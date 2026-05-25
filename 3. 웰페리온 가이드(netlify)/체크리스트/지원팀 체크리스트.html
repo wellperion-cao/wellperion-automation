@@ -1,0 +1,1410 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>웰페리온 지원팀 일일 점검</title>
+<style>
+:root{--bg:#221F20;--paper:#2a2725;--text:#f5f2ef;--dim:#8c8b83;--accent:#B79F8A;--accent-bg:rgba(183,159,138,0.12);--border:#3d3835;--green:#6abf7b;--green-bg:rgba(106,191,123,0.12);--red:#ED5B3F;--red-bg:rgba(237,91,63,0.12);--yellow:#e6c84e;--yellow-bg:rgba(230,200,78,0.12);--blue:#5b9fd5;--blue-bg:rgba(91,159,213,0.12);--purple:#a78bda;--purple-bg:rgba(167,139,218,0.12);--orange:#e6944e;--orange-bg:rgba(230,148,78,0.12)}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.6;font-size:15px;min-height:100vh}
+.header{background:var(--paper);border-bottom:1px solid var(--border);padding:16px 20px;position:sticky;top:0;z-index:10}
+.header-top{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.header h1{font-size:17px;font-weight:700;margin:0}
+.header .sub{font-size:12px;color:var(--dim);margin-top:2px}
+.sheet-links{display:flex;gap:6px;margin-left:auto}
+.sheet-link{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;padding:4px 10px;border-radius:8px;background:var(--accent-bg);color:var(--accent);border:1px solid rgba(183,159,138,0.3);text-decoration:none;white-space:nowrap;cursor:pointer;transition:background 0.15s}
+.sheet-link:hover{background:rgba(183,159,138,0.22)}
+.sheet-link svg{width:12px;height:12px;fill:currentColor;flex-shrink:0}
+.day-type{display:inline-block;font-size:11px;font-weight:700;padding:3px 10px;border-radius:12px;margin-left:8px}
+.day-type.weekday{background:var(--blue-bg);color:var(--blue)}
+.day-type.weekend{background:var(--accent-bg);color:var(--accent)}
+.day-type.closed{background:var(--red-bg);color:var(--red)}
+.mode-badge{display:inline-block;font-size:10px;padding:2px 8px;border-radius:10px;margin-left:6px;background:var(--green-bg);color:var(--green)}
+.tabs{display:flex;gap:4px;background:var(--bg);border-bottom:1px solid var(--border);padding:8px 20px;position:sticky;top:62px;z-index:9;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{padding:8px 18px;font-size:14px;font-weight:600;color:var(--dim);background:none;border:none;border-radius:8px;cursor:pointer;font-family:inherit;white-space:nowrap;flex-shrink:0}
+.tab.active{background:var(--accent-bg);color:var(--accent)}
+.content{padding:16px 20px 140px;max-width:720px;margin:0 auto}
+.date-bar{display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap}
+.date-bar input{background:var(--paper);border:1px solid var(--border);color:var(--text);padding:8px 14px;border-radius:8px;font-size:15px;font-family:inherit}
+.btn{padding:8px 14px;background:var(--accent-bg);color:var(--accent);border:1px solid var(--accent);border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit}
+.submitter-bar{background:var(--paper);border:1px solid var(--border);border-radius:10px;padding:12px 16px;margin-bottom:12px;display:flex;align-items:center;gap:12px}
+.submitter-bar label{font-size:13px;font-weight:700;color:var(--accent);white-space:nowrap}
+.submitter-bar select{flex:1;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:10px 14px;border-radius:8px;font-size:15px;font-family:inherit;font-weight:600}
+.guide-cards{display:flex;gap:10px;margin-bottom:12px}
+.guide-card{flex:1;border-radius:10px;padding:12px 14px;border:1px solid}
+.guide-card.issue-guide{background:var(--red-bg);border-color:rgba(237,91,63,0.3)}
+.guide-card.tip-guide{background:var(--purple-bg);border-color:rgba(167,139,218,0.3)}
+.guide-card .guide-title{font-size:14px;font-weight:700;margin-bottom:4px}
+.guide-card.issue-guide .guide-title{color:var(--red)}
+.guide-card.tip-guide .guide-title{color:var(--purple)}
+.guide-card .guide-desc{font-size:12px;color:var(--dim);line-height:1.4}
+.shift-divider{background:var(--paper);border:1px solid var(--accent);border-radius:12px;padding:14px 18px;margin:20px 0 12px;position:relative}
+.shift-divider:first-of-type{margin-top:0}
+.shift-divider.night-shift{border-color:var(--orange)}
+.shift-label{font-size:15px;font-weight:700;color:var(--accent)}
+.shift-divider.night-shift .shift-label{color:var(--orange)}
+.shift-progress{margin-top:8px}
+.shift-progress .progress-text{font-size:13px;color:var(--dim);display:flex;justify-content:space-between}
+.shift-progress .progress-bar{height:8px;background:var(--border);border-radius:4px;overflow:hidden;margin-top:6px}
+.shift-progress .progress-fill{height:100%;border-radius:4px;transition:width 0.3s}
+.shift-submitted{font-size:12px;color:var(--green);font-weight:600;margin-top:6px}
+.progress{background:var(--paper);border-radius:12px;padding:14px 18px;margin-bottom:16px;border:1px solid var(--border)}
+.progress-bar{height:8px;background:var(--border);border-radius:4px;overflow:hidden;margin-top:8px}
+.progress-fill{height:100%;background:var(--green);border-radius:4px;transition:width 0.3s}
+.progress-text{font-size:13px;color:var(--dim);display:flex;justify-content:space-between}
+.time-slot{margin-bottom:16px}
+.slot-header{font-size:13px;font-weight:700;color:var(--accent);padding:8px 0 6px;border-bottom:1px solid var(--border);margin-bottom:8px}
+.slot-time{background:var(--accent-bg);padding:2px 10px;border-radius:10px;font-size:12px}
+.slot-time.night{background:var(--orange-bg);color:var(--orange)}
+.category{background:var(--paper);border:1px solid var(--border);border-radius:10px;margin-bottom:8px;overflow:hidden}
+.cat-header{padding:12px 16px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none}
+.cat-header:hover{background:var(--accent-bg)}
+.cat-title{font-size:14px;font-weight:700}
+.cat-badge{font-size:11px;padding:2px 8px;border-radius:10px;font-weight:600}
+.cat-badge.done{background:var(--green-bg);color:var(--green)}
+.cat-badge.pending{background:var(--yellow-bg);color:var(--yellow)}
+.cat-body{border-top:1px solid var(--border);display:none}
+.cat-body.open{display:block}
+.item{padding:10px 16px;border-bottom:1px solid rgba(61,56,53,0.4)}
+.item:last-child{border-bottom:none}
+.item-row{display:flex;align-items:flex-start;gap:10px}
+.item input[type=checkbox]{width:22px;height:22px;margin-top:2px;accent-color:var(--green);cursor:pointer;flex-shrink:0}
+.item label{flex:1;cursor:pointer;font-size:14px;font-weight:600}
+.item.checked label{color:var(--dim);text-decoration:line-through}
+.item-detail{font-size:12px;color:var(--dim);margin:4px 0 0 32px;line-height:1.5}
+.item-btns{display:flex;gap:6px;flex-shrink:0}
+.tiny-btn{font-size:13px;padding:8px 14px;border-radius:8px;cursor:pointer;font-family:inherit;border:1px solid;font-weight:600;min-width:52px;text-align:center}
+.tiny-btn.issue{background:var(--red-bg);color:var(--red);border-color:rgba(237,91,63,0.3)}
+.tiny-btn.tip{background:var(--purple-bg);color:var(--purple);border-color:rgba(167,139,218,0.3)}
+.extra-input{width:calc(100% - 32px);padding:8px 12px;background:var(--bg);border:1px solid var(--border);color:var(--text);border-radius:8px;font-size:13px;font-family:inherit;margin:6px 0 0 32px;display:none}
+.extra-input.show{display:block}
+.extra-input.issue-field{border-color:rgba(237,91,63,0.3)}
+.extra-input.tip-field{border-color:rgba(167,139,218,0.3)}
+.submit-bar{position:fixed;bottom:0;left:0;right:0;background:var(--paper);border-top:1px solid var(--border);padding:12px 20px;display:flex;gap:10px;justify-content:center;z-index:10}
+.submit-btn{padding:12px 24px;font-size:14px;font-weight:700;border:none;border-radius:10px;cursor:pointer;font-family:inherit;flex:1;max-width:220px}
+.submit-btn.primary{background:var(--accent);color:#fff}
+.submit-btn.primary:disabled{opacity:0.4;cursor:not-allowed}
+.submit-btn.night-btn{background:var(--orange);color:#fff}
+.submit-btn.night-btn:disabled{opacity:0.4;cursor:not-allowed}
+.submit-btn.submitted{background:var(--green-bg);color:var(--green);border:1px solid rgba(106,191,123,0.3)}
+.saving{position:fixed;top:70px;right:20px;background:var(--green-bg);color:var(--green);padding:6px 14px;border-radius:8px;font-size:12px;font-weight:600;display:none;z-index:20}
+.admin-card{background:var(--paper);border:1px solid var(--border);border-radius:12px;padding:16px 18px;margin-bottom:12px}
+.admin-card h3{font-size:15px;font-weight:700;margin-bottom:10px}
+.admin-row{display:flex;justify-content:space-between;padding:6px 0;font-size:14px;border-bottom:1px solid rgba(61,56,53,0.3)}
+.admin-row:last-child{border-bottom:none}
+.admin-row .admin-row-right{text-align:right;font-size:13px}
+.status-dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px}
+.status-dot.green{background:var(--green)}.status-dot.yellow{background:var(--yellow)}.status-dot.red{background:var(--red)}
+.tip-card{background:var(--purple-bg);border:1px solid rgba(167,139,218,0.3);border-radius:12px;padding:16px 18px;margin-bottom:12px}
+.tip-card h3{color:var(--purple);font-size:15px;font-weight:700;margin-bottom:10px}
+.closed-msg{text-align:center;padding:60px 20px;color:var(--dim);font-size:16px}
+.hidden{display:none}
+.loading{text-align:center;padding:40px;color:var(--dim)}
+/* Manual tab styles */
+.manual-section{background:var(--paper);border:1px solid var(--border);border-radius:12px;margin-bottom:12px;overflow:hidden}
+.manual-header{padding:14px 18px;cursor:pointer;user-select:none;display:flex;align-items:center;justify-content:space-between}
+.manual-header:hover{background:var(--accent-bg)}
+.manual-header h3{font-size:15px;font-weight:700;margin:0}
+.manual-header .arrow{font-size:12px;color:var(--dim);transition:transform 0.2s}
+.manual-header .arrow.open{transform:rotate(90deg)}
+.manual-body{border-top:1px solid var(--border);padding:14px 18px;display:none;font-size:13px;line-height:1.8;color:var(--text)}
+.manual-body.open{display:block}
+.manual-body ul{margin:6px 0 6px 18px;list-style:disc}
+.manual-body li{margin-bottom:4px}
+.manual-body .manual-label{font-weight:700;color:var(--accent);display:block;margin-top:10px;margin-bottom:4px}
+.manual-body .manual-label:first-child{margin-top:0}
+.manual-body .highlight{color:var(--red);font-weight:600}
+.manual-body .schedule-table{width:100%;border-collapse:collapse;margin:8px 0;font-size:12px}
+.manual-body .schedule-table td,.manual-body .schedule-table th{padding:6px 10px;border:1px solid var(--border);text-align:left}
+.manual-body .schedule-table th{background:var(--accent-bg);color:var(--accent);font-weight:700}
+.day-focus-section{background:var(--paper);border:1px solid var(--blue);border-radius:12px;padding:14px 18px;margin:12px 0}
+.day-focus-section .day-focus-title{font-size:14px;font-weight:700;color:var(--blue);margin-bottom:8px}
+/* Admin shift card */
+.admin-shift-card{background:var(--paper);border:1px solid var(--border);border-radius:12px;padding:16px 18px;margin-bottom:12px}
+.admin-shift-card h3{font-size:15px;font-weight:700;margin-bottom:6px}
+.admin-shift-card.am h3{color:var(--accent)}
+.admin-shift-card.pm h3{color:var(--green)}
+.admin-shift-card.night h3{color:var(--orange)}
+.admin-shift-card.am{border-color:rgba(183,159,138,0.4)}
+.admin-shift-card.pm{border-color:rgba(106,191,123,0.4)}
+.admin-shift-card.night{border-color:rgba(230,148,78,0.4)}
+.admin-shift-meta{font-size:12px;color:var(--dim);margin-bottom:8px}
+.admin-shift-meta .submitted-badge{color:var(--green);font-weight:600}
+.admin-shift-meta .not-submitted{color:var(--red);font-weight:600}
+.admin-progress-wrap{margin-bottom:10px}
+.admin-progress-wrap .progress-text{font-size:13px;color:var(--dim);display:flex;justify-content:space-between}
+.admin-progress-wrap .progress-bar{height:8px;background:var(--border);border-radius:4px;overflow:hidden;margin-top:4px}
+.admin-progress-wrap .progress-fill{height:100%;border-radius:4px;transition:width 0.3s}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-top">
+    <h1>웰페리온 지원팀 일일 점검 <span id="dayType"></span></h1>
+    <div class="sheet-links">
+      <a class="sheet-link" href="https://docs.google.com/spreadsheets/d/1DKEKRrpsi9Nit7dNdNGsXLYtzie3PopbwD7EJzJCku0" target="_blank" rel="noopener">
+        <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zM6 20V4h7v5h5v11H6zm2-6h8v2H8v-2zm0-3h8v2H8v-2z"/></svg>
+        시트
+      </a>
+      <a class="sheet-link" href="https://docs.google.com/spreadsheets/d/1DKEKRrpsi9Nit7dNdNGsXLYtzie3PopbwD7EJzJCku0/edit?gid=716834536#gid=716834536" target="_blank" rel="noopener">
+        <svg viewBox="0 0 24 24"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
+        점검자 목록
+      </a>
+    </div>
+  </div>
+  <div class="sub" id="headerSub"></div>
+</div>
+<div class="tabs">
+  <button class="tab" onclick="switchTab('manual')">매뉴얼</button>
+  <button class="tab active" onclick="switchTab('check-m')">점검(남)</button>
+  <button class="tab" onclick="switchTab('check-f')">점검(여)</button>
+  <button class="tab" onclick="switchTab('admin')">관리자 확인</button>
+</div>
+<div class="saving" id="saveIndicator">저장 중...</div>
+
+<div id="tab-manual" class="content hidden">
+  <div class="manual-section">
+    <div class="manual-header" onclick="togManual(this)"><h3>공통 유의사항</h3><span class="arrow open">&#9654;</span></div>
+    <div class="manual-body open">
+      <ul>
+        <li><span class="highlight">대리석/코팅면 산성세제 사용 금지</span></li>
+        <li>전기설비는 반드시 비닐 포장 후 청소</li>
+        <li>청소 시 환기 + 보호장비(장갑/마스크) 필수 착용</li>
+        <li>청소 전/후 사진 촬영 의무 (탕실 / 건습식 사우나 / 화장실)</li>
+      </ul>
+    </div>
+  </div>
+  <div class="manual-section">
+    <div class="manual-header" onclick="togManual(this)"><h3>응대 기본원칙</h3><span class="arrow">&#9654;</span></div>
+    <div class="manual-body">
+      <span class="manual-label">4단계 응대 프로세스</span>
+      <ul>
+        <li><strong>1. 경청우선</strong> - 회원 말씀을 끝까지 경청</li>
+        <li><strong>2. 빠른조치</strong> - 즉시 해결 가능한 건은 현장 즉시 조치</li>
+        <li><strong>3. 표준멘트</strong> - 정중하고 일관된 안내 멘트 사용</li>
+        <li><strong>4. 기록필수</strong> - 모든 응대 내역 기록 (이슈 버튼 활용)</li>
+      </ul>
+    </div>
+  </div>
+  <div class="manual-section">
+    <div class="manual-header" onclick="togManual(this)"><h3>담당자 보고방식</h3><span class="arrow">&#9654;</span></div>
+    <div class="manual-body">
+      <span class="manual-label">즉시조치 가능한 경우</span>
+      <ul>
+        <li>현장에서 즉시 조치 완료</li>
+        <li>조치 후 카카오톡으로 팀장에게 보고</li>
+      </ul>
+      <span class="manual-label">즉시조치 불가능한 경우</span>
+      <ul>
+        <li><span class="highlight">팀장 &amp; 소장에게 즉시 보고</span></li>
+        <li>지시 받은 후 조치 진행</li>
+        <li>안전/시설 관련 긴급 사항은 무조건 즉시 보고</li>
+      </ul>
+    </div>
+  </div>
+  <div class="manual-section">
+    <div class="manual-header" onclick="togManual(this)"><h3>탕 관리 핵심</h3><span class="arrow">&#9654;</span></div>
+    <div class="manual-body">
+      <span class="manual-label">오버풀 타이머 스케줄</span>
+      <table class="schedule-table">
+        <tr><th></th><th>온탕</th><th>열탕</th></tr>
+        <tr><td><strong>평일 (6회)</strong></td><td>06:00, 10:00, 11:00, 12:00, 15:00, 20:00</td><td>06:00, 10:30, 11:30, 12:30, 15:30, 20:40</td></tr>
+        <tr><td><strong>주말 (3회)</strong></td><td>10:00, 14:00, 18:00</td><td>10:30, 14:30, 18:30</td></tr>
+      </table>
+      <span class="manual-label">배수 원칙</span>
+      <ul>
+        <li><strong>냉탕</strong> - 매일 배수</li>
+        <li><strong>온탕 &amp; 열탕</strong> - 격일 배수 (마개+스위치 확인)</li>
+        <li><strong>휴관일 전</strong> - 냉탕/온탕/열탕 전부 배수</li>
+      </ul>
+    </div>
+  </div>
+  <div class="manual-section">
+    <div class="manual-header" onclick="togManual(this)"><h3>담당 구역 배정</h3><span class="arrow">&#9654;</span></div>
+    <div class="manual-body">
+      <span class="manual-label">남 주임 전담</span>
+      <ul>
+        <li>D-3 메인 계단 (B1-B2)</li>
+        <li>D-6 G.X룸 (화요일 집중)</li>
+        <li>D-8 키즈 샤워실</li>
+      </ul>
+      <span class="manual-label">여 주임 전담</span>
+      <ul>
+        <li>D-4 메인 복도 휴게공간</li>
+        <li>D-7 센터 화분 (금요일 집중)</li>
+      </ul>
+      <span class="manual-label">공통</span>
+      <ul>
+        <li>A 사우나 점검, B 락커룸, C 세탁물, E 외곽 청결, F 회원 응대</li>
+      </ul>
+    </div>
+  </div>
+  <div class="manual-section">
+    <div class="manual-header" onclick="togManual(this)"><h3>요일별 집중 청소 요약</h3><span class="arrow">&#9654;</span></div>
+    <div class="manual-body">
+      <table class="schedule-table">
+        <tr><th>요일</th><th>집중 청소 항목</th></tr>
+        <tr><td><strong>월</strong></td><td>화장실 전체 / 탈수기 물때 곰팡이 / B-1 파우더 / B-5 사우나 화장실 (탕 배수: 마개+스위치)</td></tr>
+        <tr><td><strong>화</strong></td><td>세면대 배수 파이프 / 배수구 소독 머리카락 / 탕 내 비품 / E-2 거울 유리창 / D-6 G.X룸 거울</td></tr>
+        <tr><td><strong>수</strong></td><td>건/습식 사우나 바닥 (고압세척+산성세제) / D-8 키즈샤워실</td></tr>
+        <tr><td><strong>목</strong></td><td>화장실 전체 / 탈수기 물때 곰팡이 / B-1 파우더 / B-5 사우나 화장실</td></tr>
+        <tr><td><strong>금</strong></td><td>세면대 배수 파이프 / 배수구 소독 머리카락 / 탕 내 비품 / D-7 센터 화분</td></tr>
+        <tr><td><strong>토</strong></td><td>벽체 곰팡이 물때 / 거울 유리창 물때 / 천정 환기구 먼지 / 방제</td></tr>
+        <tr><td><strong>일</strong></td><td>탕청소 업체 휴무 / E-6 주차장 / 개인락커+미비 부분</td></tr>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div id="tab-check-m" class="content">
+  <div class="date-bar">
+    <input type="date" id="checkDateM">
+    <button class="btn" onclick="moveDateG('m',-1)">&lt;</button>
+    <button class="btn" onclick="setTodayG('m')">오늘</button>
+    <button class="btn" onclick="moveDateG('m',1)">&gt;</button>
+  </div>
+  <div class="submitter-bar">
+    <label>점검자</label>
+    <select id="submitterM" onchange="onSubmitterChangeG('m')">
+      <option value="">선택하세요</option>
+    </select>
+  </div>
+  <div class="guide-cards">
+    <div class="guide-card issue-guide">
+      <div class="guide-title">이슈</div>
+      <div class="guide-desc">고장, 부족, 이상 등 문제가 발생했을 때 기록</div>
+    </div>
+    <div class="guide-card tip-guide">
+      <div class="guide-title">노하우</div>
+      <div class="guide-desc">더 효율적인 방법, 개선 아이디어를 공유</div>
+    </div>
+  </div>
+  <div id="checklistM"></div>
+  <div class="submit-bar" id="submitBarM">
+    <button class="submit-btn primary" id="submitAmM" onclick="submitShift('am','m')" disabled>오전조 제출</button>
+    <button class="submit-btn primary" id="submitPmM" onclick="submitShift('pm','m')" disabled>오후조 제출</button>
+    <button class="submit-btn night-btn" id="submitNightM" onclick="submitShift('night','m')" disabled style="display:none">야간조 제출</button>
+  </div>
+</div>
+
+<div id="tab-check-f" class="content hidden">
+  <div class="date-bar">
+    <input type="date" id="checkDateF">
+    <button class="btn" onclick="moveDateG('f',-1)">&lt;</button>
+    <button class="btn" onclick="setTodayG('f')">오늘</button>
+    <button class="btn" onclick="moveDateG('f',1)">&gt;</button>
+  </div>
+  <div class="submitter-bar">
+    <label>점검자</label>
+    <select id="submitterF" onchange="onSubmitterChangeG('f')">
+      <option value="">선택하세요</option>
+    </select>
+  </div>
+  <div class="guide-cards">
+    <div class="guide-card issue-guide">
+      <div class="guide-title">이슈</div>
+      <div class="guide-desc">고장, 부족, 이상 등 문제가 발생했을 때 기록</div>
+    </div>
+    <div class="guide-card tip-guide">
+      <div class="guide-title">노하우</div>
+      <div class="guide-desc">더 효율적인 방법, 개선 아이디어를 공유</div>
+    </div>
+  </div>
+  <div id="checklistF"></div>
+  <div class="submit-bar" id="submitBarF" style="display:none">
+    <button class="submit-btn primary" id="submitAmF" onclick="submitShift('am','f')" disabled>오전조 제출</button>
+    <button class="submit-btn primary" id="submitPmF" onclick="submitShift('pm','f')" disabled>오후조 제출</button>
+    <button class="submit-btn night-btn" id="submitNightF" onclick="submitShift('night','f')" disabled style="display:none">야간조 제출</button>
+  </div>
+</div>
+
+<div id="tab-admin" class="content hidden">
+  <div class="date-bar">
+    <input type="date" id="adminDate">
+    <button class="btn" onclick="moveAdminDate(-1)">&lt;</button>
+    <button class="btn" onclick="setAdminToday()">오늘</button>
+    <button class="btn" onclick="moveAdminDate(1)">&gt;</button>
+  </div>
+  <div id="adminView"></div>
+</div>
+
+<script>
+const API_URL = 'https://script.google.com/macros/s/AKfycbw7aLCNG8Gu-HYnyStxSD_fyOrpZYiz5DIclrfETVF89HSJotejWF2SExnBg9FFurjL/exec';
+const ONLINE = API_URL.length > 0;
+const STAFF_CSV_URL = 'https://docs.google.com/spreadsheets/d/1DKEKRrpsi9Nit7dNdNGsXLYtzie3PopbwD7EJzJCku0/gviz/tq?tqx=out:csv&sheet=%EC%A0%90%EA%B2%80%EC%9E%90';
+
+/* ── Track which gender tab is active ── */
+let activeGenderTab = 'm';
+
+/* ── A: Staff list (fallback + dynamic) ── */
+const FALLBACK_STAFF = [
+  {name:'여 오전 주임', role:'주임', shift:'am', gender:'f'},
+  {name:'여 오후 주임', role:'주임', shift:'pm', gender:'f'},
+  {name:'남 오전 주임', role:'주임', shift:'am', gender:'m'},
+  {name:'남 오후 주임', role:'주임', shift:'pm', gender:'m'},
+  {name:'황용석 팀장', role:'팀장', shift:'all', gender:'all'},
+  {name:'중간 주임(남)', role:'주임', shift:'mid', gender:'m'},
+  {name:'중간 주임(여)', role:'주임', shift:'mid', gender:'f'},
+  {name:'탕청소 업체', role:'업체', shift:'night', gender:'all'}
+];
+let STAFF_LIST = [...FALLBACK_STAFF];
+
+async function loadStaffFromSheet(){
+  try{
+    const r=await fetch(STAFF_CSV_URL);
+    const text=await r.text();
+    const lines=text.trim().split('\n');
+    if(lines.length<2)return;
+    const hdr=parseCSVLine(lines[0]);
+    const nameIdx=hdr.findIndex(h=>h.includes('이름'));
+    const roleIdx=hdr.findIndex(h=>h.includes('역할'));
+    const shiftIdx=hdr.findIndex(h=>h.includes('교대'));
+    const genderIdx=hdr.findIndex(h=>h.includes('성별구역'));
+    if(nameIdx<0)return;
+    const list=[];
+    for(let i=1;i<lines.length;i++){
+      const cols=parseCSVLine(lines[i]);
+      if(!cols[nameIdx])continue;
+      list.push({
+        name:cols[nameIdx]||'',
+        role:cols[roleIdx]||'',
+        shift:cols[shiftIdx]||'all',
+        gender:cols[genderIdx]||'all'
+      });
+    }
+    if(list.length>0)STAFF_LIST=list;
+  }catch(e){/* use fallback */}
+  populateSubmitterDropdowns();
+}
+
+function parseCSVLine(line){
+  const result=[];let cur='',inQ=false;
+  for(let i=0;i<line.length;i++){
+    const c=line[i];
+    if(c==='"'){if(inQ&&line[i+1]==='"'){cur+='"';i++}else{inQ=!inQ}}
+    else if(c===','&&!inQ){result.push(cur.trim());cur=''}
+    else{cur+=c}
+  }
+  result.push(cur.trim());
+  return result;
+}
+
+function getStaffForGender(g){
+  // g='m' or 'f'
+  // Show staff matching gender or gender='all' (팀장, 탕청소 업체)
+  return STAFF_LIST.filter(s=>{
+    if(s.gender==='all') return true;
+    return s.gender===g;
+  });
+}
+
+function populateSubmitterDropdowns(){
+  populateOneDropdown('submitterM','m');
+  populateOneDropdown('submitterF','f');
+}
+
+function populateOneDropdown(selId,gender){
+  const sel=document.getElementById(selId);
+  const savedKey='wcheck_submitter_'+gender;
+  const saved=sel.value||localStorage.getItem(savedKey)||'';
+  sel.innerHTML='<option value="">선택하세요</option>';
+  const staff=getStaffForGender(gender);
+  staff.forEach(s=>{
+    const opt=document.createElement('option');
+    opt.value=s.name;opt.textContent=s.name;
+    sel.appendChild(opt);
+  });
+  if(saved){sel.value=saved}
+}
+
+function getStaffInfo(name){
+  return STAFF_LIST.find(s=>s.name===name)||null;
+}
+
+function getSubmitterForGender(g){
+  const selId=g==='f'?'submitterF':'submitterM';
+  return document.getElementById(selId).value;
+}
+
+function isNightShiftWorkerG(g){
+  const sub=getSubmitterForGender(g);
+  const info=getStaffInfo(sub);
+  return info&&info.shift==='night';
+}
+
+function shouldShowItemForGender(item,gender){
+  // gender = 'm' or 'f'
+  const itemGender=item.gender||'all';
+  if(itemGender==='all') return true;
+  return itemGender===gender;
+}
+
+/* ── Data: gender field added (m/f/all) ── */
+
+const WEEKDAY=[
+  {slot:"오픈 05:30~08:00",shift:"am",groups:[
+    {title:"A 사우나 점검",items:[
+      {id:"a1",name:"A-1 사우나 탕",detail:"수위/온도 체크 | 탕 청결 및 오버풀 관리\n[온탕 평일] 6회: 06:00, 10:00, 11:00, 12:00, 15:00, 20:00\n[열탕 평일] 6회: 06:00, 10:30, 11:30, 12:30, 15:30, 20:40",gender:"all"},
+      {id:"a2",name:"A-2 건/습식 사우나",detail:"온도 체크 | 건식/습식 내부 청결\n비품: 모래시계 확인",gender:"all"},
+      {id:"a3",name:"A-3 사우나 내부",detail:"배수로/배수구 청소 | 바닥 미끄럼 | 타일/유리 물때 | 탈수기 밑 | 좌식 의자 | 거울\n비품: 바가지, 목욕의자, 거품바구니, 쓰레기통, 치약, 소금, 샴푸, 린스, 바디워시, 비누",gender:"all"}
+    ]},
+    {title:"B-6 데일리 락커",items:[
+      {id:"b6",name:"요일별 락커 청소",detail:"월 1~30 | 화 31~60 | 수 61~90 | 목 91~120 | 금 121~150 | 토 151~180\n데일리/개인 락커 키 위 먼지 청소",gender:"all"}
+    ]}
+  ]},
+  {slot:"오전 08:00~12:00",shift:"am",groups:[
+    {title:"B 락커룸",items:[
+      {id:"b1",name:"B-1 파우더",detail:"선풍기 | 드라이기 | 휴지통 | 소독기 | 발건조기\n비품: 빗, 면봉, 휴지, 로션, 스킨",gender:"all"},
+      {id:"b2",name:"B-2 휴게실",detail:"TV 관리 | 소파 및 테이블 관리",gender:"all"},
+      {id:"b3_f",name:"B-3 찜질방 (여)",detail:"온도/청결 관리\n쑥 제거(휴관일 전) / 쑥 입고(휴관일 후)",gender:"f"},
+      {id:"b3_m",name:"B-3 수면실 (남)",detail:"청결 관리\n매트리스/바스타올 관리",gender:"m"},
+      {id:"b4",name:"B-4 마루바닥",detail:"바닥 미끄럼/청결 | 휴지통\n비품: 1회용 밀대 타올 (수시)",gender:"all"},
+      {id:"b5",name:"B-5 사우나 화장실",detail:"소변기/대변기/바닥/세면공간\n비품: 휴지통, 화장지, 핸드페이퍼, 손세정제",gender:"all"}
+    ]},
+    {title:"C 세탁물 (오전)",items:[
+      {id:"c1a",name:"세탁물 입고 운반",detail:"입고된 세탁물을 세탁실로 운반",gender:"all"},
+      {id:"c1b",name:"운동복/양말 상태 + 배치",detail:"상태 체크 후 사이즈별 배치",gender:"all"},
+      {id:"c1c",name:"타올류 상태 + 배치",detail:"거품타올/타올/바스타올 상태 체크 후 배치",gender:"all"}
+    ]},
+    {title:"E 외곽 청결",items:[
+      {id:"e1",name:"E-1 센터 복도 바닥",detail:"1F/B1/B2 에스컬레이터 공간 전체 복도",gender:"all"},
+      {id:"e2",name:"E-2 센터 거울/유리창",detail:"거울/유리창 물때 | 손톱깍이장 청소 (화요일 집중)",gender:"all"},
+      {id:"e3",name:"E-3 청소 비품 관리",detail:"비품 지정 위치 배치 | 깔끔하게 관리",gender:"all"},
+      {id:"e4",name:"E-4 헬스장",detail:"매일: 머신/런닝머신 땀 | 월수금: 런닝머신 바닥 | 화목: 스트레칭 공간 | 주말: 거울",gender:"all"},
+      {id:"e5",name:"E-5 골프장",detail:"매일: 복도 청소 | 월수금: 타석(스크린천) | 화목: 타석(기계) | 주말: 레슨룸",gender:"all"}
+    ]}
+  ]},
+  {slot:"오전 후반 10:00~12:00",shift:"am",groups:[
+    {title:"D 외부 (오전)",items:[
+      {id:"d1",name:"D-1 외부 화장실",detail:"골프장/B1/B2 화장실 체크\n비품: 휴지통, 화장지, 핸드페이퍼, 손세정제",gender:"all"},
+      {id:"d2",name:"D-2 복도 휴지통",detail:"운영사무실 앞 / B1 복도(헬스장 입구 구석)",gender:"all"},
+      {id:"d3",name:"D-3 메인 계단",detail:"B1-B2 메인 계단 벽/바닥 청결 (남 주임 전담)",gender:"m"},
+      {id:"d4",name:"D-4 메인 복도 휴게공간",detail:"소파/바닥 청결 (여 주임 전담)",gender:"f"},
+      {id:"d5",name:"D-5 분리수거장",detail:"에스컬레이터 아래 분리수거 진행",gender:"all"}
+    ]}
+  ]},
+  {slot:"인수인계 13:00~14:00",shift:"am",groups:[
+    {title:"교대 인수인계",items:[
+      {id:"hw1",name:"세탁물 출고 운반",detail:"세탁물 출고 운반 + 카카오톡 인수인계 보고",gender:"all"},
+      {id:"hw2",name:"인수인계 카톡 보고",detail:"오전조 → 오후조 인수사항 카카오톡 공유",gender:"all"}
+    ]}
+  ]},
+  {slot:"오후 14:00~18:00",shift:"pm",groups:[
+    {title:"A 사우나 재점검",items:[
+      {id:"a_pm",name:"A-1/A-2/A-3 오후 재점검",detail:"사우나 탕 수위/온도 | 건습식 온도 | 사우나 내부 바닥/배수\n팀장 15분 점검 (카톡 보고)",gender:"all"}
+    ]},
+    {title:"D 외부 (오후)",items:[
+      {id:"d6",name:"D-6 G.X룸",detail:"거울/바닥 청소 (남 주임 전담 / 화요일 집중)",gender:"m"},
+      {id:"d7",name:"D-7 센터 화분",detail:"물 공급 (여 주임 전담 / 금요일 집중)",gender:"f"},
+      {id:"d9",name:"D-9 수영장 계단",detail:"주 1회 청소",gender:"all"}
+    ]},
+    {title:"B 락커룸 재점검",items:[
+      {id:"b_pm",name:"B-2/B-3/B-4/B-5 오후 재점검",detail:"휴게실/찜질방(수면실)/마루바닥/사우나 화장실 오후 상태 확인",gender:"all"}
+    ]}
+  ]},
+  {slot:"저녁 19:00~22:00",shift:"pm",groups:[
+    {title:"저녁 점검",items:[
+      {id:"b_ev",name:"B 락커룸 저녁 재점검",detail:"B-2/B-3/B-4 상태 확인",gender:"all"},
+      {id:"d8",name:"D-8 키즈 샤워실",detail:"파우더룸 정리 20:30\n2주 1회 샤워실 청소 수 13:00 (남 주임 전담)",gender:"m"},
+      {id:"e6",name:"E-6 주차장",detail:"바닥 쓰레기 치우기 | 주차장 화장실 | 차단기 확인\n휴관일: 집중 청소",gender:"all"}
+    ]}
+  ]},
+  {slot:"마감 22:00~22:30",shift:"pm",groups:[
+    {title:"마감 점검",items:[
+      {id:"cls1",name:"세탁물 마감 출고",detail:"마감 세탁물 최종 출고 운반",gender:"all"},
+      {id:"cls2",name:"사우나/파우더 최종 체크",detail:"남/여 사우나 & 파우더 공간 청결 상태 체크\n시설/운영부 마감자 카톡 보고\n미비 시 경고 / 경고 3회 경징계",gender:"all"},
+      {id:"cls3",name:"전 구역 마감 확인",detail:"전 구역 이상 유무 | 미수금 정산 | 다음날 일정 준비 완료 확인",gender:"all"}
+    ]}
+  ]},
+  {slot:"상시",shift:"all",groups:[
+    {title:"F 회원 응대",items:[
+      {id:"f1",name:"F-1 개인 락커 응대",detail:"첫 인사 눈맞춤+미소 | 불편사항 접수 | 에티켓 위반 정중+단호 안내",gender:"all"},
+      {id:"f2",name:"F-2 데일리 락커 응대",detail:"락커 사용법 안내 | 분실물 민원 즉시 확인+기록",gender:"all"},
+      {id:"f3",name:"F-3 사우나 내부 응대",detail:"청결 즉시 조치 (바닥 미끄럼, 이물질)",gender:"all"},
+      {id:"f4",name:"F-4 파우더 공간 응대",detail:"소모품 요청 즉시 보충 | 드라이기 등 관리",gender:"all"},
+      {id:"f5",name:"F-5 휴게공간 응대",detail:"소파/테이블 관리 | 혼잡/소음 민원 양해 요청",gender:"all"}
+    ]}
+  ]}
+];
+
+const WEEKEND=[
+  {slot:"오픈 07:30~08:00",shift:"am",groups:[
+    {title:"A 사우나 점검",items:[
+      {id:"a1",name:"A-1 사우나 탕",detail:"수위/온도 체크 | 탕 청결 | 오버풀 관리\n[온탕 주말] 3회: 10:00, 14:00, 18:00\n[열탕 주말] 3회: 10:30, 14:30, 18:30",gender:"all"},
+      {id:"a2",name:"A-2 건/습식 사우나",detail:"온도 체크 | 내부 청결",gender:"all"},
+      {id:"a3",name:"A-3 사우나 내부",detail:"배수로/배수구 | 바닥 | 타일/유리 | 탈수기 | 거울",gender:"all"}
+    ]},
+    {title:"B-6 데일리 락커",items:[
+      {id:"b6",name:"주말 락커 청소",detail:"토 151~180 / 데일리/개인 락커 키 위 먼지",gender:"all"}
+    ]}
+  ]},
+  {slot:"오전 08:00~12:00",shift:"am",groups:[
+    {title:"B 락커룸",items:[
+      {id:"b1",name:"B-1 파우더",detail:"선풍기 | 드라이기 | 휴지통 | 소독기 | 발건조기",gender:"all"},
+      {id:"b2",name:"B-2 휴게실",detail:"TV | 소파 | 테이블",gender:"all"},
+      {id:"b3_f",name:"B-3 찜질방 (여)",detail:"온도/청결 관리",gender:"f"},
+      {id:"b3_m",name:"B-3 수면실 (남)",detail:"청결 관리 | 매트리스/바스타올",gender:"m"},
+      {id:"b4",name:"B-4 마루바닥",detail:"미끄럼/청결 | 휴지통",gender:"all"},
+      {id:"b5",name:"B-5 사우나 화장실",detail:"소변기/대변기/바닥/세면공간",gender:"all"}
+    ]},
+    {title:"C 세탁물 (오전)",items:[
+      {id:"c1a",name:"세탁물 입고 + 상태 체크",detail:"운동복/양말 사이즈별 배치 | 타올류 배치",gender:"all"}
+    ]},
+    {title:"E 외곽 청결",items:[
+      {id:"e1",name:"E-1 센터 복도 바닥",detail:"1F/B1/B2",gender:"all"},
+      {id:"e3",name:"E-3 청소 비품 관리",detail:"지정 위치 배치",gender:"all"},
+      {id:"e4",name:"E-4 헬스장",detail:"거울 청소 (주말)",gender:"all"},
+      {id:"e5",name:"E-5 골프장",detail:"레슨룸 청소 (주말)",gender:"all"}
+    ]}
+  ]},
+  {slot:"인수인계 13:00~14:00",shift:"am",groups:[
+    {title:"교대 인수인계",items:[
+      {id:"hw1",name:"세탁물 출고 + 인수인계",detail:"카카오톡 보고 의무",gender:"all"}
+    ]}
+  ]},
+  {slot:"오후 14:00~17:00",shift:"pm",groups:[
+    {title:"D 외부",items:[
+      {id:"d1",name:"D-1 외부 화장실",detail:"골프장/B1/B2",gender:"all"},
+      {id:"d2",name:"D-2 복도 휴지통",detail:"운영사무실 앞 / B1 복도",gender:"all"},
+      {id:"d3",name:"D-3 메인 계단",detail:"B1-B2 벽/바닥 (남 주임 전담)",gender:"m"},
+      {id:"d4",name:"D-4 메인 복도 휴게공간",detail:"소파/바닥 (여 주임 전담)",gender:"f"},
+      {id:"d5",name:"D-5 분리수거장",detail:"에스컬레이터 아래",gender:"all"}
+    ]},
+    {title:"A 사우나 재점검",items:[
+      {id:"a_pm",name:"A-1/A-2/A-3 오후 재점검",detail:"수위/온도 | 건습식 | 바닥/배수",gender:"all"}
+    ]}
+  ]},
+  {slot:"저녁 17:00~20:00",shift:"pm",groups:[
+    {title:"저녁 점검",items:[
+      {id:"c_ev",name:"C 세탁물 마감",detail:"마감 세탁물 출고",gender:"all"},
+      {id:"b_ev",name:"B 락커룸 저녁 재점검",detail:"B-2/B-3/B-4/B-5 상태 확인",gender:"all"},
+      {id:"e6",name:"E-6 주차장",detail:"바닥 쓰레기 | 화장실 | 차단기",gender:"all"}
+    ]}
+  ]},
+  {slot:"마감 20:00",shift:"pm",groups:[
+    {title:"마감 점검",items:[
+      {id:"cls1",name:"세탁물 최종 출고",detail:"마감 세탁물 운반",gender:"all"},
+      {id:"cls2",name:"사우나/파우더 최종 체크",detail:"남/여 사우나 & 파우더 청결 최종 체크 (카톡 보고)",gender:"all"},
+      {id:"cls3",name:"마감 탕청소",detail:"별도 2인 1조 | 탕청소 업체 20:30 출근",gender:"all"}
+    ]}
+  ]},
+  {slot:"상시",shift:"all",groups:[
+    {title:"F 회원 응대",items:[
+      {id:"f1",name:"F-1 개인 락커 응대",detail:"첫 인사 눈맞춤+미소 | 불편사항 접수 | 에티켓 위반 정중+단호 안내",gender:"all"},
+      {id:"f2",name:"F-2 데일리 락커 응대",detail:"락커 사용법 안내 | 분실물 민원 즉시 확인+기록",gender:"all"},
+      {id:"f3",name:"F-3 사우나 내부 응대",detail:"청결 즉시 조치 (바닥 미끄럼, 이물질)",gender:"all"},
+      {id:"f4",name:"F-4 파우더 공간 응대",detail:"소모품 요청 즉시 보충 | 드라이기 등 관리",gender:"all"},
+      {id:"f5",name:"F-5 휴게공간 응대",detail:"소파/테이블 관리 | 혼잡/소음 민원 양해 요청",gender:"all"}
+    ]}
+  ]}
+];
+
+/* ── D: Night shift (탕청소 업체) ── */
+const NIGHT_WEEKDAY=[
+  {slot:"23:00~23:30",shift:"night",groups:[
+    {title:"초기 점검 및 준비",items:[
+      {id:"n_prep",name:"청소 도구 준비 및 초기 점검",detail:"청소 도구 상태 확인 | 세제/장비 준비 | 구역별 점검 시작",gender:"all"}
+    ]}
+  ]},
+  {slot:"23:30~00:30 남 사우나",shift:"night",groups:[
+    {title:"남 사우나 탕청소",items:[
+      {id:"n_m_tang",name:"냉탕/온탕/열탕 배수 + 탕 내부 청소",detail:"배수 후 탕 내부 벽면/바닥 세척 | 배수구 이물질 제거",gender:"all"},
+      {id:"n_m_shower",name:"샤워부스 청소",detail:"샤워부스 벽면/바닥/배수구 세척",gender:"all"},
+      {id:"n_m_floor",name:"바닥 + 배수구",detail:"전체 바닥 세척 | 배수구 이물질 제거 및 소독",gender:"all"},
+      {id:"n_m_roller",name:"돌돌이 (격주)",detail:"격주 돌돌이 작업 실시",gender:"all"}
+    ]}
+  ]},
+  {slot:"00:30~01:30",shift:"night",groups:[
+    {title:"요일별 집중 청소 (야간)",items:[
+      {id:"n_daily_focus",name:"요일별 집중 청소",detail:"해당 요일 집중 청소 항목 수행 (요일별 항목 참고)",gender:"all"}
+    ]}
+  ]},
+  {slot:"01:30~02:00",shift:"night",groups:[
+    {title:"휴게시간",items:[
+      {id:"n_break",name:"휴게시간",detail:"30분 휴식",gender:"all"}
+    ]}
+  ]},
+  {slot:"02:00~03:00 여 사우나",shift:"night",groups:[
+    {title:"여 사우나 탕청소",items:[
+      {id:"n_f_tang",name:"냉탕/온탕/열탕 배수 + 탕 내부 청소",detail:"배수 후 탕 내부 벽면/바닥 세척 | 배수구 이물질 제거",gender:"all"},
+      {id:"n_f_shower",name:"샤워부스 청소",detail:"샤워부스 벽면/바닥/배수구 세척",gender:"all"},
+      {id:"n_f_floor",name:"바닥 + 배수구",detail:"전체 바닥 세척 | 배수구 이물질 제거 및 소독",gender:"all"},
+      {id:"n_f_roller",name:"돌돌이 (격주)",detail:"격주 돌돌이 작업 실시",gender:"all"}
+    ]}
+  ]},
+  {slot:"03:00~04:00",shift:"night",groups:[
+    {title:"여 사우나 화장실 + 마감",items:[
+      {id:"n_f_toilet",name:"여 사우나 화장실 청소",detail:"소변기/대변기/바닥/세면공간 세척",gender:"all"},
+      {id:"n_daily_focus2",name:"요일별 청소 마무리",detail:"요일별 잔여 집중 청소 항목 마무리",gender:"all"},
+      {id:"n_final",name:"최종 마감 점검",detail:"전 구역 최종 확인 | 탕 배수 일지 작성",gender:"all"}
+    ]}
+  ]}
+];
+
+const NIGHT_WEEKEND=[
+  {slot:"20:30~21:00",shift:"night",groups:[
+    {title:"초기 점검 및 준비",items:[
+      {id:"n_prep",name:"청소 도구 준비 및 초기 점검",detail:"청소 도구 상태 확인 | 세제/장비 준비 | 구역별 점검 시작",gender:"all"}
+    ]}
+  ]},
+  {slot:"21:00~22:00 남 사우나",shift:"night",groups:[
+    {title:"남 사우나 탕청소",items:[
+      {id:"n_m_tang",name:"냉탕/온탕/열탕 배수 + 탕 내부 청소",detail:"배수 후 탕 내부 벽면/바닥 세척 | 배수구 이물질 제거",gender:"all"},
+      {id:"n_m_shower",name:"샤워부스 청소",detail:"샤워부스 벽면/바닥/배수구 세척",gender:"all"},
+      {id:"n_m_floor",name:"바닥 + 배수구",detail:"전체 바닥 세척 | 배수구 이물질 제거 및 소독",gender:"all"},
+      {id:"n_m_roller",name:"돌돌이 (격주)",detail:"격주 돌돌이 작업 실시",gender:"all"}
+    ]}
+  ]},
+  {slot:"22:00~23:00",shift:"night",groups:[
+    {title:"요일별 집중 청소 (야간)",items:[
+      {id:"n_daily_focus",name:"요일별 집중 청소",detail:"해당 요일 집중 청소 항목 수행 (요일별 항목 참고)",gender:"all"}
+    ]}
+  ]},
+  {slot:"23:00~23:30",shift:"night",groups:[
+    {title:"휴게시간",items:[
+      {id:"n_break",name:"휴게시간",detail:"30분 휴식",gender:"all"}
+    ]}
+  ]},
+  {slot:"23:30~00:30 여 사우나",shift:"night",groups:[
+    {title:"여 사우나 탕청소",items:[
+      {id:"n_f_tang",name:"냉탕/온탕/열탕 배수 + 탕 내부 청소",detail:"배수 후 탕 내부 벽면/바닥 세척 | 배수구 이물질 제거",gender:"all"},
+      {id:"n_f_shower",name:"샤워부스 청소",detail:"샤워부스 벽면/바닥/배수구 세척",gender:"all"},
+      {id:"n_f_floor",name:"바닥 + 배수구",detail:"전체 바닥 세척 | 배수구 이물질 제거 및 소독",gender:"all"},
+      {id:"n_f_roller",name:"돌돌이 (격주)",detail:"격주 돌돌이 작업 실시",gender:"all"}
+    ]}
+  ]},
+  {slot:"00:30~01:30",shift:"night",groups:[
+    {title:"여 화장실 + 마감",items:[
+      {id:"n_f_toilet",name:"여 사우나 화장실 청소",detail:"소변기/대변기/바닥/세면공간 세척",gender:"all"},
+      {id:"n_daily_focus2",name:"요일별 청소 마무리",detail:"요일별 잔여 집중 청소 항목 마무리",gender:"all"},
+      {id:"n_final",name:"최종 마감 점검",detail:"전 구역 최종 확인 | 탕 배수 일지 작성",gender:"all"}
+    ]}
+  ]}
+];
+
+/* ── E: Day-of-week focused cleaning ── */
+const DAY_FOCUS={
+  1:[ // 월
+    {id:"df_mon1",name:"화장실 전체 청소",detail:"남/여 화장실 전면 세척",gender:"all"},
+    {id:"df_mon2",name:"탈수기 물때/곰팡이",detail:"탈수기 내부 물때 및 곰팡이 제거",gender:"all"},
+    {id:"df_mon3",name:"B-1 파우더 집중",detail:"파우더 공간 집중 청소",gender:"all"},
+    {id:"df_mon4",name:"B-5 사우나 화장실 집중",detail:"사우나 화장실 집중 세척 (탕 배수: 마개+스위치 확인)",gender:"all"}
+  ],
+  2:[ // 화
+    {id:"df_tue1",name:"세면대 배수 파이프",detail:"세면대 배수 파이프 분해 청소",gender:"all"},
+    {id:"df_tue2",name:"배수구 악취 소독/머리카락",detail:"배수구 악취 소독 및 머리카락 제거",gender:"all"},
+    {id:"df_tue3",name:"탕 내 비품 점검",detail:"탕 내부 비품 상태 확인 및 교체",gender:"all"},
+    {id:"df_tue4",name:"E-2 거울/유리창 집중",detail:"센터 거울 및 유리창 집중 세척",gender:"all"},
+    {id:"df_tue5",name:"D-6 G.X룸 거울",detail:"G.X룸 거울 집중 세척",gender:"m"}
+  ],
+  3:[ // 수
+    {id:"df_wed1",name:"건/습식 사우나 바닥",detail:"고압세척 + 산성세제 집중 세척",gender:"all"},
+    {id:"df_wed2",name:"D-8 키즈샤워실 집중",detail:"키즈샤워실 집중 청소",gender:"m"}
+  ],
+  4:[ // 목
+    {id:"df_thu1",name:"화장실 전체 청소",detail:"남/여 화장실 전면 세척",gender:"all"},
+    {id:"df_thu2",name:"탈수기 물때/곰팡이",detail:"탈수기 내부 물때 및 곰팡이 제거",gender:"all"},
+    {id:"df_thu3",name:"B-1 파우더 집중",detail:"파우더 공간 집중 청소",gender:"all"},
+    {id:"df_thu4",name:"B-5 사우나 화장실 집중",detail:"사우나 화장실 집중 세척",gender:"all"}
+  ],
+  5:[ // 금
+    {id:"df_fri1",name:"세면대 배수 파이프",detail:"세면대 배수 파이프 분해 청소",gender:"all"},
+    {id:"df_fri2",name:"배수구 악취 소독/머리카락",detail:"배수구 악취 소독 및 머리카락 제거",gender:"all"},
+    {id:"df_fri3",name:"탕 내 비품 점검",detail:"탕 내부 비품 상태 확인 및 교체",gender:"all"},
+    {id:"df_fri4",name:"D-7 센터 화분 집중",detail:"화분 물 공급 및 주변 정리 집중",gender:"f"}
+  ],
+  6:[ // 토
+    {id:"df_sat1",name:"벽체 곰팡이/물때",detail:"벽체 곰팡이 및 물때 제거",gender:"all"},
+    {id:"df_sat2",name:"거울/유리창 물때",detail:"거울 및 유리창 물때 집중 제거",gender:"all"},
+    {id:"df_sat3",name:"천정 환기구 먼지",detail:"천정 환기구 먼지 제거",gender:"all"},
+    {id:"df_sat4",name:"방제",detail:"방제 작업 실시",gender:"all"}
+  ],
+  0:[ // 일
+    {id:"df_sun1",name:"탕청소 업체 휴무",detail:"탕청소 업체 휴무일",gender:"all"},
+    {id:"df_sun2",name:"E-6 주차장 집중",detail:"주차장 집중 청소",gender:"all"},
+    {id:"df_sun3",name:"개인락커 + 미비 부분",detail:"개인락커 점검 및 미비 사항 보완",gender:"all"}
+  ]
+};
+
+/* ── Helper functions ── */
+
+function getDayInfo(ds){
+  const d=new Date(ds+'T00:00:00'),dow=d.getDay(),wk=Math.ceil(d.getDate()/7);
+  if(dow===0&&(wk===2||wk===4))return{type:'closed',label:'휴관일',cls:'closed'};
+  if(ds.slice(5)==='01-01')return{type:'closed',label:'휴관일',cls:'closed'};
+  if(dow===0||dow===6)return{type:'weekend',label:'주말',cls:'weekend'};
+  return{type:'weekday',label:'평일',cls:'weekday'};
+}
+
+function getDayOfWeek(ds){return new Date(ds+'T00:00:00').getDay()}
+
+function getSched(ds){
+  const i=getDayInfo(ds);
+  if(i.type==='closed')return null;
+  return i.type==='weekend'?WEEKEND:WEEKDAY;
+}
+
+function getNightSched(ds){
+  const i=getDayInfo(ds);
+  if(i.type==='closed')return null;
+  return i.type==='weekend'?NIGHT_WEEKEND:NIGHT_WEEKDAY;
+}
+
+function getActiveSchedG(ds,g){
+  if(isNightShiftWorkerG(g)){
+    return getNightSched(ds);
+  }
+  return getSched(ds);
+}
+
+function getAllItems(sched){
+  const items=[];
+  if(!sched)return items;
+  sched.forEach(slot=>{slot.groups.forEach(g=>{g.items.forEach(it=>{items.push({...it,shift:slot.shift,slot:slot.slot,cat:g.title})})})});
+  return items;
+}
+
+let STATE={};
+const LK=d=>`wcheck3_${d}`;
+
+function saveSubmitterG(g,v){localStorage.setItem('wcheck_submitter_'+g,v)}
+function onSubmitterChangeG(g){
+  const selId=g==='f'?'submitterF':'submitterM';
+  saveSubmitterG(g,document.getElementById(selId).value);
+  const d=getDateG(g);
+  drawUI(d,g);
+}
+
+function loadLocal(d){try{return JSON.parse(localStorage.getItem(LK(d)))||{}}catch{return{}}}
+function saveLocal(d,o){localStorage.setItem(LK(d),JSON.stringify(o))}
+
+async function loadState(d){
+  if(!ONLINE){STATE=loadLocal(d);return}
+  try{
+    const r=await fetch(API_URL+'?date='+d,{redirect:'follow'});
+    const j=await r.json();
+    STATE={};
+    (j.rows||[]).forEach(row=>{
+      if(row.checked)STATE[row.itemId]=true;
+      if(row.issue)STATE['iss_'+row.itemId]=row.issue;
+      if(row.tip)STATE['tip_'+row.itemId]=row.tip;
+      if(row.submitted_am)STATE._submitted_am=true;
+      if(row.submittedAt_am)STATE._submittedAt_am=row.submittedAt_am;
+      if(row.submitter_am)STATE._submitter_am=row.submitter_am;
+      if(row.submitted_pm)STATE._submitted_pm=true;
+      if(row.submittedAt_pm)STATE._submittedAt_pm=row.submittedAt_pm;
+      if(row.submitter_pm)STATE._submitter_pm=row.submitter_pm;
+      if(row.submitted_night)STATE._submitted_night=true;
+      if(row.submittedAt_night)STATE._submittedAt_night=row.submittedAt_night;
+      if(row.submitter_night)STATE._submitter_night=row.submitter_night;
+      if(row.submitted)STATE._submitted_am=true;
+      if(row.submittedAt&&!STATE._submittedAt_am)STATE._submittedAt_am=row.submittedAt;
+    });
+  }catch(e){STATE=loadLocal(d)}
+}
+
+let saveTimer=null;
+function saveState(d){
+  saveLocal(d,STATE);
+  if(!ONLINE)return;
+  clearTimeout(saveTimer);
+  saveTimer=setTimeout(()=>pushToServer(d),1500);
+}
+
+async function pushToServer(d){
+  const ind=document.getElementById('saveIndicator');
+  ind.style.display='block';ind.textContent='저장 중...';
+  // Use the active gender tab's schedule for determining items
+  const g=activeGenderTab;
+  const sched=getActiveSchedG(d,g);
+  if(!sched){ind.style.display='none';return}
+  const checks=[];
+  const dow=getDayOfWeek(d);
+  // main sched items — push ALL items regardless of gender filter so server gets everything
+  sched.forEach(slot=>{slot.groups.forEach(gr=>{gr.items.forEach(it=>{
+    checks.push({itemId:it.id,name:it.name,cat:gr.title,slot:slot.slot,shift:slot.shift,
+      checked:!!STATE[it.id],issue:STATE['iss_'+it.id]||'',tip:STATE['tip_'+it.id]||''});
+  })})});
+  // day focus items
+  if(DAY_FOCUS[dow]){
+    DAY_FOCUS[dow].forEach(it=>{
+      checks.push({itemId:it.id,name:it.name,cat:'요일별 집중 청소',slot:'요일별',shift:'focus',
+        checked:!!STATE[it.id],issue:STATE['iss_'+it.id]||'',tip:STATE['tip_'+it.id]||''});
+    });
+  }
+  try{
+    await fetch(API_URL,{method:'POST',redirect:'follow',
+      headers:{'Content-Type':'text/plain'},
+      body:JSON.stringify({action:'save',date:d,checks,
+        genderTab:g,
+        submitted_am:!!STATE._submitted_am,submittedAt_am:STATE._submittedAt_am||'',submitter_am:STATE._submitter_am||'',
+        submitted_pm:!!STATE._submitted_pm,submittedAt_pm:STATE._submittedAt_pm||'',submitter_pm:STATE._submitter_pm||'',
+        submitted_night:!!STATE._submitted_night,submittedAt_night:STATE._submittedAt_night||'',submitter_night:STATE._submitter_night||''
+      })
+    });
+    ind.textContent='저장 완료';
+  }catch(e){ind.textContent='저장 실패 (로컬 저장됨)'}
+  setTimeout(()=>{ind.style.display='none'},1500);
+}
+
+function getShiftStatsG(sched,sh,ds,gender){
+  let total=0,done=0;
+  const dow=ds?getDayOfWeek(ds):-1;
+  sched.forEach(slot=>{
+    const match=(sh==='am'&&(slot.shift==='am'||slot.shift==='all'))||(sh==='pm'&&(slot.shift==='pm'||slot.shift==='all'))||(sh==='night'&&slot.shift==='night');
+    if(match){
+      slot.groups.forEach(g=>{g.items.forEach(it=>{
+        if(shouldShowItemForGender(it,gender)){total++;if(STATE[it.id])done++}
+      })});
+    }
+  });
+  if((sh==='am'||sh==='pm')&&dow>=0&&DAY_FOCUS[dow]&&!isNightShiftWorkerG(gender)){
+    if(sh==='pm'){
+      DAY_FOCUS[dow].forEach(it=>{
+        if(shouldShowItemForGender(it,gender)){total++;if(STATE[it.id])done++}
+      });
+    }
+  }
+  if(sh==='night'&&dow>=0&&DAY_FOCUS[dow]){
+    DAY_FOCUS[dow].forEach(it=>{
+      if(shouldShowItemForGender(it,gender)){total++;if(STATE[it.id])done++}
+    });
+  }
+  return{total,done,pct:total?Math.round(done/total*100):0};
+}
+
+/* Admin uses "all" gender to count everything */
+function getShiftStatsAll(sched,sh,ds){
+  let total=0,done=0;
+  const dow=ds?getDayOfWeek(ds):-1;
+  sched.forEach(slot=>{
+    const match=(sh==='am'&&(slot.shift==='am'||slot.shift==='all'))||(sh==='pm'&&(slot.shift==='pm'||slot.shift==='all'))||(sh==='night'&&slot.shift==='night');
+    if(match){
+      slot.groups.forEach(g=>{g.items.forEach(it=>{
+        total++;if(STATE[it.id])done++;
+      })});
+    }
+  });
+  if((sh==='am'||sh==='pm')&&dow>=0&&DAY_FOCUS[dow]){
+    if(sh==='pm'){
+      DAY_FOCUS[dow].forEach(it=>{total++;if(STATE[it.id])done++});
+    }
+  }
+  if(sh==='night'&&dow>=0&&DAY_FOCUS[dow]){
+    DAY_FOCUS[dow].forEach(it=>{total++;if(STATE[it.id])done++});
+  }
+  return{total,done,pct:total?Math.round(done/total*100):0};
+}
+
+function getDateG(g){
+  const id=g==='f'?'checkDateF':'checkDateM';
+  return document.getElementById(id).value;
+}
+function setTodayG(g){
+  const id=g==='f'?'checkDateF':'checkDateM';
+  document.getElementById(id).value=new Date().toISOString().slice(0,10);
+  renderG(g);
+}
+function moveDateG(g,n){
+  const id=g==='f'?'checkDateF':'checkDateM';
+  const e=document.getElementById(id),d=new Date(e.value+'T00:00:00');
+  d.setDate(d.getDate()+n);e.value=d.toISOString().slice(0,10);
+  renderG(g);
+}
+function setAdminToday(){document.getElementById('adminDate').value=new Date().toISOString().slice(0,10);renderAdmin()}
+function moveAdminDate(n){const e=document.getElementById('adminDate'),d=new Date(e.value+'T00:00:00');d.setDate(d.getDate()+n);e.value=d.toISOString().slice(0,10);renderAdmin()}
+
+async function renderG(g){
+  const d=getDateG(g);
+  const elId=g==='f'?'checklistF':'checklistM';
+  const el=document.getElementById(elId);
+  el.innerHTML='<div class="loading">불러오는 중...</div>';
+  await loadState(d);
+  drawUI(d,g);
+}
+
+function drawUI(d,gender){
+  // gender = 'm' or 'f'
+  const info=getDayInfo(d),dn=['일','월','화','수','목','금','토'],dt=new Date(d+'T00:00:00');
+  const dow=dt.getDay();
+  document.getElementById('dayType').innerHTML=`<span class="day-type ${info.cls}">${info.label}</span>`;
+  document.getElementById('headerSub').textContent=`${d} (${dn[dow]})`;
+
+  const nightMode=isNightShiftWorkerG(gender);
+  const sched=nightMode?getNightSched(d):getSched(d);
+  const elId=gender==='f'?'checklistF':'checklistM';
+  const el=document.getElementById(elId);
+  const submitBarId=gender==='f'?'submitBarF':'submitBarM';
+
+  if(!sched){el.innerHTML='<div class="closed-msg">휴관일입니다.</div>';document.getElementById(submitBarId).style.display='none';return}
+  document.getElementById(submitBarId).style.display='flex';
+
+  const sfx=gender==='f'?'F':'M';
+  const btnAm=document.getElementById('submitAm'+sfx);
+  const btnPm=document.getElementById('submitPm'+sfx);
+  const btnNight=document.getElementById('submitNight'+sfx);
+
+  if(nightMode){
+    btnAm.style.display='none';btnPm.style.display='none';btnNight.style.display='block';
+  }else{
+    btnAm.style.display='block';btnPm.style.display='block';btnNight.style.display='none';
+  }
+
+  let html='';
+  let currentShift='';
+
+  if(nightMode){
+    const nightStats=getShiftStatsG(sched,'night',d,gender);
+    html+=`<div class="shift-divider night-shift"><div class="shift-label">야간조 (탕청소 업체)</div>
+      <div class="shift-progress">
+        <div class="progress-text"><span>${nightStats.done}/${nightStats.total}</span><span>${nightStats.pct}%</span></div>
+        <div class="progress-bar"><div class="progress-fill" style="width:${nightStats.pct}%;background:var(--orange)"></div></div>
+      </div>`;
+    if(STATE._submitted_night){
+      const who=STATE._submitter_night?` (${STATE._submitter_night})`:'';
+      const when=STATE._submittedAt_night?new Date(STATE._submittedAt_night).toLocaleString('ko-KR'):'';
+      html+=`<div class="shift-submitted">제출 완료${who} ${when}</div>`;
+    }
+    html+=`</div>`;
+
+    sched.forEach(slot=>{
+      html+=`<div class="time-slot"><div class="slot-header"><span class="slot-time night">${slot.slot}</span></div>`;
+      slot.groups.forEach(g=>{
+        const visItems=g.items.filter(it=>shouldShowItemForGender(it,gender));
+        if(visItems.length===0)return;
+        let gd=0;visItems.forEach(it=>{if(STATE[it.id])gd++});
+        const ok=gd===visItems.length,badge=ok?'<span class="cat-badge done">완료</span>':`<span class="cat-badge pending">${gd}/${visItems.length}</span>`;
+        html+=`<div class="category"><div class="cat-header" onclick="tog(this)"><span class="cat-title">${g.title}</span>${badge}</div><div class="cat-body${ok?'':' open'}">`;
+        visItems.forEach(it=>{html+=renderItem(it,slot.shift,gender)});
+        html+='</div></div>';
+      });
+      html+='</div>';
+    });
+
+    if(DAY_FOCUS[dow]){
+      const focusItems=DAY_FOCUS[dow].filter(it=>shouldShowItemForGender(it,gender));
+      if(focusItems.length>0){
+        html+=renderDayFocusSection(dow,focusItems,'night',gender);
+      }
+    }
+
+    updateNightSubmitButtonG(sched,nightStats,d,gender);
+
+  }else{
+    const amStats=getShiftStatsG(sched,'am',d,gender),pmStats=getShiftStatsG(sched,'pm',d,gender);
+
+    sched.forEach((slot,si)=>{
+      const effectiveShift=(slot.shift==='all')?null:slot.shift;
+      if(effectiveShift&&effectiveShift!==currentShift){
+        currentShift=effectiveShift;
+        const st=currentShift==='am'?amStats:pmStats;
+        const label=currentShift==='am'?'오전조 (오픈~인수인계)':'오후조 (오후~마감)';
+        const subKey='_submitted_'+currentShift;
+        const subAtKey='_submittedAt_'+currentShift;
+        const subNameKey='_submitter_'+currentShift;
+        html+=`<div class="shift-divider"><div class="shift-label">${label}</div>
+          <div class="shift-progress">
+            <div class="progress-text"><span>${st.done}/${st.total}</span><span>${st.pct}%</span></div>
+            <div class="progress-bar"><div class="progress-fill" style="width:${st.pct}%;background:var(--green)"></div></div>
+          </div>`;
+        if(STATE[subKey]){
+          const who=STATE[subNameKey]?` (${STATE[subNameKey]})`:'';
+          const when=STATE[subAtKey]?new Date(STATE[subAtKey]).toLocaleString('ko-KR'):'';
+          html+=`<div class="shift-submitted">제출 완료${who} ${when}</div>`;
+        }
+        html+=`</div>`;
+      }
+
+      html+=`<div class="time-slot"><div class="slot-header"><span class="slot-time">${slot.slot}</span></div>`;
+      slot.groups.forEach(g=>{
+        const visItems=g.items.filter(it=>shouldShowItemForGender(it,gender));
+        if(visItems.length===0)return;
+        let gd=0;visItems.forEach(it=>{if(STATE[it.id])gd++});
+        const ok=gd===visItems.length,badge=ok?'<span class="cat-badge done">완료</span>':`<span class="cat-badge pending">${gd}/${visItems.length}</span>`;
+        html+=`<div class="category"><div class="cat-header" onclick="tog(this)"><span class="cat-title">${g.title}</span>${badge}</div><div class="cat-body${ok?'':' open'}">`;
+        visItems.forEach(it=>{
+          const itemShift=slot.shift==='all'?'pm':slot.shift;
+          html+=renderItem(it,itemShift,gender);
+        });
+        html+='</div></div>';
+      });
+      html+='</div>';
+    });
+
+    if(DAY_FOCUS[dow]){
+      const focusItems=DAY_FOCUS[dow].filter(it=>shouldShowItemForGender(it,gender));
+      if(focusItems.length>0){
+        html+=renderDayFocusSection(dow,focusItems,'pm',gender);
+      }
+    }
+
+    updateSubmitButtonsG(sched,amStats,pmStats,gender);
+  }
+
+  el.innerHTML=html;
+}
+
+function renderItem(it,shift,gender){
+  const g=gender||activeGenderTab;
+  const ck=STATE[it.id]?'checked':'',cls=STATE[it.id]?'item checked':'item';
+  const iss=STATE['iss_'+it.id]||'',tip=STATE['tip_'+it.id]||'';
+  const det=it.detail.replace(/\n/g,'<br>');
+  const esc=escapeAttr;
+  // Use unique element ids per gender tab to avoid collisions
+  const pfx=g+'_';
+  return `<div class="${cls}">
+    <div class="item-row"><input type="checkbox" id="cb_${pfx}${it.id}" ${ck} onchange="onCk('${it.id}','${shift}','${g}')"><label for="cb_${pfx}${it.id}">${it.name}</label>
+      <div class="item-btns"><button class="tiny-btn issue" onclick="togX('${pfx}iss_${it.id}')">이슈</button><button class="tiny-btn tip" onclick="togX('${pfx}tip_${it.id}')">노하우</button></div>
+    </div>
+    <div class="item-detail">${det}</div>
+    <input class="extra-input issue-field${iss?' show':''}" id="${pfx}iss_${it.id}" placeholder="이슈 내용..." value="${esc(iss)}" onchange="onExtra('iss_${it.id}','${pfx}iss_${it.id}')">
+    <input class="extra-input tip-field${tip?' show':''}" id="${pfx}tip_${it.id}" placeholder="노하우/개선 의견..." value="${esc(tip)}" onchange="onExtra('tip_${it.id}','${pfx}tip_${it.id}')">
+  </div>`;
+}
+
+function escapeAttr(s){return s.replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+
+function renderDayFocusSection(dow,items,shift,gender){
+  const dayNames=['일','월','화','수','목','금','토'];
+  let gd=0;items.forEach(it=>{if(STATE[it.id])gd++});
+  const ok=gd===items.length,badge=ok?'<span class="cat-badge done">완료</span>':`<span class="cat-badge pending">${gd}/${items.length}</span>`;
+  let html=`<div class="day-focus-section">
+    <div class="day-focus-title">${dayNames[dow]}요일 집중 청소</div>
+    <div class="category"><div class="cat-header" onclick="tog(this)"><span class="cat-title">요일별 집중 청소 항목</span>${badge}</div><div class="cat-body${ok?'':' open'}">`;
+  items.forEach(it=>{html+=renderItem(it,shift,gender)});
+  html+='</div></div></div>';
+  return html;
+}
+
+function updateSubmitButtonsG(sched,amStats,pmStats,gender){
+  const sfx=gender==='f'?'F':'M';
+  const btnAm=document.getElementById('submitAm'+sfx),btnPm=document.getElementById('submitPm'+sfx);
+  const sub=getSubmitterForGender(gender);
+  if(STATE._submitted_am){
+    btnAm.textContent='오전조 제출 완료';btnAm.disabled=true;btnAm.className='submit-btn submitted';
+  }else{
+    btnAm.textContent=amStats.done===amStats.total&&amStats.total>0?'오전조 제출':`오전조 제출 (${amStats.done}/${amStats.total})`;
+    btnAm.disabled=amStats.done===0||!sub;btnAm.className='submit-btn primary';
+  }
+  if(STATE._submitted_pm){
+    btnPm.textContent='오후조 제출 완료';btnPm.disabled=true;btnPm.className='submit-btn submitted';
+  }else{
+    btnPm.textContent=pmStats.done===pmStats.total&&pmStats.total>0?'오후조 제출':`오후조 제출 (${pmStats.done}/${pmStats.total})`;
+    btnPm.disabled=pmStats.done===0||!sub;btnPm.className='submit-btn primary';
+  }
+}
+
+function updateNightSubmitButtonG(sched,nightStats,d,gender){
+  const sfx=gender==='f'?'F':'M';
+  const btnNight=document.getElementById('submitNight'+sfx);
+  const sub=getSubmitterForGender(gender);
+  if(STATE._submitted_night){
+    btnNight.textContent='야간조 제출 완료';btnNight.disabled=true;btnNight.className='submit-btn submitted';
+  }else{
+    btnNight.textContent=nightStats.done===nightStats.total&&nightStats.total>0?'야간조 제출':`야간조 제출 (${nightStats.done}/${nightStats.total})`;
+    btnNight.disabled=nightStats.done===0||!sub;btnNight.className='submit-btn night-btn';
+  }
+}
+
+function onCk(id,shift,gender){
+  const d=getDateG(gender);
+  const pfx=gender+'_';
+  STATE[id]=document.getElementById('cb_'+pfx+id).checked;
+  saveState(d);
+  drawUI(d,gender);
+
+  const nightMode=isNightShiftWorkerG(gender);
+  const sched=nightMode?getNightSched(d):getSched(d);
+  if(!sched)return;
+
+  const effectiveShift=nightMode?'night':shift;
+  const stats=getShiftStatsG(sched,effectiveShift,d,gender);
+  const subKey='_submitted_'+effectiveShift;
+  if(stats.pct===100&&!STATE[subKey]){
+    const sub=getSubmitterForGender(gender);
+    if(!sub){alert('점검자를 선택해주세요.');return}
+    const labels={am:'오전조',pm:'오후조',night:'야간조'};
+    const label=labels[effectiveShift]||effectiveShift;
+    if(confirm(`${label} 항목을 모두 완료했습니다.\n${sub}님 이름으로 제출할까요?`)){
+      submitShift(effectiveShift,gender);
+    }
+  }
+}
+
+function onExtra(stateKey,elemId){
+  const d=getDateG(activeGenderTab);
+  STATE[stateKey]=document.getElementById(elemId).value;
+  saveState(d);
+}
+function togX(id){const e=document.getElementById(id);e.classList.toggle('show');if(e.classList.contains('show'))e.focus()}
+function tog(h){h.nextElementSibling.classList.toggle('open')}
+function togManual(h){
+  const body=h.nextElementSibling;
+  const arrow=h.querySelector('.arrow');
+  body.classList.toggle('open');
+  arrow.classList.toggle('open');
+}
+
+async function submitShift(shift,gender){
+  const sub=getSubmitterForGender(gender);
+  if(!sub){alert('점검자를 선택해주세요.');return}
+  const d=getDateG(gender);
+  const labels={am:'오전조',pm:'오후조',night:'야간조'};
+  const genderLabel=gender==='f'?'여':'남';
+  const label=labels[shift]||shift;
+  STATE['_submitted_'+shift]=true;
+  STATE['_submittedAt_'+shift]=new Date().toISOString();
+  STATE['_submitter_'+shift]=sub;
+  saveLocal(d,STATE);
+  if(ONLINE)await pushToServer(d);
+  await sendTelegramNotify(d,shift,sub,gender);
+  alert(`${d} ${label} 점검(${genderLabel})이 ${sub}님 이름으로 제출되었습니다.`);
+  drawUI(d,gender);
+}
+
+async function sendTelegramNotify(date,shift,submitter,gender){
+  const nightMode=(shift==='night');
+  const sched=nightMode?getNightSched(date):getSched(date);
+  if(!sched)return;
+  const labels={am:'오전조',pm:'오후조',night:'야간조'};
+  const genderLabel=gender==='f'?'여':'남';
+  const label=labels[shift]||shift;
+  const stats=getShiftStatsG(sched,shift,date,gender);
+  let issues=[];
+  sched.forEach(slot=>{
+    const match=(shift==='am'&&(slot.shift==='am'||slot.shift==='all'))||(shift==='pm'&&(slot.shift==='pm'||slot.shift==='all'))||(shift==='night'&&slot.shift==='night');
+    if(match){
+      slot.groups.forEach(g=>{g.items.forEach(it=>{
+        if(STATE['iss_'+it.id])issues.push(`  - ${it.name}: ${STATE['iss_'+it.id]}`);
+      })});
+    }
+  });
+  const dow=getDayOfWeek(date);
+  if(DAY_FOCUS[dow]){
+    DAY_FOCUS[dow].forEach(it=>{
+      if(STATE['iss_'+it.id])issues.push(`  - ${it.name}: ${STATE['iss_'+it.id]}`);
+    });
+  }
+  let msg=`[일일 점검 ${label} 제출 (${genderLabel})]\n날짜: ${date}\n점검자: ${submitter}\n완료: ${stats.done}/${stats.total} (${stats.pct}%)`;
+  if(issues.length)msg+=`\n\n이슈 ${issues.length}건:\n${issues.join('\n')}`;
+  try{
+    if(ONLINE){
+      await fetch(API_URL,{method:'POST',redirect:'follow',
+        headers:{'Content-Type':'text/plain'},
+        body:JSON.stringify({action:'notify',date,shift,submitter,genderTab:gender,message:msg})
+      });
+    }
+  }catch(e){}
+}
+
+async function renderAdmin(){
+  const d=document.getElementById('adminDate').value,info=getDayInfo(d),sched=getSched(d),el=document.getElementById('adminView');
+  const nightSched=getNightSched(d);
+  const dn=['일','월','화','수','목','금','토'],dt=new Date(d+'T00:00:00');
+  const dow=dt.getDay();
+  if(!sched){el.innerHTML=`<div class="admin-card"><h3>${d} (${dn[dow]}) - 휴관일</h3></div>`;return}
+  el.innerHTML='<div class="loading">불러오는 중...</div>';
+  await loadState(d);
+
+  // Count all items regardless of gender
+  let amTotal=0,amDone=0,pmTotal=0,pmDone=0,nightTotal=0,nightDone=0;
+  sched.forEach(slot=>{slot.groups.forEach(g=>{g.items.forEach(it=>{
+    if(slot.shift==='am'){amTotal++;if(STATE[it.id])amDone++}
+    else if(slot.shift==='pm'||slot.shift==='all'){pmTotal++;if(STATE[it.id])pmDone++}
+  })})});
+  if(nightSched){
+    nightSched.forEach(slot=>{slot.groups.forEach(g=>{g.items.forEach(it=>{
+      nightTotal++;if(STATE[it.id])nightDone++;
+    })})});
+  }
+  if(DAY_FOCUS[dow]){
+    DAY_FOCUS[dow].forEach(it=>{pmTotal++;if(STATE[it.id])pmDone++});
+  }
+
+  let total=amTotal+pmTotal+nightTotal,done=amDone+pmDone+nightDone;
+  const pct=total?Math.round(done/total*100):0;
+  const dot=pct===100?'green':pct>0?'yellow':'red';
+
+  // Collect issues and tips with shift info
+  let issuesAm=[],issuesPm=[],issuesNight=[],issuesFocus=[];
+  let allTips=[];
+  sched.forEach(slot=>{slot.groups.forEach(g=>{g.items.forEach(it=>{
+    const issVal=STATE['iss_'+it.id], tipVal=STATE['tip_'+it.id];
+    if(issVal){
+      const entry={slot:slot.slot,shift:slot.shift,name:it.name,memo:issVal,cat:g.title};
+      if(slot.shift==='am') issuesAm.push(entry);
+      else issuesPm.push(entry);
+    }
+    if(tipVal) allTips.push({slot:slot.slot,shift:slot.shift,name:it.name,memo:tipVal});
+  })})});
+  if(nightSched){
+    nightSched.forEach(slot=>{slot.groups.forEach(g=>{g.items.forEach(it=>{
+      if(STATE['iss_'+it.id])issuesNight.push({slot:slot.slot,shift:'night',name:it.name,memo:STATE['iss_'+it.id],cat:g.title});
+      if(STATE['tip_'+it.id])allTips.push({slot:slot.slot,shift:'night',name:it.name,memo:STATE['tip_'+it.id]});
+    })})});
+  }
+  if(DAY_FOCUS[dow]){
+    DAY_FOCUS[dow].forEach(it=>{
+      if(STATE['iss_'+it.id])issuesFocus.push({slot:'요일별',shift:'focus',name:it.name,memo:STATE['iss_'+it.id],cat:'요일별 집중 청소'});
+      if(STATE['tip_'+it.id])allTips.push({slot:'요일별',shift:'focus',name:it.name,memo:STATE['tip_'+it.id]});
+    });
+  }
+  const allIssues=[...issuesAm,...issuesPm,...issuesNight,...issuesFocus];
+
+  const amSub=STATE._submitted_am,pmSub=STATE._submitted_pm,nightSub=STATE._submitted_night;
+  const amAt=STATE._submittedAt_am?new Date(STATE._submittedAt_am).toLocaleString('ko-KR'):'-';
+  const pmAt=STATE._submittedAt_pm?new Date(STATE._submittedAt_pm).toLocaleString('ko-KR'):'-';
+  const nightAt=STATE._submittedAt_night?new Date(STATE._submittedAt_night).toLocaleString('ko-KR'):'-';
+
+  const amPct=amTotal?Math.round(amDone/amTotal*100):0;
+  const pmPct=pmTotal?Math.round(pmDone/pmTotal*100):0;
+  const nightPct=nightTotal?Math.round(nightDone/nightTotal*100):0;
+
+  let html='';
+
+  // -- 전체 요약 --
+  html+=`<div class="admin-card"><h3>${d} (${dn[dow]}) <span class="day-type ${info.cls}">${info.label}</span> &mdash; 전체 요약</h3>
+    <div class="admin-row"><span><span class="status-dot ${dot}"></span>전체 완료율</span><span style="font-weight:700">${done}/${total} (${pct}%)</span></div>
+    <div class="admin-progress-wrap">
+      <div class="progress-bar"><div class="progress-fill" style="width:${pct}%;background:var(--green)"></div></div>
+    </div>
+    <div class="admin-row"><span>오전조</span><span>${amDone}/${amTotal} (${amPct}%)</span></div>
+    <div class="admin-row"><span>오후조</span><span>${pmDone}/${pmTotal} (${pmPct}%)</span></div>
+    <div class="admin-row"><span>야간조</span><span>${nightDone}/${nightTotal} (${nightPct}%)</span></div>
+  </div>`;
+
+  // -- 오전조 카드 --
+  html+=buildAdminShiftCard('am','오전조',amDone,amTotal,amPct,amSub,STATE._submitter_am,amAt,sched,null,dow,dn);
+
+  // -- 오후조 카드 --
+  html+=buildAdminShiftCard('pm','오후조',pmDone,pmTotal,pmPct,pmSub,STATE._submitter_pm,pmAt,sched,null,dow,dn);
+
+  // -- 야간조 카드 --
+  if(nightSched){
+    html+=buildAdminShiftCard('night','야간조 (탕청소)',nightDone,nightTotal,nightPct,nightSub,STATE._submitter_night,nightAt,null,nightSched,dow,dn);
+  }
+
+  // -- 이슈 목록 (교대별 그룹) --
+  if(allIssues.length){
+    html+='<div class="admin-card" style="border-color:rgba(237,91,63,0.3)"><h3 style="color:var(--red)">이슈 목록</h3>';
+    const shiftGroups=[
+      {key:'am',label:'오전조',items:issuesAm},
+      {key:'pm',label:'오후조',items:issuesPm},
+      {key:'night',label:'야간조',items:issuesNight},
+      {key:'focus',label:'요일별 집중',items:issuesFocus}
+    ];
+    shiftGroups.forEach(sg=>{
+      if(sg.items.length===0)return;
+      html+=`<div style="font-size:12px;font-weight:700;color:var(--accent);margin:10px 0 4px;padding-top:6px;border-top:1px solid var(--border)">${sg.label}</div>`;
+      sg.items.forEach(i=>{
+        html+=`<div style="padding:6px 0;border-bottom:1px solid rgba(61,56,53,0.3)"><div style="font-size:13px;font-weight:600">${i.name} <span style="color:var(--dim);font-size:11px">${i.slot}</span></div><div style="color:var(--red);font-size:12px">${i.memo}</div></div>`;
+      });
+    });
+    html+='</div>';
+  }
+
+  // -- 노하우 --
+  if(allTips.length){
+    html+='<div class="tip-card"><h3>노하우/개선 의견</h3>';
+    allTips.forEach(t=>{const sl={am:'오전',pm:'오후',night:'야간',all:'상시',focus:'집중'}[t.shift]||t.shift;html+=`<div style="padding:6px 0;border-bottom:1px solid rgba(167,139,218,0.2)"><div style="font-size:13px;font-weight:600">${t.name} <span style="color:var(--dim);font-size:11px">${sl}</span></div><div style="color:var(--purple);font-size:12px">${t.memo}</div></div>`});
+    html+='</div>';
+  }
+
+  el.innerHTML=html;
+}
+
+function buildAdminShiftCard(shiftKey,label,done,total,pct,submitted,submitterName,submittedAt,daySched,nightSched,dow,dn){
+  const dotColor=pct===100?'green':pct>0?'yellow':'red';
+  const fillColor=shiftKey==='night'?'var(--orange)':'var(--green)';
+  let html=`<div class="admin-shift-card ${shiftKey}"><h3>${label}</h3>`;
+  // Submission status
+  html+=`<div class="admin-shift-meta">`;
+  if(submitted){
+    html+=`<span class="submitted-badge">제출 완료</span> (${submitterName||'-'}) ${submittedAt}`;
+  }else{
+    html+=`<span class="not-submitted">미제출</span>`;
+  }
+  html+=`</div>`;
+  // Progress
+  html+=`<div class="admin-progress-wrap">
+    <div class="progress-text"><span><span class="status-dot ${dotColor}"></span>${done}/${total}</span><span>${pct}%</span></div>
+    <div class="progress-bar"><div class="progress-fill" style="width:${pct}%;background:${fillColor}"></div></div>
+  </div>`;
+  // Category breakdown
+  const sched=nightSched||daySched;
+  if(sched){
+    sched.forEach(slot=>{
+      let match=false;
+      if(shiftKey==='am'&&(slot.shift==='am')) match=true;
+      if(shiftKey==='pm'&&(slot.shift==='pm'||slot.shift==='all')) match=true;
+      if(shiftKey==='night'&&slot.shift==='night') match=true;
+      if(!match)return;
+      slot.groups.forEach(g=>{
+        let gd=0,gt=g.items.length;g.items.forEach(it=>{if(STATE[it.id])gd++});
+        const d2=gd===gt?'green':gd>0?'yellow':'red';
+        const slotLabel=shiftKey==='night'?` ${slot.slot}`:'';
+        html+=`<div class="admin-row"><span><span class="status-dot ${d2}"></span>${g.title}<span style="color:var(--dim);font-size:11px">${slotLabel}</span></span><span>${gd}/${gt}</span></div>`;
+      });
+    });
+  }
+  // Day focus in pm card
+  if(shiftKey==='pm'&&DAY_FOCUS[dow]){
+    let dfDone=0,dfTotal=DAY_FOCUS[dow].length;
+    DAY_FOCUS[dow].forEach(it=>{if(STATE[it.id])dfDone++});
+    const dfDot=dfDone===dfTotal?'green':dfDone>0?'yellow':'red';
+    html+=`<div class="admin-row"><span><span class="status-dot ${dfDot}"></span>요일별 집중 청소 <span style="color:var(--dim);font-size:11px">${dn[dow]}요일</span></span><span>${dfDone}/${dfTotal}</span></div>`;
+  }
+  // Day focus in night card
+  if(shiftKey==='night'&&DAY_FOCUS[dow]){
+    let dfDone=0,dfTotal=DAY_FOCUS[dow].length;
+    DAY_FOCUS[dow].forEach(it=>{if(STATE[it.id])dfDone++});
+    const dfDot=dfDone===dfTotal?'green':dfDone>0?'yellow':'red';
+    html+=`<div class="admin-row"><span><span class="status-dot ${dfDot}"></span>요일별 집중 청소 <span style="color:var(--dim);font-size:11px">${dn[dow]}요일</span></span><span>${dfDone}/${dfTotal}</span></div>`;
+  }
+  html+='</div>';
+  return html;
+}
+
+function switchTab(tab){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.querySelector(`.tab[onclick="switchTab('${tab}')"]`).classList.add('active');
+  document.getElementById('tab-manual').classList.toggle('hidden',tab!=='manual');
+  document.getElementById('tab-check-m').classList.toggle('hidden',tab!=='check-m');
+  document.getElementById('tab-check-f').classList.toggle('hidden',tab!=='check-f');
+  document.getElementById('tab-admin').classList.toggle('hidden',tab!=='admin');
+  // Show correct submit bar
+  document.getElementById('submitBarM').style.display=(tab==='check-m')?'flex':'none';
+  document.getElementById('submitBarF').style.display=(tab==='check-f')?'flex':'none';
+  if(tab==='check-m'){activeGenderTab='m';renderG('m')}
+  if(tab==='check-f'){activeGenderTab='f';renderG('f')}
+  if(tab==='admin')renderAdmin();
+}
+
+/* ── Init ── */
+const today=new Date().toISOString().slice(0,10);
+document.getElementById('checkDateM').value=today;
+document.getElementById('checkDateF').value=today;
+document.getElementById('adminDate').value=today;
+document.getElementById('checkDateM').addEventListener('change',()=>renderG('m'));
+document.getElementById('checkDateF').addEventListener('change',()=>renderG('f'));
+document.getElementById('adminDate').addEventListener('change',renderAdmin);
+
+// Populate fallback first, then load from sheet
+populateSubmitterDropdowns();
+const savedM=localStorage.getItem('wcheck_submitter_m');
+const savedF=localStorage.getItem('wcheck_submitter_f');
+// Migration: pick up old single submitter key
+const savedOld=localStorage.getItem('wcheck_submitter');
+if(savedM)document.getElementById('submitterM').value=savedM;
+else if(savedOld)document.getElementById('submitterM').value=savedOld;
+if(savedF)document.getElementById('submitterF').value=savedF;
+else if(savedOld)document.getElementById('submitterF').value=savedOld;
+
+loadStaffFromSheet();
+renderG('m');
+</script>
+</body>
+</html>

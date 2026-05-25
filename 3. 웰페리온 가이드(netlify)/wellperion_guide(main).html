@@ -1,0 +1,1604 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>웰페리온 가이드 허브 v1.4</title>
+<style>
+  :root{
+    --bg:#221F20; --paper:#2a2725; --sidebar:#1a1817;
+    --text:#f5f2ef; --text-soft:#d4d0cc; --dim:#8c8b83; --dim-soft:#6b6a64;
+    --accent:#B79F8A; --accent-hover:#d4b89e; --accent-bg:rgba(183,159,138,0.12); --accent-line:#B79F8A;
+    --warm:#ED5B3F; --warm-bg:rgba(237,91,63,0.12);
+    --grow:#6abf7b; --grow-bg:rgba(106,191,123,0.12);
+    --border:#3d3835; --border-strong:#4d4845; --gray-bg:#2a2725;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html,body{height:100%;}
+  body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif; color:var(--text); background:var(--bg); line-height:1.75; font-size:15.5px; -webkit-font-smoothing:antialiased;}
+  .layout{display:flex; min-height:100vh;}
+  .sidebar{width:286px; flex-shrink:0; background:var(--sidebar); border-right:1px solid var(--border); padding:28px 0 24px; position:sticky; top:0; height:100vh; overflow-y:auto;}
+  .sidebar .brand{padding:0 26px 6px;}
+  .sidebar .brand h1{font-size:18px; font-weight:700; letter-spacing:-0.01em;}
+  .sidebar .brand .sub{font-size:12px; color:var(--dim); margin-top:2px;}
+  .nav-label{font-size:11px; font-weight:700; color:var(--dim); letter-spacing:0.06em; padding:18px 26px 6px; text-transform:uppercase;}
+  .nav a{display:flex; align-items:flex-start; gap:9px; padding:9px 26px; font-size:14px; color:var(--text-soft); text-decoration:none; border-left:3px solid transparent; cursor:pointer; transition:background 0.12s, color 0.12s, border-color 0.12s;}
+  .nav a:hover{background:var(--bg); color:var(--text);}
+  .nav a.active{background:var(--accent-bg); border-left-color:var(--accent); color:var(--accent-hover); font-weight:600;}
+  .nav a .num{flex-shrink:0; width:22px; height:22px; border-radius:50%; background:var(--gray-bg); color:var(--dim); font-size:11px; font-weight:700; line-height:22px; text-align:center;}
+  .nav a.active .num{background:var(--accent); color:var(--bg);}
+  .nav a .label{flex:1;}
+  .nav a .tag{font-size:11.5px; color:var(--dim-soft); display:block; font-weight:400; margin-top:2px;}
+  /* sub-nav 들여쓰기 */
+  .sub-nav{display:none; background:rgba(0,0,0,0.15);}
+  .sub-nav.open{display:block;}
+  .sub-nav a{padding:6px 26px 6px 60px; font-size:13px; color:var(--dim); border-left:3px solid transparent;}
+  .sub-nav a:hover{background:var(--bg); color:var(--text);}
+  .sub-nav a.active{background:var(--accent-bg); border-left-color:var(--accent); color:var(--accent-hover);}
+  .sidebar .foot{font-size:11.5px; color:var(--dim); padding:22px 26px 0; margin-top:18px; border-top:1px solid var(--border); line-height:1.7;}
+
+  .main{flex:1; padding:48px 60px 80px; max-width:980px;}
+  .doc{display:none; animation:fadeIn 0.18s ease-out;}
+  .doc.active{display:block;}
+  @keyframes fadeIn{from{opacity:0; transform:translateY(4px);} to{opacity:1; transform:none;}}
+  .doc-header{margin-bottom:32px;}
+  .doc h2{font-size:28px; font-weight:700; letter-spacing:-0.015em; margin-bottom:6px;}
+  .doc .meta{font-size:13px; color:var(--dim);}
+  .lead{font-size:16.5px; color:var(--text-soft); line-height:1.75; background:var(--paper); border-left:3px solid var(--accent); padding:14px 18px; border-radius:0 8px 8px 0; margin:18px 0 8px;}
+  .doc h3{font-size:19px; font-weight:700; margin:36px 0 14px; padding-bottom:8px; border-bottom:2px solid var(--gray-bg); display:flex; align-items:center; gap:8px;}
+  .doc h3 .ico{font-size:22px;}
+  .doc h4{font-size:15.5px; font-weight:600; margin:20px 0 8px; color:var(--text);}
+  .doc p{margin:11px 0;}
+  .doc ul, .doc ol{margin:11px 0 11px 24px;} .doc li{margin:6px 0;}
+  .doc strong{font-weight:600; color:var(--text);}
+  code{background:var(--gray-bg); padding:2px 7px; border-radius:5px; font-family:"Cascadia Code","JetBrains Mono",Consolas,monospace; font-size:13px; color:var(--text);}
+  pre{background:var(--gray-bg); padding:14px 16px; border-radius:8px; font-family:"Cascadia Code","JetBrains Mono",Consolas,monospace; font-size:13px; margin:14px 0; overflow-x:auto; line-height:1.6;}
+
+  .card{background:var(--paper); border:1px solid var(--border); border-radius:12px; padding:20px 22px; margin:18px 0; box-shadow:0 1px 2px rgba(0,0,0,0.02);}
+  .card.accent{background:var(--accent-bg); border-color:var(--accent-line);}
+  .card.warm{background:var(--warm-bg); border-color:rgba(237,91,63,0.3);}
+  .card.grow{background:var(--grow-bg); border-color:rgba(106,191,123,0.3);}
+  .card h4{font-size:15.5px; font-weight:700; margin:0 0 6px;}
+  .card p:last-child{margin-bottom:0;}
+
+  table{border-collapse:collapse; width:100%; margin:18px 0; font-size:14px; background:var(--paper); border-radius:8px; overflow:hidden;}
+  th,td{border:1px solid var(--border); padding:10px 13px; text-align:left; vertical-align:top;}
+  th{background:var(--gray-bg); font-weight:700; color:var(--text);}
+  tr:nth-child(even) td{background:rgba(183,159,138,0.04);}
+  tr:hover td{background:var(--accent-bg);}
+
+  .badge{display:inline-block; font-size:11.5px; font-weight:600; padding:3px 10px; border-radius:20px; white-space:nowrap;}
+  .badge.gray{background:var(--gray-bg); color:var(--dim);}
+  .badge.blue{background:var(--accent); color:#fff;}
+  .badge.green{background:var(--grow); color:#fff;}
+  .badge.warm{background:var(--warm); color:#fff;}
+
+  .callout{border-left:4px solid var(--accent); background:var(--accent-bg); padding:14px 18px; border-radius:0 10px 10px 0; margin:18px 0; font-size:14.5px;}
+  .callout.fix{border-left-color:var(--warm); background:var(--warm-bg);}
+  .callout.tip{border-left-color:var(--grow); background:var(--grow-bg);}
+  .callout strong{color:var(--text);}
+
+  .diagram{background:var(--paper); border:1px solid var(--border); border-radius:12px; padding:18px 20px; margin:20px 0;}
+  .diagram svg{width:100%; height:auto; display:block; max-height:480px;}
+  .diagram .caption{font-size:12.5px; color:var(--dim); text-align:center; margin-top:8px;}
+  .source{font-size:12.5px; color:var(--dim); border-top:1px dashed var(--border-strong); margin-top:32px; padding-top:14px;}
+  .source a{color:var(--accent); text-decoration:none;}
+  .source a:hover{text-decoration:underline;}
+  .grid-2{display:grid; grid-template-columns:1fr 1fr; gap:14px; margin:16px 0;}
+  .grid-3{display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin:16px 0;}
+
+  /* 탭 */
+  .tabs{margin:20px 0;}
+  .tab-nav{display:flex; gap:4px; border-bottom:2px solid var(--border); margin-bottom:18px; overflow-x:auto;}
+  .tab-btn{
+    background:none; border:none; padding:10px 18px; font-size:14px; font-weight:600; color:var(--dim);
+    cursor:pointer; border-bottom:2px solid transparent; margin-bottom:-2px; white-space:nowrap;
+    font-family:inherit; transition:color 0.12s, border-color 0.12s;
+  }
+  .tab-btn:hover{color:var(--text);}
+  .tab-btn.active{color:var(--accent); border-bottom-color:var(--accent);}
+  .tab-panel{display:none; animation:fadeIn 0.15s ease-out;}
+  .tab-panel.active{display:block;}
+
+  /* 토글 (details) */
+  details.toggle{
+    border:1px solid var(--border); border-radius:10px; margin:10px 0;
+    background:var(--paper); overflow:hidden;
+  }
+  details.toggle[open]{border-color:var(--accent-line);}
+  details.toggle summary{
+    padding:12px 16px; font-weight:600; cursor:pointer; list-style:none;
+    display:flex; align-items:center; gap:8px; background:var(--gray-bg);
+    transition:background 0.12s;
+  }
+  details.toggle summary:hover{background:var(--accent-bg);}
+  details.toggle summary::-webkit-details-marker{display:none;}
+  details.toggle summary::before{
+    content:'▶'; font-size:11px; color:var(--dim);
+    transition:transform 0.15s;
+  }
+  details.toggle[open] summary::before{transform:rotate(90deg);}
+  details.toggle .toggle-body{padding:14px 18px; border-top:1px solid var(--border);}
+
+  /* 인쇄 버튼 */
+  .print-btn{
+    display:inline-flex; align-items:center; gap:6px; padding:9px 18px; border:1px solid var(--border);
+    border-radius:8px; background:var(--paper); color:var(--text); font-size:13.5px; font-weight:600;
+    cursor:pointer; font-family:inherit; transition:all 0.15s; box-shadow:0 1px 3px rgba(0,0,0,0.04);
+  }
+  .print-btn:hover{background:var(--accent-bg); border-color:var(--accent-line); color:var(--accent);}
+  .print-btn svg{width:16px; height:16px;}
+
+  /* 진행 바 */
+  .progress-bar{height:6px; border-radius:3px; background:var(--gray-bg); overflow:hidden; margin:6px 0 2px;}
+  .progress-bar .fill{height:100%; border-radius:3px; transition:width 0.3s ease;}
+
+  /* 상태 도트 */
+  .status-dot{display:inline-block; width:8px; height:8px; border-radius:50%; margin-right:6px; flex-shrink:0;}
+  .status-dot.active{background:#2c8a4f;}
+  .status-dot.pending{background:#e5a100;}
+  .status-dot.urgent{background:#d63031;}
+  .status-dot.longterm{background:#1e6fbf;}
+
+  /* 업무 카드 */
+  .task-card{
+    background:var(--paper); border:1px solid var(--border); border-radius:10px;
+    padding:16px 18px; margin:8px 0; transition:border-color 0.15s, box-shadow 0.15s;
+  }
+  .task-card:hover{border-color:var(--accent-line); box-shadow:0 2px 8px rgba(183,159,138,0.15);}
+  .task-card .task-title{font-weight:700; font-size:14.5px; margin-bottom:4px; display:flex; align-items:center; gap:6px;}
+  .task-card .task-meta{font-size:12.5px; color:var(--dim); display:flex; gap:14px; flex-wrap:wrap;}
+  .task-card .task-meta span{display:flex; align-items:center; gap:4px;}
+  .task-card .task-desc{font-size:13.5px; color:var(--text-soft); margin-top:8px; padding-top:8px; border-top:1px dashed var(--border); line-height:1.65;}
+
+  /* 실무진 칩 */
+  .owner-chip{
+    display:inline-flex; align-items:center; gap:4px; font-size:12px; font-weight:600;
+    padding:2px 10px; border-radius:12px; background:var(--accent-bg); color:var(--accent);
+  }
+  .owner-chip.gm{background:rgba(183,159,138,0.2); color:#d4b89e;}
+  .owner-chip.mgr{background:var(--grow-bg); color:var(--grow);}
+  .owner-chip.dir{background:rgba(237,91,63,0.15); color:#ED5B3F;}
+
+  /* 카테고리 헤더 */
+  .cat-header{
+    display:flex; align-items:center; justify-content:space-between; padding:14px 18px;
+    background:var(--paper); border:1px solid var(--border); border-radius:12px;
+    margin:24px 0 12px; box-shadow:0 1px 3px rgba(0,0,0,0.03);
+  }
+  .cat-header .cat-left{display:flex; align-items:center; gap:10px;}
+  .cat-header .cat-icon{font-size:24px;}
+  .cat-header .cat-title{font-size:17px; font-weight:700;}
+  .cat-header .cat-count{font-size:12px; font-weight:700; background:var(--accent); color:#fff; padding:2px 10px; border-radius:12px;}
+
+  /* 컬러 스와치 */
+  .color-swatch{display:inline-block; width:20px; height:20px; border-radius:4px; vertical-align:middle; margin-right:6px; border:1px solid var(--border);}
+
+  /* 아코디언 (GM TO DO LIST) — 클릭 시 펼침/접힘 */
+  .acc-list{margin:18px 0;}
+  details.acc-item{margin:8px 0; border:1px solid var(--border); border-radius:10px; background:var(--paper);}
+  details.acc-item>summary{cursor:pointer; padding:13px 18px; display:flex; align-items:center; gap:8px; list-style:none;}
+  details.acc-item>summary::-webkit-details-marker{display:none;}
+  details.acc-item>summary::before{content:'\25B8'; color:var(--accent); font-size:13px;}
+  details.acc-item[open]>summary::before{content:'\25BE';}
+  details.acc-item>summary:hover{background:var(--accent-bg);}
+  details.acc-item>summary .cat-count{margin-left:auto;}
+  details.acc-item .acc-body{padding:2px 14px 12px;}
+
+  @media (max-width:760px){
+    .layout{flex-direction:column;}
+    .sidebar{width:100%; position:relative; height:auto;}
+    .main{padding:32px 24px;}
+    .grid-2,.grid-3{grid-template-columns:1fr;}
+  }
+
+  /* 인쇄 스타일 — 인쇄 버튼을 누른 활성 섹션 1개만, 라이트 테마로 출력 */
+  @media print{
+    @page{margin:13mm;}
+    :root{
+      --bg:#ffffff; --paper:#ffffff; --sidebar:#ffffff; --gray-bg:#f0efed;
+      --text:#1a1a1a; --text-soft:#2b2b2b; --dim:#555555; --dim-soft:#777777;
+      --border:#cccccc; --border-strong:#bbbbbb; --accent-bg:#f4f1ed;
+    }
+    body{font-size:11pt; line-height:1.5; background:#fff; color:#1a1a1a; -webkit-print-color-adjust:exact; print-color-adjust:exact;}
+    .doc,.doc h2,.doc h3,.doc h4,.doc p,.doc li,.doc td,.doc th,.doc .meta,.doc .lead,.doc strong,.task-title,.task-meta,.cat-title{color:#1a1a1a!important;}
+    .sidebar,.print-btn,.tab-nav{display:none!important;}
+    .layout{display:block;}
+    .main{padding:0!important; max-width:100%!important;}
+    .doc{display:none!important;}
+    .doc.active{display:block!important;}
+    .tab-panel{display:block!important; margin-bottom:6px;}
+    details.acc-item .acc-body{display:block!important;} details.acc-item{break-inside:avoid;}
+    .card,.task-card,.cat-header,.diagram,table{break-inside:avoid; box-shadow:none!important;}
+    h2{font-size:19pt; page-break-after:avoid;}
+    h3{font-size:13.5pt; page-break-after:avoid;}
+    table{font-size:10pt;} th,td{padding:6px 8px;}
+    .badge{border:1px solid #999!important; background:#eee!important; color:#333!important;}
+    .owner-chip,.owner-chip.gm,.owner-chip.mgr,.owner-chip.dir{background:#eee!important; color:#333!important; border:1px solid #ccc;}
+    a{color:#1a4f8f!important; text-decoration:none!important;}
+    a[href]::after{content:none!important;}
+    .diagram svg{max-height:300px;}
+    pre,[style*="#16181c"]{background:#f0efed!important; color:#1a1a1a!important;}
+  }
+</style>
+</head>
+<body>
+<div class="layout">
+
+<aside class="sidebar">
+  <div class="brand">
+    <h1>웰페리온 가이드 허브 v1.4</h1>
+    <div class="sub">알아두면 좋은 것들을 한곳에</div>
+  </div>
+
+  <div class="nav-label">시작하기</div>
+  <nav class="nav">
+    <a data-doc="home" class="active"><span class="num">홈</span><span class="label">홈 · 사용법</span></a>
+    <a data-doc="update"><span class="num">📝</span><span class="label">업데이트 방법<span class="tag">GM 직접 또는 Claude 부탁</span></span></a>
+  </nav>
+
+  <div class="nav-label">시스템 가이드</div>
+  <nav class="nav">
+    <a data-doc="g1"><span class="num">①</span><span class="label">Claude 설정 폴더<span class="tag">설정이 어디에 무슨 용도로</span></span></a>
+    <a data-doc="g2"><span class="num">②</span><span class="label">자동화 시스템 구조<span class="tag">3 영역 + 사용자 3 채널</span></span></a>
+  </nav>
+
+  <div class="nav-label">정책 · 전략 SSOT</div>
+  <nav class="nav">
+    <a data-doc="g4" data-has-sub="true"><span class="num">③</span><span class="label">3대 원칙 프레임워크<span class="tag">탭: PSP · 4원칙 · 시작과 끝</span></span></a>
+    <div class="sub-nav" data-parent="g4">
+      <a data-doc="g4" data-tab="psp">PSP 프레임워크</a>
+      <a data-doc="g4" data-tab="rules">작성·경로 4원칙</a>
+      <a data-doc="g4" data-tab="flow">시작과 끝</a>
+      <a data-doc="g4" data-tab="kit">에이전트 키트</a>
+    </div>
+    <a data-doc="g5"><span class="num">④</span><span class="label">GM 전략 로드맵<span class="tag">6단계 (토글로 펼침)</span></span></a>
+    <a data-doc="g6" data-has-sub="true"><span class="num">⑤</span><span class="label">용어 사전<span class="tag">탭: 문서·조직·시스템·운영</span></span></a>
+    <div class="sub-nav" data-parent="g6">
+      <a data-doc="g6" data-tab="doc">문서 유형</a>
+      <a data-doc="g6" data-tab="org">조직·직급</a>
+      <a data-doc="g6" data-tab="sys">시스템·프로세스</a>
+      <a data-doc="g6" data-tab="op">운영 용어</a>
+    </div>
+  </nav>
+
+  <div class="nav-label">운영 정비</div>
+  <nav class="nav">
+    <a data-doc="g7" data-has-sub="true"><span class="num">⑥</span><span class="label">컨텍스트 정비 작업<span class="tag">STEP 1~5 흐름 · 핵심 프롬프트</span></span></a>
+    <div class="sub-nav" data-parent="g7">
+      <a data-doc="g7" data-tab="scan">① 스캔</a>
+      <a data-doc="g7" data-tab="clean">② 단순화</a>
+      <a data-doc="g7" data-tab="fill">③ 자동화</a>
+      <a data-doc="g7" data-tab="improve">④ 고도화</a>
+      <a data-doc="g7" data-tab="report">⑤ 통합 제안</a>
+      <a data-doc="g7" data-tab="prompt">⑥ 핵심프롬프트</a>
+    </div>
+  </nav>
+
+  <div class="nav-label">GM 업무 관리</div>
+  <nav class="nav">
+    <a data-doc="g8" data-has-sub="true"><span class="num">⑦</span><span class="label">GM TO DO LIST<span class="tag">Notion DB 29건 · 6개 카테고리</span></span></a>
+    <div class="sub-nav" data-parent="g8">
+      <a data-doc="g8" data-tab="cat1">[1] 매출 및 영업</a>
+      <a data-doc="g8" data-tab="cat2">[2] 인사&파트너</a>
+      <a data-doc="g8" data-tab="cat4">[3] 운영 정책</a>
+      <a data-doc="g8" data-tab="cat3">[4] 시설 및 환경</a>
+      <a data-doc="g8" data-tab="cat5">[5] 3대 비전</a>
+      <a data-doc="g8" data-tab="cat6">[6] 회장님 하달</a>
+    </div>
+  </nav>
+
+  <div class="nav-label">전략 · 브랜드</div>
+  <nav class="nav">
+    <a data-doc="g9" data-has-sub="true"><span class="num">⑧</span><span class="label">회사소개서<span class="tag">v2.19 · 브랜드·사업·확장</span></span></a>
+    <div class="sub-nav" data-parent="g9">
+      <a data-doc="g9" data-tab="overview">개요 · 철학</a>
+      <a data-doc="g9" data-tab="business">사업 현황</a>
+      <a data-doc="g9" data-tab="programs">프로그램</a>
+      <a data-doc="g9" data-tab="expansion">확장 전략</a>
+    </div>
+    <a data-doc="g12" data-has-sub="true"><span class="num">⑩</span><span class="label">브랜드 디자인 가이드<span class="tag">컬러·로고·타이포·톤앤매너</span></span></a>
+    <div class="sub-nav" data-parent="g12">
+      <a data-doc="g12" data-tab="identity">핵심 정체성</a>
+      <a data-doc="g12" data-tab="color">컬러 시스템</a>
+      <a data-doc="g12" data-tab="typo">타이포·톤앤매너</a>
+    </div>
+    <a data-doc="g13"><span class="num">⑪</span><span class="label">IG 메인 템플릿<span class="tag">DUOTONE · 1080x1080 레이아웃</span></span></a>
+    <a data-doc="g14"><span class="num">⑫</span><span class="label">콘텐츠 워크플로<span class="tag">폴더 구조 · 4채널 output</span></span></a>
+  </nav>
+
+  <div class="nav-label">AI 협업</div>
+  <nav class="nav">
+    <a data-doc="g10" data-has-sub="true"><span class="num">⑨</span><span class="label">C-Level 운영 가이드<span class="tag">7개 C-Level · 협업+실무</span></span></a>
+    <div class="sub-nav" data-parent="g10">
+      <a data-doc="g10" data-tab="common">공통 가이드</a>
+      <a data-doc="g10" data-tab="ceo">CEO</a>
+      <a data-doc="g10" data-tab="coo">COO</a>
+      <a data-doc="g10" data-tab="cfo">CFO</a>
+      <a data-doc="g10" data-tab="cmo">CMO</a>
+      <a data-doc="g10" data-tab="cto">CTO</a>
+      <a data-doc="g10" data-tab="chro">CHRO</a>
+      <a data-doc="g10" data-tab="cpo">CPO</a>
+    </div>
+    <a data-doc="g15" data-has-sub="true"><span class="num">⑬</span><span class="label">AI 교육자료 핵심요약<span class="tag">토큰절약·컨텍스트·비용절감</span></span></a>
+    <div class="sub-nav" data-parent="g15">
+      <a data-doc="g15" data-tab="basics">Claude Code 기본기</a>
+      <a data-doc="g15" data-tab="token">토큰 절약 5대 규칙</a>
+      <a data-doc="g15" data-tab="cost">비용 절감·플러그인</a>
+    </div>
+  </nav>
+
+  <div class="nav-label">기술 · 인프라</div>
+  <nav class="nav">
+    <a data-doc="g16" data-has-sub="true"><span class="num">⑭</span><span class="label">기술 인프라 상세<span class="tag">텔레그램봇·scripts·경로·아카이브</span></span></a>
+    <div class="sub-nav" data-parent="g16">
+      <a data-doc="g16" data-tab="telegram">텔레그램 봇</a>
+      <a data-doc="g16" data-tab="scripts">scripts 구조</a>
+      <a data-doc="g16" data-tab="paths">경로 표준화</a>
+      <a data-doc="g16" data-tab="archive">CTO 개발 아카이브</a>
+    </div>
+  </nav>
+
+  <div class="nav-label">개선안 · 로드맵</div>
+  <nav class="nav">
+    <a data-doc="g17"><span class="num">⑮</span><span class="label">COO 체크리스트 병합<span class="tag">오늘 할 일 단일 뷰 (A+B)</span></span></a>
+    <a data-doc="g18"><span class="num">⑯</span><span class="label">핵심 프롬프트<span class="tag">정비·고도화 복붙 프롬프트 모음</span></span></a>
+  </nav>
+
+  <div class="foot">
+    <strong>v2.0</strong> · 2026-05-25<br>
+    guide-hub.html 통합 병합<br><br>
+    가이드 추가·수정은<br>Claude에게 말씀하세요.
+  </div>
+</aside>
+
+<main class="main">
+
+  <article class="doc active" id="home">
+    <div class="doc-header"><h2>웰페리온 가이드 허브 v1.4</h2><div class="meta">v1.4 · 최종 업데이트 2026-05-25 · 총 16개 섹션 · ⑥ 컨텍스트 정비 STEP 1~5 흐름 재편</div></div>
+    <p class="lead">웰페리온 자동화 시스템 운영에 필요한 모든 가이드와 정책을 한곳에 모은 문서입니다.</p>
+    <div class="card accent">
+      <h4>이 문서 위치</h4>
+      <pre>C:\Users\jjky0\welperion-automation\2. 브랜드_공식문서\1. 웰페리온_가이드허브+GM업무.html</pre>
+      <p>메인 프로젝트 폴더 맨 위. 더블클릭하면 어디서든 열립니다.</p>
+    </div>
+
+    <h3><span class="ico">📚</span>수록된 가이드</h3>
+    <table>
+      <tr><th style="width:120px">분류</th><th style="width:200px">제목</th><th>한 줄 설명</th></tr>
+      <tr><td><span class="badge gray">시스템 ①</span></td><td>Claude 설정 폴더</td><td>설정 파일이 어디 있고 각각 무슨 용도인지</td></tr>
+      <tr><td><span class="badge gray">시스템 ②</span></td><td>자동화 시스템 구조</td><td>메인 프로젝트 3 영역 + 사용자 접근 3 채널</td></tr>
+      <tr><td><span class="badge blue">정책 ④</span></td><td>3대 원칙 프레임워크</td><td>PSP · 작성·경로 4원칙 · 시작과 끝 (탭)</td></tr>
+      <tr><td><span class="badge blue">전략 ⑤</span></td><td>GM 전략 로드맵</td><td>웰페리온 6단계 성장 로드맵 (토글)</td></tr>
+      <tr><td><span class="badge blue">사전 ⑥</span></td><td>용어 사전</td><td>사내 공식 용어 기준 (탭)</td></tr>
+      <tr><td><span class="badge warm">운영 ⑦</span></td><td>컨텍스트 정비 작업</td><td>채우고(Fill) · 비우고(Clean) · 다듬는다(Improve)</td></tr>
+      <tr><td><span class="badge green">업무 ⑧</span></td><td>GM TO DO LIST</td><td>Notion DB 29건 · 6개 카테고리 · 실무진 배정</td></tr>
+      <tr><td><span class="badge warm">브랜드 ⑨</span></td><td>회사소개서</td><td>v2.19 · 브랜드·사업·프로그램·확장 (탭)</td></tr>
+      <tr><td><span class="badge blue">AI ⑩</span></td><td>AI C-Level 협업매뉴얼</td><td>7개 C-Level 일일/주간 산출물·질의 템플릿 (탭)</td></tr>
+      <tr><td><span class="badge blue">AI ⑪</span></td><td>C-Level 실무가이드라인</td><td>7개 C-Level 의사결정·Do/Don't·에스컬레이션 (탭)</td></tr>
+      <tr><td><span class="badge warm">브랜드 ⑫</span></td><td>브랜드 디자인 가이드</td><td>컬러 시스템·로고·타이포그래피·톤앤매너</td></tr>
+      <tr><td><span class="badge warm">브랜드 ⑬</span></td><td>IG 메인 템플릿</td><td>DUOTONE 컨셉 · 1080x1080 레이아웃 사양</td></tr>
+      <tr><td><span class="badge warm">콘텐츠 ⑭</span></td><td>콘텐츠 제작 워크플로</td><td>표준 폴더 구조 · output 4채널 분리</td></tr>
+      <tr><td><span class="badge blue">AI ⑮</span></td><td>AI 교육자료 핵심요약</td><td>토큰 절약·컨텍스트 관리·비용 절감</td></tr>
+      <tr><td><span class="badge gray">기술 ⑯</span></td><td>기술 인프라 상세</td><td>텔레그램봇·scripts·경로·CTO 아카이브</td></tr>
+    </table>
+
+    <div class="card grow">
+      <h4>새 기능 (2026-05-25 10차) — v2.0</h4>
+      <p><strong>guide-hub.html 통합 병합.</strong> 기존 다크 테마 guide-hub.html의 기술·브랜드·교육 콘텐츠를 본 문서에 통합. 단일 SSOT 완성.</p>
+      <p><strong>5개 신규 섹션.</strong> 브랜드 디자인 가이드(12) · IG 메인 템플릿(13) · 콘텐츠 워크플로(14) · AI 교육자료(15) · 기술 인프라(16) 추가.</p>
+      <p><strong>사이드바 재구성.</strong> '전략·브랜드' · 'AI 협업' · '기술·인프라' 그룹 분리.</p>
+    </div>
+
+    <h3><span class="ico">🕐</span>업데이트 기록</h3>
+    <table>
+      <tr><th style="width:160px">날짜</th><th>변경 내용</th></tr>
+      <tr><td>2026-05-25 (10차)</td><td>guide-hub.html 기술·브랜드·교육 콘텐츠 통합 병합. 단일 SSOT 완성. v2.0</td></tr>
+      <tr><td>2026-05-23 (9차)</td><td>가이드 ⑨ 회사소개서 · ⑩ AI C-Level 협업매뉴얼 · ⑪ C-Level 실무가이드라인 합병 · ⑤ 전략로드맵 v1.4 전체 보고서로 교체</td></tr>
+      <tr><td>2026-05-23 (8차)</td><td>가이드 ⑧ GM TO DO LIST 신규 · Notion DB 29건 6카테고리 탭 구조 · 실무진별 배분 현황 · Notion 링크 연동</td></tr>
+      <tr><td>2026-05-23 (7차)</td><td>사이드바 sub-link · 본문 탭 · 토글 구조 도입 · 가이드 ⑦ 컨텍스트 정비 신규 · SSOT 정의 정정 · source 표기 정정</td></tr>
+      <tr><td>2026-05-23 (6차)</td><td>가이드 ② 사용자 접근 3 채널 · 가이드 ③ 삭제 · LMstudio archive</td></tr>
+      <tr><td>2026-05-23 (5차)</td><td>UI 다듬기 · 5 다이어그램</td></tr>
+      <tr><td>2026-05-23 (1~4차)</td><td>최초 생성 → 가이드 ④·⑤·⑥ 임베드 → CLAUDE.md 통합</td></tr>
+    </table>
+  </article>
+
+  <article class="doc" id="update">
+    <div class="doc-header"><h2>업데이트 방법</h2><div class="meta">GM이 직접 수정하거나 Claude에게 부탁하는 방법</div></div>
+    <p class="lead">가장 빠른 방법은 Claude에게 말씀하시는 것입니다. 직접 수정하셔도 6단계만 따라가면 됩니다.</p>
+    <div class="grid-2">
+      <div class="card grow"><h4>권장 · Claude에게 부탁</h4><p>한 마디면 끝. 알맞은 위치를 자동으로 찾아 갱신합니다.</p></div>
+      <div class="card"><h4>직접 수정</h4><p>VS Code로 HTML 파일을 열어 패턴 따라 추가</p></div>
+    </div>
+    <h3><span class="ico">💬</span>Claude에게 이렇게 말씀하세요</h3>
+    <table>
+      <tr><th style="width:240px">하고 싶은 일</th><th>이렇게 말하면 됩니다</th></tr>
+      <tr><td>새 가이드 추가</td><td>"가이드 허브에 <em>X 가이드</em> 추가해줘"</td></tr>
+      <tr><td>기존 가이드 수정</td><td>"가이드 ②에 <em>이 내용</em> 추가해줘"</td></tr>
+      <tr><td>정책 갱신</td><td>"용어 사전에 <em>새 용어</em> 추가해줘"</td></tr>
+      <tr><td>그림·표 추가</td><td>"가이드 ②에 <em>이런 다이어그램</em> 추가해줘"</td></tr>
+      <tr><td>탭·토글 추가</td><td>"가이드 ⑤를 탭으로 바꿔줘" / "가이드 ⑥에 토글 추가해줘"</td></tr>
+    </table>
+  </article>
+
+  <article class="doc" id="g1">
+    <div class="doc-header"><h2>① Claude 설정 폴더</h2><div class="meta">최종 수정 2026-05-23 · 설정이 어디 있고 무슨 용도인지</div></div>
+    <p class="lead">Claude 설정은 메인 프로젝트 <code>welperion-automation</code>을 중심으로 봅니다.</p>
+
+    <div class="diagram">
+      <svg viewBox="0 0 720 360" xmlns="http://www.w3.org/2000/svg" role="img">
+        <style>text{font-family:"Pretendard","Apple SD Gothic Neo",system-ui,sans-serif}</style>
+        <rect x="20" y="14" width="14" height="14" rx="3" fill="#cdcbc1"/><text x="40" y="25" font-size="12" fill="#6b6a64">보호 (안 건드림)</text>
+        <rect x="180" y="14" width="14" height="14" rx="3" fill="#1e6fbf"/><text x="200" y="25" font-size="12" fill="#6b6a64">메인 (활성)</text>
+        <rect x="320" y="14" width="14" height="14" rx="3" fill="#9ec6ec"/><text x="340" y="25" font-size="12" fill="#6b6a64">하위 모듈</text>
+        <g><rect x="20" y="50" width="680" height="44" rx="10" fill="#ffffff" stroke="#cdcbc1"/><text x="38" y="76" font-size="14" font-weight="600" fill="#1f1f1d">C:\Users\jjky0\</text><text x="180" y="76" font-size="12" fill="#6b6a64">내 컴퓨터 홈 폴더</text></g>
+        <g><rect x="50" y="104" width="650" height="44" rx="10" fill="#eeece4" stroke="#cdcbc1"/><text x="68" y="130" font-size="14" font-weight="600" fill="#6b6a64">.claude · .omc</text><text x="240" y="130" font-size="12" fill="#8c8b83">Claude·OMC 전용. 절대 이동 금지</text></g>
+        <g><rect x="50" y="158" width="650" height="44" rx="10" fill="#e8f1fa" stroke="#1e6fbf" stroke-width="2"/><text x="68" y="184" font-size="14" font-weight="700" fill="#185fa5">welperion-automation — 메인 프로젝트</text><text x="430" y="184" font-size="12" fill="#1e6fbf">Claude Code가 여기서 가동</text></g>
+        <g><rect x="80" y="212" width="620" height="40" rx="10" fill="#e8f1fa" stroke="#9ec6ec"/><text x="98" y="237" font-size="13" font-weight="600" fill="#185fa5">.claude\settings.local.json</text><text x="340" y="237" font-size="11.5" fill="#1e6fbf">활성 설정 — 권한 + SessionStart 훅</text></g>
+        <g><rect x="80" y="258" width="620" height="40" rx="10" fill="#e8f1fa" stroke="#9ec6ec"/><text x="98" y="283" font-size="13" font-weight="600" fill="#185fa5">CLAUDE.md — 메인 헌법</text><text x="290" y="283" font-size="11.5" fill="#1e6fbf">회사 정보·R/R·운영 제약 통합</text></g>
+        <g><rect x="80" y="304" width="620" height="40" rx="10" fill="#ffffff" stroke="#cdcbc1"/><text x="98" y="329" font-size="13" font-weight="600" fill="#1f1f1d">notion-c-level-agents (sub-project)</text><text x="370" y="329" font-size="11.5" fill="#6b6a64">자체 CLAUDE.md (축약) + 7 C-Level 정의</text></g>
+      </svg>
+      <div class="caption">welperion-automation이 메인 · 보호 폴더는 절대 안 건드림</div>
+    </div>
+
+    <h3><span class="ico">🗂️</span>설정은 어디에 있나</h3>
+    <table>
+      <tr><th style="width:170px">구분</th><th>위치</th><th>역할</th></tr>
+      <tr><td><span class="badge gray">전역 보호</span></td><td><code>C:\Users\jjky0\.claude\</code></td><td>모든 프로젝트 공통 · 보호</td></tr>
+      <tr><td><span class="badge blue">메인 설정 활성</span></td><td><code>welperion-automation\.claude\settings.local.json</code></td><td>권한 + SessionStart 훅</td></tr>
+      <tr><td><span class="badge blue">메인 헌법</span></td><td><code>welperion-automation\CLAUDE.md</code></td><td>회사 정보 · C-Level R/R · 자산 SSOT · 운영 제약</td></tr>
+      <tr><td><span class="badge gray">sub 헌법</span></td><td><code>notion-c-level-agents\CLAUDE.md</code></td><td>축약 · 메인 참조</td></tr>
+      <tr><td><span class="badge gray">C-Level 정의</span></td><td><code>notion-c-level-agents\.claude\agents\ai-*.md</code></td><td>AI 임원 7명 역할·성격</td></tr>
+    </table>
+    <div class="callout"><strong>핵심 한 줄.</strong> 메인은 <code>welperion-automation</code> · 활성 설정 1곳 · 헌법 1곳 · 메모리 1곳.</div>
+    <div style="margin-top:22px; padding:13px 16px; background:#16181c; border-radius:8px; border-left:3px solid var(--accent);">
+      <div style="font-size:12px; font-weight:700; color:var(--accent); margin-bottom:6px;">&#9656; Claude CLI 셋업 프롬프트</div>
+      <pre style="margin:0; color:#e8e8e8; font-size:12.5px; white-space:pre-wrap; line-height:1.6;">가이드허브 ① 기준으로 내 Claude 설정(CLAUDE.md·settings 위치와 내용)을 점검하고, 가이드와 어긋난 부분을 알려줘.</pre>
+    </div>
+  </article>
+
+  <article class="doc" id="g2">
+    <div class="doc-header"><h2>② 자동화 시스템 구조</h2><div class="meta">최종 수정 2026-05-23 · 메인 프로젝트 3 영역 + 사용자 접근 3 채널</div></div>
+    <p class="lead">메인 프로젝트는 크게 세 덩어리(에이전트·봇·자동화). 그 위에 세 가지 입력 채널(텔레그램·코워크·CLI)이 있어, GM과 실무진이 각자 편한 곳에서 들어옵니다.</p>
+
+    <div class="diagram">
+      <svg viewBox="0 0 720 480" xmlns="http://www.w3.org/2000/svg" role="img">
+        <style>text{font-family:"Pretendard","Apple SD Gothic Neo",system-ui,sans-serif}</style>
+        <defs><marker id="ar2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="#9ec6ec"/></marker></defs>
+        <text x="360" y="22" text-anchor="middle" font-size="13" font-weight="700" fill="#6b6a64">사용자 접근 채널 (3 입력)</text>
+        <g><rect x="20" y="38" width="210" height="70" rx="12" fill="#fbeee5" stroke="#c9612b"/><text x="125" y="62" text-anchor="middle" font-size="13" font-weight="700" fill="#8c401a">텔레그램</text><text x="125" y="80" text-anchor="middle" font-size="11" fill="#c9612b">GM · 어디서든 스마트폰</text><text x="125" y="96" text-anchor="middle" font-size="11" fill="#6b6a64">@namuki_report_bot</text></g>
+        <g><rect x="255" y="38" width="210" height="70" rx="12" fill="#fbeee5" stroke="#c9612b"/><text x="360" y="62" text-anchor="middle" font-size="13" font-weight="700" fill="#8c401a">클로드 코워크</text><text x="360" y="80" text-anchor="middle" font-size="11" fill="#c9612b">실무진 · GM PC 웹·앱</text><text x="360" y="96" text-anchor="middle" font-size="11" fill="#6b6a64">claude.ai + Notion 동시</text></g>
+        <g><rect x="490" y="38" width="210" height="70" rx="12" fill="#fbeee5" stroke="#c9612b"/><text x="595" y="62" text-anchor="middle" font-size="13" font-weight="700" fill="#8c401a">클로드 CLI</text><text x="595" y="80" text-anchor="middle" font-size="11" fill="#c9612b">GM · PC 터미널</text><text x="595" y="96" text-anchor="middle" font-size="11" fill="#6b6a64">Start-AI {역할}.bat</text></g>
+        <line x1="125" y1="108" x2="290" y2="195" stroke="#9ec6ec" stroke-width="2" marker-end="url(#ar2)"/>
+        <line x1="360" y1="108" x2="360" y2="195" stroke="#9ec6ec" stroke-width="2" marker-end="url(#ar2)"/>
+        <line x1="595" y1="108" x2="430" y2="195" stroke="#9ec6ec" stroke-width="2" marker-end="url(#ar2)"/>
+        <g><rect x="260" y="205" width="200" height="70" rx="14" fill="#1e6fbf"/><text x="360" y="232" text-anchor="middle" font-size="14" font-weight="700" fill="#fff">공통 축</text><text x="360" y="252" text-anchor="middle" font-size="12" fill="#cfe2f6">Notion + 텔레그램</text><text x="360" y="268" text-anchor="middle" font-size="11" fill="#cfe2f6">+ CEO 인박스 DB</text></g>
+        <g><rect x="20" y="300" width="210" height="100" rx="12" fill="#e8f1fa" stroke="#1e6fbf"/><text x="125" y="328" text-anchor="middle" font-size="14" font-weight="700" fill="#185fa5">notion-c-level-agents</text><text x="125" y="348" text-anchor="middle" font-size="12" fill="#1e6fbf">C-Level 에이전트 7명</text><text x="125" y="366" text-anchor="middle" font-size="11" fill="#6b6a64">CEO·CFO·CHRO·CMO·COO·CPO·CTO</text><text x="125" y="384" text-anchor="middle" font-size="11" fill="#6b6a64">Notion R/R 동기화</text></g>
+        <line x1="230" y1="370" x2="260" y2="260" stroke="#9ec6ec" stroke-width="2"/>
+        <g><rect x="490" y="300" width="210" height="100" rx="12" fill="#e6f3ea" stroke="#2c8a4f"/><text x="595" y="328" text-anchor="middle" font-size="14" font-weight="700" fill="#1f6638">telegram_bot</text><text x="595" y="348" text-anchor="middle" font-size="12" fill="#2c8a4f">원격 통제 + 자동 보고</text><text x="595" y="366" text-anchor="middle" font-size="11" fill="#6b6a64">매일 06·09·12·15·18·21시</text><text x="595" y="384" text-anchor="middle" font-size="11" fill="#6b6a64">정각 보고 + 헬스체크</text></g>
+        <line x1="490" y1="370" x2="460" y2="260" stroke="#b8d9bf" stroke-width="2"/>
+        <g><rect x="255" y="410" width="210" height="60" rx="12" fill="#fbeee5" stroke="#c9612b"/><text x="360" y="436" text-anchor="middle" font-size="14" font-weight="700" fill="#8c401a">scripts/</text><text x="360" y="455" text-anchor="middle" font-size="11" fill="#6b6a64">자동화 300+ 파이썬</text></g>
+        <line x1="360" y1="410" x2="360" y2="275" stroke="#ecc7ad" stroke-width="2"/>
+      </svg>
+      <div class="caption">사용자 3 채널 → 공통 축(Notion + 텔레그램 + CEO 인박스) → 메인 3 영역</div>
+    </div>
+
+    <h3><span class="ico">👤</span>사용자 접근 채널 (3 입력)</h3>
+    <table>
+      <tr><th style="width:140px">채널</th><th style="width:140px">누가</th><th>어디서</th><th>특징</th></tr>
+      <tr><td>텔레그램</td><td>GM</td><td>스마트폰</td><td>@namuki_report_bot · 단답·승인·실시간 자동 보고</td></tr>
+      <tr><td>클로드 코워크</td><td>실무진 + GM</td><td>GM PC 웹·앱 (claude.ai)</td><td>Notion DB 직접 수정 + 클로드 코워크 작업</td></tr>
+      <tr><td>클로드 CLI</td><td>GM</td><td>GM PC 터미널</td><td>본격 결재·기획·인프라 · 메모리 누적</td></tr>
+    </table>
+
+    <div class="callout tip"><strong>3 채널 통합.</strong> 세 채널 모두 「CEO 인박스 DB」(Notion)에 입력 집결. CLI SessionStart hook이 미처리 큐 자동 표시.</div>
+
+    <div class="callout"><strong>채널 진화 방향 (2026-05-25 GM 결정).</strong> Claude CLI 모바일 연동 완료 시, 텔레그램 봇은 <strong>확인·승인 전용</strong>으로 기능 최소화. 지시·보고·현황 확인은 Claude CLI(모바일 포함)로 통합하고, 텔레그램은 알림 수신 + 단답 승인·반려만 유지한다.</div>
+
+    <h3><span class="ico">🔌</span>가동 중 인프라</h3>
+    <table>
+      <tr><th style="width:280px">자원</th><th>설명</th></tr>
+      <tr><td><code>telegram_bot/bot.py</code></td><td>텔레그램 봇 메인 (PID 가동)</td></tr>
+      <tr><td><code>telegram_bot/daily_scheduler.py</code></td><td>정각 보고 스케줄러 (PID 가동)</td></tr>
+      <tr><td>Task Scheduler 6건 <code>Wellperion-*</code></td><td>AutoTask · CEO-Morning-Brief · PC-Shutdown · Weekly-Context · Education-Archive</td></tr>
+      <tr><td><code>profiles/{instagram,naver-cafe,naver-blog}/</code></td><td>Playwright 세션 271 MB</td></tr>
+      <tr><td><code>telegram_bot/.env</code></td><td>토큰·환경변수 SSOT (3 HardLink)</td></tr>
+    </table>
+    <div style="margin-top:22px; padding:13px 16px; background:#16181c; border-radius:8px; border-left:3px solid var(--accent);">
+      <div style="font-size:12px; font-weight:700; color:var(--accent); margin-bottom:6px;">&#9656; Claude CLI 셋업 프롬프트</div>
+      <pre style="margin:0; color:#e8e8e8; font-size:12.5px; white-space:pre-wrap; line-height:1.6;">가이드허브 ② 기준으로 welperion-automation 자동화 3영역의 가동 상태를 점검하고 이상을 보고해줘.</pre>
+    </div>
+  </article>
+
+  <article class="doc" id="g4">
+    <div class="doc-header"><h2>③ 3대 원칙 프레임워크 v1.1</h2><div class="meta">정책 SSOT · 모든 AI C-Level 프롬프트에 필수 포함</div></div>
+    <p class="lead">모든 AI C-Level은 어떤 업무든 이 3가지를 기준으로 한다. 결과물 품질(PSP) · 작성·경로 4원칙 · 시작과 끝. 세 축을 다 통과해야 완성.</p>
+
+    <div class="tabs" data-tabs="g4">
+      <div class="tab-nav">
+        <button class="tab-btn active" data-tab="psp">PSP 프레임워크</button>
+        <button class="tab-btn" data-tab="rules">작성·경로 4원칙</button>
+        <button class="tab-btn" data-tab="flow">시작과 끝</button>
+        <button class="tab-btn" data-tab="kit">에이전트 키트 5단계</button>
+      </div>
+
+      <div class="tab-panel active" data-panel="psp">
+        <h3><span class="ico">🎯</span>PSP — 결과물 품질 기준</h3>
+        <p><strong>표현 원칙:</strong> 가독성 · 명확성 · 직관성. 한 번에 이해할 수 있도록 핵심만 남긴다.</p>
+        <div class="callout"><strong>최종 판단 기준.</strong> "단순한가 → 구조가 있는가 → 의도가 느껴지는가" 세 질문에 모두 Yes여야 완성.</div>
+      </div>
+
+      <div class="tab-panel" data-panel="rules">
+        <h3><span class="ico">📐</span>작성·경로 표준 4원칙</h3>
+        <p><strong>하나의 진실 (SSOT)</strong> — 실무진과 AI C-Level이 한곳에 데이터를 모아두고 업데이트·학습하는 공통 데이터 원본. 중복 정보는 한 곳에만 병합.</p>
+        <ol>
+          <li>기획 정보 → Start DB</li>
+          <li>실행 결과 → 아카이브 DB</li>
+          <li>최종 통과(회장·GM·실무진 승인)된 결과물 → 종착지로 이동</li>
+        </ol>
+        <div class="grid-2">
+          <div class="card"><h4>속성은 메타데이터만</h4><p>필터·정렬·대시보드용. 본문은 속성에 안 넣음.</p></div>
+          <div class="card"><h4>연결은 관계로</h4><p>복붙 대신 Relation. 원문은 토글로 맨 위.</p></div>
+          <div class="card"><h4>보고는 문서 구조로</h4><p>H1/H2 + 표. PDF 인쇄 시 안 깨짐.</p></div>
+          <div class="card"><h4>큰 것 → 작은 것</h4><p>목적·구조 먼저 → 실행·증빙 나중.</p></div>
+        </div>
+      </div>
+
+      <div class="tab-panel" data-panel="flow">
+        <h3><span class="ico">🔄</span>시작과 끝 — 업무 흐름의 명확성</h3>
+        <ol>
+          <li>모든 업무에는 시작점과 종착점이 있어야 한다</li>
+          <li>시작: 기획DB 승인완료 → 착수 (장애·긴급은 예외)</li>
+          <li>끝: 결과 보고 → 승인 → 유지보수 전환 → 종착지 정립 = Done</li>
+        </ol>
+        <h3><span class="ico">✅</span>자가 점검</h3>
+        <div class="grid-3">
+          <div class="card accent"><h4>PSP 통과?</h4><p>단순 · 구조 · 의도</p></div>
+          <div class="card accent"><h4>4원칙 준수?</h4><p>진실 · 메타 · 관계 · 문서</p></div>
+          <div class="card accent"><h4>시작과 끝?</h4><p>출발 · 종착 · 경로</p></div>
+        </div>
+      </div>
+
+      <div class="tab-panel" data-panel="kit">
+        <h3><span class="ico">🛠️</span>에이전트 개발 키트 — 5단계 구조</h3>
+        <table>
+          <tr><th style="width:200px">단계</th><th>역할</th></tr>
+          <tr><td>1. CLAUDE.md</td><td>메모리 레이어 (헌법). 시작 시 무조건 먼저 읽음.</td></tr>
+          <tr><td>2. skills 폴더</td><td>스킬 레이어 (만능 주머니). 필요할 때 꺼내 쓰는 비법.</td></tr>
+          <tr><td>3. hooks</td><td>후크 레이어 (안전요원). AI 실수 방지 안전망.</td></tr>
+          <tr><td>4. teams · tasks · sessions</td><td>서브에이전트 레이어. 작업 분담·대화 기록.</td></tr>
+          <tr><td>5. plugins</td><td>플러그인 레이어. 외부 도구 마켓.</td></tr>
+        </table>
+        <div class="card accent"><h4>한 줄 요약</h4><p>기본 규칙(1)을 지키며 도구(2)를 꺼내 쓰고, 안전요원(3)의 보호 아래 동료(4)와 일을 나눠 한 뒤, 방법을 공유(5)한다.</p></div>
+      </div>
+    </div>
+
+    <div class="source">SSOT: 본 임베드 본문 + Notion 이관본 <a href="https://www.notion.so/3690407da94881158dcccae15cc5b46f" target="_blank">notion.so/3690...b46f</a></div>
+    <div style="margin-top:22px; padding:13px 16px; background:#16181c; border-radius:8px; border-left:3px solid var(--accent);">
+      <div style="font-size:12px; font-weight:700; color:var(--accent); margin-bottom:6px;">&#9656; Claude CLI 셋업 프롬프트</div>
+      <pre style="margin:0; color:#e8e8e8; font-size:12.5px; white-space:pre-wrap; line-height:1.6;">가이드허브 ③ 3대 원칙 프레임워크(PSP·4원칙)를 기준으로 지금 진행할 작업이 원칙에 맞는지 점검해줘.</pre>
+    </div>
+  </article>
+
+  <article class="doc" id="g5">
+    <div class="doc-header"><h2>④ GM 전략 로드맵 보고서</h2><div class="meta">전략 SSOT · v1.4 · 김남욱 GM 작성 2026-05-21 · 보고 대상: 회장님·대표님</div></div>
+    <p class="lead">검증된 운영에서 확장 가능한 플랫폼으로 — 한남동 본점이 '사람이 바뀌어도 흔들리지 않는' 시스템 위에서 돌아가야 합니다. 6단계 실행 로드맵과 3개 부서 GM 통합 관리 계획.</p>
+
+    <div class="card" style="background:linear-gradient(135deg,#1a2332 0%,#2a3a4a 100%); border:none; padding:28px 30px; margin:18px 0 24px; border-radius:14px;">
+      <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:16px;">
+        <div>
+          <div style="font-size:20px; font-weight:700; color:#fff; letter-spacing:-0.01em;">GM 전략 로드맵 보고서 <em style="color:#7EB8DA; font-style:italic;">v1.4 · A3 레이아웃</em></div>
+          <div style="font-size:13px; color:#8A9AAA; margin-top:6px;">원본 UI/UX 그대로 · A3 인쇄 최적화 · 5페이지 전체 보고서</div>
+        </div>
+        <a href="웰페리온_전략로드맵_보고서_v1.4_A3.html" target="_blank" style="display:inline-flex; align-items:center; gap:8px; padding:14px 28px; background:#3B82F6; color:#fff; font-size:15px; font-weight:700; border-radius:10px; text-decoration:none; letter-spacing:0.02em; transition:background 0.15s; white-space:nowrap; box-shadow:0 2px 8px rgba(59,130,246,0.3);" onmouseover="this.style.background='#2563EB'" onmouseout="this.style.background='#3B82F6'">
+          전략로드맵 원본 열기
+        </a>
+      </div>
+    </div>
+
+    <div class="card accent">
+      <h4>핵심 포인트 5</h4>
+      <ol>
+        <li><strong>방향</strong> — 회사소개서의 확장 전략(국내 직영·위탁운영)을 실행 순서로 정의</li>
+        <li><strong>로드맵</strong> — 자동화·매뉴얼 → 인재·권한 위임 → 브랜드 구축 → 파트너 구조 정비 → BM 생성 → 비즈니스 확장</li>
+        <li><strong>현재 위치</strong> — 1·2단계 동시 진행 중. 이 둘의 완성도가 이후 속도를 결정</li>
+        <li><strong>첫 실행 과제</strong> — 3개 부서(시설·지원·주차) GM 통합 관리 → 3개월 내 자율 운영</li>
+        <li><strong>기대 효과</strong> — 의사결정 속도 향상 · 책임 소재 명확화 · 신규 사업 기반 확보</li>
+      </ol>
+    </div>
+
+    <details class="toggle" open>
+      <summary>01 자동화 및 매뉴얼 체계 완성 <span class="badge warm" style="margin-left:8px">현재</span></summary>
+      <div class="toggle-body">
+        <ul><li>브로제이 시스템 무인화 · 핵심 운영 매뉴얼 정비 · C-레벨 AI 에이전트 도입</li></ul>
+        <p><strong>목표:</strong> 사람이 바뀌어도 품질이 흔들리지 않는 시스템 기반 운영</p>
+      </div>
+    </details>
+    <details class="toggle" open>
+      <summary>02 체크리스트 경영 + 핵심 인재 확보 <span class="badge warm" style="margin-left:8px">현재</span></summary>
+      <div class="toggle-body">
+        <ul><li>전 운영 업무 체크리스트화 · 관리자급 독립 운영 · 믿고 맡길 인재 선별과 권한 위임</li></ul>
+        <p><strong>목표:</strong> 현장은 시스템+인재가, GM은 성장 전략에 전념</p>
+      </div>
+    </details>
+    <details class="toggle">
+      <summary>03 브랜드 구축</summary>
+      <div class="toggle-body"><ul><li>하이엔드 웰니스 &amp; 멘탈 케어 허브 포지셔닝 · 공간 밸류업 · 외부 콘텐츠 제휴(루프팀·이움)</li></ul></div>
+    </details>
+    <details class="toggle">
+      <summary>04 파트너팀 채용 구조 정비</summary>
+      <div class="toggle-body"><ul><li>신규/주니어/시니어/마스터 레벨링 · 정착지원금 제도 개편 · 임대업화로 파트너 팀별 독립 운영</li></ul></div>
+    </details>
+    <details class="toggle">
+      <summary>05 BM(비즈니스 모델) 생성</summary>
+      <div class="toggle-body"><ul><li>임대업화 수익 모델 가동 · 유료 콘텐츠 다각화(그룹강습·멘탈케어·DID/작품 광고) · 공간 자산 수익화</li></ul></div>
+    </details>
+    <details class="toggle">
+      <summary>06 비즈니스 확장</summary>
+      <div class="toggle-body"><ul><li>검증된 운영 시스템 + BM 기반 사업 확장 · 웰페리온 모델 복제 또는 신규 영역 진출</li></ul></div>
+    </details>
+
+    <div class="source">SSOT: 전략 로드맵 보고서 v1.4 (2026-05-21) · 기준 문서: 회사소개서 v2.19</div>
+    <div style="margin-top:22px; padding:13px 16px; background:#16181c; border-radius:8px; border-left:3px solid var(--accent);">
+      <div style="font-size:12px; font-weight:700; color:var(--accent); margin-bottom:6px;">&#9656; Claude CLI 셋업 프롬프트</div>
+      <pre style="margin:0; color:#e8e8e8; font-size:12.5px; white-space:pre-wrap; line-height:1.6;">가이드허브 ④ GM 전략 로드맵 6단계 중 현재 진행 단계를 점검하고 다음 단계 실행안을 제안해줘.</pre>
+    </div>
+  </article>
+
+  <article class="doc" id="g6">
+    <div class="doc-header"><h2>⑤ 용어 사전 v1.0</h2><div class="meta">사전 SSOT · 2026-05-12 · 사내 공식 용어 기준</div></div>
+    <p class="lead">사내 문서·보고·시스템에서 단어가 혼재되지 않도록 공식 용어 기준을 정리합니다. 모든 사내 문서는 이 사전의 표기를 따릅니다.</p>
+
+    <div class="tabs" data-tabs="g6">
+      <div class="tab-nav">
+        <button class="tab-btn active" data-tab="doc">문서 유형</button>
+        <button class="tab-btn" data-tab="org">조직·직급</button>
+        <button class="tab-btn" data-tab="sys">시스템·프로세스</button>
+        <button class="tab-btn" data-tab="op">운영 용어</button>
+      </div>
+
+      <div class="tab-panel active" data-panel="doc">
+        <h3>정책 · 가이드라인 · 매뉴얼</h3>
+        <div class="grid-3">
+          <div class="card accent"><h4>정책 (Policy)</h4><p><strong>"이것은 이렇게 한다"</strong></p><p>회사 공식 결정. 변경 시 경영진 승인 필요.</p></div>
+          <div class="card"><h4>가이드라인 (Guideline)</h4><p><strong>"이 틀 안에서 판단해라"</strong></p><p>판단 기준과 원칙. 담당자가 상황에 맞게 적용.</p></div>
+          <div class="card grow"><h4>매뉴얼 (Manual)</h4><p><strong>"이 순서대로 해라"</strong></p><p>구체적 실행 절차. 순서대로 따라하면 완료.</p></div>
+        </div>
+      </div>
+
+      <div class="tab-panel" data-panel="org">
+        <table>
+          <tr><th style="width:200px">용어</th><th>정의</th></tr>
+          <tr><td>GM (General Manager)</td><td>총괄 매니저 · 현장 운영 총책임</td></tr>
+          <tr><td>M (Manager)</td><td>매니저 · 각 영역 실무 책임자</td></tr>
+          <tr><td>AM (Assistant Manager)</td><td>어시스턴트 매니저</td></tr>
+          <tr><td>실장</td><td>운영부 실무 총괄</td></tr>
+          <tr><td>C레벨 (C-Level)</td><td>AI 에이전트 기반 경영 지원 (CEO/CFO/COO/CHRO/CTO)</td></tr>
+          <tr><td>파트너</td><td>강습 계약 강사 (직원 아닌 사업자 계약)</td></tr>
+          <tr><td>마스터</td><td>파트너 최상위 등급 (53% 고정)</td></tr>
+          <tr><td>시니어</td><td>파트너 상위 등급 (53% 고정 + 팀 매출 1%)</td></tr>
+        </table>
+      </div>
+
+      <div class="tab-panel" data-panel="sys">
+        <table>
+          <tr><th style="width:240px">용어</th><th>정의</th></tr>
+          <tr><td>SSOT (Single Source of Truth)</td><td>실무진과 AI C-Level이 한곳에 데이터를 모아두고 업데이트·학습하는 공통 데이터 원본</td></tr>
+          <tr><td>PSP</td><td>상품성·체계성·철학성 · 결과물 품질 기준</td></tr>
+          <tr><td>기획DB</td><td>업무 시작점 · 승인 완료 후 착수</td></tr>
+          <tr><td>운영 아카이브</td><td>실행 결과 저장소</td></tr>
+          <tr><td>종착역</td><td>각 C-Level 관리 페이지 · 최종 이관</td></tr>
+          <tr><td>브로제이</td><td>신규 회원관리 시스템 (대양CIS 후속)</td></tr>
+        </table>
+      </div>
+
+      <div class="tab-panel" data-panel="op">
+        <table>
+          <tr><th style="width:200px">용어</th><th>정의</th></tr>
+          <tr><td>밸류업 (Value-Up)</td><td>기존 공간·서비스·장비의 품질 격상</td></tr>
+          <tr><td>밸류다운 (Value-Down)</td><td>하이엔드 격에 안 맞는 요소 · 즉각 차단</td></tr>
+          <tr><td>임대업화</td><td>업장별 파트너 사업자 계약 전환</td></tr>
+          <tr><td>정착지원금</td><td>신규 파트너 초기 3개월 안정화 비용 (9시간 기준 월 100만 원)</td></tr>
+          <tr><td>팔로우업</td><td>상담·체험 후 48시간 내 후속 연락</td></tr>
+        </table>
+      </div>
+    </div>
+
+    <div class="source">SSOT: 본 임베드 본문 + Notion 이관본 <a href="https://www.notion.so/3690407da94881dca894c78d38e9294c" target="_blank">notion.so/3690...294c</a></div>
+    <div style="margin-top:22px; padding:13px 16px; background:#16181c; border-radius:8px; border-left:3px solid var(--accent);">
+      <div style="font-size:12px; font-weight:700; color:var(--accent); margin-bottom:6px;">&#9656; Claude CLI 셋업 프롬프트</div>
+      <pre style="margin:0; color:#e8e8e8; font-size:12.5px; white-space:pre-wrap; line-height:1.6;">가이드허브 ⑤ 용어 사전을 기준으로 이 산출물의 용어·호칭을 검수하고 금지어·오용어를 교정해줘.</pre>
+    </div>
+  </article>
+
+  <article class="doc" id="g7">
+    <div class="doc-header"><h2>⑥ 컨텍스트 정비 작업</h2><div class="meta">정기 작업 · 매주 월요일 09:00 · 30분 · 완료 후 가이드허브+노션 기록</div></div>
+    <p class="lead">각 AI C-Level의 컨텍스트(.md · .json · .log 등 기억해야 할 것들)를 STEP 1~5 흐름으로 정비합니다 — 스캔 → 단순화 → 자동화 → 고도화 → 통합 제안. 한 번에 끝나는 게 아니라 매주 cycle로 반복.</p>
+    <div class="callout tip"><strong>🗓 정기 일정.</strong> 매주 월요일 09:00 · 30분 진행 · STEP 1~5 완료 후 결과를 가이드허브 ⑥ 및 노션에 기록.</div>
+
+    <div class="tabs" data-tabs="g7">
+      <div class="tab-nav">
+        <button class="tab-btn active" data-tab="scan">스캔</button>
+        <button class="tab-btn" data-tab="clean">단순화</button>
+        <button class="tab-btn" data-tab="fill">자동화</button>
+        <button class="tab-btn" data-tab="improve">고도화</button>
+        <button class="tab-btn" data-tab="report">통합 제안</button>
+        <button class="tab-btn" data-tab="prompt">핵심프롬프트</button>
+      </div>
+
+      <div class="tab-panel active" data-panel="scan">
+        <h3><span class="ico">🔍</span>STEP 1 · 스캔 — 대상 파일 인벤토리</h3>
+        <p>각 AI C-Level의 컨텍스트 파일을 빠짐없이 훑어 목록·크기·줄 수를 파악합니다. 이후 모든 진단(STEP 2~4)은 이 인벤토리를 기준으로 진행됩니다.</p>
+        <table>
+          <tr><th style="width:300px">대상 파일</th><th>측정 항목</th><th>산출물</th></tr>
+          <tr><td><code>.log · .txt · .json · .md.bak · .md · .py</code></td><td>목록 · 크기 · 줄 수 · 수정일 · 해시</td><td>파일 인벤토리</td></tr>
+        </table>
+        <div class="callout tip"><strong>자동.</strong> <code>scripts/context_maintenance.py</code> 실행 시 STEP 1 스캔이 자동 수행됩니다(해시 포함 — 내용 동일 중복 탐지에 사용).</div>
+      </div>
+
+      <div class="tab-panel" data-panel="clean">
+        <h3><span class="ico">🧹</span>STEP 2 · 단순화 진단 (Clean) — 무의미·불필요·중복은 삭제·병합</h3>
+        <div class="grid-3">
+          <div class="card warm"><h4>무의미</h4><p>실제 의사결정에 안 쓰이는 장식·여백·중복 헤더</p></div>
+          <div class="card warm"><h4>불필요</h4><p>낡은 정보, 더 이상 유효하지 않은 규칙</p></div>
+          <div class="card warm"><h4>중복</h4><p>같은 정보가 .md와 .json에 동시에 있거나 여러 파일에 흩어짐</p></div>
+        </div>
+        <p style="margin-top:14px;"><strong>📏 줄 수 축소 원칙.</strong> .md·설정(setting) 파일은 내용 손실 없는 선에서 줄 수를 줄인다 — 기준: 최대 200행 → 목표 50행. 초과분의 상세 내용은 별도 파일로 분리.</p>
+        <p style="font-size:13px; color:var(--dim);">산출물 — 삭제·합칠 항목 list.</p>
+      </div>
+
+      <div class="tab-panel" data-panel="fill">
+        <h3><span class="ico">🔄</span>STEP 3 · 자동화 진단 (Fill) — 트리거·스케줄로 채울 수 있는 컨텍스트</h3>
+        <table>
+          <tr><th style="width:220px">트리거</th><th>채우는 컨텍스트</th></tr>
+          <tr><td>매일 06·09·12·15·18·21시 정각</td><td>텔레그램 정각 보고 (daily_scheduler.py)</td></tr>
+          <tr><td>매일 08:00</td><td>CEO 통합 보고 (ceo_morning_brief_08.py)</td></tr>
+          <tr><td>매주 월 09:00</td><td>AI 교육자료 자동 정리 (education_archive_weekly.py)</td></tr>
+          <tr><td>5분 주기 watcher</td><td>업무자동화DB · 결과물DB · 신규기획DB · 상태 변경</td></tr>
+          <tr><td>PC 부팅·종료</td><td>pc_boot_greeting.py · pc_shutdown_greeting.py</td></tr>
+        </table>
+        <p style="font-size:13px; color:var(--dim);">산출물 — 트리거·자동화 가능 항목 list.</p>
+      </div>
+
+      <div class="tab-panel" data-panel="improve">
+        <h3><span class="ico">✨</span>STEP 4 · 고도화 진단 (Improve) — 더 좋은 방법을 발견하면 적용 제안</h3>
+        <ul>
+          <li>더 좋은 구조 (페르소나/KPI/권한 별도 섹션 분리)</li>
+          <li>더 명확한 표현 (모호 문장·추상 표현 구체화)</li>
+          <li>누락된 핵심 (실패 시 폴백, 결정 권한 명시 등)</li>
+        </ul>
+        <p style="font-size:13px; color:var(--dim);">산출물 — 구조·표현 개선안. <strong>고위험 작업이므로 직접 적용 금지 — 제안만, GM 승인 후 반영.</strong></p>
+      </div>
+
+      <div class="tab-panel" data-panel="report">
+        <h3><span class="ico">📋</span>STEP 5 · 통합 제안서 — 우선순위별 정비안</h3>
+        <p>STEP 1~4 진단을 한데 모아 우선순위별 정비 제안서를 작성합니다. 산출물 — 정비 .md 초안 + 트리거 명세(<code>정비제안서_날짜.md</code>).</p>
+        <table>
+          <tr><th style="width:130px">우선순위</th><th>항목</th><th>처리</th></tr>
+          <tr><td>P0 · 즉시</td><td>잘못된 경로 파일 · 0바이트 · 깨진 참조</td><td>백업 후 정리(저위험·자동)</td></tr>
+          <tr><td>P1 · 주간</td><td>내용 동일 중복 · 200행 초과 .md</td><td>GM 승인 후 고도화(고위험)</td></tr>
+          <tr><td>P2 · 정기</td><td>오래된 로그 · 백업본</td><td>백업 후 정리(저위험·자동)</td></tr>
+        </table>
+        <div class="callout fix"><strong>원칙.</strong> 추측 금지 · 파일 직접 읽고 보고 · 모호 시 한 번에 하나씩 질문 · 각 STEP 끝나면 중간보고 후 다음 STEP. 완료 후 제안서를 가이드허브 ⑥·노션에 기록.</div>
+      </div>
+
+      <div class="tab-panel" data-panel="prompt">
+        <h3><span class="ico">🤖</span>핵심 프롬프트 — 일일 컨텍스트 정비</h3>
+        <p>아래 프롬프트를 Claude CLI에 그대로 붙여넣으면(또는 daily_scheduler가 매일 자동 호출) STEP 1~5 정비를 안전하게 수행합니다. <strong>매주 월요일 09:00 · 30분</strong> 진행 후 결과를 가이드허브 ⑥·노션에 기록.</p>
+        <pre style="background:#16181c; color:#e8e8e8; padding:14px 16px; border-radius:8px; font-size:13px; white-space:pre-wrap; line-height:1.7; border-left:3px solid var(--accent); overflow-x:auto;">[웰페리온 컨텍스트 정비 — 매주 월요일 09:00 · 30분]
+각 AI C-Level의 컨텍스트 파일(.log · .txt · .json · .md.bak · .md · .py)을 STEP 1~5로 정비하라.
+
+■ 안전장치 (필수)
+1. 파일을 수정·삭제하기 전 .bak 백업을 만든다.
+2. 작업 후 구문·구조를 검증한다 (HTML 태그 균형, JSON·Python 파싱 등).
+3. 검증 실패 시 즉시 백업으로 롤백한다.
+
+■ 위험도 분리
+- 정리(저위험): 7일 이상 된 로그 · .bak · 0바이트 · 임시 파일은 백업 후 삭제 — 자동 진행.
+- 고도화(고위험): .md·설정(setting) 파일 구조 개선, 200행 초과 → 50행 축소 등은 직접 적용 금지.
+  진단·개선안을 '정비 제안서'로만 정리하고 GM 승인을 기다린다.
+
+■ STEP 1~5
+STEP 1 — 스캔: 대상 파일 목록·크기·줄 수 → 파일 인벤토리
+STEP 2 — 단순화 진단(Clean) → 삭제·합칠 항목 list
+STEP 3 — 자동화 진단(Fill) → 트리거·자동화 가능 항목 list
+STEP 4 — 고도화 진단(Improve) → 구조·표현 개선안
+STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
+
+완료 후: 텔레그램 1줄 요약 보고 + 제안서를 가이드허브 ⑥·노션에 기록.
+추측 금지 · 파일을 직접 읽고 보고하라.</pre>
+        <div class="callout tip"><strong>✅ STEP 1~5 진단 엔진 v2 (2026-05-25).</strong> <code>scripts/context_maintenance.py</code> — 해시 기반 중복 탐지 · .py 자동화 연결 교차검증 · 깨진 참조 탐지 · 우선순위(P0/P1/P2)·추세 분석. 실행 시 <code>정비제안서_날짜.md</code> 자동 생성(보고 전용). 매주 월 09:00 daily_scheduler 등록 가능.</div>
+      </div>
+    </div>
+
+    <div class="callout tip"><strong>한 줄 요약.</strong> 훑고 → 비우고 → 채우고 → 다듬고 → 제안한다. 한 번이 아니라 매주 cycle.</div>
+    <div style="margin-top:22px; padding:13px 16px; background:#16181c; border-radius:8px; border-left:3px solid var(--accent);">
+      <div style="font-size:12px; font-weight:700; color:var(--accent); margin-bottom:6px;">&#9656; Claude CLI 셋업 프롬프트</div>
+      <pre style="margin:0; color:#e8e8e8; font-size:12.5px; white-space:pre-wrap; line-height:1.6;">가이드허브 ⑥ 컨텍스트 정비의 일일 정비 핵심 프롬프트를 실행해줘 (STEP 1~5 · 안전장치 3종).</pre>
+    </div>
+  </article>
+
+  <article class="doc" id="g8">
+    <div class="doc-header">
+      <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px;">
+        <div><h2>⑦ GM TO DO LIST</h2><div class="meta">AI CEO 라우팅 연동 · 총 29건 · 6개 카테고리 · 기준일 2026-05-23</div></div>
+        <button class="print-btn" onclick="window.print()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9V2h12v7M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>인쇄하기</button>
+      </div>
+    </div>
+    <p class="lead">GM 김남욱의 보고업무 29건을 카테고리별로 정리한 독립 문서입니다.</p>
+
+    <p style="font-size:13px; color:var(--dim); margin-top:14px;">각 카테고리를 클릭하면 펼쳐지고, 다시 클릭하면 접힙니다.</p>
+    <div class="acc-list">
+      <details class="acc-item" open>
+        <summary><span class="cat-title">[1] 매출 및 영업 전략</span><span class="cat-count">7건</span></summary>
+        <div class="acc-body">
+        <div class="task-card"><div class="task-title"><span class="status-dot active"></span>루프팀 그룹 유료 콘텐츠 런칭 현황</div><div class="task-meta"><span><span class="owner-chip mgr">나우열M</span></span><span>미정</span></div></div>
+        <div class="task-card"><div class="task-title"><span class="status-dot active"></span>이움(명상) 계약 진행</div><div class="task-meta"><span><span class="owner-chip mgr">나우열M</span></span><span>미정</span></div></div>
+        <div class="task-card"><div class="task-title"><span class="status-dot active"></span>추가 팝업 진행 (거울 작품, 신발)</div><div class="task-meta"><span><span class="owner-chip mgr">나우열M</span></span><span>미정</span></div></div>
+        <div class="task-card"><div class="task-title"><span class="status-dot active"></span>무할인 정책 재검토 결과</div><div class="task-meta"><span><span class="owner-chip dir">이경연 실장</span></span><span>미정</span></div></div>
+        <div class="task-card" style="border-left:3px solid var(--warm);"><div class="task-title"><span class="status-dot urgent"></span>요금 인상 라인업 공지 준비</div><div class="task-meta"><span><span class="owner-chip dir">이경연 실장</span></span><span>05.21 ~ 06.30</span><span class="badge warm" style="font-size:10px">마감근접</span></div></div>
+        <div class="task-card"><div class="task-title"><span class="status-dot active"></span>다이슨 방향 전환 → 대안 제품군 재검토</div><div class="task-meta"><span><span class="owner-chip gm">김남욱GM</span></span><span>05.08 ~ 06.30</span></div></div>
+        <div class="task-card" style="border-left:3px solid var(--warm);"><div class="task-title"><span class="status-dot urgent"></span>홍보 영상 딜라이브 편집 (~5.24)</div><div class="task-meta"><span><span class="owner-chip mgr">나우열M</span></span><span>05.01 ~ 05.24</span><span class="badge warm" style="font-size:10px">마감근접</span></div></div>
+        </div>
+      </details>
+      <details class="acc-item">
+        <summary><span class="cat-title">[2] 인사&파트너팀</span><span class="cat-count">8건</span></summary>
+        <div class="acc-body">
+        <div class="task-card" style="border-left:3px solid var(--warm);"><div class="task-title"><span class="status-dot urgent"></span>정착지원금 제도 개편</div><div class="task-meta"><span><span class="owner-chip gm">김남욱GM</span></span><span>05.01 ~ 05.17</span><span class="badge warm" style="font-size:10px">마감근접</span></div></div>
+        <div class="task-card"><div class="task-title"><span class="status-dot active"></span>파트너 레벨링 체계 수립</div><div class="task-meta"><span><span class="owner-chip gm">김남욱GM</span></span><span>미정</span></div></div>
+        <div class="task-card"><div class="task-title"><span class="status-dot active"></span>쓰쿠루 아쿠아 파트너 계약</div><div class="task-meta"><span><span class="owner-chip gm">김남욱GM</span></span><span>05.01 ~ 06.30</span></div></div>
+        <div class="task-card"><div class="task-title"><span class="status-dot active"></span>김명선 프로 계약 전환</div><div class="task-meta"><span><span class="owner-chip gm">김남욱GM</span></span><span>05.01 ~ 05.31</span></div></div>
+        <div class="task-card"><div class="task-title"><span class="status-dot active"></span>위성진 주차 관리인 계약 전환</div><div class="task-meta"><span><span class="owner-chip gm">김남욱GM</span></span><span>05.01 ~ 06.07</span></div></div>
+        <div class="task-card"><div class="task-title"><span class="status-dot active"></span>황용석 팀장 퇴직 및 지원팀 재편</div><div class="task-meta"><span><span class="owner-chip gm">김남욱GM</span></span><span>05.21 ~ 06.30</span></div></div>
+        <div class="task-card"><div class="task-title"><span class="status-dot active"></span>업무 위임 5개 항목 정리</div><div class="task-meta"><span><span class="owner-chip gm">김남욱GM</span></span><span>05.01 ~ 05.31</span></div></div>
+        <div class="task-card"><div class="task-title"><span class="status-dot active"></span>파트너 복장 지급</div><div class="task-meta"><span><span class="owner-chip mgr">나우열M</span></span><span>05.01 ~ 05.31</span></div></div>
+        </div>
+      </details>
+      <details class="acc-item">
+        <summary><span class="cat-title">[3] 운영 정책 및 시스템</span><span class="cat-count">4건</span></summary>
+        <div class="acc-body">
+        <div class="task-card"><div class="task-title"><span class="status-dot active"></span>리셉션 매뉴얼 구축</div><div class="task-meta"><span><span class="owner-chip dir">이경연 실장</span> <span class="owner-chip mgr">최준용M</span></span><span>미정</span></div></div>
+        <div class="task-card"><div class="task-title"><span class="status-dot active"></span>브로제이 시스템 도입</div><div class="task-meta"><span><span class="owner-chip mgr">나우열M</span> <span class="owner-chip mgr">최준용M</span></span><span>05.01 ~ 05.31</span></div></div>
+        <div class="task-card" style="border-left:3px solid var(--warm);"><div class="task-title"><span class="status-dot urgent"></span>C-레벨 AI 에이전트 체계 구축</div><div class="task-meta"><span><span class="owner-chip gm">김남욱GM</span></span><span>04.13 ~ 05.12</span><span class="badge warm" style="font-size:10px">마감근접</span></div></div>
+        <div class="task-card"><div class="task-title"><span class="status-dot active"></span>운영 가이드라인 정립</div><div class="task-meta"><span><span class="owner-chip gm">김남욱GM</span></span><span>미정</span></div></div>
+        </div>
+      </details>
+      <details class="acc-item">
+        <summary><span class="cat-title">[4] 시설 및 환경</span><span class="cat-count">4건</span></summary>
+        <div class="acc-body">
+        <div class="task-card"><div class="task-title"><span class="status-dot active"></span>1층 식당 운영 개선</div><div class="task-meta"><span><span class="owner-chip gm">김남욱GM</span></span><span>미정</span></div></div>
+        <div class="task-card"><div class="task-title"><span class="status-dot active"></span>야외 테라스 활용 방안</div><div class="task-meta"><span><span class="owner-chip mgr">최준용M</span></span><span>미정</span></div></div>
+        <div class="task-card"><div class="task-title"><span class="status-dot active"></span>목욕탕 허가건 진행</div><div class="task-meta"><span><span class="owner-chip gm">김남욱GM</span></span><span>미정</span></div></div>
+        <div class="task-card"><div class="task-title"><span class="status-dot active"></span>기구 A/S 및 유지보수</div><div class="task-meta"><span><span class="owner-chip gm">김남욱GM</span></span><span>미정</span></div></div>
+        </div>
+      </details>
+      <details class="acc-item">
+        <summary><span class="cat-title">[5] 3대 비전 추진</span><span class="cat-count">3건</span></summary>
+        <div class="acc-body">
+        <div class="task-card" style="border-left:3px solid var(--accent);"><div class="task-title"><span class="status-dot longterm"></span>수익화 전략 수립</div><div class="task-meta"><span><span class="owner-chip gm">김남욱GM</span></span><span>2026.01 ~ 2026.12</span><span class="badge blue" style="font-size:10px">장기</span></div></div>
+        <div class="task-card" style="border-left:3px solid var(--accent);"><div class="task-title"><span class="status-dot longterm"></span>공간 밸류업 추진</div><div class="task-meta"><span><span class="owner-chip gm">김남욱GM</span></span><span>2026.01 ~ 2026.12</span><span class="badge blue" style="font-size:10px">장기</span></div></div>
+        <div class="task-card" style="border-left:3px solid var(--accent);"><div class="task-title"><span class="status-dot longterm"></span>운영 자동화 고도화</div><div class="task-meta"><span><span class="owner-chip gm">김남욱GM</span></span><span>2026.01 ~ 2026.12</span><span class="badge blue" style="font-size:10px">장기</span></div></div>
+        </div>
+      </details>
+      <details class="acc-item">
+        <summary><span class="cat-title">[6] 회장님 하달사항</span><span class="cat-count">3건</span></summary>
+        <div class="acc-body">
+        <div class="task-card"><div class="task-title"><span class="status-dot active"></span>시설 리뉴얼 6건 견적 정리</div><div class="task-meta"><span><span class="owner-chip gm">김남욱GM</span></span><span>미정</span></div></div>
+        <div class="task-card"><div class="task-title"><span class="status-dot active"></span>드라이기 교체 및 배치</div><div class="task-meta"><span><span class="owner-chip gm">김남욱GM</span></span><span>05.01 ~ 06.30</span></div></div>
+        <div class="task-card"><div class="task-title"><span class="status-dot active"></span>헬스장 장비 리뉴얼 검토</div><div class="task-meta"><span><span class="owner-chip gm">김남욱GM</span></span><span>미정</span></div></div>
+        </div>
+      </details>
+    </div>
+
+    <div class="card" style="margin-top:24px; border-left:3px solid var(--accent);">
+      <h3 style="margin-top:0;"><span class="ico">🔄</span>GM ↔ AI CEO 운영 흐름</h3>
+      <p>위 TO DO 업무는 GM이 단독으로 처리하지 않는다. AI CEO를 거쳐 담당 C-Level에 분배되고, 결과가 다시 GM에게 보고된다.</p>
+      <p style="font-weight:700; color:var(--accent); line-height:2;">
+        ① GM 지시 → ② AI CEO 접수·분해 → ③ 담당 C-Level 병렬 라우팅 → ④ C-Level 실행 → ⑤ AI CEO 취합 → ⑥ GM 보고 → (다시 ①)
+      </p>
+      <h4>카테고리별 라우팅 매핑</h4>
+      <table>
+        <tr><th>GM TO DO 카테고리</th><th>담당 C-Level</th><th>보고 주기</th></tr>
+        <tr><td>[1] 매출·영업 전략</td><td>AI CMO</td><td>매일</td></tr>
+        <tr><td>[2] 인사·파트너팀</td><td>AI CHRO</td><td>매일</td></tr>
+        <tr><td>[3] 운영 정책·시스템</td><td>AI COO</td><td>매일</td></tr>
+        <tr><td>[4] 시설·환경</td><td>AI CTO</td><td>매주 월 09:00</td></tr>
+        <tr><td>[5] 3대 비전 추진</td><td>AI CEO</td><td>매주 금 16:00</td></tr>
+        <tr><td>[6] 회장님 하달사항</td><td>AI CEO → 분배</td><td>매주 금 16:00</td></tr>
+      </table>
+      <p style="font-size:13px; color:var(--dim);">각 C-Level의 산출물·보고 형식은 <strong>⑨ C-Level 운영 가이드</strong> 참조.</p>
+    </div>
+
+    <div class="source">SSOT: 본 문서 + ⑨ C-Level 운영 가이드 연동 · 기준일 2026-05-23</div>
+    <div style="margin-top:22px; padding:13px 16px; background:#16181c; border-radius:8px; border-left:3px solid var(--accent);">
+      <div style="font-size:12px; font-weight:700; color:var(--accent); margin-bottom:6px;">&#9656; Claude CLI 셋업 프롬프트</div>
+      <pre style="margin:0; color:#e8e8e8; font-size:12.5px; white-space:pre-wrap; line-height:1.6;">가이드허브 ⑦ GM TO DO LIST를 라우팅 매핑대로 각 C-Level에 분배하고 카테고리별 진행 현황을 정리해줘.</pre>
+    </div>
+  </article>
+
+  <article class="doc" id="g9">
+    <div class="doc-header"><h2>⑧ 회사소개서</h2><div class="meta">v2.19 · 2026-05 · 브랜드·사업·프로그램·확장 전략 통합</div></div>
+    <p class="lead">웰페리온은 단순한 운동 시설이 아닙니다. 하루 루틴의 일부로 자연스럽게 자리 잡아, 건강의 기준을 세우고 그날의 완성도를 채워주는 공간. 한남동이라는 동네의 결을 따라 지어진, 리더들을 위한 건강 &amp; 힐링 커뮤니티입니다.</p>
+
+    <div class="card" style="background:linear-gradient(135deg,#221F20 0%,#3A3536 100%); border:none; padding:28px 30px; margin:18px 0 24px; border-radius:14px;">
+      <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:16px;">
+        <div>
+          <div style="font-size:12px; letter-spacing:0.2em; text-transform:uppercase; color:#B79F8A; font-weight:600; margin-bottom:6px;">WELLPERION · Company Introduction</div>
+          <div style="font-size:20px; font-weight:700; color:#fff; letter-spacing:-0.01em;">A Day, <em style="color:#B79F8A; font-style:italic;">Well Completed.</em></div>
+        </div>
+        <a href="웰페리온_회사소개서_v2.19.html" target="_blank" style="display:inline-flex; align-items:center; gap:8px; padding:14px 28px; background:#ED5B3F; color:#fff; font-size:15px; font-weight:700; border-radius:10px; text-decoration:none; letter-spacing:0.02em; white-space:nowrap; box-shadow:0 2px 8px rgba(237,91,63,0.3);">
+          회사소개서 원본 열기
+        </a>
+      </div>
+    </div>
+
+    <div class="tabs" data-tabs="g9">
+      <div class="tab-nav">
+        <button class="tab-btn active" data-tab="overview">개요·철학</button>
+        <button class="tab-btn" data-tab="business">사업 현황</button>
+        <button class="tab-btn" data-tab="programs">프로그램</button>
+        <button class="tab-btn" data-tab="expansion">확장 전략</button>
+      </div>
+
+      <div class="tab-panel active" data-panel="overview">
+        <div class="card accent">
+          <h4>A Day, Well Completed. · 하루의 완성</h4>
+          <p>Premium Lifestyle Club · Since 2017 · 한남동 · Seoul · 3,000평 · 1,000정원(대기 중)</p>
+        </div>
+        <p>웰페리온은 '운동하러 가는 곳'이 아니라 '하루의 품질을 설계하는 곳'입니다. 스포츠·스파·커뮤니티·공간이 하나로 통합된 라이프스타일 인프라.</p>
+      </div>
+
+      <div class="tab-panel" data-panel="business">
+        <h3><span class="ico">📊</span>핵심 지표</h3>
+        <table>
+          <tr><th>지표</th><th>값</th></tr>
+          <tr><td>Annual Revenue</td><td><strong>61.6억</strong> (25년 기준)</td></tr>
+          <tr><td>YoY Growth</td><td><strong>18.4%</strong></td></tr>
+          <tr><td>ARPU</td><td><strong>418만원</strong></td></tr>
+          <tr><td>LTV</td><td><strong>3년 4개월</strong></td></tr>
+          <tr><td>Retention</td><td><strong>61%</strong></td></tr>
+          <tr><td>Waitlist</td><td><strong>40명 · 2개월</strong></td></tr>
+        </table>
+      </div>
+
+      <div class="tab-panel" data-panel="programs">
+        <h3><span class="ico">🏊</span>성인 프로그램 포트폴리오</h3>
+        <table>
+          <tr><th>카테고리</th><th>프로그램</th></tr>
+          <tr><td>Core Sports</td><td>Gym(TechnoGym) · Swimming(25m) · Golf(GDR) · Squash</td></tr>
+          <tr><td>Group Exercise</td><td>G.X. · Yoga · Pilates(STOTT) · Barre · Ballet</td></tr>
+          <tr><td>Performance</td><td>Musical · Zumba · Line Dance</td></tr>
+          <tr><td>Wellness</td><td>Meditation · Spa·Sauna · Hair Salon · Lounge·Cafe</td></tr>
+        </table>
+      </div>
+
+      <div class="tab-panel" data-panel="expansion">
+        <h3><span class="ico">🗺️</span>확장 로드맵</h3>
+        <table>
+          <tr><th>단계</th><th>내용</th><th>시기</th></tr>
+          <tr><td><span class="badge blue">Phase 1</span></td><td>한남동 본점 시스템 안정화 + AI 고도화</td><td>현재 진행</td></tr>
+          <tr><td><span class="badge green">Phase 2</span></td><td>수도권 직영 2호점 · 위탁운영 파일럿</td><td>검증 후</td></tr>
+          <tr><td><span class="badge warm">Phase 3</span></td><td>전국 확장 · 위탁운영 본격화 · 플랫폼 전환</td><td>Phase 2 완료 후</td></tr>
+        </table>
+        <div class="callout"><strong>북극성.</strong> 대한민국에서 가장 체계적이고, 가장 따뜻한 프리미엄 스포츠클럽.</div>
+      </div>
+    </div>
+    <div class="source">SSOT: 회사소개서 v2.19 · 원본 HTML 별도 보관</div>
+    <div style="margin-top:22px; padding:13px 16px; background:#16181c; border-radius:8px; border-left:3px solid var(--accent);">
+      <div style="font-size:12px; font-weight:700; color:var(--accent); margin-bottom:6px;">&#9656; Claude CLI 셋업 프롬프트</div>
+      <pre style="margin:0; color:#e8e8e8; font-size:12.5px; white-space:pre-wrap; line-height:1.6;">가이드허브 ⑧ 회사소개서를 기준으로 이 산출물의 회사 정보·포지셔닝·사업 내용이 정확한지 검수해줘.</pre>
+    </div>
+  </article>
+
+  <article class="doc" id="g10">
+    <div class="doc-header"><h2>⑨ C-Level 운영 가이드</h2><div class="meta">협업 매뉴얼 v1.0 + 실무 가이드라인 v1.1 통합 · 7개 C-Level별 협업 리듬 + 실무 지침</div></div>
+    <p class="lead">매니저(GM)가 AI C-Level 에이전트와 협업할 때의 협업 리듬(언제 무엇을 산출하나)과 실무 가이드(어떻게 판단하나)를 C-Level별로 통합한 운영 가이드입니다.</p>
+    <p style="font-size:13px; color:var(--dim);">▸ GM 업무가 어떤 C-Level로 분배되는지는 <strong>⑦ GM TO DO LIST</strong>의 'GM ↔ AI CEO 운영 흐름' 참조.</p>
+
+    <div class="card" style="background:linear-gradient(135deg,#1a2a1a 0%,#2a3a2a 100%); border:none; padding:20px 24px; margin:18px 0 24px; border-radius:14px;">
+      <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+        <span style="color:#fff; font-weight:700;">원본 문서</span>
+        <a href="웰페리온_AI_C레벨_협업매뉴얼_2026-04-24.html" target="_blank" style="display:inline-flex; padding:10px 20px; background:#059669; color:#fff; font-size:14px; font-weight:700; border-radius:8px; text-decoration:none;">협업 매뉴얼 원본</a>
+        <a href="웰페리온_C레벨_실무가이드라인_2026-04-24.html" target="_blank" style="display:inline-flex; padding:10px 20px; background:#7C3AED; color:#fff; font-size:14px; font-weight:700; border-radius:8px; text-decoration:none;">실무 가이드라인 원본</a>
+      </div>
+    </div>
+
+    <div class="tabs" data-tabs="g10">
+      <div class="tab-nav">
+        <button class="tab-btn active" data-tab="common">공통</button>
+        <button class="tab-btn" data-tab="ceo">CEO</button>
+        <button class="tab-btn" data-tab="coo">COO</button>
+        <button class="tab-btn" data-tab="cfo">CFO</button>
+        <button class="tab-btn" data-tab="cmo">CMO</button>
+        <button class="tab-btn" data-tab="cto">CTO</button>
+        <button class="tab-btn" data-tab="chro">CHRO</button>
+        <button class="tab-btn" data-tab="cpo">CPO</button>
+      </div>
+      <div class="tab-panel active" data-panel="common"><p>각 C-Level 탭에서 <strong>협업 리듬</strong>(언제 무엇을 산출·보고하나)과 <strong>실무 가이드</strong>(어떻게 판단하나)를 함께 확인하세요. 상세는 위 원본 문서 참조.</p></div>
+      <div class="tab-panel" data-panel="ceo"><h4>AI CEO</h4><p><strong>협업 리듬.</strong> 전사 주간 총괄 보고 — 매주 금 16:00 자동 실행. 전사 KPI + C-Level 이슈 통합 + 의사결정 필요 항목.</p><p><strong>실무 가이드.</strong> 방향을 세우고 일관성을 지키는 일. 의사결정 우선순위: 회원 경험 일관성 &gt; 브랜드의 결 &gt; 지속 가능한 수익 &gt; 실행 속도.</p></div>
+      <div class="tab-panel" data-panel="coo"><h4>AI COO</h4><p><strong>협업 리듬.</strong> 일일 운영 모니터링 — 매일 05:30. 시설 가동 현황 · 운영 이슈 · 청결·안전·CS 점검.</p><p><strong>실무 가이드.</strong> 공간이 말하게 하는 운영. 품질 4요소: 온도·습도 / 음향·조명 / 청결 / 향.</p></div>
+      <div class="tab-panel" data-panel="cfo"><h4>AI CFO</h4><p><strong>협업 리듬.</strong> 일일 비용 모니터링 — 매일 07:00. 전일 지출 · 예산 소진율 · 이상 지출 · 현금흐름 7일 예측.</p><p><strong>실무 가이드.</strong> 숫자가 말하는 공간의 건강. 비용 3질문: 회원 경험 직접 영향? / 대안 없는 지출? / 3개월 후 유효?</p></div>
+      <div class="tab-panel" data-panel="cmo"><h4>AI CMO</h4><p><strong>협업 리듬.</strong> 일일 콘텐츠 캘린더 — 매일 09:00. 발행 예정 콘텐츠 · SNS 일정 · 전일 성과 · 주간 캘린더.</p><p><strong>실무 가이드.</strong> 간판이 아니라 공간이 말하는 브랜드. 톤 3기준: 절제된 고급감 / 경험 중심 / 일관된 호칭("스포츠클럽").</p></div>
+      <div class="tab-panel" data-panel="cto"><h4>AI CTO</h4><p><strong>협업 리듬.</strong> 주간 시스템 점검 — 매주 월 07:00. 시스템 가동 · 장애·에러 · 보안 점검 · 백업 상태.</p><p><strong>실무 가이드.</strong> 기술은 공간의 조용한 골격. 회원 정보 당일 완료 · 실시간 동기화 · 장애 시 수동 대체 즉시 가동.</p></div>
+      <div class="tab-panel" data-panel="chro"><h4>AI CHRO</h4><p><strong>협업 리듬.</strong> 일일 HR 모니터링 — 매일 08:00. 출결·근태 · 면접 일정 · 채용 파이프라인 · 이슈 플래그.</p><p><strong>실무 가이드.</strong> 사람은 공간의 가장 섬세한 요소. 채용 7원칙: 스킬 &lt; 태도 &lt; 가치관. 온보딩 30-60-90 플로우.</p></div>
+      <div class="tab-panel" data-panel="cpo"><h4>AI CPO</h4><p><strong>협업 리듬.</strong> 일일 회원 모니터링 — 매일 08:30. 이탈 징후 · VIP 케어 · 신규/해지 · CS 접수.</p><p><strong>실무 가이드.</strong> 회원은 숫자가 아니라 이름. VIP 케어 = "특별함"이 아니라 "기억". 이탈 징후 5 신호 감지.</p></div>
+    </div>
+    <div class="source">SSOT: AI C-Level 협업 매뉴얼 v1.0 + C-Level 실무 가이드라인 v1.1 (2026-04-24) 통합</div>
+    <div style="margin-top:22px; padding:13px 16px; background:#16181c; border-radius:8px; border-left:3px solid var(--accent);">
+      <div style="font-size:12px; font-weight:700; color:var(--accent); margin-bottom:6px;">&#9656; Claude CLI 셋업 프롬프트</div>
+      <pre style="margin:0; color:#e8e8e8; font-size:12.5px; white-space:pre-wrap; line-height:1.6;">가이드허브 ⑨ C-Level 운영 가이드대로 각 C-Level의 오늘 산출물을 협업 리듬에 맞춰 점검하고 AI CEO가 GM에게 통합 보고하게 해줘.</pre>
+    </div>
+  </article>
+
+  <!-- ⑫ 브랜드 디자인 가이드 (NEW) -->
+  <article class="doc" id="g12">
+    <div class="doc-header"><h2>⑩ 브랜드 디자인 가이드</h2><div class="meta">브랜드 SSOT · guide-hub.html 통합 · 2026-05-25</div></div>
+    <p class="lead">WELLPERION 브랜드 디자인의 모든 기준. 로고·컬러·타이포·톤앤매너를 한곳에 정리합니다. 모든 콘텐츠 제작은 이 가이드를 따릅니다.</p>
+
+    <div class="tabs" data-tabs="g12">
+      <div class="tab-nav">
+        <button class="tab-btn active" data-tab="identity">핵심 정체성·로고</button>
+        <button class="tab-btn" data-tab="color">컬러 시스템</button>
+        <button class="tab-btn" data-tab="typo">타이포·톤앤매너</button>
+      </div>
+
+      <div class="tab-panel active" data-panel="identity">
+        <h3><span class="ico">🏛️</span>핵심 정체성</h3>
+        <div class="card accent">
+          <h4>WELLPERION (웰페리온)</h4>
+          <p><strong>하이엔드 프라이빗 스포츠클럽</strong></p>
+          <p>슬로건: PREMIUM LIFESTYLE CLUB / A Day, Well Completed.</p>
+        </div>
+
+        <h3><span class="ico">🎨</span>로고 파일</h3>
+        <table>
+          <tr><th>파일</th><th>색상</th><th>용도</th></tr>
+          <tr><td><code>_assets/logo/wellperion_white.png</code></td><td>#FFFFFF</td><td>어두운 배경 (인스타 메인)</td></tr>
+          <tr><td><code>_assets/logo/wellperion_beige.png</code></td><td>#B79F8A</td><td>밝은 배경</td></tr>
+          <tr><td><code>_assets/logo/wellperion_black.png</code></td><td>#000000</td><td>인쇄용</td></tr>
+        </table>
+        <div class="callout fix"><strong>W 심볼 직접 그리기 금지.</strong> 정식 PNG 파일만 사용합니다.</div>
+      </div>
+
+      <div class="tab-panel" data-panel="color">
+        <h3><span class="ico">🎨</span>메인 컬러 시스템</h3>
+        <table>
+          <tr><th>역할</th><th>HEX</th><th>용도</th></tr>
+          <tr><td><span class="color-swatch" style="background:#B79F8A;"></span>BEIGE (Primary)</td><td><strong>#B79F8A</strong></td><td>로고·텍스트 강조</td></tr>
+          <tr><td><span class="color-swatch" style="background:#221F20;"></span>BLACK (Background)</td><td><strong>#221F20</strong></td><td>메인 배경 (따뜻한 차콜)</td></tr>
+          <tr><td><span class="color-swatch" style="background:#ED5B3F;"></span>HIGHLIGHT</td><td><strong>#ED5B3F</strong></td><td>CTA·강한 주목</td></tr>
+        </table>
+
+        <h3><span class="ico">🌈</span>서브 브랜드 컬러</h3>
+        <table>
+          <tr><th>사업부</th><th>Logo HEX</th><th>BG HEX</th></tr>
+          <tr><td><span class="color-swatch" style="background:#B54840;"></span>W PT</td><td>#B54840</td><td>#512B32</td></tr>
+          <tr><td><span class="color-swatch" style="background:#3F71B0;"></span>SPORTS CLUB</td><td>#3F71B0</td><td>#253B6C</td></tr>
+          <tr><td><span class="color-swatch" style="background:#C44558;"></span>W PILATES</td><td>#C44558</td><td>#822A37</td></tr>
+          <tr><td><span class="color-swatch" style="background:#215768;"></span>W SWIMMING</td><td>#215768</td><td>#172C42</td></tr>
+          <tr><td><span class="color-swatch" style="background:#D2D2D2;"></span>W SQUASH</td><td>#D2D2D2</td><td>#77968E</td></tr>
+          <tr><td><span class="color-swatch" style="background:#337342;"></span>W GOLF</td><td>#337342</td><td>#132117</td></tr>
+          <tr><td><span class="color-swatch" style="background:#C2BAD6;"></span>W GYMNASTIC</td><td>#C2BAD6</td><td>#563A61</td></tr>
+          <tr><td><span class="color-swatch" style="background:#000000;"></span>BRAD LITTLE'S STAR ACADEMY</td><td>#FFFFFF</td><td>#000000</td></tr>
+        </table>
+      </div>
+
+      <div class="tab-panel" data-panel="typo">
+        <h3><span class="ico">🔤</span>타이포그래피</h3>
+        <table>
+          <tr><th>용도</th><th>서체</th></tr>
+          <tr><td>영문 헤드라인</td><td>ITC Avant Garde / Medium</td></tr>
+          <tr><td>Sports Club 전용</td><td>Hudson NY Serif</td></tr>
+          <tr><td>한글·본문</td><td>Pretendard (Bold/Medium/SemiBold, <code>brand/font/</code>)</td></tr>
+        </table>
+        <p>자간 넓게, 가독성 우선.</p>
+
+        <h3><span class="ico">🎭</span>톤앤매너</h3>
+        <div class="grid-2">
+          <div class="card grow"><h4>허용</h4><ul><li>정중</li><li>절제</li><li>럭셔리</li><li>신뢰감</li></ul></div>
+          <div class="card warm"><h4>금지</h4><ul><li>캐주얼</li><li>컬러풀</li><li>이모지 과다</li><li>과장 그라디언트</li><li>만화체</li></ul></div>
+        </div>
+
+        <h3><span class="ico">📱</span>인스타그램 적용 규칙</h3>
+        <ul>
+          <li>배경: BLACK / 사진 위 50~70% 블랙 마스크</li>
+          <li>텍스트: BEIGE(메인) + WHITE(보조) + HIGHLIGHT(강조)</li>
+          <li>레이아웃: 여백 크게, 중앙/좌측 정렬, 박스 라운드 8~16px</li>
+          <li>로고: 하단 중앙 또는 좌측, 베이지 단색</li>
+          <li>금지: 네온 그라디언트 · 굵은 굴림체 · 형광색 · 만화 일러스트</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="source">SSOT: instagram/_브랜드_온톨로지.md 기반 · brand/ 폴더 연동</div>
+    <div style="margin-top:22px; padding:13px 16px; background:#16181c; border-radius:8px; border-left:3px solid var(--accent);">
+      <div style="font-size:12px; font-weight:700; color:var(--accent); margin-bottom:6px;">&#9656; Claude CLI 셋업 프롬프트</div>
+      <pre style="margin:0; color:#e8e8e8; font-size:12.5px; white-space:pre-wrap; line-height:1.6;">가이드허브 ⑩ 브랜드 디자인 가이드(컬러·로고·타이포·톤)를 기준으로 이 콘텐츠를 검수하고 어긋난 부분을 교정해줘.</pre>
+    </div>
+  </article>
+
+  <!-- ⑬ IG 메인 페이지 템플릿 (NEW) -->
+  <article class="doc" id="g13">
+    <div class="doc-header"><h2>⑪ 인스타그램 메인 페이지 템플릿</h2><div class="meta">브랜드 SSOT · guide-hub.html 통합 · 2026-05-25</div></div>
+    <p class="lead">모든 IG 메인 슬라이드(1p)는 이 영구 템플릿을 따릅니다. DUOTONE(BLACK + BEIGE) 2색 변환으로 어떤 사진이든 동일 브랜드 톤을 유지합니다.</p>
+
+    <h3><span class="ico">🎨</span>DUOTONE 컨셉</h3>
+    <div class="card accent">
+      <h4>BLACK #221F20 + BEIGE #B79F8A — 2색 변환</h4>
+      <p>모든 메인 사진을 2색 변환 처리하여, 어떤 사진이든 동일한 브랜드 톤을 유지합니다.</p>
+    </div>
+
+    <h3><span class="ico">📐</span>레이아웃 사양 (1080x1080)</h3>
+    <table>
+      <tr><th>영역</th><th>위치</th><th>사양</th></tr>
+      <tr><td>헤더</td><td>y=45</td><td>좌: [W] WELLPERION / 우: sub-brand chip</td></tr>
+      <tr><td>사진</td><td>상단 700px</td><td>DUOTONE 처리, 65% 영역</td></tr>
+      <tr><td>베이지 헤어라인</td><td>y=701</td><td>2px, #B79F8A</td></tr>
+      <tr><td>영문 타이틀</td><td>y=750</td><td>Pretendard Bold 60pt, 자간 4px, BEIGE</td></tr>
+      <tr><td>한글 부제목</td><td>y=840</td><td>Pretendard SemiBold 34pt, WHITE</td></tr>
+      <tr><td>베이지 액센트</td><td>y=920</td><td>80px wide, 2px</td></tr>
+      <tr><td>메타 (날짜·장소)</td><td>y=948</td><td>Pretendard Medium 24pt, BEIGE</td></tr>
+    </table>
+
+    <h3><span class="ico">🏷️</span>사업부별 chip 색상</h3>
+    <table>
+      <tr><th>사업부</th><th>HEX</th></tr>
+      <tr><td>메인</td><td><span class="color-swatch" style="background:#B79F8A;"></span>#B79F8A</td></tr>
+      <tr><td>SPORTS CLUB</td><td><span class="color-swatch" style="background:#3F71B0;"></span>#3F71B0</td></tr>
+      <tr><td>W PT</td><td><span class="color-swatch" style="background:#B54840;"></span>#B54840</td></tr>
+      <tr><td>W PILATES</td><td><span class="color-swatch" style="background:#C44558;"></span>#C44558</td></tr>
+      <tr><td>W SWIMMING</td><td><span class="color-swatch" style="background:#215768;"></span>#215768</td></tr>
+      <tr><td>W SQUASH</td><td><span class="color-swatch" style="background:#77968E;"></span>#77968E</td></tr>
+      <tr><td>W GOLF</td><td><span class="color-swatch" style="background:#337342;"></span>#337342</td></tr>
+      <tr><td>W GYMNASTIC</td><td><span class="color-swatch" style="background:#C2BAD6;"></span>#C2BAD6</td></tr>
+      <tr><td>BRAD LITTLE'S</td><td><span class="color-swatch" style="background:#fff; border:2px solid #333;"></span>#FFFFFF</td></tr>
+    </table>
+
+    <h3><span class="ico">📷</span>사진 선택 기준</h3>
+    <div class="grid-2">
+      <div class="card grow"><h4>좋음</h4><ul><li>명암 대비 뚜렷</li><li>가로형</li><li>중앙/삼분할 구도</li></ul></div>
+      <div class="card warm"><h4>피함</h4><ul><li>너무 어두운 야간</li><li>평면적 단조로운 사진</li></ul></div>
+    </div>
+
+    <div class="callout tip"><strong>스토리(1080x1920)는 DUOTONE 적용 X.</strong> 컬러 사진 유지합니다.</div>
+
+    <div class="source">SSOT: instagram/_메인_페이지_템플릿_가이드.md 기반</div>
+    <div style="margin-top:22px; padding:13px 16px; background:#16181c; border-radius:8px; border-left:3px solid var(--accent);">
+      <div style="font-size:12px; font-weight:700; color:var(--accent); margin-bottom:6px;">&#9656; Claude CLI 셋업 프롬프트</div>
+      <pre style="margin:0; color:#e8e8e8; font-size:12.5px; white-space:pre-wrap; line-height:1.6;">가이드허브 ⑪ 인스타그램 메인 템플릿 규격(DUOTONE·1080x1080)대로 이 콘텐츠를 구성해줘.</pre>
+    </div>
+  </article>
+
+  <!-- ⑭ 콘텐츠 제작 워크플로 (NEW) -->
+  <article class="doc" id="g14">
+    <div class="doc-header"><h2>⑫ 콘텐츠 제작 워크플로</h2><div class="meta">CMO 운영 SSOT · guide-hub.html 통합 · 2026-05-25</div></div>
+    <p class="lead">CMO가 IG·블로그·카페·카카오 4채널에 배포할 콘텐츠를 1:1 슬라이드 8장 단위로 작업하는 표준 폴더 구조와 규칙입니다.</p>
+
+    <h3><span class="ico">📁</span>표준 폴더 명명</h3>
+    <pre>instagram/{YYMMDD_콘텐츠명}/</pre>
+
+    <h3><span class="ico">🗂️</span>콘텐츠 폴더 구조</h3>
+    <table>
+      <tr><th>폴더/파일</th><th>용도</th></tr>
+      <tr><td><code>Image/원본</code></td><td>원본 사진·이미지</td></tr>
+      <tr><td><code>_assets</code></td><td>공통 자산 (WELLPERION GUIDE 카드 등)</td></tr>
+      <tr><td><code>_재사용_*.py</code></td><td>슬라이드 합성 스크립트</td></tr>
+      <tr><td><code>guideline_card</code></td><td>마지막 슬라이드 영구 카드 (회원·강사·시설물 가이드 + "A Day, Well Completed.")</td></tr>
+      <tr><td><code>output</code></td><td>4채널 분리 발행물 (아래 참조)</td></tr>
+    </table>
+
+    <h3><span class="ico">📤</span>output 4채널 분리</h3>
+    <table>
+      <tr><th>채널</th><th>내용</th></tr>
+      <tr><td><code>output/instagram</code></td><td>IG 슬라이드 (1:1 8장 + 가이드 카드)</td></tr>
+      <tr><td><code>output/blog</code></td><td>네이버 블로그 본문</td></tr>
+      <tr><td><code>output/cafe</code></td><td>동부이촌동 카페 본문 (격조 톤만)</td></tr>
+      <tr><td><code>output/kakao</code></td><td>카카오 채널 (자동 게시 보류)</td></tr>
+    </table>
+
+    <h3><span class="ico">📋</span>표기 규칙</h3>
+    <ul>
+      <li><strong>1p 메인 슬라이드는 영구 템플릿</strong> — 65/35 분할·W로고·사업부 컬러칩·영문대제목·한글부제목·일자장소·풋터</li>
+      <li><strong>IG 스쿼시 콘텐츠</strong> — collaborator 3개 강제 태깅 (@namuk.wellperion, @wellperion_squash, @glass_court)</li>
+      <li><strong>CTA</strong> — litt.ly/wellperion 단일. 개인 번호 010-... 절대 노출 금지</li>
+      <li><strong>마지막 슬라이드</strong> — WELLPERION GUIDE 카드 자동 첨부. 영상 있으면 영상 직전에</li>
+    </ul>
+
+    <div class="callout"><strong>자동화 의존.</strong> <code>scripts/instagram_upload_playwright.py</code>가 <code>profiles/instagram/</code> Playwright 세션을 의존합니다.</div>
+
+    <div class="source">SSOT: instagram/_README.md 기반 · 2026-05-23 GM 결재</div>
+    <div style="margin-top:22px; padding:13px 16px; background:#16181c; border-radius:8px; border-left:3px solid var(--accent);">
+      <div style="font-size:12px; font-weight:700; color:var(--accent); margin-bottom:6px;">&#9656; Claude CLI 셋업 프롬프트</div>
+      <pre style="margin:0; color:#e8e8e8; font-size:12.5px; white-space:pre-wrap; line-height:1.6;">가이드허브 ⑫ 콘텐츠 제작 워크플로(폴더 구조·4채널)대로 콘텐츠 제작을 단계별로 진행해줘.</pre>
+    </div>
+  </article>
+
+  <!-- ⑮ AI 교육자료 핵심요약 (NEW) -->
+  <article class="doc" id="g15">
+    <div class="doc-header"><h2>⑬ AI 교육자료 핵심요약</h2><div class="meta">AI 교육 SSOT · guide-hub.html 통합 · 2026-05-25 · 원본 608줄 압축</div></div>
+    <p class="lead">Claude Code 활용의 핵심만 추출한 빠른 참조 문서. 토큰 절약, 컨텍스트 관리, 비용 절감의 실전 규칙을 정리합니다.</p>
+
+    <div class="tabs" data-tabs="g15">
+      <div class="tab-nav">
+        <button class="tab-btn active" data-tab="basics">Claude Code 기본기</button>
+        <button class="tab-btn" data-tab="token">토큰 절약·컨텍스트</button>
+        <button class="tab-btn" data-tab="cost">비용 절감·플러그인</button>
+      </div>
+
+      <div class="tab-panel active" data-panel="basics">
+        <h3><span class="ico">🧠</span>Claude Code 기본기</h3>
+        <ul>
+          <li><strong>CLAUDE.md = 프로젝트 두뇌.</strong> 세션 시작 시 자동 로드. 200줄 이하·표/리스트 구조화·상세지식은 docs/로 분리.</li>
+          <li><strong>Plan Mode(Shift+Tab 2번):</strong> 복잡한 작업·아키텍처 결정 전 계획부터.</li>
+          <li><strong>Task-Do-Verify:</strong> 모든 작업에 정의 → 실행 → 검증 3단계 반복.</li>
+          <li><strong>Context Rot:</strong> 오래 쓰면 품질 붕괴(어텐션 희석·명령 충돌·토큰 압박). 파일 2,000토큰 넘으면 점검.</li>
+          <li><strong>Hooks(PreToolUse/PostToolUse):</strong> 도구 호출 전후 자동 스크립트 — 로그 전처리·파일 재읽기 차단.</li>
+          <li><strong>Skill:</strong> 도메인 지식 .md. CLAUDE.md는 인덱스, 필요 시만 로딩 → 세션당 ~15,000토큰 절약.</li>
+          <li><strong>단축키:</strong> /clear /compact /context /cost /model /mcp.</li>
+        </ul>
+
+        <h3><span class="ico">💡</span>새 AI 개념 학습 3질문법</h3>
+        <ol>
+          <li><strong>왜 이 이름?</strong> — 이름에 동작 순서가 담김</li>
+          <li><strong>기존 문제는?</strong> — 도구는 항상 문제 해결용</li>
+          <li><strong>어떻게 해결?</strong> — 해결 방식 = 기술의 본질</li>
+        </ol>
+      </div>
+
+      <div class="tab-panel" data-panel="token">
+        <h3><span class="ico">💰</span>토큰 절약 5대 규칙 (CLAUDE.md에 명시)</h3>
+        <table>
+          <tr><th style="width:40px">No.</th><th>규칙</th></tr>
+          <tr><td>1</td><td>이미 읽은 파일은 다시 확인하지 않는다</td></tr>
+          <tr><td>2</td><td>불필요한 도구 호출은 하지 않는다</td></tr>
+          <tr><td>3</td><td>의존성 없는 도구 호출은 한 번에 병렬 실행한다</td></tr>
+          <tr><td>4</td><td>20줄 이상의 불필요한 출력은 서브에이전트에 위임한다</td></tr>
+          <tr><td>5</td><td>사용자가 이미 설명한 내용을 다시 반복하지 않는다</td></tr>
+        </table>
+
+        <h3><span class="ico">📦</span>컨텍스트 관리</h3>
+        <ul>
+          <li><strong>@ 파일 참조:</strong> 500줄 이하 전체 / 500~2,000 구간 지정 / 2,000줄 이상 분리.</li>
+          <li>컨텍스트 60% 도달 시 보존 내용 지시하며 /compact. 구현 도중 /compact 절대 금지.</li>
+          <li><strong>/clear</strong> = 무관한 작업 사이 통째 비움 / <strong>/compact</strong> = 마일스톤 사이 요약 압축.</li>
+          <li>자리 비우기 전 압축·클리어(캐시 5분 만료). 대규모 작업 후 progress.md 저장.</li>
+          <li>서브에이전트는 본체 토큰 약 10배 소비 → Haiku 위임, 단발성만.</li>
+        </ul>
+
+        <h3><span class="ico">🔄</span>MCP → CLI 전환 (토큰 최대 32배·비용 17배 절감)</h3>
+        <ul>
+          <li>MCP는 도구 스키마를 매 메시지 로딩 → 컨텍스트 40~50% 잠식. 안정성 CLI 100% vs MCP 72%.</li>
+          <li>대체: GitHub→gh / HTTP→curl+jq / AWS→aws / k8s→kubectl / Docker→docker / 파일→find·grep.</li>
+          <li>CLI 없는 서비스(Notion·Slack·Figma)·멀티테넌트 OAuth·보안규제만 MCP 유지.</li>
+        </ul>
+      </div>
+
+      <div class="tab-panel" data-panel="cost">
+        <h3><span class="ico">⚙️</span>비용 80% 절감 — settings.json 4줄</h3>
+        <table>
+          <tr><th>설정</th><th>변경</th><th>효과</th></tr>
+          <tr><td>model</td><td>opus → sonnet</td><td>약 60% 절감</td></tr>
+          <tr><td>MAX_THINKING_TOKENS</td><td>31999 → 10000</td><td>thinking 약 70% 절감</td></tr>
+          <tr><td>CLAUDE_AUTOCOMPACT_PCT_OVERRIDE</td><td>95 → 50</td><td>긴 세션 품질 향상</td></tr>
+          <tr><td>CLAUDE_CODE_SUBAGENT_MODEL</td><td>→ haiku</td><td>서브에이전트 약 80% 절감</td></tr>
+        </table>
+        <p><strong>모델 선택:</strong> 일상 Sonnet / 설계·디버깅 Opus 일시전환 / 단순반복 Haiku.</p>
+
+        <h3><span class="ico">🔌</span>고급 절감 &amp; 플러그인</h3>
+        <ul>
+          <li>코드베이스 사전 인덱싱 92% 절감, read-once 훅 60~90% 절감, 훅으로 로그 FAILED/ERROR만 추출.</li>
+          <li>everything-claude-code: 코어 스킬 5개(search-first·tdd-workflow·strategic-compact·verification-loop·security-review)부터.</li>
+          <li>Continuous Learning: instinct 3개 이상 모이면 /evolve로 skill 승격.</li>
+          <li>보안: <code>npx ecc-agentshield scan</code> (시크릿·권한·훅·MCP·에이전트 5종 점검).</li>
+        </ul>
+      </div>
+
+    </div>
+
+    <div class="source">SSOT: 본 섹션 = AI 교육자료·고도화 프롬프트 단일 원본 (외부 .md 통합 완료)</div>
+    <div style="margin-top:22px; padding:13px 16px; background:#16181c; border-radius:8px; border-left:3px solid var(--accent);">
+      <div style="font-size:12px; font-weight:700; color:var(--accent); margin-bottom:6px;">&#9656; Claude CLI 셋업 프롬프트</div>
+      <pre style="margin:0; color:#e8e8e8; font-size:12.5px; white-space:pre-wrap; line-height:1.6;">가이드허브 ⑬ AI 교육자료 핵심요약 기준으로 현재 작업의 토큰·컨텍스트 효율을 점검해줘.</pre>
+    </div>
+  </article>
+
+  <!-- ⑯ 기술 인프라 상세 (NEW) -->
+  <article class="doc" id="g16">
+    <div class="doc-header"><h2>⑭ 기술 인프라 상세</h2><div class="meta">기술 SSOT · guide-hub.html 통합 · 2026-05-25</div></div>
+    <p class="lead">텔레그램 봇, scripts 폴더 구조, 경로 표준화, CTO 개발 아카이브 운영의 상세 기술 문서입니다.</p>
+
+    <div class="tabs" data-tabs="g16">
+      <div class="tab-nav">
+        <button class="tab-btn active" data-tab="telegram">텔레그램 봇</button>
+        <button class="tab-btn" data-tab="scripts">scripts 구조</button>
+        <button class="tab-btn" data-tab="paths">경로 표준화</button>
+        <button class="tab-btn" data-tab="archive">CTO 개발 아카이브</button>
+      </div>
+
+      <div class="tab-panel active" data-panel="telegram">
+        <h3><span class="ico">🤖</span>텔레그램 봇 (@namuki_report_bot)</h3>
+        <p>Chat ID 8254867551 · 단일 봇 + 정각 보고 스케줄러.</p>
+
+        <h4>가동 중 프로세스</h4>
+        <table>
+          <tr><th>프로세스</th><th>역할</th></tr>
+          <tr><td><code>bot.py</code></td><td>텔레그램 봇 메인. telegram.ext framework + RotatingFileHandler + IMPORTANT_PATTERNS.</td></tr>
+          <tr><td><code>daily_scheduler.py</code></td><td>정각 보고 스케줄러 (06/09/12/15/18/21시). MarkdownV2 + 평문 fallback 안전망.</td></tr>
+        </table>
+
+        <h4>Watcher (5분 주기)</h4>
+        <table>
+          <tr><th>파일</th><th>역할</th></tr>
+          <tr><td><code>auto_task_watcher.py</code></td><td>업무자동화DB 5분 주기 watcher</td></tr>
+          <tr><td><code>archive_watcher.py</code></td><td>결과물DB 이관 watcher</td></tr>
+          <tr><td><code>planning_watcher.py</code></td><td>신규기획DB watcher</td></tr>
+          <tr><td><code>status_change_watcher.py</code></td><td>상태 변경 알림</td></tr>
+          <tr><td><code>pre_task_notifier.py</code></td><td>실행 전 사전 알림</td></tr>
+          <tr><td><code>permission_watcher.py</code></td><td>권한 변경 watcher</td></tr>
+          <tr><td><code>status_regression_guard.py</code></td><td>상태 회귀 자동 복원</td></tr>
+        </table>
+
+        <h4>재기동 방법</h4>
+        <pre>Stop-Process -Id (PID) -Force
+Start-Process python -ArgumentList telegram_bot\daily_scheduler.py -WorkingDirectory C:\Users\jjky0\welperion-automation -WindowStyle Hidden</pre>
+      </div>
+
+      <div class="tab-panel" data-panel="scripts">
+        <h3><span class="ico">📂</span>scripts/ 구조</h3>
+        <p>웰페리온 운영 자동화 파이썬 모음.</p>
+
+        <h4>핵심 파일</h4>
+        <table>
+          <tr><th>파일</th><th>역할</th></tr>
+          <tr><td><code>telemetry_logger.py</code></td><td>wellperion.bat 진입 시 JSONL 적재 (8 sensitive 키워드 마스킹)</td></tr>
+          <tr><td><code>health_check_helper.py</code></td><td>wellperion.bat health의 실행 helper. Win32_Process로 정확 감지.</td></tr>
+          <tr><td><code>evolve_gate.py</code></td><td>Layer 3 자기 진화 게이트 스켈레톤. 자동 patch 영구 금지.</td></tr>
+          <tr><td><code>upload_with_images.py</code> (v3.12)</td><td>네이버 블로그 SmartEditor 자동 발행. Home .welperion-naver-profile 의존.</td></tr>
+          <tr><td><code>instagram_upload_playwright.py</code></td><td>IG 자동 발행. Home .welperion-instagram-profile 의존.</td></tr>
+        </table>
+
+        <h4>역할별 접두어</h4>
+        <table>
+          <tr><th>접두어</th><th>영역</th></tr>
+          <tr><td><code>cmo_*.py</code></td><td>CMO 콘텐츠 가공·검수·발행 파이프라인</td></tr>
+          <tr><td><code>coo_*.py</code></td><td>COO 운영 이슈 알림</td></tr>
+          <tr><td><code>chro_*.py</code></td><td>CHRO HR 보고</td></tr>
+          <tr><td><code>cto_*.py</code></td><td>CTO 인프라 관리</td></tr>
+          <tr><td><code>ceo_*.py</code></td><td>CEO 통합 보고·인박스</td></tr>
+        </table>
+
+        <h4>_archive (보존, 30일 후 폐기 검토)</h4>
+        <ul>
+          <li><code>audit_20260523</code> — 무의미·불필요·중복 14개</li>
+          <li><code>desktop_legacy_20260523</code> — Desktop 배포 BAT 7개 (메인 통합 완료)</li>
+          <li><code>telegram_report_bot_20260523</code> — 폐기 봇 사본</li>
+        </ul>
+        <div class="callout fix"><strong>보안.</strong> 모든 키·토큰은 telegram_bot/.env SSOT (3 위치 HardLink). 평문 stdout 절대 금지.</div>
+      </div>
+
+      <div class="tab-panel" data-panel="paths">
+        <h3><span class="ico">📍</span>경로 표준화 (SSOT 확정)</h3>
+        <table>
+          <tr><th>구분</th><th>경로</th></tr>
+          <tr><td>프로젝트 루트</td><td><code>C:\Users\jjky0\welperion-automation</code></td></tr>
+          <tr><td>텔레그램 봇</td><td><code>C:\Users\jjky0\welperion-automation\telegram_bot\</code></td></tr>
+          <tr><td>스케줄러</td><td><code>...\telegram_bot\daily_scheduler.py</code></td></tr>
+          <tr><td>봇 본체</td><td><code>...\telegram_bot\bot.py</code></td></tr>
+          <tr><td>로그</td><td><code>...\telegram_bot\scheduler.log</code></td></tr>
+          <tr><td>상태 파일</td><td><code>...\telegram_bot\state.json</code></td></tr>
+          <tr><td>환경변수</td><td><code>...\telegram_bot\.env</code></td></tr>
+        </table>
+        <div class="callout"><strong>주의.</strong> 기획서 오표기 <code>Desktop\welperion-automation</code> → 실제 위치는 <code>C:\Users\jjky0\welperion-automation</code> (Desktop 아님).</div>
+      </div>
+
+      <div class="tab-panel" data-panel="archive">
+        <h3><span class="ico">💾</span>CTO 개발 아카이브 운영</h3>
+        <p>DB: [CTO] 개발 아카이브 &amp; 거버넌스 DB · 경로: (주)웰페리온 > 3. 운영 체계 > 보안/IT</p>
+
+        <h4>워크플로우</h4>
+        <div class="card accent">
+          <p>기획DB(승인) → 운영 아카이브(결과보고→유지보수) → 개발 아카이브(Done, 기술 SSOT)</p>
+        </div>
+
+        <h4>DB 스키마 (필수 속성)</h4>
+        <table>
+          <tr><th>속성</th><th>타입</th><th>설명</th></tr>
+          <tr><td>Name</td><td>title</td><td>건명</td></tr>
+          <tr><td>구분</td><td>select</td><td>거버넌스 정책 / 개발·배포 / 장애·핫픽스 / 인프라 변경</td></tr>
+          <tr><td>상태</td><td>status</td><td>Not started → In progress → Done</td></tr>
+          <tr><td>담당</td><td>multi_select</td><td>CTO + 협업 C레벨</td></tr>
+          <tr><td>버전</td><td>number</td><td>배포 버전</td></tr>
+          <tr><td>배포일</td><td>date</td><td>실제 배포 완료일</td></tr>
+          <tr><td>태그</td><td>multi_select</td><td>신규 개발·업데이트·버그 수정·인프라·보안·자동화·Notion·텔레그램 등</td></tr>
+          <tr><td>보안 등급</td><td>select</td><td>일반(공개) / 내부 / 기밀 / 제한</td></tr>
+        </table>
+
+        <h4>본문 표준 구조</h4>
+        <ol>
+          <li>무엇을 만들었나 (요약 + 산출물)</li>
+          <li>왜 만들었나 (원 기획 링크 + 해결한 문제)</li>
+          <li>어떻게 동작하나 (흐름 + 의존성)</li>
+          <li>배포 &amp; 검증 (방법 + 테스트 결과 + 롤백)</li>
+          <li>알려진 제한 &amp; 후속 과제</li>
+        </ol>
+
+        <h4>핵심 원칙</h4>
+        <ul>
+          <li>운영 아카이브 <code>유지보수</code> 전환 후에만 Done 기록 (장애·핫픽스는 예외 즉시 기록)</li>
+          <li>SSOT 유지: 기획DB=기획, 운영 아카이브=결과, 이 DB=기술. 중복 금지</li>
+          <li>토큰·비밀번호·API 키 본문 기재 절대 금지</li>
+          <li>태그 성실 기입 (필터링 핵심)</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="source">SSOT: CTO_개발아카이브_프롬프트.md + telegram_bot/_README.md + scripts/_README.md + docs/PATH_STANDARDIZATION.md 통합</div>
+    <div style="margin-top:22px; padding:13px 16px; background:#16181c; border-radius:8px; border-left:3px solid var(--accent);">
+      <div style="font-size:12px; font-weight:700; color:var(--accent); margin-bottom:6px;">&#9656; Claude CLI 셋업 프롬프트</div>
+      <pre style="margin:0; color:#e8e8e8; font-size:12.5px; white-space:pre-wrap; line-height:1.6;">가이드허브 ⑭ 기술 인프라 기준으로 텔레그램봇·스크립트·경로 상태를 점검하고 이상을 보고해줘.</pre>
+    </div>
+  </article>
+
+  <article class="doc" id="g17">
+    <div class="doc-header"><h2>⑮ COO 체크리스트 병합 — "오늘 할 일" 단일 뷰</h2><div class="meta">2026-05-25 GM 승인 · COO 운영 개선안 (A+B 조합)</div></div>
+    <p class="lead">현재 33개 체크리스트를 시간순 + 담당자 필터 단일 뷰로 병합. 텔레그램 자동 발송 + Notion 캘린더DB 상세 체크를 결합한 하이브리드 방식.</p>
+
+    <h3><span class="ico">📋</span>개선안 요약</h3>
+    <div class="grid-2">
+      <div class="card accent">
+        <h4>A. 텔레그램 자동 발송</h4>
+        <p>매일 <strong>06:00</strong> 핵심멤버방으로 "오늘 담당별 할 일 요약" 자동 발송. 출근 전 스마트폰에서 한눈에 확인.</p>
+      </div>
+      <div class="card accent">
+        <h4>B. Notion 캘린더DB 상세 체크</h4>
+        <p>클릭 체크 + 이슈 메모 + 사진 첨부. 리셉션 현장에서 실시간 기록.</p>
+      </div>
+    </div>
+
+    <h3><span class="ico">🔧</span>구현 상세</h3>
+    <table>
+      <tr><th style="width:200px">항목</th><th>내용</th></tr>
+      <tr><td>뷰 구조</td><td>33개 체크리스트를 시간순 + 담당자 필터로 단일 뷰 병합</td></tr>
+      <tr><td>자동 시드</td><td>매월 25일 09:00 다음 달 행 자동 생성 (COO 캘린더 시드 스크립트)</td></tr>
+      <tr><td>텔레그램 연동</td><td>@namuki_report_bot 핵심멤버방(-5065206276) 06:00 정시 발송</td></tr>
+      <tr><td>필요 개발</td><td>캘린더 시드 스크립트 + 텔레그램 봇 daily_scheduler 연동</td></tr>
+    </table>
+
+    <div class="callout fix"><strong>※ 복구 안내.</strong> 본 ⑰ 섹션은 외부 편집 중 파일이 잘려, 이 지점 이후 내용이 유실되었습니다. 필요 시 이어서 보강하세요.</div>
+    <div class="source">SSOT: COO 운영 개선안 (2026-05-25 GM 승인) · ⑩ 협업매뉴얼 COO 항목 연동</div>
+    <div style="margin-top:22px; padding:13px 16px; background:#16181c; border-radius:8px; border-left:3px solid var(--accent);">
+      <div style="font-size:12px; font-weight:700; color:var(--accent); margin-bottom:6px;">&#9656; Claude CLI 셋업 프롬프트</div>
+      <pre style="margin:0; color:#e8e8e8; font-size:12.5px; white-space:pre-wrap; line-height:1.6;">가이드허브 ⑮ COO 체크리스트를 '오늘 할 일' 단일 뷰로 정리하고 06:00 텔레그램 발송 형식으로 구성해줘.</pre>
+    </div>
+  </article>
+
+  <article class="doc" id="g18">
+    <div class="doc-header"><h2>⑯ 핵심 프롬프트</h2><div class="meta">복사·붙여넣기용 프롬프트 단일 모음 · Claude CLI 셋업</div></div>
+    <p class="lead">자주 쓰는 핵심 프롬프트를 한곳에 모은 페이지입니다. 각 블록을 Claude CLI에 그대로 붙여넣어 사용하세요.</p>
+
+    <h3><span class="ico">🔧</span>일일 컨텍스트 정비</h3>
+    <p>컨텍스트 정비 핵심 프롬프트(STEP 1~5 · 안전장치 3종)는 <strong>⑥ 컨텍스트 정비 작업 ▸ ⑤ 핵심 프롬프트</strong> 탭에서 관리됩니다(SSOT — 한 곳에서만). 또는 <code>python scripts/context_maintenance.py</code> 실행 — STEP 1~5 진단(v2)을 자동 수행해 정비 제안서를 생성.</p>
+
+    <h3><span class="ico">🚀</span>AI 고도화 프롬프트 7종</h3>
+    <p>출처: Code with Claude — London 2026 TOP 5. 1·3번은 핵심 행동 → 7번으로 CLAUDE.md에 영구 박제 권장.</p>
+    <h4>1. 검증 루프 — 지켜보지 않아도 알아서 일하게</h4>
+    <pre style="background:#16181c; color:#e8e8e8; padding:14px 16px; border-radius:8px; font-size:13px; white-space:pre-wrap; line-height:1.7; border-left:3px solid var(--accent); overflow-x:auto;">앞으로 모든 작업을 "검증 루프" 방식으로 진행해줘.
+1. 작업 시작 전에 "무엇이 나오면 성공인지" 성공 기준을 먼저 정의해 알려줘.
+2. 작업을 실행한 뒤, 네가 직접 결과를 확인해.
+3. 실패하면 에러 원인을 분석해 고치고 다시 시도해.
+4. 성공할 때까지 반복하되, 3회 시도 후에도 안 되면 진행 상황을 정리해 보고해.
+5. 중간 과정은 생략하고 최종 결과만 보고해.
+이 방식을 이번 세션 내내 기본 작업 규칙으로 적용해줘.</pre>
+    <h4>2. 검증 루프 영구화 (Skill로 패키지화)</h4>
+    <pre style="background:#16181c; color:#e8e8e8; padding:14px 16px; border-radius:8px; font-size:13px; white-space:pre-wrap; line-height:1.7; border-left:3px solid var(--accent); overflow-x:auto;">방금 적용한 검증 루프를 재사용 가능한 Skill로 만들어줘.
+- 스킬 이름: verification-loop
+- 앞으로 모든 작업에서 이 스킬이 자동 적용되도록 설정해줘.
+- 작업 중 반복되는 실패 패턴이 발견되면 이 스킬을 스스로 보완·업데이트해줘.</pre>
+    <h4>3. 에러 자가복구 루프</h4>
+    <pre style="background:#16181c; color:#e8e8e8; padding:14px 16px; border-radius:8px; font-size:13px; white-space:pre-wrap; line-height:1.7; border-left:3px solid var(--accent); overflow-x:auto;">앞으로 에러가 발생하면 다음 순서로 스스로 처리해줘.
+1. 에러 메시지를 끝까지 읽고 — 무슨 에러인지 / 어느 파일·어디서 났는지 / 어떻게 고치는지 파악해.
+2. 파악한 해결책을 바로 실행해 수정해.
+3. 최대 3회까지 자가 수정을 시도해.
+4. 3회 후에도 해결되지 않으면 그때 정확한 상황(에러 내용·시도한 것·막힌 지점)을 보고해.
+그리고 우리 코드에서 에러를 출력하는 부분은, 앞으로 "에러 종류 / 위치(파일·줄) / 해결 방법"이 함께 담기도록 점진적으로 개선해줘.</pre>
+    <h4>4. 폴더별 CLAUDE.md 분산 정비</h4>
+    <pre style="background:#16181c; color:#e8e8e8; padding:14px 16px; border-radius:8px; font-size:13px; white-space:pre-wrap; line-height:1.7; border-left:3px solid var(--accent); overflow-x:auto;">우리 프로젝트를 "폴더별 작업 매뉴얼" 구조로 정비해줘.
+거대한 단일 CLAUDE.md 하나에 모든 규칙을 담는 대신, 작업 폴더마다 그 폴더 작업에만 해당하는 규칙을 담은 CLAUDE.md를 두는 방식이야.
+1. 먼저 어떤 폴더에 전용 CLAUDE.md가 필요한지, 각 폴더에 어떤 규칙이 들어가면 좋을지 목록으로 제안해줘.
+2. 내가 승인하면 그때 각 폴더에 CLAUDE.md를 생성해줘.
+루트 CLAUDE.md에는 전사 공통 규칙만 남기는 방향으로.</pre>
+    <h4>5. 역할 기반 에이전트 점검 (split-brain 방지)</h4>
+    <pre style="background:#16181c; color:#e8e8e8; padding:14px 16px; border-radius:8px; font-size:13px; white-space:pre-wrap; line-height:1.7; border-left:3px solid var(--accent); overflow-x:auto;">우리 AI 에이전트(7 C-Level) 구성이 "역할 단위로 완결되어 있는지" 점검해줘.
+- 한 업무를 여러 에이전트가 조각내어 나눠 가져 서로 맥락을 모르는 split-brain 구조가 있으면 찾아내줘.
+- 각 에이전트가 자기 담당 영역 안에서는 모든 것을 완결적으로 책임지는 구조인지 확인해줘.
+- 에이전트에게 일을 위임할 때 항상 전체 컨텍스트(기획·목적·톤·대상)를 함께 넘기는지 확인해줘.
+문제가 있으면 재설계 방안을 제안하고, 실제 수정은 내 승인 후 진행해줘.</pre>
+    <h4>6. 메모리 정착 — 세션이 끊겨도 학습 유지</h4>
+    <pre style="background:#16181c; color:#e8e8e8; padding:14px 16px; border-radius:8px; font-size:13px; white-space:pre-wrap; line-height:1.7; border-left:3px solid var(--accent); overflow-x:auto;">이 프로젝트에서 반복되는 결정·규칙·내 작업 스타일·자주 하는 요청을 파악해서, 다음 세션에도 이어지도록 메모리에 정리해 저장해줘.
+1. 먼저 /memory 로 현재 저장된 내용을 보여줘.
+2. 빠졌거나 오래된 내용이 있으면 보완·갱신해줘.
+3. 앞으로도 "미래에 기억해두면 좋을 것"이 생기면 스스로 판단해 메모리에 추가해줘.</pre>
+    <h4>7. 핵심 규칙 영구화</h4>
+    <pre style="background:#16181c; color:#e8e8e8; padding:14px 16px; border-radius:8px; font-size:13px; white-space:pre-wrap; line-height:1.7; border-left:3px solid var(--accent); overflow-x:auto;">검증 루프와 에러 자가복구 규칙을 우리 프로젝트 루트 CLAUDE.md의 "토큰·실행 효율 규칙" 섹션 아래에 영구 규칙으로 추가해줘. 기존 내용은 유지하고, 적용 전 원본을 백업해줘.</pre>
+    <div class="card" style="margin-top:20px; border-left:3px solid var(--warm);">
+      <strong>⚠️ GM 목표 반영</strong> — GM은 "깊게 생각·병렬·자동화"를 우선한다. '비용 절감' 항목의 <code>MAX_THINKING_TOKENS 낮추기</code>는 사고량을 줄이므로 <strong>적용하지 않는다.</strong> 작업량은 "매우 높음" 유지.
+    </div>
+    <p style="font-size:13px; color:var(--dim);">※ 각 섹션 하단에는 그 섹션 전용 'Claude CLI 셋업 프롬프트'가 따로 있습니다.</p>
+    <div class="source">SSOT: 핵심 프롬프트 단일 모음 (정비·고도화 프롬프트 통합)</div>
+  </article>
+</main>
+</div>
+
+<script>
+  // 메인 가이드 전환
+  const mainLinks = document.querySelectorAll('.nav > a[data-doc]');
+  const docs = document.querySelectorAll('.doc');
+  const subNavs = document.querySelectorAll('.sub-nav');
+
+  function activateDoc(id, tabName) {
+    docs.forEach(d => d.classList.toggle('active', d.id === id));
+    mainLinks.forEach(l => l.classList.toggle('active', l.getAttribute('data-doc') === id));
+    if (tabName) {
+      const tabsContainer = document.querySelector(`.tabs[data-tabs="${id}"]`);
+      if (tabsContainer) {
+        tabsContainer.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.getAttribute('data-tab') === tabName));
+        tabsContainer.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.getAttribute('data-panel') === tabName));
+      }
+    }
+    // sub-link active 표시
+    document.querySelectorAll('.sub-nav a').forEach(sa => {
+      sa.classList.toggle('active', sa.getAttribute('data-doc') === id && sa.getAttribute('data-tab') === tabName);
+    });
+    window.scrollTo(0, 0);
+  }
+
+  // 메인 메뉴 클릭 — 하위 메뉴 열기/닫기 토글 (한 번 클릭 열림, 다시 클릭 닫힘)
+  document.querySelectorAll('.nav > a[data-doc]').forEach(link => {
+    link.addEventListener('click', e => {
+      e.preventDefault();
+      const id = link.getAttribute('data-doc');
+      const subNav = document.querySelector(`.sub-nav[data-parent="${id}"]`);
+      const willOpen = subNav && !subNav.classList.contains('open');
+      subNavs.forEach(sn => sn.classList.remove('open'));
+      if (willOpen) subNav.classList.add('open');
+      activateDoc(id, null);
+    });
+  });
+
+  // 하위 메뉴 클릭 — 해당 탭으로 이동, 부모 하위 메뉴는 열린 상태 유지
+  document.querySelectorAll('.sub-nav a').forEach(link => {
+    link.addEventListener('click', e => {
+      e.preventDefault();
+      const id = link.getAttribute('data-doc');
+      const tab = link.getAttribute('data-tab');
+      subNavs.forEach(sn => sn.classList.toggle('open', sn.getAttribute('data-parent') === id));
+      activateDoc(id, tab);
+    });
+  });
+
+  // 본문 탭 클릭
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const tabName = btn.getAttribute('data-tab');
+      const tabsContainer = btn.closest('.tabs');
+      tabsContainer.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      tabsContainer.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+      btn.classList.add('active');
+      tabsContainer.querySelector(`.tab-panel[data-panel="${tabName}"]`).classList.add('active');
+    });
+  });
+
+  // 인쇄 시 모든 아코디언 펼치기 → 인쇄 후 원래대로 복원
+  window.addEventListener('beforeprint', () => {
+    document.querySelectorAll('details.acc-item').forEach(d => {
+      if (!d.open) { d.dataset.wasClosed = '1'; d.open = true; }
+    });
+  });
+  window.addEventListener('afterprint', () => {
+    document.querySelectorAll('details.acc-item').forEach(d => {
+      if (d.dataset.wasClosed) { d.open = false; delete d.dataset.wasClosed; }
+    });
+  });
+</script>
+</body>
+</html>
