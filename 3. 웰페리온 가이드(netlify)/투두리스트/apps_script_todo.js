@@ -1,0 +1,493 @@
+// 웰페리온 GM TODO 전용 Apps Script
+// apps_script_v3.js(체크리스트)와 완전 독립 — 의존성 없음
+// 시트: TODO | 헤더 14열
+// CRUD + 파일 업로드(Base64→Drive) + 텔레그램 알림(선택)
+
+// ─── 상수 ───
+const TODO_SHEET = 'TODO';
+
+const TODO_HEADERS = [
+  'id', '업무명', '카테고리', '담당자',
+  '시작일', '종료일', '내용', '상태',
+  '결재요청', '링크', '파일URL',
+  '생성자', '생성일', '수정일'
+];
+
+// 카테고리 목록
+const CATEGORIES = [
+  '[1]매출및영업',
+  '[2]인사&파트너',
+  '[3]운영정책',
+  '[4]시설및환경',
+  '[5]3대비전',
+  '[6]회장님하달'
+];
+
+// 상태 목록 + 셀 색상
+const STATUS_COLORS = {
+  '진행중': '#4285f4', // 파랑
+  '완료':   '#34a853', // 초록
+  '보류':   '#9e9e9e'  // 회색
+};
+
+// ─── ScriptProperties 헬퍼 ───
+function _prop(key) {
+  return PropertiesService.getScriptProperties().getProperty(key) || '';
+}
+
+// ─── 시트 초기화 ───
+function initTodoSheet() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let sh = ss.getSheetByName(TODO_SHEET);
+  if (sh) return sh;
+
+  sh = ss.insertSheet(TODO_SHEET);
+  // 헤더 기입
+  sh.getRange(1, 1, 1, TODO_HEADERS.length).setValues([TODO_HEADERS]);
+  sh.getRange(1, 1, 1, TODO_HEADERS.length)
+    .setFontWeight('bold')
+    .setBackground('#1a73e8')
+    .setFontColor('#ffffff');
+
+  // 컬럼 폭 설정 (px)
+  const widths = [130, 200, 130, 80, 100, 100, 300, 70, 70, 200, 200, 80, 130, 130];
+  widths.forEach((w, i) => sh.setColumnWidth(i + 1, w));
+
+  // 첫 행 고정
+  sh.setFrozenRows(1);
+
+  return sh;
+}
+
+// ─── 유틸 ───
+function _now() {
+  return Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy-MM-dd HH:mm:ss');
+}
+
+function _today() {
+  return Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy-MM-dd');
+}
+
+// 타임스탬프 기반 ID 생성 (TODO-yyyyMMddHHmmssSSS)
+function _genId() {
+  return 'TODO-' + Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyyMMddHHmmss')
+    + ('000' + new Date().getMilliseconds()).slice(-3);
+}
+
+// 시트 데이터 → 객체 배열
+function _readAll(sh) {
+  const last = sh.getLastRow();
+  if (last < 2) return [];
+  const data = sh.getRange(2, 1, last - 1, TODO_HEADERS.length).getValues();
+  return data.map(row => {
+    const obj = {};
+    TODO_HEADERS.forEach((h, i) => { obj[h] = row[i]; });
+    return obj;
+  });
+}
+
+// ID로 행 번호 찾기 (1-based, 헤더 포함)
+function _findRow(sh, id) {
+  const last = sh.getLastRow();
+  if (last < 2) return -1;
+  const ids = sh.getRange(2, 1, last - 1, 1).getValues();
+  for (let i = 0; i < ids.length; i++) {
+    if (String(ids[i][0]) === String(id)) return i + 2;
+  }
+  return -1;
+}
+
+// 상태 셀 색상 적용
+function _applyStatusColor(sh, row, status) {
+  const colIdx = TODO_HEADERS.indexOf('상태') + 1;
+  const color = STATUS_COLORS[status] || '#ffffff';
+  sh.getRange(row, colIdx).setBackground(color).setFontColor('#ffffff');
+}
+
+// TODO_완료 시트에 완료 건 복사
+function _copyToDoneSheet(srcSheet, srcRow) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const DONE_SHEET_NAME = 'TODO_완료';
+  let doneSh = ss.getSheetByName(DONE_SHEET_NAME);
+
+  // 시트가 없으면 자동 생성
+  if (!doneSh) {
+    doneSh = ss.insertSheet(DONE_SHEET_NAME);
+    // 헤더 + 완료일 컬럼 추가
+    const headers = TODO_HEADERS.concat(['완료일']);
+    doneSh.getRange(1, 1, 1, headers.length).setValues([headers]);
+    doneSh.getRange(1, 1, 1, headers.length)
+      .setFontWeight('bold')
+      .setBackground('#34a853')
+      .setFontColor('#ffffff');
+    const widths = [130, 200, 130, 80, 100, 100, 300, 70, 70, 200, 200, 80, 130, 130, 130];
+    widths.forEach((w, i) => { if (i < headers.length) doneSh.setColumnWidth(i + 1, w); });
+    doneSh.setFrozenRows(1);
+  }
+
+  // 원본 행 데이터 읽기
+  const rowData = srcSheet.getRange(srcRow, 1, 1, TODO_HEADERS.length).getValues()[0];
+  // 완료일 추가
+  rowData.push(_now());
+
+  // 완료 시트에 추가
+  const newRow = doneSh.getLastRow() + 1;
+  doneSh.getRange(newRow, 1, 1, rowData.length).setValues([rowData]);
+  // 상태 셀 녹색 표시
+  const statusCol = TODO_HEADERS.indexOf('상태') + 1;
+  doneSh.getRange(newRow, statusCol).setBackground('#34a853').setFontColor('#ffffff');
+}
+
+// ─── CORS JSON 응답 ───
+function _json(obj) {
+  return ContentService
+    .createTextOutput(JSON.stringify(obj))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+// ─── 텔레그램 알림 (선택) ───
+function _notifyTelegram(text) {
+  const token = _prop('BOT_TOKEN') || _prop('TELEGRAM_BOT_TOKEN');
+  const chatId = _prop('CHAT_ID') || _prop('TELEGRAM_CHAT_ID');
+  if (!token || !chatId) return; // 설정 없으면 스킵
+
+  try {
+    const url = 'https://api.telegram.org/bot' + token + '/sendMessage';
+    UrlFetchApp.fetch(url, {
+      method: 'post',
+      contentType: 'application/json',
+      payload: JSON.stringify({
+        chat_id: chatId,
+        text: text,
+        parse_mode: 'HTML'
+      }),
+      muteHttpExceptions: true
+    });
+  } catch (e) {
+    // 알림 실패해도 본 기능에 영향 없음
+    Logger.log('텔레그램 알림 실패: ' + e.message);
+  }
+}
+
+// ─── 파일 업로드 (Base64 → Drive) ───
+function _uploadFile(base64, fileName, mimeType) {
+  // 폴더 ID 조회 또는 자동 생성
+  let folderId = _prop('TODO_FILES_FOLDER');
+  let folder;
+
+  if (folderId) {
+    try {
+      folder = DriveApp.getFolderById(folderId);
+    } catch (e) {
+      folder = null;
+    }
+  }
+
+  if (!folder) {
+    // 루트에 'TODO_Files' 폴더 생성
+    const existing = DriveApp.getRootFolder().getFoldersByName('TODO_Files');
+    if (existing.hasNext()) {
+      folder = existing.next();
+    } else {
+      folder = DriveApp.getRootFolder().createFolder('TODO_Files');
+    }
+    // 폴더 ID 저장
+    PropertiesService.getScriptProperties().setProperty('TODO_FILES_FOLDER', folder.getId());
+  }
+
+  const blob = Utilities.newBlob(
+    Utilities.base64Decode(base64),
+    mimeType || 'application/octet-stream',
+    fileName || 'upload_' + _now().replace(/[: ]/g, '_')
+  );
+  const file = folder.createFile(blob);
+  file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+  return file.getUrl();
+}
+
+// ═══════════════════════════════════════════
+//  doGet — 조회
+// ═══════════════════════════════════════════
+function doGet(e) {
+  try {
+    const action = (e && e.parameter && e.parameter.action) || '';
+
+    if (action === 'todo_list') {
+      const sh = initTodoSheet();
+      let items = _readAll(sh);
+
+      // owner 필터 (선택)
+      const owner = e.parameter.owner || '';
+      if (owner) {
+        items = items.filter(r => String(r['담당자']) === owner);
+      }
+
+      // 상태 필터 (선택)
+      const status = e.parameter.status || '';
+      if (status) {
+        items = items.filter(r => String(r['상태']) === status);
+      }
+
+      // 카테고리 필터 (선택)
+      const cat = e.parameter.category || '';
+      if (cat) {
+        items = items.filter(r => String(r['카테고리']) === cat);
+      }
+
+      return _json({ ok: true, count: items.length, data: items });
+    }
+
+    // 카테고리 목록 조회
+    if (action === 'todo_categories') {
+      return _json({ ok: true, data: CATEGORIES });
+    }
+
+    // POST redirect 우회: URL에 todo_ write action이 오면 doPost 로직 실행
+    if (action.startsWith('todo_')) {
+      const body = {};
+      Object.keys(e.parameter).forEach(k => body[k] = e.parameter[k]);
+      if (e.postData && e.postData.contents) {
+        try { const pb = JSON.parse(e.postData.contents); Object.keys(pb).forEach(k => body[k] = pb[k]); } catch(ignored){}
+      }
+      body.action = action;
+      return _processTodoAction(body);
+    }
+
+    return _json({ ok: false, error: '알 수 없는 action: ' + action });
+  } catch (err) {
+    return _json({ ok: false, error: err.message });
+  }
+}
+
+// ═══════════════════════════════════════════
+//  doPost — 추가 / 수정 / 삭제 / 완료 / 업로드
+// ═══════════════════════════════════════════
+// 영문 → 한글 필드 매핑
+function _mapFields(body) {
+  const map = {title:'업무명',name:'업무명',category:'카테고리',owner:'담당자',startDate:'시작일',endDate:'종료일',content:'내용',status:'상태',approval:'결재요청',link:'링크',fileUrl:'파일URL',creator:'생성자'};
+  Object.keys(map).forEach(en => { if (body[en] !== undefined && !body[map[en]]) body[map[en]] = body[en]; });
+  return body;
+}
+
+// TODO action 처리 (doGet/doPost 공용)
+function _processTodoAction(body) {
+  body = _mapFields(body);
+  const action = body.action || '';
+
+    // ─── 새 업무 추가 ───
+    if (action === 'todo_add') {
+      const sh = initTodoSheet();
+      const id = _genId();
+      const now = _now();
+      const row = [
+        id,
+        body['업무명'] || '',
+        body['카테고리'] || '',
+        body['담당자'] || '',
+        body['시작일'] || _today(),
+        body['종료일'] || '',
+        body['내용'] || '',
+        body['상태'] || '진행중',
+        body['결재요청'] || '',
+        body['링크'] || '',
+        body['파일URL'] || '',
+        body['생성자'] || '',
+        now, now
+      ];
+      const newRow = sh.getLastRow() + 1;
+      sh.getRange(newRow, 1, 1, row.length).setValues([row]);
+      _applyStatusColor(sh, newRow, row[7]);
+      _notifyTelegram('📋 <b>[TODO 신규]</b>\n업무명: '+(body['업무명']||'-')+'\n카테고리: '+(body['카테고리']||'-')+'\n담당자: '+(body['담당자']||'-')+'\nID: '+id);
+      return _json({ ok: true, id: id, message: '업무가 추가되었습니다.' });
+    }
+
+    // ─── 수정 ───
+    if (action === 'todo_update') {
+      const sh = initTodoSheet();
+      const id = body.id;
+      if (!id) return _json({ ok: false, error: 'id 필수' });
+      const rowNum = _findRow(sh, id);
+      if (rowNum < 0) return _json({ ok: false, error: '해당 ID를 찾을 수 없습니다: ' + id });
+      const existing = sh.getRange(rowNum, 1, 1, TODO_HEADERS.length).getValues()[0];
+      TODO_HEADERS.forEach((h, i) => {
+        if (h === 'id' || h === '생성일' || h === '생성자') return;
+        if (body[h] !== undefined && body[h] !== null) existing[i] = body[h];
+      });
+      existing[TODO_HEADERS.indexOf('수정일')] = _now();
+      sh.getRange(rowNum, 1, 1, TODO_HEADERS.length).setValues([existing]);
+      _applyStatusColor(sh, rowNum, existing[TODO_HEADERS.indexOf('상태')]);
+      return _json({ ok: true, id: id, message: '업무가 수정되었습니다.' });
+    }
+
+    // ─── 삭제 ───
+    if (action === 'todo_delete') {
+      const sh = initTodoSheet();
+      const id = body.id;
+      if (!id) return _json({ ok: false, error: 'id 필수' });
+      const rowNum = _findRow(sh, id);
+      if (rowNum < 0) return _json({ ok: false, error: '해당 ID를 찾을 수 없습니다: ' + id });
+      sh.deleteRow(rowNum);
+      return _json({ ok: true, id: id, message: '업무가 삭제되었습니다.' });
+    }
+
+    // ─── 완료 ───
+    if (action === 'todo_done') {
+      const sh = initTodoSheet();
+      const id = body.id;
+      if (!id) return _json({ ok: false, error: 'id 필수' });
+      const rowNum = _findRow(sh, id);
+      if (rowNum < 0) return _json({ ok: false, error: '해당 ID를 찾을 수 없습니다: ' + id });
+
+      // 상태 '완료'로 변경
+      const statusCol = TODO_HEADERS.indexOf('상태') + 1;
+      const modCol = TODO_HEADERS.indexOf('수정일') + 1;
+      sh.getRange(rowNum, statusCol).setValue('완료');
+      sh.getRange(rowNum, modCol).setValue(_now());
+      _applyStatusColor(sh, rowNum, '완료');
+
+      // TODO_완료 시트에 복사
+      _copyToDoneSheet(sh, rowNum);
+
+      return _json({ ok: true, id: id, message: '업무가 완료되었습니다.' });
+    }
+
+    return _json({ ok: false, error: '알 수 없는 action: ' + action });
+}
+
+function doPost(e) {
+  try {
+    const body = JSON.parse(e.postData.contents);
+    return _processTodoAction(body);
+
+    // ─── 새 업무 추가 ───
+    if (action === 'todo_add') {
+      const sh = initTodoSheet();
+      const id = _genId();
+      const now = _now();
+
+      const row = [
+        id,
+        body['업무명'] || '',
+        body['카테고리'] || '',
+        body['담당자'] || '',
+        body['시작일'] || _today(),
+        body['종료일'] || '',
+        body['내용'] || '',
+        body['상태'] || '진행중',
+        body['결재요청'] || '',
+        body['링크'] || '',
+        body['파일URL'] || '',
+        body['생성자'] || '',
+        now,  // 생성일
+        now   // 수정일
+      ];
+
+      const newRow = sh.getLastRow() + 1;
+      sh.getRange(newRow, 1, 1, row.length).setValues([row]);
+      _applyStatusColor(sh, newRow, row[7]);
+
+      // 텔레그램 알림
+      _notifyTelegram(
+        '📋 <b>[TODO 신규]</b>\n'
+        + '업무명: ' + (body['업무명'] || '-') + '\n'
+        + '카테고리: ' + (body['카테고리'] || '-') + '\n'
+        + '담당자: ' + (body['담당자'] || '-') + '\n'
+        + 'ID: ' + id
+      );
+
+      return _json({ ok: true, id: id, message: '업무가 추가되었습니다.' });
+    }
+
+    // ─── 수정 ───
+    if (action === 'todo_update') {
+      const sh = initTodoSheet();
+      const id = body.id;
+      if (!id) return _json({ ok: false, error: 'id 필수' });
+
+      const rowNum = _findRow(sh, id);
+      if (rowNum < 0) return _json({ ok: false, error: '해당 ID를 찾을 수 없습니다: ' + id });
+
+      const existing = sh.getRange(rowNum, 1, 1, TODO_HEADERS.length).getValues()[0];
+
+      // 전달된 필드만 덮어쓰기
+      TODO_HEADERS.forEach((h, i) => {
+        if (h === 'id' || h === '생성일' || h === '생성자') return; // 불변 필드
+        if (body[h] !== undefined && body[h] !== null) {
+          existing[i] = body[h];
+        }
+      });
+      // 수정일 갱신
+      existing[TODO_HEADERS.indexOf('수정일')] = _now();
+
+      sh.getRange(rowNum, 1, 1, TODO_HEADERS.length).setValues([existing]);
+      _applyStatusColor(sh, rowNum, existing[TODO_HEADERS.indexOf('상태')]);
+
+      return _json({ ok: true, id: id, message: '업무가 수정되었습니다.' });
+    }
+
+    // ─── 삭제 ───
+    if (action === 'todo_delete') {
+      const sh = initTodoSheet();
+      const id = body.id;
+      if (!id) return _json({ ok: false, error: 'id 필수' });
+
+      const rowNum = _findRow(sh, id);
+      if (rowNum < 0) return _json({ ok: false, error: '해당 ID를 찾을 수 없습니다: ' + id });
+
+      sh.deleteRow(rowNum);
+      return _json({ ok: true, id: id, message: '업무가 삭제되었습니다.' });
+    }
+
+    // ─── 완료 처리 ───
+    if (action === 'todo_done') {
+      const sh = initTodoSheet();
+      const id = body.id;
+      if (!id) return _json({ ok: false, error: 'id 필수' });
+
+      const rowNum = _findRow(sh, id);
+      if (rowNum < 0) return _json({ ok: false, error: '해당 ID를 찾을 수 없습니다: ' + id });
+
+      const statusCol = TODO_HEADERS.indexOf('상태') + 1;
+      const modCol = TODO_HEADERS.indexOf('수정일') + 1;
+
+      sh.getRange(rowNum, statusCol).setValue('완료');
+      sh.getRange(rowNum, modCol).setValue(_now());
+      _applyStatusColor(sh, rowNum, '완료');
+
+      return _json({ ok: true, id: id, message: '업무가 완료 처리되었습니다.' });
+    }
+
+    // ─── 파일 업로드 ───
+    if (action === 'todo_upload') {
+      const id = body.id;
+      const base64 = body.file;
+      const fileName = body.fileName || '';
+      const mimeType = body.mimeType || 'application/octet-stream';
+
+      if (!base64) return _json({ ok: false, error: 'file(Base64) 필수' });
+
+      // Drive에 파일 저장
+      const fileUrl = _uploadFile(base64, fileName, mimeType);
+
+      // id가 있으면 해당 TODO의 파일URL 필드에 추가
+      if (id) {
+        const sh = initTodoSheet();
+        const rowNum = _findRow(sh, id);
+        if (rowNum > 0) {
+          const fileColIdx = TODO_HEADERS.indexOf('파일URL') + 1;
+          const modColIdx = TODO_HEADERS.indexOf('수정일') + 1;
+          const current = sh.getRange(rowNum, fileColIdx).getValue() || '';
+          const updated = current ? current + '\n' + fileUrl : fileUrl;
+          sh.getRange(rowNum, fileColIdx).setValue(updated);
+          sh.getRange(rowNum, modColIdx).setValue(_now());
+        }
+      }
+
+      return _json({ ok: true, url: fileUrl, message: '파일이 업로드되었습니다.' });
+    }
+
+    return _json({ ok: false, error: '알 수 없는 action: ' + action });
+  } catch (err) {
+    return _json({ ok: false, error: err.message });
+  }
+}

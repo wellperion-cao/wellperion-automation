@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>웰페리온 가이드 허브 v1.4</title>
+<title>웰페리온 가이드 허브 v2.4</title>
 <style>
   :root{
     --bg:#221F20; --paper:#2a2725; --sidebar:#1a1817;
@@ -145,7 +145,8 @@
     background:var(--paper); border:1px solid var(--border); border-radius:10px;
     padding:16px 18px; margin:8px 0; transition:border-color 0.15s, box-shadow 0.15s;
   }
-  .task-card:hover{border-color:var(--accent-line); box-shadow:0 2px 8px rgba(183,159,138,0.15);}
+  .task-card:hover{box-shadow:0 2px 8px rgba(183,159,138,0.15);}
+  .task-card:not([style*="border-left"]):hover{border-color:var(--accent-line);}
   .task-card .task-title{font-weight:700; font-size:14.5px; margin-bottom:4px; display:flex; align-items:center; gap:6px;}
   .task-card .task-meta{font-size:12.5px; color:var(--dim); display:flex; gap:14px; flex-wrap:wrap;}
   .task-card .task-meta span{display:flex; align-items:center; gap:4px;}
@@ -174,7 +175,58 @@
   /* 컬러 스와치 */
   .color-swatch{display:inline-block; width:20px; height:20px; border-radius:4px; vertical-align:middle; margin-right:6px; border:1px solid var(--border);}
 
-  /* 아코디언 (GM TO DO LIST) — 클릭 시 펼침/접힘 */
+  /* TODO 멀티유저 추가 UI */
+  .todo-user-bar{display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap;}
+  .todo-user-select{
+    background:var(--bg);border:1px solid var(--accent);color:var(--accent);
+    padding:6px 12px;border-radius:8px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;
+  }
+  .todo-user-select:focus{outline:2px solid var(--accent);outline-offset:2px;}
+  .todo-add-btn{
+    display:inline-flex;align-items:center;gap:5px;padding:7px 16px;
+    background:var(--accent);color:#fff;border:none;border-radius:8px;
+    font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;transition:background 0.12s;
+  }
+  .todo-add-btn:hover{background:var(--accent-hover);}
+  .todo-modal-overlay{
+    position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.55);
+    z-index:200;display:flex;align-items:center;justify-content:center;animation:fadeIn 0.15s ease-out;
+  }
+  .todo-modal{
+    background:var(--paper);border:1px solid var(--accent);border-radius:16px;
+    padding:28px;width:460px;max-width:92vw;max-height:88vh;overflow-y:auto;
+    box-shadow:0 12px 40px rgba(0,0,0,0.5);
+  }
+  .todo-modal h3{margin:0 0 18px;font-size:18px;border:none;padding:0;}
+  .todo-modal label{display:block;font-size:12px;font-weight:700;color:var(--accent);margin:12px 0 4px;}
+  .todo-modal label:first-of-type{margin-top:0;}
+  .todo-modal input[type="text"],.todo-modal input[type="date"],.todo-modal textarea,.todo-modal select{
+    width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);
+    padding:9px 12px;border-radius:8px;font-size:14px;font-family:inherit;
+  }
+  .todo-modal textarea{resize:vertical;min-height:60px;}
+  .todo-modal .modal-row{display:flex;gap:10px;}
+  .todo-modal .modal-row>*{flex:1;}
+  .todo-modal .modal-actions{display:flex;gap:8px;margin-top:18px;}
+  .todo-modal .modal-actions button{flex:1;padding:10px;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;border:none;}
+  .todo-modal .btn-save{background:var(--accent);color:#fff;}
+  .todo-modal .btn-cancel{background:var(--bg);color:var(--dim);border:1px solid var(--border)!important;}
+  .todo-modal .owner-check-list{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px;}
+  .todo-modal .owner-check-item{
+    padding:6px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;
+    font-weight:600;cursor:pointer;background:var(--bg);color:var(--dim);transition:all 0.12s;
+  }
+  .todo-modal .owner-check-item.selected{background:var(--accent-bg);border-color:var(--accent);color:var(--accent);}
+  .badge.sheets{background:rgba(106,191,123,0.2);color:var(--grow);font-size:10px;}
+  .task-card .todo-actions{display:flex;gap:4px;margin-left:auto;}
+  .task-card .todo-act-btn{
+    padding:3px 8px;font-size:11px;font-weight:600;border-radius:6px;cursor:pointer;
+    font-family:inherit;border:1px solid var(--border);background:var(--bg);color:var(--dim);transition:all 0.12s;
+  }
+  .task-card .todo-act-btn:hover{border-color:var(--accent);color:var(--accent);}
+  .task-card .todo-act-btn.del:hover{border-color:var(--warm);color:var(--warm);}
+
+  /* 아코디언 (TO DO LIST) — 클릭 시 펼침/접힘 */
   .acc-list{margin:18px 0;}
   details.acc-item{margin:8px 0; border:1px solid var(--border); border-radius:10px; background:var(--paper);}
   details.acc-item>summary{cursor:pointer; padding:13px 18px; display:flex; align-items:center; gap:8px; list-style:none;}
@@ -227,8 +279,8 @@
 
 <aside class="sidebar">
   <div class="brand">
-    <h1>웰페리온 가이드 허브 v1.4</h1>
-    <div class="sub">알아두면 좋은 것들을 한곳에</div>
+    <h1>웰페리온 가이드 허브 v2.3</h1>
+    <div class="sub">웰페리온 자동화 운영의 모든 것</div>
   </div>
 
   <div class="nav-label">시작하기</div>
@@ -237,74 +289,52 @@
     <a data-doc="update"><span class="num">📝</span><span class="label">업데이트 방법<span class="tag">GM 직접 또는 Claude 부탁</span></span></a>
   </nav>
 
-  <div class="nav-label">시스템 가이드</div>
+  <div class="nav-label">운영 · 정책</div>
   <nav class="nav">
     <a data-doc="g1"><span class="num">①</span><span class="label">Claude 설정 폴더<span class="tag">설정이 어디에 무슨 용도로</span></span></a>
     <a data-doc="g2"><span class="num">②</span><span class="label">자동화 시스템 구조<span class="tag">3 영역 + 사용자 3 채널</span></span></a>
-  </nav>
-
-  <div class="nav-label">정책 · 전략 SSOT</div>
-  <nav class="nav">
-    <a data-doc="g4" data-has-sub="true"><span class="num">③</span><span class="label">3대 원칙 프레임워크<span class="tag">탭: PSP · 4원칙 · 시작과 끝</span></span></a>
+    <a data-doc="g4" data-has-sub="true"><span class="num">③</span><span class="label">3대 원칙 프레임워크<span class="tag">PSP · 4원칙 · 시작과 끝</span></span></a>
     <div class="sub-nav" data-parent="g4">
       <a data-doc="g4" data-tab="psp">PSP 프레임워크</a>
       <a data-doc="g4" data-tab="rules">작성·경로 4원칙</a>
       <a data-doc="g4" data-tab="flow">시작과 끝</a>
       <a data-doc="g4" data-tab="kit">에이전트 키트</a>
     </div>
-    <a data-doc="g5"><span class="num">④</span><span class="label">GM 전략 로드맵<span class="tag">6단계 (토글로 펼침)</span></span></a>
-    <a data-doc="g6" data-has-sub="true"><span class="num">⑤</span><span class="label">용어 사전<span class="tag">탭: 문서·조직·시스템·운영</span></span></a>
+    <a data-doc="g6" data-has-sub="true"><span class="num">④</span><span class="label">용어 사전<span class="tag">문서·조직·시스템·운영·파일확장자</span></span></a>
     <div class="sub-nav" data-parent="g6">
       <a data-doc="g6" data-tab="doc">문서 유형</a>
       <a data-doc="g6" data-tab="org">조직·직급</a>
       <a data-doc="g6" data-tab="sys">시스템·프로세스</a>
       <a data-doc="g6" data-tab="op">운영 용어</a>
+      <a data-doc="g6" data-tab="ext">파일 확장자</a>
     </div>
   </nav>
 
-  <div class="nav-label">운영 정비</div>
+  <div class="nav-label">CMO 마케팅 · 브랜드</div>
   <nav class="nav">
-    <a data-doc="g7" data-has-sub="true"><span class="num">⑥</span><span class="label">컨텍스트 정비 작업<span class="tag">STEP 1~5 흐름 · 핵심 프롬프트</span></span></a>
-    <div class="sub-nav" data-parent="g7">
-      <a data-doc="g7" data-tab="scan">① 스캔</a>
-      <a data-doc="g7" data-tab="clean">② 단순화</a>
-      <a data-doc="g7" data-tab="fill">③ 자동화</a>
-      <a data-doc="g7" data-tab="improve">④ 고도화</a>
-      <a data-doc="g7" data-tab="report">⑤ 통합 제안</a>
-      <a data-doc="g7" data-tab="prompt">⑥ 핵심프롬프트</a>
-    </div>
-  </nav>
-
-  <div class="nav-label">GM 업무 관리</div>
-  <nav class="nav">
-    <a data-doc="g8" data-has-sub="true"><span class="num">⑦</span><span class="label">GM TO DO LIST<span class="tag">Notion DB 29건 · 6개 카테고리</span></span></a>
-    <div class="sub-nav" data-parent="g8">
-      <a data-doc="g8" data-tab="cat1">[1] 매출 및 영업</a>
-      <a data-doc="g8" data-tab="cat2">[2] 인사&파트너</a>
-      <a data-doc="g8" data-tab="cat4">[3] 운영 정책</a>
-      <a data-doc="g8" data-tab="cat3">[4] 시설 및 환경</a>
-      <a data-doc="g8" data-tab="cat5">[5] 3대 비전</a>
-      <a data-doc="g8" data-tab="cat6">[6] 회장님 하달</a>
-    </div>
-  </nav>
-
-  <div class="nav-label">전략 · 브랜드</div>
-  <nav class="nav">
-    <a data-doc="g9" data-has-sub="true"><span class="num">⑧</span><span class="label">회사소개서<span class="tag">v2.19 · 브랜드·사업·확장</span></span></a>
+    <a data-doc="g9" data-has-sub="true"><span class="num">⑤</span><span class="label">회사소개서<span class="tag">v2.19 · 브랜드·사업·확장</span></span></a>
     <div class="sub-nav" data-parent="g9">
       <a data-doc="g9" data-tab="overview">개요 · 철학</a>
       <a data-doc="g9" data-tab="business">사업 현황</a>
       <a data-doc="g9" data-tab="programs">프로그램</a>
       <a data-doc="g9" data-tab="expansion">확장 전략</a>
+      <a data-doc="g9" data-tab="g9prompt">핵심 프롬프트</a>
     </div>
-    <a data-doc="g12" data-has-sub="true"><span class="num">⑩</span><span class="label">브랜드 디자인 가이드<span class="tag">컬러·로고·타이포·톤앤매너</span></span></a>
+    <a data-doc="g20" data-has-sub="true"><span class="num">⑥</span><span class="label">전략 로드맵<span class="tag">v1.5 · 6단계 · 3라인 강화</span></span></a>
+    <div class="sub-nav" data-parent="g20">
+      <a data-doc="g20" data-tab="summary">핵심 요약</a>
+      <a data-doc="g20" data-tab="3line">3라인 운영 체계</a>
+      <a data-doc="g20" data-tab="roadmap">6단계 로드맵</a>
+      <a data-doc="g20" data-tab="g20prompt">핵심 프롬프트</a>
+    </div>
+    <a data-doc="g12" data-has-sub="true"><span class="num">⑦</span><span class="label">브랜드 디자인 가이드<span class="tag">컬러·로고·타이포·톤앤매너</span></span></a>
     <div class="sub-nav" data-parent="g12">
       <a data-doc="g12" data-tab="identity">핵심 정체성</a>
       <a data-doc="g12" data-tab="color">컬러 시스템</a>
       <a data-doc="g12" data-tab="typo">타이포·톤앤매너</a>
     </div>
-    <a data-doc="g13"><span class="num">⑪</span><span class="label">IG 메인 템플릿<span class="tag">DUOTONE · 1080x1080 레이아웃</span></span></a>
-    <a data-doc="g14"><span class="num">⑫</span><span class="label">콘텐츠 워크플로<span class="tag">폴더 구조 · 4채널 output</span></span></a>
+    <a data-doc="g13"><span class="num">⑧</span><span class="label">IG 메인 템플릿<span class="tag">CMO · DUOTONE · 1080x1080</span></span></a>
+    <a data-doc="g14"><span class="num">⑨</span><span class="label">콘텐츠 워크플로<span class="tag">CMO · 폴더구조 · 4채널 output</span></span></a>
   </nav>
 
   <div class="nav-label">AI 협업</div>
@@ -312,7 +342,7 @@
     <a data-doc="g10" data-has-sub="true"><span class="num">⑨</span><span class="label">C-Level 운영 가이드<span class="tag">7개 C-Level · 협업+실무</span></span></a>
     <div class="sub-nav" data-parent="g10">
       <a data-doc="g10" data-tab="common">공통 가이드</a>
-      <a data-doc="g10" data-tab="ceo">CEO</a>
+      <a data-doc="g10" data-tab="ceo">AI CEO</a>
       <a data-doc="g10" data-tab="coo">COO</a>
       <a data-doc="g10" data-tab="cfo">CFO</a>
       <a data-doc="g10" data-tab="cmo">CMO</a>
@@ -320,34 +350,51 @@
       <a data-doc="g10" data-tab="chro">CHRO</a>
       <a data-doc="g10" data-tab="cpo">CPO</a>
     </div>
-    <a data-doc="g15" data-has-sub="true"><span class="num">⑬</span><span class="label">AI 교육자료 핵심요약<span class="tag">토큰절약·컨텍스트·비용절감</span></span></a>
+    <a data-doc="g17"><span class="num">⑩</span><span class="label">실무진(최종 책임자) 운영 가이드<span class="tag">COO 체크리스트 · 매뉴얼 · 점검앱</span></span></a>
+    <a data-doc="g15" data-has-sub="true"><span class="num">⑪</span><span class="label">AI 교육자료 핵심요약<span class="tag">토큰절약·컨텍스트·비용절감</span></span></a>
     <div class="sub-nav" data-parent="g15">
       <a data-doc="g15" data-tab="basics">Claude Code 기본기</a>
       <a data-doc="g15" data-tab="token">토큰 절약 5대 규칙</a>
       <a data-doc="g15" data-tab="cost">비용 절감·플러그인</a>
+      <a data-doc="g15" data-tab="g15prompt">핵심 프롬프트</a>
     </div>
   </nav>
 
-  <div class="nav-label">기술 · 인프라</div>
+  <div class="nav-label">기술 · 도구</div>
   <nav class="nav">
-    <a data-doc="g16" data-has-sub="true"><span class="num">⑭</span><span class="label">기술 인프라 상세<span class="tag">텔레그램봇·scripts·경로·아카이브</span></span></a>
+    <a data-doc="g16" data-has-sub="true"><span class="num">⑫</span><span class="label">기술 인프라 상세<span class="tag">텔레그램·scripts·모바일CLI·프롬프트</span></span></a>
     <div class="sub-nav" data-parent="g16">
       <a data-doc="g16" data-tab="telegram">텔레그램 봇</a>
       <a data-doc="g16" data-tab="scripts">scripts 구조</a>
       <a data-doc="g16" data-tab="paths">경로 표준화</a>
       <a data-doc="g16" data-tab="archive">CTO 개발 아카이브</a>
+      <a data-doc="g16" data-tab="mobile">모바일 CLI 원격</a>
+      <a data-doc="g16" data-tab="prompts">핵심 프롬프트</a>
+    </div>
+    <a data-doc="g18"><span class="num">⑬</span><span class="label">핵심 프롬프트 모음<span class="tag">정비·고도화 복붙용</span></span></a>
+    <a data-doc="g19" data-has-sub="true"><span class="num">⑭</span><span class="label">업무자동화<span class="tag">캘린더 · 태스크 현황 · 불일치</span></span></a>
+    <div class="sub-nav" data-parent="g19">
+      <a data-doc="g19" data-tab="calendar">캘린더</a>
+      <a data-doc="g19" data-tab="status">태스크 현황</a>
+      <a data-doc="g19" data-tab="context">컨텍스트 정비</a>
     </div>
   </nav>
 
-  <div class="nav-label">개선안 · 로드맵</div>
+  <div class="nav-label">김남욱</div>
   <nav class="nav">
-    <a data-doc="g17"><span class="num">⑮</span><span class="label">COO 체크리스트 병합<span class="tag">오늘 할 일 단일 뷰 (A+B)</span></span></a>
-    <a data-doc="g18"><span class="num">⑯</span><span class="label">핵심 프롬프트<span class="tag">정비·고도화 복붙 프롬프트 모음</span></span></a>
+    <a data-doc="gm1" data-has-sub="true"><span class="num">📋</span><span class="label">김남욱<span class="tag">할 일 · 루틴 · 건강 · 목표</span></span></a>
+    <div class="sub-nav" data-parent="gm1">
+      <a data-doc="gm1" data-tab="todo">할 일</a>
+      <a data-doc="gm1" data-tab="morning">아침 루틴</a>
+      <a data-doc="gm1" data-tab="daily">하루 시간표</a>
+      <a data-doc="gm1" data-tab="tracker">컨디션 트래커</a>
+      <a data-doc="gm1" data-tab="principles">목표·원칙</a>
+    </div>
   </nav>
 
   <div class="foot">
-    <strong>v2.0</strong> · 2026-05-25<br>
-    guide-hub.html 통합 병합<br><br>
+    <strong>v2.4</strong> · 2026-05-26<br>
+    gm1+gm2 김남욱 통합 (15개 섹션)<br><br>
     가이드 추가·수정은<br>Claude에게 말씀하세요.
   </div>
 </aside>
@@ -355,7 +402,7 @@
 <main class="main">
 
   <article class="doc active" id="home">
-    <div class="doc-header"><h2>웰페리온 가이드 허브 v1.4</h2><div class="meta">v1.4 · 최종 업데이트 2026-05-25 · 총 16개 섹션 · ⑥ 컨텍스트 정비 STEP 1~5 흐름 재편</div></div>
+    <div class="doc-header"><h2>웰페리온 가이드 허브 v2.4</h2><div class="meta">v2.4 · 최종 업데이트 2026-05-26 · 총 15개 섹션 · gm1+gm2 김남욱 통합</div></div>
     <p class="lead">웰페리온 자동화 시스템 운영에 필요한 모든 가이드와 정책을 한곳에 모은 문서입니다.</p>
     <div class="card accent">
       <h4>이 문서 위치</h4>
@@ -363,31 +410,63 @@
       <p>메인 프로젝트 폴더 맨 위. 더블클릭하면 어디서든 열립니다.</p>
     </div>
 
-    <h3><span class="ico">📚</span>수록된 가이드</h3>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin:18px 0 24px;">
+      <a href="#" onclick="event.preventDefault();document.querySelector('[data-doc=gm1]').click();" style="display:inline-flex;align-items:center;gap:6px;padding:12px 20px;background:var(--accent);color:#fff;font-size:14px;font-weight:700;border-radius:10px;text-decoration:none;transition:background 0.12s;box-shadow:0 2px 8px rgba(183,159,138,0.3);">📋 김남욱</a>
+      <a href="#" onclick="event.preventDefault();document.querySelector('[data-doc=g9]').click();" style="display:inline-flex;align-items:center;gap:6px;padding:12px 20px;background:var(--paper);color:var(--accent);font-size:14px;font-weight:700;border-radius:10px;text-decoration:none;border:1px solid var(--accent);transition:background 0.12s;">📄 회사소개서</a>
+      <a href="#" onclick="event.preventDefault();document.querySelector('[data-doc=g20]').click();" style="display:inline-flex;align-items:center;gap:6px;padding:12px 20px;background:var(--paper);color:var(--accent);font-size:14px;font-weight:700;border-radius:10px;text-decoration:none;border:1px solid var(--accent);transition:background 0.12s;">🗺️ 전략 로드맵</a>
+      <a href="투두리스트/핵심멤버%20투두리스트.html" target="_blank" style="display:inline-flex;align-items:center;gap:6px;padding:12px 20px;background:var(--green-bg);color:var(--green);font-size:14px;font-weight:700;border-radius:10px;text-decoration:none;border:1px solid rgba(106,191,123,0.3);transition:background 0.12s;">📝 투두리스트</a>
+      <a href="체크리스트/지원팀%20체크리스트.html" target="_blank" style="display:inline-flex;align-items:center;gap:6px;padding:12px 20px;background:var(--blue-bg);color:var(--blue);font-size:14px;font-weight:700;border-radius:10px;text-decoration:none;border:1px solid rgba(91,159,213,0.3);transition:background 0.12s;">✅ 체크리스트</a>
+    </div>
+
+    <h3><span class="ico">📚</span>수록된 가이드 (사이드바 순서)</h3>
+
+    <h4 style="color:var(--accent);margin:16px 0 8px;">운영 · 정책</h4>
     <table>
-      <tr><th style="width:120px">분류</th><th style="width:200px">제목</th><th>한 줄 설명</th></tr>
-      <tr><td><span class="badge gray">시스템 ①</span></td><td>Claude 설정 폴더</td><td>설정 파일이 어디 있고 각각 무슨 용도인지</td></tr>
-      <tr><td><span class="badge gray">시스템 ②</span></td><td>자동화 시스템 구조</td><td>메인 프로젝트 3 영역 + 사용자 접근 3 채널</td></tr>
-      <tr><td><span class="badge blue">정책 ④</span></td><td>3대 원칙 프레임워크</td><td>PSP · 작성·경로 4원칙 · 시작과 끝 (탭)</td></tr>
-      <tr><td><span class="badge blue">전략 ⑤</span></td><td>GM 전략 로드맵</td><td>웰페리온 6단계 성장 로드맵 (토글)</td></tr>
-      <tr><td><span class="badge blue">사전 ⑥</span></td><td>용어 사전</td><td>사내 공식 용어 기준 (탭)</td></tr>
-      <tr><td><span class="badge warm">운영 ⑦</span></td><td>컨텍스트 정비 작업</td><td>채우고(Fill) · 비우고(Clean) · 다듬는다(Improve)</td></tr>
-      <tr><td><span class="badge green">업무 ⑧</span></td><td>GM TO DO LIST</td><td>Notion DB 29건 · 6개 카테고리 · 실무진 배정</td></tr>
-      <tr><td><span class="badge warm">브랜드 ⑨</span></td><td>회사소개서</td><td>v2.19 · 브랜드·사업·프로그램·확장 (탭)</td></tr>
-      <tr><td><span class="badge blue">AI ⑩</span></td><td>AI C-Level 협업매뉴얼</td><td>7개 C-Level 일일/주간 산출물·질의 템플릿 (탭)</td></tr>
-      <tr><td><span class="badge blue">AI ⑪</span></td><td>C-Level 실무가이드라인</td><td>7개 C-Level 의사결정·Do/Don't·에스컬레이션 (탭)</td></tr>
-      <tr><td><span class="badge warm">브랜드 ⑫</span></td><td>브랜드 디자인 가이드</td><td>컬러 시스템·로고·타이포그래피·톤앤매너</td></tr>
-      <tr><td><span class="badge warm">브랜드 ⑬</span></td><td>IG 메인 템플릿</td><td>DUOTONE 컨셉 · 1080x1080 레이아웃 사양</td></tr>
-      <tr><td><span class="badge warm">콘텐츠 ⑭</span></td><td>콘텐츠 제작 워크플로</td><td>표준 폴더 구조 · output 4채널 분리</td></tr>
-      <tr><td><span class="badge blue">AI ⑮</span></td><td>AI 교육자료 핵심요약</td><td>토큰 절약·컨텍스트 관리·비용 절감</td></tr>
-      <tr><td><span class="badge gray">기술 ⑯</span></td><td>기술 인프라 상세</td><td>텔레그램봇·scripts·경로·CTO 아카이브</td></tr>
+      <tr><th style="width:80px">번호</th><th style="width:200px">제목</th><th>한 줄 설명</th></tr>
+      <tr><td>①</td><td><a href="#" onclick="event.preventDefault();document.querySelector('[data-doc=g1]').click();" style="color:var(--accent);text-decoration:none;font-weight:600;">Claude 설정 폴더</a></td><td>설정 파일이 어디 있고 각각 무슨 용도인지</td></tr>
+      <tr><td>②</td><td><a href="#" onclick="event.preventDefault();document.querySelector('[data-doc=g2]').click();" style="color:var(--accent);text-decoration:none;font-weight:600;">자동화 시스템 구조</a></td><td>메인 프로젝트 3 영역 + 사용자 접근 3 채널</td></tr>
+      <tr><td>③</td><td><a href="#" onclick="event.preventDefault();document.querySelector('[data-doc=g4]').click();" style="color:var(--accent);text-decoration:none;font-weight:600;">3대 원칙 프레임워크</a></td><td>PSP · 작성·경로 4원칙 · 시작과 끝 (탭)</td></tr>
+      <tr><td>④</td><td><a href="#" onclick="event.preventDefault();document.querySelector('[data-doc=g6]').click();" style="color:var(--accent);text-decoration:none;font-weight:600;">용어 사전</a></td><td>문서·조직·시스템·운영·파일 확장자 (탭)</td></tr>
+    </table>
+
+    <h4 style="color:var(--accent);margin:16px 0 8px;">CMO 마케팅 · 브랜드</h4>
+    <table>
+      <tr><th style="width:80px">번호</th><th style="width:200px">제목</th><th>한 줄 설명</th></tr>
+      <tr><td>⑤</td><td><a href="#" onclick="event.preventDefault();document.querySelector('[data-doc=g9]').click();" style="color:var(--accent);text-decoration:none;font-weight:600;">회사소개서</a></td><td>v2.19 · 브랜드·사업·프로그램·확장 (탭)</td></tr>
+      <tr><td>⑥</td><td><a href="#" onclick="event.preventDefault();document.querySelector('[data-doc=g20]').click();" style="color:var(--accent);text-decoration:none;font-weight:600;">전략 로드맵</a></td><td>v1.5 · 6단계 · 3라인 강화 · A3 인쇄</td></tr>
+      <tr><td>⑦</td><td><a href="#" onclick="event.preventDefault();document.querySelector('[data-doc=g12]').click();" style="color:var(--accent);text-decoration:none;font-weight:600;">브랜드 디자인 가이드</a></td><td>컬러 시스템·로고·타이포그래피·톤앤매너</td></tr>
+      <tr><td>⑧</td><td><a href="#" onclick="event.preventDefault();document.querySelector('[data-doc=g13]').click();" style="color:var(--accent);text-decoration:none;font-weight:600;">IG 메인 템플릿 (CMO)</a></td><td>DUOTONE 컨셉 · 1080x1080 레이아웃 사양</td></tr>
+      <tr><td>⑨</td><td><a href="#" onclick="event.preventDefault();document.querySelector('[data-doc=g14]').click();" style="color:var(--accent);text-decoration:none;font-weight:600;">콘텐츠 워크플로 (CMO)</a></td><td>표준 폴더 구조 · output 4채널 분리</td></tr>
+    </table>
+
+    <h4 style="color:var(--accent);margin:16px 0 8px;">AI 협업</h4>
+    <table>
+      <tr><th style="width:80px">번호</th><th style="width:200px">제목</th><th>한 줄 설명</th></tr>
+      <tr><td>⑨</td><td><a href="#" onclick="event.preventDefault();document.querySelector('[data-doc=g10]').click();" style="color:var(--accent);text-decoration:none;font-weight:600;">C-Level 운영 가이드</a></td><td>7개 C-Level 협업+실무 통합 (탭)</td></tr>
+      <tr><td>⑩</td><td><a href="#" onclick="event.preventDefault();document.querySelector('[data-doc=g17]').click();" style="color:var(--accent);text-decoration:none;font-weight:600;">실무진(최종 책임자) 운영 가이드</a></td><td>COO 체크리스트 · 매뉴얼 · 점검앱</td></tr>
+      <tr><td>⑪</td><td><a href="#" onclick="event.preventDefault();document.querySelector('[data-doc=g15]').click();" style="color:var(--accent);text-decoration:none;font-weight:600;">AI 교육자료 핵심요약</a></td><td>토큰 절약·컨텍스트 관리·비용 절감 (탭)</td></tr>
+    </table>
+
+    <h4 style="color:var(--accent);margin:16px 0 8px;">기술 · 도구</h4>
+    <table>
+      <tr><th style="width:80px">번호</th><th style="width:200px">제목</th><th>한 줄 설명</th></tr>
+      <tr><td>⑫</td><td><a href="#" onclick="event.preventDefault();document.querySelector('[data-doc=g16]').click();" style="color:var(--accent);text-decoration:none;font-weight:600;">기술 인프라 상세</a></td><td>텔레그램봇·scripts·모바일CLI·프롬프트 (탭)</td></tr>
+      <tr><td>⑬</td><td><a href="#" onclick="event.preventDefault();document.querySelector('[data-doc=g18]').click();" style="color:var(--accent);text-decoration:none;font-weight:600;">핵심 프롬프트 모음</a></td><td>정비·고도화 복붙 프롬프트 단일 모음</td></tr>
+      <tr><td>⑭</td><td><a href="#" onclick="event.preventDefault();document.querySelector('[data-doc=g19]').click();" style="color:var(--accent);text-decoration:none;font-weight:600;">업무자동화</a></td><td>캘린더 · 태스크 현황 · 컨텍스트 정비 (탭)</td></tr>
+    </table>
+
+    <h4 style="color:var(--accent);margin:16px 0 8px;">김남욱</h4>
+    <table>
+      <tr><th style="width:80px">번호</th><th style="width:200px">제목</th><th>한 줄 설명</th></tr>
+      <tr><td>📋</td><td><a href="#" onclick="event.preventDefault();document.querySelector('[data-doc=gm1]').click();" style="color:var(--accent);text-decoration:none;font-weight:600;">김남욱</a></td><td>할 일 · 아침 루틴 · 하루 시간표 · 컨디션 · 목표·원칙 통합</td></tr>
     </table>
 
     <div class="card grow">
-      <h4>새 기능 (2026-05-25 10차) — v2.0</h4>
-      <p><strong>guide-hub.html 통합 병합.</strong> 기존 다크 테마 guide-hub.html의 기술·브랜드·교육 콘텐츠를 본 문서에 통합. 단일 SSOT 완성.</p>
-      <p><strong>5개 신규 섹션.</strong> 브랜드 디자인 가이드(12) · IG 메인 템플릿(13) · 콘텐츠 워크플로(14) · AI 교육자료(15) · 기술 인프라(16) 추가.</p>
-      <p><strong>사이드바 재구성.</strong> '전략·브랜드' · 'AI 협업' · '기술·인프라' 그룹 분리.</p>
+      <h4>새 기능 (2026-05-25 11차) — v2.1</h4>
+      <p><strong>용어사전 확장.</strong> 파일 확장자 탭 추가 (.md/.py/.json/.log/.txt/.md.bak).</p>
+      <p><strong>기술 인프라 강화.</strong> 모바일 CLI 원격 제어 가이드 + 기술 인프라 핵심 프롬프트 5종 추가. 텔레그램 봇 최신화(12시 시설점검, Watcher 현행화).</p>
+      <p><strong>체크리스트 연동.</strong> ⑮에 지원팀 매뉴얼&체크리스트 앱 + 일일 점검 데이터 시트 바로가기 추가.</p>
+      <p><strong>홈 가이드 목록 동기화.</strong> 사이드바 메뉴 순서와 홈 테이블 정합성 일치.</p>
     </div>
 
     <h3><span class="ico">🕐</span>업데이트 기록</h3>
@@ -395,7 +474,7 @@
       <tr><th style="width:160px">날짜</th><th>변경 내용</th></tr>
       <tr><td>2026-05-25 (10차)</td><td>guide-hub.html 기술·브랜드·교육 콘텐츠 통합 병합. 단일 SSOT 완성. v2.0</td></tr>
       <tr><td>2026-05-23 (9차)</td><td>가이드 ⑨ 회사소개서 · ⑩ AI C-Level 협업매뉴얼 · ⑪ C-Level 실무가이드라인 합병 · ⑤ 전략로드맵 v1.4 전체 보고서로 교체</td></tr>
-      <tr><td>2026-05-23 (8차)</td><td>가이드 ⑧ GM TO DO LIST 신규 · Notion DB 29건 6카테고리 탭 구조 · 실무진별 배분 현황 · Notion 링크 연동</td></tr>
+      <tr><td>2026-05-23 (8차)</td><td>가이드 ⑧ TO DO LIST 신규 · Notion DB 29건 6카테고리 탭 구조 · 실무진별 배분 현황 · Notion 링크 연동</td></tr>
       <tr><td>2026-05-23 (7차)</td><td>사이드바 sub-link · 본문 탭 · 토글 구조 도입 · 가이드 ⑦ 컨텍스트 정비 신규 · SSOT 정의 정정 · source 표기 정정</td></tr>
       <tr><td>2026-05-23 (6차)</td><td>가이드 ② 사용자 접근 3 채널 · 가이드 ③ 삭제 · LMstudio archive</td></tr>
       <tr><td>2026-05-23 (5차)</td><td>UI 다듬기 · 5 다이어그램</td></tr>
@@ -472,7 +551,7 @@
         <line x1="125" y1="108" x2="290" y2="195" stroke="#9ec6ec" stroke-width="2" marker-end="url(#ar2)"/>
         <line x1="360" y1="108" x2="360" y2="195" stroke="#9ec6ec" stroke-width="2" marker-end="url(#ar2)"/>
         <line x1="595" y1="108" x2="430" y2="195" stroke="#9ec6ec" stroke-width="2" marker-end="url(#ar2)"/>
-        <g><rect x="260" y="205" width="200" height="70" rx="14" fill="#1e6fbf"/><text x="360" y="232" text-anchor="middle" font-size="14" font-weight="700" fill="#fff">공통 축</text><text x="360" y="252" text-anchor="middle" font-size="12" fill="#cfe2f6">Notion + 텔레그램</text><text x="360" y="268" text-anchor="middle" font-size="11" fill="#cfe2f6">+ CEO 인박스 DB</text></g>
+        <g><rect x="260" y="205" width="200" height="70" rx="14" fill="#1e6fbf"/><text x="360" y="232" text-anchor="middle" font-size="14" font-weight="700" fill="#fff">공통 축</text><text x="360" y="252" text-anchor="middle" font-size="12" fill="#cfe2f6">Notion + 텔레그램</text><text x="360" y="268" text-anchor="middle" font-size="11" fill="#cfe2f6">+ AI CEO 인박스 DB</text></g>
         <g><rect x="20" y="300" width="210" height="100" rx="12" fill="#e8f1fa" stroke="#1e6fbf"/><text x="125" y="328" text-anchor="middle" font-size="14" font-weight="700" fill="#185fa5">notion-c-level-agents</text><text x="125" y="348" text-anchor="middle" font-size="12" fill="#1e6fbf">C-Level 에이전트 7명</text><text x="125" y="366" text-anchor="middle" font-size="11" fill="#6b6a64">CEO·CFO·CHRO·CMO·COO·CPO·CTO</text><text x="125" y="384" text-anchor="middle" font-size="11" fill="#6b6a64">Notion R/R 동기화</text></g>
         <line x1="230" y1="370" x2="260" y2="260" stroke="#9ec6ec" stroke-width="2"/>
         <g><rect x="490" y="300" width="210" height="100" rx="12" fill="#e6f3ea" stroke="#2c8a4f"/><text x="595" y="328" text-anchor="middle" font-size="14" font-weight="700" fill="#1f6638">telegram_bot</text><text x="595" y="348" text-anchor="middle" font-size="12" fill="#2c8a4f">원격 통제 + 자동 보고</text><text x="595" y="366" text-anchor="middle" font-size="11" fill="#6b6a64">매일 06·09·12·15·18·21시</text><text x="595" y="384" text-anchor="middle" font-size="11" fill="#6b6a64">정각 보고 + 헬스체크</text></g>
@@ -480,7 +559,7 @@
         <g><rect x="255" y="410" width="210" height="60" rx="12" fill="#fbeee5" stroke="#c9612b"/><text x="360" y="436" text-anchor="middle" font-size="14" font-weight="700" fill="#8c401a">scripts/</text><text x="360" y="455" text-anchor="middle" font-size="11" fill="#6b6a64">자동화 300+ 파이썬</text></g>
         <line x1="360" y1="410" x2="360" y2="275" stroke="#ecc7ad" stroke-width="2"/>
       </svg>
-      <div class="caption">사용자 3 채널 → 공통 축(Notion + 텔레그램 + CEO 인박스) → 메인 3 영역</div>
+      <div class="caption">사용자 3 채널 → 공통 축(Notion + 텔레그램 + AI CEO 인박스) → 메인 3 영역</div>
     </div>
 
     <h3><span class="ico">👤</span>사용자 접근 채널 (3 입력)</h3>
@@ -491,7 +570,7 @@
       <tr><td>클로드 CLI</td><td>GM</td><td>GM PC 터미널</td><td>본격 결재·기획·인프라 · 메모리 누적</td></tr>
     </table>
 
-    <div class="callout tip"><strong>3 채널 통합.</strong> 세 채널 모두 「CEO 인박스 DB」(Notion)에 입력 집결. CLI SessionStart hook이 미처리 큐 자동 표시.</div>
+    <div class="callout tip"><strong>3 채널 통합.</strong> 세 채널 모두 「AI CEO 인박스 DB」(Notion)에 입력 집결. CLI SessionStart hook이 미처리 큐 자동 표시.</div>
 
     <div class="callout"><strong>채널 진화 방향 (2026-05-25 GM 결정).</strong> Claude CLI 모바일 연동 완료 시, 텔레그램 봇은 <strong>확인·승인 전용</strong>으로 기능 최소화. 지시·보고·현황 확인은 Claude CLI(모바일 포함)로 통합하고, 텔레그램은 알림 수신 + 단답 승인·반려만 유지한다.</div>
 
@@ -580,70 +659,6 @@
     </div>
   </article>
 
-  <article class="doc" id="g5">
-    <div class="doc-header"><h2>④ GM 전략 로드맵 보고서</h2><div class="meta">전략 SSOT · v1.4 · 김남욱 GM 작성 2026-05-21 · 보고 대상: 회장님·대표님</div></div>
-    <p class="lead">검증된 운영에서 확장 가능한 플랫폼으로 — 한남동 본점이 '사람이 바뀌어도 흔들리지 않는' 시스템 위에서 돌아가야 합니다. 6단계 실행 로드맵과 3개 부서 GM 통합 관리 계획.</p>
-
-    <div class="card" style="background:linear-gradient(135deg,#1a2332 0%,#2a3a4a 100%); border:none; padding:28px 30px; margin:18px 0 24px; border-radius:14px;">
-      <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:16px;">
-        <div>
-          <div style="font-size:20px; font-weight:700; color:#fff; letter-spacing:-0.01em;">GM 전략 로드맵 보고서 <em style="color:#7EB8DA; font-style:italic;">v1.4 · A3 레이아웃</em></div>
-          <div style="font-size:13px; color:#8A9AAA; margin-top:6px;">원본 UI/UX 그대로 · A3 인쇄 최적화 · 5페이지 전체 보고서</div>
-        </div>
-        <a href="웰페리온_전략로드맵_보고서_v1.4_A3.html" target="_blank" style="display:inline-flex; align-items:center; gap:8px; padding:14px 28px; background:#3B82F6; color:#fff; font-size:15px; font-weight:700; border-radius:10px; text-decoration:none; letter-spacing:0.02em; transition:background 0.15s; white-space:nowrap; box-shadow:0 2px 8px rgba(59,130,246,0.3);" onmouseover="this.style.background='#2563EB'" onmouseout="this.style.background='#3B82F6'">
-          전략로드맵 원본 열기
-        </a>
-      </div>
-    </div>
-
-    <div class="card accent">
-      <h4>핵심 포인트 5</h4>
-      <ol>
-        <li><strong>방향</strong> — 회사소개서의 확장 전략(국내 직영·위탁운영)을 실행 순서로 정의</li>
-        <li><strong>로드맵</strong> — 자동화·매뉴얼 → 인재·권한 위임 → 브랜드 구축 → 파트너 구조 정비 → BM 생성 → 비즈니스 확장</li>
-        <li><strong>현재 위치</strong> — 1·2단계 동시 진행 중. 이 둘의 완성도가 이후 속도를 결정</li>
-        <li><strong>첫 실행 과제</strong> — 3개 부서(시설·지원·주차) GM 통합 관리 → 3개월 내 자율 운영</li>
-        <li><strong>기대 효과</strong> — 의사결정 속도 향상 · 책임 소재 명확화 · 신규 사업 기반 확보</li>
-      </ol>
-    </div>
-
-    <details class="toggle" open>
-      <summary>01 자동화 및 매뉴얼 체계 완성 <span class="badge warm" style="margin-left:8px">현재</span></summary>
-      <div class="toggle-body">
-        <ul><li>브로제이 시스템 무인화 · 핵심 운영 매뉴얼 정비 · C-레벨 AI 에이전트 도입</li></ul>
-        <p><strong>목표:</strong> 사람이 바뀌어도 품질이 흔들리지 않는 시스템 기반 운영</p>
-      </div>
-    </details>
-    <details class="toggle" open>
-      <summary>02 체크리스트 경영 + 핵심 인재 확보 <span class="badge warm" style="margin-left:8px">현재</span></summary>
-      <div class="toggle-body">
-        <ul><li>전 운영 업무 체크리스트화 · 관리자급 독립 운영 · 믿고 맡길 인재 선별과 권한 위임</li></ul>
-        <p><strong>목표:</strong> 현장은 시스템+인재가, GM은 성장 전략에 전념</p>
-      </div>
-    </details>
-    <details class="toggle">
-      <summary>03 브랜드 구축</summary>
-      <div class="toggle-body"><ul><li>하이엔드 웰니스 &amp; 멘탈 케어 허브 포지셔닝 · 공간 밸류업 · 외부 콘텐츠 제휴(루프팀·이움)</li></ul></div>
-    </details>
-    <details class="toggle">
-      <summary>04 파트너팀 채용 구조 정비</summary>
-      <div class="toggle-body"><ul><li>신규/주니어/시니어/마스터 레벨링 · 정착지원금 제도 개편 · 임대업화로 파트너 팀별 독립 운영</li></ul></div>
-    </details>
-    <details class="toggle">
-      <summary>05 BM(비즈니스 모델) 생성</summary>
-      <div class="toggle-body"><ul><li>임대업화 수익 모델 가동 · 유료 콘텐츠 다각화(그룹강습·멘탈케어·DID/작품 광고) · 공간 자산 수익화</li></ul></div>
-    </details>
-    <details class="toggle">
-      <summary>06 비즈니스 확장</summary>
-      <div class="toggle-body"><ul><li>검증된 운영 시스템 + BM 기반 사업 확장 · 웰페리온 모델 복제 또는 신규 영역 진출</li></ul></div>
-    </details>
-
-    <div class="source">SSOT: 전략 로드맵 보고서 v1.4 (2026-05-21) · 기준 문서: 회사소개서 v2.19</div>
-    <div style="margin-top:22px; padding:13px 16px; background:#16181c; border-radius:8px; border-left:3px solid var(--accent);">
-      <div style="font-size:12px; font-weight:700; color:var(--accent); margin-bottom:6px;">&#9656; Claude CLI 셋업 프롬프트</div>
-      <pre style="margin:0; color:#e8e8e8; font-size:12.5px; white-space:pre-wrap; line-height:1.6;">가이드허브 ④ GM 전략 로드맵 6단계 중 현재 진행 단계를 점검하고 다음 단계 실행안을 제안해줘.</pre>
-    </div>
-  </article>
 
   <article class="doc" id="g6">
     <div class="doc-header"><h2>⑤ 용어 사전 v1.0</h2><div class="meta">사전 SSOT · 2026-05-12 · 사내 공식 용어 기준</div></div>
@@ -655,6 +670,7 @@
         <button class="tab-btn" data-tab="org">조직·직급</button>
         <button class="tab-btn" data-tab="sys">시스템·프로세스</button>
         <button class="tab-btn" data-tab="op">운영 용어</button>
+        <button class="tab-btn" data-tab="ext">파일 확장자</button>
       </div>
 
       <div class="tab-panel active" data-panel="doc">
@@ -673,7 +689,7 @@
           <tr><td>M (Manager)</td><td>매니저 · 각 영역 실무 책임자</td></tr>
           <tr><td>AM (Assistant Manager)</td><td>어시스턴트 매니저</td></tr>
           <tr><td>실장</td><td>운영부 실무 총괄</td></tr>
-          <tr><td>C레벨 (C-Level)</td><td>AI 에이전트 기반 경영 지원 (CEO/CFO/COO/CHRO/CTO)</td></tr>
+          <tr><td>C레벨 (C-Level)</td><td>AI 에이전트 기반 경영 지원 (AI CEO/AI CFO/AI COO/AI CHRO/AI CTO)</td></tr>
           <tr><td>파트너</td><td>강습 계약 강사 (직원 아닌 사업자 계약)</td></tr>
           <tr><td>마스터</td><td>파트너 최상위 등급 (53% 고정)</td></tr>
           <tr><td>시니어</td><td>파트너 상위 등급 (53% 고정 + 팀 매출 1%)</td></tr>
@@ -702,6 +718,20 @@
           <tr><td>팔로우업</td><td>상담·체험 후 48시간 내 후속 연락</td></tr>
         </table>
       </div>
+
+      <div class="tab-panel" data-panel="ext">
+        <h3>파일 확장자 가이드</h3>
+        <p>프로젝트에서 사용하는 파일 확장자별 역할입니다. 모르는 파일을 만났을 때 참고하세요.</p>
+        <table>
+          <tr><th style="width:160px">확장자</th><th>설명</th><th>쉽게 말하면</th></tr>
+          <tr><td><code>.md</code></td><td>마크다운 문서. 제목·목록·굵기 등 서식을 간단한 기호로 표현하는 텍스트 파일. 설정 문서(CLAUDE.md), 메모리, 가이드 등에 사용.</td><td>서식 있는 메모장</td></tr>
+          <tr><td><code>.py</code></td><td>파이썬 프로그램 파일. 자동화 스크립트, 텔레그램 봇, Notion 연동 등 실제 동작하는 코드.</td><td>자동화 프로그램</td></tr>
+          <tr><td><code>.json</code></td><td>데이터 저장 파일. 설정값, 상태 기록, API 응답 등을 중괄호와 쌍따옴표로 구조화해서 저장.</td><td>데이터 보관함</td></tr>
+          <tr><td><code>.log</code></td><td>작업 기록 파일. 프로그램이 언제 무엇을 했는지 시간순으로 자동 기록. 문제 발생 시 원인 추적용.</td><td>자동 일지</td></tr>
+          <tr><td><code>.txt</code></td><td>일반 텍스트 파일. 서식 없는 순수 글자만 담긴 파일. 임시 메모, 출력 결과 저장 등에 사용.</td><td>순수 메모장</td></tr>
+          <tr><td><code>.md.bak</code></td><td>마크다운 백업 파일. 원본(.md)을 수정하기 전에 만들어두는 안전 복사본. 문제 시 복원용.</td><td>수정 전 백업본</td></tr>
+        </table>
+      </div>
     </div>
 
     <div class="source">SSOT: 본 임베드 본문 + Notion 이관본 <a href="https://www.notion.so/3690407da94881dca894c78d38e9294c" target="_blank">notion.so/3690...294c</a></div>
@@ -711,210 +741,7 @@
     </div>
   </article>
 
-  <article class="doc" id="g7">
-    <div class="doc-header"><h2>⑥ 컨텍스트 정비 작업</h2><div class="meta">정기 작업 · 매주 월요일 09:00 · 30분 · 완료 후 가이드허브+노션 기록</div></div>
-    <p class="lead">각 AI C-Level의 컨텍스트(.md · .json · .log 등 기억해야 할 것들)를 STEP 1~5 흐름으로 정비합니다 — 스캔 → 단순화 → 자동화 → 고도화 → 통합 제안. 한 번에 끝나는 게 아니라 매주 cycle로 반복.</p>
-    <div class="callout tip"><strong>🗓 정기 일정.</strong> 매주 월요일 09:00 · 30분 진행 · STEP 1~5 완료 후 결과를 가이드허브 ⑥ 및 노션에 기록.</div>
 
-    <div class="tabs" data-tabs="g7">
-      <div class="tab-nav">
-        <button class="tab-btn active" data-tab="scan">스캔</button>
-        <button class="tab-btn" data-tab="clean">단순화</button>
-        <button class="tab-btn" data-tab="fill">자동화</button>
-        <button class="tab-btn" data-tab="improve">고도화</button>
-        <button class="tab-btn" data-tab="report">통합 제안</button>
-        <button class="tab-btn" data-tab="prompt">핵심프롬프트</button>
-      </div>
-
-      <div class="tab-panel active" data-panel="scan">
-        <h3><span class="ico">🔍</span>STEP 1 · 스캔 — 대상 파일 인벤토리</h3>
-        <p>각 AI C-Level의 컨텍스트 파일을 빠짐없이 훑어 목록·크기·줄 수를 파악합니다. 이후 모든 진단(STEP 2~4)은 이 인벤토리를 기준으로 진행됩니다.</p>
-        <table>
-          <tr><th style="width:300px">대상 파일</th><th>측정 항목</th><th>산출물</th></tr>
-          <tr><td><code>.log · .txt · .json · .md.bak · .md · .py</code></td><td>목록 · 크기 · 줄 수 · 수정일 · 해시</td><td>파일 인벤토리</td></tr>
-        </table>
-        <div class="callout tip"><strong>자동.</strong> <code>scripts/context_maintenance.py</code> 실행 시 STEP 1 스캔이 자동 수행됩니다(해시 포함 — 내용 동일 중복 탐지에 사용).</div>
-      </div>
-
-      <div class="tab-panel" data-panel="clean">
-        <h3><span class="ico">🧹</span>STEP 2 · 단순화 진단 (Clean) — 무의미·불필요·중복은 삭제·병합</h3>
-        <div class="grid-3">
-          <div class="card warm"><h4>무의미</h4><p>실제 의사결정에 안 쓰이는 장식·여백·중복 헤더</p></div>
-          <div class="card warm"><h4>불필요</h4><p>낡은 정보, 더 이상 유효하지 않은 규칙</p></div>
-          <div class="card warm"><h4>중복</h4><p>같은 정보가 .md와 .json에 동시에 있거나 여러 파일에 흩어짐</p></div>
-        </div>
-        <p style="margin-top:14px;"><strong>📏 줄 수 축소 원칙.</strong> .md·설정(setting) 파일은 내용 손실 없는 선에서 줄 수를 줄인다 — 기준: 최대 200행 → 목표 50행. 초과분의 상세 내용은 별도 파일로 분리.</p>
-        <p style="font-size:13px; color:var(--dim);">산출물 — 삭제·합칠 항목 list.</p>
-      </div>
-
-      <div class="tab-panel" data-panel="fill">
-        <h3><span class="ico">🔄</span>STEP 3 · 자동화 진단 (Fill) — 트리거·스케줄로 채울 수 있는 컨텍스트</h3>
-        <table>
-          <tr><th style="width:220px">트리거</th><th>채우는 컨텍스트</th></tr>
-          <tr><td>매일 06·09·12·15·18·21시 정각</td><td>텔레그램 정각 보고 (daily_scheduler.py)</td></tr>
-          <tr><td>매일 08:00</td><td>CEO 통합 보고 (ceo_morning_brief_08.py)</td></tr>
-          <tr><td>매주 월 09:00</td><td>AI 교육자료 자동 정리 (education_archive_weekly.py)</td></tr>
-          <tr><td>5분 주기 watcher</td><td>업무자동화DB · 결과물DB · 신규기획DB · 상태 변경</td></tr>
-          <tr><td>PC 부팅·종료</td><td>pc_boot_greeting.py · pc_shutdown_greeting.py</td></tr>
-        </table>
-        <p style="font-size:13px; color:var(--dim);">산출물 — 트리거·자동화 가능 항목 list.</p>
-      </div>
-
-      <div class="tab-panel" data-panel="improve">
-        <h3><span class="ico">✨</span>STEP 4 · 고도화 진단 (Improve) — 더 좋은 방법을 발견하면 적용 제안</h3>
-        <ul>
-          <li>더 좋은 구조 (페르소나/KPI/권한 별도 섹션 분리)</li>
-          <li>더 명확한 표현 (모호 문장·추상 표현 구체화)</li>
-          <li>누락된 핵심 (실패 시 폴백, 결정 권한 명시 등)</li>
-        </ul>
-        <p style="font-size:13px; color:var(--dim);">산출물 — 구조·표현 개선안. <strong>고위험 작업이므로 직접 적용 금지 — 제안만, GM 승인 후 반영.</strong></p>
-      </div>
-
-      <div class="tab-panel" data-panel="report">
-        <h3><span class="ico">📋</span>STEP 5 · 통합 제안서 — 우선순위별 정비안</h3>
-        <p>STEP 1~4 진단을 한데 모아 우선순위별 정비 제안서를 작성합니다. 산출물 — 정비 .md 초안 + 트리거 명세(<code>정비제안서_날짜.md</code>).</p>
-        <table>
-          <tr><th style="width:130px">우선순위</th><th>항목</th><th>처리</th></tr>
-          <tr><td>P0 · 즉시</td><td>잘못된 경로 파일 · 0바이트 · 깨진 참조</td><td>백업 후 정리(저위험·자동)</td></tr>
-          <tr><td>P1 · 주간</td><td>내용 동일 중복 · 200행 초과 .md</td><td>GM 승인 후 고도화(고위험)</td></tr>
-          <tr><td>P2 · 정기</td><td>오래된 로그 · 백업본</td><td>백업 후 정리(저위험·자동)</td></tr>
-        </table>
-        <div class="callout fix"><strong>원칙.</strong> 추측 금지 · 파일 직접 읽고 보고 · 모호 시 한 번에 하나씩 질문 · 각 STEP 끝나면 중간보고 후 다음 STEP. 완료 후 제안서를 가이드허브 ⑥·노션에 기록.</div>
-      </div>
-
-      <div class="tab-panel" data-panel="prompt">
-        <h3><span class="ico">🤖</span>핵심 프롬프트 — 일일 컨텍스트 정비</h3>
-        <p>아래 프롬프트를 Claude CLI에 그대로 붙여넣으면(또는 daily_scheduler가 매일 자동 호출) STEP 1~5 정비를 안전하게 수행합니다. <strong>매주 월요일 09:00 · 30분</strong> 진행 후 결과를 가이드허브 ⑥·노션에 기록.</p>
-        <pre style="background:#16181c; color:#e8e8e8; padding:14px 16px; border-radius:8px; font-size:13px; white-space:pre-wrap; line-height:1.7; border-left:3px solid var(--accent); overflow-x:auto;">[웰페리온 컨텍스트 정비 — 매주 월요일 09:00 · 30분]
-각 AI C-Level의 컨텍스트 파일(.log · .txt · .json · .md.bak · .md · .py)을 STEP 1~5로 정비하라.
-
-■ 안전장치 (필수)
-1. 파일을 수정·삭제하기 전 .bak 백업을 만든다.
-2. 작업 후 구문·구조를 검증한다 (HTML 태그 균형, JSON·Python 파싱 등).
-3. 검증 실패 시 즉시 백업으로 롤백한다.
-
-■ 위험도 분리
-- 정리(저위험): 7일 이상 된 로그 · .bak · 0바이트 · 임시 파일은 백업 후 삭제 — 자동 진행.
-- 고도화(고위험): .md·설정(setting) 파일 구조 개선, 200행 초과 → 50행 축소 등은 직접 적용 금지.
-  진단·개선안을 '정비 제안서'로만 정리하고 GM 승인을 기다린다.
-
-■ STEP 1~5
-STEP 1 — 스캔: 대상 파일 목록·크기·줄 수 → 파일 인벤토리
-STEP 2 — 단순화 진단(Clean) → 삭제·합칠 항목 list
-STEP 3 — 자동화 진단(Fill) → 트리거·자동화 가능 항목 list
-STEP 4 — 고도화 진단(Improve) → 구조·표현 개선안
-STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
-
-완료 후: 텔레그램 1줄 요약 보고 + 제안서를 가이드허브 ⑥·노션에 기록.
-추측 금지 · 파일을 직접 읽고 보고하라.</pre>
-        <div class="callout tip"><strong>✅ STEP 1~5 진단 엔진 v2 (2026-05-25).</strong> <code>scripts/context_maintenance.py</code> — 해시 기반 중복 탐지 · .py 자동화 연결 교차검증 · 깨진 참조 탐지 · 우선순위(P0/P1/P2)·추세 분석. 실행 시 <code>정비제안서_날짜.md</code> 자동 생성(보고 전용). 매주 월 09:00 daily_scheduler 등록 가능.</div>
-      </div>
-    </div>
-
-    <div class="callout tip"><strong>한 줄 요약.</strong> 훑고 → 비우고 → 채우고 → 다듬고 → 제안한다. 한 번이 아니라 매주 cycle.</div>
-    <div style="margin-top:22px; padding:13px 16px; background:#16181c; border-radius:8px; border-left:3px solid var(--accent);">
-      <div style="font-size:12px; font-weight:700; color:var(--accent); margin-bottom:6px;">&#9656; Claude CLI 셋업 프롬프트</div>
-      <pre style="margin:0; color:#e8e8e8; font-size:12.5px; white-space:pre-wrap; line-height:1.6;">가이드허브 ⑥ 컨텍스트 정비의 일일 정비 핵심 프롬프트를 실행해줘 (STEP 1~5 · 안전장치 3종).</pre>
-    </div>
-  </article>
-
-  <article class="doc" id="g8">
-    <div class="doc-header">
-      <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px;">
-        <div><h2>⑦ GM TO DO LIST</h2><div class="meta">AI CEO 라우팅 연동 · 총 29건 · 6개 카테고리 · 기준일 2026-05-23</div></div>
-        <button class="print-btn" onclick="window.print()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9V2h12v7M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>인쇄하기</button>
-      </div>
-    </div>
-    <p class="lead">GM 김남욱의 보고업무 29건을 카테고리별로 정리한 독립 문서입니다.</p>
-
-    <p style="font-size:13px; color:var(--dim); margin-top:14px;">각 카테고리를 클릭하면 펼쳐지고, 다시 클릭하면 접힙니다.</p>
-    <div class="acc-list">
-      <details class="acc-item" open>
-        <summary><span class="cat-title">[1] 매출 및 영업 전략</span><span class="cat-count">7건</span></summary>
-        <div class="acc-body">
-        <div class="task-card"><div class="task-title"><span class="status-dot active"></span>루프팀 그룹 유료 콘텐츠 런칭 현황</div><div class="task-meta"><span><span class="owner-chip mgr">나우열M</span></span><span>미정</span></div></div>
-        <div class="task-card"><div class="task-title"><span class="status-dot active"></span>이움(명상) 계약 진행</div><div class="task-meta"><span><span class="owner-chip mgr">나우열M</span></span><span>미정</span></div></div>
-        <div class="task-card"><div class="task-title"><span class="status-dot active"></span>추가 팝업 진행 (거울 작품, 신발)</div><div class="task-meta"><span><span class="owner-chip mgr">나우열M</span></span><span>미정</span></div></div>
-        <div class="task-card"><div class="task-title"><span class="status-dot active"></span>무할인 정책 재검토 결과</div><div class="task-meta"><span><span class="owner-chip dir">이경연 실장</span></span><span>미정</span></div></div>
-        <div class="task-card" style="border-left:3px solid var(--warm);"><div class="task-title"><span class="status-dot urgent"></span>요금 인상 라인업 공지 준비</div><div class="task-meta"><span><span class="owner-chip dir">이경연 실장</span></span><span>05.21 ~ 06.30</span><span class="badge warm" style="font-size:10px">마감근접</span></div></div>
-        <div class="task-card"><div class="task-title"><span class="status-dot active"></span>다이슨 방향 전환 → 대안 제품군 재검토</div><div class="task-meta"><span><span class="owner-chip gm">김남욱GM</span></span><span>05.08 ~ 06.30</span></div></div>
-        <div class="task-card" style="border-left:3px solid var(--warm);"><div class="task-title"><span class="status-dot urgent"></span>홍보 영상 딜라이브 편집 (~5.24)</div><div class="task-meta"><span><span class="owner-chip mgr">나우열M</span></span><span>05.01 ~ 05.24</span><span class="badge warm" style="font-size:10px">마감근접</span></div></div>
-        </div>
-      </details>
-      <details class="acc-item">
-        <summary><span class="cat-title">[2] 인사&파트너팀</span><span class="cat-count">8건</span></summary>
-        <div class="acc-body">
-        <div class="task-card" style="border-left:3px solid var(--warm);"><div class="task-title"><span class="status-dot urgent"></span>정착지원금 제도 개편</div><div class="task-meta"><span><span class="owner-chip gm">김남욱GM</span></span><span>05.01 ~ 05.17</span><span class="badge warm" style="font-size:10px">마감근접</span></div></div>
-        <div class="task-card"><div class="task-title"><span class="status-dot active"></span>파트너 레벨링 체계 수립</div><div class="task-meta"><span><span class="owner-chip gm">김남욱GM</span></span><span>미정</span></div></div>
-        <div class="task-card"><div class="task-title"><span class="status-dot active"></span>쓰쿠루 아쿠아 파트너 계약</div><div class="task-meta"><span><span class="owner-chip gm">김남욱GM</span></span><span>05.01 ~ 06.30</span></div></div>
-        <div class="task-card"><div class="task-title"><span class="status-dot active"></span>김명선 프로 계약 전환</div><div class="task-meta"><span><span class="owner-chip gm">김남욱GM</span></span><span>05.01 ~ 05.31</span></div></div>
-        <div class="task-card"><div class="task-title"><span class="status-dot active"></span>위성진 주차 관리인 계약 전환</div><div class="task-meta"><span><span class="owner-chip gm">김남욱GM</span></span><span>05.01 ~ 06.07</span></div></div>
-        <div class="task-card"><div class="task-title"><span class="status-dot active"></span>황용석 팀장 퇴직 및 지원팀 재편</div><div class="task-meta"><span><span class="owner-chip gm">김남욱GM</span></span><span>05.21 ~ 06.30</span></div></div>
-        <div class="task-card"><div class="task-title"><span class="status-dot active"></span>업무 위임 5개 항목 정리</div><div class="task-meta"><span><span class="owner-chip gm">김남욱GM</span></span><span>05.01 ~ 05.31</span></div></div>
-        <div class="task-card"><div class="task-title"><span class="status-dot active"></span>파트너 복장 지급</div><div class="task-meta"><span><span class="owner-chip mgr">나우열M</span></span><span>05.01 ~ 05.31</span></div></div>
-        </div>
-      </details>
-      <details class="acc-item">
-        <summary><span class="cat-title">[3] 운영 정책 및 시스템</span><span class="cat-count">4건</span></summary>
-        <div class="acc-body">
-        <div class="task-card"><div class="task-title"><span class="status-dot active"></span>리셉션 매뉴얼 구축</div><div class="task-meta"><span><span class="owner-chip dir">이경연 실장</span> <span class="owner-chip mgr">최준용M</span></span><span>미정</span></div></div>
-        <div class="task-card"><div class="task-title"><span class="status-dot active"></span>브로제이 시스템 도입</div><div class="task-meta"><span><span class="owner-chip mgr">나우열M</span> <span class="owner-chip mgr">최준용M</span></span><span>05.01 ~ 05.31</span></div></div>
-        <div class="task-card" style="border-left:3px solid var(--warm);"><div class="task-title"><span class="status-dot urgent"></span>C-레벨 AI 에이전트 체계 구축</div><div class="task-meta"><span><span class="owner-chip gm">김남욱GM</span></span><span>04.13 ~ 05.12</span><span class="badge warm" style="font-size:10px">마감근접</span></div></div>
-        <div class="task-card"><div class="task-title"><span class="status-dot active"></span>운영 가이드라인 정립</div><div class="task-meta"><span><span class="owner-chip gm">김남욱GM</span></span><span>미정</span></div></div>
-        </div>
-      </details>
-      <details class="acc-item">
-        <summary><span class="cat-title">[4] 시설 및 환경</span><span class="cat-count">4건</span></summary>
-        <div class="acc-body">
-        <div class="task-card"><div class="task-title"><span class="status-dot active"></span>1층 식당 운영 개선</div><div class="task-meta"><span><span class="owner-chip gm">김남욱GM</span></span><span>미정</span></div></div>
-        <div class="task-card"><div class="task-title"><span class="status-dot active"></span>야외 테라스 활용 방안</div><div class="task-meta"><span><span class="owner-chip mgr">최준용M</span></span><span>미정</span></div></div>
-        <div class="task-card"><div class="task-title"><span class="status-dot active"></span>목욕탕 허가건 진행</div><div class="task-meta"><span><span class="owner-chip gm">김남욱GM</span></span><span>미정</span></div></div>
-        <div class="task-card"><div class="task-title"><span class="status-dot active"></span>기구 A/S 및 유지보수</div><div class="task-meta"><span><span class="owner-chip gm">김남욱GM</span></span><span>미정</span></div></div>
-        </div>
-      </details>
-      <details class="acc-item">
-        <summary><span class="cat-title">[5] 3대 비전 추진</span><span class="cat-count">3건</span></summary>
-        <div class="acc-body">
-        <div class="task-card" style="border-left:3px solid var(--accent);"><div class="task-title"><span class="status-dot longterm"></span>수익화 전략 수립</div><div class="task-meta"><span><span class="owner-chip gm">김남욱GM</span></span><span>2026.01 ~ 2026.12</span><span class="badge blue" style="font-size:10px">장기</span></div></div>
-        <div class="task-card" style="border-left:3px solid var(--accent);"><div class="task-title"><span class="status-dot longterm"></span>공간 밸류업 추진</div><div class="task-meta"><span><span class="owner-chip gm">김남욱GM</span></span><span>2026.01 ~ 2026.12</span><span class="badge blue" style="font-size:10px">장기</span></div></div>
-        <div class="task-card" style="border-left:3px solid var(--accent);"><div class="task-title"><span class="status-dot longterm"></span>운영 자동화 고도화</div><div class="task-meta"><span><span class="owner-chip gm">김남욱GM</span></span><span>2026.01 ~ 2026.12</span><span class="badge blue" style="font-size:10px">장기</span></div></div>
-        </div>
-      </details>
-      <details class="acc-item">
-        <summary><span class="cat-title">[6] 회장님 하달사항</span><span class="cat-count">3건</span></summary>
-        <div class="acc-body">
-        <div class="task-card"><div class="task-title"><span class="status-dot active"></span>시설 리뉴얼 6건 견적 정리</div><div class="task-meta"><span><span class="owner-chip gm">김남욱GM</span></span><span>미정</span></div></div>
-        <div class="task-card"><div class="task-title"><span class="status-dot active"></span>드라이기 교체 및 배치</div><div class="task-meta"><span><span class="owner-chip gm">김남욱GM</span></span><span>05.01 ~ 06.30</span></div></div>
-        <div class="task-card"><div class="task-title"><span class="status-dot active"></span>헬스장 장비 리뉴얼 검토</div><div class="task-meta"><span><span class="owner-chip gm">김남욱GM</span></span><span>미정</span></div></div>
-        </div>
-      </details>
-    </div>
-
-    <div class="card" style="margin-top:24px; border-left:3px solid var(--accent);">
-      <h3 style="margin-top:0;"><span class="ico">🔄</span>GM ↔ AI CEO 운영 흐름</h3>
-      <p>위 TO DO 업무는 GM이 단독으로 처리하지 않는다. AI CEO를 거쳐 담당 C-Level에 분배되고, 결과가 다시 GM에게 보고된다.</p>
-      <p style="font-weight:700; color:var(--accent); line-height:2;">
-        ① GM 지시 → ② AI CEO 접수·분해 → ③ 담당 C-Level 병렬 라우팅 → ④ C-Level 실행 → ⑤ AI CEO 취합 → ⑥ GM 보고 → (다시 ①)
-      </p>
-      <h4>카테고리별 라우팅 매핑</h4>
-      <table>
-        <tr><th>GM TO DO 카테고리</th><th>담당 C-Level</th><th>보고 주기</th></tr>
-        <tr><td>[1] 매출·영업 전략</td><td>AI CMO</td><td>매일</td></tr>
-        <tr><td>[2] 인사·파트너팀</td><td>AI CHRO</td><td>매일</td></tr>
-        <tr><td>[3] 운영 정책·시스템</td><td>AI COO</td><td>매일</td></tr>
-        <tr><td>[4] 시설·환경</td><td>AI CTO</td><td>매주 월 09:00</td></tr>
-        <tr><td>[5] 3대 비전 추진</td><td>AI CEO</td><td>매주 금 16:00</td></tr>
-        <tr><td>[6] 회장님 하달사항</td><td>AI CEO → 분배</td><td>매주 금 16:00</td></tr>
-      </table>
-      <p style="font-size:13px; color:var(--dim);">각 C-Level의 산출물·보고 형식은 <strong>⑨ C-Level 운영 가이드</strong> 참조.</p>
-    </div>
-
-    <div class="source">SSOT: 본 문서 + ⑨ C-Level 운영 가이드 연동 · 기준일 2026-05-23</div>
-    <div style="margin-top:22px; padding:13px 16px; background:#16181c; border-radius:8px; border-left:3px solid var(--accent);">
-      <div style="font-size:12px; font-weight:700; color:var(--accent); margin-bottom:6px;">&#9656; Claude CLI 셋업 프롬프트</div>
-      <pre style="margin:0; color:#e8e8e8; font-size:12.5px; white-space:pre-wrap; line-height:1.6;">가이드허브 ⑦ GM TO DO LIST를 라우팅 매핑대로 각 C-Level에 분배하고 카테고리별 진행 현황을 정리해줘.</pre>
-    </div>
-  </article>
 
   <article class="doc" id="g9">
     <div class="doc-header"><h2>⑧ 회사소개서</h2><div class="meta">v2.19 · 2026-05 · 브랜드·사업·프로그램·확장 전략 통합</div></div>
@@ -926,7 +753,7 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
           <div style="font-size:12px; letter-spacing:0.2em; text-transform:uppercase; color:#B79F8A; font-weight:600; margin-bottom:6px;">WELLPERION · Company Introduction</div>
           <div style="font-size:20px; font-weight:700; color:#fff; letter-spacing:-0.01em;">A Day, <em style="color:#B79F8A; font-style:italic;">Well Completed.</em></div>
         </div>
-        <a href="웰페리온_회사소개서_v2.19.html" target="_blank" style="display:inline-flex; align-items:center; gap:8px; padding:14px 28px; background:#ED5B3F; color:#fff; font-size:15px; font-weight:700; border-radius:10px; text-decoration:none; letter-spacing:0.02em; white-space:nowrap; box-shadow:0 2px 8px rgba(237,91,63,0.3);">
+        <a href="file:///C:/Users/jjky0/welperion-automation/2.%20브랜드_공식문서/웰페리온_회사소개서_v2.19.html" target="_blank" style="display:inline-flex; align-items:center; gap:8px; padding:14px 28px; background:#ED5B3F; color:#fff; font-size:15px; font-weight:700; border-radius:10px; text-decoration:none; letter-spacing:0.02em; white-space:nowrap; box-shadow:0 2px 8px rgba(237,91,63,0.3);">
           회사소개서 원본 열기
         </a>
       </div>
@@ -938,6 +765,7 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
         <button class="tab-btn" data-tab="business">사업 현황</button>
         <button class="tab-btn" data-tab="programs">프로그램</button>
         <button class="tab-btn" data-tab="expansion">확장 전략</button>
+        <button class="tab-btn" data-tab="g9prompt">핵심 프롬프트</button>
       </div>
 
       <div class="tab-panel active" data-panel="overview">
@@ -952,12 +780,12 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
         <h3><span class="ico">📊</span>핵심 지표</h3>
         <table>
           <tr><th>지표</th><th>값</th></tr>
-          <tr><td>Annual Revenue</td><td><strong>61.6억</strong> (25년 기준)</td></tr>
-          <tr><td>YoY Growth</td><td><strong>18.4%</strong></td></tr>
-          <tr><td>ARPU</td><td><strong>418만원</strong></td></tr>
-          <tr><td>LTV</td><td><strong>3년 4개월</strong></td></tr>
-          <tr><td>Retention</td><td><strong>61%</strong></td></tr>
-          <tr><td>Waitlist</td><td><strong>40명 · 2개월</strong></td></tr>
+          <tr><td>Annual Revenue (연 매출)</td><td><strong>61.6억</strong> (25년 기준)</td></tr>
+          <tr><td>YoY Growth (전년 대비 성장률)</td><td><strong>18.4%</strong></td></tr>
+          <tr><td>ARPU (회원 1인당 평균 매출)</td><td><strong>418만원</strong></td></tr>
+          <tr><td>LTV (회원 평균 재적 기간)</td><td><strong>3년 4개월</strong></td></tr>
+          <tr><td>Retention (재등록률)</td><td><strong>61%</strong></td></tr>
+          <tr><td>Waitlist (대기자)</td><td><strong>40명 · 약 2개월 대기</strong></td></tr>
         </table>
       </div>
 
@@ -965,10 +793,10 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
         <h3><span class="ico">🏊</span>성인 프로그램 포트폴리오</h3>
         <table>
           <tr><th>카테고리</th><th>프로그램</th></tr>
-          <tr><td>Core Sports</td><td>Gym(TechnoGym) · Swimming(25m) · Golf(GDR) · Squash</td></tr>
-          <tr><td>Group Exercise</td><td>G.X. · Yoga · Pilates(STOTT) · Barre · Ballet</td></tr>
-          <tr><td>Performance</td><td>Musical · Zumba · Line Dance</td></tr>
-          <tr><td>Wellness</td><td>Meditation · Spa·Sauna · Hair Salon · Lounge·Cafe</td></tr>
+          <tr><td>핵심 스포츠</td><td>헬스(TechnoGym) · 수영(25m) · 골프(GDR) · 스쿼시</td></tr>
+          <tr><td>그룹 운동</td><td>G.X. · 요가 · 필라테스(STOTT) · 바레 · 발레</td></tr>
+          <tr><td>퍼포먼스</td><td>뮤지컬 · 줌바 · 라인댄스</td></tr>
+          <tr><td>웰니스</td><td>명상 · 스파·사우나 · 헤어살롱 · 라운지·카페</td></tr>
         </table>
       </div>
 
@@ -982,18 +810,183 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
         </table>
         <div class="callout"><strong>북극성.</strong> 대한민국에서 가장 체계적이고, 가장 따뜻한 프리미엄 스포츠클럽.</div>
       </div>
+
+      <div class="tab-panel" data-panel="g9prompt">
+        <h3><span class="ico">🤖</span>핵심 프롬프트</h3>
+        <h4>회사 정보 검수</h4>
+        <pre style="background:#16181c; color:#e8e8e8; padding:14px 16px; border-radius:8px; font-size:13px; white-space:pre-wrap; line-height:1.7; border-left:3px solid var(--accent);">가이드허브 회사소개서를 기준으로 이 산출물의 회사 정보·포지셔닝·사업 내용이 정확한지 검수해줘.</pre>
+        <h4>확장 전략 점검</h4>
+        <pre style="background:#16181c; color:#e8e8e8; padding:14px 16px; border-radius:8px; font-size:13px; white-space:pre-wrap; line-height:1.7; border-left:3px solid var(--accent);">회사소개서 확장 로드맵 Phase 1~3 중 현재 진행 단계를 점검하고 다음 단계 실행안을 제안해줘.</pre>
+        <h4>브랜드 톤 검수</h4>
+        <pre style="background:#16181c; color:#e8e8e8; padding:14px 16px; border-radius:8px; font-size:13px; white-space:pre-wrap; line-height:1.7; border-left:3px solid var(--accent);">이 콘텐츠가 웰페리온 브랜드 톤(하이엔드·프리미엄·정중형)과 일치하는지 검수해줘. "피트니스" 금지, "스포츠클럽" 사용, 개인번호 노출 금지 규칙도 확인.</pre>
+      </div>
     </div>
-    <div class="source">SSOT: 회사소개서 v2.19 · 원본 HTML 별도 보관</div>
-    <div style="margin-top:22px; padding:13px 16px; background:#16181c; border-radius:8px; border-left:3px solid var(--accent);">
-      <div style="font-size:12px; font-weight:700; color:var(--accent); margin-bottom:6px;">&#9656; Claude CLI 셋업 프롬프트</div>
-      <pre style="margin:0; color:#e8e8e8; font-size:12.5px; white-space:pre-wrap; line-height:1.6;">가이드허브 ⑧ 회사소개서를 기준으로 이 산출물의 회사 정보·포지셔닝·사업 내용이 정확한지 검수해줘.</pre>
+    <div class="source">SSOT: 회사소개서 v2.19 · 원본: 2. 브랜드_공식문서/웰페리온_회사소개서_v2.19.html</div>
+  </article>
+
+  <!-- ── G20: 전략 로드맵 ── -->
+  <article class="doc" id="g20">
+    <div class="doc-header">
+      <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px;">
+        <div><h2>⑥ 전략 로드맵</h2><div class="meta">v1.5 · 6단계 실행 로드맵 · GM 직속 3라인 강화 · A3 인쇄 가능</div></div>
+        <button class="print-btn" onclick="window.print()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9V2h12v7M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>인쇄하기</button>
+      </div>
     </div>
+    <p class="lead">검증된 운영에서 확장 가능한 플랫폼으로 — 한남동 본점이 '사람이 바뀌어도 흔들리지 않는' 시스템 위에서 돌아가야 합니다.</p>
+
+    <div class="card" style="background:linear-gradient(135deg,#1a2332 0%,#2a3a4a 100%); border:none; padding:28px 30px; margin:18px 0 24px; border-radius:14px;">
+      <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:16px;">
+        <div>
+          <div style="font-size:20px; font-weight:700; color:#fff; letter-spacing:-0.01em;">GM 전략 로드맵 보고서 <em style="color:#7EB8DA; font-style:italic;">v1.5 · A3 6페이지</em></div>
+          <div style="font-size:13px; color:#8A9AAA; margin-top:6px;">3라인 강화 · A3 인쇄 최적화 · 6페이지 전체 보고서</div>
+        </div>
+        <a href="file:///C:/Users/jjky0/welperion-automation/2.%20브랜드_공식문서/웰페리온_전략로드맵_보고서_v1.4_A3.html" target="_blank" style="display:inline-flex; align-items:center; gap:8px; padding:14px 28px; background:#3B82F6; color:#fff; font-size:15px; font-weight:700; border-radius:10px; text-decoration:none; letter-spacing:0.02em; white-space:nowrap; box-shadow:0 2px 8px rgba(59,130,246,0.3);">
+          전략로드맵 원본 열기
+        </a>
+      </div>
+    </div>
+
+    <div class="tabs" data-tabs="g20">
+      <div class="tab-nav">
+        <button class="tab-btn active" data-tab="summary">핵심 요약</button>
+        <button class="tab-btn" data-tab="3line">3라인 운영 체계</button>
+        <button class="tab-btn" data-tab="roadmap">6단계 로드맵</button>
+        <button class="tab-btn" data-tab="g20prompt">핵심 프롬프트</button>
+      </div>
+
+      <!-- 핵심 요약 -->
+      <div class="tab-panel active" data-panel="summary">
+        <div class="card accent">
+          <h4>핵심 포인트 6</h4>
+          <ol>
+            <li><strong>방향</strong> — 회사소개서의 확장 전략(국내 직영·위탁운영)을 실행 순서로 정의</li>
+            <li><strong>로드맵</strong> — 자동화·매뉴얼 → 인재·권한 위임 → 브랜드 구축 → 파트너 구조 정비 → BM 생성 → 비즈니스 확장</li>
+            <li><strong>현재 위치</strong> — 1·2단계 동시 진행 중. 이 둘의 완성도가 이후 속도를 결정</li>
+            <li><strong>GM 직속 3라인</strong> — 운영부(이경연 실장)·시설부(이정헌 소장)·파트너팀(나우열M) 최측근 강화</li>
+            <li><strong>첫 실행 과제</strong> — 3라인 통해 현장 운영 위임 → GM은 전략·확장에 집중</li>
+            <li><strong>기대 효과</strong> — 현장 자율성 확보 · 책임 소재 명확화 · 확장 준비 완료</li>
+          </ol>
+        </div>
+
+        <div class="card warm" style="margin-top:20px;">
+          <h4>대표님 하달 사항</h4>
+          <table style="margin:12px 0 0;">
+            <tr><th style="width:60px">번호</th><th>항목</th><th style="width:160px">기간</th><th style="width:80px">구분</th></tr>
+            <tr><td>1</td><td><strong>수익화 전략 수립</strong> — 기존 사업 수익 극대화 + 신규 수익원 발굴</td><td>2026.01 ~ 12</td><td><span class="badge warm">장기</span></td></tr>
+            <tr><td>2</td><td><strong>공간 밸류업 추진</strong> — 시설·인테리어·서비스 품질 격상</td><td>2026.01 ~ 12</td><td><span class="badge warm">장기</span></td></tr>
+            <tr><td>3</td><td><strong>운영 자동화 고도화</strong> — AI + 시스템 기반 운영 효율 극대화</td><td>2026.01 ~ 12</td><td><span class="badge warm">장기</span></td></tr>
+          </table>
+          <p style="margin-top:10px; font-size:13px; color:var(--dim);">위 3건은 전략 로드맵 전 단계에 걸친 상위 지시 사항으로, 모든 C-Level 업무의 방향성 기준입니다.</p>
+        </div>
+      </div>
+
+      <!-- 3라인 운영 체계 -->
+      <div class="tab-panel" data-panel="3line">
+        <h3><span class="ico">👥</span>GM 직속 3라인 운영 체계</h3>
+        <div class="callout tip"><strong>목표:</strong> 시스템이 기준, 3라인 리더가 현장, GM은 전략과 확장.</div>
+
+        <h4>1라인: 운영부 — 이경연 실장 (총괄 · 매뉴얼 제작 · 판단과 결정)</h4>
+        <table>
+          <tr><th style="width:140px">직책</th><th>역할</th><th style="width:160px">AI C-Level 관계</th></tr>
+          <tr><td><strong>이경연 실장</strong></td><td>운영부 총괄 관리감독 · 매뉴얼 제작 · 판단과 결정</td><td>COO+CPO 관리감독</td></tr>
+          <tr><td>최준용M</td><td>AI COO 서포트 · 실무진 최종 책임자 · 하위 직원 관리감독 · 매뉴얼 제작 · 판단과 결정</td><td>AI COO 서포트</td></tr>
+          <tr><td style="padding-left:30px;">이지영 사원</td><td>최준용M 관리감독 하</td><td></td></tr>
+          <tr><td style="padding-left:30px;">윤병현AM</td><td>최준용M 관리감독 하</td><td></td></tr>
+          <tr><td>임정은M</td><td>AI CPO 서포트 · 실무진 최종 책임자 · 회원 상담·CS 응대 · 상품·멤버십 기획 보조 · 회원 피드백 수집</td><td>AI CPO 서포트</td></tr>
+        </table>
+
+        <h4>2라인: 시설부 — 이정헌 소장 (총괄)</h4>
+        <table>
+          <tr><th style="width:140px">직책</th><th>역할</th><th style="width:160px">AI C-Level 관계</th></tr>
+          <tr><td><strong>이정헌 소장</strong></td><td>시설·환경·안전 총괄 관리감독</td><td>AI CTO 관리감독</td></tr>
+          <tr><td>김종현 차장</td><td>시설 관리</td><td></td></tr>
+          <tr><td>박호균 과장</td><td>시설 관리</td><td></td></tr>
+        </table>
+        <table>
+          <tr><th colspan="3" style="background:var(--accent-bg);color:var(--accent);">지원팀(남) — 8인 TO</th></tr>
+          <tr><th style="width:140px">직책</th><th>역할</th><th style="width:160px">비고</th></tr>
+          <tr><td>황용석 팀장</td><td>지원팀(남) 총괄</td><td style="color:var(--warm);">6월 말일 퇴직 예정</td></tr>
+          <tr><td>천진석 주임</td><td>지원팀(남)</td><td></td></tr>
+          <tr><td>박남일 주임</td><td>지원팀(남)</td><td></td></tr>
+          <tr><td>김유정 주임</td><td>지원팀(남)</td><td></td></tr>
+        </table>
+        <table>
+          <tr><th colspan="3" style="background:var(--accent-bg);color:var(--accent);">지원팀(여) — 8인 TO</th></tr>
+          <tr><th style="width:140px">직책</th><th>역할</th><th style="width:160px">비고</th></tr>
+          <tr><td>이연희 반장</td><td>지원팀(여) 총괄</td><td></td></tr>
+          <tr><td>우춘화 주임</td><td>지원팀(여)</td><td></td></tr>
+          <tr><td>신규 2명</td><td>지원팀(여)</td><td>채용 예정</td></tr>
+        </table>
+        <table>
+          <tr><th colspan="3" style="background:var(--accent-bg);color:var(--accent);">주차 관리</th></tr>
+          <tr><th style="width:140px">직책</th><th>역할</th><th style="width:160px">비고</th></tr>
+          <tr><td>양상규 고문</td><td>주차 관리 총괄</td><td></td></tr>
+          <tr><td>추가 1명</td><td>주차 관리</td><td>신규</td></tr>
+        </table>
+
+        <h4>3라인: 파트너팀 — 나우열M (관리감독)</h4>
+        <table>
+          <tr><th style="width:140px">직책</th><th>역할</th><th style="width:160px">AI C-Level 관계</th></tr>
+          <tr><td><strong>나우열M</strong></td><td>파트너(강사) 계약·정산·품질 관리감독 · 각 파트너팀 리더 하위 배치·관리</td><td>AI CHRO + AI CFO 관리감독</td></tr>
+          <tr><td style="padding-left:30px;">각 파트너팀 리더</td><td>나우열M 관리감독 하 · 팀별 강사 운영</td><td></td></tr>
+        </table>
+        <div class="callout"><strong>AI CHRO · AI CFO:</strong> 나우열M이 단독 운영하면서 관리감독. 추가 인원 배치 필요 (채용 검토 중).</div>
+      </div>
+
+      <!-- 6단계 로드맵 -->
+      <div class="tab-panel" data-panel="roadmap">
+        <h3><span class="ico">🗺️</span>6단계 실행 로드맵</h3>
+        <details class="toggle" open>
+          <summary>01 자동화 및 매뉴얼 체계 완성 <span class="badge warm" style="margin-left:8px">현재</span></summary>
+          <div class="toggle-body">
+            <ul><li>브로제이 시스템 무인화 · 핵심 운영 매뉴얼 정비 · C-레벨 AI 에이전트 도입</li></ul>
+            <p><strong>목표:</strong> 사람이 바뀌어도 품질이 흔들리지 않는 시스템 기반 운영</p>
+          </div>
+        </details>
+        <details class="toggle" open>
+          <summary>02 체크리스트 경영 + 핵심 인재 확보 <span class="badge warm" style="margin-left:8px">현재</span></summary>
+          <div class="toggle-body">
+            <ul><li>전 운영 업무 체크리스트화 · 관리자급 독립 운영 · GM 직속 3라인 배치</li></ul>
+            <p><strong>목표:</strong> 현장은 시스템+인재가, GM은 성장 전략에 전념</p>
+          </div>
+        </details>
+        <details class="toggle">
+          <summary>03 브랜드 구축</summary>
+          <div class="toggle-body"><ul><li>하이엔드 웰니스 &amp; 멘탈 케어 허브 포지셔닝 · 공간 밸류업 · 외부 콘텐츠 제휴(루프팀·이움)</li></ul></div>
+        </details>
+        <details class="toggle">
+          <summary>04 파트너팀 채용 구조 정비</summary>
+          <div class="toggle-body"><ul><li>신규/주니어/시니어/마스터 레벨링 · 정착지원금 제도 개편 · 임대업화로 파트너 팀별 독립 운영</li></ul></div>
+        </details>
+        <details class="toggle">
+          <summary>05 BM(비즈니스 모델) 생성</summary>
+          <div class="toggle-body"><ul><li>임대업화 수익 모델 가동 · 유료 콘텐츠 다각화(그룹강습·멘탈케어·DID/작품 광고) · 공간 자산 수익화</li></ul></div>
+        </details>
+        <details class="toggle">
+          <summary>06 비즈니스 확장</summary>
+          <div class="toggle-body"><ul><li>검증된 운영 시스템 + BM 기반 사업 확장 · 웰페리온 모델 복제 또는 신규 영역 진출</li></ul></div>
+        </details>
+      </div>
+
+      <!-- 핵심 프롬프트 -->
+      <div class="tab-panel" data-panel="g20prompt">
+        <h3><span class="ico">🤖</span>핵심 프롬프트</h3>
+        <h4>현재 단계 점검</h4>
+        <pre style="background:#16181c; color:#e8e8e8; padding:14px 16px; border-radius:8px; font-size:13px; white-space:pre-wrap; line-height:1.7; border-left:3px solid var(--accent);">전략 로드맵 6단계 중 현재 진행 단계를 점검하고 다음 단계 실행안을 제안해줘.</pre>
+        <h4>3라인 운영 점검</h4>
+        <pre style="background:#16181c; color:#e8e8e8; padding:14px 16px; border-radius:8px; font-size:13px; white-space:pre-wrap; line-height:1.7; border-left:3px solid var(--accent);">GM 직속 3라인(운영부·시설부·파트너팀) 운영 현황을 점검하고, 각 라인의 이슈와 개선안을 정리해줘.</pre>
+        <h4>확장 전략 검토</h4>
+        <pre style="background:#16181c; color:#e8e8e8; padding:14px 16px; border-radius:8px; font-size:13px; white-space:pre-wrap; line-height:1.7; border-left:3px solid var(--accent);">1·2단계 완성도를 기준으로 3단계(브랜드 구축) 진입 가능 여부를 평가하고 준비 사항을 정리해줘.</pre>
+      </div>
+    </div>
+
+    <div class="source">SSOT: 전략 로드맵 보고서 v1.5 · 원본: 2. 브랜드_공식문서/웰페리온_전략로드맵_보고서_v1.4_A3.html</div>
   </article>
 
   <article class="doc" id="g10">
     <div class="doc-header"><h2>⑨ C-Level 운영 가이드</h2><div class="meta">협업 매뉴얼 v1.0 + 실무 가이드라인 v1.1 통합 · 7개 C-Level별 협업 리듬 + 실무 지침</div></div>
     <p class="lead">매니저(GM)가 AI C-Level 에이전트와 협업할 때의 협업 리듬(언제 무엇을 산출하나)과 실무 가이드(어떻게 판단하나)를 C-Level별로 통합한 운영 가이드입니다.</p>
-    <p style="font-size:13px; color:var(--dim);">▸ GM 업무가 어떤 C-Level로 분배되는지는 <strong>⑦ GM TO DO LIST</strong>의 'GM ↔ AI CEO 운영 흐름' 참조.</p>
+    <p style="font-size:13px; color:var(--dim);">▸ GM 업무가 어떤 C-Level로 분배되는지는 <strong>⑦ TO DO LIST</strong>의 'GM ↔ AI CEO 운영 흐름' 참조.</p>
 
     <div class="card" style="background:linear-gradient(135deg,#1a2a1a 0%,#2a3a2a 100%); border:none; padding:20px 24px; margin:18px 0 24px; border-radius:14px;">
       <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
@@ -1006,7 +999,7 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
     <div class="tabs" data-tabs="g10">
       <div class="tab-nav">
         <button class="tab-btn active" data-tab="common">공통</button>
-        <button class="tab-btn" data-tab="ceo">CEO</button>
+        <button class="tab-btn" data-tab="ceo">AI CEO</button>
         <button class="tab-btn" data-tab="coo">COO</button>
         <button class="tab-btn" data-tab="cfo">CFO</button>
         <button class="tab-btn" data-tab="cmo">CMO</button>
@@ -1223,6 +1216,7 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
         <button class="tab-btn active" data-tab="basics">Claude Code 기본기</button>
         <button class="tab-btn" data-tab="token">토큰 절약·컨텍스트</button>
         <button class="tab-btn" data-tab="cost">비용 절감·플러그인</button>
+        <button class="tab-btn" data-tab="g15prompt">핵심 프롬프트</button>
       </div>
 
       <div class="tab-panel active" data-panel="basics">
@@ -1293,13 +1287,21 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
         </ul>
       </div>
 
+      <div class="tab-panel" data-panel="g15prompt">
+        <h3><span class="ico">🤖</span>핵심 프롬프트</h3>
+        <h4>토큰·컨텍스트 효율 점검</h4>
+        <pre style="background:#16181c; color:#e8e8e8; padding:14px 16px; border-radius:8px; font-size:13px; white-space:pre-wrap; line-height:1.7; border-left:3px solid var(--accent);">가이드허브 AI 교육자료 핵심요약 기준으로 현재 작업의 토큰·컨텍스트 효율을 점검해줘.</pre>
+        <h4>비용 절감 설정 적용</h4>
+        <pre style="background:#16181c; color:#e8e8e8; padding:14px 16px; border-radius:8px; font-size:13px; white-space:pre-wrap; line-height:1.7; border-left:3px solid var(--accent);">settings.json의 모델·토큰·컴팩트 설정을 가이드허브 비용 절감 4줄 기준으로 점검하고 차이를 알려줘.</pre>
+        <h4>컨텍스트 정비 실행</h4>
+        <pre style="background:#16181c; color:#e8e8e8; padding:14px 16px; border-radius:8px; font-size:13px; white-space:pre-wrap; line-height:1.7; border-left:3px solid var(--accent);">각 AI C-Level의 컨텍스트 파일(.md·.json·.log)을 스캔→단순화→자동화→고도화→통합 제안 5단계로 정비해줘. 고위험 작업은 제안만, GM 승인 후 반영.</pre>
+        <h4>플러그인·보안 점검</h4>
+        <pre style="background:#16181c; color:#e8e8e8; padding:14px 16px; border-radius:8px; font-size:13px; white-space:pre-wrap; line-height:1.7; border-left:3px solid var(--accent);">현재 설치된 플러그인 목록과 보안 상태를 점검해줘. ecc-agentshield 기준 5종(시크릿·권한·훅·MCP·에이전트) 체크.</pre>
+      </div>
+
     </div>
 
     <div class="source">SSOT: 본 섹션 = AI 교육자료·고도화 프롬프트 단일 원본 (외부 .md 통합 완료)</div>
-    <div style="margin-top:22px; padding:13px 16px; background:#16181c; border-radius:8px; border-left:3px solid var(--accent);">
-      <div style="font-size:12px; font-weight:700; color:var(--accent); margin-bottom:6px;">&#9656; Claude CLI 셋업 프롬프트</div>
-      <pre style="margin:0; color:#e8e8e8; font-size:12.5px; white-space:pre-wrap; line-height:1.6;">가이드허브 ⑬ AI 교육자료 핵심요약 기준으로 현재 작업의 토큰·컨텍스트 효율을 점검해줘.</pre>
-    </div>
   </article>
 
   <!-- ⑯ 기술 인프라 상세 (NEW) -->
@@ -1313,30 +1315,43 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
         <button class="tab-btn" data-tab="scripts">scripts 구조</button>
         <button class="tab-btn" data-tab="paths">경로 표준화</button>
         <button class="tab-btn" data-tab="archive">CTO 개발 아카이브</button>
+        <button class="tab-btn" data-tab="mobile">모바일 CLI 원격</button>
+        <button class="tab-btn" data-tab="prompts">핵심 프롬프트</button>
       </div>
 
       <div class="tab-panel active" data-panel="telegram">
         <h3><span class="ico">🤖</span>텔레그램 봇 (@namuki_report_bot)</h3>
-        <p>Chat ID 8254867551 · 단일 봇 + 정각 보고 스케줄러.</p>
+        <p>Chat ID 8254867551 · 단일 봇 · 용도: <strong>C-Level 보고 + 승인요청 전용</strong> (2026-05-25 GM 확정)</p>
+
+        <h4>정각 보고 스케줄 (6슬롯)</h4>
+        <table>
+          <tr><th>시간</th><th>내용</th><th>상세</th><th>상태</th></tr>
+          <tr><td>06:00</td><td>기상 인사</td><td>"좋은 아침입니다" + 오늘 날씨/일정 요약</td><td>가동중</td></tr>
+          <tr><td>09:00</td><td>업무 시작 보고</td><td>08:00 AI CEO 통합 보고 결과 요약 + 오늘 진행 업무</td><td>가동중</td></tr>
+          <tr><td>12:00</td><td>시설·지원·주차 현황</td><td>COO 체크리스트 DB 기반 오전 점검 결과</td><td>가동중</td></tr>
+          <tr><td>15:00</td><td>오후 중간 보고</td><td>오전 업무 진행률 + 오후 예정</td><td>가동중</td></tr>
+          <tr><td>18:00</td><td>퇴근 인사</td><td>하루 마무리 + 내일 주요 일정</td><td>가동중</td></tr>
+          <tr><td>22:00</td><td>C-Level 진행 체크</td><td>일일 C-Level 진행 현황 요약</td><td>가동중</td></tr>
+        </table>
 
         <h4>가동 중 프로세스</h4>
         <table>
           <tr><th>프로세스</th><th>역할</th></tr>
-          <tr><td><code>bot.py</code></td><td>텔레그램 봇 메인. telegram.ext framework + RotatingFileHandler + IMPORTANT_PATTERNS.</td></tr>
-          <tr><td><code>daily_scheduler.py</code></td><td>정각 보고 스케줄러 (06/09/12/15/18/21시). MarkdownV2 + 평문 fallback 안전망.</td></tr>
+          <tr><td><code>bot.py</code></td><td>텔레그램 봇 메인. telegram.ext + RotatingFileHandler.</td></tr>
+          <tr><td><code>daily_scheduler.py</code></td><td>정각 보고 스케줄러 (6슬롯). MarkdownV2 + 평문 fallback.</td></tr>
         </table>
 
-        <h4>Watcher (5분 주기)</h4>
+        <h4>Watcher (자동 감시)</h4>
         <table>
-          <tr><th>파일</th><th>역할</th></tr>
-          <tr><td><code>auto_task_watcher.py</code></td><td>업무자동화DB 5분 주기 watcher</td></tr>
-          <tr><td><code>archive_watcher.py</code></td><td>결과물DB 이관 watcher</td></tr>
-          <tr><td><code>planning_watcher.py</code></td><td>신규기획DB watcher</td></tr>
-          <tr><td><code>status_change_watcher.py</code></td><td>상태 변경 알림</td></tr>
-          <tr><td><code>pre_task_notifier.py</code></td><td>실행 전 사전 알림</td></tr>
-          <tr><td><code>permission_watcher.py</code></td><td>권한 변경 watcher</td></tr>
-          <tr><td><code>status_regression_guard.py</code></td><td>상태 회귀 자동 복원</td></tr>
+          <tr><th>파일</th><th>주기</th><th>역할</th></tr>
+          <tr><td><code>auto_task_watcher.py</code></td><td>5분</td><td>업무자동화DB 자동 실행</td></tr>
+          <tr><td><code>archive_result_watcher.py</code></td><td>5분</td><td>결과물DB 이관 감지</td></tr>
+          <tr><td><code>planning_to_archive_watcher.py</code></td><td>5분</td><td>기획→아카이브 이관 감지</td></tr>
+          <tr><td><code>status_change_watcher.py</code></td><td>1분</td><td>상태 변경 텔레그램 알림</td></tr>
+          <tr><td><code>pre_task_notifier.py</code></td><td>5분</td><td>H-15분 실행 사전 알림</td></tr>
+          <tr><td><code>permission_watcher.py</code></td><td>15분</td><td>Notion 통합 권한 감시</td></tr>
         </table>
+        <div class="callout"><strong>폐기.</strong> status_regression_guard.py (2026-05-22 GM 지시로 폐기. 진행예정 옵션도 삭제됨).</div>
 
         <h4>재기동 방법</h4>
         <pre>Stop-Process -Id (PID) -Force
@@ -1364,7 +1379,7 @@ Start-Process python -ArgumentList telegram_bot\daily_scheduler.py -WorkingDirec
           <tr><td><code>coo_*.py</code></td><td>COO 운영 이슈 알림</td></tr>
           <tr><td><code>chro_*.py</code></td><td>CHRO HR 보고</td></tr>
           <tr><td><code>cto_*.py</code></td><td>CTO 인프라 관리</td></tr>
-          <tr><td><code>ceo_*.py</code></td><td>CEO 통합 보고·인박스</td></tr>
+          <tr><td><code>ceo_*.py</code></td><td>AI CEO 통합 보고·인박스</td></tr>
         </table>
 
         <h4>_archive (보존, 30일 후 폐기 검토)</h4>
@@ -1430,18 +1445,83 @@ Start-Process python -ArgumentList telegram_bot\daily_scheduler.py -WorkingDirec
           <li>태그 성실 기입 (필터링 핵심)</li>
         </ul>
       </div>
+
+      <div class="tab-panel" data-panel="mobile">
+        <h3><span class="ico">📱</span>모바일 Claude CLI 원격 제어</h3>
+        <p>퇴근 후에도 스마트폰에서 Claude Code를 원격으로 사용할 수 있는 방법입니다.</p>
+
+        <h4>방법 1: Claude Code 앱 (권장)</h4>
+        <table>
+          <tr><th>항목</th><th>내용</th></tr>
+          <tr><td>플랫폼</td><td>claude.ai/code (웹앱, 모바일 브라우저 지원)</td></tr>
+          <tr><td>장점</td><td>별도 설치 없음. 브라우저에서 바로 접속. PC와 동일 기능.</td></tr>
+          <tr><td>사용법</td><td>모바일 브라우저에서 claude.ai/code 접속 → cao@wellperion.com 로그인 → Recents에서 세션 선택 또는 새 세션 시작</td></tr>
+        </table>
+
+        <h4>방법 2: 원격 데스크톱 (PC 직접 제어)</h4>
+        <table>
+          <tr><th>항목</th><th>내용</th></tr>
+          <tr><td>앱</td><td>Chrome 원격 데스크톱 / Microsoft 원격 데스크톱 / Parsec</td></tr>
+          <tr><td>조건</td><td>PC 전원 켜져 있어야 함 (절전 모드 해제 권장)</td></tr>
+          <tr><td>장점</td><td>PC의 Claude Code CLI 터미널 그대로 사용. 파일 탐색도 가능.</td></tr>
+          <tr><td>설정</td><td>PC에서 Chrome 원격 데스크톱 설정 → PIN 설정 → 모바일에서 접속</td></tr>
+        </table>
+
+        <h4>방법 3: 텔레그램 봇 경유 (간단 명령)</h4>
+        <table>
+          <tr><th>항목</th><th>내용</th></tr>
+          <tr><td>채널</td><td>@namuki_report_bot (기존 봇)</td></tr>
+          <tr><td>기능</td><td>GM님 텔레그램 메시지 → AI CEO 인박스 → 다음 세션에서 처리</td></tr>
+          <tr><td>한계</td><td>실시간 양방향 아님. 메시지 전달 후 AI CEO 세션에서 실행.</td></tr>
+        </table>
+
+        <div class="callout tip"><strong>추천.</strong> 빠른 확인은 claude.ai/code 웹앱, 복잡한 작업은 원격 데스크톱, 간단 지시는 텔레그램 봇.</div>
+      </div>
+
+      <div class="tab-panel" data-panel="prompts">
+        <h3><span class="ico">⚡</span>기술 인프라 핵심 프롬프트</h3>
+        <p>기술 인프라 점검·운영에 바로 쓸 수 있는 프롬프트 모음입니다.</p>
+
+        <div style="margin-bottom:16px; padding:13px 16px; background:#16181c; border-radius:8px; border-left:3px solid var(--accent);">
+          <div style="font-size:12px; font-weight:700; color:var(--accent); margin-bottom:6px;">텔레그램 봇 상태 점검</div>
+          <pre style="margin:0; color:#e8e8e8; font-size:12.5px; white-space:pre-wrap; line-height:1.6;">텔레그램 봇 + daily_scheduler 상태를 점검해줘. PID 확인, 헬스체크 로그 최근 5건, state.json 연속 실패 횟수, 다음 발송 예정 시각을 보고해줘.</pre>
+        </div>
+
+        <div style="margin-bottom:16px; padding:13px 16px; background:#16181c; border-radius:8px; border-left:3px solid var(--accent);">
+          <div style="font-size:12px; font-weight:700; color:var(--accent); margin-bottom:6px;">12시 시설 점검 현황 수동 확인</div>
+          <pre style="margin:0; color:#e8e8e8; font-size:12.5px; white-space:pre-wrap; line-height:1.6;">오늘 시설·지원·주차 점검 현황을 지금 바로 확인해줘. Google Sheets API + Notion COO 체크리스트 DB 양쪽 조회해서 구역별 완료율과 이슈를 보고해줘.</pre>
+        </div>
+
+        <div style="margin-bottom:16px; padding:13px 16px; background:#16181c; border-radius:8px; border-left:3px solid var(--accent);">
+          <div style="font-size:12px; font-weight:700; color:var(--accent); margin-bottom:6px;">Watcher 전체 점검</div>
+          <pre style="margin:0; color:#e8e8e8; font-size:12.5px; white-space:pre-wrap; line-height:1.6;">daily_scheduler에 등록된 Watcher 전체(auto_task·archive·planning·status_change·pre_task·permission)의 최근 실행 로그를 확인하고, 오류가 있으면 보고해줘.</pre>
+        </div>
+
+        <div style="margin-bottom:16px; padding:13px 16px; background:#16181c; border-radius:8px; border-left:3px solid var(--accent);">
+          <div style="font-size:12px; font-weight:700; color:var(--accent); margin-bottom:6px;">스케줄러 재기동</div>
+          <pre style="margin:0; color:#e8e8e8; font-size:12.5px; white-space:pre-wrap; line-height:1.6;">daily_scheduler.py를 안전하게 재기동해줘. 기존 PID 종료 → 새 프로세스 시작 → 헬스체크 확인까지.</pre>
+        </div>
+
+        <div style="padding:13px 16px; background:#16181c; border-radius:8px; border-left:3px solid var(--accent);">
+          <div style="font-size:12px; font-weight:700; color:var(--accent); margin-bottom:6px;">전체 인프라 상태 보고</div>
+          <pre style="margin:0; color:#e8e8e8; font-size:12.5px; white-space:pre-wrap; line-height:1.6;">가이드허브 ⑭ 기술 인프라 기준으로 텔레그램봇·스크립트·경로·Watcher·체크리스트 API 상태를 전수 점검하고 이상을 보고해줘.</pre>
+        </div>
+      </div>
     </div>
 
     <div class="source">SSOT: CTO_개발아카이브_프롬프트.md + telegram_bot/_README.md + scripts/_README.md + docs/PATH_STANDARDIZATION.md 통합</div>
-    <div style="margin-top:22px; padding:13px 16px; background:#16181c; border-radius:8px; border-left:3px solid var(--accent);">
-      <div style="font-size:12px; font-weight:700; color:var(--accent); margin-bottom:6px;">&#9656; Claude CLI 셋업 프롬프트</div>
-      <pre style="margin:0; color:#e8e8e8; font-size:12.5px; white-space:pre-wrap; line-height:1.6;">가이드허브 ⑭ 기술 인프라 기준으로 텔레그램봇·스크립트·경로 상태를 점검하고 이상을 보고해줘.</pre>
-    </div>
   </article>
 
   <article class="doc" id="g17">
     <div class="doc-header"><h2>⑮ COO 체크리스트 병합 — "오늘 할 일" 단일 뷰</h2><div class="meta">2026-05-25 GM 승인 · COO 운영 개선안 (A+B 조합)</div></div>
     <p class="lead">현재 33개 체크리스트를 시간순 + 담당자 필터 단일 뷰로 병합. 텔레그램 자동 발송 + Notion 캘린더DB 상세 체크를 결합한 하이브리드 방식.</p>
+
+    <div class="card" style="background:linear-gradient(135deg,#1a2a1a 0%,#2a3a2a 100%); border:none; padding:20px 24px; margin:18px 0 24px; border-radius:14px;">
+      <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+        <span style="color:#fff; font-weight:700;">점검 앱 바로가기</span>
+        <a href="체크리스트/지원팀%20체크리스트.html" target="_blank" style="display:inline-flex; padding:10px 20px; background:#059669; color:#fff; font-size:14px; font-weight:700; border-radius:8px; text-decoration:none;">지원팀 일일 점검 열기</a>
+      </div>
+    </div>
 
     <h3><span class="ico">📋</span>개선안 요약</h3>
     <div class="grid-2">
@@ -1464,7 +1544,19 @@ Start-Process python -ArgumentList telegram_bot\daily_scheduler.py -WorkingDirec
       <tr><td>필요 개발</td><td>캘린더 시드 스크립트 + 텔레그램 봇 daily_scheduler 연동</td></tr>
     </table>
 
-    <div class="callout fix"><strong>※ 복구 안내.</strong> 본 ⑰ 섹션은 외부 편집 중 파일이 잘려, 이 지점 이후 내용이 유실되었습니다. 필요 시 이어서 보강하세요.</div>
+    <h3><span class="ico">🔗</span>바로가기</h3>
+    <div class="grid-2">
+      <div class="card accent">
+        <h4>지원팀 매뉴얼 & 체크리스트</h4>
+        <p>점검 항목 체크 + 이슈 기록 + 제출. 남/여 구역별 탭 분리.</p>
+        <a href="https://wellperion-guide.netlify.app/check" target="_blank" style="color:var(--accent);font-weight:700;">열기 →</a>
+      </div>
+      <div class="card accent">
+        <h4>일일 점검 데이터 시트</h4>
+        <p>3시트(남성/여성/공용) + 점검자 시트. 완료율·이슈·노하우 기록.</p>
+        <a href="https://docs.google.com/spreadsheets/d/1DKEKRrpsi9Nit7dNdNGsXLYtzie3PopbwD7EJzJCku0" target="_blank" style="color:var(--accent);font-weight:700;">시트 열기 →</a>
+      </div>
+    </div>
     <div class="source">SSOT: COO 운영 개선안 (2026-05-25 GM 승인) · ⑩ 협업매뉴얼 COO 항목 연동</div>
     <div style="margin-top:22px; padding:13px 16px; background:#16181c; border-radius:8px; border-left:3px solid var(--accent);">
       <div style="font-size:12px; font-weight:700; color:var(--accent); margin-bottom:6px;">&#9656; Claude CLI 셋업 프롬프트</div>
@@ -1523,9 +1615,383 @@ Start-Process python -ArgumentList telegram_bot\daily_scheduler.py -WorkingDirec
     <div class="card" style="margin-top:20px; border-left:3px solid var(--warm);">
       <strong>⚠️ GM 목표 반영</strong> — GM은 "깊게 생각·병렬·자동화"를 우선한다. '비용 절감' 항목의 <code>MAX_THINKING_TOKENS 낮추기</code>는 사고량을 줄이므로 <strong>적용하지 않는다.</strong> 작업량은 "매우 높음" 유지.
     </div>
-    <p style="font-size:13px; color:var(--dim);">※ 각 섹션 하단에는 그 섹션 전용 'Claude CLI 셋업 프롬프트'가 따로 있습니다.</p>
     <div class="source">SSOT: 핵심 프롬프트 단일 모음 (정비·고도화 프롬프트 통합)</div>
   </article>
+  <!-- ── GM1: 김남욱 (할 일 + 루틴 + 건강 + 목표 통합) ── -->
+  <article class="doc" id="gm1">
+    <div class="doc-header"><h2>김남욱</h2><div class="meta">할 일 · 루틴 · 건강 · 목표 통합</div></div>
+    <p class="lead">개인·회사 구분 없이 김남욱님의 모든 업무와 루틴을 한곳에서 관리합니다. 팀 업무는 <a href="투두리스트/핵심멤버%20투두리스트.html" target="_blank" style="color:var(--accent);">핵심멤버 투두리스트</a>에서 확인.</p>
+
+    <div class="tabs" data-tabs="gm1">
+      <div class="tab-nav">
+        <button class="tab-btn active" data-tab="todo">할 일</button>
+        <button class="tab-btn" data-tab="morning">아침 루틴</button>
+        <button class="tab-btn" data-tab="daily">하루 시간표</button>
+        <button class="tab-btn" data-tab="tracker">컨디션 트래커</button>
+        <button class="tab-btn" data-tab="principles">목표·원칙</button>
+      </div>
+
+      <!-- 할 일 -->
+      <div class="tab-panel active" data-panel="todo">
+        <h3><span class="ico">📌</span>오늘 할 일 (2026-05-26 화)</h3>
+        <div class="task-card" data-today="1">
+          <div class="task-title" style="display:flex;align-items:center;justify-content:space-between;">
+            <span><span class="status-dot active"></span>마그네슘(Cenovis) 저녁 1알</span>
+            <button class="today-done-btn" style="padding:3px 10px;font-size:11px;font-weight:700;border-radius:12px;cursor:pointer;font-family:inherit;background:var(--green-bg);color:var(--green);border:1px solid rgba(106,191,123,0.3);">완료</button>
+          </div>
+          <div class="task-desc">수면 질 개선용. 1~2주 후 체감 없으면 글리시네이트 형태 교체 검토.</div>
+        </div>
+        <details class="toggle" style="margin-top:16px;">
+          <summary style="color:var(--green);"><span style="margin-right:6px;">✅</span>오늘 완료 (<span id="today-done-count">4</span>건)</summary>
+          <div class="toggle-body" style="font-size:13px;" id="today-done-list">
+            <div style="padding:6px 0;border-bottom:1px dashed var(--border);"><span style="color:var(--green);font-weight:700;">✓</span> <span style="text-decoration:line-through;color:var(--dim-soft);">Apps Script TODO 재배포</span> <span style="font-size:11px;color:var(--dim);">· 05-26 TODO 기능 추가 배포 완료</span></div>
+            <div style="padding:6px 0;border-bottom:1px dashed var(--border);"><span style="color:var(--green);font-weight:700;">✓</span> <span style="text-decoration:line-through;color:var(--dim-soft);">가이드허브 Netlify 배포</span> <span style="font-size:11px;color:var(--dim);">· 05-26 크레딧 리밋으로 보류 완료</span></div>
+            <div style="padding:6px 0;border-bottom:1px dashed var(--border);"><span style="color:var(--green);font-weight:700;">✓</span> <span style="text-decoration:line-through;color:var(--dim-soft);">Apps Script v3 재배포</span> <span style="font-size:11px;color:var(--dim);">· 05-26 배포 완료</span></div>
+            <div style="padding:6px 0;"><span style="color:var(--green);font-weight:700;">✓</span> <span style="text-decoration:line-through;color:var(--dim-soft);">하루 일과표 공유</span> <span style="font-size:11px;color:var(--dim);">· 남욱.pdf 기반 5탭 루틴 반영 완료</span></div>
+          </div>
+        </details>
+      </div>
+
+      <!-- 아침 루틴 -->
+      <div class="tab-panel" data-panel="morning">
+        <h3><span class="ico">🌅</span>아침 루틴 (5:00~8:00)</h3>
+
+        <h4>5:00~6:30 기상 및 운동</h4>
+        <table>
+          <tr><th>순서</th><th>항목</th><th>비고</th></tr>
+          <tr><td>1</td><td>미온수 250ml</td><td>공복 수분 보충 · 간·신장 활성화</td></tr>
+          <tr><td>2</td><td>올리브오일 (성수동 유기농)</td><td>위벽 코팅 + 장 자극</td></tr>
+          <tr><td>3</td><td>정수 120ml</td><td></td></tr>
+          <tr><td>4</td><td>유산균 1알 (Probiotics Story)</td><td>올리브오일 보호막 직후 → 생존율 높음</td></tr>
+          <tr><td>5</td><td>CCA 주스</td><td>당근+셀러리+사과</td></tr>
+          <tr><td colspan="3" style="background:var(--accent-bg); font-weight:600;">운동</td></tr>
+          <tr><td>6</td><td>스트레칭 → 맨몸스쿼트 → 크로스토터치 → 푸시업</td><td>공복 운동 OK · 인슐린 민감도 향상</td></tr>
+          <tr><td>7</td><td>냉수 샤워</td><td></td></tr>
+          <tr><td colspan="3" style="background:var(--accent-bg); font-weight:600;">아침 식사</td></tr>
+          <tr><td>8</td><td>삶은 달걀 1개</td><td>반숙 권장</td></tr>
+          <tr><td>9</td><td>사과 (또는 바나나 격일)</td><td>운동 후 칼륨·탄수화물 보충</td></tr>
+          <tr><td>10</td><td>정수 250ml + 발포비타민 (비타하임 C500)</td><td>유산균과 10분+ 간격</td></tr>
+          <tr><td>11</td><td>따뜻한 아메리카노 250ml</td><td>맨 마지막 고정</td></tr>
+        </table>
+        <div class="callout tip"><strong>저녁:</strong> 마그네슘 1알 — 현재 Cenovis(옥사이드) 소진 후 → 글리시네이트로 교체 예정 (나우푸드 or 닥터스베스트 200mg). 눈떨림(근육 이완) + 수면 질 동시 개선.</div>
+
+        <h4>6:30~8:00 자기계발 및 출근</h4>
+        <div class="grid-3">
+          <div class="card"><h4>독서</h4><p>노트 기록 · 월 2권 목표</p></div>
+          <div class="card"><h4>경제</h4><p>매경 신문 · 유튜브 요약 정리</p></div>
+          <div class="card"><h4>영어</h4><p>노트 기록 · 하루 10분</p></div>
+        </div>
+      </div>
+
+      <!-- 하루 시간표 -->
+      <div class="tab-panel" data-panel="daily">
+        <h3><span class="ico">📋</span>평일 시간표 (월~토)</h3>
+        <table>
+          <tr><th style="width:130px">시간</th><th>내용</th><th style="width:200px">섭취·활동</th></tr>
+          <tr><td>5:00~6:30<br><span class="badge green">1h 30m</span></td><td><strong>기상 및 운동</strong><br>보충제 → 운동 → 냉수샤워 → 아침식사</td><td>아침 루틴 탭 참조</td></tr>
+          <tr><td>6:30~8:00<br><span class="badge green">1h 30m</span></td><td><strong>자기계발 및 출근</strong><br>독서 · 경제 · 영어 (노트 기록)</td><td></td></tr>
+          <tr><td>8:00~12:00<br><span class="badge blue">4h</span></td><td><strong>생각하는 일에 집중</strong><br>월) 운영부 회의 준비<br>화) 운영부 회의<br>수~금) 판단 및 결정 사항<br>토) 다음주 준비</td><td>아메리카노 한 잔</td></tr>
+          <tr><td>12:00~13:00<br><span class="badge gray">1h</span></td><td><strong>점심 식사</strong><br>일반식 (밥 + 반찬 자유)</td><td>국물류 주의 (나트륨·단백질 과잉)<br>요단백 방지</td></tr>
+          <tr><td>13:00~17:00<br><span class="badge blue">4h</span></td><td><strong>움직이는 일에 집중</strong><br>월/목) 시간 자원 체크<br>화/금) 공간 자원 체크<br>수/토) 인적 자원 체크</td><td>비타민D · 물 500ml + 둥글레차<br>레몬즙20g + 올리브10g<br>15~20분 산책</td></tr>
+          <tr><td>17:00~19:00<br><span class="badge warm">2h</span></td><td><strong>스트레칭 + 러닝</strong><br>월/수/금) 러닝 10km<br>화/목/토) 아이들과 러닝</td><td>운동 후 물 500ml<br>목표 1,000kcal 소모</td></tr>
+          <tr><td>19:00~20:00<br><span class="badge gray">1h</span></td><td><strong>저녁 식사</strong><br>빼빼주스 1포 + 닭가슴살/생선 + 채소 한 접시<br>(찐양배추, 브로콜리 + 쌀밥)</td><td>저염·저포화지방<br>근육 회복·신장 부담 최소화</td></tr>
+          <tr><td>20:00~21:00<br><span class="badge gray">1h</span></td><td><strong>가족과 시간</strong><br>월/목) 건강+삶 & 가족 대화<br>화/금) 실패+돈 & 가족 대화<br>수) 분리수거<br>토) 하고 싶은 것 & 가족 대화</td><td>분리수거 · 빨래 · 설거지</td></tr>
+          <tr><td>21:00~5:00<br><span class="badge green">8h</span></td><td><strong>취침 준비 및 취침</strong><br>21:00~22:00 다이어리 쓰기 · 하루 리뷰 · 명상</td><td style="color:var(--warm);font-weight:600;">20시부터 전자기기 금지<br>음식·수분 섭취 금지</td></tr>
+        </table>
+
+        <h3><span class="ico">🌿</span>일요일 시간표</h3>
+        <table>
+          <tr><th style="width:130px">시간</th><th>내용</th></tr>
+          <tr><td>8:30~9:00</td><td><strong>아침 식사</strong> — 보충제 + 달걀 + CCA주스</td></tr>
+          <tr><td>9:00~12:00</td><td><strong>방 청소</strong> — 1주차 우리방/아이들방 · 3주차 공부방/마루 · 5주차 주방</td></tr>
+          <tr><td>12:00~15:00</td><td><strong>부모님과 보양식</strong> — 1/4주 아이들 · 2주 장인어른·장모님 · 3주 엄마·아빠</td></tr>
+          <tr><td>15:00~18:00</td><td><strong>슈니됴니 놀기</strong> — 가족과 좋은 추억 만들기</td></tr>
+          <tr><td>18:00~19:00</td><td><strong>저녁 식사</strong></td></tr>
+          <tr><td>19:00~21:00</td><td><strong>가족과 시간</strong> — 쭈물쭈물, 아들들과 대화</td></tr>
+          <tr><td>21:00~5:00</td><td><strong>취침</strong> — 다이어리 쓰기 · 명상</td></tr>
+        </table>
+        <div class="callout"><strong>넷째 주 일요일 = 등산</strong> · 주말 하루는 온전히 아이가 정한 테마로 놀기</div>
+      </div>
+
+      <!-- 컨디션 트래커 -->
+      <div class="tab-panel" data-panel="tracker">
+        <h3><span class="ico">📊</span>컨디션 트래커</h3>
+        <table>
+          <tr><th>날짜</th><th>체중</th><th>수면</th><th>운동</th><th>비고</th></tr>
+          <tr><td>05-26(화)</td><td>95.9kg</td><td>23시→07시 (중간 각성 잦음)</td><td>푸시업40 · 크로스토터치50 · 맨몸스쿼트100 · 냉샤워1분</td><td>덤벨 미실시</td></tr>
+        </table>
+        <p><em>매일 기록 누적</em></p>
+
+        <h4>끊어야 할 습관 추적</h4>
+        <table>
+          <tr><th>습관</th><th>시작일</th><th>상태</th></tr>
+          <tr><td>금연</td><td>2025.6.27</td><td><span class="badge green">진행중</span></td></tr>
+          <tr><td>절주</td><td>2026.1.1</td><td><span class="badge green">진행중</span></td></tr>
+          <tr><td>게으름 (일정표대로 진행)</td><td>2025.8.1</td><td><span class="badge green">진행중</span></td></tr>
+          <tr><td>과도한 소비 (가계부)</td><td>2025.5.1</td><td><span class="badge green">진행중</span></td></tr>
+          <tr><td>자극적인 음식 (식단)</td><td>2025.8.1</td><td><span class="badge green">진행중</span></td></tr>
+        </table>
+
+        <h4>건강 점검 일정</h4>
+        <table>
+          <tr><th>항목</th><th>주기</th><th>비고</th></tr>
+          <tr><td>인바디 체크</td><td>분기별 1회 (3·6·9·12월)</td><td>매월 1일</td></tr>
+          <tr><td>정기 건강검진</td><td>연 1회</td><td>25.5.23 순천향</td></tr>
+          <tr><td>스케일링·치아 관리</td><td>주기적</td><td></td></tr>
+        </table>
+        <div class="callout"><strong>수면 개선 핵심:</strong> ① 20시부터 전자기기 금지 ② 음식·수분 섭취 금지 ③ 아침 운동 주 5일</div>
+      </div>
+
+      <!-- 목표·원칙 -->
+      <div class="tab-panel" data-panel="principles">
+        <h3><span class="ico">🎯</span>26년도 구체적 목표</h3>
+        <div class="grid-2">
+          <div class="card accent">
+            <h4>자산 관리 (월 340만)</h4>
+            <p>개인형IRP 30만 · 연금저축 50만 · ISA 50만 · 청약 25만 · 교보생명 53만 · 주식 132만</p>
+            <p>슈니됴니해유니 펀드 60만 · 해유니 아동수당</p>
+          </div>
+          <div class="card warm">
+            <h4>생활비 (월 362만)</h4>
+            <p>이자 36만 · 보험 35만 · 통신 6만 · 생활 285만</p>
+          </div>
+          <div class="card grow">
+            <h4>가족 여행 (분기별)</h4>
+            <p>1분기 강화도 · 2분기 부산 · 3분기 강원도 · 4분기 제주도</p>
+          </div>
+          <div class="card">
+            <h4>큰 목표</h4>
+            <p>30.2.12까지 집 청약 32평<br>26.12.31까지 파이프라인 1개 확장<br>스포츠클럽&커뮤니티 위탁운영</p>
+          </div>
+        </div>
+
+        <h3><span class="ico">🧭</span>결정을 위한 7대 원칙</h3>
+        <table>
+          <tr><th style="width:50px">번호</th><th style="width:100px">원칙</th><th>핵심 질문</th></tr>
+          <tr><td>1</td><td>진실</td><td>이건 내가 알고 있는 사실인가, 추측인가?</td></tr>
+          <tr><td>2</td><td>본질</td><td>지금 이 결정의 본질은 무엇인가?</td></tr>
+          <tr><td>3</td><td>원가</td><td>이 결정을 위해 포기할 것은 무엇인가?</td></tr>
+          <tr><td>4</td><td>일관성</td><td>상황이 달라도 같은 판단을 내릴 수 있는가?</td></tr>
+          <tr><td>5</td><td>성장</td><td>1년 뒤 이 결정이 나를 성장시켰다고 말할 수 있는가?</td></tr>
+          <tr><td>6</td><td>신뢰</td><td>이 결정이 상대의 신뢰를 높이는가, 떨어뜨리는가?</td></tr>
+          <tr><td>7</td><td>투명성</td><td>이 결정을 직원이나 가족에게 설명할 수 있는가?</td></tr>
+        </table>
+
+        <h3><span class="ico">🏔️</span>삶의 운영 헌장 (Principle Charter v1.0)</h3>
+        <p><em>"습관으로 내면을 다스리고, 원칙으로 세상을 이끈다."</em></p>
+        <div class="grid-3">
+          <div class="card">
+            <h4>매일 오전</h4>
+            <p>조용한 10분 (Mind Review)<br>하루 방향 한 문장 기록</p>
+          </div>
+          <div class="card">
+            <h4>매일 저녁</h4>
+            <p>운동 후 기록 (Routine Track)<br>루틴 실천 여부 3줄 정리</p>
+          </div>
+          <div class="card">
+            <h4>매주 일요일</h4>
+            <p>리뷰 타임 (Weekly Reflection)<br>지난주 돌아보기 + 다음주 설계</p>
+          </div>
+        </div>
+        <div class="callout">
+          <strong>매월 말일 원칙 점검 (Principle Check)</strong><br>
+          1. 성찰 — 외부의 소음보다 내면의 목소리에 귀 기울였는가?<br>
+          2. 습관 — 오늘의 행동이 내 이상적인 시스템에 가까운가?<br>
+          3. 원칙 — 오늘 내가 내린 결정은 원칙 기반이었는가?<br>
+          4. 피드백 — 이번 주 실수에서 새로 배운 원칙이 있는가?
+        </div>
+
+        <h3><span class="ico">📐</span>5가지 핵심 역할과 단계</h3>
+        <table>
+          <tr><th>단계</th><th>역할</th><th>형태</th></tr>
+          <tr><td>1</td><td>장인 (Product)</td><td>기술·서비스로 수익 창출 · 프리랜서</td></tr>
+          <tr><td>2</td><td>마케터 (Quantity)</td><td>수요 창출 · 시장 확장 · 자영업</td></tr>
+          <tr><td>3</td><td>조직 (Organization)</td><td>반복 가능한 비즈니스 모델 · 사업</td></tr>
+          <tr><td>4</td><td>재무 (Finance)</td><td>수익·비용·투자·리스크 관리 · 기업</td></tr>
+          <tr><td>5</td><td>비전 (Vision)</td><td>방향·철학·문화·급여 책임 · 리더십</td></tr>
+        </table>
+        <div class="card accent" style="margin-top:16px;">
+          <h4>매출 공식</h4>
+          <p><strong>매출 = 금액(Price) × 수량(Quantity)</strong><br>Price = 장인이 만드는 가치 · Quantity = 마케터와 조직이 확장시키는 시장 규모</p>
+        </div>
+        <div class="source">출처: 남욱.pdf (2026.1.10 수립) · 07_GM 루틴(건강&업무) 폴더</div>
+      </div>
+    </div>
+  </article>
+
+  <!-- ── G19: 업무자동화 ── -->
+  <article class="doc" id="g19">
+    <div class="doc-header"><h2>업무자동화</h2><div class="meta">전체 자동 태스크 캘린더 + 현황 · 2026-05-26 점검</div></div>
+    <p class="lead">Windows 스케줄러 + Python 프로세스 실측 기반. 컨텍스트 정비(매주 월)를 포함한 전체 자동화 일정을 한눈에.</p>
+
+    <div class="tabs" data-tabs="g19">
+      <div class="tab-nav">
+        <button class="tab-btn active" data-tab="calendar">캘린더</button>
+        <button class="tab-btn" data-tab="status">태스크 현황</button>
+        <button class="tab-btn" data-tab="context">컨텍스트 정비</button>
+      </div>
+
+      <!-- 캘린더 탭 -->
+      <div class="tab-panel active" data-panel="calendar">
+        <h3><span class="ico">📅</span>업무자동화 캘린더</h3>
+
+        <h4>상시 가동</h4>
+        <details class="toggle" open><summary>텔레그램 봇 (bot.py) <span class="badge green" style="margin-left:6px;">가동</span></summary><div class="toggle-body"><p><strong>담당:</strong> 인프라 · <strong>시간:</strong> 상시</p><p>C-Level 보고 수신 + GM님 지시 중계. 텔레그램 @namuki_report_bot 단일 채널.</p></div></details>
+        <details class="toggle" open><summary>일일 스케줄러 (daily_scheduler.py) <span class="badge green" style="margin-left:6px;">가동</span></summary><div class="toggle-body"><p><strong>담당:</strong> 인프라 · <strong>시간:</strong> 상시</p><p>06시 인사 · 08:00 통합 보고 · 12시 시설 현황 · 18시 인사 · 22:00 C-Level 체크.</p></div></details>
+        <details class="toggle"><summary>Start 기획 → GM 텔레그램 브리핑 <span class="badge green" style="margin-left:6px;">가동</span></summary><div class="toggle-body"><p><strong>담당:</strong> AI CEO · <strong>시간:</strong> 1분 폴링</p><p>기획 상태 변경 감지 시 즉시 GM 텔레그램 발송.</p></div></details>
+
+        <h4>매일</h4>
+        <details class="toggle"><summary>05:50 PC 자동 켜짐 <span class="badge green" style="margin-left:6px;">가동</span></summary><div class="toggle-body"><p><strong>담당:</strong> CTO</p><p>BIOS RTC Alarm으로 자동 부팅. 부팅 후 bot.py + daily_scheduler.py 자동 시작.</p></div></details>
+        <details class="toggle"><summary>08:00 AI CEO 통합 보고 <span class="badge green" style="margin-left:6px;">가동</span></summary><div class="toggle-body"><p><strong>담당:</strong> AI CEO · <strong>스크립트:</strong> ceo_morning_brief_08.py</p><p>전날 정리 + 오늘 진행 업무 + 이슈/보류 3섹션 텔레그램 발송.</p></div></details>
+        <details class="toggle"><summary>09:00 당일 신규 문의 집계 <span class="badge gray" style="margin-left:6px;">보류</span></summary><div class="toggle-body"><p><strong>담당:</strong> CMO · <strong>소요:</strong> 15분</p><p>멤버십/성인강습/유소년 문의 수 전일 기준 자동 집계. CMO 파이프라인 자동화 대상.</p></div></details>
+        <details class="toggle"><summary>09:30 일일 지출 현황 모니터링 <span class="badge gray" style="margin-left:6px;">보류</span></summary><div class="toggle-body"><p><strong>담당:</strong> CFO · <strong>소요:</strong> 15분</p><p>지출 관리 시트 연동. 별도 지출현황 페이지 업그레이드 예정.</p></div></details>
+        <details class="toggle"><summary>10:00 익일 콘텐츠 기획·초안 <span class="badge gray" style="margin-left:6px;">보류</span></summary><div class="toggle-body"><p><strong>담당:</strong> CMO · <strong>소요:</strong> 15분</p><p>내일 업로드할 채널별 콘텐츠 기획·초안 + 완성도 점검.</p></div></details>
+        <details class="toggle"><summary>10:30 3채널 자동 업로드 v1.15 <span class="badge gray" style="margin-left:6px;">보류</span></summary><div class="toggle-body"><p><strong>담당:</strong> CMO · <strong>소요:</strong> 30분</p><p>IG + 네이버 블로그 + 카페 자동 업로드. P-1: 인스타 Playwright 전환, Meta API 폐기.</p></div></details>
+        <details class="toggle"><summary>22:00 AI CEO C-Level 진행 체크 <span class="badge green" style="margin-left:6px;">가동</span></summary><div class="toggle-body"><p><strong>담당:</strong> AI CEO · <strong>소요:</strong> 30초</p><p>일일 C-Level 진행 현황 자동 체크. Notion 상태와 불일치 있음.</p></div></details>
+        <details class="toggle"><summary>22:25 PC 종료 인사 + 22:30 자동 종료 <span class="badge green" style="margin-left:6px;">가동</span></summary><div class="toggle-body"><p><strong>담당:</strong> CTO</p><p>22:25 Shutdown-Greeting 텔레그램 발송 → 22:30 Auto-Shutdown 실행.</p></div></details>
+
+        <h4>매주 월요일</h4>
+        <details class="toggle"><summary>09:00 6개 C-Level 주간 컨텍스트 정비 <span class="badge gray" style="margin-left:6px;">보류</span></summary><div class="toggle-body"><p><strong>담당:</strong> CPO·COO·CMO·CHRO·CFO·CTO · <strong>소요:</strong> 각 30분</p><p>본인 영역 .md·.json·.log 스캔→단순화→자동화→고도화→통합제안. 컨텍스트 정비 범위 정의 필요.</p></div></details>
+
+        <h4>매월 · 분기</h4>
+        <details class="toggle"><summary>마지막 영업일 경쟁사 분석 업데이트 <span class="badge gray" style="margin-left:6px;">보류</span></summary><div class="toggle-body"><p><strong>담당:</strong> CPO · <strong>소요:</strong> 90분</p><p>경쟁사 분석 데이터 정기 업데이트.</p></div></details>
+        <details class="toggle"><summary>분기 1일 조직 만족도 펄스 서베이 <span class="badge gray" style="margin-left:6px;">보류</span></summary><div class="toggle-body"><p><strong>담당:</strong> CHRO · <strong>소요:</strong> 60분</p><p>3·6·9·12월 분기별 조직 만족도 서베이 실행.</p></div></details>
+
+        <div class="callout fix"><strong>불일치 2건:</strong> AI CEO C-Level 체크(22:00)와 PC ON/OFF — 실제 가동 중이나 Notion 업무자동화DB 상태가 '보류'. GM님 확인 후 Notion 상태 동기화 필요.</div>
+        <div class="callout"><strong>점검 필요 2건:</strong> CMO-001-Calendar-Dispatcher (실행 이력 없음) · CTO-008-MetaTokenRefresh (페북 영구 삭제 후 필요성 재검토)</div>
+      </div>
+
+      <!-- 태스크 현황 탭 -->
+      <div class="tab-panel" data-panel="status">
+        <h3><span class="ico">📊</span>태스크 현황 요약</h3>
+        <div class="grid-3">
+          <div class="card grow">
+            <h4>🟢 가동 중</h4>
+            <p style="font-size:28px; font-weight:700; margin:4px 0;">5건</p>
+            <p style="font-size:13px; color:var(--dim);">봇 · 스케줄러 · 기획 브리핑 · C-Level 체크 · PC ON/OFF</p>
+          </div>
+          <div class="card">
+            <h4>⏸️ 보류</h4>
+            <p style="font-size:28px; font-weight:700; margin:4px 0;">15건</p>
+            <p style="font-size:13px; color:var(--dim);">매일 5 · 매주 월 8 · 매월 2 · 분기 1</p>
+          </div>
+          <div class="card warm">
+            <h4>⚠️ 점검</h4>
+            <p style="font-size:28px; font-weight:700; margin:4px 0;">2건</p>
+            <p style="font-size:13px; color:var(--dim);">Calendar-Dispatcher · MetaTokenRefresh</p>
+          </div>
+        </div>
+
+        <h3><span class="ico">🟢</span>가동 중 상세 (5건)</h3>
+        <div class="task-card">
+          <div class="task-title"><span class="status-dot active"></span>텔레그램 봇 (bot.py)</div>
+          <div class="task-meta"><span>상시 가동</span></div>
+          <div class="task-desc">C-Level 보고 수신 + GM님 지시 중계</div>
+        </div>
+        <div class="task-card">
+          <div class="task-title"><span class="status-dot active"></span>일일 스케줄러 (daily_scheduler.py)</div>
+          <div class="task-meta"><span>상시 가동</span></div>
+          <div class="task-desc">06시 인사, 08:00 통합 보고, 12시 시설 현황, 18시 인사</div>
+        </div>
+        <div class="task-card">
+          <div class="task-title"><span class="status-dot active"></span>Start 기획 → GM 텔레그램 브리핑</div>
+          <div class="task-meta"><span>1분 간격 폴링</span><span>Notion: 진행중 ✅</span></div>
+          <div class="task-desc">기획 상태 변경 감지 시 즉시 발송</div>
+        </div>
+        <div class="task-card">
+          <div class="task-title"><span class="status-dot active"></span>AI CEO 일일 C-Level 진행 체크</div>
+          <div class="task-meta"><span>매일 22:00</span><span style="color:var(--warm);">Notion: 보류 ⚠️ 불일치</span></div>
+        </div>
+        <div class="task-card">
+          <div class="task-title"><span class="status-dot active"></span>PC 자동 ON/OFF 인프라</div>
+          <div class="task-meta"><span>05:50 ON / 22:25 인사 / 22:30 OFF</span><span style="color:var(--warm);">Notion: 보류 ⚠️ 불일치</span></div>
+        </div>
+
+        <div class="source">점검 기준: Windows Task Scheduler + Python 프로세스 실측 (2026-05-26)</div>
+      </div>
+
+      <!-- 컨텍스트 정비 탭 (g7에서 합병) -->
+      <div class="tab-panel" data-panel="context">
+        <h3><span class="ico">🔧</span>컨텍스트 정비 작업</h3>
+        <p>각 AI C-Level의 컨텍스트(.md · .json · .log 등)를 STEP 1~5 흐름으로 정비합니다 — 스캔 → 단순화 → 자동화 → 고도화 → 통합 제안. 매주 월요일 09:00 · 30분 cycle 반복.</p>
+        <div class="callout tip"><strong>정기 일정.</strong> 매주 월요일 09:00 · 30분 진행 · STEP 1~5 완료 후 결과를 가이드허브·노션에 기록.</div>
+
+        <h3><span class="ico">🔍</span>STEP 1 · 스캔 — 대상 파일 인벤토리</h3>
+        <p>각 AI C-Level의 컨텍스트 파일을 빠짐없이 훑어 목록·크기·줄 수를 파악합니다. 이후 모든 진단(STEP 2~4)은 이 인벤토리를 기준으로 진행됩니다.</p>
+        <table>
+          <tr><th style="width:300px">대상 파일</th><th>측정 항목</th><th>산출물</th></tr>
+          <tr><td><code>.log · .txt · .json · .md.bak · .md · .py</code></td><td>목록 · 크기 · 줄 수 · 수정일 · 해시</td><td>파일 인벤토리</td></tr>
+        </table>
+        <div class="callout tip"><strong>자동.</strong> <code>scripts/context_maintenance.py</code> 실행 시 STEP 1 스캔이 자동 수행됩니다(해시 포함 — 내용 동일 중복 탐지에 사용).</div>
+
+        <h3><span class="ico">🧹</span>STEP 2 · 단순화 진단 (Clean) — 무의미·불필요·중복은 삭제·병합</h3>
+        <div class="grid-3">
+          <div class="card warm"><h4>무의미</h4><p>실제 의사결정에 안 쓰이는 장식·여백·중복 헤더</p></div>
+          <div class="card warm"><h4>불필요</h4><p>낡은 정보, 더 이상 유효하지 않은 규칙</p></div>
+          <div class="card warm"><h4>중복</h4><p>같은 정보가 .md와 .json에 동시에 있거나 여러 파일에 흩어짐</p></div>
+        </div>
+        <p style="margin-top:14px;"><strong>줄 수 축소 원칙.</strong> .md·설정(setting) 파일은 내용 손실 없는 선에서 줄 수를 줄인다 — 기준: 최대 200행 → 목표 50행. 초과분의 상세 내용은 별도 파일로 분리.</p>
+        <p style="font-size:13px; color:var(--dim);">산출물 — 삭제·합칠 항목 list.</p>
+
+        <h3><span class="ico">🔄</span>STEP 3 · 자동화 진단 (Fill) — 트리거·스케줄로 채울 수 있는 컨텍스트</h3>
+        <table>
+          <tr><th style="width:220px">트리거</th><th>채우는 컨텍스트</th></tr>
+          <tr><td>매일 06·09·12·15·18·21시 정각</td><td>텔레그램 정각 보고 (daily_scheduler.py)</td></tr>
+          <tr><td>매일 08:00</td><td>AI CEO 통합 보고 (ceo_morning_brief_08.py)</td></tr>
+          <tr><td>매주 월 09:00</td><td>AI 교육자료 자동 정리 (education_archive_weekly.py)</td></tr>
+          <tr><td>5분 주기 watcher</td><td>업무자동화DB · 결과물DB · 신규기획DB · 상태 변경</td></tr>
+          <tr><td>PC 부팅·종료</td><td>pc_boot_greeting.py · pc_shutdown_greeting.py</td></tr>
+        </table>
+        <p style="font-size:13px; color:var(--dim);">산출물 — 트리거·자동화 가능 항목 list.</p>
+
+        <h3><span class="ico">✨</span>STEP 4 · 고도화 진단 (Improve) — 더 좋은 방법을 발견하면 적용 제안</h3>
+        <ul>
+          <li>더 좋은 구조 (페르소나/KPI/권한 별도 섹션 분리)</li>
+          <li>더 명확한 표현 (모호 문장·추상 표현 구체화)</li>
+          <li>누락된 핵심 (실패 시 폴백, 결정 권한 명시 등)</li>
+        </ul>
+        <p style="font-size:13px; color:var(--dim);">산출물 — 구조·표현 개선안. <strong>고위험 작업이므로 직접 적용 금지 — 제안만, GM 승인 후 반영.</strong></p>
+
+        <h3><span class="ico">📋</span>STEP 5 · 통합 제안서 — 우선순위별 정비안</h3>
+        <p>STEP 1~4 진단을 한데 모아 우선순위별 정비 제안서를 작성합니다. 산출물 — 정비 .md 초안 + 트리거 명세(<code>정비제안서_날짜.md</code>).</p>
+        <table>
+          <tr><th style="width:130px">우선순위</th><th>항목</th><th>처리</th></tr>
+          <tr><td>P0 · 즉시</td><td>잘못된 경로 파일 · 0바이트 · 깨진 참조</td><td>백업 후 정리(저위험·자동)</td></tr>
+          <tr><td>P1 · 주간</td><td>내용 동일 중복 · 200행 초과 .md</td><td>GM 승인 후 고도화(고위험)</td></tr>
+          <tr><td>P2 · 정기</td><td>오래된 로그 · 백업본</td><td>백업 후 정리(저위험·자동)</td></tr>
+        </table>
+        <div class="callout fix"><strong>원칙.</strong> 추측 금지 · 파일 직접 읽고 보고 · 모호 시 한 번에 하나씩 질문 · 각 STEP 끝나면 중간보고 후 다음 STEP. 완료 후 제안서를 가이드허브·노션에 기록.</div>
+
+        <h3><span class="ico">🤖</span>핵심 프롬프트 — 일일 컨텍스트 정비</h3>
+        <p>아래 프롬프트를 Claude CLI에 그대로 붙여넣으면(또는 daily_scheduler가 매일 자동 호출) STEP 1~5 정비를 안전하게 수행합니다. <strong>매주 월요일 09:00 · 30분</strong> 진행 후 결과를 가이드허브·노션에 기록.</p>
+        <pre style="background:#16181c; color:#e8e8e8; padding:14px 16px; border-radius:8px; font-size:13px; white-space:pre-wrap; line-height:1.7; border-left:3px solid var(--accent); overflow-x:auto;">[웰페리온 컨텍스트 정비 — 매주 월요일 09:00 · 30분]
+각 AI C-Level의 컨텍스트 파일(.log · .txt · .json · .md.bak · .md · .py)을 STEP 1~5로 정비하라.
+
+■ 안전장치 (필수)
+1. 파일을 수정·삭제하기 전 .bak 백업을 만든다.
+2. 작업 후 구문·구조를 검증한다 (HTML 태그 균형, JSON·Python 파싱 등).
+3. 검증 실패 시 즉시 백업으로 롤백한다.
+
+■ 위험도 분리
+- 정리(저위험): 7일 이상 된 로그 · .bak · 0바이트 · 임시 파일은 백업 후 삭제 — 자동 진행.
+- 고도화(고위험): .md·설정(setting) 파일 구조 개선, 200행 초과 → 50행 축소 등은 직접 적용 금지.
+  진단·개선안을 '정비 제안서'로만 정리하고 GM 승인을 기다린다.
+
+■ STEP 1~5
+STEP 1 — 스캔: 대상 파일 목록·크기·줄 수 → 파일 인벤토리
+STEP 2 — 단순화 진단(Clean) → 삭제·합칠 항목 list
+STEP 3 — 자동화 진단(Fill) → 트리거·자동화 가능 항목 list
+STEP 4 — 고도화 진단(Improve) → 구조·표현 개선안
+STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
+
+완료 후: 텔레그램 1줄 요약 보고 + 제안서를 가이드허브·노션에 기록.
+추측 금지 · 파일을 직접 읽고 보고하라.</pre>
+        <div class="callout tip"><strong>STEP 1~5 진단 엔진 v2 (2026-05-25).</strong> <code>scripts/context_maintenance.py</code> — 해시 기반 중복 탐지 · .py 자동화 연결 교차검증 · 깨진 참조 탐지 · 우선순위(P0/P1/P2)·추세 분석. 실행 시 <code>정비제안서_날짜.md</code> 자동 생성(보고 전용). 매주 월 09:00 daily_scheduler 등록 가능.</div>
+        <div class="callout tip"><strong>한 줄 요약.</strong> 훑고 → 비우고 → 채우고 → 다듬고 → 제안한다. 한 번이 아니라 매주 cycle.</div>
+      </div>
+    </div>
+  </article>
+
 </main>
 </div>
 
@@ -1587,6 +2053,876 @@ Start-Process python -ArgumentList telegram_bot\daily_scheduler.py -WorkingDirec
       tabsContainer.querySelector(`.tab-panel[data-panel="${tabName}"]`).classList.add('active');
     });
   });
+
+  // ── TO DO LIST 편집 기능 (contenteditable + localStorage 자동 저장) ──
+  (function(){
+    const STORAGE_KEY = 'wellperion-todo-edits';
+    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+
+    // acc-list 내부 task-card에 contenteditable 적용
+    document.querySelectorAll('.acc-list .task-card').forEach((card, i) => {
+      const id = 'todo-' + i;
+      card.dataset.todoId = id;
+
+      // 담당자 영역 — 클릭 시 복수 선택 가능
+      const STAFF_LIST = [
+        {name:'김남욱GM', cls:'gm'}, {name:'이경연 실장', cls:'dir'},
+        {name:'최준용M', cls:'mgr'}, {name:'임정은M', cls:'mgr'},
+        {name:'윤병현AM', cls:'mgr'}, {name:'이지영 사원', cls:''},
+        {name:'나우열M', cls:'mgr'}, {name:'이정헌 소장', cls:'dir'},
+      ];
+      const ownerWrap = card.querySelector('.task-meta > span:first-child');
+      if (ownerWrap) {
+        ownerWrap.style.cursor = 'pointer';
+        ownerWrap.title = '클릭하여 담당자 편집 (복수 선택 가능)';
+        ownerWrap.addEventListener('click', (e) => {
+          e.stopPropagation();
+          document.querySelectorAll('.staff-dropdown').forEach(el => el.remove());
+          // 현재 선택된 담당자
+          const currentChips = ownerWrap.querySelectorAll('.owner-chip');
+          const selected = new Set([...currentChips].map(c => c.textContent.trim()));
+          const dd = document.createElement('div');
+          dd.className = 'staff-dropdown';
+          dd.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:100;display:flex;align-items:center;justify-content:center;animation:fadeIn 0.15s ease-out;';
+          const box = document.createElement('div');
+          box.style.cssText = 'background:var(--paper);border:1px solid var(--accent);border-radius:14px;padding:20px;width:280px;max-width:90vw;box-shadow:0 8px 32px rgba(0,0,0,0.4);';
+          box.innerHTML = '<div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:4px;">👤 담당자 편집</div><div style="font-size:12px;color:var(--dim);margin-bottom:12px;">여러 명 선택 가능</div>';
+          const list = document.createElement('div');
+          list.style.cssText = 'display:flex;flex-direction:column;gap:4px;';
+          STAFF_LIST.forEach(s => {
+            const btn = document.createElement('button');
+            const isSel = selected.has(s.name);
+            btn.style.cssText = 'text-align:left;padding:10px 14px;border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;transition:all 0.12s;display:flex;align-items:center;gap:8px;' +
+              (isSel ? 'background:var(--accent-bg);border-color:var(--accent);' : 'background:var(--bg);');
+            btn.innerHTML = '<span style="width:18px;height:18px;border-radius:4px;border:2px solid '+(isSel?'var(--accent)':'var(--dim)')+';display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0;">'+(isSel?'✓':'')+'</span>' + s.name;
+            btn.addEventListener('click', () => {
+              if (selected.has(s.name)) selected.delete(s.name); else selected.add(s.name);
+              // 체크 UI 갱신
+              list.querySelectorAll('button').forEach((b,bi) => {
+                const sn = STAFF_LIST[bi].name;
+                const sel = selected.has(sn);
+                b.style.background = sel ? 'var(--accent-bg)' : 'var(--bg)';
+                b.style.borderColor = sel ? 'var(--accent)' : 'var(--border)';
+                const check = b.querySelector('span');
+                check.innerHTML = sel ? '✓' : '';
+                check.style.borderColor = sel ? 'var(--accent)' : 'var(--dim)';
+              });
+            });
+            list.appendChild(btn);
+          });
+          box.appendChild(list);
+          const btnRow = document.createElement('div');
+          btnRow.style.cssText = 'display:flex;gap:6px;margin-top:12px;';
+          const saveBtn = document.createElement('button');
+          saveBtn.textContent = '저장';
+          saveBtn.style.cssText = 'flex:1;padding:10px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;';
+          saveBtn.addEventListener('click', () => {
+            ownerWrap.innerHTML = '';
+            if (selected.size === 0) selected.add('미정');
+            selected.forEach(name => {
+              const chip = document.createElement('span');
+              const staff = STAFF_LIST.find(s => s.name === name);
+              chip.className = 'owner-chip' + (staff && staff.cls ? ' '+staff.cls : '');
+              chip.textContent = name;
+              ownerWrap.appendChild(chip);
+              ownerWrap.appendChild(document.createTextNode(' '));
+            });
+            dd.remove();
+            card.dispatchEvent(new Event('input', {bubbles:true}));
+          });
+          const cancelBtn = document.createElement('button');
+          cancelBtn.textContent = '취소';
+          cancelBtn.style.cssText = 'padding:10px 14px;background:var(--bg);color:var(--dim);border:1px solid var(--border);border-radius:8px;font-size:13px;cursor:pointer;font-family:inherit;';
+          cancelBtn.addEventListener('click', () => dd.remove());
+          btnRow.appendChild(saveBtn);
+          btnRow.appendChild(cancelBtn);
+          box.appendChild(btnRow);
+          dd.appendChild(box);
+          document.body.appendChild(dd);
+          dd.addEventListener('click', (ev) => { if (ev.target === dd) dd.remove(); });
+        });
+      }
+
+      // 일정 영역 — 클릭 시 date range picker (body append 방식)
+      const metaSpans = card.querySelectorAll('.task-meta > span');
+      metaSpans.forEach((sp, j) => {
+        if (!sp.querySelector('.owner-chip') && !sp.querySelector('.badge') && !sp.classList.contains('badge') && !sp.classList.contains('owner-chip')) {
+          sp.style.cssText += 'cursor:pointer;padding:3px 8px;border-radius:6px;border:1px dashed var(--border);transition:all 0.15s;display:inline-flex;align-items:center;gap:4px;';
+          if (sp.textContent.trim() === '미정') {
+            sp.innerHTML = '📅 <span style="color:var(--accent);">일정 설정</span>';
+          }
+          sp.title = '클릭하여 시작일·종료일 설정';
+          sp.addEventListener('mouseenter', () => { sp.style.background='var(--accent-bg)'; sp.style.borderColor='var(--accent)'; });
+          sp.addEventListener('mouseleave', () => { sp.style.background='none'; sp.style.borderColor='var(--border)'; });
+          sp.addEventListener('click', (e) => {
+            e.stopPropagation();
+            document.querySelectorAll('.dp-overlay').forEach(el => el.remove());
+            const orig = sp.textContent.trim();
+            const overlay = document.createElement('div');
+            overlay.className = 'dp-overlay';
+            overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:100;display:flex;align-items:center;justify-content:center;animation:fadeIn 0.15s ease-out;';
+            const box = document.createElement('div');
+            box.style.cssText = 'background:var(--paper);border:1px solid var(--accent);border-radius:14px;padding:24px;width:300px;max-width:90vw;box-shadow:0 8px 32px rgba(0,0,0,0.4);';
+            box.innerHTML = `
+              <div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:16px;display:flex;align-items:center;gap:6px;">📅 일정 설정</div>
+              <label style="font-size:12px;color:var(--accent);font-weight:700;display:block;margin-bottom:4px;">시작일</label>
+              <input type="date" class="dp-start" style="width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:10px 12px;border-radius:8px;font-size:15px;font-family:inherit;margin-bottom:12px;">
+              <label style="font-size:12px;color:var(--accent);font-weight:700;display:block;margin-bottom:4px;">종료일</label>
+              <input type="date" class="dp-end" style="width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:10px 12px;border-radius:8px;font-size:15px;font-family:inherit;margin-bottom:16px;">
+              <div style="display:flex;gap:8px;">
+                <button class="dp-save" style="flex:1;padding:10px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;transition:background 0.12s;">저장</button>
+                <button class="dp-clear" style="padding:10px 14px;background:var(--warm-bg);color:var(--warm);border:1px solid rgba(237,91,63,0.3);border-radius:8px;font-size:14px;cursor:pointer;font-family:inherit;">초기화</button>
+                <button class="dp-cancel" style="padding:10px 14px;background:var(--bg);color:var(--dim);border:1px solid var(--border);border-radius:8px;font-size:14px;cursor:pointer;font-family:inherit;">취소</button>
+              </div>`;
+            const dateMatch = orig.match(/(\d{2})\.(\d{2})\s*~\s*(\d{2})\.(\d{2})/);
+            if (dateMatch) {
+              box.querySelector('.dp-start').value = '2026-'+dateMatch[1]+'-'+dateMatch[2];
+              box.querySelector('.dp-end').value = '2026-'+dateMatch[3]+'-'+dateMatch[4];
+            }
+            overlay.appendChild(box);
+            document.body.appendChild(overlay);
+            overlay.addEventListener('click', (ev) => { if (ev.target === overlay) overlay.remove(); });
+            box.querySelector('.dp-save').addEventListener('click', () => {
+              const s = box.querySelector('.dp-start').value;
+              const en = box.querySelector('.dp-end').value;
+              if (s && en) { sp.textContent = s.slice(5).replace('-','.') + ' ~ ' + en.slice(5).replace('-','.'); }
+              else if (s) { sp.textContent = s.slice(5).replace('-','.') + ' ~'; }
+              else { sp.innerHTML = '📅 <span style="color:var(--accent);">일정 설정</span>'; }
+              // 마감 뱃지 자동 갱신
+              const existBadge = card.querySelector('.badge.warm');
+              if (en) {
+                const today = new Date(); today.setHours(0,0,0,0);
+                const endDate = new Date(en);
+                const diff = Math.ceil((endDate - today) / 86400000);
+                if (diff < 0) {
+                  if (existBadge) { existBadge.textContent = '마감초과'; existBadge.style.background = '#d63031'; }
+                  else { const b = document.createElement('span'); b.className='badge warm'; b.style.cssText='font-size:10px;background:#d63031;'; b.textContent='마감초과'; sp.parentNode.appendChild(b); }
+                  card.style.borderLeft = '3px solid var(--warm)';
+                } else if (diff <= 7) {
+                  if (existBadge) { existBadge.textContent = '마감근접'; existBadge.style.background = ''; }
+                  else { const b = document.createElement('span'); b.className='badge warm'; b.style.cssText='font-size:10px;'; b.textContent='마감근접'; sp.parentNode.appendChild(b); }
+                  card.style.borderLeft = '3px solid var(--warm)';
+                } else {
+                  if (existBadge) existBadge.remove();
+                  card.style.borderLeft = '';
+                }
+              }
+              overlay.remove();
+              card.dispatchEvent(new Event('input', {bubbles:true}));
+            });
+            box.querySelector('.dp-clear').addEventListener('click', () => {
+              sp.innerHTML = '📅 <span style="color:var(--accent);">일정 설정</span>';
+              overlay.remove();
+              card.dispatchEvent(new Event('input', {bubbles:true}));
+            });
+            box.querySelector('.dp-cancel').addEventListener('click', () => overlay.remove());
+            box.querySelector('.dp-start').focus();
+          });
+        }
+      });
+
+      // 3단계 결재 체크 (부서장 · GM · 대표님)
+      const APPROVAL_KEY = 'wellperion-todo-approval';
+      const approvals = JSON.parse(localStorage.getItem(APPROVAL_KEY) || '{}');
+      const fmtDate = (d) => { const dt = new Date(d); return (''+(dt.getMonth()+1)).padStart(2,'0')+'.'+(''+dt.getDate()).padStart(2,'0'); };
+      if (!approvals[id]) approvals[id] = {};
+      const apData = approvals[id];
+      const apWrap = document.createElement('div');
+      apWrap.style.cssText = 'margin-left:auto;display:flex;gap:4px;';
+      const AP_LEVELS = [
+        {key:'dept', label:'부서장', color:'#5b9fd5', bg:'rgba(91,159,213,0.15)'},
+        {key:'gm', label:'GM', color:'#B79F8A', bg:'rgba(183,159,138,0.15)'},
+        {key:'ceo', label:'대표님', color:'#ED5B3F', bg:'rgba(237,91,63,0.15)'},
+      ];
+      AP_LEVELS.forEach(lv => {
+        const btn = document.createElement('button');
+        const isOn = apData[lv.key];
+        btn.textContent = isOn ? lv.label + '(' + fmtDate(isOn) + ')' : lv.label;
+        btn.dataset.approved = isOn ? '1' : '';
+        btn.dataset.level = lv.key;
+        btn.title = lv.label + ' 결재 요청 토글';
+        btn.style.cssText = 'padding:2px 8px;font-size:10px;font-weight:700;border-radius:12px;cursor:pointer;font-family:inherit;transition:all 0.12s;border:1px solid;' +
+          (isOn ? 'background:'+lv.bg+';color:'+lv.color+';border-color:'+lv.color+';' : 'background:var(--bg);color:var(--dim);border-color:var(--border);');
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          if (apData[lv.key]) {
+            delete apData[lv.key];
+            btn.textContent = lv.label;
+            btn.dataset.approved = '';
+            btn.style.background = 'var(--bg)'; btn.style.color = 'var(--dim)'; btn.style.borderColor = 'var(--border)';
+          } else {
+            const now = new Date().toISOString();
+            apData[lv.key] = now;
+            btn.textContent = lv.label + '(' + fmtDate(now) + ')';
+            btn.dataset.approved = '1';
+            btn.style.background = lv.bg; btn.style.color = lv.color; btn.style.borderColor = lv.color;
+          }
+          approvals[id] = apData;
+          localStorage.setItem(APPROVAL_KEY, JSON.stringify(approvals));
+        });
+        apWrap.appendChild(btn);
+      });
+      const metaEl = card.querySelector('.task-meta');
+      if (metaEl) metaEl.appendChild(apWrap);
+
+      // 내용 영역 (task-desc)
+      const desc = card.querySelector('.task-desc');
+      if (desc) {
+        desc.setAttribute('contenteditable', 'true');
+        desc.style.cursor = 'text';
+        desc.style.minHeight = '20px';
+        desc.style.borderBottom = '1px dashed var(--border)';
+        if (!desc.textContent.trim()) desc.setAttribute('placeholder', '내용을 입력하세요');
+      }
+
+      // 저장된 값 복원
+      if (saved[id]) {
+        if (saved[id].desc && desc) desc.innerHTML = saved[id].desc;
+        if (saved[id].meta) {
+          metaSpans.forEach((sp, j) => {
+            if (saved[id].meta[j] && !sp.querySelector('.badge')) sp.innerHTML = saved[id].meta[j];
+          });
+        }
+      }
+
+      // 변경 시 자동 저장
+      card.addEventListener('input', () => {
+        const data = saved[id] || {};
+        if (desc) data.desc = desc.innerHTML;
+        data.meta = {};
+        metaSpans.forEach((sp, j) => { data.meta[j] = sp.innerHTML; });
+        saved[id] = data;
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(saved));
+      });
+    });
+
+    // 담당자 필터 + 편집 안내
+    const todoHeader = document.querySelector('#gm1 .acc-list');
+    if (todoHeader) {
+      const filterWrap = document.createElement('div');
+      filterWrap.style.cssText = 'display:flex;flex-wrap:wrap;gap:6px;margin:-4px 0 12px;align-items:center;';
+
+      const owners = ['전체','김남욱GM','이경연 실장','최준용M','임정은M','윤병현AM','이지영 사원','나우열M','이정헌 소장','대표님 결재건'];
+      const ownerColors = {'김남욱GM':'gm','이경연 실장':'dir','나우열M':'mgr','최준용M':'mgr','임정은M':'mgr','윤병현AM':'mgr','이정헌 소장':'dir'};
+      let activeFilter = '전체';
+
+      owners.forEach(name => {
+        const btn = document.createElement('button');
+        btn.textContent = name;
+        btn.style.cssText = 'padding:5px 12px;font-size:12px;font-weight:600;border-radius:16px;cursor:pointer;font-family:inherit;transition:all 0.12s;border:1px solid var(--border);' +
+          (name === '전체' ? 'background:var(--accent);color:#fff;border-color:var(--accent);' : 'background:var(--bg);color:var(--dim);');
+        btn.addEventListener('click', () => {
+          activeFilter = name;
+          filterWrap.querySelectorAll('button').forEach(b => {
+            b.style.background = 'var(--bg)'; b.style.color = 'var(--dim)'; b.style.borderColor = 'var(--border)';
+          });
+          btn.style.background = 'var(--accent)'; btn.style.color = '#fff'; btn.style.borderColor = 'var(--accent)';
+
+          document.querySelectorAll('.acc-list .task-card').forEach(card => {
+            if (card.style.display === 'none' && card.dataset.doneHidden) return; // 완료 항목은 무시
+            const chipEl = card.querySelector('.owner-chip');
+            const chipName = chipEl ? chipEl.textContent.trim() : '';
+            if (name === '전체') { card.style.display = ''; card.removeAttribute('data-filtered'); }
+            else if (name === '대표님 결재건') {
+              const apBtn = card.querySelector('button[data-approved="1"]');
+              if (apBtn) { card.style.display = ''; card.removeAttribute('data-filtered'); }
+              else { card.style.display = 'none'; card.dataset.filtered = '1'; }
+            }
+            else if (chipName === name) { card.style.display = ''; card.removeAttribute('data-filtered'); }
+            else { card.style.display = 'none'; card.dataset.filtered = '1'; }
+          });
+          // 카테고리별 보이는 건수 업데이트
+          document.querySelectorAll('.acc-item').forEach(acc => {
+            const visible = acc.querySelectorAll('.task-card:not([style*="display: none"])').length;
+            const countEl = acc.querySelector('.cat-count');
+            if (countEl) countEl.textContent = visible + '건';
+            if (name !== '전체') { acc.open = visible > 0; }
+          });
+        });
+        filterWrap.appendChild(btn);
+      });
+
+      // 공유 버튼
+      const shareBtn = document.createElement('button');
+      shareBtn.innerHTML = '📋 공유';
+      shareBtn.style.cssText = 'padding:5px 12px;font-size:12px;font-weight:600;border-radius:16px;cursor:pointer;font-family:inherit;border:1px solid var(--accent);background:var(--accent-bg);color:var(--accent);transition:all 0.12s;margin-left:4px;';
+      shareBtn.addEventListener('click', () => {
+        const lines = [];
+        const title = activeFilter === '전체' ? 'TO DO LIST 전체' : activeFilter + ' 담당 업무';
+        lines.push('━━━ ' + title + ' ━━━');
+        lines.push('기준일: ' + new Date().toISOString().slice(0,10));
+        lines.push('');
+        document.querySelectorAll('.acc-list .acc-item').forEach(acc => {
+          const catName = acc.querySelector('.cat-title')?.textContent || '';
+          const cards = acc.querySelectorAll('.task-card:not([style*="display: none"])');
+          if (cards.length === 0) return;
+          lines.push('▸ ' + catName);
+          cards.forEach(c => {
+            const t = c.querySelector('.task-title')?.textContent.trim() || '';
+            const owner = c.querySelector('.owner-chip')?.textContent.trim() || '';
+            const meta = c.querySelectorAll('.task-meta > span');
+            let schedule = '';
+            meta.forEach(sp => { if (!sp.querySelector('.owner-chip') && !sp.classList.contains('badge') && !sp.querySelector('button')) schedule = sp.textContent.trim(); });
+            const badge = c.querySelector('.badge.warm')?.textContent || '';
+            const desc = c.querySelector('.task-desc')?.textContent.trim() || '';
+            let line = '  · ' + t;
+            if (schedule && schedule !== '📅 일정 설정') line += ' | ' + schedule;
+            if (badge) line += ' [' + badge + ']';
+            if (owner) line += ' @' + owner;
+            lines.push(line);
+            if (desc) lines.push('    → ' + desc);
+          });
+          lines.push('');
+        });
+        const text = lines.join('\n');
+        navigator.clipboard.writeText(text).then(() => {
+          shareBtn.innerHTML = '✅ 복사됨';
+          setTimeout(() => shareBtn.innerHTML = '📋 공유', 2000);
+        });
+      });
+      filterWrap.appendChild(shareBtn);
+
+      const hint = document.createElement('span');
+      hint.style.cssText = 'font-size:11px;color:var(--dim);margin-left:8px;';
+      hint.textContent = '● 도트=완료 · 담당자·일정·내용=편집';
+      filterWrap.appendChild(hint);
+
+      todoHeader.parentNode.insertBefore(filterWrap, todoHeader);
+    }
+
+    // ── 오늘 할 일 완료 버튼 ──
+    document.querySelectorAll('.today-done-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const card = btn.closest('.task-card');
+        const title = card.querySelector('.task-title span:last-of-type')?.textContent.trim() || card.querySelector('.status-dot')?.parentElement.textContent.trim() || '';
+        if (!confirm(title + ' — 완료 처리할까요?')) return;
+        card.style.transition = 'opacity 0.3s';
+        card.style.opacity = '0';
+        setTimeout(() => card.style.display = 'none', 300);
+        const countEl = document.querySelector('#today-done-count');
+        if (countEl) countEl.textContent = parseInt(countEl.textContent) + 1;
+        const logList = document.querySelector('#today-done-list');
+        if (logList) {
+          const d = document.createElement('div');
+          d.style.cssText = 'padding:6px 0;border-bottom:1px dashed var(--border);';
+          d.innerHTML = '<span style="color:var(--green);font-weight:700;">✓</span> <span style="text-decoration:line-through;color:var(--dim-soft);">' + title + '</span> <span style="font-size:11px;color:var(--dim);">· 05-26 완료</span>';
+          logList.prepend(d);
+        }
+      });
+    });
+
+    // ── 마감 뱃지 자동 재계산 (페이지 로드 시) ──
+    document.querySelectorAll('.acc-list .task-card').forEach(card => {
+      const metaSpans = card.querySelectorAll('.task-meta > span');
+      metaSpans.forEach(sp => {
+        if (sp.classList.contains('badge') || sp.classList.contains('owner-chip') || sp.querySelector('.owner-chip')) return;
+        const txt = sp.textContent.trim();
+        const m = txt.match(/(\d{2})\.(\d{2})\s*~\s*(\d{2})\.(\d{2})/);
+        if (!m) return;
+        const endDate = new Date('2026-'+m[3]+'-'+m[4]);
+        const today = new Date(); today.setHours(0,0,0,0);
+        const diff = Math.ceil((endDate - today) / 86400000);
+        let existBadge = card.querySelector('.badge.warm');
+        if (diff < 0) {
+          if (existBadge) { existBadge.textContent = '마감초과'; existBadge.style.background = '#d63031'; }
+          else { const b = document.createElement('span'); b.className='badge warm'; b.style.cssText='font-size:10px;background:#d63031;'; b.textContent='마감초과'; sp.parentNode.appendChild(b); }
+          card.style.borderLeft = '3px solid var(--warm)';
+        } else if (diff <= 7) {
+          if (existBadge) { existBadge.textContent = '마감근접'; existBadge.style.background = ''; }
+          else { const b = document.createElement('span'); b.className='badge warm'; b.style.cssText='font-size:10px;'; b.textContent='마감근접'; sp.parentNode.appendChild(b); }
+          card.style.borderLeft = '3px solid var(--warm)';
+        } else {
+          if (existBadge) existBadge.remove();
+          card.style.borderLeft = '';
+        }
+      });
+    });
+
+    // ── 완료 처리 + 완료 로그 ──
+    const DONE_KEY = 'wellperion-todo-done';
+    const doneList = JSON.parse(localStorage.getItem(DONE_KEY) || '[]');
+
+    // 완료 로그 토글 생성 (acc-list 아래)
+    const accList = document.querySelector('#gm1 .acc-list');
+    if (accList) {
+      const logToggle = document.createElement('details');
+      logToggle.className = 'toggle';
+      logToggle.style.marginTop = '20px';
+      logToggle.innerHTML = `
+        <summary style="color:var(--green);"><span style="margin-right:6px;">✅</span>완료 로그 <span class="done-count" style="font-size:12px;color:var(--dim);margin-left:8px;">(${doneList.length}건)</span></summary>
+        <div class="toggle-body">
+          <div class="done-log-list" style="font-size:13px;"></div>
+          <button class="done-clear-btn" style="margin-top:10px;padding:6px 14px;background:var(--warm-bg);color:var(--warm);border:1px solid rgba(237,91,63,0.3);border-radius:8px;font-size:12px;cursor:pointer;font-family:inherit;">전체 초기화</button>
+        </div>`;
+      accList.parentNode.insertBefore(logToggle, accList.nextSibling);
+
+      const logList = logToggle.querySelector('.done-log-list');
+      function renderDoneLog() {
+        logList.innerHTML = doneList.length === 0
+          ? '<p style="color:var(--dim);">완료된 항목이 없습니다.</p>'
+          : doneList.map((d,i) => `<div style="padding:8px 12px;background:var(--bg);border-radius:8px;margin-bottom:4px;display:flex;justify-content:space-between;align-items:center;">
+              <div><span style="color:var(--green);font-weight:700;">✓</span> <span style="text-decoration:line-through;color:var(--dim-soft);">${d.title}</span> <span style="font-size:11px;color:var(--dim);">· ${d.owner}</span></div>
+              <div style="font-size:11px;color:var(--dim);white-space:nowrap;">${d.doneAt}</div>
+            </div>`).reverse().join('');
+        logToggle.querySelector('.done-count').textContent = `(${doneList.length}건)`;
+      }
+      renderDoneLog();
+
+      logToggle.querySelector('.done-clear-btn').addEventListener('click', () => {
+        if (confirm('완료 로그를 전체 초기화할까요?')) {
+          doneList.length = 0;
+          localStorage.setItem(DONE_KEY, '[]');
+          renderDoneLog();
+        }
+      });
+
+      // 각 task-card의 status-dot 클릭 → 완료 처리
+      document.querySelectorAll('.acc-list .task-card').forEach((card) => {
+        const dot = card.querySelector('.status-dot');
+        if (!dot) return;
+        dot.style.cssText += 'cursor:pointer;width:14px;height:14px;border:2px solid var(--dim);transition:all 0.15s;';
+        dot.title = '클릭하면 완료 처리';
+        dot.addEventListener('mouseenter', () => { dot.style.borderColor='var(--green)'; dot.style.background='var(--green)'; });
+        dot.addEventListener('mouseleave', () => { dot.style.borderColor='var(--dim)'; dot.style.background=dot.classList.contains('active')?'#2c8a4f':dot.classList.contains('urgent')?'#d63031':dot.classList.contains('longterm')?'#1e6fbf':'#e5a100'; });
+        dot.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const titleEl = card.querySelector('.task-title');
+          const ownerEl = card.querySelector('.owner-chip');
+          const title = titleEl ? titleEl.textContent.trim() : '';
+          const owner = ownerEl ? ownerEl.textContent.trim() : '';
+          const now = new Date();
+          const doneAt = now.getFullYear()+'-'+(''+(now.getMonth()+1)).padStart(2,'0')+'-'+(''+ now.getDate()).padStart(2,'0')+' '+(''+ now.getHours()).padStart(2,'0')+':'+(''+ now.getMinutes()).padStart(2,'0');
+          if (!confirm(title + ' — 완료 처리할까요?')) return;
+          doneList.push({title, owner, doneAt});
+          localStorage.setItem(DONE_KEY, JSON.stringify(doneList));
+          card.style.transition = 'opacity 0.3s, max-height 0.3s';
+          card.style.opacity = '0';
+          card.style.maxHeight = '0';
+          card.style.overflow = 'hidden';
+          card.style.margin = '0';
+          card.style.padding = '0';
+          setTimeout(() => card.style.display = 'none', 300);
+          // 카테고리 건수 업데이트
+          const accItem = card.closest('.acc-item');
+          if (accItem) {
+            const countEl = accItem.querySelector('.cat-count');
+            const visible = accItem.querySelectorAll('.task-card:not([style*="display: none"])').length - 1;
+            if (countEl) countEl.textContent = visible + '건';
+          }
+          renderDoneLog();
+        });
+      });
+
+      // 페이지 로드 시 이미 완료 처리된 항목 숨기기
+      const doneTitles = new Set(doneList.map(d => d.title));
+      document.querySelectorAll('.acc-list .task-card').forEach(card => {
+        const titleEl = card.querySelector('.task-title');
+        if (titleEl && doneTitles.has(titleEl.textContent.trim())) {
+          card.style.display = 'none';
+        }
+      });
+    }
+  })();
+
+  // ── TO DO LIST 멀티유저 Sheets 연동 ──
+  (function(){
+    const TODO_API_URL = 'https://script.google.com/macros/s/AKfycbxDwFkrxK1YIaEoSNcuw2MiHiZQ-7o5N6311ytksSyeEd86ZFOhLknOWqQgNArQvZ-7/exec';
+    const TODO_LS_KEY = 'wellperion-todo-sheets';
+    const TODO_USER_KEY = 'wellperion-todo-user';
+    const CATEGORIES = [
+      {value:'[1]매출및영업', label:'[1] 매출 및 영업 전략'},
+      {value:'[2]인사&파트너', label:'[2] 인사&파트너팀'},
+      {value:'[3]운영정책', label:'[3] 운영 정책 및 시스템'},
+      {value:'[4]시설및환경', label:'[4] 시설 및 환경'},
+      {value:'[5]3대비전', label:'[5] 대표님하달 추진'},
+      {value:'[6]회장님하달', label:'[6] 회장님 하달사항'},
+    ];
+    const STAFF_LIST = [
+      {name:'김남욱GM', cls:'gm'}, {name:'이경연 실장', cls:'dir'},
+      {name:'나우열M', cls:'mgr'}, {name:'이정헌 소장', cls:'dir'},
+      {name:'이지영 사원', cls:''},
+    ];
+    const CAT_MAP = {
+      '[1]매출및영업':'[1] 매출 및 영업 전략',
+      '[2]인사&파트너':'[2] 인사&파트너팀',
+      '[3]운영정책':'[3] 운영 정책 및 시스템',
+      '[4]시설및환경':'[4] 시설 및 환경',
+      '[5]3대비전':'[5] 대표님하달 추진',
+      '[6]회장님하달':'[6] 회장님 하달사항',
+    };
+    const CAT_ICONS = {
+      '[1]매출및영업':'💰','[2]인사&파트너':'👥','[3]운영정책':'⚙️',
+      '[4]시설및환경':'🏗️','[5]3대비전':'🎯','[6]회장님하달':'📌',
+    };
+    // 로컬 캐시
+    let todoCache = JSON.parse(localStorage.getItem(TODO_LS_KEY) || '[]');
+
+    // 사용자 선택 복원
+    const userSelect = document.getElementById('todoUserSelect');
+    const syncStatus = document.getElementById('todoSyncStatus');
+    const savedUser = localStorage.getItem(TODO_USER_KEY);
+    if (savedUser && userSelect) {
+      userSelect.value = savedUser;
+    }
+    if (userSelect) {
+      userSelect.addEventListener('change', () => {
+        localStorage.setItem(TODO_USER_KEY, userSelect.value);
+      });
+    }
+
+    function setSyncStatus(msg, isError) {
+      if (!syncStatus) return;
+      syncStatus.textContent = msg;
+      syncStatus.style.color = isError ? 'var(--warm)' : 'var(--grow)';
+      if (!isError) setTimeout(() => syncStatus.textContent = '', 3000);
+    }
+
+    function ownerChipHtml(ownerStr) {
+      if (!ownerStr) return '';
+      return ownerStr.split(',').map(n => {
+        const name = n.trim();
+        const s = STAFF_LIST.find(x => x.name === name);
+        const cls = s && s.cls ? ' ' + s.cls : '';
+        return '<span class="owner-chip' + cls + '">' + name + '</span>';
+      }).join(' ');
+    }
+
+    function formatDateShort(d) {
+      if (!d) return '';
+      return d.slice(5).replace('-', '.');
+    }
+
+    function buildTodoCardHtml(todo) {
+      const endDate = todo.endDate ? new Date(todo.endDate) : null;
+      const today = new Date(); today.setHours(0,0,0,0);
+      let badgeHtml = '';
+      let borderStyle = '';
+      if (endDate) {
+        const diff = Math.ceil((endDate - today) / 86400000);
+        if (diff < 0) {
+          badgeHtml = '<span class="badge warm" style="font-size:10px;background:#d63031;">마감초과</span>';
+          borderStyle = 'border-left:3px solid var(--warm);';
+        } else if (diff <= 7) {
+          badgeHtml = '<span class="badge warm" style="font-size:10px;">마감근접</span>';
+          borderStyle = 'border-left:3px solid var(--warm);';
+        }
+      }
+      const schedule = todo.startDate && todo.endDate
+        ? formatDateShort(todo.startDate) + ' ~ ' + formatDateShort(todo.endDate)
+        : todo.startDate ? formatDateShort(todo.startDate) + ' ~'
+        : todo.endDate ? '~ ' + formatDateShort(todo.endDate)
+        : '미정';
+      const statusDot = todo.status === '완료' ? 'active' : todo.status === '보류' ? 'pending' : 'active';
+      return '<div class="task-card todo-sheets-card" data-todo-id="' + todo.id + '" data-todo-cat="' + (todo.category||'') + '" data-todo-owner="' + (todo.owner||'') + '" style="' + borderStyle + '">'
+        + '<div class="task-title">'
+        + '<span class="status-dot ' + statusDot + '"></span>'
+        + todo.title
+        + ' <span class="badge sheets">Sheets</span>'
+        + '<span class="todo-actions">'
+        + '<button class="todo-act-btn todo-edit-btn" data-id="' + todo.id + '">편집</button>'
+        + '<button class="todo-act-btn todo-done-btn" data-id="' + todo.id + '">완료</button>'
+        + '<button class="todo-act-btn del todo-del-btn" data-id="' + todo.id + '">삭제</button>'
+        + '</span>'
+        + '</div>'
+        + '<div class="task-meta">'
+        + '<span>' + ownerChipHtml(todo.owner) + '</span>'
+        + '<span>' + schedule + '</span>'
+        + badgeHtml
+        + (todo.approval === 'Y' ? '<span class="badge warm" style="font-size:10px;">결재요청</span>' : '')
+        + '</div>'
+        + (todo.content ? '<div class="task-desc" style="font-size:13px;color:var(--dim);margin-top:6px;">' + todo.content + '</div>' : '')
+        + '</div>';
+    }
+
+    // ── Sheets에서 TODO 불러오기 ──
+    function fetchTodos() {
+      setSyncStatus('동기화 중...', false);
+      fetch(TODO_API_URL + '?action=todo_list', {redirect:'follow'})
+        .then(r => r.json())
+        .then(data => {
+          if ((data.ok || data.success) && (data.data || data.todos)) {
+            const raw = data.data || data.todos;
+            todoCache = raw.map(r => ({
+              id: r.id || r.ID || '',
+              title: r['업무명'] || r.title || r.name || '',
+              category: r['카테고리'] || r.category || '',
+              owner: r['담당자'] || r.owner || '',
+              startDate: r['시작일'] || r.startDate || '',
+              endDate: r['종료일'] || r.endDate || '',
+              content: r['내용'] || r.content || '',
+              status: r['상태'] || r.status || '',
+              approval: r['결재요청'] || r.approval || '',
+              link: r['링크'] || r.link || '',
+              fileUrl: r['파일URL'] || r.fileUrl || '',
+              creator: r['생성자'] || r.creator || '',
+            }));
+            localStorage.setItem(TODO_LS_KEY, JSON.stringify(todoCache));
+            renderSheetsTodos();
+            setSyncStatus('동기화 완료 (' + todoCache.length + '건)', false);
+          } else {
+            setSyncStatus('조회 실패', true);
+            renderSheetsTodos(); // 캐시로 렌더링
+          }
+        })
+        .catch(() => {
+          setSyncStatus('오프라인 (캐시 사용)', true);
+          renderSheetsTodos(); // 캐시로 렌더링
+        });
+    }
+
+    // ── Sheets 카드 렌더링 ──
+    function renderSheetsTodos() {
+      // 기존 Sheets 카드 모두 제거
+      document.querySelectorAll('.todo-sheets-card').forEach(el => el.remove());
+      // 기존 Sheets 구분 헤더 제거
+      document.querySelectorAll('.todo-sheets-divider').forEach(el => el.remove());
+
+      if (todoCache.length === 0) return;
+
+      // 카테고리별 그룹화
+      const grouped = {};
+      CATEGORIES.forEach(c => grouped[c.value] = []);
+      todoCache.forEach(t => {
+        if (t.status === '완료') return; // 완료 항목은 제외
+        const cat = t.category || '[1]매출및영업';
+        if (!grouped[cat]) grouped[cat] = [];
+        grouped[cat].push(t);
+      });
+
+      // 각 acc-item에 매칭되는 Sheets 항목 삽입
+      const accItems = document.querySelectorAll('#gm1 .acc-list > .acc-item');
+      accItems.forEach((acc, idx) => {
+        if (idx >= CATEGORIES.length) return;
+        const catKey = CATEGORIES[idx].value;
+        const items = grouped[catKey] || [];
+        if (items.length === 0) return;
+        const body = acc.querySelector('.acc-body');
+        if (!body) return;
+
+        // 구분선
+        const divider = document.createElement('div');
+        divider.className = 'todo-sheets-divider';
+        divider.style.cssText = 'margin:12px 0 8px;padding:6px 0;border-top:1px dashed var(--accent);font-size:11px;font-weight:700;color:var(--accent);';
+        divider.textContent = '추가된 업무 (' + items.length + '건)';
+        body.appendChild(divider);
+
+        items.forEach(todo => {
+          const wrapper = document.createElement('div');
+          wrapper.innerHTML = buildTodoCardHtml(todo);
+          const card = wrapper.firstChild;
+          body.appendChild(card);
+        });
+
+        // 카테고리 건수 업데이트 (기존 + Sheets)
+        const countEl = acc.querySelector('.cat-count');
+        if (countEl) {
+          const existing = acc.querySelectorAll('.task-card:not(.todo-sheets-card)').length;
+          const visible = acc.querySelectorAll('.task-card:not(.todo-sheets-card):not([style*="display: none"])').length;
+          countEl.textContent = (visible + items.length) + '건';
+        }
+      });
+
+      // 이벤트 바인딩
+      bindSheetsCardEvents();
+    }
+
+    // ── Sheets 카드 이벤트 바인딩 ──
+    function bindSheetsCardEvents() {
+      document.querySelectorAll('.todo-edit-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const id = btn.dataset.id;
+          const todo = todoCache.find(t => t.id === id);
+          if (todo) openModal(todo);
+        });
+      });
+      document.querySelectorAll('.todo-done-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const id = btn.dataset.id;
+          const todo = todoCache.find(t => t.id === id);
+          if (!todo) return;
+          if (!confirm(todo.title + ' — 완료 처리할까요?')) return;
+          todoApiCall({action:'todo_done', id:id}, () => {
+            todo.status = '완료';
+            localStorage.setItem(TODO_LS_KEY, JSON.stringify(todoCache));
+            renderSheetsTodos();
+            setSyncStatus('완료 처리됨', false);
+          });
+        });
+      });
+      document.querySelectorAll('.todo-del-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const id = btn.dataset.id;
+          const todo = todoCache.find(t => t.id === id);
+          if (!todo) return;
+          if (!confirm(todo.title + ' — 삭제할까요? 이 작업은 되돌릴 수 없습니다.')) return;
+          todoApiCall({action:'todo_delete', id:id}, () => {
+            todoCache = todoCache.filter(t => t.id !== id);
+            localStorage.setItem(TODO_LS_KEY, JSON.stringify(todoCache));
+            renderSheetsTodos();
+            setSyncStatus('삭제 완료', false);
+          });
+        });
+      });
+    }
+
+    // ── API 호출 헬퍼 ──
+    function todoApiCall(body, onSuccess) {
+      setSyncStatus('처리 중...', false);
+      const params = new URLSearchParams();
+      Object.keys(body).forEach(k => { if (body[k] !== undefined && body[k] !== null) params.set(k, body[k]); });
+      fetch(TODO_API_URL + '?' + params.toString(), { redirect:'follow' })
+      .then(r => r.json())
+      .then(data => {
+        if (data.ok || data.success) {
+          setSyncStatus('저장 완료', false);
+          if (onSuccess) onSuccess(data);
+        } else {
+          setSyncStatus('오류: ' + (data.error||'알 수 없음'), true);
+        }
+      })
+      .catch(err => {
+        setSyncStatus('네트워크 오류 — 로컬 저장', true);
+        if (onSuccess) onSuccess({ok:true, offline:true});
+      });
+    }
+
+    // ── 모달 (추가/편집) ──
+    function openModal(editTodo) {
+      // 기존 모달 제거
+      document.querySelectorAll('.todo-modal-overlay').forEach(el => el.remove());
+
+      const isEdit = !!editTodo;
+      const currentUser = userSelect ? userSelect.value : '김남욱GM';
+      const overlay = document.createElement('div');
+      overlay.className = 'todo-modal-overlay';
+
+      const selectedOwners = new Set();
+      if (isEdit && editTodo.owner) {
+        editTodo.owner.split(',').forEach(n => selectedOwners.add(n.trim()));
+      } else {
+        selectedOwners.add(currentUser);
+      }
+
+      let ownerCheckHtml = STAFF_LIST.map(s => {
+        const sel = selectedOwners.has(s.name) ? ' selected' : '';
+        return '<span class="owner-check-item' + sel + '" data-name="' + s.name + '">' + s.name + '</span>';
+      }).join('');
+
+      overlay.innerHTML = '<div class="todo-modal">'
+        + '<h3>' + (isEdit ? '업무 편집' : '업무 추가') + '</h3>'
+        + '<label>업무명 (필수)</label>'
+        + '<input type="text" id="todoModalTitle" value="' + (isEdit ? (editTodo.title||'').replace(/"/g,'&quot;') : '') + '" placeholder="업무명을 입력하세요">'
+        + '<label>카테고리</label>'
+        + '<select id="todoModalCat">'
+        + CATEGORIES.map(c => '<option value="' + c.value + '"' + (isEdit && editTodo.category === c.value ? ' selected' : '') + '>' + c.label + '</option>').join('')
+        + '</select>'
+        + '<label>담당자 (복수 선택)</label>'
+        + '<div class="owner-check-list" id="todoModalOwners">' + ownerCheckHtml + '</div>'
+        + '<div class="modal-row">'
+        + '<div><label>시작일</label><input type="date" id="todoModalStart" value="' + (isEdit ? editTodo.startDate||'' : '') + '"></div>'
+        + '<div><label>종료일</label><input type="date" id="todoModalEnd" value="' + (isEdit ? editTodo.endDate||'' : '') + '"></div>'
+        + '</div>'
+        + '<label>내용</label>'
+        + '<textarea id="todoModalContent" placeholder="상세 내용 (선택)">' + (isEdit ? editTodo.content||'' : '') + '</textarea>'
+        + '<label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin-top:12px;">'
+        + '<input type="checkbox" id="todoModalApproval"' + (isEdit && editTodo.approval === 'Y' ? ' checked' : '') + ' style="width:auto;accent-color:var(--warm);">'
+        + '<span style="font-size:13px;color:var(--warm);font-weight:600;">결재 요청</span></label>'
+        + '<div class="modal-actions">'
+        + '<button class="btn-save" id="todoModalSave">' + (isEdit ? '수정' : '추가') + '</button>'
+        + '<button class="btn-cancel" id="todoModalCancel">취소</button>'
+        + '</div>'
+        + '</div>';
+
+      document.body.appendChild(overlay);
+
+      // 담당자 복수 선택 토글
+      overlay.querySelectorAll('.owner-check-item').forEach(item => {
+        item.addEventListener('click', () => {
+          item.classList.toggle('selected');
+        });
+      });
+
+      // 바깥 클릭 닫기
+      overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
+
+      // 취소
+      overlay.querySelector('#todoModalCancel').addEventListener('click', () => overlay.remove());
+
+      // 저장
+      overlay.querySelector('#todoModalSave').addEventListener('click', () => {
+        const title = overlay.querySelector('#todoModalTitle').value.trim();
+        if (!title) { alert('업무명을 입력하세요.'); return; }
+
+        const owners = [];
+        overlay.querySelectorAll('.owner-check-item.selected').forEach(el => owners.push(el.dataset.name));
+
+        const payload = {
+          action: isEdit ? 'todo_update' : 'todo_add',
+          title: title,
+          category: overlay.querySelector('#todoModalCat').value,
+          owner: owners.join(', '),
+          startDate: overlay.querySelector('#todoModalStart').value,
+          endDate: overlay.querySelector('#todoModalEnd').value,
+          content: overlay.querySelector('#todoModalContent').value.trim(),
+          approval: overlay.querySelector('#todoModalApproval').checked ? 'Y' : '',
+        };
+        if (isEdit) payload.id = editTodo.id;
+
+        todoApiCall(payload, (data) => {
+          if (isEdit) {
+            // 로컬 캐시 업데이트
+            const idx = todoCache.findIndex(t => t.id === editTodo.id);
+            if (idx >= 0) {
+              Object.assign(todoCache[idx], {
+                title: payload.title,
+                category: payload.category,
+                owner: payload.owner,
+                startDate: payload.startDate,
+                endDate: payload.endDate,
+                content: payload.content,
+                approval: payload.approval,
+              });
+            }
+          } else {
+            // 새 항목 캐시 추가
+            const newId = data.id || ('TD-local-' + Date.now());
+            todoCache.push({
+              id: newId,
+              title: payload.title,
+              category: payload.category,
+              owner: payload.owner,
+              startDate: payload.startDate,
+              endDate: payload.endDate,
+              content: payload.content,
+              status: '진행중',
+              approval: payload.approval,
+              createdAt: new Date().toISOString().slice(0,10),
+              updatedAt: new Date().toISOString().slice(0,10),
+            });
+          }
+          localStorage.setItem(TODO_LS_KEY, JSON.stringify(todoCache));
+          renderSheetsTodos();
+          overlay.remove();
+          setSyncStatus(isEdit ? '수정 완료' : '추가 완료', false);
+        });
+      });
+
+      // 포커스
+      overlay.querySelector('#todoModalTitle').focus();
+    }
+
+    // ── 업무 추가 버튼 ──
+    const addBtn = document.getElementById('todoAddBtn');
+    if (addBtn) {
+      addBtn.addEventListener('click', () => openModal(null));
+    }
+
+    // ── 페이지 로드 시 Sheets 동기화 ──
+    fetchTodos();
+  })();
 
   // 인쇄 시 모든 아코디언 펼치기 → 인쇄 후 원래대로 복원
   window.addEventListener('beforeprint', () => {

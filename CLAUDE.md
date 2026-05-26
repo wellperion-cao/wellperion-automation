@@ -75,6 +75,7 @@
 
 ## 6. 가이드허브 — GM·AI CEO 통합 SSOT
 
-위치: `1. 업무자료_아카이브/1. 웰페리온_가이드허브+GM업무.html`
+위치: `3. 웰페리온 가이드(netlify)/wellperion_guide(main).html`
+배포: https://wellperion-guide.netlify.app/
 GM 업무·AI C-Level 협업 매뉴얼·교육자료·고도화 프롬프트의 단일 마스터 문서.
 세부 지식은 본 CLAUDE.md에 복사하지 않고, 필요 시 허브를 펼쳐 참조한다 (허브 = 원본, CLAUDE.md = 인덱스).
