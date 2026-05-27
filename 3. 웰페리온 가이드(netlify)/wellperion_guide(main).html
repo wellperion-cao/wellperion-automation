@@ -279,7 +279,7 @@
 
 <aside class="sidebar">
   <div class="brand">
-    <h1>웰페리온 가이드 허브 v2.3</h1>
+    <h1>웰페리온 가이드 허브 v2.4</h1>
     <div class="sub">웰페리온 자동화 운영의 모든 것</div>
   </div>
 
@@ -347,12 +347,12 @@
     </div>
 
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin:18px 0 24px;">
-      <a href="#" onclick="event.preventDefault();document.querySelector('[data-doc=gm1]').click();" style="display:inline-flex;align-items:center;gap:6px;padding:12px 20px;background:var(--accent);color:#fff;font-size:14px;font-weight:700;border-radius:10px;text-decoration:none;transition:background 0.12s;box-shadow:0 2px 8px rgba(183,159,138,0.3);">📋 김남욱</a>
-      <a href="#" onclick="event.preventDefault();document.querySelector('[data-doc=g9]').click();" style="display:inline-flex;align-items:center;gap:6px;padding:12px 20px;background:var(--paper);color:var(--accent);font-size:14px;font-weight:700;border-radius:10px;text-decoration:none;border:1px solid var(--accent);transition:background 0.12s;">📄 회사소개서</a>
-      <a href="#" onclick="event.preventDefault();document.querySelector('[data-doc=g20]').click();" style="display:inline-flex;align-items:center;gap:6px;padding:12px 20px;background:var(--paper);color:var(--accent);font-size:14px;font-weight:700;border-radius:10px;text-decoration:none;border:1px solid var(--accent);transition:background 0.12s;">🗺️ 전략 로드맵</a>
-      <a href="https://wellperion-cao.github.io/wellperion-automation/coo/todo/%EC%97%85%EB%AC%B4%20%ED%98%84%ED%99%A9%20SSOT.html" target="_blank" style="display:inline-flex;align-items:center;gap:6px;padding:12px 20px;background:var(--green-bg);color:var(--green);font-size:14px;font-weight:700;border-radius:10px;text-decoration:none;border:1px solid rgba(106,191,123,0.3);transition:background 0.12s;">📝 업무 현황 SSOT</a>
+      <a href="#" onclick="event.preventDefault();document.querySelector('[data-doc=gm1]').click();" style="display:inline-flex;align-items:center;gap:6px;padding:12px 20px;background:var(--accent);color:#fff;font-size:14px;font-weight:700;border-radius:10px;text-decoration:none;border:1px solid var(--accent);transition:background 0.12s;">📋 김남욱 GM</a>
+      <a href="https://wellperion-cao.github.io/wellperion-automation/coo/todo/%EC%97%85%EB%AC%B4%20%ED%98%84%ED%99%A9%20SSOT.html" target="_blank" style="display:inline-flex;align-items:center;gap:6px;padding:12px 20px;background:var(--accent-bg);color:var(--accent);font-size:14px;font-weight:700;border-radius:10px;text-decoration:none;border:1px solid rgba(183,159,138,0.3);transition:background 0.12s;">📝 업무 현황 SSOT</a>
       <a href="https://wellperion-cao.github.io/wellperion-automation/coo/check/%EC%A7%80%EC%9B%90%EB%B6%80%20%EC%B2%B4%EA%B3%84.html" target="_blank" style="display:inline-flex;align-items:center;gap:6px;padding:12px 20px;background:var(--accent-bg);color:var(--accent);font-size:14px;font-weight:700;border-radius:10px;text-decoration:none;border:1px solid rgba(183,159,138,0.3);transition:background 0.12s;">✅ 지원부 체계</a>
-      <a href="https://wellperion-cao.github.io/wellperion-automation/cfo/expense/%EC%A7%80%EC%B6%9C%ED%98%84%ED%99%A9.html" target="_blank" style="display:inline-flex;align-items:center;gap:6px;padding:12px 20px;background:#fff3e0;color:#e65100;font-size:14px;font-weight:700;border-radius:10px;text-decoration:none;border:1px solid rgba(230,81,0,0.3);transition:background 0.12s;">💰 지출현황</a>
+      <a href="https://wellperion-cao.github.io/wellperion-automation/cfo/expense/%EC%A7%80%EC%B6%9C%ED%98%84%ED%99%A9.html" target="_blank" style="display:inline-flex;align-items:center;gap:6px;padding:12px 20px;background:var(--accent-bg);color:var(--accent);font-size:14px;font-weight:700;border-radius:10px;text-decoration:none;border:1px solid rgba(183,159,138,0.3);transition:background 0.12s;">💰 지출현황</a>
+      <a href="#" onclick="event.preventDefault();document.querySelector('[data-doc=g9]').click();" style="display:inline-flex;align-items:center;gap:6px;padding:12px 20px;background:var(--accent-bg);color:var(--accent);font-size:14px;font-weight:700;border-radius:10px;text-decoration:none;border:1px solid rgba(183,159,138,0.3);transition:background 0.12s;">🏢 회사소개서</a>
+      <a href="#" onclick="event.preventDefault();document.querySelector('[data-doc=g20]').click();" style="display:inline-flex;align-items:center;gap:6px;padding:12px 20px;background:var(--accent-bg);color:var(--accent);font-size:14px;font-weight:700;border-radius:10px;text-decoration:none;border:1px solid rgba(183,159,138,0.3);transition:background 0.12s;">🗺️ 전략 로드맵</a>
     </div>
 
     <h3><span class="ico">📚</span>수록된 가이드</h3>
@@ -2675,7 +2675,17 @@ Start-Process python -ArgumentList telegram_bot\daily_scheduler.py -WorkingDirec
       <span class="badge gray" style="padding:6px 14px;font-size:13px;">주차관리부 (예정)</span>
     </div>
 
-    <h3 style="border-bottom:2px solid var(--accent);padding-bottom:8px;">운영 체계 구축 가이드 <span style="font-size:13px;color:var(--dim);font-weight:400;">최준용M · 윤병현AM</span></h3>
+    <h3 style="border-bottom:2px solid var(--accent);padding-bottom:8px;">운영 체계 구축 가이드</h3>
+    <p style="font-size:13px;color:var(--dim);margin-bottom:16px;">새 부서의 운영 체계를 구축할 때 따르는 순서입니다. 아래 4단계로 구조를 잡고, 지원부 체계를 참고 템플릿으로 사용합니다.</p>
+
+    <table>
+      <tr><th style="width:40px">#</th><th style="width:140px">단계</th><th>작업</th></tr>
+      <tr><td>1</td><td><strong>규정 정립</strong></td><td>운영시간·근무조·위생기준·안전보고·회의 일정·고도화 정의</td></tr>
+      <tr><td>2</td><td><strong>가이드 작성</strong></td><td>응대·태도·복장·구역별 관리 기준 + 직원&파트너 기본 에티켓</td></tr>
+      <tr><td>3</td><td><strong>매뉴얼 제작</strong></td><td>시간대별 업무 절차 (오전·오후·마감·야간)</td></tr>
+      <tr><td>4</td><td><strong>체크리스트·기록·이슈</strong></td><td>점검 도구 + 인수인계 양식 + 반복 이슈·노하우 누적</td></tr>
+    </table>
+    <div class="callout tip" style="margin-top:12px;"><strong>참고 템플릿:</strong> 지원부 체계의 4탭 구조를 복제해서 부서명·구역·절차만 교체하면 됩니다.</div>
 
     <div class="tab-nav" style="display:flex;gap:4px;flex-wrap:wrap;margin:16px 0 0;border-bottom:2px solid var(--border);padding-bottom:0;">
       <button class="fw-tab active" onclick="fwTab(this,'fw1')" style="padding:8px 14px;font-size:13px;font-weight:700;border:none;background:none;color:var(--accent);cursor:pointer;border-bottom:2px solid var(--accent);margin-bottom:-2px;font-family:inherit;">지원부 규정</button>
