@@ -1947,17 +1947,6 @@ Start-Process python -ArgumentList telegram_bot\daily_scheduler.py -WorkingDirec
     <div style="margin:18px 0 24px;">
       <h3 id="gm1-todo-date"><span class="ico">📌</span>오늘 할 일</h3>
       <div id="today-task-list">
-        <div class="task-card" data-today="5">
-          <div class="task-title" style="display:flex;align-items:center;justify-content:space-between;">
-            <span><span class="status-dot active"></span>마그네슘(Cenovis) 저녁 1알</span>
-            <div class="todo-actions">
-              <button class="todo-act-btn today-act" data-action="done">완료</button>
-              <button class="todo-act-btn today-act" data-action="hold">보류</button>
-              <button class="todo-act-btn today-act del" data-action="delete">삭제</button>
-            </div>
-          </div>
-          <div class="task-desc">수면 질 개선용. 1~2주 후 체감 없으면 글리시네이트 형태 교체 검토.</div>
-        </div>
       </div>
       <div style="display:flex;gap:12px;margin-top:16px;">
         <details class="toggle" style="flex:1;" open>
@@ -1969,8 +1958,10 @@ Start-Process python -ArgumentList telegram_bot\daily_scheduler.py -WorkingDirec
           </div>
         </details>
         <details class="toggle" style="flex:1;">
-          <summary style="color:var(--accent);"><span style="margin-right:6px;">⏸️</span>보류 (<span id="today-hold-count">0</span>건)</summary>
-          <div class="toggle-body" style="font-size:13px;" id="today-hold-list"></div>
+          <summary style="color:var(--accent);"><span style="margin-right:6px;">⏸️</span>보류 (<span id="today-hold-count">1</span>건)</summary>
+          <div class="toggle-body" style="font-size:13px;" id="today-hold-list">
+            <div style="padding:6px 0;"><span style="color:var(--accent);font-weight:700;">⏸</span> <span style="color:var(--dim-soft);">마그네슘(Cenovis) 저녁 1알</span> <span style="font-size:11px;color:var(--dim);">· 컨디션 불량으로 보류</span></div>
+          </div>
         </details>
       </div>
       <details class="toggle" style="margin-top:10px;">
