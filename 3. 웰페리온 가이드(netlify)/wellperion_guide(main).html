@@ -389,6 +389,7 @@
       <a data-doc="gm1" data-tab="daily">주말(일)</a>
       <a data-doc="gm1" data-tab="tracker">컨디션 트래커</a>
       <a data-doc="gm1" data-tab="principles">목표·원칙</a>
+      <a data-doc="gm1" data-tab="nutrition">영양 관리</a>
     </div>
   </nav>
 
@@ -2029,6 +2030,7 @@ Start-Process python -ArgumentList telegram_bot\daily_scheduler.py -WorkingDirec
         <button class="tab-btn" data-tab="daily">주말(일)</button>
         <button class="tab-btn" data-tab="tracker">컨디션 트래커</button>
         <button class="tab-btn" data-tab="principles">목표·원칙</button>
+        <button class="tab-btn" data-tab="nutrition">영양 관리</button>
       </div>
 
       <!-- 평일(월~토) -->
@@ -2212,6 +2214,69 @@ Start-Process python -ArgumentList telegram_bot\daily_scheduler.py -WorkingDirec
           <p><strong>매출 = 금액(Price) × 수량(Quantity)</strong><br>Price = 장인이 만드는 가치 · Quantity = 마케터와 조직이 확장시키는 시장 규모</p>
         </div>
         <div class="source">출처: 남욱.pdf (2026.1.10 수립) · 07_GM 루틴(건강&업무) 폴더</div>
+      </div>
+
+      <!-- 영양 관리 -->
+      <div class="tab-panel" data-panel="nutrition">
+        <h3><span class="ico">🥗</span>영양 관리</h3>
+        <p>현재 섭취 중인 식품·보충제의 영양 정보와 개선 제안입니다.</p>
+
+        <h4>현재 섭취 제품 영양표</h4>
+        <table>
+          <tr><th>제품</th><th>1회 제공량</th><th>칼로리</th><th>탄수화물</th><th>단백질</th><th>지방</th><th>당류</th><th>나트륨</th></tr>
+          <tr><td><strong>CCA주스</strong> (갈아만든 마름)<br><span style="font-size:11px;color:var(--dim);">사과·당근·양배추·레몬</span></td><td>100ml</td><td>40kcal</td><td>9g</td><td>0.3g</td><td>0.3g</td><td>5g</td><td>9mg</td></tr>
+          <tr><td><strong>올리브오일</strong> (성수동 유기농)<br><span style="font-size:11px;color:var(--dim);">유기농 엑스트라버진 100%</span></td><td>10ml(1스푼)</td><td>88kcal</td><td>0g</td><td>0g</td><td>9.7g</td><td>0g</td><td>0mg</td></tr>
+          <tr><td><strong>빼빼주스</strong> (마름)<br><span style="font-size:11px;color:var(--dim);">토마토·블루베리·아스파라거스·올리브유</span></td><td>100ml</td><td>34kcal</td><td>8g</td><td>0.5g</td><td>0g</td><td>7g</td><td>0mg</td></tr>
+          <tr><td><strong>꿀고구마 말랭이</strong><br><span style="font-size:11px;color:var(--dim);">고구마 100% (국산)</span></td><td>60g</td><td>184kcal</td><td>43.7g</td><td>2.1g</td><td>0.1g</td><td>8.2g</td><td>19mg</td></tr>
+          <tr><td><strong>애사비소다 콜라 제로</strong> (클룹)<br><span style="font-size:11px;color:var(--dim);">탄산음료 대체</span></td><td>500ml</td><td>0kcal</td><td>0g</td><td>0g</td><td>0g</td><td>0g</td><td>-</td></tr>
+        </table>
+
+        <h4>일일 보충제</h4>
+        <table>
+          <tr><th>시간대</th><th>보충제</th><th>목적</th></tr>
+          <tr><td>아침 공복</td><td>올리브오일 1스푼</td><td>위벽 코팅 + 장 자극</td></tr>
+          <tr><td>아침 공복</td><td>유산균 1알 (Probiotics Story)</td><td>장 건강 (오일 보호막 직후 생존율 높음)</td></tr>
+          <tr><td>아침 식후</td><td>발포비타민 (비타하임 C500)</td><td>비타민C 보충 (유산균과 10분+ 간격)</td></tr>
+          <tr><td>오후</td><td>비타민D</td><td>뼈·면역</td></tr>
+          <tr><td>저녁</td><td>마그네슘 1알 (Cenovis)</td><td>수면 질 + 눈떨림(근육 이완)</td></tr>
+        </table>
+
+        <h4>일일 영양 추정 합산</h4>
+        <table>
+          <tr><th>끼니</th><th>구성</th><th>칼로리(추정)</th><th>단백질(추정)</th></tr>
+          <tr><td>아침</td><td>CCA주스 + 올리브오일 + 달걀1 + 사과 + 비타민수</td><td>~300kcal</td><td>~8g</td></tr>
+          <tr><td>점심</td><td>일반식 (밥 + 반찬)</td><td>~600kcal</td><td>~20g</td></tr>
+          <tr><td>간식</td><td>고구마 말랭이 + 애사비소다</td><td>~184kcal</td><td>~2g</td></tr>
+          <tr><td>저녁</td><td>빼빼주스 + 닭가슴살/생선 + 채소 + 쌀밥</td><td>~500kcal</td><td>~35g</td></tr>
+          <tr style="background:var(--accent-bg);font-weight:700;"><td>합계</td><td></td><td>~1,584kcal</td><td>~65g</td></tr>
+        </table>
+
+        <h3><span class="ico">💡</span>개선 제안</h3>
+        <div class="card warm">
+          <h4>1. 단백질 부족 (현재 ~65g → 권장 ~120g)</h4>
+          <p>체중 95kg 기준 하루 단백질 권장량은 체중 × 1.2~1.6g = 114~152g. 현재 절반 수준.<br>
+          <strong>제안:</strong> 아침 달걀 2개로 증량 / 점심에 닭가슴살·두부 추가 / 간식으로 그릭요거트 또는 단백질바</p>
+        </div>
+        <div class="card accent">
+          <h4>2. 총 칼로리 낮음 (현재 ~1,584kcal)</h4>
+          <p>95kg 남성 + 러닝 10km 기준 기초대사량만 ~2,000kcal. 운동일 총 필요량 ~2,500kcal.<br>
+          <strong>제안:</strong> 무리한 감량보다 단백질 위주로 200~300kcal 추가. 근손실 방지가 체중 감량보다 우선</p>
+        </div>
+        <div class="card grow">
+          <h4>3. 당류 관리 양호</h4>
+          <p>CCA주스(5g) + 빼빼주스(7g) + 고구마(8g) = 일 ~20g. WHO 권장(25g 이하) 충족. 애사비소다 제로 전환도 적절.</p>
+        </div>
+        <div class="card">
+          <h4>4. 나트륨 주의 (점심)</h4>
+          <p>아침·저녁은 저나트륨 식단이지만 점심 일반식에서 대부분 섭취. 국물류 주의 유지하면 충분.</p>
+        </div>
+        <div class="card accent">
+          <h4>5. 마그네슘 형태 교체 권장</h4>
+          <p>현재 Cenovis(옥사이드) → 흡수율 4%. 글리시네이트 형태(흡수율 ~80%)로 교체 시 수면 질 체감 확연.<br>
+          <strong>추천:</strong> 나우푸드 또는 닥터스베스트 200mg 글리시네이트</p>
+        </div>
+
+        <div class="callout tip"><strong>핵심 요약:</strong> 당류·나트륨은 잘 관리되고 있음. 단백질만 2배 늘리면 근손실 방지 + 체중 감량 + 수면 질 개선 동시 달성 가능.</div>
       </div>
     </div>
   </article>
