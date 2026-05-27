@@ -337,7 +337,6 @@
     <a data-doc="ghome"><span class="num">🌐</span><span class="label">공식 채널</span></a>
     <a data-doc="g9"><span class="num">🏢</span><span class="label">회사소개서</span></a>
     <a data-doc="g20"><span class="num">🗺️</span><span class="label">전략 로드맵</span></a>
-    <a data-doc="g12"><span class="num">🎨</span><span class="label">브랜드 디자인 가이드</span></a>
   </nav>
 
   <div class="nav-label">김남욱 GM</div>
@@ -368,7 +367,7 @@
       <a href="#" onclick="event.preventDefault();document.querySelector('[data-doc=g9]').click();" style="display:inline-flex;align-items:center;gap:6px;padding:12px 20px;background:var(--paper);color:var(--accent);font-size:14px;font-weight:700;border-radius:10px;text-decoration:none;border:1px solid var(--accent);transition:background 0.12s;">📄 회사소개서</a>
       <a href="#" onclick="event.preventDefault();document.querySelector('[data-doc=g20]').click();" style="display:inline-flex;align-items:center;gap:6px;padding:12px 20px;background:var(--paper);color:var(--accent);font-size:14px;font-weight:700;border-radius:10px;text-decoration:none;border:1px solid var(--accent);transition:background 0.12s;">🗺️ 전략 로드맵</a>
       <a href="coo/todo/%ED%95%B5%EC%8B%AC%EB%A9%A4%EB%B2%84%20%ED%88%AC%EB%91%90%EB%A6%AC%EC%8A%A4%ED%8A%B8.html" target="_blank" style="display:inline-flex;align-items:center;gap:6px;padding:12px 20px;background:var(--green-bg);color:var(--green);font-size:14px;font-weight:700;border-radius:10px;text-decoration:none;border:1px solid rgba(106,191,123,0.3);transition:background 0.12s;">📝 업무 현황 SSOT</a>
-      <a href="coo/check/%EC%A7%80%EC%9B%90%ED%8C%80%20%EC%B2%B4%ED%81%AC%EB%A6%AC%EC%8A%A4%ED%8A%B8.html" target="_blank" style="display:inline-flex;align-items:center;gap:6px;padding:12px 20px;background:var(--accent-bg);color:var(--accent);font-size:14px;font-weight:700;border-radius:10px;text-decoration:none;border:1px solid rgba(183,159,138,0.3);transition:background 0.12s;">✅ 체크리스트</a>
+      <a href="coo/check/%EC%A7%80%EC%9B%90%EB%B6%80%20%EC%B2%B4%EA%B3%84.html" target="_blank" style="display:inline-flex;align-items:center;gap:6px;padding:12px 20px;background:var(--accent-bg);color:var(--accent);font-size:14px;font-weight:700;border-radius:10px;text-decoration:none;border:1px solid rgba(183,159,138,0.3);transition:background 0.12s;">✅ 지원부 체계</a>
       <a href="cfo/expense/%EC%A7%80%EC%B6%9C%ED%98%84%ED%99%A9.html" target="_blank" style="display:inline-flex;align-items:center;gap:6px;padding:12px 20px;background:#fff3e0;color:#e65100;font-size:14px;font-weight:700;border-radius:10px;text-decoration:none;border:1px solid rgba(230,81,0,0.3);transition:background 0.12s;">💰 지출현황</a>
     </div>
 
@@ -456,6 +455,7 @@
       <div class="tab-nav">
         <button class="tab-btn active" data-tab="how-to">업데이트 방법</button>
         <button class="tab-btn" data-tab="company-guide">회사 가이드라인</button>
+        <button class="tab-btn" data-tab="brand-design">브랜드 디자인</button>
       </div>
 
       <div class="tab-panel active" data-panel="how-to">
@@ -526,6 +526,71 @@
         </ul></div>
 
         <div class="callout"><strong>이 가이드라인 변경 시:</strong> GM님 결재 필수. 변경 후 전 부서 공지 의무.</div>
+      </div>
+
+      <div class="tab-panel" data-panel="brand-design">
+        <h3><span class="ico">🎨</span>브랜드 디자인 가이드</h3>
+        <p>WELLPERION 브랜드 디자인의 모든 기준. 로고·컬러·타이포·톤앤매너. 모든 콘텐츠 제작은 이 가이드를 따릅니다.</p>
+
+        <h4>핵심 정체성</h4>
+        <div class="card accent">
+          <h4>WELLPERION (웰페리온)</h4>
+          <p><strong>하이엔드 프라이빗 스포츠클럽</strong></p>
+          <p>슬로건: PREMIUM LIFESTYLE CLUB / A Day, Well Completed.</p>
+        </div>
+
+        <h4>로고 파일</h4>
+        <table>
+          <tr><th>파일</th><th>색상</th><th>용도</th></tr>
+          <tr><td><code>_assets/logo/wellperion_white.png</code></td><td>#FFFFFF</td><td>어두운 배경 (인스타 메인)</td></tr>
+          <tr><td><code>_assets/logo/wellperion_beige.png</code></td><td>#B79F8A</td><td>밝은 배경</td></tr>
+          <tr><td><code>_assets/logo/wellperion_black.png</code></td><td>#000000</td><td>인쇄용</td></tr>
+        </table>
+        <div class="callout fix"><strong>W 심볼 직접 그리기 금지.</strong> 정식 PNG 파일만 사용.</div>
+
+        <h4>메인 컬러</h4>
+        <table>
+          <tr><th>역할</th><th>HEX</th><th>용도</th></tr>
+          <tr><td>BEIGE (Primary)</td><td><strong>#B79F8A</strong></td><td>로고·텍스트 강조</td></tr>
+          <tr><td>BLACK (Background)</td><td><strong>#221F20</strong></td><td>메인 배경 (따뜻한 차콜)</td></tr>
+          <tr><td>HIGHLIGHT</td><td><strong>#ED5B3F</strong></td><td>CTA·강한 주목</td></tr>
+        </table>
+
+        <h4>서브 브랜드 컬러</h4>
+        <table>
+          <tr><th>사업부</th><th>Logo HEX</th><th>BG HEX</th></tr>
+          <tr><td>W PT</td><td>#B54840</td><td>#512B32</td></tr>
+          <tr><td>SPORTS CLUB</td><td>#3F71B0</td><td>#253B6C</td></tr>
+          <tr><td>W PILATES</td><td>#C44558</td><td>#822A37</td></tr>
+          <tr><td>W SWIMMING</td><td>#215768</td><td>#172C42</td></tr>
+          <tr><td>W SQUASH</td><td>#D2D2D2</td><td>#77968E</td></tr>
+          <tr><td>W GOLF</td><td>#337342</td><td>#132117</td></tr>
+          <tr><td>W GYMNASTIC</td><td>#C2BAD6</td><td>#563A61</td></tr>
+          <tr><td>BRAD LITTLE'S</td><td>#FFFFFF</td><td>#000000</td></tr>
+        </table>
+
+        <h4>타이포그래피</h4>
+        <table>
+          <tr><th>용도</th><th>서체</th></tr>
+          <tr><td>영문 헤드라인</td><td>ITC Avant Garde / Medium</td></tr>
+          <tr><td>Sports Club 전용</td><td>Hudson NY Serif</td></tr>
+          <tr><td>한글·본문</td><td>Pretendard (Bold/Medium/SemiBold)</td></tr>
+        </table>
+
+        <h4>톤앤매너</h4>
+        <div class="grid-2">
+          <div class="card grow"><h4>허용</h4><ul><li>정중</li><li>절제</li><li>럭셔리</li><li>신뢰감</li></ul></div>
+          <div class="card warm"><h4>금지</h4><ul><li>캐주얼</li><li>컬러풀</li><li>이모지 과다</li><li>과장 그라디언트</li><li>만화체</li></ul></div>
+        </div>
+
+        <h4>인스타그램 적용 규칙</h4>
+        <ul>
+          <li>배경: BLACK / 사진 위 50~70% 블랙 마스크</li>
+          <li>텍스트: BEIGE(메인) + WHITE(보조) + HIGHLIGHT(강조)</li>
+          <li>레이아웃: 여백 크게, 중앙/좌측 정렬, 박스 라운드 8~16px</li>
+          <li>로고: 하단 중앙 또는 좌측, 베이지 단색</li>
+          <li>금지: 네온 그라디언트 · 굵은 굴림체 · 형광색 · 만화 일러스트</li>
+        </ul>
       </div>
     </div>
   </article>
@@ -1277,8 +1342,8 @@
   </article>
 
   <!-- ⑫ 브랜드 디자인 가이드 (NEW) -->
-  <article class="doc" id="g12">
-    <div class="doc-header"><h2>⑩ 브랜드 디자인 가이드</h2><div class="meta">브랜드 SSOT · guide-hub.html 통합 · 2026-05-25</div></div>
+  <article class="doc" id="g12" style="display:none!important;">
+    <div class="doc-header"><h2>브랜드 디자인 가이드 (업데이트·회사 가이드라인으로 이동됨)</h2><div class="meta">이 내용은 업데이트·회사 가이드라인 > 브랜드 디자인 탭에서 확인하세요.</div></div>
     <p class="lead">WELLPERION 브랜드 디자인의 모든 기준. 로고·컬러·타이포·톤앤매너를 한곳에 정리합니다. 모든 콘텐츠 제작은 이 가이드를 따릅니다.</p>
 
     <div class="tabs" data-tabs="g12">
@@ -2102,7 +2167,7 @@ Start-Process python -ArgumentList telegram_bot\daily_scheduler.py -WorkingDirec
     <div class="card" style="background:linear-gradient(135deg,#1a2a1a 0%,#2a3a2a 100%); border:none; padding:20px 24px; margin:18px 0 24px; border-radius:14px;">
       <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
         <span style="color:#fff; font-weight:700;">점검 앱 바로가기</span>
-        <a href="coo/check/%EC%A7%80%EC%9B%90%ED%8C%80%20%EC%B2%B4%ED%81%AC%EB%A6%AC%EC%8A%A4%ED%8A%B8.html" target="_blank" style="display:inline-flex; padding:10px 20px; background:#059669; color:#fff; font-size:14px; font-weight:700; border-radius:8px; text-decoration:none;">지원팀 일일 점검 열기</a>
+        <a href="coo/check/%EC%A7%80%EC%9B%90%EB%B6%80%20%EC%B2%B4%EA%B3%84.html" target="_blank" style="display:inline-flex; padding:10px 20px; background:#059669; color:#fff; font-size:14px; font-weight:700; border-radius:8px; text-decoration:none;">지원팀 일일 점검 열기</a>
       </div>
     </div>
 
@@ -2727,7 +2792,7 @@ Start-Process python -ArgumentList telegram_bot\daily_scheduler.py -WorkingDirec
     <div class="fw-panel" id="fw4" style="display:none;margin-top:20px;">
       <h3><span class="ico">✅</span>4. 체크리스트 (일일점검)</h3>
       <div style="margin:16px 0;">
-        <a href="coo/check/%EC%A7%80%EC%9B%90%ED%8C%80%20%EC%B2%B4%ED%81%AC%EB%A6%AC%EC%8A%A4%ED%8A%B8.html" target="_blank" style="display:inline-flex;align-items:center;gap:8px;padding:12px 24px;background:var(--accent);color:#fff;font-size:14px;font-weight:700;border-radius:10px;text-decoration:none;">✅ 체크리스트 열기</a>
+        <a href="coo/check/%EC%A7%80%EC%9B%90%EB%B6%80%20%EC%B2%B4%EA%B3%84.html" target="_blank" style="display:inline-flex;align-items:center;gap:8px;padding:12px 24px;background:var(--accent);color:#fff;font-size:14px;font-weight:700;border-radius:10px;text-decoration:none;">✅ 지원부 체계 열기</a>
       </div>
       <h4>점검 구역</h4>
       <table>
