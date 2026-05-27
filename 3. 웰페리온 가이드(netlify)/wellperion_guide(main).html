@@ -2468,6 +2468,12 @@ Start-Process python -ArgumentList telegram_bot\daily_scheduler.py -WorkingDirec
 
     <div class="fw-panel" id="fw2" style="display:none;margin-top:20px;">
       <h3><span class="ico">🧭</span>2. 가이드라인</h3>
+
+      <div class="card accent" style="margin-bottom:20px;text-align:center;padding:24px;">
+        <h4 style="font-size:18px;margin-bottom:4px;">서비스 마인드</h4>
+        <p style="font-size:16px;font-weight:700;color:var(--text);">"내가 지나간 자리는 항상 깨끗하게 정리정돈하자"</p>
+      </div>
+
       <h4>응대 태도 기준</h4>
       <table>
         <tr><th style="width:160px">상황</th><th>판단 기준</th></tr>
@@ -2476,6 +2482,7 @@ Start-Process python -ArgumentList telegram_bot\daily_scheduler.py -WorkingDirec
         <tr><td>에티켓 위반</td><td>정중하되 단호하게 안내 / 반복 위반 시 팀장 보고</td></tr>
         <tr><td>긴급·안전 상황</td><td>즉시 팀장·소장 보고 → 지시 후 조치 / 자의 판단 금지</td></tr>
       </table>
+
       <h4 style="margin-top:20px;">복장·용모 기준</h4>
       <table>
         <tr><th style="width:160px">항목</th><th>기준</th></tr>
@@ -2484,23 +2491,69 @@ Start-Process python -ArgumentList telegram_bot\daily_scheduler.py -WorkingDirec
         <tr><td>신발</td><td>미끄럼 방지 안전화 / 실외화 구역 내 착용 금지</td></tr>
         <tr><td>청소 구역</td><td>고무장갑·마스크 필수 / 환기 후 작업</td></tr>
       </table>
+
+      <h4 style="margin-top:20px;">구역별 관리 기준</h4>
+      <table>
+        <tr><th style="width:160px">구역</th><th>관리 기준</th></tr>
+        <tr><td><strong>A 사우나 탕</strong></td><td>오버풀 타이머 스케줄 준수 / 냉탕 매일 배수 / 온탕·열탕 격일 배수 / 수위·온도 상시 확인</td></tr>
+        <tr><td><strong>A 건/습식</strong></td><td>바닥·타일 물때 제거 / 고압세척(수요일 집중) / 산성세제 금지 구역 엄수</td></tr>
+        <tr><td><strong>B 락커·파우더</strong></td><td>소모품(빗·면봉·휴지) 최소 재고 유지 / 드라이기 작동 상태 수시 확인</td></tr>
+        <tr><td><strong>C 세탁물</strong></td><td>입고 즉시 사이즈별 분리 / 상태 불량 별도 분류 / 마감 출고 빠짐없이</td></tr>
+        <tr><td><strong>D 외부</strong></td><td>외부 화장실 악취 관리 / 분리수거장 정리</td></tr>
+        <tr><td><strong>E 외곽</strong></td><td>헬스장 장비 배치 정돈 / 골프장 청결 / 복도 바닥 중심</td></tr>
+      </table>
+
+      <h4 style="margin-top:20px;">위생·안전 기준</h4>
+      <table>
+        <tr><th style="width:200px">항목</th><th>기준</th></tr>
+        <tr><td>대리석·코팅면</td><td>산성 세제 절대 금지</td></tr>
+        <tr><td>전기 설비</td><td>반드시 비닐 포장 후 청소</td></tr>
+        <tr><td>배수구</td><td>화·금 소독 집중 점검</td></tr>
+        <tr><td>비품 보충</td><td>최소 재고 이하 시 즉시 보고 → 발주</td></tr>
+      </table>
+
+      <div style="margin:16px 0;">
+        <a href="coo/check/%EC%A7%80%EC%9B%90%26%ED%83%95%EC%B2%AD%EC%86%8C%20%EC%97%85%EB%AC%B4%20%EB%A7%A4%EB%89%B4%EC%96%BC%20%EB%B0%8F%20%EC%B2%B4%ED%81%AC%EB%A6%AC%EC%8A%A4%ED%8A%B8.pdf" target="_blank" style="display:inline-flex;align-items:center;gap:8px;padding:10px 20px;background:var(--accent-bg);color:var(--accent);font-size:13px;font-weight:700;border-radius:10px;text-decoration:none;border:1px solid rgba(183,159,138,0.3);">📄 지원&탕청소 가이드 PDF 열기</a>
+      </div>
       <div class="callout"><strong>제작 예정:</strong> 구역별 청결 사진 기준 (Before/After) · 회원 응대 표준 멘트집 · 상황별 판단 트리</div>
     </div>
 
     <div class="fw-panel" id="fw3" style="display:none;margin-top:20px;">
-      <h3><span class="ico">📖</span>3. 매뉴얼</h3>
+      <h3><span class="ico">📖</span>3. 매뉴얼 (시간대별 업무 절차)</h3>
+      <p style="color:var(--dim);font-size:13px;margin-bottom:16px;">근무자 시간대별로 무엇을 어떤 순서로 해야 하는지 정리한 실행 절차입니다.</p>
+
+      <h4><span class="badge" style="background:var(--accent-bg);color:var(--accent);">오전조</span> 05:30~14:15</h4>
       <table>
-        <tr><th style="width:200px">매뉴얼</th><th>주요 내용</th><th style="width:80px">상태</th></tr>
-        <tr><td><strong>탕 관리</strong></td><td>오버풀 타이머 스케줄 / 냉탕 매일 배수 / 온탕·열탕 격일 배수</td><td><span class="badge green">PDF</span></td></tr>
-        <tr><td><strong>사우나 청소</strong></td><td>배수구·바닥·타일 물때 제거 / 건습식 고압세척(수요일) / 산성세제 금지 구역</td><td><span class="badge green">PDF</span></td></tr>
-        <tr><td><strong>세탁물 처리</strong></td><td>입고→분류→상태체크→배치→마감 출고</td><td><span class="badge green">PDF</span></td></tr>
-        <tr><td><strong>요일별 집중청소</strong></td><td>월~일 집중 구역 지정 / 남·여 전담 구분</td><td><span class="badge green">운영중</span></td></tr>
-        <tr><td><strong>야간 탕청소</strong></td><td>업체 2인 1조 / 배수 일지 작성</td><td><span class="badge green">PDF</span></td></tr>
-        <tr><td><strong>회원 응대 멘트</strong></td><td>4단계 응대 (경청→조치→멘트→기록)</td><td><span class="badge gray">예정</span></td></tr>
+        <tr><th style="width:120px">시간</th><th>업무</th><th>구역</th></tr>
+        <tr><td>05:30~06:00</td><td>출근 → 사우나 탕 수위·온도 확인 → 내부 바닥·벽·천정 점검 → 배수구 체크 → 오버풀 확인</td><td>A</td></tr>
+        <tr><td>06:00~10:00</td><td>휴게실·찜질방·마루바닥 청소 → 세탁물 입고·분류·배치 → 센터 복도·헬스장·골프장 청결</td><td>B·C·E</td></tr>
+        <tr><td>10:00~12:00</td><td>외부 화장실(B1-B2) → 메인 복도 휴게공간 → 분리수거장 정리</td><td>D</td></tr>
+        <tr><td>12:00~13:00</td><td>점심 식사 (중간조가 사우나 내부 관리)</td><td>-</td></tr>
+        <tr><td>13:00~14:15</td><td>세탁물 출고 확인 → <strong>인수인계 보고 (텔레그램)</strong> → 퇴근</td><td>C·전체</td></tr>
       </table>
-      <div style="margin:16px 0;">
-        <a href="coo/check/%EC%A7%80%EC%9B%90%26%ED%83%95%EC%B2%AD%EC%86%8C%20%EC%97%85%EB%AC%B4%20%EB%A7%A4%EB%89%B4%EC%96%BC%20%EB%B0%8F%20%EC%B2%B4%ED%81%AC%EB%A6%AC%EC%8A%A4%ED%8A%B8.pdf" target="_blank" style="display:inline-flex;align-items:center;gap:8px;padding:10px 20px;background:var(--accent-bg);color:var(--accent);font-size:13px;font-weight:700;border-radius:10px;text-decoration:none;border:1px solid rgba(183,159,138,0.3);">📄 지원&탕청소 매뉴얼 PDF 열기</a>
-      </div>
+
+      <h4 style="margin-top:20px;"><span class="badge" style="background:var(--grow-bg);color:var(--grow);">오후조</span> 14:00~22:30</h4>
+      <table>
+        <tr><th style="width:120px">시간</th><th>업무</th><th>구역</th></tr>
+        <tr><td>14:00~17:00</td><td>사우나 탕·건습식·내부 재점검 → 휴게실·찜질방·마루바닥 → 사우나 화장실</td><td>A·B</td></tr>
+        <tr><td>17:00~19:00</td><td>외부 화장실 재점검 → 복도 휴지통 → 메인 계단 → 분리수거장</td><td>D</td></tr>
+        <tr><td>19:00~20:00</td><td>저녁 구역 순회 → 비품 잔량 확인 → 세탁물 마감 출고</td><td>B·C·E</td></tr>
+        <tr><td>20:00~22:00</td><td>사우나·파우더 마감 점검 → 락커룸 최종 정리</td><td>A·B</td></tr>
+        <tr><td>22:00~22:30</td><td><strong>마감:</strong> 전 구역 최종 확인 → 시설·운영부 마감자 보고 → <strong>인수인계 보고 (텔레그램)</strong></td><td>전체</td></tr>
+      </table>
+      <div class="callout fix" style="margin-top:12px;"><strong>마감 경고:</strong> 사우나·파우더 마감 미비 시 경고 / 경고 3회 → 경징계</div>
+
+      <h4 style="margin-top:20px;"><span class="badge" style="background:var(--warm-bg);color:var(--warm);">야간 탕청소</span> 평일 23:00~ / 주말 20:30~</h4>
+      <table>
+        <tr><th style="width:120px">순서</th><th>업무</th></tr>
+        <tr><td>1</td><td>탕청소 업체 출근 (2인 1조) → 남·여 사우나 배정</td></tr>
+        <tr><td>2</td><td>탕 배수 시작 → 비품(바가지·의자) 꺼내기</td></tr>
+        <tr><td>3</td><td>탕 내부·바닥·벽면·배수구 세척</td></tr>
+        <tr><td>4</td><td>건/습식 사우나 고압세척 (요일별 집중 구역)</td></tr>
+        <tr><td>5</td><td>탕 급수 시작 → 비품 원위치 → 배수 일지 작성</td></tr>
+        <tr><td>6</td><td>최종 점검 후 퇴근</td></tr>
+      </table>
+      <div class="callout"><strong>요일별 집중청소:</strong> 월~일 구역 지정 / 남·여 전담 구분. 수요일 = 건습식 고압세척 집중일.</div>
     </div>
 
     <div class="fw-panel" id="fw4" style="display:none;margin-top:20px;">
