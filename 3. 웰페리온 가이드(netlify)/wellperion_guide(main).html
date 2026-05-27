@@ -338,7 +338,7 @@
 
   <div class="nav-label">회사 핵심 문서</div>
   <nav class="nav">
-    <a data-doc="ghome"><span class="num">🌐</span><span class="label">홈페이지</span></a>
+    <a data-doc="ghome"><span class="num">🌐</span><span class="label">공식 채널</span></a>
     <a data-doc="g9"><span class="num">🏢</span><span class="label">회사소개서</span></a>
     <a data-doc="g20"><span class="num">🗺️</span><span class="label">전략 로드맵</span></a>
     <a data-doc="g12"><span class="num">🎨</span><span class="label">브랜드 디자인 가이드</span></a>
@@ -650,12 +650,96 @@
       </div>
 
       <div class="tab-panel active" data-panel="doc">
-        <h3>정책 · 가이드라인 · 매뉴얼</h3>
-        <div class="grid-3">
-          <div class="card accent"><h4>정책 (Policy)</h4><p><strong>"이것은 이렇게 한다"</strong></p><p>회사 공식 결정. 변경 시 경영진 승인 필요.</p></div>
-          <div class="card"><h4>가이드라인 (Guideline)</h4><p><strong>"이 틀 안에서 판단해라"</strong></p><p>판단 기준과 원칙. 담당자가 상황에 맞게 적용.</p></div>
-          <div class="card grow"><h4>매뉴얼 (Manual)</h4><p><strong>"이 순서대로 해라"</strong></p><p>구체적 실행 절차. 순서대로 따라하면 완료.</p></div>
+        <h3><span class="ico">📄</span>문서 계층 구조</h3>
+        <p>웰페리온의 모든 운영 문서는 6단계 계층으로 분류됩니다. 위로 갈수록 변경이 어렵고, 아래로 갈수록 현장에서 자주 사용합니다.</p>
+
+        <table>
+          <tr><th style="width:40px">단계</th><th style="width:160px">문서 유형</th><th>한 줄 정의</th><th style="width:180px">예시</th></tr>
+          <tr style="background:var(--warm-bg);">
+            <td><strong>1</strong></td>
+            <td><strong>정책 (Policy)</strong></td>
+            <td>"이것은 이렇게 한다" — 회사 공식 결정. 변경 시 대표님 승인 필수.</td>
+            <td>예약제 정책, 운영시간, 결제 권한 기준</td>
+          </tr>
+          <tr style="background:var(--accent-bg);">
+            <td><strong>2</strong></td>
+            <td><strong>가이드라인 (Guideline)</strong></td>
+            <td>"이 틀 안에서 판단해라" — 판단 기준과 원칙. 상황에 맞게 적용.</td>
+            <td>응대 태도, 복장 기준, 브랜드 용어</td>
+          </tr>
+          <tr>
+            <td><strong>3</strong></td>
+            <td><strong>매뉴얼 (Manual)</strong></td>
+            <td>"이 순서대로 해라" — 구체적 실행 절차. 따라하면 완료.</td>
+            <td>사우나 점검 절차, 세탁물 관리</td>
+          </tr>
+          <tr style="background:var(--accent-bg);">
+            <td><strong>4</strong></td>
+            <td><strong>체크리스트 (Checklist)</strong></td>
+            <td>"빠짐없이 확인해라" — 매뉴얼의 실행 점검 도구.</td>
+            <td>지원팀 일일점검, 시설 오픈/마감</td>
+          </tr>
+          <tr>
+            <td><strong>5</strong></td>
+            <td><strong>기록 (Record/Log)</strong></td>
+            <td>"기록해라" — 실행한 증거. 인수인계·추적용.</td>
+            <td>일지, 인수인계 기록, 이슈 접수</td>
+          </tr>
+          <tr style="background:var(--grow-bg);">
+            <td><strong>6</strong></td>
+            <td><strong>이슈·노하우 (Issue/Tips)</strong></td>
+            <td>"이런 사례가 있었다" — 경험 누적. 매뉴얼 개선의 원천.</td>
+            <td>컴플레인 사례, 장비 고장 대응 팁</td>
+          </tr>
+        </table>
+
+        <h3><span class="ico">👤</span>작성·승인·보관 기준</h3>
+        <table>
+          <tr><th>문서 유형</th><th>작성자</th><th>검토·승인</th><th>보관 위치</th><th>갱신 주기</th></tr>
+          <tr><td><strong>정책</strong></td><td>김남욱 GM</td><td>대표님 승인</td><td>가이드허브 (시작하기)</td><td>변경 시</td></tr>
+          <tr><td><strong>가이드라인</strong></td><td>김남욱 GM / 이경연 실장</td><td>김남욱 GM 승인</td><td>가이드허브 (해당 C-Level)</td><td>분기 1회 점검</td></tr>
+          <tr><td><strong>매뉴얼</strong></td><td>이경연 실장 / 매니저</td><td>김남욱 GM 검토</td><td>가이드허브 (COO 하위)</td><td>변경 시 즉시</td></tr>
+          <tr><td><strong>체크리스트</strong></td><td>매니저</td><td>이경연 실장 검토</td><td>가이드허브 + Apps Script</td><td>매뉴얼 변경 시 연동</td></tr>
+          <tr><td><strong>기록</strong></td><td>담당 직원</td><td>자동 저장</td><td>Google Sheets</td><td>매일 (실시간)</td></tr>
+          <tr><td><strong>이슈·노하우</strong></td><td>누구나</td><td>매니저 검토</td><td>가이드허브 (해당 부서)</td><td>발생 시 즉시</td></tr>
+        </table>
+
+        <h3><span class="ico">⚙️</span>문서 관리 규칙</h3>
+        <div class="grid-2">
+          <div class="card accent">
+            <h4>버전 관리</h4>
+            <p>v1.0 시작 · 수정 시 +0.1 증분<br>이전 버전은 변경 이력에 보존<br>제목에 날짜·버전 넣지 않음 (본문 기록)</p>
+          </div>
+          <div class="card">
+            <h4>네이밍 규칙</h4>
+            <p>순수 제목만 (이모지·날짜·식별자 금지)<br>폴더명 영문 · 파일명 한글<br>예: <code>coo/check/지원팀 체크리스트.html</code></p>
+          </div>
+          <div class="card warm">
+            <h4>브랜드 용어 준수</h4>
+            <p>"피트니스" 금지 → "스포츠클럽"<br>"현대하이페리온" 금지 → "웰페리온"<br>모든 문서·채널·대화에 적용</p>
+          </div>
+          <div class="card grow">
+            <h4>폐기·보관</h4>
+            <p>구 버전은 삭제 아닌 변경 이력 보존<br>더 이상 사용 안 하는 문서는 (폐기) 표기<br>최소 1년 보관 후 아카이브</p>
+          </div>
         </div>
+
+        <h3><span class="ico">🔄</span>문서 간 관계</h3>
+        <div class="callout">
+          <strong>상위 → 하위 흐름:</strong> 정책이 바뀌면 → 가이드라인 점검 → 매뉴얼 수정 → 체크리스트 연동 갱신<br>
+          <strong>하위 → 상위 흐름:</strong> 이슈·노하우 누적 → 매뉴얼 개선 → 필요 시 가이드라인·정책 변경 제안<br>
+          <strong>원칙:</strong> 상위 문서 변경 없이 하위 문서가 상위와 모순되면 안 됨. 발견 시 즉시 보고.
+        </div>
+
+        <h3><span class="ico">📋</span>부서별 필수 문서 체계</h3>
+        <table>
+          <tr><th>부서</th><th>가이드라인</th><th>매뉴얼</th><th>체크리스트</th><th>기록</th><th>이슈·노하우</th></tr>
+          <tr><td><strong>운영부 (리셉션)</strong></td><td>응대·태도·복장</td><td>접수·안내·민원 절차</td><td>오픈/마감 점검</td><td>방문자·문의 일지</td><td>컴플레인 사례</td></tr>
+          <tr><td><strong>시설부</strong></td><td>장비 관리 기준</td><td>장비별 점검 절차</td><td>시설 일일 점검</td><td>수리·교체 이력</td><td>고장 대응 팁</td></tr>
+          <tr><td><strong>지원부</strong></td><td>청결·위생 기준</td><td>사우나·락커·세탁 절차</td><td>지원팀 일일 점검</td><td>인수인계 기록</td><td>효율화 팁</td></tr>
+          <tr><td><strong>주차관리부</strong></td><td>주차 운영 기준</td><td>입출차·정산 절차</td><td>주차장 점검</td><td>차량 사고 기록</td><td>민원 사례</td></tr>
+        </table>
+        <div class="callout tip"><strong>목표:</strong> 4개 부서 × 5개 문서 = 20개 문서 체계 완성. 지원부(기존 체크리스트) 기준으로 나머지 3개 부서 순차 제작.</div>
       </div>
 
       <div class="tab-panel" data-panel="org">
@@ -719,39 +803,76 @@
 
 
 
-  <!-- ── 홈페이지 ── -->
+  <!-- ── 공식 채널 ── -->
   <article class="doc" id="ghome">
-    <div class="doc-header"><h2>🌐 웰페리온 홈페이지</h2><div class="meta">공식 웹사이트 · 브랜드 랜딩 페이지</div></div>
-    <p class="lead">웰페리온의 공식 홈페이지입니다. 회원·비회원 모두에게 브랜드 첫인상을 전달하는 랜딩 페이지로, 회사소개·프로그램·시설·멤버십·문의 정보를 담고 있습니다.</p>
+    <div class="doc-header"><h2>🌐 웰페리온 공식 채널</h2><div class="meta">온라인 채널 통합 허브 · 홈페이지 + SNS + 커뮤니티</div></div>
+    <p class="lead">웰페리온의 모든 공식 온라인 채널을 한눈에. 각 채널의 역할·URL·담당·현황을 관리합니다. 공식 진입점: <a href="https://litt.ly/wellperion" target="_blank" style="color:var(--accent);font-weight:700;">litt.ly/wellperion</a></p>
+
+    <h3><span class="ico">📡</span>채널 현황</h3>
+    <table>
+      <tr><th>채널</th><th>URL / 계정</th><th>역할</th><th>상태</th></tr>
+      <tr>
+        <td><strong>🌐 홈페이지</strong></td>
+        <td><a href="cmo/home/%ED%99%88%ED%8E%98%EC%9D%B4%EC%A7%80.html" target="_blank" style="color:var(--accent);">원본 열기</a></td>
+        <td>브랜드 랜딩 · 회사소개·프로그램·시설·멤버십·문의</td>
+        <td><span class="badge green">운영중</span></td>
+      </tr>
+      <tr>
+        <td><strong>📸 인스타그램</strong></td>
+        <td><a href="https://instagram.com/namuk.wellperion" target="_blank" style="color:var(--accent);">@namuk.wellperion</a></td>
+        <td>슬라이드 콘텐츠 · 브랜드 이미지 · 문의 전환</td>
+        <td><span class="badge green">운영중</span></td>
+      </tr>
+      <tr>
+        <td><strong>📝 네이버 블로그</strong></td>
+        <td><a href="https://blog.naver.com/wellperion" target="_blank" style="color:var(--accent);">wellperion</a></td>
+        <td>SEO 허브 · 검색 유입 · 상세 콘텐츠</td>
+        <td><span class="badge green">운영중</span></td>
+      </tr>
+      <tr>
+        <td><strong>☕ 네이버 카페</strong></td>
+        <td><a href="https://cafe.naver.com/dongicc" target="_blank" style="color:var(--accent);">동부이촌동 커뮤니티</a></td>
+        <td>지역 커뮤니티 노출 · 댓글 소통 · 10일 페이스</td>
+        <td><span class="badge green">운영중</span></td>
+      </tr>
+      <tr>
+        <td><strong>💬 카카오채널</strong></td>
+        <td>웰페리온</td>
+        <td>1:1 상담 · 알림 발송</td>
+        <td><span class="badge gray">보류</span></td>
+      </tr>
+      <tr>
+        <td><strong>🥕 당근</strong></td>
+        <td>웰페리온</td>
+        <td>지역 인지도 · 동네 노출</td>
+        <td><span class="badge gray">인지만</span></td>
+      </tr>
+    </table>
+
+    <h3><span class="ico">🎯</span>채널별 CTA 원칙</h3>
+    <table>
+      <tr><th>채널</th><th>CTA 전략</th><th>금지</th></tr>
+      <tr><td>인스타그램</td><td>슬라이드 + 광고 · 문의: litt.ly/wellperion</td><td>개인 번호(010-…) 노출 금지</td></tr>
+      <tr><td>네이버 블로그</td><td>SEO 허브 · 상세 정보 + litt.ly 링크</td><td></td></tr>
+      <tr><td>동부이촌동 카페</td><td>댓글 소통 · 10일 페이스 · 사실·전문성·정중형</td><td>동네 잡담 톤 금지</td></tr>
+      <tr><td>당근</td><td>인지도만 · 직접 전환 기대 안 함</td><td>링크 일변도 금지</td></tr>
+    </table>
+
+    <h3><span class="ico">📐</span>홈페이지 구성</h3>
+    <table>
+      <tr><th>섹션</th><th>내용</th></tr>
+      <tr><td><strong>Hero</strong></td><td>"A Day, Well Completed." 메인 슬로건 + CTA</td></tr>
+      <tr><td><strong>About Us</strong></td><td>건강이 일상이 되는 프라이빗 공간 · 설립 2010 · 150+ 회원</td></tr>
+      <tr><td><strong>Programs</strong></td><td>헬스·수영·골프·스쿼시·G.X·요가·필라테스</td></tr>
+      <tr><td><strong>Facilities</strong></td><td>25m 수영장·TechnoGym·GDR골프·스쿼시코트·사우나·라운지</td></tr>
+      <tr><td><strong>Membership</strong></td><td>가입 절차 · CTA: litt.ly/wellperion</td></tr>
+    </table>
 
     <div style="margin:20px 0;">
       <a href="cmo/home/%ED%99%88%ED%8E%98%EC%9D%B4%EC%A7%80.html" target="_blank" style="display:inline-flex;align-items:center;gap:8px;padding:14px 28px;background:var(--accent);color:#fff;font-size:14px;font-weight:700;border-radius:8px;text-decoration:none;">🌐 홈페이지 원본 열기</a>
     </div>
 
-    <h3><span class="ico">📐</span>페이지 구성</h3>
-    <table>
-      <tr><th>섹션</th><th>내용</th><th>비고</th></tr>
-      <tr><td><strong>Hero</strong></td><td>"A Day, Well Completed." 메인 슬로건 + CTA 버튼</td><td>첫 화면 · 풀스크린</td></tr>
-      <tr><td><strong>About Us</strong></td><td>건강이 일상이 되는 프라이빗 공간 소개 + 핵심 수치</td><td>설립 2010 · 150+ 회원</td></tr>
-      <tr><td><strong>Programs</strong></td><td>헬스·수영·골프·스쿼시·G.X·요가·필라테스 등</td><td>4개 카테고리 카드</td></tr>
-      <tr><td><strong>Facilities</strong></td><td>25m 수영장·TechnoGym·GDR골프·스쿼시코트·사우나·라운지</td><td>6개 시설 카드</td></tr>
-      <tr><td><strong>Membership</strong></td><td>가입 절차·프라이빗 멤버십 특징·문의 안내</td><td>CTA: litt.ly/wellperion</td></tr>
-      <tr><td><strong>Footer</strong></td><td>주소·운영시간·연락처·예약 필수 안내</td><td></td></tr>
-    </table>
-
-    <h3><span class="ico">🔗</span>연관 문서</h3>
-    <div class="grid-2">
-      <div class="card"><h4>회사소개서</h4><p>브랜드·사업·프로그램·확장 전략 상세</p></div>
-      <div class="card"><h4>브랜드 디자인 가이드</h4><p>컬러·로고·타이포·톤앤매너 기준</p></div>
-    </div>
-
-    <h3><span class="ico">📝</span>업데이트 이력</h3>
-    <table>
-      <tr><th>날짜</th><th>변경</th></tr>
-      <tr><td>2026-05-27</td><td>GitHub Pages 배포 · cmo/home/ 경로 이전</td></tr>
-    </table>
-
-    <div class="callout"><strong>관리 기준:</strong> 홈페이지 내용 변경 시 회사소개서·브랜드 가이드와 정합성 확인 의무. CMO 라인 관할.</div>
+    <div class="callout"><strong>관리 기준:</strong> 모든 채널 콘텐츠는 브랜드 가이드 준수. "피트니스" 금지 → "스포츠클럽". 문의 CTA는 litt.ly/wellperion 단일. CMO 라인 관할 (김남욱 GM).</div>
   </article>
 
   <article class="doc" id="g9">
