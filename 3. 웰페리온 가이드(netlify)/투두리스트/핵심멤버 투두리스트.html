@@ -202,17 +202,6 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   <div class="header-top">
     <h1>웰페리온 핵심멤버 TO DO LIST</h1>
     <div class="header-right">
-      <select class="user-select" id="userSelect" onchange="onUserChange()">
-        <option value="">사용자 선택</option>
-        <option value="김남욱GM">김남욱GM</option>
-        <option value="이경연 실장">이경연 실장</option>
-        <option value="최준용M">최준용M</option>
-        <option value="임정은M">임정은M</option>
-        <option value="윤병현AM">윤병현AM</option>
-        <option value="이지영 사원">이지영 사원</option>
-        <option value="나우열M">나우열M</option>
-        <option value="이정헌 소장">이정헌 소장</option>
-      </select>
       <a class="sheet-link" onclick="openDashboard()" style="cursor:pointer;background:var(--purple-bg);color:var(--purple);border-color:rgba(167,139,218,0.3);">
         <svg viewBox="0 0 24 24"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
         현황 대시보드
@@ -346,7 +335,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
    ═══════════════════════════════════════════ */
 const TODO_API_URL = 'https://script.google.com/macros/s/AKfycbxDwFkrxK1YIaEoSNcuw2MiHiZQ-7o5N6311ytksSyeEd86ZFOhLknOWqQgNArQvZ-7/exec';
 
-const MEMBERS = ['김남욱GM','이경연 실장','최준용M','임정은M','윤병현AM','이지영 사원','나우열M','이정헌 소장'];
+const MEMBERS = ['김남욱GM','이경연 실장','나우열M','최준용M','임정은M','윤병현AM','이지영 사원','이정헌 소장'];
 
 const CATEGORIES = [
   '[1] 매출 및 영업','[2] 인사 & 파트너','[3] 운영 정책',
@@ -383,9 +372,6 @@ let doneLogOpen = false;
    Init
    ═══════════════════════════════════════════ */
 document.addEventListener('DOMContentLoaded', () => {
-  // Restore user
-  const saved = localStorage.getItem('todo_user');
-  if (saved) document.getElementById('userSelect').value = saved;
   updateHeaderSub();
   buildFilters();
   loadTasks();
@@ -402,14 +388,8 @@ document.addEventListener('DOMContentLoaded', () => {
 /* ═══════════════════════════════════════════
    User select
    ═══════════════════════════════════════════ */
-function onUserChange() {
-  const v = document.getElementById('userSelect').value;
-  localStorage.setItem('todo_user', v);
-  updateHeaderSub();
-}
-
 function getUser() {
-  return document.getElementById('userSelect').value || '';
+  return '김남욱GM';
 }
 
 function updateHeaderSub() {
@@ -523,7 +503,8 @@ function loadFallback() {
    ═══════════════════════════════════════════ */
 function renderTasks() {
   const el = document.getElementById('mainContent');
-  const active = ALL_TASKS.filter(t => t.status !== '완료');
+  const active = ALL_TASKS.filter(t => t.status !== '완료' && t.status !== '보류');
+  const hold = ALL_TASKS.filter(t => t.status === '보류');
   const done = ALL_TASKS.filter(t => t.status === '완료');
 
   // Apply filters to active
@@ -553,21 +534,50 @@ function renderTasks() {
 
   let html = '';
 
+  var globalIdx = 1;
   if (filtered.length === 0) {
     html += '<div class="empty-msg">필터 조건에 맞는 업무가 없습니다.</div>';
   } else {
     catOrder.forEach(cat => {
       if (!groups[cat] || groups[cat].length === 0) return;
-      html += renderCatGroup(cat, groups[cat]);
+      var result = renderCatGroup(cat, groups[cat], globalIdx);
+      html += result.html;
+      globalIdx = result.nextIdx;
     });
-    // Any categories not in catOrder
     Object.keys(groups).forEach(cat => {
       if (catOrder.includes(cat)) return;
-      html += renderCatGroup(cat, groups[cat]);
+      var result = renderCatGroup(cat, groups[cat], globalIdx);
+      html += result.html;
+      globalIdx = result.nextIdx;
     });
   }
 
-  // Done log
+  // 보류 로그
+  const filteredHold = filterByStatus(hold);
+  html += '<div class="done-log" style="margin-top:20px;">';
+  html += '<div class="done-log-header" onclick="toggleHoldLog()" style="border-left:3px solid var(--orange);">';
+  html += '<h3 style="color:var(--orange);">보류 (' + filteredHold.length + '건)</h3>';
+  html += '<span class="cat-arrow' + (holdLogOpen ? ' open' : '') + '">&#9654;</span>';
+  html += '</div>';
+  html += '<div class="done-log-body' + (holdLogOpen ? ' open' : '') + '">';
+  if (filteredHold.length === 0) {
+    html += '<div class="empty-msg" style="padding:20px">보류된 업무가 없습니다.</div>';
+  } else {
+    filteredHold.forEach(t => {
+      html += '<div class="done-card" style="opacity:0.8;">';
+      html += '<div style="display:flex;align-items:center;justify-content:space-between;">';
+      html += '<div><div class="task-title" style="text-decoration:none;color:var(--orange);">' + esc(t.title) + '</div>';
+      html += '<div class="task-meta">';
+      if (t.owner) t.owner.split(',').forEach(o => { o=o.trim(); if(o) html += '<span class="chip owner">'+esc(o)+'</span>'; });
+      if (t.category) html += '<span class="chip" style="background:var(--orange-bg);color:var(--orange)">'+esc(t.category)+'</span>';
+      html += '</div></div>';
+      html += '<button class="action-btn" onclick="restoreTask(\''+escAttr(t.id)+'\')" style="padding:4px 10px;font-size:11px;background:var(--blue-bg);color:var(--blue);border-color:rgba(91,159,213,0.3);">복원</button>';
+      html += '</div></div>';
+    });
+  }
+  html += '</div></div>';
+
+  // 완료 로그
   const filteredDone = filterDone(done);
   html += '<div class="done-log">';
   html += '<div class="done-log-header" onclick="toggleDoneLog()">';
@@ -599,7 +609,7 @@ function filterDone(done) {
   return filtered;
 }
 
-function renderCatGroup(cat, tasks) {
+function renderCatGroup(cat, tasks, startIdx) {
   const label = cat || '미분류';
   const colors = CAT_COLORS[cat] || { bg: 'var(--accent-bg)', color: 'var(--accent)' };
   let html = '<div class="cat-group"><div class="cat-accordion">';
@@ -609,16 +619,31 @@ function renderCatGroup(cat, tasks) {
   html += '<span class="cat-arrow open">&#9654;</span></div>';
   html += '</div>';
   html += '<div class="cat-body open">';
-  tasks.forEach(t => { html += renderTaskCard(t); });
+  var idx = startIdx || 1;
+  tasks.forEach(t => { html += renderTaskCard(t, idx++); });
   html += '</div></div></div>';
-  return html;
+  return { html: html, nextIdx: idx };
 }
 
-function renderTaskCard(t) {
+function filterByStatus(list) {
+  let filtered = list;
+  if (activeOwnerFilter === '대표님 결재건') {
+    filtered = list.filter(t => (t.approval || '').includes('대표님'));
+  } else if (activeOwnerFilter !== '전체') {
+    filtered = list.filter(t => (t.owner || '').includes(activeOwnerFilter));
+  }
+  if (activeCatFilter !== '전체') {
+    filtered = filtered.filter(t => t.category === activeCatFilter);
+  }
+  return filtered;
+}
+
+function renderTaskCard(t, idx) {
   let html = '<div class="task-card" data-id="' + escAttr(t.id) + '">';
 
-  // 제목줄: 토글 화살표 + 제목 + 칩 + 편집/완료 버튼
+  // 제목줄: 번호 + 토글 화살표 + 제목 + 칩 + 편집/완료 버튼
   html += '<div class="task-summary" style="display:flex;align-items:center;gap:8px;">';
+  html += '<span style="font-size:12px;font-weight:700;color:var(--accent);min-width:24px;text-align:center;flex-shrink:0;">' + idx + '</span>';
   html += '<span class="toggle-arrow" onclick="this.closest(\'.task-card\').querySelector(\'.task-detail\').classList.toggle(\'open\');this.classList.toggle(\'open\');" style="font-size:10px;color:var(--dim);transition:transform 0.2s;flex-shrink:0;cursor:pointer;padding:4px;">▶</span>';
   html += '<div style="flex:1;min-width:0;cursor:pointer;" onclick="this.closest(\'.task-card\').querySelector(\'.task-detail\').classList.toggle(\'open\');this.closest(\'.task-card\').querySelector(\'.toggle-arrow\').classList.toggle(\'open\');">';
   html += '<div class="task-title" style="display:inline;">' + esc(t.title) + '</div>';
@@ -646,17 +671,17 @@ function renderTaskCard(t) {
       a = a.trim();
       if (a) html += '<span class="chip approval">' + esc(a) + '</span>';
     });
+    html += '<span class="chip" style="background:var(--yellow-bg);color:var(--yellow);cursor:pointer;" onclick="event.stopPropagation();copyForKakao(\'' + escAttr(t.id) + '\')">카톡 전송</span>';
   }
 
   html += '</div>'; // task-meta
   html += '</div>';
 
-  // 제목줄 우측: 편집 + 완료 + 삭제
-  var isGM = getUser() === '김남욱GM';
+  // 제목줄 우측: 편집 + 완료 + 보류
   html += '<div style="display:flex;gap:4px;flex-shrink:0;">';
   html += '<button class="action-btn edit" onclick="event.stopPropagation();openEditModal(\'' + escAttr(t.id) + '\')" style="padding:4px 10px;font-size:11px;">편집</button>';
   html += '<button class="action-btn done" onclick="event.stopPropagation();markDone(\'' + escAttr(t.id) + '\')" style="padding:4px 10px;font-size:11px;">완료</button>';
-  html += '<button class="action-btn delete" onclick="event.stopPropagation();deleteTask(\'' + escAttr(t.id) + '\',\'' + escAttr(t.creator || '') + '\')" style="padding:4px 10px;font-size:11px;' + (isGM ? '' : 'opacity:0.3;pointer-events:none;') + '"' + (isGM ? '' : ' disabled title="김남욱GM만 삭제 가능"') + '>삭제</button>';
+  html += '<button class="action-btn" onclick="event.stopPropagation();holdTask(\'' + escAttr(t.id) + '\')" style="padding:4px 10px;font-size:11px;background:var(--orange-bg);color:var(--orange);border-color:rgba(230,148,78,0.3);">보류</button>';
   html += '</div>';
   html += '</div>'; // task-summary
 
@@ -820,7 +845,18 @@ function getCheckboxValues(groupId) {
 
 async function saveTask() {
   const title = document.getElementById('fTitle').value.trim();
-  if (!title) { alert('업무명을 입력하세요.'); return; }
+  const category = document.getElementById('fCategory').value;
+  const owner = getCheckboxValues('fOwnerGroup');
+  const startDate = document.getElementById('fStartDate').value;
+  const endDate = document.getElementById('fEndDate').value;
+
+  var missing = [];
+  if (!title) missing.push('업무명');
+  if (!category) missing.push('카테고리');
+  if (!owner) missing.push('담당자');
+  if (!startDate) missing.push('시작일');
+  if (!endDate) missing.push('종료일');
+  if (missing.length > 0) { alert('필수 항목을 입력하세요:\n' + missing.join(', ')); return; }
 
   const editId = document.getElementById('editId').value;
   const params = {
@@ -925,29 +961,73 @@ async function markDone(id) {
   }
 }
 
-async function deleteTask(id, creator) {
-  const user = getUser();
-  if (user !== '김남욱GM' && user !== creator) {
-    alert('삭제 권한이 없습니다.\n생성자(' + (creator||'미상') + ') 또는 GM만 삭제할 수 있습니다.');
-    return;
-  }
-  if (!confirm('이 업무를 삭제하시겠습니까?\n삭제하면 복구할 수 없습니다.')) return;
-  showToast('삭제 중...');
+async function holdTask(id) {
+  if (!confirm('이 업무를 보류 처리하시겠습니까?')) return;
+  showToast('보류 처리 중...');
   try {
-    const res = await apiCall({ action: 'todo_delete', id: id });
+    const res = await apiCall({ action: 'todo_update', id: id, status: '보류' });
     if (res.ok) {
-      showToast('삭제 완료');
+      showToast('보류 처리됨');
       await loadTasks();
     } else {
-      throw new Error(res.error || '삭제 실패');
+      throw new Error(res.error || '처리 실패');
     }
   } catch (e) {
-    // Local fallback
-    ALL_TASKS = ALL_TASKS.filter(x => x.id !== id);
+    const t = ALL_TASKS.find(x => x.id === id);
+    if (t) { t.status = '보류'; t.updatedAt = new Date().toISOString(); }
     saveFallback();
     renderTasks();
-    showToast('삭제됨 (로컬)', true);
+    showToast('보류 처리됨 (로컬)', true);
   }
+}
+
+async function restoreTask(id) {
+  showToast('복원 중...');
+  try {
+    const res = await apiCall({ action: 'todo_update', id: id, status: '진행중' });
+    if (res.ok) {
+      showToast('진행중으로 복원됨');
+      await loadTasks();
+    } else {
+      throw new Error(res.error || '복원 실패');
+    }
+  } catch (e) {
+    const t = ALL_TASKS.find(x => x.id === id);
+    if (t) { t.status = '진행중'; t.updatedAt = new Date().toISOString(); }
+    saveFallback();
+    renderTasks();
+    showToast('복원됨 (로컬)', true);
+  }
+}
+
+var holdLogOpen = false;
+function toggleHoldLog() {
+  holdLogOpen = !holdLogOpen;
+  const logs = document.querySelectorAll('.done-log');
+  if (logs.length >= 2) {
+    const holdBody = logs[0].querySelector('.done-log-body');
+    const holdArrow = logs[0].querySelector('.cat-arrow');
+    if (holdBody) holdBody.classList.toggle('open', holdLogOpen);
+    if (holdArrow) holdArrow.classList.toggle('open', holdLogOpen);
+  }
+}
+
+function copyForKakao(id) {
+  const t = ALL_TASKS.find(x => x.id === id);
+  if (!t) return;
+  var lines = [];
+  lines.push('[웰페리온 결재요청]');
+  lines.push('업무명: ' + (t.title || '-'));
+  lines.push('카테고리: ' + (t.category || '-'));
+  lines.push('담당자: ' + (t.owner || '-'));
+  if (t.startDate || t.endDate) lines.push('기간: ' + formatDateRange(t.startDate, t.endDate));
+  lines.push('결재요청: ' + (t.approval || '-'));
+  if (t.content) lines.push('내용: ' + t.content);
+  if (t.link) lines.push('링크: ' + t.link);
+  var text = lines.join('\n');
+  navigator.clipboard.writeText(text).then(function() {
+    showToast('카톡 전송용 텍스트가 복사되었습니다.');
+  });
 }
 
 /* ═══════════════════════════════════════════

@@ -416,6 +416,7 @@
       <a href="#" onclick="event.preventDefault();document.querySelector('[data-doc=g20]').click();" style="display:inline-flex;align-items:center;gap:6px;padding:12px 20px;background:var(--paper);color:var(--accent);font-size:14px;font-weight:700;border-radius:10px;text-decoration:none;border:1px solid var(--accent);transition:background 0.12s;">🗺️ 전략 로드맵</a>
       <a href="투두리스트/핵심멤버%20투두리스트.html" target="_blank" style="display:inline-flex;align-items:center;gap:6px;padding:12px 20px;background:var(--green-bg);color:var(--green);font-size:14px;font-weight:700;border-radius:10px;text-decoration:none;border:1px solid rgba(106,191,123,0.3);transition:background 0.12s;">📝 투두리스트</a>
       <a href="체크리스트/지원팀%20체크리스트.html" target="_blank" style="display:inline-flex;align-items:center;gap:6px;padding:12px 20px;background:var(--blue-bg);color:var(--blue);font-size:14px;font-weight:700;border-radius:10px;text-decoration:none;border:1px solid rgba(91,159,213,0.3);transition:background 0.12s;">✅ 체크리스트</a>
+      <a href="지출현황/지출현황.html" target="_blank" style="display:inline-flex;align-items:center;gap:6px;padding:12px 20px;background:#fff3e0;color:#e65100;font-size:14px;font-weight:700;border-radius:10px;text-decoration:none;border:1px solid rgba(230,81,0,0.3);transition:background 0.12s;">💰 지출현황</a>
     </div>
 
     <h3><span class="ico">📚</span>수록된 가이드 (사이드바 순서)</h3>
@@ -856,7 +857,18 @@
 
       <!-- 핵심 요약 -->
       <div class="tab-panel active" data-panel="summary">
-        <div class="card accent">
+        <div class="card warm">
+          <h4>26년도 웰페리온 방향 — 3가지 핵심</h4>
+          <table style="margin:12px 0 0;">
+            <tr><th style="width:60px">번호</th><th>방향</th><th style="width:160px">기간</th></tr>
+            <tr><td><strong>1</strong></td><td><strong>수익화 전략 수립</strong> — 기존 사업 수익 극대화 + 신규 수익원 발굴</td><td>2026.01 ~ 12</td></tr>
+            <tr><td><strong>2</strong></td><td><strong>공간 밸류업 추진</strong> — 시설·인테리어·서비스 품질 격상</td><td>2026.01 ~ 12</td></tr>
+            <tr><td><strong>3</strong></td><td><strong>운영 자동화 고도화</strong> — AI + 시스템 기반 운영 효율 극대화</td><td>2026.01 ~ 12</td></tr>
+          </table>
+          <p style="margin-top:10px; font-size:13px; color:var(--dim);">위 3가지가 2026년도 전략 로드맵 전 단계의 방향성 기준입니다.</p>
+        </div>
+
+        <div class="card accent" style="margin-top:20px;">
           <h4>핵심 포인트 6</h4>
           <ol>
             <li><strong>방향</strong> — 회사소개서의 확장 전략(국내 직영·위탁운영)을 실행 순서로 정의</li>
@@ -866,17 +878,6 @@
             <li><strong>첫 실행 과제</strong> — 3라인 통해 현장 운영 위임 → GM은 전략·확장에 집중</li>
             <li><strong>기대 효과</strong> — 현장 자율성 확보 · 책임 소재 명확화 · 확장 준비 완료</li>
           </ol>
-        </div>
-
-        <div class="card warm" style="margin-top:20px;">
-          <h4>대표님 하달 사항</h4>
-          <table style="margin:12px 0 0;">
-            <tr><th style="width:60px">번호</th><th>항목</th><th style="width:160px">기간</th><th style="width:80px">구분</th></tr>
-            <tr><td>1</td><td><strong>수익화 전략 수립</strong> — 기존 사업 수익 극대화 + 신규 수익원 발굴</td><td>2026.01 ~ 12</td><td><span class="badge warm">장기</span></td></tr>
-            <tr><td>2</td><td><strong>공간 밸류업 추진</strong> — 시설·인테리어·서비스 품질 격상</td><td>2026.01 ~ 12</td><td><span class="badge warm">장기</span></td></tr>
-            <tr><td>3</td><td><strong>운영 자동화 고도화</strong> — AI + 시스템 기반 운영 효율 극대화</td><td>2026.01 ~ 12</td><td><span class="badge warm">장기</span></td></tr>
-          </table>
-          <p style="margin-top:10px; font-size:13px; color:var(--dim);">위 3건은 전략 로드맵 전 단계에 걸친 상위 지시 사항으로, 모든 C-Level 업무의 방향성 기준입니다.</p>
         </div>
       </div>
 
@@ -1206,69 +1207,246 @@
     </div>
   </article>
 
-  <!-- ⑮ AI 교육자료 핵심요약 (NEW) -->
+  <!-- ⑮ AI 교육자료 핵심요약 — 웰페리온_AI교육자료_핵심정리.md 전수 반영 -->
   <article class="doc" id="g15">
-    <div class="doc-header"><h2>⑬ AI 교육자료 핵심요약</h2><div class="meta">AI 교육 SSOT · guide-hub.html 통합 · 2026-05-25 · 원본 608줄 압축</div></div>
-    <p class="lead">Claude Code 활용의 핵심만 추출한 빠른 참조 문서. 토큰 절약, 컨텍스트 관리, 비용 절감의 실전 규칙을 정리합니다.</p>
+    <div class="doc-header"><h2>⑬ AI 교육자료 핵심요약</h2><div class="meta">AI 교육 SSOT · 원본 609줄 전수 반영 · 2026-05-26 크로스체크 완료</div></div>
+    <p class="lead">웰페리온_AI교육자료_핵심정리.md 전체를 반영한 실전 참조 문서. Claude Code 기본기 → 토큰 절약 32가지 → MCP→CLI 전환 → 플러그인 → 자기학습 프로세스.</p>
 
     <div class="tabs" data-tabs="g15">
       <div class="tab-nav">
         <button class="tab-btn active" data-tab="basics">Claude Code 기본기</button>
-        <button class="tab-btn" data-tab="token">토큰 절약·컨텍스트</button>
-        <button class="tab-btn" data-tab="cost">비용 절감·플러그인</button>
+        <button class="tab-btn" data-tab="token-mid">토큰 절약 중급 23가지</button>
+        <button class="tab-btn" data-tab="token-adv">토큰 절약 고급 9가지</button>
+        <button class="tab-btn" data-tab="mcp-cli">MCP→CLI 전환</button>
+        <button class="tab-btn" data-tab="plugin">플러그인 상세</button>
+        <button class="tab-btn" data-tab="selflearn">자기학습 프로세스</button>
         <button class="tab-btn" data-tab="g15prompt">핵심 프롬프트</button>
       </div>
 
+      <!-- ── 탭 1: Claude Code 기본기 (섹션 1 전수) ── -->
       <div class="tab-panel active" data-panel="basics">
-        <h3><span class="ico">🧠</span>Claude Code 기본기</h3>
+        <h3><span class="ico">🧠</span>1. Claude Code 핵심 가이드 (11항목)</h3>
+
+        <h4>1-1. CLAUDE.md — 프로젝트 두뇌</h4>
         <ul>
-          <li><strong>CLAUDE.md = 프로젝트 두뇌.</strong> 세션 시작 시 자동 로드. 200줄 이하·표/리스트 구조화·상세지식은 docs/로 분리.</li>
-          <li><strong>Plan Mode(Shift+Tab 2번):</strong> 복잡한 작업·아키텍처 결정 전 계획부터.</li>
-          <li><strong>Task-Do-Verify:</strong> 모든 작업에 정의 → 실행 → 검증 3단계 반복.</li>
-          <li><strong>Context Rot:</strong> 오래 쓰면 품질 붕괴(어텐션 희석·명령 충돌·토큰 압박). 파일 2,000토큰 넘으면 점검.</li>
-          <li><strong>Hooks(PreToolUse/PostToolUse):</strong> 도구 호출 전후 자동 스크립트 — 로그 전처리·파일 재읽기 차단.</li>
-          <li><strong>Skill:</strong> 도메인 지식 .md. CLAUDE.md는 인덱스, 필요 시만 로딩 → 세션당 ~15,000토큰 절약.</li>
-          <li><strong>단축키:</strong> /clear /compact /context /cost /model /mcp.</li>
+          <li>세션 시작 시 자동 로드. 프로젝트 루트에 위치.</li>
+          <li>200줄 이하 유지 (5,000→700 토큰 절약). 서술형 제거, 표/리스트 구조화.</li>
+          <li>상세 지식은 스킬 파일(docs/)로 분리. 이미 결정된 내용(아키텍처·규칙·빌드 명령)을 명시.</li>
         </ul>
 
-        <h3><span class="ico">💡</span>새 AI 개념 학습 3질문법</h3>
+        <h4>1-2. Plan Mode (설계 모드)</h4>
+        <p>Shift+Tab 2번으로 진입. 코드를 바로 쓰지 않고 먼저 계획을 세운다. 복잡한 작업·아키텍처 결정·대규모 리팩토링 전 활용.</p>
+
+        <h4>1-3. Task-Do-Verify 패턴</h4>
+        <ol><li>Task: 작업 정의 및 범위 설정</li><li>Do: 실행</li><li>Verify: 결과 검증</li></ol>
+
+        <h4>1-4. Context Rot (컨텍스트 부패)</h4>
+        <p>오래 쓰면 출력 품질이 무너지는 구조적 현상. 4가지 원인:</p>
         <ol>
-          <li><strong>왜 이 이름?</strong> — 이름에 동작 순서가 담김</li>
-          <li><strong>기존 문제는?</strong> — 도구는 항상 문제 해결용</li>
-          <li><strong>어떻게 해결?</strong> — 해결 방식 = 기술의 본질</li>
+          <li><strong>어텐션 희석</strong> — 문맥이 길어질수록 중간 정보를 못 떠올림</li>
+          <li><strong>명령 충돌</strong> — 누적된 지시문이 모순</li>
+          <li><strong>토큰 예산 압박</strong> — 시작 파일이 작업할 토큰을 잡아먹음</li>
+          <li><strong>관련성 미스매치</strong> — 무관한 정보까지 로딩</li>
+        </ol>
+        <p>실전 임계: 한 파일이 2,000~3,000 토큰(약 1,500단어)을 넘으면 점검 신호.</p>
+
+        <h4>1-5. Hooks (훅 시스템)</h4>
+        <p>도구 호출 전후 자동 실행 스크립트. PreToolUse(호출 직전) / PostToolUse(호출 직후). 로그 전처리(FAILED·ERROR만 추출), 파일 재읽기 방지, 패턴 학습에 활용.</p>
+
+        <h4>1-6. 4가지 권한 모드</h4>
+        <table>
+          <tr><th>모드</th><th>설명</th></tr>
+          <tr><td>모두 허용</td><td>--dangerously-skip-permissions</td></tr>
+          <tr><td>사전 승인</td><td>allowedTools 설정</td></tr>
+          <tr><td>매번 확인</td><td>기본값</td></tr>
+          <tr><td>읽기 전용</td><td>Shift+Tab</td></tr>
+        </table>
+
+        <h4>1-7. Skill 시스템</h4>
+        <p>특정 도메인 지식을 담은 .md 파일. CLAUDE.md가 인덱스 역할, 필요할 때만 로딩 → 세션당 약 15,000 토큰 절약. 구조: docs/api-guide.md, docs/deploy-checklist.md 등.</p>
+
+        <h4>1-8. MCP (Model Context Protocol)</h4>
+        <p>외부 도구와 Claude Code를 연결하는 프로토콜. 각 MCP 서버는 도구 스키마를 매 메시지마다 로딩하므로 토큰 비용이 크다.</p>
+
+        <h4>1-9. Sub Agent &amp; Agent Team</h4>
+        <ul>
+          <li><strong>Sub Agent:</strong> 독립적인 하위 작업을 위임하는 별도 인스턴스. 본체 토큰의 약 10배 소비. Haiku 모델 위임 권장.</li>
+          <li><strong>Agent Team:</strong> 복수 에이전트가 Git Worktree를 사용하여 병렬 작업.</li>
+        </ul>
+
+        <h4>1-10. Git Worktree</h4>
+        <p>하나의 저장소에서 여러 브랜치를 동시에 체크아웃. 에이전트 팀이 충돌 없이 병렬 개발 가능.</p>
+
+        <h4>1-11. 핵심 단축키</h4>
+        <table>
+          <tr><th>단축키</th><th>기능</th></tr>
+          <tr><td>Shift+Tab</td><td>Plan Mode 진입 (2번)</td></tr>
+          <tr><td>Esc</td><td>현재 생성 중단</td></tr>
+          <tr><td>/clear</td><td>컨텍스트 완전 초기화</td></tr>
+          <tr><td>/compact</td><td>컨텍스트 요약 압축</td></tr>
+          <tr><td>/cost</td><td>현재 세션 비용 확인</td></tr>
+          <tr><td>/context</td><td>컨텍스트 사용량 확인</td></tr>
+          <tr><td>/model</td><td>모델 변경</td></tr>
+          <tr><td>/mcp</td><td>MCP 서버 목록</td></tr>
+        </table>
+
+        <h3><span class="ico">💡</span>부록: AI 학습 3질문법</h3>
+        <ol>
+          <li><strong>왜 이 이름?</strong> — 이름에 동작 순서가 담김 (예: RAG = Retrieval→Augmented→Generation)</li>
+          <li><strong>기존 문제는?</strong> — 도구는 항상 문제 해결용 (예: AI가 학습 안 한 정보 답변 불가)</li>
+          <li><strong>어떻게 해결?</strong> — 해결 방식 = 기술의 본질 (예: 질문마다 문서를 찾아서 함께 전달)</li>
         </ol>
       </div>
 
-      <div class="tab-panel" data-panel="token">
-        <h3><span class="ico">💰</span>토큰 절약 5대 규칙 (CLAUDE.md에 명시)</h3>
+      <!-- ── 탭 2: 토큰 절약 중급편 23가지 (섹션 2 전수) ── -->
+      <div class="tab-panel" data-panel="token-mid">
+        <h3><span class="ico">💰</span>2. 토큰 절약 중급편 (23가지)</h3>
+
+        <h4>환경 설정 (파일·설정)</h4>
         <table>
-          <tr><th style="width:40px">No.</th><th>규칙</th></tr>
-          <tr><td>1</td><td>이미 읽은 파일은 다시 확인하지 않는다</td></tr>
-          <tr><td>2</td><td>불필요한 도구 호출은 하지 않는다</td></tr>
-          <tr><td>3</td><td>의존성 없는 도구 호출은 한 번에 병렬 실행한다</td></tr>
-          <tr><td>4</td><td>20줄 이상의 불필요한 출력은 서브에이전트에 위임한다</td></tr>
-          <tr><td>5</td><td>사용자가 이미 설명한 내용을 다시 반복하지 않는다</td></tr>
+          <tr><th style="width:50px">Tip</th><th>규칙</th><th>효과</th></tr>
+          <tr><td>01</td><td><strong>.claudeignore 파일 만들기</strong> — node_modules, .next, dist, build, .git 등 불필요 폴더 제외 (.gitignore 동일 문법)</td><td>불필요 파일 로딩 차단</td></tr>
+          <tr><td>02</td><td><strong>CLAUDE.md 200줄 이하 유지</strong> — 서술형 제거, 구조화된 형식</td><td>5,000→700 토큰</td></tr>
+          <tr><td>03</td><td><strong>상세 지식은 스킬로 분리</strong> — CLAUDE.md엔 인덱스만, 세부는 docs/</td><td>세션당 ~15,000 토큰</td></tr>
+          <tr><td>04</td><td><strong>CLAUDE.md에 5가지 절약 규칙 명시</strong> — 재읽기 금지·불필요 호출 금지·병렬 실행·서브에이전트 위임·반복 금지</td><td>규칙 준수 강제</td></tr>
+          <tr><td>05</td><td><strong>이미 결정된 내용 적기</strong> — 아키텍처·코딩 규칙·빌드 명령·자주 하는 실수</td><td>탐색 비용 제거</td></tr>
         </table>
 
-        <h3><span class="ico">📦</span>컨텍스트 관리</h3>
-        <ul>
-          <li><strong>@ 파일 참조:</strong> 500줄 이하 전체 / 500~2,000 구간 지정 / 2,000줄 이상 분리.</li>
-          <li>컨텍스트 60% 도달 시 보존 내용 지시하며 /compact. 구현 도중 /compact 절대 금지.</li>
-          <li><strong>/clear</strong> = 무관한 작업 사이 통째 비움 / <strong>/compact</strong> = 마일스톤 사이 요약 압축.</li>
-          <li>자리 비우기 전 압축·클리어(캐시 5분 만료). 대규모 작업 후 progress.md 저장.</li>
-          <li>서브에이전트는 본체 토큰 약 10배 소비 → Haiku 위임, 단발성만.</li>
-        </ul>
+        <h4>컨텍스트 관리</h4>
+        <table>
+          <tr><th style="width:50px">Tip</th><th>규칙</th><th>효과</th></tr>
+          <tr><td>06</td><td><strong>@ 파일 전체 참조 지양</strong> — 500줄 이하 전체 / 500~2,000 구간 지정 / 2,000줄 이상 분리</td><td>불필요 로딩 방지</td></tr>
+          <tr><td>07</td><td><strong>60% 시점에 수동 압축</strong> — /context 확인 → /compact 실행 + 보존 내용 지시</td><td>품질 유지</td></tr>
+          <tr><td>08</td><td><strong>자리 비우기 전 압축/클리어</strong> — 캐시 5분 만료, 돌아오면 전체 재로딩</td><td>캐시 미스 방지</td></tr>
+          <tr><td>09</td><td><strong>셸 명령어 긴 출력 주의</strong> — head/tail로 출력 상한선 설정</td><td>로그 오염 방지</td></tr>
+          <tr><td>10</td><td><strong>Extended Thinking 관리</strong> — 기본 3만 토큰 소비. /config으로 thinking 예산 조절</td><td>숨은 비용 절감</td></tr>
+        </table>
 
-        <h3><span class="ico">🔄</span>MCP → CLI 전환 (토큰 최대 32배·비용 17배 절감)</h3>
-        <ul>
-          <li>MCP는 도구 스키마를 매 메시지 로딩 → 컨텍스트 40~50% 잠식. 안정성 CLI 100% vs MCP 72%.</li>
-          <li>대체: GitHub→gh / HTTP→curl+jq / AWS→aws / k8s→kubectl / Docker→docker / 파일→find·grep.</li>
-          <li>CLI 없는 서비스(Notion·Slack·Figma)·멀티테넌트 OAuth·보안규제만 MCP 유지.</li>
-        </ul>
+        <h4>MCP 최적화</h4>
+        <table>
+          <tr><th style="width:50px">Tip</th><th>규칙</th><th>효과</th></tr>
+          <tr><td>11</td><td><strong>MCP 서버 최소화</strong> — Playwright 17,600 + Supabase 20,900 = 38,500 토큰/메시지</td><td>10개 이하, 도구 80개 이하</td></tr>
+          <tr><td>12</td><td><strong>MCP tool search 옵션</strong> — 3개 이상 MCP 시 ENABLE_TOOL_SEARCH="auto:0" 설정</td><td>온디맨드 로딩</td></tr>
+          <tr><td>13</td><td><strong>4단계 MCP 줄이기</strong> — 목록 확인 → 도구 수 파악 → 토큰 비용 추정 → 상위부터 제거</td><td>체계적 정리</td></tr>
+          <tr><td>14</td><td><strong>글로벌 vs 프로젝트 MCP 분리</strong> — .claude/settings.json에서 disabledMcpServers 설정</td><td>프로젝트별 최적화</td></tr>
+        </table>
+
+        <h4>작업 습관 &amp; 비용 인식</h4>
+        <table>
+          <tr><th style="width:50px">Tip</th><th>규칙</th></tr>
+          <tr><td>15</td><td><strong>분산 메모리 구조</strong> — CLAUDE.md = 인덱스, 실제 데이터는 docs/ 하위 분산</td></tr>
+          <tr><td>16</td><td><strong>대규모 작업 후 /clear 전 저장</strong> — progress.md에 현재 상태 기록</td></tr>
+          <tr><td>17</td><td><strong>Projects에 반복 파일 업로드</strong> — 프롬프트 캐시 참조로 재로딩 비용 절감</td></tr>
+          <tr><td>18</td><td><strong>플랜 모드 먼저</strong> — Shift+Tab 2번. 불필요한 시행착오 방지</td></tr>
+          <tr><td>19</td><td><strong>상태 표시줄 /status line</strong> — 현재 토큰 사용량 실시간 모니터링</td></tr>
+          <tr><td>20</td><td><strong>ccusage로 사용량 추적</strong> — npm install -g @ryoppippi/ccusage</td></tr>
+          <tr><td>21</td><td><strong>토큰 확인 3가지</strong> — /context 명령 / ~/.claude/projects/ JSONL / 웹 계산기</td></tr>
+          <tr><td>22</td><td><strong>툴은 필요한 것만</strong> — 2주간 미사용 도구 제거</td></tr>
+          <tr><td>23</td><td><strong>서브에이전트 비용 인식</strong> — 본체 토큰 약 10배, Haiku 위임, 단발성만</td></tr>
+        </table>
       </div>
 
-      <div class="tab-panel" data-panel="cost">
-        <h3><span class="ico">⚙️</span>비용 80% 절감 — settings.json 4줄</h3>
+      <!-- ── 탭 3: 토큰 절약 고급편 9가지 (섹션 3 전수) ── -->
+      <div class="tab-panel" data-panel="token-adv">
+        <h3><span class="ico">🔬</span>3. 토큰 절약 고급편 (9가지)</h3>
+        <table>
+          <tr><th style="width:50px">Tip</th><th>기법</th><th>효과</th></tr>
+          <tr><td>01</td><td><strong>코드베이스 사전 인덱싱 (qmd)</strong> — 코드베이스 구조를 사전 인덱싱하여 매번 탐색 제거</td><td>92% 절감</td></tr>
+          <tr><td>02</td><td><strong>파일 재읽기 방지 훅 (read-once)</strong> — PreToolUse 훅으로 이미 읽은 파일 재로딩 차단</td><td>60~90% 절감</td></tr>
+          <tr><td>03</td><td><strong>훅으로 로그 전처리</strong> — PostToolUse 훅으로 FAILED·ERROR 라인만 추출</td><td>로그 컨텍스트 최소화</td></tr>
+          <tr><td>04</td><td><strong>환경 변수로 비용 제어</strong> — DISABLE_NON_ESSENTIAL_MODEL_CALLS · DISABLE_COST_WARNINGS · DISABLE_PROMPT_CACHING</td><td>비필수 호출 차단</td></tr>
+          <tr><td>05</td><td><strong>MCP 도구 설명 다이어트</strong> — 도구당 설명 300→20 토큰 축소</td><td>50개 도구 기준 3,000~4,000 토큰</td></tr>
+          <tr><td>06</td><td><strong>MCP 도구 필터링</strong> — GitHub MCP 30→8개 도구 (73% 감소)</td><td>실사용 도구만 활성</td></tr>
+          <tr><td>07</td><td><strong>에이전트별 최소 도구 세트</strong> — 각 에이전트 역할에 맞는 최소한 도구만 할당</td><td>역할별 최적화</td></tr>
+          <tr><td>08</td><td><strong>멀티 터미널 전략</strong> — 기능개발 / 리팩토링 / 디버깅을 별도 터미널에서 병렬 실행</td><td>컨텍스트 오염 방지</td></tr>
+          <tr><td>09</td><td><strong>적용 순서</strong> — 초급 습관 → 중급 환경 → 고급 도구. MAX 플랜 전에 52가지 모두 적용</td><td>단계적 효율 극대화</td></tr>
+        </table>
+      </div>
+
+      <!-- ── 탭 4: MCP→CLI 전환 (섹션 4 전수) ── -->
+      <div class="tab-panel" data-panel="mcp-cli">
+        <h3><span class="ico">🔄</span>4. MCP→CLI 전환 핵심 가이드</h3>
+
+        <h4>4-1. MCP의 구조적 문제</h4>
+        <table>
+          <tr><th>문제</th><th>수치</th></tr>
+          <tr><td>토큰 블랙홀</td><td>GitHub MCP 43개 도구 ~55,000 토큰 / Atlassian 73개 ~45,000 / 2~3개 연결 시 컨텍스트 40~50% 소비</td></tr>
+          <tr><td>토큰 비교(동일 질문)</td><td>CLI(gh) 1,365 토큰 vs GitHub MCP 44,026 토큰 (<strong>32배</strong>)</td></tr>
+          <tr><td>안정성</td><td>CLI 100% 성공 vs MCP 72% 성공 (25회 반복 벤치마크). 좀비 프로세스 70개+ 발생 사례</td></tr>
+          <tr><td>인증 문제</td><td>gh auth 무시, 별도 PAT 요구. OAuth(gho_*)와 PAT(ghp_*) 비호환 — 미문서화</td></tr>
+          <tr><td>월 비용(10,000건)</td><td>CLI ~$3.20 / MCP Gateway ~$5.00(1.6x) / MCP 직접 ~$55.20(<strong>17.3x</strong>)</td></tr>
+        </table>
+
+        <h4>4-2. MCP→CLI 대체 목록</h4>
+        <table>
+          <tr><th>MCP 서버</th><th>CLI 대체</th><th>설치</th></tr>
+          <tr><td>GitHub MCP (43 tools)</td><td>gh</td><td>brew install gh</td></tr>
+          <tr><td>HTTP/Fetch MCP</td><td>curl + jq</td><td>기본 내장 / brew install jq</td></tr>
+          <tr><td>AWS MCP</td><td>aws</td><td>brew install awscli</td></tr>
+          <tr><td>Kubernetes MCP</td><td>kubectl</td><td>brew install kubectl</td></tr>
+          <tr><td>Docker MCP</td><td>docker</td><td>Docker Desktop 포함</td></tr>
+          <tr><td>Google Cloud MCP</td><td>gcloud</td><td>brew install google-cloud-sdk</td></tr>
+          <tr><td>Terraform MCP</td><td>terraform</td><td>brew install terraform</td></tr>
+          <tr><td>Jira MCP</td><td>jira</td><td>brew install jira-cli</td></tr>
+          <tr><td>파일 시스템 MCP</td><td>find, grep, cat</td><td>기본 내장</td></tr>
+        </table>
+
+        <h4>4-3~4-5. CLI 핵심 명령어</h4>
+        <pre style="background:#16181c; color:#e8e8e8; padding:14px 16px; border-radius:8px; font-size:12px; white-space:pre-wrap; line-height:1.6; border-left:3px solid var(--accent);"># GitHub CLI
+gh pr list / gh pr create --title "제목" --body "내용"
+gh issue list --label "bug" / gh issue create --title "제목"
+gh api repos/{owner}/{repo}/actions/runs
+
+# HTTP API: curl + jq
+curl -s https://api.example.com/data | jq '.results[] | {name, status}'
+curl -s -X POST url -H "Content-Type: application/json" -d '{"name":"test"}' | jq '.id'
+
+# Cloud CLI
+aws ec2 describe-instances --output json | jq '...'
+docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
+kubectl get pods -o json | jq '.items[] | {name: .metadata.name}'</pre>
+
+        <h4>4-7. MCP가 여전히 필요한 경우</h4>
+        <table>
+          <tr><th>상황</th><th>이유</th><th>예시</th></tr>
+          <tr><td>CLI 없는 서비스</td><td>공식 CLI 미존재</td><td>Figma, Notion, Slack API</td></tr>
+          <tr><td>멀티 테넌트 OAuth</td><td>사용자별 권한 분리</td><td>SaaS 고객별 접근</td></tr>
+          <tr><td>비개발자 환경</td><td>터미널 접근 불가</td><td>Claude Desktop 사용자</td></tr>
+          <tr><td>보안 규정</td><td>엄격한 입력 검증</td><td>금융/의료 규제 환경</td></tr>
+        </table>
+
+        <h4>4-8~4-9. ENABLE_TOOL_SEARCH &amp; MCP Gateway</h4>
+        <ul>
+          <li><strong>ENABLE_TOOL_SEARCH = "auto:0"</strong> — MCP 도구를 시작 시 모두 로드하지 않고 필요 시만 검색. 30,000+ 토큰 절약.</li>
+          <li><strong>MCP Gateway</strong> — 스키마 필터링(43→5~10개), 설명 압축, 캐싱. 벤치마크: MCP 직접 145,000 / Gateway ~15,000 / CLI 4,150 토큰.</li>
+        </ul>
+
+        <h4>4-10. 전환 체크리스트</h4>
+        <ol>
+          <li>/mcp → 현재 연결된 MCP 서버 목록 확인</li>
+          <li>각 서버에 대해 CLI 대체 가능 여부 확인</li>
+          <li>CLI 대체 가능한 MCP 비활성화</li>
+          <li>CLAUDE.md에 사용 가능한 CLI 도구 목록 명시</li>
+          <li>남은 MCP에 ENABLE_TOOL_SEARCH 적용</li>
+          <li>Gateway 도입 검토 → 스키마 필터링으로 추가 절감</li>
+        </ol>
+        <p><strong>예상 효과:</strong> 토큰 소비량 80~95% 감소, 안정성 100%, 월 비용 10배 이상 절감.</p>
+      </div>
+
+      <!-- ── 탭 5: everything-claude-code 플러그인 (섹션 5 전수) ── -->
+      <div class="tab-panel" data-panel="plugin">
+        <h3><span class="ico">🔌</span>5. everything-claude-code 플러그인 가이드</h3>
+
+        <h4>5-1. 개요</h4>
+        <p>에이전트, 스킬, 훅, 룰, MCP 설정, 메모리 학습 시스템을 통째로 묶은 플러그인. 6개 AI 코딩 툴에서 동시 동작.</p>
+        <table>
+          <tr><th>지표</th><th>값</th></tr>
+          <tr><td>구성 요소</td><td>38 agents / 156 skills / 72 commands / 34 rules / 14 MCP servers</td></tr>
+          <tr><td>테스트</td><td>1,282 tests / 98% coverage</td></tr>
+          <tr><td>지원 하네스</td><td>Claude Code, Cursor, Codex, OpenCode, Antigravity, Gemini CLI</td></tr>
+        </table>
+
+        <h4>5-2. 비용 80% 절감 — settings.json 4줄</h4>
         <table>
           <tr><th>설정</th><th>변경</th><th>효과</th></tr>
           <tr><td>model</td><td>opus → sonnet</td><td>약 60% 절감</td></tr>
@@ -1276,17 +1454,166 @@
           <tr><td>CLAUDE_AUTOCOMPACT_PCT_OVERRIDE</td><td>95 → 50</td><td>긴 세션 품질 향상</td></tr>
           <tr><td>CLAUDE_CODE_SUBAGENT_MODEL</td><td>→ haiku</td><td>서브에이전트 약 80% 절감</td></tr>
         </table>
-        <p><strong>모델 선택:</strong> 일상 Sonnet / 설계·디버깅 Opus 일시전환 / 단순반복 Haiku.</p>
 
-        <h3><span class="ico">🔌</span>고급 절감 &amp; 플러그인</h3>
+        <h4>5-3. 모델 선택</h4>
+        <table>
+          <tr><th>상황</th><th>모델</th><th>이유</th></tr>
+          <tr><td>일상 코딩, 리뷰, 테스트</td><td>Sonnet (기본)</td><td>품질/비용 균형 최적</td></tr>
+          <tr><td>아키텍처 설계, 깊은 디버깅</td><td>Opus (일시전환)</td><td>복잡한 추론에만</td></tr>
+          <tr><td>단순 조회, 반복 작업</td><td>Haiku (서브에이전트)</td><td>가장 저렴, 워커 역할</td></tr>
+        </table>
+
+        <h4>5-4. /clear vs /compact</h4>
+        <table>
+          <tr><th></th><th>/clear (무료, 즉시)</th><th>/compact (요약 압축)</th></tr>
+          <tr><td>언제</td><td>무관한 작업 사이</td><td>마일스톤 사이</td></tr>
+          <tr><td>효과</td><td>컨텍스트 통째로 비움</td><td>요약 후 압축 보존</td></tr>
+        </table>
+        <p><strong>절대 금지:</strong> 구현 도중에 /compact → 변수명·파일 경로·부분 상태 손실.</p>
+        <p>적정 시점 5가지: 리서치→구현 직전 / 마일스톤 사이 / 디버깅 후 기능 복귀 / 새 접근 시도 / 컨텍스트 50% 초과 시.</p>
+
+        <h4>5-7. 코어 스킬 5개 (처음 설치)</h4>
+        <table>
+          <tr><th>스킬</th><th>역할</th></tr>
+          <tr><td>search-first</td><td>코딩 전 리서치 워크플로 (가장 중요)</td></tr>
+          <tr><td>tdd-workflow</td><td>테스트 주도 개발 — 실패 테스트 먼저</td></tr>
+          <tr><td>strategic-compact</td><td>적절한 시점에 자동 /compact 제안</td></tr>
+          <tr><td>verification-loop</td><td>build·test·lint·typecheck·security 한 번에 검증</td></tr>
+          <tr><td>security-review</td><td>OWASP Top 10 보안 체크리스트</td></tr>
+        </table>
+
+        <h4>5-8. 핵심 슬래시 명령어 워크플로</h4>
         <ul>
-          <li>코드베이스 사전 인덱싱 92% 절감, read-once 훅 60~90% 절감, 훅으로 로그 FAILED/ERROR만 추출.</li>
-          <li>everything-claude-code: 코어 스킬 5개(search-first·tdd-workflow·strategic-compact·verification-loop·security-review)부터.</li>
-          <li>Continuous Learning: instinct 3개 이상 모이면 /evolve로 skill 승격.</li>
-          <li>보안: <code>npx ecc-agentshield scan</code> (시크릿·권한·훅·MCP·에이전트 5종 점검).</li>
+          <li><strong>새 기능:</strong> /plan → /tdd → /code-review</li>
+          <li><strong>버그 수정:</strong> /tdd(재현) → 수정+통과 → /code-review</li>
+          <li><strong>출시 전:</strong> /security-scan → /e2e → /test-coverage</li>
+        </ul>
+
+        <h4>5-9. Continuous Learning v2 — 메모리 학습 시스템</h4>
+        <p>진짜 핵심. PreToolUse/PostToolUse 훅으로 사용자 작업을 100% 관찰하고 반복 패턴을 학습.</p>
+        <ul>
+          <li><strong>instinct(본능):</strong> 학습된 패턴 1개. 신뢰도 0.3~0.9. 자주+일관되면 점수 상승.</li>
+          <li><strong>instinct → skill 승격:</strong> 관련 instinct 3개+ → /evolve로 재사용 가능 skill 모듈 자동 승격.</li>
+        </ul>
+        <table>
+          <tr><th>명령</th><th>역할</th></tr>
+          <tr><td>/instinct-status</td><td>학습된 instinct 목록과 신뢰도 확인</td></tr>
+          <tr><td>/instinct-export</td><td>학습 결과 파일로 내보내기 (팀 공유용)</td></tr>
+          <tr><td>/instinct-import</td><td>동료의 학습 결과 가져오기</td></tr>
+          <tr><td>/evolve</td><td>instinct 묶음을 skill로 자동 승격</td></tr>
+          <tr><td>/prune</td><td>30일 TTL 지난 pending instinct 정리</td></tr>
+        </table>
+
+        <h4>5-10. AgentShield — 보안 스캐너</h4>
+        <p><code>npx ecc-agentshield scan</code> (--fix 자동수정 / --opus 적대적 검증). 5종 점검:</p>
+        <table>
+          <tr><th>카테고리</th><th>검사 내용</th></tr>
+          <tr><td>시크릿 탐지</td><td>14가지 패턴 — API 키, 토큰</td></tr>
+          <tr><td>권한 감사</td><td>너무 열려 있는 도구 권한</td></tr>
+          <tr><td>훅 인젝션</td><td>prompt injection 취약점</td></tr>
+          <tr><td>MCP 리스크</td><td>위험한 MCP 서버 프로파일링</td></tr>
+          <tr><td>에이전트 리뷰</td><td>agent definition 권한 범위</td></tr>
+        </table>
+
+        <h4>5-11. 크로스 하네스 — 6개 툴 동시 동작</h4>
+        <table>
+          <tr><th>툴</th><th>지원 범위</th></tr>
+          <tr><td>Claude Code</td><td>네이티브 (47 agents, 79 commands, 181 skills)</td></tr>
+          <tr><td>Cursor IDE</td><td>완전 지원, 15 hook events</td></tr>
+          <tr><td>Codex</td><td>AGENTS.md + .codex 설정, 3 멀티에이전트 롤</td></tr>
+          <tr><td>OpenCode</td><td>12 agents, 31 commands, 37 skills</td></tr>
+          <tr><td>Antigravity</td><td>flat rules + .agent 통합</td></tr>
+          <tr><td>Gemini CLI</td><td>실험적 .gemini/GEMINI.md</td></tr>
+        </table>
+
+        <h4>5-12. 팀 단위 적용</h4>
+        <ol>
+          <li>리드 개발자가 먼저 설정 (settings.json + 코어 스킬 5개 + instinct 시드)</li>
+          <li>1~2주 후 /instinct-export로 팀 노하우 파일 생성</li>
+          <li>신입 입사 시 /instinct-import로 컨벤션 즉시 주입</li>
+          <li>CI 게이트에 npx ecc-agentshield scan 추가 (exit 2)</li>
+          <li>월 1회 /evolve로 instinct → 정식 skill 승격</li>
+        </ol>
+
+        <h4>5-13. 주의사항</h4>
+        <ul>
+          <li>156개 스킬 한 번에 설치 금지 — 코어 5개부터 시작</li>
+          <li>plugin.json에 "hooks" 필드 직접 추가 금지 — 자동 로드와 충돌</li>
+          <li>구현 도중 /compact 금지 — 변수명/파일/상태 손실</li>
+          <li>MCP 전부 활성화 금지 — 200K 컨텍스트가 70K로 축소</li>
         </ul>
       </div>
 
+      <!-- ── 탭 6: 자기학습 프로세스 (GM님 최종 목표) ── -->
+      <div class="tab-panel" data-panel="selflearn">
+        <h3><span class="ico">🔁</span>AI C-Level 자기학습 프로세스</h3>
+        <p>GM님 최종 목표: AI CEO 및 C-Level 에이전트들이 <strong>스스로 학습 → 제안·추천 → GM 승인 시 반복 고도화</strong>되는 순환 프로세스.</p>
+
+        <h4>자기학습 순환 4단계</h4>
+        <table>
+          <tr><th>단계</th><th>주체</th><th>내용</th><th>자동화 수준</th></tr>
+          <tr><td>1. 수집</td><td>시스템</td><td>Anthropic 공식 블로그·릴리스·문서 변경사항 + 로컬 교육자료 스캔</td><td>완전 자동 (스크립트)</td></tr>
+          <tr><td>2. 학습·요약</td><td>AI CEO</td><td>수집 결과를 C-Level 역할별 맞춤 요약 생성 + 현행 SOP 대비 개선점 분석</td><td>자동 (세션 시작 시)</td></tr>
+          <tr><td>3. 제안·추천</td><td>각 C-Level</td><td>본인 R/R 범위 내 고도화 안 작성 → CEO 취합 → GM님 텔레그램 보고</td><td>반자동 (C-Level 자율 제안)</td></tr>
+          <tr><td>4. 승인·반영</td><td>GM님</td><td>제안 검토 → 승인 시 즉시 반영 → 다음 사이클에 누적</td><td>GM님 승인 = 유일한 사람 게이트</td></tr>
+        </table>
+
+        <h4>자동화 도구</h4>
+        <table>
+          <tr><th>도구</th><th>위치</th><th>역할</th></tr>
+          <tr><td>ai_education_auto_learner.py</td><td>scripts/</td><td>웹 수집 → 요약 → 텔레그램 배포 (수집 단계)</td></tr>
+          <tr><td>education_archive_weekly.py</td><td>scripts/</td><td>매주 월 09:00 로컬 교육자료 자동 정리</td></tr>
+          <tr><td>컨텍스트 주간 정비</td><td>각 C-Level 자동태스크</td><td>매주 월 09:00 본인 영역 검토·고도화 (학습+제안 단계)</td></tr>
+          <tr><td>CEO 통합 보고</td><td>매일 08:00</td><td>C-Level 제안 취합 → GM님 보고 (제안 단계)</td></tr>
+        </table>
+
+        <h4>고도화 진화 로드맵</h4>
+        <ul>
+          <li><strong>v1.0 (현재):</strong> 수동 수집 + 수동 학습 + 수동 제안</li>
+          <li><strong>v2.0:</strong> 자동 수집(ai_education_auto_learner) + AI 요약 + 텔레그램 제안 → GM 승인</li>
+          <li><strong>v3.0:</strong> Continuous Learning(instinct) + 자동 SOP 업데이트 제안 + 승인 시 자동 반영 + 학습 루프 고도화</li>
+        </ul>
+        <div class="callout"><strong>핵심 원칙.</strong> 모든 자동 고도화는 GM님 승인을 거쳐야 반영됨. AI는 제안까지만, 실행은 승인 후.</div>
+
+        <h3><span class="ico">🔧</span>컨텍스트 정비 범위 정의 (매주 월 09:00)</h3>
+        <p>6 C-Level 각각이 매주 월요일 09:00에 수행하는 핵심 본업. 자기 영역 누적 자료를 검토·정리·고도화.</p>
+        <table>
+          <tr><th>C-Level</th><th>식별자</th><th>정비 범위</th><th>체크포인트</th></tr>
+          <tr>
+            <td><strong>AI CMO</strong></td><td>CMO-002</td>
+            <td>마케팅 SOP·콘텐츠 파이프라인·채널별 성과·베이스라인</td>
+            <td>콘텐츠 캘린더 정합성 / 3채널 SOP 현행화 / 검수 피드백 누적 반영 / 베이스라인 톤 갱신</td>
+          </tr>
+          <tr>
+            <td><strong>AI CPO</strong></td><td>CPO-002</td>
+            <td>회원·CS SOP·상품 아카이브·문의 응대 프로세스</td>
+            <td>회원 상품 가격표 현행화 / CS 응대 매뉴얼 업데이트 / 문의 유형별 FAQ 정비 / 예약 정책 정합성</td>
+          </tr>
+          <tr>
+            <td><strong>AI COO</strong></td><td>COO-001</td>
+            <td>운영 SOP·체크리스트·이슈 응답·리셉션 매뉴얼</td>
+            <td>일일 점검 체크리스트 항목 현행화 / 이슈 응답 시트 패턴 분석 / 운영 가이드라인 갱신 / 교대 인수인계 절차</td>
+          </tr>
+          <tr>
+            <td><strong>AI CHRO</strong></td><td>CHRO-005</td>
+            <td>인사·파트너 SOP·계약 관리·조직도·복지 정책</td>
+            <td>파트너 계약 현황 갱신 / 레벨링 체계 점검 / 복장·복지 정책 현행화 / 근태 관리 프로세스 정비</td>
+          </tr>
+          <tr>
+            <td><strong>AI CFO</strong></td><td>CFO-004</td>
+            <td>재무·지출·수익 SOP·예산 관리·세무 체크리스트</td>
+            <td>월별 지출 집계 정합성 / 수익화 KPI 갱신 / 세무 일정 체크 / 예산 vs 실적 비교 정비</td>
+          </tr>
+          <tr>
+            <td><strong>AI CTO</strong></td><td>CTO-003</td>
+            <td>전사 인프라·자동화·시설 SOP·개발 아카이브</td>
+            <td>scripts/ 폴더 구조 정비 / 자동화 태스크 가동 상태 점검 / 시설 유지보수 현황 갱신 / 기술 문서 현행화</td>
+          </tr>
+        </table>
+        <p><strong>공통 의무:</strong> 중복·구식·과잉 항목 정리 / 업무 흐름 명확화 / GM 지시 이상 자율 진화·고도화 안 자체 제안·반영</p>
+      </div>
+
+      <!-- ── 탭 7: 핵심 프롬프트 ── -->
       <div class="tab-panel" data-panel="g15prompt">
         <h3><span class="ico">🤖</span>핵심 프롬프트</h3>
         <h4>토큰·컨텍스트 효율 점검</h4>
@@ -1297,11 +1624,13 @@
         <pre style="background:#16181c; color:#e8e8e8; padding:14px 16px; border-radius:8px; font-size:13px; white-space:pre-wrap; line-height:1.7; border-left:3px solid var(--accent);">각 AI C-Level의 컨텍스트 파일(.md·.json·.log)을 스캔→단순화→자동화→고도화→통합 제안 5단계로 정비해줘. 고위험 작업은 제안만, GM 승인 후 반영.</pre>
         <h4>플러그인·보안 점검</h4>
         <pre style="background:#16181c; color:#e8e8e8; padding:14px 16px; border-radius:8px; font-size:13px; white-space:pre-wrap; line-height:1.7; border-left:3px solid var(--accent);">현재 설치된 플러그인 목록과 보안 상태를 점검해줘. ecc-agentshield 기준 5종(시크릿·권한·훅·MCP·에이전트) 체크.</pre>
+        <h4>자기학습 사이클 실행</h4>
+        <pre style="background:#16181c; color:#e8e8e8; padding:14px 16px; border-radius:8px; font-size:13px; white-space:pre-wrap; line-height:1.7; border-left:3px solid var(--accent);">ai_education_auto_learner.py를 실행해서 최신 AI 정보를 수집·요약한 뒤, 각 C-Level R/R 기준으로 고도화 제안을 정리해줘. 제안은 텔레그램으로 GM님께 발송.</pre>
       </div>
 
     </div>
 
-    <div class="source">SSOT: 본 섹션 = AI 교육자료·고도화 프롬프트 단일 원본 (외부 .md 통합 완료)</div>
+    <div class="source">SSOT: 본 섹션 = AI 교육자료·고도화 프롬프트 단일 원본 (웰페리온_AI교육자료_핵심정리.md 609줄 전수 반영 · 2026-05-26)</div>
   </article>
 
   <!-- ⑯ 기술 인프라 상세 (NEW) -->
@@ -1449,6 +1778,8 @@ Start-Process python -ArgumentList telegram_bot\daily_scheduler.py -WorkingDirec
       <div class="tab-panel" data-panel="mobile">
         <h3><span class="ico">📱</span>모바일 Claude CLI 원격 제어</h3>
         <p>퇴근 후에도 스마트폰에서 Claude Code를 원격으로 사용할 수 있는 방법입니다.</p>
+
+        <div class="callout tip"><strong>자동 연결.</strong> 매일 아침 PC 전원 ON → <code>Start-AI CEO.bat</code> 실행하면, <code>--remote-control "Wellperion GM"</code> 옵션이 자동 적용되어 모바일 Claude Code 앱(claude.ai/code)에서 즉시 "Wellperion GM" 세션으로 접속됩니다. 별도 설정이나 추가 조작 없이 .bat 하나로 끝.</div>
 
         <h4>방법 1: Claude Code 앱 (권장)</h4>
         <table>
@@ -1622,65 +1953,130 @@ Start-Process python -ArgumentList telegram_bot\daily_scheduler.py -WorkingDirec
     <div class="doc-header"><h2>김남욱</h2><div class="meta">할 일 · 루틴 · 건강 · 목표 통합</div></div>
     <p class="lead">개인·회사 구분 없이 김남욱님의 모든 업무와 루틴을 한곳에서 관리합니다. 팀 업무는 <a href="투두리스트/핵심멤버%20투두리스트.html" target="_blank" style="color:var(--accent);">핵심멤버 투두리스트</a>에서 확인.</p>
 
+    <!-- 오늘 할 일 (탭 밖 독립 영역) -->
+    <div style="margin:18px 0 24px;">
+      <h3 id="gm1-todo-date"><span class="ico">📌</span>오늘 할 일</h3>
+      <div id="today-task-list">
+        <div class="task-card" data-today="1">
+          <div class="task-title" style="display:flex;align-items:center;justify-content:space-between;">
+            <span><span class="status-dot active"></span>GitHub Pages 셋업</span>
+            <div class="todo-actions">
+              <button class="todo-act-btn today-act" data-action="done">완료</button>
+              <button class="todo-act-btn today-act" data-action="hold">보류</button>
+              <button class="todo-act-btn today-act del" data-action="delete">삭제</button>
+            </div>
+          </div>
+          <div class="task-desc">Netlify → GitHub Pages 전환. 7개 페이지 일괄 배포 (가이드허브·투두리스트·체크리스트·지출현황·CMO파이프라인·문의Survey·홈페이지).</div>
+        </div>
+        <div class="task-card" data-today="2">
+          <div class="task-title" style="display:flex;align-items:center;justify-content:space-between;">
+            <span><span class="status-dot active"></span>투두리스트 "카톡 전송" → "텔레그램 결재요청" 변경</span>
+            <div class="todo-actions">
+              <button class="todo-act-btn today-act" data-action="done">완료</button>
+              <button class="todo-act-btn today-act" data-action="hold">보류</button>
+              <button class="todo-act-btn today-act del" data-action="delete">삭제</button>
+            </div>
+          </div>
+          <div class="task-desc">카카오톡 폐기 확정. 텔레그램 결재방 체계로 통일.</div>
+        </div>
+        <div class="task-card" data-today="3">
+          <div class="task-title" style="display:flex;align-items:center;justify-content:space-between;">
+            <span><span class="status-dot active"></span>COO 캘린더뷰 6개 → 1개 통합</span>
+            <div class="todo-actions">
+              <button class="todo-act-btn today-act" data-action="done">완료</button>
+              <button class="todo-act-btn today-act" data-action="hold">보류</button>
+              <button class="todo-act-btn today-act del" data-action="delete">삭제</button>
+            </div>
+          </div>
+          <div class="task-desc">UI/UX 개선. COO에 지시 필요.</div>
+        </div>
+        <div class="task-card" data-today="4">
+          <div class="task-title" style="display:flex;align-items:center;justify-content:space-between;">
+            <span><span class="status-dot active"></span>마그네슘(Cenovis) 저녁 1알</span>
+            <div class="todo-actions">
+              <button class="todo-act-btn today-act" data-action="done">완료</button>
+              <button class="todo-act-btn today-act" data-action="hold">보류</button>
+              <button class="todo-act-btn today-act del" data-action="delete">삭제</button>
+            </div>
+          </div>
+          <div class="task-desc">수면 질 개선용. 1~2주 후 체감 없으면 글리시네이트 형태 교체 검토.</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:12px;margin-top:16px;">
+        <details class="toggle" style="flex:1;">
+          <summary style="color:var(--green);"><span style="margin-right:6px;">✅</span>완료 (<span id="today-done-count">0</span>건)</summary>
+          <div class="toggle-body" style="font-size:13px;" id="today-done-list"></div>
+        </details>
+        <details class="toggle" style="flex:1;">
+          <summary style="color:var(--accent);"><span style="margin-right:6px;">⏸️</span>보류 (<span id="today-hold-count">0</span>건)</summary>
+          <div class="toggle-body" style="font-size:13px;" id="today-hold-list"></div>
+        </details>
+      </div>
+      <details class="toggle" style="margin-top:10px;">
+        <summary style="color:var(--dim);"><span style="margin-right:6px;">📦</span>어제 기록 (05-26, 4건)</summary>
+        <div class="toggle-body" style="font-size:13px;">
+          <div style="padding:6px 0;border-bottom:1px dashed var(--border);"><span style="color:var(--green);font-weight:700;">✓</span> <span style="text-decoration:line-through;color:var(--dim-soft);">Apps Script TODO 재배포</span> <span style="font-size:11px;color:var(--dim);">· 완료</span></div>
+          <div style="padding:6px 0;border-bottom:1px dashed var(--border);"><span style="color:var(--green);font-weight:700;">✓</span> <span style="text-decoration:line-through;color:var(--dim-soft);">가이드허브 Netlify 배포</span> <span style="font-size:11px;color:var(--dim);">· 크레딧 리밋으로 보류</span></div>
+          <div style="padding:6px 0;border-bottom:1px dashed var(--border);"><span style="color:var(--green);font-weight:700;">✓</span> <span style="text-decoration:line-through;color:var(--dim-soft);">Apps Script v3 재배포</span> <span style="font-size:11px;color:var(--dim);">· 완료</span></div>
+          <div style="padding:6px 0;"><span style="color:var(--green);font-weight:700;">✓</span> <span style="text-decoration:line-through;color:var(--dim-soft);">하루 일과표 공유</span> <span style="font-size:11px;color:var(--dim);">· 완료</span></div>
+        </div>
+      </details>
+    </div>
+
     <div class="tabs" data-tabs="gm1">
       <div class="tab-nav">
-        <button class="tab-btn active" data-tab="todo">할 일</button>
-        <button class="tab-btn" data-tab="morning">아침 루틴</button>
+        <button class="tab-btn active" data-tab="morning">아침 루틴</button>
         <button class="tab-btn" data-tab="daily">하루 시간표</button>
         <button class="tab-btn" data-tab="tracker">컨디션 트래커</button>
         <button class="tab-btn" data-tab="principles">목표·원칙</button>
       </div>
 
-      <!-- 할 일 -->
-      <div class="tab-panel active" data-panel="todo">
-        <h3><span class="ico">📌</span>오늘 할 일 (2026-05-26 화)</h3>
-        <div class="task-card" data-today="1">
-          <div class="task-title" style="display:flex;align-items:center;justify-content:space-between;">
-            <span><span class="status-dot active"></span>마그네슘(Cenovis) 저녁 1알</span>
-            <button class="today-done-btn" style="padding:3px 10px;font-size:11px;font-weight:700;border-radius:12px;cursor:pointer;font-family:inherit;background:var(--green-bg);color:var(--green);border:1px solid rgba(106,191,123,0.3);">완료</button>
-          </div>
-          <div class="task-desc">수면 질 개선용. 1~2주 후 체감 없으면 글리시네이트 형태 교체 검토.</div>
-        </div>
-        <details class="toggle" style="margin-top:16px;">
-          <summary style="color:var(--green);"><span style="margin-right:6px;">✅</span>오늘 완료 (<span id="today-done-count">4</span>건)</summary>
-          <div class="toggle-body" style="font-size:13px;" id="today-done-list">
-            <div style="padding:6px 0;border-bottom:1px dashed var(--border);"><span style="color:var(--green);font-weight:700;">✓</span> <span style="text-decoration:line-through;color:var(--dim-soft);">Apps Script TODO 재배포</span> <span style="font-size:11px;color:var(--dim);">· 05-26 TODO 기능 추가 배포 완료</span></div>
-            <div style="padding:6px 0;border-bottom:1px dashed var(--border);"><span style="color:var(--green);font-weight:700;">✓</span> <span style="text-decoration:line-through;color:var(--dim-soft);">가이드허브 Netlify 배포</span> <span style="font-size:11px;color:var(--dim);">· 05-26 크레딧 리밋으로 보류 완료</span></div>
-            <div style="padding:6px 0;border-bottom:1px dashed var(--border);"><span style="color:var(--green);font-weight:700;">✓</span> <span style="text-decoration:line-through;color:var(--dim-soft);">Apps Script v3 재배포</span> <span style="font-size:11px;color:var(--dim);">· 05-26 배포 완료</span></div>
-            <div style="padding:6px 0;"><span style="color:var(--green);font-weight:700;">✓</span> <span style="text-decoration:line-through;color:var(--dim-soft);">하루 일과표 공유</span> <span style="font-size:11px;color:var(--dim);">· 남욱.pdf 기반 5탭 루틴 반영 완료</span></div>
-          </div>
-        </details>
-      </div>
-
       <!-- 아침 루틴 -->
-      <div class="tab-panel" data-panel="morning">
-        <h3><span class="ico">🌅</span>아침 루틴 (5:00~8:00)</h3>
+      <div class="tab-panel active" data-panel="morning">
+        <h3 style="display:flex;align-items:center;justify-content:space-between;">
+          <span><span class="ico">🌅</span>아침 루틴 (5:00~7:50)</span>
+          <button id="morning-edit-btn" style="padding:4px 14px;font-size:12px;font-weight:700;border-radius:8px;cursor:pointer;font-family:inherit;background:var(--accent-bg);color:var(--accent);border:1px solid var(--accent);">편집</button>
+        </h3>
 
-        <h4>5:00~6:30 기상 및 운동</h4>
         <table>
-          <tr><th>순서</th><th>항목</th><th>비고</th></tr>
-          <tr><td>1</td><td>미온수 250ml</td><td>공복 수분 보충 · 간·신장 활성화</td></tr>
-          <tr><td>2</td><td>올리브오일 (성수동 유기농)</td><td>위벽 코팅 + 장 자극</td></tr>
-          <tr><td>3</td><td>정수 120ml</td><td></td></tr>
-          <tr><td>4</td><td>유산균 1알 (Probiotics Story)</td><td>올리브오일 보호막 직후 → 생존율 높음</td></tr>
-          <tr><td>5</td><td>CCA 주스</td><td>당근+셀러리+사과</td></tr>
-          <tr><td colspan="3" style="background:var(--accent-bg); font-weight:600;">운동</td></tr>
-          <tr><td>6</td><td>스트레칭 → 맨몸스쿼트 → 크로스토터치 → 푸시업</td><td>공복 운동 OK · 인슐린 민감도 향상</td></tr>
-          <tr><td>7</td><td>냉수 샤워</td><td></td></tr>
-          <tr><td colspan="3" style="background:var(--accent-bg); font-weight:600;">아침 식사</td></tr>
-          <tr><td>8</td><td>삶은 달걀 1개</td><td>반숙 권장</td></tr>
-          <tr><td>9</td><td>사과 (또는 바나나 격일)</td><td>운동 후 칼륨·탄수화물 보충</td></tr>
-          <tr><td>10</td><td>정수 250ml + 발포비타민 (비타하임 C500)</td><td>유산균과 10분+ 간격</td></tr>
-          <tr><td>11</td><td>따뜻한 아메리카노 250ml</td><td>맨 마지막 고정</td></tr>
+          <tr><th style="width:120px">시간</th><th>내용</th><th style="width:220px">섭취·비고</th></tr>
+          <tr style="background:var(--accent-bg);">
+            <td><strong>5:00</strong><br><span class="badge green">기상</span></td>
+            <td><strong>기상 + 공복 보충제</strong><br>미온수 250ml → 올리브오일 → 정수 120ml → 유산균 1알 → CCA 주스</td>
+            <td>미온수: 간·신장 활성화<br>올리브오일(성수동 유기농): 위벽 코팅<br>유산균(Probiotics Story): 오일 보호막 직후 → 생존율 높음<br>CCA: 당근+셀러리+사과</td>
+          </tr>
+          <tr>
+            <td><strong>5:15~6:15</strong><br><span class="badge blue">1h</span></td>
+            <td><strong>운동</strong><br>스트레칭 → 맨몸스쿼트 → 크로스토터치 → 푸시업</td>
+            <td>공복 운동 OK<br>인슐린 민감도 향상</td>
+          </tr>
+          <tr>
+            <td><strong>6:15~6:30</strong><br><span class="badge gray">15m</span></td>
+            <td><strong>냉수 샤워</strong></td>
+            <td></td>
+          </tr>
+          <tr style="background:var(--accent-bg);">
+            <td><strong>6:30~7:00</strong><br><span class="badge gray">30m</span></td>
+            <td><strong>아침 식사</strong><br>삶은 달걀 1개(반숙) + 사과(또는 바나나 격일) + 정수 250ml + 발포비타민(비타하임 C500) + 아메리카노 250ml</td>
+            <td>달걀: 단백질 보충<br>사과/바나나: 칼륨·탄수화물<br>비타민: 유산균과 10분+ 간격<br>아메리카노: 맨 마지막 고정</td>
+          </tr>
+          <tr>
+            <td><strong>7:00~7:20</strong><br><span class="badge green">20m</span></td>
+            <td><strong>자기계발</strong><br>독서(월 2권) · 경제(매경·유튜브 요약) · 영어(10분) 중 택 1~2</td>
+            <td>노트 기록 필수</td>
+          </tr>
+          <tr>
+            <td><strong>~7:30</strong><br><span class="badge warm">이동</span></td>
+            <td><strong>출근 도착</strong></td>
+            <td></td>
+          </tr>
+          <tr style="background:var(--warm-bg);">
+            <td><strong>7:30~7:50</strong><br><span class="badge warm">20m</span></td>
+            <td><strong>씻기 + 정장 교체</strong></td>
+            <td>7:50 업무 준비 완료</td>
+          </tr>
         </table>
         <div class="callout tip"><strong>저녁:</strong> 마그네슘 1알 — 현재 Cenovis(옥사이드) 소진 후 → 글리시네이트로 교체 예정 (나우푸드 or 닥터스베스트 200mg). 눈떨림(근육 이완) + 수면 질 동시 개선.</div>
-
-        <h4>6:30~8:00 자기계발 및 출근</h4>
-        <div class="grid-3">
-          <div class="card"><h4>독서</h4><p>노트 기록 · 월 2권 목표</p></div>
-          <div class="card"><h4>경제</h4><p>매경 신문 · 유튜브 요약 정리</p></div>
-          <div class="card"><h4>영어</h4><p>노트 기록 · 하루 10분</p></div>
-        </div>
       </div>
 
       <!-- 하루 시간표 -->
@@ -2390,26 +2786,120 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
       todoHeader.parentNode.insertBefore(filterWrap, todoHeader);
     }
 
-    // ── 오늘 할 일 완료 버튼 ──
-    document.querySelectorAll('.today-done-btn').forEach(btn => {
+    // ── 오늘 할 일: 완료·보류·삭제 (localStorage 저장) ──
+    const TODAY_TASK_KEY = 'gm1_today_tasks';
+    function loadTodayState() {
+      return JSON.parse(localStorage.getItem(TODAY_TASK_KEY) || '{"actions":[],"date":""}');
+    }
+    function saveTodayState(state) {
+      localStorage.setItem(TODAY_TASK_KEY, JSON.stringify(state));
+    }
+    function stampNow() {
+      const n = new Date();
+      return String(n.getMonth()+1).padStart(2,'0') + '-' + String(n.getDate()).padStart(2,'0') + ' ' + String(n.getHours()).padStart(2,'0') + ':' + String(n.getMinutes()).padStart(2,'0');
+    }
+    function renderArchiveItem(entry) {
+      const d = document.createElement('div');
+      d.style.cssText = 'padding:6px 0;border-bottom:1px dashed var(--border);';
+      if (entry.action === 'done') {
+        d.innerHTML = '<span style="color:var(--green);font-weight:700;">✓</span> <span style="text-decoration:line-through;color:var(--dim-soft);">' + entry.title + '</span> <span style="font-size:11px;color:var(--dim);">· ' + entry.stamp + ' 완료</span>';
+      } else {
+        d.innerHTML = '<span style="color:var(--accent);font-weight:700;">⏸</span> <span style="color:var(--dim-soft);">' + entry.title + '</span> <span style="font-size:11px;color:var(--dim);">· ' + entry.stamp + ' 보류</span>';
+      }
+      return d;
+    }
+    // 페이지 로드 시 저장된 상태 복원
+    (function restoreTodayState() {
+      const state = loadTodayState();
+      const today = new Date().toISOString().slice(0,10);
+      if (state.date !== today) { state.actions = []; state.date = today; saveTodayState(state); return; }
+      let doneCount = 0, holdCount = 0;
+      state.actions.forEach(entry => {
+        const card = document.querySelector('.task-card[data-today="' + entry.id + '"]');
+        if (card) card.style.display = 'none';
+        if (entry.action === 'done') {
+          doneCount++;
+          const list = document.querySelector('#today-done-list');
+          if (list) list.appendChild(renderArchiveItem(entry));
+        } else if (entry.action === 'hold') {
+          holdCount++;
+          const list = document.querySelector('#today-hold-list');
+          if (list) list.appendChild(renderArchiveItem(entry));
+        }
+      });
+      const dc = document.querySelector('#today-done-count'); if (dc) dc.textContent = doneCount;
+      const hc = document.querySelector('#today-hold-count'); if (hc) hc.textContent = holdCount;
+    })();
+    // 버튼 이벤트
+    document.querySelectorAll('.today-act').forEach(btn => {
       btn.addEventListener('click', () => {
         const card = btn.closest('.task-card');
-        const title = card.querySelector('.task-title span:last-of-type')?.textContent.trim() || card.querySelector('.status-dot')?.parentElement.textContent.trim() || '';
-        if (!confirm(title + ' — 완료 처리할까요?')) return;
+        const action = btn.dataset.action;
+        const taskId = card.dataset.today;
+        const titleEl = card.querySelector('.task-title > span');
+        const title = titleEl ? titleEl.textContent.trim() : '';
+        const labels = {done:'완료', hold:'보류', delete:'삭제'};
+        if (!confirm(title + ' — ' + labels[action] + ' 처리할까요?')) return;
         card.style.transition = 'opacity 0.3s';
         card.style.opacity = '0';
         setTimeout(() => card.style.display = 'none', 300);
-        const countEl = document.querySelector('#today-done-count');
-        if (countEl) countEl.textContent = parseInt(countEl.textContent) + 1;
-        const logList = document.querySelector('#today-done-list');
-        if (logList) {
-          const d = document.createElement('div');
-          d.style.cssText = 'padding:6px 0;border-bottom:1px dashed var(--border);';
-          d.innerHTML = '<span style="color:var(--green);font-weight:700;">✓</span> <span style="text-decoration:line-through;color:var(--dim-soft);">' + title + '</span> <span style="font-size:11px;color:var(--dim);">· 05-26 완료</span>';
-          logList.prepend(d);
+        const stamp = stampNow();
+        const state = loadTodayState();
+        state.date = new Date().toISOString().slice(0,10);
+        state.actions.push({id: taskId, action: action, title: title, stamp: stamp});
+        saveTodayState(state);
+        if (action === 'done') {
+          const countEl = document.querySelector('#today-done-count');
+          if (countEl) countEl.textContent = parseInt(countEl.textContent) + 1;
+          const list = document.querySelector('#today-done-list');
+          if (list) list.prepend(renderArchiveItem({action:'done', title:title, stamp:stamp}));
+        } else if (action === 'hold') {
+          const countEl = document.querySelector('#today-hold-count');
+          if (countEl) countEl.textContent = parseInt(countEl.textContent) + 1;
+          const list = document.querySelector('#today-hold-list');
+          if (list) list.prepend(renderArchiveItem({action:'hold', title:title, stamp:stamp}));
         }
       });
     });
+
+    // ── 아침 루틴 편집·저장 (localStorage) ──
+    const MORNING_KEY = 'gm1_morning_routine';
+    const morningBtn = document.querySelector('#morning-edit-btn');
+    const morningTable = document.querySelector('[data-panel="morning"] table');
+    if (morningBtn && morningTable) {
+      // 저장된 값 복원
+      const saved = JSON.parse(localStorage.getItem(MORNING_KEY) || '{}');
+      if (Object.keys(saved).length) {
+        morningTable.querySelectorAll('td').forEach((td, i) => {
+          if (saved[i] !== undefined) td.innerHTML = saved[i];
+        });
+      }
+      let editing = false;
+      morningBtn.addEventListener('click', () => {
+        editing = !editing;
+        if (editing) {
+          morningBtn.textContent = '저장';
+          morningBtn.style.background = 'var(--accent)';
+          morningBtn.style.color = '#fff';
+          morningTable.querySelectorAll('td').forEach(td => {
+            td.setAttribute('contenteditable', 'true');
+            td.style.outline = '1px dashed var(--accent)';
+            td.style.outlineOffset = '-2px';
+          });
+        } else {
+          morningBtn.textContent = '편집';
+          morningBtn.style.background = 'var(--accent-bg)';
+          morningBtn.style.color = 'var(--accent)';
+          const data = {};
+          morningTable.querySelectorAll('td').forEach((td, i) => {
+            td.removeAttribute('contenteditable');
+            td.style.outline = '';
+            data[i] = td.innerHTML;
+          });
+          localStorage.setItem(MORNING_KEY, JSON.stringify(data));
+        }
+      });
+    }
 
     // ── 마감 뱃지 자동 재계산 (페이지 로드 시) ──
     document.querySelectorAll('.acc-list .task-card').forEach(card => {
@@ -2935,6 +3425,18 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
       if (d.dataset.wasClosed) { d.open = false; delete d.dataset.wasClosed; }
     });
   });
+
+  // 오늘 할 일 날짜 동적 표시
+  (function(){
+    var el = document.getElementById('gm1-todo-date');
+    if(!el) return;
+    var now = new Date();
+    var dow = ['일','월','화','수','목','금','토'][now.getDay()];
+    var y = now.getFullYear();
+    var m = ('0'+(now.getMonth()+1)).slice(-2);
+    var d = ('0'+now.getDate()).slice(-2);
+    el.innerHTML = '<span class="ico">📌</span>오늘 할 일 (' + y + '-' + m + '-' + d + ' ' + dow + ')';
+  })();
 </script>
 </body>
 </html>
