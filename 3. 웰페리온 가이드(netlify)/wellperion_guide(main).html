@@ -313,14 +313,14 @@
       <a href="cmo/home/" target="_blank">→ 홈페이지</a>
     </div>
 
-    <a data-has-sub="true" data-doc="coo-nav"><span class="num">🏢</span><span class="label">AI COO 운영<span class="tag">최준용M · 윤병현AM</span></span></a>
+    <a data-has-sub="true" data-nav-id="coo-nav" data-doc="g10" data-tab="coo"><span class="num">🏢</span><span class="label">AI COO 운영<span class="tag">최준용M · 윤병현AM</span></span></a>
     <div class="sub-nav" data-parent="coo-nav">
       <a data-doc="g10" data-tab="coo">AI COO 가이드</a>
       <a href="coo/check/" target="_blank">→ 체크리스트</a>
       <a href="coo/todo/" target="_blank">→ 투두리스트</a>
     </div>
 
-    <a data-has-sub="true" data-doc="cto-nav"><span class="num">🔧</span><span class="label">AI CTO 기술<span class="tag">김남욱 GM</span></span></a>
+    <a data-has-sub="true" data-nav-id="cto-nav" data-doc="g10" data-tab="cto"><span class="num">🔧</span><span class="label">AI CTO 기술<span class="tag">김남욱 GM</span></span></a>
     <div class="sub-nav" data-parent="cto-nav">
       <a data-doc="g10" data-tab="cto">AI CTO 가이드</a>
       <a data-doc="g1">Claude 설정 폴더</a>
@@ -331,20 +331,20 @@
       <a data-doc="g15">AI 교육자료 핵심요약</a>
     </div>
 
-    <a data-has-sub="true" data-doc="cfo-nav"><span class="num">💰</span><span class="label">AI CFO 재무<span class="tag">나우열M</span></span></a>
+    <a data-has-sub="true" data-nav-id="cfo-nav" data-doc="g10" data-tab="cfo"><span class="num">💰</span><span class="label">AI CFO 재무<span class="tag">나우열M</span></span></a>
     <div class="sub-nav" data-parent="cfo-nav">
       <a data-doc="g10" data-tab="cfo">AI CFO 가이드</a>
       <a href="cfo/expense/" target="_blank">→ 지출현황</a>
     </div>
 
-    <a data-has-sub="true" data-doc="chro-nav"><span class="num">👥</span><span class="label">AI CHRO 인사<span class="tag">나우열M</span></span></a>
+    <a data-has-sub="true" data-nav-id="chro-nav" data-doc="g10" data-tab="chro"><span class="num">👥</span><span class="label">AI CHRO 인사<span class="tag">나우열M</span></span></a>
     <div class="sub-nav" data-parent="chro-nav">
       <a data-doc="g10" data-tab="chro">AI CHRO 가이드</a>
       <a style="opacity:0.4;cursor:default;">채용 관리 (향후)</a>
       <a style="opacity:0.4;cursor:default;">파트너 관리 (향후)</a>
     </div>
 
-    <a data-has-sub="true" data-doc="cpo-nav"><span class="num">🤝</span><span class="label">AI CPO 회원관리<span class="tag">임정은M</span></span></a>
+    <a data-has-sub="true" data-nav-id="cpo-nav" data-doc="g10" data-tab="cpo"><span class="num">🤝</span><span class="label">AI CPO 회원관리<span class="tag">임정은M</span></span></a>
     <div class="sub-nav" data-parent="cpo-nav">
       <a data-doc="g10" data-tab="cpo">AI CPO 가이드</a>
     </div>
@@ -2525,11 +2525,13 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
     link.addEventListener('click', e => {
       e.preventDefault();
       const id = link.getAttribute('data-doc');
-      const subNav = document.querySelector(`.sub-nav[data-parent="${id}"]`);
+      const navId = link.getAttribute('data-nav-id') || id;
+      const tab = link.getAttribute('data-tab') || null;
+      const subNav = document.querySelector(`.sub-nav[data-parent="${navId}"]`);
       const willOpen = subNav && !subNav.classList.contains('open');
       subNavs.forEach(sn => sn.classList.remove('open'));
       if (willOpen) subNav.classList.add('open');
-      activateDoc(id, null);
+      activateDoc(id, tab);
     });
   });
 
