@@ -291,8 +291,8 @@
 
   <div class="nav-label">AI C-Level</div>
   <nav class="nav">
-    <a data-doc="g10" data-has-sub="true"><span class="num">👑</span><span class="label">AI CEO 경영지원<span class="tag">김남욱 GM</span></span></a>
-    <div class="sub-nav" data-parent="g10">
+    <a data-nav-id="ceo-nav" data-doc="g10" data-tab="ceo" data-has-sub="true"><span class="num">👑</span><span class="label">AI CEO 경영지원<span class="tag">김남욱 GM</span></span></a>
+    <div class="sub-nav" data-parent="ceo-nav">
       <a data-doc="g10" data-tab="common">공통 가이드</a>
       <a data-doc="g10" data-tab="ceo">AI CEO</a>
       <a data-doc="g17">실무진 운영 가이드</a>
@@ -300,8 +300,8 @@
       <a data-doc="g6">용어 사전</a>
     </div>
 
-    <a data-doc="g9" data-has-sub="true"><span class="num">📢</span><span class="label">AI CMO 마케팅<span class="tag">김남욱 GM</span></span></a>
-    <div class="sub-nav" data-parent="g9">
+    <a data-nav-id="cmo-nav" data-doc="g10" data-tab="cmo" data-has-sub="true"><span class="num">📢</span><span class="label">AI CMO 마케팅<span class="tag">김남욱 GM</span></span></a>
+    <div class="sub-nav" data-parent="cmo-nav">
       <a data-doc="g10" data-tab="cmo">AI CMO 가이드</a>
       <a data-doc="g9" data-tab="overview">회사소개서</a>
       <a data-doc="g20">전략 로드맵</a>
@@ -2521,6 +2521,7 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
   }
 
   // 메인 메뉴 클릭 — 하위 메뉴 열기/닫기 토글 (한 번 클릭 열림, 다시 클릭 닫힘)
+  var activeNavId = null;
   document.querySelectorAll('.nav > a[data-doc]').forEach(link => {
     link.addEventListener('click', e => {
       e.preventDefault();
@@ -2531,7 +2532,20 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
       const willOpen = subNav && !subNav.classList.contains('open');
       subNavs.forEach(sn => sn.classList.remove('open'));
       if (willOpen) subNav.classList.add('open');
-      activateDoc(id, tab);
+      activeNavId = navId;
+      mainLinks.forEach(l => {
+        const lNavId = l.getAttribute('data-nav-id') || l.getAttribute('data-doc');
+        l.classList.toggle('active', lNavId === navId);
+      });
+      docs.forEach(d => d.classList.toggle('active', d.id === id));
+      if (tab) {
+        const tabsContainer = document.querySelector(`.tabs[data-tabs="${id}"]`);
+        if (tabsContainer) {
+          tabsContainer.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.getAttribute('data-tab') === tab));
+          tabsContainer.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.getAttribute('data-panel') === tab));
+        }
+      }
+      window.scrollTo(0, 0);
     });
   });
 
