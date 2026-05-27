@@ -405,6 +405,7 @@
       <a data-doc="gm1" data-tab="daily">주말(일)</a>
       <a data-doc="gm1" data-tab="tracker">루틴 트래커</a>
       <a data-doc="gm1" data-tab="nutrition">영양 관리</a>
+      <a data-doc="gm1" data-tab="session-log">세션 로그</a>
       <a data-doc="gm1" data-tab="principles">목표·원칙</a>
     </div>
   </nav>
@@ -2046,6 +2047,7 @@ Start-Process python -ArgumentList telegram_bot\daily_scheduler.py -WorkingDirec
         <button class="tab-btn" data-tab="daily">주말(일)</button>
         <button class="tab-btn" data-tab="tracker">루틴 트래커</button>
         <button class="tab-btn" data-tab="nutrition">영양 관리</button>
+        <button class="tab-btn" data-tab="session-log">세션 로그</button>
         <button class="tab-btn" data-tab="principles">목표·원칙</button>
       </div>
 
@@ -2208,6 +2210,26 @@ Start-Process python -ArgumentList telegram_bot\daily_scheduler.py -WorkingDirec
           <tr><td>스케일링·치아 관리</td><td>주기적</td><td></td></tr>
         </table>
         <div class="callout"><strong>수면 개선 핵심:</strong> ① 20시부터 전자기기 금지 ② 음식·수분 섭취 금지 ③ 아침 운동 주 5일</div>
+      </div>
+
+      <!-- 세션 로그 -->
+      <div class="tab-panel" data-panel="session-log">
+        <h3><span class="ico">📝</span>세션 로그</h3>
+        <p>매일 세션 종료 시 핵심 변경 1~2줄 + 다음 할일을 기록합니다.</p>
+        <table>
+          <tr><th style="width:90px">날짜</th><th>핵심 변경</th><th style="width:280px">다음 할일</th></tr>
+          <tr>
+            <td><strong>05-27(수)</strong></td>
+            <td>GitHub Pages 셋업 + 무제한 배포 전환, 폴더 구조 C-Level 라인별 정리 (cmo/coo/cto/cfo/chro), 사이드바 재구성, 김남욱 탭 확장 (평일루틴·영양관리·루틴트래커·세션로그), 컨디션 기록 95.2kg</td>
+            <td>투두리스트 카톡→텔레그램 변경, COO 캘린더뷰 통합, AI 자동학습 주간 태스크 등록</td>
+          </tr>
+          <tr>
+            <td><strong>05-26(화)</strong></td>
+            <td>Ralph 4건 완료 (CMO 파이프라인·지출현황·컨텍스트 정비·AI 교육 7탭), 투두리스트 4건 수정, GitHub Pages 전환 결정, 카톡 폐기→텔레그램 결재 결정</td>
+            <td>GitHub Pages 셋업, 투두리스트 텔레그램 변경, Apps Script v3 재배포</td>
+          </tr>
+        </table>
+        <div class="callout tip"><strong>규칙:</strong> 하루 1~2줄만. 상세 내용은 git log로 확인. 이 테이블이 흐름 추적의 유일한 기준.</div>
       </div>
 
       <!-- 목표·원칙 -->
