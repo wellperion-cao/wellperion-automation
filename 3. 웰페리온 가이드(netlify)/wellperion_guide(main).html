@@ -2505,7 +2505,6 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
 
   function activateDoc(id, tabName) {
     docs.forEach(d => d.classList.toggle('active', d.id === id));
-    mainLinks.forEach(l => l.classList.toggle('active', l.getAttribute('data-doc') === id));
     if (tabName) {
       const tabsContainer = document.querySelector(`.tabs[data-tabs="${id}"]`);
       if (tabsContainer) {
@@ -2513,15 +2512,18 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
         tabsContainer.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.getAttribute('data-panel') === tabName));
       }
     }
-    // sub-link active 표시
-    document.querySelectorAll('.sub-nav a').forEach(sa => {
-      sa.classList.toggle('active', sa.getAttribute('data-doc') === id && sa.getAttribute('data-tab') === tabName);
-    });
     window.scrollTo(0, 0);
   }
 
-  // 메인 메뉴 클릭 — 하위 메뉴 열기/닫기 토글 (한 번 클릭 열림, 다시 클릭 닫힘)
-  var activeNavId = null;
+  function setNavActive(navId) {
+    mainLinks.forEach(l => {
+      const lNavId = l.getAttribute('data-nav-id') || l.getAttribute('data-doc');
+      l.classList.toggle('active', lNavId === navId);
+    });
+    document.querySelectorAll('.sub-nav a').forEach(sa => sa.classList.remove('active'));
+  }
+
+  // 메인 메뉴 클릭
   document.querySelectorAll('.nav > a[data-doc]').forEach(link => {
     link.addEventListener('click', e => {
       e.preventDefault();
@@ -2532,30 +2534,23 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
       const willOpen = subNav && !subNav.classList.contains('open');
       subNavs.forEach(sn => sn.classList.remove('open'));
       if (willOpen) subNav.classList.add('open');
-      activeNavId = navId;
-      mainLinks.forEach(l => {
-        const lNavId = l.getAttribute('data-nav-id') || l.getAttribute('data-doc');
-        l.classList.toggle('active', lNavId === navId);
-      });
-      docs.forEach(d => d.classList.toggle('active', d.id === id));
-      if (tab) {
-        const tabsContainer = document.querySelector(`.tabs[data-tabs="${id}"]`);
-        if (tabsContainer) {
-          tabsContainer.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.getAttribute('data-tab') === tab));
-          tabsContainer.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.getAttribute('data-panel') === tab));
-        }
-      }
-      window.scrollTo(0, 0);
+      setNavActive(navId);
+      activateDoc(id, tab);
     });
   });
 
   // 하위 메뉴 클릭 — 해당 탭으로 이동, 부모 하위 메뉴는 열린 상태 유지
-  document.querySelectorAll('.sub-nav a').forEach(link => {
+  document.querySelectorAll('.sub-nav a[data-doc]').forEach(link => {
     link.addEventListener('click', e => {
       e.preventDefault();
       const id = link.getAttribute('data-doc');
       const tab = link.getAttribute('data-tab');
-      subNavs.forEach(sn => sn.classList.toggle('open', sn.getAttribute('data-parent') === id));
+      const parentNav = link.closest('.sub-nav');
+      const parentNavId = parentNav ? parentNav.getAttribute('data-parent') : null;
+      subNavs.forEach(sn => sn.classList.toggle('open', sn === parentNav));
+      document.querySelectorAll('.sub-nav a').forEach(sa => sa.classList.remove('active'));
+      link.classList.add('active');
+      if (parentNavId) setNavActive(parentNavId);
       activateDoc(id, tab);
     });
   });
