@@ -290,6 +290,7 @@
     <a data-doc="g10"><span class="num">📋</span><span class="label">C-Level 운영 가이드<span class="tag">공통 + 7개 C-Level</span></span></a>
     <a data-doc="g4"><span class="num">📐</span><span class="label">3대 원칙 프레임워크</span></a>
     <a data-doc="g6"><span class="num">📖</span><span class="label">용어 사전</span></a>
+    <a data-doc="gcoo-todo"><span class="num">📝</span><span class="label">업무 현황 SSOT</span></a>
   </nav>
 
   <div class="nav-label">AI C-Level</div>
@@ -305,7 +306,6 @@
     <a data-toggle="coo-nav" data-has-sub="true"><span class="num">🏢</span><span class="label">AI COO 운영<span class="tag">최준용M · 윤병현AM</span></span></a>
     <div class="sub-nav" data-parent="coo-nav">
       <a data-doc="gcoo-check">운영 통합 체계</a>
-      <a data-doc="gcoo-todo">업무 현황 SSOT</a>
     </div>
 
     <a data-toggle="cto-nav" data-has-sub="true"><span class="num">🔧</span><span class="label">AI CTO 기술<span class="tag">김남욱 GM</span></span></a>
@@ -2673,32 +2673,31 @@ Start-Process python -ArgumentList telegram_bot\daily_scheduler.py -WorkingDirec
   <!-- ── G19: 업무자동화 ── -->
   <!-- ── COO 체크리스트 소개 ── -->
   <article class="doc" id="gcoo-check">
-    <div class="doc-header"><h2>운영 통합 체계</h2><div class="meta">COO 관할 · 부서별 8단계 운영 체계 · 지원부 우선 완성 → 확장</div></div>
-    <p class="lead">전 부서 공통 8단계 운영 체계입니다. 지원부를 먼저 완성하고, 운영부(리셉션)·시설부·주차관리부로 확장합니다.</p>
+    <div class="doc-header"><h2>운영 통합 체계</h2><div class="meta">COO 관할 · 부서별 운영 체계 · 지원부 우선 완성 → 확장</div></div>
+    <p class="lead">전 부서 공통 운영 체계입니다. 지원부를 먼저 완성하고, 운영부(리셉션)·시설부·주차관리부로 확장합니다.</p>
 
     <h4 style="margin-bottom:10px;">부서별 체계</h4>
-    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px;">
-      <span class="badge blue" style="padding:6px 14px;font-size:13px;">지원부 (현재)</span>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
+      <a href="coo/check/%EC%A7%80%EC%9B%90%EB%B6%80%20%EC%B2%B4%EA%B3%84.html" target="_blank" style="display:inline-flex;align-items:center;gap:6px;padding:8px 16px;background:var(--accent);color:#fff;font-size:13px;font-weight:700;border-radius:10px;text-decoration:none;">✅ 지원부 체계 열기</a>
       <span class="badge gray" style="padding:6px 14px;font-size:13px;">운영부·리셉션 (예정)</span>
       <span class="badge gray" style="padding:6px 14px;font-size:13px;">시설부 (예정)</span>
       <span class="badge gray" style="padding:6px 14px;font-size:13px;">주차관리부 (예정)</span>
+    </div>
+    <div style="margin-bottom:20px;">
+      <a href="#" onclick="event.preventDefault();document.querySelector('[data-doc=update]').click();" style="color:var(--accent);font-size:13px;font-weight:600;">📐 체계 구축 가이드라인 →</a>
     </div>
 
     <h3 style="border-bottom:2px solid var(--accent);padding-bottom:8px;">지원부 체계 <span style="font-size:13px;color:var(--dim);font-weight:400;">최준용M · 윤병현AM</span></h3>
 
     <div class="tab-nav" style="display:flex;gap:4px;flex-wrap:wrap;margin:16px 0 0;border-bottom:2px solid var(--border);padding-bottom:0;">
-      <button class="fw-tab active" onclick="fwTab(this,'fw1')" style="padding:8px 12px;font-size:12px;font-weight:700;border:none;background:none;color:var(--accent);cursor:pointer;border-bottom:2px solid var(--accent);margin-bottom:-2px;font-family:inherit;">1.정책</button>
-      <button class="fw-tab" onclick="fwTab(this,'fw2')" style="padding:8px 12px;font-size:12px;font-weight:700;border:none;background:none;color:var(--dim);cursor:pointer;font-family:inherit;">2.가이드라인</button>
-      <button class="fw-tab" onclick="fwTab(this,'fw3')" style="padding:8px 12px;font-size:12px;font-weight:700;border:none;background:none;color:var(--dim);cursor:pointer;font-family:inherit;">3.매뉴얼</button>
-      <button class="fw-tab" onclick="fwTab(this,'fw4')" style="padding:8px 12px;font-size:12px;font-weight:700;border:none;background:none;color:var(--dim);cursor:pointer;font-family:inherit;">4.체크리스트</button>
-      <button class="fw-tab" onclick="fwTab(this,'fw5')" style="padding:8px 12px;font-size:12px;font-weight:700;border:none;background:none;color:var(--dim);cursor:pointer;font-family:inherit;">5.기록</button>
-      <button class="fw-tab" onclick="fwTab(this,'fw6')" style="padding:8px 12px;font-size:12px;font-weight:700;border:none;background:none;color:var(--dim);cursor:pointer;font-family:inherit;">6.이슈</button>
-      <button class="fw-tab" onclick="fwTab(this,'fw7')" style="padding:8px 12px;font-size:12px;font-weight:700;border:none;background:none;color:var(--dim);cursor:pointer;font-family:inherit;">7.회의</button>
-      <button class="fw-tab" onclick="fwTab(this,'fw8')" style="padding:8px 12px;font-size:12px;font-weight:700;border:none;background:none;color:var(--dim);cursor:pointer;font-family:inherit;">8.고도화</button>
+      <button class="fw-tab active" onclick="fwTab(this,'fw1')" style="padding:8px 14px;font-size:13px;font-weight:700;border:none;background:none;color:var(--accent);cursor:pointer;border-bottom:2px solid var(--accent);margin-bottom:-2px;font-family:inherit;">지원부 규정</button>
+      <button class="fw-tab" onclick="fwTab(this,'fw2')" style="padding:8px 14px;font-size:13px;font-weight:700;border:none;background:none;color:var(--dim);cursor:pointer;font-family:inherit;">가이드</button>
+      <button class="fw-tab" onclick="fwTab(this,'fw3')" style="padding:8px 14px;font-size:13px;font-weight:700;border:none;background:none;color:var(--dim);cursor:pointer;font-family:inherit;">매뉴얼</button>
+      <button class="fw-tab" onclick="fwTab(this,'fw4')" style="padding:8px 14px;font-size:13px;font-weight:700;border:none;background:none;color:var(--dim);cursor:pointer;font-family:inherit;">체크리스트·기록·이슈</button>
     </div>
 
     <div class="fw-panel" id="fw1" style="display:block;margin-top:20px;">
-      <h3><span class="ico">📋</span>1. 정책·약관·규정</h3>
+      <h3><span class="ico">📋</span>지원부 규정</h3>
       <table>
         <tr><th style="width:200px">정책</th><th>내용</th><th style="width:80px">상태</th></tr>
         <tr><td><strong>운영시간</strong></td><td>평일 06:00~22:30 / 주말·공휴일 08:00~20:00<br><span style="font-size:12px;color:var(--dim);">휴관: 신정·명절·매월 2·4번째 일요일</span></td><td><span class="badge green">확정</span></td></tr>
@@ -2709,11 +2708,28 @@ Start-Process python -ArgumentList telegram_bot\daily_scheduler.py -WorkingDirec
         <tr><td><strong>마감 경고</strong></td><td>사우나·파우더 마감 미비 시 경고 / 3회 → 경징계</td><td><span class="badge green">확정</span></td></tr>
         <tr><td><strong>탕청소 위탁</strong></td><td>야간 업체 위탁 / 평일 23:00 / 주말 20:30 출근</td><td><span class="badge green">확정</span></td></tr>
       </table>
-      <div class="callout"><strong>변경 절차:</strong> 최준용M·윤병현AM 제안 → AI COO 검토 → GM님 결재. 변경 시 2~4단계 연동 갱신 의무.</div>
+      <div class="callout"><strong>변경 절차:</strong> 최준용M·윤병현AM 제안 → AI COO 검토 → GM님 결재. 변경 시 가이드·매뉴얼 연동 갱신 의무.</div>
+
+      <h4 style="margin-top:24px;">정기 회의</h4>
+      <table>
+        <tr><th style="width:160px">구분</th><th>주기</th><th>참석</th><th>안건</th></tr>
+        <tr><td><strong>주간 브리핑</strong></td><td>매주 월 오전</td><td>최준용M·윤병현AM·오전조</td><td>지난주 이슈 / 이번주 집중 구역 / 비품 현황</td></tr>
+        <tr><td><strong>월간 운영 회의</strong></td><td>매월 첫째주 화</td><td>최준용M·윤병현AM</td><td>이슈·노하우 취합 / 매뉴얼 개정 여부</td></tr>
+        <tr><td><strong>긴급 회의</strong></td><td>이슈 발생 즉시</td><td>해당 담당자+팀장</td><td>원인 분석 / 즉시 조치</td></tr>
+      </table>
+
+      <h4 style="margin-top:20px;">고도화 정의</h4>
+      <div class="card accent"><p><strong>고도화</strong> = 현재 규정·가이드·매뉴얼·체크리스트를 현장 데이터와 피드백 기반으로 지속 개선하는 것. 대규모 재설계 금지 — 보수적 증분 업데이트 원칙.</p></div>
+      <table>
+        <tr><th>구간</th><th>목표</th><th style="width:90px">시기</th></tr>
+        <tr><td><strong>단기</strong></td><td>인수인계 텔레그램 전환 / 응대 멘트 가이드 / 비품 기준 명문화</td><td>2026-07</td></tr>
+        <tr><td><strong>중기</strong></td><td>청소 전후 사진 자동 수집 / 비품 재고 자동화 / AI COO 주간 리포트</td><td>2026-10</td></tr>
+        <tr><td><strong>장기</strong></td><td>데이터 기반 예방 정비 / 직원 퍼포먼스 대시보드</td><td>2027</td></tr>
+      </table>
     </div>
 
     <div class="fw-panel" id="fw2" style="display:none;margin-top:20px;">
-      <h3><span class="ico">🧭</span>2. 가이드라인</h3>
+      <h3><span class="ico">🧭</span>가이드</h3>
 
       <div class="card accent" style="margin-bottom:20px;text-align:center;padding:24px;">
         <h4 style="font-size:18px;margin-bottom:4px;">서비스 마인드</h4>
@@ -2803,10 +2819,12 @@ Start-Process python -ArgumentList telegram_bot\daily_scheduler.py -WorkingDirec
     </div>
 
     <div class="fw-panel" id="fw4" style="display:none;margin-top:20px;">
-      <h3><span class="ico">✅</span>4. 체크리스트 (일일점검)</h3>
+      <h3><span class="ico">✅</span>체크리스트·기록·이슈</h3>
+
       <div style="margin:16px 0;">
         <a href="coo/check/%EC%A7%80%EC%9B%90%EB%B6%80%20%EC%B2%B4%EA%B3%84.html" target="_blank" style="display:inline-flex;align-items:center;gap:8px;padding:12px 24px;background:var(--accent);color:#fff;font-size:14px;font-weight:700;border-radius:10px;text-decoration:none;">✅ 지원부 체계 열기</a>
       </div>
+
       <h4>점검 구역</h4>
       <table>
         <tr><th>코드</th><th>구역</th><th>주요 점검</th></tr>
@@ -2816,88 +2834,30 @@ Start-Process python -ArgumentList telegram_bot\daily_scheduler.py -WorkingDirec
         <tr><td>D</td><td>사우나 외부</td><td>외부 화장실, 복도, 계단, 분리수거장</td></tr>
         <tr><td>E</td><td>외곽 미화</td><td>센터 복도, 헬스장, 골프장</td></tr>
       </table>
-      <h4 style="margin-top:16px;">근무조별 점검</h4>
-      <table>
-        <tr><th style="width:100px">근무조</th><th>시간</th><th>주요 점검</th></tr>
-        <tr><td><span class="badge" style="background:var(--accent-bg);color:var(--accent);">오전조</span></td><td>05:30~14:15</td><td>오픈 점검(A·B) → 오전 전구역(B·C·E) → 인수인계(13:00)</td></tr>
-        <tr><td><span class="badge" style="background:var(--grow-bg);color:var(--grow);">오후조</span></td><td>14:00~22:30</td><td>오후 재점검(A·D·B) → 저녁 점검 → 마감(22:00~22:30)</td></tr>
-        <tr><td><span class="badge" style="background:var(--warm-bg);color:var(--warm);">야간조</span></td><td>23:00~/20:30~</td><td>탕청소 업체 — 남·여 사우나 탕청소 + 집중청소</td></tr>
-      </table>
-    </div>
 
-    <div class="fw-panel" id="fw5" style="display:none;margin-top:20px;">
-      <h3><span class="ico">📝</span>5. 기록·인수인계</h3>
-      <h4>인수인계 절차</h4>
+      <h4 style="margin-top:20px;">인수인계</h4>
       <table>
-        <tr><th style="width:160px">시점</th><th>항목</th><th style="width:100px">채널</th></tr>
-        <tr><td>13:00~14:00<br><span style="font-size:11px;color:var(--dim);">오전→오후</span></td><td>세탁물 출고 확인 / 오전 이슈 공유 / 미완료 업무 인계 / 비품 잔량</td><td>텔레그램</td></tr>
-        <tr><td>22:00~22:30<br><span style="font-size:11px;color:var(--dim);">마감</span></td><td>전 구역 마감 확인 / 이슈 최종 정리 / 다음날 준비사항</td><td>텔레그램</td></tr>
+        <tr><th style="width:160px">시점</th><th>항목</th><th style="width:80px">채널</th></tr>
+        <tr><td>13:00~14:00 (오전→오후)</td><td>세탁물 출고 / 오전 이슈 / 미완료 업무 / 비품 잔량</td><td>텔레그램</td></tr>
+        <tr><td>22:00~22:30 (마감)</td><td>전 구역 마감 / 이슈 최종 / 다음날 준비사항</td><td>텔레그램</td></tr>
       </table>
-      <h4 style="margin-top:16px;">인수인계 표준 양식</h4>
-      <div style="background:var(--paper);border:1px solid var(--border);border-radius:10px;padding:14px 18px;font-size:13px;line-height:2;">
-        <strong style="color:var(--accent);">[지원부 인수인계]</strong><br>
-        날짜: YYYY-MM-DD (요일) / 조: 오전·오후<br>
-        A 사우나: (상태) / B 락커: (상태) / C 세탁: 입고O건·출고O건<br>
-        이슈: (없으면 "없음") / 인계사항: (미완료 업무)
-      </div>
-      <div class="callout" style="margin-top:16px;"><strong>원칙:</strong> 구두 전달 금지 — 텔레그램 텍스트 기록 의무. 미기록 인수인계는 미완료 간주.</div>
-    </div>
+      <div class="callout" style="margin-top:12px;"><strong>원칙:</strong> 구두 전달 금지 — 텔레그램 텍스트 기록 의무.</div>
 
-    <div class="fw-panel" id="fw6" style="display:none;margin-top:20px;">
-      <h3><span class="ico">💡</span>6. 이슈·노하우</h3>
-      <h4>반복 이슈</h4>
+      <h4 style="margin-top:20px;">반복 이슈</h4>
       <table>
-        <tr><th>구역</th><th>이슈</th><th>조치법</th><th style="width:60px">빈도</th></tr>
-        <tr><td>A</td><td>탕 온도 저하</td><td>오버풀 타이머 수동 리셋 → 팀장 보고</td><td><span class="badge" style="background:var(--warm-bg);color:var(--warm);">가끔</span></td></tr>
-        <tr><td>A</td><td>배수구 막힘</td><td>화·금 배수구 소독 집중 점검</td><td><span class="badge warm">자주</span></td></tr>
-        <tr><td>B</td><td>드라이기 고장</td><td>즉시 팀장 보고 → 예비품 교체</td><td><span class="badge" style="background:var(--warm-bg);color:var(--warm);">가끔</span></td></tr>
-        <tr><td>C</td><td>운동복 사이즈 부족</td><td>오전 8시 전 재고 확인 → 부족 시 즉시 보고</td><td><span class="badge warm">자주</span></td></tr>
+        <tr><th>구역</th><th>이슈</th><th>조치법</th></tr>
+        <tr><td>A</td><td>탕 온도 저하</td><td>오버풀 타이머 수동 리셋 → 팀장 보고</td></tr>
+        <tr><td>A</td><td>배수구 막힘</td><td>화·금 배수구 소독 집중 점검</td></tr>
+        <tr><td>B</td><td>드라이기 고장</td><td>즉시 팀장 보고 → 예비품 교체</td></tr>
+        <tr><td>C</td><td>운동복 사이즈 부족</td><td>오전 8시 전 재고 확인 → 즉시 보고</td></tr>
       </table>
+
       <h4 style="margin-top:16px;">효율화 노하우</h4>
       <table>
-        <tr><th>구역</th><th>노하우</th><th style="width:80px">효과</th></tr>
-        <tr><td>A 탕청소</td><td>배수 전 비품(바가지·의자) 먼저 꺼내면 청소 시간 20% 단축</td><td><span class="badge green">검증</span></td></tr>
-        <tr><td>C 세탁</td><td>입고 즉시 사이즈별 분리 → 출고 시간 절반 감소</td><td><span class="badge green">검증</span></td></tr>
-        <tr><td>B 파우더</td><td>소모품 여분 세트를 락커 뒤편에 예비 보관</td><td><span class="badge green">검증</span></td></tr>
-      </table>
-      <div class="callout"><strong>누적 원칙:</strong> 체크리스트 이슈 버튼으로 일상 수집 → AI COO 주간 취합 → 이 페이지 반영.</div>
-    </div>
-
-    <div class="fw-panel" id="fw7" style="display:none;margin-top:20px;">
-      <h3><span class="ico">🗣️</span>7. 실무진 회의</h3>
-      <table>
-        <tr><th style="width:160px">구분</th><th>주기</th><th>참석</th><th>안건</th></tr>
-        <tr><td><strong>주간 브리핑</strong></td><td>매주 월 오전</td><td>최준용M·윤병현AM·오전조</td><td>지난주 이슈 / 이번주 집중 구역 / 비품 현황</td></tr>
-        <tr><td><strong>월간 운영 회의</strong></td><td>매월 첫째주 화</td><td>최준용M·윤병현AM</td><td>이슈·노하우 취합 / 매뉴얼 개정 여부 / 고도화 안건</td></tr>
-        <tr><td><strong>긴급 회의</strong></td><td>이슈 발생 즉시</td><td>해당 담당자+팀장</td><td>원인 분석 / 즉시 조치</td></tr>
-      </table>
-      <div class="callout"><strong>원칙:</strong> 회의 결과 AI COO가 텔레그램으로 GM님께 즉시 보고 + 이 페이지 이력 누적. 구두 결정 후 미기록 금지.</div>
-    </div>
-
-    <div class="fw-panel" id="fw8" style="display:none;margin-top:20px;">
-      <h3><span class="ico">🔄</span>8. 고도화</h3>
-      <p>1~7단계 전체를 순환 개선. 8→1 반복.</p>
-      <table>
-        <tr><th>구간</th><th>목표</th><th style="width:100px">시기</th><th style="width:80px">상태</th></tr>
-        <tr><td><strong>단기</strong></td><td>인수인계 텔레그램 전환 / 응대 멘트 매뉴얼 / 비품 기준 명문화</td><td>2026-07</td><td><span class="badge" style="background:var(--warm-bg);color:var(--warm);">진행</span></td></tr>
-        <tr><td><strong>중기</strong></td><td>청소 전후 사진 자동 수집 / 비품 재고 자동화 / AI COO 주간 리포트</td><td>2026-10</td><td><span class="badge gray">예정</span></td></tr>
-        <tr><td><strong>장기</strong></td><td>데이터 기반 예방 정비 / 직원 퍼포먼스 대시보드</td><td>2027</td><td><span class="badge gray">기획</span></td></tr>
-      </table>
-      <div class="callout"><strong>고도화 원칙:</strong> 대규모 재설계 금지 — 보수적 증분 업데이트. 7단계 회의에서 안건 확정 → AI COO가 해당 단계 갱신 → GM님 보고.</div>
-    </div>
-
-    <div style="margin-top:28px;padding-top:20px;border-top:2px solid var(--border);">
-      <h3><span class="ico">📐</span>8단계 전체 현황</h3>
-      <table>
-        <tr><th>단계</th><th>문서</th><th style="width:80px">상태</th></tr>
-        <tr><td>1. 정책</td><td>운영시간·근무조·위생기준·보고기준</td><td><span class="badge green">확정</span></td></tr>
-        <tr><td>2. 가이드라인</td><td>응대기준·복장·청결 판단</td><td><span class="badge" style="background:var(--warm-bg);color:var(--warm);">일부</span></td></tr>
-        <tr><td>3. 매뉴얼</td><td>탕관리·청소·세탁·야간 (PDF)</td><td><span class="badge green">보유</span></td></tr>
-        <tr style="background:var(--accent-bg);"><td><strong>4. 체크리스트</strong></td><td><strong>지원팀 일일점검</strong></td><td><span class="badge green">운영중</span></td></tr>
-        <tr><td>5. 기록·인수인계</td><td>Sheets + 텔레그램 일지</td><td><span class="badge green">운영중</span></td></tr>
-        <tr><td>6. 이슈·노하우</td><td>반복이슈·효율화 팁</td><td><span class="badge" style="background:var(--warm-bg);color:var(--warm);">누적중</span></td></tr>
-        <tr><td>7. 실무진 회의</td><td>주간·월간·긴급</td><td><span class="badge" style="background:var(--warm-bg);color:var(--warm);">셋업중</span></td></tr>
-        <tr><td>8. 고도화</td><td>단기·중기·장기 로드맵</td><td><span class="badge" style="background:var(--warm-bg);color:var(--warm);">진행중</span></td></tr>
+        <tr><th>구역</th><th>노하우</th></tr>
+        <tr><td>A 탕청소</td><td>배수 전 비품 먼저 꺼내면 청소 시간 20% 단축</td></tr>
+        <tr><td>C 세탁</td><td>입고 즉시 사이즈별 분리 → 출고 시간 절반 감소</td></tr>
+        <tr><td>B 파우더</td><td>소모품 여분 세트를 락커 뒤편에 예비 보관</td></tr>
       </table>
     </div>
   </article>
@@ -2980,7 +2940,7 @@ function fwTab(btn, panelId) {
     <p class="lead">㈜웰페리온 스포츠클럽 전 직원의 근로조건·운영방침·근무수칙을 정한 사내 규정입니다.</p>
 
     <div style="margin:16px 0;">
-      <a href="chro/%EC%9B%B0%ED%8E%98%EB%A6%AC%EC%98%A8%20%EC%B7%A8%EC%97%85%EA%B7%9C%EC%B9%99%20%EA%B0%9C%EC%A0%95_%EC%B4%88%EC%95%881.txt" target="_blank" style="display:inline-flex;align-items:center;gap:8px;padding:10px 20px;background:var(--accent-bg);color:var(--accent);font-size:13px;font-weight:700;border-radius:10px;text-decoration:none;border:1px solid rgba(183,159,138,0.3);">📄 취업규칙 원본 열기</a>
+      <a href="chro/%EC%9B%B0%ED%8E%98%EB%A6%AC%EC%98%A8%20%EC%B7%A8%EC%97%85%EA%B7%9C%EC%B9%99%20%EA%B0%9C%EC%A0%95_%EC%B4%88%EC%95%88.txt" target="_blank" style="display:inline-flex;align-items:center;gap:8px;padding:10px 20px;background:var(--accent-bg);color:var(--accent);font-size:13px;font-weight:700;border-radius:10px;text-decoration:none;border:1px solid rgba(183,159,138,0.3);">📄 취업규칙 원본 열기</a>
     </div>
 
     <div class="tab-nav" style="display:flex;gap:4px;flex-wrap:wrap;margin:16px 0 0;border-bottom:2px solid var(--border);padding-bottom:0;">
