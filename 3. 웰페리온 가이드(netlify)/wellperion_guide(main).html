@@ -319,8 +319,7 @@
   <div class="nav-label">회사 핵심 문서</div>
   <nav class="nav">
     <a data-doc="ghome"><span class="num">🌐</span><span class="label">공식 채널</span></a>
-    <a data-doc="g9"><span class="num">🏢</span><span class="label">회사소개서</span></a>
-    <a data-doc="g20"><span class="num">🗺️</span><span class="label">전략 로드맵</span></a>
+    <a data-doc="g9"><span class="num">🏢</span><span class="label">회사소개서 & 전략 로드맵</span></a>
   </nav>
 
   <div class="nav-label">김남욱 GM</div>
@@ -351,8 +350,7 @@
       <a href="https://wellperion-cao.github.io/wellperion-automation/coo/todo/%EC%97%85%EB%AC%B4%20%ED%98%84%ED%99%A9%20SSOT.html" target="_blank" style="display:inline-flex;align-items:center;gap:6px;padding:12px 20px;background:var(--accent-bg);color:var(--accent);font-size:14px;font-weight:700;border-radius:10px;text-decoration:none;border:1px solid rgba(183,159,138,0.3);transition:background 0.12s;">📝 업무 현황 SSOT</a>
       <a href="https://wellperion-cao.github.io/wellperion-automation/coo/check/%EC%A7%80%EC%9B%90%EB%B6%80%20%EC%B2%B4%EA%B3%84.html" target="_blank" style="display:inline-flex;align-items:center;gap:6px;padding:12px 20px;background:var(--accent-bg);color:var(--accent);font-size:14px;font-weight:700;border-radius:10px;text-decoration:none;border:1px solid rgba(183,159,138,0.3);transition:background 0.12s;">✅ 지원부 체계</a>
       <a href="https://wellperion-cao.github.io/wellperion-automation/cfo/expense/%EC%A7%80%EC%B6%9C%ED%98%84%ED%99%A9.html" target="_blank" style="display:inline-flex;align-items:center;gap:6px;padding:12px 20px;background:var(--accent-bg);color:var(--accent);font-size:14px;font-weight:700;border-radius:10px;text-decoration:none;border:1px solid rgba(183,159,138,0.3);transition:background 0.12s;">💰 지출현황</a>
-      <a href="#" onclick="event.preventDefault();document.querySelector('[data-doc=g9]').click();" style="display:inline-flex;align-items:center;gap:6px;padding:12px 20px;background:var(--accent-bg);color:var(--accent);font-size:14px;font-weight:700;border-radius:10px;text-decoration:none;border:1px solid rgba(183,159,138,0.3);transition:background 0.12s;">🏢 회사소개서</a>
-      <a href="#" onclick="event.preventDefault();document.querySelector('[data-doc=g20]').click();" style="display:inline-flex;align-items:center;gap:6px;padding:12px 20px;background:var(--accent-bg);color:var(--accent);font-size:14px;font-weight:700;border-radius:10px;text-decoration:none;border:1px solid rgba(183,159,138,0.3);transition:background 0.12s;">🗺️ 전략 로드맵</a>
+      <a href="#" onclick="event.preventDefault();document.querySelector('[data-doc=g9]').click();" style="display:inline-flex;align-items:center;gap:6px;padding:12px 20px;background:var(--accent-bg);color:var(--accent);font-size:14px;font-weight:700;border-radius:10px;text-decoration:none;border:1px solid rgba(183,159,138,0.3);transition:background 0.12s;">🏢 회사소개서 &amp; 전략 로드맵</a>
     </div>
 
     <h3><span class="ico">📚</span>수록된 가이드</h3>
@@ -1061,7 +1059,7 @@
   </article>
 
   <article class="doc" id="g9">
-    <div class="doc-header"><h2>⑧ 회사소개서</h2><div class="meta">v2.19 · 2026-05 · 브랜드·사업·프로그램·확장 전략 통합</div></div>
+    <div class="doc-header"><h2>⑧ 회사소개서 &amp; 전략 로드맵</h2><div class="meta">v2.20 · 2026-05 · 브랜드·사업·프로그램·3라인 체계·전략 로드맵 통합 (g9+g20 합병)</div></div>
     <p class="lead">웰페리온은 단순한 운동 시설이 아닙니다. 하루 루틴의 일부로 자연스럽게 자리 잡아, 건강의 기준을 세우고 그날의 완성도를 채워주는 공간. 한남동이라는 동네의 결을 따라 지어진, 리더들을 위한 건강 &amp; 힐링 커뮤니티입니다.</p>
 
     <div class="card" style="background:linear-gradient(135deg,#221F20 0%,#3A3536 100%); border:none; padding:28px 30px; margin:18px 0 24px; border-radius:14px;">
@@ -1081,7 +1079,8 @@
         <button class="tab-btn active" data-tab="overview">개요·철학</button>
         <button class="tab-btn" data-tab="business">사업 현황</button>
         <button class="tab-btn" data-tab="programs">프로그램</button>
-        <button class="tab-btn" data-tab="expansion">확장 전략</button>
+        <button class="tab-btn" data-tab="3line">3라인 체계</button>
+        <button class="tab-btn" data-tab="roadmap">전략 로드맵</button>
         <button class="tab-btn" data-tab="g9prompt">핵심 프롬프트</button>
       </div>
 
@@ -1117,32 +1116,124 @@
         </table>
       </div>
 
-      <div class="tab-panel" data-panel="expansion">
-        <h3><span class="ico">🗺️</span>확장 로드맵</h3>
+      <!-- 3라인 운영 체계 (g20에서 이동) -->
+      <div class="tab-panel" data-panel="3line">
+        <h3><span class="ico">👥</span>GM 직속 3라인 운영 체계</h3>
+        <div class="callout tip"><strong>목표:</strong> 시스템이 기준, 3라인 리더가 현장, GM은 전략과 확장.</div>
+
+        <h4>1라인: 운영부 — 이경연 실장 (총괄 · 매뉴얼 제작 · 판단과 결정)</h4>
         <table>
-          <tr><th>단계</th><th>내용</th><th>시기</th></tr>
-          <tr><td><span class="badge blue">Phase 1</span></td><td>한남동 본점 시스템 안정화 + AI 고도화</td><td>현재 진행</td></tr>
-          <tr><td><span class="badge green">Phase 2</span></td><td>수도권 직영 2호점 · 위탁운영 파일럿</td><td>검증 후</td></tr>
-          <tr><td><span class="badge warm">Phase 3</span></td><td>전국 확장 · 위탁운영 본격화 · 플랫폼 전환</td><td>Phase 2 완료 후</td></tr>
+          <tr><th style="width:140px">직책</th><th>역할</th><th style="width:160px">AI C-Level 관계</th></tr>
+          <tr><td><strong>이경연 실장</strong></td><td>운영부 총괄 관리감독 · 매뉴얼 제작 · 판단과 결정</td><td>COO+CPO 관리감독</td></tr>
+          <tr><td>최준용M</td><td>AI COO 서포트 · 실무진 최종 책임자 · 하위 직원 관리감독 · 매뉴얼 제작 · 판단과 결정</td><td>AI COO 서포트</td></tr>
+          <tr><td style="padding-left:30px;">이지영 사원</td><td>최준용M 관리감독 하</td><td></td></tr>
+          <tr><td style="padding-left:30px;">윤병현AM</td><td>최준용M 관리감독 하</td><td></td></tr>
+          <tr><td>임정은M</td><td>AI CPO 서포트 · 실무진 최종 책임자 · 회원 상담·CS 응대 · 상품·멤버십 기획 보조 · 회원 피드백 수집</td><td>AI CPO 서포트</td></tr>
         </table>
+
+        <h4>2라인: 시설부 — 이정헌 소장 (총괄)</h4>
+        <table>
+          <tr><th style="width:140px">직책</th><th>역할</th><th style="width:160px">AI C-Level 관계</th></tr>
+          <tr><td><strong>이정헌 소장</strong></td><td>시설·환경·안전 총괄 관리감독</td><td>AI CTO 관리감독</td></tr>
+          <tr><td>김종현 차장</td><td>시설 관리</td><td></td></tr>
+          <tr><td>박호균 과장</td><td>시설 관리</td><td></td></tr>
+        </table>
+        <table>
+          <tr><th colspan="3" style="background:var(--accent-bg);color:var(--accent);">지원팀(남) — 8인 TO</th></tr>
+          <tr><th style="width:140px">직책</th><th>역할</th><th style="width:160px">비고</th></tr>
+          <tr><td>황용석 팀장</td><td>지원팀(남) 총괄</td><td style="color:var(--warm);">6월 말일 퇴직 예정</td></tr>
+          <tr><td>천진석 주임</td><td>지원팀(남)</td><td></td></tr>
+          <tr><td>박남일 주임</td><td>지원팀(남)</td><td></td></tr>
+          <tr><td>김유정 주임</td><td>지원팀(남)</td><td></td></tr>
+        </table>
+        <table>
+          <tr><th colspan="3" style="background:var(--accent-bg);color:var(--accent);">지원팀(여) — 8인 TO</th></tr>
+          <tr><th style="width:140px">직책</th><th>역할</th><th style="width:160px">비고</th></tr>
+          <tr><td>이연희 반장</td><td>지원팀(여) 총괄</td><td></td></tr>
+          <tr><td>우춘화 주임</td><td>지원팀(여)</td><td></td></tr>
+          <tr><td>신규 2명</td><td>지원팀(여)</td><td>채용 예정</td></tr>
+        </table>
+        <table>
+          <tr><th colspan="3" style="background:var(--accent-bg);color:var(--accent);">주차 관리</th></tr>
+          <tr><th style="width:140px">직책</th><th>역할</th><th style="width:160px">비고</th></tr>
+          <tr><td>양상규 고문</td><td>주차 관리 총괄</td><td></td></tr>
+          <tr><td>추가 1명</td><td>주차 관리</td><td>신규</td></tr>
+        </table>
+
+        <h4>3라인: 파트너팀 — 나우열M (관리감독)</h4>
+        <table>
+          <tr><th style="width:140px">직책</th><th>역할</th><th style="width:160px">AI C-Level 관계</th></tr>
+          <tr><td><strong>나우열M</strong></td><td>파트너(강사) 계약·정산·품질 관리감독 · 각 파트너팀 리더 하위 배치·관리</td><td>AI CHRO + AI CFO 관리감독</td></tr>
+          <tr><td style="padding-left:30px;">각 파트너팀 리더</td><td>나우열M 관리감독 하 · 팀별 강사 운영</td><td></td></tr>
+        </table>
+        <div class="callout"><strong>AI CHRO · AI CFO:</strong> 나우열M이 단독 운영하면서 관리감독. 추가 인원 배치 필요 (채용 검토 중).</div>
+      </div>
+
+      <!-- 전략 로드맵 (g20에서 이동) -->
+      <div class="tab-panel" data-panel="roadmap">
+        <h3><span class="ico">🗺️</span>6단계 실행 로드맵</h3>
+        <div class="card warm" style="margin-bottom:20px;">
+          <h4>26년도 웰페리온 방향 — 3가지 핵심</h4>
+          <table style="margin:12px 0 0;">
+            <tr><th style="width:60px">번호</th><th>방향</th><th style="width:160px">기간</th></tr>
+            <tr><td><strong>1</strong></td><td><strong>수익화 전략 수립</strong> — 기존 사업 수익 극대화 + 신규 수익원 발굴</td><td>2026.01 ~ 12</td></tr>
+            <tr><td><strong>2</strong></td><td><strong>공간 밸류업 추진</strong> — 시설·인테리어·서비스 품질 격상</td><td>2026.01 ~ 12</td></tr>
+            <tr><td><strong>3</strong></td><td><strong>운영 자동화 고도화</strong> — AI + 시스템 기반 운영 효율 극대화</td><td>2026.01 ~ 12</td></tr>
+          </table>
+        </div>
+        <details class="toggle" open>
+          <summary>01 자동화 및 매뉴얼 체계 완성 <span class="badge warm" style="margin-left:8px">현재</span></summary>
+          <div class="toggle-body">
+            <ul><li>브로제이 시스템 무인화 · 핵심 운영 매뉴얼 정비 · C-레벨 AI 에이전트 도입</li></ul>
+            <p><strong>목표:</strong> 사람이 바뀌어도 품질이 흔들리지 않는 시스템 기반 운영</p>
+          </div>
+        </details>
+        <details class="toggle" open>
+          <summary>02 체크리스트 경영 + 핵심 인재 확보 <span class="badge warm" style="margin-left:8px">현재</span></summary>
+          <div class="toggle-body">
+            <ul><li>전 운영 업무 체크리스트화 · 관리자급 독립 운영 · GM 직속 3라인 배치</li></ul>
+            <p><strong>목표:</strong> 현장은 시스템+인재가, GM은 성장 전략에 전념</p>
+          </div>
+        </details>
+        <details class="toggle">
+          <summary>03 브랜드 구축</summary>
+          <div class="toggle-body"><ul><li>하이엔드 웰니스 &amp; 멘탈 케어 허브 포지셔닝 · 공간 밸류업 · 외부 콘텐츠 제휴(루프팀·이움)</li></ul></div>
+        </details>
+        <details class="toggle">
+          <summary>04 파트너팀 채용 구조 정비</summary>
+          <div class="toggle-body"><ul><li>신규/주니어/시니어/마스터 레벨링 · 정착지원금 제도 개편 · 임대업화로 파트너 팀별 독립 운영</li></ul></div>
+        </details>
+        <details class="toggle">
+          <summary>05 BM(비즈니스 모델) 생성</summary>
+          <div class="toggle-body"><ul><li>임대업화 수익 모델 가동 · 유료 콘텐츠 다각화(그룹강습·멘탈케어·DID/작품 광고) · 공간 자산 수익화</li></ul></div>
+        </details>
+        <details class="toggle">
+          <summary>06 비즈니스 확장</summary>
+          <div class="toggle-body"><ul><li>검증된 운영 시스템 + BM 기반 사업 확장 · 웰페리온 모델 복제 또는 신규 영역 진출</li></ul></div>
+        </details>
         <div class="callout"><strong>북극성.</strong> 대한민국에서 가장 체계적이고, 가장 따뜻한 프리미엄 스포츠클럽.</div>
       </div>
 
+      <!-- 핵심 프롬프트 (g9+g20 통합) -->
       <div class="tab-panel" data-panel="g9prompt">
         <h3><span class="ico">🤖</span>핵심 프롬프트</h3>
         <h4>회사 정보 검수</h4>
         <pre style="background:#16181c; color:#e8e8e8; padding:14px 16px; border-radius:8px; font-size:13px; white-space:pre-wrap; line-height:1.7; border-left:3px solid var(--accent);">가이드허브 회사소개서를 기준으로 이 산출물의 회사 정보·포지셔닝·사업 내용이 정확한지 검수해줘.</pre>
-        <h4>확장 전략 점검</h4>
-        <pre style="background:#16181c; color:#e8e8e8; padding:14px 16px; border-radius:8px; font-size:13px; white-space:pre-wrap; line-height:1.7; border-left:3px solid var(--accent);">회사소개서 확장 로드맵 Phase 1~3 중 현재 진행 단계를 점검하고 다음 단계 실행안을 제안해줘.</pre>
+        <h4>전략 로드맵 단계 점검</h4>
+        <pre style="background:#16181c; color:#e8e8e8; padding:14px 16px; border-radius:8px; font-size:13px; white-space:pre-wrap; line-height:1.7; border-left:3px solid var(--accent);">전략 로드맵 6단계 중 현재 진행 단계를 점검하고 다음 단계 실행안을 제안해줘.</pre>
+        <h4>3라인 운영 점검</h4>
+        <pre style="background:#16181c; color:#e8e8e8; padding:14px 16px; border-radius:8px; font-size:13px; white-space:pre-wrap; line-height:1.7; border-left:3px solid var(--accent);">GM 직속 3라인(운영부·시설부·파트너팀) 운영 현황을 점검하고, 각 라인의 이슈와 개선안을 정리해줘.</pre>
         <h4>브랜드 톤 검수</h4>
         <pre style="background:#16181c; color:#e8e8e8; padding:14px 16px; border-radius:8px; font-size:13px; white-space:pre-wrap; line-height:1.7; border-left:3px solid var(--accent);">이 콘텐츠가 웰페리온 브랜드 톤(하이엔드·프리미엄·정중형)과 일치하는지 검수해줘. "피트니스" 금지, "스포츠클럽" 사용, 개인번호 노출 금지 규칙도 확인.</pre>
+        <h4>확장 전략 검토</h4>
+        <pre style="background:#16181c; color:#e8e8e8; padding:14px 16px; border-radius:8px; font-size:13px; white-space:pre-wrap; line-height:1.7; border-left:3px solid var(--accent);">1·2단계 완성도를 기준으로 3단계(브랜드 구축) 진입 가능 여부를 평가하고 준비 사항을 정리해줘.</pre>
       </div>
     </div>
-    <div class="source">SSOT: 회사소개서 v2.19 · 원본: 2. 브랜드_공식문서/웰페리온_회사소개서_v2.19.html</div>
+    <div class="source">SSOT: 회사소개서 v2.20 + 전략 로드맵 v1.5 통합 · 원본: 2. 브랜드_공식문서/웰페리온_회사소개서_v2.19.html</div>
   </article>
 
-  <!-- ── G20: 전략 로드맵 ── -->
-  <article class="doc" id="g20">
+  <!-- ── G20: 전략 로드맵 ── g9에 흡수됨 (2026-05-27 g9+g20 합병) ── -->
+  <article class="doc" id="g20" style="display:none">
     <div class="doc-header">
       <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px;">
         <div><h2>⑥ 전략 로드맵</h2><div class="meta">v1.5 · 6단계 실행 로드맵 · GM 직속 3라인 강화 · A3 인쇄 가능</div></div>
