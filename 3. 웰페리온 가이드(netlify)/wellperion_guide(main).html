@@ -449,21 +449,85 @@
   </article>
 
   <article class="doc" id="update">
-    <div class="doc-header"><h2>업데이트 방법</h2><div class="meta">GM이 직접 수정하거나 Claude에게 부탁하는 방법</div></div>
-    <p class="lead">가장 빠른 방법은 Claude에게 말씀하시는 것입니다. 직접 수정하셔도 6단계만 따라가면 됩니다.</p>
-    <div class="grid-2">
-      <div class="card grow"><h4>권장 · Claude에게 부탁</h4><p>한 마디면 끝. 알맞은 위치를 자동으로 찾아 갱신합니다.</p></div>
-      <div class="card"><h4>직접 수정</h4><p>VS Code로 HTML 파일을 열어 패턴 따라 추가</p></div>
+    <div class="doc-header"><h2>업데이트 · 회사 가이드라인</h2><div class="meta">문서 업데이트 방법 + 회사 공통 가이드라인</div></div>
+    <p class="lead">가이드허브의 정책·약관·가이드·매뉴얼 등을 업데이트하는 방법과, 전사 공통 가이드라인을 관리합니다.</p>
+
+    <div class="tabs" data-tabs="update">
+      <div class="tab-nav">
+        <button class="tab-btn active" data-tab="how-to">업데이트 방법</button>
+        <button class="tab-btn" data-tab="company-guide">회사 가이드라인</button>
+      </div>
+
+      <div class="tab-panel active" data-panel="how-to">
+        <h3><span class="ico">📝</span>업데이트 방법</h3>
+        <div class="grid-2">
+          <div class="card grow"><h4>권장 · Claude에게 부탁</h4><p>한 마디면 끝. 알맞은 위치를 자동으로 찾아 갱신합니다.</p></div>
+          <div class="card"><h4>직접 수정</h4><p>VS Code로 HTML 파일을 열어 패턴 따라 추가</p></div>
+        </div>
+
+        <h4>어떤 걸 업데이트하나요?</h4>
+        <table>
+          <tr><th style="width:160px">문서 유형</th><th>업데이트 시점</th><th>담당</th></tr>
+          <tr><td><strong>정책·약관·규정</strong></td><td>경영진 결정 시 즉시 반영</td><td>GM → CEO</td></tr>
+          <tr><td><strong>가이드라인</strong></td><td>분기 1회 점검 + 현장 피드백 시</td><td>실장 / 매니저 → GM 검토</td></tr>
+          <tr><td><strong>매뉴얼</strong></td><td>절차 변경 시 즉시</td><td>매니저 → 실장 검토</td></tr>
+          <tr><td><strong>체크리스트</strong></td><td>매뉴얼 변경 시 연동 갱신</td><td>매니저 → 실장 검토</td></tr>
+          <tr><td><strong>채널 가이드</strong></td><td>채널 정책·톤 변경 시</td><td>CMO 라인</td></tr>
+          <tr><td><strong>취업규칙</strong></td><td>개정 시 직원 과반수 의견 청취 후</td><td>CHRO 라인</td></tr>
+        </table>
+
+        <h4>Claude에게 이렇게 말하세요</h4>
+        <table>
+          <tr><th style="width:240px">하고 싶은 일</th><th>이렇게 말하면 됩니다</th></tr>
+          <tr><td>정책 변경</td><td>"운영시간 정책을 <em>이렇게</em> 변경해줘"</td></tr>
+          <tr><td>가이드라인 추가</td><td>"지원부 가이드라인에 <em>이 기준</em> 추가해줘"</td></tr>
+          <tr><td>매뉴얼 수정</td><td>"지원부 매뉴얼 오전조 절차를 <em>이렇게</em> 수정해줘"</td></tr>
+          <tr><td>채널 가이드 수정</td><td>"공식 채널 인스타 가이드에 <em>이 내용</em> 추가해줘"</td></tr>
+          <tr><td>용어 추가</td><td>"용어 사전에 <em>새 용어</em> 추가해줘"</td></tr>
+        </table>
+      </div>
+
+      <div class="tab-panel" data-panel="company-guide">
+        <h3><span class="ico">🏢</span>회사 가이드라인</h3>
+        <p>전사 공통으로 적용되는 가이드라인입니다. 모든 부서·채널·문서에 우선 적용.</p>
+
+        <h4>브랜드 용어</h4>
+        <table>
+          <tr><th style="width:200px">금지</th><th>올바른 표현</th></tr>
+          <tr><td style="color:var(--warm);"><strong>"피트니스"</strong></td><td><strong>"스포츠클럽"</strong></td></tr>
+          <tr><td style="color:var(--warm);"><strong>"현대하이페리온"</strong></td><td><strong>"웰페리온"</strong></td></tr>
+        </table>
+
+        <h4>서비스 마인드</h4>
+        <div class="card accent" style="text-align:center;padding:24px;">
+          <p style="font-size:16px;font-weight:700;color:var(--text);">"내가 지나간 자리는 항상 깨끗하게 정리정돈하자"</p>
+        </div>
+
+        <h4>문의·예약 원칙</h4>
+        <div class="card"><ul>
+          <li><strong>무조건 예약제.</strong> 투어·상담 모두 사전 예약 필수. 워크인 불가.</li>
+          <li><strong>문의 진입점 단일.</strong> 문의Survey 페이지만. 개인 번호(010-…) 노출 절대 금지.</li>
+        </ul></div>
+
+        <h4>운영시간</h4>
+        <table>
+          <tr><th style="width:160px">구분</th><th>시간</th></tr>
+          <tr><td>평일</td><td>06:00 ~ 22:30</td></tr>
+          <tr><td>주말·공휴일</td><td>08:00 ~ 20:00</td></tr>
+          <tr><td>휴관일</td><td>신정·명절·매월 2·4번째 일요일</td></tr>
+        </table>
+
+        <h4>문서 작성 원칙</h4>
+        <div class="card"><ul>
+          <li>모든 출력 한국어. 영어 최소화, 약어 사용 시 괄호 안에 한글 뜻 병기</li>
+          <li>제목에 이모지·날짜·식별자 넣지 않음 (본문에 기록)</li>
+          <li>버전 관리: v1.0 시작 · 수정 시 +0.1 증분</li>
+          <li>폴더명 영문 · 파일명 한글</li>
+        </ul></div>
+
+        <div class="callout"><strong>이 가이드라인 변경 시:</strong> GM님 결재 필수. 변경 후 전 부서 공지 의무.</div>
+      </div>
     </div>
-    <h3><span class="ico">💬</span>Claude에게 이렇게 말씀하세요</h3>
-    <table>
-      <tr><th style="width:240px">하고 싶은 일</th><th>이렇게 말하면 됩니다</th></tr>
-      <tr><td>새 가이드 추가</td><td>"가이드 허브에 <em>X 가이드</em> 추가해줘"</td></tr>
-      <tr><td>기존 가이드 수정</td><td>"가이드 ②에 <em>이 내용</em> 추가해줘"</td></tr>
-      <tr><td>정책 갱신</td><td>"용어 사전에 <em>새 용어</em> 추가해줘"</td></tr>
-      <tr><td>그림·표 추가</td><td>"가이드 ②에 <em>이런 다이어그램</em> 추가해줘"</td></tr>
-      <tr><td>탭·토글 추가</td><td>"가이드 ⑤를 탭으로 바꿔줘" / "가이드 ⑥에 토글 추가해줘"</td></tr>
-    </table>
   </article>
 
   <article class="doc" id="g1">
