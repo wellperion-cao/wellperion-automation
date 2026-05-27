@@ -1,3 +1,455 @@
 <!DOCTYPE html>
-<html><head><meta charset="UTF-8"><meta http-equiv="refresh" content="0;url=index_main.html"><title>웰페리온 홈</title></head>
-<body><a href="index_main.html">웰페리온 홈페이지</a></body></html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WELLPERION - 하이엔드 프라이빗 스포츠클럽</title>
+<meta name="description" content="웰페리온. 지속되지 않는 건강 문제를 해결합니다. 서울 용산구 한남동, 프라이빗 멤버십 스포츠클럽.">
+<meta property="og:title" content="WELLPERION - A Day, Well Completed.">
+<meta property="og:description" content="하이엔드 프라이빗 스포츠클럽. 지속되지 않는 건강 문제를 해결합니다.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&display=swap" rel="stylesheet">
+<style>
+@font-face { font-family: 'Pretendard'; src: local('Pretendard'); }
+
+:root {
+  --bg: #0A0908;
+  --surface: #141210;
+  --card: #1A1816;
+  --gold: #B79F8A;
+  --gold-light: #D4C4B0;
+  --gold-dark: #8A7562;
+  --text: #E8E4DF;
+  --dim: #6B6560;
+  --white: #F5F2EF;
+  --serif: 'Cormorant Garamond', Georgia, serif;
+  --sans: 'Pretendard', -apple-system, 'Malgun Gothic', sans-serif;
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+html { scroll-behavior: smooth; }
+body { font-family: var(--sans); background: var(--bg); color: var(--text); overflow-x: hidden; }
+a { color: var(--gold); text-decoration: none; }
+
+/* ── Nav ── */
+.nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  padding: 20px 40px; display: flex; align-items: center; justify-content: space-between;
+  transition: background 0.4s, padding 0.4s;
+}
+.nav.scrolled { background: rgba(10,9,8,0.92); backdrop-filter: blur(12px); padding: 14px 40px; }
+.nav-logo {
+  font-family: var(--serif); font-size: 18px; letter-spacing: 6px;
+  color: var(--gold); text-transform: uppercase; font-weight: 400;
+}
+.nav-links { display: flex; gap: 32px; align-items: center; }
+.nav-links a {
+  font-size: 12px; letter-spacing: 2px; color: var(--dim);
+  text-transform: uppercase; transition: color 0.3s; font-weight: 500;
+}
+.nav-links a:hover { color: var(--gold); }
+.nav-cta {
+  font-size: 12px; letter-spacing: 1px; padding: 10px 24px;
+  border: 1px solid var(--gold); color: var(--gold); border-radius: 2px;
+  transition: all 0.3s; text-transform: uppercase;
+}
+.nav-cta:hover { background: var(--gold); color: var(--bg); }
+.nav-mobile { display: none; background: none; border: none; color: var(--gold); font-size: 24px; cursor: pointer; }
+
+/* ── Hero ── */
+.hero {
+  min-height: 100vh; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; text-align: center;
+  padding: 120px 24px 80px;
+  background: radial-gradient(ellipse at 50% 20%, rgba(183,159,138,0.06) 0%, transparent 60%);
+  position: relative;
+}
+.hero::after {
+  content: ''; position: absolute; bottom: 0; left: 0; right: 0;
+  height: 120px; background: linear-gradient(transparent, var(--bg));
+}
+.hero-overtitle {
+  font-family: var(--serif); font-size: 13px; letter-spacing: 8px;
+  color: var(--gold-dark); text-transform: uppercase; margin-bottom: 40px;
+  font-weight: 400;
+}
+.hero-title {
+  font-family: var(--serif); font-size: clamp(42px, 9vw, 88px);
+  font-weight: 300; color: var(--white); line-height: 1.15;
+  letter-spacing: 4px; margin-bottom: 28px;
+}
+.hero-title em { font-style: italic; color: var(--gold); font-weight: 300; }
+.hero-sub {
+  font-size: 16px; color: var(--dim); max-width: 480px;
+  line-height: 1.9; letter-spacing: 1px; margin-bottom: 56px;
+}
+.hero-cta {
+  display: inline-flex; align-items: center; gap: 12px;
+  padding: 18px 48px; border: 1px solid rgba(183,159,138,0.4);
+  color: var(--gold-light); font-size: 13px; letter-spacing: 3px;
+  text-transform: uppercase; transition: all 0.4s; border-radius: 2px;
+}
+.hero-cta:hover {
+  background: rgba(183,159,138,0.1); border-color: var(--gold);
+  transform: translateY(-2px); box-shadow: 0 12px 40px rgba(183,159,138,0.1);
+}
+.hero-scroll {
+  position: absolute; bottom: 40px; left: 50%; transform: translateX(-50%);
+  font-size: 11px; color: var(--dim); letter-spacing: 3px; text-transform: uppercase;
+  z-index: 2;
+}
+.hero-scroll::after {
+  content: ''; display: block; width: 1px; height: 40px;
+  background: var(--gold-dark); margin: 12px auto 0; opacity: 0.4;
+}
+
+/* ── Section Common ── */
+.section {
+  padding: 120px 40px; max-width: 1200px; margin: 0 auto;
+}
+.section-label {
+  font-family: var(--serif); font-size: 12px; letter-spacing: 6px;
+  color: var(--gold-dark); text-transform: uppercase; margin-bottom: 16px;
+}
+.section-title {
+  font-family: var(--serif); font-size: clamp(28px, 5vw, 48px);
+  font-weight: 300; color: var(--white); letter-spacing: 2px;
+  line-height: 1.3; margin-bottom: 20px;
+}
+.section-desc {
+  font-size: 15px; color: var(--dim); line-height: 1.9;
+  max-width: 560px; letter-spacing: 0.3px;
+}
+.divider {
+  width: 40px; height: 1px; background: var(--gold-dark);
+  margin: 32px 0; opacity: 0.5;
+}
+
+/* ── About ── */
+.about { background: var(--surface); padding: 120px 40px; }
+.about-inner { max-width: 1200px; margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: 80px; align-items: center; }
+.about-visual {
+  height: 500px; background: var(--card); border-radius: 4px;
+  display: flex; align-items: center; justify-content: center;
+  border: 1px solid rgba(183,159,138,0.08);
+  font-family: var(--serif); font-size: 64px; color: rgba(183,159,138,0.15);
+  letter-spacing: 8px;
+}
+.about-stats { display: flex; gap: 40px; margin-top: 40px; }
+.stat { text-align: center; }
+.stat-num { font-family: var(--serif); font-size: 36px; color: var(--gold); font-weight: 300; }
+.stat-label { font-size: 11px; color: var(--dim); letter-spacing: 2px; margin-top: 4px; text-transform: uppercase; }
+
+/* ── Programs ── */
+.programs-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-top: 60px; }
+.program-card {
+  background: var(--surface); border: 1px solid rgba(183,159,138,0.08);
+  border-radius: 4px; padding: 40px 28px; text-align: center;
+  transition: all 0.4s; position: relative; overflow: hidden;
+}
+.program-card::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0;
+  height: 2px; background: var(--gold); transform: scaleX(0);
+  transition: transform 0.4s;
+}
+.program-card:hover { border-color: rgba(183,159,138,0.2); transform: translateY(-4px); }
+.program-card:hover::before { transform: scaleX(1); }
+.program-icon { font-size: 32px; margin-bottom: 20px; }
+.program-name {
+  font-family: var(--serif); font-size: 20px; color: var(--white);
+  letter-spacing: 1px; margin-bottom: 12px;
+}
+.program-desc { font-size: 13px; color: var(--dim); line-height: 1.7; }
+
+/* ── Facilities ── */
+.facilities { background: var(--surface); }
+.facilities-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 60px; }
+.facility-item {
+  background: var(--card); border: 1px solid rgba(183,159,138,0.06);
+  border-radius: 4px; padding: 32px 24px;
+  transition: border-color 0.3s;
+}
+.facility-item:hover { border-color: rgba(183,159,138,0.15); }
+.facility-name {
+  font-family: var(--serif); font-size: 17px; color: var(--gold-light);
+  letter-spacing: 1px; margin-bottom: 8px;
+}
+.facility-desc { font-size: 13px; color: var(--dim); line-height: 1.7; }
+
+/* ── Membership ── */
+.membership-content { display: grid; grid-template-columns: 1fr 1fr; gap: 60px; margin-top: 60px; }
+.membership-features { list-style: none; }
+.membership-features li {
+  padding: 16px 0; border-bottom: 1px solid rgba(183,159,138,0.08);
+  font-size: 14px; color: var(--text); display: flex; align-items: center; gap: 16px;
+}
+.feature-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--gold); flex-shrink: 0; }
+.membership-cta-box {
+  background: linear-gradient(135deg, rgba(183,159,138,0.08) 0%, rgba(183,159,138,0.02) 100%);
+  border: 1px solid rgba(183,159,138,0.15); border-radius: 8px;
+  padding: 48px 36px; text-align: center; display: flex;
+  flex-direction: column; align-items: center; justify-content: center;
+}
+.membership-cta-title { font-family: var(--serif); font-size: 24px; color: var(--gold); margin-bottom: 12px; }
+.membership-cta-sub { font-size: 13px; color: var(--dim); margin-bottom: 32px; line-height: 1.7; }
+.membership-btn {
+  padding: 16px 40px; background: var(--gold); color: var(--bg);
+  font-size: 13px; font-weight: 700; letter-spacing: 2px;
+  text-transform: uppercase; border-radius: 2px; transition: opacity 0.3s;
+  font-family: var(--sans);
+}
+.membership-btn:hover { opacity: 0.85; }
+
+/* ── Info / Footer ── */
+.info-section {
+  background: var(--surface); padding: 80px 40px;
+  border-top: 1px solid rgba(183,159,138,0.06);
+}
+.info-inner {
+  max-width: 1200px; margin: 0 auto;
+  display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 60px;
+}
+.info-group h4 {
+  font-family: var(--serif); font-size: 14px; letter-spacing: 3px;
+  color: var(--gold); text-transform: uppercase; margin-bottom: 20px;
+}
+.info-group p { font-size: 14px; color: var(--dim); line-height: 1.9; }
+.info-group a { color: var(--gold-light); }
+
+.footer {
+  padding: 40px; text-align: center; font-size: 11px;
+  color: rgba(107,101,96,0.4); letter-spacing: 2px;
+  border-top: 1px solid rgba(183,159,138,0.04);
+}
+
+/* ── Animations ── */
+.fade-in {
+  opacity: 0; transform: translateY(30px);
+  transition: opacity 0.8s ease, transform 0.8s ease;
+}
+.fade-in.visible { opacity: 1; transform: translateY(0); }
+
+/* ── Mobile ── */
+@media (max-width: 768px) {
+  .nav { padding: 16px 20px; }
+  .nav.scrolled { padding: 12px 20px; }
+  .nav-links { display: none; }
+  .nav-mobile { display: block; }
+  .hero { padding: 100px 20px 60px; }
+  .section { padding: 80px 20px; }
+  .about { padding: 80px 20px; }
+  .about-inner { grid-template-columns: 1fr; gap: 40px; }
+  .about-visual { height: 280px; font-size: 40px; }
+  .programs-grid { grid-template-columns: 1fr 1fr; gap: 12px; }
+  .program-card { padding: 28px 20px; }
+  .facilities-grid { grid-template-columns: 1fr; }
+  .membership-content { grid-template-columns: 1fr; gap: 40px; }
+  .info-inner { grid-template-columns: 1fr; gap: 40px; }
+  .about-stats { gap: 24px; }
+  .facilities { padding: 80px 20px; }
+  .info-section { padding: 60px 20px; }
+}
+</style>
+</head>
+<body>
+
+<!-- Nav -->
+<nav class="nav" id="nav">
+  <a href="#" class="nav-logo">Wellperion</a>
+  <div class="nav-links">
+    <a href="#about">소개</a>
+    <a href="#programs">프로그램</a>
+    <a href="#facilities">시설</a>
+    <a href="#membership">멤버십</a>
+    <a href="/link" class="nav-cta">문의하기</a>
+  </div>
+  <button class="nav-mobile" onclick="document.querySelector('.nav-links').style.display=document.querySelector('.nav-links').style.display==='flex'?'none':'flex'">&#9776;</button>
+</nav>
+
+<!-- Hero -->
+<section class="hero">
+  <div class="hero-overtitle">Private Sports Club</div>
+  <h1 class="hero-title">A Day,<br><em>Well Completed.</em></h1>
+  <p class="hero-sub">지속되지 않는 건강 문제를 해결합니다.<br>서울 한남동, 프라이빗 멤버십 스포츠클럽.</p>
+  <a href="/link" class="hero-cta">
+    투어 예약하기 <span style="font-size:16px;">&#8594;</span>
+  </a>
+  <div class="hero-scroll">Scroll</div>
+</section>
+
+<!-- About -->
+<section class="about" id="about">
+  <div class="about-inner">
+    <div class="about-visual">W</div>
+    <div>
+      <div class="section-label">About Us</div>
+      <h2 class="section-title">건강이 일상이 되는<br>프라이빗 공간</h2>
+      <div class="divider"></div>
+      <p class="section-desc">
+        웰페리온은 단순한 운동 공간이 아닙니다.
+        개인 맞춤 프로그램, 전문 파트너 코칭, 프라이빗 시설 환경을 통해
+        회원님의 건강이 멈추지 않도록 설계된 하이엔드 스포츠클럽입니다.
+      </p>
+      <div class="about-stats">
+        <div class="stat">
+          <div class="stat-num">2024</div>
+          <div class="stat-label">설립</div>
+        </div>
+        <div class="stat">
+          <div class="stat-num">1:1</div>
+          <div class="stat-label">맞춤 코칭</div>
+        </div>
+        <div class="stat">
+          <div class="stat-num">100%</div>
+          <div class="stat-label">사전 예약제</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Programs -->
+<section class="section" id="programs">
+  <div class="section-label fade-in">Programs</div>
+  <h2 class="section-title fade-in">전문 프로그램</h2>
+  <div class="divider fade-in"></div>
+  <p class="section-desc fade-in">각 분야 최고의 파트너와 함께하는 프라이빗 프로그램.</p>
+
+  <div class="programs-grid">
+    <div class="program-card fade-in">
+      <div class="program-icon">&#9883;</div>
+      <div class="program-name">WJO</div>
+      <div class="program-desc">Wellperion Junior Olympic. 체계적인 주니어 스포츠 육성 프로그램.</div>
+    </div>
+    <div class="program-card fade-in">
+      <div class="program-icon">&#9826;</div>
+      <div class="program-name">Ballet</div>
+      <div class="program-desc">클래식 발레부터 컨템포러리까지. 유연성과 우아함을 함께.</div>
+    </div>
+    <div class="program-card fade-in">
+      <div class="program-icon">&#9898;</div>
+      <div class="program-name">Barre</div>
+      <div class="program-desc">발레 기반 전신 근력 트레이닝. 체형 교정과 코어 강화.</div>
+    </div>
+    <div class="program-card fade-in">
+      <div class="program-icon">&#9724;</div>
+      <div class="program-name">Squash</div>
+      <div class="program-desc">글라스 코트 스쿼시. 전략적 사고와 전신 유산소를 동시에.</div>
+    </div>
+  </div>
+</section>
+
+<!-- Facilities -->
+<section class="facilities" id="facilities">
+  <div class="section" style="padding-left:0;padding-right:0;">
+    <div class="section-label fade-in">Facilities</div>
+    <h2 class="section-title fade-in">프리미엄 시설</h2>
+    <div class="divider fade-in"></div>
+    <p class="section-desc fade-in">회원 전용 프라이빗 공간. 모든 시설은 사전 예약으로 운영됩니다.</p>
+
+    <div class="facilities-grid">
+      <div class="facility-item fade-in">
+        <div class="facility-name">Training Zone</div>
+        <div class="facility-desc">최신 프리미엄 장비와 개인 트레이닝 공간. 1:1 맞춤 세션.</div>
+      </div>
+      <div class="facility-item fade-in">
+        <div class="facility-name">Glass Court</div>
+        <div class="facility-desc">전면 유리벽 스쿼시 코트. 관람과 경기를 동시에.</div>
+      </div>
+      <div class="facility-item fade-in">
+        <div class="facility-name">Studio</div>
+        <div class="facility-desc">발레, 바레, 필라테스 전용 스튜디오. 미러월 완비.</div>
+      </div>
+      <div class="facility-item fade-in">
+        <div class="facility-name">Sauna &amp; Spa</div>
+        <div class="facility-desc">남녀 분리 사우나. 운동 후 리커버리를 위한 휴식 공간.</div>
+      </div>
+      <div class="facility-item fade-in">
+        <div class="facility-name">Lounge</div>
+        <div class="facility-desc">회원 전용 라운지. 네트워킹과 휴식의 프라이빗 공간.</div>
+      </div>
+      <div class="facility-item fade-in">
+        <div class="facility-name">Terrace</div>
+        <div class="facility-desc">야외 테라스. 한남동의 조망과 함께하는 여유.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Membership -->
+<section class="section" id="membership">
+  <div class="section-label fade-in">Membership</div>
+  <h2 class="section-title fade-in">멤버십 안내</h2>
+  <div class="divider fade-in"></div>
+  <p class="section-desc fade-in">웰페리온은 100% 사전 예약제로 운영됩니다. 투어 방문 후 상담을 통해 맞춤 멤버십을 안내해 드립니다.</p>
+
+  <div class="membership-content">
+    <ul class="membership-features fade-in">
+      <li><span class="feature-dot"></span>1:1 맞춤 프로그램 설계</li>
+      <li><span class="feature-dot"></span>전문 파트너 전담 코칭</li>
+      <li><span class="feature-dot"></span>프라이빗 시설 전용 이용</li>
+      <li><span class="feature-dot"></span>사우나 / 라운지 무제한</li>
+      <li><span class="feature-dot"></span>정기 컨디션 관리 리포트</li>
+      <li><span class="feature-dot"></span>회원 전용 이벤트 / 커뮤니티</li>
+      <li><span class="feature-dot"></span>주차 지원</li>
+    </ul>
+    <div class="membership-cta-box fade-in">
+      <div class="membership-cta-title">방문 투어 예약</div>
+      <p class="membership-cta-sub">
+        시설 투어와 1:1 상담을 통해<br>
+        맞춤 멤버십을 안내해 드립니다.
+      </p>
+      <a href="/link" class="membership-btn">투어 예약하기</a>
+    </div>
+  </div>
+</section>
+
+<!-- Info -->
+<section class="info-section">
+  <div class="info-inner">
+    <div class="info-group">
+      <h4>Location</h4>
+      <p>
+        서울특별시 용산구 서빙고로 413<br>
+        101동 지1층 101호 (한남동)<br><br>
+        <a href="https://map.naver.com/p/search/웰페리온" target="_blank">네이버 지도로 보기 &#8594;</a>
+      </p>
+    </div>
+    <div class="info-group">
+      <h4>Hours</h4>
+      <p>
+        평일 &nbsp;&nbsp; 06:00 - 22:30<br>
+        주말·공휴일 &nbsp;&nbsp; 08:00 - 20:00<br><br>
+        휴관: 신정 / 명절 /<br>매월 둘째·넷째 일요일
+      </p>
+    </div>
+    <div class="info-group">
+      <h4>Contact</h4>
+      <p>
+        <a href="tel:02-795-0220">02-795-0220</a><br>
+        <a href="https://instagram.com/namuk.wellperion" target="_blank">@namuk.wellperion</a><br><br>
+        <a href="/link">온라인 문의하기 &#8594;</a>
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- Footer -->
+<footer class="footer">
+  &copy; 2026 WELLPERION. All rights reserved.
+</footer>
+
+<script>
+// Nav scroll effect
+window.addEventListener('scroll', () => {
+  document.getElementById('nav').classList.toggle('scrolled', window.scrollY > 60);
+});
+
+// Fade-in on scroll
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); } });
+}, { threshold: 0.15 });
+document.querySelectorAll('.fade-in').forEach(el => observer.observe(el));
+</script>
+</body>
+</html>
