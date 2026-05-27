@@ -2809,45 +2809,12 @@ Start-Process python -ArgumentList telegram_bot\daily_scheduler.py -WorkingDirec
     <div class="callout tip" style="margin-top:12px;"><strong>참고 템플릿:</strong> 지원부 체계의 4탭 구조를 복제해서 부서명·구역·절차만 교체하면 됩니다.</div>
 
     <div class="tab-nav" style="display:flex;gap:4px;flex-wrap:wrap;margin:16px 0 0;border-bottom:2px solid var(--border);padding-bottom:0;">
-      <button class="fw-tab active" onclick="fwTab(this,'fw1')" style="padding:8px 14px;font-size:13px;font-weight:700;border:none;background:none;color:var(--accent);cursor:pointer;border-bottom:2px solid var(--accent);margin-bottom:-2px;font-family:inherit;">지원부 규정</button>
-      <button class="fw-tab" onclick="fwTab(this,'fw2')" style="padding:8px 14px;font-size:13px;font-weight:700;border:none;background:none;color:var(--dim);cursor:pointer;font-family:inherit;">가이드</button>
+      <button class="fw-tab active" onclick="fwTab(this,'fw2')" style="padding:8px 14px;font-size:13px;font-weight:700;border:none;background:none;color:var(--accent);cursor:pointer;border-bottom:2px solid var(--accent);margin-bottom:-2px;font-family:inherit;">가이드</button>
       <button class="fw-tab" onclick="fwTab(this,'fw3')" style="padding:8px 14px;font-size:13px;font-weight:700;border:none;background:none;color:var(--dim);cursor:pointer;font-family:inherit;">매뉴얼</button>
       <button class="fw-tab" onclick="fwTab(this,'fw4')" style="padding:8px 14px;font-size:13px;font-weight:700;border:none;background:none;color:var(--dim);cursor:pointer;font-family:inherit;">체크리스트·기록·이슈</button>
     </div>
 
-    <div class="fw-panel" id="fw1" style="display:block;margin-top:20px;">
-      <h3><span class="ico">📋</span>지원부 규정</h3>
-      <table>
-        <tr><th style="width:200px">정책</th><th>내용</th><th style="width:80px">상태</th></tr>
-        <tr><td><strong>운영시간</strong></td><td>평일 06:00~22:30 / 주말·공휴일 08:00~20:00<br><span style="font-size:12px;color:var(--dim);">휴관: 신정·명절·매월 2·4번째 일요일</span></td><td><span class="badge green">확정</span></td></tr>
-        <tr><td><strong>근무조 편성</strong></td><td>오전조 05:30~14:15 / 중간조 10:00 또는 12:00~ / 오후조 14:00~22:30</td><td><span class="badge green">확정</span></td></tr>
-        <tr><td><strong>담당 구역</strong></td><td>A(사우나) B(락커룸) C(세탁물) D(사우나 외부) E(외곽+헬스장+골프장)</td><td><span class="badge green">확정</span></td></tr>
-        <tr><td><strong>위생·청결 기준</strong></td><td>대리석·코팅면 산성세제 금지 / 전기설비 비닐 포장 후 청소</td><td><span class="badge green">확정</span></td></tr>
-        <tr><td><strong>안전 보고</strong></td><td>즉시 조치 불가 시 팀장·소장 즉시 보고 의무</td><td><span class="badge green">확정</span></td></tr>
-        <tr><td><strong>마감 경고</strong></td><td>사우나·파우더 마감 미비 시 경고 / 3회 → 경징계</td><td><span class="badge green">확정</span></td></tr>
-        <tr><td><strong>탕청소 위탁</strong></td><td>야간 업체 위탁 / 평일 23:00 / 주말 20:30 출근</td><td><span class="badge green">확정</span></td></tr>
-      </table>
-      <div class="callout"><strong>변경 절차:</strong> 최준용M·윤병현AM 제안 → AI COO 검토 → GM님 결재. 변경 시 가이드·매뉴얼 연동 갱신 의무.</div>
-
-      <h4 style="margin-top:24px;">정기 회의</h4>
-      <table>
-        <tr><th style="width:160px">구분</th><th>주기</th><th>참석</th><th>안건</th></tr>
-        <tr><td><strong>주간 브리핑</strong></td><td>매주 월 오전</td><td>최준용M·윤병현AM·오전조</td><td>지난주 이슈 / 이번주 집중 구역 / 비품 현황</td></tr>
-        <tr><td><strong>월간 운영 회의</strong></td><td>매월 첫째주 화</td><td>최준용M·윤병현AM</td><td>이슈·노하우 취합 / 매뉴얼 개정 여부</td></tr>
-        <tr><td><strong>긴급 회의</strong></td><td>이슈 발생 즉시</td><td>해당 담당자+팀장</td><td>원인 분석 / 즉시 조치</td></tr>
-      </table>
-
-      <h4 style="margin-top:20px;">고도화 정의</h4>
-      <div class="card accent"><p><strong>고도화</strong> = 현재 규정·가이드·매뉴얼·체크리스트를 현장 데이터와 피드백 기반으로 지속 개선하는 것. 대규모 재설계 금지 — 보수적 증분 업데이트 원칙.</p></div>
-      <table>
-        <tr><th>구간</th><th>목표</th><th style="width:90px">시기</th></tr>
-        <tr><td><strong>단기</strong></td><td>인수인계 텔레그램 전환 / 응대 멘트 가이드 / 비품 기준 명문화</td><td>2026-07</td></tr>
-        <tr><td><strong>중기</strong></td><td>청소 전후 사진 자동 수집 / 비품 재고 자동화 / AI COO 주간 리포트</td><td>2026-10</td></tr>
-        <tr><td><strong>장기</strong></td><td>데이터 기반 예방 정비 / 직원 퍼포먼스 대시보드</td><td>2027</td></tr>
-      </table>
-    </div>
-
-    <div class="fw-panel" id="fw2" style="display:none;margin-top:20px;">
+    <div class="fw-panel" id="fw2" style="display:block;margin-top:20px;">
       <h3><span class="ico">🧭</span>가이드</h3>
 
       <div class="card accent" style="margin-bottom:20px;padding:20px;">

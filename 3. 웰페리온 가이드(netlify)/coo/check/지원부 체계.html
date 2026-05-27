@@ -373,9 +373,114 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
     <tr><td style="padding:8px;border:1px solid var(--border);"><strong>D 외부</strong></td><td style="padding:8px;border:1px solid var(--border);">외부 화장실 악취 관리 / 분리수거장 정리</td></tr>
     <tr><td style="padding:8px;border:1px solid var(--border);"><strong>E 외곽</strong></td><td style="padding:8px;border:1px solid var(--border);">헬스장 장비 정돈 / 골프장 청결 / 복도 바닥 중심</td></tr>
   </table>
+
+  <!-- 시간대별 업무 절차 (매뉴얼 탭에서 흡수) -->
+  <h3 style="font-size:17px;margin:24px 0 10px;padding-top:8px;border-top:1px solid var(--border);">시간대별 업무 절차</h3>
+
+  <!-- 오전조 -->
+  <div class="manual-section">
+    <div class="manual-header" onclick="togManual(this)" style="background:var(--accent-bg);">
+      <h3 style="color:var(--accent);">오전조 (05:30~14:15)</h3><span class="arrow">&#9654;</span>
+    </div>
+    <div class="manual-body">
+      <span class="manual-label">05:30~08:00 오픈</span>
+      <ul>
+        <li>A-1 사우나 탕 수위·온도 체크 / 오버풀 관리</li>
+        <li>A-2 건/습식 온도 체크 및 내부 청결</li>
+        <li>A-3 배수로·배수구·바닥·타일·거울 점검</li>
+        <li>B-6 데일리 락커 요일별 청소 (월1~30 · 화31~60 · 수61~90 · 목91~120 · 금121~150 · 토151~180)</li>
+      </ul>
+      <span class="manual-label">08:00~12:00 오전</span>
+      <ul>
+        <li>B-1 파우더: 드라이기·소독기·발건조기·비품</li>
+        <li>B-2 휴게실: TV·소파·테이블</li>
+        <li>B-3 수면실(남)/찜질방(여): 청결·비품</li>
+        <li>B-4 마루바닥: 미끄럼·청결</li>
+        <li>B-5 사우나 화장실: 소변기·대변기·세면공간·비품</li>
+        <li>C 세탁물 입고 → 운반 → 사이즈별 분리 배치</li>
+        <li>E-1 센터 복도 바닥 (1F/B1/B2)</li>
+        <li>E-2 거울·유리창 (화요일 집중)</li>
+        <li>E-3 청소 비품 지정 위치 관리</li>
+        <li>E-4 헬스장: 머신·런닝머신 땀 / 요일별 집중 청소</li>
+        <li>E-5 골프장: 복도·타석·레슨룸 요일별</li>
+      </ul>
+      <span class="manual-label">10:00~12:00 오전 후반</span>
+      <ul>
+        <li>D-1 외부 화장실 (골프장/B1/B2)</li>
+        <li>D-2 복도 휴지통 수거</li>
+        <li>D-3 메인 계단 B1-B2 (남 전담)</li>
+        <li>D-4 메인 복도 휴게공간 (여 전담)</li>
+        <li>D-5 분리수거장</li>
+      </ul>
+      <span class="manual-label">13:00~14:00 인수인계</span>
+      <ul>
+        <li>세탁물 출고 운반</li>
+        <li>오전조 → 오후조 인수사항 카카오톡 공유</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- 오후조 -->
+  <div class="manual-section">
+    <div class="manual-header" onclick="togManual(this)" style="background:var(--green-bg);">
+      <h3 style="color:var(--green);">오후조 (14:00~22:30)</h3><span class="arrow">&#9654;</span>
+    </div>
+    <div class="manual-body">
+      <span class="manual-label">14:00~18:00 오후</span>
+      <ul>
+        <li>A-1/A-2/A-3 오후 재점검 (수위·온도·바닥·배수) / 팀장 15분 점검 카톡 보고</li>
+        <li>D-6 G.X룸 거울·바닥 (남 전담 / 화요일 집중)</li>
+        <li>D-7 센터 화분 물 공급 (여 전담 / 금요일 집중)</li>
+        <li>D-9 수영장 계단 주 1회 청소</li>
+        <li>B-2/B-3/B-4/B-5 오후 재점검</li>
+      </ul>
+      <span class="manual-label">19:00~22:00 저녁</span>
+      <ul>
+        <li>B-2/B-3/B-4 저녁 재점검</li>
+        <li>D-8 키즈 샤워실 파우더룸 정리 20:30 / 2주 1회 청소 수 13:00 (남 전담)</li>
+        <li>E-6 주차장 바닥·화장실·차단기</li>
+      </ul>
+      <span class="manual-label">22:00~22:30 마감</span>
+      <ul>
+        <li>세탁물 최종 출고 운반</li>
+        <li>남/여 사우나·파우더 청결 최종 확인 → 시설·운영부 마감자 카톡 보고</li>
+        <li><span class="highlight">마감 미비 시 경고 / 3회 → 경징계</span></li>
+        <li>전 구역 이상 유무 / 다음날 일정 준비</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- 야간조 (탕청소 업체) -->
+  <div class="manual-section">
+    <div class="manual-header" onclick="togManual(this)" style="background:var(--orange-bg);">
+      <h3 style="color:var(--orange);">야간조 — 탕청소 업체 (평일 23:00 / 주말 20:30)</h3><span class="arrow">&#9654;</span>
+    </div>
+    <div class="manual-body">
+      <span class="manual-label">평일 스케줄</span>
+      <ul>
+        <li>23:00~23:30 — 청소 도구 준비·초기 점검</li>
+        <li>23:30~00:30 — 남 사우나: 냉/온/열탕 배수 → 탕 내부·샤워부스·바닥·배수구 세척 / 격주 돌돌이</li>
+        <li>00:30~01:30 — 요일별 집중 청소</li>
+        <li>01:30~02:00 — 휴게 30분</li>
+        <li>02:00~03:00 — 여 사우나: 냉/온/열탕 배수 → 탕 내부·샤워부스·바닥·배수구 / 격주 돌돌이</li>
+        <li>03:00~04:00 — 여 사우나 화장실 청소 + 요일별 청소 마무리 + 탕 배수 일지 작성</li>
+      </ul>
+      <span class="manual-label">주말 스케줄</span>
+      <ul>
+        <li>20:30~21:00 — 도구 준비·초기 점검</li>
+        <li>21:00~22:00 — 남 사우나 탕청소</li>
+        <li>22:00~23:00 — 요일별 집중 청소</li>
+        <li>23:00~23:30 — 휴게 30분</li>
+        <li>23:30~00:30 — 여 사우나 탕청소</li>
+        <li>00:30~01:30 — 여 화장실 + 마감 점검 + 일지</li>
+      </ul>
+    </div>
+  </div>
 </div>
 
 <div id="tab-manual" class="content hidden">
+
+  <!-- 공통 안전 유의사항 -->
   <div class="manual-section">
     <div class="manual-header" onclick="togManual(this)"><h3>공통 유의사항</h3><span class="arrow open">&#9654;</span></div>
     <div class="manual-body open">
@@ -387,84 +492,201 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
       </ul>
     </div>
   </div>
+
+  <!-- 구역별 상세 절차 -->
+  <div style="font-size:13px;color:var(--dim);margin:8px 0 12px;">구역을 탭하면 상세 절차가 펼쳐집니다.</div>
+
+  <!-- A 사우나 -->
   <div class="manual-section">
-    <div class="manual-header" onclick="togManual(this)"><h3>응대 기본원칙</h3><span class="arrow">&#9654;</span></div>
-    <div class="manual-body">
-      <span class="manual-label">4단계 응대 프로세스</span>
-      <ul>
-        <li><strong>1. 경청우선</strong> - 회원 말씀을 끝까지 경청</li>
-        <li><strong>2. 빠른조치</strong> - 즉시 해결 가능한 건은 현장 즉시 조치</li>
-        <li><strong>3. 표준멘트</strong> - 정중하고 일관된 안내 멘트 사용</li>
-        <li><strong>4. 기록필수</strong> - 모든 응대 내역 기록 (이슈 버튼 활용)</li>
-      </ul>
+    <div class="manual-header" onclick="togManual(this)">
+      <h3><span style="display:inline-block;width:26px;height:26px;border-radius:8px;background:var(--accent-bg);color:var(--accent);font-size:13px;font-weight:700;text-align:center;line-height:26px;margin-right:8px;">A</span>사우나 탕 / 건·습식</h3>
+      <span class="arrow">&#9654;</span>
     </div>
-  </div>
-  <div class="manual-section">
-    <div class="manual-header" onclick="togManual(this)"><h3>담당자 보고방식</h3><span class="arrow">&#9654;</span></div>
     <div class="manual-body">
-      <span class="manual-label">즉시조치 가능한 경우</span>
+      <span class="manual-label">A-1 사우나 탕</span>
       <ul>
-        <li>현장에서 즉시 조치 완료</li>
-        <li>조치 후 카카오톡으로 팀장에게 보고</li>
+        <li>오픈 시 수위·온도 확인 후 오버풀 타이머 가동</li>
+        <li>냉탕: 매일 배수 / 온탕·열탕: 격일 배수 (마개+스위치 확인)</li>
+        <li>휴관일 전: 냉탕·온탕·열탕 전부 배수</li>
       </ul>
-      <span class="manual-label">즉시조치 불가능한 경우</span>
-      <ul>
-        <li><span class="highlight">팀장 &amp; 소장에게 즉시 보고</span></li>
-        <li>지시 받은 후 조치 진행</li>
-        <li>안전/시설 관련 긴급 사항은 무조건 즉시 보고</li>
-      </ul>
-    </div>
-  </div>
-  <div class="manual-section">
-    <div class="manual-header" onclick="togManual(this)"><h3>탕 관리 핵심</h3><span class="arrow">&#9654;</span></div>
-    <div class="manual-body">
-      <span class="manual-label">오버풀 타이머 스케줄</span>
+      <span class="manual-label">오버풀 타이머</span>
       <table class="schedule-table">
         <tr><th></th><th>온탕</th><th>열탕</th></tr>
-        <tr><td><strong>평일 (6회)</strong></td><td>06:00, 10:00, 11:00, 12:00, 15:00, 20:00</td><td>06:00, 10:30, 11:30, 12:30, 15:30, 20:40</td></tr>
-        <tr><td><strong>주말 (3회)</strong></td><td>10:00, 14:00, 18:00</td><td>10:30, 14:30, 18:30</td></tr>
+        <tr><td><strong>평일 6회</strong></td><td>06:00·10:00·11:00·12:00·15:00·20:00</td><td>06:00·10:30·11:30·12:30·15:30·20:40</td></tr>
+        <tr><td><strong>주말 3회</strong></td><td>10:00·14:00·18:00</td><td>10:30·14:30·18:30</td></tr>
       </table>
-      <span class="manual-label">배수 원칙</span>
+      <span class="manual-label">A-2 건/습식 사우나</span>
       <ul>
-        <li><strong>냉탕</strong> - 매일 배수</li>
-        <li><strong>온탕 &amp; 열탕</strong> - 격일 배수 (마개+스위치 확인)</li>
-        <li><strong>휴관일 전</strong> - 냉탕/온탕/열탕 전부 배수</li>
+        <li>온도 체크 (건식 90~100°C / 습식 60~70°C 기준)</li>
+        <li>바닥·타일 물때 제거</li>
+        <li><strong>수요일</strong> 고압세척 + <span class="highlight">산성세제 금지</span></li>
+        <li>모래시계 위치 확인</li>
+      </ul>
+      <span class="manual-label">A-3 사우나 내부</span>
+      <ul>
+        <li>배수로·배수구 청소 / 바닥 미끄럼 방지 확인</li>
+        <li>탈수기 밑 / 좌식 의자 / 거울 청결</li>
+        <li>비품: 바가지·목욕의자·거품바구니·쓰레기통·치약·소금·샴푸·린스·바디워시·비누</li>
       </ul>
     </div>
   </div>
+
+  <!-- B 락커룸 -->
   <div class="manual-section">
-    <div class="manual-header" onclick="togManual(this)"><h3>담당 구역 배정</h3><span class="arrow">&#9654;</span></div>
+    <div class="manual-header" onclick="togManual(this)">
+      <h3><span style="display:inline-block;width:26px;height:26px;border-radius:8px;background:var(--blue-bg);color:var(--blue);font-size:13px;font-weight:700;text-align:center;line-height:26px;margin-right:8px;">B</span>락커룸 / 파우더</h3>
+      <span class="arrow">&#9654;</span>
+    </div>
     <div class="manual-body">
-      <span class="manual-label">남 주임 전담</span>
+      <span class="manual-label">B-1 파우더</span>
       <ul>
-        <li>D-3 메인 계단 (B1-B2)</li>
-        <li>D-6 G.X룸 (화요일 집중)</li>
-        <li>D-8 키즈 샤워실</li>
+        <li>선풍기·드라이기 작동 수시 확인</li>
+        <li>소독기·발건조기·휴지통 상태</li>
+        <li>비품 최소 재고 유지: 빗·면봉·휴지·로션·스킨</li>
       </ul>
-      <span class="manual-label">여 주임 전담</span>
+      <span class="manual-label">B-2 휴게실</span>
       <ul>
-        <li>D-4 메인 복도 휴게공간</li>
-        <li>D-7 센터 화분 (금요일 집중)</li>
+        <li>TV 관리 / 소파·테이블 청결</li>
       </ul>
-      <span class="manual-label">공통</span>
+      <span class="manual-label">B-3 수면실(남) / 찜질방(여)</span>
       <ul>
-        <li>A 사우나 점검, B 락커룸, C 세탁물, E 외곽 청결, F 회원 응대</li>
+        <li>남: 매트리스·바스타올 청결 관리</li>
+        <li>여: 온도·청결 / 쑥 제거(휴관일 전) · 입고(휴관일 후)</li>
+      </ul>
+      <span class="manual-label">B-4 마루바닥</span>
+      <ul>
+        <li>미끄럼 방지 확인 / 수시 청결</li>
+        <li>1회용 밀대 타올 수시 교체</li>
+      </ul>
+      <span class="manual-label">B-5 사우나 화장실</span>
+      <ul>
+        <li>소변기·대변기·바닥·세면공간 청소</li>
+        <li>비품: 휴지통·화장지·핸드페이퍼·손세정제</li>
+      </ul>
+      <span class="manual-label">B-6 데일리 락커</span>
+      <ul>
+        <li>월 1~30 / 화 31~60 / 수 61~90 / 목 91~120 / 금 121~150 / 토 151~180</li>
+        <li>데일리·개인 락커 키 위 먼지 청소</li>
       </ul>
     </div>
   </div>
+
+  <!-- C 세탁물 -->
   <div class="manual-section">
-    <div class="manual-header" onclick="togManual(this)"><h3>요일별 집중 청소 요약</h3><span class="arrow">&#9654;</span></div>
+    <div class="manual-header" onclick="togManual(this)">
+      <h3><span style="display:inline-block;width:26px;height:26px;border-radius:8px;background:var(--green-bg);color:var(--green);font-size:13px;font-weight:700;text-align:center;line-height:26px;margin-right:8px;">C</span>세탁물</h3>
+      <span class="arrow">&#9654;</span>
+    </div>
+    <div class="manual-body">
+      <span class="manual-label">입고 절차</span>
+      <ul>
+        <li>입고 즉시 세탁실로 운반</li>
+        <li>운동복·양말: 상태 체크 후 사이즈별 분리 배치</li>
+        <li>타올류(거품타올·타올·바스타올): 상태 불량 별도 분리</li>
+      </ul>
+      <span class="manual-label">마감 출고</span>
+      <ul>
+        <li>인수인계 시 오전 출고 / 마감 시 최종 출고</li>
+        <li><span class="highlight">마감 출고 빠짐없이 확인</span></li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- D 외부 -->
+  <div class="manual-section">
+    <div class="manual-header" onclick="togManual(this)">
+      <h3><span style="display:inline-block;width:26px;height:26px;border-radius:8px;background:var(--yellow-bg);color:var(--yellow);font-size:13px;font-weight:700;text-align:center;line-height:26px;margin-right:8px;">D</span>외부 공간</h3>
+      <span class="arrow">&#9654;</span>
+    </div>
+    <div class="manual-body">
+      <span class="manual-label">D-1 외부 화장실</span>
+      <ul>
+        <li>골프장·B1·B2 화장실 비품 체크</li>
+        <li>비품: 휴지통·화장지·핸드페이퍼·손세정제</li>
+        <li><span class="highlight">악취 관리 최우선</span></li>
+      </ul>
+      <span class="manual-label">D-2 복도 휴지통</span>
+      <ul><li>운영사무실 앞 / B1 복도(헬스장 입구 구석)</li></ul>
+      <span class="manual-label">D-3 메인 계단 <span style="color:var(--accent);font-size:11px;">남 주임 전담</span></span>
+      <ul><li>B1-B2 메인 계단 벽·바닥 청결</li></ul>
+      <span class="manual-label">D-4 메인 복도 휴게공간 <span style="color:var(--purple);font-size:11px;">여 주임 전담</span></span>
+      <ul><li>소파·바닥 청결</li></ul>
+      <span class="manual-label">D-5 분리수거장</span>
+      <ul><li>에스컬레이터 아래 분리수거 진행</li></ul>
+      <span class="manual-label">D-6 G.X룸 <span style="color:var(--accent);font-size:11px;">남 주임 전담 / 화요일 집중</span></span>
+      <ul><li>거울·바닥 청소</li></ul>
+      <span class="manual-label">D-7 센터 화분 <span style="color:var(--purple);font-size:11px;">여 주임 전담 / 금요일 집중</span></span>
+      <ul><li>물 공급</li></ul>
+      <span class="manual-label">D-8 키즈 샤워실 <span style="color:var(--accent);font-size:11px;">남 주임 전담</span></span>
+      <ul>
+        <li>파우더룸 정리 20:30</li>
+        <li>2주 1회 샤워실 청소 — 수요일 13:00</li>
+      </ul>
+      <span class="manual-label">D-9 수영장 계단</span>
+      <ul><li>주 1회 청소</li></ul>
+    </div>
+  </div>
+
+  <!-- E 외곽 -->
+  <div class="manual-section">
+    <div class="manual-header" onclick="togManual(this)">
+      <h3><span style="display:inline-block;width:26px;height:26px;border-radius:8px;background:var(--orange-bg);color:var(--orange);font-size:13px;font-weight:700;text-align:center;line-height:26px;margin-right:8px;">E</span>외곽 / 헬스장 / 골프장</h3>
+      <span class="arrow">&#9654;</span>
+    </div>
+    <div class="manual-body">
+      <span class="manual-label">E-1 센터 복도 바닥</span>
+      <ul><li>1F/B1/B2 에스컬레이터 공간 전체</li></ul>
+      <span class="manual-label">E-2 거울·유리창 <span style="color:var(--dim);font-size:11px;">화요일 집중</span></span>
+      <ul><li>거울·유리창 물때 / 손톱깍이장 청소</li></ul>
+      <span class="manual-label">E-3 청소 비품 관리</span>
+      <ul><li>지정 위치 배치 / 항상 깔끔하게 관리</li></ul>
+      <span class="manual-label">E-4 헬스장</span>
+      <ul>
+        <li>매일: 머신·런닝머신 땀 제거</li>
+        <li>월·수·금: 런닝머신 바닥</li>
+        <li>화·목: 스트레칭 공간</li>
+        <li>주말: 거울</li>
+      </ul>
+      <span class="manual-label">E-5 골프장</span>
+      <ul>
+        <li>매일: 복도 청소</li>
+        <li>월·수·금: 타석(스크린천)</li>
+        <li>화·목: 타석(기계)</li>
+        <li>주말: 레슨룸</li>
+      </ul>
+      <span class="manual-label">E-6 주차장 <span style="color:var(--dim);font-size:11px;">일요일·휴관일 집중</span></span>
+      <ul>
+        <li>바닥 쓰레기 / 주차장 화장실 / 차단기 확인</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- 요일별 집중 청소 -->
+  <div class="manual-section">
+    <div class="manual-header" onclick="togManual(this)">
+      <h3>요일별 집중 청소</h3><span class="arrow">&#9654;</span>
+    </div>
     <div class="manual-body">
       <table class="schedule-table">
         <tr><th>요일</th><th>집중 청소 항목</th></tr>
-        <tr><td><strong>월</strong></td><td>화장실 전체 / 탈수기 물때 곰팡이 / B-1 파우더 / B-5 사우나 화장실 (탕 배수: 마개+스위치)</td></tr>
-        <tr><td><strong>화</strong></td><td>세면대 배수 파이프 / 배수구 소독 머리카락 / 탕 내 비품 / E-2 거울 유리창 / D-6 G.X룸 거울</td></tr>
-        <tr><td><strong>수</strong></td><td>건/습식 사우나 바닥 (고압세척+산성세제) / D-8 키즈샤워실</td></tr>
-        <tr><td><strong>목</strong></td><td>화장실 전체 / 탈수기 물때 곰팡이 / B-1 파우더 / B-5 사우나 화장실</td></tr>
-        <tr><td><strong>금</strong></td><td>세면대 배수 파이프 / 배수구 소독 머리카락 / 탕 내 비품 / D-7 센터 화분</td></tr>
-        <tr><td><strong>토</strong></td><td>벽체 곰팡이 물때 / 거울 유리창 물때 / 천정 환기구 먼지 / 방제</td></tr>
-        <tr><td><strong>일</strong></td><td>탕청소 업체 휴무 / E-6 주차장 / 개인락커+미비 부분</td></tr>
+        <tr><td><strong>월</strong></td><td>화장실 전체 / 탈수기 물때·곰팡이 / B-1 파우더 / B-5 사우나 화장실 (탕 배수: 마개+스위치)</td></tr>
+        <tr><td><strong>화</strong></td><td>세면대 배수 파이프 / 배수구 소독·머리카락 / 탕 내 비품 / E-2 거울·유리창 / D-6 G.X룸</td></tr>
+        <tr><td><strong>수</strong></td><td>건/습식 사우나 바닥 고압세척 / D-8 키즈샤워실</td></tr>
+        <tr><td><strong>목</strong></td><td>화장실 전체 / 탈수기 물때·곰팡이 / B-1 파우더 / B-5 사우나 화장실</td></tr>
+        <tr><td><strong>금</strong></td><td>세면대 배수 파이프 / 배수구 소독·머리카락 / 탕 내 비품 / D-7 센터 화분</td></tr>
+        <tr><td><strong>토</strong></td><td>벽체 곰팡이·물때 / 거울·유리창 물때 / 천정 환기구 먼지 / 방제</td></tr>
+        <tr><td><strong>일</strong></td><td>탕청소 업체 휴무 / E-6 주차장 집중 / 개인락커+미비 부분</td></tr>
       </table>
+    </div>
+  </div>
+
+  <!-- PDF 매뉴얼 링크 -->
+  <div style="background:var(--paper);border:1px solid var(--border);border-radius:12px;padding:16px 18px;margin-top:12px;display:flex;align-items:center;gap:14px;">
+    <span style="font-size:28px;">📄</span>
+    <div>
+      <div style="font-size:14px;font-weight:700;margin-bottom:4px;">PDF 원본 매뉴얼</div>
+      <div style="font-size:12px;color:var(--dim);margin-bottom:8px;">인쇄 가능 전체 매뉴얼 (탕청소 절차·비품 기준 포함)</div>
+      <a href="#" style="display:inline-block;font-size:12px;font-weight:600;padding:6px 14px;border-radius:8px;background:var(--accent-bg);color:var(--accent);border:1px solid rgba(183,159,138,0.3);text-decoration:none;">PDF 다운로드</a>
     </div>
   </div>
 </div>
