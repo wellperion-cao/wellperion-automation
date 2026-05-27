@@ -671,7 +671,7 @@ function renderTaskCard(t, idx) {
       a = a.trim();
       if (a) html += '<span class="chip approval">' + esc(a) + '</span>';
     });
-    html += '<span class="chip" style="background:var(--yellow-bg);color:var(--yellow);cursor:pointer;" onclick="event.stopPropagation();copyForKakao(\'' + escAttr(t.id) + '\')">카톡 전송</span>';
+    html += '<span class="chip" style="background:#229ED9;color:#fff;cursor:pointer;" onclick="event.stopPropagation();sendToTelegram(\'' + escAttr(t.id) + '\')">텔레그램 결재</span>';
   }
 
   html += '</div>'; // task-meta
@@ -1012,11 +1012,11 @@ function toggleHoldLog() {
   }
 }
 
-function copyForKakao(id) {
+function sendToTelegram(id) {
   const t = ALL_TASKS.find(x => x.id === id);
   if (!t) return;
   var lines = [];
-  lines.push('[웰페리온 결재요청]');
+  lines.push('📋 [웰페리온 결재요청]');
   lines.push('업무명: ' + (t.title || '-'));
   lines.push('카테고리: ' + (t.category || '-'));
   lines.push('담당자: ' + (t.owner || '-'));
@@ -1026,7 +1026,9 @@ function copyForKakao(id) {
   if (t.link) lines.push('링크: ' + t.link);
   var text = lines.join('\n');
   navigator.clipboard.writeText(text).then(function() {
-    showToast('카톡 전송용 텍스트가 복사되었습니다.');
+    showToast('결재 메시지 복사 완료 — 텔레그램 결재방에 붙여넣기');
+    var encoded = encodeURIComponent(text);
+    setTimeout(function() { window.open('https://t.me/share/url?text=' + encoded, '_blank'); }, 500);
   });
 }
 
