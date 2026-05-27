@@ -2571,25 +2571,83 @@ Start-Process python -ArgumentList telegram_bot\daily_scheduler.py -WorkingDirec
     <div style="margin:18px 0 24px;">
       <h3 id="gm1-todo-date"><span class="ico">📌</span>오늘 할 일</h3>
       <div id="today-task-list">
+        <div class="task-card" data-today="1">
+          <div class="task-title" style="display:flex;align-items:center;justify-content:space-between;">
+            <span><span class="status-dot active"></span>공지/안내문 생성 도구 페이지 제작</span>
+            <div class="todo-actions">
+              <button class="todo-act-btn today-act" data-action="done">완료</button>
+              <button class="todo-act-btn today-act" data-action="hold">보류</button>
+              <button class="todo-act-btn today-act del" data-action="delete">삭제</button>
+            </div>
+          </div>
+          <div class="task-desc">브랜드 가이드 기준 공지문 자동 생성. 내용 입력 → 미리보기 → 인쇄.</div>
+        </div>
+        <div class="task-card" data-today="2">
+          <div class="task-title" style="display:flex;align-items:center;justify-content:space-between;">
+            <span><span class="status-dot active"></span>AI C-Level 개요 페이지 생성</span>
+            <div class="todo-actions">
+              <button class="todo-act-btn today-act" data-action="done">완료</button>
+              <button class="todo-act-btn today-act" data-action="hold">보류</button>
+              <button class="todo-act-btn today-act del" data-action="delete">삭제</button>
+            </div>
+          </div>
+          <div class="task-desc">각 C-Level 클릭 시 개요 먼저 표시 + 하위 페이지 연결.</div>
+        </div>
+        <div class="task-card" data-today="3">
+          <div class="task-title" style="display:flex;align-items:center;justify-content:space-between;">
+            <span><span class="status-dot active"></span>전사 기준 & 회사 핵심 문서 통합 검토</span>
+            <div class="todo-actions">
+              <button class="todo-act-btn today-act" data-action="done">완료</button>
+              <button class="todo-act-btn today-act" data-action="hold">보류</button>
+              <button class="todo-act-btn today-act del" data-action="delete">삭제</button>
+            </div>
+          </div>
+          <div class="task-desc">공통 가이드라인과 회사 핵심 문서 섹터 중복 정리.</div>
+        </div>
+        <div class="task-card" data-today="4">
+          <div class="task-title" style="display:flex;align-items:center;justify-content:space-between;">
+            <span><span class="status-dot active"></span>운영부·시설부·주차관리부 체계 확장 시작</span>
+            <div class="todo-actions">
+              <button class="todo-act-btn today-act" data-action="done">완료</button>
+              <button class="todo-act-btn today-act" data-action="hold">보류</button>
+              <button class="todo-act-btn today-act del" data-action="delete">삭제</button>
+            </div>
+          </div>
+          <div class="task-desc">지원부 체계 복제 → 부서별 규정·가이드·매뉴얼·체크리스트 제작.</div>
+        </div>
+        <div class="task-card" data-today="5">
+          <div class="task-title" style="display:flex;align-items:center;justify-content:space-between;">
+            <span><span class="status-dot active"></span>마그네슘(Cenovis) 저녁 1알</span>
+            <div class="todo-actions">
+              <button class="todo-act-btn today-act" data-action="done">완료</button>
+              <button class="todo-act-btn today-act" data-action="hold">보류</button>
+              <button class="todo-act-btn today-act del" data-action="delete">삭제</button>
+            </div>
+          </div>
+          <div class="task-desc">수면 질 개선용.</div>
+        </div>
       </div>
       <div style="display:flex;gap:12px;margin-top:16px;">
-        <details class="toggle" style="flex:1;" open>
-          <summary style="color:var(--green);"><span style="margin-right:6px;">✅</span>완료 (<span id="today-done-count">3</span>건)</summary>
-          <div class="toggle-body" style="font-size:13px;" id="today-done-list">
-            <div style="padding:6px 0;border-bottom:1px dashed var(--border);"><span style="color:var(--green);font-weight:700;">✓</span> <span style="text-decoration:line-through;color:var(--dim-soft);">AI 자동학습 주간 태스크 등록</span> <span style="font-size:11px;color:var(--dim);">· 매주 월 09:30 자동 실행</span></div>
-            <div style="padding:6px 0;border-bottom:1px dashed var(--border);"><span style="color:var(--green);font-weight:700;">✓</span> <span style="text-decoration:line-through;color:var(--dim-soft);">투두리스트 카톡→텔레그램 결재 변경</span> <span style="font-size:11px;color:var(--dim);">· 텔레그램 공유 자동 열기</span></div>
-            <div style="padding:6px 0;"><span style="color:var(--green);font-weight:700;">✓</span> <span style="text-decoration:line-through;color:var(--dim-soft);">GitHub Pages 셋업</span> <span style="font-size:11px;color:var(--dim);">· 7개 페이지 배포 + 폴더 구조 정리 + 사이드바 재구성</span></div>
-          </div>
+        <details class="toggle" style="flex:1;">
+          <summary style="color:var(--green);"><span style="margin-right:6px;">✅</span>완료 (<span id="today-done-count">0</span>건)</summary>
+          <div class="toggle-body" style="font-size:13px;" id="today-done-list"></div>
         </details>
         <details class="toggle" style="flex:1;">
-          <summary style="color:var(--accent);"><span style="margin-right:6px;">⏸️</span>보류 (<span id="today-hold-count">1</span>건)</summary>
-          <div class="toggle-body" style="font-size:13px;" id="today-hold-list">
-            <div style="padding:6px 0;"><span style="color:var(--accent);font-weight:700;">⏸</span> <span style="color:var(--dim-soft);">마그네슘(Cenovis) 저녁 1알</span> <span style="font-size:11px;color:var(--dim);">· 컨디션 불량으로 보류</span></div>
-          </div>
+          <summary style="color:var(--accent);"><span style="margin-right:6px;">⏸️</span>보류 (<span id="today-hold-count">0</span>건)</summary>
+          <div class="toggle-body" style="font-size:13px;" id="today-hold-list"></div>
         </details>
       </div>
       <details class="toggle" style="margin-top:10px;">
-        <summary style="color:var(--dim);"><span style="margin-right:6px;">📦</span>어제 기록 (05-26, 4건)</summary>
+        <summary style="color:var(--dim);"><span style="margin-right:6px;">📦</span>05-27 기록 (완료 3 + 보류 1)</summary>
+        <div class="toggle-body" style="font-size:13px;">
+          <div style="padding:6px 0;border-bottom:1px dashed var(--border);"><span style="color:var(--green);font-weight:700;">✓</span> <span style="text-decoration:line-through;color:var(--dim-soft);">AI 자동학습 주간 태스크 등록</span></div>
+          <div style="padding:6px 0;border-bottom:1px dashed var(--border);"><span style="color:var(--green);font-weight:700;">✓</span> <span style="text-decoration:line-through;color:var(--dim-soft);">투두리스트 카톡→텔레그램 결재 변경</span></div>
+          <div style="padding:6px 0;border-bottom:1px dashed var(--border);"><span style="color:var(--green);font-weight:700;">✓</span> <span style="text-decoration:line-through;color:var(--dim-soft);">GitHub Pages 셋업 + v2.5 대규모 업데이트</span></div>
+          <div style="padding:6px 0;"><span style="color:var(--accent);font-weight:700;">⏸</span> <span style="color:var(--dim-soft);">마그네슘 · 컨디션 불량 보류</span></div>
+        </div>
+      </details>
+      <details class="toggle" style="margin-top:10px;">
+        <summary style="color:var(--dim);"><span style="margin-right:6px;">📦</span>05-26 기록 (4건)</summary>
         <div class="toggle-body" style="font-size:13px;">
           <div style="padding:6px 0;border-bottom:1px dashed var(--border);"><span style="color:var(--green);font-weight:700;">✓</span> <span style="text-decoration:line-through;color:var(--dim-soft);">Apps Script TODO 재배포</span> <span style="font-size:11px;color:var(--dim);">· 완료</span></div>
           <div style="padding:6px 0;border-bottom:1px dashed var(--border);"><span style="color:var(--green);font-weight:700;">✓</span> <span style="text-decoration:line-through;color:var(--dim-soft);">가이드허브 Netlify 배포</span> <span style="font-size:11px;color:var(--dim);">· 크레딧 리밋으로 보류</span></div>
