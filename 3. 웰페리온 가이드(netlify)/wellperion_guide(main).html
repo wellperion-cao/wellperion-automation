@@ -1947,40 +1947,7 @@ Start-Process python -ArgumentList telegram_bot\daily_scheduler.py -WorkingDirec
     <div style="margin:18px 0 24px;">
       <h3 id="gm1-todo-date"><span class="ico">📌</span>오늘 할 일</h3>
       <div id="today-task-list">
-        <div class="task-card" data-today="1">
-          <div class="task-title" style="display:flex;align-items:center;justify-content:space-between;">
-            <span><span class="status-dot active"></span>GitHub Pages 셋업</span>
-            <div class="todo-actions">
-              <button class="todo-act-btn today-act" data-action="done">완료</button>
-              <button class="todo-act-btn today-act" data-action="hold">보류</button>
-              <button class="todo-act-btn today-act del" data-action="delete">삭제</button>
-            </div>
-          </div>
-          <div class="task-desc">Netlify → GitHub Pages 전환. 7개 페이지 일괄 배포 (가이드허브·투두리스트·체크리스트·지출현황·CMO파이프라인·문의Survey·홈페이지).</div>
-        </div>
-        <div class="task-card" data-today="2">
-          <div class="task-title" style="display:flex;align-items:center;justify-content:space-between;">
-            <span><span class="status-dot active"></span>투두리스트 "카톡 전송" → "텔레그램 결재요청" 변경</span>
-            <div class="todo-actions">
-              <button class="todo-act-btn today-act" data-action="done">완료</button>
-              <button class="todo-act-btn today-act" data-action="hold">보류</button>
-              <button class="todo-act-btn today-act del" data-action="delete">삭제</button>
-            </div>
-          </div>
-          <div class="task-desc">카카오톡 폐기 확정. 텔레그램 결재방 체계로 통일.</div>
-        </div>
-        <div class="task-card" data-today="3">
-          <div class="task-title" style="display:flex;align-items:center;justify-content:space-between;">
-            <span><span class="status-dot active"></span>COO 캘린더뷰 6개 → 1개 통합</span>
-            <div class="todo-actions">
-              <button class="todo-act-btn today-act" data-action="done">완료</button>
-              <button class="todo-act-btn today-act" data-action="hold">보류</button>
-              <button class="todo-act-btn today-act del" data-action="delete">삭제</button>
-            </div>
-          </div>
-          <div class="task-desc">UI/UX 개선. COO에 지시 필요.</div>
-        </div>
-        <div class="task-card" data-today="4">
+        <div class="task-card" data-today="5">
           <div class="task-title" style="display:flex;align-items:center;justify-content:space-between;">
             <span><span class="status-dot active"></span>마그네슘(Cenovis) 저녁 1알</span>
             <div class="todo-actions">
@@ -1993,9 +1960,13 @@ Start-Process python -ArgumentList telegram_bot\daily_scheduler.py -WorkingDirec
         </div>
       </div>
       <div style="display:flex;gap:12px;margin-top:16px;">
-        <details class="toggle" style="flex:1;">
-          <summary style="color:var(--green);"><span style="margin-right:6px;">✅</span>완료 (<span id="today-done-count">0</span>건)</summary>
-          <div class="toggle-body" style="font-size:13px;" id="today-done-list"></div>
+        <details class="toggle" style="flex:1;" open>
+          <summary style="color:var(--green);"><span style="margin-right:6px;">✅</span>완료 (<span id="today-done-count">3</span>건)</summary>
+          <div class="toggle-body" style="font-size:13px;" id="today-done-list">
+            <div style="padding:6px 0;border-bottom:1px dashed var(--border);"><span style="color:var(--green);font-weight:700;">✓</span> <span style="text-decoration:line-through;color:var(--dim-soft);">AI 자동학습 주간 태스크 등록</span> <span style="font-size:11px;color:var(--dim);">· 매주 월 09:30 자동 실행</span></div>
+            <div style="padding:6px 0;border-bottom:1px dashed var(--border);"><span style="color:var(--green);font-weight:700;">✓</span> <span style="text-decoration:line-through;color:var(--dim-soft);">투두리스트 카톡→텔레그램 결재 변경</span> <span style="font-size:11px;color:var(--dim);">· 텔레그램 공유 자동 열기</span></div>
+            <div style="padding:6px 0;"><span style="color:var(--green);font-weight:700;">✓</span> <span style="text-decoration:line-through;color:var(--dim-soft);">GitHub Pages 셋업</span> <span style="font-size:11px;color:var(--dim);">· 7개 페이지 배포 + 폴더 구조 정리 + 사이드바 재구성</span></div>
+          </div>
         </details>
         <details class="toggle" style="flex:1;">
           <summary style="color:var(--accent);"><span style="margin-right:6px;">⏸️</span>보류 (<span id="today-hold-count">0</span>건)</summary>
