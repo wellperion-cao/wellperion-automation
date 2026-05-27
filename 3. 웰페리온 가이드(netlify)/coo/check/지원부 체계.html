@@ -283,6 +283,8 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 </div>
 <div class="toast-msg" id="toastMsg"></div>
 <div class="tabs">
+  <button class="tab" onclick="switchTab('policy')">지원부 규정</button>
+  <button class="tab" onclick="switchTab('guide')">가이드</button>
   <button class="tab" onclick="switchTab('manual')">매뉴얼</button>
   <button class="tab active" onclick="switchTab('check-m')">점검(남)</button>
   <button class="tab" onclick="switchTab('check-f')">점검(여)</button>
@@ -295,6 +297,75 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 </div>
 </div><!-- /sticky-top -->
 <div class="saving" id="saveIndicator">저장 중...</div>
+
+<div id="tab-policy" class="content hidden">
+  <h2 style="font-size:20px;margin-bottom:16px;">지원부 규정</h2>
+  <table style="width:100%;border-collapse:collapse;margin-bottom:16px;">
+    <tr style="background:#f5f0eb;"><th style="padding:10px;border:1px solid #ddd;width:200px;">정책</th><th style="padding:10px;border:1px solid #ddd;">내용</th><th style="padding:10px;border:1px solid #ddd;width:80px;">상태</th></tr>
+    <tr><td style="padding:8px;border:1px solid #eee;"><strong>운영시간</strong></td><td style="padding:8px;border:1px solid #eee;">평일 06:00~22:30 / 주말·공휴일 08:00~20:00<br><span style="font-size:12px;color:#888;">휴관: 신정·명절·매월 2·4번째 일요일</span></td><td style="padding:8px;border:1px solid #eee;color:green;">확정</td></tr>
+    <tr><td style="padding:8px;border:1px solid #eee;"><strong>근무조 편성</strong></td><td style="padding:8px;border:1px solid #eee;">오전조 05:30~14:15 / 중간조 10:00 또는 12:00~ / 오후조 14:00~22:30</td><td style="padding:8px;border:1px solid #eee;color:green;">확정</td></tr>
+    <tr><td style="padding:8px;border:1px solid #eee;"><strong>담당 구역</strong></td><td style="padding:8px;border:1px solid #eee;">A(사우나) B(락커룸) C(세탁물) D(사우나 외부) E(외곽+헬스장+골프장)</td><td style="padding:8px;border:1px solid #eee;color:green;">확정</td></tr>
+    <tr><td style="padding:8px;border:1px solid #eee;"><strong>위생·청결</strong></td><td style="padding:8px;border:1px solid #eee;">대리석·코팅면 산성세제 금지 / 전기설비 비닐 포장 후 청소</td><td style="padding:8px;border:1px solid #eee;color:green;">확정</td></tr>
+    <tr><td style="padding:8px;border:1px solid #eee;"><strong>안전 보고</strong></td><td style="padding:8px;border:1px solid #eee;">즉시 조치 불가 시 팀장·소장 즉시 보고 의무</td><td style="padding:8px;border:1px solid #eee;color:green;">확정</td></tr>
+    <tr><td style="padding:8px;border:1px solid #eee;"><strong>마감 경고</strong></td><td style="padding:8px;border:1px solid #eee;">사우나·파우더 마감 미비 시 경고 / 3회 → 경징계</td><td style="padding:8px;border:1px solid #eee;color:green;">확정</td></tr>
+    <tr><td style="padding:8px;border:1px solid #eee;"><strong>탕청소 위탁</strong></td><td style="padding:8px;border:1px solid #eee;">야간 업체 위탁 / 평일 23:00 / 주말 20:30 출근</td><td style="padding:8px;border:1px solid #eee;color:green;">확정</td></tr>
+  </table>
+
+  <h3 style="font-size:17px;margin:20px 0 10px;">정기 회의</h3>
+  <table style="width:100%;border-collapse:collapse;margin-bottom:16px;">
+    <tr style="background:#f5f0eb;"><th style="padding:10px;border:1px solid #ddd;">구분</th><th style="padding:10px;border:1px solid #ddd;">주기</th><th style="padding:10px;border:1px solid #ddd;">참석</th><th style="padding:10px;border:1px solid #ddd;">안건</th></tr>
+    <tr><td style="padding:8px;border:1px solid #eee;"><strong>주간 브리핑</strong></td><td style="padding:8px;border:1px solid #eee;">매주 월 오전</td><td style="padding:8px;border:1px solid #eee;">최준용M·윤병현AM·오전조</td><td style="padding:8px;border:1px solid #eee;">지난주 이슈 / 이번주 집중 구역 / 비품 현황</td></tr>
+    <tr><td style="padding:8px;border:1px solid #eee;"><strong>월간 운영 회의</strong></td><td style="padding:8px;border:1px solid #eee;">매월 첫째주 화</td><td style="padding:8px;border:1px solid #eee;">최준용M·윤병현AM</td><td style="padding:8px;border:1px solid #eee;">이슈·노하우 취합 / 매뉴얼 개정 여부</td></tr>
+    <tr><td style="padding:8px;border:1px solid #eee;"><strong>긴급 회의</strong></td><td style="padding:8px;border:1px solid #eee;">이슈 발생 즉시</td><td style="padding:8px;border:1px solid #eee;">해당 담당자+팀장</td><td style="padding:8px;border:1px solid #eee;">원인 분석 / 즉시 조치</td></tr>
+  </table>
+
+  <h3 style="font-size:17px;margin:20px 0 10px;">고도화 정의</h3>
+  <div style="background:#f5f0eb;padding:16px;border-radius:8px;border-left:4px solid #B79F8A;margin-bottom:12px;">
+    <p><strong>고도화</strong> = 현재 규정·가이드·매뉴얼·체크리스트를 현장 데이터와 피드백 기반으로 지속 개선하는 것. 대규모 재설계 금지 — 보수적 증분 업데이트 원칙.</p>
+  </div>
+  <table style="width:100%;border-collapse:collapse;">
+    <tr style="background:#f5f0eb;"><th style="padding:10px;border:1px solid #ddd;">구간</th><th style="padding:10px;border:1px solid #ddd;">목표</th><th style="padding:10px;border:1px solid #ddd;width:90px;">시기</th></tr>
+    <tr><td style="padding:8px;border:1px solid #eee;"><strong>단기</strong></td><td style="padding:8px;border:1px solid #eee;">인수인계 텔레그램 전환 / 응대 멘트 가이드 / 비품 기준 명문화</td><td style="padding:8px;border:1px solid #eee;">2026-07</td></tr>
+    <tr><td style="padding:8px;border:1px solid #eee;"><strong>중기</strong></td><td style="padding:8px;border:1px solid #eee;">청소 전후 사진 자동 수집 / 비품 재고 자동화</td><td style="padding:8px;border:1px solid #eee;">2026-10</td></tr>
+    <tr><td style="padding:8px;border:1px solid #eee;"><strong>장기</strong></td><td style="padding:8px;border:1px solid #eee;">데이터 기반 예방 정비 / 직원 퍼포먼스 대시보드</td><td style="padding:8px;border:1px solid #eee;">2027</td></tr>
+  </table>
+</div>
+
+<div id="tab-guide" class="content hidden">
+  <h2 style="font-size:20px;margin-bottom:16px;">가이드</h2>
+  <div style="background:#f5f0eb;padding:16px;border-radius:8px;border-left:4px solid #B79F8A;margin-bottom:16px;text-align:center;">
+    <p style="font-size:16px;font-weight:700;">"내가 지나간 자리는 항상 깨끗하게 정리정돈하자"</p>
+  </div>
+
+  <h3 style="font-size:17px;margin:16px 0 10px;">응대 태도</h3>
+  <table style="width:100%;border-collapse:collapse;margin-bottom:16px;">
+    <tr style="background:#f5f0eb;"><th style="padding:10px;border:1px solid #ddd;width:160px;">상황</th><th style="padding:10px;border:1px solid #ddd;">판단 기준</th></tr>
+    <tr><td style="padding:8px;border:1px solid #eee;">회원 첫 인사</td><td style="padding:8px;border:1px solid #eee;">눈 맞춤 + 미소 필수 / 먼저 인사 / 이름 알면 호칭 사용</td></tr>
+    <tr><td style="padding:8px;border:1px solid #eee;">불편사항 접수</td><td style="padding:8px;border:1px solid #eee;">끝까지 경청 → 즉시 해결 가능 여부 판단 → 처리 결과 반드시 고지</td></tr>
+    <tr><td style="padding:8px;border:1px solid #eee;">에티켓 위반</td><td style="padding:8px;border:1px solid #eee;">정중하되 단호하게 안내 / 반복 위반 시 팀장 보고</td></tr>
+    <tr><td style="padding:8px;border:1px solid #eee;">긴급·안전</td><td style="padding:8px;border:1px solid #eee;">즉시 팀장·소장 보고 → 지시 후 조치 / 자의 판단 금지</td></tr>
+  </table>
+
+  <h3 style="font-size:17px;margin:16px 0 10px;">복장·용모</h3>
+  <table style="width:100%;border-collapse:collapse;margin-bottom:16px;">
+    <tr style="background:#f5f0eb;"><th style="padding:10px;border:1px solid #ddd;width:160px;">항목</th><th style="padding:10px;border:1px solid #ddd;">기준</th></tr>
+    <tr><td style="padding:8px;border:1px solid #eee;">유니폼</td><td style="padding:8px;border:1px solid #eee;">웰페리온 지급 유니폼 착용 / 청결 유지</td></tr>
+    <tr><td style="padding:8px;border:1px solid #eee;">명찰</td><td style="padding:8px;border:1px solid #eee;">항상 패용 / 좌측 가슴</td></tr>
+    <tr><td style="padding:8px;border:1px solid #eee;">신발</td><td style="padding:8px;border:1px solid #eee;">미끄럼 방지 안전화 / 실외화 구역 내 착용 금지</td></tr>
+    <tr><td style="padding:8px;border:1px solid #eee;">청소 구역</td><td style="padding:8px;border:1px solid #eee;">고무장갑·마스크 필수 / 환기 후 작업</td></tr>
+  </table>
+
+  <h3 style="font-size:17px;margin:16px 0 10px;">구역별 관리 기준</h3>
+  <table style="width:100%;border-collapse:collapse;">
+    <tr style="background:#f5f0eb;"><th style="padding:10px;border:1px solid #ddd;width:160px;">구역</th><th style="padding:10px;border:1px solid #ddd;">관리 기준</th></tr>
+    <tr><td style="padding:8px;border:1px solid #eee;"><strong>A 사우나 탕</strong></td><td style="padding:8px;border:1px solid #eee;">오버풀 타이머 준수 / 냉탕 매일 배수 / 온탕·열탕 격일 / 수위·온도 상시 확인</td></tr>
+    <tr><td style="padding:8px;border:1px solid #eee;"><strong>A 건/습식</strong></td><td style="padding:8px;border:1px solid #eee;">바닥·타일 물때 제거 / 고압세척(수요일) / 산성세제 금지</td></tr>
+    <tr><td style="padding:8px;border:1px solid #eee;"><strong>B 락커·파우더</strong></td><td style="padding:8px;border:1px solid #eee;">소모품 최소 재고 유지 / 드라이기 작동 수시 확인</td></tr>
+    <tr><td style="padding:8px;border:1px solid #eee;"><strong>C 세탁물</strong></td><td style="padding:8px;border:1px solid #eee;">입고 즉시 사이즈별 분리 / 상태 불량 별도 / 마감 출고 빠짐없이</td></tr>
+    <tr><td style="padding:8px;border:1px solid #eee;"><strong>D 외부</strong></td><td style="padding:8px;border:1px solid #eee;">외부 화장실 악취 관리 / 분리수거장 정리</td></tr>
+    <tr><td style="padding:8px;border:1px solid #eee;"><strong>E 외곽</strong></td><td style="padding:8px;border:1px solid #eee;">헬스장 장비 정돈 / 골프장 청결 / 복도 바닥 중심</td></tr>
+  </table>
+</div>
 
 <div id="tab-manual" class="content hidden">
   <div class="manual-section">
@@ -1881,6 +1952,8 @@ async function copyShare(){
 function switchTab(tab){
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
   document.querySelector(`.tab[onclick="switchTab('${tab}')"]`).classList.add('active');
+  document.getElementById('tab-policy').classList.toggle('hidden',tab!=='policy');
+  document.getElementById('tab-guide').classList.toggle('hidden',tab!=='guide');
   document.getElementById('tab-manual').classList.toggle('hidden',tab!=='manual');
   document.getElementById('tab-check-m').classList.toggle('hidden',tab!=='check-m');
   document.getElementById('tab-check-f').classList.toggle('hidden',tab!=='check-f');
