@@ -291,16 +291,37 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
       <label>업무 내용 <span style="font-size:11px;color:var(--dim);font-weight:400;">(정의·맥락·산출물)</span></label>
       <textarea id="fContent" placeholder="이 업무의 정의·맥락·기대 산출물을 입력하세요"></textarea>
     </div>
+    <div class="field" style="background:var(--green-bg);padding:12px 14px;border-radius:8px;border:1px solid rgba(106,191,123,0.3);">
+      <label style="display:flex;align-items:center;justify-content:space-between;color:var(--green);font-weight:700;">
+        <span>💰 예산 <span style="font-size:11px;color:var(--dim);font-weight:400;">(결제 권한 기준 v2.0 자동 라우팅)</span></span>
+      </label>
+      <div style="display:flex;gap:6px;align-items:stretch;margin-top:8px;">
+        <select id="fBudgetCategory" onchange="updateBudgetRoute()" style="background:var(--bg);border:1px solid var(--border);color:var(--text);padding:10px;border-radius:8px;font-size:13px;font-family:inherit;flex:1;">
+          <option value="">예산 항목 선택 (선택)</option>
+          <option value="일상 운영비">① 일상 운영비 (사무·소모품·식음료·회식)</option>
+          <option value="소액 유지보수">② 소액 유지보수 (기계·누수·전기 수리)</option>
+          <option value="마케팅">③ 마케팅 (광고·DM·콘텐츠·외부 행사)</option>
+          <option value="비상 지출">④ 비상 지출 (안전사고·긴급 대응)</option>
+          <option value="계약·정기 약정">⑤ 계약·정기 약정 (렌탈·제휴·공사)</option>
+          <option value="IT·소프트웨어">⑥ IT·소프트웨어 (구독·클라우드)</option>
+          <option value="급여·인건비·외주·교육">⑦ 급여·인건비·외주·교육</option>
+          <option value="장비 구매·교체">⑧ 장비 구매·교체</option>
+        </select>
+        <input type="number" id="fBudgetAmount" placeholder="금액 (원)" min="0" step="1000" oninput="updateBudgetRoute()" style="background:var(--bg);border:1px solid var(--border);color:var(--text);padding:10px;border-radius:8px;font-size:13px;font-family:inherit;width:140px;flex-shrink:0;">
+      </div>
+      <div id="budgetRouteHint" style="font-size:12px;color:var(--dim);margin-top:6px;line-height:1.5;"></div>
+    </div>
     <div class="field" style="background:var(--accent-bg);padding:12px 14px;border-radius:8px;border:1px solid rgba(183,159,138,0.3);">
       <label style="display:flex;align-items:center;justify-content:space-between;color:var(--accent);font-weight:700;">
         <span>📅 진척 로그 <span style="font-size:11px;color:var(--dim);font-weight:400;">(매일 한 줄씩 누적 — 보고 자동 연계)</span></span>
       </label>
       <div id="progressLogList" style="margin:8px 0;"></div>
       <div style="display:flex;gap:6px;align-items:stretch;margin-top:8px;">
-        <input type="date" id="progressLogDate" style="background:var(--bg);border:1px solid var(--border);color:var(--text);padding:8px 10px;border-radius:8px;font-size:13px;font-family:inherit;flex-shrink:0;">
-        <input type="text" id="progressLogInput" placeholder="오늘 진척 한 줄 (예: UI 80% / 검수 필요)" onkeydown="if(event.key==='Enter'){event.preventDefault();addProgressLogEntry();}" style="background:var(--bg);border:1px solid var(--border);color:var(--text);padding:8px 12px;border-radius:8px;font-size:13px;font-family:inherit;flex:1;">
-        <button type="button" onclick="addProgressLogEntry()" style="background:var(--accent);color:#fff;border:none;padding:8px 16px;border-radius:8px;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer;flex-shrink:0;">+ 추가</button>
+        <input type="date" id="progressLogDate" style="background:var(--bg);border:1px solid var(--border);color:var(--text);padding:10px;border-radius:8px;font-size:13px;font-family:inherit;flex-shrink:0;align-self:flex-start;">
+        <textarea id="progressLogInput" placeholder="오늘 진척 내용 (여러 줄 가능 · 추가 버튼 클릭)" style="background:var(--bg);border:1px solid var(--border);color:var(--text);padding:10px 12px;border-radius:8px;font-size:14px;font-family:inherit;flex:1;min-height:90px;line-height:1.55;resize:vertical;"></textarea>
+        <button type="button" onclick="addProgressLogEntry()" style="background:var(--accent);color:#fff;border:none;padding:10px 16px;border-radius:8px;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer;flex-shrink:0;align-self:flex-start;white-space:nowrap;">+ 추가</button>
       </div>
+      <div style="font-size:11px;color:var(--dim);margin-top:4px;">💡 여러 줄 입력 가능 · 저장 시 미합류 텍스트도 자동 합류</div>
     </div>
     <div class="field">
       <label>노션 링크</label>
@@ -719,8 +740,22 @@ function renderTaskCard(t, idx) {
   const parsed = parseContent(t.content);
   if (parsed.body) {
     html += '<div class="task-content" style="white-space:pre-wrap;line-height:1.55;">' + esc(parsed.body) + '</div>';
-  } else if (!parsed.logs.length) {
+  } else if (!parsed.logs.length && !parsed.budget) {
     html += '<div class="task-content" style="color:var(--dim);font-style:italic;">내용 없음</div>';
+  }
+
+  if (parsed.budget) {
+    const approvers = routeApproval(parsed.budget.category, parsed.budget.amount);
+    html += '<div style="margin-top:10px;padding:10px 12px;background:var(--green-bg);border:1px solid rgba(106,191,123,0.3);border-radius:8px;">';
+    html += '<div style="font-size:12px;font-weight:700;color:var(--green);margin-bottom:4px;">💰 예산</div>';
+    html += '<div style="font-size:14px;font-weight:700;color:var(--text);">' + esc(parsed.budget.category) + ' · ' + formatKRW(parsed.budget.amount) + '</div>';
+    html += '<div style="font-size:12px;color:var(--dim);margin-top:4px;">결재 라인: ';
+    if (approvers.length) {
+      html += approvers.map(a => '<span style="background:var(--green);color:#fff;padding:1px 8px;border-radius:5px;font-weight:700;margin:0 2px;font-size:11px;">' + esc(a) + '</span>').join(' → ');
+    } else {
+      html += '<span style="color:var(--dim);">미지정</span>';
+    }
+    html += '</div></div>';
   }
 
   if (parsed.logs.length) {
@@ -840,29 +875,92 @@ function toggleDoneLog() {
    content 필드 안에 ===PROGRESS_LOG=== 구분선으로 누적
    ═══════════════════════════════════════════ */
 const PROGRESS_MARK = '===PROGRESS_LOG===';
+const BUDGET_MARK = '===BUDGET===';
 
-function parseContent(content) {
-  const raw = String(content || '');
-  const idx = raw.indexOf(PROGRESS_MARK);
-  if (idx < 0) return { body: raw, logs: [] };
-  const body = raw.slice(0, idx).replace(/\s+$/, '');
-  const block = raw.slice(idx + PROGRESS_MARK.length).trim();
-  const logs = block.split(/\r?\n/).map(line => {
-    const m = line.match(/^(\d{4}-\d{2}-\d{2})\s*\|\s*(.*)$/);
-    return m ? { date: m[1], text: m[2].trim() } : null;
-  }).filter(Boolean);
-  // 최신 날짜가 위로
-  logs.sort((a, b) => b.date.localeCompare(a.date));
-  return { body, logs };
+/* 결제 권한 기준 v2.0 (Notion 34c0407d) 8항목 자동 결재 라우팅 */
+const BUDGET_CATEGORIES = [
+  '일상 운영비',
+  '소액 유지보수',
+  '마케팅',
+  '비상 지출',
+  '계약·정기 약정',
+  'IT·소프트웨어',
+  '급여·인건비·외주·교육',
+  '장비 구매·교체'
+];
+
+function routeApproval(category, amount) {
+  // 결재자 배열 반환 (체크박스 자동 매핑: '부서장' / 'GM' / '대표님')
+  const amt = Number(amount) || 0;
+  switch (category) {
+    case '일상 운영비':
+      if (amt <= 300000) return ['GM'];
+      return ['부서장', 'GM'];
+    case '소액 유지보수':
+      if (amt <= 100000) return ['부서장'];
+      return ['GM'];
+    case '마케팅':
+      if (amt <= 3000000) return ['GM'];
+      return ['GM', '대표님'];
+    case '비상 지출':
+      if (amt <= 500000) return ['부서장'];
+      return ['GM'];
+    case '계약·정기 약정':
+    case 'IT·소프트웨어':
+    case '급여·인건비·외주·교육':
+    case '장비 구매·교체':
+      return ['GM', '대표님'];
+    default:
+      return [];
+  }
 }
 
-function composeContent(body, logs) {
-  const b = String(body || '').replace(/\s+$/, '');
-  if (!logs || !logs.length) return b;
-  // 누적 보존을 위해 시간순(과거→현재)으로 저장
-  const sorted = logs.slice().sort((a, b) => a.date.localeCompare(b.date));
-  const block = sorted.map(l => l.date + ' | ' + l.text).join('\n');
-  return (b ? b + '\n\n' : '') + PROGRESS_MARK + '\n' + block;
+function parseContent(content) {
+  let raw = String(content || '');
+
+  // 예산 블록 추출
+  let budget = null;
+  const bIdx = raw.indexOf(BUDGET_MARK);
+  if (bIdx >= 0) {
+    const block = raw.slice(bIdx + BUDGET_MARK.length).trim().split(/\r?\n/)[0] || '';
+    const m = block.match(/^(.+?)\s*\|\s*(\d+)$/);
+    if (m) budget = { category: m[1].trim(), amount: Number(m[2]) };
+    raw = raw.slice(0, bIdx).replace(/\s+$/, '');
+  }
+
+  // 진척 로그 추출
+  let logs = [];
+  const pIdx = raw.indexOf(PROGRESS_MARK);
+  let body = raw;
+  if (pIdx >= 0) {
+    body = raw.slice(0, pIdx).replace(/\s+$/, '');
+    const block = raw.slice(pIdx + PROGRESS_MARK.length).trim();
+    logs = block.split(/\r?\n/).map(line => {
+      const m = line.match(/^(\d{4}-\d{2}-\d{2})\s*\|\s*(.*)$/);
+      return m ? { date: m[1], text: m[2].trim() } : null;
+    }).filter(Boolean);
+    logs.sort((a, b) => b.date.localeCompare(a.date));
+  }
+
+  return { body, logs, budget };
+}
+
+function composeContent(body, logs, budget) {
+  let out = String(body || '').replace(/\s+$/, '');
+  if (logs && logs.length) {
+    const sorted = logs.slice().sort((a, b) => a.date.localeCompare(b.date));
+    const block = sorted.map(l => l.date + ' | ' + l.text).join('\n');
+    out = (out ? out + '\n\n' : '') + PROGRESS_MARK + '\n' + block;
+  }
+  if (budget && budget.category && budget.amount > 0) {
+    out = (out ? out + '\n\n' : '') + BUDGET_MARK + '\n' + budget.category + ' | ' + Number(budget.amount);
+  }
+  return out;
+}
+
+function formatKRW(amount) {
+  if (!amount) return '';
+  return Number(amount).toLocaleString('ko-KR') + '원';
 }
 
 function todayDateStr() {
@@ -910,6 +1008,32 @@ function removeProgressLog(i) {
   renderProgressList();
 }
 
+/* 예산 입력 시 자동 결재 라우팅 표시 + 체크박스 자동 체크 */
+function updateBudgetRoute() {
+  const cat = document.getElementById('fBudgetCategory').value;
+  const amt = Number(document.getElementById('fBudgetAmount').value) || 0;
+  const hint = document.getElementById('budgetRouteHint');
+  if (!cat || amt <= 0) {
+    hint.innerHTML = amt > 0
+      ? '<span style="color:var(--dim);">예산 항목을 선택하면 자동 결재 라인이 표시됩니다.</span>'
+      : '<span style="color:var(--dim);">금액 입력 시 결제 권한 기준 v2.0 룰에 따라 결재자가 자동 체크됩니다.</span>';
+    return;
+  }
+  const approvers = routeApproval(cat, amt);
+  // 결재요청 체크박스 자동 체크 (기존 체크 유지하면서 합집합)
+  document.querySelectorAll('#fApprovalGroup input[type=checkbox]').forEach(cb => {
+    if (approvers.includes(cb.value)) cb.checked = true;
+  });
+  let line = '자동 결재 라인: ';
+  if (approvers.length) {
+    line += approvers.map(a => '<span style="background:var(--green);color:#fff;padding:2px 8px;border-radius:6px;font-weight:700;margin:0 2px;">' + a + '</span>').join(' → ');
+  } else {
+    line += '<span style="color:var(--dim);">없음</span>';
+  }
+  line += ' <span style="color:var(--dim);font-size:11px;margin-left:6px;">(' + formatKRW(amt) + ')</span>';
+  hint.innerHTML = line;
+}
+
 /* ═══════════════════════════════════════════
    Modal — Add / Edit
    ═══════════════════════════════════════════ */
@@ -930,6 +1054,9 @@ function openAddModal() {
   document.getElementById('progressLogDate').value = todayDateStr();
   document.getElementById('progressLogInput').value = '';
   renderProgressList();
+  document.getElementById('fBudgetCategory').value = '';
+  document.getElementById('fBudgetAmount').value = '';
+  updateBudgetRoute();
   document.getElementById('modalSaveBtn').textContent = '저장';
   document.getElementById('taskModal').classList.add('show');
 }
@@ -950,8 +1077,11 @@ function openEditModal(id) {
   document.getElementById('progressLogDate').value = todayDateStr();
   document.getElementById('progressLogInput').value = '';
   renderProgressList();
+  document.getElementById('fBudgetCategory').value = (parsed.budget && parsed.budget.category) || '';
+  document.getElementById('fBudgetAmount').value = (parsed.budget && parsed.budget.amount) || '';
   document.getElementById('fLink').value = t.link || '';
   setCheckboxGroup('fApprovalGroup', (t.approval || '').split(',').map(s => s.trim()));
+  updateBudgetRoute();
   document.getElementById('modalSaveBtn').textContent = '수정';
   document.getElementById('taskModal').classList.add('show');
 }
@@ -1000,7 +1130,11 @@ async function saveTask() {
     modalLogsCache.unshift({ date: pd, text: pendingProgress });
     modalLogsCache.sort((a, b) => b.date.localeCompare(a.date));
   }
-  const composedContent = composeContent(document.getElementById('fContent').value, modalLogsCache);
+  // 예산 입력 (선택 항목)
+  const budgetCat = document.getElementById('fBudgetCategory').value;
+  const budgetAmt = Number(document.getElementById('fBudgetAmount').value) || 0;
+  const budget = (budgetCat && budgetAmt > 0) ? { category: budgetCat, amount: budgetAmt } : null;
+  const composedContent = composeContent(document.getElementById('fContent').value, modalLogsCache, budget);
 
   const params = {
     action: editId ? 'todo_update' : 'todo_add',
@@ -1173,6 +1307,11 @@ function sendToTelegram(id) {
   lines.push('결재요청: ' + (t.approval || '-'));
   const parsedTel = parseContent(t.content);
   if (parsedTel.body) lines.push('내용: ' + parsedTel.body);
+  if (parsedTel.budget) {
+    const ap = routeApproval(parsedTel.budget.category, parsedTel.budget.amount);
+    lines.push('💰 예산: ' + parsedTel.budget.category + ' · ' + formatKRW(parsedTel.budget.amount));
+    if (ap.length) lines.push('   결재 라인: ' + ap.join(' → '));
+  }
   if (parsedTel.logs.length) {
     lines.push('📅 진척 (최근 ' + Math.min(3, parsedTel.logs.length) + '건):');
     parsedTel.logs.slice(0, 3).forEach(log => lines.push('  ' + log.date + ' | ' + log.text));
