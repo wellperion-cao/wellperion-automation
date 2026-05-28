@@ -269,7 +269,7 @@
   const noticeImages = [];
   function el(id){ return document.getElementById(id); }
   function esc(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-  /* 공지 기간(시작·종료일) 자동 표시 — 둘 다 비어있으면 표시 안 함 */
+  /* 게시기간 표시 — '게시기간 : 시작일 - 종료일' 고정 형식 */
   function ntFormatDateRange(){
     var s = el('noticeStartDate') ? el('noticeStartDate').value : '';
     var e = el('noticeEndDate') ? el('noticeEndDate').value : '';
@@ -279,11 +279,7 @@
       var p = d.split('-');
       return p[0]+'.'+p[1]+'.'+p[2];
     };
-    var txt;
-    if(s && e && s !== e) txt = '📅 ' + fmt(s) + ' ~ ' + fmt(e);
-    else if(s && e && s === e) txt = '📅 ' + fmt(s);
-    else txt = '📅 ' + fmt(s || e);
-    return '<div class="notice-date">'+txt+'</div>';
+    return '<div class="notice-date">게시기간 : ' + fmt(s) + ' - ' + fmt(e) + '</div>';
   }
 
   /* 인라인 마크다운: **주황강조** / __굵게__ / ~~가운데선~~ */
