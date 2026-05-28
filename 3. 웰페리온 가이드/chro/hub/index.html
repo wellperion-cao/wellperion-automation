@@ -321,9 +321,7 @@
     <label>성명</label>
     <input type="text" id="hireName" placeholder="홍길동">
     <label>부서</label>
-    <select id="hireDept"><option value="">선택하세요</option></select>
-    <label>소속</label>
-    <select id="hireSosok">
+    <select id="hireDept">
       <option value="">선택하세요</option>
       <option>운영부</option>
       <option>지원부</option>
@@ -331,6 +329,8 @@
       <option>강습부</option>
       <option>경영지원부</option>
     </select>
+    <label>소속</label>
+    <select id="hireSosok"><option value="">선택하세요</option></select>
     <label>직급 <span class="opt">(선택)</span></label>
     <input type="text" id="hireRank" placeholder="예: 매니저, 코치, 선생님">
     <label>고용 형태</label>
@@ -1088,13 +1088,13 @@ document.getElementById("resignModal").addEventListener("click",function(e){
 
 /* ============ 신규 입사자 등록 모달 ============ */
 function openHireModal(){
-  // 부서 select 옵션 동적 채우기 (기존 직원 부서 unique 목록)
-  var deptSel=document.getElementById("hireDept");
-  deptSel.innerHTML='<option value="">선택하세요</option>';
-  var deptSet={};
-  DB.emp.forEach(function(e){var d=e["부서"];if(d&&!deptSet[d])deptSet[d]=1;});
-  Object.keys(deptSet).sort(function(a,b){return a.localeCompare(b,"ko");}).forEach(function(d){
-    var opt=document.createElement("option");opt.value=d;opt.textContent=d;deptSel.appendChild(opt);
+  // 소속(팀) select 옵션 동적 채우기 (기존 직원 소속 unique 목록)
+  var sosokSel=document.getElementById("hireSosok");
+  sosokSel.innerHTML='<option value="">선택하세요</option>';
+  var sosokSet={};
+  DB.emp.forEach(function(e){var s=e["소속"];if(s&&!sosokSet[s])sosokSet[s]=1;});
+  Object.keys(sosokSet).sort(function(a,b){return a.localeCompare(b,"ko");}).forEach(function(s){
+    var opt=document.createElement("option");opt.value=s;opt.textContent=s;sosokSel.appendChild(opt);
   });
   document.getElementById("hireName").value="";
   document.getElementById("hireSosok").value="";
