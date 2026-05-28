@@ -5463,6 +5463,7 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
       {id:'seed-2026-05-29-03',title:'결재 9건 실제 처리 검증',description:'결재 현황 SSOT에서 미결 9건 ✅/❌ 직접 클릭 → 시트·페이지 흐름 검증.',startDate:'2026-05-29',endDate:null,time:'',category:'업무',isToday:false,status:'진행중',memo:'',ssotSynced:true},
       {id:'seed-2026-05-29-04',title:'AI 학습 시스템 고도화 (어제 보류분 이어서)',description:'수집→요약→적용→구조화 전체 파이프라인 진행.',startDate:'2026-05-29',endDate:null,time:'',category:'업무',isToday:false,status:'진행중',memo:'',ssotSynced:true},
       {id:'seed-2026-05-29-05',title:'마그네슘(Cenovis) 저녁 1알',description:'수면 질 개선 루틴.',startDate:'2026-05-29',endDate:null,time:'21:00',category:'개인',isToday:false,status:'진행중',memo:'',ssotSynced:true},
+      {id:'seed-2026-05-29-06',title:'텔레그램 ↔ Notion ↔ 가이드허브·김남욱GM 페이지 연동 보고 알림',description:'기존 텔레그램 봇 + Notion 연동 자산을 가이드허브·김남욱GM 페이지와 연결 → 일일 자동 보고·알림 흐름 통합.',startDate:'2026-05-29',endDate:null,time:'',category:'업무',isToday:false,status:'진행중',memo:'',ssotSynced:true},
       // 기존 황용석 캘린더 시드
       {id:'seed-001',title:'황용석 팀장 퇴직 및 지원팀 재편',description:'지원팀 구조 재정비 진행.',startDate:'2026-06-01',endDate:null,time:'',category:'인사·파트너',isToday:false,status:'진행중',memo:'지원팀 구조 재정비 진행',ssotSynced:false}
     ];
@@ -5638,33 +5639,37 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
         html += '<div style="color:var(--dim);font-size:13px;padding:12px 0;">오늘 진행 중인 항목이 없습니다.</div>';
       }
 
-      // 완료/보류 토글
-      html += '<div style="display:flex;gap:12px;margin-top:16px;">';
-      html += '<details class="toggle" style="flex:1;"><summary style="color:var(--green);"><span style="margin-right:6px;">✅</span>완료 (<span>' + done.length + '</span>건)</summary><div class="toggle-body" style="font-size:13px;">';
-      done.forEach(function(t){
-        html += '<div style="padding:6px 0;border-bottom:1px dashed var(--border);display:flex;align-items:center;justify-content:space-between;">' +
-          '<span><span style="color:var(--green);font-weight:700;">✓</span> <span style="text-decoration:line-through;color:var(--dim-soft);">' + gm1Esc(t.title) + '</span></span>' +
-          '<button class="todo-act-btn today-act" data-id="' + gm1Esc(t.id) + '" data-action="restore" style="font-size:11px;padding:2px 8px;">되돌리기</button>' +
-          '</div>';
-      });
-      if (!done.length) html += '<div style="color:var(--dim);padding:6px 0;">없음</div>';
+      // 완료·보류 통합 토글 (2026-05-28 GM 피드백 — 2칸 → 1칸)
+      html += '<details class="toggle" style="margin-top:16px;">';
+      html += '<summary><span style="color:var(--green);"><span style="margin-right:4px;">✅</span>완료 ' + done.length + '건</span><span style="color:var(--dim);margin:0 8px;">·</span><span style="color:var(--accent);"><span style="margin-right:4px;">⏸️</span>보류 ' + hold.length + '건</span></summary>';
+      html += '<div class="toggle-body" style="font-size:13px;">';
+      // 완료 섹션
+      if (done.length) {
+        html += '<div style="font-size:11px;font-weight:700;color:var(--green);padding:6px 0 2px;">✅ 완료</div>';
+        done.forEach(function(t){
+          html += '<div style="padding:6px 0;border-bottom:1px dashed var(--border);display:flex;align-items:center;justify-content:space-between;">' +
+            '<span><span style="color:var(--green);font-weight:700;">✓</span> <span style="text-decoration:line-through;color:var(--dim-soft);">' + gm1Esc(t.title) + '</span></span>' +
+            '<button class="todo-act-btn today-act" data-id="' + gm1Esc(t.id) + '" data-action="restore" style="font-size:11px;padding:2px 8px;">되돌리기</button>' +
+            '</div>';
+        });
+      }
+      // 보류 섹션
+      if (hold.length) {
+        html += '<div style="font-size:11px;font-weight:700;color:var(--accent);padding:8px 0 2px;">⏸️ 보류</div>';
+        hold.forEach(function(t){
+          html += '<div style="padding:6px 0;border-bottom:1px dashed var(--border);display:flex;align-items:center;justify-content:space-between;">' +
+            '<span><span style="color:var(--accent);font-weight:700;">⏸</span> <span style="color:var(--dim-soft);">' + gm1Esc(t.title) + '</span></span>' +
+            '<button class="todo-act-btn today-act" data-id="' + gm1Esc(t.id) + '" data-action="restore" style="font-size:11px;padding:2px 8px;">되돌리기</button>' +
+            '</div>';
+        });
+      }
+      if (!done.length && !hold.length) html += '<div style="color:var(--dim);padding:6px 0;">완료·보류 항목 없음</div>';
       html += '</div></details>';
-
-      html += '<details class="toggle" style="flex:1;"><summary style="color:var(--accent);"><span style="margin-right:6px;">⏸️</span>보류 (<span>' + hold.length + '</span>건)</summary><div class="toggle-body" style="font-size:13px;">';
-      hold.forEach(function(t){
-        html += '<div style="padding:6px 0;border-bottom:1px dashed var(--border);display:flex;align-items:center;justify-content:space-between;">' +
-          '<span><span style="color:var(--accent);font-weight:700;">⏸</span> <span style="color:var(--dim-soft);">' + gm1Esc(t.title) + '</span></span>' +
-          '<button class="todo-act-btn today-act" data-id="' + gm1Esc(t.id) + '" data-action="restore" style="font-size:11px;padding:2px 8px;">되돌리기</button>' +
-          '</div>';
-      });
-      if (!hold.length) html += '<div style="color:var(--dim);padding:6px 0;">없음</div>';
-      html += '</div></details>';
-      html += '</div>';
 
       container.innerHTML = html;
 
-      // 이벤트 위임
-      container.addEventListener('click', function(e) {
+      // 이벤트 위임 — onclick 단일 할당 (매 렌더 시 자동 교체 · 2026-05-28 hotfix)
+      container.onclick = function(e) {
         var btn = e.target.closest('[data-action]');
         if (!btn) return;
         var id  = btn.getAttribute('data-id');
@@ -5681,7 +5686,7 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
         }
         gm1RenderToday();
         gm1CalRender();
-      }, { once: true });
+      };
     }
 
     /* ══════════════════════════════════════════════
