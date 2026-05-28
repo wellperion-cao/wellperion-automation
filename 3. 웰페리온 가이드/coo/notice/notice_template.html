@@ -813,16 +813,24 @@
     }).catch(function(err){ alert('PDF 생성 실패: '+err.message); });
   };
 
+  /* v2.47 — 인쇄도 PDF/PNG와 동일하게 html2canvas 캡처 이미지를 새 창에 띄워 인쇄
+     장점: 인쇄 결과 = PDF/PNG = 미리보기 비율 정합. 배경색·인쇄 옵션 무관 (이미지 인쇄) */
   window.ntPrint = function(){
-    /* 사이즈는 브라우저 인쇄 다이얼로그에서 사용자가 선택 (A3/A4/Letter 등) */
-    var d = ntCollectData();
-    var orient = el('noticeOrient') ? el('noticeOrient').value : 'portrait';
-    var html = ntBuildPageHtml(d.brand, d.titleKr, d.titleEn, d.bodyHtml, d.imgHtml, d.fontFam, d.fs, 'AUTO', orient);
-    var winSize = orient === 'landscape' ? 'width=1270,height=900' : 'width=900,height=1270';
-    var w = window.open('','_blank',winSize);
-    w.document.write(html);
-    w.document.close();
-    setTimeout(function(){ w.print(); }, 600);
+    ntCaptureToCanvas('A3').then(function(r){
+      var img = r.canvas.toDataURL('image/png');
+      var orient = el('noticeOrient') ? el('noticeOrient').value : 'portrait';
+      var sizeRule = orient === 'landscape' ? '420mm 297mm' : '297mm 420mm';
+      var winSize = orient === 'landscape' ? 'width=1270,height=900' : 'width=900,height=1270';
+      var html = '<!DOCTYPE html><html><head><meta charset="utf-8"><title>WELLPERION NOTICE</title>' +
+        '<style>@page{size:'+sizeRule+';margin:0;}*{margin:0;padding:0;-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important;}' +
+        'html,body{width:100%;height:100%;overflow:hidden;background:#fff;}' +
+        'img{width:100%;height:100%;display:block;object-fit:contain;}</style>' +
+        '</head><body><img src="'+img+'" alt="NOTICE"></body></html>';
+      var w = window.open('','_blank',winSize);
+      w.document.write(html);
+      w.document.close();
+      setTimeout(function(){ w.print(); }, 800);
+    }).catch(function(err){ alert('인쇄 준비 실패: '+err.message); });
   };
 
   /* ── 저장/불러오기/삭제 (localStorage) ── */
