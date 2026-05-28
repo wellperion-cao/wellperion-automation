@@ -666,9 +666,11 @@
     html += '<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@1,400;1,500;1,600&display=swap" rel="stylesheet">';
     html += '<style>';
     html += '@page{size:'+sizeRule+';margin:0;}';
-    html += '*{margin:0;padding:0;box-sizing:border-box;}';
+    /* v2.45 — 모든 요소에 print-color-adjust:exact 강제 (브라우저 인쇄 시 배경색 보존) */
+    html += '*{margin:0;padding:0;box-sizing:border-box;-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important;color-adjust:exact !important;}';
     html += 'html,body{width:100%;height:100%;overflow:hidden;}';
-    html += 'body{font-family:'+fontFam+';-webkit-print-color-adjust:exact;print-color-adjust:exact;color:#1a1a1a;}';
+    html += 'body{font-family:'+fontFam+';color:#1a1a1a;}';
+    html += '@media print{*{-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important;color-adjust:exact !important;}}';
     html += '.page{width:100vw;height:100vh;display:flex;flex-direction:column;overflow:hidden;}';
     /* HEADER (축소된 비율 + 캡션 헤더 하단 absolute) */
     html += '.hdr{flex:0 0 30%;padding:5.2vmin 5vmin 5.2vmin;text-align:center;color:#fff;display:flex;flex-direction:column;justify-content:center;align-items:center;position:relative;}';
