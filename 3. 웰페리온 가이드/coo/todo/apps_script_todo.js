@@ -224,47 +224,36 @@ function _buildApprovalRoute(record) {
   return order.filter(role => set[role]);
 }
 
-// ─── 결재 카드 발송 (인라인 키보드) ───
+// ─── 결재 알림 (옵션 A · 2026-05-28: 알림 전용 + 페이지 링크) ───
 function _sendApprovalCard(record, route, currentRole) {
   if (!currentRole || !route.includes(currentRole)) return;
   const id = record['id'];
   const title = record['업무명'] || '(제목 없음)';
-  const category = record['카테고리'] || '-';
   const owner = record['담당자'] || '-';
 
-  // content 파싱 — 본문·예산만 텔레그램에 표시
+  // 예산 한 줄만 표시
   const content = String(record['내용'] || '');
-  let body = content;
-  const bIdx = content.indexOf('===BUDGET===');
-  if (bIdx >= 0) body = content.slice(0, bIdx).trim();
-  const pIdx = body.indexOf('===PROGRESS_LOG===');
-  if (pIdx >= 0) body = body.slice(0, pIdx).trim();
-
   const budgetMatch = content.match(/===BUDGET===\s*\n([^|]+)\|\s*(\d+)/);
   let budgetLine = '';
   if (budgetMatch) {
     const amt = Number(budgetMatch[2]).toLocaleString('ko-KR');
-    budgetLine = '\n💰 예산: ' + budgetMatch[1].trim() + ' · ' + amt + '원';
+    budgetLine = '\n💰 ' + budgetMatch[1].trim() + ' · ' + amt + '원';
   }
 
-  // 결재 라인 시각화 (현재 차례 강조)
   const routeViz = route.map(r => r === currentRole ? '<b>[' + r + ']</b>' : r).join(' → ');
+  const pageUrl = _prop('APPROVAL_PAGE_URL') ||
+    'https://wellperion-cao.github.io/wellperion-automation/coo/todo/%EA%B2%B0%EC%9E%AC%20SSOT.html';
 
   const text =
-    '📋 <b>[결재 요청]</b> ' + currentRole + '님 차례\n' +
+    '🔔 <b>[결재 요청]</b> ' + currentRole + '님 차례\n' +
     '━━━━━━━━━━━━━━━━\n' +
     '📌 ' + title + '\n' +
-    '🏷 ' + category + ' · 담당: ' + owner + budgetLine + '\n' +
-    (body ? '\n📝 ' + body.slice(0, 300) + (body.length > 300 ? '...' : '') + '\n' : '') +
-    '\n결재 라인: ' + routeViz + '\n' +
+    '👤 담당: ' + owner + budgetLine + '\n' +
+    '🧭 결재 라인: ' + routeViz + '\n\n' +
+    '👉 <a href="' + pageUrl + '">결재 SSOT 페이지 열기</a>\n' +
     '🆔 ' + id;
 
-  const kb = [[
-    { text: '✅ 승인', callback_data: 'sign:' + id + ':' + currentRole + ':approve' },
-    { text: '❌ 반려', callback_data: 'sign:' + id + ':' + currentRole + ':reject' }
-  ]];
-
-  _notifyTelegram(text, { inline_keyboard: kb });
+  _notifyTelegram(text);  // 알림 전용 — 결재는 페이지에서
 }
 
 // ─── 결재 라인 다음 단계 산출 ───

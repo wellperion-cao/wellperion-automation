@@ -197,6 +197,66 @@ function render() {
   el.innerHTML = html;
 }
 
+/* 결제 권한 기준 v2.0 라우팅 (백엔드와 동일 로직 — 페이지에서 다음 결재자 산출용) */
+function routeApproval(category, amount) {
+  const amt = Number(amount) || 0;
+  switch (category) {
+    case '일상 운영비':           return amt <= 300000 ? ['GM'] : ['부서장', 'GM'];
+    case '소액 유지보수':         return amt <= 100000 ? ['부서장'] : ['GM'];
+    case '마케팅':                return amt <= 3000000 ? ['GM'] : ['GM', '대표님'];
+    case '비상 지출':             return amt <= 500000 ? ['부서장'] : ['GM'];
+    case '계약·정기 약정':
+    case 'IT·소프트웨어':
+    case '급여·인건비·외주·교육':
+    case '장비 구매·교체':        return ['GM', '대표님'];
+    default: return [];
+  }
+}
+
+function buildEffectiveRoute(t, budget) {
+  // 수동 결재요청 + 예산 자동 산출 합집합
+  const manual = String(t.approval || '').split(',').map(s => s.trim()).filter(Boolean);
+  const auto = budget ? routeApproval(budget.category, budget.amount) : [];
+  const set = {};
+  manual.concat(auto).forEach(a => { set[a] = true; });
+  return ['부서장', 'GM', '대표님'].filter(r => set[r]);
+}
+
+function nextApprover(t, route) {
+  const map = { '부서장': t.deptSign, 'GM': t.gmSign, '대표님': t.repSign };
+  for (const r of route) {
+    if (!map[r]) return r;
+  }
+  return null;
+}
+
+async function approveTask(taskId, role) {
+  if (!confirm(role + ' 승인 처리하시겠습니까?')) return;
+  await signTask(taskId, role, 'approve');
+}
+
+async function rejectTask(taskId, role) {
+  if (!confirm(role + ' 반려 처리하시겠습니까?')) return;
+  await signTask(taskId, role, 'reject');
+}
+
+async function signTask(taskId, role, decision) {
+  const params = new URLSearchParams({
+    action: 'todo_sign', id: taskId, role: role, decision: decision, signer: '페이지'
+  });
+  try {
+    const r = await fetch(TODO_API_URL + '?' + params.toString(), { redirect:'follow' });
+    const res = await r.json();
+    if (res.ok) {
+      loadTasks();
+    } else {
+      alert('처리 실패: ' + (res.error || '알 수 없는 오류'));
+    }
+  } catch (e) {
+    alert('연결 실패: ' + e.message);
+  }
+}
+
 function renderApprovalCard(t) {
   const isRejected = /반려/.test(t.approvalStatus);
   const isDone = t.approvalStatus === '결재완료';
@@ -233,6 +293,19 @@ function renderApprovalCard(t) {
 
   if (t.completeTime) {
     h += '<div class="complete-time">🎉 결재완료: ' + esc(String(t.completeTime).slice(0, 16)) + '</div>';
+  }
+
+  // 미결 — 다음 결재자 액션 버튼 (옵션 A · 2026-05-28)
+  if (!isDone && !isRejected) {
+    const route = buildEffectiveRoute(t, parsed.budget);
+    const nxt = nextApprover(t, route);
+    if (nxt) {
+      h += '<div style="display:flex;gap:6px;align-items:center;margin-top:10px;padding-top:10px;border-top:1px dashed var(--border);">';
+      h += '<span style="font-size:12px;color:var(--dim);flex:1;">다음 차례: <b style="color:var(--accent);">' + esc(nxt) + '</b></span>';
+      h += '<button onclick="approveTask(\'' + escAttr(t.id) + '\',\'' + escAttr(nxt) + '\')" style="background:var(--green);color:#fff;border:none;padding:7px 14px;border-radius:8px;font-size:12px;font-weight:700;font-family:inherit;cursor:pointer;">✅ ' + esc(nxt) + ' 승인</button>';
+      h += '<button onclick="rejectTask(\'' + escAttr(t.id) + '\',\'' + escAttr(nxt) + '\')" style="background:var(--red);color:#fff;border:none;padding:7px 14px;border-radius:8px;font-size:12px;font-weight:700;font-family:inherit;cursor:pointer;">❌ 반려</button>';
+      h += '</div>';
+    }
   }
 
   // 토글 (본문 + 진척 로그)

@@ -960,8 +960,9 @@ def main():
     app.add_handler(CommandHandler("quote_add", cmd_quote_add))
     app.add_handler(CommandHandler("quote_delete", cmd_quote_delete))
     app.add_handler(CommandHandler("quote_list", cmd_quote_list))
-    # 결재 콜백 (sign:* prefix) — 2026-05-28 신설
-    app.add_handler(CallbackQueryHandler(cmd_approval_callback, pattern=r"^sign:"))
+    # 결재 콜백 등록은 옵션 A(2026-05-28)로 비활성 — 결재 처리는 결재 SSOT 페이지에서 단일 진행.
+    # cmd_approval_callback 함수는 보존 (텔레그램 인라인 ✅/❌ 패턴 복원 시 재등록).
+    # app.add_handler(CallbackQueryHandler(cmd_approval_callback, pattern=r"^sign:"))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
     app.add_error_handler(error_handler)
 
