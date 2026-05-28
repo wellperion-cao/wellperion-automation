@@ -612,7 +612,8 @@ function groupCount(arr,key){
 /* ============ EMPLOYEES ============ */
 function renderEmp(){
   if(ERR.emp){setPanel("emp",'<div class="sec-title">임직원 명부</div>'+errCard("임직원 명부","emp"));return;}
-  var emp=DB.emp.slice();
+  // 퇴사자 제외 (재직 인원만)
+  var emp=DB.emp.filter(function(e){return e["재직 상태"]!=="퇴사";});
   var html='<div class="sec-title">임직원 명부</div>';
   if(!emp.length){setPanel("emp",html+'<div class="card">'+emptyState("임직원 데이터가 없습니다.","◔")+'</div>');return;}
   var sosok=uniq(emp.map(function(e){return e["소속"];}));
