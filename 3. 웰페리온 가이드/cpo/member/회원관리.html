@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>웰페리온 회원관리 — AI CPO</title>
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" rel="stylesheet">
+<style>
+:root{
+  --bg:#221F20;--paper:#2a2725;--text:#f5f2ef;--dim:#8c8b83;
+  --accent:#B79F8A;--accent-bg:rgba(183,159,138,0.12);--border:#3d3835;
+  --green:#6abf7b;--green-bg:rgba(106,191,123,0.12);
+  --red:#ED5B3F;--red-bg:rgba(237,91,63,0.12);
+  --yellow:#e6c84e;--yellow-bg:rgba(230,200,78,0.12);
+  --blue:#5b9fd5;--blue-bg:rgba(91,159,213,0.12);
+  --purple:#a78bda;--purple-bg:rgba(167,139,218,0.12);
+  --orange:#e6944e;--orange-bg:rgba(230,148,78,0.12);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
+  background:var(--bg);color:var(--text);line-height:1.6;font-size:15px;min-height:100vh;
+}
+
+/* ── 헤더 ── */
+.sticky-top{position:sticky;top:0;z-index:10;background:var(--bg);border-bottom:1px solid var(--border)}
+.header{background:var(--paper);padding:12px 20px}
+.header-top{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.header h1{font-size:17px;font-weight:700;margin:0}
+.header .sub{font-size:12px;color:var(--dim);margin-top:2px}
+.badge{display:inline-block;font-size:10px;font-weight:700;padding:3px 10px;border-radius:12px;
+  background:var(--purple-bg);color:var(--purple)}
+.header-actions{display:flex;gap:6px;margin-left:auto}
+.action-btn{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;
+  padding:4px 10px;border-radius:8px;background:var(--accent-bg);color:var(--accent);
+  border:1px solid rgba(183,159,138,0.3);text-decoration:none;cursor:pointer;
+  font-family:inherit;transition:background 0.15s}
+.action-btn:hover{background:rgba(183,159,138,0.22)}
+
+/* ── 탭 ── */
+.tabs{display:flex;gap:4px;background:var(--bg);padding:8px 20px;overflow-x:auto;
+  -webkit-overflow-scrolling:touch;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{padding:8px 18px;font-size:14px;font-weight:600;color:var(--dim);background:none;
+  border:none;border-radius:8px;cursor:pointer;font-family:inherit;white-space:nowrap;flex-shrink:0}
+.tab.active{background:var(--accent-bg);color:var(--accent)}
+
+/* ── 컨텐츠 영역 ── */
+.content{padding:20px 20px 80px;max-width:760px;margin:0 auto}
+.pane{display:none}
+.pane.active{display:block}
+
+/* ── 공통 카드 ── */
+.card{background:var(--paper);border:1px solid var(--border);border-radius:12px;
+  padding:16px 18px;margin-bottom:14px}
+.card-title{font-size:15px;font-weight:700;margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.card-title .icon{font-size:18px}
+
+/* ── KPI 그리드 ── */
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:14px}
+.kpi-box{background:var(--paper);border:1px solid var(--border);border-radius:12px;
+  padding:14px 16px;text-align:center}
+.kpi-label{font-size:11px;color:var(--dim);font-weight:600;margin-bottom:6px;letter-spacing:0.03em}
+.kpi-value{font-size:26px;font-weight:800;line-height:1.1}
+.kpi-value.purple{color:var(--purple)}
+.kpi-value.green{color:var(--green)}
+.kpi-value.accent{color:var(--accent)}
+.kpi-value.blue{color:var(--blue)}
+.kpi-note{font-size:11px;color:var(--dim);margin-top:4px}
+
+/* ── 라이프사이클 스테퍼 ── */
+.lifecycle{display:flex;flex-direction:column;gap:0}
+.lc-step{display:flex;gap:14px;position:relative}
+.lc-step:not(:last-child)::after{
+  content:"";position:absolute;left:18px;top:42px;width:2px;
+  background:var(--border);bottom:-14px}
+.lc-dot{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;
+  justify-content:center;font-size:14px;font-weight:800;flex-shrink:0;margin-top:3px}
+.lc-dot.invi{background:var(--blue-bg);color:var(--blue);border:2px solid var(--blue)}
+.lc-dot.inq{background:var(--accent-bg);color:var(--accent);border:2px solid var(--accent)}
+.lc-dot.tour{background:var(--purple-bg);color:var(--purple);border:2px solid var(--purple)}
+.lc-dot.join{background:var(--green-bg);color:var(--green);border:2px solid var(--green)}
+.lc-dot.active{background:var(--yellow-bg);color:var(--yellow);border:2px solid var(--yellow)}
+.lc-dot.renew{background:var(--orange-bg);color:var(--orange);border:2px solid var(--orange)}
+.lc-body{flex:1;background:var(--paper);border:1px solid var(--border);border-radius:10px;
+  margin-bottom:14px;overflow:hidden}
+.lc-header{padding:12px 16px;display:flex;align-items:center;justify-content:space-between;
+  cursor:pointer;user-select:none}
+.lc-header:hover{background:var(--accent-bg)}
+.lc-header-left{display:flex;flex-direction:column;gap:2px}
+.lc-stage{font-size:15px;font-weight:700}
+.lc-desc{font-size:12px;color:var(--dim)}
+.lc-arrow{font-size:12px;color:var(--dim);transition:transform 0.2s}
+.lc-arrow.open{transform:rotate(90deg)}
+.lc-detail{border-top:1px solid var(--border);padding:14px 16px;display:none;font-size:13px;line-height:1.8}
+.lc-detail.open{display:block}
+.lc-row{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(61,56,53,0.3)}
+.lc-row:last-child{border-bottom:none}
+.lc-row-key{color:var(--dim);font-weight:600;font-size:12px;white-space:nowrap;margin-right:10px}
+.lc-row-val{text-align:right;font-size:13px}
+
+/* ── 이탈방지 매트릭스 ── */
+.matrix-table{width:100%;border-collapse:collapse;font-size:13px}
+.matrix-table th{background:var(--accent-bg);color:var(--accent);padding:10px 12px;
+  text-align:left;font-weight:700;border-bottom:1px solid var(--border)}
+.matrix-table td{padding:10px 12px;border-bottom:1px solid rgba(61,56,53,0.35);vertical-align:top}
+.matrix-table tr:last-child td{border-bottom:none}
+.matrix-table tr:hover td{background:rgba(255,255,255,0.02)}
+.signal-badge{display:inline-block;font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px}
+.signal-badge.high{background:var(--red-bg);color:var(--red)}
+.signal-badge.med{background:var(--yellow-bg);color:var(--yellow)}
+.signal-badge.low{background:var(--blue-bg);color:var(--blue)}
+
+/* ── 도구·DB 목록 ── */
+.tool-list{display:flex;flex-direction:column;gap:8px}
+.tool-item{display:flex;align-items:flex-start;gap:12px;background:var(--bg);
+  border:1px solid var(--border);border-radius:10px;padding:12px 14px}
+.tool-icon{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;
+  justify-content:center;font-size:16px;flex-shrink:0}
+.tool-icon.notion{background:var(--blue-bg)}
+.tool-icon.telegram{background:var(--blue-bg)}
+.tool-icon.litt{background:var(--purple-bg)}
+.tool-icon.sheet{background:var(--green-bg)}
+.tool-name{font-size:14px;font-weight:700;margin-bottom:2px}
+.tool-desc{font-size:12px;color:var(--dim);line-height:1.5}
+.tool-status{font-size:11px;font-weight:600;padding:2px 8px;border-radius:10px;
+  margin-top:4px;display:inline-block}
+.tool-status.active{background:var(--green-bg);color:var(--green)}
+.tool-status.pending{background:var(--yellow-bg);color:var(--yellow)}
+
+/* ── 섹션 레이블 ── */
+.section-label{font-size:12px;font-weight:700;color:var(--dim);letter-spacing:0.08em;
+  text-transform:uppercase;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--border)}
+
+/* ── 인포 박스 ── */
+.info-box{border-radius:10px;padding:12px 16px;font-size:13px;line-height:1.7;margin-bottom:12px}
+.info-box.purple{background:var(--purple-bg);border:1px solid rgba(167,139,218,0.3);color:var(--text)}
+.info-box.accent{background:var(--accent-bg);border:1px solid rgba(183,159,138,0.3);color:var(--text)}
+.info-box strong{font-weight:700}
+
+/* ── 인쇄 ── */
+@media print{
+  .sticky-top,.tabs,.action-btn{display:none!important}
+  body{background:#fff;color:#000}
+  .card,.lc-body,.kpi-box,.tool-item{border-color:#ccc;background:#f9f9f9}
+  .pane{display:block!important}
+}
+@media(max-width:520px){
+  .kpi-grid{grid-template-columns:repeat(2,1fr)}
+  .matrix-table{font-size:12px}
+}
+</style>
+</head>
+<body>
+
+<div class="sticky-top">
+  <div class="header">
+    <div class="header-top">
+      <div>
+        <h1>회원관리 <span class="badge">AI CPO v1.0</span></h1>
+        <div class="sub">회원 라이프사이클 · NPS · 이탈방지 — 담당 실무: 임정은M</div>
+      </div>
+      <div class="header-actions">
+        <button class="action-btn" onclick="window.print()">인쇄</button>
+      </div>
+    </div>
+  </div>
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('overview',this)">개요·KPI</button>
+    <button class="tab" onclick="switchTab('lifecycle',this)">라이프사이클 6단계</button>
+    <button class="tab" onclick="switchTab('churn',this)">이탈방지 매트릭스</button>
+    <button class="tab" onclick="switchTab('tools',this)">도구·DB</button>
+  </div>
+</div>
+
+<div class="content">
+
+  <!-- ══════════════════════════════ 1. 개요·KPI ══════════════════════════════ -->
+  <div id="pane-overview" class="pane active">
+
+    <div class="info-box purple" style="margin-bottom:16px">
+      <strong>AI CPO 미션</strong> — 회원이 지속적으로 활동하고 갱신하는 라이프사이클을 설계한다.<br>
+      최종 책임자: <strong>임정은M</strong> / AI CPO는 분석·자동화·보고 후방 서포트 담당.
+    </div>
+
+    <div class="section-label">CPO 북극성 KPI</div>
+    <div class="kpi-grid">
+      <div class="kpi-box">
+        <div class="kpi-label">회원 NPS</div>
+        <div class="kpi-value purple">&lt;placeholder&gt;</div>
+        <div class="kpi-note">추후 측정 예정</div>
+      </div>
+      <div class="kpi-box">
+        <div class="kpi-label">월 갱신율</div>
+        <div class="kpi-value green">&lt;placeholder&gt;</div>
+        <div class="kpi-note">추후 측정 예정</div>
+      </div>
+      <div class="kpi-box">
+        <div class="kpi-label">월 활성 회원 수</div>
+        <div class="kpi-value accent">&lt;placeholder&gt;</div>
+        <div class="kpi-note">추후 측정 예정</div>
+      </div>
+      <div class="kpi-box">
+        <div class="kpi-label">이탈율 (월)</div>
+        <div class="kpi-value blue">&lt;placeholder&gt;</div>
+        <div class="kpi-note">추후 측정 예정</div>
+      </div>
+    </div>
+
+    <div class="section-label" style="margin-top:20px">CPO 핵심 책임 영역</div>
+    <div class="card">
+      <div class="card-title"><span class="icon">🎯</span>CPO 운영 원칙</div>
+      <div style="font-size:13px;line-height:1.9;color:var(--text)">
+        1. 모든 회원 데이터 조회는 Notion DB 선행 조회 후 진행<br>
+        2. 실측 수치 없는 KPI는 &lt;placeholder&gt; 표기 — 임의 수치 작성 금지<br>
+        3. CS 컴플레인 접수 → 24시간 내 담당자 배정 → 72시간 내 회신<br>
+        4. 갱신 마감 7일 전 자동 알림 발송 (텔레그램 봇 연동)<br>
+        5. 매월 NPS 집계 → AI CEO 통합 보고 합류
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span class="icon">📅</span>CPO 정기 루틴</div>
+      <table style="width:100%;font-size:13px;border-collapse:collapse">
+        <thead>
+          <tr>
+            <th style="background:var(--accent-bg);color:var(--accent);padding:8px 12px;text-align:left;border-bottom:1px solid var(--border);font-weight:700">주기</th>
+            <th style="background:var(--accent-bg);color:var(--accent);padding:8px 12px;text-align:left;border-bottom:1px solid var(--border);font-weight:700">업무</th>
+            <th style="background:var(--accent-bg);color:var(--accent);padding:8px 12px;text-align:left;border-bottom:1px solid var(--border);font-weight:700">담당</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td style="padding:8px 12px;border-bottom:1px solid rgba(61,56,53,0.35)">매일</td>
+            <td style="padding:8px 12px;border-bottom:1px solid rgba(61,56,53,0.35)">CS 컴플레인·문의 인박스 확인 및 배정</td>
+            <td style="padding:8px 12px;border-bottom:1px solid rgba(61,56,53,0.35)">임정은M</td>
+          </tr>
+          <tr>
+            <td style="padding:8px 12px;border-bottom:1px solid rgba(61,56,53,0.35)">매주 월</td>
+            <td style="padding:8px 12px;border-bottom:1px solid rgba(61,56,53,0.35)">이탈 위험 회원 리스트 추출 및 대응 계획 수립</td>
+            <td style="padding:8px 12px;border-bottom:1px solid rgba(61,56,53,0.35)">AI CPO + 임정은M</td>
+          </tr>
+          <tr>
+            <td style="padding:8px 12px;border-bottom:1px solid rgba(61,56,53,0.35)">매월 초</td>
+            <td style="padding:8px 12px;border-bottom:1px solid rgba(61,56,53,0.35)">NPS 설문 발송 → 집계 → CEO 보고</td>
+            <td style="padding:8px 12px;border-bottom:1px solid rgba(61,56,53,0.35)">AI CPO</td>
+          </tr>
+          <tr>
+            <td style="padding:8px 12px">매월 셋째 주 월</td>
+            <td style="padding:8px 12px">컨텍스트 정비 (CPO-002) — 회원 DB 정리·고도화</td>
+            <td style="padding:8px 12px">AI CPO</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+  </div>
+
+  <!-- ══════════════════════════════ 2. 라이프사이클 6단계 ══════════════════════════════ -->
+  <div id="pane-lifecycle" class="pane">
+
+    <div class="info-box accent" style="margin-bottom:16px">
+      인지 → 문의 → 투어 → 가입 → 활동 → 갱신/이탈방지까지 6단계 전 구간을 추적·관리합니다.
+      각 단계 클릭 시 SOP·측정 지표 상세 확인.
+    </div>
+
+    <div class="lifecycle">
+
+      <!-- 1단계 인지 -->
+      <div class="lc-step">
+        <div class="lc-dot invi">1</div>
+        <div class="lc-body">
+          <div class="lc-header" onclick="toggleLC(this)">
+            <div class="lc-header-left">
+              <div class="lc-stage" style="color:var(--blue)">인지 (Awareness)</div>
+              <div class="lc-desc">브랜드·채널 접촉 — CMO 협업 구간</div>
+            </div>
+            <span class="lc-arrow">▶</span>
+          </div>
+          <div class="lc-detail">
+            <div class="lc-row"><span class="lc-row-key">SOP</span><span class="lc-row-val">IG·블로그·카페 콘텐츠 노출 → Litt.ly/wellperion CTA</span></div>
+            <div class="lc-row"><span class="lc-row-key">담당</span><span class="lc-row-val">AI CMO (콘텐츠) + 임정은M (문의 접수 대기)</span></div>
+            <div class="lc-row"><span class="lc-row-key">측정 지표</span><span class="lc-row-val">Litt.ly 클릭수, IG 도달·저장수 &lt;placeholder&gt;</span></div>
+            <div class="lc-row"><span class="lc-row-key">CPO 역할</span><span class="lc-row-val">CMO 콘텐츠 → 문의 전환율 모니터링</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2단계 문의 -->
+      <div class="lc-step">
+        <div class="lc-dot inq">2</div>
+        <div class="lc-body">
+          <div class="lc-header" onclick="toggleLC(this)">
+            <div class="lc-header-left">
+              <div class="lc-stage" style="color:var(--accent)">문의 (Inquiry)</div>
+              <div class="lc-desc">첫 접점 — 24시간 내 회신 의무</div>
+            </div>
+            <span class="lc-arrow">▶</span>
+          </div>
+          <div class="lc-detail">
+            <div class="lc-row"><span class="lc-row-key">SOP</span><span class="lc-row-val">IG DM·Litt.ly 문의폼 접수 → CEO 인박스 DB 기록 → 임정은M 배정 → 24h 내 회신</span></div>
+            <div class="lc-row"><span class="lc-row-key">담당</span><span class="lc-row-val">임정은M (1차 회신) + AI CPO (자동 알림)</span></div>
+            <div class="lc-row"><span class="lc-row-key">측정 지표</span><span class="lc-row-val">문의 → 투어 전환율 &lt;placeholder&gt;, 평균 회신 시간 &lt;placeholder&gt;</span></div>
+            <div class="lc-row"><span class="lc-row-key">채널</span><span class="lc-row-val">litt.ly/wellperion (공식 단일 진입점)</span></div>
+            <div class="lc-row"><span class="lc-row-key">주의</span><span class="lc-row-val">개인 번호(010-…) 노출 금지. CTA는 Litt.ly 단일</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3단계 투어 -->
+      <div class="lc-step">
+        <div class="lc-dot tour">3</div>
+        <div class="lc-body">
+          <div class="lc-header" onclick="toggleLC(this)">
+            <div class="lc-header-left">
+              <div class="lc-stage" style="color:var(--purple)">투어 (Tour)</div>
+              <div class="lc-desc">사전 예약제 — 워크인 불가</div>
+            </div>
+            <span class="lc-arrow">▶</span>
+          </div>
+          <div class="lc-detail">
+            <div class="lc-row"><span class="lc-row-key">SOP</span><span class="lc-row-val">예약 확정 → 투어 당일 안내 → 시설 투어 → 상담 → 가입 권유</span></div>
+            <div class="lc-row"><span class="lc-row-key">담당</span><span class="lc-row-val">임정은M (투어 진행·상담)</span></div>
+            <div class="lc-row"><span class="lc-row-key">측정 지표</span><span class="lc-row-val">투어 → 가입 전환율 &lt;placeholder&gt;</span></div>
+            <div class="lc-row"><span class="lc-row-key">예약 채널</span><span class="lc-row-val">litt.ly/wellperion (무조건 사전 예약)</span></div>
+            <div class="lc-row"><span class="lc-row-key">운영시간</span><span class="lc-row-val">평일 06:00~22:30 / 주말·공휴일 08:00~20:00</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 4단계 가입 -->
+      <div class="lc-step">
+        <div class="lc-dot join">4</div>
+        <div class="lc-body">
+          <div class="lc-header" onclick="toggleLC(this)">
+            <div class="lc-header-left">
+              <div class="lc-stage" style="color:var(--green)">가입 (Onboarding)</div>
+              <div class="lc-desc">계약·등록 — 첫 경험 설계</div>
+            </div>
+            <span class="lc-arrow">▶</span>
+          </div>
+          <div class="lc-detail">
+            <div class="lc-row"><span class="lc-row-key">SOP</span><span class="lc-row-val">계약서 작성 → 회원 DB 등록 → 웰컴 안내 → 첫 이용 가이드 제공</span></div>
+            <div class="lc-row"><span class="lc-row-key">담당</span><span class="lc-row-val">임정은M (계약) + AI CPO (DB 등록 확인·웰컴 메시지 자동 발송)</span></div>
+            <div class="lc-row"><span class="lc-row-key">측정 지표</span><span class="lc-row-val">온보딩 완료율 &lt;placeholder&gt;, 첫 7일 활동 참여율 &lt;placeholder&gt;</span></div>
+            <div class="lc-row"><span class="lc-row-key">산출물</span><span class="lc-row-val">회원 DB 레코드 생성 (담당자: 임정은M relation 필수)</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 5단계 활동 -->
+      <div class="lc-step">
+        <div class="lc-dot active">5</div>
+        <div class="lc-body">
+          <div class="lc-header" onclick="toggleLC(this)">
+            <div class="lc-header-left">
+              <div class="lc-stage" style="color:var(--yellow)">활동 (Engagement)</div>
+              <div class="lc-desc">지속 이용·강습 참여 — 이탈 신호 모니터링</div>
+            </div>
+            <span class="lc-arrow">▶</span>
+          </div>
+          <div class="lc-detail">
+            <div class="lc-row"><span class="lc-row-key">SOP</span><span class="lc-row-val">주간 출석 집계 → 2주 이상 결석 감지 → 이탈방지 액션 발동</span></div>
+            <div class="lc-row"><span class="lc-row-key">담당</span><span class="lc-row-val">AI CPO (자동 집계·알림) + 임정은M (대면 케어)</span></div>
+            <div class="lc-row"><span class="lc-row-key">측정 지표</span><span class="lc-row-val">월 평균 방문 횟수 &lt;placeholder&gt;, 강습 참여율 &lt;placeholder&gt;</span></div>
+            <div class="lc-row"><span class="lc-row-key">이탈 신호</span><span class="lc-row-val">2주+ 결석, 강습 중단, CS 컴플레인 2건+</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 6단계 갱신/이탈방지 -->
+      <div class="lc-step">
+        <div class="lc-dot renew">6</div>
+        <div class="lc-body">
+          <div class="lc-header" onclick="toggleLC(this)">
+            <div class="lc-header-left">
+              <div class="lc-stage" style="color:var(--orange)">갱신 / 이탈방지 (Renewal)</div>
+              <div class="lc-desc">갱신 마감 7일 전 자동 알림 — CPO 최전선</div>
+            </div>
+            <span class="lc-arrow">▶</span>
+          </div>
+          <div class="lc-detail">
+            <div class="lc-row"><span class="lc-row-key">SOP</span><span class="lc-row-val">만료 7일 전 자동 알림 → 임정은M 1:1 연락 → 갱신 or 이탈 사유 기록</span></div>
+            <div class="lc-row"><span class="lc-row-key">담당</span><span class="lc-row-val">AI CPO (알림 자동화) + 임정은M (최종 갱신 설득)</span></div>
+            <div class="lc-row"><span class="lc-row-key">측정 지표</span><span class="lc-row-val">월 갱신율 &lt;placeholder&gt; (북극성 KPI)</span></div>
+            <div class="lc-row"><span class="lc-row-key">이탈 사유 기록</span><span class="lc-row-val">Notion 회원 DB 이탈 사유 필드 필수 입력</span></div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /lifecycle -->
+  </div>
+
+  <!-- ══════════════════════════════ 3. 이탈방지 매트릭스 ══════════════════════════════ -->
+  <div id="pane-churn" class="pane">
+
+    <div class="info-box purple" style="margin-bottom:16px">
+      이탈 신호 감지 → 위험도 분류 → 대응 액션 순서로 운영합니다.
+      AI CPO가 자동 감지·알림, 임정은M이 최종 대면 케어 담당.
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span class="icon">⚠️</span>이탈 신호 × 대응 매트릭스</div>
+      <div style="overflow-x:auto">
+        <table class="matrix-table">
+          <thead>
+            <tr>
+              <th>이탈 신호</th>
+              <th>위험도</th>
+              <th>감지 기준</th>
+              <th>대응 액션</th>
+              <th>담당</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>2주 이상 연속 결석</td>
+              <td><span class="signal-badge high">HIGH</span></td>
+              <td>출석 DB 14일+ 공백</td>
+              <td>텔레그램 알림 → 임정은M 1:1 연락 → 방문 동기 파악</td>
+              <td>AI CPO → 임정은M</td>
+            </tr>
+            <tr>
+              <td>강습 프로그램 중단</td>
+              <td><span class="signal-badge high">HIGH</span></td>
+              <td>강습 예약 3회 연속 취소</td>
+              <td>강습 변경 옵션 안내 → 무료 체험 세션 제공 검토</td>
+              <td>임정은M</td>
+            </tr>
+            <tr>
+              <td>CS 컴플레인 2건+</td>
+              <td><span class="signal-badge high">HIGH</span></td>
+              <td>30일 내 컴플레인 2건</td>
+              <td>COO 협조 요청 → 시설·서비스 개선 → 사과 연락</td>
+              <td>AI CPO + AI COO</td>
+            </tr>
+            <tr>
+              <td>갱신 D-14 미응답</td>
+              <td><span class="signal-badge med">MED</span></td>
+              <td>만료 14일 전 회신 없음</td>
+              <td>자동 문자 → 임정은M 전화 → 갱신 혜택 안내</td>
+              <td>AI CPO → 임정은M</td>
+            </tr>
+            <tr>
+              <td>방문 빈도 급감</td>
+              <td><span class="signal-badge med">MED</span></td>
+              <td>평소 대비 50% 이하로 감소</td>
+              <td>관심사 변화 파악 → 개인 맞춤 프로그램 제안</td>
+              <td>임정은M</td>
+            </tr>
+            <tr>
+              <td>NPS 5점 이하</td>
+              <td><span class="signal-badge med">MED</span></td>
+              <td>월 NPS 설문 응답</td>
+              <td>24시간 내 CPO 직접 연락 → 불만 원인 파악·해소</td>
+              <td>임정은M</td>
+            </tr>
+            <tr>
+              <td>신규 가입 후 3주 미방문</td>
+              <td><span class="signal-badge low">LOW</span></td>
+              <td>가입일 + 21일 방문 없음</td>
+              <td>웰컴 체크인 메시지 → 첫 이용 가이드 재발송</td>
+              <td>AI CPO (자동)</td>
+            </tr>
+            <tr>
+              <td>SNS 언팔·DM 차단</td>
+              <td><span class="signal-badge low">LOW</span></td>
+              <td>CMO 채널 모니터링</td>
+              <td>CPO-CMO 공유 → 오프라인 케어로 전환</td>
+              <td>AI CMO → AI CPO</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span class="icon">📊</span>이탈 현황 추적 (추후 측정)</div>
+      <div style="font-size:13px;color:var(--dim);line-height:1.8">
+        · 이탈율: &lt;placeholder&gt;<br>
+        · 이번 달 이탈 회원 수: &lt;placeholder&gt;<br>
+        · 이탈 주요 사유 TOP 3: &lt;placeholder&gt;<br>
+        · 재가입 전환율: &lt;placeholder&gt;
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ══════════════════════════════ 4. 도구·DB ══════════════════════════════ -->
+  <div id="pane-tools" class="pane">
+
+    <div class="info-box accent" style="margin-bottom:16px">
+      현재 운영 중인 자원 기반으로 구성. 미구현 항목은 "준비 중" 표기.
+    </div>
+
+    <div class="section-label">운영 중 도구</div>
+    <div class="tool-list" style="margin-bottom:20px">
+
+      <div class="tool-item">
+        <div class="tool-icon notion">📋</div>
+        <div>
+          <div class="tool-name">Notion — AI 조직 DB</div>
+          <div class="tool-desc">
+            회원·CS·기획 관련 레코드 관리 허브. CPO 담당 레코드 신규 생성 시
+            담당자(임정은M) relation 필수 입력.
+          </div>
+          <span class="tool-status active">운영 중</span>
+        </div>
+      </div>
+
+      <div class="tool-item">
+        <div class="tool-icon notion">📥</div>
+        <div>
+          <div class="tool-name">CEO 인박스 DB</div>
+          <div class="tool-desc">
+            텔레그램·코워크·CLI 3채널 통합 인박스.
+            문의·CS 접수 시 자동 기록 → AI CPO 분류 후 임정은M 배정.
+            DB ID: fed0015b-23cc-4faf-8acb-d3310edf4f72
+          </div>
+          <span class="tool-status active">운영 중</span>
+        </div>
+      </div>
+
+      <div class="tool-item">
+        <div class="tool-icon telegram">📲</div>
+        <div>
+          <div class="tool-name">텔레그램 봇 (@namuki_report_bot)</div>
+          <div class="tool-desc">
+            갱신 D-7·D-3 자동 알림, 이탈 신호 감지 알림 발송.
+            Chat ID 8254867551. 모든 AI C-Level 보고 단일 채널.
+          </div>
+          <span class="tool-status active">운영 중</span>
+        </div>
+      </div>
+
+      <div class="tool-item">
+        <div class="tool-icon litt">🔗</div>
+        <div>
+          <div class="tool-name">Litt.ly/wellperion</div>
+          <div class="tool-desc">
+            문의·투어 예약 공식 단일 진입점. 모든 CTA는 이 링크로 통일.
+            개인 번호(010-…) 노출 금지.
+          </div>
+          <span class="tool-status active">운영 중</span>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="section-label">준비 중 / 고도화 예정</div>
+    <div class="tool-list">
+
+      <div class="tool-item">
+        <div class="tool-icon sheet">📊</div>
+        <div>
+          <div class="tool-name">NPS 자동 집계 시트</div>
+          <div class="tool-desc">
+            월 NPS 설문 응답 → 자동 집계 → CEO 통합 보고 합류.
+            구글 폼 또는 Notion 연동 방식 R&D 예정.
+          </div>
+          <span class="tool-status pending">준비 중</span>
+        </div>
+      </div>
+
+      <div class="tool-item">
+        <div class="tool-icon notion">🤖</div>
+        <div>
+          <div class="tool-name">이탈 감지 자동화 스크립트</div>
+          <div class="tool-desc">
+            출석 DB 2주+ 공백 자동 감지 → 텔레그램 알림 → 담당자 배정.
+            auto_task_watcher 연동 설계 예정.
+          </div>
+          <span class="tool-status pending">준비 중</span>
+        </div>
+      </div>
+
+      <div class="tool-item">
+        <div class="tool-icon litt">📋</div>
+        <div>
+          <div class="tool-name">회원 CRM 통합 뷰</div>
+          <div class="tool-desc">
+            회원별 가입일·최근 방문·NPS·갱신 예정일을 한 화면에서 확인하는
+            Notion 뷰 또는 전용 대시보드. CPO-002 컨텍스트 정비 주기에 고도화.
+          </div>
+          <span class="tool-status pending">준비 중</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div><!-- /content -->
+
+<script>
+function switchTab(id, btn) {
+  document.querySelectorAll('.pane').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('pane-' + id).classList.add('active');
+  btn.classList.add('active');
+}
+
+function toggleLC(header) {
+  const detail = header.nextElementSibling;
+  const arrow = header.querySelector('.lc-arrow');
+  const isOpen = detail.classList.contains('open');
+  detail.classList.toggle('open', !isOpen);
+  arrow.classList.toggle('open', !isOpen);
+}
+</script>
+</body>
+</html>
