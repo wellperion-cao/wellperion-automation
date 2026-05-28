@@ -820,11 +820,15 @@
 
     <div class="tabs" data-tabs="ai-ops-ssot">
       <div class="tab-nav">
-        <button class="tab-btn active" data-tab="ai-ops">① AI 운영</button>
+        <button class="tab-btn active" data-tab="ai-ops">① AI 운영 원칙·검증</button>
         <button class="tab-btn" data-tab="todo">② 실무진 업무 현황</button>
       </div>
 
       <div class="tab-panel active" data-panel="ai-ops">
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;">
+          <a href="#" onclick="event.preventDefault();document.querySelector('[data-doc=g10]').click();" style="display:inline-flex;align-items:center;gap:6px;padding:10px 18px;background:var(--accent-bg);color:var(--accent);font-size:13px;font-weight:700;border-radius:8px;text-decoration:none;border:1px solid rgba(183,159,138,0.3);">📋 AI C-Level 운영 가이드 (R/R) 열기</a>
+          <span style="font-size:12px;color:var(--dim);align-self:center;">← 페르소나·KPI·핵심업무 (누가 무엇을) | 본 탭 = 운영 원칙·검증 (어떻게)</span>
+        </div>
         <div class="callout" style="background:#1a2a1a;border-left:3px solid #059669;margin:18px 0 24px;">
           <strong>📌 흐름:</strong> ① 체크 → ② 표 보고 → ③ 보완 보고 → ④ GM 승인 시 진행 → ⑤ 기록·정리·학습
         </div>
@@ -1660,6 +1664,10 @@
         <button class="tab-btn" data-tab="cpo">AI CPO</button>
       </div>
       <div class="tab-panel active" data-panel="common">
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;">
+          <a href="#" onclick="event.preventDefault();document.querySelector('[data-doc=ai-ops-ssot]').click();" style="display:inline-flex;align-items:center;gap:6px;padding:10px 18px;background:var(--accent-bg);color:var(--accent);font-size:13px;font-weight:700;border-radius:8px;text-decoration:none;border:1px solid rgba(183,159,138,0.3);">🛡️ SSOT[최종본] 열기 (운영 원칙·검증)</a>
+          <span style="font-size:12px;color:var(--dim);align-self:center;">본 페이지 = R/R (누가 무엇을) | SSOT[최종본] = 운영 원칙 (어떻게)</span>
+        </div>
         <h3><span class="ico">🏢</span>AI 조직도</h3>
         <div class="card accent" style="text-align:center;padding:20px;margin-bottom:16px;">
           <h4>👑 AI CEO 경영지원자</h4>
