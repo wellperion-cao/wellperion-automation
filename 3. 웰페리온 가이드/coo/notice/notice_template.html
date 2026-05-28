@@ -75,7 +75,7 @@
 
   /* ── 미리보기 푸터 (가로 wordmark 단독) ── */
   .ntool-pv-ftr{background:#221F20;padding:clamp(10px,1.8vw,18px);display:flex;align-items:center;justify-content:center;flex:0 0 6.5%;}
-  .ntool-pv-ftr img.wlogo-h-img{height:clamp(14px,2.6vw,32px);width:auto;}
+  .ntool-pv-ftr img{height:clamp(14px,2.6vw,32px);width:auto;}
 
   /* ── 사진 첨부 썸네일 ── */
   .ntool-img-thumb{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;}
@@ -192,14 +192,14 @@
         <div class="ntool-preview-inner" id="noticePreview">
           <div class="ntool-pv-hdr" id="noticeHdr">
             <div class="ntool-pv-notice-label" id="noticePvNoticeLabel">NOTICE</div>
-            <div class="ntool-pv-wmark-w"><img class="wlogo-img" alt="W"></div>
+            <div class="ntool-pv-wmark-w"><img src="../../_assets/logo/w_mark.png" alt="W"></div>
             <div class="ntool-pv-title-kr" id="noticePvTitleKr">국문 공지 제목</div>
             <div class="ntool-pv-title-en" id="noticePvTitleEn">ENG NOTICE TITLE</div>
             <div class="ntool-pv-subtitle">웰페리온은 회원님들의 건강과 행복을 위하여 항상 최선을 다하겠습니다.</div>
           </div>
           <div class="ntool-pv-body" id="noticePvBody">본문 내용이 여기에 표시됩니다.</div>
           <div class="ntool-pv-ftr">
-            <img class="wlogo-h-img" alt="WELLPERION">
+            <img src="../../_assets/logo/wellperion_wordmark.png" alt="WELLPERION">
           </div>
         </div>
       </div>
@@ -345,7 +345,10 @@
   function ntBuildPageHtml(brand, titleKr, titleEn, bodyHtml, imgHtml, fontFam, fs, pageSize){
     var sizeMap = {A3:'297mm 420mm', A4:'210mm 297mm'};
     var sizeRule = sizeMap[pageSize] || '297mm 420mm';
+    /* base href = 부모 페이지 디렉토리 → 인쇄 윈도우에서도 _assets/logo 상대경로 동작 */
+    var baseUrl = window.location.href.replace(/[^/]*(?:\?.*)?(?:#.*)?$/, '');
     var html = '<!DOCTYPE html><html><head><meta charset="utf-8"><title>'+esc(brand.name)+' NOTICE</title>';
+    html += '<base href="'+baseUrl+'">';
     html += '<link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.min.css" rel="stylesheet">';
     html += '<style>';
     html += '@page{size:'+sizeRule+';margin:0;}';
@@ -380,13 +383,13 @@
     html += '<div class="page">';
     html += '<div class="hdr" style="background:'+brand.hdr+';">';
     html += '<div class="notice-label-top">NOTICE</div>';
-    html += '<div class="wmark"><img src="'+WLOGO_V+'" alt="W"></div>';
+    html += '<div class="wmark"><img src="../../_assets/logo/w_mark.png" alt="W"></div>';
     html += '<div class="tkr">'+esc(titleKr)+'</div>';
     html += '<div class="ten">'+esc(titleEn)+'</div>';
     html += '<div class="sub">웰페리온은 회원님들의 건강과 행복을 위하여 항상 최선을 다하겠습니다.</div>';
     html += '</div>';
     html += '<div class="body">'+bodyHtml+imgHtml+'</div>';
-    html += '<div class="ftr"><img src="'+WLOGO_H+'" alt="WELLPERION"></div>';
+    html += '<div class="ftr"><img src="../../_assets/logo/wellperion_wordmark.png" alt="WELLPERION"></div>';
     html += '</div></body></html>';
     return html;
   }
@@ -500,11 +503,9 @@
     container.innerHTML = html;
   };
 
-  // 초기화
+  // 초기화 (로고는 HTML img src=PNG 상대경로로 직접 명시되므로 JS 할당 불필요)
   var today = new Date().toISOString().slice(0,10);
   if(el('noticeDate')) el('noticeDate').value = today;
-  document.querySelectorAll('.wlogo-img').forEach(function(img){ img.src = WLOGO_V; });
-  document.querySelectorAll('.wlogo-h-img').forEach(function(img){ img.src = WLOGO_H; });
   ntApplyPreset();
   ntRenderSavedList();
 })();
