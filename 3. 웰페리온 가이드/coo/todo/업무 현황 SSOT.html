@@ -757,6 +757,7 @@ function renderTaskCard(t, idx) {
   html += '<button class="action-btn edit" onclick="event.stopPropagation();openEditModal(\'' + escAttr(t.id) + '\')" style="padding:4px 10px;font-size:11px;">편집</button>';
   html += '<button class="action-btn done" onclick="event.stopPropagation();markDone(\'' + escAttr(t.id) + '\')" style="padding:4px 10px;font-size:11px;">완료</button>';
   html += '<button class="action-btn" onclick="event.stopPropagation();holdTask(\'' + escAttr(t.id) + '\')" style="padding:4px 10px;font-size:11px;background:var(--orange-bg);color:var(--orange);border-color:rgba(230,148,78,0.3);">보류</button>';
+  html += '<button class="action-btn" onclick="event.stopPropagation();deleteTaskWithAuth(\'' + escAttr(t.id) + '\',\'' + escAttr(t.title || '') + '\')" style="padding:4px 10px;font-size:11px;background:transparent;color:var(--dim);border-color:var(--border);">삭제</button>';
   html += '</div>';
   html += '</div>'; // task-summary
 
@@ -819,12 +820,6 @@ function renderTaskCard(t, idx) {
   if (t.fileUrl) {
     html += '<div style="margin:6px 0;"><a class="chip link-chip" href="' + escAttr(t.fileUrl) + '" target="_blank" rel="noopener" onclick="event.stopPropagation()">첨부파일</a></div>';
   }
-
-  // 삭제 (비밀번호 보호 · 2026-05-28)
-  html += '<div style="margin-top:12px;display:flex;align-items:center;gap:8px;">';
-  html += '<button onclick="event.stopPropagation();deleteTaskWithAuth(\'' + escAttr(t.id) + '\',\'' + escAttr(t.title || '') + '\')" style="background:transparent;color:var(--dim);border:1px solid var(--border);padding:6px 12px;border-radius:8px;font-size:12px;font-weight:600;font-family:inherit;cursor:pointer;">🗑 삭제</button>';
-  html += '<span style="font-size:11px;color:var(--dim);">비밀번호 필요</span>';
-  html += '</div>';
 
   html += '</div>'; // task-detail
   html += '</div>'; // task-card
