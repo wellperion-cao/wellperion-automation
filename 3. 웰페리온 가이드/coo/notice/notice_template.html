@@ -62,8 +62,8 @@
   .ntool-pv-subtitle{position:absolute;bottom:clamp(8px,1.6vw,16px);left:0;right:0;text-align:center;font-size:clamp(9px,1.15vw,13px);color:var(--hl);opacity:0.95;letter-spacing:0.12em;font-weight:500;padding:0 clamp(16px,3vw,28px);}
 
   /* ── 미리보기 본문 (흰 배경, 자동 파싱 3구획) ── */
-  #noticePreview .ntool-pv-body{flex:1;padding:clamp(18px,3.2vw,36px) clamp(16px,2.8vw,32px);display:flex;flex-direction:column;justify-content:center;align-items:stretch;color:#1a1a1a;line-height:1.85;font-size:clamp(12px,1.6vw,19px);font-weight:500;background:#fff;text-align:center;overflow:hidden;}
-  #noticePreview .notice-date{font-size:0.85em;color:var(--accent);font-weight:600;letter-spacing:0.06em;margin-bottom:1em;text-align:center;}
+  #noticePreview .ntool-pv-body{flex:1;padding:clamp(18px,3.2vw,36px) clamp(16px,2.8vw,32px) clamp(28px,4vw,42px);display:flex;flex-direction:column;justify-content:center;align-items:stretch;color:#1a1a1a;line-height:1.85;font-size:clamp(12px,1.6vw,19px);font-weight:500;background:#fff;text-align:center;overflow:hidden;position:relative;}
+  #noticePreview .notice-date{position:absolute;right:clamp(16px,2.8vw,32px);bottom:clamp(8px,1.4vw,14px);font-size:0.78em;color:var(--accent);font-weight:600;letter-spacing:0.06em;text-align:right;margin:0;}
   #noticePreview .notice-head{font-size:1.75em;font-weight:700;line-height:1.5;color:#1a1a1a;letter-spacing:-0.005em;}
   #noticePreview .notice-divider{width:62%;height:1px;background:var(--accent);opacity:0.45;margin:1.3em auto;border:none;}
   #noticePreview .notice-list{text-align:left;margin:0 auto;max-width:88%;}
@@ -435,8 +435,8 @@
     html += '.ten{font-size:3vmin;font-weight:500;color:'+brand.logo+';opacity:0.92;letter-spacing:0.01em;margin-bottom:0;}';
     html += '.sub{position:absolute;bottom:1.8vmin;left:0;right:0;text-align:center;font-size:1.55vmin;color:#ED5B3F;opacity:0.95;letter-spacing:0.12em;font-weight:500;padding:0 4vmin;}';
     /* BODY */
-    html += '.body{flex:1;background:#fff;color:#1a1a1a;padding:4.5vmin 4vmin;text-align:center;display:flex;flex-direction:column;justify-content:center;align-items:stretch;line-height:1.85;font-size:'+fs+'px;font-weight:500;overflow:hidden;}';
-    html += '.notice-date{font-size:0.85em;color:#B79F8A;font-weight:600;letter-spacing:0.06em;margin-bottom:1em;text-align:center;}';
+    html += '.body{flex:1;background:#fff;color:#1a1a1a;padding:4.5vmin 4vmin 6vmin;text-align:center;display:flex;flex-direction:column;justify-content:center;align-items:stretch;line-height:1.85;font-size:'+fs+'px;font-weight:500;overflow:hidden;position:relative;}';
+    html += '.notice-date{position:absolute;right:3.5vmin;bottom:1.8vmin;font-size:0.78em;color:#B79F8A;font-weight:600;letter-spacing:0.06em;text-align:right;margin:0;}';
     html += '.notice-head{font-size:1.75em;font-weight:700;line-height:1.5;color:#1a1a1a;}';
     html += '.notice-divider{width:62%;height:1px;background:#B79F8A;opacity:0.45;margin:1.4em auto;border:none;}';
     html += '.notice-list{text-align:left;margin:0 auto;max-width:88%;}';
