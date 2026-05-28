@@ -344,6 +344,31 @@
   .ntool-saved-item button:hover{background:var(--accent-bg);}
   .ntool-saved-item button.del{color:#ED5B3F; border-color:#ED5B3F;}
   .ntool-saved-item button.del:hover{background:var(--warm-bg);}
+  /* ── KPI 대시보드 v1 ─────────────────────────────────────── */
+  .kpi-section{margin:0 0 28px;}
+  .kpi-toggle-btn{display:flex;align-items:center;gap:8px;background:none;border:none;color:var(--accent);font-size:14px;font-weight:700;font-family:inherit;cursor:pointer;padding:0 0 10px;letter-spacing:0.02em;}
+  .kpi-toggle-btn .kpi-arrow{display:inline-block;transition:transform 0.2s;font-size:12px;}
+  .kpi-toggle-btn.collapsed .kpi-arrow{transform:rotate(-90deg);}
+  .kpi-panel{overflow:hidden;transition:max-height 0.3s ease;}
+  .kpi-panel.collapsed{max-height:0!important;}
+  .kpi-meta{display:flex;justify-content:flex-end;font-size:11px;color:var(--dim);margin-bottom:10px;}
+  .kpi-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;}
+  .kpi-grid-ceo{display:grid;grid-template-columns:1fr;gap:12px;margin-top:12px;}
+  .kpi-card{background:var(--paper);border:1px solid var(--border);border-radius:12px;padding:16px 18px;}
+  .kpi-card-label{font-size:11px;font-weight:700;color:var(--accent);letter-spacing:0.06em;text-transform:uppercase;margin-bottom:10px;}
+  .kpi-metric{margin-bottom:8px;}
+  .kpi-metric:last-child{margin-bottom:0;}
+  .kpi-metric-label{font-size:12px;color:var(--dim);margin-bottom:3px;}
+  .kpi-metric-value{font-size:22px;font-weight:700;color:var(--text);line-height:1.2;}
+  .kpi-metric-value .kpi-unit{font-size:13px;font-weight:400;color:var(--dim);margin-left:3px;}
+  .kpi-pending{display:inline-block;background:var(--gray-bg);color:var(--dim);font-size:11px;font-weight:600;padding:3px 9px;border-radius:20px;letter-spacing:0.03em;}
+  .kpi-card.ceo-card{background:linear-gradient(135deg,#1e1c1a 0%,#2a2725 100%);border-color:var(--border-strong);}
+  .kpi-card.ceo-card .kpi-card-label{color:var(--accent-hover);}
+  @media(max-width:768px){
+    .kpi-grid{grid-template-columns:1fr;}
+    .kpi-grid-ceo{grid-template-columns:1fr;}
+  }
+  /* ── /KPI 대시보드 v1 ──────────────────────────────────────── */
 </style>
 </head>
 <body>
@@ -1643,6 +1668,56 @@
   <article class="doc" id="g10">
     <div class="doc-header"><h2>AI C-Level 운영 가이드</h2><div class="meta">협업 매뉴얼 v1.0 + 실무 가이드라인 v1.1 통합 · 7개 C-Level별 협업 리듬 + 실무 지침</div></div>
     <p class="lead">웰페리온 실무진(최종 책임자)들이 AI C-Level 에이전트와 협업 및 서포트를 받는 기준을 가이드라인한 운영 가이드입니다.</p>
+
+    <!-- ── KPI 대시보드 v1 ──────────────────────────────────── -->
+    <div class="kpi-section" id="kpi-dashboard">
+      <button class="kpi-toggle-btn" id="kpi-toggle" onclick="kpiToggle()">
+        <span class="kpi-arrow">▼</span> KPI 대시보드 v1
+      </button>
+      <div class="kpi-panel" id="kpi-panel">
+        <div class="kpi-meta"><span id="kpi-generated-at"></span></div>
+        <div class="kpi-grid" id="kpi-clevel-grid">
+          <!-- CFO -->
+          <div class="kpi-card" id="kpi-card-CFO">
+            <div class="kpi-card-label">CFO</div>
+            <div id="kpi-metrics-CFO"></div>
+          </div>
+          <!-- CHRO -->
+          <div class="kpi-card" id="kpi-card-CHRO">
+            <div class="kpi-card-label">CHRO</div>
+            <div id="kpi-metrics-CHRO"></div>
+          </div>
+          <!-- CMO -->
+          <div class="kpi-card" id="kpi-card-CMO">
+            <div class="kpi-card-label">CMO</div>
+            <div id="kpi-metrics-CMO"></div>
+          </div>
+          <!-- COO -->
+          <div class="kpi-card" id="kpi-card-COO">
+            <div class="kpi-card-label">COO</div>
+            <div id="kpi-metrics-COO"></div>
+          </div>
+          <!-- CPO -->
+          <div class="kpi-card" id="kpi-card-CPO">
+            <div class="kpi-card-label">CPO</div>
+            <div id="kpi-metrics-CPO"></div>
+          </div>
+          <!-- CTO -->
+          <div class="kpi-card" id="kpi-card-CTO">
+            <div class="kpi-card-label">CTO</div>
+            <div id="kpi-metrics-CTO"></div>
+          </div>
+        </div>
+        <!-- CEO 종합 — full width -->
+        <div class="kpi-grid-ceo">
+          <div class="kpi-card ceo-card" id="kpi-card-CEO">
+            <div class="kpi-card-label">CEO 종합</div>
+            <div id="kpi-metrics-CEO"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- ── /KPI 대시보드 v1 ──────────────────────────────────── -->
 
     <div class="card" style="background:linear-gradient(135deg,#1a2a1a 0%,#2a3a2a 100%); border:none; padding:20px 24px; margin:18px 0 24px; border-radius:14px;">
       <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
@@ -6048,6 +6123,107 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
 
   })();
   // ── /GM1 통합 태스크 시스템 ─────────────────────────────────────
+
+  // ── KPI 대시보드 v1 ──────────────────────────────────────────────
+  (function(){
+    var ROLES = ['CFO','CHRO','CMO','COO','CPO','CTO'];
+
+    function pendingHtml(){ return '<span class="kpi-pending">측정 중</span>'; }
+
+    function metricHtml(m){
+      if(m.value === null || m.value === undefined || m.status === '측정중' || m.status === '측정 중'){
+        return '<div class="kpi-metric"><div class="kpi-metric-label">'+m.label+'</div>'+pendingHtml()+'</div>';
+      }
+      return '<div class="kpi-metric"><div class="kpi-metric-label">'+m.label+'</div>'
+        +'<div class="kpi-metric-value">'+m.value+'<span class="kpi-unit">'+m.unit+'</span></div>'
+        +'</div>';
+    }
+
+    function renderMetrics(containerId, metrics){
+      var el = document.getElementById(containerId);
+      if(!el) return;
+      el.innerHTML = metrics.map(metricHtml).join('');
+    }
+
+    function renderGeneratedAt(ts){
+      var el = document.getElementById('kpi-generated-at');
+      if(!el) return;
+      if(!ts){ el.textContent=''; return; }
+      try{
+        var d = new Date(ts);
+        var fmt = d.toLocaleString('ko-KR',{timeZone:'Asia/Seoul',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'});
+        el.textContent = '업데이트 '+fmt+' (KST)';
+      }catch(e){ el.textContent = ts; }
+    }
+
+    function applyFallback(){
+      ROLES.forEach(function(r){
+        var el = document.getElementById('kpi-metrics-'+r);
+        if(el) el.innerHTML = pendingHtml();
+      });
+      var ceo = document.getElementById('kpi-metrics-CEO');
+      if(ceo) ceo.innerHTML = pendingHtml();
+      renderGeneratedAt(null);
+    }
+
+    function applyData(data){
+      renderGeneratedAt(data.generatedAt || null);
+      var clevel = data.clevel || {};
+      ROLES.forEach(function(r){
+        var metrics = clevel[r];
+        if(metrics && metrics.length){ renderMetrics('kpi-metrics-'+r, metrics); }
+        else{ var el=document.getElementById('kpi-metrics-'+r); if(el) el.innerHTML=pendingHtml(); }
+      });
+      var ceoMetrics = data.ceo || [];
+      if(ceoMetrics.length){ renderMetrics('kpi-metrics-CEO', ceoMetrics); }
+      else{ var c=document.getElementById('kpi-metrics-CEO'); if(c) c.innerHTML=pendingHtml(); }
+      // 패널 초기 높이 확정
+      var panel = document.getElementById('kpi-panel');
+      if(panel) panel.style.maxHeight = panel.scrollHeight+'px';
+    }
+
+    function initKpi(){
+      applyFallback();
+      var panel = document.getElementById('kpi-panel');
+      if(panel) panel.style.maxHeight = panel.scrollHeight+'px';
+      fetch('./data/kpi_snapshot.json')
+        .then(function(r){ if(!r.ok) throw new Error('no file'); return r.json(); })
+        .then(function(d){ applyData(d); })
+        .catch(function(){ /* 404 silent — fallback 유지 */ });
+    }
+
+    // 토글 함수 전역 노출
+    window.kpiToggle = function(){
+      var btn = document.getElementById('kpi-toggle');
+      var panel = document.getElementById('kpi-panel');
+      if(!btn||!panel) return;
+      var collapsed = btn.classList.toggle('collapsed');
+      if(collapsed){
+        panel.style.maxHeight = panel.scrollHeight+'px';
+        requestAnimationFrame(function(){ panel.style.maxHeight='0'; panel.classList.add('collapsed'); });
+      } else {
+        panel.classList.remove('collapsed');
+        panel.style.maxHeight = panel.scrollHeight+'px';
+        setTimeout(function(){ panel.style.maxHeight=''; }, 300);
+      }
+    };
+
+    // g10 섹션 활성화 시 초기화 (중복 방지)
+    var _kpiInited = false;
+    function maybeInit(){
+      if(_kpiInited) return;
+      var dash = document.getElementById('kpi-dashboard');
+      if(dash && dash.offsetParent !== null){ _kpiInited = true; initKpi(); }
+    }
+    // nav 클릭 감시
+    document.addEventListener('click', function(e){
+      var a = e.target.closest('[data-doc="g10"]');
+      if(a) setTimeout(maybeInit, 80);
+    });
+    // 페이지 로드 시 g10이 이미 활성이면 즉시 실행
+    setTimeout(maybeInit, 200);
+  })();
+  // ── /KPI 대시보드 v1 ─────────────────────────────────────────────
 </script>
 </body>
 </html>
