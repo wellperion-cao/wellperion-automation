@@ -35,7 +35,7 @@ html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font-family:
 .stat-card{background:var(--paper);border:1px solid var(--border);border-radius:10px;padding:12px 10px;text-align:center}
 .stat-card .num{font-size:22px;font-weight:800;line-height:1.1}
 .stat-card .label{font-size:11px;color:var(--dim);margin-top:4px}
-.approval-card{background:var(--paper);border:1px solid var(--border);border-left:3px solid var(--green);border-radius:12px;padding:14px 16px;margin-bottom:10px;transition:background 0.1s}
+.approval-card{background:var(--paper);border:1px solid var(--border);border-left:3px solid var(--green);border-radius:10px;padding:10px 14px;margin-bottom:7px;transition:background 0.1s}
 .approval-card.rejected{border-left-color:var(--red)}
 .approval-card:hover{background:rgba(183,159,138,0.04)}
 .approval-card .title-row{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:8px}
@@ -371,52 +371,41 @@ async function signTask(taskId, role, decision) {
 function renderApprovalCard(t) {
   const isRejected = /반려/.test(t.approvalStatus);
   const isDone = t.approvalStatus === '결재완료';
+  const parsed = parseContent(t.content);
+  const route = buildEffectiveRoute(t, parsed.budget);
+  const nxt = (!isDone && !isRejected) ? nextApprover(t, route) : null;
 
   let h = '<div class="approval-card' + (isRejected ? ' rejected' : '') + '" data-id="' + escAttr(t.id) + '">';
 
-  // 제목 + 상태
-  h += '<div class="title-row">';
-  h += '<div class="title">' + esc(t.title || '(제목 없음)') + '</div>';
+  // 제목 줄 — 우측에 카테고리·담당자·상태칩
+  h += '<div class="title-row" style="flex-wrap:wrap;gap:6px;margin-bottom:6px;">';
+  h += '<div class="title" style="flex:1;min-width:0;">' + esc(t.title || '(제목 없음)') + '</div>';
+  if (t.category) h += '<span class="chip category" style="font-size:10px;">' + esc(t.category) + '</span>';
+  if (t.owner) {
+    t.owner.split(',').forEach(o => { o = o.trim(); if (o) h += '<span class="chip owner" style="font-size:10px;">' + esc(o) + '</span>'; });
+  }
   let chipCls = 'status-chip', chipText = t.approvalStatus;
   if (isDone) { chipCls += ' done'; chipText = '✅ 결재완료'; }
   else if (isRejected) { chipCls += ' rejected'; chipText = '❌ ' + t.approvalStatus; }
-  h += '<span class="' + chipCls + '">' + esc(chipText) + '</span>';
+  if (chipText) h += '<span class="' + chipCls + '">' + esc(chipText) + '</span>';
   h += '</div>';
 
-  // 메타 (카테고리·담당·예산)
-  h += '<div class="meta-row">';
-  if (t.category) h += '<span class="chip category">' + esc(t.category) + '</span>';
-  if (t.owner) {
-    t.owner.split(',').forEach(o => { o = o.trim(); if (o) h += '<span class="chip owner">' + esc(o) + '</span>'; });
-  }
-  const parsed = parseContent(t.content);
+  // 메타 — 예산만 (카테고리·담당자는 제목 줄로 이동)
   if (parsed.budget) {
+    h += '<div class="meta-row" style="margin-bottom:6px;">';
     h += '<span class="chip budget">💰 ' + esc(parsed.budget.category) + ' · ' + formatKRW(parsed.budget.amount) + '</span>';
+    h += '</div>';
   }
-  h += '</div>';
 
-  // 싸인 라인
+  // 싸인 라인 — 미서명 + 현재 차례면 ✅/❌ 버튼 내장
   h += '<div class="sign-line">';
-  h += renderSignPill('부서장', t.deptSign);
-  h += renderSignPill('GM', t.gmSign);
-  h += renderSignPill('대표님', t.repSign);
+  h += renderSignPill('부서장', t.deptSign, t.id, nxt === '부서장', route.includes('부서장'));
+  h += renderSignPill('GM',     t.gmSign,   t.id, nxt === 'GM',     route.includes('GM'));
+  h += renderSignPill('대표님',  t.repSign,  t.id, nxt === '대표님',  route.includes('대표님'));
   h += '</div>';
 
   if (t.completeTime) {
     h += '<div class="complete-time">🎉 결재완료: ' + esc(String(t.completeTime).slice(0, 16)) + '</div>';
-  }
-
-  // 미결 — 다음 결재자 액션 버튼 (옵션 A · 2026-05-28)
-  if (!isDone && !isRejected) {
-    const route = buildEffectiveRoute(t, parsed.budget);
-    const nxt = nextApprover(t, route);
-    if (nxt) {
-      h += '<div style="display:flex;gap:6px;align-items:center;margin-top:10px;padding-top:10px;border-top:1px dashed var(--border);">';
-      h += '<span style="font-size:12px;color:var(--dim);flex:1;">다음 차례: <b style="color:var(--accent);">' + esc(nxt) + '</b></span>';
-      h += '<button onclick="approveTask(\'' + escAttr(t.id) + '\',\'' + escAttr(nxt) + '\')" style="background:var(--green);color:#fff;border:none;padding:7px 14px;border-radius:8px;font-size:12px;font-weight:700;font-family:inherit;cursor:pointer;">✅ ' + esc(nxt) + ' 승인</button>';
-      h += '<button onclick="rejectTask(\'' + escAttr(t.id) + '\',\'' + escAttr(nxt) + '\')" style="background:var(--red);color:#fff;border:none;padding:7px 14px;border-radius:8px;font-size:12px;font-weight:700;font-family:inherit;cursor:pointer;">❌ 반려</button>';
-      h += '</div>';
-    }
   }
 
   // 토글 (본문 + 기획 + 진척 로그 + 결과보고)
@@ -453,12 +442,23 @@ function renderApprovalCard(t) {
   return h;
 }
 
-function renderSignPill(role, sign) {
-  if (!sign) return '<span class="sign-pill empty">' + role + ' 미서명</span>';
-  // 시각 추출 (앞 16자: yyyy-MM-dd HH:mm)
-  const time = String(sign).slice(0, 16);
-  const rest = String(sign).slice(16).trim();
-  return '<span class="sign-pill">✅ ' + role + '<span class="time">' + esc(time) + (rest ? ' ' + esc(rest) : '') + '</span></span>';
+function renderSignPill(role, sign, taskId, isCurrent, isInRoute) {
+  if (sign) {
+    const time = String(sign).slice(0, 16);
+    const rest = String(sign).slice(16).trim();
+    return '<span class="sign-pill">✅ ' + role + '<span class="time">' + esc(time) + (rest ? ' ' + esc(rest) : '') + '</span></span>';
+  }
+  if (isInRoute === false) {
+    return '<span class="sign-pill empty" style="opacity:0.35;">' + role + ' (해당 없음)</span>';
+  }
+  if (isCurrent && taskId) {
+    return '<span class="sign-pill empty active" style="background:var(--accent-bg);border-color:var(--accent);color:var(--accent);display:inline-flex;align-items:center;gap:6px;padding:3px 4px;">' +
+      '<span style="padding:1px 6px;font-weight:700;">' + role + ' 미서명</span>' +
+      '<button onclick="approveTask(\'' + escAttr(taskId) + '\',\'' + escAttr(role) + '\')" style="background:var(--green);color:#fff;border:none;padding:3px 9px;border-radius:5px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;">✅ ' + esc(role) + ' 승인</button>' +
+      '<button onclick="rejectTask(\'' + escAttr(taskId) + '\',\'' + escAttr(role) + '\')" style="background:var(--red);color:#fff;border:none;padding:3px 9px;border-radius:5px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;">❌ 반려</button>' +
+      '</span>';
+  }
+  return '<span class="sign-pill empty">' + role + ' 미서명</span>';
 }
 
 function setFilter(f) {
