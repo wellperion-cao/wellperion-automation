@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>웰페리온 업무&결재 현황 SSOT</title>
+<title>웰페리온 업무 현황 SSOT</title>
 <style>
 :root{--bg:#221F20;--paper:#2a2725;--text:#f5f2ef;--dim:#8c8b83;--accent:#B79F8A;--accent-bg:rgba(183,159,138,0.12);--border:#3d3835;--green:#6abf7b;--green-bg:rgba(106,191,123,0.12);--red:#ED5B3F;--red-bg:rgba(237,91,63,0.12);--yellow:#e6c84e;--yellow-bg:rgba(230,200,78,0.12);--blue:#5b9fd5;--blue-bg:rgba(91,159,213,0.12);--purple:#a78bda;--purple-bg:rgba(167,139,218,0.12);--orange:#e6944e;--orange-bg:rgba(230,148,78,0.12)}
 *{box-sizing:border-box;margin:0;padding:0}
@@ -208,7 +208,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 <div class="sticky-top">
 <div class="header">
   <div class="header-top">
-    <h1>웰페리온 업무&결재 현황 SSOT</h1>
+    <h1>웰페리온 업무 현황 SSOT</h1>
     <div class="header-right">
       <a class="sheet-link" onclick="openDashboard()" style="cursor:pointer;background:var(--purple-bg);color:var(--purple);border-color:rgba(167,139,218,0.3);">
         <svg viewBox="0 0 24 24"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
@@ -216,7 +216,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
       </a>
       <a class="sheet-link" href="결재 SSOT.html" style="background:var(--green-bg);color:var(--green);border-color:rgba(106,191,123,0.3);">
         <svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/></svg>
-        결재 SSOT
+        결재 현황 SSOT
       </a>
       <a class="sheet-link" href="https://docs.google.com/spreadsheets/d/1aqZGHpxzjAMqQvWQDrBWxrVtrFdZhFMxqFudNFlGnTk/edit" target="_blank" rel="noopener">
         <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-2 10H7v-2h10v2z"/></svg>
@@ -245,6 +245,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 
 <div class="add-bar">
   <button class="add-btn" onclick="openAddModal()">+ 업무 추가</button>
+  <a class="add-btn" href="결재 SSOT.html" style="background:var(--green);color:#fff;border:none;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;">📁 결재 현황 SSOT</a>
 </div>
 
 <!-- Add / Edit Modal -->
@@ -746,7 +747,7 @@ function renderTaskCard(t, idx) {
       a = a.trim();
       if (a) html += '<span class="chip approval">' + esc(a) + '</span>';
     });
-    html += '<span class="chip" style="background:#229ED9;color:#fff;cursor:pointer;" onclick="event.stopPropagation();sendToTelegram(\'' + escAttr(t.id) + '\')">텔레그램 결재</span>';
+    html += '<a class="chip" href="결재 SSOT.html" style="background:var(--green);color:#fff;cursor:pointer;text-decoration:none;" onclick="event.stopPropagation();">📁 결재 현황 SSOT</a>';
   }
 
   html += '</div>'; // task-meta
