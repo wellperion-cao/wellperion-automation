@@ -84,6 +84,12 @@
   #noticePreview .notice-tail{margin-top:1.4em;line-height:1.85;color:#1a1a1a;font-weight:500;font-size:1.05em;}
   #noticePreview .notice-imgs{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:14px;}
   #noticePreview .notice-imgs img{max-width:46%;max-height:120px;border-radius:6px;object-fit:cover;}
+  /* 네이버 블로그 풀세트 v2.26 — 인용구·구분선·정렬 */
+  #noticePreview .notice-quote{border-left:4px solid var(--accent);padding:0.7em 1em;margin:1em auto;color:var(--accent);background:var(--accent-bg);border-radius:0 6px 6px 0;font-style:italic;max-width:88%;text-align:left;}
+  #noticePreview .notice-hr{border:none;height:1px;background:#ccc;margin:1.2em auto;width:80%;}
+  #noticePreview .align-left{text-align:left;}
+  #noticePreview .align-center{text-align:center;}
+  #noticePreview .align-right{text-align:right;}
 
   /* ── 미리보기 푸터 (가로 락업 corner 워터마크 단독) ── */
   .ntool-pv-ftr{background:#221F20;padding:clamp(10px,1.8vw,18px);display:flex;align-items:center;justify-content:center;flex:0 0 7%;}
@@ -185,14 +191,31 @@
           <button type="button" onclick="ntFmtBold()" title="굵게 (__텍스트__)" style="font-weight:800;">B 굵게</button>
           <button type="button" onclick="ntFmtUnderline()" title="밑줄 (==텍스트==)" style="text-decoration:underline;">U 밑줄</button>
           <button type="button" onclick="ntFmtStrike()" title="가운데선 (~~텍스트~~)" style="text-decoration:line-through;">S 선긋기</button>
+          <span class="sep"></span>
+          <input type="color" id="noticeColorPicker" value="#ED5B3F" title="글자 색" onchange="ntFmtColor()" style="width:34px;height:32px;padding:0;border:1px solid var(--border);border-radius:6px;cursor:pointer;background:#fff;">
+          <button type="button" onclick="ntFmtAlign('left')" title="좌측 정렬 단락">⬅ 좌</button>
+          <button type="button" onclick="ntFmtAlign('center')" title="가운데 정렬 단락">≡ 중</button>
+          <button type="button" onclick="ntFmtAlign('right')" title="우측 정렬 단락">➡ 우</button>
+          <span class="sep"></span>
+          <button type="button" onclick="ntFmtQuote()" title="인용구 (현재 줄 앞에 &gt; )">" 인용</button>
+          <button type="button" onclick="ntFmtHr()" title="구분선 (--- 한 줄)">─ 구분</button>
+          <span class="sep"></span>
+          <button type="button" onclick="ntFmtSize('14')" title="작게 (14px)" style="font-size:11px;">작</button>
+          <button type="button" onclick="ntFmtSize('18')" title="중간 (18px)">중</button>
+          <button type="button" onclick="ntFmtSize('24')" title="크게 (24px)" style="font-size:16px;font-weight:700;">크</button>
+          <span class="sep"></span>
+          <select id="noticeLineHeight" title="줄간격" onchange="ntUpdatePreview()" style="padding:6px 8px;font-size:12px;border:1px solid var(--border);border-radius:6px;background:var(--paper);">
+            <option value="1.5">줄간격: 좁게</option>
+            <option value="1.85" selected>줄간격: 보통</option>
+            <option value="2.2">줄간격: 넓게</option>
+          </select>
         </div>
         <textarea class="ntool-textarea" id="noticeBody" placeholder="6월 정기 휴관 안내&#10;&#10;회원 여러분의 양해를 부탁드리며&#10;6월 정기 휴관일을 안내드립니다.&#10;&#10;1. 휴관 일자: **2026년 6월 14일** (둘째 주 일요일)&#10;2. 휴관 일자: **2026년 6월 28일** (넷째 주 일요일)&#10;3. 평일 정상 운영 — 06:00 ~ 22:30&#10;4. 주말·공휴일 정상 운영 — 08:00 ~ 20:00&#10;&#10;웰페리온은 회원님들의 더 나은 경험을 위해&#10;시설 유지·관리에 만전을 기하겠습니다. 감사합니다." oninput="ntUpdatePreview()"></textarea>
         <div class="ntool-help">
           <b>자동 3구획 파싱</b> — 빈 줄로 단락 구분<br>
-          ① 첫 단락 → 큰 안내 헤드라인 (가운데, 굵게)<br>
-          ② 1./2./3. 으로 시작하는 줄 묶음 → 번호 리스트 (주황 강조, 좌측 정렬)<br>
-          ③ 마지막 단락 → 닫음말 (가운데)<br>
-          <b>인라인 강조</b> — 위 툴바 클릭 또는 마크다운 직접 입력: <code>**주황**</code> · <code>__굵게__</code> · <code>==밑줄==</code> · <code>~~선긋기~~</code> / 빈 줄 = 단락 구분
+          ① 첫 단락 → 큰 안내 헤드라인 (가운데, 굵게) · ② 1./2./3. 줄 묶음 → 번호 리스트 (주황 강조) · ③ 마지막 단락 → 닫음말<br>
+          <b>인라인</b> <code>**주황**</code> · <code>__굵게__</code> · <code>==밑줄==</code> · <code>~~선긋기~~</code> · <code>{c:#색상}글자{/c}</code><br>
+          <b>블록</b> 단락 시작 <code>[align=center]</code> 정렬 · 줄 시작 <code>&gt; </code> 인용구 · 단독 줄 <code>---</code> 구분선
         </div>
       </div>
       <div style="margin-top:12px;">
@@ -302,13 +325,14 @@
     return '<div class="notice-date">게시기간 : ' + fmt(s) + ' - ' + fmt(e) + '</div>';
   }
 
-  /* 인라인 마크다운: **주황강조** / __굵게__ / ==밑줄== / ~~가운데선~~ */
+  /* 인라인 마크다운: **주황강조** / __굵게__ / ==밑줄== / ~~가운데선~~ / {c:#XXXXXX}색{/c} */
   function inline(s){
     return esc(s)
       .replace(/\*\*(.+?)\*\*/g,'<span class="hl" style="color:#ED5B3F;font-weight:700;">$1</span>')
       .replace(/__(.+?)__/g,'<strong>$1</strong>')
       .replace(/==(.+?)==/g,'<u>$1</u>')
-      .replace(/~~(.+?)~~/g,'<s>$1</s>');
+      .replace(/~~(.+?)~~/g,'<s>$1</s>')
+      .replace(/\{c:(#[0-9a-fA-F]{3,8})\}([\s\S]+?)\{\/c\}/g,'<span style="color:$1">$2</span>');
   }
 
   /* 본문 textarea 선택 영역에 마크다운 prefix/suffix 자동 삽입 */
@@ -327,6 +351,56 @@
   window.ntFmtBold = function(){ ntWrap('__', '__'); };
   window.ntFmtUnderline = function(){ ntWrap('==', '=='); };
   window.ntFmtStrike = function(){ ntWrap('~~', '~~'); };
+  window.ntFmtColor = function(){
+    var c = el('noticeColorPicker').value;
+    ntWrap('{c:'+c+'}', '{/c}');
+  };
+  /* 현재 커서/선택 위치가 속한 단락의 시작에 [align=...] 토큰 삽입. 기존 토큰은 교체 */
+  window.ntFmtAlign = function(side){
+    var ta = el('noticeBody');
+    var s = ta.selectionStart;
+    var before = ta.value.substring(0, s);
+    var lastBlank = before.lastIndexOf('\n\n');
+    var paraStart = lastBlank === -1 ? 0 : lastBlank + 2;
+    var rest = ta.value.substring(paraStart);
+    rest = rest.replace(/^\[align=(left|center|right)\]\n?/, '');
+    var token = '[align='+side+']\n';
+    ta.value = ta.value.substring(0, paraStart) + token + rest;
+    ta.focus();
+    ntUpdatePreview();
+  };
+  /* 현재 줄 시작에 "> " prefix 추가 (이미 인용구면 제거 toggle) */
+  window.ntFmtQuote = function(){
+    var ta = el('noticeBody');
+    var s = ta.selectionStart;
+    var before = ta.value.substring(0, s);
+    var lineStart = before.lastIndexOf('\n') + 1;
+    var head = ta.value.substring(lineStart, lineStart+2);
+    if(head === '> '){
+      ta.value = ta.value.substring(0, lineStart) + ta.value.substring(lineStart+2);
+    } else {
+      ta.value = ta.value.substring(0, lineStart) + '> ' + ta.value.substring(lineStart);
+    }
+    ta.focus();
+    ntUpdatePreview();
+  };
+  /* 커서 위치에 구분선 줄 삽입 */
+  window.ntFmtHr = function(){
+    var ta = el('noticeBody');
+    var s = ta.selectionStart;
+    var before = ta.value.substring(0, s);
+    var after = ta.value.substring(s);
+    /* 줄 중간이면 새 줄로 분리 */
+    var prefix = (before === '' || before.endsWith('\n')) ? '' : '\n';
+    var suffix = (after === '' || after.startsWith('\n')) ? '' : '\n';
+    ta.value = before + prefix + '---' + suffix + after;
+    ta.focus();
+    ntUpdatePreview();
+  };
+  window.ntFmtSize = function(px){
+    el('noticeFontSize').value = px;
+    ntUpdatePreview();
+  };
 
   /* 본문 3구획 자동 파서:
      - 빈 줄로 단락 split
@@ -341,27 +415,46 @@
     var sawHead = false;
     var sawList = false;
     paras.forEach(function(p, idx){
+      /* 단락 정렬 토큰 추출 ([align=center] 등) */
+      var alignCls = '';
+      var alignMatch = p.match(/^\[align=(left|center|right)\]\n?/);
+      if(alignMatch){
+        alignCls = ' align-'+alignMatch[1];
+        p = p.substring(alignMatch[0].length);
+      }
       var lines = p.split('\n').map(function(l){ return l.replace(/\s+$/,''); }).filter(function(l){ return l.length>0; });
       if(!lines.length) return;
+      /* 단독 --- 줄은 구분선 */
+      if(lines.length === 1 && lines[0].trim() === '---'){
+        html += '<hr class="notice-hr">';
+        return;
+      }
+      /* 모든 줄이 "> "로 시작하면 인용구 블록 */
+      var isQuote = lines.every(function(l){ return /^\s*>\s?/.test(l); });
+      if(isQuote){
+        var qcontent = lines.map(function(l){ return inline(l.replace(/^\s*>\s?/, '')); }).join('<br>');
+        html += '<div class="notice-quote'+alignCls+'">'+qcontent+'</div>';
+        return;
+      }
       var isList = lines.some(function(l){ return /^\s*\d+\./.test(l); });
       if(isList){
         var items = lines.map(function(l){
           var t = l.trim();
           var m = t.match(/^(\d+\.)\s*(.*)$/);
           if(m){
-            return '<div class="notice-line"><span class="num">'+m[1]+'</span>'+inline(m[2])+'</div>';
+            return '<div class="notice-line'+alignCls+'"><span class="num">'+m[1]+'</span>'+inline(m[2])+'</div>';
           } else {
-            return '<div class="notice-line plain">'+inline(t)+'</div>';
+            return '<div class="notice-line plain'+alignCls+'">'+inline(t)+'</div>';
           }
         });
         if(sawHead && !sawList) html += '<hr class="notice-divider">';
-        html += '<div class="notice-list">'+items.join('')+'</div>';
+        html += '<div class="notice-list'+alignCls+'">'+items.join('')+'</div>';
         sawList = true;
       } else if(!sawHead){
-        html += '<div class="notice-head">'+lines.map(inline).join('<br>')+'</div>';
+        html += '<div class="notice-head'+alignCls+'">'+lines.map(inline).join('<br>')+'</div>';
         sawHead = true;
       } else {
-        html += '<div class="notice-tail">'+lines.map(inline).join('<br>')+'</div>';
+        html += '<div class="notice-tail'+alignCls+'">'+lines.map(inline).join('<br>')+'</div>';
       }
     });
     return html;
@@ -404,6 +497,8 @@
     bodyEl.innerHTML = html;
     bodyEl.style.fontFamily = ff==='serif' ? '"Noto Serif KR",serif' : '"Pretendard",sans-serif';
     bodyEl.style.fontSize = fs+'px';
+    var lh = el('noticeLineHeight');
+    bodyEl.style.lineHeight = lh ? lh.value : '1.85';
   };
 
   /* 공지 종류 선택 시 제목·본문 자동 교체 (본문 입력 중이면 confirm) */
@@ -481,7 +576,8 @@
     html += '.sub em{font-family:"Playfair Display","Hudson NY Serif",Georgia,serif;font-style:italic;font-weight:500;letter-spacing:0.01em;font-size:1.08em;}';
     /* BODY — font-size를 vmin으로 환산해 미리보기와 동일 시각 배율 (사용자 fs px → vmin) */
     var fsVmin = ((parseFloat(fs)||18) * 0.22).toFixed(2);
-    html += '.body{flex:1;background:#fff;color:#1a1a1a;padding:4.5vmin 4vmin 6vmin;text-align:center;display:flex;flex-direction:column;justify-content:center;align-items:stretch;line-height:1.85;font-size:'+fsVmin+'vmin;font-weight:500;overflow:hidden;position:relative;}';
+    var lhRaw = el('noticeLineHeight'); var lh = lhRaw ? lhRaw.value : '1.85';
+    html += '.body{flex:1;background:#fff;color:#1a1a1a;padding:4.5vmin 4vmin 6vmin;text-align:center;display:flex;flex-direction:column;justify-content:center;align-items:stretch;line-height:'+lh+';font-size:'+fsVmin+'vmin;font-weight:500;overflow:hidden;position:relative;}';
     html += '.notice-date{position:absolute;right:3.5vmin;bottom:1.8vmin;font-size:0.78em;color:#B79F8A;font-weight:600;letter-spacing:0.06em;text-align:right;margin:0;}';
     html += '.notice-head{font-size:1.75em;font-weight:700;line-height:1.5;color:#1a1a1a;}';
     html += '.notice-divider{width:62%;height:1px;background:#B79F8A;opacity:0.45;margin:1.4em auto;border:none;}';
@@ -490,6 +586,10 @@
     html += '.notice-line.plain{color:#1a1a1a;font-weight:500;}';
     html += '.notice-line .num{color:#ED5B3F;font-weight:700;margin-right:6px;}';
     html += '.notice-tail{margin-top:1.4em;line-height:1.85;color:#1a1a1a;font-weight:500;font-size:1.05em;}';
+    /* v2.26 풀세트 — 인용구·구분선·정렬 */
+    html += '.notice-quote{border-left:4px solid #B79F8A;padding:0.7em 1em;margin:1em auto;color:#B79F8A;background:#f5efe8;border-radius:0 6px 6px 0;font-style:italic;max-width:88%;text-align:left;}';
+    html += '.notice-hr{border:none;height:1px;background:#ccc;margin:1.2em auto;width:80%;}';
+    html += '.align-left{text-align:left;} .align-center{text-align:center;} .align-right{text-align:right;}';
     html += '.notice-imgs{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;margin-top:2vmin;}';
     html += '.notice-imgs img{max-width:48%;max-height:24vh;border-radius:1vmin;object-fit:cover;}';
     html += '.hl{color:#ED5B3F;font-weight:700;}';
@@ -609,6 +709,7 @@
       body: el('noticeBody').value,
       ff: el('noticeFontFamily').value,
       fs: el('noticeFontSize').value,
+      lh: el('noticeLineHeight') ? el('noticeLineHeight').value : '1.85',
       savedAt: new Date().toLocaleString('ko-KR')
     };
     var arr = ntGetSaved();
@@ -633,6 +734,7 @@
     el('noticeBody').value = item.body||'';
     el('noticeFontFamily').value = item.ff||'Pretendard';
     el('noticeFontSize').value = item.fs||'16';
+    if(el('noticeLineHeight')) el('noticeLineHeight').value = item.lh||'1.85';
     ntUpdatePreview();
     window.scrollTo({top:0, behavior:'smooth'});
   };
