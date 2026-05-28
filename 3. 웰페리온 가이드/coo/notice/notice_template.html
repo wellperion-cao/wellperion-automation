@@ -140,7 +140,7 @@
   .ntool-pv-ftr img{height:clamp(20px,3.4vw,44px);width:auto;}
   /* v2.39 — 가로형 전용 비율·폰트 축소 (헤더 30% → 22%, 폰트 약 60%) */
   #noticePreviewFrame.landscape .ntool-pv-hdr{flex:0 0 22%;padding:clamp(12px,2.2vw,26px) clamp(18px,2.8vw,34px);}
-  #noticePreviewFrame.landscape .ntool-pv-notice-label{font-size:clamp(7px,0.85vw,10px);}
+  #noticePreviewFrame.landscape .ntool-pv-notice-label{font-size:clamp(7px,0.85vw,10px);top:clamp(3px,0.6vw,7px);}
   #noticePreviewFrame.landscape .ntool-pv-wmark-w{height:clamp(28px,5vw,70px);top:clamp(4px,0.8vw,10px);}
   #noticePreviewFrame.landscape #noticePreview .ntool-pv-title-kr{font-size:clamp(15px,2.8vw,34px);}
   #noticePreviewFrame.landscape #noticePreview .ntool-pv-title-en{font-size:clamp(9px,1.3vw,16px);}
@@ -712,7 +712,7 @@
     if(orient === 'landscape'){
       html += '.hdr{flex:0 0 22% !important;padding:2.6vmin 3.2vmin !important;}';
       html += '.wmark{height:8vmin !important;top:0.6vmin !important;}';
-      html += '.notice-label-top{font-size:1.1vmin !important;}';
+      html += '.notice-label-top{font-size:1.1vmin !important;top:0.9vmin !important;}';
       html += '.tkr{font-size:4vmin !important;}';
       html += '.ten{font-size:2vmin !important;}';
       html += '.sub{font-size:1.2vmin !important;bottom:1vmin !important;}';
