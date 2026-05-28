@@ -79,6 +79,11 @@
   .ntool-fmt-bar .sep{display:none;}
   .ntool-fmt-bar input[type=color]{width:36px;height:34px;padding:2px;border:1px solid var(--border);border-radius:6px;cursor:pointer;background:#fff;transition:border-color 0.15s;}
   .ntool-fmt-bar input[type=color]:hover{border-color:var(--accent);}
+  /* v2.52 — 색상 즐겨찾기 칩 */
+  .fav-color-chip{display:inline-block;position:relative;width:24px;height:24px;border-radius:5px;border:1px solid var(--border);cursor:pointer;transition:transform 0.1s,border-color 0.15s;}
+  .fav-color-chip:hover{transform:scale(1.1);border-color:var(--accent);}
+  .fav-color-chip .chip-x{display:none;position:absolute;top:-5px;right:-5px;width:14px;height:14px;background:var(--hl);color:#fff;border:none;border-radius:50%;font-size:9px;line-height:1;cursor:pointer;align-items:center;justify-content:center;padding:0;font-family:inherit;}
+  .fav-color-chip:hover .chip-x{display:flex;}
   .ntool-fmt-bar select{padding:7px 10px;font-size:12px;font-weight:500;border:1px solid var(--border);border-radius:6px;background:var(--paper);cursor:pointer;font-family:inherit;transition:border-color 0.15s;}
   .ntool-fmt-bar select:hover{border-color:var(--accent);}
   /* 도움말 토글 (details/summary) */
@@ -274,6 +279,8 @@
             <button type="button" onclick="ntFmtUnderline()" title="밑줄 (==텍스트==)" style="text-decoration:underline;">U</button>
             <button type="button" onclick="ntFmtStrike()" title="가운데선 (~~텍스트~~)" style="text-decoration:line-through;">S</button>
             <input type="color" id="noticeColorPicker" value="#ED5B3F" title="글자 색 (선택 영역)" onchange="ntFmtColor()">
+            <button type="button" onclick="ntAddFavColor()" title="현재 색을 즐겨찾기에 추가" style="padding:5px 8px;font-size:12px;background:var(--accent-bg);color:var(--accent);border:1px solid rgba(183,159,138,0.5);border-radius:5px;cursor:pointer;font-family:inherit;line-height:1;">★+</button>
+            <span id="noticeFavColors" style="display:inline-flex;gap:3px;align-items:center;flex-wrap:wrap;"></span>
           </div>
           <div class="fmt-group" role="group" aria-label="단락 정렬">
             <span class="fmt-label">정렬</span>
@@ -417,6 +424,45 @@
   window.ntFmtUnderline = function(){ ntExec('underline'); };
   window.ntFmtStrike = function(){ ntExec('strikeThrough'); };
   window.ntFmtColor = function(){ ntExec('foreColor', el('noticeColorPicker').value); };
+  /* v2.52 — 색상 즐겨찾기 (localStorage) */
+  function getFavColors(){
+    try{ var a = JSON.parse(localStorage.getItem('wp_notice_fav_colors')||'null'); return Array.isArray(a) ? a : null; }
+    catch{ return null; }
+  }
+  function saveFavColors(arr){ localStorage.setItem('wp_notice_fav_colors', JSON.stringify(arr.slice(0,12))); }
+  window.ntAddFavColor = function(){
+    var c = el('noticeColorPicker').value;
+    var arr = getFavColors() || [];
+    if(arr.indexOf(c) >= 0) return;
+    arr.unshift(c);
+    saveFavColors(arr);
+    ntRenderFavColors();
+  };
+  window.ntApplyFavColor = function(c){
+    el('noticeColorPicker').value = c;
+    ntExec('foreColor', c);
+  };
+  window.ntRemoveFavColor = function(c, ev){
+    if(ev) ev.stopPropagation();
+    var arr = (getFavColors()||[]).filter(function(x){ return x !== c; });
+    saveFavColors(arr);
+    ntRenderFavColors();
+  };
+  function ntRenderFavColors(){
+    var wrap = el('noticeFavColors');
+    if(!wrap) return;
+    var arr = getFavColors();
+    /* 첫 로드면 기본 즐겨찾기 6종 자동 시드 */
+    if(arr === null){
+      arr = ['#1a1a1a','#ED5B3F','#B79F8A','#5b9fd5','#888888','#E53935'];
+      saveFavColors(arr);
+    }
+    wrap.innerHTML = arr.map(function(c){
+      var safe = c.replace(/'/g,"\\'");
+      return '<span class="fav-color-chip" style="background:'+c+';" title="'+c+' (클릭=적용, ✕=삭제)" onclick="ntApplyFavColor(\''+safe+'\')">' +
+             '<button type="button" class="chip-x" onclick="ntRemoveFavColor(\''+safe+'\',event)" title="삭제">×</button></span>';
+    }).join('');
+  }
   window.ntFmtAlign = function(side){
     var cmd = {left:'justifyLeft', center:'justifyCenter', right:'justifyRight'}[side];
     if(cmd) ntExec(cmd);
@@ -949,6 +995,7 @@
   /* 본문은 비워둠 — 사용자가 공지 종류 선택 시 ntApplyPreset이 자동 채움 */
   ntUpdatePreview();
   ntRenderSavedList();
+  if(typeof ntRenderFavColors==='function') ntRenderFavColors();
 })();
 </script>
 </body>
