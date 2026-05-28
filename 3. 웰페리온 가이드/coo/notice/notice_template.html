@@ -223,7 +223,7 @@
           </div>
           <div class="ntool-pv-body" id="noticePvBody">본문 내용이 여기에 표시됩니다.</div>
           <div class="ntool-pv-ftr">
-            <img id="noticePvFtrWmark" src="../../_assets/logo/watermarks/BRAD_LOGO-FFFFFF_BG-000000_corner.png" alt="WELLPERION">
+            <img id="noticePvFtrWmark" src="../../../1. AI학습자료_아카이브/08_로고&워터마크/_assets/logo/watermarks/BRAD_LOGO-FFFFFF_BG-000000_corner.png" alt="WELLPERION">
           </div>
         </div>
       </div>
@@ -238,7 +238,7 @@
   const BRANDS = {
     main:      {name:'WELLPERION',                 logo:'#B79F8A', bg:'#221F20', hdr:'#221F20', pantone:'4735 C', wm:'beige'},
     pt:        {name:'WELLPERION PT',              logo:'#B54840', bg:'#512B32', hdr:'#512B32', pantone:'504 C',  wm:'pt-red'},
-    sports:    {name:'WELLPERION SPORTS CLUB',     logo:'#3F71B0', bg:'#253B6C', hdr:'#253B6C', pantone:'—',     wm:'sportsclub-blue', wordmark:'../../_assets/logo/sportsclub_wordmark.png'},
+    sports:    {name:'WELLPERION SPORTS CLUB',     logo:'#3F71B0', bg:'#253B6C', hdr:'#253B6C', pantone:'—',     wm:'sportsclub-blue', wordmark:'../../../1. AI학습자료_아카이브/08_로고&워터마크/_assets/logo/sportsclub_wordmark.png'},
     pilates:   {name:'WELLPERION PILATES',         logo:'#C44558', bg:'#8A2933', hdr:'#8A2933', pantone:'202 C', wm:'pilates'},
     swimming:  {name:'WELLPERION SWIMMING',        logo:'#215768', bg:'#172C42', hdr:'#172C42', pantone:'533 C', wm:'swimming'},
     squash:    {name:'WELLPERION SQUASH',          logo:'#D2D2D2', bg:'#77968E', hdr:'#77968E', pantone:'5565 C',wm:'grey'},
@@ -388,7 +388,7 @@
     if(ftrEl) ftrEl.style.background = brand.bg;
     /* 푸터: SPORTS CLUB은 전용 방패+월계관 wordmark, 그 외는 corner_white 고정 */
     var ftrWmEl = el('noticePvFtrWmark');
-    if(ftrWmEl) ftrWmEl.src = brand.wordmark || '../../_assets/logo/watermarks/BRAD_LOGO-FFFFFF_BG-000000_corner.png';
+    if(ftrWmEl) ftrWmEl.src = brand.wordmark || '../../../1. AI학습자료_아카이브/08_로고&워터마크/_assets/logo/watermarks/BRAD_LOGO-FFFFFF_BG-000000_corner.png';
     var bodyEl = el('noticePvBody');
     var txt = el('noticeBody').value;
     var ff = el('noticeFontFamily').value;
@@ -503,7 +503,7 @@
     html += '<div class="sub"><em>A Day, Well Completed.</em> 하루의 완성, 웰페리온</div>';
     html += '</div>';
     html += '<div class="body">'+bodyHtml+imgHtml+'</div>';
-    html += '<div class="ftr"><img src="'+(brand.wordmark || '../../_assets/logo/watermarks/BRAD_LOGO-FFFFFF_BG-000000_corner.png')+'" alt="WELLPERION"></div>';
+    html += '<div class="ftr"><img src="'+(brand.wordmark || '../../../1. AI학습자료_아카이브/08_로고&워터마크/_assets/logo/watermarks/BRAD_LOGO-FFFFFF_BG-000000_corner.png')+'" alt="WELLPERION"></div>';
     html += '</div></body></html>';
     return html;
   }
