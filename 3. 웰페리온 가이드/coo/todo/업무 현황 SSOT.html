@@ -69,9 +69,16 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 .chip.owner{background:var(--blue-bg);color:var(--blue)}
 .chip.date-chip{background:var(--accent-bg);color:var(--accent);cursor:pointer}
 .chip.date-chip:hover{background:rgba(183,159,138,0.25)}
-.chip.overdue{background:var(--red-bg);color:var(--red)}
-.chip.due-soon{background:var(--yellow-bg);color:var(--yellow)}
+.chip.overdue{background:var(--red-bg);color:var(--red);font-weight:700}
+.chip.due-today{background:var(--red-bg);color:var(--red);font-weight:700;animation:pulse-due 1.6s ease-in-out infinite}
+.chip.due-soon{background:var(--yellow-bg);color:var(--yellow);font-weight:700}
+.chip.due-warn{background:var(--accent-bg);color:var(--accent);font-weight:600}
 .chip.due-ok{background:var(--green-bg);color:var(--green)}
+@keyframes pulse-due{0%,100%{opacity:1}50%{opacity:0.55}}
+.task-card.is-due-soon{border-left:3px solid var(--yellow)}
+.task-card.is-due-warn{border-left:3px solid var(--accent)}
+.task-card.is-overdue{border-left:3px solid var(--red);background:rgba(237,91,63,0.04)}
+.task-card.is-due-today{border-left:3px solid var(--red);background:rgba(237,91,63,0.06)}
 .chip.approval{background:var(--purple-bg);color:var(--purple)}
 .chip.link-chip{background:var(--green-bg);color:var(--green);cursor:pointer;text-decoration:none}
 .chip.link-chip:hover{background:rgba(106,191,123,0.22)}
@@ -639,7 +646,16 @@ function filterByStatus(list) {
 }
 
 function renderTaskCard(t, idx) {
-  let html = '<div class="task-card" data-id="' + escAttr(t.id) + '">';
+  // 마감 임박 카드 시각 강조 (옵션 A · 2026-05-28)
+  const cardBadge = t.endDate ? getDeadlineBadge(t.endDate) : null;
+  let cardClass = 'task-card';
+  if (cardBadge) {
+    if (cardBadge.cls === 'overdue')   cardClass += ' is-overdue';
+    else if (cardBadge.cls === 'due-today') cardClass += ' is-due-today';
+    else if (cardBadge.cls === 'due-soon')  cardClass += ' is-due-soon';
+    else if (cardBadge.cls === 'due-warn')  cardClass += ' is-due-warn';
+  }
+  let html = '<div class="' + cardClass + '" data-id="' + escAttr(t.id) + '">';
 
   // 제목줄: 번호 + 토글 화살표 + 제목 + 칩 + 편집/완료 버튼
   html += '<div class="task-summary" style="display:flex;align-items:center;gap:8px;">';
@@ -752,9 +768,10 @@ function getDeadlineBadge(endDate) {
   const end = new Date(String(endDate).slice(0, 10) + 'T23:59:59');
   const now = new Date();
   const diff = Math.ceil((end - now) / (1000 * 60 * 60 * 24));
-  if (diff < 0) return { cls: 'overdue', text: 'D+' + Math.abs(diff) + ' 지연' };
-  if (diff === 0) return { cls: 'due-soon', text: 'D-Day' };
-  if (diff <= 3) return { cls: 'due-soon', text: 'D-' + diff };
+  if (diff < 0)   return { cls: 'overdue',   text: 'D+' + Math.abs(diff) + ' 지연' };
+  if (diff === 0) return { cls: 'due-today', text: '🔴 D-Day 마무리' };
+  if (diff <= 3)  return { cls: 'due-soon',  text: '⚡ D-' + diff + ' 임박' };
+  if (diff <= 7)  return { cls: 'due-warn',  text: '⏰ D-' + diff + ' 마무리' };
   return { cls: 'due-ok', text: 'D-' + diff };
 }
 
