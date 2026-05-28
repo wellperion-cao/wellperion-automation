@@ -561,12 +561,12 @@ function renderTasks() {
 
   // 보류 로그
   const filteredHold = filterByStatus(hold);
-  html += '<div class="done-log" style="margin-top:20px;">';
+  html += '<div class="done-log" id="holdLogSection" style="margin-top:20px;">';
   html += '<div class="done-log-header" onclick="toggleHoldLog()" style="border-left:3px solid var(--orange);">';
-  html += '<h3 style="color:var(--orange);">보류 (' + filteredHold.length + '건)</h3>';
+  html += '<h3 style="color:var(--orange);">⏸ 보류 (' + filteredHold.length + '건)<span style="font-size:11px;font-weight:500;color:var(--dim);margin-left:8px;">눌러서 펼침</span></h3>';
   html += '<span class="cat-arrow' + (holdLogOpen ? ' open' : '') + '">&#9654;</span>';
   html += '</div>';
-  html += '<div class="done-log-body' + (holdLogOpen ? ' open' : '') + '">';
+  html += '<div class="done-log-body' + (holdLogOpen ? ' open' : '') + '" id="holdLogBody">';
   if (filteredHold.length === 0) {
     html += '<div class="empty-msg" style="padding:20px">보류된 업무가 없습니다.</div>';
   } else {
@@ -984,8 +984,13 @@ async function holdTask(id) {
   try {
     const res = await apiCall({ action: 'todo_update', id: id, status: '보류' });
     if (res.ok) {
-      showToast('보류 처리됨');
+      holdLogOpen = true;  // 보류 영역 자동 펼침 (UX 명확화)
+      showToast('보류 처리됨 — 아래 ⏸ 보류 영역으로 이동');
       await loadTasks();
+      setTimeout(function(){
+        const sec = document.getElementById('holdLogSection');
+        if (sec) sec.scrollIntoView({ behavior:'smooth', block:'start' });
+      }, 300);
     } else {
       throw new Error(res.error || '처리 실패');
     }
@@ -993,8 +998,9 @@ async function holdTask(id) {
     const t = ALL_TASKS.find(x => x.id === id);
     if (t) { t.status = '보류'; t.updatedAt = new Date().toISOString(); }
     saveFallback();
+    holdLogOpen = true;
     renderTasks();
-    showToast('보류 처리됨 (로컬)', true);
+    showToast('보류 처리됨 (로컬 — 시트 미반영)', true);
   }
 }
 
@@ -1020,13 +1026,13 @@ async function restoreTask(id) {
 var holdLogOpen = false;
 function toggleHoldLog() {
   holdLogOpen = !holdLogOpen;
-  const logs = document.querySelectorAll('.done-log');
-  if (logs.length >= 2) {
-    const holdBody = logs[0].querySelector('.done-log-body');
-    const holdArrow = logs[0].querySelector('.cat-arrow');
-    if (holdBody) holdBody.classList.toggle('open', holdLogOpen);
-    if (holdArrow) holdArrow.classList.toggle('open', holdLogOpen);
-  }
+  const section = document.getElementById('holdLogSection');
+  if (!section) return;
+  const holdBody = section.querySelector('.done-log-body');
+  const holdArrow = section.querySelector('.cat-arrow');
+  if (holdBody) holdBody.classList.toggle('open', holdLogOpen);
+  if (holdArrow) holdArrow.classList.toggle('open', holdLogOpen);
+  if (holdLogOpen) section.scrollIntoView({ behavior:'smooth', block:'start' });
 }
 
 function sendToTelegram(id) {
