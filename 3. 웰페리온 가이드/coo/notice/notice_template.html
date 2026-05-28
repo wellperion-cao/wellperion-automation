@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>WELLPERION 공지 서식 v2.0</title>
+<title>WELLPERION 공지 서식 v2.1</title>
 <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.min.css" rel="stylesheet">
 <style>
   :root{
@@ -15,6 +15,7 @@
     --accent-bg:#f5efe8;
     --warm-bg:#fef1ed;
     --bg:#f9f7f4;
+    --hl:#ED5B3F;
   }
   *{margin:0;padding:0;box-sizing:border-box;}
   html,body{font-family:"Pretendard","Apple SD Gothic Neo",sans-serif;background:var(--bg);color:var(--text);-webkit-print-color-adjust:exact;print-color-adjust:exact;}
@@ -36,10 +37,11 @@
   .ntool-input,.ntool-select,.ntool-textarea{width:100%;padding:10px 14px;background:var(--paper);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:14px;font-family:inherit;box-sizing:border-box;transition:border-color 0.15s;}
   .ntool-input:focus,.ntool-select:focus,.ntool-textarea:focus{outline:none;border-color:var(--accent);}
   .ntool-select{cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M3 5l3 3 3-3' fill='none' stroke='%23999' stroke-width='1.5'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;}
-  .ntool-textarea{min-height:140px;resize:vertical;line-height:1.7;}
+  .ntool-textarea{min-height:240px;resize:vertical;line-height:1.7;}
   .ntool-font-bar{display:flex;gap:8px;margin-bottom:8px;align-items:center;}
   .ntool-font-bar select,.ntool-font-bar input{padding:6px 10px;background:var(--paper);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;font-family:inherit;}
   .ntool-font-bar input[type=number]{width:60px;}
+  .ntool-help{margin-top:6px;padding:8px 12px;background:var(--accent-bg);border-radius:6px;font-size:11px;color:var(--accent);line-height:1.6;}
   .ntool-img-btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;background:var(--accent-bg);color:var(--accent);font-size:13px;font-weight:600;border:1px solid rgba(183,159,138,0.3);border-radius:8px;cursor:pointer;font-family:inherit;}
   .ntool-img-btn:hover{background:var(--accent);color:#fff;}
   .ntool-actions{display:flex;gap:10px;margin-top:18px;flex-wrap:wrap;}
@@ -49,21 +51,40 @@
   .ntool-btn.secondary{background:var(--accent-bg);color:var(--accent);border:1px solid rgba(183,159,138,0.3);}
   .ntool-preview-frame{background:#221F20;border-radius:12px;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,0.4);aspect-ratio:297/420;}
   .ntool-preview-inner{display:flex;flex-direction:column;height:100%;box-sizing:border-box;position:relative;overflow:hidden;color:#fff;}
-  .ntool-pv-hdr{background:#221F20;padding:clamp(16px,4vw,40px) clamp(14px,3vw,32px);text-align:center;color:#fff;flex:0 0 38%;display:flex;flex-direction:column;justify-content:center;align-items:center;}
-  .ntool-pv-brand-logo{font-size:clamp(14px,2.4vw,28px);font-weight:300;letter-spacing:0.08em;margin-bottom:clamp(10px,2.5vw,24px);opacity:0.9;}
-  #noticePreview .ntool-pv-title-kr{font-size:clamp(18px,3.5vw,42px);font-weight:700;margin-bottom:4px;line-height:1.25;color:#fff;}
-  #noticePreview .ntool-pv-title-en{font-size:clamp(10px,1.6vw,20px);font-weight:600;opacity:0.85;letter-spacing:0.03em;margin-bottom:clamp(8px,1.5vw,16px);}
-  .ntool-pv-subtitle{font-size:clamp(7px,0.9vw,10px);opacity:0.5;letter-spacing:0.03em;}
-  #noticePreview .ntool-pv-body{flex:1;padding:clamp(12px,2.5vw,28px);text-align:center;display:flex;flex-direction:column;justify-content:center;align-items:center;color:#1a1a1a;line-height:1.9;font-size:clamp(11px,1.5vw,17px);font-weight:500;background:#fff;}
-  #noticePreview .ntool-pv-body img{max-width:75%;max-height:150px;border-radius:8px;margin-top:10px;object-fit:cover;}
-  #noticePreview .ntool-pv-body .hl{color:#ED5B3F;font-weight:700;}
-  .ntool-pv-ftr{background:#221F20;padding:clamp(8px,1.5vw,16px);display:flex;align-items:center;justify-content:center;gap:8px;}
-  .ntool-pv-ftr img{width:clamp(16px,2.5vw,28px);height:auto;}
-  .ntool-pv-ftr span{color:#B79F8A;font-size:clamp(9px,1.2vw,14px);font-weight:600;letter-spacing:0.18em;}
+
+  /* ── 미리보기 헤더 (어두운 상단) ── */
+  .ntool-pv-hdr{background:#221F20;padding:clamp(20px,4vw,42px) clamp(20px,4vw,40px) clamp(18px,3.2vw,32px);text-align:center;color:#fff;flex:0 0 38%;position:relative;display:flex;flex-direction:column;justify-content:center;align-items:center;}
+  .ntool-pv-notice-label{position:absolute;top:clamp(14px,2.4vw,24px);left:50%;transform:translateX(-50%);font-size:clamp(9px,1.1vw,13px);font-weight:600;letter-spacing:0.32em;color:rgba(255,255,255,0.78);}
+  .ntool-pv-wmark-w{position:absolute;top:clamp(8px,1.6vw,18px);right:clamp(10px,2vw,24px);width:clamp(60px,11vw,140px);opacity:0.18;pointer-events:none;}
+  .ntool-pv-wmark-w img{width:100%;height:auto;display:block;}
+  #noticePreview .ntool-pv-title-kr{font-size:clamp(22px,4.2vw,52px);font-weight:700;margin-bottom:6px;line-height:1.18;color:#E8D8C5;letter-spacing:0.005em;}
+  #noticePreview .ntool-pv-title-en{font-size:clamp(11px,1.9vw,24px);font-weight:500;color:#E8D8C5;opacity:0.92;letter-spacing:0.01em;margin-bottom:clamp(10px,1.8vw,18px);}
+  .ntool-pv-subtitle{font-size:clamp(8px,1.05vw,12px);color:var(--hl);opacity:0.92;letter-spacing:0.02em;font-weight:500;}
+
+  /* ── 미리보기 본문 (흰 배경, 자동 파싱 3구획) ── */
+  #noticePreview .ntool-pv-body{flex:1;padding:clamp(18px,3.2vw,36px) clamp(16px,2.8vw,32px);display:flex;flex-direction:column;justify-content:center;align-items:stretch;color:#1a1a1a;line-height:1.85;font-size:clamp(10px,1.35vw,16px);font-weight:500;background:#fff;text-align:center;overflow:hidden;}
+  #noticePreview .notice-head{font-size:1.55em;font-weight:700;line-height:1.55;color:#1a1a1a;letter-spacing:-0.005em;}
+  #noticePreview .notice-divider{width:62%;height:1px;background:var(--accent);opacity:0.45;margin:1.3em auto;border:none;}
+  #noticePreview .notice-list{text-align:left;margin:0 auto;max-width:88%;}
+  #noticePreview .notice-line{margin-bottom:0.45em;line-height:1.85;color:var(--hl);font-weight:600;}
+  #noticePreview .notice-line.plain{color:#1a1a1a;font-weight:500;}
+  #noticePreview .notice-line .num{color:var(--hl);font-weight:700;margin-right:6px;}
+  #noticePreview .notice-tail{margin-top:1.4em;line-height:1.85;color:#1a1a1a;font-weight:500;font-size:0.98em;}
+  #noticePreview .notice-imgs{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:14px;}
+  #noticePreview .notice-imgs img{max-width:46%;max-height:120px;border-radius:6px;object-fit:cover;}
+
+  /* ── 미리보기 푸터 ── */
+  .ntool-pv-ftr{background:#221F20;padding:clamp(10px,1.8vw,18px);display:flex;align-items:center;justify-content:center;gap:8px;flex:0 0 6.5%;}
+  .ntool-pv-ftr img{width:clamp(18px,2.8vw,32px);height:auto;}
+  .ntool-pv-ftr span{color:#B79F8A;font-size:clamp(9px,1.2vw,14px);font-weight:600;letter-spacing:0.22em;}
+
+  /* ── 사진 첨부 썸네일 ── */
   .ntool-img-thumb{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;}
   .ntool-img-thumb img{width:60px;height:60px;object-fit:cover;border-radius:6px;border:1px solid var(--border);}
-  .ntool-img-thumb .remove{position:absolute;top:-4px;right:-4px;width:18px;height:18px;background:#ED5B3F;color:#fff;border:none;border-radius:50%;font-size:11px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+  .ntool-img-thumb .remove{position:absolute;top:-4px;right:-4px;width:18px;height:18px;background:var(--hl);color:#fff;border:none;border-radius:50%;font-size:11px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
   .ntool-img-item{position:relative;display:inline-block;}
+
+  /* ── 저장 목록 ── */
   .ntool-saved{margin-top:24px;border-top:1px solid var(--border);padding-top:16px;}
   .ntool-saved-title{font-size:13px;font-weight:700;color:var(--dim);margin-bottom:10px;}
   .ntool-saved-item{display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--paper);border:1px solid var(--border);border-radius:8px;margin-bottom:8px;}
@@ -71,7 +92,7 @@
   .ntool-saved-item .date{font-size:11px;color:var(--dim);white-space:nowrap;}
   .ntool-saved-item button{padding:4px 10px;font-size:11px;font-weight:600;border:1px solid var(--border);border-radius:6px;background:var(--paper);color:var(--text);cursor:pointer;font-family:inherit;}
   .ntool-saved-item button:hover{background:var(--accent-bg);}
-  .ntool-saved-item button.del{color:#ED5B3F;border-color:#ED5B3F;}
+  .ntool-saved-item button.del{color:var(--hl);border-color:var(--hl);}
   .ntool-saved-item button.del:hover{background:var(--warm-bg);}
   .preview-label{font-size:12px;font-weight:700;color:var(--dim);margin-bottom:10px;display:block;}
   @media print{.topbar,.ntool-form,.preview-label{display:none!important;} .wrap{padding:0!important;max-width:none!important;} .ntool-wrap{display:block!important;} .ntool-preview-area{position:static!important;}}
@@ -81,7 +102,7 @@
 <div class="topbar">
   <div class="left">
     <a class="back" href="../../wellperion_guide(main).html#gcoo-notice">← 가이드허브</a>
-    <h1>WELLPERION 공지 서식 v2.0</h1>
+    <h1>WELLPERION 공지 서식 v2.1</h1>
   </div>
   <span class="path">3. 웰페리온 가이드 / coo / notice / notice_template.html</span>
 </div>
@@ -121,11 +142,11 @@
       <div class="ntool-row">
         <div>
           <label class="ntool-label">제목 (한글)</label>
-          <input class="ntool-input" id="noticeTitleKr" placeholder="예: 4월 휴관일 안내" oninput="ntUpdatePreview()">
+          <input class="ntool-input" id="noticeTitleKr" placeholder="예: 사우나 내 개인 물품 관리" oninput="ntUpdatePreview()">
         </div>
         <div>
           <label class="ntool-label">제목 (영문)</label>
-          <input class="ntool-input" id="noticeTitleEn" placeholder="예: Regular Closed Day Notice" oninput="ntUpdatePreview()">
+          <input class="ntool-input" id="noticeTitleEn" placeholder="예: Responsibility on Personal Item" oninput="ntUpdatePreview()">
         </div>
       </div>
       <div class="ntool-row">
@@ -135,7 +156,7 @@
         </div>
       </div>
       <div>
-        <label class="ntool-label">본문 (**텍스트** = 주황 강조)</label>
+        <label class="ntool-label">본문</label>
         <div class="ntool-font-bar">
           <select id="noticeFontFamily" onchange="ntUpdatePreview()">
             <option value="Pretendard">Pretendard</option>
@@ -144,7 +165,14 @@
           <input type="number" id="noticeFontSize" value="16" min="10" max="40" onchange="ntUpdatePreview()">
           <span style="font-size:11px;color:var(--dim);">px</span>
         </div>
-        <textarea class="ntool-textarea" id="noticeBody" placeholder="공지 내용을 입력하세요..." oninput="ntUpdatePreview()"></textarea>
+        <textarea class="ntool-textarea" id="noticeBody" placeholder="사우나 내에서 개인 물품&#10;도난 및 분실 사건을 예방하기 위해&#10;회원님들께 안내 드립니다.&#10;&#10;1. 회원님들께서는 개인 물품 관리에 신경 써주시길 부탁드립니다.&#10;2. 귀중품은 리셉션에 맡겨주세요.&#10;3. 개인 물품 보관함은 비밀번호를 설정하시어 이용해주세요.&#10;(개인락커 개방 이용 시 분실된 물품은 책임지지 않습니다.)&#10;4. 개인 물품 분실 시 리셉션에 문의 바랍니다.&#10;&#10;저희 웰페리온은 회원님들의 안전과 보안을&#10;최우선으로 생각하여, 앞으로도 더 나은 서비스를 제공하기 위해&#10;노력하겠습니다. 감사합니다." oninput="ntUpdatePreview()"></textarea>
+        <div class="ntool-help">
+          <b>자동 3구획 파싱</b> — 빈 줄로 단락 구분<br>
+          ① 첫 단락 → 큰 안내 헤드라인 (가운데, 굵게)<br>
+          ② 1./2./3. 으로 시작하는 줄 묶음 → 번호 리스트 (주황 강조, 좌측 정렬)<br>
+          ③ 마지막 단락 → 닫음말 (가운데)<br>
+          <code>**텍스트**</code> = 주황 강조 / 빈 줄 = 단락 구분
+        </div>
       </div>
       <div style="margin-top:12px;">
         <label class="ntool-label">사진 첨부</label>
@@ -164,7 +192,8 @@
       <div class="ntool-preview-frame" id="noticePreviewFrame">
         <div class="ntool-preview-inner" id="noticePreview">
           <div class="ntool-pv-hdr" id="noticeHdr">
-            <div class="ntool-pv-brand-logo" id="noticePvSub">W</div>
+            <div class="ntool-pv-notice-label" id="noticePvNoticeLabel">NOTICE</div>
+            <div class="ntool-pv-wmark-w"><img class="wlogo-img" alt="W"></div>
             <div class="ntool-pv-title-kr" id="noticePvTitleKr">국문 공지 제목</div>
             <div class="ntool-pv-title-en" id="noticePvTitleEn">ENG NOTICE TITLE</div>
             <div class="ntool-pv-subtitle">웰페리온은 회원님들의 건강과 행복을 위하여 항상 최선을 다하겠습니다.</div>
@@ -205,7 +234,48 @@
   };
   const noticeImages = [];
   function el(id){ return document.getElementById(id); }
-  function ntFormatBody(txt){ return txt.replace(/\n/g,'<br>').replace(/\*\*(.+?)\*\*/g,'<span class="hl">$1</span>'); }
+  function esc(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+  function inline(s){ return esc(s).replace(/\*\*(.+?)\*\*/g,'<span class="hl" style="color:#ED5B3F;font-weight:700;">$1</span>'); }
+
+  /* 본문 3구획 자동 파서:
+     - 빈 줄로 단락 split
+     - 첫 단락 = notice-head
+     - "1." "2." 등 숫자.으로 시작하는 줄이 포함된 단락 = notice-list (각 줄 = notice-line)
+     - 마지막(혹은 단독) 단락 = notice-tail
+  */
+  function ntFormatNoticeBody(txt){
+    if(!txt || !txt.trim()) return '';
+    var paras = txt.trim().split(/\n\s*\n+/);
+    var html = '';
+    var sawHead = false;
+    var sawList = false;
+    paras.forEach(function(p, idx){
+      var lines = p.split('\n').map(function(l){ return l.replace(/\s+$/,''); }).filter(function(l){ return l.length>0; });
+      if(!lines.length) return;
+      var isList = lines.some(function(l){ return /^\s*\d+\./.test(l); });
+      if(isList){
+        var items = lines.map(function(l){
+          var t = l.trim();
+          var m = t.match(/^(\d+\.)\s*(.*)$/);
+          if(m){
+            return '<div class="notice-line"><span class="num">'+m[1]+'</span>'+inline(m[2])+'</div>';
+          } else {
+            return '<div class="notice-line plain">'+inline(t)+'</div>';
+          }
+        });
+        if(sawHead && !sawList) html += '<hr class="notice-divider">';
+        html += '<div class="notice-list">'+items.join('')+'</div>';
+        sawList = true;
+      } else if(!sawHead){
+        html += '<div class="notice-head">'+lines.map(inline).join('<br>')+'</div>';
+        sawHead = true;
+      } else {
+        html += '<div class="notice-tail">'+lines.map(inline).join('<br>')+'</div>';
+      }
+    });
+    return html;
+  }
+
   var WLOGO = 'data:image/png;base64,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';
 
   window.ntUpdatePreview = function(){
@@ -213,19 +283,17 @@
     var brand = BRANDS[brandKey];
     var hdr = el('noticeHdr');
     if(hdr) hdr.style.background = brand.hdr;
-    var subEl = el('noticePvSub');
-    if(subEl) subEl.textContent = brand.sub;
     el('noticePvTitleKr').textContent = el('noticeTitleKr').value || '국문 공지 제목';
     el('noticePvTitleEn').textContent = el('noticeTitleEn').value || 'ENG NOTICE TITLE';
     el('noticePvBrandName').textContent = brand.name;
     var bodyEl = el('noticePvBody');
-    var txt = el('noticeBody').value || '본문 내용이 여기에 표시됩니다.';
+    var txt = el('noticeBody').value;
     var ff = el('noticeFontFamily').value;
     var fs = el('noticeFontSize').value;
-    var html = ntFormatBody(txt);
+    var html = ntFormatNoticeBody(txt) || '<div class="notice-head" style="color:#999;">본문 내용이 여기에 표시됩니다.</div>';
     if(noticeImages.length){
-      html += '<div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:12px;">';
-      noticeImages.forEach(function(src){ html += '<img src="'+src+'" style="max-width:45%;max-height:120px;border-radius:6px;object-fit:cover;">'; });
+      html += '<div class="notice-imgs">';
+      noticeImages.forEach(function(src){ html += '<img src="'+src+'">'; });
       html += '</div>';
     }
     bodyEl.innerHTML = html;
@@ -273,37 +341,51 @@
   };
 
   function ntBuildPageHtml(brand, titleKr, titleEn, bodyHtml, imgHtml, fontFam, fs, pageSize){
-    var WLOGO_PRINT = '<img src="'+WLOGO+'" alt="WELLPERION">';
     var sizeMap = {A3:'297mm 420mm', A4:'210mm 297mm'};
     var sizeRule = sizeMap[pageSize] || '297mm 420mm';
-    var html = '<!DOCTYPE html><html><head><meta charset="utf-8"><title>'+brand.name+' NOTICE</title>';
+    var html = '<!DOCTYPE html><html><head><meta charset="utf-8"><title>'+esc(brand.name)+' NOTICE</title>';
     html += '<link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.min.css" rel="stylesheet">';
     html += '<style>';
     html += '@page{size:'+sizeRule+';margin:0;}';
     html += '*{margin:0;padding:0;box-sizing:border-box;}';
     html += 'html,body{width:100%;height:100%;overflow:hidden;}';
-    html += 'body{font-family:'+fontFam+';-webkit-print-color-adjust:exact;print-color-adjust:exact;}';
+    html += 'body{font-family:'+fontFam+';-webkit-print-color-adjust:exact;print-color-adjust:exact;color:#1a1a1a;}';
     html += '.page{width:100vw;height:100vh;display:flex;flex-direction:column;overflow:hidden;}';
-    html += '.hdr{flex:0 0 38%;padding:5vmin 4vmin;text-align:center;color:#fff;display:flex;flex-direction:column;justify-content:center;}';
-    html += '.brand-logo{font-size:3vmin;font-weight:300;letter-spacing:0.08em;margin-bottom:3vmin;opacity:0.9;}';
-    html += '.tkr{font-size:5.5vmin;font-weight:700;line-height:1.25;margin-bottom:1vmin;}';
-    html += '.ten{font-size:2.5vmin;font-weight:600;opacity:0.85;letter-spacing:0.03em;margin-bottom:2vmin;}';
-    html += '.sub{font-size:1.3vmin;opacity:0.5;letter-spacing:0.04em;}';
-    html += '.body{flex:1;background:#fff;color:#1a1a1a;padding:4vmin;text-align:center;display:flex;flex-direction:column;justify-content:center;align-items:center;line-height:1.9;font-size:'+fs+'px;font-weight:500;}';
+    /* HEADER */
+    html += '.hdr{flex:0 0 38%;padding:5.5vmin 5vmin 4vmin;text-align:center;color:#fff;display:flex;flex-direction:column;justify-content:center;align-items:center;position:relative;}';
+    html += '.notice-label-top{position:absolute;top:3.2vmin;left:50%;transform:translateX(-50%);font-size:1.5vmin;font-weight:600;letter-spacing:0.32em;color:rgba(255,255,255,0.78);}';
+    html += '.wmark{position:absolute;top:2.4vmin;right:3vmin;width:14vmin;opacity:0.18;}';
+    html += '.wmark img{width:100%;height:auto;display:block;}';
+    html += '.tkr{font-size:6.2vmin;font-weight:700;line-height:1.16;margin-bottom:0.8vmin;color:#E8D8C5;letter-spacing:0.005em;}';
+    html += '.ten{font-size:3vmin;font-weight:500;color:#E8D8C5;opacity:0.92;letter-spacing:0.01em;margin-bottom:2vmin;}';
+    html += '.sub{font-size:1.4vmin;color:#ED5B3F;opacity:0.92;letter-spacing:0.02em;font-weight:500;}';
+    /* BODY */
+    html += '.body{flex:1;background:#fff;color:#1a1a1a;padding:4.5vmin 4vmin;text-align:center;display:flex;flex-direction:column;justify-content:center;align-items:stretch;line-height:1.85;font-size:'+fs+'px;font-weight:500;overflow:hidden;}';
+    html += '.notice-head{font-size:1.55em;font-weight:700;line-height:1.55;color:#1a1a1a;}';
+    html += '.notice-divider{width:62%;height:1px;background:#B79F8A;opacity:0.45;margin:1.4em auto;border:none;}';
+    html += '.notice-list{text-align:left;margin:0 auto;max-width:88%;}';
+    html += '.notice-line{margin-bottom:0.45em;line-height:1.85;color:#ED5B3F;font-weight:600;}';
+    html += '.notice-line.plain{color:#1a1a1a;font-weight:500;}';
+    html += '.notice-line .num{color:#ED5B3F;font-weight:700;margin-right:6px;}';
+    html += '.notice-tail{margin-top:1.4em;line-height:1.85;color:#1a1a1a;font-weight:500;font-size:0.98em;}';
+    html += '.notice-imgs{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;margin-top:2vmin;}';
+    html += '.notice-imgs img{max-width:48%;max-height:24vh;border-radius:1vmin;object-fit:cover;}';
     html += '.hl{color:#ED5B3F;font-weight:700;}';
-    html += '.ftr{flex:0 0 10%;background:#221F20;display:flex;align-items:center;justify-content:center;gap:1.2vmin;}';
-    html += '.ftr img{width:3.5vmin;height:auto;}';
-    html += '.ftr span{color:#B79F8A;font-size:1.6vmin;font-weight:600;letter-spacing:0.18em;}';
+    /* FOOTER */
+    html += '.ftr{flex:0 0 6.5%;background:#221F20;display:flex;align-items:center;justify-content:center;gap:1.2vmin;}';
+    html += '.ftr img{width:3vmin;height:auto;}';
+    html += '.ftr span{color:#B79F8A;font-size:1.7vmin;font-weight:600;letter-spacing:0.22em;}';
     html += '</style></head><body>';
     html += '<div class="page">';
     html += '<div class="hdr" style="background:'+brand.hdr+';">';
-    html += '<div class="brand-logo">'+brand.sub+'</div>';
-    html += '<div class="tkr">'+titleKr+'</div>';
-    html += '<div class="ten">'+titleEn+'</div>';
+    html += '<div class="notice-label-top">NOTICE</div>';
+    html += '<div class="wmark"><img src="'+WLOGO+'" alt="W"></div>';
+    html += '<div class="tkr">'+esc(titleKr)+'</div>';
+    html += '<div class="ten">'+esc(titleEn)+'</div>';
     html += '<div class="sub">웰페리온은 회원님들의 건강과 행복을 위하여 항상 최선을 다하겠습니다.</div>';
     html += '</div>';
     html += '<div class="body">'+bodyHtml+imgHtml+'</div>';
-    html += '<div class="ftr">'+WLOGO_PRINT+'<span>'+brand.name+'</span></div>';
+    html += '<div class="ftr"><img src="'+WLOGO+'" alt="WELLPERION"><span>'+esc(brand.name)+'</span></div>';
     html += '</div></body></html>';
     return html;
   }
@@ -311,15 +393,15 @@
   function ntCollectData(){
     var brandKey = el('noticeBrand').value;
     var brand = BRANDS[brandKey];
-    var titleKr = el('noticeTitleKr').value;
-    var titleEn = el('noticeTitleEn').value;
-    var bodyHtml = ntFormatBody(el('noticeBody').value);
+    var titleKr = el('noticeTitleKr').value || '';
+    var titleEn = el('noticeTitleEn').value || '';
+    var bodyHtml = ntFormatNoticeBody(el('noticeBody').value);
     var ff = el('noticeFontFamily').value;
     var fs = el('noticeFontSize').value;
     var imgHtml = '';
     if(noticeImages.length){
-      imgHtml = '<div style="display:flex;gap:12px;flex-wrap:wrap;justify-content:center;margin-top:2.5vmin;">';
-      noticeImages.forEach(function(src){ imgHtml += '<img src="'+src+'" style="max-width:55%;max-height:28vh;border-radius:1vmin;object-fit:cover;">'; });
+      imgHtml = '<div class="notice-imgs">';
+      noticeImages.forEach(function(src){ imgHtml += '<img src="'+src+'">'; });
       imgHtml += '</div>';
     }
     var fontFam = ff==='serif' ? '"Noto Serif KR","Batang",serif' : '"Pretendard","Apple SD Gothic Neo",sans-serif';
