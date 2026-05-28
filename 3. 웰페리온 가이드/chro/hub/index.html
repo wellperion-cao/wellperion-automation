@@ -330,7 +330,21 @@
       <option>경영지원부</option>
     </select>
     <label>소속</label>
-    <select id="hireSosok"><option value="">선택하세요</option></select>
+    <select id="hireSosok">
+      <option value="">선택하세요</option>
+      <option>경영지원부</option>
+      <option>운영부</option>
+      <option>지원부</option>
+      <option>주차관리</option>
+      <option>시설부</option>
+      <option>PT팀</option>
+      <option>필라테스팀</option>
+      <option>골프팀</option>
+      <option>수영팀</option>
+      <option>체조팀</option>
+      <option>스쿼시팀</option>
+      <option>GX</option>
+    </select>
     <label>직급 <span class="opt">(선택)</span></label>
     <input type="text" id="hireRank" placeholder="예: 매니저, 코치, 선생님">
     <label>고용 형태</label>
@@ -1088,18 +1102,6 @@ document.getElementById("resignModal").addEventListener("click",function(e){
 
 /* ============ 신규 입사자 등록 모달 ============ */
 function openHireModal(){
-  // 소속(팀) select 옵션 동적 채우기 (기존 직원 소속 unique 목록 — 큰 카테고리/잘못 입력값 제외)
-  var BIG=["운영부","지원부","시설부","강습부","경영지원부","관리부","경영부","지원","시설","파트너","파트너팀"];
-  var sosokSel=document.getElementById("hireSosok");
-  sosokSel.innerHTML='<option value="">선택하세요</option>';
-  var sosokSet={};
-  DB.emp.forEach(function(e){
-    var s=e["소속"];
-    if(s&&!sosokSet[s]&&BIG.indexOf(s)<0) sosokSet[s]=1;
-  });
-  Object.keys(sosokSet).sort(function(a,b){return a.localeCompare(b,"ko");}).forEach(function(s){
-    var opt=document.createElement("option");opt.value=s;opt.textContent=s;sosokSel.appendChild(opt);
-  });
   document.getElementById("hireName").value="";
   document.getElementById("hireSosok").value="";
   document.getElementById("hireDept").value="";
