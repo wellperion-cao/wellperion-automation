@@ -68,7 +68,7 @@
   .ntool-pv-wmark-w{position:absolute;top:clamp(0px,0.6vw,8px);right:clamp(8px,1.6vw,20px);font-family:"Pretendard","Apple SD Gothic Neo",sans-serif;font-size:clamp(72px,14vw,180px);font-weight:200;line-height:1;letter-spacing:-0.05em;opacity:0.55;pointer-events:none;user-select:none;}
   #noticePreview .ntool-pv-title-kr{font-size:clamp(22px,4.2vw,52px);font-weight:700;margin-bottom:6px;line-height:1.18;color:#E8D8C5;letter-spacing:0.005em;}
   #noticePreview .ntool-pv-title-en{font-size:clamp(11px,1.9vw,24px);font-weight:500;color:#E8D8C5;opacity:0.92;letter-spacing:0.01em;margin-bottom:0;}
-  .ntool-pv-subtitle{position:absolute;bottom:clamp(8px,1.6vw,16px);left:0;right:0;text-align:center;font-size:clamp(9px,1.2vw,14px);color:var(--hl);opacity:0.95;letter-spacing:0.06em;font-weight:500;padding:0 clamp(16px,3vw,28px);}
+  .ntool-pv-subtitle{position:absolute;bottom:clamp(8px,1.6vw,16px);left:0;right:0;text-align:center;font-size:clamp(9px,1.2vw,14px);opacity:0.95;letter-spacing:0.06em;font-weight:500;padding:0 clamp(16px,3vw,28px);}
   /* 회사소개서·전략로드맵 슬로건 스타일 정합: 영문은 Playfair Display italic */
   .ntool-pv-subtitle em{font-family:"Playfair Display","Hudson NY Serif",Georgia,serif;font-style:italic;font-weight:500;letter-spacing:0.01em;font-size:1.08em;}
 
@@ -381,6 +381,9 @@
     /* 헤더 우상단 W = 제목과 동일 brand.logo / 푸터 배경 = 사업부 BG / 푸터 corner = 흰색 고정 */
     var wmEl = el('noticePvWmark');
     if(wmEl) wmEl.style.color = brand.logo;
+    /* 슬로건도 사업부 LOGO 컬러로 동기화 (제목·워터마크 W와 같은 톤) */
+    var subEl = document.querySelector('#noticePreview .ntool-pv-subtitle');
+    if(subEl) subEl.style.color = brand.logo;
     var ftrEl = document.querySelector('#noticePreview .ntool-pv-ftr');
     if(ftrEl) ftrEl.style.background = brand.bg;
     /* 푸터: SPORTS CLUB은 전용 방패+월계관 wordmark, 그 외는 corner_white 고정 */
@@ -472,7 +475,7 @@
     html += '.wmark{position:absolute;top:0.8vmin;right:2.4vmin;font-family:"Pretendard","Apple SD Gothic Neo",sans-serif;font-size:18vmin;font-weight:200;line-height:1;letter-spacing:-0.05em;opacity:0.55;color:'+brand.logo+';user-select:none;}';
     html += '.tkr{font-size:6.2vmin;font-weight:700;line-height:1.16;margin-bottom:0.8vmin;color:'+brand.logo+';letter-spacing:0.005em;}';
     html += '.ten{font-size:3vmin;font-weight:500;color:'+brand.logo+';opacity:0.92;letter-spacing:0.01em;margin-bottom:0;}';
-    html += '.sub{position:absolute;bottom:1.8vmin;left:0;right:0;text-align:center;font-size:1.6vmin;color:#ED5B3F;opacity:0.95;letter-spacing:0.06em;font-weight:500;padding:0 4vmin;}';
+    html += '.sub{position:absolute;bottom:1.8vmin;left:0;right:0;text-align:center;font-size:1.6vmin;color:'+brand.logo+';opacity:0.95;letter-spacing:0.06em;font-weight:500;padding:0 4vmin;}';
     html += '.sub em{font-family:"Playfair Display","Hudson NY Serif",Georgia,serif;font-style:italic;font-weight:500;letter-spacing:0.01em;font-size:1.08em;}';
     /* BODY */
     html += '.body{flex:1;background:#fff;color:#1a1a1a;padding:4.5vmin 4vmin 6vmin;text-align:center;display:flex;flex-direction:column;justify-content:center;align-items:stretch;line-height:1.85;font-size:'+fs+'px;font-weight:500;overflow:hidden;position:relative;}';
