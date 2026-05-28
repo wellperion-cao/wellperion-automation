@@ -360,7 +360,6 @@
     <a data-doc="home" class="active"><span class="num">홈</span><span class="label">홈 · 사용법</span></a>
     <a data-doc="update"><span class="num">📝</span><span class="label">공통 가이드라인</span></a>
     <a data-doc="g10"><span class="num">📋</span><span class="label">AI C-Level 운영 가이드</span></a>
-    <a data-doc="g4"><span class="num">📐</span><span class="label">3대 원칙 프레임워크</span></a>
     <a data-doc="g6"><span class="num">📖</span><span class="label">용어 사전</span></a>
     <a data-doc="gcoo-todo"><span class="num">📝</span><span class="label">업무 현황 SSOT</span></a>
   </nav>
@@ -451,9 +450,8 @@
       <tr><th style="width:60px"></th><th style="width:200px">제목</th><th>한 줄 설명</th></tr>
       <tr><td>📝</td><td><a href="#" onclick="event.preventDefault();document.querySelector('[data-doc=update]').click();" style="color:var(--accent);text-decoration:none;font-weight:600;">S1 공통 가이드라인</a></td><td>전사 기준 + 직원 에티켓 + 브랜드 디자인 + 업데이트 방법</td></tr>
       <tr><td>📋</td><td><a href="#" onclick="event.preventDefault();document.querySelector('[data-doc=g10]').click();" style="color:var(--accent);text-decoration:none;font-weight:600;">S2 AI C-Level 운영 가이드</a></td><td>AI 조직도 + 7개 C-Level 협업·실무</td></tr>
-      <tr><td>📐</td><td><a href="#" onclick="event.preventDefault();document.querySelector('[data-doc=g4]').click();" style="color:var(--accent);text-decoration:none;font-weight:600;">S3 3대 원칙 프레임워크</a></td><td>PSP · 작성·경로 4원칙 · 시작과 끝</td></tr>
-      <tr><td>📖</td><td><a href="#" onclick="event.preventDefault();document.querySelector('[data-doc=g6]').click();" style="color:var(--accent);text-decoration:none;font-weight:600;">S4 용어 사전</a></td><td>문서·조직·시스템·운영·파일 확장자</td></tr>
-      <tr><td>📝</td><td><a href="#" onclick="event.preventDefault();document.querySelector('[data-doc=gcoo-todo]').click();" style="color:var(--accent);text-decoration:none;font-weight:600;">S5 업무 현황 SSOT</a></td><td>핵심멤버 업무 배분·추적 (Apps Script 연동)</td></tr>
+      <tr><td>📖</td><td><a href="#" onclick="event.preventDefault();document.querySelector('[data-doc=g6]').click();" style="color:var(--accent);text-decoration:none;font-weight:600;">S3 용어 사전</a></td><td>문서·조직·시스템·운영·파일 확장자</td></tr>
+      <tr><td>📝</td><td><a href="#" onclick="event.preventDefault();document.querySelector('[data-doc=gcoo-todo]').click();" style="color:var(--accent);text-decoration:none;font-weight:600;">S4 업무 현황 SSOT</a></td><td>핵심멤버 업무 배분·추적 (Apps Script 연동)</td></tr>
     </table>
 
     <h4 style="color:var(--accent);margin:16px 0 8px;">AI CFO 재무 <span style="font-size:12px;color:var(--dim);font-weight:400;">나우열M</span></h4>
@@ -743,7 +741,7 @@
     </div>
   </article>
 
-  <article class="doc" id="g4">
+  <article class="doc" id="g4" style="display:none">
     <div class="doc-header"><h2>3대 원칙 프레임워크 v1.1</h2><div class="meta">정책 SSOT · 모든 AI C-Level 프롬프트에 필수 포함</div></div>
     <p class="lead">모든 AI C-Level은 어떤 업무든 이 3가지를 기준으로 한다. 결과물 품질(PSP) · 작성·경로 4원칙 · 시작과 끝. 세 축을 다 통과해야 완성.</p>
 
@@ -1662,6 +1660,7 @@
         <button class="tab-btn" data-tab="cfo">AI CFO</button>
         <button class="tab-btn" data-tab="chro">AI CHRO</button>
         <button class="tab-btn" data-tab="cpo">AI CPO</button>
+        <button class="tab-btn" data-tab="g4-kit">🎯 3대 원칙·키트</button>
       </div>
       <div class="tab-panel active" data-panel="common">
         <h3><span class="ico">🏢</span>AI 조직도</h3>
@@ -1898,8 +1897,55 @@
         <p style="margin-top:8px;font-size:13px;color:var(--dim);">회원은 숫자가 아니라 이름. VIP 케어 = "특별함"이 아니라 "기억". 이탈 징후 5 신호 감지.</p>
       </div>
 
+      <!-- 3대 원칙·키트 (g4에서 흡수, 2026-05-28) -->
+      <div class="tab-panel" data-panel="g4-kit">
+        <p class="lead">모든 AI C-Level은 어떤 업무든 이 3가지를 기준으로 한다. 결과물 품질(PSP) · 작성·경로 4원칙 · 시작과 끝. 세 축을 다 통과해야 완성. + 에이전트 개발 키트 5단계.</p>
+
+        <h3><span class="ico">🎯</span>PSP — 결과물 품질 기준</h3>
+        <p><strong>표현 원칙:</strong> 가독성 · 명확성 · 직관성. 한 번에 이해할 수 있도록 핵심만 남긴다.</p>
+        <div class="callout"><strong>최종 판단 기준.</strong> "단순한가 → 구조가 있는가 → 의도가 느껴지는가" 세 질문에 모두 Yes여야 완성.</div>
+
+        <h3 style="margin-top:24px;"><span class="ico">📐</span>작성·경로 표준 4원칙</h3>
+        <p><strong>하나의 진실 (SSOT)</strong> — 실무진과 AI C-Level이 한곳에 데이터를 모아두고 업데이트·학습하는 공통 데이터 원본. 중복 정보는 한 곳에만 병합.</p>
+        <ol>
+          <li>기획 정보 → Start DB</li>
+          <li>실행 결과 → 아카이브 DB</li>
+          <li>최종 통과(회장·GM·실무진 승인)된 결과물 → 종착지로 이동</li>
+        </ol>
+        <div class="grid-2">
+          <div class="card"><h4>속성은 메타데이터만</h4><p>필터·정렬·대시보드용. 본문은 속성에 안 넣음.</p></div>
+          <div class="card"><h4>연결은 관계로</h4><p>복붙 대신 Relation. 원문은 토글로 맨 위.</p></div>
+          <div class="card"><h4>보고는 문서 구조로</h4><p>H1/H2 + 표. PDF 인쇄 시 안 깨짐.</p></div>
+          <div class="card"><h4>큰 것 → 작은 것</h4><p>목적·구조 먼저 → 실행·증빙 나중.</p></div>
+        </div>
+
+        <h3 style="margin-top:24px;"><span class="ico">🔄</span>시작과 끝 — 업무 흐름의 명확성</h3>
+        <ol>
+          <li>모든 업무에는 시작점과 종착점이 있어야 한다</li>
+          <li>시작: 기획DB 승인완료 → 착수 (장애·긴급은 예외)</li>
+          <li>끝: 결과 보고 → 승인 → 유지보수 전환 → 종착지 정립 = Done</li>
+        </ol>
+        <h4 style="margin-top:16px;"><span class="ico">✅</span>자가 점검</h4>
+        <div class="grid-3">
+          <div class="card accent"><h4>PSP 통과?</h4><p>단순 · 구조 · 의도</p></div>
+          <div class="card accent"><h4>4원칙 준수?</h4><p>진실 · 메타 · 관계 · 문서</p></div>
+          <div class="card accent"><h4>시작과 끝?</h4><p>출발 · 종착 · 경로</p></div>
+        </div>
+
+        <h3 style="margin-top:24px;"><span class="ico">🛠️</span>에이전트 개발 키트 — 5단계 구조</h3>
+        <table>
+          <tr><th style="width:200px">단계</th><th>역할</th></tr>
+          <tr><td>1. CLAUDE.md</td><td>메모리 레이어 (헌법). 시작 시 무조건 먼저 읽음.</td></tr>
+          <tr><td>2. skills 폴더</td><td>스킬 레이어 (만능 주머니). 필요할 때 꺼내 쓰는 비법.</td></tr>
+          <tr><td>3. hooks</td><td>후크 레이어 (안전요원). AI 실수 방지 안전망.</td></tr>
+          <tr><td>4. teams · tasks · sessions</td><td>서브에이전트 레이어. 작업 분담·대화 기록.</td></tr>
+          <tr><td>5. plugins</td><td>플러그인 레이어. 외부 도구 마켓.</td></tr>
+        </table>
+        <div class="card accent" style="margin-top:12px;"><h4>한 줄 요약</h4><p>기본 규칙(1)을 지키며 도구(2)를 꺼내 쓰고, 안전요원(3)의 보호 아래 동료(4)와 일을 나눠 한 뒤, 방법을 공유(5)한다.</p></div>
+      </div>
+
     </div>
-    <div class="source">SSOT: AI C-Level 협업 매뉴얼 v1.0 + C-Level 실무 가이드라인 v1.1 (2026-04-24) 통합 + AI 운영 원칙·검증 5단계 (2026-05-28 이관) · 관련 메모리 11건 cross-link</div>
+    <div class="source">SSOT: AI C-Level 협업 매뉴얼 v1.0 + C-Level 실무 가이드라인 v1.1 (2026-04-24) 통합 + AI 운영 원칙·검증 5단계 + 3대 원칙 프레임워크·에이전트 키트 (2026-05-28 g4 흡수) · 관련 메모리 11건 cross-link</div>
     <div style="margin-top:22px; padding:13px 16px; background:#16181c; border-radius:8px; border-left:3px solid var(--accent);">
       <div style="font-size:12px; font-weight:700; color:var(--accent); margin-bottom:6px;">&#9656; Claude CLI 셋업 프롬프트</div>
       <pre style="margin:0; color:#e8e8e8; font-size:12.5px; white-space:pre-wrap; line-height:1.6;">가이드허브 ⑨ AI C-Level 운영 가이드대로 각 C-Level의 오늘 산출물을 협업 리듬에 맞춰 점검하고 AI CEO가 GM에게 통합 보고하게 해줘.</pre>
