@@ -771,6 +771,23 @@
   if(el('noticeEndDate')) el('noticeEndDate').value = today;
   el('noticeTitleKr').value = NOTICE_PRESETS.holiday.kr;
   el('noticeTitleEn').value = NOTICE_PRESETS.holiday.en;
+  /* v2.33 — Enter 시 <p>가 자동 생성되도록 defaultParagraphSeparator=p (chrome 기본 'div' 또는 br만 삽입 회피).
+     이렇게 해야 ntFmtSize/BoldLine이 줄 단위로만 동작 (1줄에 클릭 시 3줄에 영향 X) */
+  try{ document.execCommand('defaultParagraphSeparator', false, 'p'); }catch(e){}
+  /* 빈 contenteditable 첫 focus 시 <p><br></p> 자동 삽입 — block 식별 보장 */
+  el('noticeBody').addEventListener('focus', function(){
+    var inner = this.innerHTML.trim();
+    if(inner === '' || inner === '<br>' || inner === '<br/>'){
+      this.innerHTML = '<p><br></p>';
+      var p = this.firstChild;
+      var range = document.createRange();
+      range.setStart(p, 0);
+      range.collapse(true);
+      var sel = window.getSelection();
+      sel.removeAllRanges();
+      sel.addRange(range);
+    }
+  });
   /* 본문은 비워둠 — 사용자가 공지 종류 선택 시 ntApplyPreset이 자동 채움 */
   ntUpdatePreview();
   ntRenderSavedList();
