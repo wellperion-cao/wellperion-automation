@@ -361,6 +361,7 @@
     <a data-doc="update"><span class="num">📝</span><span class="label">공통 가이드라인</span></a>
     <a data-doc="g10"><span class="num">📋</span><span class="label">AI C-Level 운영 가이드</span></a>
     <a data-doc="g4"><span class="num">📐</span><span class="label">3대 원칙 프레임워크</span></a>
+    <a data-doc="ai-ops-ssot"><span class="num">🛡️</span><span class="label">AI 운영 SSOT</span></a>
     <a data-doc="g6"><span class="num">📖</span><span class="label">용어 사전</span></a>
     <a data-doc="gcoo-todo"><span class="num">📝</span><span class="label">업무 현황 SSOT</span></a>
   </nav>
@@ -452,6 +453,7 @@
       <tr><td>📝</td><td><a href="#" onclick="event.preventDefault();document.querySelector('[data-doc=update]').click();" style="color:var(--accent);text-decoration:none;font-weight:600;">공통 가이드라인</a></td><td>전사 기준 + 직원 에티켓 + 브랜드 디자인 + 업데이트 방법</td></tr>
       <tr><td>📋</td><td><a href="#" onclick="event.preventDefault();document.querySelector('[data-doc=g10]').click();" style="color:var(--accent);text-decoration:none;font-weight:600;">AI C-Level 운영 가이드</a></td><td>AI 조직도 + 7개 C-Level 협업·실무</td></tr>
       <tr><td>📐</td><td><a href="#" onclick="event.preventDefault();document.querySelector('[data-doc=g4]').click();" style="color:var(--accent);text-decoration:none;font-weight:600;">3대 원칙 프레임워크</a></td><td>PSP · 작성·경로 4원칙 · 시작과 끝</td></tr>
+      <tr><td>🛡️</td><td><a href="#" onclick="event.preventDefault();document.querySelector('[data-doc=ai-ops-ssot]').click();" style="color:var(--accent);text-decoration:none;font-weight:600;">AI 운영 SSOT</a></td><td>검증·고도화·기록·정리·진화 5단계 + CEO 감독 프로토콜</td></tr>
       <tr><td>📖</td><td><a href="#" onclick="event.preventDefault();document.querySelector('[data-doc=g6]').click();" style="color:var(--accent);text-decoration:none;font-weight:600;">용어 사전</a></td><td>문서·조직·시스템·운영·파일 확장자</td></tr>
       <tr><td>📝</td><td><a href="#" onclick="event.preventDefault();document.querySelector('[data-doc=gcoo-todo]').click();" style="color:var(--accent);text-decoration:none;font-weight:600;">업무 현황 SSOT</a></td><td>핵심멤버 업무 배분·추적</td></tr>
     </table>
@@ -813,6 +815,92 @@
     </div>
   </article>
 
+
+  <article class="doc" id="ai-ops-ssot">
+    <div class="doc-header"><h2>AI 운영 SSOT</h2><div class="meta">AI(CEO + 6 C-Level) 운영 원칙·검증 프로토콜·자기 진화의 단일 진실 · v1.0 · 2026-05-28</div></div>
+    <p class="lead">AI 에이전트가 따라야 할 5단계 운영 체계입니다. CEO는 모든 작업에서 이 5단계 프로토콜로 관리·감독합니다.</p>
+
+    <div class="callout" style="background:#1a2a1a;border-left:3px solid #059669;margin:18px 0 24px;">
+      <strong>📌 흐름:</strong> ① 체크 → ② 표 보고 → ③ 보완 보고 → ④ GM 승인 시 진행 → ⑤ 기록·정리·학습
+    </div>
+
+    <h3><span class="ico">🛡️</span>5단계 운영 체계</h3>
+    <table>
+      <tr><th style="width:60px">#</th><th style="width:160px">단계</th><th>목적</th><th style="width:120px">CEO 본업</th></tr>
+      <tr><td>①</td><td><strong>문제점 체크</strong></td><td>사실 오류·정합성·컨텍스트 부패·훅·권한·실측 검증 6영역 추적</td><td>능동 점검</td></tr>
+      <tr><td>②</td><td><strong>고도화 체크</strong></td><td>신규 신설 X, 기존 자산 연결·고도화·중복 흡수 우선</td><td>연결 매트릭스</td></tr>
+      <tr><td>③</td><td><strong>기록</strong></td><td>git log·자동 changelog·메모리·세션 로그 — 언제든 확인 가능</td><td>즉시 커밋 의무</td></tr>
+      <tr><td>④</td><td><strong>중복·무의미 정리</strong></td><td>중복 흡수·SSOT 단일화·구 버전 폐기·무분별 자동화 제거</td><td>데이터 정리</td></tr>
+      <tr><td>⑤</td><td><strong>스스로 학습 진화</strong></td><td>사고 → 분류 → 재발방지 규칙 명문화·스킬 누적</td><td>메모리 보강</td></tr>
+    </table>
+
+    <h3 style="margin-top:24px;"><span class="ico">①</span>문제점 체크 — CEO 풀스택 감독 6영역</h3>
+    <div class="grid-3">
+      <div class="card"><h4>설계</h4><p>전체 아키텍처·디렉토리 구조·SSOT 일관성</p></div>
+      <div class="card"><h4>패턴</h4><p>SOP·운영 규칙·코드 컨벤션 준수</p></div>
+      <div class="card"><h4>컨텍스트 부패</h4><p>옛 경로·옛 ID·옛 폴더명·옛 URL 사일런트 잔재</p></div>
+    </div>
+    <div class="grid-3" style="margin-top:8px;">
+      <div class="card"><h4>훅 시스템</h4><p>post-action·trigger·watcher·scheduler·workflow 동작</p></div>
+      <div class="card"><h4>권한</h4><p>settings·git·DB·MCP·token 권한 일치</p></div>
+      <div class="card"><h4>최종 검증</h4><p>파일 존재·HTTP 응답·DB 상태·실측 스크린샷</p></div>
+    </div>
+    <div class="callout tip" style="margin-top:12px;"><strong>진단 오류 4규칙:</strong> 유사 명칭 단정 금지 · 진단 정정 시 자율 진행 · 결재 카테고리 엄격 적용 · log read 선행 의무</div>
+
+    <h3 style="margin-top:24px;"><span class="ico">②</span>고도화 체크 — 신규 < 연결·고도화</h3>
+    <div class="callout"><strong>원칙:</strong> 새 페이지·기능을 마구 만들지 말 것. 기존 자산을 연결하고 깊이를 더하는 방향이 우선.</div>
+    <table>
+      <tr><th style="width:200px">우선 패턴</th><th>설명</th></tr>
+      <tr><td><strong>데이터 연동 강화</strong></td><td>같은 라인의 페이지들 양방향 연결 (예: 지출현황 ↔ 매출현황)</td></tr>
+      <tr><td><strong>양방향 링크 추가</strong></td><td>관련 페이지 상호 참조</td></tr>
+      <tr><td><strong>자동화 합류</strong></td><td>수동 입력 → 워크플로·스크립트 자동 갱신</td></tr>
+      <tr><td><strong>중복 흡수</strong></td><td>유사 콘텐츠 통합, SSOT 1곳만 유지</td></tr>
+    </table>
+    <div class="callout warn" style="margin-top:12px;"><strong>신규 신설 허용 조건:</strong> 기존 자산으로 흡수 불가능 + 명확한 단독 R/R + GM 직접 승인</div>
+
+    <h3 style="margin-top:24px;"><span class="ico">③</span>기록 — 언제든 확인 가능</h3>
+    <table>
+      <tr><th style="width:200px">기록 도구</th><th>위치·동작</th></tr>
+      <tr><td><strong>git log</strong></td><td>모든 작업은 즉시 커밋+push 의무 (작업 단위별)</td></tr>
+      <tr><td><strong>자동 changelog</strong></td><td><code>scripts/update_guide_hub_changelog.py</code> — 매 push마다 home 페이지 "최신 카드"·"업데이트 기록" 자동 갱신</td></tr>
+      <tr><td><strong>메모리 시스템</strong></td><td><code>~/.claude/projects/.../memory/</code> — type별(user/feedback/project/reference) 누적</td></tr>
+      <tr><td><strong>본문 토글 Changelog</strong></td><td>모든 C-Level DB 페이지 본문 「📜 Changelog 상세」 토글 단일 누적</td></tr>
+      <tr><td><strong>이슈 기록</strong></td><td>사고 발생 시 6영역 중 어디 속하는지 분류 → 재발방지 규칙 명문화</td></tr>
+    </table>
+
+    <h3 style="margin-top:24px;"><span class="ico">④</span>중복·무분별·무의미 삭제</h3>
+    <table>
+      <tr><th style="width:200px">정리 정책</th><th>적용</th></tr>
+      <tr><td><strong>중복 데이터</strong></td><td>발견 시 흡수·통합 (연동 리스크 있으면 GM 질문)</td></tr>
+      <tr><td><strong>버전업 시 구 데이터</strong></td><td>코드 수정·재시작 시 구 로그·임시파일·캐시 삭제 후 가동</td></tr>
+      <tr><td><strong>SSOT 단일화</strong></td><td>이관(Move) 사용, 복사(Copy) 금지</td></tr>
+      <tr><td><strong>무분별 자동화 금지</strong></td><td>자동 태스크 신설은 핵심 KPI 직결 건만, 보조·예방·옵션성은 보류</td></tr>
+      <tr><td><strong>임시 파일</strong></td><td>작업 후 즉시 정리 (예: <code>_*.png</code>, <code>_b64.txt</code> 등)</td></tr>
+    </table>
+
+    <h3 style="margin-top:24px;"><span class="ico">⑤</span>스스로 학습 진화</h3>
+    <div class="callout"><strong>5단계 SOP (사고 재발 방지):</strong> 발견 → 진단 → 수정 → 이중기록(메모리+가이드허브) → 재발방지 규칙 명문화</div>
+    <table>
+      <tr><th style="width:200px">학습 트리거</th><th>액션</th></tr>
+      <tr><td><strong>사고·실수 발생</strong></td><td>주체별 책임 비율 분류(CEO 60% / 사고 영역 25% / 공통 15%) + 메모리 신설</td></tr>
+      <tr><td><strong>모호한 요청</strong></td><td><code>/deep-interview</code> 선행 → 명확화 후 실행</td></tr>
+      <tr><td><strong>새 패턴 검증</strong></td><td>해당 패턴이 효과 있으면 메모리화, 없으면 폐기</td></tr>
+      <tr><td><strong>주간 컨텍스트 정비</strong></td><td>매주 월 09:00 본인 영역 누적 자료 검토·정리정돈·고도화 (C-Level 본업)</td></tr>
+    </table>
+
+    <h3 style="margin-top:24px;"><span class="ico">📊</span>CEO 보고 형식</h3>
+    <div class="callout"><strong>표 + 요약 + 추천 3요소 (산문 X, 식별자 N줄 X):</strong> GM이 1초 안에 파악 가능하게. 옵션 3개 이상이면 CEO 추천값 명시. GM은 선택만.</div>
+
+    <h3 style="margin-top:24px;"><span class="ico">🎯</span>GM 결재 영역 (4종 외 자율 진행)</h3>
+    <div class="grid-3">
+      <div class="card"><h4>💰 결제</h4><p>1원 이상 모든 결제</p></div>
+      <div class="card"><h4>🔒 보안</h4><p>비밀번호·결제·키값 등</p></div>
+      <div class="card"><h4>🚫 금지</h4><p>전략·브랜드·공식값 변경</p></div>
+    </div>
+    <p style="font-size:13px;color:var(--dim);margin-top:8px;">그 외 모든 작업은 CEO·C-Level 자율 진행 후 결과 보고. 결재 카테고리 외 GM께 묻지 말 것.</p>
+
+    <div class="source">SSOT: AI 운영 원칙 단일 모음 · 관련 메모리: ceo_full_stack_oversight · ceo_essence_oversight_and_brief · prioritize_connect_over_create · clevel_commit_on_completion · ceo_diagnostic_failure_pattern · mistake_process_sop · data_cleanup_policy · ambiguous_deep_interview_first · gm_direct_trigger · screenshot_visual_verify · ceo_proactive_verification (2026-05-28 신설)</div>
+  </article>
 
   <article class="doc" id="g6">
     <div class="doc-header"><h2>용어 사전 v1.0</h2><div class="meta">사전 SSOT · 2026-05-12 · 사내 공식 용어 기준</div></div>
