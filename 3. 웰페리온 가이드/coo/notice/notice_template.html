@@ -64,8 +64,8 @@
   /* ── 미리보기 헤더 (어두운 상단) ── */
   .ntool-pv-hdr{background:#221F20;padding:clamp(22px,4vw,42px) clamp(20px,4vw,40px) clamp(28px,4.5vw,46px);text-align:center;color:#fff;flex:0 0 30%;position:relative;display:flex;flex-direction:column;justify-content:center;align-items:center;}
   .ntool-pv-notice-label{position:absolute;top:clamp(12px,2vw,20px);left:50%;transform:translateX(-50%);font-size:clamp(9px,1.1vw,13px);font-weight:600;letter-spacing:0.32em;color:rgba(255,255,255,0.78);}
-  /* 헤더 우상단 W 워터마크 = 사업부별 mark.png (우측으로 30% 잘려 70%만 노출) */
-  .ntool-pv-wmark-w{position:absolute;top:clamp(4px,1vw,14px);right:0;transform:translateX(30%);height:clamp(78px,15vw,200px);width:auto;opacity:0.95;pointer-events:none;user-select:none;}
+  /* 헤더 우상단 W 워터마크 = 사업부별 mark.png (우측으로 30% 잘려 70%만 노출, 사이즈 반 축소 v2.25) */
+  .ntool-pv-wmark-w{position:absolute;top:clamp(6px,1.4vw,18px);right:0;transform:translateX(30%);height:clamp(40px,7.5vw,100px);width:auto;opacity:0.95;pointer-events:none;user-select:none;}
   #noticePreview .ntool-pv-title-kr{font-size:clamp(22px,4.2vw,52px);font-weight:700;margin-bottom:6px;line-height:1.18;color:#E8D8C5;letter-spacing:0.005em;}
   #noticePreview .ntool-pv-title-en{font-size:clamp(11px,1.9vw,24px);font-weight:500;color:#E8D8C5;opacity:0.92;letter-spacing:0.01em;margin-bottom:0;}
   .ntool-pv-subtitle{position:absolute;bottom:clamp(8px,1.6vw,16px);left:0;right:0;text-align:center;font-size:clamp(9px,1.2vw,14px);opacity:0.95;letter-spacing:0.06em;font-weight:500;padding:0 clamp(16px,3vw,28px);}
@@ -474,13 +474,14 @@
     /* HEADER (축소된 비율 + 캡션 헤더 하단 absolute) */
     html += '.hdr{flex:0 0 30%;padding:5.2vmin 5vmin 5.2vmin;text-align:center;color:#fff;display:flex;flex-direction:column;justify-content:center;align-items:center;position:relative;}';
     html += '.notice-label-top{position:absolute;top:2.6vmin;left:50%;transform:translateX(-50%);font-size:1.5vmin;font-weight:600;letter-spacing:0.32em;color:rgba(255,255,255,0.78);}';
-    html += '.wmark{position:absolute;top:1.4vmin;right:0;transform:translateX(30%);height:22vmin;width:auto;opacity:0.95;user-select:none;pointer-events:none;}';
+    html += '.wmark{position:absolute;top:1.4vmin;right:0;transform:translateX(30%);height:11vmin;width:auto;opacity:0.95;user-select:none;pointer-events:none;}';
     html += '.tkr{font-size:6.2vmin;font-weight:700;line-height:1.16;margin-bottom:0.8vmin;color:'+brand.logo+';letter-spacing:0.005em;}';
     html += '.ten{font-size:3vmin;font-weight:500;color:'+brand.logo+';opacity:0.92;letter-spacing:0.01em;margin-bottom:0;}';
     html += '.sub{position:absolute;bottom:1.8vmin;left:0;right:0;text-align:center;font-size:1.6vmin;color:'+brand.logo+';opacity:0.95;letter-spacing:0.06em;font-weight:500;padding:0 4vmin;}';
     html += '.sub em{font-family:"Playfair Display","Hudson NY Serif",Georgia,serif;font-style:italic;font-weight:500;letter-spacing:0.01em;font-size:1.08em;}';
-    /* BODY */
-    html += '.body{flex:1;background:#fff;color:#1a1a1a;padding:4.5vmin 4vmin 6vmin;text-align:center;display:flex;flex-direction:column;justify-content:center;align-items:stretch;line-height:1.85;font-size:'+fs+'px;font-weight:500;overflow:hidden;position:relative;}';
+    /* BODY — font-size를 vmin으로 환산해 미리보기와 동일 시각 배율 (사용자 fs px → vmin) */
+    var fsVmin = ((parseFloat(fs)||18) * 0.22).toFixed(2);
+    html += '.body{flex:1;background:#fff;color:#1a1a1a;padding:4.5vmin 4vmin 6vmin;text-align:center;display:flex;flex-direction:column;justify-content:center;align-items:stretch;line-height:1.85;font-size:'+fsVmin+'vmin;font-weight:500;overflow:hidden;position:relative;}';
     html += '.notice-date{position:absolute;right:3.5vmin;bottom:1.8vmin;font-size:0.78em;color:#B79F8A;font-weight:600;letter-spacing:0.06em;text-align:right;margin:0;}';
     html += '.notice-head{font-size:1.75em;font-weight:700;line-height:1.5;color:#1a1a1a;}';
     html += '.notice-divider{width:62%;height:1px;background:#B79F8A;opacity:0.45;margin:1.4em auto;border:none;}';
