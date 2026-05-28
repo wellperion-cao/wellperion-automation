@@ -390,8 +390,8 @@
     var selected = ta.value.substring(s, e);
     var after = ta.value.substring(e);
 
-    /* 토글 A: 선택 영역 바로 바깥이 prefix/suffix면 제거 (예: **|안|** 클릭) */
-    if(selected && before.endsWith(prefix) && after.startsWith(suffix)){
+    /* 토글 A: 선택/커서 바로 바깥이 prefix/suffix면 제거 (선택 무관, 빈 ****도 정리) */
+    if(before.endsWith(prefix) && after.startsWith(suffix)){
       ta.value = before.slice(0, -prefix.length) + selected + after.slice(suffix.length);
       ta.focus();
       var ns = s - prefix.length;
