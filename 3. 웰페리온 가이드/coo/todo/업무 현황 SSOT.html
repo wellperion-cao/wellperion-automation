@@ -288,8 +288,19 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
       </div>
     </div>
     <div class="field">
-      <label>내용</label>
-      <textarea id="fContent" placeholder="업무 내용을 입력하세요"></textarea>
+      <label>업무 내용 <span style="font-size:11px;color:var(--dim);font-weight:400;">(정의·맥락·산출물)</span></label>
+      <textarea id="fContent" placeholder="이 업무의 정의·맥락·기대 산출물을 입력하세요"></textarea>
+    </div>
+    <div class="field" style="background:var(--accent-bg);padding:12px 14px;border-radius:8px;border:1px solid rgba(183,159,138,0.3);">
+      <label style="display:flex;align-items:center;justify-content:space-between;color:var(--accent);font-weight:700;">
+        <span>📅 진척 로그 <span style="font-size:11px;color:var(--dim);font-weight:400;">(매일 한 줄씩 누적 — 보고 자동 연계)</span></span>
+      </label>
+      <div id="progressLogList" style="margin:8px 0;"></div>
+      <div style="display:flex;gap:6px;align-items:stretch;margin-top:8px;">
+        <input type="date" id="progressLogDate" style="background:var(--bg);border:1px solid var(--border);color:var(--text);padding:8px 10px;border-radius:8px;font-size:13px;font-family:inherit;flex-shrink:0;">
+        <input type="text" id="progressLogInput" placeholder="오늘 진척 한 줄 (예: UI 80% / 검수 필요)" onkeydown="if(event.key==='Enter'){event.preventDefault();addProgressLogEntry();}" style="background:var(--bg);border:1px solid var(--border);color:var(--text);padding:8px 12px;border-radius:8px;font-size:13px;font-family:inherit;flex:1;">
+        <button type="button" onclick="addProgressLogEntry()" style="background:var(--accent);color:#fff;border:none;padding:8px 16px;border-radius:8px;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer;flex-shrink:0;">+ 추가</button>
+      </div>
     </div>
     <div class="field">
       <label>노션 링크</label>
@@ -702,13 +713,30 @@ function renderTaskCard(t, idx) {
   html += '</div>';
   html += '</div>'; // task-summary
 
-  // 토글 영역: 내용 + 링크 + 첨부
+  // 토글 영역: 내용 + 진척 로그 + 링크 + 첨부
   html += '<div class="task-detail" style="display:none;padding:10px 0 0 18px;border-top:1px dashed var(--border);margin-top:8px;">';
 
-  if (t.content) {
-    html += '<div class="task-content">' + esc(t.content) + '</div>';
-  } else {
+  const parsed = parseContent(t.content);
+  if (parsed.body) {
+    html += '<div class="task-content" style="white-space:pre-wrap;line-height:1.55;">' + esc(parsed.body) + '</div>';
+  } else if (!parsed.logs.length) {
     html += '<div class="task-content" style="color:var(--dim);font-style:italic;">내용 없음</div>';
+  }
+
+  if (parsed.logs.length) {
+    html += '<div style="margin-top:10px;">';
+    html += '<div style="font-size:12px;font-weight:700;color:var(--accent);margin-bottom:6px;">📅 진척 로그 (' + parsed.logs.length + '건)</div>';
+    const recent = parsed.logs.slice(0, 5);
+    recent.forEach(log => {
+      html += '<div style="display:flex;gap:8px;align-items:flex-start;padding:6px 10px;border-left:3px solid var(--accent);background:var(--accent-bg);border-radius:6px;margin-bottom:4px;">';
+      html += '<span style="font-size:12px;font-weight:700;color:var(--accent);min-width:88px;flex-shrink:0;">' + esc(log.date) + '</span>';
+      html += '<span style="flex:1;font-size:13px;line-height:1.5;color:var(--text);word-break:break-word;">' + esc(log.text) + '</span>';
+      html += '</div>';
+    });
+    if (parsed.logs.length > 5) {
+      html += '<div style="font-size:11px;color:var(--dim);text-align:right;padding:4px 6px;">··· 외 ' + (parsed.logs.length - 5) + '건 (편집 모달에서 전체 보기)</div>';
+    }
+    html += '</div>';
   }
 
   if (t.link) {
@@ -808,6 +836,81 @@ function toggleDoneLog() {
 }
 
 /* ═══════════════════════════════════════════
+   진척 로그 (옵션 B · 2026-05-28)
+   content 필드 안에 ===PROGRESS_LOG=== 구분선으로 누적
+   ═══════════════════════════════════════════ */
+const PROGRESS_MARK = '===PROGRESS_LOG===';
+
+function parseContent(content) {
+  const raw = String(content || '');
+  const idx = raw.indexOf(PROGRESS_MARK);
+  if (idx < 0) return { body: raw, logs: [] };
+  const body = raw.slice(0, idx).replace(/\s+$/, '');
+  const block = raw.slice(idx + PROGRESS_MARK.length).trim();
+  const logs = block.split(/\r?\n/).map(line => {
+    const m = line.match(/^(\d{4}-\d{2}-\d{2})\s*\|\s*(.*)$/);
+    return m ? { date: m[1], text: m[2].trim() } : null;
+  }).filter(Boolean);
+  // 최신 날짜가 위로
+  logs.sort((a, b) => b.date.localeCompare(a.date));
+  return { body, logs };
+}
+
+function composeContent(body, logs) {
+  const b = String(body || '').replace(/\s+$/, '');
+  if (!logs || !logs.length) return b;
+  // 누적 보존을 위해 시간순(과거→현재)으로 저장
+  const sorted = logs.slice().sort((a, b) => a.date.localeCompare(b.date));
+  const block = sorted.map(l => l.date + ' | ' + l.text).join('\n');
+  return (b ? b + '\n\n' : '') + PROGRESS_MARK + '\n' + block;
+}
+
+function todayDateStr() {
+  const d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+
+let modalLogsCache = [];
+
+function renderProgressList() {
+  const el = document.getElementById('progressLogList');
+  if (!el) return;
+  if (!modalLogsCache.length) {
+    el.innerHTML = '<div style="color:var(--dim);font-size:13px;padding:8px 0;font-style:italic;">아직 진척 로그가 없습니다. 오늘 진척을 추가하세요.</div>';
+    return;
+  }
+  let h = '';
+  modalLogsCache.forEach((log, i) => {
+    h += '<div class="progress-row" style="display:flex;gap:8px;align-items:flex-start;padding:8px 10px;border-left:3px solid var(--accent);background:var(--accent-bg);border-radius:6px;margin-bottom:6px;">';
+    h += '<span style="font-size:12px;font-weight:700;color:var(--accent);min-width:90px;flex-shrink:0;">' + esc(log.date) + '</span>';
+    h += '<span style="flex:1;font-size:13px;line-height:1.5;color:var(--text);word-break:break-word;">' + esc(log.text) + '</span>';
+    h += '<button type="button" onclick="removeProgressLog(' + i + ')" style="font-size:11px;padding:2px 8px;border:1px solid var(--border);background:var(--paper);color:var(--dim);border-radius:6px;cursor:pointer;flex-shrink:0;">삭제</button>';
+    h += '</div>';
+  });
+  el.innerHTML = h;
+}
+
+function addProgressLogEntry() {
+  const input = document.getElementById('progressLogInput');
+  const dateEl = document.getElementById('progressLogDate');
+  const txt = (input.value || '').trim();
+  if (!txt) { input.focus(); return; }
+  const d = dateEl.value || todayDateStr();
+  modalLogsCache.unshift({ date: d, text: txt });
+  // 최신 위로
+  modalLogsCache.sort((a, b) => b.date.localeCompare(a.date));
+  input.value = '';
+  dateEl.value = todayDateStr();
+  renderProgressList();
+  input.focus();
+}
+
+function removeProgressLog(i) {
+  modalLogsCache.splice(i, 1);
+  renderProgressList();
+}
+
+/* ═══════════════════════════════════════════
    Modal — Add / Edit
    ═══════════════════════════════════════════ */
 function openAddModal() {
@@ -823,6 +926,10 @@ function openAddModal() {
   document.getElementById('fFile').value = '';
   document.getElementById('fFileStatus').textContent = '';
   clearCheckboxGroup('fApprovalGroup');
+  modalLogsCache = [];
+  document.getElementById('progressLogDate').value = todayDateStr();
+  document.getElementById('progressLogInput').value = '';
+  renderProgressList();
   document.getElementById('modalSaveBtn').textContent = '저장';
   document.getElementById('taskModal').classList.add('show');
 }
@@ -837,7 +944,12 @@ function openEditModal(id) {
   setCheckboxGroup('fOwnerGroup', (t.owner || '').split(',').map(s => s.trim()));
   document.getElementById('fStartDate').value = fmtDate(t.startDate);
   document.getElementById('fEndDate').value = fmtDate(t.endDate);
-  document.getElementById('fContent').value = t.content || '';
+  const parsed = parseContent(t.content);
+  document.getElementById('fContent').value = parsed.body;
+  modalLogsCache = parsed.logs.slice();
+  document.getElementById('progressLogDate').value = todayDateStr();
+  document.getElementById('progressLogInput').value = '';
+  renderProgressList();
   document.getElementById('fLink').value = t.link || '';
   setCheckboxGroup('fApprovalGroup', (t.approval || '').split(',').map(s => s.trim()));
   document.getElementById('modalSaveBtn').textContent = '수정';
@@ -880,6 +992,16 @@ async function saveTask() {
   if (missing.length > 0) { alert('필수 항목을 입력하세요:\n' + missing.join(', ')); return; }
 
   const editId = document.getElementById('editId').value;
+
+  // 입력박스에 미합류 진척 텍스트 있으면 자동 합류 (저장 누락 방지)
+  const pendingProgress = (document.getElementById('progressLogInput').value || '').trim();
+  if (pendingProgress) {
+    const pd = document.getElementById('progressLogDate').value || todayDateStr();
+    modalLogsCache.unshift({ date: pd, text: pendingProgress });
+    modalLogsCache.sort((a, b) => b.date.localeCompare(a.date));
+  }
+  const composedContent = composeContent(document.getElementById('fContent').value, modalLogsCache);
+
   const params = {
     action: editId ? 'todo_update' : 'todo_add',
     title: title,
@@ -887,7 +1009,7 @@ async function saveTask() {
     owner: getCheckboxValues('fOwnerGroup'),
     startDate: document.getElementById('fStartDate').value,
     endDate: document.getElementById('fEndDate').value,
-    content: document.getElementById('fContent').value,
+    content: composedContent,
     link: document.getElementById('fLink').value,
     approval: getCheckboxValues('fApprovalGroup'),
     creator: getUser()
@@ -1049,7 +1171,12 @@ function sendToTelegram(id) {
   lines.push('담당자: ' + (t.owner || '-'));
   if (t.startDate || t.endDate) lines.push('기간: ' + formatDateRange(t.startDate, t.endDate));
   lines.push('결재요청: ' + (t.approval || '-'));
-  if (t.content) lines.push('내용: ' + t.content);
+  const parsedTel = parseContent(t.content);
+  if (parsedTel.body) lines.push('내용: ' + parsedTel.body);
+  if (parsedTel.logs.length) {
+    lines.push('📅 진척 (최근 ' + Math.min(3, parsedTel.logs.length) + '건):');
+    parsedTel.logs.slice(0, 3).forEach(log => lines.push('  ' + log.date + ' | ' + log.text));
+  }
   if (t.link) lines.push('링크: ' + t.link);
   var text = lines.join('\n');
   navigator.clipboard.writeText(text).then(function() {
