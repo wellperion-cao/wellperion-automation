@@ -53,7 +53,9 @@
   .ntool-editor:empty:before{content:attr(data-placeholder);color:#bbb;font-weight:400;pointer-events:none;}
   .ntool-editor blockquote{border-left:4px solid var(--accent);padding:0.5em 1em;margin:0.8em 0;color:var(--accent);background:var(--accent-bg);border-radius:0 6px 6px 0;font-style:italic;}
   .ntool-editor hr{border:none;height:1px;background:#ccc;margin:1em auto;width:80%;}
-  .ntool-editor p{margin:0 0 0.4em 0;}
+  /* v2.35 — 자식 요소(p, blockquote)가 부모 font-size 상속 + 명시적 size span은 그대로 유지 */
+  .ntool-editor p{margin:0 0 0.4em 0;font-size:inherit;}
+  .ntool-editor blockquote{font-size:inherit;}
   .ntool-help-tip{margin-top:8px;padding:8px 12px;background:var(--accent-bg);border-radius:6px;font-size:11px;color:var(--accent);line-height:1.6;}
   .ntool-font-bar{display:flex;gap:6px;margin-bottom:8px;align-items:center;flex-wrap:wrap;padding:8px 10px;background:#fafaf8;border-radius:9px;border:1px solid var(--border);}
   .ntool-font-bar select,.ntool-font-bar input{padding:7px 10px;background:var(--paper);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;font-family:inherit;transition:border-color 0.15s;}
@@ -222,7 +224,7 @@
             <option value="Pretendard">Pretendard</option>
             <option value="serif">명조 (Serif)</option>
           </select>
-          <input type="number" id="noticeFontSize" value="18" min="10" max="40" onchange="ntUpdatePreview()">
+          <input type="number" id="noticeFontSize" value="18" min="10" max="40" oninput="ntUpdatePreview()" onchange="ntUpdatePreview()">
           <span style="font-size:11px;color:var(--dim);">px</span>
           <span class="font-sep"></span>
           <span style="font-size:10px;color:var(--dim);font-weight:700;letter-spacing:0.04em;">줄 크기</span>
