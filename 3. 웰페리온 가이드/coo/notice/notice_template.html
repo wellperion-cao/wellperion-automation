@@ -59,8 +59,8 @@
   /* ── 미리보기 헤더 (어두운 상단) ── */
   .ntool-pv-hdr{background:#221F20;padding:clamp(22px,4vw,42px) clamp(20px,4vw,40px) clamp(28px,4.5vw,46px);text-align:center;color:#fff;flex:0 0 30%;position:relative;display:flex;flex-direction:column;justify-content:center;align-items:center;}
   .ntool-pv-notice-label{position:absolute;top:clamp(12px,2vw,20px);left:50%;transform:translateX(-50%);font-size:clamp(9px,1.1vw,13px);font-weight:600;letter-spacing:0.32em;color:rgba(255,255,255,0.78);}
-  .ntool-pv-wmark-w{position:absolute;top:clamp(8px,1.4vw,16px);right:clamp(10px,2vw,24px);width:clamp(45px,9vw,110px);opacity:1;pointer-events:none;}
-  .ntool-pv-wmark-w img{width:100%;height:auto;display:block;}
+  /* 헤더 우상단 W 워터마크 = 텍스트 (color는 JS에서 brand.logo로 동적, 제목과 같은 색) */
+  .ntool-pv-wmark-w{position:absolute;top:clamp(0px,0.6vw,8px);right:clamp(8px,1.6vw,20px);font-family:"Pretendard","Apple SD Gothic Neo",sans-serif;font-size:clamp(72px,14vw,180px);font-weight:200;line-height:1;letter-spacing:-0.05em;opacity:0.55;pointer-events:none;user-select:none;}
   #noticePreview .ntool-pv-title-kr{font-size:clamp(22px,4.2vw,52px);font-weight:700;margin-bottom:6px;line-height:1.18;color:#E8D8C5;letter-spacing:0.005em;}
   #noticePreview .ntool-pv-title-en{font-size:clamp(11px,1.9vw,24px);font-weight:500;color:#E8D8C5;opacity:0.92;letter-spacing:0.01em;margin-bottom:0;}
   .ntool-pv-subtitle{position:absolute;bottom:clamp(8px,1.6vw,16px);left:0;right:0;text-align:center;font-size:clamp(9px,1.15vw,13px);color:var(--hl);opacity:0.95;letter-spacing:0.12em;font-weight:500;padding:0 clamp(16px,3vw,28px);}
@@ -207,7 +207,7 @@
         <div class="ntool-preview-inner" id="noticePreview">
           <div class="ntool-pv-hdr" id="noticeHdr">
             <div class="ntool-pv-notice-label" id="noticePvNoticeLabel">NOTICE</div>
-            <div class="ntool-pv-wmark-w"><img id="noticePvWmark" src="../../_assets/logo/watermarks/mark_beige.png" alt="W"></div>
+            <div class="ntool-pv-wmark-w" id="noticePvWmark">W</div>
             <div class="ntool-pv-title-kr" id="noticePvTitleKr">국문 공지 제목</div>
             <div class="ntool-pv-title-en" id="noticePvTitleEn">ENG NOTICE TITLE</div>
             <div class="ntool-pv-subtitle">A Day, Well Completed. 하루의 완성, 웰페리온</div>
@@ -369,9 +369,9 @@
     en.textContent = el('noticeTitleEn').value || 'ENG NOTICE TITLE';
     kr.style.color = brand.logo;
     en.style.color = brand.logo;
-    /* 헤더 우상단 mark(W) = 사업부 컬러 / 푸터 배경 = 사업부 BG / 푸터 corner = 흰색 고정(가독성) */
+    /* 헤더 우상단 W = 제목과 동일 brand.logo / 푸터 배경 = 사업부 BG / 푸터 corner = 흰색 고정 */
     var wmEl = el('noticePvWmark');
-    if(wmEl) wmEl.src = '../../_assets/logo/watermarks/mark_'+brand.wm+'.png';
+    if(wmEl) wmEl.style.color = brand.logo;
     var ftrEl = document.querySelector('#noticePreview .ntool-pv-ftr');
     if(ftrEl) ftrEl.style.background = brand.bg;
     /* 푸터 corner는 흰색 고정 — 모든 사업부 BG 위에서 일관된 가독성 */
@@ -458,8 +458,7 @@
     /* HEADER (축소된 비율 + 캡션 헤더 하단 absolute) */
     html += '.hdr{flex:0 0 30%;padding:5.2vmin 5vmin 5.2vmin;text-align:center;color:#fff;display:flex;flex-direction:column;justify-content:center;align-items:center;position:relative;}';
     html += '.notice-label-top{position:absolute;top:2.6vmin;left:50%;transform:translateX(-50%);font-size:1.5vmin;font-weight:600;letter-spacing:0.32em;color:rgba(255,255,255,0.78);}';
-    html += '.wmark{position:absolute;top:2.4vmin;right:3vmin;width:11vmin;opacity:1;}';
-    html += '.wmark img{width:100%;height:auto;display:block;}';
+    html += '.wmark{position:absolute;top:0.8vmin;right:2.4vmin;font-family:"Pretendard","Apple SD Gothic Neo",sans-serif;font-size:18vmin;font-weight:200;line-height:1;letter-spacing:-0.05em;opacity:0.55;color:'+brand.logo+';user-select:none;}';
     html += '.tkr{font-size:6.2vmin;font-weight:700;line-height:1.16;margin-bottom:0.8vmin;color:'+brand.logo+';letter-spacing:0.005em;}';
     html += '.ten{font-size:3vmin;font-weight:500;color:'+brand.logo+';opacity:0.92;letter-spacing:0.01em;margin-bottom:0;}';
     html += '.sub{position:absolute;bottom:1.8vmin;left:0;right:0;text-align:center;font-size:1.55vmin;color:#ED5B3F;opacity:0.95;letter-spacing:0.12em;font-weight:500;padding:0 4vmin;}';
@@ -483,7 +482,7 @@
     html += '<div class="page">';
     html += '<div class="hdr" style="background:'+brand.hdr+';">';
     html += '<div class="notice-label-top">NOTICE</div>';
-    html += '<div class="wmark"><img src="../../_assets/logo/watermarks/mark_'+brand.wm+'.png" alt="W"></div>';
+    html += '<div class="wmark">W</div>';
     html += '<div class="tkr">'+esc(titleKr)+'</div>';
     html += '<div class="ten">'+esc(titleEn)+'</div>';
     html += '<div class="sub">A Day, Well Completed. 하루의 완성, 웰페리온</div>';
