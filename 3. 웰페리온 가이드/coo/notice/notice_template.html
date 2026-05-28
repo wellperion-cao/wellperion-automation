@@ -43,6 +43,14 @@
   .ntool-input:focus,.ntool-select:focus,.ntool-textarea:focus{outline:none;border-color:var(--accent);}
   .ntool-select{cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M3 5l3 3 3-3' fill='none' stroke='%23999' stroke-width='1.5'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;}
   .ntool-textarea{min-height:240px;resize:vertical;line-height:1.7;}
+  /* v2.32 contenteditable wysiwyg 에디터 — 네이버 블로그 글쓰기와 동일 경험 */
+  .ntool-editor{width:100%;min-height:280px;padding:16px 20px;background:var(--paper);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:18px;line-height:1.85;outline:none;overflow-y:auto;font-family:"Pretendard","Apple SD Gothic Neo",sans-serif;cursor:text;}
+  .ntool-editor:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(183,159,138,0.12);}
+  .ntool-editor:empty:before{content:attr(data-placeholder);color:#bbb;font-weight:400;pointer-events:none;}
+  .ntool-editor blockquote{border-left:4px solid var(--accent);padding:0.5em 1em;margin:0.8em 0;color:var(--accent);background:var(--accent-bg);border-radius:0 6px 6px 0;font-style:italic;}
+  .ntool-editor hr{border:none;height:1px;background:#ccc;margin:1em auto;width:80%;}
+  .ntool-editor p{margin:0 0 0.4em 0;}
+  .ntool-help-tip{margin-top:8px;padding:8px 12px;background:var(--accent-bg);border-radius:6px;font-size:11px;color:var(--accent);line-height:1.6;}
   .ntool-font-bar{display:flex;gap:6px;margin-bottom:8px;align-items:center;flex-wrap:wrap;padding:8px 10px;background:#fafaf8;border-radius:9px;border:1px solid var(--border);}
   .ntool-font-bar select,.ntool-font-bar input{padding:7px 10px;background:var(--paper);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;font-family:inherit;transition:border-color 0.15s;}
   .ntool-font-bar select:hover,.ntool-font-bar input:hover{border-color:var(--accent);}
@@ -241,17 +249,8 @@
             <button type="button" onclick="ntFmtHr()" title="구분선 (--- 한 줄)">─ 구분</button>
           </div>
         </div>
-        <textarea class="ntool-textarea" id="noticeBody" placeholder="6월 정기 휴관 안내&#10;&#10;회원 여러분의 양해를 부탁드리며&#10;6월 정기 휴관일을 안내드립니다.&#10;&#10;1. 휴관 일자: **2026년 6월 14일** (둘째 주 일요일)&#10;2. 휴관 일자: **2026년 6월 28일** (넷째 주 일요일)&#10;3. 평일 정상 운영 — 06:00 ~ 22:30&#10;4. 주말·공휴일 정상 운영 — 08:00 ~ 20:00&#10;&#10;웰페리온은 회원님들의 더 나은 경험을 위해&#10;시설 유지·관리에 만전을 기하겠습니다. 감사합니다." oninput="ntUpdatePreview()"></textarea>
-        <details class="ntool-help-toggle">
-          <summary>📖 마크다운 사용법 펼치기</summary>
-          <div class="ntool-help">
-            <b>자동 3구획 파싱</b> — 빈 줄로 단락 구분<br>
-            ① 첫 단락 → 큰 안내 헤드라인 (가운데, 굵게) · ② 1./2./3. 줄 묶음 → 번호 리스트 (주황 강조) · ③ 마지막 단락 → 닫음말<br>
-            <b>인라인 (선택 영역)</b> <code>**주황**</code> · <code>__굵게__</code> · <code>==밑줄==</code> · <code>~~선긋기~~</code> · <code>{c:#색상}글자{/c}</code><br>
-            <b>줄 단위 (작/중/크/⮊B 클릭)</b> <code>[size=14]</code> · <code>[size=18]</code> · <code>[size=24]</code> · <code>[b]</code> 줄 전체<br>
-            <b>블록</b> 단락 시작 <code>[align=center]</code> 정렬 · 줄 시작 <code>&gt; </code> 인용구 · 단독 줄 <code>---</code> 구분선
-          </div>
-        </details>
+        <div class="ntool-editor" id="noticeBody" contenteditable="true" data-placeholder="공지 본문을 입력하세요. 위 도구로 강조·색·정렬·인용구·구분선·크기·줄 굵기를 시각적으로 적용할 수 있습니다." oninput="ntUpdatePreview()" onpaste="ntHandlePaste(event)"></div>
+        <div class="ntool-help-tip">💡 텍스트를 드래그해 선택한 뒤 상단 도구를 누르면 즉시 스타일이 적용됩니다. Ctrl+Z로 되돌리기 가능.</div>
       </div>
       <div class="ntool-img-thumb" id="noticeImgThumb" style="margin-top:8px;"></div>
       <div class="ntool-actions">
@@ -357,215 +356,88 @@
     return '<div class="notice-date">게시기간 : ' + fmt(s) + ' - ' + fmt(e) + '</div>';
   }
 
-  /* 인라인 마크다운: **주황강조** / __굵게__ / ==밑줄== / ~~가운데선~~ / {c:#XXXXXX}색{/c} */
-  function inline(s){
-    return esc(s)
-      .replace(/\*\*(.+?)\*\*/g,'<span class="hl" style="color:#ED5B3F;font-weight:700;">$1</span>')
-      .replace(/__(.+?)__/g,'<strong>$1</strong>')
-      .replace(/==(.+?)==/g,'<u>$1</u>')
-      .replace(/~~(.+?)~~/g,'<s>$1</s>')
-      .replace(/\{c:(#[0-9a-fA-F]{3,8})\}([\s\S]+?)\{\/c\}/g,'<span style="color:$1">$2</span>');
-  }
-  /* 줄 시작 토큰 추출 ([size=N], [b]) + 인라인 처리. 반환 = {style, html} */
-  function extractLineTokens(l){
-    var style = '';
-    var sm = l.match(/^\[size=(\d+)\]\s*/);
-    if(sm){ style += 'font-size:'+sm[1]+'px;'; l = l.substring(sm[0].length); }
-    var bm = l.match(/^\[b\]\s*/);
-    if(bm){ style += 'font-weight:700;'; l = l.substring(bm[0].length); }
-    return {style:style, text:l};
-  }
-  /* 줄 단위 토큰 + 인라인 = 줄 전체 wrap (head/tail/quote용) */
-  function lineInline(l){
-    var t = extractLineTokens(l);
-    if(t.style){ return '<span style="'+t.style+'">'+inline(t.text)+'</span>'; }
-    return inline(t.text);
-  }
-
-  /* 본문 textarea 선택 영역에 마크다운 prefix/suffix wrap (v2.28 토글 + placeholder 제거) */
-  function ntWrap(prefix, suffix){
-    var ta = el('noticeBody');
-    var s = ta.selectionStart, e = ta.selectionEnd;
-    var before = ta.value.substring(0, s);
-    var selected = ta.value.substring(s, e);
-    var after = ta.value.substring(e);
-
-    /* 토글 A: 선택/커서 바로 바깥이 prefix/suffix면 제거 (선택 무관, 빈 ****도 정리) */
-    if(before.endsWith(prefix) && after.startsWith(suffix)){
-      ta.value = before.slice(0, -prefix.length) + selected + after.slice(suffix.length);
-      ta.focus();
-      var ns = s - prefix.length;
-      ta.setSelectionRange(ns, ns + selected.length);
-      ntUpdatePreview();
-      return;
-    }
-    /* 토글 B: 선택 영역 자체가 prefix...suffix 형태면 안쪽만 남기기 */
-    if(selected.length >= prefix.length + suffix.length &&
-       selected.startsWith(prefix) && selected.endsWith(suffix)){
-      var inner = selected.slice(prefix.length, selected.length - suffix.length);
-      ta.value = before + inner + after;
-      ta.focus();
-      ta.setSelectionRange(s, s + inner.length);
-      ntUpdatePreview();
-      return;
-    }
-    /* 일반 wrap — 선택 없으면 커서만 prefix·suffix 사이 (placeholder 삽입 X) */
-    ta.value = before + prefix + selected + suffix + after;
-    ta.focus();
-    if(selected === ''){
-      var cur = s + prefix.length;
-      ta.setSelectionRange(cur, cur);
-    } else {
-      ta.setSelectionRange(s + prefix.length, s + prefix.length + selected.length);
-    }
+  /* v2.32 contenteditable wysiwyg — 마크다운 토큰 폐기, execCommand 기반 */
+  function ntExec(cmd, val){
+    el('noticeBody').focus();
+    try{ document.execCommand(cmd, false, val); }catch(e){}
     ntUpdatePreview();
   }
-  window.ntFmtHl = function(){ ntWrap('**', '**'); };
-  window.ntFmtBold = function(){ ntWrap('__', '__'); };
-  window.ntFmtUnderline = function(){ ntWrap('==', '=='); };
-  window.ntFmtStrike = function(){ ntWrap('~~', '~~'); };
-  window.ntFmtColor = function(){
-    var c = el('noticeColorPicker').value;
-    ntWrap('{c:'+c+'}', '{/c}');
+  /* 붙여넣기 시 plain text만 (외부 스타일 침범 방지) */
+  window.ntHandlePaste = function(ev){
+    ev.preventDefault();
+    var text = (ev.clipboardData || window.clipboardData).getData('text');
+    document.execCommand('insertText', false, text);
   };
-  /* 현재 커서/선택 위치가 속한 단락의 시작에 [align=...] 토큰 삽입. 기존 토큰은 교체 */
+
+  /* v2.32 wysiwyg fmt — 모든 동작이 execCommand 기반, contenteditable에 즉시 반영 */
+  window.ntFmtHl = function(){
+    /* 주황 강조 = foreColor + bold 동시 */
+    el('noticeBody').focus();
+    document.execCommand('foreColor', false, '#ED5B3F');
+    document.execCommand('bold', false, null);
+    ntUpdatePreview();
+  };
+  window.ntFmtBold = function(){ ntExec('bold'); };
+  window.ntFmtUnderline = function(){ ntExec('underline'); };
+  window.ntFmtStrike = function(){ ntExec('strikeThrough'); };
+  window.ntFmtColor = function(){ ntExec('foreColor', el('noticeColorPicker').value); };
   window.ntFmtAlign = function(side){
-    var ta = el('noticeBody');
-    var s = ta.selectionStart;
-    var before = ta.value.substring(0, s);
-    var lastBlank = before.lastIndexOf('\n\n');
-    var paraStart = lastBlank === -1 ? 0 : lastBlank + 2;
-    var rest = ta.value.substring(paraStart);
-    rest = rest.replace(/^\[align=(left|center|right)\]\n?/, '');
-    var token = '[align='+side+']\n';
-    ta.value = ta.value.substring(0, paraStart) + token + rest;
-    ta.focus();
-    ntUpdatePreview();
+    var cmd = {left:'justifyLeft', center:'justifyCenter', right:'justifyRight'}[side];
+    if(cmd) ntExec(cmd);
   };
-  /* 현재 줄 시작에 "> " prefix 추가 (이미 인용구면 제거 toggle) */
-  window.ntFmtQuote = function(){
-    var ta = el('noticeBody');
-    var s = ta.selectionStart;
-    var before = ta.value.substring(0, s);
-    var lineStart = before.lastIndexOf('\n') + 1;
-    var head = ta.value.substring(lineStart, lineStart+2);
-    if(head === '> '){
-      ta.value = ta.value.substring(0, lineStart) + ta.value.substring(lineStart+2);
-    } else {
-      ta.value = ta.value.substring(0, lineStart) + '> ' + ta.value.substring(lineStart);
-    }
-    ta.focus();
-    ntUpdatePreview();
-  };
-  /* 커서 위치에 구분선 줄 삽입 */
-  window.ntFmtHr = function(){
-    var ta = el('noticeBody');
-    var s = ta.selectionStart;
-    var before = ta.value.substring(0, s);
-    var after = ta.value.substring(s);
-    /* 줄 중간이면 새 줄로 분리 */
-    var prefix = (before === '' || before.endsWith('\n')) ? '' : '\n';
-    var suffix = (after === '' || after.startsWith('\n')) ? '' : '\n';
-    ta.value = before + prefix + '---' + suffix + after;
-    ta.focus();
-    ntUpdatePreview();
-  };
-  /* 현재 줄 시작에 [size=N] 토큰 삽입/교체 (줄 단위 크기 v2.27) */
+  window.ntFmtQuote = function(){ ntExec('formatBlock', '<blockquote>'); };
+  window.ntFmtHr = function(){ ntExec('insertHorizontalRule'); };
+  /* 줄 단위 크기 — 현재 선택 영역 (또는 커서 위치 줄) span으로 wrap + font-size */
   window.ntFmtSize = function(px){
-    var ta = el('noticeBody');
-    var s = ta.selectionStart;
-    var before = ta.value.substring(0, s);
-    var lineStart = before.lastIndexOf('\n') + 1;
-    var rest = ta.value.substring(lineStart);
-    rest = rest.replace(/^\[size=\d+\]\s*/, '');
-    ta.value = ta.value.substring(0, lineStart) + '[size='+px+']' + rest;
-    ta.focus();
+    var ed = el('noticeBody');
+    ed.focus();
+    var sel = window.getSelection();
+    if(!sel || sel.rangeCount === 0) return;
+    var range = sel.getRangeAt(0);
+    /* 선택 없으면 현재 줄(블록 부모) 선택 */
+    if(range.collapsed){
+      var block = range.startContainer;
+      while(block && block.nodeType !== 1) block = block.parentNode;
+      while(block && block !== ed && !/^(P|DIV|LI|BLOCKQUOTE|H[1-6])$/i.test(block.nodeName)) block = block.parentNode;
+      if(block && block !== ed){
+        range = document.createRange();
+        range.selectNodeContents(block);
+        sel.removeAllRanges();
+        sel.addRange(range);
+      }
+    }
+    /* span wrap + font-size 적용 */
+    document.execCommand('fontSize', false, '7'); /* 임시 큰 사이즈 마커 */
+    var marks = ed.querySelectorAll('font[size="7"]');
+    marks.forEach(function(f){
+      var span = document.createElement('span');
+      span.style.fontSize = px+'px';
+      while(f.firstChild) span.appendChild(f.firstChild);
+      f.parentNode.replaceChild(span, f);
+    });
     ntUpdatePreview();
   };
-  /* 현재 줄 시작에 [b] 토큰 삽입/제거 (줄 전체 굵게) */
+  /* 현재 줄(블록) 전체를 굵게 */
   window.ntFmtBoldLine = function(){
-    var ta = el('noticeBody');
-    var s = ta.selectionStart;
-    var before = ta.value.substring(0, s);
-    var lineStart = before.lastIndexOf('\n') + 1;
-    var rest = ta.value.substring(lineStart);
-    /* [size=N]은 보존하고 그 뒤 [b] 토글 */
-    var sizePrefix = '';
-    var sizeMatch = rest.match(/^\[size=\d+\]\s*/);
-    if(sizeMatch){
-      sizePrefix = sizeMatch[0];
-      rest = rest.substring(sizeMatch[0].length);
+    var ed = el('noticeBody');
+    ed.focus();
+    var sel = window.getSelection();
+    if(!sel || sel.rangeCount === 0) return;
+    var range = sel.getRangeAt(0);
+    var block = range.startContainer;
+    while(block && block.nodeType !== 1) block = block.parentNode;
+    while(block && block !== ed && !/^(P|DIV|LI|BLOCKQUOTE|H[1-6])$/i.test(block.nodeName)) block = block.parentNode;
+    if(block && block !== ed){
+      var newRange = document.createRange();
+      newRange.selectNodeContents(block);
+      sel.removeAllRanges();
+      sel.addRange(newRange);
     }
-    if(rest.startsWith('[b]')){
-      rest = rest.substring(3).replace(/^\s+/, '');
-    } else {
-      rest = '[b]' + rest;
-    }
-    ta.value = ta.value.substring(0, lineStart) + sizePrefix + rest;
-    ta.focus();
+    document.execCommand('bold', false, null);
     ntUpdatePreview();
   };
 
-  /* 본문 3구획 자동 파서:
-     - 빈 줄로 단락 split
-     - 첫 단락 = notice-head
-     - "1." "2." 등 숫자.으로 시작하는 줄이 포함된 단락 = notice-list (각 줄 = notice-line)
-     - 마지막(혹은 단독) 단락 = notice-tail
-  */
-  function ntFormatNoticeBody(txt){
-    if(!txt || !txt.trim()) return '';
-    var paras = txt.trim().split(/\n\s*\n+/);
-    var html = '';
-    var sawHead = false;
-    var sawList = false;
-    paras.forEach(function(p, idx){
-      /* 단락 정렬 토큰 추출 ([align=center] 등) */
-      var alignCls = '';
-      var alignMatch = p.match(/^\[align=(left|center|right)\]\n?/);
-      if(alignMatch){
-        alignCls = ' align-'+alignMatch[1];
-        p = p.substring(alignMatch[0].length);
-      }
-      var lines = p.split('\n').map(function(l){ return l.replace(/\s+$/,''); }).filter(function(l){ return l.length>0; });
-      if(!lines.length) return;
-      /* 단독 --- 줄은 구분선 */
-      if(lines.length === 1 && lines[0].trim() === '---'){
-        html += '<hr class="notice-hr">';
-        return;
-      }
-      /* 모든 줄이 "> "로 시작하면 인용구 블록 (줄 토큰 추출 후 wrap) */
-      var isQuote = lines.every(function(l){ return /^\s*>\s?/.test(l); });
-      if(isQuote){
-        var qcontent = lines.map(function(l){ return lineInline(l.replace(/^\s*>\s?/, '')); }).join('<br>');
-        html += '<div class="notice-quote'+alignCls+'">'+qcontent+'</div>';
-        return;
-      }
-      var isList = lines.some(function(l){ return /^\s*\d+\./.test(l); });
-      if(isList){
-        var items = lines.map(function(l){
-          var t = l.trim();
-          /* 줄 시작 토큰 추출 → div style 적용 (번호도 같이 스타일 적용) */
-          var tok = extractLineTokens(t);
-          var styleAttr = tok.style ? ' style="'+tok.style+'"' : '';
-          var m = tok.text.match(/^(\d+\.)\s*(.*)$/);
-          if(m){
-            return '<div class="notice-line'+alignCls+'"'+styleAttr+'><span class="num">'+m[1]+'</span>'+inline(m[2])+'</div>';
-          } else {
-            return '<div class="notice-line plain'+alignCls+'"'+styleAttr+'>'+inline(tok.text)+'</div>';
-          }
-        });
-        if(sawHead && !sawList) html += '<hr class="notice-divider">';
-        html += '<div class="notice-list'+alignCls+'">'+items.join('')+'</div>';
-        sawList = true;
-      } else if(!sawHead){
-        html += '<div class="notice-head'+alignCls+'">'+lines.map(lineInline).join('<br>')+'</div>';
-        sawHead = true;
-      } else {
-        html += '<div class="notice-tail'+alignCls+'">'+lines.map(lineInline).join('<br>')+'</div>';
-      }
-    });
-    return html;
-  }
+  /* v2.32 — 마크다운 파서 폐기. contenteditable HTML이 미리보기에 그대로 노출됨 */
 
 
 
@@ -591,11 +463,13 @@
     var ftrWmEl = el('noticePvFtrWmark');
     if(ftrWmEl) ftrWmEl.src = brand.wordmark || (WM_BASE + brand.corner);
     var bodyEl = el('noticePvBody');
-    var txt = el('noticeBody').value;
+    /* v2.32 wysiwyg — contenteditable HTML 그대로 미리보기에 반영 */
+    var editor = el('noticeBody');
+    var bodyHtml = editor.innerHTML.trim();
     var ff = el('noticeFontFamily').value;
     var fs = el('noticeFontSize').value;
     var dateHtml = ntFormatDateRange();
-    var html = dateHtml + (ntFormatNoticeBody(txt) || '<div class="notice-head" style="color:#999;">본문 내용이 여기에 표시됩니다.</div>');
+    var html = dateHtml + (bodyHtml || '<div class="notice-head" style="color:#999;">본문 내용이 여기에 표시됩니다.</div>');
     if(noticeImages.length){
       html += '<div class="notice-imgs">';
       noticeImages.forEach(function(src){ html += '<img src="'+src+'">'; });
@@ -606,22 +480,38 @@
     bodyEl.style.fontSize = fs+'px';
     var lh = el('noticeLineHeight');
     bodyEl.style.lineHeight = lh ? lh.value : '1.85';
+    /* 에디터 글꼴·기본 사이즈·줄간격도 동기화 (사용자가 변경 시 즉시 반영) */
+    editor.style.fontFamily = ff==='serif' ? '"Noto Serif KR",serif' : '"Pretendard",sans-serif';
+    editor.style.fontSize = fs+'px';
+    if(lh) editor.style.lineHeight = lh.value;
   };
 
+  /* 마크다운 prefix를 wysiwyg HTML로 변환 (preset body 전용 — 사용자 입력은 그대로 wysiwyg) */
+  function presetMdToHtml(md){
+    if(!md) return '';
+    return md.split(/\n\s*\n/).map(function(p){
+      var hl = p.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+                .replace(/\*\*(.+?)\*\*/g, '<strong style="color:#ED5B3F">$1</strong>')
+                .replace(/\n/g, '<br>');
+      return '<p>' + hl + '</p>';
+    }).join('');
+  }
   /* 공지 종류 선택 시 제목·본문 자동 교체 (본문 입력 중이면 confirm) */
   window.ntApplyPreset = function(){
     var t = el('noticeType').value;
     var pr = NOTICE_PRESETS[t];
     if(!pr) return;
     var bodyEl = el('noticeBody');
-    var hasUserBody = bodyEl.value && bodyEl.value.trim() && bodyEl.value !== NOTICE_PRESETS.holiday.body;
+    var presetHtml = presetMdToHtml(pr.body);
+    var hasUserBody = bodyEl.innerHTML && bodyEl.innerHTML.trim() &&
+                      bodyEl.innerHTML !== presetMdToHtml(NOTICE_PRESETS.holiday.body);
     var shouldReplaceBody = true;
     if(hasUserBody){
       shouldReplaceBody = confirm('입력하신 본문이 새 예시로 교체됩니다. 진행할까요?\n(취소 시 제목만 변경되고 본문은 유지됩니다)');
     }
     el('noticeTitleKr').value = pr.kr;
     el('noticeTitleEn').value = pr.en;
-    if(shouldReplaceBody) bodyEl.value = pr.body;
+    if(shouldReplaceBody) bodyEl.innerHTML = presetHtml;
     ntUpdatePreview();
   };
 
@@ -725,7 +615,8 @@
     var titleKr = el('noticeTitleKr').value || '';
     var titleEn = el('noticeTitleEn').value || '';
     var dateHtml = ntFormatDateRange();
-    var bodyHtml = dateHtml + ntFormatNoticeBody(el('noticeBody').value);
+    /* v2.32 wysiwyg — contenteditable HTML 그대로 인쇄 빌더에 전달 */
+    var bodyHtml = dateHtml + (el('noticeBody').innerHTML || '');
     var ff = el('noticeFontFamily').value;
     var fs = el('noticeFontSize').value;
     var imgHtml = '';
@@ -814,7 +705,7 @@
       endDate: el('noticeEndDate').value,
       titleKr: el('noticeTitleKr').value,
       titleEn: el('noticeTitleEn').value,
-      body: el('noticeBody').value,
+      body: el('noticeBody').innerHTML,
       ff: el('noticeFontFamily').value,
       fs: el('noticeFontSize').value,
       lh: el('noticeLineHeight') ? el('noticeLineHeight').value : '1.85',
@@ -839,7 +730,7 @@
     if(item.endDate) el('noticeEndDate').value = item.endDate;
     el('noticeTitleKr').value = item.titleKr||'';
     el('noticeTitleEn').value = item.titleEn||'';
-    el('noticeBody').value = item.body||'';
+    el('noticeBody').innerHTML = item.body||'';
     el('noticeFontFamily').value = item.ff||'Pretendard';
     el('noticeFontSize').value = item.fs||'16';
     if(el('noticeLineHeight')) el('noticeLineHeight').value = item.lh||'1.85';
