@@ -138,6 +138,16 @@
   /* ── 미리보기 푸터 (가로 락업 corner 워터마크 단독) ── */
   .ntool-pv-ftr{background:#221F20;padding:clamp(10px,1.8vw,18px);display:flex;align-items:center;justify-content:center;flex:0 0 7%;}
   .ntool-pv-ftr img{height:clamp(20px,3.4vw,44px);width:auto;}
+  /* v2.39 — 가로형 전용 비율·폰트 축소 (헤더 30% → 22%, 폰트 약 60%) */
+  #noticePreviewFrame.landscape .ntool-pv-hdr{flex:0 0 22%;padding:clamp(12px,2.2vw,26px) clamp(18px,2.8vw,34px);}
+  #noticePreviewFrame.landscape .ntool-pv-notice-label{font-size:clamp(7px,0.85vw,10px);}
+  #noticePreviewFrame.landscape .ntool-pv-wmark-w{height:clamp(28px,5vw,70px);top:clamp(4px,0.8vw,10px);}
+  #noticePreviewFrame.landscape #noticePreview .ntool-pv-title-kr{font-size:clamp(15px,2.8vw,34px);}
+  #noticePreviewFrame.landscape #noticePreview .ntool-pv-title-en{font-size:clamp(9px,1.3vw,16px);}
+  #noticePreviewFrame.landscape .ntool-pv-subtitle{font-size:clamp(8px,0.9vw,12px);bottom:clamp(4px,0.8vw,10px);}
+  #noticePreviewFrame.landscape #noticePreview .ntool-pv-body{padding:clamp(12px,2vw,26px) clamp(18px,2.8vw,34px) clamp(18px,2.4vw,28px);font-size:clamp(9px,1.2vw,15px);}
+  #noticePreviewFrame.landscape .ntool-pv-ftr{flex:0 0 6%;padding:clamp(6px,1.2vw,12px);}
+  #noticePreviewFrame.landscape .ntool-pv-ftr img{height:clamp(14px,2.4vw,30px);}
 
   /* ── 사진 첨부 썸네일 ── */
   .ntool-img-thumb{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;}
@@ -491,7 +501,12 @@
     /* v2.38 — 방향 (세로/가로) 미리보기 aspect-ratio 동적 변경 */
     var orient = el('noticeOrient') ? el('noticeOrient').value : 'portrait';
     var frame = el('noticePreviewFrame');
-    if(frame) frame.style.aspectRatio = orient === 'landscape' ? '420/297' : '297/420';
+    if(frame){
+      frame.style.aspectRatio = orient === 'landscape' ? '420/297' : '297/420';
+      /* v2.39 — 가로형 전용 비율·폰트 축소 (.landscape CSS 룰 활성) */
+      if(orient === 'landscape') frame.classList.add('landscape');
+      else frame.classList.remove('landscape');
+    }
   };
 
   /* 마크다운 prefix를 wysiwyg HTML로 변환 (preset body 전용 — 사용자 입력은 그대로 wysiwyg) */
@@ -684,6 +699,18 @@
     /* FOOTER (가로 락업 corner 워터마크 단독, 사업부 BG 동기화 + 흰 워터마크로 가독성) */
     html += '.ftr{flex:0 0 7%;background:'+brand.bg+';display:flex;align-items:center;justify-content:center;}';
     html += '.ftr img{height:4.5vmin;width:auto;}';
+    /* v2.39 — 가로형 인쇄 비율·폰트 축소 (헤더 30% → 22%, 폰트 약 60%) */
+    if(orient === 'landscape'){
+      html += '.hdr{flex:0 0 22% !important;padding:2.6vmin 3.2vmin !important;}';
+      html += '.wmark{height:8vmin !important;top:0.6vmin !important;}';
+      html += '.notice-label-top{font-size:1.1vmin !important;}';
+      html += '.tkr{font-size:4vmin !important;}';
+      html += '.ten{font-size:2vmin !important;}';
+      html += '.sub{font-size:1.2vmin !important;bottom:1vmin !important;}';
+      html += '.body{flex:0 0 72% !important;padding:2.6vmin 3.2vmin 3.2vmin !important;font-size:'+(((parseFloat(fs)||18)*0.13).toFixed(2))+'vmin !important;}';
+      html += '.ftr{flex:0 0 6% !important;}';
+      html += '.ftr img{height:3vmin !important;}';
+    }
     html += '</style></head><body>';
     html += '<div class="page">';
     html += '<div class="hdr" style="background:'+brand.hdr+';">';
