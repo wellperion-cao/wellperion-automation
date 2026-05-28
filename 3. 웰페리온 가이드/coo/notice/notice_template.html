@@ -46,11 +46,27 @@
   .ntool-font-bar{display:flex;gap:8px;margin-bottom:8px;align-items:center;flex-wrap:wrap;}
   .ntool-font-bar select,.ntool-font-bar input{padding:6px 10px;background:var(--paper);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;font-family:inherit;}
   .ntool-font-bar input[type=number]{width:60px;}
-  .ntool-fmt-bar{display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap;}
-  .ntool-fmt-bar button{padding:6px 12px;border:1px solid var(--border);background:var(--paper);color:var(--text);border-radius:6px;cursor:pointer;font-family:inherit;font-size:13px;min-width:36px;line-height:1;}
-  .ntool-fmt-bar button:hover{background:var(--accent-bg);border-color:var(--accent);color:var(--accent);}
-  .ntool-fmt-bar .sep{width:1px;background:var(--border);margin:0 2px;}
-  .ntool-help{margin-top:6px;padding:8px 12px;background:var(--accent-bg);border-radius:6px;font-size:11px;color:var(--accent);line-height:1.6;}
+  /* fmt-bar — v2.27 그룹 박스화 + 호버 효과 */
+  .ntool-fmt-bar{display:flex;gap:10px;margin-bottom:10px;flex-wrap:wrap;align-items:flex-start;}
+  .fmt-group{display:flex;align-items:center;gap:4px;padding:6px 10px 6px 8px;background:#fafaf8;border-radius:9px;border:1px solid var(--border);}
+  .fmt-label{font-size:10px;font-weight:800;color:var(--dim);letter-spacing:0.06em;padding:0 8px 0 2px;border-right:1px solid var(--border);margin-right:4px;line-height:1.4;text-transform:uppercase;}
+  .ntool-fmt-bar button{padding:7px 11px;border:1px solid var(--border);background:var(--paper);color:var(--text);border-radius:6px;cursor:pointer;font-family:inherit;font-size:13px;min-width:34px;line-height:1;transition:background 0.15s,color 0.15s,border-color 0.15s,transform 0.08s;}
+  .ntool-fmt-bar button:hover{background:var(--accent);border-color:var(--accent);color:#fff;}
+  .ntool-fmt-bar button:active{transform:translateY(1px);}
+  .ntool-fmt-bar .sep{display:none;}
+  .ntool-fmt-bar input[type=color]{width:36px;height:34px;padding:2px;border:1px solid var(--border);border-radius:6px;cursor:pointer;background:#fff;transition:border-color 0.15s;}
+  .ntool-fmt-bar input[type=color]:hover{border-color:var(--accent);}
+  .ntool-fmt-bar select{padding:7px 10px;font-size:12px;font-weight:500;border:1px solid var(--border);border-radius:6px;background:var(--paper);cursor:pointer;font-family:inherit;transition:border-color 0.15s;}
+  .ntool-fmt-bar select:hover{border-color:var(--accent);}
+  /* 도움말 토글 (details/summary) */
+  .ntool-help-toggle{margin-top:6px;}
+  .ntool-help-toggle summary{cursor:pointer;padding:7px 12px;background:var(--accent-bg);border-radius:6px;font-size:11px;font-weight:700;color:var(--accent);list-style:none;display:flex;align-items:center;gap:6px;user-select:none;}
+  .ntool-help-toggle summary::-webkit-details-marker{display:none;}
+  .ntool-help-toggle summary::before{content:'▶';font-size:9px;transition:transform 0.15s;}
+  .ntool-help-toggle[open] summary::before{transform:rotate(90deg);}
+  .ntool-help-toggle summary:hover{background:var(--accent);color:#fff;}
+  .ntool-help{margin-top:6px;padding:10px 14px;background:var(--accent-bg);border-radius:6px;font-size:11px;color:var(--accent);line-height:1.7;}
+  .ntool-help code{background:#fff;padding:1px 6px;border-radius:3px;font-family:"Consolas",monospace;font-size:10.5px;}
   .ntool-img-btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;background:var(--accent-bg);color:var(--accent);font-size:13px;font-weight:600;border:1px solid rgba(183,159,138,0.3);border-radius:8px;cursor:pointer;font-family:inherit;}
   .ntool-img-btn:hover{background:var(--accent);color:#fff;}
   .ntool-actions{display:flex;gap:10px;margin-top:18px;flex-wrap:wrap;}
@@ -187,36 +203,52 @@
           <span style="font-size:11px;color:var(--dim);">px</span>
         </div>
         <div class="ntool-fmt-bar">
-          <button type="button" onclick="ntFmtHl()" title="주황 강조 (**텍스트**)" style="color:#ED5B3F;font-weight:700;">★ 강조</button>
-          <button type="button" onclick="ntFmtBold()" title="굵게 (__텍스트__)" style="font-weight:800;">B 굵게</button>
-          <button type="button" onclick="ntFmtUnderline()" title="밑줄 (==텍스트==)" style="text-decoration:underline;">U 밑줄</button>
-          <button type="button" onclick="ntFmtStrike()" title="가운데선 (~~텍스트~~)" style="text-decoration:line-through;">S 선긋기</button>
-          <span class="sep"></span>
-          <input type="color" id="noticeColorPicker" value="#ED5B3F" title="글자 색" onchange="ntFmtColor()" style="width:34px;height:32px;padding:0;border:1px solid var(--border);border-radius:6px;cursor:pointer;background:#fff;">
-          <button type="button" onclick="ntFmtAlign('left')" title="좌측 정렬 단락">⬅ 좌</button>
-          <button type="button" onclick="ntFmtAlign('center')" title="가운데 정렬 단락">≡ 중</button>
-          <button type="button" onclick="ntFmtAlign('right')" title="우측 정렬 단락">➡ 우</button>
-          <span class="sep"></span>
-          <button type="button" onclick="ntFmtQuote()" title="인용구 (현재 줄 앞에 &gt; )">" 인용</button>
-          <button type="button" onclick="ntFmtHr()" title="구분선 (--- 한 줄)">─ 구분</button>
-          <span class="sep"></span>
-          <button type="button" onclick="ntFmtSize('14')" title="작게 (14px)" style="font-size:11px;">작</button>
-          <button type="button" onclick="ntFmtSize('18')" title="중간 (18px)">중</button>
-          <button type="button" onclick="ntFmtSize('24')" title="크게 (24px)" style="font-size:16px;font-weight:700;">크</button>
-          <span class="sep"></span>
-          <select id="noticeLineHeight" title="줄간격" onchange="ntUpdatePreview()" style="padding:6px 8px;font-size:12px;border:1px solid var(--border);border-radius:6px;background:var(--paper);">
-            <option value="1.5">줄간격: 좁게</option>
-            <option value="1.85" selected>줄간격: 보통</option>
-            <option value="2.2">줄간격: 넓게</option>
-          </select>
+          <div class="fmt-group" role="group" aria-label="인라인 강조 (선택 영역)">
+            <span class="fmt-label">강조</span>
+            <button type="button" onclick="ntFmtHl()" title="주황 강조 (**텍스트**)" style="color:#ED5B3F;font-weight:700;">★</button>
+            <button type="button" onclick="ntFmtBold()" title="굵게 (__텍스트__)" style="font-weight:800;">B</button>
+            <button type="button" onclick="ntFmtUnderline()" title="밑줄 (==텍스트==)" style="text-decoration:underline;">U</button>
+            <button type="button" onclick="ntFmtStrike()" title="가운데선 (~~텍스트~~)" style="text-decoration:line-through;">S</button>
+            <input type="color" id="noticeColorPicker" value="#ED5B3F" title="글자 색 (선택 영역)" onchange="ntFmtColor()">
+          </div>
+          <div class="fmt-group" role="group" aria-label="단락 정렬">
+            <span class="fmt-label">정렬</span>
+            <button type="button" onclick="ntFmtAlign('left')" title="좌측 정렬 (단락)">⬅</button>
+            <button type="button" onclick="ntFmtAlign('center')" title="가운데 정렬 (단락)">≡</button>
+            <button type="button" onclick="ntFmtAlign('right')" title="우측 정렬 (단락)">➡</button>
+          </div>
+          <div class="fmt-group" role="group" aria-label="블록 요소">
+            <span class="fmt-label">블록</span>
+            <button type="button" onclick="ntFmtQuote()" title="인용구 (줄 앞에 &gt; )">" 인용</button>
+            <button type="button" onclick="ntFmtHr()" title="구분선 (--- 한 줄)">─ 구분</button>
+          </div>
+          <div class="fmt-group" role="group" aria-label="줄 단위 글자 크기">
+            <span class="fmt-label">크기</span>
+            <button type="button" onclick="ntFmtSize(14)" title="현재 줄 작게 (14px)" style="font-size:11px;">작</button>
+            <button type="button" onclick="ntFmtSize(18)" title="현재 줄 중간 (18px)">중</button>
+            <button type="button" onclick="ntFmtSize(24)" title="현재 줄 크게 (24px)" style="font-size:16px;font-weight:700;">크</button>
+            <button type="button" onclick="ntFmtBoldLine()" title="현재 줄 전체 굵게 ([b])" style="font-weight:800;">⮊ B</button>
+          </div>
+          <div class="fmt-group" role="group" aria-label="줄간격">
+            <span class="fmt-label">줄간격</span>
+            <select id="noticeLineHeight" title="본문 전체 줄간격" onchange="ntUpdatePreview()">
+              <option value="1.5">좁게</option>
+              <option value="1.85" selected>보통</option>
+              <option value="2.2">넓게</option>
+            </select>
+          </div>
         </div>
         <textarea class="ntool-textarea" id="noticeBody" placeholder="6월 정기 휴관 안내&#10;&#10;회원 여러분의 양해를 부탁드리며&#10;6월 정기 휴관일을 안내드립니다.&#10;&#10;1. 휴관 일자: **2026년 6월 14일** (둘째 주 일요일)&#10;2. 휴관 일자: **2026년 6월 28일** (넷째 주 일요일)&#10;3. 평일 정상 운영 — 06:00 ~ 22:30&#10;4. 주말·공휴일 정상 운영 — 08:00 ~ 20:00&#10;&#10;웰페리온은 회원님들의 더 나은 경험을 위해&#10;시설 유지·관리에 만전을 기하겠습니다. 감사합니다." oninput="ntUpdatePreview()"></textarea>
-        <div class="ntool-help">
-          <b>자동 3구획 파싱</b> — 빈 줄로 단락 구분<br>
-          ① 첫 단락 → 큰 안내 헤드라인 (가운데, 굵게) · ② 1./2./3. 줄 묶음 → 번호 리스트 (주황 강조) · ③ 마지막 단락 → 닫음말<br>
-          <b>인라인</b> <code>**주황**</code> · <code>__굵게__</code> · <code>==밑줄==</code> · <code>~~선긋기~~</code> · <code>{c:#색상}글자{/c}</code><br>
-          <b>블록</b> 단락 시작 <code>[align=center]</code> 정렬 · 줄 시작 <code>&gt; </code> 인용구 · 단독 줄 <code>---</code> 구분선
-        </div>
+        <details class="ntool-help-toggle">
+          <summary>📖 마크다운 사용법 펼치기</summary>
+          <div class="ntool-help">
+            <b>자동 3구획 파싱</b> — 빈 줄로 단락 구분<br>
+            ① 첫 단락 → 큰 안내 헤드라인 (가운데, 굵게) · ② 1./2./3. 줄 묶음 → 번호 리스트 (주황 강조) · ③ 마지막 단락 → 닫음말<br>
+            <b>인라인 (선택 영역)</b> <code>**주황**</code> · <code>__굵게__</code> · <code>==밑줄==</code> · <code>~~선긋기~~</code> · <code>{c:#색상}글자{/c}</code><br>
+            <b>줄 단위 (작/중/크/⮊B 클릭)</b> <code>[size=14]</code> · <code>[size=18]</code> · <code>[size=24]</code> · <code>[b]</code> 줄 전체<br>
+            <b>블록</b> 단락 시작 <code>[align=center]</code> 정렬 · 줄 시작 <code>&gt; </code> 인용구 · 단독 줄 <code>---</code> 구분선
+          </div>
+        </details>
       </div>
       <div style="margin-top:12px;">
         <label class="ntool-label">사진 첨부</label>
@@ -334,6 +366,21 @@
       .replace(/~~(.+?)~~/g,'<s>$1</s>')
       .replace(/\{c:(#[0-9a-fA-F]{3,8})\}([\s\S]+?)\{\/c\}/g,'<span style="color:$1">$2</span>');
   }
+  /* 줄 시작 토큰 추출 ([size=N], [b]) + 인라인 처리. 반환 = {style, html} */
+  function extractLineTokens(l){
+    var style = '';
+    var sm = l.match(/^\[size=(\d+)\]\s*/);
+    if(sm){ style += 'font-size:'+sm[1]+'px;'; l = l.substring(sm[0].length); }
+    var bm = l.match(/^\[b\]\s*/);
+    if(bm){ style += 'font-weight:700;'; l = l.substring(bm[0].length); }
+    return {style:style, text:l};
+  }
+  /* 줄 단위 토큰 + 인라인 = 줄 전체 wrap (head/tail/quote용) */
+  function lineInline(l){
+    var t = extractLineTokens(l);
+    if(t.style){ return '<span style="'+t.style+'">'+inline(t.text)+'</span>'; }
+    return inline(t.text);
+  }
 
   /* 본문 textarea 선택 영역에 마크다운 prefix/suffix 자동 삽입 */
   function ntWrap(prefix, suffix){
@@ -397,8 +444,39 @@
     ta.focus();
     ntUpdatePreview();
   };
+  /* 현재 줄 시작에 [size=N] 토큰 삽입/교체 (줄 단위 크기 v2.27) */
   window.ntFmtSize = function(px){
-    el('noticeFontSize').value = px;
+    var ta = el('noticeBody');
+    var s = ta.selectionStart;
+    var before = ta.value.substring(0, s);
+    var lineStart = before.lastIndexOf('\n') + 1;
+    var rest = ta.value.substring(lineStart);
+    rest = rest.replace(/^\[size=\d+\]\s*/, '');
+    ta.value = ta.value.substring(0, lineStart) + '[size='+px+']' + rest;
+    ta.focus();
+    ntUpdatePreview();
+  };
+  /* 현재 줄 시작에 [b] 토큰 삽입/제거 (줄 전체 굵게) */
+  window.ntFmtBoldLine = function(){
+    var ta = el('noticeBody');
+    var s = ta.selectionStart;
+    var before = ta.value.substring(0, s);
+    var lineStart = before.lastIndexOf('\n') + 1;
+    var rest = ta.value.substring(lineStart);
+    /* [size=N]은 보존하고 그 뒤 [b] 토글 */
+    var sizePrefix = '';
+    var sizeMatch = rest.match(/^\[size=\d+\]\s*/);
+    if(sizeMatch){
+      sizePrefix = sizeMatch[0];
+      rest = rest.substring(sizeMatch[0].length);
+    }
+    if(rest.startsWith('[b]')){
+      rest = rest.substring(3).replace(/^\s+/, '');
+    } else {
+      rest = '[b]' + rest;
+    }
+    ta.value = ta.value.substring(0, lineStart) + sizePrefix + rest;
+    ta.focus();
     ntUpdatePreview();
   };
 
@@ -429,10 +507,10 @@
         html += '<hr class="notice-hr">';
         return;
       }
-      /* 모든 줄이 "> "로 시작하면 인용구 블록 */
+      /* 모든 줄이 "> "로 시작하면 인용구 블록 (줄 토큰 추출 후 wrap) */
       var isQuote = lines.every(function(l){ return /^\s*>\s?/.test(l); });
       if(isQuote){
-        var qcontent = lines.map(function(l){ return inline(l.replace(/^\s*>\s?/, '')); }).join('<br>');
+        var qcontent = lines.map(function(l){ return lineInline(l.replace(/^\s*>\s?/, '')); }).join('<br>');
         html += '<div class="notice-quote'+alignCls+'">'+qcontent+'</div>';
         return;
       }
@@ -440,21 +518,24 @@
       if(isList){
         var items = lines.map(function(l){
           var t = l.trim();
-          var m = t.match(/^(\d+\.)\s*(.*)$/);
+          /* 줄 시작 토큰 추출 → div style 적용 (번호도 같이 스타일 적용) */
+          var tok = extractLineTokens(t);
+          var styleAttr = tok.style ? ' style="'+tok.style+'"' : '';
+          var m = tok.text.match(/^(\d+\.)\s*(.*)$/);
           if(m){
-            return '<div class="notice-line'+alignCls+'"><span class="num">'+m[1]+'</span>'+inline(m[2])+'</div>';
+            return '<div class="notice-line'+alignCls+'"'+styleAttr+'><span class="num">'+m[1]+'</span>'+inline(m[2])+'</div>';
           } else {
-            return '<div class="notice-line plain'+alignCls+'">'+inline(t)+'</div>';
+            return '<div class="notice-line plain'+alignCls+'"'+styleAttr+'>'+inline(tok.text)+'</div>';
           }
         });
         if(sawHead && !sawList) html += '<hr class="notice-divider">';
         html += '<div class="notice-list'+alignCls+'">'+items.join('')+'</div>';
         sawList = true;
       } else if(!sawHead){
-        html += '<div class="notice-head'+alignCls+'">'+lines.map(inline).join('<br>')+'</div>';
+        html += '<div class="notice-head'+alignCls+'">'+lines.map(lineInline).join('<br>')+'</div>';
         sawHead = true;
       } else {
-        html += '<div class="notice-tail'+alignCls+'">'+lines.map(inline).join('<br>')+'</div>';
+        html += '<div class="notice-tail'+alignCls+'">'+lines.map(lineInline).join('<br>')+'</div>';
       }
     });
     return html;
