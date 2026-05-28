@@ -195,7 +195,7 @@
     border-radius:50%;margin:0 auto 14px;animation:rot .8s linear infinite}
   @keyframes rot{to{transform:rotate(360deg)}}
 
-  /* 접근 게이트 */
+  /* 비밀번호 게이트 */
   #gate{position:fixed;inset:0;z-index:100;display:flex;align-items:center;justify-content:center;
     padding:20px;background:linear-gradient(180deg,#262524,#1a1918)}
   .gate-card{background:var(--surface);border-radius:14px;padding:32px 28px;width:100%;max-width:344px;text-align:center}
@@ -305,11 +305,59 @@
     </select>
     <label>퇴사 사유 <span class="opt">(선택)</span></label>
     <input type="text" id="rmReason" placeholder="예: 개인 사정">
-    <div class="modal-warn">실행 시 Notion 임직원 명부 재직 상태가 '퇴사'로 바뀌고, 퇴사 처리 DB에 레코드가 생성됩니다. 매출보고서 시트 연동이 설정된 경우 현재근무자→퇴사자 이동도 함께 실행됩니다.</div>
+    <div class="modal-warn">실행 시 Notion 임직원 명부 재직 상태가 ‘퇴사’로 바뀌고, 퇴사 처리 DB에 레코드가 생성됩니다. 매출보고서 시트 연동이 설정된 경우 현재근무자→퇴사자 이동도 함께 실행됩니다.</div>
     <div class="modal-msg" id="rmMsg"></div>
     <div class="modal-act">
       <button class="btn btn-ghost" id="rmCancel">취소</button>
       <button class="btn" id="rmConfirm">퇴사 처리 실행</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-bg" id="hireModal">
+  <div class="modal">
+    <h3>신규 입사자 등록</h3>
+    <div class="msub">Notion 임직원 명부와 매출보고서 현재근무자 시트에 동시 등록됩니다.</div>
+    <label>성명</label>
+    <input type="text" id="hireName" placeholder="홍길동">
+    <label>소속</label>
+    <select id="hireSosok">
+      <option value="">선택하세요</option>
+      <option>운영부</option>
+      <option>지원부</option>
+      <option>시설부</option>
+      <option>강습부</option>
+      <option>경영지원부</option>
+    </select>
+    <label>부서</label>
+    <input type="text" id="hireDept" placeholder="예: 프런트, GX, 골프, 주차지원팀">
+    <label>직급 <span class="opt">(선택)</span></label>
+    <input type="text" id="hireRank" placeholder="예: 매니저, 코치, 선생님">
+    <label>고용 형태</label>
+    <select id="hireType">
+      <option value="">선택하세요</option>
+      <option>정규직</option>
+      <option>계약직</option>
+      <option>파트타임</option>
+      <option>프리랜서</option>
+      <option>파트너</option>
+    </select>
+    <label>재직 상태</label>
+    <select id="hireStatus">
+      <option>수습중</option>
+      <option>재직중</option>
+    </select>
+    <label>입사일</label>
+    <input type="date" id="hireDate">
+    <label>연락처 <span class="opt">(선택)</span></label>
+    <input type="text" id="hirePhone" placeholder="010-1234-5678">
+    <label>G메일 주소 <span class="opt">(선택)</span></label>
+    <input type="text" id="hireEmail" placeholder="example@gmail.com">
+    <div class="modal-warn">주민번호·생년월일·근무시간은 자동 입력되지 않습니다. 등록 후 시트에서 직접 채워주세요.</div>
+    <div class="modal-msg" id="hireMsg"></div>
+    <div class="modal-act">
+      <button class="btn btn-ghost" id="hireCancel">취소</button>
+      <button class="btn" id="hireConfirm">등록 실행</button>
     </div>
   </div>
 </div>
@@ -447,7 +495,7 @@ function resolveRel(field){
   return parseArr(field).map(function(u){return map[normId(u)]||"";}).filter(Boolean);
 }
 function emptyState(msg,ic){
-  return '<div class="empty-state"><div class="es-ic">'+(ic||"○")+'</div>'+esc(msg)+'</div>';
+  return '<div class="empty-state"><div class="es-ic">'+(ic||"◌")+'</div>'+esc(msg)+'</div>';
 }
 function errCard(name,key){
   var msg=key&&ERRMSG[key]?ERRMSG[key]:"";
@@ -560,7 +608,9 @@ function renderEmp(){
       sosok.map(function(s){return '<option>'+esc(s)+'</option>';}).join("")+'</select>'+
     '<select id="empType"><option value="">고용형태 전체</option>'+
       ["정규직","계약직","파트타임","프리랜서","파트너"].map(function(s){return '<option>'+esc(s)+'</option>';}).join("")+'</select>'+
-    '<span class="count-pill" id="empCount"></span></div>';
+    '<span class="count-pill" id="empCount"></span>'+
+    (SESSION_ROLE==="admin"?'<button class="btn-sm" id="hireBtn" style="margin-left:auto;color:var(--gold-deep);border-color:var(--gold);font-weight:700">+ 신규 입사자 등록</button>':"")+
+    '</div>';
   html+='<div class="tbl-wrap scroll-y"><table><thead><tr id="empHead"></tr></thead><tbody id="empBody"></tbody></table></div>';
   setPanel("emp",html);
 
@@ -623,6 +673,8 @@ function renderEmp(){
     var b=ev.target.closest&&ev.target.closest("[data-resign]");
     if(b)openResignModal(b.getAttribute("data-name"),b.getAttribute("data-resign"));
   });
+  var hireBtn=document.getElementById("hireBtn");
+  if(hireBtn)hireBtn.addEventListener("click",openHireModal);
   draw();
 }
 function uniq(a){var s={},o=[];a.forEach(function(v){if(v&&!s[v]){s[v]=1;o.push(v);}});
@@ -880,8 +932,7 @@ function setPanel(id,html){document.querySelector('.panel[data-panel="'+id+'"]')
 function drawBar(cid,obj){
   var el=document.getElementById(cid);if(!el)return;
   if(typeof Chart==="undefined"){
-    el.parentNode.innerHTML='<div class="muted" style="padding:36px 10px;text-align:center">차트 라이브러리를 불러오지 못했습니다.</div>';return;
-  }
+    el.parentNode.innerHTML='<div class="muted" style="padding:36px 10px;text-align:center">차트 라이브러리를 불러오지 못했습니다.</div>';return;}
   if(charts[cid])charts[cid].destroy();
   var labels=Object.keys(obj);
   try{
@@ -896,8 +947,7 @@ function drawBar(cid,obj){
 function drawDonut(cid,obj){
   var el=document.getElementById(cid);if(!el)return;
   if(typeof Chart==="undefined"){
-    el.parentNode.innerHTML='<div class="muted" style="padding:36px 10px;text-align:center">차트 라이브러리를 불러오지 못했습니다.</div>';return;
-  }
+    el.parentNode.innerHTML='<div class="muted" style="padding:36px 10px;text-align:center">차트 라이브러리를 불러오지 못했습니다.</div>';return;}
   if(charts[cid])charts[cid].destroy();
   var labels=Object.keys(obj);
   try{
@@ -1036,6 +1086,78 @@ document.getElementById("resignModal").addEventListener("click",function(e){
   if(e.target.id==="resignModal")closeResignModal();
 });
 
+/* ============ 신규 입사자 등록 모달 ============ */
+function openHireModal(){
+  document.getElementById("hireName").value="";
+  document.getElementById("hireSosok").value="";
+  document.getElementById("hireDept").value="";
+  document.getElementById("hireRank").value="";
+  document.getElementById("hireType").value="";
+  document.getElementById("hireStatus").value="수습중";
+  document.getElementById("hireDate").value="";
+  document.getElementById("hirePhone").value="";
+  document.getElementById("hireEmail").value="";
+  var msg=document.getElementById("hireMsg");msg.textContent="";msg.className="modal-msg";
+  var btn=document.getElementById("hireConfirm");btn.disabled=false;btn.textContent="등록 실행";
+  document.getElementById("hireModal").classList.add("show");
+}
+function closeHireModal(){document.getElementById("hireModal").classList.remove("show");}
+async function submitHire(){
+  var name  =document.getElementById("hireName").value.trim();
+  var sosok =document.getElementById("hireSosok").value;
+  var dept  =document.getElementById("hireDept").value.trim();
+  var rank  =document.getElementById("hireRank").value.trim();
+  var empType=document.getElementById("hireType").value;
+  var status=document.getElementById("hireStatus").value;
+  var date  =document.getElementById("hireDate").value;
+  var phone =document.getElementById("hirePhone").value.trim();
+  var email =document.getElementById("hireEmail").value.trim();
+  var msg=document.getElementById("hireMsg");
+  var btn=document.getElementById("hireConfirm");
+  msg.className="modal-msg";
+  if(!name) {msg.className="modal-msg err";msg.textContent="성명을 입력하세요.";return;}
+  if(!sosok){msg.className="modal-msg err";msg.textContent="소속을 선택하세요.";return;}
+  if(!dept) {msg.className="modal-msg err";msg.textContent="부서를 입력하세요.";return;}
+  if(!empType){msg.className="modal-msg err";msg.textContent="고용 형태를 선택하세요.";return;}
+  if(!date) {msg.className="modal-msg err";msg.textContent="입사일을 입력하세요.";return;}
+  btn.disabled=true;btn.textContent="처리 중…";
+  msg.textContent="Notion·시트에 반영하는 중입니다…";
+  try{
+    var r=await fetch(NOTION_FN,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},
+      body:JSON.stringify({action:"register",adminPassword:SESSION_PW,
+        name:name,sosok:sosok,dept:dept,rank:rank,empType:empType,status:status,
+        joinDate:date,phone:phone,email:email})});
+    var data={};try{data=await r.json();}catch(e){}
+    if(r.status===401){
+      msg.className="modal-msg err";msg.textContent=(data.error||"관리자 비밀번호가 올바르지 않습니다.");
+      btn.disabled=false;btn.textContent="등록 실행";return;
+    }
+    if(!r.ok||!data.ok){
+      msg.className="modal-msg err";msg.textContent=(data.error||(data.notionMsg||"")||("처리 실패 — 서버 오류 "+r.status));
+      btn.disabled=false;btn.textContent="등록 실행";return;
+    }
+    var parts=[data.notionRoster?"• Notion 임직원 명부: 페이지 생성":"• Notion 임직원 명부: 실패 — "+(data.notionMsg||"")];
+    if(data.sheet&&data.sheet.attempted){
+      parts.push(data.sheet.ok?"• 매출보고서 시트: "+(data.sheet.msg||"행 추가 완료")
+                              :"• 매출보고서 시트: 실패 — "+(data.sheet.msg||""));
+    }else{
+      parts.push("• 매출보고서 시트: 미연동");
+    }
+    msg.className="modal-msg ok";
+    msg.innerHTML="✓ "+esc(name)+" 등록 완료<br>"+parts.map(esc).join("<br>");
+    btn.textContent="완료";
+    setTimeout(function(){closeHireModal();reloadData();},2600);
+  }catch(e){
+    msg.className="modal-msg err";msg.textContent="서버 연결 오류: "+((e&&e.message)||e);
+    btn.disabled=false;btn.textContent="등록 실행";
+  }
+}
+document.getElementById("hireConfirm").addEventListener("click",submitHire);
+document.getElementById("hireCancel").addEventListener("click",closeHireModal);
+document.getElementById("hireModal").addEventListener("click",function(e){
+  if(e.target.id==="hireModal")closeHireModal();
+});
+
 /* ============ 비밀번호 게이트 ============ */
 function showGate(){document.getElementById("gate").style.display="flex";}
 function hideGate(){document.getElementById("gate").style.display="none";}
@@ -1062,6 +1184,7 @@ async function attemptGate(pw){
     if(errEl)errEl.textContent="비밀번호가 올바르지 않습니다.";
     showGate();return;
   }
+  // 200 또는 5xx(토큰 미설정 등) — 비밀번호는 통과. 데이터 단계에서 진단 표시.
   SESSION_PW=pw;
   SESSION_ROLE=(gateData&&gateData.role)||"viewer";
   try{sessionStorage.setItem("wp_hr_pw",pw);}catch(e){}
@@ -1079,6 +1202,12 @@ document.getElementById("gatePw").addEventListener("keydown",function(e){
 (function boot(){
   var sp="";try{sp=sessionStorage.getItem("wp_hr_pw")||"";}catch(e){}
   if(sp){hideGate();attemptGate(sp);}
+  else{showGate();document.getElementById("gatePw").focus();}
+})();
+</script>
+</body>
+</html>
+attemptGate(sp);}
   else{showGate();document.getElementById("gatePw").focus();}
 })();
 </script>
