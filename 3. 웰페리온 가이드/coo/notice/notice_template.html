@@ -124,19 +124,6 @@
             <option value="brad">BRAD LITTLE'S STAR ACADEMY</option>
           </select>
         </div>
-        <div>
-          <label class="ntool-label">공지 종류</label>
-          <select class="ntool-select" id="noticeType" onchange="ntApplyPreset()">
-            <option value="holiday">휴관일 안내</option>
-            <option value="program">프로그램 런칭</option>
-            <option value="facility">시설 점검/공사</option>
-            <option value="pricing">요금 변경</option>
-            <option value="etiquette">에티켓/규칙</option>
-            <option value="security">보안/도난</option>
-            <option value="network">네트워크 장애</option>
-            <option value="custom">기타 (자유입력)</option>
-          </select>
-        </div>
       </div>
       <div class="ntool-row">
         <div>
@@ -222,16 +209,6 @@
     gymnastic: {name:'WELLPERION GYMNASTIC',       logo:'#DCE7FF', bg:'#8F9AB6', hdr:'#8F9AB6', pantone:'535 C'},
     brad:      {name:"BRAD LITTLE'S STAR ACADEMY", logo:'#FFFFFF', bg:'#000000', hdr:'#000000', pantone:'—'}
   };
-  const NOTICE_PRESETS = {
-    holiday:   {kr:'휴관일 안내',       en:'Regular Closed Day Notice'},
-    program:   {kr:'프로그램 안내',     en:'New Program Notice'},
-    facility:  {kr:'시설 점검 안내',    en:'Facility Maintenance Notice'},
-    pricing:   {kr:'요금 안내',         en:'Pricing Notice'},
-    etiquette: {kr:'이용 에티켓',       en:'Etiquette Guide'},
-    security:  {kr:'보안 공지',         en:'Security Notice'},
-    network:   {kr:'시스템 안내',       en:'System Notice'},
-    custom:    {kr:'',                  en:''}
-  };
   const noticeImages = [];
   function el(id){ return document.getElementById(id); }
   function esc(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
@@ -307,14 +284,6 @@
     bodyEl.innerHTML = html;
     bodyEl.style.fontFamily = ff==='serif' ? '"Noto Serif KR",serif' : '"Pretendard",sans-serif';
     bodyEl.style.fontSize = fs+'px';
-  };
-
-  window.ntApplyPreset = function(){
-    var t = el('noticeType').value;
-    var pr = NOTICE_PRESETS[t];
-    el('noticeTitleKr').value = pr.kr;
-    el('noticeTitleEn').value = pr.en;
-    ntUpdatePreview();
   };
 
   window.ntAddImages = function(input){
@@ -440,7 +409,6 @@
     var data = {
       id: Date.now(),
       brand: el('noticeBrand').value,
-      type: el('noticeType').value,
       date: el('noticeDate').value,
       titleKr: el('noticeTitleKr').value,
       titleEn: el('noticeTitleEn').value,
@@ -462,7 +430,6 @@
     var item = arr.find(function(a){ return a.id === id; });
     if(!item) return;
     el('noticeBrand').value = item.brand||'main';
-    el('noticeType').value = item.type||'holiday';
     if(item.date) el('noticeDate').value = item.date;
     el('noticeTitleKr').value = item.titleKr||'';
     el('noticeTitleEn').value = item.titleEn||'';
@@ -503,7 +470,7 @@
   // 초기화 (로고는 HTML img src=PNG 상대경로로 직접 명시되므로 JS 할당 불필요)
   var today = new Date().toISOString().slice(0,10);
   if(el('noticeDate')) el('noticeDate').value = today;
-  ntApplyPreset();
+  ntUpdatePreview();
   ntRenderSavedList();
 })();
 </script>
