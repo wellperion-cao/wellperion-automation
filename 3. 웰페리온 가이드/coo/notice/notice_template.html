@@ -43,9 +43,14 @@
   .ntool-input:focus,.ntool-select:focus,.ntool-textarea:focus{outline:none;border-color:var(--accent);}
   .ntool-select{cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M3 5l3 3 3-3' fill='none' stroke='%23999' stroke-width='1.5'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;}
   .ntool-textarea{min-height:240px;resize:vertical;line-height:1.7;}
-  .ntool-font-bar{display:flex;gap:8px;margin-bottom:8px;align-items:center;flex-wrap:wrap;}
-  .ntool-font-bar select,.ntool-font-bar input{padding:6px 10px;background:var(--paper);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;font-family:inherit;}
-  .ntool-font-bar input[type=number]{width:60px;}
+  .ntool-font-bar{display:flex;gap:6px;margin-bottom:8px;align-items:center;flex-wrap:wrap;padding:8px 10px;background:#fafaf8;border-radius:9px;border:1px solid var(--border);}
+  .ntool-font-bar select,.ntool-font-bar input{padding:7px 10px;background:var(--paper);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;font-family:inherit;transition:border-color 0.15s;}
+  .ntool-font-bar select:hover,.ntool-font-bar input:hover{border-color:var(--accent);}
+  .ntool-font-bar input[type=number]{width:56px;}
+  .ntool-font-bar .font-sep{width:1px;height:20px;background:var(--border);margin:0 4px;}
+  .ntool-font-bar .fb-btn{padding:6px 10px;border:1px solid var(--border);background:var(--paper);color:var(--text);border-radius:6px;cursor:pointer;font-family:inherit;font-size:12px;min-width:30px;line-height:1;transition:background 0.15s,color 0.15s,border-color 0.15s,transform 0.08s;}
+  .ntool-font-bar .fb-btn:hover{background:var(--accent);border-color:var(--accent);color:#fff;}
+  .ntool-font-bar .fb-btn:active{transform:translateY(1px);}
   /* fmt-bar — v2.27 그룹 박스화 + 호버 효과 */
   .ntool-fmt-bar{display:flex;gap:10px;margin-bottom:10px;flex-wrap:wrap;align-items:flex-start;}
   .fmt-group{display:flex;align-items:center;gap:4px;padding:6px 10px 6px 8px;background:#fafaf8;border-radius:9px;border:1px solid var(--border);}
@@ -161,7 +166,7 @@
         <div>
           <label class="ntool-label">공지 종류 (선택 시 제목·본문 자동 채움)</label>
           <select class="ntool-select" id="noticeType" onchange="ntApplyPreset()">
-            <option value="holiday">휴관일 안내</option>
+            <option value="holiday">정기 휴관일 안내</option>
             <option value="program">프로그램 런칭</option>
             <option value="facility">시설 점검/공사</option>
             <option value="pricing">요금 변경</option>
@@ -201,6 +206,19 @@
           </select>
           <input type="number" id="noticeFontSize" value="18" min="10" max="40" onchange="ntUpdatePreview()">
           <span style="font-size:11px;color:var(--dim);">px</span>
+          <span class="font-sep"></span>
+          <span style="font-size:10px;color:var(--dim);font-weight:700;letter-spacing:0.04em;">줄 크기</span>
+          <button type="button" onclick="ntFmtSize(14)" title="현재 줄 작게" class="fb-btn" style="font-size:11px;">작</button>
+          <button type="button" onclick="ntFmtSize(18)" title="현재 줄 중간" class="fb-btn">중</button>
+          <button type="button" onclick="ntFmtSize(24)" title="현재 줄 크게" class="fb-btn" style="font-size:15px;font-weight:700;">크</button>
+          <button type="button" onclick="ntFmtBoldLine()" title="현재 줄 굵게" class="fb-btn" style="font-weight:800;">⮊ B</button>
+          <span class="font-sep"></span>
+          <span style="font-size:10px;color:var(--dim);font-weight:700;letter-spacing:0.04em;">줄간격</span>
+          <select id="noticeLineHeight" title="본문 전체 줄간격" onchange="ntUpdatePreview()">
+            <option value="1.5">좁게</option>
+            <option value="1.85" selected>보통</option>
+            <option value="2.2">넓게</option>
+          </select>
         </div>
         <div class="ntool-fmt-bar">
           <div class="fmt-group" role="group" aria-label="인라인 강조 (선택 영역)">
@@ -222,21 +240,6 @@
             <button type="button" onclick="ntFmtQuote()" title="인용구 (줄 앞에 &gt; )">" 인용</button>
             <button type="button" onclick="ntFmtHr()" title="구분선 (--- 한 줄)">─ 구분</button>
           </div>
-          <div class="fmt-group" role="group" aria-label="줄 단위 글자 크기">
-            <span class="fmt-label">크기</span>
-            <button type="button" onclick="ntFmtSize(14)" title="현재 줄 작게 (14px)" style="font-size:11px;">작</button>
-            <button type="button" onclick="ntFmtSize(18)" title="현재 줄 중간 (18px)">중</button>
-            <button type="button" onclick="ntFmtSize(24)" title="현재 줄 크게 (24px)" style="font-size:16px;font-weight:700;">크</button>
-            <button type="button" onclick="ntFmtBoldLine()" title="현재 줄 전체 굵게 ([b])" style="font-weight:800;">⮊ B</button>
-          </div>
-          <div class="fmt-group" role="group" aria-label="줄간격">
-            <span class="fmt-label">줄간격</span>
-            <select id="noticeLineHeight" title="본문 전체 줄간격" onchange="ntUpdatePreview()">
-              <option value="1.5">좁게</option>
-              <option value="1.85" selected>보통</option>
-              <option value="2.2">넓게</option>
-            </select>
-          </div>
         </div>
         <textarea class="ntool-textarea" id="noticeBody" placeholder="6월 정기 휴관 안내&#10;&#10;회원 여러분의 양해를 부탁드리며&#10;6월 정기 휴관일을 안내드립니다.&#10;&#10;1. 휴관 일자: **2026년 6월 14일** (둘째 주 일요일)&#10;2. 휴관 일자: **2026년 6월 28일** (넷째 주 일요일)&#10;3. 평일 정상 운영 — 06:00 ~ 22:30&#10;4. 주말·공휴일 정상 운영 — 08:00 ~ 20:00&#10;&#10;웰페리온은 회원님들의 더 나은 경험을 위해&#10;시설 유지·관리에 만전을 기하겠습니다. 감사합니다." oninput="ntUpdatePreview()"></textarea>
         <details class="ntool-help-toggle">
@@ -250,12 +253,9 @@
           </div>
         </details>
       </div>
-      <div style="margin-top:12px;">
-        <label class="ntool-label">사진 첨부</label>
-        <label class="ntool-img-btn">📷 이미지 추가<input type="file" accept="image/*" multiple hidden id="noticeImgInput" onchange="ntAddImages(this)"></label>
-        <div class="ntool-img-thumb" id="noticeImgThumb"></div>
-      </div>
+      <div class="ntool-img-thumb" id="noticeImgThumb" style="margin-top:8px;"></div>
       <div class="ntool-actions">
+        <label class="ntool-btn secondary" style="cursor:pointer;display:inline-flex;align-items:center;gap:6px;">📷 이미지 추가<input type="file" accept="image/*" multiple hidden id="noticeImgInput" onchange="ntAddImages(this)"></label>
         <button class="ntool-btn primary" onclick="ntPrint()">🖨️ 인쇄</button>
         <button class="ntool-btn secondary" onclick="ntSave()">💾 저장하기</button>
         <button class="ntool-btn secondary" onclick="ntDownloadPDF()">📄 PDF 다운로드</button>
@@ -305,7 +305,7 @@
   /* 공지 종류별 자동 채움 프리셋 (kr·en 제목 + 본문 예시) */
   const NOTICE_PRESETS = {
     holiday: {
-      kr: '휴관일 안내',
+      kr: '정기 휴관일 안내',
       en: 'Regular Closure Notice',
       body: '6월 정기 휴관 안내\n\n회원 여러분의 양해를 부탁드리며\n6월 정기 휴관일을 안내드립니다.\n\n1. 휴관 일자: **2026년 6월 14일** (둘째 주 일요일)\n2. 휴관 일자: **2026년 6월 28일** (넷째 주 일요일)\n3. 평일 정상 운영 — 06:00 ~ 22:30\n4. 주말·공휴일 정상 운영 — 08:00 ~ 20:00\n\n웰페리온은 회원님들의 더 나은 경험을 위해\n시설 유지·관리에 만전을 기하겠습니다. 감사합니다.'
     },
