@@ -395,9 +395,10 @@
     return '<div class="notice-date">게시기간 : ' + fmt(s) + ' - ' + fmt(e) + '</div>';
   }
 
-  /* v2.32 contenteditable wysiwyg — 마크다운 토큰 폐기, execCommand 기반 */
+  /* v2.32 contenteditable wysiwyg — 마크다운 토큰 폐기, execCommand 기반. v2.55 selection 복원 합류 */
   function ntExec(cmd, val){
-    el('noticeBody').focus();
+    if(typeof _restoreSavedSelection==='function') _restoreSavedSelection();
+    else el('noticeBody').focus();
     try{ document.execCommand(cmd, false, val); }catch(e){}
     ntUpdatePreview();
   }
@@ -411,7 +412,8 @@
   /* v2.32 wysiwyg fmt — 모든 동작이 execCommand 기반, contenteditable에 즉시 반영 */
   window.ntFmtHl = function(){
     /* 주황 강조 = foreColor + bold 동시 */
-    el('noticeBody').focus();
+    if(typeof _restoreSavedSelection==='function') _restoreSavedSelection();
+    else el('noticeBody').focus();
     document.execCommand('foreColor', false, '#ED5B3F');
     document.execCommand('bold', false, null);
     ntUpdatePreview();
@@ -436,7 +438,7 @@
   };
   window.ntApplyFavColor = function(c){
     el('noticeColorPicker').value = c;
-    ntExec('foreColor', c);
+    ntExec('foreColor', c);  /* ntExec 내에 _restoreSavedSelection 호출됨 */
   };
   window.ntRemoveFavColor = function(c, ev){
     if(ev){ ev.preventDefault(); ev.stopPropagation(); }
@@ -456,7 +458,7 @@
     }
     wrap.innerHTML = arr.map(function(c){
       var safe = c.replace(/'/g,"\\'");
-      return '<span class="fav-color-chip" style="background:'+c+';" title="'+c+' (클릭=적용, 우클릭=삭제)" onclick="ntApplyFavColor(\''+safe+'\')" oncontextmenu="ntRemoveFavColor(\''+safe+'\',event);return false;"></span>';
+      return '<span class="fav-color-chip" style="background:'+c+';" title="'+c+' (클릭=적용, 우클릭=삭제)" onmousedown="_saveCurSelection();event.preventDefault()" onclick="ntApplyFavColor(\''+safe+'\')" oncontextmenu="ntRemoveFavColor(\''+safe+'\',event);return false;"></span>';
     }).join('');
   }
   window.ntFmtAlign = function(side){
@@ -465,9 +467,27 @@
   };
   window.ntFmtQuote = function(){ ntExec('formatBlock', '<blockquote>'); };
   window.ntFmtHr = function(){ ntExec('insertHorizontalRule'); };
-  /* v2.53 — 자유 px input 폐기 (글꼴 옆 18px input 만으로 본문 전체 fontSize 조정) */
+  /* v2.55 — input/버튼 클릭 시 contenteditable selection 잃지 않도록 저장·복원 */
+  let _ntSavedRange = null;
+  window._saveCurSelection = function(){
+    var sel = window.getSelection();
+    var ed = el('noticeBody');
+    if(sel && sel.rangeCount > 0 && ed.contains(sel.anchorNode)){
+      _ntSavedRange = sel.getRangeAt(0).cloneRange();
+    }
+  };
+  window._restoreSavedSelection = function(){
+    var ed = el('noticeBody');
+    ed.focus();
+    if(_ntSavedRange){
+      var sel = window.getSelection();
+      sel.removeAllRanges();
+      sel.addRange(_ntSavedRange);
+    }
+  };
   /* 줄 단위 크기 — 현재 선택 영역 (또는 커서 위치 줄) span으로 wrap + font-size */
   window.ntFmtSize = function(px){
+    _restoreSavedSelection();
     var ed = el('noticeBody');
     ed.focus();
     var sel = window.getSelection();
@@ -965,6 +985,12 @@
   /* v2.33 — Enter 시 <p>가 자동 생성되도록 defaultParagraphSeparator=p (chrome 기본 'div' 또는 br만 삽입 회피).
      이렇게 해야 ntFmtSize/BoldLine이 줄 단위로만 동작 (1줄에 클릭 시 3줄에 영향 X) */
   try{ document.execCommand('defaultParagraphSeparator', false, 'p'); }catch(e){}
+  /* v2.55 — contenteditable selection 저장: 편집 중 mouseup/keyup + 외부 도구(input/버튼) mousedown */
+  el('noticeBody').addEventListener('mouseup', _saveCurSelection);
+  el('noticeBody').addEventListener('keyup', _saveCurSelection);
+  document.querySelectorAll('.ntool-fmt-bar button, .ntool-fmt-bar input[type=color], .ntool-font-bar .fb-btn, #noticeFontSize, .fav-color-chip').forEach(function(b){
+    b.addEventListener('mousedown', _saveCurSelection);
+  });
   /* 빈 contenteditable 첫 focus 시 <p><br></p> 자동 삽입 — block 식별 보장 */
   el('noticeBody').addEventListener('focus', function(){
     var inner = this.innerHTML.trim();
