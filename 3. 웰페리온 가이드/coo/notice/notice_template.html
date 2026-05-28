@@ -252,9 +252,10 @@
           <span style="font-size:11px;color:var(--dim);">px</span>
           <span class="font-sep"></span>
           <span style="font-size:10px;color:var(--dim);font-weight:700;letter-spacing:0.04em;">줄 크기</span>
-          <button type="button" onclick="ntFmtSize(14)" title="현재 줄 작게" class="fb-btn" style="font-size:11px;">작</button>
-          <button type="button" onclick="ntFmtSize(18)" title="현재 줄 중간" class="fb-btn">중</button>
-          <button type="button" onclick="ntFmtSize(24)" title="현재 줄 크게" class="fb-btn" style="font-size:15px;font-weight:700;">크</button>
+          <button type="button" onclick="ntFmtSize(14)" title="현재 줄 작게 (14px)" class="fb-btn" style="font-size:11px;">작</button>
+          <button type="button" onclick="ntFmtSize(18)" title="현재 줄 중간 (18px)" class="fb-btn">중</button>
+          <button type="button" onclick="ntFmtSize(22)" title="현재 줄 크게 (22px · 소제목 동일)" class="fb-btn" style="font-size:15px;font-weight:700;">크</button>
+          <input type="number" id="noticeLineSize" min="8" max="80" placeholder="px" title="현재 줄 px 직접 입력 (Enter 또는 다른 곳 클릭 시 적용)" onchange="ntApplyLineSize(this)" style="width:54px;padding:6px 8px;font-size:12px;background:var(--paper);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:inherit;">
           <span class="font-sep"></span>
           <span style="font-size:10px;color:var(--dim);font-weight:700;letter-spacing:0.04em;">줄간격</span>
           <select id="noticeLineHeight" title="본문 전체 줄간격" onchange="ntUpdatePreview()">
@@ -422,6 +423,13 @@
   };
   window.ntFmtQuote = function(){ ntExec('formatBlock', '<blockquote>'); };
   window.ntFmtHr = function(){ ntExec('insertHorizontalRule'); };
+  /* v2.51 — 사용자 자유 px 입력 → 현재 줄에 적용 후 input 비움 */
+  window.ntApplyLineSize = function(input){
+    var v = parseInt(input.value, 10);
+    if(!v || v < 6 || v > 200){ input.value=''; return; }
+    ntFmtSize(v);
+    input.value = '';
+  };
   /* 줄 단위 크기 — 현재 선택 영역 (또는 커서 위치 줄) span으로 wrap + font-size */
   window.ntFmtSize = function(px){
     var ed = el('noticeBody');
