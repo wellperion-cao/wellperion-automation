@@ -5,12 +5,22 @@
 
 // ─── 상수 ───
 // 시트명 fallback (GM이 수동 변경 시 자동 매칭 · 2026-05-28)
-const TODO_SHEET = '업무 현황';            // 메인 — 신규 생성 시 이름
-const TODO_SHEET_FALLBACKS = ['업무 현황', 'TODO', '업무 현황 SSOT'];
-const DONE_SHEET_NAME = '결재 현황';        // 결재 완료/반려 백업
-const DONE_SHEET_FALLBACKS = ['결재 현황', 'TODO_완료', '결재 현황 SSOT'];
+const TODO_SHEET = '업무&결재 현황';        // 메인 — 신규 생성 시 이름
+const TODO_SHEET_FALLBACKS = [
+  '업무&결재 현황', '업무&결재현황',
+  '업무 현황',
+  'TODO',
+  '업무 현황 SSOT'
+];
+const DONE_SHEET_NAME = '업무 완료 현황';   // 백업 (상태=완료 자동 복사 + 결재완료 자동 복사)
+const DONE_SHEET_FALLBACKS = [
+  '업무 완료 현황',
+  '결재 현황',
+  'TODO_완료',
+  '결재 현황 SSOT'
+];
 
-// 데이터 있는 시트 우선 (행 ≥ 2면 데이터 있음)
+// 데이터 있는 시트 우선 — 첫 행 헤더에 '업무명' 또는 'id' 있으면 정식 시트
 function _findSheet(ss, fallbacks) {
   let candidate = null;
   for (const name of fallbacks) {
