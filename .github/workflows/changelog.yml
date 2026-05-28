@@ -1,0 +1,40 @@
+name: 가이드허브 홈 최신 카드 자동 갱신
+
+on:
+  push:
+    branches: [master]
+    paths-ignore:
+      # 가이드허브 자체 변경은 제외 — 무한 루프 방지
+      - '3. 웰페리온 가이드/**'
+      - '.github/workflows/changelog.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  update-changelog:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # git log --since 를 위해 전체 이력 필요
+
+      - name: Python 설정
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: 가이드허브 홈 페이지 갱신
+        run: python scripts/update_guide_hub_changelog.py
+
+      - name: 변경사항 커밋 & 푸시
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add "3. 웰페리온 가이드/wellperion_guide(main).html"
+          if git diff --cached --quiet; then
+            echo "변경 없음 — 커밋 생략"
+          else
+            git commit -m "auto(changelog): home 페이지 최신 카드 자동 갱신"
+            git push
+          fi
