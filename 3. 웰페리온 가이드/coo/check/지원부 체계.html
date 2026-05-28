@@ -1579,20 +1579,41 @@ function drawUI(d,gender){
   el.innerHTML=html;
 }
 
-/* v2.48 — 점검 항목 사용자 수정 기능 (localStorage override) */
+/* v2.48 — 점검 항목 사용자 수정 기능 (localStorage override). v2.49 onclick HTML 충돌 fix */
 function getItemOverrides(){try{return JSON.parse(localStorage.getItem('wcheck_overrides')||'{}')}catch{return{}}}
 function saveItemOverrides(o){localStorage.setItem('wcheck_overrides',JSON.stringify(o))}
-window.editItem=function(id,curName,curDetail){
+function findBaseItem(id){
+  const today=new Date().toISOString().slice(0,10);
+  let base=null;
+  function scan(sched){
+    if(!sched||base)return;
+    sched.forEach(slot=>slot.groups.forEach(g=>g.items.forEach(it=>{if(it.id===id)base=it})));
+  }
+  scan(getSched(today));
+  scan(getNightSched(today));
+  if(!base&&typeof DAY_FOCUS!=='undefined'){
+    for(const dow in DAY_FOCUS){
+      DAY_FOCUS[dow].forEach(it=>{if(it.id===id)base=it});
+      if(base)break;
+    }
+  }
+  return base||{name:'',detail:''};
+}
+window.editItem=function(id){
+  const ov=getItemOverrides()[id]||{};
+  const base=findBaseItem(id);
+  const curName=ov.name||base.name;
+  const curDetail=ov.detail||base.detail;
   const newName=prompt('항목 이름을 수정하세요:',curName);
   if(newName===null)return;
   const newDetail=prompt('세부 설명을 수정하세요 (줄바꿈은 그대로 Enter):',curDetail);
   if(newDetail===null)return;
-  const ov=getItemOverrides();
-  if(!ov[id])ov[id]={};
-  if(newName.trim()&&newName!==curName)ov[id].name=newName.trim();else delete ov[id].name;
-  if(newDetail!==curDetail)ov[id].detail=newDetail;else delete ov[id].detail;
-  if(!ov[id].name&&!ov[id].detail)delete ov[id];
-  saveItemOverrides(ov);
+  const all=getItemOverrides();
+  if(!all[id])all[id]={};
+  if(newName.trim()&&newName!==base.name)all[id].name=newName.trim();else delete all[id].name;
+  if(newDetail!==base.detail)all[id].detail=newDetail;else delete all[id].detail;
+  if(!all[id].name&&!all[id].detail)delete all[id];
+  saveItemOverrides(all);
   renderG(activeGenderTab);
 };
 window.resetItem=function(id){
@@ -1616,7 +1637,7 @@ function renderItem(it,shift,gender){
   const esc=escapeAttr;
   // Use unique element ids per gender tab to avoid collisions
   const pfx=g+'_';
-  const editBtn=`<button class="tiny-btn" style="background:rgba(91,159,213,0.12);color:#5b9fd5;border-color:rgba(91,159,213,0.3);" title="이 항목 수정" onclick="editItem('${it.id}',${JSON.stringify(itemName)},${JSON.stringify(itemDetail)})">✏️</button>`;
+  const editBtn=`<button class="tiny-btn" style="background:rgba(91,159,213,0.12);color:#5b9fd5;border-color:rgba(91,159,213,0.3);" title="이 항목 수정" onclick="editItem('${it.id}')">✏️</button>`;
   const resetBtn=isEdited?`<button class="tiny-btn" style="background:rgba(140,139,131,0.12);color:#8c8b83;border-color:rgba(140,139,131,0.3);" title="기본값 복원" onclick="resetItem('${it.id}')">↺</button>`:'';
   const editedTag=isEdited?'<span style="font-size:10px;color:#e6c84e;font-weight:700;margin-left:4px;">수정됨</span>':'';
   return `<div class="${cls}">
