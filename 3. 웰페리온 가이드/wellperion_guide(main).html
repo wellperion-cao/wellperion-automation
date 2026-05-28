@@ -3133,97 +3133,12 @@ Start-Process python -ArgumentList telegram_bot\daily_scheduler.py -WorkingDirec
     <div class="doc-header"><h2>공지/안내문 생성</h2><div class="meta">COO 관할 · 브랜드 가이드 기준 · 내용 입력 → 미리보기 → A3 인쇄</div></div>
     <p class="lead">웰페리온 브랜드 아이덴티티 기준으로 공지/안내문을 생성합니다. 사업부를 선택하면 컬러칩과 로고가 자동 전환됩니다.</p>
 
-    <div class="ntool-wrap" id="noticeToolWrap">
-      <div class="ntool-form">
-        <div class="ntool-row">
-          <div>
-            <label class="ntool-label">사업부 (서브브랜드)</label>
-            <select class="ntool-select" id="noticeBrand" onchange="ntUpdatePreview('notice')">
-              <option value="main">WELLPERION (메인)</option>
-              <option value="pt">PT</option>
-              <option value="sports">SPORTS CLUB</option>
-              <option value="pilates">PILATES</option>
-              <option value="swimming">SWIMMING</option>
-              <option value="squash">SQUASH</option>
-              <option value="golf">GOLF</option>
-              <option value="gymnastic">GYMNASTIC</option>
-              <option value="brad">BRAD LITTLE'S STAR ACADEMY</option>
-            </select>
-          </div>
-          <div>
-            <label class="ntool-label">공지 종류</label>
-            <select class="ntool-select" id="noticeType" onchange="ntApplyPreset('notice')">
-              <option value="holiday">휴관일 안내</option>
-              <option value="program">프로그램 런칭</option>
-              <option value="facility">시설 점검/공사</option>
-              <option value="pricing">요금 변경</option>
-              <option value="etiquette">에티켓/규칙</option>
-              <option value="security">보안/도난</option>
-              <option value="network">네트워크 장애</option>
-              <option value="custom">기타 (자유입력)</option>
-            </select>
-          </div>
-        </div>
-        <div class="ntool-row">
-          <div>
-            <label class="ntool-label">제목 (한글)</label>
-            <input class="ntool-input" id="noticeTitleKr" placeholder="예: 4월 휴관일 안내" oninput="ntUpdatePreview('notice')">
-          </div>
-          <div>
-            <label class="ntool-label">제목 (영문)</label>
-            <input class="ntool-input" id="noticeTitleEn" placeholder="예: Regular Closed Day Notice" oninput="ntUpdatePreview('notice')">
-          </div>
-        </div>
-        <div class="ntool-row">
-          <div>
-            <label class="ntool-label">날짜</label>
-            <input class="ntool-input" type="date" id="noticeDate" oninput="ntUpdatePreview('notice')">
-          </div>
-        </div>
-        <div>
-          <label class="ntool-label">본문</label>
-          <div class="ntool-font-bar">
-            <select id="noticeFontFamily" onchange="ntUpdatePreview('notice')">
-              <option value="Pretendard">Pretendard</option>
-              <option value="serif">명조 (Serif)</option>
-            </select>
-            <input type="number" id="noticeFontSize" value="16" min="10" max="40" onchange="ntUpdatePreview('notice')">
-            <span style="font-size:11px;color:var(--dim);">px</span>
-          </div>
-          <textarea class="ntool-textarea" id="noticeBody" placeholder="공지 내용을 입력하세요..." oninput="ntUpdatePreview('notice')"></textarea>
-        </div>
-        <div style="margin-top:12px;">
-          <label class="ntool-label">사진 첨부</label>
-          <label class="ntool-img-btn">📷 이미지 추가<input type="file" accept="image/*" multiple hidden id="noticeImgInput" onchange="ntAddImages(this,'notice')"></label>
-          <div class="ntool-img-thumb" id="noticeImgThumb"></div>
-        </div>
-        <div class="ntool-actions">
-          <button class="ntool-btn primary" onclick="ntPrint('notice','A3')">🖨️ A3 인쇄</button>
-          <button class="ntool-btn primary" onclick="ntPrint('notice','A4')">🖨️ A4 인쇄</button>
-          <button class="ntool-btn secondary" onclick="ntSave('notice')">💾 저장하기</button>
-          <a class="ntool-btn secondary" href="cmo/notice/notice_template.html" target="_blank" rel="noopener" style="text-decoration:none;display:inline-flex;align-items:center;">🔗 독립 페이지 열기</a>
-        </div>
-        <div class="ntool-saved" id="noticeSavedList"></div>
-      </div>
-
-      <div class="ntool-preview-area">
-        <label class="ntool-label" style="margin-bottom:10px;">미리보기</label>
-        <div class="ntool-preview-frame" id="noticePreviewFrame">
-          <div class="ntool-preview-inner" id="noticePreview">
-            <div class="ntool-pv-hdr" id="noticeHdr">
-              <div class="ntool-pv-brand-logo" id="noticePvSub">W</div>
-              <div class="ntool-pv-title-kr" id="noticePvTitleKr">국문 공지 제목</div>
-              <div class="ntool-pv-title-en" id="noticePvTitleEn">ENG NOTICE TITLE</div>
-              <div class="ntool-pv-subtitle">웰페리온은 회원님들의 건강과 행복을 위하여 항상 최선을 다하겠습니다.</div>
-            </div>
-            <div class="ntool-pv-body" id="noticePvBody">본문 내용이 여기에 표시됩니다.</div>
-            <div class="ntool-pv-ftr">
-              <img class="wlogo-img" src="data:image/png;base64,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" alt="WELLPERION">
-              <span id="noticePvBrandName">WELLPERION</span>
-            </div>
-          </div>
-        </div>
-      </div>
+    <div class="notice-entry-card" style="margin-top:18px;padding:32px 28px;background:linear-gradient(135deg,#221F20,#3a3134);border-radius:14px;color:#fff;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,0.18);">
+      <div style="font-size:13px;font-weight:600;letter-spacing:0.18em;color:#B79F8A;margin-bottom:12px;">NOTICE TEMPLATE v2.0</div>
+      <div style="font-size:20px;font-weight:700;margin-bottom:8px;">공지/안내문 생성 전용 도구</div>
+      <div style="font-size:13px;opacity:0.72;margin-bottom:22px;line-height:1.6;">9개 사업부 컬러칩 · 8가지 공지 프리셋 · 한영 제목 분리 · 이미지 첨부 · A3/A4 인쇄 · 저장 목록 (편집·복사·삭제)</div>
+      <a href="cmo/notice/notice_template.html" target="_blank" rel="noopener" style="display:inline-block;padding:14px 38px;background:#B79F8A;color:#221F20;font-weight:700;text-decoration:none;border-radius:10px;font-size:15px;letter-spacing:0.04em;">🔗 도구 열기 (새 탭)</a>
+      <div style="font-size:11px;opacity:0.5;margin-top:18px;font-family:Consolas,monospace;">3. 웰페리온 가이드 / cmo / notice / notice_template.html</div>
     </div>
   </article>
 
@@ -5169,9 +5084,7 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
     var today = new Date().toISOString().slice(0,10);
     if(el('noticeDate')) el('noticeDate').value = today;
     document.querySelectorAll('.wlogo-img').forEach(function(img){ img.src = WLOGO; });
-    ntApplyPreset('notice');
     ntApplyPreset('print');
-    ntRenderSavedList('notice');
     ntRenderSavedList('print');
   })();
 
