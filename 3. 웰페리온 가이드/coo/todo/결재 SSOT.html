@@ -308,16 +308,32 @@ function renderApprovalCard(t) {
     }
   }
 
-  // 토글 (본문 + 진척 로그)
-  if (parsed.body || parsed.logs.length) {
-    h += '<div class="detail-toggle" onclick="toggleDetail(this)"><span class="arrow">▶</span>본문·진척 로그 (' + parsed.logs.length + '건)</div>';
+  // 토글 (본문 + 기획 + 진척 로그 + 결과보고)
+  if (parsed.body || parsed.plan || parsed.logs.length || parsed.result) {
+    const label = [
+      parsed.body ? '본문' : null,
+      parsed.plan ? '기획' : null,
+      parsed.logs.length ? '진척 ' + parsed.logs.length + '건' : null,
+      parsed.result ? '결과보고' : null
+    ].filter(Boolean).join(' · ');
+    h += '<div class="detail-toggle" onclick="toggleDetail(this)"><span class="arrow">▶</span>' + label + '</div>';
     h += '<div class="detail-body">';
     if (parsed.body) h += '<div class="body-text">' + esc(parsed.body) + '</div>';
+    if (parsed.plan) {
+      h += '<div style="margin-top:10px;padding:10px 12px;background:var(--blue-bg);border:1px solid rgba(91,159,213,0.3);border-radius:8px;">';
+      h += '<div style="font-size:12px;font-weight:700;color:var(--blue);margin-bottom:4px;">📋 기획</div>';
+      h += '<div style="font-size:13px;white-space:pre-wrap;line-height:1.55;">' + esc(parsed.plan) + '</div></div>';
+    }
     if (parsed.logs.length) {
-      h += '<div style="margin-top:8px;font-size:12px;font-weight:700;color:var(--accent);">📅 진척 로그</div>';
+      h += '<div style="margin-top:10px;font-size:12px;font-weight:700;color:var(--accent);">📅 진척 로그</div>';
       parsed.logs.forEach(log => {
         h += '<div class="progress-row"><span class="date">' + esc(log.date) + '</span><span class="text">' + esc(log.text) + '</span></div>';
       });
+    }
+    if (parsed.result) {
+      h += '<div style="margin-top:10px;padding:10px 12px;background:var(--purple-bg);border:1px solid rgba(167,139,218,0.3);border-radius:8px;">';
+      h += '<div style="font-size:12px;font-weight:700;color:var(--purple);margin-bottom:4px;">🎯 결과보고</div>';
+      h += '<div style="font-size:13px;white-space:pre-wrap;line-height:1.55;">' + esc(parsed.result) + '</div></div>';
     }
     h += '</div>';
   }
@@ -345,33 +361,47 @@ function toggleDetail(el) {
   if (body) body.classList.toggle('open');
 }
 
-/* ─── 공유 유틸 (업무&결재 현황 SSOT와 동일) ─── */
+/* ─── 공유 유틸 (업무&결재 현황 SSOT와 동일 — 4섹션 마커) ─── */
 const PROGRESS_MARK = '===PROGRESS_LOG===';
 const BUDGET_MARK = '===BUDGET===';
+const PLAN_MARK = '===PLAN===';
+const RESULT_MARK = '===RESULT===';
 
 function parseContent(content) {
-  let raw = String(content || '');
+  const raw = String(content || '');
+  const marks = [
+    { key: 'plan',     mark: PLAN_MARK },
+    { key: 'progress', mark: PROGRESS_MARK },
+    { key: 'result',   mark: RESULT_MARK },
+    { key: 'budget',   mark: BUDGET_MARK }
+  ];
+  const positions = marks
+    .map(m => ({ key: m.key, mark: m.mark, idx: raw.indexOf(m.mark) }))
+    .filter(m => m.idx >= 0)
+    .sort((a, b) => a.idx - b.idx);
+  const body = positions.length ? raw.slice(0, positions[0].idx).replace(/\s+$/, '') : raw;
+  const sections = {};
+  for (let i = 0; i < positions.length; i++) {
+    const start = positions[i].idx + positions[i].mark.length;
+    const end = i + 1 < positions.length ? positions[i + 1].idx : raw.length;
+    sections[positions[i].key] = raw.slice(start, end).trim();
+  }
+  const plan = sections.plan || '';
+  const result = sections.result || '';
   let budget = null;
-  const bIdx = raw.indexOf(BUDGET_MARK);
-  if (bIdx >= 0) {
-    const block = raw.slice(bIdx + BUDGET_MARK.length).trim().split(/\r?\n/)[0] || '';
-    const m = block.match(/^(.+?)\s*\|\s*(\d+)$/);
+  if (sections.budget) {
+    const m = sections.budget.split(/\r?\n/)[0].match(/^(.+?)\s*\|\s*(\d+)$/);
     if (m) budget = { category: m[1].trim(), amount: Number(m[2]) };
-    raw = raw.slice(0, bIdx).replace(/\s+$/, '');
   }
   let logs = [];
-  const pIdx = raw.indexOf(PROGRESS_MARK);
-  let body = raw;
-  if (pIdx >= 0) {
-    body = raw.slice(0, pIdx).replace(/\s+$/, '');
-    const block = raw.slice(pIdx + PROGRESS_MARK.length).trim();
-    logs = block.split(/\r?\n/).map(line => {
+  if (sections.progress) {
+    logs = sections.progress.split(/\r?\n/).map(line => {
       const m = line.match(/^(\d{4}-\d{2}-\d{2})\s*\|\s*(.*)$/);
       return m ? { date: m[1], text: m[2].trim() } : null;
     }).filter(Boolean);
     logs.sort((a, b) => b.date.localeCompare(a.date));
   }
-  return { body, logs, budget };
+  return { body, plan, logs, result, budget };
 }
 
 function formatKRW(amount) {

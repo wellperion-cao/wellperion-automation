@@ -291,9 +291,17 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
         <input type="date" id="fEndDate">
       </div>
     </div>
+    <div id="lifecycleBanner" style="margin-bottom:12px;padding:10px 14px;border-radius:8px;font-size:12px;font-weight:600;display:none;"></div>
     <div class="field">
-      <label>업무 내용 <span style="font-size:11px;color:var(--dim);font-weight:400;">(정의·맥락·산출물)</span></label>
-      <textarea id="fContent" placeholder="이 업무의 정의·맥락·기대 산출물을 입력하세요"></textarea>
+      <label>업무 본문 <span style="font-size:11px;color:var(--dim);font-weight:400;">(한 줄 요약 — 자세한 내용은 기획 섹션)</span></label>
+      <textarea id="fContent" placeholder="이 업무의 한 줄 요약" style="min-height:80px;"></textarea>
+    </div>
+    <div class="field" id="fPlanField" style="background:var(--blue-bg);padding:14px 16px;border-radius:10px;border:1px solid rgba(91,159,213,0.35);">
+      <label style="display:flex;align-items:center;justify-content:space-between;color:var(--blue);font-weight:700;margin-bottom:8px;">
+        <span>📋 기획 <span style="font-size:11px;color:var(--dim);font-weight:400;">(목적·범위·해결 전략·실행 계획·KPI·일정)</span></span>
+        <span id="fPlanLockBadge" style="font-size:11px;color:var(--dim);font-weight:500;"></span>
+      </label>
+      <textarea id="fPlan" placeholder="6섹션 기획 (간단한 업무는 비워둬도 OK)&#10;예시:&#10;목적 — &#10;범위 — &#10;해결 전략 — &#10;실행 계획 — &#10;KPI — &#10;일정 —" style="min-height:140px;line-height:1.6;background:var(--paper);border:1px solid var(--border);"></textarea>
     </div>
     <div class="field" style="background:var(--green-bg);padding:12px 14px;border-radius:8px;border:1px solid rgba(106,191,123,0.3);">
       <label style="display:flex;align-items:center;justify-content:space-between;color:var(--green);font-weight:700;">
@@ -333,6 +341,13 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
         </div>
       </div>
       <div style="font-size:11px;color:var(--dim);margin-top:6px;">💡 저장 시 미합류 내용도 자동 합류 · 추가된 항목은 위 목록에 누적</div>
+    </div>
+    <div class="field" id="fResultField" style="background:var(--purple-bg);padding:14px 16px;border-radius:10px;border:1px solid rgba(167,139,218,0.35);">
+      <label style="display:flex;align-items:center;justify-content:space-between;color:var(--purple);font-weight:700;margin-bottom:8px;">
+        <span>🎯 결과보고 <span style="font-size:11px;color:var(--dim);font-weight:400;">(최종 결과·산출물·교훈)</span></span>
+        <span id="fResultLockBadge" style="font-size:11px;color:var(--dim);font-weight:500;"></span>
+      </label>
+      <textarea id="fResult" placeholder="진척 마무리 후 최종 결과·산출물·달성도·교훈을 정리하세요.&#10;예시:&#10;🎯 결과 — &#10;📦 산출물 — &#10;📊 KPI 달성 — &#10;💡 교훈 — " style="min-height:140px;line-height:1.6;background:var(--paper);border:1px solid var(--border);"></textarea>
     </div>
     <div class="field">
       <label>노션 링크</label>
@@ -751,8 +766,20 @@ function renderTaskCard(t, idx) {
   const parsed = parseContent(t.content);
   if (parsed.body) {
     html += '<div class="task-content" style="white-space:pre-wrap;line-height:1.55;">' + esc(parsed.body) + '</div>';
-  } else if (!parsed.logs.length && !parsed.budget) {
+  } else if (!parsed.logs.length && !parsed.budget && !parsed.plan && !parsed.result) {
     html += '<div class="task-content" style="color:var(--dim);font-style:italic;">내용 없음</div>';
+  }
+
+  if (parsed.plan) {
+    html += '<div style="margin-top:10px;padding:10px 12px;background:var(--blue-bg);border:1px solid rgba(91,159,213,0.3);border-radius:8px;">';
+    html += '<div style="font-size:12px;font-weight:700;color:var(--blue);margin-bottom:4px;">📋 기획</div>';
+    html += '<div style="font-size:13px;white-space:pre-wrap;line-height:1.5;">' + esc(parsed.plan) + '</div></div>';
+  }
+
+  if (parsed.result) {
+    html += '<div style="margin-top:10px;padding:10px 12px;background:var(--purple-bg);border:1px solid rgba(167,139,218,0.3);border-radius:8px;">';
+    html += '<div style="font-size:12px;font-weight:700;color:var(--purple);margin-bottom:4px;">🎯 결과보고</div>';
+    html += '<div style="font-size:13px;white-space:pre-wrap;line-height:1.5;">' + esc(parsed.result) + '</div></div>';
   }
 
   if (parsed.budget) {
@@ -887,6 +914,38 @@ function toggleDoneLog() {
    ═══════════════════════════════════════════ */
 const PROGRESS_MARK = '===PROGRESS_LOG===';
 const BUDGET_MARK = '===BUDGET===';
+const PLAN_MARK = '===PLAN===';
+const RESULT_MARK = '===RESULT===';
+
+/* 업무 라이프사이클 단계 판단 (옵션 A · 2026-05-28) */
+function lifecycleStage(task) {
+  const approvalStatus = String(task['결재상태'] || task.approvalStatus || '');
+  const approvalReq = String(task['결재요청'] || task.approval || '').trim();
+  const status = String(task['상태'] || task.status || '');
+  // 결과보고 작성 여부는 content RESULT 마커 존재로 판단
+  const content = String(task['내용'] || task.content || '');
+  const hasResult = content.indexOf(RESULT_MARK) >= 0;
+
+  if (status === '완료') return 'closed';                // ⑤ 종료
+  if (hasResult) return 'result';                         // ④ 결과보고 작성 단계
+  if (!approvalReq) return 'free';                        // ① 결재 미요청 — 자유
+  if (approvalStatus === '결재완료') return 'execution';   // ③ 결재 완료 → 진척 활성
+  if (/반려/.test(approvalStatus)) return 'rejected';     // 반려
+  return 'approval';                                       // ② 결재 진행 중
+}
+
+/* 단계별 잠금 정책 */
+function stageLocks(stage) {
+  switch (stage) {
+    case 'free':      return { body:false, plan:false, progress:false, result:false, budget:false, approvalReq:false };
+    case 'approval':  return { body:false, plan:false, progress:true,  result:true,  budget:false, approvalReq:false };
+    case 'execution': return { body:true,  plan:true,  progress:false, result:false, budget:true,  approvalReq:true  };
+    case 'result':    return { body:true,  plan:true,  progress:true,  result:false, budget:true,  approvalReq:true  };
+    case 'closed':    return { body:true,  plan:true,  progress:true,  result:true,  budget:true,  approvalReq:true  };
+    case 'rejected':  return { body:false, plan:false, progress:true,  result:true,  budget:false, approvalReq:false };
+    default:          return { body:false, plan:false, progress:false, result:false, budget:false, approvalReq:false };
+  }
+}
 
 /* 결제 권한 기준 v2.0 (Notion 34c0407d) 8항목 자동 결재 라우팅 */
 const BUDGET_CATEGORIES = [
@@ -927,41 +986,62 @@ function routeApproval(category, amount) {
 }
 
 function parseContent(content) {
-  let raw = String(content || '');
+  const raw = String(content || '');
+  const marks = [
+    { key: 'plan',     mark: PLAN_MARK },
+    { key: 'progress', mark: PROGRESS_MARK },
+    { key: 'result',   mark: RESULT_MARK },
+    { key: 'budget',   mark: BUDGET_MARK }
+  ];
+  const positions = marks
+    .map(m => ({ key: m.key, mark: m.mark, idx: raw.indexOf(m.mark) }))
+    .filter(m => m.idx >= 0)
+    .sort((a, b) => a.idx - b.idx);
 
-  // 예산 블록 추출
-  let budget = null;
-  const bIdx = raw.indexOf(BUDGET_MARK);
-  if (bIdx >= 0) {
-    const block = raw.slice(bIdx + BUDGET_MARK.length).trim().split(/\r?\n/)[0] || '';
-    const m = block.match(/^(.+?)\s*\|\s*(\d+)$/);
-    if (m) budget = { category: m[1].trim(), amount: Number(m[2]) };
-    raw = raw.slice(0, bIdx).replace(/\s+$/, '');
+  const body = positions.length
+    ? raw.slice(0, positions[0].idx).replace(/\s+$/, '')
+    : raw;
+
+  const sections = {};
+  for (let i = 0; i < positions.length; i++) {
+    const start = positions[i].idx + positions[i].mark.length;
+    const end = i + 1 < positions.length ? positions[i + 1].idx : raw.length;
+    sections[positions[i].key] = raw.slice(start, end).trim();
   }
 
-  // 진척 로그 추출
+  const plan = sections.plan || '';
+  const result = sections.result || '';
+
+  let budget = null;
+  if (sections.budget) {
+    const m = sections.budget.split(/\r?\n/)[0].match(/^(.+?)\s*\|\s*(\d+)$/);
+    if (m) budget = { category: m[1].trim(), amount: Number(m[2]) };
+  }
+
   let logs = [];
-  const pIdx = raw.indexOf(PROGRESS_MARK);
-  let body = raw;
-  if (pIdx >= 0) {
-    body = raw.slice(0, pIdx).replace(/\s+$/, '');
-    const block = raw.slice(pIdx + PROGRESS_MARK.length).trim();
-    logs = block.split(/\r?\n/).map(line => {
+  if (sections.progress) {
+    logs = sections.progress.split(/\r?\n/).map(line => {
       const m = line.match(/^(\d{4}-\d{2}-\d{2})\s*\|\s*(.*)$/);
       return m ? { date: m[1], text: m[2].trim() } : null;
     }).filter(Boolean);
     logs.sort((a, b) => b.date.localeCompare(a.date));
   }
 
-  return { body, logs, budget };
+  return { body, plan, logs, result, budget };
 }
 
-function composeContent(body, logs, budget) {
+function composeContent(body, logs, budget, plan, result) {
   let out = String(body || '').replace(/\s+$/, '');
+  if (plan && String(plan).trim()) {
+    out = (out ? out + '\n\n' : '') + PLAN_MARK + '\n' + String(plan).trim();
+  }
   if (logs && logs.length) {
     const sorted = logs.slice().sort((a, b) => a.date.localeCompare(b.date));
     const block = sorted.map(l => l.date + ' | ' + l.text).join('\n');
     out = (out ? out + '\n\n' : '') + PROGRESS_MARK + '\n' + block;
+  }
+  if (result && String(result).trim()) {
+    out = (out ? out + '\n\n' : '') + RESULT_MARK + '\n' + String(result).trim();
   }
   if (budget && budget.category && budget.amount > 0) {
     out = (out ? out + '\n\n' : '') + BUDGET_MARK + '\n' + budget.category + ' | ' + Number(budget.amount);
@@ -1019,6 +1099,61 @@ function removeProgressLog(i) {
   renderProgressList();
 }
 
+/* 라이프사이클 단계 기반 활성/잠금 적용 (옵션 A · 2026-05-28) */
+function applyLifecycleLocks(task) {
+  const stage = task ? lifecycleStage(task) : 'free';
+  const locks = stageLocks(stage);
+  const labels = {
+    free:      { text: '① 자유 — 모든 섹션 편집 가능',                bg: 'var(--accent-bg)', fg: 'var(--accent)' },
+    approval:  { text: '② 결재 진행 중 — 진척·결과보고 잠금',         bg: 'var(--yellow-bg)', fg: 'var(--yellow)' },
+    execution: { text: '③ 결재 완료 — 진척 로그 활성, 기획·예산 잠금', bg: 'var(--green-bg)',  fg: 'var(--green)' },
+    result:    { text: '④ 결과보고 작성 단계 — 결과보고만 편집',       bg: 'var(--purple-bg)', fg: 'var(--purple)' },
+    closed:    { text: '⑤ 업무 종료 — 모든 섹션 read-only',           bg: 'var(--paper)',     fg: 'var(--dim)' },
+    rejected:  { text: '❌ 반려 — 기획·예산 보완 후 재상신 가능',      bg: 'var(--red-bg)',    fg: 'var(--red)' }
+  };
+  const banner = document.getElementById('lifecycleBanner');
+  if (banner) {
+    const meta = labels[stage] || labels.free;
+    banner.style.display = task && task.id ? 'block' : 'none';
+    banner.style.background = meta.bg;
+    banner.style.color = meta.fg;
+    banner.textContent = '🔄 라이프사이클: ' + meta.text;
+  }
+  const setLock = (elId, locked, badgeId) => {
+    const el = document.getElementById(elId);
+    if (!el) return;
+    if (locked) {
+      el.setAttribute('readonly', 'readonly');
+      el.style.opacity = '0.55';
+      el.style.cursor = 'not-allowed';
+    } else {
+      el.removeAttribute('readonly');
+      el.style.opacity = '';
+      el.style.cursor = '';
+    }
+    if (badgeId) {
+      const b = document.getElementById(badgeId);
+      if (b) b.textContent = locked ? '🔒 잠금' : '✏️ 편집 가능';
+    }
+  };
+  setLock('fContent', locks.body);
+  setLock('fPlan',    locks.plan,   'fPlanLockBadge');
+  setLock('progressLogInput', locks.progress);
+  setLock('progressLogDate',  locks.progress);
+  setLock('fResult',  locks.result, 'fResultLockBadge');
+  setLock('fBudgetCategory', locks.budget);
+  setLock('fBudgetAmount',   locks.budget);
+  // approvalReq 체크박스 잠금은 별도 처리
+  document.querySelectorAll('#fApprovalGroup input[type=checkbox]').forEach(cb => {
+    cb.disabled = locks.approvalReq;
+    cb.parentElement.style.opacity = locks.approvalReq ? '0.55' : '';
+  });
+  // 진척 추가 버튼·삭제 버튼
+  document.querySelectorAll('#progressLogList button, #fPlanField + .field button').forEach(b => {
+    // (placeholder — modular)
+  });
+}
+
 /* 예산 입력 시 자동 결재 라우팅 표시 + 체크박스 자동 체크 */
 function updateBudgetRoute() {
   const cat = document.getElementById('fBudgetCategory').value;
@@ -1067,7 +1202,10 @@ function openAddModal() {
   renderProgressList();
   document.getElementById('fBudgetCategory').value = '';
   document.getElementById('fBudgetAmount').value = '';
+  document.getElementById('fPlan').value = '';
+  document.getElementById('fResult').value = '';
   updateBudgetRoute();
+  applyLifecycleLocks(null);  // 신규 = free stage
   document.getElementById('modalSaveBtn').textContent = '저장';
   document.getElementById('taskModal').classList.add('show');
 }
@@ -1084,6 +1222,8 @@ function openEditModal(id) {
   document.getElementById('fEndDate').value = fmtDate(t.endDate);
   const parsed = parseContent(t.content);
   document.getElementById('fContent').value = parsed.body;
+  document.getElementById('fPlan').value = parsed.plan || '';
+  document.getElementById('fResult').value = parsed.result || '';
   modalLogsCache = parsed.logs.slice();
   document.getElementById('progressLogDate').value = todayDateStr();
   document.getElementById('progressLogInput').value = '';
@@ -1093,6 +1233,7 @@ function openEditModal(id) {
   document.getElementById('fLink').value = t.link || '';
   setCheckboxGroup('fApprovalGroup', (t.approval || '').split(',').map(s => s.trim()));
   updateBudgetRoute();
+  applyLifecycleLocks(t);  // 단계 기반 잠금 적용
   document.getElementById('modalSaveBtn').textContent = '수정';
   document.getElementById('taskModal').classList.add('show');
 }
@@ -1145,7 +1286,16 @@ async function saveTask() {
   const budgetCat = document.getElementById('fBudgetCategory').value;
   const budgetAmt = Number(document.getElementById('fBudgetAmount').value) || 0;
   const budget = (budgetCat && budgetAmt > 0) ? { category: budgetCat, amount: budgetAmt } : null;
-  const composedContent = composeContent(document.getElementById('fContent').value, modalLogsCache, budget);
+  // 기획·결과보고 (선택 항목)
+  const planText = document.getElementById('fPlan').value;
+  const resultText = document.getElementById('fResult').value;
+  const composedContent = composeContent(
+    document.getElementById('fContent').value,
+    modalLogsCache,
+    budget,
+    planText,
+    resultText
+  );
 
   const params = {
     action: editId ? 'todo_update' : 'todo_add',
