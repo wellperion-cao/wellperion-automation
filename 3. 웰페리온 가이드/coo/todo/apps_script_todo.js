@@ -4,7 +4,19 @@
 // CRUD + 파일 업로드(Base64→Drive) + 텔레그램 알림(선택)
 
 // ─── 상수 ───
-const TODO_SHEET = 'TODO';
+// 시트명 fallback (GM이 수동 변경 시 자동 매칭 · 2026-05-28)
+const TODO_SHEET = '업무 현황';            // 메인 — 모든 업무 데이터
+const TODO_SHEET_FALLBACKS = ['업무 현황', 'TODO', '업무 현황 SSOT'];
+const DONE_SHEET_NAME = '결재 현황';        // 결재 완료/반려 백업
+const DONE_SHEET_FALLBACKS = ['결재 현황', 'TODO_완료', '결재 현황 SSOT'];
+
+function _findSheet(ss, fallbacks) {
+  for (const name of fallbacks) {
+    const s = ss.getSheetByName(name);
+    if (s) return s;
+  }
+  return null;
+}
 
 const TODO_HEADERS = [
   'id', '업무명', '카테고리', '담당자',
@@ -40,7 +52,7 @@ function _prop(key) {
 // ─── 시트 초기화 ───
 function initTodoSheet() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
-  let sh = ss.getSheetByName(TODO_SHEET);
+  let sh = _findSheet(ss, TODO_SHEET_FALLBACKS);
   if (sh) {
     // 기존 시트 — 결재 컬럼 자동 마이그레이션 (2026-05-28)
     const existingHeaders = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0];
@@ -121,13 +133,12 @@ function _applyStatusColor(sh, row, status) {
   sh.getRange(row, colIdx).setBackground(color).setFontColor('#ffffff');
 }
 
-// TODO_완료 시트에 완료 건 복사
+// 결재 현황(완료/반려) 시트에 완료 건 복사
 function _copyToDoneSheet(srcSheet, srcRow) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const DONE_SHEET_NAME = 'TODO_완료';
-  let doneSh = ss.getSheetByName(DONE_SHEET_NAME);
+  let doneSh = _findSheet(ss, DONE_SHEET_FALLBACKS);
 
-  // 시트가 없으면 자동 생성
+  // 시트가 없으면 자동 생성 (메인 fallback 이름 우선)
   if (!doneSh) {
     doneSh = ss.insertSheet(DONE_SHEET_NAME);
     // 헤더 + 완료일 컬럼 추가
