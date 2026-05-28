@@ -59,7 +59,7 @@
   .ntool-pv-wmark-w img{width:100%;height:auto;display:block;}
   #noticePreview .ntool-pv-title-kr{font-size:clamp(22px,4.2vw,52px);font-weight:700;margin-bottom:6px;line-height:1.18;color:#E8D8C5;letter-spacing:0.005em;}
   #noticePreview .ntool-pv-title-en{font-size:clamp(11px,1.9vw,24px);font-weight:500;color:#E8D8C5;opacity:0.92;letter-spacing:0.01em;margin-bottom:0;}
-  .ntool-pv-subtitle{position:absolute;bottom:clamp(8px,1.6vw,16px);left:0;right:0;text-align:center;font-size:clamp(8px,1.05vw,12px);color:var(--hl);opacity:0.92;letter-spacing:0.02em;font-weight:500;padding:0 clamp(16px,3vw,28px);}
+  .ntool-pv-subtitle{position:absolute;bottom:clamp(8px,1.6vw,16px);left:0;right:0;text-align:center;font-size:clamp(9px,1.15vw,13px);color:var(--hl);opacity:0.95;letter-spacing:0.12em;font-weight:500;padding:0 clamp(16px,3vw,28px);}
 
   /* ── 미리보기 본문 (흰 배경, 자동 파싱 3구획) ── */
   #noticePreview .ntool-pv-body{flex:1;padding:clamp(18px,3.2vw,36px) clamp(16px,2.8vw,32px);display:flex;flex-direction:column;justify-content:center;align-items:stretch;color:#1a1a1a;line-height:1.85;font-size:clamp(12px,1.6vw,19px);font-weight:500;background:#fff;text-align:center;overflow:hidden;}
@@ -182,7 +182,7 @@
             <div class="ntool-pv-wmark-w"><img src="../../_assets/logo/w_mark.png" alt="W"></div>
             <div class="ntool-pv-title-kr" id="noticePvTitleKr">국문 공지 제목</div>
             <div class="ntool-pv-title-en" id="noticePvTitleEn">ENG NOTICE TITLE</div>
-            <div class="ntool-pv-subtitle">웰페리온은 회원님들의 건강과 행복을 위하여 항상 최선을 다하겠습니다.</div>
+            <div class="ntool-pv-subtitle">A Day, Well Completed.&nbsp;&nbsp;/&nbsp;&nbsp;하루의 완성, 웰페리온.</div>
           </div>
           <div class="ntool-pv-body" id="noticePvBody">본문 내용이 여기에 표시됩니다.</div>
           <div class="ntool-pv-ftr">
@@ -271,6 +271,9 @@
     en.textContent = el('noticeTitleEn').value || 'ENG NOTICE TITLE';
     kr.style.color = brand.logo;
     en.style.color = brand.logo;
+    /* 푸터 배경도 사업부 BG로 동적 동기화 */
+    var ftrEl = document.querySelector('#noticePreview .ntool-pv-ftr');
+    if(ftrEl) ftrEl.style.background = brand.bg;
     var bodyEl = el('noticePvBody');
     var txt = el('noticeBody').value;
     var ff = el('noticeFontFamily').value;
@@ -338,7 +341,7 @@
     html += '.wmark img{width:100%;height:auto;display:block;}';
     html += '.tkr{font-size:6.2vmin;font-weight:700;line-height:1.16;margin-bottom:0.8vmin;color:'+brand.logo+';letter-spacing:0.005em;}';
     html += '.ten{font-size:3vmin;font-weight:500;color:'+brand.logo+';opacity:0.92;letter-spacing:0.01em;margin-bottom:0;}';
-    html += '.sub{position:absolute;bottom:1.8vmin;left:0;right:0;text-align:center;font-size:1.4vmin;color:#ED5B3F;opacity:0.92;letter-spacing:0.02em;font-weight:500;padding:0 4vmin;}';
+    html += '.sub{position:absolute;bottom:1.8vmin;left:0;right:0;text-align:center;font-size:1.55vmin;color:#ED5B3F;opacity:0.95;letter-spacing:0.12em;font-weight:500;padding:0 4vmin;}';
     /* BODY */
     html += '.body{flex:1;background:#fff;color:#1a1a1a;padding:4.5vmin 4vmin;text-align:center;display:flex;flex-direction:column;justify-content:center;align-items:stretch;line-height:1.85;font-size:'+fs+'px;font-weight:500;overflow:hidden;}';
     html += '.notice-head{font-size:1.75em;font-weight:700;line-height:1.5;color:#1a1a1a;}';
@@ -351,8 +354,8 @@
     html += '.notice-imgs{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;margin-top:2vmin;}';
     html += '.notice-imgs img{max-width:48%;max-height:24vh;border-radius:1vmin;object-fit:cover;}';
     html += '.hl{color:#ED5B3F;font-weight:700;}';
-    /* FOOTER (가로 wordmark 단독) */
-    html += '.ftr{flex:0 0 6.5%;background:#221F20;display:flex;align-items:center;justify-content:center;}';
+    /* FOOTER (가로 wordmark 단독, 사업부 BG 동기화) */
+    html += '.ftr{flex:0 0 6.5%;background:'+brand.bg+';display:flex;align-items:center;justify-content:center;}';
     html += '.ftr img{height:3vmin;width:auto;}';
     html += '</style></head><body>';
     html += '<div class="page">';
@@ -361,7 +364,7 @@
     html += '<div class="wmark"><img src="../../_assets/logo/w_mark.png" alt="W"></div>';
     html += '<div class="tkr">'+esc(titleKr)+'</div>';
     html += '<div class="ten">'+esc(titleEn)+'</div>';
-    html += '<div class="sub">웰페리온은 회원님들의 건강과 행복을 위하여 항상 최선을 다하겠습니다.</div>';
+    html += '<div class="sub">A Day, Well Completed.&nbsp;&nbsp;/&nbsp;&nbsp;하루의 완성, 웰페리온.</div>';
     html += '</div>';
     html += '<div class="body">'+bodyHtml+imgHtml+'</div>';
     html += '<div class="ftr"><img src="../../_assets/logo/wellperion_wordmark.png" alt="WELLPERION"></div>';
