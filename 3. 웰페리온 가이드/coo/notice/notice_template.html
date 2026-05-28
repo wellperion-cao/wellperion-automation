@@ -59,7 +59,7 @@
   /* ── 미리보기 헤더 (어두운 상단) ── */
   .ntool-pv-hdr{background:#221F20;padding:clamp(22px,4vw,42px) clamp(20px,4vw,40px) clamp(28px,4.5vw,46px);text-align:center;color:#fff;flex:0 0 30%;position:relative;display:flex;flex-direction:column;justify-content:center;align-items:center;}
   .ntool-pv-notice-label{position:absolute;top:clamp(12px,2vw,20px);left:50%;transform:translateX(-50%);font-size:clamp(9px,1.1vw,13px);font-weight:600;letter-spacing:0.32em;color:rgba(255,255,255,0.78);}
-  .ntool-pv-wmark-w{position:absolute;top:clamp(10px,1.8vw,20px);right:clamp(12px,2.2vw,28px);width:clamp(110px,20vw,260px);opacity:1;pointer-events:none;}
+  .ntool-pv-wmark-w{position:absolute;top:clamp(8px,1.4vw,16px);right:clamp(10px,2vw,24px);width:clamp(45px,9vw,110px);opacity:1;pointer-events:none;}
   .ntool-pv-wmark-w img{width:100%;height:auto;display:block;}
   #noticePreview .ntool-pv-title-kr{font-size:clamp(22px,4.2vw,52px);font-weight:700;margin-bottom:6px;line-height:1.18;color:#E8D8C5;letter-spacing:0.005em;}
   #noticePreview .ntool-pv-title-en{font-size:clamp(11px,1.9vw,24px);font-weight:500;color:#E8D8C5;opacity:0.92;letter-spacing:0.01em;margin-bottom:0;}
@@ -78,9 +78,9 @@
   #noticePreview .notice-imgs{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:14px;}
   #noticePreview .notice-imgs img{max-width:46%;max-height:120px;border-radius:6px;object-fit:cover;}
 
-  /* ── 미리보기 푸터 (가로 wordmark 단독) ── */
-  .ntool-pv-ftr{background:#221F20;padding:clamp(10px,1.8vw,18px);display:flex;align-items:center;justify-content:center;flex:0 0 6.5%;}
-  .ntool-pv-ftr img{height:clamp(14px,2.6vw,32px);width:auto;}
+  /* ── 미리보기 푸터 (가로 락업 corner 워터마크 단독) ── */
+  .ntool-pv-ftr{background:#221F20;padding:clamp(10px,1.8vw,18px);display:flex;align-items:center;justify-content:center;flex:0 0 7%;}
+  .ntool-pv-ftr img{height:clamp(20px,3.4vw,44px);width:auto;}
 
   /* ── 사진 첨부 썸네일 ── */
   .ntool-img-thumb{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;}
@@ -207,14 +207,14 @@
         <div class="ntool-preview-inner" id="noticePreview">
           <div class="ntool-pv-hdr" id="noticeHdr">
             <div class="ntool-pv-notice-label" id="noticePvNoticeLabel">NOTICE</div>
-            <div class="ntool-pv-wmark-w"><img id="noticePvWmark" src="../../_assets/logo/watermarks/corner_beige.png" alt="WELLPERION"></div>
+            <div class="ntool-pv-wmark-w"><img id="noticePvWmark" src="../../_assets/logo/watermarks/mark_beige.png" alt="W"></div>
             <div class="ntool-pv-title-kr" id="noticePvTitleKr">국문 공지 제목</div>
             <div class="ntool-pv-title-en" id="noticePvTitleEn">ENG NOTICE TITLE</div>
             <div class="ntool-pv-subtitle">A Day, Well Completed. 하루의 완성, 웰페리온</div>
           </div>
           <div class="ntool-pv-body" id="noticePvBody">본문 내용이 여기에 표시됩니다.</div>
           <div class="ntool-pv-ftr">
-            <img src="../../_assets/logo/wellperion_wordmark.png" alt="WELLPERION">
+            <img id="noticePvFtrWmark" src="../../_assets/logo/watermarks/corner_beige.png" alt="WELLPERION">
           </div>
         </div>
       </div>
@@ -369,12 +369,11 @@
     en.textContent = el('noticeTitleEn').value || 'ENG NOTICE TITLE';
     kr.style.color = brand.logo;
     en.style.color = brand.logo;
-    /* 푸터 배경도 사업부 BG로 동적 동기화 */
-    var ftrEl = document.querySelector('#noticePreview .ntool-pv-ftr');
-    if(ftrEl) ftrEl.style.background = brand.bg;
-    /* 헤더 우상단 워터마크도 사업부 컬러 세트로 동기화 */
+    /* 헤더 우상단 = mark(W) 워터마크, 푸터 = corner(가로 락업) — 둘 다 사업부 컬러 동기화 */
     var wmEl = el('noticePvWmark');
-    if(wmEl) wmEl.src = '../../_assets/logo/watermarks/corner_'+brand.wm+'.png';
+    if(wmEl) wmEl.src = '../../_assets/logo/watermarks/mark_'+brand.wm+'.png';
+    var ftrWmEl = el('noticePvFtrWmark');
+    if(ftrWmEl) ftrWmEl.src = '../../_assets/logo/watermarks/corner_'+brand.wm+'.png';
     var bodyEl = el('noticePvBody');
     var txt = el('noticeBody').value;
     var ff = el('noticeFontFamily').value;
@@ -456,7 +455,7 @@
     /* HEADER (축소된 비율 + 캡션 헤더 하단 absolute) */
     html += '.hdr{flex:0 0 30%;padding:5.2vmin 5vmin 5.2vmin;text-align:center;color:#fff;display:flex;flex-direction:column;justify-content:center;align-items:center;position:relative;}';
     html += '.notice-label-top{position:absolute;top:2.6vmin;left:50%;transform:translateX(-50%);font-size:1.5vmin;font-weight:600;letter-spacing:0.32em;color:rgba(255,255,255,0.78);}';
-    html += '.wmark{position:absolute;top:2.8vmin;right:3.2vmin;width:26vmin;opacity:1;}';
+    html += '.wmark{position:absolute;top:2.4vmin;right:3vmin;width:11vmin;opacity:1;}';
     html += '.wmark img{width:100%;height:auto;display:block;}';
     html += '.tkr{font-size:6.2vmin;font-weight:700;line-height:1.16;margin-bottom:0.8vmin;color:'+brand.logo+';letter-spacing:0.005em;}';
     html += '.ten{font-size:3vmin;font-weight:500;color:'+brand.logo+';opacity:0.92;letter-spacing:0.01em;margin-bottom:0;}';
@@ -474,20 +473,20 @@
     html += '.notice-imgs{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;margin-top:2vmin;}';
     html += '.notice-imgs img{max-width:48%;max-height:24vh;border-radius:1vmin;object-fit:cover;}';
     html += '.hl{color:#ED5B3F;font-weight:700;}';
-    /* FOOTER (가로 wordmark 단독, 사업부 BG 동기화) */
-    html += '.ftr{flex:0 0 6.5%;background:'+brand.bg+';display:flex;align-items:center;justify-content:center;}';
-    html += '.ftr img{height:3vmin;width:auto;}';
+    /* FOOTER (가로 락업 corner 워터마크 단독, 어두운 BG 고정으로 워터마크 가독성 확보) */
+    html += '.ftr{flex:0 0 7%;background:#221F20;display:flex;align-items:center;justify-content:center;}';
+    html += '.ftr img{height:4.5vmin;width:auto;}';
     html += '</style></head><body>';
     html += '<div class="page">';
     html += '<div class="hdr" style="background:'+brand.hdr+';">';
     html += '<div class="notice-label-top">NOTICE</div>';
-    html += '<div class="wmark"><img src="../../_assets/logo/watermarks/corner_'+brand.wm+'.png" alt="WELLPERION"></div>';
+    html += '<div class="wmark"><img src="../../_assets/logo/watermarks/mark_'+brand.wm+'.png" alt="W"></div>';
     html += '<div class="tkr">'+esc(titleKr)+'</div>';
     html += '<div class="ten">'+esc(titleEn)+'</div>';
     html += '<div class="sub">A Day, Well Completed. 하루의 완성, 웰페리온</div>';
     html += '</div>';
     html += '<div class="body">'+bodyHtml+imgHtml+'</div>';
-    html += '<div class="ftr"><img src="../../_assets/logo/wellperion_wordmark.png" alt="WELLPERION"></div>';
+    html += '<div class="ftr"><img src="../../_assets/logo/watermarks/corner_'+brand.wm+'.png" alt="WELLPERION"></div>';
     html += '</div></body></html>';
     return html;
   }
