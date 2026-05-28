@@ -158,18 +158,20 @@ function render() {
   // 결재 관련 건 (결재상태 있거나 결재요청이 체크된 모든 행) — 2026-05-28 보강
   const approvalTasks = ALL_TASKS.filter(t => (t.approvalStatus && String(t.approvalStatus).trim()) || (t.approval && String(t.approval).trim()));
 
-  // 통계
+  // 통계 — funnel 단계별 카운트 (2026-05-28 GM 결재)
   const done = approvalTasks.filter(t => t.approvalStatus === '결재완료');
   const rejected = approvalTasks.filter(t => /반려/.test(t.approvalStatus));
   const pending = approvalTasks.filter(t => t.approvalStatus !== '결재완료' && !/반려/.test(t.approvalStatus));
+  const gmSigned = approvalTasks.filter(t => String(t.gmSign || '').trim());
+  const repSigned = approvalTasks.filter(t => String(t.repSign || '').trim());
 
   let html = '';
 
-  // 통계 카드
+  // 통계 카드 — 4종 단계별
   html += '<div class="stat-grid">';
   html += '<div class="stat-card"><div class="num" style="color:var(--accent)">' + approvalTasks.length + '</div><div class="label">총 결재 건</div></div>';
-  html += '<div class="stat-card"><div class="num" style="color:var(--green)">' + done.length + '</div><div class="label">결재완료</div></div>';
-  html += '<div class="stat-card"><div class="num" style="color:var(--yellow)">' + pending.length + '</div><div class="label">진행 중</div></div>';
+  html += '<div class="stat-card"><div class="num" style="color:var(--blue)">' + gmSigned.length + '</div><div class="label">GM 결재 완료</div></div>';
+  html += '<div class="stat-card"><div class="num" style="color:var(--green)">' + repSigned.length + '</div><div class="label">대표 결재 완료</div></div>';
   html += '<div class="stat-card"><div class="num" style="color:var(--red)">' + rejected.length + '</div><div class="label">반려</div></div>';
   html += '</div>';
 
