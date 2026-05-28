@@ -1584,37 +1584,62 @@ function getItemOverrides(){try{return JSON.parse(localStorage.getItem('wcheck_o
 function saveItemOverrides(o){localStorage.setItem('wcheck_overrides',JSON.stringify(o))}
 function findBaseItem(id){
   const today=new Date().toISOString().slice(0,10);
-  let base=null;
+  let found=null;
   function scan(sched){
-    if(!sched||base)return;
-    sched.forEach(slot=>slot.groups.forEach(g=>g.items.forEach(it=>{if(it.id===id)base=it})));
+    if(!sched||found)return;
+    sched.forEach(slot=>slot.groups.forEach(g=>g.items.forEach(it=>{
+      if(it.id===id)found={name:it.name,detail:it.detail,slot:slot.slot,shift:slot.shift,cat:g.title};
+    })));
   }
   scan(getSched(today));
   scan(getNightSched(today));
-  if(!base&&typeof DAY_FOCUS!=='undefined'){
+  if(!found&&typeof DAY_FOCUS!=='undefined'){
     for(const dow in DAY_FOCUS){
-      DAY_FOCUS[dow].forEach(it=>{if(it.id===id)base=it});
-      if(base)break;
+      DAY_FOCUS[dow].forEach(it=>{
+        if(it.id===id)found={name:it.name,detail:it.detail,slot:'요일별 집중 청소',shift:'focus',cat:'요일별 집중'};
+      });
+      if(found)break;
     }
   }
-  return base||{name:'',detail:''};
+  return found||{name:'',detail:'',slot:'',shift:'am',cat:''};
 }
+let _editingItemId=null;
 window.editItem=function(id){
   const ov=getItemOverrides()[id]||{};
   const base=findBaseItem(id);
-  const curName=ov.name||base.name;
-  const curDetail=ov.detail||base.detail;
-  const newName=prompt('항목 이름을 수정하세요:',curName);
-  if(newName===null)return;
-  const newDetail=prompt('세부 설명을 수정하세요 (줄바꿈은 그대로 Enter):',curDetail);
-  if(newDetail===null)return;
+  _editingItemId=id;
+  document.getElementById('editName').value=ov.name||base.name;
+  document.getElementById('editDetail').value=ov.detail||base.detail;
+  document.getElementById('editSlot').value=ov.slot||base.slot||'';
+  document.getElementById('editShift').value=ov.shift||base.shift||'am';
+  document.getElementById('editCat').value=ov.cat||base.cat||'';
+  document.getElementById('itemEditModal').style.display='flex';
+};
+window.saveItemEdit=function(){
+  const id=_editingItemId;
+  if(!id)return;
+  const base=findBaseItem(id);
+  const newName=document.getElementById('editName').value.trim();
+  const newDetail=document.getElementById('editDetail').value;
+  const newSlot=document.getElementById('editSlot').value.trim();
+  const newShift=document.getElementById('editShift').value;
+  const newCat=document.getElementById('editCat').value.trim();
   const all=getItemOverrides();
   if(!all[id])all[id]={};
-  if(newName.trim()&&newName!==base.name)all[id].name=newName.trim();else delete all[id].name;
+  if(newName&&newName!==base.name)all[id].name=newName;else delete all[id].name;
   if(newDetail!==base.detail)all[id].detail=newDetail;else delete all[id].detail;
-  if(!all[id].name&&!all[id].detail)delete all[id];
+  if(newSlot&&newSlot!==base.slot)all[id].slot=newSlot;else delete all[id].slot;
+  if(newShift&&newShift!==base.shift)all[id].shift=newShift;else delete all[id].shift;
+  if(newCat&&newCat!==base.cat)all[id].cat=newCat;else delete all[id].cat;
+  if(Object.keys(all[id]).length===0)delete all[id];
   saveItemOverrides(all);
+  document.getElementById('itemEditModal').style.display='none';
+  _editingItemId=null;
   renderG(activeGenderTab);
+};
+window.cancelItemEdit=function(){
+  document.getElementById('itemEditModal').style.display='none';
+  _editingItemId=null;
 };
 window.resetItem=function(id){
   if(!confirm('이 항목을 기본값으로 초기화할까요?'))return;
@@ -1637,9 +1662,18 @@ function renderItem(it,shift,gender){
   const esc=escapeAttr;
   // Use unique element ids per gender tab to avoid collisions
   const pfx=g+'_';
-  const editBtn=`<button class="tiny-btn" style="background:rgba(91,159,213,0.12);color:#5b9fd5;border-color:rgba(91,159,213,0.3);" title="이 항목 수정" onclick="editItem('${it.id}')">✏️</button>`;
-  const resetBtn=isEdited?`<button class="tiny-btn" style="background:rgba(140,139,131,0.12);color:#8c8b83;border-color:rgba(140,139,131,0.3);" title="기본값 복원" onclick="resetItem('${it.id}')">↺</button>`:'';
-  const editedTag=isEdited?'<span style="font-size:10px;color:#e6c84e;font-weight:700;margin-left:4px;">수정됨</span>':'';
+  const editBtn=`<button class="tiny-btn" style="background:rgba(91,159,213,0.12);color:#5b9fd5;border-color:rgba(91,159,213,0.3);font-size:12px;" title="이 항목 수정 (제목·내용·시간대·근무조)" onclick="editItem('${it.id}')">편집</button>`;
+  const resetBtn=isEdited?`<button class="tiny-btn" style="background:rgba(140,139,131,0.12);color:#8c8b83;border-color:rgba(140,139,131,0.3);font-size:12px;" title="기본값 복원" onclick="resetItem('${it.id}')">초기화</button>`:'';
+  const shiftLabel={am:'오전조',pm:'오후조',night:'야간조',focus:'요일집중',all:'전체'};
+  let metaInfo='';
+  if(ov.slot||ov.shift||ov.cat){
+    const m=[];
+    if(ov.slot)m.push('시간 '+ov.slot);
+    if(ov.shift)m.push(shiftLabel[ov.shift]||ov.shift);
+    if(ov.cat)m.push('카테고리 '+ov.cat);
+    metaInfo='<span style="font-size:10px;color:#5b9fd5;margin-left:6px;">('+m.join(' · ')+')</span>';
+  }
+  const editedTag=isEdited?'<span style="font-size:10px;color:#e6c84e;font-weight:700;margin-left:4px;">수정됨</span>'+metaInfo:'';
   return `<div class="${cls}">
     <div class="item-row"><input type="checkbox" id="cb_${pfx}${it.id}" ${ck} onchange="onCk('${it.id}','${shift}','${g}')"><label for="cb_${pfx}${it.id}">${itemName}${editedTag}</label>
       <div class="item-btns">${editBtn}${resetBtn}<button class="tiny-btn issue" onclick="togX('${pfx}iss_${it.id}')">이슈</button><button class="tiny-btn tip" onclick="togX('${pfx}tip_${it.id}')">노하우</button></div>
@@ -2667,5 +2701,45 @@ renderItem = function(it, shift, gender){
 /* 초기 렌더링 */
 mgmtRenderList();
 </script>
+
+<!-- v1.3 항목 편집 모달 (제목·내용·시간대·근무조·카테고리) -->
+<div id="itemEditModal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);z-index:1000;align-items:center;justify-content:center;padding:20px;">
+  <div style="background:var(--paper);padding:22px 24px;border-radius:14px;max-width:520px;width:100%;border:1px solid var(--accent);box-shadow:0 12px 40px rgba(0,0,0,0.5);max-height:90vh;overflow-y:auto;">
+    <h3 style="font-size:16px;font-weight:700;color:var(--accent);margin-bottom:14px;">항목 편집</h3>
+    <div style="margin-bottom:12px;">
+      <label style="display:block;font-size:13px;font-weight:600;color:var(--dim);margin-bottom:4px;">제목</label>
+      <input id="editName" type="text" style="width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:10px 14px;border-radius:8px;font-size:14px;font-family:inherit;">
+    </div>
+    <div style="margin-bottom:12px;">
+      <label style="display:block;font-size:13px;font-weight:600;color:var(--dim);margin-bottom:4px;">내용 (세부 설명)</label>
+      <textarea id="editDetail" style="width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:10px 14px;border-radius:8px;font-size:13px;font-family:inherit;min-height:80px;line-height:1.6;resize:vertical;"></textarea>
+    </div>
+    <div style="display:flex;gap:10px;margin-bottom:12px;">
+      <div style="flex:1;">
+        <label style="display:block;font-size:13px;font-weight:600;color:var(--dim);margin-bottom:4px;">근무조</label>
+        <select id="editShift" style="width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:10px 14px;border-radius:8px;font-size:14px;font-family:inherit;cursor:pointer;">
+          <option value="am">오전조 (05:30~14:15)</option>
+          <option value="pm">오후조 (14:00~22:30)</option>
+          <option value="night">야간조 (탕청소 업체)</option>
+          <option value="focus">요일별 집중 청소</option>
+          <option value="all">전체 시간대</option>
+        </select>
+      </div>
+      <div style="flex:1;">
+        <label style="display:block;font-size:13px;font-weight:600;color:var(--dim);margin-bottom:4px;">시간대 라벨</label>
+        <input id="editSlot" type="text" placeholder="예: 10:00~12:00 오전 후반" style="width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:10px 14px;border-radius:8px;font-size:13px;font-family:inherit;">
+      </div>
+    </div>
+    <div style="margin-bottom:14px;">
+      <label style="display:block;font-size:13px;font-weight:600;color:var(--dim);margin-bottom:4px;">카테고리</label>
+      <input id="editCat" type="text" placeholder="예: A 사우나 탕" style="width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:10px 14px;border-radius:8px;font-size:13px;font-family:inherit;">
+    </div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;">
+      <button onclick="cancelItemEdit()" style="padding:10px 20px;background:var(--paper);color:var(--dim);border:1px solid var(--border);border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;">취소</button>
+      <button onclick="saveItemEdit()" style="padding:10px 22px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;">저장</button>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
