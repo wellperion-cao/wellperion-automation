@@ -494,15 +494,21 @@
     /* v2.36 — 이미지는 본문 contenteditable 안에 직접 삽입되므로 자동 prepend 폐기 (중복 방지) */
     bodyEl.innerHTML = html;
     bodyEl.style.fontFamily = ff==='serif' ? '"Noto Serif KR",serif' : '"Pretendard",sans-serif';
-    bodyEl.style.fontSize = fs+'px';
+    var orient = el('noticeOrient') ? el('noticeOrient').value : 'portrait';
     var lh = el('noticeLineHeight');
-    bodyEl.style.lineHeight = lh ? lh.value : '1.85';
+    /* v2.43 — 가로형은 CSS clamp 규칙 우선 (inline style 비움) → overflow 방지 */
+    if(orient === 'landscape'){
+      bodyEl.style.fontSize = '';
+      bodyEl.style.lineHeight = '';
+    } else {
+      bodyEl.style.fontSize = fs+'px';
+      bodyEl.style.lineHeight = lh ? lh.value : '1.85';
+    }
     /* 에디터 글꼴·기본 사이즈·줄간격도 동기화 (사용자가 변경 시 즉시 반영) */
     editor.style.fontFamily = ff==='serif' ? '"Noto Serif KR",serif' : '"Pretendard",sans-serif';
     editor.style.fontSize = fs+'px';
     if(lh) editor.style.lineHeight = lh.value;
     /* v2.38 — 방향 (세로/가로) 미리보기 aspect-ratio 동적 변경 */
-    var orient = el('noticeOrient') ? el('noticeOrient').value : 'portrait';
     var frame = el('noticePreviewFrame');
     if(frame){
       frame.style.aspectRatio = orient === 'landscape' ? '420/297' : '297/420';
