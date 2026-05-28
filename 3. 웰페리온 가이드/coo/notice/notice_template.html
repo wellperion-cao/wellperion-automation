@@ -43,6 +43,10 @@
   .ntool-input:focus,.ntool-select:focus,.ntool-textarea:focus{outline:none;border-color:var(--accent);}
   .ntool-select{cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M3 5l3 3 3-3' fill='none' stroke='%23999' stroke-width='1.5'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;}
   .ntool-textarea{min-height:240px;resize:vertical;line-height:1.7;}
+  /* v2.34 — 소제목 고정 input (본문 위, 글씨 크기 고정) */
+  .ntool-subtitle-input{width:100%;padding:14px 18px;margin-bottom:10px;background:var(--paper);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:22px;font-weight:700;font-family:"Pretendard","Apple SD Gothic Neo",sans-serif;outline:none;transition:border-color 0.15s;}
+  .ntool-subtitle-input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(183,159,138,0.12);}
+  .ntool-subtitle-input::placeholder{color:#bbb;font-weight:400;font-size:14px;}
   /* v2.32 contenteditable wysiwyg 에디터 — 네이버 블로그 글쓰기와 동일 경험 */
   .ntool-editor{width:100%;min-height:280px;padding:16px 20px;background:var(--paper);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:18px;line-height:1.85;outline:none;overflow-y:auto;font-family:"Pretendard","Apple SD Gothic Neo",sans-serif;cursor:text;}
   .ntool-editor:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(183,159,138,0.12);}
@@ -113,9 +117,14 @@
   #noticePreview .notice-tail{margin-top:1.4em;line-height:1.85;color:#1a1a1a;font-weight:500;font-size:1.05em;}
   #noticePreview .notice-imgs{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:14px;}
   #noticePreview .notice-imgs img{max-width:46%;max-height:120px;border-radius:6px;object-fit:cover;}
+  /* v2.34 — 소제목 미리보기·인쇄 헤드라인 (본문 위 큰 글씨 고정) */
+  #noticePreview .notice-subtitle{font-size:1.75em;font-weight:700;line-height:1.4;color:#1a1a1a;text-align:center;margin-bottom:0.7em;letter-spacing:-0.01em;}
   /* 네이버 블로그 풀세트 v2.26 — 인용구·구분선·정렬 */
   #noticePreview .notice-quote{border-left:4px solid var(--accent);padding:0.7em 1em;margin:1em auto;color:var(--accent);background:var(--accent-bg);border-radius:0 6px 6px 0;font-style:italic;max-width:88%;text-align:left;}
   #noticePreview .notice-hr{border:none;height:1px;background:#ccc;margin:1.2em auto;width:80%;}
+  /* v2.34 — wysiwyg blockquote/hr 미리보기 정합 (작성칸과 동일 시각) */
+  #noticePreview .ntool-pv-body blockquote{border-left:4px solid var(--accent);padding:0.7em 1em;margin:1em auto;color:var(--accent);background:var(--accent-bg);border-radius:0 6px 6px 0;font-style:italic;max-width:88%;text-align:left;}
+  #noticePreview .ntool-pv-body hr{border:none;height:1px;background:#ccc;margin:1.2em auto;width:80%;}
   #noticePreview .align-left{text-align:left;}
   #noticePreview .align-center{text-align:center;}
   #noticePreview .align-right{text-align:right;}
@@ -207,6 +216,7 @@
       </div>
       <div>
         <label class="ntool-label">본문</label>
+        <input class="ntool-subtitle-input" id="noticeSubtitle" placeholder="소제목 (예: 6월 정기 휴관 안내) — 본문 맨 위 큰 글씨 고정" oninput="ntUpdatePreview()">
         <div class="ntool-font-bar">
           <select id="noticeFontFamily" onchange="ntUpdatePreview()">
             <option value="Pretendard">Pretendard</option>
@@ -227,6 +237,8 @@
             <option value="1.85" selected>보통</option>
             <option value="2.2">넓게</option>
           </select>
+          <span class="font-sep"></span>
+          <label class="fb-btn" style="cursor:pointer;display:inline-flex;align-items:center;gap:4px;" title="이미지 추가 (여러 장 선택 가능)">📷 이미지<input type="file" accept="image/*" multiple hidden id="noticeImgInput" onchange="ntAddImages(this)"></label>
         </div>
         <div class="ntool-fmt-bar">
           <div class="fmt-group" role="group" aria-label="인라인 강조 (선택 영역)">
@@ -254,7 +266,6 @@
       </div>
       <div class="ntool-img-thumb" id="noticeImgThumb" style="margin-top:8px;"></div>
       <div class="ntool-actions">
-        <label class="ntool-btn secondary" style="cursor:pointer;display:inline-flex;align-items:center;gap:6px;">📷 이미지 추가<input type="file" accept="image/*" multiple hidden id="noticeImgInput" onchange="ntAddImages(this)"></label>
         <button class="ntool-btn primary" onclick="ntPrint()">🖨️ 인쇄</button>
         <button class="ntool-btn secondary" onclick="ntSave()">💾 저장하기</button>
         <button class="ntool-btn secondary" onclick="ntDownloadPDF()">📄 PDF 다운로드</button>
@@ -469,7 +480,11 @@
     var ff = el('noticeFontFamily').value;
     var fs = el('noticeFontSize').value;
     var dateHtml = ntFormatDateRange();
-    var html = dateHtml + (bodyHtml || '<div class="notice-head" style="color:#999;">본문 내용이 여기에 표시됩니다.</div>');
+    /* v2.34 — 소제목 (본문 맨 위 큰 글씨 고정) */
+    var subtitleEl = el('noticeSubtitle');
+    var subtitle = subtitleEl ? subtitleEl.value.trim() : '';
+    var subtitleHtml = subtitle ? '<div class="notice-subtitle">' + esc(subtitle) + '</div>' : '';
+    var html = dateHtml + subtitleHtml + (bodyHtml || '<div class="notice-head" style="color:#999;">본문 내용이 여기에 표시됩니다.</div>');
     if(noticeImages.length){
       html += '<div class="notice-imgs">';
       noticeImages.forEach(function(src){ html += '<img src="'+src+'">'; });
@@ -578,6 +593,8 @@
     html += '.body{flex:1;background:#fff;color:#1a1a1a;padding:4vmin 5vmin 5vmin;text-align:center;display:flex;flex-direction:column;justify-content:center;align-items:stretch;line-height:'+lh+';font-size:'+fsVmin+'vmin;font-weight:500;overflow:hidden;position:relative;}';
     html += '.notice-date{position:absolute;right:3.5vmin;bottom:1.8vmin;font-size:0.78em;color:#B79F8A;font-weight:600;letter-spacing:0.06em;text-align:right;margin:0;}';
     html += '.notice-head{font-size:1.75em;font-weight:700;line-height:1.5;color:#1a1a1a;}';
+    /* v2.34 인쇄 소제목 (본문 위 큰 글씨 고정) */
+    html += '.notice-subtitle{font-size:1.75em;font-weight:700;line-height:1.4;color:#1a1a1a;text-align:center;margin-bottom:0.7em;letter-spacing:-0.01em;}';
     html += '.notice-divider{width:62%;height:1px;background:#B79F8A;opacity:0.45;margin:1.4em auto;border:none;}';
     html += '.notice-list{text-align:left;margin:0 auto;max-width:88%;}';
     html += '.notice-line{margin-bottom:0.5em;line-height:1.85;color:#ED5B3F;font-weight:600;font-size:1.05em;}';
@@ -587,6 +604,9 @@
     /* v2.26 풀세트 — 인용구·구분선·정렬 */
     html += '.notice-quote{border-left:4px solid #B79F8A;padding:0.7em 1em;margin:1em auto;color:#B79F8A;background:#f5efe8;border-radius:0 6px 6px 0;font-style:italic;max-width:88%;text-align:left;}';
     html += '.notice-hr{border:none;height:1px;background:#ccc;margin:1.2em auto;width:80%;}';
+    /* v2.34 wysiwyg blockquote/hr 인쇄 정합 */
+    html += 'blockquote{border-left:4px solid #B79F8A;padding:0.7em 1em;margin:1em auto;color:#B79F8A;background:#f5efe8;border-radius:0 6px 6px 0;font-style:italic;max-width:88%;text-align:left;}';
+    html += 'hr{border:none;height:1px;background:#ccc;margin:1.2em auto;width:80%;}';
     html += '.align-left{text-align:left;} .align-center{text-align:center;} .align-right{text-align:right;}';
     html += '.notice-imgs{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;margin-top:2vmin;}';
     html += '.notice-imgs img{max-width:48%;max-height:24vh;border-radius:1vmin;object-fit:cover;}';
@@ -615,8 +635,12 @@
     var titleKr = el('noticeTitleKr').value || '';
     var titleEn = el('noticeTitleEn').value || '';
     var dateHtml = ntFormatDateRange();
+    /* v2.34 — 소제목 인쇄 합류 */
+    var subEl = el('noticeSubtitle');
+    var subtitle = subEl ? subEl.value.trim() : '';
+    var subtitleHtml = subtitle ? '<div class="notice-subtitle">' + esc(subtitle) + '</div>' : '';
     /* v2.32 wysiwyg — contenteditable HTML 그대로 인쇄 빌더에 전달 */
-    var bodyHtml = dateHtml + (el('noticeBody').innerHTML || '');
+    var bodyHtml = dateHtml + subtitleHtml + (el('noticeBody').innerHTML || '');
     var ff = el('noticeFontFamily').value;
     var fs = el('noticeFontSize').value;
     var imgHtml = '';
@@ -705,6 +729,7 @@
       endDate: el('noticeEndDate').value,
       titleKr: el('noticeTitleKr').value,
       titleEn: el('noticeTitleEn').value,
+      subtitle: el('noticeSubtitle') ? el('noticeSubtitle').value : '',
       body: el('noticeBody').innerHTML,
       ff: el('noticeFontFamily').value,
       fs: el('noticeFontSize').value,
@@ -730,6 +755,7 @@
     if(item.endDate) el('noticeEndDate').value = item.endDate;
     el('noticeTitleKr').value = item.titleKr||'';
     el('noticeTitleEn').value = item.titleEn||'';
+    if(el('noticeSubtitle')) el('noticeSubtitle').value = item.subtitle||'';
     el('noticeBody').innerHTML = item.body||'';
     el('noticeFontFamily').value = item.ff||'Pretendard';
     el('noticeFontSize').value = item.fs||'16';
