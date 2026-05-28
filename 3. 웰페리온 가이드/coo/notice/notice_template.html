@@ -79,11 +79,9 @@
   .ntool-fmt-bar .sep{display:none;}
   .ntool-fmt-bar input[type=color]{width:36px;height:34px;padding:2px;border:1px solid var(--border);border-radius:6px;cursor:pointer;background:#fff;transition:border-color 0.15s;}
   .ntool-fmt-bar input[type=color]:hover{border-color:var(--accent);}
-  /* v2.52 — 색상 즐겨찾기 칩 */
-  .fav-color-chip{display:inline-block;position:relative;width:24px;height:24px;border-radius:5px;border:1px solid var(--border);cursor:pointer;transition:transform 0.1s,border-color 0.15s;}
-  .fav-color-chip:hover{transform:scale(1.1);border-color:var(--accent);}
-  .fav-color-chip .chip-x{display:none;position:absolute;top:-5px;right:-5px;width:14px;height:14px;background:var(--hl);color:#fff;border:none;border-radius:50%;font-size:9px;line-height:1;cursor:pointer;align-items:center;justify-content:center;padding:0;font-family:inherit;}
-  .fav-color-chip:hover .chip-x{display:flex;}
+  /* v2.53 — 색상 즐겨찾기 칩 (✕ 폐기, 우클릭=삭제) */
+  .fav-color-chip{display:inline-block;width:24px;height:24px;border-radius:5px;border:1px solid var(--border);cursor:pointer;transition:transform 0.1s,border-color 0.15s,box-shadow 0.15s;}
+  .fav-color-chip:hover{transform:scale(1.15);border-color:var(--accent);box-shadow:0 2px 6px rgba(0,0,0,0.15);}
   .ntool-fmt-bar select{padding:7px 10px;font-size:12px;font-weight:500;border:1px solid var(--border);border-radius:6px;background:var(--paper);cursor:pointer;font-family:inherit;transition:border-color 0.15s;}
   .ntool-fmt-bar select:hover{border-color:var(--accent);}
   /* 도움말 토글 (details/summary) */
@@ -260,7 +258,6 @@
           <button type="button" onclick="ntFmtSize(14)" title="현재 줄 작게 (14px)" class="fb-btn" style="font-size:11px;">작</button>
           <button type="button" onclick="ntFmtSize(18)" title="현재 줄 중간 (18px)" class="fb-btn">중</button>
           <button type="button" onclick="ntFmtSize(22)" title="현재 줄 크게 (22px · 소제목 동일)" class="fb-btn" style="font-size:15px;font-weight:700;">크</button>
-          <input type="number" id="noticeLineSize" min="8" max="80" placeholder="px" title="현재 줄 px 직접 입력 (Enter 또는 다른 곳 클릭 시 적용)" onchange="ntApplyLineSize(this)" style="width:54px;padding:6px 8px;font-size:12px;background:var(--paper);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:inherit;">
           <span class="font-sep"></span>
           <span style="font-size:10px;color:var(--dim);font-weight:700;letter-spacing:0.04em;">줄간격</span>
           <select id="noticeLineHeight" title="본문 전체 줄간격" onchange="ntUpdatePreview()">
@@ -268,8 +265,6 @@
             <option value="1.85" selected>보통</option>
             <option value="2.2">넓게</option>
           </select>
-          <span class="font-sep"></span>
-          <label class="fb-btn" style="cursor:pointer;display:inline-flex;align-items:center;gap:4px;" title="이미지 추가 (여러 장 선택 가능)">📷 이미지<input type="file" accept="image/*" multiple hidden id="noticeImgInput" onchange="ntAddImages(this)"></label>
         </div>
         <div class="ntool-fmt-bar">
           <div class="fmt-group" role="group" aria-label="인라인 강조 (선택 영역)">
@@ -292,6 +287,7 @@
             <span class="fmt-label">블록</span>
             <button type="button" onclick="ntFmtQuote()" title="인용구 (줄 앞에 &gt; )">" 인용</button>
             <button type="button" onclick="ntFmtHr()" title="구분선 (--- 한 줄)">─ 구분</button>
+            <label style="padding:7px 11px;border:1px solid var(--border);background:var(--paper);color:var(--text);border-radius:6px;cursor:pointer;font-family:inherit;font-size:13px;line-height:1;transition:background 0.15s,color 0.15s,border-color 0.15s;display:inline-flex;align-items:center;" title="이미지 추가 (여러 장 가능)">📷 이미지<input type="file" accept="image/*" multiple hidden id="noticeImgInput" onchange="ntAddImages(this)"></label>
           </div>
         </div>
         <div class="ntool-editor" id="noticeBody" contenteditable="true" data-placeholder="공지 본문을 입력하세요. 위 도구로 강조·색·정렬·인용구·구분선·크기·줄 굵기를 시각적으로 적용할 수 있습니다." oninput="ntUpdatePreview()" onpaste="ntHandlePaste(event)"></div>
@@ -443,7 +439,8 @@
     ntExec('foreColor', c);
   };
   window.ntRemoveFavColor = function(c, ev){
-    if(ev) ev.stopPropagation();
+    if(ev){ ev.preventDefault(); ev.stopPropagation(); }
+    if(!confirm('이 색을 즐겨찾기에서 삭제할까요?\n'+c)) return;
     var arr = (getFavColors()||[]).filter(function(x){ return x !== c; });
     saveFavColors(arr);
     ntRenderFavColors();
@@ -459,8 +456,7 @@
     }
     wrap.innerHTML = arr.map(function(c){
       var safe = c.replace(/'/g,"\\'");
-      return '<span class="fav-color-chip" style="background:'+c+';" title="'+c+' (클릭=적용, ✕=삭제)" onclick="ntApplyFavColor(\''+safe+'\')">' +
-             '<button type="button" class="chip-x" onclick="ntRemoveFavColor(\''+safe+'\',event)" title="삭제">×</button></span>';
+      return '<span class="fav-color-chip" style="background:'+c+';" title="'+c+' (클릭=적용, 우클릭=삭제)" onclick="ntApplyFavColor(\''+safe+'\')" oncontextmenu="ntRemoveFavColor(\''+safe+'\',event);return false;"></span>';
     }).join('');
   }
   window.ntFmtAlign = function(side){
@@ -469,13 +465,7 @@
   };
   window.ntFmtQuote = function(){ ntExec('formatBlock', '<blockquote>'); };
   window.ntFmtHr = function(){ ntExec('insertHorizontalRule'); };
-  /* v2.51 — 사용자 자유 px 입력 → 현재 줄에 적용 후 input 비움 */
-  window.ntApplyLineSize = function(input){
-    var v = parseInt(input.value, 10);
-    if(!v || v < 6 || v > 200){ input.value=''; return; }
-    ntFmtSize(v);
-    input.value = '';
-  };
+  /* v2.53 — 자유 px input 폐기 (글꼴 옆 18px input 만으로 본문 전체 fontSize 조정) */
   /* 줄 단위 크기 — 현재 선택 영역 (또는 커서 위치 줄) span으로 wrap + font-size */
   window.ntFmtSize = function(px){
     var ed = el('noticeBody');
