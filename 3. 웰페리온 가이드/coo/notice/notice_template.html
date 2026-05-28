@@ -985,12 +985,8 @@
   /* v2.33 — Enter 시 <p>가 자동 생성되도록 defaultParagraphSeparator=p (chrome 기본 'div' 또는 br만 삽입 회피).
      이렇게 해야 ntFmtSize/BoldLine이 줄 단위로만 동작 (1줄에 클릭 시 3줄에 영향 X) */
   try{ document.execCommand('defaultParagraphSeparator', false, 'p'); }catch(e){}
-  /* v2.55 — contenteditable selection 저장: 편집 중 mouseup/keyup + 외부 도구(input/버튼) mousedown */
-  el('noticeBody').addEventListener('mouseup', _saveCurSelection);
-  el('noticeBody').addEventListener('keyup', _saveCurSelection);
-  document.querySelectorAll('.ntool-fmt-bar button, .ntool-fmt-bar input[type=color], .ntool-font-bar .fb-btn, #noticeFontSize, .fav-color-chip').forEach(function(b){
-    b.addEventListener('mousedown', _saveCurSelection);
-  });
+  /* v2.56 — selection 변경 시점 자동 추적 (mouseup/keyup보다 robust) */
+  document.addEventListener('selectionchange', _saveCurSelection);
   /* 빈 contenteditable 첫 focus 시 <p><br></p> 자동 삽입 — block 식별 보장 */
   el('noticeBody').addEventListener('focus', function(){
     var inner = this.innerHTML.trim();
