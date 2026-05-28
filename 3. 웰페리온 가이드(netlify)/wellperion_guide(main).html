@@ -271,7 +271,54 @@
     a[href]::after{content:none!important;}
     .diagram svg{max-height:300px;}
     pre,[style*="#16181c"]{background:#f0efed!important; color:#1a1a1a!important;}
+    .ntool-wrap,.ntool-form{display:none!important;}
+    .ntool-preview-area{display:block!important; width:100%!important; margin:0!important; box-shadow:none!important;}
+    .ntool-preview-inner{transform:none!important;}
   }
+
+  /* ── 공지/인쇄물 생성 도구 스타일 ── */
+  .ntool-wrap{display:flex; gap:24px; margin-top:20px;}
+  .ntool-form{flex:1; min-width:0;}
+  .ntool-preview-area{flex:1; min-width:0; position:sticky; top:20px; align-self:flex-start;}
+  @media(max-width:900px){.ntool-wrap{flex-direction:column;} .ntool-preview-area{position:static;}}
+  .ntool-row{display:flex; gap:12px; margin-bottom:14px;}
+  .ntool-row > *{flex:1; min-width:0;}
+  @media(max-width:600px){.ntool-row{flex-direction:column;}}
+  .ntool-label{display:block; font-size:12px; font-weight:700; color:var(--dim); margin-bottom:5px; letter-spacing:0.02em;}
+  .ntool-input,.ntool-select,.ntool-textarea{width:100%; padding:10px 14px; background:var(--paper); border:1px solid var(--border); border-radius:8px; color:var(--text); font-size:14px; font-family:inherit; box-sizing:border-box; transition:border-color 0.15s;}
+  .ntool-input:focus,.ntool-select:focus,.ntool-textarea:focus{outline:none; border-color:var(--accent);}
+  .ntool-select{cursor:pointer; appearance:none; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M3 5l3 3 3-3' fill='none' stroke='%23999' stroke-width='1.5'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 12px center;}
+  .ntool-textarea{min-height:140px; resize:vertical; line-height:1.7;}
+  .ntool-font-bar{display:flex; gap:8px; margin-bottom:8px; align-items:center;}
+  .ntool-font-bar select,.ntool-font-bar input{padding:6px 10px; background:var(--paper); border:1px solid var(--border); border-radius:6px; color:var(--text); font-size:12px; font-family:inherit;}
+  .ntool-font-bar input[type=number]{width:60px;}
+  .ntool-img-btn{display:inline-flex; align-items:center; gap:6px; padding:8px 16px; background:var(--accent-bg); color:var(--accent); font-size:13px; font-weight:600; border:1px solid rgba(183,159,138,0.3); border-radius:8px; cursor:pointer; font-family:inherit;}
+  .ntool-img-btn:hover{background:var(--accent); color:#fff;}
+  .ntool-actions{display:flex; gap:10px; margin-top:18px;}
+  .ntool-btn{padding:12px 24px; font-size:14px; font-weight:700; border:none; border-radius:10px; cursor:pointer; font-family:inherit; transition:background 0.12s;}
+  .ntool-btn.primary{background:var(--accent); color:#fff;}
+  .ntool-btn.primary:hover{filter:brightness(1.1);}
+  .ntool-btn.secondary{background:var(--accent-bg); color:var(--accent); border:1px solid rgba(183,159,138,0.3);}
+  .ntool-preview-frame{background:#221F20; border-radius:12px; overflow:hidden; box-shadow:0 8px 32px rgba(0,0,0,0.4); aspect-ratio:297/420;}
+  .ntool-preview-inner{padding:clamp(20px,4vw,48px); display:flex; flex-direction:column; height:100%; box-sizing:border-box; position:relative; overflow:hidden;}
+  .ntool-pv-header{text-align:center; margin-bottom:auto;}
+  .ntool-pv-notice{font-size:clamp(9px,1.2vw,12px); letter-spacing:0.2em; opacity:0.6; margin-bottom:8px;}
+  .ntool-pv-logo{position:absolute; top:clamp(16px,3vw,40px); right:clamp(16px,3vw,40px); font-size:clamp(28px,4vw,56px); font-weight:200; opacity:0.15;}
+  .ntool-pv-title-kr{font-size:clamp(16px,2.8vw,36px); font-weight:700; margin:8px 0 4px; line-height:1.2;}
+  .ntool-pv-title-en{font-size:clamp(10px,1.4vw,16px); font-weight:500; opacity:0.8; margin-bottom:12px;}
+  .ntool-pv-subtitle{font-size:clamp(8px,1vw,11px); opacity:0.5; margin-bottom:16px;}
+  .ntool-pv-divider{width:60px; height:1px; margin:0 auto 20px; opacity:0.3;}
+  .ntool-pv-body{flex:1; text-align:center; display:flex; flex-direction:column; justify-content:center; align-items:center; line-height:1.8; font-size:clamp(11px,1.4vw,16px);}
+  .ntool-pv-body img{max-width:80%; max-height:200px; border-radius:8px; margin-top:12px; object-fit:cover;}
+  .ntool-pv-footer{text-align:center; margin-top:auto; padding-top:16px; font-size:clamp(10px,1.2vw,14px); letter-spacing:0.15em; opacity:0.7;}
+  .ntool-pv-footer .wlogo{font-size:clamp(10px,1.2vw,14px); margin-right:4px;}
+  .ntool-img-thumb{display:flex; gap:8px; flex-wrap:wrap; margin-top:8px;}
+  .ntool-img-thumb img{width:60px; height:60px; object-fit:cover; border-radius:6px; border:1px solid var(--border);}
+  .ntool-img-thumb .remove{position:absolute; top:-4px; right:-4px; width:18px; height:18px; background:#ED5B3F; color:#fff; border:none; border-radius:50%; font-size:11px; cursor:pointer; display:flex; align-items:center; justify-content:center;}
+  .ntool-img-item{position:relative; display:inline-block;}
+  .ntool-size-row{display:flex; gap:8px; align-items:flex-end;}
+  .ntool-size-row .ntool-input{width:80px; text-align:center;}
+  .ntool-size-x{color:var(--dim); font-size:14px; padding-bottom:10px;}
 </style>
 </head>
 <body>
@@ -309,6 +356,7 @@
     <a data-toggle="coo-nav2" data-has-sub="true"><span class="num">🏢</span><span class="label">AI COO 운영<span class="tag">최준용M · 윤병현AM</span></span></a>
     <div class="sub-nav" data-parent="coo-nav2">
       <a data-doc="gcoo-check">운영 통합 체계</a>
+      <a data-doc="gcoo-notice">공지/안내문 생성</a>
     </div>
 
     <a data-toggle="cpo-nav2" data-has-sub="true"><span class="num">🤝</span><span class="label">AI CPO 회원관리<span class="tag">임정은M</span></span></a>
@@ -320,6 +368,7 @@
     <div class="sub-nav" data-parent="cmo-nav2">
       <a data-doc="ghome">공식 채널</a>
       <a data-doc="g14">콘텐츠 제작 프로세스</a>
+      <a data-doc="gcmo-print">인쇄 산출물 생성</a>
     </div>
 
     <a data-toggle="cto-nav" data-has-sub="true"><span class="num">🔧</span><span class="label">AI CTO 기술<span class="tag">김남욱 GM</span></span></a>
@@ -3053,6 +3102,200 @@ Start-Process python -ArgumentList telegram_bot\daily_scheduler.py -WorkingDirec
   </article>
 
 
+  <!-- ── COO 공지/안내문 생성 도구 ── -->
+  <article class="doc" id="gcoo-notice">
+    <div class="doc-header"><h2>공지/안내문 생성</h2><div class="meta">COO 관할 · 브랜드 가이드 기준 · 내용 입력 → 미리보기 → A3 인쇄</div></div>
+    <p class="lead">웰페리온 브랜드 아이덴티티 기준으로 공지/안내문을 생성합니다. 사업부를 선택하면 컬러칩과 로고가 자동 전환됩니다.</p>
+
+    <div class="ntool-wrap" id="noticeToolWrap">
+      <div class="ntool-form">
+        <div class="ntool-row">
+          <div>
+            <label class="ntool-label">사업부 (서브브랜드)</label>
+            <select class="ntool-select" id="noticeBrand" onchange="ntUpdatePreview('notice')">
+              <option value="main">WELLPERION (메인)</option>
+              <option value="pt">PT</option>
+              <option value="sports">SPORTS CLUB</option>
+              <option value="pilates">PILATES</option>
+              <option value="swimming">SWIMMING</option>
+              <option value="squash">SQUASH</option>
+              <option value="golf">GOLF</option>
+              <option value="gymnastic">GYMNASTIC</option>
+              <option value="brad">BRAD LITTLE'S STAR ACADEMY</option>
+            </select>
+          </div>
+          <div>
+            <label class="ntool-label">공지 종류</label>
+            <select class="ntool-select" id="noticeType" onchange="ntApplyPreset('notice')">
+              <option value="holiday">휴관일 안내</option>
+              <option value="program">프로그램 런칭</option>
+              <option value="facility">시설 점검/공사</option>
+              <option value="pricing">요금 변경</option>
+              <option value="etiquette">에티켓/규칙</option>
+              <option value="security">보안/도난</option>
+              <option value="network">네트워크 장애</option>
+              <option value="custom">기타 (자유입력)</option>
+            </select>
+          </div>
+        </div>
+        <div class="ntool-row">
+          <div>
+            <label class="ntool-label">제목 (한글)</label>
+            <input class="ntool-input" id="noticeTitleKr" placeholder="예: 4월 휴관일 안내" oninput="ntUpdatePreview('notice')">
+          </div>
+          <div>
+            <label class="ntool-label">제목 (영문)</label>
+            <input class="ntool-input" id="noticeTitleEn" placeholder="예: Regular Closed Day Notice" oninput="ntUpdatePreview('notice')">
+          </div>
+        </div>
+        <div class="ntool-row">
+          <div>
+            <label class="ntool-label">날짜</label>
+            <input class="ntool-input" type="date" id="noticeDate" oninput="ntUpdatePreview('notice')">
+          </div>
+        </div>
+        <div>
+          <label class="ntool-label">본문</label>
+          <div class="ntool-font-bar">
+            <select id="noticeFontFamily" onchange="ntUpdatePreview('notice')">
+              <option value="Pretendard">Pretendard</option>
+              <option value="serif">명조 (Serif)</option>
+            </select>
+            <input type="number" id="noticeFontSize" value="16" min="10" max="40" onchange="ntUpdatePreview('notice')">
+            <span style="font-size:11px;color:var(--dim);">px</span>
+          </div>
+          <textarea class="ntool-textarea" id="noticeBody" placeholder="공지 내용을 입력하세요..." oninput="ntUpdatePreview('notice')"></textarea>
+        </div>
+        <div style="margin-top:12px;">
+          <label class="ntool-label">사진 첨부</label>
+          <label class="ntool-img-btn">📷 이미지 추가<input type="file" accept="image/*" multiple hidden id="noticeImgInput" onchange="ntAddImages(this,'notice')"></label>
+          <div class="ntool-img-thumb" id="noticeImgThumb"></div>
+        </div>
+        <div class="ntool-actions">
+          <button class="ntool-btn primary" onclick="ntPrint('notice')">🖨️ A3 인쇄</button>
+        </div>
+      </div>
+
+      <div class="ntool-preview-area">
+        <label class="ntool-label" style="margin-bottom:10px;">미리보기</label>
+        <div class="ntool-preview-frame" id="noticePreviewFrame">
+          <div class="ntool-preview-inner" id="noticePreview">
+            <div class="ntool-pv-header">
+              <div class="ntool-pv-notice">NOTICE</div>
+              <div class="ntool-pv-logo">W</div>
+              <div class="ntool-pv-title-kr" id="noticePvTitleKr">제목을 입력하세요</div>
+              <div class="ntool-pv-title-en" id="noticePvTitleEn">Title in English</div>
+              <div class="ntool-pv-subtitle">웰페리온은 회원님들의 건강과 행복을 위하여 항상 최선을 다하겠습니다.</div>
+              <div class="ntool-pv-divider" id="noticePvDivider" style="background:#B79F8A;"></div>
+            </div>
+            <div class="ntool-pv-body" id="noticePvBody">본문 내용이 여기에 표시됩니다.</div>
+            <div class="ntool-pv-footer"><span class="wlogo">W</span> <span id="noticePvBrandName">WELLPERION</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </article>
+
+  <!-- ── CMO 인쇄 산출물 생성 도구 ── -->
+  <article class="doc" id="gcmo-print">
+    <div class="doc-header"><h2>인쇄 산출물 생성</h2><div class="meta">CMO 관할 · 오프라인 마케팅 · 배너/현수막/봉투/브로슈어</div></div>
+    <p class="lead">웰페리온 브랜드 아이덴티티 기준으로 인쇄 산출물을 디자인합니다. 사업부를 선택하면 컬러칩과 로고가 자동 전환됩니다.</p>
+
+    <div class="ntool-wrap" id="printToolWrap">
+      <div class="ntool-form">
+        <div class="ntool-row">
+          <div>
+            <label class="ntool-label">사업부 (서브브랜드)</label>
+            <select class="ntool-select" id="printBrand" onchange="ntUpdatePreview('print')">
+              <option value="main">WELLPERION (메인)</option>
+              <option value="pt">PT</option>
+              <option value="sports">SPORTS CLUB</option>
+              <option value="pilates">PILATES</option>
+              <option value="swimming">SWIMMING</option>
+              <option value="squash">SQUASH</option>
+              <option value="golf">GOLF</option>
+              <option value="gymnastic">GYMNASTIC</option>
+              <option value="brad">BRAD LITTLE'S STAR ACADEMY</option>
+            </select>
+          </div>
+          <div>
+            <label class="ntool-label">산출물 종류</label>
+            <select class="ntool-select" id="printType" onchange="ntApplyPreset('print')">
+              <option value="banner">배너</option>
+              <option value="hanging">현수막</option>
+              <option value="envelope">봉투</option>
+              <option value="brochure">브로슈어</option>
+            </select>
+          </div>
+        </div>
+        <div class="ntool-row">
+          <div>
+            <label class="ntool-label">사이즈</label>
+            <select class="ntool-select" id="printSize" onchange="ntUpdatePrintSize()">
+              <option value="2000x600">가로 배너 (2000×600mm)</option>
+              <option value="600x1800">세로 배너 (600×1800mm)</option>
+              <option value="custom">커스텀 사이즈</option>
+            </select>
+          </div>
+          <div id="printCustomSize" style="display:none;">
+            <label class="ntool-label">커스텀 (mm)</label>
+            <div class="ntool-size-row">
+              <input class="ntool-input" type="number" id="printW" placeholder="가로" value="2000" oninput="ntUpdatePreview('print')">
+              <span class="ntool-size-x">×</span>
+              <input class="ntool-input" type="number" id="printH" placeholder="세로" value="600" oninput="ntUpdatePreview('print')">
+            </div>
+          </div>
+        </div>
+        <div class="ntool-row">
+          <div>
+            <label class="ntool-label">제목 (한글)</label>
+            <input class="ntool-input" id="printTitleKr" placeholder="예: 웰페리온 스포츠클럽" oninput="ntUpdatePreview('print')">
+          </div>
+          <div>
+            <label class="ntool-label">부제목 (영문)</label>
+            <input class="ntool-input" id="printTitleEn" placeholder="예: PREMIUM LIFESTYLE CLUB" oninput="ntUpdatePreview('print')">
+          </div>
+        </div>
+        <div>
+          <label class="ntool-label">내용</label>
+          <div class="ntool-font-bar">
+            <select id="printFontFamily" onchange="ntUpdatePreview('print')">
+              <option value="Pretendard">Pretendard</option>
+              <option value="serif">명조 (Serif)</option>
+            </select>
+            <input type="number" id="printFontSize" value="16" min="10" max="60" onchange="ntUpdatePreview('print')">
+            <span style="font-size:11px;color:var(--dim);">px</span>
+          </div>
+          <textarea class="ntool-textarea" id="printBody" placeholder="내용을 입력하세요..." oninput="ntUpdatePreview('print')"></textarea>
+        </div>
+        <div style="margin-top:12px;">
+          <label class="ntool-label">사진 첨부</label>
+          <label class="ntool-img-btn">📷 이미지 추가<input type="file" accept="image/*" multiple hidden id="printImgInput" onchange="ntAddImages(this,'print')"></label>
+          <div class="ntool-img-thumb" id="printImgThumb"></div>
+        </div>
+        <div class="ntool-actions">
+          <button class="ntool-btn primary" onclick="ntPrint('print')">🖨️ 인쇄</button>
+        </div>
+      </div>
+
+      <div class="ntool-preview-area">
+        <label class="ntool-label" style="margin-bottom:10px;">미리보기</label>
+        <div class="ntool-preview-frame" id="printPreviewFrame" style="aspect-ratio:10/3;">
+          <div class="ntool-preview-inner" id="printPreview">
+            <div class="ntool-pv-header">
+              <div class="ntool-pv-logo">W</div>
+              <div class="ntool-pv-title-kr" id="printPvTitleKr">제목을 입력하세요</div>
+              <div class="ntool-pv-title-en" id="printPvTitleEn">Subtitle</div>
+              <div class="ntool-pv-divider" id="printPvDivider" style="background:#B79F8A;"></div>
+            </div>
+            <div class="ntool-pv-body" id="printPvBody">내용이 여기에 표시됩니다.</div>
+            <div class="ntool-pv-footer"><span class="wlogo">W</span> <span id="printPvBrandName">WELLPERION</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </article>
+
   <!-- ── COO 투두리스트 소개 ── -->
   <article class="doc" id="gcoo-todo">
     <div class="doc-header"><h2>업무 현황 SSOT</h2><div class="meta">COO 관할 · 핵심멤버 업무 배분·추적 · Apps Script 연동</div></div>
@@ -4550,6 +4793,189 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
 
     // ── 페이지 로드 시 Sheets 동기화 ──
     fetchTodos();
+  })();
+
+  // ── 공지/인쇄물 생성 도구 ──
+  (function(){
+    const BRANDS = {
+      main:      {name:'WELLPERION',                   logo:'#B79F8A', bg:'#221F20'},
+      pt:        {name:'WELLPERION PT',                logo:'#B54840', bg:'#512B32'},
+      sports:    {name:'WELLPERION SPORTS CLUB',       logo:'#3F71B0', bg:'#253B6C'},
+      pilates:   {name:'WELLPERION PILATES',           logo:'#C44558', bg:'#8A2933'},
+      swimming:  {name:'WELLPERION SWIMMING',          logo:'#215768', bg:'#172C42'},
+      squash:    {name:'WELLPERION SQUASH',            logo:'#D2D2D2', bg:'#77968E'},
+      golf:      {name:'WELLPERION GOLF',              logo:'#337342', bg:'#132117'},
+      gymnastic: {name:'WELLPERION GYMNASTIC',         logo:'#DCE7FF', bg:'#8F9AB6'},
+      brad:      {name:"BRAD LITTLE'S STAR ACADEMY",   logo:'#FFFFFF', bg:'#000000'}
+    };
+    const NOTICE_PRESETS = {
+      holiday:   {kr:'휴관일 안내',       en:'Regular Closed Day Notice'},
+      program:   {kr:'프로그램 안내',     en:'New Program Notice'},
+      facility:  {kr:'시설 점검 안내',    en:'Facility Maintenance Notice'},
+      pricing:   {kr:'요금 안내',         en:'Pricing Notice'},
+      etiquette: {kr:'이용 에티켓',       en:'Etiquette Guide'},
+      security:  {kr:'보안 공지',         en:'Security Notice'},
+      network:   {kr:'시스템 안내',       en:'System Notice'},
+      custom:    {kr:'',                  en:''}
+    };
+    const PRINT_SIZES = {
+      banner:  [{l:'가로 배너 (2000×600mm)',v:'2000x600'},{l:'세로 배너 (600×1800mm)',v:'600x1800'}],
+      hanging: [{l:'표준 (5000×900mm)',v:'5000x900'},{l:'소형 (3000×600mm)',v:'3000x600'}],
+      envelope:[{l:'대봉투 (324×229mm)',v:'324x229'},{l:'소봉투 (230×114mm)',v:'230x114'}],
+      brochure:[{l:'A4 3단접지 (297×210mm)',v:'297x210'},{l:'A5 양면 (210×148mm)',v:'210x148'}]
+    };
+    const noticeImages = [];
+    const printImages = [];
+    function getImgs(mode){ return mode==='notice'? noticeImages : printImages; }
+    function el(id){ return document.getElementById(id); }
+
+    window.ntUpdatePreview = function(mode){
+      const p = mode === 'notice' ? 'notice' : 'print';
+      const brandKey = el(p+'Brand').value;
+      const brand = BRANDS[brandKey];
+      const frame = el(p+'PreviewFrame');
+      const inner = el(p+'Preview');
+      frame.style.background = brand.bg;
+      inner.style.color = brand.logo;
+      el(p+'PvTitleKr').textContent = el(p+'TitleKr').value || '제목을 입력하세요';
+      el(p+'PvTitleEn').textContent = el(p+'TitleEn').value || (mode==='notice'?'Title in English':'Subtitle');
+      el(p+'PvBrandName').textContent = brand.name;
+      var div = el(p+'PvDivider');
+      if(div) div.style.background = brand.logo;
+      var bodyEl = el(p+'PvBody');
+      var txt = el(p+'Body').value || (mode==='notice'?'본문 내용이 여기에 표시됩니다.':'내용이 여기에 표시됩니다.');
+      var ff = el(p+'FontFamily').value;
+      var fs = el(p+'FontSize').value;
+      var html = txt.replace(/\n/g,'<br>');
+      var imgs = getImgs(mode);
+      if(imgs.length){
+        html += '<div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:12px;">';
+        imgs.forEach(function(src){ html += '<img src="'+src+'" style="max-width:45%;max-height:120px;border-radius:6px;object-fit:cover;">'; });
+        html += '</div>';
+      }
+      bodyEl.innerHTML = html;
+      bodyEl.style.fontFamily = ff==='serif'? '"Noto Serif KR",serif' : '"Pretendard",sans-serif';
+      bodyEl.style.fontSize = fs+'px';
+      if(mode==='print'){
+        var sv = el('printSize').value;
+        if(sv==='custom'){ var w=el('printW').value||2000, h=el('printH').value||600; frame.style.aspectRatio=w+'/'+h; }
+        else{ var wh=sv.split('x'); frame.style.aspectRatio=wh[0]+'/'+wh[1]; }
+      }
+    };
+
+    window.ntApplyPreset = function(mode){
+      if(mode==='notice'){
+        var t = el('noticeType').value;
+        var pr = NOTICE_PRESETS[t];
+        el('noticeTitleKr').value = pr.kr;
+        el('noticeTitleEn').value = pr.en;
+      } else {
+        var t = el('printType').value;
+        var sel = el('printSize');
+        sel.innerHTML = '';
+        PRINT_SIZES[t].forEach(function(s){ var o=document.createElement('option'); o.value=s.v; o.textContent=s.l; sel.appendChild(o); });
+        var co = document.createElement('option'); co.value='custom'; co.textContent='커스텀 사이즈'; sel.appendChild(co);
+        ntUpdatePrintSize();
+      }
+      ntUpdatePreview(mode);
+    };
+
+    window.ntUpdatePrintSize = function(){
+      var v = el('printSize').value;
+      el('printCustomSize').style.display = v==='custom'?'block':'none';
+      if(v!=='custom'){ var wh=v.split('x'); el('printW').value=wh[0]; el('printH').value=wh[1]; }
+      ntUpdatePreview('print');
+    };
+
+    window.ntAddImages = function(input, mode){
+      var imgs = getImgs(mode);
+      var thumbEl = el(mode+'ImgThumb');
+      Array.from(input.files).forEach(function(f){
+        var reader = new FileReader();
+        reader.onload = function(e){
+          imgs.push(e.target.result);
+          var item = document.createElement('span');
+          item.className='ntool-img-item';
+          var idx = imgs.length-1;
+          item.innerHTML = '<img src="'+e.target.result+'"><button class="remove" onclick="ntRemoveImg('+idx+',\''+mode+'\')">&times;</button>';
+          thumbEl.appendChild(item);
+          ntUpdatePreview(mode);
+        };
+        reader.readAsDataURL(f);
+      });
+      input.value = '';
+    };
+
+    window.ntRemoveImg = function(idx, mode){
+      var imgs = getImgs(mode);
+      imgs.splice(idx,1);
+      var thumbEl = el(mode+'ImgThumb');
+      thumbEl.innerHTML = '';
+      imgs.forEach(function(src,i){
+        var item = document.createElement('span');
+        item.className='ntool-img-item';
+        item.innerHTML = '<img src="'+src+'"><button class="remove" onclick="ntRemoveImg('+i+',\''+mode+'\')">&times;</button>';
+        thumbEl.appendChild(item);
+      });
+      ntUpdatePreview(mode);
+    };
+
+    window.ntPrint = function(mode){
+      var frame = el(mode==='notice'?'noticePreviewFrame':'printPreviewFrame');
+      var w = window.open('','_blank','width=900,height=1200');
+      var bg = frame.style.background || '#221F20';
+      var ratio = mode==='notice' ? '297mm 420mm' : 'landscape';
+      w.document.write('<!DOCTYPE html><html><head><meta charset="utf-8"><title>WELLPERION</title>');
+      w.document.write('<link rel="preconnect" href="https://cdn.jsdelivr.net">');
+      w.document.write('<link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.min.css" rel="stylesheet">');
+      w.document.write('<style>');
+      w.document.write('@page{size:'+(mode==='notice'?'A3 portrait':'auto')+';margin:0;}');
+      w.document.write('*{margin:0;padding:0;box-sizing:border-box;}');
+      w.document.write('body{width:100vw;height:100vh;display:flex;align-items:center;justify-content:center;background:#fff;font-family:"Pretendard",sans-serif;-webkit-print-color-adjust:exact;print-color-adjust:exact;}');
+      w.document.write('.frame{background:'+bg+';width:100vw;height:100vh;display:flex;flex-direction:column;padding:5vmin;position:relative;overflow:hidden;}');
+      w.document.write('.header{text-align:center;margin-bottom:auto;}');
+      w.document.write('.notice-label{font-size:1.4vmin;letter-spacing:0.2em;opacity:0.6;margin-bottom:1vmin;}');
+      w.document.write('.wmark{position:absolute;top:4vmin;right:4vmin;font-size:7vmin;font-weight:200;opacity:0.15;}');
+      w.document.write('.title-kr{font-size:4vmin;font-weight:700;margin:1vmin 0 0.5vmin;line-height:1.2;}');
+      w.document.write('.title-en{font-size:2vmin;font-weight:500;opacity:0.8;margin-bottom:1.5vmin;}');
+      w.document.write('.subtitle{font-size:1.2vmin;opacity:0.5;margin-bottom:2vmin;}');
+      w.document.write('.divider{width:8vmin;height:1px;margin:0 auto 2.5vmin;opacity:0.4;}');
+      w.document.write('.body{flex:1;text-align:center;display:flex;flex-direction:column;justify-content:center;align-items:center;line-height:1.8;font-size:2vmin;}');
+      w.document.write('.body img{max-width:60%;max-height:30vh;border-radius:1vmin;margin-top:1.5vmin;object-fit:cover;}');
+      w.document.write('.footer{text-align:center;margin-top:auto;padding-top:2vmin;font-size:1.6vmin;letter-spacing:0.15em;opacity:0.7;}');
+      w.document.write('</style></head><body>');
+      var inner = (mode==='notice'? el('noticePreview') : el('printPreview'));
+      var brandKey = el(mode==='notice'?'noticeBrand':'printBrand').value;
+      var brand = BRANDS[brandKey];
+      var c = brand.logo;
+      w.document.write('<div class="frame" style="color:'+c+';">');
+      w.document.write('<div class="wmark">W</div>');
+      w.document.write('<div class="header">');
+      if(mode==='notice') w.document.write('<div class="notice-label">NOTICE</div>');
+      w.document.write('<div class="title-kr">'+el((mode==='notice'?'notice':'print')+'TitleKr').value+'</div>');
+      w.document.write('<div class="title-en">'+el((mode==='notice'?'notice':'print')+'TitleEn').value+'</div>');
+      if(mode==='notice') w.document.write('<div class="subtitle">웰페리온은 회원님들의 건강과 행복을 위하여 항상 최선을 다하겠습니다.</div>');
+      w.document.write('<div class="divider" style="background:'+c+';"></div>');
+      w.document.write('</div>');
+      var bodyTxt = el((mode==='notice'?'notice':'print')+'Body').value.replace(/\n/g,'<br>');
+      var ff = el((mode==='notice'?'notice':'print')+'FontFamily').value;
+      var fs = el((mode==='notice'?'notice':'print')+'FontSize').value;
+      var fontStyle = 'font-family:'+(ff==='serif'?'"Noto Serif KR",serif':'"Pretendard",sans-serif')+';font-size:'+fs+'px;';
+      w.document.write('<div class="body" style="'+fontStyle+'">'+bodyTxt);
+      var imgs = getImgs(mode);
+      if(imgs.length){ imgs.forEach(function(src){ w.document.write('<img src="'+src+'">'); }); }
+      w.document.write('</div>');
+      w.document.write('<div class="footer"><span style="margin-right:4px;">W</span>'+brand.name+'</div>');
+      w.document.write('</div></body></html>');
+      w.document.close();
+      setTimeout(function(){ w.print(); }, 500);
+    };
+
+    // 초기값 세팅
+    var today = new Date().toISOString().slice(0,10);
+    if(el('noticeDate')) el('noticeDate').value = today;
+    ntApplyPreset('notice');
+    ntApplyPreset('print');
   })();
 
   // 인쇄 시 모든 아코디언 펼치기 → 인쇄 후 원래대로 복원
