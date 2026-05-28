@@ -63,6 +63,7 @@
 
   /* ── 미리보기 본문 (흰 배경, 자동 파싱 3구획) ── */
   #noticePreview .ntool-pv-body{flex:1;padding:clamp(18px,3.2vw,36px) clamp(16px,2.8vw,32px);display:flex;flex-direction:column;justify-content:center;align-items:stretch;color:#1a1a1a;line-height:1.85;font-size:clamp(12px,1.6vw,19px);font-weight:500;background:#fff;text-align:center;overflow:hidden;}
+  #noticePreview .notice-date{font-size:0.85em;color:var(--accent);font-weight:600;letter-spacing:0.06em;margin-bottom:1em;text-align:center;}
   #noticePreview .notice-head{font-size:1.75em;font-weight:700;line-height:1.5;color:#1a1a1a;letter-spacing:-0.005em;}
   #noticePreview .notice-divider{width:62%;height:1px;background:var(--accent);opacity:0.45;margin:1.3em auto;border:none;}
   #noticePreview .notice-list{text-align:left;margin:0 auto;max-width:88%;}
@@ -124,6 +125,19 @@
             <option value="brad">BRAD LITTLE'S STAR ACADEMY</option>
           </select>
         </div>
+        <div>
+          <label class="ntool-label">공지 종류 (선택 시 제목·본문 자동 채움)</label>
+          <select class="ntool-select" id="noticeType" onchange="ntApplyPreset()">
+            <option value="holiday">휴관일 안내</option>
+            <option value="program">프로그램 런칭</option>
+            <option value="facility">시설 점검/공사</option>
+            <option value="pricing">요금 변경</option>
+            <option value="etiquette">이용 에티켓</option>
+            <option value="security">보안/도난</option>
+            <option value="network">시스템 안내</option>
+            <option value="custom">기타 (자유입력)</option>
+          </select>
+        </div>
       </div>
       <div class="ntool-row">
         <div>
@@ -137,8 +151,12 @@
       </div>
       <div class="ntool-row">
         <div>
-          <label class="ntool-label">날짜</label>
-          <input class="ntool-input" type="date" id="noticeDate" oninput="ntUpdatePreview()">
+          <label class="ntool-label">공지 시작일</label>
+          <input class="ntool-input" type="date" id="noticeStartDate" oninput="ntUpdatePreview()">
+        </div>
+        <div>
+          <label class="ntool-label">공지 종료일</label>
+          <input class="ntool-input" type="date" id="noticeEndDate" oninput="ntUpdatePreview()">
         </div>
       </div>
       <div>
@@ -209,9 +227,65 @@
     gymnastic: {name:'WELLPERION GYMNASTIC',       logo:'#DCE7FF', bg:'#8F9AB6', hdr:'#8F9AB6', pantone:'535 C'},
     brad:      {name:"BRAD LITTLE'S STAR ACADEMY", logo:'#FFFFFF', bg:'#000000', hdr:'#000000', pantone:'—'}
   };
+  /* 공지 종류별 자동 채움 프리셋 (kr·en 제목 + 본문 예시) */
+  const NOTICE_PRESETS = {
+    holiday: {
+      kr: '휴관일 안내',
+      en: 'Regular Closure Notice',
+      body: '6월 정기 휴관 안내\n\n회원 여러분의 양해를 부탁드리며\n6월 정기 휴관일을 안내드립니다.\n\n1. 휴관 일자: **2026년 6월 14일** (둘째 주 일요일)\n2. 휴관 일자: **2026년 6월 28일** (넷째 주 일요일)\n3. 평일 정상 운영 — 06:00 ~ 22:30\n4. 주말·공휴일 정상 운영 — 08:00 ~ 20:00\n\n웰페리온은 회원님들의 더 나은 경험을 위해\n시설 유지·관리에 만전을 기하겠습니다. 감사합니다.'
+    },
+    program: {
+      kr: '신규 프로그램 런칭',
+      en: 'New Program Launch',
+      body: '신규 프로그램 런칭 안내\n\n회원 여러분께\n새로운 프로그램 개강을 안내드립니다.\n\n1. 프로그램명: **(프로그램명 입력)**\n2. 개강 일자: 2026년 0월 0일\n3. 담당 강사: (강사명)\n4. 정원: 0명 / **사전 예약 필수**\n\n프로그램 신청·문의는 리셉션으로 부탁드립니다.\n감사합니다.'
+    },
+    facility: {
+      kr: '시설 점검 안내',
+      en: 'Facility Maintenance Notice',
+      body: '시설 정기 점검 안내\n\n회원 여러분의 안전한 이용을 위해\n시설 정기 점검을 진행합니다.\n\n1. 점검 일자: **2026년 0월 0일**\n2. 점검 시간: 00:00 ~ 00:00\n3. 점검 범위: (해당 시설 입력)\n4. 점검 시간 중 해당 시설 일시 휴게 양해 부탁드립니다.\n\n쾌적한 환경 제공을 위한 정기 점검입니다.\n감사합니다.'
+    },
+    pricing: {
+      kr: '요금 변경 안내',
+      en: 'Pricing Update Notice',
+      body: '요금 정책 변경 안내\n\n회원 여러분께\n요금 정책 변경을 안내드립니다.\n\n1. 변경 일자: **2026년 0월 0일부터**\n2. 변경 내역: (변경 항목 입력)\n3. 기존 회원: 잔여 기간 종전 요금 적용\n4. 신규·재등록 회원: 변경 요금 적용\n\n자세한 사항은 리셉션 또는 담당자에게 문의 부탁드립니다.\n감사합니다.'
+    },
+    etiquette: {
+      kr: '이용 에티켓 안내',
+      en: 'Etiquette Guide',
+      body: '쾌적한 이용을 위한 에티켓 안내\n\n모든 회원님의 편안한 이용을 위해\n다음 사항을 부탁드립니다.\n\n1. 운동 후 기구·매트는 원위치 및 정리 부탁드립니다.\n2. 락커룸·샤워실 사용 후 정돈 부탁드립니다.\n3. 큰 소리·통화는 라운지에서만 부탁드립니다.\n4. 공용 공간 음식물 반입 금지.\n\n서로를 배려하는 작은 매너가\n모두에게 더 좋은 공간을 만듭니다. 감사합니다.'
+    },
+    security: {
+      kr: '개인 물품·보안 안내',
+      en: 'Security Notice',
+      body: '개인 물품·보안 안내\n\n안전한 시설 이용을 위해\n다음 사항을 안내드립니다.\n\n1. 귀중품은 **리셉션 보관** 부탁드립니다.\n2. 개인 락커는 비밀번호 설정 후 이용 부탁드립니다.\n3. 개인 락커 개방 이용 시 분실 책임은 본인입니다.\n4. 분실·도난 발생 시 즉시 리셉션에 신고 부탁드립니다.\n\n웰페리온은 회원님의 안전을 최우선으로 합니다.\n감사합니다.'
+    },
+    network: {
+      kr: '시스템 점검 안내',
+      en: 'System Maintenance Notice',
+      body: '시스템 점검 안내\n\n서비스 안정화를 위한\n시스템 점검을 진행합니다.\n\n1. 점검 일자: **2026년 0월 0일**\n2. 점검 시간: 00:00 ~ 00:00\n3. 점검 시간 중 예약·결제 시스템 일시 중단\n4. 점검 종료 후 정상 이용 가능\n\n불편을 드려 죄송합니다.\n감사합니다.'
+    },
+    custom: { kr: '', en: '', body: '' }
+  };
   const noticeImages = [];
   function el(id){ return document.getElementById(id); }
   function esc(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+  /* 공지 기간(시작·종료일) 자동 표시 — 둘 다 비어있으면 표시 안 함 */
+  function ntFormatDateRange(){
+    var s = el('noticeStartDate') ? el('noticeStartDate').value : '';
+    var e = el('noticeEndDate') ? el('noticeEndDate').value : '';
+    if(!s && !e) return '';
+    var fmt = function(d){
+      if(!d) return '';
+      var p = d.split('-');
+      return p[0]+'.'+p[1]+'.'+p[2];
+    };
+    var txt;
+    if(s && e && s !== e) txt = '📅 ' + fmt(s) + ' ~ ' + fmt(e);
+    else if(s && e && s === e) txt = '📅 ' + fmt(s);
+    else txt = '📅 ' + fmt(s || e);
+    return '<div class="notice-date">'+txt+'</div>';
+  }
+
   /* 인라인 마크다운: **주황강조** / __굵게__ / ~~가운데선~~ */
   function inline(s){
     return esc(s)
@@ -278,7 +352,8 @@
     var txt = el('noticeBody').value;
     var ff = el('noticeFontFamily').value;
     var fs = el('noticeFontSize').value;
-    var html = ntFormatNoticeBody(txt) || '<div class="notice-head" style="color:#999;">본문 내용이 여기에 표시됩니다.</div>';
+    var dateHtml = ntFormatDateRange();
+    var html = dateHtml + (ntFormatNoticeBody(txt) || '<div class="notice-head" style="color:#999;">본문 내용이 여기에 표시됩니다.</div>');
     if(noticeImages.length){
       html += '<div class="notice-imgs">';
       noticeImages.forEach(function(src){ html += '<img src="'+src+'">'; });
@@ -287,6 +362,23 @@
     bodyEl.innerHTML = html;
     bodyEl.style.fontFamily = ff==='serif' ? '"Noto Serif KR",serif' : '"Pretendard",sans-serif';
     bodyEl.style.fontSize = fs+'px';
+  };
+
+  /* 공지 종류 선택 시 제목·본문 자동 교체 (본문 입력 중이면 confirm) */
+  window.ntApplyPreset = function(){
+    var t = el('noticeType').value;
+    var pr = NOTICE_PRESETS[t];
+    if(!pr) return;
+    var bodyEl = el('noticeBody');
+    var hasUserBody = bodyEl.value && bodyEl.value.trim() && bodyEl.value !== NOTICE_PRESETS.holiday.body;
+    var shouldReplaceBody = true;
+    if(hasUserBody){
+      shouldReplaceBody = confirm('입력하신 본문이 새 예시로 교체됩니다. 진행할까요?\n(취소 시 제목만 변경되고 본문은 유지됩니다)');
+    }
+    el('noticeTitleKr').value = pr.kr;
+    el('noticeTitleEn').value = pr.en;
+    if(shouldReplaceBody) bodyEl.value = pr.body;
+    ntUpdatePreview();
   };
 
   window.ntAddImages = function(input){
@@ -344,6 +436,7 @@
     html += '.sub{position:absolute;bottom:1.8vmin;left:0;right:0;text-align:center;font-size:1.55vmin;color:#ED5B3F;opacity:0.95;letter-spacing:0.12em;font-weight:500;padding:0 4vmin;}';
     /* BODY */
     html += '.body{flex:1;background:#fff;color:#1a1a1a;padding:4.5vmin 4vmin;text-align:center;display:flex;flex-direction:column;justify-content:center;align-items:stretch;line-height:1.85;font-size:'+fs+'px;font-weight:500;overflow:hidden;}';
+    html += '.notice-date{font-size:0.85em;color:#B79F8A;font-weight:600;letter-spacing:0.06em;margin-bottom:1em;text-align:center;}';
     html += '.notice-head{font-size:1.75em;font-weight:700;line-height:1.5;color:#1a1a1a;}';
     html += '.notice-divider{width:62%;height:1px;background:#B79F8A;opacity:0.45;margin:1.4em auto;border:none;}';
     html += '.notice-list{text-align:left;margin:0 auto;max-width:88%;}';
@@ -377,7 +470,8 @@
     var brand = BRANDS[brandKey];
     var titleKr = el('noticeTitleKr').value || '';
     var titleEn = el('noticeTitleEn').value || '';
-    var bodyHtml = ntFormatNoticeBody(el('noticeBody').value);
+    var dateHtml = ntFormatDateRange();
+    var bodyHtml = dateHtml + ntFormatNoticeBody(el('noticeBody').value);
     var ff = el('noticeFontFamily').value;
     var fs = el('noticeFontSize').value;
     var imgHtml = '';
@@ -412,7 +506,9 @@
     var data = {
       id: Date.now(),
       brand: el('noticeBrand').value,
-      date: el('noticeDate').value,
+      type: el('noticeType').value,
+      startDate: el('noticeStartDate').value,
+      endDate: el('noticeEndDate').value,
       titleKr: el('noticeTitleKr').value,
       titleEn: el('noticeTitleEn').value,
       body: el('noticeBody').value,
@@ -433,7 +529,10 @@
     var item = arr.find(function(a){ return a.id === id; });
     if(!item) return;
     el('noticeBrand').value = item.brand||'main';
-    if(item.date) el('noticeDate').value = item.date;
+    if(item.type) el('noticeType').value = item.type;
+    if(item.startDate) el('noticeStartDate').value = item.startDate;
+    else if(item.date) el('noticeStartDate').value = item.date;
+    if(item.endDate) el('noticeEndDate').value = item.endDate;
     el('noticeTitleKr').value = item.titleKr||'';
     el('noticeTitleEn').value = item.titleEn||'';
     el('noticeBody').value = item.body||'';
@@ -470,9 +569,13 @@
     container.innerHTML = html;
   };
 
-  // 초기화 (로고는 HTML img src=PNG 상대경로로 직접 명시되므로 JS 할당 불필요)
+  // 초기화 — 본문은 빈 칸으로 시작 (GM 지시), 제목·날짜는 holiday 프리셋·오늘 자동
   var today = new Date().toISOString().slice(0,10);
-  if(el('noticeDate')) el('noticeDate').value = today;
+  if(el('noticeStartDate')) el('noticeStartDate').value = today;
+  if(el('noticeEndDate')) el('noticeEndDate').value = today;
+  el('noticeTitleKr').value = NOTICE_PRESETS.holiday.kr;
+  el('noticeTitleEn').value = NOTICE_PRESETS.holiday.en;
+  /* 본문은 비워둠 — 사용자가 공지 종류 선택 시 ntApplyPreset이 자동 채움 */
   ntUpdatePreview();
   ntRenderSavedList();
 })();
