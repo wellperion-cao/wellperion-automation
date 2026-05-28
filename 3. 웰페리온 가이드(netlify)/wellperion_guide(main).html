@@ -300,18 +300,21 @@
   .ntool-btn.primary:hover{filter:brightness(1.1);}
   .ntool-btn.secondary{background:var(--accent-bg); color:var(--accent); border:1px solid rgba(183,159,138,0.3);}
   .ntool-preview-frame{background:#221F20; border-radius:12px; overflow:hidden; box-shadow:0 8px 32px rgba(0,0,0,0.4); aspect-ratio:297/420;}
-  .ntool-preview-inner{padding:clamp(20px,4vw,48px); display:flex; flex-direction:column; height:100%; box-sizing:border-box; position:relative; overflow:hidden;}
-  .ntool-pv-header{text-align:center; margin-bottom:auto;}
-  .ntool-pv-notice{font-size:clamp(9px,1.2vw,12px); letter-spacing:0.2em; opacity:0.6; margin-bottom:8px;}
-  .ntool-pv-logo{position:absolute; top:clamp(16px,3vw,40px); right:clamp(16px,3vw,40px); font-size:clamp(28px,4vw,56px); font-weight:200; opacity:0.15;}
-  .ntool-pv-title-kr{font-size:clamp(16px,2.8vw,36px); font-weight:700; margin:8px 0 4px; line-height:1.2;}
-  .ntool-pv-title-en{font-size:clamp(10px,1.4vw,16px); font-weight:500; opacity:0.8; margin-bottom:12px;}
-  .ntool-pv-subtitle{font-size:clamp(8px,1vw,11px); opacity:0.5; margin-bottom:16px;}
-  .ntool-pv-divider{width:60px; height:1px; margin:0 auto 20px; opacity:0.3;}
-  .ntool-pv-body{flex:1; text-align:center; display:flex; flex-direction:column; justify-content:center; align-items:center; line-height:1.8; font-size:clamp(11px,1.4vw,16px);}
-  .ntool-pv-body img{max-width:80%; max-height:200px; border-radius:8px; margin-top:12px; object-fit:cover;}
-  .ntool-pv-footer{text-align:center; margin-top:auto; padding-top:16px; font-size:clamp(10px,1.2vw,14px); letter-spacing:0.15em; opacity:0.7;}
-  .ntool-pv-footer .wlogo{font-size:clamp(10px,1.2vw,14px); margin-right:4px;}
+  .ntool-preview-inner{padding:clamp(24px,5vw,56px) clamp(20px,4vw,48px); display:flex; flex-direction:column; height:100%; box-sizing:border-box; position:relative; overflow:hidden;}
+  .ntool-pv-header{text-align:center; padding-bottom:clamp(8px,2vw,20px);}
+  .ntool-pv-notice{font-size:clamp(8px,1vw,11px); letter-spacing:0.25em; opacity:0.5; margin-bottom:clamp(8px,2vw,16px); text-transform:uppercase;}
+  .ntool-pv-logo{position:absolute; top:clamp(16px,3vw,36px); right:clamp(16px,3vw,40px);}
+  .ntool-pv-logo svg{width:clamp(36px,6vw,72px); height:auto; opacity:0.12;}
+  .ntool-pv-title-kr{font-size:clamp(18px,3.2vw,40px); font-weight:700; margin:0 0 6px; line-height:1.25;}
+  .ntool-pv-title-en{font-size:clamp(10px,1.5vw,18px); font-weight:600; opacity:0.85; margin-bottom:clamp(8px,1.5vw,14px); letter-spacing:0.02em;}
+  .ntool-pv-subtitle{font-size:clamp(7px,0.9vw,10px); opacity:0.4; margin-bottom:clamp(10px,2vw,20px); letter-spacing:0.03em;}
+  .ntool-pv-divider{width:clamp(40px,8vw,80px); height:1px; margin:0 auto clamp(12px,2.5vw,24px);}
+  .ntool-pv-body{flex:1; text-align:center; display:flex; flex-direction:column; justify-content:center; align-items:center; line-height:1.9; font-size:clamp(11px,1.5vw,17px); font-weight:500;}
+  .ntool-pv-body img{max-width:75%; max-height:180px; border-radius:8px; margin-top:14px; object-fit:cover;}
+  .ntool-pv-body .hl{color:#ED5B3F; font-weight:700;}
+  .ntool-pv-footer{text-align:center; margin-top:auto; padding-top:clamp(12px,2vw,24px); letter-spacing:0.18em; opacity:0.65; display:flex; align-items:center; justify-content:center; gap:6px;}
+  .ntool-pv-footer svg{width:clamp(12px,1.6vw,18px); height:auto;}
+  .ntool-pv-footer span{font-size:clamp(9px,1.1vw,13px); font-weight:600;}
   .ntool-img-thumb{display:flex; gap:8px; flex-wrap:wrap; margin-top:8px;}
   .ntool-img-thumb img{width:60px; height:60px; object-fit:cover; border-radius:6px; border:1px solid var(--border);}
   .ntool-img-thumb .remove{position:absolute; top:-4px; right:-4px; width:18px; height:18px; background:#ED5B3F; color:#fff; border:none; border-radius:50%; font-size:11px; cursor:pointer; display:flex; align-items:center; justify-content:center;}
@@ -368,7 +371,7 @@
     <div class="sub-nav" data-parent="cmo-nav2">
       <a data-doc="ghome">공식 채널</a>
       <a data-doc="g14">콘텐츠 제작 프로세스</a>
-      <a data-doc="gcmo-print">인쇄 산출물 생성</a>
+      <a data-doc="gcmo-print">오프라인 홍보물 디자인 제작</a>
     </div>
 
     <a data-toggle="cto-nav" data-has-sub="true"><span class="num">🔧</span><span class="label">AI CTO 기술<span class="tag">김남욱 GM</span></span></a>
@@ -3182,23 +3185,23 @@ Start-Process python -ArgumentList telegram_bot\daily_scheduler.py -WorkingDirec
           <div class="ntool-preview-inner" id="noticePreview">
             <div class="ntool-pv-header">
               <div class="ntool-pv-notice">NOTICE</div>
-              <div class="ntool-pv-logo">W</div>
+              <div class="ntool-pv-logo"><svg viewBox="0 0 60 50" fill="currentColor"><path d="M5 5 L15 40 L25 18 L30 30 L35 18 L45 40 L55 5 L48 5 L42 28 L35 10 L30 22 L25 10 L18 28 L12 5Z" opacity="0.9"/></svg></div>
               <div class="ntool-pv-title-kr" id="noticePvTitleKr">제목을 입력하세요</div>
               <div class="ntool-pv-title-en" id="noticePvTitleEn">Title in English</div>
               <div class="ntool-pv-subtitle">웰페리온은 회원님들의 건강과 행복을 위하여 항상 최선을 다하겠습니다.</div>
               <div class="ntool-pv-divider" id="noticePvDivider" style="background:#B79F8A;"></div>
             </div>
             <div class="ntool-pv-body" id="noticePvBody">본문 내용이 여기에 표시됩니다.</div>
-            <div class="ntool-pv-footer"><span class="wlogo">W</span> <span id="noticePvBrandName">WELLPERION</span></div>
+            <div class="ntool-pv-footer"><svg viewBox="0 0 60 50" fill="currentColor" style="opacity:0.8;"><path d="M5 5 L15 40 L25 18 L30 30 L35 18 L45 40 L55 5 L48 5 L42 28 L35 10 L30 22 L25 10 L18 28 L12 5Z"/></svg><span id="noticePvBrandName">WELLPERION</span></div>
           </div>
         </div>
       </div>
     </div>
   </article>
 
-  <!-- ── CMO 인쇄 산출물 생성 도구 ── -->
+  <!-- ── CMO 오프라인 홍보물 디자인 제작 도구 ── -->
   <article class="doc" id="gcmo-print">
-    <div class="doc-header"><h2>인쇄 산출물 생성</h2><div class="meta">CMO 관할 · 오프라인 마케팅 · 배너/현수막/봉투/브로슈어</div></div>
+    <div class="doc-header"><h2>오프라인 홍보물 디자인 제작</h2><div class="meta">CMO 관할 · 오프라인 마케팅 · 배너/현수막/봉투/브로슈어</div></div>
     <p class="lead">웰페리온 브랜드 아이덴티티 기준으로 인쇄 산출물을 디자인합니다. 사업부를 선택하면 컬러칩과 로고가 자동 전환됩니다.</p>
 
     <div class="ntool-wrap" id="printToolWrap">
@@ -3283,13 +3286,13 @@ Start-Process python -ArgumentList telegram_bot\daily_scheduler.py -WorkingDirec
         <div class="ntool-preview-frame" id="printPreviewFrame" style="aspect-ratio:10/3;">
           <div class="ntool-preview-inner" id="printPreview">
             <div class="ntool-pv-header">
-              <div class="ntool-pv-logo">W</div>
+              <div class="ntool-pv-logo"><svg viewBox="0 0 60 50" fill="currentColor"><path d="M5 5 L15 40 L25 18 L30 30 L35 18 L45 40 L55 5 L48 5 L42 28 L35 10 L30 22 L25 10 L18 28 L12 5Z" opacity="0.9"/></svg></div>
               <div class="ntool-pv-title-kr" id="printPvTitleKr">제목을 입력하세요</div>
               <div class="ntool-pv-title-en" id="printPvTitleEn">Subtitle</div>
               <div class="ntool-pv-divider" id="printPvDivider" style="background:#B79F8A;"></div>
             </div>
             <div class="ntool-pv-body" id="printPvBody">내용이 여기에 표시됩니다.</div>
-            <div class="ntool-pv-footer"><span class="wlogo">W</span> <span id="printPvBrandName">WELLPERION</span></div>
+            <div class="ntool-pv-footer"><svg viewBox="0 0 60 50" fill="currentColor" style="opacity:0.8;"><path d="M5 5 L15 40 L25 18 L30 30 L35 18 L45 40 L55 5 L48 5 L42 28 L35 10 L30 22 L25 10 L18 28 L12 5Z"/></svg><span id="printPvBrandName">WELLPERION</span></div>
           </div>
         </div>
       </div>
@@ -4828,6 +4831,8 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
     const printImages = [];
     function getImgs(mode){ return mode==='notice'? noticeImages : printImages; }
     function el(id){ return document.getElementById(id); }
+    function ntFormatBody(txt){ return txt.replace(/\n/g,'<br>').replace(/\*\*(.+?)\*\*/g,'<span class="hl">$1</span>'); }
+    var WSVG = '<svg viewBox="0 0 60 50" fill="currentColor"><path d="M5 5 L15 40 L25 18 L30 30 L35 18 L45 40 L55 5 L48 5 L42 28 L35 10 L30 22 L25 10 L18 28 L12 5Z"/></svg>';
 
     window.ntUpdatePreview = function(mode){
       const p = mode === 'notice' ? 'notice' : 'print';
@@ -4846,7 +4851,7 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
       var txt = el(p+'Body').value || (mode==='notice'?'본문 내용이 여기에 표시됩니다.':'내용이 여기에 표시됩니다.');
       var ff = el(p+'FontFamily').value;
       var fs = el(p+'FontSize').value;
-      var html = txt.replace(/\n/g,'<br>');
+      var html = ntFormatBody(txt);
       var imgs = getImgs(mode);
       if(imgs.length){
         html += '<div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:12px;">';
@@ -4921,54 +4926,56 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
     };
 
     window.ntPrint = function(mode){
-      var frame = el(mode==='notice'?'noticePreviewFrame':'printPreviewFrame');
-      var w = window.open('','_blank','width=900,height=1200');
-      var bg = frame.style.background || '#221F20';
-      var ratio = mode==='notice' ? '297mm 420mm' : 'landscape';
-      w.document.write('<!DOCTYPE html><html><head><meta charset="utf-8"><title>WELLPERION</title>');
-      w.document.write('<link rel="preconnect" href="https://cdn.jsdelivr.net">');
+      var brandKey = el(mode==='notice'?'noticeBrand':'printBrand').value;
+      var brand = BRANDS[brandKey];
+      var c = brand.logo, bg = brand.bg;
+      var titleKr = el((mode==='notice'?'notice':'print')+'TitleKr').value;
+      var titleEn = el((mode==='notice'?'notice':'print')+'TitleEn').value;
+      var bodyRaw = el((mode==='notice'?'notice':'print')+'Body').value;
+      var bodyHtml = ntFormatBody(bodyRaw);
+      var ff = el((mode==='notice'?'notice':'print')+'FontFamily').value;
+      var fs = el((mode==='notice'?'notice':'print')+'FontSize').value;
+      var imgs = getImgs(mode);
+      var imgHtml = '';
+      if(imgs.length){ imgHtml='<div style="display:flex;gap:12px;flex-wrap:wrap;justify-content:center;margin-top:2.5vmin;">'; imgs.forEach(function(src){ imgHtml+='<img src="'+src+'" style="max-width:55%;max-height:28vh;border-radius:1vmin;object-fit:cover;">'; }); imgHtml+='</div>'; }
+      var fontFam = ff==='serif'?'"Noto Serif KR","Batang",serif':'"Pretendard","Apple SD Gothic Neo",sans-serif';
+      var w = window.open('','_blank','width=900,height=1270');
+      w.document.write('<!DOCTYPE html><html><head><meta charset="utf-8"><title>'+brand.name+' NOTICE</title>');
       w.document.write('<link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.min.css" rel="stylesheet">');
       w.document.write('<style>');
       w.document.write('@page{size:'+(mode==='notice'?'A3 portrait':'auto')+';margin:0;}');
       w.document.write('*{margin:0;padding:0;box-sizing:border-box;}');
-      w.document.write('body{width:100vw;height:100vh;display:flex;align-items:center;justify-content:center;background:#fff;font-family:"Pretendard",sans-serif;-webkit-print-color-adjust:exact;print-color-adjust:exact;}');
-      w.document.write('.frame{background:'+bg+';width:100vw;height:100vh;display:flex;flex-direction:column;padding:5vmin;position:relative;overflow:hidden;}');
-      w.document.write('.header{text-align:center;margin-bottom:auto;}');
-      w.document.write('.notice-label{font-size:1.4vmin;letter-spacing:0.2em;opacity:0.6;margin-bottom:1vmin;}');
-      w.document.write('.wmark{position:absolute;top:4vmin;right:4vmin;font-size:7vmin;font-weight:200;opacity:0.15;}');
-      w.document.write('.title-kr{font-size:4vmin;font-weight:700;margin:1vmin 0 0.5vmin;line-height:1.2;}');
-      w.document.write('.title-en{font-size:2vmin;font-weight:500;opacity:0.8;margin-bottom:1.5vmin;}');
-      w.document.write('.subtitle{font-size:1.2vmin;opacity:0.5;margin-bottom:2vmin;}');
-      w.document.write('.divider{width:8vmin;height:1px;margin:0 auto 2.5vmin;opacity:0.4;}');
-      w.document.write('.body{flex:1;text-align:center;display:flex;flex-direction:column;justify-content:center;align-items:center;line-height:1.8;font-size:2vmin;}');
-      w.document.write('.body img{max-width:60%;max-height:30vh;border-radius:1vmin;margin-top:1.5vmin;object-fit:cover;}');
-      w.document.write('.footer{text-align:center;margin-top:auto;padding-top:2vmin;font-size:1.6vmin;letter-spacing:0.15em;opacity:0.7;}');
+      w.document.write('html,body{width:100%;height:100%;overflow:hidden;}');
+      w.document.write('body{font-family:'+fontFam+';-webkit-print-color-adjust:exact;print-color-adjust:exact;}');
+      w.document.write('.page{width:100vw;height:100vh;background:'+bg+';color:'+c+';display:flex;flex-direction:column;padding:6vmin 5vmin 4vmin;position:relative;overflow:hidden;}');
+      w.document.write('.wmark{position:absolute;top:4.5vmin;right:5vmin;opacity:0.12;width:9vmin;height:auto;}');
+      w.document.write('.wmark svg{width:100%;height:auto;fill:'+c+';}');
+      w.document.write('.header{text-align:center;padding-bottom:2vmin;}');
+      w.document.write('.label{font-size:1.3vmin;letter-spacing:0.28em;opacity:0.45;margin-bottom:2vmin;text-transform:uppercase;font-weight:500;}');
+      w.document.write('.tkr{font-size:4.5vmin;font-weight:700;line-height:1.25;margin-bottom:0.8vmin;}');
+      w.document.write('.ten{font-size:2.2vmin;font-weight:600;opacity:0.82;letter-spacing:0.02em;margin-bottom:1.5vmin;}');
+      w.document.write('.sub{font-size:1.15vmin;opacity:0.38;letter-spacing:0.04em;margin-bottom:2.5vmin;}');
+      w.document.write('.hr{width:7vmin;height:1px;background:'+c+';margin:0 auto 3vmin;opacity:0.35;}');
+      w.document.write('.body{flex:1;text-align:center;display:flex;flex-direction:column;justify-content:center;align-items:center;line-height:1.9;font-size:'+fs+'px;font-weight:500;}');
+      w.document.write('.hl{color:#ED5B3F;font-weight:700;}');
+      w.document.write('.footer{text-align:center;margin-top:auto;padding-top:2.5vmin;display:flex;align-items:center;justify-content:center;gap:0.8vmin;opacity:0.6;}');
+      w.document.write('.footer svg{width:2vmin;height:auto;fill:'+c+';}');
+      w.document.write('.footer span{font-size:1.4vmin;font-weight:600;letter-spacing:0.18em;}');
       w.document.write('</style></head><body>');
-      var inner = (mode==='notice'? el('noticePreview') : el('printPreview'));
-      var brandKey = el(mode==='notice'?'noticeBrand':'printBrand').value;
-      var brand = BRANDS[brandKey];
-      var c = brand.logo;
-      w.document.write('<div class="frame" style="color:'+c+';">');
-      w.document.write('<div class="wmark">W</div>');
+      w.document.write('<div class="page">');
+      w.document.write('<div class="wmark">'+WSVG+'</div>');
       w.document.write('<div class="header">');
-      if(mode==='notice') w.document.write('<div class="notice-label">NOTICE</div>');
-      w.document.write('<div class="title-kr">'+el((mode==='notice'?'notice':'print')+'TitleKr').value+'</div>');
-      w.document.write('<div class="title-en">'+el((mode==='notice'?'notice':'print')+'TitleEn').value+'</div>');
-      if(mode==='notice') w.document.write('<div class="subtitle">웰페리온은 회원님들의 건강과 행복을 위하여 항상 최선을 다하겠습니다.</div>');
-      w.document.write('<div class="divider" style="background:'+c+';"></div>');
+      if(mode==='notice') w.document.write('<div class="label">NOTICE</div>');
+      w.document.write('<div class="tkr">'+titleKr+'</div>');
+      w.document.write('<div class="ten">'+titleEn+'</div>');
+      if(mode==='notice') w.document.write('<div class="sub">웰페리온은 회원님들의 건강과 행복을 위하여 항상 최선을 다하겠습니다.</div>');
+      w.document.write('<div class="hr"></div>');
       w.document.write('</div>');
-      var bodyTxt = el((mode==='notice'?'notice':'print')+'Body').value.replace(/\n/g,'<br>');
-      var ff = el((mode==='notice'?'notice':'print')+'FontFamily').value;
-      var fs = el((mode==='notice'?'notice':'print')+'FontSize').value;
-      var fontStyle = 'font-family:'+(ff==='serif'?'"Noto Serif KR",serif':'"Pretendard",sans-serif')+';font-size:'+fs+'px;';
-      w.document.write('<div class="body" style="'+fontStyle+'">'+bodyTxt);
-      var imgs = getImgs(mode);
-      if(imgs.length){ imgs.forEach(function(src){ w.document.write('<img src="'+src+'">'); }); }
-      w.document.write('</div>');
-      w.document.write('<div class="footer"><span style="margin-right:4px;">W</span>'+brand.name+'</div>');
+      w.document.write('<div class="body">'+bodyHtml+imgHtml+'</div>');
+      w.document.write('<div class="footer">'+WSVG+'<span>'+brand.name+'</span></div>');
       w.document.write('</div></body></html>');
       w.document.close();
-      setTimeout(function(){ w.print(); }, 500);
+      setTimeout(function(){ w.print(); }, 600);
     };
 
     // 초기값 세팅
