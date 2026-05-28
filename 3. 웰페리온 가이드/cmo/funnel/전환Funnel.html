@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>웰페리온 전환 Funnel v0.1</title>
+<style>
+:root{
+  --bg:#221F20;--paper:#2a2725;--text:#f5f2ef;--dim:#8c8b83;
+  --accent:#B79F8A;--accent-bg:rgba(183,159,138,0.12);--border:#3d3835;
+  --green:#6abf7b;--green-bg:rgba(106,191,123,0.12);
+  --red:#ED5B3F;--red-bg:rgba(237,91,63,0.12);
+  --yellow:#e6c84e;--yellow-bg:rgba(230,200,78,0.12);
+  --blue:#5b9fd5;--blue-bg:rgba(91,159,213,0.12);
+  --orange:#e6944e;--orange-bg:rgba(230,148,78,0.12);
+  --purple:#a78bda;--purple-bg:rgba(167,139,218,0.12);
+
+  --f1:#5b9fd5;--f1-bg:rgba(91,159,213,0.13);
+  --f2:#a78bda;--f2-bg:rgba(167,139,218,0.13);
+  --f3:#e6944e;--f3-bg:rgba(230,148,78,0.13);
+  --f4:#e6c84e;--f4-bg:rgba(230,200,78,0.13);
+  --f5:#6abf7b;--f5-bg:rgba(106,191,123,0.13);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.6;font-size:15px;min-height:100vh}
+a{color:var(--accent);text-decoration:none}
+
+/* Header */
+.header{background:var(--paper);padding:14px 20px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100}
+.header-left{display:flex;align-items:center;gap:10px}
+.header h1{font-size:17px;font-weight:700}
+.version-badge{font-size:11px;padding:2px 8px;border-radius:8px;background:var(--accent-bg);color:var(--accent);font-weight:700;border:1px solid rgba(183,159,138,0.25)}
+.header-meta{font-size:12px;color:var(--dim)}
+
+/* Content */
+.content{padding:20px 20px 80px;max-width:860px;margin:0 auto}
+
+/* Section */
+.section{margin-bottom:28px}
+.section-title{font-size:14px;font-weight:700;color:var(--dim);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.section-title::after{content:"";flex:1;height:1px;background:var(--border)}
+
+/* KPI Summary */
+.kpi-row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:6px}
+.kpi-card{flex:1;min-width:100px;background:var(--paper);border:1px solid var(--border);border-radius:10px;padding:14px 12px;text-align:center}
+.kpi-card .num{font-size:22px;font-weight:700;color:var(--accent)}
+.kpi-card .unit{font-size:11px;color:var(--dim);margin-left:2px}
+.kpi-card .label{font-size:11px;color:var(--dim);margin-top:3px}
+.kpi-card .sub{font-size:10px;color:var(--dim);margin-top:1px}
+
+/* Funnel Visual */
+.funnel-wrap{background:var(--paper);border:1px solid var(--border);border-radius:14px;padding:20px;margin-bottom:6px;overflow:hidden}
+.funnel-title-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}
+.funnel-title-row h2{font-size:15px;font-weight:700}
+.funnel-legend{display:flex;gap:14px;flex-wrap:wrap}
+.legend-item{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--dim)}
+.legend-dot{width:8px;height:8px;border-radius:50%}
+
+.funnel-stages{display:flex;flex-direction:column;gap:8px}
+.funnel-stage{display:flex;align-items:stretch;gap:12px}
+.funnel-bar-wrap{flex:1;display:flex;align-items:center;position:relative;height:56px}
+.funnel-bar{height:100%;border-radius:8px;display:flex;align-items:center;padding:0 14px;transition:width 0.5s ease;position:relative;overflow:hidden}
+.funnel-bar::after{content:"";position:absolute;inset:0;background:rgba(255,255,255,0.04);pointer-events:none}
+.funnel-bar-label{font-size:13px;font-weight:700;white-space:nowrap;z-index:1;position:relative}
+.funnel-bar-val{font-size:12px;font-weight:600;margin-left:8px;opacity:0.75;z-index:1;position:relative}
+
+.funnel-side{width:200px;flex-shrink:0;display:flex;flex-direction:column;justify-content:center;gap:3px}
+.funnel-side .conv-rate{font-size:12px;font-weight:700}
+.funnel-side .conv-label{font-size:10px;color:var(--dim)}
+.funnel-side .drop-label{font-size:10px;color:var(--red);margin-top:2px}
+
+.funnel-arrow{display:flex;align-items:center;justify-content:center;color:var(--dim);font-size:16px;height:12px;margin:-2px 0}
+
+/* Stage color classes */
+.s1{background:var(--f1-bg);color:var(--f1)}
+.s2{background:var(--f2-bg);color:var(--f2)}
+.s3{background:var(--f3-bg);color:var(--f3)}
+.s4{background:var(--f4-bg);color:var(--f4)}
+.s5{background:var(--f5-bg);color:var(--f5)}
+
+/* Detail table */
+.detail-card{background:var(--paper);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:10px}
+.detail-card-header{padding:12px 16px;display:flex;align-items:center;gap:10px;cursor:pointer;user-select:none}
+.detail-card-header:hover{background:var(--accent-bg)}
+.stage-badge{padding:3px 10px;border-radius:8px;font-size:11px;font-weight:700}
+.detail-card-header h3{font-size:14px;font-weight:700;flex:1}
+.detail-card-header .toggle-icon{font-size:12px;color:var(--dim)}
+.detail-body{display:none;border-top:1px solid var(--border)}
+.detail-body.open{display:block}
+
+.metrics-grid{display:grid;grid-template-columns:1fr 1fr;gap:0;border-bottom:1px solid var(--border)}
+.metric-cell{padding:12px 16px;border-right:1px solid var(--border)}
+.metric-cell:nth-child(even){border-right:none}
+.metric-cell .m-label{font-size:11px;color:var(--dim);margin-bottom:4px}
+.metric-cell .m-val{font-size:15px;font-weight:700}
+.metric-cell .m-src{font-size:10px;color:var(--dim);margin-top:3px}
+
+.drop-section{padding:12px 16px;border-bottom:1px solid var(--border)}
+.drop-section h4{font-size:12px;font-weight:700;color:var(--red);margin-bottom:8px}
+.drop-item{display:flex;align-items:flex-start;gap:8px;margin-bottom:6px;font-size:12px}
+.drop-num{width:18px;height:18px;border-radius:50%;background:var(--red-bg);color:var(--red);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;margin-top:1px}
+
+.improve-section{padding:12px 16px}
+.improve-section h4{font-size:12px;font-weight:700;color:var(--green);margin-bottom:8px}
+.improve-item{display:flex;align-items:flex-start;gap:8px;margin-bottom:6px;font-size:12px}
+.improve-check{width:18px;height:18px;border-radius:4px;background:var(--green-bg);color:var(--green);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;margin-top:1px}
+
+/* Channel compare */
+.channel-table{width:100%;border-collapse:collapse;font-size:13px}
+.channel-table th{background:var(--paper);padding:10px 14px;text-align:left;font-size:11px;font-weight:700;color:var(--dim);border-bottom:1px solid var(--border)}
+.channel-table td{padding:10px 14px;border-bottom:1px solid var(--border)}
+.channel-table tr:last-child td{border-bottom:none}
+.channel-table tr:hover td{background:var(--accent-bg)}
+.placeholder{color:var(--dim);font-style:italic;font-size:11px}
+.channel-dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px}
+
+/* Experiment log */
+.exp-item{background:var(--paper);border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin-bottom:8px}
+.exp-header{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.exp-date{font-size:11px;color:var(--dim)}
+.exp-badge{font-size:10px;font-weight:700;padding:2px 8px;border-radius:6px}
+.exp-badge.pending{background:var(--yellow-bg);color:var(--yellow)}
+.exp-body{font-size:13px;color:var(--dim)}
+
+/* Info box */
+.info-box{background:var(--accent-bg);border:1px solid rgba(183,159,138,0.2);border-radius:10px;padding:14px 16px;margin-bottom:16px;font-size:13px}
+.info-box strong{color:var(--accent)}
+
+/* Footer */
+.page-footer{text-align:center;padding:20px;font-size:11px;color:var(--dim);border-top:1px solid var(--border);margin-top:20px}
+
+@media print{
+  .header{position:static}
+  body{background:#fff;color:#222}
+  .funnel-bar{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .detail-body{display:block!important}
+  .kpi-card,.detail-card,.channel-table,.exp-item{border:1px solid #ccc}
+}
+@media(max-width:640px){
+  .funnel-side{width:120px}
+  .kpi-card .num{font-size:18px}
+  .metrics-grid{grid-template-columns:1fr}
+  .metric-cell{border-right:none}
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-left">
+    <h1>전환 Funnel</h1>
+    <span class="version-badge">v0.1</span>
+  </div>
+  <span class="header-meta">AI CMO · 2026-05-28 · 실무진: 김남욱 GM</span>
+</div>
+
+<div class="content">
+
+  <!-- INFO BOX -->
+  <div class="info-box">
+    <strong>핵심 병목:</strong> 웰페리온 마케팅의 문제는 노출 부족이 아니라 <strong>노출→문의 전환 설계 부재</strong>입니다.
+    이 페이지는 각 단계의 전환율을 측정해 병목 지점을 찾고 개선 우선순위를 결정합니다.
+    실측 수치 입력 전까지 모든 수치는 &lt;placeholder&gt;로 표기됩니다.
+  </div>
+
+  <!-- KPI 요약 -->
+  <div class="section">
+    <div class="section-title">북극성 KPI</div>
+    <div class="kpi-row">
+      <div class="kpi-card">
+        <div class="num" style="color:var(--f1)"><span class="placeholder">&lt;placeholder&gt;</span></div>
+        <div class="label">월간 총 노출</div>
+        <div class="sub">IG 도달 + 블로그 방문 + 카페 방문</div>
+      </div>
+      <div class="kpi-card">
+        <div class="num" style="color:var(--f3)"><span class="placeholder">&lt;placeholder&gt;</span></div>
+        <div class="label">Litt.ly 클릭</div>
+        <div class="sub">CTA 단일 진입점</div>
+      </div>
+      <div class="kpi-card">
+        <div class="num" style="color:var(--f4)"><span class="placeholder">&lt;placeholder&gt;</span></div>
+        <div class="label">월간 문의</div>
+        <div class="sub">예약·상담 문의 완료</div>
+      </div>
+      <div class="kpi-card">
+        <div class="num" style="color:var(--f5)"><span class="placeholder">&lt;placeholder&gt;</span></div>
+        <div class="label">신규 가입</div>
+        <div class="sub">월간 멤버십 전환</div>
+      </div>
+      <div class="kpi-card">
+        <div class="num" style="color:var(--accent)"><span class="placeholder">&lt;%&gt;</span></div>
+        <div class="label">전체 문의 전환율</div>
+        <div class="sub">노출 대비 문의 완료 %</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Funnel 시각화 -->
+  <div class="section">
+    <div class="section-title">Funnel 시각화</div>
+    <div class="funnel-wrap">
+      <div class="funnel-title-row">
+        <h2>5단계 전환 경로</h2>
+        <div class="funnel-legend">
+          <div class="legend-item"><div class="legend-dot" style="background:var(--f1)"></div>노출</div>
+          <div class="legend-item"><div class="legend-dot" style="background:var(--f2)"></div>인지</div>
+          <div class="legend-item"><div class="legend-dot" style="background:var(--f3)"></div>관심</div>
+          <div class="legend-item"><div class="legend-dot" style="background:var(--f4)"></div>문의</div>
+          <div class="legend-item"><div class="legend-dot" style="background:var(--f5)"></div>가입</div>
+        </div>
+      </div>
+
+      <div class="funnel-stages">
+
+        <!-- Stage 1: 노출 -->
+        <div class="funnel-stage">
+          <div class="funnel-bar-wrap">
+            <div class="funnel-bar s1" style="width:100%">
+              <span class="funnel-bar-label">① 노출 (Reach)</span>
+              <span class="funnel-bar-val">&lt;placeholder&gt;</span>
+            </div>
+          </div>
+          <div class="funnel-side">
+            <div class="conv-rate" style="color:var(--f1)">—</div>
+            <div class="conv-label">시작 단계</div>
+          </div>
+        </div>
+
+        <div class="funnel-arrow">↓</div>
+
+        <!-- Stage 2: 인지 -->
+        <div class="funnel-stage">
+          <div class="funnel-bar-wrap">
+            <div class="funnel-bar s2" style="width:75%">
+              <span class="funnel-bar-label">② 인지 (Awareness)</span>
+              <span class="funnel-bar-val">&lt;placeholder&gt;</span>
+            </div>
+          </div>
+          <div class="funnel-side">
+            <div class="conv-rate" style="color:var(--f2)">&lt;%&gt;</div>
+            <div class="conv-label">노출→인지 전환율</div>
+            <div class="drop-label">이탈 &lt;%&gt;</div>
+          </div>
+        </div>
+
+        <div class="funnel-arrow">↓</div>
+
+        <!-- Stage 3: 관심 -->
+        <div class="funnel-stage">
+          <div class="funnel-bar-wrap">
+            <div class="funnel-bar s3" style="width:50%">
+              <span class="funnel-bar-label">③ 관심 (Interest)</span>
+              <span class="funnel-bar-val">&lt;placeholder&gt;</span>
+            </div>
+          </div>
+          <div class="funnel-side">
+            <div class="conv-rate" style="color:var(--f3)">&lt;%&gt;</div>
+            <div class="conv-label">인지→관심 전환율</div>
+            <div class="drop-label">이탈 &lt;%&gt;</div>
+          </div>
+        </div>
+
+        <div class="funnel-arrow">↓</div>
+
+        <!-- Stage 4: 문의 -->
+        <div class="funnel-stage">
+          <div class="funnel-bar-wrap">
+            <div class="funnel-bar s4" style="width:28%">
+              <span class="funnel-bar-label">④ 문의 (Inquiry)</span>
+              <span class="funnel-bar-val">&lt;placeholder&gt;</span>
+            </div>
+          </div>
+          <div class="funnel-side">
+            <div class="conv-rate" style="color:var(--f4)">&lt;%&gt;</div>
+            <div class="conv-label">관심→문의 전환율</div>
+            <div class="drop-label">이탈 &lt;%&gt;</div>
+          </div>
+        </div>
+
+        <div class="funnel-arrow">↓</div>
+
+        <!-- Stage 5: 가입 -->
+        <div class="funnel-stage">
+          <div class="funnel-bar-wrap">
+            <div class="funnel-bar s5" style="width:12%">
+              <span class="funnel-bar-label">⑤ 가입 (Conversion)</span>
+              <span class="funnel-bar-val">&lt;placeholder&gt;</span>
+            </div>
+          </div>
+          <div class="funnel-side">
+            <div class="conv-rate" style="color:var(--f5)">&lt;%&gt;</div>
+            <div class="conv-label">문의→가입 전환율</div>
+            <div class="drop-label">이탈 &lt;%&gt;</div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- 단계별 상세 -->
+  <div class="section">
+    <div class="section-title">단계별 측정 지표 · 이탈 원인 · 개선안</div>
+
+    <!-- Stage 1 -->
+    <div class="detail-card">
+      <div class="detail-card-header" onclick="toggleCard(this)">
+        <span class="stage-badge" style="background:var(--f1-bg);color:var(--f1)">① 노출</span>
+        <h3>Reach — 잠재 고객이 웰페리온을 처음 접하는 단계</h3>
+        <span class="toggle-icon">▼</span>
+      </div>
+      <div class="detail-body open">
+        <div class="metrics-grid">
+          <div class="metric-cell">
+            <div class="m-label">IG 도달 수 (월간)</div>
+            <div class="m-val placeholder">&lt;placeholder&gt;</div>
+            <div class="m-src">출처: IG Insights</div>
+          </div>
+          <div class="metric-cell">
+            <div class="m-label">블로그 방문 수 (월간)</div>
+            <div class="m-val placeholder">&lt;placeholder&gt;</div>
+            <div class="m-src">출처: 네이버 블로그 통계</div>
+          </div>
+          <div class="metric-cell">
+            <div class="m-label">카페 방문 수 (월간)</div>
+            <div class="m-val placeholder">&lt;placeholder&gt;</div>
+            <div class="m-src">출처: 네이버 카페 통계</div>
+          </div>
+          <div class="metric-cell">
+            <div class="m-label">노출 총합 (월간)</div>
+            <div class="m-val placeholder">&lt;placeholder&gt;</div>
+            <div class="m-src">3채널 합산</div>
+          </div>
+        </div>
+        <div class="drop-section">
+          <h4>주요 이탈 원인</h4>
+          <div class="drop-item"><div class="drop-num">1</div>콘텐츠 노출 빈도 부족 — 발행 주기 불규칙으로 알고리즘 노출 감소</div>
+          <div class="drop-item"><div class="drop-num">2</div>SEO 미최적화 — 네이버 검색 자연 유입 키워드 부재</div>
+          <div class="drop-item"><div class="drop-num">3</div>채널 다양성 부족 — 현재 3채널 외 신규 노출 경로 없음</div>
+        </div>
+        <div class="improve-section">
+          <h4>개선안</h4>
+          <div class="improve-item"><div class="improve-check">A</div>블로그 주 2회 이상 발행 고정 스케줄 수립</div>
+          <div class="improve-item"><div class="improve-check">B</div>SEO 허브 페이지 신설 후 타깃 키워드 10개 우선 공략</div>
+          <div class="improve-item"><div class="improve-check">C</div>IG 릴스 테스트 — 단순 이미지 대비 도달 증폭 효과 측정</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Stage 2 -->
+    <div class="detail-card">
+      <div class="detail-card-header" onclick="toggleCard(this)">
+        <span class="stage-badge" style="background:var(--f2-bg);color:var(--f2)">② 인지</span>
+        <h3>Awareness — 브랜드·서비스를 인식하고 프로필·블로그를 탐색하는 단계</h3>
+        <span class="toggle-icon">▼</span>
+      </div>
+      <div class="detail-body">
+        <div class="metrics-grid">
+          <div class="metric-cell">
+            <div class="m-label">IG 프로필 방문 수</div>
+            <div class="m-val placeholder">&lt;placeholder&gt;</div>
+            <div class="m-src">출처: IG Insights</div>
+          </div>
+          <div class="metric-cell">
+            <div class="m-label">블로그 평균 체류 시간</div>
+            <div class="m-val placeholder">&lt;placeholder&gt;</div>
+            <div class="m-src">출처: 네이버 블로그 통계</div>
+          </div>
+          <div class="metric-cell">
+            <div class="m-label">팔로우 전환율 (IG)</div>
+            <div class="m-val placeholder">&lt;placeholder&gt;</div>
+            <div class="m-src">팔로우/도달 %</div>
+          </div>
+          <div class="metric-cell">
+            <div class="m-label">노출→인지 전환율</div>
+            <div class="m-val placeholder">&lt;%&gt;</div>
+            <div class="m-src">프로필방문/도달</div>
+          </div>
+        </div>
+        <div class="drop-section">
+          <h4>주요 이탈 원인</h4>
+          <div class="drop-item"><div class="drop-num">1</div>프로필 첫인상 약함 — 하이엔드 포지셔닝 대비 프로필 소개 불명확</div>
+          <div class="drop-item"><div class="drop-num">2</div>콘텐츠 일관성 부족 — 슬라이드 톤·디자인 분산으로 브랜드 인식 저하</div>
+          <div class="drop-item"><div class="drop-num">3</div>블로그 이탈률 높음 — 상단 CTA 부재로 체류 없이 이탈</div>
+        </div>
+        <div class="improve-section">
+          <h4>개선안</h4>
+          <div class="improve-item"><div class="improve-check">A</div>IG 프로필 소개 문구 개선 — "하이엔드 프라이빗 스포츠클럽" 명확 표기</div>
+          <div class="improve-item"><div class="improve-check">B</div>인스타 메인 영구 템플릿 일관 적용 (65/35 분할, W로고 고정)</div>
+          <div class="improve-item"><div class="improve-check">C</div>블로그 포스팅 첫 문단에 litt.ly CTA 삽입 표준화</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Stage 3 -->
+    <div class="detail-card">
+      <div class="detail-card-header" onclick="toggleCard(this)">
+        <span class="stage-badge" style="background:var(--f3-bg);color:var(--f3)">③ 관심</span>
+        <h3>Interest — 시설·멤버십·혜택을 구체적으로 탐색하며 Litt.ly를 클릭하는 단계</h3>
+        <span class="toggle-icon">▼</span>
+      </div>
+      <div class="detail-body">
+        <div class="metrics-grid">
+          <div class="metric-cell">
+            <div class="m-label">Litt.ly 월간 클릭 수</div>
+            <div class="m-val placeholder">&lt;placeholder&gt;</div>
+            <div class="m-src">출처: Litt.ly 대시보드</div>
+          </div>
+          <div class="metric-cell">
+            <div class="m-label">IG 링크 클릭 수</div>
+            <div class="m-val placeholder">&lt;placeholder&gt;</div>
+            <div class="m-src">출처: IG Insights</div>
+          </div>
+          <div class="metric-cell">
+            <div class="m-label">블로그→Litt.ly 클릭</div>
+            <div class="m-val placeholder">&lt;placeholder&gt;</div>
+            <div class="m-src">출처: Litt.ly 유입 경로</div>
+          </div>
+          <div class="metric-cell">
+            <div class="m-label">인지→관심 전환율</div>
+            <div class="m-val placeholder">&lt;%&gt;</div>
+            <div class="m-src">Litt.ly클릭/프로필방문</div>
+          </div>
+        </div>
+        <div class="drop-section">
+          <h4>주요 이탈 원인</h4>
+          <div class="drop-item"><div class="drop-num">1</div>CTA 버튼 가시성 낮음 — 캡션 내 링크 안내 미흡</div>
+          <div class="drop-item"><div class="drop-num">2</div>Litt.ly 페이지 콘텐츠 부실 — 버튼 나열만으로 설득력 부족</div>
+          <div class="drop-item"><div class="drop-num">3</div>콘텐츠가 관심 유발보다 정보 나열 위주</div>
+        </div>
+        <div class="improve-section">
+          <h4>개선안</h4>
+          <div class="improve-item"><div class="improve-check">A</div>IG 캡션 첫 줄에 "문의: litt.ly/wellperion" CTA 고정 삽입</div>
+          <div class="improve-item"><div class="improve-check">B</div>Litt.ly 페이지 시설 사진·멤버십 혜택 1줄 요약 추가</div>
+          <div class="improve-item"><div class="improve-check">C</div>슬라이드 마지막 카드(가이드 카드) CTA 버튼 텍스트 강화</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Stage 4 -->
+    <div class="detail-card">
+      <div class="detail-card-header" onclick="toggleCard(this)">
+        <span class="stage-badge" style="background:var(--f4-bg);color:var(--f4)">④ 문의</span>
+        <h3>Inquiry — Litt.ly를 통해 실제 예약·상담 문의를 완료하는 단계</h3>
+        <span class="toggle-icon">▼</span>
+      </div>
+      <div class="detail-body">
+        <div class="metrics-grid">
+          <div class="metric-cell">
+            <div class="m-label">월간 문의 완료 건수</div>
+            <div class="m-val placeholder">&lt;placeholder&gt;</div>
+            <div class="m-src">출처: COO 이슈 응답 DB</div>
+          </div>
+          <div class="metric-cell">
+            <div class="m-label">예약 문의 비율</div>
+            <div class="m-val placeholder">&lt;%&gt;</div>
+            <div class="m-src">투어·상담 예약 %</div>
+          </div>
+          <div class="metric-cell">
+            <div class="m-label">관심→문의 전환율</div>
+            <div class="m-val placeholder">&lt;%&gt;</div>
+            <div class="m-src">문의완료/Litt.ly클릭</div>
+          </div>
+          <div class="metric-cell">
+            <div class="m-label">문의 응답 평균 시간</div>
+            <div class="m-val placeholder">&lt;placeholder&gt;</div>
+            <div class="m-src">COO 운영 기록</div>
+          </div>
+        </div>
+        <div class="drop-section">
+          <h4>주요 이탈 원인</h4>
+          <div class="drop-item"><div class="drop-num">1</div>예약 프로세스 복잡 — 워크인 불가·사전 예약 필수 안내 불명확</div>
+          <div class="drop-item"><div class="drop-num">2</div>응답 지연 — 문의 후 즉각 응답 없을 경우 이탈</div>
+          <div class="drop-item"><div class="drop-num">3</div>가격 정보 부재 — 멤버십 비용 사전 노출 없어 결정 장벽 높음</div>
+        </div>
+        <div class="improve-section">
+          <h4>개선안</h4>
+          <div class="improve-item"><div class="improve-check">A</div>Litt.ly 내 "투어 예약" 버튼 클릭 즉시 예약 폼 연결 (마찰 최소화)</div>
+          <div class="improve-item"><div class="improve-check">B</div>문의 접수 즉시 자동 응답 메시지 설정 (COO 연계)</div>
+          <div class="improve-item"><div class="improve-check">C</div>콘텐츠에 "멤버십 문의하기" 단계별 안내 삽입</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Stage 5 -->
+    <div class="detail-card">
+      <div class="detail-card-header" onclick="toggleCard(this)">
+        <span class="stage-badge" style="background:var(--f5-bg);color:var(--f5)">⑤ 가입</span>
+        <h3>Conversion — 문의 후 실제 멤버십에 가입하는 최종 전환 단계</h3>
+        <span class="toggle-icon">▼</span>
+      </div>
+      <div class="detail-body">
+        <div class="metrics-grid">
+          <div class="metric-cell">
+            <div class="m-label">월간 신규 가입 건수</div>
+            <div class="m-val placeholder">&lt;placeholder&gt;</div>
+            <div class="m-src">출처: CPO 회원 DB</div>
+          </div>
+          <div class="metric-cell">
+            <div class="m-label">문의→가입 전환율</div>
+            <div class="m-val placeholder">&lt;%&gt;</div>
+            <div class="m-src">가입/문의완료</div>
+          </div>
+          <div class="metric-cell">
+            <div class="m-label">투어→가입 전환율</div>
+            <div class="m-val placeholder">&lt;%&gt;</div>
+            <div class="m-src">투어 후 가입 %</div>
+          </div>
+          <div class="metric-cell">
+            <div class="m-label">평균 결정 소요 기간</div>
+            <div class="m-val placeholder">&lt;placeholder&gt;</div>
+            <div class="m-src">첫문의→가입 일수</div>
+          </div>
+        </div>
+        <div class="drop-section">
+          <h4>주요 이탈 원인</h4>
+          <div class="drop-item"><div class="drop-num">1</div>투어 현장 경험 미흡 — 하이엔드 포지셔닝 대비 현장 설득 부족</div>
+          <div class="drop-item"><div class="drop-num">2</div>결정 기간 중 재접촉 없음 — 투어 후 팔로업 부재</div>
+          <div class="drop-item"><div class="drop-num">3</div>멤버십 옵션 복잡 — 비교 가능한 안내 자료 부재</div>
+        </div>
+        <div class="improve-section">
+          <h4>개선안</h4>
+          <div class="improve-item"><div class="improve-check">A</div>투어 후 24시간 내 팔로업 메시지 자동화 (COO 연계)</div>
+          <div class="improve-item"><div class="improve-check">B</div>멤버십 비교 안내 1페이지 카드 제작 (CPO 연계)</div>
+          <div class="improve-item"><div class="improve-check">C</div>현재 회원 후기·추천 콘텐츠 활용으로 결정 확신 강화</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- 채널별 Funnel 비교 -->
+  <div class="section">
+    <div class="section-title">채널별 Funnel 비교</div>
+    <div style="background:var(--paper);border:1px solid var(--border);border-radius:12px;overflow:hidden">
+      <table class="channel-table">
+        <thead>
+          <tr>
+            <th>채널</th>
+            <th>월간 노출</th>
+            <th>Litt.ly 클릭</th>
+            <th>문의 전환</th>
+            <th>노출→문의 전환율</th>
+            <th>주요 특이사항</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="channel-dot" style="background:var(--f1)"></span>Instagram</td>
+            <td class="placeholder">&lt;placeholder&gt;</td>
+            <td class="placeholder">&lt;placeholder&gt;</td>
+            <td class="placeholder">&lt;placeholder&gt;</td>
+            <td class="placeholder">&lt;%&gt;</td>
+            <td style="font-size:12px;color:var(--dim)">비주얼 강점, CTA 클릭 마찰</td>
+          </tr>
+          <tr>
+            <td><span class="channel-dot" style="background:var(--green)"></span>네이버 블로그</td>
+            <td class="placeholder">&lt;placeholder&gt;</td>
+            <td class="placeholder">&lt;placeholder&gt;</td>
+            <td class="placeholder">&lt;placeholder&gt;</td>
+            <td class="placeholder">&lt;%&gt;</td>
+            <td style="font-size:12px;color:var(--dim)">SEO 유입, 체류시간 긺</td>
+          </tr>
+          <tr>
+            <td><span class="channel-dot" style="background:var(--orange)"></span>네이버 카페</td>
+            <td class="placeholder">&lt;placeholder&gt;</td>
+            <td class="placeholder">&lt;placeholder&gt;</td>
+            <td class="placeholder">&lt;placeholder&gt;</td>
+            <td class="placeholder">&lt;%&gt;</td>
+            <td style="font-size:12px;color:var(--dim)">지역 커뮤니티, 신뢰도 높음</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- 개선 실험 로그 -->
+  <div class="section">
+    <div class="section-title">개선 실험 로그</div>
+    <div class="exp-item">
+      <div class="exp-header">
+        <span class="exp-date">2026-05-28</span>
+        <span class="exp-badge pending">대기중</span>
+        <strong style="font-size:13px">실험 #1 — IG 캡션 첫 줄 CTA 삽입 효과 측정</strong>
+      </div>
+      <div class="exp-body">
+        가설: 캡션 첫 줄에 "문의: litt.ly/wellperion" 삽입 시 Litt.ly 클릭률 향상.<br>
+        측정 기간: 2주 / 측정 지표: Litt.ly 일별 클릭 수 전후 비교<br>
+        결과: <span class="placeholder">&lt;실험 후 입력&gt;</span>
+      </div>
+    </div>
+    <div class="exp-item">
+      <div class="exp-header">
+        <span class="exp-date">2026-05-28</span>
+        <span class="exp-badge pending">대기중</span>
+        <strong style="font-size:13px">실험 #2 — 블로그 포스팅 CTA 위치 최적화</strong>
+      </div>
+      <div class="exp-body">
+        가설: 블로그 본문 상단·중간·하단 3위치 중 상단 CTA 전환율 최고.<br>
+        측정 기간: 4주 / 측정 지표: 블로그→Litt.ly 클릭 경로<br>
+        결과: <span class="placeholder">&lt;실험 후 입력&gt;</span>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="page-footer">
+  웰페리온 전환 Funnel v0.1 · AI CMO · 2026-05-28 · 실무진: 김남욱 GM<br>
+  실측 수치 미입력 — 모든 &lt;placeholder&gt; 항목은 실제 데이터 취합 후 교체 필요
+</div>
+
+<script>
+function toggleCard(header) {
+  const body = header.nextElementSibling;
+  const icon = header.querySelector('.toggle-icon');
+  const isOpen = body.classList.contains('open');
+  body.classList.toggle('open', !isOpen);
+  icon.textContent = isOpen ? '▼' : '▲';
+}
+</script>
+</body>
+</html>
