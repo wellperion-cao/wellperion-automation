@@ -1,10 +1,7 @@
 # 웰페리온 자동화 (welperion-automation)
-
 메인 SSOT. 모든 sub-project·자동화·콘텐츠·자산은 본 폴더 하위 통합. 자산 위치 상세 → `INDEX.md`.
 
-
 ## 0. 회사 정보
-
 | 항목 | 값 |
 |---|---|
 | 상호 | 주식회사 웰페리온 (Wellperion) |
@@ -17,9 +14,7 @@
 
 
 ## 1. AI C-Level 7 에이전트
-
 `notion-c-level-agents/.claude/agents/` 정의. 보고 라인: 6 C-레벨 → AI CEO → GM님.
-
 | 직책 | 파일 | 라우팅 키워드 |
 |---|---|---|
 | AI CEO | ai-ceo.md | 전사 전략·통합 판단 |
@@ -32,7 +27,6 @@
 
 
 ## 2. Notion R/R 연동
-
 - AI 조직 DB: `33f0407d-a948-805d-80b7-d792667cae33`
 - Data Source ID: `33f0407d-a948-80d2-ad27-000b132ef146`
 - 조회: `notion_wrapper.py` / `mcp__notion__API-query-data-source`
@@ -41,7 +35,6 @@
 
 
 ## 3. 보고·승인
-
 - 일일 08:00 통합 보고: `notion-c-level-agents/scripts/ceo_morning_brief_08.py`
 - 텔레그램: `telegram_bot/bot.py` + `daily_scheduler.py` (PID 가동)
 - CEO 인박스 DB: `fed0015b-23cc-4faf-8acb-d3310edf4f72` (INBOX_DB_ID)
@@ -49,7 +42,6 @@
 
 
 ## 4. 운영 제약
-
 ### 거버넌스
 1. 모든 출력 한국어. 영어 최소화, 약어 한글 병기
 2. SOP·분석·보고 시 Notion DB 선행 조회
@@ -65,17 +57,14 @@
 
 상세 교육자료·고도화 프롬프트 → 가이드허브 참조 (6번)
 
-
 ## 5. post-action 훅
-
 위치: `notion-c-level-agents/scripts/clevel_post_action.py`
 용도: .bat 종료 직전 업무자동화DB patch + 텔레그램 1줄 보고.
 인자: `--clevel --task-id --status --summary [--version] [--changelog] [--dry-run]`
 
 
 ## 6. 가이드허브 — GM·AI CEO 통합 SSOT
-
-위치: `3. 웰페리온 가이드(netlify)/wellperion_guide(main).html`
-배포: https://wellperion-guide.netlify.app/
+위치: `3. 웰페리온 가이드/wellperion_guide(main).html`
+배포: https://wellperion-cao.github.io/wellperion-automation/
 GM 업무·AI C-Level 협업 매뉴얼·교육자료·고도화 프롬프트의 단일 마스터 문서.
 세부 지식은 본 CLAUDE.md에 복사하지 않고, 필요 시 허브를 펼쳐 참조한다 (허브 = 원본, CLAUDE.md = 인덱스).
