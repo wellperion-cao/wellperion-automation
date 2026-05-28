@@ -681,10 +681,11 @@
     html += '.ten{font-size:3vmin;font-weight:500;color:'+brand.logo+';opacity:0.92;letter-spacing:0.01em;margin-bottom:0;}';
     html += '.sub{position:absolute;bottom:1.8vmin;left:0;right:0;text-align:center;font-size:1.6vmin;color:'+brand.logo+';opacity:0.95;letter-spacing:0.06em;font-weight:500;padding:0 4vmin;}';
     html += '.sub em{font-family:"Playfair Display","Hudson NY Serif",Georgia,serif;font-style:italic;font-weight:500;letter-spacing:0.01em;font-size:1.08em;}';
-    /* BODY — font-size를 vmin으로 환산해 미리보기와 동일 시각 배율 (사용자 fs px → vmin) */
-    var fsVmin = ((parseFloat(fs)||18) * 0.22).toFixed(2);
+    /* BODY — font-size를 vmin으로 환산해 미리보기와 동일 시각 배율 (사용자 fs px → vmin)
+       v2.31 비율 0.22 → 0.17 (인쇄 콘텐츠가 종이 초과해 헤더·푸터 침범하던 이슈 정정) */
+    var fsVmin = ((parseFloat(fs)||18) * 0.17).toFixed(2);
     var lhRaw = el('noticeLineHeight'); var lh = lhRaw ? lhRaw.value : '1.85';
-    html += '.body{flex:1;background:#fff;color:#1a1a1a;padding:4.5vmin 4vmin 6vmin;text-align:center;display:flex;flex-direction:column;justify-content:center;align-items:stretch;line-height:'+lh+';font-size:'+fsVmin+'vmin;font-weight:500;overflow:hidden;position:relative;}';
+    html += '.body{flex:1;background:#fff;color:#1a1a1a;padding:4vmin 5vmin 5vmin;text-align:center;display:flex;flex-direction:column;justify-content:center;align-items:stretch;line-height:'+lh+';font-size:'+fsVmin+'vmin;font-weight:500;overflow:hidden;position:relative;}';
     html += '.notice-date{position:absolute;right:3.5vmin;bottom:1.8vmin;font-size:0.78em;color:#B79F8A;font-weight:600;letter-spacing:0.06em;text-align:right;margin:0;}';
     html += '.notice-head{font-size:1.75em;font-weight:700;line-height:1.5;color:#1a1a1a;}';
     html += '.notice-divider{width:62%;height:1px;background:#B79F8A;opacity:0.45;margin:1.4em auto;border:none;}';
