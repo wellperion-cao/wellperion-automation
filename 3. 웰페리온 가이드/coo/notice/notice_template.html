@@ -467,14 +467,6 @@
     window.scrollTo({top:0, behavior:'smooth'});
   };
 
-  window.ntCopySaved = function(id){
-    var arr = ntGetSaved();
-    var item = arr.find(function(a){ return a.id === id; });
-    if(!item) return;
-    var text = (item.titleKr ? item.titleKr + '\n' : '') + (item.titleEn ? item.titleEn + '\n' : '') + (item.body || '');
-    navigator.clipboard.writeText(text).then(function(){ alert('클립보드에 복사되었습니다.'); });
-  };
-
   window.ntDeleteSaved = function(id){
     var pw = prompt('삭제 비밀번호를 입력하세요');
     if(pw !== '1234') { if(pw !== null) alert('비밀번호가 틀립니다.'); return; }
@@ -495,7 +487,6 @@
       html += '<div class="ntool-saved-item">';
       html += '<span class="title" title="'+title.replace(/"/g,'&quot;')+'">'+title+'</span>';
       html += '<span class="date">'+item.savedAt+'</span>';
-      html += '<button onclick="ntCopySaved('+item.id+')">복사</button>';
       html += '<button onclick="ntLoadSaved('+item.id+')">편집</button>';
       html += '<button class="del" onclick="ntDeleteSaved('+item.id+')">삭제</button>';
       html += '</div>';
