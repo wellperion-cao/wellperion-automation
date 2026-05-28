@@ -3003,6 +3003,7 @@ Start-Process python -ArgumentList telegram_bot\daily_scheduler.py -WorkingDirec
         <button class="tab-btn" data-tab="nutrition">영양 관리</button>
         <button class="tab-btn" data-tab="session-log">세션 로그</button>
         <button class="tab-btn" data-tab="principles">목표·원칙</button>
+        <button class="tab-btn" data-tab="calendar">🗓️ 캘린더</button>
       </div>
 
       <!-- 평일(월~토) -->
@@ -3338,6 +3339,97 @@ Start-Process python -ArgumentList telegram_bot\daily_scheduler.py -WorkingDirec
 
         <div class="callout tip"><strong>핵심 요약:</strong> 당류·나트륨은 잘 관리되고 있음. 단백질만 2배 늘리면 근손실 방지 + 체중 감량 + 수면 질 개선 동시 달성 가능.</div>
       </div>
+
+      <!-- 개인 캘린더 -->
+      <div class="tab-panel" data-panel="calendar">
+        <h3><span class="ico">🗓️</span>개인 캘린더</h3>
+
+        <!-- 컨트롤바 -->
+        <div id="gm1CalBar" style="display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:16px;">
+          <button id="gm1CalPrev" style="padding:6px 14px;font-size:13px;font-weight:700;border-radius:8px;cursor:pointer;font-family:inherit;background:var(--paper);color:var(--text);border:1px solid var(--border);">← 이전 달</button>
+          <span id="gm1CalMonthLabel" style="font-size:16px;font-weight:700;min-width:100px;text-align:center;"></span>
+          <button id="gm1CalNext" style="padding:6px 14px;font-size:13px;font-weight:700;border-radius:8px;cursor:pointer;font-family:inherit;background:var(--paper);color:var(--text);border:1px solid var(--border);">다음 달 →</button>
+          <button id="gm1CalToday" style="padding:6px 14px;font-size:13px;font-weight:600;border-radius:8px;cursor:pointer;font-family:inherit;background:var(--bg);color:var(--dim);border:1px solid var(--border);">오늘로</button>
+          <button id="gm1CalAddBtn" style="padding:6px 16px;font-size:13px;font-weight:700;border-radius:8px;cursor:pointer;font-family:inherit;background:var(--accent);color:#fff;border:none;margin-left:auto;">+ 일정 추가</button>
+        </div>
+
+        <!-- 월별 그리드 -->
+        <div id="gm1CalGrid" style="overflow-x:auto;">
+          <table id="gm1CalTable" style="width:100%;border-collapse:collapse;table-layout:fixed;">
+            <thead>
+              <tr id="gm1CalHeader">
+                <th style="padding:6px 4px;text-align:center;font-size:12px;color:#e85555;">일</th>
+                <th style="padding:6px 4px;text-align:center;font-size:12px;">월</th>
+                <th style="padding:6px 4px;text-align:center;font-size:12px;">화</th>
+                <th style="padding:6px 4px;text-align:center;font-size:12px;">수</th>
+                <th style="padding:6px 4px;text-align:center;font-size:12px;">목</th>
+                <th style="padding:6px 4px;text-align:center;font-size:12px;">금</th>
+                <th style="padding:6px 4px;text-align:center;font-size:12px;color:#5588ee;">토</th>
+              </tr>
+            </thead>
+            <tbody id="gm1CalBody"></tbody>
+          </table>
+        </div>
+
+        <!-- 이번 달 일정 목록 -->
+        <h4 style="margin-top:24px;margin-bottom:10px;"><span class="ico">📋</span>이번 달 일정</h4>
+        <div id="gm1CalList" style="display:flex;flex-direction:column;gap:6px;"></div>
+        <div id="gm1CalEmpty" style="display:none;color:var(--dim);font-size:13px;padding:12px 0;">이번 달 일정이 없습니다.</div>
+
+        <!-- 일정 추가/편집 모달 -->
+        <div id="gm1CalModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.55);z-index:9999;align-items:center;justify-content:center;">
+          <div style="background:var(--paper);border-radius:14px;padding:28px 24px;width:min(440px,92vw);box-shadow:0 8px 40px rgba(0,0,0,0.4);position:relative;">
+            <h4 id="gm1CalModalTitle" style="margin:0 0 18px;font-size:16px;">일정 추가</h4>
+            <input type="hidden" id="gm1CalEditId">
+            <div style="display:flex;flex-direction:column;gap:12px;">
+              <div>
+                <label style="font-size:12px;color:var(--dim);display:block;margin-bottom:4px;">날짜 <span style="color:var(--warm);">*</span></label>
+                <input type="date" id="gm1CalFDate" style="width:100%;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:14px;font-family:inherit;box-sizing:border-box;">
+              </div>
+              <div>
+                <label style="font-size:12px;color:var(--dim);display:block;margin-bottom:4px;">시간 (선택)</label>
+                <input type="time" id="gm1CalFTime" style="width:100%;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:14px;font-family:inherit;box-sizing:border-box;">
+              </div>
+              <div>
+                <label style="font-size:12px;color:var(--dim);display:block;margin-bottom:4px;">제목 <span style="color:var(--warm);">*</span></label>
+                <input type="text" id="gm1CalFTitle" placeholder="일정 제목" style="width:100%;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:14px;font-family:inherit;box-sizing:border-box;">
+              </div>
+              <div>
+                <label style="font-size:12px;color:var(--dim);display:block;margin-bottom:4px;">카테고리</label>
+                <select id="gm1CalFCat" style="width:100%;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:14px;font-family:inherit;box-sizing:border-box;">
+                  <option value="개인">개인</option>
+                  <option value="업무">업무</option>
+                  <option value="인사·파트너">인사·파트너</option>
+                  <option value="회의">회의</option>
+                  <option value="기타">기타</option>
+                </select>
+              </div>
+              <div>
+                <label style="font-size:12px;color:var(--dim);display:block;margin-bottom:4px;">메모</label>
+                <textarea id="gm1CalFMemo" rows="3" placeholder="메모 (선택)" style="width:100%;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:14px;font-family:inherit;resize:vertical;box-sizing:border-box;"></textarea>
+              </div>
+            </div>
+            <div style="display:flex;gap:8px;margin-top:18px;justify-content:flex-end;">
+              <button id="gm1CalModalDel" style="display:none;padding:8px 16px;font-size:13px;font-weight:700;border-radius:8px;cursor:pointer;font-family:inherit;background:var(--warm);color:#fff;border:none;margin-right:auto;">삭제</button>
+              <button id="gm1CalModalCancel" style="padding:8px 16px;font-size:13px;font-weight:600;border-radius:8px;cursor:pointer;font-family:inherit;background:var(--bg);color:var(--dim);border:1px solid var(--border);">취소</button>
+              <button id="gm1CalModalSave" style="padding:8px 20px;font-size:13px;font-weight:700;border-radius:8px;cursor:pointer;font-family:inherit;background:var(--accent);color:#fff;border:none;">저장</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 날짜 상세 모달 -->
+        <div id="gm1CalDayModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.55);z-index:9998;align-items:center;justify-content:center;">
+          <div style="background:var(--paper);border-radius:14px;padding:24px 22px;width:min(400px,90vw);box-shadow:0 8px 40px rgba(0,0,0,0.4);max-height:80vh;overflow-y:auto;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+              <h4 id="gm1CalDayTitle" style="margin:0;font-size:15px;"></h4>
+              <button id="gm1CalDayClose" style="background:none;border:none;font-size:18px;cursor:pointer;color:var(--dim);padding:2px 6px;">✕</button>
+            </div>
+            <div id="gm1CalDayList" style="display:flex;flex-direction:column;gap:8px;"></div>
+            <button id="gm1CalDayAdd" style="margin-top:14px;width:100%;padding:8px;font-size:13px;font-weight:700;border-radius:8px;cursor:pointer;font-family:inherit;background:var(--accent);color:#fff;border:none;">+ 이 날 일정 추가</button>
+          </div>
+        </div>
+
+      </div><!-- /calendar panel -->
     </div>
     </div>
   </article>
@@ -5370,6 +5462,423 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
     var d = ('0'+now.getDate()).slice(-2);
     el.innerHTML = '<span class="ico">📌</span>오늘 할 일 (' + y + '-' + m + '-' + d + ' ' + dow + ')';
   })();
+
+  // ── GM1 개인 캘린더 ──────────────────────────────────────────
+  (function(){
+    var CAL_KEY = 'gm1_calendar_events';
+    var SEED = [{
+      id: 'seed-001',
+      date: '2026-06-01',
+      time: '',
+      title: '황용석 팀장 퇴직 및 지원팀 재편',
+      category: '인사·파트너',
+      memo: '지원팀 구조 재정비 진행'
+    }];
+
+    var CAT_COLORS = {
+      '개인':      'background:#B79F8A;color:#221F20;',
+      '업무':      'background:#4caf50;color:#fff;',
+      '인사·파트너':'background:#e85555;color:#fff;',
+      '회의':      'background:#4488ee;color:#fff;',
+      '기타':      'background:#888;color:#fff;'
+    };
+
+    // 현재 뷰 연월
+    var viewDate = new Date();
+    var viewYear = viewDate.getFullYear();
+    var viewMonth = viewDate.getMonth(); // 0-based
+
+    // 선택된 날짜 (날짜 모달용)
+    var selectedDay = null;
+
+    /* ── 데이터 CRUD ── */
+    function gm1CalLoad() {
+      try {
+        var raw = localStorage.getItem(CAL_KEY);
+        return raw ? JSON.parse(raw) : [];
+      } catch(e) { return []; }
+    }
+
+    function gm1CalSave(events) {
+      try { localStorage.setItem(CAL_KEY, JSON.stringify(events)); } catch(e){}
+    }
+
+    function gm1CalSeed() {
+      var events = gm1CalLoad();
+      if (!events.length) {
+        gm1CalSave(SEED);
+      }
+    }
+
+    function gm1CalAdd(ev) {
+      var events = gm1CalLoad();
+      events.push(ev);
+      gm1CalSave(events);
+    }
+
+    function gm1CalEdit(id, updates) {
+      var events = gm1CalLoad();
+      for (var i = 0; i < events.length; i++) {
+        if (events[i].id === id) {
+          events[i] = Object.assign({}, events[i], updates);
+          break;
+        }
+      }
+      gm1CalSave(events);
+    }
+
+    function gm1CalDelete(id) {
+      var events = gm1CalLoad().filter(function(e){ return e.id !== id; });
+      gm1CalSave(events);
+    }
+
+    function gm1CalGenId() {
+      return 'ev-' + Date.now() + '-' + Math.floor(Math.random()*10000);
+    }
+
+    /* ── 렌더링 ── */
+    function gm1CalRender() {
+      var events = gm1CalLoad();
+      gm1CalRenderGrid(events);
+      gm1CalRenderList(events);
+    }
+
+    function gm1CalRenderGrid(events) {
+      var label = document.getElementById('gm1CalMonthLabel');
+      if (!label) return;
+      label.textContent = viewYear + '년 ' + (viewMonth + 1) + '월';
+
+      var tbody = document.getElementById('gm1CalBody');
+      if (!tbody) return;
+      tbody.innerHTML = '';
+
+      var today = new Date();
+      var todayStr = today.getFullYear() + '-' +
+        ('0'+(today.getMonth()+1)).slice(-2) + '-' +
+        ('0'+today.getDate()).slice(-2);
+
+      // 달 첫날 요일, 마지막 날
+      var firstDay = new Date(viewYear, viewMonth, 1).getDay(); // 0=일
+      var lastDate = new Date(viewYear, viewMonth + 1, 0).getDate();
+      // 이전 달 마지막 날
+      var prevLast = new Date(viewYear, viewMonth, 0).getDate();
+
+      // 이벤트 날짜 맵
+      var evMap = {};
+      events.forEach(function(ev) {
+        if (!evMap[ev.date]) evMap[ev.date] = [];
+        evMap[ev.date].push(ev);
+      });
+
+      var cells = [];
+      // 이전 달 채우기
+      for (var i = firstDay - 1; i >= 0; i--) {
+        var d = prevLast - i;
+        var prevMonth = viewMonth === 0 ? 12 : viewMonth;
+        var prevYear  = viewMonth === 0 ? viewYear - 1 : viewYear;
+        cells.push({ day: d, dateStr: null, other: true });
+      }
+      // 이번 달
+      for (var d2 = 1; d2 <= lastDate; d2++) {
+        var ds = viewYear + '-' + ('0'+(viewMonth+1)).slice(-2) + '-' + ('0'+d2).slice(-2);
+        cells.push({ day: d2, dateStr: ds, other: false });
+      }
+      // 다음 달 채우기 (6행 완성)
+      var total = Math.ceil(cells.length / 7) * 7;
+      var nextD = 1;
+      while (cells.length < total) {
+        cells.push({ day: nextD++, dateStr: null, other: true });
+      }
+
+      var MIN_ROWS = 42; // 6행
+      while (cells.length < MIN_ROWS) {
+        cells.push({ day: nextD++, dateStr: null, other: true });
+      }
+
+      for (var row = 0; row < cells.length / 7; row++) {
+        var tr = document.createElement('tr');
+        for (var col = 0; col < 7; col++) {
+          var cell = cells[row * 7 + col];
+          var td = document.createElement('td');
+          td.style.cssText = 'vertical-align:top;padding:4px 3px;border:1px solid var(--border);min-height:72px;height:72px;width:14.28%;cursor:' + (cell.other ? 'default' : 'pointer') + ';';
+
+          if (cell.other) {
+            td.style.opacity = '0.35';
+          }
+          if (!cell.other && cell.dateStr === todayStr) {
+            td.style.background = 'var(--accent-bg)';
+          }
+
+          // 날짜 숫자
+          var dayNum = document.createElement('div');
+          dayNum.style.cssText = 'font-size:12px;font-weight:700;margin-bottom:3px;' +
+            (col === 0 ? 'color:#e85555;' : col === 6 ? 'color:#5588ee;' : '') +
+            (cell.dateStr === todayStr ? 'background:var(--accent);color:#fff;border-radius:50%;width:20px;height:20px;display:flex;align-items:center;justify-content:center;' : '');
+          dayNum.textContent = cell.day;
+          td.appendChild(dayNum);
+
+          // 일정 뱃지
+          if (!cell.other && cell.dateStr && evMap[cell.dateStr]) {
+            var evs = evMap[cell.dateStr];
+            var showCount = Math.min(evs.length, 3);
+            for (var ei = 0; ei < showCount; ei++) {
+              var badge = document.createElement('div');
+              var catStyle = CAT_COLORS[evs[ei].category] || CAT_COLORS['기타'];
+              badge.style.cssText = 'font-size:10px;border-radius:4px;padding:1px 4px;margin-bottom:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;' + catStyle;
+              badge.textContent = (evs[ei].time ? evs[ei].time.slice(0,5) + ' ' : '') + evs[ei].title;
+              td.appendChild(badge);
+            }
+            if (evs.length > 3) {
+              var more = document.createElement('div');
+              more.style.cssText = 'font-size:10px;color:var(--dim);';
+              more.textContent = '+' + (evs.length - 3) + '개';
+              td.appendChild(more);
+            }
+          }
+
+          // 날짜 클릭 → 상세 모달
+          if (!cell.other && cell.dateStr) {
+            (function(ds, dy){
+              td.addEventListener('click', function(){ gm1CalOpenDay(ds, dy); });
+            })(cell.dateStr, cell.day);
+          }
+
+          tr.appendChild(td);
+        }
+        tbody.appendChild(tr);
+      }
+    }
+
+    function gm1CalRenderList(events) {
+      var list = document.getElementById('gm1CalList');
+      var empty = document.getElementById('gm1CalEmpty');
+      if (!list) return;
+      list.innerHTML = '';
+
+      var prefix = viewYear + '-' + ('0'+(viewMonth+1)).slice(-2);
+      var monthEvs = events.filter(function(e){ return e.date && e.date.startsWith(prefix); });
+      monthEvs.sort(function(a,b){ return (a.date+a.time) < (b.date+b.time) ? -1 : 1; });
+
+      if (!monthEvs.length) {
+        if (empty) { empty.style.display = ''; }
+        return;
+      }
+      if (empty) { empty.style.display = 'none'; }
+
+      monthEvs.forEach(function(ev) {
+        var item = document.createElement('div');
+        item.style.cssText = 'display:flex;align-items:flex-start;gap:10px;padding:10px 12px;border-radius:10px;background:var(--paper);border:1px solid var(--border);';
+
+        var catStyle = CAT_COLORS[ev.category] || CAT_COLORS['기타'];
+        var badge = document.createElement('span');
+        badge.style.cssText = 'font-size:11px;border-radius:5px;padding:2px 7px;white-space:nowrap;flex-shrink:0;margin-top:2px;' + catStyle;
+        badge.textContent = ev.category;
+
+        var info = document.createElement('div');
+        info.style.cssText = 'flex:1;min-width:0;';
+        info.innerHTML = '<div style="font-size:12px;color:var(--dim);">' + ev.date + (ev.time ? ' ' + ev.time.slice(0,5) : '') + '</div>' +
+          '<div style="font-size:14px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + gm1CalEsc(ev.title) + '</div>' +
+          (ev.memo ? '<div style="font-size:12px;color:var(--dim);margin-top:2px;">' + gm1CalEsc(ev.memo) + '</div>' : '');
+
+        var btnWrap = document.createElement('div');
+        btnWrap.style.cssText = 'display:flex;gap:6px;flex-shrink:0;';
+
+        var editBtn = document.createElement('button');
+        editBtn.textContent = '편집';
+        editBtn.style.cssText = 'padding:4px 10px;font-size:12px;font-weight:600;border-radius:6px;cursor:pointer;font-family:inherit;background:var(--bg);color:var(--text);border:1px solid var(--border);';
+        editBtn.addEventListener('click', function(e){ e.stopPropagation(); gm1CalOpenModal(ev); });
+
+        var delBtn = document.createElement('button');
+        delBtn.textContent = '삭제';
+        delBtn.style.cssText = 'padding:4px 10px;font-size:12px;font-weight:600;border-radius:6px;cursor:pointer;font-family:inherit;background:var(--warm);color:#fff;border:none;';
+        delBtn.addEventListener('click', function(e){ e.stopPropagation(); if(confirm('"' + ev.title + '" 일정을 삭제하시겠습니까?')){ gm1CalDelete(ev.id); gm1CalRender(); } });
+
+        btnWrap.appendChild(editBtn);
+        btnWrap.appendChild(delBtn);
+
+        item.appendChild(badge);
+        item.appendChild(info);
+        item.appendChild(btnWrap);
+        list.appendChild(item);
+      });
+    }
+
+    /* ── 모달 ── */
+    function gm1CalOpenModal(ev, prefillDate) {
+      var modal = document.getElementById('gm1CalModal');
+      if (!modal) return;
+      modal.style.display = 'flex';
+
+      document.getElementById('gm1CalModalTitle').textContent = ev ? '일정 편집' : '일정 추가';
+      document.getElementById('gm1CalEditId').value = ev ? ev.id : '';
+      document.getElementById('gm1CalFDate').value = ev ? ev.date : (prefillDate || '');
+      document.getElementById('gm1CalFTime').value = ev ? ev.time : '';
+      document.getElementById('gm1CalFTitle').value = ev ? ev.title : '';
+      document.getElementById('gm1CalFCat').value = ev ? ev.category : '개인';
+      document.getElementById('gm1CalFMemo').value = ev ? ev.memo : '';
+      document.getElementById('gm1CalModalDel').style.display = ev ? '' : 'none';
+    }
+
+    function gm1CalCloseModal() {
+      var modal = document.getElementById('gm1CalModal');
+      if (modal) modal.style.display = 'none';
+    }
+
+    function gm1CalOpenDay(dateStr, day) {
+      selectedDay = dateStr;
+      var modal = document.getElementById('gm1CalDayModal');
+      if (!modal) return;
+      modal.style.display = 'flex';
+
+      document.getElementById('gm1CalDayTitle').textContent =
+        viewYear + '년 ' + (viewMonth+1) + '월 ' + day + '일';
+
+      var events = gm1CalLoad().filter(function(e){ return e.date === dateStr; });
+      events.sort(function(a,b){ return a.time < b.time ? -1 : 1; });
+
+      var dl = document.getElementById('gm1CalDayList');
+      dl.innerHTML = '';
+
+      if (!events.length) {
+        dl.innerHTML = '<div style="color:var(--dim);font-size:13px;">이 날 일정이 없습니다.</div>';
+        return;
+      }
+
+      events.forEach(function(ev) {
+        var row = document.createElement('div');
+        row.style.cssText = 'display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;background:var(--bg);';
+
+        var catStyle = CAT_COLORS[ev.category] || CAT_COLORS['기타'];
+        var badge = document.createElement('span');
+        badge.style.cssText = 'font-size:11px;border-radius:4px;padding:2px 6px;white-space:nowrap;' + catStyle;
+        badge.textContent = ev.category;
+
+        var info = document.createElement('div');
+        info.style.cssText = 'flex:1;min-width:0;';
+        info.innerHTML = (ev.time ? '<span style="font-size:11px;color:var(--dim);">' + ev.time.slice(0,5) + ' </span>' : '') +
+          '<strong style="font-size:13px;">' + gm1CalEsc(ev.title) + '</strong>' +
+          (ev.memo ? '<div style="font-size:11px;color:var(--dim);">' + gm1CalEsc(ev.memo) + '</div>' : '');
+
+        var editBtn = document.createElement('button');
+        editBtn.textContent = '편집';
+        editBtn.style.cssText = 'padding:3px 9px;font-size:11px;font-weight:600;border-radius:5px;cursor:pointer;font-family:inherit;background:var(--paper);color:var(--text);border:1px solid var(--border);flex-shrink:0;';
+        editBtn.addEventListener('click', function(){
+          gm1CalCloseDayModal();
+          gm1CalOpenModal(ev);
+        });
+
+        row.appendChild(badge);
+        row.appendChild(info);
+        row.appendChild(editBtn);
+        dl.appendChild(row);
+      });
+    }
+
+    function gm1CalCloseDayModal() {
+      var modal = document.getElementById('gm1CalDayModal');
+      if (modal) modal.style.display = 'none';
+    }
+
+    /* ── 유틸 ── */
+    function gm1CalEsc(str) {
+      return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }
+
+    /* ── 이벤트 바인딩 ── */
+    function gm1CalBind() {
+      var prevBtn   = document.getElementById('gm1CalPrev');
+      var nextBtn   = document.getElementById('gm1CalNext');
+      var todayBtn  = document.getElementById('gm1CalToday');
+      var addBtn    = document.getElementById('gm1CalAddBtn');
+      var saveBtn   = document.getElementById('gm1CalModalSave');
+      var cancelBtn = document.getElementById('gm1CalModalCancel');
+      var delBtn    = document.getElementById('gm1CalModalDel');
+      var dayClose  = document.getElementById('gm1CalDayClose');
+      var dayAdd    = document.getElementById('gm1CalDayAdd');
+
+      if (prevBtn) prevBtn.addEventListener('click', function(){
+        viewMonth--;
+        if (viewMonth < 0) { viewMonth = 11; viewYear--; }
+        gm1CalRender();
+      });
+      if (nextBtn) nextBtn.addEventListener('click', function(){
+        viewMonth++;
+        if (viewMonth > 11) { viewMonth = 0; viewYear++; }
+        gm1CalRender();
+      });
+      if (todayBtn) todayBtn.addEventListener('click', function(){
+        var now = new Date();
+        viewYear = now.getFullYear();
+        viewMonth = now.getMonth();
+        gm1CalRender();
+      });
+      if (addBtn) addBtn.addEventListener('click', function(){ gm1CalOpenModal(null); });
+
+      if (saveBtn) saveBtn.addEventListener('click', function(){
+        var id    = document.getElementById('gm1CalEditId').value;
+        var date  = document.getElementById('gm1CalFDate').value;
+        var time  = document.getElementById('gm1CalFTime').value;
+        var title = document.getElementById('gm1CalFTitle').value.trim();
+        var cat   = document.getElementById('gm1CalFCat').value;
+        var memo  = document.getElementById('gm1CalFMemo').value.trim();
+
+        if (!date) { alert('날짜를 입력해주세요.'); return; }
+        if (!title) { alert('제목을 입력해주세요.'); return; }
+
+        if (id) {
+          gm1CalEdit(id, { date:date, time:time, title:title, category:cat, memo:memo });
+        } else {
+          gm1CalAdd({ id: gm1CalGenId(), date:date, time:time, title:title, category:cat, memo:memo });
+        }
+        gm1CalCloseModal();
+        gm1CalRender();
+      });
+
+      if (cancelBtn) cancelBtn.addEventListener('click', gm1CalCloseModal);
+
+      if (delBtn) delBtn.addEventListener('click', function(){
+        var id = document.getElementById('gm1CalEditId').value;
+        var title = document.getElementById('gm1CalFTitle').value;
+        if (id && confirm('"' + title + '" 일정을 삭제하시겠습니까?')) {
+          gm1CalDelete(id);
+          gm1CalCloseModal();
+          gm1CalRender();
+        }
+      });
+
+      // 모달 배경 클릭 닫기
+      var modal = document.getElementById('gm1CalModal');
+      if (modal) modal.addEventListener('click', function(e){ if(e.target === modal) gm1CalCloseModal(); });
+
+      if (dayClose) dayClose.addEventListener('click', gm1CalCloseDayModal);
+      var dayModal = document.getElementById('gm1CalDayModal');
+      if (dayModal) dayModal.addEventListener('click', function(e){ if(e.target === dayModal) gm1CalCloseDayModal(); });
+
+      if (dayAdd) dayAdd.addEventListener('click', function(){
+        gm1CalCloseDayModal();
+        gm1CalOpenModal(null, selectedDay);
+      });
+    }
+
+    /* ── 인쇄 스타일 ── */
+    (function(){
+      var style = document.createElement('style');
+      style.textContent =
+        '@media print {' +
+        '  #gm1CalModal, #gm1CalDayModal, #gm1CalBar button { display:none !important; }' +
+        '  #gm1CalGrid, #gm1CalList { display:block !important; }' +
+        '  #gm1CalTable { page-break-inside: avoid; }' +
+        '}';
+      document.head.appendChild(style);
+    })();
+
+    /* ── 초기화 ── */
+    gm1CalSeed();
+    gm1CalBind();
+    gm1CalRender();
+
+  })();
+  // ── /GM1 개인 캘린더 ────────────────────────────────────────
 </script>
 </body>
 </html>
