@@ -93,12 +93,13 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 /* ── Modal ── */
 .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:200;align-items:center;justify-content:center;padding:20px}
 .modal-overlay.show{display:flex}
-.modal{background:var(--paper);border:1px solid var(--border);border-radius:16px;width:100%;max-width:480px;max-height:90vh;overflow-y:auto;padding:24px 20px}
+.modal{background:var(--paper);border:1px solid var(--border);border-radius:16px;width:100%;max-width:640px;max-height:90vh;overflow-y:auto;padding:24px 20px}
 .modal h2{font-size:16px;font-weight:700;margin-bottom:16px;color:var(--accent)}
 .field{margin-bottom:12px}
 .field label{display:block;font-size:13px;font-weight:600;color:var(--dim);margin-bottom:4px}
 .field input[type=text],.field input[type=url],.field input[type=date],.field select,.field textarea{width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:10px 14px;border-radius:8px;font-size:14px;font-family:inherit;resize:vertical}
-.field textarea{min-height:80px;line-height:1.6}
+.field textarea{min-height:220px;line-height:1.6}
+#fContent{min-height:280px;font-size:14px}
 .field-row{display:flex;gap:10px}
 .field-row .field{flex:1}
 .checkbox-group{display:flex;flex-wrap:wrap;gap:6px;padding:4px 0}
