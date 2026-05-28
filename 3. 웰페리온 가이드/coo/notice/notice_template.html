@@ -251,7 +251,7 @@
             <option value="Pretendard">Pretendard</option>
             <option value="serif">명조 (Serif)</option>
           </select>
-          <input type="number" id="noticeFontSize" value="18" min="10" max="40" oninput="ntUpdatePreview()" onchange="ntUpdatePreview()">
+          <input type="number" id="noticeFontSize" value="18" min="8" max="80" title="선택 영역(또는 현재 줄)에 px 적용" onchange="ntFmtSize(this.value)">
           <span style="font-size:11px;color:var(--dim);">px</span>
           <span class="font-sep"></span>
           <span style="font-size:10px;color:var(--dim);font-weight:700;letter-spacing:0.04em;">줄 크기</span>
@@ -540,17 +540,14 @@
     bodyEl.style.fontFamily = ff==='serif' ? '"Noto Serif KR",serif' : '"Pretendard",sans-serif';
     var orient = el('noticeOrient') ? el('noticeOrient').value : 'portrait';
     var lh = el('noticeLineHeight');
-    /* v2.43 — 가로형은 CSS clamp 규칙 우선 (inline style 비움) → overflow 방지 */
+    /* v2.54 — px input은 선택 영역만 적용 (ntFmtSize). 본문 전체 fontSize 강제 적용 폐기. 줄간격은 본문 전체 유지 */
     if(orient === 'landscape'){
-      bodyEl.style.fontSize = '';
       bodyEl.style.lineHeight = '';
     } else {
-      bodyEl.style.fontSize = fs+'px';
       bodyEl.style.lineHeight = lh ? lh.value : '1.85';
     }
-    /* 에디터 글꼴·기본 사이즈·줄간격도 동기화 (사용자가 변경 시 즉시 반영) */
+    bodyEl.style.fontSize = '';  /* CSS clamp 기본값 사용 (사용자 span style은 자체 적용) */
     editor.style.fontFamily = ff==='serif' ? '"Noto Serif KR",serif' : '"Pretendard",sans-serif';
-    editor.style.fontSize = fs+'px';
     if(lh) editor.style.lineHeight = lh.value;
     /* v2.38 — 방향 (세로/가로) 미리보기 aspect-ratio 동적 변경 */
     var frame = el('noticePreviewFrame');
