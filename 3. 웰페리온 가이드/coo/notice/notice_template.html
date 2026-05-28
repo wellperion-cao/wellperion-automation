@@ -199,6 +199,13 @@
             <option value="custom">기타 (자유입력)</option>
           </select>
         </div>
+        <div>
+          <label class="ntool-label">방향 (인쇄·미리보기 비율)</label>
+          <select class="ntool-select" id="noticeOrient" onchange="ntUpdatePreview()">
+            <option value="portrait" selected>세로 (A3 297 × 420)</option>
+            <option value="landscape">가로 (A3 420 × 297)</option>
+          </select>
+        </div>
       </div>
       <div class="ntool-row">
         <div>
@@ -481,6 +488,10 @@
     editor.style.fontFamily = ff==='serif' ? '"Noto Serif KR",serif' : '"Pretendard",sans-serif';
     editor.style.fontSize = fs+'px';
     if(lh) editor.style.lineHeight = lh.value;
+    /* v2.38 — 방향 (세로/가로) 미리보기 aspect-ratio 동적 변경 */
+    var orient = el('noticeOrient') ? el('noticeOrient').value : 'portrait';
+    var frame = el('noticePreviewFrame');
+    if(frame) frame.style.aspectRatio = orient === 'landscape' ? '420/297' : '297/420';
   };
 
   /* 마크다운 prefix를 wysiwyg HTML로 변환 (preset body 전용 — 사용자 입력은 그대로 wysiwyg) */
@@ -612,10 +623,16 @@
     }
   });
 
-  function ntBuildPageHtml(brand, titleKr, titleEn, bodyHtml, imgHtml, fontFam, fs, pageSize){
+  function ntBuildPageHtml(brand, titleKr, titleEn, bodyHtml, imgHtml, fontFam, fs, pageSize, orient){
     /* AUTO = 인쇄 다이얼로그에서 사용자가 사이즈 선택 / A3·A4 = PDF·PNG 다운로드 고정 */
     var sizeMap = {A3:'297mm 420mm', A4:'210mm 297mm', AUTO:'auto'};
     var sizeRule = sizeMap[pageSize] || 'auto';
+    /* v2.38 — 가로 방향: @page size 좌우 교환 + landscape 키워드 */
+    if(orient === 'landscape'){
+      if(pageSize === 'A3') sizeRule = '420mm 297mm';
+      else if(pageSize === 'A4') sizeRule = '297mm 210mm';
+      else sizeRule = 'auto landscape';
+    }
     /* base href = 부모 페이지 디렉토리 → 인쇄 윈도우에서도 _assets/logo 상대경로 동작 */
     var baseUrl = window.location.href.replace(/[^/]*(?:\?.*)?(?:#.*)?$/, '');
     var html = '<!DOCTYPE html><html><head><meta charset="utf-8"><title>'+esc(brand.name)+' NOTICE</title>';
@@ -706,9 +723,12 @@
   function ntCaptureToCanvas(pageSize){
     return new Promise(function(resolve, reject){
       var d = ntCollectData();
-      var html = ntBuildPageHtml(d.brand, d.titleKr, d.titleEn, d.bodyHtml, d.imgHtml, d.fontFam, d.fs, pageSize);
+      /* v2.38 — 방향(세로/가로) 반영 */
+      var orient = el('noticeOrient') ? el('noticeOrient').value : 'portrait';
+      var html = ntBuildPageHtml(d.brand, d.titleKr, d.titleEn, d.bodyHtml, d.imgHtml, d.fontFam, d.fs, pageSize, orient);
       var sizeMap = {A3:[297,420], A4:[210,297]};
       var mm = sizeMap[pageSize] || [297,420];
+      if(orient === 'landscape') mm = [mm[1], mm[0]];
       var px = 96/25.4; /* 1mm = ~3.78px @96dpi */
       var w = Math.round(mm[0]*px), h = Math.round(mm[1]*px);
       var iframe = document.createElement('iframe');
@@ -746,7 +766,9 @@
   window.ntDownloadPDF = function(){
     ntCaptureToCanvas('A3').then(function(r){
       var imgData = r.canvas.toDataURL('image/png');
-      var pdf = new jspdf.jsPDF({orientation:'portrait', unit:'mm', format:[r.mm[0], r.mm[1]]});
+      /* v2.38 — 방향 반영 (r.mm은 이미 swap됨) */
+      var orient = el('noticeOrient') ? el('noticeOrient').value : 'portrait';
+      var pdf = new jspdf.jsPDF({orientation:orient, unit:'mm', format:[r.mm[0], r.mm[1]]});
       pdf.addImage(imgData, 'PNG', 0, 0, r.mm[0], r.mm[1]);
       pdf.save(ntDownloadFileName('pdf'));
     }).catch(function(err){ alert('PDF 생성 실패: '+err.message); });
@@ -755,8 +777,10 @@
   window.ntPrint = function(){
     /* 사이즈는 브라우저 인쇄 다이얼로그에서 사용자가 선택 (A3/A4/Letter 등) */
     var d = ntCollectData();
-    var html = ntBuildPageHtml(d.brand, d.titleKr, d.titleEn, d.bodyHtml, d.imgHtml, d.fontFam, d.fs, 'AUTO');
-    var w = window.open('','_blank','width=900,height=1270');
+    var orient = el('noticeOrient') ? el('noticeOrient').value : 'portrait';
+    var html = ntBuildPageHtml(d.brand, d.titleKr, d.titleEn, d.bodyHtml, d.imgHtml, d.fontFam, d.fs, 'AUTO', orient);
+    var winSize = orient === 'landscape' ? 'width=1270,height=900' : 'width=900,height=1270';
+    var w = window.open('','_blank',winSize);
     w.document.write(html);
     w.document.close();
     setTimeout(function(){ w.print(); }, 600);
@@ -779,6 +803,7 @@
       titleKr: el('noticeTitleKr').value,
       titleEn: el('noticeTitleEn').value,
       subtitle: el('noticeSubtitle') ? el('noticeSubtitle').value : '',
+      orient: el('noticeOrient') ? el('noticeOrient').value : 'portrait',
       body: el('noticeBody').innerHTML,
       ff: el('noticeFontFamily').value,
       fs: el('noticeFontSize').value,
@@ -805,6 +830,7 @@
     el('noticeTitleKr').value = item.titleKr||'';
     el('noticeTitleEn').value = item.titleEn||'';
     if(el('noticeSubtitle')) el('noticeSubtitle').value = item.subtitle||'';
+    if(el('noticeOrient')) el('noticeOrient').value = item.orient || 'portrait';
     el('noticeBody').innerHTML = item.body||'';
     el('noticeFontFamily').value = item.ff||'Pretendard';
     el('noticeFontSize').value = item.fs||'16';
