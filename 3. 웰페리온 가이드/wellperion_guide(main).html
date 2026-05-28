@@ -361,9 +361,8 @@
     <a data-doc="update"><span class="num">📝</span><span class="label">공통 가이드라인</span></a>
     <a data-doc="g10"><span class="num">📋</span><span class="label">AI C-Level 운영 가이드</span></a>
     <a data-doc="g4"><span class="num">📐</span><span class="label">3대 원칙 프레임워크</span></a>
-    <a data-doc="ai-ops-ssot"><span class="num">🛡️</span><span class="label">AI 운영 SSOT</span></a>
+    <a data-doc="ai-ops-ssot"><span class="num">🛡️</span><span class="label">SSOT[최종본]</span></a>
     <a data-doc="g6"><span class="num">📖</span><span class="label">용어 사전</span></a>
-    <a data-doc="gcoo-todo"><span class="num">📝</span><span class="label">업무 현황 SSOT</span></a>
   </nav>
 
   <div class="nav-label">AI C-Level</div>
@@ -453,9 +452,8 @@
       <tr><td>📝</td><td><a href="#" onclick="event.preventDefault();document.querySelector('[data-doc=update]').click();" style="color:var(--accent);text-decoration:none;font-weight:600;">공통 가이드라인</a></td><td>전사 기준 + 직원 에티켓 + 브랜드 디자인 + 업데이트 방법</td></tr>
       <tr><td>📋</td><td><a href="#" onclick="event.preventDefault();document.querySelector('[data-doc=g10]').click();" style="color:var(--accent);text-decoration:none;font-weight:600;">AI C-Level 운영 가이드</a></td><td>AI 조직도 + 7개 C-Level 협업·실무</td></tr>
       <tr><td>📐</td><td><a href="#" onclick="event.preventDefault();document.querySelector('[data-doc=g4]').click();" style="color:var(--accent);text-decoration:none;font-weight:600;">3대 원칙 프레임워크</a></td><td>PSP · 작성·경로 4원칙 · 시작과 끝</td></tr>
-      <tr><td>🛡️</td><td><a href="#" onclick="event.preventDefault();document.querySelector('[data-doc=ai-ops-ssot]').click();" style="color:var(--accent);text-decoration:none;font-weight:600;">AI 운영 SSOT</a></td><td>검증·고도화·기록·정리·진화 5단계 + CEO 감독 프로토콜</td></tr>
+      <tr><td>🛡️</td><td><a href="#" onclick="event.preventDefault();document.querySelector('[data-doc=ai-ops-ssot]').click();" style="color:var(--accent);text-decoration:none;font-weight:600;">SSOT[최종본]</a></td><td>AI 운영 원칙 5단계 + 실무진 업무 현황 통합</td></tr>
       <tr><td>📖</td><td><a href="#" onclick="event.preventDefault();document.querySelector('[data-doc=g6]').click();" style="color:var(--accent);text-decoration:none;font-weight:600;">용어 사전</a></td><td>문서·조직·시스템·운영·파일 확장자</td></tr>
-      <tr><td>📝</td><td><a href="#" onclick="event.preventDefault();document.querySelector('[data-doc=gcoo-todo]').click();" style="color:var(--accent);text-decoration:none;font-weight:600;">업무 현황 SSOT</a></td><td>핵심멤버 업무 배분·추적</td></tr>
     </table>
 
     <h4 style="color:var(--accent);margin:16px 0 8px;">AI CFO 재무 <span style="font-size:12px;color:var(--dim);font-weight:400;">나우열M</span></h4>
@@ -817,12 +815,19 @@
 
 
   <article class="doc" id="ai-ops-ssot">
-    <div class="doc-header"><h2>AI 운영 SSOT</h2><div class="meta">AI(CEO + 6 C-Level) 운영 원칙·검증 프로토콜·자기 진화의 단일 진실 · v1.0 · 2026-05-28</div></div>
-    <p class="lead">AI 에이전트가 따라야 할 5단계 운영 체계입니다. CEO는 모든 작업에서 이 5단계 프로토콜로 관리·감독합니다.</p>
+    <div class="doc-header"><h2>SSOT[최종본]</h2><div class="meta">AI 운영 원칙 + 실무진 업무 현황 통합 단일 진실 · v2.0 · 2026-05-28</div></div>
+    <p class="lead">웰페리온 전체 운영의 최종 SSOT. ① AI 운영 — CEO·6 C-Level 운영 원칙·검증·진화 / ② 실무진 업무 현황 — 핵심멤버 업무 배분·추적.</p>
 
-    <div class="callout" style="background:#1a2a1a;border-left:3px solid #059669;margin:18px 0 24px;">
-      <strong>📌 흐름:</strong> ① 체크 → ② 표 보고 → ③ 보완 보고 → ④ GM 승인 시 진행 → ⑤ 기록·정리·학습
-    </div>
+    <div class="tabs" data-tabs="ai-ops-ssot">
+      <div class="tab-nav">
+        <button class="tab-btn active" data-tab="ai-ops">① AI 운영</button>
+        <button class="tab-btn" data-tab="todo">② 실무진 업무 현황</button>
+      </div>
+
+      <div class="tab-panel active" data-panel="ai-ops">
+        <div class="callout" style="background:#1a2a1a;border-left:3px solid #059669;margin:18px 0 24px;">
+          <strong>📌 흐름:</strong> ① 체크 → ② 표 보고 → ③ 보완 보고 → ④ GM 승인 시 진행 → ⑤ 기록·정리·학습
+        </div>
 
     <h3><span class="ico">🛡️</span>5단계 운영 체계</h3>
     <table>
@@ -898,8 +903,38 @@
       <div class="card"><h4>🚫 금지</h4><p>전략·브랜드·공식값 변경</p></div>
     </div>
     <p style="font-size:13px;color:var(--dim);margin-top:8px;">그 외 모든 작업은 CEO·C-Level 자율 진행 후 결과 보고. 결재 카테고리 외 GM께 묻지 말 것.</p>
+      </div>
 
-    <div class="source">SSOT: AI 운영 원칙 단일 모음 · 관련 메모리: ceo_full_stack_oversight · ceo_essence_oversight_and_brief · prioritize_connect_over_create · clevel_commit_on_completion · ceo_diagnostic_failure_pattern · mistake_process_sop · data_cleanup_policy · ambiguous_deep_interview_first · gm_direct_trigger · screenshot_visual_verify · ceo_proactive_verification (2026-05-28 신설)</div>
+      <div class="tab-panel" data-panel="todo">
+        <div class="doc-header" style="margin-bottom:12px;"><div class="meta">COO 관할 · 핵심멤버 업무 배분·추적 · Apps Script 연동 · 실무: 최준용M · 윤병현AM</div></div>
+        <p class="lead">핵심멤버(매니저·AM)의 업무를 등록·배분·추적하는 업무 현황 SSOT입니다. 카테고리별 분류, 담당자 배정, 기간 설정, 결재 요청까지 한 페이지에서 처리합니다.</p>
+
+        <div style="margin:16px 0;">
+          <a href="https://wellperion-cao.github.io/wellperion-automation/coo/todo/%EC%97%85%EB%AC%B4%20%ED%98%84%ED%99%A9%20SSOT.html" target="_blank" style="display:inline-flex;align-items:center;gap:8px;padding:12px 24px;background:var(--accent);color:#fff;font-size:14px;font-weight:700;border-radius:10px;text-decoration:none;">📝 업무 현황 SSOT 열기</a>
+        </div>
+
+        <h3><span class="ico">📋</span>기능 요약</h3>
+        <table>
+          <tr><th>기능</th><th>설명</th></tr>
+          <tr><td><strong>업무 등록</strong></td><td>제목·카테고리·담당자·기간·내용·결재요청 입력</td></tr>
+          <tr><td><strong>담당자 필터</strong></td><td>핵심멤버별 업무 필터링 + GM님 결재건 별도 필터</td></tr>
+          <tr><td><strong>상태 관리</strong></td><td>완료·보류 처리 + 보류/완료 탭 분리</td></tr>
+          <tr><td><strong>텔레그램 결재</strong></td><td>결재요청 클릭 → 메시지 복사 + 텔레그램 공유 자동 열기</td></tr>
+          <tr><td><strong>공유</strong></td><td>전체 업무 텍스트 복사 (보고·공유용)</td></tr>
+        </table>
+
+        <h3><span class="ico">🗂️</span>카테고리</h3>
+        <div class="grid-3">
+          <div class="card"><h4>매출·영업</h4><p>회원 유치·갱신·매출 관련</p></div>
+          <div class="card"><h4>인사·재무</h4><p>채용·급여·지출 관련</p></div>
+          <div class="card"><h4>마케팅·시설</h4><p>콘텐츠·시설 유지보수</p></div>
+        </div>
+
+        <div class="callout" style="margin-top:16px;"><strong>관리 기준:</strong> 업무 등록 시 담당자·기간 필수. 결재건은 텔레그램 결재방으로 발송. COO 라인 관할.</div>
+      </div>
+    </div>
+
+    <div class="source">SSOT[최종본]: AI 운영 원칙 + 실무진 업무 현황 통합 (2026-05-28 합병) · 관련 메모리 11건 cross-link · 실무진 외부 페이지: coo/todo/업무 현황 SSOT.html</div>
   </article>
 
   <article class="doc" id="g6">
@@ -3352,7 +3387,7 @@ Start-Process python -ArgumentList telegram_bot\daily_scheduler.py -WorkingDirec
   </article>
 
   <!-- ── COO 투두리스트 소개 ── -->
-  <article class="doc" id="gcoo-todo">
+  <article class="doc" id="gcoo-todo" style="display:none">
     <div class="doc-header"><h2>업무 현황 SSOT</h2><div class="meta">COO 관할 · 핵심멤버 업무 배분·추적 · Apps Script 연동</div></div>
     <p class="lead">핵심멤버(매니저·AM)의 업무를 등록·배분·추적하는 업무 현황 SSOT입니다. 카테고리별 분류, 담당자 배정, 기간 설정, 결재 요청까지 한 페이지에서 처리합니다.</p>
 
