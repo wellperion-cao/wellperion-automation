@@ -62,14 +62,14 @@
   .ntool-pv-subtitle{font-size:clamp(8px,1.05vw,12px);color:var(--hl);opacity:0.92;letter-spacing:0.02em;font-weight:500;}
 
   /* ── 미리보기 본문 (흰 배경, 자동 파싱 3구획) ── */
-  #noticePreview .ntool-pv-body{flex:1;padding:clamp(18px,3.2vw,36px) clamp(16px,2.8vw,32px);display:flex;flex-direction:column;justify-content:center;align-items:stretch;color:#1a1a1a;line-height:1.85;font-size:clamp(10px,1.35vw,16px);font-weight:500;background:#fff;text-align:center;overflow:hidden;}
-  #noticePreview .notice-head{font-size:1.55em;font-weight:700;line-height:1.55;color:#1a1a1a;letter-spacing:-0.005em;}
+  #noticePreview .ntool-pv-body{flex:1;padding:clamp(18px,3.2vw,36px) clamp(16px,2.8vw,32px);display:flex;flex-direction:column;justify-content:center;align-items:stretch;color:#1a1a1a;line-height:1.85;font-size:clamp(12px,1.6vw,19px);font-weight:500;background:#fff;text-align:center;overflow:hidden;}
+  #noticePreview .notice-head{font-size:1.75em;font-weight:700;line-height:1.5;color:#1a1a1a;letter-spacing:-0.005em;}
   #noticePreview .notice-divider{width:62%;height:1px;background:var(--accent);opacity:0.45;margin:1.3em auto;border:none;}
   #noticePreview .notice-list{text-align:left;margin:0 auto;max-width:88%;}
-  #noticePreview .notice-line{margin-bottom:0.45em;line-height:1.85;color:var(--hl);font-weight:600;}
+  #noticePreview .notice-line{margin-bottom:0.5em;line-height:1.85;color:var(--hl);font-weight:600;font-size:1.05em;}
   #noticePreview .notice-line.plain{color:#1a1a1a;font-weight:500;}
   #noticePreview .notice-line .num{color:var(--hl);font-weight:700;margin-right:6px;}
-  #noticePreview .notice-tail{margin-top:1.4em;line-height:1.85;color:#1a1a1a;font-weight:500;font-size:0.98em;}
+  #noticePreview .notice-tail{margin-top:1.4em;line-height:1.85;color:#1a1a1a;font-weight:500;font-size:1.05em;}
   #noticePreview .notice-imgs{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:14px;}
   #noticePreview .notice-imgs img{max-width:46%;max-height:120px;border-radius:6px;object-fit:cover;}
 
@@ -161,7 +161,7 @@
             <option value="Pretendard">Pretendard</option>
             <option value="serif">명조 (Serif)</option>
           </select>
-          <input type="number" id="noticeFontSize" value="16" min="10" max="40" onchange="ntUpdatePreview()">
+          <input type="number" id="noticeFontSize" value="18" min="10" max="40" onchange="ntUpdatePreview()">
           <span style="font-size:11px;color:var(--dim);">px</span>
         </div>
         <textarea class="ntool-textarea" id="noticeBody" placeholder="사우나 내에서 개인 물품&#10;도난 및 분실 사건을 예방하기 위해&#10;회원님들께 안내 드립니다.&#10;&#10;1. 회원님들께서는 개인 물품 관리에 신경 써주시길 부탁드립니다.&#10;2. 귀중품은 리셉션에 맡겨주세요.&#10;3. 개인 물품 보관함은 비밀번호를 설정하시어 이용해주세요.&#10;(개인락커 개방 이용 시 분실된 물품은 책임지지 않습니다.)&#10;4. 개인 물품 분실 시 리셉션에 문의 바랍니다.&#10;&#10;저희 웰페리온은 회원님들의 안전과 보안을&#10;최우선으로 생각하여, 앞으로도 더 나은 서비스를 제공하기 위해&#10;노력하겠습니다. 감사합니다." oninput="ntUpdatePreview()"></textarea>
@@ -366,13 +366,13 @@
     html += '.sub{font-size:1.4vmin;color:#ED5B3F;opacity:0.92;letter-spacing:0.02em;font-weight:500;}';
     /* BODY */
     html += '.body{flex:1;background:#fff;color:#1a1a1a;padding:4.5vmin 4vmin;text-align:center;display:flex;flex-direction:column;justify-content:center;align-items:stretch;line-height:1.85;font-size:'+fs+'px;font-weight:500;overflow:hidden;}';
-    html += '.notice-head{font-size:1.55em;font-weight:700;line-height:1.55;color:#1a1a1a;}';
+    html += '.notice-head{font-size:1.75em;font-weight:700;line-height:1.5;color:#1a1a1a;}';
     html += '.notice-divider{width:62%;height:1px;background:#B79F8A;opacity:0.45;margin:1.4em auto;border:none;}';
     html += '.notice-list{text-align:left;margin:0 auto;max-width:88%;}';
-    html += '.notice-line{margin-bottom:0.45em;line-height:1.85;color:#ED5B3F;font-weight:600;}';
+    html += '.notice-line{margin-bottom:0.5em;line-height:1.85;color:#ED5B3F;font-weight:600;font-size:1.05em;}';
     html += '.notice-line.plain{color:#1a1a1a;font-weight:500;}';
     html += '.notice-line .num{color:#ED5B3F;font-weight:700;margin-right:6px;}';
-    html += '.notice-tail{margin-top:1.4em;line-height:1.85;color:#1a1a1a;font-weight:500;font-size:0.98em;}';
+    html += '.notice-tail{margin-top:1.4em;line-height:1.85;color:#1a1a1a;font-weight:500;font-size:1.05em;}';
     html += '.notice-imgs{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;margin-top:2vmin;}';
     html += '.notice-imgs img{max-width:48%;max-height:24vh;border-radius:1vmin;object-fit:cover;}';
     html += '.hl{color:#ED5B3F;font-weight:700;}';
