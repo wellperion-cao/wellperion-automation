@@ -262,7 +262,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 <div class="sticky-top">
 <div class="header">
   <div class="header-top">
-    <h1>웰페리온 지원팀 일일 점검 <span id="dayType"></span></h1>
+    <h1>지원부 체계 <span id="dayType"></span></h1>
     <div class="sheet-links">
       <a class="sheet-link" onclick="switchTab('admin')" style="cursor:pointer;background:var(--purple-bg);color:var(--purple);border-color:rgba(167,139,218,0.3);">
         <svg viewBox="0 0 24 24"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
@@ -286,9 +286,8 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   <button class="tab" onclick="switchTab('policy')">지원부 규정</button>
   <button class="tab" onclick="switchTab('guide')">가이드</button>
   <button class="tab" onclick="switchTab('manual')">매뉴얼</button>
-  <button class="tab active" onclick="switchTab('check-m')">점검(남)</button>
-  <button class="tab" onclick="switchTab('check-f')">점검(여)</button>
-  <button class="tab" onclick="switchTab('admin')">현황 대시보드</button>
+  <button class="tab active" onclick="switchTab('check-m','lock')">점검(남) 🔒</button>
+  <button class="tab" onclick="switchTab('check-f','lock')">점검(여) 🔒</button>
   <div style="display:flex;gap:4px;margin-left:auto;">
     <button class="util-btn print-btn" onclick="printCurrentTab()">인쇄</button>
     <button class="util-btn report-btn" onclick="copyReport()">보고용</button>
@@ -1717,7 +1716,7 @@ async function sendTelegramNotify(date,shift,submitter,gender){
       if(STATE['iss_'+it.id])issues.push(`  - ${it.name}: ${STATE['iss_'+it.id]}`);
     });
   }
-  let msg=`[일일 점검 ${label} 제출 (${genderLabel})]\n날짜: ${date}\n점검자: ${submitter}\n완료: ${stats.done}/${stats.total} (${stats.pct}%)`;
+  let msg=`[지원부 체계 점검 ${label} 제출 (${genderLabel})]\n날짜: ${date}\n점검자: ${submitter}\n완료: ${stats.done}/${stats.total} (${stats.pct}%)`;
   if(issues.length)msg+=`\n\n이슈 ${issues.length}건:\n${issues.join('\n')}`;
   try{
     if(ONLINE){
@@ -2057,12 +2056,12 @@ async function copyReport(){
   const data=collectDashboardData(d);
 
   if(data.closed){
-    _copyToClipboard('━━━ 웰페리온 지원팀 일일 점검 보고 ━━━\n보고일: '+d+' ('+dn[dow]+')\n\n휴관일입니다.');
+    _copyToClipboard('━━━ 지원부 체계 일일 점검 보고 ━━━\n보고일: '+d+' ('+dn[dow]+')\n\n휴관일입니다.');
     return;
   }
 
   const lines=[];
-  lines.push('━━━ 웰페리온 지원팀 일일 점검 보고 ━━━');
+  lines.push('━━━ 지원부 체계 일일 점검 보고 ━━━');
   lines.push('보고일: '+d+' ('+dn[dow]+')');
   lines.push('');
 
@@ -2179,9 +2178,18 @@ async function copyShare(){
   _copyToClipboard(line);
 }
 
-function switchTab(tab){
+function switchTab(tab, opts){
+  // 점검(남)·점검(여) 비밀번호 보호
+  if(opts==='lock' && sessionStorage.getItem('checkAuth')!=='1'){
+    var pw = prompt('점검 탭 비밀번호를 입력하세요');
+    if(pw !== '1234'){ if(pw !== null) alert('비밀번호가 틀립니다.'); return; }
+    sessionStorage.setItem('checkAuth','1');
+  }
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
-  document.querySelector(`.tab[onclick="switchTab('${tab}')"]`).classList.add('active');
+  document.querySelectorAll('.tab').forEach(t=>{
+    var oc = t.getAttribute('onclick') || '';
+    if(oc.indexOf("'"+tab+"'") >= 0) t.classList.add('active');
+  });
   document.getElementById('tab-policy').classList.toggle('hidden',tab!=='policy');
   document.getElementById('tab-guide').classList.toggle('hidden',tab!=='guide');
   document.getElementById('tab-manual').classList.toggle('hidden',tab!=='manual');
