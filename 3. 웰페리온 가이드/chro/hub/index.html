@@ -1,0 +1,1086 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>웰페리온 인사 운영 허브</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.0/dist/chart.umd.js" integrity="sha384-iU8HYtnGQ8Cy4zl7gbNMOhsDTTKX02BTXptVP/vqAWIaTfM7isw76iyZCsjL2eVi" crossorigin="anonymous"></script>
+<style>
+  :root{
+    color-scheme: light;
+    --bg:#f4f3ef; --surface:#ffffff; --surface-2:#faf9f6;
+    --ink:#1f1e1b; --ink-soft:#6c6961; --ink-faint:#9a978e;
+    --line:#e7e4dc; --line-soft:#efece4;
+    --gold:#a98a52; --gold-deep:#8a6f3f;
+    --navy:#22324a;
+    --green:#3c7a4a; --green-bg:#e9f1ea;
+    --blue:#2f6d9e; --blue-bg:#e8f0f6;
+    --amber:#b07d24; --amber-bg:#f6efdd;
+    --orange:#c1702c; --orange-bg:#f7ebe0;
+    --red:#b14238; --red-bg:#f6e6e4;
+    --purple:#6a5891; --purple-bg:#eeebf3;
+    --gray:#7c7a73; --gray-bg:#edece8;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{background:var(--bg);color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",sans-serif;
+    font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased}
+  a{color:var(--blue);text-decoration:none}
+  a:hover{text-decoration:underline}
+  code{background:var(--surface-2);border:1px solid var(--line);border-radius:4px;padding:1px 5px;font-size:11.5px}
+  .wrap{max-width:1180px;margin:0 auto;padding:0 18px 56px}
+
+  header{background:linear-gradient(180deg,#262524 0%,#1c1b1a 100%);color:#f3f1ec;padding:20px 0 0}
+  .hd-inner{max-width:1180px;margin:0 auto;padding:0 18px;position:relative}
+  .brand{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+  .brand .mark{font-size:12px;letter-spacing:.28em;color:var(--gold);font-weight:600;text-transform:uppercase}
+  .brand h1{font-size:21px;font-weight:700;letter-spacing:-.01em}
+  .hd-sub{color:#a6a39a;font-size:12.5px;margin-top:4px}
+  .hd-meta{margin-top:12px;font-size:11.5px;color:#85827a}
+  .role-pill{font-size:10px;font-weight:700;padding:3px 9px;border-radius:20px;
+    letter-spacing:.02em;align-self:center}
+  .role-pill.admin{background:rgba(169,138,82,.24);color:#e3c98c;border:1px solid rgba(169,138,82,.55)}
+  .role-pill.viewer{background:rgba(255,255,255,.07);color:#b3b0a7;border:1px solid rgba(255,255,255,.16)}
+  .hd-btn{position:absolute;right:18px;top:18px;background:rgba(255,255,255,.1);
+    border:1px solid rgba(255,255,255,.22);color:#e8e5dd;font-size:11.5px;font-weight:600;
+    padding:6px 12px;border-radius:7px;cursor:pointer;font-family:inherit}
+  .hd-btn:hover{background:rgba(255,255,255,.18)}
+  .hd-btn:disabled{opacity:.5;cursor:default}
+  nav{margin-top:14px;display:flex;gap:2px;overflow-x:auto;scrollbar-width:none}
+  nav::-webkit-scrollbar{display:none}
+  .tab{flex:0 0 auto;background:none;border:none;color:#9b988f;font-size:13px;font-weight:600;
+    padding:11px 15px;cursor:pointer;border-bottom:2.5px solid transparent;white-space:nowrap;
+    font-family:inherit;transition:color .12s}
+  .tab:hover{color:#e8e5dd}
+  .tab.active{color:#fff;border-bottom-color:var(--gold)}
+
+  main{padding-top:22px}
+  .panel{display:none}
+  .panel.active{display:block;animation:fade .2s ease}
+  @keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+
+  .sec-title{font-size:12px;font-weight:700;letter-spacing:.06em;color:var(--ink-soft);
+    text-transform:uppercase;margin:26px 0 12px}
+  .sec-title:first-child{margin-top:0}
+
+  .kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(168px,1fr));gap:12px}
+  .kpi{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px 17px;position:relative;overflow:hidden}
+  .kpi::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--gold)}
+  .kpi .label{font-size:11.5px;color:var(--ink-soft);font-weight:600}
+  .kpi .val{font-size:28px;font-weight:750;margin-top:7px;letter-spacing:-.02em}
+  .kpi .val small{font-size:14px;font-weight:600;color:var(--ink-soft)}
+  .kpi .note{font-size:11px;color:var(--ink-faint);margin-top:3px}
+
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:18px}
+  .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .grid-2>*{min-width:0}
+  .card h3{font-size:13.5px;font-weight:700;margin-bottom:14px}
+  .chart-box{position:relative;height:230px}
+
+  .alert{display:flex;gap:10px;background:var(--amber-bg);border:1px solid #e8d49a;
+    border-radius:10px;padding:12px 14px;font-size:12.5px;color:#7a5a16;margin-top:12px}
+  .alert b{font-weight:700}
+  .alert.empty{background:var(--green-bg);border-color:#bcd9bf;color:#3c6442}
+
+  .diag{border-radius:12px;padding:13px 16px;margin-bottom:14px;font-size:12.5px}
+  .diag.ok{background:var(--green-bg);border:1px solid #bcd9bf}
+  .diag.bad{background:#fbf2ec;border:1px solid #e6c4a6}
+  .diag-head{font-weight:700;color:#9a5a2a;margin-bottom:8px}
+  .diag-row{display:flex;align-items:center;gap:8px;padding:3px 0;flex-wrap:wrap}
+  .diag-dot{width:8px;height:8px;border-radius:50%;flex:0 0 8px}
+  .dot-ok{background:var(--green)}.dot-warn{background:var(--amber)}.dot-err{background:var(--red)}
+  .diag-row .nm{font-weight:650;min-width:108px}
+  .diag-row .ms{color:var(--ink-soft);word-break:break-all}
+  .diag-hint{margin-top:9px;padding-top:9px;border-top:1px solid #e6c4a6;color:var(--ink-soft);line-height:1.6}
+
+  .badge{display:inline-block;font-size:11px;font-weight:600;padding:2.5px 8px;border-radius:20px;white-space:nowrap}
+  .b-green{background:var(--green-bg);color:var(--green)}
+  .b-blue{background:var(--blue-bg);color:var(--blue)}
+  .b-amber{background:var(--amber-bg);color:var(--amber)}
+  .b-orange{background:var(--orange-bg);color:var(--orange)}
+  .b-red{background:var(--red-bg);color:var(--red)}
+  .b-purple{background:var(--purple-bg);color:var(--purple)}
+  .b-gray{background:var(--gray-bg);color:var(--gray)}
+  .b-gold{background:#f3e8cf;color:#8a6f3f}
+
+  .controls{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;align-items:center}
+  input[type=search],input[type=password],select{font-family:inherit;font-size:12.5px;color:var(--ink);
+    background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:7px 10px;outline:none}
+  input[type=search]{min-width:180px;flex:1}
+  input[type=search]:focus,select:focus,input[type=password]:focus{border-color:var(--gold)}
+  .count-pill{font-size:11.5px;color:var(--ink-soft);background:var(--surface-2);
+    border:1px solid var(--line);border-radius:20px;padding:4px 11px;font-weight:600}
+
+  .tbl-wrap{background:var(--surface);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+  table{width:100%;border-collapse:collapse;font-size:12.5px}
+  th{text-align:left;font-weight:700;color:var(--ink-soft);font-size:11px;letter-spacing:.03em;
+    text-transform:uppercase;padding:10px 13px;background:var(--surface-2);border-bottom:1px solid var(--line);position:sticky;top:0}
+  td{padding:10px 13px;border-bottom:1px solid var(--line-soft);vertical-align:middle}
+  tr:last-child td{border-bottom:none}
+  tr:hover td{background:var(--surface-2)}
+  .t-name{font-weight:650;color:var(--ink)}
+  .t-sub{color:var(--ink-faint);font-size:11px}
+  .scroll-y{max-height:560px;overflow-y:auto}
+  th.th-sort{cursor:pointer;user-select:none;white-space:nowrap}
+  th.th-sort:hover{color:var(--ink)}
+  .sort-ind{color:var(--gold-deep);font-size:9px;margin-left:1px}
+  .grid-3{display:grid;grid-template-columns:repeat(auto-fit,minmax(198px,1fr));gap:14px}
+  .grid-3>*{min-width:0}
+  .crit-row{display:flex;justify-content:space-between;font-size:12px;margin-top:9px}
+  .crit-pt{font-weight:700;color:var(--gold-deep)}
+  .crit-bar{height:5px;background:var(--line);border-radius:20px;overflow:hidden;margin-top:3px}
+  .crit-bar>span{display:block;height:100%;background:var(--gold);border-radius:20px}
+  .crit-total{margin-top:11px;padding-top:9px;border-top:1px solid var(--line-soft);
+    font-size:12px;font-weight:700;text-align:right}
+  .kv2{padding:8px 0;border-bottom:1px solid var(--line-soft);font-size:12px}
+  .kv2:last-child{border-bottom:none}
+  .kv2 b{display:block;color:var(--gold-deep);font-size:11px;margin-bottom:2px}
+  .kv2 span{color:var(--ink-soft);line-height:1.55}
+
+  .stack{display:flex;flex-direction:column;gap:11px}
+  .item{background:var(--surface);border:1px solid var(--line);border-radius:11px;padding:14px 16px}
+  .item-top{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;flex-wrap:wrap}
+  .item-title{font-size:14px;font-weight:700}
+  .item-meta{display:flex;gap:7px;flex-wrap:wrap;margin-top:8px}
+  .kv{display:grid;grid-template-columns:repeat(auto-fit,minmax(118px,1fr));gap:9px 16px;margin-top:11px;
+    padding-top:11px;border-top:1px solid var(--line-soft)}
+  .kv div{font-size:12px}
+  .kv .k{color:var(--ink-faint);font-size:10.5px;font-weight:600;text-transform:uppercase;letter-spacing:.03em}
+  .kv .v{margin-top:1px;font-weight:600}
+
+  .pipe{display:grid;grid-template-columns:repeat(auto-fill,minmax(178px,1fr));gap:12px}
+  .pipe-col{background:var(--surface-2);border:1px solid var(--line);border-radius:11px;padding:11px;min-height:80px}
+  .pipe-head{display:flex;justify-content:space-between;align-items:center;font-size:11.5px;font-weight:700;margin-bottom:9px}
+  .pipe-head .n{background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:1px 8px;font-size:10.5px}
+  .appl{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:9px 10px;margin-bottom:7px}
+  .appl:last-child{margin-bottom:0}
+  .appl .an{font-weight:650;font-size:12px}
+  .appl .ap{color:var(--ink-faint);font-size:10.5px;margin-top:2px}
+  .appl .ax{display:flex;justify-content:space-between;align-items:center;margin-top:6px}
+
+  .ob-cat{margin-bottom:14px}
+  .ob-cat-h{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+  .ob-cat-h .nm{font-size:12.5px;font-weight:700}
+  .prog{height:7px;background:var(--line);border-radius:20px;overflow:hidden;margin-top:6px}
+  .prog>span{display:block;height:100%;background:var(--gold);border-radius:20px}
+  .chk{display:flex;align-items:flex-start;gap:9px;padding:8px 0;border-bottom:1px solid var(--line-soft);font-size:12.5px}
+  .chk:last-child{border-bottom:none}
+  .chk .box{flex:0 0 16px;height:16px;border-radius:5px;border:1.5px solid var(--line);margin-top:1px;
+    display:flex;align-items:center;justify-content:center;font-size:11px;color:#fff}
+  .chk.done .box{background:var(--green);border-color:var(--green)}
+  .chk.done .ct{color:var(--ink-faint);text-decoration:line-through}
+
+  .talent-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px}
+  .talent{background:var(--surface);border:1px solid var(--line);border-radius:11px;padding:15px 16px;border-top:3px solid var(--gold)}
+  .talent .tt{font-size:14px;font-weight:750}
+  .talent .tw{float:right;font-size:12px;font-weight:700;color:var(--gold-deep)}
+  .talent .td{font-size:12px;color:var(--ink-soft);margin-top:7px}
+  .flow{display:flex;flex-wrap:wrap;gap:7px;align-items:center}
+  .flow .step{background:var(--surface-2);border:1px solid var(--line);border-radius:8px;
+    padding:8px 12px;font-size:12px;font-weight:650}
+  .flow .arr{color:var(--ink-faint);font-weight:700}
+  .plist{list-style:none}
+  .plist li{padding:9px 0;border-bottom:1px solid var(--line-soft);font-size:12.5px;display:flex;gap:9px}
+  .plist li:last-child{border-bottom:none}
+  .plist .pn{flex:0 0 20px;height:20px;border-radius:6px;background:var(--navy);color:#fff;
+    font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center}
+
+  .muted{color:var(--ink-faint);font-size:12px}
+  .empty-state{text-align:center;padding:40px 20px;color:var(--ink-faint);font-size:12.5px}
+  .empty-state .es-ic{font-size:26px;opacity:.5;margin-bottom:8px}
+
+  #loading{text-align:center;padding:70px 20px;color:var(--ink-soft)}
+  .spin{width:26px;height:26px;border:3px solid var(--line);border-top-color:var(--gold);
+    border-radius:50%;margin:0 auto 14px;animation:rot .8s linear infinite}
+  @keyframes rot{to{transform:rotate(360deg)}}
+
+  /* 접근 게이트 */
+  #gate{position:fixed;inset:0;z-index:100;display:flex;align-items:center;justify-content:center;
+    padding:20px;background:linear-gradient(180deg,#262524,#1a1918)}
+  .gate-card{background:var(--surface);border-radius:14px;padding:32px 28px;width:100%;max-width:344px;text-align:center}
+  .gate-card .mark{font-size:11px;letter-spacing:.28em;color:var(--gold);font-weight:600;text-transform:uppercase}
+  .gate-card h2{font-size:18px;margin:9px 0 3px;letter-spacing:-.01em}
+  .gate-card p{font-size:12px;color:var(--ink-soft);margin-bottom:18px}
+  .gate-card input{width:100%;text-align:center;font-size:13px;padding:10px 12px}
+  .gate-card .btn{width:100%;margin-top:10px;justify-content:center}
+  .gate-err{color:var(--red);font-size:12px;margin-top:10px;min-height:16px}
+  .gate-foot{margin-top:16px;font-size:10.5px;color:var(--ink-faint);line-height:1.5}
+
+  .btn{font-family:inherit;font-size:12.5px;font-weight:650;cursor:pointer;border-radius:8px;
+    padding:9px 14px;border:1px solid var(--gold);background:var(--gold);color:#fff;transition:opacity .12s}
+  .btn:hover{opacity:.88}
+  .btn:disabled{opacity:.5;cursor:default}
+  .btn-ghost{background:none;color:var(--ink-soft);border-color:var(--line)}
+  .btn-ghost:hover{opacity:1;background:var(--surface-2)}
+  .btn-sm{font-family:inherit;font-size:11px;font-weight:650;cursor:pointer;border-radius:6px;
+    padding:5px 10px;border:1px solid var(--line);background:var(--surface);color:var(--ink-soft);white-space:nowrap}
+  .btn-sm:hover{border-color:var(--gold);color:var(--gold-deep)}
+
+  /* 퇴사 처리 모달 */
+  .modal-bg{position:fixed;inset:0;z-index:95;background:rgba(28,27,26,.55);
+    display:none;align-items:center;justify-content:center;padding:20px}
+  .modal-bg.show{display:flex}
+  .modal{background:var(--surface);border-radius:14px;width:100%;max-width:404px;
+    padding:24px 24px 20px;max-height:90vh;overflow-y:auto}
+  .modal h3{font-size:16px;font-weight:750;margin-bottom:4px}
+  .modal .msub{font-size:12.5px;color:var(--ink-soft);margin-bottom:6px}
+  .modal label{display:block;font-size:11px;font-weight:700;color:var(--ink-soft);
+    text-transform:uppercase;letter-spacing:.03em;margin:13px 0 4px}
+  .modal label .opt{font-weight:400;text-transform:none;letter-spacing:0;color:var(--ink-faint)}
+  .modal input,.modal select{width:100%;font-family:inherit;font-size:13px;color:var(--ink);
+    border:1px solid var(--line);border-radius:8px;padding:8px 10px;background:var(--surface)}
+  .modal input:focus,.modal select:focus{outline:none;border-color:var(--gold)}
+  .modal-warn{background:var(--amber-bg);border:1px solid #e8d49a;border-radius:8px;
+    padding:9px 11px;font-size:11.5px;color:#7a5a16;margin-top:14px;line-height:1.55}
+  .modal-msg{font-size:12px;margin-top:12px;min-height:16px;line-height:1.6}
+  .modal-msg.err{color:var(--red)}
+  .modal-msg.ok{color:var(--green)}
+  .modal-act{display:flex;gap:8px;margin-top:16px}
+  .modal-act .btn{flex:1;justify-content:center;text-align:center}
+
+  @media(max-width:680px){
+    .grid-2{grid-template-columns:1fr}
+    .kpi .val{font-size:24px}
+    .hd-btn{position:static;display:inline-block;margin-bottom:10px}
+  }
+</style>
+</head>
+<body>
+
+<div id="gate">
+  <div class="gate-card">
+    <div class="mark">Wellperion</div>
+    <h2>인사 운영 허브</h2>
+    <p>사내 전용 페이지입니다. 접근 비밀번호를 입력하세요.</p>
+    <input type="password" id="gatePw" placeholder="접근 비밀번호" autocomplete="current-password">
+    <button class="btn" id="gateBtn">입장</button>
+    <div class="gate-err" id="gateErr"></div>
+    <div class="gate-foot">대외비 — 임직원 개인정보 포함. 권한 없는 열람·외부 공유를 금합니다.</div>
+  </div>
+</div>
+
+<header>
+  <div class="hd-inner">
+    <button class="hd-btn" id="reloadBtn">↻ 새로고침</button>
+    <div class="brand">
+      <span class="mark">Wellperion</span>
+      <h1>인사 운영 허브</h1>
+      <span class="role-pill" id="rolePill"></span>
+    </div>
+    <div class="hd-sub">AI CHRO · 인사&amp;파트너팀 관리 · 사내 전용</div>
+    <div class="hd-meta" id="syncMeta">동기화 준비 중…</div>
+    <nav id="nav"></nav>
+  </div>
+</header>
+
+<main class="wrap">
+  <div id="loading">
+    <div class="spin"></div>
+    <span id="loadMsg">인사 데이터를 불러오는 중입니다…</span>
+  </div>
+  <div id="app" style="display:none">
+    <section class="panel" data-panel="dash"></section>
+    <section class="panel" data-panel="emp"></section>
+    <section class="panel" data-panel="hire"></section>
+    <section class="panel" data-panel="onbo"></section>
+    <section class="panel" data-panel="eval"></section>
+    <section class="panel" data-panel="exit"></section>
+    <section class="panel" data-panel="std"></section>
+  </div>
+</main>
+
+<div class="modal-bg" id="resignModal">
+  <div class="modal">
+    <h3>퇴사 처리</h3>
+    <div class="msub" id="rmName">—</div>
+    <label>최종 근무일</label>
+    <input type="date" id="rmDate">
+    <label>퇴사 유형</label>
+    <select id="rmType">
+      <option value="자진 퇴사">자진 퇴사</option>
+      <option value="계약 만료">계약 만료</option>
+      <option value="권고 퇴사">권고 퇴사</option>
+      <option value="해고">해고</option>
+    </select>
+    <label>퇴사 사유 <span class="opt">(선택)</span></label>
+    <input type="text" id="rmReason" placeholder="예: 개인 사정">
+    <div class="modal-warn">실행 시 Notion 임직원 명부 재직 상태가 '퇴사'로 바뀌고, 퇴사 처리 DB에 레코드가 생성됩니다. 매출보고서 시트 연동이 설정된 경우 현재근무자→퇴사자 이동도 함께 실행됩니다.</div>
+    <div class="modal-msg" id="rmMsg"></div>
+    <div class="modal-act">
+      <button class="btn btn-ghost" id="rmCancel">취소</button>
+      <button class="btn" id="rmConfirm">퇴사 처리 실행</button>
+    </div>
+  </div>
+</div>
+
+<script>
+"use strict";
+/* ============ config ============ */
+var NOTION_FN = "https://script.google.com/macros/s/AKfycbyyXrdM7nSXKPG3Dy8wI6_3AI1spZs24d-uHTzQZlsqzoRXKkFbSFnX-hr42D3ScQSSHQ/exec";
+var SESSION_PW = "";
+var SESSION_ROLE = "viewer";
+var KEYS = ["emp","hire","appl","onbo","eval","exit"];
+var DBMETA=[["emp","임직원 명부"],["hire","채용 공고"],["appl","지원자 트래킹"],
+  ["onbo","온보딩 체크리스트"],["eval","인사평가"],["exit","퇴사 처리"]];
+var TABS = [
+  {id:"dash",label:"대시보드"},{id:"emp",label:"임직원"},{id:"hire",label:"채용"},
+  {id:"onbo",label:"온보딩"},{id:"eval",label:"평가·포상"},{id:"exit",label:"퇴사"},
+  {id:"std",label:"운영 기준"}
+];
+var DB={emp:[],hire:[],appl:[],onbo:[],eval:[],exit:[]};
+var ERR={},ERRMSG={},ROWCOUNT={},RAWSAMPLE={},STALE={};
+var charts={};
+var empSortState={key:"성명",dir:1};
+
+/* ============ helpers ============ */
+function esc(s){return String(s==null?"":s).replace(/[&<>"']/g,function(c){
+  return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];});}
+function txt(v){return (v==null||v==="")?"—":String(v);}
+function num(v){var n=parseFloat(v);return isNaN(n)?0:n;}
+function isYes(v){return v==="__YES__"||v===true||v==="true";}
+function dt(r,f){return r["date:"+f+":start"]||"";}
+function fmtD(v){if(!v)return"—";return String(v).slice(0,10);}
+function parseArr(v){
+  if(Array.isArray(v))return v;
+  if(typeof v==="string"&&v.trim()){try{var p=JSON.parse(v);return Array.isArray(p)?p:[v];}catch(e){return [v];}}
+  return [];
+}
+function normId(u){var s=String(u||"").split(/[?#]/)[0].replace(/-/g,"");var m=s.match(/[0-9a-f]{32}$/i);return m?m[0].toLowerCase():"";}
+function daysBetween(a,b){return Math.round((a-b)/86400000);}
+function p2(n){return (n<10?"0":"")+n;}
+
+var COLOR={
+  "재직중":"green","수습중":"amber","휴직중":"orange","퇴사":"red",
+  "정규직":"green","계약직":"blue","파트타임":"amber","프리랜서":"orange","파트너":"purple",
+  "공고 준비":"gray","공고중":"blue","서류심사":"amber","면접 진행":"orange","처우 협의":"purple","채용 완료":"green","보류":"red",
+  "서류 검토":"gray","1차 면접":"blue","2차 면접":"purple","최종 합격":"green","불합격":"red",
+  "긴급":"red","높음":"orange","보통":"amber","낮음":"gray",
+  "A":"green","B":"blue","C":"amber","D":"red",
+  "자진 퇴사":"blue","계약 만료":"amber","권고 퇴사":"orange","해고":"red",
+  "서류·계약":"blue","시스템 접근":"purple","시설·장비":"orange","교육·OT":"green","조직 적응":"purple",
+  "직원평가":"blue","상호평가":"purple","리더십평가":"orange","자체평가":"gray",
+  "월간":"gray","분기":"blue","반기":"green","연간":"purple"
+};
+function badge(v){
+  if(v==null||v==="")return '<span class="muted">—</span>';
+  return '<span class="badge b-'+(COLOR[v]||"gray")+'">'+esc(v)+'</span>';
+}
+
+/* ============ data layer ============ */
+function extractResults(raw){
+  if(raw&&Array.isArray(raw.results))return raw.results;
+  if(Array.isArray(raw))return raw;
+  return [];
+}
+function sampleOf(raw){
+  try{var s=JSON.stringify(raw);return s.length>220?s.slice(0,220)+"…":s;}
+  catch(e){return String(raw).slice(0,220);}
+}
+function withTimeout(p,ms){
+  return Promise.race([p,new Promise(function(_,rej){
+    setTimeout(function(){rej(new Error("응답 시간 초과("+Math.round(ms/1000)+"초)"));},ms);})]);
+}
+async function queryDB(key){
+  var lastErr;
+  for(var attempt=0;attempt<3;attempt++){
+    try{
+      var r=await withTimeout(fetch(NOTION_FN,{method:"POST",
+        headers:{"Content-Type":"text/plain;charset=utf-8"},
+        body:JSON.stringify({db:key,password:SESSION_PW})}),22000);
+      if(r.status===401){var ae=new Error("접근 권한 없음 (비밀번호 확인 필요)");ae.auth=true;throw ae;}
+      var data=await r.json();
+      if(!r.ok)throw new Error((data&&data.error)||("서버 오류 "+r.status));
+      return data;
+    }catch(e){
+      lastErr=e;
+      if(e&&e.auth)throw e;
+      await new Promise(function(rs){setTimeout(rs,700);});
+    }
+  }
+  throw lastErr||new Error("알 수 없는 오류");
+}
+function cacheKey(k){return "wp_hr_cache_"+k;}
+function saveCache(k,rows){
+  try{localStorage.setItem(cacheKey(k),JSON.stringify({ts:Date.now(),rows:rows}));}catch(e){}
+}
+function loadCache(k){
+  try{var s=localStorage.getItem(cacheKey(k));return s?JSON.parse(s):null;}catch(e){return null;}
+}
+function fmtTime(ts){
+  if(!ts)return"";var d=new Date(ts);
+  return p2(d.getMonth()+1)+"/"+p2(d.getDate())+" "+p2(d.getHours())+":"+p2(d.getMinutes());
+}
+async function loadOne(k){
+  var cached=loadCache(k);
+  try{
+    var raw=await queryDB(k);
+    RAWSAMPLE[k]=sampleOf(raw);
+    var rows=extractResults(raw);
+    rows=Array.isArray(rows)?rows:[];
+    if(rows.length===0&&cached&&cached.rows&&cached.rows.length>0){
+      DB[k]=cached.rows;ROWCOUNT[k]=cached.rows.length;ERR[k]=false;STALE[k]=cached.ts;
+    }else{
+      DB[k]=rows;ROWCOUNT[k]=rows.length;ERR[k]=false;STALE[k]=0;
+      saveCache(k,rows);
+    }
+  }catch(e){
+    if(cached&&cached.rows&&cached.rows.length>0){
+      DB[k]=cached.rows;ROWCOUNT[k]=cached.rows.length;ERR[k]=false;STALE[k]=cached.ts;
+      ERRMSG[k]=String((e&&e.message)||e);
+    }else{
+      DB[k]=[];ROWCOUNT[k]=0;ERR[k]=true;ERRMSG[k]=String((e&&e.message)||e);
+    }
+  }
+}
+async function loadAll(){
+  for(var i=0;i<KEYS.length;i++){
+    await loadOne(KEYS[i]);
+    if(i<KEYS.length-1)await new Promise(function(r){setTimeout(r,200);});
+  }
+}
+
+/* ============ shared ============ */
+function empNameByUrl(){var m={};DB.emp.forEach(function(e){m[normId(e.url)]=e["성명"]||"";});return m;}
+function resolveRel(field){
+  var map=empNameByUrl();
+  return parseArr(field).map(function(u){return map[normId(u)]||"";}).filter(Boolean);
+}
+function emptyState(msg,ic){
+  return '<div class="empty-state"><div class="es-ic">'+(ic||"○")+'</div>'+esc(msg)+'</div>';
+}
+function errCard(name,key){
+  var msg=key&&ERRMSG[key]?ERRMSG[key]:"";
+  return '<div class="card"><div class="empty-state"><div class="es-ic">⚠</div>'+
+    esc(name)+' 데이터를 불러오지 못했습니다.'+
+    (msg?'<br><span class="muted">'+esc(msg)+'</span>':'')+
+    '<br><span class="muted">헤더의 새로고침 버튼으로 다시 시도해 주세요.</span></div></div>';
+}
+
+/* ============ diagnostics ============ */
+function diagCard(){
+  var errs=DBMETA.filter(function(m){return ERR[m[0]];});
+  var stales=DBMETA.filter(function(m){return STALE[m[0]];});
+  if(errs.length===0&&stales.length===0){
+    return '<div class="diag ok"><div class="diag-row">'+
+      '<span class="diag-dot dot-ok"></span><b>Notion 6개 DB 정상 연동</b>'+
+      '<span class="muted"> · 임직원 '+(ROWCOUNT.emp||0)+' · 채용 '+(ROWCOUNT.hire||0)+
+      ' · 지원자 '+(ROWCOUNT.appl||0)+' · 온보딩 '+(ROWCOUNT.onbo||0)+
+      ' · 평가 '+(ROWCOUNT.eval||0)+' · 퇴사 '+(ROWCOUNT.exit||0)+'</span></div></div>';
+  }
+  var rows=DBMETA.map(function(m){
+    var k=m[0],cls,ms;
+    if(ERR[k]){cls="dot-err";ms="연동 실패 — "+esc(ERRMSG[k]||"오류");}
+    else if(STALE[k]){cls="dot-warn";ms=(ROWCOUNT[k]||0)+"행 · 캐시 표시 중 (마지막 정상 "+fmtTime(STALE[k])+")";}
+    else if((ROWCOUNT[k]||0)===0){cls="dot-ok";ms="0행";}
+    else{cls="dot-ok";ms=ROWCOUNT[k]+"행 정상";}
+    return '<div class="diag-row"><span class="diag-dot '+cls+'"></span>'+
+      '<span class="nm">'+esc(m[1])+'</span><span class="ms">'+ms+'</span></div>';
+  }).join("");
+  var head,hint;
+  if(errs.length){
+    head="⚠ 데이터 연동 상태 — 일부 DB 연동 실패";
+    hint="Notion 호출이 일부 실패했습니다. 헤더의 새로고침 버튼으로 다시 시도해 주세요. 반복되면 서버의 NOTION_TOKEN 설정 또는 통합(Integration) 권한, 해당 DB 공유 여부를 확인해야 합니다.";
+  }else{
+    head="↻ 데이터 연동 상태 — 캐시 데이터 표시 중";
+    hint="일시적으로 일부 데이터를 새로 받지 못해 마지막 정상 데이터를 표시하고 있습니다. 새로고침 버튼으로 최신화를 재시도하세요.";
+  }
+  return '<div class="diag bad"><div class="diag-head">'+head+'</div>'+
+    rows+'<div class="diag-hint">'+hint+'</div></div>';
+}
+
+/* ============ DASHBOARD ============ */
+function renderDash(){
+  var emp=DB.emp,hire=DB.hire,appl=DB.appl,onbo=DB.onbo;
+  var active=emp.filter(function(e){return e["재직 상태"]!=="퇴사";});
+  var activeHire=hire.filter(function(h){
+    return ["공고 준비","공고중","서류심사","면접 진행","처우 협의"].indexOf(h["채용 상태"])>=0;});
+  var obDone=onbo.filter(function(o){return isYes(o["완료 여부"]);}).length;
+  var obRate=onbo.length?Math.round(obDone/onbo.length*100):0;
+  var today=new Date();
+
+  var html=diagCard();
+  html+='<div class="sec-title">핵심 지표</div><div class="kpi-grid">';
+  html+=kpi("재직 인원",active.length+'<small> 명</small>',"임직원 명부 기준");
+  html+=kpi("진행 중 채용",activeHire.length+'<small> 건</small>',"공고~처우협의 단계");
+  html+=kpi("지원자 풀",appl.length+'<small> 명</small>',"지원자 트래킹 기준");
+  html+=kpi("온보딩 완료율",obRate+'<small> %</small>',obDone+" / "+onbo.length+" 항목");
+  html+='</div>';
+
+  var overdue=hire.filter(function(h){
+    var dl=dt(h,"공고 마감일");return h["채용 상태"]==="공고중"&&dl&&new Date(dl)<today;});
+  if(overdue.length){
+    html+='<div class="alert"><b>⚠ 단계 전환 필요</b><div>'+
+      overdue.map(function(h){return esc(h["포지션명"])+" — 공고 마감일("+fmtD(dt(h,"공고 마감일"))+
+      ")이 지났으나 상태가 ‘공고중’입니다.";}).join("<br>")+'</div></div>';
+  }
+  var contractSoon=active.filter(function(e){
+    var c=dt(e,"계약 만료일");if(!c)return false;
+    var dd=daysBetween(new Date(c),today);return dd>=0&&dd<=60;});
+  if(contractSoon.length){
+    html+='<div class="alert"><b>⚠ 계약 만료 임박</b><div>60일 이내 계약 만료 예정 '+
+      contractSoon.length+'명 — 재계약 검토가 필요합니다.</div></div>';
+  }
+  if(emp.length&&!overdue.length&&!contractSoon.length){
+    html+='<div class="alert empty"><b>✓ 양호</b><div>즉시 조치가 필요한 채용·계약 항목이 없습니다.</div></div>';
+  }
+
+  html+='<div class="sec-title">인력 구성</div><div class="grid-2">';
+  html+='<div class="card"><h3>부서별 인원</h3><div class="chart-box"><canvas id="cDept"></canvas></div></div>';
+  html+='<div class="card"><h3>고용 형태 분포</h3><div class="chart-box"><canvas id="cType"></canvas></div></div>';
+  html+='</div>';
+
+  html+='<div class="sec-title">진행 중 채용</div>';
+  html+=activeHire.length
+    ?'<div class="stack">'+activeHire.map(jobItem).join("")+'</div>'
+    :'<div class="card">'+emptyState("진행 중인 채용 공고가 없습니다.","◔")+'</div>';
+
+  setPanel("dash",html);
+  drawBar("cDept",groupCount(active,"부서"));
+  drawDonut("cType",groupCount(active,"고용 형태"));
+}
+function kpi(label,val,note){
+  return '<div class="kpi"><div class="label">'+esc(label)+'</div>'+
+    '<div class="val">'+val+'</div><div class="note">'+esc(note)+'</div></div>';
+}
+function groupCount(arr,key){
+  var m={};arr.forEach(function(r){var v=r[key]||"미지정";m[v]=(m[v]||0)+1;});return m;
+}
+
+/* ============ EMPLOYEES ============ */
+function renderEmp(){
+  if(ERR.emp){setPanel("emp",'<div class="sec-title">임직원 명부</div>'+errCard("임직원 명부","emp"));return;}
+  var emp=DB.emp.slice();
+  var html='<div class="sec-title">임직원 명부</div>';
+  if(!emp.length){setPanel("emp",html+'<div class="card">'+emptyState("임직원 데이터가 없습니다.","◔")+'</div>');return;}
+  var sosok=uniq(emp.map(function(e){return e["소속"];}));
+  html+='<div class="controls">'+
+    '<input type="search" id="empQ" placeholder="이름·소속·직급 검색">'+
+    '<select id="empSosok"><option value="">소속 전체</option>'+
+      sosok.map(function(s){return '<option>'+esc(s)+'</option>';}).join("")+'</select>'+
+    '<select id="empType"><option value="">고용형태 전체</option>'+
+      ["정규직","계약직","파트타임","프리랜서","파트너"].map(function(s){return '<option>'+esc(s)+'</option>';}).join("")+'</select>'+
+    '<span class="count-pill" id="empCount"></span></div>';
+  html+='<div class="tbl-wrap scroll-y"><table><thead><tr id="empHead"></tr></thead><tbody id="empBody"></tbody></table></div>';
+  setPanel("emp",html);
+
+  var COLS=[["성명","성명",1],["소속","소속",1],["부서","부서",1],["직급","직급",1],
+    ["고용 형태","고용형태",1],["재직 상태","재직상태",1],["입사일","입사일",1],["연락처","연락처",0]];
+  try{var sv=JSON.parse(localStorage.getItem("wp_hr_empsort")||"null");
+    if(sv&&sv.key)empSortState=sv;}catch(e){}
+  function headHtml(){
+    return COLS.map(function(c){
+      if(!c[2])return '<th>'+esc(c[1])+'</th>';
+      var ind=empSortState.key===c[0]?' <span class="sort-ind">'+(empSortState.dir>0?"▲":"▼")+'</span>':'';
+      return '<th class="th-sort" data-k="'+esc(c[0])+'">'+esc(c[1])+ind+'</th>';
+    }).join("")+(SESSION_ROLE==="admin"?'<th>관리</th>':'');
+  }
+  function cmp(a,b,key){
+    var va=key==="입사일"?dt(a,"입사일"):(a[key]||"");
+    var vb=key==="입사일"?dt(b,"입사일"):(b[key]||"");
+    return (va+"").localeCompare(vb+"","ko");
+  }
+  function draw(){
+    var q=(document.getElementById("empQ").value||"").toLowerCase().trim();
+    var fs=document.getElementById("empSosok").value;
+    var ft=document.getElementById("empType").value;
+    var rows=emp.filter(function(e){
+      if(fs&&e["소속"]!==fs)return false;
+      if(ft&&e["고용 형태"]!==ft)return false;
+      if(q){var hay=((e["성명"]||"")+" "+(e["소속"]||"")+" "+(e["직급"]||"")+" "+(e["부서"]||"")).toLowerCase();
+        if(hay.indexOf(q)<0)return false;}
+      return true;
+    });
+    rows.sort(function(a,b){return cmp(a,b,empSortState.key)*empSortState.dir;});
+    document.getElementById("empHead").innerHTML=headHtml();
+    document.querySelectorAll("#empHead .th-sort").forEach(function(th){
+      th.addEventListener("click",function(){
+        var k=th.getAttribute("data-k");
+        if(empSortState.key===k)empSortState.dir=-empSortState.dir;
+        else{empSortState.key=k;empSortState.dir=1;}
+        try{localStorage.setItem("wp_hr_empsort",JSON.stringify(empSortState));}catch(e){}
+        draw();
+      });
+    });
+    var isAdmin=SESSION_ROLE==="admin";
+    document.getElementById("empBody").innerHTML=rows.length?rows.map(function(e){
+      var canResign=e["재직 상태"]!=="퇴사";
+      return '<tr><td class="t-name">'+esc(txt(e["성명"]))+'</td>'+
+        '<td>'+esc(txt(e["소속"]))+'</td><td>'+esc(txt(e["부서"]))+'</td>'+
+        '<td>'+esc(txt(e["직급"]))+'</td><td>'+badge(e["고용 형태"])+'</td>'+
+        '<td>'+badge(e["재직 상태"])+'</td><td>'+fmtD(dt(e,"입사일"))+'</td>'+
+        '<td class="t-sub">'+esc(txt(e["연락처"]))+'</td>'+
+        (isAdmin?'<td>'+(canResign
+          ?'<button class="btn-sm" data-resign="'+esc(e.url||"")+'" data-name="'+esc(e["성명"]||"")+'">퇴사 처리</button>'
+          :'<span class="muted">—</span>')+'</td>':'')+'</tr>';
+    }).join(""):'<tr><td colspan="'+(isAdmin?9:8)+'">'+emptyState("조건에 맞는 임직원이 없습니다.")+'</td></tr>';
+    document.getElementById("empCount").textContent=rows.length+" / "+emp.length+" 명";
+  }
+  document.getElementById("empQ").addEventListener("input",draw);
+  document.getElementById("empSosok").addEventListener("change",draw);
+  document.getElementById("empType").addEventListener("change",draw);
+  document.getElementById("empBody").addEventListener("click",function(ev){
+    var b=ev.target.closest&&ev.target.closest("[data-resign]");
+    if(b)openResignModal(b.getAttribute("data-name"),b.getAttribute("data-resign"));
+  });
+  draw();
+}
+function uniq(a){var s={},o=[];a.forEach(function(v){if(v&&!s[v]){s[v]=1;o.push(v);}});
+  return o.sort(function(x,y){return x.localeCompare(y,"ko");});}
+
+/* ============ HIRING ============ */
+function jobItem(h){
+  var cl=parseArr(h["담당 C-Level"]).join(", ");
+  var ch=parseArr(h["채용 채널"]).join(", ");
+  return '<div class="item"><div class="item-top">'+
+    '<div><div class="item-title">'+esc(txt(h["포지션명"]))+'</div>'+
+    '<div class="item-meta">'+badge(h["채용 상태"])+(h["부서"]?badge(h["부서"]):"")+
+      badge(h["채용 유형"])+(h["우선순위"]?badge(h["우선순위"]):"")+'</div></div>'+
+    '<div style="text-align:right"><div class="t-name" style="font-size:18px">'+
+      num(h["지원자 수"])+'</div><div class="t-sub">지원자</div></div></div>'+
+    '<div class="kv">'+
+    kv("모집 인원",txt(h["모집 인원"]))+kv("면접자 수",txt(h["면접자 수"]))+
+    kv("급여 범위",txt(h["급여 범위"]))+kv("공고 기간",fmtD(dt(h,"공고 시작일"))+" ~ "+fmtD(dt(h,"공고 마감일")))+
+    kv("채용 채널",txt(ch))+kv("담당 C-Level",txt(cl))+
+    '</div>'+
+    (h["주요 업무"]?'<div style="margin-top:9px;font-size:12px;color:var(--ink-soft);white-space:pre-wrap">'+
+      esc(h["주요 업무"])+'</div>':"")+
+    '</div>';
+}
+function kv(k,v){return '<div><div class="k">'+esc(k)+'</div><div class="v">'+esc(v)+'</div></div>';}
+function renderHire(){
+  var html='<div class="sec-title">채용 공고</div>';
+  if(ERR.hire){html+=errCard("채용 공고 DB","hire");}
+  else if(DB.hire.length){
+    var order={"공고중":0,"서류심사":1,"면접 진행":2,"처우 협의":3,"공고 준비":4,"보류":5,"채용 완료":6};
+    var sorted=DB.hire.slice().sort(function(a,b){
+      return (order[a["채용 상태"]]==null?9:order[a["채용 상태"]])-(order[b["채용 상태"]]==null?9:order[b["채용 상태"]]);});
+    html+='<div class="stack">'+sorted.map(jobItem).join("")+'</div>';
+  }else{html+='<div class="card">'+emptyState("등록된 채용 공고가 없습니다.","◔")+'</div>';}
+
+  html+='<div class="sec-title">지원자 트래킹 — 전형 단계</div>';
+  if(ERR.appl){html+=errCard("지원자 트래킹","appl");}
+  else if(DB.appl.length){
+    var stages=["서류 검토","1차 면접","2차 면접","최종 합격","보류","불합격"];
+    html+='<div class="pipe">';
+    stages.forEach(function(st){
+      var list=DB.appl.filter(function(a){return a["전형 단계"]===st;});
+      html+='<div class="pipe-col"><div class="pipe-head"><span>'+badge(st)+
+        '</span><span class="n">'+list.length+'</span></div>';
+      html+=list.map(function(a){
+        return '<div class="appl"><div class="an">'+esc(txt(a["지원자명"]))+'</div>'+
+          '<div class="ap">'+esc(txt(a["지원 포지션"]))+'</div>'+
+          '<div class="ax">'+(a["면접 평점"]?badge(a["면접 평점"]):'<span class="muted">평점 —</span>')+
+          '<span class="t-sub">'+fmtD(dt(a,"면접 일정"))+'</span></div></div>';
+      }).join("")||'<div class="muted" style="font-size:11px">해당 없음</div>';
+      html+='</div>';
+    });
+    html+='</div>';
+  }else{html+='<div class="card">'+emptyState("등록된 지원자가 없습니다.","◔")+'</div>';}
+  setPanel("hire",html);
+}
+
+/* ============ ONBOARDING ============ */
+function renderOnbo(){
+  var html='<div class="sec-title">온보딩 체크리스트</div>';
+  if(ERR.onbo){setPanel("onbo",html+errCard("온보딩 체크리스트","onbo"));return;}
+  var onbo=DB.onbo;
+  if(!onbo.length){setPanel("onbo",html+'<div class="card">'+
+    emptyState("등록된 온보딩 항목이 없습니다. 신규 입사자 발생 시 체크리스트가 생성됩니다.","☑")+'</div>');return;}
+  var done=onbo.filter(function(o){return isYes(o["완료 여부"]);}).length;
+  html+='<div class="kpi-grid" style="margin-bottom:6px">'+
+    kpi("전체 항목",onbo.length+'<small> 개</small>',"")+
+    kpi("완료",done+'<small> 개</small>',"")+
+    kpi("진행률",Math.round(done/onbo.length*100)+'<small> %</small>',"")+'</div>';
+  var cats=["서류·계약","시스템 접근","시설·장비","교육·OT","조직 적응"];
+  var others=uniq(onbo.map(function(o){return o["카테고리"];})).filter(function(c){return cats.indexOf(c)<0;});
+  cats.concat(others).forEach(function(cat){
+    var list=onbo.filter(function(o){return (o["카테고리"]||"미분류")===cat;});
+    if(!list.length)return;
+    var cd=list.filter(function(o){return isYes(o["완료 여부"]);}).length;
+    html+='<div class="card ob-cat"><div class="ob-cat-h"><span class="nm">'+badge(cat)+
+      '</span><span class="t-sub">'+cd+" / "+list.length+'</span></div>'+
+      '<div class="prog"><span style="width:'+Math.round(cd/list.length*100)+'%"></span></div>'+
+      '<div style="margin-top:8px">'+list.map(function(o){
+        var d=isYes(o["완료 여부"]);
+        return '<div class="chk'+(d?" done":"")+'"><div class="box">'+(d?"✓":"")+'</div>'+
+          '<div style="flex:1"><span class="ct">'+esc(txt(o["체크 항목"]))+'</span>'+
+          '<div class="t-sub">'+(o["대상 신입 직원"]?"대상: "+esc(o["대상 신입 직원"])+" · ":"")+
+          (o["담당자"]?"담당: "+esc(o["담당자"])+" · ":"")+
+          "기한: "+fmtD(dt(o,"완료 기한"))+'</div></div></div>';
+      }).join("")+'</div></div>';
+  });
+  setPanel("onbo",html);
+}
+
+/* ============ EVALUATION ============ */
+function criteriaSection(){
+  var multi=[
+    ["① 직원평가","팀장 → 팀원","직원 등급 50%"],
+    ["② 상호평가","팀원 → 동료","직원 등급 50%"],
+    ["③ 리더십평가","팀원 → 팀장","리더 등급 100%"],
+    ["④ 자체평가","본인","참고용"]
+  ];
+  var forms=[
+    ["직원 평가","팀장 → 팀원",[["근무태도",15],["직무이해도·실행력",35],["조직기여도",20],["성장가능성",20],["가산점",10]]],
+    ["상호 평가","팀원 → 동료",[["근무태도",15],["업무수행능력",35],["협업능력",20],["의사소통능력",20],["가산점",10]]],
+    ["리더십 평가","팀원 → 팀장",[["리더십·공정성",40],["소통·관리능력",20],["지원·성장관리",15],["조직문화 기여",15],["가산점",10]]]
+  ];
+  var h='<div class="card"><h3>다면평가 구조 (4종)</h3>'+
+    '<table><thead><tr><th>평가 종류</th><th>평가자 → 대상</th><th>등급 반영</th></tr></thead><tbody>'+
+    multi.map(function(m){return '<tr><td class="t-name">'+esc(m[0])+'</td><td>'+esc(m[1])+
+      '</td><td>'+esc(m[2])+'</td></tr>';}).join("")+'</tbody></table></div>';
+  h+='<div style="height:14px"></div><div class="grid-3">'+
+    forms.map(function(f){
+      var max=f[2].reduce(function(s,x){return s+x[1];},0);
+      return '<div class="card"><h3>'+esc(f[0])+'</h3>'+
+        '<div class="muted" style="margin-top:-8px;margin-bottom:4px">'+esc(f[1])+'</div>'+
+        f[2].map(function(a){
+          return '<div class="crit-row"><span>'+esc(a[0])+'</span><span class="crit-pt">'+a[1]+'점</span></div>'+
+            '<div class="crit-bar"><span style="width:'+Math.round(a[1]/40*100)+'%"></span></div>';
+        }).join("")+
+        '<div class="crit-total">합계 '+max+'점</div></div>';
+    }).join("")+'</div>';
+  h+='<div style="height:14px"></div><div class="grid-2">'+
+    '<div class="card"><h3>등급 산출</h3>'+
+      '<div class="kv2"><b>직원 등급</b><span>직원평가 50% + 상호평가 50% · 부서별 상대평가 (A 상위~20% / B 21~79% / C 80~100%)</span></div>'+
+      '<div class="kv2"><b>리더 등급</b><span>리더십평가 평균 · 절대평가 (A 85점 이상 / B 50~84점 / C 50점 미만)</span></div>'+
+      '<div class="kv2"><b>평가 기간</b><span>상반기 1~6월 (7월 발표) · 하반기 7~12월 (익년 1월 발표)</span></div>'+
+      '<div class="kv2"><b>대상 부서</b><span>운영부 · 지원부 · 시설부 (강습부는 별도 인센티브 체계)</span></div>'+
+      '<div class="kv2"><b>운영 원칙</b><span>익명성·비공개 보장 · 연 1회 상·하반기 운영</span></div>'+
+    '</div>'+
+    '<div class="card"><h3>반기 포상</h3>'+
+      '<table><thead><tr><th>등급</th><th>직원</th><th>리더</th></tr></thead><tbody>'+
+      '<tr><td>'+badge("A")+'</td><td class="t-name">3,000,000원</td><td class="t-name">3,000,000원</td></tr>'+
+      '<tr><td>'+badge("B")+'</td><td>1,000,000원</td><td>1,000,000원</td></tr>'+
+      '<tr><td>'+badge("C")+'</td><td>500,000원</td><td>500,000원</td></tr>'+
+      '</tbody></table>'+
+      '<div class="muted" style="margin-top:9px">강습부: 분기 매출 달성 부서 → 상품권 30만원 + 회식비 지원</div>'+
+      '<div class="muted" style="margin-top:5px">절대평가 미도달 시: 업무개선 계획서 + 사유서 제출</div>'+
+    '</div>'+
+    '</div>';
+  h+='<div class="card" style="margin-top:14px"><h3>4대 인재상 ↔ 평가 영역</h3>'+
+    '<table><thead><tr><th>인재상</th><th>핵심 평가 영역</th></tr></thead><tbody>'+
+    [["주인의식","직원 직무이해도(35) · 상호 업무수행능력(35) · 리더 공정성(40)"],
+     ["팀워크","직원 조직기여도(20) · 상호 협업능력(20) · 리더 조직문화(15)"],
+     ["주도성","직원 성장가능성(20) · 상호 적극성 · 리더 지원·성장관리(15)"],
+     ["프로세스","직원·상호 근무태도(15) · 상호 의사소통(20)"]]
+    .map(function(r){return '<tr><td>'+badge(r[0])+'</td><td>'+esc(r[1])+'</td></tr>';}).join("")+
+    '</tbody></table></div>';
+  return h;
+}
+function renderEval(){
+  var html='<div class="sec-title">인사평가 · 포상</div>';
+  if(ERR.eval){setPanel("eval",html+errCard("인사평가 DB","eval"));return;}
+  var all=DB.eval;
+  var ev=all.filter(function(e){return (e["평가명"]||"").indexOf("[제외")!==0;});
+  var excludedN=all.length-ev.length;
+  var rewarded=ev.filter(function(e){return isYes(e["포상 여부"]);}).length;
+  html+='<div class="kpi-grid" style="margin-bottom:6px">'+
+    kpi("평가 기록",ev.length+'<small> 건</small>',"정규직 평가 대상")+
+    kpi("포상 대상",rewarded+'<small> 건</small>',"")+'</div>';
+  if(excludedN){html+='<div class="muted" style="margin-bottom:10px">파트너 전환 등으로 제외된 '+excludedN+'건은 표시에서 숨겼습니다.</div>';}
+  html+='<div class="sec-title">평가 방식 · 기준</div>'+criteriaSection();
+  html+='<div class="sec-title">평가 기록</div>';
+  if(!ev.length){
+    setPanel("eval",html+'<div class="card">'+emptyState("표시할 인사평가 기록이 없습니다.","◇")+'</div>');return;
+  }
+  html+='<div class="stack">'+ev.map(function(e){
+    var tgt=resolveRel(e["대상자"]).join(", ");
+    return '<div class="item"><div class="item-top">'+
+      '<div><div class="item-title">'+esc(txt(e["평가명"]))+'</div>'+
+      '<div class="item-meta">'+(e["평가 등급"]?badge(e["평가 등급"]):"")+
+        badge(e["평가 종류"])+badge(e["평가 주기"])+
+        (isYes(e["포상 여부"])?'<span class="badge b-gold">포상</span>':"")+
+      '</div></div>'+
+      '<div style="text-align:right"><div class="t-name" style="font-size:18px">'+
+        (e["총점"]!=null&&e["총점"]!==""?num(e["총점"]):"—")+'</div><div class="t-sub">총점</div></div></div>'+
+      '<div class="kv">'+
+      kv("대상자",txt(tgt))+kv("평가자",txt(e["평가자"]))+
+      kv("평가 기간",fmtD(dt(e,"평가 기간")))+kv("가산점",txt(e["가산점"]))+
+      '</div>'+
+      (e["포상 내역"]?'<div style="margin-top:8px;font-size:12px"><b>포상:</b> '+esc(e["포상 내역"])+'</div>':"")+
+      (e["피드백"]?'<div style="margin-top:6px;font-size:12px;color:var(--ink-soft);white-space:pre-wrap">'+esc(e["피드백"])+'</div>':"")+
+      '</div>';
+  }).join("")+'</div>';
+  setPanel("eval",html);
+}
+
+/* ============ OFFBOARDING ============ */
+function renderExit(){
+  var html='<div class="sec-title">퇴사 처리</div>';
+  if(ERR.exit){setPanel("exit",html+errCard("퇴사 처리 DB","exit"));return;}
+  var ex=DB.exit;
+  if(!ex.length){setPanel("exit",html+'<div class="card">'+
+    emptyState("진행 중인 퇴사 처리 건이 없습니다.","◇")+'</div>');return;}
+  var open=ex.filter(function(e){return !isYes(e["처리 완료 여부"]);}).length;
+  html+='<div class="kpi-grid" style="margin-bottom:6px">'+
+    kpi("전체 건",ex.length+'<small> 건</small>',"")+
+    kpi("처리 중",open+'<small> 건</small>',"")+'</div>';
+  html+='<div class="stack">'+ex.map(function(e){
+    var who=resolveRel(e["연결 임직원"]).join(", ");
+    function ck(lbl,v){return '<span class="badge b-'+(isYes(v)?"green":"gray")+'">'+(isYes(v)?"✓ ":"○ ")+lbl+'</span>';}
+    return '<div class="item"><div class="item-top">'+
+      '<div><div class="item-title">'+esc(txt(e["처리 건명"]))+'</div>'+
+      '<div class="item-meta">'+badge(e["퇴사 유형"])+
+        (isYes(e["처리 완료 여부"])?'<span class="badge b-green">처리 완료</span>':'<span class="badge b-amber">처리 중</span>')+
+      '</div></div></div>'+
+      '<div class="kv">'+
+      kv("대상자",txt(who))+kv("최종 근무일",fmtD(dt(e,"최종 근무일")))+
+      kv("퇴사 신청일",fmtD(dt(e,"퇴사 신청일")))+kv("퇴사 사유",txt(e["퇴사 사유"]))+
+      '</div>'+
+      '<div class="item-meta" style="margin-top:10px">'+
+      ck("퇴사 면담",e["퇴사 면담 여부"])+ck("장비 반납",e["장비 반납 여부"])+
+      ck("계정 회수",e["시스템 계정 회수"])+ck("퇴직금 지급",e["퇴직금 지급 여부"])+'</div>'+
+      (e["면담 내용"]?'<div style="margin-top:8px;font-size:12px;color:var(--ink-soft);white-space:pre-wrap">'+esc(e["면담 내용"])+'</div>':"")+
+      '</div>';
+  }).join("")+'</div>';
+  setPanel("exit",html);
+}
+
+/* ============ STANDARDS ============ */
+function renderStd(){
+  var talents=[
+    ["주인의식","30%","본인 영역의 이슈를 회피하지 않고 끝까지 해결한다."],
+    ["팀워크","30%","동료의 도움 요청에 거절감 없이 응한다."],
+    ["주도성","20%","새 도구·정책을 빠르게 익히고 활용한다."],
+    ["프로세스","20%","규정·매뉴얼을 따르되 개선은 정식 루트로 제안한다."]
+  ];
+  var html='<div class="sec-title">웰페리온 4대 인재상</div><div class="talent-grid">';
+  talents.forEach(function(t){
+    html+='<div class="talent"><div class="tt">'+t[0]+'<span class="tw">'+t[1]+'</span></div>'+
+      '<div class="td">'+t[2]+'</div></div>';
+  });
+  html+='</div>';
+  html+='<div class="alert" style="margin-top:14px"><b>서비스 마인드 컷오프</b>'+
+    '<div>서비스 마인드 항목 20점 미만 시 총점과 무관하게 불합격. 타협 없는 채용 기준이 서비스 조직 문화의 첫 방어선이다.</div></div>';
+  html+='<div class="sec-title">인사 기능 6단계 워크플로우</div><div class="card"><div class="flow">'+
+    ["채용 공고","지원자 트래킹","온보딩","임직원 현황","평가·포상","퇴사 처리"]
+    .map(function(s,i){return (i?'<span class="arr">→</span>':"")+'<span class="step">'+s+'</span>';}).join("")+
+    '</div></div>';
+  html+='<div class="sec-title">핵심 운영 원칙</div><div class="card"><ul class="plist">'+
+    ["인재상 우선 — 4대 인재상이 선발부터 퇴사까지 모든 판단의 기준이다.",
+     "객관 절차 — 소개·추천 후보라도 후광효과를 배제하고 표준 평가 절차를 적용한다.",
+     "단일 진실 출처(SSOT) — 마스터 페이지가 인사 데이터의 유일한 원본. 복붙 금지, 관계로 연결한다.",
+     "개인정보 보호(PIPA) — 이력서·처우·평가 자료는 접근 권한을 분리해 관리한다.",
+     "체계적 성과 보상 — 반기 평가가 기본, 포상은 기여에 비례한다."]
+    .map(function(p,i){return '<li><span class="pn">'+(i+1)+'</span><span>'+esc(p)+'</span></li>';}).join("")+
+    '</ul></div>';
+  html+='<div class="sec-title">AI CHRO 에이전트 업무 범위</div><div class="grid-2">'+
+    '<div class="card"><h3>에이전트가 수행</h3><div style="font-size:12.5px;color:var(--ink-soft);line-height:1.85">'+
+    '채용 기획·공고문 · 면접 질문지·스코어카드 · 지원자 평가 의견 · 온보딩 계획 · 인사평가 운영 지원 · 퇴사 처리 문서 · 인사 데이터 리포트</div></div>'+
+    '<div class="card"><h3>사람이 결정</h3><div style="font-size:12.5px;color:var(--ink-soft);line-height:1.85">'+
+    '채용 확정·불합격 최종 결정 · 처우(연봉·타임비) 확정 · 해고·징계 결정 · 비용 집행 및 계약 서명</div></div>'+
+    '</div>';
+  setPanel("std",html);
+}
+
+/* ============ infra ============ */
+function setPanel(id,html){document.querySelector('.panel[data-panel="'+id+'"]').innerHTML=html;}
+function drawBar(cid,obj){
+  var el=document.getElementById(cid);if(!el)return;
+  if(typeof Chart==="undefined"){
+    el.parentNode.innerHTML='<div class="muted" style="padding:36px 10px;text-align:center">차트 라이브러리를 불러오지 못했습니다.</div>';return;
+  }
+  if(charts[cid])charts[cid].destroy();
+  var labels=Object.keys(obj);
+  try{
+    charts[cid]=new Chart(el,{type:"bar",data:{labels:labels,datasets:[{
+      data:labels.map(function(k){return obj[k];}),
+      backgroundColor:"#a98a52",borderRadius:5,maxBarThickness:46}]},
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+        scales:{y:{beginAtZero:true,ticks:{precision:0,color:"#9a978e"},grid:{color:"#efece4"}},
+          x:{ticks:{color:"#6c6961",font:{size:11}},grid:{display:false}}}}});
+  }catch(e){el.parentNode.innerHTML='<div class="muted" style="padding:36px 10px;text-align:center">차트 표시 오류</div>';}
+}
+function drawDonut(cid,obj){
+  var el=document.getElementById(cid);if(!el)return;
+  if(typeof Chart==="undefined"){
+    el.parentNode.innerHTML='<div class="muted" style="padding:36px 10px;text-align:center">차트 라이브러리를 불러오지 못했습니다.</div>';return;
+  }
+  if(charts[cid])charts[cid].destroy();
+  var labels=Object.keys(obj);
+  try{
+    charts[cid]=new Chart(el,{type:"doughnut",data:{labels:labels,datasets:[{
+      data:labels.map(function(k){return obj[k];}),
+      backgroundColor:["#3c7a4a","#2f6d9e","#b07d24","#c1702c","#6a5891","#7c7a73"],
+      borderColor:"#fff",borderWidth:2}]},
+      options:{responsive:true,maintainAspectRatio:false,cutout:"60%",
+        plugins:{legend:{position:"right",labels:{color:"#6c6961",font:{size:11},boxWidth:11,padding:9}}}}});
+  }catch(e){el.parentNode.innerHTML='<div class="muted" style="padding:36px 10px;text-align:center">차트 표시 오류</div>';}
+}
+var RENDERED={};
+var RENDERERS={dash:renderDash,emp:renderEmp,hire:renderHire,onbo:renderOnbo,
+  eval:renderEval,exit:renderExit,std:renderStd};
+function showTab(id){
+  TABS.forEach(function(t){
+    document.querySelector('.tab[data-tab="'+t.id+'"]').classList.toggle("active",t.id===id);
+    document.querySelector('.panel[data-panel="'+t.id+'"]').classList.toggle("active",t.id===id);
+  });
+  try{localStorage.setItem("wp_hr_tab",id);}catch(e){}
+  if(!RENDERED[id]){
+    try{RENDERERS[id]();}
+    catch(e){setPanel(id,'<div class="card"><div class="empty-state"><div class="es-ic">⚠</div>'+
+      '화면 렌더링 중 오류가 발생했습니다.<br><span class="muted">'+esc(e.message||e)+'</span></div></div>');}
+    RENDERED[id]=true;
+  }
+}
+function buildNav(){
+  document.getElementById("nav").innerHTML=TABS.map(function(t){
+    return '<button class="tab" data-tab="'+t.id+'">'+esc(t.label)+'</button>';
+  }).join("");
+  TABS.forEach(function(t){
+    document.querySelector('.tab[data-tab="'+t.id+'"]').addEventListener("click",function(){showTab(t.id);});
+  });
+}
+function finishLoad(){
+  document.getElementById("loading").style.display="none";
+  document.getElementById("app").style.display="block";
+  var rp=document.getElementById("rolePill");
+  if(rp){
+    if(SESSION_ROLE==="admin"){rp.className="role-pill admin";rp.textContent="관리자 모드";}
+    else{rp.className="role-pill viewer";rp.textContent="뷰어 모드";}
+  }
+  var ok=DBMETA.filter(function(m){return !ERR[m[0]];}).length;
+  var now=new Date();
+  document.getElementById("syncMeta").textContent=
+    "마지막 동기화 "+now.getFullYear()+"-"+p2(now.getMonth()+1)+"-"+p2(now.getDate())+" "+
+    p2(now.getHours())+":"+p2(now.getMinutes())+" · 6개 DB 중 "+ok+"개 정상"+
+    (DB.emp.length?" · 재직 "+DB.emp.filter(function(e){return e["재직 상태"]!=="퇴사";}).length+"명":"");
+  var saved="dash";
+  try{var s=localStorage.getItem("wp_hr_tab");if(s&&TABS.some(function(t){return t.id===s;}))saved=s;}catch(e){}
+  showTab(saved);
+}
+var navBuilt=false;
+async function startApp(){
+  if(!navBuilt){
+    buildNav();
+    document.getElementById("reloadBtn").addEventListener("click",reloadData);
+    navBuilt=true;
+  }
+  await loadAll();
+  finishLoad();
+}
+async function reloadData(){
+  var btn=document.getElementById("reloadBtn");
+  if(btn){btn.disabled=true;btn.textContent="갱신 중…";}
+  document.getElementById("app").style.display="none";
+  document.getElementById("loading").style.display="block";
+  document.getElementById("loadMsg").textContent="데이터를 새로 불러오는 중…";
+  RENDERED={};
+  await loadAll();
+  finishLoad();
+  if(btn){btn.disabled=false;btn.textContent="↻ 새로고침";}
+}
+
+/* ============ 퇴사 처리 모달 ============ */
+var resignTarget=null;
+function openResignModal(name,url){
+  resignTarget={name:name,url:url};
+  document.getElementById("rmName").textContent=name+" 님의 퇴사를 처리합니다.";
+  document.getElementById("rmDate").value="";
+  document.getElementById("rmType").value="자진 퇴사";
+  document.getElementById("rmReason").value="";
+  var msg=document.getElementById("rmMsg");msg.textContent="";msg.className="modal-msg";
+  var btn=document.getElementById("rmConfirm");btn.disabled=false;btn.textContent="퇴사 처리 실행";
+  document.getElementById("resignModal").classList.add("show");
+}
+function closeResignModal(){document.getElementById("resignModal").classList.remove("show");}
+async function submitResign(){
+  if(!resignTarget)return;
+  var date=document.getElementById("rmDate").value;
+  var type=document.getElementById("rmType").value;
+  var reason=document.getElementById("rmReason").value.trim();
+  var msg=document.getElementById("rmMsg");
+  var btn=document.getElementById("rmConfirm");
+  msg.className="modal-msg";
+  if(!date){msg.className="modal-msg err";msg.textContent="최종 근무일을 입력하세요.";return;}
+  var pageId=normId(resignTarget.url);
+  if(!pageId){msg.className="modal-msg err";msg.textContent="임직원 페이지 정보를 찾을 수 없습니다.";return;}
+  btn.disabled=true;btn.textContent="처리 중…";
+  msg.className="modal-msg";msg.textContent="Notion·시트에 반영하는 중입니다…";
+  try{
+    var r=await fetch(NOTION_FN,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},
+      body:JSON.stringify({action:"resign",adminPassword:SESSION_PW,
+        employeePageId:pageId,employeeName:resignTarget.name,
+        lastDay:date,exitType:type,reason:reason})});
+    var data={};try{data=await r.json();}catch(e){}
+    if(r.status===401){
+      msg.className="modal-msg err";msg.textContent=(data.error||"관리자 비밀번호가 올바르지 않습니다.");
+      btn.disabled=false;btn.textContent="퇴사 처리 실행";return;
+    }
+    if(!r.ok||!data.ok){
+      msg.className="modal-msg err";msg.textContent=(data.error||("처리 실패 — 서버 오류 "+r.status));
+      btn.disabled=false;btn.textContent="퇴사 처리 실행";return;
+    }
+    var parts=["• Notion 임직원 명부: 퇴사 반영"];
+    parts.push(data.exitRecord?"• 퇴사 처리 DB: 레코드 생성":"• 퇴사 처리 DB: 실패 — "+(data.exitRecordMsg||""));
+    if(data.sheet&&data.sheet.attempted){
+      parts.push(data.sheet.ok?"• 매출보고서 시트: 현재근무자→퇴사자 이동 완료"
+                              :"• 매출보고서 시트: 실패 — "+(data.sheet.msg||""));
+    }else{
+      parts.push("• 매출보고서 시트: 미연동 (시트는 수동 처리 필요)");
+    }
+    msg.className="modal-msg ok";
+    msg.innerHTML="✓ "+esc(data.name||resignTarget.name)+" 퇴사 처리 완료<br>"+parts.map(esc).join("<br>");
+    btn.textContent="완료";
+    setTimeout(function(){closeResignModal();reloadData();},2600);
+  }catch(e){
+    msg.className="modal-msg err";msg.textContent="서버 연결 오류: "+((e&&e.message)||e);
+    btn.disabled=false;btn.textContent="퇴사 처리 실행";
+  }
+}
+document.getElementById("rmConfirm").addEventListener("click",submitResign);
+document.getElementById("rmCancel").addEventListener("click",closeResignModal);
+document.getElementById("resignModal").addEventListener("click",function(e){
+  if(e.target.id==="resignModal")closeResignModal();
+});
+
+/* ============ 비밀번호 게이트 ============ */
+function showGate(){document.getElementById("gate").style.display="flex";}
+function hideGate(){document.getElementById("gate").style.display="none";}
+async function attemptGate(pw){
+  var errEl=document.getElementById("gateErr");
+  var btn=document.getElementById("gateBtn");
+  if(btn){btn.disabled=true;btn.textContent="확인 중…";}
+  if(errEl)errEl.textContent="";
+  var status=0,netErr=false,gateData={};
+  try{
+    var r=await fetch(NOTION_FN,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},
+      body:JSON.stringify({db:"emp",password:pw})});
+    status=r.status;
+    try{gateData=await r.json();}catch(e){}
+  }catch(e){netErr=true;}
+  if(netErr){
+    if(btn){btn.disabled=false;btn.textContent="입장";}
+    if(errEl)errEl.textContent="서버에 연결할 수 없습니다. 잠시 후 다시 시도해 주세요.";
+    showGate();return;
+  }
+  if(status===401){
+    try{sessionStorage.removeItem("wp_hr_pw");}catch(e){}
+    if(btn){btn.disabled=false;btn.textContent="입장";}
+    if(errEl)errEl.textContent="비밀번호가 올바르지 않습니다.";
+    showGate();return;
+  }
+  SESSION_PW=pw;
+  SESSION_ROLE=(gateData&&gateData.role)||"viewer";
+  try{sessionStorage.setItem("wp_hr_pw",pw);}catch(e){}
+  hideGate();
+  document.getElementById("loading").style.display="block";
+  document.getElementById("loadMsg").textContent="인사 데이터를 불러오는 중입니다…";
+  startApp();
+}
+document.getElementById("gateBtn").addEventListener("click",function(){
+  attemptGate(document.getElementById("gatePw").value);
+});
+document.getElementById("gatePw").addEventListener("keydown",function(e){
+  if(e.key==="Enter")attemptGate(document.getElementById("gatePw").value);
+});
+(function boot(){
+  var sp="";try{sp=sessionStorage.getItem("wp_hr_pw")||"";}catch(e){}
+  if(sp){hideGate();attemptGate(sp);}
+  else{showGate();document.getElementById("gatePw").focus();}
+})();
+</script>
+</body>
+</html>
