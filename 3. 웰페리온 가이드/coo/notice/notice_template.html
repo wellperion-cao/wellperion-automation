@@ -675,7 +675,8 @@
     /* HEADER (축소된 비율 + 캡션 헤더 하단 absolute) */
     html += '.hdr{flex:0 0 30%;padding:5.2vmin 5vmin 5.2vmin;text-align:center;color:#fff;display:flex;flex-direction:column;justify-content:center;align-items:center;position:relative;}';
     html += '.notice-label-top{position:absolute;top:2.6vmin;left:50%;transform:translateX(-50%);font-size:1.5vmin;font-weight:600;letter-spacing:0.32em;color:rgba(255,255,255,0.78);}';
-    html += '.wmark{position:absolute;top:1.4vmin;right:0;transform:translateX(30%);height:12.1vmin;width:auto;opacity:0.95;user-select:none;pointer-events:none;}';
+    /* v2.50 — 인쇄 빌더 W 마크: transform 폐기 (html2canvas가 transform 정확히 안 잡아 50%+ 잘림). right 음수로 동일 30% 잘림 효과 + 캡처 호환 */
+    html += '.wmark{position:absolute;top:1.4vmin;right:-3.6vmin;height:12.1vmin;width:auto;opacity:0.95;user-select:none;pointer-events:none;}';
     html += '.tkr{font-size:6.2vmin;font-weight:700;line-height:1.16;margin-bottom:0.8vmin;color:'+brand.logo+';letter-spacing:0.005em;}';
     html += '.ten{font-size:3vmin;font-weight:500;color:'+brand.logo+';opacity:0.92;letter-spacing:0.01em;margin-bottom:0;}';
     html += '.sub{position:absolute;bottom:1.8vmin;left:0;right:0;text-align:center;font-size:1.6vmin;color:'+brand.logo+';opacity:0.95;letter-spacing:0.06em;font-weight:500;padding:0 4vmin;}';
@@ -713,7 +714,8 @@
     /* v2.39 — 가로형 인쇄 비율·폰트 축소 (헤더 30% → 22%, 폰트 약 60%) */
     if(orient === 'landscape'){
       html += '.hdr{flex:0 0 22% !important;padding:2.6vmin 3.2vmin !important;}';
-      html += '.wmark{height:8.8vmin !important;top:0.6vmin !important;}';
+      /* v2.50 가로형 W: right 음수로 잘림 효과 (transform 폐기) */
+      html += '.wmark{height:8.8vmin !important;top:0.6vmin !important;right:-2.6vmin !important;}';
       html += '.notice-label-top{font-size:1.1vmin !important;top:0.9vmin !important;}';
       html += '.tkr{font-size:4vmin !important;}';
       html += '.ten{font-size:2vmin !important;}';
