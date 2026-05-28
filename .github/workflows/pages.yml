@@ -3,7 +3,7 @@ on:
   push:
     branches: [master]
     paths:
-      - '3. 웰페리온 가이드(netlify)/**'
+      - '3. 웰페리온 가이드/**'
       - '.github/workflows/pages.yml'
   workflow_dispatch:
 
@@ -29,7 +29,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: '3. 웰페리온 가이드(netlify)'
+          path: '3. 웰페리온 가이드'
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
