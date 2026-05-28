@@ -1179,6 +1179,12 @@ function hideGate(){document.getElementById("gate").style.display="none";}
 async function attemptGate(pw){
   var errEl=document.getElementById("gateErr");
   var btn=document.getElementById("gateBtn");
+  // 빈 비밀번호 거부
+  if(!pw || !String(pw).trim()){
+    try{sessionStorage.removeItem("wp_hr_pw");}catch(e){}
+    if(errEl)errEl.textContent="비밀번호를 입력해 주세요.";
+    showGate();return;
+  }
   if(btn){btn.disabled=true;btn.textContent="확인 중…";}
   if(errEl)errEl.textContent="";
   var status=0,netErr=false,gateData={};
@@ -1193,15 +1199,19 @@ async function attemptGate(pw){
     if(errEl)errEl.textContent="서버에 연결할 수 없습니다. 잠시 후 다시 시도해 주세요.";
     showGate();return;
   }
-  if(status===401){
+  // unauthorized 검사 — Apps Script는 status 200으로 응답하면서 body에 error를 넣으므로 둘 다 검사
+  var isUnauthorized = (status===401)
+    || (gateData && gateData.error && /unauthorized|권한|비밀번호/i.test(String(gateData.error)))
+    || !(gateData && gateData.role);
+  if(isUnauthorized){
     try{sessionStorage.removeItem("wp_hr_pw");}catch(e){}
     if(btn){btn.disabled=false;btn.textContent="입장";}
     if(errEl)errEl.textContent="비밀번호가 올바르지 않습니다.";
     showGate();return;
   }
-  // 200 또는 5xx(토큰 미설정 등) — 비밀번호는 통과. 데이터 단계에서 진단 표시.
+  // 정상 인증 통과
   SESSION_PW=pw;
-  SESSION_ROLE=(gateData&&gateData.role)||"viewer";
+  SESSION_ROLE=gateData.role;
   try{sessionStorage.setItem("wp_hr_pw",pw);}catch(e){}
   hideGate();
   document.getElementById("loading").style.display="block";
@@ -1217,12 +1227,6 @@ document.getElementById("gatePw").addEventListener("keydown",function(e){
 (function boot(){
   var sp="";try{sp=sessionStorage.getItem("wp_hr_pw")||"";}catch(e){}
   if(sp){hideGate();attemptGate(sp);}
-  else{showGate();document.getElementById("gatePw").focus();}
-})();
-</script>
-</body>
-</html>
-attemptGate(sp);}
   else{showGate();document.getElementById("gatePw").focus();}
 })();
 </script>
