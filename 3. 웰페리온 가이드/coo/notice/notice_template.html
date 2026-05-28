@@ -56,6 +56,10 @@
   /* v2.35 — 자식 요소(p, blockquote)가 부모 font-size 상속 + 명시적 size span은 그대로 유지 */
   .ntool-editor p{margin:0 0 0.4em 0;font-size:inherit;}
   .ntool-editor blockquote{font-size:inherit;}
+  /* v2.36 — 본문 이미지 (커서 위치 삽입, 클릭 시 정렬·크기 툴바) */
+  .ntool-editor img.nt-img,.ntool-editor img{max-width:100%;height:auto;display:block;margin:0.8em auto;border-radius:4px;cursor:pointer;transition:outline 0.15s;}
+  .ntool-editor img:hover{outline:2px solid var(--accent);}
+  #noticePreview .ntool-pv-body img{max-width:100%;height:auto;display:block;margin:0.8em auto;border-radius:4px;}
   .ntool-help-tip{margin-top:8px;padding:8px 12px;background:var(--accent-bg);border-radius:6px;font-size:11px;color:var(--accent);line-height:1.6;}
   .ntool-font-bar{display:flex;gap:6px;margin-bottom:8px;align-items:center;flex-wrap:wrap;padding:8px 10px;background:#fafaf8;border-radius:9px;border:1px solid var(--border);}
   .ntool-font-bar select,.ntool-font-bar input{padding:7px 10px;background:var(--paper);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;font-family:inherit;transition:border-color 0.15s;}
@@ -108,7 +112,7 @@
   .ntool-pv-subtitle em{font-family:"Playfair Display","Hudson NY Serif",Georgia,serif;font-style:italic;font-weight:500;letter-spacing:0.01em;font-size:1.08em;}
 
   /* ── 미리보기 본문 (흰 배경, 자동 파싱 3구획) ── */
-  #noticePreview .ntool-pv-body{flex:1;padding:clamp(18px,3.2vw,36px) clamp(16px,2.8vw,32px) clamp(28px,4vw,42px);display:flex;flex-direction:column;justify-content:center;align-items:stretch;color:#1a1a1a;line-height:1.85;font-size:clamp(12px,1.6vw,19px);font-weight:500;background:#fff;text-align:center;overflow:hidden;position:relative;}
+  #noticePreview .ntool-pv-body{flex:1;padding:clamp(18px,3.2vw,36px) clamp(16px,2.8vw,32px) clamp(28px,4vw,42px);display:flex;flex-direction:column;justify-content:flex-start;align-items:stretch;color:#1a1a1a;line-height:1.85;font-size:clamp(12px,1.6vw,19px);font-weight:500;background:#fff;text-align:center;overflow:hidden;position:relative;}
   #noticePreview .notice-date{position:absolute;right:clamp(16px,2.8vw,32px);bottom:clamp(8px,1.4vw,14px);font-size:0.78em;color:var(--accent);font-weight:600;letter-spacing:0.06em;text-align:right;margin:0;}
   #noticePreview .notice-head{font-size:1.75em;font-weight:700;line-height:1.5;color:#1a1a1a;letter-spacing:-0.005em;}
   #noticePreview .notice-divider{width:62%;height:1px;background:var(--accent);opacity:0.45;margin:1.3em auto;border:none;}
@@ -266,7 +270,6 @@
         <div class="ntool-editor" id="noticeBody" contenteditable="true" data-placeholder="공지 본문을 입력하세요. 위 도구로 강조·색·정렬·인용구·구분선·크기·줄 굵기를 시각적으로 적용할 수 있습니다." oninput="ntUpdatePreview()" onpaste="ntHandlePaste(event)"></div>
         <div class="ntool-help-tip">💡 텍스트를 드래그해 선택한 뒤 상단 도구를 누르면 즉시 스타일이 적용됩니다. Ctrl+Z로 되돌리기 가능.</div>
       </div>
-      <div class="ntool-img-thumb" id="noticeImgThumb" style="margin-top:8px;"></div>
       <div class="ntool-actions">
         <button class="ntool-btn primary" onclick="ntPrint()">🖨️ 인쇄</button>
         <button class="ntool-btn secondary" onclick="ntSave()">💾 저장하기</button>
@@ -487,11 +490,7 @@
     var subtitle = subtitleEl ? subtitleEl.value.trim() : '';
     var subtitleHtml = subtitle ? '<div class="notice-subtitle">' + esc(subtitle) + '</div>' : '';
     var html = dateHtml + subtitleHtml + (bodyHtml || '<div class="notice-head" style="color:#999;">본문 내용이 여기에 표시됩니다.</div>');
-    if(noticeImages.length){
-      html += '<div class="notice-imgs">';
-      noticeImages.forEach(function(src){ html += '<img src="'+src+'">'; });
-      html += '</div>';
-    }
+    /* v2.36 — 이미지는 본문 contenteditable 안에 직접 삽입되므로 자동 prepend 폐기 (중복 방지) */
     bodyEl.innerHTML = html;
     bodyEl.style.fontFamily = ff==='serif' ? '"Noto Serif KR",serif' : '"Pretendard",sans-serif';
     bodyEl.style.fontSize = fs+'px';
@@ -532,17 +531,44 @@
     ntUpdatePreview();
   };
 
+  /* v2.36 — 이미지를 본문 contenteditable 안 커서 위치에 직접 삽입 (드래그·삭제 가능, 정렬 툴바 노출) */
   window.ntAddImages = function(input){
-    var thumbEl = el('noticeImgThumb');
+    var ed = el('noticeBody');
+    ed.focus();
+    /* 빈 상태면 <p> 자동 보장 (focus handler가 처리하지만 명시적으로 한 번 더) */
+    if(!ed.innerHTML.trim() || ed.innerHTML.trim() === '<br>'){
+      ed.innerHTML = '<p><br></p>';
+      var p0 = ed.firstChild;
+      var r0 = document.createRange();
+      r0.setStart(p0, 0);
+      r0.collapse(true);
+      var s0 = window.getSelection();
+      s0.removeAllRanges();
+      s0.addRange(r0);
+    }
     Array.from(input.files).forEach(function(f){
       var reader = new FileReader();
       reader.onload = function(e){
-        noticeImages.push(e.target.result);
-        var item = document.createElement('span');
-        item.className = 'ntool-img-item';
-        var idx = noticeImages.length-1;
-        item.innerHTML = '<img src="'+e.target.result+'"><button class="remove" onclick="ntRemoveImg('+idx+')">&times;</button>';
-        thumbEl.appendChild(item);
+        var src = e.target.result;
+        var img = document.createElement('img');
+        img.src = src;
+        img.className = 'nt-img';
+        img.style.maxWidth = '100%';
+        img.style.height = 'auto';
+        img.draggable = true;
+        var sel = window.getSelection();
+        if(sel && sel.rangeCount > 0){
+          var range = sel.getRangeAt(0);
+          range.collapse(false);
+          range.insertNode(img);
+          /* 커서를 이미지 뒤로 */
+          range.setStartAfter(img);
+          range.collapse(true);
+          sel.removeAllRanges();
+          sel.addRange(range);
+        } else {
+          ed.appendChild(img);
+        }
         ntUpdatePreview();
       };
       reader.readAsDataURL(f);
@@ -550,18 +576,60 @@
     input.value = '';
   };
 
-  window.ntRemoveImg = function(idx){
-    noticeImages.splice(idx,1);
-    var thumbEl = el('noticeImgThumb');
-    thumbEl.innerHTML = '';
-    noticeImages.forEach(function(src,i){
-      var item = document.createElement('span');
-      item.className = 'ntool-img-item';
-      item.innerHTML = '<img src="'+src+'"><button class="remove" onclick="ntRemoveImg('+i+')">&times;</button>';
-      thumbEl.appendChild(item);
+  /* 이미지 클릭 시 작은 정렬·크기 툴바 노출 */
+  window.ntImageToolbar = function(img){
+    /* 기존 툴바 제거 */
+    var prev = document.getElementById('ntImgToolbar');
+    if(prev) prev.remove();
+    if(!img) return;
+    var bar = document.createElement('div');
+    bar.id = 'ntImgToolbar';
+    bar.style.cssText = 'position:absolute;background:#221F20;color:#fff;border-radius:8px;padding:6px 8px;display:flex;gap:4px;z-index:1000;box-shadow:0 4px 16px rgba(0,0,0,0.25);';
+    var btns = [
+      {label:'⬅', title:'왼쪽 정렬', act:function(){ img.style.display='block'; img.style.marginLeft='0'; img.style.marginRight='auto'; }},
+      {label:'≡', title:'가운데 정렬', act:function(){ img.style.display='block'; img.style.marginLeft='auto'; img.style.marginRight='auto'; }},
+      {label:'➡', title:'오른쪽 정렬', act:function(){ img.style.display='block'; img.style.marginLeft='auto'; img.style.marginRight='0'; }},
+      {label:'|', title:'구분', act:null},
+      {label:'작', title:'작게 (33%)', act:function(){ img.style.maxWidth='33%'; }},
+      {label:'중', title:'보통 (60%)', act:function(){ img.style.maxWidth='60%'; }},
+      {label:'크', title:'크게 (100%)', act:function(){ img.style.maxWidth='100%'; }},
+      {label:'|', title:'구분', act:null},
+      {label:'🗑', title:'삭제', act:function(){ img.remove(); document.getElementById('ntImgToolbar').remove(); ntUpdatePreview(); }}
+    ];
+    btns.forEach(function(b){
+      if(b.act === null){
+        var sep = document.createElement('span');
+        sep.style.cssText = 'width:1px;background:#555;margin:0 3px;';
+        bar.appendChild(sep);
+        return;
+      }
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.textContent = b.label;
+      btn.title = b.title;
+      btn.style.cssText = 'background:transparent;color:#fff;border:1px solid #444;padding:5px 9px;border-radius:5px;cursor:pointer;font-size:12px;font-family:inherit;';
+      btn.onmouseenter = function(){ btn.style.background='#B79F8A'; };
+      btn.onmouseleave = function(){ btn.style.background='transparent'; };
+      btn.onclick = function(ev){ ev.stopPropagation(); b.act(); ntUpdatePreview(); };
+      bar.appendChild(btn);
     });
-    ntUpdatePreview();
+    document.body.appendChild(bar);
+    var rect = img.getBoundingClientRect();
+    bar.style.top = (window.scrollY + rect.top - bar.offsetHeight - 8) + 'px';
+    bar.style.left = (window.scrollX + rect.left) + 'px';
   };
+
+  /* 본문 안 이미지 클릭 → 툴바 노출 / 다른 곳 클릭 → 툴바 닫힘 */
+  document.addEventListener('click', function(ev){
+    var t = ev.target;
+    if(t && t.tagName === 'IMG' && t.closest('#noticeBody')){
+      ev.stopPropagation();
+      ntImageToolbar(t);
+    } else if(!t.closest || !t.closest('#ntImgToolbar')){
+      var bar = document.getElementById('ntImgToolbar');
+      if(bar) bar.remove();
+    }
+  });
 
   function ntBuildPageHtml(brand, titleKr, titleEn, bodyHtml, imgHtml, fontFam, fs, pageSize){
     /* AUTO = 인쇄 다이얼로그에서 사용자가 사이즈 선택 / A3·A4 = PDF·PNG 다운로드 고정 */
@@ -592,7 +660,7 @@
        v2.31 비율 0.22 → 0.17 (인쇄 콘텐츠가 종이 초과해 헤더·푸터 침범하던 이슈 정정) */
     var fsVmin = ((parseFloat(fs)||18) * 0.17).toFixed(2);
     var lhRaw = el('noticeLineHeight'); var lh = lhRaw ? lhRaw.value : '1.85';
-    html += '.body{flex:1;background:#fff;color:#1a1a1a;padding:4vmin 5vmin 5vmin;text-align:center;display:flex;flex-direction:column;justify-content:center;align-items:stretch;line-height:'+lh+';font-size:'+fsVmin+'vmin;font-weight:500;overflow:hidden;position:relative;}';
+    html += '.body{flex:1;background:#fff;color:#1a1a1a;padding:4vmin 5vmin 5vmin;text-align:center;display:flex;flex-direction:column;justify-content:flex-start;align-items:stretch;line-height:'+lh+';font-size:'+fsVmin+'vmin;font-weight:500;overflow:hidden;position:relative;}';
     html += '.notice-date{position:absolute;right:3.5vmin;bottom:1.8vmin;font-size:0.78em;color:#B79F8A;font-weight:600;letter-spacing:0.06em;text-align:right;margin:0;}';
     html += '.notice-head{font-size:1.75em;font-weight:700;line-height:1.5;color:#1a1a1a;}';
     /* v2.34 인쇄 소제목 (본문 위 큰 글씨 고정) */
@@ -612,6 +680,8 @@
     html += '.align-left{text-align:left;} .align-center{text-align:center;} .align-right{text-align:right;}';
     html += '.notice-imgs{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;margin-top:2vmin;}';
     html += '.notice-imgs img{max-width:48%;max-height:24vh;border-radius:1vmin;object-fit:cover;}';
+    /* v2.36 본문 안 직접 삽입된 이미지 (정렬·크기는 inline style로 보존됨) */
+    html += '.body img{max-width:100%;height:auto;display:block;margin:0.8em auto;border-radius:0.6vmin;}';
     html += '.hl{color:#ED5B3F;font-weight:700;}';
     /* FOOTER (가로 락업 corner 워터마크 단독, 사업부 BG 동기화 + 흰 워터마크로 가독성) */
     html += '.ftr{flex:0 0 7%;background:'+brand.bg+';display:flex;align-items:center;justify-content:center;}';
@@ -645,12 +715,8 @@
     var bodyHtml = dateHtml + subtitleHtml + (el('noticeBody').innerHTML || '');
     var ff = el('noticeFontFamily').value;
     var fs = el('noticeFontSize').value;
+    /* v2.36 — 이미지는 본문 HTML 안에 들어 있으므로 별도 imgHtml 폐기 */
     var imgHtml = '';
-    if(noticeImages.length){
-      imgHtml = '<div class="notice-imgs">';
-      noticeImages.forEach(function(src){ imgHtml += '<img src="'+src+'">'; });
-      imgHtml += '</div>';
-    }
     var fontFam = ff==='serif' ? '"Noto Serif KR","Batang",serif' : '"Pretendard","Apple SD Gothic Neo",sans-serif';
     return {brand:brand, titleKr:titleKr, titleEn:titleEn, bodyHtml:bodyHtml, fs:fs, fontFam:fontFam, imgHtml:imgHtml};
   }
