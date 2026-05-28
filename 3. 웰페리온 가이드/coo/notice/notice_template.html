@@ -235,7 +235,6 @@
           <button type="button" onclick="ntFmtSize(14)" title="현재 줄 작게" class="fb-btn" style="font-size:11px;">작</button>
           <button type="button" onclick="ntFmtSize(18)" title="현재 줄 중간" class="fb-btn">중</button>
           <button type="button" onclick="ntFmtSize(24)" title="현재 줄 크게" class="fb-btn" style="font-size:15px;font-weight:700;">크</button>
-          <button type="button" onclick="ntFmtBoldLine()" title="현재 줄 굵게" class="fb-btn" style="font-weight:800;">⮊ B</button>
           <span class="font-sep"></span>
           <span style="font-size:10px;color:var(--dim);font-weight:700;letter-spacing:0.04em;">줄간격</span>
           <select id="noticeLineHeight" title="본문 전체 줄간격" onchange="ntUpdatePreview()">
@@ -433,25 +432,7 @@
     });
     ntUpdatePreview();
   };
-  /* 현재 줄(블록) 전체를 굵게 */
-  window.ntFmtBoldLine = function(){
-    var ed = el('noticeBody');
-    ed.focus();
-    var sel = window.getSelection();
-    if(!sel || sel.rangeCount === 0) return;
-    var range = sel.getRangeAt(0);
-    var block = range.startContainer;
-    while(block && block.nodeType !== 1) block = block.parentNode;
-    while(block && block !== ed && !/^(P|DIV|LI|BLOCKQUOTE|H[1-6])$/i.test(block.nodeName)) block = block.parentNode;
-    if(block && block !== ed){
-      var newRange = document.createRange();
-      newRange.selectNodeContents(block);
-      sel.removeAllRanges();
-      sel.addRange(newRange);
-    }
-    document.execCommand('bold', false, null);
-    ntUpdatePreview();
-  };
+  /* v2.37 — ntFmtBoldLine 폐기 (강조 그룹 "B 굵게"와 기능 중복) */
 
   /* v2.32 — 마크다운 파서 폐기. contenteditable HTML이 미리보기에 그대로 노출됨 */
 
