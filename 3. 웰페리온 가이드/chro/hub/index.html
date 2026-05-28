@@ -320,6 +320,8 @@
     <div class="msub">Notion 임직원 명부와 매출보고서 현재근무자 시트에 동시 등록됩니다.</div>
     <label>성명</label>
     <input type="text" id="hireName" placeholder="홍길동">
+    <label>부서</label>
+    <select id="hireDept"><option value="">선택하세요</option></select>
     <label>소속</label>
     <select id="hireSosok">
       <option value="">선택하세요</option>
@@ -329,8 +331,6 @@
       <option>강습부</option>
       <option>경영지원부</option>
     </select>
-    <label>부서</label>
-    <select id="hireDept"><option value="">선택하세요</option></select>
     <label>직급 <span class="opt">(선택)</span></label>
     <input type="text" id="hireRank" placeholder="예: 매니저, 코치, 선생님">
     <label>고용 형태</label>
@@ -614,7 +614,7 @@ function renderEmp(){
   html+='<div class="tbl-wrap scroll-y"><table><thead><tr id="empHead"></tr></thead><tbody id="empBody"></tbody></table></div>';
   setPanel("emp",html);
 
-  var COLS=[["성명","성명",1],["소속","소속",1],["부서","부서",1],["직급","직급",1],
+  var COLS=[["성명","성명",1],["부서","부서",1],["소속","소속",1],["직급","직급",1],
     ["고용 형태","고용형태",1],["재직 상태","재직상태",1],["입사일","입사일",1],["연락처","연락처",0]];
   try{var sv=JSON.parse(localStorage.getItem("wp_hr_empsort")||"null");
     if(sv&&sv.key)empSortState=sv;}catch(e){}
@@ -656,7 +656,7 @@ function renderEmp(){
     document.getElementById("empBody").innerHTML=rows.length?rows.map(function(e){
       var canResign=e["재직 상태"]!=="퇴사";
       return '<tr><td class="t-name">'+esc(txt(e["성명"]))+'</td>'+
-        '<td>'+esc(txt(e["소속"]))+'</td><td>'+esc(txt(e["부서"]))+'</td>'+
+        '<td>'+esc(txt(e["부서"]))+'</td><td>'+esc(txt(e["소속"]))+'</td>'+
         '<td>'+esc(txt(e["직급"]))+'</td><td>'+badge(e["고용 형태"])+'</td>'+
         '<td>'+badge(e["재직 상태"])+'</td><td>'+fmtD(dt(e,"입사일"))+'</td>'+
         '<td class="t-sub">'+esc(txt(e["연락처"]))+'</td>'+
