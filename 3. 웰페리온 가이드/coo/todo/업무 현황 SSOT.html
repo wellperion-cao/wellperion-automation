@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>웰페리온 업무 현황 SSOT</title>
+<title>웰페리온 업무&결재 현황 SSOT</title>
 <style>
 :root{--bg:#221F20;--paper:#2a2725;--text:#f5f2ef;--dim:#8c8b83;--accent:#B79F8A;--accent-bg:rgba(183,159,138,0.12);--border:#3d3835;--green:#6abf7b;--green-bg:rgba(106,191,123,0.12);--red:#ED5B3F;--red-bg:rgba(237,91,63,0.12);--yellow:#e6c84e;--yellow-bg:rgba(230,200,78,0.12);--blue:#5b9fd5;--blue-bg:rgba(91,159,213,0.12);--purple:#a78bda;--purple-bg:rgba(167,139,218,0.12);--orange:#e6944e;--orange-bg:rgba(230,148,78,0.12)}
 *{box-sizing:border-box;margin:0;padding:0}
@@ -208,7 +208,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 <div class="sticky-top">
 <div class="header">
   <div class="header-top">
-    <h1>웰페리온 업무 현황 SSOT</h1>
+    <h1>웰페리온 업무&결재 현황 SSOT</h1>
     <div class="header-right">
       <a class="sheet-link" onclick="openDashboard()" style="cursor:pointer;background:var(--purple-bg);color:var(--purple);border-color:rgba(167,139,218,0.3);">
         <svg viewBox="0 0 24 24"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
@@ -315,17 +315,24 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
       </div>
       <div id="budgetRouteHint" style="font-size:12px;color:var(--dim);margin-top:6px;line-height:1.5;"></div>
     </div>
-    <div class="field" style="background:var(--accent-bg);padding:12px 14px;border-radius:8px;border:1px solid rgba(183,159,138,0.3);">
-      <label style="display:flex;align-items:center;justify-content:space-between;color:var(--accent);font-weight:700;">
-        <span>📅 진척 로그 <span style="font-size:11px;color:var(--dim);font-weight:400;">(매일 한 줄씩 누적 — 보고 자동 연계)</span></span>
+    <div class="field" style="background:var(--accent-bg);padding:14px 16px;border-radius:10px;border:1px solid rgba(183,159,138,0.35);">
+      <label style="display:flex;align-items:center;justify-content:space-between;color:var(--accent);font-weight:700;margin-bottom:8px;">
+        <span>📅 진척 로그 <span style="font-size:11px;color:var(--dim);font-weight:400;">(매일 누적 — 보고 자동 연계)</span></span>
       </label>
-      <div id="progressLogList" style="margin:8px 0;"></div>
-      <div style="display:flex;gap:6px;align-items:stretch;margin-top:8px;">
-        <input type="date" id="progressLogDate" style="background:var(--bg);border:1px solid var(--border);color:var(--text);padding:10px;border-radius:8px;font-size:13px;font-family:inherit;flex-shrink:0;align-self:flex-start;">
-        <textarea id="progressLogInput" placeholder="오늘 진척 내용 (여러 줄 가능 · 추가 버튼 클릭)" style="background:var(--bg);border:1px solid var(--border);color:var(--text);padding:10px 12px;border-radius:8px;font-size:14px;font-family:inherit;flex:1;min-height:90px;line-height:1.55;resize:vertical;"></textarea>
-        <button type="button" onclick="addProgressLogEntry()" style="background:var(--accent);color:#fff;border:none;padding:10px 16px;border-radius:8px;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer;flex-shrink:0;align-self:flex-start;white-space:nowrap;">+ 추가</button>
+      <div id="progressLogList" style="margin-bottom:10px;"></div>
+      <div style="background:var(--bg);border:1px dashed rgba(183,159,138,0.4);border-radius:8px;padding:12px;">
+        <div style="font-size:12px;font-weight:700;color:var(--accent);margin-bottom:8px;">＋ 새 진척 추가</div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+          <label style="font-size:12px;color:var(--dim);font-weight:600;flex-shrink:0;">날짜</label>
+          <input type="date" id="progressLogDate" style="background:var(--paper);border:1px solid var(--border);color:var(--text);padding:8px 10px;border-radius:6px;font-size:13px;font-family:inherit;">
+        </div>
+        <label style="font-size:12px;color:var(--dim);font-weight:600;display:block;margin-bottom:4px;">내용</label>
+        <textarea id="progressLogInput" placeholder="오늘 진척 내용을 자세히 작성하세요 (여러 줄 가능)" style="background:var(--paper);border:1px solid var(--border);color:var(--text);padding:10px 12px;border-radius:6px;font-size:14px;font-family:inherit;width:100%;min-height:120px;line-height:1.6;resize:vertical;box-sizing:border-box;display:block;"></textarea>
+        <div style="display:flex;justify-content:flex-end;margin-top:8px;">
+          <button type="button" onclick="addProgressLogEntry()" style="background:var(--accent);color:#fff;border:none;padding:9px 22px;border-radius:8px;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer;">＋ 추가</button>
+        </div>
       </div>
-      <div style="font-size:11px;color:var(--dim);margin-top:4px;">💡 여러 줄 입력 가능 · 저장 시 미합류 텍스트도 자동 합류</div>
+      <div style="font-size:11px;color:var(--dim);margin-top:6px;">💡 저장 시 미합류 내용도 자동 합류 · 추가된 항목은 위 목록에 누적</div>
     </div>
     <div class="field">
       <label>노션 링크</label>
