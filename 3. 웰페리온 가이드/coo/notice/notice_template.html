@@ -5,6 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>WELLPERION 공지 서식 v2.1</title>
 <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.min.css" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@1,400;1,500;1,600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 <style>
   :root{
     --paper:#fff;
@@ -63,7 +68,9 @@
   .ntool-pv-wmark-w{position:absolute;top:clamp(0px,0.6vw,8px);right:clamp(8px,1.6vw,20px);font-family:"Pretendard","Apple SD Gothic Neo",sans-serif;font-size:clamp(72px,14vw,180px);font-weight:200;line-height:1;letter-spacing:-0.05em;opacity:0.55;pointer-events:none;user-select:none;}
   #noticePreview .ntool-pv-title-kr{font-size:clamp(22px,4.2vw,52px);font-weight:700;margin-bottom:6px;line-height:1.18;color:#E8D8C5;letter-spacing:0.005em;}
   #noticePreview .ntool-pv-title-en{font-size:clamp(11px,1.9vw,24px);font-weight:500;color:#E8D8C5;opacity:0.92;letter-spacing:0.01em;margin-bottom:0;}
-  .ntool-pv-subtitle{position:absolute;bottom:clamp(8px,1.6vw,16px);left:0;right:0;text-align:center;font-size:clamp(9px,1.15vw,13px);color:var(--hl);opacity:0.95;letter-spacing:0.12em;font-weight:500;padding:0 clamp(16px,3vw,28px);}
+  .ntool-pv-subtitle{position:absolute;bottom:clamp(8px,1.6vw,16px);left:0;right:0;text-align:center;font-size:clamp(9px,1.2vw,14px);color:var(--hl);opacity:0.95;letter-spacing:0.06em;font-weight:500;padding:0 clamp(16px,3vw,28px);}
+  /* 회사소개서·전략로드맵 슬로건 스타일 정합: 영문은 Playfair Display italic */
+  .ntool-pv-subtitle em{font-family:"Playfair Display","Hudson NY Serif",Georgia,serif;font-style:italic;font-weight:500;letter-spacing:0.01em;font-size:1.08em;}
 
   /* ── 미리보기 본문 (흰 배경, 자동 파싱 3구획) ── */
   #noticePreview .ntool-pv-body{flex:1;padding:clamp(18px,3.2vw,36px) clamp(16px,2.8vw,32px) clamp(28px,4vw,42px);display:flex;flex-direction:column;justify-content:center;align-items:stretch;color:#1a1a1a;line-height:1.85;font-size:clamp(12px,1.6vw,19px);font-weight:500;background:#fff;text-align:center;overflow:hidden;position:relative;}
@@ -197,6 +204,8 @@
         <button class="ntool-btn primary" onclick="ntPrint('A3')">🖨️ A3 인쇄</button>
         <button class="ntool-btn primary" onclick="ntPrint('A4')">🖨️ A4 인쇄</button>
         <button class="ntool-btn secondary" onclick="ntSave()">💾 저장하기</button>
+        <button class="ntool-btn secondary" onclick="ntDownloadPDF()">📄 PDF 다운로드</button>
+        <button class="ntool-btn secondary" onclick="ntDownloadPNG()">🖼️ PNG 다운로드</button>
       </div>
       <div class="ntool-saved" id="noticeSavedList"></div>
     </div>
@@ -210,7 +219,7 @@
             <div class="ntool-pv-wmark-w" id="noticePvWmark">W</div>
             <div class="ntool-pv-title-kr" id="noticePvTitleKr">국문 공지 제목</div>
             <div class="ntool-pv-title-en" id="noticePvTitleEn">ENG NOTICE TITLE</div>
-            <div class="ntool-pv-subtitle">A Day, Well Completed. 하루의 완성, 웰페리온</div>
+            <div class="ntool-pv-subtitle"><em>A Day, Well Completed.</em> 하루의 완성, 웰페리온</div>
           </div>
           <div class="ntool-pv-body" id="noticePvBody">본문 내용이 여기에 표시됩니다.</div>
           <div class="ntool-pv-ftr">
@@ -449,6 +458,8 @@
     var html = '<!DOCTYPE html><html><head><meta charset="utf-8"><title>'+esc(brand.name)+' NOTICE</title>';
     html += '<base href="'+baseUrl+'">';
     html += '<link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.min.css" rel="stylesheet">';
+    html += '<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>';
+    html += '<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@1,400;1,500;1,600&display=swap" rel="stylesheet">';
     html += '<style>';
     html += '@page{size:'+sizeRule+';margin:0;}';
     html += '*{margin:0;padding:0;box-sizing:border-box;}';
@@ -461,7 +472,8 @@
     html += '.wmark{position:absolute;top:0.8vmin;right:2.4vmin;font-family:"Pretendard","Apple SD Gothic Neo",sans-serif;font-size:18vmin;font-weight:200;line-height:1;letter-spacing:-0.05em;opacity:0.55;color:'+brand.logo+';user-select:none;}';
     html += '.tkr{font-size:6.2vmin;font-weight:700;line-height:1.16;margin-bottom:0.8vmin;color:'+brand.logo+';letter-spacing:0.005em;}';
     html += '.ten{font-size:3vmin;font-weight:500;color:'+brand.logo+';opacity:0.92;letter-spacing:0.01em;margin-bottom:0;}';
-    html += '.sub{position:absolute;bottom:1.8vmin;left:0;right:0;text-align:center;font-size:1.55vmin;color:#ED5B3F;opacity:0.95;letter-spacing:0.12em;font-weight:500;padding:0 4vmin;}';
+    html += '.sub{position:absolute;bottom:1.8vmin;left:0;right:0;text-align:center;font-size:1.6vmin;color:#ED5B3F;opacity:0.95;letter-spacing:0.06em;font-weight:500;padding:0 4vmin;}';
+    html += '.sub em{font-family:"Playfair Display","Hudson NY Serif",Georgia,serif;font-style:italic;font-weight:500;letter-spacing:0.01em;font-size:1.08em;}';
     /* BODY */
     html += '.body{flex:1;background:#fff;color:#1a1a1a;padding:4.5vmin 4vmin 6vmin;text-align:center;display:flex;flex-direction:column;justify-content:center;align-items:stretch;line-height:1.85;font-size:'+fs+'px;font-weight:500;overflow:hidden;position:relative;}';
     html += '.notice-date{position:absolute;right:3.5vmin;bottom:1.8vmin;font-size:0.78em;color:#B79F8A;font-weight:600;letter-spacing:0.06em;text-align:right;margin:0;}';
@@ -485,7 +497,7 @@
     html += '<div class="wmark">W</div>';
     html += '<div class="tkr">'+esc(titleKr)+'</div>';
     html += '<div class="ten">'+esc(titleEn)+'</div>';
-    html += '<div class="sub">A Day, Well Completed. 하루의 완성, 웰페리온</div>';
+    html += '<div class="sub"><em>A Day, Well Completed.</em> 하루의 완성, 웰페리온</div>';
     html += '</div>';
     html += '<div class="body">'+bodyHtml+imgHtml+'</div>';
     html += '<div class="ftr"><img src="../../_assets/logo/watermarks/corner_white.png" alt="WELLPERION"></div>';
@@ -511,6 +523,56 @@
     var fontFam = ff==='serif' ? '"Noto Serif KR","Batang",serif' : '"Pretendard","Apple SD Gothic Neo",sans-serif';
     return {brand:brand, titleKr:titleKr, titleEn:titleEn, bodyHtml:bodyHtml, fs:fs, fontFam:fontFam, imgHtml:imgHtml};
   }
+
+  /* PDF/PNG 즉시 다운로드 — 인쇄 빌더 HTML을 hidden iframe에 렌더링 후 html2canvas 캡처 */
+  function ntCaptureToCanvas(pageSize){
+    return new Promise(function(resolve, reject){
+      var d = ntCollectData();
+      var html = ntBuildPageHtml(d.brand, d.titleKr, d.titleEn, d.bodyHtml, d.imgHtml, d.fontFam, d.fs, pageSize);
+      var sizeMap = {A3:[297,420], A4:[210,297]};
+      var mm = sizeMap[pageSize] || [297,420];
+      var px = 96/25.4; /* 1mm = ~3.78px @96dpi */
+      var w = Math.round(mm[0]*px), h = Math.round(mm[1]*px);
+      var iframe = document.createElement('iframe');
+      iframe.style.cssText = 'position:fixed;left:-99999px;top:0;width:'+w+'px;height:'+h+'px;border:0;';
+      document.body.appendChild(iframe);
+      iframe.onload = function(){
+        setTimeout(function(){
+          var target = iframe.contentDocument.querySelector('.page');
+          if(!target){ document.body.removeChild(iframe); reject(new Error('렌더 대상 없음')); return; }
+          html2canvas(target, {scale:2, backgroundColor:'#ffffff', useCORS:true, logging:false}).then(function(canvas){
+            document.body.removeChild(iframe);
+            resolve({canvas:canvas, mm:mm});
+          }).catch(function(err){ document.body.removeChild(iframe); reject(err); });
+        }, 800);
+      };
+      iframe.srcdoc = html;
+    });
+  }
+
+  function ntDownloadFileName(ext){
+    var titleKr = (el('noticeTitleKr').value || '공지').replace(/[\\\/:\*\?"<>\|]/g,'').trim();
+    var d = new Date().toISOString().slice(0,10).replace(/-/g,'');
+    return 'WELLPERION_'+titleKr+'_'+d+'.'+ext;
+  }
+
+  window.ntDownloadPNG = function(){
+    ntCaptureToCanvas('A3').then(function(r){
+      var link = document.createElement('a');
+      link.download = ntDownloadFileName('png');
+      link.href = r.canvas.toDataURL('image/png');
+      link.click();
+    }).catch(function(err){ alert('PNG 생성 실패: '+err.message); });
+  };
+
+  window.ntDownloadPDF = function(){
+    ntCaptureToCanvas('A3').then(function(r){
+      var imgData = r.canvas.toDataURL('image/png');
+      var pdf = new jspdf.jsPDF({orientation:'portrait', unit:'mm', format:[r.mm[0], r.mm[1]]});
+      pdf.addImage(imgData, 'PNG', 0, 0, r.mm[0], r.mm[1]);
+      pdf.save(ntDownloadFileName('pdf'));
+    }).catch(function(err){ alert('PDF 생성 실패: '+err.message); });
+  };
 
   window.ntPrint = function(size){
     var d = ntCollectData();
