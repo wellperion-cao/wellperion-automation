@@ -268,6 +268,10 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
         <svg viewBox="0 0 24 24"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
         현황 대시보드
       </a>
+      <a class="sheet-link" onclick="openMgmtAddForm()" style="cursor:pointer;background:var(--green-bg);color:var(--green);border-color:rgba(106,191,123,0.3);">
+        <svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+        항목 추가
+      </a>
       <a class="sheet-link" href="https://docs.google.com/spreadsheets/d/1DKEKRrpsi9Nit7dNdNGsXLYtzie3PopbwD7EJzJCku0" target="_blank" rel="noopener">
         <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zM6 20V4h7v5h5v11H6zm2-6h8v2H8v-2zm0-3h8v2H8v-2z"/></svg>
         시트
@@ -761,11 +765,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   </div>
   <div id="adminView"></div>
 
-  <!-- 항목 관리 영역 -->
-  <div class="admin-mgmt-divider">
-    <h2>항목 관리</h2>
-    <div class="mgmt-sub">체크리스트 항목을 추가, 편집, 삭제합니다. 변경사항은 이 기기에 저장됩니다.</div>
-  </div>
+  <!-- 항목 관리 영역 (헤더 폐기 — 시트칸 옆 '항목 추가' 버튼으로 진입) -->
 
   <!-- 새 항목 추가 폼 -->
   <div class="admin-mgmt-form" id="mgmtAddForm">
@@ -830,8 +830,8 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
     </div>
   </div>
 
-  <!-- 커스텀 항목 목록 -->
-  <div class="mgmt-item-list" id="mgmtItemList">
+  <!-- 커스텀 항목 목록 (2026-05-28 GM 결재 폐기 — display:none) -->
+  <div class="mgmt-item-list" id="mgmtItemList" style="display:none">
     <h3>커스텀 항목 목록 <span class="mgmt-count" id="mgmtCount">0건</span></h3>
     <div class="mgmt-filter-bar">
       <select id="mgmtFilterDayType" onchange="mgmtRenderList()">
@@ -2247,6 +2247,20 @@ function mgmtGenerateId(){
 }
 
 /* ── 추가 / 저장 ── */
+function openMgmtAddForm(){
+  // admin 탭 진입 + 항목 추가 폼으로 스크롤
+  switchTab('admin');
+  setTimeout(function(){
+    var form = document.getElementById('mgmtAddForm');
+    if(form){
+      form.scrollIntoView({behavior:'smooth', block:'start'});
+      // 첫 필드 포커스
+      var firstField = form.querySelector('select, input');
+      if(firstField) firstField.focus();
+    }
+  }, 100);
+}
+
 function mgmtAddItem(){
   const slot = document.getElementById('mgmtSlot').value;
   const shift = document.getElementById('mgmtShift').value;
