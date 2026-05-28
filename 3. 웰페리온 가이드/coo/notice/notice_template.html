@@ -73,10 +73,9 @@
   #noticePreview .notice-imgs{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:14px;}
   #noticePreview .notice-imgs img{max-width:46%;max-height:120px;border-radius:6px;object-fit:cover;}
 
-  /* ── 미리보기 푸터 ── */
-  .ntool-pv-ftr{background:#221F20;padding:clamp(10px,1.8vw,18px);display:flex;align-items:center;justify-content:center;gap:8px;flex:0 0 6.5%;}
-  .ntool-pv-ftr img{width:clamp(18px,2.8vw,32px);height:auto;}
-  .ntool-pv-ftr span{color:#B79F8A;font-size:clamp(9px,1.2vw,14px);font-weight:600;letter-spacing:0.22em;}
+  /* ── 미리보기 푸터 (가로 wordmark 단독) ── */
+  .ntool-pv-ftr{background:#221F20;padding:clamp(10px,1.8vw,18px);display:flex;align-items:center;justify-content:center;flex:0 0 6.5%;}
+  .ntool-pv-ftr img.wlogo-h-img{height:clamp(14px,2.6vw,32px);width:auto;}
 
   /* ── 사진 첨부 썸네일 ── */
   .ntool-img-thumb{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;}
@@ -200,8 +199,7 @@
           </div>
           <div class="ntool-pv-body" id="noticePvBody">본문 내용이 여기에 표시됩니다.</div>
           <div class="ntool-pv-ftr">
-            <img class="wlogo-img" alt="WELLPERION">
-            <span id="noticePvBrandName">WELLPERION</span>
+            <img class="wlogo-h-img" alt="WELLPERION">
           </div>
         </div>
       </div>
@@ -211,16 +209,18 @@
 
 <script>
 (function(){
+  /* 공식 SSOT: wellperion_brand_identity(최종시안).pdf (BLACK=#221F20, BEIGE=#B79F8A, HIGHLIGHT=#ED5B3F)
+     각 서브브랜드: logo=메인 컬러, bg=배경(=헤더), pantone 참고용 */
   const BRANDS = {
-    main:      {name:'WELLPERION',                 logo:'#B79F8A', bg:'#221F20', hdr:'#221F20', sub:'W'},
-    pt:        {name:'WELLPERION PT',              logo:'#B54840', bg:'#512B32', hdr:'#C64233', sub:'W gym'},
-    pilates:   {name:'WELLPERION PILATES',         logo:'#C44558', bg:'#8A2933', hdr:'#E8694B', sub:'W pilates'},
-    swimming:  {name:'WELLPERION SWIMMING',        logo:'#215768', bg:'#172C42', hdr:'#4AAFCB', sub:'W swimming'},
-    squash:    {name:'WELLPERION SQUASH',          logo:'#D2D2D2', bg:'#77968E', hdr:'#30574F', sub:'W squash'},
-    golf:      {name:'WELLPERION GOLF',            logo:'#337342', bg:'#132117', hdr:'#09763D', sub:'W golf'},
-    gymnastic: {name:'WELLPERION GYMNASTIC',       logo:'#DCE7FF', bg:'#8F9AB6', hdr:'#2C74B6', sub:'W gymnastic'},
-    sports:    {name:'WELLPERION SPORTS CLUB',     logo:'#3F71B0', bg:'#253B6C', hdr:'#253B6C', sub:'W sports club'},
-    brad:      {name:"BRAD LITTLE'S STAR ACADEMY", logo:'#FFFFFF', bg:'#000000', hdr:'#000000', sub:"Brad Little's"}
+    main:      {name:'WELLPERION',                 logo:'#B79F8A', bg:'#221F20', hdr:'#221F20', pantone:'4735 C'},
+    pt:        {name:'WELLPERION PT',              logo:'#B54840', bg:'#512B32', hdr:'#512B32', pantone:'504 C'},
+    sports:    {name:'WELLPERION SPORTS CLUB',     logo:'#3F71B0', bg:'#253B6C', hdr:'#253B6C', pantone:'—'},
+    pilates:   {name:'WELLPERION PILATES',         logo:'#C44558', bg:'#8A2933', hdr:'#8A2933', pantone:'202 C'},
+    swimming:  {name:'WELLPERION SWIMMING',        logo:'#215768', bg:'#172C42', hdr:'#172C42', pantone:'533 C'},
+    squash:    {name:'WELLPERION SQUASH',          logo:'#D2D2D2', bg:'#77968E', hdr:'#77968E', pantone:'5565 C'},
+    golf:      {name:'WELLPERION GOLF',            logo:'#337342', bg:'#132117', hdr:'#132117', pantone:'627 C'},
+    gymnastic: {name:'WELLPERION GYMNASTIC',       logo:'#DCE7FF', bg:'#8F9AB6', hdr:'#8F9AB6', pantone:'535 C'},
+    brad:      {name:"BRAD LITTLE'S STAR ACADEMY", logo:'#FFFFFF', bg:'#000000', hdr:'#000000', pantone:'—'}
   };
   const NOTICE_PRESETS = {
     holiday:   {kr:'휴관일 안내',       en:'Regular Closed Day Notice'},
@@ -276,16 +276,18 @@
     return html;
   }
 
-  var WLOGO = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAANEAAACBCAYAAABetF8YAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAt/SURBVHhe7Z1NqyRKEYb9/2tX7ty50o0uBHFzN7oQLhdkQO6AogzCgNwrih8IIw+cF2LiRGZ9RHb1me73gaDPZOVHZWa8GVnVVT0/+GSMaWERGdPEIjKmiUVkTBOLyJgmFpExTSwiY5pYRMY0sYiMaWIRGdPEIjKmiUVkTBOLyJgmFpExTSwiY5pYRE3+8fEvr+x///33y9H9dOr513cfX5U9Q1UPaWaORdTk/Vc//fTNz374mf313W9fju7nz7/71al6ENrvf/6jz8pxTkf5zz///lkdsr/96d1LDjPCImoycj7Sj1DVgzi2olElvjORqKrnjBifEYtoAZUDknaUo9GoEt7KKHRGjM+IRbSAe0UjR6G3gUW0iFXR6MM3X72qh7QMF/w5n6PQfbCIFlFd4GNHo9HeehBMzrMqCp0R/zNjES2E65cVDrlVD2LJx1dGoaPCf3YsooVcFY1WRaE//uYXr+pxFDqORbSYW0ej7z+8f5V+JgpV0QxzFDqORbQYosi7X/74lXMe/eZ/FI2qus9EoSqazW6nmzEW0Q3gW/7soGeiRRWNsq2KQggW4ZrjWEQ3YkXEGEWjaI5C98ciuhGrolFVj8xR6G1gEd2QP/z6J68c9kzkqKLa2bqqKPTx269fjpozWEQ3pFr1z0SP6ikGosdRqvNBoKaHRXRjqpX/SASZXRcdvY6pzsWvOvSxiG5MNxpVUUh25FrGUeh2WEQXcDYajR7LibY3GnUjohljEV1AJQZuOmzBEwq5XLY90agbDc0ci+giKkHMrkcq4bH9qr6ArV6ViDgK3RaL6CJGohgxE111y3v0zJuj0O2xiC5kbzTa2v5VX8BSd0X1XZV/wWctFtGFII58u7qKRpXY8vZrTzQ6IjZzHovoYqprmhiNqihUbb8qgfB+UOTIts+cxyK6mOrL0xiN9kQhMbth4Ch0HRbRHRhFo71RSMxuGuQohHAdhW6DRXQHRtHoSBQSVTSq6jn6iJDZj0V0J6rtVrZZFBJVNMq25wtZcx6L6I5UF/7RtqKQqCJPNEeh22IR3ZFZNDpyE6C6lpIhVEeh22IR3ZlRNDp6E2AUjRCquS0W0Z2prmmORCFRRSMEam6PRfQGyHfYzt6KzrfOHYWuwSJ6A8RodCYKiXjrfM+rFmYNFtEbQdGo+4WootHeO3umj0X0RuDJ6k4UEkSj/AyduS0WkTFNLCJjmlhExjSxiIxpYhEZ08QiMqaJRWRME4vImCYWkTFNLCJjmlhExjSxiIxpYhEZ08QiMqaJRWRME4vImCYWkTFNLhERrzzz2jK25/Vn3vJU/j3wKnTOz490KG3L8g96KP3Iq9pnysRxGdnHb7+e1rminzPb+r+MlG9Pv3nrlnPgDV5eh9fvQfCrRPyb//Fv72vtsd/ff3j/krpNHPNVXCIiBo/BwnCKLeJvqO0ZIF6HJm/82d38Czozi+VA6Ud+p+BMGfKq3JbxwyPVWKzo55bh7COnU55Zv5l/BJJ/f3xkiGpr3nO/9457HPNVXLadk6Pv+RWa+IOGW787MBKoBpnyDNzM8mqr+ji2lzNlyBvLZdOqHZ0vR5MV/azK0g6OH+eCuWO8IzpGmQrajHXwN/NEftVFdEA0ua/4TG5PZBFRbpQ3Qrsqs4rLRMSk6ORnnWXQlQ9jcGbEeuOWQoN8JmyrvpFjVJwps3dCGa/oNKv7uVUW51be/J8sK73qN3MpUfCZF4AK+kobqrcSLqjfHFcbexboL1pEDIROfjaYGkAGRPlnjjmKcI8kImD85CyxT1eICDTOWERpud8IPTp3FP4e4uJIHzPqN59xHLPIM0fGfC+XiQg0EXyOUOgn5EtIs4HRgORrrUcTEahPRAaxop97ysZzjX2s0kDnhZCOCkhEIeWFV/XzCfRBeWfXU0fHfA+XiigOShWiGWwdZyuAMPgbYVUwWMqfJ2qFc2XHmHGmzNEJ1QITF5WrRBS32bGPVVqcx7y4HUX9G+00JCLQIo1wOd+Ko2O+h0tFtLWly6LJospor54HGB5NRNGJo2NeJSLNDRbnQmmx3zFvtVgeYbRQViKiLS00+ETV9hcvIlDnqy1dtX2rVl+hPXe12sVBxklmlqMY5bC3IiIcSX3lMzrHkX7mc1PbHJuBaNR+3hWojlg3c0Ua59QlLryxjdjvSDzXuO0Ve8f8CJeLaLRKxahTTUiONrOtHGiQ99jIuXL6jDNl4oRmh8dYaLSIYDhHjshH+kmdkVG6YFzjfGG5faXHfo8c/CxH24iXDXmBjWO+istFFMUSLwA1WThKhElT/iiW2VYONMjkY+BmlsO+2uPYXs6UIa/KzQwhMT7V9uRIP/Nio/olItqgPtUZjXmhjoyOx2MrI1H0l9iGznHUhvwDi8KnDqWv4nIRgbZtMdzqojCmCYXnuKpUaREN8miVnUE5rHKaEWfKxAnl78ryyp9Z0U+VRaSaGwzxUv9IwKC8nKsgv9JH5fYyuhm1JSJQX+iHynKeqm8VdxGRBllRhw6qY9UNB60qijpxIPLqKr40EZ1lpYiAudACxeeWCFRH7HeMHqNFbi8SQhbLHhFxHuqL8q0Y88xdRBQHmS3d1q3veP3D8dF1UmSFcz2jiIDoJ+djjGdCUh2531r4qGcrmo7gvEb17xERRN+hvhVjnrmLiEArDIOtrVx1xw6YRHUcweliu7pjJyyibdR2VTY632heQHlyv5mzGNGOCikurNUWf6+IIIpRCzC2iruJKG7pNNiz0C+hxbtVs4mxiLZR26OyW44MOl71O0Y0PvecI7sUzTU2ioRHRATKH20VdxNR3NLJSBsRJxRDTDM0aEw+EzyzLEa1gair/LJY7kwZ/q1yZ1nRz5lzU6/yVYucjlF/BW1q14Exb0QDIl08N+Y3toWNhAtHRYQQ4wKMreJuIoI4uPw9I4tutpWDauUZWZ6IKk9lsVx1vLJYBudR+llW9HMrQsTIgLNHlD4SkaANRaUt4zy36lO/c59mIOjYziruKiIGisHFtgYNWAmVfxa1gMlW3i3LjlHlqSyWq45XFsvQB6WfZUU/t8aeVVx5czRS+tZ8CCIQCyDOn416crQcoX7nPm1B+zrnVdxVRMY8AhaRMU0sImOaWETGNLGIjGliERnTxCIypolFZEwTi8iYJhaRMU2eWkQ8YsLjHzwKUhEfS8JGj7bo8Z3qaWNBG9UDnJH8CE/1OE6VHh8fGpXN50hb1SMzuc9VHuqgL9jWmFB+Ni6PwNOKCGeJDyPy7FYGJ4h5eICychq9o1I5HMQHH/c8mSyj/UyVnvsyy6N3g/S8Wib3ucqTz7MSbHzYlKenH1lITysiVlE5AJNeTbIcKv6dHQb0iP3o5TWJiCfVca6RQ40cO0I9WSBiVj4Kjag4yhv7PILjKls9MKq2qIu+jqLVo/C0ImJi5VQ4dxVF5FA4jFbW7DQ4JOl6XWDkMCpPnQi4EqPakYNXDqo6KlSuIoqINuhzlVd9llVt6b0f6uHvvCjwb/WXdkbn+yg89TURDo9DjyKEHErOWV07yaEkJurLUI8cV85V1UUbRDXyY5UgKTtySp1nRYwOfGJVXh3XOVRiBxYdbWOrPjOWpG8tLo/A04qIVZ4JloiY6Lzyy6FGxBVXRl0ZnJV80YGzYGEmAkFZ6qmYlZeI+JTzV3l1juTDqmhIefIpb77Oo2+kITTaUH2PytOKiEigVRLDMTJykhE4SXQQ/Ts7ntIxnApBVddPMxEI6uiKCCcn4lV51ed4vhHKMlZaPKgn91cL1KiOR+Opt3Nw5Tbj0bY0W/1BcFXEfTSeXkTGdLGIjGliERnTxCIypolFZEwTi8iYJhaRMU0sImOaWETGNLGIjGliERnTxCIypolFZEwTi8iYJhaRMU0sImOaWETGNLGIjGliERnTxCIypolFZEwTi8iYJhaRMS0+ffo/r+FmK6S1mKQAAAAASUVORK5CYII=';
+
 
   window.ntUpdatePreview = function(){
     var brandKey = el('noticeBrand').value;
     var brand = BRANDS[brandKey];
     var hdr = el('noticeHdr');
     if(hdr) hdr.style.background = brand.hdr;
-    el('noticePvTitleKr').textContent = el('noticeTitleKr').value || '국문 공지 제목';
-    el('noticePvTitleEn').textContent = el('noticeTitleEn').value || 'ENG NOTICE TITLE';
-    el('noticePvBrandName').textContent = brand.name;
+    var kr = el('noticePvTitleKr'); var en = el('noticePvTitleEn');
+    kr.textContent = el('noticeTitleKr').value || '국문 공지 제목';
+    en.textContent = el('noticeTitleEn').value || 'ENG NOTICE TITLE';
+    kr.style.color = brand.logo;
+    en.style.color = brand.logo;
     var bodyEl = el('noticePvBody');
     var txt = el('noticeBody').value;
     var ff = el('noticeFontFamily').value;
@@ -356,8 +358,8 @@
     html += '.notice-label-top{position:absolute;top:3.2vmin;left:50%;transform:translateX(-50%);font-size:1.5vmin;font-weight:600;letter-spacing:0.32em;color:rgba(255,255,255,0.78);}';
     html += '.wmark{position:absolute;top:2.4vmin;right:3vmin;width:14vmin;opacity:0.18;}';
     html += '.wmark img{width:100%;height:auto;display:block;}';
-    html += '.tkr{font-size:6.2vmin;font-weight:700;line-height:1.16;margin-bottom:0.8vmin;color:#E8D8C5;letter-spacing:0.005em;}';
-    html += '.ten{font-size:3vmin;font-weight:500;color:#E8D8C5;opacity:0.92;letter-spacing:0.01em;margin-bottom:2vmin;}';
+    html += '.tkr{font-size:6.2vmin;font-weight:700;line-height:1.16;margin-bottom:0.8vmin;color:'+brand.logo+';letter-spacing:0.005em;}';
+    html += '.ten{font-size:3vmin;font-weight:500;color:'+brand.logo+';opacity:0.92;letter-spacing:0.01em;margin-bottom:2vmin;}';
     html += '.sub{font-size:1.4vmin;color:#ED5B3F;opacity:0.92;letter-spacing:0.02em;font-weight:500;}';
     /* BODY */
     html += '.body{flex:1;background:#fff;color:#1a1a1a;padding:4.5vmin 4vmin;text-align:center;display:flex;flex-direction:column;justify-content:center;align-items:stretch;line-height:1.85;font-size:'+fs+'px;font-weight:500;overflow:hidden;}';
@@ -371,21 +373,20 @@
     html += '.notice-imgs{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;margin-top:2vmin;}';
     html += '.notice-imgs img{max-width:48%;max-height:24vh;border-radius:1vmin;object-fit:cover;}';
     html += '.hl{color:#ED5B3F;font-weight:700;}';
-    /* FOOTER */
-    html += '.ftr{flex:0 0 6.5%;background:#221F20;display:flex;align-items:center;justify-content:center;gap:1.2vmin;}';
-    html += '.ftr img{width:3vmin;height:auto;}';
-    html += '.ftr span{color:#B79F8A;font-size:1.7vmin;font-weight:600;letter-spacing:0.22em;}';
+    /* FOOTER (가로 wordmark 단독) */
+    html += '.ftr{flex:0 0 6.5%;background:#221F20;display:flex;align-items:center;justify-content:center;}';
+    html += '.ftr img{height:3vmin;width:auto;}';
     html += '</style></head><body>';
     html += '<div class="page">';
     html += '<div class="hdr" style="background:'+brand.hdr+';">';
     html += '<div class="notice-label-top">NOTICE</div>';
-    html += '<div class="wmark"><img src="'+WLOGO+'" alt="W"></div>';
+    html += '<div class="wmark"><img src="'+WLOGO_V+'" alt="W"></div>';
     html += '<div class="tkr">'+esc(titleKr)+'</div>';
     html += '<div class="ten">'+esc(titleEn)+'</div>';
     html += '<div class="sub">웰페리온은 회원님들의 건강과 행복을 위하여 항상 최선을 다하겠습니다.</div>';
     html += '</div>';
     html += '<div class="body">'+bodyHtml+imgHtml+'</div>';
-    html += '<div class="ftr"><img src="'+WLOGO+'" alt="WELLPERION"><span>'+esc(brand.name)+'</span></div>';
+    html += '<div class="ftr"><img src="'+WLOGO_H+'" alt="WELLPERION"></div>';
     html += '</div></body></html>';
     return html;
   }
@@ -502,7 +503,8 @@
   // 초기화
   var today = new Date().toISOString().slice(0,10);
   if(el('noticeDate')) el('noticeDate').value = today;
-  document.querySelectorAll('.wlogo-img').forEach(function(img){ img.src = WLOGO; });
+  document.querySelectorAll('.wlogo-img').forEach(function(img){ img.src = WLOGO_V; });
+  document.querySelectorAll('.wlogo-h-img').forEach(function(img){ img.src = WLOGO_H; });
   ntApplyPreset();
   ntRenderSavedList();
 })();
