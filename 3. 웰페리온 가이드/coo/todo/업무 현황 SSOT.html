@@ -586,7 +586,7 @@ function renderTasks() {
 
   // 완료 로그
   const filteredDone = filterDone(done);
-  html += '<div class="done-log">';
+  html += '<div class="done-log" id="doneLogSection">';
   html += '<div class="done-log-header" onclick="toggleDoneLog()">';
   html += '<h3>완료 로그 (' + filteredDone.length + '건)</h3>';
   html += '<span class="cat-arrow' + (doneLogOpen ? ' open' : '') + '">&#9654;</span>';
@@ -797,10 +797,13 @@ function toggleCat(header) {
 
 function toggleDoneLog() {
   doneLogOpen = !doneLogOpen;
-  const el = document.querySelector('.done-log-body');
-  const arrow = document.querySelector('.done-log-header .cat-arrow');
+  const section = document.getElementById('doneLogSection');
+  if (!section) return;
+  const el = section.querySelector('.done-log-body');
+  const arrow = section.querySelector('.cat-arrow');
   if (el) el.classList.toggle('open', doneLogOpen);
   if (arrow) arrow.classList.toggle('open', doneLogOpen);
+  if (doneLogOpen) section.scrollIntoView({ behavior:'smooth', block:'start' });
 }
 
 /* ═══════════════════════════════════════════
