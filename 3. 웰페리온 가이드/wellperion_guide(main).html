@@ -5479,15 +5479,14 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
       var existIds = {};
       tasks.forEach(function(t){ existIds[t.id] = true; });
       var added = false;
-      var newSeeds = [];
       CEO_SEEDS.forEach(function(s) {
-        if (!existIds[s.id]) { tasks.push(s); added = true; newSeeds.push(s); }
+        if (!existIds[s.id]) {
+          // 시드는 가이드허브 시각용 — SSOT push 대상에서 영구 제외 (중복 방지 · 2026-05-28)
+          s.ssotSynced = true;
+          tasks.push(s); added = true;
+        }
       });
-      if (added) {
-        gm1Save(tasks);
-        // SSOT 자동 동기화 (옵션 A · 2026-05-28)
-        newSeeds.forEach(function(s){ gm1PushToSSOT(s); });
-      }
+      if (added) gm1Save(tasks);
     }
 
     function gm1GenId() {
@@ -5508,8 +5507,16 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
 
     function gm1PushToSSOT(task) {
       if (!task || task.ssotSynced) return;
-      // 개인 카테고리는 SSOT 미포함 (회사 업무 SSOT 한정)
       if (task.category === '개인') return;
+      if (String(task.id || '').indexOf('seed-') === 0) return;  // 시드는 push 안 함
+
+      // 낙관적 즉시 플래그 (중복 방지 · 2026-05-28) — 동일 페이지 로드 중 재호출 차단
+      task.ssotSynced = true;
+      var tasks = gm1Load();
+      for (var i = 0; i < tasks.length; i++) {
+        if (tasks[i].id === task.id) { tasks[i].ssotSynced = true; break; }
+      }
+      gm1Save(tasks);
 
       var ssotCategory = SSOT_CAT_MAP[task.category] || '[3] 운영 정책';
       var params = {
@@ -5527,24 +5534,23 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
       var qs = Object.keys(params).map(function(k){
         return encodeURIComponent(k) + '=' + encodeURIComponent(params[k]);
       }).join('&');
-      // no-cors fire-and-forget (Apps Script GET-bridge for todo_ actions)
-      fetch(SSOT_API_URL + '?' + qs, { mode:'no-cors', redirect:'follow' })
-        .then(function(){
-          // 성공 가정 (no-cors라 응답 미확인) → 플래그 갱신
-          var tasks = gm1Load();
-          for (var i = 0; i < tasks.length; i++) {
-            if (tasks[i].id === task.id) { tasks[i].ssotSynced = true; break; }
-          }
-          gm1Save(tasks);
-        })
-        .catch(function(){ /* 실패 무시 (다음 페이지 로드 시 재시도) */ });
+      fetch(SSOT_API_URL + '?' + qs, { mode:'no-cors', redirect:'follow' }).catch(function(){});
     }
 
     function gm1RetrySSOTSync() {
+      // 시드 (seed-* prefix)는 가이드허브 시각용 — SSOT 자동 push 제외 (중복 방지 · 2026-05-28)
       var tasks = gm1Load();
       tasks.forEach(function(t){
-        if (!t.ssotSynced && t.category !== '개인') gm1PushToSSOT(t);
+        if (t.ssotSynced) return;
+        if (t.category === '개인') return;
+        if (String(t.id || '').indexOf('seed-') === 0) {
+          // 시드는 push 안 함 — 한 번 ssotSynced=true 박아 다시 시도 막기
+          t.ssotSynced = true;
+          return;
+        }
+        gm1PushToSSOT(t);
       });
+      gm1Save(tasks);
     }
 
     function gm1UpdateStatus(id, status) {

@@ -820,9 +820,34 @@ function renderTaskCard(t, idx) {
     html += '<div style="margin:6px 0;"><a class="chip link-chip" href="' + escAttr(t.fileUrl) + '" target="_blank" rel="noopener" onclick="event.stopPropagation()">첨부파일</a></div>';
   }
 
+  // 위험 영역 — 삭제 (비밀번호 보호 · 2026-05-28)
+  html += '<div style="margin-top:14px;padding:10px 12px;background:var(--red-bg);border:1px dashed rgba(237,91,63,0.4);border-radius:8px;">';
+  html += '<div style="font-size:11px;color:var(--red);font-weight:700;margin-bottom:6px;">⚠️ 위험 영역</div>';
+  html += '<button onclick="event.stopPropagation();deleteTaskWithAuth(\'' + escAttr(t.id) + '\',\'' + escAttr(t.title || '') + '\')" style="background:var(--red);color:#fff;border:none;padding:7px 14px;border-radius:8px;font-size:12px;font-weight:700;font-family:inherit;cursor:pointer;">🗑 이 업무 영구 삭제</button>';
+  html += '<span style="font-size:11px;color:var(--dim);margin-left:8px;">비밀번호 필요</span>';
+  html += '</div>';
+
   html += '</div>'; // task-detail
   html += '</div>'; // task-card
   return html;
+}
+
+async function deleteTaskWithAuth(id, title) {
+  const pw = prompt('"' + (title || id) + '" 영구 삭제\n\n비밀번호를 입력하세요:');
+  if (pw === null) return;
+  if (pw !== '1234') { alert('비밀번호가 일치하지 않습니다.'); return; }
+  showToast('삭제 중...');
+  try {
+    const res = await apiCall({ action: 'todo_delete', id: id });
+    if (res.ok) {
+      showToast('삭제 완료');
+      await loadTasks();
+    } else {
+      throw new Error(res.error || '삭제 실패');
+    }
+  } catch (e) {
+    showToast('삭제 실패: ' + e.message, true);
+  }
 }
 
 function renderDoneCard(t) {

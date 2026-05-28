@@ -398,16 +398,9 @@ function _processTodoAction(body) {
       sh.getRange(newRow, 1, 1, row.length).setValues([row]);
       _applyStatusColor(sh, newRow, row[7]);
 
-      // 결재요청 있으면 첫 결재자에게 카드 발송 (2026-05-28 신설)
-      if (body['결재요청']) {
-        const record = {};
-        TODO_HEADERS.forEach((h, i) => record[h] = row[i]);
-        const route = _buildApprovalRoute(record);
-        const next = _nextApprover(record, route);
-        if (next) _sendApprovalCard(record, route, next);
-      } else {
-        _notifyTelegram('📋 <b>[TODO 신규]</b>\n업무명: '+(body['업무명']||'-')+'\n카테고리: '+(body['카테고리']||'-')+'\n담당자: '+(body['담당자']||'-')+'\nID: '+id);
-      }
+      // 텔레그램 결재 발송 폐기 (2026-05-28 GM 결재) — 결재 SSOT 페이지 단일 운영.
+      // 일반 신규 알림만 유지 (결재요청 유무 무관, 짧은 알림).
+      _notifyTelegram('📋 <b>[TODO 신규]</b>\n업무명: '+(body['업무명']||'-')+'\n카테고리: '+(body['카테고리']||'-')+'\n담당자: '+(body['담당자']||'-')+(body['결재요청']?'\n결재요청: '+body['결재요청']:'')+'\nID: '+id);
       return _json({ ok: true, id: id, message: '업무가 추가되었습니다.' });
     }
 
@@ -437,13 +430,7 @@ function _processTodoAction(body) {
       sh.getRange(rowNum, 1, 1, TODO_HEADERS.length).setValues([existing]);
       _applyStatusColor(sh, rowNum, existing[TODO_HEADERS.indexOf('상태')]);
 
-      if (approvalChanged && (currentApprovalStatus === '' || currentApprovalStatus === '대기')) {
-        const record = {};
-        TODO_HEADERS.forEach((h, i) => record[h] = existing[i]);
-        const route = _buildApprovalRoute(record);
-        const next = _nextApprover(record, route);
-        if (next) _sendApprovalCard(record, route, next);
-      }
+      // 텔레그램 결재 발송 폐기 (2026-05-28 GM 결재). 결재는 결재 SSOT 페이지에서만 진행.
       return _json({ ok: true, id: id, message: '업무가 수정되었습니다.' });
     }
 
@@ -488,10 +475,8 @@ function _processTodoAction(body) {
       existing[TODO_HEADERS.indexOf('수정일')] = now;
       sh.getRange(rowNum, 1, 1, TODO_HEADERS.length).setValues([existing]);
 
+      // 텔레그램 결재 카드 폐기 (2026-05-28). 단순 진행 알림만 유지.
       if (next) {
-        // 다음 결재자에게 카드 발송
-        TODO_HEADERS.forEach((h, i) => record[h] = existing[i]);
-        _sendApprovalCard(record, route, next);
         _notifyTelegram('✅ <b>[' + role + ' 싸인 완료]</b> → ' + next + ' 결재 대기\n📌 ' + (record['업무명']||'-') + '\n🆔 ' + id);
       } else {
         _notifyTelegram('🎉 <b>[결재 완료]</b> 전 라인 승인\n📌 ' + (record['업무명']||'-') + '\n🆔 ' + id + '\n✅ ' + now);
