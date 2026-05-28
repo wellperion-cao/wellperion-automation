@@ -1088,11 +1088,15 @@ document.getElementById("resignModal").addEventListener("click",function(e){
 
 /* ============ 신규 입사자 등록 모달 ============ */
 function openHireModal(){
-  // 소속(팀) select 옵션 동적 채우기 (기존 직원 소속 unique 목록)
+  // 소속(팀) select 옵션 동적 채우기 (기존 직원 소속 unique 목록 — 큰 카테고리/잘못 입력값 제외)
+  var BIG=["운영부","지원부","시설부","강습부","경영지원부","관리부","경영부","지원","시설","파트너","파트너팀"];
   var sosokSel=document.getElementById("hireSosok");
   sosokSel.innerHTML='<option value="">선택하세요</option>';
   var sosokSet={};
-  DB.emp.forEach(function(e){var s=e["소속"];if(s&&!sosokSet[s])sosokSet[s]=1;});
+  DB.emp.forEach(function(e){
+    var s=e["소속"];
+    if(s&&!sosokSet[s]&&BIG.indexOf(s)<0) sosokSet[s]=1;
+  });
   Object.keys(sosokSet).sort(function(a,b){return a.localeCompare(b,"ko");}).forEach(function(s){
     var opt=document.createElement("option");opt.value=s;opt.textContent=s;sosokSel.appendChild(opt);
   });
