@@ -162,33 +162,10 @@ function _json(obj) {
     .setMimeType(ContentService.MimeType.JSON);
 }
 
-// ─── 텔레그램 발송 (옵션: inline_keyboard + chat_id 오버라이드) ───
+// ─── 텔레그램 알림 전면 폐기 (2026-05-28 GM 결재) — 결재 SSOT 페이지 단일 운영 ───
+// 함수 시그니처는 보존 — 향후 복구 시 본체만 복원하면 됨.
 function _notifyTelegram(text, opts) {
-  const token = _prop('BOT_TOKEN') || _prop('TELEGRAM_BOT_TOKEN');
-  opts = opts || {};
-  const chatId = opts.chat_id || _prop('APPROVAL_CHAT_ID') || _prop('CHAT_ID') || _prop('TELEGRAM_CHAT_ID');
-  if (!token || !chatId) return; // 설정 없으면 스킵
-
-  const payload = {
-    chat_id: chatId,
-    text: text,
-    parse_mode: 'HTML',
-    disable_web_page_preview: true
-  };
-  if (opts.inline_keyboard) {
-    payload.reply_markup = { inline_keyboard: opts.inline_keyboard };
-  }
-
-  try {
-    UrlFetchApp.fetch('https://api.telegram.org/bot' + token + '/sendMessage', {
-      method: 'post',
-      contentType: 'application/json',
-      payload: JSON.stringify(payload),
-      muteHttpExceptions: true
-    });
-  } catch (e) {
-    Logger.log('텔레그램 발송 실패: ' + e.message);
-  }
+  return; // no-op
 }
 
 // ─── 결재 라인 자동 산출 (결제 권한 기준 v2.0) ───

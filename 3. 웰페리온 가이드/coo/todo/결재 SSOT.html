@@ -107,8 +107,10 @@ const CAT_COLORS = {
 };
 
 let ALL_TASKS = [];
-let activeFilter = '전체';  // '전체' | '결재완료' | '반려' | '미결'
-let activeMonth = '전체';   // '전체' | 'YYYY-MM'
+let activeFilter = '전체';      // '전체' | '결재완료' | '반려' | '미결'
+let activeRoleFilter = '전체';  // '전체' | '부서장' | 'GM' | '대표님' — 차례별
+let activeCatFilter = '전체';   // '전체' | 카테고리
+let searchQuery = '';            // 키워드
 
 document.addEventListener('DOMContentLoaded', loadTasks);
 
@@ -153,8 +155,8 @@ function normalizeTask(r) {
 
 function render() {
   const el = document.getElementById('mainContent');
-  // 결재 진행/완료 건만 (결재상태 비어있지 않은 것)
-  const approvalTasks = ALL_TASKS.filter(t => t.approvalStatus);
+  // 결재 관련 건 (결재상태 있거나 결재요청이 체크된 모든 행) — 2026-05-28 보강
+  const approvalTasks = ALL_TASKS.filter(t => (t.approvalStatus && String(t.approvalStatus).trim()) || (t.approval && String(t.approval).trim()));
 
   // 통계
   const done = approvalTasks.filter(t => t.approvalStatus === '결재완료');
@@ -171,12 +173,58 @@ function render() {
   html += '<div class="stat-card"><div class="num" style="color:var(--red)">' + rejected.length + '</div><div class="label">반려</div></div>';
   html += '</div>';
 
-  // 필터
-  html += '<div class="filter-bar">';
+  // 결재자별 카운트 (미결만)
+  const pendingByRole = { '부서장':0, 'GM':0, '대표님':0 };
+  pending.forEach(t => {
+    const parsed = parseContent(t.content);
+    const route = buildEffectiveRoute(t, parsed.budget);
+    const nxt = nextApprover(t, route);
+    if (nxt && nxt in pendingByRole) pendingByRole[nxt]++;
+  });
+
+  // 카테고리 목록 (실측)
+  const catSet = {};
+  approvalTasks.forEach(t => { if (t.category) catSet[t.category] = (catSet[t.category]||0) + 1; });
+  const catList = Object.keys(catSet).sort();
+
+  // 1줄 — 상태 필터 + 보고용·인쇄
+  html += '<div class="filter-bar" style="align-items:center;">';
   html += '<button class="filter-btn ' + (activeFilter==='전체'?'active':'') + '" onclick="setFilter(\'전체\')">전체 (' + approvalTasks.length + ')</button>';
-  html += '<button class="filter-btn ' + (activeFilter==='결재완료'?'active':'') + '" onclick="setFilter(\'결재완료\')">결재완료 (' + done.length + ')</button>';
   html += '<button class="filter-btn ' + (activeFilter==='미결'?'active':'') + '" onclick="setFilter(\'미결\')">진행 중 (' + pending.length + ')</button>';
+  html += '<button class="filter-btn ' + (activeFilter==='결재완료'?'active':'') + '" onclick="setFilter(\'결재완료\')">결재완료 (' + done.length + ')</button>';
   html += '<button class="filter-btn ' + (activeFilter==='반려'?'active':'') + '" onclick="setFilter(\'반려\')">반려 (' + rejected.length + ')</button>';
+  html += '<div style="margin-left:auto;display:flex;gap:4px;">';
+  html += '<button class="filter-btn" onclick="window.print()" style="background:var(--paper);">🖨 인쇄</button>';
+  html += '<button class="filter-btn" onclick="shareReport()" style="background:var(--purple-bg);color:var(--purple);border-color:rgba(167,139,218,0.3);">📋 보고용</button>';
+  html += '</div>';
+  html += '</div>';
+
+  // 2줄 — 결재자별 차례 (미결 한정)
+  html += '<div class="filter-bar">';
+  html += '<span style="font-size:11px;color:var(--dim);align-self:center;margin-right:4px;">차례:</span>';
+  html += '<button class="filter-btn ' + (activeRoleFilter==='전체'?'active':'') + '" onclick="setRoleFilter(\'전체\')">전체</button>';
+  html += '<button class="filter-btn ' + (activeRoleFilter==='부서장'?'active':'') + '" onclick="setRoleFilter(\'부서장\')">부서장 (' + pendingByRole['부서장'] + ')</button>';
+  html += '<button class="filter-btn ' + (activeRoleFilter==='GM'?'active':'') + '" onclick="setRoleFilter(\'GM\')">김남욱GM (' + pendingByRole['GM'] + ')</button>';
+  html += '<button class="filter-btn ' + (activeRoleFilter==='대표님'?'active':'') + '" onclick="setRoleFilter(\'대표님\')">전응준 대표 (' + pendingByRole['대표님'] + ')</button>';
+  html += '<span style="font-size:11px;color:var(--dim);margin-left:6px;align-self:center;">부서장 = 이경연 실장·이정헌 소장·나우열 매니저</span>';
+  html += '</div>';
+
+  // 3줄 — 카테고리 필터
+  if (catList.length > 1) {
+    html += '<div class="filter-bar">';
+    html += '<span style="font-size:11px;color:var(--dim);align-self:center;margin-right:4px;">카테고리:</span>';
+    html += '<button class="filter-btn ' + (activeCatFilter==='전체'?'active':'') + '" onclick="setCatFilter(\'전체\')">전체</button>';
+    catList.forEach(cat => {
+      const active = activeCatFilter === cat ? 'active' : '';
+      html += '<button class="filter-btn ' + active + '" onclick="setCatFilter(\'' + escAttr(cat) + '\')">' + esc(cat) + ' (' + catSet[cat] + ')</button>';
+    });
+    html += '</div>';
+  }
+
+  // 4줄 — 검색
+  html += '<div class="filter-bar">';
+  html += '<input type="text" id="searchInput" placeholder="업무명·내용·담당자 검색" value="' + escAttr(searchQuery) + '" oninput="setSearch(this.value)" style="flex:1;background:var(--paper);border:1px solid var(--border);color:var(--text);padding:7px 12px;border-radius:8px;font-size:13px;font-family:inherit;">';
+  if (searchQuery) html += '<button class="filter-btn" onclick="setSearch(\'\')">✕ 초기화</button>';
   html += '</div>';
 
   // 필터링
@@ -185,16 +233,79 @@ function render() {
   else if (activeFilter === '반려') list = rejected;
   else if (activeFilter === '미결') list = pending;
 
+  // 카테고리 필터
+  if (activeCatFilter !== '전체') {
+    list = list.filter(t => t.category === activeCatFilter);
+  }
+
+  // 결재자별 차례 (미결 한정)
+  if (activeRoleFilter !== '전체') {
+    list = list.filter(t => {
+      if (t.approvalStatus === '결재완료' || /반려/.test(t.approvalStatus)) return false;
+      const parsed = parseContent(t.content);
+      const route = buildEffectiveRoute(t, parsed.budget);
+      return nextApprover(t, route) === activeRoleFilter;
+    });
+  }
+
+  // 검색
+  if (searchQuery && searchQuery.trim()) {
+    const q = searchQuery.trim().toLowerCase();
+    list = list.filter(t => {
+      const blob = ((t.title || '') + ' ' + (t.content || '') + ' ' + (t.owner || '') + ' ' + (t.category || '')).toLowerCase();
+      return blob.includes(q);
+    });
+  }
+
   // 정렬: 결재완료시각 또는 수정일 기준 최신 위
   list.sort((a, b) => String(b.completeTime || b['수정일'] || '').localeCompare(String(a.completeTime || a['수정일'] || '')));
 
   if (!list.length) {
-    html += '<div class="empty-msg"><span class="ico">📂</span>해당 조건의 결재 건이 아직 없습니다.<br><span style="font-size:12px;color:var(--dim);">업무&결재 현황 SSOT에서 결재요청을 체크해 보세요.</span></div>';
+    html += '<div class="empty-msg"><span class="ico">📂</span>해당 조건의 결재 건이 없습니다.<br><span style="font-size:12px;color:var(--dim);">필터를 조정하거나 업무&결재 현황 SSOT에서 결재요청을 체크해 보세요.</span></div>';
   } else {
+    html += '<div style="font-size:12px;color:var(--dim);margin-bottom:8px;">총 ' + list.length + '건 표시</div>';
     list.forEach(t => { html += renderApprovalCard(t); });
   }
 
   el.innerHTML = html;
+  // 검색 박스 focus 유지
+  if (searchQuery && document.activeElement && document.activeElement.id !== 'searchInput') {
+    const si = document.getElementById('searchInput');
+    if (si) { si.focus(); si.setSelectionRange(searchQuery.length, searchQuery.length); }
+  }
+}
+
+function setRoleFilter(r) { activeRoleFilter = r; render(); }
+function setCatFilter(c) { activeCatFilter = c; render(); }
+function setSearch(q) { searchQuery = q; render(); }
+
+function shareReport() {
+  const list = ALL_TASKS.filter(t => (t.approvalStatus && String(t.approvalStatus).trim()) || (t.approval && String(t.approval).trim()));
+  const done = list.filter(t => t.approvalStatus === '결재완료').length;
+  const pending = list.filter(t => t.approvalStatus !== '결재완료' && !/반려/.test(t.approvalStatus)).length;
+  const rejected = list.filter(t => /반려/.test(t.approvalStatus)).length;
+  let lines = [];
+  lines.push('📁 [결재 SSOT 보고용] ' + todayDateStr());
+  lines.push('━━━━━━━━━━━━━━');
+  lines.push('총 ' + list.length + '건 · 완료 ' + done + ' / 진행 ' + pending + ' / 반려 ' + rejected);
+  lines.push('');
+  list.forEach((t, i) => {
+    const parsed = parseContent(t.content);
+    const budget = parsed.budget ? ' · 💰 ' + parsed.budget.category + ' ' + formatKRW(parsed.budget.amount) : '';
+    const status = t.approvalStatus || '대기';
+    lines.push((i+1) + '. [' + status + '] ' + (t.title || '-') + budget);
+  });
+  const text = lines.join('\n');
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(() => alert('보고용 텍스트가 클립보드에 복사되었습니다.'));
+  } else {
+    prompt('아래 텍스트 복사:', text);
+  }
+}
+
+function todayDateStr() {
+  const d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
 }
 
 /* 결제 권한 기준 v2.0 라우팅 (백엔드와 동일 로직 — 페이지에서 다음 결재자 산출용) */
