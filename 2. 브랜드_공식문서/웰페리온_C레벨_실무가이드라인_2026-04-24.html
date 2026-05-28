@@ -1,0 +1,1561 @@
+<!DOCTYPE html>
+<html lang="ko"><head>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html-to-image/1.11.13/html-to-image.min.js" integrity="sha512-iZ2ORl595Wx6miw+GuadDet4WQbdSWS3JLMoNfY8cRGoEFy6oT3G9IbcrBeL6AfkgpA51ETt/faX6yLV+/gFJg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script>
+      (function() {
+        const originalConsole = window.console;
+        window.console = {
+          log: (...args) => {
+            originalConsole.log(...args);
+            window.parent.postMessage({ type: 'console', message: args.join(' ') }, '*');
+          },
+          error: (...args) => {
+            originalConsole.error(...args);
+            window.parent.postMessage({ type: 'console', message: 'Error: ' + args.join(' ') }, '*');
+          },
+          warn: (...args) => {
+            originalConsole.warn(...args);
+            window.parent.postMessage({ type: 'console', message: 'Warning: ' + args.join(' ') }, '*');
+          }
+        };
+
+        let requestId = 0;
+        let callbacksMap = new Map();
+        let streamControllers = new Map();
+        
+        window.claude = {
+          complete: (prompt) => {
+            return new Promise((resolve, reject) => {
+              const id = requestId++;
+              callbacksMap.set(id, { resolve, reject });
+              window.parent.postMessage({ type: 'claudeComplete', id, prompt }, '*');
+            });
+          }
+        };
+
+        window.storage = {
+          get: (key, shared = false) => {
+            return new Promise((resolve, reject) => {
+              const id = requestId++;
+              callbacksMap.set(id, { resolve, reject });
+              window.parent.postMessage({ type: 'storageGet', id, key, shared }, '*');
+            });
+          },
+          set: (key, value, shared = false) => {
+            return new Promise((resolve, reject) => {
+              const id = requestId++;
+              callbacksMap.set(id, { resolve, reject });
+              window.parent.postMessage({ type: 'storageSet', id, key, value, shared }, '*');
+            });
+          },
+          delete: (key, shared = false) => {
+            return new Promise((resolve, reject) => {
+              const id = requestId++;
+              callbacksMap.set(id, { resolve, reject });
+              window.parent.postMessage({ type: 'storageDelete', id, key, shared }, '*');
+            });
+          },
+          list: (prefix, shared = false) => {
+            return new Promise((resolve, reject) => {
+              const id = requestId++;
+              callbacksMap.set(id, { resolve, reject });
+              window.parent.postMessage({ type: 'storageList', id, prefix, shared }, '*');
+            });
+          }
+        };
+
+        let pendingBlobs = new Map();
+        URL.createObjectURL = (blob) => {
+          // Store the blob and create an ID and URL for it
+          const blobId = `blob-${Date.now()}-${Math.random()}`;
+          pendingBlobs.set(blobId, blob);
+          return `blob-request://${blobId}`;
+        };
+
+        URL.revokeObjectURL = (url) => {
+          // Remove the blob from our store
+          const blobId = url.replace("blob-request://", "");
+          pendingBlobs.delete(blobId);
+        };
+
+        const getBlobFromURL = (url) => {
+          const blobId = url.replace("blob-request://", "");
+          return pendingBlobs.get(blobId);
+        };
+
+        // Override global fetch with streaming support
+        window.fetch = (url, init = {}) => {
+          return new Promise((resolve, reject) => {
+            const id = requestId++;
+            const channelId = `fetch-${id}-${Date.now()}`;
+            
+            callbacksMap.set(id, { 
+              resolve: (response) => {
+                // Create a ReadableStream for the response body
+                const stream = new ReadableStream({
+                  start(controller) {
+                    streamControllers.set(channelId, controller);
+                  },
+                  cancel() {
+                    streamControllers.delete(channelId);
+                  }
+                });
+                
+                // Create and return the Response with the stream
+                resolve(new Response(stream, {
+                  status: response.status,
+                  statusText: response.statusText,
+                  headers: response.headers
+                }));
+              },
+              reject,
+              channelId
+            });
+            
+            window.parent.postMessage({
+              type: 'proxyFetch',
+              id,
+              url,
+              init,
+              channelId
+            }, '*');
+          });
+        };
+
+        window.addEventListener('message', async (event) => {
+          if (event.data.type === 'takeScreenshot') {
+            const rootElement = document.getElementById('artifacts-component-root-html');
+            if (!rootElement) {
+              window.parent.postMessage({
+                type: 'screenshotError',
+                error: new Error('Root element not found'),
+              }, '*');
+            }
+            const screenshot = await htmlToImage.toPng(rootElement, {
+              imagePlaceholder:
+                "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAAXNSR0IArs4c6QAAAA1JREFUGFdjePDgwX8ACOQDoNsk0PMAAAAASUVORK5CYII=",
+            });
+            window.parent.postMessage({
+              type: 'screenshotData',
+              data: screenshot,
+            }, '*');
+          } else if (event.data.type === 'claudeComplete') {
+            const callback = callbacksMap.get(event.data.id);
+            if (event.data.error) {
+              callback.reject(new Error(event.data.error));
+            } else {
+              callback.resolve(event.data.completion);
+            }
+            callbacksMap.delete(event.data.id);
+          } else if (event.data.type === 'proxyFetchResponse') {
+            const callback = callbacksMap.get(event.data.id);
+            if (event.data.error) {
+              callback.reject(new Error(event.data.error));
+              callbacksMap.delete(event.data.id);
+            } else {
+              // Initial response with headers, status, etc.
+              callback.resolve({
+                status: event.data.status,
+                statusText: event.data.statusText,
+                headers: event.data.headers
+              });
+              // Don't delete the callback yet if streaming
+              if (!event.data.body) {
+                callbacksMap.delete(event.data.id);
+              }
+            }
+          } else if (event.data.type === 'proxyFetchStream') {
+            // Handle streaming data chunks
+            const controller = streamControllers.get(event.data.channelId);
+            if (controller) {
+              if (event.data.error) {
+                controller.error(new Error(event.data.error));
+                streamControllers.delete(event.data.channelId);
+              } else if (event.data.done) {
+                controller.close();
+                streamControllers.delete(event.data.channelId);
+                // Clean up the callback
+                const callback = Array.from(callbacksMap.entries()).find(
+                  ([_, value]) => value.channelId === event.data.channelId
+                );
+                if (callback) {
+                  callbacksMap.delete(callback[0]);
+                }
+              } else if (event.data.chunk) {
+                controller.enqueue(new Uint8Array(event.data.chunk));
+              }
+            }
+          } else if (event.data.type === 'storageGet') {
+            const callback = callbacksMap.get(event.data.id);
+            if (event.data.error) {
+              callback.reject(new Error(event.data.error));
+            } else {
+              callback.resolve(event.data.result);
+            }
+            callbacksMap.delete(event.data.id);
+          } else if (event.data.type === 'storageSet') {
+            const callback = callbacksMap.get(event.data.id);
+            if (event.data.error) {
+              callback.reject(new Error(event.data.error));
+            } else {
+              callback.resolve(event.data.result);
+            }
+            callbacksMap.delete(event.data.id);
+          } else if (event.data.type === 'storageDelete') {
+            const callback = callbacksMap.get(event.data.id);
+            if (event.data.error) {
+              callback.reject(new Error(event.data.error));
+            } else {
+              callback.resolve(event.data.result);
+            }
+            callbacksMap.delete(event.data.id);
+          } else if (event.data.type === 'storageList') {
+            const callback = callbacksMap.get(event.data.id);
+            if (event.data.error) {
+              callback.reject(new Error(event.data.error));
+            } else {
+              callback.resolve(event.data.result);
+            }
+            callbacksMap.delete(event.data.id);
+          }
+        });
+
+        window.addEventListener('click', (event) => {
+          const isEl = event.target instanceof HTMLElement;
+          if (!isEl) return;
+    
+          // find ancestor links
+          const linkEl = event.target.closest("a");
+          if (!linkEl || !linkEl.href) return;
+    
+          event.preventDefault();
+          event.stopImmediatePropagation();
+    
+          if (linkEl.href.startsWith("blob-request:")) {
+            const blob = getBlobFromURL(linkEl.href);
+            if (!blob) return;
+            void blob.arrayBuffer().then((data) => {
+              window.parent.postMessage({
+                type: "downloadFile",
+                filename: linkEl.download,
+                data,
+                mimeType: blob.type || "application/octet-stream",
+              });
+            });
+          } else if (linkEl.href.startsWith("data:")) {
+            const [header, base64Data] = linkEl.href.split(",");
+            const mimeMatch = header.match(/data:([^;]+)/);
+            const mimeType = mimeMatch ? mimeMatch[1] : "application/octet-stream";
+            const binaryString = atob(base64Data);
+            const data = Uint8Array.from(binaryString, (c) =>
+              c.charCodeAt(0),
+            ).buffer;
+            window.parent.postMessage({
+              type: "downloadFile",
+              filename: linkEl.download,
+              data,
+              mimeType,
+            });
+          } else {
+            let linkUrl;
+            try {
+              linkUrl = new URL(linkEl.href);
+            } catch (error) {
+              return;
+            }
+    
+            if (linkUrl.hostname === window.location.hostname) return;
+      
+            window.parent.postMessage({
+              type: 'openExternal',
+              href: linkEl.href,
+            }, '*');
+          }
+      });
+
+        const originalOpen = window.open;
+        window.open = function (url) {
+          window.parent.postMessage({
+            type: "openExternal",
+            href: url,
+          }, "*");
+        };
+
+        window.addEventListener('error', (event) => {
+          window.parent.postMessage({ type: 'console', message: 'Uncaught Error: ' + event.message }, '*');
+        });
+      })();
+    </script>
+  
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>웰페리온 C-Level 실무 가이드라인 · 팀장·매니저용 v1.1</title>
+
+<!-- Web fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&amp;family=Jost:wght@300;400;500;600&amp;display=swap" rel="stylesheet">
+<link rel="stylesheet" as="style" crossorigin="" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.css">
+
+<style>
+  :root {
+    --ink:        #1a1614;
+    --ink-soft:   #3a3330;
+    --paper:      #fdfcf9;
+    --paper-soft: #f5f1ea;
+    --line:       #e3ddd3;
+    --line-soft:  #efe9df;
+    --muted:      #7a736d;
+
+    --accent-ceo:  #2f3b33; /* deep pine */
+    --accent-coo:  #3b4350; /* slate */
+    --accent-cfo:  #2d3a4a; /* navy */
+    --accent-cmo:  #822a37; /* pilates burgundy */
+    --accent-cto:  #2a3830; /* moss */
+    --accent-chro: #6b553b; /* walnut */
+    --accent-cpo:  #563a61; /* golf purple */
+
+    --serif: 'Playfair Display', 'Noto Serif KR', serif;
+    --sans:  'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+    --mark:  'Jost', 'Pretendard Variable', sans-serif;
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+
+  body {
+    margin: 0;
+    font-family: var(--sans);
+    font-weight: 400;
+    color: var(--ink);
+    background: var(--paper);
+    line-height: 1.7;
+    letter-spacing: -0.005em;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ============ Edit Panel ============ */
+  .edit-panel {
+    position: fixed;
+    top: 16px;
+    right: 16px;
+    z-index: 9999;
+    display: flex;
+    gap: 8px;
+    background: rgba(26,22,20,0.94);
+    padding: 8px;
+    border-radius: 10px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.18);
+    backdrop-filter: blur(10px);
+  }
+  .edit-panel button {
+    font-family: var(--mark);
+    font-size: 12px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    font-weight: 500;
+    color: #fff;
+    background: transparent;
+    border: 1px solid rgba(255,255,255,0.18);
+    padding: 8px 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all .2s ease;
+  }
+  .edit-panel button:hover {
+    background: rgba(255,255,255,0.12);
+    border-color: rgba(255,255,255,0.35);
+  }
+  .edit-panel button.is-active {
+    background: #fdfcf9;
+    color: var(--ink);
+  }
+  body.is-editing [contenteditable="true"]:hover {
+    outline: 1px dashed rgba(86,58,97,0.5);
+    outline-offset: 4px;
+  }
+  body.is-editing [contenteditable="true"]:focus {
+    outline: 2px solid var(--accent-cpo);
+    outline-offset: 4px;
+    background: rgba(255,249,220,0.4);
+  }
+
+  /* ============ Layout ============ */
+  .sheet {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 80px 64px 120px;
+  }
+
+  /* ============ Header ============ */
+  .doc-header {
+    border-bottom: 1px solid var(--line);
+    padding-bottom: 40px;
+    margin-bottom: 56px;
+  }
+  .brand-mark {
+    font-family: var(--mark);
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.32em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 28px;
+  }
+  .doc-title {
+    font-family: var(--serif);
+    font-size: 52px;
+    font-weight: 500;
+    line-height: 1.15;
+    letter-spacing: -0.02em;
+    margin: 0 0 20px;
+    color: var(--ink);
+  }
+  .doc-subtitle {
+    font-size: 17px;
+    color: var(--ink-soft);
+    max-width: 720px;
+    line-height: 1.65;
+    margin: 0;
+  }
+  .doc-meta {
+    display: flex;
+    gap: 32px;
+    flex-wrap: wrap;
+    margin-top: 28px;
+    font-family: var(--mark);
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .doc-meta strong {
+    color: var(--ink);
+    font-weight: 500;
+    margin-left: 8px;
+  }
+
+  /* ============ Preamble ============ */
+  .preamble {
+    background: var(--paper-soft);
+    border-left: 3px solid var(--ink);
+    padding: 32px 36px;
+    margin: 0 0 72px;
+  }
+  .preamble-label {
+    font-family: var(--mark);
+    font-size: 10px;
+    letter-spacing: 0.32em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 14px;
+  }
+  .preamble p {
+    font-family: var(--serif);
+    font-size: 19px;
+    font-style: italic;
+    font-weight: 400;
+    line-height: 1.6;
+    color: var(--ink);
+    margin: 0;
+  }
+
+  /* ============ Tab Nav ============ */
+  .cxo-nav {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 1px;
+    background: var(--line);
+    border: 1px solid var(--line);
+    margin-bottom: 64px;
+  }
+  .cxo-nav button {
+    font-family: var(--mark);
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.16em;
+    color: var(--muted);
+    background: var(--paper);
+    border: none;
+    padding: 20px 8px 18px;
+    cursor: pointer;
+    transition: all .2s ease;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    align-items: center;
+  }
+  .cxo-nav button:hover {
+    background: var(--paper-soft);
+    color: var(--ink);
+  }
+  .cxo-nav button .tab-num {
+    font-size: 10px;
+    opacity: 0.55;
+    letter-spacing: 0.2em;
+  }
+  .cxo-nav button.is-active {
+    background: var(--ink);
+    color: #fff;
+  }
+  .cxo-nav button.is-active .tab-num {
+    opacity: 0.7;
+    color: #fff;
+  }
+
+  /* ============ Pane ============ */
+  .cxo-pane { display: none; }
+  .cxo-pane.is-active { display: block; animation: fadeIn .35s ease; }
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .pane-header {
+    display: grid;
+    grid-template-columns: 140px 1fr;
+    gap: 40px;
+    padding-bottom: 36px;
+    margin-bottom: 40px;
+    border-bottom: 1px solid var(--line);
+  }
+  .pane-label {
+    font-family: var(--mark);
+    font-size: 11px;
+    letter-spacing: 0.32em;
+    text-transform: uppercase;
+    color: var(--muted);
+    padding-top: 6px;
+  }
+  .pane-title {
+    font-family: var(--serif);
+    font-size: 38px;
+    font-weight: 500;
+    line-height: 1.2;
+    letter-spacing: -0.015em;
+    margin: 0 0 14px;
+  }
+  .pane-lede {
+    font-size: 16px;
+    color: var(--ink-soft);
+    line-height: 1.75;
+    margin: 0;
+    max-width: 680px;
+  }
+  .pane-accent {
+    display: inline-block;
+    width: 48px;
+    height: 2px;
+    margin-bottom: 24px;
+  }
+
+  /* C-level accent colors */
+  #ceo .pane-accent  { background: var(--accent-ceo); }
+  #coo .pane-accent  { background: var(--accent-coo); }
+  #cfo .pane-accent  { background: var(--accent-cfo); }
+  #cmo .pane-accent  { background: var(--accent-cmo); }
+  #cto .pane-accent  { background: var(--accent-cto); }
+  #chro .pane-accent { background: var(--accent-chro); }
+  #cpo .pane-accent  { background: var(--accent-cpo); }
+
+  /* ============ Philosophy Block ============ */
+  .philosophy {
+    background: var(--paper-soft);
+    padding: 40px 44px;
+    margin: 0 0 48px;
+    position: relative;
+  }
+  .philosophy::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 3px;
+  }
+  #ceo  .philosophy::before { background: var(--accent-ceo); }
+  #coo  .philosophy::before { background: var(--accent-coo); }
+  #cfo  .philosophy::before { background: var(--accent-cfo); }
+  #cmo  .philosophy::before { background: var(--accent-cmo); }
+  #cto  .philosophy::before { background: var(--accent-cto); }
+  #chro .philosophy::before { background: var(--accent-chro); }
+  #cpo  .philosophy::before { background: var(--accent-cpo); }
+
+  .philosophy-label {
+    font-family: var(--mark);
+    font-size: 10px;
+    letter-spacing: 0.32em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 18px;
+  }
+  .philosophy p {
+    font-family: var(--serif);
+    font-size: 18px;
+    font-style: italic;
+    line-height: 1.7;
+    color: var(--ink);
+    margin: 0 0 14px;
+  }
+  .philosophy p:last-child { margin-bottom: 0; }
+
+  /* ============ Section Title ============ */
+  .sec-title {
+    font-family: var(--serif);
+    font-size: 22px;
+    font-weight: 500;
+    letter-spacing: -0.01em;
+    margin: 56px 0 10px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--line-soft);
+  }
+  .sec-num {
+    font-family: var(--mark);
+    font-size: 10px;
+    letter-spacing: 0.32em;
+    color: var(--muted);
+    margin-right: 14px;
+    vertical-align: 3px;
+  }
+
+  /* ============ Checklist ============ */
+  .checklist {
+    list-style: none;
+    padding: 0;
+    margin: 24px 0 0;
+  }
+  .checklist li {
+    position: relative;
+    padding: 14px 0 14px 30px;
+    border-bottom: 1px solid var(--line-soft);
+    font-size: 15px;
+    color: var(--ink-soft);
+    line-height: 1.75;
+  }
+  .checklist li::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 20px;
+    width: 14px;
+    height: 14px;
+    border: 1.5px solid var(--ink-soft);
+    border-radius: 2px;
+    opacity: 0.65;
+  }
+  .checklist strong {
+    color: var(--ink);
+    font-weight: 600;
+    margin-right: 4px;
+  }
+
+  /* ============ Do/Don't Matrix ============ */
+  .dodont {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    margin: 32px 0;
+  }
+  .dodont-col {
+    padding: 28px 28px 24px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+  }
+  .dodont-col h4 {
+    font-family: var(--mark);
+    font-size: 12px;
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
+    margin: 0 0 18px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--line-soft);
+    font-weight: 500;
+  }
+  .dodont-col.do h4 { color: var(--accent-cto); }
+  .dodont-col.dont h4 { color: var(--accent-cmo); }
+  .dodont-col ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+  .dodont-col li {
+    font-size: 14px;
+    line-height: 1.65;
+    color: var(--ink-soft);
+    padding: 9px 0 9px 18px;
+    position: relative;
+  }
+  .dodont-col.do li::before {
+    content: '✓';
+    position: absolute;
+    left: 0; top: 9px;
+    color: var(--accent-cto);
+    font-weight: 600;
+  }
+  .dodont-col.dont li::before {
+    content: '✕';
+    position: absolute;
+    left: 0; top: 9px;
+    color: var(--accent-cmo);
+    font-weight: 500;
+  }
+
+  /* ============ Decision Box ============ */
+  .decision {
+    background: var(--ink);
+    color: #fff;
+    padding: 36px 40px;
+    margin: 36px 0;
+  }
+  .decision-label {
+    font-family: var(--mark);
+    font-size: 10px;
+    letter-spacing: 0.32em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.55);
+    margin-bottom: 14px;
+  }
+  .decision h3 {
+    font-family: var(--serif);
+    font-size: 22px;
+    font-weight: 500;
+    margin: 0 0 20px;
+    line-height: 1.35;
+  }
+  .decision ol {
+    margin: 0;
+    padding-left: 20px;
+  }
+  .decision ol li {
+    font-size: 15px;
+    line-height: 1.7;
+    color: rgba(255,255,255,0.88);
+    padding: 6px 0;
+  }
+  .decision .rule {
+    font-family: var(--serif);
+    font-style: italic;
+    font-size: 16px;
+    color: rgba(255,255,255,0.78);
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid rgba(255,255,255,0.15);
+  }
+
+  /* ============ Matrix Table ============ */
+  .matrix {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 24px 0;
+    font-size: 14px;
+  }
+  .matrix th, .matrix td {
+    text-align: left;
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--line-soft);
+    vertical-align: top;
+  }
+  .matrix th {
+    font-family: var(--mark);
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-weight: 500;
+    background: var(--paper-soft);
+    border-bottom: 1px solid var(--line);
+  }
+  .matrix td strong {
+    color: var(--ink);
+    font-weight: 600;
+  }
+  .matrix td.num {
+    font-family: var(--mark);
+    font-variant-numeric: tabular-nums;
+    color: var(--ink);
+    font-weight: 500;
+  }
+
+  /* ============ Callout ============ */
+  .callout {
+    background: #f9f6ef;
+    border: 1px solid var(--line);
+    padding: 24px 28px;
+    margin: 24px 0;
+    font-size: 14px;
+    color: var(--ink-soft);
+    line-height: 1.7;
+  }
+  .callout strong {
+    color: var(--ink);
+    display: block;
+    margin-bottom: 6px;
+    font-size: 12px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    font-family: var(--mark);
+    font-weight: 500;
+  }
+
+  /* ============ Body Prose ============ */
+  .prose p {
+    margin: 0 0 16px;
+    font-size: 15.5px;
+    color: var(--ink-soft);
+    line-height: 1.8;
+  }
+
+  /* ============ Footer ============ */
+  .doc-footer {
+    margin-top: 120px;
+    padding-top: 36px;
+    border-top: 1px solid var(--line);
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    flex-wrap: wrap;
+    gap: 24px;
+    font-family: var(--mark);
+    font-size: 11px;
+    letter-spacing: 0.16em;
+    color: var(--muted);
+  }
+  .doc-footer .sig {
+    font-family: var(--serif);
+    font-style: italic;
+    font-size: 15px;
+    color: var(--ink-soft);
+    letter-spacing: 0;
+    max-width: 400px;
+    line-height: 1.6;
+  }
+
+  /* ============ Print ============ */
+  @media print {
+    .edit-panel { display: none !important; }
+    .cxo-nav { display: none !important; }
+    .cxo-pane { display: block !important; page-break-before: always; }
+    .cxo-pane:first-of-type { page-break-before: auto; }
+    .sheet { padding: 20px 0; max-width: 100%; }
+    body { font-size: 11pt; }
+    .pane-title { font-size: 24pt; }
+    .doc-title { font-size: 28pt; }
+  }
+
+  @media (max-width: 880px) {
+    .sheet { padding: 48px 24px; }
+    .doc-title { font-size: 36px; }
+    .pane-header { grid-template-columns: 1fr; gap: 12px; }
+    .cxo-nav { grid-template-columns: repeat(2, 1fr); }
+    .dodont { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body id="artifacts-component-root-html">
+
+<!-- Edit Panel -->
+<div class="edit-panel" id="editPanel">
+  <button id="btnEdit">✎ 편집 시작</button>
+  <button id="btnSave">💾 수정본 저장</button>
+  <button id="btnPrint">🖨 PDF / 인쇄</button>
+</div>
+
+<div class="sheet">
+
+  <!-- ============ HEADER ============ -->
+  <header class="doc-header">
+    <div class="brand-mark" contenteditable="false">Wellperion — Internal Operations Guideline</div>
+    <h1 class="doc-title" contenteditable="false">C-Level 실무 가이드라인</h1>
+    <p class="doc-subtitle" contenteditable="false">
+      C레벨의 의사결정 언어를 팀장·매니저급 실무에 접목시키기 위한 내부 문서입니다.
+      각 C레벨별 철학 한 단락, 주간 체크리스트, Do/Don't 매트릭스, 의사결정 기준으로 구성되어 있습니다.
+      현장에서 바로 꺼내 쓸 수 있도록 설계되었으며, 상황에 맞게 편집·추가할 수 있습니다.
+    </p>
+    <div class="doc-meta">
+      <span>Document <strong>v1.1</strong></span>
+      <span>Audience <strong>Team Lead · Manager</strong></span>
+      <span>Scope <strong>7 C-Level Domains</strong></span>
+      <span>Updated <strong>2026.04</strong></span>
+    </div>
+  </header>
+
+  <!-- ============ PREAMBLE ============ -->
+  <div class="preamble">
+    <div class="preamble-label">The Principle</div>
+    <p contenteditable="false">
+      웰페리온의 일관성은 문장이 아니라 공간에서 나옵니다.
+      공간의 언어가 회원에게 닿기 위해서는, 그 언어를 가장 먼저 해석하는 사람이 팀장입니다.
+    </p>
+    <p contenteditable="false">
+      C레벨은 방향을 정하고, 팀장은 그 방향을 현장의 리듬으로 옮깁니다.
+      이 문서는 그 번역의 기준선입니다.
+    </p>
+  </div>
+
+  <!-- ============ TABS ============ -->
+  <nav class="cxo-nav" id="cxoNav">
+    <button class="is-active" data-tab="ceo"><span class="tab-num">Ⅰ</span><span>CEO</span></button>
+    <button data-tab="coo"><span class="tab-num">Ⅱ</span><span>COO</span></button>
+    <button data-tab="cfo"><span class="tab-num">Ⅲ</span><span>CFO</span></button>
+    <button data-tab="cmo"><span class="tab-num">Ⅳ</span><span>CMO</span></button>
+    <button data-tab="cto"><span class="tab-num">Ⅴ</span><span>CTO</span></button>
+    <button data-tab="chro"><span class="tab-num">Ⅵ</span><span>CHRO</span></button>
+    <button data-tab="cpo"><span class="tab-num">Ⅶ</span><span>CPO</span></button>
+  </nav>
+
+  <!-- ============ CEO ============ -->
+  <section class="cxo-pane is-active" id="ceo">
+    <div class="pane-header">
+      <div class="pane-label">Chapter Ⅰ · CEO</div>
+      <div>
+        <span class="pane-accent"></span>
+        <h2 class="pane-title" contenteditable="false">방향을 세우는 일, 일관성을 지키는 일</h2>
+        <p class="pane-lede" contenteditable="false">
+          CEO의 언어를 팀장의 판단 기준으로 옮기는 섹션입니다.
+          속도보다 일관성, 수익성보다 신뢰, 단기 지표보다 장기 리텐션 — 의사결정이 흔들릴 때 돌아볼 기준이 담겨 있습니다.
+        </p>
+      </div>
+    </div>
+
+    <div class="philosophy">
+      <div class="philosophy-label">Philosophy</div>
+      <p contenteditable="false">
+        웰페리온이 지켜야 할 것은 매출이 아니라 <strong>회원의 신뢰</strong>입니다.
+        신뢰는 빠른 결정이 아니라 일관된 결정에서 쌓입니다.
+      </p>
+      <p contenteditable="false">
+        팀장은 하루에 수십 개의 작은 판단을 내립니다.
+        그 판단이 모두 같은 방향을 향하고 있을 때, 공간은 브랜드가 됩니다.
+      </p>
+    </div>
+
+    <h3 class="sec-title"><span class="sec-num">01</span>의사결정 우선순위</h3>
+    <div class="decision">
+      <div class="decision-label">Priority Order</div>
+      <h3>판단이 엇갈릴 때, 이 순서를 따릅니다.</h3>
+      <ol>
+        <li contenteditable="false"><strong>회원 경험의 일관성</strong> — 한 명의 회원이 다음에도 같은 경험을 받을 수 있는가.</li>
+        <li contenteditable="false"><strong>브랜드의 결</strong> — 웰페리온이라는 공간의 톤을 거스르지 않는가.</li>
+        <li contenteditable="false"><strong>지속 가능한 수익</strong> — 단발성 매출이 아니라 반복되는 가치인가.</li>
+        <li contenteditable="false"><strong>실행 속도</strong> — 위 세 가지가 충족된 이후의 변수.</li>
+      </ol>
+      <div class="rule" contenteditable="false">속도는 마지막 변수입니다. 빨리 가는 것보다 같은 방향으로 가는 것이 우선입니다.</div>
+    </div>
+
+    <h3 class="sec-title"><span class="sec-num">02</span>팀장 주간 리듬</h3>
+    <ul class="checklist">
+      <li contenteditable="false"><strong>월요일</strong> 지난주 주요 회원 이슈 5건 요약 · 본부장 공유</li>
+      <li contenteditable="false"><strong>수요일</strong> 팀원 1:1 15분 · 업무 진도보다 컨디션·협업 신호 우선 확인</li>
+      <li contenteditable="false"><strong>금요일</strong> 이번 주 "회원 경험 하이라이트·로우라이트" 각 1건 문서화</li>
+      <li contenteditable="false"><strong>매일</strong> 오전 오픈 전 15분 플로어 워크 — 공간의 첫인상을 직접 확인</li>
+      <li contenteditable="false"><strong>월 1회</strong> 현장 불편·건의를 제안 문서로 정리하여 CEO/GM 라인에 전달</li>
+    </ul>
+
+    <h3 class="sec-title"><span class="sec-num">03</span>Do / Don't</h3>
+    <div class="dodont">
+      <div class="dodont-col do">
+        <h4>Do</h4>
+        <ul>
+          <li contenteditable="false">판단이 애매할 때는 "회원이 이 결정을 봤을 때 어떻게 해석할까"를 먼저 물어본다.</li>
+          <li contenteditable="false">불편 신호를 숨기지 않고 빠르게 에스컬레이션한다 — 늦은 보고가 가장 큰 리스크.</li>
+          <li contenteditable="false">팀의 실수를 본인 책임으로 먼저 받고, 이후 원인을 분석한다.</li>
+          <li contenteditable="false">"왜"를 먼저 공유하고 "무엇을"을 지시한다.</li>
+        </ul>
+      </div>
+      <div class="dodont-col dont">
+        <h4>Don't</h4>
+        <ul>
+          <li contenteditable="false">단기 KPI를 맞추기 위해 회원 경험을 타협하지 않는다.</li>
+          <li contenteditable="false">브랜드 톤에 어긋나는 이벤트·프로모션을 현장 판단만으로 진행하지 않는다.</li>
+          <li contenteditable="false">나쁜 소식을 포장하지 않는다 — 사실 그대로가 가장 안전한 보고.</li>
+          <li contenteditable="false">"원래 이렇게 해왔다"로 변화를 막지 않는다.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="callout">
+      <strong>Escalation Rule</strong>
+      회원 불만, 안전 사고, 언론·SNS 노출, 법적 이슈 — 4가지 카테고리는 발생 즉시 30분 안에 본부장/CEO 라인에 공유합니다. 규모를 판단한 뒤 보고하는 것이 아니라, 보고한 뒤 함께 판단합니다.
+    </div>
+  </section>
+
+  <!-- ============ COO ============ -->
+  <section class="cxo-pane" id="coo">
+    <div class="pane-header">
+      <div class="pane-label">Chapter Ⅱ · COO</div>
+      <div>
+        <span class="pane-accent"></span>
+        <h2 class="pane-title" contenteditable="false">공간이 말하게 하는 운영</h2>
+        <p class="pane-lede" contenteditable="false">
+          운영의 목표는 "문제가 없는 상태"가 아니라 "회원이 공간을 의식하지 않아도 되는 상태"입니다.
+          팀장은 공간의 언어가 흐트러지지 않도록 하루의 리듬을 지켜냅니다.
+        </p>
+      </div>
+    </div>
+
+    <div class="philosophy">
+      <div class="philosophy-label">Philosophy</div>
+      <p contenteditable="false">
+        좋은 운영은 회원이 운영을 느끼지 않는 운영입니다.
+        온도, 소리, 동선, 청결 — 이 네 가지가 균형을 잃는 순간 공간은 스스로를 드러냅니다.
+      </p>
+      <p contenteditable="false">
+        팀장의 역할은 문제를 해결하는 사람이 아니라, 문제가 일어나기 전의 신호를 읽는 사람입니다.
+      </p>
+    </div>
+
+    <h3 class="sec-title"><span class="sec-num">01</span>Daily Rhythm · 하루의 리듬</h3>
+    <table class="matrix">
+      <thead>
+        <tr><th style="width:110px;">시간</th><th>체크 포인트</th><th style="width:150px;">기준</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="num" contenteditable="false">06:00</td><td contenteditable="false"><strong>오픈 30분 전</strong> · 플로어 워크 — 조도·온도·음악 볼륨, 수조 수질, 라운지 세팅</td><td contenteditable="false">22 ± 1 °C</td></tr>
+        <tr><td class="num" contenteditable="false">06:30</td><td contenteditable="false"><strong>Front Desk 인수인계</strong> — 전일 미해결 이슈 3건 이하로 정리</td><td contenteditable="false">&lt; 3건</td></tr>
+        <tr><td class="num" contenteditable="false">10:00</td><td contenteditable="false"><strong>청결·비품 1차 라운드</strong> · 락커룸 · 샤워실 · 수건 재고</td><td contenteditable="false">재고 50% 이상</td></tr>
+        <tr><td class="num" contenteditable="false">14:00</td><td contenteditable="false"><strong>피크 전 점검</strong> · 스튜디오 장비 · GDR · 스쿼시 코트</td><td contenteditable="false">가동 100%</td></tr>
+        <tr><td class="num" contenteditable="false">21:30</td><td contenteditable="false"><strong>마감 전 마지막 라운드</strong> · 익일 오픈 준비 상태 기록</td><td contenteditable="false">체크리스트 100%</td></tr>
+      </tbody>
+    </table>
+
+    <h3 class="sec-title"><span class="sec-num">02</span>품질 체크리스트 · 공간의 4요소</h3>
+    <ul class="checklist">
+      <li contenteditable="false"><strong>온도·습도</strong> 라운지 22 ± 1 °C / 수영장 29 ± 1 °C / 습도 50–60%. 이탈 시 즉시 시설팀 공유.</li>
+      <li contenteditable="false"><strong>음향</strong> 라운지 55 dB 이하, 스튜디오는 프로그램별 기준. 회원 대화가 묻히지 않는 볼륨이 기본.</li>
+      <li contenteditable="false"><strong>조명</strong> 시간대별 씬 세팅 (Morning / Day / Evening). 조명이 "바뀐 것"이 눈에 보이면 이미 늦은 것.</li>
+      <li contenteditable="false"><strong>청결</strong> 회원 시야에서 "치우는 모습"이 보이지 않도록. 청결은 결과물이 아니라 흐름.</li>
+      <li contenteditable="false"><strong>향</strong> 시그니처 향의 강도가 일정한지 주 2회 점검. 강도 변화는 공간의 일관성을 해치는 가장 빠른 신호.</li>
+    </ul>
+
+    <h3 class="sec-title"><span class="sec-num">03</span>Do / Don't</h3>
+    <div class="dodont">
+      <div class="dodont-col do">
+        <h4>Do</h4>
+        <ul>
+          <li contenteditable="false">문제를 발견하면 "누가 했는가"보다 "왜 일어났는가"를 먼저 기록한다.</li>
+          <li contenteditable="false">회원이 같은 불편을 두 번 겪지 않도록 매뉴얼을 즉시 업데이트한다.</li>
+          <li contenteditable="false">현장 직원의 "뭔가 이상한데" 신호를 공식 보고로 승격시킨다.</li>
+          <li contenteditable="false">피크 시간대 동선 혼잡은 숫자로 기록한다 — 감이 아니라 데이터로.</li>
+        </ul>
+      </div>
+      <div class="dodont-col dont">
+        <h4>Don't</h4>
+        <ul>
+          <li contenteditable="false">회원 앞에서 장비·시설 수리를 진행하지 않는다.</li>
+          <li contenteditable="false">"괜찮을 거예요"로 컴플레인을 마무리하지 않는다 — 반드시 구체적 조치와 시점을 약속한다.</li>
+          <li contenteditable="false">아르바이트·신규 직원을 혼자 Front Desk에 세우지 않는다.</li>
+          <li contenteditable="false">청소·정비 시간을 회원이 쉽게 인지할 수 있는 시간대에 배치하지 않는다.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="callout">
+      <strong>Incident Protocol</strong>
+      안전 사고 · 의료 응급 · 장비 파손 — 3가지는 즉시 연락망으로 병행 알림(본부장·시설팀·CS). 보고서는 사건 발생 후 2시간 내 초안 공유, 24시간 내 최종 버전 확정.
+    </div>
+  </section>
+
+  <!-- ============ CFO ============ -->
+  <section class="cxo-pane" id="cfo">
+    <div class="pane-header">
+      <div class="pane-label">Chapter Ⅲ · CFO</div>
+      <div>
+        <span class="pane-accent"></span>
+        <h2 class="pane-title" contenteditable="false">숫자가 말하는 공간의 건강</h2>
+        <p class="pane-lede" contenteditable="false">
+          재무는 제약이 아니라 우선순위의 언어입니다.
+          팀장은 숫자를 읽는 사람이 아니라, 숫자를 통해 어디에 투자할지 판단하는 사람입니다.
+        </p>
+      </div>
+    </div>
+
+    <div class="philosophy">
+      <div class="philosophy-label">Philosophy</div>
+      <p contenteditable="false">
+        지출은 매출을 만드는 원인이지, 매출의 결과가 아닙니다.
+        오늘의 10만 원이 내일의 회원 경험을 결정한다는 전제 위에서 결재합니다.
+      </p>
+      <p contenteditable="false">
+        투명한 숫자가 빠른 숫자보다 항상 앞섭니다. 숫자가 불투명해지는 순간 판단도 불투명해집니다.
+      </p>
+    </div>
+
+    <h3 class="sec-title"><span class="sec-num">01</span>지출 승인 한도</h3>
+    <table class="matrix">
+      <thead>
+        <tr><th style="width:180px;">직급</th><th>단건 한도</th><th>월 누적 한도</th><th>사전 승인</th></tr>
+      </thead>
+      <tbody>
+        <tr><td contenteditable="false"><strong>현장 매니저</strong></td><td class="num" contenteditable="false">30만원</td><td class="num" contenteditable="false">150만원</td><td contenteditable="false">팀장 서명</td></tr>
+        <tr><td contenteditable="false"><strong>팀장</strong></td><td class="num" contenteditable="false">100만원</td><td class="num" contenteditable="false">500만원</td><td contenteditable="false">본부장 확인</td></tr>
+        <tr><td contenteditable="false"><strong>본부장</strong></td><td class="num" contenteditable="false">500만원</td><td class="num" contenteditable="false">2,000만원</td><td contenteditable="false">CFO 결재</td></tr>
+        <tr><td contenteditable="false"><strong>CFO</strong></td><td class="num" contenteditable="false">3,000만원</td><td class="num" contenteditable="false">—</td><td contenteditable="false">CEO 결재</td></tr>
+      </tbody>
+    </table>
+    <div class="callout">
+      <strong>예외 규정</strong>
+      회원 안전·의료 응급 관련 지출은 한도와 무관하게 즉시 집행한 뒤, 24시간 내 사후 보고합니다. 이 경우 절대 지연 승인을 기다리지 않습니다.
+    </div>
+
+    <h3 class="sec-title"><span class="sec-num">02</span>월간 리포팅 포맷</h3>
+    <ul class="checklist">
+      <li contenteditable="false"><strong>1. 매출 · 수익성</strong> 멤버십 갱신률 · 신규 · 이탈 · ARPU · WSC 유소년 기여도 분리 표시</li>
+      <li contenteditable="false"><strong>2. 고정비 · 변동비 비율</strong> 전월 대비 변화 + 사유 3줄 이내</li>
+      <li contenteditable="false"><strong>3. Top 5 지출 카테고리</strong> 금액·변화·판단 (유지 / 조정 / 축소)</li>
+      <li contenteditable="false"><strong>4. 예상 vs 실제</strong> 10% 이상 편차 항목은 별도 섹션으로 분리</li>
+      <li contenteditable="false"><strong>5. 다음 달 요청 예산</strong> 요청 금액 · 목적 · 기대 효과 1줄</li>
+    </ul>
+
+    <h3 class="sec-title"><span class="sec-num">03</span>비용 관리 3원칙</h3>
+    <div class="decision">
+      <div class="decision-label">Three Principles</div>
+      <h3>지출을 결정하기 전, 세 가지 질문을 통과해야 합니다.</h3>
+      <ol>
+        <li contenteditable="false"><strong>회원 경험과 직접 연결되는가</strong> — 연결되지 않는 지출은 우선순위 뒤로.</li>
+        <li contenteditable="false"><strong>반복되는 성격인가</strong> — 반복 비용은 연 단위 총액으로 환산해 판단.</li>
+        <li contenteditable="false"><strong>대체안을 2개 이상 비교했는가</strong> — 단일 견적은 원칙적으로 결재하지 않음.</li>
+      </ol>
+      <div class="rule" contenteditable="false">세 질문 중 두 개 이상이 "예"가 아니면, 결재 전 한 번 더 멈춥니다.</div>
+    </div>
+
+    <h3 class="sec-title"><span class="sec-num">04</span>Do / Don't</h3>
+    <div class="dodont">
+      <div class="dodont-col do">
+        <h4>Do</h4>
+        <ul>
+          <li contenteditable="false">모든 지출은 품의 — 집행 — 증빙 3단계 순서로 기록한다.</li>
+          <li contenteditable="false">예산 초과가 예상되면 초과 시점 전에 미리 공유한다.</li>
+          <li contenteditable="false">벤더와의 계약서는 자동 갱신 조항을 반드시 확인한다.</li>
+          <li contenteditable="false">동일 품목은 분기 1회 이상 견적 재검토.</li>
+        </ul>
+      </div>
+      <div class="dodont-col dont">
+        <h4>Don't</h4>
+        <ul>
+          <li contenteditable="false">긴급을 이유로 사전 승인 프로세스를 건너뛰지 않는다.</li>
+          <li contenteditable="false">개인 카드로 선결제 후 청구하는 패턴을 관행화하지 않는다.</li>
+          <li contenteditable="false">세금계산서·현금영수증이 없는 거래는 원칙적으로 진행하지 않는다.</li>
+          <li contenteditable="false">"작년에도 이 금액이었다"를 근거로 견적 재검토를 생략하지 않는다.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ CMO ============ -->
+  <section class="cxo-pane" id="cmo">
+    <div class="pane-header">
+      <div class="pane-label">Chapter Ⅳ · CMO</div>
+      <div>
+        <span class="pane-accent"></span>
+        <h2 class="pane-title" contenteditable="false">간판이 아니라 공간이 말하는 브랜드</h2>
+        <p class="pane-lede" contenteditable="false">
+          브랜드는 슬로건이 아니라 반복되는 경험입니다.
+          팀장은 매일의 작은 접점에서 웰페리온의 톤이 흐트러지지 않게 하는 최전선의 편집자입니다.
+        </p>
+      </div>
+    </div>
+
+    <div class="philosophy">
+      <div class="philosophy-label">Philosophy</div>
+      <p contenteditable="false">
+        웰페리온의 브랜드는 말하지 않음으로써 말합니다.
+        간판 대신 공간이, 광고 대신 회원의 경험이 브랜드를 대신합니다.
+      </p>
+      <p contenteditable="false">
+        모든 콘텐츠는 "이 장면이 한남동의 결에 맞는가"를 기준으로 판단합니다.
+        과잉 설명, 과잉 수식, 과잉 노출 — 세 가지는 공간의 언어를 가장 빠르게 무너뜨립니다.
+      </p>
+    </div>
+
+    <h3 class="sec-title"><span class="sec-num">01</span>콘텐츠 승인 프로세스</h3>
+    <table class="matrix">
+      <thead>
+        <tr><th style="width:180px;">콘텐츠 유형</th><th>1차 검수</th><th>최종 승인</th><th>Lead Time</th></tr>
+      </thead>
+      <tbody>
+        <tr><td contenteditable="false"><strong>회원 대상 공지</strong></td><td contenteditable="false">CS 팀장</td><td contenteditable="false">CMO</td><td contenteditable="false">D-2</td></tr>
+        <tr><td contenteditable="false"><strong>SNS · 인스타그램</strong></td><td contenteditable="false">마케팅 매니저</td><td contenteditable="false">CMO</td><td contenteditable="false">D-3</td></tr>
+        <tr><td contenteditable="false"><strong>프로모션 · 이벤트</strong></td><td contenteditable="false">본부장</td><td contenteditable="false">CMO + CEO</td><td contenteditable="false">D-7</td></tr>
+        <tr><td contenteditable="false"><strong>외부 인터뷰 · 기고</strong></td><td contenteditable="false">CMO</td><td contenteditable="false">CEO</td><td contenteditable="false">D-10</td></tr>
+      </tbody>
+    </table>
+
+    <h3 class="sec-title"><span class="sec-num">02</span>톤 앤 보이스 · 3가지 기준</h3>
+    <ul class="checklist">
+      <li contenteditable="false"><strong>담백한 문장</strong> 수식어는 1문장당 1개 이하. "프리미엄", "최고의", "완벽한" 같은 포괄 수식은 피한다.</li>
+      <li contenteditable="false"><strong>공간의 언어</strong> 프로그램보다 공간을 먼저 말한다 — 무엇을 하는가보다 어디에 있는가.</li>
+      <li contenteditable="false"><strong>회원의 이름</strong> "고객님"보다 구체적 호칭. 회원 개개인의 이야기를 수치화하지 않는다.</li>
+    </ul>
+
+    <h3 class="sec-title"><span class="sec-num">03</span>사진·영상 사용 기준</h3>
+    <ul class="checklist">
+      <li contenteditable="false"><strong>회원 노출 금지</strong> 사전 서면 동의가 없는 한, 얼굴·실루엣·식별 가능 소지품은 크롭·모자이크 처리.</li>
+      <li contenteditable="false"><strong>공간 사진</strong> 자연광 우선. 보정은 채도·대비 각각 ±5% 이내로 제한.</li>
+      <li contenteditable="false"><strong>스태프 사진</strong> 유니폼 정면·단정 상태에서만 업로드. 후면·작업 중 모습은 비공개 아카이브.</li>
+      <li contenteditable="false"><strong>리그램·외부 인용</strong> 원저작자 명시 + 해시태그 동의 확인 후 공유.</li>
+    </ul>
+
+    <h3 class="sec-title"><span class="sec-num">04</span>Do / Don't</h3>
+    <div class="dodont">
+      <div class="dodont-col do">
+        <h4>Do</h4>
+        <ul>
+          <li contenteditable="false">한 줄 캡션이 제목보다 많은 일을 하게 쓴다 — 길이보다 밀도.</li>
+          <li contenteditable="false">회원 불편 댓글·DM은 24시간 내 답변. 공개 채널 사과는 간결하고 구체적으로.</li>
+          <li contenteditable="false">외부 협업·콜라보는 브랜드 아키텍처(성인/WSC/Brad Little's) 구분을 명확히 한다.</li>
+          <li contenteditable="false">계절·시간대별 콘텐츠 캘린더를 분기 단위로 미리 짠다.</li>
+        </ul>
+      </div>
+      <div class="dodont-col dont">
+        <h4>Don't</h4>
+        <ul>
+          <li contenteditable="false">할인·프로모션 중심 메시지를 메인 채널에 노출하지 않는다.</li>
+          <li contenteditable="false">경쟁사 · 타 브랜드를 직접 비교하는 표현을 쓰지 않는다.</li>
+          <li contenteditable="false">트렌드 이모티콘·밈을 공식 채널에 사용하지 않는다.</li>
+          <li contenteditable="false">회원 후기를 동의 없이 인용·재게시하지 않는다.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="callout">
+      <strong>Escalation Keywords</strong>
+      "사고", "의료", "고발", "소송", "언론", "갑질", "차별" — 7개 단어가 회원 문의·댓글·DM에 등장하는 순간 즉시 CMO + CEO 라인 병행 보고. 단독 답변 금지.
+    </div>
+  </section>
+
+  <!-- ============ CTO ============ -->
+  <section class="cxo-pane" id="cto">
+    <div class="pane-header">
+      <div class="pane-label">Chapter Ⅴ · CTO</div>
+      <div>
+        <span class="pane-accent"></span>
+        <h2 class="pane-title" contenteditable="false">기술은 공간의 조용한 골격</h2>
+        <p class="pane-lede" contenteditable="false">
+          좋은 시스템은 회원이 기술을 의식하지 않게 합니다.
+          팀장은 현장과 시스템 사이의 번역자이며, 데이터의 정합성을 지키는 첫 번째 책임자입니다.
+        </p>
+      </div>
+    </div>
+
+    <div class="philosophy">
+      <div class="philosophy-label">Philosophy</div>
+      <p contenteditable="false">
+        기술의 목표는 화려함이 아니라 생략입니다.
+        회원이 결제 · 예약 · 출입 과정을 의식하지 않아도 되는 상태가 가장 잘 작동하는 시스템입니다.
+      </p>
+      <p contenteditable="false">
+        데이터는 운영의 언어입니다. 숫자가 깨지면 판단이 깨지고, 판단이 깨지면 공간이 흔들립니다.
+      </p>
+    </div>
+
+    <h3 class="sec-title"><span class="sec-num">01</span>회원관리 시스템 운영 기준 (브로제이)</h3>
+    <ul class="checklist">
+      <li contenteditable="false"><strong>신규 등록</strong> 회원 정보 입력 시 필수 10항목 누락 금지 — 연락처 · 생년월일 · 멤버십 등급 · 가입경로 · 건강고지.</li>
+      <li contenteditable="false"><strong>변경 이력</strong> 멤버십 변경·중지·해지는 모두 사유 코드와 함께 기록 (자유 텍스트 단독 입력 금지).</li>
+      <li contenteditable="false"><strong>중복 방지</strong> 이름 + 전화 뒷자리 + 생년 3가지로 동일 회원 검색 후 신규 등록.</li>
+      <li contenteditable="false"><strong>가족 연동</strong> WSC 유소년 회원은 반드시 보호자 계정과 연결 — 미연결 레코드는 주 1회 감사.</li>
+      <li contenteditable="false"><strong>결제 오류</strong> 실패 건은 당일 재시도 + 회원 알림 + 로그 기록 3단 프로세스로 처리.</li>
+    </ul>
+
+    <h3 class="sec-title"><span class="sec-num">02</span>데이터 입력 표준</h3>
+    <table class="matrix">
+      <thead>
+        <tr><th style="width:180px;">항목</th><th>표준 포맷</th><th>담당</th></tr>
+      </thead>
+      <tbody>
+        <tr><td contenteditable="false"><strong>연락처</strong></td><td contenteditable="false">010-XXXX-XXXX (하이픈 포함)</td><td contenteditable="false">Front Desk</td></tr>
+        <tr><td contenteditable="false"><strong>이름</strong></td><td contenteditable="false">공식 신분증 기준 · 띄어쓰기 유지</td><td contenteditable="false">Front Desk</td></tr>
+        <tr><td contenteditable="false"><strong>메모</strong></td><td contenteditable="false">[날짜] [작성자] [내용] 구조 고정</td><td contenteditable="false">CS · 매니저</td></tr>
+        <tr><td contenteditable="false"><strong>건강 고지</strong></td><td contenteditable="false">사전 문진표 스캔 첨부 필수</td><td contenteditable="false">트레이너 리드</td></tr>
+      </tbody>
+    </table>
+
+    <h3 class="sec-title"><span class="sec-num">03</span>보안 · 백업 · 권한</h3>
+    <ul class="checklist">
+      <li contenteditable="false"><strong>접근 권한</strong> 역할별로 엄격히 분리. 팀장은 소속 부서 회원 데이터만 열람 가능.</li>
+      <li contenteditable="false"><strong>비밀번호</strong> 90일 주기 갱신. 공용 ID 사용 원칙적 금지.</li>
+      <li contenteditable="false"><strong>백업</strong> 일일 자동 + 주간 수동 검증. 복원 훈련은 분기 1회.</li>
+      <li contenteditable="false"><strong>외부 유출 경보</strong> 단일 계정에서 100건 이상 회원 데이터 다운로드 시 자동 알람 — 발생 즉시 CTO + CEO 공유.</li>
+    </ul>
+
+    <h3 class="sec-title"><span class="sec-num">04</span>Do / Don't</h3>
+    <div class="dodont">
+      <div class="dodont-col do">
+        <h4>Do</h4>
+        <ul>
+          <li contenteditable="false">시스템 장애는 발생 시점을 분 단위로 기록한다.</li>
+          <li contenteditable="false">신규 툴 도입 전 POC 2주 이상 · 백업 시나리오 확보.</li>
+          <li contenteditable="false">현장 직원의 "이게 더 빠른데요" 제안을 월 1회 채널로 모은다.</li>
+          <li contenteditable="false">데이터 요청은 반드시 목적 · 범위 · 보존 기간을 명시한 문서로 받는다.</li>
+        </ul>
+      </div>
+      <div class="dodont-col dont">
+        <h4>Don't</h4>
+        <ul>
+          <li contenteditable="false">회원 정보를 개인 메신저·이메일로 전달하지 않는다.</li>
+          <li contenteditable="false">관리자 권한을 임시 대체 목적으로 공유하지 않는다.</li>
+          <li contenteditable="false">엑셀 파일 로컬 저장본을 장기 운용 데이터로 쓰지 않는다.</li>
+          <li contenteditable="false">장애 원인이 확정되기 전에 "괜찮아졌다"고 결론 내지 않는다.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="callout">
+      <strong>Incident Classification</strong>
+      Severity 1 (결제·출입 중단) · 2 (회원 데이터 조회 장애) · 3 (단일 기능 오류) · 4 (화면 표시 이슈). Sev 1–2는 즉시 전사 공유, Sev 3은 24시간 내, Sev 4는 주간 요약.
+    </div>
+  </section>
+
+  <!-- ============ CHRO ============ -->
+  <section class="cxo-pane" id="chro">
+    <div class="pane-header">
+      <div class="pane-label">Chapter Ⅵ · CHRO</div>
+      <div>
+        <span class="pane-accent"></span>
+        <h2 class="pane-title" contenteditable="false">사람은 공간의 가장 섬세한 요소</h2>
+        <p class="pane-lede" contenteditable="false">
+          사람이 흐트러지면 공간도 흐트러집니다.
+          팀장은 채용 · 온보딩 · 피드백 · 이탈 관리의 네 지점에서 문화를 직조해내는 실무 리더입니다.
+        </p>
+      </div>
+    </div>
+
+    <div class="philosophy">
+      <div class="philosophy-label">Philosophy</div>
+      <p contenteditable="false">
+        웰페리온의 문화는 매뉴얼이 아니라 반복된 태도에서 만들어집니다.
+        팀장이 오늘 한 반응이, 다음 달의 우리 팀이 됩니다.
+      </p>
+      <p contenteditable="false">
+        채용은 "공간에 머무를 수 있는 사람"을 고르는 일이며, 온보딩은 그 공간에 적응할 수 있는 시간을 주는 일입니다.
+      </p>
+    </div>
+
+    <h3 class="sec-title"><span class="sec-num">01</span>채용 7원칙</h3>
+    <ul class="checklist">
+      <li contenteditable="false"><strong>1. 공간에 대한 감수성</strong> 공간·디테일·분위기에 반응하는 사람인지 면접 대화에서 확인.</li>
+      <li contenteditable="false"><strong>2. 과장 없는 커뮤니케이션</strong> 답변이 구체적이고 수식이 적은 사람을 우선.</li>
+      <li contenteditable="false"><strong>3. 회복력</strong> 실수 경험을 숨기지 않고 복기할 수 있는 사람인지.</li>
+      <li contenteditable="false"><strong>4. 회원 서비스 지향</strong> 이전 경험에서 "회원/고객" 이야기가 자연스럽게 나오는지.</li>
+      <li contenteditable="false"><strong>5. 팀 기반 사고</strong> "나"보다 "우리"의 서사를 가진 사람.</li>
+      <li contenteditable="false"><strong>6. 학습 태도</strong> 모르는 것을 모른다고 말할 수 있는 사람.</li>
+      <li contenteditable="false"><strong>7. 장기 합류 의지</strong> 최소 2년 이상 조직에 머물 수 있는 여건·의지.</li>
+    </ul>
+
+    <h3 class="sec-title"><span class="sec-num">02</span>온보딩 30-60-90 플로우</h3>
+    <table class="matrix">
+      <thead>
+        <tr><th style="width:130px;">시점</th><th>목표</th><th>팀장 액션</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="num" contenteditable="false">D+7</td><td contenteditable="false">공간 구조·브랜드 아키텍처 이해 · 시스템 접근 권한 세팅</td><td contenteditable="false">1:1 30분 × 3회</td></tr>
+        <tr><td class="num" contenteditable="false">D+30</td><td contenteditable="false">일상 업무 80% 독립 수행 가능 · 주요 회원 50명 인지</td><td contenteditable="false">역할 기대치 재확인</td></tr>
+        <tr><td class="num" contenteditable="false">D+60</td><td contenteditable="false">컴플레인 1차 대응 가능 · 소규모 이벤트 담당 경험</td><td contenteditable="false">피드백 세션 · 360°</td></tr>
+        <tr><td class="num" contenteditable="false">D+90</td><td contenteditable="false">프로베이션 평가 · 정식 전환 여부 결정</td><td contenteditable="false">CHRO 리뷰 · 연봉 협상</td></tr>
+      </tbody>
+    </table>
+
+    <h3 class="sec-title"><span class="sec-num">03</span>피드백 사이클</h3>
+    <ul class="checklist">
+      <li contenteditable="false"><strong>주간 1:1 (15분)</strong> 업무 진행 상황보다 컨디션 · 협업 신호 · 막힌 지점 우선.</li>
+      <li contenteditable="false"><strong>분기 리뷰 (60분)</strong> 성과 · 행동 · 성장 3축으로 구조화. 숫자만으로 결론 내지 않는다.</li>
+      <li contenteditable="false"><strong>360° 피드백 (반기)</strong> 상사·동료·후배 3방향. 익명 보장 · 요약본은 당사자가 가장 먼저 본다.</li>
+      <li contenteditable="false"><strong>Exit Interview</strong> 퇴사 결정 후 7일 내 진행. 30일 후 1회 추가 연락.</li>
+    </ul>
+
+    <h3 class="sec-title"><span class="sec-num">04</span>Do / Don't</h3>
+    <div class="dodont">
+      <div class="dodont-col do">
+        <h4>Do</h4>
+        <ul>
+          <li contenteditable="false">칭찬은 공개적으로, 피드백은 1:1로.</li>
+          <li contenteditable="false">실수의 원인을 개인이 아니라 프로세스에서 먼저 찾는다.</li>
+          <li contenteditable="false">휴가·휴무는 눈치 보지 않게 먼저 말해준다.</li>
+          <li contenteditable="false">퇴사자에게 마지막 주까지 동일한 존중으로 대한다.</li>
+        </ul>
+      </div>
+      <div class="dodont-col dont">
+        <h4>Don't</h4>
+        <ul>
+          <li contenteditable="false">감정적 판단으로 즉석에서 인사 결정하지 않는다.</li>
+          <li contenteditable="false">"요즘 애들은"이라는 언어로 세대 문제를 말하지 않는다.</li>
+          <li contenteditable="false">근태 이슈를 성격 이슈로 번역하지 않는다 — 사실과 맥락을 분리.</li>
+          <li contenteditable="false">직원의 개인 정보를 다른 직원에게 공유하지 않는다.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ CPO ============ -->
+  <section class="cxo-pane" id="cpo">
+    <div class="pane-header">
+      <div class="pane-label">Chapter Ⅶ · CPO</div>
+      <div>
+        <span class="pane-accent"></span>
+        <h2 class="pane-title" contenteditable="false">회원은 숫자가 아니라 이름</h2>
+        <p class="pane-lede" contenteditable="false">
+          리텐션은 프로모션이 아니라 기억에서 나옵니다.
+          팀장은 회원 한 명 한 명의 이름과 맥락을 기억해내는 조직의 중심입니다.
+        </p>
+      </div>
+    </div>
+
+    <div class="philosophy">
+      <div class="philosophy-label">Philosophy</div>
+      <p contenteditable="false">
+        회원은 우리의 데이터가 아니라 이웃입니다.
+        한남동이라는 동네 안에서 우리를 선택해준 사람들이라는 전제가 모든 응대의 출발점입니다.
+      </p>
+      <p contenteditable="false">
+        좋은 리텐션은 "떠나지 않게 하는 것"이 아니라 "다시 오고 싶게 만드는 것"입니다.
+      </p>
+    </div>
+
+    <h3 class="sec-title"><span class="sec-num">01</span>멤버십 타입별 응대 매트릭스</h3>
+    <table class="matrix">
+      <thead>
+        <tr><th style="width:140px;">타입</th><th>응대 기본</th><th>기념일 케어</th><th>이탈 신호 시</th></tr>
+      </thead>
+      <tbody>
+        <tr><td contenteditable="false"><strong>Founding Member</strong></td><td contenteditable="false">이름 호칭 · 취향 기억 · 맞춤 공간 제안</td><td contenteditable="false">가입일·생일 수기 카드</td><td contenteditable="false">CPO 직접 연락</td></tr>
+        <tr><td contenteditable="false"><strong>Premium</strong></td><td contenteditable="false">이름 호칭 · 방문 리듬 인지</td><td contenteditable="false">생일 꽃·손글씨 메시지</td><td contenteditable="false">팀장 직접 연락</td></tr>
+        <tr><td contenteditable="false"><strong>Standard</strong></td><td contenteditable="false">이름 호칭 · 정확한 서비스</td><td contenteditable="false">생일 축하 메시지</td><td contenteditable="false">매니저 상담</td></tr>
+        <tr><td contenteditable="false"><strong>WSC 유소년</strong></td><td contenteditable="false">아이·보호자 양쪽 호칭 · 성장 기록 공유</td><td contenteditable="false">프로그램 이수 축하</td><td contenteditable="false">보호자와 먼저 대화</td></tr>
+      </tbody>
+    </table>
+
+    <h3 class="sec-title"><span class="sec-num">02</span>이탈 징후 감지 신호</h3>
+    <ul class="checklist">
+      <li contenteditable="false"><strong>방문 리듬 변화</strong> 지난 4주 대비 방문 횟수 40% 이상 감소.</li>
+      <li contenteditable="false"><strong>이용 종목 축소</strong> 기존 3개 이상 이용하던 회원이 1개로 축소.</li>
+      <li contenteditable="false"><strong>결제 수단 변경</strong> 자동결제 해지 → 수동 전환.</li>
+      <li contenteditable="false"><strong>예약 반복 취소</strong> 2주 내 3회 이상 예약 후 노쇼·취소.</li>
+      <li contenteditable="false"><strong>직원과의 대화 감소</strong> Front Desk 인사 외 대화가 4주 이상 없음.</li>
+    </ul>
+    <div class="callout">
+      <strong>Response Window</strong>
+      위 신호가 2개 이상 동시 감지되면 7일 내 담당 매니저가 직접 연락합니다. 프로모션이 아닌 "혹시 최근 불편이 있었는지" 질문이 먼저입니다.
+    </div>
+
+    <h3 class="sec-title"><span class="sec-num">03</span>VIP 케어 원칙</h3>
+    <div class="decision">
+      <div class="decision-label">VIP Care</div>
+      <h3>VIP 응대는 "특별함"이 아니라 "기억"입니다.</h3>
+      <ol>
+        <li contenteditable="false"><strong>이름 · 취향 · 가족 구성</strong>을 담당자 3명이 동시에 알고 있다.</li>
+        <li contenteditable="false"><strong>대접</strong>이 아니라 <strong>맞춤</strong>을 제공한다 — 과장된 서비스는 오히려 피한다.</li>
+        <li contenteditable="false"><strong>연락</strong>은 분기 1회 자연스러운 안부. 프로모션 메시지는 별도 채널.</li>
+        <li contenteditable="false"><strong>불편</strong> 발생 시 30분 내 CPO·팀장·담당 3인 동시 인지.</li>
+      </ol>
+      <div class="rule" contenteditable="false">VIP는 "특별 대우"가 아니라 "정확히 기억되는 경험"에서 머뭅니다.</div>
+    </div>
+
+    <h3 class="sec-title"><span class="sec-num">04</span>Do / Don't</h3>
+    <div class="dodont">
+      <div class="dodont-col do">
+        <h4>Do</h4>
+        <ul>
+          <li contenteditable="false">회원과의 대화에서 오간 맥락은 CRM에 반드시 2문장 이상 기록.</li>
+          <li contenteditable="false">컴플레인은 "사실 확인 → 사과 → 보상 기준 제시" 3단계로 응대.</li>
+          <li contenteditable="false">장기 회원에겐 "오랜만"이 아니라 "지난번 말씀하신 ○○"으로 다시 문을 연다.</li>
+          <li contenteditable="false">WSC 유소년은 보호자뿐 아니라 아이의 이름과 성장도 함께 기억한다.</li>
+        </ul>
+      </div>
+      <div class="dodont-col dont">
+        <h4>Don't</h4>
+        <ul>
+          <li contenteditable="false">회원 정보를 직원 간 잡담에 쓰지 않는다.</li>
+          <li contenteditable="false">"그런 경우는 처음이에요"로 답하지 않는다.</li>
+          <li contenteditable="false">이탈이 확인된 뒤에 연락하지 않는다 — 신호 단계에서 접촉한다.</li>
+          <li contenteditable="false">한 회원의 선호를 다른 회원에게 일반화하지 않는다.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ FOOTER ============ -->
+  <footer class="doc-footer">
+    <div class="sig" contenteditable="false">
+      이 문서는 웰페리온의 내부 기준을 팀장·매니저급 실무에 연결하기 위한 살아있는 문서입니다. 분기 1회 재검토하며, 현장의 신호를 반영해 계속 다듬어 나갑니다.
+    </div>
+    <div>
+      <div contenteditable="false">Wellperion · Hannam-dong</div>
+      <div contenteditable="false" style="margin-top: 4px;">v1.1 · 2026.04</div>
+    </div>
+  </footer>
+
+</div>
+
+<script>
+  // ===== Tab Switching =====
+  const nav = document.getElementById('cxoNav');
+  const panes = document.querySelectorAll('.cxo-pane');
+  nav.addEventListener('click', (e) => {
+    const btn = e.target.closest('button[data-tab]');
+    if (!btn) return;
+    nav.querySelectorAll('button').forEach(b => b.classList.remove('is-active'));
+    btn.classList.add('is-active');
+    const target = btn.dataset.tab;
+    panes.forEach(p => p.classList.toggle('is-active', p.id === target));
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+
+  // ===== Edit Mode =====
+  const btnEdit = document.getElementById('btnEdit');
+  const btnSave = document.getElementById('btnSave');
+  const btnPrint = document.getElementById('btnPrint');
+
+  let editing = false;
+  function setEditable(on) {
+    editing = on;
+    document.body.classList.toggle('is-editing', on);
+    document.querySelectorAll('[contenteditable]').forEach(el => {
+      el.setAttribute('contenteditable', on ? 'true' : 'false');
+    });
+    btnEdit.textContent = on ? '✓ 편집 종료' : '✎ 편집 시작';
+    btnEdit.classList.toggle('is-active', on);
+  }
+  setEditable(false); // start locked
+
+  btnEdit.addEventListener('click', () => setEditable(!editing));
+
+  // ===== Save as new HTML =====
+  btnSave.addEventListener('click', () => {
+    // Lock editing before save so the saved file opens in read-only state
+    setEditable(false);
+    // Clone the document to clean state
+    const doctype = '<!DOCTYPE html>';
+    const html = document.documentElement.outerHTML;
+    const blob = new Blob([doctype + '\n' + html], { type: 'text/html;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const ts = new Date().toISOString().slice(0,10);
+    a.href = url;
+    a.download = `웰페리온_C레벨_실무가이드라인_${ts}.html`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  });
+
+  // ===== Print =====
+  btnPrint.addEventListener('click', () => {
+    // Show all panes for full print
+    const activeId = document.querySelector('.cxo-pane.is-active')?.id;
+    panes.forEach(p => p.classList.add('is-active'));
+    window.print();
+    // Restore single active pane after print dialog closes
+    setTimeout(() => {
+      panes.forEach(p => p.classList.toggle('is-active', p.id === activeId));
+    }, 500);
+  });
+
+  // ===== Keyboard shortcut: ⌘/Ctrl + E toggles edit =====
+  document.addEventListener('keydown', (e) => {
+    if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'e') {
+      e.preventDefault();
+      setEditable(!editing);
+    }
+  });
+</script>
+
+
+</body></html>
