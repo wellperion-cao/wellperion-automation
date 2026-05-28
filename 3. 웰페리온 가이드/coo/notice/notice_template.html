@@ -64,8 +64,8 @@
   /* ── 미리보기 헤더 (어두운 상단) ── */
   .ntool-pv-hdr{background:#221F20;padding:clamp(22px,4vw,42px) clamp(20px,4vw,40px) clamp(28px,4.5vw,46px);text-align:center;color:#fff;flex:0 0 30%;position:relative;display:flex;flex-direction:column;justify-content:center;align-items:center;}
   .ntool-pv-notice-label{position:absolute;top:clamp(12px,2vw,20px);left:50%;transform:translateX(-50%);font-size:clamp(9px,1.1vw,13px);font-weight:600;letter-spacing:0.32em;color:rgba(255,255,255,0.78);}
-  /* 헤더 우상단 W 워터마크 = 텍스트 (color는 JS에서 brand.logo로 동적, 제목과 같은 색) */
-  .ntool-pv-wmark-w{position:absolute;top:clamp(0px,0.6vw,8px);right:clamp(8px,1.6vw,20px);font-family:"Pretendard","Apple SD Gothic Neo",sans-serif;font-size:clamp(72px,14vw,180px);font-weight:200;line-height:1;letter-spacing:-0.05em;opacity:0.55;pointer-events:none;user-select:none;}
+  /* 헤더 우상단 W 워터마크 = 사업부별 mark.png 이미지 (크게) */
+  .ntool-pv-wmark-w{position:absolute;top:clamp(4px,1vw,14px);right:clamp(6px,1.4vw,18px);height:clamp(78px,15vw,200px);width:auto;opacity:0.95;pointer-events:none;user-select:none;}
   #noticePreview .ntool-pv-title-kr{font-size:clamp(22px,4.2vw,52px);font-weight:700;margin-bottom:6px;line-height:1.18;color:#E8D8C5;letter-spacing:0.005em;}
   #noticePreview .ntool-pv-title-en{font-size:clamp(11px,1.9vw,24px);font-weight:500;color:#E8D8C5;opacity:0.92;letter-spacing:0.01em;margin-bottom:0;}
   .ntool-pv-subtitle{position:absolute;bottom:clamp(8px,1.6vw,16px);left:0;right:0;text-align:center;font-size:clamp(9px,1.2vw,14px);opacity:0.95;letter-spacing:0.06em;font-weight:500;padding:0 clamp(16px,3vw,28px);}
@@ -216,7 +216,7 @@
         <div class="ntool-preview-inner" id="noticePreview">
           <div class="ntool-pv-hdr" id="noticeHdr">
             <div class="ntool-pv-notice-label" id="noticePvNoticeLabel">NOTICE</div>
-            <div class="ntool-pv-wmark-w" id="noticePvWmark">W</div>
+            <img class="ntool-pv-wmark-w" id="noticePvWmark" src="../../../1. AI학습자료_아카이브/08_로고&워터마크/_assets/logo/watermarks/MAIN_LOGO-B79F8A_BG-221F20_mark.png" alt="W">
             <div class="ntool-pv-title-kr" id="noticePvTitleKr">국문 공지 제목</div>
             <div class="ntool-pv-title-en" id="noticePvTitleEn">ENG NOTICE TITLE</div>
             <div class="ntool-pv-subtitle"><em>A Day, Well Completed.</em> 하루의 완성, 웰페리온</div>
@@ -235,16 +235,18 @@
 (function(){
   /* 공식 SSOT: wellperion_brand_identity(최종시안).pdf (BLACK=#221F20, BEIGE=#B79F8A, HIGHLIGHT=#ED5B3F)
      각 서브브랜드: logo=메인 컬러, bg=배경(=헤더), pantone 참고용 */
+  /* 워터마크 자산 베이스 경로 (사업부별 mark.png = 헤더 우상단, corner.png = 푸터 가로 락업) */
+  const WM_BASE = '../../../1. AI학습자료_아카이브/08_로고&워터마크/_assets/logo/watermarks/';
   const BRANDS = {
-    main:      {name:'WELLPERION',                 logo:'#B79F8A', bg:'#221F20', hdr:'#221F20', pantone:'4735 C', wm:'beige'},
-    pt:        {name:'WELLPERION PT',              logo:'#B54840', bg:'#512B32', hdr:'#512B32', pantone:'504 C',  wm:'pt-red'},
-    sports:    {name:'WELLPERION SPORTS CLUB',     logo:'#3F71B0', bg:'#253B6C', hdr:'#253B6C', pantone:'—',     wm:'sportsclub-blue', wordmark:'../../../1. AI학습자료_아카이브/08_로고&워터마크/_assets/logo/sportsclub_wordmark.png'},
-    pilates:   {name:'WELLPERION PILATES',         logo:'#C44558', bg:'#8A2933', hdr:'#8A2933', pantone:'202 C', wm:'pilates'},
-    swimming:  {name:'WELLPERION SWIMMING',        logo:'#215768', bg:'#172C42', hdr:'#172C42', pantone:'533 C', wm:'swimming'},
-    squash:    {name:'WELLPERION SQUASH',          logo:'#D2D2D2', bg:'#77968E', hdr:'#77968E', pantone:'5565 C',wm:'grey'},
-    golf:      {name:'WELLPERION GOLF',            logo:'#337342', bg:'#132117', hdr:'#132117', pantone:'627 C', wm:'golf-green'},
-    gymnastic: {name:'WELLPERION GYMNASTIC',       logo:'#DCE7FF', bg:'#8F9AB6', hdr:'#8F9AB6', pantone:'535 C', wm:'gymnastic-purple'},
-    brad:      {name:"BRAD LITTLE'S STAR ACADEMY", logo:'#FFFFFF', bg:'#000000', hdr:'#000000', pantone:'—',     wm:'white'}
+    main:      {name:'WELLPERION',                 logo:'#B79F8A', bg:'#221F20', hdr:'#221F20', pantone:'4735 C', wm:'beige',              mark:'MAIN_LOGO-B79F8A_BG-221F20_mark.png'},
+    pt:        {name:'WELLPERION PT',              logo:'#B54840', bg:'#512B32', hdr:'#512B32', pantone:'504 C',  wm:'pt-red',             mark:'PT_LOGO-B54840_BG-512B32_mark.png'},
+    sports:    {name:'WELLPERION SPORTS CLUB',     logo:'#3F71B0', bg:'#253B6C', hdr:'#253B6C', pantone:'—',     wm:'sportsclub-blue',     mark:'SPORTS_LOGO-3F71B0_BG-253B6C_mark.png', wordmark:'../../../1. AI학습자료_아카이브/08_로고&워터마크/_assets/logo/sportsclub_wordmark.png'},
+    pilates:   {name:'WELLPERION PILATES',         logo:'#C44558', bg:'#8A2933', hdr:'#8A2933', pantone:'202 C', wm:'pilates',             mark:'PILATES_LOGO-C44558_BG-8A2933_mark.png'},
+    swimming:  {name:'WELLPERION SWIMMING',        logo:'#215768', bg:'#172C42', hdr:'#172C42', pantone:'533 C', wm:'swimming',            mark:'SWIMMING_LOGO-215768_BG-172C42_mark.png'},
+    squash:    {name:'WELLPERION SQUASH',          logo:'#D2D2D2', bg:'#77968E', hdr:'#77968E', pantone:'5565 C',wm:'grey',                mark:'SQUASH_LOGO-D2D2D2_BG-77968E_mark.png'},
+    golf:      {name:'WELLPERION GOLF',            logo:'#337342', bg:'#132117', hdr:'#132117', pantone:'627 C', wm:'golf-green',          mark:'GOLF_LOGO-337342_BG-132117_mark.png'},
+    gymnastic: {name:'WELLPERION GYMNASTIC',       logo:'#DCE7FF', bg:'#8F9AB6', hdr:'#8F9AB6', pantone:'535 C', wm:'gymnastic-purple',    mark:'GYMNASTIC_LOGO-DCE7FF_BG-8F9AB6_mark.png'},
+    brad:      {name:"BRAD LITTLE'S STAR ACADEMY", logo:'#FFFFFF', bg:'#000000', hdr:'#000000', pantone:'—',     wm:'white',               mark:'BRAD_LOGO-FFFFFF_BG-000000_mark.png'}
   };
   /* 공지 종류별 자동 채움 프리셋 (kr·en 제목 + 본문 예시) */
   const NOTICE_PRESETS = {
@@ -378,9 +380,9 @@
     en.textContent = el('noticeTitleEn').value || 'ENG NOTICE TITLE';
     kr.style.color = brand.logo;
     en.style.color = brand.logo;
-    /* 헤더 우상단 W = 제목과 동일 brand.logo / 푸터 배경 = 사업부 BG / 푸터 corner = 흰색 고정 */
+    /* 헤더 우상단 mark = 사업부별 mark.png (img) / 푸터 배경 = 사업부 BG / 푸터 corner = 흰색 고정 */
     var wmEl = el('noticePvWmark');
-    if(wmEl) wmEl.style.color = brand.logo;
+    if(wmEl && brand.mark) wmEl.src = WM_BASE + brand.mark;
     /* 슬로건도 사업부 LOGO 컬러로 동기화 (제목·워터마크 W와 같은 톤) */
     var subEl = document.querySelector('#noticePreview .ntool-pv-subtitle');
     if(subEl) subEl.style.color = brand.logo;
@@ -472,7 +474,7 @@
     /* HEADER (축소된 비율 + 캡션 헤더 하단 absolute) */
     html += '.hdr{flex:0 0 30%;padding:5.2vmin 5vmin 5.2vmin;text-align:center;color:#fff;display:flex;flex-direction:column;justify-content:center;align-items:center;position:relative;}';
     html += '.notice-label-top{position:absolute;top:2.6vmin;left:50%;transform:translateX(-50%);font-size:1.5vmin;font-weight:600;letter-spacing:0.32em;color:rgba(255,255,255,0.78);}';
-    html += '.wmark{position:absolute;top:0.8vmin;right:2.4vmin;font-family:"Pretendard","Apple SD Gothic Neo",sans-serif;font-size:18vmin;font-weight:200;line-height:1;letter-spacing:-0.05em;opacity:0.55;color:'+brand.logo+';user-select:none;}';
+    html += '.wmark{position:absolute;top:1.4vmin;right:2.4vmin;height:22vmin;width:auto;opacity:0.95;user-select:none;pointer-events:none;}';
     html += '.tkr{font-size:6.2vmin;font-weight:700;line-height:1.16;margin-bottom:0.8vmin;color:'+brand.logo+';letter-spacing:0.005em;}';
     html += '.ten{font-size:3vmin;font-weight:500;color:'+brand.logo+';opacity:0.92;letter-spacing:0.01em;margin-bottom:0;}';
     html += '.sub{position:absolute;bottom:1.8vmin;left:0;right:0;text-align:center;font-size:1.6vmin;color:'+brand.logo+';opacity:0.95;letter-spacing:0.06em;font-weight:500;padding:0 4vmin;}';
@@ -497,7 +499,7 @@
     html += '<div class="page">';
     html += '<div class="hdr" style="background:'+brand.hdr+';">';
     html += '<div class="notice-label-top">NOTICE</div>';
-    html += '<div class="wmark">W</div>';
+    html += '<img class="wmark" src="'+WM_BASE+brand.mark+'" alt="W">';
     html += '<div class="tkr">'+esc(titleKr)+'</div>';
     html += '<div class="ten">'+esc(titleEn)+'</div>';
     html += '<div class="sub"><em>A Day, Well Completed.</em> 하루의 완성, 웰페리온</div>';
