@@ -382,16 +382,42 @@
     return inline(t.text);
   }
 
-  /* 본문 textarea 선택 영역에 마크다운 prefix/suffix 자동 삽입 */
+  /* 본문 textarea 선택 영역에 마크다운 prefix/suffix wrap (v2.28 토글 + placeholder 제거) */
   function ntWrap(prefix, suffix){
     var ta = el('noticeBody');
     var s = ta.selectionStart, e = ta.selectionEnd;
     var before = ta.value.substring(0, s);
-    var selected = ta.value.substring(s, e) || '텍스트';
+    var selected = ta.value.substring(s, e);
     var after = ta.value.substring(e);
+
+    /* 토글 A: 선택 영역 바로 바깥이 prefix/suffix면 제거 (예: **|안|** 클릭) */
+    if(selected && before.endsWith(prefix) && after.startsWith(suffix)){
+      ta.value = before.slice(0, -prefix.length) + selected + after.slice(suffix.length);
+      ta.focus();
+      var ns = s - prefix.length;
+      ta.setSelectionRange(ns, ns + selected.length);
+      ntUpdatePreview();
+      return;
+    }
+    /* 토글 B: 선택 영역 자체가 prefix...suffix 형태면 안쪽만 남기기 */
+    if(selected.length >= prefix.length + suffix.length &&
+       selected.startsWith(prefix) && selected.endsWith(suffix)){
+      var inner = selected.slice(prefix.length, selected.length - suffix.length);
+      ta.value = before + inner + after;
+      ta.focus();
+      ta.setSelectionRange(s, s + inner.length);
+      ntUpdatePreview();
+      return;
+    }
+    /* 일반 wrap — 선택 없으면 커서만 prefix·suffix 사이 (placeholder 삽입 X) */
     ta.value = before + prefix + selected + suffix + after;
     ta.focus();
-    ta.setSelectionRange(s + prefix.length, s + prefix.length + selected.length);
+    if(selected === ''){
+      var cur = s + prefix.length;
+      ta.setSelectionRange(cur, cur);
+    } else {
+      ta.setSelectionRange(s + prefix.length, s + prefix.length + selected.length);
+    }
     ntUpdatePreview();
   }
   window.ntFmtHl = function(){ ntWrap('**', '**'); };
