@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>웰페리온 매출현황</title>
+<style>
+:root {
+  --bg:#221F20;--paper:#2a2725;--text:#f5f2ef;--dim:#8c8b83;
+  --accent:#B79F8A;--accent-bg:rgba(183,159,138,0.12);--border:#3d3835;
+  --green:#6abf7b;--green-bg:rgba(106,191,123,0.12);
+  --red:#ED5B3F;--red-bg:rgba(237,91,63,0.12);
+  --yellow:#e6c84e;--yellow-bg:rgba(230,200,78,0.12);
+  --blue:#5b9fd5;--blue-bg:rgba(91,159,213,0.12);
+  --purple:#a78bda;--purple-bg:rgba(167,139,218,0.12);
+  --orange:#e6944e;--orange-bg:rgba(230,148,78,0.12);
+  --primary: var(--accent);
+  --success: var(--green);
+  --warning: var(--orange);
+  --danger: var(--red);
+  --muted: var(--dim);
+  --card-bg: var(--paper);
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: "Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
+  background: var(--bg); color: var(--text); line-height:1.6; font-size:15px;
+}
+a { color: var(--accent); text-decoration: none; }
+
+/* ── 상단 고정 ── */
+.sticky-top {
+  position: sticky; top: 0; z-index: 100; background: var(--bg);
+  border-bottom: 1px solid var(--border);
+}
+.header {
+  background: var(--paper); display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 16px; border-bottom: 1px solid var(--border);
+}
+.header h1 { font-size: 17px; font-weight: 700; }
+.header-meta { font-size: 12px; color: var(--dim); margin-top: 2px; }
+.header-right { display: flex; align-items: center; gap: 8px; }
+.header-btns { display: flex; gap: 6px; flex-wrap: wrap; }
+.header-btns button, .header-btns a {
+  padding: 6px 12px; border: 1px solid var(--border); border-radius: 8px;
+  background: var(--bg); color: var(--text); cursor: pointer; font-size: 12px; font-weight: 600;
+  display: inline-flex; align-items: center; gap: 4px; font-family: inherit; text-decoration: none;
+}
+.header-btns button:hover, .header-btns a:hover {
+  background: var(--accent-bg); color: var(--accent); border-color: rgba(183,159,138,0.3);
+}
+
+/* ── 탭 바 ── */
+.tab-bar {
+  display: flex; border-bottom: 2px solid var(--border); padding: 0 16px; background: var(--bg);
+}
+.tab-bar button {
+  padding: 10px 16px; border: none; background: none;
+  cursor: pointer; font-size: 14px; color: var(--dim); font-family: inherit;
+  border-bottom: 2px solid transparent; margin-bottom: -2px;
+}
+.tab-bar button.active { color: var(--accent); border-bottom-color: var(--accent); font-weight: 600; }
+
+/* ── 필터 바 ── */
+.filter-bar {
+  display: flex; gap: 8px; padding: 10px 16px; flex-wrap: wrap;
+  border-bottom: 1px solid var(--border); align-items: center; background: var(--bg);
+}
+.filter-bar select {
+  padding: 6px 10px; border: 1px solid var(--border); border-radius: 8px;
+  font-size: 13px; background: var(--bg); color: var(--text); font-family: inherit;
+}
+.filter-bar .total-badge {
+  margin-left: auto; font-size: 14px; font-weight: 600; color: var(--accent);
+}
+
+/* ── 콘텐츠 영역 ── */
+.content { padding: 16px; max-width: 960px; margin: 0 auto; }
+
+/* ── KPI 카드 행 ── */
+.kpi-row {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 16px;
+}
+.kpi-card {
+  background: var(--paper); border-radius: 12px; padding: 16px;
+  border: 1px solid var(--border);
+}
+.kpi-card .kpi-label { font-size: 12px; color: var(--dim); margin-bottom: 6px; }
+.kpi-card .kpi-value { font-size: 24px; font-weight: 700; color: var(--accent); }
+.kpi-card .kpi-sub { font-size: 12px; color: var(--dim); margin-top: 4px; }
+.kpi-card .kpi-delta { font-size: 12px; margin-top: 4px; font-weight: 600; }
+.kpi-card .kpi-delta.up { color: var(--green); }
+.kpi-card .kpi-delta.down { color: var(--red); }
+.kpi-card .kpi-delta.flat { color: var(--dim); }
+
+/* ── 목표 달성률 게이지 ── */
+.gauge-wrap { margin-top: 8px; }
+.gauge-track {
+  width: 100%; height: 8px; background: var(--border); border-radius: 4px; overflow: hidden;
+}
+.gauge-fill {
+  height: 100%; border-radius: 4px; transition: width 0.6s;
+}
+.gauge-fill.good { background: var(--green); }
+.gauge-fill.warn { background: var(--yellow); }
+.gauge-fill.bad  { background: var(--red); }
+.gauge-label { font-size: 11px; color: var(--dim); margin-top: 4px; display: flex; justify-content: space-between; }
+
+/* ── 섹션 카드 ── */
+.section-card {
+  background: var(--paper); border-radius: 12px; padding: 16px;
+  border: 1px solid var(--border); margin-bottom: 12px;
+}
+.section-card h3 { font-size: 14px; font-weight: 700; color: var(--accent); margin-bottom: 12px; }
+
+/* ── 바 차트 ── */
+.bar-chart { display: flex; flex-direction: column; gap: 10px; }
+.bar-row { display: flex; align-items: center; gap: 10px; }
+.bar-row-label { font-size: 13px; min-width: 80px; color: var(--text); }
+.bar-track {
+  flex: 1; height: 20px; background: var(--border); border-radius: 4px; overflow: hidden; position: relative;
+}
+.bar-fill {
+  height: 100%; border-radius: 4px; transition: width 0.6s;
+  display: flex; align-items: center; justify-content: flex-end; padding-right: 6px;
+}
+.bar-fill span { font-size: 11px; color: rgba(255,255,255,0.8); font-weight: 600; white-space: nowrap; }
+.bar-fill.accent { background: var(--accent); }
+.bar-fill.blue   { background: var(--blue); }
+.bar-fill.green  { background: var(--green); }
+.bar-fill.purple { background: var(--purple); }
+.bar-fill.orange { background: var(--orange); }
+.bar-row-val { font-size: 13px; min-width: 90px; text-align: right; color: var(--dim); }
+
+/* ── 채널 분해 테이블 ── */
+.channel-table { width: 100%; border-collapse: collapse; }
+.channel-table th {
+  text-align: left; font-size: 12px; color: var(--dim); padding: 6px 8px;
+  border-bottom: 1px solid var(--border); font-weight: 600;
+}
+.channel-table td {
+  font-size: 13px; padding: 8px; border-bottom: 1px solid var(--border);
+}
+.channel-table tr:last-child td { border-bottom: none; }
+.channel-table .amount { text-align: right; font-weight: 700; }
+.channel-table .pct { text-align: right; color: var(--dim); }
+.channel-table .ratio-bar {
+  width: 80px; display: inline-block; vertical-align: middle;
+}
+.channel-table .ratio-track {
+  width: 100%; height: 6px; background: var(--border); border-radius: 3px; overflow: hidden;
+}
+.channel-table .ratio-fill {
+  height: 100%; background: var(--accent); border-radius: 3px;
+}
+
+/* ── 미수금 목록 ── */
+.receivable-item {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 0; border-bottom: 1px solid var(--border);
+}
+.receivable-item:last-child { border-bottom: none; }
+.receivable-name { font-size: 14px; font-weight: 500; }
+.receivable-meta { font-size: 12px; color: var(--dim); margin-top: 2px; }
+.receivable-amount { font-size: 15px; font-weight: 700; color: var(--warning); }
+.badge {
+  display: inline-block; padding: 2px 8px; border-radius: 10px;
+  font-size: 11px; font-weight: 600; white-space: nowrap;
+}
+.badge-yellow { background: var(--yellow-bg); color: var(--yellow); }
+.badge-red    { background: var(--red-bg);    color: var(--red); }
+.badge-blue   { background: var(--blue-bg);   color: var(--blue); }
+.badge-green  { background: var(--green-bg);  color: var(--green); }
+
+/* ── placeholder 스타일 ── */
+.placeholder {
+  color: var(--dim); font-style: italic; font-size: 13px;
+  background: var(--accent-bg); border: 1px dashed rgba(183,159,138,0.3);
+  border-radius: 8px; padding: 20px; text-align: center; margin: 8px 0;
+}
+.placeholder-inline {
+  color: var(--dim); font-size: 13px;
+  background: var(--accent-bg); border-radius: 4px; padding: 2px 8px;
+}
+
+/* ── 안내 배너 ── */
+.info-banner {
+  background: var(--blue-bg); border: 1px solid rgba(91,159,213,0.3);
+  border-radius: 10px; padding: 12px 14px; margin-bottom: 16px;
+  font-size: 13px; color: var(--blue); display: flex; gap: 8px; align-items: flex-start;
+}
+.info-banner .info-icon { font-size: 16px; flex-shrink: 0; }
+
+/* ── 전월 대비 카드 ── */
+.compare-row {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;
+}
+.compare-card {
+  background: var(--bg); border-radius: 10px; padding: 14px; border: 1px solid var(--border);
+}
+.compare-card .c-label { font-size: 12px; color: var(--dim); margin-bottom: 4px; }
+.compare-card .c-val { font-size: 20px; font-weight: 700; }
+.compare-card .c-sub { font-size: 11px; color: var(--dim); margin-top: 2px; }
+
+/* ── 인쇄 ── */
+@media print {
+  .sticky-top, .header-btns, .filter-bar { display: none !important; }
+  .content { max-width: 100%; }
+  body { background: #fff; color: #000; }
+  .kpi-card, .section-card, .compare-card { border: 1px solid #ccc; }
+}
+
+@media (max-width: 700px) {
+  .kpi-row { grid-template-columns: 1fr 1fr; }
+  .compare-row { grid-template-columns: 1fr; }
+  .bar-row-label { min-width: 60px; font-size: 12px; }
+}
+@media (max-width: 400px) {
+  .kpi-row { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<!-- ▸ 상단 고정 -->
+<div class="sticky-top">
+  <div class="header">
+    <div>
+      <h1>웰페리온 매출현황</h1>
+      <div class="header-meta">AI CFO 재무 라인 · 담당: 나우열M · v0.1</div>
+    </div>
+    <div class="header-btns">
+      <a href="/"><span>&#127968;</span> 가이드허브</a>
+      <button onclick="window.print()"><span>&#128424;</span> 인쇄</button>
+    </div>
+  </div>
+  <div class="tab-bar">
+    <button class="active" onclick="switchTab('overview')">매출 개요</button>
+    <button onclick="switchTab('channel')">채널별 분해</button>
+    <button onclick="switchTab('trend')">월별 추이</button>
+    <button onclick="switchTab('receivable')">미수금</button>
+  </div>
+  <div class="filter-bar" id="filterBar">
+    <select id="filterMonth" onchange="onMonthChange()">
+      <option value="2026-05">2026년 5월</option>
+      <option value="2026-04">2026년 4월</option>
+      <option value="2026-03">2026년 3월</option>
+      <option value="2026-02">2026년 2월</option>
+      <option value="2026-01">2026년 1월</option>
+    </select>
+    <span class="total-badge" id="totalBadge">이번 달 매출: 추후 측정</span>
+  </div>
+</div>
+
+<!-- ▸ 콘텐츠 -->
+<div class="content">
+
+  <!-- ── 매출 개요 탭 ── -->
+  <div id="tabOverview">
+
+    <div class="info-banner">
+      <span class="info-icon">&#9432;</span>
+      <span>
+        이 페이지는 <strong>v0.1 샘플</strong>입니다.
+        실측 데이터는 Apps Script 시트 연동 후 자동으로 채워집니다.
+        수치가 필요한 항목은 나우열M이 직접 입력하거나, Q3 2026 Apps Script 연동 완료 후 자동화합니다.
+      </span>
+    </div>
+
+    <!-- KPI 카드 4개 -->
+    <div class="kpi-row">
+      <div class="kpi-card">
+        <div class="kpi-label">이달 총 매출</div>
+        <div class="kpi-value"><span class="placeholder-inline">추후 측정</span></div>
+        <div class="kpi-sub">2026년 5월 기준</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">월 목표 달성률</div>
+        <div class="kpi-value"><span class="placeholder-inline">추후 측정</span></div>
+        <div class="gauge-wrap">
+          <div class="gauge-track">
+            <div class="gauge-fill warn" style="width:0%" id="goalGauge"></div>
+          </div>
+          <div class="gauge-label">
+            <span>목표: 추후 측정</span>
+            <span id="goalPct">—%</span>
+          </div>
+        </div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">전월 대비 증감</div>
+        <div class="kpi-value"><span class="placeholder-inline">추후 측정</span></div>
+        <div class="kpi-delta flat">데이터 연동 전</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">미수금 잔액</div>
+        <div class="kpi-value"><span class="placeholder-inline">추후 측정</span></div>
+        <div class="kpi-sub">정산 대기 포함</div>
+      </div>
+    </div>
+
+    <!-- 전월 대비 비교 -->
+    <div class="section-card">
+      <h3>전월 대비 매출 비교</h3>
+      <div class="compare-row">
+        <div class="compare-card">
+          <div class="c-label">이번 달 (2026-05)</div>
+          <div class="c-val"><span class="placeholder-inline">추후 측정</span></div>
+          <div class="c-sub">목표 대비: 추후 측정</div>
+        </div>
+        <div class="compare-card">
+          <div class="c-label">지난 달 (2026-04)</div>
+          <div class="c-val"><span class="placeholder-inline">추후 측정</span></div>
+          <div class="c-sub">달성률: 추후 측정</div>
+        </div>
+      </div>
+      <div class="placeholder">Apps Script 시트 연동 완료 후 자동으로 수치가 표시됩니다.</div>
+    </div>
+
+    <!-- 채널별 간략 요약 -->
+    <div class="section-card">
+      <h3>채널별 매출 요약</h3>
+      <div class="bar-chart">
+        <div class="bar-row">
+          <span class="bar-row-label">멤버십</span>
+          <div class="bar-track">
+            <div class="bar-fill accent" style="width:0%" id="barMembership">
+              <span></span>
+            </div>
+          </div>
+          <span class="bar-row-val"><span class="placeholder-inline">추후 측정</span></span>
+        </div>
+        <div class="bar-row">
+          <span class="bar-row-label">PT·레슨</span>
+          <div class="bar-track">
+            <div class="bar-fill blue" style="width:0%" id="barPt">
+              <span></span>
+            </div>
+          </div>
+          <span class="bar-row-val"><span class="placeholder-inline">추후 측정</span></span>
+        </div>
+        <div class="bar-row">
+          <span class="bar-row-label">스쿼시</span>
+          <div class="bar-track">
+            <div class="bar-fill green" style="width:0%" id="barSquash">
+              <span></span>
+            </div>
+          </div>
+          <span class="bar-row-val"><span class="placeholder-inline">추후 측정</span></span>
+        </div>
+        <div class="bar-row">
+          <span class="bar-row-label">기타</span>
+          <div class="bar-track">
+            <div class="bar-fill purple" style="width:0%" id="barOther">
+              <span></span>
+            </div>
+          </div>
+          <span class="bar-row-val"><span class="placeholder-inline">추후 측정</span></span>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /tabOverview -->
+
+  <!-- ── 채널별 분해 탭 ── -->
+  <div id="tabChannel" style="display:none;">
+
+    <div class="section-card">
+      <h3>채널별 매출 상세 분해</h3>
+      <table class="channel-table">
+        <thead>
+          <tr>
+            <th>채널</th>
+            <th style="text-align:right">매출액</th>
+            <th style="text-align:right">비율</th>
+            <th style="text-align:right">전월 대비</th>
+            <th>구성비</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>멤버십 (월회비)</td>
+            <td class="amount"><span class="placeholder-inline">추후 측정</span></td>
+            <td class="pct">—%</td>
+            <td class="pct">—</td>
+            <td>
+              <span class="ratio-bar">
+                <span class="ratio-track"><span class="ratio-fill" style="width:0%"></span></span>
+              </span>
+            </td>
+          </tr>
+          <tr>
+            <td>PT·개인 레슨</td>
+            <td class="amount"><span class="placeholder-inline">추후 측정</span></td>
+            <td class="pct">—%</td>
+            <td class="pct">—</td>
+            <td>
+              <span class="ratio-bar">
+                <span class="ratio-track"><span class="ratio-fill" style="width:0%"></span></span>
+              </span>
+            </td>
+          </tr>
+          <tr>
+            <td>스쿼시 코트</td>
+            <td class="amount"><span class="placeholder-inline">추후 측정</span></td>
+            <td class="pct">—%</td>
+            <td class="pct">—</td>
+            <td>
+              <span class="ratio-bar">
+                <span class="ratio-track"><span class="ratio-fill" style="width:0%"></span></span>
+              </span>
+            </td>
+          </tr>
+          <tr>
+            <td>발레·바레·기타 클래스</td>
+            <td class="amount"><span class="placeholder-inline">추후 측정</span></td>
+            <td class="pct">—%</td>
+            <td class="pct">—</td>
+            <td>
+              <span class="ratio-bar">
+                <span class="ratio-track"><span class="ratio-fill" style="width:0%"></span></span>
+              </span>
+            </td>
+          </tr>
+          <tr>
+            <td>기타 (입장료·부대)</td>
+            <td class="amount"><span class="placeholder-inline">추후 측정</span></td>
+            <td class="pct">—%</td>
+            <td class="pct">—</td>
+            <td>
+              <span class="ratio-bar">
+                <span class="ratio-track"><span class="ratio-fill" style="width:0%"></span></span>
+              </span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="placeholder" style="margin-top:12px">
+        채널별 분해 데이터는 CRM 결제 내역 및 Apps Script 시트 연동 후 자동 집계됩니다.
+      </div>
+    </div>
+
+    <!-- 북극성 KPI 연결 -->
+    <div class="section-card">
+      <h3>북극성 KPI 연결</h3>
+      <div class="bar-chart">
+        <div class="bar-row">
+          <span class="bar-row-label">OCF 기여</span>
+          <div class="bar-track">
+            <div class="bar-fill accent" style="width:0%"><span></span></div>
+          </div>
+          <span class="bar-row-val"><span class="placeholder-inline">월 OCF: 추후 측정</span></span>
+        </div>
+        <div class="bar-row">
+          <span class="bar-row-label">목표 달성률</span>
+          <div class="bar-track">
+            <div class="bar-fill green" style="width:0%"><span></span></div>
+          </div>
+          <span class="bar-row-val"><span class="placeholder-inline">추후 측정</span></span>
+        </div>
+      </div>
+      <div style="margin-top:12px; font-size:13px; color:var(--dim)">
+        달성률 ≥100% → 녹색 표시 / 80~99% → 노란색 경보 / 80% 미만 → 적색 경보 (데이터 연동 후 자동 적용)
+      </div>
+    </div>
+
+  </div><!-- /tabChannel -->
+
+  <!-- ── 월별 추이 탭 ── -->
+  <div id="tabTrend" style="display:none;">
+
+    <div class="section-card">
+      <h3>월별 매출 추이 (2026년)</h3>
+      <div class="bar-chart">
+        <div class="bar-row">
+          <span class="bar-row-label">2026-01</span>
+          <div class="bar-track"><div class="bar-fill accent" style="width:0%"><span></span></div></div>
+          <span class="bar-row-val"><span class="placeholder-inline">추후 측정</span></span>
+        </div>
+        <div class="bar-row">
+          <span class="bar-row-label">2026-02</span>
+          <div class="bar-track"><div class="bar-fill accent" style="width:0%"><span></span></div></div>
+          <span class="bar-row-val"><span class="placeholder-inline">추후 측정</span></span>
+        </div>
+        <div class="bar-row">
+          <span class="bar-row-label">2026-03</span>
+          <div class="bar-track"><div class="bar-fill accent" style="width:0%"><span></span></div></div>
+          <span class="bar-row-val"><span class="placeholder-inline">추후 측정</span></span>
+        </div>
+        <div class="bar-row">
+          <span class="bar-row-label">2026-04</span>
+          <div class="bar-track"><div class="bar-fill accent" style="width:0%"><span></span></div></div>
+          <span class="bar-row-val"><span class="placeholder-inline">추후 측정</span></span>
+        </div>
+        <div class="bar-row">
+          <span class="bar-row-label" style="color:var(--accent); font-weight:700">2026-05</span>
+          <div class="bar-track"><div class="bar-fill green" style="width:0%"><span></span></div></div>
+          <span class="bar-row-val" style="color:var(--accent); font-weight:700"><span class="placeholder-inline">이번 달</span></span>
+        </div>
+      </div>
+      <div class="placeholder" style="margin-top:12px">
+        월별 추이는 Apps Script 시트 연동 완료 후 실측값으로 자동 갱신됩니다.
+        데이터 소스: 매출 집계 구글 스프레드시트 (나우열M 관리)
+      </div>
+    </div>
+
+    <div class="section-card">
+      <h3>분기별 목표 대비 달성</h3>
+      <div class="bar-chart">
+        <div class="bar-row">
+          <span class="bar-row-label">Q1 2026</span>
+          <div class="bar-track"><div class="bar-fill blue" style="width:0%"><span></span></div></div>
+          <span class="bar-row-val"><span class="placeholder-inline">추후 측정</span></span>
+        </div>
+        <div class="bar-row">
+          <span class="bar-row-label">Q2 2026</span>
+          <div class="bar-track"><div class="bar-fill blue" style="width:0%"><span></span></div></div>
+          <span class="bar-row-val"><span class="placeholder-inline">추후 측정</span></span>
+        </div>
+        <div class="bar-row">
+          <span class="bar-row-label">Q3 2026</span>
+          <div class="bar-track"><div class="bar-fill warn" style="width:0%"><span></span></div></div>
+          <span class="bar-row-val"><span class="placeholder-inline">진행 중</span></span>
+        </div>
+        <div class="bar-row">
+          <span class="bar-row-label">Q4 2026</span>
+          <div class="bar-track"><div class="bar-fill orange" style="width:0%"><span></span></div></div>
+          <span class="bar-row-val"><span class="placeholder-inline">계획</span></span>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /tabTrend -->
+
+  <!-- ── 미수금 탭 ── -->
+  <div id="tabReceivable" style="display:none;">
+
+    <div class="section-card">
+      <h3>미수금 및 정산 대기 현황</h3>
+
+      <div class="info-banner" style="margin-bottom:12px">
+        <span class="info-icon">&#9432;</span>
+        <span>
+          아래 항목은 <strong>샘플 구조</strong>입니다.
+          실제 미수금 데이터는 나우열M이 직접 입력하거나, CRM 연동 후 자동으로 채워집니다.
+        </span>
+      </div>
+
+      <div class="receivable-item">
+        <div>
+          <div class="receivable-name">샘플: 미수금 항목 A</div>
+          <div class="receivable-meta">발생일: 추후 측정 · 담당: 나우열M</div>
+        </div>
+        <div style="display:flex; align-items:center; gap:10px">
+          <span class="badge badge-yellow">정산 대기</span>
+          <span class="receivable-amount"><span class="placeholder-inline">추후 측정</span></span>
+        </div>
+      </div>
+
+      <div class="receivable-item">
+        <div>
+          <div class="receivable-name">샘플: 미수금 항목 B</div>
+          <div class="receivable-meta">발생일: 추후 측정 · 담당: 나우열M</div>
+        </div>
+        <div style="display:flex; align-items:center; gap:10px">
+          <span class="badge badge-red">연체</span>
+          <span class="receivable-amount"><span class="placeholder-inline">추후 측정</span></span>
+        </div>
+      </div>
+
+      <div class="receivable-item">
+        <div>
+          <div class="receivable-name">샘플: 정산 완료 항목</div>
+          <div class="receivable-meta">정산일: 추후 측정 · 담당: 나우열M</div>
+        </div>
+        <div style="display:flex; align-items:center; gap:10px">
+          <span class="badge badge-green">완료</span>
+          <span class="receivable-amount" style="color:var(--dim)"><span class="placeholder-inline">추후 측정</span></span>
+        </div>
+      </div>
+
+      <div class="placeholder" style="margin-top:16px">
+        미수금 총계: 추후 측정 · 정산 대기: 추후 측정건 · 연체: 추후 측정건
+      </div>
+    </div>
+
+    <!-- OCF 영향 -->
+    <div class="section-card">
+      <h3>미수금 OCF 영향 분석</h3>
+      <div style="font-size:13px; color:var(--dim); line-height:1.8">
+        <p>미수금은 영업현금흐름(OCF)을 왜곡합니다. 매출로 인식되었으나 실제 현금이 유입되지 않은 금액입니다.</p>
+        <br>
+        <p>현재 미수금 잔액: <span class="placeholder-inline">추후 측정</span></p>
+        <p>OCF 보정치 (미수금 제외 실현 현금): <span class="placeholder-inline">추후 측정</span></p>
+        <p>북극성 KPI(월 OCF 흑자) 달성 여부: <span class="placeholder-inline">데이터 연동 후 자동 판정</span></p>
+      </div>
+    </div>
+
+  </div><!-- /tabReceivable -->
+
+</div><!-- /content -->
+
+<script>
+// ─── 탭 전환 ───
+function switchTab(tab) {
+  const tabs = ['overview', 'channel', 'trend', 'receivable'];
+  const labels = ['매출 개요', '채널별 분해', '월별 추이', '미수금'];
+
+  tabs.forEach(t => {
+    document.getElementById('tab' + t.charAt(0).toUpperCase() + t.slice(1)).style.display =
+      t === tab ? '' : 'none';
+  });
+
+  document.querySelectorAll('.tab-bar button').forEach((btn, i) => {
+    btn.classList.toggle('active', i === tabs.indexOf(tab));
+  });
+
+  document.getElementById('filterBar').style.display =
+    (tab === 'overview' || tab === 'channel') ? '' : 'none';
+}
+
+// ─── 월 변경 핸들러 ───
+function onMonthChange() {
+  const month = document.getElementById('filterMonth').value;
+  document.getElementById('totalBadge').textContent =
+    month + ' 매출: 추후 측정';
+}
+
+// ─── 초기화 ───
+document.addEventListener('DOMContentLoaded', () => {
+  switchTab('overview');
+});
+</script>
+
+</body>
+</html>
