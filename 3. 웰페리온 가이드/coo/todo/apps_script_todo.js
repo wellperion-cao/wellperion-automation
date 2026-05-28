@@ -10,7 +10,9 @@ const TODO_HEADERS = [
   'id', '업무명', '카테고리', '담당자',
   '시작일', '종료일', '내용', '상태',
   '결재요청', '링크', '파일URL',
-  '생성자', '생성일', '수정일'
+  '생성자', '생성일', '수정일',
+  // 결재 체계 (2026-05-28 신설)
+  '부서장싸인', 'GM싸인', '대표싸인', '결재상태', '결재완료시각'
 ];
 
 // 카테고리 목록
@@ -39,23 +41,38 @@ function _prop(key) {
 function initTodoSheet() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   let sh = ss.getSheetByName(TODO_SHEET);
-  if (sh) return sh;
+  if (sh) {
+    // 기존 시트 — 결재 컬럼 자동 마이그레이션 (2026-05-28)
+    const existingHeaders = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0];
+    const newCols = TODO_HEADERS.filter(h => !existingHeaders.includes(h));
+    if (newCols.length) {
+      const startCol = existingHeaders.length + 1;
+      sh.getRange(1, startCol, 1, newCols.length).setValues([newCols]);
+      sh.getRange(1, startCol, 1, newCols.length)
+        .setFontWeight('bold')
+        .setBackground('#0b8043')  // 결재 컬럼 = 초록 (구분)
+        .setFontColor('#ffffff');
+      const newWidths = [130, 130, 130, 100, 150];
+      newCols.forEach((_, i) => sh.setColumnWidth(startCol + i, newWidths[i] || 120));
+    }
+    return sh;
+  }
 
   sh = ss.insertSheet(TODO_SHEET);
-  // 헤더 기입
   sh.getRange(1, 1, 1, TODO_HEADERS.length).setValues([TODO_HEADERS]);
   sh.getRange(1, 1, 1, TODO_HEADERS.length)
     .setFontWeight('bold')
     .setBackground('#1a73e8')
     .setFontColor('#ffffff');
 
-  // 컬럼 폭 설정 (px)
-  const widths = [130, 200, 130, 80, 100, 100, 300, 70, 70, 200, 200, 80, 130, 130];
+  // 결재 컬럼 5개는 별도 색 강조
+  sh.getRange(1, 15, 1, 5).setBackground('#0b8043');
+
+  const widths = [130, 200, 130, 80, 100, 100, 300, 70, 70, 200, 200, 80, 130, 130,
+                  130, 130, 130, 100, 150];
   widths.forEach((w, i) => sh.setColumnWidth(i + 1, w));
 
-  // 첫 행 고정
   sh.setFrozenRows(1);
-
   return sh;
 }
 
@@ -145,28 +162,120 @@ function _json(obj) {
     .setMimeType(ContentService.MimeType.JSON);
 }
 
-// ─── 텔레그램 알림 (선택) ───
-function _notifyTelegram(text) {
+// ─── 텔레그램 발송 (옵션: inline_keyboard + chat_id 오버라이드) ───
+function _notifyTelegram(text, opts) {
   const token = _prop('BOT_TOKEN') || _prop('TELEGRAM_BOT_TOKEN');
-  const chatId = _prop('CHAT_ID') || _prop('TELEGRAM_CHAT_ID');
+  opts = opts || {};
+  const chatId = opts.chat_id || _prop('APPROVAL_CHAT_ID') || _prop('CHAT_ID') || _prop('TELEGRAM_CHAT_ID');
   if (!token || !chatId) return; // 설정 없으면 스킵
 
+  const payload = {
+    chat_id: chatId,
+    text: text,
+    parse_mode: 'HTML',
+    disable_web_page_preview: true
+  };
+  if (opts.inline_keyboard) {
+    payload.reply_markup = { inline_keyboard: opts.inline_keyboard };
+  }
+
   try {
-    const url = 'https://api.telegram.org/bot' + token + '/sendMessage';
-    UrlFetchApp.fetch(url, {
+    UrlFetchApp.fetch('https://api.telegram.org/bot' + token + '/sendMessage', {
       method: 'post',
       contentType: 'application/json',
-      payload: JSON.stringify({
-        chat_id: chatId,
-        text: text,
-        parse_mode: 'HTML'
-      }),
+      payload: JSON.stringify(payload),
       muteHttpExceptions: true
     });
   } catch (e) {
-    // 알림 실패해도 본 기능에 영향 없음
-    Logger.log('텔레그램 알림 실패: ' + e.message);
+    Logger.log('텔레그램 발송 실패: ' + e.message);
   }
+}
+
+// ─── 결재 라인 자동 산출 (결제 권한 기준 v2.0) ───
+function _buildApprovalRoute(record) {
+  // content에서 BUDGET 마커 파싱
+  const content = String(record['내용'] || '');
+  const m = content.match(/===BUDGET===\s*\n([^|]+)\|\s*(\d+)/);
+  let budgetCategory = null, budgetAmount = 0;
+  if (m) { budgetCategory = m[1].trim(); budgetAmount = Number(m[2]); }
+
+  // 결재요청 필드 (수동 체크)
+  const manual = String(record['결재요청'] || '').split(',').map(s => s.trim()).filter(Boolean);
+
+  // 예산 기반 자동 산출
+  let auto = [];
+  if (budgetCategory && budgetAmount > 0) {
+    switch (budgetCategory) {
+      case '일상 운영비':           auto = budgetAmount <= 300000 ? ['GM'] : ['부서장', 'GM']; break;
+      case '소액 유지보수':         auto = budgetAmount <= 100000 ? ['부서장'] : ['GM']; break;
+      case '마케팅':                auto = budgetAmount <= 3000000 ? ['GM'] : ['GM', '대표님']; break;
+      case '비상 지출':             auto = budgetAmount <= 500000 ? ['부서장'] : ['GM']; break;
+      case '계약·정기 약정':
+      case 'IT·소프트웨어':
+      case '급여·인건비·외주·교육':
+      case '장비 구매·교체':        auto = ['GM', '대표님']; break;
+    }
+  }
+
+  // 수동 + 자동 합집합 (순서: 부서장 → GM → 대표님)
+  const set = {};
+  manual.concat(auto).forEach(a => { set[a] = true; });
+  const order = ['부서장', 'GM', '대표님'];
+  return order.filter(role => set[role]);
+}
+
+// ─── 결재 카드 발송 (인라인 키보드) ───
+function _sendApprovalCard(record, route, currentRole) {
+  if (!currentRole || !route.includes(currentRole)) return;
+  const id = record['id'];
+  const title = record['업무명'] || '(제목 없음)';
+  const category = record['카테고리'] || '-';
+  const owner = record['담당자'] || '-';
+
+  // content 파싱 — 본문·예산만 텔레그램에 표시
+  const content = String(record['내용'] || '');
+  let body = content;
+  const bIdx = content.indexOf('===BUDGET===');
+  if (bIdx >= 0) body = content.slice(0, bIdx).trim();
+  const pIdx = body.indexOf('===PROGRESS_LOG===');
+  if (pIdx >= 0) body = body.slice(0, pIdx).trim();
+
+  const budgetMatch = content.match(/===BUDGET===\s*\n([^|]+)\|\s*(\d+)/);
+  let budgetLine = '';
+  if (budgetMatch) {
+    const amt = Number(budgetMatch[2]).toLocaleString('ko-KR');
+    budgetLine = '\n💰 예산: ' + budgetMatch[1].trim() + ' · ' + amt + '원';
+  }
+
+  // 결재 라인 시각화 (현재 차례 강조)
+  const routeViz = route.map(r => r === currentRole ? '<b>[' + r + ']</b>' : r).join(' → ');
+
+  const text =
+    '📋 <b>[결재 요청]</b> ' + currentRole + '님 차례\n' +
+    '━━━━━━━━━━━━━━━━\n' +
+    '📌 ' + title + '\n' +
+    '🏷 ' + category + ' · 담당: ' + owner + budgetLine + '\n' +
+    (body ? '\n📝 ' + body.slice(0, 300) + (body.length > 300 ? '...' : '') + '\n' : '') +
+    '\n결재 라인: ' + routeViz + '\n' +
+    '🆔 ' + id;
+
+  const kb = [[
+    { text: '✅ 승인', callback_data: 'sign:' + id + ':' + currentRole + ':approve' },
+    { text: '❌ 반려', callback_data: 'sign:' + id + ':' + currentRole + ':reject' }
+  ]];
+
+  _notifyTelegram(text, { inline_keyboard: kb });
+}
+
+// ─── 결재 라인 다음 단계 산출 ───
+function _nextApprover(record, route) {
+  // 싸인 컬럼 확인 → 미서명 첫 사람
+  const map = { '부서장': '부서장싸인', 'GM': 'GM싸인', '대표님': '대표싸인' };
+  for (let i = 0; i < route.length; i++) {
+    const r = route[i];
+    if (!record[map[r]]) return r;
+  }
+  return null; // 전원 서명 완료
 }
 
 // ─── 파일 업로드 (Base64 → Drive) ───
@@ -279,25 +388,37 @@ function _processTodoAction(body) {
       const sh = initTodoSheet();
       const id = _genId();
       const now = _now();
-      const row = [
-        id,
-        body['업무명'] || '',
-        body['카테고리'] || '',
-        body['담당자'] || '',
-        body['시작일'] || _today(),
-        body['종료일'] || '',
-        body['내용'] || '',
-        body['상태'] || '진행중',
-        body['결재요청'] || '',
-        body['링크'] || '',
-        body['파일URL'] || '',
-        body['생성자'] || '',
-        now, now
-      ];
+      const row = new Array(TODO_HEADERS.length).fill('');
+      row[0] = id;
+      row[1] = body['업무명'] || '';
+      row[2] = body['카테고리'] || '';
+      row[3] = body['담당자'] || '';
+      row[4] = body['시작일'] || _today();
+      row[5] = body['종료일'] || '';
+      row[6] = body['내용'] || '';
+      row[7] = body['상태'] || '진행중';
+      row[8] = body['결재요청'] || '';
+      row[9] = body['링크'] || '';
+      row[10] = body['파일URL'] || '';
+      row[11] = body['생성자'] || '';
+      row[12] = now;
+      row[13] = now;
+      // 결재 컬럼 14~18: 신설 — 결재요청 있으면 '대기', 없으면 빈칸
+      row[17] = body['결재요청'] ? '대기' : '';
       const newRow = sh.getLastRow() + 1;
       sh.getRange(newRow, 1, 1, row.length).setValues([row]);
       _applyStatusColor(sh, newRow, row[7]);
-      _notifyTelegram('📋 <b>[TODO 신규]</b>\n업무명: '+(body['업무명']||'-')+'\n카테고리: '+(body['카테고리']||'-')+'\n담당자: '+(body['담당자']||'-')+'\nID: '+id);
+
+      // 결재요청 있으면 첫 결재자에게 카드 발송 (2026-05-28 신설)
+      if (body['결재요청']) {
+        const record = {};
+        TODO_HEADERS.forEach((h, i) => record[h] = row[i]);
+        const route = _buildApprovalRoute(record);
+        const next = _nextApprover(record, route);
+        if (next) _sendApprovalCard(record, route, next);
+      } else {
+        _notifyTelegram('📋 <b>[TODO 신규]</b>\n업무명: '+(body['업무명']||'-')+'\n카테고리: '+(body['카테고리']||'-')+'\n담당자: '+(body['담당자']||'-')+'\nID: '+id);
+      }
       return _json({ ok: true, id: id, message: '업무가 추가되었습니다.' });
     }
 
@@ -309,14 +430,85 @@ function _processTodoAction(body) {
       const rowNum = _findRow(sh, id);
       if (rowNum < 0) return _json({ ok: false, error: '해당 ID를 찾을 수 없습니다: ' + id });
       const existing = sh.getRange(rowNum, 1, 1, TODO_HEADERS.length).getValues()[0];
+      const prevApproval = existing[TODO_HEADERS.indexOf('결재요청')];
       TODO_HEADERS.forEach((h, i) => {
         if (h === 'id' || h === '생성일' || h === '생성자') return;
         if (body[h] !== undefined && body[h] !== null) existing[i] = body[h];
       });
       existing[TODO_HEADERS.indexOf('수정일')] = _now();
+
+      // 결재요청 새로 추가/변경된 경우 + 결재상태가 미설정/대기인 경우 → 카드 발송
+      const newApproval = existing[TODO_HEADERS.indexOf('결재요청')];
+      const approvalStatusIdx = TODO_HEADERS.indexOf('결재상태');
+      const currentApprovalStatus = String(existing[approvalStatusIdx] || '');
+      const approvalChanged = newApproval && newApproval !== prevApproval;
+      if (approvalChanged && (currentApprovalStatus === '' || currentApprovalStatus === '대기')) {
+        existing[approvalStatusIdx] = '대기';
+      }
       sh.getRange(rowNum, 1, 1, TODO_HEADERS.length).setValues([existing]);
       _applyStatusColor(sh, rowNum, existing[TODO_HEADERS.indexOf('상태')]);
+
+      if (approvalChanged && (currentApprovalStatus === '' || currentApprovalStatus === '대기')) {
+        const record = {};
+        TODO_HEADERS.forEach((h, i) => record[h] = existing[i]);
+        const route = _buildApprovalRoute(record);
+        const next = _nextApprover(record, route);
+        if (next) _sendApprovalCard(record, route, next);
+      }
       return _json({ ok: true, id: id, message: '업무가 수정되었습니다.' });
+    }
+
+    // ─── 결재 싸인 (봇 콜백 호출) — 2026-05-28 신설 ───
+    if (action === 'todo_sign') {
+      const sh = initTodoSheet();
+      const id = body.id;
+      const role = body.role || '';  // '부서장' / 'GM' / '대표님'
+      const decision = body.decision || '';  // 'approve' / 'reject'
+      const signer = body.signer || role;
+      if (!id || !role || !decision) return _json({ ok: false, error: 'id·role·decision 필수' });
+      const rowNum = _findRow(sh, id);
+      if (rowNum < 0) return _json({ ok: false, error: '해당 ID를 찾을 수 없습니다: ' + id });
+
+      const existing = sh.getRange(rowNum, 1, 1, TODO_HEADERS.length).getValues()[0];
+      const record = {};
+      TODO_HEADERS.forEach((h, i) => record[h] = existing[i]);
+      const route = _buildApprovalRoute(record);
+      const signMap = { '부서장': '부서장싸인', 'GM': 'GM싸인', '대표님': '대표싸인' };
+      const signCol = signMap[role];
+      if (!signCol) return _json({ ok: false, error: '알 수 없는 결재자: ' + role });
+
+      const now = _now();
+      if (decision === 'reject') {
+        existing[TODO_HEADERS.indexOf('결재상태')] = role + ' 반려';
+        existing[TODO_HEADERS.indexOf('수정일')] = now;
+        sh.getRange(rowNum, 1, 1, TODO_HEADERS.length).setValues([existing]);
+        _notifyTelegram('❌ <b>[결재 반려]</b> ' + role + '\n📌 ' + (record['업무명']||'-') + '\n🆔 ' + id);
+        return _json({ ok: true, id: id, message: role + ' 반려 처리됨', decision: 'reject' });
+      }
+
+      // approve
+      existing[TODO_HEADERS.indexOf(signCol)] = now + (signer && signer !== role ? ' (' + signer + ')' : '');
+      record[signCol] = existing[TODO_HEADERS.indexOf(signCol)];
+      const next = _nextApprover(record, route);
+      if (next) {
+        existing[TODO_HEADERS.indexOf('결재상태')] = role + ' 완료';
+      } else {
+        existing[TODO_HEADERS.indexOf('결재상태')] = '결재완료';
+        existing[TODO_HEADERS.indexOf('결재완료시각')] = now;
+      }
+      existing[TODO_HEADERS.indexOf('수정일')] = now;
+      sh.getRange(rowNum, 1, 1, TODO_HEADERS.length).setValues([existing]);
+
+      if (next) {
+        // 다음 결재자에게 카드 발송
+        TODO_HEADERS.forEach((h, i) => record[h] = existing[i]);
+        _sendApprovalCard(record, route, next);
+        _notifyTelegram('✅ <b>[' + role + ' 싸인 완료]</b> → ' + next + ' 결재 대기\n📌 ' + (record['업무명']||'-') + '\n🆔 ' + id);
+      } else {
+        _notifyTelegram('🎉 <b>[결재 완료]</b> 전 라인 승인\n📌 ' + (record['업무명']||'-') + '\n🆔 ' + id + '\n✅ ' + now);
+      }
+
+      return _json({ ok: true, id: id, message: role + ' 승인 처리됨', next: next || null, decision: 'approve' });
     }
 
     // ─── 삭제 ───
