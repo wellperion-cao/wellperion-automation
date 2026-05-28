@@ -36,9 +36,10 @@
 
 ## 3. 보고·승인
 - 일일 08:00 통합 보고: `notion-c-level-agents/scripts/ceo_morning_brief_08.py`
-- 텔레그램: `telegram_bot/bot.py` + `daily_scheduler.py` (PID 가동)
-- CEO 인박스 DB: `fed0015b-23cc-4faf-8acb-d3310edf4f72` (INBOX_DB_ID)
+- 텔레그램 (범위: C-Level 보고 + GM 승인 회신 전용): `telegram_bot/bot.py` + `daily_scheduler.py` (PID 가동)
+- GM 자유텍스트 지시 채널: CLI(현 세션) · 모바일 Claude Code (remote)
 - 봇 토큰 SSOT: `telegram_bot/.env`
+- ※ CEO 인박스 DB(INB)는 2026-05-29 폐기 (텔레그램 보고+승인 전용화)
 
 
 ## 4. 운영 제약
