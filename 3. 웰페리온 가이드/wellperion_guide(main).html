@@ -2898,72 +2898,7 @@ Start-Process python -ArgumentList telegram_bot\daily_scheduler.py -WorkingDirec
     <div style="margin:18px 0 24px;">
       <h3 id="gm1-todo-date"><span class="ico">📌</span>오늘 할 일</h3>
       <div id="today-task-list">
-        <div class="task-card" data-today="1">
-          <div class="task-title" style="display:flex;align-items:center;justify-content:space-between;">
-            <span><span class="status-dot active"></span>공지/안내문 생성 도구 페이지 제작</span>
-            <div class="todo-actions">
-              <button class="todo-act-btn today-act" data-action="done">완료</button>
-              <button class="todo-act-btn today-act" data-action="hold">보류</button>
-              <button class="todo-act-btn today-act del" data-action="delete">삭제</button>
-            </div>
-          </div>
-          <div class="task-desc">브랜드 가이드 기준 공지문 자동 생성. 내용 입력 → 미리보기 → 인쇄.</div>
-        </div>
-        <div class="task-card" data-today="2">
-          <div class="task-title" style="display:flex;align-items:center;justify-content:space-between;">
-            <span><span class="status-dot active"></span>AI C-Level 개요 페이지 생성</span>
-            <div class="todo-actions">
-              <button class="todo-act-btn today-act" data-action="done">완료</button>
-              <button class="todo-act-btn today-act" data-action="hold">보류</button>
-              <button class="todo-act-btn today-act del" data-action="delete">삭제</button>
-            </div>
-          </div>
-          <div class="task-desc">각 C-Level 클릭 시 개요 먼저 표시 + 하위 페이지 연결.</div>
-        </div>
-        <div class="task-card" data-today="3">
-          <div class="task-title" style="display:flex;align-items:center;justify-content:space-between;">
-            <span><span class="status-dot active"></span>전사 기준 & 회사 핵심 문서 통합 검토</span>
-            <div class="todo-actions">
-              <button class="todo-act-btn today-act" data-action="done">완료</button>
-              <button class="todo-act-btn today-act" data-action="hold">보류</button>
-              <button class="todo-act-btn today-act del" data-action="delete">삭제</button>
-            </div>
-          </div>
-          <div class="task-desc">공통 가이드라인과 회사 핵심 문서 섹터 중복 정리.</div>
-        </div>
-        <div class="task-card" data-today="4">
-          <div class="task-title" style="display:flex;align-items:center;justify-content:space-between;">
-            <span><span class="status-dot active"></span>운영부·시설부·주차관리부 체계 확장 시작</span>
-            <div class="todo-actions">
-              <button class="todo-act-btn today-act" data-action="done">완료</button>
-              <button class="todo-act-btn today-act" data-action="hold">보류</button>
-              <button class="todo-act-btn today-act del" data-action="delete">삭제</button>
-            </div>
-          </div>
-          <div class="task-desc">지원부 체계 복제 → 부서별 규정·가이드·매뉴얼·체크리스트 제작.</div>
-        </div>
-        <div class="task-card" data-today="5">
-          <div class="task-title" style="display:flex;align-items:center;justify-content:space-between;">
-            <span><span class="status-dot active"></span>AI 학습 시스템 고도화</span>
-            <div class="todo-actions">
-              <button class="todo-act-btn today-act" data-action="done">완료</button>
-              <button class="todo-act-btn today-act" data-action="hold">보류</button>
-              <button class="todo-act-btn today-act del" data-action="delete">삭제</button>
-            </div>
-          </div>
-          <div class="task-desc">수집→요약→적용→구조화 전체 파이프라인. Auto Mode·Auto Memory·Routines 학습 포함. CTO 영역에 학습 현황 페이지.</div>
-        </div>
-        <div class="task-card" data-today="6">
-          <div class="task-title" style="display:flex;align-items:center;justify-content:space-between;">
-            <span><span class="status-dot active"></span>마그네슘(Cenovis) 저녁 1알</span>
-            <div class="todo-actions">
-              <button class="todo-act-btn today-act" data-action="done">완료</button>
-              <button class="todo-act-btn today-act" data-action="hold">보류</button>
-              <button class="todo-act-btn today-act del" data-action="delete">삭제</button>
-            </div>
-          </div>
-          <div class="task-desc">수면 질 개선용.</div>
-        </div>
+        <!-- 동적 렌더링 — gm1_unified_tasks localStorage 기반 -->
       </div>
       <div style="display:flex;gap:12px;margin-top:16px;">
         <details class="toggle" style="flex:1;">
@@ -3407,6 +3342,10 @@ Start-Process python -ArgumentList telegram_bot\daily_scheduler.py -WorkingDirec
               <div>
                 <label style="font-size:12px;color:var(--dim);display:block;margin-bottom:4px;">메모</label>
                 <textarea id="gm1CalFMemo" rows="3" placeholder="메모 (선택)" style="width:100%;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:14px;font-family:inherit;resize:vertical;box-sizing:border-box;"></textarea>
+              </div>
+              <div style="display:flex;align-items:center;gap:8px;">
+                <input type="checkbox" id="gm1CalFIsToday" style="width:16px;height:16px;cursor:pointer;accent-color:var(--accent);">
+                <label for="gm1CalFIsToday" style="font-size:13px;cursor:pointer;">오늘 할 일로 표시 (isToday)</label>
               </div>
             </div>
             <div style="display:flex;gap:8px;margin-top:18px;justify-content:flex-end;">
@@ -5463,87 +5402,229 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
     el.innerHTML = '<span class="ico">📌</span>오늘 할 일 (' + y + '-' + m + '-' + d + ' ' + dow + ')';
   })();
 
-  // ── GM1 개인 캘린더 ──────────────────────────────────────────
+  // ── GM1 통합 태스크 시스템 (오늘 할 일 ↔ 캘린더 단일 데이터 소스) ──────────
   (function(){
-    var CAL_KEY = 'gm1_calendar_events';
-    var SEED = [{
-      id: 'seed-001',
-      date: '2026-06-01',
-      time: '',
-      title: '황용석 팀장 퇴직 및 지원팀 재편',
-      category: '인사·파트너',
-      memo: '지원팀 구조 재정비 진행'
-    }];
+    var UNIFIED_KEY = 'gm1_unified_tasks';
+    var OLD_KEY     = 'gm1_calendar_events';
 
-    var CAT_COLORS = {
-      '개인':      'background:#B79F8A;color:#221F20;',
-      '업무':      'background:#4caf50;color:#fff;',
-      '인사·파트너':'background:#e85555;color:#fff;',
-      '회의':      'background:#4488ee;color:#fff;',
-      '기타':      'background:#888;color:#fff;'
-    };
+    /* ── 오늘 날짜 문자열 ── */
+    function todayStr() {
+      var n = new Date();
+      return n.getFullYear() + '-' + ('0'+(n.getMonth()+1)).slice(-2) + '-' + ('0'+n.getDate()).slice(-2);
+    }
 
-    // 현재 뷰 연월
-    var viewDate = new Date();
-    var viewYear = viewDate.getFullYear();
-    var viewMonth = viewDate.getMonth(); // 0-based
+    /* ── 마이그레이션: 옛 키 → 새 키 ── */
+    function gm1Migrate() {
+      try {
+        var oldRaw = localStorage.getItem(OLD_KEY);
+        if (!oldRaw) return;
+        var oldData = JSON.parse(oldRaw);
+        if (!Array.isArray(oldData) || !oldData.length) { localStorage.removeItem(OLD_KEY); return; }
+        var existing = gm1Load();
+        var existIds = {};
+        existing.forEach(function(e){ existIds[e.id] = true; });
+        var td = todayStr();
+        oldData.forEach(function(ev) {
+          if (existIds[ev.id]) return;
+          // 구 모델 → 신 모델
+          var startDate = ev.startDate || ev.date || td;
+          existing.push({
+            id:          ev.id || ('migrated-' + Date.now() + '-' + Math.random()),
+            title:       ev.title || '',
+            description: ev.description || ev.memo || '',
+            startDate:   startDate,
+            endDate:     ev.endDate || null,
+            time:        ev.time || '',
+            category:    ev.category || '기타',
+            isToday:     ev.isToday !== undefined ? ev.isToday : (startDate === td),
+            status:      ev.status || '진행중',
+            memo:        ev.memo || ev.description || '',
+            ssotSynced:  ev.ssotSynced || false
+          });
+        });
+        gm1Save(existing);
+        localStorage.removeItem(OLD_KEY);
+      } catch(e) {}
+    }
 
-    // 선택된 날짜 (날짜 모달용)
-    var selectedDay = null;
+    /* ── CEO_SEED_START ── */
+    var CEO_SEEDS = [
+      {id:'seed-2026-05-28-01',title:'공지/안내문 생성 도구 페이지 제작',description:'브랜드 가이드 기준 공지문 자동 생성. 내용 입력 → 미리보기 → 인쇄.',startDate:'2026-05-28',endDate:null,time:'',category:'업무',isToday:true,status:'진행중',memo:'',ssotSynced:false},
+      {id:'seed-2026-05-28-02',title:'AI C-Level 개요 페이지 생성',description:'각 C-Level 클릭 시 개요 먼저 표시 + 하위 페이지 연결.',startDate:'2026-05-28',endDate:null,time:'',category:'업무',isToday:true,status:'진행중',memo:'',ssotSynced:false},
+      {id:'seed-2026-05-28-03',title:'전사 기준 & 회사 핵심 문서 통합 검토',description:'공통 가이드라인과 회사 핵심 문서 섹터 중복 정리.',startDate:'2026-05-28',endDate:null,time:'',category:'업무',isToday:true,status:'진행중',memo:'',ssotSynced:false},
+      {id:'seed-2026-05-28-04',title:'운영부·시설부·주차관리부 체계 확장 시작',description:'지원부 체계 복제 → 부서별 규정·가이드·매뉴얼·체크리스트 제작.',startDate:'2026-05-28',endDate:null,time:'',category:'업무',isToday:true,status:'진행중',memo:'',ssotSynced:false},
+      {id:'seed-2026-05-28-05',title:'AI 학습 시스템 고도화',description:'수집→요약→적용→구조화 전체 파이프라인. Auto Mode·Auto Memory·Routines 학습 포함.',startDate:'2026-05-28',endDate:null,time:'',category:'업무',isToday:true,status:'진행중',memo:'',ssotSynced:false},
+      {id:'seed-2026-05-28-06',title:'마그네슘(Cenovis) 저녁 1알',description:'수면 질 개선용.',startDate:'2026-05-28',endDate:null,time:'21:00',category:'개인',isToday:true,status:'진행중',memo:'',ssotSynced:false},
+      // 기존 황용석 캘린더 시드
+      {id:'seed-001',title:'황용석 팀장 퇴직 및 지원팀 재편',description:'지원팀 구조 재정비 진행.',startDate:'2026-06-01',endDate:null,time:'',category:'인사·파트너',isToday:false,status:'진행중',memo:'지원팀 구조 재정비 진행',ssotSynced:false}
+    ];
+    /* ── CEO_SEED_END ── */
 
     /* ── 데이터 CRUD ── */
-    function gm1CalLoad() {
+    function gm1Load() {
       try {
-        var raw = localStorage.getItem(CAL_KEY);
+        var raw = localStorage.getItem(UNIFIED_KEY);
         return raw ? JSON.parse(raw) : [];
       } catch(e) { return []; }
     }
 
-    function gm1CalSave(events) {
-      try { localStorage.setItem(CAL_KEY, JSON.stringify(events)); } catch(e){}
+    function gm1Save(tasks) {
+      try { localStorage.setItem(UNIFIED_KEY, JSON.stringify(tasks)); } catch(e){}
     }
 
-    function gm1CalSeed() {
-      var events = gm1CalLoad();
-      if (!events.length) {
-        gm1CalSave(SEED);
-      }
+    function gm1SeedInit() {
+      var tasks = gm1Load();
+      var existIds = {};
+      tasks.forEach(function(t){ existIds[t.id] = true; });
+      var added = false;
+      CEO_SEEDS.forEach(function(s) {
+        if (!existIds[s.id]) { tasks.push(s); added = true; }
+      });
+      if (added) gm1Save(tasks);
     }
 
-    function gm1CalAdd(ev) {
-      var events = gm1CalLoad();
-      events.push(ev);
-      gm1CalSave(events);
-    }
-
-    function gm1CalEdit(id, updates) {
-      var events = gm1CalLoad();
-      for (var i = 0; i < events.length; i++) {
-        if (events[i].id === id) {
-          events[i] = Object.assign({}, events[i], updates);
-          break;
-        }
-      }
-      gm1CalSave(events);
-    }
-
-    function gm1CalDelete(id) {
-      var events = gm1CalLoad().filter(function(e){ return e.id !== id; });
-      gm1CalSave(events);
-    }
-
-    function gm1CalGenId() {
+    function gm1GenId() {
       return 'ev-' + Date.now() + '-' + Math.floor(Math.random()*10000);
     }
 
-    /* ── 렌더링 ── */
-    function gm1CalRender() {
-      var events = gm1CalLoad();
-      gm1CalRenderGrid(events);
-      gm1CalRenderList(events);
+    function gm1UpdateStatus(id, status) {
+      var tasks = gm1Load();
+      for (var i = 0; i < tasks.length; i++) {
+        if (tasks[i].id === id) { tasks[i].status = status; break; }
+      }
+      gm1Save(tasks);
     }
 
-    function gm1CalRenderGrid(events) {
+    function gm1DeleteTask(id) {
+      gm1Save(gm1Load().filter(function(t){ return t.id !== id; }));
+    }
+
+    function gm1AddTask(t) {
+      var tasks = gm1Load();
+      tasks.push(t);
+      gm1Save(tasks);
+    }
+
+    function gm1EditTask(id, updates) {
+      var tasks = gm1Load();
+      for (var i = 0; i < tasks.length; i++) {
+        if (tasks[i].id === id) { tasks[i] = Object.assign({}, tasks[i], updates); break; }
+      }
+      gm1Save(tasks);
+    }
+
+    /* ── 유틸 ── */
+    function gm1Esc(str) {
+      return String(str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }
+
+    var CAT_COLORS = {
+      '개인':        'background:#B79F8A;color:#221F20;',
+      '업무':        'background:#4caf50;color:#fff;',
+      '인사·파트너': 'background:#e85555;color:#fff;',
+      '회의':        'background:#4488ee;color:#fff;',
+      '기타':        'background:#888;color:#fff;'
+    };
+
+    /* ══════════════════════════════════════════════
+       오늘 할 일 렌더링
+    ══════════════════════════════════════════════ */
+    function gm1RenderToday() {
+      var container = document.getElementById('today-task-list');
+      if (!container) return;
+
+      var td = todayStr();
+      var tasks = gm1Load();
+      var todayTasks = tasks.filter(function(t){
+        return t.startDate === td || t.isToday === true;
+      });
+
+      var active = todayTasks.filter(function(t){ return t.status === '진행중'; });
+      var done   = todayTasks.filter(function(t){ return t.status === '완료'; });
+      var hold   = todayTasks.filter(function(t){ return t.status === '보류'; });
+
+      var html = '';
+
+      // 진행중 카드
+      active.forEach(function(t) {
+        var statusStyle = '';
+        html += '<div class="task-card" data-id="' + gm1Esc(t.id) + '">' +
+          '<div class="task-title" style="display:flex;align-items:center;justify-content:space-between;">' +
+          '<span><span class="status-dot active"></span>' + gm1Esc(t.title) + (t.time ? ' <span style="font-size:11px;color:var(--dim);">(' + gm1Esc(t.time.slice(0,5)) + ')</span>' : '') + '</span>' +
+          '<div class="todo-actions">' +
+          '<button class="todo-act-btn today-act" data-id="' + gm1Esc(t.id) + '" data-action="done">완료</button>' +
+          '<button class="todo-act-btn today-act" data-id="' + gm1Esc(t.id) + '" data-action="hold">보류</button>' +
+          '<button class="todo-act-btn today-act del" data-id="' + gm1Esc(t.id) + '" data-action="delete">삭제</button>' +
+          '</div></div>' +
+          (t.description ? '<div class="task-desc">' + gm1Esc(t.description) + '</div>' : '') +
+          '</div>';
+      });
+
+      if (!active.length) {
+        html += '<div style="color:var(--dim);font-size:13px;padding:12px 0;">오늘 진행 중인 항목이 없습니다.</div>';
+      }
+
+      // 완료/보류 토글
+      html += '<div style="display:flex;gap:12px;margin-top:16px;">';
+      html += '<details class="toggle" style="flex:1;"><summary style="color:var(--green);"><span style="margin-right:6px;">✅</span>완료 (<span>' + done.length + '</span>건)</summary><div class="toggle-body" style="font-size:13px;">';
+      done.forEach(function(t){
+        html += '<div style="padding:6px 0;border-bottom:1px dashed var(--border);display:flex;align-items:center;justify-content:space-between;">' +
+          '<span><span style="color:var(--green);font-weight:700;">✓</span> <span style="text-decoration:line-through;color:var(--dim-soft);">' + gm1Esc(t.title) + '</span></span>' +
+          '<button class="todo-act-btn today-act" data-id="' + gm1Esc(t.id) + '" data-action="restore" style="font-size:11px;padding:2px 8px;">되돌리기</button>' +
+          '</div>';
+      });
+      if (!done.length) html += '<div style="color:var(--dim);padding:6px 0;">없음</div>';
+      html += '</div></details>';
+
+      html += '<details class="toggle" style="flex:1;"><summary style="color:var(--accent);"><span style="margin-right:6px;">⏸️</span>보류 (<span>' + hold.length + '</span>건)</summary><div class="toggle-body" style="font-size:13px;">';
+      hold.forEach(function(t){
+        html += '<div style="padding:6px 0;border-bottom:1px dashed var(--border);display:flex;align-items:center;justify-content:space-between;">' +
+          '<span><span style="color:var(--accent);font-weight:700;">⏸</span> <span style="color:var(--dim-soft);">' + gm1Esc(t.title) + '</span></span>' +
+          '<button class="todo-act-btn today-act" data-id="' + gm1Esc(t.id) + '" data-action="restore" style="font-size:11px;padding:2px 8px;">되돌리기</button>' +
+          '</div>';
+      });
+      if (!hold.length) html += '<div style="color:var(--dim);padding:6px 0;">없음</div>';
+      html += '</div></details>';
+      html += '</div>';
+
+      container.innerHTML = html;
+
+      // 이벤트 위임
+      container.addEventListener('click', function(e) {
+        var btn = e.target.closest('[data-action]');
+        if (!btn) return;
+        var id  = btn.getAttribute('data-id');
+        var act = btn.getAttribute('data-action');
+        if (!id) return;
+        if (act === 'done')    { gm1UpdateStatus(id, '완료'); }
+        else if (act === 'hold')    { gm1UpdateStatus(id, '보류'); }
+        else if (act === 'restore') { gm1UpdateStatus(id, '진행중'); }
+        else if (act === 'delete') {
+          var t = gm1Load().find(function(x){ return x.id === id; });
+          if (t && confirm('"' + t.title + '" 항목을 삭제하시겠습니까?')) {
+            gm1DeleteTask(id);
+          } else { return; }
+        }
+        gm1RenderToday();
+        gm1CalRender();
+      }, { once: true });
+    }
+
+    /* ══════════════════════════════════════════════
+       캘린더 렌더링
+    ══════════════════════════════════════════════ */
+    var viewDate  = new Date();
+    var viewYear  = viewDate.getFullYear();
+    var viewMonth = viewDate.getMonth();
+    var selectedDay = null;
+
+    function gm1CalRender() {
+      var tasks = gm1Load();
+      gm1CalRenderGrid(tasks);
+      gm1CalRenderList(tasks);
+    }
+
+    function gm1CalRenderGrid(tasks) {
       var label = document.getElementById('gm1CalMonthLabel');
       if (!label) return;
       label.textContent = viewYear + '년 ' + (viewMonth + 1) + '월';
@@ -5552,45 +5633,31 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
       if (!tbody) return;
       tbody.innerHTML = '';
 
-      var today = new Date();
-      var todayStr = today.getFullYear() + '-' +
-        ('0'+(today.getMonth()+1)).slice(-2) + '-' +
-        ('0'+today.getDate()).slice(-2);
+      var td = todayStr();
 
-      // 달 첫날 요일, 마지막 날
-      var firstDay = new Date(viewYear, viewMonth, 1).getDay(); // 0=일
+      var firstDay = new Date(viewYear, viewMonth, 1).getDay();
       var lastDate = new Date(viewYear, viewMonth + 1, 0).getDate();
-      // 이전 달 마지막 날
       var prevLast = new Date(viewYear, viewMonth, 0).getDate();
 
-      // 이벤트 날짜 맵
+      // startDate 기준 날짜 맵
       var evMap = {};
-      events.forEach(function(ev) {
-        if (!evMap[ev.date]) evMap[ev.date] = [];
-        evMap[ev.date].push(ev);
+      tasks.forEach(function(t) {
+        var key = t.startDate;
+        if (!key) return;
+        if (!evMap[key]) evMap[key] = [];
+        evMap[key].push(t);
       });
 
       var cells = [];
-      // 이전 달 채우기
       for (var i = firstDay - 1; i >= 0; i--) {
-        var d = prevLast - i;
-        var prevMonth = viewMonth === 0 ? 12 : viewMonth;
-        var prevYear  = viewMonth === 0 ? viewYear - 1 : viewYear;
-        cells.push({ day: d, dateStr: null, other: true });
+        cells.push({ day: prevLast - i, dateStr: null, other: true });
       }
-      // 이번 달
       for (var d2 = 1; d2 <= lastDate; d2++) {
         var ds = viewYear + '-' + ('0'+(viewMonth+1)).slice(-2) + '-' + ('0'+d2).slice(-2);
         cells.push({ day: d2, dateStr: ds, other: false });
       }
-      // 다음 달 채우기 (6행 완성)
-      var total = Math.ceil(cells.length / 7) * 7;
       var nextD = 1;
-      while (cells.length < total) {
-        cells.push({ day: nextD++, dateStr: null, other: true });
-      }
-
-      var MIN_ROWS = 42; // 6행
+      var MIN_ROWS = 42;
       while (cells.length < MIN_ROWS) {
         cells.push({ day: nextD++, dateStr: null, other: true });
       }
@@ -5599,65 +5666,58 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
         var tr = document.createElement('tr');
         for (var col = 0; col < 7; col++) {
           var cell = cells[row * 7 + col];
-          var td = document.createElement('td');
-          td.style.cssText = 'vertical-align:top;padding:4px 3px;border:1px solid var(--border);min-height:72px;height:72px;width:14.28%;cursor:' + (cell.other ? 'default' : 'pointer') + ';';
+          var tdEl = document.createElement('td');
+          tdEl.style.cssText = 'vertical-align:top;padding:4px 3px;border:1px solid var(--border);min-height:72px;height:72px;width:14.28%;cursor:' + (cell.other ? 'default' : 'pointer') + ';';
+          if (cell.other) { tdEl.style.opacity = '0.35'; }
+          if (!cell.other && cell.dateStr === td) { tdEl.style.background = 'var(--accent-bg)'; }
 
-          if (cell.other) {
-            td.style.opacity = '0.35';
-          }
-          if (!cell.other && cell.dateStr === todayStr) {
-            td.style.background = 'var(--accent-bg)';
-          }
-
-          // 날짜 숫자
           var dayNum = document.createElement('div');
           dayNum.style.cssText = 'font-size:12px;font-weight:700;margin-bottom:3px;' +
             (col === 0 ? 'color:#e85555;' : col === 6 ? 'color:#5588ee;' : '') +
-            (cell.dateStr === todayStr ? 'background:var(--accent);color:#fff;border-radius:50%;width:20px;height:20px;display:flex;align-items:center;justify-content:center;' : '');
+            (cell.dateStr === td ? 'background:var(--accent);color:#fff;border-radius:50%;width:20px;height:20px;display:flex;align-items:center;justify-content:center;' : '');
           dayNum.textContent = cell.day;
-          td.appendChild(dayNum);
+          tdEl.appendChild(dayNum);
 
-          // 일정 뱃지
           if (!cell.other && cell.dateStr && evMap[cell.dateStr]) {
             var evs = evMap[cell.dateStr];
             var showCount = Math.min(evs.length, 3);
             for (var ei = 0; ei < showCount; ei++) {
+              var ev = evs[ei];
               var badge = document.createElement('div');
-              var catStyle = CAT_COLORS[evs[ei].category] || CAT_COLORS['기타'];
-              badge.style.cssText = 'font-size:10px;border-radius:4px;padding:1px 4px;margin-bottom:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;' + catStyle;
-              badge.textContent = (evs[ei].time ? evs[ei].time.slice(0,5) + ' ' : '') + evs[ei].title;
-              td.appendChild(badge);
+              var catStyle = CAT_COLORS[ev.category] || CAT_COLORS['기타'];
+              var isDone = ev.status === '완료';
+              badge.style.cssText = 'font-size:10px;border-radius:4px;padding:1px 4px;margin-bottom:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;' + catStyle + (isDone ? 'opacity:0.45;text-decoration:line-through;' : '');
+              badge.textContent = (ev.time ? ev.time.slice(0,5) + ' ' : '') + ev.title;
+              tdEl.appendChild(badge);
             }
             if (evs.length > 3) {
               var more = document.createElement('div');
               more.style.cssText = 'font-size:10px;color:var(--dim);';
               more.textContent = '+' + (evs.length - 3) + '개';
-              td.appendChild(more);
+              tdEl.appendChild(more);
             }
           }
 
-          // 날짜 클릭 → 상세 모달
           if (!cell.other && cell.dateStr) {
             (function(ds, dy){
-              td.addEventListener('click', function(){ gm1CalOpenDay(ds, dy); });
+              tdEl.addEventListener('click', function(){ gm1CalOpenDay(ds, dy); });
             })(cell.dateStr, cell.day);
           }
-
-          tr.appendChild(td);
+          tr.appendChild(tdEl);
         }
         tbody.appendChild(tr);
       }
     }
 
-    function gm1CalRenderList(events) {
-      var list = document.getElementById('gm1CalList');
+    function gm1CalRenderList(tasks) {
+      var list  = document.getElementById('gm1CalList');
       var empty = document.getElementById('gm1CalEmpty');
       if (!list) return;
       list.innerHTML = '';
 
       var prefix = viewYear + '-' + ('0'+(viewMonth+1)).slice(-2);
-      var monthEvs = events.filter(function(e){ return e.date && e.date.startsWith(prefix); });
-      monthEvs.sort(function(a,b){ return (a.date+a.time) < (b.date+b.time) ? -1 : 1; });
+      var monthEvs = tasks.filter(function(t){ return t.startDate && t.startDate.startsWith(prefix); });
+      monthEvs.sort(function(a,b){ return ((a.startDate||'')+(a.time||'')) < ((b.startDate||'')+(b.time||'')) ? -1 : 1; });
 
       if (!monthEvs.length) {
         if (empty) { empty.style.display = ''; }
@@ -5667,7 +5727,8 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
 
       monthEvs.forEach(function(ev) {
         var item = document.createElement('div');
-        item.style.cssText = 'display:flex;align-items:flex-start;gap:10px;padding:10px 12px;border-radius:10px;background:var(--paper);border:1px solid var(--border);';
+        var isDone = ev.status === '완료';
+        item.style.cssText = 'display:flex;align-items:flex-start;gap:10px;padding:10px 12px;border-radius:10px;background:var(--paper);border:1px solid var(--border);' + (isDone ? 'opacity:0.55;' : '');
 
         var catStyle = CAT_COLORS[ev.category] || CAT_COLORS['기타'];
         var badge = document.createElement('span');
@@ -5676,9 +5737,10 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
 
         var info = document.createElement('div');
         info.style.cssText = 'flex:1;min-width:0;';
-        info.innerHTML = '<div style="font-size:12px;color:var(--dim);">' + ev.date + (ev.time ? ' ' + ev.time.slice(0,5) : '') + '</div>' +
-          '<div style="font-size:14px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + gm1CalEsc(ev.title) + '</div>' +
-          (ev.memo ? '<div style="font-size:12px;color:var(--dim);margin-top:2px;">' + gm1CalEsc(ev.memo) + '</div>' : '');
+        info.innerHTML =
+          '<div style="font-size:12px;color:var(--dim);">' + gm1Esc(ev.startDate) + (ev.time ? ' ' + gm1Esc(ev.time.slice(0,5)) : '') + '</div>' +
+          '<div style="font-size:14px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;' + (isDone ? 'text-decoration:line-through;' : '') + '">' + gm1Esc(ev.title) + '</div>' +
+          (ev.description ? '<div style="font-size:12px;color:var(--dim);margin-top:2px;">' + gm1Esc(ev.description) + '</div>' : (ev.memo ? '<div style="font-size:12px;color:var(--dim);margin-top:2px;">' + gm1Esc(ev.memo) + '</div>' : ''));
 
         var btnWrap = document.createElement('div');
         btnWrap.style.cssText = 'display:flex;gap:6px;flex-shrink:0;';
@@ -5691,11 +5753,17 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
         var delBtn = document.createElement('button');
         delBtn.textContent = '삭제';
         delBtn.style.cssText = 'padding:4px 10px;font-size:12px;font-weight:600;border-radius:6px;cursor:pointer;font-family:inherit;background:var(--warm);color:#fff;border:none;';
-        delBtn.addEventListener('click', function(e){ e.stopPropagation(); if(confirm('"' + ev.title + '" 일정을 삭제하시겠습니까?')){ gm1CalDelete(ev.id); gm1CalRender(); } });
+        delBtn.addEventListener('click', function(e){
+          e.stopPropagation();
+          if (confirm('"' + ev.title + '" 일정을 삭제하시겠습니까?')) {
+            gm1DeleteTask(ev.id);
+            gm1CalRender();
+            gm1RenderToday();
+          }
+        });
 
         btnWrap.appendChild(editBtn);
         btnWrap.appendChild(delBtn);
-
         item.appendChild(badge);
         item.appendChild(info);
         item.appendChild(btnWrap);
@@ -5709,14 +5777,23 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
       if (!modal) return;
       modal.style.display = 'flex';
 
+      var td = todayStr();
+      var dateVal = ev ? (ev.startDate || ev.date || '') : (prefillDate || '');
+
       document.getElementById('gm1CalModalTitle').textContent = ev ? '일정 편집' : '일정 추가';
-      document.getElementById('gm1CalEditId').value = ev ? ev.id : '';
-      document.getElementById('gm1CalFDate').value = ev ? ev.date : (prefillDate || '');
-      document.getElementById('gm1CalFTime').value = ev ? ev.time : '';
-      document.getElementById('gm1CalFTitle').value = ev ? ev.title : '';
-      document.getElementById('gm1CalFCat').value = ev ? ev.category : '개인';
-      document.getElementById('gm1CalFMemo').value = ev ? ev.memo : '';
+      document.getElementById('gm1CalEditId').value           = ev ? ev.id : '';
+      document.getElementById('gm1CalFDate').value            = dateVal;
+      document.getElementById('gm1CalFTime').value            = ev ? (ev.time || '') : '';
+      document.getElementById('gm1CalFTitle').value           = ev ? ev.title : '';
+      document.getElementById('gm1CalFCat').value             = ev ? ev.category : '개인';
+      document.getElementById('gm1CalFMemo').value            = ev ? (ev.memo || ev.description || '') : '';
       document.getElementById('gm1CalModalDel').style.display = ev ? '' : 'none';
+
+      // isToday 체크박스
+      var cbToday = document.getElementById('gm1CalFIsToday');
+      if (cbToday) {
+        cbToday.checked = ev ? (ev.isToday === true || (ev.startDate || ev.date || '') === td) : (dateVal === td);
+      }
     }
 
     function gm1CalCloseModal() {
@@ -5733,20 +5810,21 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
       document.getElementById('gm1CalDayTitle').textContent =
         viewYear + '년 ' + (viewMonth+1) + '월 ' + day + '일';
 
-      var events = gm1CalLoad().filter(function(e){ return e.date === dateStr; });
-      events.sort(function(a,b){ return a.time < b.time ? -1 : 1; });
+      var tasks = gm1Load().filter(function(t){ return t.startDate === dateStr; });
+      tasks.sort(function(a,b){ return (a.time||'') < (b.time||'') ? -1 : 1; });
 
       var dl = document.getElementById('gm1CalDayList');
       dl.innerHTML = '';
 
-      if (!events.length) {
+      if (!tasks.length) {
         dl.innerHTML = '<div style="color:var(--dim);font-size:13px;">이 날 일정이 없습니다.</div>';
         return;
       }
 
-      events.forEach(function(ev) {
+      tasks.forEach(function(ev) {
         var row = document.createElement('div');
-        row.style.cssText = 'display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;background:var(--bg);';
+        var isDone = ev.status === '완료';
+        row.style.cssText = 'display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;background:var(--bg);' + (isDone ? 'opacity:0.5;' : '');
 
         var catStyle = CAT_COLORS[ev.category] || CAT_COLORS['기타'];
         var badge = document.createElement('span');
@@ -5755,9 +5833,10 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
 
         var info = document.createElement('div');
         info.style.cssText = 'flex:1;min-width:0;';
-        info.innerHTML = (ev.time ? '<span style="font-size:11px;color:var(--dim);">' + ev.time.slice(0,5) + ' </span>' : '') +
-          '<strong style="font-size:13px;">' + gm1CalEsc(ev.title) + '</strong>' +
-          (ev.memo ? '<div style="font-size:11px;color:var(--dim);">' + gm1CalEsc(ev.memo) + '</div>' : '');
+        info.innerHTML =
+          (ev.time ? '<span style="font-size:11px;color:var(--dim);">' + gm1Esc(ev.time.slice(0,5)) + ' </span>' : '') +
+          '<strong style="font-size:13px;' + (isDone ? 'text-decoration:line-through;' : '') + '">' + gm1Esc(ev.title) + '</strong>' +
+          (ev.description ? '<div style="font-size:11px;color:var(--dim);">' + gm1Esc(ev.description) + '</div>' : (ev.memo ? '<div style="font-size:11px;color:var(--dim);">' + gm1Esc(ev.memo) + '</div>' : ''));
 
         var editBtn = document.createElement('button');
         editBtn.textContent = '편집';
@@ -5779,11 +5858,6 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
       if (modal) modal.style.display = 'none';
     }
 
-    /* ── 유틸 ── */
-    function gm1CalEsc(str) {
-      return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-    }
-
     /* ── 이벤트 바인딩 ── */
     function gm1CalBind() {
       var prevBtn   = document.getElementById('gm1CalPrev');
@@ -5797,22 +5871,25 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
       var dayAdd    = document.getElementById('gm1CalDayAdd');
 
       if (prevBtn) prevBtn.addEventListener('click', function(){
-        viewMonth--;
-        if (viewMonth < 0) { viewMonth = 11; viewYear--; }
+        viewMonth--; if (viewMonth < 0) { viewMonth = 11; viewYear--; }
         gm1CalRender();
       });
       if (nextBtn) nextBtn.addEventListener('click', function(){
-        viewMonth++;
-        if (viewMonth > 11) { viewMonth = 0; viewYear++; }
+        viewMonth++; if (viewMonth > 11) { viewMonth = 0; viewYear++; }
         gm1CalRender();
       });
       if (todayBtn) todayBtn.addEventListener('click', function(){
-        var now = new Date();
-        viewYear = now.getFullYear();
-        viewMonth = now.getMonth();
+        var now = new Date(); viewYear = now.getFullYear(); viewMonth = now.getMonth();
         gm1CalRender();
       });
       if (addBtn) addBtn.addEventListener('click', function(){ gm1CalOpenModal(null); });
+
+      // isToday 자동 토글: 날짜 입력 변경 시
+      var fDate = document.getElementById('gm1CalFDate');
+      if (fDate) fDate.addEventListener('change', function(){
+        var cbToday = document.getElementById('gm1CalFIsToday');
+        if (cbToday) cbToday.checked = (this.value === todayStr());
+      });
 
       if (saveBtn) saveBtn.addEventListener('click', function(){
         var id    = document.getElementById('gm1CalEditId').value;
@@ -5821,32 +5898,35 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
         var title = document.getElementById('gm1CalFTitle').value.trim();
         var cat   = document.getElementById('gm1CalFCat').value;
         var memo  = document.getElementById('gm1CalFMemo').value.trim();
+        var cbToday = document.getElementById('gm1CalFIsToday');
+        var isToday = cbToday ? cbToday.checked : (date === todayStr());
 
-        if (!date) { alert('날짜를 입력해주세요.'); return; }
+        if (!date)  { alert('날짜를 입력해주세요.'); return; }
         if (!title) { alert('제목을 입력해주세요.'); return; }
 
         if (id) {
-          gm1CalEdit(id, { date:date, time:time, title:title, category:cat, memo:memo });
+          gm1EditTask(id, { startDate:date, time:time, title:title, category:cat, memo:memo, description:memo, isToday:isToday });
         } else {
-          gm1CalAdd({ id: gm1CalGenId(), date:date, time:time, title:title, category:cat, memo:memo });
+          gm1AddTask({ id:gm1GenId(), title:title, description:memo, startDate:date, endDate:null, time:time, category:cat, isToday:isToday, status:'진행중', memo:memo, ssotSynced:false });
         }
         gm1CalCloseModal();
         gm1CalRender();
+        gm1RenderToday();
       });
 
       if (cancelBtn) cancelBtn.addEventListener('click', gm1CalCloseModal);
 
       if (delBtn) delBtn.addEventListener('click', function(){
-        var id = document.getElementById('gm1CalEditId').value;
+        var id    = document.getElementById('gm1CalEditId').value;
         var title = document.getElementById('gm1CalFTitle').value;
         if (id && confirm('"' + title + '" 일정을 삭제하시겠습니까?')) {
-          gm1CalDelete(id);
+          gm1DeleteTask(id);
           gm1CalCloseModal();
           gm1CalRender();
+          gm1RenderToday();
         }
       });
 
-      // 모달 배경 클릭 닫기
       var modal = document.getElementById('gm1CalModal');
       if (modal) modal.addEventListener('click', function(e){ if(e.target === modal) gm1CalCloseModal(); });
 
@@ -5873,12 +5953,14 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
     })();
 
     /* ── 초기화 ── */
-    gm1CalSeed();
+    gm1Migrate();
+    gm1SeedInit();
     gm1CalBind();
     gm1CalRender();
+    gm1RenderToday();
 
   })();
-  // ── /GM1 개인 캘린더 ────────────────────────────────────────
+  // ── /GM1 통합 태스크 시스템 ─────────────────────────────────────
 </script>
 </body>
 </html>
