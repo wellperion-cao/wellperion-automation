@@ -216,14 +216,14 @@
         <div class="ntool-preview-inner" id="noticePreview">
           <div class="ntool-pv-hdr" id="noticeHdr">
             <div class="ntool-pv-notice-label" id="noticePvNoticeLabel">NOTICE</div>
-            <img class="ntool-pv-wmark-w" id="noticePvWmark" src="../../../1. AI학습자료_아카이브/08_로고&워터마크/_assets/logo/watermarks/MAIN_LOGO-B79F8A_BG-221F20_mark.png" alt="W">
+            <img class="ntool-pv-wmark-w" id="noticePvWmark" src="../../1. AI학습자료_아카이브/08_로고&워터마크/_assets/logo/watermarks/MAIN_LOGO-B79F8A_BG-221F20_mark.png" alt="W">
             <div class="ntool-pv-title-kr" id="noticePvTitleKr">국문 공지 제목</div>
             <div class="ntool-pv-title-en" id="noticePvTitleEn">ENG NOTICE TITLE</div>
             <div class="ntool-pv-subtitle"><em>A Day, Well Completed.</em> 하루의 완성, 웰페리온</div>
           </div>
           <div class="ntool-pv-body" id="noticePvBody">본문 내용이 여기에 표시됩니다.</div>
           <div class="ntool-pv-ftr">
-            <img id="noticePvFtrWmark" src="../../../1. AI학습자료_아카이브/08_로고&워터마크/_assets/logo/watermarks/BRAD_LOGO-FFFFFF_BG-000000_corner.png" alt="WELLPERION">
+            <img id="noticePvFtrWmark" src="../../1. AI학습자료_아카이브/08_로고&워터마크/_assets/logo/watermarks/BRAD_LOGO-FFFFFF_BG-000000_corner.png" alt="WELLPERION">
           </div>
         </div>
       </div>
@@ -236,11 +236,11 @@
   /* 공식 SSOT: wellperion_brand_identity(최종시안).pdf (BLACK=#221F20, BEIGE=#B79F8A, HIGHLIGHT=#ED5B3F)
      각 서브브랜드: logo=메인 컬러, bg=배경(=헤더), pantone 참고용 */
   /* 워터마크 자산 베이스 경로 (사업부별 mark.png = 헤더 우상단, corner.png = 푸터 가로 락업) */
-  const WM_BASE = '../../../1. AI학습자료_아카이브/08_로고&워터마크/_assets/logo/watermarks/';
+  const WM_BASE = '../../1. AI학습자료_아카이브/08_로고&워터마크/_assets/logo/watermarks/';
   const BRANDS = {
     main:      {name:'WELLPERION',                 logo:'#B79F8A', bg:'#221F20', hdr:'#221F20', pantone:'4735 C', wm:'beige',              mark:'MAIN_LOGO-B79F8A_BG-221F20_mark.png'},
     pt:        {name:'WELLPERION PT',              logo:'#B54840', bg:'#512B32', hdr:'#512B32', pantone:'504 C',  wm:'pt-red',             mark:'PT_LOGO-B54840_BG-512B32_mark.png'},
-    sports:    {name:'WELLPERION SPORTS CLUB',     logo:'#3F71B0', bg:'#253B6C', hdr:'#253B6C', pantone:'—',     wm:'sportsclub-blue',     mark:'SPORTS_LOGO-3F71B0_BG-253B6C_mark.png', wordmark:'../../../1. AI학습자료_아카이브/08_로고&워터마크/_assets/logo/sportsclub_wordmark.png'},
+    sports:    {name:'WELLPERION SPORTS CLUB',     logo:'#3F71B0', bg:'#253B6C', hdr:'#253B6C', pantone:'—',     wm:'sportsclub-blue',     mark:'SPORTS_LOGO-3F71B0_BG-253B6C_mark.png', wordmark:'../../1. AI학습자료_아카이브/08_로고&워터마크/_assets/logo/sportsclub_wordmark.png'},
     pilates:   {name:'WELLPERION PILATES',         logo:'#C44558', bg:'#8A2933', hdr:'#8A2933', pantone:'202 C', wm:'pilates',             mark:'PILATES_LOGO-C44558_BG-8A2933_mark.png'},
     swimming:  {name:'WELLPERION SWIMMING',        logo:'#215768', bg:'#172C42', hdr:'#172C42', pantone:'533 C', wm:'swimming',            mark:'SWIMMING_LOGO-215768_BG-172C42_mark.png'},
     squash:    {name:'WELLPERION SQUASH',          logo:'#D2D2D2', bg:'#77968E', hdr:'#77968E', pantone:'5565 C',wm:'grey',                mark:'SQUASH_LOGO-D2D2D2_BG-77968E_mark.png'},
@@ -390,7 +390,7 @@
     if(ftrEl) ftrEl.style.background = brand.bg;
     /* 푸터: SPORTS CLUB은 전용 방패+월계관 wordmark, 그 외는 corner_white 고정 */
     var ftrWmEl = el('noticePvFtrWmark');
-    if(ftrWmEl) ftrWmEl.src = brand.wordmark || '../../../1. AI학습자료_아카이브/08_로고&워터마크/_assets/logo/watermarks/BRAD_LOGO-FFFFFF_BG-000000_corner.png';
+    if(ftrWmEl) ftrWmEl.src = brand.wordmark || '../../1. AI학습자료_아카이브/08_로고&워터마크/_assets/logo/watermarks/BRAD_LOGO-FFFFFF_BG-000000_corner.png';
     var bodyEl = el('noticePvBody');
     var txt = el('noticeBody').value;
     var ff = el('noticeFontFamily').value;
@@ -505,7 +505,7 @@
     html += '<div class="sub"><em>A Day, Well Completed.</em> 하루의 완성, 웰페리온</div>';
     html += '</div>';
     html += '<div class="body">'+bodyHtml+imgHtml+'</div>';
-    html += '<div class="ftr"><img src="'+(brand.wordmark || '../../../1. AI학습자료_아카이브/08_로고&워터마크/_assets/logo/watermarks/BRAD_LOGO-FFFFFF_BG-000000_corner.png')+'" alt="WELLPERION"></div>';
+    html += '<div class="ftr"><img src="'+(brand.wordmark || '../../1. AI학습자료_아카이브/08_로고&워터마크/_assets/logo/watermarks/BRAD_LOGO-FFFFFF_BG-000000_corner.png')+'" alt="WELLPERION"></div>';
     html += '</div></body></html>';
     return html;
   }
