@@ -214,7 +214,7 @@
           </div>
           <div class="ntool-pv-body" id="noticePvBody">본문 내용이 여기에 표시됩니다.</div>
           <div class="ntool-pv-ftr">
-            <img id="noticePvFtrWmark" src="../../_assets/logo/watermarks/corner_beige.png" alt="WELLPERION">
+            <img id="noticePvFtrWmark" src="../../_assets/logo/watermarks/corner_white.png" alt="WELLPERION">
           </div>
         </div>
       </div>
@@ -369,11 +369,14 @@
     en.textContent = el('noticeTitleEn').value || 'ENG NOTICE TITLE';
     kr.style.color = brand.logo;
     en.style.color = brand.logo;
-    /* 헤더 우상단 = mark(W) 워터마크, 푸터 = corner(가로 락업) — 둘 다 사업부 컬러 동기화 */
+    /* 헤더 우상단 mark(W) = 사업부 컬러 / 푸터 배경 = 사업부 BG / 푸터 corner = 흰색 고정(가독성) */
     var wmEl = el('noticePvWmark');
     if(wmEl) wmEl.src = '../../_assets/logo/watermarks/mark_'+brand.wm+'.png';
+    var ftrEl = document.querySelector('#noticePreview .ntool-pv-ftr');
+    if(ftrEl) ftrEl.style.background = brand.bg;
+    /* 푸터 corner는 흰색 고정 — 모든 사업부 BG 위에서 일관된 가독성 */
     var ftrWmEl = el('noticePvFtrWmark');
-    if(ftrWmEl) ftrWmEl.src = '../../_assets/logo/watermarks/corner_'+brand.wm+'.png';
+    if(ftrWmEl) ftrWmEl.src = '../../_assets/logo/watermarks/corner_white.png';
     var bodyEl = el('noticePvBody');
     var txt = el('noticeBody').value;
     var ff = el('noticeFontFamily').value;
@@ -473,8 +476,8 @@
     html += '.notice-imgs{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;margin-top:2vmin;}';
     html += '.notice-imgs img{max-width:48%;max-height:24vh;border-radius:1vmin;object-fit:cover;}';
     html += '.hl{color:#ED5B3F;font-weight:700;}';
-    /* FOOTER (가로 락업 corner 워터마크 단독, 어두운 BG 고정으로 워터마크 가독성 확보) */
-    html += '.ftr{flex:0 0 7%;background:#221F20;display:flex;align-items:center;justify-content:center;}';
+    /* FOOTER (가로 락업 corner 워터마크 단독, 사업부 BG 동기화 + 흰 워터마크로 가독성) */
+    html += '.ftr{flex:0 0 7%;background:'+brand.bg+';display:flex;align-items:center;justify-content:center;}';
     html += '.ftr img{height:4.5vmin;width:auto;}';
     html += '</style></head><body>';
     html += '<div class="page">';
@@ -486,7 +489,7 @@
     html += '<div class="sub">A Day, Well Completed. 하루의 완성, 웰페리온</div>';
     html += '</div>';
     html += '<div class="body">'+bodyHtml+imgHtml+'</div>';
-    html += '<div class="ftr"><img src="../../_assets/logo/watermarks/corner_'+brand.wm+'.png" alt="WELLPERION"></div>';
+    html += '<div class="ftr"><img src="../../_assets/logo/watermarks/corner_white.png" alt="WELLPERION"></div>';
     html += '</div></body></html>';
     return html;
   }
