@@ -32,6 +32,10 @@ SLIDES = [
         kor_title="웰페리온은\nAI 7명이 일한다",
         body="AI 임원 7명이 자동화·집계·보고를 맡는다.\n사람은 한눈에 파악하고, 결정만 내린다.\n이것이 우리가 매일 일하는 방식이다.",
     ),
+    dict(  # 5장 마무리 — 1장과 짝이 되는 마무리(개인 톤, 회사 가이드 카드 아님)
+        kor_title="핵심에 집중하는 하루",
+        eng_title="A Day, Well Completed.",
+    ),
 ]
 
 
@@ -48,14 +52,8 @@ def main() -> None:
         results.append(r)
         print(f"[OK] {out.name} — {r['layout']} ({r['size_kb']}KB)")
 
-    # 5장 — 기성 WELLPERION GUIDE 카드 복사
-    if not GUIDE_CARD.exists():
-        raise FileNotFoundError(f"가이드 카드 부재: {GUIDE_CARD}")
-    dst = OUT / "post_A_5.jpg"
-    shutil.copy2(GUIDE_CARD, dst)
-    print(f"[OK] {dst.name} — guideline_card 복사 ({round(dst.stat().st_size/1024,1)}KB)")
-
-    print(f"\n총 {len(results)+1}장 생성 완료 → {OUT}")
+    # 5장 = 마무리 텍스트 슬라이드(개인 톤). 회사 WELLPERION GUIDE 카드는 개인 계정 제외.
+    print(f"\n총 {len(results)}장 생성 완료 → {OUT}")
 
 
 if __name__ == "__main__":
