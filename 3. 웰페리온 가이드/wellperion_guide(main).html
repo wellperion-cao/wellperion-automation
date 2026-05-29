@@ -5662,9 +5662,12 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
       if (done.length) {
         html += '<div style="font-size:11px;font-weight:700;color:var(--green);padding:6px 0 2px;">✅ 완료</div>';
         done.forEach(function(t){
-          html += '<div style="padding:6px 0;border-bottom:1px dashed var(--border);display:flex;align-items:center;justify-content:space-between;">' +
-            '<span><span style="color:var(--green);font-weight:700;">✓</span> <span style="text-decoration:line-through;color:var(--dim-soft);">' + gm1Esc(t.title) + '</span></span>' +
-            '<button class="todo-act-btn today-act" data-id="' + gm1Esc(t.id) + '" data-action="restore" style="font-size:11px;padding:2px 8px;">되돌리기</button>' +
+          var descHtml = t.description ? '<details style="margin-top:4px;font-size:12px;"><summary style="cursor:pointer;color:var(--accent);font-weight:600;font-size:11px;list-style:none;">▼ 내용 보기</summary><div style="padding:6px 8px;background:var(--paper-soft,#f5f3f0);border-radius:6px;margin-top:4px;line-height:1.5;white-space:pre-wrap;color:var(--text);">' + gm1Esc(t.description) + '</div></details>' : '';
+          html += '<div style="padding:8px 0;border-bottom:1px dashed var(--border);">' +
+            '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">' +
+            '<span><span style="color:var(--green);font-weight:700;">✓</span> <span style="text-decoration:line-through;text-decoration-color:var(--dim);color:var(--text);font-weight:500;">' + gm1Esc(t.title) + '</span></span>' +
+            '<button class="todo-act-btn today-act" data-id="' + gm1Esc(t.id) + '" data-action="restore" style="font-size:11px;padding:2px 8px;flex-shrink:0;">되돌리기</button>' +
+            '</div>' + descHtml +
             '</div>';
         });
       }
@@ -5672,9 +5675,12 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
       if (hold.length) {
         html += '<div style="font-size:11px;font-weight:700;color:var(--accent);padding:8px 0 2px;">⏸️ 보류</div>';
         hold.forEach(function(t){
-          html += '<div style="padding:6px 0;border-bottom:1px dashed var(--border);display:flex;align-items:center;justify-content:space-between;">' +
-            '<span><span style="color:var(--accent);font-weight:700;">⏸</span> <span style="color:var(--dim-soft);">' + gm1Esc(t.title) + '</span></span>' +
-            '<button class="todo-act-btn today-act" data-id="' + gm1Esc(t.id) + '" data-action="restore" style="font-size:11px;padding:2px 8px;">되돌리기</button>' +
+          var descHtml = t.description ? '<details style="margin-top:4px;font-size:12px;"><summary style="cursor:pointer;color:var(--accent);font-weight:600;font-size:11px;list-style:none;">▼ 내용 보기</summary><div style="padding:6px 8px;background:var(--paper-soft,#f5f3f0);border-radius:6px;margin-top:4px;line-height:1.5;white-space:pre-wrap;color:var(--text);">' + gm1Esc(t.description) + '</div></details>' : '';
+          html += '<div style="padding:8px 0;border-bottom:1px dashed var(--border);">' +
+            '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">' +
+            '<span><span style="color:var(--accent);font-weight:700;">⏸</span> <span style="color:var(--text);font-weight:500;">' + gm1Esc(t.title) + '</span></span>' +
+            '<button class="todo-act-btn today-act" data-id="' + gm1Esc(t.id) + '" data-action="restore" style="font-size:11px;padding:2px 8px;flex-shrink:0;">되돌리기</button>' +
+            '</div>' + descHtml +
             '</div>';
         });
       }
