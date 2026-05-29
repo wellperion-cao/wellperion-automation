@@ -697,10 +697,107 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
     </div>
   </div>
 
-  <!-- 현재 점검 항목 자동 동기화 — 소스 배열에서 자동 생성 (v2.50) -->
+  <!-- 점검 항목 관리 (GM 편집 · 시트 영구 저장) -->
   <div style="margin-top:20px;">
-    <div style="font-size:16px;font-weight:700;color:var(--text);padding:12px 0 8px;border-bottom:2px solid var(--accent);margin-bottom:12px;">현재 점검 항목 (자동 동기화)</div>
-    <div style="font-size:12px;color:var(--dim);margin-bottom:14px;">아래 항목은 소스 배열(WEEKDAY/WEEKEND)에서 자동으로 생성됩니다. 소스를 수정하면 여기도 즉시 반영됩니다.</div>
+    <div style="font-size:16px;font-weight:700;color:var(--text);padding:12px 0 8px;border-bottom:2px solid var(--accent);margin-bottom:8px;">점검 항목 관리</div>
+    <div style="font-size:12px;color:var(--dim);margin-bottom:14px;">항목을 추가·편집·삭제하면 구글 시트에 저장되어 모든 기기에 반영됩니다. 편집 시 관리자 비밀번호가 필요합니다. 열람은 누구나 가능합니다.</div>
+
+    <!-- 새 항목 추가 폼 -->
+    <div class="admin-mgmt-form" id="mgmtAddForm">
+      <h3 id="mgmtFormTitle">새 항목 추가</h3>
+      <div class="mgmt-row">
+        <div class="mgmt-field">
+          <label>시간대</label>
+          <select id="mgmtSlot">
+            <option value="05:30~08:00">오픈 05:30~08:00</option>
+            <option value="08:00~12:00">오전 08:00~12:00</option>
+            <option value="10:00~12:00">오전 후반 10:00~12:00</option>
+            <option value="13:00~14:00">인수인계 13:00~14:00</option>
+            <option value="14:00~18:00" selected>오후 14:00~18:00</option>
+            <option value="19:00~22:00">저녁 19:00~22:00</option>
+            <option value="22:00~22:30">마감 22:00~22:30</option>
+            <option value="상시">상시</option>
+          </select>
+        </div>
+        <div class="mgmt-field">
+          <label>교대조</label>
+          <select id="mgmtShift">
+            <option value="am">오전조</option>
+            <option value="pm" selected>오후조</option>
+            <option value="night">야간조</option>
+            <option value="all">상시</option>
+          </select>
+        </div>
+      </div>
+      <div class="mgmt-row">
+        <div class="mgmt-field">
+          <label>평일/주말</label>
+          <select id="mgmtDayType">
+            <option value="both" selected>공통 (평일+주말)</option>
+            <option value="weekday">평일만</option>
+            <option value="weekend">주말만</option>
+          </select>
+        </div>
+        <div class="mgmt-field">
+          <label>구역 (남/여)</label>
+          <select id="mgmtGender">
+            <option value="all" selected>공통</option>
+            <option value="m">남탕</option>
+            <option value="f">여탕</option>
+          </select>
+        </div>
+      </div>
+      <div class="mgmt-field">
+        <label>카테고리 (그룹명)</label>
+        <input type="text" id="mgmtCategory" placeholder="예: A 사우나 점검, B 락커룸, 추가 점검 등">
+      </div>
+      <div class="mgmt-field">
+        <label>항목명</label>
+        <input type="text" id="mgmtName" placeholder="예: 사우나 배수구 추가 점검">
+      </div>
+      <div class="mgmt-field">
+        <label>상세 매뉴얼 (줄바꿈 가능)</label>
+        <textarea id="mgmtDetail" placeholder="점검 상세 내용을 입력하세요.&#10;줄바꿈으로 여러 항목을 구분할 수 있습니다."></textarea>
+      </div>
+      <div class="mgmt-actions">
+        <button class="mgmt-btn cancel" id="mgmtCancelBtn" onclick="mgmtCancelEdit()" style="display:none">취소</button>
+        <button class="mgmt-btn add" id="mgmtSubmitBtn" onclick="mgmtAddItem()">항목 추가</button>
+      </div>
+    </div>
+
+    <!-- 추가한 항목(편집 가능) 목록 -->
+    <div class="mgmt-item-list" id="mgmtItemList">
+      <h3>추가 항목 목록 <span class="mgmt-count" id="mgmtCount">0건</span></h3>
+      <div class="mgmt-filter-bar">
+        <select id="mgmtFilterDayType" onchange="mgmtRenderList()">
+          <option value="all">전체 유형</option>
+          <option value="weekday">평일</option>
+          <option value="weekend">주말</option>
+          <option value="both">공통</option>
+        </select>
+        <select id="mgmtFilterShift" onchange="mgmtRenderList()">
+          <option value="all">전체 교대</option>
+          <option value="am">오전조</option>
+          <option value="pm">오후조</option>
+          <option value="night">야간조</option>
+        </select>
+        <input type="text" id="mgmtFilterSearch" placeholder="검색..." oninput="mgmtRenderList()">
+      </div>
+      <div id="mgmtListBody"></div>
+    </div>
+
+    <!-- 하단 유틸 버튼 -->
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin:12px 0 20px">
+      <button class="mgmt-btn export" onclick="mgmtExportJSON()">JSON 내보내기</button>
+      <button class="mgmt-btn save" onclick="mgmtImportJSON()">JSON 가져오기</button>
+      <button class="mgmt-btn reset" onclick="mgmtResetAll()">전체 초기화</button>
+    </div>
+  </div>
+
+  <!-- 현재 전체 점검 항목 (기본 + 추가 · 읽기 전용) -->
+  <div style="margin-top:10px;">
+    <div style="font-size:16px;font-weight:700;color:var(--text);padding:12px 0 8px;border-bottom:2px solid var(--accent);margin-bottom:12px;">현재 전체 점검 항목</div>
+    <div style="font-size:12px;color:var(--dim);margin-bottom:14px;">기본 항목과 GM이 추가한 항목이 함께 표시됩니다.</div>
     <div id="manual-items-sync"></div>
   </div>
 </div>
@@ -778,100 +875,9 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 
 </div>
 
-<!-- ── 항목 추가/관리 탭 (대시보드와 분리) ── -->
-<div id="tab-manage" class="content hidden">
-
-  <!-- 새 항목 추가 폼 -->
-  <div class="admin-mgmt-form" id="mgmtAddForm">
-    <h3 id="mgmtFormTitle">새 항목 추가</h3>
-    <div class="mgmt-row">
-      <div class="mgmt-field">
-        <label>시간대</label>
-        <select id="mgmtSlot">
-          <option value="05:30~08:00">오픈 05:30~08:00</option>
-          <option value="08:00~12:00">오전 08:00~12:00</option>
-          <option value="10:00~12:00">오전 후반 10:00~12:00</option>
-          <option value="13:00~14:00">인수인계 13:00~14:00</option>
-          <option value="14:00~18:00" selected>오후 14:00~18:00</option>
-          <option value="19:00~22:00">저녁 19:00~22:00</option>
-          <option value="22:00~22:30">마감 22:00~22:30</option>
-          <option value="상시">상시</option>
-        </select>
-      </div>
-      <div class="mgmt-field">
-        <label>교대조</label>
-        <select id="mgmtShift">
-          <option value="am">오전조</option>
-          <option value="pm" selected>오후조</option>
-          <option value="night">야간조</option>
-          <option value="all">상시</option>
-        </select>
-      </div>
-    </div>
-    <div class="mgmt-row">
-      <div class="mgmt-field">
-        <label>평일/주말</label>
-        <select id="mgmtDayType">
-          <option value="both" selected>공통 (평일+주말)</option>
-          <option value="weekday">평일만</option>
-          <option value="weekend">주말만</option>
-        </select>
-      </div>
-      <div class="mgmt-field">
-        <label>구역 (남/여)</label>
-        <select id="mgmtGender">
-          <option value="all" selected>공통</option>
-          <option value="m">남탕</option>
-          <option value="f">여탕</option>
-        </select>
-      </div>
-    </div>
-    <div class="mgmt-field">
-      <label>카테고리 (그룹명)</label>
-      <input type="text" id="mgmtCategory" placeholder="예: A 사우나 점검, B 락커룸, 추가 점검 등">
-    </div>
-    <div class="mgmt-field">
-      <label>항목명</label>
-      <input type="text" id="mgmtName" placeholder="예: 사우나 배수구 추가 점검">
-    </div>
-    <div class="mgmt-field">
-      <label>상세 매뉴얼 (줄바꿈 가능)</label>
-      <textarea id="mgmtDetail" placeholder="점검 상세 내용을 입력하세요.&#10;줄바꿈으로 여러 항목을 구분할 수 있습니다."></textarea>
-    </div>
-    <div class="mgmt-actions">
-      <button class="mgmt-btn cancel" id="mgmtCancelBtn" onclick="mgmtCancelEdit()" style="display:none">취소</button>
-      <button class="mgmt-btn add" id="mgmtSubmitBtn" onclick="mgmtAddItem()">항목 추가</button>
-    </div>
-  </div>
-
-  <!-- 커스텀 항목 목록 (2026-05-28 GM 결재 폐기 — display:none) -->
-  <div class="mgmt-item-list" id="mgmtItemList" style="display:none">
-    <h3>커스텀 항목 목록 <span class="mgmt-count" id="mgmtCount">0건</span></h3>
-    <div class="mgmt-filter-bar">
-      <select id="mgmtFilterDayType" onchange="mgmtRenderList()">
-        <option value="all">전체 유형</option>
-        <option value="weekday">평일</option>
-        <option value="weekend">주말</option>
-        <option value="both">공통</option>
-      </select>
-      <select id="mgmtFilterShift" onchange="mgmtRenderList()">
-        <option value="all">전체 교대</option>
-        <option value="am">오전조</option>
-        <option value="pm">오후조</option>
-        <option value="night">야간조</option>
-      </select>
-      <input type="text" id="mgmtFilterSearch" placeholder="검색..." oninput="mgmtRenderList()">
-    </div>
-    <div id="mgmtListBody"></div>
-  </div>
-
-  <!-- 하단 유틸 버튼 -->
-  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:60px">
-    <button class="mgmt-btn export" onclick="mgmtExportJSON()">JSON 내보내기</button>
-    <button class="mgmt-btn save" onclick="mgmtImportJSON()">JSON 가져오기</button>
-    <button class="mgmt-btn reset" onclick="mgmtResetAll()">전체 초기화</button>
-  </div>
-</div>
+<!-- ── 항목 관리 탭 (매뉴얼 탭으로 통합 이전 · 2026-05-29) ──
+     폼/목록/유틸 UI는 매뉴얼 탭(tab-manual)으로 이동. 빈 패널 유지(switchTab 참조 보존). -->
+<div id="tab-manage" class="content hidden"></div>
 
 <script>
 const API_URL = 'https://script.google.com/macros/s/AKfycbzcOTihPYfTWQ64rbNMpfgv9p2keav0mcf7x0LrPhHm8nOUIlsqPTwCOumzE-JIcv1F/exec';
@@ -894,6 +900,72 @@ async function loadStaffFromSheet(){
   // 기존 8명이 시트에서 다시 들어오지 않도록 STAFF_LIST는 FALLBACK 고정 유지.
   STAFF_LIST=[...FALLBACK_STAFF];
   populateSubmitterDropdowns();
+}
+
+/* ── 점검 항목 마스터 (GM 편집 · 시트 영구 저장) ──
+   CUSTOM_ITEMS = 편집 가능한 항목 마스터. 시트(점검항목 탭)와 동기화.
+   프론트 항목 모델 {id, slot, shift, dayType, gender, category, name, detail}
+   ↔ 시트 컬럼 {항목ID, 카테고리, 항목명, 상세, 성별, 시간대, 정렬} 매핑. */
+let CUSTOM_ITEMS = [];
+const ITEM_CACHE_KEY = 'wcheck_items_cache'; // 오프라인 폴백 캐시
+
+/* 시간대(slot) → 교대조(shift) 추정 (기본 항목 배열의 slot 명명 규칙 기준) */
+function slotToShiftFront(slot){
+  var s = slot || '';
+  if(s.indexOf('야간')>=0||s.indexOf('23:')>=0||s.indexOf('00:')>=0||s.indexOf('01:')>=0||s.indexOf('02:')>=0||s.indexOf('03:')>=0||s.indexOf('20:30')>=0||s.indexOf('21:00')>=0||s.indexOf('22:00~23')>=0) return 'night';
+  if(s.indexOf('상시')>=0) return 'all';
+  if(s.indexOf('오픈')>=0||s.indexOf('오전')>=0||s.indexOf('05:30')>=0||s.indexOf('07:30')>=0||s.indexOf('인수인계')>=0||s.indexOf('08:00')>=0||s.indexOf('10:00')>=0) return 'am';
+  return 'pm';
+}
+
+/* 시트 행 → 프론트 항목 모델 */
+function itemFromSheet(row){
+  return {
+    id: row.id || mgmtGenerateId(),
+    slot: row.slot || '상시',
+    shift: row.shift || slotToShiftFront(row.slot),
+    dayType: row.dayType || 'both',
+    gender: row.gender || 'all',
+    category: row.cat || '추가 점검',
+    name: row.name || '',
+    detail: row.detail || '',
+    order: row.order
+  };
+}
+
+/* 프론트 항목 모델 → 시트 행(API 계약 필드) */
+function itemToSheet(it, idx){
+  return {
+    id: it.id,
+    cat: it.category || '',
+    name: it.name || '',
+    detail: it.detail || '',
+    gender: it.gender || 'all',
+    slot: it.slot || '',
+    order: (it.order !== undefined && it.order !== '') ? it.order : (idx + 1)
+  };
+}
+
+/* 시트에서 항목 마스터 로드 (loadStaffFromSheet 미러) */
+async function loadItemMasterFromSheet(){
+  if(!ONLINE){
+    try{ CUSTOM_ITEMS = JSON.parse(localStorage.getItem(ITEM_CACHE_KEY)) || []; }catch(e){ CUSTOM_ITEMS = []; }
+    return;
+  }
+  try{
+    const res = await fetch(API_URL+'?action=items',{method:'GET',redirect:'follow'});
+    const data = await res.json();
+    const items = Array.isArray(data.items) ? data.items : [];
+    CUSTOM_ITEMS = items.map(itemFromSheet);
+    localStorage.setItem(ITEM_CACHE_KEY, JSON.stringify(CUSTOM_ITEMS)); // 오프라인 폴백
+  }catch(e){
+    // 실패 시 캐시 폴백, 그래도 없으면 빈 배열 (기본 항목은 항상 렌더)
+    try{ CUSTOM_ITEMS = JSON.parse(localStorage.getItem(ITEM_CACHE_KEY)) || []; }catch(_){ CUSTOM_ITEMS = []; }
+  }
+  // 로드 후 현재 화면 갱신
+  if(typeof mgmtRenderList==='function') mgmtRenderList();
+  if(typeof mgmtInjectCustomItems==='function') mgmtInjectCustomItems();
+  if(typeof renderManualItems==='function') renderManualItems();
 }
 
 function parseCSVLine(line){
@@ -1754,28 +1826,34 @@ function renderManualItems(){
   const sched=typeof WEEKDAY!=='undefined'?WEEKDAY:[];
   // 카테고리별로 항목 모으기 (중복 id 제거)
   const catMap={};
+  const catOrder=[];
   const seen=new Set();
+  function pushItem(cat,it){
+    if(!catMap[cat]){catMap[cat]=[];catOrder.push(cat);}
+    if(!seen.has(it.id)){seen.add(it.id);catMap[cat].push(it);}
+  }
   sched.forEach(slot=>{
     slot.groups.forEach(grp=>{
-      const cat=grp.title;
-      if(!catMap[cat])catMap[cat]=[];
-      grp.items.forEach(it=>{
-        if(!seen.has(it.id)){
-          seen.add(it.id);
-          catMap[cat].push(it);
-        }
-      });
+      grp.items.forEach(it=>pushItem(grp.title,it));
     });
   });
+  // GM이 추가한 항목(CUSTOM_ITEMS)도 함께 표시
+  if(typeof CUSTOM_ITEMS!=='undefined'){
+    CUSTOM_ITEMS.forEach(ci=>{
+      pushItem(ci.category||'추가 점검',{id:ci.id,name:ci.name,detail:ci.detail,gender:ci.gender,_custom:true});
+    });
+  }
   let html='';
-  Object.entries(catMap).forEach(([cat,items])=>{
+  catOrder.forEach(cat=>{
+    const items=catMap[cat];
     html+=`<div style="background:var(--paper);border:1px solid var(--border);border-radius:10px;margin-bottom:10px;overflow:hidden;">`;
     html+=`<div style="padding:10px 16px;font-size:13px;font-weight:700;color:var(--accent);border-bottom:1px solid var(--border);">${cat}</div>`;
     items.forEach(it=>{
       const detHtml=it.detail?it.detail.replace(/\n/g,'<br>'):'';
       const genderLabel=it.gender==='m'?' <span style="font-size:10px;color:var(--blue);background:var(--blue-bg);padding:1px 6px;border-radius:6px;">남</span>':it.gender==='f'?' <span style="font-size:10px;color:var(--orange);background:var(--orange-bg);padding:1px 6px;border-radius:6px;">여</span>':'';
+      const customLabel=it._custom?' <span style="font-size:10px;color:var(--accent);background:var(--accent-bg);padding:1px 6px;border-radius:6px;">추가</span>':'';
       html+=`<div style="padding:10px 16px;border-bottom:1px solid rgba(61,56,53,0.35);">`;
-      html+=`<div style="font-size:13px;font-weight:600;">${it.name}${genderLabel}</div>`;
+      html+=`<div style="font-size:13px;font-weight:600;">${it.name}${genderLabel}${customLabel}</div>`;
       if(detHtml)html+=`<div style="font-size:12px;color:var(--dim);margin-top:3px;line-height:1.5;">${detHtml}</div>`;
       html+=`</div>`;
     });
@@ -2342,6 +2420,7 @@ if(savedF)document.getElementById('submitterF').value=savedF;
 else if(savedOld)document.getElementById('submitterF').value=savedOld;
 
 loadStaffFromSheet();
+loadItemMasterFromSheet(); // 점검 항목 마스터를 시트에서 로드 (비동기 — 완료 시 화면 갱신)
 renderG('m');
 
 /* ═══════════════════════════════════════════════
@@ -2351,12 +2430,33 @@ renderG('m');
 const MGMT_STORAGE_KEY = 'wcheck_custom_items';
 let mgmtEditingId = null; // null = 추가 모드, string = 편집 중인 ID
 
-function mgmtLoadItems(){
-  try{ return JSON.parse(localStorage.getItem(MGMT_STORAGE_KEY)) || []; }
-  catch{ return []; }
+/* ── 관리자 편집 게이트 (비밀번호 1234, 세션당 1회) ──
+   조회·열람은 게이트 없음. 추가/편집저장/삭제 등 변경 시에만 호출. */
+function requireEditAuth(){
+  if(sessionStorage.getItem('editAuth')==='1') return true;
+  var pw = prompt('항목 편집 비밀번호를 입력하세요');
+  if(pw !== '1234'){ if(pw !== null) alert('비밀번호가 틀립니다.'); return false; }
+  sessionStorage.setItem('editAuth','1');
+  return true;
 }
+
+/* mgmtLoadItems → 시트 동기화된 CUSTOM_ITEMS 반환 (localStorage 폐기) */
+function mgmtLoadItems(){
+  return CUSTOM_ITEMS;
+}
+/* mgmtSaveItems → CUSTOM_ITEMS 갱신 + 시트 저장(saveItems) + 오프라인 캐시 */
 function mgmtSaveItems(items){
-  localStorage.setItem(MGMT_STORAGE_KEY, JSON.stringify(items));
+  CUSTOM_ITEMS = items;
+  localStorage.setItem(ITEM_CACHE_KEY, JSON.stringify(items)); // 오프라인 폴백 캐시
+  if(!ONLINE) return;
+  const payload = items.map(itemToSheet);
+  const ind = document.getElementById('saveIndicator');
+  if(ind){ ind.style.display='block'; ind.textContent='항목 저장 중...'; }
+  fetch(API_URL,{method:'POST',redirect:'follow',
+    headers:{'Content-Type':'text/plain'},
+    body:JSON.stringify({action:'saveItems',items:payload})
+  }).then(()=>{ if(ind){ind.textContent='항목 저장 완료';setTimeout(()=>{ind.style.display='none'},1500);} })
+    .catch(()=>{ if(ind){ind.textContent='항목 저장 실패 (로컬 보관됨)';setTimeout(()=>{ind.style.display='none'},1500);} });
 }
 
 function mgmtGenerateId(){
@@ -2365,8 +2465,8 @@ function mgmtGenerateId(){
 
 /* ── 추가 / 저장 ── */
 function openMgmtAddForm(){
-  // 항목 추가/관리 전용 탭으로 진입 (대시보드와 완전 분리)
-  switchTab('manage');
+  // 항목 관리 UI는 매뉴얼 탭으로 통합 이전 (2026-05-29)
+  switchTab('manual');
   setTimeout(function(){
     var form = document.getElementById('mgmtAddForm');
     if(form){
@@ -2379,6 +2479,7 @@ function openMgmtAddForm(){
 }
 
 function mgmtAddItem(){
+  if(!requireEditAuth()) return; // 추가·편집저장 게이트
   const slot = document.getElementById('mgmtSlot').value;
   const shift = document.getElementById('mgmtShift').value;
   const dayType = document.getElementById('mgmtDayType').value;
@@ -2416,6 +2517,7 @@ function mgmtAddItem(){
 
 /* ── 편집 모드 진입 ── */
 function mgmtStartEdit(id){
+  if(!requireEditAuth()) return; // 편집 진입 게이트
   const items = mgmtLoadItems();
   const item = items.find(i => i.id === id);
   if(!item) return;
@@ -2457,6 +2559,7 @@ function mgmtClearForm(){
 
 /* ── 삭제 ── */
 function mgmtDeleteItem(id){
+  if(!requireEditAuth()) return; // 삭제 게이트
   if(!confirm('이 항목을 삭제하시겠습니까?')) return;
   let items = mgmtLoadItems();
   items = items.filter(i => i.id !== id);
@@ -2538,6 +2641,7 @@ function mgmtExportJSON(){
 }
 
 function mgmtImportJSON(){
+  if(!requireEditAuth()) return; // 가져오기(저장) 게이트
   const input = document.createElement('input');
   input.type = 'file';
   input.accept = '.json';
@@ -2584,6 +2688,7 @@ function mgmtImportJSON(){
 }
 
 function mgmtResetAll(){
+  if(!requireEditAuth()) return; // 전체 초기화 게이트
   const items = mgmtLoadItems();
   if(items.length === 0){ alert('초기화할 항목이 없습니다.'); return; }
   if(!confirm('커스텀 항목 ' + items.length + '건을 모두 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다.')){ return; }
@@ -2595,8 +2700,13 @@ function mgmtResetAll(){
 
 /* ── 커스텀 항목을 기존 스케줄에 주입 ── */
 function mgmtGetCustomItemsForSchedule(schedType){
-  // v2.50 — 커스텀 항목 주입 비활성화. 항목은 소스 배열(WEEKDAY/WEEKEND)이 SSOT.
-  return [];
+  // schedType: 'weekday' or 'weekend'
+  // GM이 시트에 저장한 항목(CUSTOM_ITEMS)을 해당 스케줄에 주입.
+  const items = mgmtLoadItems();
+  return items.filter(item => {
+    if(!item.dayType || item.dayType === 'both') return true;
+    return item.dayType === schedType;
+  });
 }
 
 function mgmtBuildCustomSlots(customItems){

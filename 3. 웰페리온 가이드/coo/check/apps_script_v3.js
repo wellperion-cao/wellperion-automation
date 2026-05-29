@@ -6,6 +6,9 @@ const SHEET_MALE   = '남성구역';
 const SHEET_FEMALE = '여성구역';
 const SHEET_COMMON = '공용구역';
 const SHEET_STAFF  = '점검자';
+const SHEET_ITEMS  = '점검항목';   // GM 편집 점검 항목 마스터 (시트 영구 저장)
+
+const ITEM_HEADERS = ['항목ID','카테고리','항목명','상세','성별','시간대','정렬'];
 
 const BOT_TOKEN = PropertiesService.getScriptProperties().getProperty('TELEGRAM_BOT_TOKEN');
 const CHAT_ID   = PropertiesService.getScriptProperties().getProperty('TELEGRAM_CHAT_ID');
@@ -210,6 +213,7 @@ function migrateFromOldSheet() {
 function doGet(e) {
   var action = e.parameter.action || '';
   if (action === 'todo_list') return handleTodoGet(e.parameter);
+  if (action === 'items')     return getItems();
 
   var date = e.parameter.date;
   if (!date) return jsonRes({ error: 'date required' });
@@ -276,9 +280,10 @@ function doPost(e) {
   try {
     var body = JSON.parse(e.postData.contents);
     if (body.action && body.action.indexOf('todo_') === 0) return handleTodoPost(body);
-    if (body.action === 'save')   return handleSave(body);
-    if (body.action === 'notify') return handleNotify(body);
-    if (body.action === 'seed')   return handleSeed(body);
+    if (body.action === 'save')      return handleSave(body);
+    if (body.action === 'notify')    return handleNotify(body);
+    if (body.action === 'seed')      return handleSeed(body);
+    if (body.action === 'saveItems') return saveItems(body);
     return jsonRes({ error: 'unknown action' });
   } catch (err) {
     return jsonRes({ error: err.message });
@@ -497,6 +502,98 @@ function getStaff() {
     }
   }
   return jsonRes({ staff: staff });
+}
+
+// ════════════════════════════════════════════
+// 점검 항목 마스터 (GM 편집 — 시트 영구 저장)
+// ════════════════════════════════════════════
+
+// ─── 점검항목 시트 자동 생성 ───
+function initItemSheet() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName(SHEET_ITEMS);
+  if (sheet) return sheet;
+  sheet = ss.insertSheet(SHEET_ITEMS);
+  sheet.appendRow(ITEM_HEADERS);
+  sheet.getRange(1, 1, 1, ITEM_HEADERS.length)
+    .setBackground('#2a2725').setFontColor('#B79F8A')
+    .setFontWeight('bold').setHorizontalAlignment('center');
+  sheet.setFrozenRows(1);
+  var widths = [180, 180, 240, 360, 80, 180, 70];
+  for (var i = 0; i < widths.length; i++) sheet.setColumnWidth(i + 1, widths[i]);
+  return sheet;
+}
+
+// ─── 항목 조회 (GET ?action=items) ───
+function getItems() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName(SHEET_ITEMS);
+  if (!sheet) return jsonRes({ items: [] });
+  var data = sheet.getDataRange().getValues();
+  var items = [];
+  for (var i = 1; i < data.length; i++) {
+    if (!data[i][0] && !data[i][2]) continue; // id·항목명 모두 없으면 건너뜀
+    items.push({
+      id:     String(data[i][0] || ''),
+      cat:    String(data[i][1] || ''),
+      name:   String(data[i][2] || ''),
+      detail: String(data[i][3] || ''),
+      gender: String(data[i][4] || 'all'),
+      slot:   String(data[i][5] || ''),
+      order:  data[i][6] !== '' && data[i][6] != null ? Number(data[i][6]) : (i)
+    });
+  }
+  return jsonRes({ items: items });
+}
+
+// ─── 항목 저장 (POST {action:'saveItems', items:[...]}) — 전체 재기록 ───
+function saveItems(body) {
+  var items = body.items || [];
+  var sheet = initItemSheet();
+  // 헤더만 남기고 기존 데이터 전체 삭제
+  var lastRow = sheet.getLastRow();
+  if (lastRow > 1) {
+    sheet.getRange(2, 1, lastRow - 1, ITEM_HEADERS.length).clearContent();
+  }
+  var rows = items.map(function (it, idx) {
+    return [
+      String(it.id || ''),
+      String(it.cat || ''),
+      String(it.name || ''),
+      String(it.detail || ''),
+      String(it.gender || 'all'),
+      String(it.slot || ''),
+      it.order !== undefined && it.order !== '' ? it.order : (idx + 1)
+    ];
+  });
+  if (rows.length > 0) {
+    sheet.getRange(2, 1, rows.length, ITEM_HEADERS.length).setValues(rows);
+  }
+  return jsonRes({ ok: true, count: rows.length });
+}
+
+// ─── 항목 마스터 1회 시드 (Apps Script 에디터에서 1회 실행) ───
+// 현재 기본 항목(ZONE_ITEMS + COMMON_ITEMS)을 점검항목 시트에 채운다.
+function seedItemMaster() {
+  var sheet = initItemSheet();
+  var lastRow = sheet.getLastRow();
+  if (lastRow > 1) {
+    sheet.getRange(2, 1, lastRow - 1, ITEM_HEADERS.length).clearContent();
+  }
+  var rows = [];
+  var order = 1;
+  // 남/여 공통 구역 항목
+  ZONE_ITEMS.forEach(function (it) {
+    rows.push([it.id, it.cat, it.name, '', 'all', it.slot, order++]);
+  });
+  // 공용 구역 항목
+  COMMON_ITEMS.forEach(function (it) {
+    rows.push([it.id, it.cat, it.name, '', 'all', it.slot, order++]);
+  });
+  if (rows.length > 0) {
+    sheet.getRange(2, 1, rows.length, ITEM_HEADERS.length).setValues(rows);
+  }
+  Logger.log('seedItemMaster 완료: ' + rows.length + '개 항목 시드');
 }
 
 // ─── 중복 제거 유틸 (신규 시트 대상, 1회 실행) ───
