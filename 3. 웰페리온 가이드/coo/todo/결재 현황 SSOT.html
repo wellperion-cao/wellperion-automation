@@ -10,7 +10,7 @@
 <script>
 /* 최신본 자동 보장 — HTTP 캐시로 옛 버전이 떠 'GM 화면만 미반영'되는 문제 방지 (2026-05-29 COO).
    서버 최신본 버전과 비교해 다르면 1회만 강제 갱신. 루프 방지: ?pv 가 현재 버전과 같으면 종료. */
-window.__PV='20260529-3';
+window.__PV='20260529-4';
 (function(){
   window.addEventListener('pageshow',function(e){ if(e.persisted) location.reload(); });
   try{
@@ -386,32 +386,33 @@ function nextApprover(t, route) {
 
 /* 결재 비밀번호 게이트 — GM·대표님 승인/반려 시 본인 PIN 입력 필수 (2026-05-29 GM 지시)
    부서장은 PIN 미지정 → 기존 확인창 유지 */
-const APPROVAL_PINS = { 'GM': '0987', '대표님': '3211' };
+/* 결재 비밀번호: 평문 저장 금지(공개 repo) — 페이지는 입력만 받고 서버(Apps Script)가 검증 (2026-05-29 COO 보안) */
+const PIN_ROLES = ['GM', '대표님'];
 
 function gateApproval(role, actionLabel) {
-  const pin = APPROVAL_PINS[role];
-  if (pin) {
+  if (PIN_ROLES.indexOf(role) >= 0) {
     const input = prompt(role + ' ' + actionLabel + ' — 비밀번호를 입력하세요:');
-    if (input === null) return false;            // 취소
-    if (input !== pin) { alert('비밀번호가 일치하지 않습니다. ' + actionLabel + '이 취소되었습니다.'); return false; }
-    return true;
+    if (input === null || input === '') return null;   // 취소·빈값 → 중단
+    return input;                                       // 실제 검증은 서버에서
   }
-  return confirm(role + ' ' + actionLabel + ' 처리하시겠습니까?');
+  return confirm(role + ' ' + actionLabel + ' 처리하시겠습니까?') ? '' : null;
 }
 
 async function approveTask(taskId, role) {
-  if (!gateApproval(role, '승인')) return;
-  await signTask(taskId, role, 'approve');
+  const pin = gateApproval(role, '승인');
+  if (pin === null) return;
+  await signTask(taskId, role, 'approve', pin);
 }
 
 async function rejectTask(taskId, role) {
-  if (!gateApproval(role, '반려')) return;
-  await signTask(taskId, role, 'reject');
+  const pin = gateApproval(role, '반려');
+  if (pin === null) return;
+  await signTask(taskId, role, 'reject', pin);
 }
 
-async function signTask(taskId, role, decision) {
+async function signTask(taskId, role, decision, pin) {
   const params = new URLSearchParams({
-    action: 'todo_sign', id: taskId, role: role, decision: decision, signer: '페이지'
+    action: 'todo_sign', id: taskId, role: role, decision: decision, signer: '페이지', pin: pin || ''
   });
   try {
     const r = await fetch(TODO_API_URL + '?' + params.toString(), { redirect:'follow' });
