@@ -875,43 +875,17 @@ const STAFF_CSV_URL = 'https://docs.google.com/spreadsheets/d/1DKEKRrpsi9Nit7dNd
 let activeGenderTab = 'm';
 
 /* ── A: Staff list (fallback + dynamic) ── */
+// 점검자 = 지원팀 반장 2명 고정 (GM 2026-05-29). 여=이경연 실장 / 남=최준용M.
 const FALLBACK_STAFF = [
-  {name:'여 오전 주임', role:'주임', shift:'am', gender:'f'},
-  {name:'여 오후 주임', role:'주임', shift:'pm', gender:'f'},
-  {name:'남 오전 주임', role:'주임', shift:'am', gender:'m'},
-  {name:'남 오후 주임', role:'주임', shift:'pm', gender:'m'},
-  {name:'황용석 팀장', role:'팀장', shift:'all', gender:'all'},
-  {name:'중간 주임(남)', role:'주임', shift:'mid', gender:'m'},
-  {name:'중간 주임(여)', role:'주임', shift:'mid', gender:'f'},
-  {name:'탕청소 업체', role:'업체', shift:'night', gender:'all'}
+  {name:'지원팀 반장(여) · 이경연 실장', role:'반장', shift:'all', gender:'f'},
+  {name:'지원팀 반장(남) · 최준용M', role:'반장', shift:'all', gender:'m'}
 ];
 let STAFF_LIST = [...FALLBACK_STAFF];
 
 async function loadStaffFromSheet(){
-  try{
-    const r=await fetch(STAFF_CSV_URL);
-    const text=await r.text();
-    const lines=text.trim().split('\n');
-    if(lines.length<2)return;
-    const hdr=parseCSVLine(lines[0]);
-    const nameIdx=hdr.findIndex(h=>h.includes('이름'));
-    const roleIdx=hdr.findIndex(h=>h.includes('역할'));
-    const shiftIdx=hdr.findIndex(h=>h.includes('교대'));
-    const genderIdx=hdr.findIndex(h=>h.includes('성별구역'));
-    if(nameIdx<0)return;
-    const list=[];
-    for(let i=1;i<lines.length;i++){
-      const cols=parseCSVLine(lines[i]);
-      if(!cols[nameIdx])continue;
-      list.push({
-        name:cols[nameIdx]||'',
-        role:cols[roleIdx]||'',
-        shift:cols[shiftIdx]||'all',
-        gender:cols[genderIdx]||'all'
-      });
-    }
-    if(list.length>0)STAFF_LIST=list;
-  }catch(e){/* use fallback */}
+  // 점검자 고정 2명(지원팀 반장 여/남) — 시트 동적 로드 비활성화 (GM 2026-05-29).
+  // 기존 8명이 시트에서 다시 들어오지 않도록 STAFF_LIST는 FALLBACK 고정 유지.
+  STAFF_LIST=[...FALLBACK_STAFF];
   populateSubmitterDropdowns();
 }
 
