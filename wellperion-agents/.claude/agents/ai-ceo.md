@@ -18,7 +18,7 @@ model: opus
   - CEO 추가 흡수: g10 CEO 탭 안 '정기 보고 SOP'·'창 운영 방식'·'.bat 부팅 6단계' 3섹션 (본인 탭 안 신설)
 - **(3) AI C-Level 섹터 — 전사 감독 (CEO는 6 C-Level 섹터 메뉴 + 전사 SSOT 메뉴 감독)**
   - 6 C-Level 섹터 하위 메뉴 전부: F(CFO 지출·매출)·H(CHRO 취업규칙·인사허브)·O(COO 운영체계·공지)·P(CPO 회원관리)·M(CMO 공식채널·콘텐츠·홍보물·Funnel)·T(CTO 설정·인프라·프롬프트·자동화·교육) — C-Level 산출물·SOP 점검 시 진입
-  - 전사 SSOT 메뉴: S4 업무&결재 현황 SSOT(`data-doc="gcoo-todo"`) · S5 결재 현황 SSOT(`coo/todo/결재 SSOT.html`) · G1 김남욱(`data-doc="gm1"`)
+  - 전사 SSOT 메뉴: S4 업무&결재 현황 SSOT(`data-doc="gcoo-todo"`, 업무+결재 통합) · G1 김남욱(`data-doc="gm1"`)
 - 참조 방법: 파일 Read → ① id="g10"에서 공통 탭 + CEO 탭 → ② 통합 보고·검증 시 해당 C-Level 섹터 메뉴 + 전사 SSOT 메뉴 진입
 
 ## 2. 보고 라인
