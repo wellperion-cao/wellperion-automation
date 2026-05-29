@@ -3290,6 +3290,39 @@ Start-Process python -ArgumentList telegram_bot\daily_scheduler.py -WorkingDirec
       </div>
     </div>
 
+    <!-- ── 오늘 핵심 + 히스토리 (시드 #07, 2026-05-29 신설) ── -->
+    <div id="hl-today-section" style="margin:0 0 20px;">
+      <!-- 오늘 핵심 카드 -->
+      <div class="card" style="background:var(--paper); border:1px solid rgba(183,159,138,0.18); padding:16px 20px; border-radius:12px; margin-bottom:12px;">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;">
+          <span id="hl-today-header" style="font-weight:700; font-size:14.5px; color:var(--text);">📌 오늘 핵심</span>
+          <button onclick="hlEditToday()" style="background:none; border:1px solid rgba(183,159,138,0.35); color:var(--accent); font-size:12px; padding:3px 10px; border-radius:6px; cursor:pointer;">✏️ 편집</button>
+        </div>
+        <ul id="hl-today-list" style="margin:0; padding:0; list-style:none; font-size:13.5px; color:var(--text-soft); line-height:1.75;"></ul>
+      </div>
+      <!-- 히스토리 토글 -->
+      <details id="hl-history-details" style="background:var(--paper); border:1px solid rgba(183,159,138,0.12); border-radius:12px; padding:0;">
+        <summary id="hl-history-summary" style="padding:13px 18px; cursor:pointer; font-size:13.5px; font-weight:600; color:var(--dim); list-style:none; display:flex; align-items:center; gap:8px; user-select:none;">
+          <span>📜</span><span id="hl-history-count">히스토리 (0건)</span>
+        </summary>
+        <div id="hl-history-body" style="padding:0 18px 14px; display:flex; flex-direction:column; gap:10px;"></div>
+      </details>
+    </div>
+
+    <!-- 편집 모달 -->
+    <div id="hl-modal-overlay" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.55); z-index:9000; align-items:center; justify-content:center;">
+      <div style="background:var(--paper); border:1px solid rgba(183,159,138,0.3); border-radius:14px; padding:24px; width:min(480px,90vw); box-shadow:0 8px 32px rgba(0,0,0,0.5);">
+        <div style="font-weight:700; font-size:15px; color:var(--text); margin-bottom:12px;">✏️ 오늘 핵심 편집</div>
+        <div style="font-size:12px; color:var(--dim); margin-bottom:8px;">한 줄 = 1건, 최대 5건</div>
+        <textarea id="hl-modal-ta" rows="6" style="width:100%; box-sizing:border-box; background:rgba(255,255,255,0.05); border:1px solid rgba(183,159,138,0.25); border-radius:8px; color:var(--text); font-size:13.5px; padding:10px; resize:vertical; line-height:1.7; font-family:inherit;"></textarea>
+        <div style="display:flex; gap:8px; margin-top:14px; justify-content:flex-end;">
+          <button onclick="hlModalClose()" style="background:none; border:1px solid rgba(183,159,138,0.3); color:var(--dim); font-size:13px; padding:6px 16px; border-radius:7px; cursor:pointer;">취소</button>
+          <button onclick="hlModalSave()" style="background:var(--accent); border:none; color:#1a1817; font-size:13px; font-weight:700; padding:6px 18px; border-radius:7px; cursor:pointer;">저장</button>
+        </div>
+      </div>
+    </div>
+    <!-- ── /오늘 핵심 + 히스토리 ── -->
+
     <!-- 오늘 할 일 (탭 밖 독립 영역) -->
     <div style="margin:18px 0 24px;">
       <h3 id="gm1-todo-date"><span class="ico">📌</span>오늘 할 일</h3>
@@ -6504,6 +6537,232 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
     setTimeout(maybeInit, 200);
   })();
   // ── /KPI 대시보드 v1 ─────────────────────────────────────────────
+
+  // ── 오늘 핵심 + 히스토리 (시드 #07) ────────────────────────────────
+  (function(){
+    var STORE_KEY = 'gm1_daily_history';
+    var TASKS_KEY = 'gm1_unified_tasks';
+    var DOW = ['일','월','화','수','목','금','토'];
+
+    /* 날짜 유틸 */
+    function todayStr(){
+      var d = new Date();
+      var y = d.getFullYear();
+      var m = String(d.getMonth()+1).padStart(2,'0');
+      var dd = String(d.getDate()).padStart(2,'0');
+      return y+'-'+m+'-'+dd;
+    }
+    function dateLabel(str){
+      try{
+        var p = str.split('-');
+        var d = new Date(+p[0],+p[1]-1,+p[2]);
+        return str+' ('+DOW[d.getDay()]+')';
+      }catch(e){ return str; }
+    }
+    function todayLabel(){
+      var d = new Date();
+      var y = d.getFullYear();
+      var m = String(d.getMonth()+1).padStart(2,'0');
+      var dd = String(d.getDate()).padStart(2,'0');
+      return y+'-'+m+'-'+dd+' ('+DOW[d.getDay()]+')';
+    }
+
+    /* localStorage helpers */
+    function loadHistory(){
+      try{ return JSON.parse(localStorage.getItem(STORE_KEY)||'[]'); }catch(e){ return []; }
+    }
+    function saveHistory(arr){ localStorage.setItem(STORE_KEY, JSON.stringify(arr)); }
+
+    /* gm1_unified_tasks에서 완료 항목 title 추출 */
+    function extractCompletedTitles(dateStr){
+      try{
+        var raw = localStorage.getItem(TASKS_KEY);
+        if(!raw) return [];
+        var data = JSON.parse(raw);
+        var seeds = data.seeds || data || [];
+        if(!Array.isArray(seeds)) seeds = Object.values(seeds);
+        var titles = [];
+        seeds.forEach(function(s){
+          if(!s) return;
+          var statusOk = (s.status==='완료'||s.status==='done'||s.status==='completed');
+          var dateOk = false;
+          if(s.isToday){ dateOk = true; }
+          if(s.date && s.date.slice(0,10)===dateStr){ dateOk = true; }
+          if(s.completedAt && s.completedAt.slice(0,10)===dateStr){ dateOk = true; }
+          if(statusOk && dateOk && s.title){
+            var t = String(s.title).replace(/^\[\d+\]\s*/,'').trim();
+            if(t && titles.indexOf(t)===-1) titles.push(t);
+          }
+        });
+        return titles.slice(0,5);
+      }catch(e){ return []; }
+    }
+
+    /* 다음 number 계산 */
+    function nextNumber(arr){
+      if(!arr.length) return 1;
+      return Math.max.apply(null, arr.map(function(x){ return x.number||0; })) + 1;
+    }
+
+    /* 오늘 항목 보장 (없으면 신설) */
+    function ensureTodayEntry(arr, today){
+      var idx = arr.findIndex(function(x){ return x.date===today; });
+      if(idx===-1){
+        var titles = extractCompletedTitles(today);
+        arr.unshift({ date:today, number:nextNumber(arr), highlights:titles, auto_summarized:true });
+        return 0;
+      }
+      return idx;
+    }
+
+    /* 어제 항목 보장 */
+    function ensureYesterdayEntry(arr){
+      var d = new Date(); d.setDate(d.getDate()-1);
+      var y = d.getFullYear(), m = String(d.getMonth()+1).padStart(2,'0'), dd = String(d.getDate()).padStart(2,'0');
+      var yest = y+'-'+m+'-'+dd;
+      var has = arr.some(function(x){ return x.date===yest; });
+      if(!has){
+        var titles = extractCompletedTitles(yest);
+        var pos = arr.findIndex(function(x){ return x.date < yest; });
+        var entry = { date:yest, number:nextNumber(arr), highlights:titles, auto_summarized:true };
+        if(pos===-1) arr.push(entry); else arr.splice(pos,0,entry);
+      }
+    }
+
+    /* 오늘 핵심 렌더 */
+    function renderToday(arr, today){
+      var hdr = document.getElementById('hl-today-header');
+      var list = document.getElementById('hl-today-list');
+      if(!hdr||!list) return;
+      hdr.innerHTML = '📌 오늘 핵심 <span style="font-size:12px;font-weight:400;color:var(--dim);margin-left:6px;">'+todayLabel()+'</span>';
+      var entry = arr.find(function(x){ return x.date===today; });
+      var items = entry ? entry.highlights : [];
+      if(!items.length){
+        list.innerHTML = '<li style="color:var(--dim); font-size:13px;">(오늘 완료된 핵심 없음)</li>';
+      } else {
+        list.innerHTML = items.map(function(t){
+          return '<li style="padding:2px 0; border-bottom:1px solid rgba(255,255,255,0.05);">'+escHtml(t)+'</li>';
+        }).join('');
+      }
+    }
+
+    /* 히스토리 렌더 */
+    function renderHistory(arr, today){
+      var countEl = document.getElementById('hl-history-count');
+      var body = document.getElementById('hl-history-body');
+      if(!countEl||!body) return;
+      var past = arr.filter(function(x){ return x.date!==today; });
+      countEl.textContent = '히스토리 ('+past.length+'건)';
+      if(!past.length){
+        body.innerHTML = '<p style="color:var(--dim); font-size:13px; margin:0;">(히스토리 없음)</p>';
+        return;
+      }
+      var INIT_SHOW = 5;
+      function buildCards(list){
+        return list.map(function(e){
+          var num = String(e.number||'?').padStart(3,'0');
+          var items = e.highlights||[];
+          var inner = items.length
+            ? items.map(function(t){ return '<li style="padding:1px 0;">'+escHtml(t)+'</li>'; }).join('')
+            : '<li style="color:var(--dim);">(기록 없음)</li>';
+          return '<div style="background:rgba(255,255,255,0.03); border:1px solid rgba(183,159,138,0.1); border-radius:9px; padding:11px 14px;">'
+            +'<div style="font-size:12.5px; font-weight:700; color:var(--accent); margin-bottom:6px;">#'+num+' · '+dateLabel(e.date)+'</div>'
+            +'<ul style="margin:0; padding:0 0 0 14px; font-size:13px; color:var(--text-soft); line-height:1.7;">'+inner+'</ul>'
+            +'</div>';
+        }).join('');
+      }
+      if(past.length <= INIT_SHOW){
+        body.innerHTML = buildCards(past);
+      } else {
+        var visible = past.slice(0, INIT_SHOW);
+        var hidden = past.slice(INIT_SHOW);
+        body.innerHTML = buildCards(visible)
+          +'<div id="hl-more-hidden" style="display:none;">'+buildCards(hidden)+'</div>'
+          +'<button id="hl-more-btn" onclick="hlShowMore()" style="background:none; border:1px solid rgba(183,159,138,0.25); color:var(--accent); font-size:12px; padding:5px 14px; border-radius:7px; cursor:pointer; margin-top:4px;">더보기 ('+(past.length-INIT_SHOW)+'건)</button>';
+      }
+    }
+
+    function escHtml(s){
+      return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }
+
+    /* 전체 렌더 */
+    function hlRender(){
+      var today = todayStr();
+      var arr = loadHistory();
+      ensureTodayEntry(arr, today);
+      ensureYesterdayEntry(arr);
+      saveHistory(arr);
+      renderToday(arr, today);
+      renderHistory(arr, today);
+    }
+
+    /* 더보기 */
+    window.hlShowMore = function(){
+      var h = document.getElementById('hl-more-hidden');
+      var b = document.getElementById('hl-more-btn');
+      if(h){ h.style.display=''; }
+      if(b){ b.style.display='none'; }
+    };
+
+    /* 편집 모달 열기 */
+    window.hlEditToday = function(){
+      var today = todayStr();
+      var arr = loadHistory();
+      var entry = arr.find(function(x){ return x.date===today; });
+      var items = entry ? entry.highlights : [];
+      var ta = document.getElementById('hl-modal-ta');
+      var ov = document.getElementById('hl-modal-overlay');
+      if(!ta||!ov) return;
+      ta.value = items.join('\n');
+      ov.style.display = 'flex';
+      ta.focus();
+    };
+
+    /* 편집 모달 닫기 */
+    window.hlModalClose = function(){
+      var ov = document.getElementById('hl-modal-overlay');
+      if(ov) ov.style.display = 'none';
+    };
+
+    /* 편집 모달 저장 */
+    window.hlModalSave = function(){
+      var today = todayStr();
+      var ta = document.getElementById('hl-modal-ta');
+      if(!ta) return;
+      var lines = ta.value.split('\n').map(function(l){ return l.trim(); }).filter(Boolean).slice(0,5);
+      var arr = loadHistory();
+      var idx = arr.findIndex(function(x){ return x.date===today; });
+      if(idx===-1){
+        arr.unshift({ date:today, number:nextNumber(arr), highlights:lines, auto_summarized:false });
+      } else {
+        arr[idx].highlights = lines;
+        arr[idx].auto_summarized = false;
+      }
+      saveHistory(arr);
+      hlModalClose();
+      hlRender();
+    };
+
+    /* 모달 오버레이 클릭 시 닫기 */
+    var ov = document.getElementById('hl-modal-overlay');
+    if(ov) ov.addEventListener('click', function(e){ if(e.target===ov) hlModalClose(); });
+
+    /* gm1-content 활성화 감지 후 초기화 */
+    var _hlInited = false;
+    function maybeInitHl(){
+      if(_hlInited) return;
+      var sec = document.getElementById('hl-today-section');
+      if(sec && sec.offsetParent !== null){ _hlInited = true; hlRender(); }
+    }
+    document.addEventListener('click', function(e){
+      var a = e.target.closest('[data-doc="gm1"]') || e.target.closest('[href="#gm1"]');
+      if(a) setTimeout(maybeInitHl, 80);
+    });
+    setTimeout(maybeInitHl, 250);
+
+  })();
+  // ── /오늘 핵심 + 히스토리 (시드 #07) ────────────────────────────────
 </script>
 </body>
 </html>
