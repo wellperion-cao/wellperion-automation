@@ -3325,6 +3325,14 @@ Start-Process python -ArgumentList telegram_bot\daily_scheduler.py -WorkingDirec
     </div>
     <!-- ── /오늘 핵심 + 히스토리 ── -->
 
+    <!-- 위임 큐 (C-Level → GM 합류 항목) -->
+    <div id="gm1-delegated-queue" style="margin:0 0 16px; display:none;">
+      <h3 style="font-size:14.5px; color:var(--text); margin-bottom:10px;">
+        <span class="ico">📥</span>위임받은 일 (<span id="gm1-deleg-count">0</span>건)
+      </h3>
+      <div id="gm1-deleg-list" style="display:flex; flex-direction:column; gap:8px;"></div>
+    </div>
+
     <!-- 오늘 할 일 (탭 밖 독립 영역) -->
     <div style="margin:18px 0 24px;">
       <h3 id="gm1-todo-date"><span class="ico">📌</span>오늘 할 일</h3>
@@ -6013,7 +6021,7 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
         var statusStyle = '';
         html += '<div class="task-card" data-id="' + gm1Esc(t.id) + '">' +
           '<div class="task-title" style="display:flex;align-items:center;justify-content:space-between;">' +
-          '<span><span class="status-dot active"></span>' + gm1Esc(t.title) + (t.time ? ' <span style="font-size:11px;color:var(--dim);">(' + gm1Esc(t.time.slice(0,5)) + ')</span>' : '') + '</span>' +
+          '<span><span style="display:inline-block;background:rgba(183,159,138,0.15);color:var(--accent);font-size:10.5px;font-weight:600;padding:2px 7px;border-radius:4px;margin-right:6px;">🟡 진행 중</span><span class="status-dot active"></span>' + gm1Esc(t.title) + (t.time ? ' <span style="font-size:11px;color:var(--dim);">(' + gm1Esc(t.time.slice(0,5)) + ')</span>' : '') + '</span>' +
           '<div class="todo-actions">' +
           '<button class="todo-act-btn today-act" data-id="' + gm1Esc(t.id) + '" data-action="done">완료</button>' +
           '<button class="todo-act-btn today-act" data-id="' + gm1Esc(t.id) + '" data-action="hold">보류</button>' +
@@ -6038,7 +6046,7 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
           var descHtml = t.description ? '<details style="margin-top:4px;font-size:12px;"><summary style="cursor:pointer;color:var(--accent);font-weight:600;font-size:11px;list-style:none;">▼ 내용 보기</summary><div style="padding:6px 8px;background:var(--paper-soft,#f5f3f0);border-radius:6px;margin-top:4px;line-height:1.5;white-space:pre-wrap;color:var(--text);">' + gm1Esc(t.description) + '</div></details>' : '';
           html += '<div style="padding:8px 0;border-bottom:1px dashed var(--border);">' +
             '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">' +
-            '<span><span style="color:var(--green);font-weight:700;">✓</span> <span style="color:var(--text);font-weight:500;">' + gm1Esc(t.title) + '</span></span>' +
+            '<span><span style="color:var(--green);font-weight:700;">✓</span> <span style="display:inline-block;background:rgba(100,180,120,0.13);color:var(--green);font-size:10.5px;font-weight:600;padding:2px 7px;border-radius:4px;margin:0 5px;">✅ 완료</span><span style="color:var(--text);font-weight:500;">' + gm1Esc(t.title) + '</span></span>' +
             '<button class="todo-act-btn today-act" data-id="' + gm1Esc(t.id) + '" data-action="restore" style="font-size:11px;padding:2px 8px;flex-shrink:0;">되돌리기</button>' +
             '</div>' + descHtml +
             '</div>';
@@ -6051,7 +6059,7 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
           var descHtml = t.description ? '<details style="margin-top:4px;font-size:12px;"><summary style="cursor:pointer;color:var(--accent);font-weight:600;font-size:11px;list-style:none;">▼ 내용 보기</summary><div style="padding:6px 8px;background:var(--paper-soft,#f5f3f0);border-radius:6px;margin-top:4px;line-height:1.5;white-space:pre-wrap;color:var(--text);">' + gm1Esc(t.description) + '</div></details>' : '';
           html += '<div style="padding:8px 0;border-bottom:1px dashed var(--border);">' +
             '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">' +
-            '<span><span style="color:var(--accent);font-weight:700;">⏸</span> <span style="color:var(--text);font-weight:500;">' + gm1Esc(t.title) + '</span></span>' +
+            '<span><span style="color:var(--accent);font-weight:700;">⏸</span> <span style="display:inline-block;background:rgba(183,159,138,0.15);color:var(--accent);font-size:10.5px;font-weight:600;padding:2px 7px;border-radius:4px;margin:0 5px;">⏸️ 보류</span><span style="color:var(--text);font-weight:500;">' + gm1Esc(t.title) + '</span></span>' +
             '<button class="todo-act-btn today-act" data-id="' + gm1Esc(t.id) + '" data-action="restore" style="font-size:11px;padding:2px 8px;flex-shrink:0;">되돌리기</button>' +
             '</div>' + descHtml +
             '</div>';
@@ -6438,6 +6446,75 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
 
   })();
   // ── /GM1 통합 태스크 시스템 ─────────────────────────────────────
+
+  // ── 위임 큐 로더 (gm1-delegated-queue) ──────────────────────────
+  (function(){
+    function renderDelegated(items){
+      var container = document.getElementById('gm1-deleg-list');
+      var section   = document.getElementById('gm1-delegated-queue');
+      if(!container || !section) return;
+
+      var filtered = items.filter(function(t){
+        return t.clevel === 'gm1' || (t.task_id && t.task_id.indexOf('G1-') === 0);
+      });
+
+      document.getElementById('gm1-deleg-count').textContent = filtered.length;
+
+      if(filtered.length === 0){
+        section.style.display = 'none';
+        return;
+      }
+      section.style.display = 'block';
+
+      container.innerHTML = filtered.map(function(t){
+        var statusLabel = '⏸️ 대기';
+        var statusColor = 'var(--dim)';
+        if(t.status === 'ASSIGNED' || t.status === 'IN_PROGRESS'){
+          statusLabel = '🟡 진행 중';
+          statusColor = 'var(--accent)';
+        } else if(t.status === 'PENDING_DEPENDENCY'){
+          statusLabel = '⏸️ 대기 (선행 작업 후)';
+        } else if(t.status === 'VERIFIED' || t.status === 'DONE'){
+          statusLabel = '✅ 완료';
+          statusColor = 'var(--grow)';
+        }
+        var dependLine = t.depends_on
+          ? '<div style="font-size:11px;color:var(--dim);margin-top:2px;">↳ 선행: ' + t.depends_on + '</div>'
+          : '';
+        return '<div style="background:var(--paper);border:1px solid rgba(183,159,138,0.18);border-radius:10px;padding:10px 14px;">'
+          + '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">'
+            + '<span style="font-size:10.5px;font-weight:600;color:' + statusColor + ';background:rgba(183,159,138,0.12);padding:2px 7px;border-radius:4px;">' + statusLabel + '</span>'
+            + '<span style="font-size:11px;color:var(--dim);font-family:monospace;">' + (t.task_id || '') + '</span>'
+          + '</div>'
+          + '<div style="font-size:13.5px;color:var(--text);">' + (t.title || '(제목 없음)') + '</div>'
+          + dependLine
+          + '</div>';
+      }).join('');
+    }
+
+    function init(){
+      var paths = [
+        './status/_queue.json',
+        '../../status/_queue.json',
+        '/wellperion-automation/status/_queue.json'
+      ];
+      function tryFetch(i){
+        if(i >= paths.length){
+          var s = document.getElementById('gm1-delegated-queue');
+          if(s) s.style.display = 'none';
+          return;
+        }
+        fetch(paths[i])
+          .then(function(r){ if(!r.ok) throw new Error('fail'); return r.json(); })
+          .then(function(d){ renderDelegated(d); })
+          .catch(function(){ tryFetch(i + 1); });
+      }
+      tryFetch(0);
+    }
+
+    setTimeout(init, 500);
+  })();
+  // ── /위임 큐 로더 ─────────────────────────────────────────────────
 
   // ── KPI 대시보드 v1 ──────────────────────────────────────────────
   (function(){
