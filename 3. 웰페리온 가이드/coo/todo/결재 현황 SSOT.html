@@ -35,14 +35,19 @@ html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font-family:
 .stat-card{background:var(--paper);border:1px solid var(--border);border-radius:10px;padding:12px 10px;text-align:center}
 .stat-card .num{font-size:22px;font-weight:800;line-height:1.1}
 .stat-card .label{font-size:11px;color:var(--dim);margin-top:4px}
-.approval-card{background:var(--paper);border:1px solid var(--border);border-left:3px solid var(--green);border-radius:10px;padding:10px 14px;margin-bottom:7px;transition:background 0.1s}
-.approval-card.rejected{border-left-color:var(--red)}
+.approval-card{background:var(--paper);border:1px solid var(--border);border-left:3px solid var(--dim-soft);border-radius:10px;padding:10px 14px;margin-bottom:7px;transition:background 0.1s}
+.approval-card.st-done{border-left-color:var(--green)}
+.approval-card.st-rejected,.approval-card.rejected{border-left-color:var(--red)}
+.approval-card.st-progress{border-left-color:var(--blue)}
+.approval-card.st-waiting{border-left-color:var(--yellow)}
 .approval-card:hover{background:rgba(183,159,138,0.04)}
 .approval-card .title-row{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:8px}
 .approval-card .title{font-size:14px;font-weight:700;flex:1;line-height:1.4}
 .status-chip{font-size:11px;font-weight:700;padding:3px 9px;border-radius:6px;flex-shrink:0;white-space:nowrap}
 .status-chip.done{background:var(--green-bg);color:var(--green)}
 .status-chip.rejected{background:var(--red-bg);color:var(--red)}
+.status-chip.progress{background:var(--blue-bg);color:var(--blue)}
+.status-chip.waiting{background:var(--yellow-bg);color:var(--yellow)}
 .meta-row{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
 .chip{font-size:11px;padding:3px 8px;border-radius:6px;background:var(--accent-bg);color:var(--accent);font-weight:600}
 .chip.owner{background:var(--blue-bg);color:var(--blue)}
@@ -392,7 +397,23 @@ function renderApprovalCard(t) {
   const route = buildEffectiveRoute(t, parsed.budget);
   const nxt = (!isDone && !isRejected) ? nextApprover(t, route) : null;
 
-  let h = '<div class="approval-card' + (isRejected ? ' rejected' : '') + '" data-id="' + escAttr(t.id) + '">';
+  // 결재 단계 마킹 — 결재상태 컬럼이 비어 있어도 싸인 실측으로 단계 산출 (2026-05-29 COO 수정)
+  const signMap = { '부서장': t.deptSign, 'GM': t.gmSign, '대표님': t.repSign };
+  const signedRoles = route.filter(r => String(signMap[r] || '').trim());
+  let stCls, chipCls = 'status-chip', chipText;
+  if (isDone) {
+    stCls = 'st-done'; chipCls += ' done'; chipText = '✅ 결재완료';
+  } else if (isRejected) {
+    stCls = 'st-rejected'; chipCls += ' rejected'; chipText = '❌ ' + (t.approvalStatus || '반려');
+  } else if (signedRoles.length) {
+    stCls = 'st-progress'; chipCls += ' progress';
+    chipText = '🔵 ' + signedRoles.join('·') + ' 완료' + (nxt ? ' · ' + nxt + ' 차례' : '');
+  } else {
+    stCls = 'st-waiting'; chipCls += ' waiting';
+    chipText = '⏳ ' + (nxt ? nxt + ' 결재 대기' : '결재 대기');
+  }
+
+  let h = '<div class="approval-card ' + stCls + (isRejected ? ' rejected' : '') + '" data-id="' + escAttr(t.id) + '">';
 
   // 제목 줄 — 우측에 카테고리·담당자·상태칩
   h += '<div class="title-row" style="flex-wrap:wrap;gap:6px;margin-bottom:6px;">';
@@ -401,10 +422,7 @@ function renderApprovalCard(t) {
   if (t.owner) {
     t.owner.split(',').forEach(o => { o = o.trim(); if (o) h += '<span class="chip owner" style="font-size:10px;">' + esc(o) + '</span>'; });
   }
-  let chipCls = 'status-chip', chipText = t.approvalStatus;
-  if (isDone) { chipCls += ' done'; chipText = '✅ 결재완료'; }
-  else if (isRejected) { chipCls += ' rejected'; chipText = '❌ ' + t.approvalStatus; }
-  if (chipText) h += '<span class="' + chipCls + '">' + esc(chipText) + '</span>';
+  h += '<span class="' + chipCls + '">' + esc(chipText) + '</span>';
   h += '</div>';
 
   // 메타 — 예산만 (카테고리·담당자는 제목 줄로 이동)
