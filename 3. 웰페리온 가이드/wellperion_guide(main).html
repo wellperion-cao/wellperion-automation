@@ -2100,6 +2100,7 @@
           <tr><td>3</td><td><strong>CEO는 상시 루프를 돌리지 않는다</strong> — GitHub push 완료 신호 시에만 깨어나 1회 검증·기록·알림</td></tr>
           <tr><td>4</td><td><strong>완료 신호 = 이중 확인</strong> — ① 커밋 메시지 <code>[DONE][C-Level][task_id]</code> 태그 + ② <code>status/&lt;clevel&gt;.json</code> 안 <code>status:DONE</code> 둘 다 충족</td></tr>
         </table>
+        <div class="callout" style="background:#1a2a1a;border-left:3px solid #059669;margin-top:12px;"><strong>📌 CEO = 상시 대기 디스패처 (2026-05-30 GM 결정):</strong> CEO 메인 창은 GM 지시를 언제든 받도록 <strong>항상 비워둔다.</strong> 무거운 작업(PC 정리·집계·git·patch)을 메인 세션에서 직접 끝까지 붙잡으면 그 동안 GM이 새 지시를 못 넣는다. 따라서 ① <strong>가벼운 정리·집계·git·patch → 서브에이전트(executor, Sonnet) 백그라운드 위임</strong> ② <strong>큰 프로젝트 → 담당 C-Level 창 분산</strong> — 작업 성격을 판단해 둘을 병행. 위임 직후 창을 비워 GM이 작업 중에도 다음 지시를 넣게 한다. CEO는 결과만 검증·보고.</div>
 
         <h3><span class="ico">🔔</span>CEO 깨어남 메커니즘 (트리거)</h3>
         <table>
