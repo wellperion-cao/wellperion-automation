@@ -25,6 +25,11 @@ html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font-family:
 .sheet-links{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
 .sheet-links a{display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:600;padding:6px 12px;border-radius:8px;background:var(--accent-bg);color:var(--accent);text-decoration:none;border:1px solid rgba(183,159,138,0.3)}
 .sheet-links a:hover{opacity:0.85}
+.header-top{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.header-right{display:flex;gap:6px;margin-left:auto;align-items:center;flex-wrap:wrap}
+.sheet-link{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;padding:4px 10px;border-radius:8px;background:var(--accent-bg);color:var(--accent);border:1px solid rgba(183,159,138,0.3);text-decoration:none;white-space:nowrap;cursor:pointer;transition:background 0.15s}
+.sheet-link:hover{background:rgba(183,159,138,0.22)}
+.sheet-link svg{width:12px;height:12px;fill:currentColor;flex-shrink:0}
 .content{padding:14px 16px 80px;max-width:760px;margin:0 auto}
 .loading{text-align:center;color:var(--dim);padding:40px 0;font-size:13px}
 .filter-bar{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px}
@@ -86,13 +91,24 @@ html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font-family:
 <body>
 
 <div class="header">
-  <h1>📁 결재 현황 SSOT <span style="font-size:11px;font-weight:500;color:var(--dim);margin-left:6px;letter-spacing:0.02em;">v1.0 · 2026-05-28</span></h1>
-  <div class="sub">결재 진행·완료·반려 이력 적립 — 결재 페이지에서 ✅/❌ 클릭 시 자동 누적</div>
-  <div class="sheet-links">
-    <a href="업무 현황 SSOT.html">← 업무 현황 SSOT</a>
-    <a href="https://docs.google.com/spreadsheets/d/1aqZGHpxzjAMqQvWQDrBWxrVtrFdZhFMxqFudNFlGnTk/edit" target="_blank" rel="noopener">📊 시트</a>
-    <a href="../../wellperion_guide(main).html" target="_blank" rel="noopener">📕 가이드허브</a>
+  <div class="header-top">
+    <h1>📁 결재 현황 SSOT <span style="font-size:11px;font-weight:500;color:var(--dim);margin-left:6px;letter-spacing:0.02em;">v1.1 · 2026-05-29</span></h1>
+    <div class="header-right">
+      <a class="sheet-link" href="업무 현황 SSOT.html" style="background:var(--blue-bg);color:var(--blue);border-color:rgba(91,159,213,0.3);">
+        <svg viewBox="0 0 24 24"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
+        업무 현황 SSOT
+      </a>
+      <a class="sheet-link" href="https://docs.google.com/spreadsheets/d/1aqZGHpxzjAMqQvWQDrBWxrVtrFdZhFMxqFudNFlGnTk/edit" target="_blank" rel="noopener">
+        <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-2 10H7v-2h10v2z"/></svg>
+        시트
+      </a>
+      <a class="sheet-link" href="../../wellperion_guide(main).html">
+        <svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+        가이드허브
+      </a>
+    </div>
   </div>
+  <div class="sub">결재 진행·완료·반려 이력 적립 — 승인/반려 시 비밀번호 확인 (GM·대표님)</div>
 </div>
 
 <div class="content" id="mainContent">
