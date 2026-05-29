@@ -696,6 +696,13 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
       <a href="#" style="display:inline-block;font-size:12px;font-weight:600;padding:6px 14px;border-radius:8px;background:var(--accent-bg);color:var(--accent);border:1px solid rgba(183,159,138,0.3);text-decoration:none;">PDF 다운로드</a>
     </div>
   </div>
+
+  <!-- 현재 점검 항목 자동 동기화 — 소스 배열에서 자동 생성 (v2.50) -->
+  <div style="margin-top:20px;">
+    <div style="font-size:16px;font-weight:700;color:var(--text);padding:12px 0 8px;border-bottom:2px solid var(--accent);margin-bottom:12px;">현재 점검 항목 (자동 동기화)</div>
+    <div style="font-size:12px;color:var(--dim);margin-bottom:14px;">아래 항목은 소스 배열(WEEKDAY/WEEKEND)에서 자동으로 생성됩니다. 소스를 수정하면 여기도 즉시 반영됩니다.</div>
+    <div id="manual-items-sync"></div>
+  </div>
 </div>
 
 <div id="tab-check-m" class="content">
@@ -966,7 +973,7 @@ const WEEKDAY=[
   ]},
   {slot:"오전 08:00~12:00",shift:"am",groups:[
     {title:"B 락커룸",items:[
-      {id:"b1",name:"B-1 파우더",detail:"선풍기 | 드라이기 | 휴지통 | 소독기 | 발건조기\n비품: 빗, 면봉, 휴지, 로션, 스킨",gender:"all"},
+      {id:"b1",name:"B-1 파우더",detail:"선풍기 | 드라이기 | 휴지통 | 소독기 | 발건조기 | 청소 진행\n비품: 빗, 면봉, 휴지, 로션, 스킨",gender:"all"},
       {id:"b2",name:"B-2 휴게실",detail:"TV 관리 | 소파 및 테이블 관리",gender:"all"},
       {id:"b3_f",name:"B-3 찜질방 (여)",detail:"온도/청결 관리\n쑥 제거(휴관일 전) / 쑥 입고(휴관일 후)",gender:"f"},
       {id:"b3_m",name:"B-3 수면실 (남)",detail:"청결 관리\n매트리스/바스타올 관리",gender:"m"},
@@ -1052,7 +1059,7 @@ const WEEKEND=[
   ]},
   {slot:"오전 08:00~12:00",shift:"am",groups:[
     {title:"B 락커룸",items:[
-      {id:"b1",name:"B-1 파우더",detail:"선풍기 | 드라이기 | 휴지통 | 소독기 | 발건조기",gender:"all"},
+      {id:"b1",name:"B-1 파우더",detail:"선풍기 | 드라이기 | 휴지통 | 소독기 | 발건조기 | 청소 진행",gender:"all"},
       {id:"b2",name:"B-2 휴게실",detail:"TV | 소파 | 테이블",gender:"all"},
       {id:"b3_f",name:"B-3 찜질방 (여)",detail:"온도/청결 관리",gender:"f"},
       {id:"b3_m",name:"B-3 수면실 (남)",detail:"청결 관리 | 매트리스/바스타올",gender:"m"},
@@ -1557,8 +1564,8 @@ function drawUI(d,gender){
 }
 
 /* v2.48 — 점검 항목 사용자 수정 기능 (localStorage override). v2.49 onclick HTML 충돌 fix */
-function getItemOverrides(){try{return JSON.parse(localStorage.getItem('wcheck_overrides')||'{}')}catch{return{}}}
-function saveItemOverrides(o){localStorage.setItem('wcheck_overrides',JSON.stringify(o))}
+function getItemOverrides(){return{}} /* v2.50 — 항목은 소스 배열이 SSOT. localStorage override 비활성화 */
+function saveItemOverrides(o){/* v2.50 — 쓰기 비활성화. 항목 수정은 소스 직접 편집 */}
 function findBaseItem(id){
   const today=new Date().toISOString().slice(0,10);
   let found=null;
@@ -1737,6 +1744,44 @@ function onExtra(stateKey,elemId){
 }
 function togX(id){const e=document.getElementById(id);e.classList.toggle('show');if(e.classList.contains('show'))e.focus()}
 function tog(h){h.nextElementSibling.classList.toggle('open')}
+/* v2.50 — 매뉴얼 탭 현재 점검 항목 자동 동기화 */
+function renderManualItems(){
+  const el=document.getElementById('manual-items-sync');
+  if(!el)return;
+  // WEEKDAY를 기준으로 항목 수집 (평일 = 기본 표준 스케줄)
+  const sched=typeof WEEKDAY!=='undefined'?WEEKDAY:[];
+  // 카테고리별로 항목 모으기 (중복 id 제거)
+  const catMap={};
+  const seen=new Set();
+  sched.forEach(slot=>{
+    slot.groups.forEach(grp=>{
+      const cat=grp.title;
+      if(!catMap[cat])catMap[cat]=[];
+      grp.items.forEach(it=>{
+        if(!seen.has(it.id)){
+          seen.add(it.id);
+          catMap[cat].push(it);
+        }
+      });
+    });
+  });
+  let html='';
+  Object.entries(catMap).forEach(([cat,items])=>{
+    html+=`<div style="background:var(--paper);border:1px solid var(--border);border-radius:10px;margin-bottom:10px;overflow:hidden;">`;
+    html+=`<div style="padding:10px 16px;font-size:13px;font-weight:700;color:var(--accent);border-bottom:1px solid var(--border);">${cat}</div>`;
+    items.forEach(it=>{
+      const detHtml=it.detail?it.detail.replace(/\n/g,'<br>'):'';
+      const genderLabel=it.gender==='m'?' <span style="font-size:10px;color:var(--blue);background:var(--blue-bg);padding:1px 6px;border-radius:6px;">남</span>':it.gender==='f'?' <span style="font-size:10px;color:var(--orange);background:var(--orange-bg);padding:1px 6px;border-radius:6px;">여</span>':'';
+      html+=`<div style="padding:10px 16px;border-bottom:1px solid rgba(61,56,53,0.35);">`;
+      html+=`<div style="font-size:13px;font-weight:600;">${it.name}${genderLabel}</div>`;
+      if(detHtml)html+=`<div style="font-size:12px;color:var(--dim);margin-top:3px;line-height:1.5;">${detHtml}</div>`;
+      html+=`</div>`;
+    });
+    html+=`</div>`;
+  });
+  el.innerHTML=html||'<div style="color:var(--dim);font-size:13px;">항목 없음</div>';
+}
+
 function togManual(h){
   const body=h.nextElementSibling;
   const arrow=h.querySelector('.arrow');
@@ -2271,6 +2316,7 @@ function switchTab(tab, opts){
   if(tab==='check-m'){activeGenderTab='m';renderG('m')}
   if(tab==='check-f'){activeGenderTab='f';renderG('f')}
   if(tab==='admin')renderAdmin();
+  if(tab==='manual')renderManualItems();
 }
 
 /* ── Init ── */
@@ -2547,12 +2593,8 @@ function mgmtResetAll(){
 
 /* ── 커스텀 항목을 기존 스케줄에 주입 ── */
 function mgmtGetCustomItemsForSchedule(schedType){
-  // schedType: 'weekday' or 'weekend'
-  const items = mgmtLoadItems();
-  return items.filter(item => {
-    if(item.dayType === 'both') return true;
-    return item.dayType === schedType;
-  });
+  // v2.50 — 커스텀 항목 주입 비활성화. 항목은 소스 배열(WEEKDAY/WEEKEND)이 SSOT.
+  return [];
 }
 
 function mgmtBuildCustomSlots(customItems){
