@@ -26,12 +26,12 @@
 | AI CTO | ai-cto.md | 시설·기술 |
 
 
-## 2. Notion R/R 연동
-- AI 조직 DB: `33f0407d-a948-805d-80b7-d792667cae33`
-- Data Source ID: `33f0407d-a948-80d2-ad27-000b132ef146`
-- 조회: `notion_wrapper.py` / `mcp__notion__API-query-data-source`
-- 환경 변수: `telegram_bot/.env` NOTION_API_KEY (3 HardLink)
-- 규칙: 작업 전 반드시 Fetch. 로컬과 충돌 시 Notion 우선. R/R 하드코딩 금지.
+## 2. R/R SSOT — 가이드허브
+- AI C-Level 운영 가이드: `3. 웰페리온 가이드/wellperion_guide(main).html` → `id="g10"` 영역
+- 공통 탭 (전 C-Level 필수): `data-panel="common"` — 절대 원칙 3대·업무 처리 3단계·보고 표 형식 의무
+- 본인 탭: `data-panel="{role}"` — 페르소나·핵심역할·담당 KPI·실무진·핵심업무·협업 리듬
+- 규칙: 작업 전 반드시 가이드허브 fetch. R/R 하드코딩 금지. Notion AI 조직 DB는 폐기 진행 중 — 호출 금지.
+- 본인 위임 task: `status/{role}.json` + `status/_queue.json` read
 
 
 ## 3. 보고·승인
