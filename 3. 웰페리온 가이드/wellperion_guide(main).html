@@ -6023,6 +6023,10 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
     var UNIFIED_KEY = 'gm1_unified_tasks';
     var OLD_KEY     = 'gm1_calendar_events';
 
+    /* ── SSOT 자동 합류 (in-memory · localStorage 저장 금지 · 2026-05-29 seed#10) ── */
+    var gm1SsotItems = [];   // SSOT(구글시트)에서 읽어온 GM 본인·결재 차례 항목 (항상 최신)
+    var gm1CatFilter = { '업무':true, '결재':true, '기획':true, '개인':true };  // 분류 필터 체크 상태
+
     /* ── 오늘 날짜 문자열 ── */
     function todayStr() {
       var n = new Date();
@@ -6198,6 +6202,47 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
       gm1Save(tasks);
     }
 
+    /* ══════════════════════════════════════════════
+       SSOT → G1 단방향 자동 합류 (2026-05-29 seed#10 1차)
+       업무현황 SSOT에서 GM 본인 항목 + GM 결재 차례 항목을
+       읽어와 in-memory(gm1SsotItems)에만 담는다. localStorage 저장 금지.
+    ══════════════════════════════════════════════ */
+    function gm1FetchSsot() {
+      fetch(SSOT_API_URL + '?action=todo_list', { redirect:'follow' })
+        .then(function(r){ return r.ok ? r.json() : null; })
+        .then(function(json){
+          var items = [];
+          if (json && json.ok && Array.isArray(json.data)) {
+            json.data.forEach(function(row){
+              var owner   = String(row['담당자'] || '');
+              var title   = String(row['업무명'] || '').trim();
+              if (!title) return;
+              var apr     = String(row['결재상태'] || '');
+              var gmSign  = row['GM싸인'];
+              // GM 결재 차례 우선 판정
+              var needsGm = !gmSign && apr && (apr === '대기' || apr.indexOf('부서장') >= 0);
+              var base    = 'ssot-' + (row['id'] || title);
+              if (needsGm) {
+                items.push({
+                  id: base, title: '[결재] ' + title, status: '진행중',
+                  category: '결재', description: '', isToday: true, ssotAuto: true
+                });
+              } else if (owner.indexOf('김남욱GM') >= 0) {
+                var st = String(row['상태'] || '');
+                var status = (st === '완료') ? '완료' : (st === '보류') ? '보류' : '진행중';
+                items.push({
+                  id: base, title: title, status: status,
+                  category: '업무', description: '', isToday: true, ssotAuto: true
+                });
+              }
+            });
+          }
+          gm1SsotItems = items;
+        })
+        .catch(function(){ /* graceful: 수동 목록은 정상 표시 */ console.warn('[gm1] SSOT fetch 실패 — 수동 목록만 표시'); })
+        .then(function(){ gm1RenderToday(); });
+    }
+
     function gm1UpdateStatus(id, status) {
       var tasks = gm1Load();
       for (var i = 0; i < tasks.length; i++) {
@@ -6243,6 +6288,8 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
     var CAT_COLORS = {
       '개인':        'background:#B79F8A;color:#221F20;',
       '업무':        'background:#4caf50;color:#fff;',
+      '결재':        'background:#e8a33d;color:#fff;',
+      '기획':        'background:#7e57c2;color:#fff;',
       '인사·파트너': 'background:#e85555;color:#fff;',
       '회의':        'background:#4488ee;color:#fff;',
       '기타':        'background:#888;color:#fff;'
@@ -6257,19 +6304,74 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
 
       var td = todayStr();
       var tasks = gm1Load();
-      var todayTasks = tasks.filter(function(t){
+      var manualTasks = tasks.filter(function(t){
         return t.startDate === td || t.isToday === true;
       });
 
-      var active = todayTasks.filter(function(t){ return t.status === '진행중'; });
-      var done   = todayTasks.filter(function(t){ return t.status === '완료'; });
-      var hold   = todayTasks.filter(function(t){ return t.status === '보류'; });
+      // 분류 4종 외 기존 카테고리는 '업무'로 취급 (필터 매칭용)
+      function catOf(t) {
+        var c = t.category;
+        return (c === '업무' || c === '결재' || c === '기획' || c === '개인') ? c : '업무';
+      }
+      // 분류 칩 (SSOT 항목 등에 표시)
+      function catChip(t) {
+        var c = catOf(t);
+        return '<span style="display:inline-block;' + (CAT_COLORS[c] || CAT_COLORS['업무']) + 'font-size:9.5px;font-weight:600;padding:1px 6px;border-radius:4px;margin-left:5px;vertical-align:middle;">' + gm1Esc(c) + '</span>';
+      }
+      var SSOT_BADGE = '<span style="display:inline-block;background:rgba(126,87,194,0.15);color:#7e57c2;font-size:9.5px;font-weight:700;padding:1px 6px;border-radius:4px;margin-left:5px;vertical-align:middle;">SSOT</span>';
+
+      // ── 수동 today 항목 + SSOT 항목 병합 (제목 정규화 dedup · 상태는 SSOT 우선) ──
+      var ssotByTitle = {};
+      gm1SsotItems.forEach(function(s){ ssotByTitle[String(s.title).trim()] = s; });
+
+      var merged = [];
+      var matchedSsotTitles = {};
+      manualTasks.forEach(function(t){
+        var key = String(t.title).trim();
+        var m = ssotByTitle[key];
+        if (m) {
+          // SSOT 제목 매칭 — 표시 레벨에서만 상태 덮어쓰기 (localStorage 저장 금지)
+          matchedSsotTitles[key] = true;
+          merged.push(Object.assign({}, t, { status: m.status, _ssotMatched: true }));
+        } else {
+          merged.push(t);
+        }
+      });
+      // 매칭 안 된 SSOT 항목만 별도 카드로 합류
+      gm1SsotItems.forEach(function(s){
+        if (!matchedSsotTitles[String(s.title).trim()]) merged.push(s);
+      });
+
+      // 분류 필터 적용
+      merged = merged.filter(function(t){ return gm1CatFilter[catOf(t)]; });
+
+      var active = merged.filter(function(t){ return t.status === '진행중'; });
+      var done   = merged.filter(function(t){ return t.status === '완료'; });
+      var hold   = merged.filter(function(t){ return t.status === '보류'; });
 
       var html = '';
 
+      // ── 분류 필터 UI (업무·결재·기획·개인) ──
+      var FILTER_CATS = ['업무','결재','기획','개인'];
+      html += '<div id="gm1-cat-filter" style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:12px;font-size:12px;">';
+      FILTER_CATS.forEach(function(c){
+        html += '<label style="display:inline-flex;align-items:center;gap:4px;cursor:pointer;color:var(--text);">' +
+          '<input type="checkbox" class="gm1-cat-cb" data-cat="' + gm1Esc(c) + '"' + (gm1CatFilter[c] ? ' checked' : '') + ' style="cursor:pointer;">' +
+          '<span style="display:inline-block;' + (CAT_COLORS[c] || CAT_COLORS['업무']) + 'font-size:10px;font-weight:600;padding:1px 7px;border-radius:4px;">' + gm1Esc(c) + '</span>' +
+          '</label>';
+      });
+      html += '</div>';
+
       // 진행중 카드
       active.forEach(function(t) {
-        var statusStyle = '';
+        if (t.ssotAuto) {
+          // SSOT 자동 항목 — 1차 read-only (액션 버튼 없음 · SSOT 뱃지 + 분류 칩)
+          html += '<div class="task-card" data-id="' + gm1Esc(t.id) + '" style="opacity:0.96;">' +
+            '<div class="task-title">' +
+            '<span><span style="display:inline-block;background:rgba(183,159,138,0.15);color:var(--accent);font-size:10.5px;font-weight:600;padding:2px 7px;border-radius:4px;margin-right:6px;">🟡 진행 중</span><span class="status-dot active"></span>' + gm1Esc(t.title) + catChip(t) + SSOT_BADGE + '</span>' +
+            '</div></div>';
+          return;
+        }
         html += '<div class="task-card" data-id="' + gm1Esc(t.id) + '">' +
           '<div class="task-title" style="display:flex;align-items:center;justify-content:space-between;">' +
           '<span><span style="display:inline-block;background:rgba(183,159,138,0.15);color:var(--accent);font-size:10.5px;font-weight:600;padding:2px 7px;border-radius:4px;margin-right:6px;">🟡 진행 중</span><span class="status-dot active"></span>' + gm1Esc(t.title) + (t.time ? ' <span style="font-size:11px;color:var(--dim);">(' + gm1Esc(t.time.slice(0,5)) + ')</span>' : '') + '</span>' +
@@ -6297,8 +6399,8 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
           var descHtml = t.description ? '<details style="margin-top:4px;font-size:12px;"><summary style="cursor:pointer;color:var(--accent);font-weight:600;font-size:11px;list-style:none;">▼ 내용 보기</summary><div style="padding:6px 8px;background:var(--paper-soft,#f5f3f0);border-radius:6px;margin-top:4px;line-height:1.5;white-space:pre-wrap;color:var(--text);">' + gm1Esc(t.description) + '</div></details>' : '';
           html += '<div style="padding:8px 0;border-bottom:1px dashed var(--border);">' +
             '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">' +
-            '<span><span style="color:var(--green);font-weight:700;">✓</span> <span style="display:inline-block;background:rgba(100,180,120,0.13);color:var(--green);font-size:10.5px;font-weight:600;padding:2px 7px;border-radius:4px;margin:0 5px;">✅ 완료</span><span style="color:var(--text);font-weight:500;">' + gm1Esc(t.title) + '</span></span>' +
-            '<button class="todo-act-btn today-act" data-id="' + gm1Esc(t.id) + '" data-action="restore" style="font-size:11px;padding:2px 8px;flex-shrink:0;">되돌리기</button>' +
+            '<span><span style="color:var(--green);font-weight:700;">✓</span> <span style="display:inline-block;background:rgba(100,180,120,0.13);color:var(--green);font-size:10.5px;font-weight:600;padding:2px 7px;border-radius:4px;margin:0 5px;">✅ 완료</span><span style="color:var(--text);font-weight:500;">' + gm1Esc(t.title) + '</span>' + (t.ssotAuto ? catChip(t) + SSOT_BADGE : '') + '</span>' +
+            (t.ssotAuto ? '' : '<button class="todo-act-btn today-act" data-id="' + gm1Esc(t.id) + '" data-action="restore" style="font-size:11px;padding:2px 8px;flex-shrink:0;">되돌리기</button>') +
             '</div>' + descHtml +
             '</div>';
         });
@@ -6310,8 +6412,8 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
           var descHtml = t.description ? '<details style="margin-top:4px;font-size:12px;"><summary style="cursor:pointer;color:var(--accent);font-weight:600;font-size:11px;list-style:none;">▼ 내용 보기</summary><div style="padding:6px 8px;background:var(--paper-soft,#f5f3f0);border-radius:6px;margin-top:4px;line-height:1.5;white-space:pre-wrap;color:var(--text);">' + gm1Esc(t.description) + '</div></details>' : '';
           html += '<div style="padding:8px 0;border-bottom:1px dashed var(--border);">' +
             '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">' +
-            '<span><span style="color:var(--accent);font-weight:700;">⏸</span> <span style="display:inline-block;background:rgba(183,159,138,0.15);color:var(--accent);font-size:10.5px;font-weight:600;padding:2px 7px;border-radius:4px;margin:0 5px;">⏸️ 보류</span><span style="color:var(--text);font-weight:500;">' + gm1Esc(t.title) + '</span></span>' +
-            '<button class="todo-act-btn today-act" data-id="' + gm1Esc(t.id) + '" data-action="restore" style="font-size:11px;padding:2px 8px;flex-shrink:0;">되돌리기</button>' +
+            '<span><span style="color:var(--accent);font-weight:700;">⏸</span> <span style="display:inline-block;background:rgba(183,159,138,0.15);color:var(--accent);font-size:10.5px;font-weight:600;padding:2px 7px;border-radius:4px;margin:0 5px;">⏸️ 보류</span><span style="color:var(--text);font-weight:500;">' + gm1Esc(t.title) + '</span>' + (t.ssotAuto ? catChip(t) + SSOT_BADGE : '') + '</span>' +
+            (t.ssotAuto ? '' : '<button class="todo-act-btn today-act" data-id="' + gm1Esc(t.id) + '" data-action="restore" style="font-size:11px;padding:2px 8px;flex-shrink:0;">되돌리기</button>') +
             '</div>' + descHtml +
             '</div>';
         });
@@ -6321,6 +6423,16 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
 
       container.innerHTML = html;
 
+      // 분류 필터 체크박스 바인딩 (변경 시 재렌더)
+      var cbs = container.querySelectorAll('.gm1-cat-cb');
+      for (var ci = 0; ci < cbs.length; ci++) {
+        cbs[ci].onchange = function(){
+          var cat = this.getAttribute('data-cat');
+          gm1CatFilter[cat] = this.checked;
+          gm1RenderToday();
+        };
+      }
+
       // 이벤트 위임 — onclick 단일 할당 (매 렌더 시 자동 교체 · 2026-05-28 hotfix)
       container.onclick = function(e) {
         var btn = e.target.closest('[data-action]');
@@ -6328,6 +6440,8 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
         var id  = btn.getAttribute('data-id');
         var act = btn.getAttribute('data-action');
         if (!id) return;
+        // SSOT 자동 항목은 1차 read-only — 안전장치 (버튼이 없으나 혹시 모를 무시 · 2026-05-29)
+        if (String(id).indexOf('ssot-') === 0) return;
         if (act === 'done')    { gm1UpdateStatus(id, '완료'); }
         else if (act === 'hold')    { gm1UpdateStatus(id, '보류'); }
         else if (act === 'restore') { gm1UpdateStatus(id, '진행중'); }
@@ -6692,6 +6806,8 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
     gm1CalBind();
     gm1CalRender();
     gm1RenderToday();
+    // SSOT(구글시트) GM 본인·결재 차례 항목 자동 합류 — fetch 완료 시 재렌더 (2026-05-29 seed#10)
+    gm1FetchSsot();
     // 미동기화 항목 재시도 (페이지 로드마다)
     setTimeout(gm1RetrySSOTSync, 2000);
 
