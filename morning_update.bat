@@ -1,41 +1,26 @@
 @echo off
 chcp 65001 >nul
 
-REM ============================================================
-REM  Wellperion Morning Update — pre-session npm + claude update
-REM  Runs at 05:40 BEFORE any Claude session launches.
-REM  Does NOT launch claude or any AI session.
-REM ============================================================
+REM  Wellperion Morning Update — 세션 기동 前 클로드/OMC 자동 업데이트
+REM  매일 05:40 Task Scheduler 가동. 세션 미기동(순수 업데이트). EBUSY 방지.
 
-set LOGDIR=C:\Users\jjky0\welperion-automation\logs
-set LOGFILE=%LOGDIR%\morning_update.log
+set "LOGFILE=C:\Users\jjky0\welperion-automation\logs\morning_update.log"
+if not exist "C:\Users\jjky0\welperion-automation\logs" mkdir "C:\Users\jjky0\welperion-automation\logs"
 
-REM Create log directory if absent
-if not exist "%LOGDIR%" mkdir "%LOGDIR%"
+>>"%LOGFILE%" echo.
+>>"%LOGFILE%" echo ========================================================
+>>"%LOGFILE%" echo [%DATE% %TIME%] Morning Update START
+>>"%LOGFILE%" echo ========================================================
 
-REM Timestamp header
-echo. >> "%LOGFILE%"
-echo ======================================================== >> "%LOGFILE%"
-for /f "tokens=*" %%T in ('powershell -NoProfile -Command "Get-Date -Format \"yyyy-MM-dd HH:mm:ss\""') do echo [%%T] Wellperion Morning Update START >> "%LOGFILE%"
-echo ======================================================== >> "%LOGFILE%"
+REM  npm·claude 는 .cmd 셸 → 반드시 call 로 호출해야 제어가 복귀함
+>>"%LOGFILE%" echo [Step 1] npm i -g @anthropic-ai/claude-code@latest
+call npm install -g @anthropic-ai/claude-code@latest >>"%LOGFILE%" 2>&1
+>>"%LOGFILE%" echo [Step 1] npm exit=%ERRORLEVEL%
 
-REM --- Step 1: npm global update of @anthropic-ai/claude-code ---
-echo [Step 1] npm install -g @anthropic-ai/claude-code@latest >> "%LOGFILE%"
-npm install -g @anthropic-ai/claude-code@latest >> "%LOGFILE%" 2>&1
-set NPM_EXIT=%ERRORLEVEL%
-echo [Step 1] npm exit code: %NPM_EXIT% >> "%LOGFILE%"
+>>"%LOGFILE%" echo [Step 2] claude update
+call claude update >>"%LOGFILE%" 2>&1
+>>"%LOGFILE%" echo [Step 2] claude update exit=%ERRORLEVEL%
 
-REM --- Step 2: claude self-update (only if npm step did not produce EBUSY) ---
-echo [Step 2] claude update (self-update check) >> "%LOGFILE%"
-claude update >> "%LOGFILE%" 2>&1
-set CLAUDE_EXIT=%ERRORLEVEL%
-echo [Step 2] claude update exit code: %CLAUDE_EXIT% >> "%LOGFILE%"
-
-REM --- Summary ---
-echo -------------------------------------------------------- >> "%LOGFILE%"
-for /f "tokens=*" %%T in ('powershell -NoProfile -Command "Get-Date -Format \"yyyy-MM-dd HH:mm:ss\""') do echo [%%T] Wellperion Morning Update END >> "%LOGFILE%"
-echo npm exit=%NPM_EXIT%  claude-update exit=%CLAUDE_EXIT% >> "%LOGFILE%"
-echo ======================================================== >> "%LOGFILE%"
-
-REM Exit 0 regardless — a no-op update is success; EBUSY during active session is expected.
+>>"%LOGFILE%" echo [%DATE% %TIME%] Morning Update END
+>>"%LOGFILE%" echo ========================================================
 exit /b 0
