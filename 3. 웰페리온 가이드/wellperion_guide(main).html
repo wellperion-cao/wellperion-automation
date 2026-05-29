@@ -3374,12 +3374,12 @@ Start-Process python -ArgumentList telegram_bot\daily_scheduler.py -WorkingDirec
     </div>
 
     <!-- 📨 검수 대기 (시드 #09 검수→승인→발행 루프 Phase 1, 2026-05-29) -->
-    <div id="gm1-review-section" style="margin:0 0 22px;">
-      <h3><span class="ico">📨</span>검수 대기 <span id="gm1-review-count" style="font-size:12px;color:var(--dim);font-weight:400;"></span></h3>
+    <details id="gm1-review-section" open style="margin:0 0 22px;border:1px solid rgba(183,159,138,0.14);border-radius:12px;padding:4px 14px 12px;">
+      <summary style="cursor:pointer;list-style:none;font-size:15px;font-weight:700;padding:8px 0;"><span class="ico">📨</span>인스타그램 검수 대기 <span id="gm1-review-count" style="font-size:12px;color:var(--dim);font-weight:400;"></span></summary>
       <div id="gm1-review-list" style="display:flex;flex-direction:column;gap:12px;">
         <div style="color:var(--dim);font-size:13px;">불러오는 중…</div>
       </div>
-    </div>
+    </details>
     <script>
     (function(){
       var URL='cmo/review/review_queue.json';
@@ -3415,8 +3415,8 @@ Start-Process python -ArgumentList telegram_bot\daily_scheduler.py -WorkingDirec
     </script>
 
     <!-- 오늘 할 일 (탭 밖 독립 영역) -->
-    <div style="margin:18px 0 24px;">
-      <h3 id="gm1-todo-date"><span class="ico">📌</span>오늘 할 일</h3>
+    <details id="gm1-todo-section" open style="margin:18px 0 24px;">
+      <summary style="cursor:pointer;list-style:none;"><h3 id="gm1-todo-date" style="display:inline;"><span class="ico">📌</span>오늘 할 일</h3></summary>
       <div id="today-task-list">
         <!-- 동적 렌더링 — gm1_unified_tasks localStorage 기반 -->
       </div>
@@ -3438,30 +3438,7 @@ Start-Process python -ArgumentList telegram_bot\daily_scheduler.py -WorkingDirec
           <div style="padding:6px 0;"><span style="color:var(--green);font-weight:700;">✓</span> <span style="text-decoration:line-through;color:var(--dim-soft);">하루 일과표 공유</span> <span style="font-size:11px;color:var(--dim);">· 완료</span></div>
         </div>
       </details>
-    </div>
-
-    <!-- 🤖 자동화하고 싶은 것 (2026-05-29 GM 지시) -->
-    <div style="margin:18px 0 24px;">
-      <h3><span class="ico">🤖</span>자동화하고 싶은 것</h3>
-      <details class="toggle" style="margin-top:10px;" open>
-        <summary style="color:var(--text);font-weight:600;"><span style="margin-right:6px;">📲</span>인스타 콘텐츠 자동 발행</summary>
-        <div class="toggle-body" style="font-size:13.5px;line-height:1.85;">
-          <p style="margin:4px 0;"><strong>무엇</strong> · 주제만 정하면 → AI가 슬라이드 5장 + 글 자동 제작 → GM이 미리보기 한 장으로 검수 → 승인하면 인스타에 자동 게시</p>
-          <p style="margin:4px 0;"><strong>오늘 한 것</strong> · 처음으로 끝까지 작동 확인 (개인 계정 namuk.wellperion에 "AI가 일하고, 사람은 결정한다" 5장 발행)</p>
-          <p style="margin:4px 0;"><strong>자동화 목표</strong> · 매일·매주 주제만 던지면, 검수 한 번으로 발행까지. 회사 계정에도 그대로 적용</p>
-          <p style="margin:4px 0;"><strong>기억할 점</strong> · 개인 계정엔 회사 안내 카드 안 붙임 · 발행 전 미리보기 검수 꼭 거치기</p>
-        </div>
-      </details>
-      <details class="toggle" style="margin-top:10px;">
-        <summary style="color:var(--text);font-weight:600;"><span style="margin-right:6px;">🌐</span>온라인 채널 자동 업로드 페이지 (CMO 주도 · 나중에)</summary>
-        <div class="toggle-body" style="font-size:13.5px;line-height:1.85;">
-          <p style="margin:4px 0;"><strong>무엇</strong> · 인스타·블로그·카페 등 채널을 한 페이지에서 — 주제만 던지면 채널별 콘텐츠 자동 생성 → 페이지에서 검수·승인 → 자동 업로드까지</p>
-          <p style="margin:4px 0;"><strong>관계</strong> · 지금 만드는 '검수→승인→자동 발행'을 이 한 페이지로 확장한 완성형</p>
-          <p style="margin:4px 0;"><strong>담당</strong> · AI CMO 주도 (시기: 나중에)</p>
-          <p style="margin:4px 0;color:var(--dim);"><strong>참고</strong> · 페이지에서 누른 OK를 PC가 받는 '역방향 중계'만 새로 필요. 감시기·검수 화면·이미지 표시는 기존 것 재사용</p>
-        </div>
-      </details>
-    </div>
+    </details>
 
     <div class="tabs" data-tabs="gm1">
       <div class="tab-nav">
