@@ -289,6 +289,45 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   </div>
 </div>
 
+<!-- ═══ 업무자동화 현황 패널 (2026-05-29 GM 지시 · 실제 가동 기준) ═══ -->
+<div class="content" style="padding-top:8px;padding-bottom:0;">
+  <div style="background:var(--paper);border:1px solid var(--border);border-radius:12px;overflow:hidden;">
+    <div onclick="toggleAuto()" style="padding:13px 16px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none;border-left:3px solid var(--green);">
+      <span style="font-size:14px;font-weight:700;color:var(--green);">⚙️ 업무자동화 현황 <span style="font-size:11px;font-weight:500;color:var(--dim);">지금 실제로 돌고 있는 것</span></span>
+      <span id="autoArrow" style="font-size:12px;color:var(--dim);transition:transform 0.2s;">▶</span>
+    </div>
+    <div id="autoBody" style="display:none;border-top:1px solid var(--border);padding:14px 16px;font-size:13px;">
+      <div style="font-size:12px;color:var(--dim);margin-bottom:10px;">노션 목록이 아니라, 지금 PC·서버에서 실제로 가동 중인 자동화 기준입니다.</div>
+
+      <div style="font-size:12px;font-weight:700;color:var(--accent);margin-bottom:6px;">⏱ 정기 자동 점검 (자동 비서)</div>
+      <table style="width:100%;border-collapse:collapse;font-size:12px;margin-bottom:14px;">
+        <tr style="background:var(--bg);"><th style="padding:6px 8px;border:1px solid var(--border);text-align:left;width:120px;">하는 일</th><th style="padding:6px 8px;border:1px solid var(--border);text-align:left;width:96px;">주기</th><th style="padding:6px 8px;border:1px solid var(--border);text-align:left;">설명</th></tr>
+        <tr><td style="padding:6px 8px;border:1px solid var(--border);">통합 보고</td><td style="padding:6px 8px;border:1px solid var(--border);">매일 6·9·12·15·18·21시</td><td style="padding:6px 8px;border:1px solid var(--border);">시간대별 업무 현황을 텔레그램으로 보고</td></tr>
+        <tr><td style="padding:6px 8px;border:1px solid var(--border);">상태 변경 알림</td><td style="padding:6px 8px;border:1px solid var(--border);">1분마다</td><td style="padding:6px 8px;border:1px solid var(--border);">업무 상태가 바뀌면 즉시 텔레그램 알림</td></tr>
+        <tr><td style="padding:6px 8px;border:1px solid var(--border);">자동 업무 실행</td><td style="padding:6px 8px;border:1px solid var(--border);">5분마다</td><td style="padding:6px 8px;border:1px solid var(--border);">예정 시각이 된 자동 업무를 스스로 실행</td></tr>
+        <tr><td style="padding:6px 8px;border:1px solid var(--border);">사전 알림</td><td style="padding:6px 8px;border:1px solid var(--border);">5분마다</td><td style="padding:6px 8px;border:1px solid var(--border);">업무 시작 15분 전 미리 알림</td></tr>
+        <tr><td style="padding:6px 8px;border:1px solid var(--border);">결과 보고 감지</td><td style="padding:6px 8px;border:1px solid var(--border);">5분마다</td><td style="padding:6px 8px;border:1px solid var(--border);">마무리된 업무를 감지해 보고</td></tr>
+        <tr><td style="padding:6px 8px;border:1px solid var(--border);">이관 감지</td><td style="padding:6px 8px;border:1px solid var(--border);">5분마다</td><td style="padding:6px 8px;border:1px solid var(--border);">기획 완료 건을 결과물로 자동 이관</td></tr>
+        <tr><td style="padding:6px 8px;border:1px solid var(--border);">설정 변경 감시</td><td style="padding:6px 8px;border:1px solid var(--border);">5분마다</td><td style="padding:6px 8px;border:1px solid var(--border);">토큰·설정 파일이 바뀌면 자동 반영</td></tr>
+        <tr><td style="padding:6px 8px;border:1px solid var(--border);">권한 점검</td><td style="padding:6px 8px;border:1px solid var(--border);">15분마다</td><td style="padding:6px 8px;border:1px solid var(--border);">노션 연결 권한이 살아있는지 점검</td></tr>
+        <tr><td style="padding:6px 8px;border:1px solid var(--border);">봇 건강 점검</td><td style="padding:6px 8px;border:1px solid var(--border);">15분마다</td><td style="padding:6px 8px;border:1px solid var(--border);">텔레그램 봇이 살아있는지 점검</td></tr>
+      </table>
+
+      <div style="font-size:12px;font-weight:700;color:var(--accent);margin-bottom:6px;">🔌 상시 가동 (24시간)</div>
+      <ul style="margin:0 0 14px 18px;padding:0;color:var(--text);">
+        <li><b>텔레그램 봇</b> — 보고 발송 · GM 승인 회신 수신</li>
+        <li><b>업무·결재 시트 연결</b> — 이 페이지와 구글 시트를 잇는 통로</li>
+      </ul>
+
+      <div style="font-size:12px;font-weight:700;color:var(--accent);margin-bottom:6px;">🚀 저장할 때마다 (GitHub)</div>
+      <ul style="margin:0 0 0 18px;padding:0;color:var(--text);">
+        <li><b>변경 기록 자동화</b> — 홈 페이지 최신 카드 자동 갱신</li>
+        <li><b>웹 배포</b> — 가이드허브를 인터넷에 자동 게시</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
 <div class="content" id="mainContent">
   <div class="loading">불러오는 중...</div>
 </div>
@@ -1012,6 +1051,15 @@ function escAttr(s) {
 function toggleOverview() {
   const body = document.getElementById('overviewBody');
   const arrow = document.getElementById('ovArrow');
+  if (!body) return;
+  const open = body.style.display === 'none' || !body.style.display;
+  body.style.display = open ? 'block' : 'none';
+  if (arrow) arrow.style.transform = open ? 'rotate(90deg)' : 'rotate(0deg)';
+}
+
+function toggleAuto() {
+  const body = document.getElementById('autoBody');
+  const arrow = document.getElementById('autoArrow');
   if (!body) return;
   const open = body.style.display === 'none' || !body.style.display;
   body.style.display = open ? 'block' : 'none';
