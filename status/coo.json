@@ -30,6 +30,13 @@
       "assigned_at": "2026-05-29T15:30:00",
       "status": "DONE",
       "result": "A) 평문 PIN(0987/3211) HTML 제거 → 페이지는 입력만, Apps Script ScriptProperties 서버검증으로 이전(.deploy-todo todo_sign, SEED01 PDF hook 무충돌·구문검증). GM redeploy + APPROVAL_PIN_GM/APPROVAL_PIN_REP 속성 설정 필요. B) 시트 중복 2건 삭제(공지/안내문·AI C-Level 개요 진행중 dup, 내용 동일 확인)+AI학습시스템 완료갱신, 40→38건. 전사기준은 이미 완료."
+    },
+    {
+      "task_id": "COO-2026-05-29-CHECKLIST-UI-REVAMP",
+      "title": "지원부 체계 페이지 개편 — 관리UI 삭제 + 점검 항목 상태 체크",
+      "assigned_at": "2026-05-29T16:30:00",
+      "status": "DONE",
+      "result": "삭제: PDF 원본 매뉴얼 링크·점검 항목 관리 섹션(추가폼·추가항목목록·JSON내보내기/가져오기/초기화)·헤더 항목추가 버튼 + 고아 JS 9개(mgmtAddItem/StartEdit/CancelEdit/ClearForm/DeleteItem/RenderList/ExportJSON/ImportJSON/ResetAll)+openMgmtAddForm. 보존: 텍스트 운영매뉴얼·데이터계층(CUSTOM_ITEMS·시트동기화·스케줄주입). 개편(GM 재지시 '수정 아니라 상태 체크'): 현재 전체 점검 항목을 항목별 체크박스(점검완료)+토글(상세) 구성, onManualCk가 기존 STATE/saveState/pushToServer 재사용해 시트 영구 저장(전체 41항목). Playwright 검증: 삭제 잔존0·고아함수 undefined·체크→save POST(checked:true)·에러0·스크린샷."
     }
   ],
   "agent": "coo",
