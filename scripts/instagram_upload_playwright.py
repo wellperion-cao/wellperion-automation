@@ -543,6 +543,62 @@ async def _probe_selector_group(page, label: str, selectors: list[str]) -> str |
 
 
 # -----------------------------------------------------------------
+# review_queue.json 후처리 — 발행 완료 시 큐 항목 자동 갱신
+# 수동 --mode publish 경로에서도 큐가 '발행완료'로 갱신되게 (누락 반복 방지).
+# 예외는 광범위 try/except 로 포획 — 발행 자체를 절대 깨지 않음.
+# -----------------------------------------------------------------
+ROOT = Path(r"C:\Users\jjky0\welperion-automation")
+_REVIEW_QUEUE_PATH = ROOT / "3. 웰페리온 가이드" / "cmo" / "review" / "review_queue.json"
+
+
+def update_review_queue(content_folder: Path, published: dict[str, str]) -> None:
+    """큐에서 content_folder 와 매칭되는 항목을 발행완료로 갱신.
+
+    매칭 기준: 큐 item["folder"] 문자열이 content_folder 경로 끝과 일치하거나
+    폴더 이름(basename)이 같은 경우.
+    갱신 필드: status="발행완료", post_url=첫 published url, published_at=ISO now.
+    큐 파일 git commit 은 하지 않음(파일만 갱신).
+    """
+    try:
+        import json as _json
+
+        if not _REVIEW_QUEUE_PATH.exists():
+            print(f"[INFO] review_queue.json 미존재 — 후처리 건너뜀 ({_REVIEW_QUEUE_PATH})")
+            return
+
+        queue: list[dict] = _json.loads(_REVIEW_QUEUE_PATH.read_text(encoding="utf-8"))
+        folder_name = content_folder.name  # 예: "260529_AI직원효율_핵심집중"
+        # content_folder 를 정방향 슬래시 상대경로로도 비교
+        cf_str = content_folder.as_posix()
+
+        first_url = next(iter(published.values()), "") if published else ""
+        now_iso = datetime.now().isoformat(timespec="seconds")
+
+        matched = False
+        for item in queue:
+            item_folder: str = item.get("folder", "")
+            # 큐 folder 필드 예: "instagram/260529_AI직원효율_핵심집중"
+            item_folder_name = item_folder.split("/")[-1].split("\\")[-1]
+            if item_folder_name == folder_name or cf_str.endswith(item_folder.replace("\\", "/")):
+                item["status"] = "발행완료"
+                item["post_url"] = first_url
+                item["published_at"] = now_iso
+                matched = True
+                print(f"[INFO] review_queue 갱신 완료 — id={item.get('id', '?')} → 발행완료 / {first_url}")
+
+        if not matched:
+            print(f"[INFO] review_queue 매칭 항목 없음 (folder={folder_name}) — 후처리 건너뜀")
+            return
+
+        _REVIEW_QUEUE_PATH.write_text(
+            _json.dumps(queue, ensure_ascii=False, indent=2),
+            encoding="utf-8",
+        )
+    except Exception as exc:
+        print(f"[WARN] review_queue 후처리 예외 (발행 영향 없음): {exc}")
+
+
+# -----------------------------------------------------------------
 # publish 모드 — instagram/{콘텐츠}/output/post_{A|B|C}_*.jpg 3 post 묶음 발행
 # 흐름: 큐레이션 파싱 → 검증(collab 강제) → post A → 1~3초 → post B → 1~3초 → post C
 # 비가역 실 발행. 별건 결재 후만 호출.
@@ -651,6 +707,9 @@ async def run_publish(content_folder: Path) -> dict[str, str]:
     print(f"\n[INFO] === PUBLISH 완료 — 게시 URL {len(present_slots)}개 ===")
     for slot in present_slots:
         print(f"  post {slot}: {published[slot]}")
+
+    # 수동 발행 경로에서도 큐 자동 갱신 (ig_review_publish_watcher 와 동일 필드명)
+    update_review_queue(content_folder, published)
 
     return published
 
