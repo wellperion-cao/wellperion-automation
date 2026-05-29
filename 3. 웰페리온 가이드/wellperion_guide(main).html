@@ -1721,12 +1721,9 @@
     </div>
     <!-- ── /KPI 대시보드 v1 ──────────────────────────────────── -->
 
-    <div class="card" style="background:linear-gradient(135deg,#1a2a1a 0%,#2a3a2a 100%); border:none; padding:20px 24px; margin:18px 0 24px; border-radius:14px;">
-      <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
-        <span style="color:#fff; font-weight:700;">원본 문서</span>
-        <a href="웰페리온_AI_C레벨_협업매뉴얼_2026-04-24.html" target="_blank" style="display:inline-flex; padding:10px 20px; background:#059669; color:#fff; font-size:14px; font-weight:700; border-radius:8px; text-decoration:none;">협업 매뉴얼 원본</a>
-        <a href="웰페리온_C레벨_실무가이드라인_2026-04-24.html" target="_blank" style="display:inline-flex; padding:10px 20px; background:#7C3AED; color:#fff; font-size:14px; font-weight:700; border-radius:8px; text-decoration:none;">실무 가이드라인 원본</a>
-      </div>
+    <div class="callout" style="margin:18px 0 24px; background:#1a2a1a; border-left:3px solid #059669;">
+      <strong>원본 문서 (archive 용)</strong> — g10이 통합본이므로 일반 업무 시 본 페이지 사용.
+      원본: <a href="웰페리온_AI_C레벨_협업매뉴얼_2026-04-24.html" target="_blank" style="color:#059669;">협업 매뉴얼</a> · <a href="웰페리온_C레벨_실무가이드라인_2026-04-24.html" target="_blank" style="color:#7C3AED;">실무 가이드라인</a>
     </div>
 
     <div class="tabs" data-tabs="g10">
@@ -1759,6 +1756,23 @@
         </div>
         <div class="callout" style="margin-top:16px;"><strong>핵심 원칙:</strong> AI C-Level = 자동화·DB·집계·검증·보고 후방 서포트. 최종 책임자 = 실무직원. 각 C-Level 탭에서 협업 리듬(언제 무엇을 산출하나)과 실무 가이드(어떻게 판단하나)를 확인하세요.</div>
         <div class="callout" style="margin-top:12px;background:#2a3a2a;border-left:3px solid #059669;"><strong>📌 작업 완료 시 즉시 커밋 의무:</strong> 모든 C-Level은 작업 완료 직후 git commit + push 필수. 커밋하지 않으면 다른 C-Level이나 CEO가 작업 내역을 파악할 수 없음. 작업 단위별로 짧은 메시지로 즉시 기록.</div>
+
+        <h3 style="margin-top:28px;border-top:1px solid var(--border);padding-top:24px;"><span class="ico">⚖️</span>절대 원칙 (항상 우선 적용)</h3>
+        <table>
+          <tr><th style="width:80px">번호</th><th>원칙</th><th>핵심</th></tr>
+          <tr><td>1</td><td><strong>SSOT = 가이드허브</strong></td><td>Notion 아님. 노션으로 진행했을 때와 결과 차이가 없도록 가이드허브에 재셋팅</td></tr>
+          <tr><td>2</td><td><strong>중복 금지</strong></td><td>기록·업무 모두 이미 존재/진행 중이면 새로 만들지 말고 기존 것을 업데이트. 신규일 때만 생성</td></tr>
+          <tr><td>3</td><td><strong>현황 파악 = GitHub</strong></td><td>각 C-Level 진행 업무·프로젝트 상태는 GitHub commit·PR로 확인</td></tr>
+        </table>
+
+        <h3 style="margin-top:24px;"><span class="ico">🔄</span>업무 처리 3단계 순서 (병렬 진행도 결과는 이 순서)</h3>
+        <table>
+          <tr><th style="width:80px">단계</th><th>처리</th><th>참고</th></tr>
+          <tr><td>①</td><td><strong>GitHub 기록</strong></td><td>commit + push (작업 완료 즉시 의무)</td></tr>
+          <tr><td>②</td><td><strong>가이드허브 반영</strong></td><td>GitHub 기록을 UI/UX 감안해 SSOT에 합류 (시드·세션 로그 등)</td></tr>
+          <tr><td>③</td><td><strong>텔레그램 알림</strong></td><td>1줄 보고 또는 통합 보고 (08:00·21:00 등)</td></tr>
+        </table>
+        <div class="callout"><strong>매 단계에 "중복 금지" 원칙 적용.</strong></div>
 
         <h3 style="margin-top:28px;border-top:1px solid var(--border);padding-top:24px;"><span class="ico">🛡️</span>운영 원칙·검증 5단계</h3>
         <div class="callout" style="background:#1a2a1a;border-left:3px solid #059669;margin:12px 0 20px;">
@@ -1841,6 +1855,33 @@
         <h4 style="margin-top:16px;">협업 리듬</h4>
         <p><strong>전사 주간 총괄 보고</strong> — 매주 금 16:00 자동 실행. 전사 KPI + C-Level 이슈 통합 + 의사결정 필요 항목.</p>
         <p style="margin-top:8px;font-size:13px;color:var(--dim);">의사결정 우선순위: 회원 경험 일관성 &gt; 브랜드의 결 &gt; 지속 가능한 수익 &gt; 실행 속도.</p>
+
+        <h3 style="margin-top:24px;border-top:1px solid var(--border);padding-top:20px;"><span class="ico">📨</span>정기 텔레그램 보고 SOP (매일 2회)</h3>
+        <table>
+          <tr><th style="width:80px">시각</th><th>역할</th><th>형식</th></tr>
+          <tr><td><strong>08:00</strong></td><td>할 일 리마인드 &amp; 지시</td><td>① 오늘 할 일 리마인드 ② C-Level 위임 리스트업 ③ 우선순위 설정·충돌 회피 → 보고 후 우선순위대로 각 C-Level에 업무 지시</td></tr>
+          <tr><td><strong>21:00</strong></td><td>하루 마감 보고</td><td>① 오늘 진행/완료한 일 리마인드 ② 내일 해야 할 일 리스트업</td></tr>
+        </table>
+        <div class="callout tip"><strong>원칙:</strong> 표 기반 직관·가독성. 단순 카운트 나열 금지. 항목별 prefix 번호로 GM 선택 가능.</div>
+
+        <h3 style="margin-top:24px;"><span class="ico">🪟</span>창 운영 방식 (8창 병렬)</h3>
+        <table>
+          <tr><th style="width:200px">.bat 파일</th><th>역할</th><th>실행 방식</th></tr>
+          <tr><td>Start-AI CEO.bat</td><td>AI CEO 본 세션 + 정기 보고 봇·스케줄러 동시 기동</td><td>claude --remote-control "Wellperion GM"</td></tr>
+          <tr><td>Start-AI CTO/CFO/CMO/COO/CHRO/CPO.bat (6개)</td><td>각 C-Level 본 세션</td><td>wt new-tab (PowerShell)</td></tr>
+        </table>
+        <div class="callout"><strong>현행 방침 (2026-05-29 GM 결재 옵션 A):</strong> GM이 필요한 C-Level만 수동 클릭 오픈. 1번 클릭 통합 .bat 미신설. 특정 C-Level만 쓰고 싶을 때의 유연성 우선.</div>
+
+        <h3 style="margin-top:24px;"><span class="ico">✅</span>.bat 부팅 6단계 체크리스트</h3>
+        <table>
+          <tr><th style="width:60px">#</th><th>단계</th></tr>
+          <tr><td>1</td><td>에이전트 md(<code>notion-c-level-agents/.claude/agents/ai-{role}.md</code>) 읽고 페르소나·R/R 동적 조회·운영 원칙 숙지</td></tr>
+          <tr><td>2</td><td>메인 CLAUDE.md 헌법 로드</td></tr>
+          <tr><td>3</td><td>Notion AI 조직 DB (Data Source 33f0407d-a948-80d2-ad27-000b132ef146)에서 본 직책 최신 R/R 흡수</td></tr>
+          <tr><td>4</td><td>페르소나·KPI·권한 마크다운 표 선언</td></tr>
+          <tr><td>5</td><td>타 C-Level 침범 금지 선언</td></tr>
+          <tr><td>6</td><td>대기 (CEO는 추가 본업: GitHub 백그라운드 SSOT + 가이드허브 프론트 SSOT 즉시 fetch 후 일일 본업)</td></tr>
+        </table>
       </div>
       <div class="tab-panel" data-panel="coo">
         <div class="card accent" style="margin-bottom:16px;">
@@ -1899,7 +1940,7 @@
         </table>
         <h4 style="margin-top:16px;">핵심업무</h4>
         <ul>
-          <li>공식 채널 6채널 운영 (인스타·블로그·카페 등)</li>
+          <li>공식 3채널 운영: IG namuk.wellperion · 네이버 블로그(wellperion) · 네이버 카페(동부이촌동) (페북·당근 영구 삭제·보류)</li>
           <li>콘텐츠 제작 프로세스 관리</li>
           <li>신규 회원 모집 기획</li>
           <li>월간 마케팅 ROI 분석</li>
@@ -5471,7 +5512,7 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
       {id:'seed-2026-05-29-09',title:'AI 슬라이드 생성 + GM 개인 인스타 자동 업로드',description:'주제: AI로 직원 효율 + 핵심 집중. 내용+스토리+슬라이드 4-5장 + 캡션 자동 → GM 개인 인스타에 자동 업로드까지. 김남욱GM 페이지 내장.',startDate:'2026-05-29',endDate:null,time:'',category:'업무',isToday:false,status:'진행중',memo:'',ssotSynced:true},
       {id:'seed-2026-05-29-10',title:'김남욱GM 오늘 할일에 SSOT 본인 업무·결재 자동 합류 + 분류 필터',description:'업무&결재 SSOT에서 GM 본인 항목(담당자=김남욱GM + 결재 차례=GM) 자동 추출 → 오늘 할일에 합류. 분류값(업무·결재·기획·개인)별 필터·체크. 한 화면 통합 처리.',startDate:'2026-05-29',endDate:null,time:'',category:'업무',isToday:false,status:'진행중',memo:'',ssotSynced:true},
       {id:'seed-2026-05-29-11',title:'마케팅 자동화 실제 가동 (CMO 4-Stage 파이프라인)',description:'기존 CMO 자산 통합·실가동 — IG namuk.wellperion + 네이버 블로그 + 동부이촌동 카페 3채널. 가공→검수→발행→Litt.ly 추적. 신설 X, 기존 연결·고도화.',startDate:'2026-05-29',endDate:null,time:'',category:'업무',isToday:false,status:'진행중',memo:'',ssotSynced:true},
-      {id:'seed-2026-05-29-meta',title:'[AI CEO 세션 마감 묶음] INB 폐기 · 토큰 라우팅 · SSOT 이중 · KPI v1 · 마감 검증 · #08 P1-A · 중복 UI hotfix',description:'본 세션 8건 마감 — (1) INB DB 폐기 옵션 A: Notion in_trash + CLAUDE.md + 메모리 + 운영 프레임워크 + jsonl 이관 (2) 토큰 라우팅 매트릭스 옵션 B: Haiku/Sonnet/Opus 3계층, 메인=Opus 판단·반복=Sonnet/Haiku 위임 (3) SSOT 이중 정립: 백엔드=GitHub / 프론트=가이드허브 (4) AI CEO 마감 검증 의무 정립: 응답 200·push success만으로 마감 보고 금지 (5) 시드 #06 KPI 대시보드 v1 골격: g10 상단 카드 7장 + JS fetch + 토글 (6) 08:00 회복 보고 + 6 C-Level 자율 지시: 이슈 4건(PCC·자동화 보류·DB 정합·캘린더 미점검) (7) 시드 #08 P1-A hotfix: isToday 잔존 차단 + migration 보정 + 모달 정합 (8) 김남욱 페이지 완료·보류 중복 UI hotfix: 구 정적 + 구 IIFE 86라인 제거. 모든 변경 GitHub push + Pages Actions success + 마감 검증 통과.',startDate:'2026-05-29',endDate:null,time:'',category:'업무',isToday:true,status:'완료',memo:'본 세션 마감 묶음 (12건 누적) — 추가: line-through 가독성+description 토글 / OMC 4.13.7→4.14.4 / Auto-update failed stale 기록 정리 + CTO P3 At log on 30초 delay 지시 / 좀비 시드(마그네슘 delete 후 부활) hotfix + line-through 제거 + paper-soft CSS 변수 추가. 시드 #07 착수 시 자동 누적 페이지로 흡수 예정.',ssotSynced:true},
+      {id:'seed-2026-05-29-meta',title:'[AI CEO 세션 마감 묶음] INB 폐기 · 토큰 라우팅 · SSOT 이중 · KPI v1 · 마감 검증 · #08 P1-A · 중복 UI hotfix',description:'본 세션 8건 마감 — (1) INB DB 폐기 옵션 A: Notion in_trash + CLAUDE.md + 메모리 + 운영 프레임워크 + jsonl 이관 (2) 토큰 라우팅 매트릭스 옵션 B: Haiku/Sonnet/Opus 3계층, 메인=Opus 판단·반복=Sonnet/Haiku 위임 (3) SSOT 이중 정립: 백엔드=GitHub / 프론트=가이드허브 (4) AI CEO 마감 검증 의무 정립: 응답 200·push success만으로 마감 보고 금지 (5) 시드 #06 KPI 대시보드 v1 골격: g10 상단 카드 7장 + JS fetch + 토글 (6) 08:00 회복 보고 + 6 C-Level 자율 지시: 이슈 4건(PCC·자동화 보류·DB 정합·캘린더 미점검) (7) 시드 #08 P1-A hotfix: isToday 잔존 차단 + migration 보정 + 모달 정합 (8) 김남욱 페이지 완료·보류 중복 UI hotfix: 구 정적 + 구 IIFE 86라인 제거. 모든 변경 GitHub push + Pages Actions success + 마감 검증 통과.',startDate:'2026-05-29',endDate:null,time:'',category:'업무',isToday:true,status:'완료',memo:'본 세션 마감 묶음 (14건 누적) — 추가: line-through 가독성+description 토글 / OMC 4.13.7→4.14.4 / Auto-update failed stale 기록 정리 + CTO P3 At log on 30초 delay 지시 / 좀비 시드(마그네슘 delete 후 부활) hotfix + line-through 제거 + paper-soft CSS 변수 추가 / g10 운영 지침 통합 정비(절대 원칙 3대·업무 3단계 순서·08:00·21:00 보고 SOP·창 운영 방식·.bat 부팅 6단계·CMO 3채널 정정·원본 문서 단일화) / 21:00 보고 확장(daily_scheduler.py 가이드허브 SSOT CEO_SEEDS 파싱 → 내일 할 일 리스트업 섹션 추가). 시드 #07 착수 시 자동 누적 페이지로 흡수 예정.',ssotSynced:true},
       // 기존 황용석 캘린더 시드
       {id:'seed-001',title:'황용석 팀장 퇴직 및 지원팀 재편',description:'지원팀 구조 재정비 진행.',startDate:'2026-06-01',endDate:null,time:'',category:'인사·파트너',isToday:false,status:'진행중',memo:'지원팀 구조 재정비 진행',ssotSynced:false}
     ];
