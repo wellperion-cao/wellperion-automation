@@ -14,7 +14,7 @@
 
 
 ## 1. AI C-Level 7 에이전트
-`notion-c-level-agents/.claude/agents/` 정의. 보고 라인: 6 C-레벨 → AI CEO → GM님.
+`wellperion-agents/.claude/agents/` 정의. 보고 라인: 6 C-레벨 → AI CEO → GM님.
 | 직책 | 파일 | 라우팅 키워드 |
 |---|---|---|
 | AI CEO | ai-ceo.md | 전사 전략·통합 판단 |
@@ -35,7 +35,7 @@
 
 
 ## 3. 보고·승인
-- 일일 08:00 통합 보고: `notion-c-level-agents/scripts/ceo_morning_brief_08.py`
+- 일일 08:00 통합 보고: `wellperion-agents/scripts/ceo_morning_brief_08.py`
 - 텔레그램 (범위: C-Level 보고 + GM 승인 회신 전용): `telegram_bot/bot.py` + `daily_scheduler.py` (PID 가동)
 - GM 자유텍스트 지시 채널: CLI(현 세션) · 모바일 Claude Code (remote)
 - 봇 토큰 SSOT: `telegram_bot/.env`
@@ -70,7 +70,7 @@
 상세 교육자료·고도화 프롬프트 → 가이드허브 참조 (6번)
 
 ## 5. post-action 훅
-위치: `notion-c-level-agents/scripts/clevel_post_action.py`
+위치: `wellperion-agents/scripts/clevel_post_action.py`
 용도: .bat 종료 직전 업무자동화DB patch + 텔레그램 1줄 보고.
 인자: `--clevel --task-id --status --summary [--version] [--changelog] [--dry-run]`
 

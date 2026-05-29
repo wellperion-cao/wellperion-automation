@@ -45,8 +45,8 @@ if "%VERSION%"=="" set VERSION=v1.0
 if "%CHANGELOG%"=="" set CHANGELOG=auto-recorded %DATE%
 
 set BAT_DIR=%~dp0
-set VENV_ACTIVATE=%BAT_DIR%notion-c-level-agents\venv\Scripts\activate.bat
-set POST_ACTION=%BAT_DIR%notion-c-level-agents\scripts\clevel_post_action.py
+set VENV_ACTIVATE=%BAT_DIR%wellperion-agents\venv\Scripts\activate.bat
+set POST_ACTION=%BAT_DIR%wellperion-agents\scripts\clevel_post_action.py
 
 if not exist "%VENV_ACTIVATE%" (
     echo [clevel.bat ERROR] venv not found: %VENV_ACTIVATE%

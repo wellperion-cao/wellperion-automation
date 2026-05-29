@@ -9,7 +9,7 @@
 | telegram_bot | 봇 + 스케줄러 (PID 가동) |
 | profiles | Playwright 세션 3 프로필 (IG·카페·블로그) |
 | scripts | 자동화 파이썬 (Notion·블로그·CMO·COO·CTO) |
-| notion-c-level-agents | C-Level 에이전트 정의 + R/R SSOT |
+| wellperion-agents | C-Level 에이전트 정의 + R/R SSOT |
 | instagram | CMO 4채널 콘텐츠 작업 ({YYMMDD_콘텐츠명}/) |
 | brand | 로고·컬러·가이드 (변경 시 GM 결재) |
 | .omc / .claude | 상태·메모리·hooks (자동 갱신) |
