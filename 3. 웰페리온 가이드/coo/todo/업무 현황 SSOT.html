@@ -1335,9 +1335,8 @@ async function saveTask() {
   if (!title) missing.push('업무명');
   if (!category) missing.push('카테고리');
   if (!owner) missing.push('담당자');
-  if (!startDate) missing.push('시작일');
-  if (!endDate) missing.push('종료일');
   if (missing.length > 0) { alert('필수 항목을 입력하세요:\n' + missing.join(', ')); return; }
+  // 시작일 미입력 시 오늘 기본 · 종료일은 선택(마감 없는 업무 허용) — 진척 추가가 날짜로 막히지 않도록 (2026-05-29 COO)
 
   const editId = document.getElementById('editId').value;
 
@@ -1368,7 +1367,7 @@ async function saveTask() {
     title: title,
     category: document.getElementById('fCategory').value,
     owner: getCheckboxValues('fOwnerGroup'),
-    startDate: document.getElementById('fStartDate').value,
+    startDate: startDate || todayDateStr(),
     endDate: document.getElementById('fEndDate').value,
     content: composedContent,
     link: document.getElementById('fLink').value,
