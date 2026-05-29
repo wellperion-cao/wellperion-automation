@@ -727,7 +727,7 @@ function renderTaskCard(t, idx) {
 
   // 제목줄: 번호 + 토글 화살표 + 제목 + 칩 + 편집/완료 버튼
   html += '<div class="task-summary" style="display:flex;align-items:center;gap:8px;">';
-  html += '<span style="font-size:12px;font-weight:700;color:var(--accent);min-width:24px;text-align:center;flex-shrink:0;">' + idx + '</span>';
+  html += '<span style="font-size:11px;font-weight:700;color:var(--accent);min-width:34px;text-align:center;flex-shrink:0;letter-spacing:0.02em;">#' + String(idx).padStart(3, '0') + '</span>';
   html += '<span class="toggle-arrow" onclick="this.closest(\'.task-card\').querySelector(\'.task-detail\').classList.toggle(\'open\');this.classList.toggle(\'open\');" style="font-size:10px;color:var(--dim);transition:transform 0.2s;flex-shrink:0;cursor:pointer;padding:4px;">▶</span>';
   html += '<div style="flex:1;min-width:0;cursor:pointer;" onclick="this.closest(\'.task-card\').querySelector(\'.task-detail\').classList.toggle(\'open\');this.closest(\'.task-card\').querySelector(\'.toggle-arrow\').classList.toggle(\'open\');">';
   html += '<div class="task-title" style="display:inline;">' + esc(t.title) + '</div>';
