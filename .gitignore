@@ -14,6 +14,10 @@ scripts/_archive/
 *.log.*
 .omc/
 .claude/
+# 예외: 6 C-Level 에이전트 정의 = SSOT 자산 (2026-05-29 GM 옵션 A)
+!notion-c-level-agents/.claude/
+!notion-c-level-agents/.claude/agents/
+!notion-c-level-agents/.claude/agents/*.md
 telegram_bot/state.json
 telegram_bot/status_change_state.json
 telegram_bot/status_regression_guard_state.json
@@ -22,6 +26,8 @@ telegram_bot/ceo_inbox.jsonl
 telegram_bot/.inbox_read_marker
 telegram_bot/routing_rules.json
 *.bat
+# 예외: 8 .bat 진입점 = SSOT 자산 (2026-05-29 GM 옵션 A)
+!Start-AI*.bat
 profiles/
 temp_*.txt
 C\357\200\272*
