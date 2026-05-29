@@ -311,7 +311,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
         <tr><td style="padding:6px 8px;border:1px solid var(--border);">결과 보고 감지</td><td style="padding:6px 8px;border:1px solid var(--border);">5분마다</td><td style="padding:6px 8px;border:1px solid var(--border);">마무리된 업무를 감지해 보고</td></tr>
         <tr><td style="padding:6px 8px;border:1px solid var(--border);">이관 감지</td><td style="padding:6px 8px;border:1px solid var(--border);">5분마다</td><td style="padding:6px 8px;border:1px solid var(--border);">기획 완료 건을 결과물로 자동 이관</td></tr>
         <tr><td style="padding:6px 8px;border:1px solid var(--border);">설정 변경 감시</td><td style="padding:6px 8px;border:1px solid var(--border);">5분마다</td><td style="padding:6px 8px;border:1px solid var(--border);">토큰·설정 파일이 바뀌면 자동 반영</td></tr>
-        <tr><td style="padding:6px 8px;border:1px solid var(--border);">권한 점검</td><td style="padding:6px 8px;border:1px solid var(--border);">15분마다</td><td style="padding:6px 8px;border:1px solid var(--border);">노션 연결 권한이 살아있는지 점검</td></tr>
+        <tr><td style="padding:6px 8px;border:1px solid var(--border);">권한 점검</td><td style="padding:6px 8px;border:1px solid var(--border);">15분마다</td><td style="padding:6px 8px;border:1px solid var(--border);">외부 연동(GitHub·텔레그램·시트) 권한 살아있는지 점검</td></tr>
         <tr><td style="padding:6px 8px;border:1px solid var(--border);">봇 건강 점검</td><td style="padding:6px 8px;border:1px solid var(--border);">15분마다</td><td style="padding:6px 8px;border:1px solid var(--border);">텔레그램 봇이 살아있는지 점검</td></tr>
       </table>
 
@@ -441,8 +441,8 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
       <textarea id="fResult" placeholder="진척 마무리 후 최종 결과·산출물·달성도·교훈을 정리하세요.&#10;예시:&#10;🎯 결과 — &#10;📦 산출물 — &#10;📊 KPI 달성 — &#10;💡 교훈 — " style="min-height:140px;line-height:1.6;background:var(--paper);border:1px solid var(--border);"></textarea>
     </div>
     <div class="field">
-      <label>노션 링크</label>
-      <input type="url" id="fLink" placeholder="https://www.notion.so/...">
+      <label>외부 링크 (옵션)</label>
+      <input type="url" id="fLink" placeholder="https://...">
     </div>
     <div class="field">
       <label>첨부파일 <span style="font-size:11px;color:var(--dim);font-weight:400;">(최대 5MB)</span></label>

@@ -4038,7 +4038,7 @@ Start-Process python -ArgumentList telegram_bot\daily_scheduler.py -WorkingDirec
           <tr><td style="padding:6px 8px;border:1px solid var(--border);">결과 보고 감지</td><td style="padding:6px 8px;border:1px solid var(--border);">5분마다</td><td style="padding:6px 8px;border:1px solid var(--border);">마무리된 업무를 감지해 보고</td></tr>
           <tr><td style="padding:6px 8px;border:1px solid var(--border);">이관 감지</td><td style="padding:6px 8px;border:1px solid var(--border);">5분마다</td><td style="padding:6px 8px;border:1px solid var(--border);">기획 완료 건을 결과물로 자동 이관</td></tr>
           <tr><td style="padding:6px 8px;border:1px solid var(--border);">설정 변경 감시</td><td style="padding:6px 8px;border:1px solid var(--border);">5분마다</td><td style="padding:6px 8px;border:1px solid var(--border);">토큰·설정 파일이 바뀌면 자동 반영</td></tr>
-          <tr><td style="padding:6px 8px;border:1px solid var(--border);">권한 점검</td><td style="padding:6px 8px;border:1px solid var(--border);">15분마다</td><td style="padding:6px 8px;border:1px solid var(--border);">노션 연결 권한이 살아있는지 점검</td></tr>
+          <tr><td style="padding:6px 8px;border:1px solid var(--border);">권한 점검</td><td style="padding:6px 8px;border:1px solid var(--border);">15분마다</td><td style="padding:6px 8px;border:1px solid var(--border);">외부 연동(GitHub·텔레그램·시트) 권한 살아있는지 점검</td></tr>
           <tr><td style="padding:6px 8px;border:1px solid var(--border);">봇 건강 점검</td><td style="padding:6px 8px;border:1px solid var(--border);">15분마다</td><td style="padding:6px 8px;border:1px solid var(--border);">텔레그램 봇이 살아있는지 점검</td></tr>
         </table>
 
@@ -4410,7 +4410,7 @@ function crTab(btn, panelId) {
       <div class="tab-panel" data-panel="context">
         <h3><span class="ico">🔧</span>컨텍스트 정비 작업</h3>
         <p>각 AI C-Level의 컨텍스트(.md · .json · .log 등)를 STEP 1~5 흐름으로 정비합니다 — 스캔 → 단순화 → 자동화 → 고도화 → 통합 제안. 매주 월요일 09:00 · 30분 cycle 반복.</p>
-        <div class="callout tip"><strong>정기 일정.</strong> 매주 월요일 09:00 · 30분 진행 · STEP 1~5 완료 후 결과를 가이드허브·노션에 기록.</div>
+        <div class="callout tip"><strong>정기 일정.</strong> 매주 월요일 09:00 · 30분 진행 · STEP 1~5 완료 후 결과를 가이드허브에 기록 (노션 사용 안 함, SSOT는 가이드허브).</div>
 
         <h3><span class="ico">🔍</span>STEP 1 · 스캔 — 대상 파일 인벤토리</h3>
         <p>각 AI C-Level의 컨텍스트 파일을 빠짐없이 훑어 목록·크기·줄 수를 파악합니다. 이후 모든 진단(STEP 2~4)은 이 인벤토리를 기준으로 진행됩니다.</p>
@@ -4456,10 +4456,10 @@ function crTab(btn, panelId) {
           <tr><td>P1 · 주간</td><td>내용 동일 중복 · 200행 초과 .md</td><td>GM 승인 후 고도화(고위험)</td></tr>
           <tr><td>P2 · 정기</td><td>오래된 로그 · 백업본</td><td>백업 후 정리(저위험·자동)</td></tr>
         </table>
-        <div class="callout fix"><strong>원칙.</strong> 추측 금지 · 파일 직접 읽고 보고 · 모호 시 한 번에 하나씩 질문 · 각 STEP 끝나면 중간보고 후 다음 STEP. 완료 후 제안서를 가이드허브·노션에 기록.</div>
+        <div class="callout fix"><strong>원칙.</strong> 추측 금지 · 파일 직접 읽고 보고 · 모호 시 한 번에 하나씩 질문 · 각 STEP 끝나면 중간보고 후 다음 STEP. 완료 후 제안서를 가이드허브에 기록 (노션 사용 안 함, SSOT는 가이드허브).</div>
 
         <h3><span class="ico">🤖</span>핵심 프롬프트 — 일일 컨텍스트 정비</h3>
-        <p>아래 프롬프트를 Claude CLI에 그대로 붙여넣으면(또는 daily_scheduler가 매일 자동 호출) STEP 1~5 정비를 안전하게 수행합니다. <strong>매주 월요일 09:00 · 30분</strong> 진행 후 결과를 가이드허브·노션에 기록.</p>
+        <p>아래 프롬프트를 Claude CLI에 그대로 붙여넣으면(또는 daily_scheduler가 매일 자동 호출) STEP 1~5 정비를 안전하게 수행합니다. <strong>매주 월요일 09:00 · 30분</strong> 진행 후 결과를 가이드허브에 기록 (노션 사용 안 함, SSOT는 가이드허브).</p>
         <pre style="background:#16181c; color:#e8e8e8; padding:14px 16px; border-radius:8px; font-size:13px; white-space:pre-wrap; line-height:1.7; border-left:3px solid var(--accent); overflow-x:auto;">[웰페리온 컨텍스트 정비 — 매주 월요일 09:00 · 30분]
 각 AI C-Level의 컨텍스트 파일(.log · .txt · .json · .md.bak · .md · .py)을 STEP 1~5로 정비하라.
 
@@ -4480,7 +4480,7 @@ STEP 3 — 자동화 진단(Fill) → 트리거·자동화 가능 항목 list
 STEP 4 — 고도화 진단(Improve) → 구조·표현 개선안
 STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
 
-완료 후: 텔레그램 1줄 요약 보고 + 제안서를 가이드허브·노션에 기록.
+완료 후: 텔레그램 1줄 요약 보고 + 제안서를 가이드허브에 기록 (노션 사용 안 함, SSOT는 가이드허브).
 추측 금지 · 파일을 직접 읽고 보고하라.</pre>
         <div class="callout tip"><strong>STEP 1~5 진단 엔진 v2 (2026-05-25).</strong> <code>scripts/context_maintenance.py</code> — 해시 기반 중복 탐지 · .py 자동화 연결 교차검증 · 깨진 참조 탐지 · 우선순위(P0/P1/P2)·추세 분석. 실행 시 <code>정비제안서_날짜.md</code> 자동 생성(보고 전용). 매주 월 09:00 daily_scheduler 등록 가능.</div>
         <div class="callout tip"><strong>한 줄 요약.</strong> 훑고 → 비우고 → 채우고 → 다듬고 → 제안한다. 한 번이 아니라 매주 cycle.</div>
@@ -5898,7 +5898,7 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
       // 2026-05-29 (금) 내일 할일 — 어제 마무리 못한 + 새 시작
       {id:'seed-2026-05-29-01',title:'결재 완료 시 결과보고서 자동 생성',description:'대표 결재 완료 트리거 → RESULT 섹션 자동 PDF 생성 → 결재 현황 SSOT에 첨부.',startDate:'2026-05-29',endDate:null,time:'',category:'업무',isToday:false,status:'진행중',memo:'',ssotSynced:true},
       {id:'seed-2026-05-29-02',title:'시설부·운영부·주차관리부 페이지 신설',description:'지원부 체계 패턴 복제 → 4부서 운영 통합 체계. 6.1~6.30 프로젝트 1차.',startDate:'2026-05-29',endDate:null,time:'',category:'업무',isToday:false,status:'진행중',memo:'',ssotSynced:true},
-      {id:'seed-2026-05-29-03',title:'결재 9건 실제 처리 검증',description:'결재 현황 SSOT에서 미결 9건 ✅/❌ 직접 클릭 → 시트·페이지 흐름 검증.',startDate:'2026-05-29',endDate:null,time:'',category:'업무',isToday:false,status:'진행중',memo:'',ssotSynced:true},
+      {id:'seed-2026-05-29-03',title:'결재 10건 실제 처리 검증',description:'결재 현황 SSOT에서 미결 10건 ✅/❌ 직접 클릭 → 시트·페이지 흐름 검증. (COO UI 마킹 수정 후 진행)',startDate:'2026-05-29',endDate:null,time:'',category:'업무',isToday:false,status:'진행중',memo:'GM 발견: 정의는 9건이었으나 실제 10건. 결재 카드 상태가 다 진행중으로 표시되는 UI 문제 → COO 긴급 위임 (COO-2026-05-29-APPROVAL-UI-MARK-FIX).',ssotSynced:true},
       {id:'seed-2026-05-29-04',title:'AI 학습 시스템 고도화 (어제 보류분 이어서)',description:'수집→요약→적용→구조화 전체 파이프라인 진행.',startDate:'2026-05-29',endDate:null,time:'',category:'업무',isToday:false,status:'진행중',memo:'',ssotSynced:true},
       {id:'seed-2026-05-29-06',title:'Notion → 가이드허브 이관 + 텔레그램 보고만 연동 + 동적 v1 KPI 대시보드',description:'Notion 의존 폐기. 가이드허브 단일 SSOT로 데이터 이관. 텔레그램은 보고 알림 채널만 유지 (C-Level 보고+승인). 가이드허브 동적 v1 — ceo_morning_brief_08.py가 매일 08:00 kpi_snapshot.json + tasks.json + issues.json 자동 push → g10 상단 KPI 대시보드 카드 7장(6 C-Level 북극성 KPI + CEO 종합) JS fetch 렌더링. 양방향 자동 연동.',startDate:'2026-05-29',endDate:null,time:'',category:'업무',isToday:false,status:'진행중',memo:'[2026-05-29 부분 완료 60%] ✅ INB DB 폐기·텔레그램 범위 한정·가이드허브 g10 KPI 대시보드 v1 골격(카드 7장·JS fetch·토글) 완료. 잔여 40%: CTO JSON 빌더(ceo_morning_brief_08.py에 kpi_snapshot.json/tasks.json/issues.json 출력 + 자동 push) + 6 C-Level 본인 KPI 산출 함수 정의 + Notion 잔존 DB 가이드허브 이관',ssotSynced:true},
       {id:'seed-2026-05-29-07',title:'GM 일일 핵심 요약본 + 히스토리 순번 자동 정리',description:'건바이건 기록 폐기. 오늘 핵심 3-5건만 보여주고 과거는 #001·#002... 순번 누적. 일일·주간·월간 자동 요약.',startDate:'2026-05-29',endDate:null,time:'',category:'업무',isToday:false,status:'진행중',memo:'',ssotSynced:true},
