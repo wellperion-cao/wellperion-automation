@@ -522,8 +522,17 @@ async function loadTasks() {
   try {
     const res = await apiCall({ action: 'todo_list' });
     if (res.ok) {
-      ALL_TASKS = (res.data || []).map(normalizeTask);
-      saveFallback();
+      const incoming = (res.data || []).map(normalizeTask);
+      const cached = loadFallback();
+      // 데이터 보호 가드: 서버 0건 + 로컬 캐시 존재 → 백엔드 일시 이상(시트 매칭 실패 등)으로
+      // 간주, 캐시를 덮어쓰지 않고 보존·표시 (2026-05-29 2중 손실 사고 재발 방지)
+      if (incoming.length === 0 && cached.length > 0) {
+        ALL_TASKS = cached;
+        showToast('서버 0건 응답 — 로컬 캐시 표시 중. 백엔드(시트/배포) 점검 필요', true);
+      } else {
+        ALL_TASKS = incoming;
+        saveFallback();
+      }
     } else {
       throw new Error(res.error || 'API 오류');
     }

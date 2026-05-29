@@ -21,13 +21,29 @@ const DONE_SHEET_FALLBACKS = [
 ];
 
 // 데이터 있는 시트 우선 — 첫 행 헤더에 '업무명' 또는 'id' 있으면 정식 시트
-function _findSheet(ss, fallbacks) {
+// autoDetect=true: fallback 이름이 모두 빗나가도 'id'+'업무명' 헤더를 가진
+//   데이터 최다 시트를 자동 인식 (시트명 불일치로 인한 0건 사고 영구 차단 · 2026-05-29)
+function _findSheet(ss, fallbacks, autoDetect) {
   let candidate = null;
   for (const name of fallbacks) {
     const s = ss.getSheetByName(name);
     if (!s) continue;
     if (s.getLastRow() >= 2) return s;  // 데이터 있는 시트 즉시 반환
     if (!candidate) candidate = s;       // 빈 시트는 후보로만
+  }
+  // 이름 매칭 실패 — 헤더 기반 자동 탐지 (TODO 조회 전용; DONE 복사 시엔 끔)
+  if (autoDetect) {
+    let best = null, bestRows = 0;
+    ss.getSheets().forEach(s => {
+      const lc = s.getLastColumn();
+      if (lc < 2) return;
+      const hdr = s.getRange(1, 1, 1, Math.min(lc, 3)).getValues()[0].map(String);
+      if (hdr.indexOf('id') >= 0 && hdr.indexOf('업무명') >= 0) {
+        const rows = s.getLastRow();
+        if (rows > bestRows) { bestRows = rows; best = s; }
+      }
+    });
+    if (best && bestRows >= 2) return best;  // 데이터 든 정식 시트 발견
   }
   return candidate;
 }
@@ -66,7 +82,7 @@ function _prop(key) {
 // ─── 시트 초기화 ───
 function initTodoSheet() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
-  let sh = _findSheet(ss, TODO_SHEET_FALLBACKS);
+  let sh = _findSheet(ss, TODO_SHEET_FALLBACKS, true);
   if (sh) {
     // 기존 시트 — 결재 컬럼 자동 마이그레이션 (2026-05-28)
     const existingHeaders = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0];
@@ -150,7 +166,7 @@ function _applyStatusColor(sh, row, status) {
 // 결재 현황(완료/반려) 시트에 완료 건 복사
 function _copyToDoneSheet(srcSheet, srcRow) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
-  let doneSh = _findSheet(ss, DONE_SHEET_FALLBACKS);
+  let doneSh = _findSheet(ss, DONE_SHEET_FALLBACKS, false);
 
   // 시트가 없으면 자동 생성 (메인 fallback 이름 우선)
   if (!doneSh) {
