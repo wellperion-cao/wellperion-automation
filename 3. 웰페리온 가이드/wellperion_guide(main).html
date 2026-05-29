@@ -3969,7 +3969,7 @@ Start-Process python -ArgumentList telegram_bot\daily_scheduler.py -WorkingDirec
 
   <!-- ── COO 투두리스트 소개 ── -->
   <article class="doc" id="gcoo-todo">
-    <div class="doc-header"><h2>업무 현황 SSOT</h2><div class="meta">COO 관할 · 핵심멤버 업무 배분·추적 · Apps Script 연동</div></div>
+    <div class="doc-header"><h2>업무&결재 현황 SSOT</h2><div class="meta">COO 관할 · 핵심멤버 업무 배분·추적 · Apps Script 연동</div></div>
     <p class="lead">핵심멤버(매니저·AM)의 업무를 등록·배분·추적하는 업무 현황 SSOT입니다. 카테고리별 분류, 담당자 배정, 기간 설정, 결재 요청까지 한 페이지에서 처리합니다.</p>
 
     <!-- 개요 · 보고 체계 SSOT (별도 페이지 패널 그대로 이관 · 기본 펼침) -->
@@ -3992,16 +3992,22 @@ Start-Process python -ArgumentList telegram_bot\daily_scheduler.py -WorkingDirec
           <li><b>Google 시트 실시간 연동</b> · 인쇄 · 보고용 · 공유용 출력</li>
         </ul>
 
-        <div style="font-size:12px;font-weight:700;color:var(--green);margin-bottom:6px;">📣 보고 체계</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+          <span style="font-size:12px;font-weight:700;color:var(--green);">📣 보고 체계</span>
+          <button onclick="hubEditNotes('reporting')" id="hubReportingEditBtn" style="font-size:11px;font-weight:600;padding:3px 10px;border-radius:7px;cursor:pointer;font-family:inherit;background:var(--accent-bg);color:var(--accent);border:1px solid rgba(183,159,138,0.3);">✏️ 편집</button>
+        </div>
         <div id="hubReportingView" style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin:0 0 16px 0;white-space:pre-line;line-height:1.7;">• 매일 08:00 통합 보고 — 전날 정리 · 오늘 진행 · 이슈/보류 (텔레그램)
 • 결재 — 결재 현황 SSOT에서 실시간 추적. GM·대표님은 본인 비밀번호로 승인/반려
 • 진척 로그 — 카드별 날짜 누적 → 보고 자동 연계
 • 이슈/보류 — 별도 섹션 단독 노출, 묻히지 않게</div>
 
-        <div style="font-size:12px;font-weight:700;color:var(--accent);margin-bottom:6px;">📝 현재 내용 기록</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+          <span style="font-size:12px;font-weight:700;color:var(--accent);">📝 현재 내용 기록</span>
+          <button onclick="hubEditNotes('notes')" id="hubNotesEditBtn" style="font-size:11px;font-weight:600;padding:3px 10px;border-radius:7px;cursor:pointer;font-family:inherit;background:var(--accent-bg);color:var(--accent);border:1px solid rgba(183,159,138,0.3);">✏️ 편집</button>
+        </div>
         <div id="hubNotesView" style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin:0 0 6px 0;white-space:pre-line;line-height:1.7;">• 현재 진행 업무 41건 (Google 시트 "업무&결재 현황")
 • 최근 정비: 빈 시트 정리 · 결재 비밀번호 게이트 · 카드 결재 진행 표시 · 지원부 대시보드/항목추가 분리</div>
-        <p style="font-size:11px;color:var(--dim);margin:0 0 20px;">✏️ 보고 체계·현재 내용 기록은 아래 "업무 현황 SSOT"에서 편집·저장하면 이 화면에도 자동 반영됩니다.</p>
+        <p style="font-size:11px;color:var(--dim);margin:0 0 20px;">✏️ 보고 체계·현재 내용 기록은 위 편집 버튼으로 바로 수정·저장하면 GitHub에 자동 반영됩니다 (1~2분).</p>
 
         <!-- ②③ 바로가기 -->
         <div style="display:flex;flex-wrap:wrap;gap:10px;">
@@ -4057,8 +4063,15 @@ Start-Process python -ArgumentList telegram_bot\daily_scheduler.py -WorkingDirec
     </div>
   </article>
 <script>
-/* 가이드허브 '업무&결재 현황' 페이지 — 패널 토글 + 보고 체계·현재 내용 기록을 ssot_notes.json에서 읽어 표시(읽기 전용, 편집은 별도 페이지) */
+/* 가이드허브 '업무&결재 현황' 페이지 — 패널 토글 + 보고 체계·현재 내용 기록 표시·편집(Apps Script→GitHub 자동 저장) */
 (function(){
+  var TODO_API_URL = 'https://script.google.com/macros/s/AKfycbxDwFkrxK1YIaEoSNcuw2MiHiZQ-7o5N6311ytksSyeEd86ZFOhLknOWqQgNArQvZ-7/exec';
+  var NOTES_PATH = '3. 웰페리온 가이드/coo/todo/ssot_notes.json';
+  var EDIT_KEY = '';
+  var LAST_NOTES = { reporting: null, notes: null };
+  function viewId(f){ return f === 'reporting' ? 'hubReportingView' : 'hubNotesView'; }
+  function btnId(f){ return f === 'reporting' ? 'hubReportingEditBtn' : 'hubNotesEditBtn'; }
+
   window.gcooToggle = function(bodyId, arrowId){
     var b = document.getElementById(bodyId), a = document.getElementById(arrowId);
     if (!b) return;
@@ -4066,11 +4079,58 @@ Start-Process python -ArgumentList telegram_bot\daily_scheduler.py -WorkingDirec
     b.style.display = open ? 'block' : 'none';
     if (a) a.style.transform = open ? 'rotate(90deg)' : 'rotate(0deg)';
   };
-  function fill(id, t){ var el = document.getElementById(id); if (el && t) el.textContent = t; }
+
+  function esc(s){ return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+  function fill(id, t){ var el = document.getElementById(id); if (el && t != null) el.textContent = t; }
+  function api(params){
+    var qs = Object.keys(params).map(function(k){ return encodeURIComponent(k) + '=' + encodeURIComponent(params[k]); }).join('&');
+    return fetch(TODO_API_URL + '?' + qs, { redirect: 'follow' }).then(function(r){ return r.json(); });
+  }
+  function toast(msg){
+    var t = document.getElementById('hubToast');
+    if (!t){ t = document.createElement('div'); t.id = 'hubToast'; t.style.cssText = 'position:fixed;top:20px;right:20px;background:var(--accent);color:#fff;padding:10px 16px;border-radius:8px;font-size:13px;font-weight:700;z-index:9999;box-shadow:0 4px 14px rgba(0,0,0,0.3);'; document.body.appendChild(t); }
+    t.textContent = msg; t.style.display = 'block'; clearTimeout(t._h); t._h = setTimeout(function(){ t.style.display = 'none'; }, 3000);
+  }
+
+  // 기본값 저장 → 정적 json으로 최신 표시(있으면)
+  (function initDefaults(){ var rv = document.getElementById('hubReportingView'), nv = document.getElementById('hubNotesView'); if (rv) LAST_NOTES.reporting = rv.textContent; if (nv) LAST_NOTES.notes = nv.textContent; })();
   fetch('coo/todo/ssot_notes.json?_=' + Date.now())
     .then(function(r){ return r.ok ? r.json() : null; })
-    .then(function(j){ if (!j) return; fill('hubReportingView', j.reporting); fill('hubNotesView', j.notes); })
-    .catch(function(){ /* 실패 시 기본 텍스트 유지 */ });
+    .then(function(j){ if (!j) return; if (j.reporting != null){ LAST_NOTES.reporting = j.reporting; fill('hubReportingView', j.reporting); } if (j.notes != null){ LAST_NOTES.notes = j.notes; fill('hubNotesView', j.notes); } })
+    .catch(function(){ /* 기본 텍스트 유지 */ });
+
+  window.hubEditNotes = function(field){
+    var view = document.getElementById(viewId(field)), btn = document.getElementById(btnId(field));
+    if (!view || document.getElementById('hub_' + field + '_editor')) return;
+    var cur = LAST_NOTES[field] != null ? LAST_NOTES[field] : view.textContent;
+    if (btn) btn.style.display = 'none';
+    view.style.display = 'none';
+    var w = document.createElement('div'); w.id = 'hub_' + field + '_editor'; w.style.margin = '0 0 16px 0';
+    w.innerHTML = '<textarea id="hub_' + field + '_ta" style="width:100%;min-height:130px;background:var(--bg);border:1px solid var(--accent);color:var(--text);padding:10px 12px;border-radius:8px;font-size:13px;font-family:inherit;line-height:1.6;resize:vertical;box-sizing:border-box;">' + esc(cur) + '</textarea>'
+      + '<div style="display:flex;gap:6px;justify-content:flex-end;margin-top:6px;">'
+      + '<button onclick="hubCancelNotes(\'' + field + '\')" style="font-size:12px;font-weight:600;padding:6px 14px;border-radius:8px;cursor:pointer;font-family:inherit;background:var(--paper);color:var(--dim);border:1px solid var(--border);">취소</button>'
+      + '<button onclick="hubSaveNotes(\'' + field + '\')" style="font-size:12px;font-weight:700;padding:6px 14px;border-radius:8px;cursor:pointer;font-family:inherit;background:var(--accent);color:#fff;border:1px solid var(--accent);">💾 저장</button></div>';
+    view.parentNode.insertBefore(w, view.nextSibling);
+    var ta = document.getElementById('hub_' + field + '_ta'); if (ta) ta.focus();
+  };
+  window.hubCancelNotes = function(field){
+    var ed = document.getElementById('hub_' + field + '_editor'); if (ed) ed.remove();
+    var view = document.getElementById(viewId(field)); if (view) view.style.display = '';
+    var btn = document.getElementById(btnId(field)); if (btn) btn.style.display = '';
+  };
+  window.hubSaveNotes = function(field){
+    var ta = document.getElementById('hub_' + field + '_ta'); if (!ta) return;
+    var val = ta.value;
+    var d = new Date(); var today = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+    var payload = { reporting: field === 'reporting' ? val : (LAST_NOTES.reporting || ''), notes: field === 'notes' ? val : (LAST_NOTES.notes || ''), updatedAt: today };
+    toast('저장 중...');
+    api({ action: 'commit_file', path: NOTES_PATH, content: JSON.stringify(payload, null, 2), message: 'docs(ssot): ' + field + ' 편집(허브)', key: EDIT_KEY })
+      .then(function(r){
+        if (r && r.ok){ LAST_NOTES[field] = val; var v = document.getElementById(viewId(field)); if (v) v.textContent = val; hubCancelNotes(field); toast('저장됨 — 1~2분 후 반영'); }
+        else { var e = (r && r.error) || '오류'; toast(/GITHUB_TOKEN/.test(e) ? '관리자 토큰 설정 후 저장 가능' : '저장 실패: ' + e); }
+      })
+      .catch(function(e){ toast('연결 실패: ' + e.message); });
+  };
 })();
 </script>
 
