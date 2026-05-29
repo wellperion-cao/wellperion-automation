@@ -52,11 +52,21 @@ FIXED_UA = (
     "Chrome/124.0.0.0 Safari/537.36"
 )
 
-# dryrun 셀렉터 후보 3종 (UI 버전별 fallback 순서)
+# 새 게시물(만들기) 진입 셀렉터 — 2026-05-29 실측: aria-label "새로운 게시물"
 NEW_POST_SELECTORS = [
+    'a:has(svg[aria-label="새로운 게시물"])',
+    'div[role="button"]:has(svg[aria-label="새로운 게시물"])',
+    'svg[aria-label="새로운 게시물"]',
+    # legacy fallback
     'button[aria-label*="새 게시물"]',
     'svg[aria-label*="새 게시물"]',
-    '[role="menuitem"]:has-text("게시물")',
+]
+
+# '만들기' 클릭 후 뜨는 하위메뉴의 '게시물' 항목 (없는 UI 버전도 있음 → 옵션)
+CREATE_SUBMENU_SELECTORS = [
+    'svg[aria-label="게시물"]',
+    'div[role="dialog"] svg[aria-label="게시물"]',
+    'div[role="menuitem"]:has-text("게시물")',
 ]
 
 # 사진 업로드 input[type="file"] 셀렉터 후보 (인스타 2026 데스크탑 기준)
@@ -81,8 +91,9 @@ NEXT_BUTTON_SELECTORS = [
     '[role="dialog"] button:has-text("다음")',
 ]
 
-# "공유하기"/"게시" 최종 발행 버튼 셀렉터 후보
+# "공유하기"/"게시" 최종 발행 버튼 — 2026-05-29 실측: div[role=button] "공유하기" (우상단)
 SHARE_BUTTON_SELECTORS = [
+    'div[role="button"]:text-is("공유하기")',
     'button:has-text("공유하기")',
     'div[role="button"]:has-text("공유하기")',
     'button:has-text("게시")',
@@ -666,6 +677,18 @@ async def _publish_single_post(page, spec: PostSpec, content_folder: Path) -> st
         raise RuntimeError("새 게시물 버튼 셀렉터 모두 실패")
 
     await page.wait_for_timeout(2000)
+
+    # '만들기' → '게시물' 하위메뉴 클릭 (없는 UI 버전이면 건너뜀 — 옵션)
+    for sel in CREATE_SUBMENU_SELECTORS:
+        try:
+            el = page.locator(sel).first
+            if await el.count() > 0:
+                await el.click(timeout=3000)
+                print(f"[INFO]   '게시물' 하위메뉴 클릭: {sel!r}")
+                await page.wait_for_timeout(1500)
+                break
+        except Exception:
+            continue
 
     # 사진 input[type=file] 다중 업로드
     file_input = None
