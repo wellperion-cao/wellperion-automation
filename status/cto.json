@@ -1,10 +1,10 @@
 {
   "clevel": "cto",
   "status": "DONE",
-  "task_id": "CTO-2026-05-29-RESULT-REPORT-AUTOGEN",
-  "last_task_id": "CTO-2026-05-29-RESULT-REPORT-AUTOGEN",
+  "task_id": "CTO-2026-05-29-RESULT-PRINT-MANUAL",
+  "last_task_id": "CTO-2026-05-29-RESULT-PRINT-MANUAL",
   "last_commit_sha": null,
-  "last_pushed_at": "2026-05-29T19:05:00",
+  "last_pushed_at": "2026-05-29T19:25:00",
   "active_tasks": [
     {
       "task_id": "CTO-2026-05-29-NOTION-DEPRECATE",
@@ -69,14 +69,23 @@
       "assigned_at": "2026-05-29T18:50:00",
       "status": "DONE",
       "completed_at": "2026-05-29T19:05:00",
-      "note": "/team(워커1·opus). _parseTodoContent 마커 파싱 + _generateResultReport 구조화(본문/결과보고 박스/진척 타임라인/계획/예산) + todo_update에 ===RESULT=== 훅(결재 없이 결과보고만 저장해도 PDF 생성). 카드에 결과보고서 링크 노출. clasp @12→@16 재배포. 라이브 실측: 결과보고+진척 저장→유효 PDF 생성·다운로드 확인→테스트행 삭제. COO PROGRESS-UNLOCK은 게이트(decoupled), 마커 기반이라 무충돌.",
+      "note": "/team(워커1·opus). _parseTodoContent 마커 파싱 + _generateResultReport 구조화(본문/결과보고 박스/진척 타임라인/계획/예산) + todo_update에 ===RESULT=== 훅(결재 없이 결과보고만 저장해도 PDF 생성). 카드에 결과보고서 링크 노출. clasp @12→@16 재배포. 라이브 실측: 결과보고+진척 저장→유효 PDF 생성·다운로드 확인→테스트행 삭제. [후속 RESULT-PRINT-MANUAL로 자동→수동 전환됨]",
+      "blocks": []
+    },
+    {
+      "task_id": "CTO-2026-05-29-RESULT-PRINT-MANUAL",
+      "title": "결과보고서 자동생성 → 수동 인쇄/PDF 저장 버튼 전환 + 결재란 (GM 결재)",
+      "assigned_at": "2026-05-29T19:08:00",
+      "status": "DONE",
+      "completed_at": "2026-05-29T19:25:00",
+      "note": "GM '자동보단 수동' 결재. 백엔드 자동생성 트리거(todo_update·todo_sign) + 죽은 함수 제거, clasp @12→@17 재배포. 프론트: 편집 모달 '인쇄/PDF 저장' 버튼 + #resultReportPrint 인쇄뷰(parseContent 재사용) + 결재요청 시 우상단 결재란(담당·부서장·GM·대표). designer 에이전트 제작 + 옛 자동 링크 잔재 정리. 라이브 Playwright 실측: 29업무 렌더·오류0·결재란 조건부(승인8/비승인21)·역할4칸 확인.",
       "blocks": []
     }
   ],
   "agent": "cto",
-  "title": "결과보고 저장 시 결과보고서 PDF 자동생성 (SEED01 확장)",
+  "title": "결과보고서 수동 인쇄/PDF 저장 버튼 + 결재란 (자동생성 폐지)",
   "artifact_url": null,
   "commit": "",
-  "note": "결과보고 자동생성 완료(라이브 PDF 실측). 활성 대기 없음. 보류: AUTOMATION-DB-MIGRATE(GM). 별건 후보: seed#10 2차(G1→SSOT 쓰기), status/_queue.json Pages 404.",
-  "updated_at": "2026-05-29T19:05:00"
+  "note": "결과보고서 수동 인쇄/PDF 저장 전환 완료(라이브 Playwright 실측). 활성 대기 없음. 보류: AUTOMATION-DB-MIGRATE(GM). 별건 후보: seed#10 2차(G1→SSOT 쓰기), status/_queue.json Pages 404.",
+  "updated_at": "2026-05-29T19:25:00"
 }
