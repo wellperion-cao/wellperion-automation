@@ -385,6 +385,7 @@
   <div class="nav-label">시작하기</div>
   <nav class="nav">
     <a data-doc="home" class="active"><span class="num">홈</span><span class="label">홈 · 사용법</span></a>
+    <a data-doc="dashboard"><span class="num">🎯</span><span class="label">웰페리온 대시보드</span></a>
     <a data-doc="update"><span class="num">📝</span><span class="label">공통 가이드라인</span></a>
     <a data-doc="g10"><span class="num">📋</span><span class="label">AI C-Level 운영 가이드</span></a>
     <a data-doc="g6"><span class="num">📖</span><span class="label">용어 사전</span></a>
@@ -1506,196 +1507,9 @@
     </div>
     <div class="source">SSOT: 회사소개서 v2.20 + 전략 로드맵 v1.5 통합 · 원본: <a href="회사문서/웰페리온_회사소개서_v2.19.html" target="_blank">회사소개서 v2.19</a> · <a href="회사문서/웰페리온_전략로드맵_보고서_v1.4.html" target="_blank">전략 로드맵 v1.4</a></div>
 
-    <!-- ── 웰페리온 대시보드 ──────────────────────────────────── -->
-    <div class="kpi-section" id="kpi-dashboard" style="margin-top:32px;">
-      <button class="kpi-toggle-btn" id="kpi-toggle" onclick="kpiToggle()">
-        <span class="kpi-arrow">▼</span> 웰페리온 대시보드
-      </button>
-      <div class="kpi-panel" id="kpi-panel">
-        <div class="kpi-meta"><span id="kpi-generated-at"></span></div>
+    <!-- ── 웰페리온 대시보드 → dashboard article로 이전됨 (2026-05-29) ── -->
 
-        <!-- C-Level KPI -->
-        <div class="kpi-grid" id="kpi-clevel-grid">
-          <!-- CFO -->
-          <div class="kpi-card" id="kpi-card-CFO">
-            <div class="kpi-card-label">CFO</div>
-            <div id="kpi-metrics-CFO"></div>
-          </div>
-          <!-- CHRO -->
-          <div class="kpi-card" id="kpi-card-CHRO">
-            <div class="kpi-card-label">CHRO</div>
-            <div id="kpi-metrics-CHRO"></div>
-          </div>
-          <!-- CMO -->
-          <div class="kpi-card" id="kpi-card-CMO">
-            <div class="kpi-card-label">CMO</div>
-            <div id="kpi-metrics-CMO"></div>
-          </div>
-          <!-- COO -->
-          <div class="kpi-card" id="kpi-card-COO">
-            <div class="kpi-card-label">COO</div>
-            <div id="kpi-metrics-COO"></div>
-          </div>
-          <!-- CPO -->
-          <div class="kpi-card" id="kpi-card-CPO">
-            <div class="kpi-card-label">CPO</div>
-            <div id="kpi-metrics-CPO"></div>
-          </div>
-          <!-- CTO -->
-          <div class="kpi-card" id="kpi-card-CTO">
-            <div class="kpi-card-label">CTO</div>
-            <div id="kpi-metrics-CTO"></div>
-          </div>
-        </div>
-        <!-- CEO 종합 — full width -->
-        <div class="kpi-grid-ceo">
-          <div class="kpi-card ceo-card" id="kpi-card-CEO">
-            <div class="kpi-card-label">CEO 종합</div>
-            <div id="kpi-metrics-CEO"></div>
-          </div>
-        </div>
-
-        <!-- ── 업무 KPI ── -->
-        <div style="margin-top:24px; border-top:1px solid var(--border); padding-top:20px;">
-          <div style="font-size:12px; font-weight:700; letter-spacing:0.08em; color:var(--dim); text-transform:uppercase; margin-bottom:12px;">업무 KPI — 작업 처리 / 완료 추적</div>
-          <div class="kpi-grid">
-            <div class="kpi-card">
-              <div class="kpi-card-label">누적 작업 건수</div>
-              <div style="font-size:22px; font-weight:700; color:var(--text); margin:8px 0 4px;">—</div>
-              <div style="font-size:11px; color:var(--dim);">측정 예정</div>
-            </div>
-            <div class="kpi-card">
-              <div class="kpi-card-label">완료 건수</div>
-              <div style="font-size:22px; font-weight:700; color:var(--text); margin:8px 0 4px;">—</div>
-              <div style="font-size:11px; color:var(--dim);">측정 예정</div>
-            </div>
-            <div class="kpi-card">
-              <div class="kpi-card-label">완료율</div>
-              <div style="font-size:22px; font-weight:700; color:var(--text); margin:8px 0 4px;">—</div>
-              <div style="font-size:11px; color:var(--dim);">측정 예정</div>
-            </div>
-            <div class="kpi-card">
-              <div class="kpi-card-label">보류 건수</div>
-              <div style="font-size:22px; font-weight:700; color:var(--text); margin:8px 0 4px;">—</div>
-              <div style="font-size:11px; color:var(--dim);">측정 예정</div>
-            </div>
-            <div class="kpi-card">
-              <div class="kpi-card-label">이번 주 신규</div>
-              <div style="font-size:22px; font-weight:700; color:var(--text); margin:8px 0 4px;">—</div>
-              <div style="font-size:11px; color:var(--dim);">측정 예정</div>
-            </div>
-            <div class="kpi-card">
-              <div class="kpi-card-label">평균 처리 기간</div>
-              <div style="font-size:22px; font-weight:700; color:var(--text); margin:8px 0 4px;">—</div>
-              <div style="font-size:11px; color:var(--dim);">측정 예정</div>
-            </div>
-          </div>
-        </div>
-
-        <!-- ── 문의·등록 KPI ── -->
-        <div style="margin-top:24px; border-top:1px solid var(--border); padding-top:20px;">
-          <div style="font-size:12px; font-weight:700; letter-spacing:0.08em; color:var(--dim); text-transform:uppercase; margin-bottom:12px;">문의·등록 KPI — 노출 → 문의 → 등록 전환</div>
-          <div class="kpi-grid">
-            <div class="kpi-card">
-              <div class="kpi-card-label">노출 (인스타·블로그)</div>
-              <div style="font-size:22px; font-weight:700; color:var(--text); margin:8px 0 4px;">—</div>
-              <div style="font-size:11px; color:var(--dim);">측정 예정</div>
-            </div>
-            <div class="kpi-card">
-              <div class="kpi-card-label">문의 건수</div>
-              <div style="font-size:22px; font-weight:700; color:var(--text); margin:8px 0 4px;">—</div>
-              <div style="font-size:11px; color:var(--dim);">측정 예정</div>
-            </div>
-            <div class="kpi-card">
-              <div class="kpi-card-label">투어·상담 건수</div>
-              <div style="font-size:22px; font-weight:700; color:var(--text); margin:8px 0 4px;">—</div>
-              <div style="font-size:11px; color:var(--dim);">측정 예정</div>
-            </div>
-            <div class="kpi-card">
-              <div class="kpi-card-label">등록 건수</div>
-              <div style="font-size:22px; font-weight:700; color:var(--text); margin:8px 0 4px;">—</div>
-              <div style="font-size:11px; color:var(--dim);">측정 예정</div>
-            </div>
-            <div class="kpi-card">
-              <div class="kpi-card-label">문의→등록 전환율</div>
-              <div style="font-size:22px; font-weight:700; color:var(--text); margin:8px 0 4px;">—</div>
-              <div style="font-size:11px; color:var(--dim);">측정 예정</div>
-            </div>
-            <div class="kpi-card">
-              <div class="kpi-card-label">이탈 건수</div>
-              <div style="font-size:22px; font-weight:700; color:var(--text); margin:8px 0 4px;">—</div>
-              <div style="font-size:11px; color:var(--dim);">측정 예정</div>
-            </div>
-          </div>
-        </div>
-
-        <!-- ── 일일 점검 KPI ── -->
-        <div style="margin-top:24px; border-top:1px solid var(--border); padding-top:20px;">
-          <div style="font-size:12px; font-weight:700; letter-spacing:0.08em; color:var(--dim); text-transform:uppercase; margin-bottom:12px;">일일 점검 KPI — 시설·안전 점검 완료율</div>
-          <div class="kpi-grid">
-            <div class="kpi-card">
-              <div class="kpi-card-label">오늘 점검 완료율</div>
-              <div style="font-size:22px; font-weight:700; color:var(--text); margin:8px 0 4px;">—</div>
-              <div style="font-size:11px; color:var(--dim);">측정 예정</div>
-            </div>
-            <div class="kpi-card">
-              <div class="kpi-card-label">이번 주 평균 완료율</div>
-              <div style="font-size:22px; font-weight:700; color:var(--text); margin:8px 0 4px;">—</div>
-              <div style="font-size:11px; color:var(--dim);">측정 예정</div>
-            </div>
-            <div class="kpi-card">
-              <div class="kpi-card-label">미완료 점검 항목</div>
-              <div style="font-size:22px; font-weight:700; color:var(--text); margin:8px 0 4px;">—</div>
-              <div style="font-size:11px; color:var(--dim);">측정 예정</div>
-            </div>
-            <div class="kpi-card">
-              <div class="kpi-card-label">시설 이상 보고 건수</div>
-              <div style="font-size:22px; font-weight:700; color:var(--text); margin:8px 0 4px;">—</div>
-              <div style="font-size:11px; color:var(--dim);">측정 예정</div>
-            </div>
-            <div class="kpi-card">
-              <div class="kpi-card-label">안전 이슈 처리 건수</div>
-              <div style="font-size:22px; font-weight:700; color:var(--text); margin:8px 0 4px;">—</div>
-              <div style="font-size:11px; color:var(--dim);">측정 예정</div>
-            </div>
-            <div class="kpi-card">
-              <div class="kpi-card-label">월 누적 점검 완료율</div>
-              <div style="font-size:22px; font-weight:700; color:var(--text); margin:8px 0 4px;">—</div>
-              <div style="font-size:11px; color:var(--dim);">측정 예정</div>
-            </div>
-          </div>
-        </div>
-
-        <!-- ── 고정 업무 ── -->
-        <div style="margin-top:24px; border-top:1px solid var(--border); padding-top:20px;">
-          <div style="font-size:12px; font-weight:700; letter-spacing:0.08em; color:var(--dim); text-transform:uppercase; margin-bottom:12px;">고정 업무 현황</div>
-          <div class="kpi-grid">
-            <div class="kpi-card">
-              <div class="kpi-card-label">분실물 관리</div>
-              <div style="font-size:13px; color:var(--text); margin:10px 0 4px; line-height:1.6;">보관 현황 · 반환 처리 · 폐기 주기</div>
-              <div style="font-size:11px; color:var(--dim);">담당: COO · 윤병현AM</div>
-            </div>
-            <div class="kpi-card">
-              <div class="kpi-card-label">휴관일 공지</div>
-              <div style="font-size:13px; color:var(--text); margin:10px 0 4px; line-height:1.6;">매월 둘째·넷째 일요일 + 신정·명절 사전 공지</div>
-              <div style="font-size:11px; color:var(--dim);">담당: COO · 최준용M</div>
-            </div>
-            <div class="kpi-card">
-              <div class="kpi-card-label">매출 보고</div>
-              <div style="font-size:13px; color:var(--text); margin:10px 0 4px; line-height:1.6;">일일 · 주간 · 월간 CFO 집계 및 GM 보고</div>
-              <div style="font-size:11px; color:var(--dim);">담당: CFO · 나우열M</div>
-            </div>
-            <div class="kpi-card">
-              <div class="kpi-card-label">락커 관리</div>
-              <div style="font-size:13px; color:var(--text); margin:10px 0 4px; line-height:1.6;">배정 · 만료 · 미사용 현황 점검</div>
-              <div style="font-size:11px; color:var(--dim);">담당: CPO · 임정은M</div>
-            </div>
-          </div>
-        </div>
-
-      </div>
-    </div>
-    <!-- ── /웰페리온 대시보드 ──────────────────────────────────── -->
+    <!-- ── /웰페리온 대시보드 (dashboard article로 이전됨) ── -->
 
   </article>
 
@@ -1857,6 +1671,183 @@
 
     <div class="source">SSOT: 전략 로드맵 보고서 v1.5 · 원본: <a href="회사문서/웰페리온_전략로드맵_보고서_v1.4_A3.html" target="_blank">전략 로드맵 v1.4 (A3)</a></div>
   </article>
+
+  <!-- ── 웰페리온 대시보드 (2026-05-29 신설 · g9 KPI 이전 + 4섹션 추가) ── -->
+  <article class="doc" id="dashboard">
+    <div class="doc-header">
+      <h2>🎯 웰페리온 대시보드</h2>
+      <div class="meta">전사 실시간 현황 — 모든 실무진 진입</div>
+    </div>
+    <p class="lead">웰페리온 운영 전반(KPI·진행 현황·세션 로그·시설 점검·결재)을 한눈에 확인. 매일 08:00 자동 갱신.</p>
+
+    <!-- ① KPI 대시보드 (g9에서 이전) -->
+    <div class="kpi-section" id="kpi-dashboard" style="margin-top:8px;">
+      <button class="kpi-toggle-btn" id="kpi-toggle" onclick="kpiToggle()">
+        <span class="kpi-arrow">▼</span> C-Level KPI 대시보드
+      </button>
+      <div class="kpi-panel" id="kpi-panel">
+        <div class="kpi-meta"><span id="kpi-generated-at"></span></div>
+
+        <!-- C-Level KPI -->
+        <div class="kpi-grid" id="kpi-clevel-grid">
+          <div class="kpi-card" id="kpi-card-CFO"><div class="kpi-card-label">CFO</div><div id="kpi-metrics-CFO"></div></div>
+          <div class="kpi-card" id="kpi-card-CHRO"><div class="kpi-card-label">CHRO</div><div id="kpi-metrics-CHRO"></div></div>
+          <div class="kpi-card" id="kpi-card-CMO"><div class="kpi-card-label">CMO</div><div id="kpi-metrics-CMO"></div></div>
+          <div class="kpi-card" id="kpi-card-COO"><div class="kpi-card-label">COO</div><div id="kpi-metrics-COO"></div></div>
+          <div class="kpi-card" id="kpi-card-CPO"><div class="kpi-card-label">CPO</div><div id="kpi-metrics-CPO"></div></div>
+          <div class="kpi-card" id="kpi-card-CTO"><div class="kpi-card-label">CTO</div><div id="kpi-metrics-CTO"></div></div>
+        </div>
+        <div class="kpi-grid-ceo">
+          <div class="kpi-card ceo-card" id="kpi-card-CEO"><div class="kpi-card-label">CEO 종합</div><div id="kpi-metrics-CEO"></div></div>
+        </div>
+
+        <!-- 업무 KPI -->
+        <div style="margin-top:24px; border-top:1px solid var(--border); padding-top:20px;">
+          <div style="font-size:12px; font-weight:700; letter-spacing:0.08em; color:var(--dim); text-transform:uppercase; margin-bottom:12px;">업무 KPI — 작업 처리 / 완료 추적</div>
+          <div class="kpi-grid">
+            <div class="kpi-card"><div class="kpi-card-label">누적 작업 건수</div><div style="font-size:22px;font-weight:700;color:var(--text);margin:8px 0 4px;">—</div><div style="font-size:11px;color:var(--dim);">측정 예정</div></div>
+            <div class="kpi-card"><div class="kpi-card-label">완료 건수</div><div style="font-size:22px;font-weight:700;color:var(--text);margin:8px 0 4px;">—</div><div style="font-size:11px;color:var(--dim);">측정 예정</div></div>
+            <div class="kpi-card"><div class="kpi-card-label">완료율</div><div style="font-size:22px;font-weight:700;color:var(--text);margin:8px 0 4px;">—</div><div style="font-size:11px;color:var(--dim);">측정 예정</div></div>
+            <div class="kpi-card"><div class="kpi-card-label">보류 건수</div><div style="font-size:22px;font-weight:700;color:var(--text);margin:8px 0 4px;">—</div><div style="font-size:11px;color:var(--dim);">측정 예정</div></div>
+            <div class="kpi-card"><div class="kpi-card-label">이번 주 신규</div><div style="font-size:22px;font-weight:700;color:var(--text);margin:8px 0 4px;">—</div><div style="font-size:11px;color:var(--dim);">측정 예정</div></div>
+            <div class="kpi-card"><div class="kpi-card-label">평균 처리 기간</div><div style="font-size:22px;font-weight:700;color:var(--text);margin:8px 0 4px;">—</div><div style="font-size:11px;color:var(--dim);">측정 예정</div></div>
+          </div>
+        </div>
+
+        <!-- 문의·등록 KPI -->
+        <div style="margin-top:24px; border-top:1px solid var(--border); padding-top:20px;">
+          <div style="font-size:12px; font-weight:700; letter-spacing:0.08em; color:var(--dim); text-transform:uppercase; margin-bottom:12px;">문의·등록 KPI — 노출 → 문의 → 등록 전환</div>
+          <div class="kpi-grid">
+            <div class="kpi-card"><div class="kpi-card-label">노출 (인스타·블로그)</div><div style="font-size:22px;font-weight:700;color:var(--text);margin:8px 0 4px;">—</div><div style="font-size:11px;color:var(--dim);">측정 예정</div></div>
+            <div class="kpi-card"><div class="kpi-card-label">문의 건수</div><div style="font-size:22px;font-weight:700;color:var(--text);margin:8px 0 4px;">—</div><div style="font-size:11px;color:var(--dim);">측정 예정</div></div>
+            <div class="kpi-card"><div class="kpi-card-label">투어·상담 건수</div><div style="font-size:22px;font-weight:700;color:var(--text);margin:8px 0 4px;">—</div><div style="font-size:11px;color:var(--dim);">측정 예정</div></div>
+            <div class="kpi-card"><div class="kpi-card-label">등록 건수</div><div style="font-size:22px;font-weight:700;color:var(--text);margin:8px 0 4px;">—</div><div style="font-size:11px;color:var(--dim);">측정 예정</div></div>
+            <div class="kpi-card"><div class="kpi-card-label">문의→등록 전환율</div><div style="font-size:22px;font-weight:700;color:var(--text);margin:8px 0 4px;">—</div><div style="font-size:11px;color:var(--dim);">측정 예정</div></div>
+            <div class="kpi-card"><div class="kpi-card-label">이탈 건수</div><div style="font-size:22px;font-weight:700;color:var(--text);margin:8px 0 4px;">—</div><div style="font-size:11px;color:var(--dim);">측정 예정</div></div>
+          </div>
+        </div>
+
+        <!-- 일일 점검 KPI -->
+        <div style="margin-top:24px; border-top:1px solid var(--border); padding-top:20px;">
+          <div style="font-size:12px; font-weight:700; letter-spacing:0.08em; color:var(--dim); text-transform:uppercase; margin-bottom:12px;">일일 점검 KPI — 시설·안전 점검 완료율</div>
+          <div class="kpi-grid">
+            <div class="kpi-card"><div class="kpi-card-label">오늘 점검 완료율</div><div style="font-size:22px;font-weight:700;color:var(--text);margin:8px 0 4px;">—</div><div style="font-size:11px;color:var(--dim);">측정 예정</div></div>
+            <div class="kpi-card"><div class="kpi-card-label">이번 주 평균 완료율</div><div style="font-size:22px;font-weight:700;color:var(--text);margin:8px 0 4px;">—</div><div style="font-size:11px;color:var(--dim);">측정 예정</div></div>
+            <div class="kpi-card"><div class="kpi-card-label">미완료 점검 항목</div><div style="font-size:22px;font-weight:700;color:var(--text);margin:8px 0 4px;">—</div><div style="font-size:11px;color:var(--dim);">측정 예정</div></div>
+            <div class="kpi-card"><div class="kpi-card-label">시설 이상 보고 건수</div><div style="font-size:22px;font-weight:700;color:var(--text);margin:8px 0 4px;">—</div><div style="font-size:11px;color:var(--dim);">측정 예정</div></div>
+            <div class="kpi-card"><div class="kpi-card-label">안전 이슈 처리 건수</div><div style="font-size:22px;font-weight:700;color:var(--text);margin:8px 0 4px;">—</div><div style="font-size:11px;color:var(--dim);">측정 예정</div></div>
+            <div class="kpi-card"><div class="kpi-card-label">월 누적 점검 완료율</div><div style="font-size:22px;font-weight:700;color:var(--text);margin:8px 0 4px;">—</div><div style="font-size:11px;color:var(--dim);">측정 예정</div></div>
+          </div>
+        </div>
+
+        <!-- 고정 업무 -->
+        <div style="margin-top:24px; border-top:1px solid var(--border); padding-top:20px;">
+          <div style="font-size:12px; font-weight:700; letter-spacing:0.08em; color:var(--dim); text-transform:uppercase; margin-bottom:12px;">고정 업무 현황</div>
+          <div class="kpi-grid">
+            <div class="kpi-card"><div class="kpi-card-label">분실물 관리</div><div style="font-size:13px;color:var(--text);margin:10px 0 4px;line-height:1.6;">보관 현황 · 반환 처리 · 폐기 주기</div><div style="font-size:11px;color:var(--dim);">담당: COO · 윤병현AM</div></div>
+            <div class="kpi-card"><div class="kpi-card-label">휴관일 공지</div><div style="font-size:13px;color:var(--text);margin:10px 0 4px;line-height:1.6;">매월 둘째·넷째 일요일 + 신정·명절 사전 공지</div><div style="font-size:11px;color:var(--dim);">담당: COO · 최준용M</div></div>
+            <div class="kpi-card"><div class="kpi-card-label">매출 보고</div><div style="font-size:13px;color:var(--text);margin:10px 0 4px;line-height:1.6;">일일 · 주간 · 월간 CFO 집계 및 GM 보고</div><div style="font-size:11px;color:var(--dim);">담당: CFO · 나우열M</div></div>
+            <div class="kpi-card"><div class="kpi-card-label">락커 관리</div><div style="font-size:13px;color:var(--text);margin:10px 0 4px;line-height:1.6;">배정 · 만료 · 미사용 현황 점검</div><div style="font-size:11px;color:var(--dim);">담당: CPO · 임정은M</div></div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ② 오늘 진행 현황 -->
+    <div style="margin-top:32px; border-top:2px solid var(--border); padding-top:24px;">
+      <div style="font-size:13px; font-weight:700; letter-spacing:0.06em; color:var(--dim); text-transform:uppercase; margin-bottom:16px;">🟢 오늘 진행 현황</div>
+      <div id="dash-today-date" style="font-size:12px; color:var(--dim); margin-bottom:12px;"></div>
+      <div class="kpi-grid" id="dash-today-grid">
+        <div class="kpi-card"><div class="kpi-card-label">✅ 오늘 완료</div><div id="dash-done" style="font-size:28px;font-weight:700;color:#4ade80;margin:8px 0 4px;">—</div><div style="font-size:11px;color:var(--dim);">건</div></div>
+        <div class="kpi-card"><div class="kpi-card-label">🟡 진행 중·위임</div><div id="dash-doing" style="font-size:28px;font-weight:700;color:#facc15;margin:8px 0 4px;">—</div><div style="font-size:11px;color:var(--dim);">건</div></div>
+        <div class="kpi-card"><div class="kpi-card-label">⏸️ 대기 큐</div><div id="dash-waiting" style="font-size:28px;font-weight:700;color:var(--accent);margin:8px 0 4px;">—</div><div style="font-size:11px;color:var(--dim);">건</div></div>
+        <div class="kpi-card"><div class="kpi-card-label">📝 미시작</div><div id="dash-todo" style="font-size:28px;font-weight:700;color:var(--text);margin:8px 0 4px;">—</div><div style="font-size:11px;color:var(--dim);">건</div></div>
+      </div>
+    </div>
+
+    <!-- ③ 세션 로그 미러 (김남욱 탭에서 읽기 전용) -->
+    <div style="margin-top:32px; border-top:2px solid var(--border); padding-top:24px;">
+      <div style="font-size:13px; font-weight:700; letter-spacing:0.06em; color:var(--dim); text-transform:uppercase; margin-bottom:16px;">📝 세션 로그 (최근 5일)</div>
+      <table>
+        <tr><th style="width:90px">날짜</th><th>핵심 변경</th><th style="width:240px">다음 할일</th></tr>
+        <tr>
+          <td><strong>05-29(금)</strong></td>
+          <td>INB DB 폐기(옵션 A) · 토큰 라우팅 매트릭스 정립(Haiku/Sonnet/Opus 3계층) · SSOT 이중 정립(백엔드=GitHub/프론트=가이드허브) · AI CEO 마감 검증 의무 정립 · 시드 #06 합류 + KPI 대시보드 v1 골격(g10 카드 7장·JS fetch·토글) · 08:00 회복 보고 + 6 C-Level 자율 지시 · 시드 #08 P1-A hotfix(isToday 잔존 차단·migration 보정·모달 정합) · 대시보드 article 신설(g9 KPI 이전+4섹션)</td>
+          <td>시드 #06 잔여(CTO JSON 빌더 + 6 KPI 함수) · #08 P1-B 세션 로그 자동 누적 · P2-A 루틴 정합 · P2-B SSOT 멱등성 · P3 gm1 KPI 미니뷰 · 시드 #10·#01·#02·#11·#09·#04</td>
+        </tr>
+        <tr>
+          <td><strong>05-28(목)</strong></td>
+          <td>146 commits 대규모 작업. 시드 #06~#11 SSOT 등록 · 가이드허브 단일 SSOT 확립 · 공지 서식 v2.0~v2.55 완성 · 결재 SSOT 통합 · 인사허브 GitHub Pages 이전 · 김남욱 GM 페이지 Phase 1 통합(gm1_unified_tasks) · 슬로건 전수 통일</td>
+          <td>시드 11건 처리 시작(#06부터)</td>
+        </tr>
+        <tr>
+          <td><strong>05-27(수)</strong></td>
+          <td>v2.5 대규모 업데이트. GitHub Pages 전환·사이드바 4섹터·AI C-Level 순서 변경·Notion 조직도 7명 반영·핵심업무 재정립·g2+g19·g9+g20·g12·g13 합병·공식채널 6채널·지출현황·취업규칙 7탭·운영 통합 체계 4탭</td>
+          <td>AI C-Level 개요 페이지 생성 / 전사 기준 & 회사 핵심 문서 통합 검토</td>
+        </tr>
+        <tr>
+          <td><strong>05-26(화)</strong></td>
+          <td>Ralph 4건 완료 (CMO 파이프라인·지출현황·컨텍스트 정비·AI 교육 7탭), 투두리스트 4건 수정, GitHub Pages 전환 결정, 카톡 폐기→텔레그램 결재 결정</td>
+          <td>GitHub Pages 셋업, 투두리스트 텔레그램 변경, Apps Script v3 재배포</td>
+        </tr>
+        <tr>
+          <td><strong>05-25(월)</strong></td>
+          <td>—</td>
+          <td>—</td>
+        </tr>
+      </table>
+      <div class="callout tip" style="margin-top:12px;"><strong>원본:</strong> 김남욱 GM 페이지 → 세션 로그 탭. 이곳은 읽기 전용 미러 (최근 5일).</div>
+    </div>
+
+    <!-- ④ 시설·지원·주차 점검 현황 (12시 슬롯) -->
+    <div style="margin-top:32px; border-top:2px solid var(--border); padding-top:24px;">
+      <div style="font-size:13px; font-weight:700; letter-spacing:0.06em; color:var(--dim); text-transform:uppercase; margin-bottom:16px;">🏢 시설·지원·주차 점검 현황</div>
+      <div class="kpi-grid">
+        <div class="kpi-card">
+          <div class="kpi-card-label">오늘 점검 완료</div>
+          <div style="font-size:28px;font-weight:700;color:var(--text);margin:8px 0 4px;">—</div>
+          <div style="font-size:11px;color:var(--dim);">측정 중</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-card-label">미점검</div>
+          <div style="font-size:28px;font-weight:700;color:var(--text);margin:8px 0 4px;">—</div>
+          <div style="font-size:11px;color:var(--dim);">측정 중</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-card-label">이슈</div>
+          <div style="font-size:28px;font-weight:700;color:var(--text);margin:8px 0 4px;">—</div>
+          <div style="font-size:11px;color:var(--dim);">측정 중</div>
+        </div>
+      </div>
+      <div style="font-size:12px; color:var(--dim); margin-top:10px;">데이터 소스: COO 체크리스트 DB (COO_CHECKLIST_DB_ID) 연동 예정</div>
+    </div>
+
+    <!-- ⑤ 결재 현황 미니뷰 -->
+    <div style="margin-top:32px; border-top:2px solid var(--border); padding-top:24px;">
+      <div style="font-size:13px; font-weight:700; letter-spacing:0.06em; color:var(--dim); text-transform:uppercase; margin-bottom:16px;">✍️ 결재 현황</div>
+      <div class="kpi-grid">
+        <div class="kpi-card">
+          <div class="kpi-card-label">미결</div>
+          <div style="font-size:28px;font-weight:700;color:var(--text);margin:8px 0 4px;">—</div>
+          <div style="font-size:11px;color:var(--dim);">측정 중</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-card-label">결재 완료 (오늘)</div>
+          <div style="font-size:28px;font-weight:700;color:var(--text);margin:8px 0 4px;">—</div>
+          <div style="font-size:11px;color:var(--dim);">측정 중</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-card-label">반려 (오늘)</div>
+          <div style="font-size:28px;font-weight:700;color:var(--text);margin:8px 0 4px;">—</div>
+          <div style="font-size:11px;color:var(--dim);">측정 중</div>
+        </div>
+      </div>
+      <div style="font-size:12px; color:var(--dim); margin-top:10px;">데이터 소스: 업무&amp;결재 현황 SSOT 연동 예정</div>
+    </div>
+
+  </article>
+  <!-- ── /웰페리온 대시보드 ── -->
 
   <article class="doc" id="g10">
     <div class="doc-header"><h2>AI C-Level 운영 가이드</h2><div class="meta">협업 매뉴얼 v1.0 + 실무 가이드라인 v1.1 통합 · 7개 C-Level별 협업 리듬 + 실무 지침</div></div>
@@ -6532,7 +6523,7 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
       }
     };
 
-    // g10 섹션 활성화 시 초기화 (중복 방지)
+    // dashboard 섹션 활성화 시 초기화 (중복 방지)
     var _kpiInited = false;
     function maybeInit(){
       if(_kpiInited) return;
@@ -6541,13 +6532,67 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
     }
     // nav 클릭 감시
     document.addEventListener('click', function(e){
-      var a = e.target.closest('[data-doc="g9"]');
+      var a = e.target.closest('[data-doc="dashboard"]');
       if(a) setTimeout(maybeInit, 80);
     });
-    // 페이지 로드 시 g9이 이미 활성이면 즉시 실행
+    // 페이지 로드 시 dashboard가 이미 활성이면 즉시 실행
     setTimeout(maybeInit, 200);
   })();
   // ── /KPI 대시보드 v1 ─────────────────────────────────────────────
+
+  // ── 대시보드 오늘 진행 현황 ──────────────────────────────────────
+  (function(){
+    var TASKS_KEY = 'gm1_unified_tasks';
+    var HISTORY_KEY = 'gm1_daily_history';
+    var DOW = ['일','월','화','수','목','금','토'];
+
+    function todayStr(){
+      var d = new Date();
+      return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+    }
+
+    function renderTodayStats(){
+      var today = todayStr();
+      var d = new Date(); var dow = DOW[d.getDay()];
+      var dateEl = document.getElementById('dash-today-date');
+      if(dateEl) dateEl.textContent = today + ' (' + dow + ')';
+
+      var tasks = [];
+      try{ tasks = JSON.parse(localStorage.getItem(TASKS_KEY)||'[]'); }catch(e){}
+
+      var done=0, doing=0, waiting=0, todo=0;
+      tasks.forEach(function(t){
+        var s = (t.status||'').trim();
+        if(s==='완료') done++;
+        else if(s==='진행중'||s==='위임') doing++;
+        else if(s==='보류') waiting++;
+        else todo++;
+      });
+
+      // history today entry 보완
+      var hist = {};
+      try{ hist = JSON.parse(localStorage.getItem(HISTORY_KEY)||'{}'); }catch(e){}
+      var entry = hist[today];
+      if(entry && typeof entry.done === 'number') done = entry.done;
+
+      function set(id, val){ var el=document.getElementById(id); if(el) el.textContent = val; }
+      set('dash-done', done);
+      set('dash-doing', doing);
+      set('dash-waiting', waiting);
+      set('dash-todo', todo);
+    }
+
+    function maybeRender(){
+      var art = document.getElementById('dashboard');
+      if(art && art.offsetParent !== null){ renderTodayStats(); }
+    }
+
+    document.addEventListener('click', function(e){
+      if(e.target.closest('[data-doc="dashboard"]')) setTimeout(maybeRender, 100);
+    });
+    setTimeout(maybeRender, 300);
+  })();
+  // ── /대시보드 오늘 진행 현황 ─────────────────────────────────────
 
   // ── 오늘 핵심 + 히스토리 (시드 #07) ────────────────────────────────
   (function(){
