@@ -583,9 +583,7 @@ function renderTasks() {
 
   // Apply filters to active
   let filtered = active;
-  if (activeOwnerFilter === '대표님 결재건') {
-    filtered = active.filter(t => (t.approval || '').includes('대표님'));
-  } else if (activeOwnerFilter !== '전체') {
+  if (activeOwnerFilter !== '전체') {
     filtered = active.filter(t => (t.owner || '').includes(activeOwnerFilter));
   }
   if (activeCatFilter !== '전체') {
@@ -672,9 +670,7 @@ function renderTasks() {
 
 function filterDone(done) {
   let filtered = done;
-  if (activeOwnerFilter === '대표님 결재건') {
-    filtered = done.filter(t => (t.approval || '').includes('대표님'));
-  } else if (activeOwnerFilter !== '전체') {
+  if (activeOwnerFilter !== '전체') {
     filtered = done.filter(t => (t.owner || '').includes(activeOwnerFilter));
   }
   if (activeCatFilter !== '전체') {
@@ -701,9 +697,7 @@ function renderCatGroup(cat, tasks, startIdx) {
 
 function filterByStatus(list) {
   let filtered = list;
-  if (activeOwnerFilter === '대표님 결재건') {
-    filtered = list.filter(t => (t.approval || '').includes('대표님'));
-  } else if (activeOwnerFilter !== '전체') {
+  if (activeOwnerFilter !== '전체') {
     filtered = list.filter(t => (t.owner || '').includes(activeOwnerFilter));
   }
   if (activeCatFilter !== '전체') {
@@ -1719,9 +1713,7 @@ function shareReport() {
 /* ── Share helpers ── */
 function _applyShareFilters(tasks) {
   let filtered = tasks;
-  if (activeOwnerFilter === '대표님 결재건') {
-    filtered = tasks.filter(t => (t.approval || '').includes('대표님'));
-  } else if (activeOwnerFilter !== '전체') {
+  if (activeOwnerFilter !== '전체') {
     filtered = tasks.filter(t => (t.owner || '').includes(activeOwnerFilter));
   }
   if (activeCatFilter !== '전체') {
