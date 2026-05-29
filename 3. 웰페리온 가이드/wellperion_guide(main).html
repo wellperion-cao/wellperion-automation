@@ -1977,12 +1977,13 @@
           <tr><td><strong>① 기록 위치</strong></td><td>GitHub commit(메시지) · 가이드허브 반영 위치 — 어디서 확인 가능한지</td></tr>
           <tr><td><strong>② Before &amp; After</strong></td><td>변경 전 → 후 핵심 1줄 (<strong>완료건만</strong>)</td></tr>
           <tr><td><strong>③ 진행 현황</strong></td><td>✅ 오늘 완료건 · 🔄 진행 중/위임건 · ⏳ 대기 큐건 · ⬜ 미시작건</td></tr>
-          <tr><td><strong>④ 남은 할 일</strong></td><td>표로 정리: <strong>상태 · ID · 누가(담당) · 일(내용)</strong></td></tr>
+          <tr><td><strong>④ 남은 할 일</strong></td><td>표로 정리: <strong>상태 · ID · 담당(AI) · 최종책임자(사람) · 일(내용)</strong></td></tr>
         </table>
         <table>
-          <tr><th style="width:80px">상태</th><th style="width:110px">ID</th><th style="width:130px">누가</th><th>일</th></tr>
-          <tr><td>⏳ 대기</td><td>COO-007</td><td>최준용M</td><td>(예시) 주차 동선 개선</td></tr>
+          <tr><th style="width:70px">상태</th><th style="width:100px">ID</th><th style="width:110px">담당(AI)</th><th style="width:130px">최종책임자(사람)</th><th>일</th></tr>
+          <tr><td>⏳ 대기</td><td>COO-007</td><td>AI COO</td><td>최준용M·윤병현AM</td><td>(예시) 주차 동선 개선</td></tr>
         </table>
+        <div class="callout" style="margin-top:10px;"><strong>📌 "누가" = 두 칼럼 분리 의무:</strong> <strong>담당(AI)</strong> = 자동화·DB·집계·검증 후방 서포트를 수행하는 AI C-Level / <strong>최종책임자(사람)</strong> = 실무진. R/R 대전환(서포트 vs 책임)을 표에 그대로 반영. 사람 이름만 적고 담당 AI를 빠뜨리지 말 것.</div>
         <p style="font-size:13px;color:var(--dim);margin-top:6px;">※ GM 발신 채널(텔레그램·허브)이면 식별자·commit 해시는 최소화하고 일상어로. 내부 기록(git·세션 로그)엔 식별자 유지.</p>
 
         <h4 style="margin-top:20px;"><span class="ico">🎯</span>GM 결재 영역 (4종 외 자율 진행)</h4>
@@ -2037,7 +2038,7 @@
 
         <h4 style="margin-top:16px;">4. 남은 할일</h4>
         <table>
-          <tr><th>상태</th><th>ID</th><th>누가(담당)</th><th>일(할 일)</th></tr>
+          <tr><th>상태</th><th>ID</th><th>담당(AI)</th><th>최종책임자(사람)</th><th>일(할 일)</th></tr>
         </table>
 
         <div class="callout tip" style="margin-top:12px;"><strong>Before &amp; After는 완료 보고에만.</strong> 대기·진행중 보고는 진행 현황 + 남은 할일 표만으로 충분.</div>
