@@ -3373,6 +3373,47 @@ Start-Process python -ArgumentList telegram_bot\daily_scheduler.py -WorkingDirec
       <div id="gm1-deleg-list" style="display:flex; flex-direction:column; gap:8px;"></div>
     </div>
 
+    <!-- 📨 검수 대기 (시드 #09 검수→승인→발행 루프 Phase 1, 2026-05-29) -->
+    <div id="gm1-review-section" style="margin:0 0 22px;">
+      <h3><span class="ico">📨</span>검수 대기 <span id="gm1-review-count" style="font-size:12px;color:var(--dim);font-weight:400;"></span></h3>
+      <div id="gm1-review-list" style="display:flex;flex-direction:column;gap:12px;">
+        <div style="color:var(--dim);font-size:13px;">불러오는 중…</div>
+      </div>
+    </div>
+    <script>
+    (function(){
+      var URL='cmo/review/review_queue.json';
+      function dec(){try{return JSON.parse(localStorage.getItem('gm1_review_decisions')||'{}');}catch(e){return {};}}
+      function save(id,v){var d=dec();d[id]={decision:v,at:new Date().toISOString()};localStorage.setItem('gm1_review_decisions',JSON.stringify(d));}
+      function esc(s){return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+      function done(st){return st==='발행완료'||st==='approved'||st==='승인'||st==='rejected'||st==='반려';}
+      function render(items){
+        var list=document.getElementById('gm1-review-list');if(!list)return;
+        var d=dec();var cnt=document.getElementById('gm1-review-count');
+        var waiting=items.filter(function(it){var e=(d[it.id]&&d[it.id].decision)||it.status;return !done(e);}).length;
+        if(cnt)cnt.textContent='· 대기 '+waiting+'건 / 전체 '+items.length+'건';
+        if(!items.length){list.innerHTML='<div style="color:var(--dim);font-size:13px;padding:8px 0;">검수 대기 없음 — 새 콘텐츠가 준비되면 여기에 표시됩니다.</div>';return;}
+        list.innerHTML='';
+        items.forEach(function(it){
+          var e=(d[it.id]&&d[it.id].decision)||it.status;var c=document.createElement('div');
+          c.style.cssText='border:1px solid rgba(183,159,138,0.2);border-radius:12px;padding:14px;background:var(--paper);';
+          var badge=e==='발행완료'?'<span style="color:var(--green);font-weight:700;">✅ 발행완료</span>':(e==='approved'||e==='승인')?'<span style="color:var(--green);font-weight:700;">✅ 승인됨 · 발행 대기</span>':(e==='rejected'||e==='반려')?'<span style="color:var(--warm,#d98c5f);font-weight:700;">↩ 반려됨</span>':'<span style="color:var(--accent);font-weight:700;">🟡 검수 대기</span>';
+          var h='<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px;"><strong style="font-size:13.5px;">'+esc(it.title)+'</strong>'+badge+'</div>';
+          if(it.channel)h+='<div style="font-size:12px;color:var(--dim);margin-bottom:8px;">채널: '+esc(it.channel)+'</div>';
+          if(it.preview)h+='<img src="'+esc(it.preview)+'" alt="미리보기" style="width:100%;border-radius:8px;border:1px solid rgba(183,159,138,0.15);margin-bottom:8px;" loading="lazy">';
+          if(it.caption)h+='<details style="margin-bottom:8px;"><summary style="cursor:pointer;font-size:12.5px;color:var(--dim);">캡션 보기</summary><div style="font-size:12.5px;color:var(--text-soft);white-space:pre-wrap;line-height:1.7;padding-top:6px;">'+esc(it.caption)+'</div></details>';
+          if(it.post_url)h+='<div style="font-size:12px;margin-bottom:6px;"><a href="'+esc(it.post_url)+'" target="_blank" style="color:var(--accent);">게시물 보기 ↗</a></div>';
+          if(!done(e)){h+='<div style="display:flex;gap:8px;margin-top:4px;"><button data-act="approve" data-id="'+esc(it.id)+'" style="flex:1;background:var(--accent);color:#fff;border:none;border-radius:8px;padding:9px;font-weight:700;cursor:pointer;font-family:inherit;">승인</button><button data-act="reject" data-id="'+esc(it.id)+'" style="flex:1;background:none;color:var(--dim);border:1px solid var(--border);border-radius:8px;padding:9px;cursor:pointer;font-family:inherit;">반려</button></div>';}
+          else if(e==='approved'||e==='승인'){h+='<div style="font-size:11.5px;color:var(--dim);">승인 기록됨 — 자동 발행 연결은 다음 단계(감시기). 현재는 승인 표시만.</div>';}
+          c.innerHTML=h;list.appendChild(c);
+        });
+        list.querySelectorAll('button[data-act]').forEach(function(b){b.addEventListener('click',function(){save(b.getAttribute('data-id'),b.getAttribute('data-act')==='approve'?'approved':'rejected');render(window.__gm1_rv||[]);});});
+      }
+      function load(){fetch(URL,{cache:'no-store'}).then(function(r){return r.ok?r.json():[];}).then(function(items){if(!Array.isArray(items))items=[];window.__gm1_rv=items;render(items);}).catch(function(){var l=document.getElementById('gm1-review-list');if(l)l.innerHTML='<div style="color:var(--dim);font-size:13px;">검수 큐를 불러오지 못했습니다.</div>';});}
+      if(document.readyState!=='loading')load();else document.addEventListener('DOMContentLoaded',load);
+    })();
+    </script>
+
     <!-- 오늘 할 일 (탭 밖 독립 영역) -->
     <div style="margin:18px 0 24px;">
       <h3 id="gm1-todo-date"><span class="ico">📌</span>오늘 할 일</h3>
