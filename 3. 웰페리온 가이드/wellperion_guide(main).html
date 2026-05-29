@@ -6323,9 +6323,11 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
         var key = String(t.title).trim();
         var m = ssotByTitle[key];
         if (m) {
-          // SSOT 제목 매칭 — 표시 레벨에서만 상태 덮어쓰기 (localStorage 저장 금지)
+          // SSOT 제목 매칭 — 표시 레벨에서만 상태 병합 (localStorage 저장 금지)
+          // 완료 우선: 어느 쪽이든 완료면 완료 보존 (G1에서 완료 처리한 건이 미갱신 SSOT에 역행 덮이는 것 방지)
           matchedSsotTitles[key] = true;
-          merged.push(Object.assign({}, t, { status: m.status, _ssotMatched: true }));
+          var mergedStatus = (t.status === '완료' || m.status === '완료') ? '완료' : m.status;
+          merged.push(Object.assign({}, t, { status: mergedStatus, _ssotMatched: true }));
         } else {
           merged.push(t);
         }
