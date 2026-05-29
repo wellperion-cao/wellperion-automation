@@ -1969,6 +1969,21 @@
         <h4 style="margin-top:20px;"><span class="ico">📊</span>CEO 보고 형식</h4>
         <div class="callout"><strong>표 + 요약 + 추천 3요소 (산문 X, 식별자 N줄 X):</strong> GM이 1초 안에 파악 가능하게. 옵션 3개 이상이면 CEO 추천값 명시. GM은 선택만.</div>
 
+        <h4 style="margin-top:20px;"><span class="ico">🖥️</span>C-Level 작업 완료·대기 보고 형식 (PowerShell/CLI 공통)</h4>
+        <div class="callout" style="background:#1a2a1a;border-left:3px solid #059669;">AI CEO와 동일하게, <strong>모든 C-Level(+CEO)은 작업을 마치고 대기로 들어갈 때마다</strong> 아래 4블록으로 정리해 보고한다. (CLAUDE.md 헌법 명문화 · 본 탭이 포맷 정본)</div>
+        <table>
+          <tr><th style="width:140px">블록</th><th>내용</th></tr>
+          <tr><td><strong>① 기록 위치</strong></td><td>GitHub commit(메시지) · 가이드허브 반영 위치 — 어디서 확인 가능한지</td></tr>
+          <tr><td><strong>② Before &amp; After</strong></td><td>변경 전 → 후 핵심 1줄 (<strong>완료건만</strong>)</td></tr>
+          <tr><td><strong>③ 진행 현황</strong></td><td>✅ 오늘 완료건 · 🔄 진행 중/위임건 · ⏳ 대기 큐건 · ⬜ 미시작건</td></tr>
+          <tr><td><strong>④ 남은 할 일</strong></td><td>표로 정리: <strong>상태 · ID · 누가(담당) · 일(내용)</strong></td></tr>
+        </table>
+        <table>
+          <tr><th style="width:80px">상태</th><th style="width:110px">ID</th><th style="width:130px">누가</th><th>일</th></tr>
+          <tr><td>⏳ 대기</td><td>COO-007</td><td>최준용M</td><td>(예시) 주차 동선 개선</td></tr>
+        </table>
+        <p style="font-size:13px;color:var(--dim);margin-top:6px;">※ GM 발신 채널(텔레그램·허브)이면 식별자·commit 해시는 최소화하고 일상어로. 내부 기록(git·세션 로그)엔 식별자 유지.</p>
+
         <h4 style="margin-top:20px;"><span class="ico">🎯</span>GM 결재 영역 (4종 외 자율 진행)</h4>
         <div class="grid-3">
           <div class="card"><h4>💰 결제</h4><p>1원 이상 모든 결제</p></div>
@@ -2000,6 +2015,31 @@
         </table>
         <div class="callout tip" style="margin-top:12px;"><strong>원칙:</strong> Stop 사안은 절대로 C-Level 자율 처리 금지. GM 텔레그램 즉시 보고 후 대기.</div>
         <!-- ── /협업매뉴얼 v1.0 흡수 ── -->
+
+        <h3 style="margin-top:28px;border-top:1px solid var(--border);padding-top:24px;">작업 사이클 보고 포맷 (완료·대기 시마다 의무)</h3>
+        <p>모든 AI C-Level(CEO 포함)은 작업을 완료하고 대기로 전환할 때마다, 자신의 PowerShell 세션에 아래 형식으로 보고한다. 표 기반·한눈 파악·일상어. 모든 항목 앞에 식별자(시드 #NN·task ID) prefix 의무.</p>
+
+        <h4 style="margin-top:20px;">1. 기록 위치</h4>
+        <p>이번 작업 산출물이 남은 곳 1줄 (GitHub 커밋 SHA·태그 / Notion 페이지 URL / 가이드허브 섹션 중 해당).</p>
+
+        <h4 style="margin-top:16px;">2. Before &amp; After</h4>
+        <p>완료된 작업만 작성. 전(현행) → 후(변경 결과) 핵심 1~2줄. 진행중·미완료 건은 생략.</p>
+
+        <h4 style="margin-top:16px;">3. 진행 현황</h4>
+        <table>
+          <tr><th>분류</th><th>건수</th><th>식별자</th></tr>
+          <tr><td>✅ 오늘 완료</td><td></td><td></td></tr>
+          <tr><td>🟡 진행 중(위임)</td><td></td><td></td></tr>
+          <tr><td>⏸️ 대기 큐</td><td></td><td></td></tr>
+          <tr><td>📝 미시작</td><td></td><td></td></tr>
+        </table>
+
+        <h4 style="margin-top:16px;">4. 남은 할일</h4>
+        <table>
+          <tr><th>상태</th><th>ID</th><th>누가(담당)</th><th>일(할 일)</th></tr>
+        </table>
+
+        <div class="callout tip" style="margin-top:12px;"><strong>Before &amp; After는 완료 보고에만.</strong> 대기·진행중 보고는 진행 현황 + 남은 할일 표만으로 충분.</div>
       </div>
       <div class="tab-panel" data-panel="ceo">
         <div class="card accent" style="margin-bottom:16px;">
