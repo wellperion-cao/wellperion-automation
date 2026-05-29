@@ -171,6 +171,7 @@ function normalizeTask(r) {
   t.repSign = r['대표싸인'] || '';
   t.approvalStatus = r['결재상태'] || '';
   t.completeTime = r['결재완료시각'] || '';
+  t.reportUrl = r['결과보고서URL'] || '';
   return t;
 }
 
@@ -457,6 +458,9 @@ function renderApprovalCard(t) {
 
   if (t.completeTime) {
     h += '<div class="complete-time">🎉 결재완료: ' + esc(String(t.completeTime).slice(0, 16)) + '</div>';
+  }
+  if (t.reportUrl) {
+    h += '<a href="' + escAttr(t.reportUrl) + '" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:4px;margin-top:6px;font-size:11px;font-weight:600;padding:4px 10px;border-radius:6px;background:var(--purple-bg);color:var(--purple);border:1px solid rgba(167,139,218,0.3);text-decoration:none;">&#128196; 결과보고서</a>';
   }
 
   // 토글 (본문 + 기획 + 진척 로그 + 결과보고)

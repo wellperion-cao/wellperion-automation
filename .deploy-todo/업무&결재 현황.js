@@ -54,7 +54,9 @@ const TODO_HEADERS = [
   '결재요청', '링크', '파일URL',
   '생성자', '생성일', '수정일',
   // 결재 체계 (2026-05-28 신설)
-  '부서장싸인', 'GM싸인', '대표싸인', '결재상태', '결재완료시각'
+  '부서장싸인', 'GM싸인', '대표싸인', '결재상태', '결재완료시각',
+  // 결과보고서 자동 생성 (2026-05-29 신설)
+  '결과보고서URL'
 ];
 
 // 카테고리 목록
@@ -111,7 +113,7 @@ function initTodoSheet() {
   sh.getRange(1, 15, 1, 5).setBackground('#0b8043');
 
   const widths = [130, 200, 130, 80, 100, 100, 300, 70, 70, 200, 200, 80, 130, 130,
-                  130, 130, 130, 100, 150];
+                  130, 130, 130, 100, 150, 200];
   widths.forEach((w, i) => sh.setColumnWidth(i + 1, w));
 
   sh.setFrozenRows(1);
@@ -346,9 +348,8 @@ function _nextApprover(record, route) {
   return null; // 전원 서명 완료
 }
 
-// ─── 파일 업로드 (Base64 → Drive) ───
-function _uploadFile(base64, fileName, mimeType) {
-  // 폴더 ID 조회 또는 자동 생성
+// ─── TODO_Files Drive 폴더 확보 (없으면 생성) ───
+function _getTodoFolder() {
   let folderId = _prop('TODO_FILES_FOLDER');
   let folder;
 
@@ -371,6 +372,12 @@ function _uploadFile(base64, fileName, mimeType) {
     // 폴더 ID 저장
     PropertiesService.getScriptProperties().setProperty('TODO_FILES_FOLDER', folder.getId());
   }
+  return folder;
+}
+
+// ─── 파일 업로드 (Base64 → Drive) ───
+function _uploadFile(base64, fileName, mimeType) {
+  const folder = _getTodoFolder();
 
   const blob = Utilities.newBlob(
     Utilities.base64Decode(base64),
@@ -380,6 +387,87 @@ function _uploadFile(base64, fileName, mimeType) {
   const file = folder.createFile(blob);
   file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
   return file.getUrl();
+}
+
+// ─── 결과보고서 PDF 자동 생성 (결재 완료 트리거) — 2026-05-29 신설 ───
+// 입력: record (TODO_HEADERS 키 객체, 싸인 최종값 포함)
+// 출력: Drive 공유 URL (실패 시 '' — 절대 throw 금지, 결재 쓰기 보호)
+function _generateResultReport(record) {
+  try {
+    const esc = function (v) {
+      return String(v == null ? '' : v)
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    };
+    const val = function (k) { return esc(record[k] || '-'); };
+
+    const title = String(record['업무명'] || '무제');
+    const id = String(record['id'] || '');
+    const period = esc(record['시작일'] || '-') + ' ~ ' + esc(record['종료일'] || '-');
+    const sign = function (k) { return record[k] ? esc(record[k]) : '-'; };
+
+    // 참고 링크 (있을 때만)
+    let refRows = '';
+    if (record['링크']) {
+      refRows += '<tr><th>링크</th><td><a href="' + esc(record['링크']) + '">' + esc(record['링크']) + '</a></td></tr>';
+    }
+    if (record['파일URL']) {
+      refRows += '<tr><th>첨부파일</th><td><a href="' + esc(record['파일URL']) + '">' + esc(record['파일URL']) + '</a></td></tr>';
+    }
+
+    const html =
+      '<!DOCTYPE html><html><head><meta charset="utf-8"></head>' +
+      '<body style="margin:0;padding:0;font-family:\'Malgun Gothic\',\'Apple SD Gothic Neo\',sans-serif;color:#1a1a1a;">' +
+      '<div style="max-width:700px;margin:0 auto;padding:48px 40px;">' +
+        // 헤더 워드마크
+        '<div style="font-size:22px;font-weight:700;letter-spacing:4px;color:#0b3d2e;">WELLPERION</div>' +
+        '<div style="border-bottom:1px solid #cfcfcf;margin:14px 0 30px;"></div>' +
+        // 문서 제목
+        '<div style="font-size:28px;font-weight:700;margin-bottom:26px;">결과보고서</div>' +
+        // 정보 표
+        '<table style="width:100%;border-collapse:collapse;font-size:14px;margin-bottom:24px;">' +
+          '<tr><th style="width:120px;text-align:left;background:#f4f6f5;border:1px solid #ddd;padding:9px 12px;font-weight:600;">업무명</th><td style="border:1px solid #ddd;padding:9px 12px;">' + val('업무명') + '</td></tr>' +
+          '<tr><th style="text-align:left;background:#f4f6f5;border:1px solid #ddd;padding:9px 12px;font-weight:600;">카테고리</th><td style="border:1px solid #ddd;padding:9px 12px;">' + val('카테고리') + '</td></tr>' +
+          '<tr><th style="text-align:left;background:#f4f6f5;border:1px solid #ddd;padding:9px 12px;font-weight:600;">담당자</th><td style="border:1px solid #ddd;padding:9px 12px;">' + val('담당자') + '</td></tr>' +
+          '<tr><th style="text-align:left;background:#f4f6f5;border:1px solid #ddd;padding:9px 12px;font-weight:600;">기간</th><td style="border:1px solid #ddd;padding:9px 12px;">' + period + '</td></tr>' +
+          '<tr><th style="text-align:left;background:#f4f6f5;border:1px solid #ddd;padding:9px 12px;font-weight:600;">상태</th><td style="border:1px solid #ddd;padding:9px 12px;">' + val('상태') + '</td></tr>' +
+          '<tr><th style="text-align:left;background:#f4f6f5;border:1px solid #ddd;padding:9px 12px;font-weight:600;vertical-align:top;">내용</th><td style="border:1px solid #ddd;padding:9px 12px;white-space:pre-wrap;">' + val('내용') + '</td></tr>' +
+        '</table>' +
+        // 결재 라인 표
+        '<div style="font-size:15px;font-weight:700;margin:6px 0 10px;">결재 라인</div>' +
+        '<table style="width:100%;border-collapse:collapse;font-size:14px;margin-bottom:24px;">' +
+          '<tr><th style="width:120px;text-align:left;background:#f4f6f5;border:1px solid #ddd;padding:9px 12px;font-weight:600;">부서장 싸인</th><td style="border:1px solid #ddd;padding:9px 12px;">' + sign('부서장싸인') + '</td></tr>' +
+          '<tr><th style="text-align:left;background:#f4f6f5;border:1px solid #ddd;padding:9px 12px;font-weight:600;">GM 싸인</th><td style="border:1px solid #ddd;padding:9px 12px;">' + sign('GM싸인') + '</td></tr>' +
+          '<tr><th style="text-align:left;background:#f4f6f5;border:1px solid #ddd;padding:9px 12px;font-weight:600;">대표 싸인</th><td style="border:1px solid #ddd;padding:9px 12px;">' + sign('대표싸인') + '</td></tr>' +
+          '<tr><th style="text-align:left;background:#f4f6f5;border:1px solid #ddd;padding:9px 12px;font-weight:600;">결재완료시각</th><td style="border:1px solid #ddd;padding:9px 12px;">' + sign('결재완료시각') + '</td></tr>' +
+        '</table>' +
+        // 참고 링크 (있을 때만)
+        (refRows
+          ? '<div style="font-size:15px;font-weight:700;margin:6px 0 10px;">참고</div>' +
+            '<table style="width:100%;border-collapse:collapse;font-size:13px;margin-bottom:24px;">' + refRows + '</table>'
+          : '') +
+        // 푸터
+        '<div style="border-top:1px solid #cfcfcf;margin-top:36px;padding-top:16px;font-size:12px;color:#777;display:flex;justify-content:space-between;">' +
+          '<span style="font-style:italic;letter-spacing:1px;">A Day, Well Completed.</span>' +
+          '<span>발행일 ' + esc(_now()) + '</span>' +
+        '</div>' +
+      '</div></body></html>';
+
+    // 파일명 — 파일명 불가 문자 치환
+    const safeTitle = title.replace(/[\/\\:*?"<>|]/g, '_');
+    const fileName = '결과보고서_' + safeTitle + '_' + id + '.pdf';
+
+    const pdf = Utilities.newBlob(html, 'text/html', fileName).getAs('application/pdf');
+    pdf.setName(fileName);
+
+    const folder = _getTodoFolder();
+    const file = folder.createFile(pdf);
+    file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+    return file.getUrl();
+  } catch (e) {
+    Logger.log('결과보고서 생성 실패: ' + (e && e.message ? e.message : e));
+    return '';
+  }
 }
 
 // ═══════════════════════════════════════════
@@ -558,23 +646,34 @@ function _processTodoAction(body) {
       existing[TODO_HEADERS.indexOf(signCol)] = now + (signer && signer !== role ? ' (' + signer + ')' : '');
       record[signCol] = existing[TODO_HEADERS.indexOf(signCol)];
       const next = _nextApprover(record, route);
+      let reportUrl = '';
       if (next) {
         existing[TODO_HEADERS.indexOf('결재상태')] = role + ' 완료';
       } else {
         existing[TODO_HEADERS.indexOf('결재상태')] = '결재완료';
         existing[TODO_HEADERS.indexOf('결재완료시각')] = now;
+        // 결재 완료 트리거 — 싸인 최종값 반영 record로 결과보고서 PDF 자동 생성
+        const finalRecord = {};
+        TODO_HEADERS.forEach(h => finalRecord[h] = existing[TODO_HEADERS.indexOf(h)]);
+        reportUrl = _generateResultReport(finalRecord);
       }
       existing[TODO_HEADERS.indexOf('수정일')] = now;
       sh.getRange(rowNum, 1, 1, TODO_HEADERS.length).setValues([existing]);
+
+      // 결과보고서URL은 메인 setValues 이후 별도 기록 (배열 길이 마이그레이션 안전)
+      if (reportUrl) {
+        sh.getRange(rowNum, TODO_HEADERS.indexOf('결과보고서URL') + 1).setValue(reportUrl);
+      }
 
       // 텔레그램 결재 카드 폐기 (2026-05-28). 단순 진행 알림만 유지.
       if (next) {
         _notifyTelegram('✅ <b>[' + role + ' 싸인 완료]</b> → ' + next + ' 결재 대기\n📌 ' + (record['업무명']||'-') + '\n🆔 ' + id);
       } else {
-        _notifyTelegram('🎉 <b>[결재 완료]</b> 전 라인 승인\n📌 ' + (record['업무명']||'-') + '\n🆔 ' + id + '\n✅ ' + now);
+        _notifyTelegram('🎉 <b>[결재 완료]</b> 전 라인 승인\n📌 ' + (record['업무명']||'-') + '\n🆔 ' + id + '\n✅ ' + now +
+          (reportUrl ? '\n📄 결과보고서 자동 생성됨' : ''));
       }
 
-      return _json({ ok: true, id: id, message: role + ' 승인 처리됨', next: next || null, decision: 'approve' });
+      return _json({ ok: true, id: id, message: role + ' 승인 처리됨', next: next || null, decision: 'approve', reportUrl: reportUrl || null });
     }
 
     // ─── 삭제 ───

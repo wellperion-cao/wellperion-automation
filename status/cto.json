@@ -1,10 +1,10 @@
 {
   "clevel": "cto",
   "status": "DONE",
-  "task_id": "CTO-2026-05-29-NOTION-DEPRECATE",
-  "last_task_id": "CTO-2026-05-29-NOTION-DEPRECATE",
+  "task_id": "CTO-2026-05-29-SEED01-APPROVAL-PDF",
+  "last_task_id": "CTO-2026-05-29-SEED01-APPROVAL-PDF",
   "last_commit_sha": null,
-  "last_pushed_at": "2026-05-29T16:58:23",
+  "last_pushed_at": "2026-05-29T17:55:00",
   "active_tasks": [
     {
       "task_id": "CTO-2026-05-29-NOTION-DEPRECATE",
@@ -12,23 +12,24 @@
       "assigned_at": "2026-05-29T12:06:00.781241",
       "status": "DONE",
       "completed_at": "2026-05-29T16:58:23",
-      "note": "단계적 폐기(GM 결재). 코드 참조 0건인 콘텐츠 DB 6개(마스터색인·이슈트래킹·월간지출·월간매출·운영SOP·KPI스냅샷) [폐기] 표기 완료(raw API PATCH 200+GET 검증). 토픽은 가이드허브가 이미 커버, 거래데이터는 노션에 비파괴 보존. 업무자동화DB는 살아있는 텔레그램 자동화 6파일 의존으로 후속 작업(AUTOMATION-DB-MIGRATE)에서 status/json 전환 후 폐기.",
+      "note": "단계적 폐기(GM 결재). 코드 참조 0건 콘텐츠 DB 6개 [폐기] 표기 완료. 업무자동화DB는 후속 AUTOMATION-DB-MIGRATE.",
       "blocks": [
         "G1-2026-05-29-04-SSOT-AUTO-JOIN"
       ]
     },
     {
-      "task_id": "CTO-2026-05-29-AUTOMATION-DB-MIGRATE",
-      "title": "업무자동화DB 폐기 2단계 — 텔레그램 자동화 6파일(auto_task_watcher·bot·pre_task_notifier·weekly_context_maintenance_arm·bulk_exec_time_input·daily_audit)을 status/json 읽기로 전환 후 노션 업무자동화DB [폐기]",
-      "assigned_at": "2026-05-29T16:58:23",
-      "status": "QUEUED",
-      "depends_on": "CTO-2026-05-29-NOTION-DEPRECATE",
-      "blocks": []
-    },
-    {
       "task_id": "CTO-2026-05-29-SEED01-APPROVAL-PDF",
       "title": "시드 #01 — 결재 완료 시 자동 결과보고서 PDF + 결재 현황 SSOT 첨부",
       "assigned_at": "2026-05-29T13:26:34.866039",
+      "status": "DONE",
+      "completed_at": "2026-05-29T17:55:00",
+      "note": "Apps Script(업무&결재 현황.js)에 결과보고서URL 컬럼 + _generateResultReport(HTML→PDF→Drive) + todo_sign 결재완료 hook 추가. 프론트(결재 현황 SSOT.html)에 결과보고서 링크. clasp @12→@14 재배포. 라이브 실측: 결재완료→유효 PDF 105KB 생성·다운로드·신규 컬럼 노출 확인.",
+      "blocks": []
+    },
+    {
+      "task_id": "CTO-2026-05-29-AUTOMATION-DB-MIGRATE",
+      "title": "업무자동화DB 폐기 2단계 — 텔레그램 자동화 6파일을 status/json 읽기로 전환 후 노션 업무자동화DB [폐기]",
+      "assigned_at": "2026-05-29T16:58:23",
       "status": "QUEUED",
       "depends_on": "CTO-2026-05-29-NOTION-DEPRECATE",
       "blocks": []
@@ -43,9 +44,9 @@
     }
   ],
   "agent": "cto",
-  "title": "노션 잔존 DB → 가이드허브 흡수 + 노션 원본 제목 앞 [폐기] 표기",
+  "title": "시드 #01 — 결재 완료 시 자동 결과보고서 PDF + 결재 현황 SSOT 첨부",
   "artifact_url": null,
   "commit": "",
-  "note": "6개 콘텐츠 DB [폐기] 완료. 업무자동화DB는 단계적 후속.",
-  "updated_at": "2026-05-29T16:58:23"
+  "note": "시드 #01 완료 (라이브 검증). 다음 대기: AUTOMATION-DB-MIGRATE / SEED04.",
+  "updated_at": "2026-05-29T17:55:00"
 }
