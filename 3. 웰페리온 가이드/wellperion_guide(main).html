@@ -12,6 +12,7 @@
     --warm:#ED5B3F; --warm-bg:rgba(237,91,63,0.12);
     --grow:#6abf7b; --grow-bg:rgba(106,191,123,0.12);
     --border:#3d3835; --border-strong:#4d4845; --gray-bg:#2a2725;
+    --paper-soft:#221F20;
   }
   *{box-sizing:border-box; margin:0; padding:0;}
   html,body{height:100%;}
@@ -251,6 +252,7 @@
       --bg:#ffffff; --paper:#ffffff; --sidebar:#ffffff; --gray-bg:#f0efed;
       --text:#1a1a1a; --text-soft:#2b2b2b; --dim:#555555; --dim-soft:#777777;
       --border:#cccccc; --border-strong:#bbbbbb; --accent-bg:#f4f1ed;
+      --paper-soft:#f5f3f0;
     }
     body{font-size:11pt; line-height:1.5; background:#fff; color:#1a1a1a; -webkit-print-color-adjust:exact; print-color-adjust:exact;}
     .doc,.doc h2,.doc h3,.doc h4,.doc p,.doc li,.doc td,.doc th,.doc .meta,.doc .lead,.doc strong,.task-title,.task-meta,.cat-title{color:#1a1a1a!important;}
@@ -5469,7 +5471,7 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
       {id:'seed-2026-05-29-09',title:'AI 슬라이드 생성 + GM 개인 인스타 자동 업로드',description:'주제: AI로 직원 효율 + 핵심 집중. 내용+스토리+슬라이드 4-5장 + 캡션 자동 → GM 개인 인스타에 자동 업로드까지. 김남욱GM 페이지 내장.',startDate:'2026-05-29',endDate:null,time:'',category:'업무',isToday:false,status:'진행중',memo:'',ssotSynced:true},
       {id:'seed-2026-05-29-10',title:'김남욱GM 오늘 할일에 SSOT 본인 업무·결재 자동 합류 + 분류 필터',description:'업무&결재 SSOT에서 GM 본인 항목(담당자=김남욱GM + 결재 차례=GM) 자동 추출 → 오늘 할일에 합류. 분류값(업무·결재·기획·개인)별 필터·체크. 한 화면 통합 처리.',startDate:'2026-05-29',endDate:null,time:'',category:'업무',isToday:false,status:'진행중',memo:'',ssotSynced:true},
       {id:'seed-2026-05-29-11',title:'마케팅 자동화 실제 가동 (CMO 4-Stage 파이프라인)',description:'기존 CMO 자산 통합·실가동 — IG namuk.wellperion + 네이버 블로그 + 동부이촌동 카페 3채널. 가공→검수→발행→Litt.ly 추적. 신설 X, 기존 연결·고도화.',startDate:'2026-05-29',endDate:null,time:'',category:'업무',isToday:false,status:'진행중',memo:'',ssotSynced:true},
-      {id:'seed-2026-05-29-meta',title:'[AI CEO 세션 마감 묶음] INB 폐기 · 토큰 라우팅 · SSOT 이중 · KPI v1 · 마감 검증 · #08 P1-A · 중복 UI hotfix',description:'본 세션 8건 마감 — (1) INB DB 폐기 옵션 A: Notion in_trash + CLAUDE.md + 메모리 + 운영 프레임워크 + jsonl 이관 (2) 토큰 라우팅 매트릭스 옵션 B: Haiku/Sonnet/Opus 3계층, 메인=Opus 판단·반복=Sonnet/Haiku 위임 (3) SSOT 이중 정립: 백엔드=GitHub / 프론트=가이드허브 (4) AI CEO 마감 검증 의무 정립: 응답 200·push success만으로 마감 보고 금지 (5) 시드 #06 KPI 대시보드 v1 골격: g10 상단 카드 7장 + JS fetch + 토글 (6) 08:00 회복 보고 + 6 C-Level 자율 지시: 이슈 4건(PCC·자동화 보류·DB 정합·캘린더 미점검) (7) 시드 #08 P1-A hotfix: isToday 잔존 차단 + migration 보정 + 모달 정합 (8) 김남욱 페이지 완료·보류 중복 UI hotfix: 구 정적 + 구 IIFE 86라인 제거. 모든 변경 GitHub push + Pages Actions success + 마감 검증 통과.',startDate:'2026-05-29',endDate:null,time:'',category:'업무',isToday:true,status:'완료',memo:'본 세션 마감 묶음. 시드 #07 (GM 일일 핵심 요약본 + 히스토리 순번 자동 정리) 착수 시 자동 누적 페이지로 흡수 예정.',ssotSynced:true},
+      {id:'seed-2026-05-29-meta',title:'[AI CEO 세션 마감 묶음] INB 폐기 · 토큰 라우팅 · SSOT 이중 · KPI v1 · 마감 검증 · #08 P1-A · 중복 UI hotfix',description:'본 세션 8건 마감 — (1) INB DB 폐기 옵션 A: Notion in_trash + CLAUDE.md + 메모리 + 운영 프레임워크 + jsonl 이관 (2) 토큰 라우팅 매트릭스 옵션 B: Haiku/Sonnet/Opus 3계층, 메인=Opus 판단·반복=Sonnet/Haiku 위임 (3) SSOT 이중 정립: 백엔드=GitHub / 프론트=가이드허브 (4) AI CEO 마감 검증 의무 정립: 응답 200·push success만으로 마감 보고 금지 (5) 시드 #06 KPI 대시보드 v1 골격: g10 상단 카드 7장 + JS fetch + 토글 (6) 08:00 회복 보고 + 6 C-Level 자율 지시: 이슈 4건(PCC·자동화 보류·DB 정합·캘린더 미점검) (7) 시드 #08 P1-A hotfix: isToday 잔존 차단 + migration 보정 + 모달 정합 (8) 김남욱 페이지 완료·보류 중복 UI hotfix: 구 정적 + 구 IIFE 86라인 제거. 모든 변경 GitHub push + Pages Actions success + 마감 검증 통과.',startDate:'2026-05-29',endDate:null,time:'',category:'업무',isToday:true,status:'완료',memo:'본 세션 마감 묶음 (12건 누적) — 추가: line-through 가독성+description 토글 / OMC 4.13.7→4.14.4 / Auto-update failed stale 기록 정리 + CTO P3 At log on 30초 delay 지시 / 좀비 시드(마그네슘 delete 후 부활) hotfix + line-through 제거 + paper-soft CSS 변수 추가. 시드 #07 착수 시 자동 누적 페이지로 흡수 예정.',ssotSynced:true},
       // 기존 황용석 캘린더 시드
       {id:'seed-001',title:'황용석 팀장 퇴직 및 지원팀 재편',description:'지원팀 구조 재정비 진행.',startDate:'2026-06-01',endDate:null,time:'',category:'인사·파트너',isToday:false,status:'진행중',memo:'지원팀 구조 재정비 진행',ssotSynced:false}
     ];
@@ -5487,14 +5489,26 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
       try { localStorage.setItem(UNIFIED_KEY, JSON.stringify(tasks)); } catch(e){}
     }
 
+    /* ── 삭제된 시드 영구 추적 (좀비 부활 방지 · 2026-05-29) ── */
+    var DELETED_SEEDS_KEY = 'gm1_deleted_seeds';
+    function gm1LoadDeleted() {
+      try { return JSON.parse(localStorage.getItem(DELETED_SEEDS_KEY) || '[]'); }
+      catch(e) { return []; }
+    }
+    function gm1SaveDeleted(arr) {
+      localStorage.setItem(DELETED_SEEDS_KEY, JSON.stringify(arr));
+    }
+
     function gm1SeedInit() {
       var td = todayStr();
       var tasks = gm1Load();
       var existIds = {};
       tasks.forEach(function(t){ existIds[t.id] = true; });
+      var deletedIds = {};
+      gm1LoadDeleted().forEach(function(id){ deletedIds[id] = true; });
       var added = false;
       CEO_SEEDS.forEach(function(s) {
-        if (!existIds[s.id]) {
+        if (!existIds[s.id] && !deletedIds[s.id]) {
           // 시드는 가이드허브 시각용 — SSOT push 대상에서 영구 제외 (중복 방지 · 2026-05-28)
           s.ssotSynced = true;
           tasks.push(s); added = true;
@@ -5584,6 +5598,15 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
     }
 
     function gm1DeleteTask(id) {
+      // CEO_SEEDS 항목이면 deleted set에 영구 마킹 (좀비 부활 방지 · 2026-05-29)
+      var isSeed = CEO_SEEDS.some(function(s){ return s.id === id; });
+      if (isSeed) {
+        var deleted = gm1LoadDeleted();
+        if (deleted.indexOf(id) === -1) {
+          deleted.push(id);
+          gm1SaveDeleted(deleted);
+        }
+      }
       gm1Save(gm1Load().filter(function(t){ return t.id !== id; }));
     }
 
@@ -5665,7 +5688,7 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
           var descHtml = t.description ? '<details style="margin-top:4px;font-size:12px;"><summary style="cursor:pointer;color:var(--accent);font-weight:600;font-size:11px;list-style:none;">▼ 내용 보기</summary><div style="padding:6px 8px;background:var(--paper-soft,#f5f3f0);border-radius:6px;margin-top:4px;line-height:1.5;white-space:pre-wrap;color:var(--text);">' + gm1Esc(t.description) + '</div></details>' : '';
           html += '<div style="padding:8px 0;border-bottom:1px dashed var(--border);">' +
             '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">' +
-            '<span><span style="color:var(--green);font-weight:700;">✓</span> <span style="text-decoration:line-through;text-decoration-color:var(--dim);color:var(--text);font-weight:500;">' + gm1Esc(t.title) + '</span></span>' +
+            '<span><span style="color:var(--green);font-weight:700;">✓</span> <span style="color:var(--text);font-weight:500;">' + gm1Esc(t.title) + '</span></span>' +
             '<button class="todo-act-btn today-act" data-id="' + gm1Esc(t.id) + '" data-action="restore" style="font-size:11px;padding:2px 8px;flex-shrink:0;">되돌리기</button>' +
             '</div>' + descHtml +
             '</div>';
