@@ -1,10 +1,10 @@
 {
   "clevel": "cto",
   "status": "DONE",
-  "task_id": "CTO-2026-05-29-SEED04-STEP1-COLLECT",
-  "last_task_id": "CTO-2026-05-29-SEED04-STEP1-COLLECT",
+  "task_id": "CTO-2026-05-29-AUTOMATION-STATUS-FIX",
+  "last_task_id": "CTO-2026-05-29-AUTOMATION-STATUS-FIX",
   "last_commit_sha": null,
-  "last_pushed_at": "2026-05-29T18:12:00",
+  "last_pushed_at": "2026-05-29T18:25:00",
   "active_tasks": [
     {
       "task_id": "CTO-2026-05-29-NOTION-DEPRECATE",
@@ -44,12 +44,21 @@
       "note": "기존 ai_education_auto_learner.py 확장(중복 신설 금지). 소스 3→7, learning/sources.json(SSOT)+README, learner v1→v2(json 로드+폴백). 주간 트리거는 기존 작업 스케줄러 Wellperion-AI-Education-Weekly(월 09:30) 재사용. 실측: 7소스 전부 fetch 성공·84건 수집·--status 7소스 인식 확인.",
       "depends_on": "CTO-2026-05-29-SEED01-APPROVAL-PDF",
       "blocks": []
+    },
+    {
+      "task_id": "CTO-2026-05-29-AUTOMATION-STATUS-FIX",
+      "title": "업무자동화 현황 SSOT 정비 (가이드허브 g19 — 실가동 대조)",
+      "assigned_at": "2026-05-29T18:20:00",
+      "status": "DONE",
+      "completed_at": "2026-05-29T18:25:00",
+      "note": "/team(워커1)로 진행. 점검 표 9→6행(노션 폐기 무력 3행 제거+근거 열), 자동화된 업무 표 8행 신설(예약작업), 노션 잔재 정리. 리드 실측: 상시 프로세스 bot+scheduler 2개, 예약작업 9개 Ready 확인.",
+      "blocks": []
     }
   ],
   "agent": "cto",
-  "title": "시드 #04 1단계 — 학습 자료 자동 수집 인프라 (3→7 소스)",
+  "title": "업무자동화 현황 SSOT 정비 (가이드허브 g19)",
   "artifact_url": null,
   "commit": "",
-  "note": "시드 #04 1단계 완료 (실측 검증). 업무자동화DB 폐기 2단계는 GM 보류. 대기: 없음(SEED04 2~4단계 요약·제안·구조화는 별건).",
-  "updated_at": "2026-05-29T18:12:00"
+  "note": "업무자동화 현황 토글 실가동 대조 완료(/team). 활성 대기 없음. 보류: AUTOMATION-DB-MIGRATE(GM).",
+  "updated_at": "2026-05-29T18:25:00"
 }
