@@ -443,7 +443,8 @@ const FIELD_MAP = {
   '내용':'content','시작일':'startDate','종료일':'endDate',
   '상태':'status','결재요청':'approval','링크':'link',
   '파일URL':'fileUrl','생성자':'creator','id':'id',
-  '생성일':'createdAt','수정일':'updatedAt'
+  '생성일':'createdAt','수정일':'updatedAt',
+  '결과보고서URL':'reportUrl'
 };
 
 /* ═══════════════════════════════════════════
@@ -882,6 +883,10 @@ function renderTaskCard(t, idx) {
 
   if (t.fileUrl) {
     html += '<div style="margin:6px 0;"><a class="chip link-chip" href="' + escAttr(t.fileUrl) + '" target="_blank" rel="noopener" onclick="event.stopPropagation()">첨부파일</a></div>';
+  }
+
+  if (t.reportUrl) {
+    html += '<div style="margin:6px 0;"><a class="chip link-chip" href="' + escAttr(t.reportUrl) + '" target="_blank" rel="noopener" onclick="event.stopPropagation()">📄 결과보고서</a></div>';
   }
 
   html += '</div>'; // task-detail

@@ -1,10 +1,10 @@
 {
   "clevel": "cto",
   "status": "DONE",
-  "task_id": "CTO-2026-05-29-GM-SSOT-AUTOSYNC",
-  "last_task_id": "CTO-2026-05-29-GM-SSOT-AUTOSYNC",
+  "task_id": "CTO-2026-05-29-RESULT-REPORT-AUTOGEN",
+  "last_task_id": "CTO-2026-05-29-RESULT-REPORT-AUTOGEN",
   "last_commit_sha": null,
-  "last_pushed_at": "2026-05-29T18:50:00",
+  "last_pushed_at": "2026-05-29T19:05:00",
   "active_tasks": [
     {
       "task_id": "CTO-2026-05-29-NOTION-DEPRECATE",
@@ -62,12 +62,21 @@
       "completed_at": "2026-05-29T18:50:00",
       "note": "/team(워커1·opus)로 진행. gm1FetchSsot로 담당자 김남욱GM(19건)+GM 결재차례 합류, 분류 필터 4종, 제목 dedup(SSOT 우선), SSOT 항목 read-only, 완료 동기화. 라이브 Playwright 실측: SSOT 뱃지 29·필터 동작·콘솔오류(내 변경발) 0. 2차(G1→SSOT 쓰기)는 별건. 참고: status/_queue.json 404는 무관한 기존 이슈(별도).",
       "blocks": []
+    },
+    {
+      "task_id": "CTO-2026-05-29-RESULT-REPORT-AUTOGEN",
+      "title": "결과보고 저장 시 결과보고서 PDF 자동생성 (SEED01 확장)",
+      "assigned_at": "2026-05-29T18:50:00",
+      "status": "DONE",
+      "completed_at": "2026-05-29T19:05:00",
+      "note": "/team(워커1·opus). _parseTodoContent 마커 파싱 + _generateResultReport 구조화(본문/결과보고 박스/진척 타임라인/계획/예산) + todo_update에 ===RESULT=== 훅(결재 없이 결과보고만 저장해도 PDF 생성). 카드에 결과보고서 링크 노출. clasp @12→@16 재배포. 라이브 실측: 결과보고+진척 저장→유효 PDF 생성·다운로드 확인→테스트행 삭제. COO PROGRESS-UNLOCK은 게이트(decoupled), 마커 기반이라 무충돌.",
+      "blocks": []
     }
   ],
   "agent": "cto",
-  "title": "seed#10 1차 — GM 오늘할일 ↔ SSOT 단방향 자동 합류",
+  "title": "결과보고 저장 시 결과보고서 PDF 자동생성 (SEED01 확장)",
   "artifact_url": null,
   "commit": "",
-  "note": "seed#10 1차 완료(라이브 Playwright 검증). 활성 대기 없음. 보류: AUTOMATION-DB-MIGRATE(GM). 별건 후보: seed#10 2차(G1→SSOT 쓰기), status/_queue.json Pages 404.",
-  "updated_at": "2026-05-29T18:50:00"
+  "note": "결과보고 자동생성 완료(라이브 PDF 실측). 활성 대기 없음. 보류: AUTOMATION-DB-MIGRATE(GM). 별건 후보: seed#10 2차(G1→SSOT 쓰기), status/_queue.json Pages 404.",
+  "updated_at": "2026-05-29T19:05:00"
 }

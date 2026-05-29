@@ -389,7 +389,55 @@ function _uploadFile(base64, fileName, mimeType) {
   return file.getUrl();
 }
 
-// ─── 결과보고서 PDF 자동 생성 (결재 완료 트리거) — 2026-05-29 신설 ───
+// ─── '내용' 마커 파싱 (HTML parseContent 로직 GAS 이식) — 2026-05-29 신설 ───
+// ===PLAN=== / ===PROGRESS_LOG=== / ===RESULT=== / ===BUDGET=== 마커 분리
+// 반환: { body, plan, logs:[{date,text}](오름차순), result, budget:{category,amount}|null }
+function _parseTodoContent(content) {
+  const raw = String(content == null ? '' : content);
+  const marks = [
+    { key: 'plan',     mark: '===PLAN===' },
+    { key: 'progress', mark: '===PROGRESS_LOG===' },
+    { key: 'result',   mark: '===RESULT===' },
+    { key: 'budget',   mark: '===BUDGET===' }
+  ];
+  const positions = marks
+    .map(function (m) { return { key: m.key, mark: m.mark, idx: raw.indexOf(m.mark) }; })
+    .filter(function (m) { return m.idx >= 0; })
+    .sort(function (a, b) { return a.idx - b.idx; });
+
+  const body = positions.length
+    ? raw.slice(0, positions[0].idx).replace(/\s+$/, '')
+    : raw.replace(/\s+$/, '');
+
+  const sections = {};
+  for (let i = 0; i < positions.length; i++) {
+    const start = positions[i].idx + positions[i].mark.length;
+    const end = i + 1 < positions.length ? positions[i + 1].idx : raw.length;
+    sections[positions[i].key] = raw.slice(start, end).trim();
+  }
+
+  const plan = sections.plan || '';
+  const result = sections.result || '';
+
+  let budget = null;
+  if (sections.budget) {
+    const m = sections.budget.split(/\r?\n/)[0].match(/^(.+?)\s*\|\s*(\d+)$/);
+    if (m) budget = { category: m[1].trim(), amount: Number(m[2]) };
+  }
+
+  let logs = [];
+  if (sections.progress) {
+    logs = sections.progress.split(/\r?\n/).map(function (line) {
+      const m = line.match(/^(\d{4}-\d{2}-\d{2})\s*\|\s*(.*)$/);
+      return m ? { date: m[1], text: m[2].trim() } : null;
+    }).filter(Boolean);
+    logs.sort(function (a, b) { return a.date.localeCompare(b.date); });
+  }
+
+  return { body: body, plan: plan, logs: logs, result: result, budget: budget };
+}
+
+// ─── 결과보고서 PDF 자동 생성 (결재 완료 / 결과보고 저장 트리거) — 2026-05-29 신설 ───
 // 입력: record (TODO_HEADERS 키 객체, 싸인 최종값 포함)
 // 출력: Drive 공유 URL (실패 시 '' — 절대 throw 금지, 결재 쓰기 보호)
 function _generateResultReport(record) {
@@ -405,6 +453,47 @@ function _generateResultReport(record) {
     const id = String(record['id'] || '');
     const period = esc(record['시작일'] || '-') + ' ~ ' + esc(record['종료일'] || '-');
     const sign = function (k) { return record[k] ? esc(record[k]) : '-'; };
+
+    // '내용' 마커 파싱 (HTML parseContent 로직 GAS 이식) — body/plan/logs/result/budget 분리
+    const parsed = _parseTodoContent(record['내용']);
+
+    // 본문(마커 제거된 순수 텍스트)
+    const bodyHtml = parsed.body
+      ? '<tr><th style="text-align:left;background:#f4f6f5;border:1px solid #ddd;padding:9px 12px;font-weight:600;vertical-align:top;">내용</th><td style="border:1px solid #ddd;padding:9px 12px;white-space:pre-wrap;">' + esc(parsed.body) + '</td></tr>'
+      : '';
+
+    // 결과보고 강조 박스 (있을 때만)
+    const resultBox = parsed.result
+      ? '<div style="font-size:15px;font-weight:700;margin:6px 0 10px;">결과보고</div>' +
+        '<div style="border:1px solid #b9d4c6;background:#eef6f1;border-radius:8px;padding:14px 16px;font-size:14px;line-height:1.6;white-space:pre-wrap;margin-bottom:24px;">' + esc(parsed.result) + '</div>'
+      : '';
+
+    // 진척 로그 타임라인 (날짜 오름차순)
+    let timelineHtml = '';
+    if (parsed.logs.length) {
+      const asc = parsed.logs.slice().sort(function (a, b) { return a.date.localeCompare(b.date); });
+      let rows = '';
+      asc.forEach(function (log) {
+        rows += '<tr>' +
+          '<td style="border:1px solid #ddd;padding:8px 12px;width:120px;font-weight:600;color:#0b3d2e;vertical-align:top;white-space:nowrap;">' + esc(log.date) + '</td>' +
+          '<td style="border:1px solid #ddd;padding:8px 12px;white-space:pre-wrap;line-height:1.5;">' + esc(log.text) + '</td>' +
+          '</tr>';
+      });
+      timelineHtml =
+        '<div style="font-size:15px;font-weight:700;margin:6px 0 10px;">진척 로그 (' + asc.length + '건)</div>' +
+        '<table style="width:100%;border-collapse:collapse;font-size:13px;margin-bottom:24px;">' + rows + '</table>';
+    }
+
+    // 계획 섹션 (있을 때만)
+    const planBox = parsed.plan
+      ? '<div style="font-size:15px;font-weight:700;margin:6px 0 10px;">계획</div>' +
+        '<div style="border:1px solid #ddd;border-radius:8px;padding:12px 14px;font-size:14px;line-height:1.6;white-space:pre-wrap;margin-bottom:24px;">' + esc(parsed.plan) + '</div>'
+      : '';
+
+    // 예산 한 줄 (있을 때만)
+    const budgetLine = parsed.budget
+      ? '<div style="font-size:14px;margin-bottom:24px;"><b>예산</b> · ' + esc(parsed.budget.category) + ' · ' + esc(Number(parsed.budget.amount).toLocaleString('ko-KR')) + '원</div>'
+      : '';
 
     // 참고 링크 (있을 때만)
     let refRows = '';
@@ -431,8 +520,15 @@ function _generateResultReport(record) {
           '<tr><th style="text-align:left;background:#f4f6f5;border:1px solid #ddd;padding:9px 12px;font-weight:600;">담당자</th><td style="border:1px solid #ddd;padding:9px 12px;">' + val('담당자') + '</td></tr>' +
           '<tr><th style="text-align:left;background:#f4f6f5;border:1px solid #ddd;padding:9px 12px;font-weight:600;">기간</th><td style="border:1px solid #ddd;padding:9px 12px;">' + period + '</td></tr>' +
           '<tr><th style="text-align:left;background:#f4f6f5;border:1px solid #ddd;padding:9px 12px;font-weight:600;">상태</th><td style="border:1px solid #ddd;padding:9px 12px;">' + val('상태') + '</td></tr>' +
-          '<tr><th style="text-align:left;background:#f4f6f5;border:1px solid #ddd;padding:9px 12px;font-weight:600;vertical-align:top;">내용</th><td style="border:1px solid #ddd;padding:9px 12px;white-space:pre-wrap;">' + val('내용') + '</td></tr>' +
+          bodyHtml +
         '</table>' +
+        // 결과보고 강조 박스 (있을 때만)
+        resultBox +
+        // 진척 로그 타임라인 (있을 때만)
+        timelineHtml +
+        // 계획·예산 (있을 때만)
+        planBox +
+        budgetLine +
         // 결재 라인 표
         '<div style="font-size:15px;font-weight:700;margin:6px 0 10px;">결재 라인</div>' +
         '<table style="width:100%;border-collapse:collapse;font-size:14px;margin-bottom:24px;">' +
@@ -610,6 +706,19 @@ function _processTodoAction(body) {
       sh.getRange(rowNum, 1, 1, TODO_HEADERS.length).setValues([existing]);
       _applyStatusColor(sh, rowNum, existing[TODO_HEADERS.indexOf('상태')]);
 
+      // 결과보고 저장 트리거 — '내용'에 ===RESULT=== 본문이 있으면 결과보고서 PDF 자동 생성/갱신
+      // (결재 완료 훅 todo_sign과 별개. 결재 없이 결과보고만 저장해도 발동) — 2026-05-29 신설
+      const finalRecord = {};
+      TODO_HEADERS.forEach(function (h, i) { finalRecord[h] = existing[i]; });
+      const resultSection = _parseTodoContent(finalRecord['내용']).result;
+      if (resultSection) {
+        const reportUrl = _generateResultReport(finalRecord);
+        if (reportUrl) {
+          // 결과보고서URL은 메인 setValues 이후 별도 기록 (배열 길이 마이그레이션 안전)
+          sh.getRange(rowNum, TODO_HEADERS.indexOf('결과보고서URL') + 1).setValue(reportUrl);
+        }
+      }
+
       // 텔레그램 결재 발송 폐기 (2026-05-28 GM 결재). 결재는 결재 SSOT 페이지에서만 진행.
       return _json({ ok: true, id: id, message: '업무가 수정되었습니다.' });
     }
@@ -632,6 +741,17 @@ function _processTodoAction(body) {
       const signMap = { '부서장': '부서장싸인', 'GM': 'GM싸인', '대표님': '대표싸인' };
       const signCol = signMap[role];
       if (!signCol) return _json({ ok: false, error: '알 수 없는 결재자: ' + role });
+
+      // ── 결재 비밀번호 서버 검증 (GM·대표님) — 평문 PIN은 서버 ScriptProperties에만 저장 (2026-05-29 COO 보안) ──
+      // GM 콘솔: 프로젝트 설정 → 스크립트 속성에 APPROVAL_PIN_GM, APPROVAL_PIN_REP 등록 후 사용.
+      // 승인·반려 공통 게이트 (이 아래 reject/approve 분기보다 먼저 차단).
+      var _pinKey = { 'GM': 'APPROVAL_PIN_GM', '대표님': 'APPROVAL_PIN_REP' }[role];
+      if (_pinKey) {
+        var _expected = _prop(_pinKey);
+        var _submitted = String(body.pin || '');
+        if (!_expected) return _json({ ok: false, error: role + ' 결재 비밀번호가 서버에 설정되지 않았습니다(관리자 설정 필요).' });
+        if (_submitted !== _expected) return _json({ ok: false, error: '비밀번호가 일치하지 않습니다.' });
+      }
 
       const now = _now();
       if (decision === 'reject') {
