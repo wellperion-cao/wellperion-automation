@@ -239,6 +239,56 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 
 <div class="toast" id="toast"></div>
 
+<!-- ═══ 개요 · 보고 체계 SSOT 패널 (2026-05-29 GM 지시) ═══ -->
+<div class="content" style="padding-top:10px;padding-bottom:0;">
+  <div style="background:var(--paper);border:1px solid var(--border);border-radius:12px;overflow:hidden;">
+    <div onclick="toggleOverview()" style="padding:13px 16px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none;border-left:3px solid var(--accent);">
+      <span style="font-size:14px;font-weight:700;color:var(--accent);">📋 개요 · 보고 체계 SSOT</span>
+      <span id="ovArrow" style="font-size:12px;color:var(--dim);transition:transform 0.2s;">▶</span>
+    </div>
+    <div id="overviewBody" style="display:none;border-top:1px solid var(--border);padding:16px;font-size:13px;line-height:1.65;">
+
+      <!-- ① 기능 요약 -->
+      <div style="font-size:13px;font-weight:700;color:var(--blue);margin-bottom:6px;">🧩 기능 요약</div>
+      <ul style="margin:0 0 16px 18px;padding:0;color:var(--text);">
+        <li>전사 업무를 <b>6개 카테고리</b>로 등록·추적 (매출/영업 · 인사&amp;파트너 · 운영 정책 · 시설&amp;환경 · 대표님 하달 · 회장님 하달)</li>
+        <li>업무별 <b>담당자 · 기간 · 기획(6섹션) · 진척 로그 · 예산 · 결과보고</b> 통합 관리</li>
+        <li><b>마감 임박 자동 강조</b>(D-day) · 완료/보류 로그 분리 보관</li>
+        <li>결재요청 시 <b>결재 라인 자동 산출</b>(부서장 → GM → 대표님) + 카드에 진행 정도 표시</li>
+        <li><b>Google 시트 실시간 연동</b> · 인쇄 · 보고용 · 공유용 출력</li>
+      </ul>
+
+      <!-- ② 보고 체계 -->
+      <div style="font-size:13px;font-weight:700;color:var(--green);margin-bottom:6px;">📣 보고 체계</div>
+      <ul style="margin:0 0 16px 18px;padding:0;color:var(--text);">
+        <li><b>매일 08:00 통합 보고</b> — 전날 정리 · 오늘 진행 · 이슈/보류 (텔레그램)</li>
+        <li><b>결재</b> — 결재 현황 SSOT에서 실시간 추적. GM·대표님은 본인 비밀번호로 승인/반려</li>
+        <li><b>진척 로그</b> — 카드별 날짜 누적 → 보고 자동 연계</li>
+        <li><b>이슈/보류</b> — 별도 섹션 단독 노출, 묻히지 않게</li>
+      </ul>
+
+      <!-- ③ 결재 현황 SSOT -->
+      <div style="font-size:13px;font-weight:700;color:var(--purple);margin-bottom:6px;">📁 결재 현황 SSOT</div>
+      <div style="margin:0 0 16px 0;color:var(--text);">
+        결재 진행·완료·반려 이력을 자동 적립하는 짝 페이지입니다.
+        <ul style="margin:6px 0 0 18px;padding:0;">
+          <li>결재 라인: <b>부서장 → GM → 대표님</b> (예산 항목·금액 따라 자동 산출)</li>
+          <li>GM·대표님 승인/반려 시 <b>본인 비밀번호 게이트</b> (오승인 방지)</li>
+          <li>단계별 통계(총/GM완료/대표완료/반려) · 결재자별 차례 필터 · 검색</li>
+        </ul>
+        <a href="결재 SSOT.html" style="display:inline-block;margin-top:8px;font-size:12px;font-weight:700;padding:6px 12px;border-radius:8px;background:var(--green-bg);color:var(--green);border:1px solid rgba(106,191,123,0.3);text-decoration:none;">📁 결재 현황 SSOT 열기 →</a>
+      </div>
+
+      <!-- ④ 현재 내용 기록 -->
+      <div style="font-size:13px;font-weight:700;color:var(--accent);margin-bottom:6px;">📝 현재 내용 기록 <span style="font-size:11px;font-weight:500;color:var(--dim);">(2026-05-29 기준)</span></div>
+      <ul style="margin:0 0 4px 18px;padding:0;color:var(--text);">
+        <li>현재 진행 업무 <b>41건</b> (Google 시트 "업무&amp;결재 현황")</li>
+        <li>최근 정비: 빈 시트 정리 · 결재 비밀번호 게이트 · 카드 결재 진행 표시 · 지원부 대시보드/항목추가 분리</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
 <div class="content" id="mainContent">
   <div class="loading">불러오는 중...</div>
 </div>
@@ -959,6 +1009,15 @@ function escAttr(s) {
 /* ═══════════════════════════════════════════
    Toggle
    ═══════════════════════════════════════════ */
+function toggleOverview() {
+  const body = document.getElementById('overviewBody');
+  const arrow = document.getElementById('ovArrow');
+  if (!body) return;
+  const open = body.style.display === 'none' || !body.style.display;
+  body.style.display = open ? 'block' : 'none';
+  if (arrow) arrow.style.transform = open ? 'rotate(90deg)' : 'rotate(0deg)';
+}
+
 function toggleCat(header) {
   const body = header.nextElementSibling;
   const arrow = header.querySelector('.cat-arrow');
