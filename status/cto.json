@@ -1,10 +1,10 @@
 {
   "clevel": "cto",
   "status": "DONE",
-  "task_id": "CTO-2026-05-29-SEED01-APPROVAL-PDF",
-  "last_task_id": "CTO-2026-05-29-SEED01-APPROVAL-PDF",
+  "task_id": "CTO-2026-05-29-SEED04-STEP1-COLLECT",
+  "last_task_id": "CTO-2026-05-29-SEED04-STEP1-COLLECT",
   "last_commit_sha": null,
-  "last_pushed_at": "2026-05-29T17:55:00",
+  "last_pushed_at": "2026-05-29T18:12:00",
   "active_tasks": [
     {
       "task_id": "CTO-2026-05-29-NOTION-DEPRECATE",
@@ -30,7 +30,8 @@
       "task_id": "CTO-2026-05-29-AUTOMATION-DB-MIGRATE",
       "title": "업무자동화DB 폐기 2단계 — 텔레그램 자동화 6파일을 status/json 읽기로 전환 후 노션 업무자동화DB [폐기]",
       "assigned_at": "2026-05-29T16:58:23",
-      "status": "QUEUED",
+      "status": "ON_HOLD",
+      "note": "GM 보류 결재(2026-05-29). 새 GitHub 시스템에 '실행시간 기반 자동 기동(알람)' 기능이 없어 단순 이관 불가 — 알람 기능 설계 결정 후 재개. 그때까지 업무자동화DB는 노션 마지막 잔류로 유지.",
       "depends_on": "CTO-2026-05-29-NOTION-DEPRECATE",
       "blocks": []
     },
@@ -38,15 +39,17 @@
       "task_id": "CTO-2026-05-29-SEED04-STEP1-COLLECT",
       "title": "시드 #04 1단계 — 학습 자료 자동 수집 인프라 (learning/ 디렉토리 + 트리거 + 7개 소스 collector)",
       "assigned_at": "2026-05-29T14:04:41.843075",
-      "status": "QUEUED",
+      "status": "DONE",
+      "completed_at": "2026-05-29T18:12:00",
+      "note": "기존 ai_education_auto_learner.py 확장(중복 신설 금지). 소스 3→7, learning/sources.json(SSOT)+README, learner v1→v2(json 로드+폴백). 주간 트리거는 기존 작업 스케줄러 Wellperion-AI-Education-Weekly(월 09:30) 재사용. 실측: 7소스 전부 fetch 성공·84건 수집·--status 7소스 인식 확인.",
       "depends_on": "CTO-2026-05-29-SEED01-APPROVAL-PDF",
       "blocks": []
     }
   ],
   "agent": "cto",
-  "title": "시드 #01 — 결재 완료 시 자동 결과보고서 PDF + 결재 현황 SSOT 첨부",
+  "title": "시드 #04 1단계 — 학습 자료 자동 수집 인프라 (3→7 소스)",
   "artifact_url": null,
   "commit": "",
-  "note": "시드 #01 완료 (라이브 검증). 다음 대기: AUTOMATION-DB-MIGRATE / SEED04.",
-  "updated_at": "2026-05-29T17:55:00"
+  "note": "시드 #04 1단계 완료 (실측 검증). 업무자동화DB 폐기 2단계는 GM 보류. 대기: 없음(SEED04 2~4단계 요약·제안·구조화는 별건).",
+  "updated_at": "2026-05-29T18:12:00"
 }
