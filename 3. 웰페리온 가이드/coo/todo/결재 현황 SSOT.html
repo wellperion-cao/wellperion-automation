@@ -1,0 +1,552 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<title>웰페리온 결재 현황 SSOT</title>
+<link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" rel="stylesheet">
+<style>
+:root{
+  --bg:#1a1815;--paper:#221F1B;--text:#E8E2D8;--dim:#8C7E6D;--dim-soft:#564a3d;
+  --accent:#B79F8A;--accent-bg:rgba(183,159,138,0.12);--border:#3D3835;
+  --green:#6abf7b;--green-bg:rgba(106,191,123,0.14);
+  --red:#ED5B3F;--red-bg:rgba(237,91,63,0.14);
+  --blue:#5B9FD5;--blue-bg:rgba(91,159,213,0.14);
+  --yellow:#E0B341;--yellow-bg:rgba(224,179,65,0.14);
+  --purple:#A78BDA;--purple-bg:rgba(167,139,218,0.14);
+  --orange:#E6944E;--orange-bg:rgba(230,148,78,0.14);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font-family:'Pretendard',-apple-system,sans-serif;-webkit-text-size-adjust:100%;font-size:14px;line-height:1.5}
+.header{position:sticky;top:0;background:var(--paper);border-bottom:1px solid var(--border);padding:14px 18px;z-index:50}
+.header h1{margin:0;font-size:17px;font-weight:800;color:var(--accent);display:flex;align-items:center;gap:8px}
+.header .sub{margin-top:4px;font-size:12px;color:var(--dim)}
+.sheet-links{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.sheet-links a{display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:600;padding:6px 12px;border-radius:8px;background:var(--accent-bg);color:var(--accent);text-decoration:none;border:1px solid rgba(183,159,138,0.3)}
+.sheet-links a:hover{opacity:0.85}
+.content{padding:14px 16px 80px;max-width:760px;margin:0 auto}
+.loading{text-align:center;color:var(--dim);padding:40px 0;font-size:13px}
+.filter-bar{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px}
+.filter-btn{padding:6px 12px;border-radius:8px;background:transparent;color:var(--dim);border:1px solid var(--border);font-size:12px;font-weight:600;font-family:inherit;cursor:pointer;transition:all 0.12s}
+.filter-btn:hover{border-color:var(--accent)}
+.filter-btn.active{background:var(--accent);color:var(--paper);border-color:var(--accent)}
+.stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px}
+.stat-card{background:var(--paper);border:1px solid var(--border);border-radius:10px;padding:12px 10px;text-align:center}
+.stat-card .num{font-size:22px;font-weight:800;line-height:1.1}
+.stat-card .label{font-size:11px;color:var(--dim);margin-top:4px}
+.approval-card{background:var(--paper);border:1px solid var(--border);border-left:3px solid var(--green);border-radius:10px;padding:10px 14px;margin-bottom:7px;transition:background 0.1s}
+.approval-card.rejected{border-left-color:var(--red)}
+.approval-card:hover{background:rgba(183,159,138,0.04)}
+.approval-card .title-row{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:8px}
+.approval-card .title{font-size:14px;font-weight:700;flex:1;line-height:1.4}
+.status-chip{font-size:11px;font-weight:700;padding:3px 9px;border-radius:6px;flex-shrink:0;white-space:nowrap}
+.status-chip.done{background:var(--green-bg);color:var(--green)}
+.status-chip.rejected{background:var(--red-bg);color:var(--red)}
+.meta-row{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
+.chip{font-size:11px;padding:3px 8px;border-radius:6px;background:var(--accent-bg);color:var(--accent);font-weight:600}
+.chip.owner{background:var(--blue-bg);color:var(--blue)}
+.chip.category{background:var(--purple-bg);color:var(--purple)}
+.chip.budget{background:var(--green-bg);color:var(--green);font-weight:700}
+.sign-line{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;padding-top:8px;border-top:1px dashed var(--border)}
+.sign-pill{display:inline-flex;align-items:center;gap:4px;font-size:11px;padding:4px 9px;border-radius:6px;background:var(--green-bg);color:var(--green);font-weight:600}
+.sign-pill.empty{background:transparent;color:var(--dim);border:1px dashed var(--border)}
+.sign-pill .time{font-size:10px;font-weight:500;opacity:0.85;margin-left:2px}
+.complete-time{display:inline-flex;align-items:center;gap:4px;font-size:11px;padding:4px 9px;border-radius:6px;background:var(--paper);color:var(--dim);border:1px solid var(--border);font-weight:600;margin-top:8px}
+.detail-toggle{cursor:pointer;font-size:11px;color:var(--dim);margin-top:8px;padding-top:8px;border-top:1px dashed var(--border);display:flex;align-items:center;gap:4px;user-select:none}
+.detail-toggle:hover{color:var(--accent)}
+.detail-toggle .arrow{transition:transform 0.18s}
+.detail-toggle.open .arrow{transform:rotate(90deg)}
+.detail-body{display:none;margin-top:10px;padding-top:10px;border-top:1px dashed var(--border)}
+.detail-body.open{display:block}
+.detail-body .body-text{font-size:13px;white-space:pre-wrap;line-height:1.55;color:var(--text)}
+.progress-row{display:flex;gap:8px;align-items:flex-start;padding:6px 10px;border-left:3px solid var(--accent);background:var(--accent-bg);border-radius:6px;margin:6px 0}
+.progress-row .date{font-size:12px;font-weight:700;color:var(--accent);min-width:88px;flex-shrink:0}
+.progress-row .text{font-size:13px;flex:1;line-height:1.45;word-break:break-word}
+.empty-msg{text-align:center;padding:60px 20px;color:var(--dim);font-size:14px;line-height:1.6}
+.empty-msg .ico{font-size:36px;display:block;margin-bottom:14px;opacity:0.5}
+@media (max-width:520px){
+  .stat-grid{grid-template-columns:repeat(2,1fr)}
+  .header h1{font-size:15px}
+}
+@media print{
+  .header{position:static;background:#fff;color:#000;border-bottom:1px solid #ccc}
+  .sheet-links,.filter-bar,.detail-toggle{display:none!important}
+  body{background:#fff;color:#000}
+  .approval-card{background:#fff;border:1px solid #ccc;border-left:3px solid #0b8043;page-break-inside:avoid}
+  .detail-body{display:block!important}
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>📁 결재 현황 SSOT <span style="font-size:11px;font-weight:500;color:var(--dim);margin-left:6px;letter-spacing:0.02em;">v1.0 · 2026-05-28</span></h1>
+  <div class="sub">결재 진행·완료·반려 이력 적립 — 결재 페이지에서 ✅/❌ 클릭 시 자동 누적</div>
+  <div class="sheet-links">
+    <a href="업무 현황 SSOT.html">← 업무 현황 SSOT</a>
+    <a href="https://docs.google.com/spreadsheets/d/1aqZGHpxzjAMqQvWQDrBWxrVtrFdZhFMxqFudNFlGnTk/edit" target="_blank" rel="noopener">📊 시트</a>
+    <a href="../../wellperion_guide(main).html" target="_blank" rel="noopener">📕 가이드허브</a>
+  </div>
+</div>
+
+<div class="content" id="mainContent">
+  <div class="loading">불러오는 중...</div>
+</div>
+
+<script>
+const TODO_API_URL = 'https://script.google.com/macros/s/AKfycbxDwFkrxK1YIaEoSNcuw2MiHiZQ-7o5N6311ytksSyeEd86ZFOhLknOWqQgNArQvZ-7/exec';
+
+const CAT_COLORS = {
+  '[1] 매출 및 영업':  {bg:'var(--blue-bg)',   color:'var(--blue)'},
+  '[2] 인사 & 파트너': {bg:'var(--purple-bg)', color:'var(--purple)'},
+  '[3] 운영 정책':    {bg:'var(--accent-bg)', color:'var(--accent)'},
+  '[4] 시설 및 환경':  {bg:'var(--green-bg)',  color:'var(--green)'},
+  '[5] 대표님 하달':     {bg:'var(--yellow-bg)', color:'var(--yellow)'},
+  '[6] 회장님 하달':  {bg:'var(--red-bg)',    color:'var(--red)'}
+};
+
+let ALL_TASKS = [];
+let activeFilter = '전체';      // '전체' | '결재완료' | '반려' | '미결'
+let activeRoleFilter = '전체';  // '전체' | '부서장' | 'GM' | '대표님' — 차례별
+let activeCatFilter = '전체';   // '전체' | 카테고리
+let searchQuery = '';            // 키워드
+
+document.addEventListener('DOMContentLoaded', loadTasks);
+
+async function loadTasks() {
+  const el = document.getElementById('mainContent');
+  el.innerHTML = '<div class="loading">불러오는 중...</div>';
+  try {
+    const qs = 'action=todo_list';
+    const r = await fetch(TODO_API_URL + '?' + qs, { redirect:'follow' });
+    const res = await r.json();
+    if (res.ok) {
+      ALL_TASKS = (res.data || []).map(normalizeTask);
+      render();
+    } else {
+      el.innerHTML = '<div class="empty-msg"><span class="ico">⚠️</span>데이터 로드 실패<br><span style="font-size:12px;color:var(--dim);">' + esc(res.error || '') + '</span></div>';
+    }
+  } catch (e) {
+    el.innerHTML = '<div class="empty-msg"><span class="ico">⚠️</span>연결 실패<br><span style="font-size:12px;color:var(--dim);">' + esc(e.message) + '</span></div>';
+  }
+}
+
+function normalizeTask(r) {
+  const t = {};
+  Object.keys(r).forEach(k => { t[k] = r[k]; });
+  // 영문 alias
+  t.id = r.id;
+  t.title = r['업무명'] || r.title || '';
+  t.category = r['카테고리'] || r.category || '';
+  t.owner = r['담당자'] || r.owner || '';
+  t.content = r['내용'] || r.content || '';
+  t.startDate = r['시작일'] || r.startDate || '';
+  t.endDate = r['종료일'] || r.endDate || '';
+  t.status = r['상태'] || r.status || '';
+  t.approval = r['결재요청'] || r.approval || '';
+  t.deptSign = r['부서장싸인'] || '';
+  t.gmSign = r['GM싸인'] || '';
+  t.repSign = r['대표싸인'] || '';
+  t.approvalStatus = r['결재상태'] || '';
+  t.completeTime = r['결재완료시각'] || '';
+  return t;
+}
+
+function render() {
+  const el = document.getElementById('mainContent');
+  // 결재 관련 건 (결재상태 있거나 결재요청이 체크된 모든 행) — 2026-05-28 보강
+  const approvalTasks = ALL_TASKS.filter(t => (t.approvalStatus && String(t.approvalStatus).trim()) || (t.approval && String(t.approval).trim()));
+
+  // 통계 — funnel 단계별 카운트 (2026-05-28 GM 결재)
+  const done = approvalTasks.filter(t => t.approvalStatus === '결재완료');
+  const rejected = approvalTasks.filter(t => /반려/.test(t.approvalStatus));
+  const pending = approvalTasks.filter(t => t.approvalStatus !== '결재완료' && !/반려/.test(t.approvalStatus));
+  const gmSigned = approvalTasks.filter(t => String(t.gmSign || '').trim());
+  const repSigned = approvalTasks.filter(t => String(t.repSign || '').trim());
+
+  let html = '';
+
+  // 통계 카드 — 4종 단계별
+  html += '<div class="stat-grid">';
+  html += '<div class="stat-card"><div class="num" style="color:var(--accent)">' + approvalTasks.length + '</div><div class="label">총 결재 건</div></div>';
+  html += '<div class="stat-card"><div class="num" style="color:var(--blue)">' + gmSigned.length + '</div><div class="label">GM 결재 완료</div></div>';
+  html += '<div class="stat-card"><div class="num" style="color:var(--green)">' + repSigned.length + '</div><div class="label">대표 결재 완료</div></div>';
+  html += '<div class="stat-card"><div class="num" style="color:var(--red)">' + rejected.length + '</div><div class="label">반려</div></div>';
+  html += '</div>';
+
+  // 결재자별 카운트 (미결만)
+  const pendingByRole = { '부서장':0, 'GM':0, '대표님':0 };
+  pending.forEach(t => {
+    const parsed = parseContent(t.content);
+    const route = buildEffectiveRoute(t, parsed.budget);
+    const nxt = nextApprover(t, route);
+    if (nxt && nxt in pendingByRole) pendingByRole[nxt]++;
+  });
+
+  // 카테고리 목록 (실측)
+  const catSet = {};
+  approvalTasks.forEach(t => { if (t.category) catSet[t.category] = (catSet[t.category]||0) + 1; });
+  const catList = Object.keys(catSet).sort();
+
+  // 1줄 — 상태 필터 + 보고용·인쇄
+  html += '<div class="filter-bar" style="align-items:center;">';
+  html += '<button class="filter-btn ' + (activeFilter==='전체'?'active':'') + '" onclick="setFilter(\'전체\')">전체 (' + approvalTasks.length + ')</button>';
+  html += '<button class="filter-btn ' + (activeFilter==='미결'?'active':'') + '" onclick="setFilter(\'미결\')">진행 중 (' + pending.length + ')</button>';
+  html += '<button class="filter-btn ' + (activeFilter==='결재완료'?'active':'') + '" onclick="setFilter(\'결재완료\')">결재완료 (' + done.length + ')</button>';
+  html += '<button class="filter-btn ' + (activeFilter==='반려'?'active':'') + '" onclick="setFilter(\'반려\')">반려 (' + rejected.length + ')</button>';
+  html += '<div style="margin-left:auto;display:flex;gap:4px;">';
+  html += '<button class="filter-btn" onclick="window.print()" style="background:var(--paper);">🖨 인쇄</button>';
+  html += '<button class="filter-btn" onclick="shareReport()" style="background:var(--purple-bg);color:var(--purple);border-color:rgba(167,139,218,0.3);">📋 보고용</button>';
+  html += '</div>';
+  html += '</div>';
+
+  // 2줄 — 결재자별 차례 (미결 한정)
+  html += '<div class="filter-bar">';
+  html += '<span style="font-size:11px;color:var(--dim);align-self:center;margin-right:4px;">차례:</span>';
+  html += '<button class="filter-btn ' + (activeRoleFilter==='전체'?'active':'') + '" onclick="setRoleFilter(\'전체\')">전체</button>';
+  html += '<button class="filter-btn ' + (activeRoleFilter==='부서장'?'active':'') + '" onclick="setRoleFilter(\'부서장\')">부서장 (' + pendingByRole['부서장'] + ')</button>';
+  html += '<button class="filter-btn ' + (activeRoleFilter==='GM'?'active':'') + '" onclick="setRoleFilter(\'GM\')">김남욱GM (' + pendingByRole['GM'] + ')</button>';
+  html += '<button class="filter-btn ' + (activeRoleFilter==='대표님'?'active':'') + '" onclick="setRoleFilter(\'대표님\')">전응준 대표 (' + pendingByRole['대표님'] + ')</button>';
+  html += '<span style="font-size:11px;color:var(--dim);margin-left:6px;align-self:center;">부서장 = 이경연 실장·이정헌 소장·나우열 매니저</span>';
+  html += '</div>';
+
+  // 3줄 — 카테고리 필터
+  if (catList.length > 1) {
+    html += '<div class="filter-bar">';
+    html += '<span style="font-size:11px;color:var(--dim);align-self:center;margin-right:4px;">카테고리:</span>';
+    html += '<button class="filter-btn ' + (activeCatFilter==='전체'?'active':'') + '" onclick="setCatFilter(\'전체\')">전체</button>';
+    catList.forEach(cat => {
+      const active = activeCatFilter === cat ? 'active' : '';
+      html += '<button class="filter-btn ' + active + '" onclick="setCatFilter(\'' + escAttr(cat) + '\')">' + esc(cat) + ' (' + catSet[cat] + ')</button>';
+    });
+    html += '</div>';
+  }
+
+  // 4줄 — 검색
+  html += '<div class="filter-bar">';
+  html += '<input type="text" id="searchInput" placeholder="업무명·내용·담당자 검색" value="' + escAttr(searchQuery) + '" oninput="setSearch(this.value)" style="flex:1;background:var(--paper);border:1px solid var(--border);color:var(--text);padding:7px 12px;border-radius:8px;font-size:13px;font-family:inherit;">';
+  if (searchQuery) html += '<button class="filter-btn" onclick="setSearch(\'\')">✕ 초기화</button>';
+  html += '</div>';
+
+  // 필터링
+  let list = approvalTasks;
+  if (activeFilter === '결재완료') list = done;
+  else if (activeFilter === '반려') list = rejected;
+  else if (activeFilter === '미결') list = pending;
+
+  // 카테고리 필터
+  if (activeCatFilter !== '전체') {
+    list = list.filter(t => t.category === activeCatFilter);
+  }
+
+  // 결재자별 차례 (미결 한정)
+  if (activeRoleFilter !== '전체') {
+    list = list.filter(t => {
+      if (t.approvalStatus === '결재완료' || /반려/.test(t.approvalStatus)) return false;
+      const parsed = parseContent(t.content);
+      const route = buildEffectiveRoute(t, parsed.budget);
+      return nextApprover(t, route) === activeRoleFilter;
+    });
+  }
+
+  // 검색
+  if (searchQuery && searchQuery.trim()) {
+    const q = searchQuery.trim().toLowerCase();
+    list = list.filter(t => {
+      const blob = ((t.title || '') + ' ' + (t.content || '') + ' ' + (t.owner || '') + ' ' + (t.category || '')).toLowerCase();
+      return blob.includes(q);
+    });
+  }
+
+  // 정렬: 결재완료시각 또는 수정일 기준 최신 위
+  list.sort((a, b) => String(b.completeTime || b['수정일'] || '').localeCompare(String(a.completeTime || a['수정일'] || '')));
+
+  if (!list.length) {
+    html += '<div class="empty-msg"><span class="ico">📂</span>해당 조건의 결재 건이 없습니다.<br><span style="font-size:12px;color:var(--dim);">필터를 조정하거나 업무 현황 SSOT에서 결재요청을 체크해 보세요.</span></div>';
+  } else {
+    html += '<div style="font-size:12px;color:var(--dim);margin-bottom:8px;">총 ' + list.length + '건 표시</div>';
+    list.forEach(t => { html += renderApprovalCard(t); });
+  }
+
+  el.innerHTML = html;
+  // 검색 박스 focus 유지
+  if (searchQuery && document.activeElement && document.activeElement.id !== 'searchInput') {
+    const si = document.getElementById('searchInput');
+    if (si) { si.focus(); si.setSelectionRange(searchQuery.length, searchQuery.length); }
+  }
+}
+
+function setRoleFilter(r) { activeRoleFilter = r; render(); }
+function setCatFilter(c) { activeCatFilter = c; render(); }
+function setSearch(q) { searchQuery = q; render(); }
+
+function shareReport() {
+  const list = ALL_TASKS.filter(t => (t.approvalStatus && String(t.approvalStatus).trim()) || (t.approval && String(t.approval).trim()));
+  const done = list.filter(t => t.approvalStatus === '결재완료').length;
+  const pending = list.filter(t => t.approvalStatus !== '결재완료' && !/반려/.test(t.approvalStatus)).length;
+  const rejected = list.filter(t => /반려/.test(t.approvalStatus)).length;
+  let lines = [];
+  lines.push('📁 [결재 현황 SSOT 보고용] ' + todayDateStr());
+  lines.push('━━━━━━━━━━━━━━');
+  lines.push('총 ' + list.length + '건 · 완료 ' + done + ' / 진행 ' + pending + ' / 반려 ' + rejected);
+  lines.push('');
+  list.forEach((t, i) => {
+    const parsed = parseContent(t.content);
+    const budget = parsed.budget ? ' · 💰 ' + parsed.budget.category + ' ' + formatKRW(parsed.budget.amount) : '';
+    const status = t.approvalStatus || '대기';
+    lines.push((i+1) + '. [' + status + '] ' + (t.title || '-') + budget);
+  });
+  const text = lines.join('\n');
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(() => alert('보고용 텍스트가 클립보드에 복사되었습니다.'));
+  } else {
+    prompt('아래 텍스트 복사:', text);
+  }
+}
+
+function todayDateStr() {
+  const d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+
+/* 결제 권한 기준 v2.0 라우팅 (백엔드와 동일 로직 — 페이지에서 다음 결재자 산출용) */
+function routeApproval(category, amount) {
+  const amt = Number(amount) || 0;
+  switch (category) {
+    case '일상 운영비':           return amt <= 300000 ? ['GM'] : ['부서장', 'GM'];
+    case '소액 유지보수':         return amt <= 100000 ? ['부서장'] : ['GM'];
+    case '마케팅':                return amt <= 3000000 ? ['GM'] : ['GM', '대표님'];
+    case '비상 지출':             return amt <= 500000 ? ['부서장'] : ['GM'];
+    case '계약·정기 약정':
+    case 'IT·소프트웨어':
+    case '급여·인건비·외주·교육':
+    case '장비 구매·교체':        return ['GM', '대표님'];
+    default: return [];
+  }
+}
+
+function buildEffectiveRoute(t, budget) {
+  // 수동 결재요청 + 예산 자동 산출 합집합
+  const manual = String(t.approval || '').split(',').map(s => s.trim()).filter(Boolean);
+  const auto = budget ? routeApproval(budget.category, budget.amount) : [];
+  const set = {};
+  manual.concat(auto).forEach(a => { set[a] = true; });
+  return ['부서장', 'GM', '대표님'].filter(r => set[r]);
+}
+
+function nextApprover(t, route) {
+  const map = { '부서장': t.deptSign, 'GM': t.gmSign, '대표님': t.repSign };
+  for (const r of route) {
+    if (!map[r]) return r;
+  }
+  return null;
+}
+
+/* 결재 비밀번호 게이트 — GM·대표님 승인/반려 시 본인 PIN 입력 필수 (2026-05-29 GM 지시)
+   부서장은 PIN 미지정 → 기존 확인창 유지 */
+const APPROVAL_PINS = { 'GM': '0987', '대표님': '3211' };
+
+function gateApproval(role, actionLabel) {
+  const pin = APPROVAL_PINS[role];
+  if (pin) {
+    const input = prompt(role + ' ' + actionLabel + ' — 비밀번호를 입력하세요:');
+    if (input === null) return false;            // 취소
+    if (input !== pin) { alert('비밀번호가 일치하지 않습니다. ' + actionLabel + '이 취소되었습니다.'); return false; }
+    return true;
+  }
+  return confirm(role + ' ' + actionLabel + ' 처리하시겠습니까?');
+}
+
+async function approveTask(taskId, role) {
+  if (!gateApproval(role, '승인')) return;
+  await signTask(taskId, role, 'approve');
+}
+
+async function rejectTask(taskId, role) {
+  if (!gateApproval(role, '반려')) return;
+  await signTask(taskId, role, 'reject');
+}
+
+async function signTask(taskId, role, decision) {
+  const params = new URLSearchParams({
+    action: 'todo_sign', id: taskId, role: role, decision: decision, signer: '페이지'
+  });
+  try {
+    const r = await fetch(TODO_API_URL + '?' + params.toString(), { redirect:'follow' });
+    const res = await r.json();
+    if (res.ok) {
+      loadTasks();
+    } else {
+      alert('처리 실패: ' + (res.error || '알 수 없는 오류'));
+    }
+  } catch (e) {
+    alert('연결 실패: ' + e.message);
+  }
+}
+
+function renderApprovalCard(t) {
+  const isRejected = /반려/.test(t.approvalStatus);
+  const isDone = t.approvalStatus === '결재완료';
+  const parsed = parseContent(t.content);
+  const route = buildEffectiveRoute(t, parsed.budget);
+  const nxt = (!isDone && !isRejected) ? nextApprover(t, route) : null;
+
+  let h = '<div class="approval-card' + (isRejected ? ' rejected' : '') + '" data-id="' + escAttr(t.id) + '">';
+
+  // 제목 줄 — 우측에 카테고리·담당자·상태칩
+  h += '<div class="title-row" style="flex-wrap:wrap;gap:6px;margin-bottom:6px;">';
+  h += '<div class="title" style="flex:1;min-width:0;">' + esc(t.title || '(제목 없음)') + '</div>';
+  if (t.category) h += '<span class="chip category" style="font-size:10px;">' + esc(t.category) + '</span>';
+  if (t.owner) {
+    t.owner.split(',').forEach(o => { o = o.trim(); if (o) h += '<span class="chip owner" style="font-size:10px;">' + esc(o) + '</span>'; });
+  }
+  let chipCls = 'status-chip', chipText = t.approvalStatus;
+  if (isDone) { chipCls += ' done'; chipText = '✅ 결재완료'; }
+  else if (isRejected) { chipCls += ' rejected'; chipText = '❌ ' + t.approvalStatus; }
+  if (chipText) h += '<span class="' + chipCls + '">' + esc(chipText) + '</span>';
+  h += '</div>';
+
+  // 메타 — 예산만 (카테고리·담당자는 제목 줄로 이동)
+  if (parsed.budget) {
+    h += '<div class="meta-row" style="margin-bottom:6px;">';
+    h += '<span class="chip budget">💰 ' + esc(parsed.budget.category) + ' · ' + formatKRW(parsed.budget.amount) + '</span>';
+    h += '</div>';
+  }
+
+  // 싸인 라인 — 미서명 + 현재 차례면 ✅/❌ 버튼 내장
+  h += '<div class="sign-line">';
+  h += renderSignPill('부서장', t.deptSign, t.id, nxt === '부서장', route.includes('부서장'));
+  h += renderSignPill('GM',     t.gmSign,   t.id, nxt === 'GM',     route.includes('GM'));
+  h += renderSignPill('대표님',  t.repSign,  t.id, nxt === '대표님',  route.includes('대표님'));
+  h += '</div>';
+
+  if (t.completeTime) {
+    h += '<div class="complete-time">🎉 결재완료: ' + esc(String(t.completeTime).slice(0, 16)) + '</div>';
+  }
+
+  // 토글 (본문 + 기획 + 진척 로그 + 결과보고)
+  if (parsed.body || parsed.plan || parsed.logs.length || parsed.result) {
+    const label = [
+      parsed.body ? '본문' : null,
+      parsed.plan ? '기획' : null,
+      parsed.logs.length ? '진척 ' + parsed.logs.length + '건' : null,
+      parsed.result ? '결과보고' : null
+    ].filter(Boolean).join(' · ');
+    h += '<div class="detail-toggle" onclick="toggleDetail(this)"><span class="arrow">▶</span>' + label + '</div>';
+    h += '<div class="detail-body">';
+    if (parsed.body) h += '<div class="body-text">' + esc(parsed.body) + '</div>';
+    if (parsed.plan) {
+      h += '<div style="margin-top:10px;padding:10px 12px;background:var(--blue-bg);border:1px solid rgba(91,159,213,0.3);border-radius:8px;">';
+      h += '<div style="font-size:12px;font-weight:700;color:var(--blue);margin-bottom:4px;">📋 기획</div>';
+      h += '<div style="font-size:13px;white-space:pre-wrap;line-height:1.55;">' + esc(parsed.plan) + '</div></div>';
+    }
+    if (parsed.logs.length) {
+      h += '<div style="margin-top:10px;font-size:12px;font-weight:700;color:var(--accent);">📅 진척 로그</div>';
+      parsed.logs.forEach(log => {
+        h += '<div class="progress-row"><span class="date">' + esc(log.date) + '</span><span class="text">' + esc(log.text) + '</span></div>';
+      });
+    }
+    if (parsed.result) {
+      h += '<div style="margin-top:10px;padding:10px 12px;background:var(--purple-bg);border:1px solid rgba(167,139,218,0.3);border-radius:8px;">';
+      h += '<div style="font-size:12px;font-weight:700;color:var(--purple);margin-bottom:4px;">🎯 결과보고</div>';
+      h += '<div style="font-size:13px;white-space:pre-wrap;line-height:1.55;">' + esc(parsed.result) + '</div></div>';
+    }
+    h += '</div>';
+  }
+
+  h += '</div>';
+  return h;
+}
+
+function renderSignPill(role, sign, taskId, isCurrent, isInRoute) {
+  if (sign) {
+    const time = String(sign).slice(0, 16);
+    const rest = String(sign).slice(16).trim();
+    return '<span class="sign-pill">✅ ' + role + '<span class="time">' + esc(time) + (rest ? ' ' + esc(rest) : '') + '</span></span>';
+  }
+  if (isInRoute === false) {
+    return '<span class="sign-pill empty" style="opacity:0.35;">' + role + ' (해당 없음)</span>';
+  }
+  if (isCurrent && taskId) {
+    return '<span class="sign-pill empty active" style="background:var(--accent-bg);border-color:var(--accent);color:var(--accent);display:inline-flex;align-items:center;gap:6px;padding:3px 4px;">' +
+      '<span style="padding:1px 6px;font-weight:700;">' + role + ' 미서명</span>' +
+      '<button onclick="approveTask(\'' + escAttr(taskId) + '\',\'' + escAttr(role) + '\')" style="background:var(--green);color:#fff;border:none;padding:3px 9px;border-radius:5px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;">✅ ' + esc(role) + ' 승인</button>' +
+      '<button onclick="rejectTask(\'' + escAttr(taskId) + '\',\'' + escAttr(role) + '\')" style="background:var(--red);color:#fff;border:none;padding:3px 9px;border-radius:5px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;">❌ 반려</button>' +
+      '</span>';
+  }
+  return '<span class="sign-pill empty">' + role + ' 미서명</span>';
+}
+
+function setFilter(f) {
+  activeFilter = f;
+  render();
+}
+
+function toggleDetail(el) {
+  el.classList.toggle('open');
+  const body = el.nextElementSibling;
+  if (body) body.classList.toggle('open');
+}
+
+/* ─── 공유 유틸 (업무 현황 SSOT와 동일 — 4섹션 마커) ─── */
+const PROGRESS_MARK = '===PROGRESS_LOG===';
+const BUDGET_MARK = '===BUDGET===';
+const PLAN_MARK = '===PLAN===';
+const RESULT_MARK = '===RESULT===';
+
+function parseContent(content) {
+  const raw = String(content || '');
+  const marks = [
+    { key: 'plan',     mark: PLAN_MARK },
+    { key: 'progress', mark: PROGRESS_MARK },
+    { key: 'result',   mark: RESULT_MARK },
+    { key: 'budget',   mark: BUDGET_MARK }
+  ];
+  const positions = marks
+    .map(m => ({ key: m.key, mark: m.mark, idx: raw.indexOf(m.mark) }))
+    .filter(m => m.idx >= 0)
+    .sort((a, b) => a.idx - b.idx);
+  const body = positions.length ? raw.slice(0, positions[0].idx).replace(/\s+$/, '') : raw;
+  const sections = {};
+  for (let i = 0; i < positions.length; i++) {
+    const start = positions[i].idx + positions[i].mark.length;
+    const end = i + 1 < positions.length ? positions[i + 1].idx : raw.length;
+    sections[positions[i].key] = raw.slice(start, end).trim();
+  }
+  const plan = sections.plan || '';
+  const result = sections.result || '';
+  let budget = null;
+  if (sections.budget) {
+    const m = sections.budget.split(/\r?\n/)[0].match(/^(.+?)\s*\|\s*(\d+)$/);
+    if (m) budget = { category: m[1].trim(), amount: Number(m[2]) };
+  }
+  let logs = [];
+  if (sections.progress) {
+    logs = sections.progress.split(/\r?\n/).map(line => {
+      const m = line.match(/^(\d{4}-\d{2}-\d{2})\s*\|\s*(.*)$/);
+      return m ? { date: m[1], text: m[2].trim() } : null;
+    }).filter(Boolean);
+    logs.sort((a, b) => b.date.localeCompare(a.date));
+  }
+  return { body, plan, logs, result, budget };
+}
+
+function formatKRW(amount) {
+  if (!amount) return '';
+  return Number(amount).toLocaleString('ko-KR') + '원';
+}
+
+function esc(s) {
+  if (s === null || s === undefined) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function escAttr(s) {
+  if (s === null || s === undefined) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/'/g,'&#39;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+</script>
+
+</body>
+</html>
