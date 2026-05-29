@@ -2977,16 +2977,6 @@ Start-Process python -ArgumentList telegram_bot\daily_scheduler.py -WorkingDirec
       <div id="today-task-list">
         <!-- 동적 렌더링 — gm1_unified_tasks localStorage 기반 -->
       </div>
-      <div style="display:flex;gap:12px;margin-top:16px;">
-        <details class="toggle" style="flex:1;">
-          <summary style="color:var(--green);"><span style="margin-right:6px;">✅</span>완료 (<span id="today-done-count">0</span>건)</summary>
-          <div class="toggle-body" style="font-size:13px;" id="today-done-list"></div>
-        </details>
-        <details class="toggle" style="flex:1;">
-          <summary style="color:var(--accent);"><span style="margin-right:6px;">⏸️</span>보류 (<span id="today-hold-count">0</span>건)</summary>
-          <div class="toggle-body" style="font-size:13px;" id="today-hold-list"></div>
-        </details>
-      </div>
       <details class="toggle" style="margin-top:10px;">
         <summary style="color:var(--dim);"><span style="margin-right:6px;">📦</span>05-27 기록 (완료 3 + 보류 1)</summary>
         <div class="toggle-body" style="font-size:13px;">
@@ -4486,82 +4476,6 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
 
       todoHeader.parentNode.insertBefore(filterWrap, todoHeader);
     }
-
-    // ── 오늘 할 일: 완료·보류·삭제 (localStorage 저장) ──
-    const TODAY_TASK_KEY = 'gm1_today_tasks';
-    function loadTodayState() {
-      return JSON.parse(localStorage.getItem(TODAY_TASK_KEY) || '{"actions":[],"date":""}');
-    }
-    function saveTodayState(state) {
-      localStorage.setItem(TODAY_TASK_KEY, JSON.stringify(state));
-    }
-    function stampNow() {
-      const n = new Date();
-      return String(n.getMonth()+1).padStart(2,'0') + '-' + String(n.getDate()).padStart(2,'0') + ' ' + String(n.getHours()).padStart(2,'0') + ':' + String(n.getMinutes()).padStart(2,'0');
-    }
-    function renderArchiveItem(entry) {
-      const d = document.createElement('div');
-      d.style.cssText = 'padding:6px 0;border-bottom:1px dashed var(--border);';
-      if (entry.action === 'done') {
-        d.innerHTML = '<span style="color:var(--green);font-weight:700;">✓</span> <span style="text-decoration:line-through;color:var(--dim-soft);">' + entry.title + '</span> <span style="font-size:11px;color:var(--dim);">· ' + entry.stamp + ' 완료</span>';
-      } else {
-        d.innerHTML = '<span style="color:var(--accent);font-weight:700;">⏸</span> <span style="color:var(--dim-soft);">' + entry.title + '</span> <span style="font-size:11px;color:var(--dim);">· ' + entry.stamp + ' 보류</span>';
-      }
-      return d;
-    }
-    // 페이지 로드 시 저장된 상태 복원
-    (function restoreTodayState() {
-      const state = loadTodayState();
-      const today = new Date().toISOString().slice(0,10);
-      if (state.date !== today) { state.actions = []; state.date = today; saveTodayState(state); return; }
-      let doneCount = 0, holdCount = 0;
-      state.actions.forEach(entry => {
-        const card = document.querySelector('.task-card[data-today="' + entry.id + '"]');
-        if (card) card.style.display = 'none';
-        if (entry.action === 'done') {
-          doneCount++;
-          const list = document.querySelector('#today-done-list');
-          if (list) list.appendChild(renderArchiveItem(entry));
-        } else if (entry.action === 'hold') {
-          holdCount++;
-          const list = document.querySelector('#today-hold-list');
-          if (list) list.appendChild(renderArchiveItem(entry));
-        }
-      });
-      const dc = document.querySelector('#today-done-count'); if (dc) dc.textContent = doneCount;
-      const hc = document.querySelector('#today-hold-count'); if (hc) hc.textContent = holdCount;
-    })();
-    // 버튼 이벤트
-    document.querySelectorAll('.today-act').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const card = btn.closest('.task-card');
-        const action = btn.dataset.action;
-        const taskId = card.dataset.today;
-        const titleEl = card.querySelector('.task-title > span');
-        const title = titleEl ? titleEl.textContent.trim() : '';
-        const labels = {done:'완료', hold:'보류', delete:'삭제'};
-        if (!confirm(title + ' — ' + labels[action] + ' 처리할까요?')) return;
-        card.style.transition = 'opacity 0.3s';
-        card.style.opacity = '0';
-        setTimeout(() => card.style.display = 'none', 300);
-        const stamp = stampNow();
-        const state = loadTodayState();
-        state.date = new Date().toISOString().slice(0,10);
-        state.actions.push({id: taskId, action: action, title: title, stamp: stamp});
-        saveTodayState(state);
-        if (action === 'done') {
-          const countEl = document.querySelector('#today-done-count');
-          if (countEl) countEl.textContent = parseInt(countEl.textContent) + 1;
-          const list = document.querySelector('#today-done-list');
-          if (list) list.prepend(renderArchiveItem({action:'done', title:title, stamp:stamp}));
-        } else if (action === 'hold') {
-          const countEl = document.querySelector('#today-hold-count');
-          if (countEl) countEl.textContent = parseInt(countEl.textContent) + 1;
-          const list = document.querySelector('#today-hold-list');
-          if (list) list.prepend(renderArchiveItem({action:'hold', title:title, stamp:stamp}));
-        }
-      });
-    });
 
     // ── 아침 루틴 편집·저장 (localStorage) ──
     const MORNING_KEY = 'gm1_morning_routine';
