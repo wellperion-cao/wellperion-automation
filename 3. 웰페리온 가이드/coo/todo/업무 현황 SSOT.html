@@ -751,10 +751,51 @@ function renderTaskCard(t, idx) {
   }
 
   if (t.approval) {
-    t.approval.split(',').forEach(a => {
-      a = a.trim();
-      if (a) html += '<span class="chip approval">' + esc(a) + '</span>';
-    });
+    // ── 결재 진행 표시 (2026-05-29 GM 지시) ─────────────────────────────
+    const _parsed = parseContent(t.content);
+    // buildEffectiveRoute: 수동 결재요청 + 예산 자동 산출 합집합 → 순서 정렬
+    const _manual = String(t.approval || '').split(',').map(s => s.trim()).filter(Boolean);
+    const _auto   = _parsed.budget ? routeApproval(_parsed.budget.category, _parsed.budget.amount) : [];
+    const _set    = {};
+    _manual.concat(_auto).forEach(a => { _set[a] = true; });
+    const _route  = ['부서장', 'GM', '대표님'].filter(r => _set[r]);
+
+    if (_route.length > 0) {
+      const _appStatus = String(t['결재상태'] || '');
+      if (_appStatus === '결재완료') {
+        // ① 결재완료
+        html += '<span class="chip" style="background:var(--green-bg);color:var(--green);font-weight:700;">✅ 결재완료</span>';
+      } else if (/반려/.test(_appStatus)) {
+        // ② 반려
+        html += '<span class="chip" style="background:var(--red-bg);color:var(--red);font-weight:700;">❌ ' + esc(_appStatus) + '</span>';
+      } else {
+        // ③ 진행 중 — 싸인 맵: 한글 키 직접 접근
+        const _signMap = { '부서장': t['부서장싸인'] || '', 'GM': t['GM싸인'] || '', '대표님': t['대표싸인'] || '' };
+        // 다음 결재자 = 라인 중 싸인 필드가 비어 있는 첫 번째
+        let _nextIdx = _route.length; // 전원 서명 완료 시 sentinel
+        for (let _i = 0; _i < _route.length; _i++) {
+          if (!String(_signMap[_route[_i]]).trim()) { _nextIdx = _i; break; }
+        }
+        const _signed = _route.filter(r => String(_signMap[r]).trim()).length;
+        const _total  = _route.length;
+        // 카운트 칩
+        html += '<span class="chip" style="background:var(--yellow-bg);color:var(--yellow);font-weight:700;">🧾 결재 ' + _signed + '/' + _total + '</span>';
+        // 역할 시퀀스
+        const _roleHtml = _route.map((r, i) => {
+          const _isSigned = !!String(_signMap[r]).trim();
+          const _isNext   = i === _nextIdx;
+          const _style    = _isSigned
+            ? 'color:var(--green);font-weight:700;'
+            : _isNext
+              ? 'color:var(--yellow);font-weight:700;'
+              : 'color:var(--dim);opacity:0.5;';
+          const _icon  = _isSigned ? '✅' : _isNext ? '⏳' : '◻';
+          return '<span style="' + _style + 'font-size:10px;">' + _icon + esc(r) + '</span>';
+        }).join('<span style="color:var(--dim);font-size:10px;"> → </span>');
+        html += '<span style="display:inline-flex;align-items:center;gap:0;flex-wrap:nowrap;">' + _roleHtml + '</span>';
+      }
+    }
+    // 기존 결재 현황 SSOT 링크 유지
     html += '<a class="chip" href="결재 SSOT.html" style="background:var(--green);color:#fff;cursor:pointer;text-decoration:none;" onclick="event.stopPropagation();">📁 결재 현황 SSOT</a>';
   }
 
