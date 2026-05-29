@@ -389,182 +389,6 @@ function _uploadFile(base64, fileName, mimeType) {
   return file.getUrl();
 }
 
-// ─── '내용' 마커 파싱 (HTML parseContent 로직 GAS 이식) — 2026-05-29 신설 ───
-// ===PLAN=== / ===PROGRESS_LOG=== / ===RESULT=== / ===BUDGET=== 마커 분리
-// 반환: { body, plan, logs:[{date,text}](오름차순), result, budget:{category,amount}|null }
-function _parseTodoContent(content) {
-  const raw = String(content == null ? '' : content);
-  const marks = [
-    { key: 'plan',     mark: '===PLAN===' },
-    { key: 'progress', mark: '===PROGRESS_LOG===' },
-    { key: 'result',   mark: '===RESULT===' },
-    { key: 'budget',   mark: '===BUDGET===' }
-  ];
-  const positions = marks
-    .map(function (m) { return { key: m.key, mark: m.mark, idx: raw.indexOf(m.mark) }; })
-    .filter(function (m) { return m.idx >= 0; })
-    .sort(function (a, b) { return a.idx - b.idx; });
-
-  const body = positions.length
-    ? raw.slice(0, positions[0].idx).replace(/\s+$/, '')
-    : raw.replace(/\s+$/, '');
-
-  const sections = {};
-  for (let i = 0; i < positions.length; i++) {
-    const start = positions[i].idx + positions[i].mark.length;
-    const end = i + 1 < positions.length ? positions[i + 1].idx : raw.length;
-    sections[positions[i].key] = raw.slice(start, end).trim();
-  }
-
-  const plan = sections.plan || '';
-  const result = sections.result || '';
-
-  let budget = null;
-  if (sections.budget) {
-    const m = sections.budget.split(/\r?\n/)[0].match(/^(.+?)\s*\|\s*(\d+)$/);
-    if (m) budget = { category: m[1].trim(), amount: Number(m[2]) };
-  }
-
-  let logs = [];
-  if (sections.progress) {
-    logs = sections.progress.split(/\r?\n/).map(function (line) {
-      const m = line.match(/^(\d{4}-\d{2}-\d{2})\s*\|\s*(.*)$/);
-      return m ? { date: m[1], text: m[2].trim() } : null;
-    }).filter(Boolean);
-    logs.sort(function (a, b) { return a.date.localeCompare(b.date); });
-  }
-
-  return { body: body, plan: plan, logs: logs, result: result, budget: budget };
-}
-
-// ─── 결과보고서 PDF 자동 생성 (결재 완료 / 결과보고 저장 트리거) — 2026-05-29 신설 ───
-// 입력: record (TODO_HEADERS 키 객체, 싸인 최종값 포함)
-// 출력: Drive 공유 URL (실패 시 '' — 절대 throw 금지, 결재 쓰기 보호)
-function _generateResultReport(record) {
-  try {
-    const esc = function (v) {
-      return String(v == null ? '' : v)
-        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;');
-    };
-    const val = function (k) { return esc(record[k] || '-'); };
-
-    const title = String(record['업무명'] || '무제');
-    const id = String(record['id'] || '');
-    const period = esc(record['시작일'] || '-') + ' ~ ' + esc(record['종료일'] || '-');
-    const sign = function (k) { return record[k] ? esc(record[k]) : '-'; };
-
-    // '내용' 마커 파싱 (HTML parseContent 로직 GAS 이식) — body/plan/logs/result/budget 분리
-    const parsed = _parseTodoContent(record['내용']);
-
-    // 본문(마커 제거된 순수 텍스트)
-    const bodyHtml = parsed.body
-      ? '<tr><th style="text-align:left;background:#f4f6f5;border:1px solid #ddd;padding:9px 12px;font-weight:600;vertical-align:top;">내용</th><td style="border:1px solid #ddd;padding:9px 12px;white-space:pre-wrap;">' + esc(parsed.body) + '</td></tr>'
-      : '';
-
-    // 결과보고 강조 박스 (있을 때만)
-    const resultBox = parsed.result
-      ? '<div style="font-size:15px;font-weight:700;margin:6px 0 10px;">결과보고</div>' +
-        '<div style="border:1px solid #b9d4c6;background:#eef6f1;border-radius:8px;padding:14px 16px;font-size:14px;line-height:1.6;white-space:pre-wrap;margin-bottom:24px;">' + esc(parsed.result) + '</div>'
-      : '';
-
-    // 진척 로그 타임라인 (날짜 오름차순)
-    let timelineHtml = '';
-    if (parsed.logs.length) {
-      const asc = parsed.logs.slice().sort(function (a, b) { return a.date.localeCompare(b.date); });
-      let rows = '';
-      asc.forEach(function (log) {
-        rows += '<tr>' +
-          '<td style="border:1px solid #ddd;padding:8px 12px;width:120px;font-weight:600;color:#0b3d2e;vertical-align:top;white-space:nowrap;">' + esc(log.date) + '</td>' +
-          '<td style="border:1px solid #ddd;padding:8px 12px;white-space:pre-wrap;line-height:1.5;">' + esc(log.text) + '</td>' +
-          '</tr>';
-      });
-      timelineHtml =
-        '<div style="font-size:15px;font-weight:700;margin:6px 0 10px;">진척 로그 (' + asc.length + '건)</div>' +
-        '<table style="width:100%;border-collapse:collapse;font-size:13px;margin-bottom:24px;">' + rows + '</table>';
-    }
-
-    // 계획 섹션 (있을 때만)
-    const planBox = parsed.plan
-      ? '<div style="font-size:15px;font-weight:700;margin:6px 0 10px;">계획</div>' +
-        '<div style="border:1px solid #ddd;border-radius:8px;padding:12px 14px;font-size:14px;line-height:1.6;white-space:pre-wrap;margin-bottom:24px;">' + esc(parsed.plan) + '</div>'
-      : '';
-
-    // 예산 한 줄 (있을 때만)
-    const budgetLine = parsed.budget
-      ? '<div style="font-size:14px;margin-bottom:24px;"><b>예산</b> · ' + esc(parsed.budget.category) + ' · ' + esc(Number(parsed.budget.amount).toLocaleString('ko-KR')) + '원</div>'
-      : '';
-
-    // 참고 링크 (있을 때만)
-    let refRows = '';
-    if (record['링크']) {
-      refRows += '<tr><th>링크</th><td><a href="' + esc(record['링크']) + '">' + esc(record['링크']) + '</a></td></tr>';
-    }
-    if (record['파일URL']) {
-      refRows += '<tr><th>첨부파일</th><td><a href="' + esc(record['파일URL']) + '">' + esc(record['파일URL']) + '</a></td></tr>';
-    }
-
-    const html =
-      '<!DOCTYPE html><html><head><meta charset="utf-8"></head>' +
-      '<body style="margin:0;padding:0;font-family:\'Malgun Gothic\',\'Apple SD Gothic Neo\',sans-serif;color:#1a1a1a;">' +
-      '<div style="max-width:700px;margin:0 auto;padding:48px 40px;">' +
-        // 헤더 워드마크
-        '<div style="font-size:22px;font-weight:700;letter-spacing:4px;color:#0b3d2e;">WELLPERION</div>' +
-        '<div style="border-bottom:1px solid #cfcfcf;margin:14px 0 30px;"></div>' +
-        // 문서 제목
-        '<div style="font-size:28px;font-weight:700;margin-bottom:26px;">결과보고서</div>' +
-        // 정보 표
-        '<table style="width:100%;border-collapse:collapse;font-size:14px;margin-bottom:24px;">' +
-          '<tr><th style="width:120px;text-align:left;background:#f4f6f5;border:1px solid #ddd;padding:9px 12px;font-weight:600;">업무명</th><td style="border:1px solid #ddd;padding:9px 12px;">' + val('업무명') + '</td></tr>' +
-          '<tr><th style="text-align:left;background:#f4f6f5;border:1px solid #ddd;padding:9px 12px;font-weight:600;">카테고리</th><td style="border:1px solid #ddd;padding:9px 12px;">' + val('카테고리') + '</td></tr>' +
-          '<tr><th style="text-align:left;background:#f4f6f5;border:1px solid #ddd;padding:9px 12px;font-weight:600;">담당자</th><td style="border:1px solid #ddd;padding:9px 12px;">' + val('담당자') + '</td></tr>' +
-          '<tr><th style="text-align:left;background:#f4f6f5;border:1px solid #ddd;padding:9px 12px;font-weight:600;">기간</th><td style="border:1px solid #ddd;padding:9px 12px;">' + period + '</td></tr>' +
-          '<tr><th style="text-align:left;background:#f4f6f5;border:1px solid #ddd;padding:9px 12px;font-weight:600;">상태</th><td style="border:1px solid #ddd;padding:9px 12px;">' + val('상태') + '</td></tr>' +
-          bodyHtml +
-        '</table>' +
-        // 결과보고 강조 박스 (있을 때만)
-        resultBox +
-        // 진척 로그 타임라인 (있을 때만)
-        timelineHtml +
-        // 계획·예산 (있을 때만)
-        planBox +
-        budgetLine +
-        // 결재 라인 표
-        '<div style="font-size:15px;font-weight:700;margin:6px 0 10px;">결재 라인</div>' +
-        '<table style="width:100%;border-collapse:collapse;font-size:14px;margin-bottom:24px;">' +
-          '<tr><th style="width:120px;text-align:left;background:#f4f6f5;border:1px solid #ddd;padding:9px 12px;font-weight:600;">부서장 싸인</th><td style="border:1px solid #ddd;padding:9px 12px;">' + sign('부서장싸인') + '</td></tr>' +
-          '<tr><th style="text-align:left;background:#f4f6f5;border:1px solid #ddd;padding:9px 12px;font-weight:600;">GM 싸인</th><td style="border:1px solid #ddd;padding:9px 12px;">' + sign('GM싸인') + '</td></tr>' +
-          '<tr><th style="text-align:left;background:#f4f6f5;border:1px solid #ddd;padding:9px 12px;font-weight:600;">대표 싸인</th><td style="border:1px solid #ddd;padding:9px 12px;">' + sign('대표싸인') + '</td></tr>' +
-          '<tr><th style="text-align:left;background:#f4f6f5;border:1px solid #ddd;padding:9px 12px;font-weight:600;">결재완료시각</th><td style="border:1px solid #ddd;padding:9px 12px;">' + sign('결재완료시각') + '</td></tr>' +
-        '</table>' +
-        // 참고 링크 (있을 때만)
-        (refRows
-          ? '<div style="font-size:15px;font-weight:700;margin:6px 0 10px;">참고</div>' +
-            '<table style="width:100%;border-collapse:collapse;font-size:13px;margin-bottom:24px;">' + refRows + '</table>'
-          : '') +
-        // 푸터
-        '<div style="border-top:1px solid #cfcfcf;margin-top:36px;padding-top:16px;font-size:12px;color:#777;display:flex;justify-content:space-between;">' +
-          '<span style="font-style:italic;letter-spacing:1px;">A Day, Well Completed.</span>' +
-          '<span>발행일 ' + esc(_now()) + '</span>' +
-        '</div>' +
-      '</div></body></html>';
-
-    // 파일명 — 파일명 불가 문자 치환
-    const safeTitle = title.replace(/[\/\\:*?"<>|]/g, '_');
-    const fileName = '결과보고서_' + safeTitle + '_' + id + '.pdf';
-
-    const pdf = Utilities.newBlob(html, 'text/html', fileName).getAs('application/pdf');
-    pdf.setName(fileName);
-
-    const folder = _getTodoFolder();
-    const file = folder.createFile(pdf);
-    file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
-    return file.getUrl();
-  } catch (e) {
-    Logger.log('결과보고서 생성 실패: ' + (e && e.message ? e.message : e));
-    return '';
-  }
-}
 
 // ═══════════════════════════════════════════
 //  doGet — 조회
@@ -706,19 +530,7 @@ function _processTodoAction(body) {
       sh.getRange(rowNum, 1, 1, TODO_HEADERS.length).setValues([existing]);
       _applyStatusColor(sh, rowNum, existing[TODO_HEADERS.indexOf('상태')]);
 
-      // 결과보고 저장 트리거 — '내용'에 ===RESULT=== 본문이 있으면 결과보고서 PDF 자동 생성/갱신
-      // (결재 완료 훅 todo_sign과 별개. 결재 없이 결과보고만 저장해도 발동) — 2026-05-29 신설
-      const finalRecord = {};
-      TODO_HEADERS.forEach(function (h, i) { finalRecord[h] = existing[i]; });
-      const resultSection = _parseTodoContent(finalRecord['내용']).result;
-      if (resultSection) {
-        const reportUrl = _generateResultReport(finalRecord);
-        if (reportUrl) {
-          // 결과보고서URL은 메인 setValues 이후 별도 기록 (배열 길이 마이그레이션 안전)
-          sh.getRange(rowNum, TODO_HEADERS.indexOf('결과보고서URL') + 1).setValue(reportUrl);
-        }
-      }
-
+      // 결과보고서는 자동 생성하지 않음 — 페이지의 "인쇄/PDF 저장" 버튼으로 수동 생성 (2026-05-29 GM 결재)
       // 텔레그램 결재 발송 폐기 (2026-05-28 GM 결재). 결재는 결재 SSOT 페이지에서만 진행.
       return _json({ ok: true, id: id, message: '업무가 수정되었습니다.' });
     }
@@ -766,34 +578,24 @@ function _processTodoAction(body) {
       existing[TODO_HEADERS.indexOf(signCol)] = now + (signer && signer !== role ? ' (' + signer + ')' : '');
       record[signCol] = existing[TODO_HEADERS.indexOf(signCol)];
       const next = _nextApprover(record, route);
-      let reportUrl = '';
       if (next) {
         existing[TODO_HEADERS.indexOf('결재상태')] = role + ' 완료';
       } else {
         existing[TODO_HEADERS.indexOf('결재상태')] = '결재완료';
         existing[TODO_HEADERS.indexOf('결재완료시각')] = now;
-        // 결재 완료 트리거 — 싸인 최종값 반영 record로 결과보고서 PDF 자동 생성
-        const finalRecord = {};
-        TODO_HEADERS.forEach(h => finalRecord[h] = existing[TODO_HEADERS.indexOf(h)]);
-        reportUrl = _generateResultReport(finalRecord);
       }
       existing[TODO_HEADERS.indexOf('수정일')] = now;
       sh.getRange(rowNum, 1, 1, TODO_HEADERS.length).setValues([existing]);
 
-      // 결과보고서URL은 메인 setValues 이후 별도 기록 (배열 길이 마이그레이션 안전)
-      if (reportUrl) {
-        sh.getRange(rowNum, TODO_HEADERS.indexOf('결과보고서URL') + 1).setValue(reportUrl);
-      }
-
+      // 결과보고서는 자동 생성하지 않음 — 페이지 "인쇄/PDF 저장" 버튼으로 수동 (2026-05-29 GM 결재)
       // 텔레그램 결재 카드 폐기 (2026-05-28). 단순 진행 알림만 유지.
       if (next) {
         _notifyTelegram('✅ <b>[' + role + ' 싸인 완료]</b> → ' + next + ' 결재 대기\n📌 ' + (record['업무명']||'-') + '\n🆔 ' + id);
       } else {
-        _notifyTelegram('🎉 <b>[결재 완료]</b> 전 라인 승인\n📌 ' + (record['업무명']||'-') + '\n🆔 ' + id + '\n✅ ' + now +
-          (reportUrl ? '\n📄 결과보고서 자동 생성됨' : ''));
+        _notifyTelegram('🎉 <b>[결재 완료]</b> 전 라인 승인\n📌 ' + (record['업무명']||'-') + '\n🆔 ' + id + '\n✅ ' + now);
       }
 
-      return _json({ ok: true, id: id, message: role + ' 승인 처리됨', next: next || null, decision: 'approve', reportUrl: reportUrl || null });
+      return _json({ ok: true, id: id, message: role + ' 승인 처리됨', next: next || null, decision: 'approve' });
     }
 
     // ─── 삭제 ───

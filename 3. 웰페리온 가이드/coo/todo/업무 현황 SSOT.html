@@ -199,6 +199,33 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   /* 업무 모드: 대시보드 숨김 */
   [data-print-mode="tasks"] .dashboard-overlay{display:none!important}
   [data-print-mode="tasks"] .content{display:block!important}
+  /* 결과보고서 모드: 결과보고서만 표시, 나머지 모두 숨김 */
+  [data-print-mode="result"] .content{display:none!important}
+  [data-print-mode="result"] .dashboard-overlay{display:none!important}
+  [data-print-mode="result"] .sticky-top{display:none!important}
+  #resultReportPrint{display:none}
+  [data-print-mode="result"] #resultReportPrint{display:block!important}
+  /* 결과보고서 인쇄 스타일 */
+  .rr-page{font-family:"Malgun Gothic",sans-serif;color:#111;font-size:11px;line-height:1.6;padding:0}
+  .rr-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:14px;padding-bottom:10px;border-bottom:2px solid #111}
+  .rr-wordmark{font-size:15px;font-weight:900;letter-spacing:0.18em;text-transform:uppercase;color:#111}
+  .rr-approval-table{border-collapse:collapse;font-size:9px}
+  .rr-approval-table td{border:1px solid #555;padding:4px 8px;text-align:center;min-width:44px;vertical-align:top}
+  .rr-approval-label{writing-mode:vertical-rl;text-orientation:mixed;font-weight:700;padding:6px 4px;font-size:9px;background:#f0f0f0}
+  .rr-approval-role{font-weight:700;font-size:9px;border-bottom:1px solid #bbb;padding-bottom:2px;margin-bottom:4px}
+  .rr-approval-sign{font-size:10px;min-height:22px;display:flex;align-items:center;justify-content:center}
+  .rr-doc-title{text-align:center;font-size:18px;font-weight:900;letter-spacing:0.08em;margin:10px 0 14px}
+  .rr-info-table{width:100%;border-collapse:collapse;margin-bottom:14px;font-size:10px}
+  .rr-info-table th{background:#f0f0f0;border:1px solid #bbb;padding:4px 8px;font-weight:700;text-align:left;width:18%;white-space:nowrap}
+  .rr-info-table td{border:1px solid #bbb;padding:4px 8px}
+  .rr-section-title{font-size:11px;font-weight:700;border-left:3px solid #111;padding-left:6px;margin:14px 0 6px}
+  .rr-section-body{font-size:10px;white-space:pre-wrap;word-break:break-word;padding:8px;border:1px solid #ddd;background:#fafafa;line-height:1.7}
+  .rr-result-box{font-size:10px;white-space:pre-wrap;word-break:break-word;padding:8px 10px;border:2px solid #111;background:#f5f5f5;line-height:1.7}
+  .rr-log-table{width:100%;border-collapse:collapse;font-size:10px}
+  .rr-log-table th{background:#f0f0f0;border:1px solid #bbb;padding:4px 8px;font-weight:700;text-align:left}
+  .rr-log-table td{border:1px solid #ddd;padding:4px 8px;vertical-align:top}
+  .rr-log-date{white-space:nowrap;width:90px}
+  .rr-footer{margin-top:20px;padding-top:8px;border-top:1px solid #bbb;display:flex;justify-content:space-between;font-size:9px;color:#666}
   /* 공통 대시보드 */
   .dashboard-panel h2 .close-dash,.dash-print-btn{display:none!important}
   .dash-table th,.dash-table td{border:1px solid #ccc;padding:4px 8px;font-size:10px}
@@ -387,11 +414,15 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
       </div>
     </div>
     <div class="modal-actions">
+      <button class="modal-btn cancel" id="modalPrintBtn" onclick="(function(){var id=document.getElementById('editId').value;if(id)printResultReport(id);})()" style="background:var(--bg);color:var(--dim);border-color:var(--border);margin-right:auto;">🖨 인쇄 / PDF 저장</button>
       <button class="modal-btn cancel" onclick="closeModal()">취소</button>
       <button class="modal-btn save" id="modalSaveBtn" onclick="saveTask()">저장</button>
     </div>
   </div>
 </div>
+
+<!-- Result Report Print Container -->
+<div id="resultReportPrint" style="display:none"></div>
 
 <!-- Date Picker Modal -->
 <div class="modal-overlay date-picker-modal" id="datePickerModal">
@@ -443,8 +474,7 @@ const FIELD_MAP = {
   '내용':'content','시작일':'startDate','종료일':'endDate',
   '상태':'status','결재요청':'approval','링크':'link',
   '파일URL':'fileUrl','생성자':'creator','id':'id',
-  '생성일':'createdAt','수정일':'updatedAt',
-  '결과보고서URL':'reportUrl'
+  '생성일':'createdAt','수정일':'updatedAt'
 };
 
 /* ═══════════════════════════════════════════
@@ -883,10 +913,6 @@ function renderTaskCard(t, idx) {
 
   if (t.fileUrl) {
     html += '<div style="margin:6px 0;"><a class="chip link-chip" href="' + escAttr(t.fileUrl) + '" target="_blank" rel="noopener" onclick="event.stopPropagation()">첨부파일</a></div>';
-  }
-
-  if (t.reportUrl) {
-    html += '<div style="margin:6px 0;"><a class="chip link-chip" href="' + escAttr(t.reportUrl) + '" target="_blank" rel="noopener" onclick="event.stopPropagation()">📄 결과보고서</a></div>';
   }
 
   html += '</div>'; // task-detail
@@ -1933,6 +1959,146 @@ function printTasks() {
   // 복원
   document.querySelectorAll('.cat-body.print-opened').forEach(b => { b.classList.remove('open','print-opened'); b.previousElementSibling.querySelector('.cat-arrow')?.classList.remove('open'); });
   delete document.body.dataset.printMode;
+}
+
+function printResultReport(taskId) {
+  var t = ALL_TASKS.find(function(x){ return x.id === taskId; });
+  if (!t) { alert('업무를 찾을 수 없습니다.'); return; }
+
+  var parsed = parseContent(t.content);
+
+  /* ── 결재란 (결재요청 있을 때만) ── */
+  var approvalReq = String(t['결재요청'] || t.approval || '').trim();
+  var approvalHtml = '';
+  if (approvalReq) {
+    var signMap = {
+      '부서장': String(t['부서장싸인'] || '').trim(),
+      'GM':    String(t['GM싸인']    || '').trim(),
+      '대표님': String(t['대표싸인']  || '').trim()
+    };
+    var roles = ['담당', '부서장', 'GM', '대표님'];
+    var signValues = {
+      '담당':  esc(t.owner || ''),
+      '부서장': esc(signMap['부서장']),
+      'GM':    esc(signMap['GM']),
+      '대표님': esc(signMap['대표님'])
+    };
+    var cells = roles.map(function(role){
+      return '<td style="border:1px solid #555;padding:4px 8px;text-align:center;min-width:48px;vertical-align:top">'
+        + '<div style="font-weight:700;font-size:9px;border-bottom:1px solid #bbb;padding-bottom:3px;margin-bottom:5px;">' + esc(role) + '</div>'
+        + '<div style="font-size:10px;min-height:24px;display:flex;align-items:center;justify-content:center;">' + (signValues[role] || '') + '</div>'
+        + '</td>';
+    }).join('');
+    approvalHtml = '<table style="border-collapse:collapse;font-size:9px;">'
+      + '<tr>'
+      + '<td style="border:1px solid #555;padding:4px 6px;background:#f0f0f0;writing-mode:vertical-rl;text-orientation:mixed;font-weight:700;font-size:9px;vertical-align:middle;">결재</td>'
+      + cells
+      + '</tr></table>';
+  }
+
+  /* ── 정보표 ── */
+  var period = (t.startDate || t.endDate)
+    ? esc((t.startDate || '') + (t.endDate ? ' ~ ' + t.endDate : ''))
+    : '-';
+  var infoRows = [
+    ['업무명', esc(t.title || '-')],
+    ['카테고리', esc(t.category || '-')],
+    ['담당자', esc(t.owner || '-')],
+    ['기간', period],
+    ['상태', esc(t.status || '-')]
+  ];
+  var infoHtml = '<table class="rr-info-table">'
+    + infoRows.map(function(r){
+        return '<tr><th>' + r[0] + '</th><td>' + r[1] + '</td></tr>';
+      }).join('')
+    + '</table>';
+
+  /* ── 본문 ── */
+  var bodyHtml = parsed.body
+    ? '<div class="rr-section-title">업무 내용</div>'
+      + '<div class="rr-section-body">' + esc(parsed.body) + '</div>'
+    : '';
+
+  /* ── 결과보고 ── */
+  var resultHtml = parsed.result
+    ? '<div class="rr-section-title">결과보고</div>'
+      + '<div class="rr-result-box">' + esc(parsed.result) + '</div>'
+    : '';
+
+  /* ── 진척 로그 (날짜 오름차순) ── */
+  var logsHtml = '';
+  if (parsed.logs && parsed.logs.length > 0) {
+    var sorted = parsed.logs.slice().sort(function(a, b){ return a.date.localeCompare(b.date); });
+    var rows = sorted.map(function(l){
+      return '<tr><td class="rr-log-date">' + esc(l.date) + '</td><td>' + esc(l.text) + '</td></tr>';
+    }).join('');
+    logsHtml = '<div class="rr-section-title">진척 로그</div>'
+      + '<table class="rr-log-table">'
+      + '<thead><tr><th style="width:90px">날짜</th><th>내용</th></tr></thead>'
+      + '<tbody>' + rows + '</tbody>'
+      + '</table>';
+  }
+
+  /* ── 계획 ── */
+  var planHtml = parsed.plan
+    ? '<div class="rr-section-title">계획</div>'
+      + '<div class="rr-section-body">' + esc(parsed.plan) + '</div>'
+    : '';
+
+  /* ── 예산 ── */
+  var budgetHtml = '';
+  if (parsed.budget && parsed.budget.category) {
+    budgetHtml = '<div class="rr-section-title">예산</div>'
+      + '<table class="rr-info-table">'
+      + '<tr><th>항목</th><td>' + esc(parsed.budget.category) + '</td></tr>'
+      + '<tr><th>금액</th><td>' + Number(parsed.budget.amount).toLocaleString() + ' 원</td></tr>'
+      + '</table>';
+  }
+
+  /* ── 발행일 ── */
+  var today = (function(){
+    var d = new Date();
+    var y = d.getFullYear();
+    var m = String(d.getMonth()+1).padStart(2,'0');
+    var day = String(d.getDate()).padStart(2,'0');
+    return y + '-' + m + '-' + day;
+  })();
+
+  /* ── 컨테이너에 주입 ── */
+  var container = document.getElementById('resultReportPrint');
+  container.innerHTML = '<div class="rr-page">'
+    + '<div class="rr-header">'
+    +   '<div class="rr-wordmark">WELLPERION</div>'
+    +   (approvalHtml ? '<div>' + approvalHtml + '</div>' : '')
+    + '</div>'
+    + '<div class="rr-doc-title">결 과 보 고 서</div>'
+    + infoHtml
+    + bodyHtml
+    + resultHtml
+    + logsHtml
+    + planHtml
+    + budgetHtml
+    + '<div class="rr-footer">'
+    +   '<span>A Day, Well Completed.</span>'
+    +   '<span>발행일: ' + today + '</span>'
+    + '</div>'
+    + '</div>';
+
+  /* ── 인쇄 ── */
+  document.body.dataset.printMode = 'result';
+  window.print();
+  window.addEventListener('afterprint', function _cleanup(){
+    delete document.body.dataset.printMode;
+    container.innerHTML = '';
+    window.removeEventListener('afterprint', _cleanup);
+  });
+  // afterprint 미지원 브라우저 fallback
+  setTimeout(function(){
+    if (document.body.dataset.printMode === 'result') {
+      delete document.body.dataset.printMode;
+      container.innerHTML = '';
+    }
+  }, 3000);
 }
 </script>
 </body>
