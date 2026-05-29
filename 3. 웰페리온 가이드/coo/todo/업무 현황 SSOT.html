@@ -3,6 +3,25 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<script>
+/* 최신본 자동 보장 — HTTP 캐시로 옛 버전이 떠 'GM 화면만 미반영'되는 문제 방지 (2026-05-29 COO).
+   서버 최신본 버전과 비교해 다르면 1회만 강제 갱신. 루프 방지: ?pv 가 현재 버전과 같으면 종료. */
+window.__PV='20260529-2';
+(function(){
+  window.addEventListener('pageshow',function(e){ if(e.persisted) location.reload(); });
+  try{
+    var u=new URL(location.href);
+    if(u.searchParams.get('pv')===window.__PV) return;
+    fetch(location.pathname,{cache:'no-store'}).then(function(r){return r.text();}).then(function(t){
+      var m=t.match(/window\.__PV='([^']+)'/);
+      if(m&&m[1]&&m[1]!==window.__PV){ u.searchParams.set('pv',m[1]); location.replace(u.toString()); }
+    }).catch(function(){});
+  }catch(e){}
+})();
+</script>
 <title>웰페리온 업무 현황 SSOT</title>
 <style>
 :root{--bg:#221F20;--paper:#2a2725;--text:#f5f2ef;--dim:#8c8b83;--accent:#B79F8A;--accent-bg:rgba(183,159,138,0.12);--border:#3d3835;--green:#6abf7b;--green-bg:rgba(106,191,123,0.12);--red:#ED5B3F;--red-bg:rgba(237,91,63,0.12);--yellow:#e6c84e;--yellow-bg:rgba(230,200,78,0.12);--blue:#5b9fd5;--blue-bg:rgba(91,159,213,0.12);--purple:#a78bda;--purple-bg:rgba(167,139,218,0.12);--orange:#e6944e;--orange-bg:rgba(230,148,78,0.12)}
