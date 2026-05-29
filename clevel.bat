@@ -72,11 +72,16 @@ python "%POST_ACTION%" --clevel %ROLE% --task-id "%TASK_ID%" --status "%STATUS%"
 set EXIT_CODE=%ERRORLEVEL%
 
 REM Auto commit + push (2026-05-28 GM 결재 — feedback_clevel_commit_on_completion)
+REM 듀얼 시그널(dual-signal): 완료/DONE 시 watcher 트리거 태그 포함
+set COMMIT_MSG=[%ROLE%] %TASK_ID% %STATUS% - %SUMMARY%
+if /i "%STATUS%"=="완료" set COMMIT_MSG=[DONE][%ROLE%][%TASK_ID%] %SUMMARY%
+if /i "%STATUS%"=="DONE"  set COMMIT_MSG=[DONE][%ROLE%][%TASK_ID%] %SUMMARY%
+
 cd /d "%BAT_DIR%"
 git add -A
 git diff --cached --quiet
 if not %ERRORLEVEL%==0 (
-    git commit -m "[%ROLE%] %TASK_ID% %STATUS% - %SUMMARY%"
+    git commit -m "%COMMIT_MSG%"
     git push origin master
     echo [clevel.bat] Auto commit/push done.
 ) else (
