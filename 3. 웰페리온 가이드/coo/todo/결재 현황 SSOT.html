@@ -10,7 +10,7 @@
 <script>
 /* 최신본 자동 보장 — HTTP 캐시로 옛 버전이 떠 'GM 화면만 미반영'되는 문제 방지 (2026-05-29 COO).
    서버 최신본 버전과 비교해 다르면 1회만 강제 갱신. 루프 방지: ?pv 가 현재 버전과 같으면 종료. */
-window.__PV='20260529-2';
+window.__PV='20260529-3';
 (function(){
   window.addEventListener('pageshow',function(e){ if(e.persisted) location.reload(); });
   try{
@@ -307,7 +307,7 @@ function render() {
     html += '<div class="empty-msg"><span class="ico">📂</span>해당 조건의 결재 건이 없습니다.<br><span style="font-size:12px;color:var(--dim);">필터를 조정하거나 업무 현황 SSOT에서 결재요청을 체크해 보세요.</span></div>';
   } else {
     html += '<div style="font-size:12px;color:var(--dim);margin-bottom:8px;">총 ' + list.length + '건 표시</div>';
-    list.forEach(t => { html += renderApprovalCard(t); });
+    list.forEach((t, i) => { html += renderApprovalCard(t, i + 1); });
   }
 
   el.innerHTML = html;
@@ -426,7 +426,7 @@ async function signTask(taskId, role, decision) {
   }
 }
 
-function renderApprovalCard(t) {
+function renderApprovalCard(t, idx) {
   const isRejected = /반려/.test(t.approvalStatus);
   const isDone = t.approvalStatus === '결재완료';
   const parsed = parseContent(t.content);
@@ -452,7 +452,8 @@ function renderApprovalCard(t) {
   let h = '<div class="approval-card ' + stCls + (isRejected ? ' rejected' : '') + '" data-id="' + escAttr(t.id) + '">';
 
   // 제목 줄 — 우측에 카테고리·담당자·상태칩
-  h += '<div class="title-row" style="flex-wrap:wrap;gap:6px;margin-bottom:6px;">';
+  h += '<div class="title-row" style="flex-wrap:wrap;gap:6px;margin-bottom:6px;align-items:center;">';
+  h += '<span style="font-size:11px;font-weight:700;color:var(--accent);min-width:30px;text-align:center;flex-shrink:0;letter-spacing:0.02em;">#' + String(idx).padStart(3, '0') + '</span>';
   h += '<div class="title" style="flex:1;min-width:0;">' + esc(t.title || '(제목 없음)') + '</div>';
   if (t.category) h += '<span class="chip category" style="font-size:10px;">' + esc(t.category) + '</span>';
   if (t.owner) {
