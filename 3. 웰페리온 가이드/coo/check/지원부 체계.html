@@ -1419,19 +1419,21 @@ function getDateG(g){
   const id=g==='f'?'checkDateF':'checkDateM';
   return document.getElementById(id).value;
 }
+// v2.51 — 로컬(KST) 날짜 직렬화. toISOString()(UTC)은 9시간 차로 날짜가 어긋나 ±1일 이동이 깨짐.
+function fmtLocalDate(d){const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),day=String(d.getDate()).padStart(2,'0');return `${y}-${m}-${day}`}
 function setTodayG(g){
   const id=g==='f'?'checkDateF':'checkDateM';
-  document.getElementById(id).value=new Date().toISOString().slice(0,10);
+  document.getElementById(id).value=fmtLocalDate(new Date());
   renderG(g);
 }
 function moveDateG(g,n){
   const id=g==='f'?'checkDateF':'checkDateM';
   const e=document.getElementById(id),d=new Date(e.value+'T00:00:00');
-  d.setDate(d.getDate()+n);e.value=d.toISOString().slice(0,10);
+  d.setDate(d.getDate()+n);e.value=fmtLocalDate(d);
   renderG(g);
 }
-function setAdminToday(){document.getElementById('adminDate').value=new Date().toISOString().slice(0,10);renderAdmin()}
-function moveAdminDate(n){const e=document.getElementById('adminDate'),d=new Date(e.value+'T00:00:00');d.setDate(d.getDate()+n);e.value=d.toISOString().slice(0,10);renderAdmin()}
+function setAdminToday(){document.getElementById('adminDate').value=fmtLocalDate(new Date());renderAdmin()}
+function moveAdminDate(n){const e=document.getElementById('adminDate'),d=new Date(e.value+'T00:00:00');d.setDate(d.getDate()+n);e.value=fmtLocalDate(d);renderAdmin()}
 
 async function renderG(g){
   const d=getDateG(g);
