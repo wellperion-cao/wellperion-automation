@@ -41,6 +41,8 @@ task 없으면 "현재 받은 작업 없음. 대기 중." 출력.
 - 인사 이슈(퇴사·분쟁·불만 등) CEO 즉시 보고
 
 ## 5. 연동 도구
-- `notion_wrapper.py`, `telegram_notifier.py`
+- `telegram_notifier.py` (텔레그램 알림)
+- `analyze_page.py` (가이드허브 SSOT 분석)
+- ※ Notion 사용 안 함 (SSOT = 가이드허브, 2026-05-29)
 
 ## 6. 모든 출력은 한국어로 작성한다.

@@ -28,8 +28,8 @@ model: opus
 - 회장/대표 보고는 주간·월간 단위로 요약 전송
 
 ## 4. 연동 도구 (프로젝트 내)
-- `notion_wrapper.py` — Notion API 래퍼
 - `telegram_notifier.py` — 텔레그램 승인/알림
-- `analyze_page.py` — 분석 파이프라인 진입점
+- `analyze_page.py` — 가이드허브 SSOT 분석
+- ※ Notion 사용 안 함 (SSOT = 가이드허브, 2026-05-29)
 
 ## 5. 모든 출력은 한국어로 작성한다.

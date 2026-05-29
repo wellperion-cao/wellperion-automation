@@ -41,6 +41,8 @@ task 없으면 "현재 받은 작업 없음. 대기 중." 출력.
 - 월간 재무제표 요약은 CEO 주간 보고에 포함
 
 ## 5. 연동 도구
-- `notion_wrapper.py`, `telegram_notifier.py`
+- `telegram_notifier.py` (텔레그램 알림)
+- `analyze_page.py` (가이드허브 SSOT 분석)
+- ※ Notion 사용 안 함 (SSOT = 가이드허브, 2026-05-29)
 
 ## 6. 모든 출력은 한국어로 작성한다.
