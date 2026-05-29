@@ -418,7 +418,7 @@ var COLOR={
   "공고 준비":"gray","공고중":"blue","서류심사":"amber","면접 진행":"orange","처우 협의":"purple","채용 완료":"green","보류":"red",
   "서류 검토":"gray","1차 면접":"blue","2차 면접":"purple","최종 합격":"green","불합격":"red",
   "긴급":"red","높음":"orange","보통":"amber","낮음":"gray",
-  "A":"green","B":"blue","C":"amber","D":"red",
+  "A":"green","B":"blue","C":"amber","D":"orange","E":"red","F":"gray","미평가":"gray",
   "자진 퇴사":"blue","계약 만료":"amber","권고 퇴사":"orange","해고":"red",
   "서류·계약":"blue","시스템 접근":"purple","시설·장비":"orange","교육·OT":"green","조직 적응":"purple",
   "직원평가":"blue","상호평가":"purple","리더십평가":"orange","자체평가":"gray",
@@ -699,6 +699,19 @@ function uniq(a){var s={},o=[];a.forEach(function(v){if(v&&!s[v]){s[v]=1;o.push(
 function jobItem(h){
   var cl=parseArr(h["담당 C-Level"]).join(", ");
   var ch=parseArr(h["채용 채널"]).join(", ");
+  var hireId=normId(h.url);
+  // 이 공고에 연결된 지원자 추출
+  var applicants=(DB.appl||[]).filter(function(a){
+    return parseArr(a["연결 공고"]).some(function(r){return normId(r)===hireId;});
+  });
+  // 등급 우선순위 정렬 (A>B>C>D>E>F>미평가)
+  var GRADE_ORDER={A:1,B:2,C:3,D:4,E:5,F:6};
+  applicants.sort(function(x,y){
+    var gx=GRADE_ORDER[x["면접 평점"]]||99;
+    var gy=GRADE_ORDER[y["면접 평점"]]||99;
+    return gx-gy;
+  });
+
   return '<div class="item"><div class="item-top">'+
     '<div><div class="item-title">'+esc(txt(h["포지션명"]))+'</div>'+
     '<div class="item-meta">'+badge(h["채용 상태"])+(h["부서"]?badge(h["부서"]):"")+
@@ -712,7 +725,34 @@ function jobItem(h){
     '</div>'+
     (h["주요 업무"]?'<div style="margin-top:9px;font-size:12px;color:var(--ink-soft);white-space:pre-wrap">'+
       esc(h["주요 업무"])+'</div>':"")+
+    (applicants.length
+      ? '<details class="appl-details" style="margin-top:12px;border-top:1px solid var(--line-soft);padding-top:10px">'+
+        '<summary style="cursor:pointer;font-weight:650;font-size:13px;color:var(--gold-deep)">▾ 지원자 '+applicants.length+'명 보기 (등급순)</summary>'+
+        '<div style="margin-top:10px;display:flex;flex-direction:column;gap:8px">'+
+          applicants.map(applicantRow).join("")+
+        '</div></details>'
+      : '<div style="margin-top:10px;font-size:11.5px;color:var(--ink-faint)">· 연결된 지원자 없음</div>')+
     '</div>';
+}
+function applicantRow(a){
+  var grade=a["면접 평점"]||"미평가";
+  var gColor=COLOR[grade]||"gray";
+  return '<div style="background:var(--surface-2);border:1px solid var(--line);border-radius:8px;padding:10px 12px">'+
+    '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">'+
+      '<div style="display:flex;align-items:center;gap:8px">'+
+        '<span class="badge b-'+gColor+'" style="font-size:12px;font-weight:700">'+esc(grade)+'</span>'+
+        '<span class="t-name">'+esc(txt(a["지원자명"]))+'</span>'+
+        (a["전형 단계"]?badge(a["전형 단계"]):"")+
+      '</div>'+
+      (a.url?'<a href="'+esc(a.url)+'" target="_blank" class="btn-sm" style="color:var(--gold-deep);border-color:var(--gold)">평가·면접질문 보기 →</a>':"")+
+    '</div>'+
+    '<div class="kv" style="margin-top:8px;padding-top:8px">'+
+      kv("지원 포지션",txt(a["지원 포지션"]))+
+      kv("연락처",txt(a["연락처"]))+
+      kv("이메일",txt(a["이메일"]))+
+      kv("지원일",fmtD(dt(a,"지원일")))+
+    '</div>'+
+  '</div>';
 }
 function kv(k,v){return '<div><div class="k">'+esc(k)+'</div><div class="v">'+esc(v)+'</div></div>';}
 function renderHire(){
