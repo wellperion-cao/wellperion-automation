@@ -1882,6 +1882,55 @@
           <tr><td>5</td><td>타 C-Level 침범 금지 선언</td></tr>
           <tr><td>6</td><td>대기 (CEO는 추가 본업: GitHub 백그라운드 SSOT + 가이드허브 프론트 SSOT 즉시 fetch 후 일일 본업)</td></tr>
         </table>
+
+        <h3><span class="ico">🎯</span>AI CEO 운영 체계 — 핵심 4원칙</h3>
+        <table>
+          <tr><th style="width:60px">#</th><th>원칙</th></tr>
+          <tr><td>1</td><td><strong>CEO는 직접 작업하지 않는다</strong> — 역할: ① 배분·조율 ② 검증 ③ 기록(업무현황 SSOT + 김남욱 할일) ④ 텔레그램 발신</td></tr>
+          <tr><td>2</td><td><strong>실제 작업은 6 C-Level .bat 창 병렬 수행</strong></td></tr>
+          <tr><td>3</td><td><strong>CEO는 상시 루프를 돌리지 않는다</strong> — GitHub push 완료 신호 시에만 깨어나 1회 검증·기록·알림</td></tr>
+          <tr><td>4</td><td><strong>완료 신호 = 이중 확인</strong> — ① 커밋 메시지 <code>[DONE][C-Level][task_id]</code> 태그 + ② <code>status/&lt;clevel&gt;.json</code> 안 <code>status:DONE</code> 둘 다 충족</td></tr>
+        </table>
+
+        <h3><span class="ico">🔔</span>CEO 깨어남 메커니즘 (트리거)</h3>
+        <table>
+          <tr><th style="width:120px">메커니즘</th><th>설명</th></tr>
+          <tr><td>Watcher</td><td>PowerShell <code>scripts/ceo_watcher.ps1</code> 백그라운드 폴링(polling) (15초 주기)</td></tr>
+          <tr><td>등록</td><td>Windows 예약 작업(scheduled task) <code>At log on</code> + 지연 60초 (claude.exe 종료 후 가동)</td></tr>
+          <tr><td>종료</td><td>PC 종료(shutdown) 시 자동 종료</td></tr>
+          <tr><td>트리거 조건</td><td><code>[DONE]</code> 태그 커밋 AND <code>status/&lt;clevel&gt;.json</code> 안 미처리(LOGGED 아닌) task_id 둘 다</td></tr>
+          <tr><td>깨어남 후</td><td>큐 1건 꺼내기(pop) → 1층 기계 검증 → 2층 AI 검증 → ceo_log 누적 → 텔레그램 알림</td></tr>
+        </table>
+
+        <h3><span class="ico">🚦</span>C-Level 동시 push 경합 직렬화 — FIFO 큐</h3>
+        <table>
+          <tr><th style="width:120px">파일</th><th>구조</th></tr>
+          <tr><td><code>status/_queue.json</code></td><td>FIFO 배열 — 항목: <code>{task_id, clevel, push_time, commit_sha, processed_at}</code></td></tr>
+          <tr><td>처리 순서</td><td>CEO가 1건씩 꺼내기(pop). 처리 중 추가 push는 큐 끝에 추가(append)</td></tr>
+          <tr><td>잠금(락)</td><td>processed_at 갱신 시 단일 잠금(lock) — 다중 CEO 인스턴스 방지</td></tr>
+        </table>
+
+        <h3><span class="ico">🔄</span>상태 머신 (status/&lt;clevel&gt;.json)</h3>
+        <table>
+          <tr><th style="width:140px">상태</th><th>의미</th><th>전이</th></tr>
+          <tr><td><strong>DONE</strong></td><td>C-Level 작업 완료 + 커밋 푸시 직후</td><td>→ VERIFYING (CEO가 꺼낼 때)</td></tr>
+          <tr><td><strong>VERIFYING</strong></td><td>CEO 검증 중 (1층 + 2층)</td><td>→ VERIFIED · REJECTED</td></tr>
+          <tr><td><strong>VERIFIED</strong></td><td>검증 통과 + 기록 + 알림 완료</td><td>→ ARCHIVED (다음 사이클)</td></tr>
+          <tr><td><strong>REJECTED</strong></td><td>검증 실패. 자동 재작업 금지. GM 텔레그램 알림만</td><td>→ 가이드허브 시드 신규 + GM 결재 후 재시작 (새 task_id)</td></tr>
+          <tr><td><strong>ARCHIVED</strong></td><td>처리 종결. <code>_ceo_log.jsonl</code> 누적 후 정리</td><td>(종료)</td></tr>
+        </table>
+
+        <h3><span class="ico">🛡️</span>헛깨움·중복처리·반려 재시작 정책</h3>
+        <table>
+          <tr><th style="width:160px">정책</th><th>구현</th></tr>
+          <tr><td>헛깨움 방지</td><td>처리 완료 task_id는 <code>_ceo_log.jsonl</code>에 LOGGED 마킹. 트리거 시 미처리(미LOGGED) 큐 항목만 진행</td></tr>
+          <tr><td>중복 처리 방지</td><td>같은 task_id가 큐에 두 번 들어와도 LOGGED 마킹으로 1회만 처리</td></tr>
+          <tr><td>반려 시 재시작</td><td>자동 재작업 금지. GM 텔레그램 알림 + 가이드허브 시드 신규 등록 → GM 결재 → 새 task_id로 새 [DONE] 사이클</td></tr>
+          <tr><td>2층 검증</td><td>[1층 기계] 커밋 존재 확인 + URL 200 + SSOT 중복 grep → 실패 시 즉시 REJECTED / [2층 AI] 원칙 위반·의도 부합 판단 (Claude CLI <code>-p</code> 호출)</td></tr>
+          <tr><td>ceo_log 누적</td><td><code>status/_ceo_log.jsonl</code> JSON Lines, 1건씩 추가(append), 영구 보존</td></tr>
+        </table>
+        <div class="callout"><strong>가동 전 의무:</strong> ① <code>scripts/ceo_watcher.ps1</code> 등록 ② <code>status/</code> 디렉토리 + 7 json 초기화 ③ Windows 예약 작업(scheduled task) At log on 등록 ④ 1회 수동 테스트 (가짜 [DONE] 커밋으로 큐 진입·검증·로그·알림 흐름 확인)</div>
+
       </div>
       <div class="tab-panel" data-panel="coo">
         <div class="card accent" style="margin-bottom:16px;">
@@ -5512,7 +5561,7 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
       {id:'seed-2026-05-29-09',title:'AI 슬라이드 생성 + GM 개인 인스타 자동 업로드',description:'주제: AI로 직원 효율 + 핵심 집중. 내용+스토리+슬라이드 4-5장 + 캡션 자동 → GM 개인 인스타에 자동 업로드까지. 김남욱GM 페이지 내장.',startDate:'2026-05-29',endDate:null,time:'',category:'업무',isToday:false,status:'진행중',memo:'',ssotSynced:true},
       {id:'seed-2026-05-29-10',title:'김남욱GM 오늘 할일에 SSOT 본인 업무·결재 자동 합류 + 분류 필터',description:'업무&결재 SSOT에서 GM 본인 항목(담당자=김남욱GM + 결재 차례=GM) 자동 추출 → 오늘 할일에 합류. 분류값(업무·결재·기획·개인)별 필터·체크. 한 화면 통합 처리.',startDate:'2026-05-29',endDate:null,time:'',category:'업무',isToday:false,status:'진행중',memo:'',ssotSynced:true},
       {id:'seed-2026-05-29-11',title:'마케팅 자동화 실제 가동 (CMO 4-Stage 파이프라인)',description:'기존 CMO 자산 통합·실가동 — IG namuk.wellperion + 네이버 블로그 + 동부이촌동 카페 3채널. 가공→검수→발행→Litt.ly 추적. 신설 X, 기존 연결·고도화.',startDate:'2026-05-29',endDate:null,time:'',category:'업무',isToday:false,status:'진행중',memo:'',ssotSynced:true},
-      {id:'seed-2026-05-29-meta',title:'[AI CEO 세션 마감 묶음] INB 폐기 · 토큰 라우팅 · SSOT 이중 · KPI v1 · 마감 검증 · #08 P1-A · 중복 UI hotfix',description:'본 세션 8건 마감 — (1) INB DB 폐기 옵션 A: Notion in_trash + CLAUDE.md + 메모리 + 운영 프레임워크 + jsonl 이관 (2) 토큰 라우팅 매트릭스 옵션 B: Haiku/Sonnet/Opus 3계층, 메인=Opus 판단·반복=Sonnet/Haiku 위임 (3) SSOT 이중 정립: 백엔드=GitHub / 프론트=가이드허브 (4) AI CEO 마감 검증 의무 정립: 응답 200·push success만으로 마감 보고 금지 (5) 시드 #06 KPI 대시보드 v1 골격: g10 상단 카드 7장 + JS fetch + 토글 (6) 08:00 회복 보고 + 6 C-Level 자율 지시: 이슈 4건(PCC·자동화 보류·DB 정합·캘린더 미점검) (7) 시드 #08 P1-A hotfix: isToday 잔존 차단 + migration 보정 + 모달 정합 (8) 김남욱 페이지 완료·보류 중복 UI hotfix: 구 정적 + 구 IIFE 86라인 제거. 모든 변경 GitHub push + Pages Actions success + 마감 검증 통과.',startDate:'2026-05-29',endDate:null,time:'',category:'업무',isToday:true,status:'완료',memo:'본 세션 마감 묶음 (14건 누적) — 추가: line-through 가독성+description 토글 / OMC 4.13.7→4.14.4 / Auto-update failed stale 기록 정리 + CTO P3 At log on 30초 delay 지시 / 좀비 시드(마그네슘 delete 후 부활) hotfix + line-through 제거 + paper-soft CSS 변수 추가 / g10 운영 지침 통합 정비(절대 원칙 3대·업무 3단계 순서·08:00·21:00 보고 SOP·창 운영 방식·.bat 부팅 6단계·CMO 3채널 정정·원본 문서 단일화) / 21:00 보고 확장(daily_scheduler.py 가이드허브 SSOT CEO_SEEDS 파싱 → 내일 할 일 리스트업 섹션 추가). 시드 #07 착수 시 자동 누적 페이지로 흡수 예정.',ssotSynced:true},
+      {id:'seed-2026-05-29-meta',title:'[AI CEO 세션 마감 묶음] INB 폐기 · 토큰 라우팅 · SSOT 이중 · KPI v1 · 마감 검증 · #08 P1-A · 중복 UI hotfix',description:'본 세션 8건 마감 — (1) INB DB 폐기 옵션 A: Notion in_trash + CLAUDE.md + 메모리 + 운영 프레임워크 + jsonl 이관 (2) 토큰 라우팅 매트릭스 옵션 B: Haiku/Sonnet/Opus 3계층, 메인=Opus 판단·반복=Sonnet/Haiku 위임 (3) SSOT 이중 정립: 백엔드=GitHub / 프론트=가이드허브 (4) AI CEO 마감 검증 의무 정립: 응답 200·push success만으로 마감 보고 금지 (5) 시드 #06 KPI 대시보드 v1 골격: g10 상단 카드 7장 + JS fetch + 토글 (6) 08:00 회복 보고 + 6 C-Level 자율 지시: 이슈 4건(PCC·자동화 보류·DB 정합·캘린더 미점검) (7) 시드 #08 P1-A hotfix: isToday 잔존 차단 + migration 보정 + 모달 정합 (8) 김남욱 페이지 완료·보류 중복 UI hotfix: 구 정적 + 구 IIFE 86라인 제거. 모든 변경 GitHub push + Pages Actions success + 마감 검증 통과.',startDate:'2026-05-29',endDate:null,time:'',category:'업무',isToday:true,status:'완료',memo:'본 세션 마감 묶음 (17건 누적) — 추가: line-through 가독성+description 토글 / OMC 4.13.7→4.14.4 / Auto-update failed stale 기록 정리 + CTO P3 At log on 30초 delay 지시 / 좀비 시드(마그네슘 delete 후 부활) hotfix + line-through 제거 + paper-soft CSS 변수 추가 / g10 운영 지침 통합 정비(절대 원칙 3대·업무 3단계 순서·08:00·21:00 보고 SOP·창 운영 방식·.bat 부팅 6단계·CMO 3채널 정정·원본 문서 단일화) / 21:00 보고 확장(daily_scheduler.py 가이드허브 SSOT CEO_SEEDS 파싱 → 내일 할 일 리스트업 섹션 추가) / ai-{role}.md 7개 공통 탭 read 의무 추가 / .gitignore 예외 (ai-{role}.md + Start-AI*.bat 14건 GitHub SSOT 추적) / AI CEO 운영 체계 보완 5섹션 g10 신설 + status/ 디렉토리 8 json + scripts/ceo_watcher.py 스켈레톤 + scripts/register_ceo_watcher.ps1 등록 스크립트. 시드 #07 착수 시 자동 누적 페이지로 흡수 예정.',ssotSynced:true},
       // 기존 황용석 캘린더 시드
       {id:'seed-001',title:'황용석 팀장 퇴직 및 지원팀 재편',description:'지원팀 구조 재정비 진행.',startDate:'2026-06-01',endDate:null,time:'',category:'인사·파트너',isToday:false,status:'진행중',memo:'지원팀 구조 재정비 진행',ssotSynced:false}
     ];
