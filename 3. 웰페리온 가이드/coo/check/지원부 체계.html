@@ -769,7 +769,10 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   </div>
   <div id="adminView"></div>
 
-  <!-- 항목 관리 영역 (헤더 폐기 — 시트칸 옆 '항목 추가' 버튼으로 진입) -->
+</div>
+
+<!-- ── 항목 추가/관리 탭 (대시보드와 분리) ── -->
+<div id="tab-manage" class="content hidden">
 
   <!-- 새 항목 추가 폼 -->
   <div class="admin-mgmt-form" id="mgmtAddForm">
@@ -2287,6 +2290,7 @@ function switchTab(tab, opts){
   document.getElementById('tab-check-m').classList.toggle('hidden',tab!=='check-m');
   document.getElementById('tab-check-f').classList.toggle('hidden',tab!=='check-f');
   document.getElementById('tab-admin').classList.toggle('hidden',tab!=='admin');
+  document.getElementById('tab-manage').classList.toggle('hidden',tab!=='manage');
   // Show correct submit bar
   document.getElementById('submitBarM').style.display=(tab==='check-m')?'flex':'none';
   document.getElementById('submitBarF').style.display=(tab==='check-f')?'flex':'none';
@@ -2339,8 +2343,8 @@ function mgmtGenerateId(){
 
 /* ── 추가 / 저장 ── */
 function openMgmtAddForm(){
-  // admin 탭 진입 + 항목 추가 폼으로 스크롤
-  switchTab('admin');
+  // 항목 추가/관리 전용 탭으로 진입 (대시보드와 완전 분리)
+  switchTab('manage');
   setTimeout(function(){
     var form = document.getElementById('mgmtAddForm');
     if(form){
