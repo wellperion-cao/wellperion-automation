@@ -1,10 +1,10 @@
 {
   "clevel": "cto",
   "status": "DONE",
-  "task_id": "CTO-2026-05-29-AUTOMATION-STATUS-FIX",
-  "last_task_id": "CTO-2026-05-29-AUTOMATION-STATUS-FIX",
+  "task_id": "CTO-2026-05-29-GM-SSOT-AUTOSYNC",
+  "last_task_id": "CTO-2026-05-29-GM-SSOT-AUTOSYNC",
   "last_commit_sha": null,
-  "last_pushed_at": "2026-05-29T18:25:00",
+  "last_pushed_at": "2026-05-29T18:50:00",
   "active_tasks": [
     {
       "task_id": "CTO-2026-05-29-NOTION-DEPRECATE",
@@ -53,12 +53,21 @@
       "completed_at": "2026-05-29T18:25:00",
       "note": "/team(워커1)로 진행. 점검 표 9→6행(노션 폐기 무력 3행 제거+근거 열), 자동화된 업무 표 8행 신설(예약작업), 노션 잔재 정리. 리드 실측: 상시 프로세스 bot+scheduler 2개, 예약작업 9개 Ready 확인.",
       "blocks": []
+    },
+    {
+      "task_id": "CTO-2026-05-29-GM-SSOT-AUTOSYNC",
+      "title": "seed#10 1차 — GM 오늘할일 ↔ 업무현황 SSOT 단방향 자동 합류",
+      "assigned_at": "2026-05-29T18:35:00",
+      "status": "DONE",
+      "completed_at": "2026-05-29T18:50:00",
+      "note": "/team(워커1·opus)로 진행. gm1FetchSsot로 담당자 김남욱GM(19건)+GM 결재차례 합류, 분류 필터 4종, 제목 dedup(SSOT 우선), SSOT 항목 read-only, 완료 동기화. 라이브 Playwright 실측: SSOT 뱃지 29·필터 동작·콘솔오류(내 변경발) 0. 2차(G1→SSOT 쓰기)는 별건. 참고: status/_queue.json 404는 무관한 기존 이슈(별도).",
+      "blocks": []
     }
   ],
   "agent": "cto",
-  "title": "업무자동화 현황 SSOT 정비 (가이드허브 g19)",
+  "title": "seed#10 1차 — GM 오늘할일 ↔ SSOT 단방향 자동 합류",
   "artifact_url": null,
   "commit": "",
-  "note": "업무자동화 현황 토글 실가동 대조 완료(/team). 활성 대기 없음. 보류: AUTOMATION-DB-MIGRATE(GM).",
-  "updated_at": "2026-05-29T18:25:00"
+  "note": "seed#10 1차 완료(라이브 Playwright 검증). 활성 대기 없음. 보류: AUTOMATION-DB-MIGRATE(GM). 별건 후보: seed#10 2차(G1→SSOT 쓰기), status/_queue.json Pages 404.",
+  "updated_at": "2026-05-29T18:50:00"
 }
