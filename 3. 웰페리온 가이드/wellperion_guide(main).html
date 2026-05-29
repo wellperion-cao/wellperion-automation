@@ -3972,63 +3972,100 @@ Start-Process python -ArgumentList telegram_bot\daily_scheduler.py -WorkingDirec
     <div class="doc-header"><h2>업무 현황 SSOT</h2><div class="meta">COO 관할 · 핵심멤버 업무 배분·추적 · Apps Script 연동</div></div>
     <p class="lead">핵심멤버(매니저·AM)의 업무를 등록·배분·추적하는 업무 현황 SSOT입니다. 카테고리별 분류, 담당자 배정, 기간 설정, 결재 요청까지 한 페이지에서 처리합니다.</p>
 
-    <div style="margin:16px 0;display:flex;flex-wrap:wrap;gap:8px;">
-      <a href="https://wellperion-cao.github.io/wellperion-automation/coo/todo/%EC%97%85%EB%AC%B4%20%ED%98%84%ED%99%A9%20SSOT.html" target="_blank" style="display:inline-flex;align-items:center;gap:8px;padding:12px 24px;background:var(--accent);color:#fff;font-size:14px;font-weight:700;border-radius:10px;text-decoration:none;">📝 업무 현황 SSOT 열기</a>
-      <a href="https://wellperion-cao.github.io/wellperion-automation/coo/todo/%EA%B2%B0%EC%9E%AC%20SSOT.html" target="_blank" style="display:inline-flex;align-items:center;gap:8px;padding:12px 24px;background:var(--green);color:#fff;font-size:14px;font-weight:700;border-radius:10px;text-decoration:none;">📁 결재 현황 SSOT 열기</a>
-    </div>
+    <!-- 개요 · 보고 체계 SSOT (별도 페이지 패널 그대로 이관 · 기본 펼침) -->
+    <div style="background:var(--paper);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin:8px 0;">
+      <div onclick="gcooToggle('gcooOverviewBody','gcooOvArrow')" style="padding:13px 16px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none;border-left:3px solid var(--accent);">
+        <span style="font-size:14px;font-weight:700;color:var(--accent);">📋 개요 · 보고 체계 SSOT</span>
+        <span id="gcooOvArrow" style="font-size:12px;color:var(--dim);transition:transform 0.2s;transform:rotate(90deg);">▶</span>
+      </div>
+      <div id="gcooOverviewBody" style="display:block;border-top:1px solid var(--border);padding:16px;font-size:13px;line-height:1.65;">
 
-    <h3><span class="ico">📋</span>기능 요약</h3>
-    <table>
-      <tr><th>기능</th><th>설명</th></tr>
-      <tr><td><strong>업무 등록</strong></td><td>제목·카테고리·담당자·기간·내용·결재요청 입력</td></tr>
-      <tr><td><strong>담당자 필터</strong></td><td>핵심멤버별 업무 필터링 + 대표님 결재건 별도 필터</td></tr>
-      <tr><td><strong>상태 관리</strong></td><td>완료·보류 처리 + 보류/완료 탭 분리</td></tr>
-      <tr><td><strong>결재 진행</strong></td><td>결재요청 시 결재 라인 자동 산출 + 카드에 진행 표시 → 결재 현황 SSOT에서 GM·대표님 비밀번호 승인/반려</td></tr>
-      <tr><td><strong>공유</strong></td><td>전체 업무 텍스트 복사 (보고·공유용)</td></tr>
-    </table>
+        <!-- ① 보고 체계 및 기능 요약 -->
+        <div style="font-size:13px;font-weight:800;color:var(--accent);margin-bottom:12px;padding-bottom:7px;border-bottom:1px solid var(--border);">① 보고 체계 및 기능 요약</div>
 
-    <h3><span class="ico">🗂️</span>카테고리</h3>
-    <div class="grid-3">
-      <div class="card"><h4>매출·영업</h4><p>회원 유치·갱신·매출 관련</p></div>
-      <div class="card"><h4>인사·재무</h4><p>채용·급여·지출 관련</p></div>
-      <div class="card"><h4>마케팅·시설</h4><p>콘텐츠·시설 유지보수</p></div>
-    </div>
+        <div style="font-size:12px;font-weight:700;color:var(--blue);margin-bottom:6px;">🧩 기능 요약</div>
+        <ul style="margin:0 0 16px 18px;padding:0;">
+          <li>전사 업무를 <b>6개 카테고리</b>로 등록·추적 (매출/영업 · 인사&amp;파트너 · 운영 정책 · 시설&amp;환경 · 대표님 하달 · 회장님 하달)</li>
+          <li>업무별 <b>담당자 · 기간 · 기획(6섹션) · 진척 로그 · 예산 · 결과보고</b> 통합 관리</li>
+          <li><b>마감 임박 자동 강조</b>(D-day) · 완료/보류 로그 분리</li>
+          <li>결재요청 시 <b>결재 라인 자동 산출</b>(부서장 → GM → 대표님) + 카드에 진행 표시</li>
+          <li><b>Google 시트 실시간 연동</b> · 인쇄 · 보고용 · 공유용 출력</li>
+        </ul>
 
-    <div class="callout"><strong>관리 기준:</strong> 업무 등록 시 담당자·기간 필수. 결재는 결재 현황 SSOT에서 GM·대표님 비밀번호 승인/반려. COO 라인 관할 (최준용M · 윤병현AM).</div>
-
-    <h3><span class="ico">📣</span>보고 체계</h3>
-    <div id="hubReportingView" style="background:var(--paper);border:1px solid var(--border);border-radius:10px;padding:14px 16px;white-space:pre-line;line-height:1.7;">• 매일 08:00 통합 보고 — 전날 정리 · 오늘 진행 · 이슈/보류 (텔레그램)
+        <div style="font-size:12px;font-weight:700;color:var(--green);margin-bottom:6px;">📣 보고 체계</div>
+        <div id="hubReportingView" style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin:0 0 16px 0;white-space:pre-line;line-height:1.7;">• 매일 08:00 통합 보고 — 전날 정리 · 오늘 진행 · 이슈/보류 (텔레그램)
 • 결재 — 결재 현황 SSOT에서 실시간 추적. GM·대표님은 본인 비밀번호로 승인/반려
 • 진척 로그 — 카드별 날짜 누적 → 보고 자동 연계
 • 이슈/보류 — 별도 섹션 단독 노출, 묻히지 않게</div>
 
-    <h3><span class="ico">📝</span>현재 내용 기록</h3>
-    <div id="hubNotesView" style="background:var(--paper);border:1px solid var(--border);border-radius:10px;padding:14px 16px;white-space:pre-line;line-height:1.7;">• 현재 진행 업무 41건 (Google 시트 "업무&결재 현황")
+        <div style="font-size:12px;font-weight:700;color:var(--accent);margin-bottom:6px;">📝 현재 내용 기록</div>
+        <div id="hubNotesView" style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin:0 0 6px 0;white-space:pre-line;line-height:1.7;">• 현재 진행 업무 41건 (Google 시트 "업무&결재 현황")
 • 최근 정비: 빈 시트 정리 · 결재 비밀번호 게이트 · 카드 결재 진행 표시 · 지원부 대시보드/항목추가 분리</div>
-    <p style="font-size:12px;color:var(--dim);margin-top:6px;">✏️ 보고 체계·현재 내용 기록 편집은 위 "📝 업무 현황 SSOT 열기" 페이지에서 (저장 시 자동 반영 — 이 화면도 같은 내용을 읽어 표시합니다).</p>
+        <p style="font-size:11px;color:var(--dim);margin:0 0 20px;">✏️ 보고 체계·현재 내용 기록은 아래 "업무 현황 SSOT"에서 편집·저장하면 이 화면에도 자동 반영됩니다.</p>
 
-    <h3><span class="ico">⚙️</span>업무자동화 현황 <span style="font-size:12px;font-weight:400;color:var(--dim);">지금 실제로 돌고 있는 것</span></h3>
-    <table>
-      <tr><th>하는 일</th><th>주기</th><th>설명</th></tr>
-      <tr><td>통합 보고</td><td>매일 6·9·12·15·18·21시</td><td>시간대별 업무 현황을 텔레그램으로 보고</td></tr>
-      <tr><td>상태 변경 알림</td><td>1분</td><td>업무 상태가 바뀌면 즉시 텔레그램 알림</td></tr>
-      <tr><td>자동 업무 실행</td><td>5분</td><td>예정 시각이 된 자동 업무를 스스로 실행</td></tr>
-      <tr><td>사전 알림</td><td>5분</td><td>업무 시작 15분 전 미리 알림</td></tr>
-      <tr><td>결과 보고 감지</td><td>5분</td><td>마무리된 업무를 감지해 보고</td></tr>
-      <tr><td>이관 감지</td><td>5분</td><td>기획 완료 건을 결과물로 자동 이관</td></tr>
-      <tr><td>설정 변경 감시</td><td>5분</td><td>토큰·설정 파일이 바뀌면 자동 반영</td></tr>
-      <tr><td>권한 점검</td><td>15분</td><td>노션 연결 권한이 살아있는지 점검</td></tr>
-      <tr><td>봇 건강 점검</td><td>15분</td><td>텔레그램 봇이 살아있는지 점검</td></tr>
-      <tr><td>텔레그램 봇 · 시트 연결</td><td>24시간</td><td>보고 발송·GM 승인 수신 / 페이지↔구글 시트 통로</td></tr>
-      <tr><td>변경 기록 · 웹 배포</td><td>저장 시</td><td>홈 최신 카드 갱신 / 가이드허브 자동 게시</td></tr>
-    </table>
+        <!-- ②③ 바로가기 -->
+        <div style="display:flex;flex-wrap:wrap;gap:10px;">
+          <div style="flex:1;min-width:220px;background:var(--bg);border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:10px;padding:15px 16px;">
+            <div style="font-size:13px;font-weight:700;margin-bottom:5px;">② 업무 추가</div>
+            <div style="font-size:12px;color:var(--dim);margin-bottom:12px;line-height:1.5;">업무 현황 SSOT에서 새 업무를 등록·배분·추적합니다.</div>
+            <a href="https://wellperion-cao.github.io/wellperion-automation/coo/todo/%EC%97%85%EB%AC%B4%20%ED%98%84%ED%99%A9%20SSOT.html" target="_blank" style="display:inline-flex;align-items:center;gap:6px;padding:10px 18px;background:var(--accent);color:#fff;font-size:13px;font-weight:700;border-radius:8px;text-decoration:none;">📝 업무 현황 SSOT 열기 →</a>
+          </div>
+          <div style="flex:1;min-width:220px;background:var(--bg);border:1px solid var(--border);border-left:3px solid var(--green);border-radius:10px;padding:15px 16px;">
+            <div style="font-size:13px;font-weight:700;margin-bottom:5px;">③ 결재 확인</div>
+            <div style="font-size:12px;color:var(--dim);margin-bottom:12px;line-height:1.5;">결재 진행·완료·반려를 확인하고, GM·대표님 비밀번호로 승인/반려합니다.</div>
+            <a href="https://wellperion-cao.github.io/wellperion-automation/coo/todo/%EA%B2%B0%EC%9E%AC%20SSOT.html" target="_blank" style="display:inline-flex;align-items:center;gap:6px;padding:10px 18px;background:var(--green);color:#fff;font-size:13px;font-weight:700;border-radius:8px;text-decoration:none;">📁 결재 현황 SSOT 열기 →</a>
+          </div>
+        </div>
+      </div>
+    </div>
 
-    <h3><span class="ico">📁</span>결재 현황 SSOT</h3>
-    <div class="callout">결재 진행·완료·반려 이력을 자동 적립하는 짝 페이지. 결재 라인 <strong>부서장 → GM → 대표님</strong>(예산 따라 자동 산출), GM·대표님은 <strong>본인 비밀번호</strong>로 승인/반려, 단계별 통계·차례 필터 제공. 위 "📁 결재 현황 SSOT 열기" 버튼으로 이동.</div>
+    <!-- 업무자동화 현황 (별도 페이지 패널 그대로 이관 · 토글) -->
+    <div style="background:var(--paper);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin:8px 0;">
+      <div onclick="gcooToggle('gcooAutoBody','gcooAutoArrow')" style="padding:13px 16px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none;border-left:3px solid var(--green);">
+        <span style="font-size:14px;font-weight:700;color:var(--green);">⚙️ 업무자동화 현황 <span style="font-size:11px;font-weight:500;color:var(--dim);">지금 실제로 돌고 있는 것</span></span>
+        <span id="gcooAutoArrow" style="font-size:12px;color:var(--dim);transition:transform 0.2s;">▶</span>
+      </div>
+      <div id="gcooAutoBody" style="display:none;border-top:1px solid var(--border);padding:14px 16px;font-size:13px;">
+        <div style="font-size:12px;color:var(--dim);margin-bottom:10px;">노션 목록이 아니라, 지금 PC·서버에서 실제로 가동 중인 자동화 기준입니다.</div>
+
+        <div style="font-size:12px;font-weight:700;color:var(--accent);margin-bottom:6px;">⏱ 정기 자동 점검 (자동 비서)</div>
+        <table style="width:100%;border-collapse:collapse;font-size:12px;margin-bottom:14px;">
+          <tr style="background:var(--bg);"><th style="padding:6px 8px;border:1px solid var(--border);text-align:left;width:120px;">하는 일</th><th style="padding:6px 8px;border:1px solid var(--border);text-align:left;width:96px;">주기</th><th style="padding:6px 8px;border:1px solid var(--border);text-align:left;">설명</th></tr>
+          <tr><td style="padding:6px 8px;border:1px solid var(--border);">통합 보고</td><td style="padding:6px 8px;border:1px solid var(--border);">매일 6·9·12·15·18·21시</td><td style="padding:6px 8px;border:1px solid var(--border);">시간대별 업무 현황을 텔레그램으로 보고</td></tr>
+          <tr><td style="padding:6px 8px;border:1px solid var(--border);">상태 변경 알림</td><td style="padding:6px 8px;border:1px solid var(--border);">1분마다</td><td style="padding:6px 8px;border:1px solid var(--border);">업무 상태가 바뀌면 즉시 텔레그램 알림</td></tr>
+          <tr><td style="padding:6px 8px;border:1px solid var(--border);">자동 업무 실행</td><td style="padding:6px 8px;border:1px solid var(--border);">5분마다</td><td style="padding:6px 8px;border:1px solid var(--border);">예정 시각이 된 자동 업무를 스스로 실행</td></tr>
+          <tr><td style="padding:6px 8px;border:1px solid var(--border);">사전 알림</td><td style="padding:6px 8px;border:1px solid var(--border);">5분마다</td><td style="padding:6px 8px;border:1px solid var(--border);">업무 시작 15분 전 미리 알림</td></tr>
+          <tr><td style="padding:6px 8px;border:1px solid var(--border);">결과 보고 감지</td><td style="padding:6px 8px;border:1px solid var(--border);">5분마다</td><td style="padding:6px 8px;border:1px solid var(--border);">마무리된 업무를 감지해 보고</td></tr>
+          <tr><td style="padding:6px 8px;border:1px solid var(--border);">이관 감지</td><td style="padding:6px 8px;border:1px solid var(--border);">5분마다</td><td style="padding:6px 8px;border:1px solid var(--border);">기획 완료 건을 결과물로 자동 이관</td></tr>
+          <tr><td style="padding:6px 8px;border:1px solid var(--border);">설정 변경 감시</td><td style="padding:6px 8px;border:1px solid var(--border);">5분마다</td><td style="padding:6px 8px;border:1px solid var(--border);">토큰·설정 파일이 바뀌면 자동 반영</td></tr>
+          <tr><td style="padding:6px 8px;border:1px solid var(--border);">권한 점검</td><td style="padding:6px 8px;border:1px solid var(--border);">15분마다</td><td style="padding:6px 8px;border:1px solid var(--border);">노션 연결 권한이 살아있는지 점검</td></tr>
+          <tr><td style="padding:6px 8px;border:1px solid var(--border);">봇 건강 점검</td><td style="padding:6px 8px;border:1px solid var(--border);">15분마다</td><td style="padding:6px 8px;border:1px solid var(--border);">텔레그램 봇이 살아있는지 점검</td></tr>
+        </table>
+
+        <div style="font-size:12px;font-weight:700;color:var(--accent);margin-bottom:6px;">🔌 상시 가동 (24시간)</div>
+        <ul style="margin:0 0 14px 18px;padding:0;">
+          <li><b>텔레그램 봇</b> — 보고 발송 · GM 승인 회신 수신</li>
+          <li><b>업무·결재 시트 연결</b> — 이 페이지와 구글 시트를 잇는 통로</li>
+        </ul>
+
+        <div style="font-size:12px;font-weight:700;color:var(--accent);margin-bottom:6px;">🚀 저장할 때마다 (GitHub)</div>
+        <ul style="margin:0 0 0 18px;padding:0;">
+          <li><b>변경 기록 자동화</b> — 홈 페이지 최신 카드 자동 갱신</li>
+          <li><b>웹 배포</b> — 가이드허브를 인터넷에 자동 게시</li>
+        </ul>
+      </div>
+    </div>
   </article>
 <script>
-/* 가이드허브 '업무&결재 현황' 페이지 — 보고 체계·현재 내용 기록을 ssot_notes.json에서 읽어 표시(읽기 전용, 편집은 별도 페이지) */
+/* 가이드허브 '업무&결재 현황' 페이지 — 패널 토글 + 보고 체계·현재 내용 기록을 ssot_notes.json에서 읽어 표시(읽기 전용, 편집은 별도 페이지) */
 (function(){
+  window.gcooToggle = function(bodyId, arrowId){
+    var b = document.getElementById(bodyId), a = document.getElementById(arrowId);
+    if (!b) return;
+    var open = (b.style.display === 'none');
+    b.style.display = open ? 'block' : 'none';
+    if (a) a.style.transform = open ? 'rotate(90deg)' : 'rotate(0deg)';
+  };
   function fill(id, t){ var el = document.getElementById(id); if (el && t) el.textContent = t; }
   fetch('coo/todo/ssot_notes.json?_=' + Date.now())
     .then(function(r){ return r.ok ? r.json() : null; })
