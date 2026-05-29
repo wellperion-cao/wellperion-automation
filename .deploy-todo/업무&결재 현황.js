@@ -203,6 +203,67 @@ function _json(obj) {
     .setMimeType(ContentService.MimeType.JSON);
 }
 
+// ═══ GitHub 콘텐츠 파일 중계 (GM 편집 → 자동 커밋·push) — 2026-05-29 ═══
+// 보안: ① 커밋 가능 경로는 coo 하위 .json 으로 한정(코드 조작 차단)
+//       ② EDIT_KEY 일치 필수  ③ 토큰은 ScriptProperties 서버측 보관(브라우저 비노출)
+function _ghHeaders() {
+  const token = _prop('GITHUB_TOKEN');
+  if (!token) return null;
+  return { 'Authorization': 'Bearer ' + token, 'Accept': 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28' };
+}
+function _ghUrl(path) {
+  const repo = _prop('GITHUB_REPO') || 'wellperion-cao/wellperion-automation';
+  const apiPath = String(path).split('/').map(encodeURIComponent).join('/');
+  return 'https://api.github.com/repos/' + repo + '/contents/' + apiPath;
+}
+function _ghPathAllowed(path) {
+  // 가이드허브 coo 하위 .json 만 허용
+  return /^3\. 웰페리온 가이드\/coo\/.+\.json$/.test(String(path));
+}
+function _githubReadFile(path) {
+  const headers = _ghHeaders();
+  if (!headers) return { ok: false, error: 'GITHUB_TOKEN 미설정' };
+  if (!_ghPathAllowed(path)) return { ok: false, error: '허용되지 않은 경로' };
+  const branch = _prop('GITHUB_BRANCH') || 'master';
+  const r = UrlFetchApp.fetch(_ghUrl(path) + '?ref=' + branch, { method: 'get', headers: headers, muteHttpExceptions: true });
+  const code = r.getResponseCode();
+  if (code === 200) {
+    const j = JSON.parse(r.getContentText());
+    const text = Utilities.newBlob(Utilities.base64Decode(j.content)).getDataAsString('UTF-8');
+    return { ok: true, content: text, sha: j.sha };
+  }
+  if (code === 404) return { ok: true, content: '', sha: null };  // 아직 없음
+  return { ok: false, error: 'GitHub ' + code };
+}
+function _githubCommitFile(path, contentText, message, key) {
+  const headers = _ghHeaders();
+  if (!headers) return { ok: false, error: 'GITHUB_TOKEN 미설정 — Apps Script 속성에 추가 필요' };
+  const editKey = _prop('EDIT_KEY');
+  if (editKey && String(key) !== editKey) return { ok: false, error: '편집 키 불일치' };
+  if (!_ghPathAllowed(path)) return { ok: false, error: '허용되지 않은 경로(coo 하위 .json 만 가능)' };
+  const branch = _prop('GITHUB_BRANCH') || 'master';
+  // 현재 sha 조회 (있으면 갱신, 없으면 신규 생성)
+  let sha = null;
+  const getR = UrlFetchApp.fetch(_ghUrl(path) + '?ref=' + branch, { method: 'get', headers: headers, muteHttpExceptions: true });
+  if (getR.getResponseCode() === 200) sha = JSON.parse(getR.getContentText()).sha;
+  const payload = {
+    message: message || ('edit via SSOT ' + _now()),
+    content: Utilities.base64Encode(contentText, Utilities.Charset.UTF_8),
+    branch: branch
+  };
+  if (sha) payload.sha = sha;
+  const putR = UrlFetchApp.fetch(_ghUrl(path), {
+    method: 'put', contentType: 'application/json', headers: headers,
+    payload: JSON.stringify(payload), muteHttpExceptions: true
+  });
+  const code = putR.getResponseCode();
+  if (code === 200 || code === 201) {
+    const j = JSON.parse(putR.getContentText());
+    return { ok: true, commit: (j.commit && j.commit.sha) || null, path: path };
+  }
+  return { ok: false, error: 'GitHub ' + code + ': ' + putR.getContentText().slice(0, 160) };
+}
+
 // ─── 텔레그램 알림 전면 폐기 (2026-05-28 GM 결재) — 결재 SSOT 페이지 단일 운영 ───
 // 함수 시그니처는 보존 — 향후 복구 시 본체만 복원하면 됨.
 function _notifyTelegram(text, opts) {
@@ -356,6 +417,19 @@ function doGet(e) {
     // 카테고리 목록 조회
     if (action === 'todo_categories') {
       return _json({ ok: true, data: CATEGORIES });
+    }
+
+    // ─── 콘텐츠 파일 읽기 (GM 편집 페이지용) — 2026-05-29 ───
+    if (action === 'read_file') {
+      const r = _githubReadFile(e.parameter.path || '');
+      return _json(r);
+    }
+
+    // ─── 콘텐츠 파일 커밋 (GM 편집 → GitHub 자동 push) — 2026-05-29 ───
+    if (action === 'commit_file') {
+      const r = _githubCommitFile(e.parameter.path || '', e.parameter.content || '',
+                                  e.parameter.message || '', e.parameter.key || '');
+      return _json(r);
     }
 
     // POST redirect 우회: URL에 todo_ write action이 오면 doPost 로직 실행

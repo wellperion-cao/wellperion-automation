@@ -258,14 +258,15 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
         <li><b>Google 시트 실시간 연동</b> · 인쇄 · 보고용 · 공유용 출력</li>
       </ul>
 
-      <!-- ② 보고 체계 -->
-      <div style="font-size:13px;font-weight:700;color:var(--green);margin-bottom:6px;">📣 보고 체계</div>
-      <ul style="margin:0 0 16px 18px;padding:0;color:var(--text);">
-        <li><b>매일 08:00 통합 보고</b> — 전날 정리 · 오늘 진행 · 이슈/보류 (텔레그램)</li>
-        <li><b>결재</b> — 결재 현황 SSOT에서 실시간 추적. GM·대표님은 본인 비밀번호로 승인/반려</li>
-        <li><b>진척 로그</b> — 카드별 날짜 누적 → 보고 자동 연계</li>
-        <li><b>이슈/보류</b> — 별도 섹션 단독 노출, 묻히지 않게</li>
-      </ul>
+      <!-- ② 보고 체계 (편집 가능 · GitHub 자동 저장) -->
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+        <span style="font-size:13px;font-weight:700;color:var(--green);">📣 보고 체계</span>
+        <button onclick="editNotes('reporting')" id="reportingEditBtn" style="font-size:11px;font-weight:600;padding:3px 10px;border-radius:7px;cursor:pointer;font-family:inherit;background:var(--accent-bg);color:var(--accent);border:1px solid rgba(183,159,138,0.3);">✏️ 편집</button>
+      </div>
+      <div id="reportingView" style="margin:0 0 16px 0;color:var(--text);white-space:pre-line;line-height:1.65;">• 매일 08:00 통합 보고 — 전날 정리 · 오늘 진행 · 이슈/보류 (텔레그램)
+• 결재 — 결재 현황 SSOT에서 실시간 추적. GM·대표님은 본인 비밀번호로 승인/반려
+• 진척 로그 — 카드별 날짜 누적 → 보고 자동 연계
+• 이슈/보류 — 별도 섹션 단독 노출, 묻히지 않게</div>
 
       <!-- ③ 결재 현황 SSOT -->
       <div style="font-size:13px;font-weight:700;color:var(--purple);margin-bottom:6px;">📁 결재 현황 SSOT</div>
@@ -279,12 +280,13 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
         <a href="결재 SSOT.html" style="display:inline-block;margin-top:8px;font-size:12px;font-weight:700;padding:6px 12px;border-radius:8px;background:var(--green-bg);color:var(--green);border:1px solid rgba(106,191,123,0.3);text-decoration:none;">📁 결재 현황 SSOT 열기 →</a>
       </div>
 
-      <!-- ④ 현재 내용 기록 -->
-      <div style="font-size:13px;font-weight:700;color:var(--accent);margin-bottom:6px;">📝 현재 내용 기록 <span style="font-size:11px;font-weight:500;color:var(--dim);">(2026-05-29 기준)</span></div>
-      <ul style="margin:0 0 4px 18px;padding:0;color:var(--text);">
-        <li>현재 진행 업무 <b>41건</b> (Google 시트 "업무&amp;결재 현황")</li>
-        <li>최근 정비: 빈 시트 정리 · 결재 비밀번호 게이트 · 카드 결재 진행 표시 · 지원부 대시보드/항목추가 분리</li>
-      </ul>
+      <!-- ④ 현재 내용 기록 (편집 가능 · GitHub 자동 저장) -->
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+        <span style="font-size:13px;font-weight:700;color:var(--accent);">📝 현재 내용 기록</span>
+        <button onclick="editNotes('notes')" id="notesEditBtn" style="font-size:11px;font-weight:600;padding:3px 10px;border-radius:7px;cursor:pointer;font-family:inherit;background:var(--accent-bg);color:var(--accent);border:1px solid rgba(183,159,138,0.3);">✏️ 편집</button>
+      </div>
+      <div id="notesView" style="margin:0 0 4px 0;color:var(--text);white-space:pre-line;line-height:1.65;">• 현재 진행 업무 41건 (Google 시트 "업무&결재 현황")
+• 최근 정비: 빈 시트 정리 · 결재 비밀번호 게이트 · 카드 결재 진행 표시 · 지원부 대시보드/항목추가 분리</div>
     </div>
   </div>
 </div>
@@ -530,6 +532,8 @@ document.addEventListener('DOMContentLoaded', () => {
   updateHeaderSub();
   buildFilters();
   loadTasks();
+  initNotesDefaults();
+  loadNotes();
 
   // Close modals on overlay click
   document.getElementById('taskModal').addEventListener('click', e => {
@@ -1064,6 +1068,89 @@ function toggleAuto() {
   const open = body.style.display === 'none' || !body.style.display;
   body.style.display = open ? 'block' : 'none';
   if (arrow) arrow.style.transform = open ? 'rotate(90deg)' : 'rotate(0deg)';
+}
+
+/* ═══ 편집 가능 보고 체계·현재 내용 기록 (GitHub 자동 저장) — 2026-05-29 ═══
+   서버측 Apps Script가 GITHUB_TOKEN으로 ssot_notes.json 을 커밋·push */
+const SSOT_NOTES_PATH = '3. 웰페리온 가이드/coo/todo/ssot_notes.json';
+const SSOT_EDIT_KEY = '';   // 서버 EDIT_KEY 설정 시 동일 값으로
+let LAST_NOTES = { reporting: null, notes: null };
+
+function initNotesDefaults() {
+  const rv = document.getElementById('reportingView');
+  const nv = document.getElementById('notesView');
+  if (rv) LAST_NOTES.reporting = rv.textContent;
+  if (nv) LAST_NOTES.notes = nv.textContent;
+}
+
+async function loadNotes() {
+  try {
+    const r = await apiCall({ action: 'read_file', path: SSOT_NOTES_PATH });
+    if (r && r.ok && r.content) {
+      const j = JSON.parse(r.content);
+      if (j.reporting != null) { LAST_NOTES.reporting = j.reporting; const el = document.getElementById('reportingView'); if (el) el.textContent = j.reporting; }
+      if (j.notes != null)     { LAST_NOTES.notes = j.notes;         const el = document.getElementById('notesView');     if (el) el.textContent = j.notes; }
+    }
+  } catch (e) { /* 토큰 미설정/오류 → 기본 텍스트 유지(조용히) */ }
+}
+
+function editNotes(field) {
+  const view = document.getElementById(field + 'View');
+  const btn = document.getElementById(field + 'EditBtn');
+  if (!view || document.getElementById(field + 'Editor')) return;
+  const current = LAST_NOTES[field] != null ? LAST_NOTES[field] : view.textContent;
+  if (btn) btn.style.display = 'none';
+  view.style.display = 'none';
+  const wrap = document.createElement('div');
+  wrap.id = field + 'Editor';
+  wrap.style.margin = '0 0 16px 0';
+  wrap.innerHTML =
+    '<textarea id="' + field + 'Ta" style="width:100%;min-height:140px;background:var(--bg);border:1px solid var(--accent);color:var(--text);padding:10px 12px;border-radius:8px;font-size:13px;font-family:inherit;line-height:1.6;resize:vertical;box-sizing:border-box;">' + esc(current) + '</textarea>' +
+    '<div style="display:flex;gap:6px;justify-content:flex-end;margin-top:6px;">' +
+      '<button onclick="cancelNotes(\'' + field + '\')" style="font-size:12px;font-weight:600;padding:6px 14px;border-radius:8px;cursor:pointer;font-family:inherit;background:var(--paper);color:var(--dim);border:1px solid var(--border);">취소</button>' +
+      '<button onclick="saveNotes(\'' + field + '\')" style="font-size:12px;font-weight:700;padding:6px 14px;border-radius:8px;cursor:pointer;font-family:inherit;background:var(--accent);color:#fff;border:1px solid var(--accent);">💾 저장</button>' +
+    '</div>';
+  view.parentNode.insertBefore(wrap, view.nextSibling);
+  const ta = document.getElementById(field + 'Ta');
+  if (ta) ta.focus();
+}
+
+function cancelNotes(field) {
+  const editor = document.getElementById(field + 'Editor');
+  const view = document.getElementById(field + 'View');
+  const btn = document.getElementById(field + 'EditBtn');
+  if (editor) editor.remove();
+  if (view) view.style.display = '';
+  if (btn) btn.style.display = '';
+}
+
+async function saveNotes(field) {
+  const ta = document.getElementById(field + 'Ta');
+  if (!ta) return;
+  const val = ta.value;
+  const today = (() => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'); })();
+  const payload = {
+    reporting: field === 'reporting' ? val : (LAST_NOTES.reporting || ''),
+    notes:     field === 'notes'     ? val : (LAST_NOTES.notes || ''),
+    updatedAt: today
+  };
+  showToast('저장 중...');
+  try {
+    const r = await apiCall({ action: 'commit_file', path: SSOT_NOTES_PATH, content: JSON.stringify(payload, null, 2), message: 'docs(ssot): ' + field + ' 편집', key: SSOT_EDIT_KEY });
+    if (r && r.ok) {
+      LAST_NOTES[field] = val;
+      const view = document.getElementById(field + 'View');
+      if (view) view.textContent = val;
+      cancelNotes(field);
+      showToast('저장됨 — GitHub 반영 1~2분');
+    } else {
+      const err = (r && r.error) || '알 수 없는 오류';
+      if (/GITHUB_TOKEN/.test(err)) showToast('관리자 토큰 설정 후 저장 가능합니다', true);
+      else showToast('저장 실패: ' + err, true);
+    }
+  } catch (e) {
+    showToast('연결 실패: ' + e.message, true);
+  }
 }
 
 function toggleCat(header) {
