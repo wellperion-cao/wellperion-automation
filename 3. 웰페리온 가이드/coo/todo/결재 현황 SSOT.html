@@ -10,7 +10,7 @@
 <script>
 /* 최신본 자동 보장 — HTTP 캐시로 옛 버전이 떠 'GM 화면만 미반영'되는 문제 방지 (2026-05-29 COO).
    서버 최신본 버전과 비교해 다르면 1회만 강제 갱신. 루프 방지: ?pv 가 현재 버전과 같으면 종료. */
-window.__PV='20260530-1';
+window.__PV='20260530-2';
 (function(){
   window.addEventListener('pageshow',function(e){ if(e.persisted) location.reload(); });
   try{
@@ -56,6 +56,8 @@ html,body{background:var(--bg);color:var(--text);font-family:"Pretendard","Apple
 .filter-btn{padding:6px 12px;border-radius:8px;background:none;color:var(--dim);border:1px solid transparent;font-size:12px;font-weight:600;font-family:inherit;cursor:pointer;white-space:nowrap;transition:all 0.15s}
 .filter-btn:hover{background:var(--accent-bg)}
 .filter-btn.active{background:var(--accent-bg);color:var(--accent);border-color:rgba(183,159,138,0.3)}
+.share-btn{padding:6px 12px;font-size:12px;font-weight:600;color:var(--blue);background:var(--blue-bg);border:1px solid rgba(91,159,213,0.3);border-radius:8px;cursor:pointer;font-family:inherit;white-space:nowrap;flex-shrink:0;transition:all 0.15s}
+.share-btn:hover{opacity:0.85}
 .stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px}
 .stat-card{background:var(--paper);border:1px solid var(--border);border-radius:12px;padding:12px 10px;text-align:center}
 .stat-card .num{font-size:22px;font-weight:700;line-height:1.1}
@@ -239,9 +241,9 @@ function render() {
   html += '<button class="filter-btn ' + (activeFilter==='미결'?'active':'') + '" onclick="setFilter(\'미결\')">진행 중 (' + pending.length + ')</button>';
   html += '<button class="filter-btn ' + (activeFilter==='결재완료'?'active':'') + '" onclick="setFilter(\'결재완료\')">결재완료 (' + done.length + ')</button>';
   html += '<button class="filter-btn ' + (activeFilter==='반려'?'active':'') + '" onclick="setFilter(\'반려\')">반려 (' + rejected.length + ')</button>';
-  html += '<div style="margin-left:auto;display:flex;gap:4px;">';
-  html += '<button class="filter-btn" onclick="window.print()" style="background:var(--paper);">🖨 인쇄</button>';
-  html += '<button class="filter-btn" onclick="shareReport()" style="background:var(--purple-bg);color:var(--purple);border-color:rgba(167,139,218,0.3);">📋 보고용</button>';
+  html += '<div style="display:flex;gap:4px;margin-left:auto;">';
+  html += '<button class="share-btn" onclick="window.print()" style="background:var(--accent-bg);color:var(--accent);border-color:rgba(183,159,138,0.3);">🖨 인쇄</button>';
+  html += '<button class="share-btn" onclick="shareReport()" style="background:var(--purple-bg);color:var(--purple);border-color:rgba(167,139,218,0.3);">📋 보고용</button>';
   html += '</div>';
   html += '</div>';
 
@@ -531,10 +533,10 @@ function renderSignPill(role, sign, taskId, isCurrent, isInRoute) {
     return '<span class="sign-pill empty" style="opacity:0.35;">' + role + ' (해당 없음)</span>';
   }
   if (isCurrent && taskId) {
-    return '<span class="sign-pill empty active" style="background:var(--accent-bg);border-color:var(--accent);color:var(--accent);display:inline-flex;align-items:center;gap:6px;padding:3px 4px;">' +
+    return '<span class="sign-pill empty active" style="background:var(--accent-bg);border-color:var(--accent);color:var(--accent);display:inline-flex;align-items:center;gap:4px;padding:3px 4px;">' +
       '<span style="padding:1px 6px;font-weight:700;">' + role + ' 미서명</span>' +
-      '<button onclick="approveTask(\'' + escAttr(taskId) + '\',\'' + escAttr(role) + '\')" style="background:var(--green);color:#fff;border:none;padding:3px 9px;border-radius:5px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;">✅ ' + esc(role) + ' 승인</button>' +
-      '<button onclick="rejectTask(\'' + escAttr(taskId) + '\',\'' + escAttr(role) + '\')" style="background:var(--red);color:#fff;border:none;padding:3px 9px;border-radius:5px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;">❌ 반려</button>' +
+      '<button onclick="approveTask(\'' + escAttr(taskId) + '\',\'' + escAttr(role) + '\')" style="background:var(--green);color:#fff;border:none;padding:4px 10px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;">✅ ' + esc(role) + ' 승인</button>' +
+      '<button onclick="rejectTask(\'' + escAttr(taskId) + '\',\'' + escAttr(role) + '\')" style="background:var(--red);color:#fff;border:none;padding:4px 10px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;">❌ 반려</button>' +
       '</span>';
   }
   return '<span class="sign-pill empty">' + role + ' 미서명</span>';
