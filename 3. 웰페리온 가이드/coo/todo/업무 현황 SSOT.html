@@ -9,7 +9,7 @@
 <script>
 /* 최신본 자동 보장 — HTTP 캐시로 옛 버전이 떠 'GM 화면만 미반영'되는 문제 방지 (2026-05-29 COO).
    서버 최신본 버전과 비교해 다르면 1회만 강제 갱신. 루프 방지: ?pv 가 현재 버전과 같으면 종료. */
-window.__PV='20260530-1';
+window.__PV='20260530-2';
 (function(){
   window.addEventListener('pageshow',function(e){ if(e.persisted) location.reload(); });
   try{
@@ -842,11 +842,18 @@ function renderTaskCard(t, idx) {
   html += '</div>'; // task-meta
   html += '</div>';
 
-  // 제목줄 우측: 편집 + 완료 + 보류
-  html += '<div style="display:flex;gap:4px;flex-shrink:0;">';
+  // 제목줄 우측: 편집 + 완료 + 보류 + 결과보고 인쇄
+  const _parsedCard = parseContent(t.content);
+  const _hasResult = !!(_parsedCard.result && _parsedCard.result.trim());
+  html += '<div style="display:flex;gap:4px;flex-shrink:0;flex-wrap:wrap;">';
   html += '<button class="action-btn edit" onclick="event.stopPropagation();openEditModal(\'' + escAttr(t.id) + '\')" style="padding:4px 10px;font-size:11px;">편집</button>';
   html += '<button class="action-btn done" onclick="event.stopPropagation();markDone(\'' + escAttr(t.id) + '\')" style="padding:4px 10px;font-size:11px;">완료</button>';
   html += '<button class="action-btn" onclick="event.stopPropagation();holdTask(\'' + escAttr(t.id) + '\')" style="padding:4px 10px;font-size:11px;background:var(--orange-bg);color:var(--orange);border-color:rgba(230,148,78,0.3);">보류</button>';
+  if (_hasResult) {
+    html += '<button class="action-btn" onclick="event.stopPropagation();printResultReport(\'' + escAttr(t.id) + '\')" style="padding:4px 10px;font-size:11px;background:var(--purple-bg);color:var(--purple);border-color:rgba(167,139,218,0.3);">🖨 결과보고</button>';
+  } else {
+    html += '<button class="action-btn" disabled title="결과보고를 먼저 작성하세요" style="padding:4px 10px;font-size:11px;background:transparent;color:var(--dim);border-color:var(--border);opacity:0.45;cursor:not-allowed;">🖨 결과보고</button>';
+  }
   html += '<button class="action-btn" onclick="event.stopPropagation();deleteTaskWithAuth(\'' + escAttr(t.id) + '\',\'' + escAttr(t.title || '') + '\')" style="padding:4px 10px;font-size:11px;background:transparent;color:var(--dim);border-color:var(--border);">삭제</button>';
   html += '</div>';
   html += '</div>'; // task-summary
@@ -1047,9 +1054,9 @@ function lifecycleStage(task) {
 function stageLocks(stage) {
   switch (stage) {
     case 'free':      return { body:false, plan:false, progress:false, result:false, budget:false, approvalReq:false };
-    case 'approval':  return { body:false, plan:false, progress:false, result:true,  budget:false, approvalReq:false }; // 진척 로그는 결재 진행 중에도 항상 작성 가능 (2026-05-30 COO)
-    case 'execution': return { body:true,  plan:true,  progress:false, result:false, budget:true,  approvalReq:true  };
-    case 'result':    return { body:true,  plan:true,  progress:false, result:false, budget:true,  approvalReq:true  }; // [업무-4] 결과보고 단계에서도 진척 로그 작성 가능 (2026-05-30 COO)
+    case 'approval':  return { body:false, plan:false, progress:false, result:false, budget:false, approvalReq:false }; // 결과보고는 결재 상태 무관 항상 편집 가능 (2026-05-30 GM 결정)
+    case 'execution': return { body:true,  plan:true,  progress:false, result:false, budget:true,  approvalReq:true  }; // 결과보고 항상 편집 가능
+    case 'result':    return { body:true,  plan:true,  progress:false, result:false, budget:true,  approvalReq:true  }; // 결과보고 항상 편집 가능 (2026-05-30 GM 결정)
     case 'closed':    return { body:true,  plan:true,  progress:true,  result:true,  budget:true,  approvalReq:true  };
     case 'rejected':  return { body:false, plan:false, progress:true,  result:true,  budget:false, approvalReq:false };
     default:          return { body:false, plan:false, progress:false, result:false, budget:false, approvalReq:false };
