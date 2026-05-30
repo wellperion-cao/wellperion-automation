@@ -10,7 +10,7 @@
 <script>
 /* 최신본 자동 보장 — HTTP 캐시로 옛 버전이 떠 'GM 화면만 미반영'되는 문제 방지 (2026-05-29 COO).
    서버 최신본 버전과 비교해 다르면 1회만 강제 갱신. 루프 방지: ?pv 가 현재 버전과 같으면 종료. */
-window.__PV='20260530-5';
+window.__PV='20260530-6';
 (function(){
   window.addEventListener('pageshow',function(e){ if(e.persisted) location.reload(); });
   try{
@@ -96,11 +96,13 @@ html,body{background:var(--bg);color:var(--text);font-family:"Pretendard","Apple
 .progress-row .text{font-size:13px;flex:1;line-height:1.45;word-break:break-word}
 .empty-msg{text-align:center;padding:60px 20px;color:var(--dim);font-size:14px;line-height:1.6}
 .empty-msg .ico{font-size:36px;display:block;margin-bottom:14px;opacity:0.5}
-/* [결재-2] 카드 제목행 — 카테고리·담당자 칩을 우측으로 분리해 제목 폭 우선 확보 */
+/* [결재-2] 카드 제목행 — 카테고리는 제목 옆, 결재대기 배지는 제목 아래, 담당자는 우측 */
 .approval-card .title-row{display:flex;align-items:flex-start;gap:8px;margin-bottom:6px;flex-wrap:nowrap;}
-.approval-card .title-row .card-title-area{flex:1;min-width:0;display:flex;align-items:center;gap:6px;}
-.approval-card .title-row .card-title-area .title{font-size:14px;font-weight:700;flex:1;min-width:0;word-break:break-word;line-height:1.4;}
-.approval-card .title-row .card-meta-chips{display:flex;flex-wrap:wrap;gap:4px;align-items:center;flex-shrink:0;max-width:200px;}
+.approval-card .title-row .card-title-area{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px;}
+.approval-card .title-row .card-title-area .title-line{display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+.approval-card .title-row .card-title-area .title{font-size:14px;font-weight:700;min-width:0;word-break:break-word;line-height:1.4;}
+.approval-card .title-row .card-title-area .approval-badge-line{display:flex;flex-wrap:wrap;gap:4px;}
+.approval-card .title-row .card-meta-chips{display:flex;flex-wrap:wrap;gap:4px;align-items:flex-start;flex-shrink:0;max-width:200px;}
 /* [결재-3] 대시보드 패널 — 업무 현황 SSOT와 동일 토큰 재사용 */
 .dash-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:200;align-items:flex-start;justify-content:center;padding:20px;overflow-y:auto;}
 .dash-overlay.show{display:flex;}
@@ -583,16 +585,23 @@ function renderApprovalCard(t, idx) {
 
   let h = '<div class="approval-card ' + stCls + (isRejected ? ' rejected' : '') + '" data-id="' + escAttr(t.id) + '">';
 
-  // [결재-2] 제목 줄 — 제목 우선 폭, 카테고리·담당자·상태칩은 우측 card-meta-chips로 분리
+  // [결재-2] 제목 줄 — 카테고리는 제목 옆, 결재대기 배지는 제목 아래, 담당자는 우측 card-meta-chips
   h += '<div class="title-row">';
-  h += '<span style="font-size:11px;font-weight:700;color:var(--accent);min-width:30px;text-align:center;flex-shrink:0;letter-spacing:0.02em;">#' + String(idx).padStart(3, '0') + '</span>';
-  h += '<div class="card-title-area"><div class="title">' + esc(t.title || '(제목 없음)') + '</div></div>';
+  h += '<span style="font-size:11px;font-weight:700;color:var(--accent);min-width:30px;text-align:center;flex-shrink:0;letter-spacing:0.02em;padding-top:2px;">#' + String(idx).padStart(3, '0') + '</span>';
+  h += '<div class="card-title-area">';
+  // 첫째 줄: 제목 + 카테고리 칩
+  h += '<div class="title-line">';
+  h += '<span class="title">' + esc(t.title || '(제목 없음)') + '</span>';
+  if (t.category) h += '<span class="chip category" style="font-size:10px;flex-shrink:0;">' + esc(t.category) + '</span>';
+  h += '</div>';
+  // 둘째 줄: 결재 대기 배지
+  h += '<div class="approval-badge-line"><span class="' + chipCls + '">' + esc(chipText) + '</span></div>';
+  h += '</div>';
+  // 우측: 담당자 칩만
   h += '<div class="card-meta-chips">';
-  if (t.category) h += '<span class="chip category" style="font-size:10px;">' + esc(t.category) + '</span>';
   if (t.owner) {
     t.owner.split(',').forEach(o => { o = o.trim(); if (o) h += '<span class="chip owner" style="font-size:10px;">' + esc(o) + '</span>'; });
   }
-  h += '<span class="' + chipCls + '">' + esc(chipText) + '</span>';
   h += '</div>';
   h += '</div>';
 
