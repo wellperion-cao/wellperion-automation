@@ -1227,15 +1227,20 @@ def main():
             next_run_time=datetime.now(),
         )
     else:
-        logger.info("=== 정규 스케줄 시작: 06 / 09 / 12 / 15 / 18 / 21시 ===")
-        # 새 6개 슬롯 스케줄
+        logger.info("=== 정규 스케줄 시작: 06 / 09 / 12 / 15 / 18시 (21시 비활성) ===")
+        # 정기 슬롯 스케줄
+        # [2026-05-30 CTO 비활성] 21시 고정 마감 보고 슬롯 제거 — 세션종료(off)
+        #   마감 루틴(ceo_evening_wrap.py, 5b58f9b)으로 단일화(GM 결정 "합쳐줘").
+        #   06·09·12·15·18시 정기 보고는 그대로 유지. _build_21_body 함수·
+        #   SLOT_BUILDERS["21"]는 보존(가역적 — '21' 키만 schedule_map에서 제외).
+        #   --manual-test 21 수동 발송은 여전히 가능.
         schedule_map = {
             "06": (6, 0),
             "09": (9, 0),
             "12": (12, 0),
             "15": (15, 0),
             "18": (18, 0),
-            "21": (21, 0),
+            # "21": (21, 0),  # 비활성 — 세션종료 마감 루틴으로 단일화 (위 주석 참조)
         }
         for slot, (hour, minute) in schedule_map.items():
             scheduler.add_job(
