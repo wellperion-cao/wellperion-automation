@@ -10,7 +10,7 @@
 <script>
 /* 최신본 자동 보장 — HTTP 캐시로 옛 버전이 떠 'GM 화면만 미반영'되는 문제 방지 (2026-05-29 COO).
    서버 최신본 버전과 비교해 다르면 1회만 강제 갱신. 루프 방지: ?pv 가 현재 버전과 같으면 종료. */
-window.__PV='20260530-4';
+window.__PV='20260530-5';
 (function(){
   window.addEventListener('pageshow',function(e){ if(e.persisted) location.reload(); });
   try{
@@ -329,13 +329,18 @@ function render() {
     }
   });
 
-  // [결재-1] 1줄 — 상태 필터 + 대시보드·인쇄·보고용 (업무 현황 SSOT와 동일 배치)
+  // [결재-1] 1줄 — 상태 필터 + 정렬 드롭다운 + 대시보드·인쇄·보고용 (컴팩트 통일)
   html += '<div class="filter-bar" style="align-items:center;">';
   html += '<button class="filter-btn ' + (activeFilter==='전체'?'active':'') + '" onclick="setFilter(\'전체\')">전체 (' + approvalTasks.length + ')</button>';
   html += '<button class="filter-btn ' + (activeFilter==='미결'?'active':'') + '" onclick="setFilter(\'미결\')">진행 중 (' + pending.length + ')</button>';
   html += '<button class="filter-btn ' + (activeFilter==='결재완료'?'active':'') + '" onclick="setFilter(\'결재완료\')">결재완료 (' + done.length + ')</button>';
   html += '<button class="filter-btn ' + (activeFilter==='반려'?'active':'') + '" onclick="setFilter(\'반려\')">반려 (' + rejected.length + ')</button>';
-  html += '<div style="display:flex;gap:4px;margin-left:auto;">';
+  html += '<div style="display:flex;gap:4px;margin-left:auto;align-items:center;">';
+  html += '<select onchange="setSort(this.value)" style="background:var(--paper);border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:8px;font-size:12px;font-family:inherit;font-weight:600;cursor:pointer;">';
+  ['최신순','결재상태','카테고리','시작일순'].forEach(function(opt) {
+    html += '<option value="' + opt + '"' + (activeSortBy === opt ? ' selected' : '') + '>' + opt + '</option>';
+  });
+  html += '</select>';
   html += '<button class="share-btn" onclick="openApprovalDashboard()" style="background:var(--purple-bg);color:var(--purple);border-color:rgba(167,139,218,0.3);">결재 현황 대시보드</button>';
   html += '<button class="share-btn" onclick="window.print()" style="background:var(--accent-bg);color:var(--accent);border-color:rgba(183,159,138,0.3);">인쇄</button>';
   html += '<button class="share-btn" onclick="shareReport()" style="background:var(--purple-bg);color:var(--purple);border-color:rgba(167,139,218,0.3);">보고용</button>';
@@ -371,15 +376,6 @@ function render() {
   if (searchQuery) html += '<button class="filter-btn" onclick="setSearch(\'\')">✕ 초기화</button>';
   html += '</div>';
 
-  // 5줄 — 정렬
-  html += '<div class="filter-bar" style="align-items:center;">';
-  html += '<span style="font-size:11px;color:var(--dim);align-self:center;margin-right:4px;">정렬:</span>';
-  html += '<select onchange="setSort(this.value)" style="background:var(--paper);border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:8px;font-size:12px;font-family:inherit;font-weight:600;cursor:pointer;">';
-  ['최신순','결재상태','카테고리','시작일순'].forEach(function(opt) {
-    html += '<option value="' + opt + '"' + (activeSortBy === opt ? ' selected' : '') + '>' + opt + '</option>';
-  });
-  html += '</select>';
-  html += '</div>';
 
   // 필터링
   let list = approvalTasks;
