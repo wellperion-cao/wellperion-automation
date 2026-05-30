@@ -4899,6 +4899,7 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
       document.querySelectorAll('.nav > a[data-toggle]').forEach(t => t.classList.remove('active'));
       link.classList.add('active');
       activateDoc(id, null);
+      if (id) location.hash = id;   // URL에 메뉴 반영 — 북마크·공유·새로고침·뒤로가기 (2026-05-30 GM)
     });
   });
 
@@ -4920,6 +4921,7 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
         t.classList.toggle('active', t.getAttribute('data-toggle') === parentNavId);
       });
       activateDoc(id, tab);
+      if (id) location.hash = tab ? (id + '/' + tab) : id;   // URL에 메뉴+탭 반영 (2026-05-30 GM)
     });
   });
 
@@ -4932,6 +4934,8 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
       tabsContainer.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
       btn.classList.add('active');
       tabsContainer.querySelector(`.tab-panel[data-panel="${tabName}"]`).classList.add('active');
+      var curDoc = document.querySelector('.doc.active');   // 탭 전환도 URL에 반영 (예: #g10/ceo) (2026-05-30 GM)
+      if (curDoc && curDoc.id) location.hash = curDoc.id + '/' + tabName;
     });
   });
 
