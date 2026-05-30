@@ -131,7 +131,7 @@ html,body{background:var(--bg);color:var(--text);font-family:"Pretendard","Apple
       </a>
     </div>
   </div>
-  <div class="sub" id="headerSub"></div>
+  <div class="sub" id="headerSub">결재 진행·완료·반려 이력 적립 — 승인/반려 시 비밀번호 확인 (GM·대표님)</div>
 </div>
 </div><!-- /sticky-top -->
 
@@ -167,6 +167,7 @@ function getUser() {
   return '김남욱GM';
 }
 function updateHeaderSub() {
+  return; // 헤더는 정적 설명문 사용 (2026-05-30 GM) — 날짜|담당자 덮어쓰기 중단
   const u = getUser();
   const now = new Date();
   const days = ['일','월','화','수','목','금','토'];
