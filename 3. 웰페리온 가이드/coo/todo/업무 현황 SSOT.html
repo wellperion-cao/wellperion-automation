@@ -491,13 +491,8 @@ document.addEventListener('DOMContentLoaded', () => {
   buildFilters();
   loadTasks();
 
-  // Close modals on overlay click
-  document.getElementById('taskModal').addEventListener('click', e => {
-    if (e.target === e.currentTarget) closeModal();
-  });
-  document.getElementById('datePickerModal').addEventListener('click', e => {
-    if (e.target === e.currentTarget) closeDatePicker();
-  });
+  // 작성 유실 방지 (2026-05-30 COO): 바깥(오버레이) 클릭으로는 닫지 않음.
+  // 작성·편집 모달은 [취소]/[저장] 버튼으로만 닫히게 해 작성 중 데이터 유실 차단.
 });
 
 /* ═══════════════════════════════════════════
@@ -1049,7 +1044,7 @@ function lifecycleStage(task) {
 function stageLocks(stage) {
   switch (stage) {
     case 'free':      return { body:false, plan:false, progress:false, result:false, budget:false, approvalReq:false };
-    case 'approval':  return { body:false, plan:false, progress:true,  result:true,  budget:false, approvalReq:false };
+    case 'approval':  return { body:false, plan:false, progress:false, result:true,  budget:false, approvalReq:false }; // 진척 로그는 결재 진행 중에도 항상 작성 가능 (2026-05-30 COO)
     case 'execution': return { body:true,  plan:true,  progress:false, result:false, budget:true,  approvalReq:true  };
     case 'result':    return { body:true,  plan:true,  progress:true,  result:false, budget:true,  approvalReq:true  };
     case 'closed':    return { body:true,  plan:true,  progress:true,  result:true,  budget:true,  approvalReq:true  };
@@ -1218,7 +1213,7 @@ function applyLifecycleLocks(task) {
   const locks = stageLocks(stage);
   const labels = {
     free:      { text: '① 자유 — 모든 섹션 편집 가능',                bg: 'var(--accent-bg)', fg: 'var(--accent)' },
-    approval:  { text: '② 결재 진행 중 — 진척·결과보고 잠금',         bg: 'var(--yellow-bg)', fg: 'var(--yellow)' },
+    approval:  { text: '② 결재 진행 중 — 진척 로그 작성 가능, 결과보고만 잠금', bg: 'var(--yellow-bg)', fg: 'var(--yellow)' },
     execution: { text: '③ 결재 완료 — 진척 로그 활성, 기획·예산 잠금', bg: 'var(--green-bg)',  fg: 'var(--green)' },
     result:    { text: '④ 결과보고 작성 단계 — 결과보고만 편집',       bg: 'var(--purple-bg)', fg: 'var(--purple)' },
     closed:    { text: '⑤ 업무 종료 — 모든 섹션 read-only',           bg: 'var(--paper)',     fg: 'var(--dim)' },
@@ -1611,7 +1606,7 @@ function openDateRangePicker(id, startVal, endVal) {
     + '<div class="modal-actions"><button class="btn primary" id="drpSave">저장</button><button class="btn" onclick="this.closest(\'.modal-overlay\').remove()">취소</button></div>'
     + '</div>';
   document.body.appendChild(overlay);
-  overlay.addEventListener('click', function(ev) { if (ev.target === overlay) overlay.remove(); });
+  // 바깥 클릭으로 닫지 않음 — [취소] 버튼으로만 닫기 (2026-05-30 COO 작성 유실 방지)
   document.getElementById('drpSave').addEventListener('click', async function() {
     var s = document.getElementById('drpStart').value;
     var e = document.getElementById('drpEnd').value;
