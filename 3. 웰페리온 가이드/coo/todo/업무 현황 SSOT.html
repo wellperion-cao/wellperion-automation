@@ -9,7 +9,7 @@
 <script>
 /* 최신본 자동 보장 — HTTP 캐시로 옛 버전이 떠 'GM 화면만 미반영'되는 문제 방지 (2026-05-29 COO).
    서버 최신본 버전과 비교해 다르면 1회만 강제 갱신. 루프 방지: ?pv 가 현재 버전과 같으면 종료. */
-window.__PV='20260530-3';
+window.__PV='20260530-4';
 (function(){
   window.addEventListener('pageshow',function(e){ if(e.persisted) location.reload(); });
   try{
@@ -535,12 +535,6 @@ function buildFilters() {
   // Owner filters — 정렬 드롭다운 왼쪽, 버튼 그룹 오른쪽
   const ownerEl = document.getElementById('ownerFilters');
   let html = '';
-  // 정렬 드롭다운 (결재현황과 동일 스타일)
-  html += '<select onchange="setSortBy(this.value)" style="background:var(--paper);border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:8px;font-size:12px;font-family:inherit;font-weight:600;cursor:pointer;flex-shrink:0;margin-right:4px;">';
-  ['최신순','카테고리','담당자','시작일순'].forEach(function(opt) {
-    html += '<option value="' + opt + '"' + (activeSortBy === opt ? ' selected' : '') + '>' + opt + (opt === '최신순' ? ' ▼' : '') + '</option>';
-  });
-  html += '</select>';
   // 담당자 필터 버튼 (카운트 포함)
   html += '<button class="filter-btn' + (activeOwnerFilter === '전체' ? ' active' : '') + '" onclick="setOwnerFilter(\'전체\',this)">전체</button>';
   MEMBERS.forEach(m => {
@@ -548,8 +542,13 @@ function buildFilters() {
     const label = esc(m) + (cnt > 0 ? ' (' + cnt + ')' : '');
     html += '<button class="filter-btn' + (activeOwnerFilter === m ? ' active' : '') + '" onclick="setOwnerFilter(\'' + escAttr(m) + '\',this)">' + label + '</button>';
   });
-  // 버튼 그룹 오른쪽
-  html += '<div style="display:flex;gap:4px;margin-left:auto;flex-shrink:0;">';
+  // 정렬 드롭다운 + 버튼 그룹 오른쪽 (2026-05-30 GM: 정렬을 버튼 옆으로 — 결재현황과 동일)
+  html += '<div style="display:flex;gap:4px;margin-left:auto;flex-shrink:0;align-items:center;">';
+  html += '<select onchange="setSortBy(this.value)" style="background:var(--paper);border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:8px;font-size:12px;font-family:inherit;font-weight:600;cursor:pointer;flex-shrink:0;">';
+  ['최신순','카테고리','담당자','시작일순'].forEach(function(opt) {
+    html += '<option value="' + opt + '"' + (activeSortBy === opt ? ' selected' : '') + '>' + opt + (opt === '최신순' ? ' ▼' : '') + '</option>';
+  });
+  html += '</select>';
   html += '<button class="share-btn" onclick="openDashboard()" style="background:var(--purple-bg);color:var(--purple);border-color:rgba(167,139,218,0.3);">업무 현황 대시보드</button>';
   html += '<button class="share-btn" onclick="printTasks()" style="background:var(--accent-bg);color:var(--accent);border-color:rgba(183,159,138,0.3);">인쇄</button>';
   html += '<button class="share-btn" onclick="shareReport()" style="background:var(--purple-bg);color:var(--purple);border-color:rgba(167,139,218,0.3);">보고용</button>';
