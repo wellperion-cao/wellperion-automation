@@ -1987,6 +1987,8 @@ function printResultReport(taskId) {
   if (!t) { alert('업무를 찾을 수 없습니다.'); return; }
 
   var parsed = parseContent(t.content);
+  // 담당자 복수선택 → ' · ' 구분 정리 (2026-05-30 GM 결정: 전원 표시 + 구분자)
+  var ownerStr = String(t.owner || '').split(',').map(function(s){ return s.trim(); }).filter(Boolean).join(' · ');
 
   /* ── 결재란 (결재요청 있을 때만) ── */
   var approvalReq = String(t['결재요청'] || t.approval || '').trim();
@@ -1998,7 +2000,7 @@ function printResultReport(taskId) {
     };
     var roles = ['담당', '부서장', 'GM'];
     var signValues = {
-      '담당':  esc(t.owner || ''),
+      '담당':  esc(ownerStr),
       '부서장': esc(signMap['부서장']),
       'GM':    esc(signMap['GM'])
     };
@@ -2022,7 +2024,7 @@ function printResultReport(taskId) {
   var infoRows = [
     ['업무명', esc(t.title || '-')],
     ['카테고리', esc(t.category || '-')],
-    ['담당자', esc(t.owner || '-')],
+    ['담당자', esc(ownerStr) || '-'],
     ['기간', period],
     ['상태', esc(t.status || '-')]
   ];
