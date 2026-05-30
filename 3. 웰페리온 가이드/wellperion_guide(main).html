@@ -428,6 +428,7 @@
       <a data-doc="g14">M2 콘텐츠 제작 프로세스</a>
       <a data-doc="gcmo-print">M3 오프라인 홍보물 디자인 제작</a>
       <a href="cmo/funnel/전환Funnel.html" target="_blank">M4 전환 Funnel (v0.1)</a>
+      <a data-doc="cmo-publish">M5 콘텐츠 검수·자동업로드</a>
     </div>
 
     <a data-toggle="cto-nav" data-has-sub="true"><span class="num">🔧</span><span class="label">AI CTO 기술<span class="tag">김남욱 GM</span></span></a>
@@ -514,6 +515,7 @@
       <tr><td>🌐</td><td><a href="#" onclick="event.preventDefault();document.querySelector('[data-doc=ghome]').click();" style="color:var(--accent);text-decoration:none;font-weight:600;">M1 공식 채널</a></td><td>6채널 통합 + 채널별 운영 가이드</td></tr>
       <tr><td>📂</td><td><a href="#" onclick="event.preventDefault();document.querySelector('[data-doc=g14]').click();" style="color:var(--accent);text-decoration:none;font-weight:600;">M2 콘텐츠 제작 프로세스</a></td><td>제작 절차 + 마케팅 자동화 + 문의 Survey</td></tr>
       <tr><td>🎨</td><td><a href="#" onclick="event.preventDefault();document.querySelector('[data-doc=gcmo-print]').click();" style="color:var(--accent);text-decoration:none;font-weight:600;">M3 오프라인 홍보물 디자인 제작</a></td><td>배너·현수막·봉투·브로슈어 (브랜드 가이드 자동 적용)</td></tr>
+      <tr><td>🚀</td><td><a href="#" onclick="event.preventDefault();document.querySelector('[data-doc=cmo-publish]').click();" style="color:var(--accent);text-decoration:none;font-weight:600;">M5 콘텐츠 검수·자동업로드</a></td><td>5채널 통합 · 제목→슬라이드·캡션 생성→검수→승인 발행 (인스타 2계정)</td></tr>
       <tr><td>🎯</td><td><a href="cmo/funnel/전환Funnel.html" target="_blank" style="color:var(--accent);text-decoration:none;font-weight:600;">M4 전환 Funnel (v0.1)</a></td><td>노출→인지→관심→문의→가입 5단계 추적</td></tr>
     </table>
 
@@ -3391,65 +3393,24 @@ Start-Process python -ArgumentList telegram_bot\daily_scheduler.py -WorkingDirec
       <div id="gm1-deleg-list" style="display:flex; flex-direction:column; gap:8px;"></div>
     </div>
 
-    <!-- 📨 검수 대기 (시드 #09 검수→승인→발행 루프 Phase 1, 2026-05-29) -->
-    <details id="gm1-review-section" open style="margin:0 0 22px;border:1px solid rgba(183,159,138,0.14);border-radius:12px;padding:4px 14px 12px;">
-      <summary style="cursor:pointer;list-style:none;font-size:15px;font-weight:700;padding:8px 0;"><span class="ico">📨</span>인스타그램 검수 대기 <span id="gm1-review-count" style="font-size:12px;color:var(--dim);font-weight:400;"></span></summary>
-      <div id="gm1-review-list" style="display:flex;flex-direction:column;gap:12px;">
-        <div style="color:var(--dim);font-size:13px;">불러오는 중…</div>
-      </div>
-    </details>
+    <!-- 📨 검수 대기 — M5 콘텐츠 검수·자동업로드 페이지로 이관 (2026-05-30). 여기는 대기 건수 + 바로가기만. -->
+    <div id="gm1-review-section" style="margin:0 0 22px;border:1px solid rgba(183,159,138,0.14);border-radius:12px;padding:14px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+      <div style="font-size:14px;font-weight:700;"><span class="ico">📨</span>인스타그램 검수 대기 <span id="gm1-review-count" style="font-size:12px;color:var(--dim);font-weight:400;"></span></div>
+      <a href="#" onclick="event.preventDefault();document.querySelector('[data-doc=cmo-publish]').click();" style="display:inline-flex;align-items:center;gap:6px;padding:8px 16px;background:var(--accent);color:#fff;font-size:13px;font-weight:700;border-radius:8px;text-decoration:none;">🚀 콘텐츠 검수·자동업로드 열기</a>
+    </div>
     <script>
     (function(){
+      // 검수 대기 건수만 표시 — 실제 검수·승인 UI는 M5 cmo-publish 페이지로 이관
       var URL='cmo/review/review_queue.json';
-      var RELAY_URL='https://script.google.com/macros/s/AKfycbxDwFkrxK1YIaEoSNcuw2MiHiZQ-7o5N6311ytksSyeEd86ZFOhLknOWqQgNArQvZ-7/exec';
       function dec(){try{return JSON.parse(localStorage.getItem('gm1_review_decisions')||'{}');}catch(e){return {};}}
-      function save(id,v){var d=dec();d[id]={decision:v,at:new Date().toISOString()};localStorage.setItem('gm1_review_decisions',JSON.stringify(d));}
-      // 검수 결정 → GitHub review_queue.json status 중계 (Apps Script 재사용)
-      function relay(id,decision){
-        var status=decision==='approve'?'승인':'반려';
-        var qs='action=review_set_status&id='+encodeURIComponent(id)+'&status='+encodeURIComponent(status)+'&key=';
-        return fetch(RELAY_URL+'?'+qs,{redirect:'follow'}).then(function(r){return r.json();});
-      }
-      function esc(s){return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
       function done(st){return st==='발행완료'||st==='approved'||st==='승인'||st==='rejected'||st==='반려';}
-      function render(items){
-        var list=document.getElementById('gm1-review-list');if(!list)return;
-        var d=dec();var cnt=document.getElementById('gm1-review-count');
+      fetch(URL,{cache:'no-store'}).then(function(r){return r.ok?r.json():[];}).then(function(items){
+        if(!Array.isArray(items))items=[];
+        var d=dec();
         var waiting=items.filter(function(it){var e=(d[it.id]&&d[it.id].decision)||it.status;return !done(e);}).length;
+        var cnt=document.getElementById('gm1-review-count');
         if(cnt)cnt.textContent='· 대기 '+waiting+'건 / 전체 '+items.length+'건';
-        if(!items.length){list.innerHTML='<div style="color:var(--dim);font-size:13px;padding:8px 0;">검수 대기 없음 — 새 콘텐츠가 준비되면 여기에 표시됩니다.</div>';return;}
-        list.innerHTML='';
-        items.forEach(function(it){
-          var e=(d[it.id]&&d[it.id].decision)||it.status;var c=document.createElement('div');
-          c.style.cssText='border:1px solid rgba(183,159,138,0.2);border-radius:12px;padding:14px;background:var(--paper);';
-          var badge=e==='발행완료'?'<span style="color:var(--green);font-weight:700;">✅ 발행완료</span>':(e==='approved'||e==='승인')?'<span style="color:var(--green);font-weight:700;">✅ 승인됨 · 발행 대기</span>':(e==='rejected'||e==='반려')?'<span style="color:var(--warm,#d98c5f);font-weight:700;">↩ 반려됨</span>':'<span style="color:var(--accent);font-weight:700;">🟡 검수 대기</span>';
-          var h='<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px;"><strong style="font-size:13.5px;">'+esc(it.title)+'</strong>'+badge+'</div>';
-          if(it.channel)h+='<div style="font-size:12px;color:var(--dim);margin-bottom:8px;">채널: '+esc(it.channel)+'</div>';
-          if(it.preview)h+='<img src="'+esc(it.preview)+'" alt="미리보기" style="width:100%;border-radius:8px;border:1px solid rgba(183,159,138,0.15);margin-bottom:8px;" loading="lazy">';
-          if(it.caption)h+='<details style="margin-bottom:8px;"><summary style="cursor:pointer;font-size:12.5px;color:var(--dim);">캡션 보기</summary><div style="font-size:12.5px;color:var(--text-soft);white-space:pre-wrap;line-height:1.7;padding-top:6px;">'+esc(it.caption)+'</div></details>';
-          if(it.post_url)h+='<div style="font-size:12px;margin-bottom:6px;"><a href="'+esc(it.post_url)+'" target="_blank" style="color:var(--accent);">게시물 보기 ↗</a></div>';
-          if(!done(e)){h+='<div style="display:flex;gap:8px;margin-top:4px;"><button data-act="approve" data-id="'+esc(it.id)+'" style="flex:1;background:var(--accent);color:#fff;border:none;border-radius:8px;padding:9px;font-weight:700;cursor:pointer;font-family:inherit;">승인</button><button data-act="reject" data-id="'+esc(it.id)+'" style="flex:1;background:none;color:var(--dim);border:1px solid var(--border);border-radius:8px;padding:9px;cursor:pointer;font-family:inherit;">반려</button></div>';}
-          else if(e==='approved'||e==='승인'){h+='<div style="font-size:11.5px;color:var(--dim);">승인 기록됨 — 자동 발행 연결은 다음 단계(감시기). 현재는 승인 표시만.</div>';}
-          c.innerHTML=h;list.appendChild(c);
-        });
-        list.querySelectorAll('button[data-act]').forEach(function(b){b.addEventListener('click',function(){
-          var id=b.getAttribute('data-id');var act=b.getAttribute('data-act');
-          var sib=b.parentNode.querySelectorAll('button[data-act]');
-          for(var i=0;i<sib.length;i++){sib[i].disabled=true;}
-          b.textContent=act==='approve'?'승인 전송 중…':'반려 전송 중…';
-          save(id,act==='approve'?'approved':'rejected');  // 낙관적 표시(로컬)
-          relay(id,act).then(function(res){
-            if(res&&res.ok){load();}  // GitHub 기록 성공 → 라이브 큐 재조회
-            else{for(var i=0;i<sib.length;i++){sib[i].disabled=false;}render(window.__gm1_rv||[]);
-              alert('중계 실패: '+((res&&res.error)||'알 수 없음')+'\n(로컬 표시는 유지됩니다)');}
-          }).catch(function(){
-            for(var i=0;i<sib.length;i++){sib[i].disabled=false;}render(window.__gm1_rv||[]);
-            alert('네트워크 오류 — GitHub 기록 실패. 로컬 표시만 유지됩니다.');
-          });
-        });});
-      }
-      function load(){fetch(URL,{cache:'no-store'}).then(function(r){return r.ok?r.json():[];}).then(function(items){if(!Array.isArray(items))items=[];window.__gm1_rv=items;render(items);}).catch(function(){var l=document.getElementById('gm1-review-list');if(l)l.innerHTML='<div style="color:var(--dim);font-size:13px;">검수 큐를 불러오지 못했습니다.</div>';});}
-      if(document.readyState!=='loading')load();else document.addEventListener('DOMContentLoaded',load);
+      }).catch(function(){});
     })();
     </script>
 
@@ -3981,6 +3942,214 @@ Start-Process python -ArgumentList telegram_bot\daily_scheduler.py -WorkingDirec
       <a href="coo/notice/notice_template.html" target="_blank" rel="noopener" style="display:inline-block;padding:14px 38px;background:#B79F8A;color:#221F20;font-weight:700;text-decoration:none;border-radius:10px;font-size:15px;letter-spacing:0.04em;">🔗 도구 열기 (새 탭)</a>
       <div style="font-size:11px;opacity:0.5;margin-top:18px;font-family:Consolas,monospace;">3. 웰페리온 가이드 / coo / notice / notice_template.html</div>
     </div>
+  </article>
+
+  <!-- ── CMO 콘텐츠 검수·자동업로드 전용 페이지 (M5, 1단계 골격, 2026-05-30) ── -->
+  <article class="doc" id="cmo-publish">
+    <div class="doc-header"><h2>콘텐츠 검수·자동업로드</h2><div class="meta">CMO 관할 · 공식 5채널 · 제목 → 슬라이드·캡션 생성 → 검수 → 승인 발행 · v1.0 (1단계 골격)</div></div>
+    <p class="lead">콘텐츠 제작부터 검수, 자동 업로드까지 한 곳에서 관리하는 전용 페이지입니다. 채널별 특성을 미리 학습해 기록하고, 제목만 입력하면 슬라이드와 캡션이 생성되며, 검수 후 승인 시 자동 발행됩니다. <span style="color:var(--dim);">(1단계는 골격·흐름 UI. 실제 자동 생성·업로드 풀가동은 다음 단계.)</span></p>
+
+    <div class="callout"><strong>핵심 흐름:</strong> ① 채널 선택 → ② 제목 입력 → ③ <strong>슬라이드+캡션 자동 생성</strong> → ④ 미리보기 검수 → ⑤ <strong>승인 시 업로드</strong>. 인스타그램은 2개 계정(브랜드·개인)으로 계정별 발행.</div>
+
+    <!-- ① 인스타 업로드 추가 UI (계정별, 1단계 골격) -->
+    <h3><span class="ico">📸</span>인스타그램 업로드 (계정별)</h3>
+    <div class="card accent" style="margin-bottom:8px;">
+      <div style="display:flex;flex-wrap:wrap;gap:14px;align-items:flex-end;">
+        <div style="flex:1;min-width:200px;">
+          <label style="display:block;font-size:12.5px;font-weight:700;color:var(--dim);margin-bottom:6px;">계정 선택</label>
+          <select id="cmopub-account" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:14px;background:var(--paper);color:var(--text);">
+            <option value="wellperion">@wellperion (브랜드 · 회사 계정)</option>
+            <option value="namuk.wellperion">@namuk.wellperion (개인 계정 · GM go 후 발행)</option>
+          </select>
+        </div>
+        <div style="flex:2;min-width:240px;">
+          <label style="display:block;font-size:12.5px;font-weight:700;color:var(--dim);margin-bottom:6px;">콘텐츠 제목</label>
+          <input id="cmopub-title" type="text" placeholder="예: 스포츠클럽에 왜 AI인가" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:14px;background:var(--paper);color:var(--text);box-sizing:border-box;">
+        </div>
+      </div>
+      <div style="display:flex;gap:10px;margin-top:14px;flex-wrap:wrap;">
+        <button id="cmopub-generate" style="flex:1;min-width:180px;background:var(--accent);color:#fff;border:none;border-radius:8px;padding:11px;font-weight:700;cursor:pointer;font-family:inherit;font-size:14px;">🎨 슬라이드 + 캡션 생성</button>
+        <button id="cmopub-approve" disabled style="flex:1;min-width:180px;background:none;color:var(--dim);border:1px solid var(--border);border-radius:8px;padding:11px;cursor:not-allowed;font-family:inherit;font-size:14px;font-weight:700;">✅ 승인 시 업로드</button>
+      </div>
+      <div id="cmopub-preview" style="margin-top:14px;font-size:13px;color:var(--dim);line-height:1.7;border-top:1px dashed var(--border);padding-top:12px;">제목을 입력하고 <strong>생성</strong>을 누르면 미리보기가 여기에 표시됩니다. (1단계: 흐름 배선 · 실제 생성은 다음 단계)</div>
+    </div>
+    <div class="callout tip" style="font-size:13px;"><strong>연결되는 기존 자산:</strong> 슬라이드 합성 <code>scripts/slide_compositor.py</code> · 발행기 <code>scripts/instagram_upload_playwright.py</code> · 검수 큐 <code>cmo/review/review_queue.json</code> · 승인 중계 <code>review_set_status</code> (Apps Script). 1단계는 버튼·흐름까지 배선, 실제 호출 연결은 다음 단계.</div>
+
+    <!-- ③ 채널별 구조 (5채널 탭) + 특성 학습 기록 -->
+    <h3><span class="ico">🌐</span>공식 5채널 — 특성 학습 기록</h3>
+    <p style="font-size:13px;color:var(--dim);margin-bottom:14px;">각 채널의 톤·이미지 규격·해시태그·글자수 등 특성을 학습해 기록합니다. 메모는 이 브라우저에 자동 저장됩니다.</p>
+    <div class="tabs" data-tabs="cmopub-ch">
+      <div class="tab-nav">
+        <button class="tab-btn active" data-tab="ig-brand">📸 인스타 @wellperion</button>
+        <button class="tab-btn" data-tab="ig-namuk">📸 인스타 @namuk.wellperion</button>
+        <button class="tab-btn" data-tab="blog">📝 네이버 블로그</button>
+        <button class="tab-btn" data-tab="cafe">☕ 네이버 카페</button>
+        <button class="tab-btn" data-tab="kakao">💬 카카오채널</button>
+      </div>
+
+      <div class="tab-panel active" data-panel="ig-brand">
+        <div class="card"><h4>📸 인스타그램 — @wellperion (브랜드)</h4>
+          <table>
+            <tr><th style="width:130px">항목</th><th>기준</th></tr>
+            <tr><td>이미지 규격</td><td>1080×1080 (피드) · 1080×1920 (스토리)</td></tr>
+            <tr><td>톤</td><td>DUOTONE(BLACK #221F20 + BEIGE #B79F8A) · 하이엔드 브랜드 톤</td></tr>
+            <tr><td>해시태그</td><td>#웰페리온 #한남동스포츠클럽 (브랜드·지역 중심)</td></tr>
+            <tr><td>글자수</td><td>캡션 핵심 메시지 + 문의Survey CTA. 개인 번호 금지</td></tr>
+            <tr><td>마지막 슬라이드</td><td>WELLPERION GUIDE 카드 자동 첨부</td></tr>
+          </table>
+        </div>
+        <label style="display:block;font-size:12.5px;font-weight:700;color:var(--dim);margin:6px 0;">특성 학습 메모</label>
+        <textarea class="cmopub-note" data-note="ig-brand" rows="4" placeholder="이 채널에서 학습한 특성·주의사항을 기록…" style="width:100%;padding:12px;border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:13.5px;line-height:1.6;background:var(--paper);color:var(--text);box-sizing:border-box;resize:vertical;"></textarea>
+      </div>
+
+      <div class="tab-panel" data-panel="ig-namuk">
+        <div class="card"><h4>📸 인스타그램 — @namuk.wellperion (개인)</h4>
+          <div class="callout fix" style="margin-top:0;"><strong>개인 계정:</strong> 회사 가이드 카드·마케팅 톤 금지. 발행 전 미리보기로 GM 검수 게이트 필수. (GM go 후 발행)</div>
+          <table>
+            <tr><th style="width:130px">항목</th><th>기준</th></tr>
+            <tr><td>이미지 규격</td><td>1080×1080 (피드)</td></tr>
+            <tr><td>톤</td><td>개인 1인칭 진솔체 · 마케팅 톤 배제</td></tr>
+            <tr><td>해시태그</td><td>최소화 · 자연스러운 개인 기록 톤</td></tr>
+            <tr><td>검수</td><td>발행 전 montage 미리보기 → GM 검수 게이트 필수</td></tr>
+          </table>
+        </div>
+        <label style="display:block;font-size:12.5px;font-weight:700;color:var(--dim);margin:6px 0;">특성 학습 메모</label>
+        <textarea class="cmopub-note" data-note="ig-namuk" rows="4" placeholder="이 채널에서 학습한 특성·주의사항을 기록…" style="width:100%;padding:12px;border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:13.5px;line-height:1.6;background:var(--paper);color:var(--text);box-sizing:border-box;resize:vertical;"></textarea>
+      </div>
+
+      <div class="tab-panel" data-panel="blog">
+        <div class="card"><h4>📝 네이버 블로그 — blog.naver.com/wellperion</h4>
+          <table>
+            <tr><th style="width:130px">항목</th><th>기준</th></tr>
+            <tr><td>역할</td><td>SEO 허브 · "웰페리온"·"한남동 스포츠클럽" 검색 유입</td></tr>
+            <tr><td>톤</td><td>전문성+정보 · "~합니다" 형식체 · 하이엔드 격조</td></tr>
+            <tr><td>제목</td><td>SEO 키워드 포함</td></tr>
+            <tr><td>이미지</td><td>본문 교차 삽입 (SmartEditor 자동 첨부 upload_with_images.py)</td></tr>
+            <tr><td>페이스</td><td>주 1~2회 · 임시저장 큐 0건 확인 후 가동</td></tr>
+          </table>
+        </div>
+        <label style="display:block;font-size:12.5px;font-weight:700;color:var(--dim);margin:6px 0;">특성 학습 메모</label>
+        <textarea class="cmopub-note" data-note="blog" rows="4" placeholder="이 채널에서 학습한 특성·주의사항을 기록…" style="width:100%;padding:12px;border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:13.5px;line-height:1.6;background:var(--paper);color:var(--text);box-sizing:border-box;resize:vertical;"></textarea>
+      </div>
+
+      <div class="tab-panel" data-panel="cafe">
+        <div class="card"><h4>☕ 네이버 카페 — 동부이촌동 커뮤니티</h4>
+          <div class="callout fix" style="margin-top:0;"><strong>톤 주의:</strong> "동네 잡담"·"이웃" 톤 금지. 사실·전문성·정중형 격조 톤만.</div>
+          <table>
+            <tr><th style="width:130px">항목</th><th>기준</th></tr>
+            <tr><td>역할</td><td>지역 커뮤니티 노출 · 인지도 제고</td></tr>
+            <tr><td>페이스</td><td>10일에 1건 (과다 게시 스팸 방지)</td></tr>
+            <tr><td>톤</td><td>사실 기반 · 정중·격조 · 영업 문구 자제</td></tr>
+            <tr><td>댓글</td><td>사실 기반 정중 응답</td></tr>
+          </table>
+        </div>
+        <label style="display:block;font-size:12.5px;font-weight:700;color:var(--dim);margin:6px 0;">특성 학습 메모</label>
+        <textarea class="cmopub-note" data-note="cafe" rows="4" placeholder="이 채널에서 학습한 특성·주의사항을 기록…" style="width:100%;padding:12px;border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:13.5px;line-height:1.6;background:var(--paper);color:var(--text);box-sizing:border-box;resize:vertical;"></textarea>
+      </div>
+
+      <div class="tab-panel" data-panel="kakao">
+        <div class="card"><h4>💬 카카오채널 — 웰페리온 <span class="badge gray" style="margin-left:8px;">보류</span></h4>
+          <div class="callout fix" style="margin-top:0;"><strong>현재 보류.</strong> 자동화 미완료. 향후 1:1 상담·알림 발송 채널.</div>
+          <table>
+            <tr><th style="width:130px">항목</th><th>기준</th></tr>
+            <tr><td>응답 시간</td><td>운영시간 내 30분 이내 목표</td></tr>
+            <tr><td>문의 종류</td><td>멤버십·투어 예약·시설 문의</td></tr>
+            <tr><td>투어</td><td>예약 필수 · 워크인 불가 → 문의Survey 페이지</td></tr>
+          </table>
+        </div>
+        <label style="display:block;font-size:12.5px;font-weight:700;color:var(--dim);margin:6px 0;">특성 학습 메모</label>
+        <textarea class="cmopub-note" data-note="kakao" rows="4" placeholder="이 채널에서 학습한 특성·주의사항을 기록…" style="width:100%;padding:12px;border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:13.5px;line-height:1.6;background:var(--paper);color:var(--text);box-sizing:border-box;resize:vertical;"></textarea>
+      </div>
+    </div>
+
+    <!-- ⑤ 검수 큐 (G1에서 이관) -->
+    <h3><span class="ico">📨</span>인스타그램 검수 대기 <span id="cmopub-review-count" style="font-size:12px;color:var(--dim);font-weight:400;"></span></h3>
+    <p style="font-size:13px;color:var(--dim);margin-bottom:12px;">생성된 콘텐츠를 검수하고 승인/반려합니다. 승인 결정은 GitHub 검수 큐에 기록됩니다. <span style="color:var(--dim-soft);">(G1 김남욱 페이지에서 이 페이지로 이관)</span></p>
+    <div id="cmopub-review-list" style="display:flex;flex-direction:column;gap:12px;">
+      <div style="color:var(--dim);font-size:13px;">불러오는 중…</div>
+    </div>
+
+    <script>
+    (function(){
+      // ── 채널 특성 학습 메모 자동 저장 (localStorage) ──
+      var NOTE_KEY='cmopub_channel_notes';
+      function loadNotes(){try{return JSON.parse(localStorage.getItem(NOTE_KEY)||'{}');}catch(e){return {};}}
+      function saveNote(ch,v){var d=loadNotes();d[ch]=v;localStorage.setItem(NOTE_KEY,JSON.stringify(d));}
+      var notes=loadNotes();
+      document.querySelectorAll('#cmo-publish .cmopub-note').forEach(function(t){
+        var ch=t.getAttribute('data-note');
+        if(notes[ch])t.value=notes[ch];
+        t.addEventListener('input',function(){saveNote(ch,t.value);});
+      });
+
+      // ── 인스타 업로드 흐름 배선 (1단계: UI 흐름만, 실제 생성/업로드는 다음 단계) ──
+      var genBtn=document.getElementById('cmopub-generate');
+      var approveBtn=document.getElementById('cmopub-approve');
+      var prev=document.getElementById('cmopub-preview');
+      if(genBtn){genBtn.addEventListener('click',function(){
+        var acc=document.getElementById('cmopub-account').value;
+        var title=(document.getElementById('cmopub-title').value||'').trim();
+        if(!title){prev.innerHTML='<span style="color:var(--warm,#d98c5f);">제목을 입력해 주세요.</span>';return;}
+        prev.innerHTML='<strong>생성 요청 (배선됨):</strong><br>· 계정: '+acc+'<br>· 제목: '+title.replace(/</g,'&lt;')+'<br><span style="color:var(--dim-soft);">→ 다음 단계에서 slide_compositor.py + 캡션 생성기 호출 연결 예정. 생성 후 미리보기·검수가 여기에 표시됩니다.</span>';
+        approveBtn.disabled=false;approveBtn.style.background='var(--accent)';approveBtn.style.color='#fff';approveBtn.style.cursor='pointer';approveBtn.style.border='none';
+      });}
+      if(approveBtn){approveBtn.addEventListener('click',function(){
+        if(approveBtn.disabled)return;
+        prev.innerHTML+='<br><strong style="color:var(--green);">✅ 승인·업로드 요청 (배선됨)</strong> — 다음 단계에서 instagram_upload_playwright.py 발행 연결 예정.';
+      });}
+
+      // ── 검수 큐 (G1에서 이관, 동일 로직 재사용) ──
+      var URL='cmo/review/review_queue.json';
+      var RELAY_URL='https://script.google.com/macros/s/AKfycbxDwFkrxK1YIaEoSNcuw2MiHiZQ-7o5N6311ytksSyeEd86ZFOhLknOWqQgNArQvZ-7/exec';
+      function dec(){try{return JSON.parse(localStorage.getItem('gm1_review_decisions')||'{}');}catch(e){return {};}}
+      function save(id,v){var d=dec();d[id]={decision:v,at:new Date().toISOString()};localStorage.setItem('gm1_review_decisions',JSON.stringify(d));}
+      function relay(id,decision){
+        var status=decision==='approve'?'승인':'반려';
+        var qs='action=review_set_status&id='+encodeURIComponent(id)+'&status='+encodeURIComponent(status)+'&key=';
+        return fetch(RELAY_URL+'?'+qs,{redirect:'follow'}).then(function(r){return r.json();});
+      }
+      function esc(s){return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+      function isDone(st){return st==='발행완료'||st==='approved'||st==='승인'||st==='rejected'||st==='반려';}
+      function render(items){
+        var list=document.getElementById('cmopub-review-list');if(!list)return;
+        var d=dec();var cnt=document.getElementById('cmopub-review-count');
+        var waiting=items.filter(function(it){var e=(d[it.id]&&d[it.id].decision)||it.status;return !isDone(e);}).length;
+        if(cnt)cnt.textContent='· 대기 '+waiting+'건 / 전체 '+items.length+'건';
+        if(!items.length){list.innerHTML='<div style="color:var(--dim);font-size:13px;padding:8px 0;">검수 대기 없음 — 새 콘텐츠가 준비되면 여기에 표시됩니다.</div>';return;}
+        list.innerHTML='';
+        items.forEach(function(it){
+          var e=(d[it.id]&&d[it.id].decision)||it.status;var c=document.createElement('div');
+          c.style.cssText='border:1px solid rgba(183,159,138,0.2);border-radius:12px;padding:14px;background:var(--paper);';
+          var badge=e==='발행완료'?'<span style="color:var(--green);font-weight:700;">✅ 발행완료</span>':(e==='approved'||e==='승인')?'<span style="color:var(--green);font-weight:700;">✅ 승인됨 · 발행 대기</span>':(e==='rejected'||e==='반려')?'<span style="color:var(--warm,#d98c5f);font-weight:700;">↩ 반려됨</span>':'<span style="color:var(--accent);font-weight:700;">🟡 검수 대기</span>';
+          var h='<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px;"><strong style="font-size:13.5px;">'+esc(it.title)+'</strong>'+badge+'</div>';
+          if(it.channel)h+='<div style="font-size:12px;color:var(--dim);margin-bottom:8px;">채널: '+esc(it.channel)+'</div>';
+          if(it.preview)h+='<img src="'+esc(it.preview)+'" alt="미리보기" style="width:100%;border-radius:8px;border:1px solid rgba(183,159,138,0.15);margin-bottom:8px;" loading="lazy">';
+          if(it.caption)h+='<details style="margin-bottom:8px;"><summary style="cursor:pointer;font-size:12.5px;color:var(--dim);">캡션 보기</summary><div style="font-size:12.5px;color:var(--text-soft);white-space:pre-wrap;line-height:1.7;padding-top:6px;">'+esc(it.caption)+'</div></details>';
+          if(it.post_url)h+='<div style="font-size:12px;margin-bottom:6px;"><a href="'+esc(it.post_url)+'" target="_blank" style="color:var(--accent);">게시물 보기 ↗</a></div>';
+          if(!isDone(e)){h+='<div style="display:flex;gap:8px;margin-top:4px;"><button data-act="approve" data-id="'+esc(it.id)+'" style="flex:1;background:var(--accent);color:#fff;border:none;border-radius:8px;padding:9px;font-weight:700;cursor:pointer;font-family:inherit;">승인</button><button data-act="reject" data-id="'+esc(it.id)+'" style="flex:1;background:none;color:var(--dim);border:1px solid var(--border);border-radius:8px;padding:9px;cursor:pointer;font-family:inherit;">반려</button></div>';}
+          else if(e==='approved'||e==='승인'){h+='<div style="font-size:11.5px;color:var(--dim);">승인 기록됨 — 자동 발행 연결은 다음 단계(감시기). 현재는 승인 표시만.</div>';}
+          c.innerHTML=h;list.appendChild(c);
+        });
+        list.querySelectorAll('button[data-act]').forEach(function(b){b.addEventListener('click',function(){
+          var id=b.getAttribute('data-id');var act=b.getAttribute('data-act');
+          var sib=b.parentNode.querySelectorAll('button[data-act]');
+          for(var i=0;i<sib.length;i++){sib[i].disabled=true;}
+          b.textContent=act==='approve'?'승인 전송 중…':'반려 전송 중…';
+          save(id,act==='approve'?'approved':'rejected');
+          relay(id,act).then(function(res){
+            if(res&&res.ok){load();}
+            else{for(var i=0;i<sib.length;i++){sib[i].disabled=false;}render(window.__cmopub_rv||[]);
+              alert('중계 실패: '+((res&&res.error)||'알 수 없음')+'\n(로컬 표시는 유지됩니다)');}
+          }).catch(function(){
+            for(var i=0;i<sib.length;i++){sib[i].disabled=false;}render(window.__cmopub_rv||[]);
+            alert('네트워크 오류 — GitHub 기록 실패. 로컬 표시만 유지됩니다.');
+          });
+        });});
+      }
+      function load(){fetch(URL,{cache:'no-store'}).then(function(r){return r.ok?r.json():[];}).then(function(items){if(!Array.isArray(items))items=[];window.__cmopub_rv=items;render(items);}).catch(function(){var l=document.getElementById('cmopub-review-list');if(l)l.innerHTML='<div style="color:var(--dim);font-size:13px;">검수 큐를 불러오지 못했습니다.</div>';});}
+      if(document.readyState!=='loading')load();else document.addEventListener('DOMContentLoaded',load);
+    })();
+    </script>
   </article>
 
   <!-- ── CMO 오프라인 홍보물 디자인 제작 도구 ── -->
