@@ -1073,19 +1073,27 @@ def main():
     scheduler = BlockingScheduler(timezone="Asia/Seoul")
 
     # ── 운영 아카이브 결과 보고 감지기 (5분 주기) ──────────────────────────────
-    try:
-        from archive_result_watcher import check_and_notify as _archive_check
-        scheduler.add_job(
-            _archive_check,
-            trigger=IntervalTrigger(minutes=5),
-            id="archive_result_watcher",
-            misfire_grace_time=120,
-            coalesce=True,
-            next_run_time=datetime.now(),
-        )
-        logger.info("archive_result_watcher 등록 완료 (5분 주기)")
-    except ImportError as e:
-        logger.error(f"archive_result_watcher 임포트 실패 — 감지기 미등록: {e}")
+    # [2026-05-30 CTO 비활성] 노션 결과물DB 폐기(2026-05-29)로 상태 select 옵션
+    #   ('결과 보고'·'유지보수'·'완료')이 사라져 5분마다 400 validation_error 폭주
+    #   (archive_watcher.log 누적 248건+). 쿼리가 항상 [] 반환 → GM 알림 0건 발송이므로
+    #   비활성해도 GM 정기 알림에 영향 없음. 가이드허브 큐 기반 전환은 Phase 2 계획 참조:
+    #   docs/노션_가이드허브_리뉴얼_계획.md. 코드·import 보존(데이터 유실 0, 가역적).
+    if False:  # archive_result_watcher 노션 추종 중단 (Phase 2 전환 전까지 스킵)
+        try:
+            from archive_result_watcher import check_and_notify as _archive_check
+            scheduler.add_job(
+                _archive_check,
+                trigger=IntervalTrigger(minutes=5),
+                id="archive_result_watcher",
+                misfire_grace_time=120,
+                coalesce=True,
+                next_run_time=datetime.now(),
+            )
+            logger.info("archive_result_watcher 등록 완료 (5분 주기)")
+        except ImportError as e:
+            logger.error(f"archive_result_watcher 임포트 실패 — 감지기 미등록: {e}")
+    else:
+        logger.info("archive_result_watcher 비활성 — 노션 결과물DB 폐기, Phase 2 가이드허브 전환 대기")
 
     # ── Start 기획 → 결과물DB 이관 감지기 (5분 주기) ─────────────────────────
     try:
