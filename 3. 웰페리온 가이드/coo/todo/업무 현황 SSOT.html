@@ -9,7 +9,7 @@
 <script>
 /* 최신본 자동 보장 — HTTP 캐시로 옛 버전이 떠 'GM 화면만 미반영'되는 문제 방지 (2026-05-29 COO).
    서버 최신본 버전과 비교해 다르면 1회만 강제 갱신. 루프 방지: ?pv 가 현재 버전과 같으면 종료. */
-window.__PV='20260529-3';
+window.__PV='20260530-1';
 (function(){
   window.addEventListener('pageshow',function(e){ if(e.persisted) location.reload(); });
   try{
@@ -518,7 +518,8 @@ function buildFilters() {
     html += '<button class="filter-btn" onclick="setOwnerFilter(\'' + escAttr(m) + '\',this)">' + esc(m) + '</button>';
   });
   html += '<div style="display:flex;gap:4px;margin-left:auto;">';
-  html += '<button class="share-btn" onclick="openDashboard()" style="background:var(--purple-bg);color:var(--purple);border-color:rgba(167,139,218,0.3);">현황 대시보드</button>';
+  // [업무-1] 버튼 라벨 "현황 대시보드" → "업무 현황 대시보드" (2026-05-30 COO)
+  html += '<button class="share-btn" onclick="openDashboard()" style="background:var(--purple-bg);color:var(--purple);border-color:rgba(167,139,218,0.3);">업무 현황 대시보드</button>';
   html += '<button class="share-btn" onclick="printTasks()" style="background:var(--accent-bg);color:var(--accent);border-color:rgba(183,159,138,0.3);">인쇄</button>';
   html += '<button class="share-btn" onclick="shareReport()" style="background:var(--purple-bg);color:var(--purple);border-color:rgba(167,139,218,0.3);">보고용</button>';
   html += '<button class="share-btn" onclick="shareList()">공유용</button>';
@@ -1048,7 +1049,7 @@ function stageLocks(stage) {
     case 'free':      return { body:false, plan:false, progress:false, result:false, budget:false, approvalReq:false };
     case 'approval':  return { body:false, plan:false, progress:false, result:true,  budget:false, approvalReq:false }; // 진척 로그는 결재 진행 중에도 항상 작성 가능 (2026-05-30 COO)
     case 'execution': return { body:true,  plan:true,  progress:false, result:false, budget:true,  approvalReq:true  };
-    case 'result':    return { body:true,  plan:true,  progress:true,  result:false, budget:true,  approvalReq:true  };
+    case 'result':    return { body:true,  plan:true,  progress:false, result:false, budget:true,  approvalReq:true  }; // [업무-4] 결과보고 단계에서도 진척 로그 작성 가능 (2026-05-30 COO)
     case 'closed':    return { body:true,  plan:true,  progress:true,  result:true,  budget:true,  approvalReq:true  };
     case 'rejected':  return { body:false, plan:false, progress:true,  result:true,  budget:false, approvalReq:false };
     default:          return { body:false, plan:false, progress:false, result:false, budget:false, approvalReq:false };
@@ -1258,9 +1259,18 @@ function applyLifecycleLocks(task) {
     cb.disabled = locks.approvalReq;
     cb.parentElement.style.opacity = locks.approvalReq ? '0.55' : '';
   });
-  // 진척 추가 버튼·삭제 버튼
-  document.querySelectorAll('#progressLogList button, #fPlanField + .field button').forEach(b => {
-    // (placeholder — modular)
+  // [업무-4] 진척 추가 버튼·삭제 버튼 — locks.progress 기반 활성/비활성 (2026-05-30 COO)
+  const progressLocked = locks.progress;
+  const addBtn = document.querySelector('[onclick="addProgressLogEntry()"]');
+  if (addBtn) {
+    addBtn.disabled = progressLocked;
+    addBtn.style.opacity = progressLocked ? '0.45' : '';
+    addBtn.style.cursor = progressLocked ? 'not-allowed' : '';
+  }
+  document.querySelectorAll('#progressLogList button').forEach(b => {
+    b.disabled = progressLocked;
+    b.style.opacity = progressLocked ? '0.45' : '';
+    b.style.cursor = progressLocked ? 'not-allowed' : '';
   });
 }
 
@@ -1890,6 +1900,14 @@ function renderDashboard() {
     h += '<td><div class="dash-bar-wrap"><div class="dash-bar ' + barColor + '" style="width:' + pct + '%"></div></div></td>';
     h += '</tr>';
   });
+  h += '</table>';
+
+  // [업무-3] 부서별 책임자 (2026-05-30 COO) — 운영부=이경연 실장 / 시설부=이정헌 소장 / 파트너팀=나우열M
+  h += '<h3>부서별 책임자</h3>';
+  h += '<table class="dash-table"><tr><th>부서</th><th>책임자</th><th>관련 카테고리</th></tr>';
+  h += '<tr><td>운영부</td><td><strong>이경연 실장</strong></td><td>[1] 매출 및 영업 · [3] 운영 정책</td></tr>';
+  h += '<tr><td>시설부</td><td><strong>이정헌 소장</strong></td><td>[4] 시설 및 환경</td></tr>';
+  h += '<tr><td>파트너팀</td><td><strong>나우열M</strong></td><td>[2] 인사 &amp; 파트너</td></tr>';
   h += '</table>';
 
   // Completion trend (by month)
