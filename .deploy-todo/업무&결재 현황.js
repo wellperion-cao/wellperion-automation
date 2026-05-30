@@ -331,6 +331,9 @@ function _buildApprovalRoute(record) {
   // 수동 + 자동 합집합 (순서: 부서장 → GM → 대표님)
   const set = {};
   manual.concat(auto).forEach(a => { set[a] = true; });
+  // 본인 결재 중복 방지 — 담당자가 김남욱GM이면 GM 결재 단계 생략(부서장·대표님은 유지) (2026-05-30 GM 지시)
+  const owners = String(record['담당자'] || '').split(',').map(s => s.trim());
+  if (owners.indexOf('김남욱GM') >= 0) { delete set['GM']; }
   const order = ['부서장', 'GM', '대표님'];
   return order.filter(role => set[role]);
 }
