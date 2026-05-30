@@ -2075,6 +2075,32 @@
           <tr><td>9</td><td>세션 시작 루틴</td><td>웰리 가동(세션 시작) 시 가이드허브 <strong>AI CEO 탭</strong>의 이 <strong>운영 기본값(SSOT)</strong> 표를 먼저 읽고 <strong>R/R·KPI·운영 기본값을 흡수</strong>한다.</td></tr>
         </table>
 
+        <h3 id="ceo-code-status" style="margin-top:24px;border-top:1px solid var(--border);padding-top:20px;"><span class="ico">📊</span>코드 현황 (실시간)</h3>
+        <div class="callout tip" style="font-size:12.5px;margin:0 0 10px;"><code>status/_queue.json</code> 실시간 — 진행 중·대기·완료를 코드로 한눈에. (최대 5분 캐시 지연)</div>
+        <div id="ceo-queue-table" style="font-size:13px;">불러오는 중…</div>
+        <script>
+        (function(){
+          var Q_URL='https://raw.githubusercontent.com/wellperion-cao/wellperion-automation/master/status/_queue.json';
+          var OWN={coo:'COO',cto:'CTO',cmo:'CMO',cfo:'CFO',chro:'CHRO',cpo:'CPO',ceo:'CEO',gm1:'GM',gm:'GM'};
+          var ST={DONE:{i:'✅',t:'완료',c:'#5cb85c'},IN_PROGRESS:{i:'🔄',t:'진행중',c:'#b79f8a'},PENDING:{i:'⏸️',t:'대기',c:'#999'}};
+          function qEsc(s){return String(s==null?'':s).replace(/[&<>]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;'}[c];});}
+          fetch(Q_URL,{cache:'no-store'}).then(function(r){return r.ok?r.json():[];}).then(function(rows){
+            if(!Array.isArray(rows))rows=[];
+            var order={IN_PROGRESS:0,PENDING:1,DONE:2};
+            rows.sort(function(a,b){return (order[a.status]==null?9:order[a.status])-(order[b.status]==null?9:order[b.status]);});
+            var h='<table><tr><th style="width:34%">코드</th><th>내용</th><th style="width:64px">담당</th><th style="width:78px">상태</th><th style="width:48px">링크</th></tr>';
+            rows.forEach(function(t){
+              var s=ST[t.status]||{i:'•',t:t.status||'-',c:'#999'};
+              var own=OWN[(t.clevel||'').toLowerCase()]||t.clevel||'-';
+              var link=t.commit_sha?('<a href="https://github.com/wellperion-cao/wellperion-automation/commit/'+qEsc(t.commit_sha)+'" target="_blank" style="color:var(--accent);">커밋</a>'):(t.spec||t.brief?'문서':'—');
+              h+='<tr><td style="font-size:10.5px;color:var(--dim);word-break:break-all;">'+qEsc(t.task_id)+'</td><td>'+qEsc(t.title)+'</td><td>'+qEsc(own)+'</td><td><span style="color:'+s.c+';font-weight:600;white-space:nowrap;">'+s.i+' '+qEsc(s.t)+'</span></td><td>'+link+'</td></tr>';
+            });
+            h+='</table>';
+            var el=document.getElementById('ceo-queue-table'); if(el)el.innerHTML=h;
+          }).catch(function(){var el=document.getElementById('ceo-queue-table'); if(el)el.innerHTML='<span style="color:var(--dim);">코드 현황을 불러오지 못했습니다.</span>';});
+        })();
+        </script>
+
         <h3 style="margin-top:24px;border-top:1px solid var(--border);padding-top:20px;"><span class="ico">📨</span>정기 텔레그램 보고 SOP (매일 2회)</h3>
         <table>
           <tr><th style="width:80px">시각</th><th>역할</th><th>형식</th></tr>
