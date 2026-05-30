@@ -89,18 +89,42 @@ CLEVEL_OWNER = {
 }
 CLEVEL_ORDER = ["CFO", "CHRO", "CMO", "COO", "CPO", "CTO"]
 
-# 모호성 키워드: 제목/노트에 이런 신호가 있으면 GM 답이 필요 → 자동 처리 금지
-AMBIGUOUS_SIGNALS = [
-    ("🔒", "보안값(PIN·토큰 등) GM 직접 설정 필요"),
-    ("PIN", "PIN 값 설정·재배포는 GM 보안 결재"),
-    ("토큰", "토큰 발급은 GM 보안 결재"),
-    ("token", "토큰 발급은 GM 보안 결재"),
-    ("결재 대기", "GM 결재 대기"),
-    ("GM 결재", "GM 결재 필요"),
-    ("GM 대기", "GM 응답 대기"),
-    ("GM 승인", "GM 승인 필요"),
+# ── 분류 SSOT (2026-05-30 GM 지시: 3분류) ────────────────────────────────────
+# 한 항목을 아래 3개 중 하나로 라벨한다. 이 함수가 아침·저녁 두 보고의 단일 기준(SSOT).
+#   ① GM_DECISION  : 보안값(PIN·토큰·GitHub 키)·결재 — GM 직접 결재 영역. 자동·deep-interview 아님.
+#   ② AUTONOMOUS   : 명확 — AI CEO가 담당 C-Level에 위임해 스스로 진행.
+#   ③ DEEP_INTERVIEW: 모호(정보 부족·방향 미정) — deep-interview로 명확화 후 진행.
+DISP_GM_DECISION = "GM_DECISION"
+DISP_AUTONOMOUS = "AUTONOMOUS"
+DISP_DEEP_INTERVIEW = "DEEP_INTERVIEW"
+
+# ① 보안값·결재 신호 → GM 직접 결재 (최우선). 있으면 무조건 GM_DECISION.
+SECURITY_SIGNALS = [
+    ("🔒", "보안값(PIN·토큰·키)은 GM 직접 설정"),
+    ("PIN", "PIN 값 설정·재배포는 GM 결재"),
+    ("토큰", "토큰 발급은 GM 결재"),
+    ("token", "토큰 발급은 GM 결재"),
+    ("github 토큰", "GitHub 쓰기 키는 GM 결재"),
+    ("github 키", "GitHub 키는 GM 결재"),
+    ("github 쓰기", "GitHub 쓰기 권한은 GM 결재"),
+    ("api 키", "API 키는 GM 결재"),
+    ("api key", "API 키는 GM 결재"),
+    ("비밀번호", "비밀번호는 GM 직접 전달"),
+    ("결제", "💰 결제는 GM 직접 결재"),
+    ("💰", "💰 결제는 GM 직접 결재"),
+]
+
+# ③ 모호 신호 → deep-interview (정보 부족·방향 미정). 보안값이 없을 때만 적용.
+DEEP_INTERVIEW_SIGNALS = [
+    ("방향 결정", "방향이 정해져야 진행 가능"),
     ("결정 후", "방향 결정 후 재개"),
-    ("보류 결재", "GM 보류 — 재개 결정 필요"),
+    ("보류 결재", "보류 사유 — 재개 방향 확인 필요"),
+    ("미정", "세부가 정해지지 않음"),
+    ("불가 —", "현 구조로 불가 — 대안 방향 확인 필요"),
+    ("불가-", "현 구조로 불가 — 대안 방향 확인 필요"),
+    ("불명확", "요건이 불명확"),
+    ("어떻게 할지", "방법이 정해지지 않음"),
+    ("정해지면", "선결 조건 미정"),
 ]
 
 # 명확하지 않은(미결) 큐 상태 — 처리 대상
@@ -185,13 +209,76 @@ def git_recent_done(limit: int = 30) -> list[str]:
     return done
 
 
-def classify_ambiguity(item: dict) -> tuple[bool, str]:
-    """(is_ambiguous, reason). 제목+노트에서 모호성 신호 탐지."""
-    hay = f"{item.get('title','')} {item.get('note','')}"
-    for sig, reason in AMBIGUOUS_SIGNALS:
-        if sig.lower() in hay.lower():
-            return True, reason
-    return False, ""
+def classify_disposition(item: dict) -> tuple[str, str]:
+    """
+    분류 SSOT — 아침·저녁 두 보고가 공유하는 단일 기준 (2026-05-30 GM 3분류).
+
+    반환: (disposition, reason)
+      disposition ∈ {GM_DECISION, AUTONOMOUS, DEEP_INTERVIEW}
+
+    우선순위:
+      1) 보안값·결재 신호 → GM_DECISION (GM 직접 결재. 자동·deep-interview 아님)
+      2) 모호 신호       → DEEP_INTERVIEW (방향·정보 미정 → 명확화 선행)
+      3) 그 외           → AUTONOMOUS (명확 → CEO가 위임해 자율 진행)
+    """
+    hay = f"{item.get('title','')} {item.get('note','')}".lower()
+    for sig, reason in SECURITY_SIGNALS:
+        if sig.lower() in hay:
+            return DISP_GM_DECISION, reason
+    for sig, reason in DEEP_INTERVIEW_SIGNALS:
+        if sig.lower() in hay:
+            return DISP_DEEP_INTERVIEW, reason
+    return DISP_AUTONOMOUS, ""
+
+
+def summarize_title(title: str, limit: int = 30) -> str:
+    """
+    원본 task title을 사람이 읽는 짧은 요약으로 가공 (limit자 이내, 중간 '…' 절단 금지).
+
+    규칙:
+      - 첫 의미 단위(' + ', ' — ', ':', '(', '．' 등)에서 자연스럽게 끊는다.
+      - 그래도 limit를 넘으면 어절(공백) 경계까지만 살리고 뒤는 버린다('…' 안 붙임).
+      - 결과는 항상 limit 이하 + 단어 중간이 잘리지 않는다.
+    """
+    t = (title or "").strip()
+    if not t:
+        return "(제목 없음)"
+    # 1) 의미 구분자에서 1차 컷 (앞 토막만 사용). 가장 먼저(앞쪽) 나오는 구분자 기준.
+    cut = len(t)
+    for sep in [" + ", " — ", " - ", " → ", "→", "(", "·", ":", "："]:
+        idx = t.find(sep)
+        if 0 < idx < cut:
+            cut = idx
+    if cut <= limit:
+        t = t[:cut].strip()
+    if len(t) <= limit:
+        return t.rstrip(" →-·:[")
+    # 2) 아직 길면 어절 경계까지만 (단어 중간 절단 방지, '…' 미사용)
+    head = t[:limit]
+    if " " in head:
+        head = head.rsplit(" ", 1)[0]
+    return head.strip().rstrip(" →-·:[")
+
+
+def count_table(rows: list[tuple[str, int]]) -> list[str]:
+    """
+    텔레그램 고정폭에서 안 깨지는 카운트 표 (좌측 라벨 + 우측 숫자).
+    한글 1자=2폭으로 계산해 라벨 칸 폭을 맞춘다.
+    """
+    def w(s: str) -> int:
+        return sum(2 if ord(c) > 0x2500 else 1 for c in s)
+
+    label_w = max((w(lbl) for lbl, _ in rows), default=4)
+    num_w = max((len(str(n)) for _, n in rows), default=1)
+    bar = "─"
+    top = f"┌─{bar * label_w}─┬─{bar * num_w}─┐"
+    bot = f"└─{bar * label_w}─┴─{bar * num_w}─┘"
+    out = [top]
+    for lbl, n in rows:
+        pad = " " * (label_w - w(lbl))
+        out.append(f"│ {lbl}{pad} │ {str(n).rjust(num_w)} │")
+    out.append(bot)
+    return out
 
 
 def stage1_collect_classify() -> dict:
@@ -234,19 +321,26 @@ def stage1_collect_classify() -> dict:
             continue
         items.append(it)
 
-    clear, ambiguous = [], []
+    gm_decision, autonomous, deep_interview = [], [], []
     for it in items:
-        amb, reason = classify_ambiguity(it)
-        if amb:
-            it["ambiguous_reason"] = reason
-            ambiguous.append(it)
+        disp, reason = classify_disposition(it)
+        it["disposition"] = disp
+        it["disposition_reason"] = reason
+        if disp == DISP_GM_DECISION:
+            gm_decision.append(it)
+        elif disp == DISP_DEEP_INTERVIEW:
+            deep_interview.append(it)
         else:
-            clear.append(it)
+            autonomous.append(it)
 
+    # 'clear'(자율 진행 가능 = 위임 대상) = autonomous 전용.
+    # GM_DECISION·DEEP_INTERVIEW 는 자동 배정/실행 대상이 아님.
     return {
         "collected": len(items),
-        "clear": clear,
-        "ambiguous": ambiguous,
+        "gm_decision": gm_decision,
+        "autonomous": autonomous,
+        "deep_interview": deep_interview,
+        "clear": autonomous,        # stage2 배정 입력 (= 자율 진행)
         "git_done_excluded": sorted(git_done),
     }
 
@@ -401,70 +495,67 @@ def stage3_orchestrate(assigned: list[dict]) -> dict:
 
 # ── STAGE 4: 완료 → 텔레그램 보고 ─────────────────────────────────────────────
 
-def build_telegram_report(s1: dict, assigned: list[dict], orch: dict) -> str:
-    """GM 일상어 보고. '무엇을 어디에 기록 / 앞으로 어떻게 진행' 포함."""
-    lines = []
-    lines.append(f"🌅 AI CEO 아침 자동 파이프라인 — {today_kr()}")
-    lines.append("━" * 22)
+# 동그라미 번호 (제목 잘림 없는 짧은 요약과 함께 사용)
+CIRCLED = ["①", "②", "③", "④", "⑤", "⑥", "⑦", "⑧", "⑨", "⑩"]
 
-    # ① 요약
-    n_clear = len(assigned)
-    n_amb = len(s1["ambiguous"])
-    lines.append(f"오늘 미결 할일 {s1['collected']}건을 모았어요.")
-    lines.append(f"· 바로 진행 가능: {n_clear}건 (담당별 배정 완료)")
-    lines.append(f"· GM 답이 필요한 것: {n_amb}건 (자동 진행 안 함)")
+
+def _circled(i: int) -> str:
+    return CIRCLED[i - 1] if 1 <= i <= len(CIRCLED) else f"{i}."
+
+
+def build_telegram_report(s1: dict, assigned: list[dict], orch: dict) -> str:
+    """
+    GM 보고 — 시안1(결정 중심 초간결) + 시안2(한눈 표) 조합 (2026-05-30 GM 지시).
+    상단: 한눈 카운트 표 / 본문: GM 결정 필요분만 부각 / 하단: 자율 진행 1줄 + 안내.
+    """
+    gm_dec = s1["gm_decision"]
+    auto = s1["autonomous"]
+    deep = s1["deep_interview"]
+
+    lines = []
+    lines.append(f"🌅 아침 정리 — {today_kr()}")
+
+    # ── 상단: 한눈 표 (시안2) ──
+    lines += count_table([
+        ("GM 결정", len(gm_dec)),
+        ("자율 진행", len(auto)),
+        ("명확화 대기", len(deep)),
+    ])
     lines.append("")
 
-    # ② 담당 배정 표 (일상어)
-    if assigned:
-        lines.append("〈누가 무엇을 — 바로 진행〉")
-        by_cl: dict[str, list[dict]] = {}
-        for a in assigned:
-            by_cl.setdefault(a["assigned_clevel"], []).append(a)
-        for cl in CLEVEL_ORDER:
-            for a in by_cl.get(cl, []):
-                title = (a.get("title") or "")[:42]
-                lines.append(f"· [{cl}/{a['owner']}] {title}")
-        lines.append("")
+    # ── 본문: GM 결정 필요분만 부각 (시안1) ──
+    if gm_dec:
+        lines.append("▶ GM 결정 필요 (이것만 봐주세요)")
+        for i, a in enumerate(gm_dec, 1):
+            lines.append(f"{_circled(i)} {summarize_title(a.get('title'))}")
+            lines.append(f"   └ 왜: {a.get('disposition_reason','')}")
+    else:
+        lines.append("▶ GM 결정 필요: 없음 — 봐주실 것 없어요.")
+    lines.append("")
 
-    # ③ 충돌 직렬화 안내 (일상어)
-    if orch["serialized_conflicts"] > 0:
-        lines.append(
-            f"〈겹치는 작업 정리〉 같은 문서를 동시에 고치면 꼬이니까, "
-            f"{orch['serialized_conflicts']}건은 순서대로(하나 끝나면 다음) 진행해요. "
-            f"나머지는 {orch['parallel_chains']}갈래로 동시에 진행돼요."
-        )
-        lines.append("")
-
-    # ④ 모호 질문 카드 (자동 처리 금지)
-    if s1["ambiguous"]:
-        lines.append("〈❓ GM 결정이 필요한 것 — 자동으로 손대지 않았어요〉")
-        for i, a in enumerate(s1["ambiguous"], 1):
-            title = (a.get("title") or "")[:40]
-            lines.append(f"{i}. {title}")
-            lines.append(f"   → 왜: {a.get('ambiguous_reason','')}")
-        lines.append("")
-
-    # ⑤ 기록 위치 + 앞으로 진행
-    lines.append("〈어디에 기록했나 / 앞으로 어떻게〉")
-    lines.append("· 오늘 계획은 status/morning_plans/ 에 날짜별로 저장돼요.")
-    lines.append("· 각 작업은 담당이 끝내면 GitHub에 올리고(커밋), CEO 검증기가")
-    lines.append("  자동으로 점검(통과/반려)해서 이 방으로 결과를 알려드려요.")
-    lines.append("· 업무 현황은 가이드허브 'S4 업무&결재 현황' 에서 한눈에 보여요.")
+    # ── 하단: 자율 진행 + 명확화 안내 ──
+    if auto:
+        names = "·".join(summarize_title(a.get("title"), 16) for a in auto[:3])
+        more = f" 외 {len(auto) - 3}건" if len(auto) > 3 else ""
+        lines.append(f"▶ 자율 진행 중: {len(auto)}건 ({names}{more})")
+    else:
+        lines.append("▶ 자율 진행 중: 없음")
+    if deep:
+        lines.append(f"▶ 명확화 대기: {len(deep)}건 — deep-interview로 명확화 후 진행")
 
     return "\n".join(lines)
 
 
-def build_question_card(ambiguous: list[dict]) -> str:
-    """모호 항목 전용 질문 카드 (별도 발송용)."""
-    if not ambiguous:
+def build_question_card(gm_decision: list[dict]) -> str:
+    """GM 결정 필요(보안·결재) 항목 전용 카드 — 본보고와 별도 발송. 제목 잘림 없음."""
+    if not gm_decision:
         return ""
-    lines = ["❓ GM 결정 요청 카드 (아침 파이프라인)"]
-    lines.append("아래는 자동으로 진행하지 않고 GM 답을 기다리는 것들이에요.")
+    lines = ["🔒 GM 결정 카드 (아침)"]
+    lines.append("아래는 GM 직접 결재 영역이라 자동으로 손대지 않았어요.")
     lines.append("")
-    for i, a in enumerate(ambiguous, 1):
-        lines.append(f"{i}. {(a.get('title') or '')[:48]}")
-        lines.append(f"   사유: {a.get('ambiguous_reason','')}")
+    for i, a in enumerate(gm_decision, 1):
+        lines.append(f"{_circled(i)} {summarize_title(a.get('title'))}")
+        lines.append(f"   사유: {a.get('disposition_reason','')}")
         if a.get("note"):
             lines.append(f"   메모: {(a.get('note') or '')[:80]}")
     return "\n".join(lines)
@@ -478,12 +569,18 @@ def save_plan(s1: dict, assigned: list[dict], orch: dict, dry_run: bool) -> Path
         "date": today_kr(),
         "stage1_collect_classify": {
             "collected": s1["collected"],
-            "clear_count": len(s1["clear"]),
-            "ambiguous_count": len(s1["ambiguous"]),
-            "ambiguous": [
+            "gm_decision_count": len(s1["gm_decision"]),
+            "autonomous_count": len(s1["autonomous"]),
+            "deep_interview_count": len(s1["deep_interview"]),
+            "gm_decision": [
                 {"task_id": a.get("task_id"), "title": a.get("title"),
-                 "reason": a.get("ambiguous_reason")}
-                for a in s1["ambiguous"]
+                 "reason": a.get("disposition_reason")}
+                for a in s1["gm_decision"]
+            ],
+            "deep_interview": [
+                {"task_id": a.get("task_id"), "title": a.get("title"),
+                 "reason": a.get("disposition_reason")}
+                for a in s1["deep_interview"]
             ],
             "git_done_excluded": s1["git_done_excluded"],
         },
@@ -544,9 +641,10 @@ def run_pipeline(dry_run: bool, as_json: bool, once_per_day: bool = False) -> in
 
     print(f"=== CEO 아침 파이프라인 시작 (dry_run={dry_run}, once_per_day={once_per_day}) ===")
 
-    # ① 수집 + 분류
+    # ① 수집 + 분류 (3분류: GM 결정 / 자율 / 명확화 대기)
     s1 = stage1_collect_classify()
-    print(f"[STAGE 1] 수집 {s1['collected']}건 → 명확 {len(s1['clear'])} / 모호 {len(s1['ambiguous'])}")
+    print(f"[STAGE 1] 수집 {s1['collected']}건 → GM결정 {len(s1['gm_decision'])} "
+          f"/ 자율 {len(s1['autonomous'])} / 명확화대기 {len(s1['deep_interview'])}")
 
     # ② 명확화 + 배정
     assigned = stage2_assign(s1["clear"])
@@ -563,7 +661,7 @@ def run_pipeline(dry_run: bool, as_json: bool, once_per_day: bool = False) -> in
 
     # ④ 보고 빌드 + 발송
     report = build_telegram_report(s1, assigned, orch)
-    question_card = build_question_card(s1["ambiguous"])
+    question_card = build_question_card(s1["gm_decision"])
     plan_path = save_plan(s1, assigned, orch, dry_run)
     sent = send_reports(report, question_card, dry_run)
     print(f"[STAGE 4] 보고 {'(dry-run 출력)' if dry_run else '발송'} — {'OK' if sent else 'FAIL'}")
@@ -572,8 +670,9 @@ def run_pipeline(dry_run: bool, as_json: bool, once_per_day: bool = False) -> in
         print("\n========== PLAN JSON ==========")
         print(json.dumps({
             "collected": s1["collected"],
-            "clear": len(assigned),
-            "ambiguous": len(s1["ambiguous"]),
+            "gm_decision": len(s1["gm_decision"]),
+            "autonomous": len(s1["autonomous"]),
+            "deep_interview": len(s1["deep_interview"]),
             "plan_path": str(plan_path),
             "parallel_chains": orch["parallel_chains"],
             "serialized_conflicts": orch["serialized_conflicts"],

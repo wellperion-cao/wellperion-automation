@@ -62,13 +62,21 @@ if str(PACKAGE_ROOT) not in sys.path:
 if str(BASE) not in sys.path:
     sys.path.insert(0, str(BASE))
 
-# 아침 파이프라인 수집·분류 로직 재사용 (신규 최소화)
+# 아침 파이프라인 수집·분류 로직 재사용 (신규 최소화 — 분류 SSOT는 ceo_morning_pipeline 단일)
 from ceo_morning_pipeline import (  # noqa: E402
     stage1_collect_classify,
     today_kr,
+    summarize_title,
+    count_table,
     CLEVEL_OWNER,
     CLEVEL_ORDER,
 )
+
+CIRCLED = ["①", "②", "③", "④", "⑤", "⑥", "⑦", "⑧", "⑨", "⑩"]
+
+
+def _circled(i: int) -> str:
+    return CIRCLED[i - 1] if 1 <= i <= len(CIRCLED) else f"{i}."
 
 
 def now_iso() -> str:
@@ -135,55 +143,65 @@ def today_done_queue() -> list[dict]:
 # ── 마감 보고 빌드 ───────────────────────────────────────────────────────────
 
 def build_evening_report(commits: list[str], done_q: list[dict],
-                         remaining: list[dict], issues: list[dict]) -> str:
-    """GM 일상어 마감 보고."""
+                         gm_decision: list[dict], autonomous: list[dict],
+                         deep_interview: list[dict]) -> str:
+    """
+    GM 마감 보고 — 아침과 같은 톤 (시안1+2). 2026-05-30 GM 지시.
+    상단: 오늘 한 일 N / 남은 N / GM 결정 N 한눈 표.
+    본문: GM 결정 필요분만 부각 + 오늘 한 일은 압축(개수 + 대표 3건).
+    """
+    done_total = len(commits) + len(done_q)
+    remaining_total = len(gm_decision) + len(autonomous) + len(deep_interview)
+
     lines = []
-    lines.append(f"🌙 AI CEO 하루 마감 — {today_kr()}")
-    lines.append("━" * 22)
+    lines.append(f"🌙 하루 마감 — {today_kr()}")
 
-    # ① 오늘 한 일
-    lines.append(f"〈오늘 한 일〉 마무리 {len(commits)}건 + 끝낸 업무 {len(done_q)}건")
-    if commits:
-        for c in commits[:8]:
-            lines.append(f"· {c[:50]}")
-        if len(commits) > 8:
-            lines.append(f"· … 외 {len(commits) - 8}건 더")
-    if done_q:
-        for d in done_q:
-            title = (d.get("title") or "")[:42]
-            lines.append(f"✓ [{d.get('clevel','?')}] {title}")
-    if not commits and not done_q:
-        lines.append("· (오늘 기록된 마무리·완료 업무 없음)")
+    # ── 상단: 한눈 표 ──
+    lines += count_table([
+        ("오늘 한 일", done_total),
+        ("남은 일", remaining_total),
+        ("GM 결정", len(gm_decision)),
+    ])
     lines.append("")
 
-    # ② 내일/남은 할일
-    lines.append(f"〈내일·남은 할일〉 {len(remaining)}건")
-    if remaining:
-        for it in remaining:
-            cl = it.get("clevel") or "?"
-            owner = CLEVEL_OWNER.get(cl, "?")
-            title = (it.get("title") or "")[:40]
-            lines.append(f"· [{cl}/{owner}] {title}")
-    else:
-        lines.append("· 남은 할일 없음 — 깔끔하게 마감!")
-    lines.append("")
-
-    # ③ 미완 이슈 (GM 답 필요한 것만)
-    if issues:
-        lines.append(f"〈❓ GM 결정이 필요해 멈춰둔 것〉 {len(issues)}건")
-        for i, a in enumerate(issues, 1):
-            title = (a.get("title") or "")[:38]
-            lines.append(f"{i}. {title}")
-            lines.append(f"   → 왜: {a.get('ambiguous_reason','')}")
+    # ── 본문: GM 결정 필요분만 부각 ──
+    if gm_decision:
+        lines.append("▶ GM 결정 필요 (이것만 봐주세요)")
+        for i, a in enumerate(gm_decision, 1):
+            lines.append(f"{_circled(i)} {summarize_title(a.get('title'))}")
+            lines.append(f"   └ 왜: {a.get('disposition_reason','')}")
         lines.append("")
 
-    lines.append("〈기록 위치〉 오늘 마감 요약은 status/evening_wraps/ 에 저장돼요.")
-    lines.append("내일 아침 CLI를 켜면 남은 할일이 다시 정리돼 올라와요.")
+    # ── 오늘 한 일: 압축 (개수 + 대표 3건) ──
+    if done_total:
+        reps = []
+        for d in done_q[:3]:
+            reps.append(summarize_title(d.get("title")))
+        if len(reps) < 3:
+            for c in commits:
+                reps.append(summarize_title(c))
+                if len(reps) >= 3:
+                    break
+        rep_str = " · ".join(reps[:3]) if reps else ""
+        lines.append(f"▶ 오늘 한 일: {done_total}건 ({rep_str})")
+    else:
+        lines.append("▶ 오늘 한 일: 기록된 완료 없음")
+
+    # ── 자율 진행/명확화 대기 1줄 ──
+    if autonomous:
+        lines.append(f"▶ 자율 진행 중: {len(autonomous)}건")
+    if deep_interview:
+        lines.append(f"▶ 명확화 대기: {len(deep_interview)}건 — deep-interview로 명확화 후 진행")
+    if remaining_total == 0:
+        lines.append("▶ 남은 일: 없음 — 깔끔하게 마감!")
+
     return "\n".join(lines)
 
 
 def save_marker(commits: list[str], done_q: list[dict],
-                remaining: list[dict], issues: list[dict], dry_run: bool) -> Path:
+                gm_decision: list[dict], autonomous: list[dict],
+                deep_interview: list[dict], dry_run: bool) -> Path:
+    remaining = gm_decision + autonomous + deep_interview
     marker = {
         "generated_at": now_iso(),
         "date": today_kr(),
@@ -195,13 +213,18 @@ def save_marker(commits: list[str], done_q: list[dict],
         "remaining": [
             {"task_id": it.get("task_id"), "clevel": it.get("clevel"),
              "status": it.get("status"), "title": it.get("title"),
-             "source": it.get("source")}
+             "disposition": it.get("disposition"), "source": it.get("source")}
             for it in remaining
         ],
-        "issues_need_gm": [
+        "gm_decision": [
             {"task_id": a.get("task_id"), "title": a.get("title"),
-             "reason": a.get("ambiguous_reason")}
-            for a in issues
+             "reason": a.get("disposition_reason")}
+            for a in gm_decision
+        ],
+        "deep_interview": [
+            {"task_id": a.get("task_id"), "title": a.get("title"),
+             "reason": a.get("disposition_reason")}
+            for a in deep_interview
         ],
     }
     out = today_marker()
@@ -249,16 +272,19 @@ def run_wrap(dry_run: bool, once_per_day: bool = False) -> int:
     done_q = today_done_queue()
     print(f"[① 오늘 한 일] 커밋 {len(commits)}건 + 완료 큐 {len(done_q)}건")
 
-    # ②③ 남은 할일 + 미완 이슈 — 아침 파이프라인 수집·분류 재사용
+    # ②③ 남은 할일 — 아침 파이프라인 수집·분류(3분류 SSOT) 재사용
     s1 = stage1_collect_classify()
-    remaining = s1["clear"] + s1["ambiguous"]      # 미결 전체(명확+모호)
-    issues = s1["ambiguous"]                         # GM 답 필요한 것만
-    print(f"[② 남은 할일] {len(remaining)}건 (그중 미완 이슈 {len(issues)}건)")
+    gm_decision = s1["gm_decision"]
+    autonomous = s1["autonomous"]
+    deep_interview = s1["deep_interview"]
+    remaining_total = len(gm_decision) + len(autonomous) + len(deep_interview)
+    print(f"[② 남은 할일] {remaining_total}건 → GM결정 {len(gm_decision)} "
+          f"/ 자율 {len(autonomous)} / 명확화대기 {len(deep_interview)}")
 
     # 보고 빌드 + 발송 + 마커
-    report = build_evening_report(commits, done_q, remaining, issues)
+    report = build_evening_report(commits, done_q, gm_decision, autonomous, deep_interview)
     sent = send_report(report, dry_run)
-    save_marker(commits, done_q, remaining, issues, dry_run)
+    save_marker(commits, done_q, gm_decision, autonomous, deep_interview, dry_run)
     print(f"[보고] {'(dry-run 출력)' if dry_run else '발송'} — {'OK' if sent else 'FAIL'}")
 
     print(f"=== 마감 루틴 종료 — {'성공' if sent else '실패'} ===")
