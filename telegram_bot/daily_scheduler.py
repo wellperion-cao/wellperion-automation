@@ -1096,19 +1096,30 @@ def main():
         logger.info("archive_result_watcher 비활성 — 노션 결과물DB 폐기, Phase 2 가이드허브 전환 대기")
 
     # ── Start 기획 → 결과물DB 이관 감지기 (5분 주기) ─────────────────────────
-    try:
-        from planning_to_archive_watcher import check_planning_migration as _planning_check
-        scheduler.add_job(
-            _planning_check,
-            trigger=IntervalTrigger(minutes=5),
-            id="planning_to_archive_watcher",
-            misfire_grace_time=120,
-            coalesce=True,
-            next_run_time=datetime.now(),
-        )
-        logger.info("planning_to_archive_watcher 등록 완료 (5분 주기)")
-    except ImportError as e:
-        logger.error(f"planning_to_archive_watcher 임포트 실패 — 감지기 미등록: {e}")
+    # [2026-05-30 CTO 비활성 / Phase 2 두 번째 전환] Start 기획DB·결과물DB 두 DB
+    #   모두 폐기 방향 → '기획 초안완료' 이관 이벤트 발생 0건 확정. 텔레그램 알림은
+    #   이관 루프(Step 3) 안에서만 발송되는데, 기획DB 쿼리가 상시 0건이라 알림 코드에
+    #   도달 자체가 불가. 로그 실측: 보존 윈도우(2026-05-23~05-30) 69회 체크 전부
+    #   '신규 이관 0건', 알림/이관 0건. state.planning_migrated 7건은 폐기 전 과거
+    #   이관분으로 dedup·last_check 커서로 재발화 불가. → GM 정기 알림에 영향 전무.
+    #   코드·import·planning_to_archive_watcher.py 보존(가역적, if False 한 줄 토글).
+    #   참조: docs/노션_가이드허브_리뉴얼_계획.md.
+    if False:  # planning_to_archive_watcher 노션 추종 중단 (Phase 2 폐기 후보, 병행 보존)
+        try:
+            from planning_to_archive_watcher import check_planning_migration as _planning_check
+            scheduler.add_job(
+                _planning_check,
+                trigger=IntervalTrigger(minutes=5),
+                id="planning_to_archive_watcher",
+                misfire_grace_time=120,
+                coalesce=True,
+                next_run_time=datetime.now(),
+            )
+            logger.info("planning_to_archive_watcher 등록 완료 (5분 주기)")
+        except ImportError as e:
+            logger.error(f"planning_to_archive_watcher 임포트 실패 — 감지기 미등록: {e}")
+    else:
+        logger.info("planning_to_archive_watcher 비활성 — 노션 Start기획DB·결과물DB 폐기, 이관 이벤트 0건(알림 0건), Phase 2 폐기 대기")
 
     # ── 업무자동화 DB 자동 실행 Watcher (5분 주기) — CTO v1.0 ───────────────
     try:
