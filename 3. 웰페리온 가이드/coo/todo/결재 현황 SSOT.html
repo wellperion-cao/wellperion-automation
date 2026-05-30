@@ -156,6 +156,7 @@ let activeFilter = '전체';      // '전체' | '결재완료' | '반려' | '미
 let activeRoleFilter = '전체';  // '전체' | '부서장' | 'GM' | '대표님' — 차례별
 let activeCatFilter = '전체';   // '전체' | 카테고리
 let searchQuery = '';            // 키워드
+let activeSortBy = '최신순';    // '최신순' | '결재상태' | '카테고리' | '시작일순'
 
 document.addEventListener('DOMContentLoaded', function() {
   updateHeaderSub();
@@ -293,6 +294,16 @@ function render() {
   if (searchQuery) html += '<button class="filter-btn" onclick="setSearch(\'\')">✕ 초기화</button>';
   html += '</div>';
 
+  // 5줄 — 정렬
+  html += '<div class="filter-bar" style="align-items:center;">';
+  html += '<span style="font-size:11px;color:var(--dim);align-self:center;margin-right:4px;">정렬:</span>';
+  html += '<select onchange="setSort(this.value)" style="background:var(--paper);border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:8px;font-size:12px;font-family:inherit;font-weight:600;cursor:pointer;">';
+  ['최신순','결재상태','카테고리','시작일순'].forEach(function(opt) {
+    html += '<option value="' + opt + '"' + (activeSortBy === opt ? ' selected' : '') + '>' + opt + '</option>';
+  });
+  html += '</select>';
+  html += '</div>';
+
   // 필터링
   let list = approvalTasks;
   if (activeFilter === '결재완료') list = done;
@@ -323,9 +334,20 @@ function render() {
     });
   }
 
-  // 통일 정렬: 최근 활동(수정일→시작일) 최신순 — 업무 현황 SSOT와 동일 기준
-  const sortKey = t => String(t.updatedAt || t['수정일'] || t.startDate || t['시작일'] || t.completeTime || '');
-  list.sort((a, b) => sortKey(b).localeCompare(sortKey(a)));
+  // 정렬 — activeSortBy에 따라 분기
+  if (activeSortBy === '결재상태') {
+    const stOrder = {'결재완료':0,'반려':1,'GM결재':2,'부서장결재':3,'대기':4};
+    const stRank = t => stOrder[t.approvalStatus] !== undefined ? stOrder[t.approvalStatus] : 5;
+    list.sort((a, b) => stRank(a) - stRank(b) || String(a.title).localeCompare(String(b.title)));
+  } else if (activeSortBy === '카테고리') {
+    list.sort((a, b) => String(a.category || '').localeCompare(String(b.category || '')) || String(a.title).localeCompare(String(b.title)));
+  } else if (activeSortBy === '시작일순') {
+    list.sort((a, b) => String(b.startDate || '').localeCompare(String(a.startDate || '')));
+  } else {
+    // 최신순(기본): 최근 활동(수정일→시작일) 최신순 — 업무 현황 SSOT와 동일 기준
+    const sortKey = t => String(t.updatedAt || t['수정일'] || t.startDate || t['시작일'] || t.completeTime || '');
+    list.sort((a, b) => sortKey(b).localeCompare(sortKey(a)));
+  }
 
   if (!list.length) {
     html += '<div class="empty-msg"><span class="ico">📂</span>해당 조건의 결재 건이 없습니다.<br><span style="font-size:12px;color:var(--dim);">필터를 조정하거나 업무 현황 SSOT에서 결재요청을 체크해 보세요.</span></div>';
@@ -345,6 +367,7 @@ function render() {
 function setRoleFilter(r) { activeRoleFilter = r; render(); }
 function setCatFilter(c) { activeCatFilter = c; render(); }
 function setSearch(q) { searchQuery = q; render(); }
+function setSort(s) { activeSortBy = s; render(); }
 
 function shareReport() {
   const list = ALL_TASKS.filter(t => (t.approvalStatus && String(t.approvalStatus).trim()) || (t.approval && String(t.approval).trim()));
