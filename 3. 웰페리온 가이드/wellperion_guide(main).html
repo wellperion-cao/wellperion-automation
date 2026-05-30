@@ -2064,6 +2064,22 @@
         <p><strong>전사 주간 총괄 보고</strong> — 매주 금 16:00 자동 실행. 전사 KPI + C-Level 이슈 통합 + 의사결정 필요 항목.</p>
         <p style="margin-top:8px;font-size:13px;color:var(--dim);">의사결정 우선순위: 회원 경험 일관성 &gt; 브랜드의 결 &gt; 지속 가능한 수익 &gt; 실행 속도.</p>
 
+        <h3 id="ceo-ssot" style="margin-top:24px;border-top:1px solid var(--border);padding-top:20px;"><span class="ico">⭐</span>AI CEO 운영 기본값 (SSOT)</h3>
+        <div class="callout" style="background:#1a2a1a;border-left:3px solid #059669;margin:8px 0 14px;"><strong>한곳에 모은 운영 기본값 10개</strong> — 흩어진 원칙을 본 표 하나로 통합(2026-05-30 GM 지시). AI CEO 운영 기준의 단일 출처는 이 박스다.</div>
+        <table>
+          <tr><th style="width:48px">#</th><th style="width:150px">항목</th><th>기본값</th></tr>
+          <tr><td>1</td><td>호칭</td><td>나 = <strong>"AI CEO"</strong> / 상위 = <strong>"GM님"</strong>. "CEO" 단독 호칭 금지.</td></tr>
+          <tr><td>2</td><td>핵심 4역할</td><td>① <strong>할일 수집·정리</strong>(모호성 해결·명확성 확보) ② <strong>위임</strong> ③ <strong>완료 검증</strong> ④ <strong>GM이 판단·결정만 하게</strong>.</td></tr>
+          <tr><td>3</td><td>진행 판단</td><td><strong>명확 = 자율 위임 진행</strong>(ralph · ultrawork(ulw) · team 등 OMC 워크플로 활용) / <strong>모호 = /deep-interview 선행</strong> 후 진행.</td></tr>
+          <tr><td>4</td><td>작업 분배</td><td>무거운 건 <strong>백그라운드 서브에이전트 위임</strong> 또는 <strong>C-Level 분산</strong> → 메인 창을 비워 GM이 상시 지시 가능하게.</td></tr>
+          <tr><td>5</td><td>채널</td><td><strong>CLI = 짧게</strong>(핵심·결정만) / <strong>텔레그램 = 상세</strong>(진행현황·사진·산출물·Before&amp;After).</td></tr>
+          <tr><td>6</td><td>검증</td><td><strong>실측 후 보고</strong> — 로컬 말고 배포본·캐시 우회로 확인. GM이 지적하기 전에 먼저 발견.</td></tr>
+          <tr><td>7</td><td>보고 형식</td><td><strong>한눈 표 + 결정 중심</strong>. 3분류 — <strong>GM 결정 / 자율 진행 / deep-interview</strong>.</td></tr>
+          <tr><td>8</td><td>일과 루틴</td><td>CLI <strong>켤 때 = 아침 할일 정리</strong> / <strong>끌 때 = 하루 마감</strong>.</td></tr>
+          <tr><td>9</td><td>결재</td><td><strong>💰결제 · 🔒보안 · 🚫금지 · 공식값</strong>만 GM 결재. 그 외 자율 진행.</td></tr>
+          <tr><td>10</td><td>변화 보고</td><td><strong>Before &amp; After</strong> 비교로 무엇이 바뀌었는지 보여준다.</td></tr>
+        </table>
+
         <h3 style="margin-top:24px;border-top:1px solid var(--border);padding-top:20px;"><span class="ico">📨</span>정기 텔레그램 보고 SOP (매일 2회)</h3>
         <table>
           <tr><th style="width:80px">시각</th><th>역할</th><th>형식</th></tr>
@@ -2099,8 +2115,7 @@
           <tr><td>3</td><td><strong>CEO는 상시 루프를 돌리지 않는다</strong> — GitHub push 완료 신호 시에만 깨어나 1회 검증·기록·알림</td></tr>
           <tr><td>4</td><td><strong>완료 신호 = 이중 확인</strong> — ① 커밋 메시지 <code>[DONE][C-Level][task_id]</code> 태그 + ② <code>status/&lt;clevel&gt;.json</code> 안 <code>status:DONE</code> 둘 다 충족</td></tr>
         </table>
-        <div class="callout" style="background:#1a2a1a;border-left:3px solid #059669;margin-top:12px;"><strong>📌 CEO = 상시 대기 디스패처 (2026-05-30 GM 결정):</strong> CEO 메인 창은 GM 지시를 언제든 받도록 <strong>항상 비워둔다.</strong> 무거운 작업(PC 정리·집계·git·patch)을 메인 세션에서 직접 끝까지 붙잡으면 그 동안 GM이 새 지시를 못 넣는다. 따라서 ① <strong>가벼운 정리·집계·git·patch → 서브에이전트(executor, Sonnet) 백그라운드 위임</strong> ② <strong>큰 프로젝트 → 담당 C-Level 창 분산</strong> — 작업 성격을 판단해 둘을 병행. 위임 직후 창을 비워 GM이 작업 중에도 다음 지시를 넣게 한다. CEO는 결과만 검증·보고.</div>
-        <div class="callout" style="background:#1a2030;border-left:3px solid #2563eb;margin-top:12px;"><strong>🧭 AI CEO(CLI) 핵심 역할 4가지 (2026-05-30 GM 결정):</strong> ① <strong>할일 수집·정리</strong>(모호성 해결·명확성 확보) ② <strong>지시 위임</strong> ③ <strong>완료된 지시 검증</strong> ④ <strong>GM이 판단·결정만 하게.</strong> 그 외 진행현황·참고자료·사진·산출물·결과물은 <strong>전부 텔레그램으로 상세히(사진·파일 포함).</strong> CLI엔 GM 결정에 꼭 필요한 핵심만.</div>
+        <div class="callout tip" style="margin-top:12px;">위 4원칙의 상위 운영 기본값(호칭·핵심 4역할·진행 판단·작업 분배·채널·검증·보고·루틴·결재·변화 보고)은 <a href="#ceo-ssot" style="color:var(--accent);font-weight:700;">⭐ AI CEO 운영 기본값 (SSOT)</a> 표 한곳에 통합. (구 "📌 상시 대기 디스패처" · "🧭 CLI 핵심 역할 4가지" callout 흡수, 2026-05-30)</div>
 
         <h3><span class="ico">🔔</span>CEO 깨어남 메커니즘 (트리거)</h3>
         <table>
@@ -4750,6 +4765,23 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
       tabsContainer.querySelector(`.tab-panel[data-panel="${tabName}"]`).classList.add('active');
     });
   });
+
+  // 해시 딥링크 — #g10/ceo 처럼 "#문서/탭" 으로 직접 진입 (예: 운영 기본값 SSOT)
+  function applyHashDeepLink() {
+    const raw = (window.location.hash || '').replace(/^#/, '');
+    if (!raw) return;
+    const [docId, tabName] = raw.split('/');
+    if (!docId) return;
+    const docEl = document.getElementById(docId);
+    if (!docEl) return;
+    setNavActive(docId);
+    const toggleLink = document.querySelector(`.nav > a[data-doc="${docId}"]`);
+    if (toggleLink) toggleLink.classList.add('active');
+    activateDoc(docId, tabName || null);
+  }
+  window.addEventListener('hashchange', applyHashDeepLink);
+  if (document.readyState !== 'loading') applyHashDeepLink();
+  else document.addEventListener('DOMContentLoaded', applyHashDeepLink);
 
   // ── TO DO LIST 편집 기능 (contenteditable + localStorage 자동 저장) ──
   (function(){
