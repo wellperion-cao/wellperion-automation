@@ -100,10 +100,12 @@
   {
     "task_id": "NEXT-2026-05-30-02-G1필터수정",
     "clevel": "ceo",
-    "title": "G1 '오늘 완료'에 팀작업 15건 잘못 합류 수정 — main.html gm1 SSOT fetch 필터(약 6447행 owner=김남욱GM 조건). G1은 GM 개인 항목만 떠야 함. #04 소급등록이 오염",
-    "status": "PENDING",
+    "title": "G1 '오늘 완료' 과거건 오염 수정 — gm1FetchSsot에 ssotDateLocal 추가, 김남욱GM 항목 중 시작일=오늘(KST)만 합류. (큐 오진 정정: 팀작업 15건은 owner=AI CEO라 무관, 진짜 범인은 GM 과거 완료건)",
+    "status": "DONE",
     "priority": "HIGH",
-    "enqueued_at": "2026-05-30"
+    "enqueued_at": "2026-05-30",
+    "commit_sha": "46fcd3a",
+    "note": "라이브 DOM 렌더 실측 검증 — 오늘 완료 1건(과거 제거), 검수박스 삭제 동반(#A)."
   },
   {
     "task_id": "NEXT-2026-05-30-03-부서장요청",
