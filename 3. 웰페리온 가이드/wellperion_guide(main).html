@@ -456,120 +456,166 @@
 
   <article class="doc active" id="home">
     <div class="doc-header"><h2>웰페리온 가이드 허브 v2.5</h2><div class="meta">v2.5 · 최종 업데이트 2026-05-28 · 총 15개 섹션</div></div>
-    <p class="lead">웰페리온 자동화 시스템 운영에 필요한 모든 가이드와 정책을 한곳에 모은 문서입니다.</p>
+    <p class="lead">웰페리온 운영에 필요한 가이드·정책·도구로 빠르게 이동하는 목차·허브입니다.</p>
     <div class="card accent">
       <h4>이 문서 위치</h4>
       <pre>C:\Users\jjky0\welperion-automation\3. 웰페리온 가이드\wellperion_guide(main).html</pre>
       <p>메인 프로젝트 폴더 맨 위. 더블클릭하면 어디서든 열립니다.</p>
     </div>
 
-    <div style="display:flex;gap:8px;flex-wrap:wrap;margin:18px 0 24px;">
-      <a href="#" onclick="event.preventDefault();document.querySelector('[data-doc=gm1]').click();" style="display:inline-flex;align-items:center;gap:6px;padding:12px 20px;background:var(--accent);color:#fff;font-size:14px;font-weight:700;border-radius:10px;text-decoration:none;border:1px solid var(--accent);transition:background 0.12s;">📋 김남욱 GM</a>
-      <a href="https://wellperion-cao.github.io/wellperion-automation/coo/todo/%EC%97%85%EB%AC%B4%20%ED%98%84%ED%99%A9%20SSOT.html" target="_blank" style="display:inline-flex;align-items:center;gap:6px;padding:12px 20px;background:var(--accent-bg);color:var(--accent);font-size:14px;font-weight:700;border-radius:10px;text-decoration:none;border:1px solid rgba(183,159,138,0.3);transition:background 0.12s;">📝 업무 현황 SSOT</a>
-      <a href="https://wellperion-cao.github.io/wellperion-automation/coo/check/%EC%A7%80%EC%9B%90%EB%B6%80%20%EC%B2%B4%EA%B3%84.html" target="_blank" style="display:inline-flex;align-items:center;gap:6px;padding:12px 20px;background:var(--accent-bg);color:var(--accent);font-size:14px;font-weight:700;border-radius:10px;text-decoration:none;border:1px solid rgba(183,159,138,0.3);transition:background 0.12s;">✅ 지원부 체계</a>
-      <a href="https://wellperion-cao.github.io/wellperion-automation/cfo/expense/%EC%A7%80%EC%B6%9C%ED%98%84%ED%99%A9.html" target="_blank" style="display:inline-flex;align-items:center;gap:6px;padding:12px 20px;background:var(--accent-bg);color:var(--accent);font-size:14px;font-weight:700;border-radius:10px;text-decoration:none;border:1px solid rgba(183,159,138,0.3);transition:background 0.12s;">💰 지출현황</a>
-      <a href="#" onclick="event.preventDefault();document.querySelector('[data-doc=g9]').click();" style="display:inline-flex;align-items:center;gap:6px;padding:12px 20px;background:var(--accent-bg);color:var(--accent);font-size:14px;font-weight:700;border-radius:10px;text-decoration:none;border:1px solid rgba(183,159,138,0.3);transition:background 0.12s;">🏢 회사소개서 &amp; 전략 로드맵</a>
-    </div>
+    <details open class="toggle" style="margin:18px 0 24px;">
+      <summary>⭐ 즐겨찾기</summary>
+      <div class="toggle-body" style="display:flex;gap:8px;flex-wrap:wrap;">
+        <a href="#" onclick="event.preventDefault();document.querySelector('[data-doc=gm1]').click();" style="display:inline-flex;align-items:center;gap:6px;padding:12px 20px;background:var(--accent);color:#fff;font-size:14px;font-weight:700;border-radius:10px;text-decoration:none;border:1px solid var(--accent);transition:background 0.12s;">📋 김남욱 GM</a>
+        <a href="https://wellperion-cao.github.io/wellperion-automation/coo/todo/%EC%97%85%EB%AC%B4%20%ED%98%84%ED%99%A9%20SSOT.html" target="_blank" style="display:inline-flex;align-items:center;gap:6px;padding:12px 20px;background:var(--accent-bg);color:var(--accent);font-size:14px;font-weight:700;border-radius:10px;text-decoration:none;border:1px solid rgba(183,159,138,0.3);transition:background 0.12s;">📝 업무 현황 SSOT</a>
+        <a href="https://wellperion-cao.github.io/wellperion-automation/coo/check/%EC%A7%80%EC%9B%90%EB%B6%80%20%EC%B2%B4%EA%B3%84.html" target="_blank" style="display:inline-flex;align-items:center;gap:6px;padding:12px 20px;background:var(--accent-bg);color:var(--accent);font-size:14px;font-weight:700;border-radius:10px;text-decoration:none;border:1px solid rgba(183,159,138,0.3);transition:background 0.12s;">✅ 지원부 체계</a>
+        <a href="https://wellperion-cao.github.io/wellperion-automation/cfo/expense/%EC%A7%80%EC%B6%9C%ED%98%84%ED%99%A9.html" target="_blank" style="display:inline-flex;align-items:center;gap:6px;padding:12px 20px;background:var(--accent-bg);color:var(--accent);font-size:14px;font-weight:700;border-radius:10px;text-decoration:none;border:1px solid rgba(183,159,138,0.3);transition:background 0.12s;">💰 지출현황</a>
+        <a href="#" onclick="event.preventDefault();document.querySelector('[data-doc=g9]').click();" style="display:inline-flex;align-items:center;gap:6px;padding:12px 20px;background:var(--accent-bg);color:var(--accent);font-size:14px;font-weight:700;border-radius:10px;text-decoration:none;border:1px solid rgba(183,159,138,0.3);transition:background 0.12s;">🏢 회사소개서 &amp; 전략 로드맵</a>
+      </div>
+    </details>
 
-    <h3><span class="ico">📚</span>수록된 가이드</h3>
+    <details class="toggle" style="margin:0 0 8px;">
+      <summary>📚 수록된 가이드</summary>
+      <div class="toggle-body">
 
-    <h4 style="color:var(--accent);margin:16px 0 8px;">시작하기</h4>
-    <table>
-      <tr><th style="width:60px"></th><th style="width:200px">제목</th><th>한 줄 설명</th></tr>
-      <tr><td>📝</td><td><a href="#" onclick="event.preventDefault();document.querySelector('[data-doc=update]').click();" style="color:var(--accent);text-decoration:none;font-weight:600;">S1 공통 가이드라인</a></td><td>전사 기준 + 직원 에티켓 + 브랜드 디자인 + 업데이트 방법</td></tr>
-      <tr><td>📋</td><td><a href="#" onclick="event.preventDefault();document.querySelector('[data-doc=g10]').click();" style="color:var(--accent);text-decoration:none;font-weight:600;">S2 AI C-Level 운영 가이드</a></td><td>AI 조직도 + 7개 C-Level 협업·실무</td></tr>
-      <tr><td>📖</td><td><a href="#" onclick="event.preventDefault();document.querySelector('[data-doc=g6]').click();" style="color:var(--accent);text-decoration:none;font-weight:600;">S3 용어 사전</a></td><td>문서·조직·시스템·운영·파일 확장자</td></tr>
-      <tr><td>📝</td><td><a href="#" onclick="event.preventDefault();document.querySelector('[data-doc=gcoo-todo]').click();" style="color:var(--accent);text-decoration:none;font-weight:600;">S4 업무&결재 현황 SSOT</a></td><td>핵심멤버 업무 배분·추적 + 결재 현황 통합 (Apps Script 연동)</td></tr>
-    </table>
+        <h4 style="color:var(--accent);margin:12px 0 8px;">시작하기</h4>
+        <table>
+          <tr><th style="width:60px"></th><th style="width:240px">제목</th><th>한 줄 설명</th></tr>
+          <tr><td>📝</td><td><a href="#" onclick="event.preventDefault();document.querySelector('[data-doc=update]').click();" style="color:var(--accent);text-decoration:none;font-weight:600;">S1 공통 가이드라인</a></td><td>전사 기준 + 직원 에티켓 + 브랜드 디자인 + 업데이트 방법</td></tr>
+          <tr><td>📋</td><td><a href="#" onclick="event.preventDefault();document.querySelector('[data-doc=g10]').click();" style="color:var(--accent);text-decoration:none;font-weight:600;">S2 AI C-Level 운영 가이드</a></td><td>AI 조직도 + 7개 C-Level 협업·실무</td></tr>
+          <tr><td>📖</td><td><a href="#" onclick="event.preventDefault();document.querySelector('[data-doc=g6]').click();" style="color:var(--accent);text-decoration:none;font-weight:600;">S3 용어 사전</a></td><td>문서·조직·시스템·운영·파일 확장자</td></tr>
+          <tr><td>📝</td><td><a href="#" onclick="event.preventDefault();document.querySelector('[data-doc=gcoo-todo]').click();" style="color:var(--accent);text-decoration:none;font-weight:600;">S4 업무&결재 현황 SSOT</a></td><td>핵심멤버 업무 배분·추적 + 결재 현황 통합 (Apps Script 연동)</td></tr>
+        </table>
 
-    <h4 style="color:var(--accent);margin:16px 0 8px;">AI CFO 재무 <span style="font-size:12px;color:var(--dim);font-weight:400;">나우열M</span></h4>
-    <table>
-      <tr><th style="width:60px"></th><th style="width:200px">제목</th><th>한 줄 설명</th></tr>
-      <tr><td>💰</td><td><a href="#" onclick="event.preventDefault();document.querySelector('[data-doc=gcfo-expense]').click();" style="color:var(--accent);text-decoration:none;font-weight:600;">F1 지출현황</a></td><td>지출 등록·조회·승인 대시보드</td></tr>
-      <tr><td>📊</td><td><a href="cfo/sales/매출현황.html" target="_blank" style="color:var(--accent);text-decoration:none;font-weight:600;">F2 매출현황 (v0.1)</a></td><td>월 OCF·채널별 분해·미수금 추적</td></tr>
-    </table>
+        <h4 style="color:var(--accent);margin:12px 0 8px;">AI CFO 재무 <span style="font-size:12px;color:var(--dim);font-weight:400;">나우열M</span></h4>
+        <table>
+          <tr><th style="width:60px"></th><th style="width:240px">제목</th><th>한 줄 설명</th></tr>
+          <tr><td>💰</td><td><a href="#" onclick="event.preventDefault();document.querySelector('[data-doc=gcfo-expense]').click();" style="color:var(--accent);text-decoration:none;font-weight:600;">F1 지출현황</a></td><td>지출 등록·조회·승인 대시보드</td></tr>
+          <tr><td>📊</td><td><a href="cfo/sales/매출현황.html" target="_blank" style="color:var(--accent);text-decoration:none;font-weight:600;">F2 매출현황 (v0.1)</a></td><td>월 OCF·채널별 분해·미수금 추적</td></tr>
+        </table>
 
-    <h4 style="color:var(--accent);margin:16px 0 8px;">AI CHRO 인사 <span style="font-size:12px;color:var(--dim);font-weight:400;">나우열M</span></h4>
-    <table>
-      <tr><th style="width:60px"></th><th style="width:200px">제목</th><th>한 줄 설명</th></tr>
-      <tr><td>📋</td><td><a href="#" onclick="event.preventDefault();document.querySelector('[data-doc=gchro-rules]').click();" style="color:var(--accent);text-decoration:none;font-weight:600;">H1 취업규칙</a></td><td>15장 98조 · 7탭 구조</td></tr>
-      <tr><td>👥</td><td><a href="https://wellperion-cao.github.io/wellperion-automation/chro/hub/" target="_blank" style="color:var(--accent);text-decoration:none;font-weight:600;">H2 인사 운영 허브</a></td><td>채용·평가·온보딩 운영 허브</td></tr>
-    </table>
+        <h4 style="color:var(--accent);margin:12px 0 8px;">AI CHRO 인사 <span style="font-size:12px;color:var(--dim);font-weight:400;">나우열M</span></h4>
+        <table>
+          <tr><th style="width:60px"></th><th style="width:240px">제목</th><th>한 줄 설명</th></tr>
+          <tr><td>📋</td><td><a href="#" onclick="event.preventDefault();document.querySelector('[data-doc=gchro-rules]').click();" style="color:var(--accent);text-decoration:none;font-weight:600;">H1 취업규칙</a></td><td>15장 98조 · 7탭 구조</td></tr>
+          <tr><td>👥</td><td><a href="https://wellperion-cao.github.io/wellperion-automation/chro/hub/" target="_blank" style="color:var(--accent);text-decoration:none;font-weight:600;">H2 인사 운영 허브</a></td><td>채용·평가·온보딩 운영 허브</td></tr>
+        </table>
 
-    <h4 style="color:var(--accent);margin:16px 0 8px;">AI COO 운영 <span style="font-size:12px;color:var(--dim);font-weight:400;">최준용M · 윤병현AM</span></h4>
-    <table>
-      <tr><th style="width:60px"></th><th style="width:200px">제목</th><th>한 줄 설명</th></tr>
-      <tr><td>🏢</td><td><a href="#" onclick="event.preventDefault();document.querySelector('[data-doc=gcoo-check]').click();" style="color:var(--accent);text-decoration:none;font-weight:600;">O1 운영 통합 체계</a></td><td>부서별 체계 + 구축 가이드</td></tr>
-      <tr><td>📋</td><td><a href="#" onclick="event.preventDefault();document.querySelector('[data-doc=gcoo-notice]').click();" style="color:var(--accent);text-decoration:none;font-weight:600;">O2 공지/안내문 생성</a></td><td>브랜드 가이드 기준 공지문 생성 도구 (9개 사업부 + 8개 프리셋 + A3/A4)</td></tr>
-    </table>
+        <h4 style="color:var(--accent);margin:12px 0 8px;">AI COO 운영 <span style="font-size:12px;color:var(--dim);font-weight:400;">최준용M · 윤병현AM</span></h4>
+        <table>
+          <tr><th style="width:60px"></th><th style="width:240px">제목</th><th>한 줄 설명</th></tr>
+          <tr><td>🏢</td><td><a href="#" onclick="event.preventDefault();document.querySelector('[data-doc=gcoo-check]').click();" style="color:var(--accent);text-decoration:none;font-weight:600;">O1 운영 통합 체계</a></td><td>부서별 체계 + 구축 가이드</td></tr>
+          <tr><td>📋</td><td><a href="#" onclick="event.preventDefault();document.querySelector('[data-doc=gcoo-notice]').click();" style="color:var(--accent);text-decoration:none;font-weight:600;">O2 공지/안내문 생성</a></td><td>브랜드 가이드 기준 공지문 생성 도구 (9개 사업부 + 8개 프리셋 + A3/A4)</td></tr>
+        </table>
 
-    <h4 style="color:var(--accent);margin:16px 0 8px;">AI CPO 회원관리 <span style="font-size:12px;color:var(--dim);font-weight:400;">임정은M</span></h4>
-    <table>
-      <tr><th style="width:60px"></th><th style="width:200px">제목</th><th>한 줄 설명</th></tr>
-      <tr><td>🤝</td><td><a href="cpo/member/회원관리.html" target="_blank" style="color:var(--accent);text-decoration:none;font-weight:600;">P1 회원관리</a></td><td>라이프사이클 6단계·이탈방지·NPS·도구</td></tr>
-    </table>
+        <h4 style="color:var(--accent);margin:12px 0 8px;">AI CPO 회원관리 <span style="font-size:12px;color:var(--dim);font-weight:400;">임정은M</span></h4>
+        <table>
+          <tr><th style="width:60px"></th><th style="width:240px">제목</th><th>한 줄 설명</th></tr>
+          <tr><td>🤝</td><td><a href="cpo/member/회원관리.html" target="_blank" style="color:var(--accent);text-decoration:none;font-weight:600;">P1 회원관리</a></td><td>라이프사이클 6단계·이탈방지·NPS·도구</td></tr>
+        </table>
 
-    <h4 style="color:var(--accent);margin:16px 0 8px;">AI CMO 마케팅 <span style="font-size:12px;color:var(--dim);font-weight:400;">김남욱 GM</span></h4>
-    <table>
-      <tr><th style="width:60px"></th><th style="width:200px">제목</th><th>한 줄 설명</th></tr>
-      <tr><td>🌐</td><td><a href="#" onclick="event.preventDefault();document.querySelector('[data-doc=ghome]').click();" style="color:var(--accent);text-decoration:none;font-weight:600;">M1 공식 채널</a></td><td>6채널 통합 + 채널별 운영 가이드</td></tr>
-      <tr><td>📂</td><td><a href="#" onclick="event.preventDefault();document.querySelector('[data-doc=g14]').click();" style="color:var(--accent);text-decoration:none;font-weight:600;">M2 콘텐츠 제작 프로세스</a></td><td>제작 절차 + 마케팅 자동화 + 문의 Survey</td></tr>
-      <tr><td>🎨</td><td><a href="#" onclick="event.preventDefault();document.querySelector('[data-doc=gcmo-print]').click();" style="color:var(--accent);text-decoration:none;font-weight:600;">M3 오프라인 홍보물 디자인 제작</a></td><td>배너·현수막·봉투·브로슈어 (브랜드 가이드 자동 적용)</td></tr>
-      <tr><td>🚀</td><td><a href="#" onclick="event.preventDefault();document.querySelector('[data-doc=cmo-publish]').click();" style="color:var(--accent);text-decoration:none;font-weight:600;">M5 콘텐츠 검수·자동업로드</a></td><td>5채널 통합 · 제목→슬라이드·캡션 생성→검수→승인 발행 (인스타 2계정)</td></tr>
-      <tr><td>🎯</td><td><a href="cmo/funnel/전환Funnel.html" target="_blank" style="color:var(--accent);text-decoration:none;font-weight:600;">M4 전환 Funnel (v0.1)</a></td><td>노출→인지→관심→문의→가입 5단계 추적</td></tr>
-    </table>
+        <h4 style="color:var(--accent);margin:12px 0 8px;">AI CMO 마케팅 <span style="font-size:12px;color:var(--dim);font-weight:400;">김남욱 GM</span></h4>
+        <table>
+          <tr><th style="width:60px"></th><th style="width:240px">제목</th><th>한 줄 설명</th></tr>
+          <tr><td>🌐</td><td><a href="#" onclick="event.preventDefault();document.querySelector('[data-doc=ghome]').click();" style="color:var(--accent);text-decoration:none;font-weight:600;">M1 공식 채널</a></td><td>6채널 통합 + 채널별 운영 가이드</td></tr>
+          <tr><td>📂</td><td><a href="#" onclick="event.preventDefault();document.querySelector('[data-doc=g14]').click();" style="color:var(--accent);text-decoration:none;font-weight:600;">M2 콘텐츠 제작 프로세스</a></td><td>제작 절차 + 마케팅 자동화 + 문의 Survey</td></tr>
+          <tr><td>🎨</td><td><a href="#" onclick="event.preventDefault();document.querySelector('[data-doc=gcmo-print]').click();" style="color:var(--accent);text-decoration:none;font-weight:600;">M3 오프라인 홍보물 디자인 제작</a></td><td>배너·현수막·봉투·브로슈어 (브랜드 가이드 자동 적용)</td></tr>
+          <tr><td>🚀</td><td><a href="#" onclick="event.preventDefault();document.querySelector('[data-doc=cmo-publish]').click();" style="color:var(--accent);text-decoration:none;font-weight:600;">M5 콘텐츠 검수·자동업로드</a></td><td>5채널 통합 · 제목→슬라이드·캡션 생성→검수→승인 발행 (인스타 2계정)</td></tr>
+          <tr><td>🎯</td><td><a href="cmo/funnel/전환Funnel.html" target="_blank" style="color:var(--accent);text-decoration:none;font-weight:600;">M4 전환 Funnel (v0.1)</a></td><td>노출→인지→관심→문의→가입 5단계 추적</td></tr>
+        </table>
 
-    <h4 style="color:var(--accent);margin:16px 0 8px;">AI CTO 기술 <span style="font-size:12px;color:var(--dim);font-weight:400;">김남욱 GM</span></h4>
-    <table>
-      <tr><th style="width:60px"></th><th style="width:200px">제목</th><th>한 줄 설명</th></tr>
-      <tr><td>🔧</td><td><a href="#" onclick="event.preventDefault();document.querySelector('[data-doc=g1]').click();" style="color:var(--accent);text-decoration:none;font-weight:600;">T1 Claude 설정 폴더</a></td><td>설정 파일 위치와 용도</td></tr>
-      <tr><td>🖥️</td><td><a href="#" onclick="event.preventDefault();document.querySelector('[data-doc=g16]').click();" style="color:var(--accent);text-decoration:none;font-weight:600;">T2 기술 인프라 상세</a></td><td>텔레그램봇·scripts·모바일CLI</td></tr>
-      <tr><td>⚡</td><td><a href="#" onclick="event.preventDefault();document.querySelector('[data-doc=g18]').click();" style="color:var(--accent);text-decoration:none;font-weight:600;">T3 핵심 프롬프트 모음</a></td><td>정비·고도화 복붙 프롬프트</td></tr>
-      <tr><td>🤖</td><td><a href="#" onclick="event.preventDefault();document.querySelector('[data-doc=g19]').click();" style="color:var(--accent);text-decoration:none;font-weight:600;">T4 업무자동화</a></td><td>시스템 구조 · 캘린더 · 태스크 현황</td></tr>
-      <tr><td>📚</td><td><a href="#" onclick="event.preventDefault();document.querySelector('[data-doc=g15]').click();" style="color:var(--accent);text-decoration:none;font-weight:600;">T5 AI 교육자료 핵심요약</a></td><td>토큰 절약·컨텍스트 관리·비용 절감</td></tr>
-    </table>
+        <h4 style="color:var(--accent);margin:12px 0 8px;">AI CTO 기술 <span style="font-size:12px;color:var(--dim);font-weight:400;">김남욱 GM</span></h4>
+        <table>
+          <tr><th style="width:60px"></th><th style="width:240px">제목</th><th>한 줄 설명</th></tr>
+          <tr><td>🔧</td><td><a href="#" onclick="event.preventDefault();document.querySelector('[data-doc=g1]').click();" style="color:var(--accent);text-decoration:none;font-weight:600;">T1 Claude 설정 폴더</a></td><td>설정 파일 위치와 용도</td></tr>
+          <tr><td>🖥️</td><td><a href="#" onclick="event.preventDefault();document.querySelector('[data-doc=g16]').click();" style="color:var(--accent);text-decoration:none;font-weight:600;">T2 기술 인프라 상세</a></td><td>텔레그램봇·scripts·모바일CLI</td></tr>
+          <tr><td>⚡</td><td><a href="#" onclick="event.preventDefault();document.querySelector('[data-doc=g18]').click();" style="color:var(--accent);text-decoration:none;font-weight:600;">T3 핵심 프롬프트 모음</a></td><td>정비·고도화 복붙 프롬프트</td></tr>
+          <tr><td>🤖</td><td><a href="#" onclick="event.preventDefault();document.querySelector('[data-doc=g19]').click();" style="color:var(--accent);text-decoration:none;font-weight:600;">T4 업무자동화</a></td><td>시스템 구조 · 캘린더 · 태스크 현황</td></tr>
+          <tr><td>📚</td><td><a href="#" onclick="event.preventDefault();document.querySelector('[data-doc=g15]').click();" style="color:var(--accent);text-decoration:none;font-weight:600;">T5 AI 교육자료 핵심요약</a></td><td>토큰 절약·컨텍스트 관리·비용 절감</td></tr>
+        </table>
 
-    <h4 style="color:var(--accent);margin:16px 0 8px;">회사 핵심 문서</h4>
-    <table>
-      <tr><th style="width:60px"></th><th style="width:200px">제목</th><th>한 줄 설명</th></tr>
-      <tr><td>🏢</td><td><a href="#" onclick="event.preventDefault();document.querySelector('[data-doc=g9]').click();" style="color:var(--accent);text-decoration:none;font-weight:600;">D1 회사소개서 & 전략 로드맵</a></td><td>브랜드·사업·프로그램·3라인·6단계 통합</td></tr>
-    </table>
+        <h4 style="color:var(--accent);margin:12px 0 8px;">회사 핵심 문서</h4>
+        <table>
+          <tr><th style="width:60px"></th><th style="width:240px">제목</th><th>한 줄 설명</th></tr>
+          <tr><td>🏢</td><td><a href="#" onclick="event.preventDefault();document.querySelector('[data-doc=g9]').click();" style="color:var(--accent);text-decoration:none;font-weight:600;">D1 회사소개서 & 전략 로드맵</a></td><td>브랜드·사업·프로그램·3라인·6단계 통합</td></tr>
+        </table>
 
-    <h4 style="color:var(--accent);margin:16px 0 8px;">김남욱 GM</h4>
-    <table>
-      <tr><th style="width:60px"></th><th style="width:200px">제목</th><th>한 줄 설명</th></tr>
-      <tr><td>📋</td><td><a href="#" onclick="event.preventDefault();document.querySelector('[data-doc=gm1]').click();" style="color:var(--accent);text-decoration:none;font-weight:600;">G1 김남욱</a></td><td>할 일 · 평일루틴 · 주말 · 루틴트래커 · 영양 · 세션로그 · 목표·원칙</td></tr>
-    </table>
+        <h4 style="color:var(--accent);margin:12px 0 8px;">김남욱 GM</h4>
+        <table>
+          <tr><th style="width:60px"></th><th style="width:240px">제목</th><th>한 줄 설명</th></tr>
+          <tr><td>📋</td><td><a href="#" onclick="event.preventDefault();document.querySelector('[data-doc=gm1]').click();" style="color:var(--accent);text-decoration:none;font-weight:600;">G1 김남욱</a></td><td>할 일 · 평일루틴 · 주말 · 루틴트래커 · 영양 · 세션로그 · 목표·원칙</td></tr>
+        </table>
+
+      </div>
+    </details>
+
+    <details class="toggle" style="margin:8px 0;">
+      <summary>📊 대시보드 KPI 요약</summary>
+      <div class="toggle-body">
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px;margin-bottom:14px;">
+          <div style="background:var(--accent-bg);border:1px solid var(--border);border-radius:8px;padding:10px 14px;">
+            <div style="font-size:11px;font-weight:700;color:var(--dim);margin-bottom:4px;">CFO 재무</div>
+            <div style="font-size:13px;color:var(--text);">매출·지출 현황 추적</div>
+          </div>
+          <div style="background:var(--accent-bg);border:1px solid var(--border);border-radius:8px;padding:10px 14px;">
+            <div style="font-size:11px;font-weight:700;color:var(--dim);margin-bottom:4px;">CHRO 인사</div>
+            <div style="font-size:13px;color:var(--text);">채용·평가·온보딩</div>
+          </div>
+          <div style="background:var(--accent-bg);border:1px solid var(--border);border-radius:8px;padding:10px 14px;">
+            <div style="font-size:11px;font-weight:700;color:var(--dim);margin-bottom:4px;">CMO 마케팅</div>
+            <div style="font-size:13px;color:var(--text);">노출→문의→등록 전환</div>
+          </div>
+          <div style="background:var(--accent-bg);border:1px solid var(--border);border-radius:8px;padding:10px 14px;">
+            <div style="font-size:11px;font-weight:700;color:var(--dim);margin-bottom:4px;">COO 운영</div>
+            <div style="font-size:13px;color:var(--text);">시설·점검·이슈 대응</div>
+          </div>
+          <div style="background:var(--accent-bg);border:1px solid var(--border);border-radius:8px;padding:10px 14px;">
+            <div style="font-size:11px;font-weight:700;color:var(--dim);margin-bottom:4px;">CPO 회원</div>
+            <div style="font-size:13px;color:var(--text);">라이프사이클·이탈방지</div>
+          </div>
+          <div style="background:var(--accent-bg);border:1px solid var(--border);border-radius:8px;padding:10px 14px;">
+            <div style="font-size:11px;font-weight:700;color:var(--dim);margin-bottom:4px;">CTO 기술</div>
+            <div style="font-size:13px;color:var(--text);">자동화·인프라 가동률</div>
+          </div>
+        </div>
+        <div style="font-size:12px;color:var(--dim);margin-bottom:10px;">※ 수치는 대시보드에서 실시간 확인. 매일 08:00 자동 갱신.</div>
+        <a href="#" onclick="event.preventDefault();document.querySelector('[data-doc=dashboard]').click();" style="display:inline-flex;align-items:center;gap:6px;padding:9px 18px;background:var(--accent);color:#fff;font-size:13px;font-weight:700;border-radius:8px;text-decoration:none;">🎯 전체 대시보드 열기</a>
+      </div>
+    </details>
 
     <!-- AUTO:LATEST-START -->
     <div class="card grow">
       <h4>최신 업데이트 — 2026-05-30 (자동 갱신)</h4>
-      <p><strong>2026-05-30</strong> chore(apps-script): _buildApprovalRoute GM 본인결재 생략 로직 git 동기화 (clasp는 기배포)</p>
-      <p><strong>2026-05-30</strong> feat(coo): 업무 현황 SSOT 결과보고 인쇄 버튼 + 잠금 정책 수정</p>
-      <p><strong>2026-05-30</strong> feat(g10/ceo): CEO탭-7 실시간 코드 현황 표 — _queue.json raw fetch (코드/내용/담당/상태/링크)</p>
       <p><strong>2026-05-30</strong> chore(queue): NEXT-05 방향전환 — 결과보고 결재와 분리, 담당자 작성+인쇄/다운로드 (옵션A 폐기)</p>
       <p><strong>2026-05-30</strong> refactor(g10): CEO탭-1 원본문서 콜아웃 제거 → archive 링크를 인트로 문장에 통합</p>
+      <p><strong>2026-05-30</strong> refactor(g10/ceo): AI CEO 탭 정리 — SSOT 12→9행 통합·8창 삭제·부팅6단계 .bat대조 수정·기술섹션 토글화</p>
+      <p><strong>2026-05-30</strong> feat(guide): 사이드 메뉴 클릭 시 URL 해시 갱신 — 북마크·공유·새로고침·뒤로가기 지원</p>
+      <p><strong>2026-05-30</strong> fix(coo): 결재 현황 SSOT 정렬 칸 위치 통일 — 맨 아래 외딴 줄 → 상태 필터 줄 우측 통합</p>
     </div>
 <!-- AUTO:LATEST-END -->
 
-    <h3><span class="ico">🕐</span>업데이트 기록</h3>
-    <table>
-      <tr><th style="width:160px">날짜</th><th>변경 내용</th></tr>
-      <!-- AUTO:TABLE-START -->
-      <tr><td><strong>2026-05-30 (자동)</strong></td><td>chore(apps-script): _buildApprovalRoute GM 본인결재 생략 로직 git 동기화 (clasp는 기배포) · feat(coo): 업무 현황 SSOT 결과보고 인쇄 버튼 + 잠금 정책 수정 · feat(g10/ceo): CEO탭-7 실시간 코드 현황 표 — _queue.json raw fetch (코드/내용/담당/상태/링크)…</td></tr>
-      <!-- AUTO:TABLE-END -->
-      <tr><td><strong>2026-05-28 (14차)</strong></td><td>공지/안내문 생성(COO 하위) · 오프라인 홍보물 디자인 제작(CMO 하위) 도구 신설 · 공지 서식 v2.0 독립 페이지화 · 회사소개서·전략로드맵 원본 「3. 웰페리온 가이드/회사문서/」로 이관(SSOT 단일화) · C-Level 부팅 R/R Notion API→가이드허브 g10 참조로 전환 · GitHub Pages 워크플로 폴더명 경로 수정 · 사이드바 "공통+7개 C-Level" 라벨 제거</td></tr>
-      <tr><td>2026-05-27 (13차)</td><td>GitHub Pages 전환 · 사이드바 4섹터 · AI C-Level 통일 · 운영 통합 체계 · 공식채널·지출현황·취업규칙·SSOT 신설 · g2+g19·g9+g20·g12·g13 합병 · 김남욱 탭 확장 · v2.5</td></tr>
-      <tr><td>2026-05-26 (12차)</td><td>Ralph 4건 (CMO파이프라인·지출현황·컨텍스트 정비·AI교육 7탭). 투두리스트 4건 수정. GitHub Pages 전환 결정. v2.5</td></tr>
-      <tr><td>2026-05-25 (11차)</td><td>용어사전 확장 · 기술 인프라 강화 · 모바일 CLI 원격 · 체크리스트 연동. v2.1</td></tr>
-      <tr><td>2026-05-25 (10차)</td><td>기술·브랜드·교육 콘텐츠 통합 병합. 단일 SSOT 완성. v2.0</td></tr>
-      <tr><td>2026-05-23 (9차)</td><td>가이드 ⑨ 회사소개서 · ⑩ AI C-Level 협업매뉴얼 · ⑪ C-Level 실무가이드라인 합병 · ⑤ 전략로드맵 v1.4 전체 보고서로 교체</td></tr>
-      <tr><td>2026-05-23 (8차)</td><td>가이드 ⑧ TO DO LIST 신규 · Notion DB 29건 6카테고리 탭 구조 · 실무진별 배분 현황 · Notion 링크 연동</td></tr>
-      <tr><td>2026-05-23 (7차)</td><td>사이드바 sub-link · 본문 탭 · 토글 구조 도입 · 가이드 ⑦ 컨텍스트 정비 신규 · SSOT 정의 정정 · source 표기 정정</td></tr>
-      <tr><td>2026-05-23 (6차)</td><td>가이드 ② 사용자 접근 3 채널 · 가이드 ③ 삭제 · LMstudio archive</td></tr>
-      <tr><td>2026-05-23 (5차)</td><td>UI 다듬기 · 5 다이어그램</td></tr>
-      <tr><td>2026-05-23 (1~4차)</td><td>최초 생성 → 가이드 ④·⑤·⑥ 임베드 → CLAUDE.md 통합</td></tr>
-    </table>
+    <details class="toggle" style="margin:8px 0 0;">
+      <summary>🕐 업데이트 기록</summary>
+      <div class="toggle-body">
+        <table>
+          <tr><th style="width:160px">날짜</th><th>변경 내용</th></tr>
+          <!-- AUTO:TABLE-START -->
+          <tr><td><strong>2026-05-30 (자동)</strong></td><td>chore(queue): NEXT-05 방향전환 — 결과보고 결재와 분리, 담당자 작성+인쇄/다운로드 (옵션A 폐기) · refactor(g10): CEO탭-1 원본문서 콜아웃 제거 → archive 링크를 인트로 문장에 통합 · refactor(g10/ceo): AI CEO 탭 정리 — SSOT 12→9행 통합·8창 삭제·부팅6단계 .bat대조 수정…</td></tr>
+          <!-- AUTO:TABLE-END -->
+          <tr><td><strong>2026-05-28 (14차)</strong></td><td>공지/안내문 생성(COO 하위) · 오프라인 홍보물 디자인 제작(CMO 하위) 도구 신설 · 공지 서식 v2.0 독립 페이지화 · 회사소개서·전략로드맵 원본 「3. 웰페리온 가이드/회사문서/」로 이관(SSOT 단일화) · C-Level 부팅 R/R Notion API→가이드허브 g10 참조로 전환 · GitHub Pages 워크플로 폴더명 경로 수정 · 사이드바 "공통+7개 C-Level" 라벨 제거</td></tr>
+          <tr><td>2026-05-27 (13차)</td><td>GitHub Pages 전환 · 사이드바 4섹터 · AI C-Level 통일 · 운영 통합 체계 · 공식채널·지출현황·취업규칙·SSOT 신설 · g2+g19·g9+g20·g12·g13 합병 · 김남욱 탭 확장 · v2.5</td></tr>
+          <tr><td>2026-05-26 (12차)</td><td>Ralph 4건 (CMO파이프라인·지출현황·컨텍스트 정비·AI교육 7탭). 투두리스트 4건 수정. GitHub Pages 전환 결정. v2.5</td></tr>
+          <tr><td>2026-05-25 (11차)</td><td>용어사전 확장 · 기술 인프라 강화 · 모바일 CLI 원격 · 체크리스트 연동. v2.1</td></tr>
+          <tr><td>2026-05-25 (10차)</td><td>기술·브랜드·교육 콘텐츠 통합 병합. 단일 SSOT 완성. v2.0</td></tr>
+          <tr><td>2026-05-23 (9차)</td><td>가이드 ⑨ 회사소개서 · ⑩ AI C-Level 협업매뉴얼 · ⑪ C-Level 실무가이드라인 합병 · ⑤ 전략로드맵 v1.4 전체 보고서로 교체</td></tr>
+          <tr><td>2026-05-23 (8차)</td><td>가이드 ⑧ TO DO LIST 신규 · Notion DB 29건 6카테고리 탭 구조 · 실무진별 배분 현황 · Notion 링크 연동</td></tr>
+          <tr><td>2026-05-23 (7차)</td><td>사이드바 sub-link · 본문 탭 · 토글 구조 도입 · 가이드 ⑦ 컨텍스트 정비 신규 · SSOT 정의 정정 · source 표기 정정</td></tr>
+          <tr><td>2026-05-23 (6차)</td><td>가이드 ② 사용자 접근 3 채널 · 가이드 ③ 삭제 · LMstudio archive</td></tr>
+          <tr><td>2026-05-23 (5차)</td><td>UI 다듬기 · 5 다이어그램</td></tr>
+          <tr><td>2026-05-23 (1~4차)</td><td>최초 생성 → 가이드 ④·⑤·⑥ 임베드 → CLAUDE.md 통합</td></tr>
+        </table>
+      </div>
+    </details>
   </article>
 
   <article class="doc" id="update">
