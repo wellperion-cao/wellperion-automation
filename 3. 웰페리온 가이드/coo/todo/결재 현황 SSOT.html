@@ -10,7 +10,7 @@
 <script>
 /* 최신본 자동 보장 — HTTP 캐시로 옛 버전이 떠 'GM 화면만 미반영'되는 문제 방지 (2026-05-29 COO).
    서버 최신본 버전과 비교해 다르면 1회만 강제 갱신. 루프 방지: ?pv 가 현재 버전과 같으면 종료. */
-window.__PV='20260530-6';
+window.__PV='20260530-7';
 (function(){
   window.addEventListener('pageshow',function(e){ if(e.persisted) location.reload(); });
   try{
@@ -297,13 +297,8 @@ function render() {
 
   let html = '';
 
-  // 통계 카드 — 4종 단계별
-  html += '<div class="stat-grid">';
-  html += '<div class="stat-card"><div class="num" style="color:var(--accent)">' + approvalTasks.length + '</div><div class="label">총 결재 건</div></div>';
-  html += '<div class="stat-card"><div class="num" style="color:var(--blue)">' + gmSigned.length + '</div><div class="label">GM 결재 완료</div></div>';
-  html += '<div class="stat-card"><div class="num" style="color:var(--green)">' + repSigned.length + '</div><div class="label">대표 결재 완료</div></div>';
-  html += '<div class="stat-card"><div class="num" style="color:var(--red)">' + rejected.length + '</div><div class="label">반려</div></div>';
-  html += '</div>';
+  // 통계 카드 제거 (2026-05-30 GM: 업무현황 SSOT처럼) — 상태 필터(전체/진행중/결재완료/반려)와 중복.
+  // 툴바(필터·정렬·검색)를 제목 아래 최상단으로. GM·대표 세분 수치는 '결재 현황 대시보드'에서 확인.
 
   // 결재자별 카운트 (미결만)
   const pendingByRole = { '부서장':0, 'GM':0, '대표님':0 };
