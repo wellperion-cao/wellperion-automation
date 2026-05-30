@@ -27,6 +27,12 @@ GM 결정(2026-05-30, 가이드허브 g10 "CEO = 상시 대기 디스패처"):
   python ceo_morning_pipeline.py --dry-run     # 4단계 끝까지 (텔레그램·파일 수정 막고 로그만)
   python ceo_morning_pipeline.py               # 실제 가동 (텔레그램 발송 + 계획 기록)
   python ceo_morning_pipeline.py --dry-run --json   # 계획을 JSON으로도 출력
+  python ceo_morning_pipeline.py --once-per-day      # 오늘 이미 돌았으면 스킵 (세션시작 훅용)
+
+하루 1회 가드(--once-per-day):
+  오늘자 계획 파일 status/morning_plans/YYYY-MM-DD.json 이 이미 있으면 즉시 스킵(exit 0).
+  같은 날 CLI 세션을 여러 번 띄워도 아침 파이프라인은 1회만 실가동된다.
+  (dry-run 은 실제 파일을 만들지 않으므로 가드를 소모하지 않는다.)
 
 보안: PIN/토큰 등 하드코딩 금지. .env(HardLink → telegram_bot/.env) / 환경변수만 참조.
 """
@@ -110,6 +116,16 @@ def now_iso() -> str:
 def today_kr() -> str:
     wk = ["월", "화", "수", "목", "금", "토", "일"][datetime.now().weekday()]
     return datetime.now().strftime("%Y-%m-%d") + f" ({wk})"
+
+
+def today_marker() -> Path:
+    """오늘자 실가동 계획 파일 경로 = 하루 1회 가드 마커."""
+    return PLAN_DIR / (datetime.now().strftime("%Y-%m-%d") + ".json")
+
+
+def already_ran_today() -> bool:
+    """오늘 실가동(비-dry-run) 계획 파일이 이미 있으면 True."""
+    return today_marker().exists()
 
 
 # ── STAGE 1: 수집 + 모호성 분류 ───────────────────────────────────────────────
@@ -518,8 +534,15 @@ def send_reports(report: str, question_card: str, dry_run: bool) -> bool:
 
 # ── 메인 ─────────────────────────────────────────────────────────────────────
 
-def run_pipeline(dry_run: bool, as_json: bool) -> int:
-    print(f"=== CEO 아침 파이프라인 시작 (dry_run={dry_run}) ===")
+def run_pipeline(dry_run: bool, as_json: bool, once_per_day: bool = False) -> int:
+    # 하루 1회 가드: 오늘 이미 실가동 계획이 있으면 즉시 스킵 (세션 시작 훅 다중 호출 대비).
+    # dry-run 은 실제 파일을 만들지 않으므로 마커 점검에서 제외(가드 소모 안 함).
+    if once_per_day and not dry_run and already_ran_today():
+        print(f"[SKIP] 오늘({datetime.now().strftime('%Y-%m-%d')}) 아침 파이프라인 이미 실행됨 "
+              f"→ {today_marker()} (스킵)")
+        return 0
+
+    print(f"=== CEO 아침 파이프라인 시작 (dry_run={dry_run}, once_per_day={once_per_day}) ===")
 
     # ① 수집 + 분류
     s1 = stage1_collect_classify()
@@ -566,8 +589,10 @@ def main() -> int:
     ap.add_argument("--dry-run", action="store_true",
                     help="4단계 전부 돌리되 텔레그램 발송·파일 기록을 막고 로그만 출력")
     ap.add_argument("--json", action="store_true", help="계획 요약을 JSON으로도 출력")
+    ap.add_argument("--once-per-day", action="store_true",
+                    help="오늘자 계획 파일이 이미 있으면 즉시 스킵 (세션 시작 훅용 가드)")
     args = ap.parse_args()
-    return run_pipeline(dry_run=args.dry_run, as_json=args.json)
+    return run_pipeline(dry_run=args.dry_run, as_json=args.json, once_per_day=args.once_per_day)
 
 
 if __name__ == "__main__":
