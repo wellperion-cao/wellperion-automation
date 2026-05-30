@@ -1141,19 +1141,29 @@ def main():
         logger.error(f"pre_task_notifier 임포트 실패 — 알림기 미등록: {e}")
 
     # ── Notion 통합 권한 상시 감시 Watcher (15분 주기) — CTO-001 ────────────
-    try:
-        from permission_watcher import check_all_permissions as _perm_check
-        scheduler.add_job(
-            _perm_check,
-            trigger=IntervalTrigger(minutes=15),
-            id="permission_watcher",
-            misfire_grace_time=300,
-            coalesce=True,
-            next_run_time=datetime.now(),
-        )
-        logger.info("permission_watcher 등록 완료 (15분 주기) — CTO-001")
-    except ImportError as e:
-        logger.error(f"permission_watcher 임포트 실패 — 감지기 미등록: {e}")
+    # [2026-05-30 CTO 비활성 / Phase 2 첫 전환] 노션 미사용 확정으로 '노션 통합
+    #   권한 단절 감시' 자체가 무의미. 감시 대상 4DB(신규기획·결과물·CTO개발·R/R)는
+    #   현재 200 응답이나 노션 폐기 방향상 권한 점검 가치 0. 로그 실측: 누적 88회
+    #   체크 중 FAIL 0·경보/복구 알림 0건 → GM 정기 알림에 영향 전무.
+    #   대체 경로 불필요(노션 미사용이면 권한 감시 무의미 — Phase 2 계획 2-(5)).
+    #   코드·import·permission_watcher.py 보존(가역적). 가이드허브 전환 대상 아님(폐기).
+    #   참조: docs/노션_가이드허브_리뉴얼_계획.md.
+    if False:  # permission_watcher 노션 추종 중단 (Phase 2 폐기 후보, 병행 보존)
+        try:
+            from permission_watcher import check_all_permissions as _perm_check
+            scheduler.add_job(
+                _perm_check,
+                trigger=IntervalTrigger(minutes=15),
+                id="permission_watcher",
+                misfire_grace_time=300,
+                coalesce=True,
+                next_run_time=datetime.now(),
+            )
+            logger.info("permission_watcher 등록 완료 (15분 주기) — CTO-001")
+        except ImportError as e:
+            logger.error(f"permission_watcher 임포트 실패 — 감지기 미등록: {e}")
+    else:
+        logger.info("permission_watcher 비활성 — 노션 미사용, 권한 감시 무의미(알림 0건), Phase 2 폐기 대기")
 
     # ── C-Level 상태변경 텔레그램 자동발송 (1분 주기) — CTO v1.0 ─────────────
     try:
