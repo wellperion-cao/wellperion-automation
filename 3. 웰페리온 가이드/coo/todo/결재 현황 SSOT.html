@@ -117,7 +117,7 @@ html,body{background:var(--bg);color:var(--text);font-family:"Pretendard","Apple
   <div class="header-top">
     <h1>웰페리온 결재 현황 SSOT <span style="font-size:11px;font-weight:500;color:var(--dim);margin-left:6px;letter-spacing:0.02em;">v1.1 · 2026-05-29</span></h1>
     <div class="header-right">
-      <a class="sheet-link" href="업무 현황 SSOT.html" style="background:var(--blue-bg);color:var(--blue);border-color:rgba(91,159,213,0.3);">
+      <a class="sheet-link" href="업무 현황 SSOT.html" target="_blank" rel="noopener" style="background:var(--blue-bg);color:var(--blue);border-color:rgba(91,159,213,0.3);">
         <svg viewBox="0 0 24 24"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
         업무 현황 SSOT
       </a>
@@ -378,6 +378,10 @@ function buildEffectiveRoute(t, budget) {
   const auto = budget ? routeApproval(budget.category, budget.amount) : [];
   const set = {};
   manual.concat(auto).forEach(a => { set[a] = true; });
+  // 본인 결재 중복 방지 — 담당자가 김남욱GM이면 GM 결재 단계 생략(부서장·대표님은 유지) (2026-05-30 GM 지시)
+  if (String(t.owner || '').split(',').map(s => s.trim()).indexOf('김남욱GM') >= 0) {
+    delete set['GM'];
+  }
   return ['부서장', 'GM', '대표님'].filter(r => set[r]);
 }
 

@@ -261,7 +261,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
         <svg viewBox="0 0 24 24"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
         현황 대시보드
       </a>
-      <a class="sheet-link" href="결재 현황 SSOT.html" style="background:var(--green-bg);color:var(--green);border-color:rgba(106,191,123,0.3);">
+      <a class="sheet-link" href="결재 현황 SSOT.html" target="_blank" rel="noopener" style="background:var(--green-bg);color:var(--green);border-color:rgba(106,191,123,0.3);">
         <svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/></svg>
         결재 현황 SSOT
       </a>
@@ -344,10 +344,10 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
     </div>
     <div class="field" id="fPlanField" style="background:var(--blue-bg);padding:14px 16px;border-radius:10px;border:1px solid rgba(91,159,213,0.35);">
       <label style="display:flex;align-items:center;justify-content:space-between;color:var(--blue);font-weight:700;margin-bottom:8px;">
-        <span>📋 기획 <span style="font-size:11px;color:var(--dim);font-weight:400;">(목적·범위·해결 전략·실행 계획·KPI·일정)</span></span>
+        <span>📋 기획 <span style="font-size:11px;color:var(--dim);font-weight:400;">(목적·범위·해결 전략·실행 계획)</span></span>
         <span id="fPlanLockBadge" style="font-size:11px;color:var(--dim);font-weight:500;"></span>
       </label>
-      <textarea id="fPlan" placeholder="6섹션 기획 (간단한 업무는 비워둬도 OK)&#10;예시:&#10;목적 — &#10;범위 — &#10;해결 전략 — &#10;실행 계획 — &#10;KPI — &#10;일정 —" style="min-height:140px;line-height:1.6;background:var(--paper);border:1px solid var(--border);"></textarea>
+      <textarea id="fPlan" placeholder="4섹션 기획 (간단한 업무는 비워둬도 OK)&#10;목적 — &#10;범위 — &#10;해결 전략 — &#10;실행 계획 —" style="min-height:140px;line-height:1.6;background:var(--paper);border:1px solid var(--border);"></textarea>
     </div>
     <div class="field" style="background:var(--green-bg);padding:12px 14px;border-radius:8px;border:1px solid rgba(106,191,123,0.3);">
       <label style="display:flex;align-items:center;justify-content:space-between;color:var(--green);font-weight:700;">
@@ -355,7 +355,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
       </label>
       <div style="display:flex;gap:6px;align-items:stretch;margin-top:8px;">
         <select id="fBudgetCategory" onchange="updateBudgetRoute()" style="background:var(--bg);border:1px solid var(--border);color:var(--text);padding:10px;border-radius:8px;font-size:13px;font-family:inherit;flex:1;">
-          <option value="">예산 항목 선택 (선택)</option>
+          <option value="">예산 항목 (선택)</option>
           <option value="일상 운영비">① 일상 운영비 (사무·소모품·식음료·회식)</option>
           <option value="소액 유지보수">② 소액 유지보수 (기계·누수·전기 수리)</option>
           <option value="마케팅">③ 마케팅 (광고·DM·콘텐츠·외부 행사)</option>
@@ -364,6 +364,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
           <option value="IT·소프트웨어">⑥ IT·소프트웨어 (구독·클라우드)</option>
           <option value="급여·인건비·외주·교육">⑦ 급여·인건비·외주·교육</option>
           <option value="장비 구매·교체">⑧ 장비 구매·교체</option>
+          <option value="시설물 리뉴얼(공간 디자인)">⑨ 시설물 리뉴얼(공간 디자인)</option>
         </select>
         <input type="number" id="fBudgetAmount" placeholder="금액 (원)" min="0" step="1000" oninput="updateBudgetRoute()" style="background:var(--bg);border:1px solid var(--border);color:var(--text);padding:10px;border-radius:8px;font-size:13px;font-family:inherit;width:140px;flex-shrink:0;">
       </div>
@@ -1024,6 +1025,9 @@ const BUDGET_MARK = '===BUDGET===';
 const PLAN_MARK = '===PLAN===';
 const RESULT_MARK = '===RESULT===';
 
+/* 기획 4섹션 하드코딩 템플릿 — 편집 시 비어 있으면 자동 채움 (KPI·일정 제거, 2026-05-30 GM 지시) */
+const PLAN_TEMPLATE = '목적 — \n범위 — \n해결 전략 — \n실행 계획 — ';
+
 /* 업무 라이프사이클 단계 판단 (옵션 A · 2026-05-28) */
 function lifecycleStage(task) {
   const approvalStatus = String(task['결재상태'] || task.approvalStatus || '');
@@ -1331,7 +1335,7 @@ function openEditModal(id) {
   document.getElementById('fEndDate').value = fmtDate(t.endDate);
   const parsed = parseContent(t.content);
   document.getElementById('fContent').value = parsed.body;
-  document.getElementById('fPlan').value = parsed.plan || '';
+  document.getElementById('fPlan').value = parsed.plan || PLAN_TEMPLATE;
   document.getElementById('fResult').value = parsed.result || '';
   modalLogsCache = parsed.logs.slice();
   document.getElementById('progressLogDate').value = todayDateStr();
