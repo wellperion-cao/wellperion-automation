@@ -10,7 +10,7 @@
 <script>
 /* 최신본 자동 보장 — HTTP 캐시로 옛 버전이 떠 'GM 화면만 미반영'되는 문제 방지 (2026-05-29 COO).
    서버 최신본 버전과 비교해 다르면 1회만 강제 갱신. 루프 방지: ?pv 가 현재 버전과 같으면 종료. */
-window.__PV='20260530-2';
+window.__PV='20260530-3';
 (function(){
   window.addEventListener('pageshow',function(e){ if(e.persisted) location.reload(); });
   try{
@@ -151,6 +151,29 @@ const CAT_COLORS = {
   '[6] 회장님 하달':  {bg:'var(--red-bg)',    color:'var(--red)'}
 };
 
+/* 부서↔부서장 매핑 상수 (GM 2026-05-30 확정) */
+const DEPT_HEAD_MAP = {
+  '운영부': '이경연 실장',
+  '시설부': '이정헌 소장',
+  '파트너팀': '나우열M'
+};
+
+/* 카테고리 → 부서 매핑 (기존 CAT_COLORS 키 기준) */
+const CAT_DEPT_MAP = {
+  '[1] 매출 및 영업':  '운영부',
+  '[2] 인사 & 파트너': '파트너팀',
+  '[3] 운영 정책':    '운영부',
+  '[4] 시설 및 환경':  '시설부',
+  '[5] 대표님 하달':   '운영부',
+  '[6] 회장님 하달':   '운영부'
+};
+
+/* 업무의 카테고리로 담당 부서장 이름 반환. 매핑 없으면 null */
+function getDeptHead(category) {
+  const dept = CAT_DEPT_MAP[category];
+  return dept ? (DEPT_HEAD_MAP[dept] || null) : null;
+}
+
 let ALL_TASKS = [];
 let activeFilter = '전체';      // '전체' | '결재완료' | '반려' | '미결'
 let activeRoleFilter = '전체';  // '전체' | '부서장' | 'GM' | '대표님' — 차례별
@@ -273,7 +296,7 @@ function render() {
   html += '<button class="filter-btn ' + (activeRoleFilter==='부서장'?'active':'') + '" onclick="setRoleFilter(\'부서장\')">부서장 (' + pendingByRole['부서장'] + ')</button>';
   html += '<button class="filter-btn ' + (activeRoleFilter==='GM'?'active':'') + '" onclick="setRoleFilter(\'GM\')">김남욱GM (' + pendingByRole['GM'] + ')</button>';
   html += '<button class="filter-btn ' + (activeRoleFilter==='대표님'?'active':'') + '" onclick="setRoleFilter(\'대표님\')">전응준 대표 (' + pendingByRole['대표님'] + ')</button>';
-  html += '<span style="font-size:11px;color:var(--dim);margin-left:6px;align-self:center;">부서장 = 이경연 실장·이정헌 소장·나우열 매니저</span>';
+  html += '<span style="font-size:11px;color:var(--dim);margin-left:6px;align-self:center;">부서장: 운영부 이경연 실장 · 시설부 이정헌 소장 · 파트너팀 나우열M</span>';
   html += '</div>';
 
   // 3줄 — 카테고리 필터
@@ -522,10 +545,13 @@ function renderApprovalCard(t, idx) {
   }
 
   // 싸인 라인 — 미서명 + 현재 차례면 ✅/❌ 버튼 내장
+  // 부서장은 카테고리로 담당자 특정 (매핑 없으면 3인 병기)
+  const deptHeadName = getDeptHead(t.category);
+  const deptHeadLabel = deptHeadName ? ('부서장 · ' + deptHeadName) : '부서장 · 운영부 이경연 실장 / 시설부 이정헌 소장 / 파트너팀 나우열M';
   h += '<div class="sign-line">';
-  h += renderSignPill('부서장', t.deptSign, t.id, nxt === '부서장', route.includes('부서장'));
-  h += renderSignPill('GM',     t.gmSign,   t.id, nxt === 'GM',     route.includes('GM'));
-  h += renderSignPill('대표님',  t.repSign,  t.id, nxt === '대표님',  route.includes('대표님'));
+  h += renderSignPill(deptHeadLabel, t.deptSign, t.id, nxt === '부서장', route.includes('부서장'));
+  h += renderSignPill('GM',          t.gmSign,   t.id, nxt === 'GM',     route.includes('GM'));
+  h += renderSignPill('대표님',       t.repSign,  t.id, nxt === '대표님',  route.includes('대표님'));
   h += '</div>';
 
   if (t.completeTime) {
