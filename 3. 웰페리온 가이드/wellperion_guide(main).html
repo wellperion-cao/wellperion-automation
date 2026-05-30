@@ -3402,8 +3402,15 @@ Start-Process python -ArgumentList telegram_bot\daily_scheduler.py -WorkingDirec
     <script>
     (function(){
       var URL='cmo/review/review_queue.json';
+      var RELAY_URL='https://script.google.com/macros/s/AKfycbxDwFkrxK1YIaEoSNcuw2MiHiZQ-7o5N6311ytksSyeEd86ZFOhLknOWqQgNArQvZ-7/exec';
       function dec(){try{return JSON.parse(localStorage.getItem('gm1_review_decisions')||'{}');}catch(e){return {};}}
       function save(id,v){var d=dec();d[id]={decision:v,at:new Date().toISOString()};localStorage.setItem('gm1_review_decisions',JSON.stringify(d));}
+      // 검수 결정 → GitHub review_queue.json status 중계 (Apps Script 재사용)
+      function relay(id,decision){
+        var status=decision==='approve'?'승인':'반려';
+        var qs='action=review_set_status&id='+encodeURIComponent(id)+'&status='+encodeURIComponent(status)+'&key=';
+        return fetch(RELAY_URL+'?'+qs,{redirect:'follow'}).then(function(r){return r.json();});
+      }
       function esc(s){return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
       function done(st){return st==='발행완료'||st==='approved'||st==='승인'||st==='rejected'||st==='반려';}
       function render(items){
@@ -3426,7 +3433,21 @@ Start-Process python -ArgumentList telegram_bot\daily_scheduler.py -WorkingDirec
           else if(e==='approved'||e==='승인'){h+='<div style="font-size:11.5px;color:var(--dim);">승인 기록됨 — 자동 발행 연결은 다음 단계(감시기). 현재는 승인 표시만.</div>';}
           c.innerHTML=h;list.appendChild(c);
         });
-        list.querySelectorAll('button[data-act]').forEach(function(b){b.addEventListener('click',function(){save(b.getAttribute('data-id'),b.getAttribute('data-act')==='approve'?'approved':'rejected');render(window.__gm1_rv||[]);});});
+        list.querySelectorAll('button[data-act]').forEach(function(b){b.addEventListener('click',function(){
+          var id=b.getAttribute('data-id');var act=b.getAttribute('data-act');
+          var sib=b.parentNode.querySelectorAll('button[data-act]');
+          for(var i=0;i<sib.length;i++){sib[i].disabled=true;}
+          b.textContent=act==='approve'?'승인 전송 중…':'반려 전송 중…';
+          save(id,act==='approve'?'approved':'rejected');  // 낙관적 표시(로컬)
+          relay(id,act).then(function(res){
+            if(res&&res.ok){load();}  // GitHub 기록 성공 → 라이브 큐 재조회
+            else{for(var i=0;i<sib.length;i++){sib[i].disabled=false;}render(window.__gm1_rv||[]);
+              alert('중계 실패: '+((res&&res.error)||'알 수 없음')+'\n(로컬 표시는 유지됩니다)');}
+          }).catch(function(){
+            for(var i=0;i<sib.length;i++){sib[i].disabled=false;}render(window.__gm1_rv||[]);
+            alert('네트워크 오류 — GitHub 기록 실패. 로컬 표시만 유지됩니다.');
+          });
+        });});
       }
       function load(){fetch(URL,{cache:'no-store'}).then(function(r){return r.ok?r.json():[];}).then(function(items){if(!Array.isArray(items))items=[];window.__gm1_rv=items;render(items);}).catch(function(){var l=document.getElementById('gm1-review-list');if(l)l.innerHTML='<div style="color:var(--dim);font-size:13px;">검수 큐를 불러오지 못했습니다.</div>';});}
       if(document.readyState!=='loading')load();else document.addEventListener('DOMContentLoaded',load);

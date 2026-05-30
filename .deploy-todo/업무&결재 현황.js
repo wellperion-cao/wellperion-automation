@@ -219,8 +219,11 @@ function _ghUrl(path) {
   return 'https://api.github.com/repos/' + repo + '/contents/' + apiPath;
 }
 function _ghPathAllowed(path) {
-  // 가이드허브 coo 하위 .json 만 허용
-  return /^3\. 웰페리온 가이드\/coo\/.+\.json$/.test(String(path));
+  // 가이드허브 coo 하위 .json + cmo 검수 큐 .json 만 허용
+  var p = String(path);
+  if (/^3\. 웰페리온 가이드\/coo\/.+\.json$/.test(p)) return true;
+  if (/^3\. 웰페리온 가이드\/cmo\/review\/.+\.json$/.test(p)) return true;
+  return false;
 }
 function _githubReadFile(path) {
   const headers = _ghHeaders();
@@ -264,6 +267,33 @@ function _githubCommitFile(path, contentText, message, key) {
     return { ok: true, commit: (j.commit && j.commit.sha) || null, path: path };
   }
   return { ok: false, error: 'GitHub ' + code + ': ' + putR.getContentText().slice(0, 160) };
+}
+
+// ═══ 인스타 검수 큐 status 중계 (검수카드 [승인]/[반려] → GitHub 기록) — 2026-05-30 ═══
+// review_queue.json 에서 해당 id 의 status 를 승인|반려 로 갱신 후 GitHub commit.
+// 토큰은 기존 GITHUB_TOKEN 재사용(서버측 ScriptProperties). 경로는 cmo/review/*.json 만 허용.
+function _reviewSetStatus(id, status, key) {
+  if (!id) return { ok: false, error: 'id 필수' };
+  var allowed = { '승인': true, '반려': true };
+  if (!allowed[status]) return { ok: false, error: 'status 는 승인|반려 만 허용' };
+  var editKey = _prop('EDIT_KEY');
+  if (editKey && String(key) !== editKey) return { ok: false, error: '편집 키 불일치' };
+  var path = '3. 웰페리온 가이드/cmo/review/review_queue.json';
+  var rf = _githubReadFile(path);
+  if (!rf.ok) return { ok: false, error: '큐 읽기 실패: ' + (rf.error || '') };
+  var arr;
+  try { arr = JSON.parse(rf.content || '[]'); } catch (e) { return { ok: false, error: '큐 JSON 파싱 실패' }; }
+  if (!Array.isArray(arr)) return { ok: false, error: '큐 형식 오류(배열 아님)' };
+  var found = false, prev = '';
+  for (var i = 0; i < arr.length; i++) {
+    if (String(arr[i].id) === String(id)) { prev = arr[i].status; arr[i].status = status; found = true; break; }
+  }
+  if (!found) return { ok: false, error: '해당 id 없음: ' + id };
+  var body = JSON.stringify(arr, null, 2) + '\n';
+  var msg = 'review: ' + id + ' status ' + (prev || '?') + '→' + status + ' (검수카드 중계)';
+  var cr = _githubCommitFile(path, body, msg, key);
+  if (!cr.ok) return { ok: false, error: '커밋 실패: ' + (cr.error || '') };
+  return { ok: true, id: id, status: status, prev: prev, commit: cr.commit || null };
 }
 
 // ─── 텔레그램 알림 전면 폐기 (2026-05-28 GM 결재) — 결재 SSOT 페이지 단일 운영 ───
@@ -437,6 +467,12 @@ function doGet(e) {
     if (action === 'commit_file') {
       const r = _githubCommitFile(e.parameter.path || '', e.parameter.content || '',
                                   e.parameter.message || '', e.parameter.key || '');
+      return _json(r);
+    }
+
+    // ─── 인스타 검수 status 중계 (검수카드 [승인]/[반려]) — 2026-05-30 ───
+    if (action === 'review_set_status') {
+      const r = _reviewSetStatus(e.parameter.id || '', e.parameter.status || '', e.parameter.key || '');
       return _json(r);
     }
 
