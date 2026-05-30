@@ -257,10 +257,6 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   <div class="header-top">
     <h1>웰페리온 업무 현황 SSOT</h1>
     <div class="header-right">
-      <a class="sheet-link" onclick="openDashboard()" style="cursor:pointer;background:var(--purple-bg);color:var(--purple);border-color:rgba(167,139,218,0.3);">
-        <svg viewBox="0 0 24 24"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
-        현황 대시보드
-      </a>
       <a class="sheet-link" href="결재 현황 SSOT.html" target="_blank" rel="noopener" style="background:var(--green-bg);color:var(--green);border-color:rgba(106,191,123,0.3);">
         <svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/></svg>
         결재 현황 SSOT
@@ -521,6 +517,7 @@ function buildFilters() {
     html += '<button class="filter-btn" onclick="setOwnerFilter(\'' + escAttr(m) + '\',this)">' + esc(m) + '</button>';
   });
   html += '<div style="display:flex;gap:4px;margin-left:auto;">';
+  html += '<button class="share-btn" onclick="openDashboard()" style="background:var(--purple-bg);color:var(--purple);border-color:rgba(167,139,218,0.3);">현황 대시보드</button>';
   html += '<button class="share-btn" onclick="printTasks()" style="background:var(--accent-bg);color:var(--accent);border-color:rgba(183,159,138,0.3);">인쇄</button>';
   html += '<button class="share-btn" onclick="shareReport()" style="background:var(--purple-bg);color:var(--purple);border-color:rgba(167,139,218,0.3);">보고용</button>';
   html += '<button class="share-btn" onclick="shareList()">공유용</button>';
@@ -646,6 +643,10 @@ function renderTasks() {
     const cat = t.category || '';
     if (!groups[cat]) groups[cat] = [];
     groups[cat].push(t);
+  });
+  // 통일 정렬: 최근 활동(수정일→시작일) 최신순 — 결재 현황 SSOT와 동일 기준
+  Object.keys(groups).forEach(cat => {
+    groups[cat].sort((a, b) => String(b.updatedAt || b.startDate || '').localeCompare(String(a.updatedAt || a.startDate || '')));
   });
 
   let html = '';

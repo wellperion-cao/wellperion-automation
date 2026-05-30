@@ -115,7 +115,7 @@ html,body{background:var(--bg);color:var(--text);font-family:"Pretendard","Apple
 <div class="sticky-top">
 <div class="header">
   <div class="header-top">
-    <h1>웰페리온 결재 현황 SSOT <span style="font-size:11px;font-weight:500;color:var(--dim);margin-left:6px;letter-spacing:0.02em;">v1.1 · 2026-05-29</span></h1>
+    <h1>웰페리온 결재 현황 SSOT</h1>
     <div class="header-right">
       <a class="sheet-link" href="업무 현황 SSOT.html" target="_blank" rel="noopener" style="background:var(--blue-bg);color:var(--blue);border-color:rgba(91,159,213,0.3);">
         <svg viewBox="0 0 24 24"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
@@ -131,7 +131,7 @@ html,body{background:var(--bg);color:var(--text);font-family:"Pretendard","Apple
       </a>
     </div>
   </div>
-  <div class="sub">결재 진행·완료·반려 이력 적립 — 승인/반려 시 비밀번호 확인 (GM·대표님)</div>
+  <div class="sub" id="headerSub"></div>
 </div>
 </div><!-- /sticky-top -->
 
@@ -157,7 +157,23 @@ let activeRoleFilter = '전체';  // '전체' | '부서장' | 'GM' | '대표님'
 let activeCatFilter = '전체';   // '전체' | 카테고리
 let searchQuery = '';            // 키워드
 
-document.addEventListener('DOMContentLoaded', loadTasks);
+document.addEventListener('DOMContentLoaded', function() {
+  updateHeaderSub();
+  loadTasks();
+});
+
+// 헤더 메타 — 업무 현황 SSOT와 동일 형식 (날짜(요일) | 담당자)
+function getUser() {
+  return '김남욱GM';
+}
+function updateHeaderSub() {
+  const u = getUser();
+  const now = new Date();
+  const days = ['일','월','화','수','목','금','토'];
+  const ds = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0') + '-' + String(now.getDate()).padStart(2,'0');
+  const elSub = document.getElementById('headerSub');
+  if (elSub) elSub.textContent = ds + ' (' + days[now.getDay()] + ')' + (u ? ' | ' + u : '');
+}
 
 async function loadTasks() {
   const el = document.getElementById('mainContent');
@@ -196,6 +212,7 @@ function normalizeTask(r) {
   t.approvalStatus = r['결재상태'] || '';
   t.completeTime = r['결재완료시각'] || '';
   t.reportUrl = r['결과보고서URL'] || '';
+  t.updatedAt = r['수정일'] || r.updatedAt || '';
   return t;
 }
 
@@ -305,8 +322,9 @@ function render() {
     });
   }
 
-  // 정렬: 결재완료시각 또는 수정일 기준 최신 위
-  list.sort((a, b) => String(b.completeTime || b['수정일'] || '').localeCompare(String(a.completeTime || a['수정일'] || '')));
+  // 통일 정렬: 최근 활동(수정일→시작일) 최신순 — 업무 현황 SSOT와 동일 기준
+  const sortKey = t => String(t.updatedAt || t['수정일'] || t.startDate || t['시작일'] || t.completeTime || '');
+  list.sort((a, b) => sortKey(b).localeCompare(sortKey(a)));
 
   if (!list.length) {
     html += '<div class="empty-msg"><span class="ico">📂</span>해당 조건의 결재 건이 없습니다.<br><span style="font-size:12px;color:var(--dim);">필터를 조정하거나 업무 현황 SSOT에서 결재요청을 체크해 보세요.</span></div>';
