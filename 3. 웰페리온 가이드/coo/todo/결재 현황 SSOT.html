@@ -10,7 +10,7 @@
 <script>
 /* 최신본 자동 보장 — HTTP 캐시로 옛 버전이 떠 'GM 화면만 미반영'되는 문제 방지 (2026-05-29 COO).
    서버 최신본 버전과 비교해 다르면 1회만 강제 갱신. 루프 방지: ?pv 가 현재 버전과 같으면 종료. */
-window.__PV='20260530-3';
+window.__PV='20260530-4';
 (function(){
   window.addEventListener('pageshow',function(e){ if(e.persisted) location.reload(); });
   try{
@@ -68,7 +68,6 @@ html,body{background:var(--bg);color:var(--text);font-family:"Pretendard","Apple
 .approval-card.st-progress{border-left-color:var(--blue)}
 .approval-card.st-waiting{border-left-color:var(--yellow)}
 .approval-card:hover{background:rgba(183,159,138,0.04)}
-.approval-card .title-row{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:8px}
 .approval-card .title{font-size:14px;font-weight:700;flex:1;line-height:1.4}
 .status-chip{font-size:11px;font-weight:700;padding:3px 9px;border-radius:10px;flex-shrink:0;white-space:nowrap}
 .status-chip.done{background:var(--green-bg);color:var(--green)}
@@ -97,9 +96,35 @@ html,body{background:var(--bg);color:var(--text);font-family:"Pretendard","Apple
 .progress-row .text{font-size:13px;flex:1;line-height:1.45;word-break:break-word}
 .empty-msg{text-align:center;padding:60px 20px;color:var(--dim);font-size:14px;line-height:1.6}
 .empty-msg .ico{font-size:36px;display:block;margin-bottom:14px;opacity:0.5}
+/* [결재-2] 카드 제목행 — 카테고리·담당자 칩을 우측으로 분리해 제목 폭 우선 확보 */
+.approval-card .title-row{display:flex;align-items:flex-start;gap:8px;margin-bottom:6px;flex-wrap:nowrap;}
+.approval-card .title-row .card-title-area{flex:1;min-width:0;display:flex;align-items:center;gap:6px;}
+.approval-card .title-row .card-title-area .title{font-size:14px;font-weight:700;flex:1;min-width:0;word-break:break-word;line-height:1.4;}
+.approval-card .title-row .card-meta-chips{display:flex;flex-wrap:wrap;gap:4px;align-items:center;flex-shrink:0;max-width:200px;}
+/* [결재-3] 대시보드 패널 — 업무 현황 SSOT와 동일 토큰 재사용 */
+.dash-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:200;align-items:flex-start;justify-content:center;padding:20px;overflow-y:auto;}
+.dash-overlay.show{display:flex;}
+.dash-panel{background:var(--paper);border:1px solid var(--border);border-radius:16px;width:100%;max-width:700px;margin:40px auto;padding:28px 24px;}
+.dash-panel h2{font-size:18px;font-weight:700;color:var(--accent);margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;}
+.dash-panel h2 .close-dash{background:none;border:none;color:var(--dim);font-size:20px;cursor:pointer;padding:4px 8px;}
+.dash-panel h3{font-size:15px;font-weight:700;margin:20px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--border);}
+.dash-table{width:100%;border-collapse:collapse;font-size:13px;margin:8px 0 16px;}
+.dash-table th,.dash-table td{padding:8px 10px;text-align:left;border:1px solid var(--border);}
+.dash-table th{background:var(--bg);font-weight:700;color:var(--accent);font-size:12px;}
+.dash-table td{vertical-align:middle;}
+.dash-bar-wrap{height:16px;background:var(--bg);border-radius:8px;overflow:hidden;min-width:60px;}
+.dash-bar{height:100%;border-radius:8px;transition:width 0.3s;}
+.dash-bar.green{background:var(--green)}.dash-bar.blue{background:var(--blue)}.dash-bar.accent{background:var(--accent)}.dash-bar.red{background:var(--red)}.dash-bar.yellow{background:var(--yellow)}.dash-bar.purple{background:var(--purple);}
+.dash-stat-row{display:flex;gap:10px;flex-wrap:wrap;margin:8px 0 16px;}
+.dash-stat-card{flex:1;min-width:100px;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:12px 14px;text-align:center;}
+.dash-stat-card .num{font-size:24px;font-weight:700;color:var(--accent);}
+.dash-stat-card .label{font-size:11px;color:var(--dim);margin-top:2px;}
+.dash-print-btn{display:inline-flex;align-items:center;gap:4px;padding:6px 14px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;}
+.dash-print-btn:hover{border-color:var(--accent);color:var(--accent);}
 @media (max-width:520px){
   .stat-grid{grid-template-columns:repeat(2,1fr)}
   .header h1{font-size:15px}
+  .approval-card .title-row .card-meta-chips{max-width:130px;}
 }
 @media print{
   .header{position:static;background:#fff;color:#000;border-bottom:1px solid #ccc}
@@ -107,6 +132,16 @@ html,body{background:var(--bg);color:var(--text);font-family:"Pretendard","Apple
   body{background:#fff;color:#000}
   .approval-card{background:#fff;border:1px solid #ccc;border-left:3px solid #0b8043;page-break-inside:avoid}
   .detail-body{display:block!important}
+  /* [결재-3] 대시보드 인쇄 모드 */
+  [data-print-mode="approval-dashboard"] .content{display:none!important}
+  [data-print-mode="approval-dashboard"] .dash-overlay{position:static!important;display:block!important;background:none!important;padding:0!important;}
+  [data-print-mode="approval-dashboard"] .dash-panel{border:none!important;margin:0!important;padding:10px!important;max-width:100%!important;}
+  .dash-panel h2 .close-dash,.dash-print-btn{display:none!important}
+  .dash-table th,.dash-table td{border:1px solid #ccc;padding:4px 8px;font-size:10px;}
+  .dash-bar-wrap{background:#eee!important}
+  .dash-bar{-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+  .dash-stat-card{border:1px solid #ccc;background:#f9f9f9!important;break-inside:avoid;}
+  .dash-stat-card .num{color:#333!important;}
 }
 </style>
 </head>
@@ -137,6 +172,11 @@ html,body{background:var(--bg);color:var(--text);font-family:"Pretendard","Apple
 
 <div class="content" id="mainContent">
   <div class="loading">불러오는 중...</div>
+</div>
+
+<!-- [결재-3] 결재 현황 대시보드 오버레이 -->
+<div class="dash-overlay" id="approvalDashOverlay">
+  <div class="dash-panel" id="approvalDashPanel"></div>
 </div>
 
 <script>
@@ -176,7 +216,7 @@ function getDeptHead(category) {
 
 let ALL_TASKS = [];
 let activeFilter = '전체';      // '전체' | '결재완료' | '반려' | '미결'
-let activeRoleFilter = '전체';  // '전체' | '부서장' | 'GM' | '대표님' — 차례별
+let activeRoleFilter = '전체';  // '전체' | '부서장' | '이경연 실장' | '이정헌 소장' | '나우열M' | 'GM' | '대표님'
 let activeCatFilter = '전체';   // '전체' | 카테고리
 let searchQuery = '';            // 키워드
 let activeSortBy = '최신순';    // '최신순' | '결재상태' | '카테고리' | '시작일순'
@@ -277,26 +317,40 @@ function render() {
   approvalTasks.forEach(t => { if (t.category) catSet[t.category] = (catSet[t.category]||0) + 1; });
   const catList = Object.keys(catSet).sort();
 
-  // 1줄 — 상태 필터 + 보고용·인쇄
+  // [결재-4] 부서장별 미결 카운트 집계 (개인별 구분)
+  const pendingByPerson = { '이경연 실장':0, '이정헌 소장':0, '나우열M':0 };
+  pending.forEach(t => {
+    const parsed = parseContent(t.content);
+    const route = buildEffectiveRoute(t, parsed.budget);
+    const nxt = nextApprover(t, route);
+    if (nxt === '부서장') {
+      const head = getDeptHead(t.category);
+      if (head && head in pendingByPerson) pendingByPerson[head]++;
+    }
+  });
+
+  // [결재-1] 1줄 — 상태 필터 + 대시보드·인쇄·보고용 (업무 현황 SSOT와 동일 배치)
   html += '<div class="filter-bar" style="align-items:center;">';
   html += '<button class="filter-btn ' + (activeFilter==='전체'?'active':'') + '" onclick="setFilter(\'전체\')">전체 (' + approvalTasks.length + ')</button>';
   html += '<button class="filter-btn ' + (activeFilter==='미결'?'active':'') + '" onclick="setFilter(\'미결\')">진행 중 (' + pending.length + ')</button>';
   html += '<button class="filter-btn ' + (activeFilter==='결재완료'?'active':'') + '" onclick="setFilter(\'결재완료\')">결재완료 (' + done.length + ')</button>';
   html += '<button class="filter-btn ' + (activeFilter==='반려'?'active':'') + '" onclick="setFilter(\'반려\')">반려 (' + rejected.length + ')</button>';
   html += '<div style="display:flex;gap:4px;margin-left:auto;">';
+  html += '<button class="share-btn" onclick="openApprovalDashboard()" style="background:var(--purple-bg);color:var(--purple);border-color:rgba(167,139,218,0.3);">결재 현황 대시보드</button>';
   html += '<button class="share-btn" onclick="window.print()" style="background:var(--accent-bg);color:var(--accent);border-color:rgba(183,159,138,0.3);">인쇄</button>';
   html += '<button class="share-btn" onclick="shareReport()" style="background:var(--purple-bg);color:var(--purple);border-color:rgba(167,139,218,0.3);">보고용</button>';
   html += '</div>';
   html += '</div>';
 
-  // 2줄 — 결재자별 차례 (미결 한정)
+  // [결재-4] 2줄 — 결재자별 차례 (미결 한정) — 부서장을 3인 개별 버튼으로 확장
   html += '<div class="filter-bar">';
   html += '<span style="font-size:11px;color:var(--dim);align-self:center;margin-right:4px;">차례:</span>';
   html += '<button class="filter-btn ' + (activeRoleFilter==='전체'?'active':'') + '" onclick="setRoleFilter(\'전체\')">전체</button>';
-  html += '<button class="filter-btn ' + (activeRoleFilter==='부서장'?'active':'') + '" onclick="setRoleFilter(\'부서장\')">부서장 (' + pendingByRole['부서장'] + ')</button>';
+  html += '<button class="filter-btn ' + (activeRoleFilter==='이경연 실장'?'active':'') + '" onclick="setRoleFilter(\'이경연 실장\')">이경연 실장 (' + pendingByPerson['이경연 실장'] + ')</button>';
+  html += '<button class="filter-btn ' + (activeRoleFilter==='이정헌 소장'?'active':'') + '" onclick="setRoleFilter(\'이정헌 소장\')">이정헌 소장 (' + pendingByPerson['이정헌 소장'] + ')</button>';
+  html += '<button class="filter-btn ' + (activeRoleFilter==='나우열M'?'active':'') + '" onclick="setRoleFilter(\'나우열M\')">나우열M (' + pendingByPerson['나우열M'] + ')</button>';
   html += '<button class="filter-btn ' + (activeRoleFilter==='GM'?'active':'') + '" onclick="setRoleFilter(\'GM\')">김남욱GM (' + pendingByRole['GM'] + ')</button>';
   html += '<button class="filter-btn ' + (activeRoleFilter==='대표님'?'active':'') + '" onclick="setRoleFilter(\'대표님\')">전응준 대표 (' + pendingByRole['대표님'] + ')</button>';
-  html += '<span style="font-size:11px;color:var(--dim);margin-left:6px;align-self:center;">부서장: 운영부 이경연 실장 · 시설부 이정헌 소장 · 파트너팀 나우열M</span>';
   html += '</div>';
 
   // 3줄 — 카테고리 필터
@@ -338,13 +392,20 @@ function render() {
     list = list.filter(t => t.category === activeCatFilter);
   }
 
-  // 결재자별 차례 (미결 한정)
+  // [결재-4] 결재자별 차례 (미결 한정) — 부서장 3인 개별 필터 포함
+  const DEPT_HEAD_PERSONS = ['이경연 실장', '이정헌 소장', '나우열M'];
   if (activeRoleFilter !== '전체') {
     list = list.filter(t => {
       if (t.approvalStatus === '결재완료' || /반려/.test(t.approvalStatus)) return false;
       const parsed = parseContent(t.content);
       const route = buildEffectiveRoute(t, parsed.budget);
-      return nextApprover(t, route) === activeRoleFilter;
+      const nxt = nextApprover(t, route);
+      // 부서장 3인 개별 선택 시: 다음 결재자=부서장 이고 해당 카테고리 담당 부서장과 일치하는지 확인
+      if (DEPT_HEAD_PERSONS.indexOf(activeRoleFilter) >= 0) {
+        if (nxt !== '부서장') return false;
+        return getDeptHead(t.category) === activeRoleFilter;
+      }
+      return nxt === activeRoleFilter;
     });
   }
 
@@ -526,15 +587,17 @@ function renderApprovalCard(t, idx) {
 
   let h = '<div class="approval-card ' + stCls + (isRejected ? ' rejected' : '') + '" data-id="' + escAttr(t.id) + '">';
 
-  // 제목 줄 — 우측에 카테고리·담당자·상태칩
-  h += '<div class="title-row" style="flex-wrap:wrap;gap:6px;margin-bottom:6px;align-items:center;">';
+  // [결재-2] 제목 줄 — 제목 우선 폭, 카테고리·담당자·상태칩은 우측 card-meta-chips로 분리
+  h += '<div class="title-row">';
   h += '<span style="font-size:11px;font-weight:700;color:var(--accent);min-width:30px;text-align:center;flex-shrink:0;letter-spacing:0.02em;">#' + String(idx).padStart(3, '0') + '</span>';
-  h += '<div class="title" style="flex:1;min-width:0;">' + esc(t.title || '(제목 없음)') + '</div>';
+  h += '<div class="card-title-area"><div class="title">' + esc(t.title || '(제목 없음)') + '</div></div>';
+  h += '<div class="card-meta-chips">';
   if (t.category) h += '<span class="chip category" style="font-size:10px;">' + esc(t.category) + '</span>';
   if (t.owner) {
     t.owner.split(',').forEach(o => { o = o.trim(); if (o) h += '<span class="chip owner" style="font-size:10px;">' + esc(o) + '</span>'; });
   }
   h += '<span class="' + chipCls + '">' + esc(chipText) + '</span>';
+  h += '</div>';
   h += '</div>';
 
   // 메타 — 예산만 (카테고리·담당자는 제목 줄로 이동)
@@ -612,6 +675,147 @@ function renderSignPill(role, sign, taskId, isCurrent, isInRoute) {
       '</span>';
   }
   return '<span class="sign-pill empty">' + role + ' 미서명</span>';
+}
+
+/* ── [결재-3] 결재 현황 대시보드 ── */
+function openApprovalDashboard() {
+  renderApprovalDashboard();
+  document.getElementById('approvalDashOverlay').classList.add('show');
+}
+function closeApprovalDashboard() {
+  document.getElementById('approvalDashOverlay').classList.remove('show');
+}
+document.addEventListener('DOMContentLoaded', function() {
+  var ov = document.getElementById('approvalDashOverlay');
+  if (ov) ov.addEventListener('click', function(e) { if (e.target === e.currentTarget) closeApprovalDashboard(); });
+});
+
+function renderApprovalDashboard() {
+  var panel = document.getElementById('approvalDashPanel');
+  var all = ALL_TASKS.filter(function(t) {
+    return (t.approvalStatus && String(t.approvalStatus).trim()) || (t.approval && String(t.approval).trim());
+  });
+  var done = all.filter(function(t) { return t.approvalStatus === '결재완료'; });
+  var rejected = all.filter(function(t) { return /반려/.test(t.approvalStatus); });
+  var pending = all.filter(function(t) { return t.approvalStatus !== '결재완료' && !/반려/.test(t.approvalStatus); });
+  var total = all.length;
+
+  var now = new Date();
+  var ds = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0') + '-' + String(now.getDate()).padStart(2,'0');
+
+  var h = '';
+  h += '<h2>결재 현황 대시보드 <span style="font-size:12px;color:var(--dim);font-weight:400;">' + ds + ' 기준</span>';
+  h += '<span><button class="dash-print-btn" onclick="printApprovalDashboard()">인쇄</button>';
+  h += '<button class="close-dash" onclick="closeApprovalDashboard()">&times;</button></span></h2>';
+
+  // 요약 통계
+  var gmSigned = all.filter(function(t) { return String(t.gmSign||'').trim(); }).length;
+  var repSigned = all.filter(function(t) { return String(t.repSign||'').trim(); }).length;
+  var deptSigned = all.filter(function(t) { return String(t.deptSign||'').trim(); }).length;
+  var completionRate = total > 0 ? Math.round(done.length / total * 100) : 0;
+
+  h += '<div class="dash-stat-row">';
+  h += '<div class="dash-stat-card"><div class="num" style="color:var(--accent)">' + total + '</div><div class="label">총 결재 건</div></div>';
+  h += '<div class="dash-stat-card"><div class="num" style="color:var(--yellow)">' + pending.length + '</div><div class="label">진행 중</div></div>';
+  h += '<div class="dash-stat-card"><div class="num" style="color:var(--green)">' + done.length + '</div><div class="label">결재완료</div></div>';
+  h += '<div class="dash-stat-card"><div class="num" style="color:var(--red)">' + rejected.length + '</div><div class="label">반려</div></div>';
+  h += '<div class="dash-stat-card"><div class="num">' + completionRate + '%</div><div class="label">완료율</div></div>';
+  h += '</div>';
+
+  // 결재 단계별 서명 현황
+  h += '<h3>결재 단계별 서명 현황</h3>';
+  h += '<div class="dash-stat-row">';
+  h += '<div class="dash-stat-card"><div class="num" style="color:var(--accent)">' + deptSigned + '</div><div class="label">부서장 서명</div></div>';
+  h += '<div class="dash-stat-card"><div class="num" style="color:var(--blue)">' + gmSigned + '</div><div class="label">GM 서명</div></div>';
+  h += '<div class="dash-stat-card"><div class="num" style="color:var(--purple)">' + repSigned + '</div><div class="label">대표님 서명</div></div>';
+  h += '</div>';
+
+  // 미결 건 — 다음 결재자별 대기 현황
+  h += '<h3>미결 건 — 다음 결재자 대기 현황</h3>';
+  var waitByRole = { '이경연 실장':[], '이정헌 소장':[], '나우열M':[], 'GM':[], '대표님':[] };
+  pending.forEach(function(t) {
+    var parsed = parseContent(t.content);
+    var route = buildEffectiveRoute(t, parsed.budget);
+    var nxt = nextApprover(t, route);
+    if (nxt === '부서장') {
+      var head = getDeptHead(t.category) || '이경연 실장';
+      if (waitByRole[head]) waitByRole[head].push(t);
+    } else if (nxt && waitByRole[nxt] !== undefined) {
+      waitByRole[nxt].push(t);
+    }
+  });
+  h += '<table class="dash-table"><tr><th>결재자</th><th>대기 건수</th><th style="min-width:120px">비율</th></tr>';
+  var roleOrder = ['이경연 실장','이정헌 소장','나우열M','GM','대표님'];
+  var maxWait = Math.max.apply(null, roleOrder.map(function(r){ return waitByRole[r].length; }).concat([1]));
+  var barColors = ['accent','blue','purple','green','yellow'];
+  roleOrder.forEach(function(role, ri) {
+    var cnt = waitByRole[role].length;
+    var pct = Math.round(cnt / maxWait * 100);
+    h += '<tr><td><strong>' + esc(role) + '</strong></td><td>' + cnt + '건</td>';
+    h += '<td><div class="dash-bar-wrap"><div class="dash-bar ' + barColors[ri % barColors.length] + '" style="width:' + pct + '%"></div></div></td></tr>';
+  });
+  h += '</table>';
+
+  // 카테고리별 분포
+  h += '<h3>카테고리별 분포</h3>';
+  var catBarColors = ['blue','purple','accent','green','yellow','red'];
+  var catSet = {};
+  all.forEach(function(t) { if (t.category) catSet[t.category] = (catSet[t.category]||0) + 1; });
+  var catList = Object.keys(catSet).sort();
+  h += '<table class="dash-table"><tr><th>카테고리</th><th>건수</th><th>비율</th><th style="min-width:120px">분포</th></tr>';
+  catList.forEach(function(cat, ci) {
+    var count = catSet[cat];
+    var pct = total > 0 ? Math.round(count / total * 100) : 0;
+    h += '<tr><td>' + esc(cat) + '</td><td>' + count + '건</td><td>' + pct + '%</td>';
+    h += '<td><div class="dash-bar-wrap"><div class="dash-bar ' + catBarColors[ci % catBarColors.length] + '" style="width:' + pct + '%"></div></div></td></tr>';
+  });
+  h += '</table>';
+
+  // 예산 포함 결재 건 목록
+  var budgetTasks = all.filter(function(t) { return parseContent(t.content).budget; });
+  if (budgetTasks.length > 0) {
+    h += '<h3>예산 포함 결재 건 (' + budgetTasks.length + '건)</h3>';
+    var totalAmt = 0;
+    h += '<table class="dash-table"><tr><th>업무명</th><th>예산 항목</th><th>금액</th><th>결재 상태</th></tr>';
+    budgetTasks.forEach(function(t) {
+      var b = parseContent(t.content).budget;
+      totalAmt += b.amount;
+      h += '<tr><td>' + esc(t.title) + '</td><td>' + esc(b.category) + '</td>';
+      h += '<td style="font-weight:700;color:var(--green)">' + formatKRW(b.amount) + '</td>';
+      h += '<td>' + esc(t.approvalStatus || '대기') + '</td></tr>';
+    });
+    h += '<tr style="font-weight:700;"><td colspan="2" style="text-align:right;color:var(--accent)">합계</td><td style="color:var(--green)">' + formatKRW(totalAmt) + '</td><td></td></tr>';
+    h += '</table>';
+  }
+
+  // 완료 건 월별 추이
+  h += '<h3>결재완료 월별 추이</h3>';
+  var monthMap = {};
+  done.forEach(function(t) {
+    var d = String(t.completeTime || t.updatedAt || '').slice(0,7);
+    if (d && d.length >= 7) { monthMap[d] = (monthMap[d]||0) + 1; }
+  });
+  var months = Object.keys(monthMap).sort();
+  if (months.length === 0) {
+    h += '<p style="color:var(--dim);font-size:13px;">완료 데이터가 없습니다.</p>';
+  } else {
+    var maxVal = Math.max.apply(null, Object.values(monthMap).concat([1]));
+    h += '<table class="dash-table"><tr><th>월</th><th>완료 건수</th><th style="min-width:120px">추이</th></tr>';
+    months.forEach(function(m) {
+      var pct = Math.round(monthMap[m] / maxVal * 100);
+      h += '<tr><td>' + esc(m) + '</td><td>' + monthMap[m] + '건</td>';
+      h += '<td><div class="dash-bar-wrap"><div class="dash-bar green" style="width:' + pct + '%"></div></div></td></tr>';
+    });
+    h += '</table>';
+  }
+
+  panel.innerHTML = h;
+}
+
+function printApprovalDashboard() {
+  document.body.dataset.printMode = 'approval-dashboard';
+  window.print();
+  delete document.body.dataset.printMode;
 }
 
 function setFilter(f) {
