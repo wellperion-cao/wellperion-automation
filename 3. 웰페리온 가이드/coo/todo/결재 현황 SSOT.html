@@ -10,7 +10,7 @@
 <script>
 /* 최신본 자동 보장 — HTTP 캐시로 옛 버전이 떠 'GM 화면만 미반영'되는 문제 방지 (2026-05-29 COO).
    서버 최신본 버전과 비교해 다르면 1회만 강제 갱신. 루프 방지: ?pv 가 현재 버전과 같으면 종료. */
-window.__PV='20260530-7';
+window.__PV='20260530-8';
 (function(){
   window.addEventListener('pageshow',function(e){ if(e.persisted) location.reload(); });
   try{
@@ -341,6 +341,7 @@ function render() {
   html += '<button class="share-btn" onclick="openApprovalDashboard()" style="background:var(--purple-bg);color:var(--purple);border-color:rgba(167,139,218,0.3);">결재 현황 대시보드</button>';
   html += '<button class="share-btn" onclick="window.print()" style="background:var(--accent-bg);color:var(--accent);border-color:rgba(183,159,138,0.3);">인쇄</button>';
   html += '<button class="share-btn" onclick="shareReport()" style="background:var(--purple-bg);color:var(--purple);border-color:rgba(167,139,218,0.3);">보고용</button>';
+  html += '<button class="share-btn" onclick="shareList()">공유용</button>';
   html += '</div>';
   html += '</div>';
 
@@ -465,6 +466,26 @@ function shareReport() {
   const text = lines.join('\n');
   if (navigator.clipboard && navigator.clipboard.writeText) {
     navigator.clipboard.writeText(text).then(() => alert('보고용 텍스트가 클립보드에 복사되었습니다.'));
+  } else {
+    prompt('아래 텍스트 복사:', text);
+  }
+}
+
+/* 공유용 — 간단 명료 (업무 현황 SSOT shareList() 방식 참고) */
+function shareList() {
+  const list = ALL_TASKS.filter(t => (t.approvalStatus && String(t.approvalStatus).trim()) || (t.approval && String(t.approval).trim()));
+  const lines = [];
+  lines.push('[결재 현황 공유용] ' + todayDateStr());
+  list.forEach(t => {
+    const status = t.approvalStatus || '대기';
+    const cat = (t.category || '미분류').replace(/^\[\d+\]\s*/, '');
+    let line = '[' + status + '] [' + cat + '] ' + (t.title || '-');
+    if (t.owner) line += ' @' + String(t.owner).split(',').map(s => s.trim()).join(' @');
+    lines.push(line);
+  });
+  const text = lines.join('\n');
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(() => alert('공유용 텍스트가 클립보드에 복사되었습니다.'));
   } else {
     prompt('아래 텍스트 복사:', text);
   }

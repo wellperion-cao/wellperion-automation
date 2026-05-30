@@ -9,7 +9,7 @@
 <script>
 /* 최신본 자동 보장 — HTTP 캐시로 옛 버전이 떠 'GM 화면만 미반영'되는 문제 방지 (2026-05-29 COO).
    서버 최신본 버전과 비교해 다르면 1회만 강제 갱신. 루프 방지: ?pv 가 현재 버전과 같으면 종료. */
-window.__PV='20260530-2';
+window.__PV='20260530-3';
 (function(){
   window.addEventListener('pageshow',function(e){ if(e.persisted) location.reload(); });
   try{
@@ -277,6 +277,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 <div class="filter-bar">
   <div class="filter-row" id="ownerFilters"></div>
   <div class="filter-row" id="catFilters"></div>
+  <div class="filter-row" id="searchRow" style="padding-top:2px;"></div>
 </div>
 </div><!-- /sticky-top -->
 
@@ -477,6 +478,8 @@ const FIELD_MAP = {
 let ALL_TASKS = [];
 let activeOwnerFilter = '전체';
 let activeCatFilter = '전체';
+let activeSortBy = '최신순';    // '최신순' | '카테고리' | '담당자' | '시작일순'
+let searchQuery = '';            // 키워드 검색
 let doneLogOpen = false;
 
 /* ═══════════════════════════════════════════
@@ -511,14 +514,42 @@ function updateHeaderSub() {
    Filters
    ═══════════════════════════════════════════ */
 function buildFilters() {
-  // Owner filters
-  const ownerEl = document.getElementById('ownerFilters');
-  let html = '<button class="filter-btn active" onclick="setOwnerFilter(\'전체\',this)">전체</button>';
-  MEMBERS.forEach(m => {
-    html += '<button class="filter-btn" onclick="setOwnerFilter(\'' + escAttr(m) + '\',this)">' + esc(m) + '</button>';
+  // 카운트 계산 — 진행중 업무만 대상
+  const active = ALL_TASKS.filter(t => t.status !== '완료' && t.status !== '보류');
+
+  // 담당자별 카운트
+  const ownerCount = {};
+  active.forEach(t => {
+    (t.owner || '').split(',').map(s => s.trim()).filter(Boolean).forEach(o => {
+      ownerCount[o] = (ownerCount[o] || 0) + 1;
+    });
   });
-  html += '<div style="display:flex;gap:4px;margin-left:auto;">';
-  // [업무-1] 버튼 라벨 "현황 대시보드" → "업무 현황 대시보드" (2026-05-30 COO)
+
+  // 카테고리별 카운트
+  const catCount = {};
+  active.forEach(t => {
+    const c = t.category || '';
+    if (c) catCount[c] = (catCount[c] || 0) + 1;
+  });
+
+  // Owner filters — 정렬 드롭다운 왼쪽, 버튼 그룹 오른쪽
+  const ownerEl = document.getElementById('ownerFilters');
+  let html = '';
+  // 정렬 드롭다운 (결재현황과 동일 스타일)
+  html += '<select onchange="setSortBy(this.value)" style="background:var(--paper);border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:8px;font-size:12px;font-family:inherit;font-weight:600;cursor:pointer;flex-shrink:0;margin-right:4px;">';
+  ['최신순','카테고리','담당자','시작일순'].forEach(function(opt) {
+    html += '<option value="' + opt + '"' + (activeSortBy === opt ? ' selected' : '') + '>' + opt + (opt === '최신순' ? ' ▼' : '') + '</option>';
+  });
+  html += '</select>';
+  // 담당자 필터 버튼 (카운트 포함)
+  html += '<button class="filter-btn' + (activeOwnerFilter === '전체' ? ' active' : '') + '" onclick="setOwnerFilter(\'전체\',this)">전체</button>';
+  MEMBERS.forEach(m => {
+    const cnt = ownerCount[m] || 0;
+    const label = esc(m) + (cnt > 0 ? ' (' + cnt + ')' : '');
+    html += '<button class="filter-btn' + (activeOwnerFilter === m ? ' active' : '') + '" onclick="setOwnerFilter(\'' + escAttr(m) + '\',this)">' + label + '</button>';
+  });
+  // 버튼 그룹 오른쪽
+  html += '<div style="display:flex;gap:4px;margin-left:auto;flex-shrink:0;">';
   html += '<button class="share-btn" onclick="openDashboard()" style="background:var(--purple-bg);color:var(--purple);border-color:rgba(167,139,218,0.3);">업무 현황 대시보드</button>';
   html += '<button class="share-btn" onclick="printTasks()" style="background:var(--accent-bg);color:var(--accent);border-color:rgba(183,159,138,0.3);">인쇄</button>';
   html += '<button class="share-btn" onclick="shareReport()" style="background:var(--purple-bg);color:var(--purple);border-color:rgba(167,139,218,0.3);">보고용</button>';
@@ -526,14 +557,25 @@ function buildFilters() {
   html += '</div>';
   ownerEl.innerHTML = html;
 
-  // Category filters
+  // Category filters (카운트 포함)
   const catEl = document.getElementById('catFilters');
-  html = '<button class="filter-btn active" onclick="setCatFilter(\'전체\',this)">전체</button>';
+  html = '<button class="filter-btn' + (activeCatFilter === '전체' ? ' active' : '') + '" onclick="setCatFilter(\'전체\',this)">전체</button>';
   CATEGORIES.forEach(c => {
-    html += '<button class="filter-btn" onclick="setCatFilter(\'' + escAttr(c) + '\',this)">' + esc(c) + '</button>';
+    const cnt = catCount[c] || 0;
+    const label = esc(c) + (cnt > 0 ? ' (' + cnt + ')' : '');
+    html += '<button class="filter-btn' + (activeCatFilter === c ? ' active' : '') + '" onclick="setCatFilter(\'' + escAttr(c) + '\',this)">' + label + '</button>';
   });
   catEl.innerHTML = html;
+
+  // 검색창
+  const searchEl = document.getElementById('searchRow');
+  let shtml = '<input type="text" id="searchInput" placeholder="업무명·내용·담당자 검색" value="' + escAttr(searchQuery) + '" oninput="setSearchQuery(this.value)" style="flex:1;background:var(--paper);border:1px solid var(--border);color:var(--text);padding:7px 12px;border-radius:8px;font-size:13px;font-family:inherit;">';
+  if (searchQuery) shtml += '<button class="filter-btn" onclick="setSearchQuery(\'\')">✕ 초기화</button>';
+  searchEl.innerHTML = shtml;
 }
+
+function setSortBy(s) { activeSortBy = s; renderTasks(); }
+function setSearchQuery(q) { searchQuery = q; renderTasks(); }
 
 function setOwnerFilter(v, btn) {
   activeOwnerFilter = v;
@@ -619,6 +661,14 @@ function loadFallback() {
    Render
    ═══════════════════════════════════════════ */
 function renderTasks() {
+  // 필터 UI 재빌드 (카운트·선택 상태 동기화)
+  buildFilters();
+  // 검색 박스 포커스 유지
+  if (searchQuery) {
+    const si = document.getElementById('searchInput');
+    if (si && document.activeElement !== si) { si.focus(); si.setSelectionRange(searchQuery.length, searchQuery.length); }
+  }
+
   const el = document.getElementById('mainContent');
   const active = ALL_TASKS.filter(t => t.status !== '완료' && t.status !== '보류');
   const hold = ALL_TASKS.filter(t => t.status === '보류');
@@ -631,6 +681,14 @@ function renderTasks() {
   }
   if (activeCatFilter !== '전체') {
     filtered = filtered.filter(t => t.category === activeCatFilter);
+  }
+  // 검색 필터
+  if (searchQuery && searchQuery.trim()) {
+    const q = searchQuery.trim().toLowerCase();
+    filtered = filtered.filter(t => {
+      const blob = ((t.title || '') + ' ' + (t.content || '') + ' ' + (t.owner || '') + ' ' + (t.category || '')).toLowerCase();
+      return blob.includes(q);
+    });
   }
 
   if (filtered.length === 0 && done.length === 0) {
@@ -646,9 +704,18 @@ function renderTasks() {
     if (!groups[cat]) groups[cat] = [];
     groups[cat].push(t);
   });
-  // 통일 정렬: 최근 활동(수정일→시작일) 최신순 — 결재 현황 SSOT와 동일 기준
+  // activeSortBy에 따른 그룹 내 정렬
   Object.keys(groups).forEach(cat => {
-    groups[cat].sort((a, b) => String(b.updatedAt || b.startDate || '').localeCompare(String(a.updatedAt || a.startDate || '')));
+    if (activeSortBy === '시작일순') {
+      groups[cat].sort((a, b) => String(b.startDate || '').localeCompare(String(a.startDate || '')));
+    } else if (activeSortBy === '담당자') {
+      groups[cat].sort((a, b) => String(a.owner || '').localeCompare(String(b.owner || '')) || String(a.title || '').localeCompare(String(b.title || '')));
+    } else if (activeSortBy === '카테고리') {
+      groups[cat].sort((a, b) => String(a.category || '').localeCompare(String(b.category || '')) || String(a.title || '').localeCompare(String(b.title || '')));
+    } else {
+      // 최신순(기본): 최근 활동(수정일→시작일) 최신순 — 결재 현황 SSOT와 동일 기준
+      groups[cat].sort((a, b) => String(b.updatedAt || b.startDate || '').localeCompare(String(a.updatedAt || a.startDate || '')));
+    }
   });
 
   let html = '';
