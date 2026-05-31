@@ -9,7 +9,7 @@
 <script>
 /* 최신본 자동 보장 — HTTP 캐시로 옛 버전이 떠 'GM 화면만 미반영'되는 문제 방지 (2026-05-29 COO).
    서버 최신본 버전과 비교해 다르면 1회만 강제 갱신. 루프 방지: ?pv 가 현재 버전과 같으면 종료. */
-window.__PV='20260530-4';
+window.__PV='20260531-1';
 (function(){
   window.addEventListener('pageshow',function(e){ if(e.persisted) location.reload(); });
   try{
@@ -103,7 +103,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 .chip.link-chip{background:var(--green-bg);color:var(--green);cursor:pointer;text-decoration:none}
 .chip.link-chip:hover{background:rgba(106,191,123,0.22)}
 .task-content{font-size:12px;color:var(--dim);line-height:1.5;white-space:pre-line;margin-bottom:6px}
-.task-actions{display:flex;gap:6px;flex-shrink:0;flex-wrap:wrap}
+.task-actions{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
 .action-btn{font-size:12px;padding:6px 12px;border-radius:8px;cursor:pointer;font-family:inherit;border:1px solid;font-weight:600;transition:opacity 0.15s;white-space:nowrap}
 .action-btn:hover{opacity:0.8}
 .action-btn.edit{background:var(--accent-bg);color:var(--accent);border-color:rgba(183,159,138,0.3)}
@@ -831,12 +831,12 @@ function renderTaskCard(t, idx) {
   }
   let html = '<div class="' + cardClass + '" data-id="' + escAttr(t.id) + '">';
 
-  // 제목줄: 번호 + 토글 화살표 + 제목 + 칩 + 편집/완료 버튼
-  html += '<div class="task-summary" style="display:flex;align-items:center;gap:8px;">';
-  html += '<span style="font-size:11px;font-weight:700;color:var(--accent);min-width:34px;text-align:center;flex-shrink:0;letter-spacing:0.02em;">#' + String(idx).padStart(3, '0') + '</span>';
+  // 제목줄: 번호 + 토글 화살표 + 제목(전체폭) — 액션 버튼은 카드 하단 별도 줄 (결재 현황 SSOT 구조 통일, 2026-05-31 GM)
+  html += '<div class="task-summary" style="display:flex;align-items:flex-start;gap:8px;">';
+  html += '<span style="font-size:11px;font-weight:700;color:var(--accent);min-width:34px;text-align:center;flex-shrink:0;letter-spacing:0.02em;padding-top:2px;">#' + String(idx).padStart(3, '0') + '</span>';
   html += '<span class="toggle-arrow" onclick="this.closest(\'.task-card\').querySelector(\'.task-detail\').classList.toggle(\'open\');this.classList.toggle(\'open\');" style="font-size:10px;color:var(--dim);transition:transform 0.2s;flex-shrink:0;cursor:pointer;padding:4px;">▶</span>';
   html += '<div style="flex:1;min-width:0;cursor:pointer;" onclick="this.closest(\'.task-card\').querySelector(\'.task-detail\').classList.toggle(\'open\');this.closest(\'.task-card\').querySelector(\'.toggle-arrow\').classList.toggle(\'open\');">';
-  html += '<div class="task-title" style="display:inline;">' + esc(t.title) + '</div>';
+  html += '<div class="task-title" style="word-break:keep-all;overflow-wrap:anywhere;">' + esc(t.title) + '</div>';
   html += '<div class="task-meta" style="margin-top:4px;">';
 
   if (t.owner) {
@@ -906,12 +906,13 @@ function renderTaskCard(t, idx) {
   }
 
   html += '</div>'; // task-meta
-  html += '</div>';
+  html += '</div>'; // title-block
+  html += '</div>'; // task-summary
 
-  // 제목줄 우측: 편집 + 완료 + 보류 + 결과보고 인쇄
+  // 액션 버튼: 카드 하단 별도 줄 (가로 wrap) — 제목과 같은 줄 X (결재 현황 SSOT 구조 통일, 2026-05-31 GM)
   const _parsedCard = parseContent(t.content);
   const _hasResult = !!(_parsedCard.result && _parsedCard.result.trim());
-  html += '<div style="display:flex;gap:4px;flex-shrink:0;flex-wrap:wrap;">';
+  html += '<div class="task-actions" style="margin-top:8px;padding-top:8px;border-top:1px dashed var(--border);">';
   html += '<button class="action-btn edit" onclick="event.stopPropagation();openEditModal(\'' + escAttr(t.id) + '\')" style="padding:4px 10px;font-size:11px;">편집</button>';
   html += '<button class="action-btn done" onclick="event.stopPropagation();markDone(\'' + escAttr(t.id) + '\')" style="padding:4px 10px;font-size:11px;">완료</button>';
   html += '<button class="action-btn" onclick="event.stopPropagation();holdTask(\'' + escAttr(t.id) + '\')" style="padding:4px 10px;font-size:11px;background:var(--orange-bg);color:var(--orange);border-color:rgba(230,148,78,0.3);">보류</button>';
@@ -921,8 +922,7 @@ function renderTaskCard(t, idx) {
     html += '<button class="action-btn" disabled title="결과보고를 먼저 작성하세요" style="padding:4px 10px;font-size:11px;background:transparent;color:var(--dim);border-color:var(--border);opacity:0.45;cursor:not-allowed;">🖨 결과보고</button>';
   }
   html += '<button class="action-btn" onclick="event.stopPropagation();deleteTaskWithAuth(\'' + escAttr(t.id) + '\',\'' + escAttr(t.title || '') + '\')" style="padding:4px 10px;font-size:11px;background:transparent;color:var(--dim);border-color:var(--border);">삭제</button>';
-  html += '</div>';
-  html += '</div>'; // task-summary
+  html += '</div>'; // task-actions
 
   // 토글 영역: 내용 + 진척 로그 + 링크 + 첨부
   html += '<div class="task-detail" style="display:none;padding:10px 0 0 18px;border-top:1px dashed var(--border);margin-top:8px;">';
