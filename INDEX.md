@@ -1,6 +1,6 @@
 # 웰페리온 자산 마스터 INDEX
 
-최종 audit 2026-05-23. SSOT = 본 파일 + Notion 마스터 프레임워크.
+최종 audit 2026-05-23. SSOT = 본 파일 + 가이드허브(https://wellperion-cao.github.io/welperion-automation/).
 
 ## 1. 메인 repo (welperion-automation)
 
@@ -37,8 +37,7 @@
 | 채널 | 경로 |
 |---|---|
 | 텔레그램 | @namuki_report_bot (Chat ID 8254867551) |
-| Notion 마스터 | https://www.notion.so/AI-CEO-34a0407da94881c59c54dd7cc43b6072 |
-| CEO 인박스 DB | https://www.notion.so/fed0015b23cc4faf8acbd3310edf4f72 |
+| 가이드허브 | https://wellperion-cao.github.io/welperion-automation/ |
 
 ## 5. 갱신 규칙
 신규 자산 등록·이동·폐기 시 본 파일 우선 patch → 메모리 동기화.

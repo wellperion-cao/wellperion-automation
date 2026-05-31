@@ -185,21 +185,21 @@ class TelegramNotifier:
         self.send(
             f"🎯 <b>워크플로우 완료</b>\n"
             f"📋 {task_name}\n"
-            f"📊 Notion Agent Tasks에서 확인하세요."
+            f"📊 가이드허브에서 확인하세요."
         )
 
     def notify_workflow_rejected(self, task_name: str):
         self.send(
             f"🚫 <b>태스크 반려됨</b>\n"
             f"📋 {task_name}\n"
-            f"💬 CEO가 반려했습니다. Notion에서 이유를 확인하세요."
+            f"💬 CEO가 반려했습니다. 가이드허브 또는 GitHub에서 이유를 확인하세요."
         )
 
     def notify_confirmed(self, task_name: str):
         self.send(
-            f"📌 <b>Notion 확정 기록 완료</b>\n"
+            f"📌 <b>GitHub 확정 기록 완료</b>\n"
             f"📋 {task_name}\n"
-            f"✅ 승인된 내용이 Notion에 확정 저장되었습니다."
+            f"✅ 승인된 내용이 GitHub에 확정 저장되었습니다."
         )
 
     def send_daily_report(self, role: str, task_summary: str):
@@ -211,5 +211,5 @@ class TelegramNotifier:
         self.send(
             f"{emoji} <b>[{role}] 일일 업무 보고</b>\n\n"
             f"{task_summary[:800]}\n\n"
-            f"📊 상세 내용 → Notion Agent Tasks"
+            f"📊 상세 내용 → 가이드허브"
         )
