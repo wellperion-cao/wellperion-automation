@@ -138,5 +138,15 @@
     "enqueued_at": "2026-05-30",
     "commit_sha": "c10d5d7",
     "note": "카드마다 🖨 결과보고 버튼(작성 전 비활성)·result 잠금 해제. 담당자 콤마→' · '(b235e27). 라이브 검증. 자동생성 옵션A 폐기."
+  },
+  {
+    "task_id": "GM-2026-06-01-01-DISABLE-DUP-0800TASK",
+    "clevel": "gm1",
+    "owner": "김남욱GM",
+    "title": "[관리자] 08:00 중복 예약작업 'Wellperion-CEO-Morning-Brief-0800'(구 notion-c-level 경로) 비활성화/삭제 — 회사 PC 관리자 PowerShell",
+    "status": "PENDING",
+    "priority": "LOW",
+    "enqueued_at": "2026-06-01",
+    "note": "권한: 관리자 PowerShell 필요(현 세션 Access denied). 명령: Disable-ScheduledTask -TaskPath '\\' -TaskName 'Wellperion-CEO-Morning-Brief-0800' (삭제는 Unregister-ScheduledTask). 무해(없는 파일 가리켜 미발송)이나 매일 0x2 실패 로그 제거용. -0800-Live는 실엔진 재지정 완료(bb52b90)."
   }
 ]
