@@ -60,11 +60,12 @@
     "task_id": "COO-2026-05-29-S4-SSOT-REVAMP",
     "clevel": "coo",
     "title": "S4 업무&결재 SSOT 2페이지 UI/UX 통일 + 업무현황 대표님 결제건 삭제 + 결재현황 GM·대표 승인/반려 PIN 게이트(Apps Script 서버검증, PIN은 스크립트 속성에 GM 직접 설정 — 평문 코드 금지)",
-    "status": "IN_PROGRESS",
+    "status": "DONE",
     "depends_on": null,
     "priority": "HIGH",
     "enqueued_at": "2026-05-29T17:17:17.961503",
-    "note": "대표님 결재건 제거 완료(커밋 fb622ee). PIN 값 설정·재배포는 GM 🔒 대기."
+    "processed_at": "2026-05-31",
+    "note": "전 범위 완료·라이브검증(2026-05-31 CEO). 대표 결재건 제거(fb622ee)+PIN 게이트 서버검증 배선(prompt→signTask→todo_sign) 확인. APPROVAL_PIN_GM·APPROVAL_PIN_REP 설정 라이브 확정(오답 PIN→'불일치', '미설정' 아님). 배포본 작동."
   },
   {
     "task_id": "CTO-2026-05-29-IG-APPROVAL-RELAY",
@@ -77,7 +78,7 @@
     "enqueued_at": "2026-05-29T19:04:06.499898",
     "commit_sha": null,
     "processed_at": null,
-    "note": "GM GitHub 토큰 발급 대기 → CTO 중계 빌드. Apps Script는 PIN과 동일 인프라, CTO 단독 1회 배포."
+    "note": "토큰·중계 빌드 완료·라이브검증(2026-05-31 CEO). GITHUB_TOKEN 설정 확정(review_queue.json 1397B 라이브 read). review_set_status 액션 배포·end-to-end 작동(없는 id→'해당 id 없음', commit 이전 반환=무변경). gm1 검수카드 [승인]→relay()→review_set_status 완전 배선(성공시 GitHub 재로드/실패시 롤백). 잔여=발행감시기 예약작업 등록·실발행 가동(개인계정 외부공개)=GM go 후."
   },
   {
     "task_id": "CEO-2026-05-30-REPORT-CONTENT-POLISH",
