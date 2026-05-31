@@ -38,15 +38,19 @@ from telegram.ext import (
 )
 
 from message_store import append_message as _inbox_log
-from bidirectional_handler import (
-    classify_message as _bidir_classify,
-    push_to_inbox as _bidir_push_inbox,
-)
+from bidirectional_handler import classify_message as _bidir_classify
 
 BASE = Path(__file__).parent
 STATE_FILE = BASE / "state.json"
 ENV_FILE = BASE / ".env"
 LOG_FILE = BASE / "bot.log"
+
+# ── SSOT 소스 경로 (노션 폐기 2026-05-29 → GitHub status/*) ───────────────────
+REPO_ROOT = BASE.parent
+STATUS_DIR = REPO_ROOT / "status"
+QUOTES_FILE = STATUS_DIR / "quotes.json"
+QUEUE_FILE = STATUS_DIR / "_queue.json"
+CEO_LOG_FILE = STATUS_DIR / "_ceo_log.jsonl"
 
 WORKDIR = Path.home() / "welperion-automation"  # Claude 실행 기준 디렉토리 (2026-05-23 fix: Desktop → 메인 repo)
 
@@ -86,36 +90,14 @@ def load_env() -> dict:
 
 ENV = load_env()
 
-# inbox_watcher가 사용하는 환경변수를 os.environ에 동기화 (옵션 c 통합, 2026-05-23)
-for _k in ("TELEGRAM_BOT_TOKEN", "NOTION_API_KEY", "INBOX_DB_ID"):
-    if _k in ENV and not os.environ.get(_k):
-        os.environ[_k] = ENV[_k]
+# [2026-05-31 CTO] 죽은 inbox_watcher env 동기화·import 제거 (inbox_watcher.py 부재,
+#   CEO 인박스 DB 폐기 2026-05-29). 인박스 적재는 status/_ceo_log.jsonl append로 대체.
 
-# 인박스 DB 적재 (옵션 c 통합, 2026-05-23)
-try:
-    from inbox_watcher import push_to_notion_inbox as _push_inbox
-except Exception:
-    _push_inbox = None
 TOKEN = ENV.get("TELEGRAM_BOT_TOKEN")
 if not TOKEN:
     raise RuntimeError(".env 에 TELEGRAM_BOT_TOKEN 미정의")
 
-# ── Notion 문구 DB 연동 상수 ─────────────────────────────────────────────────
-NOTION_TOKEN = ENV.get("NOTION_TOKEN", "")
-NOTION_QUOTE_DB_ID = ENV.get("NOTION_QUOTE_DB_ID", "b8e60ed9-53ab-472b-ab8b-fc6c91d138e6")
-NOTION_HEADERS = {
-    "Authorization": f"Bearer {NOTION_TOKEN}",
-    "Notion-Version": "2022-06-28",
-    "Content-Type": "application/json",
-}
-
-# ── 결재 회신 라우터 상수 ─────────────────────────────────────────────────────
-# Start 기획DB / 운영 아카이브DB / 업무자동화DB
-PLANNING_DB_ID   = ENV.get("NOTION_PLANNING_DB_ID",   "3430407d-a948-8156-afde-e663227cb7a1")
-ARCHIVE_DB_ID    = ENV.get("NOTION_ARCHIVE_DB_ID",    "3430407d-a948-819d-8769-f739221cf4c8")
-AUTOMATION_DB_ID = ENV.get("NOTION_AUTOMATION_DB_ID", "aac275a4-fd54-4d97-8971-4f7050de4f6e")
-
-# 결재 키워드 → (상태값, 승인결과값)
+# ── 결재 키워드 → (상태값, 승인결과값) ────────────────────────────────────────
 _APPROVAL_KEYWORD_MAP = {
     "승인":      ("승인완료", "승인"),
     "조건부 승인": ("승인완료", "조건부 승인"),
@@ -231,75 +213,67 @@ async def cmd_stop(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     os._exit(0)
 
 
-# ── 문구 DB 명령어 (v1.1) ─────────────────────────────────────────────────────
+# ── 문구 명령어 (v2.0) — status/quotes.json SSOT (노션 문구 DB 폐기 2026-05-29) ──
 
-def _notion_add_quote(time_slot: str, content: str) -> dict | None:
-    """Notion 문구 DB에 새 항목 추가. 성공 시 page dict 반환."""
-    if not NOTION_TOKEN:
-        return None
-    payload = {
-        "parent": {"database_id": NOTION_QUOTE_DB_ID},
-        "properties": {
-            "문구": {"title": [{"type": "text", "text": {"content": content}}]},
-            "시간대": {"select": {"name": time_slot}},
-            "활성": {"checkbox": True},
-        },
-    }
+def _load_quotes() -> dict:
+    """quotes.json 로드. 실패 시 빈 슬롯 구조 반환."""
+    if not QUOTES_FILE.exists():
+        return {"06": [], "18": []}
     try:
-        resp = requests.post(
-            "https://api.notion.com/v1/pages",
-            headers=NOTION_HEADERS,
-            json=payload,
-            timeout=15,
-        )
-        if resp.status_code == 200:
-            return resp.json()
-        return None
-    except Exception:
-        return None
+        data = json.loads(QUOTES_FILE.read_text(encoding="utf-8"))
+        data.setdefault("06", [])
+        data.setdefault("18", [])
+        return data
+    except Exception as e:
+        log.error(f"quotes.json 로드 실패: {e}")
+        return {"06": [], "18": []}
 
 
-def _notion_deactivate_quote(page_id: str) -> bool:
-    """문구 페이지 활성=False 처리."""
-    if not NOTION_TOKEN:
-        return False
+def _save_quotes(data: dict) -> bool:
+    """quotes.json 저장."""
     try:
-        resp = requests.patch(
-            f"https://api.notion.com/v1/pages/{page_id}",
-            headers=NOTION_HEADERS,
-            json={"properties": {"활성": {"checkbox": False}}},
-            timeout=15,
+        QUOTES_FILE.write_text(
+            json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8"
         )
-        return resp.status_code == 200
-    except Exception:
+        return True
+    except Exception as e:
+        log.error(f"quotes.json 저장 실패: {e}")
         return False
 
 
-def _notion_list_quotes(time_slot: str) -> list[dict]:
-    """해당 시간대 활성 문구 목록 반환."""
-    if not NOTION_TOKEN:
-        return []
-    try:
-        payload = {
-            "filter": {
-                "and": [
-                    {"property": "시간대", "select": {"equals": time_slot}},
-                    {"property": "활성", "checkbox": {"equals": True}},
-                ]
-            },
-            "page_size": 20,
-        }
-        resp = requests.post(
-            f"https://api.notion.com/v1/databases/{NOTION_QUOTE_DB_ID}/query",
-            headers=NOTION_HEADERS,
-            json=payload,
-            timeout=15,
-        )
-        if resp.status_code == 200:
-            return resp.json().get("results", [])
-        return []
-    except Exception:
-        return []
+def _quotes_add(slot: str, content: str) -> str | None:
+    """슬롯('06'|'18')에 문구 추가. 성공 시 새 id 반환, 실패 시 None."""
+    data = _load_quotes()
+    items = data.setdefault(slot, [])
+    # id 자동 증가: 슬롯 내 최대 접미 숫자 + 1
+    max_n = 0
+    for q in items:
+        m = re.search(r"-(\d+)$", str(q.get("id", "")))
+        if m:
+            max_n = max(max_n, int(m.group(1)))
+    new_id = f"{slot}-{max_n + 1}"
+    items.append({"id": new_id, "text": content, "active": True})
+    return new_id if _save_quotes(data) else None
+
+
+def _quotes_deactivate(quote_id: str) -> bool:
+    """문구 id 를 active=False 처리. 매칭 없으면 False."""
+    data = _load_quotes()
+    found = False
+    for slot in ("06", "18"):
+        for q in data.get(slot, []):
+            if str(q.get("id")) == quote_id:
+                q["active"] = False
+                found = True
+    if not found:
+        return False
+    return _save_quotes(data)
+
+
+def _quotes_list(slot: str) -> list[dict]:
+    """슬롯의 active=True 문구 목록 반환."""
+    data = _load_quotes()
+    return [q for q in data.get(slot, []) if q.get("active")]
 
 
 async def cmd_quote_add(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
@@ -309,8 +283,8 @@ async def cmd_quote_add(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     if not await authorized(update):
         return
     raw = update.message.text or ""
-    # 명령어 부분 제거
-    body = re.sub(r"^/문구추가\s*", "", raw).strip()
+    # 명령어 부분 제거 (영문/한글 커맨드 모두 허용)
+    body = re.sub(r"^/(문구추가|quote_add)\s*", "", raw).strip()
     # 시간대 파싱: 06 또는 18
     m = re.match(r"^(06|18)\s+(.+)$", body, re.DOTALL)
     if not m:
@@ -320,52 +294,43 @@ async def cmd_quote_add(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
             parse_mode="Markdown",
         )
         return
-    slot_raw, content = m.group(1), m.group(2).strip().strip('"').strip("'")
-    time_slot = f"{slot_raw}시"
+    slot, content = m.group(1), m.group(2).strip().strip('"').strip("'")
 
-    if not NOTION_TOKEN:
-        await update.message.reply_text("NOTION_TOKEN 미설정 — .env 확인 필요")
-        return
-
-    result = _notion_add_quote(time_slot, content)
-    if result:
-        page_id = result.get("id", "")
+    new_id = _quotes_add(slot, content)
+    if new_id:
         await update.message.reply_text(
             f"문구 등록 완료\n"
-            f"시간대: {time_slot}\n"
+            f"시간대: {slot}시\n"
             f"내용: {content}\n"
-            f"페이지 ID: `{page_id}`",
+            f"ID: `{new_id}`",
             parse_mode="Markdown",
         )
     else:
-        await update.message.reply_text("문구 등록 실패 — Notion API 오류. 로그 확인 필요.")
+        await update.message.reply_text("문구 등록 실패 — quotes.json 쓰기 오류. 로그 확인 필요.")
 
 
 async def cmd_quote_delete(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     """
-    /문구삭제 PAGE_ID
+    /문구삭제 QUOTE_ID  (예: 06-2)
     """
     if not await authorized(update):
         return
     raw = update.message.text or ""
-    body = re.sub(r"^/문구삭제\s*", "", raw).strip()
+    body = re.sub(r"^/(문구삭제|quote_delete)\s*", "", raw).strip()
     if not body:
         await update.message.reply_text(
-            "사용법: `/문구삭제 PAGE_ID`\n"
-            "PAGE_ID는 /문구목록 에서 확인하세요.",
+            "사용법: `/문구삭제 ID`\n"
+            "ID는 /문구목록 에서 확인하세요 (예: 06-2).",
             parse_mode="Markdown",
         )
         return
-    page_id = body
-    if not NOTION_TOKEN:
-        await update.message.reply_text("NOTION_TOKEN 미설정 — .env 확인 필요")
-        return
+    quote_id = body
 
-    ok = _notion_deactivate_quote(page_id)
+    ok = _quotes_deactivate(quote_id)
     if ok:
-        await update.message.reply_text(f"문구 비활성화 완료\nID: `{page_id}`", parse_mode="Markdown")
+        await update.message.reply_text(f"문구 비활성화 완료\nID: `{quote_id}`", parse_mode="Markdown")
     else:
-        await update.message.reply_text("비활성화 실패 — PAGE_ID 확인 또는 Notion API 오류.")
+        await update.message.reply_text("비활성화 실패 — ID 확인 또는 quotes.json 쓰기 오류.")
 
 
 async def cmd_quote_list(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
@@ -375,104 +340,120 @@ async def cmd_quote_list(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     if not await authorized(update):
         return
     raw = update.message.text or ""
-    body = re.sub(r"^/문구목록\s*", "", raw).strip()
+    body = re.sub(r"^/(문구목록|quote_list)\s*", "", raw).strip()
     if body not in ("06", "18"):
         await update.message.reply_text(
             "사용법: `/문구목록 06` 또는 `/문구목록 18`",
             parse_mode="Markdown",
         )
         return
-    time_slot = f"{body}시"
-    if not NOTION_TOKEN:
-        await update.message.reply_text("NOTION_TOKEN 미설정 — .env 확인 필요")
-        return
 
-    items = _notion_list_quotes(time_slot)
+    items = _quotes_list(body)
     if not items:
-        await update.message.reply_text(f"{time_slot} 활성 문구가 없습니다.")
+        await update.message.reply_text(f"{body}시 활성 문구가 없습니다.")
         return
 
-    lines = [f"[{time_slot} 활성 문구 — {len(items)}건]"]
+    lines = [f"[{body}시 활성 문구 — {len(items)}건]"]
     for i, item in enumerate(items, 1):
-        pid = item.get("id", "")
-        props = item.get("properties", {})
-        title_list = props.get("문구", {}).get("title", [])
-        text = title_list[0].get("plain_text", "(제목없음)") if title_list else "(제목없음)"
-        lines.append(f"{i}. {text}\n   ID: `{pid}`")
+        lines.append(f"{i}. {item.get('text', '(내용없음)')}\n   ID: `{item.get('id', '')}`")
 
     await update.message.reply_text("\n".join(lines), parse_mode="Markdown")
 
 
-# ── 결재 회신 라우터 헬퍼 ─────────────────────────────────────────────────────
+# ── 결재 회신 라우터 헬퍼 (v2.0 — status/_queue.json SSOT, 노션 폐기 대체) ──────
+# 결재 매핑: 승인/조건부승인 → DONE 가속(진행), 보류 → ON_HOLD, 반려 → REJECTED
+_QUEUE_STATUS_MAP = {
+    "승인완료": "APPROVED",
+    "보류": "ON_HOLD",
+    "반려": "REJECTED",
+}
 
-def _notion_query_approval_candidates(db_id: str) -> list[dict]:
-    """해당 DB에서 상태='승인 요청' 레코드를 최신순 최대 10건 조회."""
-    if not NOTION_TOKEN:
+
+def _load_queue() -> list[dict]:
+    """_queue.json 전체 로드. 실패 시 빈 리스트."""
+    if not QUEUE_FILE.exists():
         return []
     try:
-        payload = {
-            "filter": {"property": "상태", "select": {"equals": "승인 요청"}},
-            "sorts": [{"timestamp": "last_edited_time", "direction": "descending"}],
-            "page_size": 10,
-        }
-        resp = requests.post(
-            f"https://api.notion.com/v1/databases/{db_id}/query",
-            headers=NOTION_HEADERS,
-            json=payload,
-            timeout=15,
+        return json.loads(QUEUE_FILE.read_text(encoding="utf-8"))
+    except Exception as e:
+        log.error(f"_queue.json 로드 실패: {e}")
+        return []
+
+
+def _save_queue(items: list[dict]) -> bool:
+    """_queue.json 저장."""
+    try:
+        QUEUE_FILE.write_text(
+            json.dumps(items, ensure_ascii=False, indent=2), encoding="utf-8"
         )
-        if resp.status_code == 200:
-            return resp.json().get("results", [])
-    except Exception:
-        pass
-    return []
+        return True
+    except Exception as e:
+        log.error(f"_queue.json 저장 실패: {e}")
+        return False
 
 
-def _page_title(page: dict) -> str:
-    """Notion 페이지에서 title 속성 텍스트 추출."""
-    props = page.get("properties", {})
-    for key in ("제목", "이름", "Name", "title"):
-        field = props.get(key, {})
-        title_list = field.get("title", [])
-        if title_list:
-            return "".join(t.get("plain_text", "") for t in title_list)
-    return "(제목 없음)"
+def _ceo_log_append(event: str, **fields) -> None:
+    """status/_ceo_log.jsonl 에 이벤트 1줄 append (CEO 인박스 DB 폐기 대체)."""
+    import datetime as _dt
+    rec = {"event": event, **fields, "logged_at": _dt.datetime.now().isoformat()}
+    try:
+        with open(CEO_LOG_FILE, "a", encoding="utf-8") as f:
+            f.write(json.dumps(rec, ensure_ascii=False) + "\n")
+    except Exception as e:
+        log.error(f"_ceo_log.jsonl append 실패: {e}")
 
 
-def _match_identifier(identifier: str, pages: list[dict]) -> list[dict]:
-    """식별자 문자열로 후보 페이지 필터링. page_id prefix 또는 제목 포함 매칭."""
-    identifier = identifier.strip().lower().replace("-", "")
+def _query_approval_candidates() -> list[dict]:
+    """_queue.json 에서 결재 대기(status=PENDING) 항목을 최신 enqueue 순 반환."""
+    items = [x for x in _load_queue() if str(x.get("status", "")).upper() == "PENDING"]
+    items.sort(key=lambda x: str(x.get("enqueued_at", "")), reverse=True)
+    return items
+
+
+def _page_title(item: dict) -> str:
+    """큐 항목에서 제목 텍스트 추출 (첫 줄만)."""
+    title = str(item.get("title", "(제목 없음)"))
+    return title.split("\n")[0].strip() or "(제목 없음)"
+
+
+def _match_identifier(identifier: str, items: list[dict]) -> list[dict]:
+    """식별자 문자열로 후보 필터링. task_id 또는 제목 포함 매칭."""
+    ident = identifier.strip().lower().replace("-", "")
     matched = []
-    for p in pages:
-        pid = p.get("id", "").replace("-", "").lower()
-        title = _page_title(p).lower()
-        if identifier in pid or identifier in title.replace(" ", "").replace("-", ""):
-            matched.append(p)
+    for x in items:
+        tid = str(x.get("task_id", "")).replace("-", "").lower()
+        title = _page_title(x).lower().replace(" ", "").replace("-", "")
+        if ident in tid or ident in title:
+            matched.append(x)
     return matched
 
 
-def _patch_approval(page_id: str, status_value: str, approval_result: str, comment: str) -> bool:
-    """Notion 페이지 상태·승인결과·반려코멘트 patch."""
-    if not NOTION_TOKEN:
+def _patch_approval(task_id: str, status_value: str, approval_result: str, comment: str) -> bool:
+    """_queue.json 의 해당 task_id 항목에 결재 결과 반영 + _ceo_log 기록."""
+    import datetime as _dt
+    items = _load_queue()
+    found = False
+    for x in items:
+        if str(x.get("task_id")) == task_id:
+            x["status"] = _QUEUE_STATUS_MAP.get(status_value, status_value)
+            x["approval"] = approval_result
+            x["approved_at"] = _dt.datetime.now().isoformat()
+            if comment:
+                x["approval_comment"] = comment[:2000]
+            found = True
+            break
+    if not found:
         return False
-    props: dict = {
-        "상태": {"select": {"name": status_value}},
-        "AI CEO 결재": {"select": {"name": approval_result}},
-    }
-    if comment:
-        props["반려 및 조건 코멘트"] = {
-            "rich_text": [{"type": "text", "text": {"content": comment[:2000]}}]
-        }
-    try:
-        resp = requests.patch(
-            f"https://api.notion.com/v1/pages/{page_id}",
-            headers=NOTION_HEADERS,
-            json={"properties": props},
-            timeout=15,
-        )
-        return resp.status_code == 200
-    except Exception:
+    if not _save_queue(items):
         return False
+    _ceo_log_append(
+        "GM_APPROVAL",
+        task_id=task_id,
+        approval=approval_result,
+        status=_QUEUE_STATUS_MAP.get(status_value, status_value),
+        comment=comment[:500] if comment else "",
+    )
+    return True
 
 
 def _detect_approval_intent(text: str) -> str | None:
@@ -508,14 +489,12 @@ async def route_approval(update: Update, text: str) -> bool:
     elif remainder:
         comment = remainder
 
-    # 3개 DB 후보 수집
-    all_candidates: list[dict] = []
-    for db_id in (PLANNING_DB_ID, ARCHIVE_DB_ID, AUTOMATION_DB_ID):
-        all_candidates.extend(_notion_query_approval_candidates(db_id))
+    # 결재 대기 후보 수집 (status/_queue.json status=PENDING)
+    all_candidates: list[dict] = _query_approval_candidates()
 
     if not all_candidates:
         await update.message.reply_text(
-            "[AI CEO 자동 중계] 현재 '승인 요청' 상태 레코드가 없습니다. Notion DB를 확인해주세요."
+            "[AI CEO 자동 중계] 현재 결재 대기(PENDING) 항목이 없습니다. status/_queue.json을 확인해주세요."
         )
         return True
 
@@ -542,21 +521,21 @@ async def route_approval(update: Update, text: str) -> bool:
         )
         return True
 
-    # 단일 매칭 — patch 실행
+    # 단일 매칭 — patch 실행 (_queue.json 갱신 + _ceo_log 기록)
     target = matched[0]
-    page_id = target["id"]
+    task_id = target.get("task_id", "")
     title = _page_title(target)
-    ok = _patch_approval(page_id, status_value, approval_result, comment)
+    ok = _patch_approval(task_id, status_value, approval_result, comment)
     if ok:
         await update.message.reply_text(
-            f"[AI CEO 자동 중계] 결재 patch 완료 — {title}\n"
-            f"결재: {approval_result} / 상태: {status_value}"
+            f"[AI CEO 자동 중계] 결재 반영 완료 — {title}\n"
+            f"결재: {approval_result} / 상태: {_QUEUE_STATUS_MAP.get(status_value, status_value)}"
             + (f"\n코멘트: {comment}" if comment else "")
         )
     else:
         await update.message.reply_text(
-            f"[AI CEO 자동 중계] Notion patch 실패 — '{title}' (ID: {page_id})\n"
-            "NOTION_TOKEN 또는 페이지 권한을 확인해주세요."
+            f"[AI CEO 자동 중계] _queue.json 반영 실패 — '{title}' (task_id: {task_id})\n"
+            "status/_queue.json 쓰기 권한을 확인해주세요."
         )
     return True
 
@@ -837,11 +816,9 @@ async def handle_message(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
         f"회신미리보기={bidir_reply[:50]}"
     )
 
-    # 인박스 적재 (simple_ack 제외)
+    # 인박스 적재 (simple_ack 제외) — CEO 인박스 DB 폐기 → status/_ceo_log.jsonl append
     if bidir_category != "simple_ack":
-        notion_key = ENV.get("NOTION_API_KEY", "")
-        inbox_id = ENV.get("INBOX_DB_ID", "")
-        _bidir_push_inbox(prompt, bidir_category, notion_key, inbox_id)
+        _ceo_log_append("GM_INBOX", category=bidir_category, text=prompt[:1000])
 
     # 자동 회신
     _inbox_log("out", "CEO", bidir_reply, msg_type=bidir_category)

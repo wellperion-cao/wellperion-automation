@@ -80,6 +80,14 @@ STATE_FILE = BASE / "state.json"
 ENV_FILE = BASE / ".env"
 LOG_FILE = BASE / "scheduler.log"
 
+# ── SSOT 소스 경로 (노션 폐기 2026-05-29 → GitHub status/* + git log) ──────────
+REPO_ROOT = BASE.parent
+STATUS_DIR = REPO_ROOT / "status"
+QUOTES_FILE = STATUS_DIR / "quotes.json"
+QUEUE_FILE = STATUS_DIR / "_queue.json"
+# 진행현황 집계 대상 C-Level status 파일
+_CLEVEL_FILES = ["ceo", "cfo", "chro", "cmo", "coo", "cpo", "cto"]
+
 # ── 로거 설정 (7일 RotatingFileHandler) ──────────────────────────────────────
 logger = logging.getLogger("scheduler")
 logger.setLevel(logging.INFO)
@@ -108,7 +116,7 @@ def load_env() -> dict[str, str]:
                 continue
             k, v = line.split("=", 1)
             env[k.strip()] = v.strip()
-    for key in ("TELEGRAM_BOT_TOKEN", "NOTION_TOKEN", "NOTION_DB_ID", "NOTION_QUOTE_DB_ID"):
+    for key in ("TELEGRAM_BOT_TOKEN", "OWNER_ID", "CHECKLIST_API_URL"):
         if key in os.environ:
             env[key] = os.environ[key]
     return env
@@ -122,23 +130,10 @@ if not TELEGRAM_TOKEN:
 
 TELEGRAM_API = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}"
 
-# Notion 연동
-NOTION_TOKEN = ENV.get("NOTION_TOKEN", "")
-NOTION_HEADERS = {
-    "Authorization": f"Bearer {NOTION_TOKEN}",
-    "Notion-Version": "2022-06-28",
-    "Content-Type": "application/json",
-}
+# [2026-05-31 CTO] 노션 연동 상수 제거 — 일일보고 소스를 GitHub status/* + git log로
+#   이관(노션 폐기 2026-05-29). 문구=status/quotes.json, 09시=git log, 15시=status/*.json.
 
-# 문구 DB ID (.env NOTION_QUOTE_DB_ID 로 주입, 또는 기동 후 자동 탐지)
-NOTION_QUOTE_DB_ID = ENV.get("NOTION_QUOTE_DB_ID", "")
-
-# 기획DB·결과물DB ID (기존 설정 유지)
-NOTION_PLANNING_DB_ID = ENV.get("NOTION_PLANNING_DB_ID", "")
-NOTION_ARCHIVE_DB_ID = ENV.get("NOTION_ARCHIVE_DB_ID", "")
-
-# 12시 시설·지원·주차 현황용
-COO_CHECKLIST_DB_ID = ENV.get("COO_CHECKLIST_DB_ID", "")
+# 12시 시설·지원·주차 현황용 (Google Sheets Apps Script 단일 소스)
 CHECKLIST_API_URL = ENV.get("CHECKLIST_API_URL", "")
 
 
@@ -335,151 +330,144 @@ def _restart_scheduler() -> None:
         logger.error(f"재기동 실패: {e}")
 
 
-# ── Notion: 문구 DB에서 랜덤 1건 취득 ────────────────────────────────────────
+# ── 문구: status/quotes.json 에서 랜덤 1건 취득 (노션 문구 DB 폐기 대체) ──────
 def fetch_random_quote(time_slot: str) -> str | None:
     """
     time_slot: "06시" | "18시"
-    해당 시간대 + 활성=True 인 문구 중 랜덤 1건 반환.
-    실패 시 None 반환.
+    status/quotes.json 의 해당 시간대 + active=True 문구 중 랜덤 1건 반환.
+    파일 없거나 문구 없으면 None 반환.
     """
-    if not NOTION_TOKEN or not NOTION_QUOTE_DB_ID:
+    slot_key = time_slot.replace("시", "").strip()  # "06시" → "06"
+    if not QUOTES_FILE.exists():
+        logger.warning(f"quotes.json 없음: {QUOTES_FILE}")
         return None
     try:
-        payload = {
-            "filter": {
-                "and": [
-                    {"property": "시간대", "select": {"equals": time_slot}},
-                    {"property": "활성", "checkbox": {"equals": True}},
-                ]
-            }
-        }
-        resp = requests.post(
-            f"https://api.notion.com/v1/databases/{NOTION_QUOTE_DB_ID}/query",
-            headers=NOTION_HEADERS,
-            json=payload,
-            timeout=15,
-        )
-        if resp.status_code != 200:
-            logger.warning(f"문구 DB 조회 실패: {resp.status_code} {resp.text[:200]}")
+        data = json.loads(QUOTES_FILE.read_text(encoding="utf-8"))
+        items = data.get(slot_key, [])
+        active = [q.get("text", "") for q in items if q.get("active") and q.get("text")]
+        if not active:
             return None
-        results = resp.json().get("results", [])
-        if not results:
-            return None
-        item = random.choice(results)
-        title_prop = item.get("properties", {}).get("문구", {})
-        rich_texts = title_prop.get("title", [])
-        if rich_texts:
-            return rich_texts[0].get("plain_text", "")
-        return None
+        return random.choice(active)
     except Exception as e:
-        logger.error(f"문구 DB 조회 예외: {e}")
+        logger.error(f"quotes.json 조회 예외: {e}")
         return None
 
 
-# ── Notion: 전날 업무 변경 집계 (09시용) ─────────────────────────────────────
+# ── git log: 전날 커밋 집계 (09시용, 노션 DB 폐기 대체) ───────────────────────
+def _git_log_between(since: str, until: str, max_lines: int = 40) -> list[str]:
+    """git log --since/--until 로 커밋 제목 목록 반환. 실패 시 빈 리스트."""
+    try:
+        # bytes 모드 후 수동 디코드 — git stderr가 OS 로캘(cp949 등) 바이트를 섞어
+        #   text=True 의 리더 스레드 디코드를 깨뜨리는 문제 회피 (Python 3.14).
+        result = subprocess.run(
+            [
+                "git", "log",
+                f"--since={since}", f"--until={until}",
+                "--no-merges", "--pretty=format:%s",
+            ],
+            cwd=str(REPO_ROOT),
+            capture_output=True,
+            timeout=20,
+        )
+        if result.returncode != 0:
+            logger.warning(f"git log 실패: {result.stderr.decode('utf-8', 'replace')[:200]}")
+            return []
+        stdout = result.stdout.decode("utf-8", "replace")
+        lines = [ln.strip() for ln in stdout.splitlines() if ln.strip()]
+        # auto(changelog) 자동 커밋은 노이즈 → 제외
+        lines = [ln for ln in lines if not ln.startswith("auto(changelog)")]
+        return lines[:max_lines]
+    except Exception as e:
+        logger.warning(f"git log 예외: {e}")
+        return []
+
+
 def fetch_yesterday_summary() -> str:
     """
-    전날 (어제) 변경된 기획DB·결과물DB·아카이브 항목을 집계.
-    Notion API last_edited_time 필터 활용.
+    전날(어제) git 커밋을 집계. SSOT = GitHub (노션 결과물DB 폐기 2026-05-29).
     """
-    if not NOTION_TOKEN:
-        return "(추후 데이터 연결 필요 — NOTION_TOKEN 미설정)"
-
     yesterday = (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d")
     today = datetime.now().strftime("%Y-%m-%d")
 
-    lines: list[str] = []
-    db_targets = [
-        ("기획DB", NOTION_PLANNING_DB_ID),
-        ("결과물DB", NOTION_ARCHIVE_DB_ID),
-    ]
+    commits = _git_log_between(f"{yesterday} 00:00", f"{today} 00:00")
+    total = len(commits)
+    if total == 0:
+        return f"• 전날({yesterday}) 커밋 없음"
 
-    for db_name, db_id in db_targets:
-        if not db_id:
-            lines.append(f"• {db_name}: (DB ID 미설정 — .env 확인 필요)")
-            continue
-        try:
-            payload = {
-                "filter": {
-                    "and": [
-                        {"timestamp": "last_edited_time", "last_edited_time": {"on_or_after": f"{yesterday}T00:00:00+09:00"}},
-                        {"timestamp": "last_edited_time", "last_edited_time": {"before": f"{today}T00:00:00+09:00"}},
-                    ]
-                },
-                "sorts": [{"timestamp": "last_edited_time", "direction": "descending"}],
-                "page_size": 20,
-            }
-            resp = requests.post(
-                f"https://api.notion.com/v1/databases/{db_id}/query",
-                headers=NOTION_HEADERS,
-                json=payload,
-                timeout=15,
-            )
-            if resp.status_code != 200:
-                lines.append(f"• {db_name}: 조회 실패 (status={resp.status_code})")
-                continue
-            results = resp.json().get("results", [])
-            count = len(results)
-            if count == 0:
-                lines.append(f"• {db_name}: 전날 변경 없음")
-            else:
-                # 상위 5건 제목 추출
-                titles = []
-                for item in results[:5]:
-                    props = item.get("properties", {})
-                    # title 타입 프로퍼티 탐색
-                    for pv in props.values():
-                        if pv.get("type") == "title":
-                            rt = pv.get("title", [])
-                            if rt:
-                                titles.append(rt[0].get("plain_text", "(제목없음)"))
-                            break
-                lines.append(f"• {db_name}: 전날 변경 {count}건")
-                for t in titles:
-                    lines.append(f"  - {t}")
-                if count > 5:
-                    lines.append(f"  ... 외 {count - 5}건")
-        except Exception as e:
-            lines.append(f"• {db_name}: 조회 예외 ({e})")
-
-    return "\n".join(lines) if lines else "(데이터 없음)"
+    lines = [f"• 전날 커밋 {total}건 (auto 제외)"]
+    for c in commits[:10]:
+        lines.append(f"  - {c}")
+    if total > 10:
+        lines.append(f"  ... 외 {total - 10}건")
+    return "\n".join(lines)
 
 
-# ── Notion: C-Level별 현재 업무 진행현황 (15시용) ────────────────────────────
+# ── status/*: C-Level별 현재 업무 진행현황 (15시용, 노션 DB 폐기 대체) ────────
+# 미완료로 간주하는 상태값 (DONE/완료/폐기 외 전부 진행/대기로 집계)
+_OPEN_STATUSES = {"PENDING", "IN_PROGRESS", "ON_HOLD", "진행중", "대기", "보류", "진행예정"}
+
+
+def _load_queue_open() -> list[dict]:
+    """_queue.json 에서 미완료(status != DONE) 항목 반환."""
+    if not QUEUE_FILE.exists():
+        return []
+    try:
+        data = json.loads(QUEUE_FILE.read_text(encoding="utf-8"))
+        return [x for x in data if str(x.get("status", "")).upper() != "DONE"]
+    except Exception as e:
+        logger.warning(f"_queue.json 읽기 실패: {e}")
+        return []
+
+
 def fetch_current_progress() -> str:
     """
-    기획DB·결과물DB에서 진행 중인 항목을 C-Level(담당자)별로 집계.
+    status/_queue.json (대기 큐) + 각 C-Level status JSON의 active_tasks 중
+    미완료 항목을 C-Level별로 집계. SSOT = GitHub status/*.json.
     """
-    if not NOTION_TOKEN:
-        return "(추후 데이터 연결 필요 — NOTION_TOKEN 미설정)"
+    # C-Level별 미완료 카운트 + 제목 수집
+    per_clevel: dict[str, list[str]] = {}
 
-    lines: list[str] = []
-    db_targets = [
-        ("기획DB", NOTION_PLANNING_DB_ID),
-        ("결과물DB", NOTION_ARCHIVE_DB_ID),
-    ]
+    # 1) 대기 큐 (status != DONE)
+    for item in _load_queue_open():
+        clevel = str(item.get("clevel", "?")).upper()
+        title = str(item.get("title", "(제목없음)")).split("\n")[0][:60]
+        status = item.get("status", "")
+        per_clevel.setdefault(clevel, []).append(f"[{status}] {title}")
 
-    for db_name, db_id in db_targets:
-        if not db_id:
-            lines.append(f"• {db_name}: (DB ID 미설정)")
+    # 2) 각 C-Level active_tasks (status not in 완료군)
+    for name in _CLEVEL_FILES:
+        f = STATUS_DIR / f"{name}.json"
+        if not f.exists():
             continue
         try:
-            payload = {"page_size": 50}
-            resp = requests.post(
-                f"https://api.notion.com/v1/databases/{db_id}/query",
-                headers=NOTION_HEADERS,
-                json=payload,
-                timeout=15,
-            )
-            if resp.status_code != 200:
-                lines.append(f"• {db_name}: 조회 실패 (status={resp.status_code})")
-                continue
-            results = resp.json().get("results", [])
-            lines.append(f"• {db_name}: 총 {len(results)}건")
+            d = json.loads(f.read_text(encoding="utf-8"))
         except Exception as e:
-            lines.append(f"• {db_name}: 조회 예외 ({e})")
+            logger.warning(f"{name}.json 읽기 실패: {e}")
+            continue
+        for t in d.get("active_tasks", []):
+            st = str(t.get("status", ""))
+            if st.upper() == "DONE" or st in ("완료", "폐기"):
+                continue
+            if st and st.upper() not in {s.upper() for s in _OPEN_STATUSES}:
+                continue
+            clevel = name.upper()
+            title = str(t.get("title", "(제목없음)")).split("\n")[0][:60]
+            per_clevel.setdefault(clevel, []).append(f"[{st or '진행'}] {title}")
 
-    return "\n".join(lines) if lines else "(데이터 없음)"
+    if not per_clevel:
+        return "• 현재 진행중·대기 항목 없음"
+
+    total = sum(len(v) for v in per_clevel.values())
+    lines = [f"• 진행중·대기 총 {total}건"]
+    for clevel in sorted(per_clevel):
+        items = per_clevel[clevel]
+        lines.append("")
+        lines.append(f"[{clevel}] {len(items)}건")
+        for it in items[:5]:
+            lines.append(f"  - {it}")
+        if len(items) > 5:
+            lines.append(f"  ... 외 {len(items) - 5}건")
+    return "\n".join(lines)
 
 
 # ── Claude CLI: 오늘자 요약 생성 (21시 Lv1용) ───────────────────────────────
@@ -500,47 +488,13 @@ def _find_claude_bin() -> str:
 
 
 def _fetch_today_changes_grouped() -> dict[str, list[str]]:
-    """오늘자 변경 항목을 DB별로 그룹핑해서 반환."""
+    """오늘자 git 커밋을 단일 그룹('커밋')으로 반환. SSOT = GitHub (노션 폐기)."""
     today = datetime.now().strftime("%Y-%m-%d")
-    grouped: dict[str, list[str]] = {}
-    db_targets = [
-        ("기획DB", NOTION_PLANNING_DB_ID),
-        ("결과물DB", NOTION_ARCHIVE_DB_ID),
-    ]
-    for db_name, db_id in db_targets:
-        if not db_id or not NOTION_TOKEN:
-            continue
-        try:
-            payload = {
-                "filter": {
-                    "timestamp": "last_edited_time",
-                    "last_edited_time": {"on_or_after": f"{today}T00:00:00+09:00"},
-                },
-                "sorts": [{"timestamp": "last_edited_time", "direction": "descending"}],
-                "page_size": 30,
-            }
-            resp = requests.post(
-                f"https://api.notion.com/v1/databases/{db_id}/query",
-                headers=NOTION_HEADERS,
-                json=payload,
-                timeout=15,
-            )
-            if resp.status_code == 200:
-                results = resp.json().get("results", [])
-                titles: list[str] = []
-                for item in results:
-                    props = item.get("properties", {})
-                    for pv in props.values():
-                        if pv.get("type") == "title":
-                            rt = pv.get("title", [])
-                            if rt:
-                                titles.append(rt[0].get("plain_text", "").strip())
-                            break
-                if titles:
-                    grouped[db_name] = titles
-        except Exception as e:
-            logger.warning(f"21시 데이터 수집 예외 ({db_name}): {e}")
-    return grouped
+    tomorrow = (datetime.now() + timedelta(days=1)).strftime("%Y-%m-%d")
+    commits = _git_log_between(f"{today} 00:00", f"{tomorrow} 00:00", max_lines=30)
+    if not commits:
+        return {}
+    return {"커밋": commits}
 
 
 def _fetch_one_line_summary(grouped: dict[str, list[str]]) -> str:
@@ -754,26 +708,6 @@ def _fetch_checklist_status_sheets(today: str) -> dict | None:
     return None
 
 
-def _fetch_checklist_status_notion(today: str) -> list | None:
-    """Notion COO 체크리스트 DB에서 오늘 데이터 조회."""
-    if not NOTION_TOKEN or not COO_CHECKLIST_DB_ID:
-        return None
-    try:
-        payload = {
-            "filter": {"property": "일자", "date": {"equals": today}},
-            "page_size": 100,
-        }
-        resp = requests.post(
-            f"https://api.notion.com/v1/databases/{COO_CHECKLIST_DB_ID}/query",
-            headers=NOTION_HEADERS, json=payload, timeout=15,
-        )
-        if resp.status_code == 200:
-            return resp.json().get("results", [])
-    except Exception as e:
-        logger.warning(f"12시 Notion 조회 실패: {e}")
-    return None
-
-
 def _compile_zone_summary(rows: list[dict]) -> str:
     """Google Sheets 행 데이터 → 구역별 완료율 + 이슈 + 주차."""
     zones: dict[str, dict] = {}
@@ -817,71 +751,8 @@ def _compile_zone_summary(rows: list[dict]) -> str:
     return "\n".join(result)
 
 
-def _compile_notion_summary(results: list) -> str:
-    """Notion 페이지 목록 → 카테고리별 점검 현황."""
-    cats: dict[str, dict] = {}
-    issues: list[str] = []
-    parking: list[str] = []
-
-    for item in results:
-        props = item.get("properties", {})
-        cat_prop = props.get("카테고리", {})
-        status_prop = props.get("상태", {})
-        name_prop = props.get("항목명", {})
-        issue_prop = props.get("이슈 메모", {})
-
-        cat = ""
-        if cat_prop.get("select"):
-            cat = cat_prop["select"].get("name", "")
-        if not cat:
-            cat = "기타"
-
-        status = ""
-        if status_prop.get("select"):
-            status = status_prop["select"].get("name", "")
-
-        title = ""
-        title_arr = name_prop.get("title", [])
-        if title_arr:
-            title = title_arr[0].get("plain_text", "")
-
-        issue_text = ""
-        issue_rt = issue_prop.get("rich_text", [])
-        if issue_rt:
-            issue_text = issue_rt[0].get("plain_text", "")
-
-        if cat not in cats:
-            cats[cat] = {"total": 0, "done": 0, "issue": 0}
-        cats[cat]["total"] += 1
-        if status == "점검완료":
-            cats[cat]["done"] += 1
-        if issue_text:
-            cats[cat]["issue"] += 1
-            issues.append(f"  - {title}: {issue_text}")
-
-        if "주차" in title:
-            mark = "V" if status == "점검완료" else "_"
-            parking.append(f"  [{mark}] {title}")
-
-    lines = ["[시설·지원 점검 현황]"]
-    for cat, c in sorted(cats.items()):
-        rate = int(c["done"] / c["total"] * 100) if c["total"] > 0 else 0
-        issue_tag = f" (이슈 {c['issue']})" if c["issue"] > 0 else ""
-        lines.append(f"  {cat}: {rate}% ({c['done']}/{c['total']}){issue_tag}")
-
-    if parking:
-        lines += ["", "[주차 관리]"] + parking
-
-    if issues:
-        lines += ["", "[이슈 발생]"] + issues[:5]
-        if len(issues) > 5:
-            lines.append(f"  ... 외 {len(issues) - 5}건")
-
-    return "\n".join(lines)
-
-
 def _build_12_body() -> str:
-    """12시 — 시설·지원·주차 점검 현황"""
+    """12시 — 시설·지원·주차 점검 현황 (Google Sheets 단일 소스, 노션 폐기)"""
     now = datetime.now()
     today = now.strftime("%Y-%m-%d")
     weekday_kor = _WEEKDAY_KOR[now.weekday()]
@@ -893,14 +764,9 @@ def _build_12_body() -> str:
         sections.append(_compile_zone_summary(sheets_data["rows"]))
 
     if not sections:
-        notion_data = _fetch_checklist_status_notion(today)
-        if notion_data:
-            sections.append(_compile_notion_summary(notion_data))
-
-    if not sections:
         sections.append(
             "(점검 데이터 미연결)\n"
-            "  .env CHECKLIST_API_URL 또는 COO_CHECKLIST_DB_ID 설정 후 활성화"
+            "  .env CHECKLIST_API_URL 설정 후 활성화"
         )
 
     body = "\n\n".join(sections)
@@ -1072,54 +938,10 @@ def main():
 
     scheduler = BlockingScheduler(timezone="Asia/Seoul")
 
-    # ── 운영 아카이브 결과 보고 감지기 (5분 주기) ──────────────────────────────
-    # [2026-05-30 CTO 비활성] 노션 결과물DB 폐기(2026-05-29)로 상태 select 옵션
-    #   ('결과 보고'·'유지보수'·'완료')이 사라져 5분마다 400 validation_error 폭주
-    #   (archive_watcher.log 누적 248건+). 쿼리가 항상 [] 반환 → GM 알림 0건 발송이므로
-    #   비활성해도 GM 정기 알림에 영향 없음. 가이드허브 큐 기반 전환은 Phase 2 계획 참조:
-    #   docs/노션_가이드허브_리뉴얼_계획.md. 코드·import 보존(데이터 유실 0, 가역적).
-    if False:  # archive_result_watcher 노션 추종 중단 (Phase 2 전환 전까지 스킵)
-        try:
-            from archive_result_watcher import check_and_notify as _archive_check
-            scheduler.add_job(
-                _archive_check,
-                trigger=IntervalTrigger(minutes=5),
-                id="archive_result_watcher",
-                misfire_grace_time=120,
-                coalesce=True,
-                next_run_time=datetime.now(),
-            )
-            logger.info("archive_result_watcher 등록 완료 (5분 주기)")
-        except ImportError as e:
-            logger.error(f"archive_result_watcher 임포트 실패 — 감지기 미등록: {e}")
-    else:
-        logger.info("archive_result_watcher 비활성 — 노션 결과물DB 폐기, Phase 2 가이드허브 전환 대기")
-
-    # ── Start 기획 → 결과물DB 이관 감지기 (5분 주기) ─────────────────────────
-    # [2026-05-30 CTO 비활성 / Phase 2 두 번째 전환] Start 기획DB·결과물DB 두 DB
-    #   모두 폐기 방향 → '기획 초안완료' 이관 이벤트 발생 0건 확정. 텔레그램 알림은
-    #   이관 루프(Step 3) 안에서만 발송되는데, 기획DB 쿼리가 상시 0건이라 알림 코드에
-    #   도달 자체가 불가. 로그 실측: 보존 윈도우(2026-05-23~05-30) 69회 체크 전부
-    #   '신규 이관 0건', 알림/이관 0건. state.planning_migrated 7건은 폐기 전 과거
-    #   이관분으로 dedup·last_check 커서로 재발화 불가. → GM 정기 알림에 영향 전무.
-    #   코드·import·planning_to_archive_watcher.py 보존(가역적, if False 한 줄 토글).
-    #   참조: docs/노션_가이드허브_리뉴얼_계획.md.
-    if False:  # planning_to_archive_watcher 노션 추종 중단 (Phase 2 폐기 후보, 병행 보존)
-        try:
-            from planning_to_archive_watcher import check_planning_migration as _planning_check
-            scheduler.add_job(
-                _planning_check,
-                trigger=IntervalTrigger(minutes=5),
-                id="planning_to_archive_watcher",
-                misfire_grace_time=120,
-                coalesce=True,
-                next_run_time=datetime.now(),
-            )
-            logger.info("planning_to_archive_watcher 등록 완료 (5분 주기)")
-        except ImportError as e:
-            logger.error(f"planning_to_archive_watcher 임포트 실패 — 감지기 미등록: {e}")
-    else:
-        logger.info("planning_to_archive_watcher 비활성 — 노션 Start기획DB·결과물DB 폐기, 이관 이벤트 0건(알림 0건), Phase 2 폐기 대기")
+    # [2026-05-31 CTO 제거] archive_result_watcher · planning_to_archive_watcher
+    #   두 노션 추종 감지기는 노션 결과물DB·Start기획DB 폐기(2026-05-29)로 상시 0건·
+    #   알림 0건 확정 → if False 사문(死文) 블록 삭제. 파일(archive_result_watcher.py·
+    #   planning_to_archive_watcher.py)은 디스크 보존(가역적). 참조: docs/노션_가이드허브_리뉴얼_계획.md.
 
     # ── 업무자동화 DB 자동 실행 Watcher (5분 주기) — CTO v1.0 ───────────────
     try:
@@ -1151,30 +973,9 @@ def main():
     except ImportError as e:
         logger.error(f"pre_task_notifier 임포트 실패 — 알림기 미등록: {e}")
 
-    # ── Notion 통합 권한 상시 감시 Watcher (15분 주기) — CTO-001 ────────────
-    # [2026-05-30 CTO 비활성 / Phase 2 첫 전환] 노션 미사용 확정으로 '노션 통합
-    #   권한 단절 감시' 자체가 무의미. 감시 대상 4DB(신규기획·결과물·CTO개발·R/R)는
-    #   현재 200 응답이나 노션 폐기 방향상 권한 점검 가치 0. 로그 실측: 누적 88회
-    #   체크 중 FAIL 0·경보/복구 알림 0건 → GM 정기 알림에 영향 전무.
-    #   대체 경로 불필요(노션 미사용이면 권한 감시 무의미 — Phase 2 계획 2-(5)).
-    #   코드·import·permission_watcher.py 보존(가역적). 가이드허브 전환 대상 아님(폐기).
-    #   참조: docs/노션_가이드허브_리뉴얼_계획.md.
-    if False:  # permission_watcher 노션 추종 중단 (Phase 2 폐기 후보, 병행 보존)
-        try:
-            from permission_watcher import check_all_permissions as _perm_check
-            scheduler.add_job(
-                _perm_check,
-                trigger=IntervalTrigger(minutes=15),
-                id="permission_watcher",
-                misfire_grace_time=300,
-                coalesce=True,
-                next_run_time=datetime.now(),
-            )
-            logger.info("permission_watcher 등록 완료 (15분 주기) — CTO-001")
-        except ImportError as e:
-            logger.error(f"permission_watcher 임포트 실패 — 감지기 미등록: {e}")
-    else:
-        logger.info("permission_watcher 비활성 — 노션 미사용, 권한 감시 무의미(알림 0건), Phase 2 폐기 대기")
+    # [2026-05-31 CTO 제거] permission_watcher(노션 통합 권한 감시)는 노션 미사용
+    #   확정으로 감시 가치 0·알림 0건 → if False 사문 블록 삭제. permission_watcher.py는
+    #   디스크 보존(가역적). 참조: docs/노션_가이드허브_리뉴얼_계획.md.
 
     # ── C-Level 상태변경 텔레그램 자동발송 (1분 주기) — CTO v1.0 ─────────────
     try:

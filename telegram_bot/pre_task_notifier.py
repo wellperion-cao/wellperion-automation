@@ -1,6 +1,16 @@
 # pre_task_notifier.py
 # 업무자동화 DB 보류 레코드 H-15분 사전 알림 — AI CTO v1.1
 # 2026-04-21 / 2026-05-22 보류 옵션 폐기, 보류 단일 휴면 상태로 통합
+#
+# [2026-05-31 CTO 이관 보류 — Notion 소스 유지 + TODO]
+#   본 알림기는 '실행 시간'(예: '매주 월요일 08:00') 필드 기준 H-15분 알람이 핵심.
+#   그러나 새 GitHub status/* 시스템에는 실행시간(알람) 필드가 없어(=시간기반 자동
+#   기동 메커니즘 부재) 단순 이관 불가. 참조: status/cto.json 의 ON_HOLD 태스크
+#   CTO-2026-05-29-AUTOMATION-DB-MIGRATE ("새 GitHub 시스템에 '실행시간 기반 자동
+#   기동(알람)' 기능이 없어 단순 이관 불가 — 알람 기능 설계 결정 후 재개").
+#   → 알람 스키마 설계 결정 전까지 노션 업무자동화 DB(AUTOMATION_DB_ID) 소스 유지.
+#   TODO(CTO): status/*.json 에 exec_schedule(실행시간) 필드 도입 후 fetch_scheduled_records()
+#   를 status 파서로 교체. 폴백·중복방지(state.json pre_task_notified) 로직은 재사용 가능.
 
 import sys
 import os
