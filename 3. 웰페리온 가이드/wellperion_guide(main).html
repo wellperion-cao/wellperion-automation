@@ -149,6 +149,7 @@
   .task-card:hover{box-shadow:0 2px 8px rgba(183,159,138,0.15);}
   .task-card:not([style*="border-left"]):hover{border-color:var(--accent-line);}
   .task-card .task-title{font-weight:700; font-size:14.5px; margin-bottom:4px; display:flex; align-items:center; gap:6px;}
+  .task-card .task-title > span:first-child{flex:1; min-width:0; overflow:hidden;}
   .task-card .task-meta{font-size:12.5px; color:var(--dim); display:flex; gap:14px; flex-wrap:wrap;}
   .task-card .task-meta span{display:flex; align-items:center; gap:4px;}
   .task-card .task-desc{font-size:13.5px; color:var(--text-soft); margin-top:8px; padding-top:8px; border-top:1px dashed var(--border); line-height:1.65;}
@@ -219,7 +220,7 @@
   }
   .todo-modal .owner-check-item.selected{background:var(--accent-bg);border-color:var(--accent);color:var(--accent);}
   .badge.sheets{background:rgba(106,191,123,0.2);color:var(--grow);font-size:10px;}
-  .task-card .todo-actions{display:flex;gap:4px;margin-left:auto;}
+  .task-card .todo-actions{display:flex;gap:4px;margin-left:auto;flex-shrink:0;}
   .task-card .todo-act-btn{
     padding:3px 8px;font-size:11px;font-weight:600;border-radius:6px;cursor:pointer;
     font-family:inherit;border:1px solid var(--border);background:var(--bg);color:var(--dim);transition:all 0.12s;
@@ -1385,7 +1386,7 @@
           <div style="font-size:12px; letter-spacing:0.2em; text-transform:uppercase; color:#B79F8A; font-weight:600; margin-bottom:6px;">WELLPERION · Company Introduction</div>
           <div style="font-size:20px; font-weight:700; color:#fff; letter-spacing:-0.01em;">A Day, <em style="color:#B79F8A; font-style:italic;">Well Completed.</em></div>
         </div>
-        <a href="file:///C:/Users/jjky0/welperion-automation/2.%20브랜드_공식문서/웰페리온_회사소개서_v2.19.html" target="_blank" style="display:inline-flex; align-items:center; gap:8px; padding:14px 28px; background:#ED5B3F; color:#fff; font-size:15px; font-weight:700; border-radius:10px; text-decoration:none; letter-spacing:0.02em; white-space:nowrap; box-shadow:0 2px 8px rgba(237,91,63,0.3);">
+        <a href="회사문서/웰페리온_회사소개서_v2.19.html" target="_blank" style="display:inline-flex; align-items:center; gap:8px; padding:14px 28px; background:#ED5B3F; color:#fff; font-size:15px; font-weight:700; border-radius:10px; text-decoration:none; letter-spacing:0.02em; white-space:nowrap; box-shadow:0 2px 8px rgba(237,91,63,0.3);">
           회사소개서 원본 열기
         </a>
       </div>
@@ -1577,7 +1578,7 @@
           <div style="font-size:20px; font-weight:700; color:#fff; letter-spacing:-0.01em;">GM 전략 로드맵 보고서 <em style="color:#7EB8DA; font-style:italic;">v1.5 · A3 6페이지</em></div>
           <div style="font-size:13px; color:#8A9AAA; margin-top:6px;">3라인 강화 · A3 인쇄 최적화 · 6페이지 전체 보고서</div>
         </div>
-        <a href="file:///C:/Users/jjky0/welperion-automation/2.%20브랜드_공식문서/웰페리온_전략로드맵_보고서_v1.4_A3.html" target="_blank" style="display:inline-flex; align-items:center; gap:8px; padding:14px 28px; background:#3B82F6; color:#fff; font-size:15px; font-weight:700; border-radius:10px; text-decoration:none; letter-spacing:0.02em; white-space:nowrap; box-shadow:0 2px 8px rgba(59,130,246,0.3);">
+        <a href="회사문서/웰페리온_전략로드맵_보고서_v1.4_A3.html" target="_blank" style="display:inline-flex; align-items:center; gap:8px; padding:14px 28px; background:#3B82F6; color:#fff; font-size:15px; font-weight:700; border-radius:10px; text-decoration:none; letter-spacing:0.02em; white-space:nowrap; box-shadow:0 2px 8px rgba(59,130,246,0.3);">
           전략로드맵 원본 열기
         </a>
       </div>
@@ -6867,7 +6868,7 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
         info.style.cssText = 'flex:1;min-width:0;';
         info.innerHTML =
           '<div style="font-size:12px;color:var(--dim);">' + gm1Esc(ev.startDate) + (ev.time ? ' ' + gm1Esc(ev.time.slice(0,5)) : '') + '</div>' +
-          '<div style="font-size:14px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;' + (isDone ? '' : '') + '">' + gm1Esc(ev.title) + '</div>' +
+          '<div style="font-size:14px;font-weight:700;white-space:normal;word-break:break-word;' + (isDone ? '' : '') + '">' + gm1Esc(ev.title) + '</div>' +
           (ev.description ? '<div style="font-size:12px;color:var(--dim);margin-top:2px;">' + gm1Esc(ev.description) + '</div>' : (ev.memo ? '<div style="font-size:12px;color:var(--dim);margin-top:2px;">' + gm1Esc(ev.memo) + '</div>' : ''));
 
         var btnWrap = document.createElement('div');
