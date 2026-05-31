@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>웰페리온 신입 퀴즈 스트릭</title>
+<link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.min.css" rel="stylesheet">
+<style>
+  :root{
+    --bg:#221F20; --paper:#2a2725; --paper-2:#322e2b;
+    --text:#f5f2ef; --text-soft:#d4d0cc; --dim:#8c8b83;
+    --beige:#B79F8A; --beige-soft:rgba(183,159,138,0.14);
+    --warm:#ED5B3F; --warm-soft:rgba(237,91,63,0.14);
+    --grow:#6abf7b; --grow-soft:rgba(106,191,123,0.14);
+    --border:#3d3835; --border-strong:#4d4845;
+  }
+  *{box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent;}
+  html,body{height:100%;}
+  body{
+    font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
+    background:var(--bg); color:var(--text); line-height:1.6;
+    -webkit-font-smoothing:antialiased;
+    display:flex; flex-direction:column; align-items:center;
+    min-height:100vh; min-height:100dvh;
+    padding:24px 16px calc(24px + env(safe-area-inset-bottom));
+    overflow-x:hidden;
+  }
+  .stage{width:100%; max-width:480px; margin:auto 0;}
+
+  /* ── Brand header ── */
+  .brand{text-align:center; margin-bottom:18px;}
+  .brand .logo{font-size:13px; letter-spacing:0.32em; color:var(--beige); font-weight:700; text-transform:uppercase;}
+  .brand .ttl{font-size:23px; font-weight:800; letter-spacing:-0.02em; margin-top:6px;}
+  .brand .ttl b{color:var(--warm);}
+
+  /* ── Panel ── */
+  .panel{
+    background:var(--paper); border:1px solid var(--border);
+    border-radius:20px; padding:24px 22px 26px;
+    box-shadow:0 20px 50px -24px rgba(0,0,0,0.7);
+  }
+
+  /* ── HUD ── */
+  .hud{display:flex; align-items:center; gap:8px; margin-bottom:18px;}
+  .hud .pill{
+    flex:1; background:var(--bg); border:1px solid var(--border);
+    border-radius:12px; padding:9px 6px; text-align:center; transition:transform .15s, border-color .2s;
+  }
+  .hud .pill .k{font-size:10px; letter-spacing:0.08em; color:var(--dim); text-transform:uppercase;}
+  .hud .pill .v{font-size:18px; font-weight:800; margin-top:2px;}
+  .hud .pill.combo .v{color:var(--warm);}
+  .hud .pill.score .v{color:var(--beige);}
+  .pill.combo.hot{border-color:var(--warm); box-shadow:0 0 0 1px var(--warm) inset;}
+
+  /* ── progress / timer ── */
+  .meta-row{display:flex; justify-content:space-between; align-items:center; font-size:12px; color:var(--dim); margin-bottom:8px;}
+  .rank-badge{color:var(--beige); font-weight:700;}
+  .timerbar{height:6px; background:var(--bg); border-radius:99px; overflow:hidden; margin-bottom:20px; border:1px solid var(--border);}
+  .timerbar i{display:block; height:100%; width:100%; background:linear-gradient(90deg,var(--grow),var(--beige)); transition:width .1s linear;}
+  .timerbar.warn i{background:linear-gradient(90deg,var(--warm),#ff8a6e);}
+
+  /* ── question ── */
+  .qcat{font-size:11px; letter-spacing:0.1em; color:var(--beige); text-transform:uppercase; font-weight:700; margin-bottom:8px;}
+  .qtext{font-size:20px; font-weight:700; line-height:1.45; letter-spacing:-0.01em; min-height:58px;}
+
+  /* ── answers ── */
+  .answers{display:grid; gap:10px; margin-top:20px;}
+  .answers.ox{grid-template-columns:1fr 1fr;}
+  .opt{
+    appearance:none; border:1px solid var(--border-strong); background:var(--paper-2);
+    color:var(--text); font-family:inherit; font-size:16px; font-weight:600;
+    padding:16px 14px; border-radius:13px; cursor:pointer; text-align:left;
+    transition:transform .1s, background .15s, border-color .15s; line-height:1.4;
+    min-height:54px; display:flex; align-items:center; gap:10px;
+  }
+  .answers.ox .opt{justify-content:center; font-size:22px; font-weight:800; padding:22px 14px;}
+  .opt:hover{border-color:var(--beige); background:#3a3633;}
+  .opt:active{transform:scale(0.98);}
+  .opt .mk{font-size:14px; color:var(--dim); font-weight:700; min-width:18px;}
+  .opt.correct{background:var(--grow-soft); border-color:var(--grow); color:#bfe9c8;}
+  .opt.wrong{background:var(--warm-soft); border-color:var(--warm); color:#ffc4b6;}
+  .opt[disabled]{cursor:default;}
+
+  /* ── feedback ── */
+  .feedback{
+    margin-top:16px; padding:14px 16px; border-radius:13px; font-size:14px;
+    background:var(--beige-soft); border:1px solid var(--border); display:none; line-height:1.55;
+  }
+  .feedback.show{display:block; animation:rise .3s ease;}
+  .feedback .verdict{font-weight:800; font-size:15px; margin-bottom:4px;}
+  .feedback.ok .verdict{color:var(--grow);}
+  .feedback.no .verdict{color:var(--warm);}
+  .feedback .lp{color:var(--text-soft);}
+  .feedback .lp b{color:var(--beige);}
+
+  /* ── buttons ── */
+  .btn{
+    display:block; width:100%; margin-top:18px; padding:16px;
+    border:none; border-radius:14px; font-family:inherit; font-size:16px; font-weight:800;
+    background:var(--warm); color:#fff; cursor:pointer; letter-spacing:-0.01em;
+    transition:transform .1s, filter .15s;
+  }
+  .btn:hover{filter:brightness(1.08);}
+  .btn:active{transform:scale(0.98);}
+  .btn.ghost{background:transparent; border:1px solid var(--border-strong); color:var(--text-soft);}
+  .btn.beige{background:var(--beige); color:#241f1c;}
+
+  /* ── start screen ── */
+  .start-lead{color:var(--text-soft); font-size:14.5px; margin:10px 0 4px; line-height:1.65;}
+  .ranks{display:flex; gap:6px; margin:18px 0 6px; flex-wrap:wrap; justify-content:center;}
+  .ranks span{font-size:11.5px; color:var(--dim); background:var(--bg); border:1px solid var(--border); padding:5px 9px; border-radius:99px;}
+  .ranks span b{color:var(--beige);}
+  .best-note{text-align:center; font-size:12.5px; color:var(--dim); margin-top:14px;}
+  .best-note b{color:var(--beige);}
+
+  /* ── result ── */
+  .result{text-align:center;}
+  .result .rk{font-size:13px; letter-spacing:0.1em; color:var(--dim); text-transform:uppercase;}
+  .result .rk-name{font-size:30px; font-weight:800; color:var(--beige); margin:4px 0 2px; letter-spacing:-0.02em;}
+  .result .rk-emoji{font-size:46px; margin-bottom:6px;}
+  .result .bigscore{font-size:54px; font-weight:800; letter-spacing:-0.03em; line-height:1; margin:6px 0;}
+  .result .bigscore small{font-size:16px; color:var(--dim); font-weight:600;}
+  .stats{display:flex; gap:10px; margin:20px 0 4px;}
+  .stats .s{flex:1; background:var(--bg); border:1px solid var(--border); border-radius:13px; padding:13px 8px;}
+  .stats .s .k{font-size:10px; letter-spacing:0.06em; color:var(--dim); text-transform:uppercase;}
+  .stats .s .v{font-size:21px; font-weight:800; margin-top:3px;}
+  .stats .s.c .v{color:var(--warm);}
+  .newbest{margin-top:14px; color:var(--grow); font-weight:800; font-size:14px; display:none;}
+  .newbest.show{display:block; animation:rise .35s ease;}
+
+  /* ── shake & confetti ── */
+  @keyframes shake{10%,90%{transform:translateX(-2px)}20%,80%{transform:translateX(4px)}30%,50%,70%{transform:translateX(-7px)}40%,60%{transform:translateX(7px)}}
+  .shake{animation:shake .5s cubic-bezier(.36,.07,.19,.97)}
+  @keyframes pop{0%{transform:scale(.6);opacity:0}60%{transform:scale(1.12)}100%{transform:scale(1);opacity:1}}
+  .pop{animation:pop .32s ease}
+  @keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+  #confetti{position:fixed; inset:0; pointer-events:none; z-index:50;}
+  .conf{position:absolute; width:9px; height:14px; top:-20px; opacity:.95; will-change:transform;}
+  @keyframes fall{to{transform:translateY(108vh) rotate(640deg); opacity:.2;}}
+
+  .hide{display:none !important;}
+  .footer{text-align:center; font-size:11px; color:var(--dim); margin-top:18px; letter-spacing:0.02em;}
+  .footer b{color:var(--beige);}
+
+  @media(max-width:380px){
+    .qtext{font-size:18px;}
+    .brand .ttl{font-size:20px;}
+    .result .bigscore{font-size:46px;}
+  }
+</style>
+</head>
+<body>
+<div id="confetti" aria-hidden="true"></div>
+
+<div class="stage">
+  <div class="brand">
+    <div class="logo">Wellperion</div>
+    <div class="ttl">신입 <b>퀴즈 스트릭</b> 🔥</div>
+  </div>
+
+  <!-- START -->
+  <section id="screen-start" class="panel">
+    <p class="start-lead">웰페리온의 핵심을 얼마나 알고 있나요?<br>빠르고 정확하게 답할수록 <b style="color:var(--warm)">콤보</b>가 쌓이고 점수가 배수로 폭발합니다.</p>
+    <div class="ranks">
+      <span>🌱 <b>신입</b></span>
+      <span>👔 <b>정직원</b></span>
+      <span>🏅 <b>베테랑</b></span>
+      <span>👑 <b>마스터</b></span>
+    </div>
+    <button class="btn" id="btn-start">시작하기 →</button>
+    <div class="best-note" id="best-note"></div>
+    <div class="footer">문항당 7초 · OX + 객관식 혼합 · <b>틀려도 한 줄 학습</b></div>
+  </section>
+
+  <!-- QUIZ -->
+  <section id="screen-quiz" class="panel hide">
+    <div class="meta-row">
+      <span id="progress">문항 1 / 10</span>
+      <span class="rank-badge" id="rank-live">🌱 신입</span>
+    </div>
+    <div class="timerbar" id="timerbar"><i id="timerfill"></i></div>
+
+    <div class="qcat" id="qcat">브랜드</div>
+    <div class="qtext" id="qtext">질문</div>
+
+    <div class="answers" id="answers"></div>
+
+    <div class="feedback" id="feedback">
+      <div class="verdict" id="fb-verdict"></div>
+      <div class="lp" id="fb-lp"></div>
+    </div>
+
+    <button class="btn hide" id="btn-next">다음 →</button>
+  </section>
+
+  <!-- RESULT -->
+  <section id="screen-result" class="panel hide">
+    <div class="result">
+      <div class="rk-emoji" id="r-emoji">👑</div>
+      <div class="rk">최종 랭크</div>
+      <div class="rk-name" id="r-rank">마스터</div>
+      <div class="bigscore"><span id="r-score">0</span><small> 점</small></div>
+      <div class="stats">
+        <div class="s"><div class="k">정답</div><div class="v" id="r-correct">0 / 10</div></div>
+        <div class="s c"><div class="k">최고 콤보</div><div class="v" id="r-combo">🔥 0</div></div>
+      </div>
+      <div class="newbest" id="newbest">🎉 신기록 달성!</div>
+      <div class="best-note" id="r-best"></div>
+    </div>
+    <button class="btn" id="btn-retry">다시 도전 →</button>
+    <button class="btn beige" id="btn-home">가이드 허브로 돌아가기</button>
+  </section>
+
+  <div class="footer">웰페리온은 회원님들의 건강과 행복을 위하여 항상 최선을 다하겠습니다.</div>
+</div>
+
+<script>
+"use strict";
+(function(){
+  // ── 문항은행 (확인된 사실만) ──
+  // type: 'ox' (O=true, X=false) | 'mc'(객관식, ans=정답 index)
+  var BANK = [
+    { cat:"브랜드 용어", type:"ox", q:"우리는 우리 공간을 \"피트니스\"라고 부른다.", ans:false,
+      lp:"정답은 <b>X</b>. \"피트니스\"가 아닌 <b>\"스포츠클럽\"</b>이라 부릅니다." },
+    { cat:"브랜드 표기", type:"ox", q:"건물·콘텐츠에서 \"현대하이페리온\"으로 표기한다.", ans:false,
+      lp:"정답은 <b>X</b>. \"현대하이페리온\"이 아닌 <b>\"웰페리온\"</b>으로 표기합니다." },
+    { cat:"미션", type:"mc", q:"웰페리온의 미션은 무엇일까요?",
+      opts:["더 많은 회원을 모은다","지속되지 않는 건강 문제를 해결한다","최신 운동기구를 들여온다","업계 1위가 된다"], ans:1,
+      lp:"미션은 <b>\"지속되지 않는 건강 문제를 해결한다\"</b> 입니다." },
+    { cat:"포지셔닝", type:"mc", q:"웰페리온의 포지셔닝을 가장 잘 나타낸 것은?",
+      opts:["저가형 동네 헬스장","하이엔드 프라이빗 스포츠클럽 멤버십 커뮤니티","24시간 무인 운동시설","대형 프랜차이즈 체육관"], ans:1,
+      lp:"포지셔닝은 <b>하이엔드 프라이빗 스포츠클럽 멤버십 커뮤니티</b> 입니다." },
+    { cat:"예약 정책", type:"ox", q:"투어·상담은 예약 없이 워크인(현장 방문)으로 가능하다.", ans:false,
+      lp:"정답은 <b>X</b>. 투어·상담 모두 <b>무조건 사전 예약제</b>로 운영합니다." },
+    { cat:"공식 채널", type:"mc", q:"웰페리온의 공식 문의 링크는?",
+      opts:["litt.ly/wellperion","wellperion.com","cafe.naver.com/welp","insta.com/wellperion"], ans:0,
+      lp:"공식 문의 링크는 <b>litt.ly/wellperion</b> 입니다." },
+    { cat:"본사 위치", type:"mc", q:"웰페리온 본사가 위치한 곳은?",
+      opts:["서울 강남구 테헤란로","서울 용산구 서빙고로 413 (한남동)","서울 마포구 양화로","경기 성남시 분당구"], ans:1,
+      lp:"본사는 <b>서울 용산구 서빙고로 413 (한남동)</b> 에 있습니다." },
+    { cat:"조직 (운영부)", type:"mc", q:"GM 직속 3라인 중 \"운영부\"를 이끄는 분은?",
+      opts:["이정헌 소장","나우열M","이경연 실장","김남욱 GM"], ans:2,
+      lp:"운영부는 <b>이경연 실장</b>이 이끕니다. (시설부=이정헌 소장 / 파트너팀=나우열M)" },
+    { cat:"조직 (시설부)", type:"mc", q:"GM 직속 3라인 중 \"시설부\"를 이끄는 분은?",
+      opts:["이정헌 소장","이경연 실장","나우열M","외부 위탁"], ans:0,
+      lp:"시설부는 <b>이정헌 소장</b>이 이끕니다. (운영부=이경연 실장 / 파트너팀=나우열M)" },
+    { cat:"고정 문구", type:"mc", q:"웰페리온의 고정 문구(클로징 멘트)는?",
+      opts:["함께라서 더 건강합니다","웰페리온은 회원님들의 건강과 행복을 위하여 항상 최선을 다하겠습니다.","당신의 운동을 응원합니다","건강한 하루 되세요"], ans:1,
+      lp:"고정 문구는 <b>\"웰페리온은 회원님들의 건강과 행복을 위하여 항상 최선을 다하겠습니다.\"</b> 입니다." },
+    { cat:"서브브랜드", type:"mc", q:"다음 중 웰페리온 서브브랜드(사업부)가 <b>아닌</b> 것은?",
+      opts:["필라테스","스쿼시","스키 스쿨","Brad Little's Star Academy"], ans:2,
+      lp:"<b>스키 스쿨</b>은 해당 없음. 서브브랜드 예: PT·필라테스·스위밍·스쿼시·골프·짐내스틱·Brad Little's Star Academy." }
+  ];
+
+  var TIME = 7.0;            // 문항당 초
+  var BASE = 100;            // 기본 점수
+  var TIME_BONUS = 60;       // 남은 시간 최대 보너스
+  var RANKS = [
+    { min:0,   name:"신입",   emoji:"🌱" },
+    { min:350, name:"정직원", emoji:"👔" },
+    { min:700, name:"베테랑", emoji:"🏅" },
+    { min:1050,name:"마스터", emoji:"👑" }
+  ];
+  var BEST_KEY = "wlp_quiz_streak_best_v1";
+
+  // ── DOM ──
+  var $ = function(id){ return document.getElementById(id); };
+  var scrStart=$("screen-start"), scrQuiz=$("screen-quiz"), scrResult=$("screen-result");
+  var elProg=$("progress"), elRankLive=$("rank-live"), elBar=$("timerbar"), elFill=$("timerfill");
+  var elCat=$("qcat"), elQ=$("qtext"), elAns=$("answers"), elFb=$("feedback"),
+      elFbV=$("fb-verdict"), elFbL=$("fb-lp"), btnNext=$("btn-next");
+  var elScore=null; // injected HUD nodes
+  var confettiBox=$("confetti");
+
+  // HUD (score/combo) — inject into quiz panel top
+  var hud=document.createElement("div"); hud.className="hud";
+  hud.innerHTML='<div class="pill score"><div class="k">점수</div><div class="v" id="hud-score">0</div></div>'+
+                '<div class="pill combo" id="hud-combo-pill"><div class="k">콤보</div><div class="v" id="hud-combo">🔥 0</div></div>'+
+                '<div class="pill"><div class="k">정답</div><div class="v" id="hud-correct">0</div></div>';
+  scrQuiz.insertBefore(hud, scrQuiz.firstChild);
+  var hudScore=$("hud-score"), hudCombo=$("hud-combo"), hudComboPill=$("hud-combo-pill"), hudCorrect=$("hud-correct");
+
+  // ── state ──
+  var qi, score, combo, maxCombo, correct, locked, raf, deadline, tCur;
+
+  function bestScore(){ try{ return parseInt(localStorage.getItem(BEST_KEY)||"0",10)||0; }catch(e){ return 0; } }
+  function saveBest(s){ try{ localStorage.setItem(BEST_KEY, String(s)); }catch(e){} }
+
+  function rankFor(s){
+    var r=RANKS[0];
+    for(var i=0;i<RANKS.length;i++){ if(s>=RANKS[i].min) r=RANKS[i]; }
+    return r;
+  }
+
+  function show(which){
+    scrStart.classList.toggle("hide", which!=="start");
+    scrQuiz.classList.toggle("hide", which!=="quiz");
+    scrResult.classList.toggle("hide", which!=="result");
+  }
+
+  function refreshBestNote(){
+    var b=bestScore();
+    $("best-note").innerHTML = b>0 ? '🏆 현재 최고기록 <b>'+b+'점</b>' : '아직 기록이 없어요. 첫 도전을 남겨보세요!';
+  }
+
+  function start(){
+    qi=0; score=0; combo=0; maxCombo=0; correct=0;
+    updateHUD();
+    show("quiz");
+    render();
+  }
+
+  function updateHUD(){
+    hudScore.textContent=score;
+    hudCombo.textContent="🔥 "+combo;
+    hudCorrect.textContent=correct;
+    var r=rankFor(score);
+    elRankLive.textContent=r.emoji+" "+r.name;
+    hudComboPill.classList.toggle("hot", combo>=3);
+  }
+
+  function render(){
+    locked=false;
+    var item=BANK[qi];
+    elProg.textContent="문항 "+(qi+1)+" / "+BANK.length;
+    elCat.textContent=item.cat;
+    elQ.innerHTML=item.q;
+    elFb.className="feedback"; btnNext.classList.add("hide");
+    elAns.innerHTML="";
+
+    if(item.type==="ox"){
+      elAns.className="answers ox";
+      [["O",true],["X",false]].forEach(function(p){
+        var b=document.createElement("button");
+        b.className="opt"; b.type="button"; b.textContent=p[0];
+        b.onclick=function(){ choose(p[1]===item.ans, b, item); };
+        b.dataset.correct = (p[1]===item.ans) ? "1":"0";
+        elAns.appendChild(b);
+      });
+    } else {
+      elAns.className="answers";
+      item.opts.forEach(function(txt, idx){
+        var b=document.createElement("button");
+        b.className="opt"; b.type="button";
+        b.innerHTML='<span class="mk">'+String.fromCharCode(65+idx)+'</span><span>'+txt+'</span>';
+        b.onclick=function(){ choose(idx===item.ans, b, item); };
+        b.dataset.correct = (idx===item.ans) ? "1":"0";
+        elAns.appendChild(b);
+      });
+    }
+    startTimer();
+  }
+
+  function startTimer(){
+    tCur=TIME; deadline=performance.now()+TIME*1000;
+    elBar.classList.remove("warn");
+    elFill.style.width="100%";
+    cancelAnimationFrame(raf);
+    tick();
+  }
+  function tick(){
+    var left=(deadline-performance.now())/1000;
+    if(left<=0){ tCur=0; elFill.style.width="0%"; timeUp(); return; }
+    tCur=left;
+    var pct=(left/TIME)*100;
+    elFill.style.width=pct+"%";
+    elBar.classList.toggle("warn", left<=2.5);
+    raf=requestAnimationFrame(tick);
+  }
+
+  function timeUp(){
+    if(locked) return;
+    locked=true; cancelAnimationFrame(raf);
+    revealAnswers();
+    combo=0;
+    var item=BANK[qi];
+    elFb.className="feedback no show";
+    elFbV.textContent="⏱ 시간 초과!";
+    elFbL.innerHTML=item.lp;
+    updateHUD();
+    finishQuestionUI();
+  }
+
+  function choose(isRight, btn, item){
+    if(locked) return;
+    locked=true; cancelAnimationFrame(raf);
+    revealAnswers();
+
+    if(isRight){
+      var rem=Math.max(0, tCur);
+      var speedBonus=Math.round((rem/TIME)*TIME_BONUS);
+      combo++; if(combo>maxCombo) maxCombo=combo;
+      correct++;
+      var mult=1+Math.max(0,(combo-1))*0.5;        // 콤보 배수: 1, 1.5, 2.0 ...
+      var gained=Math.round((BASE+speedBonus)*mult);
+      score+=gained;
+
+      btn.classList.add("correct","pop");
+      elFb.className="feedback ok show";
+      var comboTxt = combo>=2 ? ' <b>🔥'+combo+' 콤보</b> ×'+mult.toFixed(1) : '';
+      elFbV.innerHTML="정답! +"+gained+"점"+comboTxt;
+      elFbL.innerHTML=item.lp;
+
+      if(combo>=4){ confetti(combo>=6?80:42); }
+    } else {
+      combo=0;
+      btn.classList.add("wrong");
+      scrQuiz.classList.add("shake");
+      setTimeout(function(){ scrQuiz.classList.remove("shake"); }, 520);
+      elFb.className="feedback no show";
+      elFbV.textContent="아쉬워요!";
+      elFbL.innerHTML=item.lp;
+    }
+    updateHUD();
+    finishQuestionUI();
+  }
+
+  function revealAnswers(){
+    var btns=elAns.querySelectorAll(".opt");
+    for(var i=0;i<btns.length;i++){
+      btns[i].setAttribute("disabled","");
+      if(btns[i].dataset.correct==="1") btns[i].classList.add("correct");
+    }
+  }
+
+  function finishQuestionUI(){
+    btnNext.textContent = (qi+1<BANK.length) ? "다음 →" : "결과 보기 →";
+    btnNext.classList.remove("hide");
+    btnNext.focus();
+  }
+
+  function next(){
+    qi++;
+    if(qi<BANK.length){ render(); }
+    else { finish(); }
+  }
+
+  function finish(){
+    var r=rankFor(score);
+    $("r-emoji").textContent=r.emoji;
+    $("r-rank").textContent=r.name;
+    $("r-score").textContent=score;
+    $("r-correct").textContent=correct+" / "+BANK.length;
+    $("r-combo").textContent="🔥 "+maxCombo;
+
+    var prev=bestScore();
+    var isNew = score>prev;
+    if(isNew){ saveBest(score); confetti(120); }
+    $("newbest").classList.toggle("show", isNew);
+    $("r-best").innerHTML = "🏆 최고기록 <b>"+Math.max(prev,score)+"점</b>";
+    show("result");
+  }
+
+  // ── confetti (가벼운 juice) ──
+  function confetti(n){
+    var colors=["#ED5B3F","#B79F8A","#6abf7b","#f5f2ef","#d4b89e"];
+    for(var i=0;i<n;i++){
+      (function(){
+        var c=document.createElement("div");
+        c.className="conf";
+        c.style.left=(Math.random()*100)+"%";
+        c.style.background=colors[(Math.random()*colors.length)|0];
+        var dur=(1.6+Math.random()*1.4);
+        var delay=(Math.random()*0.25);
+        c.style.animation="fall "+dur+"s "+delay+"s linear forwards";
+        if(Math.random()>0.5) c.style.borderRadius="50%";
+        confettiBox.appendChild(c);
+        setTimeout(function(){ if(c.parentNode) c.parentNode.removeChild(c); }, (dur+delay)*1000+200);
+      })();
+    }
+  }
+
+  // ── go home (가이드 허브) ──
+  function goHome(){
+    // iframe 내부면 부모로 신호, 아니면 메인 가이드로 이동
+    if(window.parent && window.parent!==window){
+      try{ window.parent.postMessage("wlp-onboarding-close","*"); }catch(e){}
+    }
+    location.href="../wellperion_guide(main).html";
+  }
+
+  // ── bind ──
+  $("btn-start").addEventListener("click", start);
+  $("btn-retry").addEventListener("click", start);
+  $("btn-home").addEventListener("click", goHome);
+  btnNext.addEventListener("click", next);
+
+  refreshBestNote();
+  show("start");
+})();
+</script>
+</body>
+</html>
