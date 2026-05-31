@@ -175,7 +175,7 @@
   <!-- QUIZ -->
   <section id="screen-quiz" class="panel hide">
     <div class="meta-row">
-      <span id="progress">문항 1 / 10</span>
+      <span id="progress">문항 1 / 12</span>
       <span class="rank-badge" id="rank-live">🌱 신입</span>
     </div>
     <div class="timerbar" id="timerbar"><i id="timerfill"></i></div>
@@ -232,9 +232,12 @@
       lp:"포지셔닝은 <b>하이엔드 프라이빗 스포츠클럽 멤버십 커뮤니티</b> 입니다." },
     { cat:"예약 정책", type:"ox", q:"투어·상담은 예약 없이 워크인(현장 방문)으로 가능하다.", ans:false,
       lp:"정답은 <b>X</b>. 투어·상담 모두 <b>무조건 사전 예약제</b>로 운영합니다." },
-    { cat:"공식 채널", type:"mc", q:"웰페리온의 공식 문의 링크는?",
-      opts:["litt.ly/wellperion","wellperion.com","cafe.naver.com/welp","insta.com/wellperion"], ans:0,
-      lp:"공식 문의 링크는 <b>litt.ly/wellperion</b> 입니다." },
+    { cat:"문의 접수", type:"mc", q:"회원 문의·상담은 어떻게 접수하나?",
+      opts:["자체 문의 survey","전화 워크인 접수","litt.ly DM","현장 방문 접수"], ans:0,
+      lp:"<b>자체 문의 survey</b>로 접수합니다 — 이름·연락처·문의유형 입력 → 시트 누적 + 텔레그램 즉시 알림. litt.ly를 대체하는 자체 채널입니다." },
+    { cat:"문의 접수", type:"mc", q:"문의 survey의 \"문의유형\"이 아닌 것은?",
+      opts:["투어 예약","멤버십 상담","프로그램 문의","주차권 발급"], ans:3,
+      lp:"문의유형 5종은 <b>투어 예약 / 프로그램 문의 / 멤버십 상담 / 시설 안내 / 기타</b>. '주차권 발급'은 없습니다." },
     { cat:"본사 위치", type:"mc", q:"웰페리온 본사가 위치한 곳은?",
       opts:["서울 강남구 테헤란로","서울 용산구 서빙고로 413 (한남동)","서울 마포구 양화로","경기 성남시 분당구"], ans:1,
       lp:"본사는 <b>서울 용산구 서빙고로 413 (한남동)</b> 에 있습니다." },
