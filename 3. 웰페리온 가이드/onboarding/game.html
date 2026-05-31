@@ -214,12 +214,24 @@
   <div class="footer">웰페리온은 회원님들의 건강과 행복을 위하여 항상 최선을 다하겠습니다.</div>
 </div>
 
+<!--
+  ┌─ 유지보수 안내 ──────────────────────────────────────────────────────────┐
+  │ 이 게임의 문항 원천(SSOT) = 가이드허브 용어사전(g6, S3 용어 사전).        │
+  │ 용어사전(g6)을 수정하면 → `python scripts/extract_glossary_quiz.py` 재실행 │
+  │   → 아래 GLOSSARY_BANK가 자동 갱신되어 게임에 반영됩니다.                  │
+  │ 매주 월 09:00 컨텍스트 정비 때 재추출 권장.                                │
+  │ (CORE_FACTS만 게임 내 소량 상수로 유지 — 용어사전에 없는 핵심 온보딩 사실) │
+  └────────────────────────────────────────────────────────────────────────┘
+-->
 <script>
 "use strict";
+/* AUTO:QUIZBANK-START */var GLOSSARY_BANK=[{"term":"GM (General Manager)","def":"총괄 매니저 · 현장 운영 총책임","category":"조직·직급"},{"term":"M (Manager)","def":"매니저 · 각 영역 실무 책임자","category":"조직·직급"},{"term":"AM (Assistant Manager)","def":"어시스턴트 매니저","category":"조직·직급"},{"term":"실장","def":"운영부 실무 총괄","category":"조직·직급"},{"term":"C레벨 (C-Level)","def":"AI 에이전트 기반 경영 지원 (AI CEO/AI CFO/AI COO/AI CHRO/AI CTO)","category":"조직·직급"},{"term":"파트너","def":"강습 계약 강사 (직원 아닌 사업자 계약)","category":"조직·직급"},{"term":"마스터","def":"파트너 최상위 등급 (53% 고정)","category":"조직·직급"},{"term":"시니어","def":"파트너 상위 등급 (53% 고정 + 팀 매출 1%)","category":"조직·직급"},{"term":"SSOT (Single Source of Truth)","def":"실무진과 AI C-Level이 한곳에 데이터를 모아두고 업데이트·학습하는 공통 데이터 원본","category":"시스템·프로세스"},{"term":"PSP","def":"상품성·체계성·철학성 · 결과물 품질 기준","category":"시스템·프로세스"},{"term":"기획DB","def":"업무 시작점 · 승인 완료 후 착수","category":"시스템·프로세스"},{"term":"운영 아카이브","def":"실행 결과 저장소","category":"시스템·프로세스"},{"term":"종착역","def":"각 C-Level 관리 페이지 · 최종 이관","category":"시스템·프로세스"},{"term":"브로제이","def":"신규 회원관리 시스템 (대양CIS 후속)","category":"시스템·프로세스"},{"term":"밸류업 (Value-Up)","def":"기존 공간·서비스·장비의 품질 격상","category":"운영 용어"},{"term":"밸류다운 (Value-Down)","def":"하이엔드 격에 안 맞는 요소 · 즉각 차단","category":"운영 용어"},{"term":"임대업화","def":"업장별 파트너 사업자 계약 전환","category":"운영 용어"},{"term":"정착지원금","def":"신규 파트너 초기 3개월 안정화 비용 (9시간 기준 월 100만 원)","category":"운영 용어"},{"term":"팔로우업","def":"상담·체험 후 48시간 내 후속 연락","category":"운영 용어"},{"term":"CTA (Call To Action, 행동 유도)","def":"\"문의하기\", \"예약하기\" 등 고객이 다음 행동을 하도록 유도하는 문구나 버튼. 웰페리온 공식 CTA = 문의Survey 페이지","category":"운영 용어"},{"term":"SSOT (Single Source of Truth, 단일 기준점)","def":"하나의 정보는 한 곳에서만 관리. 웰페리온 SSOT = 가이드허브","category":"운영 용어"},{"term":"SOP (Standard Operating Procedure, 표준 운영 절차)","def":"반복 업무를 매번 같은 품질로 수행하기 위한 표준 절차서","category":"운영 용어"},{"term":"KPI (Key Performance Indicator, 핵심 성과 지표)","def":"목표 달성을 측정하는 핵심 숫자. 예: 전환율, 재등록률","category":"운영 용어"},{"term":"R/R (Role & Responsibility, 역할과 책임)","def":"누가 무엇을 담당하는지 명확히 정의한 것","category":"운영 용어"},{"term":".md","def":"마크다운 문서. 제목·목록·굵기 등 서식을 간단한 기호로 표현하는 텍스트 파일. 설정 문서(CLAUDE.md), 메모리, 가이드 등에 사용.","category":"파일 확장자"},{"term":".py","def":"파이썬 프로그램 파일. 자동화 스크립트, 텔레그램 봇, Notion 연동 등 실제 동작하는 코드.","category":"파일 확장자"},{"term":".json","def":"데이터 저장 파일. 설정값, 상태 기록, API 응답 등을 중괄호와 쌍따옴표로 구조화해서 저장.","category":"파일 확장자"},{"term":".log","def":"작업 기록 파일. 프로그램이 언제 무엇을 했는지 시간순으로 자동 기록. 문제 발생 시 원인 추적용.","category":"파일 확장자"},{"term":".txt","def":"일반 텍스트 파일. 서식 없는 순수 글자만 담긴 파일. 임시 메모, 출력 결과 저장 등에 사용.","category":"파일 확장자"},{"term":".md.bak","def":"마크다운 백업 파일. 원본(.md)을 수정하기 전에 만들어두는 안전 복사본. 문제 시 복원용.","category":"파일 확장자"}];/* AUTO:QUIZBANK-END */
 (function(){
-  // ── 문항은행 (확인된 사실만) ──
+  // ── 핵심 온보딩 사실 (CORE_FACTS) ──
+  // 용어사전(g6)에 "용어→정의" 형태로 들어있지 않은, 그러나 신입이 반드시 알아야 할
+  // 브랜드·정책·조직 핵심. 사실 창작 금지 — 모두 회사 SSOT에서 확인된 값만.
   // type: 'ox' (O=true, X=false) | 'mc'(객관식, ans=정답 index)
-  var BANK = [
+  var CORE_FACTS = [
     { cat:"브랜드 용어", type:"ox", q:"우리는 우리 공간을 \"피트니스\"라고 부른다.", ans:false,
       lp:"정답은 <b>X</b>. \"피트니스\"가 아닌 <b>\"스포츠클럽\"</b>이라 부릅니다." },
     { cat:"브랜드 표기", type:"ox", q:"건물·콘텐츠에서 \"현대하이페리온\"으로 표기한다.", ans:false,
@@ -235,9 +247,6 @@
     { cat:"문의 접수", type:"mc", q:"회원 문의·상담은 어떻게 접수하나?",
       opts:["자체 문의 survey","전화 워크인 접수","litt.ly DM","현장 방문 접수"], ans:0,
       lp:"<b>자체 문의 survey</b>로 접수합니다 — 이름·연락처·문의유형 입력 → 시트 누적 + 텔레그램 즉시 알림. litt.ly를 대체하는 자체 채널입니다." },
-    { cat:"문의 접수", type:"mc", q:"문의 survey의 \"문의유형\"이 아닌 것은?",
-      opts:["투어 예약","멤버십 상담","프로그램 문의","주차권 발급"], ans:3,
-      lp:"문의유형 5종은 <b>투어 예약 / 프로그램 문의 / 멤버십 상담 / 시설 안내 / 기타</b>. '주차권 발급'은 없습니다." },
     { cat:"본사 위치", type:"mc", q:"웰페리온 본사가 위치한 곳은?",
       opts:["서울 강남구 테헤란로","서울 용산구 서빙고로 413 (한남동)","서울 마포구 양화로","경기 성남시 분당구"], ans:1,
       lp:"본사는 <b>서울 용산구 서빙고로 413 (한남동)</b> 에 있습니다." },
@@ -249,11 +258,121 @@
       lp:"시설부는 <b>이정헌 소장</b>이 이끕니다. (운영부=이경연 실장 / 파트너팀=나우열M)" },
     { cat:"고정 문구", type:"mc", q:"웰페리온의 고정 문구(클로징 멘트)는?",
       opts:["함께라서 더 건강합니다","웰페리온은 회원님들의 건강과 행복을 위하여 항상 최선을 다하겠습니다.","당신의 운동을 응원합니다","건강한 하루 되세요"], ans:1,
-      lp:"고정 문구는 <b>\"웰페리온은 회원님들의 건강과 행복을 위하여 항상 최선을 다하겠습니다.\"</b> 입니다." },
-    { cat:"서브브랜드", type:"mc", q:"다음 중 웰페리온 서브브랜드(사업부)가 <b>아닌</b> 것은?",
-      opts:["필라테스","스쿼시","스키 스쿨","Brad Little's Star Academy"], ans:2,
-      lp:"<b>스키 스쿨</b>은 해당 없음. 서브브랜드 예: PT·필라테스·스위밍·스쿼시·골프·짐내스틱·Brad Little's Star Academy." }
+      lp:"고정 문구는 <b>\"웰페리온은 회원님들의 건강과 행복을 위하여 항상 최선을 다하겠습니다.\"</b> 입니다." }
   ];
+
+  // ── 용어사전(g6) 기반 문항 자동 생성 ──
+  // GLOSSARY_BANK = [{term, def, category}] (extract_glossary_quiz.py가 위에서 주입)
+  // (a) "이 용어의 뜻은?"  — 정답 def + 다른 용어 def 3개 distractor
+  // (b) "이 뜻에 맞는 용어는?" — 역방향
+  function buildGlossaryQuestions(bank){
+    var out = [];
+    if(!bank || !bank.length) return out;
+    // distractor 후보가 최소 1개는 있어야 객관식이 성립
+    if(bank.length < 2) return out;
+    for(var i=0;i<bank.length;i++){
+      var it = bank[i];
+      if(!it || !it.term || !it.def) continue;
+      var cat = it.category || "용어 사전";
+      // distractor 풀: 자신 외 항목
+      var others = [];
+      for(var j=0;j<bank.length;j++){ if(j!==i && bank[j].def && bank[j].term) others.push(bank[j]); }
+      // (a) 뜻 맞히기
+      out.push({
+        cat: cat, type:"mc", _gloss:true, _mode:"def", _term:it.term, _def:it.def,
+        _others:others,
+        q:"\""+escapeHtml(it.term)+"\" 의 뜻으로 알맞은 것은?",
+        lp:"<b>"+escapeHtml(it.term)+"</b> = "+escapeHtml(it.def)
+      });
+      // (b) 용어 맞히기
+      out.push({
+        cat: cat, type:"mc", _gloss:true, _mode:"term", _term:it.term, _def:it.def,
+        _others:others,
+        q:"다음 뜻에 맞는 용어는?<br><span style=\"color:var(--text-soft);font-weight:600;font-size:15px;\">"+escapeHtml(it.def)+"</span>",
+        lp:"정답은 <b>"+escapeHtml(it.term)+"</b> 입니다."
+      });
+    }
+    return out;
+  }
+
+  function escapeHtml(s){
+    return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+  }
+
+  // 글로서리 문항의 보기(opts)·정답(ans)을 주차 시드로 결정적으로 구성.
+  function materializeGloss(item, seed){
+    var pool = item._others.slice();
+    seededShuffle(pool, seed);
+    var picks = pool.slice(0, 3); // distractor 3개 (부족하면 가능한 만큼)
+    var correctVal = item._mode==="def" ? item._def : item._term;
+    var distractVals = [];
+    for(var k=0;k<picks.length;k++){
+      distractVals.push(item._mode==="def" ? picks[k].def : picks[k].term);
+    }
+    var opts = distractVals.concat([correctVal]);
+    seededShuffle(opts, seed ^ 0x9e3779b9);
+    var ans = opts.indexOf(correctVal);
+    var resolved = {};
+    for(var p in item){ if(item.hasOwnProperty(p)) resolved[p]=item[p]; }
+    resolved.opts = opts.map(escapeHtml);
+    resolved.ans = ans;
+    return resolved;
+  }
+
+  // ── 결정적 셔플 (주차 시드) ──
+  // mulberry32 PRNG + Fisher–Yates. 같은 시드 = 같은 순서.
+  function mulberry32(a){
+    return function(){
+      a|=0; a=(a+0x6D2B79F5)|0;
+      var t=Math.imul(a^(a>>>15), 1|a);
+      t=(t+Math.imul(t^(t>>>7), 61|t))^t;
+      return ((t^(t>>>14))>>>0)/4294967296;
+    };
+  }
+  function seededShuffle(arr, seed){
+    var rnd=mulberry32(seed>>>0);
+    for(var i=arr.length-1;i>0;i--){
+      var j=Math.floor(rnd()*(i+1));
+      var tmp=arr[i]; arr[i]=arr[j]; arr[j]=tmp;
+    }
+    return arr;
+  }
+
+  // ── ISO 주차 시드 ──
+  // 같은 주 = 같은 세트, 다음 주 = 다른 세트. 서버 불필요.
+  function isoWeekSeed(d){
+    d = d || new Date();
+    var dt = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+    var day = dt.getUTCDay() || 7;
+    dt.setUTCDate(dt.getUTCDate() + 4 - day);
+    var yearStart = new Date(Date.UTC(dt.getUTCFullYear(), 0, 1));
+    var week = Math.ceil((((dt - yearStart) / 86400000) + 1) / 7);
+    return dt.getUTCFullYear() * 53 + week;
+  }
+
+  // ── 이번 주 출제 세트 빌드 ──
+  var QUIZ_N = 10; // 기본 출제 문항 수 (은행이 적으면 전체)
+  function buildWeeklySet(seedOverride){
+    var seed = (typeof seedOverride === "number") ? seedOverride : isoWeekSeed(new Date());
+    var glossQ = buildGlossaryQuestions(GLOSSARY_BANK);
+    // 핵심 사실 + 용어사전 문항을 한 풀로 합쳐 시드 셔플
+    var pool = CORE_FACTS.concat(glossQ);
+    if(!pool.length){ pool = CORE_FACTS.slice(); } // 최후 폴백
+    var idx = [];
+    for(var i=0;i<pool.length;i++) idx.push(i);
+    seededShuffle(idx, seed);
+    var n = Math.min(QUIZ_N, pool.length);
+    var chosen = [];
+    for(var k=0;k<n;k++){
+      var item = pool[idx[k]];
+      if(item._gloss){ item = materializeGloss(item, seed + k); }
+      chosen.push(item);
+    }
+    return chosen;
+  }
+
+  // 동적 문항은행: 이번 주 세트
+  var BANK = buildWeeklySet();
 
   var TIME = 7.0;            // 문항당 초
   var BASE = 100;            // 기본 점수
