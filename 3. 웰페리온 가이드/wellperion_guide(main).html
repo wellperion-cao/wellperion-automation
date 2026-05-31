@@ -323,11 +323,13 @@
   .ntool-pv-logo{position:absolute; top:clamp(16px,3vw,36px); right:clamp(16px,3vw,40px);}
   .ntool-pv-logo img{width:clamp(48px,8vw,100px); height:auto; opacity:0.2;}
   .ntool-pv-title-kr{font-size:clamp(18px,3.2vw,40px); font-weight:700; margin:0 0 6px; line-height:1.25;}
-  .ntool-pv-title-en{font-size:clamp(10px,1.5vw,18px); font-weight:600; opacity:0.85; margin-bottom:clamp(8px,1.5vw,14px); letter-spacing:0.02em;}
+  .ntool-pv-title-en{font-family:"Playfair Display","Hudson NY Serif",Georgia,serif; font-style:italic; font-size:clamp(11px,1.6vw,20px); font-weight:500; opacity:0.85; margin-bottom:clamp(8px,1.5vw,14px); letter-spacing:0.02em;}
   .ntool-pv-divider{width:clamp(40px,8vw,80px); height:1px; margin:0 auto clamp(12px,2.5vw,24px);}
   .ntool-pv-body{flex:1; text-align:center; display:flex; flex-direction:column; justify-content:center; align-items:center; line-height:1.9; font-size:clamp(11px,1.5vw,17px); font-weight:500;}
   .ntool-pv-body img{max-width:75%; max-height:180px; border-radius:8px; margin-top:14px; object-fit:cover;}
   .ntool-pv-body .hl{color:#ED5B3F; font-weight:700;}
+  .ntool-pv-slogan{text-align:center; margin-top:auto; padding-top:clamp(8px,1.6vw,18px); font-size:clamp(9px,1.05vw,12px); color:rgba(255,255,255,0.55); letter-spacing:0.04em; font-weight:500; line-height:1.5;}
+  .ntool-pv-slogan + .ntool-pv-footer{margin-top:clamp(6px,1.2vw,14px);}
   .ntool-pv-footer{text-align:center; margin-top:auto; padding-top:clamp(12px,2vw,24px); letter-spacing:0.18em; color:rgba(255,255,255,0.6); display:flex; align-items:center; justify-content:center; gap:6px;}
   .ntool-pv-footer img{width:clamp(16px,2vw,24px); height:auto;}
   .ntool-pv-footer span{font-size:clamp(9px,1.1vw,13px); font-weight:600;}
@@ -3981,8 +3983,13 @@ Start-Process python -ArgumentList telegram_bot\daily_scheduler.py -WorkingDirec
       <div style="font-size:13px;font-weight:600;letter-spacing:0.18em;color:#B79F8A;margin-bottom:12px;">NOTICE TEMPLATE v2.0</div>
       <div style="font-size:20px;font-weight:700;margin-bottom:8px;">공지/안내문 생성 전용 도구</div>
       <div style="font-size:13px;opacity:0.72;margin-bottom:22px;line-height:1.6;">9개 사업부 컬러칩 · 8가지 공지 프리셋 · 한영 제목 분리 · 이미지 첨부 · A3/A4 인쇄 · 저장 목록 (편집·복사·삭제)</div>
-      <a href="coo/notice/notice_template.html" target="_blank" rel="noopener" style="display:inline-block;padding:14px 38px;background:#B79F8A;color:#221F20;font-weight:700;text-decoration:none;border-radius:10px;font-size:15px;letter-spacing:0.04em;">🔗 도구 열기 (새 탭)</a>
+      <a href="coo/notice/notice_template.html" target="_blank" rel="noopener" style="display:inline-block;padding:14px 38px;background:#B79F8A;color:#221F20;font-weight:700;text-decoration:none;border-radius:10px;font-size:15px;letter-spacing:0.04em;">🔗 새 탭으로 크게 열기</a>
       <div style="font-size:11px;opacity:0.5;margin-top:18px;font-family:Consolas,monospace;">3. 웰페리온 가이드 / coo / notice / notice_template.html</div>
+    </div>
+
+    <!-- SPA 내 임베드 — 새 탭 단절 해소 (보조 링크는 위에 유지) -->
+    <div style="margin-top:18px;border:1px solid var(--border);border-radius:14px;overflow:hidden;background:#221F20;box-shadow:0 4px 20px rgba(0,0,0,0.12);">
+      <iframe src="coo/notice/notice_template.html" title="공지/안내문 생성 도구" loading="lazy" style="width:100%;height:1100px;border:0;display:block;"></iframe>
     </div>
   </article>
 
@@ -4291,6 +4298,7 @@ Start-Process python -ArgumentList telegram_bot\daily_scheduler.py -WorkingDirec
               <div class="ntool-pv-divider" id="printPvDivider" style="background:#B79F8A;"></div>
             </div>
             <div class="ntool-pv-body" id="printPvBody">내용이 여기에 표시됩니다.</div>
+            <div class="ntool-pv-slogan">웰페리온은 회원님들의 건강과 행복을 위하여 항상 최선을 다하겠습니다.</div>
             <div class="ntool-pv-footer"><svg viewBox="0 0 60 55" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="opacity:0.8;"><path d="M5 5 L17 45 L30 15 L43 45 L55 5"/></svg><span id="printPvBrandName">WELLPERION</span></div>
           </div>
         </div>
@@ -4771,7 +4779,7 @@ function crTab(btn, panelId) {
         <details class="toggle"><summary>마지막 영업일 경쟁사 분석 업데이트 <span class="badge gray" style="margin-left:6px;">보류</span></summary><div class="toggle-body"><p><strong>담당:</strong> CPO · <strong>소요:</strong> 90분</p><p>경쟁사 분석 데이터 정기 업데이트.</p></div></details>
         <details class="toggle"><summary>분기 1일 조직 만족도 펄스 서베이 <span class="badge gray" style="margin-left:6px;">보류</span></summary><div class="toggle-body"><p><strong>담당:</strong> CHRO · <strong>소요:</strong> 60분</p><p>3·6·9·12월 분기별 조직 만족도 서베이 실행.</p></div></details>
 
-        <div class="callout fix"><strong>불일치 2건:</strong> AI CEO C-Level 체크(22:00)와 PC ON/OFF — 실제 가동 중이나 Notion 업무자동화DB 상태가 '보류'. GM님 확인 후 Notion 상태 동기화 필요.</div>
+        <div class="callout"><strong>상태 정합:</strong> AI CEO C-Level 체크(22:00)·PC 자동 ON/OFF 모두 실측 가동 중. SSOT는 가이드허브로 일원화(노션 폐기)되어 상태 불일치 해소됨.</div>
         <div class="callout"><strong>점검 필요 2건:</strong> CMO-001-Calendar-Dispatcher (실행 이력 없음) · CTO-008-MetaTokenRefresh (페북 영구 삭제 후 필요성 재검토)</div>
       </div>
 
@@ -4809,16 +4817,16 @@ function crTab(btn, panelId) {
         </div>
         <div class="task-card">
           <div class="task-title"><span class="status-dot active"></span>Start 기획 → GM 텔레그램 브리핑</div>
-          <div class="task-meta"><span>1분 간격 폴링</span><span>Notion: 진행중 ✅</span></div>
+          <div class="task-meta"><span>1분 간격 폴링</span><span>가이드허브 SSOT: 가동중 ✅</span></div>
           <div class="task-desc">기획 상태 변경 감지 시 즉시 발송</div>
         </div>
         <div class="task-card">
           <div class="task-title"><span class="status-dot active"></span>AI CEO 일일 C-Level 진행 체크</div>
-          <div class="task-meta"><span>매일 22:00</span><span style="color:var(--warm);">Notion: 보류 ⚠️ 불일치</span></div>
+          <div class="task-meta"><span>매일 22:00</span><span>가이드허브 SSOT: 가동중 ✅</span></div>
         </div>
         <div class="task-card">
           <div class="task-title"><span class="status-dot active"></span>PC 자동 ON/OFF 인프라</div>
-          <div class="task-meta"><span>05:50 ON / 22:25 인사 / 22:30 OFF</span><span style="color:var(--warm);">Notion: 보류 ⚠️ 불일치</span></div>
+          <div class="task-meta"><span>05:50 ON / 22:25 인사 / 22:30 OFF</span><span>가이드허브 SSOT: 가동중 ✅</span></div>
         </div>
 
         <div class="source">점검 기준: Windows Task Scheduler + Python 프로세스 실측 (2026-05-26)</div>
@@ -6047,8 +6055,10 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
       var WLOGO_PRINT = '<img src="'+WLOGO+'" alt="WELLPERION">';
       var sizeMap = {A3:'297mm 420mm', A4:'210mm 297mm'};
       var sizeRule = pageSize ? (sizeMap[pageSize] || '297mm 420mm') : 'auto';
+      var ptype = (typeof mode === 'string' && mode.indexOf('print') === 0) ? (el('printType') ? el('printType').value : 'banner') : '';
       var html = '<!DOCTYPE html><html><head><meta charset="utf-8"><title>'+brand.name+' NOTICE</title>';
       html += '<link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.min.css" rel="stylesheet">';
+      html += '<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@1,400;1,500;1,600&display=swap" rel="stylesheet">';
       html += '<style>';
       html += '@page{size:'+sizeRule+';margin:0;}';
       html += '*{margin:0;padding:0;box-sizing:border-box;}';
@@ -6077,30 +6087,90 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
         html += '<div class="body">'+bodyHtml+imgHtml+'</div>';
         html += '<div class="ftr">'+WLOGO_PRINT+'<span>'+brand.name+'</span></div>';
         html += '</div></body></html>';
-      } else {
-        html += '.page{width:100vw;height:100vh;background:'+bg+';color:#ffffff;display:flex;flex-direction:column;padding:6vmin 5vmin 4vmin;position:relative;overflow:hidden;}';
-        html += '.wmark{position:absolute;top:4.5vmin;right:5vmin;opacity:0.18;width:12vmin;height:auto;}';
+      } else if(ptype === 'envelope'){
+        /* 봉투 — 발신(좌상) / 수신(우하) 영역 분기 */
+        html += '.page{width:100vw;height:100vh;background:#ffffff;color:#1a1a1a;display:flex;flex-direction:column;padding:7vmin 8vmin;position:relative;overflow:hidden;border:0.4vmin solid '+c+';}';
+        html += '.wmark{position:absolute;top:5vmin;right:7vmin;opacity:0.14;width:11vmin;height:auto;}';
+        html += '.wmark img{width:100%;height:auto;}';
+        html += '.wmark svg{width:100%;height:auto;stroke:'+c+';}';
+        html += '.env-from{max-width:55%;}';
+        html += '.env-from .tkr{font-size:3.2vmin;font-weight:700;color:'+c+';line-height:1.3;}';
+        html += '.env-from .ten{font-family:"Playfair Display","Hudson NY Serif",Georgia,serif;font-style:italic;font-size:1.8vmin;font-weight:500;opacity:0.8;letter-spacing:0.02em;margin-top:0.6vmin;}';
+        html += '.env-from .env-body{font-size:'+fs+'px;line-height:1.7;margin-top:1.6vmin;}';
+        html += '.env-to{position:absolute;right:8vmin;bottom:9vmin;text-align:left;max-width:55%;border-top:1px solid '+c+';padding-top:1.8vmin;}';
+        html += '.env-to .lbl{font-size:1.4vmin;letter-spacing:0.18em;color:'+c+';font-weight:700;margin-bottom:0.8vmin;}';
+        html += '.env-to .line{height:1px;background:rgba(0,0,0,0.18);margin:2.4vmin 0;}';
+        html += '.slogan{position:absolute;left:0;right:0;bottom:3vmin;text-align:center;font-size:1.3vmin;color:'+c+';opacity:0.75;letter-spacing:0.05em;font-weight:500;}';
+        html += '.footer{position:absolute;left:8vmin;bottom:3vmin;display:flex;align-items:center;gap:0.8vmin;color:'+c+';opacity:0.7;}';
+        html += '.footer img{width:3vmin;height:auto;}';
+        html += '.footer span{font-size:1.3vmin;font-weight:600;letter-spacing:0.18em;}';
+        html += '.hl{color:#ED5B3F;font-weight:700;}';
+        html += '</style></head><body>';
+        html += '<div class="page">';
+        html += '<div class="wmark">'+WLOGO_PRINT+'</div>';
+        html += '<div class="env-from"><div class="tkr">'+titleKr+'</div><div class="ten">'+titleEn+'</div><div class="env-body">'+bodyHtml+'</div></div>';
+        html += '<div class="env-to"><div class="lbl">TO · 받는 분</div><div class="line"></div><div class="line"></div></div>';
+        html += '<div class="footer">'+WLOGO_PRINT+'<span>'+brand.name+'</span></div>';
+        html += '<div class="slogan">웰페리온은 회원님들의 건강과 행복을 위하여 항상 최선을 다하겠습니다.</div>';
+        html += '</div></body></html>';
+      } else if(ptype === 'brochure'){
+        /* 브로슈어 — 3단 칼럼 레이아웃 */
+        html += '.page{width:100vw;height:100vh;background:'+bg+';color:#ffffff;display:flex;flex-direction:column;padding:5vmin 4vmin 4vmin;position:relative;overflow:hidden;}';
+        html += '.wmark{position:absolute;top:4vmin;right:4.5vmin;opacity:0.16;width:10vmin;height:auto;}';
         html += '.wmark img{width:100%;height:auto;}';
         html += '.wmark svg{width:100%;height:auto;stroke:'+c+';}';
         html += '.header{text-align:center;padding-bottom:2vmin;}';
-        html += '.tkr{font-size:4.5vmin;font-weight:700;line-height:1.25;margin-bottom:0.8vmin;color:'+c+';}';
-        html += '.ten{font-size:2.2vmin;font-weight:600;opacity:0.82;letter-spacing:0.02em;margin-bottom:1.5vmin;}';
-        html += '.hr{width:7vmin;height:1px;background:'+c+';margin:0 auto 3vmin;opacity:0.35;}';
-        html += '.body{flex:1;text-align:center;display:flex;flex-direction:column;justify-content:center;align-items:center;line-height:1.9;font-size:'+fs+'px;font-weight:500;}';
+        html += '.tkr{font-size:4vmin;font-weight:700;line-height:1.25;margin-bottom:0.8vmin;color:'+c+';}';
+        html += '.ten{font-family:"Playfair Display","Hudson NY Serif",Georgia,serif;font-style:italic;font-size:2.2vmin;font-weight:500;opacity:0.85;letter-spacing:0.02em;margin-bottom:1.5vmin;}';
+        html += '.hr{width:7vmin;height:1px;background:'+c+';margin:0 auto 2.5vmin;opacity:0.35;}';
+        html += '.cols{flex:1;display:flex;gap:3vmin;align-items:stretch;}';
+        html += '.col{flex:1;border-left:1px solid rgba(255,255,255,0.18);padding:0 2vmin;display:flex;flex-direction:column;justify-content:flex-start;line-height:1.85;font-size:'+fs+'px;font-weight:500;}';
+        html += '.col:first-child{border-left:none;}';
         html += '.hl{color:#ED5B3F;font-weight:700;}';
-        html += '.footer{text-align:center;margin-top:auto;padding-top:2.5vmin;display:flex;align-items:center;justify-content:center;gap:0.8vmin;color:rgba(255,255,255,0.6);}';
+        html += '.slogan{text-align:center;font-size:1.4vmin;color:rgba(255,255,255,0.55);letter-spacing:0.05em;margin-top:2vmin;}';
+        html += '.footer{text-align:center;margin-top:1.6vmin;padding-top:1.6vmin;display:flex;align-items:center;justify-content:center;gap:0.8vmin;color:rgba(255,255,255,0.6);}';
         html += '.footer img{width:3vmin;height:auto;}';
         html += '.footer span{font-size:1.4vmin;font-weight:600;letter-spacing:0.18em;}';
         html += '</style></head><body>';
         html += '<div class="page">';
         html += '<div class="wmark">'+WLOGO_PRINT+'</div>';
-        html += '<div class="header">';
-        html += '<div class="tkr">'+titleKr+'</div>';
-        html += '<div class="ten">'+titleEn+'</div>';
-        html += '<div class="hr"></div>';
-        html += '</div>';
-        html += '<div class="body">'+bodyHtml+imgHtml+'</div>';
+        html += '<div class="header"><div class="tkr">'+titleKr+'</div><div class="ten">'+titleEn+'</div><div class="hr"></div></div>';
+        html += '<div class="cols"><div class="col">'+bodyHtml+'</div><div class="col">'+imgHtml+'</div><div class="col"></div></div>';
+        html += '<div class="slogan">웰페리온은 회원님들의 건강과 행복을 위하여 항상 최선을 다하겠습니다.</div>';
         html += '<div class="footer">'+WLOGO_PRINT+'<span>'+brand.name+'</span></div>';
+        html += '</div></body></html>';
+      } else {
+        /* 배너(세로 기본) / 현수막(초광폭 가로) 공통 베이스 + 종류별 미세 분기 */
+        var isHanging = (ptype === 'hanging');
+        var pad = isHanging ? '4vmin 8vmin' : '6vmin 5vmin 4vmin';
+        var flowDir = isHanging ? 'row' : 'column';
+        var tkrFs = isHanging ? '6vmin' : '4.5vmin';
+        html += '.page{width:100vw;height:100vh;background:'+bg+';color:#ffffff;display:flex;flex-direction:'+flowDir+';'+(isHanging?'align-items:center;justify-content:center;gap:6vmin;':'')+'padding:'+pad+';position:relative;overflow:hidden;}';
+        html += '.wmark{position:absolute;top:4.5vmin;right:5vmin;opacity:0.18;width:12vmin;height:auto;}';
+        html += '.wmark img{width:100%;height:auto;}';
+        html += '.wmark svg{width:100%;height:auto;stroke:'+c+';}';
+        html += '.header{text-align:center;padding-bottom:2vmin;}';
+        html += '.tkr{font-size:'+tkrFs+';font-weight:700;line-height:1.2;margin-bottom:0.8vmin;color:'+c+';}';
+        html += '.ten{font-family:"Playfair Display","Hudson NY Serif",Georgia,serif;font-style:italic;font-size:2.4vmin;font-weight:500;opacity:0.85;letter-spacing:0.02em;margin-bottom:1.5vmin;}';
+        html += '.hr{width:7vmin;height:1px;background:'+c+';margin:0 auto 3vmin;opacity:0.35;}';
+        html += '.body{'+(isHanging?'':'flex:1;')+'text-align:center;display:flex;flex-direction:column;justify-content:center;align-items:center;line-height:1.9;font-size:'+fs+'px;font-weight:500;}';
+        html += '.hl{color:#ED5B3F;font-weight:700;}';
+        html += '.slogan{text-align:center;'+(isHanging?'':'margin-top:1.5vmin;')+'font-size:1.4vmin;color:rgba(255,255,255,0.55);letter-spacing:0.05em;}';
+        html += '.footer{text-align:center;margin-top:'+(isHanging?'1vmin':'auto')+';padding-top:2.5vmin;display:flex;align-items:center;justify-content:center;gap:0.8vmin;color:rgba(255,255,255,0.6);}';
+        html += '.footer img{width:3vmin;height:auto;}';
+        html += '.footer span{font-size:1.4vmin;font-weight:600;letter-spacing:0.18em;}';
+        html += '</style></head><body>';
+        html += '<div class="page">';
+        html += '<div class="wmark">'+WLOGO_PRINT+'</div>';
+        if(isHanging){
+          html += '<div class="header" style="padding-bottom:0;"><div class="tkr">'+titleKr+'</div><div class="ten">'+titleEn+'</div></div>';
+          html += '<div style="display:flex;flex-direction:column;align-items:center;"><div class="body">'+bodyHtml+imgHtml+'</div><div class="slogan">웰페리온은 회원님들의 건강과 행복을 위하여 항상 최선을 다하겠습니다.</div><div class="footer">'+WLOGO_PRINT+'<span>'+brand.name+'</span></div></div>';
+        } else {
+          html += '<div class="header"><div class="tkr">'+titleKr+'</div><div class="ten">'+titleEn+'</div><div class="hr"></div></div>';
+          html += '<div class="body">'+bodyHtml+imgHtml+'</div>';
+          html += '<div class="slogan">웰페리온은 회원님들의 건강과 행복을 위하여 항상 최선을 다하겠습니다.</div>';
+          html += '<div class="footer">'+WLOGO_PRINT+'<span>'+brand.name+'</span></div>';
+        }
         html += '</div></body></html>';
       }
       return html;
