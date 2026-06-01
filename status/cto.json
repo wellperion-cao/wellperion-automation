@@ -30,8 +30,8 @@
       "task_id": "CTO-2026-05-29-AUTOMATION-DB-MIGRATE",
       "title": "업무자동화DB 폐기 2단계 — 텔레그램 자동화 6파일을 status/json 읽기로 전환 후 노션 업무자동화DB [폐기]",
       "assigned_at": "2026-05-29T16:58:23",
-      "status": "ON_HOLD",
-      "note": "GM 보류 결재(2026-05-29). 새 GitHub 시스템에 '실행시간 기반 자동 기동(알람)' 기능이 없어 단순 이관 불가 — 알람 기능 설계 결정 후 재개. 그때까지 업무자동화DB는 노션 마지막 잔류로 유지.",
+      "status": "IN_PROGRESS",
+      "note": "GM 2026-06-01 옵션B(대체설계 후 노션 끊기) 결정으로 재개. 1단계 완료: pre_task_notifier 노션→status/schedule.json 이관(14건, 노션 의존 0, commit 4312eb7). 가동 전환은 GM 관리자 부팅 자동기동 등록(GM-2026-06-01-04) 후 다음 재부팅 시 적용. 잔여: 가이드허브 g19 반영·노션 업무자동화DB 폐기 표기.",
       "depends_on": "CTO-2026-05-29-NOTION-DEPRECATE",
       "blocks": []
     },
@@ -94,6 +94,6 @@
   "title": "clevel_post_action.py 소스 복원 - 자동 보고 파이프라인 부활",
   "artifact_url": null,
   "commit": "",
-  "note": "복원 실증",
-  "updated_at": "2026-06-01T06:17:04Z"
+  "note": "AUTOMATION-DB-MIGRATE IN_PROGRESS 재개(옵션B). bot.py+daily_scheduler.py 부팅 자동기동 등록 GM 관리자 실행 대기(GM-2026-06-01-04).",
+  "updated_at": "2026-06-01T17:30:00"
 }
