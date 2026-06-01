@@ -40,6 +40,31 @@ from pathlib import Path
 
 from playwright.async_api import async_playwright
 
+
+# -----------------------------------------------------------------
+# 콘솔 인코딩 하드닝 (수정 3) — Windows cp949 콘솔에서 대시(—)·이모지 print 시
+# UnicodeEncodeError 로 스크립트가 중단되는 사고 재발방지.
+# stdout/stderr 를 UTF-8(errors=replace)로 강제. reconfigure 미지원 환경은
+# 안전 폴백(무시) — 어떤 경우에도 import 시 예외로 죽지 않게 한다.
+# -----------------------------------------------------------------
+def _harden_console_encoding() -> None:
+    for stream_name in ("stdout", "stderr"):
+        stream = getattr(sys, stream_name, None)
+        if stream is None:
+            continue
+        reconfigure = getattr(stream, "reconfigure", None)
+        if reconfigure is None:
+            continue
+        try:
+            reconfigure(encoding="utf-8", errors="replace")
+        except Exception:
+            # 콘솔이 reconfigure 를 거부해도 발행 자체는 진행돼야 함
+            pass
+
+
+_harden_console_encoding()
+
+
 # -----------------------------------------------------------------
 # 상수
 # -----------------------------------------------------------------
@@ -799,14 +824,21 @@ async def run_publish(
                     sys.exit(7)
 
             if not url:
-                print(f"[ERROR] post {slot} 게시 URL 회수 실패 (스크립트 exit 0만으로 단정 금지 — 4.21 v1.19 사고 재발 방지)")
+                # (수정 4) 신규 shortcode 미확인 = 게시 미확정. review_queue 발행완료 기록 절대 금지.
+                # exit 비0 + 텔레그램 실패 보고 (토큰 stdout 노출 금지 — telegram_report 내부 처리).
+                print(
+                    f"[ERROR] post {slot} 신규 게시물(shortcode) 미확인 → 게시 실패로 판정 "
+                    f"(false-positive 사고 재발 방지 — exit 0/핀글 URL 단정 금지). review_queue 갱신 안 함."
+                )
                 telegram_report(
-                    f"⚠️ AI CTO 인스타 publish — 게시 URL 미회수\npost: {slot}\n폴더: {content_folder.name}"
+                    f"⛔ AI CTO 인스타 publish 실패 — 신규 게시물 미확인\n"
+                    f"post: {slot}\n폴더: {content_folder.name}\n"
+                    f"조치: 그리드 신규 shortcode 미등장 → 발행완료 미기록 (수동 확인 필요)"
                 )
                 await context.close()
                 sys.exit(8)
             published[slot] = url
-            print(f"[INFO] post {slot} 발행 성공 — {url}")
+            print(f"[INFO] post {slot} 발행 성공(신규 shortcode 확인) — {url}")
 
             if idx < len(present_slots) - 1:
                 import random
@@ -844,6 +876,15 @@ async def _publish_single_post(
     """단일 post 발행. 게시 URL 반환 (실패 시 None)."""
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     evidence_prefix = EVIDENCE_DIR / f"instagram-publish-{content_folder.name}-post{spec.slot}-{timestamp}"
+
+    # (수정 1+2) 발행 직전 그리드 shortcode 집합 수집 — 핀 글 포함.
+    # 발행 후 (current - before) 차집합으로 '신규' 게시물만 실게시로 인정한다.
+    # 그리드 수집은 프로필로 이동하므로 반드시 업로드 시작 전에 수행한다.
+    before_shortcodes = await _collect_grid_shortcodes(page, account)
+    print(f"[INFO]   발행 전 그리드 shortcode {len(before_shortcodes)}개 수집 (신규 검증 기준선)")
+    # 그리드로 이동했으므로 홈으로 복귀 후 새 게시물 흐름 진입
+    await page.goto(INSTAGRAM_HOME_URL, wait_until="domcontentloaded", timeout=30_000)
+    await page.wait_for_timeout(2000)
 
     # 새 게시물 버튼 클릭
     new_post_clicked = False
@@ -960,25 +1001,49 @@ async def _publish_single_post(
         await page.screenshot(path=str(evidence_prefix.with_suffix(".error_share.png")))
         raise RuntimeError("공유하기 버튼 클릭 실패")
 
-    # 게시 완료 대기 — "공유하기" 버튼이 사라지고 완료 다이얼로그가 뜰 때까지 최대 30초 폴링
-    share_done = False
-    for _ in range(30):
-        await page.wait_for_timeout(1000)
-        # 완료 신호 1: "게시물이 공유되었습니다" 또는 "회원님의 게시물이 공유" 문구
-        done1 = await page.locator(':text("게시물이 공유되었습니다")').count()
-        done2 = await page.locator(':text("회원님의 게시물이 공유")').count()
-        # 완료 신호 2: 공유하기 버튼이 더 이상 없음 (dialog 닫힘)
-        share_still = await page.locator('div[role="button"]:text-is("공유하기")').count()
-        if done1 > 0 or done2 > 0 or share_still == 0:
-            share_done = True
-            print("[INFO]   게시 완료 신호 감지")
+    # (수정 1) 게시 완료 판정 — "공유하기 버튼 사라짐"을 완료로 간주하지 않는다.
+    # 영상 캐러셀은 '공유 중' 스피너로 공유 버튼이 먼저 사라져 오탐 → 프로필 이동+context.close()로
+    # 실제 업로드 중단 사고가 발생했다. 다음 둘 중 하나가 확인될 때까지 최대 180초 폴링하며
+    # 절대 context.close() 하지 않는다(상위 run_publish 가 닫음 — 여기선 확정 전 이탈 금지):
+    #   (a) 성공 토스트 ':text("게시물이 공유되었습니다")' / '회원님의 게시물이 공유', 또는
+    #   (b) (가장 확실) 발행계정 그리드에 '발행 전엔 없던' 신규 shortcode 등장.
+    # 토스트 폴링 단계에서는 프로필로 이동하지 않는다(업로드 진행 중 dialog 보존).
+    MAX_WAIT_SEC = 180
+    toast_confirmed = False
+    waited = 0
+    while waited < MAX_WAIT_SEC:
+        await page.wait_for_timeout(2000)
+        waited += 2
+        try:
+            done1 = await page.locator(':text("게시물이 공유되었습니다")').count()
+            done2 = await page.locator(':text("회원님의 게시물이 공유")').count()
+        except Exception:
+            done1 = done2 = 0
+        if done1 > 0 or done2 > 0:
+            toast_confirmed = True
+            print(f"[INFO]   게시 완료 토스트 확인 ({waited}s 경과)")
             break
-    if not share_done:
-        print("[WARN]   게시 완료 신호 미감지 — 30초 경과 후 URL 회수 시도")
+        if waited % 20 == 0:
+            print(f"[INFO]   게시 완료 대기 중... ({waited}/{MAX_WAIT_SEC}s)")
+    if not toast_confirmed:
+        print(
+            f"[WARN]   성공 토스트 {MAX_WAIT_SEC}s 내 미확인 — 그리드 신규 shortcode 검증으로 최종 확정"
+        )
     await page.screenshot(path=str(evidence_prefix.with_suffix(".post_share.png")))
 
-    # 프로필 이동 후 최신 게시물 URL 회수 (발행 계정 기준)
-    return await _capture_latest_post_url(page, account=account)
+    # (수정 1+2) 확정 검증: 발행계정 그리드에 '발행 전엔 없던' 신규 shortcode 등장 폴링.
+    # 토스트가 확인됐어도 실게시 URL(신규 shortcode) 회수를 끝까지 시도한다.
+    # 신규 shortcode 가 끝내 없으면 None 반환 → 상위에서 실패 처리(성공 단정 금지).
+    grid_polls = 6 if toast_confirmed else max(1, (MAX_WAIT_SEC - waited) // 5)
+    new_url: str | None = None
+    for attempt in range(grid_polls):
+        new_url = await _capture_new_post_url(page, account, before_shortcodes)
+        if new_url:
+            break
+        if attempt < grid_polls - 1:
+            await page.wait_for_timeout(5000)
+            print(f"[INFO]   신규 shortcode 미등장 — 재폴링 ({attempt + 1}/{grid_polls})")
+    return new_url
 
 
 async def _add_location(page, location: str, evidence_prefix: Path) -> None:
@@ -1097,36 +1162,100 @@ async def _add_collaborators(page, handles: list[str]) -> int:
     return added
 
 
-async def _capture_latest_post_url(page, account: str = DEFAULT_ACCOUNT) -> str | None:
-    """게시 완료 후 해당 계정의 최신 게시물 URL 회수.
+async def _collect_grid_shortcodes(page, account: str) -> set[str]:
+    """발행 계정 프로필 그리드에 현재 보이는 게시물 shortcode 집합을 수집.
 
-    계정별 프로필 URL로 직접 이동 후 첫 /p/ 링크를 추출.
-    namuk.wellperion 하드코딩 제거 — account 파라미터 기준으로 이동.
+    고정(핀) 게시물 포함 — 핀 글은 발행 전/후 모두 그리드에 있으므로
+    before-set 에 그대로 들어가 (current - before) 차집합에서 자연 제외된다.
+    URL 회수가 아니라 '집합' 만 수집 (수정 2: 핀 글 오회수 차단의 기반).
     """
+    shortcodes: set[str] = set()
     try:
-        # 계정 프로필 URL로 직접 이동 (아바타 클릭 없음 — 하드코딩 계정 오이동 방지)
         profile_url = f"https://www.instagram.com/{account}/"
-        print(f"[INFO]   프로필 이동 중: {profile_url}")
         await page.goto(profile_url, wait_until="domcontentloaded", timeout=20_000)
-        # 피드 그리드 로딩 대기 (최대 10초 폴링)
+        # 그리드 로딩 대기 (최대 10초 폴링)
         for _ in range(10):
             await page.wait_for_timeout(1000)
             if await page.locator('a[href*="/p/"]').count() > 0:
                 break
-        # 첫 게시물 링크 추출 (가장 최신 — 그리드 좌상단)
-        first_post = page.locator('a[href*="/p/"]').first
-        if await first_post.count() > 0:
-            href = await first_post.get_attribute("href")
-            if href:
-                full = href if href.startswith("http") else f"https://www.instagram.com{href}"
-                m = POST_URL_PATTERN.search(full)
-                if m:
-                    return f"https://www.instagram.com/p/{m.group(1)}/"
-                return full
-        print("[WARN]   프로필 그리드에서 /p/ 링크 미발견")
-        return None
+        hrefs = await page.locator('a[href*="/p/"]').evaluate_all(
+            "els => els.map(e => e.getAttribute('href'))"
+        )
+        for href in hrefs:
+            if not href:
+                continue
+            full = href if href.startswith("http") else f"https://www.instagram.com{href}"
+            m = POST_URL_PATTERN.search(full)
+            if m:
+                shortcodes.add(m.group(1))
     except Exception as e:
-        print(f"[WARN]   게시 URL 회수 예외: {e}")
+        print(f"[WARN]   그리드 shortcode 수집 예외: {e}")
+    return shortcodes
+
+
+def _is_today_kst(datetime_attr: str) -> bool:
+    """time[datetime] ISO 문자열이 오늘(KST, UTC+9)인지 교차 확인 (보조 검증)."""
+    try:
+        from datetime import timedelta, timezone
+
+        # 인스타 time datetime 은 보통 UTC ISO (Z 또는 +00:00). KST 로 환산해 날짜 비교.
+        raw = datetime_attr.strip().replace("Z", "+00:00")
+        dt = datetime.fromisoformat(raw)
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
+        kst = timezone(timedelta(hours=9))
+        today_kst = datetime.now(kst).date()
+        return dt.astimezone(kst).date() == today_kst
+    except Exception:
+        return False
+
+
+async def _capture_new_post_url(
+    page, account: str, before_shortcodes: set[str]
+) -> str | None:
+    """게시 완료 후 (current - before) 신규 shortcode 를 실게시 URL 로 회수 (수정 2).
+
+    - 발행 직전 그리드 shortcode 집합(before_shortcodes)을 받아, 발행 후 그리드와
+      차집합을 계산해 '발행 전엔 없던' 신규 shortcode 만 게시 URL 로 회수한다.
+    - 신규 shortcode 가 없으면 None 반환 (성공 단정 금지 — 핀 글 오회수 차단).
+    - 신규가 여러 개면 time[datetime] 가 오늘(KST)인 것을 우선 채택.
+    """
+    try:
+        current = await _collect_grid_shortcodes(page, account)
+        new_codes = current - before_shortcodes
+        if not new_codes:
+            print(
+                "[WARN]   신규 shortcode 없음 — 게시 미확정 (발행 전 그리드 대비 변화 없음). "
+                "성공 단정 금지 → None 반환"
+            )
+            return None
+
+        # 보조 교차검증: 신규 코드 중 time[datetime] 가 오늘(KST)인 것 우선
+        chosen: str | None = None
+        for code in new_codes:
+            try:
+                link = page.locator(f'a[href*="/p/{code}/"]').first
+                if await link.count() == 0:
+                    continue
+                t = link.locator('time[datetime]').first
+                if await t.count() > 0:
+                    dt_attr = await t.get_attribute("datetime")
+                    if dt_attr and _is_today_kst(dt_attr):
+                        chosen = code
+                        break
+            except Exception:
+                continue
+        if chosen is None:
+            # 오늘자 time 확인 실패해도 신규 shortcode 자체는 실게시 증거 → 첫 신규 채택
+            chosen = sorted(new_codes)[0]
+            print(
+                f"[INFO]   신규 shortcode {len(new_codes)}개 감지 (오늘자 time 미확인 — 신규성으로 채택): {chosen}"
+            )
+        else:
+            print(f"[INFO]   신규 shortcode 감지 + 오늘(KST) time 교차확인: {chosen}")
+        return f"https://www.instagram.com/p/{chosen}/"
+    except Exception as e:
+        print(f"[WARN]   신규 게시 URL 회수 예외: {e}")
         return None
 
 
