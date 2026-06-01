@@ -408,7 +408,7 @@ def compose_slide(
         # 좌측 하단 — 회사 정보
         info_size = int(target_w * 0.018)
         info_font = load_font("medium", info_size)
-        info_text = "한남동 현대하이페리온"
+        info_text = "한남동"  # 건물명 '현대하이페리온' 금지(브랜드 규칙) — '한남동'만 표기
         draw.text(
             (margin_x, wm_y + int(wm_size * 0.15)),
             info_text,

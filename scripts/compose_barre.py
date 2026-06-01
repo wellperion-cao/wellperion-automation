@@ -134,7 +134,9 @@ def draw_counter(draw: ImageDraw.ImageDraw, current: int, total: int,
     chip_right = chip_x + 240  # 칩 오른쪽 끝
     tx = chip_right - tw
     ty = chip_y + chip_h + 8
-    draw.text((tx, ty), text, font=font, fill=WHITE)
+    # 가독성: 배경박스 없이(GM 지시 준수) 다크 아웃라인으로 밝은 배경에서도 또렷하게
+    draw.text((tx, ty), text, font=font, fill=WHITE,
+              stroke_width=2, stroke_fill=BLACK_BG)
 
 
 # ---------------------------------------------------------------------------
