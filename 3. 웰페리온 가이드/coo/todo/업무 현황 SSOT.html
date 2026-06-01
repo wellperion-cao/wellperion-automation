@@ -9,7 +9,7 @@
 <script>
 /* 최신본 자동 보장 — HTTP 캐시로 옛 버전이 떠 'GM 화면만 미반영'되는 문제 방지 (2026-05-29 COO).
    서버 최신본 버전과 비교해 다르면 1회만 강제 갱신. 루프 방지: ?pv 가 현재 버전과 같으면 종료. */
-window.__PV='20260601-1';
+window.__PV='20260601-2';
 (function(){
   window.addEventListener('pageshow',function(e){ if(e.persisted) location.reload(); });
   try{
@@ -497,15 +497,18 @@ const FIELD_MAP = {
    State
    ═══════════════════════════════════════════ */
 let ALL_TASKS = [];
-/* 업무 현황 = C-Level·실무진 전용 SSOT (2026-06-01 GM 확정).
-   GM 할일(G1)은 여기에 섞이지 않음 — owner가 '김남욱GM' 단독인 행은 G1(오늘 할일)에서만 본다.
-   실무진이 함께 담당하는 행(혼합)은 실무 업무이므로 유지. */
-function isGmOnlyTask(t) {
+/* 업무현황 SSOT = 실무진(사람)만 표시 (2026-06-01 GM 최종 확정 v2).
+   C레벨(AI)건·GM건·결재건은 G1(오늘 할일)에서만 본다.
+   실무진 토큰이 하나라도 있으면 표시. 실무진이 전혀 없으면 숨김. */
+const STAFF_TOKENS = new Set([
+  '이경연 실장','나우열M','최준용M','임정은M','윤병현AM','이지영 사원','이정헌 소장'
+]);
+function hasNoStaff(t) {
   var owners = String((t && t.owner) || '').split(',').map(function(s){return s.trim();}).filter(Boolean);
-  if (owners.length === 0) return false;
-  return owners.every(function(o){ return o === '김남욱GM' || o === 'gm1' || o === '김남욱'; });
+  if (owners.length === 0) return true; // 담당 없음 → 숨김
+  return !owners.some(function(o){ return STAFF_TOKENS.has(o); });
 }
-function excludeGmOnly(list) { return (list || []).filter(function(t){ return !isGmOnlyTask(t); }); }
+function excludeNonStaff(list) { return (list || []).filter(function(t){ return !hasNoStaff(t); }); }
 let activeOwnerFilter = '전체';
 let activeCatFilter = '전체';
 let activeSortBy = '최신순';    // '최신순' | '카테고리' | '담당자' | '시작일순'
@@ -545,7 +548,7 @@ function updateHeaderSub() {
    ═══════════════════════════════════════════ */
 function buildFilters() {
   // 카운트 계산 — 진행중 업무만 대상 (GM 단독 할일 제외 = G1 전용)
-  const active = excludeGmOnly(ALL_TASKS.filter(t => t.status !== '완료' && t.status !== '보류'));
+  const active = excludeNonStaff(ALL_TASKS.filter(t => t.status !== '완료' && t.status !== '보류'));
 
   // 담당자별 카운트
   const ownerCount = {};
@@ -777,9 +780,9 @@ function renderTasks() {
 
   const el = document.getElementById('mainContent');
   // GM 단독 할일은 G1 전용 — 업무 현황(실무진용)에서 제외 (2026-06-01 GM 확정)
-  const active = excludeGmOnly(ALL_TASKS.filter(t => t.status !== '완료' && t.status !== '보류'));
-  const hold = excludeGmOnly(ALL_TASKS.filter(t => t.status === '보류'));
-  const done = excludeGmOnly(ALL_TASKS.filter(t => t.status === '완료'));
+  const active = excludeNonStaff(ALL_TASKS.filter(t => t.status !== '완료' && t.status !== '보류'));
+  const hold = excludeNonStaff(ALL_TASKS.filter(t => t.status === '보류'));
+  const done = excludeNonStaff(ALL_TASKS.filter(t => t.status === '완료'));
 
   // Apply filters to active
   let filtered = active;
@@ -893,9 +896,10 @@ function renderTasks() {
 }
 
 function filterDone(done) {
-  let filtered = done;
+  // 완료 로그도 실무진만 표시 (C레벨·GM 완료건 제외 — 2026-06-01 GM 확정)
+  let filtered = excludeNonStaff(done);
   if (activeOwnerFilter !== '전체') {
-    filtered = done.filter(t => (t.owner || '').includes(activeOwnerFilter));
+    filtered = filtered.filter(t => (t.owner || '').includes(activeOwnerFilter));
   }
   if (activeCatFilter !== '전체') {
     filtered = filtered.filter(t => t.category === activeCatFilter);
@@ -1029,9 +1033,9 @@ function renderTaskCard(t, idx) {
   html += '<button class="action-btn done" onclick="event.stopPropagation();markDone(\'' + escAttr(t.id) + '\')" style="padding:4px 10px;font-size:11px;">완료</button>';
   html += '<button class="action-btn" onclick="event.stopPropagation();holdTask(\'' + escAttr(t.id) + '\')" style="padding:4px 10px;font-size:11px;background:var(--orange-bg);color:var(--orange);border-color:rgba(230,148,78,0.3);">보류</button>';
   if (_hasResult) {
-    html += '<button class="action-btn" onclick="event.stopPropagation();printResultReport(\'' + escAttr(t.id) + '\')" style="padding:4px 10px;font-size:11px;background:var(--purple-bg);color:var(--purple);border-color:rgba(167,139,218,0.3);">🖨 보고서</button>';
+    html += '<button class="action-btn" onclick="event.stopPropagation();printResultReport(\'' + escAttr(t.id) + '\')" style="padding:4px 10px;font-size:11px;background:var(--purple-bg);color:var(--purple);border-color:rgba(167,139,218,0.3);">🖨 결과 보고서</button>';
   } else {
-    html += '<button class="action-btn" disabled title="결과보고를 먼저 작성하세요" style="padding:4px 10px;font-size:11px;background:transparent;color:var(--dim);border-color:var(--border);opacity:0.45;cursor:not-allowed;">🖨 보고서</button>';
+    html += '<button class="action-btn" disabled title="결과보고를 먼저 작성하세요" style="padding:4px 10px;font-size:11px;background:transparent;color:var(--dim);border-color:var(--border);opacity:0.45;cursor:not-allowed;">🖨 결과 보고서</button>';
   }
   html += '<button class="action-btn" onclick="event.stopPropagation();deleteTaskWithAuth(\'' + escAttr(t.id) + '\',\'' + escAttr(t.title || '') + '\')" style="padding:4px 10px;font-size:11px;background:transparent;color:var(--dim);border-color:var(--border);">삭제</button>';
   html += '</div>'; // task-actions
@@ -1140,7 +1144,7 @@ function renderDoneCard(t) {
   // 액션: 링크 · 보고서 (완료건도 활용 가능 데이터)
   html += '<div style="display:flex;gap:4px;flex-shrink:0;flex-wrap:wrap;">';
   html += '<button class="action-btn" title="이 업무 링크 복사" onclick="event.stopPropagation();copyItemLink(\'' + escAttr(t.id) + '\')" style="padding:4px 8px;font-size:11px;">🔗</button>';
-  html += '<button class="action-btn" onclick="event.stopPropagation();printResultReport(\'' + escAttr(t.id) + '\')" style="padding:4px 8px;font-size:11px;background:var(--purple-bg);color:var(--purple);border-color:rgba(167,139,218,0.3);">🖨 보고서</button>';
+  html += '<button class="action-btn" onclick="event.stopPropagation();printResultReport(\'' + escAttr(t.id) + '\')" style="padding:4px 8px;font-size:11px;background:var(--purple-bg);color:var(--purple);border-color:rgba(167,139,218,0.3);">🖨 결과 보고서</button>';
   html += '</div></div>';
   // 내용 토글 — 본문·기획·진척·결과 열람
   const hasDetail = p.body || p.plan || (p.logs && p.logs.length) || p.result;
@@ -1917,7 +1921,7 @@ async function saveDatePicker() {
    Share — 공유용 (간단 명료)
    ═══════════════════════════════════════════ */
 function shareList() {
-  const active = excludeGmOnly(ALL_TASKS.filter(t => t.status !== '완료'));
+  const active = excludeNonStaff(ALL_TASKS.filter(t => t.status !== '완료'));
   let filtered = _applyShareFilters(active);
 
   const lines = [];
@@ -1946,7 +1950,7 @@ function shareList() {
    Share — 보고용 공유 (격식체)
    ═══════════════════════════════════════════ */
 function shareReport() {
-  const active = excludeGmOnly(ALL_TASKS.filter(t => t.status !== '완료'));
+  const active = excludeNonStaff(ALL_TASKS.filter(t => t.status !== '완료'));
   let filtered = _applyShareFilters(active);
 
   const now = new Date();
@@ -2059,7 +2063,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 function renderDashboard() {
   const panel = document.getElementById('dashboardPanel');
-  const all = excludeGmOnly(ALL_TASKS);  // GM 단독 할일 제외 — 업무현황 대시보드는 실무진 기준
+  const all = excludeNonStaff(ALL_TASKS);  // GM 단독 할일 제외 — 업무현황 대시보드는 실무진 기준
   const active = all.filter(t => t.status !== '완료');
   const done = all.filter(t => t.status === '완료');
   const hold = all.filter(t => t.status === '보류');

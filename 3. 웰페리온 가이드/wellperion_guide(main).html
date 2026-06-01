@@ -6429,9 +6429,9 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
                   id: base, title: '[결재] ' + title, status: '진행중',
                   category: '결재', description: '', isToday: true, startDate: sd, ssotAuto: true
                 });
-              } else if (owner.indexOf('김남욱GM') >= 0) {
-                // ★ G1 '오늘 할 일'에는 시작일이 오늘(KST)인 GM 항목만 합류 —
-                //   과거 완료·진행건이 '오늘 완료'로 오염되던 버그 차단 (2026-05-30 #03 fix)
+              } else if (owner.indexOf('김남욱GM') >= 0 || /AI (CEO|CMO|CTO|COO|CFO|CPO|CHRO)/.test(owner) || /웰리|시모|시토|시우|시뽀|시포|시로/.test(owner)) {
+                // ★ G1 합류: GM 본인 + AI C레벨 전체 (2026-06-01 GM 최종 확정 v2)
+                //   시작일이 오늘(KST)인 항목만 — 과거 완료·진행건이 '오늘 완료'로 오염되던 버그 차단 (2026-05-30 #03 fix)
                 if (sd !== TD) return;
                 var st = String(row['상태'] || '');
                 var status = (st === '완료') ? '완료' : (st === '보류') ? '보류' : '진행중';
