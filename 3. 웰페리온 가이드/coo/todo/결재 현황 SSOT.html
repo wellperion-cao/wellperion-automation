@@ -93,6 +93,12 @@ html,body{background:var(--bg);color:var(--text);font-family:"Pretendard","Apple
 .detail-toggle.open .arrow{transform:rotate(90deg)}
 .detail-body{display:none;margin-top:10px;padding-top:10px;border-top:1px dashed var(--border)}
 .detail-body.open{display:block}
+/* [결재] 완료·반려 접이식 그룹 섹션 (전체 보기에서 진행중과 분리) */
+.group-toggle{cursor:pointer;font-size:12px;font-weight:700;color:var(--text);margin:18px 0 4px;padding:9px 12px;border-radius:8px;background:var(--paper);border:1px solid var(--border);display:flex;align-items:center;gap:6px;user-select:none}
+.group-toggle:hover{border-color:var(--accent)}
+.group-toggle .arrow{transition:transform 0.15s;font-size:10px;color:var(--dim)}
+.group-toggle.open .arrow{transform:rotate(90deg)}
+.group-toggle .gcount{margin-left:auto;font-weight:600;color:var(--dim)}
 .detail-body .body-text{font-size:13px;white-space:pre-wrap;line-height:1.55;color:var(--text)}
 .progress-row{display:flex;gap:8px;align-items:flex-start;padding:6px 10px;border-left:3px solid var(--accent);background:var(--accent-bg);border-radius:6px;margin:6px 0}
 .progress-row .date{font-size:12px;font-weight:700;color:var(--accent);min-width:88px;flex-shrink:0}
@@ -441,6 +447,31 @@ function render() {
 
   if (!list.length) {
     html += '<div class="empty-msg"><span class="ico">📂</span>해당 조건의 결재 건이 없습니다.<br><span style="font-size:12px;color:var(--dim);">필터를 조정하거나 업무 현황 SSOT에서 결재요청을 체크해 보세요.</span></div>';
+  } else if (activeFilter === '전체') {
+    // 전체 보기: 진행 중은 펼쳐 보이고, 결재완료·반려는 접이식 섹션으로 분리 (2026-06-01 GM)
+    const gPend = list.filter(t => t.approvalStatus !== '결재완료' && !/반려/.test(t.approvalStatus));
+    const gDone = list.filter(t => t.approvalStatus === '결재완료');
+    const gRej  = list.filter(t => /반려/.test(t.approvalStatus));
+    let n = 0;
+    html += '<div style="font-size:12px;color:var(--dim);margin-bottom:8px;">진행 중 ' + gPend.length + '건'
+      + (gDone.length ? ' · 완료 ' + gDone.length : '') + (gRej.length ? ' · 반려 ' + gRej.length : '') + '</div>';
+    if (gPend.length) {
+      gPend.forEach(t => { html += renderApprovalCard(t, ++n); });
+    } else {
+      html += '<div style="font-size:13px;color:var(--dim);padding:10px 0 4px;">진행 중인 결재 건이 없습니다.</div>';
+    }
+    if (gDone.length) {
+      html += '<div class="group-toggle" onclick="toggleDetail(this)"><span class="arrow">▶</span>✅ 결재완료<span class="gcount">' + gDone.length + '건</span></div>';
+      html += '<div class="detail-body">';
+      gDone.forEach(t => { html += renderApprovalCard(t, ++n); });
+      html += '</div>';
+    }
+    if (gRej.length) {
+      html += '<div class="group-toggle" onclick="toggleDetail(this)"><span class="arrow">▶</span>❌ 반려<span class="gcount">' + gRej.length + '건</span></div>';
+      html += '<div class="detail-body">';
+      gRej.forEach(t => { html += renderApprovalCard(t, ++n); });
+      html += '</div>';
+    }
   } else {
     html += '<div style="font-size:12px;color:var(--dim);margin-bottom:8px;">총 ' + list.length + '건 표시</div>';
     list.forEach((t, i) => { html += renderApprovalCard(t, i + 1); });
