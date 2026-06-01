@@ -329,7 +329,9 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
         <option value="[2] 인사 & 파트너">[2] 인사 & 파트너</option>
         <option value="[3] 운영 정책">[3] 운영 정책</option>
         <option value="[4] 시설 및 환경">[4] 시설 및 환경</option>
-        <option value="[6] 회장님 하달">[6] 회장님 하달</option>
+        <option value="[5] 회원·CS">[5] 회원·CS</option>
+        <option value="[6] IT·시스템·자동화">[6] IT·시스템·자동화</option>
+        <option value="[7] 교육·조직문화">[7] 교육·조직문화</option>
       </select>
     </div>
     <div class="field">
@@ -472,7 +474,7 @@ const MEMBERS = ['이경연 실장','나우열M','최준용M','임정은M','윤�
 
 const CATEGORIES = [
   '[1] 매출 및 영업','[2] 인사 & 파트너','[3] 운영 정책',
-  '[4] 시설 및 환경','[6] 회장님 하달'
+  '[4] 시설 및 환경','[5] 회원·CS','[6] IT·시스템·자동화','[7] 교육·조직문화'
 ];
 
 const CAT_COLORS = {
@@ -480,7 +482,9 @@ const CAT_COLORS = {
   '[2] 인사 & 파트너': {bg:'var(--purple-bg)', color:'var(--purple)'},
   '[3] 운영 정책':    {bg:'var(--accent-bg)', color:'var(--accent)'},
   '[4] 시설 및 환경':  {bg:'var(--green-bg)',  color:'var(--green)'},
-  '[6] 회장님 하달':  {bg:'var(--red-bg)',    color:'var(--red)'}
+  '[5] 회원·CS':       {bg:'var(--red-bg)',    color:'var(--red)'},
+  '[6] IT·시스템·자동화':{bg:'var(--blue-bg)',  color:'var(--blue)'},
+  '[7] 교육·조직문화': {bg:'var(--yellow-bg)', color:'var(--yellow)'}
 };
 
 /* field mapping: API 한글 → 영문 */
@@ -810,7 +814,7 @@ function renderTasks() {
 
   // Group by category
   const groups = {};
-  const catOrder = ['[1] 매출 및 영업','[2] 인사 & 파트너','[3] 운영 정책','[4] 시설 및 환경','[6] 회장님 하달',''];
+  const catOrder = ['[1] 매출 및 영업','[2] 인사 & 파트너','[3] 운영 정책','[4] 시설 및 환경','[5] 회원·CS','[6] IT·시스템·자동화','[7] 교육·조직문화',''];
   filtered.forEach(t => {
     const cat = t.category || '';
     if (!groups[cat]) groups[cat] = [];
@@ -1032,11 +1036,8 @@ function renderTaskCard(t, idx) {
   html += '<button class="action-btn edit" onclick="event.stopPropagation();openEditModal(\'' + escAttr(t.id) + '\')" style="padding:4px 10px;font-size:11px;">편집</button>';
   html += '<button class="action-btn done" onclick="event.stopPropagation();markDone(\'' + escAttr(t.id) + '\')" style="padding:4px 10px;font-size:11px;">완료</button>';
   html += '<button class="action-btn" onclick="event.stopPropagation();holdTask(\'' + escAttr(t.id) + '\')" style="padding:4px 10px;font-size:11px;background:var(--orange-bg);color:var(--orange);border-color:rgba(230,148,78,0.3);">보류</button>';
-  if (_hasResult) {
-    html += '<button class="action-btn" onclick="event.stopPropagation();printResultReport(\'' + escAttr(t.id) + '\')" style="padding:4px 10px;font-size:11px;background:var(--purple-bg);color:var(--purple);border-color:rgba(167,139,218,0.3);">🖨 결과 보고서</button>';
-  } else {
-    html += '<button class="action-btn" disabled title="결과보고를 먼저 작성하세요" style="padding:4px 10px;font-size:11px;background:transparent;color:var(--dim);border-color:var(--border);opacity:0.45;cursor:not-allowed;">🖨 결과 보고서</button>';
-  }
+  // 결과 보고서: 항상 활성(작성 전이어도 인쇄 가능 — 2026-06-01 GM)
+  html += '<button class="action-btn" onclick="event.stopPropagation();printResultReport(\'' + escAttr(t.id) + '\')" style="padding:4px 10px;font-size:11px;background:var(--purple-bg);color:var(--purple);border-color:rgba(167,139,218,0.3);">🖨 결과 보고서</button>';
   html += '<button class="action-btn" onclick="event.stopPropagation();deleteTaskWithAuth(\'' + escAttr(t.id) + '\',\'' + escAttr(t.title || '') + '\')" style="padding:4px 10px;font-size:11px;background:transparent;color:var(--dim);border-color:var(--border);">삭제</button>';
   html += '</div>'; // task-actions
 
