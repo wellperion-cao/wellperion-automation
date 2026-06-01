@@ -120,7 +120,7 @@ html,body{background:var(--bg);color:var(--text);font-family:"Pretendard","Apple
 .approval-card .title-row .card-title-area .approval-badge-line{display:flex;flex-wrap:wrap;gap:4px;}
 .approval-card .title-row .card-meta-chips{display:flex;flex-wrap:wrap;gap:4px;align-items:flex-start;flex-shrink:0;max-width:200px;}
 @media(max-width:400px){.approval-card .title-row{flex-wrap:wrap;}}
-/* [결재] 결재 진행바 — 부서장→GM→대표 단계 시각화 (2026-06-01 GM) */
+/* [결재] 결재 진행바 — GM→대표 단계 시각화 (2026-06-01 GM) */
 .approval-steps{display:flex;align-items:flex-start;gap:0;margin:6px 0 8px;flex-wrap:wrap}
 .approval-steps .step{display:flex;flex-direction:column;align-items:center;gap:2px;min-width:46px}
 .approval-steps .step-dot{font-size:13px;line-height:1.2}
@@ -234,32 +234,11 @@ const CAT_COLORS = {
   '[6] 회장님 하달':  {bg:'var(--red-bg)',    color:'var(--red)'}
 };
 
-/* 부서↔부서장 매핑 상수 (GM 2026-05-30 확정) */
-const DEPT_HEAD_MAP = {
-  '운영부': '이경연 실장',
-  '시설부': '이정헌 소장',
-  '파트너팀': '나우열M'
-};
-
-/* 카테고리 → 부서 매핑 (기존 CAT_COLORS 키 기준) */
-const CAT_DEPT_MAP = {
-  '[1] 매출 및 영업':  '운영부',
-  '[2] 인사 & 파트너': '파트너팀',
-  '[3] 운영 정책':    '운영부',
-  '[4] 시설 및 환경':  '시설부',
-  '[5] 대표님 하달':   '운영부',
-  '[6] 회장님 하달':   '운영부'
-};
-
-/* 업무의 카테고리로 담당 부서장 이름 반환. 매핑 없으면 null */
-function getDeptHead(category) {
-  const dept = CAT_DEPT_MAP[category];
-  return dept ? (DEPT_HEAD_MAP[dept] || null) : null;
-}
+/* 부서장 결재 폐지(2026-06-01 GM) — DEPT_HEAD_MAP·CAT_DEPT_MAP·getDeptHead 제거 */
 
 let ALL_TASKS = [];
 let activeFilter = '전체';      // '전체' | '결재완료' | '반려' | '미결'
-let activeRoleFilter = '전체';  // '전체' | '부서장' | '이경연 실장' | '이정헌 소장' | '나우열M' | 'GM' | '대표님'
+let activeRoleFilter = '전체';  // '전체' | 'GM' | '대표님'
 let activeCatFilter = '전체';   // '전체' | 카테고리
 let searchQuery = '';            // 키워드
 let activeSortBy = '최신순';    // '최신순' | '결재상태' | '카테고리' | '시작일순'
@@ -316,7 +295,6 @@ function normalizeTask(r) {
   t.endDate = r['종료일'] || r.endDate || '';
   t.status = r['상태'] || r.status || '';
   t.approval = r['결재요청'] || r.approval || '';
-  t.deptSign = r['부서장싸인'] || '';
   t.gmSign = r['GM싸인'] || '';
   t.repSign = r['대표싸인'] || '';
   t.approvalStatus = r['결재상태'] || '';
@@ -344,7 +322,7 @@ function render() {
   // 툴바(필터·정렬·검색)를 제목 아래 최상단으로. GM·대표 세분 수치는 '결재 현황 대시보드'에서 확인.
 
   // 결재자별 카운트 (미결만)
-  const pendingByRole = { '부서장':0, 'GM':0, '대표님':0 };
+  const pendingByRole = { 'GM':0, '대표님':0 };
   pending.forEach(t => {
     const parsed = parseContent(t.content);
     const route = buildEffectiveRoute(t, parsed.budget);
@@ -356,18 +334,6 @@ function render() {
   const catSet = {};
   approvalTasks.forEach(t => { if (t.category) catSet[t.category] = (catSet[t.category]||0) + 1; });
   const catList = Object.keys(catSet).sort();
-
-  // [결재-4] 부서장별 미결 카운트 집계 (개인별 구분)
-  const pendingByPerson = { '이경연 실장':0, '이정헌 소장':0, '나우열M':0 };
-  pending.forEach(t => {
-    const parsed = parseContent(t.content);
-    const route = buildEffectiveRoute(t, parsed.budget);
-    const nxt = nextApprover(t, route);
-    if (nxt === '부서장') {
-      const head = getDeptHead(t.category);
-      if (head && head in pendingByPerson) pendingByPerson[head]++;
-    }
-  });
 
   // [결재-1] 1줄 — 상태 필터 + 정렬 드롭다운 + 대시보드·인쇄·보고용 (업무현황 정렬식 통일 · sticky 풀폭)
   let stHtml = '';
@@ -423,20 +389,13 @@ function render() {
     list = list.filter(t => t.category === activeCatFilter);
   }
 
-  // [결재-4] 결재자별 차례 (미결 한정) — 부서장 3인 개별 필터 포함
-  const DEPT_HEAD_PERSONS = ['이경연 실장', '이정헌 소장', '나우열M'];
+  // [결재] 결재자별 차례 필터 (미결 한정) — GM·대표님
   if (activeRoleFilter !== '전체') {
     list = list.filter(t => {
       if (t.approvalStatus === '결재완료' || /반려/.test(t.approvalStatus)) return false;
       const parsed = parseContent(t.content);
       const route = buildEffectiveRoute(t, parsed.budget);
-      const nxt = nextApprover(t, route);
-      // 부서장 3인 개별 선택 시: 다음 결재자=부서장 이고 해당 카테고리 담당 부서장과 일치하는지 확인
-      if (DEPT_HEAD_PERSONS.indexOf(activeRoleFilter) >= 0) {
-        if (nxt !== '부서장') return false;
-        return getDeptHead(t.category) === activeRoleFilter;
-      }
-      return nxt === activeRoleFilter;
+      return nextApprover(t, route) === activeRoleFilter;
     });
   }
 
@@ -454,7 +413,7 @@ function render() {
 
   // 정렬 — activeSortBy에 따라 분기
   if (activeSortBy === '결재상태') {
-    const stOrder = {'결재완료':0,'반려':1,'GM결재':2,'부서장결재':3,'대기':4};
+    const stOrder = {'결재완료':0,'반려':1,'GM결재':2,'대기':4};
     const stRank = t => stOrder[t.approvalStatus] !== undefined ? stOrder[t.approvalStatus] : 5;
     list.sort((a, b) => stRank(a) - stRank(b) || String(a.title).localeCompare(String(b.title)));
   } else if (activeSortBy === '카테고리') {
@@ -661,15 +620,14 @@ function buildEffectiveRoute(t, budget) {
 }
 
 function nextApprover(t, route) {
-  const map = { '부서장': t.deptSign, 'GM': t.gmSign, '대표님': t.repSign };
+  const map = { 'GM': t.gmSign, '대표님': t.repSign };
   for (const r of route) {
     if (!map[r]) return r;
   }
   return null;
 }
 
-/* 결재 비밀번호 게이트 — GM·대표님 승인/반려 시 본인 PIN 입력 필수 (2026-05-29 GM 지시)
-   부서장은 PIN 미지정 → 기존 확인창 유지 */
+/* 결재 비밀번호 게이트 — GM·대표님 승인/반려 시 본인 PIN 입력 필수 (2026-05-29 GM 지시) */
 /* 결재 비밀번호: 평문 저장 금지(공개 repo) — 페이지는 입력만 받고 서버(Apps Script)가 검증 (2026-05-29 COO 보안) */
 const PIN_ROLES = ['GM', '대표님'];
 
@@ -719,7 +677,7 @@ function renderApprovalCard(t, idx) {
   const nxt = (!isDone && !isRejected) ? nextApprover(t, route) : null;
 
   // 결재 단계 마킹 — 결재상태 컬럼이 비어 있어도 싸인 실측으로 단계 산출 (2026-05-29 COO 수정)
-  const signMap = { '부서장': t.deptSign, 'GM': t.gmSign, '대표님': t.repSign };
+  const signMap = { 'GM': t.gmSign, '대표님': t.repSign };
   const signedRoles = route.filter(r => String(signMap[r] || '').trim());
   let stCls, chipCls = 'status-chip', chipText;
   if (isDone) {
@@ -764,7 +722,7 @@ function renderApprovalCard(t, idx) {
     h += '</div>';
   }
 
-  // [결재] 결재 진행바 — 부서장→GM→대표 단계 한눈에 (2026-06-01 GM)
+  // [결재] 결재 진행바 — GM→대표 단계 한눈에 (2026-06-01 GM)
   if (route && route.length) {
     let stepsH = '<div class="approval-steps">';
     route.forEach((r, i) => {
@@ -885,7 +843,6 @@ function renderApprovalDashboard() {
   // 요약 통계
   var gmSigned = all.filter(function(t) { return String(t.gmSign||'').trim(); }).length;
   var repSigned = all.filter(function(t) { return String(t.repSign||'').trim(); }).length;
-  var deptSigned = all.filter(function(t) { return String(t.deptSign||'').trim(); }).length;
   var completionRate = total > 0 ? Math.round(done.length / total * 100) : 0;
 
   h += '<div class="dash-stat-row">';
