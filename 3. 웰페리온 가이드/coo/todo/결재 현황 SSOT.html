@@ -113,6 +113,17 @@ html,body{background:var(--bg);color:var(--text);font-family:"Pretendard","Apple
 .approval-card .title-row .card-title-area .approval-badge-line{display:flex;flex-wrap:wrap;gap:4px;}
 .approval-card .title-row .card-meta-chips{display:flex;flex-wrap:wrap;gap:4px;align-items:flex-start;flex-shrink:0;max-width:200px;}
 @media(max-width:400px){.approval-card .title-row{flex-wrap:wrap;}}
+/* [결재] 결재 진행바 — 부서장→GM→대표 단계 시각화 (2026-06-01 GM) */
+.approval-steps{display:flex;align-items:flex-start;gap:0;margin:6px 0 8px;flex-wrap:wrap}
+.approval-steps .step{display:flex;flex-direction:column;align-items:center;gap:2px;min-width:46px}
+.approval-steps .step-dot{font-size:13px;line-height:1.2}
+.approval-steps .step-label{font-size:10px;color:var(--dim);white-space:nowrap}
+.approval-steps .step.done .step-dot,.approval-steps .step.done .step-label{color:var(--green);font-weight:700}
+.approval-steps .step.current .step-dot,.approval-steps .step.current .step-label{color:var(--blue);font-weight:700}
+.approval-steps .step.pending .step-dot{opacity:0.5}
+.approval-steps .step.reject .step-dot,.approval-steps .step.reject .step-label{color:var(--red);font-weight:700}
+.approval-steps .conn{height:2px;width:24px;background:var(--border);margin-top:7px;border-radius:1px}
+.approval-steps .conn.done{background:var(--green)}
 /* [결재-3] 대시보드 패널 — 업무 현황 SSOT와 동일 토큰 재사용 */
 .dash-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:200;align-items:flex-start;justify-content:center;padding:20px;overflow-y:auto;}
 .dash-overlay.show{display:flex;}
@@ -669,6 +680,27 @@ function renderApprovalCard(t, idx) {
     h += '<div class="meta-row" style="margin-bottom:6px;">';
     h += '<span class="chip budget">💰 ' + esc(parsed.budget.category) + ' · ' + formatKRW(parsed.budget.amount) + '</span>';
     h += '</div>';
+  }
+
+  // [결재] 결재 진행바 — 부서장→GM→대표 단계 한눈에 (2026-06-01 GM)
+  if (route && route.length) {
+    let stepsH = '<div class="approval-steps">';
+    route.forEach((r, i) => {
+      if (i > 0) {
+        const prevSigned = !!String(signMap[route[i - 1]] || '').trim();
+        stepsH += '<div class="conn' + (prevSigned ? ' done' : '') + '"></div>';
+      }
+      const signed = !!String(signMap[r] || '').trim();
+      const lbl = r === '대표님' ? '대표' : r;
+      let cls = 'step', dot = '○';
+      if (signed) { cls += ' done'; dot = '●'; }
+      else if (isRejected && r === nxt) { cls += ' reject'; dot = '✕'; }
+      else if (!isDone && !isRejected && r === nxt) { cls += ' current'; dot = '●'; }
+      else { cls += ' pending'; }
+      stepsH += '<div class="' + cls + '"><span class="step-dot">' + dot + '</span><span class="step-label">' + esc(lbl) + '</span></div>';
+    });
+    stepsH += '</div>';
+    h += stepsH;
   }
 
   // 싸인 라인 — 미서명 + 현재 차례면 ✅/❌ 버튼 내장
