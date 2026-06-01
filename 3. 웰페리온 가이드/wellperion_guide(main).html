@@ -6644,7 +6644,7 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
           '<button class="todo-act-btn today-act" data-id="' + gm1Esc(t.id) + '" data-action="hold">보류</button>' +
           '<button class="todo-act-btn today-act del" data-id="' + gm1Esc(t.id) + '" data-action="delete">삭제</button>' +
           '</div></div>' +
-          (t.description ? '<div class="task-desc">' + gm1Esc(t.description) + '</div>' : '') +
+          (t.description ? '<div class="task-desc" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;" title="' + gm1Esc(t.description) + '">' + gm1Esc(t.description) + '</div>' : '') +
           '</div>';
       });
 
@@ -7297,13 +7297,31 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
       }
 
       window.gm1CloseTaskModal();
-      gm1RenderToday();
+      // ssot-* 항목은 gm1SsotItems를 직접 갱신(낙관적) 후 재fetch로 서버값 동기화
+      if (isSsotOrigin) {
+        var ssotIdx = gm1SsotItems.findIndex(function(x){ return x.id === id; });
+        if (ssotIdx >= 0) {
+          gm1SsotItems[ssotIdx] = Object.assign({}, gm1SsotItems[ssotIdx], {
+            title: title, status: status, startDate: start
+          });
+        }
+        gm1RenderToday();
+        // 백그라운드 재fetch로 Sheets 최신값 반영
+        setTimeout(function(){ gm1FetchSsot(); }, 1500);
+      } else {
+        gm1RenderToday();
+      }
       gm1CalRender();
     };
 
     /* ── 일정(시작/종료일) 변경 모달 (업무SSOT openDateRangePicker 이식) ── */
     window.gm1OpenDateRange = function(id) {
-      var t = gm1Load().find(function(x){ return x.id === id; });
+      // ssot-* 항목도 지원: gm1SsotItems에서 먼저 찾기
+      var t = null;
+      if (String(id).indexOf('ssot-') === 0) {
+        t = gm1SsotItems.find(function(x){ return x.id === id; });
+      }
+      if (!t) t = gm1Load().find(function(x){ return x.id === id; });
       if (!t) return;
       document.getElementById('gm1DrId').value    = id;
       document.getElementById('gm1DrStart').value = t.startDate || '';
