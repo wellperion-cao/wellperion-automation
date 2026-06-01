@@ -3454,6 +3454,119 @@ Start-Process python -ArgumentList telegram_bot\daily_scheduler.py -WorkingDirec
 
       </div><!-- /calendar panel -->
     </div>
+
+    <!-- ════ G1 업무 편집 모달 (업무SSOT 이식 · 진척 로그·예산·결재 라우팅) ════ -->
+    <div id="gm1TaskModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.55);z-index:9997;align-items:center;justify-content:center;">
+      <div style="background:var(--paper);border-radius:14px;padding:24px 22px;width:min(560px,94vw);max-height:88vh;overflow-y:auto;box-shadow:0 8px 40px rgba(0,0,0,0.4);">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+          <h4 id="gm1TaskModalTitle" style="margin:0;font-size:16px;">업무 편집</h4>
+          <button onclick="window.gm1CloseTaskModal()" style="background:none;border:none;font-size:18px;cursor:pointer;color:var(--dim);padding:2px 6px;">✕</button>
+        </div>
+        <input type="hidden" id="gm1TEditId">
+        <div style="display:flex;flex-direction:column;gap:12px;">
+          <div>
+            <label style="font-size:12px;color:var(--dim);display:block;margin-bottom:4px;">제목 <span style="color:var(--warm);">*</span></label>
+            <input type="text" id="gm1TTitle" placeholder="업무 제목" style="width:100%;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:14px;font-family:inherit;box-sizing:border-box;">
+          </div>
+          <div style="display:flex;gap:10px;">
+            <div style="flex:1;">
+              <label style="font-size:12px;color:var(--dim);display:block;margin-bottom:4px;">시작일</label>
+              <input type="date" id="gm1TStart" style="width:100%;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:14px;font-family:inherit;box-sizing:border-box;">
+            </div>
+            <div style="flex:1;">
+              <label style="font-size:12px;color:var(--dim);display:block;margin-bottom:4px;">종료일</label>
+              <input type="date" id="gm1TEnd" style="width:100%;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:14px;font-family:inherit;box-sizing:border-box;">
+            </div>
+          </div>
+          <div style="display:flex;gap:10px;">
+            <div style="flex:1;">
+              <label style="font-size:12px;color:var(--dim);display:block;margin-bottom:4px;">카테고리</label>
+              <select id="gm1TCat" style="width:100%;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:14px;font-family:inherit;box-sizing:border-box;">
+                <option value="업무">업무</option>
+                <option value="결재">결재</option>
+                <option value="기획">기획</option>
+                <option value="개인">개인</option>
+                <option value="인사·파트너">인사·파트너</option>
+                <option value="회의">회의</option>
+                <option value="기타">기타</option>
+              </select>
+            </div>
+            <div style="flex:1;">
+              <label style="font-size:12px;color:var(--dim);display:block;margin-bottom:4px;">상태</label>
+              <select id="gm1TStatus" style="width:100%;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:14px;font-family:inherit;box-sizing:border-box;">
+                <option value="진행중">진행중</option>
+                <option value="완료">완료</option>
+                <option value="보류">보류</option>
+              </select>
+            </div>
+          </div>
+          <div>
+            <label style="font-size:12px;color:var(--dim);display:block;margin-bottom:4px;">내용</label>
+            <textarea id="gm1TDesc" rows="3" placeholder="업무 내용 (선택)" style="width:100%;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:14px;font-family:inherit;resize:vertical;box-sizing:border-box;"></textarea>
+          </div>
+
+          <!-- 진척 로그 -->
+          <div style="border-top:1px dashed var(--border);padding-top:12px;">
+            <label style="font-size:12px;color:var(--dim);display:block;margin-bottom:6px;font-weight:700;">📈 진척 로그</label>
+            <div style="display:flex;gap:6px;margin-bottom:8px;">
+              <input type="date" id="gm1TProgDate" style="width:140px;padding:6px 8px;border-radius:7px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:13px;font-family:inherit;box-sizing:border-box;">
+              <input type="text" id="gm1TProgInput" placeholder="오늘 진척 내용" style="flex:1;padding:6px 8px;border-radius:7px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:13px;font-family:inherit;box-sizing:border-box;" onkeydown="if(event.key==='Enter'){event.preventDefault();window.gm1AddProgressLogEntry();}">
+              <button type="button" onclick="window.gm1AddProgressLogEntry()" style="padding:6px 14px;font-size:13px;font-weight:700;border-radius:7px;cursor:pointer;font-family:inherit;background:var(--accent);color:#fff;border:none;flex-shrink:0;">추가</button>
+            </div>
+            <div id="gm1TProgList"></div>
+          </div>
+
+          <!-- 예산 + 결재 라우팅 -->
+          <div style="border-top:1px dashed var(--border);padding-top:12px;">
+            <label style="font-size:12px;color:var(--dim);display:block;margin-bottom:6px;font-weight:700;">💰 예산 · 결재 라인 (자동)</label>
+            <div style="display:flex;gap:6px;margin-bottom:8px;">
+              <select id="gm1TBudgetCat" onchange="window.gm1UpdateApprovalPreview()" style="flex:1;padding:6px 8px;border-radius:7px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:13px;font-family:inherit;box-sizing:border-box;">
+                <option value="">예산 항목 (선택)</option>
+                <option value="일상 운영비">일상 운영비</option>
+                <option value="소액 유지보수">소액 유지보수</option>
+                <option value="마케팅">마케팅</option>
+                <option value="비상 지출">비상 지출</option>
+                <option value="계약·정기 약정">계약·정기 약정</option>
+                <option value="IT·소프트웨어">IT·소프트웨어</option>
+                <option value="급여·인건비·외주·교육">급여·인건비·외주·교육</option>
+                <option value="장비 구매·교체">장비 구매·교체</option>
+              </select>
+              <input type="number" id="gm1TBudgetAmt" placeholder="금액(원)" oninput="window.gm1UpdateApprovalPreview()" style="width:130px;padding:6px 8px;border-radius:7px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:13px;font-family:inherit;box-sizing:border-box;">
+            </div>
+            <div id="gm1TApprovalHint" style="font-size:12px;color:var(--dim);">금액 입력 시 결제 권한 기준 v2.0 룰에 따라 결재 라인이 자동 표시됩니다.</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:18px;justify-content:flex-end;">
+          <button id="gm1TPrintBtn" onclick="window.gm1PrintResultReport(document.getElementById('gm1TEditId').value)" style="display:none;padding:8px 16px;font-size:13px;font-weight:700;border-radius:8px;cursor:pointer;font-family:inherit;background:var(--paper);color:var(--accent);border:1px solid var(--accent);margin-right:auto;">🖨️ 보고서 인쇄</button>
+          <button onclick="window.gm1CloseTaskModal()" style="padding:8px 16px;font-size:13px;font-weight:600;border-radius:8px;cursor:pointer;font-family:inherit;background:var(--bg);color:var(--dim);border:1px solid var(--border);">취소</button>
+          <button onclick="window.gm1SaveTaskModal()" style="padding:8px 20px;font-size:13px;font-weight:700;border-radius:8px;cursor:pointer;font-family:inherit;background:var(--accent);color:#fff;border:none;">저장</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════ G1 일정(시작/종료일) 변경 모달 (업무SSOT openDateRangePicker 이식) ════ -->
+    <div id="gm1DateRangeModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.55);z-index:9999;align-items:center;justify-content:center;">
+      <div style="background:var(--paper);border-radius:14px;padding:24px 22px;width:min(340px,92vw);box-shadow:0 8px 40px rgba(0,0,0,0.4);">
+        <h4 style="margin:0 0 16px;font-size:15px;">일정 변경</h4>
+        <input type="hidden" id="gm1DrId">
+        <div style="margin-bottom:12px;">
+          <label style="font-size:12px;color:var(--dim);display:block;margin-bottom:4px;">시작일</label>
+          <input type="date" id="gm1DrStart" style="width:100%;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:14px;font-family:inherit;box-sizing:border-box;">
+        </div>
+        <div style="margin-bottom:16px;">
+          <label style="font-size:12px;color:var(--dim);display:block;margin-bottom:4px;">종료일</label>
+          <input type="date" id="gm1DrEnd" style="width:100%;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:14px;font-family:inherit;box-sizing:border-box;">
+        </div>
+        <div style="display:flex;gap:8px;justify-content:flex-end;">
+          <button onclick="window.gm1CloseDateRange()" style="padding:8px 16px;font-size:13px;font-weight:600;border-radius:8px;cursor:pointer;font-family:inherit;background:var(--bg);color:var(--dim);border:1px solid var(--border);">취소</button>
+          <button onclick="window.gm1SaveDateRange()" style="padding:8px 20px;font-size:13px;font-weight:700;border-radius:8px;cursor:pointer;font-family:inherit;background:var(--accent);color:#fff;border:none;">저장</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════ G1 결과보고서 인쇄 컨테이너 (printResultReport 이식) ════ -->
+    <div id="gm1ResultReportPrint" style="display:none"></div>
+
     </div>
   </article>
 
@@ -5987,6 +6100,11 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
     /* ── SSOT 자동 합류 (in-memory · localStorage 저장 금지 · 2026-05-29 seed#10) ── */
     var gm1SsotItems = [];   // SSOT(구글시트)에서 읽어온 GM 본인·결재 차례 항목 (항상 최신)
     var gm1CatFilter = { '업무':true, '결재':true, '기획':true, '개인':true };  // 분류 필터 체크 상태
+    // 업무SSOT 이식 — 정렬·검색·담당자 필터 상태 (2026-06-01)
+    var gm1SortBy      = '최신순';  // '최신순' | '카테고리' | '담당자' | '시작일순'
+    var gm1SearchQuery = '';
+    var gm1OwnerFilter = '전체';   // G1은 GM 단독이나 "완전 동일" 위해 이식
+    var gm1ModalLogs   = [];       // 편집 모달 진척 로그 캐시
 
     /* ── 오늘 날짜 문자열 ── */
     function todayStr() {
@@ -6325,11 +6443,54 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
       // 분류 필터 적용
       merged = merged.filter(function(t){ return gm1CatFilter[catOf(t)]; });
 
+      // ── 검색 필터 (업무SSOT 이식) ──
+      if (gm1SearchQuery && gm1SearchQuery.trim()) {
+        var q = gm1SearchQuery.trim().toLowerCase();
+        merged = merged.filter(function(t){
+          var logTxt = Array.isArray(t.progressLog) ? t.progressLog.map(function(l){ return (l.date||'')+' '+(l.text||''); }).join(' ') : '';
+          var blob = [t.title, t.category, t.description, t.memo, logTxt, t.budgetCat].filter(Boolean).join(' ').toLowerCase();
+          return blob.indexOf(q) >= 0;
+        });
+      }
+      // ── 담당자 필터 (업무SSOT 이식 · G1은 GM 단독) ──
+      if (gm1OwnerFilter !== '전체') {
+        merged = merged.filter(function(t){ return (t.owner || '김남욱GM').indexOf(gm1OwnerFilter) >= 0; });
+      }
+
+      // ── 정렬 (업무SSOT 이식) ──
+      function gm1SortCmp(a, b) {
+        if (gm1SortBy === '시작일순') return String(b.startDate||'').localeCompare(String(a.startDate||''));
+        if (gm1SortBy === '카테고리') return String(catOf(a)).localeCompare(String(catOf(b))) || String(a.title||'').localeCompare(String(b.title||''));
+        if (gm1SortBy === '담당자')   return String(a.owner||'김남욱GM').localeCompare(String(b.owner||'김남욱GM')) || String(a.title||'').localeCompare(String(b.title||''));
+        return String(b.startDate||'').localeCompare(String(a.startDate||'')) || String(a.title||'').localeCompare(String(b.title||''));  // 최신순
+      }
+      merged.sort(gm1SortCmp);
+
       var active = merged.filter(function(t){ return t.status === '진행중'; });
       var done   = merged.filter(function(t){ return t.status === '완료'; });
       var hold   = merged.filter(function(t){ return t.status === '보류'; });
 
       var html = '';
+
+      // ── 도구 바: 검색 + 정렬 + 담당자 필터 + 공유/인쇄 + 결재현황 chip (업무SSOT 이식) ──
+      html += '<div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:10px;">';
+      html += '<input type="text" id="gm1-search" placeholder="제목·내용·진척 검색" value="' + gm1Esc(gm1SearchQuery).replace(/"/g,'&quot;') + '" style="flex:1;min-width:140px;background:var(--paper);border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:8px;font-size:12.5px;font-family:inherit;">';
+      html += '<select id="gm1-sort" style="background:var(--paper);border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:8px;font-size:12px;font-family:inherit;font-weight:600;cursor:pointer;">';
+      ['최신순','카테고리','담당자','시작일순'].forEach(function(opt){
+        html += '<option value="' + opt + '"' + (gm1SortBy === opt ? ' selected' : '') + '>' + opt + '</option>';
+      });
+      html += '</select>';
+      html += '<select id="gm1-owner" style="background:var(--paper);border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:8px;font-size:12px;font-family:inherit;font-weight:600;cursor:pointer;">';
+      ['전체','김남욱GM'].forEach(function(opt){
+        html += '<option value="' + opt + '"' + (gm1OwnerFilter === opt ? ' selected' : '') + '>' + opt + '</option>';
+      });
+      html += '</select>';
+      html += '</div>';
+      html += '<div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:12px;">';
+      html += '<button type="button" id="gm1-share-report" style="background:var(--accent-bg);color:var(--accent);border:1px solid rgba(183,159,138,0.3);padding:5px 12px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;">📋 보고용</button>';
+      html += '<button type="button" id="gm1-share-list" style="background:var(--paper);color:var(--text);border:1px solid var(--border);padding:5px 12px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;">🔗 공유용</button>';
+      html += '<a href="https://wellperion-cao.github.io/wellperion-automation/coo/todo/%EA%B2%B0%EC%9E%AC%20%ED%98%84%ED%99%A9%20SSOT.html" target="_blank" style="background:rgba(232,163,61,0.12);color:#e8a33d;border:1px solid rgba(232,163,61,0.3);padding:5px 12px;border-radius:8px;font-size:12px;font-weight:600;text-decoration:none;margin-left:auto;">✍️ 결재 현황 SSOT →</a>';
+      html += '</div>';
 
       // ── 분류 필터 UI (업무·결재·기획·개인) ──
       var FILTER_CATS = ['업무','결재','기획','개인'];
@@ -6352,10 +6513,15 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
             '</div></div>';
           return;
         }
+        // 날짜 chip (클릭 → 일정 변경) + 진척 로그 건수 chip (업무SSOT 이식)
+        var dateChip = '<span data-id="' + gm1Esc(t.id) + '" data-action="daterange" title="클릭하여 일정 변경" style="display:inline-block;background:rgba(91,159,213,0.13);color:#5b9fd5;font-size:10px;font-weight:600;padding:1px 7px;border-radius:4px;margin-left:6px;cursor:pointer;vertical-align:middle;">📅 ' + gm1Esc((t.startDate||'').slice(5) || '날짜없음') + (t.endDate ? '~' + gm1Esc(String(t.endDate).slice(5)) : '') + '</span>';
+        var logCount = Array.isArray(t.progressLog) ? t.progressLog.length : 0;
+        var logChip = logCount ? '<span style="display:inline-block;background:rgba(126,87,194,0.13);color:#7e57c2;font-size:10px;font-weight:600;padding:1px 7px;border-radius:4px;margin-left:5px;vertical-align:middle;">📈 ' + logCount + '</span>' : '';
         html += '<div class="task-card" data-id="' + gm1Esc(t.id) + '">' +
           '<div class="task-title" style="display:flex;align-items:center;justify-content:space-between;">' +
-          '<span><span style="display:inline-block;background:rgba(183,159,138,0.15);color:var(--accent);font-size:10.5px;font-weight:600;padding:2px 7px;border-radius:4px;margin-right:6px;">🟡 진행 중</span><span class="status-dot active"></span>' + gm1Esc(t.title) + (t.time ? ' <span style="font-size:11px;color:var(--dim);">(' + gm1Esc(t.time.slice(0,5)) + ')</span>' : '') + '</span>' +
+          '<span><span style="display:inline-block;background:rgba(183,159,138,0.15);color:var(--accent);font-size:10.5px;font-weight:600;padding:2px 7px;border-radius:4px;margin-right:6px;">🟡 진행 중</span><span class="status-dot active"></span>' + gm1Esc(t.title) + (t.time ? ' <span style="font-size:11px;color:var(--dim);">(' + gm1Esc(t.time.slice(0,5)) + ')</span>' : '') + dateChip + logChip + '</span>' +
           '<div class="todo-actions">' +
+          '<button class="todo-act-btn today-act" data-id="' + gm1Esc(t.id) + '" data-action="edit">편집</button>' +
           '<button class="todo-act-btn today-act" data-id="' + gm1Esc(t.id) + '" data-action="done">완료</button>' +
           '<button class="todo-act-btn today-act" data-id="' + gm1Esc(t.id) + '" data-action="hold">보류</button>' +
           '<button class="todo-act-btn today-act del" data-id="' + gm1Esc(t.id) + '" data-action="delete">삭제</button>' +
@@ -6413,6 +6579,21 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
         };
       }
 
+      // 도구 바 바인딩 (검색·정렬·담당자·공유/인쇄 · 업무SSOT 이식)
+      var srch = container.querySelector('#gm1-search');
+      if (srch) {
+        srch.oninput = function(){ gm1SearchQuery = this.value; gm1RenderToday(); };
+        if (gm1SearchQuery) { srch.focus(); try { srch.setSelectionRange(gm1SearchQuery.length, gm1SearchQuery.length); } catch(e){} }
+      }
+      var srt = container.querySelector('#gm1-sort');
+      if (srt) srt.onchange = function(){ gm1SortBy = this.value; gm1RenderToday(); };
+      var own = container.querySelector('#gm1-owner');
+      if (own) own.onchange = function(){ gm1OwnerFilter = this.value; gm1RenderToday(); };
+      var sr = container.querySelector('#gm1-share-report');
+      if (sr) sr.onclick = function(){ window.gm1ShareReport(); };
+      var sl = container.querySelector('#gm1-share-list');
+      if (sl) sl.onclick = function(){ window.gm1ShareList(); };
+
       // 이벤트 위임 — onclick 단일 할당 (매 렌더 시 자동 교체 · 2026-05-28 hotfix)
       container.onclick = function(e) {
         var btn = e.target.closest('[data-action]');
@@ -6422,7 +6603,9 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
         if (!id) return;
         // SSOT 자동 항목은 1차 read-only — 안전장치 (버튼이 없으나 혹시 모를 무시 · 2026-05-29)
         if (String(id).indexOf('ssot-') === 0) return;
-        if (act === 'done')    { gm1UpdateStatus(id, '완료'); }
+        if (act === 'edit')      { window.gm1OpenTaskModal(id); return; }
+        else if (act === 'daterange') { window.gm1OpenDateRange(id); return; }
+        else if (act === 'done')    { gm1UpdateStatus(id, '완료'); }
         else if (act === 'hold')    { gm1UpdateStatus(id, '보류'); }
         else if (act === 'restore') { gm1UpdateStatus(id, '진행중'); }
         else if (act === 'delete') {
@@ -6780,7 +6963,355 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
       document.head.appendChild(style);
     })();
 
+    /* ══════════════════════════════════════════════
+       업무SSOT 이식 기능 (2026-06-01 — "완전 동일")
+       정렬·검색·담당자필터 / 진척로그 / 예산·결재라우팅
+       / 일정변경 / 보고서 인쇄 / 공유
+    ══════════════════════════════════════════════ */
+
+    /* ── 결제 권한 기준 v2.0 — 자동 결재 라우팅 (업무SSOT routeApproval 이식) ── */
+    function gm1RouteApproval(category, amount) {
+      var amt = Number(amount) || 0;
+      switch (category) {
+        case '일상 운영비':   return amt <= 300000 ? ['GM'] : ['부서장','GM'];
+        case '소액 유지보수': return amt <= 100000 ? ['부서장'] : ['GM'];
+        case '마케팅':        return ['GM'];
+        case '비상 지출':     return amt <= 500000 ? ['부서장'] : ['GM'];
+        case '계약·정기 약정':
+        case 'IT·소프트웨어':
+        case '급여·인건비·외주·교육':
+        case '장비 구매·교체': return ['GM'];
+        default:              return [];
+      }
+    }
+    function gm1FormatKRW(amount) {
+      if (!amount) return '';
+      return Number(amount).toLocaleString('ko-KR') + '원';
+    }
+
+    /* ── 진척 로그 (업무SSOT addProgressLogEntry/removeProgressLog 이식) ── */
+    function gm1RenderProgressList() {
+      var el = document.getElementById('gm1TProgList');
+      if (!el) return;
+      if (!gm1ModalLogs.length) {
+        el.innerHTML = '<div style="color:var(--dim);font-size:12px;padding:6px 0;font-style:italic;">아직 진척 로그가 없습니다.</div>';
+        return;
+      }
+      var h = '';
+      gm1ModalLogs.forEach(function(log, i){
+        h += '<div style="display:flex;gap:8px;align-items:flex-start;padding:7px 9px;border-left:3px solid var(--accent);background:var(--accent-bg);border-radius:6px;margin-bottom:6px;">' +
+          '<span style="font-size:12px;font-weight:700;color:var(--accent);min-width:84px;flex-shrink:0;">' + gm1Esc(log.date) + '</span>' +
+          '<span style="flex:1;font-size:13px;line-height:1.5;color:var(--text);word-break:break-word;">' + gm1Esc(log.text) + '</span>' +
+          '<button type="button" onclick="window.gm1RemoveProgressLog(' + i + ')" style="font-size:11px;padding:2px 8px;border:1px solid var(--border);background:var(--paper);color:var(--dim);border-radius:6px;cursor:pointer;flex-shrink:0;">삭제</button>' +
+          '</div>';
+      });
+      el.innerHTML = h;
+    }
+    window.gm1AddProgressLogEntry = function() {
+      var input = document.getElementById('gm1TProgInput');
+      var dateEl = document.getElementById('gm1TProgDate');
+      var txt = (input.value || '').trim();
+      if (!txt) { input.focus(); return; }
+      var d = dateEl.value || todayStr();
+      gm1ModalLogs.unshift({ date:d, text:txt });
+      gm1ModalLogs.sort(function(a,b){ return b.date.localeCompare(a.date); });
+      input.value = '';
+      dateEl.value = todayStr();
+      gm1RenderProgressList();
+      input.focus();
+    };
+    window.gm1RemoveProgressLog = function(i) {
+      gm1ModalLogs.splice(i, 1);
+      gm1RenderProgressList();
+    };
+
+    /* ── 예산 입력 시 결재 라인 자동 미리보기 (업무SSOT updateBudgetRoute 이식) ── */
+    window.gm1UpdateApprovalPreview = function() {
+      var cat = document.getElementById('gm1TBudgetCat').value;
+      var amt = Number(document.getElementById('gm1TBudgetAmt').value) || 0;
+      var hint = document.getElementById('gm1TApprovalHint');
+      if (!hint) return;
+      if (!cat || amt <= 0) {
+        hint.innerHTML = '<span style="color:var(--dim);">금액 입력 시 결제 권한 기준 v2.0 룰에 따라 결재 라인이 자동 표시됩니다.</span>';
+        return;
+      }
+      var approvers = gm1RouteApproval(cat, amt);
+      var line = '자동 결재 라인: ';
+      if (approvers.length) {
+        line += approvers.map(function(a){ return '<span style="background:#4caf50;color:#fff;padding:2px 8px;border-radius:6px;font-weight:700;margin:0 2px;">' + gm1Esc(a) + '</span>'; }).join(' → ');
+      } else {
+        line += '<span style="color:var(--dim);">없음</span>';
+      }
+      line += ' <span style="color:var(--dim);font-size:11px;margin-left:6px;">(' + gm1FormatKRW(amt) + ')</span>';
+      hint.innerHTML = line;
+    };
+
+    /* ── 업무 편집 모달 (진척로그·예산·결재 호스트) ── */
+    window.gm1OpenTaskModal = function(id) {
+      var t = gm1Load().find(function(x){ return x.id === id; });
+      if (!t) return;
+      document.getElementById('gm1TaskModalTitle').textContent = '업무 편집';
+      document.getElementById('gm1TEditId').value = t.id;
+      document.getElementById('gm1TTitle').value  = t.title || '';
+      document.getElementById('gm1TStart').value  = t.startDate || '';
+      document.getElementById('gm1TEnd').value    = t.endDate || '';
+      document.getElementById('gm1TCat').value    = t.category || '업무';
+      document.getElementById('gm1TStatus').value = t.status || '진행중';
+      document.getElementById('gm1TDesc').value   = t.description || t.memo || '';
+      gm1ModalLogs = Array.isArray(t.progressLog) ? t.progressLog.slice() : [];
+      gm1ModalLogs.sort(function(a,b){ return b.date.localeCompare(a.date); });
+      document.getElementById('gm1TProgDate').value  = todayStr();
+      document.getElementById('gm1TProgInput').value = '';
+      gm1RenderProgressList();
+      document.getElementById('gm1TBudgetCat').value = t.budgetCat || '';
+      document.getElementById('gm1TBudgetAmt').value = t.budgetAmt || '';
+      window.gm1UpdateApprovalPreview();
+      document.getElementById('gm1TPrintBtn').style.display = '';
+      document.getElementById('gm1TaskModal').style.display = 'flex';
+    };
+    window.gm1CloseTaskModal = function() {
+      var m = document.getElementById('gm1TaskModal');
+      if (m) m.style.display = 'none';
+    };
+    window.gm1SaveTaskModal = function() {
+      var id    = document.getElementById('gm1TEditId').value;
+      if (!id) return;
+      var title = document.getElementById('gm1TTitle').value.trim();
+      if (!title) { alert('제목을 입력해주세요.'); return; }
+      var start = document.getElementById('gm1TStart').value;
+      var end   = document.getElementById('gm1TEnd').value;
+      var cat   = document.getElementById('gm1TCat').value;
+      var status= document.getElementById('gm1TStatus').value;
+      var desc  = document.getElementById('gm1TDesc').value.trim();
+      // 입력박스에 미합류 진척 텍스트 있으면 자동 합류 (업무SSOT 패턴 — 저장 누락 방지)
+      var pending = (document.getElementById('gm1TProgInput').value || '').trim();
+      if (pending) {
+        gm1ModalLogs.unshift({ date: document.getElementById('gm1TProgDate').value || todayStr(), text: pending });
+        gm1ModalLogs.sort(function(a,b){ return b.date.localeCompare(a.date); });
+      }
+      var bCat = document.getElementById('gm1TBudgetCat').value;
+      var bAmt = Number(document.getElementById('gm1TBudgetAmt').value) || 0;
+      var approval = (bCat && bAmt > 0) ? gm1RouteApproval(bCat, bAmt).join(',') : '';
+      gm1EditTask(id, {
+        title:title, startDate:start, endDate:(end||null), category:cat, status:status,
+        description:desc, memo:desc, progressLog:gm1ModalLogs.slice(),
+        budgetCat:bCat, budgetAmt:bAmt, approval:approval
+      });
+      window.gm1CloseTaskModal();
+      gm1RenderToday();
+      gm1CalRender();
+    };
+
+    /* ── 일정(시작/종료일) 변경 모달 (업무SSOT openDateRangePicker 이식) ── */
+    window.gm1OpenDateRange = function(id) {
+      var t = gm1Load().find(function(x){ return x.id === id; });
+      if (!t) return;
+      document.getElementById('gm1DrId').value    = id;
+      document.getElementById('gm1DrStart').value = t.startDate || '';
+      document.getElementById('gm1DrEnd').value   = t.endDate || '';
+      document.getElementById('gm1DateRangeModal').style.display = 'flex';
+    };
+    window.gm1CloseDateRange = function() {
+      var m = document.getElementById('gm1DateRangeModal');
+      if (m) m.style.display = 'none';
+    };
+    window.gm1SaveDateRange = function() {
+      var id = document.getElementById('gm1DrId').value;
+      if (!id) return;
+      var s = document.getElementById('gm1DrStart').value;
+      var e = document.getElementById('gm1DrEnd').value;
+      var upd = { startDate:s, endDate:(e||null) };
+      // 시작일 과거면 isToday 강제 false (기존 정합 규칙 유지)
+      if (s && s < todayStr()) upd.isToday = false;
+      gm1EditTask(id, upd);
+      window.gm1CloseDateRange();
+      gm1RenderToday();
+      gm1CalRender();
+    };
+
+    /* ── 정렬·검색·담당자 필터 setter ── */
+    window.gm1SetSortBy   = function(v){ gm1SortBy = v; gm1RenderToday(); };
+    window.gm1SetSearch   = function(v){ gm1SearchQuery = v; gm1RenderToday(); };
+    window.gm1SetOwner    = function(v){ gm1OwnerFilter = v; gm1RenderToday(); };
+
+    /* ── 보고서 인쇄 (업무SSOT printResultReport 이식 · rr-* 스타일) ── */
+    window.gm1PrintResultReport = function(taskId) {
+      var t = gm1Load().find(function(x){ return x.id === taskId; });
+      if (!t) { alert('업무를 찾을 수 없습니다.'); return; }
+      var ownerStr = '김남욱GM';
+      var logs = Array.isArray(t.progressLog) ? t.progressLog.slice() : [];
+
+      var approvalReq = String(t.approval || '').trim();
+      var approvalHtml = '';
+      if (approvalReq) {
+        var roles = ['담당','부서장','GM'];
+        var signValues = { '담당': gm1Esc(ownerStr), '부서장':'', 'GM':'' };
+        var cells = roles.map(function(role){
+          return '<td style="border:1px solid #555;padding:4px 8px;text-align:center;min-width:48px;vertical-align:top">' +
+            '<div style="font-weight:700;font-size:9px;border-bottom:1px solid #bbb;padding-bottom:3px;margin-bottom:5px;">' + gm1Esc(role) + '</div>' +
+            '<div style="font-size:10px;min-height:24px;display:flex;align-items:center;justify-content:center;">' + (signValues[role] || '') + '</div>' +
+            '</td>';
+        }).join('');
+        approvalHtml = '<table style="border-collapse:collapse;font-size:9px;"><tr>' +
+          '<td style="border:1px solid #555;padding:4px 6px;background:#f0f0f0;writing-mode:vertical-rl;text-orientation:mixed;font-weight:700;font-size:9px;vertical-align:middle;">결재</td>' +
+          cells + '</tr></table>';
+      }
+
+      var period = (t.startDate || t.endDate)
+        ? gm1Esc(String(t.startDate || '').slice(0,10) + (t.endDate ? ' ~ ' + String(t.endDate).slice(0,10) : ''))
+        : '-';
+      var infoRows = [
+        ['업무명', gm1Esc(t.title || '-')],
+        ['카테고리', gm1Esc(t.category || '-')],
+        ['담당자', gm1Esc(ownerStr)],
+        ['기간', period],
+        ['상태', gm1Esc(t.status || '-')]
+      ];
+      var infoHtml = '<table class="gm1rr-info-table">' +
+        infoRows.map(function(r){ return '<tr><th>' + r[0] + '</th><td>' + r[1] + '</td></tr>'; }).join('') +
+        '</table>';
+
+      var bodyTxt = t.description || t.memo || '';
+      var bodyHtml = bodyTxt ? '<div class="gm1rr-section-title">업무 내용</div><div class="gm1rr-section-body">' + gm1Esc(bodyTxt) + '</div>' : '';
+
+      var logsHtml = '';
+      if (logs.length) {
+        var sorted = logs.slice().sort(function(a,b){ return a.date.localeCompare(b.date); });
+        var rows = sorted.map(function(l){ return '<tr><td class="gm1rr-log-date">' + gm1Esc(l.date) + '</td><td>' + gm1Esc(l.text) + '</td></tr>'; }).join('');
+        logsHtml = '<div class="gm1rr-section-title">진척 로그</div><table class="gm1rr-log-table"><thead><tr><th style="width:90px">날짜</th><th>내용</th></tr></thead><tbody>' + rows + '</tbody></table>';
+      }
+
+      var budgetHtml = '';
+      if (t.budgetCat && Number(t.budgetAmt) > 0) {
+        budgetHtml = '<div class="gm1rr-section-title">예산</div><table class="gm1rr-info-table">' +
+          '<tr><th>항목</th><td>' + gm1Esc(t.budgetCat) + '</td></tr>' +
+          '<tr><th>금액</th><td>' + Number(t.budgetAmt).toLocaleString() + ' 원</td></tr></table>';
+      }
+
+      var today = todayStr();
+      var container = document.getElementById('gm1ResultReportPrint');
+      container.innerHTML = '<div class="gm1rr-page">' +
+        '<div class="gm1rr-header"><div class="gm1rr-wordmark">WELLPERION</div>' + (approvalHtml ? '<div>' + approvalHtml + '</div>' : '') + '</div>' +
+        '<div class="gm1rr-doc-title">업 무 보 고 서</div>' +
+        infoHtml + bodyHtml + logsHtml + budgetHtml +
+        '<div class="gm1rr-footer"><span>A Day, Well Completed.</span><span>발행일: ' + today + '</span></div>' +
+        '</div>';
+
+      document.body.dataset.printMode = 'gm1result';
+      window.print();
+      window.addEventListener('afterprint', function _c(){
+        delete document.body.dataset.printMode;
+        container.innerHTML = '';
+        window.removeEventListener('afterprint', _c);
+      });
+      setTimeout(function(){
+        if (document.body.dataset.printMode === 'gm1result') {
+          delete document.body.dataset.printMode;
+          container.innerHTML = '';
+        }
+      }, 3000);
+    };
+
+    /* ── 공유 — 보고용/공유용 (업무SSOT shareReport/shareList 이식) ── */
+    function gm1ShareTasks() {
+      var td = todayStr();
+      var tasks = gm1Load().filter(function(t){
+        return (t.startDate === td || t.isToday === true) && t.status !== '완료';
+      });
+      if (gm1SearchQuery && gm1SearchQuery.trim()) {
+        var q = gm1SearchQuery.trim().toLowerCase();
+        tasks = tasks.filter(function(t){
+          return [t.title, t.category, t.description, t.memo].filter(Boolean).join(' ').toLowerCase().indexOf(q) >= 0;
+        });
+      }
+      return tasks;
+    }
+    function gm1CopyToClipboard(text) {
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(text).then(function(){ alert('클립보드에 복사되었습니다'); });
+      } else {
+        var ta = document.createElement('textarea');
+        ta.value = text; document.body.appendChild(ta); ta.select();
+        try { document.execCommand('copy'); } catch(e){}
+        document.body.removeChild(ta); alert('클립보드에 복사되었습니다');
+      }
+    }
+    window.gm1ShareList = function() {
+      var lines = [];
+      gm1ShareTasks().forEach(function(t){
+        var cat = (t.category || '미분류');
+        var line = '[' + cat + '] ' + (t.title || '');
+        if (t.startDate || t.endDate) {
+          var s = t.startDate ? String(t.startDate).slice(5) : '';
+          var e = t.endDate ? String(t.endDate).slice(5) : '';
+          line += ' ' + s + '~' + e;
+        }
+        lines.push(line);
+      });
+      gm1CopyToClipboard(lines.join('\n') || '(공유할 항목 없음)');
+    };
+    window.gm1ShareReport = function() {
+      var now = new Date();
+      var ds = now.getFullYear() + '-' + ('0'+(now.getMonth()+1)).slice(-2) + '-' + ('0'+now.getDate()).slice(-2);
+      var lines = ['━━━ 김남욱GM 오늘 할 일 보고 ━━━', '보고일: ' + ds, '보고자: 김남욱GM', ''];
+      var groups = {};
+      gm1ShareTasks().forEach(function(t){
+        var c = t.category || '미분류';
+        if (!groups[c]) groups[c] = [];
+        groups[c].push(t);
+      });
+      var total = 0;
+      Object.keys(groups).forEach(function(cat){
+        lines.push('■ ' + cat + ' (' + groups[cat].length + '건)');
+        groups[cat].forEach(function(t, idx){
+          total++;
+          lines.push('  ' + (idx+1) + '. ' + (t.title || ''));
+          var meta = '     상태: ' + (t.status || '진행중');
+          if (t.startDate || t.endDate) {
+            var s = t.startDate ? String(t.startDate).slice(5) : '';
+            var e = t.endDate ? String(t.endDate).slice(5) : '';
+            meta += ' | 기간: ' + s + '~' + e;
+          }
+          lines.push(meta);
+        });
+        lines.push('');
+      });
+      lines.push('━━━ 총 ' + total + '건 ━━━');
+      gm1CopyToClipboard(lines.join('\n'));
+    };
+
+    /* ── 결과보고서 인쇄 스타일 주입 (업무SSOT rr-* → gm1rr-* 스코프) ── */
+    (function(){
+      var style = document.createElement('style');
+      style.textContent =
+        '#gm1ResultReportPrint{display:none}' +
+        '@media print {' +
+        '  [data-print-mode="gm1result"] body > *:not(#gm1ResultReportPrint){display:none!important}' +
+        '  [data-print-mode="gm1result"] #gm1ResultReportPrint{display:block!important}' +
+        '  .gm1rr-page{font-family:"Malgun Gothic",sans-serif;color:#111;font-size:11px;line-height:1.6;padding:0}' +
+        '  .gm1rr-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:14px;padding-bottom:10px;border-bottom:2px solid #111}' +
+        '  .gm1rr-wordmark{font-size:15px;font-weight:900;letter-spacing:0.18em;text-transform:uppercase;color:#111}' +
+        '  .gm1rr-doc-title{text-align:center;font-size:18px;font-weight:900;letter-spacing:0.08em;margin:10px 0 14px}' +
+        '  .gm1rr-info-table{width:100%;border-collapse:collapse;margin-bottom:14px;font-size:10px}' +
+        '  .gm1rr-info-table th{background:#f0f0f0;border:1px solid #bbb;padding:4px 8px;font-weight:700;text-align:left;width:18%;white-space:nowrap}' +
+        '  .gm1rr-info-table td{border:1px solid #bbb;padding:4px 8px}' +
+        '  .gm1rr-section-title{font-size:11px;font-weight:700;border-left:3px solid #111;padding-left:6px;margin:14px 0 6px}' +
+        '  .gm1rr-section-body{font-size:10px;white-space:pre-wrap;word-break:break-word;padding:8px;border:1px solid #ddd;background:#fafafa;line-height:1.7}' +
+        '  .gm1rr-log-table{width:100%;border-collapse:collapse;font-size:10px}' +
+        '  .gm1rr-log-table th{background:#f0f0f0;border:1px solid #bbb;padding:4px 8px;font-weight:700;text-align:left}' +
+        '  .gm1rr-log-table td{border:1px solid #ddd;padding:4px 8px;vertical-align:top}' +
+        '  .gm1rr-log-date{white-space:nowrap;width:90px}' +
+        '  .gm1rr-footer{margin-top:20px;padding-top:8px;border-top:1px solid #bbb;display:flex;justify-content:space-between;font-size:9px;color:#666}' +
+        '}';
+      document.head.appendChild(style);
+    })();
+
     /* ── 초기화 ── */
+    // 결과보고서 인쇄 컨테이너를 body 직속으로 이동 (print isolation — body>*:not() 적용 위해)
+    (function(){
+      var rp = document.getElementById('gm1ResultReportPrint');
+      if (rp && rp.parentNode !== document.body) document.body.appendChild(rp);
+    })();
     gm1Migrate();
     gm1SeedInit();
     gm1CalBind();
