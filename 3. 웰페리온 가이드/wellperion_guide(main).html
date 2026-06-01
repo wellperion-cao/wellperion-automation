@@ -2121,12 +2121,23 @@
   <!-- ⑭ 콘텐츠 제작 워크플로 (NEW) -->
   <article class="doc" id="g14">
     <div class="doc-header"><h2>콘텐츠 제작 프로세스</h2><div class="meta">CMO 운영 SSOT · 제작 프로세스 + 마케팅 자동화 + 문의 Survey</div></div>
-    <p class="lead">CMO가 IG·블로그·카페·카카오 4채널에 배포할 콘텐츠를 제작·자동화·문의 수집까지 관리하는 통합 프로세스입니다.</p>
+    <p class="lead">CMO가 IG·블로그·카페·카카오·당근 5채널에 배포할 콘텐츠를 제작·자동화·문의 수집·등록 전환까지 관리하는 통합 프로세스입니다.</p>
 
     <div style="display:flex;gap:10px;flex-wrap:wrap;margin:16px 0;">
       <a href="https://wellperion-cao.github.io/wellperion-automation/cmo/CMO%ED%8C%8C%EC%9D%B4%ED%94%84%EB%9D%BC%EC%9D%B8.html" target="_blank" style="display:inline-flex;align-items:center;gap:6px;padding:10px 18px;background:var(--accent);color:#fff;font-size:13px;font-weight:700;border-radius:10px;text-decoration:none;">⚡ 마케팅 자동화 열기</a>
       <a href="https://wellperion-cao.github.io/wellperion-automation/cmo/survey/%EB%AC%B8%EC%9D%98survey.html" target="_blank" style="display:inline-flex;align-items:center;gap:6px;padding:10px 18px;background:var(--accent-bg);color:var(--accent);font-size:13px;font-weight:700;border-radius:10px;text-decoration:none;border:1px solid rgba(183,159,138,0.3);">📋 문의 Survey 열기</a>
     </div>
+
+    <h3><span class="ico">🏛️</span>CMO 운영 6대 기둥</h3>
+    <table>
+      <tr><th>#</th><th>기둥</th><th>내용</th><th>상태</th></tr>
+      <tr><td>1</td><td><strong>채널별 검수 프로세스</strong></td><td>초안 → 가공완료 → CEO 검수 게이트 → 발행. 채널별 톤·CTA 체크리스트</td><td>운영 중</td></tr>
+      <tr><td>2</td><td><strong>5채널 자동 업로드</strong></td><td>인스타그램 · 네이버 블로그 · 네이버 카페(동부이촌동) · 카카오채널 · 당근채널</td><td>구축 중</td></tr>
+      <tr><td>3</td><td><strong>문의 Survey + 누적 시트</strong></td><td>Survey 수집 → 누적 시트(유입채널·상태) 관리</td><td>고도화</td></tr>
+      <tr><td>4</td><td><strong>안내 가이드</strong></td><td>예약제 · Q&amp;A · 주차 · 이용 · 요금 표준 안내문</td><td>신설 예정</td></tr>
+      <tr><td>5</td><td><strong>문의·등록 현황 대시보드</strong></td><td>노출 → 클릭 → 문의 → 상담 → 등록 퍼널 추적 (설계 논의 중)</td><td>설계 중</td></tr>
+      <tr><td>6</td><td><strong>정기 보고</strong></td><td>매주 / 매월 채널 성과 · 문의 · 등록 전환 ROI</td><td>신설 예정</td></tr>
+    </table>
 
     <h3><span class="ico">📁</span>표준 폴더 명명</h3>
     <pre>instagram/{YYMMDD_콘텐츠명}/</pre>
@@ -2141,13 +2152,14 @@
       <tr><td><code>output</code></td><td>4채널 분리 발행물 (아래 참조)</td></tr>
     </table>
 
-    <h3><span class="ico">📤</span>output 4채널 분리</h3>
+    <h3><span class="ico">📤</span>output 5채널 분리</h3>
     <table>
       <tr><th>채널</th><th>내용</th></tr>
-      <tr><td><code>output/instagram</code></td><td>IG 슬라이드 (1:1 8장 + 가이드 카드)</td></tr>
+      <tr><td><code>output/instagram</code></td><td>IG 슬라이드 (1:1 · 가이드 카드)</td></tr>
       <tr><td><code>output/blog</code></td><td>네이버 블로그 본문</td></tr>
       <tr><td><code>output/cafe</code></td><td>동부이촌동 카페 본문 (격조 톤만)</td></tr>
-      <tr><td><code>output/kakao</code></td><td>카카오 채널 (자동 게시 보류)</td></tr>
+      <tr><td><code>output/kakao</code></td><td>카카오 채널</td></tr>
+      <tr><td><code>output/danggn</code></td><td>당근 채널 (동네생활·이웃 톤)</td></tr>
     </table>
 
     <h3><span class="ico">📋</span>표기 규칙</h3>
@@ -2165,6 +2177,20 @@
       <div style="font-size:12px; font-weight:700; color:var(--accent); margin-bottom:6px;">&#9656; Claude CLI 셋업 프롬프트</div>
       <pre style="margin:0; color:#e8e8e8; font-size:12.5px; white-space:pre-wrap; line-height:1.6;">가이드허브 ⑫ 콘텐츠 제작 워크플로(폴더 구조·4채널)대로 콘텐츠 제작을 단계별로 진행해줘.</pre>
     </div>
+
+    <h3><span class="ico">📑</span>안내 가이드 (예약·이용)</h3>
+    <p>회원·문의자용 표준 안내문. <strong>예약제</strong>(투어·상담 사전 예약 필수) · <strong>Q&amp;A</strong> · <strong>주차</strong> · <strong>이용</strong> · <strong>요금</strong>.</p>
+    <div class="callout"><strong>신설 예정.</strong> 채널·리셉션 공통 안내 SSOT로 정리.</div>
+
+    <h3><span class="ico">📊</span>문의·등록 현황 대시보드</h3>
+    <p>채널별 퍼널: <code>노출 → litt.ly 클릭 → 문의(Survey) → 상담·투어 → 등록</code>. 유입채널·전환율로 "어느 채널이 실제 회원을 데려오는지" 추적.</p>
+    <div class="callout"><strong>설계 논의 중.</strong> 등록 추적 후보 = 전화번호를 키로 문의 누적 시트 ↔ 회원부 매칭. 방식 GM 논의 후 확정.</div>
+
+    <h3><span class="ico">🗓️</span>정기 보고</h3>
+    <ul>
+      <li><strong>매주</strong> — 채널별 발행·문의·상담 건수, 주간 콘텐츠 캘린더</li>
+      <li><strong>매월</strong> — 채널 성과·문의→등록 전환·마케팅 ROI, CEO 보고</li>
+    </ul>
   </article>
 
   <!-- ⑮ AI 교육자료 핵심요약 — 웰페리온_AI교육자료_핵심정리.md 전수 반영 -->
