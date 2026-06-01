@@ -713,6 +713,7 @@ async def run_publish(
     location: str = "",
     mentions: list[str] | None = None,
     account: str = DEFAULT_ACCOUNT,
+    extra_collaborators: list[str] | None = None,
 ) -> dict[str, str]:
     profile_dir = get_profile_dir(account)
     if not profile_dir.exists():
@@ -739,6 +740,13 @@ async def run_publish(
         spec = posts[slot]
         spec.image_paths = collect_post_images(content_folder, slot)
         enforce_subject_collaborators(spec)
+        # --collaborators CLI 인자 병합 (중복 제거)
+        if extra_collaborators:
+            existing_lower = {c.lower() for c in spec.collaborators}
+            for handle in extra_collaborators:
+                if handle.lower() not in existing_lower:
+                    spec.collaborators.append(handle)
+                    existing_lower.add(handle.lower())
         all_errors.extend(validate_post_spec(spec))
 
     if all_errors:
@@ -1154,6 +1162,15 @@ def parse_args() -> argparse.Namespace:
             "caption 본문에 이미 있는 핸들은 중복 추가 안 함."
         ),
     )
+    parser.add_argument(
+        "--collaborators",
+        default="",
+        help=(
+            "인스타 공동작업자 핸들 목록, 콤마 구분 (예: 'namuk.wellperion'). "
+            "큐레이션 Collaborator/종목 매핑에 병합(중복 제거). "
+            "watcher가 review_queue의 collaborators 필드를 전달할 때 사용."
+        ),
+    )
     return parser.parse_args()
 
 
@@ -1172,6 +1189,7 @@ if __name__ == "__main__":
         if not folder.is_absolute():
             folder = Path.cwd() / folder
         mentions_list = [m.strip() for m in args.mentions.split(",") if m.strip()] if args.mentions else []
-        asyncio.run(run_publish(folder, location=args.location, mentions=mentions_list, account=args.account))
+        collab_list = [c.strip() for c in args.collaborators.split(",") if c.strip()] if args.collaborators else []
+        asyncio.run(run_publish(folder, location=args.location, mentions=mentions_list, account=args.account, extra_collaborators=collab_list))
     else:
         asyncio.run(run_dryrun(account=args.account))

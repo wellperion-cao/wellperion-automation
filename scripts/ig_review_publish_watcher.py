@@ -89,9 +89,11 @@ def save_queue(items: list) -> None:
 
 def publish_item(it: dict) -> str | None:
     """발행 서브프로세스 실행 → 게시 URL 반환(실패 시 None).
-    it 에서 folder / location / mentions 를 추출해 발행기에 CLI 인자로 전달."""
+    it 에서 folder / location / mentions / account / collaborators 를 추출해 발행기에 CLI 인자로 전달."""
     folder: str = it.get("folder", "")
     location: str = it.get("location", "").strip()
+    account: str = it.get("account", "").strip()
+
     raw_mentions = it.get("mentions", [])
     # mentions 는 리스트 또는 콤마 문자열 모두 허용
     if isinstance(raw_mentions, list):
@@ -99,11 +101,22 @@ def publish_item(it: dict) -> str | None:
     else:
         mentions_str = str(raw_mentions).strip()
 
+    raw_collaborators = it.get("collaborators", [])
+    # collaborators 는 리스트 또는 콤마 문자열 모두 허용
+    if isinstance(raw_collaborators, list):
+        collab_str = ",".join(c.strip() for c in raw_collaborators if c.strip())
+    else:
+        collab_str = str(raw_collaborators).strip()
+
     cmd = [str(PY), str(PUBLISH_SCRIPT), "--mode", "publish", "--content-folder", folder]
+    if account:
+        cmd += ["--account", account]
     if location:
         cmd += ["--location", location]
     if mentions_str:
         cmd += ["--mentions", mentions_str]
+    if collab_str:
+        cmd += ["--collaborators", collab_str]
 
     env = dict(os.environ, PYTHONIOENCODING="utf-8")
     proc = subprocess.run(cmd, cwd=str(ROOT), capture_output=True, text=True, env=env, timeout=600)
