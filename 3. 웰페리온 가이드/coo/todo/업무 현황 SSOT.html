@@ -481,6 +481,15 @@ const FIELD_MAP = {
    State
    ═══════════════════════════════════════════ */
 let ALL_TASKS = [];
+/* 업무 현황 = C-Level·실무진 전용 SSOT (2026-06-01 GM 확정).
+   GM 할일(G1)은 여기에 섞이지 않음 — owner가 '김남욱GM' 단독인 행은 G1(오늘 할일)에서만 본다.
+   실무진이 함께 담당하는 행(혼합)은 실무 업무이므로 유지. */
+function isGmOnlyTask(t) {
+  var owners = String((t && t.owner) || '').split(',').map(function(s){return s.trim();}).filter(Boolean);
+  if (owners.length === 0) return false;
+  return owners.every(function(o){ return o === '김남욱GM' || o === 'gm1' || o === '김남욱'; });
+}
+function excludeGmOnly(list) { return (list || []).filter(function(t){ return !isGmOnlyTask(t); }); }
 let activeOwnerFilter = '전체';
 let activeCatFilter = '전체';
 let activeSortBy = '최신순';    // '최신순' | '카테고리' | '담당자' | '시작일순'
@@ -519,8 +528,8 @@ function updateHeaderSub() {
    Filters
    ═══════════════════════════════════════════ */
 function buildFilters() {
-  // 카운트 계산 — 진행중 업무만 대상
-  const active = ALL_TASKS.filter(t => t.status !== '완료' && t.status !== '보류');
+  // 카운트 계산 — 진행중 업무만 대상 (GM 단독 할일 제외 = G1 전용)
+  const active = excludeGmOnly(ALL_TASKS.filter(t => t.status !== '완료' && t.status !== '보류'));
 
   // 담당자별 카운트
   const ownerCount = {};
@@ -674,9 +683,10 @@ function renderTasks() {
   }
 
   const el = document.getElementById('mainContent');
-  const active = ALL_TASKS.filter(t => t.status !== '완료' && t.status !== '보류');
-  const hold = ALL_TASKS.filter(t => t.status === '보류');
-  const done = ALL_TASKS.filter(t => t.status === '완료');
+  // GM 단독 할일은 G1 전용 — 업무 현황(실무진용)에서 제외 (2026-06-01 GM 확정)
+  const active = excludeGmOnly(ALL_TASKS.filter(t => t.status !== '완료' && t.status !== '보류'));
+  const hold = excludeGmOnly(ALL_TASKS.filter(t => t.status === '보류'));
+  const done = excludeGmOnly(ALL_TASKS.filter(t => t.status === '완료'));
 
   // Apply filters to active
   let filtered = active;
@@ -1762,7 +1772,7 @@ async function saveDatePicker() {
    Share — 공유용 (간단 명료)
    ═══════════════════════════════════════════ */
 function shareList() {
-  const active = ALL_TASKS.filter(t => t.status !== '완료');
+  const active = excludeGmOnly(ALL_TASKS.filter(t => t.status !== '완료'));
   let filtered = _applyShareFilters(active);
 
   const lines = [];
@@ -1791,7 +1801,7 @@ function shareList() {
    Share — 보고용 공유 (격식체)
    ═══════════════════════════════════════════ */
 function shareReport() {
-  const active = ALL_TASKS.filter(t => t.status !== '완료');
+  const active = excludeGmOnly(ALL_TASKS.filter(t => t.status !== '완료'));
   let filtered = _applyShareFilters(active);
 
   const now = new Date();
@@ -1904,7 +1914,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 function renderDashboard() {
   const panel = document.getElementById('dashboardPanel');
-  const all = ALL_TASKS;
+  const all = excludeGmOnly(ALL_TASKS);  // GM 단독 할일 제외 — 업무현황 대시보드는 실무진 기준
   const active = all.filter(t => t.status !== '완료');
   const done = all.filter(t => t.status === '완료');
   const hold = all.filter(t => t.status === '보류');
