@@ -23,6 +23,13 @@ window.__PV='20260601-1';
 })();
 </script>
 <title>웰페리온 업무 현황 SSOT</title>
+<!-- 링크 미리보기(카톡 등) — OG 메타 (2026-06-01 GM) -->
+<meta property="og:type" content="website">
+<meta property="og:title" content="웰페리온 업무 현황 SSOT">
+<meta property="og:description" content="업무 등록·배분·진척을 한눈에. 링크를 열면 해당 화면이 그대로 표시됩니다.">
+<meta name="description" content="웰페리온 업무 현황 SSOT — 업무 등록·배분·진척 추적">
+<meta property="og:site_name" content="웰페리온">
+<meta name="twitter:card" content="summary">
 <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" rel="stylesheet">
 <style>
 :root{--bg:#1a1815;--paper:#221F1B;--text:#E8E2D8;--dim:#8C7E6D;--dim-soft:#564a3d;--accent:#B79F8A;--accent-bg:rgba(183,159,138,0.12);--border:#3D3835;--green:#6abf7b;--green-bg:rgba(106,191,123,0.14);--red:#ED5B3F;--red-bg:rgba(237,91,63,0.14);--yellow:#E0B341;--yellow-bg:rgba(224,179,65,0.14);--blue:#5B9FD5;--blue-bg:rgba(91,159,213,0.14);--purple:#A78BDA;--purple-bg:rgba(167,139,218,0.14);--orange:#E6944E;--orange-bg:rgba(230,148,78,0.14)}
@@ -622,18 +629,35 @@ function buildShareUrl() {
   if (searchQuery && searchQuery.trim()) u.searchParams.set('q', searchQuery.trim());
   return u.toString();
 }
-function copyToClipboard(text, okMsg) {
-  // 모바일: 원탭 카톡/문자 공유(Web Share). 미지원(데스크톱 등): 클립보드 복사 폴백 (2026-06-01 GM)
-  if (navigator.share) { navigator.share({ title: document.title, url: text }).catch(function(){}); return; }
+// 공유: 제목 + 내용 요약 + 링크 (모바일=Web Share 카톡/문자, 데스크톱=클립보드 폴백) (2026-06-01 GM)
+function shareLink(url, shareTitle, shareText) {
+  if (navigator.share) { navigator.share({ title: shareTitle, text: shareText, url: url }).catch(function(){}); return; }
+  const full = (shareText ? shareText + '\n' : '') + url;
   if (navigator.clipboard && navigator.clipboard.writeText) {
-    navigator.clipboard.writeText(text).then(function(){ showToast(okMsg); }, function(){ prompt('아래 링크를 복사하세요:', text); });
-  } else { prompt('아래 링크를 복사하세요:', text); }
+    navigator.clipboard.writeText(full).then(function(){ showToast('🔗 복사됨 — 붙여넣기로 공유'); }, function(){ prompt('아래 내용을 복사하세요:', full); });
+  } else { prompt('아래 내용을 복사하세요:', full); }
 }
-function copyShareLink() { copyToClipboard(buildShareUrl(), '🔗 현재 화면 링크 복사됨 — 받는 분이 열면 같은 화면'); }
+function copyShareLink() {
+  const parts = [];
+  if (activeOwnerFilter && activeOwnerFilter !== '전체') parts.push(activeOwnerFilter);
+  if (activeCatFilter && activeCatFilter !== '전체') parts.push(activeCatFilter);
+  if (searchQuery && searchQuery.trim()) parts.push('검색: ' + searchQuery.trim());
+  const txt = '📋 웰페리온 업무 현황' + (parts.length ? ' — ' + parts.join(' · ') : ' (전체)');
+  shareLink(buildShareUrl(), '웰페리온 업무 현황 SSOT', txt);
+}
 function copyItemLink(id) {
+  const t = ALL_TASKS.find(x => x.id === id);
   const u = new URL(location.origin + location.pathname);
   u.searchParams.set('item', id);
-  copyToClipboard(u.toString(), '🔗 이 업무로 바로 가는 링크 복사됨');
+  let txt = '📋 [업무] ' + (t ? (t.title || t['업무명'] || '') : '');
+  if (t) {
+    const bits = [];
+    if (t.status) bits.push(t.status);
+    if (t.category) bits.push(t.category);
+    if (t.owner) bits.push(t.owner);
+    if (bits.length) txt += ' — ' + bits.join(' · ');
+  }
+  shareLink(u.toString(), (t ? (t.title || '업무') : '업무'), txt);
 }
 function handleDeepLink() {
   if (!_deepLinkId) return;

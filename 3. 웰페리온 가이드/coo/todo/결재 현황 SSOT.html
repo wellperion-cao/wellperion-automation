@@ -24,6 +24,13 @@ window.__PV='20260601-1';
 })();
 </script>
 <title>웰페리온 결재 현황 SSOT</title>
+<!-- 링크 미리보기(카톡 등) — OG 메타 (2026-06-01 GM) -->
+<meta property="og:type" content="website">
+<meta property="og:title" content="웰페리온 결재 현황 SSOT">
+<meta property="og:description" content="결재 진행·완료·반려 현황을 한눈에. 링크를 열면 해당 화면이 그대로 표시됩니다.">
+<meta name="description" content="웰페리온 결재 현황 SSOT — 결재 진행·완료·반려 현황">
+<meta property="og:site_name" content="웰페리온">
+<meta name="twitter:card" content="summary">
 <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" rel="stylesheet">
 <style>
 :root{
@@ -531,18 +538,36 @@ function buildShareUrl() {
   if (searchQuery && searchQuery.trim()) u.searchParams.set('q', searchQuery.trim());
   return u.toString();
 }
-function copyToClipboard(text, okMsg) {
-  // 모바일: 원탭 카톡/문자 공유(Web Share). 미지원(데스크톱 등): 클립보드 복사 폴백 (2026-06-01 GM)
-  if (navigator.share) { navigator.share({ title: document.title, url: text }).catch(function(){}); return; }
+// 공유: 제목 + 내용 요약 + 링크 (모바일=Web Share 카톡/문자, 데스크톱=클립보드 폴백) (2026-06-01 GM)
+function shareLink(url, shareTitle, shareText) {
+  if (navigator.share) { navigator.share({ title: shareTitle, text: shareText, url: url }).catch(function(){}); return; }
+  const full = (shareText ? shareText + '\n' : '') + url;
   if (navigator.clipboard && navigator.clipboard.writeText) {
-    navigator.clipboard.writeText(text).then(function(){ alert(okMsg); }, function(){ prompt('아래 링크를 복사하세요:', text); });
-  } else { prompt('아래 링크를 복사하세요:', text); }
+    navigator.clipboard.writeText(full).then(function(){ alert('🔗 복사되었습니다:\n\n' + full); }, function(){ prompt('아래 내용을 복사하세요:', full); });
+  } else { prompt('아래 내용을 복사하세요:', full); }
 }
-function copyShareLink() { copyToClipboard(buildShareUrl(), '🔗 현재 화면 링크가 복사되었습니다.\n받는 분이 열면 같은 필터 화면이 그대로 뜹니다.'); }
+function copyShareLink() {
+  const parts = [];
+  if (activeFilter && activeFilter !== '전체') parts.push(activeFilter === '미결' ? '진행 중' : activeFilter);
+  if (activeRoleFilter && activeRoleFilter !== '전체') parts.push(activeRoleFilter + ' 차례');
+  if (activeCatFilter && activeCatFilter !== '전체') parts.push(activeCatFilter);
+  if (searchQuery && searchQuery.trim()) parts.push('검색: ' + searchQuery.trim());
+  const txt = '🧾 웰페리온 결재 현황' + (parts.length ? ' — ' + parts.join(' · ') : ' (전체)');
+  shareLink(buildShareUrl(), '웰페리온 결재 현황 SSOT', txt);
+}
 function copyItemLink(id) {
+  const t = ALL_TASKS.find(x => x.id === id);
   const u = new URL(location.origin + location.pathname);
   u.searchParams.set('item', id);
-  copyToClipboard(u.toString(), '🔗 이 건으로 바로 가는 링크가 복사되었습니다.');
+  let txt = '🧾 [결재] ' + (t ? (t.title || t['업무명'] || '') : '');
+  if (t) {
+    const bits = [];
+    bits.push(t.approvalStatus || '진행 중');
+    if (t.category) bits.push(t.category);
+    if (t.owner) bits.push(t.owner);
+    txt += ' — ' + bits.join(' · ');
+  }
+  shareLink(u.toString(), (t ? (t.title || '결재 건') : '결재 건'), txt);
 }
 function handleDeepLink() {
   if (!_deepLinkId) return;
