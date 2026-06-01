@@ -700,7 +700,10 @@ function renderTasks() {
   if (searchQuery && searchQuery.trim()) {
     const q = searchQuery.trim().toLowerCase();
     filtered = filtered.filter(t => {
-      const blob = ((t.title || '') + ' ' + (t.content || '') + ' ' + (t.owner || '') + ' ' + (t.category || '')).toLowerCase();
+      const _p = parseContent(t.content || '');
+      const _lg = (_p.logs || []).map(function(l){ return (l.date||'') + ' ' + (l.text||''); }).join(' ');
+      const _bd = _p.budget ? (_p.budget.category + ' ' + _p.budget.amount) : '';
+      const blob = [t.title, t.owner, t.category, _p.body, _p.plan, _p.result, _lg, _bd].filter(Boolean).join(' ').toLowerCase();
       return blob.includes(q);
     });
   }
