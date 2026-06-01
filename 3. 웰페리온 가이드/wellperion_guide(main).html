@@ -3680,26 +3680,38 @@ Start-Process python -ArgumentList telegram_bot\daily_scheduler.py -WorkingDirec
       }
       function esc(s){return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
       function isDone(st){return st==='발행완료'||st==='approved'||st==='승인'||st==='rejected'||st==='반려';}
+      function badgeOf(e){return e==='발행완료'?'<span style="color:var(--green);font-weight:700;">✅ 발행완료</span>':(e==='approved'||e==='승인')?'<span style="color:var(--green);font-weight:700;">✅ 승인됨 · 발행 대기</span>':(e==='rejected'||e==='반려')?'<span style="color:var(--warm,#d98c5f);font-weight:700;">↩ 반려됨</span>':'<span style="color:var(--accent);font-weight:700;">🟡 검수 대기</span>';}
       function render(items){
         var list=document.getElementById('cmopub-review-list');if(!list)return;
         var d=dec();var cnt=document.getElementById('cmopub-review-count');
-        var waiting=items.filter(function(it){var e=(d[it.id]&&d[it.id].decision)||it.status;return !isDone(e);}).length;
-        if(cnt)cnt.textContent='· 대기 '+waiting+'건 / 전체 '+items.length+'건';
-        if(!items.length){list.innerHTML='<div style="color:var(--dim);font-size:13px;padding:8px 0;">검수 대기 없음 — 새 콘텐츠가 준비되면 여기에 표시됩니다.</div>';return;}
+        var waiting=[],done=[];
+        items.forEach(function(it){var e=(d[it.id]&&d[it.id].decision)||it.status;(isDone(e)?done:waiting).push(it);});
+        if(cnt)cnt.textContent='· 대기 '+waiting.length+'건 / 처리완료 '+done.length+'건';
         list.innerHTML='';
-        items.forEach(function(it){
+        if(!waiting.length){list.innerHTML='<div style="color:var(--dim);font-size:13px;padding:8px 0;">검수 대기 없음 — 새 콘텐츠가 준비되면 여기에 표시됩니다.</div>';}
+        waiting.forEach(function(it){
           var e=(d[it.id]&&d[it.id].decision)||it.status;var c=document.createElement('div');
-          c.style.cssText='border:1px solid rgba(183,159,138,0.2);border-radius:12px;padding:14px;background:var(--paper);';
-          var badge=e==='발행완료'?'<span style="color:var(--green);font-weight:700;">✅ 발행완료</span>':(e==='approved'||e==='승인')?'<span style="color:var(--green);font-weight:700;">✅ 승인됨 · 발행 대기</span>':(e==='rejected'||e==='반려')?'<span style="color:var(--warm,#d98c5f);font-weight:700;">↩ 반려됨</span>':'<span style="color:var(--accent);font-weight:700;">🟡 검수 대기</span>';
-          var h='<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px;"><strong style="font-size:13.5px;">'+esc(it.title)+'</strong>'+badge+'</div>';
+          c.style.cssText='border:1px solid rgba(183,159,138,0.2);border-radius:12px;padding:14px;background:var(--paper);margin-bottom:10px;';
+          var h='<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px;"><strong style="font-size:13.5px;">'+esc(it.title)+'</strong>'+badgeOf(e)+'</div>';
           if(it.channel)h+='<div style="font-size:12px;color:var(--dim);margin-bottom:8px;">채널: '+esc(it.channel)+'</div>';
           if(it.preview)h+='<img src="'+esc(it.preview)+'" alt="미리보기" style="width:100%;border-radius:8px;border:1px solid rgba(183,159,138,0.15);margin-bottom:8px;" loading="lazy">';
           if(it.caption)h+='<details style="margin-bottom:8px;"><summary style="cursor:pointer;font-size:12.5px;color:var(--dim);">캡션 보기</summary><div style="font-size:12.5px;color:var(--text-soft);white-space:pre-wrap;line-height:1.7;padding-top:6px;">'+esc(it.caption)+'</div></details>';
-          if(it.post_url)h+='<div style="font-size:12px;margin-bottom:6px;"><a href="'+esc(it.post_url)+'" target="_blank" style="color:var(--accent);">게시물 보기 ↗</a></div>';
-          if(!isDone(e)){h+='<div style="display:flex;gap:8px;margin-top:4px;"><button data-act="approve" data-id="'+esc(it.id)+'" style="flex:1;background:var(--accent);color:#fff;border:none;border-radius:8px;padding:9px;font-weight:700;cursor:pointer;font-family:inherit;">승인</button><button data-act="reject" data-id="'+esc(it.id)+'" style="flex:1;background:none;color:var(--dim);border:1px solid var(--border);border-radius:8px;padding:9px;cursor:pointer;font-family:inherit;">반려</button></div>';}
-          else if(e==='approved'||e==='승인'){h+='<div style="font-size:11.5px;color:var(--dim);">승인 기록됨 — 자동 발행 연결은 다음 단계(감시기). 현재는 승인 표시만.</div>';}
+          h+='<div style="display:flex;gap:8px;margin-top:4px;"><button data-act="approve" data-id="'+esc(it.id)+'" style="flex:1;background:var(--accent);color:#fff;border:none;border-radius:8px;padding:9px;font-weight:700;cursor:pointer;font-family:inherit;">승인</button><button data-act="reject" data-id="'+esc(it.id)+'" style="flex:1;background:none;color:var(--dim);border:1px solid var(--border);border-radius:8px;padding:9px;cursor:pointer;font-family:inherit;">반려</button></div>';
           c.innerHTML=h;list.appendChild(c);
         });
+        if(done.length){
+          var det=document.createElement('details');
+          det.style.cssText='margin-top:6px;border:1px solid rgba(183,159,138,0.18);border-radius:10px;padding:10px 12px;background:var(--paper);';
+          var inner='<summary style="cursor:pointer;font-size:13px;color:var(--dim);font-weight:600;">처리완료 '+done.length+'건 (펼쳐 보기)</summary><div style="padding-top:10px;display:flex;flex-direction:column;gap:10px;">';
+          done.forEach(function(it){
+            var e=(d[it.id]&&d[it.id].decision)||it.status;
+            inner+='<div style="border-top:1px solid rgba(183,159,138,0.12);padding-top:8px;font-size:12.5px;"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px;"><strong>'+esc(it.title)+'</strong>'+badgeOf(e)+'</div>';
+            if(it.post_url)inner+='<div style="margin-top:4px;"><a href="'+esc(it.post_url)+'" target="_blank" style="color:var(--accent);font-size:12px;">게시물 보기 ↗</a></div>';
+            inner+='<details style="margin-top:4px;"><summary style="cursor:pointer;font-size:11.5px;color:var(--dim);">캡션·미리보기 보기</summary>'+(it.preview?'<img src="'+esc(it.preview)+'" style="width:100%;border-radius:6px;margin-top:6px;" loading="lazy">':'')+(it.caption?'<div style="font-size:12px;color:var(--text-soft);white-space:pre-wrap;line-height:1.6;padding-top:6px;">'+esc(it.caption)+'</div>':'')+'</details></div>';
+          });
+          inner+='</div>';
+          det.innerHTML=inner;list.appendChild(det);
+        }
         list.querySelectorAll('button[data-act]').forEach(function(b){b.addEventListener('click',function(){
           var id=b.getAttribute('data-id');var act=b.getAttribute('data-act');
           var sib=b.parentNode.querySelectorAll('button[data-act]');
