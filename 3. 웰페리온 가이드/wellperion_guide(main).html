@@ -3567,6 +3567,100 @@ Start-Process python -ArgumentList telegram_bot\daily_scheduler.py -WorkingDirec
             <tr><td>마지막 슬라이드</td><td>WELLPERION GUIDE 카드 자동 첨부</td></tr>
           </table>
         </div>
+        <div class="card" style="margin-top:12px;">
+          <h4>슬라이드 디자인 구조 — 공식 표준 (정본: 발레·스쿼시 완성본 기준)</h4>
+          <div class="callout fix" style="margin-top:0;margin-bottom:10px;"><strong>정본 경로:</strong> <code>instagram/260520_발레_런칭/output(인스타그램)/ig_01~07.jpg</code> &amp; <code>instagram/260426_WJO_스쿼시_대회/output(인스타그램)/</code> — 코드는 이 정본과 픽셀 단위 1:1 일치해야 함. 임의 디자인 금지.</div>
+          <table>
+            <tr><th style="width:160px">항목</th><th>기준값</th></tr>
+            <tr>
+              <td>캔버스</td>
+              <td>1080×1080 px (인스타 정방형 피드)</td>
+            </tr>
+            <tr>
+              <td>표지(1p) 구조</td>
+              <td>
+                상단 65% 사진(y=0~700) — <strong>BLACK+BEIGE 듀오톤</strong> (#221F20 + #B79F8A)<br>
+                분리선 y=701~702 — RGB(171,161,151) 전폭(x=50~1030)<br>
+                하단 35% 순수 검정 정보영역(y=703~1080) — <strong>#221F20 fill, 그라디언트 없음</strong>
+              </td>
+            </tr>
+            <tr>
+              <td>표지 정보영역<br>텍스트 배치</td>
+              <td>
+                한글 부제목 y≈789 — Pretendard SemiBold 38px, <strong>베이지 #B79F8A</strong>, 중앙정렬<br>
+                영문 대제목 y≈859 — Pretendard Bold 88px, <strong>흰색</strong>, 중앙정렬, UPPERCASE<br>
+                베이지 얇은 선 y≈920 — 60px 중앙<br>
+                날짜·장소 y≈962 — Pretendard Medium 26px, <strong>회색 RGB(170,160,152)</strong>, 중앙정렬
+              </td>
+            </tr>
+            <tr>
+              <td>공식 로고 PNG</td>
+              <td>
+                파일: <code>instagram/_assets/logo/wellperion_white_alpha.png</code><br>
+                위치: 좌상단 x=40, y=36 / 너비=130px / <strong>반투명 박스 없이 직접 합성</strong><br>
+                (텍스트 "W" 렌더링 절대 금지 — 공식 PNG만 사용)
+              </td>
+            </tr>
+            <tr>
+              <td>우상단 컬러칩</td>
+              <td>
+                베이지 둥근 사각 fill RGB(186,162,140) / 흰색 텍스트 "WELLPERION" Bold 28px<br>
+                칩 크기: w=240, h=52 / 위치: 우측 여백 40px, y=38
+              </td>
+            </tr>
+            <tr>
+              <td>카운터<br>(스토리 슬라이드)</td>
+              <td>
+                형식: <code>02 / 06</code> (제로패딩) — <strong>배경 박스 없음, 텍스트만</strong><br>
+                위치: 칩 아래 우측정렬 / Pretendard Medium 28px / 흰색<br>
+                표지(1p)에는 카운터 없음
+              </td>
+            </tr>
+            <tr>
+              <td>스토리 슬라이드<br>레이아웃</td>
+              <td>
+                전체 사진 fill(center-crop) + 하단 그라디언트(y≈555~, #221F20)<br>
+                메타라인(회색 26px) → 한글 대제목(흰색 Bold 64px) → 서브텍스트(베이지 30px) → 풋터(베이지 26px)<br>
+                좌측 여백 x=40 기준
+              </td>
+            </tr>
+            <tr>
+              <td>폰트</td>
+              <td>
+                Pretendard Bold / SemiBold / Medium<br>
+                경로: <code>brand/font/</code> 또는 <code>2. 브랜드_공식문서/font/</code>
+              </td>
+            </tr>
+            <tr>
+              <td>색상</td>
+              <td>
+                배경 검정: <strong>#221F20</strong> RGB(34,31,32)<br>
+                베이지: <strong>#B79F8A</strong> RGB(183,159,138)<br>
+                칩 배경: RGB(186,162,140) / 분리선: RGB(171,161,151)<br>
+                텍스트 흰색: #FFFFFF / 날짜 회색: RGB(170,160,152)
+              </td>
+            </tr>
+            <tr>
+              <td>풋터 워드마크</td>
+              <td>
+                스토리: <code>WELLPERION  ·  [프로그램명]</code> 좌측 베이지 26px<br>
+                y≈1026 (1080px 기준)
+              </td>
+            </tr>
+            <tr>
+              <td>영상 슬라이드</td>
+              <td>마지막 슬라이드 = 원본 mp4 그대로 (합성 없음). gitignore 대상.</td>
+            </tr>
+            <tr>
+              <td>합성 스크립트</td>
+              <td>
+                <code>scripts/compose_barre.py</code> — 바레 전용<br>
+                <code>scripts/slide_compositor.py</code> — 범용 (v1.1 로고 PNG 적용)<br>
+                신규 콘텐츠는 완성본 픽셀 실측 기반 1:1 구현 필수
+              </td>
+            </tr>
+          </table>
+        </div>
         <label style="display:block;font-size:12.5px;font-weight:700;color:var(--dim);margin:6px 0;">특성 학습 메모</label>
         <textarea class="cmopub-note" data-note="ig-brand" rows="4" placeholder="이 채널에서 학습한 특성·주의사항을 기록…" style="width:100%;padding:12px;border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:13.5px;line-height:1.6;background:var(--paper);color:var(--text);box-sizing:border-box;resize:vertical;"></textarea>
       </div>
