@@ -230,13 +230,12 @@ def check_and_notify():
         exec_time_str = f'{hour:02d}:{minute:02d}'
 
         msg = (
-            f'[AI CTO → CEO] 업무자동화 진행 요청\n\n'
-            f'레코드: {name}\n'
+            f'[AI CTO → CEO] 업무자동화 사전 알림\n\n'
+            f'루틴: {name}\n'
             f'담당: {clevel}\n'
             f'예정 실행 시각: {exec_time_str} KST (약 15분 후)\n\n'
-            f'CEO께서 해당 레코드 상태를 진행중으로 변경해 주시면\n'
-            f'auto_task_watcher가 자동 감지하여 에이전트를 기동합니다.\n\n'
-            f'[자체 결정] AI CTO — H-15분 사전 알림 v1.0'
+            f'정기 루틴 실행 사전 안내입니다. (실행 트리거=작업 스케줄러 자동)\n\n'
+            f'[자체 결정] AI CTO — H-15분 사전 알림 v1.1'
         )
 
         ok = send_telegram(msg)

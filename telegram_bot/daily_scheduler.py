@@ -943,20 +943,11 @@ def main():
     #   알림 0건 확정 → if False 사문(死文) 블록 삭제. 파일(archive_result_watcher.py·
     #   planning_to_archive_watcher.py)은 디스크 보존(가역적). 참조: docs/노션_가이드허브_리뉴얼_계획.md.
 
-    # ── 업무자동화 DB 자동 실행 Watcher (5분 주기) — CTO v1.0 ───────────────
-    try:
-        from auto_task_watcher import check_and_run_auto_tasks as _auto_task_check
-        scheduler.add_job(
-            _auto_task_check,
-            trigger=IntervalTrigger(minutes=5),
-            id="auto_task_watcher",
-            misfire_grace_time=600,
-            coalesce=True,
-            next_run_time=datetime.now(),
-        )
-        logger.info("auto_task_watcher 등록 완료 (5분 주기) — CTO v1.0")
-    except ImportError as e:
-        logger.error(f"auto_task_watcher 임포트 실패 — 감지기 미등록: {e}")
+    # [2026-06-01 CTO 공식 폐지] auto_task_watcher(노션 업무자동화DB 폴링→Claude CLI
+    #   자동실행)는 노션 업무자동화DB '[폐기]'(2026-06-01)로 방식 자체가 구식.
+    #   소스도 소실(git 미추적)되어 import 항시 실패·매 부팅 ERROR 로그만 남기던
+    #   사문 블록을 제거(GM 결재). 정기 실행 트리거는 Windows Task Scheduler가 담당,
+    #   H-15분 사전 알림은 pre_task_notifier(status/schedule.json SSOT)가 유지.
 
     # ── 업무자동화 DB H-15분 사전 알림 Notifier (5분 주기) — CTO v1.0 ─────────
     try:

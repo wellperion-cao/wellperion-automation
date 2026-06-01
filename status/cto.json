@@ -32,7 +32,7 @@
       "assigned_at": "2026-05-29T16:58:23",
       "status": "DONE",
       "completed_at": "2026-06-01T18:20:00",
-      "note": "GM 2026-06-01 옵션B(대체설계 후 노션 끊기) 결정. 1단계: pre_task_notifier 노션→status/schedule.json 이관(14건, commit 4312eb7). g19 반영. 종착: 코드 실측 검증 — pre_task_notifier=schedule.json 소스(노션 의존 0), auto_task_watcher.py=git 추적이력無·소스소실로 scheduler import 항시 실패(미등록), 결과 노션 업무자동화DB 라이브 reader 0건 확인 후 노션 데이터소스(4f19597f) 제목 '[폐기] 📅 업무자동화DB'+폐기설명 표기 완료(실측). 잔재 1건 보고: daily_scheduler의 죽은 auto_task_watcher import가 매 부팅 ERROR 로그 — 자동실행 capability 공식 폐지 vs schedule.json 재구현은 GM 판단 대기.",
+      "note": "GM 2026-06-01 옵션B(대체설계 후 노션 끊기) 결정. 1단계: pre_task_notifier 노션→status/schedule.json 이관(14건, commit 4312eb7). g19 반영. 종착: 코드 실측 검증 — pre_task_notifier=schedule.json 소스(노션 의존 0), auto_task_watcher.py=git 추적이력無·소스소실로 scheduler import 항시 실패(미등록), 결과 노션 업무자동화DB 라이브 reader 0건 확인 후 노션 데이터소스(4f19597f) 제목 '[폐기] 📅 업무자동화DB'+폐기설명 표기 완료(실측). 후속(GM 공식 폐지 결재): daily_scheduler 죽은 auto_task_watcher import 블록 제거(제거주석 대체)+pre_task_notifier 알림문구 노션/auto_task_watcher 구식표현→작업스케줄러 자동 체계로 정정(v1.0→v1.1). 양 파일 py_compile OK, auto_task_watcher 잔존참조 0(폐지주석만). 다음 스케줄러 재기동 시 적용.",
       "depends_on": "CTO-2026-05-29-NOTION-DEPRECATE",
       "blocks": []
     },
