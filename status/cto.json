@@ -30,8 +30,9 @@
       "task_id": "CTO-2026-05-29-AUTOMATION-DB-MIGRATE",
       "title": "업무자동화DB 폐기 2단계 — 텔레그램 자동화 6파일을 status/json 읽기로 전환 후 노션 업무자동화DB [폐기]",
       "assigned_at": "2026-05-29T16:58:23",
-      "status": "IN_PROGRESS",
-      "note": "GM 2026-06-01 옵션B(대체설계 후 노션 끊기) 결정으로 재개. 1단계 완료: pre_task_notifier 노션→status/schedule.json 이관(14건, 노션 의존 0, commit 4312eb7). 가동 전환은 GM 관리자 부팅 자동기동 등록(GM-2026-06-01-04) 후 다음 재부팅 시 적용. 잔여: 가이드허브 g19 반영·노션 업무자동화DB 폐기 표기.",
+      "status": "DONE",
+      "completed_at": "2026-06-01T18:20:00",
+      "note": "GM 2026-06-01 옵션B(대체설계 후 노션 끊기) 결정. 1단계: pre_task_notifier 노션→status/schedule.json 이관(14건, commit 4312eb7). g19 반영. 종착: 코드 실측 검증 — pre_task_notifier=schedule.json 소스(노션 의존 0), auto_task_watcher.py=git 추적이력無·소스소실로 scheduler import 항시 실패(미등록), 결과 노션 업무자동화DB 라이브 reader 0건 확인 후 노션 데이터소스(4f19597f) 제목 '[폐기] 📅 업무자동화DB'+폐기설명 표기 완료(실측). 잔재 1건 보고: daily_scheduler의 죽은 auto_task_watcher import가 매 부팅 ERROR 로그 — 자동실행 capability 공식 폐지 vs schedule.json 재구현은 GM 판단 대기.",
       "depends_on": "CTO-2026-05-29-NOTION-DEPRECATE",
       "blocks": []
     },
@@ -111,6 +112,6 @@
   "title": "clevel_post_action.py 소스 복원 - 자동 보고 파이프라인 부활",
   "artifact_url": null,
   "commit": "",
-  "note": "2026-06-01 트리거·감시기 종합 정리: 예약작업 13건(정상8·폐기4·중복1·별건1) 가이드허브 g19 반영. IG 발행기 하드닝 DONE(실발행 GM 시각승인 대기). 감시기 가동2·폐기5, pre_task_notifier→schedule.json 14건 SSOT 전환 노션의존0.",
-  "updated_at": "2026-06-01T18:00:00"
+  "note": "2026-06-01 마무리 세션: ①유물 예약작업 4개 UAC 삭제(13→9)·weekly 중복 아님 확정·archive 작업 결과0 정상화 = TRIGGER-WATCHER-CLEANUP 종료. ②AUTOMATION-DB-MIGRATE 종착 — 노션 reader 0건 실측 후 노션 업무자동화DB '[폐기]' 표기 완료. 잔재: daily_scheduler 죽은 auto_task_watcher import(매부팅 ERROR) GM 판단 대기. 잔여 task: IG-APPROVAL-RELAY 실발행 GM go 대기.",
+  "updated_at": "2026-06-01T18:20:00"
 }
