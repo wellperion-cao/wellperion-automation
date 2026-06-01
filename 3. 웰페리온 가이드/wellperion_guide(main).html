@@ -6335,6 +6335,13 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
     }
 
     function gm1Save(tasks) {
+      // 빈 배열 저장 방지 가드 — 실수로 전체 데이터 손실 차단 (2026-06-01 긴급 패치)
+      if (!Array.isArray(tasks)) return;
+      if (tasks.length === 0) {
+        // 기존 데이터가 있으면 덮어쓰지 않음
+        var existing = localStorage.getItem(UNIFIED_KEY);
+        if (existing && existing !== '[]' && existing !== 'null') return;
+      }
       try { localStorage.setItem(UNIFIED_KEY, JSON.stringify(tasks)); } catch(e){}
     }
 
@@ -6532,7 +6539,15 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
     function gm1EditTask(id, updates) {
       var tasks = gm1Load();
       for (var i = 0; i < tasks.length; i++) {
-        if (tasks[i].id === id) { tasks[i] = Object.assign({}, tasks[i], updates); break; }
+        if (tasks[i].id === id) {
+          // startDate 빈 값 방어 — 기존 startDate 보존 (2026-06-01 긴급 패치)
+          if (updates.startDate === '' || updates.startDate === null || updates.startDate === undefined) {
+            updates = Object.assign({}, updates);
+            delete updates.startDate;
+          }
+          tasks[i] = Object.assign({}, tasks[i], updates);
+          break;
+        }
       }
       gm1Save(tasks);
     }
@@ -7407,11 +7422,15 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
       // SSOT 기원 항목(ssot-*): localStorage에 없으므로 gm1EditTask 스킵, Sheets만 update
       var isSsotOrigin = String(id).indexOf('ssot-') === 0;
       if (!isSsotOrigin) {
-        gm1EditTask(id, {
-          title:title, startDate:start, endDate:(end||null), category:cat, status:status,
+        // startDate 빈 값 덮어쓰기 방지 — 빈 문자열이면 기존 값 유지 (2026-06-01 긴급 패치)
+        var existing = gm1Load().find(function(x){ return x.id === id; });
+        var safeStart = start || (existing && existing.startDate) || todayStr();
+        var updates = {
+          title:title, startDate:safeStart, endDate:(end||null), category:cat, status:status,
           description:desc, memo:desc, progressLog:logs,
           budgetCat:bCat, budgetAmt:bAmt, approval:approval
-        });
+        };
+        gm1EditTask(id, updates);
       }
 
       // Sheets 동기화 — ssot-* 또는 ssotSynced=true localStorage 항목
