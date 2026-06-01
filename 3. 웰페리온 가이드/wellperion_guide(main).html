@@ -4438,7 +4438,7 @@ function crTab(btn, panelId) {
 
   <!-- ── G19: 업무자동화 ── -->
   <article class="doc" id="g19">
-    <div class="doc-header"><h2>업무자동화</h2><div class="meta">전체 자동 태스크 캘린더 + 현황 · 2026-05-26 점검</div></div>
+    <div class="doc-header"><h2>업무자동화</h2><div class="meta">전체 자동 태스크 캘린더 + 현황 · 2026-06-01 트리거·감시기 종합 정리</div></div>
     <p class="lead">Windows 스케줄러 + Python 프로세스 실측 기반. 컨텍스트 정비(매주 월)를 포함한 전체 자동화 일정을 한눈에.</p>
 
     <div class="tabs" data-tabs="g19">
@@ -4524,26 +4524,65 @@ function crTab(btn, panelId) {
 
       <!-- 태스크 현황 탭 -->
       <div class="tab-panel" data-panel="status">
-        <h3><span class="ico">📊</span>태스크 현황 요약</h3>
+        <h3><span class="ico">📊</span>예약작업(트리거) 현황 — 13건</h3>
+        <p style="font-size:13px; color:var(--dim);">Windows 작업 스케줄러 실측 (2026-06-01 정리). GM 직접 관리 SSOT.</p>
         <div class="grid-3">
           <div class="card grow">
-            <h4>🟢 가동 중</h4>
-            <p style="font-size:28px; font-weight:700; margin:4px 0;">5건</p>
-            <p style="font-size:13px; color:var(--dim);">봇 · 스케줄러 · 기획 브리핑 · C-Level 체크 · PC ON/OFF</p>
-          </div>
-          <div class="card">
-            <h4>⏸️ 보류</h4>
-            <p style="font-size:28px; font-weight:700; margin:4px 0;">15건</p>
-            <p style="font-size:13px; color:var(--dim);">매일 5 · 매주 월 8 · 매월 2 · 분기 1</p>
+            <h4>✅ 정상 가동</h4>
+            <p style="font-size:28px; font-weight:700; margin:4px 0;">8건</p>
+            <p style="font-size:13px; color:var(--dim);">교육·아침보고·봇·스케줄러·검증·업데이트·종료인사·교육정리</p>
           </div>
           <div class="card warm">
-            <h4>⚠️ 점검</h4>
+            <h4>🗑️ 폐기 대상</h4>
+            <p style="font-size:28px; font-weight:700; margin:4px 0;">4건</p>
+            <p style="font-size:13px; color:var(--dim);">관리자 1회 실행 대기 (unregister_stale_tasks.bat)</p>
+          </div>
+          <div class="card warm">
+            <h4>⚠️ 중복·🔧 별건</h4>
             <p style="font-size:28px; font-weight:700; margin:4px 0;">2건</p>
-            <p style="font-size:13px; color:var(--dim);">Calendar-Dispatcher · MetaTokenRefresh</p>
+            <p style="font-size:13px; color:var(--dim);">Weekly-Context-Arm 중복 · CEO_DAILY_CLEVEL_CHECK 소스소실</p>
           </div>
         </div>
 
-        <h3><span class="ico">🟢</span>가동 중 상세 (5건)</h3>
+        <h4>✅ 정상 가동 (8건)</h4>
+        <table>
+          <tr><th style="width:340px">예약작업</th><th>역할 · 비고</th></tr>
+          <tr><td><code>Wellperion-AI-Education-Weekly</code></td><td>주간 교육자료 학습</td></tr>
+          <tr><td><code>Wellperion-CEO-Morning-Brief-0800-Live</code></td><td>08:00 아침보고 (ceo_morning_pipeline.py)</td></tr>
+          <tr><td><code>WellperionDailyScheduler</code></td><td>봇 스케줄러 부팅 자동기동 <span class="badge green" style="margin-left:4px;">2026-06-01 신규</span></td></tr>
+          <tr><td><code>WellperionTelegramBot</code></td><td>텔레그램 봇 부팅 자동기동 <span class="badge green" style="margin-left:4px;">2026-06-01 신규</span></td></tr>
+          <tr><td><code>Wellperion-CEO-Verify-Watcher</code></td><td>CEO 검증 watcher</td></tr>
+          <tr><td><code>Wellperion-Morning-Update</code></td><td>claude/npm 업데이트</td></tr>
+          <tr><td><code>Wellperion-PC-Shutdown-Greeting-Live</code></td><td>PC 종료 퇴근인사 <span class="badge green" style="margin-left:4px;">2026-06-01 소스 복구</span></td></tr>
+          <tr><td><code>Wellperion-Education-Archive-Weekly</code></td><td>교육자료 주간정리 <span class="badge green" style="margin-left:4px;">2026-06-01 소스 복구</span></td></tr>
+        </table>
+
+        <h4>🗑️ 폐기 대상 — 관리자 1회 실행 대기 (4건)</h4>
+        <p style="font-size:13px; color:var(--dim);">정리 스크립트: <code>telegram_bot/unregister_stale_tasks.bat</code></p>
+        <table>
+          <tr><th style="width:340px">예약작업</th><th>폐기 사유</th></tr>
+          <tr><td><code>Wellperion-AutoTask-Watcher-Start</code></td><td>notion-c-level-agents 폴더 삭제됨</td></tr>
+          <tr><td><code>Wellperion-AutoTask-Watcher-Stop</code></td><td>위 짝</td></tr>
+          <tr><td><code>Wellperion-CEO-Morning-Brief-0800</code></td><td>구 노션경로, -Live와 중복</td></tr>
+          <tr><td><code>Wellperion-PC-Shutdown-Greeting</code></td><td>구 노션경로, -Live와 중복</td></tr>
+        </table>
+
+        <h4>⚠️ 중복 · 🔧 별건 (2건)</h4>
+        <table>
+          <tr><th style="width:340px">예약작업</th><th>상태</th></tr>
+          <tr><td><code>Welperion-Weekly-Context-Maintenance-Arm</code></td><td>⚠️ 미등록. 주간 컨텍스트정비는 이미 <code>status/schedule.json</code> 6건+pre_task_notifier로 가동 중 → 중복, <code>register_arm_scheduler.bat</code> 폐기권고</td></tr>
+          <tr><td><code>CEO_DAILY_CLEVEL_CHECK</code></td><td>🔧 CEO_DAILY_CHECK.bat은 있으나 내부 ceo_daily_clevel_check.py 소스 소실 → 무력, 복원 점검 대기</td></tr>
+        </table>
+
+        <h4>🔭 텔레그램 감시기 · 노션 이관 현황</h4>
+        <table>
+          <tr><th style="width:200px">구분</th><th>현황</th></tr>
+          <tr><td>감시기 가동 2</td><td><code>auto_task_watcher</code> · <code>status_change_watcher</code> — 노션 폴링 의존, 노션 완전폐기 시 이관/폐기 예정</td></tr>
+          <tr><td>감시기 폐기정리 5</td><td><code>archive_result</code> · <code>planning_to_archive</code> · <code>permission</code> · <code>archive_merge</code> · <code>inbox</code> — 노션·인박스 유물, .pyc 제거 완료</td></tr>
+          <tr><td>노션 이관 완료</td><td><code>pre_task_notifier</code> 실행시간 알림 → <code>status/schedule.json</code>(14건) SSOT 전환, 노션 의존 0</td></tr>
+        </table>
+
+        <h3><span class="ico">🟢</span>상시 프로세스 상세 (5건)</h3>
         <div class="task-card">
           <div class="task-title"><span class="status-dot active"></span>텔레그램 봇 (bot.py)</div>
           <div class="task-meta"><span>상시 가동</span></div>
@@ -4568,7 +4607,7 @@ function crTab(btn, panelId) {
           <div class="task-meta"><span>05:50 ON / 22:25 인사 / 22:30 OFF</span><span>가이드허브 SSOT: 가동중 ✅</span></div>
         </div>
 
-        <div class="source">점검 기준: Windows Task Scheduler + Python 프로세스 실측 (2026-05-26)</div>
+        <div class="source">점검 기준: Windows Task Scheduler + Python 프로세스 실측 (2026-06-01 트리거·감시기 종합 정리)</div>
       </div>
 
       <!-- 컨텍스트 정비 탭 (g7에서 합병) -->

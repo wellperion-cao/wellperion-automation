@@ -88,12 +88,28 @@
       "note": "복원 실증",
       "updated_at": "2026-06-01T06:17:04Z",
       "blocks": []
+    },
+    {
+      "task_id": "CTO-2026-06-01-IG-PUBLISH-HARDEN",
+      "title": "IG 발행기 하드닝",
+      "status": "DONE",
+      "note": "4대 false-positive 수정+dryrun검증, 실발행은 GM 시각승인 대기",
+      "updated_at": "2026-06-01T18:00:00",
+      "blocks": []
+    },
+    {
+      "task_id": "CTO-2026-06-01-TRIGGER-WATCHER-CLEANUP",
+      "title": "트리거·감시기 정리",
+      "status": "IN_PROGRESS",
+      "note": "폐기4 스크립트+죽은pyc5+기능복구2(pc_shutdown·education)+weekly중복폐기권고, 가이드허브 g19 반영",
+      "updated_at": "2026-06-01T18:00:00",
+      "blocks": []
     }
   ],
   "agent": "cto",
   "title": "clevel_post_action.py 소스 복원 - 자동 보고 파이프라인 부활",
   "artifact_url": null,
   "commit": "",
-  "note": "AUTOMATION-DB-MIGRATE IN_PROGRESS 재개(옵션B). bot.py+daily_scheduler.py 부팅 자동기동 등록 GM 관리자 실행 대기(GM-2026-06-01-04).",
-  "updated_at": "2026-06-01T17:30:00"
+  "note": "2026-06-01 트리거·감시기 종합 정리: 예약작업 13건(정상8·폐기4·중복1·별건1) 가이드허브 g19 반영. IG 발행기 하드닝 DONE(실발행 GM 시각승인 대기). 감시기 가동2·폐기5, pre_task_notifier→schedule.json 14건 SSOT 전환 노션의존0.",
+  "updated_at": "2026-06-01T18:00:00"
 }
