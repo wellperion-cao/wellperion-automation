@@ -6610,36 +6610,41 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
 
       var html = '';
 
-      // ── 도구 바: 검색 + 정렬 + 담당자 필터 + 공유/인쇄 + 결재현황 chip (업무SSOT 이식) ──
-      html += '<div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:10px;">';
-      html += '<input type="text" id="gm1-search" placeholder="제목·내용·진척 검색" value="' + gm1Esc(gm1SearchQuery).replace(/"/g,'&quot;') + '" style="flex:1;min-width:140px;background:var(--paper);border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:8px;font-size:12.5px;font-family:inherit;">';
-      html += '<select id="gm1-sort" style="background:var(--paper);border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:8px;font-size:12px;font-family:inherit;font-weight:600;cursor:pointer;">';
+      // ── 도구 바 (업무현황 SSOT 수준 · 배경 박스로 명확 표시) ──
+      html += '<div style="background:var(--paper);border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin-bottom:12px;">';
+
+      // 1행: 검색 + 정렬 + 담당자
+      html += '<div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:8px;">';
+      html += '<input type="text" id="gm1-search" placeholder="🔍 제목·내용·진척 검색" value="' + gm1Esc(gm1SearchQuery).replace(/"/g,'&quot;') + '" style="flex:1;min-width:120px;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:8px;font-size:12.5px;font-family:inherit;">';
+      html += '<select id="gm1-sort" title="정렬" style="background:var(--bg);border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:8px;font-size:12px;font-family:inherit;font-weight:600;cursor:pointer;">';
       ['최신순','카테고리','담당자','시작일순'].forEach(function(opt){
         html += '<option value="' + opt + '"' + (gm1SortBy === opt ? ' selected' : '') + '>' + opt + '</option>';
       });
       html += '</select>';
-      html += '<select id="gm1-owner" style="background:var(--paper);border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:8px;font-size:12px;font-family:inherit;font-weight:600;cursor:pointer;">';
-      ['전체','김남욱GM'].forEach(function(opt){
-        html += '<option value="' + opt + '"' + (gm1OwnerFilter === opt ? ' selected' : '') + '>' + opt + '</option>';
-      });
-      html += '</select>';
-      html += '</div>';
-      html += '<div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:12px;">';
-      html += '<button type="button" id="gm1-share-report" style="background:var(--accent-bg);color:var(--accent);border:1px solid rgba(183,159,138,0.3);padding:5px 12px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;">📋 보고용</button>';
-      html += '<button type="button" id="gm1-share-list" style="background:var(--paper);color:var(--text);border:1px solid var(--border);padding:5px 12px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;">🔗 공유용</button>';
-      html += '<a href="https://wellperion-cao.github.io/wellperion-automation/coo/todo/%EA%B2%B0%EC%9E%AC%20%ED%98%84%ED%99%A9%20SSOT.html" target="_blank" style="background:rgba(232,163,61,0.12);color:#e8a33d;border:1px solid rgba(232,163,61,0.3);padding:5px 12px;border-radius:8px;font-size:12px;font-weight:600;text-decoration:none;margin-left:auto;">✍️ 결재 현황 SSOT →</a>';
       html += '</div>';
 
-      // ── 분류 필터 UI (업무·결재·기획·개인) ──
+      // 2행: 분류 필터 chip (체크박스 → 클릭 토글 버튼 방식)
       var FILTER_CATS = ['업무','결재','기획','개인'];
-      html += '<div id="gm1-cat-filter" style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:12px;font-size:12px;">';
+      html += '<div id="gm1-cat-filter" style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:8px;">';
+      html += '<span style="font-size:11px;color:var(--dim);flex-shrink:0;">분류:</span>';
       FILTER_CATS.forEach(function(c){
-        html += '<label style="display:inline-flex;align-items:center;gap:4px;cursor:pointer;color:var(--text);">' +
-          '<input type="checkbox" class="gm1-cat-cb" data-cat="' + gm1Esc(c) + '"' + (gm1CatFilter[c] ? ' checked' : '') + ' style="cursor:pointer;">' +
-          '<span style="display:inline-block;' + (CAT_COLORS[c] || CAT_COLORS['업무']) + 'font-size:10px;font-weight:600;padding:1px 7px;border-radius:4px;">' + gm1Esc(c) + '</span>' +
+        var active = gm1CatFilter[c];
+        var cs = CAT_COLORS[c] || CAT_COLORS['업무'];
+        html += '<label style="display:inline-flex;align-items:center;gap:3px;cursor:pointer;">' +
+          '<input type="checkbox" class="gm1-cat-cb" data-cat="' + gm1Esc(c) + '"' + (active ? ' checked' : '') + ' style="cursor:pointer;width:13px;height:13px;">' +
+          '<span style="display:inline-block;' + cs + 'font-size:10px;font-weight:600;padding:1px 7px;border-radius:4px;opacity:' + (active ? '1' : '0.4') + ';">' + gm1Esc(c) + '</span>' +
           '</label>';
       });
       html += '</div>';
+
+      // 3행: 공유 버튼 + 결재현황 링크
+      html += '<div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;">';
+      html += '<button type="button" id="gm1-share-report" style="background:var(--accent-bg);color:var(--accent);border:1px solid rgba(183,159,138,0.3);padding:5px 12px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;">📋 보고용</button>';
+      html += '<button type="button" id="gm1-share-list" style="background:var(--bg);color:var(--text);border:1px solid var(--border);padding:5px 12px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;">🔗 공유용</button>';
+      html += '<a href="https://wellperion-cao.github.io/wellperion-automation/coo/todo/%EA%B2%B0%EC%9E%AC%20%ED%98%84%ED%99%A9%20SSOT.html" target="_blank" style="background:rgba(232,163,61,0.12);color:#e8a33d;border:1px solid rgba(232,163,61,0.3);padding:5px 12px;border-radius:8px;font-size:12px;font-weight:600;text-decoration:none;margin-left:auto;">✍️ 결재 현황 SSOT →</a>';
+      html += '</div>';
+
+      html += '</div>'; // 도구바 박스 끝
 
       // 진행중 카드 (클릭 펼침 · 업무현황 SSOT 패턴 · 2026-06-01)
       active.forEach(function(t) {
@@ -6650,7 +6655,7 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
         // 카드 래퍼
         html += '<div class="task-card" data-id="' + gm1Esc(t.id) + '" style="' + (isSsot ? 'opacity:0.96;' : '') + '">';
         // 제목줄 — 본문 클릭=펼침, 버튼=stopPropagation
-        html += '<div style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;" onclick="var card=this.closest(\'.task-card\');var d=card.querySelector(\'.gm1-detail\');var a=card.querySelector(\'.gm1-arrow\');if(!d)return;var open=d.style.display!==\'none\';d.style.display=open?\'none\':\'\';a.style.transform=open?\'\':\' rotate(90deg)\';">';
+        html += '<div style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;" onclick="var card=this.closest(\'.task-card\');var d=card.querySelector(\'.gm1-detail\');var a=card.querySelector(\'.gm1-arrow\');if(!d)return;var open=d.style.display===\'block\';d.style.display=open?\'none\':\'block\';a.style.transform=open?\'\':\' rotate(90deg)\';">';
         html += '<span style="display:flex;align-items:center;flex:1;min-width:0;overflow:hidden;">';
         html += '<span class="gm1-arrow" style="font-size:9px;color:var(--dim);transition:transform 0.18s;flex-shrink:0;margin-right:5px;display:inline-block;">▶</span>';
         html += '<span style="display:inline-block;background:rgba(183,159,138,0.15);color:var(--accent);font-size:10.5px;font-weight:600;padding:2px 7px;border-radius:4px;margin-right:6px;flex-shrink:0;">🟡 진행 중</span>';
