@@ -133,8 +133,11 @@ html,body{background:var(--bg);color:var(--text);font-family:"Pretendard","Apple
   .approval-card .title-row .card-meta-chips{max-width:130px;}
 }
 @media print{
+  /* 인쇄용 라이트 팔레트 — 대시보드 패널이 다크로 인쇄되던 문제 해결(2026-06-01 COO) */
+  :root{--bg:#fff;--paper:#fff;--text:#1a1a1a;--dim:#555;--border:#ccc}
+  .dash-panel{background:#fff!important;color:#1a1a1a}
   .header{position:static;background:#fff;color:#000;border-bottom:1px solid #ccc}
-  .sheet-links,.filter-bar,.detail-toggle{display:none!important}
+  .header-right,.sheet-link,.filter-bar,.detail-toggle{display:none!important}
   body{background:#fff;color:#000}
   .approval-card{background:#fff;border:1px solid #ccc;border-left:3px solid #0b8043;page-break-inside:avoid}
   .detail-body{display:block!important}

@@ -183,8 +183,13 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 /* ── Print ── */
 @media print{
   @page{margin:10mm;size:A4}
-  body{background:#fff;color:#222;font-size:11px;line-height:1.4}
-  .header,.filter-bar,.add-bar,.action-btn,.modal-overlay,.toast,.share-btn,.sheet-link,.print-tasks-btn{display:none!important}
+  /* 인쇄용 라이트 팔레트 — 다크 카드 그대로 인쇄되던 문제 해결(2026-06-01 COO, 결재현황과 통일) */
+  :root{--bg:#fff;--paper:#fff;--text:#1a1a1a;--dim:#555;--dim-soft:#999;--border:#ccc}
+  body{background:#fff;color:#1a1a1a;font-size:11px;line-height:1.4}
+  .header-right,.filter-bar,.add-bar,.action-btn,.modal-overlay,.toast,.share-btn,.sheet-link,.print-tasks-btn{display:none!important}
+  .header{position:static;background:#fff;border-bottom:1px solid #ccc;padding:6px 0 8px;margin-bottom:10px}
+  .header h1{font-size:15px;color:#111}
+  .cat-accordion,.cat-header,.task-card{background:#fff}
   .content{padding:0;max-width:100%}
   .cat-accordion{border:1px solid #ccc;break-inside:avoid;margin-bottom:8px}
   .cat-header{padding:8px 12px}
