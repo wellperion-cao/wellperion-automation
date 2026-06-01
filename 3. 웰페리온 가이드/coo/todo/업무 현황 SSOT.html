@@ -2322,7 +2322,7 @@ function printResultReport(taskId) {
     +   '<div class="rr-wordmark">WELLPERION</div>'
     +   (approvalHtml ? '<div>' + approvalHtml + '</div>' : '')
     + '</div>'
-    + '<div class="rr-doc-title">업 무 보 고 서</div>'
+    + '<div class="rr-doc-title">' + ((t && t.status === '완료') ? '결 과 보 고 서' : '업 무 보 고 서') + '</div>'
     + infoHtml
     + bodyHtml
     + resultHtml
