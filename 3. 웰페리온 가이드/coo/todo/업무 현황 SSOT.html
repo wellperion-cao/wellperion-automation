@@ -426,8 +426,8 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
     <div class="field">
       <label>결재요청</label>
       <div class="approval-group" id="fApprovalGroup">
-        <label><input type="checkbox" value="부서장">부서장</label>
         <label><input type="checkbox" value="GM">GM</label>
+        <label><input type="checkbox" value="대표님">대표님</label>
       </div>
     </div>
     <div class="modal-actions">
@@ -979,7 +979,7 @@ function renderTaskCard(t, idx) {
     const _auto   = _parsed.budget ? routeApproval(_parsed.budget.category, _parsed.budget.amount) : [];
     const _set    = {};
     _manual.concat(_auto).forEach(a => { _set[a] = true; });
-    const _route  = ['부서장', 'GM'].filter(r => _set[r]);
+    const _route  = ['GM', '대표님'].filter(r => _set[r]);
 
     if (_route.length > 0) {
       const _appStatus = String(t['결재상태'] || '');
@@ -991,7 +991,7 @@ function renderTaskCard(t, idx) {
         html += '<span class="chip" style="background:var(--red-bg);color:var(--red);font-weight:700;">❌ ' + esc(_appStatus) + '</span>';
       } else {
         // ③ 진행 중 — 싸인 맵: 한글 키 직접 접근
-        const _signMap = { '부서장': t['부서장싸인'] || '', 'GM': t['GM싸인'] || '' };
+        const _signMap = { 'GM': t['GM싸인'] || '', '대표님': t['대표님싸인'] || '' };
         // 다음 결재자 = 라인 중 싸인 필드가 비어 있는 첫 번째
         let _nextIdx = _route.length; // 전원 서명 완료 시 sentinel
         for (let _i = 0; _i < _route.length; _i++) {
@@ -1279,19 +1279,16 @@ const BUDGET_CATEGORIES = [
 ];
 
 function routeApproval(category, amount) {
-  // 결재자 배열 반환 (체크박스 자동 매핑: '부서장' / 'GM')
+  // 결재자 배열 반환 (예산→GM/대표님 자동 매핑, 부서장 결재 폐지 2026-06-01)
   const amt = Number(amount) || 0;
   switch (category) {
     case '일상 운영비':
-      if (amt <= 300000) return ['GM'];
-      return ['부서장', 'GM'];
+      return ['GM'];
     case '소액 유지보수':
-      if (amt <= 100000) return ['부서장'];
       return ['GM'];
     case '마케팅':
       return ['GM'];
     case '비상 지출':
-      if (amt <= 500000) return ['부서장'];
       return ['GM'];
     case '계약·정기 약정':
     case 'IT·소프트웨어':
@@ -2225,14 +2222,14 @@ function printResultReport(taskId) {
   var approvalHtml = '';
   if (approvalReq) {
     var signMap = {
-      '부서장': String(t['부서장싸인'] || '').trim(),
-      'GM':    String(t['GM싸인']    || '').trim()
+      'GM':    String(t['GM싸인']    || '').trim(),
+      '대표님': String(t['대표님싸인'] || '').trim()
     };
-    var roles = ['담당', '부서장', 'GM'];
+    var roles = ['담당', 'GM', '대표님'];
     var signValues = {
       '담당':  esc(ownerStr),
-      '부서장': esc(signMap['부서장']),
-      'GM':    esc(signMap['GM'])
+      'GM':    esc(signMap['GM']),
+      '대표님': esc(signMap['대표님'])
     };
     var cells = roles.map(function(role){
       return '<td style="border:1px solid #555;padding:4px 8px;text-align:center;min-width:48px;vertical-align:top">'

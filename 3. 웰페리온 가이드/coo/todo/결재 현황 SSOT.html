@@ -392,9 +392,6 @@ function render() {
   // 2줄 — 결재자(담당자) 버튼 — 업무현황 담당자 줄처럼 라벨 없이 버튼만 (2026-06-01 GM)
   let owHtml = '';
   owHtml += '<button class="filter-btn ' + (activeRoleFilter==='전체'?'active':'') + '" onclick="setRoleFilter(\'전체\')">전체</button>';
-  owHtml += '<button class="filter-btn ' + (activeRoleFilter==='이경연 실장'?'active':'') + '" onclick="setRoleFilter(\'이경연 실장\')">이경연 실장 (' + pendingByPerson['이경연 실장'] + ')</button>';
-  owHtml += '<button class="filter-btn ' + (activeRoleFilter==='이정헌 소장'?'active':'') + '" onclick="setRoleFilter(\'이정헌 소장\')">이정헌 소장 (' + pendingByPerson['이정헌 소장'] + ')</button>';
-  owHtml += '<button class="filter-btn ' + (activeRoleFilter==='나우열M'?'active':'') + '" onclick="setRoleFilter(\'나우열M\')">나우열M (' + pendingByPerson['나우열M'] + ')</button>';
   owHtml += '<button class="filter-btn ' + (activeRoleFilter==='GM'?'active':'') + '" onclick="setRoleFilter(\'GM\')">김남욱GM (' + pendingByRole['GM'] + ')</button>';
   owHtml += '<button class="filter-btn ' + (activeRoleFilter==='대표님'?'active':'') + '" onclick="setRoleFilter(\'대표님\')">전응준 대표 (' + pendingByRole['대표님'] + ')</button>';
   document.getElementById('ownerFilters').innerHTML = owHtml;
@@ -638,10 +635,10 @@ function todayDateStr() {
 function routeApproval(category, amount) {
   const amt = Number(amount) || 0;
   switch (category) {
-    case '일상 운영비':           return amt <= 300000 ? ['GM'] : ['부서장', 'GM'];
-    case '소액 유지보수':         return amt <= 100000 ? ['부서장'] : ['GM'];
+    case '일상 운영비':           return ['GM'];
+    case '소액 유지보수':         return ['GM'];
     case '마케팅':                return amt <= 3000000 ? ['GM'] : ['GM', '대표님'];
-    case '비상 지출':             return amt <= 500000 ? ['부서장'] : ['GM'];
+    case '비상 지출':             return ['GM'];
     case '계약·정기 약정':
     case 'IT·소프트웨어':
     case '급여·인건비·외주·교육':
@@ -656,11 +653,12 @@ function buildEffectiveRoute(t, budget) {
   const auto = budget ? routeApproval(budget.category, budget.amount) : [];
   const set = {};
   manual.concat(auto).forEach(a => { set[a] = true; });
-  // 본인 결재 중복 방지 — 담당자가 김남욱GM이면 GM 결재 단계 생략(부서장·대표님은 유지) (2026-05-30 GM 지시)
+  // 본인 결재 중복 방지 — 담당자가 김남욱GM이면 GM 결재 단계 생략(대표님은 유지) (2026-05-30 GM 지시)
   if (String(t.owner || '').split(',').map(s => s.trim()).indexOf('김남욱GM') >= 0) {
     delete set['GM'];
   }
-  return ['부서장', 'GM', '대표님'].filter(r => set[r]);
+  // 부서장 결재 폐지 — GM·대표님만 (2026-06-01 GM)
+  return ['GM', '대표님'].filter(r => set[r]);
 }
 
 function nextApprover(t, route) {
@@ -788,12 +786,8 @@ function renderApprovalCard(t, idx) {
     h += stepsH;
   }
 
-  // 싸인 라인 — 미서명 + 현재 차례면 ✅/❌ 버튼 내장
-  // 부서장은 카테고리로 담당자 특정 (매핑 없으면 3인 병기)
-  const deptHeadName = getDeptHead(t.category);
-  const deptHeadLabel = deptHeadName ? ('부서장 · ' + deptHeadName) : '부서장 · 운영부 이경연 실장 / 시설부 이정헌 소장 / 파트너팀 나우열M';
+  // 싸인 라인 — GM·대표님만 (부서장 결재 폐지, 2026-06-01 GM)
   h += '<div class="sign-line">';
-  h += renderSignPill(deptHeadLabel, t.deptSign, t.id, nxt === '부서장', route.includes('부서장'));
   h += renderSignPill('GM',          t.gmSign,   t.id, nxt === 'GM',     route.includes('GM'));
   h += renderSignPill('대표님',       t.repSign,  t.id, nxt === '대표님',  route.includes('대표님'));
   h += '</div>';
@@ -906,27 +900,23 @@ function renderApprovalDashboard() {
   // 결재 단계별 서명 현황
   h += '<h3>결재 단계별 서명 현황</h3>';
   h += '<div class="dash-stat-row">';
-  h += '<div class="dash-stat-card"><div class="num" style="color:var(--accent)">' + deptSigned + '</div><div class="label">부서장 서명</div></div>';
   h += '<div class="dash-stat-card"><div class="num" style="color:var(--blue)">' + gmSigned + '</div><div class="label">GM 서명</div></div>';
   h += '<div class="dash-stat-card"><div class="num" style="color:var(--purple)">' + repSigned + '</div><div class="label">대표님 서명</div></div>';
   h += '</div>';
 
   // 미결 건 — 다음 결재자별 대기 현황
   h += '<h3>미결 건 — 다음 결재자 대기 현황</h3>';
-  var waitByRole = { '이경연 실장':[], '이정헌 소장':[], '나우열M':[], 'GM':[], '대표님':[] };
+  var waitByRole = { 'GM':[], '대표님':[] };
   pending.forEach(function(t) {
     var parsed = parseContent(t.content);
     var route = buildEffectiveRoute(t, parsed.budget);
     var nxt = nextApprover(t, route);
-    if (nxt === '부서장') {
-      var head = getDeptHead(t.category) || '이경연 실장';
-      if (waitByRole[head]) waitByRole[head].push(t);
-    } else if (nxt && waitByRole[nxt] !== undefined) {
+    if (nxt && waitByRole[nxt] !== undefined) {
       waitByRole[nxt].push(t);
     }
   });
   h += '<table class="dash-table"><tr><th>결재자</th><th>대기 건수</th><th style="min-width:120px">비율</th></tr>';
-  var roleOrder = ['이경연 실장','이정헌 소장','나우열M','GM','대표님'];
+  var roleOrder = ['GM','대표님'];
   var maxWait = Math.max.apply(null, roleOrder.map(function(r){ return waitByRole[r].length; }).concat([1]));
   var barColors = ['accent','blue','purple','green','yellow'];
   roleOrder.forEach(function(role, ri) {
