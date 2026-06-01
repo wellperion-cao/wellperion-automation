@@ -4,17 +4,17 @@
 정규 스케줄 (6개): 06 / 09 / 12 / 15 / 18 / 21시 정각 텔레그램 자동 보고
 테스트 모드: python daily_scheduler.py --test  →  1시간 주기 실행
 
-스케줄 설계:
-  06시 — 하루 시작 다짐·좋은 문구 (Notion 정기 보고 문구 DB, 06시 시간대)
-  09시 — 전날 업무 전체 정리 (Notion 전 DB 어제자 변경 집계)
-  12시 — 관심 분야 트렌드 정리 (Phase 2 플레이스홀더)
-  15시 — 현재 업무 진행현황 C-Level별 (기획DB·결과물DB 필터링)
-  18시 — 퇴근·가족·건강 좋은 문구 (Notion 정기 보고 문구 DB, 18시 시간대)
-  21시 — 하루 핵심 요약 Lv1 MVP (Claude CLI + Notion 오늘자 변동 종합 요약)
+스케줄 설계 (SSOT = GitHub status/* + git log + 가이드허브, 노션 폐기 2026-05-29):
+  06시 — 하루 시작 다짐·좋은 문구 (status/quotes.json 06 시간대) + 운동 체크리스트
+  09시 — 전날 업무 전체 정리 (git log 어제자 커밋 집계)
+  12시 — 시설·지원·주차 점검 현황 (Google Sheets Apps Script 단일 소스)
+  15시 — 현재 업무 진행현황 C-Level별 (status/_queue.json + status/*.json 필터링)
+  18시 — 퇴근·가족·건강 좋은 문구 (status/quotes.json 18 시간대)
+  21시 — 하루 핵심 요약 Lv1 MVP (git log 오늘자 커밋 + Claude CLI 한줄요약 + 가이드허브 내일할일)
 
 운영 원칙:
 - 기존 워처 3종 (archive_result_watcher·planning_to_archive_watcher·permission_watcher) 유지
-- Notion API 호출 실패 시 Claude 연동 없이 자동화 실패 경보만 송신
+- 데이터 소스 조회 실패(quotes.json 부재·git log 실패 등) 시 Claude 연동 없이 자동화 실패 경보만 송신
 - PC 정각 오프 후 복구 시 misfire_grace_time(600초) 내 catch-up 자동 실행
 - 로그: scheduler.log (RotatingFileHandler, 7일 보존)
 

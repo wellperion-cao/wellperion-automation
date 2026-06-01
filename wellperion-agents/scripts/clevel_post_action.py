@@ -5,7 +5,7 @@ C-Level .bat 종료 직전 표준 post-action 훅 (hook) 모듈
 
 복원 경위: git에 한 번도 커밋된 적 없던 소스가 소실(.pyc만 잔존)되어
 clevel.bat 파이프라인이 죽어 있었음 — .pyc 바이트코드 상수에서 원본 인터페이스를
-복원하고, Notion(2026-05-29 폐기) 의존성을 제거한 채 status json + 텔레그램 1줄
+복원하고, 외부 DB(2026-05-29 폐기) 의존성을 제거한 채 status json + 텔레그램 1줄
 보고만 남겨 재작성(2026-06-01, AI CTO).
 
 역할(R/R): AI CTO -- IT 인프라 표준화
@@ -200,7 +200,7 @@ def send_telegram(clevel: str, task_id: str, status: str, summary: str, dry_run:
 
 def parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser(
-        description="C-Level .bat post-action 표준 훅 (hook) — status json + 텔레그램(Telegram) 보고 (Notion 제외)"
+        description="C-Level .bat post-action 표준 훅 (hook) — status json + 텔레그램(Telegram) 보고 (외부 DB 의존 없음)"
     )
     p.add_argument("--clevel", required=True, help="실행 주체 C-Level (예: CTO)")
     p.add_argument("--task-id", required=True,
@@ -229,7 +229,7 @@ def main() -> int:
         print("=" * 60)
 
     title = args.title if args.title else args.summary
-    # changelog 는 note(상태 파일 메모) 로 흡수. 별도 Notion Changelog 속성은 폐기.
+    # changelog 는 note(상태 파일 메모) 로 흡수. 별도 변경이력 속성 없음(status json note로 단일화).
     note = args.changelog if args.changelog else args.summary
 
     ok_status = write_status_file(
