@@ -15,15 +15,15 @@
 
 ## 1. AI C-Level 7 에이전트
 `wellperion-agents/.claude/agents/` 정의. 보고 라인: 6 C-레벨 → AI CEO → GM님.
-| 직책 | 파일 | 라우팅 키워드 |
-|---|---|---|
-| AI CEO | ai-ceo.md | 전사 전략·통합 판단 |
-| AI CFO | ai-cfo.md | 재무 |
-| AI CHRO | ai-chro.md | 인사 |
-| AI CMO | ai-cmo.md | 마케팅 |
-| AI COO | ai-coo.md | 운영 |
-| AI CPO | ai-cpo.md | 회원·CS |
-| AI CTO | ai-cto.md | 시설·기술 |
+| 직책 | 닉네임 | 파일 | 라우팅 키워드 |
+|---|---|---|---|
+| AI CEO | 웰리 | ai-ceo.md | 전사 전략·통합 판단 |
+| AI CFO | 시뽀 | ai-cfo.md | 재무 |
+| AI CHRO | 시로 | ai-chro.md | 인사 |
+| AI CMO | 시모 | ai-cmo.md | 마케팅 |
+| AI COO | 시우 | ai-coo.md | 운영 |
+| AI CPO | 시포 | ai-cpo.md | 회원·CS |
+| AI CTO | 시토 | ai-cto.md | 시설·기술 |
 
 
 ## 2. R/R SSOT — 가이드허브
