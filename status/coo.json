@@ -1,9 +1,9 @@
 {
   "clevel": "coo",
   "status": "ASSIGNED",
-  "last_task_id": "COO-2026-05-29-ID-NUMBER-PREFIX",
-  "last_commit_sha": "64f2c83",
-  "last_pushed_at": "2026-05-29T13:15:08.963032",
+  "last_task_id": "COO-2026-06-01-APPROVAL-TOOLBAR-UNIFY",
+  "last_commit_sha": "8f30448",
+  "last_pushed_at": "2026-06-01T15:20:00",
   "active_tasks": [
     {
       "task_id": "COO-2026-05-29-ID-NUMBER-PREFIX",
@@ -37,6 +37,13 @@
       "assigned_at": "2026-05-29T16:30:00",
       "status": "DONE",
       "result": "삭제: PDF 원본 매뉴얼 링크·점검 항목 관리 섹션(추가폼·추가항목목록·JSON내보내기/가져오기/초기화)·헤더 항목추가 버튼 + 고아 JS 9개(mgmtAddItem/StartEdit/CancelEdit/ClearForm/DeleteItem/RenderList/ExportJSON/ImportJSON/ResetAll)+openMgmtAddForm. 보존: 텍스트 운영매뉴얼·데이터계층(CUSTOM_ITEMS·시트동기화·스케줄주입). 개편(GM 재지시 '수정 아니라 상태 체크'): 현재 전체 점검 항목을 항목별 체크박스(점검완료)+토글(상세) 구성, onManualCk가 기존 STATE/saveState/pushToServer 재사용해 시트 영구 저장(전체 41항목). Playwright 검증: 삭제 잔존0·고아함수 undefined·체크→save POST(checked:true)·에러0·스크린샷."
+    },
+    {
+      "task_id": "COO-2026-06-01-APPROVAL-TOOLBAR-UNIFY",
+      "title": "결재 현황 SSOT 툴바 업무현황 정렬식 통일",
+      "assigned_at": "2026-06-01",
+      "status": "DONE",
+      "result": "툴바를 본문(720px)→sticky-top 풀폭으로 이동, filter-row(nowrap 가로스크롤) 구조로 교체. '차례:'/'카테고리:' 라벨 제거, 결재자 줄을 담당자 버튼 정렬식으로 통일, 상태탭 1줄 좌측 유지(GM Q1). 기능 전부 보존(상태/결재자/카테고리/정렬/검색). 로컬+라이브 Playwright 검증(에러0·상태탭4·담당자6·카테고리4·버튼4·카드10·sticky·라벨0). commit 6a86db4 push 8f30448."
     }
   ],
   "agent": "coo",
