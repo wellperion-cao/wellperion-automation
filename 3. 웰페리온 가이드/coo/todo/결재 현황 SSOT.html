@@ -648,17 +648,16 @@ function routeApproval(category, amount) {
 }
 
 function buildEffectiveRoute(t, budget) {
-  // 수동 결재요청 + 예산 자동 산출 합집합
+  // 결재 필요 여부 = 수동 결재요청 또는 예산 자동 산출
   const manual = String(t.approval || '').split(',').map(s => s.trim()).filter(Boolean);
   const auto = budget ? routeApproval(budget.category, budget.amount) : [];
-  const set = {};
-  manual.concat(auto).forEach(a => { set[a] = true; });
-  // 본인 결재 중복 방지 — 담당자가 김남욱GM이면 GM 결재 단계 생략(대표님은 유지) (2026-05-30 GM 지시)
-  if (String(t.owner || '').split(',').map(s => s.trim()).indexOf('김남욱GM') >= 0) {
-    delete set['GM'];
-  }
-  // 부서장 결재 폐지 — GM·대표님만 (2026-06-01 GM)
-  return ['GM', '대표님'].filter(r => set[r]);
+  if (manual.length === 0 && auto.length === 0) return [];
+  // 결재 필요 → GM 승인 → 대표님 최종(항상). 담당자가 김남욱GM이면 GM 단계 생략 → 대표님만 (2026-06-01 GM)
+  const ownerIsGM = String(t.owner || '').split(',').map(s => s.trim()).indexOf('김남욱GM') >= 0;
+  const route = [];
+  if (!ownerIsGM) route.push('GM');
+  route.push('대표님');
+  return route;
 }
 
 function nextApprover(t, route) {
