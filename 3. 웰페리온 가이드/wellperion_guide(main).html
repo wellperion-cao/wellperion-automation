@@ -3684,12 +3684,12 @@ Start-Process python -ArgumentList telegram_bot\daily_scheduler.py -WorkingDirec
         var list=document.getElementById('cmopub-review-list');if(!list)return;
         var d=dec();var cnt=document.getElementById('cmopub-review-count');
         var waiting=[],done=[];
-        items.forEach(function(it){var e=(d[it.id]&&d[it.id].decision)||it.status;(isDone(e)?done:waiting).push(it);});
+        items.forEach(function(it){var e=(it.status==='발행완료'||it.status==='발행실패')?it.status:((d[it.id]&&d[it.id].decision)||it.status);(isDone(e)?done:waiting).push(it);});
         if(cnt)cnt.textContent='· 대기 '+waiting.length+'건 / 처리완료 '+done.length+'건';
         list.innerHTML='';
         if(!waiting.length){list.innerHTML='<div style="color:var(--dim);font-size:13px;padding:8px 0;">검수 대기 없음 — 새 콘텐츠가 준비되면 여기에 표시됩니다.</div>';}
         waiting.forEach(function(it){
-          var e=(d[it.id]&&d[it.id].decision)||it.status;var c=document.createElement('div');
+          var e=(it.status==='발행완료'||it.status==='발행실패')?it.status:((d[it.id]&&d[it.id].decision)||it.status);var c=document.createElement('div');
           c.style.cssText='border:1px solid rgba(183,159,138,0.2);border-radius:12px;padding:14px;background:var(--paper);margin-bottom:10px;';
           var h='<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px;"><strong style="font-size:13.5px;">'+esc(it.title)+'</strong>'+badgeOf(e)+'</div>';
           if(it.channel)h+='<div style="font-size:12px;color:var(--dim);margin-bottom:8px;">채널: '+esc(it.channel)+'</div>';
@@ -3703,7 +3703,7 @@ Start-Process python -ArgumentList telegram_bot\daily_scheduler.py -WorkingDirec
           det.style.cssText='margin-top:6px;border:1px solid rgba(183,159,138,0.18);border-radius:10px;padding:10px 12px;background:var(--paper);';
           var inner='<summary style="cursor:pointer;font-size:13px;color:var(--dim);font-weight:600;">처리완료 '+done.length+'건 (펼쳐 보기)</summary><div style="padding-top:10px;display:flex;flex-direction:column;gap:10px;">';
           done.forEach(function(it){
-            var e=(d[it.id]&&d[it.id].decision)||it.status;
+            var e=(it.status==='발행완료'||it.status==='발행실패')?it.status:((d[it.id]&&d[it.id].decision)||it.status);
             inner+='<div style="border-top:1px solid rgba(183,159,138,0.12);padding-top:8px;font-size:12.5px;"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px;"><strong>'+esc(it.title)+'</strong>'+badgeOf(e)+'</div>';
             if(it.post_url)inner+='<div style="margin-top:4px;"><a href="'+esc(it.post_url)+'" target="_blank" style="color:var(--accent);font-size:12px;">게시물 보기 ↗</a></div>';
             inner+='<details style="margin-top:4px;"><summary style="cursor:pointer;font-size:11.5px;color:var(--dim);">캡션·미리보기 보기</summary>'+(it.preview?'<img src="'+esc(it.preview)+'" style="width:100%;border-radius:6px;margin-top:6px;" loading="lazy">':'')+(it.caption?'<div style="font-size:12px;color:var(--text-soft);white-space:pre-wrap;line-height:1.6;padding-top:6px;">'+esc(it.caption)+'</div>':'')+'</details></div>';
