@@ -124,6 +124,10 @@ html,body{background:var(--bg);color:var(--text);font-family:"Pretendard","Apple
 .approval-steps .step.reject .step-dot,.approval-steps .step.reject .step-label{color:var(--red);font-weight:700}
 .approval-steps .conn{height:2px;width:24px;background:var(--border);margin-top:7px;border-radius:1px}
 .approval-steps .conn.done{background:var(--green)}
+/* [결재] 공유 링크 버튼 / 딥링크 하이라이트 */
+.card-link-btn{background:none;border:none;cursor:pointer;font-size:12px;opacity:0.4;padding:0 2px;line-height:1;transition:opacity 0.15s;flex-shrink:0}
+.card-link-btn:hover{opacity:1}
+.deeplink-highlight{box-shadow:0 0 0 2px var(--accent),0 0 14px rgba(183,159,138,0.55)!important;transition:box-shadow 0.3s}
 /* [결재-3] 대시보드 패널 — 업무 현황 SSOT와 동일 토큰 재사용 */
 .dash-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:200;align-items:flex-start;justify-content:center;padding:20px;overflow-y:auto;}
 .dash-overlay.show{display:flex;}
@@ -281,7 +285,9 @@ async function loadTasks() {
     const res = await r.json();
     if (res.ok) {
       ALL_TASKS = (res.data || []).map(normalizeTask);
+      applyUrlParams();
       render();
+      handleDeepLink();
     } else {
       el.innerHTML = '<div class="empty-msg"><span class="ico">⚠️</span>데이터 로드 실패<br><span style="font-size:12px;color:var(--dim);">' + esc(res.error || '') + '</span></div>';
     }
@@ -370,6 +376,7 @@ function render() {
   stHtml += '</select>';
   stHtml += '<button class="share-btn" onclick="openApprovalDashboard()" style="background:var(--purple-bg);color:var(--purple);border-color:rgba(167,139,218,0.3);">결재 현황 대시보드</button>';
   stHtml += '<button class="share-btn" onclick="window.print()" style="background:var(--accent-bg);color:var(--accent);border-color:rgba(183,159,138,0.3);">인쇄</button>';
+  stHtml += '<button class="share-btn" onclick="copyShareLink()" style="background:var(--green-bg);color:var(--green);border-color:rgba(106,191,123,0.3);">🔗 링크</button>';
   stHtml += '<button class="share-btn" onclick="shareReport()" style="background:var(--purple-bg);color:var(--purple);border-color:rgba(167,139,218,0.3);">보고용</button>';
   stHtml += '<button class="share-btn" onclick="shareList()">공유용</button>';
   stHtml += '</div>';
@@ -500,6 +507,55 @@ function setRoleFilter(r) { activeRoleFilter = r; render(); }
 function setCatFilter(c) { activeCatFilter = c; render(); }
 function setSearch(q) { searchQuery = q; render(); }
 function setSort(s) { activeSortBy = s; render(); }
+
+/* ─── 공유 링크 / 딥링크 (2026-06-01 GM) ─── */
+let _deepLinkId = null;
+function applyUrlParams() {
+  try {
+    const p = new URL(location.href).searchParams;
+    const item = p.get('item');
+    if (item) { _deepLinkId = item; activeFilter = '전체'; activeRoleFilter = '전체'; activeCatFilter = '전체'; searchQuery = ''; return; }
+    if (p.get('f')) activeFilter = p.get('f');
+    if (p.get('role')) activeRoleFilter = p.get('role');
+    if (p.get('cat')) activeCatFilter = p.get('cat');
+    if (p.get('sort')) activeSortBy = p.get('sort');
+    if (p.get('q')) searchQuery = p.get('q');
+  } catch (e) {}
+}
+function buildShareUrl() {
+  const u = new URL(location.origin + location.pathname);
+  if (activeFilter && activeFilter !== '전체') u.searchParams.set('f', activeFilter);
+  if (activeRoleFilter && activeRoleFilter !== '전체') u.searchParams.set('role', activeRoleFilter);
+  if (activeCatFilter && activeCatFilter !== '전체') u.searchParams.set('cat', activeCatFilter);
+  if (activeSortBy && activeSortBy !== '최신순') u.searchParams.set('sort', activeSortBy);
+  if (searchQuery && searchQuery.trim()) u.searchParams.set('q', searchQuery.trim());
+  return u.toString();
+}
+function copyToClipboard(text, okMsg) {
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(function(){ alert(okMsg); }, function(){ prompt('아래 링크를 복사하세요:', text); });
+  } else { prompt('아래 링크를 복사하세요:', text); }
+}
+function copyShareLink() { copyToClipboard(buildShareUrl(), '🔗 현재 화면 링크가 복사되었습니다.\n받는 분이 열면 같은 필터 화면이 그대로 뜹니다.'); }
+function copyItemLink(id) {
+  const u = new URL(location.origin + location.pathname);
+  u.searchParams.set('item', id);
+  copyToClipboard(u.toString(), '🔗 이 건으로 바로 가는 링크가 복사되었습니다.');
+}
+function handleDeepLink() {
+  if (!_deepLinkId) return;
+  const id = _deepLinkId; _deepLinkId = null;
+  setTimeout(function() {
+    let card = null;
+    document.querySelectorAll('.approval-card').forEach(function(c){ if (c.getAttribute('data-id') === id) card = c; });
+    if (!card) return;
+    card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    card.classList.add('deeplink-highlight');
+    const tg = card.querySelector('.detail-toggle');
+    if (tg && !tg.classList.contains('open')) toggleDetail(tg);
+    setTimeout(function(){ card.classList.remove('deeplink-highlight'); }, 3500);
+  }, 250);
+}
 
 function shareReport() {
   const list = ALL_TASKS.filter(t => (t.approvalStatus && String(t.approvalStatus).trim()) || (t.approval && String(t.approval).trim()));
@@ -667,8 +723,9 @@ function renderApprovalCard(t, idx) {
   // 둘째 줄: 결재 대기 배지
   h += '<div class="approval-badge-line"><span class="' + chipCls + '">' + esc(chipText) + '</span></div>';
   h += '</div>';
-  // 우측: 담당자 칩만
+  // 우측: 담당자 칩 + 이 건 링크
   h += '<div class="card-meta-chips">';
+  h += '<button class="card-link-btn" title="이 건 링크 복사" onclick="event.stopPropagation();copyItemLink(\'' + escAttr(t.id) + '\')">🔗</button>';
   if (t.owner) {
     t.owner.split(',').forEach(o => { o = o.trim(); if (o) h += '<span class="chip owner" style="font-size:10px;">' + esc(o) + '</span>'; });
   }
