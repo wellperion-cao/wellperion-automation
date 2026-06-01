@@ -1,8 +1,8 @@
 {
   "clevel": "coo",
   "status": "ASSIGNED",
-  "last_task_id": "COO-2026-06-01-PRINT-AUDIT-FIX",
-  "last_commit_sha": "f8b84a9",
+  "last_task_id": "COO-2026-06-01-SSOT-IMPROVE-BATCH",
+  "last_commit_sha": "d842d9d",
   "last_pushed_at": "2026-06-01T15:20:00",
   "active_tasks": [
     {
@@ -51,6 +51,13 @@
       "assigned_at": "2026-06-01",
       "status": "DONE",
       "result": "전수 점검(인쇄/다운로드/대시보드/필터/콘솔). 발견·수정: ①업무현황 목록·대시보드 인쇄가 다크 카드 그대로 출력(@media print 변수 미재정의) → 라이트 :root 팔레트 추가 ②업무현황 인쇄 제목 헤더 표시(결재현황과 통일) ③결재현황 대시보드 인쇄 다크 패널 → 변수 재정의+.dash-panel 흰색 ④결재현황 네비링크 인쇄 잔존(선택자 오타 .sheet-links) → .header-right/.sheet-link 정정. 라이브 Playwright 검증(양 페이지 목록+대시보드: 배경 rgb(255,255,255)·네비숨김·콘솔0). commit eec24bb push f8b84a9. 다운로드=브라우저 인쇄→PDF저장 정상(별도 다운로드 버튼 없음=추천사항)."
+    },
+    {
+      "task_id": "COO-2026-06-01-SSOT-IMPROVE-BATCH",
+      "title": "두 SSOT 연속 점검·보완 — 검색/보고서/완료반려토글/결재진행바",
+      "assigned_at": "2026-06-01",
+      "status": "DONE",
+      "result": "GM 배치 요청 일괄 처리. ①양 페이지 검색 노이즈 제거: t.content 원본(마커 ===RESULT===등) 매칭 버그 → parseContent 깨끗한 필드만 검색(commit 3c9a073, 마커검색 0건/실단어 정상). ②업무현황 인쇄 보고서 '결과보고서'→'업무 보고서' + 버튼 '🖨 보고서' + 기간 ISO→날짜만(4103d0b). ③결재현황 전체보기 결재완료·반려 접이식 분류(ebe984e). ④결재현황 카드 결재 진행바 부서장→GM→대표 ●─●─○ 시각화(d842d9d). 제목옆 카테고리는 기존 존재 확인. 전부 로컬+라이브 Playwright 검증·콘솔0. 잔여: 공유링크 기능 deep-interview 파킹(딥링크=전체보기후 스크롤+하이라이트+상세펼침까지 확정)."
     }
   ],
   "agent": "coo",
