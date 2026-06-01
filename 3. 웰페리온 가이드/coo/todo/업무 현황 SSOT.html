@@ -922,9 +922,9 @@ function renderTaskCard(t, idx) {
   html += '<button class="action-btn done" onclick="event.stopPropagation();markDone(\'' + escAttr(t.id) + '\')" style="padding:4px 10px;font-size:11px;">완료</button>';
   html += '<button class="action-btn" onclick="event.stopPropagation();holdTask(\'' + escAttr(t.id) + '\')" style="padding:4px 10px;font-size:11px;background:var(--orange-bg);color:var(--orange);border-color:rgba(230,148,78,0.3);">보류</button>';
   if (_hasResult) {
-    html += '<button class="action-btn" onclick="event.stopPropagation();printResultReport(\'' + escAttr(t.id) + '\')" style="padding:4px 10px;font-size:11px;background:var(--purple-bg);color:var(--purple);border-color:rgba(167,139,218,0.3);">🖨 결과보고</button>';
+    html += '<button class="action-btn" onclick="event.stopPropagation();printResultReport(\'' + escAttr(t.id) + '\')" style="padding:4px 10px;font-size:11px;background:var(--purple-bg);color:var(--purple);border-color:rgba(167,139,218,0.3);">🖨 보고서</button>';
   } else {
-    html += '<button class="action-btn" disabled title="결과보고를 먼저 작성하세요" style="padding:4px 10px;font-size:11px;background:transparent;color:var(--dim);border-color:var(--border);opacity:0.45;cursor:not-allowed;">🖨 결과보고</button>';
+    html += '<button class="action-btn" disabled title="결과보고를 먼저 작성하세요" style="padding:4px 10px;font-size:11px;background:transparent;color:var(--dim);border-color:var(--border);opacity:0.45;cursor:not-allowed;">🖨 보고서</button>';
   }
   html += '<button class="action-btn" onclick="event.stopPropagation();deleteTaskWithAuth(\'' + escAttr(t.id) + '\',\'' + escAttr(t.title || '') + '\')" style="padding:4px 10px;font-size:11px;background:transparent;color:var(--dim);border-color:var(--border);">삭제</button>';
   html += '</div>'; // task-actions
@@ -2090,7 +2090,7 @@ function printResultReport(taskId) {
 
   /* ── 정보표 ── */
   var period = (t.startDate || t.endDate)
-    ? esc((t.startDate || '') + (t.endDate ? ' ~ ' + t.endDate : ''))
+    ? esc(String(t.startDate || '').slice(0,10) + (t.endDate ? ' ~ ' + String(t.endDate).slice(0,10) : ''))
     : '-';
   var infoRows = [
     ['업무명', esc(t.title || '-')],
@@ -2163,7 +2163,7 @@ function printResultReport(taskId) {
     +   '<div class="rr-wordmark">WELLPERION</div>'
     +   (approvalHtml ? '<div>' + approvalHtml + '</div>' : '')
     + '</div>'
-    + '<div class="rr-doc-title">결 과 보 고 서</div>'
+    + '<div class="rr-doc-title">업 무 보 고 서</div>'
     + infoHtml
     + bodyHtml
     + resultHtml
