@@ -1,20 +1,18 @@
 # pre_task_notifier.py
-# 업무자동화 DB 보류 레코드 H-15분 사전 알림 — AI CTO v1.1
+# 정기 자동화 루틴 H-15분 사전 알림 — AI CTO v2.0
 # 2026-04-21 / 2026-05-22 보류 옵션 폐기, 보류 단일 휴면 상태로 통합
 #
-# [2026-05-31 CTO 이관 보류 — Notion 소스 유지 + TODO]
+# [2026-06-01 CTO 이관 완료 — status/schedule.json 소스 전환, 노션 의존 0]
 #   본 알림기는 '실행 시간'(예: '매주 월요일 08:00') 필드 기준 H-15분 알람이 핵심.
-#   그러나 새 GitHub status/* 시스템에는 실행시간(알람) 필드가 없어(=시간기반 자동
-#   기동 메커니즘 부재) 단순 이관 불가. 참조: status/cto.json 의 ON_HOLD 태스크
-#   CTO-2026-05-29-AUTOMATION-DB-MIGRATE ("새 GitHub 시스템에 '실행시간 기반 자동
-#   기동(알람)' 기능이 없어 단순 이관 불가 — 알람 기능 설계 결정 후 재개").
-#   → 알람 스키마 설계 결정 전까지 노션 업무자동화 DB(AUTOMATION_DB_ID) 소스 유지.
-#   TODO(CTO): status/*.json 에 exec_schedule(실행시간) 필드 도입 후 fetch_scheduled_records()
-#   를 status 파서로 교체. 폴백·중복방지(state.json pre_task_notified) 로직은 재사용 가능.
+#   데이터 소스를 레포 status/schedule.json (실행시간 SSOT)으로 전환했다.
+#   schedule.json 스키마: sid(기존 page_id 보존) / name / exec_time(원문) / clevel.
+#   sid는 state.json pre_task_notified 중복방지 키와 호환 유지(재발송 방지).
+#   AUTOMATION-DB-MIGRATE 대체설계 1단계. 폴백·중복방지·파싱 로직은 그대로 재사용.
 
 import sys
 import os
 import re
+import json
 import logging
 from datetime import datetime, timezone, timedelta
 
@@ -23,14 +21,16 @@ sys.stdout.reconfigure(encoding='utf-8', errors='replace')
 from dotenv import load_dotenv
 load_dotenv(os.path.join(os.path.dirname(__file__), '.env'))
 
-import requests
+import requests  # send_telegram 발송용
 
 # ── 환경 변수 ──────────────────────────────────────────────────────────────────
-NOTION_TOKEN   = os.getenv('NOTION_TOKEN') or os.getenv('NOTION_API_KEY')
 TELEGRAM_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN')
 OWNER_ID       = os.getenv('OWNER_ID')
 
-AUTOMATION_DB_ID = os.getenv('NOTION_AUTOMATION_DB_ID', 'aac275a4-fd54-4d97-8971-4f7050de4f6e')
+# 실행시간 SSOT — 레포 status/schedule.json
+SCHEDULE_FILE = os.path.normpath(
+    os.path.join(os.path.dirname(__file__), '..', 'status', 'schedule.json')
+)
 
 KST = timezone(timedelta(hours=9))
 
@@ -51,13 +51,6 @@ logging.basicConfig(
     ]
 )
 logger = logging.getLogger(__name__)
-
-# ── Notion API 헬퍼 ───────────────────────────────────────────────────────────
-NOTION_HEADERS = {
-    'Authorization': f'Bearer {NOTION_TOKEN}',
-    'Notion-Version': '2022-06-28',
-    'Content-Type': 'application/json',
-}
 
 WEEKDAY_KO_MAP = {
     '월요일': 1, '화요일': 2, '수요일': 3,
@@ -119,41 +112,27 @@ def is_h15_window(exec_text: str, now: datetime) -> bool:
 
 
 def fetch_scheduled_records() -> list[dict]:
-    """업무자동화 DB 상태=보류 레코드 전체 조회"""
-    resp = requests.post(
-        f'https://api.notion.com/v1/databases/{AUTOMATION_DB_ID}/query',
-        headers=NOTION_HEADERS,
-        json={
-            'filter': {
-                'property': '상태',
-                'select': {'equals': '보류'}
-            },
-            'page_size': 50,
-        },
-        timeout=15
-    )
-    if resp.status_code != 200:
-        logger.error(f'업무자동화 DB 쿼리 실패: {resp.status_code}')
+    """status/schedule.json (실행시간 SSOT) 정기 루틴 레코드 전체 조회.
+
+    반환 형식은 기존과 동일: list[dict] (키: id=sid, name, exec_time, clevel).
+    파일이 없으면 [] 반환 + 경고 로그.
+    """
+    if not os.path.exists(SCHEDULE_FILE):
+        logger.warning(f'schedule.json 없음: {SCHEDULE_FILE}')
+        return []
+    try:
+        with open(SCHEDULE_FILE, encoding='utf-8') as f:
+            data = json.load(f)
+    except Exception as e:
+        logger.error(f'schedule.json 로드 실패: {e}')
         return []
     results = []
-    for r in resp.json().get('results', []):
-        props = r.get('properties', {})
-        def pt(key):
-            p = props.get(key, {})
-            t = p.get('type', '')
-            if t == 'title':
-                return ''.join(x['plain_text'] for x in p.get('title', []))
-            elif t == 'rich_text':
-                return ''.join(x['plain_text'] for x in p.get('rich_text', []))
-            elif t == 'select':
-                s = p.get('select')
-                return s['name'] if s else ''
-            return ''
+    for r in data:
         results.append({
-            'id': r['id'],
-            'name': pt('업무명') or pt('Name') or pt('이름'),
-            'exec_time': pt('실행 시간'),
-            'clevel': pt('담당 C-Level') or pt('담당'),
+            'id': r.get('sid', ''),
+            'name': r.get('name', ''),
+            'exec_time': r.get('exec_time', ''),
+            'clevel': r.get('clevel', ''),
         })
     return results
 
