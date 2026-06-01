@@ -783,13 +783,13 @@ async def run_publish(
             spec = posts[slot]
             print(f"\n[INFO] ── post {slot} 발행 시작 ── images={len(spec.image_paths)} / collab={len(spec.collaborators)}")
             try:
-                url = await _publish_single_post(page, spec, content_folder, location=location, mentions=mentions)
+                url = await _publish_single_post(page, spec, content_folder, location=location, mentions=mentions, account=account)
             except Exception as e:
                 print(f"[ERROR] post {slot} 발행 예외: {e}")
                 # 자동 재시도 1회 (지시 v1.0)
                 print(f"[INFO] post {slot} 자동 재시도 1회 시작")
                 try:
-                    url = await _publish_single_post(page, spec, content_folder, location=location, mentions=mentions)
+                    url = await _publish_single_post(page, spec, content_folder, location=location, mentions=mentions, account=account)
                 except Exception as e2:
                     print(f"[ERROR] post {slot} 재시도 실패: {e2}")
                     telegram_report(
@@ -839,6 +839,7 @@ async def _publish_single_post(
     content_folder: Path,
     location: str = "",
     mentions: list[str] | None = None,
+    account: str = DEFAULT_ACCOUNT,
 ) -> str | None:
     """단일 post 발행. 게시 URL 반환 (실패 시 None)."""
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -959,12 +960,25 @@ async def _publish_single_post(
         await page.screenshot(path=str(evidence_prefix.with_suffix(".error_share.png")))
         raise RuntimeError("공유하기 버튼 클릭 실패")
 
-    # 게시 완료 대기 + URL 회수
-    await page.wait_for_timeout(8000)
+    # 게시 완료 대기 — "공유하기" 버튼이 사라지고 완료 다이얼로그가 뜰 때까지 최대 30초 폴링
+    share_done = False
+    for _ in range(30):
+        await page.wait_for_timeout(1000)
+        # 완료 신호 1: "게시물이 공유되었습니다" 또는 "회원님의 게시물이 공유" 문구
+        done1 = await page.locator(':text("게시물이 공유되었습니다")').count()
+        done2 = await page.locator(':text("회원님의 게시물이 공유")').count()
+        # 완료 신호 2: 공유하기 버튼이 더 이상 없음 (dialog 닫힘)
+        share_still = await page.locator('div[role="button"]:text-is("공유하기")').count()
+        if done1 > 0 or done2 > 0 or share_still == 0:
+            share_done = True
+            print("[INFO]   게시 완료 신호 감지")
+            break
+    if not share_done:
+        print("[WARN]   게시 완료 신호 미감지 — 30초 경과 후 URL 회수 시도")
     await page.screenshot(path=str(evidence_prefix.with_suffix(".post_share.png")))
 
-    # 프로필 이동 후 최신 게시물 URL 회수 (가장 안정적인 경로)
-    return await _capture_latest_post_url(page)
+    # 프로필 이동 후 최신 게시물 URL 회수 (발행 계정 기준)
+    return await _capture_latest_post_url(page, account=account)
 
 
 async def _add_location(page, location: str, evidence_prefix: Path) -> None:
@@ -1083,22 +1097,23 @@ async def _add_collaborators(page, handles: list[str]) -> int:
     return added
 
 
-async def _capture_latest_post_url(page) -> str | None:
+async def _capture_latest_post_url(page, account: str = DEFAULT_ACCOUNT) -> str | None:
+    """게시 완료 후 해당 계정의 최신 게시물 URL 회수.
+
+    계정별 프로필 URL로 직접 이동 후 첫 /p/ 링크를 추출.
+    namuk.wellperion 하드코딩 제거 — account 파라미터 기준으로 이동.
+    """
     try:
-        # 인스타 본인 프로필로 이동 (페이지 자체 URL은 /username/)
-        await page.goto("https://www.instagram.com/", wait_until="domcontentloaded", timeout=15_000)
-        await page.wait_for_timeout(2000)
-        # 프로필 아바타 → 내 프로필 진입
-        for sel in ['a[href*="/namuk.wellperion/"]', 'img[alt*="프로필"]', 'img[data-testid="user-avatar"]']:
-            loc = page.locator(sel).first
-            if await loc.count() > 0:
-                try:
-                    await loc.click(timeout=4000)
-                    break
-                except Exception:
-                    continue
-        await page.wait_for_timeout(2500)
-        # 첫 게시물 링크 추출
+        # 계정 프로필 URL로 직접 이동 (아바타 클릭 없음 — 하드코딩 계정 오이동 방지)
+        profile_url = f"https://www.instagram.com/{account}/"
+        print(f"[INFO]   프로필 이동 중: {profile_url}")
+        await page.goto(profile_url, wait_until="domcontentloaded", timeout=20_000)
+        # 피드 그리드 로딩 대기 (최대 10초 폴링)
+        for _ in range(10):
+            await page.wait_for_timeout(1000)
+            if await page.locator('a[href*="/p/"]').count() > 0:
+                break
+        # 첫 게시물 링크 추출 (가장 최신 — 그리드 좌상단)
         first_post = page.locator('a[href*="/p/"]').first
         if await first_post.count() > 0:
             href = await first_post.get_attribute("href")
@@ -1108,6 +1123,7 @@ async def _capture_latest_post_url(page) -> str | None:
                 if m:
                     return f"https://www.instagram.com/p/{m.group(1)}/"
                 return full
+        print("[WARN]   프로필 그리드에서 /p/ 링크 미발견")
         return None
     except Exception as e:
         print(f"[WARN]   게시 URL 회수 예외: {e}")
