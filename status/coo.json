@@ -1,8 +1,8 @@
 {
   "clevel": "coo",
   "status": "ASSIGNED",
-  "last_task_id": "COO-2026-06-01-APPROVAL-TOOLBAR-UNIFY",
-  "last_commit_sha": "8f30448",
+  "last_task_id": "COO-2026-06-01-PRINT-AUDIT-FIX",
+  "last_commit_sha": "f8b84a9",
   "last_pushed_at": "2026-06-01T15:20:00",
   "active_tasks": [
     {
@@ -44,6 +44,13 @@
       "assigned_at": "2026-06-01",
       "status": "DONE",
       "result": "툴바를 본문(720px)→sticky-top 풀폭으로 이동, filter-row(nowrap 가로스크롤) 구조로 교체. '차례:'/'카테고리:' 라벨 제거, 결재자 줄을 담당자 버튼 정렬식으로 통일, 상태탭 1줄 좌측 유지(GM Q1). 기능 전부 보존(상태/결재자/카테고리/정렬/검색). 로컬+라이브 Playwright 검증(에러0·상태탭4·담당자6·카테고리4·버튼4·카드10·sticky·라벨0). commit 6a86db4 push 8f30448."
+    },
+    {
+      "task_id": "COO-2026-06-01-PRINT-AUDIT-FIX",
+      "title": "업무·결재 SSOT 인쇄/다운로드 전체 점검 + 인쇄 품질 버그 일괄 수정",
+      "assigned_at": "2026-06-01",
+      "status": "DONE",
+      "result": "전수 점검(인쇄/다운로드/대시보드/필터/콘솔). 발견·수정: ①업무현황 목록·대시보드 인쇄가 다크 카드 그대로 출력(@media print 변수 미재정의) → 라이트 :root 팔레트 추가 ②업무현황 인쇄 제목 헤더 표시(결재현황과 통일) ③결재현황 대시보드 인쇄 다크 패널 → 변수 재정의+.dash-panel 흰색 ④결재현황 네비링크 인쇄 잔존(선택자 오타 .sheet-links) → .header-right/.sheet-link 정정. 라이브 Playwright 검증(양 페이지 목록+대시보드: 배경 rgb(255,255,255)·네비숨김·콘솔0). commit eec24bb push f8b84a9. 다운로드=브라우저 인쇄→PDF저장 정상(별도 다운로드 버튼 없음=추천사항)."
     }
   ],
   "agent": "coo",
