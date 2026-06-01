@@ -100,9 +100,10 @@
     {
       "task_id": "CTO-2026-06-01-TRIGGER-WATCHER-CLEANUP",
       "title": "트리거·감시기 정리",
-      "status": "IN_PROGRESS",
-      "note": "폐기4 스크립트+죽은pyc5+기능복구2(pc_shutdown·education)+가이드허브 g19 반영 완료. 2026-06-01 후속: 유물 예약작업 4개(AutoTask-Watcher-Start/Stop·CEO-Morning-Brief-0800·PC-Shutdown-Greeting) 액션경로 실측=전부 폐기된 notion-c-level-agents/ 죽은경로 확인 후 unregister_stale_tasks.bat UAC 실행 삭제. 실측 ALL_DELETED, 생존9개 정상(-Live·신경로). 잔여=weekly 중복(AI-Education-Weekly vs Education-Archive-Weekly) 진단·권고만 미착수.",
-      "updated_at": "2026-06-01T19:30:00",
+      "status": "DONE",
+      "completed_at": "2026-06-01T18:05:00",
+      "note": "폐기4 스크립트+죽은pyc5+기능복구2(pc_shutdown·education)+가이드허브 g19 반영. 유물 예약작업 4개(AutoTask-Watcher-Start/Stop·CEO-Morning-Brief-0800·PC-Shutdown-Greeting) 액션경로 실측=폐기된 notion-c-level-agents/ 죽은경로 확인 후 UAC로 삭제, ALL_DELETED 검증(13→9개). weekly 2개 진단: AI-Education-Weekly(수집,월0930) vs Education-Archive-Weekly(아카이브정리,월0900)=기능 별개라 중복 아님·둘 다 유지. Archive 작업 결과=2 실패는 오늘 0900 실행시 스크립트 복원 전 잔재였고, 복원본으로 수동·스케줄러 재실행 양쪽 결과=0 실측 검증·밀린 2건 이관 완료. 스레드 종료.",
+      "updated_at": "2026-06-01T18:05:00",
       "blocks": []
     }
   ],
