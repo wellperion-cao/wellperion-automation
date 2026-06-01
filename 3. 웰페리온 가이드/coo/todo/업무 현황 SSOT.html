@@ -1044,7 +1044,7 @@ function renderTaskCard(t, idx) {
     recent.forEach(log => {
       html += '<div style="display:flex;gap:8px;align-items:flex-start;padding:6px 10px;border-left:3px solid var(--accent);background:var(--accent-bg);border-radius:6px;margin-bottom:4px;">';
       html += '<span style="font-size:12px;font-weight:700;color:var(--accent);min-width:88px;flex-shrink:0;">' + esc(log.date) + '</span>';
-      html += '<span style="flex:1;font-size:13px;line-height:1.5;color:var(--text);word-break:break-word;">' + esc(log.text) + '</span>';
+      html += '<span style="flex:1;font-size:13px;line-height:1.5;color:var(--text);word-break:break-word;white-space:pre-wrap;">' + esc(log.text) + '</span>';
       html += '</div>';
     });
     if (parsed.logs.length > 5) {
@@ -1278,10 +1278,13 @@ function parseContent(content) {
 
   let logs = [];
   if (sections.progress) {
-    logs = sections.progress.split(/\r?\n/).map(line => {
+    // 연속 줄(날짜패턴 미일치)은 직전 로그 본문에 이어붙임 — 여러 줄·빈 줄 보존 (2026-06-01 GM 버그수정)
+    sections.progress.split(/\r?\n/).forEach(line => {
       const m = line.match(/^(\d{4}-\d{2}-\d{2})\s*\|\s*(.*)$/);
-      return m ? { date: m[1], text: m[2].trim() } : null;
-    }).filter(Boolean);
+      if (m) logs.push({ date: m[1], text: m[2] });
+      else if (logs.length) logs[logs.length - 1].text += '\n' + line;
+    });
+    logs.forEach(l => { l.text = l.text.replace(/\s+$/, ''); });
     logs.sort((a, b) => b.date.localeCompare(a.date));
   }
 
@@ -1333,7 +1336,7 @@ function renderProgressList() {
   modalLogsCache.forEach((log, i) => {
     h += '<div class="progress-row" style="display:flex;gap:8px;align-items:flex-start;padding:8px 10px;border-left:3px solid var(--accent);background:var(--accent-bg);border-radius:6px;margin-bottom:6px;">';
     h += '<span style="font-size:12px;font-weight:700;color:var(--accent);min-width:90px;flex-shrink:0;">' + esc(log.date) + '</span>';
-    h += '<span style="flex:1;font-size:13px;line-height:1.5;color:var(--text);word-break:break-word;">' + esc(log.text) + '</span>';
+    h += '<span style="flex:1;font-size:13px;line-height:1.5;color:var(--text);word-break:break-word;white-space:pre-wrap;">' + esc(log.text) + '</span>';
     h += '<button type="button" onclick="removeProgressLog(' + i + ')" style="font-size:11px;padding:2px 8px;border:1px solid var(--border);background:var(--paper);color:var(--dim);border-radius:6px;cursor:pointer;flex-shrink:0;">삭제</button>';
     h += '</div>';
   });
