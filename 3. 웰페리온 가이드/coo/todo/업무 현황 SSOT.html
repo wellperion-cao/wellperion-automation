@@ -144,9 +144,16 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 .done-log-header h3{font-size:15px;font-weight:700;margin:0;color:var(--green)}
 .done-log-body{border-top:1px solid var(--border);display:none}
 .done-log-body.open{display:block}
-.done-card{padding:12px 16px;border-bottom:1px solid rgba(61,56,53,0.3);opacity:0.7}
+.done-card{padding:12px 16px;border-bottom:1px solid rgba(61,56,53,0.3)}
 .done-card:last-child{border-bottom:none}
-.done-card .task-title{text-decoration:line-through;color:var(--dim)}
+.done-card .task-title{color:var(--text);font-weight:700}
+/* 완료/내용 토글 (선긋기 해제·내용 열람 — 2026-06-01 GM) */
+.detail-toggle{cursor:pointer;user-select:none;display:flex;align-items:center;gap:4px}
+.detail-toggle:hover{color:var(--accent)}
+.detail-toggle .arrow{display:inline-block;transition:transform 0.15s;font-size:10px}
+.detail-toggle.open .arrow{transform:rotate(90deg)}
+.detail-body{display:none}
+.detail-body.open{display:block}
 
 /* ── Toast ── */
 .toast{position:fixed;top:70px;right:20px;background:var(--green-bg);color:var(--green);padding:8px 16px;border-radius:8px;font-size:13px;font-weight:600;display:none;z-index:300;border:1px solid rgba(106,191,123,0.3)}
@@ -633,7 +640,7 @@ function handleDeepLink() {
     document.querySelectorAll('[data-id]').forEach(function(c){ if (c.getAttribute('data-id') === id && c.querySelector) card = c.classList.contains('task-card') || c.className.indexOf('card') >= 0 ? c : card; });
     if (!card) { document.querySelectorAll('[data-id]').forEach(function(c){ if (c.getAttribute('data-id') === id) card = c; }); }
     if (!card) return;
-    const body = card.closest('.cat-body');
+    const body = card.closest('.cat-body, .done-log-body');
     if (body && !body.classList.contains('open')) {
       body.classList.add('open');
       const head = body.previousElementSibling;
@@ -1085,14 +1092,14 @@ async function deleteTaskWithAuth(id, title) {
 }
 
 function renderDoneCard(t) {
-  let html = '<div class="done-card">';
-  html += '<div class="task-title">' + esc(t.title) + '</div>';
+  const p = parseContent(t.content || '');
+  let html = '<div class="done-card" data-id="' + escAttr(t.id) + '">';
+  html += '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;">';
+  html += '<div style="flex:1;min-width:0;">';
+  html += '<div class="task-title">✅ ' + esc(t.title) + '</div>';
   html += '<div class="task-meta">';
   if (t.owner) {
-    t.owner.split(',').forEach(o => {
-      o = o.trim();
-      if (o) html += '<span class="chip owner">' + esc(o) + '</span>';
-    });
+    t.owner.split(',').forEach(o => { o = o.trim(); if (o) html += '<span class="chip owner">' + esc(o) + '</span>'; });
   }
   if (t.category) {
     const colors = CAT_COLORS[t.category] || { bg: 'var(--accent-bg)', color: 'var(--accent)' };
@@ -1101,10 +1108,31 @@ function renderDoneCard(t) {
   if (t.updatedAt) {
     html += '<span class="chip" style="background:var(--green-bg);color:var(--green)">완료: ' + esc(String(t.updatedAt).slice(0, 10)) + '</span>';
   }
-  html += '</div>';
+  html += '</div></div>';
+  // 액션: 링크 · 보고서 (완료건도 활용 가능 데이터)
+  html += '<div style="display:flex;gap:4px;flex-shrink:0;flex-wrap:wrap;">';
+  html += '<button class="action-btn" title="이 업무 링크 복사" onclick="event.stopPropagation();copyItemLink(\'' + escAttr(t.id) + '\')" style="padding:4px 8px;font-size:11px;">🔗</button>';
+  html += '<button class="action-btn" onclick="event.stopPropagation();printResultReport(\'' + escAttr(t.id) + '\')" style="padding:4px 8px;font-size:11px;background:var(--purple-bg);color:var(--purple);border-color:rgba(167,139,218,0.3);">🖨 보고서</button>';
+  html += '</div></div>';
+  // 내용 토글 — 본문·기획·진척·결과 열람
+  const hasDetail = p.body || p.plan || (p.logs && p.logs.length) || p.result;
+  if (hasDetail) {
+    const lbl = [p.body ? '본문' : null, p.plan ? '기획' : null, (p.logs && p.logs.length) ? '진척 ' + p.logs.length : null, p.result ? '결과' : null].filter(Boolean).join(' · ');
+    html += '<div class="detail-toggle" onclick="toggleDetail(this)" style="font-size:11px;color:var(--dim);margin-top:8px;padding-top:8px;border-top:1px dashed var(--border);"><span class="arrow">&#9654;</span> ' + lbl + '</div>';
+    html += '<div class="detail-body" style="margin-top:8px;">';
+    if (p.body) html += '<div style="font-size:13px;white-space:pre-wrap;line-height:1.55;color:var(--text);">' + esc(p.body) + '</div>';
+    if (p.plan) html += '<div style="margin-top:8px;padding:8px 10px;background:var(--blue-bg);border:1px solid rgba(91,159,213,0.3);border-radius:8px;"><div style="color:var(--blue);font-size:12px;font-weight:700;margin-bottom:3px;">📋 기획</div><div style="font-size:13px;white-space:pre-wrap;line-height:1.55;">' + esc(p.plan) + '</div></div>';
+    if (p.logs && p.logs.length) {
+      html += '<div style="margin-top:8px;font-size:12px;font-weight:700;color:var(--accent);">📅 진척 로그</div>';
+      p.logs.forEach(l => { html += '<div style="display:flex;gap:8px;align-items:flex-start;padding:6px 10px;border-left:3px solid var(--accent);background:var(--accent-bg);border-radius:6px;margin:6px 0;"><span style="font-size:12px;font-weight:700;color:var(--accent);min-width:88px;flex-shrink:0;">' + esc(l.date) + '</span><span style="flex:1;font-size:13px;line-height:1.45;white-space:pre-wrap;word-break:break-word;">' + esc(l.text) + '</span></div>'; });
+    }
+    if (p.result) html += '<div style="margin-top:8px;padding:8px 10px;background:var(--purple-bg);border:1px solid rgba(167,139,218,0.3);border-radius:8px;"><div style="color:var(--purple);font-size:12px;font-weight:700;margin-bottom:3px;">🎯 결과보고</div><div style="font-size:13px;white-space:pre-wrap;line-height:1.55;">' + esc(p.result) + '</div></div>';
+    html += '</div>';
+  }
   html += '</div>';
   return html;
 }
+function toggleDetail(el) { el.classList.toggle('open'); const b = el.nextElementSibling; if (b) b.classList.toggle('open'); }
 
 /* ═══════════════════════════════════════════
    Helpers
