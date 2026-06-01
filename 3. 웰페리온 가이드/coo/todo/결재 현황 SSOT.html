@@ -532,6 +532,8 @@ function buildShareUrl() {
   return u.toString();
 }
 function copyToClipboard(text, okMsg) {
+  // 모바일: 원탭 카톡/문자 공유(Web Share). 미지원(데스크톱 등): 클립보드 복사 폴백 (2026-06-01 GM)
+  if (navigator.share) { navigator.share({ title: document.title, url: text }).catch(function(){}); return; }
   if (navigator.clipboard && navigator.clipboard.writeText) {
     navigator.clipboard.writeText(text).then(function(){ alert(okMsg); }, function(){ prompt('아래 링크를 복사하세요:', text); });
   } else { prompt('아래 링크를 복사하세요:', text); }
@@ -545,6 +547,7 @@ function copyItemLink(id) {
 function handleDeepLink() {
   if (!_deepLinkId) return;
   const id = _deepLinkId; _deepLinkId = null;
+  try { const _u = new URL(location.href); _u.searchParams.delete('item'); history.replaceState(null, '', _u.pathname + (_u.search || '')); } catch (e) {}
   setTimeout(function() {
     let card = null;
     document.querySelectorAll('.approval-card').forEach(function(c){ if (c.getAttribute('data-id') === id) card = c; });
