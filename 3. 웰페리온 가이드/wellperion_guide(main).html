@@ -6431,10 +6431,11 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
                   category: '결재', description: '', isToday: true, startDate: sd, ssotAuto: true
                 });
               } else if (owner.indexOf('김남욱GM') >= 0 || /AI (CEO|CMO|CTO|COO|CFO|CPO|CHRO)/.test(owner) || /웰리|시모|시토|시우|시뽀|시포|시로/.test(owner)) {
-                // ★ G1 합류: GM 본인 + AI C레벨 전체 (2026-06-01 GM 최종 확정 v2)
-                //   시작일이 오늘(KST)인 항목만 — 과거 완료·진행건이 '오늘 완료'로 오염되던 버그 차단 (2026-05-30 #03 fix)
-                if (sd !== TD) return;
+                // ★ G1 합류: GM 본인 + AI C레벨 전체 (2026-06-01 GM 확정 v3)
+                //   시작일=오늘 OR 상태=진행중이면 합류 — 과거 시작이어도 진행중인 건 항상 표시
+                //   완료·보류는 제외 (오염 방지 유지)
                 var st = String(row['상태'] || '');
+                if (sd !== TD && st !== '진행중') return;
                 var status = (st === '완료') ? '완료' : (st === '보류') ? '보류' : '진행중';
                 items.push({
                   id: base, title: title, status: status,
