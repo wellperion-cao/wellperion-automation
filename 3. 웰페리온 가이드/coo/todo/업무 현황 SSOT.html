@@ -311,7 +311,8 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
     <input type="hidden" id="editId">
     <div class="field">
       <label>업무명 *</label>
-      <input type="text" id="fTitle" placeholder="업무명을 입력하세요">
+      <input type="text" id="fTitle" placeholder="업무명을 입력하세요 (기존 업무명 입력 시 불러오기 제안)" list="fTitleList" autocomplete="off" onchange="checkDuplicateTitle()">
+      <datalist id="fTitleList"></datalist>
     </div>
     <div class="field">
       <label>카테고리</label>
@@ -1488,6 +1489,7 @@ function openAddModal() {
   document.getElementById('modalTitle').textContent = '업무 추가';
   document.getElementById('editId').value = '';
   document.getElementById('fTitle').value = '';
+  populateTitleSuggest();
   document.getElementById('fCategory').value = '';
   clearCheckboxGroup('fOwnerGroup');
   document.getElementById('fStartDate').value = new Date().toISOString().slice(0, 10);
@@ -1541,6 +1543,29 @@ function openEditModal(id) {
 
 function closeModal() {
   document.getElementById('taskModal').classList.remove('show');
+}
+
+/* 업무명 중복 방지 — 자동완성 + 기존 업무명 입력 시 불러오기 제안 (2026-06-01 GM) */
+function populateTitleSuggest() {
+  const dl = document.getElementById('fTitleList');
+  if (!dl) return;
+  const seen = {}, opts = [];
+  ALL_TASKS.forEach(t => {
+    const ti = (t.title || '').trim();
+    if (ti && t.status !== '완료' && !seen[ti]) { seen[ti] = 1; opts.push(ti); }
+  });
+  dl.innerHTML = opts.map(ti => '<option value="' + escAttr(ti) + '"></option>').join('');
+}
+function checkDuplicateTitle() {
+  if (document.getElementById('editId').value) return; // 편집 모드면 무시
+  const v = (document.getElementById('fTitle').value || '').trim();
+  if (!v) return;
+  const match = ALL_TASKS.find(t => (t.title || '').trim() === v);
+  if (match) {
+    if (confirm('같은 업무명이 이미 있습니다:\n"' + v + '"\n\n그 업무를 불러와 이어서 편집할까요?\n(확인=기존 불러오기 / 취소=새 업무로 진행)')) {
+      openEditModal(match.id);
+    }
+  }
 }
 
 function clearCheckboxGroup(groupId) {
