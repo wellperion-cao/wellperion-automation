@@ -6641,33 +6641,51 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
       });
       html += '</div>';
 
-      // 진행중 카드
+      // 진행중 카드 (클릭 펼침 · 업무현황 SSOT 패턴 · 2026-06-01)
       active.forEach(function(t) {
-        if (t.ssotAuto) {
-          // SSOT 기원 항목 — 편집·일정 변경 허용 (Sheets 동기화 · 2026-06-01), 상태변경·삭제는 SSOT 단방향 유지
-          var ssotDateChip = '<span data-id="' + gm1Esc(t.id) + '" data-action="daterange" title="클릭하여 일정 변경" style="display:inline-block;background:rgba(91,159,213,0.13);color:#5b9fd5;font-size:10px;font-weight:600;padding:1px 7px;border-radius:4px;margin-left:6px;cursor:pointer;vertical-align:middle;">📅 ' + gm1Esc((t.startDate||'').slice(5) || '날짜없음') + (t.endDate ? '~' + gm1Esc(String(t.endDate).slice(5)) : '') + '</span>';
-          html += '<div class="task-card" data-id="' + gm1Esc(t.id) + '" style="opacity:0.96;">' +
-            '<div class="task-title" style="display:flex;align-items:center;justify-content:space-between;">' +
-            '<span><span style="display:inline-block;background:rgba(183,159,138,0.15);color:var(--accent);font-size:10.5px;font-weight:600;padding:2px 7px;border-radius:4px;margin-right:6px;">🟡 진행 중</span><span class="status-dot active"></span>' + gm1Esc(t.title) + catChip(t) + SSOT_BADGE + ssotDateChip + '</span>' +
-            '<div class="todo-actions"><button class="todo-act-btn today-act" data-id="' + gm1Esc(t.id) + '" data-action="edit">편집</button></div>' +
-            '</div></div>';
-          return;
-        }
-        // 날짜 chip (클릭 → 일정 변경) + 진척 로그 건수 chip (업무SSOT 이식)
-        var dateChip = '<span data-id="' + gm1Esc(t.id) + '" data-action="daterange" title="클릭하여 일정 변경" style="display:inline-block;background:rgba(91,159,213,0.13);color:#5b9fd5;font-size:10px;font-weight:600;padding:1px 7px;border-radius:4px;margin-left:6px;cursor:pointer;vertical-align:middle;">📅 ' + gm1Esc((t.startDate||'').slice(5) || '날짜없음') + (t.endDate ? '~' + gm1Esc(String(t.endDate).slice(5)) : '') + '</span>';
+        var isSsot = !!t.ssotAuto;
+        var dateChipStr = '<span data-id="' + gm1Esc(t.id) + '" data-action="daterange" title="클릭하여 일정 변경" onclick="event.stopPropagation()" style="display:inline-block;background:rgba(91,159,213,0.13);color:#5b9fd5;font-size:10px;font-weight:600;padding:1px 7px;border-radius:4px;margin-left:6px;cursor:pointer;vertical-align:middle;">📅 ' + gm1Esc((t.startDate||'').slice(5) || '날짜없음') + (t.endDate ? '~' + gm1Esc(String(t.endDate).slice(5)) : '') + '</span>';
         var logCount = Array.isArray(t.progressLog) ? t.progressLog.length : 0;
         var logChip = logCount ? '<span style="display:inline-block;background:rgba(126,87,194,0.13);color:#7e57c2;font-size:10px;font-weight:600;padding:1px 7px;border-radius:4px;margin-left:5px;vertical-align:middle;">📈 ' + logCount + '</span>' : '';
-        html += '<div class="task-card" data-id="' + gm1Esc(t.id) + '">' +
-          '<div class="task-title" style="display:flex;align-items:center;justify-content:space-between;">' +
-          '<span><span style="display:inline-block;background:rgba(183,159,138,0.15);color:var(--accent);font-size:10.5px;font-weight:600;padding:2px 7px;border-radius:4px;margin-right:6px;">🟡 진행 중</span><span class="status-dot active"></span>' + gm1Esc(t.title) + (t.time ? ' <span style="font-size:11px;color:var(--dim);">(' + gm1Esc(t.time.slice(0,5)) + ')</span>' : '') + dateChip + logChip + '</span>' +
-          '<div class="todo-actions">' +
-          '<button class="todo-act-btn today-act" data-id="' + gm1Esc(t.id) + '" data-action="edit">편집</button>' +
-          '<button class="todo-act-btn today-act" data-id="' + gm1Esc(t.id) + '" data-action="done">완료</button>' +
-          '<button class="todo-act-btn today-act" data-id="' + gm1Esc(t.id) + '" data-action="hold">보류</button>' +
-          '<button class="todo-act-btn today-act del" data-id="' + gm1Esc(t.id) + '" data-action="delete">삭제</button>' +
-          '</div></div>' +
-          (t.description ? '<div class="task-desc" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;" title="' + gm1Esc(t.description) + '">' + gm1Esc(t.description) + '</div>' : '') +
-          '</div>';
+        // 카드 래퍼
+        html += '<div class="task-card" data-id="' + gm1Esc(t.id) + '" style="' + (isSsot ? 'opacity:0.96;' : '') + '">';
+        // 제목줄 — 본문 클릭=펼침, 버튼=stopPropagation
+        html += '<div style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;" onclick="var card=this.closest(\'.task-card\');var d=card.querySelector(\'.gm1-detail\');var a=card.querySelector(\'.gm1-arrow\');if(!d)return;var open=d.style.display!==\'none\';d.style.display=open?\'none\':\'\';a.style.transform=open?\'\':\' rotate(90deg)\';">';
+        html += '<span style="display:flex;align-items:center;flex:1;min-width:0;overflow:hidden;">';
+        html += '<span class="gm1-arrow" style="font-size:9px;color:var(--dim);transition:transform 0.18s;flex-shrink:0;margin-right:5px;display:inline-block;">▶</span>';
+        html += '<span style="display:inline-block;background:rgba(183,159,138,0.15);color:var(--accent);font-size:10.5px;font-weight:600;padding:2px 7px;border-radius:4px;margin-right:6px;flex-shrink:0;">🟡 진행 중</span>';
+        html += '<span style="font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + gm1Esc(t.title) + (t.time ? ' <span style="font-size:11px;color:var(--dim);">(' + gm1Esc(t.time.slice(0,5)) + ')</span>' : '') + '</span>';
+        if (isSsot) { html += catChip(t) + SSOT_BADGE; }
+        html += dateChipStr + logChip;
+        html += '</span>';
+        // 버튼 영역
+        html += '<div class="todo-actions" onclick="event.stopPropagation()">';
+        html += '<button class="todo-act-btn today-act" data-id="' + gm1Esc(t.id) + '" data-action="edit">편집</button>';
+        if (!isSsot) {
+          html += '<button class="todo-act-btn today-act" data-id="' + gm1Esc(t.id) + '" data-action="done">완료</button>';
+          html += '<button class="todo-act-btn today-act" data-id="' + gm1Esc(t.id) + '" data-action="hold">보류</button>';
+          html += '<button class="todo-act-btn today-act del" data-id="' + gm1Esc(t.id) + '" data-action="delete">삭제</button>';
+        }
+        html += '</div>';
+        html += '</div>';
+        // 펼침 상세 (기본 숨김)
+        html += '<div class="gm1-detail" style="display:none;padding:10px 4px 4px 22px;border-top:1px dashed var(--border);margin-top:8px;">';
+        var desc = t.description || t.memo || '';
+        if (desc) {
+          html += '<div style="font-size:13px;color:var(--text);line-height:1.65;white-space:pre-wrap;margin-bottom:6px;">' + gm1Esc(desc) + '</div>';
+        }
+        if (logCount) {
+          html += '<div style="font-size:11px;color:var(--dim);font-weight:700;margin-bottom:4px;">📈 진척 로그</div>';
+          var logs = t.progressLog.slice().sort(function(a,b){ return b.date.localeCompare(a.date); });
+          logs.forEach(function(l){
+            html += '<div style="display:flex;gap:8px;font-size:12px;line-height:1.5;padding:2px 0 2px 7px;border-left:2px solid var(--accent);margin-bottom:3px;"><span style="color:var(--accent);font-weight:600;flex-shrink:0;">' + gm1Esc(l.date) + '</span><span style="color:var(--text);">' + gm1Esc(l.text) + '</span></div>';
+          });
+        }
+        if (!desc && !logCount) {
+          html += '<div style="font-size:12px;color:var(--dim);font-style:italic;">내용 없음 — 편집 버튼으로 추가하세요.</div>';
+        }
+        html += '</div>';
+        html += '</div>';
       });
 
       if (!active.length) {
