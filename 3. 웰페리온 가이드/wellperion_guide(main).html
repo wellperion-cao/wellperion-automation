@@ -6341,10 +6341,15 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
 
     function gm1UpdateStatus(id, status) {
       var tasks = gm1Load();
+      var target = null;
       for (var i = 0; i < tasks.length; i++) {
-        if (tasks[i].id === id) { tasks[i].status = status; break; }
+        if (tasks[i].id === id) { tasks[i].status = status; target = tasks[i]; break; }
       }
       gm1Save(tasks);
+      // Sheets 동기화 (2026-06-01): ssotSynced=true인 localStorage 항목만 update
+      if (target && target.ssotSynced && String(id).indexOf('seed-') !== 0) {
+        gm1SyncUpdate(id, { status: status });
+      }
     }
 
     function gm1DeleteTask(id) {
@@ -6506,10 +6511,12 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
       // 진행중 카드
       active.forEach(function(t) {
         if (t.ssotAuto) {
-          // SSOT 자동 항목 — 1차 read-only (액션 버튼 없음 · SSOT 뱃지 + 분류 칩)
+          // SSOT 기원 항목 — 편집·일정 변경 허용 (Sheets 동기화 · 2026-06-01), 상태변경·삭제는 SSOT 단방향 유지
+          var ssotDateChip = '<span data-id="' + gm1Esc(t.id) + '" data-action="daterange" title="클릭하여 일정 변경" style="display:inline-block;background:rgba(91,159,213,0.13);color:#5b9fd5;font-size:10px;font-weight:600;padding:1px 7px;border-radius:4px;margin-left:6px;cursor:pointer;vertical-align:middle;">📅 ' + gm1Esc((t.startDate||'').slice(5) || '날짜없음') + (t.endDate ? '~' + gm1Esc(String(t.endDate).slice(5)) : '') + '</span>';
           html += '<div class="task-card" data-id="' + gm1Esc(t.id) + '" style="opacity:0.96;">' +
-            '<div class="task-title">' +
-            '<span><span style="display:inline-block;background:rgba(183,159,138,0.15);color:var(--accent);font-size:10.5px;font-weight:600;padding:2px 7px;border-radius:4px;margin-right:6px;">🟡 진행 중</span><span class="status-dot active"></span>' + gm1Esc(t.title) + catChip(t) + SSOT_BADGE + '</span>' +
+            '<div class="task-title" style="display:flex;align-items:center;justify-content:space-between;">' +
+            '<span><span style="display:inline-block;background:rgba(183,159,138,0.15);color:var(--accent);font-size:10.5px;font-weight:600;padding:2px 7px;border-radius:4px;margin-right:6px;">🟡 진행 중</span><span class="status-dot active"></span>' + gm1Esc(t.title) + catChip(t) + SSOT_BADGE + ssotDateChip + '</span>' +
+            '<div class="todo-actions"><button class="todo-act-btn today-act" data-id="' + gm1Esc(t.id) + '" data-action="edit">편집</button></div>' +
             '</div></div>';
           return;
         }
@@ -6601,8 +6608,13 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
         var id  = btn.getAttribute('data-id');
         var act = btn.getAttribute('data-action');
         if (!id) return;
-        // SSOT 자동 항목은 1차 read-only — 안전장치 (버튼이 없으나 혹시 모를 무시 · 2026-05-29)
-        if (String(id).indexOf('ssot-') === 0) return;
+        // SSOT 기원 항목: edit/daterange 액션은 허용 (Sheets 동기화 편집 2026-06-01)
+        // done/hold/restore/delete 는 기존대로 차단 (SSOT 단방향 read 유지)
+        if (String(id).indexOf('ssot-') === 0) {
+          if (act === 'edit')      { window.gm1OpenTaskModal(id); return; }
+          if (act === 'daterange') { window.gm1OpenDateRange(id); return; }
+          return;  // 그 외 상태변경·삭제는 read-only 유지
+        }
         if (act === 'edit')      { window.gm1OpenTaskModal(id); return; }
         else if (act === 'daterange') { window.gm1OpenDateRange(id); return; }
         else if (act === 'done')    { gm1UpdateStatus(id, '완료'); }
@@ -6964,6 +6976,46 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
     })();
 
     /* ══════════════════════════════════════════════
+       Sheets 동기화 — todo_update (2026-06-01 GM 승인)
+       ssot-{realId} 기원 또는 ssotSynced=true localStorage 항목
+       편집(내용·날짜·상태·진척·예산·결재) → Sheets 즉시 반영
+    ══════════════════════════════════════════════ */
+
+    /* 진척로그 + 예산을 SSOT '내용' 마커 포맷으로 직렬화 */
+    function gm1ComposeContent(body, logs, budgetCat, budgetAmt) {
+      var out = String(body || '').replace(/\s+$/, '');
+      if (logs && logs.length) {
+        var sorted = logs.slice().sort(function(a,b){ return a.date.localeCompare(b.date); });
+        var block = sorted.map(function(l){ return l.date + ' | ' + l.text; }).join('\n');
+        out = (out ? out + '\n\n' : '') + '===PROGRESS_LOG===\n' + block;
+      }
+      if (budgetCat && Number(budgetAmt) > 0) {
+        out = (out ? out + '\n\n' : '') + '===BUDGET===\n' + budgetCat + ' | ' + Number(budgetAmt);
+      }
+      // Sheets '=' 수식 오인 방지 (업무SSOT 동일 패턴)
+      if (out.charAt(0) === '=') out = ' ' + out;
+      return out;
+    }
+
+    /* Sheets id 추출: ssot-{id} → {id}, ev-* → 그대로 */
+    function gm1SheetsId(localId) {
+      var s = String(localId || '');
+      if (s.indexOf('ssot-') === 0) return s.slice(5);  // 'ssot-' prefix 제거
+      return s;
+    }
+
+    /* todo_update fire-and-forget (mode:'no-cors' — 응답 불필요) */
+    function gm1SyncUpdate(localId, fields) {
+      var sheetsId = gm1SheetsId(localId);
+      if (!sheetsId) return;
+      var params = Object.assign({ action: 'todo_update', id: sheetsId }, fields);
+      var qs = Object.keys(params).map(function(k){
+        return encodeURIComponent(k) + '=' + encodeURIComponent(params[k] == null ? '' : params[k]);
+      }).join('&');
+      fetch(SSOT_API_URL + '?' + qs, { mode: 'no-cors', redirect: 'follow' }).catch(function(){});
+    }
+
+    /* ══════════════════════════════════════════════
        업무SSOT 이식 기능 (2026-06-01 — "완전 동일")
        정렬·검색·담당자필터 / 진척로그 / 예산·결재라우팅
        / 일정변경 / 보고서 인쇄 / 공유
@@ -7048,7 +7100,16 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
 
     /* ── 업무 편집 모달 (진척로그·예산·결재 호스트) ── */
     window.gm1OpenTaskModal = function(id) {
-      var t = gm1Load().find(function(x){ return x.id === id; });
+      // SSOT 기원(ssot-*): in-memory gm1SsotItems에서 읽어 모달 채움
+      var t = null;
+      if (String(id).indexOf('ssot-') === 0) {
+        t = gm1SsotItems.find(function(x){ return x.id === id; });
+        if (t) {
+          // 최소 필드로 모달 열기 (Sheets에서 읽어온 제목·카테고리·날짜·상태 사용)
+          t = Object.assign({ progressLog: [], budgetCat: '', budgetAmt: 0, approval: '' }, t);
+        }
+      }
+      if (!t) t = gm1Load().find(function(x){ return x.id === id; });
       if (!t) return;
       document.getElementById('gm1TaskModalTitle').textContent = '업무 편집';
       document.getElementById('gm1TEditId').value = t.id;
@@ -7092,11 +7153,38 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
       var bCat = document.getElementById('gm1TBudgetCat').value;
       var bAmt = Number(document.getElementById('gm1TBudgetAmt').value) || 0;
       var approval = (bCat && bAmt > 0) ? gm1RouteApproval(bCat, bAmt).join(',') : '';
-      gm1EditTask(id, {
-        title:title, startDate:start, endDate:(end||null), category:cat, status:status,
-        description:desc, memo:desc, progressLog:gm1ModalLogs.slice(),
-        budgetCat:bCat, budgetAmt:bAmt, approval:approval
-      });
+      var logs = gm1ModalLogs.slice();
+
+      // SSOT 기원 항목(ssot-*): localStorage에 없으므로 gm1EditTask 스킵, Sheets만 update
+      var isSsotOrigin = String(id).indexOf('ssot-') === 0;
+      if (!isSsotOrigin) {
+        gm1EditTask(id, {
+          title:title, startDate:start, endDate:(end||null), category:cat, status:status,
+          description:desc, memo:desc, progressLog:logs,
+          budgetCat:bCat, budgetAmt:bAmt, approval:approval
+        });
+      }
+
+      // Sheets 동기화 — ssot-* 또는 ssotSynced=true localStorage 항목
+      var doSync = isSsotOrigin;
+      if (!doSync) {
+        var stored = gm1Load().find(function(x){ return x.id === id; });
+        doSync = !!(stored && stored.ssotSynced && String(id).indexOf('seed-') !== 0);
+      }
+      if (doSync) {
+        var content = gm1ComposeContent(desc, logs, bCat, bAmt);
+        var ssotCat = SSOT_CAT_MAP[cat] || cat;
+        gm1SyncUpdate(id, {
+          title:    title,
+          category: ssotCat,
+          startDate: start,
+          endDate:  end || '',
+          status:   status,
+          content:  content,
+          approval: approval
+        });
+      }
+
       window.gm1CloseTaskModal();
       gm1RenderToday();
       gm1CalRender();
@@ -7120,10 +7208,24 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
       if (!id) return;
       var s = document.getElementById('gm1DrStart').value;
       var e = document.getElementById('gm1DrEnd').value;
-      var upd = { startDate:s, endDate:(e||null) };
-      // 시작일 과거면 isToday 강제 false (기존 정합 규칙 유지)
-      if (s && s < todayStr()) upd.isToday = false;
-      gm1EditTask(id, upd);
+
+      var isSsotOrigin = String(id).indexOf('ssot-') === 0;
+      if (!isSsotOrigin) {
+        var upd = { startDate:s, endDate:(e||null) };
+        if (s && s < todayStr()) upd.isToday = false;
+        gm1EditTask(id, upd);
+      }
+
+      // Sheets 동기화 — ssot-* 또는 ssotSynced=true localStorage 항목
+      var doSync = isSsotOrigin;
+      if (!doSync) {
+        var stored = gm1Load().find(function(x){ return x.id === id; });
+        doSync = !!(stored && stored.ssotSynced && String(id).indexOf('seed-') !== 0);
+      }
+      if (doSync) {
+        gm1SyncUpdate(id, { startDate: s, endDate: e || '' });
+      }
+
       window.gm1CloseDateRange();
       gm1RenderToday();
       gm1CalRender();
