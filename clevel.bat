@@ -82,6 +82,8 @@ git add -A
 git diff --cached --quiet
 if not %ERRORLEVEL%==0 (
     git commit -m "%COMMIT_MSG%"
+    REM 동시 다중 C-Level 세션 push 충돌 방지 — push 전 rebase (2026-06-01 GM 멀티세션 운영)
+    git pull --rebase --autostash origin master
     git push origin master
     echo [clevel.bat] Auto commit/push done.
 ) else (
