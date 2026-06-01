@@ -6669,7 +6669,7 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
 
       html += '</div>'; // 도구바 박스 끝
 
-      // 진행중 카드 — 업무현황 SSOT 동일 구조 (2026-06-01 GM 최종)
+      // 진행중 카드 — 업무현황 SSOT 전체 기능 이식 (결과보고서 제외, 2026-06-01 GM 최종)
       var cardIdx = 0;
       active.forEach(function(t) {
         cardIdx++;
@@ -6678,62 +6678,112 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
 
         html += '<div class="task-card" data-id="' + gm1Esc(t.id) + '">';
 
-        // 제목줄: 번호 + ▶ + 제목+meta (클릭=펼침)
+        // ── 제목줄: 번호 + ▶ + 제목+meta (클릭=펼침) ──
         html += '<div style="display:flex;align-items:flex-start;gap:8px;">';
+        // 번호
         html += '<span style="font-size:11px;font-weight:700;color:var(--accent);min-width:28px;text-align:center;flex-shrink:0;padding-top:2px;">#' + String(cardIdx).padStart(2,'0') + '</span>';
+        // 토글 화살표
         html += '<span class="gm1-toggle-arrow" onclick="event.stopPropagation();var c=this.closest(\'.task-card\');var d=c.querySelector(\'.task-detail\');if(!d)return;d.classList.toggle(\'open\');this.classList.toggle(\'open\');">▶</span>';
+        // 제목+meta 클릭 영역
         html += '<div style="flex:1;min-width:0;cursor:pointer;" onclick="var c=this.closest(\'.task-card\');var d=c.querySelector(\'.task-detail\');if(!d)return;d.classList.toggle(\'open\');c.querySelector(\'.gm1-toggle-arrow\').classList.toggle(\'open\');">';
-        html += '<div style="font-size:14px;font-weight:700;margin-bottom:4px;word-break:keep-all;overflow-wrap:anywhere;">' + gm1Esc(t.title) + (t.time ? ' <span style="font-size:11px;color:var(--dim);font-weight:400;">(' + gm1Esc(t.time.slice(0,5)) + ')</span>' : '') + '</div>';
+        html += '<div style="font-size:14px;font-weight:700;margin-bottom:4px;word-break:keep-all;overflow-wrap:anywhere;">' + gm1Esc(t.title) +
+                (t.time ? ' <span style="font-size:11px;color:var(--dim);font-weight:400;">(' + gm1Esc(t.time.slice(0,5)) + ')</span>' : '') + '</div>';
+
         // meta chips
         html += '<div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:3px;">';
+        // 상태 chip
         html += '<span class="gm1-chip status-active">🟡 진행 중</span>';
+        // 담당자 chip (SSOT 기원이면 owner 필드, 일반은 GM)
+        var ownerStr = t.owner || (isSsot ? '' : '김남욱GM');
+        if (ownerStr) {
+          ownerStr.split(',').forEach(function(o){
+            o = o.trim();
+            if (o) html += '<span class="gm1-chip" style="background:rgba(91,159,213,0.13);color:#5b9fd5;">' + gm1Esc(o) + '</span>';
+          });
+        }
+        // 날짜 chip (클릭=일정변경)
+        var dateLabel = (t.startDate||'').slice(5) || '날짜없음';
+        if (t.endDate) dateLabel += ' ~ ' + String(t.endDate).slice(5);
+        html += '<span class="gm1-chip date" data-id="' + gm1Esc(t.id) + '" data-action="daterange" onclick="event.stopPropagation()">📅 ' + gm1Esc(dateLabel) + '</span>';
+        // 진척 로그 수 chip
+        if (logCount) html += '<span class="gm1-chip log">📈 진척 ' + logCount + '건</span>';
+        // 결재 chip (approval 있는 항목)
+        if (t.approval || t.budgetCat) {
+          var apr = String(t.approval || '').trim();
+          if (apr) {
+            html += '<span class="gm1-chip" style="background:rgba(224,179,65,0.14);color:var(--yellow,#E0B341);font-weight:700;">🧾 결재 요청</span>';
+          }
+        }
+        // SSOT 뱃지
         if (isSsot) {
           var cc = catOf(t);
           html += '<span class="gm1-chip" style="' + (CAT_COLORS[cc]||CAT_COLORS['업무']) + '">' + gm1Esc(cc) + '</span>';
           html += '<span class="gm1-chip ssot">SSOT</span>';
         }
-        var dateLabel = (t.startDate||'').slice(5) || '날짜없음';
-        if (t.endDate) dateLabel += '~' + String(t.endDate).slice(5);
-        html += '<span class="gm1-chip date" data-id="' + gm1Esc(t.id) + '" data-action="daterange" onclick="event.stopPropagation()">📅 ' + gm1Esc(dateLabel) + '</span>';
-        if (logCount) html += '<span class="gm1-chip log">📈 진척 ' + logCount + '건</span>';
         html += '</div>'; // meta
         html += '</div>'; // title-click area
         html += '</div>'; // flex row
 
-        // 액션버튼: 하단 별도 줄
+        // ── 액션 버튼: 하단 별도 줄 (결과보고서 제외) ──
         html += '<div class="gm1-task-actions">';
-        html += '<button class="gm1-action-btn edit" data-id="' + gm1Esc(t.id) + '" data-action="edit">편집</button>';
+        // 🔗 링크복사 (업무SSOT 동일: 현재 페이지 URL + id 앵커)
+        html += '<button class="gm1-action-btn" title="이 항목 링크 복사" data-id="' + gm1Esc(t.id) + '" data-action="copylink" style="padding:4px 10px;font-size:11px;">🔗</button>';
+        // 편집
+        html += '<button class="gm1-action-btn edit" data-id="' + gm1Esc(t.id) + '" data-action="edit" style="padding:4px 10px;font-size:11px;">편집</button>';
         if (!isSsot) {
-          html += '<button class="gm1-action-btn done" data-id="' + gm1Esc(t.id) + '" data-action="done">완료</button>';
-          html += '<button class="gm1-action-btn hold" data-id="' + gm1Esc(t.id) + '" data-action="hold">보류</button>';
-          html += '<button class="gm1-action-btn del" data-id="' + gm1Esc(t.id) + '" data-action="delete">삭제</button>';
+          // 완료
+          html += '<button class="gm1-action-btn done" data-id="' + gm1Esc(t.id) + '" data-action="done" style="padding:4px 10px;font-size:11px;">완료</button>';
+          // 보류
+          html += '<button class="gm1-action-btn hold" data-id="' + gm1Esc(t.id) + '" data-action="hold" style="padding:4px 10px;font-size:11px;">보류</button>';
+          // 삭제
+          html += '<button class="gm1-action-btn del" data-id="' + gm1Esc(t.id) + '" data-action="delete" style="padding:4px 10px;font-size:11px;">삭제</button>';
         }
+        // ⚠️ 결과 보고서 버튼 의도적 제외 (GM 지시 2026-06-01)
         html += '</div>';
 
-        // 펼침 상세 (.task-detail.open CSS)
+        // ── 펼침 상세 (.task-detail.open CSS) ──
         html += '<div class="task-detail" style="padding:10px 0 0 18px;margin-top:8px;">';
         var desc = t.description || t.memo || '';
         if (desc) {
-          html += '<div style="font-size:12px;color:var(--dim);line-height:1.55;white-space:pre-line;margin-bottom:6px;">' + gm1Esc(desc) + '</div>';
-        } else {
-          html += '<div style="font-size:12px;color:var(--dim);font-style:italic;">내용 없음</div>';
+          html += '<div class="task-content" style="white-space:pre-wrap;line-height:1.55;">' + gm1Esc(desc) + '</div>';
+        } else if (!logCount && !t.budgetCat) {
+          html += '<div class="task-content" style="color:var(--dim);font-style:italic;">내용 없음</div>';
         }
+
+        // 예산 블록 (budgetCat+budgetAmt 있으면 표시)
+        if (t.budgetCat && Number(t.budgetAmt) > 0) {
+          var budgetApprovers = gm1RouteApproval(t.budgetCat, t.budgetAmt);
+          html += '<div style="margin-top:10px;padding:10px 12px;background:var(--green-bg);border:1px solid rgba(106,191,123,0.3);border-radius:8px;">';
+          html += '<div style="font-size:12px;font-weight:700;color:var(--green);margin-bottom:4px;">💰 예산</div>';
+          html += '<div style="font-size:14px;font-weight:700;color:var(--text);">' + gm1Esc(t.budgetCat) + ' · ' + gm1FormatKRW(t.budgetAmt) + '</div>';
+          html += '<div style="font-size:12px;color:var(--dim);margin-top:4px;">결재 라인: ';
+          if (budgetApprovers.length) {
+            html += budgetApprovers.map(function(a){ return '<span style="background:var(--green);color:#fff;padding:1px 8px;border-radius:5px;font-weight:700;margin:0 2px;font-size:11px;">' + gm1Esc(a) + '</span>'; }).join(' → ');
+          } else {
+            html += '<span style="color:var(--dim);">미지정</span>';
+          }
+          html += '</div></div>';
+        }
+
+        // 진척 로그 블록
         if (logCount) {
           var sl = t.progressLog.slice().sort(function(a,b){return b.date.localeCompare(a.date);});
-          html += '<div style="margin-top:8px;">';
-          html += '<div style="font-size:12px;font-weight:700;color:var(--accent);margin-bottom:5px;">📅 진척 로그 (' + logCount + '건)</div>';
+          html += '<div style="margin-top:10px;">';
+          html += '<div style="font-size:12px;font-weight:700;color:var(--accent);margin-bottom:6px;">📅 진척 로그 (' + logCount + '건)</div>';
           sl.slice(0,5).forEach(function(l){
-            html += '<div style="display:flex;gap:8px;align-items:flex-start;padding:5px 9px;border-left:3px solid var(--accent);background:var(--accent-bg);border-radius:6px;margin-bottom:4px;">';
-            html += '<span style="font-size:12px;font-weight:700;color:var(--accent);min-width:84px;flex-shrink:0;">' + gm1Esc(l.date) + '</span>';
-            html += '<span style="flex:1;font-size:13px;line-height:1.5;color:var(--text);word-break:break-word;">' + gm1Esc(l.text) + '</span>';
+            html += '<div style="display:flex;gap:8px;align-items:flex-start;padding:6px 10px;border-left:3px solid var(--accent);background:var(--accent-bg);border-radius:6px;margin-bottom:4px;">';
+            html += '<span style="font-size:12px;font-weight:700;color:var(--accent);min-width:88px;flex-shrink:0;">' + gm1Esc(l.date) + '</span>';
+            html += '<span style="flex:1;font-size:13px;line-height:1.5;color:var(--text);word-break:break-word;white-space:pre-wrap;">' + gm1Esc(l.text) + '</span>';
             html += '</div>';
           });
-          if (sl.length > 5) html += '<div style="font-size:11px;color:var(--dim);text-align:right;">··· 외 ' + (sl.length-5) + '건</div>';
+          if (sl.length > 5) html += '<div style="font-size:11px;color:var(--dim);text-align:right;padding:4px 6px;">··· 외 ' + (sl.length-5) + '건 (편집 모달에서 전체 보기)</div>';
           html += '</div>';
         }
+
         html += '</div>'; // task-detail
         html += '</div>'; // task-card
       });
+
 
       if (!active.length) {
         html += '<div style="color:var(--dim);font-size:13px;padding:12px 0;">오늘 진행 중인 항목이 없습니다.</div>';
@@ -6813,6 +6863,7 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
           if (act === 'daterange') { window.gm1OpenDateRange(id); return; }
           return;  // 그 외 상태변경·삭제는 read-only 유지
         }
+        if (act === 'copylink') { var url=window.location.href.split('?')[0]+'?gm1='+encodeURIComponent(id); if(navigator.clipboard){navigator.clipboard.writeText(url);}else{var ta=document.createElement('textarea');ta.value=url;document.body.appendChild(ta);ta.select();try{document.execCommand('copy');}catch(ex){}document.body.removeChild(ta);} return; }
         if (act === 'edit')      { window.gm1OpenTaskModal(id); return; }
         else if (act === 'daterange') { window.gm1OpenDateRange(id); return; }
         else if (act === 'done')    { gm1UpdateStatus(id, '완료'); }
