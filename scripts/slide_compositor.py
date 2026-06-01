@@ -1,8 +1,12 @@
-"""웰페리온 슬라이드 자동 합성 모듈 v1.0
+"""웰페리온 슬라이드 자동 합성 모듈 v1.1
 브랜드 가이드(241030) 기반 사진+카피 슬라이드 JPG 생성
 
 CMO-001 자동 업로드 파이프라인의 시각 자료 생성 단계.
 Pillow로 베이스 사진 위에 다크 오버레이 + 카피 + 액센트 + 워드마크 합성.
+
+v1.1 변경: 로고를 텍스트 "W"에서 공식 PNG(_assets/logo/)로 교체.
+  - 밝은 배경(사진 위): wellperion_white_alpha.png
+  - 어두운 배경(텍스트 슬라이드): wellperion_beige_alpha.png
 
 CLI 사용:
     python slide_compositor.py \
@@ -36,6 +40,13 @@ FONT_DIR = next((d for d in _FONT_DIR_CANDIDATES if d.exists()), _FONT_DIR_CANDI
 FONT_BOLD = FONT_DIR / "Pretendard-Bold.otf"
 FONT_SEMIBOLD = FONT_DIR / "Pretendard-SemiBold.otf"
 FONT_MEDIUM = FONT_DIR / "Pretendard-Medium.otf"
+
+# 공식 로고 PNG (instagram/_assets/logo/)
+LOGO_DIR = PROJECT_ROOT / "instagram" / "_assets" / "logo"
+# 사진 위(반투명 오버레이용): 흰색 알파
+LOGO_WHITE_ALPHA = LOGO_DIR / "wellperion_white_alpha.png"
+# 어두운 배경용: 베이지 알파
+LOGO_BEIGE_ALPHA = LOGO_DIR / "wellperion_beige_alpha.png"
 
 # -----------------------------------------------------------------
 # 브랜드 프리셋 (241030 가이드)
@@ -116,6 +127,62 @@ ASPECT_PRESETS = {
     "1200x900": (1200, 900),    # 블로그 가로
     "1200x630": (1200, 630),    # 블로그 OG / 페이스북
 }
+
+
+# -----------------------------------------------------------------
+# 로고 PNG 합성 헬퍼 (v1.1 — 텍스트 로고 대체)
+# -----------------------------------------------------------------
+def paste_logo_png(
+    canvas: Image.Image,
+    logo_path: Path,
+    target_w: int,
+    target_h: int,
+    margin: int,
+    logo_target_w: int | None = None,
+    with_dark_box: bool = True,
+) -> Image.Image:
+    """공식 로고 PNG를 캔버스 좌상단에 합성한다.
+
+    Args:
+        canvas: 합성 대상 Image (RGBA or RGB)
+        logo_path: 공식 로고 PNG 경로 (RGBA)
+        target_w / target_h: 캔버스 크기 (비율 계산용)
+        margin: 좌상단 여백 px
+        logo_target_w: 로고 너비 px (None이면 target_w * 0.28)
+        with_dark_box: 로고 뒤 반투명 박스 여부 (사진 위 오버레이 시 True)
+    Returns:
+        합성된 RGB Image
+    """
+    if logo_target_w is None:
+        logo_target_w = int(target_w * 0.28)
+
+    logo_img = Image.open(logo_path).convert("RGBA")
+    orig_w, orig_h = logo_img.size
+    logo_target_h = int(orig_h * logo_target_w / orig_w)
+    logo_img = logo_img.resize((logo_target_w, logo_target_h), Image.LANCZOS)
+
+    logo_x = margin
+    logo_y = margin
+
+    if with_dark_box:
+        box_pad_x = int(logo_target_w * 0.12)
+        box_pad_y = int(logo_target_h * 0.18)
+        box_overlay = Image.new("RGBA", canvas.size, (0, 0, 0, 0))
+        box_draw = ImageDraw.Draw(box_overlay)
+        box_draw.rounded_rectangle(
+            [
+                (logo_x - box_pad_x, logo_y - box_pad_y),
+                (logo_x + logo_target_w + box_pad_x, logo_y + logo_target_h + box_pad_y),
+            ],
+            radius=6,
+            fill=(34, 31, 32, 170),
+        )
+        base = canvas.convert("RGBA")
+        canvas = Image.alpha_composite(base, box_overlay)
+
+    canvas_rgba = canvas.convert("RGBA")
+    canvas_rgba.paste(logo_img, (logo_x, logo_y), mask=logo_img)
+    return canvas_rgba.convert("RGB")
 
 
 # -----------------------------------------------------------------
@@ -396,28 +463,19 @@ def compose_main_slide(
     photo = to_duotone(photo)
     canvas.paste(photo, (0, 0))
 
-    draw = ImageDraw.Draw(canvas)
-
-    # 2) 상단 좌측 W 로고 (텍스트, 사진 위 오버레이)
+    # 2) 상단 좌측 공식 로고 PNG (사진 위 — 반투명 박스 포함)
     margin = int(target_w * 0.05)
-    logo_size = int(target_w * 0.07)
-    logo_font = load_font("bold", logo_size)
-    # 로고 가독성을 위해 어두운 반투명 박스 깔기
-    box_pad = int(logo_size * 0.3)
-    logo_text = "W"
-    lb = logo_font.getbbox(logo_text)
-    lw = lb[2] - lb[0]
-    lh = lb[3] - lb[1]
-    box_overlay = Image.new("RGBA", (target_w, target_h), (0, 0, 0, 0))
-    box_draw = ImageDraw.Draw(box_overlay)
-    box_draw.rectangle(
-        [(margin - box_pad, margin - box_pad // 2),
-         (margin + lw + box_pad, margin + lh + box_pad)],
-        fill=(34, 31, 32, 180),
+    canvas = paste_logo_png(
+        canvas=canvas,
+        logo_path=LOGO_WHITE_ALPHA,
+        target_w=target_w,
+        target_h=target_h,
+        margin=margin,
+        logo_target_w=int(target_w * 0.28),
+        with_dark_box=True,
     )
-    canvas = Image.alpha_composite(canvas.convert("RGBA"), box_overlay).convert("RGB")
+
     draw = ImageDraw.Draw(canvas)
-    draw.text((margin, margin), logo_text, font=logo_font, fill=brand["primary"])
 
     # 3) 상단 우측 사업부 컬러 칩 (사각 + 사업부명)
     chip_w = int(target_w * 0.20)
@@ -542,27 +600,20 @@ def compose_unified_slide(
     photo = to_duotone(photo)
     canvas.paste(photo, (0, 0))
 
-    draw = ImageDraw.Draw(canvas)
     margin = int(target_w * 0.05)
 
-    # 2) 상단 좌측 W 로고 (반투명 박스)
-    logo_size = int(target_w * 0.07)
-    logo_font = load_font("bold", logo_size)
-    box_pad = int(logo_size * 0.3)
-    logo_text = "W"
-    lb = logo_font.getbbox(logo_text)
-    lw = lb[2] - lb[0]
-    lh = lb[3] - lb[1]
-    box_overlay = Image.new("RGBA", (target_w, target_h), (0, 0, 0, 0))
-    box_draw = ImageDraw.Draw(box_overlay)
-    box_draw.rectangle(
-        [(margin - box_pad, margin - box_pad // 2),
-         (margin + lw + box_pad, margin + lh + box_pad)],
-        fill=(34, 31, 32, 180),
+    # 2) 상단 좌측 공식 로고 PNG (사진 위 — 반투명 박스 포함)
+    canvas = paste_logo_png(
+        canvas=canvas,
+        logo_path=LOGO_WHITE_ALPHA,
+        target_w=target_w,
+        target_h=target_h,
+        margin=margin,
+        logo_target_w=int(target_w * 0.28),
+        with_dark_box=True,
     )
-    canvas = Image.alpha_composite(canvas.convert("RGBA"), box_overlay).convert("RGB")
+
     draw = ImageDraw.Draw(canvas)
-    draw.text((margin, margin), logo_text, font=logo_font, fill=brand["primary"])
 
     # 3) 상단 우측 사업부 칩
     chip_w = int(target_w * 0.20)
@@ -675,20 +726,29 @@ def compose_text_slide(
     brand = BRAND_PRESETS[brand_key]
 
     canvas = Image.new("RGB", (target_w, target_h), brand["background"])
-    draw = ImageDraw.Draw(canvas)
     margin = int(target_w * 0.085)
     text_max_width = target_w - 2 * margin
 
-    # 1) 헤더 — 좌측 W 로고 + 우측 워드마크
-    logo_size = int(target_w * 0.055)
-    logo_font = load_font("bold", logo_size)
-    draw.text((margin, margin), "W", font=logo_font, fill=brand["primary"])
+    # 1) 헤더 — 좌측 공식 로고 PNG (어두운 배경 → 베이지 알파, 박스 불필요)
+    canvas = paste_logo_png(
+        canvas=canvas,
+        logo_path=LOGO_BEIGE_ALPHA,
+        target_w=target_w,
+        target_h=target_h,
+        margin=margin,
+        logo_target_w=int(target_w * 0.26),
+        with_dark_box=False,
+    )
+    draw = ImageDraw.Draw(canvas)
+
+    # 우측 워드마크
     wm_size = int(target_w * 0.020)
     wm_font = load_font("medium", wm_size)
     wm_text = "WELLPERION"
     wb = wm_font.getbbox(wm_text)
+    logo_img_h = int(Image.open(LOGO_BEIGE_ALPHA).size[1] * (target_w * 0.26) / Image.open(LOGO_BEIGE_ALPHA).size[0])
     draw.text(
-        (target_w - margin - (wb[2] - wb[0]), margin + int(logo_size * 0.30)),
+        (target_w - margin - (wb[2] - wb[0]), margin + int(logo_img_h * 0.30)),
         wm_text, font=wm_font, fill=brand["text_secondary"],
     )
 
