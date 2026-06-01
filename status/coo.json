@@ -1,8 +1,8 @@
 {
   "clevel": "coo",
   "status": "ASSIGNED",
-  "last_task_id": "COO-2026-06-01-SSOT-IMPROVE-BATCH",
-  "last_commit_sha": "d842d9d",
+  "last_task_id": "COO-2026-06-01-SHARELINK-AND-IMPROVE",
+  "last_commit_sha": "426412a",
   "last_pushed_at": "2026-06-01T15:20:00",
   "active_tasks": [
     {
@@ -58,6 +58,13 @@
       "assigned_at": "2026-06-01",
       "status": "DONE",
       "result": "GM 배치 요청 일괄 처리. ①양 페이지 검색 노이즈 제거: t.content 원본(마커 ===RESULT===등) 매칭 버그 → parseContent 깨끗한 필드만 검색(commit 3c9a073, 마커검색 0건/실단어 정상). ②업무현황 인쇄 보고서 '결과보고서'→'업무 보고서' + 버튼 '🖨 보고서' + 기간 ISO→날짜만(4103d0b). ③결재현황 전체보기 결재완료·반려 접이식 분류(ebe984e). ④결재현황 카드 결재 진행바 부서장→GM→대표 ●─●─○ 시각화(d842d9d). 제목옆 카테고리는 기존 존재 확인. 전부 로컬+라이브 Playwright 검증·콘솔0. 잔여: 공유링크 기능 deep-interview 파킹(딥링크=전체보기후 스크롤+하이라이트+상세펼침까지 확정)."
+    },
+    {
+      "task_id": "COO-2026-06-01-SHARELINK-AND-IMPROVE",
+      "title": "두 SSOT 공유링크/딥링크 + 개선후보(캐시버전)",
+      "assigned_at": "2026-06-01",
+      "status": "DONE",
+      "result": "공유링크 기능 양 페이지 구현(deep-interview 설계 확정분). ①툴바 '🔗 링크' = 현재 필터(담당자·결재자·상태·카테고리·정렬·검색) URL 생성·복사 → 받는 사람이 열면 동일 화면 재현(applyUrlParams 최초1회 가드). ②카드별 '🔗' = 개별 건 딥링크(?item=id) → 결재현황은 전체보기+스크롤+하이라이트+상세펼침, 업무현황은 소속 카테고리 아코디언 자동 열기까지. commit a85a34e(결재)+5421425(업무). 개선후보: __PV 캐시버전 20260531-1→20260601-1 양쪽 상향(426412a, 캐시 사용자 자동 갱신). 전부 로컬+라이브 Playwright 검증(버튼·링크생성·파라미터적용·딥링크·콘솔0). 미실행 개선후보: 진행바↔싸인라인 중복 간결화·두 페이지 카드액션 통일 = 현재 기능적 정상이라 GM 라이브 확인 후 판단 권장."
     }
   ],
   "agent": "coo",
