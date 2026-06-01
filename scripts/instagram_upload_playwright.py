@@ -99,6 +99,21 @@ SHARE_BUTTON_SELECTORS = [
     'button:has-text("게시")',
 ]
 
+# 위치 추가 UI 진입 셀렉터 후보 (캡션 화면 하단 "위치 추가" / "Add location")
+LOCATION_TRIGGER_SELECTORS = [
+    'div[role="button"]:has-text("위치 추가")',
+    'span:has-text("위치 추가")',
+    'div[role="button"]:has-text("Add location")',
+    'span:has-text("Add location")',
+    'button:has-text("위치 추가")',
+]
+LOCATION_INPUT_SELECTORS = [
+    'input[placeholder*="위치"]',
+    'input[placeholder*="검색"]',
+    'input[aria-label*="위치"]',
+    'input[type="text"][autocomplete="off"]',
+]
+
 # 협업자(Collaborator) 추가 UI 진입 셀렉터 후보
 COLLABORATOR_TRIGGER_SELECTORS = [
     'div[role="button"]:has-text("사람 태그")',
@@ -157,10 +172,31 @@ class PostSpec:
         self.subject: str = ""
         self.image_paths: list[Path] = []
 
-    def merged_caption(self) -> str:
-        parts = [self.caption.strip()] if self.caption.strip() else []
-        if self.hashtags:
-            parts.append(" ".join(self.hashtags))
+    def merged_caption(self, extra_mentions: list[str] | None = None) -> str:
+        """캡션 + 해시태그 합성. extra_mentions 있으면 해시태그 줄 앞에 멘션 줄 삽입.
+        caption 본문에 이미 @핸들이 있으면 중복 추가 금지."""
+        body = self.caption.strip()
+        hashtag_line = " ".join(self.hashtags) if self.hashtags else ""
+
+        # 멘션 합성 — 이미 caption에 있는 핸들은 제외
+        mention_line = ""
+        if extra_mentions:
+            existing = {m.lstrip("@").lower() for m in re.findall(r"@[\w.]+", body)}
+            new_handles = [
+                m if m.startswith("@") else "@" + m
+                for m in extra_mentions
+                if m.lstrip("@").lower() not in existing
+            ]
+            if new_handles:
+                mention_line = " ".join(new_handles)
+
+        parts: list[str] = []
+        if body:
+            parts.append(body)
+        if mention_line:
+            parts.append(mention_line)
+        if hashtag_line:
+            parts.append(hashtag_line)
         return "\n\n".join(parts)
 
 
@@ -603,7 +639,11 @@ def update_review_queue(content_folder: Path, published: dict[str, str]) -> None
 # 흐름: 큐레이션 파싱 → 검증(collab 강제) → post A → 1~3초 → post B → 1~3초 → post C
 # 비가역 실 발행. 별건 결재 후만 호출.
 # -----------------------------------------------------------------
-async def run_publish(content_folder: Path) -> dict[str, str]:
+async def run_publish(
+    content_folder: Path,
+    location: str = "",
+    mentions: list[str] | None = None,
+) -> dict[str, str]:
     if not PERSISTENT_PROFILE_DIR.exists():
         print("[ERROR] 프로필 디렉터리 미존재. --mode setup 우선 실행 필요.")
         sys.exit(3)
@@ -664,13 +704,13 @@ async def run_publish(content_folder: Path) -> dict[str, str]:
             spec = posts[slot]
             print(f"\n[INFO] ── post {slot} 발행 시작 ── images={len(spec.image_paths)} / collab={len(spec.collaborators)}")
             try:
-                url = await _publish_single_post(page, spec, content_folder)
+                url = await _publish_single_post(page, spec, content_folder, location=location, mentions=mentions)
             except Exception as e:
                 print(f"[ERROR] post {slot} 발행 예외: {e}")
                 # 자동 재시도 1회 (지시 v1.0)
                 print(f"[INFO] post {slot} 자동 재시도 1회 시작")
                 try:
-                    url = await _publish_single_post(page, spec, content_folder)
+                    url = await _publish_single_post(page, spec, content_folder, location=location, mentions=mentions)
                 except Exception as e2:
                     print(f"[ERROR] post {slot} 재시도 실패: {e2}")
                     telegram_report(
@@ -714,7 +754,13 @@ async def run_publish(content_folder: Path) -> dict[str, str]:
     return published
 
 
-async def _publish_single_post(page, spec: PostSpec, content_folder: Path) -> str | None:
+async def _publish_single_post(
+    page,
+    spec: PostSpec,
+    content_folder: Path,
+    location: str = "",
+    mentions: list[str] | None = None,
+) -> str | None:
     """단일 post 발행. 게시 URL 반환 (실패 시 None)."""
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     evidence_prefix = EVIDENCE_DIR / f"instagram-publish-{content_folder.name}-post{spec.slot}-{timestamp}"
@@ -796,8 +842,13 @@ async def _publish_single_post(page, spec: PostSpec, content_folder: Path) -> st
         raise RuntimeError("캡션 textbox 미발견")
 
     await caption_box.click()
-    await page.keyboard.type(spec.merged_caption(), delay=15)
-    print(f"[INFO]   캡션 입력 완료 ({len(spec.merged_caption())} chars)")
+    final_caption = spec.merged_caption(extra_mentions=mentions)
+    await page.keyboard.type(final_caption, delay=15)
+    print(f"[INFO]   캡션 입력 완료 ({len(final_caption)} chars)")
+
+    # 위치 태그 추가 (location 있을 때만, graceful — 실패해도 발행 차단 안 함)
+    if location:
+        await _add_location(page, location, evidence_prefix)
 
     # Collaborator 추가 (있는 경우만)
     if spec.collaborators:
@@ -833,6 +884,66 @@ async def _publish_single_post(page, spec: PostSpec, content_folder: Path) -> st
 
     # 프로필 이동 후 최신 게시물 URL 회수 (가장 안정적인 경로)
     return await _capture_latest_post_url(page)
+
+
+async def _add_location(page, location: str, evidence_prefix: Path) -> None:
+    """캡션 화면에서 '위치 추가' UI 진입 → 검색어 입력 → 첫 결과 클릭.
+    셀렉터 미발견 또는 예외 시 [WARN]+스크린샷으로 graceful 처리 (발행 차단 안 함)."""
+    trigger = None
+    for sel in LOCATION_TRIGGER_SELECTORS:
+        loc = page.locator(sel).first
+        if await loc.count() > 0:
+            trigger = loc
+            print(f"[INFO]   위치 추가 진입 셀렉터: {sel!r}")
+            break
+    if trigger is None:
+        print("[WARN]   위치 추가 진입 셀렉터 미발견 — UI 변경 가능성 (위치 태그 건너뜀)")
+        warn_path = str(evidence_prefix.with_suffix(".warn_location_trigger.png"))
+        await page.screenshot(path=warn_path)
+        print(f"[WARN]   스크린샷: {warn_path}")
+        return
+    try:
+        await trigger.click(timeout=5000)
+    except Exception as e:
+        print(f"[WARN]   위치 추가 진입 클릭 실패: {e} (위치 태그 건너뜀)")
+        warn_path = str(evidence_prefix.with_suffix(".warn_location_click.png"))
+        await page.screenshot(path=warn_path)
+        return
+    await page.wait_for_timeout(1500)
+
+    inp = None
+    for sel in LOCATION_INPUT_SELECTORS:
+        loc = page.locator(sel).first
+        if await loc.count() > 0:
+            inp = loc
+            print(f"[INFO]   위치 입력창 셀렉터: {sel!r}")
+            break
+    if inp is None:
+        print("[WARN]   위치 입력창 미발견 — 위치 태그 건너뜀")
+        warn_path = str(evidence_prefix.with_suffix(".warn_location_input.png"))
+        await page.screenshot(path=warn_path)
+        return
+
+    try:
+        await inp.fill("")
+        await inp.type(location, delay=30)
+        await page.wait_for_timeout(1500)
+        # 첫 검색 결과 클릭
+        first_result = page.locator('div[role="option"]').first
+        if await first_result.count() == 0:
+            # 후보 fallback
+            first_result = page.locator('div[role="listbox"] div').first
+        if await first_result.count() > 0:
+            await first_result.click(timeout=4000)
+            print(f"[INFO]   위치 태그 선택 완료: {location!r}")
+        else:
+            print(f"[WARN]   위치 검색 결과 없음: {location!r} (위치 태그 건너뜀)")
+            warn_path = str(evidence_prefix.with_suffix(".warn_location_result.png"))
+            await page.screenshot(path=warn_path)
+    except Exception as e:
+        print(f"[WARN]   위치 태그 추가 예외: {e} (발행 계속)")
+        warn_path = str(evidence_prefix.with_suffix(".warn_location_exc.png"))
+        await page.screenshot(path=warn_path)
 
 
 async def _add_collaborators(page, handles: list[str]) -> int:
@@ -945,6 +1056,17 @@ def parse_args() -> argparse.Namespace:
         default=None,
         help="publish 모드 필수: 콘텐츠 폴더 경로 (예: instagram\\260426_WJO_스쿼시_대회)",
     )
+    parser.add_argument(
+        "--location",
+        default="",
+        help="위치 태그 문자열 (예: '서울 용산구 한남동'). 있을 때만 위치 추가 UI 진입.",
+    )
+    parser.add_argument(
+        "--mentions",
+        default="",
+        help="캡션 멘션 핸들 목록, 콤마 구분 (예: 'namuk.wellperion,wellperion_squash'). "
+             "caption 본문에 이미 있는 핸들은 중복 추가 안 함.",
+    )
     return parser.parse_args()
 
 
@@ -962,6 +1084,7 @@ if __name__ == "__main__":
         folder = Path(args.content_folder)
         if not folder.is_absolute():
             folder = Path.cwd() / folder
-        asyncio.run(run_publish(folder))
+        mentions_list = [m.strip() for m in args.mentions.split(",") if m.strip()] if args.mentions else []
+        asyncio.run(run_publish(folder, location=args.location, mentions=mentions_list))
     else:
         asyncio.run(run_dryrun())

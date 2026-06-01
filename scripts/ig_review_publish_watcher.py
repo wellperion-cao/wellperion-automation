@@ -87,12 +87,26 @@ def save_queue(items: list) -> None:
     QUEUE.write_text(json.dumps(items, ensure_ascii=False, indent=2), encoding="utf-8")
 
 
-def publish_folder(folder: str) -> str | None:
-    """발행 서브프로세스 실행 → 게시 URL 반환(실패 시 None)."""
+def publish_item(it: dict) -> str | None:
+    """발행 서브프로세스 실행 → 게시 URL 반환(실패 시 None).
+    it 에서 folder / location / mentions 를 추출해 발행기에 CLI 인자로 전달."""
+    folder: str = it.get("folder", "")
+    location: str = it.get("location", "").strip()
+    raw_mentions = it.get("mentions", [])
+    # mentions 는 리스트 또는 콤마 문자열 모두 허용
+    if isinstance(raw_mentions, list):
+        mentions_str = ",".join(m.strip() for m in raw_mentions if m.strip())
+    else:
+        mentions_str = str(raw_mentions).strip()
+
+    cmd = [str(PY), str(PUBLISH_SCRIPT), "--mode", "publish", "--content-folder", folder]
+    if location:
+        cmd += ["--location", location]
+    if mentions_str:
+        cmd += ["--mentions", mentions_str]
+
     env = dict(os.environ, PYTHONIOENCODING="utf-8")
-    proc = subprocess.run(
-        [str(PY), str(PUBLISH_SCRIPT), "--mode", "publish", "--content-folder", folder],
-        cwd=str(ROOT), capture_output=True, text=True, env=env, timeout=600)
+    proc = subprocess.run(cmd, cwd=str(ROOT), capture_output=True, text=True, env=env, timeout=600)
     out = (proc.stdout or "") + (proc.stderr or "")
     print(out)
     m = POST_URL_RE.search(out)
@@ -113,9 +127,16 @@ def process_queue(items: list, dry_run: bool) -> tuple[list, list]:
             events.append(f"⛔ {title}: folder 미지정")
             continue
         if dry_run:
-            events.append(f"🔎 [dry-run] 발행 대상: {title} (folder={folder})")
+            location_info = it.get("location", "")
+            mentions_info = it.get("mentions", [])
+            events.append(
+                f"🔎 [dry-run] 발행 대상: {title} (folder={folder}"
+                + (f", location={location_info!r}" if location_info else "")
+                + (f", mentions={mentions_info}" if mentions_info else "")
+                + ")"
+            )
             continue
-        url = publish_folder(folder)
+        url = publish_item(it)
         if url:
             it["status"] = "발행완료"
             it["post_url"] = url
