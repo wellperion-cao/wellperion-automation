@@ -6477,10 +6477,12 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
               // GM 결재 차례 우선 판정 — 결재 대기는 날짜 무관 항상 노출(GM 액션 필요)
               var needsGm = !gmSign && apr && (apr === '대기' || apr.indexOf('부서장') >= 0);
               var base    = 'ssot-' + (row['id'] || title);
+              var rawContent = String(row['내용'] || '');
               if (needsGm) {
                 items.push({
                   id: base, title: '[결재] ' + title, status: '진행중',
-                  category: '결재', description: '', isToday: true, startDate: sd, ssotAuto: true
+                  category: '결재', description: rawContent, isToday: true, startDate: sd, ssotAuto: true,
+                  _sheetsId: String(row['id'] || '')
                 });
               } else if (owner.indexOf('김남욱GM') >= 0 || /AI (CEO|CMO|CTO|COO|CFO|CPO|CHRO)/.test(owner) || /웰리|시모|시토|시우|시뽀|시포|시로/.test(owner)) {
                 // ★ G1 합류: GM 본인 + AI C레벨 전체 (2026-06-01 GM 확정 v3)
@@ -6491,7 +6493,8 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
                 var status = (st === '완료') ? '완료' : (st === '보류') ? '보류' : '진행중';
                 items.push({
                   id: base, title: title, status: status,
-                  category: '업무', description: '', isToday: true, startDate: sd, ssotAuto: true
+                  category: '업무', description: rawContent, isToday: true, startDate: sd, ssotAuto: true,
+                  _sheetsId: String(row['id'] || '')
                 });
               }
             });
@@ -6503,13 +6506,21 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
     }
 
     function gm1UpdateStatus(id, status) {
+      // ssot-* 기원 항목은 localStorage 없음 → gm1SsotItems에서 낙관적 갱신 + Sheets sync
+      if (String(id).indexOf('ssot-') === 0) {
+        var ssotIdx = gm1SsotItems.findIndex(function(x){ return x.id === id; });
+        if (ssotIdx >= 0) { gm1SsotItems[ssotIdx].status = status; }
+        gm1SyncUpdate(id, { status: status });
+        gm1RenderToday();
+        return;
+      }
       var tasks = gm1Load();
       var target = null;
       for (var i = 0; i < tasks.length; i++) {
         if (tasks[i].id === id) { tasks[i].status = status; target = tasks[i]; break; }
       }
       gm1Save(tasks);
-      // Sheets 동기화 (2026-06-01): ssotSynced=true인 localStorage 항목만 update
+      // Sheets 동기화: ssotSynced=true인 localStorage 항목
       if (target && target.ssotSynced && String(id).indexOf('seed-') !== 0) {
         gm1SyncUpdate(id, { status: status });
       }
@@ -6745,12 +6756,11 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
         html += '<button class="gm1-action-btn" title="이 항목 링크 복사" data-id="' + gm1Esc(t.id) + '" data-action="copylink" style="padding:4px 10px;font-size:11px;">🔗</button>';
         // 편집
         html += '<button class="gm1-action-btn edit" data-id="' + gm1Esc(t.id) + '" data-action="edit" style="padding:4px 10px;font-size:11px;">편집</button>';
+        // 완료·보류: ssot 항목 포함 모두 표시 (Sheets sync) — 삭제는 SSOT 단방향 유지
+        html += '<button class="gm1-action-btn done" data-id="' + gm1Esc(t.id) + '" data-action="done" style="padding:4px 10px;font-size:11px;">완료</button>';
+        html += '<button class="gm1-action-btn hold" data-id="' + gm1Esc(t.id) + '" data-action="hold" style="padding:4px 10px;font-size:11px;">보류</button>';
         if (!isSsot) {
-          // 완료
-          html += '<button class="gm1-action-btn done" data-id="' + gm1Esc(t.id) + '" data-action="done" style="padding:4px 10px;font-size:11px;">완료</button>';
-          // 보류
-          html += '<button class="gm1-action-btn hold" data-id="' + gm1Esc(t.id) + '" data-action="hold" style="padding:4px 10px;font-size:11px;">보류</button>';
-          // 삭제
+          // 삭제: localStorage 전용 항목만 (SSOT 기원은 삭제 불가)
           html += '<button class="gm1-action-btn del" data-id="' + gm1Esc(t.id) + '" data-action="delete" style="padding:4px 10px;font-size:11px;">삭제</button>';
         }
         // ⚠️ 결과 보고서 버튼 의도적 제외 (GM 지시 2026-06-01)
@@ -7421,6 +7431,11 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
 
       // SSOT 기원 항목(ssot-*): localStorage에 없으므로 gm1EditTask 스킵, Sheets만 update
       var isSsotOrigin = String(id).indexOf('ssot-') === 0;
+      // desc 빈값 방어 — 빈 문자열이면 gm1SsotItems의 기존 description 보존 (2026-06-01 패치)
+      if (isSsotOrigin && !desc) {
+        var ssotT = gm1SsotItems.find(function(x){ return x.id === id; });
+        if (ssotT && ssotT.description) desc = ssotT.description;
+      }
       if (!isSsotOrigin) {
         // startDate 빈 값 덮어쓰기 방지 — 빈 문자열이면 기존 값 유지 (2026-06-01 긴급 패치)
         var existing = gm1Load().find(function(x){ return x.id === id; });
