@@ -20,7 +20,7 @@ model: opus
   - M1 공식 채널 — `data-doc="ghome"` (IG namuk.wellperion·네이버 블로그·카페 3채널)
   - M2 콘텐츠 제작 프로세스 — `data-doc="g14"`
   - M3 오프라인 홍보물 디자인 제작 — `data-doc="gcmo-print"`
-  - M4 전환 Funnel — `cmo/funnel/전환Funnel.html` (노출→문의 전환 설계)
+  - M4 마케팅 현황 대시보드 — `cmo/funnel/마케팅현황대시보드.html` (노출→문의→등록 단계 추적)
   - 본인 R/R 실무 데이터·SOP는 g10 탭(개요)이 아니라 이 섹터 개별 메뉴에서 최신값 확인
 - 참조 방법: 파일 Read → ① id="g10"에서 공통 탭 + 본인(CMO) 탭 → ② 위 (3) 섹터 메뉴(`data-doc` 또는 경로) 순차 확인
 
