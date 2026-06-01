@@ -1,5 +1,6 @@
 ﻿# scripts/instagram_upload_playwright.py
-# v1.0 — Playwright Persistent Context (Creator 계정) 인스타그램 자동 업로드
+# v1.1 — Playwright Persistent Context (Creator 계정) 인스타그램 자동 업로드
+#         멀티계정(--account) + 영상(mp4) 캐러셀 + ig_NN 폴더 형식 지원
 #
 # 실행 전 사전 설치 (GM님 로컬 PC 1회):
 #   cd C:\Users\jjky0\welperion-automation
@@ -9,18 +10,22 @@
 #
 # 실행 방법:
 #   setup (최초 1회 · GM님 수동 로그인):
-#     python scripts\instagram_upload_playwright.py --mode setup
+#     python scripts\instagram_upload_playwright.py --mode setup [--account wellperion]
 #   dryrun (셀렉터 검증, 발행 없음):
-#     python scripts\instagram_upload_playwright.py --mode dryrun
+#     python scripts\instagram_upload_playwright.py --mode dryrun [--account wellperion]
 #   publish (3 post 묶음 실 발행 — 별건 결재 후):
 #     python scripts\instagram_upload_playwright.py --mode publish ^
-#         --content-folder instagram\260426_WJO_스쿼시_대회
+#         --content-folder instagram\260520_바레_런칭 [--account wellperion]
 #
-# 콘텐츠 폴더 v1.0 명세:
+# 콘텐츠 폴더 v1.1 명세:
 #   instagram/{YYMMDD_콘텐츠명}/
-#     ├─ output/post_A_1.jpg, post_A_2.jpg, ..., post_B_*.jpg, post_C_*.jpg
+#     ├─ output/post_A_1.jpg, post_A_2.jpg, ..., post_B_*.jpg, post_C_*.jpg  (기존 형식)
+#     ├─ output/ig_01.jpg, ig_02.jpg, ..., ig_07.mp4                          (ig_NN 형식 · 바레 등)
 #     └─ 큐레이션_추천.md  ← 3 섹션 (## post A / ## post B / ## post C),
 #                            각 섹션: ### 캡션 / ### 해시태그 / ### Collaborator / ### 종목
+#
+# 멀티계정 프로필 경로:
+#   profiles/instagram/{account}/  (기본 account: namuk.wellperion)
 #
 # 결과 확인:
 #   C:\Users\jjky0\welperion-automation\scripts\poc-evidence\instagram-{mode}-{timestamp}.png
@@ -40,8 +45,17 @@ from playwright.async_api import async_playwright
 # -----------------------------------------------------------------
 INSTAGRAM_HOME_URL = "https://www.instagram.com"
 
-# Persistent Context 프로필 디렉터리 — DPAPI 암호화 적용됨
-PERSISTENT_PROFILE_DIR = Path(r"C:\Users\jjky0\welperion-automation\profiles\instagram")
+# Persistent Context 프로필 베이스 디렉터리 — 계정별 하위 폴더로 분리
+# 실제 경로: PROFILE_BASE / {account}  (예: profiles/instagram/namuk.wellperion)
+PROFILE_BASE = Path(r"C:\Users\jjky0\welperion-automation\profiles\instagram")
+
+# 기본 계정 (--account 미지정 시)
+DEFAULT_ACCOUNT = "namuk.wellperion"
+
+
+def get_profile_dir(account: str) -> Path:
+    """계정명 → Persistent Context 프로필 경로. 기존 단일 프로필과 호환."""
+    return PROFILE_BASE / account
 
 EVIDENCE_DIR = Path(r"C:\Users\jjky0\welperion-automation\scripts\poc-evidence")
 
@@ -69,10 +83,11 @@ CREATE_SUBMENU_SELECTORS = [
     'div[role="menuitem"]:has-text("게시물")',
 ]
 
-# 사진 업로드 input[type="file"] 셀렉터 후보 (인스타 2026 데스크탑 기준)
+# 사진/영상 업로드 input[type="file"] 셀렉터 후보 (인스타 2026 데스크탑 기준)
+# accept*="image" 셀렉터는 mp4 혼합 캐러셀 시 제한될 수 있으므로 범용 순위 상향
 FILE_INPUT_SELECTORS = [
-    'input[type="file"][accept*="image"]',
     'input[type="file"]',
+    'input[type="file"][accept*="image"]',
     'form[role="presentation"] input[type="file"]',
 ]
 
@@ -244,19 +259,63 @@ def _parse_post_section(slot: str, body: str) -> PostSpec:
 
 
 def collect_post_images(content_folder: Path, slot: str) -> list[Path]:
+    """output/ 디렉터리에서 슬롯에 해당하는 파일 목록을 반환.
+
+    우선순위:
+    1) post_{slot}_N 형식 (기존 표준) — .jpg/.jpeg/.png/.mp4 지원.
+       영상(mp4)은 항상 마지막 슬롯으로 정렬.
+    2) post_{slot}_N 매칭 없으면 ig_NN 형식 fallback (바레 등 단일 슬롯 폴더).
+       ig_NN.jpg/png/mp4 파일을 숫자 순으로 수집하고 mp4는 가장 뒤로 이동.
+    """
     output_dir = content_folder / "output"
     if not output_dir.exists():
         return []
-    pattern = re.compile(rf"^post_{slot}_(\d+)", re.IGNORECASE)
-    candidates: list[tuple[int, Path]] = []
+
+    IMAGE_EXTS = {".jpg", ".jpeg", ".png"}
+    VIDEO_EXTS = {".mp4"}
+    ALLOWED_EXTS = IMAGE_EXTS | VIDEO_EXTS
+
+    # --- 1) post_{slot}_N 형식 ---
+    pattern = re.compile(rf"^post_{re.escape(slot)}_(\d+)", re.IGNORECASE)
+    images: list[tuple[int, Path]] = []
+    videos: list[tuple[int, Path]] = []
     for p in output_dir.iterdir():
-        if not p.is_file() or p.suffix.lower() not in (".jpg", ".jpeg", ".png"):
+        if not p.is_file() or p.suffix.lower() not in ALLOWED_EXTS:
             continue
         m = pattern.match(p.name)
         if m:
-            candidates.append((int(m.group(1)), p))
-    candidates.sort(key=lambda t: t[0])
-    return [p for _, p in candidates]
+            idx = int(m.group(1))
+            if p.suffix.lower() in VIDEO_EXTS:
+                videos.append((idx, p))
+            else:
+                images.append((idx, p))
+    if images or videos:
+        images.sort(key=lambda t: t[0])
+        videos.sort(key=lambda t: t[0])
+        # 영상은 항상 마지막 슬롯
+        return [p for _, p in images] + [p for _, p in videos]
+
+    # --- 2) ig_NN 형식 fallback (post_{slot}_N 미발견 시) ---
+    ig_pattern = re.compile(r"^ig_?(\d+)", re.IGNORECASE)
+    ig_images: list[tuple[int, Path]] = []
+    ig_videos: list[tuple[int, Path]] = []
+    for p in output_dir.iterdir():
+        if not p.is_file() or p.suffix.lower() not in ALLOWED_EXTS:
+            continue
+        m = ig_pattern.match(p.name)
+        if m:
+            idx = int(m.group(1))
+            if p.suffix.lower() in VIDEO_EXTS:
+                ig_videos.append((idx, p))
+            else:
+                ig_images.append((idx, p))
+    if ig_images or ig_videos:
+        ig_images.sort(key=lambda t: t[0])
+        ig_videos.sort(key=lambda t: t[0])
+        # 영상은 항상 마지막 슬롯
+        return [p for _, p in ig_images] + [p for _, p in ig_videos]
+
+    return []
 
 
 def enforce_subject_collaborators(spec: PostSpec) -> None:
@@ -275,7 +334,11 @@ def enforce_subject_collaborators(spec: PostSpec) -> None:
 def validate_post_spec(spec: PostSpec) -> list[str]:
     errors: list[str] = []
     if not spec.image_paths:
-        errors.append(f"post {spec.slot}: 사진 파일 미존재 (output/post_{spec.slot}_*.jpg)")
+        slot_label = spec.slot
+        errors.append(
+            f"post {slot_label}: 파일 미존재 "
+            f"(output/post_{slot_label}_*.jpg/mp4 또는 ig_NN.jpg/mp4)"
+        )
     if not spec.caption.strip() and not spec.hashtags:
         errors.append(f"post {spec.slot}: 캡션·해시태그 모두 비어 있음")
     # 종목이 강제 매핑 대상이면 collaborator 누락 차단
@@ -351,17 +414,19 @@ async def detect_login_required(page) -> bool:
 # setup 모드 — 최초 1회 대표님 수동 로그인으로 세션 확보
 # headful(화면 표시) 모드로 실행 → 대표님이 직접 로그인 → 세션 자동 저장
 # -----------------------------------------------------------------
-async def run_setup() -> None:
+async def run_setup(account: str = DEFAULT_ACCOUNT) -> None:
+    profile_dir = get_profile_dir(account)
     print("[INFO] === SETUP 모드 시작 ===")
+    print(f"[INFO] 계정: {account}")
     print("[INFO] headful Chrome 창이 열립니다.")
     print("[INFO] 인스타그램에 로그인 후 Enter 키를 눌러 세션을 저장하세요.")
-    print(f"[INFO] 프로필 저장 경로: {PERSISTENT_PROFILE_DIR}")
+    print(f"[INFO] 프로필 저장 경로: {profile_dir}")
 
-    PERSISTENT_PROFILE_DIR.mkdir(parents=True, exist_ok=True)
+    profile_dir.mkdir(parents=True, exist_ok=True)
 
     async with async_playwright() as p:
         context = await p.chromium.launch_persistent_context(
-            user_data_dir=str(PERSISTENT_PROFILE_DIR),
+            user_data_dir=str(profile_dir),
             headless=False,
             user_agent=FIXED_UA,
             args=["--start-maximized"],
@@ -397,7 +462,7 @@ async def run_setup() -> None:
         await context.close()
 
     print("[INFO] === SETUP 완료 ===")
-    print(f"[INFO] 프로필 저장 위치: {PERSISTENT_PROFILE_DIR}")
+    print(f"[INFO] 프로필 저장 위치: {profile_dir}")
     print("[INFO] 이후 --mode dryrun 실행 시 이 세션이 자동 사용됩니다.")
 
 
@@ -405,15 +470,17 @@ async def run_setup() -> None:
 # setup-auto 모드 — 로그인을 자동 감지해 세션 저장 (Enter 불필요)
 # 백그라운드 실행 가능: headful 창이 뜨면 GM이 로그인만 하면 자동 종료.
 # -----------------------------------------------------------------
-async def run_setup_auto(max_wait_sec: int = 300) -> None:
+async def run_setup_auto(account: str = DEFAULT_ACCOUNT, max_wait_sec: int = 300) -> None:
+    profile_dir = get_profile_dir(account)
     print("[INFO] === SETUP-AUTO 모드 시작 ===")
-    print("[INFO] headful Chrome 창이 열립니다. namuk.wellperion 으로 로그인하세요.")
+    print(f"[INFO] 계정: {account}")
+    print(f"[INFO] headful Chrome 창이 열립니다. {account} 으로 로그인하세요.")
     print("[INFO] 로그인 감지 시 자동으로 세션 저장 후 종료합니다 (Enter 불필요).")
-    PERSISTENT_PROFILE_DIR.mkdir(parents=True, exist_ok=True)
+    profile_dir.mkdir(parents=True, exist_ok=True)
 
     async with async_playwright() as p:
         context = await p.chromium.launch_persistent_context(
-            user_data_dir=str(PERSISTENT_PROFILE_DIR),
+            user_data_dir=str(profile_dir),
             headless=False,
             user_agent=FIXED_UA,
             args=["--start-maximized"],
@@ -451,12 +518,14 @@ async def run_setup_auto(max_wait_sec: int = 300) -> None:
 # -----------------------------------------------------------------
 # dryrun 모드 — 로그인 세션 확인 + 새 게시물 버튼 셀렉터 탐색 (발행 안 함)
 # -----------------------------------------------------------------
-async def run_dryrun() -> None:
-    if not PERSISTENT_PROFILE_DIR.exists():
-        print("[ERROR] 프로필 디렉터리 미존재. 먼저 --mode setup 실행 후 대표님이 로그인해야 합니다.")
+async def run_dryrun(account: str = DEFAULT_ACCOUNT) -> None:
+    profile_dir = get_profile_dir(account)
+    if not profile_dir.exists():
+        print(f"[ERROR] 프로필 디렉터리 미존재 ({profile_dir}). 먼저 --mode setup --account {account} 실행 후 로그인해야 합니다.")
         sys.exit(3)
 
     print("[INFO] === DRYRUN 모드 시작 ===")
+    print(f"[INFO] 계정: {account}")
     EVIDENCE_DIR.mkdir(parents=True, exist_ok=True)
 
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -464,7 +533,7 @@ async def run_dryrun() -> None:
 
     async with async_playwright() as p:
         context = await p.chromium.launch_persistent_context(
-            user_data_dir=str(PERSISTENT_PROFILE_DIR),
+            user_data_dir=str(profile_dir),
             headless=False,
             user_agent=FIXED_UA,
             args=["--start-maximized"],
@@ -643,15 +712,17 @@ async def run_publish(
     content_folder: Path,
     location: str = "",
     mentions: list[str] | None = None,
+    account: str = DEFAULT_ACCOUNT,
 ) -> dict[str, str]:
-    if not PERSISTENT_PROFILE_DIR.exists():
-        print("[ERROR] 프로필 디렉터리 미존재. --mode setup 우선 실행 필요.")
+    profile_dir = get_profile_dir(account)
+    if not profile_dir.exists():
+        print(f"[ERROR] 프로필 디렉터리 미존재 ({profile_dir}). --mode setup --account {account} 우선 실행 필요.")
         sys.exit(3)
     if not content_folder.exists() or not content_folder.is_dir():
         print(f"[ERROR] 콘텐츠 폴더 미존재: {content_folder}")
         sys.exit(4)
 
-    print(f"[INFO] === PUBLISH 모드 시작 === folder={content_folder}")
+    print(f"[INFO] === PUBLISH 모드 시작 === folder={content_folder} account={account}")
 
     # 1. 큐레이션 파싱 + 사진 매핑 + 종목 collaborator 강제 + 검증
     md_path = content_folder / "큐레이션_추천.md"
@@ -685,7 +756,7 @@ async def run_publish(
 
     async with async_playwright() as p:
         context = await p.chromium.launch_persistent_context(
-            user_data_dir=str(PERSISTENT_PROFILE_DIR),
+            user_data_dir=str(profile_dir),
             headless=False,
             user_agent=FIXED_UA,
             args=["--start-maximized"],
@@ -808,7 +879,9 @@ async def _publish_single_post(
         raise RuntimeError("사진 input[type=file] 미발견")
 
     await file_input.set_input_files([str(p) for p in spec.image_paths])
-    print(f"[INFO]   사진 {len(spec.image_paths)}장 업로드 시작")
+    video_count = sum(1 for p in spec.image_paths if p.suffix.lower() == ".mp4")
+    image_count = len(spec.image_paths) - video_count
+    print(f"[INFO]   파일 업로드 시작 — 이미지 {image_count}장 + 영상 {video_count}개 (총 {len(spec.image_paths)})")
     await page.wait_for_timeout(3500)
 
     # "다음" 2회 클릭 (자르기 → 필터 → 캡션) — 인스타 데스크탑 표준 흐름
@@ -1038,7 +1111,7 @@ async def _capture_latest_post_url(page) -> str | None:
 # -----------------------------------------------------------------
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="웰페리온 AI CTO — 인스타그램 Playwright v1.0 (Persistent Context · 3 post 묶음)"
+        description="웰페리온 AI CTO — 인스타그램 Playwright v1.1 (Persistent Context · 멀티계정 · 영상 캐러셀)"
     )
     parser.add_argument(
         "--mode",
@@ -1048,13 +1121,25 @@ def parse_args() -> argparse.Namespace:
             "setup: 최초 1회 GM님 수동 로그인 (Enter로 저장) / "
             "setup-auto: 로그인 자동 감지 저장 (Enter 불필요·백그라운드 가능) / "
             "dryrun: 세션 확인 + publish 흐름 셀렉터 후보군 전체 탐색 (기본·발행 없음) / "
-            "publish: instagram/{콘텐츠}/output/post_{A|B|C}_*.jpg 실 발행 — 존재하는 슬롯만(단일 포스트 허용·비가역)"
+            "publish: 콘텐츠 폴더 실 발행 (post_{A|B|C}_N 또는 ig_NN 형식 · 이미지+영상 혼합 캐러셀 · 비가역)"
+        ),
+    )
+    parser.add_argument(
+        "--account",
+        default=DEFAULT_ACCOUNT,
+        help=(
+            f"인스타그램 계정 식별자 (기본: {DEFAULT_ACCOUNT}). "
+            "프로필 경로: profiles/instagram/{account}. "
+            "예: --account wellperion"
         ),
     )
     parser.add_argument(
         "--content-folder",
         default=None,
-        help="publish 모드 필수: 콘텐츠 폴더 경로 (예: instagram\\260426_WJO_스쿼시_대회)",
+        help=(
+            "publish 모드 필수: 콘텐츠 폴더 경로 "
+            "(예: instagram\\260520_바레_런칭 또는 instagram\\260426_WJO_스쿼시_대회)"
+        ),
     )
     parser.add_argument(
         "--location",
@@ -1064,8 +1149,10 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--mentions",
         default="",
-        help="캡션 멘션 핸들 목록, 콤마 구분 (예: 'namuk.wellperion,wellperion_squash'). "
-             "caption 본문에 이미 있는 핸들은 중복 추가 안 함.",
+        help=(
+            "캡션 멘션 핸들 목록, 콤마 구분 (예: 'namuk.wellperion,wellperion_squash'). "
+            "caption 본문에 이미 있는 핸들은 중복 추가 안 함."
+        ),
     )
     return parser.parse_args()
 
@@ -1074,9 +1161,9 @@ if __name__ == "__main__":
     args = parse_args()
 
     if args.mode == "setup":
-        asyncio.run(run_setup())
+        asyncio.run(run_setup(account=args.account))
     elif args.mode == "setup-auto":
-        asyncio.run(run_setup_auto())
+        asyncio.run(run_setup_auto(account=args.account))
     elif args.mode == "publish":
         if not args.content_folder:
             print("[ERROR] --mode publish 는 --content-folder 인자 필수")
@@ -1085,6 +1172,6 @@ if __name__ == "__main__":
         if not folder.is_absolute():
             folder = Path.cwd() / folder
         mentions_list = [m.strip() for m in args.mentions.split(",") if m.strip()] if args.mentions else []
-        asyncio.run(run_publish(folder, location=args.location, mentions=mentions_list))
+        asyncio.run(run_publish(folder, location=args.location, mentions=mentions_list, account=args.account))
     else:
-        asyncio.run(run_dryrun())
+        asyncio.run(run_dryrun(account=args.account))
