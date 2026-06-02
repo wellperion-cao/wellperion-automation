@@ -9,7 +9,7 @@
 <script>
 /* 최신본 자동 보장 — HTTP 캐시로 옛 버전이 떠 'GM 화면만 미반영'되는 문제 방지 (2026-05-29 COO).
    서버 최신본 버전과 비교해 다르면 1회만 강제 갱신. 루프 방지: ?pv 가 현재 버전과 같으면 종료. */
-window.__PV='20260601-2';
+window.__PV='20260602-1';
 (function(){
   window.addEventListener('pageshow',function(e){ if(e.persisted) location.reload(); });
   try{
@@ -134,6 +134,11 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 .checkbox-group label{display:flex;align-items:center;gap:4px;font-size:13px;cursor:pointer;padding:4px 10px;border-radius:8px;border:1px solid var(--border);background:var(--bg);transition:all 0.15s;user-select:none}
 .checkbox-group label:has(input:checked){background:var(--blue-bg);border-color:rgba(91,159,213,0.3);color:var(--blue)}
 .checkbox-group input[type=checkbox]{accent-color:var(--blue);cursor:pointer}
+.radio-group{display:flex;flex-wrap:wrap;gap:6px;padding:4px 0}
+.radio-group label{display:flex;align-items:center;gap:4px;font-size:13px;cursor:pointer;padding:4px 10px;border-radius:8px;border:1px solid var(--border);background:var(--bg);transition:all 0.15s;user-select:none}
+.radio-group label:has(input:checked){background:var(--blue-bg);border-color:rgba(91,159,213,0.3);color:var(--blue)}
+.radio-group input[type=radio]{accent-color:var(--blue);cursor:pointer}
+.chip.collab{background:rgba(91,159,213,0.07);color:var(--dim);border:1px solid rgba(91,159,213,0.2)}
 .approval-group{display:flex;flex-wrap:wrap;gap:6px;padding:4px 0}
 .approval-group label{display:flex;align-items:center;gap:4px;font-size:13px;cursor:pointer;padding:4px 10px;border-radius:8px;border:1px solid var(--border);background:var(--bg);transition:all 0.15s;user-select:none}
 .approval-group label:has(input:checked){background:var(--purple-bg);border-color:rgba(167,139,218,0.3);color:var(--purple)}
@@ -336,9 +341,21 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
       </select>
     </div>
     <div class="field">
-      <label>담당자 (복수 선택)</label>
-      <div class="checkbox-group" id="fOwnerGroup">
+      <label>담당자 (1명)</label>
+      <div class="radio-group" id="fOwnerGroup">
         <!-- 김남욱GM 제거: GM은 담당자가 아니라 감독·최종책임자 (2026-05-30 업무-2 GM 결정) -->
+        <label><input type="radio" name="fOwner" value="이경연 실장">이경연 실장</label>
+        <label><input type="radio" name="fOwner" value="최준용M">최준용M</label>
+        <label><input type="radio" name="fOwner" value="임정은M">임정은M</label>
+        <label><input type="radio" name="fOwner" value="윤병현AM">윤병현AM</label>
+        <label><input type="radio" name="fOwner" value="이지영 사원">이지영 사원</label>
+        <label><input type="radio" name="fOwner" value="나우열M">나우열M</label>
+        <label><input type="radio" name="fOwner" value="이정헌 소장">이정헌 소장</label>
+      </div>
+    </div>
+    <div class="field">
+      <label>협조 담당자 (여러명)</label>
+      <div class="checkbox-group" id="fCollabGroup">
         <label><input type="checkbox" value="이경연 실장">이경연 실장</label>
         <label><input type="checkbox" value="최준용M">최준용M</label>
         <label><input type="checkbox" value="임정은M">임정은M</label>
@@ -984,6 +1001,12 @@ function renderTaskCard(t, idx) {
     });
   }
 
+  const _cardParsed = parseContent(t.content);
+  if (_cardParsed.collab && _cardParsed.collab.length) {
+    html += '<span class="chip collab" style="font-size:10px;">🤝</span>';
+    _cardParsed.collab.forEach(c => { if (c) html += '<span class="chip collab">' + esc(c) + '</span>'; });
+  }
+
   if (t.startDate || t.endDate) {
     const dateStr = formatDateRange(t.startDate, t.endDate);
     html += '<span class="chip date-chip" onclick="event.stopPropagation();openDateRangePicker(\'' + escAttr(t.id) + '\',\'' + escAttr(t.startDate || '') + '\',\'' + escAttr(t.endDate || '') + '\')" title="클릭하여 시작일·종료일 변경">' + esc(dateStr) + '</span>';
@@ -1151,6 +1174,10 @@ function renderDoneCard(t) {
   if (t.owner) {
     t.owner.split(',').forEach(o => { o = o.trim(); if (o) html += ownerChip(o); });
   }
+  if (p.collab && p.collab.length) {
+    html += '<span class="chip collab" style="font-size:10px;">🤝</span>';
+    p.collab.forEach(c => { if (c) html += '<span class="chip collab">' + esc(c) + '</span>'; });
+  }
   if (t.category) {
     const colors = CAT_COLORS[t.category] || { bg: 'var(--accent-bg)', color: 'var(--accent)' };
     html += '<span class="chip" style="background:' + colors.bg + ';color:' + colors.color + '">' + esc(t.category) + '</span>';
@@ -1249,6 +1276,7 @@ const PROGRESS_MARK = '===PROGRESS_LOG===';
 const BUDGET_MARK = '===BUDGET===';
 const PLAN_MARK = '===PLAN===';
 const RESULT_MARK = '===RESULT===';
+const COLLAB_MARK = '===COLLAB===';
 
 /* 기획 4섹션 하드코딩 템플릿 — 편집 시 비어 있으면 자동 채움 (KPI·일정 제거, 2026-05-30 GM 지시) */
 const PLAN_TEMPLATE = '목적 — \n범위 — \n해결 전략 — \n실행 계획 — ';
@@ -1325,7 +1353,8 @@ function parseContent(content) {
     { key: 'plan',     mark: PLAN_MARK },
     { key: 'progress', mark: PROGRESS_MARK },
     { key: 'result',   mark: RESULT_MARK },
-    { key: 'budget',   mark: BUDGET_MARK }
+    { key: 'budget',   mark: BUDGET_MARK },
+    { key: 'collab',   mark: COLLAB_MARK }
   ];
   const positions = marks
     .map(m => ({ key: m.key, mark: m.mark, idx: raw.indexOf(m.mark) }))
@@ -1364,10 +1393,15 @@ function parseContent(content) {
     logs.sort((a, b) => b.date.localeCompare(a.date));
   }
 
-  return { body, plan, logs, result, budget };
+  let collab = [];
+  if (sections.collab) {
+    collab = sections.collab.split(/\r?\n/)[0].split(',').map(s => s.trim()).filter(Boolean);
+  }
+
+  return { body, plan, logs, result, budget, collab };
 }
 
-function composeContent(body, logs, budget, plan, result) {
+function composeContent(body, logs, budget, plan, result, collab) {
   let out = String(body || '').replace(/\s+$/, '');
   if (plan && String(plan).trim()) {
     out = (out ? out + '\n\n' : '') + PLAN_MARK + '\n' + String(plan).trim();
@@ -1382,6 +1416,9 @@ function composeContent(body, logs, budget, plan, result) {
   }
   if (budget && budget.category && budget.amount > 0) {
     out = (out ? out + '\n\n' : '') + BUDGET_MARK + '\n' + budget.category + ' | ' + Number(budget.amount);
+  }
+  if (collab && collab.length) {
+    out = (out ? out + '\n\n' : '') + COLLAB_MARK + '\n' + collab.join(',');
   }
   // Google Sheets가 '='로 시작하는 값을 수식으로 오인 → 셀이 #ERROR!로 손상되고 원문 유실되는 문제 방지.
   // 본문 없이 ===PROGRESS_LOG=== 등 마커로 시작하면 선행 공백 1칸 추가(읽을 때 본문은 trim되어 무해) (2026-05-29 COO)
@@ -1539,6 +1576,7 @@ function openAddModal() {
   populateTitleSuggest();
   document.getElementById('fCategory').value = '';
   clearCheckboxGroup('fOwnerGroup');
+  clearCheckboxGroup('fCollabGroup');
   document.getElementById('fStartDate').value = new Date().toISOString().slice(0, 10);
   document.getElementById('fEndDate').value = '';
   document.getElementById('fContent').value = '';
@@ -1594,7 +1632,10 @@ function openEditModal(id) {
   document.getElementById('editId').value = t.id;
   document.getElementById('fTitle').value = t.title || '';
   document.getElementById('fCategory').value = t.category || '';
-  setCheckboxGroup('fOwnerGroup', (t.owner || '').split(',').map(s => s.trim()));
+  const ownerParts = (t.owner || '').split(',').map(s => s.trim()).filter(Boolean);
+  const primaryOwner = ownerParts.slice(0, 1);
+  const legacyCollab = ownerParts.slice(1);
+  setCheckboxGroup('fOwnerGroup', primaryOwner);
   document.getElementById('fStartDate').value = fmtDate(t.startDate);
   document.getElementById('fEndDate').value = fmtDate(t.endDate);
   const parsed = parseContent(t.content);
@@ -1607,6 +1648,11 @@ function openEditModal(id) {
   renderProgressList();
   document.getElementById('fBudgetCategory').value = (parsed.budget && parsed.budget.category) || '';
   document.getElementById('fBudgetAmount').value = (parsed.budget && parsed.budget.amount) || '';
+  // 협조 담당자: legacyCollab(구 다중담당자 잔여) + content 마커 collab 병합, 중복 제거
+  const contentCollab = parsed.collab || [];
+  const mergedCollab = Array.from(new Set([...legacyCollab, ...contentCollab]));
+  clearCheckboxGroup('fCollabGroup');
+  setCheckboxGroup('fCollabGroup', mergedCollab);
   document.getElementById('fLink').value = t.link || '';
   setCheckboxGroup('fApprovalGroup', (t.approval || '').split(',').map(s => s.trim()));
   updateBudgetRoute();
@@ -1643,18 +1689,18 @@ function checkDuplicateTitle() {
 }
 
 function clearCheckboxGroup(groupId) {
-  document.querySelectorAll('#' + groupId + ' input[type=checkbox]').forEach(cb => cb.checked = false);
+  document.querySelectorAll('#' + groupId + ' input[type=checkbox],#' + groupId + ' input[type=radio]').forEach(cb => cb.checked = false);
 }
 
 function setCheckboxGroup(groupId, values) {
-  document.querySelectorAll('#' + groupId + ' input[type=checkbox]').forEach(cb => {
+  document.querySelectorAll('#' + groupId + ' input[type=checkbox],#' + groupId + ' input[type=radio]').forEach(cb => {
     cb.checked = values.includes(cb.value);
   });
 }
 
 function getCheckboxValues(groupId) {
   const vals = [];
-  document.querySelectorAll('#' + groupId + ' input[type=checkbox]:checked').forEach(cb => vals.push(cb.value));
+  document.querySelectorAll('#' + groupId + ' input[type=checkbox]:checked,#' + groupId + ' input[type=radio]:checked').forEach(cb => vals.push(cb.value));
   return vals.join(',');
 }
 
@@ -1688,12 +1734,15 @@ async function saveTask() {
   // 기획·결과보고 (선택 항목)
   const planText = document.getElementById('fPlan').value;
   const resultText = document.getElementById('fResult').value;
+  const collabRaw = getCheckboxValues('fCollabGroup');
+  const collabArr = collabRaw ? collabRaw.split(',').map(s => s.trim()).filter(Boolean) : [];
   const composedContent = composeContent(
     document.getElementById('fContent').value,
     modalLogsCache,
     budget,
     planText,
-    resultText
+    resultText,
+    collabArr
   );
 
   const params = {
