@@ -605,15 +605,32 @@ function buildFilters() {
   });
   catEl.innerHTML = html;
 
-  // 검색창
+  // 검색창 — IME(한글) 조합이 끊기지 않도록 input은 1회만 생성·재사용.
+  // 재렌더 시 input을 절대 재생성하거나 .value를 건드리지 않는다(조합 중 DOM 교체=자모 분리 버그).
   const searchEl = document.getElementById('searchRow');
-  let shtml = '<input type="text" id="searchInput" placeholder="업무명·내용·담당자 검색" value="' + escAttr(searchQuery) + '" oninput="setSearchQuery(this.value)" style="flex:1;background:var(--paper);border:1px solid var(--border);color:var(--text);padding:7px 12px;border-radius:8px;font-size:13px;font-family:inherit;">';
-  if (searchQuery) shtml += '<button class="filter-btn" onclick="setSearchQuery(\'\')">✕ 초기화</button>';
-  searchEl.innerHTML = shtml;
+  let si = document.getElementById('searchInput');
+  if (!si) {
+    searchEl.innerHTML =
+      '<input type="text" id="searchInput" placeholder="업무명·내용·담당자 검색" oninput="setSearchQuery(this.value)" style="flex:1;background:var(--paper);border:1px solid var(--border);color:var(--text);padding:7px 12px;border-radius:8px;font-size:13px;font-family:inherit;">'
+      + '<button type="button" id="searchClearBtn" class="filter-btn" onclick="clearSearch()" style="display:none;">✕ 초기화</button>';
+    si = document.getElementById('searchInput');
+    si.value = searchQuery;  // 최초 1회만 (딥링크 q 반영) — 조합 중이 아니므로 안전
+  }
+  // 초기화 버튼만 토글 (input 요소는 손대지 않음 → 조합 유지)
+  const clearBtn = document.getElementById('searchClearBtn');
+  if (clearBtn) clearBtn.style.display = searchQuery ? '' : 'none';
 }
 
 function setSortBy(s) { activeSortBy = s; renderTasks(); }
 function setSearchQuery(q) { searchQuery = q; renderTasks(); }
+/* ✕ 초기화 — 사용자 액션이라 .value 직접 비움(조합 중 아님) */
+function clearSearch() {
+  const si = document.getElementById('searchInput');
+  if (si) si.value = '';
+  searchQuery = '';
+  renderTasks();
+  if (si) si.focus();
+}
 
 /* 검색 일치 여부 — 진행중·보류·완료 로그 모두 동일 기준 적용 (검색어 없으면 전부 통과) */
 function matchesSearch(t) {
@@ -789,21 +806,9 @@ function loadFallback() {
    Render
    ═══════════════════════════════════════════ */
 function renderTasks() {
-  // 검색칸은 buildFilters에서 매번 새로 생성됨 → 포커스·캐럿 위치를 직접 보존·복원.
-  // (검색어를 모두 지워 빈 값이 돼도 포커스가 유지되도록: 빈값 조건 분기 제거)
-  const _prevSi = document.getElementById('searchInput');
-  const _hadFocus = !!_prevSi && document.activeElement === _prevSi;
-  const _caret = _prevSi ? _prevSi.selectionStart : null;
-  // 필터 UI 재빌드 (카운트·선택 상태 동기화)
+  // 필터 UI 재빌드. 검색 input은 buildFilters에서 재생성하지 않으므로
+  // 포커스·한글 IME 조합·캐럿이 그대로 유지됨 (별도 복원 불필요).
   buildFilters();
-  if (_hadFocus) {
-    const si = document.getElementById('searchInput');
-    if (si) {
-      si.focus();
-      const pos = (_caret == null) ? si.value.length : _caret;
-      try { si.setSelectionRange(pos, pos); } catch (e) {}
-    }
-  }
 
   const el = document.getElementById('mainContent');
   // GM 단독 할일은 G1 전용 — 업무 현황(실무진용)에서 제외 (2026-06-01 GM 확정)
