@@ -1,0 +1,69 @@
+#!/bin/sh
+# pre-commit.hook — 웰페리온 가이드허브 home changelog 자동 갱신
+# 설치 위치: .git/hooks/pre-commit  (install_hooks.sh 로 설치)
+#
+# 【방식: pre-commit 선택 이유】
+#   pre-push 에서 git commit 을 하면 해당 커밋은 이미 결정된 push 범위 밖이라
+#   "다음 push" 에만 포함됨 → 목표(현재 push에 포함) 달성 불가.
+#   pre-commit 은 커밋 생성 직전에 실행되므로 git add 만 하면
+#   changelog 갱신분이 해당 커밋에 자동 포함됨. push 재귀도 없음.
+#
+# 【무한루프 방지】
+#   커밋 메시지 첫 줄이 "auto(changelog):" 로 시작하면 skip.
+#   또한 auto changelog 커밋 자체는 --no-verify 로 생성하므로
+#   이 hook 이 재실행되지 않음.
+#
+# 【안전 원칙】
+#   스크립트 실패 / 변경 없음 → exit 0 (push/commit 절대 막지 않음)
+
+# ── 직전 커밋 메시지 확인 (무한루프 가드 1: 현재 커밋 메시지) ────────────
+# COMMIT_EDITMSG 는 현재 커밋 준비 중인 메시지 파일
+COMMIT_MSG_FILE=".git/COMMIT_EDITMSG"
+if [ -f "$COMMIT_MSG_FILE" ]; then
+  FIRST_LINE="$(head -n 1 "$COMMIT_MSG_FILE" 2>/dev/null)"
+  case "$FIRST_LINE" in
+    auto\(changelog\):*)
+      echo "[changelog-hook] auto(changelog) 커밋 — skip"
+      exit 0
+      ;;
+  esac
+fi
+
+# ── repo root 확인 ────────────────────────────────────────────────────────
+REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null)"
+if [ -z "$REPO_ROOT" ]; then
+  echo "[changelog-hook][WARN] git root 를 찾을 수 없음 — skip"
+  exit 0
+fi
+
+SCRIPT="$REPO_ROOT/scripts/update_guide_hub_changelog.py"
+GUIDE_HTML="$REPO_ROOT/3. 웰페리온 가이드/wellperion_guide(main).html"
+
+# ── 스크립트 존재 확인 ────────────────────────────────────────────────────
+if [ ! -f "$SCRIPT" ]; then
+  echo "[changelog-hook][WARN] 스크립트 없음: $SCRIPT — skip"
+  exit 0
+fi
+
+# ── changelog 갱신 실행 ───────────────────────────────────────────────────
+echo "[changelog-hook] home changelog 갱신 중..."
+python "$SCRIPT"
+EXIT_CODE=$?
+
+if [ $EXIT_CODE -ne 0 ]; then
+  echo "[changelog-hook][WARN] 스크립트 실패 (exit $EXIT_CODE) — push 는 계속 진행"
+  exit 0
+fi
+
+# ── 변경 여부 확인 후 stage ────────────────────────────────────────────────
+# git diff --name-only: 워킹트리 변경 (unstaged)
+CHANGED="$(git diff --name-only -- "3. 웰페리온 가이드/wellperion_guide(main).html" 2>/dev/null)"
+if [ -n "$CHANGED" ]; then
+  echo "[changelog-hook] 변경 감지 → git add"
+  git add -- "3. 웰페리온 가이드/wellperion_guide(main).html"
+  echo "[changelog-hook] staged: wellperion_guide(main).html (이번 커밋에 포함됨)"
+else
+  echo "[changelog-hook] 변경 없음 — no-op"
+fi
+
+exit 0
