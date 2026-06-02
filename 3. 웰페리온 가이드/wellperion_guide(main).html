@@ -6502,10 +6502,13 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
               var needsGm = !gmSign && apr && (apr === '대기' || apr.indexOf('부서장') >= 0);
               var base    = 'ssot-' + (row['id'] || title);
               var rawContent = String(row['내용'] || '');
+              var parsed  = gm1ParseContent(rawContent);  // D-1 역파서: 마커 분해 + 진척/예산 복원
               if (needsGm) {
                 items.push({
                   id: base, title: '[결재] ' + title, status: '진행중',
-                  category: '결재', description: rawContent, isToday: true, startDate: sd, ssotAuto: true,
+                  category: '결재', description: parsed.description,
+                  progressLog: parsed.progressLog, budgetCat: parsed.budgetCat, budgetAmt: parsed.budgetAmt,
+                  isToday: true, startDate: sd, ssotAuto: true,
                   _sheetsId: String(row['id'] || '')
                 });
               } else if (owner.indexOf('김남욱GM') >= 0 || /AI (CEO|CMO|CTO|COO|CFO|CPO|CHRO)/.test(owner) || /웰리|시모|시토|시우|시뽀|시포|시로/.test(owner)) {
@@ -6517,7 +6520,9 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
                 var status = (st === '완료') ? '완료' : (st === '보류') ? '보류' : '진행중';
                 items.push({
                   id: base, title: title, status: status,
-                  category: '업무', description: rawContent, isToday: true, startDate: sd, ssotAuto: true,
+                  category: '업무', description: parsed.description,
+                  progressLog: parsed.progressLog, budgetCat: parsed.budgetCat, budgetAmt: parsed.budgetAmt,
+                  isToday: true, startDate: sd, ssotAuto: true,
                   _sheetsId: String(row['id'] || '')
                 });
               }
@@ -7293,6 +7298,69 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
       // Sheets '=' 수식 오인 방지 (업무SSOT 동일 패턴)
       if (out.charAt(0) === '=') out = ' ' + out;
       return out;
+    }
+
+    /* gm1ComposeContent 역파서 — 마커 포맷 '내용' → {description, progressLog, budgetCat, budgetAmt}
+       하위호환: 마커 없으면 통째로 description. 부분/오류 마커도 graceful (절대 throw 안 함). */
+    function gm1ParseContent(rawContent) {
+      var result = { description: '', progressLog: [], budgetCat: '', budgetAmt: 0 };
+      try {
+        var raw = String(rawContent == null ? '' : rawContent);
+        // compose가 '=' 회피용으로 앞에 붙인 선행 공백 1개 복원 제거
+        if (raw.charAt(0) === ' ' && raw.charAt(1) === '=') raw = raw.slice(1);
+
+        var budgetText = '';
+        var budgetIdx = raw.indexOf('===BUDGET===');
+        if (budgetIdx >= 0) {
+          budgetText = raw.slice(budgetIdx + '===BUDGET==='.length);
+          raw = raw.slice(0, budgetIdx);
+        }
+
+        var logText = '';
+        var logIdx = raw.indexOf('===PROGRESS_LOG===');
+        if (logIdx >= 0) {
+          logText = raw.slice(logIdx + '===PROGRESS_LOG==='.length);
+          raw = raw.slice(0, logIdx);
+        }
+
+        // 본문(마커 앞) — compose가 붙인 후행 '\n\n' 제거
+        result.description = raw.replace(/\s+$/, '');
+
+        // 진척로그 파싱: 'YYYY-MM-DD | 텍스트' 줄들
+        if (logText) {
+          logText.replace(/^\s+/, '').split('\n').forEach(function(line){
+            var s = String(line).replace(/\s+$/, '');
+            if (!s) return;
+            var bar = s.indexOf(' | ');
+            if (bar >= 0) {
+              result.progressLog.push({ date: s.slice(0, bar).trim(), text: s.slice(bar + 3) });
+            } else {
+              // 구분자 없는 줄은 직전 로그 텍스트에 이어붙임(graceful), 없으면 통째 text
+              if (result.progressLog.length) {
+                result.progressLog[result.progressLog.length - 1].text += '\n' + s;
+              } else {
+                result.progressLog.push({ date: '', text: s });
+              }
+            }
+          });
+        }
+
+        // 예산 파싱: 'category | amount'
+        if (budgetText) {
+          var bLine = budgetText.replace(/^\s+/, '').split('\n')[0].replace(/\s+$/, '');
+          var bbar = bLine.lastIndexOf(' | ');
+          if (bbar >= 0) {
+            result.budgetCat = bLine.slice(0, bbar).trim();
+            result.budgetAmt = Number(String(bLine.slice(bbar + 3)).replace(/[^\d.-]/g, '')) || 0;
+          } else if (bLine) {
+            result.budgetCat = bLine.trim();
+          }
+        }
+      } catch (e) {
+        // 파싱 실패 시 원문 통째 description (렌더 중단 방지)
+        result = { description: String(rawContent == null ? '' : rawContent), progressLog: [], budgetCat: '', budgetAmt: 0 };
+      }
+      return result;
     }
 
     /* Sheets id 추출: ssot-{id} → {id}, ev-* → 그대로 */
