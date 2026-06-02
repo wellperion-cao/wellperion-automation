@@ -62,6 +62,23 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 .owner-chip-btn:hover{opacity:0.85}
 .owner-chip-btn.active{opacity:1;box-shadow:0 0 0 2px var(--bg),0 0 0 3px currentColor}
 .owner-chip-btn.active:hover{opacity:1}
+/* 뷰 토글(트렐로/캘린더) (2026-06-02 GM) */
+.view-toggle-btn{padding:6px 12px;font-size:12px;font-weight:700;color:var(--dim);background:var(--paper);border:none;cursor:pointer;font-family:inherit;white-space:nowrap;transition:all 0.15s}
+.view-toggle-btn+.view-toggle-btn{border-left:1px solid var(--border)}
+.view-toggle-btn.active{background:var(--accent);color:#fff}
+.view-toggle-btn:hover:not(.active){background:var(--accent-bg);color:var(--accent)}
+/* 캘린더 뷰 (G1 패턴 이식) */
+#calendarView{display:none;padding:4px 2px 20px}
+.cal-bar{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:14px}
+.cal-nav-btn{padding:6px 14px;font-size:13px;font-weight:700;border-radius:8px;cursor:pointer;font-family:inherit;background:var(--paper);color:var(--text);border:1px solid var(--border)}
+.cal-nav-btn:hover{background:var(--accent-bg);color:var(--accent)}
+.cal-month-label{font-size:16px;font-weight:700;min-width:120px;text-align:center}
+.cal-table{width:100%;border-collapse:collapse;table-layout:fixed}
+.cal-table th{padding:6px 4px;text-align:center;font-size:12px;font-weight:700;color:var(--dim)}
+.cal-table td{vertical-align:top;padding:4px 3px;border:1px solid var(--border);height:84px;width:14.28%}
+.cal-daynum{font-size:12px;font-weight:700;margin-bottom:3px}
+.cal-badge{font-size:10px;border-radius:4px;padding:1px 5px;margin-bottom:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer}
+.cal-badge:hover{filter:brightness(1.15)}
 .share-btn{padding:6px 12px;font-size:12px;font-weight:600;color:var(--blue);background:var(--blue-bg);border:1px solid rgba(91,159,213,0.3);border-radius:8px;cursor:pointer;font-family:inherit;white-space:nowrap;margin-left:auto;flex-shrink:0;transition:all 0.15s}
 .share-btn:hover{background:rgba(91,159,213,0.22)}
 .deeplink-highlight{box-shadow:0 0 0 2px var(--accent),0 0 14px rgba(183,159,138,0.55)!important;border-radius:12px;transition:box-shadow 0.3s}
@@ -246,6 +263,8 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   .task-card{border-bottom:1px solid #eee;padding:8px 12px;break-inside:avoid}
   .chip{border:1px solid #ccc;background:#f5f5f5;color:#333}
   .done-log-body{display:block!important}
+  /* 캘린더 뷰는 인쇄에서 숨김 — 인쇄 대상은 칸반 업무 목록 (2026-06-02) */
+  #calendarView{display:none!important}
   /* 대시보드 모드: 업무 목록 숨김 */
   [data-print-mode="dashboard"] .content{display:none!important}
   [data-print-mode="dashboard"] .dashboard-overlay{position:static!important;display:block!important;background:none!important;padding:0!important}
@@ -341,6 +360,27 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   <div class="loading">불러오는 중...</div>
 </div>
 
+<!-- 캘린더 뷰 (G1 패턴 이식, 2026-06-02 GM) — 기본 숨김, 뷰 토글로 표시 -->
+<div class="content" id="calendarView">
+  <div class="cal-bar">
+    <button class="cal-nav-btn" onclick="calPrevMonth()">← 이전 달</button>
+    <span class="cal-month-label" id="calMonthLabel"></span>
+    <button class="cal-nav-btn" onclick="calNextMonth()">다음 달 →</button>
+    <button class="cal-nav-btn" onclick="calToday()" style="font-weight:600;color:var(--dim);">오늘로</button>
+  </div>
+  <div style="overflow-x:auto;">
+    <table class="cal-table">
+      <thead>
+        <tr>
+          <th style="color:#e85555;">일</th><th>월</th><th>화</th><th>수</th><th>목</th><th>금</th><th style="color:#5588ee;">토</th>
+        </tr>
+      </thead>
+      <tbody id="calBody"></tbody>
+    </table>
+  </div>
+  <div id="calUndated" style="margin-top:14px;"></div>
+</div>
+
 <div class="add-bar">
   <button class="add-btn" onclick="openAddModal()">+ 업무 추가</button>
 </div>
@@ -396,11 +436,11 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
     </div>
     <div class="field-row">
       <div class="field">
-        <label>시작일</label>
+        <label>일정(시작일) * <span style="font-size:11px;color:var(--dim);font-weight:400;">필수</span></label>
         <input type="date" id="fStartDate">
       </div>
       <div class="field">
-        <label>종료일</label>
+        <label>종료일 <span style="font-size:11px;color:var(--dim);font-weight:400;">(선택·있으면 기간)</span></label>
         <input type="date" id="fEndDate">
       </div>
     </div>
@@ -568,6 +608,11 @@ let activeSortBy = '최신순';    // '최신순' | '카테고리' | '담당자'
 let searchQuery = '';            // 키워드 검색
 let doneLogOpen = false;
 
+/* 뷰 토글: 'kanban'(기본) | 'calendar'. localStorage 유지. (2026-06-02 GM) */
+let currentView = (function(){ try { return localStorage.getItem('todo_view') === 'calendar' ? 'calendar' : 'kanban'; } catch(e){ return 'kanban'; } })();
+let calViewYear  = new Date().getFullYear();
+let calViewMonth = new Date().getMonth();  // 0-based
+
 /* ═══════════════════════════════════════════
    Init
    ═══════════════════════════════════════════ */
@@ -634,6 +679,11 @@ function buildFilters() {
   });
   // 정렬 드롭다운 + 버튼 그룹 오른쪽 (2026-05-30 GM: 정렬을 버튼 옆으로 — 결재현황과 동일)
   html += '<div style="display:flex;gap:4px;margin-left:auto;flex-shrink:0;align-items:center;">';
+  // 뷰 토글: 트렐로(칸반) / 캘린더 (2026-06-02 GM). 선택 뷰는 localStorage 유지.
+  html += '<div style="display:inline-flex;border:1px solid var(--border);border-radius:8px;overflow:hidden;flex-shrink:0;margin-right:4px;">';
+  html += '<button class="view-toggle-btn' + (currentView === 'kanban' ? ' active' : '') + '" onclick="setView(\'kanban\')" title="트렐로(칸반) 보드">🗂 트렐로</button>';
+  html += '<button class="view-toggle-btn' + (currentView === 'calendar' ? ' active' : '') + '" onclick="setView(\'calendar\')" title="월별 캘린더">🗓 캘린더</button>';
+  html += '</div>';
   html += '<select onchange="setSortBy(this.value)" style="background:var(--paper);border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:8px;font-size:12px;font-family:inherit;font-weight:600;cursor:pointer;flex-shrink:0;">';
   ['최신순','카테고리','담당자','시작일순'].forEach(function(opt) {
     html += '<option value="' + opt + '"' + (activeSortBy === opt ? ' selected' : '') + '>' + opt + (opt === '최신순' ? ' ▼' : '') + '</option>';
@@ -976,6 +1026,163 @@ function renderTasks() {
 
   el.innerHTML = html;
   initKanbanDrag();  // 칸반 보드 가로 드래그·휠 스크롤 활성 (2026-06-02 GM 최종)
+
+  // 캘린더 뷰도 동일 데이터로 갱신 + 현재 뷰 적용 (2026-06-02 GM)
+  renderCalendar();
+  applyView();
+}
+
+/* ═══════════════════════════════════════════
+   View Toggle (트렐로 칸반 / 캘린더) — 2026-06-02 GM
+   ═══════════════════════════════════════════ */
+function setView(v) {
+  currentView = (v === 'calendar') ? 'calendar' : 'kanban';
+  try { localStorage.setItem('todo_view', currentView); } catch(e) {}
+  buildFilters();   // 토글 버튼 active 상태 갱신
+  applyView();
+}
+function applyView() {
+  const mc = document.getElementById('mainContent');
+  const cv = document.getElementById('calendarView');
+  if (!mc || !cv) return;
+  if (currentView === 'calendar') {
+    mc.style.display = 'none';
+    cv.style.display = 'block';
+  } else {
+    mc.style.display = 'block';
+    cv.style.display = 'none';
+  }
+}
+
+/* ═══════════════════════════════════════════
+   Calendar View (G1 gm1CalRender 패턴 이식)
+   - 시작일 기준 배치, 종료일 있으면 기간 전체 칸에 표시
+   - 카테고리/담당자 색 활용, 클릭 시 기존 편집 모달 재사용(openEditModal)
+   ═══════════════════════════════════════════ */
+function calPad(n){ return ('0' + n).slice(-2); }
+function calTodayStr(){ const d = new Date(); return d.getFullYear() + '-' + calPad(d.getMonth()+1) + '-' + calPad(d.getDate()); }
+function calPrevMonth(){ calViewMonth--; if (calViewMonth < 0){ calViewMonth = 11; calViewYear--; } renderCalendar(); }
+function calNextMonth(){ calViewMonth++; if (calViewMonth > 11){ calViewMonth = 0; calViewYear++; } renderCalendar(); }
+function calToday(){ const n = new Date(); calViewYear = n.getFullYear(); calViewMonth = n.getMonth(); renderCalendar(); }
+
+/* 캘린더 대상 = 실무진 진행/완료 업무(보류 제외, 칸반과 동일 모집단) + 검색·담당자·카테고리 필터 AND */
+function calFilteredTasks() {
+  let list = excludeNonStaff(ALL_TASKS.filter(t => t.status !== '보류'));
+  if (activeOwnerFilter !== '전체') list = list.filter(t => (t.owner || '').includes(activeOwnerFilter));
+  if (activeCatFilter !== '전체')   list = list.filter(t => t.category === activeCatFilter);
+  list = list.filter(matchesSearch);
+  return list;
+}
+
+function renderCalendar() {
+  const body = document.getElementById('calBody');
+  const label = document.getElementById('calMonthLabel');
+  if (!body || !label) return;
+  label.textContent = calViewYear + '년 ' + (calViewMonth + 1) + '월';
+
+  const tasks = calFilteredTasks();
+  const td = calTodayStr();
+
+  // 날짜별 업무 맵 — 시작일~종료일 기간 전체 칸에 분배(종료일 없으면 시작일 1칸)
+  const evMap = {};
+  const undated = [];
+  tasks.forEach(t => {
+    const sd = (t.startDate || '').slice(0,10);
+    if (!sd) { undated.push(t); return; }
+    const ed = (t.endDate || '').slice(0,10) || sd;
+    // 기간이 한 달 그리드를 넘지 않도록 안전 상한(최대 60칸)
+    let cur = sd, guard = 0;
+    while (cur <= ed && guard < 60) {
+      if (!evMap[cur]) evMap[cur] = [];
+      evMap[cur].push(t);
+      // 다음 날
+      const dParts = cur.split('-');
+      const dObj = new Date(Number(dParts[0]), Number(dParts[1])-1, Number(dParts[2]) + 1);
+      cur = dObj.getFullYear() + '-' + calPad(dObj.getMonth()+1) + '-' + calPad(dObj.getDate());
+      guard++;
+    }
+  });
+
+  const firstDay = new Date(calViewYear, calViewMonth, 1).getDay();
+  const lastDate = new Date(calViewYear, calViewMonth + 1, 0).getDate();
+  const prevLast = new Date(calViewYear, calViewMonth, 0).getDate();
+
+  const cells = [];
+  for (let i = firstDay - 1; i >= 0; i--) cells.push({ day: prevLast - i, dateStr: null, other: true });
+  for (let d2 = 1; d2 <= lastDate; d2++) {
+    const ds = calViewYear + '-' + calPad(calViewMonth+1) + '-' + calPad(d2);
+    cells.push({ day: d2, dateStr: ds, other: false });
+  }
+  let nextD = 1;
+  while (cells.length < 42) cells.push({ day: nextD++, dateStr: null, other: true });
+
+  body.innerHTML = '';
+  for (let row = 0; row < cells.length / 7; row++) {
+    const tr = document.createElement('tr');
+    for (let col = 0; col < 7; col++) {
+      const cell = cells[row * 7 + col];
+      const tdEl = document.createElement('td');
+      if (cell.other) tdEl.style.opacity = '0.35';
+      if (!cell.other && cell.dateStr === td) tdEl.style.background = 'var(--accent-bg)';
+
+      const dayNum = document.createElement('div');
+      dayNum.className = 'cal-daynum';
+      let dnStyle = (col === 0 ? 'color:#e85555;' : col === 6 ? 'color:#5588ee;' : '');
+      if (cell.dateStr === td) dnStyle += 'background:var(--accent);color:#fff;border-radius:50%;width:20px;height:20px;display:flex;align-items:center;justify-content:center;';
+      dayNum.style.cssText = dnStyle;
+      dayNum.textContent = cell.day;
+      tdEl.appendChild(dayNum);
+
+      if (!cell.other && cell.dateStr && evMap[cell.dateStr]) {
+        const evs = evMap[cell.dateStr];
+        const showCount = Math.min(evs.length, 3);
+        for (let ei = 0; ei < showCount; ei++) {
+          const ev = evs[ei];
+          const badge = document.createElement('div');
+          badge.className = 'cal-badge';
+          // 담당자색 우선, 없으면 카테고리색
+          const owner1 = String(ev.owner || '').split(',')[0].trim();
+          const oc = OWNER_COLORS[owner1];
+          const cc = CAT_COLORS[ev.category];
+          const sty = oc || cc || { bg: 'var(--accent-bg)', color: 'var(--accent)' };
+          const isDone = ev.status === '완료';
+          badge.style.background = sty.bg;
+          badge.style.color = sty.color;
+          if (isDone) badge.style.opacity = '0.45';
+          badge.textContent = (isDone ? '✓ ' : '') + ev.title;
+          badge.title = ev.title + (ev.owner ? ' · ' + ev.owner : '');
+          (function(id){ badge.addEventListener('click', function(e){ e.stopPropagation(); openEditModal(id); }); })(ev.id);
+          tdEl.appendChild(badge);
+        }
+        if (evs.length > 3) {
+          const more = document.createElement('div');
+          more.style.cssText = 'font-size:10px;color:var(--dim);';
+          more.textContent = '+' + (evs.length - 3) + '개';
+          tdEl.appendChild(more);
+        }
+      }
+      tr.appendChild(tdEl);
+    }
+    body.appendChild(tr);
+  }
+
+  // 일정 미정(기존 시작일 없는 호환 데이터) — 깨지지 않게 하단 별도 안내
+  const un = document.getElementById('calUndated');
+  if (un) {
+    if (undated.length) {
+      let uh = '<div style="font-size:12px;font-weight:700;color:var(--dim);margin-bottom:6px;">📌 일정 미정 (' + undated.length + '건) — 클릭해 일정 입력</div>';
+      uh += '<div style="display:flex;flex-wrap:wrap;gap:6px;">';
+      undated.forEach(t => {
+        const owner1 = String(t.owner || '').split(',')[0].trim();
+        const oc = OWNER_COLORS[owner1] || { bg: 'var(--accent-bg)', color: 'var(--accent)' };
+        uh += '<span class="cal-badge" style="background:' + oc.bg + ';color:' + oc.color + ';padding:3px 8px;" onclick="openEditModal(\'' + escAttr(t.id) + '\')">' + esc(t.title) + '</span>';
+      });
+      uh += '</div>';
+      un.innerHTML = uh;
+    } else {
+      un.innerHTML = '';
+    }
+  }
 }
 
 /* 칸반 보드 가로 스크롤: 마우스 드래그 + 세로휠→가로. 보드 전체 단위.
@@ -1812,8 +2019,13 @@ async function saveTask() {
   if (!title) missing.push('업무명');
   if (!category) missing.push('카테고리');
   if (!owner) missing.push('담당자');
-  if (missing.length > 0) { alert('필수 항목을 입력하세요:\n' + missing.join(', ')); return; }
-  // 시작일 미입력 시 오늘 기본 · 종료일은 선택(마감 없는 업무 허용) — 진척 추가가 날짜로 막히지 않도록 (2026-05-29 COO)
+  if (!startDate) missing.push('일정(시작일)');  // 일정 필수화 (2026-06-02 GM — 캘린더 뷰 연계)
+  if (missing.length > 0) {
+    if (!startDate && missing.length === 1) { alert('일정을 입력해 주세요. (시작일 필수)'); }
+    else { alert('필수 항목을 입력하세요:\n' + missing.join(', ')); }
+    return;
+  }
+  // 시작일 필수 · 종료일은 선택(있으면 기간) — 마감 없는 업무 허용 (2026-06-02 GM)
 
   const editId = document.getElementById('editId').value;
 
