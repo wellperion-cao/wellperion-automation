@@ -223,7 +223,12 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 /* ── Print ── */
 @media print{
   @page{margin:10mm;size:A4}
+  /* 다크 테마 변수 → 인쇄용 밝은 값 (어두운 배경·흰 글씨로 안 보이던 문제 해결) */
+  :root{--bg:#fff;--paper:#fff;--text:#222;--dim:#555;--border:#ccc;--accent-bg:#f3ede7;--green-bg:#eef7f0;--red-bg:#fdeeeb;--yellow-bg:#fbf6e2;--blue-bg:#eaf3fb;--purple-bg:#f1edfa;--orange-bg:#fbf0e6}
   body{background:#fff!important;color:#222!important;font-size:11px;line-height:1.4;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  /* 가이드 등 본문 박스·표 강제 밝게 */
+  #tab-guide div,#tab-guide td,#tab-guide th,#tab-guide p{color:#222!important}
+  #tab-guide table th{background:#f0ece8!important;color:#222!important}
   .header,.tabs,.submit-bar,.saving,.toast-msg,.header-util-btns,.util-btn,.sheet-links{display:none!important}
   .content{padding:0!important;max-width:100%!important}
   .content.hidden{display:none!important}
