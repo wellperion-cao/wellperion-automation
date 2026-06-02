@@ -97,6 +97,7 @@
   .setup-note{background:var(--amber-bg);border:1px solid #e8d49a;border-radius:11px;padding:12px 14px;
     font-size:12.5px;color:#7a5a16;margin-top:13px;line-height:1.55}
   .setup-note b{font-weight:700}
+  .setup-note code{background:#fff;border:1px solid #e8d49a;border-radius:4px;padding:1px 5px;font-size:11.5px}
   .done-banner{display:none;background:var(--green-bg);border:1px solid #bcd9bf;border-radius:11px;
     padding:11px 14px;font-size:12.5px;color:#3c6442;margin-top:13px;font-weight:600}
   .done-banner.show{display:block}
@@ -135,14 +136,14 @@
   <div class="done-banner" id="doneBanner">✓ 오늘 점검이 기록되었습니다. 수정 후 다시 전송하면 덮어쓰기 됩니다.</div>
 
   <div class="setup-note" id="setupNote">
-    <b>최초 1회 설정 필요</b> — 아직 구글 시트 주소가 연결되지 않았습니다. 함께 드린 <b>설치 안내서</b>대로 Apps Script 주소를 입력하면 제출 시 시트에 자동 기록됩니다. (지금도 작성·확인은 가능합니다.)
+    <b>최초 1회 설정 필요</b> — 제출 시 구글 시트에 자동 기록되게 하려면 Apps Script 주소(<code>ENDPOINT</code>) 연결이 필요합니다. 우측 상단 <b>기록 시트</b> 버튼으로 기록 시트는 바로 열 수 있습니다. (지금도 작성·확인은 가능합니다.)
   </div>
 </main>
 
 <div class="footbar">
   <div class="inner">
     <div class="prog-wrap">
-      <div class="prog-txt" id="progTxt">점검 0 / 21</div>
+      <div class="prog-txt" id="progTxt">점검 0 / 0</div>
       <div class="prog"><span id="progBar" style="width:0%"></span></div>
     </div>
     <button class="btn" id="submitBtn">전송</button>
@@ -155,15 +156,12 @@
 "use strict";
 
 /* ====== 설정 ====== */
-/* 1) 설치 안내서대로 발급받은 Apps Script 웹앱 URL */
+/* 1) 제출 기록 전송용 Apps Script 웹앱 URL (배포 후 붙여넣기) */
 var ENDPOINT = "";
-/* 예: var ENDPOINT = "https://script.google.com/macros/s/AKfy....../exec"; */
-
-/* 2) 기록용 구글 스프레드시트 주소 (우측 상단 '기록 시트' 버튼이 여는 곳) */
+/* 2) 기록용 구글 스프레드시트 주소 (우측 상단 '기록 시트' 버튼) */
 var SHEET_URL = "https://docs.google.com/spreadsheets/d/19fyGlLvYjO_PWZGGxPa6S33PJ0dn5nwvBrdqYNPK7oI/edit?gid=0#gid=0";
-/* 예: var SHEET_URL = "https://docs.google.com/spreadsheets/d/..../edit"; */
 
-/* ====== 점검 항목 정의 (순서 = 순회 순서) ====== */
+/* ====== 점검 항목 (순서 = 순회 순서) ====== */
 var ITEMS = ["정리정돈","홍보물","청결","조명 및 냉난방"];
 var SECTIONS = [
   {id:"hallway",    kind:"common", name:"복도",     items:ITEMS},
@@ -176,14 +174,13 @@ var SECTIONS = [
 ];
 
 var TOTAL_ITEMS = SECTIONS.reduce(function(s,x){return s+x.items.length;},0);
-var state = {}; // id -> {checks:[bool], issue:""}
+var state = {};
 
 function esc(s){return String(s==null?"":s).replace(/[&<>"']/g,function(c){
   return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];});}
 function todayStr(){var d=new Date();var p=function(n){return(n<10?"0":"")+n;};
   return d.getFullYear()+"-"+p(d.getMonth()+1)+"-"+p(d.getDate());}
 
-/* ====== 렌더 ====== */
 function render(){
   var seq=0;
   var html=SECTIONS.map(function(sec){
@@ -222,7 +219,6 @@ function render(){
 }
 
 function updateSec(sid){
-  var sec=SECTIONS.filter(function(s){return s.id===sid;})[0];
   var st=state[sid];
   var done=st.checks.filter(Boolean).length, tot=st.checks.length;
   var hasIssue=st.issue.trim().length>0;
@@ -239,7 +235,6 @@ function updateProg(){
   document.getElementById("progBar").style.width=Math.round(done/TOTAL_ITEMS*100)+"%";
 }
 
-/* ====== 전송 ====== */
 function buildPayload(){
   var rec={
     date:document.getElementById("f_date").value||todayStr(),
@@ -248,7 +243,6 @@ function buildPayload(){
   };
   SECTIONS.forEach(function(sec){
     var st=state[sec.id];
-    var checked=sec.items.filter(function(it,i){return st.checks[i];});
     var done=st.checks.filter(Boolean).length, tot=st.checks.length;
     rec.sections[sec.id]={
       name:sec.name,
@@ -278,15 +272,13 @@ async function submit(){
   var btn=document.getElementById("submitBtn");
 
   if(!ENDPOINT){
-    // 미연결 상태 — 페이로드를 콘솔에 남기고 안내
     console.log("점검 결과(미전송):",JSON.stringify(payload,null,2));
-    toast("구글 시트가 아직 연결되지 않았습니다. 안내서 참고",true);
+    toast("기록 전송 주소(ENDPOINT)가 아직 연결되지 않았습니다.",true);
     return;
   }
 
   btn.disabled=true;btn.textContent="전송 중…";
   try{
-    // text/plain 으로 보내 CORS preflight 회피
     var res=await fetch(ENDPOINT,{
       method:"POST",
       headers:{"Content-Type":"text/plain;charset=utf-8"},
@@ -301,4 +293,29 @@ async function submit(){
       toast("전송 실패: "+txt.slice(0,80),true);
     }
   }catch(e){
-    toast("전송 오류:
+    toast("전송 오류: "+(e.message||e),true);
+  }finally{
+    btn.disabled=false;btn.textContent="전송";
+  }
+}
+
+function init(){
+  document.getElementById("f_date").value=todayStr();
+  try{var n=localStorage.getItem("wp_inspect_name");if(n)document.getElementById("f_name").value=n;}catch(e){}
+  render();
+  updateProg();
+  document.getElementById("submitBtn").addEventListener("click",submit);
+
+  var dbBtn=document.getElementById("dbBtn");
+  dbBtn.addEventListener("click",function(ev){
+    if(SHEET_URL){window.open(SHEET_URL,"_blank");}
+    else{ev.preventDefault();toast("기록 시트 주소(SHEET_URL)를 먼저 설정해 주세요.",true);}
+  });
+  if(SHEET_URL)dbBtn.setAttribute("href",SHEET_URL);
+
+  if(ENDPOINT)document.getElementById("setupNote").style.display="none";
+}
+init();
+</script>
+</body>
+</html>
