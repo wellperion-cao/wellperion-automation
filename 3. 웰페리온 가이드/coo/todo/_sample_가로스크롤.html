@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>가로 스크롤 레이아웃 샘플 (평가용)</title>
+<link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" rel="stylesheet">
+<style>
+:root{
+  --bg:#1a1815;--paper:#221F1B;--text:#E8E2D8;--dim:#8C7E6D;--dim-soft:#564a3d;
+  --accent:#B79F8A;--accent-bg:rgba(183,159,138,0.12);--border:#3D3835;
+  --green:#6abf7b;--green-bg:rgba(106,191,123,0.14);
+  --red:#ED5B3F;--red-bg:rgba(237,91,63,0.14);
+  --yellow:#E0B341;--yellow-bg:rgba(224,179,65,0.14);
+  --blue:#5B9FD5;--blue-bg:rgba(91,159,213,0.14);
+  --purple:#A78BDA;--purple-bg:rgba(167,139,218,0.14);
+  --orange:#E6944E;--orange-bg:rgba(230,148,78,0.14);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
+  background:var(--bg);color:var(--text);line-height:1.6;font-size:15px;min-height:100vh;
+}
+
+/* ── 헤더 ── */
+.page-header{
+  background:var(--paper);border-bottom:1px solid var(--border);
+  padding:20px 24px 18px;
+}
+.page-header h1{font-size:18px;font-weight:700;margin-bottom:6px}
+.page-header p{font-size:13px;color:var(--dim);line-height:1.7}
+.badge-sample{
+  display:inline-flex;align-items:center;gap:5px;
+  font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;
+  background:var(--yellow-bg);color:var(--yellow);border:1px solid rgba(224,179,65,0.3);
+  margin-left:10px;vertical-align:middle;
+}
+
+/* ── 본문 ── */
+.content{padding:20px 24px 100px}
+
+/* ── 카테고리 그룹 ── */
+.cat-group{margin-bottom:28px}
+
+.cat-header{
+  display:flex;align-items:center;gap:10px;margin-bottom:12px;padding-bottom:8px;
+  border-bottom:2px solid var(--border);
+}
+.cat-bar{width:4px;height:20px;border-radius:2px;flex-shrink:0}
+.cat-title{font-size:15px;font-weight:700}
+.cat-count{
+  font-size:11px;padding:2px 9px;border-radius:10px;font-weight:700;
+  background:var(--accent-bg);color:var(--accent);
+}
+
+/* ── 가로 스크롤 트랙 ── */
+.card-track{
+  display:flex;
+  flex-direction:row;
+  gap:12px;
+  overflow-x:auto;
+  padding:4px 2px 14px;
+  /* 스크롤바 표시 — 평가용이므로 항상 보이게 */
+  scrollbar-width:thin;
+  scrollbar-color:var(--dim-soft) transparent;
+  -webkit-overflow-scrolling:touch;
+  cursor:grab;
+}
+.card-track:active{cursor:grabbing}
+.card-track::-webkit-scrollbar{height:6px}
+.card-track::-webkit-scrollbar-track{background:transparent}
+.card-track::-webkit-scrollbar-thumb{background:var(--dim-soft);border-radius:3px}
+.card-track::-webkit-scrollbar-thumb:hover{background:var(--dim)}
+
+/* 마지막 카드 오른쪽 여백 — 다음 카드가 살짝 잘려 스크롤 암시 */
+.card-track::after{
+  content:'';flex-shrink:0;width:8px;
+}
+
+/* ── 태스크 카드 ── */
+.task-card{
+  flex-shrink:0;
+  width:272px;
+  background:var(--paper);
+  border:1px solid var(--border);
+  border-radius:12px;
+  padding:14px 15px 13px;
+  transition:background 0.15s, border-color 0.15s;
+  position:relative;
+}
+.task-card:hover{background:rgba(183,159,138,0.05);border-color:rgba(183,159,138,0.25)}
+
+/* 상태별 왼쪽 바 */
+.task-card.status-progress{border-left:3px solid var(--yellow)}
+.task-card.status-review  {border-left:3px solid var(--purple)}
+.task-card.status-done    {border-left:3px solid var(--green);opacity:0.7}
+.task-card.status-hold    {border-left:3px solid var(--dim)}
+
+.task-title{
+  font-size:13px;font-weight:700;margin-bottom:8px;
+  line-height:1.4;word-break:break-word;
+}
+
+.task-meta{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px}
+
+.chip{
+  display:inline-flex;align-items:center;
+  font-size:10px;font-weight:600;padding:2px 8px;border-radius:10px;white-space:nowrap;
+}
+.chip.owner-1 {background:var(--blue-bg);  color:var(--blue)}   /* 이경연 실장 */
+.chip.owner-2 {background:var(--accent-bg);color:var(--accent)}  /* 최준용 M */
+.chip.owner-3 {background:var(--purple-bg);color:var(--purple)}  /* 나우열 M */
+.chip.owner-4 {background:var(--orange-bg);color:var(--orange)}  /* 이정헌 소장 */
+.chip.owner-5 {background:var(--green-bg); color:var(--green)}   /* 기타 */
+.chip.date{background:var(--accent-bg);color:var(--accent)}
+.chip.status-badge-progress{background:var(--yellow-bg);color:var(--yellow)}
+.chip.status-badge-review  {background:var(--purple-bg);color:var(--purple)}
+.chip.status-badge-done    {background:var(--green-bg); color:var(--green)}
+.chip.status-badge-hold    {background:rgba(61,56,53,0.5);color:var(--dim)}
+
+.task-desc{font-size:11px;color:var(--dim);line-height:1.5;border-top:1px solid rgba(61,56,53,0.5);padding-top:7px;margin-top:2px}
+
+/* ── 범례 ── */
+.legend{
+  display:flex;gap:8px;flex-wrap:wrap;
+  padding:12px 16px;background:var(--paper);border:1px solid var(--border);
+  border-radius:10px;margin-bottom:24px;
+}
+.legend-item{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--dim)}
+.legend-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+
+/* ── 하단 안내 ── */
+.footer-note{
+  background:var(--paper);border:1px solid var(--border);border-radius:12px;
+  padding:18px 20px;margin-top:8px;
+}
+.footer-note h3{font-size:14px;font-weight:700;margin-bottom:10px;color:var(--accent)}
+.footer-note ul{padding-left:16px;display:flex;flex-direction:column;gap:6px}
+.footer-note li{font-size:13px;color:var(--dim);line-height:1.5}
+.footer-note li strong{color:var(--text)}
+.footer-note .cta{
+  margin-top:14px;padding-top:12px;border-top:1px solid var(--border);
+  font-size:13px;color:var(--text);font-weight:600;
+}
+</style>
+</head>
+<body>
+
+<div class="page-header">
+  <h1>가로 스크롤 레이아웃 샘플 <span class="badge-sample">평가용</span></h1>
+  <p>
+    카테고리 안의 업무 카드들을 <strong>가로(좌우)로 나열</strong>해 한 화면에서 더 많은 카드를 훑을 수 있는 레이아웃입니다.<br>
+    실데이터 아님 — 목업 데이터로 구성. 마음에 들면 GM님 결정 후 본 적용 진행합니다.
+  </p>
+</div>
+
+<div class="content">
+
+  <!-- 범례 -->
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot" style="background:var(--yellow)"></div>진행 중</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--purple)"></div>검토 중</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--green)"></div>완료</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--dim)"></div>보류</div>
+    <div class="legend-item" style="margin-left:8px">
+      <span class="chip owner-1" style="font-size:10px">이경연 실장</span>
+    </div>
+    <div class="legend-item">
+      <span class="chip owner-2" style="font-size:10px">최준용 M</span>
+    </div>
+    <div class="legend-item">
+      <span class="chip owner-3" style="font-size:10px">나우열 M</span>
+    </div>
+    <div class="legend-item">
+      <span class="chip owner-4" style="font-size:10px">이정헌 소장</span>
+    </div>
+  </div>
+
+  <!-- ① 카테고리: 매출 및 영업 -->
+  <div class="cat-group">
+    <div class="cat-header">
+      <div class="cat-bar" style="background:var(--accent)"></div>
+      <span class="cat-title">[1] 매출 및 영업</span>
+      <span class="cat-count">6건</span>
+    </div>
+    <div class="card-track">
+
+      <div class="task-card status-progress">
+        <div class="task-title">6월 신규 멤버십 목표 달성 플랜 수립</div>
+        <div class="task-meta">
+          <span class="chip owner-1">이경연 실장</span>
+          <span class="chip date">~ 06-07</span>
+          <span class="chip status-badge-progress">진행 중</span>
+        </div>
+        <div class="task-desc">월 신규 12명 목표. 투어 전환율 개선 방안 포함.</div>
+      </div>
+
+      <div class="task-card status-review">
+        <div class="task-title">하반기 멤버십 가격 정책 검토</div>
+        <div class="task-meta">
+          <span class="chip owner-1">이경연 실장</span>
+          <span class="chip date">~ 06-15</span>
+          <span class="chip status-badge-review">검토 중</span>
+        </div>
+        <div class="task-desc">연간·반기 플랜 옵션 재설계. CFO 협의 필요.</div>
+      </div>
+
+      <div class="task-card status-progress">
+        <div class="task-title">투어 동선 및 응대 스크립트 개선</div>
+        <div class="task-meta">
+          <span class="chip owner-2">최준용 M</span>
+          <span class="chip date">~ 06-10</span>
+          <span class="chip status-badge-progress">진행 중</span>
+        </div>
+        <div class="task-desc">기존 대본 대비 전환율 +15% 목표. 시나리오 3종 작성 중.</div>
+      </div>
+
+      <div class="task-card status-done">
+        <div class="task-title">5월 매출 결산 보고서 제출</div>
+        <div class="task-meta">
+          <span class="chip owner-1">이경연 실장</span>
+          <span class="chip date">06-01</span>
+          <span class="chip status-badge-done">완료</span>
+        </div>
+        <div class="task-desc">신규 9명 / 유지 41명 / 총 매출 목표 대비 92%.</div>
+      </div>
+
+      <div class="task-card status-hold">
+        <div class="task-title">파트너사 법인 멤버십 제안서 발송</div>
+        <div class="task-meta">
+          <span class="chip owner-1">이경연 실장</span>
+          <span class="chip date">~ 06-20</span>
+          <span class="chip status-badge-hold">보류</span>
+        </div>
+        <div class="task-desc">GM님 최종 금액 확인 후 재개 예정.</div>
+      </div>
+
+      <div class="task-card status-progress">
+        <div class="task-title">SNS 문의 → 투어 전환 트래킹 셋업</div>
+        <div class="task-meta">
+          <span class="chip owner-2">최준용 M</span>
+          <span class="chip date">~ 06-12</span>
+          <span class="chip status-badge-progress">진행 중</span>
+        </div>
+        <div class="task-desc">DM 문의 로그 → 투어 일정 → 계약 추적 시트 연결.</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ② 카테고리: 시설 및 환경 -->
+  <div class="cat-group">
+    <div class="cat-header">
+      <div class="cat-bar" style="background:var(--blue)"></div>
+      <span class="cat-title">[4] 시설 및 환경</span>
+      <span class="cat-count">5건</span>
+    </div>
+    <div class="card-track">
+
+      <div class="task-card status-progress">
+        <div class="task-title">B1 샤워실 온수 배관 점검</div>
+        <div class="task-meta">
+          <span class="chip owner-4">이정헌 소장</span>
+          <span class="chip date">~ 06-05</span>
+          <span class="chip status-badge-progress">진행 중</span>
+        </div>
+        <div class="task-desc">수요일 영업 전 점검 예정. 업체 2곳 견적 비교 중.</div>
+      </div>
+
+      <div class="task-card status-done">
+        <div class="task-title">에어컨 필터 전수 교체</div>
+        <div class="task-meta">
+          <span class="chip owner-4">이정헌 소장</span>
+          <span class="chip date">06-01</span>
+          <span class="chip status-badge-done">완료</span>
+        </div>
+        <div class="task-desc">운동존 8대 / 라커룸 4대 전부 교체 완료.</div>
+      </div>
+
+      <div class="task-card status-review">
+        <div class="task-title">헬스존 조명 색온도 재검토</div>
+        <div class="task-meta">
+          <span class="chip owner-4">이정헌 소장</span>
+          <span class="chip date">~ 06-14</span>
+          <span class="chip status-badge-review">검토 중</span>
+        </div>
+        <div class="task-desc">현재 5000K → 4000K 교체 검토. 하이엔드 분위기 강화.</div>
+      </div>
+
+      <div class="task-card status-hold">
+        <div class="task-title">주차장 차단기 원격 제어 시스템 도입</div>
+        <div class="task-meta">
+          <span class="chip owner-4">이정헌 소장</span>
+          <span class="chip date">~ 07-01</span>
+          <span class="chip status-badge-hold">보류</span>
+        </div>
+        <div class="task-desc">건물 관리사무소 협의 필요. GM 승인 대기.</div>
+      </div>
+
+      <div class="task-card status-progress">
+        <div class="task-title">GX룸 방음 패널 추가 설치</div>
+        <div class="task-meta">
+          <span class="chip owner-4">이정헌 소장</span>
+          <span class="chip date">~ 06-18</span>
+          <span class="chip status-badge-progress">진행 중</span>
+        </div>
+        <div class="task-desc">회원 소음 민원 2건 접수. 흡음재 3면 추가 설치 진행 중.</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ③ 카테고리: 회원 서비스 -->
+  <div class="cat-group">
+    <div class="cat-header">
+      <div class="cat-bar" style="background:var(--green)"></div>
+      <span class="cat-title">[6] 회원 서비스</span>
+      <span class="cat-count">7건</span>
+    </div>
+    <div class="card-track">
+
+      <div class="task-card status-progress">
+        <div class="task-title">6월 회원 만족도 설문 발송</div>
+        <div class="task-meta">
+          <span class="chip owner-2">최준용 M</span>
+          <span class="chip date">~ 06-08</span>
+          <span class="chip status-badge-progress">진행 중</span>
+        </div>
+        <div class="task-desc">전체 회원 52명 대상. 구글폼 링크 카카오톡 발송.</div>
+      </div>
+
+      <div class="task-card status-done">
+        <div class="task-title">신규 회원 웰컴 키트 전달</div>
+        <div class="task-meta">
+          <span class="chip owner-2">최준용 M</span>
+          <span class="chip date">06-02</span>
+          <span class="chip status-badge-done">완료</span>
+        </div>
+        <div class="task-desc">5월 신규 9명 전원. 타월 + 웰컴카드 + 일정표.</div>
+      </div>
+
+      <div class="task-card status-review">
+        <div class="task-title">갱신 예정 회원 리텐션 연락</div>
+        <div class="task-meta">
+          <span class="chip owner-1">이경연 실장</span>
+          <span class="chip date">~ 06-10</span>
+          <span class="chip status-badge-review">검토 중</span>
+        </div>
+        <div class="task-desc">6월 만료 8명. 혜택 제안 스크립트 최종 검토 중.</div>
+      </div>
+
+      <div class="task-card status-progress">
+        <div class="task-title">PT 트레이너 배정 재조정</div>
+        <div class="task-meta">
+          <span class="chip owner-3">나우열 M</span>
+          <span class="chip date">~ 06-09</span>
+          <span class="chip status-badge-progress">진행 중</span>
+        </div>
+        <div class="task-desc">요청 회원 3명 매칭. 선호 시간대 조율 중.</div>
+      </div>
+
+      <div class="task-card status-done">
+        <div class="task-title">컴플레인 #26-11 처리 완료</div>
+        <div class="task-meta">
+          <span class="chip owner-1">이경연 실장</span>
+          <span class="chip date">06-01</span>
+          <span class="chip status-badge-done">완료</span>
+        </div>
+        <div class="task-desc">탈의실 락커 고장. 즉시 교체 + 사과 안내문 발송.</div>
+      </div>
+
+      <div class="task-card status-hold">
+        <div class="task-title">회원 전용 앱 푸시 알림 재개</div>
+        <div class="task-meta">
+          <span class="chip owner-3">나우열 M</span>
+          <span class="chip date">~ 06-30</span>
+          <span class="chip status-badge-hold">보류</span>
+        </div>
+        <div class="task-desc">앱 업체 점검 완료 후 재개. 현재 API 오류 수정 중.</div>
+      </div>
+
+      <div class="task-card status-progress">
+        <div class="task-title">VIP 회원 전용 프라이빗 세션 기획</div>
+        <div class="task-meta">
+          <span class="chip owner-2">최준용 M</span>
+          <span class="chip date">~ 06-20</span>
+          <span class="chip status-badge-progress">진행 중</span>
+        </div>
+        <div class="task-desc">월 1회 익스클루시브 클래스. 일정·강사 확보 중.</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ④ 카테고리: 회의 및 행정 -->
+  <div class="cat-group">
+    <div class="cat-header">
+      <div class="cat-bar" style="background:var(--purple)"></div>
+      <span class="cat-title">[8] 회의 및 행정</span>
+      <span class="cat-count">5건</span>
+    </div>
+    <div class="card-track">
+
+      <div class="task-card status-progress">
+        <div class="task-title">6월 주간 운영 회의 아젠다 작성</div>
+        <div class="task-meta">
+          <span class="chip owner-1">이경연 실장</span>
+          <span class="chip date">~ 06-04</span>
+          <span class="chip status-badge-progress">진행 중</span>
+        </div>
+        <div class="task-desc">매주 화 10:00 운영 전체 회의. 3개 안건 준비 중.</div>
+      </div>
+
+      <div class="task-card status-done">
+        <div class="task-title">직원 근태 기록 5월 마감</div>
+        <div class="task-meta">
+          <span class="chip owner-1">이경연 실장</span>
+          <span class="chip date">06-02</span>
+          <span class="chip status-badge-done">완료</span>
+        </div>
+        <div class="task-desc">전직원 6명 집계 완료. 초과근무 2건 보전 처리.</div>
+      </div>
+
+      <div class="task-card status-review">
+        <div class="task-title">6월 하반기 연간 목표 중간 점검 보고서</div>
+        <div class="task-meta">
+          <span class="chip owner-1">이경연 실장</span>
+          <span class="chip date">~ 06-15</span>
+          <span class="chip status-badge-review">검토 중</span>
+        </div>
+        <div class="task-desc">4대 KPI 달성률 작성. GM 보고 전 AI CEO 검토 예정.</div>
+      </div>
+
+      <div class="task-card status-progress">
+        <div class="task-title">신규 직원 온보딩 자료 정비</div>
+        <div class="task-meta">
+          <span class="chip owner-3">나우열 M</span>
+          <span class="chip date">~ 06-12</span>
+          <span class="chip status-badge-progress">진행 중</span>
+        </div>
+        <div class="task-desc">CHRO 지원. 가이드북 v2 초안 작성 중. 3개 섹션 남음.</div>
+      </div>
+
+      <div class="task-card status-hold">
+        <div class="task-title">임대차 계약 갱신 검토</div>
+        <div class="task-meta">
+          <span class="chip owner-1">이경연 실장</span>
+          <span class="chip date">~ 07-31</span>
+          <span class="chip status-badge-hold">보류</span>
+        </div>
+        <div class="task-desc">만료 2개월 전. 법무 검토 필요. GM님 결재 사안.</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- 하단 안내 -->
+  <div class="footer-note">
+    <h3>이 방식으로 본 적용할까요?</h3>
+    <ul>
+      <li><strong>가로 스크롤(현 샘플):</strong> 카테고리 내 카드를 좌우로 밀어 확인. 한 화면에 카테고리 수가 더 많이 보임. 카드 수가 많은 카테고리에서 특히 유리.</li>
+      <li><strong>세로 쌓기(현행):</strong> 카드를 위아래로 쌓아 전체 목록을 한 번에 스크롤. 카드 내용 비교가 쉽고 익숙한 구조.</li>
+      <li><strong>혼합안:</strong> 카테고리 헤더 영역은 세로, 카드만 가로 스크롤 — 현 샘플 방식.</li>
+    </ul>
+    <div class="cta">
+      GM님, 이 레이아웃 괜찮으시면 "본 적용" 지시 주시면 업무 현황 SSOT에 반영하겠습니다.
+    </div>
+  </div>
+
+</div>
+
+<!-- 드래그 스크롤 (마우스) -->
+<script>
+document.querySelectorAll('.card-track').forEach(function(track){
+  var isDown=false, startX=0, scrollLeft=0;
+  track.addEventListener('mousedown',function(e){
+    isDown=true; track.classList.add('active');
+    startX=e.pageX-track.offsetLeft; scrollLeft=track.scrollLeft;
+  });
+  track.addEventListener('mouseleave',function(){ isDown=false; track.classList.remove('active'); });
+  track.addEventListener('mouseup',function(){ isDown=false; track.classList.remove('active'); });
+  track.addEventListener('mousemove',function(e){
+    if(!isDown) return;
+    e.preventDefault();
+    var x=e.pageX-track.offsetLeft;
+    track.scrollLeft=scrollLeft-(x-startX)*1.2;
+  });
+  /* 마우스 휠 → 가로 스크롤 */
+  track.addEventListener('wheel',function(e){
+    if(e.deltaY!==0){ e.preventDefault(); track.scrollLeft+=e.deltaY*0.8; }
+  },{passive:false});
+});
+</script>
+</body>
+</html>
