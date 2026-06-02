@@ -323,7 +323,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
     </div>
     <div class="field">
       <label>카테고리</label>
-      <select id="fCategory">
+      <select id="fCategory" onchange="onCategoryChange()">
         <option value="">선택</option>
         <option value="[1] 매출 및 영업">[1] 매출 및 영업</option>
         <option value="[2] 인사 & 파트너">[2] 인사 & 파트너</option>
@@ -332,6 +332,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
         <option value="[5] 회원·CS">[5] 회원·CS</option>
         <option value="[6] IT·시스템·자동화">[6] IT·시스템·자동화</option>
         <option value="[7] 교육·조직문화">[7] 교육·조직문화</option>
+        <option value="[8] 회의">[8] 회의</option>
       </select>
     </div>
     <div class="field">
@@ -474,7 +475,7 @@ const MEMBERS = ['이경연 실장','나우열M','최준용M','임정은M','윤�
 
 const CATEGORIES = [
   '[1] 매출 및 영업','[2] 인사 & 파트너','[3] 운영 정책',
-  '[4] 시설 및 환경','[5] 회원·CS','[6] IT·시스템·자동화','[7] 교육·조직문화'
+  '[4] 시설 및 환경','[5] 회원·CS','[6] IT·시스템·자동화','[7] 교육·조직문화','[8] 회의'
 ];
 
 const CAT_COLORS = {
@@ -484,7 +485,8 @@ const CAT_COLORS = {
   '[4] 시설 및 환경':  {bg:'var(--green-bg)',  color:'var(--green)'},
   '[5] 회원·CS':       {bg:'var(--red-bg)',    color:'var(--red)'},
   '[6] IT·시스템·자동화':{bg:'var(--blue-bg)',  color:'var(--blue)'},
-  '[7] 교육·조직문화': {bg:'var(--yellow-bg)', color:'var(--yellow)'}
+  '[7] 교육·조직문화': {bg:'var(--yellow-bg)', color:'var(--yellow)'},
+  '[8] 회의':          {bg:'var(--orange-bg)', color:'var(--orange)'}
 };
 
 /* field mapping: API 한글 → 영문 */
@@ -1540,6 +1542,18 @@ function openAddModal() {
   applyLifecycleLocks(null);  // 신규 = free stage
   document.getElementById('modalSaveBtn').textContent = '저장';
   document.getElementById('taskModal').classList.add('show');
+}
+
+/* 회의 카테고리 선택 시 본문에 회의록 양식 자동 프리필 (본문이 비어 있을 때만) */
+const MEETING_TEMPLATE = '📌 안건 — \n👥 참석자 — \n✅ 결정사항 — \n📋 후속조치 — ';
+function onCategoryChange() {
+  const cat = document.getElementById('fCategory').value;
+  if (cat !== '[8] 회의') return;
+  const content = document.getElementById('fContent');
+  if (!content.value.trim()) {
+    content.value = MEETING_TEMPLATE;
+    content.focus();
+  }
 }
 
 function openEditModal(id) {
