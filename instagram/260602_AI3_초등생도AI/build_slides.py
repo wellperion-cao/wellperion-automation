@@ -98,10 +98,14 @@ def main() -> None:
     for old in OUT.glob("_검수_미리보기_*.png"):
         old.unlink()
 
+    # 개인계정(namuk.wellperion) = 'W' 심볼만 미니멀 로고 (2026-06-02 GM 결정)
+    # 기존 개인계정 발행분(왜AI·AI직원효율)과 동일 처리. 풀 로고 금지.
+    LOGO_STYLE = "symbol"
+
     paths = []
     for i, slide in enumerate(SLIDES, start=1):
         out = OUT / f"post_{i}.jpg"
-        r = compose_text_slide(output=out, brand_key="main", **slide)
+        r = compose_text_slide(output=out, brand_key="main", logo_style=LOGO_STYLE, **slide)
         paths.append(out)
         print(f"[OK] {out.name} - {r['layout']} ({r['size_kb']}KB)")
 
@@ -110,6 +114,7 @@ def main() -> None:
     r = compose_text_slide(
         output=last_out,
         brand_key="main",
+        logo_style=LOGO_STYLE,
         kor_title="AI를 다루는 대표가\n살아남는다",
         body="솔직히 저도 아직 부족하고, 배우는 중이에요.\n완벽하진 않아도 같이 성장하고 싶어요.\n\nAI 활용이 궁금한 운동시설 대표님,\n부담 없이 DM 주세요.",
     )

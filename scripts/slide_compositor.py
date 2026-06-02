@@ -715,12 +715,21 @@ def compose_text_slide(
     footer_meta: str | None = None,
     brand_key: str = "main",
     aspect: str = "1080x1350",
+    logo_style: str = "full",
 ) -> dict:
-    """사진 없는 텍스트 중심 슬라이드. 럭셔리 매거진 무드의 여백 중심 레이아웃."""
+    """사진 없는 텍스트 중심 슬라이드. 럭셔리 매거진 무드의 여백 중심 레이아웃.
+
+    logo_style — 계정별 로고 규칙 (2026-06-02 GM 결정):
+        "full"   = 풀 로고 PNG(W심볼+WELLPERION+영문). 회사 공식계정 wellperion.
+        "symbol" = 'W' 심볼만 미니멀(Pretendard Bold 텍스트). 개인계정 namuk.wellperion.
+                   기존 개인계정 발행분(왜AI·AI직원효율)과 동일한 처리.
+    """
     if aspect not in ASPECT_PRESETS:
         raise ValueError(f"Unknown aspect: {aspect}")
     if brand_key not in BRAND_PRESETS:
         raise ValueError(f"Unknown brand: {brand_key}")
+    if logo_style not in ("full", "symbol"):
+        raise ValueError(f"Unknown logo_style: {logo_style}")
 
     target_w, target_h = ASPECT_PRESETS[aspect]
     brand = BRAND_PRESETS[brand_key]
@@ -729,24 +738,35 @@ def compose_text_slide(
     margin = int(target_w * 0.085)
     text_max_width = target_w - 2 * margin
 
-    # 1) 헤더 — 좌측 공식 로고 PNG (어두운 배경 → 베이지 알파, 박스 불필요)
-    canvas = paste_logo_png(
-        canvas=canvas,
-        logo_path=LOGO_BEIGE_ALPHA,
-        target_w=target_w,
-        target_h=target_h,
-        margin=margin,
-        logo_target_w=int(target_w * 0.26),
-        with_dark_box=False,
-    )
-    draw = ImageDraw.Draw(canvas)
+    # 1) 헤더 — 좌측 로고 (계정별 규칙)
+    if logo_style == "symbol":
+        # 개인계정: 'W' 심볼만 (Pretendard Bold 텍스트) — 기존 개인계정 발행분과 통일
+        draw = ImageDraw.Draw(canvas)
+        sym_size = int(target_w * 0.060)
+        sym_font = load_font("bold", sym_size)
+        draw.text((margin, margin), "W", font=sym_font, fill=brand["primary"])
+        # 로고 높이 추정(우측 워드마크 수직 정렬용)
+        _sb = sym_font.getbbox("W")
+        logo_img_h = _sb[3] - _sb[1]
+    else:
+        # 회사 공식계정: 풀 로고 PNG (어두운 배경 → 베이지 알파, 박스 불필요)
+        canvas = paste_logo_png(
+            canvas=canvas,
+            logo_path=LOGO_BEIGE_ALPHA,
+            target_w=target_w,
+            target_h=target_h,
+            margin=margin,
+            logo_target_w=int(target_w * 0.26),
+            with_dark_box=False,
+        )
+        draw = ImageDraw.Draw(canvas)
+        logo_img_h = int(Image.open(LOGO_BEIGE_ALPHA).size[1] * (target_w * 0.26) / Image.open(LOGO_BEIGE_ALPHA).size[0])
 
-    # 우측 워드마크
+    # 우측 워드마크 (양 계정 공통 — 기존 개인계정 발행분에도 존재)
     wm_size = int(target_w * 0.020)
     wm_font = load_font("medium", wm_size)
     wm_text = "WELLPERION"
     wb = wm_font.getbbox(wm_text)
-    logo_img_h = int(Image.open(LOGO_BEIGE_ALPHA).size[1] * (target_w * 0.26) / Image.open(LOGO_BEIGE_ALPHA).size[0])
     draw.text(
         (target_w - margin - (wb[2] - wb[0]), margin + int(logo_img_h * 0.30)),
         wm_text, font=wm_font, fill=brand["text_secondary"],
