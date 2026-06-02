@@ -42,7 +42,7 @@ except Exception:
 # 상수
 # -----------------------------------------------------------------
 ROOT = Path(r"C:\Users\jjky0\welperion-automation")
-PERSISTENT_PROFILE_DIR = ROOT / "profiles" / "naver"  # 네이버 단일 세션 (블로그와 공유 가능)
+PERSISTENT_PROFILE_DIR = ROOT / "profiles" / "naver-cafe"  # 실제 저장된 카페 로그인 세션
 EVIDENCE_DIR = ROOT / "scripts" / "poc-evidence"
 
 NAVER_LOGIN_URL = "https://nid.naver.com/nidlogin.login"

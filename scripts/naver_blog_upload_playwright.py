@@ -44,7 +44,7 @@ except Exception:
 # 상수
 # -----------------------------------------------------------------
 ROOT = Path(r"C:\Users\jjky0\welperion-automation")
-PERSISTENT_PROFILE_DIR = ROOT / "profiles" / "naver"
+PERSISTENT_PROFILE_DIR = ROOT / "profiles" / "naver-blog"  # 실제 저장된 블로그 로그인 세션
 EVIDENCE_DIR = ROOT / "scripts" / "poc-evidence"
 
 NAVER_LOGIN_URL = "https://nid.naver.com/nidlogin.login"
