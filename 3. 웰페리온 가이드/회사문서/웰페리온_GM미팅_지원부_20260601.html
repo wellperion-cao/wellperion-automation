@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600&family=Jost:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+<title>WELLPERION · 지원부 운영 보고 — 6/1 GM 미팅 기반</title>
+<style>
+  :root {
+    --beige:#B79F8A; --beige-soft:#E8DFD4; --beige-pale:#F7F2EC;
+    --black:#221F20; --black-soft:#3A3536; --coral:#ED5B3F;
+    --gray:#8A8587; --line:#D9CFC3; --white:#FBF9F6;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html,body{background:#E7E2DA;font-family:"Pretendard Variable","Pretendard",-apple-system,"Malgun Gothic",system-ui,sans-serif;font-weight:400;line-height:1.5;color:var(--black);-webkit-font-smoothing:antialiased;}
+
+  /* A3 PAGE — 297×420mm */
+  .page{width:297mm;min-height:420mm;background:var(--white);margin:14px auto;padding:14mm 14mm 22mm;position:relative;overflow:hidden;}
+
+  /* COVER */
+  .cover{background:var(--black);color:var(--beige);margin:-14mm -14mm 12px;padding:18mm 14mm 14mm;position:relative;overflow:hidden;}
+  .cover::after{content:"";position:absolute;bottom:-90px;right:-90px;width:280px;height:280px;background:radial-gradient(circle,rgba(237,91,63,0.12) 0%,transparent 70%);}
+  .cover-inner{position:relative;z-index:1;display:flex;justify-content:space-between;align-items:flex-end;gap:24px;flex-wrap:wrap;}
+  .cover-l{flex:1;min-width:280px;}
+  .era{font-family:"Playfair Display",Georgia,serif;font-size:11px;color:var(--coral);letter-spacing:0.3em;text-transform:uppercase;}
+  .cover h1{font-family:"Playfair Display",Georgia,serif;font-weight:400;font-size:34px;line-height:1.18;color:var(--white);margin-top:8px;letter-spacing:-0.01em;}
+  .cover .sub{margin-top:7px;font-size:13px;color:var(--beige-soft);letter-spacing:0.04em;}
+  .cover-r{text-align:right;font-size:10px;letter-spacing:0.04em;color:rgba(232,223,212,0.85);line-height:1.85;}
+  .cover-r b{color:var(--white);}
+
+  /* FM BANNER */
+  .fm{background:var(--coral);color:var(--white);padding:14px 18px;display:grid;grid-template-columns:auto 1fr auto;gap:18px;align-items:center;}
+  .fm .fm-tag{font-family:"Jost",system-ui,sans-serif;font-size:9.5px;letter-spacing:0.24em;text-transform:uppercase;font-weight:700;background:var(--black);color:var(--coral);padding:5px 10px;}
+  .fm .fm-msg{font-family:"Playfair Display",Georgia,serif;font-size:15px;line-height:1.4;}
+  .fm .fm-msg b{color:var(--black);}
+  .fm .fm-link{font-size:9.5px;letter-spacing:0.04em;text-align:right;line-height:1.5;}
+  .fm .fm-link a{color:var(--white);text-decoration:none;border-bottom:1px solid rgba(255,255,255,0.5);}
+
+  /* TWO-COLUMN */
+  .twocol{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:14px;}
+  .col{display:flex;flex-direction:column;gap:6px;}
+
+  h2.sec{font-family:"Playfair Display",Georgia,serif;font-weight:400;font-size:19px;color:var(--black);margin:8px 0 4px;display:flex;align-items:baseline;gap:8px;border-top:1.5px solid var(--black);padding-top:7px;}
+  h2.sec:first-of-type{margin-top:0;}
+  h2.sec .num{font-size:15px;color:var(--coral);letter-spacing:0.18em;}
+  h2.sec .tag{font-size:8.5px;letter-spacing:0.2em;text-transform:uppercase;background:var(--coral);color:var(--white);padding:2px 7px;font-weight:700;margin-left:4px;}
+  h3.sub{font-size:13px;color:var(--black-soft);font-weight:600;margin:7px 0 4px;letter-spacing:0.01em;}
+
+  table{width:100%;border-collapse:collapse;font-size:12px;border:1px solid var(--line);margin:5px 0;}
+  th,td{border:1px solid var(--line);padding:5px 7px;text-align:left;vertical-align:top;line-height:1.45;}
+  thead th{background:var(--black);color:var(--beige);font-size:10.5px;letter-spacing:0.06em;text-transform:uppercase;font-weight:600;}
+  td{background:var(--white);color:var(--black-soft);}
+  td b{color:var(--black);font-weight:600;}
+
+  ul,ol{padding-left:0;list-style:none;margin:4px 0;}
+  ul li,ol li{position:relative;padding:3px 0 3px 14px;font-size:12px;color:var(--black-soft);line-height:1.55;}
+  ul li::before{content:"—";position:absolute;left:0;color:var(--coral);font-weight:600;}
+  ol{counter-reset:ol;}
+  ol li{counter-increment:ol;padding-left:20px;}
+  ol li::before{content:counter(ol);position:absolute;left:0;color:var(--coral);font-family:"Playfair Display",Georgia,serif;font-size:12.5px;font-weight:600;}
+
+  .note{font-size:11px;color:var(--gray);margin-top:4px;}
+
+  .next{background:var(--beige-pale);border-left:3px solid var(--coral);padding:10px 14px;margin-top:8px;}
+  .next .nl{font-size:9px;letter-spacing:0.22em;text-transform:uppercase;color:var(--coral);font-weight:700;}
+  .next ol{margin-top:5px;}
+  .next ol li{font-size:12px;}
+
+  .agenda-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px 10px;margin-top:5px;}
+  .agenda-cell{background:var(--beige-pale);border:1px solid var(--line);padding:8px 10px;}
+  .agenda-cell .ag-n{font-family:"Playfair Display",Georgia,serif;font-size:13px;color:var(--coral);}
+  .agenda-cell .ag-t{font-size:12.5px;color:var(--black);font-weight:600;margin-top:3px;}
+  .agenda-cell .ag-d{font-size:11px;color:var(--black-soft);margin-top:4px;line-height:1.55;}
+
+  .pf{position:absolute;left:14mm;right:14mm;bottom:9mm;border-top:1px solid var(--line);padding-top:7px;display:flex;justify-content:space-between;font-size:8.5px;letter-spacing:0.06em;color:var(--gray);}
+
+  [contenteditable="true"]:hover{background:rgba(237,91,63,0.04);outline:1px dashed rgba(237,91,63,0.3);outline-offset:2px;}
+  [contenteditable="true"]:focus{background:rgba(237,91,63,0.08);outline:1px solid var(--coral);outline-offset:2px;}
+  .edit-banner{position:fixed;top:10px;right:10px;background:var(--black);color:var(--beige);font-size:10px;letter-spacing:0.18em;padding:6px 12px;z-index:999;}
+  .edit-banner .dot{display:inline-block;width:6px;height:6px;background:var(--coral);border-radius:50%;margin-right:6px;vertical-align:middle;}
+
+  /* 결재 box */
+  .approval{display:grid;grid-template-columns:64px repeat(4,1fr);border:1px solid var(--black);margin-top:10px;background:var(--white);}
+  .approval > div{border-right:1px solid var(--line);text-align:center;}
+  .approval > div:last-child{border-right:none;}
+  .approval > div:first-child{background:var(--black);color:var(--beige);display:flex;align-items:center;justify-content:center;font-family:"Jost",system-ui,sans-serif;font-size:10px;letter-spacing:0.22em;font-weight:700;}
+  .approval .ap-cell{display:flex;flex-direction:column;}
+  .approval .ap-head{background:var(--beige-pale);color:var(--black);font-size:10px;font-weight:600;letter-spacing:0.04em;padding:5px 0;border-bottom:1px solid var(--line);}
+  .approval .ap-sign{min-height:28px;padding:4px;font-size:10px;color:var(--gray);}
+  .agenda-cell .ag-bg{margin-top:5px;padding-top:5px;border-top:1px dashed var(--line);font-size:9px;color:var(--coral);font-weight:600;letter-spacing:0.04em;}
+  .role-block{background:var(--beige-pale);border:1px solid var(--line);padding:10px 12px;margin-top:6px;}
+  .role-block .rb-l{font-size:9px;letter-spacing:0.22em;text-transform:uppercase;color:var(--coral);font-weight:700;}
+  .role-block ul{margin-top:5px;}
+
+  /* 체크리스트 — Next Steps */
+  .checklist{list-style:none;padding:0;margin:5px 0 0;counter-reset:none;}
+  .checklist li{display:flex;align-items:flex-start;gap:8px;padding:3px 0;counter-increment:none;}
+  .checklist li::before{display:none !important;content:none !important;}
+  .checklist .ck{appearance:none;-webkit-appearance:none;width:14px;height:14px;border:1.5px solid var(--coral);background:var(--white);cursor:pointer;flex-shrink:0;margin-top:2px;position:relative;border-radius:2px;transition:all 0.15s;}
+  .checklist .ck:hover{box-shadow:0 0 0 3px rgba(237,91,63,0.12);}
+  .checklist .ck:checked{background:var(--coral);border-color:var(--coral);}
+  .checklist .ck:checked::after{content:"";position:absolute;left:3px;top:0;width:4px;height:8px;border:solid var(--white);border-width:0 2px 2px 0;transform:rotate(45deg);}
+  .checklist .ck-txt{flex:1;font-size:12px;color:var(--black-soft);line-height:1.55;transition:all 0.15s;}
+  .checklist .ck:checked ~ .ck-txt{text-decoration:line-through;color:var(--gray);opacity:0.65;}
+  .checklist .ck-done{display:none;font-size:8px;letter-spacing:0.18em;text-transform:uppercase;background:var(--coral);color:var(--white);padding:2px 6px;font-weight:700;flex-shrink:0;align-self:flex-start;margin-top:2px;font-family:"Jost",system-ui,sans-serif;}
+  .checklist .ck:checked ~ .ck-done{display:inline-block;}
+
+  @media print{
+    @page{size:A3;margin:0;}
+    .page{zoom:0.95;}
+    *{-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important;}
+    html,body{background:var(--white);}
+    .page{margin:0;width:297mm;min-height:420mm;}
+    [contenteditable="true"]:hover,[contenteditable="true"]:focus{background:transparent !important;outline:none !important;}
+    .edit-banner{display:none !important;}
+    table tr,h2.sec,.next,.fm,.agenda-cell{break-inside:avoid;}
+  }
+  @media (max-width:1100px){
+    .page{width:100%;min-height:auto;padding:18px 14px;}
+    .cover{margin:-18px -14px 12px;padding:28px 14px 22px;}
+    .twocol,.agenda-grid{grid-template-columns:1fr;}
+    .fm{grid-template-columns:1fr;text-align:left;gap:8px;}
+    .fm .fm-link{text-align:left;}
+    .pf{position:static;margin-top:22px;}
+  }
+</style>
+</head>
+<body>
+<div class="edit-banner"><span class="dot"></span>편집 모드 — 텍스트 클릭 → 수정</div>
+
+<div class="page">
+
+  <div class="cover">
+    <div class="cover-inner">
+      <div class="cover-l">
+        <div class="era">Support Team · Operations Report</div>
+        <h1 contenteditable="true">지원부 운영 보고</h1>
+        <div class="sub" contenteditable="true">6/1 GM 미팅 기반 · 운영 변경 · 인수인계 · 안건 · Next Steps</div>
+      </div>
+      <div class="cover-r" contenteditable="true">
+        <b>일시</b> &nbsp; 2026. 6. 1 (월)<br>
+        <b>참석</b> &nbsp; 김남욱 GM · 이경연 실장 · 이정헌 소장<br>
+        <b>구분</b> &nbsp; Internal · Confidential
+      </div>
+    </div>
+  </div>
+
+  <div class="fm">
+    <div class="fm-tag">Field Manual · 구축 완료</div>
+    <div class="fm-msg" contenteditable="true">
+      규정 · 가이드 · 매뉴얼 · 점검(체크리스트)까지 구성하여 웰페리온 <b>FM(필드 매뉴얼 — 원리원칙)</b> 구축 완료. <b>앞으로 모든 운영은 이 FM을 토대로 움직입니다.</b>
+    </div>
+    <div class="fm-link">참조<br><a href="https://wellperion-cao.github.io/wellperion-automation/coo/check/%EC%A7%80%EC%9B%90%EB%B6%80%20%EC%B2%B4%EA%B3%84.html">지원부 체계 →</a></div>
+  </div>
+
+  <!-- 운영 철학 -->
+  <div style="background:var(--black);color:var(--beige);padding:14px 18px;margin-top:8px;display:grid;grid-template-columns:auto 1fr;gap:18px;align-items:center;">
+    <div style="font-family:'Jost',system-ui,sans-serif;font-size:9.5px;letter-spacing:0.24em;text-transform:uppercase;font-weight:700;background:var(--beige);color:var(--black);padding:5px 10px;">운영 철학 · Philosophy</div>
+    <div contenteditable="true" style="font-family:'Playfair Display',Georgia,serif;font-size:15px;line-height:1.45;color:var(--white);">
+      <b style="color:var(--coral);">회원님도 왕, 우리도 왕.</b> 서비스 직원이 무조건 시달리는 자리는 웰페리온에 없습니다. <br>
+      <span style="font-size:11.5px;color:rgba(232,223,212,0.88);font-family:'Pretendard',system-ui,sans-serif;font-style:normal;">회원을 정성껏 모시되, 그 서비스를 만들어내는 우리 또한 같은 가치로 존중받습니다 — 서로를 왕으로 대하는 문화 위에서만 진짜 프리미엄이 만들어집니다.</span>
+    </div>
+  </div>
+
+  <div class="twocol">
+
+    <!-- LEFT: 확정·결정 -->
+    <div class="col">
+
+      <h2 class="sec" contenteditable="true"><span class="num">①</span>지원팀 운영 변경<span class="tag">조율</span></h2>
+
+      <h3 class="sub" contenteditable="true">근무시간 변경 (휴게 1시간 포함)</h3>
+      <table>
+        <thead><tr><th>구분</th><th>근무시간</th><th>실근무</th><th>비고</th></tr></thead>
+        <tbody>
+          <tr><td contenteditable="true"><b>오전조</b></td><td contenteditable="true">05:20 ~ 14:00</td><td contenteditable="true">7시간 40분</td><td contenteditable="true">—</td></tr>
+          <tr><td contenteditable="true"><b>중간조</b></td><td contenteditable="true">10:00 ~ 18:40 (변동 가능)</td><td contenteditable="true">7시간 40분</td><td contenteditable="true"><b>점검자</b> · 여 <b>이경연 실장</b> / 남 <b>최준용 M</b></td></tr>
+          <tr><td contenteditable="true"><b>마감조</b></td><td contenteditable="true">14:00 ~ 22:40</td><td contenteditable="true">7시간 40분</td><td contenteditable="true">—</td></tr>
+        </tbody>
+      </table>
+      <div class="note" contenteditable="true">※ 각 조 고정 휴무 진행 · 점검자는 중간조 근무 시간대에 사우나 점검 수행</div>
+
+      <h3 class="sub" contenteditable="true">확정 사항</h3>
+      <ol contenteditable="true">
+        <li>단일 카카오톡 톡방 운영</li>
+        <li>지원부 체계(앱) 사용</li>
+        <li>6/10 대체자 입사 — 외곽 · 미화 · 골프 · 헬스장</li>
+        <li>세탁물 업체 — 이번 주 컨택 · 변경 시 GM이 기존 업체 해지</li>
+        <li>시설부 오픈 · 마감 시 시설 + 사우나 + 건습식 점검</li>
+        <li>지원부 앱 적응 후 → 시설부 체계(앱) 구축</li>
+        <li><b>비품 관리 이관</b> — 고문님 진행 → <b>지원부(반장 책임)</b>로 이관</li>
+      </ol>
+
+      <div class="role-block">
+        <div class="rb-l">직급별 역할</div>
+        <ul contenteditable="true">
+          <li><b>반장</b> — 현장 운영 책임자 · 일일 점검 · 인력 배분 · 이슈 1차 대응 · <b>비품 관리</b></li>
+          <li><b>주임</b> — 현장 실무 · 청결 · 회원 응대 · 구역 관리 직접 수행</li>
+        </ul>
+      </div>
+
+      <h2 class="sec" contenteditable="true"><span class="num">②</span>황용석 팀장 인수인계</h2>
+      <p style="font-size:12.5px;color:var(--black-soft);line-height:1.65;margin:5px 0;" contenteditable="true">
+        <b>반장 체제 전환</b> — 여 (이경연 실장 + 이연희 반장) / 남 (최준용 M + 윤병현 AM) · 8월 말 후임 검토 · <b>인수인계</b> 1차(~6/10, 인원·야간·외곽) → 2차(~6/15, 루틴·비품·안전) · 6/10 입사자 직접 인계.
+      </p>
+
+    </div>
+
+    <!-- RIGHT: 진행 예정 · 안건 · Next Steps -->
+    <div class="col">
+
+<h2 class="sec" contenteditable="true"><span class="num">③</span>지원부 전체 미팅 — 안건</h2>
+      <p style="font-size:12.5px;color:var(--black-soft);line-height:1.6;margin:4px 0 6px;" contenteditable="true">
+        GM 기준안을 바탕으로 지원부 전체 인원과 미팅을 진행하여 의견을 수렴 · 조율합니다. 아래 6개 안건을 다루며, 결과에 따라 운영 기준을 확정합니다.
+      </p>
+      <div class="agenda-grid">
+        <div class="agenda-cell">
+          <div class="ag-n">① 운영 변경</div>
+          <div class="ag-t" contenteditable="true">GM 기준안 조율</div>
+          <div class="ag-d" contenteditable="true">근무시간 · 점검자 · 확정 6개 사항에 대한 현장 의견 수렴, 마찰 지점 보완</div>
+        </div>
+        <div class="agenda-cell">
+          <div class="ag-n">② 급여</div>
+          <div class="ag-t" contenteditable="true">직급별 급여 체계</div>
+          <div class="ag-d" contenteditable="true">반장 · 주임 — 역할 · 책임 · 근속 단계 명확화</div>
+          <div class="ag-bg" contenteditable="true">예산 안 · 관리이사 협의 후 확정 (6/3)</div>
+        </div>
+        <div class="agenda-cell">
+          <div class="ag-n">③ 칭찬</div>
+          <div class="ag-t" contenteditable="true">칭찬 주임 제도 (월간)</div>
+          <div class="ag-d" contenteditable="true">매월 우수 주임 1인 선정 → 인정 + 포상. 선정 기준 · 포상 내용 · 발표 방식 합의</div>
+          <div class="ag-bg" contenteditable="true">예산 안 · 월 10만원 + 연말 50만원 ≈ 170만원/년</div>
+        </div>
+        <div class="agenda-cell">
+          <div class="ag-n">④ 회식</div>
+          <div class="ag-t" contenteditable="true">회식 기준</div>
+          <div class="ag-d" contenteditable="true">빈도 · 예산 · 범위 · 진행 방식 표준화</div>
+          <div class="ag-bg" contenteditable="true">예산 안 · 분기 50만원 × 4 + 특별 100만원 × 2 ≈ 400만원/년</div>
+        </div>
+        <div class="agenda-cell">
+          <div class="ag-n">⑤ 간식</div>
+          <div class="ag-t" contenteditable="true">간식 기준</div>
+          <div class="ag-d" contenteditable="true">상시 비치 품목 · 보충 주기 · 예산 한도 정립</div>
+          <div class="ag-bg" contenteditable="true">예산 안 · 월 50만원 ≈ 600만원/년</div>
+        </div>
+        <div class="agenda-cell">
+          <div class="ag-n">⑥ 환경</div>
+          <div class="ag-t" contenteditable="true">긍정 근무 환경 조성</div>
+          <div class="ag-d" contenteditable="true">주임 의견 채널 · 정기 1:1 · 현장 의견 → 정책 반영 사이클</div>
+          <div class="ag-d" contenteditable="true" style="margin-top:4px;"><b>복장 컨셉</b> — 활동성 + 격식 (베이지/블랙 폴로 + 슬랙스 + 미니멀 스니커즈, 직급 식별 가능)</div>
+          <div class="ag-bg" contenteditable="true">예산 안 · 복장 ≈ 180만원/년 (하/동·소모품)</div>
+        </div>
+      </div>
+
+      <h2 class="sec" contenteditable="true"><span class="num">④</span>GM 현장 투입<span class="tag">다음주 1주일</span></h2>
+      <p style="font-size:12.5px;color:var(--black-soft);line-height:1.6;margin:4px 0 6px;" contenteditable="true">
+        GM이 직접 1주일간 지원팀 현장에 투입됩니다. <b>외곽 청소부터 시작해 내부 사우나 관리까지</b>, 새벽 시간을 포함한 전 영역을 직접 경험합니다.
+      </p>
+      <ul contenteditable="true">
+        <li><b>일정</b> — 다음 주 월~일 (1주일)</li>
+        <li><b>범위</b> — 외곽 청소 → 내부 시설 → 사우나 관리</li>
+        <li><b>시간</b> — 새벽 오전조(05:20~) 포함 전 시간대</li>
+        <li><b>목적</b> — 현장 실제 경험 · 솔선수범 · FM이 현장에서 어떻게 작동하는지 직접 확인</li>
+      </ul>
+
+      <div class="next">
+        <div class="nl">Next Steps · 체크하면 완료 표시</div>
+        <ul class="checklist">
+          <li><input type="checkbox" class="ck"><span class="ck-txt" contenteditable="true">점검자 배정 → 앱 즉시 반영</span><span class="ck-done">완료</span></li>
+          <li><input type="checkbox" class="ck"><span class="ck-txt" contenteditable="true">오늘 지원팀 톡방 참여</span><span class="ck-done">완료</span></li>
+          <li><input type="checkbox" class="ck"><span class="ck-txt" contenteditable="true">이번 주 중 지원부 전체 미팅 (6개 안건 합의)</span><span class="ck-done">완료</span></li>
+          <li><input type="checkbox" class="ck"><span class="ck-txt" contenteditable="true">6/10 대체자 입사 + 인수인계 1차</span><span class="ck-done">완료</span></li>
+          <li><input type="checkbox" class="ck"><span class="ck-txt" contenteditable="true">6/15 인수인계 2차 완료</span><span class="ck-done">완료</span></li>
+          <li><input type="checkbox" class="ck"><span class="ck-txt" contenteditable="true">세탁물 업체 이번 주 컨택</span><span class="ck-done">완료</span></li>
+          <li><input type="checkbox" class="ck"><span class="ck-txt" contenteditable="true">반장 체제 안정화 → 8월 말 후임 검토</span><span class="ck-done">완료</span></li>
+          <li><input type="checkbox" class="ck"><span class="ck-txt" contenteditable="true">지원부 앱 적응 → 시설부 앱 구축</span><span class="ck-done">완료</span></li>
+          <li><input type="checkbox" class="ck"><span class="ck-txt" contenteditable="true">GM 다음주 현장 투입 (외곽 → 사우나) — 1주일</span><span class="ck-done">완료</span></li>
+          <li><input type="checkbox" class="ck"><span class="ck-txt" contenteditable="true">회장·대표 보고 — 지원부 운용 예산 보고서 (별첨)</span><span class="ck-done">완료</span></li>
+        </ul>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="pf">
+    <span>WELLPERION SPORTS CLUB · 지원부 운영 보고 · 6/1 GM 미팅 기반 · A3</span>
+    <span>Internal · Confidential</span>
+  </div>
+</div>
+
+</body>
+</html>
