@@ -209,10 +209,21 @@ function _notifyTelegram(text, opts) {
   return; // no-op
 }
 
-// ─── 결재 라인 자동 산출 — GM → 대표 2단계 통일 (2026-06-02 GM 확정) ───
-// 부서장 라인·금액 임계 분기 폐지. 결재 필요 시 전 건 GM → 대표님 2단계.
+// ─── 카테고리 → 부서장 매핑 (결재선 1단계 자동, 2026-06-02 GM 확정 복원) ───
+// 운영부=이경연 실장([1][3]) / 시설부=이정헌 소장([4]) / 파트너팀=나우열M([2]).
+// 매핑 없는 카테고리([5][6][7][8])는 부서장 생략 → GM→대표 폴백.
+var CAT_DEPT_HEAD = {
+  '[1] 매출 및 영업': '이경연 실장',
+  '[3] 운영 정책':   '이경연 실장',
+  '[4] 시설 및 환경': '이정헌 소장',
+  '[2] 인사 & 파트너': '나우열M'
+};
+function _deptHeadFor(category) { return CAT_DEPT_HEAD[String(category || '')] || ''; }
+
+// ─── 결재 라인 자동 산출 — 부서장 → GM → 대표 3단계 (2026-06-02 GM 확정 복원) ───
+// 부서장: 카테고리→부서 매핑 시 자동 1단계(매핑 없으면 생략).
 // 결재 필요 여부 = 수동 결재요청 또는 예산(BUDGET 마커) 존재.
-// 담당자=김남욱GM이면 GM 단계 생략 → 대표님만 (프론트 buildEffectiveRoute와 동일).
+// 담당자=김남욱GM이면 GM 단계 생략 (프론트 buildEffectiveRoute와 동일).
 function _buildApprovalRoute(record) {
   const content = String(record['내용'] || '');
   const hasBudget = /===BUDGET===\s*\n[^|]+\|\s*\d+/.test(content);
@@ -221,13 +232,15 @@ function _buildApprovalRoute(record) {
   // 결재 불필요 → 빈 라인
   if (manual.length === 0 && !hasBudget) return [];
 
-  // 결재선 = 체크한 결재자 기준 (중간관리자 부서장 → GM → 대표님). 예산만 있으면 GM→대표.
-  const MID = ['이경연 실장','이정헌 소장','나우열M'];
+  // 부서장 실명: 카테고리 매핑 우선, 없으면 수동 결재요청 포함 부서장
+  var MID = ['이경연 실장','이정헌 소장','나우열M'];
+  var midName = _deptHeadFor(record['카테고리']) || manual.filter(function(m){ return MID.indexOf(m) >= 0; })[0] || '';
+
+  // 표준 결재선: (부서장) → GM → 대표님
   const route = [];
-  if (manual.some(m => MID.indexOf(m) >= 0)) route.push('부서장');
-  if (manual.indexOf('GM') >= 0) route.push('GM');
-  if (manual.indexOf('대표') >= 0 || manual.indexOf('대표님') >= 0) route.push('대표님');
-  if (route.length === 0) { route.push('GM'); route.push('대표님'); }  // 예산만 있는 경우
+  if (midName) route.push('부서장');
+  route.push('GM');
+  route.push('대표님');
   return route;
 }
 
@@ -467,10 +480,11 @@ function _processTodoAction(body) {
       // 승인·반려 공통 게이트 (이 아래 reject/approve 분기보다 먼저 차단).
       var _pinKey = { 'GM': 'APPROVAL_PIN_GM', '대표님': 'APPROVAL_PIN_REP' }[role];
       if (role === '부서장') {
-        // 부서장(중간관리자)은 결재요청에 체크된 본인 이름으로 PIN 키 결정
+        // 부서장 PIN 키 = 카테고리→부서장 매핑 우선, 없으면 결재요청에 체크된 본인 이름 (2026-06-02 GM 복원)
         var _MID_PIN = { '이경연 실장':'APPROVAL_PIN_OPS', '이정헌 소장':'APPROVAL_PIN_FAC', '나우열M':'APPROVAL_PIN_PARTNER' };
-        var _mid = String(record['결재요청'] || '').split(',').map(function(s){ return s.trim(); }).filter(function(m){ return _MID_PIN[m]; })[0];
-        _pinKey = _mid ? _MID_PIN[_mid] : null;
+        var _mid = _deptHeadFor(record['카테고리'])
+          || String(record['결재요청'] || '').split(',').map(function(s){ return s.trim(); }).filter(function(m){ return _MID_PIN[m]; })[0];
+        _pinKey = (_mid && _MID_PIN[_mid]) ? _MID_PIN[_mid] : null;
       }
       if (_pinKey) {
         var _expected = _prop(_pinKey);
