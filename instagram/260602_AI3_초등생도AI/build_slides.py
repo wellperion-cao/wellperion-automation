@@ -1,8 +1,8 @@
-# 260602 슬라이드 빌드 — 초등학생도 따라 하는 AI 활용 A→Z (AI 시리즈 #3 · namuk.wellperion)
+# 260602 슬라이드 빌드 — 복잡한 건 빼고 핵심만: AI 활용 A→Z (AI 시리즈 #3 · namuk.wellperion)
 # 텍스트 중심(사진 없음) · 브랜드 BLACK 배경 + 베이지 타이포 · main 프리셋
 # "왜AI"(260530) 5장 양식과 일관 — compose_text_slide(main) 그대로 사용, 디자인 코드 재발명 금지
-# GM 사양: 초등학생 눈높이 · 3단 구조(범용 가이드→웰페리온 사례→따라하기) · 매수 많아도 됨
-# CTA: DM 유도(개인계정 톤, litt.ly 강제 없음) · 마지막 장 슬로건+같이성장+DM
+# GM 사양: 대표 눈높이로 쉽게 · 3단 구조(범용 가이드→웰페리온 사례→따라하기) · 매수 많아도 됨
+# CTA(개인계정 확정): litt.ly 미사용 · 'DM 문의' + '함께 성장합시다'로 통일 · 마지막 장 반영
 # 실행: .venv\Scripts\python instagram\260602_AI3_초등생도AI\build_slides.py
 import sys
 from pathlib import Path
@@ -20,7 +20,7 @@ OUT = FOLDER / "output"
 # 3단 구조는 헤딩 번호(①②③)와 montage 그룹으로 표현 (compositor 파라미터 재발명 금지)
 SLIDES = [
     dict(  # 1장 표지
-        kor_title="초등학생도 따라 하는\nAI 활용법",
+        kor_title="복잡한 건 빼고,\n핵심만",
         eng_title="How I Use AI",
     ),
     dict(  # 2장 도입 — 눈높이 낮추기
@@ -116,7 +116,7 @@ def main() -> None:
         brand_key="main",
         logo_style=LOGO_STYLE,
         kor_title="AI를 다루는 대표가\n살아남는다",
-        body="솔직히 저도 아직 부족하고, 배우는 중이에요.\n완벽하진 않아도 같이 성장하고 싶어요.\n\nAI 활용이 궁금한 운동시설 대표님,\n부담 없이 DM 주세요.",
+        body="저도 아직 배우는 중입니다.\n완벽하진 않아도, 함께 성장합시다.\n\nAI 활용이 궁금한 운동시설 대표님,\nDM으로 문의 주세요.",
     )
     print(f"[OK] {last_out.name} - slogan/DM card ({r['size_kb']}KB)")
     paths.append(last_out)
