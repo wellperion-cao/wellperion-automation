@@ -83,12 +83,22 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 .cat-body{border-top:1px solid var(--border);display:none}
 .cat-body.open{display:block}
 
-/* ── 가로 와이드 카드 (2026-06-02 GM 확정 — 한 줄 한 카드, 세로 나열) ──
-   [업무명] + 담당·상태·날짜·결재를 가로 한 줄 + 그 아래 내용 요약 한 줄.
-   카드는 화면 전체폭을 채워 세로로 쌓임(가로 스크롤 없음). */
-.wide-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap;min-width:0}
-.wide-row .task-title{flex:0 0 auto;margin-bottom:0;max-width:100%}
-.wide-row .task-meta{margin-bottom:0;flex:1 1 auto;min-width:0}
+/* ── 칸반(Trello) 보드 (2026-06-02 GM 최종 확정) ──
+   카테고리 = 세로 컬럼. 컬럼들을 좌→우 가로 나열, 넘치면 보드 전체 가로 스크롤.
+   각 컬럼 내부는 업무 카드를 세로로 쌓음. */
+.kanban-board{display:flex;flex-direction:row;align-items:flex-start;gap:14px;overflow-x:auto;padding:4px 2px 14px;scrollbar-width:thin;scrollbar-color:var(--dim-soft) transparent;-webkit-overflow-scrolling:touch;cursor:grab}
+.kanban-board.dragging{cursor:grabbing}
+.kanban-board::-webkit-scrollbar{height:8px}
+.kanban-board::-webkit-scrollbar-track{background:transparent}
+.kanban-board::-webkit-scrollbar-thumb{background:var(--dim-soft);border-radius:4px}
+.kanban-board::-webkit-scrollbar-thumb:hover{background:var(--dim)}
+.kanban-board::after{content:'';flex-shrink:0;width:8px}
+/* 컬럼 = 카테고리 그룹. 고정폭 — 보드 안에서만 컬럼화(보류·완료 로그엔 영향 없음) */
+.kanban-board > .cat-group{flex:0 0 auto;width:300px;margin-bottom:0;align-self:stretch}
+/* 카드 내부 정보: 컬럼 폭에 맞춰 세로형 컴팩트 (업무명 → 담당·상태·날짜·결재 wrap) */
+.wide-row{display:flex;flex-direction:column;align-items:stretch;gap:6px;min-width:0}
+.wide-row .task-title{margin-bottom:0;max-width:100%}
+.wide-row .task-meta{margin-bottom:0;min-width:0}
 /* 내용 요약 한 줄 (상시 노출, 말줄임) */
 .task-summary-line{font-size:12px;color:var(--dim);line-height:1.5;margin-top:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
@@ -223,6 +233,10 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   .cat-accordion{border:1px solid #ccc;break-inside:avoid;margin-bottom:8px}
   .cat-header{padding:8px 12px}
   .cat-body{display:block!important}
+  /* 칸반 보드 → 인쇄 시 컬럼을 세로 나열(클리핑 방지) */
+  .kanban-board{display:block!important;overflow:visible!important;padding:0!important}
+  .kanban-board > .cat-group{width:auto!important;margin-bottom:8px!important;break-inside:avoid}
+  .kanban-board::after{display:none!important}
   .task-card{border-bottom:1px solid #eee;padding:8px 12px;break-inside:avoid}
   .chip{border:1px solid #ccc;background:#f5f5f5;color:#333}
   .done-log-body{display:block!important}
@@ -888,6 +902,8 @@ function renderTasks() {
   if (filtered.length === 0) {
     html += '<div class="empty-msg">필터 조건에 맞는 업무가 없습니다.</div>';
   } else {
+    // 칸반 보드: 카테고리 컬럼을 좌→우 가로 나열 (번호순). 넘치면 보드 전체 가로 스크롤.
+    html += '<div class="kanban-board" id="kanbanBoard">';
     catOrder.forEach(cat => {
       if (!groups[cat] || groups[cat].length === 0) return;
       var result = renderCatGroup(cat, groups[cat], globalIdx);
@@ -900,6 +916,7 @@ function renderTasks() {
       html += result.html;
       globalIdx = result.nextIdx;
     });
+    html += '</div>';  // /kanban-board
   }
 
   // 보류 로그
@@ -944,6 +961,41 @@ function renderTasks() {
   html += '</div></div>';
 
   el.innerHTML = html;
+  initKanbanDrag();  // 칸반 보드 가로 드래그·휠 스크롤 활성 (2026-06-02 GM 최종)
+}
+
+/* 칸반 보드 가로 스크롤: 마우스 드래그 + 세로휠→가로. 보드 전체 단위.
+   카드 내부 버튼/토글 클릭은 방해 않도록 일정 거리(6px) 이상 끌었을 때만 드래그로 간주. */
+function initKanbanDrag() {
+  document.querySelectorAll('.kanban-board').forEach(function(board) {
+    if (board.dataset.dragInit) return;  // 중복 바인딩 방지
+    board.dataset.dragInit = '1';
+    var isDown = false, moved = false, startX = 0, scrollLeft = 0;
+    board.addEventListener('mousedown', function(e) {
+      isDown = true; moved = false;
+      startX = e.pageX - board.offsetLeft; scrollLeft = board.scrollLeft;
+    });
+    board.addEventListener('mouseleave', function() { isDown = false; board.classList.remove('dragging'); });
+    board.addEventListener('mouseup', function() { isDown = false; board.classList.remove('dragging'); });
+    board.addEventListener('mousemove', function(e) {
+      if (!isDown) return;
+      var x = e.pageX - board.offsetLeft;
+      var dist = x - startX;
+      if (!moved && Math.abs(dist) < 6) return;  // 미세 이동은 클릭으로 보존
+      moved = true; board.classList.add('dragging');
+      e.preventDefault();
+      board.scrollLeft = scrollLeft - dist * 1.2;
+    });
+    // 드래그 직후 클릭(버튼/토글) 1회 무시
+    board.addEventListener('click', function(e) {
+      if (moved) { e.stopPropagation(); e.preventDefault(); moved = false; }
+    }, true);
+    // 세로 휠 → 가로 스크롤 (보드가 실제로 넘칠 때만, 컬럼 내부 세로스크롤 방해 X)
+    board.addEventListener('wheel', function(e) {
+      if (board.scrollWidth <= board.clientWidth) return;
+      if (e.deltaY !== 0) { e.preventDefault(); board.scrollLeft += e.deltaY * 0.8; }
+    }, { passive: false });
+  });
 }
 
 function filterDone(done) {
