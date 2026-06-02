@@ -62,7 +62,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 .deeplink-highlight{box-shadow:0 0 0 2px var(--accent),0 0 14px rgba(183,159,138,0.55)!important;border-radius:12px;transition:box-shadow 0.3s}
 
 /* ── Content ── */
-.content{padding:16px 20px 100px;max-width:720px;margin:0 auto}
+.content{padding:16px 20px 100px;max-width:100%;margin:0}
 .loading{text-align:center;padding:40px;color:var(--dim)}
 .empty-msg{text-align:center;padding:40px 20px;color:var(--dim);font-size:14px}
 
@@ -83,19 +83,14 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 .cat-body{border-top:1px solid var(--border);display:none}
 .cat-body.open{display:block}
 
-/* ── 가로 스크롤 트랙 (2026-06-02 GM 본적용 — _sample_가로스크롤 레이아웃 이식) ── */
-.card-track{display:flex;flex-direction:row;align-items:flex-start;gap:12px;overflow-x:auto;padding:12px 14px 14px;scrollbar-width:thin;scrollbar-color:var(--dim-soft) transparent;-webkit-overflow-scrolling:touch;cursor:grab}
-.card-track.dragging{cursor:grabbing}
-.card-track::-webkit-scrollbar{height:6px}
-.card-track::-webkit-scrollbar-track{background:transparent}
-.card-track::-webkit-scrollbar-thumb{background:var(--dim-soft);border-radius:3px}
-.card-track::-webkit-scrollbar-thumb:hover{background:var(--dim)}
-.card-track::after{content:'';flex-shrink:0;width:8px}
-/* 트랙 안의 카드만 고정폭 가로 카드로 — done-log/보류 카드엔 영향 없음 */
-.card-track > .task-card{flex-shrink:0;width:300px;border-bottom:none;border:1px solid var(--border);border-radius:12px;align-self:stretch}
-.card-track > .task-card:last-child{border-bottom:none}
-/* 펼침(상세 토글) 시 해당 카드만 전체폭으로 늘려 가독성 확보 */
-.card-track > .task-card.detail-expanded{width:100%;max-width:660px}
+/* ── 가로 와이드 카드 (2026-06-02 GM 확정 — 한 줄 한 카드, 세로 나열) ──
+   [업무명] + 담당·상태·날짜·결재를 가로 한 줄 + 그 아래 내용 요약 한 줄.
+   카드는 화면 전체폭을 채워 세로로 쌓임(가로 스크롤 없음). */
+.wide-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap;min-width:0}
+.wide-row .task-title{flex:0 0 auto;margin-bottom:0;max-width:100%}
+.wide-row .task-meta{margin-bottom:0;flex:1 1 auto;min-width:0}
+/* 내용 요약 한 줄 (상시 노출, 말줄임) */
+.task-summary-line{font-size:12px;color:var(--dim);line-height:1.5;margin-top:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
 /* ── Task Card ── */
 .task-card{padding:14px 16px;border-bottom:1px solid rgba(61,56,53,0.4);transition:background 0.1s}
@@ -228,10 +223,6 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   .cat-accordion{border:1px solid #ccc;break-inside:avoid;margin-bottom:8px}
   .cat-header{padding:8px 12px}
   .cat-body{display:block!important}
-  /* 가로 트랙 → 인쇄 시 세로 나열(클리핑 방지) */
-  .card-track{display:block!important;overflow:visible!important;padding:0!important}
-  .card-track > .task-card{width:auto!important;border:none!important;border-bottom:1px solid #eee!important;border-radius:0!important}
-  .card-track::after{display:none!important}
   .task-card{border-bottom:1px solid #eee;padding:8px 12px;break-inside:avoid}
   .chip{border:1px solid #ccc;background:#f5f5f5;color:#333}
   .done-log-body{display:block!important}
@@ -953,41 +944,6 @@ function renderTasks() {
   html += '</div></div>';
 
   el.innerHTML = html;
-  initCardTrackDrag();  // 가로 스크롤 트랙 드래그·휠 활성 (2026-06-02 본적용)
-}
-
-/* 가로 스크롤 트랙: 마우스 드래그 + 휠(세로→가로) 스크롤.
-   카드 내부 버튼/토글 클릭은 방해하지 않도록 일정 거리 이상 끌었을 때만 드래그로 간주. */
-function initCardTrackDrag() {
-  document.querySelectorAll('.card-track').forEach(function(track) {
-    if (track.dataset.dragInit) return;  // 중복 바인딩 방지
-    track.dataset.dragInit = '1';
-    var isDown = false, moved = false, startX = 0, scrollLeft = 0;
-    track.addEventListener('mousedown', function(e) {
-      isDown = true; moved = false;
-      startX = e.pageX - track.offsetLeft; scrollLeft = track.scrollLeft;
-    });
-    track.addEventListener('mouseleave', function() { isDown = false; track.classList.remove('dragging'); });
-    track.addEventListener('mouseup', function() { isDown = false; track.classList.remove('dragging'); });
-    track.addEventListener('mousemove', function(e) {
-      if (!isDown) return;
-      var x = e.pageX - track.offsetLeft;
-      var dist = x - startX;
-      if (!moved && Math.abs(dist) < 6) return;  // 미세 이동은 클릭으로 보존
-      moved = true; track.classList.add('dragging');
-      e.preventDefault();
-      track.scrollLeft = scrollLeft - dist * 1.2;
-    });
-    // 클릭 직전 드래그였으면 클릭(버튼/토글) 1회 무시
-    track.addEventListener('click', function(e) {
-      if (moved) { e.stopPropagation(); e.preventDefault(); moved = false; }
-    }, true);
-    // 세로 휠 → 가로 스크롤 (가로 스크롤바가 실제 있을 때만)
-    track.addEventListener('wheel', function(e) {
-      if (track.scrollWidth <= track.clientWidth) return;
-      if (e.deltaY !== 0) { e.preventDefault(); track.scrollLeft += e.deltaY * 0.8; }
-    }, { passive: false });
-  });
 }
 
 function filterDone(done) {
@@ -1013,10 +969,8 @@ function renderCatGroup(cat, tasks, startIdx) {
   html += '<span class="cat-arrow open">&#9654;</span></div>';
   html += '</div>';
   html += '<div class="cat-body open">';
-  html += '<div class="card-track">';  // 가로 스크롤 트랙 (2026-06-02 본적용)
   var idx = startIdx || 1;
   tasks.forEach(t => { html += renderTaskCard(t, idx++); });
-  html += '</div>';  // /card-track
   html += '</div></div></div>';
   return { html: html, nextIdx: idx };
 }
@@ -1048,10 +1002,11 @@ function renderTaskCard(t, idx) {
   // 제목줄: 번호 + 토글 화살표 + 제목(전체폭) — 액션 버튼은 카드 하단 별도 줄 (결재 현황 SSOT 구조 통일, 2026-05-31 GM)
   html += '<div class="task-summary" style="display:flex;align-items:flex-start;gap:8px;">';
   html += '<span style="font-size:11px;font-weight:700;color:var(--accent);min-width:34px;text-align:center;flex-shrink:0;letter-spacing:0.02em;padding-top:2px;">#' + String(idx).padStart(3, '0') + '</span>';
-  html += '<span class="toggle-arrow" onclick="var c=this.closest(\'.task-card\');c.querySelector(\'.task-detail\').classList.toggle(\'open\');this.classList.toggle(\'open\');c.classList.toggle(\'detail-expanded\');" style="font-size:10px;color:var(--dim);transition:transform 0.2s;flex-shrink:0;cursor:pointer;padding:4px;">▶</span>';
-  html += '<div style="flex:1;min-width:0;cursor:pointer;" onclick="var c=this.closest(\'.task-card\');c.querySelector(\'.task-detail\').classList.toggle(\'open\');c.querySelector(\'.toggle-arrow\').classList.toggle(\'open\');c.classList.toggle(\'detail-expanded\');">';
+  html += '<span class="toggle-arrow" onclick="this.closest(\'.task-card\').querySelector(\'.task-detail\').classList.toggle(\'open\');this.classList.toggle(\'open\');" style="font-size:10px;color:var(--dim);transition:transform 0.2s;flex-shrink:0;cursor:pointer;padding:4px;">▶</span>';
+  html += '<div style="flex:1;min-width:0;cursor:pointer;" onclick="this.closest(\'.task-card\').querySelector(\'.task-detail\').classList.toggle(\'open\');this.closest(\'.task-card\').querySelector(\'.toggle-arrow\').classList.toggle(\'open\');">';
+  html += '<div class="wide-row">';  // 업무명 + 담당·상태·날짜·결재 가로 한 줄 (2026-06-02 GM 확정)
   html += '<div class="task-title" style="word-break:keep-all;overflow-wrap:anywhere;">' + esc(t.title) + '</div>';
-  html += '<div class="task-meta" style="margin-top:4px;">';
+  html += '<div class="task-meta">';
 
   if (t.owner) {
     t.owner.split(',').forEach(o => {
@@ -1134,6 +1089,15 @@ function renderTaskCard(t, idx) {
   }
 
   html += '</div>'; // task-meta
+  html += '</div>'; // /wide-row (업무명+메타 가로 한 줄)
+
+  // 내용 요약 한 줄 (상시 노출 — 한 줄 말줄임). 본문 첫 줄을 요약으로 사용.
+  const _sumParsed = parseContent(t.content);
+  const _sumText = String((_sumParsed.body || '')).split('\n').map(function(s){return s.trim();}).filter(Boolean)[0] || '';
+  if (_sumText) {
+    html += '<div class="task-summary-line" title="' + escAttr(_sumText) + '">' + esc(_sumText) + '</div>';
+  }
+
   html += '</div>'; // title-block
   html += '</div>'; // task-summary
 
