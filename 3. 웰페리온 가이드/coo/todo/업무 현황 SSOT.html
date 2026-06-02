@@ -1544,14 +1544,29 @@ function openAddModal() {
   document.getElementById('taskModal').classList.add('show');
 }
 
-/* 회의 카테고리 선택 시 본문에 회의록 양식 자동 프리필 (본문이 비어 있을 때만) */
-const MEETING_TEMPLATE = '📌 안건 — \n👥 참석자 — \n✅ 결정사항 — \n📋 후속조치 — ';
+/* 카테고리별 본문 양식 자동 프리필.
+   본문이 비어 있거나, 다른 카테고리의 양식만 들어있는(작성자가 손대지 않은) 경우에만 교체.
+   작성자가 직접 입력한 내용은 절대 덮어쓰지 않음. */
+const CATEGORY_TEMPLATES = {
+  '[1] 매출 및 영업':   '🎯 목표 — \n📊 현황·실적 — \n💡 전략·액션 — \n📅 일정 — ',
+  '[2] 인사 & 파트너':  '👤 대상 — \n📋 사안 — \n✅ 조치·결정 — \n📅 일정 — ',
+  '[3] 운영 정책':     '📌 정책·사안 — \n🎯 목적 — \n🛠 적용 방안 — \n📅 시행 일정 — ',
+  '[4] 시설 및 환경':   '🏢 대상 시설 — \n🔍 점검·이슈 — \n🛠 조치 — \n📅 일정 — ',
+  '[5] 회원·CS':       '👥 회원·대상 — \n💬 내용·요청 — \n✅ 대응·해결 — \n📅 후속 — ',
+  '[6] IT·시스템·자동화':'⚙️ 대상 시스템 — \n🎯 목적 — \n🔧 작업·구현 — \n✅ 검증·배포 — ',
+  '[7] 교육·조직문화':  '📚 주제 — \n🎯 목표 — \n🧑‍🏫 진행 방식 — \n📅 일정 — ',
+  '[8] 회의':          '📌 안건 — \n👥 참석자 — \n✅ 결정사항 — \n📋 후속조치 — '
+};
+const ALL_TEMPLATE_VALUES = Object.values(CATEGORY_TEMPLATES).map(s => s.trim());
 function onCategoryChange() {
   const cat = document.getElementById('fCategory').value;
-  if (cat !== '[8] 회의') return;
+  const tpl = CATEGORY_TEMPLATES[cat];
+  if (!tpl) return;
   const content = document.getElementById('fContent');
-  if (!content.value.trim()) {
-    content.value = MEETING_TEMPLATE;
+  const cur = content.value.trim();
+  // 비어있거나, 다른 양식만 들어있는 경우 → 새 양식으로 교체. 작성자 입력은 보존.
+  if (!cur || ALL_TEMPLATE_VALUES.includes(cur)) {
+    content.value = tpl;
     content.focus();
   }
 }
