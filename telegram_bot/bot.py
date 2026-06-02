@@ -921,7 +921,31 @@ async def cmd_approval_callback(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
             pass
 
 
+# ── 중복 기동 방지 PID 락 (daily_scheduler.py와 동일 패턴, 2026-06-02) ──────────
+_PID_FILE = BASE / "bot.pid"
+
+
+def _check_pid_lock() -> None:
+    """이미 실행 중인 bot.py 인스턴스가 있으면 즉시 종료 (중복 폴링 409 충돌 방지)."""
+    if _PID_FILE.exists():
+        try:
+            old_pid = int(_PID_FILE.read_text().strip())
+            result = subprocess.run(
+                ["tasklist", "/FI", f"PID eq {old_pid}", "/FO", "CSV"],
+                capture_output=True, text=True, shell=True,
+            )
+            if str(old_pid) in result.stdout:
+                print(f"[bot] 이미 실행 중 (PID {old_pid}). 중복 기동 차단 후 종료.", flush=True)
+                raise SystemExit(0)
+        except SystemExit:
+            raise
+        except Exception:
+            pass
+    _PID_FILE.write_text(str(os.getpid()))
+
+
 def main():
+    _check_pid_lock()  # 중복 봇 기동 차단 (자동기동 + 수동 배치 충돌 방지)
     # Python 3.14 호환성: run_polling 내부의 get_event_loop 호출 대응
     try:
         asyncio.get_event_loop()
