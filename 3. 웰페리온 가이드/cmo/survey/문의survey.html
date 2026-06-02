@@ -269,6 +269,23 @@ body { font-family: var(--sans); background: var(--bg); color: var(--text); min-
       </select>
     </div>
     <div class="field">
+      <label>어디서 알게 되셨나요?</label>
+      <select id="iqInflow" onchange="toggleInflowEtc()">
+        <option value="">선택해 주세요</option>
+        <option value="인스타그램">인스타그램</option>
+        <option value="네이버 블로그">네이버 블로그</option>
+        <option value="네이버 카페">네이버 카페</option>
+        <option value="당근">당근</option>
+        <option value="지인 소개">지인 소개</option>
+        <option value="네이버·구글 검색">네이버·구글 검색</option>
+        <option value="기타">기타 (직접 입력)</option>
+      </select>
+    </div>
+    <div class="field" id="inflowEtcWrap" style="display:none;">
+      <label>기타 유입 경로</label>
+      <input type="text" id="iqInflowEtc" placeholder="어디서 알게 되셨는지 입력해 주세요">
+    </div>
+    <div class="field">
       <label>문의 내용</label>
       <textarea id="iqMessage" placeholder="궁금하신 내용을 남겨주세요"></textarea>
     </div>
@@ -317,10 +334,19 @@ function closeInquiry() {
   document.getElementById('inquiryModal').classList.remove('show');
 }
 
+function toggleInflowEtc() {
+  const sel = document.getElementById('iqInflow').value;
+  document.getElementById('inflowEtcWrap').style.display = sel === '기타' ? 'block' : 'none';
+}
+
 async function submitInquiry() {
   const name = document.getElementById('iqName').value.trim();
   const phone = document.getElementById('iqPhone').value.trim();
   if (!name || !phone) { alert('이름과 연락처를 입력해 주세요.'); return; }
+
+  const inflowSel = document.getElementById('iqInflow').value;
+  const inflowEtc = document.getElementById('iqInflowEtc').value.trim();
+  const inflow = inflowSel === '기타' ? (inflowEtc || '기타') : inflowSel;
 
   const utm = getUTM();
   const params = new URLSearchParams({
@@ -329,6 +355,7 @@ async function submitInquiry() {
     phone: phone,
     type: document.getElementById('iqType').value,
     message: document.getElementById('iqMessage').value,
+    inflow: inflow,
     utmSource: utm.utmSource,
     utmMedium: utm.utmMedium
   });
@@ -341,6 +368,9 @@ async function submitInquiry() {
       document.getElementById('iqName').value = '';
       document.getElementById('iqPhone').value = '';
       document.getElementById('iqMessage').value = '';
+      document.getElementById('iqInflow').value = '';
+      document.getElementById('iqInflowEtc').value = '';
+      document.getElementById('inflowEtcWrap').style.display = 'none';
     }
   } catch(e) {
     showToast('접수에 실패했습니다. 전화(02-795-0220)로 문의해 주세요.');

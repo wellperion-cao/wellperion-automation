@@ -8,7 +8,7 @@ const CLICK_SHEET = '클릭로그';
 const INQUIRY_SHEET = '문의접수';
 
 const CLICK_HEADERS = ['id', '시각', '링크명', '링크URL', 'UTM소스', 'UTM미디엄', '리퍼러', '디바이스'];
-const INQUIRY_HEADERS = ['id', '시각', '이름', '연락처', '문의유형', '내용', 'UTM소스', 'UTM미디엄', '상태', '메모'];
+const INQUIRY_HEADERS = ['id', '시각', '이름', '연락처', '문의유형', '내용', '유입채널', 'UTM소스', 'UTM미디엄', '상태', '메모'];
 
 const INQUIRY_TYPES = ['투어 예약', '프로그램 문의', '멤버십 상담', '시설 안내', '기타'];
 
@@ -96,6 +96,7 @@ function _processAction(body) {
       body.phone || '',
       body.type || '기타',
       body.message || '',
+      body.inflow || '',
       body.utmSource || '',
       body.utmMedium || '',
       '신규',
@@ -108,6 +109,7 @@ function _processAction(body) {
       + '이름: ' + (body.name || '-') + '\n'
       + '연락처: ' + (body.phone || '-') + '\n'
       + '유형: ' + (body.type || '-') + '\n'
+      + '유입채널: ' + (body.inflow || '-') + '\n'
       + '내용: ' + (body.message || '-').substring(0, 100)
     );
 
