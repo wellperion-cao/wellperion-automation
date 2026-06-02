@@ -302,40 +302,24 @@ function _notifyTelegram(text, opts) {
   return; // no-op
 }
 
-// ─── 결재 라인 자동 산출 (결제 권한 기준 v2.0) ───
+// ─── 결재 라인 자동 산출 — GM → 대표 2단계 통일 (2026-06-02 GM 확정) ───
+// 부서장 라인·금액 임계 분기 폐지. 결재 필요 시 전 건 GM → 대표님 2단계.
+// 결재 필요 여부 = 수동 결재요청 또는 예산(BUDGET 마커) 존재.
+// 담당자=김남욱GM이면 GM 단계 생략 → 대표님만 (본인 결재 중복 방지).
 function _buildApprovalRoute(record) {
-  // content에서 BUDGET 마커 파싱
   const content = String(record['내용'] || '');
-  const m = content.match(/===BUDGET===\s*\n([^|]+)\|\s*(\d+)/);
-  let budgetCategory = null, budgetAmount = 0;
-  if (m) { budgetCategory = m[1].trim(); budgetAmount = Number(m[2]); }
-
-  // 결재요청 필드 (수동 체크)
+  const hasBudget = /===BUDGET===\s*\n[^|]+\|\s*\d+/.test(content);
   const manual = String(record['결재요청'] || '').split(',').map(s => s.trim()).filter(Boolean);
 
-  // 예산 기반 자동 산출
-  let auto = [];
-  if (budgetCategory && budgetAmount > 0) {
-    switch (budgetCategory) {
-      case '일상 운영비':           auto = budgetAmount <= 300000 ? ['GM'] : ['부서장', 'GM']; break;
-      case '소액 유지보수':         auto = budgetAmount <= 100000 ? ['부서장'] : ['GM']; break;
-      case '마케팅':                auto = budgetAmount <= 3000000 ? ['GM'] : ['GM', '대표님']; break;
-      case '비상 지출':             auto = budgetAmount <= 500000 ? ['부서장'] : ['GM']; break;
-      case '계약·정기 약정':
-      case 'IT·소프트웨어':
-      case '급여·인건비·외주·교육':
-      case '장비 구매·교체':        auto = ['GM', '대표님']; break;
-    }
-  }
+  // 결재 불필요 → 빈 라인
+  if (manual.length === 0 && !hasBudget) return [];
 
-  // 수동 + 자동 합집합 (순서: 부서장 → GM → 대표님)
-  const set = {};
-  manual.concat(auto).forEach(a => { set[a] = true; });
-  // 본인 결재 중복 방지 — 담당자가 김남욱GM이면 GM 결재 단계 생략(부서장·대표님은 유지) (2026-05-30 GM 지시)
-  const owners = String(record['담당자'] || '').split(',').map(s => s.trim());
-  if (owners.indexOf('김남욱GM') >= 0) { delete set['GM']; }
-  const order = ['부서장', 'GM', '대표님'];
-  return order.filter(role => set[role]);
+  // 결재 필요 → GM → 대표님 (항상 2단계). 담당자 GM이면 GM 단계 생략.
+  const ownerIsGM = String(record['담당자'] || '').split(',').map(s => s.trim()).indexOf('김남욱GM') >= 0;
+  const route = [];
+  if (!ownerIsGM) route.push('GM');
+  route.push('대표님');
+  return route;
 }
 
 // ─── 결재 알림 (옵션 A · 2026-05-28: 알림 전용 + 페이지 링크) ───
@@ -356,7 +340,7 @@ function _sendApprovalCard(record, route, currentRole) {
 
   const routeViz = route.map(r => r === currentRole ? '<b>[' + r + ']</b>' : r).join(' → ');
   const pageUrl = _prop('APPROVAL_PAGE_URL') ||
-    'https://wellperion-cao.github.io/wellperion-automation/coo/todo/%EA%B2%B0%EC%9E%AC%20SSOT.html';
+    'https://wellperion-cao.github.io/wellperion-automation/coo/todo/%EA%B2%B0%EC%9E%AC%20%ED%98%84%ED%99%A9%20SSOT.html';
 
   const text =
     '🔔 <b>[결재 요청]</b> ' + currentRole + '님 차례\n' +

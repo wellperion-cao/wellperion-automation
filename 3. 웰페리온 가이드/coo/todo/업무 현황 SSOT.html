@@ -443,23 +443,6 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 <!-- Result Report Print Container -->
 <div id="resultReportPrint" style="display:none"></div>
 
-<!-- Date Picker Modal -->
-<div class="modal-overlay date-picker-modal" id="datePickerModal">
-  <div class="modal">
-    <h2 id="datePickerTitle">날짜 변경</h2>
-    <input type="hidden" id="datePickerId">
-    <input type="hidden" id="datePickerField">
-    <div class="field">
-      <label id="datePickerLabel">날짜</label>
-      <input type="date" id="datePickerValue">
-    </div>
-    <div class="modal-actions">
-      <button class="modal-btn cancel" onclick="closeDatePicker()">취소</button>
-      <button class="modal-btn save" onclick="saveDatePicker()">저장</button>
-    </div>
-  </div>
-</div>
-
 <!-- Dashboard Overlay -->
 <div class="dashboard-overlay" id="dashboardOverlay">
   <div class="dashboard-panel" id="dashboardPanel"></div>
@@ -1017,7 +1000,7 @@ function renderTaskCard(t, idx) {
         html += '<span class="chip" style="background:var(--red-bg);color:var(--red);font-weight:700;">❌ ' + esc(_appStatus) + '</span>';
       } else {
         // ③ 진행 중 — 싸인 맵: 한글 키 직접 접근
-        const _signMap = { 'GM': t['GM싸인'] || '', '대표님': t['대표님싸인'] || '' };
+        const _signMap = { 'GM': t['GM싸인'] || '', '대표님': t['대표싸인'] || '' };
         // 다음 결재자 = 라인 중 싸인 필드가 비어 있는 첫 번째
         let _nextIdx = _route.length; // 전원 서명 완료 시 sentinel
         for (let _i = 0; _i < _route.length; _i++) {
@@ -1043,7 +1026,7 @@ function renderTaskCard(t, idx) {
       }
     }
     // 기존 결재 현황 SSOT 링크 유지
-    html += '<a class="chip" href="결재 SSOT.html" style="background:var(--green);color:#fff;cursor:pointer;text-decoration:none;" onclick="event.stopPropagation();">📁 결재 현황 SSOT</a>';
+    html += '<a class="chip" href="결재 현황 SSOT.html" style="background:var(--green);color:#fff;cursor:pointer;text-decoration:none;" onclick="event.stopPropagation();">📁 결재 현황 SSOT</a>';
   }
 
   html += '</div>'; // task-meta
@@ -1861,36 +1844,6 @@ function toggleHoldLog() {
   if (holdLogOpen) section.scrollIntoView({ behavior:'smooth', block:'start' });
 }
 
-function sendToTelegram(id) {
-  const t = ALL_TASKS.find(x => x.id === id);
-  if (!t) return;
-  var lines = [];
-  lines.push('📋 [웰페리온 결재요청]');
-  lines.push('업무명: ' + (t.title || '-'));
-  lines.push('카테고리: ' + (t.category || '-'));
-  lines.push('담당자: ' + (t.owner || '-'));
-  if (t.startDate || t.endDate) lines.push('기간: ' + formatDateRange(t.startDate, t.endDate));
-  lines.push('결재요청: ' + (t.approval || '-'));
-  const parsedTel = parseContent(t.content);
-  if (parsedTel.body) lines.push('내용: ' + parsedTel.body);
-  if (parsedTel.budget) {
-    const ap = routeApproval(parsedTel.budget.category, parsedTel.budget.amount);
-    lines.push('💰 예산: ' + parsedTel.budget.category + ' · ' + formatKRW(parsedTel.budget.amount));
-    if (ap.length) lines.push('   결재 라인: ' + ap.join(' → '));
-  }
-  if (parsedTel.logs.length) {
-    lines.push('📅 진척 (최근 ' + Math.min(3, parsedTel.logs.length) + '건):');
-    parsedTel.logs.slice(0, 3).forEach(log => lines.push('  ' + log.date + ' | ' + log.text));
-  }
-  if (t.link) lines.push('링크: ' + t.link);
-  var text = lines.join('\n');
-  navigator.clipboard.writeText(text).then(function() {
-    showToast('결재 메시지 복사 완료 — 텔레그램 결재방에 붙여넣기');
-    var encoded = encodeURIComponent(text);
-    setTimeout(function() { window.open('https://t.me/share/url?text=' + encoded, '_blank'); }, 500);
-  });
-}
-
 /* ═══════════════════════════════════════════
    Date Range Picker (시작일+종료일)
    ═══════════════════════════════════════════ */
@@ -1921,49 +1874,6 @@ function openDateRangePicker(id, startVal, endVal) {
       showToast('일정 변경됨 (로컬)', true);
     }
   });
-}
-
-/* ═══════════════════════════════════════════
-   Date Picker (단일)
-   ═══════════════════════════════════════════ */
-function openDatePicker(id, field, current) {
-  document.getElementById('datePickerId').value = id;
-  document.getElementById('datePickerField').value = field;
-  document.getElementById('datePickerValue').value = current || '';
-  document.getElementById('datePickerTitle').textContent = field === 'endDate' ? '종료일 변경' : '시작일 변경';
-  document.getElementById('datePickerLabel').textContent = field === 'endDate' ? '종료일' : '시작일';
-  document.getElementById('datePickerModal').classList.add('show');
-}
-
-function closeDatePicker() {
-  document.getElementById('datePickerModal').classList.remove('show');
-}
-
-async function saveDatePicker() {
-  const id = document.getElementById('datePickerId').value;
-  const field = document.getElementById('datePickerField').value;
-  const value = document.getElementById('datePickerValue').value;
-  closeDatePicker();
-
-  const params = { action: 'todo_update', id: id };
-  params[field] = value;
-
-  showToast('저장 중...');
-  try {
-    const res = await apiCall(params);
-    if (res.ok) {
-      showToast('날짜 변경 완료');
-      await loadTasks();
-    } else {
-      throw new Error(res.error || '변경 실패');
-    }
-  } catch (e) {
-    const t = ALL_TASKS.find(x => x.id === id);
-    if (t) { t[field] = value; }
-    saveFallback();
-    renderTasks();
-    showToast('날짜 변경됨 (로컬)', true);
-  }
 }
 
 /* ═══════════════════════════════════════════
@@ -2275,7 +2185,7 @@ function printResultReport(taskId) {
   if (approvalReq) {
     var signMap = {
       'GM':    String(t['GM싸인']    || '').trim(),
-      '대표님': String(t['대표님싸인'] || '').trim()
+      '대표님': String(t['대표싸인'] || '').trim()
     };
     var roles = ['담당', 'GM', '대표님'];
     var signValues = {

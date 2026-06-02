@@ -414,8 +414,15 @@ function render() {
 
   // 정렬 — activeSortBy에 따라 분기
   if (activeSortBy === '결재상태') {
-    const stOrder = {'결재완료':0,'반려':1,'GM결재':2,'대기':4};
-    const stRank = t => stOrder[t.approvalStatus] !== undefined ? stOrder[t.approvalStatus] : 5;
+    // 백엔드 실제 결재상태 문자열 기준 (apps_script_todo.js): '결재완료' / 'GM 완료'·'대표님 완료'·'부서장 완료' / 'GM 반려' 등 / '대기'
+    const stRank = t => {
+      const s = String(t.approvalStatus || '');
+      if (s === '결재완료') return 0;        // 전 라인 승인
+      if (/반려/.test(s)) return 1;          // 반려 (GM/대표님/부서장)
+      if (/완료/.test(s)) return 2;          // 중간 단계 완료 = 진행 중
+      if (s === '대기') return 4;            // 미착수
+      return 5;                              // 기타·미설정
+    };
     list.sort((a, b) => stRank(a) - stRank(b) || String(a.title).localeCompare(String(b.title)));
   } else if (activeSortBy === '카테고리') {
     list.sort((a, b) => String(a.category || '').localeCompare(String(b.category || '')) || String(a.title).localeCompare(String(b.title)));
@@ -591,18 +598,20 @@ function todayDateStr() {
   return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
 }
 
-/* 결제 권한 기준 v2.0 라우팅 (백엔드와 동일 로직 — 페이지에서 다음 결재자 산출용) */
+/* 결재 필요 여부 산출용 (실제 라인은 buildEffectiveRoute가 GM→대표 2단계로 통일).
+   부서장·금액 임계 분기 폐지 — 전 건 GM→대표 2단계 (2026-06-02 GM 확정). */
 function routeApproval(category, amount) {
-  const amt = Number(amount) || 0;
   switch (category) {
-    case '일상 운영비':           return ['GM'];
-    case '소액 유지보수':         return ['GM'];
-    case '마케팅':                return amt <= 3000000 ? ['GM'] : ['GM', '대표님'];
-    case '비상 지출':             return ['GM'];
+    case '일상 운영비':
+    case '소액 유지보수':
+    case '마케팅':
+    case '비상 지출':
     case '계약·정기 약정':
     case 'IT·소프트웨어':
     case '급여·인건비·외주·교육':
-    case '장비 구매·교체':        return ['GM', '대표님'];
+    case '장비 구매·교체':
+    case '시설물 리뉴얼(공간 디자인)':
+      return ['GM'];
     default: return [];
   }
 }
@@ -875,7 +884,7 @@ function renderApprovalDashboard() {
   h += '<table class="dash-table"><tr><th>결재자</th><th>대기 건수</th><th style="min-width:120px">비율</th></tr>';
   var roleOrder = ['GM','대표님'];
   var maxWait = Math.max.apply(null, roleOrder.map(function(r){ return waitByRole[r].length; }).concat([1]));
-  var barColors = ['accent','blue','purple','green','yellow'];
+  var barColors = ['accent','blue'];  // roleOrder=2개(GM·대표님)뿐 — 뒤 3색은 도달불가 死폭이라 제거 (2026-06-02 COO)
   roleOrder.forEach(function(role, ri) {
     var cnt = waitByRole[role].length;
     var pct = Math.round(cnt / maxWait * 100);

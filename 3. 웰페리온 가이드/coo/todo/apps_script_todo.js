@@ -209,37 +209,24 @@ function _notifyTelegram(text, opts) {
   return; // no-op
 }
 
-// ─── 결재 라인 자동 산출 (결제 권한 기준 v2.0) ───
+// ─── 결재 라인 자동 산출 — GM → 대표 2단계 통일 (2026-06-02 GM 확정) ───
+// 부서장 라인·금액 임계 분기 폐지. 결재 필요 시 전 건 GM → 대표님 2단계.
+// 결재 필요 여부 = 수동 결재요청 또는 예산(BUDGET 마커) 존재.
+// 담당자=김남욱GM이면 GM 단계 생략 → 대표님만 (프론트 buildEffectiveRoute와 동일).
 function _buildApprovalRoute(record) {
-  // content에서 BUDGET 마커 파싱
   const content = String(record['내용'] || '');
-  const m = content.match(/===BUDGET===\s*\n([^|]+)\|\s*(\d+)/);
-  let budgetCategory = null, budgetAmount = 0;
-  if (m) { budgetCategory = m[1].trim(); budgetAmount = Number(m[2]); }
-
-  // 결재요청 필드 (수동 체크)
+  const hasBudget = /===BUDGET===\s*\n[^|]+\|\s*\d+/.test(content);
   const manual = String(record['결재요청'] || '').split(',').map(s => s.trim()).filter(Boolean);
 
-  // 예산 기반 자동 산출
-  let auto = [];
-  if (budgetCategory && budgetAmount > 0) {
-    switch (budgetCategory) {
-      case '일상 운영비':           auto = budgetAmount <= 300000 ? ['GM'] : ['부서장', 'GM']; break;
-      case '소액 유지보수':         auto = budgetAmount <= 100000 ? ['부서장'] : ['GM']; break;
-      case '마케팅':                auto = budgetAmount <= 3000000 ? ['GM'] : ['GM', '대표님']; break;
-      case '비상 지출':             auto = budgetAmount <= 500000 ? ['부서장'] : ['GM']; break;
-      case '계약·정기 약정':
-      case 'IT·소프트웨어':
-      case '급여·인건비·외주·교육':
-      case '장비 구매·교체':        auto = ['GM', '대표님']; break;
-    }
-  }
+  // 결재 불필요 → 빈 라인
+  if (manual.length === 0 && !hasBudget) return [];
 
-  // 수동 + 자동 합집합 (순서: 부서장 → GM → 대표님)
-  const set = {};
-  manual.concat(auto).forEach(a => { set[a] = true; });
-  const order = ['부서장', 'GM', '대표님'];
-  return order.filter(role => set[role]);
+  // 결재 필요 → GM → 대표님 (항상 2단계). 담당자 GM이면 GM 단계 생략.
+  const ownerIsGM = String(record['담당자'] || '').split(',').map(s => s.trim()).indexOf('김남욱GM') >= 0;
+  const route = [];
+  if (!ownerIsGM) route.push('GM');
+  route.push('대표님');
+  return route;
 }
 
 // ─── 결재 알림 (옵션 A · 2026-05-28: 알림 전용 + 페이지 링크) ───
@@ -260,7 +247,7 @@ function _sendApprovalCard(record, route, currentRole) {
 
   const routeViz = route.map(r => r === currentRole ? '<b>[' + r + ']</b>' : r).join(' → ');
   const pageUrl = _prop('APPROVAL_PAGE_URL') ||
-    'https://wellperion-cao.github.io/wellperion-automation/coo/todo/%EA%B2%B0%EC%9E%AC%20SSOT.html';
+    'https://wellperion-cao.github.io/wellperion-automation/coo/todo/%EA%B2%B0%EC%9E%AC%20%ED%98%84%ED%99%A9%20SSOT.html';
 
   const text =
     '🔔 <b>[결재 요청]</b> ' + currentRole + '님 차례\n' +
@@ -471,6 +458,18 @@ function _processTodoAction(body) {
       const signCol = signMap[role];
       if (!signCol) return _json({ ok: false, error: '알 수 없는 결재자: ' + role });
 
+      // ── 결재 비밀번호 서버 검증 (GM·대표님) — 평문 PIN은 서버 ScriptProperties에만 저장 (2026-05-29 COO 보안) ──
+      // GM 콘솔: 프로젝트 설정 → 스크립트 속성에 APPROVAL_PIN_GM, APPROVAL_PIN_REP 등록 후 사용.
+      // 승인·반려 공통 게이트 (이 아래 reject/approve 분기보다 먼저 차단).
+      // (라이브 GAS 소스와 동기화 — 2026-06-02 COO: repo 구버전이 PIN 미검증이라 오진되던 것 바로잡음.)
+      var _pinKey = { 'GM': 'APPROVAL_PIN_GM', '대표님': 'APPROVAL_PIN_REP' }[role];
+      if (_pinKey) {
+        var _expected = _prop(_pinKey);
+        var _submitted = String(body.pin || '');
+        if (!_expected) return _json({ ok: false, error: role + ' 결재 비밀번호가 서버에 설정되지 않았습니다(관리자 설정 필요).' });
+        if (_submitted !== _expected) return _json({ ok: false, error: '비밀번호가 일치하지 않습니다.' });
+      }
+
       const now = _now();
       if (decision === 'reject') {
         existing[TODO_HEADERS.indexOf('결재상태')] = role + ' 반려';
@@ -535,125 +534,18 @@ function _processTodoAction(body) {
       return _json({ ok: true, id: id, message: '업무가 완료되었습니다.' });
     }
 
-    return _json({ ok: false, error: '알 수 없는 action: ' + action });
-}
-
-function doPost(e) {
-  try {
-    const body = JSON.parse(e.postData.contents);
-    return _processTodoAction(body);
-
-    // ─── 새 업무 추가 ───
-    if (action === 'todo_add') {
-      const sh = initTodoSheet();
-      const id = _genId();
-      const now = _now();
-
-      const row = [
-        id,
-        body['업무명'] || '',
-        body['카테고리'] || '',
-        body['담당자'] || '',
-        body['시작일'] || _today(),
-        body['종료일'] || '',
-        body['내용'] || '',
-        body['상태'] || '진행중',
-        body['결재요청'] || '',
-        body['링크'] || '',
-        body['파일URL'] || '',
-        body['생성자'] || '',
-        now,  // 생성일
-        now   // 수정일
-      ];
-
-      const newRow = sh.getLastRow() + 1;
-      sh.getRange(newRow, 1, 1, row.length).setValues([row]);
-      _applyStatusColor(sh, newRow, row[7]);
-
-      // 텔레그램 알림
-      _notifyTelegram(
-        '📋 <b>[TODO 신규]</b>\n'
-        + '업무명: ' + (body['업무명'] || '-') + '\n'
-        + '카테고리: ' + (body['카테고리'] || '-') + '\n'
-        + '담당자: ' + (body['담당자'] || '-') + '\n'
-        + 'ID: ' + id
-      );
-
-      return _json({ ok: true, id: id, message: '업무가 추가되었습니다.' });
-    }
-
-    // ─── 수정 ───
-    if (action === 'todo_update') {
-      const sh = initTodoSheet();
-      const id = body.id;
-      if (!id) return _json({ ok: false, error: 'id 필수' });
-
-      const rowNum = _findRow(sh, id);
-      if (rowNum < 0) return _json({ ok: false, error: '해당 ID를 찾을 수 없습니다: ' + id });
-
-      const existing = sh.getRange(rowNum, 1, 1, TODO_HEADERS.length).getValues()[0];
-
-      // 전달된 필드만 덮어쓰기
-      TODO_HEADERS.forEach((h, i) => {
-        if (h === 'id' || h === '생성일' || h === '생성자') return; // 불변 필드
-        if (body[h] !== undefined && body[h] !== null) {
-          existing[i] = body[h];
-        }
-      });
-      // 수정일 갱신
-      existing[TODO_HEADERS.indexOf('수정일')] = _now();
-
-      sh.getRange(rowNum, 1, 1, TODO_HEADERS.length).setValues([existing]);
-      _applyStatusColor(sh, rowNum, existing[TODO_HEADERS.indexOf('상태')]);
-
-      return _json({ ok: true, id: id, message: '업무가 수정되었습니다.' });
-    }
-
-    // ─── 삭제 ───
-    if (action === 'todo_delete') {
-      const sh = initTodoSheet();
-      const id = body.id;
-      if (!id) return _json({ ok: false, error: 'id 필수' });
-
-      const rowNum = _findRow(sh, id);
-      if (rowNum < 0) return _json({ ok: false, error: '해당 ID를 찾을 수 없습니다: ' + id });
-
-      sh.deleteRow(rowNum);
-      return _json({ ok: true, id: id, message: '업무가 삭제되었습니다.' });
-    }
-
-    // ─── 완료 처리 ───
-    if (action === 'todo_done') {
-      const sh = initTodoSheet();
-      const id = body.id;
-      if (!id) return _json({ ok: false, error: 'id 필수' });
-
-      const rowNum = _findRow(sh, id);
-      if (rowNum < 0) return _json({ ok: false, error: '해당 ID를 찾을 수 없습니다: ' + id });
-
-      const statusCol = TODO_HEADERS.indexOf('상태') + 1;
-      const modCol = TODO_HEADERS.indexOf('수정일') + 1;
-
-      sh.getRange(rowNum, statusCol).setValue('완료');
-      sh.getRange(rowNum, modCol).setValue(_now());
-      _applyStatusColor(sh, rowNum, '완료');
-
-      return _json({ ok: true, id: id, message: '업무가 완료 처리되었습니다.' });
-    }
-
-    // ─── 파일 업로드 ───
+    // ─── 파일 업로드 (Base64 → Drive) ───
+    // 프론트(apiCall=GET)·doPost 공용 진입점으로 이관 (2026-06-02 COO):
+    // 기존엔 도달불가 doPost 死코드에만 존재해 첨부 업로드가 동작하지 않던 버그 수정.
     if (action === 'todo_upload') {
       const id = body.id;
-      const base64 = body.file;
+      const base64 = body.file || body.base64;
       const fileName = body.fileName || '';
       const mimeType = body.mimeType || 'application/octet-stream';
-
       if (!base64) return _json({ ok: false, error: 'file(Base64) 필수' });
 
-      // Drive에 파일 저장
       const fileUrl = _uploadFile(base64, fileName, mimeType);
 
-      // id가 있으면 해당 TODO의 파일URL 필드에 추가
       if (id) {
         const sh = initTodoSheet();
         const rowNum = _findRow(sh, id);
@@ -671,6 +563,12 @@ function doPost(e) {
     }
 
     return _json({ ok: false, error: '알 수 없는 action: ' + action });
+}
+
+function doPost(e) {
+  try {
+    const body = JSON.parse(e.postData.contents);
+    return _processTodoAction(body);
   } catch (err) {
     return _json({ ok: false, error: err.message });
   }
