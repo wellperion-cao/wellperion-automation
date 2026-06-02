@@ -93,9 +93,9 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 .kanban-board::-webkit-scrollbar-thumb{background:var(--dim-soft);border-radius:4px}
 .kanban-board::-webkit-scrollbar-thumb:hover{background:var(--dim)}
 .kanban-board::after{content:'';flex-shrink:0;width:8px}
-/* 컬럼 = 카테고리 그룹. 고정폭 360px — 보드 안에서만 컬럼화(보류·완료 로그엔 영향 없음).
-   컬럼 폭 = 카드 폭(카드는 컬럼 전체폭을 채움) → 360px 일관 (2026-06-02 GM 조정: 300→360) */
-.kanban-board > .cat-group{flex:0 0 auto;width:360px;margin-bottom:0;align-self:stretch}
+/* 컬럼 = 카테고리 그룹. 고정폭 450px — 보드 안에서만 컬럼화(보류·완료 로그엔 영향 없음).
+   컬럼 폭 = 카드 폭(카드는 컬럼 전체폭을 채움) → 450px 일관 (2026-06-02 GM 조정: 300→450, 원폭의 1.5배) */
+.kanban-board > .cat-group{flex:0 0 auto;width:450px;margin-bottom:0;align-self:stretch}
 /* 카드 내부 정보: 컬럼 폭에 맞춰 세로형 컴팩트 (업무명 → 담당·상태·날짜·결재 wrap) */
 .wide-row{display:flex;flex-direction:column;align-items:stretch;gap:6px;min-width:0}
 .wide-row .task-title{margin-bottom:0;max-width:100%}
