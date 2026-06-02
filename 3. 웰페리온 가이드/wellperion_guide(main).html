@@ -2594,7 +2594,7 @@ kubectl get pods -o json | jq '.items[] | {name: .metadata.name}'</pre>
           <tr><th>도구</th><th>위치</th><th>역할</th></tr>
           <tr><td>ai_education_auto_learner.py</td><td>scripts/</td><td>웹 수집 → 요약 → 텔레그램 배포 (수집 단계)</td></tr>
           <tr><td>education_archive_weekly.py</td><td>scripts/</td><td>매주 월 09:00 로컬 교육자료 자동 정리</td></tr>
-          <tr><td>컨텍스트 주간 정비</td><td>각 C-Level 자동태스크</td><td>매주 월 09:00 본인 영역 검토·고도화 (학습+제안 단계)</td></tr>
+          <tr><td>컨텍스트 주간 정비</td><td>각 C-Level (반자동)</td><td>매주 월 09:00 텔레그램 알림 → 세션에서 CEO가 6 C-Level에 일괄 위임 → 본인 영역 검토·고도화 → CEO 취합 (학습+제안 단계)</td></tr>
           <tr><td>CEO 통합 보고</td><td>매일 08:00</td><td>C-Level 제안 취합 → GM님 보고 (제안 단계)</td></tr>
         </table>
 
@@ -2608,6 +2608,18 @@ kubectl get pods -o json | jq '.items[] | {name: .metadata.name}'</pre>
 
         <h3><span class="ico">🔧</span>컨텍스트 정비 범위 정의 (매주 월 09:00)</h3>
         <p>6 C-Level 각각이 매주 월요일 09:00에 수행하는 핵심 본업. 자기 영역 누적 자료를 검토·정리·고도화.</p>
+
+        <div class="callout"><strong>반자동 실행 모델 v2 (2026-06-02 GM 확정 · 이 흐름이 SSOT).</strong> 자동으로 혼자 돌아가는 게 아니라, <strong>월요일 알림 → 세션에서 사람이 실행 → CEO가 모아 한 번에 보고</strong>하는 구조입니다.</div>
+        <table>
+          <tr><th style="width:90px">단계</th><th>누가</th><th>무엇을</th></tr>
+          <tr><td>1. 알림(리마인더)</td><td>시스템</td><td>매주 월 09:00 텔레그램으로 "주간 정비 시작" 알림 (<code>pre_task_notifier</code> + <code>status/schedule.json</code> 6건). 자동 실행이 아니라 사람에게 알려주는 리마인더.</td></tr>
+          <tr><td>2. 일괄 위임</td><td>AI CEO(웰리)</td><td>그 주 월요일 Claude 세션이 열리면, CEO가 6 C-Level에게 "주간 정비 시작"을 한 번에 위임.</td></tr>
+          <tr><td>3. 정비 실행</td><td>각 C-Level</td><td>아래 범위표 기준으로 본인 영역을 정비(핵심 프롬프트 STEP 1~5를 세션에서 직접 수행). 정비 전·후 + 발견·개선안을 CEO에 보고.</td></tr>
+          <tr><td>4. CEO 취합 → GM 1보고</td><td>AI CEO(웰리)</td><td>6 C-Level 결과 6건을 모아 GM님께 <strong>1회 통합 보고</strong>. (이 취합 경로가 본 모델의 핵심.)</td></tr>
+        </table>
+        <div class="callout tip"><strong>세션이 안 열린 주는?</strong> 다음 가능한 날에 수행합니다. 밀린 주를 거슬러 추적하지 않습니다. <strong>정비 엔진은 별도 프로그램(.py)이 아니라</strong>, 아래 핵심 프롬프트(STEP 1~5)를 사람이 세션에서 직접 실행하는 방식입니다.</div>
+        <div class="callout"><strong>식별자 SSOT.</strong> 아래 범위표의 식별자(CMO-002·CPO-002·COO-001·CHRO-005·CFO-004·CTO-003)가 단일 기준입니다. 노션 조직 DB는 폐기됐으므로, 식별자는 이 범위표를 따릅니다. (<code>status/schedule.json</code>의 코드·작업스케줄러 이름 등은 내부 부품일 뿐 식별자 SSOT가 아닙니다.)</div>
+
         <table>
           <tr><th>C-Level</th><th>식별자</th><th>정비 범위</th><th>체크포인트</th></tr>
           <tr>
@@ -2931,7 +2943,7 @@ Start-Process python -ArgumentList telegram_bot\daily_scheduler.py -WorkingDirec
     <p class="lead">자주 쓰는 핵심 프롬프트를 한곳에 모은 페이지입니다. 각 블록을 Claude CLI에 그대로 붙여넣어 사용하세요.</p>
 
     <h3><span class="ico">🔧</span>일일 컨텍스트 정비</h3>
-    <p>컨텍스트 정비 핵심 프롬프트(STEP 1~5 · 안전장치 3종)는 <strong>⑥ 컨텍스트 정비 작업 ▸ ⑤ 핵심 프롬프트</strong> 탭에서 관리됩니다(SSOT — 한 곳에서만). 또는 <code>python scripts/context_maintenance.py</code> 실행 — STEP 1~5 진단(v2)을 자동 수행해 정비 제안서를 생성.</p>
+    <p>컨텍스트 정비 핵심 프롬프트(STEP 1~5 · 안전장치 3종)는 <strong>⑥ 컨텍스트 정비 작업 ▸ ⑤ 핵심 프롬프트</strong> 탭에서 관리됩니다(SSOT — 한 곳에서만). 별도 실행 프로그램은 없으며, 그 프롬프트를 세션에서 직접 붙여넣어 STEP 1~5를 수행합니다.</p>
 
     <h3><span class="ico">🚀</span>AI 고도화 프롬프트 7종</h3>
     <p>출처: Code with Claude — London 2026 TOP 5. 1·3번은 핵심 행동 → 7번으로 CLAUDE.md에 영구 박제 권장.</p>
@@ -4245,7 +4257,7 @@ Start-Process python -ArgumentList telegram_bot\daily_scheduler.py -WorkingDirec
           <tr><td style="padding:6px 8px;border:1px solid var(--border);">교육자료 주간 정리</td><td style="padding:6px 8px;border:1px solid var(--border);">매주 월 09:00</td><td style="padding:6px 8px;border:1px solid var(--border);">로컬 AI 교육자료 자동 아카이브 <span style="color:var(--dim);font-size:11px;">(Education-Archive-Weekly)</span></td></tr>
           <tr><td style="padding:6px 8px;border:1px solid var(--border);">AI 학습자료 주간 수집</td><td style="padding:6px 8px;border:1px solid var(--border);">매주 월 09:30</td><td style="padding:6px 8px;border:1px solid var(--border);">7개 소스에서 최신 AI 정보 자동 수집 <span style="color:var(--dim);font-size:11px;">(AI-Education-Weekly)</span></td></tr>
           <tr><td style="padding:6px 8px;border:1px solid var(--border);">결재 완료 검증</td><td style="padding:6px 8px;border:1px solid var(--border);">PC 로그온 시</td><td style="padding:6px 8px;border:1px solid var(--border);">완료 보고 자동 검증 <span style="color:var(--dim);font-size:11px;">(CEO-Verify-Watcher)</span></td></tr>
-          <tr><td style="padding:6px 8px;border:1px solid var(--border);">컨텍스트 정비 준비</td><td style="padding:6px 8px;border:1px solid var(--border);">매주 일 23:00</td><td style="padding:6px 8px;border:1px solid var(--border);">각 부서 주간 정비 자동 준비 <span style="color:var(--dim);font-size:11px;">(Weekly-Context-Maintenance-Arm)</span></td></tr>
+          <tr style="opacity:0.55;"><td style="padding:6px 8px;border:1px solid var(--border);"><s>컨텍스트 정비 준비</s> <span style="color:var(--dim);font-size:11px;">폐기됨</span></td><td style="padding:6px 8px;border:1px solid var(--border);"><s>매주 일 23:00</s></td><td style="padding:6px 8px;border:1px solid var(--border);">🗑️ 폐기됨(2026-06-02). 매주 실패하던 준비 트리거 — 주간 정비는 월 09:00 텔레그램 알림(반자동 모델)로 대체됨 <span style="color:var(--dim);font-size:11px;">(구 Weekly-Context-Maintenance-Arm)</span></td></tr>
           <tr><td style="padding:6px 8px;border:1px solid var(--border);">자동 업무 가동창</td><td style="padding:6px 8px;border:1px solid var(--border);">매일 05:35 / 22:00</td><td style="padding:6px 8px;border:1px solid var(--border);">자동 업무 실행 시간창 열기·닫기 (2개) <span style="color:var(--dim);font-size:11px;">(AutoTask-Watcher Start/Stop)</span></td></tr>
           <tr><td style="padding:6px 8px;border:1px solid var(--border);">PC 종료 인사</td><td style="padding:6px 8px;border:1px solid var(--border);">매일 22:25</td><td style="padding:6px 8px;border:1px solid var(--border);">종료 시 마무리 인사 <span style="color:var(--dim);font-size:11px;">(PC-Shutdown-Greeting)</span></td></tr>
         </table>
@@ -4592,7 +4604,7 @@ function crTab(btn, panelId) {
           <tr><th style="width:280px">자원</th><th>설명</th></tr>
           <tr><td><code>telegram_bot/bot.py</code></td><td>텔레그램 봇 메인 (PID 가동)</td></tr>
           <tr><td><code>telegram_bot/daily_scheduler.py</code></td><td>정각 보고 스케줄러 (PID 가동)</td></tr>
-          <tr><td>Task Scheduler 6건 <code>Wellperion-*</code></td><td>AutoTask · CEO-Morning-Brief · PC-Shutdown · Weekly-Context · Education-Archive</td></tr>
+          <tr><td>Task Scheduler 정상 가동 <code>Wellperion-*</code></td><td>CEO-Morning-Brief · PC-Shutdown · Education-Archive · AI-Education · CEO-Verify · Morning-Update (구 Weekly-Context-Arm은 폐기됨)</td></tr>
           <tr><td><code>profiles/{instagram,naver-cafe,naver-blog}/</code></td><td>Playwright 세션 271 MB</td></tr>
           <tr><td><code>telegram_bot/.env</code></td><td>토큰·환경변수 SSOT (3 HardLink)</td></tr>
         </table>
@@ -4618,7 +4630,7 @@ function crTab(btn, panelId) {
         <details class="toggle"><summary>22:25 PC 종료 인사 + 22:30 자동 종료 <span class="badge green" style="margin-left:6px;">가동</span></summary><div class="toggle-body"><p><strong>담당:</strong> CTO</p><p>22:25 Shutdown-Greeting 텔레그램 발송 → 22:30 Auto-Shutdown 실행.</p></div></details>
 
         <h4>매주 월요일</h4>
-        <details class="toggle"><summary>09:00 6개 C-Level 주간 컨텍스트 정비 <span class="badge gray" style="margin-left:6px;">보류</span></summary><div class="toggle-body"><p><strong>담당:</strong> CPO·COO·CMO·CHRO·CFO·CTO · <strong>소요:</strong> 각 30분</p><p>본인 영역 .md·.json·.log 스캔→단순화→자동화→고도화→통합제안. 컨텍스트 정비 범위 정의 필요.</p></div></details>
+        <details class="toggle"><summary>09:00 6개 C-Level 주간 컨텍스트 정비 <span class="badge green" style="margin-left:6px;">활성 (반자동)</span></summary><div class="toggle-body"><p><strong>담당:</strong> CPO·COO·CMO·CHRO·CFO·CTO · <strong>소요:</strong> 각 30분</p><p>본인 영역 .md·.json·.log 스캔→단순화→자동화→고도화→통합제안. <strong>범위 정의 완료 + 반자동 모델 확정(2026-06-02).</strong> 월 09:00 텔레그램 알림 → 세션에서 CEO가 6 C-Level에 일괄 위임 → 각자 정비 → CEO가 6건 취합해 GM 1보고. 상세 흐름·범위표 → T1 가이드허브 ⑥ 컨텍스트 정비.</p></div></details>
 
         <h4>매월 · 분기</h4>
         <details class="toggle"><summary>마지막 영업일 경쟁사 분석 업데이트 <span class="badge gray" style="margin-left:6px;">보류</span></summary><div class="toggle-body"><p><strong>담당:</strong> CPO · <strong>소요:</strong> 90분</p><p>경쟁사 분석 데이터 정기 업데이트.</p></div></details>
@@ -4646,7 +4658,7 @@ function crTab(btn, panelId) {
           <div class="card warm">
             <h4>⚠️ 중복·🔧 별건</h4>
             <p style="font-size:28px; font-weight:700; margin:4px 0;">2건</p>
-            <p style="font-size:13px; color:var(--dim);">Weekly-Context-Arm 중복 · CEO_DAILY_CLEVEL_CHECK 소스소실</p>
+            <p style="font-size:13px; color:var(--dim);">Weekly-Context-Arm 폐기됨(06-02) · CEO_DAILY_CLEVEL_CHECK 소스소실</p>
           </div>
         </div>
 
@@ -4676,7 +4688,7 @@ function crTab(btn, panelId) {
         <h4>⚠️ 중복 · 🔧 별건 (2건)</h4>
         <table>
           <tr><th style="width:340px">예약작업</th><th>상태</th></tr>
-          <tr><td><code>Welperion-Weekly-Context-Maintenance-Arm</code></td><td>⚠️ 미등록. 주간 컨텍스트정비는 이미 <code>status/schedule.json</code> 6건+pre_task_notifier로 가동 중 → 중복, <code>register_arm_scheduler.bat</code> 폐기권고</td></tr>
+          <tr><td><code>Wellperion-Weekly-Context-Maintenance-Arm</code></td><td>🗑️ 폐기됨(2026-06-02). 일요일 23:00 준비 트리거가 매주 실패 → 불필요. 등록 배치 <code>register_arm_scheduler.bat</code>는 삭제 완료, 작업스케줄러는 <code>_unregister_arm_scheduler.bat</code>(관리자 1클릭)로 제거. 주간 컨텍스트 정비는 월 09:00 텔레그램 알림(<code>status/schedule.json</code> 6건+pre_task_notifier) 반자동 모델로 운영.</td></tr>
           <tr><td><code>CEO_DAILY_CLEVEL_CHECK</code></td><td>🔧 CEO_DAILY_CHECK.bat은 있으나 내부 ceo_daily_clevel_check.py 소스 소실 → 무력, 복원 점검 대기</td></tr>
         </table>
 
@@ -4720,7 +4732,7 @@ function crTab(btn, panelId) {
       <div class="tab-panel" data-panel="context">
         <h3><span class="ico">🔧</span>컨텍스트 정비 작업</h3>
         <p>각 AI C-Level의 컨텍스트(.md · .json · .log 등)를 STEP 1~5 흐름으로 정비합니다 — 스캔 → 단순화 → 자동화 → 고도화 → 통합 제안. 매주 월요일 09:00 · 30분 cycle 반복.</p>
-        <div class="callout tip"><strong>정기 일정.</strong> 매주 월요일 09:00 · 30분 진행 · STEP 1~5 완료 후 결과를 가이드허브에 기록 (노션 사용 안 함, SSOT는 가이드허브).</div>
+        <div class="callout tip"><strong>정기 일정 (반자동 모델 v2 · 2026-06-02 확정).</strong> 매주 월 09:00 텔레그램 알림(리마인더) → 그 주 세션에서 CEO(웰리)가 6 C-Level에 일괄 위임 → 각자 STEP 1~5로 본인 영역 정비(각 30분) → <strong>CEO가 6건 취합해 GM께 1회 통합 보고</strong>. 세션이 안 열린 주는 다음 가능한 날 수행(소급 추적 안 함). 결과는 가이드허브에 기록(노션 사용 안 함, SSOT는 가이드허브). <strong>별도 실행 프로그램 없음 — 아래 핵심 프롬프트를 세션에서 직접 실행.</strong></div>
 
         <h3><span class="ico">🔍</span>STEP 1 · 스캔 — 대상 파일 인벤토리</h3>
         <p>각 AI C-Level의 컨텍스트 파일을 빠짐없이 훑어 목록·크기·줄 수를 파악합니다. 이후 모든 진단(STEP 2~4)은 이 인벤토리를 기준으로 진행됩니다.</p>
@@ -4728,7 +4740,7 @@ function crTab(btn, panelId) {
           <tr><th style="width:300px">대상 파일</th><th>측정 항목</th><th>산출물</th></tr>
           <tr><td><code>.log · .txt · .json · .md.bak · .md · .py</code></td><td>목록 · 크기 · 줄 수 · 수정일 · 해시</td><td>파일 인벤토리</td></tr>
         </table>
-        <div class="callout tip"><strong>자동.</strong> <code>scripts/context_maintenance.py</code> 실행 시 STEP 1 스캔이 자동 수행됩니다(해시 포함 — 내용 동일 중복 탐지에 사용).</div>
+        <div class="callout tip"><strong>방법.</strong> 별도 실행 프로그램은 없습니다. 세션에서 핵심 프롬프트를 따라 대상 파일을 직접 훑어 인벤토리(목록·크기·줄 수·수정일)를 만듭니다 — 내용 동일 중복은 눈으로 대조해 표시.</div>
 
         <h3><span class="ico">🧹</span>STEP 2 · 단순화 진단 (Clean) — 무의미·불필요·중복은 삭제·병합</h3>
         <div class="grid-3">
@@ -4759,7 +4771,7 @@ function crTab(btn, panelId) {
         <p style="font-size:13px; color:var(--dim);">산출물 — 구조·표현 개선안. <strong>고위험 작업이므로 직접 적용 금지 — 제안만, GM 승인 후 반영.</strong></p>
 
         <h3><span class="ico">📋</span>STEP 5 · 통합 제안서 — 우선순위별 정비안</h3>
-        <p>STEP 1~4 진단을 한데 모아 우선순위별 정비 제안서를 작성합니다. 산출물 — 정비 .md 초안 + 트리거 명세(<code>정비제안서_날짜.md</code>).</p>
+        <p>STEP 1~4 진단을 한데 모아 우선순위별 정비 제안서를 작성합니다(세션에서 사람이 직접 작성). 산출물 — 정비 .md 초안 + 트리거 명세. 각 C-Level은 이 제안서를 CEO에 보고하고, CEO가 6건을 모아 GM께 1회 통합 보고.</p>
         <table>
           <tr><th style="width:130px">우선순위</th><th>항목</th><th>처리</th></tr>
           <tr><td>P0 · 즉시</td><td>잘못된 경로 파일 · 0바이트 · 깨진 참조</td><td>백업 후 정리(저위험·자동)</td></tr>
@@ -4769,7 +4781,7 @@ function crTab(btn, panelId) {
         <div class="callout fix"><strong>원칙.</strong> 추측 금지 · 파일 직접 읽고 보고 · 모호 시 한 번에 하나씩 질문 · 각 STEP 끝나면 중간보고 후 다음 STEP. 완료 후 제안서를 가이드허브에 기록 (노션 사용 안 함, SSOT는 가이드허브).</div>
 
         <h3><span class="ico">🤖</span>핵심 프롬프트 — 일일 컨텍스트 정비</h3>
-        <p>아래 프롬프트를 Claude CLI에 그대로 붙여넣으면(또는 daily_scheduler가 매일 자동 호출) STEP 1~5 정비를 안전하게 수행합니다. <strong>매주 월요일 09:00 · 30분</strong> 진행 후 결과를 가이드허브에 기록 (노션 사용 안 함, SSOT는 가이드허브).</p>
+        <p>아래 프롬프트를 Claude CLI에 그대로 붙여넣어 STEP 1~5 정비를 안전하게 수행합니다(별도 자동 실행 프로그램 없음 — 세션에서 사람이 직접 실행). <strong>매주 월요일 09:00 · 30분</strong> 진행 후 결과를 가이드허브에 기록 (노션 사용 안 함, SSOT는 가이드허브).</p>
         <pre style="background:#16181c; color:#e8e8e8; padding:14px 16px; border-radius:8px; font-size:13px; white-space:pre-wrap; line-height:1.7; border-left:3px solid var(--accent); overflow-x:auto;">[웰페리온 컨텍스트 정비 — 매주 월요일 09:00 · 30분]
 각 AI C-Level의 컨텍스트 파일(.log · .txt · .json · .md.bak · .md · .py)을 STEP 1~5로 정비하라.
 
@@ -4792,7 +4804,7 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
 
 완료 후: 텔레그램 1줄 요약 보고 + 제안서를 가이드허브에 기록 (노션 사용 안 함, SSOT는 가이드허브).
 추측 금지 · 파일을 직접 읽고 보고하라.</pre>
-        <div class="callout tip"><strong>STEP 1~5 진단 엔진 v2 (2026-05-25).</strong> <code>scripts/context_maintenance.py</code> — 해시 기반 중복 탐지 · .py 자동화 연결 교차검증 · 깨진 참조 탐지 · 우선순위(P0/P1/P2)·추세 분석. 실행 시 <code>정비제안서_날짜.md</code> 자동 생성(보고 전용). 매주 월 09:00 daily_scheduler 등록 가능.</div>
+        <div class="callout tip"><strong>실행 방식 (2026-06-02 정정).</strong> 별도 실행 프로그램(.py)은 없습니다. 위 핵심 프롬프트를 세션에서 직접 붙여넣어 STEP 1~5(해시 대신 눈 대조로 중복 탐지 · 깨진 참조 점검 · 우선순위 P0/P1/P2 분류)를 사람이 수행합니다. 매주 월 09:00 텔레그램 알림이 시작 리마인더 역할을 하며, CEO가 6 C-Level 결과를 취합해 GM께 1회 보고합니다.</div>
         <div class="callout tip"><strong>한 줄 요약.</strong> 훑고 → 비우고 → 채우고 → 다듬고 → 제안한다. 한 번이 아니라 매주 cycle.</div>
       </div>
     </div>
