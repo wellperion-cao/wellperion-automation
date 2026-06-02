@@ -512,6 +512,17 @@ async def run_publish(args: argparse.Namespace) -> int:
         await page.wait_for_timeout(5000)
         await page.screenshot(path=str(shot))
         print(f"[INFO] 등록 완료 — 스크린샷 {shot}")
+        # 발행 후 현재 페이지 URL 회수 시도 (감시기 post_url 기록용)
+        # 카페는 등록 후 게시물 상세 페이지로 이동하는 경우가 있어 현재 URL 확인.
+        # URL 취득 불가 시에도 발행 성공 사실은 exit code 0 으로 전달.
+        try:
+            current_url = page.url
+            if current_url and "cafe.naver.com" in current_url and "/articles/" in current_url:
+                print(f"post A: {current_url}")
+            else:
+                print("post A: (naver-url-회수불가)")
+        except Exception:
+            print("post A: (naver-url-회수불가)")
     except Exception as e:
         await page.screenshot(path=str(shot.with_suffix(".error.png")))
         print(f"[ERROR] publish 실패: {e}")
