@@ -982,13 +982,12 @@ function renderTaskCard(t, idx) {
   if (t.approval) {
     // ── 결재 진행 표시 (2026-05-29 GM 지시) ─────────────────────────────
     const _parsed = parseContent(t.content);
-    // 결재 필요 시 GM → 대표님(항상 최종). 담당자가 GM이면 GM 단계 생략 → 대표님만 (2026-06-01 GM)
+    // 결재선 = 항상 GM → 대표님 2단계 (부서장 폐지·금액 임계 없음)
     const _manual = String(t.approval || '').split(',').map(s => s.trim()).filter(Boolean);
     const _auto   = _parsed.budget ? routeApproval(_parsed.budget.category, _parsed.budget.amount) : [];
     const _needs  = _manual.length > 0 || _auto.length > 0;
-    const _ownerGM = String(t.owner || '').split(',').map(s => s.trim()).indexOf('김남욱GM') >= 0;
     const _route  = [];
-    if (_needs) { if (!_ownerGM) _route.push('GM'); _route.push('대표님'); }
+    if (_needs) { _route.push('GM'); _route.push('대표님'); }
 
     if (_route.length > 0) {
       const _appStatus = String(t['결재상태'] || '');
