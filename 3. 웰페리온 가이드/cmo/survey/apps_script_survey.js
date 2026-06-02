@@ -7,6 +7,12 @@ const LANDING_SPREADSHEET_ID = '1g9Ohmd8C_WxyvWt9EX58oEFZLiOAJ_EG7t7XteJFuGE';
 const CLICK_SHEET = '클릭로그';
 const INQUIRY_SHEET = '문의접수';
 
+// 회원부 시트 (유효회원 탭)
+const MEMBER_SPREADSHEET_ID = '12AWcAlgmmYKr2nUbWmVpa71_z3zi0BaU4ZdnOwrI_7U';
+const MEMBER_SHEET = '유효회원';
+const MEMBER_PHONE_COL = '휴대폰 번호';   // 회원부 전화번호 헤더
+const MEMBER_DATE_COL  = '등록 일자';      // 회원부 등록일 헤더
+
 const CLICK_HEADERS = ['id', '시각', '링크명', '링크URL', 'UTM소스', 'UTM미디엄', '리퍼러', '디바이스'];
 const INQUIRY_HEADERS = ['id', '시각', '이름', '연락처', '문의유형', '내용', '유입채널', 'UTM소스', 'UTM미디엄', '상태', '메모'];
 
@@ -47,6 +53,16 @@ function _json(obj) {
 
 function _prop(key) {
   return PropertiesService.getScriptProperties().getProperty(key) || '';
+}
+
+// 전화번호 정규화 — 숫자만 추출, 국가코드 82→0 치환, 빈값→''
+function normalizePhone_(s) {
+  if (!s) return '';
+  var digits = String(s).replace(/\D/g, '');
+  if (digits.length >= 11 && digits.slice(0, 2) === '82') {
+    digits = '0' + digits.slice(2);
+  }
+  return digits;
 }
 
 function _notifyTelegram(text) {
@@ -144,6 +160,73 @@ function _processAction(body) {
       return obj;
     });
     return _json({ ok: true, count: items.length, data: items });
+  }
+
+  // ─── 문의→가입 전환 집계 ───
+  if (action === 'funnel_conversion') {
+    // ① 회원부 전화번호 Set 생성
+    var memberSs  = SpreadsheetApp.openById(MEMBER_SPREADSHEET_ID);
+    var memberSh  = memberSs.getSheetByName(MEMBER_SHEET);
+    var memberLast = memberSh.getLastRow();
+    var memberSet = {};
+    if (memberLast >= 2) {
+      var memberHeaders = memberSh.getRange(1, 1, 1, memberSh.getLastColumn()).getValues()[0];
+      var phoneColIdx   = memberHeaders.indexOf(MEMBER_PHONE_COL);
+      if (phoneColIdx >= 0) {
+        var memberPhones = memberSh.getRange(2, phoneColIdx + 1, memberLast - 1, 1).getValues();
+        memberPhones.forEach(function(r) {
+          var n = normalizePhone_(r[0]);
+          if (n) memberSet[n] = true;
+        });
+      }
+    }
+
+    // ② 문의접수 시트 집계
+    var inqSh   = _getSheet(INQUIRY_SHEET, INQUIRY_HEADERS);
+    var inqLast = inqSh.getLastRow();
+    var totalInq = 0, totalConv = 0;
+    var byChannel = {};  // { 채널명: {inquiries, converted} }
+
+    if (inqLast >= 2) {
+      var inqData = inqSh.getRange(2, 1, inqLast - 1, INQUIRY_HEADERS.length).getValues();
+      // 헤더 인덱스
+      var idxPhone   = INQUIRY_HEADERS.indexOf('연락처');   // 3
+      var idxChannel = INQUIRY_HEADERS.indexOf('유입채널'); // 6
+
+      inqData.forEach(function(row) {
+        var phone   = normalizePhone_(row[idxPhone]);
+        var channel = String(row[idxChannel] || '기타').trim() || '기타';
+
+        totalInq++;
+        if (!byChannel[channel]) byChannel[channel] = { inquiries: 0, converted: 0 };
+        byChannel[channel].inquiries++;
+
+        if (phone && memberSet[phone]) {
+          totalConv++;
+          byChannel[channel].converted++;
+        }
+      });
+    }
+
+    // ③ 반환 JSON — 집계 수치만, 개인정보 절대 미포함
+    var rate = totalInq > 0 ? Math.round((totalConv / totalInq) * 1000) / 10 : 0;
+    var channelArr = Object.keys(byChannel).map(function(ch) {
+      var d = byChannel[ch];
+      return {
+        channel:   ch,
+        inquiries: d.inquiries,
+        converted: d.converted,
+        rate:      d.inquiries > 0 ? Math.round((d.converted / d.inquiries) * 1000) / 10 : 0
+      };
+    });
+    channelArr.sort(function(a, b) { return b.inquiries - a.inquiries; });
+
+    return _json({
+      ok: true,
+      total: { inquiries: totalInq, converted: totalConv, rate: rate },
+      byChannel: channelArr,
+      generatedAt: _now()
+    });
   }
 
   return _json({ ok: false, error: '알 수 없는 action: ' + action });

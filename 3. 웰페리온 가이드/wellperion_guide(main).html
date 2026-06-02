@@ -6983,12 +6983,16 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
         var id  = btn.getAttribute('data-id');
         var act = btn.getAttribute('data-action');
         if (!id) return;
-        // SSOT 기원 항목: edit/daterange 액션은 허용 (Sheets 동기화 편집 2026-06-01)
-        // done/hold/restore/delete 는 기존대로 차단 (SSOT 단방향 read 유지)
+        // SSOT 기원 항목: edit/daterange + 완료/보류/진행중 상태변경 허용 (Sheets 동기화 2026-06-02)
+        //   gm1UpdateStatus가 ssot-* 분기에서 낙관적 갱신 + gm1SyncUpdate(todo_update status)로 시트 반영.
+        //   delete만 차단 유지 (SSOT 단방향 — 시트 행 삭제는 업무현황 페이지 전용).
         if (String(id).indexOf('ssot-') === 0) {
           if (act === 'edit')      { window.gm1OpenTaskModal(id); return; }
           if (act === 'daterange') { window.gm1OpenDateRange(id); return; }
-          return;  // 그 외 상태변경·삭제는 read-only 유지
+          if (act === 'done')      { gm1UpdateStatus(id, '완료'); return; }
+          if (act === 'hold')      { gm1UpdateStatus(id, '보류'); return; }
+          if (act === 'restore')   { gm1UpdateStatus(id, '진행중'); return; }
+          return;  // 그 외(delete 등)는 read-only 유지
         }
         if (act === 'copylink') { var url=window.location.href.split('?')[0]+'?gm1='+encodeURIComponent(id); if(navigator.clipboard){navigator.clipboard.writeText(url);}else{var ta=document.createElement('textarea');ta.value=url;document.body.appendChild(ta);ta.select();try{document.execCommand('copy');}catch(ex){}document.body.removeChild(ta);} return; }
         if (act === 'edit')      { window.gm1OpenTaskModal(id); return; }

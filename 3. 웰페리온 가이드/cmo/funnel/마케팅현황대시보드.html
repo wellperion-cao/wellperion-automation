@@ -493,17 +493,17 @@ a{color:var(--accent);text-decoration:none}
         <div class="metrics-grid">
           <div class="metric-cell">
             <div class="m-label">월간 신규 가입 건수</div>
-            <div class="m-val placeholder">&lt;placeholder&gt;</div>
-            <div class="m-src">출처: CPO 회원 DB</div>
+            <div class="m-val placeholder" id="fc-converted">&lt;placeholder&gt;</div>
+            <div class="m-src">출처: 전화번호 매칭 집계</div>
           </div>
           <div class="metric-cell">
             <div class="m-label">문의→가입 전환율</div>
-            <div class="m-val placeholder">&lt;%&gt;</div>
+            <div class="m-val placeholder" id="fc-rate">&lt;%&gt;</div>
             <div class="m-src">가입/문의완료</div>
           </div>
           <div class="metric-cell">
             <div class="m-label">투어→가입 전환율</div>
-            <div class="m-val placeholder">&lt;%&gt;</div>
+            <div class="m-val placeholder" id="fc-tour-rate">&lt;%&gt;</div>
             <div class="m-src">투어 후 가입 %</div>
           </div>
           <div class="metric-cell">
@@ -541,16 +541,18 @@ a{color:var(--accent);text-decoration:none}
             <th>Litt.ly 클릭</th>
             <th>문의 전환</th>
             <th>노출→문의 전환율</th>
+            <th>문의→가입 전환율</th>
             <th>주요 특이사항</th>
           </tr>
         </thead>
-        <tbody>
+        <tbody id="channel-table-body">
           <tr>
             <td><span class="channel-dot" style="background:var(--f1)"></span>Instagram</td>
             <td class="placeholder">&lt;placeholder&gt;</td>
             <td class="placeholder">&lt;placeholder&gt;</td>
             <td class="placeholder">&lt;placeholder&gt;</td>
             <td class="placeholder">&lt;%&gt;</td>
+            <td class="placeholder fc-ch" data-channel="Instagram">&lt;%&gt;</td>
             <td style="font-size:12px;color:var(--dim)">비주얼 강점, CTA 클릭 마찰</td>
           </tr>
           <tr>
@@ -559,6 +561,7 @@ a{color:var(--accent);text-decoration:none}
             <td class="placeholder">&lt;placeholder&gt;</td>
             <td class="placeholder">&lt;placeholder&gt;</td>
             <td class="placeholder">&lt;%&gt;</td>
+            <td class="placeholder fc-ch" data-channel="네이버 블로그">&lt;%&gt;</td>
             <td style="font-size:12px;color:var(--dim)">SEO 유입, 체류시간 긺</td>
           </tr>
           <tr>
@@ -567,6 +570,7 @@ a{color:var(--accent);text-decoration:none}
             <td class="placeholder">&lt;placeholder&gt;</td>
             <td class="placeholder">&lt;placeholder&gt;</td>
             <td class="placeholder">&lt;%&gt;</td>
+            <td class="placeholder fc-ch" data-channel="네이버 카페">&lt;%&gt;</td>
             <td style="font-size:12px;color:var(--dim)">지역 커뮤니티, 신뢰도 높음</td>
           </tr>
         </tbody>
@@ -618,6 +622,76 @@ function toggleCard(header) {
   body.classList.toggle('open', !isOpen);
   icon.textContent = isOpen ? '▼' : '▲';
 }
+
+// ─── 문의→가입 전환율 자동 집계 ───────────────────────────────
+// Apps Script 배포 URL — survey와 동일 스크립트(funnel_conversion 액션). 재배포는 '동일 배포→새 버전'으로 하면 URL 불변
+const FUNNEL_APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwvGAD9jDZ1t7JOft7cfHokxrYt2fa0ENqHHXw3z46mXiZ1j4-VE_YcBbq8r9RWBAaLxQ/exec';
+
+async function loadFunnelConversion() {
+  const elRate      = document.getElementById('fc-rate');
+  const elConverted = document.getElementById('fc-converted');
+  const elTourRate  = document.getElementById('fc-tour-rate');
+  if (!elRate) return;
+
+  // placeholder URL이면 조용히 종료 (graceful)
+  if (FUNNEL_APPS_SCRIPT_URL.includes('DEPLOY_ID_HERE')) return;
+
+  try {
+    const url = FUNNEL_APPS_SCRIPT_URL + '?action=funnel_conversion';
+    const res  = await fetch(url, { redirect: 'follow' });
+    if (!res.ok) return;
+    const data = await res.json();
+    if (!data || !data.ok) return;
+
+    const t = data.total;
+
+    // ⑤ 가입 카드 수치 채우기
+    if (elConverted) {
+      elConverted.textContent = t.converted + '건';
+      elConverted.classList.remove('placeholder');
+    }
+    if (elRate) {
+      elRate.textContent = t.rate + '%';
+      elRate.classList.remove('placeholder');
+    }
+
+    // 투어→가입 전환율: 유입채널이 '투어 예약' 또는 '투어'인 항목 필터
+    if (elTourRate && Array.isArray(data.byChannel)) {
+      const tourRows = data.byChannel.filter(function(d) {
+        return d.channel.includes('투어');
+      });
+      if (tourRows.length > 0) {
+        const tourInq  = tourRows.reduce(function(s, d) { return s + d.inquiries; }, 0);
+        const tourConv = tourRows.reduce(function(s, d) { return s + d.converted; }, 0);
+        const tourRate = tourInq > 0 ? Math.round((tourConv / tourInq) * 1000) / 10 : 0;
+        elTourRate.textContent = tourRate + '%';
+        elTourRate.classList.remove('placeholder');
+      }
+    }
+
+    // 채널별 비교 테이블 — 문의→가입 전환율 열 채우기
+    if (Array.isArray(data.byChannel)) {
+      document.querySelectorAll('.fc-ch').forEach(function(td) {
+        const ch = (td.dataset.channel || '').trim();
+        // 부분 매칭: 'Instagram' ↔ 'instagram', '네이버 블로그' ↔ '블로그' 등
+        const match = data.byChannel.find(function(d) {
+          return d.channel === ch
+            || d.channel.includes(ch)
+            || ch.includes(d.channel);
+        });
+        if (match) {
+          td.textContent = match.rate + '%';
+          td.classList.remove('placeholder');
+        }
+      });
+    }
+  } catch (e) {
+    // 네트워크 오류 등 — placeholder 유지, 콘솔에만 기록
+    console.warn('[funnel_conversion] 로드 실패:', e.message);
+  }
+}
+
+document.addEventListener('DOMContentLoaded', loadFunnelConversion);
 </script>
 </body>
 </html>
