@@ -653,125 +653,18 @@ function _processTodoAction(body) {
       return _json({ ok: true, id: id, message: '업무가 완료되었습니다.' });
     }
 
-    return _json({ ok: false, error: '알 수 없는 action: ' + action });
-}
-
-function doPost(e) {
-  try {
-    const body = JSON.parse(e.postData.contents);
-    return _processTodoAction(body);
-
-    // ─── 새 업무 추가 ───
-    if (action === 'todo_add') {
-      const sh = initTodoSheet();
-      const id = _genId();
-      const now = _now();
-
-      const row = [
-        id,
-        body['업무명'] || '',
-        body['카테고리'] || '',
-        body['담당자'] || '',
-        body['시작일'] || _today(),
-        body['종료일'] || '',
-        body['내용'] || '',
-        body['상태'] || '진행중',
-        body['결재요청'] || '',
-        body['링크'] || '',
-        body['파일URL'] || '',
-        body['생성자'] || '',
-        now,  // 생성일
-        now   // 수정일
-      ];
-
-      const newRow = sh.getLastRow() + 1;
-      sh.getRange(newRow, 1, 1, row.length).setValues([row]);
-      _applyStatusColor(sh, newRow, row[7]);
-
-      // 텔레그램 알림
-      _notifyTelegram(
-        '📋 <b>[TODO 신규]</b>\n'
-        + '업무명: ' + (body['업무명'] || '-') + '\n'
-        + '카테고리: ' + (body['카테고리'] || '-') + '\n'
-        + '담당자: ' + (body['담당자'] || '-') + '\n'
-        + 'ID: ' + id
-      );
-
-      return _json({ ok: true, id: id, message: '업무가 추가되었습니다.' });
-    }
-
-    // ─── 수정 ───
-    if (action === 'todo_update') {
-      const sh = initTodoSheet();
-      const id = body.id;
-      if (!id) return _json({ ok: false, error: 'id 필수' });
-
-      const rowNum = _findRow(sh, id);
-      if (rowNum < 0) return _json({ ok: false, error: '해당 ID를 찾을 수 없습니다: ' + id });
-
-      const existing = sh.getRange(rowNum, 1, 1, TODO_HEADERS.length).getValues()[0];
-
-      // 전달된 필드만 덮어쓰기
-      TODO_HEADERS.forEach((h, i) => {
-        if (h === 'id' || h === '생성일' || h === '생성자') return; // 불변 필드
-        if (body[h] !== undefined && body[h] !== null) {
-          existing[i] = body[h];
-        }
-      });
-      // 수정일 갱신
-      existing[TODO_HEADERS.indexOf('수정일')] = _now();
-
-      sh.getRange(rowNum, 1, 1, TODO_HEADERS.length).setValues([existing]);
-      _applyStatusColor(sh, rowNum, existing[TODO_HEADERS.indexOf('상태')]);
-
-      return _json({ ok: true, id: id, message: '업무가 수정되었습니다.' });
-    }
-
-    // ─── 삭제 ───
-    if (action === 'todo_delete') {
-      const sh = initTodoSheet();
-      const id = body.id;
-      if (!id) return _json({ ok: false, error: 'id 필수' });
-
-      const rowNum = _findRow(sh, id);
-      if (rowNum < 0) return _json({ ok: false, error: '해당 ID를 찾을 수 없습니다: ' + id });
-
-      sh.deleteRow(rowNum);
-      return _json({ ok: true, id: id, message: '업무가 삭제되었습니다.' });
-    }
-
-    // ─── 완료 처리 ───
-    if (action === 'todo_done') {
-      const sh = initTodoSheet();
-      const id = body.id;
-      if (!id) return _json({ ok: false, error: 'id 필수' });
-
-      const rowNum = _findRow(sh, id);
-      if (rowNum < 0) return _json({ ok: false, error: '해당 ID를 찾을 수 없습니다: ' + id });
-
-      const statusCol = TODO_HEADERS.indexOf('상태') + 1;
-      const modCol = TODO_HEADERS.indexOf('수정일') + 1;
-
-      sh.getRange(rowNum, statusCol).setValue('완료');
-      sh.getRange(rowNum, modCol).setValue(_now());
-      _applyStatusColor(sh, rowNum, '완료');
-
-      return _json({ ok: true, id: id, message: '업무가 완료 처리되었습니다.' });
-    }
-
-    // ─── 파일 업로드 ───
+    // ─── 파일 업로드 (Base64 → Drive) ───
+    // 프론트(apiCall=GET)·doPost 공용 진입점으로 이관 (2026-06-02 COO):
+    // 기존엔 도달불가 doPost 死코드에만 존재해 첨부 업로드가 동작하지 않던 버그 수정.
     if (action === 'todo_upload') {
       const id = body.id;
-      const base64 = body.file;
+      const base64 = body.file || body.base64;
       const fileName = body.fileName || '';
       const mimeType = body.mimeType || 'application/octet-stream';
-
       if (!base64) return _json({ ok: false, error: 'file(Base64) 필수' });
 
-      // Drive에 파일 저장
       const fileUrl = _uploadFile(base64, fileName, mimeType);
 
-      // id가 있으면 해당 TODO의 파일URL 필드에 추가
       if (id) {
         const sh = initTodoSheet();
         const rowNum = _findRow(sh, id);
@@ -789,6 +682,12 @@ function doPost(e) {
     }
 
     return _json({ ok: false, error: '알 수 없는 action: ' + action });
+}
+
+function doPost(e) {
+  try {
+    const body = JSON.parse(e.postData.contents);
+    return _processTodoAction(body);
   } catch (err) {
     return _json({ ok: false, error: err.message });
   }
