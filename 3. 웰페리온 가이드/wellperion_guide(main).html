@@ -3597,7 +3597,7 @@ Start-Process python -ArgumentList telegram_bot\daily_scheduler.py -WorkingDirec
           </div>
           <div>
             <label style="font-size:12px;color:var(--dim);display:block;margin-bottom:4px;">내용</label>
-            <textarea id="gm1TDesc" rows="3" placeholder="업무 내용 (선택)" style="width:100%;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:14px;font-family:inherit;resize:vertical;box-sizing:border-box;"></textarea>
+            <textarea id="gm1TDesc" rows="8" placeholder="업무 내용 (선택)" style="width:100%;min-height:160px;padding:10px 12px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:14px;line-height:1.6;font-family:inherit;resize:vertical;box-sizing:border-box;"></textarea>
           </div>
 
           <!-- 진척 로그 -->
@@ -3632,7 +3632,8 @@ Start-Process python -ArgumentList telegram_bot\daily_scheduler.py -WorkingDirec
           </div>
         </div>
         <div style="display:flex;gap:8px;margin-top:18px;justify-content:flex-end;">
-          <button id="gm1TPrintBtn" onclick="window.gm1PrintResultReport(document.getElementById('gm1TEditId').value)" style="display:none;padding:8px 16px;font-size:13px;font-weight:700;border-radius:8px;cursor:pointer;font-family:inherit;background:var(--paper);color:var(--accent);border:1px solid var(--accent);margin-right:auto;">🖨️ 보고서 인쇄</button>
+          <button id="gm1TPrintBtn" onclick="window.gm1PrintResultReport(document.getElementById('gm1TEditId').value)" style="display:none;padding:8px 16px;font-size:13px;font-weight:700;border-radius:8px;cursor:pointer;font-family:inherit;background:var(--paper);color:var(--accent);border:1px solid var(--accent);">🖨️ 보고서 인쇄</button>
+          <button onclick="window.gm1CopyKakaoReport()" style="margin-right:auto;padding:8px 16px;font-size:13px;font-weight:700;border-radius:8px;cursor:pointer;font-family:inherit;background:#FEE500;color:#3A1D1D;border:none;">💬 카톡 보고 복사</button>
           <button onclick="window.gm1CloseTaskModal()" style="padding:8px 16px;font-size:13px;font-weight:600;border-radius:8px;cursor:pointer;font-family:inherit;background:var(--bg);color:var(--dim);border:1px solid var(--border);">취소</button>
           <button onclick="window.gm1SaveTaskModal()" style="padding:8px 20px;font-size:13px;font-weight:700;border-radius:8px;cursor:pointer;font-family:inherit;background:var(--accent);color:#fff;border:none;">저장</button>
         </div>
@@ -7405,6 +7406,32 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
       document.getElementById('gm1TPrintBtn').style.display = '';
       document.getElementById('gm1TaskModal').style.display = 'flex';
     };
+    window.gm1CopyKakaoReport = function() {
+      var v = function(id){ var el = document.getElementById(id); return el ? (el.value || '') : ''; };
+      var title = v('gm1TTitle').trim();
+      var sd = v('gm1TStart'), ed = v('gm1TEnd');
+      var cat = v('gm1TCat'), st = v('gm1TStatus');
+      var desc = v('gm1TDesc').trim();
+      if (!title) { alert('제목이 비어 있습니다. 업무를 먼저 선택하거나 작성해 주세요.'); return; }
+      var period = sd ? (ed && ed !== sd ? sd + ' ~ ' + ed : sd) : '';
+      var lines = ['[업무 보고]', '📌 ' + title];
+      if (cat || st) lines.push('🔖 ' + [cat, st].filter(Boolean).join(' · '));
+      if (period) lines.push('📅 ' + period);
+      if (desc) { lines.push(''); lines.push(desc); }
+      var text = lines.join('\n');
+      var btn = document.querySelector('[onclick*="gm1CopyKakaoReport"]');
+      var flash = function(ok){
+        if (!btn) { if (!ok) window.prompt('아래 내용을 복사하세요 (Ctrl+C):', text); return; }
+        var orig = btn.textContent;
+        btn.textContent = ok ? '✓ 복사됨 — 카톡에 붙여넣기' : '복사 실패';
+        if (!ok) window.prompt('아래 내용을 복사하세요 (Ctrl+C):', text);
+        setTimeout(function(){ btn.textContent = orig; }, 1800);
+      };
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(function(){ flash(true); }).catch(function(){ flash(false); });
+      } else { flash(false); }
+    };
+
     window.gm1CloseTaskModal = function() {
       var m = document.getElementById('gm1TaskModal');
       if (m) m.style.display = 'none';
