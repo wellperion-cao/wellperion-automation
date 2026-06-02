@@ -47,11 +47,16 @@
   .row2{display:flex;gap:10px}
   .row2 .field{flex:1}
 
-  .sec{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:15px 15px 13px;margin-top:13px;
-    overflow:hidden}
+  .legend{display:flex;gap:6px;margin-top:10px;font-size:11px;color:var(--ink-soft);flex-wrap:wrap;align-items:center}
+  .legend b{font-weight:700;color:var(--ink-faint)}
+  .legend .lg{display:inline-flex;align-items:center;gap:4px}
+  .legend .dot{width:9px;height:9px;border-radius:3px;display:inline-block}
+  .dot-need{background:var(--red)} .dot-ok{background:var(--green)} .dot-best{background:var(--gold)}
+
+  .sec{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:15px 15px 13px;margin-top:13px;overflow:hidden}
   .sec.common{border-top:3px solid var(--navy)}
   .sec.venue{border-top:3px solid var(--gold)}
-  .sec-h{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}
+  .sec-h{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
   .sec-h .nm{display:flex;align-items:center;gap:9px;font-size:16px;font-weight:750}
   .sec-h .seq{flex:0 0 24px;height:24px;border-radius:7px;background:var(--gold);color:#fff;
     font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center}
@@ -59,17 +64,20 @@
   .sec-h .st{font-size:11.5px;font-weight:700;padding:4px 10px;border-radius:20px;white-space:nowrap}
   .st.ok{background:var(--green-bg);color:var(--green)}
   .st.warn{background:var(--amber-bg);color:var(--amber)}
+  .st.bad{background:var(--red-bg);color:var(--red)}
 
-  .chk{display:flex;align-items:center;gap:11px;padding:11px 4px;border-bottom:1px solid var(--line-soft);
-    cursor:pointer;user-select:none}
-  .chk:last-of-type{border-bottom:none}
-  .chk .box{flex:0 0 24px;height:24px;border-radius:7px;border:1.8px solid var(--line);background:var(--surface-2);
-    display:flex;align-items:center;justify-content:center;font-size:15px;color:#fff;transition:all .12s}
-  .chk.on .box{background:var(--green);border-color:var(--green)}
-  .chk .ct{font-size:14.5px;font-weight:550;flex:1}
-  .chk.on .ct{color:var(--ink-soft)}
+  .item{padding:10px 2px;border-bottom:1px solid var(--line-soft)}
+  .item:last-of-type{border-bottom:none}
+  .item .il{font-size:14.5px;font-weight:650;margin-bottom:7px}
+  .seg{display:flex;gap:6px}
+  .seg button{flex:1;font-family:inherit;font-size:13px;font-weight:700;padding:10px 4px;border-radius:9px;
+    border:1.5px solid var(--line);background:var(--surface-2);color:var(--ink-soft);cursor:pointer;transition:all .1s}
+  .seg button:active{transform:scale(.97)}
+  .seg button.on-need{background:var(--red);border-color:var(--red);color:#fff}
+  .seg button.on-ok{background:var(--green);border-color:var(--green);color:#fff}
+  .seg button.on-best{background:var(--gold);border-color:var(--gold);color:#fff}
 
-  .issue{margin-top:11px}
+  .issue{margin-top:12px}
   .issue label{display:block;font-size:11.5px;font-weight:700;color:var(--gold-deep);margin-bottom:6px}
   .issue textarea{width:100%;font-family:inherit;font-size:14px;color:var(--ink);background:var(--surface-2);
     border:1px solid var(--line);border-radius:9px;padding:10px 11px;outline:none;resize:vertical;min-height:46px;line-height:1.5}
@@ -129,6 +137,12 @@
         <input type="text" id="f_name" placeholder="이름" autocomplete="name">
       </div>
     </div>
+    <div class="legend">
+      <b>평가</b>
+      <span class="lg"><span class="dot dot-need"></span>점검필요</span>
+      <span class="lg"><span class="dot dot-ok"></span>양호</span>
+      <span class="lg"><span class="dot dot-best"></span>우수</span>
+    </div>
   </div>
 
   <div id="sections"></div>
@@ -136,14 +150,14 @@
   <div class="done-banner" id="doneBanner">✓ 오늘 점검이 기록되었습니다. 수정 후 다시 전송하면 덮어쓰기 됩니다.</div>
 
   <div class="setup-note" id="setupNote">
-    <b>최초 1회 설정 필요</b> — 제출 시 구글 시트에 자동 기록되게 하려면 Apps Script 주소(<code>ENDPOINT</code>) 연결이 필요합니다. 우측 상단 <b>기록 시트</b> 버튼으로 기록 시트는 바로 열 수 있습니다. (지금도 작성·확인은 가능합니다.)
+    <b>최초 1회 설정 필요</b> — 제출 시 구글 시트에 자동 기록되게 하려면 Apps Script 주소(<code>ENDPOINT</code>) 연결이 필요합니다. 우측 상단 <b>기록 시트</b> 버튼으로 기록 시트는 바로 열 수 있습니다.
   </div>
 </main>
 
 <div class="footbar">
   <div class="inner">
     <div class="prog-wrap">
-      <div class="prog-txt" id="progTxt">점검 0 / 0</div>
+      <div class="prog-txt" id="progTxt">평가 0 / 28</div>
       <div class="prog"><span id="progBar" style="width:0%"></span></div>
     </div>
     <button class="btn" id="submitBtn">전송</button>
@@ -156,13 +170,18 @@
 "use strict";
 
 /* ====== 설정 ====== */
-/* 1) 제출 기록 전송용 Apps Script 웹앱 URL (배포 후 붙여넣기) */
+/* 1) 제출 기록 전송용 Apps Script 웹앱 URL */
 var ENDPOINT = "https://script.google.com/macros/s/AKfycbySsnbKDtOI7ktGd-qQrZ3y7V0AFu9SpGtzriL1bGTxafECrmDq2AbgK76OwXGh47r4Pw/exec";
-/* 2) 기록용 구글 스프레드시트 주소 (우측 상단 '기록 시트' 버튼) */
+/* 2) 기록용 구글 스프레드시트 주소 (우측 상단 '기록 시트' 버튼 — 점검기록 탭) */
 var SHEET_URL = "https://docs.google.com/spreadsheets/d/19fyGlLvYjO_PWZGGxPa6S33PJ0dn5nwvBrdqYNPK7oI/edit?gid=2068795804#gid=2068795804";
 
-/* ====== 점검 항목 (순서 = 순회 순서) ====== */
+/* ====== 점검 항목 / 3단계 ====== */
 var ITEMS = ["정리정돈","홍보물","청결","조명 및 냉난방"];
+var LEVELS = [
+  {v:"점검필요", cls:"on-need"},
+  {v:"양호",     cls:"on-ok"},
+  {v:"우수",     cls:"on-best"}
+];
 var SECTIONS = [
   {id:"hallway",    kind:"common", name:"복도",     items:ITEMS},
   {id:"pilates",    kind:"venue",  name:"필라테스", items:ITEMS},
@@ -184,11 +203,13 @@ function todayStr(){var d=new Date();var p=function(n){return(n<10?"0":"")+n;};
 function render(){
   var seq=0;
   var html=SECTIONS.map(function(sec){
-    state[sec.id]=state[sec.id]||{checks:sec.items.map(function(){return false;}),issue:""};
+    state[sec.id]=state[sec.id]||{vals:sec.items.map(function(){return "";}),issue:""};
     var label = ++seq;
     var items=sec.items.map(function(it,i){
-      return '<div class="chk" data-sec="'+sec.id+'" data-i="'+i+'">'+
-        '<div class="box">✓</div><div class="ct">'+esc(it)+'</div></div>';
+      var btns=LEVELS.map(function(lv){
+        return '<button type="button" data-sec="'+sec.id+'" data-i="'+i+'" data-v="'+lv.v+'" data-cls="'+lv.cls+'">'+lv.v+'</button>';
+      }).join("");
+      return '<div class="item"><div class="il">'+esc(it)+'</div><div class="seg">'+btns+'</div></div>';
     }).join("");
     return '<div class="sec '+sec.kind+'" id="sec_'+sec.id+'">'+
       '<div class="sec-h"><div class="nm"><span class="seq">'+label+'</span>'+esc(sec.name)+'</div>'+
@@ -200,12 +221,15 @@ function render(){
   }).join("");
   document.getElementById("sections").innerHTML=html;
 
-  document.querySelectorAll(".chk").forEach(function(el){
-    el.addEventListener("click",function(){
-      var sid=el.getAttribute("data-sec"),i=+el.getAttribute("data-i");
-      state[sid].checks[i]=!state[sid].checks[i];
-      el.classList.toggle("on",state[sid].checks[i]);
-      updateSec(sid);updateProg();
+  document.querySelectorAll(".seg button").forEach(function(b){
+    b.addEventListener("click",function(){
+      var sid=b.getAttribute("data-sec"), i=+b.getAttribute("data-i"), v=b.getAttribute("data-v");
+      state[sid].vals[i]=v;
+      // 같은 항목의 버튼들 클래스 초기화 후 선택만 강조
+      var seg=b.parentNode;
+      seg.querySelectorAll("button").forEach(function(x){ x.classList.remove("on-need","on-ok","on-best"); });
+      b.classList.add(b.getAttribute("data-cls"));
+      updateSec(sid); updateProg();
     });
   });
   document.querySelectorAll(".issue textarea").forEach(function(ta){
@@ -220,18 +244,18 @@ function render(){
 
 function updateSec(sid){
   var st=state[sid];
-  var done=st.checks.filter(Boolean).length, tot=st.checks.length;
-  var hasIssue=st.issue.trim().length>0;
+  var sel=st.vals.filter(Boolean).length, tot=st.vals.length;
+  var need=st.vals.indexOf("점검필요")>=0;
   var el=document.getElementById("st_"+sid);
-  if(done===0 && !hasIssue){el.className="st warn";el.textContent="미점검";}
-  else if(hasIssue){el.className="st warn";el.textContent="이슈 "+done+"/"+tot;}
-  else if(done===tot){el.className="st ok";el.textContent="이상없음";}
-  else{el.className="st warn";el.textContent=done+"/"+tot;}
+  if(need){el.className="st bad";el.textContent="점검필요";}
+  else if(sel===0){el.className="st warn";el.textContent="미점검";}
+  else if(sel===tot){el.className="st ok";el.textContent="완료";}
+  else{el.className="st warn";el.textContent=sel+"/"+tot;}
 }
 
 function updateProg(){
-  var done=0;SECTIONS.forEach(function(s){done+=state[s.id].checks.filter(Boolean).length;});
-  document.getElementById("progTxt").textContent="점검 "+done+" / "+TOTAL_ITEMS;
+  var done=0;SECTIONS.forEach(function(s){done+=state[s.id].vals.filter(Boolean).length;});
+  document.getElementById("progTxt").textContent="평가 "+done+" / "+TOTAL_ITEMS;
   document.getElementById("progBar").style.width=Math.round(done/TOTAL_ITEMS*100)+"%";
 }
 
@@ -243,13 +267,9 @@ function buildPayload(){
   };
   SECTIONS.forEach(function(sec){
     var st=state[sec.id];
-    var done=st.checks.filter(Boolean).length, tot=st.checks.length;
-    rec.sections[sec.id]={
-      name:sec.name,
-      status: done===tot ? "이상없음" : (done+"/"+tot),
-      checked:done, total:tot,
-      issue:st.issue.trim()
-    };
+    var items={};
+    sec.items.forEach(function(it,i){ items[it]=st.vals[i]||""; });
+    rec.sections[sec.id]={ name:sec.name, items:items, issue:st.issue.trim() };
   });
   return rec;
 }
