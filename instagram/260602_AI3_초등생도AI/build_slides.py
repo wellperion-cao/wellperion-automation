@@ -33,7 +33,7 @@ SLIDES = [
     ),
     dict(  # 3장 ★신규 — Claude CLI 간단 셋업 (설치법 정확, 대표 눈높이 1~2스텝)
         kor_title="익숙해지면 컴퓨터에 깔아\n더 많이 시켜요",
-        body="저는 이걸로 회사 일을 자동화해요.\n셋업은 딱 두 줄이에요.\n\n① 윈도우: 파워셸 열고\n   irm https://claude.ai/install.ps1 | iex\n   (맥이면 install.sh)\n② 끝나면 claude 입력 → 로그인",
+        body="저는 이걸로 회사 일을 자동화해요.\n셋업은 딱 두 줄이에요.\n\n① 윈도우 파워셸에\n   irm https://claude.ai/install.ps1 | iex\n② claude 입력 → 로그인\n\n단, Claude 유료 구독이 필요해요.\n제일 싼 Pro(월 2~3만원)면 시작은 충분하고요.",
     ),
     dict(  # 4장 ② 웰페리온 실제 사례 — AI 직원(C-Level) 만든 솔직 사례
         kor_title="그렇게 우리는\nAI 직원을 만들었어요",
