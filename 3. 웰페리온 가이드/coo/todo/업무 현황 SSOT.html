@@ -775,12 +775,20 @@ function loadFallback() {
    Render
    ═══════════════════════════════════════════ */
 function renderTasks() {
+  // 검색칸은 buildFilters에서 매번 새로 생성됨 → 포커스·캐럿 위치를 직접 보존·복원.
+  // (검색어를 모두 지워 빈 값이 돼도 포커스가 유지되도록: 빈값 조건 분기 제거)
+  const _prevSi = document.getElementById('searchInput');
+  const _hadFocus = !!_prevSi && document.activeElement === _prevSi;
+  const _caret = _prevSi ? _prevSi.selectionStart : null;
   // 필터 UI 재빌드 (카운트·선택 상태 동기화)
   buildFilters();
-  // 검색 박스 포커스 유지
-  if (searchQuery) {
+  if (_hadFocus) {
     const si = document.getElementById('searchInput');
-    if (si && document.activeElement !== si) { si.focus(); si.setSelectionRange(searchQuery.length, searchQuery.length); }
+    if (si) {
+      si.focus();
+      const pos = (_caret == null) ? si.value.length : _caret;
+      try { si.setSelectionRange(pos, pos); } catch (e) {}
+    }
   }
 
   const el = document.getElementById('mainContent');
@@ -816,7 +824,7 @@ function renderTasks() {
 
   // Group by category
   const groups = {};
-  const catOrder = ['[1] 매출 및 영업','[2] 인사 & 파트너','[3] 운영 정책','[4] 시설 및 환경','[5] 회원·CS','[6] IT·시스템·자동화','[7] 교육·조직문화',''];
+  const catOrder = CATEGORIES.concat(['']);  // [8] 회의 포함 — 단일 SSOT(CATEGORIES) 기준
   filtered.forEach(t => {
     const cat = t.category || '';
     if (!groups[cat]) groups[cat] = [];
