@@ -9,6 +9,13 @@ echo    Wellperion GM Control Room Starting
 echo  ========================================
 echo.
 
+REM -- 0. Auto-update Claude Code + OMC (run BEFORE any claude session; claude.exe must be 0) --
+echo  [0/4] Checking Claude Code and OMC updates...
+call claude update
+call claude plugin marketplace update omc
+call claude plugin update oh-my-claudecode@omc
+echo.
+
 REM -- 1. Telegram CEO Bot --
 echo  [1/3] Telegram CEO Bot starting...
 start "WP_CEO_BOT" /min cmd /c "cd /d "%WORK%\telegram_bot" && python bot.py"
