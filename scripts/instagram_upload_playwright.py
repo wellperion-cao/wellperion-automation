@@ -985,6 +985,10 @@ async def _publish_single_post(
 
     await page.screenshot(path=str(evidence_prefix.with_suffix(".pre_share.png")))
 
+    # (수정 5) 발행 시도 시각(UTC) 기록 — 최신 게시물 시각 근접 판정(폴백)의 기준선.
+    from datetime import timezone as _tz
+    attempt_started_utc = datetime.now(_tz.utc)
+
     # 공유하기 버튼 클릭 (실 게시)
     share_clicked = False
     for sel in SHARE_BUTTON_SELECTORS:
@@ -1043,6 +1047,19 @@ async def _publish_single_post(
         if attempt < grid_polls - 1:
             await page.wait_for_timeout(5000)
             print(f"[INFO]   신규 shortcode 미등장 — 재폴링 ({attempt + 1}/{grid_polls})")
+
+    # (수정 5: 2026-06-02 false-negative 사고 재발방지)
+    # 그리드 shortcode 스크랩이 0건/실패여도 '게시 실패'를 단정하지 않는다.
+    # 오늘 사고: 그리드 a[href*="/p/"] 0건 회수 → 실게시를 실패로 오판(하마터면 중복 재발행).
+    # 폴백: 그리드 차집합이 비었고(=before/after 모두 스크랩 실패 의심), 토스트가 떴다면,
+    #       프로필 '최신 게시물 1건'을 직접 열어 게시 시각이 발행 시도 시각과 근접(±10분)하면
+    #       그 게시물을 실게시로 인정한다. (false-positive·false-negative 양방향 가드)
+    if new_url is None and toast_confirmed and not before_shortcodes:
+        print(
+            "[INFO]   그리드 차집합 비어 있고 토스트 확인됨 → 최신 게시물 직접 열람 폴백 검증 시작 "
+            "(그리드 스크랩 false-negative 가드)"
+        )
+        new_url = await _verify_via_latest_post(page, account, attempt_started_utc)
     return new_url
 
 
@@ -1256,6 +1273,79 @@ async def _capture_new_post_url(
         return f"https://www.instagram.com/p/{chosen}/"
     except Exception as e:
         print(f"[WARN]   신규 게시 URL 회수 예외: {e}")
+        return None
+
+
+async def _verify_via_latest_post(
+    page, account: str, attempt_started_utc, proximity_min: int = 10
+) -> str | None:
+    """(수정 5) 그리드 차집합 스크랩이 0건/실패일 때의 폴백 검증.
+
+    프로필 '최신 게시물 1건'을 직접 열어, 그 게시 시각(time[datetime])이
+    발행 시도 시각(attempt_started_utc)과 proximity_min 분 이내로 근접하면
+    그 게시물을 '방금 올린 실게시'로 인정하고 URL 을 반환한다.
+
+    오늘(2026-06-02) 사고: 그리드 a[href*="/p/"] 스크랩이 0건 → 실게시를
+    '실패'로 오판(하마터면 중복 재발행). 이 폴백이 false-negative 를 막는다.
+    시각 근접 조건으로 '이전 게시물 오인'(false-positive)도 동시에 차단한다.
+    스크랩/파싱 실패 등 어떤 예외도 None 반환(성공 단정 절대 금지).
+    """
+    try:
+        from datetime import timezone as _tz
+
+        await page.goto(
+            f"https://www.instagram.com/{account}/",
+            wait_until="domcontentloaded",
+            timeout=20_000,
+        )
+        # 최신 게시물 링크 등장 폴링 (그리드 로딩 지연 대비)
+        first = None
+        for _ in range(12):
+            await page.wait_for_timeout(1500)
+            cand = page.locator('main a[href*="/p/"]').first
+            if await cand.count() > 0:
+                first = cand
+                break
+        if first is None:
+            print("[WARN]   폴백: 최신 게시물 링크 미등장 — 검증 보류(None)")
+            return None
+
+        href = await first.get_attribute("href")
+        m = POST_URL_PATTERN.search(
+            href if href and href.startswith("http") else f"https://www.instagram.com{href or ''}"
+        )
+        if not m:
+            print("[WARN]   폴백: 최신 게시물 shortcode 파싱 실패 — None")
+            return None
+        shortcode = m.group(1)
+
+        # 최신 게시물 상세 진입 → time[datetime] 시각 회수
+        await first.click()
+        await page.wait_for_timeout(3500)
+        t = page.locator('time[datetime]').first
+        if await t.count() == 0:
+            print(f"[WARN]   폴백: 최신 게시물 시각(time) 미회수 — 근접판정 불가(None) [{shortcode}]")
+            return None
+        dt_attr = await t.get_attribute("datetime")
+        raw = (dt_attr or "").strip().replace("Z", "+00:00")
+        post_dt = datetime.fromisoformat(raw)
+        if post_dt.tzinfo is None:
+            post_dt = post_dt.replace(tzinfo=_tz.utc)
+
+        delta_min = abs((post_dt - attempt_started_utc).total_seconds()) / 60.0
+        if delta_min <= proximity_min:
+            print(
+                f"[INFO]   폴백 검증 성공 — 최신 게시물 시각이 발행 시도와 {delta_min:.1f}분 근접 "
+                f"(≤{proximity_min}분) → 실게시 인정: {shortcode}"
+            )
+            return f"https://www.instagram.com/p/{shortcode}/"
+        print(
+            f"[WARN]   폴백: 최신 게시물 시각이 {delta_min:.1f}분 떨어짐(>{proximity_min}분) "
+            f"— 이전 게시물 오인 차단(None) [{shortcode}]"
+        )
+        return None
+    except Exception as e:
+        print(f"[WARN]   폴백 검증 예외(성공 단정 금지 → None): {e}")
         return None
 
 
