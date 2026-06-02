@@ -126,7 +126,8 @@ def publish_item(it: dict) -> str | None:
         cmd += ["--collaborators", collab_str]
 
     env = dict(os.environ, PYTHONIOENCODING="utf-8")
-    proc = subprocess.run(cmd, cwd=str(ROOT), capture_output=True, text=True, env=env, timeout=600)
+    proc = subprocess.run(cmd, cwd=str(ROOT), capture_output=True, text=True,
+                          encoding="utf-8", errors="replace", env=env, timeout=600)
     out = (proc.stdout or "") + (proc.stderr or "")
     print(out)
     m = POST_URL_RE.search(out)
@@ -150,7 +151,8 @@ def publish_blog(it: dict) -> tuple[bool, str | None]:
     if it.get("image_glob"):
         cmd += ["--image-glob", it["image_glob"]]
     env = dict(os.environ, PYTHONIOENCODING="utf-8")
-    proc = subprocess.run(cmd, cwd=str(ROOT), capture_output=True, text=True, env=env, timeout=600)
+    proc = subprocess.run(cmd, cwd=str(ROOT), capture_output=True, text=True,
+                          encoding="utf-8", errors="replace", env=env, timeout=600)
     out = (proc.stdout or "") + (proc.stderr or "")
     print(out)
     m = POST_URL_RE.search(out)
@@ -180,7 +182,8 @@ def publish_cafe(it: dict) -> tuple[bool, str | None]:
     if it.get("image_glob"):
         cmd += ["--image-glob", it["image_glob"]]
     env = dict(os.environ, PYTHONIOENCODING="utf-8")
-    proc = subprocess.run(cmd, cwd=str(ROOT), capture_output=True, text=True, env=env, timeout=600)
+    proc = subprocess.run(cmd, cwd=str(ROOT), capture_output=True, text=True,
+                          encoding="utf-8", errors="replace", env=env, timeout=600)
     out = (proc.stdout or "") + (proc.stderr or "")
     print(out)
     m = POST_URL_RE.search(out)
