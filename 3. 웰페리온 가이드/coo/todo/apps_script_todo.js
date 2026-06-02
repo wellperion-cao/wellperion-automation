@@ -221,11 +221,13 @@ function _buildApprovalRoute(record) {
   // 결재 불필요 → 빈 라인
   if (manual.length === 0 && !hasBudget) return [];
 
-  // 결재 필요 → GM → 대표님 (항상 2단계). 담당자 GM이면 GM 단계 생략.
-  const ownerIsGM = String(record['담당자'] || '').split(',').map(s => s.trim()).indexOf('김남욱GM') >= 0;
+  // 결재선 = 체크한 결재자 기준 (중간관리자 부서장 → GM → 대표님). 예산만 있으면 GM→대표.
+  const MID = ['이경연 실장','이정헌 소장','나우열M'];
   const route = [];
-  if (!ownerIsGM) route.push('GM');
-  route.push('대표님');
+  if (manual.some(m => MID.indexOf(m) >= 0)) route.push('부서장');
+  if (manual.indexOf('GM') >= 0) route.push('GM');
+  if (manual.indexOf('대표') >= 0 || manual.indexOf('대표님') >= 0) route.push('대표님');
+  if (route.length === 0) { route.push('GM'); route.push('대표님'); }  // 예산만 있는 경우
   return route;
 }
 
@@ -459,10 +461,17 @@ function _processTodoAction(body) {
       if (!signCol) return _json({ ok: false, error: '알 수 없는 결재자: ' + role });
 
       // ── 결재 비밀번호 서버 검증 (GM·대표님) — 평문 PIN은 서버 ScriptProperties에만 저장 (2026-05-29 COO 보안) ──
-      // GM 콘솔: 프로젝트 설정 → 스크립트 속성에 APPROVAL_PIN_GM, APPROVAL_PIN_REP 등록 후 사용.
+      // GM 콘솔: 프로젝트 설정 → 스크립트 속성에 PIN 등록 후 사용.
+      //   APPROVAL_PIN_GM(김남욱 GM) · APPROVAL_PIN_REP(전응준 대표)
+      //   APPROVAL_PIN_OPS(이경연 실장) · APPROVAL_PIN_FAC(이정헌 소장) · APPROVAL_PIN_PARTNER(나우열M)
       // 승인·반려 공통 게이트 (이 아래 reject/approve 분기보다 먼저 차단).
-      // (라이브 GAS 소스와 동기화 — 2026-06-02 COO: repo 구버전이 PIN 미검증이라 오진되던 것 바로잡음.)
       var _pinKey = { 'GM': 'APPROVAL_PIN_GM', '대표님': 'APPROVAL_PIN_REP' }[role];
+      if (role === '부서장') {
+        // 부서장(중간관리자)은 결재요청에 체크된 본인 이름으로 PIN 키 결정
+        var _MID_PIN = { '이경연 실장':'APPROVAL_PIN_OPS', '이정헌 소장':'APPROVAL_PIN_FAC', '나우열M':'APPROVAL_PIN_PARTNER' };
+        var _mid = String(record['결재요청'] || '').split(',').map(function(s){ return s.trim(); }).filter(function(m){ return _MID_PIN[m]; })[0];
+        _pinKey = _mid ? _MID_PIN[_mid] : null;
+      }
       if (_pinKey) {
         var _expected = _prop(_pinKey);
         var _submitted = String(body.pin || '');

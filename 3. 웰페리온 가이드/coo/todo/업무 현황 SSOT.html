@@ -444,9 +444,13 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
       <div id="fFileStatus" style="font-size:12px;color:var(--dim);margin-top:4px;"></div>
     </div>
     <div class="field">
-      <label>결재요청 <span style="font-size:11px;color:var(--dim);font-weight:400;">(체크 시 GM 승인 → 대표님 최종)</span></label>
+      <label>결재요청 <span style="font-size:11px;color:var(--dim);font-weight:400;">(체크한 결재자 순서: 중간관리자 → GM → 대표)</span></label>
       <div class="approval-group" id="fApprovalGroup">
-        <label><input type="checkbox" value="GM">결재 요청 (GM → 대표님)</label>
+        <label><input type="checkbox" value="이경연 실장">이경연 실장(운영)</label>
+        <label><input type="checkbox" value="이정헌 소장">이정헌 소장(시설)</label>
+        <label><input type="checkbox" value="나우열M">나우열M(파트너)</label>
+        <label><input type="checkbox" value="GM">김남욱 GM</label>
+        <label><input type="checkbox" value="대표">전응준 대표</label>
       </div>
     </div>
     <div class="modal-actions">
@@ -1020,12 +1024,19 @@ function renderTaskCard(t, idx) {
   if (t.approval) {
     // ── 결재 진행 표시 (2026-05-29 GM 지시) ─────────────────────────────
     const _parsed = parseContent(t.content);
-    // 결재선 = 항상 GM → 대표님 2단계 (부서장 폐지·금액 임계 없음)
+    // 결재선 = 체크한 결재자 기준 (중간관리자 부서장 → GM → 대표). 예산만 있으면 GM→대표.
     const _manual = String(t.approval || '').split(',').map(s => s.trim()).filter(Boolean);
+    const _MID = ['이경연 실장','이정헌 소장','나우열M'];
+    const _midName = _manual.find(m => _MID.indexOf(m) >= 0) || '';
     const _auto   = _parsed.budget ? routeApproval(_parsed.budget.category, _parsed.budget.amount) : [];
     const _needs  = _manual.length > 0 || _auto.length > 0;
     const _route  = [];
-    if (_needs) { _route.push('GM'); _route.push('대표님'); }
+    if (_needs) {
+      if (_midName) _route.push('부서장');
+      if (_manual.indexOf('GM') >= 0) _route.push('GM');
+      if (_manual.indexOf('대표') >= 0 || _manual.indexOf('대표님') >= 0) _route.push('대표님');
+      if (_route.length === 0) { _route.push('GM'); _route.push('대표님'); }  // 예산만 있는 경우
+    }
 
     if (_route.length > 0) {
       const _appStatus = String(t['결재상태'] || '');
@@ -1037,7 +1048,7 @@ function renderTaskCard(t, idx) {
         html += '<span class="chip" style="background:var(--red-bg);color:var(--red);font-weight:700;">❌ ' + esc(_appStatus) + '</span>';
       } else {
         // ③ 진행 중 — 싸인 맵: 한글 키 직접 접근
-        const _signMap = { 'GM': t['GM싸인'] || '', '대표님': t['대표싸인'] || '' };
+        const _signMap = { '부서장': t['부서장싸인'] || '', 'GM': t['GM싸인'] || '', '대표님': t['대표싸인'] || '' };
         // 다음 결재자 = 라인 중 싸인 필드가 비어 있는 첫 번째
         let _nextIdx = _route.length; // 전원 서명 완료 시 sentinel
         for (let _i = 0; _i < _route.length; _i++) {
@@ -1057,7 +1068,8 @@ function renderTaskCard(t, idx) {
               ? 'color:var(--yellow);font-weight:700;'
               : 'color:var(--dim);opacity:0.5;';
           const _icon  = _isSigned ? '✅' : _isNext ? '⏳' : '◻';
-          return '<span style="' + _style + 'font-size:10px;">' + _icon + esc(r) + '</span>';
+          const _label = (r === '부서장' && _midName) ? _midName : r;
+          return '<span style="' + _style + 'font-size:10px;">' + _icon + esc(_label) + '</span>';
         }).join('<span style="color:var(--dim);font-size:10px;"> → </span>');
         html += '<span style="display:inline-flex;align-items:center;gap:0;flex-wrap:nowrap;">' + _roleHtml + '</span>';
       }
