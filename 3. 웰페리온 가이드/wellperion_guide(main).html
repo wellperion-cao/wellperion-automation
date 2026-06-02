@@ -4071,13 +4071,10 @@ Start-Process python -ArgumentList telegram_bot\daily_scheduler.py -WorkingDirec
       var RELAY_URL='https://script.google.com/macros/s/AKfycbxDwFkrxK1YIaEoSNcuw2MiHiZQ-7o5N6311ytksSyeEd86ZFOhLknOWqQgNArQvZ-7/exec';
       function dec(){try{return JSON.parse(localStorage.getItem('gm1_review_decisions')||'{}');}catch(e){return {};}}
       function save(id,v){var d=dec();d[id]={decision:v,at:new Date().toISOString()};localStorage.setItem('gm1_review_decisions',JSON.stringify(d));}
-      function clearDec(id){var d=dec();delete d[id];localStorage.setItem('gm1_review_decisions',JSON.stringify(d));}
-      function relayStatus(id,status){
+      function relay(id,decision){
+        var status=decision==='approve'?'승인':'반려';
         var qs='action=review_set_status&id='+encodeURIComponent(id)+'&status='+encodeURIComponent(status)+'&key=';
         return fetch(RELAY_URL+'?'+qs,{redirect:'follow'}).then(function(r){return r.json();});
-      }
-      function relay(id,decision){
-        return relayStatus(id,decision==='approve'?'승인':'반려');
       }
       function esc(s){return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
       function isDone(st){return st==='발행완료'||st==='approved'||st==='승인'||st==='rejected'||st==='반려';}
@@ -4106,10 +4103,8 @@ Start-Process python -ArgumentList telegram_bot\daily_scheduler.py -WorkingDirec
           var inner='<summary style="cursor:pointer;font-size:13px;color:var(--dim);font-weight:600;">처리완료 '+done.length+'건 (펼쳐 보기)</summary><div style="padding-top:10px;display:flex;flex-direction:column;gap:10px;">';
           done.forEach(function(it){
             var e=(it.status==='발행완료'||it.status==='발행실패')?it.status:((d[it.id]&&d[it.id].decision)||it.status);
-            var isPub=(it.status==='발행완료'||!!it.post_url);
             inner+='<div style="border-top:1px solid rgba(183,159,138,0.12);padding-top:8px;font-size:12.5px;"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px;"><strong>'+esc(it.title)+'</strong>'+badgeOf(e)+'</div>';
             if(it.post_url)inner+='<div style="margin-top:4px;"><a href="'+esc(it.post_url)+'" target="_blank" style="color:var(--accent);font-size:12px;">게시물 보기 ↗</a></div>';
-            inner+='<div style="display:flex;align-items:center;gap:8px;margin-top:6px;flex-wrap:wrap;"><button data-restore="'+esc(it.id)+'" style="background:none;color:var(--dim);border:1px solid var(--border);border-radius:8px;padding:5px 10px;font-size:11.5px;cursor:pointer;font-family:inherit;">↩ 복원</button>'+(isPub?'<span style="font-size:11px;color:var(--dim-soft);">(표시만 검수대기로 · 게시물은 유지)</span>':'')+'</div>';
             inner+='<details style="margin-top:4px;"><summary style="cursor:pointer;font-size:11.5px;color:var(--dim);">캡션·미리보기 보기</summary>'+(it.preview?'<img src="'+esc(it.preview)+'" style="width:100%;border-radius:6px;margin-top:6px;" loading="lazy">':'')+(it.caption?'<div style="font-size:12px;color:var(--text-soft);white-space:pre-wrap;line-height:1.6;padding-top:6px;">'+esc(it.caption)+'</div>':'')+'</details></div>';
           });
           inner+='</div>';
@@ -4117,8 +4112,6 @@ Start-Process python -ArgumentList telegram_bot\daily_scheduler.py -WorkingDirec
         }
         list.querySelectorAll('button[data-act]').forEach(function(b){b.addEventListener('click',function(){
           var id=b.getAttribute('data-id');var act=b.getAttribute('data-act');
-          var okMsg=act==='approve'?'이 콘텐츠를 승인(발행 요청)할까요?':'이 콘텐츠를 반려할까요?';
-          if(!confirm(okMsg))return;
           var sib=b.parentNode.querySelectorAll('button[data-act]');
           for(var i=0;i<sib.length;i++){sib[i].disabled=true;}
           b.textContent=act==='approve'?'승인 전송 중…':'반려 전송 중…';
@@ -4130,20 +4123,6 @@ Start-Process python -ArgumentList telegram_bot\daily_scheduler.py -WorkingDirec
           }).catch(function(){
             for(var i=0;i<sib.length;i++){sib[i].disabled=false;}render(window.__cmopub_rv||[]);
             alert('네트워크 오류 — GitHub 기록 실패. 로컬 표시만 유지됩니다.');
-          });
-        });});
-        list.querySelectorAll('button[data-restore]').forEach(function(b){b.addEventListener('click',function(){
-          var id=b.getAttribute('data-restore');
-          if(!confirm('이 항목을 검수 대기로 되돌릴까요?\n(이미 발행된 게시물은 그대로 유지됩니다)'))return;
-          b.disabled=true;b.textContent='복원 중…';
-          clearDec(id);
-          relayStatus(id,'검수 대기').then(function(res){
-            if(res&&res.ok){load();}
-            else{b.disabled=false;b.textContent='↩ 복원';render(window.__cmopub_rv||[]);
-              alert('중계 실패: '+((res&&res.error)||'알 수 없음')+'\n(로컬 결정은 이미 취소되었습니다)');}
-          }).catch(function(){
-            b.disabled=false;b.textContent='↩ 복원';render(window.__cmopub_rv||[]);
-            alert('네트워크 오류 — 상태 되돌리기 실패. 로컬 결정만 취소되었습니다.');
           });
         });});
       }
@@ -6887,10 +6866,8 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
         // 완료·보류: ssot 항목 포함 모두 표시 (Sheets sync) — 삭제는 SSOT 단방향 유지
         html += '<button class="gm1-action-btn done" data-id="' + gm1Esc(t.id) + '" data-action="done" style="padding:4px 10px;font-size:11px;">완료</button>';
         html += '<button class="gm1-action-btn hold" data-id="' + gm1Esc(t.id) + '" data-action="hold" style="padding:4px 10px;font-size:11px;">보류</button>';
-        if (!isSsot) {
-          // 삭제: localStorage 전용 항목만 (SSOT 기원은 삭제 불가)
-          html += '<button class="gm1-action-btn del" data-id="' + gm1Esc(t.id) + '" data-action="delete" style="padding:4px 10px;font-size:11px;">삭제</button>';
-        }
+        // 삭제: 전 항목 노출 (SSOT 기원은 시트에서도 완전 삭제 · 2026-06-02 GM 확정)
+        html += '<button class="gm1-action-btn del" data-id="' + gm1Esc(t.id) + '" data-action="delete" style="padding:4px 10px;font-size:11px;">삭제</button>';
         // ⚠️ 결과 보고서 버튼 의도적 제외 (GM 지시 2026-06-01)
         html += '</div>';
 
@@ -6954,7 +6931,7 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
           html += '<div style="padding:8px 0;border-bottom:1px dashed var(--border);">' +
             '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">' +
             '<span><span style="color:var(--green);font-weight:700;">✓</span> <span style="display:inline-block;background:rgba(100,180,120,0.13);color:var(--green);font-size:10.5px;font-weight:600;padding:2px 7px;border-radius:4px;margin:0 5px;">✅ 완료</span><span style="color:var(--text);font-weight:500;">' + gm1Esc(t.title) + '</span>' + (t.ssotAuto ? catChip(t) + SSOT_BADGE : '') + '</span>' +
-            (t.ssotAuto ? '' : '<button class="todo-act-btn today-act" data-id="' + gm1Esc(t.id) + '" data-action="restore" style="font-size:11px;padding:2px 8px;flex-shrink:0;">되돌리기</button>') +
+            '<button class="todo-act-btn today-act" data-id="' + gm1Esc(t.id) + '" data-action="restore" title="진행 중으로 되돌리기" style="font-size:11px;padding:2px 8px;flex-shrink:0;">↩ 복원</button>' +
             '</div>' + descHtml +
             '</div>';
         });
@@ -7024,21 +7001,50 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
         if (!id) return;
         // SSOT 기원 항목: edit/daterange + 완료/보류/진행중 상태변경 허용 (Sheets 동기화 2026-06-02)
         //   gm1UpdateStatus가 ssot-* 분기에서 낙관적 갱신 + gm1SyncUpdate(todo_update status)로 시트 반영.
-        //   delete만 차단 유지 (SSOT 단방향 — 시트 행 삭제는 업무현황 페이지 전용).
+        //   삭제: 비번 확인 후 시트 행까지 완전 삭제(todo_delete) — 2026-06-02 GM 확정.
         if (String(id).indexOf('ssot-') === 0) {
           if (act === 'edit')      { window.gm1OpenTaskModal(id); return; }
           if (act === 'daterange') { window.gm1OpenDateRange(id); return; }
-          if (act === 'done')      { gm1UpdateStatus(id, '완료'); return; }
+          if (act === 'done')      { if(!confirm('이 항목을 완료 처리할까요?')) return; gm1UpdateStatus(id, '완료'); return; }
           if (act === 'hold')      { gm1UpdateStatus(id, '보류'); return; }
-          if (act === 'restore')   { gm1UpdateStatus(id, '진행중'); return; }
-          return;  // 그 외(delete 등)는 read-only 유지
+          if (act === 'restore')   { if(!confirm('이 항목을 다시 진행 중으로 되돌릴까요?')) return; gm1UpdateStatus(id, '진행중'); return; }
+          if (act === 'delete')    {
+            var st = gm1SsotItems.find(function(x){ return x.id === id; });
+            var tt = (st && st.title) || '이 항목';
+            if (!confirm('"' + tt + '" 항목을 삭제하시겠습니까?\n(업무현황 시트에서도 함께 삭제됩니다)')) return;
+            var pw = prompt('삭제 비밀번호를 입력하세요 (페이지 진입 비밀번호와 동일)');
+            if (pw === null) { return; }
+            if (pw !== window.GM1_PW) { alert('비밀번호가 틀립니다.'); return; }
+            var sheetsId = gm1SheetsId(id);
+            if (!sheetsId) { alert('시트 식별자를 찾지 못했습니다.'); return; }
+            btn.disabled = true; btn.textContent = '삭제 중…';
+            fetch(SSOT_API_URL + '?action=todo_delete&id=' + encodeURIComponent(sheetsId), { redirect: 'follow' })
+              .then(function(r){ return r.json(); })
+              .then(function(res){
+                if (res && (res.ok || res.success)) {
+                  gm1SsotItems = gm1SsotItems.filter(function(x){ return x.id !== id; });
+                  gm1RenderToday();
+                  gm1CalRender();
+                  setTimeout(function(){ gm1FetchSsot(); }, 800);
+                } else {
+                  btn.disabled = false; btn.textContent = '삭제';
+                  alert('시트 삭제 실패: ' + ((res && res.error) || '알 수 없음'));
+                }
+              })
+              .catch(function(){
+                btn.disabled = false; btn.textContent = '삭제';
+                alert('네트워크 오류 — 시트 삭제에 실패했습니다.');
+              });
+            return;
+          }
+          return;  // 그 외는 read-only 유지
         }
         if (act === 'copylink') { var url=window.location.href.split('?')[0]+'?gm1='+encodeURIComponent(id); if(navigator.clipboard){navigator.clipboard.writeText(url);}else{var ta=document.createElement('textarea');ta.value=url;document.body.appendChild(ta);ta.select();try{document.execCommand('copy');}catch(ex){}document.body.removeChild(ta);} return; }
         if (act === 'edit')      { window.gm1OpenTaskModal(id); return; }
         else if (act === 'daterange') { window.gm1OpenDateRange(id); return; }
-        else if (act === 'done')    { gm1UpdateStatus(id, '완료'); }
+        else if (act === 'done')    { if(!confirm('이 항목을 완료 처리할까요?')) return; gm1UpdateStatus(id, '완료'); }
         else if (act === 'hold')    { gm1UpdateStatus(id, '보류'); }
-        else if (act === 'restore') { gm1UpdateStatus(id, '진행중'); }
+        else if (act === 'restore') { if(!confirm('이 항목을 다시 진행 중으로 되돌릴까요?')) return; gm1UpdateStatus(id, '진행중'); }
         else if (act === 'delete') {
           var t = gm1Load().find(function(x){ return x.id === id; });
           if (t && confirm('"' + t.title + '" 항목을 삭제하시겠습니까?')) {
