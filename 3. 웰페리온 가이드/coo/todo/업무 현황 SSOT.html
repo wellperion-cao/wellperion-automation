@@ -57,6 +57,11 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 .filter-btn.active{background:var(--accent-bg);color:var(--accent);border-color:rgba(183,159,138,0.3)}
 .filter-btn:hover{background:var(--accent-bg)}
 .filter-btn.approval-filter.active{background:var(--red-bg);color:var(--red);border-color:rgba(237,91,63,0.3)}
+/* 담당자 색상 칩(범례+필터). 비활성=살짝 흐리게, 활성=진하게+링 강조 (2026-06-02 GM) */
+.owner-chip-btn{opacity:0.62;font-weight:700;box-shadow:none}
+.owner-chip-btn:hover{opacity:0.85}
+.owner-chip-btn.active{opacity:1;box-shadow:0 0 0 2px var(--bg),0 0 0 3px currentColor}
+.owner-chip-btn.active:hover{opacity:1}
 .share-btn{padding:6px 12px;font-size:12px;font-weight:600;color:var(--blue);background:var(--blue-bg);border:1px solid rgba(91,159,213,0.3);border-radius:8px;cursor:pointer;font-family:inherit;white-space:nowrap;margin-left:auto;flex-shrink:0;transition:all 0.15s}
 .share-btn:hover{background:rgba(91,159,213,0.22)}
 .deeplink-highlight{box-shadow:0 0 0 2px var(--accent),0 0 14px rgba(183,159,138,0.55)!important;border-radius:12px;transition:box-shadow 0.3s}
@@ -616,12 +621,16 @@ function buildFilters() {
   // Owner filters — 정렬 드롭다운 왼쪽, 버튼 그룹 오른쪽
   const ownerEl = document.getElementById('ownerFilters');
   let html = '';
-  // 담당자 필터 버튼 (카운트 포함)
-  html += '<button class="filter-btn' + (activeOwnerFilter === '전체' ? ' active' : '') + '" onclick="setOwnerFilter(\'전체\',this)">전체</button>';
+  // 담당자 색상 칩 = 범례 + 클릭 필터(토글). 색은 OWNER_COLORS 단일 출처(카드 칩과 동일). (2026-06-02 GM)
+  html += '<button class="filter-btn owner-chip-btn' + (activeOwnerFilter === '전체' ? ' active' : '') + '" onclick="setOwnerFilter(\'전체\',this)">전체</button>';
   MEMBERS.forEach(m => {
     const cnt = ownerCount[m] || 0;
+    const oc = OWNER_COLORS[m] || { bg: 'var(--accent-bg)', color: 'var(--accent)' };
+    const isOn = activeOwnerFilter === m;
     const label = esc(m) + (cnt > 0 ? ' (' + cnt + ')' : '');
-    html += '<button class="filter-btn' + (activeOwnerFilter === m ? ' active' : '') + '" onclick="setOwnerFilter(\'' + escAttr(m) + '\',this)">' + label + '</button>';
+    // 색칩 스타일: 배경=담당자색bg, 글자/테두리=담당자색. 활성 시 ring 강조(.active)
+    const style = 'background:' + oc.bg + ';color:' + oc.color + ';border:1px solid ' + oc.color + ';';
+    html += '<button class="filter-btn owner-chip-btn' + (isOn ? ' active' : '') + '" style="' + style + '" onclick="setOwnerFilter(\'' + escAttr(m) + '\',this)" title="' + escAttr(m) + ' — 클릭 시 이 담당자만, 다시 클릭 시 해제">' + label + '</button>';
   });
   // 정렬 드롭다운 + 버튼 그룹 오른쪽 (2026-05-30 GM: 정렬을 버튼 옆으로 — 결재현황과 동일)
   html += '<div style="display:flex;gap:4px;margin-left:auto;flex-shrink:0;align-items:center;">';
@@ -761,9 +770,13 @@ function handleDeepLink() {
 }
 
 function setOwnerFilter(v, btn) {
-  activeOwnerFilter = v;
-  document.querySelectorAll('#ownerFilters .filter-btn').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
+  // 토글: 이미 활성인 담당자 칩을 다시 누르면 해제(전체). (2026-06-02 GM — 색칩 필터 토글)
+  if (v !== '전체' && activeOwnerFilter === v) {
+    activeOwnerFilter = '전체';
+  } else {
+    activeOwnerFilter = v;
+  }
+  // active 표시는 buildFilters()가 activeOwnerFilter 기준으로 재계산하므로 여기선 renderTasks만.
   renderTasks();
 }
 
