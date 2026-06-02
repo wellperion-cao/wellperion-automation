@@ -968,20 +968,10 @@ def main():
     #   확정으로 감시 가치 0·알림 0건 → if False 사문 블록 삭제. permission_watcher.py는
     #   디스크 보존(가역적). 참조: docs/노션_가이드허브_리뉴얼_계획.md.
 
-    # ── C-Level 상태변경 텔레그램 자동발송 (1분 주기) — CTO v1.0 ─────────────
-    try:
-        from status_change_watcher import check_status_changes as _status_check
-        scheduler.add_job(
-            _status_check,
-            trigger=IntervalTrigger(minutes=1),
-            id="status_change_watcher",
-            misfire_grace_time=120,
-            coalesce=True,
-            next_run_time=datetime.now(),
-        )
-        logger.info("status_change_watcher 등록 완료 (1분 주기) — CTO v1.0")
-    except ImportError as e:
-        logger.error(f"status_change_watcher 임포트 실패 — 감지기 미등록: {e}")
+    # [2026-06-02 CTO 제거] status_change_watcher(C-Level 상태변경 1분주기 자동발송)는
+    #   status_change_watcher.py가 미구현(git 이력·디스크 0)으로 매 부팅 ImportError만
+    #   발생 → 기능 0의 사문 블록 제거. C-Level 상태 보고는 각 에이전트 직접 발송으로 대체.
+    #   필요 시 status_change_watcher.py 작성 후 복원(가역적).
 
     # status_regression_guard 폐기 (2026-05-22 GM 지시)
     # 사유: 진행중→진행예정→진행중(자동복원) 무의미한 사이클 + GM 의도 덮어쓰기 위험.
