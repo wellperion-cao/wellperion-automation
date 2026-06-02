@@ -87,7 +87,7 @@ def main() -> None:
         brand_key="main",
         logo_style=LOGO_STYLE,
         kor_title="AI를 다루는 대표가\n살아남는다",
-        body="저도 아직 배우는 중입니다.\n완벽하진 않아도, 함께 성장합시다.\n\nAI 활용이 궁금한 운동시설 대표님,\nDM으로 문의 주세요.",
+        body="저도 아직 배우는 중입니다.\n완벽하진 않아도, 함께 성장합시다.\n\nAI 활용이 궁금한 운동시설 대표님,\nDM 주시면 제가 아는 선에선 돕겠습니다.",
     )
     print(f"[OK] {last_out.name} - slogan/DM card ({r['size_kb']}KB)")
     paths.append(last_out)
