@@ -10,7 +10,7 @@
 <script>
 /* 최신본 자동 보장 — HTTP 캐시로 옛 버전이 떠 'GM 화면만 미반영'되는 문제 방지 (2026-05-29 COO).
    서버 최신본 버전과 비교해 다르면 1회만 강제 갱신. 루프 방지: ?pv 가 현재 버전과 같으면 종료. */
-window.__PV='20260601-1';
+window.__PV='20260602-1';
 (function(){
   window.addEventListener('pageshow',function(e){ if(e.persisted) location.reload(); });
   try{
@@ -372,11 +372,20 @@ function render() {
   });
   document.getElementById('catFilters').innerHTML = ctHtml;
 
-  // 4줄 — 검색
-  let scHtml = '';
-  scHtml += '<input type="text" id="searchInput" placeholder="업무명·내용·담당자 검색" value="' + escAttr(searchQuery) + '" oninput="setSearch(this.value)" style="flex:1;background:var(--paper);border:1px solid var(--border);color:var(--text);padding:7px 12px;border-radius:8px;font-size:13px;font-family:inherit;">';
-  if (searchQuery) scHtml += '<button class="filter-btn" onclick="setSearch(\'\')">✕ 초기화</button>';
-  document.getElementById('searchRow').innerHTML = scHtml;
+  // 4줄 — 검색 (IME 한글 조합 끊김 방지 — 업무 현황 SSOT 패턴 이식 2026-06-02)
+  //   input은 최초 1회만 생성·재사용. 재렌더 시 innerHTML로 교체하면 조합 중 DOM이 교체돼
+  //   자모 분리·포커스 유실이 발생한다. ✕ 초기화 버튼만 토글하고 input은 절대 손대지 않는다.
+  const searchEl = document.getElementById('searchRow');
+  let si = document.getElementById('searchInput');
+  if (!si) {
+    searchEl.innerHTML =
+      '<input type="text" id="searchInput" placeholder="업무명·내용·담당자 검색" oninput="setSearch(this.value)" style="flex:1;background:var(--paper);border:1px solid var(--border);color:var(--text);padding:7px 12px;border-radius:8px;font-size:13px;font-family:inherit;">'
+      + '<button type="button" id="searchClearBtn" class="filter-btn" onclick="clearSearch()" style="display:none;">✕ 초기화</button>';
+    si = document.getElementById('searchInput');
+    si.value = searchQuery;  // 최초 1회만 (딥링크 q 반영) — 조합 중이 아니므로 안전
+  }
+  const clearBtn = document.getElementById('searchClearBtn');
+  if (clearBtn) clearBtn.style.display = searchQuery ? '' : 'none';
 
 
   // 필터링
@@ -466,18 +475,23 @@ function render() {
     list.forEach((t, i) => { html += renderApprovalCard(t, i + 1); });
   }
 
+  // mainContent만 갱신 — 검색 input(#searchRow)은 별도 고정 DOM이라 건드리지 않음.
+  //   따라서 포커스·한글 IME 조합·캐럿이 그대로 유지된다(focus 복원 hack 불필요).
   el.innerHTML = html;
-  // 검색 박스 focus 유지
-  if (searchQuery && document.activeElement && document.activeElement.id !== 'searchInput') {
-    const si = document.getElementById('searchInput');
-    if (si) { si.focus(); si.setSelectionRange(searchQuery.length, searchQuery.length); }
-  }
 }
 
 function setRoleFilter(r) { activeRoleFilter = r; render(); }
 function setCatFilter(c) { activeCatFilter = c; render(); }
 function setSearch(q) { searchQuery = q; render(); }
 function setSort(s) { activeSortBy = s; render(); }
+/* ✕ 초기화 — 사용자 액션이라 .value 직접 비움(조합 중 아님) */
+function clearSearch() {
+  const si = document.getElementById('searchInput');
+  if (si) si.value = '';
+  searchQuery = '';
+  render();
+  if (si) si.focus();
+}
 
 /* ─── 공유 링크 / 딥링크 (2026-06-01 GM) ─── */
 let _deepLinkId = null;
