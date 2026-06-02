@@ -433,7 +433,6 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
       </div>
     </div>
     <div class="modal-actions">
-      <button class="modal-btn cancel" id="modalPrintBtn" onclick="(function(){var id=document.getElementById('editId').value;if(id)printResultReport(id);})()" style="background:var(--bg);color:var(--dim);border-color:var(--border);margin-right:auto;">🖨 인쇄 / PDF 저장</button>
       <button class="modal-btn cancel" onclick="closeModal()">취소</button>
       <button class="modal-btn save" id="modalSaveBtn" onclick="saveTask()">저장</button>
     </div>
@@ -480,6 +479,22 @@ const FIELD_MAP = {
   '파일URL':'fileUrl','생성자':'creator','id':'id',
   '생성일':'createdAt','수정일':'updatedAt'
 };
+
+/* 담당자별 이름 배경색 (사람마다 고유색) */
+const OWNER_COLORS = {
+  '이경연 실장': {bg:'var(--blue-bg)',   color:'var(--blue)'},
+  '이정헌 소장': {bg:'var(--green-bg)',  color:'var(--green)'},
+  '나우열M':     {bg:'var(--purple-bg)', color:'var(--purple)'},
+  '최준용M':     {bg:'var(--accent-bg)', color:'var(--accent)'},
+  '임정은M':     {bg:'var(--red-bg)',    color:'var(--red)'},
+  '윤병현AM':    {bg:'var(--yellow-bg)', color:'var(--yellow)'},
+  '이지영 사원': {bg:'var(--orange-bg)', color:'var(--orange)'}
+};
+function ownerChip(name) {
+  var c = OWNER_COLORS[name];
+  var style = c ? 'background:' + c.bg + ';color:' + c.color + ';' : '';
+  return '<span class="chip owner" style="' + style + '">' + esc(name) + '</span>';
+}
 
 /* ═══════════════════════════════════════════
    State
@@ -873,7 +888,7 @@ function renderTasks() {
       html += '<div style="display:flex;align-items:center;justify-content:space-between;">';
       html += '<div><div class="task-title" style="text-decoration:none;color:var(--orange);">' + esc(t.title) + '</div>';
       html += '<div class="task-meta">';
-      if (t.owner) t.owner.split(',').forEach(o => { o=o.trim(); if(o) html += '<span class="chip owner">'+esc(o)+'</span>'; });
+      if (t.owner) t.owner.split(',').forEach(o => { o=o.trim(); if(o) html += ownerChip(o); });
       if (t.category) html += '<span class="chip" style="background:var(--orange-bg);color:var(--orange)">'+esc(t.category)+'</span>';
       html += '</div></div>';
       html += '<button class="action-btn" onclick="restoreTask(\''+escAttr(t.id)+'\')" style="padding:4px 10px;font-size:11px;background:var(--blue-bg);color:var(--blue);border-color:rgba(91,159,213,0.3);">복원</button>';
@@ -965,7 +980,7 @@ function renderTaskCard(t, idx) {
   if (t.owner) {
     t.owner.split(',').forEach(o => {
       o = o.trim();
-      if (o) html += '<span class="chip owner">' + esc(o) + '</span>';
+      if (o) html += ownerChip(o);
     });
   }
 
@@ -1040,8 +1055,6 @@ function renderTaskCard(t, idx) {
   html += '<button class="action-btn edit" onclick="event.stopPropagation();openEditModal(\'' + escAttr(t.id) + '\')" style="padding:4px 10px;font-size:11px;">편집</button>';
   html += '<button class="action-btn done" onclick="event.stopPropagation();markDone(\'' + escAttr(t.id) + '\')" style="padding:4px 10px;font-size:11px;">완료</button>';
   html += '<button class="action-btn" onclick="event.stopPropagation();holdTask(\'' + escAttr(t.id) + '\')" style="padding:4px 10px;font-size:11px;background:var(--orange-bg);color:var(--orange);border-color:rgba(230,148,78,0.3);">보류</button>';
-  // 결과 보고서: 항상 활성(작성 전이어도 인쇄 가능 — 2026-06-01 GM)
-  html += '<button class="action-btn" onclick="event.stopPropagation();printResultReport(\'' + escAttr(t.id) + '\')" style="padding:4px 10px;font-size:11px;background:var(--purple-bg);color:var(--purple);border-color:rgba(167,139,218,0.3);">🖨 결과 보고서</button>';
   html += '<button class="action-btn" onclick="event.stopPropagation();deleteTaskWithAuth(\'' + escAttr(t.id) + '\',\'' + escAttr(t.title || '') + '\')" style="padding:4px 10px;font-size:11px;background:transparent;color:var(--dim);border-color:var(--border);">삭제</button>';
   html += '</div>'; // task-actions
 
@@ -1136,7 +1149,7 @@ function renderDoneCard(t) {
   html += '<div class="task-title">✅ ' + esc(t.title) + '</div>';
   html += '<div class="task-meta">';
   if (t.owner) {
-    t.owner.split(',').forEach(o => { o = o.trim(); if (o) html += '<span class="chip owner">' + esc(o) + '</span>'; });
+    t.owner.split(',').forEach(o => { o = o.trim(); if (o) html += ownerChip(o); });
   }
   if (t.category) {
     const colors = CAT_COLORS[t.category] || { bg: 'var(--accent-bg)', color: 'var(--accent)' };
@@ -1149,7 +1162,6 @@ function renderDoneCard(t) {
   // 액션: 링크 · 보고서 (완료건도 활용 가능 데이터)
   html += '<div style="display:flex;gap:4px;flex-shrink:0;flex-wrap:wrap;">';
   html += '<button class="action-btn" title="이 업무 링크 복사" onclick="event.stopPropagation();copyItemLink(\'' + escAttr(t.id) + '\')" style="padding:4px 8px;font-size:11px;">🔗</button>';
-  html += '<button class="action-btn" onclick="event.stopPropagation();printResultReport(\'' + escAttr(t.id) + '\')" style="padding:4px 8px;font-size:11px;background:var(--purple-bg);color:var(--purple);border-color:rgba(167,139,218,0.3);">🖨 결과 보고서</button>';
   html += '</div></div>';
   // 내용 토글 — 본문·기획·진척·결과 열람
   const hasDetail = p.body || p.plan || (p.logs && p.logs.length) || p.result;
