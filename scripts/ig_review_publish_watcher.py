@@ -69,7 +69,8 @@ def telegram(message: str) -> None:
 
 def git(*args: str, check: bool = False) -> subprocess.CompletedProcess:
     return subprocess.run(["git", "-C", str(ROOT), *args],
-                          capture_output=True, text=True, check=check)
+                          capture_output=True, text=True,
+                          encoding="utf-8", errors="replace", check=check)
 
 
 def pull_latest() -> None:
