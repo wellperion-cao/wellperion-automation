@@ -27,8 +27,23 @@
 | 개인계정 namuk.wellperion | **'DM 문의' + '함께 성장합시다'** | 미사용(예외) |
 | 회사/공식 IG wellperion | litt.ly 링크 유도 (기존대로) | 사용 |
 
-- 개인계정은 litt.ly를 쓰지 않는다. 마지막 장·캡션 CTA = "함께 성장합시다" + "DM으로 문의 주세요" 톤으로 통일.
+- 개인계정은 litt.ly를 쓰지 않는다. 마지막 장·캡션 CTA = "함께 성장합시다" + "DM 주시면 제가 아는 선에선 돕겠습니다" 톤으로 통일.
 - 본문·캡션에 litt.ly 링크 삽입 금지(개인계정 한정). 회사/공식 IG는 기존대로 litt.ly 유지.
+
+## ★ 콘텐츠 '제작 완료' 표준 종료 절차 (2026-06-02 GM 표준 지시 — 전 콘텐츠 공통 SOP)
+모든 슬라이드/콘텐츠 제작을 '완료'하면, GM의 별도 지시 없이도 아래 ①②를 항상 자동 수행한다.
+이 두 단계까지가 "제작 완료"의 기본 종료 상태다. (발행은 GM 승인 후에만 — 비가역 게이트 유지)
+
+| 단계 | 동작 | 비고 |
+|---|---|---|
+| ① 텔레그램 알림 | 1줄 보고(한줄 제목/한줄 내용) + montage 미리보기 송부 | telegram_notifier.send_photo, 토큰 stdout 노출 금지 |
+| ② M5 검수 큐 자동 등록 | `3. 웰페리온 가이드/cmo/review/review_queue.json`에 항목 추가, `status="검수 대기"` | review_set_status 호환 스키마 |
+
+- 자동 등록 = GM이 M5(콘텐츠 검수·자동업로드, cmo-publish)에서 [승인] 누르면 시모가 즉시 발행할 수 있는 상태로 둔다.
+- review_queue 항목 스키마(기존 재사용·신규 포맷 금지): `id` · `title` · `channel` · `account` · `folder` · `preview`(montage를 `cmo/review/`로 복사한 배포루트 상대경로) · `slides[]` · `caption` · `location` · `collaborators[]` · `mentions[]` · `status="검수 대기"`.
+- preview 이미지는 반드시 `3. 웰페리온 가이드/cmo/review/` 아래로 복사(배포 루트에서 `instagram/...`은 미해석) → 경로는 `cmo/review/<name>.png`.
+- 등록 후: 커밋·푸시 → 배포본 review_queue.json fetch로 '검수 대기' 실측 확인(false-positive 방지).
+- ★ 앞으로 GM이 "검수 큐에 올려라"라고 따로 지시하지 않아도, 제작 완료 시 ①+②가 기본이다.
 
 ## 시리즈 흐름 설계 (A~Z = 인식 → 이유 → 실제 → 한계 → 미래)
 처음 두 편이 'AI를 왜 쓰는가(인식·동기)'를 다뤘으니, 이후는 '무엇을·어떻게(실제)' → '주의·한계' → '앞으로(미래)'로 점층한다. 추상 → 구체 → 성찰 순.

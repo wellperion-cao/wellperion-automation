@@ -2176,6 +2176,15 @@
     </table>
     <div class="callout"><strong>공통 톤·CTA 체크.</strong> "스포츠클럽"(피트니스 금지) · 건물명 금지("현대하이페리온"→"한남동/웰페리온") · CTA = 문의 Survey / litt.ly 단일 · 개인번호(010) 절대 노출 금지.</div>
 
+    <h3><span class="ico">🏁</span>콘텐츠 '제작 완료' 표준 종료 절차 <span style="font-size:12px;color:var(--dim);font-weight:400;">(2026-06-02 GM 표준)</span></h3>
+    <p>슬라이드/콘텐츠 제작을 <strong>'완료'</strong>하면, GM의 별도 지시 없이도 아래 ①②를 <strong>항상 자동</strong> 수행한다. 이 두 단계까지가 "제작 완료"의 기본 종료 상태다.</p>
+    <table>
+      <tr><th>단계</th><th>동작</th><th>비고</th></tr>
+      <tr><td><strong>① 텔레그램 알림</strong></td><td>1줄 보고(한줄 제목/한줄 내용) + montage 미리보기 송부</td><td>토큰 stdout 노출 금지</td></tr>
+      <tr><td><strong>② M5 검수 큐 자동 등록</strong></td><td><code>cmo/review/review_queue.json</code>에 항목 추가, <code>status="검수 대기"</code></td><td>review_set_status 호환 스키마 · M5 페이지 참조</td></tr>
+    </table>
+    <div class="callout"><strong>기본 종료 = 텔레그램 알림 + M5 검수 대기 등록.</strong> 앞으로 GM이 "검수 큐에 올려라"라고 따로 지시하지 않아도, 제작 완료 시 ①+②가 기본이다. <strong>발행은 GM이 M5에서 [승인]을 누른 뒤에만</strong> 시모가 수행한다(비가역 게이트 유지).</div>
+
     <h3><span class="ico">📁</span>표준 폴더 명명</h3>
     <pre>instagram/{YYMMDD_콘텐츠명}/</pre>
 
@@ -3728,6 +3737,8 @@ Start-Process python -ArgumentList telegram_bot\daily_scheduler.py -WorkingDirec
     <p class="lead">콘텐츠 제작부터 검수, 자동 업로드까지 한 곳에서 관리하는 전용 페이지입니다. 채널별 특성을 미리 학습해 기록하고, 제목만 입력하면 슬라이드와 캡션이 생성되며, 검수 후 승인 시 자동 발행됩니다. <span style="color:var(--dim);">(1단계는 골격·흐름 UI. 실제 자동 생성·업로드 풀가동은 다음 단계.)</span></p>
 
     <div class="callout"><strong>핵심 흐름:</strong> ① 채널 선택 → ② 제목 입력 → ③ <strong>슬라이드+캡션 자동 생성</strong> → ④ 미리보기 검수 → ⑤ <strong>승인 시 업로드</strong>. 인스타그램은 2개 계정(브랜드·개인)으로 계정별 발행.</div>
+
+    <div class="callout tip"><strong>🏁 콘텐츠 '제작 완료' 표준 종료 절차 (2026-06-02 GM 표준).</strong> 시모(CMO)가 슬라이드/콘텐츠 제작을 완료하면, GM 별도 지시 없이도 <strong>① 텔레그램 1줄 알림+montage 미리보기 → ② 아래 검수 큐에 <code>status="검수 대기"</code>로 자동 등록</strong>까지가 기본 종료 상태다. 즉 <strong>이 페이지 '인스타그램 검수 대기'에 새 콘텐츠가 자동으로 올라온다.</strong> GM은 여기서 시각 검수 후 [승인]만 누르면 되고, 승인 즉시 시모가 발행한다(승인 전 발행 절대 금지 — 비가역 게이트).</div>
 
     <!-- ① 인스타 업로드 추가 UI (계정별, 1단계 골격) -->
     <h3><span class="ico">📸</span>인스타그램 업로드 (계정별)</h3>
