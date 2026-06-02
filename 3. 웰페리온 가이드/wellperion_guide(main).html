@@ -6353,10 +6353,10 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
     /* ── SSOT 자동 합류 (in-memory · localStorage 저장 금지 · 2026-05-29 seed#10) ── */
     var gm1SsotItems = [];   // SSOT(구글시트)에서 읽어온 GM 본인·결재 차례 항목 (항상 최신)
     var gm1CatFilter = { '업무':true, '결재':true, '기획':true, '개인':true };  // 분류 필터 체크 상태
-    // 업무SSOT 이식 — 정렬·검색·담당자 필터 상태 (2026-06-01)
-    var gm1SortBy      = '최신순';  // '최신순' | '카테고리' | '담당자' | '시작일순'
+    // 업무SSOT 이식 — 정렬·검색 상태 (2026-06-01) · 담당자 필터/정렬 UI 死코드 제거(2026-06-02 GM 단독 페이지)
+    var gm1SortBy      = '최신순';  // '최신순' | '카테고리' | '시작일순'
     var gm1SearchQuery = '';
-    var gm1OwnerFilter = '전체';   // G1은 GM 단독이나 "완전 동일" 위해 이식
+    var gm1SearchTimer = null;     // 검색 디바운스 타이머 (IME 끊김 방지 · 2026-06-02)
     var gm1ModalLogs   = [];       // 편집 모달 진척 로그 캐시
 
     /* ── 오늘 날짜 문자열 ── */
@@ -6581,7 +6581,7 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
                   id: base, title: '[결재] ' + title, status: '진행중',
                   category: '결재', description: parsed.description,
                   progressLog: parsed.progressLog, budgetCat: parsed.budgetCat, budgetAmt: parsed.budgetAmt,
-                  isToday: true, startDate: sd, ssotAuto: true,
+                  isToday: true, startDate: sd, ssotAuto: true, owner: owner,
                   _sheetsId: String(row['id'] || '')
                 });
               } else if (owner.indexOf('김남욱GM') >= 0 || /AI (CEO|CMO|CTO|COO|CFO|CPO|CHRO)/.test(owner) || /웰리|시모|시토|시우|시뽀|시포|시로/.test(owner)) {
@@ -6595,7 +6595,7 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
                   id: base, title: title, status: status,
                   category: '업무', description: parsed.description,
                   progressLog: parsed.progressLog, budgetCat: parsed.budgetCat, budgetAmt: parsed.budgetAmt,
-                  isToday: true, startDate: sd, ssotAuto: true,
+                  isToday: true, startDate: sd, ssotAuto: true, owner: owner,
                   _sheetsId: String(row['id'] || '')
                 });
               }
@@ -6705,19 +6705,26 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
       }
       var SSOT_BADGE = '<span style="display:inline-block;background:rgba(126,87,194,0.15);color:#7e57c2;font-size:9.5px;font-weight:700;padding:1px 6px;border-radius:4px;margin-left:5px;vertical-align:middle;">SSOT</span>';
 
-      // ── 수동 today 항목 + SSOT 항목 병합 (제목 정규화 dedup · 상태는 SSOT 우선) ──
-      var ssotByTitle = {};
-      gm1SsotItems.forEach(function(s){ ssotByTitle[String(s.title).trim()] = s; });
+      // ── 수동 today 항목 + SSOT 항목 병합 (id 기반 dedup · 상태는 SSOT 우선) ──
+      //   2026-06-02: dedup 키를 _sheetsId 기반으로 강화 — 동명 항목이라도 다른 id면 별개 카드 유지.
+      //   같은 실체(동일 _sheetsId)일 때만 병합 (완료-우선 상태병합 유지).
+      function gm1MergeKey(x){
+        var sid = String(x._sheetsId || '').trim();
+        if (sid) return 'sid:' + sid;
+        return 'title:' + String(x.title).trim();  // _sheetsId 없는 순수 로컬 항목 — 제목 fallback
+      }
+      var ssotByKey = {};
+      gm1SsotItems.forEach(function(s){ ssotByKey[gm1MergeKey(s)] = s; });
 
       var merged = [];
-      var matchedSsotTitles = {};
+      var matchedSsotKeys = {};
       manualTasks.forEach(function(t){
-        var key = String(t.title).trim();
-        var m = ssotByTitle[key];
+        var key = gm1MergeKey(t);
+        var m = ssotByKey[key];
         if (m) {
-          // SSOT 제목 매칭 — 표시 레벨에서만 상태 병합 (localStorage 저장 금지)
+          // SSOT 동일 실체 매칭 — 표시 레벨에서만 상태 병합 (localStorage 저장 금지)
           // 완료 우선: 어느 쪽이든 완료면 완료 보존 (G1에서 완료 처리한 건이 미갱신 SSOT에 역행 덮이는 것 방지)
-          matchedSsotTitles[key] = true;
+          matchedSsotKeys[key] = true;
           var mergedStatus = (t.status === '완료' || m.status === '완료') ? '완료' : m.status;
           merged.push(Object.assign({}, t, { status: mergedStatus, _ssotMatched: true }));
         } else {
@@ -6726,7 +6733,7 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
       });
       // 매칭 안 된 SSOT 항목만 별도 카드로 합류
       gm1SsotItems.forEach(function(s){
-        if (!matchedSsotTitles[String(s.title).trim()]) merged.push(s);
+        if (!matchedSsotKeys[gm1MergeKey(s)]) merged.push(s);
       });
 
       // 분류 필터 적용
@@ -6741,16 +6748,11 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
           return blob.indexOf(q) >= 0;
         });
       }
-      // ── 담당자 필터 (업무SSOT 이식 · G1은 GM 단독) ──
-      if (gm1OwnerFilter !== '전체') {
-        merged = merged.filter(function(t){ return (t.owner || '김남욱GM').indexOf(gm1OwnerFilter) >= 0; });
-      }
 
-      // ── 정렬 (업무SSOT 이식) ──
+      // ── 정렬 (업무SSOT 이식 · 담당자 정렬은 GM 단독 페이지라 제거) ──
       function gm1SortCmp(a, b) {
         if (gm1SortBy === '시작일순') return String(b.startDate||'').localeCompare(String(a.startDate||''));
         if (gm1SortBy === '카테고리') return String(catOf(a)).localeCompare(String(catOf(b))) || String(a.title||'').localeCompare(String(b.title||''));
-        if (gm1SortBy === '담당자')   return String(a.owner||'김남욱GM').localeCompare(String(b.owner||'김남욱GM')) || String(a.title||'').localeCompare(String(b.title||''));
         return String(b.startDate||'').localeCompare(String(a.startDate||'')) || String(a.title||'').localeCompare(String(b.title||''));  // 최신순
       }
       merged.sort(gm1SortCmp);
@@ -6768,7 +6770,7 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
       html += '<div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:8px;">';
       html += '<input type="text" id="gm1-search" placeholder="🔍 제목·내용·진척 검색" value="' + gm1Esc(gm1SearchQuery).replace(/"/g,'&quot;') + '" style="flex:1;min-width:120px;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:8px;font-size:12.5px;font-family:inherit;">';
       html += '<select id="gm1-sort" title="정렬" style="background:var(--bg);border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:8px;font-size:12px;font-family:inherit;font-weight:600;cursor:pointer;">';
-      ['최신순','카테고리','담당자','시작일순'].forEach(function(opt){
+      ['최신순','카테고리','시작일순'].forEach(function(opt){
         html += '<option value="' + opt + '"' + (gm1SortBy === opt ? ' selected' : '') + '>' + opt + '</option>';
       });
       html += '</select>';
@@ -6964,13 +6966,26 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
       // 도구 바 바인딩 (검색·정렬·담당자·공유/인쇄 · 업무SSOT 이식)
       var srch = container.querySelector('#gm1-search');
       if (srch) {
-        srch.oninput = function(){ gm1SearchQuery = this.value; gm1RenderToday(); };
+        // 한글 IME 끊김 방지 (2026-06-02): 조합 중에는 재렌더 보류 + 150ms 디바운스.
+        //   매 입력마다 gm1RenderToday() 전체 재렌더 시 input DOM이 교체되어 한글 조합·커서가 깨지던 버그 보완.
+        var gm1Composing = false;
+        srch.addEventListener('compositionstart', function(){ gm1Composing = true; });
+        srch.addEventListener('compositionend', function(){
+          gm1Composing = false;
+          gm1SearchQuery = this.value;
+          if (gm1SearchTimer) { clearTimeout(gm1SearchTimer); gm1SearchTimer = null; }
+          gm1RenderToday();
+        });
+        srch.oninput = function(){
+          gm1SearchQuery = this.value;
+          if (gm1Composing) return;  // 조합 중에는 보류 — compositionend에서 실행
+          if (gm1SearchTimer) clearTimeout(gm1SearchTimer);
+          gm1SearchTimer = setTimeout(function(){ gm1SearchTimer = null; gm1RenderToday(); }, 150);
+        };
         if (gm1SearchQuery) { srch.focus(); try { srch.setSelectionRange(gm1SearchQuery.length, gm1SearchQuery.length); } catch(e){} }
       }
       var srt = container.querySelector('#gm1-sort');
       if (srt) srt.onchange = function(){ gm1SortBy = this.value; gm1RenderToday(); };
-      var own = container.querySelector('#gm1-owner');
-      if (own) own.onchange = function(){ gm1OwnerFilter = this.value; gm1RenderToday(); };
       var sr = container.querySelector('#gm1-share-report');
       if (sr) sr.onclick = function(){ window.gm1ShareReport(); };
       var sl = container.querySelector('#gm1-share-list');
@@ -7727,10 +7742,9 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
       gm1CalRender();
     };
 
-    /* ── 정렬·검색·담당자 필터 setter ── */
+    /* ── 정렬·검색 setter (담당자 필터 setter는 GM 단독 페이지라 제거 · 2026-06-02) ── */
     window.gm1SetSortBy   = function(v){ gm1SortBy = v; gm1RenderToday(); };
     window.gm1SetSearch   = function(v){ gm1SearchQuery = v; gm1RenderToday(); };
-    window.gm1SetOwner    = function(v){ gm1OwnerFilter = v; gm1RenderToday(); };
 
     /* ── 보고서 인쇄 (업무SSOT printResultReport 이식 · rr-* 스타일) ── */
     window.gm1PrintResultReport = function(taskId) {
