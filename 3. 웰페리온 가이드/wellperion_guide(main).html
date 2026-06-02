@@ -3104,7 +3104,7 @@ Start-Process python -ArgumentList telegram_bot\daily_scheduler.py -WorkingDirec
       <h3 style="border:none;margin-bottom:8px;">김남욱 GM 전용</h3>
       <p style="color:var(--dim);margin-bottom:20px;">비밀번호를 입력하세요</p>
       <input type="password" id="gm1-pw" placeholder="비밀번호" style="padding:10px 16px;font-size:16px;border-radius:8px;border:1px solid var(--border);background:var(--paper);color:var(--text);text-align:center;width:200px;font-family:inherit;" onkeydown="if(event.key==='Enter')document.querySelector('#gm1-pw-btn').click()">
-      <br><button id="gm1-pw-btn" onclick="if(document.querySelector('#gm1-pw').value==='1234'){document.querySelector('#gm1-lock').style.display='none';document.querySelector('#gm1-content').style.display='block';sessionStorage.setItem('gm1_auth','1')}else{document.querySelector('#gm1-pw').style.borderColor='var(--warm)';document.querySelector('#gm1-pw').value=''}" style="margin-top:12px;padding:10px 28px;font-size:14px;font-weight:700;border-radius:8px;background:var(--accent);color:#fff;border:none;cursor:pointer;font-family:inherit;">확인</button>
+      <br><button id="gm1-pw-btn" onclick="if(document.querySelector('#gm1-pw').value===window.GM1_PW){document.querySelector('#gm1-lock').style.display='none';document.querySelector('#gm1-content').style.display='block';sessionStorage.setItem('gm1_auth','1')}else{document.querySelector('#gm1-pw').style.borderColor='var(--warm)';document.querySelector('#gm1-pw').value=''}" style="margin-top:12px;padding:10px 28px;font-size:14px;font-weight:700;border-radius:8px;background:var(--accent);color:#fff;border:none;cursor:pointer;font-family:inherit;">확인</button>
     </div>
     <div id="gm1-content" style="display:none;">
     <div class="doc-header"><h2><span class="g-id">G1</span>김남욱 GM</h2><div class="meta">할 일 · 루틴 · 건강 · 목표 통합</div></div>
@@ -4071,10 +4071,13 @@ Start-Process python -ArgumentList telegram_bot\daily_scheduler.py -WorkingDirec
       var RELAY_URL='https://script.google.com/macros/s/AKfycbxDwFkrxK1YIaEoSNcuw2MiHiZQ-7o5N6311ytksSyeEd86ZFOhLknOWqQgNArQvZ-7/exec';
       function dec(){try{return JSON.parse(localStorage.getItem('gm1_review_decisions')||'{}');}catch(e){return {};}}
       function save(id,v){var d=dec();d[id]={decision:v,at:new Date().toISOString()};localStorage.setItem('gm1_review_decisions',JSON.stringify(d));}
-      function relay(id,decision){
-        var status=decision==='approve'?'승인':'반려';
+      function clearDec(id){var d=dec();delete d[id];localStorage.setItem('gm1_review_decisions',JSON.stringify(d));}
+      function relayStatus(id,status){
         var qs='action=review_set_status&id='+encodeURIComponent(id)+'&status='+encodeURIComponent(status)+'&key=';
         return fetch(RELAY_URL+'?'+qs,{redirect:'follow'}).then(function(r){return r.json();});
+      }
+      function relay(id,decision){
+        return relayStatus(id,decision==='approve'?'승인':'반려');
       }
       function esc(s){return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
       function isDone(st){return st==='발행완료'||st==='approved'||st==='승인'||st==='rejected'||st==='반려';}
@@ -4103,8 +4106,10 @@ Start-Process python -ArgumentList telegram_bot\daily_scheduler.py -WorkingDirec
           var inner='<summary style="cursor:pointer;font-size:13px;color:var(--dim);font-weight:600;">처리완료 '+done.length+'건 (펼쳐 보기)</summary><div style="padding-top:10px;display:flex;flex-direction:column;gap:10px;">';
           done.forEach(function(it){
             var e=(it.status==='발행완료'||it.status==='발행실패')?it.status:((d[it.id]&&d[it.id].decision)||it.status);
+            var isPub=(it.status==='발행완료'||!!it.post_url);
             inner+='<div style="border-top:1px solid rgba(183,159,138,0.12);padding-top:8px;font-size:12.5px;"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px;"><strong>'+esc(it.title)+'</strong>'+badgeOf(e)+'</div>';
             if(it.post_url)inner+='<div style="margin-top:4px;"><a href="'+esc(it.post_url)+'" target="_blank" style="color:var(--accent);font-size:12px;">게시물 보기 ↗</a></div>';
+            inner+='<div style="display:flex;align-items:center;gap:8px;margin-top:6px;flex-wrap:wrap;"><button data-restore="'+esc(it.id)+'" style="background:none;color:var(--dim);border:1px solid var(--border);border-radius:8px;padding:5px 10px;font-size:11.5px;cursor:pointer;font-family:inherit;">↩ 복원</button>'+(isPub?'<span style="font-size:11px;color:var(--dim-soft);">(표시만 검수대기로 · 게시물은 유지)</span>':'')+'</div>';
             inner+='<details style="margin-top:4px;"><summary style="cursor:pointer;font-size:11.5px;color:var(--dim);">캡션·미리보기 보기</summary>'+(it.preview?'<img src="'+esc(it.preview)+'" style="width:100%;border-radius:6px;margin-top:6px;" loading="lazy">':'')+(it.caption?'<div style="font-size:12px;color:var(--text-soft);white-space:pre-wrap;line-height:1.6;padding-top:6px;">'+esc(it.caption)+'</div>':'')+'</details></div>';
           });
           inner+='</div>';
@@ -4112,6 +4117,8 @@ Start-Process python -ArgumentList telegram_bot\daily_scheduler.py -WorkingDirec
         }
         list.querySelectorAll('button[data-act]').forEach(function(b){b.addEventListener('click',function(){
           var id=b.getAttribute('data-id');var act=b.getAttribute('data-act');
+          var okMsg=act==='approve'?'이 콘텐츠를 승인(발행 요청)할까요?':'이 콘텐츠를 반려할까요?';
+          if(!confirm(okMsg))return;
           var sib=b.parentNode.querySelectorAll('button[data-act]');
           for(var i=0;i<sib.length;i++){sib[i].disabled=true;}
           b.textContent=act==='approve'?'승인 전송 중…':'반려 전송 중…';
@@ -4123,6 +4130,20 @@ Start-Process python -ArgumentList telegram_bot\daily_scheduler.py -WorkingDirec
           }).catch(function(){
             for(var i=0;i<sib.length;i++){sib[i].disabled=false;}render(window.__cmopub_rv||[]);
             alert('네트워크 오류 — GitHub 기록 실패. 로컬 표시만 유지됩니다.');
+          });
+        });});
+        list.querySelectorAll('button[data-restore]').forEach(function(b){b.addEventListener('click',function(){
+          var id=b.getAttribute('data-restore');
+          if(!confirm('이 항목을 검수 대기로 되돌릴까요?\n(이미 발행된 게시물은 그대로 유지됩니다)'))return;
+          b.disabled=true;b.textContent='복원 중…';
+          clearDec(id);
+          relayStatus(id,'검수 대기').then(function(res){
+            if(res&&res.ok){load();}
+            else{b.disabled=false;b.textContent='↩ 복원';render(window.__cmopub_rv||[]);
+              alert('중계 실패: '+((res&&res.error)||'알 수 없음')+'\n(로컬 결정은 이미 취소되었습니다)');}
+          }).catch(function(){
+            b.disabled=false;b.textContent='↩ 복원';render(window.__cmopub_rv||[]);
+            alert('네트워크 오류 — 상태 되돌리기 실패. 로컬 결정만 취소되었습니다.');
           });
         });});
       }
@@ -6278,7 +6299,7 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
 
     window.ntDeleteSaved = function(mode, id){
       var pw = prompt('삭제 비밀번호를 입력하세요');
-      if(pw !== '1234') { if(pw !== null) alert('비밀번호가 틀립니다.'); return; }
+      if(pw !== window.GM1_PW) { if(pw !== null) alert('비밀번호가 틀립니다.'); return; }
       var arr = ntGetSaved(mode);
       arr = arr.filter(function(item){ return item.id !== id; });
       ntSetSaved(mode, arr);
@@ -6324,6 +6345,9 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
       if (d.dataset.wasClosed) { d.open = false; delete d.dataset.wasClosed; }
     });
   });
+
+  // 김남욱GM 전용 비밀번호 — 진입·삭제 단일 출처(SSOT). 값 변경 시 이 한 곳만 수정.
+  window.GM1_PW = '1234';
 
   // 김남욱GM 세션 인증 복원
   if (sessionStorage.getItem('gm1_auth') === '1') {
@@ -7018,6 +7042,9 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
         else if (act === 'delete') {
           var t = gm1Load().find(function(x){ return x.id === id; });
           if (t && confirm('"' + t.title + '" 항목을 삭제하시겠습니까?')) {
+            var pw = prompt('삭제 비밀번호를 입력하세요 (페이지 진입 비밀번호와 동일)');
+            if (pw === null) { return; }
+            if (pw !== window.GM1_PW) { alert('비밀번호가 틀립니다.'); return; }
             gm1DeleteTask(id);
           } else { return; }
         }
@@ -7338,6 +7365,9 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
         var id    = document.getElementById('gm1CalEditId').value;
         var title = document.getElementById('gm1CalFTitle').value;
         if (id && confirm('"' + title + '" 일정을 삭제하시겠습니까?')) {
+          var pw = prompt('삭제 비밀번호를 입력하세요 (페이지 진입 비밀번호와 동일)');
+          if (pw === null) { return; }
+          if (pw !== window.GM1_PW) { alert('비밀번호가 틀립니다.'); return; }
           gm1DeleteTask(id);
           gm1CalCloseModal();
           gm1CalRender();
