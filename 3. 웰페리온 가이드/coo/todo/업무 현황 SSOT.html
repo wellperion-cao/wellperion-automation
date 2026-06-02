@@ -615,6 +615,17 @@ function buildFilters() {
 function setSortBy(s) { activeSortBy = s; renderTasks(); }
 function setSearchQuery(q) { searchQuery = q; renderTasks(); }
 
+/* 검색 일치 여부 — 진행중·보류·완료 로그 모두 동일 기준 적용 (검색어 없으면 전부 통과) */
+function matchesSearch(t) {
+  if (!searchQuery || !searchQuery.trim()) return true;
+  const q = searchQuery.trim().toLowerCase();
+  const _p = parseContent(t.content || '');
+  const _lg = (_p.logs || []).map(function(l){ return (l.date||'') + ' ' + (l.text||''); }).join(' ');
+  const _bd = _p.budget ? (_p.budget.category + ' ' + _p.budget.amount) : '';
+  const blob = [t.title, t.owner, t.category, _p.body, _p.plan, _p.result, _lg, _bd].filter(Boolean).join(' ').toLowerCase();
+  return blob.includes(q);
+}
+
 /* ─── 공유 링크 / 딥링크 (2026-06-01 GM) ─── */
 let _deepLinkId = null;
 let _initApplied = false;
@@ -709,7 +720,10 @@ function setCatFilter(v, btn) {
 function apiCall(params) {
   const qs = Object.keys(params).map(k => encodeURIComponent(k) + '=' + encodeURIComponent(params[k])).join('&');
   return fetch(TODO_API_URL + '?' + qs, { redirect: 'follow' })
-    .then(r => r.json());
+    .then(r => {
+      if (!r.ok) throw new Error('HTTP ' + r.status);  // 오류 응답을 성공으로 오판하지 않도록
+      return r.json();
+    });
 }
 
 async function loadTasks() {
@@ -805,17 +819,8 @@ function renderTasks() {
   if (activeCatFilter !== '전체') {
     filtered = filtered.filter(t => t.category === activeCatFilter);
   }
-  // 검색 필터
-  if (searchQuery && searchQuery.trim()) {
-    const q = searchQuery.trim().toLowerCase();
-    filtered = filtered.filter(t => {
-      const _p = parseContent(t.content || '');
-      const _lg = (_p.logs || []).map(function(l){ return (l.date||'') + ' ' + (l.text||''); }).join(' ');
-      const _bd = _p.budget ? (_p.budget.category + ' ' + _p.budget.amount) : '';
-      const blob = [t.title, t.owner, t.category, _p.body, _p.plan, _p.result, _lg, _bd].filter(Boolean).join(' ').toLowerCase();
-      return blob.includes(q);
-    });
-  }
+  // 검색 필터 (active)
+  filtered = filtered.filter(matchesSearch);
 
   if (filtered.length === 0 && done.length === 0) {
     el.innerHTML = '<div class="empty-msg">등록된 업무가 없습니다.<br>아래 "+ 업무 추가" 버튼으로 시작하세요.</div>';
@@ -917,6 +922,7 @@ function filterDone(done) {
   if (activeCatFilter !== '전체') {
     filtered = filtered.filter(t => t.category === activeCatFilter);
   }
+  filtered = filtered.filter(matchesSearch);  // 완료 로그도 검색 일치 적용 (빈상태 혼동 방지)
   return filtered;
 }
 
@@ -944,6 +950,7 @@ function filterByStatus(list) {
   if (activeCatFilter !== '전체') {
     filtered = filtered.filter(t => t.category === activeCatFilter);
   }
+  filtered = filtered.filter(matchesSearch);  // 보류 로그도 검색 일치 적용
   return filtered;
 }
 
@@ -1286,7 +1293,8 @@ const BUDGET_CATEGORIES = [
   '계약·정기 약정',
   'IT·소프트웨어',
   '급여·인건비·외주·교육',
-  '장비 구매·교체'
+  '장비 구매·교체',
+  '시설물 리뉴얼(공간 디자인)'
 ];
 
 function routeApproval(category, amount) {
@@ -1305,6 +1313,7 @@ function routeApproval(category, amount) {
     case 'IT·소프트웨어':
     case '급여·인건비·외주·교육':
     case '장비 구매·교체':
+    case '시설물 리뉴얼(공간 디자인)':
       return ['GM'];
     default:
       return [];
@@ -1887,7 +1896,7 @@ function openDateRangePicker(id, startVal, endVal) {
     + '<div class="modal-header"><h3>일정 변경</h3></div>'
     + '<div class="field"><label>시작일</label><input type="date" id="drpStart" value="' + (startVal ? startVal.slice(0,10) : '') + '"></div>'
     + '<div class="field"><label>종료일</label><input type="date" id="drpEnd" value="' + (endVal ? endVal.slice(0,10) : '') + '"></div>'
-    + '<div class="modal-actions"><button class="btn primary" id="drpSave">저장</button><button class="btn" onclick="this.closest(\'.modal-overlay\').remove()">취소</button></div>'
+    + '<div class="modal-actions"><button class="modal-btn cancel" onclick="this.closest(\'.modal-overlay\').remove()">취소</button><button class="modal-btn save" id="drpSave">저장</button></div>'
     + '</div>';
   document.body.appendChild(overlay);
   // 바깥 클릭으로 닫지 않음 — [취소] 버튼으로만 닫기 (2026-05-30 COO 작성 유실 방지)
@@ -2159,17 +2168,17 @@ function renderDashboard() {
 
   // Category distribution
   h += '<h3>카테고리별 분포</h3>';
-  const catBarColors = ['blue','purple','accent','green','yellow','red'];
   h += '<table class="dash-table"><tr><th>카테고리</th><th>건수</th><th>비율</th><th style="min-width:120px">분포</th></tr>';
   CATEGORIES.forEach((cat, ci) => {
     const count = all.filter(t => t.category === cat).length;
     const pct = total > 0 ? Math.round(count / total * 100) : 0;
-    const barColor = catBarColors[ci % catBarColors.length];
+    // 카테고리 칩과 동일 색상 사용 — 8개 카테고리 색상 정확 일치 (색상 배열 모듈로 중복 제거)
+    const barColor = (CAT_COLORS[cat] && CAT_COLORS[cat].color) || 'var(--accent)';
     h += '<tr>';
     h += '<td>' + esc(cat) + '</td>';
     h += '<td>' + count + '건</td>';
     h += '<td>' + pct + '%</td>';
-    h += '<td><div class="dash-bar-wrap"><div class="dash-bar ' + barColor + '" style="width:' + pct + '%"></div></div></td>';
+    h += '<td><div class="dash-bar-wrap"><div class="dash-bar" style="width:' + pct + '%;background:' + barColor + '"></div></div></td>';
     h += '</tr>';
   });
   h += '</table>';
