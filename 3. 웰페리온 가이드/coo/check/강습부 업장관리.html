@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="업장점검">
+<title>웰페리온 업장점검</title>
+<style>
+  :root{
+    color-scheme: light;
+    --bg:#f4f3ef; --surface:#ffffff; --surface-2:#faf9f6;
+    --ink:#1f1e1b; --ink-soft:#6c6961; --ink-faint:#9a978e;
+    --line:#e7e4dc; --line-soft:#efece4;
+    --gold:#a98a52; --gold-deep:#8a6f3f;
+    --navy:#22324a;
+    --green:#3c7a4a; --green-bg:#e9f1ea;
+    --red:#b14238; --red-bg:#f6e6e4;
+    --amber:#b07d24; --amber-bg:#f6efdd;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  html,body{background:var(--bg);color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",sans-serif;
+    font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:520px;margin:0 auto;padding:0 14px 120px}
+
+  header{background:linear-gradient(180deg,#262524 0%,#1c1b1a 100%);color:#f3f1ec;padding:18px 0 16px;
+    position:sticky;top:0;z-index:20}
+  .hd-inner{max-width:520px;margin:0 auto;padding:0 16px}
+  .hd-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+  .db-btn{flex:0 0 auto;display:inline-flex;align-items:center;gap:6px;font-family:inherit;
+    font-size:12px;font-weight:700;cursor:pointer;border:1px solid var(--gold);background:rgba(169,138,82,.16);
+    color:#e7cf9a;border-radius:9px;padding:8px 12px;white-space:nowrap;transition:opacity .12s;text-decoration:none}
+  .db-btn:active{opacity:.7}
+  .brand{display:flex;align-items:baseline;gap:9px;flex-wrap:wrap}
+  .brand .mark{font-size:11px;letter-spacing:.26em;color:var(--gold);font-weight:600;text-transform:uppercase}
+  .brand h1{font-size:18px;font-weight:700;letter-spacing:-.01em}
+  .hd-sub{color:#a6a39a;font-size:12px;margin-top:4px}
+
+  .meta-card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 15px;margin-top:16px}
+  .field{display:flex;flex-direction:column;gap:6px;margin-bottom:11px}
+  .field:last-child{margin-bottom:0}
+  .field label{font-size:12px;font-weight:700;color:var(--ink-soft)}
+  .field input{font-family:inherit;font-size:15px;color:var(--ink);background:var(--surface-2);
+    border:1px solid var(--line);border-radius:9px;padding:11px 12px;outline:none}
+  .field input:focus{border-color:var(--gold);background:#fff}
+  .row2{display:flex;gap:10px}
+  .row2 .field{flex:1}
+
+  .sec{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:15px 15px 13px;margin-top:13px;
+    overflow:hidden}
+  .sec.common{border-top:3px solid var(--navy)}
+  .sec.venue{border-top:3px solid var(--gold)}
+  .sec-h{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}
+  .sec-h .nm{display:flex;align-items:center;gap:9px;font-size:16px;font-weight:750}
+  .sec-h .seq{flex:0 0 24px;height:24px;border-radius:7px;background:var(--gold);color:#fff;
+    font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center}
+  .sec.common .seq{background:var(--navy)}
+  .sec-h .st{font-size:11.5px;font-weight:700;padding:4px 10px;border-radius:20px;white-space:nowrap}
+  .st.ok{background:var(--green-bg);color:var(--green)}
+  .st.warn{background:var(--amber-bg);color:var(--amber)}
+
+  .chk{display:flex;align-items:center;gap:11px;padding:11px 4px;border-bottom:1px solid var(--line-soft);
+    cursor:pointer;user-select:none}
+  .chk:last-of-type{border-bottom:none}
+  .chk .box{flex:0 0 24px;height:24px;border-radius:7px;border:1.8px solid var(--line);background:var(--surface-2);
+    display:flex;align-items:center;justify-content:center;font-size:15px;color:#fff;transition:all .12s}
+  .chk.on .box{background:var(--green);border-color:var(--green)}
+  .chk .ct{font-size:14.5px;font-weight:550;flex:1}
+  .chk.on .ct{color:var(--ink-soft)}
+
+  .issue{margin-top:11px}
+  .issue label{display:block;font-size:11.5px;font-weight:700;color:var(--gold-deep);margin-bottom:6px}
+  .issue textarea{width:100%;font-family:inherit;font-size:14px;color:var(--ink);background:var(--surface-2);
+    border:1px solid var(--line);border-radius:9px;padding:10px 11px;outline:none;resize:vertical;min-height:46px;line-height:1.5}
+  .issue textarea:focus{border-color:var(--gold);background:#fff}
+  .issue textarea.has{background:#fff;border-color:var(--amber)}
+
+  .footbar{position:fixed;left:0;right:0;bottom:0;background:rgba(244,243,239,.92);
+    backdrop-filter:blur(8px);border-top:1px solid var(--line);padding:12px 14px calc(12px + env(safe-area-inset-bottom));z-index:30}
+  .footbar .inner{max-width:520px;margin:0 auto;display:flex;align-items:center;gap:12px}
+  .prog-wrap{flex:1}
+  .prog-txt{font-size:11.5px;color:var(--ink-soft);font-weight:600;margin-bottom:5px}
+  .prog{height:7px;background:var(--line);border-radius:20px;overflow:hidden}
+  .prog>span{display:block;height:100%;background:var(--gold);border-radius:20px;transition:width .2s}
+  .btn{font-family:inherit;font-size:15px;font-weight:700;cursor:pointer;border-radius:11px;
+    padding:13px 20px;border:none;background:var(--gold);color:#fff;transition:opacity .12s;white-space:nowrap}
+  .btn:active{opacity:.8}
+  .btn:disabled{opacity:.45;cursor:default}
+
+  .toast{position:fixed;left:50%;bottom:96px;transform:translateX(-50%) translateY(20px);
+    background:var(--navy);color:#fff;font-size:13.5px;font-weight:600;padding:12px 18px;border-radius:11px;
+    box-shadow:0 8px 24px rgba(0,0,0,.22);opacity:0;pointer-events:none;transition:all .25s;z-index:40;max-width:90%;text-align:center}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  .toast.err{background:var(--red)}
+
+  .setup-note{background:var(--amber-bg);border:1px solid #e8d49a;border-radius:11px;padding:12px 14px;
+    font-size:12.5px;color:#7a5a16;margin-top:13px;line-height:1.55}
+  .setup-note b{font-weight:700}
+  .done-banner{display:none;background:var(--green-bg);border:1px solid #bcd9bf;border-radius:11px;
+    padding:11px 14px;font-size:12.5px;color:#3c6442;margin-top:13px;font-weight:600}
+  .done-banner.show{display:block}
+</style>
+</head>
+<body>
+<header>
+  <div class="hd-inner">
+    <div class="hd-top">
+      <div class="brand">
+        <span class="mark">Wellperion</span>
+        <h1>업장점검</h1>
+      </div>
+      <a class="db-btn" id="dbBtn" href="#">▦ 기록 시트</a>
+    </div>
+    <div class="hd-sub">하루 1회 · 복도 → 필라테스 → 헬스장 → 골프장 → 수영장 → 체조장 → 스쿼시장</div>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="meta-card">
+    <div class="row2">
+      <div class="field">
+        <label>점검일</label>
+        <input type="date" id="f_date">
+      </div>
+      <div class="field">
+        <label>점검자</label>
+        <input type="text" id="f_name" placeholder="이름" autocomplete="name">
+      </div>
+    </div>
+  </div>
+
+  <div id="sections"></div>
+
+  <div class="done-banner" id="doneBanner">✓ 오늘 점검이 기록되었습니다. 수정 후 다시 전송하면 덮어쓰기 됩니다.</div>
+
+  <div class="setup-note" id="setupNote">
+    <b>최초 1회 설정 필요</b> — 아직 구글 시트 주소가 연결되지 않았습니다. 함께 드린 <b>설치 안내서</b>대로 Apps Script 주소를 입력하면 제출 시 시트에 자동 기록됩니다. (지금도 작성·확인은 가능합니다.)
+  </div>
+</main>
+
+<div class="footbar">
+  <div class="inner">
+    <div class="prog-wrap">
+      <div class="prog-txt" id="progTxt">점검 0 / 21</div>
+      <div class="prog"><span id="progBar" style="width:0%"></span></div>
+    </div>
+    <button class="btn" id="submitBtn">전송</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+"use strict";
+
+/* ====== 설정 ====== */
+/* 1) 설치 안내서대로 발급받은 Apps Script 웹앱 URL */
+var ENDPOINT = "";
+/* 예: var ENDPOINT = "https://script.google.com/macros/s/AKfy....../exec"; */
+
+/* 2) 기록용 구글 스프레드시트 주소 (우측 상단 '기록 시트' 버튼이 여는 곳) */
+var SHEET_URL = "https://docs.google.com/spreadsheets/d/19fyGlLvYjO_PWZGGxPa6S33PJ0dn5nwvBrdqYNPK7oI/edit?gid=0#gid=0";
+/* 예: var SHEET_URL = "https://docs.google.com/spreadsheets/d/..../edit"; */
+
+/* ====== 점검 항목 정의 (순서 = 순회 순서) ====== */
+var ITEMS = ["정리정돈","홍보물","청결","조명 및 냉난방"];
+var SECTIONS = [
+  {id:"hallway",    kind:"common", name:"복도",     items:ITEMS},
+  {id:"pilates",    kind:"venue",  name:"필라테스", items:ITEMS},
+  {id:"gym",        kind:"venue",  name:"헬스장",   items:ITEMS},
+  {id:"golf",       kind:"venue",  name:"골프장",   items:ITEMS},
+  {id:"pool",       kind:"venue",  name:"수영장",   items:ITEMS},
+  {id:"gymnastics", kind:"venue",  name:"체조장",   items:ITEMS},
+  {id:"squash",     kind:"venue",  name:"스쿼시장", items:ITEMS}
+];
+
+var TOTAL_ITEMS = SECTIONS.reduce(function(s,x){return s+x.items.length;},0);
+var state = {}; // id -> {checks:[bool], issue:""}
+
+function esc(s){return String(s==null?"":s).replace(/[&<>"']/g,function(c){
+  return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];});}
+function todayStr(){var d=new Date();var p=function(n){return(n<10?"0":"")+n;};
+  return d.getFullYear()+"-"+p(d.getMonth()+1)+"-"+p(d.getDate());}
+
+/* ====== 렌더 ====== */
+function render(){
+  var seq=0;
+  var html=SECTIONS.map(function(sec){
+    state[sec.id]=state[sec.id]||{checks:sec.items.map(function(){return false;}),issue:""};
+    var label = ++seq;
+    var items=sec.items.map(function(it,i){
+      return '<div class="chk" data-sec="'+sec.id+'" data-i="'+i+'">'+
+        '<div class="box">✓</div><div class="ct">'+esc(it)+'</div></div>';
+    }).join("");
+    return '<div class="sec '+sec.kind+'" id="sec_'+sec.id+'">'+
+      '<div class="sec-h"><div class="nm"><span class="seq">'+label+'</span>'+esc(sec.name)+'</div>'+
+      '<span class="st warn" id="st_'+sec.id+'">미점검</span></div>'+
+      items+
+      '<div class="issue"><label>이슈사항 (주관식)</label>'+
+      '<textarea data-sec="'+sec.id+'" placeholder="특이사항이 있으면 적어주세요. 없으면 비워두세요."></textarea></div>'+
+      '</div>';
+  }).join("");
+  document.getElementById("sections").innerHTML=html;
+
+  document.querySelectorAll(".chk").forEach(function(el){
+    el.addEventListener("click",function(){
+      var sid=el.getAttribute("data-sec"),i=+el.getAttribute("data-i");
+      state[sid].checks[i]=!state[sid].checks[i];
+      el.classList.toggle("on",state[sid].checks[i]);
+      updateSec(sid);updateProg();
+    });
+  });
+  document.querySelectorAll(".issue textarea").forEach(function(ta){
+    ta.addEventListener("input",function(){
+      var sid=ta.getAttribute("data-sec");
+      state[sid].issue=ta.value;
+      ta.classList.toggle("has",ta.value.trim().length>0);
+      updateSec(sid);
+    });
+  });
+}
+
+function updateSec(sid){
+  var sec=SECTIONS.filter(function(s){return s.id===sid;})[0];
+  var st=state[sid];
+  var done=st.checks.filter(Boolean).length, tot=st.checks.length;
+  var hasIssue=st.issue.trim().length>0;
+  var el=document.getElementById("st_"+sid);
+  if(done===0 && !hasIssue){el.className="st warn";el.textContent="미점검";}
+  else if(hasIssue){el.className="st warn";el.textContent="이슈 "+done+"/"+tot;}
+  else if(done===tot){el.className="st ok";el.textContent="이상없음";}
+  else{el.className="st warn";el.textContent=done+"/"+tot;}
+}
+
+function updateProg(){
+  var done=0;SECTIONS.forEach(function(s){done+=state[s.id].checks.filter(Boolean).length;});
+  document.getElementById("progTxt").textContent="점검 "+done+" / "+TOTAL_ITEMS;
+  document.getElementById("progBar").style.width=Math.round(done/TOTAL_ITEMS*100)+"%";
+}
+
+/* ====== 전송 ====== */
+function buildPayload(){
+  var rec={
+    date:document.getElementById("f_date").value||todayStr(),
+    inspector:document.getElementById("f_name").value.trim(),
+    sections:{}
+  };
+  SECTIONS.forEach(function(sec){
+    var st=state[sec.id];
+    var checked=sec.items.filter(function(it,i){return st.checks[i];});
+    var done=st.checks.filter(Boolean).length, tot=st.checks.length;
+    rec.sections[sec.id]={
+      name:sec.name,
+      status: done===tot ? "이상없음" : (done+"/"+tot),
+      checked:done, total:tot,
+      issue:st.issue.trim()
+    };
+  });
+  return rec;
+}
+
+function toast(msg,isErr){
+  var t=document.getElementById("toast");
+  t.textContent=msg;t.className="toast show"+(isErr?" err":"");
+  setTimeout(function(){t.className="toast";},2600);
+}
+
+function saveLocal(){
+  try{localStorage.setItem("wp_inspect_name",document.getElementById("f_name").value);}catch(e){}
+}
+
+async function submit(){
+  var name=document.getElementById("f_name").value.trim();
+  if(!name){toast("점검자 이름을 입력해 주세요.",true);document.getElementById("f_name").focus();return;}
+  saveLocal();
+  var payload=buildPayload();
+  var btn=document.getElementById("submitBtn");
+
+  if(!ENDPOINT){
+    // 미연결 상태 — 페이로드를 콘솔에 남기고 안내
+    console.log("점검 결과(미전송):",JSON.stringify(payload,null,2));
+    toast("구글 시트가 아직 연결되지 않았습니다. 안내서 참고",true);
+    return;
+  }
+
+  btn.disabled=true;btn.textContent="전송 중…";
+  try{
+    // text/plain 으로 보내 CORS preflight 회피
+    var res=await fetch(ENDPOINT,{
+      method:"POST",
+      headers:{"Content-Type":"text/plain;charset=utf-8"},
+      body:JSON.stringify(payload)
+    });
+    var txt=await res.text();
+    var ok=false;try{ok=JSON.parse(txt).ok===true;}catch(e){ok=res.ok;}
+    if(ok){
+      toast("✓ 구글 시트에 기록되었습니다.");
+      document.getElementById("doneBanner").classList.add("show");
+    }else{
+      toast("전송 실패: "+txt.slice(0,80),true);
+    }
+  }catch(e){
+    toast("전송 오류:
