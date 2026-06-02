@@ -44,7 +44,8 @@ import json
 import re
 import subprocess
 import sys
-from datetime import datetime, timezone
+import urllib.request
+from datetime import datetime, timezone, timedelta
 from pathlib import Path
 
 # Windows 한글 안전 출력
@@ -67,6 +68,19 @@ PLAN_DIR = STATUS_DIR / "morning_plans"          # 산출물: 일자별 계획 J
 # telegram_notifier import 경로
 if str(PACKAGE_ROOT) not in sys.path:
     sys.path.insert(0, str(PACKAGE_ROOT))
+
+# ── C-Level 닉네임 (spec ③ — 모든 항목 끝에 [닉네임] 부착) ─────────────────────
+CLEVEL_NICK = {
+    "CEO": "웰리",
+    "CFO": "시뽀",
+    "CHRO": "시로",
+    "CMO": "시모",
+    "COO": "시우",
+    "CPO": "시포",
+    "CTO": "시토",
+    "GM": "GM",
+    "GM1": "GM",
+}
 
 # ── R/R 매핑 (CLAUDE.md §1 + project_ai_clevel_to_practitioner_mapping) ───────
 CLEVEL_DOMAIN = {
@@ -152,6 +166,169 @@ def already_ran_today() -> bool:
     return today_marker().exists()
 
 
+# ── G1 SSOT API (가이드허브 gm1FetchSsot 동일 로직) ─────────────────────────
+# URL은 가이드허브 SSOT_API_URL 상수와 동일. stdout/텔레그램 노출 금지.
+_G1_API = (
+    "https://script.google.com/macros/s/"
+    "AKfycbxDwFkrxK1YIaEoSNcuw2MiHiZQ-7o5N6311ytksSyeEd86ZFOhLknOWqQgNArQvZ-7"
+    "/exec?action=todo_list"
+)
+
+# 담당자 필드에서 G1 합류 대상 판정용 패턴 (가이드허브 gm1FetchSsot 100% 동일)
+_OWNER_GM_RE = re.compile(r"김남욱\s*GM")
+_OWNER_CLEVEL_RE = re.compile(r"AI\s+(CEO|CMO|CTO|COO|CFO|CPO|CHRO)")
+_OWNER_NICK_RE = re.compile(r"웰리|시모|시토|시우|시뽀|시포|시로")
+
+
+def _ssot_date_local(v: object) -> str:
+    """Apps Script ISO datetime → KST YYYY-MM-DD 변환 (가이드허브 ssotDateLocal 동일)."""
+    if not v:
+        return ""
+    s = str(v)
+    if re.match(r"^\d{4}-\d{2}-\d{2}$", s):
+        return s
+    try:
+        dt = datetime.fromisoformat(s.replace("Z", "+00:00"))
+        kst = dt.astimezone(timezone(timedelta(hours=9)))
+        return kst.strftime("%Y-%m-%d")
+    except Exception:
+        return s[:10]
+
+
+def fetch_g1_ssot() -> dict | None:
+    """
+    가이드허브 gm1FetchSsot()와 동일한 필터로 G1 SSOT 데이터를 수집한다.
+
+    반환: {
+        "gm_decision":   [{"title", "task_id", "owner", "disposition_reason"}],  # 결재 대기
+        "today_tasks":   [{"title", "task_id", "owner", "status", "start_date"}], # 오늘 할 일
+        "done_today":    [{"title", "task_id", "owner"}],  # 오늘 완료 (수정일=오늘)
+        "done_yesterday":[{"title", "task_id", "owner"}],  # 어제 완료 (수정일=어제)
+    }
+    네트워크/파싱 실패 시 None 반환 → 호출부에서 fallback.
+    """
+    try:
+        req = urllib.request.Request(
+            _G1_API,
+            headers={"User-Agent": "Mozilla/5.0 (CEO-morning-pipeline)"},
+        )
+        with urllib.request.urlopen(req, timeout=20) as resp:
+            raw = resp.read().decode("utf-8")
+        data = json.loads(raw)
+        if not data.get("ok") or not isinstance(data.get("data"), list):
+            print("[WARN] G1 SSOT API 응답 형식 이상 — fallback", file=sys.stderr)
+            return None
+    except Exception as exc:
+        print(f"[WARN] G1 SSOT API 호출 실패: {exc} — fallback", file=sys.stderr)
+        return None
+
+    today = datetime.now().strftime("%Y-%m-%d")
+    yesterday = (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d")
+
+    gm_decision: list[dict] = []
+    today_tasks: list[dict] = []
+    done_today: list[dict] = []
+    done_yesterday: list[dict] = []
+
+    for row in data["data"]:
+        owner = str(row.get("담당자") or "")
+        title = str(row.get("업무명") or "").strip()
+        if not title:
+            continue
+
+        apr = str(row.get("결재상태") or "")
+        gm_sign = row.get("GM싸인")
+        sd = _ssot_date_local(row.get("시작일"))
+        mod = _ssot_date_local(row.get("수정일"))
+        st = str(row.get("상태") or "")
+        task_id = str(row.get("id") or "")
+
+        # ① 결재 대기: GM싸인 없음 AND 결재상태∈{대기,"부서장"포함} — 날짜 무관 항상
+        needs_gm = (not gm_sign) and apr and (apr == "대기" or "부서장" in apr)
+        if needs_gm:
+            gm_decision.append({
+                "title": "[결재] " + title,
+                "task_id": task_id,
+                "owner": owner,
+                "disposition": "GM_DECISION",
+                "disposition_reason": "결재 대기 — GM 직접 승인 필요",
+                "source": "g1_ssot",
+            })
+            continue
+
+        # ② G1 합류 조건: 담당자에 김남욱GM / AI C레벨 / 닉네임 포함
+        is_target = (
+            bool(_OWNER_GM_RE.search(owner))
+            or bool(_OWNER_CLEVEL_RE.search(owner))
+            or bool(_OWNER_NICK_RE.search(owner))
+        )
+        if not is_target:
+            continue
+
+        base_item = {
+            "title": title,
+            "task_id": task_id,
+            "owner": owner,
+            "status": st,
+            "start_date": sd,
+            "source": "g1_ssot",
+        }
+
+        if st == "완료":
+            # 완료일 기준: 결재완료시각 > 수정일 순서로 우선 적용
+            done_date = _ssot_date_local(row.get("결재완료시각")) or mod
+            if done_date == today:
+                done_today.append(base_item)
+            elif done_date == yesterday:
+                done_yesterday.append(base_item)
+            # 그 외 완료는 보고 대상 아님 (오염 방지)
+            continue
+
+        if st == "보류":
+            continue
+
+        # ③ 오늘 할 일: 시작일=오늘 OR 상태=진행중 (완료·보류 제외)
+        if sd == today or st == "진행중":
+            # 담당자에서 C레벨 닉네임 추출 (CLEVEL_NICK 매핑용 clevel 키 추가)
+            cl = _infer_clevel_from_owner(owner, title)
+            today_tasks.append({**base_item, "clevel": cl})
+
+    return {
+        "gm_decision": gm_decision,
+        "today_tasks": today_tasks,
+        "done_today": done_today,
+        "done_yesterday": done_yesterday,
+    }
+
+
+def _infer_clevel_from_owner(owner: str, title: str = "") -> str:
+    """담당자 문자열에서 AI C레벨 코드 추출 (없으면 키워드 폴백)."""
+    m = re.search(r"AI\s+(CEO|CMO|CTO|COO|CFO|CPO|CHRO)", owner)
+    if m:
+        return m.group(1)
+    nick_map = {"웰리": "CEO", "시모": "CMO", "시토": "CTO",
+                "시우": "COO", "시뽀": "CFO", "시포": "CPO", "시로": "CHRO"}
+    for nick, cl in nick_map.items():
+        if nick in owner:
+            return cl
+    if "김남욱" in owner or "GM" in owner:
+        return "GM1"
+    # 키워드 폴백 (제목 기반)
+    hay = title.lower()
+    kw = {
+        "CMO": ["마케팅", "인스타", "블로그", "카페", "콘텐츠", "슬라이드", "광고", "ig", "시모"],
+        "CTO": ["인프라", "스크립트", "자동화", "github", "apps script", "배포", "코드", "watcher", "시토"],
+        "COO": ["운영", "시설", "공지", "체크리스트", "점검", "ssot", "리셉션", "시우"],
+        "CFO": ["지출", "재무", "비용", "예산", "정산", "시뽀"],
+        "CHRO": ["인사", "채용", "취업규칙", "근태", "교육", "시로"],
+        "CPO": ["회원", "cs", "컴플레인", "예약", "상담", "시포"],
+    }
+    for c, words in kw.items():
+        if any(w in hay for w in words):
+            return c
+    return "CEO"
+
+
 # ── STAGE 1: 수집 + 모호성 분류 ───────────────────────────────────────────────
 
 def load_queue() -> list[dict]:
@@ -231,7 +408,7 @@ def classify_disposition(item: dict) -> tuple[str, str]:
     return DISP_AUTONOMOUS, ""
 
 
-def summarize_title(title: str, limit: int = 30) -> str:
+def summarize_title(title: str, limit: int = 45) -> str:
     """
     원본 task title을 사람이 읽는 짧은 요약으로 가공 (limit자 이내, 중간 '…' 절단 금지).
 
@@ -282,11 +459,53 @@ def count_table(rows: list[tuple[str, int]]) -> list[str]:
 
 
 def stage1_collect_classify() -> dict:
-    """전체 미결 할일 수집 + 명확/모호 분류. dict 반환."""
+    """
+    전체 미결 할일 수집 + 명확/모호 분류. dict 반환.
+
+    데이터 소스 우선순위 (2026-06-02 G1 SSOT 재배선):
+      1) G1 SSOT API (가이드허브 gm1FetchSsot와 동일 엔드포인트·필터)
+      2) fallback: status/_queue.json + status/{clevel}.json (네트워크 실패 시)
+    """
     git_done = set(git_recent_done())
 
+    g1 = fetch_g1_ssot()
+    if g1 is not None:
+        # ── G1 SSOT 경로 ────────────────────────────────────────────────────
+        print("[STAGE 1] 데이터 소스: G1 SSOT API")
+        gm_decision = g1["gm_decision"]
+        # today_tasks는 전부 AUTONOMOUS (결재 대기는 이미 gm_decision에 분리됨)
+        autonomous: list[dict] = []
+        deep_interview: list[dict] = []
+        for it in g1["today_tasks"]:
+            # 보안 신호가 제목에 포함된 경우 GM_DECISION으로 상향
+            disp, reason = classify_disposition({"title": it.get("title", ""), "note": ""})
+            it["disposition"] = disp
+            it["disposition_reason"] = reason
+            it.setdefault("priority", "NORMAL")
+            if disp == DISP_GM_DECISION:
+                gm_decision.append(it)
+            elif disp == DISP_DEEP_INTERVIEW:
+                deep_interview.append(it)
+            else:
+                autonomous.append(it)
+
+        items_all = gm_decision + autonomous + deep_interview
+        return {
+            "collected": len(items_all),
+            "gm_decision": gm_decision,
+            "autonomous": autonomous,
+            "deep_interview": deep_interview,
+            "clear": autonomous,
+            "git_done_excluded": sorted(git_done),
+            # G1 완료 항목 — build_telegram_report 에서 참조
+            "_g1_done_today": g1["done_today"],
+            "_g1_done_yesterday": g1["done_yesterday"],
+            "_source": "g1_ssot",
+        }
+
+    # ── fallback: 기존 _queue.json + status/{clevel}.json 경로 ────────────
+    print("[STAGE 1] 데이터 소스: fallback (_queue.json)", file=sys.stderr)
     raw: list[dict] = []
-    # 1) _queue.json
     for q in load_queue():
         st = (q.get("status") or "").upper()
         if st in DONE_STATUSES:
@@ -302,12 +521,10 @@ def stage1_collect_classify() -> dict:
             "brief": q.get("brief"),
             "source": "status/_queue.json",
         })
-    # 2) status/{clevel}.json active_tasks
     for t in load_clevel_active():
         t.setdefault("priority", "NORMAL")
         raw.append(t)
 
-    # dedup by task_id (queue 우선 — 먼저 들어온 것 유지)
     seen: set[str] = set()
     items: list[dict] = []
     for it in raw:
@@ -316,7 +533,6 @@ def stage1_collect_classify() -> dict:
             continue
         if tid:
             seen.add(tid)
-        # git 에서 이미 DONE 태그된 task_id 는 제외 (status 미반영 잔류 방지)
         if tid in git_done:
             continue
         items.append(it)
@@ -333,15 +549,16 @@ def stage1_collect_classify() -> dict:
         else:
             autonomous.append(it)
 
-    # 'clear'(자율 진행 가능 = 위임 대상) = autonomous 전용.
-    # GM_DECISION·DEEP_INTERVIEW 는 자동 배정/실행 대상이 아님.
     return {
         "collected": len(items),
         "gm_decision": gm_decision,
         "autonomous": autonomous,
         "deep_interview": deep_interview,
-        "clear": autonomous,        # stage2 배정 입력 (= 자율 진행)
+        "clear": autonomous,
         "git_done_excluded": sorted(git_done),
+        "_g1_done_today": [],
+        "_g1_done_yesterday": [],
+        "_source": "fallback",
     }
 
 
@@ -350,9 +567,19 @@ def stage1_collect_classify() -> dict:
 def infer_clevel(item: dict) -> str:
     """clevel 미지정 시 task_id prefix / 키워드로 추론."""
     cl = (item.get("clevel") or "").upper()
+    # CEO / GM 계열 먼저 처리 (결함 A: CLEVEL_DOMAIN 에 없어서 폴백 오작동 방지)
+    if cl in ("CEO",):
+        return "CEO"
+    if cl in ("GM1", "GM"):
+        return "GM1"
     if cl in CLEVEL_DOMAIN:
         return cl
     tid = (item.get("task_id") or "").upper()
+    # CEO- 또는 GM- prefix 직접 확인
+    if tid.startswith("CEO-") or tid.startswith("CEO"):
+        return "CEO"
+    if tid.startswith("GM1-") or tid.startswith("GM-"):
+        return "GM1"
     for c in CLEVEL_ORDER:
         if tid.startswith(c + "-") or tid.startswith(c):
             return c
@@ -498,50 +725,194 @@ def stage3_orchestrate(assigned: list[dict]) -> dict:
 # 동그라미 번호 (제목 잘림 없는 짧은 요약과 함께 사용)
 CIRCLED = ["①", "②", "③", "④", "⑤", "⑥", "⑦", "⑧", "⑨", "⑩"]
 
+# 어제 완료 → 오늘 이어서 할 일 후속 신호 키워드 (spec ⑤)
+FOLLOWUP_SIGNALS = ["내일", "오늘 .*예정", "실측 예정", "재요청", "후속", "다음 단계", "예정", "재개"]
+_FOLLOWUP_RE = re.compile("|".join(FOLLOWUP_SIGNALS))
+
 
 def _circled(i: int) -> str:
     return CIRCLED[i - 1] if 1 <= i <= len(CIRCLED) else f"{i}."
 
 
+def yesterday_done() -> tuple[list[str], list[dict]]:
+    """
+    어제(로컬 날짜-1) 완료 항목 수집 (spec ①).
+    반환: (git_commits, queue_items)
+      git_commits: 어제자 git 커밋 제목 목록 (auto(changelog) 제외) — 건수 집계용 아님, 참고용
+      queue_items: _queue.json 에서 processed_at=어제인 DONE 항목 — 건수·대표·후속 추출 기준
+    결함 C: 어제 마무리 건수·대표는 queue_items 만 사용 (git 커밋 다중 = 무의미).
+    결함 B: extract_followups 는 queue_items 만 받는다.
+    """
+    from datetime import timedelta
+    yesterday = (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d")
+    git_commits: list[str] = []
+    queue_items: list[dict] = []
+
+    # git 커밋 (어제자) — 참고용으로만 수집
+    try:
+        proc = subprocess.run(
+            ["git", "-C", str(REPO), "log",
+             f"--since={yesterday} 00:00:00", f"--until={yesterday} 23:59:59",
+             "--format=%s"],
+            capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=20,
+        )
+        for line in proc.stdout.splitlines():
+            line = line.strip()
+            if not line or line.startswith("auto(changelog)"):
+                continue
+            git_commits.append(line)
+    except Exception:
+        pass
+
+    # _queue.json processed_at 어제 DONE 항목 — 건수·후속 기준
+    if QUEUE_PATH.exists():
+        try:
+            data = json.loads(QUEUE_PATH.read_text(encoding="utf-8"))
+            for q in data if isinstance(data, list) else []:
+                st = (q.get("status") or "").upper()
+                proc_at = str(q.get("processed_at") or "")
+                if st == "DONE" and proc_at.startswith(yesterday):
+                    queue_items.append({
+                        "title": q.get("title", ""),
+                        "clevel": (q.get("clevel") or "").upper(),
+                        "task_id": q.get("task_id", ""),
+                        "note": q.get("note", ""),
+                    })
+        except Exception:
+            pass
+
+    return git_commits, queue_items
+
+
+# conventional-commit prefix 제거 정규식 (결함 B 이중 안전장치)
+_CC_PREFIX_RE = re.compile(r"^(?:feat|fix|chore|refactor|style|test|docs|perf|ci|build|revert)"
+                            r"(?:\([^)]*\))?!?:\s*", re.IGNORECASE)
+
+
+def extract_followups(queue_items: list[dict]) -> list[dict]:
+    """
+    어제 큐 완료 항목의 note 에서 후속 신호를 추출 (spec ⑤).
+    결함 B: git 커밋 메시지 완전 제외 — queue note 만 검색.
+    매칭된 문장(80자 이내)을 인용 — task 자동 생성 금지, 리마인드만.
+    conventional-commit prefix(feat(...):, chore(...): 등)는 제거 후 표시.
+    반환: [{"quote": str, "clevel": str, "task_id": str}]
+    """
+    results = []
+    for item in queue_items:
+        note = (item.get("note") or "").strip()
+        if not note:
+            continue
+        cl_raw = (item.get("clevel") or "").upper()
+        tid = (item.get("task_id") or "")
+        # clevel 직접 값 우선, 없으면 task_id prefix 추론
+        cl = cl_raw
+        if not cl:
+            for prefix in ["CEO", "CFO", "CHRO", "CMO", "COO", "CPO", "CTO"]:
+                if tid.upper().startswith(prefix):
+                    cl = prefix
+                    break
+
+        # note 를 문장 단위로 분리해 후속 신호 검색
+        sentences = re.split(r"[.\n。]", note)
+        for sent in sentences:
+            sent = sent.strip()
+            if not sent:
+                continue
+            if _FOLLOWUP_RE.search(sent):
+                # conventional-commit prefix 제거 (이중 안전장치)
+                quote = _CC_PREFIX_RE.sub("", sent).strip()
+                quote = quote[:80].strip()
+                results.append({
+                    "quote": quote,
+                    "clevel": cl,
+                    "task_id": tid,
+                })
+                break  # 항목당 첫 매칭 1건만
+
+    return results
+
+
 def build_telegram_report(s1: dict, assigned: list[dict], orch: dict) -> str:
     """
-    GM 보고 — 시안1(결정 중심 초간결) + 시안2(한눈 표) 조합 (2026-05-30 GM 지시).
-    상단: 한눈 카운트 표 / 본문: GM 결정 필요분만 부각 / 하단: 자율 진행 1줄 + 안내.
+    GM 아침 보고 — spec v2 레이아웃 (2026-06-02 GM 승인).
+    상단: 한눈 카운트 표 / GM 결정 / 오늘 할 일 추천순 / 이어서 할 일 / 어제 마무리.
+
+    G1 SSOT 경로: s1["_g1_done_yesterday"] 를 어제 마무리로 사용.
+    fallback 경로: yesterday_done() 큐 기반 유지.
     """
     gm_dec = s1["gm_decision"]
     auto = s1["autonomous"]
     deep = s1["deep_interview"]
 
+    # 어제 마무리 — G1 SSOT 우선, fallback 시 queue 기반
+    if s1.get("_source") == "g1_ssot":
+        yday_items = s1.get("_g1_done_yesterday", [])
+        followups = extract_followups([
+            {"title": d.get("title", ""), "note": "", "clevel": d.get("clevel", ""),
+             "task_id": d.get("task_id", "")}
+            for d in yday_items
+        ])
+    else:
+        _yday_git, yday_queue = yesterday_done()
+        yday_items = yday_queue
+        followups = extract_followups(yday_queue)
+
     lines = []
     lines.append(f"🌅 아침 정리 — {today_kr()}")
 
-    # ── 상단: 한눈 표 (시안2) ──
+    # ── 상단: 한눈 표 ──
     lines += count_table([
         ("GM 결정", len(gm_dec)),
-        ("자율 진행", len(auto)),
+        ("오늘 할 일", len(auto)),
         ("명확화 대기", len(deep)),
     ])
     lines.append("")
 
-    # ── 본문: GM 결정 필요분만 부각 (시안1) ──
+    # ── GM 결정 필요 ──
     if gm_dec:
-        lines.append("▶ GM 결정 필요 (이것만 봐주세요)")
+        lines.append("🔴 GM 결정 필요")
         for i, a in enumerate(gm_dec, 1):
             lines.append(f"{_circled(i)} {summarize_title(a.get('title'))}")
             lines.append(f"   └ 왜: {a.get('disposition_reason','')}")
     else:
-        lines.append("▶ GM 결정 필요: 없음 — 봐주실 것 없어요.")
+        lines.append("🔴 GM 결정 필요: 없음")
     lines.append("")
 
-    # ── 하단: 자율 진행 + 명확화 안내 ──
-    if auto:
-        names = "·".join(summarize_title(a.get("title"), 16) for a in auto[:3])
-        more = f" 외 {len(auto) - 3}건" if len(auto) > 3 else ""
-        lines.append(f"▶ 자율 진행 중: {len(auto)}건 ({names}{more})")
+    # ── 오늘 할 일 (CEO 추천순, 번호 + 닉네임) ──
+    if assigned:
+        lines.append("▶ 오늘 할 일 (CEO 추천순)")
+        display = assigned[:5]
+        for i, a in enumerate(display, 1):
+            cl = a.get("assigned_clevel", "")
+            nick = CLEVEL_NICK.get(cl, cl)
+            lines.append(f"{_circled(i)} {summarize_title(a.get('title'))} [{nick}]")
+        if len(assigned) > 5:
+            lines.append(f"…외 {len(assigned) - 5}건")
     else:
-        lines.append("▶ 자율 진행 중: 없음")
+        lines.append("▶ 오늘 할 일: 없음")
     if deep:
-        lines.append(f"▶ 명확화 대기: {len(deep)}건 — deep-interview로 명확화 후 진행")
+        lines.append(f"▶ 명확화 대기: {len(deep)}건 — 명확화 후 진행")
+
+    # ── 이어서 할 일 (어제 완료 → 후속 신호) ──
+    if followups:
+        lines.append("")
+        lines.append("▶ 이어서 할 일 (어제에서 연결)")
+        for fu in followups:
+            cl = fu.get("clevel", "")
+            nick = CLEVEL_NICK.get(cl, cl) if cl else ""
+            suffix = f" [{nick}]" if nick else ""
+            lines.append(f"· {fu['quote']}{suffix}")
+
+    # ── 어제 마무리 (G1 SSOT 완료 기준 / fallback: queue 완료) ──
+    yday_dt = datetime.now() - timedelta(days=1)
+    yday_label = f"{yday_dt.month}/{yday_dt.day}"
+    lines.append("")
+    if yday_items:
+        reps = [summarize_title(d.get("title", "")) for d in yday_items[:3]]
+        rep_str = " · ".join(reps)
+        lines.append(f"📌 어제({yday_label}) 마무리: {len(yday_items)}건 ({rep_str})")
+    else:
+        lines.append(f"📌 어제({yday_label}) 마무리: 기록된 완료 없음")
 
     return "\n".join(lines)
 

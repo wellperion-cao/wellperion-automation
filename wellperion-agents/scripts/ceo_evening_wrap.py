@@ -65,11 +65,13 @@ if str(BASE) not in sys.path:
 # 아침 파이프라인 수집·분류 로직 재사용 (신규 최소화 — 분류 SSOT는 ceo_morning_pipeline 단일)
 from ceo_morning_pipeline import (  # noqa: E402
     stage1_collect_classify,
+    stage2_assign,
     today_kr,
     summarize_title,
     count_table,
     CLEVEL_OWNER,
     CLEVEL_ORDER,
+    CLEVEL_NICK,
 )
 
 CIRCLED = ["①", "②", "③", "④", "⑤", "⑥", "⑦", "⑧", "⑨", "⑩"]
@@ -140,15 +142,26 @@ def today_done_queue() -> list[dict]:
     return out
 
 
+def today_done_g1(s1: dict) -> list[dict]:
+    """
+    G1 SSOT 경로에서 오늘 완료 항목 반환.
+    s1["_source"] == "g1_ssot" 일 때 s1["_g1_done_today"] 사용.
+    fallback 시 빈 리스트 (today_done_queue 로 대체).
+    """
+    if s1.get("_source") == "g1_ssot":
+        return s1.get("_g1_done_today", [])
+    return []
+
+
 # ── 마감 보고 빌드 ───────────────────────────────────────────────────────────
 
 def build_evening_report(commits: list[str], done_q: list[dict],
                          gm_decision: list[dict], autonomous: list[dict],
                          deep_interview: list[dict]) -> str:
     """
-    GM 마감 보고 — 아침과 같은 톤 (시안1+2). 2026-05-30 GM 지시.
+    GM 마감 보고 — spec v2 레이아웃 (2026-06-02 GM 승인).
     상단: 오늘 한 일 N / 남은 N / GM 결정 N 한눈 표.
-    본문: GM 결정 필요분만 부각 + 오늘 한 일은 압축(개수 + 대표 3건).
+    본문: GM 결정 / 오늘 한 일 압축 / 내일 이어서 할 일 (우선순위순 + 닉네임).
     """
     done_total = len(commits) + len(done_q)
     remaining_total = len(gm_decision) + len(autonomous) + len(deep_interview)
@@ -164,12 +177,15 @@ def build_evening_report(commits: list[str], done_q: list[dict],
     ])
     lines.append("")
 
-    # ── 본문: GM 결정 필요분만 부각 ──
+    # ── GM 결정 필요 ──
     if gm_decision:
-        lines.append("▶ GM 결정 필요 (이것만 봐주세요)")
+        lines.append("🔴 GM 결정 필요")
         for i, a in enumerate(gm_decision, 1):
             lines.append(f"{_circled(i)} {summarize_title(a.get('title'))}")
             lines.append(f"   └ 왜: {a.get('disposition_reason','')}")
+        lines.append("")
+    else:
+        lines.append("🔴 GM 결정 필요: 없음")
         lines.append("")
 
     # ── 오늘 한 일: 압축 (개수 + 대표 3건) ──
@@ -187,13 +203,21 @@ def build_evening_report(commits: list[str], done_q: list[dict],
     else:
         lines.append("▶ 오늘 한 일: 기록된 완료 없음")
 
-    # ── 자율 진행/명확화 대기 1줄 ──
-    if autonomous:
-        lines.append(f"▶ 자율 진행 중: {len(autonomous)}건")
-    if deep_interview:
-        lines.append(f"▶ 명확화 대기: {len(deep_interview)}건 — deep-interview로 명확화 후 진행")
-    if remaining_total == 0:
-        lines.append("▶ 남은 일: 없음 — 깔끔하게 마감!")
+    # ── 내일 이어서 할 일 (남은 자율 항목 → 우선순위순 + 닉네임) ──
+    # stage2_assign 으로 우선순위+clevel 정렬 재활용
+    todo_items = autonomous + deep_interview  # GM결정 제외
+    if todo_items:
+        assigned_todo = stage2_assign(todo_items)
+        lines.append("▶ 내일 이어서 할 일")
+        display = assigned_todo[:5]
+        for i, a in enumerate(display, 1):
+            cl = a.get("assigned_clevel", "")
+            nick = CLEVEL_NICK.get(cl, cl)
+            lines.append(f"{_circled(i)} {summarize_title(a.get('title'))} [{nick}]")
+        if len(assigned_todo) > 5:
+            lines.append(f"…외 {len(assigned_todo) - 5}건")
+    else:
+        lines.append("▶ 내일 이어서 할 일: 없음 — 깔끔하게 마감!")
 
     return "\n".join(lines)
 
@@ -267,19 +291,25 @@ def run_wrap(dry_run: bool, once_per_day: bool = False) -> int:
 
     print(f"=== CEO 하루 마감 루틴 시작 (dry_run={dry_run}, once_per_day={once_per_day}) ===")
 
-    # ① 오늘 한 일
-    commits = today_commits()
-    done_q = today_done_queue()
-    print(f"[① 오늘 한 일] 커밋 {len(commits)}건 + 완료 큐 {len(done_q)}건")
-
-    # ②③ 남은 할일 — 아침 파이프라인 수집·분류(3분류 SSOT) 재사용
+    # ②③ 남은 할일 — 아침 파이프라인 수집·분류(3분류 SSOT + G1 SSOT) 재사용
     s1 = stage1_collect_classify()
     gm_decision = s1["gm_decision"]
     autonomous = s1["autonomous"]
     deep_interview = s1["deep_interview"]
     remaining_total = len(gm_decision) + len(autonomous) + len(deep_interview)
+    print(f"[STAGE 1] 데이터 소스: {s1.get('_source','?')}")
     print(f"[② 남은 할일] {remaining_total}건 → GM결정 {len(gm_decision)} "
           f"/ 자율 {len(autonomous)} / 명확화대기 {len(deep_interview)}")
+
+    # ① 오늘 한 일 — G1 SSOT 완료 우선, fallback 시 커밋+큐
+    commits = today_commits()
+    g1_done_today = today_done_g1(s1)
+    if g1_done_today:
+        done_q = g1_done_today
+        print(f"[① 오늘 한 일] G1 완료 {len(done_q)}건 + 커밋 {len(commits)}건")
+    else:
+        done_q = today_done_queue()
+        print(f"[① 오늘 한 일] 커밋 {len(commits)}건 + 완료 큐 {len(done_q)}건")
 
     # 보고 빌드 + 발송 + 마커
     report = build_evening_report(commits, done_q, gm_decision, autonomous, deep_interview)
