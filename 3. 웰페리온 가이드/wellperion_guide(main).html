@@ -617,17 +617,17 @@
     <!-- AUTO:LATEST-START -->
     <div class="card grow">
       <h4>최신 업데이트 — 2026-06-03 (자동 갱신)</h4>
+      <p><strong>2026-06-03</strong> feat(coo): 업장별 항목 차등(복도 복장착용 제외·타업장 홍보물 제외) + 기록시트 버튼 새탭 고정</p>
+      <p><strong>2026-06-03</strong> refactor(guidehub): 컨텍스트정비 풀 SOP T2 단일화 — T4 풀본문 제거·T5 콜아웃 S2→T2 교정</p>
       <p><strong>2026-06-03</strong> feat(cmo): 카카오 채널·당근 비즈 반자동 업로더 스캐폴드 (네이버 패턴 차용)</p>
       <p><strong>2026-06-03</strong> fix(coo): 부서장 자기결재 스킵 — 버튼 카운트↔트렐로 컬럼 불일치 해소</p>
       <p><strong>2026-06-03</strong> refactor(cmo): WJO 카카오·당근 본문을 카페 본문으로 통일 (GM 지시)</p>
-      <p><strong>2026-06-03</strong> refactor(guidehub): 컨텍스트정비 실행·자기학습 프롬프트 S2->T2(시토) 이동, 범위표는 S2 잔류</p>
-      <p><strong>2026-06-03</strong> feat(cmo): WJO 카카오·당근 업로드 패키지 제작 (B안 GM 수동 업로드용)</p>
     </div>
 <!-- AUTO:LATEST-END -->
         <table>
           <tr><th style="width:160px">날짜</th><th>변경 내용</th></tr>
           <!-- AUTO:TABLE-START -->
-      <tr><td><strong>2026-06-03 (자동)</strong></td><td>feat(cmo): 카카오 채널·당근 비즈 반자동 업로더 스캐폴드 (네이버 패턴 차용) · fix(coo): 부서장 자기결재 스킵 — 버튼 카운트↔트렐로 컬럼 불일치 해소 · refactor(cmo): WJO 카카오·당근 본문을 카페 본문으로 통일 (GM 지시) · refactor(guidehub): 컨텍스트정비 실행·자기학습 프롬프트 S2->T2(시…</td></tr>
+      <tr><td><strong>2026-06-03 (자동)</strong></td><td>feat(coo): 업장별 항목 차등(복도 복장착용 제외·타업장 홍보물 제외) + 기록시트 버튼 새탭 고정 · refactor(guidehub): 컨텍스트정비 풀 SOP T2 단일화 — T4 풀본문 제거·T5 콜아웃 S2→T2 교정 · feat(cmo): 카카오 채널·당근 비즈 반자동 업로더 스캐폴드 (네이버 패턴 차용) · fix(coo): 부서장 …</td></tr>
       <!-- AUTO:TABLE-END -->
           <tr><td><strong>2026-05-28 (14차)</strong></td><td>공지/안내문 생성(COO 하위) · 오프라인 홍보물 디자인 제작(CMO 하위) 도구 신설 · 공지 서식 v2.0 독립 페이지화 · 회사소개서·전략로드맵 원본 「3. 웰페리온 가이드/회사문서/」로 이관(SSOT 단일화) · C-Level 부팅 R/R Notion API→가이드허브 g10 참조로 전환 · GitHub Pages 워크플로 폴더명 경로 수정 · 사이드바 "공통+7개 C-Level" 라벨 제거</td></tr>
           <tr><td>2026-05-27 (13차)</td><td>GitHub Pages 전환 · 사이드바 4섹터 · AI C-Level 통일 · 운영 통합 체계 · 공식채널·지출현황·취업규칙·SSOT 신설 · g2+g19·g9+g20·g12·g13 합병 · 김남욱 탭 확장 · v2.5</td></tr>
@@ -808,66 +808,18 @@
           <li>금지: 네온 그라디언트 · 굵은 굴림체 · 형광색 · 만화 일러스트</li>
         </ul>
       </div>
-    </div>
-  </article>
 
-
-
-  <article class="doc" id="g6">
-    <div class="doc-header"><h2><span class="g-id">S3</span>용어 사전 v1.0</h2><div class="meta">사전 SSOT · 2026-05-12 · 사내 공식 용어 기준</div></div>
-    <p class="lead">사내 문서·보고·시스템에서 단어가 혼재되지 않도록 공식 용어 기준을 정리합니다. 모든 사내 문서는 이 사전의 표기를 따릅니다.</p>
-
-    <div class="tabs" data-tabs="g6">
-      <div class="tab-nav">
-        <button class="tab-btn active" data-tab="doc">문서 유형</button>
-        <button class="tab-btn" data-tab="org">조직·직급</button>
-        <button class="tab-btn" data-tab="sys">시스템·프로세스</button>
-        <button class="tab-btn" data-tab="op">운영 용어</button>
-        <button class="tab-btn" data-tab="ext">파일 확장자</button>
-      </div>
-
-      <div class="tab-panel active" data-panel="doc">
+      <div class="tab-panel" data-panel="terms-doc">
         <h3><span class="ico">📄</span>문서 계층 구조</h3>
         <p>웰페리온의 모든 운영 문서는 6단계 계층으로 분류됩니다. 위로 갈수록 변경이 어렵고, 아래로 갈수록 현장에서 자주 사용합니다.</p>
-
         <table>
           <tr><th style="width:40px">단계</th><th style="width:160px">문서 유형</th><th>한 줄 정의</th><th style="width:180px">예시</th></tr>
-          <tr style="background:var(--warm-bg);">
-            <td><strong>1</strong></td>
-            <td><strong>정책 (Policy)</strong></td>
-            <td>"이것은 이렇게 한다" — 회사 공식 결정. 변경 시 대표님 승인 필수.</td>
-            <td>예약제 정책, 운영시간, 결제 권한 기준</td>
-          </tr>
-          <tr style="background:var(--accent-bg);">
-            <td><strong>2</strong></td>
-            <td><strong>가이드라인 (Guideline)</strong></td>
-            <td>"이 틀 안에서 판단해라" — 판단 기준과 원칙. 상황에 맞게 적용.</td>
-            <td>응대 태도, 복장 기준, 브랜드 용어</td>
-          </tr>
-          <tr>
-            <td><strong>3</strong></td>
-            <td><strong>매뉴얼 (Manual)</strong></td>
-            <td>"이 순서대로 해라" — 구체적 실행 절차. 따라하면 완료.</td>
-            <td>사우나 점검 절차, 세탁물 관리</td>
-          </tr>
-          <tr style="background:var(--accent-bg);">
-            <td><strong>4</strong></td>
-            <td><strong>체크리스트 (Checklist)</strong></td>
-            <td>"빠짐없이 확인해라" — 매뉴얼의 실행 점검 도구.</td>
-            <td>지원팀 일일점검, 시설 오픈/마감</td>
-          </tr>
-          <tr>
-            <td><strong>5</strong></td>
-            <td><strong>기록 (Record/Log)</strong></td>
-            <td>"기록해라" — 실행한 증거. 인수인계·추적용.</td>
-            <td>일지, 인수인계 기록, 이슈 접수</td>
-          </tr>
-          <tr style="background:var(--grow-bg);">
-            <td><strong>6</strong></td>
-            <td><strong>이슈·노하우 (Issue/Tips)</strong></td>
-            <td>"이런 사례가 있었다" — 경험 누적. 매뉴얼 개선의 원천.</td>
-            <td>컴플레인 사례, 장비 고장 대응 팁</td>
-          </tr>
+          <tr style="background:var(--warm-bg);"><td><strong>1</strong></td><td><strong>정책 (Policy)</strong></td><td>"이것은 이렇게 한다" — 회사 공식 결정. 변경 시 대표님 승인 필수.</td><td>예약제 정책, 운영시간, 결제 권한 기준</td></tr>
+          <tr style="background:var(--accent-bg);"><td><strong>2</strong></td><td><strong>가이드라인 (Guideline)</strong></td><td>"이 틀 안에서 판단해라" — 판단 기준과 원칙. 상황에 맞게 적용.</td><td>응대 태도, 복장 기준, 브랜드 용어</td></tr>
+          <tr><td><strong>3</strong></td><td><strong>매뉴얼 (Manual)</strong></td><td>"이 순서대로 해라" — 구체적 실행 절차. 따라하면 완료.</td><td>사우나 점검 절차, 세탁물 관리</td></tr>
+          <tr style="background:var(--accent-bg);"><td><strong>4</strong></td><td><strong>체크리스트 (Checklist)</strong></td><td>"빠짐없이 확인해라" — 매뉴얼의 실행 점검 도구.</td><td>지원팀 일일점검, 시설 오픈/마감</td></tr>
+          <tr><td><strong>5</strong></td><td><strong>기록 (Record/Log)</strong></td><td>"기록해라" — 실행한 증거. 인수인계·추적용.</td><td>일지, 인수인계 기록, 이슈 접수</td></tr>
+          <tr style="background:var(--grow-bg);"><td><strong>6</strong></td><td><strong>이슈·노하우 (Issue/Tips)</strong></td><td>"이런 사례가 있었다" — 경험 누적. 매뉴얼 개선의 원천.</td><td>컴플레인 사례, 장비 고장 대응 팁</td></tr>
         </table>
 
         <h3><span class="ico">👤</span>작성·승인·보관 기준</h3>
@@ -934,7 +886,8 @@
         <div class="callout tip"><strong>목표:</strong> 4개 부서 × 5개 문서 = 20개 문서 체계 완성. 지원부(기존 체크리스트) 기준으로 나머지 3개 부서 순차 제작.</div>
       </div>
 
-      <div class="tab-panel" data-panel="org">
+      <div class="tab-panel" data-panel="terms-vocab">
+        <h3><span class="ico">👥</span>조직·직급 용어</h3>
         <table>
           <tr><th style="width:200px">용어</th><th>정의</th></tr>
           <tr><td>GM (General Manager)</td><td>총괄 매니저 · 현장 운영 총책임</td></tr>
@@ -946,9 +899,8 @@
           <tr><td>마스터</td><td>파트너 최상위 등급 (53% 고정)</td></tr>
           <tr><td>시니어</td><td>파트너 상위 등급 (53% 고정 + 팀 매출 1%)</td></tr>
         </table>
-      </div>
 
-      <div class="tab-panel" data-panel="sys">
+        <h3><span class="ico">⚙️</span>시스템·프로세스 용어</h3>
         <table>
           <tr><th style="width:240px">용어</th><th>정의</th></tr>
           <tr><td>SSOT (Single Source of Truth)</td><td>실무진과 AI C-Level이 한곳에 데이터를 모아두고 업데이트·학습하는 공통 데이터 원본</td></tr>
@@ -958,9 +910,8 @@
           <tr><td>종착역</td><td>각 C-Level 관리 페이지 · 최종 이관</td></tr>
           <tr><td>브로제이</td><td>신규 회원관리 시스템 (대양CIS 후속)</td></tr>
         </table>
-      </div>
 
-      <div class="tab-panel" data-panel="op">
+        <h3><span class="ico">🏢</span>운영 용어</h3>
         <table>
           <tr><th style="width:200px">용어</th><th>정의</th></tr>
           <tr><td>밸류업 (Value-Up)</td><td>기존 공간·서비스·장비의 품질 격상</td></tr>
@@ -972,12 +923,12 @@
           <tr><td>SSOT (Single Source of Truth, 단일 기준점)</td><td>하나의 정보는 한 곳에서만 관리. 웰페리온 SSOT = 가이드허브</td></tr>
           <tr><td>SOP (Standard Operating Procedure, 표준 운영 절차)</td><td>반복 업무를 매번 같은 품질로 수행하기 위한 표준 절차서</td></tr>
           <tr><td>KPI (Key Performance Indicator, 핵심 성과 지표)</td><td>목표 달성을 측정하는 핵심 숫자. 예: 전환율, 재등록률</td></tr>
-          <tr><td>R/R (Role & Responsibility, 역할과 책임)</td><td>누가 무엇을 담당하는지 명확히 정의한 것</td></tr>
+          <tr><td>R/R (Role &amp; Responsibility, 역할과 책임)</td><td>누가 무엇을 담당하는지 명확히 정의한 것</td></tr>
         </table>
       </div>
 
-      <div class="tab-panel" data-panel="ext">
-        <h3>파일 확장자 가이드</h3>
+      <div class="tab-panel" data-panel="terms-ext">
+        <h3><span class="ico">📁</span>파일 확장자 가이드</h3>
         <p>프로젝트에서 사용하는 파일 확장자별 역할입니다. 모르는 파일을 만났을 때 참고하세요.</p>
         <table>
           <tr><th style="width:160px">확장자</th><th>설명</th><th>쉽게 말하면</th></tr>
@@ -988,15 +939,16 @@
           <tr><td><code>.txt</code></td><td>일반 텍스트 파일. 서식 없는 순수 글자만 담긴 파일. 임시 메모, 출력 결과 저장 등에 사용.</td><td>순수 메모장</td></tr>
           <tr><td><code>.md.bak</code></td><td>마크다운 백업 파일. 원본(.md)을 수정하기 전에 만들어두는 안전 복사본. 문제 시 복원용.</td><td>수정 전 백업본</td></tr>
         </table>
+        <div style="margin-top:22px; padding:13px 16px; background:#16181c; border-radius:8px; border-left:3px solid var(--accent);">
+          <div style="font-size:12px; font-weight:700; color:var(--accent); margin-bottom:6px;">&#9656; Claude CLI 셋업 프롬프트</div>
+          <pre style="margin:0; color:#e8e8e8; font-size:12.5px; white-space:pre-wrap; line-height:1.6;">가이드허브 공통 가이드라인(S1) 용어 사전을 기준으로 이 산출물의 용어·호칭을 검수하고 금지어·오용어를 교정해줘.</pre>
+        </div>
       </div>
     </div>
-
-    <div class="source">SSOT: 본 임베드 본문 + Notion 이관본 <a href="https://www.notion.so/3690407da94881dca894c78d38e9294c" target="_blank">notion.so/3690...294c</a></div>
-    <div style="margin-top:22px; padding:13px 16px; background:#16181c; border-radius:8px; border-left:3px solid var(--accent);">
-      <div style="font-size:12px; font-weight:700; color:var(--accent); margin-bottom:6px;">&#9656; Claude CLI 셋업 프롬프트</div>
-      <pre style="margin:0; color:#e8e8e8; font-size:12.5px; white-space:pre-wrap; line-height:1.6;">가이드허브 ⑤ 용어 사전을 기준으로 이 산출물의 용어·호칭을 검수하고 금지어·오용어를 교정해줘.</pre>
-    </div>
   </article>
+
+
+
 
 
 
