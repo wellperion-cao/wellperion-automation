@@ -631,17 +631,17 @@
     <!-- AUTO:LATEST-START -->
     <div class="card grow">
       <h4>최신 업데이트 — 2026-06-03 (자동 갱신)</h4>
+      <p><strong>2026-06-03</strong> refactor(guidehub): M5 상단 콜아웃 3개 1개로 병합 — 핵심흐름·표준종료절차·연결자산 통합 정리 (GM 지시)</p>
       <p><strong>2026-06-03</strong> fix(cto): Morning-Update 배터리 거부(0x800710E0) 해제 — 재등록 스크립트에 추가</p>
       <p><strong>2026-06-03</strong> fix(cto): 예약작업 검은 cmd 창 근본 제거 — 숨김 런처 + 1회 재등록 스크립트</p>
       <p><strong>2026-06-03</strong> feat(cmo): AI 시리즈 #4편 역할분담 namuk.wellperion 발행 완료</p>
       <p><strong>2026-06-03</strong> feat(cmo): AI 시리즈 #4편 역할분담 6장 사전제작 (검수 대기·발행 금지)</p>
-      <p><strong>2026-06-02</strong> feat(coo): 점검 3단계(점검필요/양호/우수) 개편 — 항목별 컬럼 기록</p>
     </div>
 <!-- AUTO:LATEST-END -->
         <table>
           <tr><th style="width:160px">날짜</th><th>변경 내용</th></tr>
           <!-- AUTO:TABLE-START -->
-      <tr><td><strong>2026-06-03 (자동)</strong></td><td>fix(cto): Morning-Update 배터리 거부(0x800710E0) 해제 — 재등록 스크립트에 추가 · fix(cto): 예약작업 검은 cmd 창 근본 제거 — 숨김 런처 + 1회 재등록 스크립트 · feat(cmo): AI 시리즈 #4편 역할분담 namuk.wellperion 발행 완료 · feat(cmo): AI 시리즈 #4편 역할분담 …</td></tr>
+      <tr><td><strong>2026-06-03 (자동)</strong></td><td>refactor(guidehub): M5 상단 콜아웃 3개 1개로 병합 — 핵심흐름·표준종료절차·연결자산 통합 정리 (GM 지시) · fix(cto): Morning-Update 배터리 거부(0x800710E0) 해제 — 재등록 스크립트에 추가 · fix(cto): 예약작업 검은 cmd 창 근본 제거 — 숨김 런처 + 1회 재등록 스크립트 · feat…</td></tr>
       <tr><td><strong>2026-06-02 (자동)</strong></td><td>feat(coo): 점검 3단계(점검필요/양호/우수) 개편 — 항목별 컬럼 기록 · fix(coo): 기록 시트 버튼을 점검기록 탭으로 연결 · feat(coo): 강습부 업장점검 ENDPOINT 연결 — 제출 시 구글시트 자동기록 · fix(cmo): git헬퍼 UTF-8 디코드 + WJO 큐 정직 복원(발행 미검증) · fix(cmo): 발행 감시…</td></tr>
       <!-- AUTO:TABLE-END -->
           <tr><td><strong>2026-05-28 (14차)</strong></td><td>공지/안내문 생성(COO 하위) · 오프라인 홍보물 디자인 제작(CMO 하위) 도구 신설 · 공지 서식 v2.0 독립 페이지화 · 회사소개서·전략로드맵 원본 「3. 웰페리온 가이드/회사문서/」로 이관(SSOT 단일화) · C-Level 부팅 R/R Notion API→가이드허브 g10 참조로 전환 · GitHub Pages 워크플로 폴더명 경로 수정 · 사이드바 "공통+7개 C-Level" 라벨 제거</td></tr>
@@ -3935,9 +3935,9 @@ Start-Process python -ArgumentList telegram_bot\daily_scheduler.py -WorkingDirec
             <tr><td>마지막 슬라이드</td><td>WELLPERION GUIDE 카드 자동 첨부</td></tr>
           </table>
         </div>
-        <div class="card" style="margin-top:12px;">
-          <h4>슬라이드 디자인 구조 — 공식 표준 (정본: 발레·스쿼시 완성본 기준)</h4>
-          <div class="callout fix" style="margin-top:0;margin-bottom:10px;"><strong>정본 경로:</strong> <code>instagram/260520_발레_런칭/output(인스타그램)/ig_01~07.jpg</code> &amp; <code>instagram/260426_WJO_스쿼시_대회/output(인스타그램)/</code> — 코드는 이 정본과 픽셀 단위 1:1 일치해야 함. 임의 디자인 금지.</div>
+        <details class="card" style="margin-top:12px;">
+          <summary style="cursor:pointer;font-weight:700;font-size:15px;color:var(--text);">슬라이드 디자인 구조 — 공식 표준 (정본: 발레·스쿼시 완성본 기준) <span style="color:var(--dim);font-weight:400;font-size:12px;">▾ 펼쳐 보기</span></summary>
+          <div class="callout fix" style="margin-top:10px;margin-bottom:10px;"><strong>정본 경로:</strong> <code>instagram/260520_발레_런칭/output(인스타그램)/ig_01~07.jpg</code> &amp; <code>instagram/260426_WJO_스쿼시_대회/output(인스타그램)/</code> — 코드는 이 정본과 픽셀 단위 1:1 일치해야 함. 임의 디자인 금지.</div>
           <table>
             <tr><th style="width:160px">항목</th><th>기준값</th></tr>
             <tr>
@@ -4028,7 +4028,7 @@ Start-Process python -ArgumentList telegram_bot\daily_scheduler.py -WorkingDirec
               </td>
             </tr>
           </table>
-        </div>
+        </details>
         <label style="display:block;font-size:12.5px;font-weight:700;color:var(--dim);margin:6px 0;">특성 학습 메모</label>
         <textarea class="cmopub-note" data-note="ig-brand" rows="4" placeholder="이 채널에서 학습한 특성·주의사항을 기록…" style="width:100%;padding:12px;border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:13.5px;line-height:1.6;background:var(--paper);color:var(--text);box-sizing:border-box;resize:vertical;"></textarea>
       </div>
@@ -4157,6 +4157,7 @@ Start-Process python -ArgumentList telegram_bot\daily_scheduler.py -WorkingDirec
           if(it.channel)h+='<div style="font-size:12px;color:var(--dim);margin-bottom:8px;">채널: '+esc(it.channel)+'</div>';
           if(it.preview)h+='<img src="'+esc(it.preview)+'" alt="미리보기" style="width:100%;border-radius:8px;border:1px solid rgba(183,159,138,0.15);margin-bottom:8px;" loading="lazy">';
           if(it.caption)h+='<details style="margin-bottom:8px;"><summary style="cursor:pointer;font-size:12.5px;color:var(--dim);">캡션 보기</summary><div style="font-size:12.5px;color:var(--text-soft);white-space:pre-wrap;line-height:1.7;padding-top:6px;">'+esc(it.caption)+'</div></details>';
+          if(it.body)h+='<details style="margin-bottom:8px;" open><summary style="cursor:pointer;font-size:12.5px;color:var(--dim);">본문 보기</summary><div style="font-size:12.5px;color:var(--text-soft);white-space:pre-wrap;line-height:1.7;padding-top:6px;">'+esc(it.body)+'</div></details>';
           h+='<div style="display:flex;gap:8px;margin-top:4px;"><button data-act="approve" data-id="'+esc(it.id)+'" style="flex:1;background:var(--accent);color:#fff;border:none;border-radius:8px;padding:9px;font-weight:700;cursor:pointer;font-family:inherit;">승인</button><button data-act="reject" data-id="'+esc(it.id)+'" style="flex:1;background:none;color:var(--dim);border:1px solid var(--border);border-radius:8px;padding:9px;cursor:pointer;font-family:inherit;">반려</button></div>';
           c.innerHTML=h;list.appendChild(c);
         });

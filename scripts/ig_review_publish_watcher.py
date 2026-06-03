@@ -37,6 +37,7 @@ PUBLISH_SCRIPT = ROOT / "scripts" / "instagram_upload_playwright.py"
 BLOG_SCRIPT = ROOT / "scripts" / "naver_blog_upload_playwright.py"   # 블로그 발행 스크립트
 CAFE_SCRIPT = ROOT / "scripts" / "cafe_upload_playwright.py"          # 카페 발행 스크립트
 PY = ROOT / ".venv" / "Scripts" / "python.exe"
+NOTIFIED_FILE = ROOT / "scripts" / ".review_notified.json"  # 검수대기 알림 발송 이력
 
 APPROVED_STATES = {"승인", "승인발행대기", "approved"}
 POST_URL_RE = re.compile(r"post\s+[A-C]:\s*(https?://\S+)", re.IGNORECASE)
@@ -65,6 +66,49 @@ def telegram(message: str) -> None:
             print(f"[INFO] 텔레그램 보고 {'성공' if resp.status == 200 else '실패'}")
     except Exception:
         print("[WARN] 텔레그램 보고 실패 (토큰 trace 노출 방지로 상세 미출력)")
+
+
+def load_notified() -> set:
+    """이미 검수대기 알림을 발송한 id 집합 로드."""
+    if not NOTIFIED_FILE.exists():
+        return set()
+    try:
+        data = json.loads(NOTIFIED_FILE.read_text(encoding="utf-8"))
+        return set(data) if isinstance(data, list) else set()
+    except Exception:
+        return set()
+
+
+def save_notified(notified: set) -> None:
+    """검수대기 알림 발송 이력 저장."""
+    NOTIFIED_FILE.write_text(
+        json.dumps(sorted(notified), ensure_ascii=False, indent=2), encoding="utf-8"
+    )
+
+
+def notify_pending_review(items: list) -> None:
+    """검수대기 항목 중 아직 알림 안 보낸 건만 텔레그램 발송 후 이력 기록."""
+    notified = load_notified()
+    newly_notified: list[str] = []
+    for it in items:
+        if it.get("status") != "검수대기":
+            continue
+        item_id = it.get("id", "")
+        if not item_id or item_id in notified:
+            continue
+        title = it.get("title", item_id)
+        channel = it.get("channel", "")
+        msg = (
+            f"🔎 검수 대기 등록\n"
+            f"{title} ({channel}) — 가이드허브 M5에서 미리보기·승인\n"
+            f"https://wellperion-cao.github.io/wellperion-automation/"
+        )
+        telegram(msg)
+        newly_notified.append(item_id)
+        print(f"[INFO] 검수대기 알림 발송: {item_id}")
+    if newly_notified:
+        notified.update(newly_notified)
+        save_notified(notified)
 
 
 def git(*args: str, check: bool = False) -> subprocess.CompletedProcess:
@@ -302,6 +346,8 @@ def run_once(dry_run: bool) -> int:
     if not dry_run:
         pull_latest()
     items = load_queue()
+    # 검수대기 신규 항목 텔레그램 알림 (중복 방지 이력 기반)
+    notify_pending_review(items)
     approved = [it for it in items if it.get("status") in APPROVED_STATES]
     if not approved:
         print("[INFO] 발행할 승인 건 없음.")
