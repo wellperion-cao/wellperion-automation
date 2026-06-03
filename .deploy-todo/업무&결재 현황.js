@@ -335,7 +335,9 @@ function _buildApprovalRoute(record) {
   // 표준 결재선: (부서장) → GM → 대표님. 담당자 GM이면 GM 단계 생략.
   const ownerIsGM = String(record['담당자'] || '').split(',').map(s => s.trim()).indexOf('김남욱GM') >= 0;
   const route = [];
-  if (midName) route.push('부서장');
+  // GM 직접 진행 건(담당자=김남욱GM)은 부서장·GM 단계 스킵 → 대표님 결재만 (2026-06-03 GM).
+  // 부서장(하급자)이 GM 직접 건을 결재하는 역전 방지.
+  if (midName && !ownerIsGM) route.push('부서장');
   if (!ownerIsGM) route.push('GM');
   route.push('대표님');
   return route;
