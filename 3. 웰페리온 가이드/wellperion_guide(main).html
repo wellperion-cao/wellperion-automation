@@ -631,17 +631,17 @@
     <!-- AUTO:LATEST-START -->
     <div class="card grow">
       <h4>최신 업데이트 — 2026-06-03 (자동 갱신)</h4>
+      <p><strong>2026-06-03</strong> docs(cmo): M5 블로그·카페 탭에 자동 발행 규칙 카드 추가 (GM 확정 2026-06-03)</p>
       <p><strong>2026-06-03</strong> refactor(guidehub): T4 상단 콜아웃 2개+표 → 접이식 토글 1개로 정리 (GM 지시)</p>
       <p><strong>2026-06-03</strong> fix(cmo): 블로그·카페 제목 연속표기 버그 수정 (_strip_leading_title)</p>
       <p><strong>2026-06-03</strong> chore(cmo): WJO 블로그·카페 발행완료 처리 — GM 수동 발행(2026-06-03)</p>
       <p><strong>2026-06-03</strong> fix(cmo): AI #4 재발행 발행완료 기록 (DZGzrMnEtjT) — 발행기 검증 오탐 수기 정정</p>
-      <p><strong>2026-06-03</strong> feat(coo): S4 '최근 변동' 피드 — 업무·결재 SSOT 최근 수정 항목 간단 대시보드</p>
     </div>
 <!-- AUTO:LATEST-END -->
         <table>
           <tr><th style="width:160px">날짜</th><th>변경 내용</th></tr>
           <!-- AUTO:TABLE-START -->
-      <tr><td><strong>2026-06-03 (자동)</strong></td><td>refactor(guidehub): T4 상단 콜아웃 2개+표 → 접이식 토글 1개로 정리 (GM 지시) · fix(cmo): 블로그·카페 제목 연속표기 버그 수정 (_strip_leading_title) · chore(cmo): WJO 블로그·카페 발행완료 처리 — GM 수동 발행(2026-06-03) · fix(cmo): AI #4 재발행 발행완료…</td></tr>
+      <tr><td><strong>2026-06-03 (자동)</strong></td><td>docs(cmo): M5 블로그·카페 탭에 자동 발행 규칙 카드 추가 (GM 확정 2026-06-03) · refactor(guidehub): T4 상단 콜아웃 2개+표 → 접이식 토글 1개로 정리 (GM 지시) · fix(cmo): 블로그·카페 제목 연속표기 버그 수정 (_strip_leading_title) · chore(cmo): WJO 블로그·…</td></tr>
       <!-- AUTO:TABLE-END -->
           <tr><td><strong>2026-05-28 (14차)</strong></td><td>공지/안내문 생성(COO 하위) · 오프라인 홍보물 디자인 제작(CMO 하위) 도구 신설 · 공지 서식 v2.0 독립 페이지화 · 회사소개서·전략로드맵 원본 「3. 웰페리온 가이드/회사문서/」로 이관(SSOT 단일화) · C-Level 부팅 R/R Notion API→가이드허브 g10 참조로 전환 · GitHub Pages 워크플로 폴더명 경로 수정 · 사이드바 "공통+7개 C-Level" 라벨 제거</td></tr>
           <tr><td>2026-05-27 (13차)</td><td>GitHub Pages 전환 · 사이드바 4섹터 · AI C-Level 통일 · 운영 통합 체계 · 공식채널·지출현황·취업규칙·SSOT 신설 · g2+g19·g9+g20·g12·g13 합병 · 김남욱 탭 확장 · v2.5</td></tr>
@@ -4336,6 +4336,14 @@ Start-Process python -ArgumentList telegram_bot\daily_scheduler.py -WorkingDirec
       </div>
     </div>
 
+    <!-- ⏰ 마감 임박 — 진행 중 업무 중 종료일 7일 내(+지연). getDeadlineBadge 임계와 동일. 같은 todo_list 재사용 (2026-06-03 GM) -->
+    <div id="s4DeadlineFeed" style="margin:0 0 20px;">
+      <div style="font-size:11px;font-weight:700;letter-spacing:0.04em;color:var(--dim);margin-bottom:8px;text-transform:uppercase;">⏰ 마감 임박 <span style="font-weight:500;text-transform:none;">— 진행 중 업무 · 종료일 7일 내 (지연 포함) · 급한 순</span></div>
+      <div id="s4DeadlineList" style="background:var(--bg);border:1px solid var(--border);border-radius:10px;overflow:hidden;">
+        <div style="color:var(--dim);font-size:13px;padding:12px 14px;">불러오는 중…</div>
+      </div>
+    </div>
+
     <!-- 🔄 최근 변동 — 업무·결재 SSOT 최근 수정 항목(수정일 순). 같은 todo_list 호출 재사용 (2026-06-03 GM) -->
     <div id="s4ChangeFeed" style="margin:0 0 20px;">
       <div style="font-size:11px;font-weight:700;letter-spacing:0.04em;color:var(--dim);margin-bottom:8px;text-transform:uppercase;">🔄 최근 변동 <span style="font-weight:500;text-transform:none;">— 최근 바뀐 업무·결재 (수정 순) · 항목 클릭 시 해당 SSOT로 이동</span></div>
@@ -4475,6 +4483,43 @@ Start-Process python -ArgumentList telegram_bot\daily_scheduler.py -WorkingDirec
           + card(apprDone.length, '결재 완료', 'var(--grow)', APPR_URL, '결재 SSOT')
           + card(apprRej.length, '반려', 'var(--dim)', APPR_URL, '결재 SSOT');
 
+        // ⏰ 마감 임박 — 같은 rows 재사용. 진행 중(완료·보류 제외)·종료일 7일 내(+지연). getDeadlineBadge와 동일 임계.
+        var ddEl = document.getElementById('s4DeadlineList');
+        if (ddEl) {
+          function ddayBadge(endDate){
+            if (!endDate) return null;
+            var end = new Date(String(endDate).slice(0, 10) + 'T23:59:59');
+            if (isNaN(end.getTime())) return null;
+            var diff = Math.ceil((end - new Date()) / 86400000);
+            if (diff < 0)   return { t: 'D+' + Math.abs(diff) + ' 지연', c: 'var(--warm)', d: diff };
+            if (diff === 0) return { t: '🔴 D-Day', c: 'var(--warm)', d: diff };
+            if (diff <= 3)  return { t: '⚡ D-' + diff, c: 'var(--warm)', d: diff };
+            if (diff <= 7)  return { t: '⏰ D-' + diff, c: 'var(--accent)', d: diff };
+            return null; // 8일 이상은 임박 아님
+          }
+          var due = rows.map(function(r){ return { r: r, b: ddayBadge(r['종료일'] || r.endDate || '') }; })
+            .filter(function(x){ return x.b && st(x.r) !== '완료' && st(x.r) !== '보류' && String(x.r['업무명'] || x.r.title || '').trim(); })
+            .sort(function(a, b){ return a.b.d - b.b.d; })
+            .slice(0, 5);
+          if (!due.length) {
+            ddEl.innerHTML = '<div style="color:var(--dim);font-size:13px;padding:12px 14px;">마감 임박 업무 없음 (7일 내)</div>';
+          } else {
+            ddEl.innerHTML = due.map(function(x, i){
+              var r = x.r, id = r.id || r['id'] || '';
+              var href = WORK_URL + (id ? '?item=' + encodeURIComponent(id) : '');
+              var title = String(r['업무명'] || r.title || '(제목 없음)');
+              var owner = String(r['담당자'] || r.owner || '-');
+              var end = String(r['종료일'] || r.endDate || '').slice(0, 10);
+              return '<a href="' + href + '" target="_blank" style="display:flex;align-items:center;gap:10px;padding:9px 14px;'
+                + (i ? 'border-top:1px solid var(--border);' : '') + 'text-decoration:none;color:var(--text);">'
+                + '<span style="font-size:11px;font-weight:700;color:' + x.b.c + ';min-width:64px;">' + x.b.t + '</span>'
+                + '<span style="flex:1;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + esc(title) + '</span>'
+                + '<span style="font-size:11px;color:var(--dim);white-space:nowrap;">' + esc(owner) + '</span>'
+                + '<span style="font-size:11px;color:var(--dim);white-space:nowrap;min-width:52px;text-align:right;">~' + end.slice(5) + '</span></a>';
+            }).join('');
+          }
+        }
+
         // 🔄 최근 변동 — 같은 rows 재사용. 수정일 desc 정렬 후 상위 6건. 이벤트 유형은 상태/결재상태로 추정.
         // 주의: 시트엔 수정일만 있어 필드 단위 old→new diff는 없음(현재 스냅샷+유형만 표시).
         var feedEl = document.getElementById('s4ChangeList');
@@ -4529,7 +4574,7 @@ Start-Process python -ArgumentList telegram_bot\daily_scheduler.py -WorkingDirec
           }
         }
       })
-      .catch(function(){ fail(); var f = document.getElementById('s4ChangeList'); if (f) f.innerHTML = '<div style="color:var(--dim);font-size:13px;padding:12px 14px;">변동 불러오기 실패</div>'; });
+      .catch(function(){ fail(); ['s4DeadlineList','s4ChangeList'].forEach(function(fid){ var f = document.getElementById(fid); if (f) f.innerHTML = '<div style="color:var(--dim);font-size:13px;padding:12px 14px;">불러오기 실패 — 업무 현황 SSOT에서 직접 확인</div>'; }); });
   })();
 
   window.hubEditNotes = function(field){
