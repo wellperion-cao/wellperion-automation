@@ -1221,10 +1221,11 @@ function initKanbanDrag() {
     board.addEventListener('click', function(e) {
       if (moved) { e.stopPropagation(); e.preventDefault(); moved = false; }
     }, true);
-    // 세로 휠 → 가로 스크롤 (보드가 실제로 넘칠 때만, 컬럼 내부 세로스크롤 방해 X)
+    // 휠 표준 (2026-06-03 GM): 일반 휠 = 세로(페이지) 그대로, Shift+휠 = 가로 보드 스크롤.
+    // 트랙패드 가로 스와이프(deltaX)는 native 그대로 가로 스크롤.
     board.addEventListener('wheel', function(e) {
       if (board.scrollWidth <= board.clientWidth) return;
-      if (e.deltaY !== 0) { e.preventDefault(); board.scrollLeft += e.deltaY * 0.8; }
+      if (e.shiftKey && e.deltaY !== 0) { e.preventDefault(); board.scrollLeft += e.deltaY; }
     }, { passive: false });
   });
 }

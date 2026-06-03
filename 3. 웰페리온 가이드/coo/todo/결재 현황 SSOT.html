@@ -1087,6 +1087,8 @@ function approvalColumnOf(t) {
   // 싸인 실측 — 가장 진행된 단계 우선 (결재상태 컬럼이 비어 있어도 산출)
   if (String(t.repSign || '').trim()) return 'rep';   // 대표 서명 있으나 미완료(중간)
   if (String(t.gmSign || '').trim())  return 'gm';    // GM 서명 완료
+  // GM 직접 건(담당자=김남욱GM, 결재선=대표님만): 부서장·GM 단계 없음 → 대표 차례 = 'GM 완료' 컬럼 (2026-06-03 GM)
+  if (String(t.owner || '').split(',').map(function(x){ return x.trim(); }).indexOf('김남욱GM') >= 0) return 'gm';
   if (/대표님?\s*완료/.test(s)) return 'rep';          // 상태 문자열 보강
   if (/GM\s*완료/.test(s) || /부서장\s*완료/.test(s)) return 'gm';
   return 'waiting';                                    // 미서명·대기
@@ -1142,9 +1144,11 @@ function initKanbanDrag() {
       board.scrollLeft = scrollLeft - dist * 1.2;
     });
     board.addEventListener('click', function(e) { if (moved) { e.stopPropagation(); e.preventDefault(); moved = false; } }, true);
+    // 휠 표준 (2026-06-03 GM): 일반 휠 = 세로(페이지) 그대로, Shift+휠 = 가로 보드 스크롤.
+    // 트랙패드 가로 스와이프(deltaX)는 native 그대로 가로 스크롤.
     board.addEventListener('wheel', function(e) {
       if (board.scrollWidth <= board.clientWidth) return;
-      if (e.deltaY !== 0) { e.preventDefault(); board.scrollLeft += e.deltaY * 0.8; }
+      if (e.shiftKey && e.deltaY !== 0) { e.preventDefault(); board.scrollLeft += e.deltaY; }
     }, { passive: false });
   });
 }
