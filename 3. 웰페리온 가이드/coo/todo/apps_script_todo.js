@@ -608,7 +608,9 @@ function _processTodoAction(body) {
       var _deptPinOptional = false;
       if (role === '부서장') {
         var _MID_PIN = { '이경연 실장':'APPROVAL_PIN_OPS', '이정헌 소장':'APPROVAL_PIN_FAC', '나우열M':'APPROVAL_PIN_PARTNER' };
-        var _mid = _deptHeadFor(record['카테고리'])
+        // 부서장 = 담당자가 부서장이면 본인 우선(결재선 midName과 동일), 없으면 카테고리, 없으면 결재요청 (2026-06-03 GM)
+        var _ownerDH = String(record['담당자'] || '').split(',').map(function(s){ return s.trim(); }).filter(function(m){ return _MID_PIN[m]; })[0];
+        var _mid = _ownerDH || _deptHeadFor(record['카테고리'])
           || String(record['결재요청'] || '').split(',').map(function(s){ return s.trim(); }).filter(function(m){ return _MID_PIN[m]; })[0];
         _pinKey = (_mid && _MID_PIN[_mid]) ? _MID_PIN[_mid] : null;
         _deptPinOptional = true;  // 부서장은 속성 미설정 시 차단하지 않음(graceful)
