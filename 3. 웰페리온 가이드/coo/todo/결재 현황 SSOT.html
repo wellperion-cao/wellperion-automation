@@ -313,6 +313,10 @@ function deptHeadFor(category) { return CAT_DEPT_HEAD[category] || ''; }
 const DEPT_HEADS = ['이경연 실장','이정헌 소장','나우열M'];
 // 항목의 부서장 실명 — 카테고리 매핑 우선, 없으면 결재요청에 포함된 부서장 (결재자 필터·카운트용, 2026-06-03 GM)
 function deptHeadNameOf(t) {
+  // 담당자가 부서장(이경연/이정헌/나우열) 본인이면 그 부서장이 결재자 — 카테고리 짐작 오배정 우회(2026-06-03 GM).
+  var owners = String((t && t.owner) || '').split(',').map(function(s){ return s.trim(); });
+  var ownerDH = owners.find(function(o){ return DEPT_HEADS.indexOf(o) >= 0; });
+  if (ownerDH) return ownerDH;
   return deptHeadFor(t && t.category) || String((t && (t.approval || t['결재요청'])) || '').split(',').map(function(s){ return s.trim(); }).find(function(m){ return DEPT_HEADS.indexOf(m) >= 0; }) || '';
 }
 
@@ -806,16 +810,13 @@ function buildEffectiveRoute(t, budget) {
   if (manual.length === 0 && auto.length === 0) return [];
   // 표준 결재선: (부서장 — 카테고리→부서 자동) → GM → 대표 3단계 (2026-06-02 GM 확정 복원).
   // 부서장: 카테고리 매핑 우선, 없으면 수동 결재요청에 포함된 부서장. 매핑 없으면 생략(GM→대표 폴백).
-  const MID = ['이경연 실장','이정헌 소장','나우열M'];
-  const midName = deptHeadFor(t.category) || manual.find(m => MID.indexOf(m) >= 0) || '';
   const owners = String(t.owner || '').split(',').map(s => s.trim());
-  // 자기결재·오배정 방지(2026-06-03 GM): ① 담당자=김남욱GM → 부서장·GM 스킵(대표만)
-  // ② 담당자가 부서장(이경연/이정헌/나우열) 본인이면 부서장 스킵 → GM→대표.
-  //   (예: 이경연 실장 업무를 카테고리[4]시설 짐작으로 이정헌 소장에게 보내는 cross-부서 오배정 차단)
   const ownerIsGM = owners.indexOf('김남욱GM') >= 0;
-  const ownerIsDeptHead = owners.some(function(o){ return MID.indexOf(o) >= 0; });
+  // 부서장 = 담당자의 부서장(본인이 부서장이면 본인) — deptHeadNameOf가 담당자 우선(카테고리 짐작 우회).
+  // 본인이 부서장이라도 부서장 승인부터 밟는다(스킵 X). GM 직접 건만 부서장·GM 스킵→대표만 (2026-06-03 GM).
+  const midName = deptHeadNameOf(t);
   const route = [];
-  if (midName && !ownerIsGM && !ownerIsDeptHead) route.push('부서장');
+  if (midName && !ownerIsGM) route.push('부서장');
   if (!ownerIsGM) route.push('GM');
   route.push('대표님');
   return route;
@@ -881,7 +882,7 @@ function renderApprovalCard(t, idx) {
   // 결재 단계 마킹 — 결재상태 컬럼이 비어 있어도 싸인 실측으로 단계 산출 (2026-05-29 COO 수정)
   const _MID = ['이경연 실장','이정헌 소장','나우열M'];
   // 부서장 실명: 카테고리 매핑 우선, 없으면 수동 결재요청 포함 부서장 (2026-06-02 GM 복원)
-  const _midName = deptHeadFor(t.category) || String(t.approval || '').split(',').map(s => s.trim()).find(m => _MID.indexOf(m) >= 0) || '부서장';
+  const _midName = deptHeadNameOf(t) || '부서장';
   const signMap = { '부서장': t.deptSign, 'GM': t.gmSign, '대표님': t.repSign };
   const signedRoles = route.filter(r => String(signMap[r] || '').trim());
   let stCls, chipCls = 'status-chip', chipText;

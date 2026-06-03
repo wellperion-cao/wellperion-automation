@@ -328,17 +328,16 @@ function _buildApprovalRoute(record) {
   // 결재 불필요 → 빈 라인
   if (manual.length === 0 && !hasBudget) return [];
 
-  // 부서장 실명: 카테고리 매핑 우선, 없으면 수동 결재요청 포함 부서장
+  // 부서장 = 담당자의 부서장(본인이 부서장이면 본인) — 카테고리 짐작보다 담당자 우선(오배정 차단, 2026-06-03 GM).
   var MID = ['이경연 실장','이정헌 소장','나우열M'];
-  var midName = _deptHeadFor(record['카테고리']) || manual.filter(function(m){ return MID.indexOf(m) >= 0; })[0] || '';
-
-  // 표준 결재선: (부서장) → GM → 대표님. 자기결재 방지(2026-06-03 GM).
   var owners = String(record['담당자'] || '').split(',').map(function(s){ return s.trim(); });
+  var ownerDH = owners.filter(function(o){ return MID.indexOf(o) >= 0; })[0];
+  var midName = ownerDH || _deptHeadFor(record['카테고리']) || manual.filter(function(m){ return MID.indexOf(m) >= 0; })[0] || '';
+
+  // 표준 결재선: 부서장 → GM → 대표님. 본인이 부서장이라도 부서장 승인부터(스킵 X). GM 직접 건만 부서장·GM 스킵→대표만.
   const ownerIsGM = owners.indexOf('김남욱GM') >= 0;
-  const ownerIsDeptHead = owners.some(function(o){ return MID.indexOf(o) >= 0; });  // 담당자가 부서장 본인이면 부서장 스킵
   const route = [];
-  // ① 담당자=김남욱GM → 부서장·GM 스킵(대표만). ② 담당자가 부서장 본인 → 부서장 스킵(카테고리 짐작 cross-부서 오배정 차단, 2026-06-03 GM).
-  if (midName && !ownerIsGM && !ownerIsDeptHead) route.push('부서장');
+  if (midName && !ownerIsGM) route.push('부서장');
   if (!ownerIsGM) route.push('GM');
   route.push('대표님');
   return route;
