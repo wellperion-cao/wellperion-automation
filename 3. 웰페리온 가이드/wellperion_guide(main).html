@@ -632,17 +632,17 @@
     <!-- AUTO:LATEST-START -->
     <div class="card grow">
       <h4>최신 업데이트 — 2026-06-03 (자동 갱신)</h4>
+      <p><strong>2026-06-03</strong> feat(guidehub): S2에 운영 프롬프트·컨텍스트정비 범위표 흡수처 신설</p>
       <p><strong>2026-06-03</strong> fix(coo): GM 직접 건 결재선 대표님만 + 결재카드 담당자 제목아래로</p>
       <p><strong>2026-06-03</strong> refactor(s2): STAGE4+5 CLAUDE.md 얇은인덱스 축소 + 부팅 단일출처 명시 (원칙 S2 단일화 완료)</p>
       <p><strong>2026-06-03</strong> refactor(guidehub): T4 자동화 표+행펼침 방식 전환 (GM 요청)</p>
       <p><strong>2026-06-03</strong> fix(coo): 결재 SSOT 트렐로·캘린더 풀폭 — .content 720px 가운데 → 풀폭 좌측정렬 (업무현황 파리티)</p>
-      <p><strong>2026-06-03</strong> fix(cmo): 블로그 제목칸에 본문 첫 문장 혼입 버그 수정</p>
     </div>
 <!-- AUTO:LATEST-END -->
         <table>
           <tr><th style="width:160px">날짜</th><th>변경 내용</th></tr>
           <!-- AUTO:TABLE-START -->
-      <tr><td><strong>2026-06-03 (자동)</strong></td><td>fix(coo): GM 직접 건 결재선 대표님만 + 결재카드 담당자 제목아래로 · refactor(s2): STAGE4+5 CLAUDE.md 얇은인덱스 축소 + 부팅 단일출처 명시 (원칙 S2 단일화 완료) · refactor(guidehub): T4 자동화 표+행펼침 방식 전환 (GM 요청) · fix(coo): 결재 SSOT 트렐로·캘린더 풀폭 —…</td></tr>
+      <tr><td><strong>2026-06-03 (자동)</strong></td><td>feat(guidehub): S2에 운영 프롬프트·컨텍스트정비 범위표 흡수처 신설 · fix(coo): GM 직접 건 결재선 대표님만 + 결재카드 담당자 제목아래로 · refactor(s2): STAGE4+5 CLAUDE.md 얇은인덱스 축소 + 부팅 단일출처 명시 (원칙 S2 단일화 완료) · refactor(guidehub): T4 자동화 표+행펼…</td></tr>
       <!-- AUTO:TABLE-END -->
           <tr><td><strong>2026-05-28 (14차)</strong></td><td>공지/안내문 생성(COO 하위) · 오프라인 홍보물 디자인 제작(CMO 하위) 도구 신설 · 공지 서식 v2.0 독립 페이지화 · 회사소개서·전략로드맵 원본 「3. 웰페리온 가이드/회사문서/」로 이관(SSOT 단일화) · C-Level 부팅 R/R Notion API→가이드허브 g10 참조로 전환 · GitHub Pages 워크플로 폴더명 경로 수정 · 사이드바 "공통+7개 C-Level" 라벨 제거</td></tr>
           <tr><td>2026-05-27 (13차)</td><td>GitHub Pages 전환 · 사이드바 4섹터 · AI C-Level 통일 · 운영 통합 체계 · 공식채널·지출현황·취업규칙·SSOT 신설 · g2+g19·g9+g20·g12·g13 합병 · 김남욱 탭 확장 · v2.5</td></tr>
@@ -1889,21 +1889,42 @@
         <details class="toggle" style="margin:12px 0;">
           <summary style="font-weight:700;"><span class="ico">🔧</span>① 컨텍스트 정비·자기학습 실행 (클릭해서 펼치기)</summary>
           <div class="toggle-body">
-            <!-- STAGE 2에서 g15 정비/자기학습 프롬프트 이동 예정 -->
+            <p style="font-size:13px;color:var(--dim);">매주 월 09:00 주간 정비(아래 범위표)와 자기학습 사이클에서 세션에 직접 붙여넣어 사용. STEP 1~5(스캔→단순화→자동화→고도화→통합) 단일 실행 프롬프트.</p>
+            <h4>컨텍스트 정비 실행 (STEP 1~5)</h4>
+            <pre style="background:#16181c; color:#e8e8e8; padding:14px 16px; border-radius:8px; font-size:13px; white-space:pre-wrap; line-height:1.7; border-left:3px solid var(--accent);">각 AI C-Level의 컨텍스트 파일(.md·.json·.log)을 스캔→단순화→자동화→고도화→통합 제안 5단계로 정비해줘. 고위험 작업은 제안만, GM 승인 후 반영.</pre>
+            <h4>자기학습 사이클 실행</h4>
+            <pre style="background:#16181c; color:#e8e8e8; padding:14px 16px; border-radius:8px; font-size:13px; white-space:pre-wrap; line-height:1.7; border-left:3px solid var(--accent);">ai_education_auto_learner.py를 실행해서 최신 AI 정보를 수집·요약한 뒤, 각 C-Level R/R 기준으로 고도화 제안을 정리해줘. 제안은 텔레그램으로 GM님께 발송.</pre>
           </div>
         </details>
 
         <details class="toggle" style="margin:12px 0;">
           <summary style="font-weight:700;"><span class="ico">🧩</span>② 조직 규칙·split-brain·메모리·영구화 (클릭해서 펼치기)</summary>
           <div class="toggle-body">
-            <!-- STAGE 2에서 g18 운영형(5·6·7) 프롬프트 이동 예정 -->
+            <p style="font-size:13px;color:var(--dim);">출처: Code with Claude — London 2026. 7번으로 CLAUDE.md에 영구 박제 권장.</p>
+            <h4>역할 기반 에이전트 점검 (split-brain 방지)</h4>
+            <pre style="background:#16181c; color:#e8e8e8; padding:14px 16px; border-radius:8px; font-size:13px; white-space:pre-wrap; line-height:1.7; border-left:3px solid var(--accent); overflow-x:auto;">우리 AI 에이전트(7 C-Level) 구성이 "역할 단위로 완결되어 있는지" 점검해줘.
+- 한 업무를 여러 에이전트가 조각내어 나눠 가져 서로 맥락을 모르는 split-brain 구조가 있으면 찾아내줘.
+- 각 에이전트가 자기 담당 영역 안에서는 모든 것을 완결적으로 책임지는 구조인지 확인해줘.
+- 에이전트에게 일을 위임할 때 항상 전체 컨텍스트(기획·목적·톤·대상)를 함께 넘기는지 확인해줘.
+문제가 있으면 재설계 방안을 제안하고, 실제 수정은 내 승인 후 진행해줘.</pre>
+            <h4>메모리 정착 — 세션이 끊겨도 학습 유지</h4>
+            <pre style="background:#16181c; color:#e8e8e8; padding:14px 16px; border-radius:8px; font-size:13px; white-space:pre-wrap; line-height:1.7; border-left:3px solid var(--accent); overflow-x:auto;">이 프로젝트에서 반복되는 결정·규칙·내 작업 스타일·자주 하는 요청을 파악해서, 다음 세션에도 이어지도록 메모리에 정리해 저장해줘.
+1. 먼저 /memory 로 현재 저장된 내용을 보여줘.
+2. 빠졌거나 오래된 내용이 있으면 보완·갱신해줘.
+3. 앞으로도 "미래에 기억해두면 좋을 것"이 생기면 스스로 판단해 메모리에 추가해줘.</pre>
+            <h4>핵심 규칙 영구화</h4>
+            <pre style="background:#16181c; color:#e8e8e8; padding:14px 16px; border-radius:8px; font-size:13px; white-space:pre-wrap; line-height:1.7; border-left:3px solid var(--accent); overflow-x:auto;">검증 루프와 에러 자가복구 규칙을 우리 프로젝트 루트 CLAUDE.md의 "토큰·실행 효율 규칙" 섹션 아래에 영구 규칙으로 추가해줘. 기존 내용은 유지하고, 적용 전 원본을 백업해줘.</pre>
           </div>
         </details>
 
         <details class="toggle" style="margin:12px 0;">
           <summary style="font-weight:700;"><span class="ico">⚙️</span>③ 셋업·점검 단발 프롬프트 (클릭해서 펼치기)</summary>
           <div class="toggle-body">
-            <!-- STAGE 2에서 g1/g10 셋업·점검 프롬프트 이동 예정 -->
+            <p style="font-size:13px;color:var(--dim);">신규 PC·세션 셋업 시 1회 점검용. (설정 파일 위치·용도는 T2 기술 인프라 상세 ▸ 설정 위치 탭 참조.)</p>
+            <h4>Claude 설정 점검 (CLAUDE.md·settings)</h4>
+            <pre style="background:#16181c; color:#e8e8e8; padding:14px 16px; border-radius:8px; font-size:13px; white-space:pre-wrap; line-height:1.7; border-left:3px solid var(--accent);">가이드허브 S1 공통 가이드라인 기준으로 내 Claude 설정(CLAUDE.md·settings 위치와 내용)을 점검하고, 가이드와 어긋난 부분을 알려줘.</pre>
+            <h4>S2 운영 가이드 정합성 점검</h4>
+            <pre style="background:#16181c; color:#e8e8e8; padding:14px 16px; border-radius:8px; font-size:13px; white-space:pre-wrap; line-height:1.7; border-left:3px solid var(--accent);">가이드허브 S2 AI C-Level 운영 가이드의 공통 절대 원칙·보고 포맷·통합 원칙을 현재 내 작업 방식과 대조해 어긋난 부분을 점검해줘.</pre>
           </div>
         </details>
 
@@ -3190,17 +3211,47 @@ kubectl get pods -o json | jq '.items[] | {name: .metadata.name}'</pre>
 
       <!-- ── 탭 7: 핵심 프롬프트 ── -->
       <div class="tab-panel" data-panel="g15prompt">
-        <h3><span class="ico">🤖</span>핵심 프롬프트</h3>
+        <h3><span class="ico">🤖</span>핵심 프롬프트 (교육·방법론)</h3>
+        <div class="callout tip" style="margin:8px 0 16px;"><strong>📌 운영형 프롬프트는 S2로 이동.</strong> 컨텍스트 정비 실행·자기학습 사이클은 <strong>S2 AI C-Level 운영 가이드 ▸ 공통 ▸ 운영 프롬프트 ①</strong>에서 관리합니다(SSOT). 아래는 교육·범용 방법론 프롬프트만 둡니다.</div>
+
         <h4>토큰·컨텍스트 효율 점검</h4>
         <pre style="background:#16181c; color:#e8e8e8; padding:14px 16px; border-radius:8px; font-size:13px; white-space:pre-wrap; line-height:1.7; border-left:3px solid var(--accent);">가이드허브 AI 교육자료 핵심요약 기준으로 현재 작업의 토큰·컨텍스트 효율을 점검해줘.</pre>
         <h4>비용 절감 설정 적용</h4>
         <pre style="background:#16181c; color:#e8e8e8; padding:14px 16px; border-radius:8px; font-size:13px; white-space:pre-wrap; line-height:1.7; border-left:3px solid var(--accent);">settings.json의 모델·토큰·컴팩트 설정을 가이드허브 비용 절감 4줄 기준으로 점검하고 차이를 알려줘.</pre>
-        <h4>컨텍스트 정비 실행</h4>
-        <pre style="background:#16181c; color:#e8e8e8; padding:14px 16px; border-radius:8px; font-size:13px; white-space:pre-wrap; line-height:1.7; border-left:3px solid var(--accent);">각 AI C-Level의 컨텍스트 파일(.md·.json·.log)을 스캔→단순화→자동화→고도화→통합 제안 5단계로 정비해줘. 고위험 작업은 제안만, GM 승인 후 반영.</pre>
         <h4>플러그인·보안 점검</h4>
         <pre style="background:#16181c; color:#e8e8e8; padding:14px 16px; border-radius:8px; font-size:13px; white-space:pre-wrap; line-height:1.7; border-left:3px solid var(--accent);">현재 설치된 플러그인 목록과 보안 상태를 점검해줘. ecc-agentshield 기준 5종(시크릿·권한·훅·MCP·에이전트) 체크.</pre>
-        <h4>자기학습 사이클 실행</h4>
-        <pre style="background:#16181c; color:#e8e8e8; padding:14px 16px; border-radius:8px; font-size:13px; white-space:pre-wrap; line-height:1.7; border-left:3px solid var(--accent);">ai_education_auto_learner.py를 실행해서 최신 AI 정보를 수집·요약한 뒤, 각 C-Level R/R 기준으로 고도화 제안을 정리해줘. 제안은 텔레그램으로 GM님께 발송.</pre>
+
+        <h3 style="margin-top:28px;border-top:1px solid var(--border);padding-top:24px;"><span class="ico">🚀</span>범용 방법론 프롬프트 (Claude Code 작업 원칙)</h3>
+        <p style="font-size:13px;color:var(--dim);">출처: Code with Claude — London 2026. 어떤 프로젝트에서도 쓰는 작업 방식 프롬프트. (조직 운영형 프롬프트 split-brain·메모리·영구화는 S2 운영 프롬프트 ②.)</p>
+        <h4>1. 검증 루프 — 지켜보지 않아도 알아서 일하게</h4>
+        <pre style="background:#16181c; color:#e8e8e8; padding:14px 16px; border-radius:8px; font-size:13px; white-space:pre-wrap; line-height:1.7; border-left:3px solid var(--accent); overflow-x:auto;">앞으로 모든 작업을 "검증 루프" 방식으로 진행해줘.
+1. 작업 시작 전에 "무엇이 나오면 성공인지" 성공 기준을 먼저 정의해 알려줘.
+2. 작업을 실행한 뒤, 네가 직접 결과를 확인해.
+3. 실패하면 에러 원인을 분석해 고치고 다시 시도해.
+4. 성공할 때까지 반복하되, 3회 시도 후에도 안 되면 진행 상황을 정리해 보고해.
+5. 중간 과정은 생략하고 최종 결과만 보고해.
+이 방식을 이번 세션 내내 기본 작업 규칙으로 적용해줘.</pre>
+        <h4>2. 검증 루프 영구화 (Skill로 패키지화)</h4>
+        <pre style="background:#16181c; color:#e8e8e8; padding:14px 16px; border-radius:8px; font-size:13px; white-space:pre-wrap; line-height:1.7; border-left:3px solid var(--accent); overflow-x:auto;">방금 적용한 검증 루프를 재사용 가능한 Skill로 만들어줘.
+- 스킬 이름: verification-loop
+- 앞으로 모든 작업에서 이 스킬이 자동 적용되도록 설정해줘.
+- 작업 중 반복되는 실패 패턴이 발견되면 이 스킬을 스스로 보완·업데이트해줘.</pre>
+        <h4>3. 에러 자가복구 루프</h4>
+        <pre style="background:#16181c; color:#e8e8e8; padding:14px 16px; border-radius:8px; font-size:13px; white-space:pre-wrap; line-height:1.7; border-left:3px solid var(--accent); overflow-x:auto;">앞으로 에러가 발생하면 다음 순서로 스스로 처리해줘.
+1. 에러 메시지를 끝까지 읽고 — 무슨 에러인지 / 어느 파일·어디서 났는지 / 어떻게 고치는지 파악해.
+2. 파악한 해결책을 바로 실행해 수정해.
+3. 최대 3회까지 자가 수정을 시도해.
+4. 3회 후에도 해결되지 않으면 그때 정확한 상황(에러 내용·시도한 것·막힌 지점)을 보고해.
+그리고 우리 코드에서 에러를 출력하는 부분은, 앞으로 "에러 종류 / 위치(파일·줄) / 해결 방법"이 함께 담기도록 점진적으로 개선해줘.</pre>
+        <h4>4. 폴더별 CLAUDE.md 분산 정비</h4>
+        <pre style="background:#16181c; color:#e8e8e8; padding:14px 16px; border-radius:8px; font-size:13px; white-space:pre-wrap; line-height:1.7; border-left:3px solid var(--accent); overflow-x:auto;">우리 프로젝트를 "폴더별 작업 매뉴얼" 구조로 정비해줘.
+거대한 단일 CLAUDE.md 하나에 모든 규칙을 담는 대신, 작업 폴더마다 그 폴더 작업에만 해당하는 규칙을 담은 CLAUDE.md를 두는 방식이야.
+1. 먼저 어떤 폴더에 전용 CLAUDE.md가 필요한지, 각 폴더에 어떤 규칙이 들어가면 좋을지 목록으로 제안해줘.
+2. 내가 승인하면 그때 각 폴더에 CLAUDE.md를 생성해줘.
+루트 CLAUDE.md에는 전사 공통 규칙만 남기는 방향으로.</pre>
+        <div class="card" style="margin-top:20px; border-left:3px solid var(--warm);">
+          <strong>⚠️ GM 목표 반영</strong> — GM은 "깊게 생각·병렬·자동화"를 우선한다. '비용 절감' 항목의 <code>MAX_THINKING_TOKENS 낮추기</code>는 사고량을 줄이므로 <strong>적용하지 않는다.</strong> 작업량은 "매우 높음" 유지.
+        </div>
       </div>
 
     </div>
@@ -3394,12 +3445,12 @@ Start-Process python -ArgumentList telegram_bot\daily_scheduler.py -WorkingDirec
 
         <div style="margin-bottom:16px; padding:13px 16px; background:#16181c; border-radius:8px; border-left:3px solid var(--accent);">
           <div style="font-size:12px; font-weight:700; color:var(--accent); margin-bottom:6px;">12시 시설 점검 현황 수동 확인</div>
-          <pre style="margin:0; color:#e8e8e8; font-size:12.5px; white-space:pre-wrap; line-height:1.6;">오늘 시설·지원·주차 점검 현황을 지금 바로 확인해줘. Google Sheets API + Notion COO 체크리스트 DB 양쪽 조회해서 구역별 완료율과 이슈를 보고해줘.</pre>
+          <pre style="margin:0; color:#e8e8e8; font-size:12.5px; white-space:pre-wrap; line-height:1.6;">오늘 시설·지원·주차 점검 현황을 지금 바로 확인해줘. 지원부 체계 점검 앱 + Google Sheets 기록 시트를 조회해서 구역별 완료율과 이슈를 보고해줘.</pre>
         </div>
 
         <div style="margin-bottom:16px; padding:13px 16px; background:#16181c; border-radius:8px; border-left:3px solid var(--accent);">
           <div style="font-size:12px; font-weight:700; color:var(--accent); margin-bottom:6px;">Watcher 전체 점검</div>
-          <pre style="margin:0; color:#e8e8e8; font-size:12.5px; white-space:pre-wrap; line-height:1.6;">daily_scheduler에 등록된 Watcher 전체(auto_task·archive·planning·status_change·pre_task·permission)의 최근 실행 로그를 확인하고, 오류가 있으면 보고해줘.</pre>
+          <pre style="margin:0; color:#e8e8e8; font-size:12.5px; white-space:pre-wrap; line-height:1.6;">현행 Watcher 전체(pre_task_notifier·bot_health_check·env_reload_watcher·ig_review_publish_watcher)의 최근 실행 로그를 확인하고, 오류가 있으면 보고해줘. (폐기된 노션 폴링 watcher는 제외.)</pre>
         </div>
 
         <div style="margin-bottom:16px; padding:13px 16px; background:#16181c; border-radius:8px; border-left:3px solid var(--accent);">
