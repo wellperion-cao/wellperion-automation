@@ -318,9 +318,148 @@ async def run_draft_inquiry(post_id_arg: "str | None" = None) -> int:
     return 0 if post_id else 7
 
 
+async def run_publish_inquiry(post_id_arg: str, slug: str = "inquiry") -> int:
+    """초안 페이지를 슬러그 설정 후 '공개' 발행. (되돌리기: 편집화면에서 다시 임시글 전환 가능)"""
+    async_playwright = _import_playwright()
+    print(f"[INFO] === 워드프레스 문의 페이지 발행 (post={post_id_arg}, slug={slug}) ===")
+    if not PROFILE_DIR.exists():
+        print("[ERROR] 프로필 미존재 — 먼저 --mode setup 실행 필요.")
+        return 3
+    p, ctx = await _launch(async_playwright)
+    page = ctx.pages[0] if ctx.pages else await ctx.new_page()
+    await page.goto(f"http://wellperion.com/wp/wp-admin/post.php?post={post_id_arg}&action=edit&lang=ko",
+                    wait_until="domcontentloaded", timeout=40_000)
+    await page.wait_for_timeout(2500)
+    if "wp-login" in page.url:
+        print("[ERROR] 세션 만료 — setup 재실행 필요.")
+        await ctx.close(); await p.stop(); return 2
+
+    # 슬러그 설정 (퍼머링크 편집)
+    try:
+        if await page.query_selector("#edit-slug-buttons button.edit-slug"):
+            await page.click("#edit-slug-buttons button.edit-slug")
+            await page.wait_for_timeout(600)
+            await page.fill("#new-post-slug", slug)
+            await page.click("#edit-slug-buttons button.save")
+            await page.wait_for_timeout(1200)
+            print(f"[INFO] 슬러그 설정: {slug}")
+    except Exception as e:
+        print(f"[WARN] 슬러그 설정 경고(무시): {e}")
+
+    # 발행 — #publish 버튼 (초안에서는 '공개')
+    await page.click("#publish")
+    try:
+        await page.wait_for_url("**/post.php?post=*", timeout=30_000)
+    except Exception:
+        await page.wait_for_timeout(4000)
+    await page.wait_for_timeout(1500)
+    status = await page.evaluate("() => (document.querySelector('#post-status-display')||{}).innerText || ''")
+    permalink = await page.evaluate(
+        "() => { const a=document.querySelector('#sample-permalink a, #sample-permalink'); return a? (a.href||a.innerText):''; }"
+    )
+    await page.screenshot(path=str(INSPECT_DIR / "wp_inquiry_published.png"))
+    print(f"[INFO] 글 상태: {status or '(미검출)'}")
+    print(f"[INFO] 공개 URL: {permalink or '(미검출)'}")
+    await ctx.close(); await p.stop()
+    published = "공개" in status or "published" in status.lower()
+    print(f"[INFO] === 발행 {'완료' if published else '확인 필요'} ===")
+    return 0 if published else 8
+
+
+KOREAN_MENU_ID = "59"  # '한국어 메인 (Top Navigation Menu)' — 프론트 상단 메뉴
+
+
+async def run_add_menu(post_id_arg: str, menu_id: str = KOREAN_MENU_ID) -> int:
+    """한글 메인 메뉴(기본 id=59) '맨 끝'에 해당 페이지를 추가. (Add to Menu = 끝에 추가)"""
+    async_playwright = _import_playwright()
+    print(f"[INFO] === 상단 메뉴에 문의 페이지 추가 (post={post_id_arg}, menu={menu_id}) ===")
+    if not PROFILE_DIR.exists():
+        print("[ERROR] 프로필 미존재 — 먼저 --mode setup 실행 필요.")
+        return 3
+    p, ctx = await _launch(async_playwright)
+    page = ctx.pages[0] if ctx.pages else await ctx.new_page()
+    # 한글 메인 메뉴를 직접 지정해 편집
+    await page.goto(f"http://wellperion.com/wp/wp-admin/nav-menus.php?action=edit&menu={menu_id}&lang=ko",
+                    wait_until="domcontentloaded", timeout=40_000)
+    await page.wait_for_timeout(2500)
+    if "wp-login" in page.url:
+        print("[ERROR] 세션 만료 — setup 재실행 필요.")
+        await ctx.close(); await p.stop(); return 2
+
+    before = await page.evaluate("() => document.querySelectorAll('#menu-to-edit li.menu-item').length")
+    menu_name = await page.evaluate("() => (document.querySelector('#menu-name')||{}).value || ''")
+    print(f"[INFO] 편집 중 메뉴: '{menu_name}' / 현재 항목 {before}개")
+    await page.screenshot(path=str(INSPECT_DIR / "wp_menu_before.png"))
+    if "한국" not in menu_name and "Top" not in menu_name:
+        print(f"[WARN] 한글 메인 메뉴가 아닐 수 있음('{menu_name}') — 계속 진행하되 결과 확인 필요.")
+
+    # 이미 추가돼 있는지 확인(중복 방지)
+    already = await page.evaluate(
+        "(pid)=>[...document.querySelectorAll('#menu-to-edit input.menu-item-data-object-id')].some(i=>i.value===String(pid))",
+        post_id_arg,
+    )
+    if already:
+        print("[INFO] 이미 메뉴에 문의 페이지가 있음 — 중복 추가 안 함.")
+        await ctx.close(); await p.stop(); return 0
+
+    # Pages 메타박스 '검색' 탭 클릭 후 검색
+    try:
+        tab = await page.query_selector("a[href='#tabs-panel-posttype-page-search']")
+        if tab:
+            await tab.click()
+            await page.wait_for_timeout(600)
+        await page.fill("#quick-search-posttype-page", INQUIRY_PAGE_TITLE)
+        await page.keyboard.press("Enter")
+        await page.wait_for_timeout(2500)
+    except Exception as e:
+        print(f"[WARN] 검색 경고(무시): {e}")
+
+    # 검색 결과/전체에서 post-id 체크박스 선택
+    checked = await page.evaluate(
+        """(pid) => {
+            let target=null;
+            document.querySelectorAll('#add-page input[type=checkbox]').forEach(cb=>{
+                if((cb.value||'')===String(pid)) target=cb;
+            });
+            if(target){ target.checked=true; target.dispatchEvent(new Event('change',{bubbles:true})); return true; }
+            return false;
+        }""",
+        post_id_arg,
+    )
+    print(f"[INFO] 문의 페이지 체크박스 선택: {checked}")
+    if not checked:
+        await page.screenshot(path=str(INSPECT_DIR / "wp_menu_searchfail.png"))
+        print("[ERROR] 페이지 체크박스 미발견 — 스크린샷(wp_menu_searchfail.png) 확인.")
+        await ctx.close(); await p.stop(); return 9
+
+    # 'Add to Menu' (페이지 post_type 전용 버튼)
+    add_btn = await page.query_selector("#submit-posttype-page, .submit-add-to-menu")
+    if add_btn:
+        await add_btn.click()
+        await page.wait_for_timeout(3000)
+    after = await page.evaluate("() => document.querySelectorAll('#menu-to-edit li.menu-item').length")
+    print(f"[INFO] 추가 후 항목 {after}개 (이전 {before})")
+    if after <= before:
+        await page.screenshot(path=str(INSPECT_DIR / "wp_menu_addfail.png"))
+        print("[ERROR] 메뉴 항목이 늘지 않음 — 추가 실패. 스크린샷 확인.")
+        await ctx.close(); await p.stop(); return 10
+
+    # 메뉴 저장
+    save_btn = await page.query_selector("#save_menu_footer, #save_menu_header")
+    if save_btn:
+        await save_btn.click()
+        await page.wait_for_timeout(3500)
+    await page.screenshot(path=str(INSPECT_DIR / "wp_menu_after.png"))
+    print("[INFO] === 메뉴 저장 완료 (맨 끝에 추가) ===")
+    await ctx.close(); await p.stop()
+    return 0
+
+
 def main() -> int:
-    ap = argparse.ArgumentParser(description="워드프레스 관리자 반자동 (setup/check/inspect/draft-inquiry)")
-    ap.add_argument("--mode", choices=["setup", "check", "inspect", "draft-inquiry"], default="setup")
+    ap = argparse.ArgumentParser(description="워드프레스 관리자 반자동 (setup/check/inspect/draft-inquiry/publish-inquiry/add-menu)")
+    ap.add_argument("--mode", choices=["setup", "check", "inspect", "draft-inquiry", "publish-inquiry", "add-menu"], default="setup")
+    ap.add_argument("--slug", dest="slug", default="inquiry", help="publish-inquiry 슬러그(기본 inquiry)")
+    ap.add_argument("--menu-id", dest="menu_id", default=KOREAN_MENU_ID, help="add-menu 대상 메뉴 ID(기본 59=한글메인)")
     ap.add_argument("--post-id", dest="post_id", default=None,
                     help="draft-inquiry 갱신 대상 페이지 ID (미지정 시 신규 생성)")
     args = ap.parse_args()
@@ -330,6 +469,14 @@ def main() -> int:
         return asyncio.run(run_inspect())
     if args.mode == "draft-inquiry":
         return asyncio.run(run_draft_inquiry(args.post_id))
+    if args.mode == "publish-inquiry":
+        if not args.post_id:
+            print("[ERROR] --post-id 필요"); return 1
+        return asyncio.run(run_publish_inquiry(args.post_id, args.slug))
+    if args.mode == "add-menu":
+        if not args.post_id:
+            print("[ERROR] --post-id 필요"); return 1
+        return asyncio.run(run_add_menu(args.post_id, args.menu_id))
     return asyncio.run(run_check())
 
 
