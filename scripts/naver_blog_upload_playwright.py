@@ -74,9 +74,14 @@ IMAGE_TOOLBAR_BUTTON_SELECTORS = [
     'button[data-log="image"]',
 ]
 # 사진 첨부 방식 모달 → 슬라이드 옵션 (v3.0 핵심 단계)
+# ⚠ #image-type-slide 는 <input type=button> 인데 <label for=...>가 포인터 이벤트를 가로채
+#   input 직접 클릭은 타임아웃. 반드시 label[for="image-type-slide"] 를 클릭한다(2026-06-03 실측).
 IMAGE_TYPE_MODAL_SELECTORS = [".se-popup-image-type", '[data-group="popupLayer"] .se-popup-image-type']
-IMAGE_TYPE_SLIDE_SELECTOR = "#image-type-slide"
+IMAGE_TYPE_SLIDE_SELECTOR = 'label[for="image-type-slide"]'
+IMAGE_TYPE_SLIDE_INPUT_SELECTOR = "#image-type-slide"
 IMAGE_TYPE_LIST_SELECTOR = "#image-type-list"
+# 본문에 실제 삽입된 이미지 검증용 — .se-content 영역 내 <img> 개수(슬라이드=N장 모두 img 태그).
+INSERTED_IMAGE_SELECTOR = ".se-content img"
 
 # 스티커 (2026-06-03 실측 — 사진 버튼과 동일한 툴바 구조).
 # 툴바 '스티커' 버튼 클릭 → 우측 se-sidebar-container-sticker 패널 오픈.
@@ -120,9 +125,12 @@ DRAFT_RESUME_CANCEL_SELECTORS = [
 ]
 
 # popup killer (project_smarteditor_auto_attach v3.0)
+# ⚠ [data-group='popupLayer'] 제거: 사진 첨부 방식(se-popup-image-type) 모달이 이 그룹에 속해
+#   killer가 모달을 즉시 삭제 → 슬라이드 선택 불가 → 이미지 미삽입(2026-06-03 실측 root cause).
+#   resume 이어쓰기 팝업은 _dismiss_draft_resume_popup가 별도로 취소하므로 popupLayer 통삭제 불필요.
 POPUP_KILLER_SELECTORS = (
     ".se-popup-dim, .se-popup-alert, .se-popup-alert-confirm, "
-    ".blog-se-alert, .se-help-panel, [data-group='popupLayer']"
+    ".blog-se-alert, .se-help-panel"
 )
 
 # 임시저장 큐 카운트 버튼 (큐 누적 진단용 — project_draft_queue_dependency)
@@ -485,12 +493,18 @@ async def _enter_write_and_fill(page, post: BlogPost, blog_id: str | None) -> No
     except Exception:
         pass
 
-    # 스티커 삽입 (우선 — GM 지시 2026-06-03). 본문 끝에 STICKER_COUNT개 삽입.
+    # 스티커 2개 위치 지정 삽입 (GM 지시 2026-06-03):
+    #   ① 본문 맨 처음 1개  ② '문의 : litt.ly/wellperion' 줄 다음 1개.
+    #   순서: 시작 스티커 먼저 → '문의' 줄 재탐색 후 그 다음에 삽입(텍스트 매칭이라 caret 충돌 없음).
+    #   이미지는 맨 마지막에 본문 끝(Ctrl+End)으로 삽입하므로 스티커와 caret 충돌 없음.
     sticker_count = getattr(post, "sticker_count", STICKER_COUNT_DEFAULT)
     if sticker_count > 0:
-        await _insert_stickers(page, target, sticker_count)
+        await _place_caret_at_body_start(page, target)
+        await _insert_one_sticker_at_caret(page, target, "본문 맨 처음")
+        await _place_caret_after_inquiry_line(page, target)
+        await _insert_one_sticker_at_caret(page, target, "'문의' 줄 다음")
 
-    # 이미지 첨부 (부차적 — 슬라이드 모달 단계 포함 v3.0). 실패해도 draft 진행.
+    # 이미지 첨부 (슬라이드 모달 단계 포함). 본문 맨 아래에 삽입. 실패해도 draft 진행.
     if post.image_paths:
         await _attach_images(page, target, post.image_paths)
 
@@ -566,16 +580,121 @@ async def _insert_stickers(page, target, count: int) -> int:
     return inserted
 
 
-async def _attach_images(page, target, image_paths: list[Path]) -> None:
+async def _insert_one_sticker_at_caret(page, target, label: str) -> int:
+    """현재 caret 위치에 스티커 1개만 삽입. (위치 지정은 호출 측 caret 이동 책임)
+    툴바 스티커 버튼으로 패널 오픈 → 첫 가시 항목 1개 클릭 → 패널 닫기 → 삽입 검증.
+    삽입 성공 시 1, 실패 시 0 반환. (위치 지정 스티커 — 2026-06-03 GM 지시)"""
+    btn_loc, btn_sel = await _first_locator(target, STICKER_TOOLBAR_BUTTON_SELECTORS)
+    if btn_loc is None:
+        print(f"[WARN] 스티커 버튼 미발견 — {label} 스티커 건너뜀")
+        return 0
+    sticker_count_js = "() => document.querySelectorAll('.se-component.se-sticker').length"
+    try:
+        before = await target.evaluate(sticker_count_js)
+    except Exception:
+        before = 0
+    try:
+        await btn_loc.click(force=True)
+        await page.wait_for_timeout(2000)  # 패널 그리드 로딩
+    except Exception as e:
+        print(f"[WARN] 스티커 패널 오픈 실패({label}): {e}")
+        return 0
+    items = target.locator(STICKER_ITEM_SELECTOR)
+    try:
+        n = await items.count()
+    except Exception:
+        n = 0
+    clicked = 0
+    for i in range(min(n, 11)):
+        it = items.nth(i)
+        try:
+            if await it.is_visible():
+                await it.click(force=True)
+                clicked = 1
+                await page.wait_for_timeout(900)
+                break
+        except Exception:
+            continue
+    # 패널 닫기 (토글)
+    try:
+        await btn_loc.click(force=True)
+        await page.wait_for_timeout(600)
+    except Exception:
+        pass
+    try:
+        after = await target.evaluate(sticker_count_js)
+    except Exception:
+        after = before
+    inserted = after - before
+    if inserted >= 1:
+        print(f"[INFO] 스티커 삽입 OK — {label} (본문 스티커 {before}→{after})")
+    else:
+        print(f"[WARN] 스티커 삽입 실패 — {label} (본문 스티커 {before}→{after}, 클릭 {clicked})")
+    return inserted
+
+
+async def _place_caret_at_body_start(page, target) -> None:
+    """본문 첫 문단을 클릭하고 Ctrl+Home으로 caret을 본문 맨 처음으로 이동."""
+    try:
+        body_loc, _ = await _first_locator(target, BODY_SELECTORS)
+        if body_loc is not None:
+            await body_loc.click()
+        await page.keyboard.press("Control+Home")
+        await page.wait_for_timeout(300)
+    except Exception as e:
+        print(f"[WARN] 본문 시작 caret 이동 실패: {e}")
+
+
+async def _place_caret_after_inquiry_line(page, target) -> bool:
+    """본문에서 '문의' 텍스트가 있는 문단을 찾아 그 문단 끝으로 caret 이동.
+    찾으면 True. 못 찾으면 본문 끝(Ctrl+End)으로 폴백하고 False 반환."""
+    try:
+        # SmartEditor 문단(span.se-text-paragraph 등)에서 '문의' 포함 노드를 찾아 클릭
+        para = target.locator('p.se-text-paragraph:has-text("문의"), .se-text-paragraph:has-text("문의")').last
+        if await para.count() > 0:
+            await para.click()
+            # 문단 끝으로 caret (End)
+            await page.keyboard.press("End")
+            await page.wait_for_timeout(300)
+            print("[INFO] '문의' 줄 끝으로 caret 이동")
+            return True
+    except Exception as e:
+        print(f"[WARN] '문의' 줄 탐색 실패: {e}")
+    try:
+        await page.keyboard.press("Control+End")
+        await page.wait_for_timeout(200)
+    except Exception:
+        pass
+    print("[WARN] '문의' 줄 미발견 — 본문 끝으로 폴백")
+    return False
+
+
+async def _attach_images(page, target, image_paths: list[Path]) -> int:
+    """사진 버튼 클릭→file_chooser로 N장 주입→'사진 첨부 방식' 모달에서 슬라이드 선택→본문 맨 아래 삽입.
+    실제 삽입된 <img> 개수를 반환. (2026-06-03 실측 root cause 반영)
+
+    핵심 수정 2가지:
+      1) popup killer가 image-type 모달(data-group=popupLayer)을 지우면 슬라이드 선택 불가 →
+         POPUP_KILLER_SELECTORS 에서 popupLayer 제거 완료.
+      2) #image-type-slide(input)는 label이 포인터를 가로채므로 label[for=...]를 클릭한다.
+    """
     btn_loc, btn_sel = await _first_locator(target, IMAGE_TOOLBAR_BUTTON_SELECTORS)
     if btn_loc is None:
         print("[WARN] 사진 추가 버튼 미발견 — 이미지 첨부 건너뜀")
-        return
+        return 0
     # 본문 끝으로 caret 이동 (이미지가 본문 아래 들어가게)
     try:
         await page.keyboard.press("Control+End")
     except Exception:
         pass
+
+    # 삽입 전 본문 이미지 수 (검증 기준선)
+    try:
+        before = await page.evaluate("(sel)=>document.querySelectorAll(sel).length", INSERTED_IMAGE_SELECTOR)
+    except Exception:
+        before = 0
+
+    # 사진 버튼 클릭 → 네이티브 file_chooser 가로채 N장 주입
     try:
         async with page.expect_file_chooser(timeout=8000) as fc_info:
             await btn_loc.click(force=True)
@@ -584,19 +703,43 @@ async def _attach_images(page, target, image_paths: list[Path]) -> None:
         print(f"[INFO] 이미지 {len(image_paths)}장 주입 (file_chooser)")
     except Exception as e:
         print(f"[WARN] file_chooser 경로 실패: {e}")
-        return
-    await page.wait_for_timeout(2000)
-    # 사진 첨부 방식 모달 → 슬라이드 선택 (v3.0 핵심)
-    modal_loc, _ = await _first_locator(page, IMAGE_TYPE_MODAL_SELECTORS)
-    if modal_loc is not None:
-        slide = page.locator(IMAGE_TYPE_SLIDE_SELECTOR).first
+        return 0
+
+    # '사진 첨부 방식' 모달 대기 → 슬라이드 라벨 클릭 (input은 label이 포인터 가로챔)
+    slide = page.locator(IMAGE_TYPE_SLIDE_SELECTOR).first
+    try:
+        await slide.wait_for(state="visible", timeout=10000)
+        await slide.click()
+        print("[INFO] 사진 첨부 방식 = 슬라이드 선택 (label[for=image-type-slide])")
+    except Exception as e:
+        print(f"[WARN] 슬라이드 옵션 클릭 실패: {e}")
+        # 폴백: input 강제 클릭
         try:
-            if await slide.count() > 0:
-                await slide.click(force=True)
-                print("[INFO] 사진 첨부 방식 = 슬라이드 선택 (#image-type-slide)")
-        except Exception as e:
-            print(f"[WARN] 슬라이드 옵션 클릭 실패: {e}")
-    await page.wait_for_timeout(3500)
+            await page.locator(IMAGE_TYPE_SLIDE_INPUT_SELECTOR).first.click(force=True)
+            print("[INFO] 슬라이드 폴백 — input 강제 클릭")
+        except Exception as e2:
+            print(f"[WARN] 슬라이드 폴백도 실패: {e2}")
+            return 0
+
+    # 업로드+본문 삽입 대기 — <img> 개수가 before+len(image_paths) 도달할 때까지 폴링(최대 40초)
+    target_count = before + len(image_paths)
+    after = before
+    for _ in range(40):
+        await page.wait_for_timeout(1000)
+        try:
+            after = await page.evaluate("(sel)=>document.querySelectorAll(sel).length", INSERTED_IMAGE_SELECTOR)
+        except Exception:
+            after = before
+        if after >= target_count:
+            break
+    inserted = after - before
+    if inserted >= len(image_paths):
+        print(f"[INFO] 이미지 삽입 검증 OK — 본문 <img> {before}→{after} ({inserted}장 슬라이드 삽입)")
+    elif inserted > 0:
+        print(f"[WARN] 이미지 일부 삽입 — 본문 <img> {before}→{after} (요청 {len(image_paths)}장 중 {inserted}장)")
+    else:
+        print(f"[WARN] 이미지 삽입 검증 실패 — 본문 <img> {before}→{after} (0장 삽입)")
+    return inserted
 
 
 # -----------------------------------------------------------------

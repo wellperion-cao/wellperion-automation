@@ -58,6 +58,13 @@ CAFE_WRITE_URL_TEMPLATE = (
 
 LOGIN_REDIRECT_SIGNALS = ("nid.naver.com/nidlogin", "nid.naver.com/login")
 
+# 게시판/말머리 2단 드롭다운 (실측 2026-06-03).
+# 글쓰기 폼 상단에 FormSelectButton 2개: [0]=게시판("게시판을 선택해 주세요."), [1]=말머리("말머리 선택").
+# menuId URL 파라미터만으로는 게시판이 선택되지 않음 → 드롭다운에서 명시 선택 필요.
+BOARD_SELECT_BUTTON_SELECTOR = '[class*="FormSelectButton"]'
+BOARD_TARGET_TEXT = "웰페리온 Spa&Fitness"  # 1단 게시판명
+PREFIX_TARGET_TEXT = "웰페리온"  # 2단 말머리(카테고리)명
+
 # SmartEditor ONE 셀렉터 — 카페 (2026-05-21 v3.0 실측, project_smarteditor_auto_attach)
 TITLE_SELECTORS = [
     "textarea.textarea_input",
@@ -75,6 +82,13 @@ IMAGE_TOOLBAR_BUTTON_SELECTORS = [
 ]
 IMAGE_TYPE_MODAL_SELECTORS = [".se-popup-image-type", '[data-group="popupLayer"] .se-popup-image-type']
 IMAGE_TYPE_SLIDE_SELECTOR = "#image-type-slide"
+# 슬라이드 선택 클릭 대상 — radio INPUT(#image-type-slide) 은 클릭해도 적용 안 됨.
+# 클릭 가능한 LABEL/옵션 박스를 눌러야 본문에 슬라이드 삽입됨 (실측 2026-06-03).
+IMAGE_TYPE_SLIDE_CLICK_SELECTORS = [
+    'label[for="image-type-slide"]',
+    ".se-image-type-option-slide",
+    "#image-type-slide",
+]
 # 스티커 (2026-06-03 블로그 발행기에서 이식 — 동일 SmartEditor 툴바 구조).
 # 툴바 '스티커' 버튼 클릭 → 우측 se-sidebar-container-sticker 패널 오픈.
 # 패널 그리드의 각 스티커 = button.se-sidebar-element-sticker. 클릭 시 본문에
@@ -177,6 +191,24 @@ def _strip_leading_title(title: str, body: str) -> str:
             del lines[i]
         return "\n".join(lines)
     return body
+
+
+def _split_body_at_inquiry(body: str) -> tuple[str, str | None]:
+    """본문을 '문의' 줄 기준으로 (앞부분[문의 줄 포함], 뒷부분) 으로 분리.
+    스티커#2 를 '문의' 줄 다음에 삽입하기 위함 (실측 2026-06-03 — SE ONE 컴포넌트 경계 삽입).
+    '문의' 줄이 없으면 (전체, None) 반환 → 스티커#2 는 본문 끝."""
+    if not body:
+        return body, None
+    lines = body.split("\n")
+    inquiry_idx = -1
+    for i, ln in enumerate(lines):
+        if "문의" in ln:
+            inquiry_idx = i  # 마지막 '문의' 줄 기준
+    if inquiry_idx < 0:
+        return body, None
+    seg1 = "\n".join(lines[: inquiry_idx + 1])
+    seg2 = "\n".join(lines[inquiry_idx + 1 :])
+    return seg1, seg2
 
 
 def build_post(args: argparse.Namespace) -> CafePost:
@@ -420,6 +452,45 @@ async def run_setup() -> int:
 # -----------------------------------------------------------------
 # 글쓰기 진입 + 제목·본문·이미지 입력 (draft·publish 공용)
 # -----------------------------------------------------------------
+async def _select_board_and_prefix(page) -> None:
+    """게시판(1단)·말머리(2단) 드롭다운 선택. 실측 2026-06-03.
+    FormSelectButton[0]=게시판, [1]=말머리. 드롭다운을 열고 텍스트로 옵션 클릭."""
+    buttons = page.locator(BOARD_SELECT_BUTTON_SELECTOR)
+    try:
+        n = await buttons.count()
+    except Exception:
+        n = 0
+    if n < 1:
+        print("[WARN] 게시판 드롭다운 미발견 — 게시판/말머리 선택 건너뜀")
+        return
+
+    # 1단: 게시판
+    try:
+        await buttons.nth(0).click()
+        await page.wait_for_timeout(800)
+        await page.get_by_text(BOARD_TARGET_TEXT, exact=False).first.click(timeout=4000)
+        await page.wait_for_timeout(1000)
+        print(f"[INFO] 게시판 선택 = {BOARD_TARGET_TEXT!r}")
+    except Exception as e:
+        print(f"[WARN] 게시판 선택 실패: {e}")
+        return
+
+    # 2단: 말머리(카테고리)
+    buttons = page.locator(BOARD_SELECT_BUTTON_SELECTOR)
+    try:
+        if await buttons.count() < 2:
+            print("[INFO] 말머리 드롭다운 없음 — 게시판만 선택 (말머리 미사용 게시판)")
+            return
+        await buttons.nth(1).click()
+        await page.wait_for_timeout(800)
+        # 열린 드롭다운 목록의 보이는 옵션 중 정확히 '웰페리온' 클릭
+        await page.get_by_text(PREFIX_TARGET_TEXT, exact=True).first.click(timeout=4000)
+        await page.wait_for_timeout(800)
+        print(f"[INFO] 말머리 선택 = {PREFIX_TARGET_TEXT!r}")
+    except Exception as e:
+        print(f"[WARN] 말머리 선택 실패(게시판은 선택됨): {e}")
+
+
 async def _enter_write_and_fill(page, post: CafePost) -> None:
     write_url = CAFE_WRITE_URL_TEMPLATE.format(club_id=CAFE_CLUB_ID, menu_id=post.menu_id)
     print(f"[INFO] 카페 글쓰기 진입: {write_url}")
@@ -429,6 +500,9 @@ async def _enter_write_and_fill(page, post: CafePost) -> None:
 
     if is_login_required(page.url):
         raise RuntimeError("로그인 필요 — --mode setup 으로 세션 재저장 필요")
+
+    # 게시판·말머리 2단 선택 (본문 입력 전 — 실측 2026-06-03)
+    await _select_board_and_prefix(page)
 
     scope = await _resolve_editor_scope(page)
 
@@ -444,41 +518,105 @@ async def _enter_write_and_fill(page, post: CafePost) -> None:
     print(f"[INFO] 제목 입력 ({title_sel!r})")
     await page.wait_for_timeout(800)
 
-    # 본문
+    # 본문 + 스티커 인터리브 입력.
+    # 핵심(실측 2026-06-03): SmartEditor ONE 은 연속 타이핑한 본문을 단일 se-component-text 로
+    # 묶고, 스티커는 컴포넌트 경계에만 삽입됨 → 입력 후 caret 이동으로는 '본문 맨 처음/문의 다음'
+    # 위치 지정 불가(스티커가 본문 블록 뒤에 뭉침). 따라서 본문을 세그먼트로 나눠 타이핑하며
+    # 사이사이에 스티커를 삽입한다: [스티커1] 본문(~문의 줄) [스티커2] 본문(문의 줄 이후).
     body_loc, body_sel = await _first_locator(scope, BODY_SELECTORS)
     if body_loc is None:
         raise RuntimeError("본문 셀렉터 미발견 (SmartEditor 미로딩)")
-    await body_loc.click()
-    await page.keyboard.type(post.body, delay=8)
-    print(f"[INFO] 본문 입력 ({body_sel!r}, {len(post.body)} chars)")
-    await page.wait_for_timeout(800)
+    sticker_count = getattr(post, "sticker_count", STICKER_COUNT_DEFAULT)
+    seg1, seg2 = _split_body_at_inquiry(post.body)
+    has_inquiry = bool(seg2 is not None)
+
+    await _focus_body_end(page, scope)
+    # 스티커#1 = 본문 맨 처음 (빈 본문에 먼저 삽입)
+    if sticker_count >= 1:
+        await _insert_stickers(page, scope, 1, label="#1 본문 맨 처음")
+    # 본문 세그먼트1 (문의 줄 포함) 타이핑
+    await _focus_body_end(page, scope)
+    await page.keyboard.type(seg1, delay=8)
+    await page.wait_for_timeout(600)
+    # 스티커#2 = 문의 줄 다음 (현재 caret = seg1 끝 = 문의 줄 끝)
+    if sticker_count >= 2:
+        await _insert_stickers(page, scope, 1, label=("#2 문의 줄 다음" if has_inquiry else "#2 본문 끝(문의 미발견)"))
+    # 본문 세그먼트2 (문의 이후 = 해시태그 등) 타이핑
+    if seg2:
+        await _focus_body_end(page, scope)
+        await page.keyboard.type(seg2, delay=8)
+        await page.wait_for_timeout(600)
+    # 잔여 스티커(요청 3개 이상)는 본문 끝에 삽입
+    if sticker_count >= 3:
+        await _focus_body_end(page, scope)
+        await _insert_stickers(page, scope, sticker_count - 2, label="추가(본문 끝)")
+    print(f"[INFO] 본문 입력 ({body_sel!r}, {len(post.body)} chars) + 스티커 {sticker_count}개 인터리브")
 
     try:
-        body_text = (await body_loc.inner_text()) or ""
-        if len(body_text.strip()) < min(10, len(post.body)):
-            raise RuntimeError(f"본문 입력 검증 실패 — textContent 길이 {len(body_text.strip())}")
+        body_text = await scope.evaluate(
+            "() => { const e = document.querySelector('.se-content, [contenteditable=\\\"true\\\"]'); return e ? (e.innerText || '') : ''; }"
+        )
+        if len((body_text or "").strip()) < min(10, len(post.body)):
+            raise RuntimeError(f"본문 입력 검증 실패 — textContent 길이 {len((body_text or '').strip())}")
     except RuntimeError:
         raise
     except Exception:
         pass
 
-    # 스티커 삽입 (블로그 발행기에서 이식 — 본문 입력 직후, 이미지 첨부 전).
-    sticker_count = getattr(post, "sticker_count", STICKER_COUNT_DEFAULT)
-    if sticker_count > 0:
-        await _insert_stickers(page, scope, sticker_count)
-
     if post.image_paths:
         await _attach_images(page, scope, post.image_paths)
 
 
-async def _insert_stickers(page, scope, count: int) -> int:
-    """툴바 '스티커' 버튼 → 우측 패널 오픈 → 그리드에서 count개 클릭해 본문에 삽입.
-    삽입된 se-component.se-sticker 컴포넌트 수를 반환. (블로그 발행기 이식 2026-06-03)"""
-    # caret을 본문 끝으로 (스티커가 본문 아래 들어가게)
+async def _focus_body_end(page, scope) -> None:
+    """본문 편집영역에 포커스를 주고 caret 을 문서 '맨 끝'으로 안정적으로 이동.
+    SE ONE 은 본문이 여러 se-component 로 쪼개지며 bare Control+End 가 직전 caret(중간)에
+    머무는 사고가 있으므로, JS 로 contenteditable 의 마지막 텍스트 문단을 직접 선택한다.
+    빈 본문(placeholder)일 땐 클릭으로 포커스만 준다."""
+    # 빈 본문이면 placeholder 클릭으로 포커스
     try:
-        await page.keyboard.press("Control+End")
+        ph = scope.locator(".__se_placeholder.se-fs15").last
+        if await ph.count() > 0 and await ph.is_visible():
+            await ph.click()
+            return
     except Exception:
         pass
+    placed = False
+    try:
+        placed = await scope.evaluate(
+            """() => {
+                const editor = document.querySelector('.se-content, [contenteditable="true"]');
+                if (!editor) return false;
+                editor.focus();
+                // 문서 순서상 마지막 텍스트 문단을 찾아 그 끝으로 caret
+                const paras = editor.querySelectorAll('.se-text-paragraph');
+                const target = paras.length ? paras[paras.length - 1] : editor;
+                const range = document.createRange();
+                range.selectNodeContents(target);
+                range.collapse(false);  // 끝
+                const sel = window.getSelection();
+                sel.removeAllRanges();
+                sel.addRange(range);
+                target.scrollIntoView({block: 'center'});
+                return true;
+            }"""
+        )
+    except Exception:
+        placed = False
+    if not placed:
+        # 폴백 — 마지막 문단 클릭 후 End
+        try:
+            loc = scope.locator(".se-text-paragraph").last
+            if await loc.count() > 0:
+                await loc.click()
+            await page.keyboard.press("Control+End")
+        except Exception:
+            pass
+
+
+async def _insert_stickers(page, scope, count: int, label: str = "") -> int:
+    """툴바 '스티커' 버튼 → 우측 팝업 모달 → 그리드에서 count개 클릭해 '현재 caret 위치'에 삽입.
+    위치 제어는 호출측이 caret(=세그먼트 타이핑)으로 담당 (실측 2026-06-03 — SE ONE 컴포넌트 경계 삽입).
+    삽입된 se-component.se-sticker 컴포넌트 증가분을 반환. (블로그 발행기 이식 2026-06-03)"""
     # 팝업 킬러가 스티커 모달(팝업 레이어)을 삭제하므로 잠시 정지 (실측 2026-06-03)
     await _stop_popup_killer(page)
     btn_loc, btn_sel = await _first_locator(scope, STICKER_TOOLBAR_BUTTON_SELECTORS)
@@ -514,7 +652,7 @@ async def _insert_stickers(page, scope, count: int) -> int:
         except Exception:
             break
         if k == 0:
-            print(f"[INFO] 스티커 패널 오픈 ({btn_sel!r})")
+            print(f"[INFO] 스티커 패널 오픈 ({btn_sel!r}) — 위치 {label or '(현재 caret)'}")
         items = await _find_sticker_items()
         if items is None:
             await page.wait_for_timeout(2000)
@@ -523,7 +661,7 @@ async def _insert_stickers(page, scope, count: int) -> int:
             print("[WARN] 스티커 그리드 항목 0개 (전 프레임)")
             break
         n = await items.count()
-        idx = (k * 5) % n  # 매번 다른 스티커
+        idx = ((before + k) * 5) % n  # 호출·반복 누적 기준으로 매번 다른 스티커
         picked = False
         for off in range(n):
             it = items.nth((idx + off) % n)
@@ -559,10 +697,11 @@ async def _attach_images(page, scope, image_paths: list[Path]) -> None:
     if btn_loc is None:
         print("[WARN] 사진 추가 버튼 미발견 — 이미지 첨부 건너뜀")
         return
-    try:
-        await page.keyboard.press("Control+End")
-    except Exception:
-        pass
+    # 핵심(실측 2026-06-03): '사진 첨부 방식' 모달은 [data-group='popupLayer'] 팝업 레이어라
+    # 팝업 킬러가 즉시 삭제해 슬라이드 선택이 불가 → 이미지 단계 동안 킬러 정지(스티커와 동일 패턴).
+    await _stop_popup_killer(page)
+    # 본문 편집영역 포커스 + caret 맨 끝 (bare Control+End 는 포커스 이탈 시 무효 → 이미지 중간 삽입 사고).
+    await _focus_body_end(page, scope)
     try:
         async with page.expect_file_chooser(timeout=8000) as fc_info:
             await btn_loc.click(force=True)
@@ -572,17 +711,39 @@ async def _attach_images(page, scope, image_paths: list[Path]) -> None:
     except Exception as e:
         print(f"[WARN] file_chooser 경로 실패: {e}")
         return
-    await page.wait_for_timeout(2000)
+    await page.wait_for_timeout(2500)
+    # 사진 첨부 방식 모달 → '슬라이드' 선택.
+    # 핵심(실측 2026-06-03): #image-type-slide 는 숨은 radio INPUT 이라 직접 클릭해도
+    # 레이아웃이 적용되지 않음. 클릭 가능한 LABEL(label[for="image-type-slide"]) 을 눌러야
+    # 슬라이드가 본문에 실제 삽입되고 모달이 자동 닫힘(별도 적용 버튼 없음).
     modal_loc, _ = await _first_locator(page, IMAGE_TYPE_MODAL_SELECTORS)
     if modal_loc is not None:
-        slide = page.locator(IMAGE_TYPE_SLIDE_SELECTOR).first
-        try:
-            if await slide.count() > 0:
-                await slide.click(force=True)
-                print("[INFO] 사진 첨부 방식 = 슬라이드 선택 (#image-type-slide)")
-        except Exception as e:
-            print(f"[WARN] 슬라이드 옵션 클릭 실패: {e}")
+        clicked_slide = False
+        for sel in IMAGE_TYPE_SLIDE_CLICK_SELECTORS:
+            slide = page.locator(sel).first
+            try:
+                if await slide.count() > 0 and await slide.is_visible():
+                    await slide.click(force=True)
+                    print(f"[INFO] 사진 첨부 방식 = 슬라이드 선택 ({sel!r})")
+                    clicked_slide = True
+                    break
+            except Exception:
+                continue
+        if not clicked_slide:
+            print("[WARN] 슬라이드 옵션 클릭 대상 미발견 — 기본 레이아웃으로 진행")
     await page.wait_for_timeout(3500)
+    # 본문 삽입 실측 검증 (로그만 믿지 말 것)
+    try:
+        img_cnt = await scope.evaluate(
+            "() => document.querySelectorAll('.se-component.se-image, .se-module-image').length"
+        )
+        if img_cnt > 0:
+            print(f"[INFO] 이미지 본문 삽입 검증 OK — se-image 컴포넌트 {img_cnt}개")
+        else:
+            print("[WARN] 이미지 본문 삽입 검증 — se-image 컴포넌트 0개 (삽입 실패 의심)")
+    except Exception:
+        pass
+    await _install_popup_killer(page)  # 킬러 복구
 
 
 # -----------------------------------------------------------------
