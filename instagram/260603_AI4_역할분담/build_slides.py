@@ -91,7 +91,7 @@ def main() -> None:
         output=last_out,
         brand_key="main",
         logo_style=LOGO_STYLE,
-        kor_title="맡길수록\n더 중요한 일만 남아요",
+        kor_title="AI를 다루는 대표가\n살아남는다",
         body="AI한테 반복을 넘기면\n제 손엔 진짜 중요한 일만 남아요.\n완벽하진 않아도, 함께 성장합시다.\n\n운동시설 대표님, 궁금하시면\nDM 주세요. 아는 선에선 돕겠습니다.",
     )
     print(f"[OK] {last_out.name} - slogan/DM card ({r['size_kb']}KB)")
