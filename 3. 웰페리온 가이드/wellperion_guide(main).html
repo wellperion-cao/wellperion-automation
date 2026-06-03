@@ -616,17 +616,17 @@
     <!-- AUTO:LATEST-START -->
     <div class="card grow">
       <h4>최신 업데이트 — 2026-06-03 (자동 갱신)</h4>
+      <p><strong>2026-06-03</strong> refactor(s2): 공통탭 참고 큰 덩어리 2개 기본 접힘 — 길이 축소(읽기 부담 해소)</p>
       <p><strong>2026-06-03</strong> fix(coo): 3페이지 점검 — 필터카운트·결재대시보드 정합 수정</p>
       <p><strong>2026-06-03</strong> feat(cmo): 검수 승인→즉시 발행 봇 콜백(pub:) + 검수 카드 발송기 — IG 폴링 감시기 대체</p>
       <p><strong>2026-06-03</strong> feat(coo): 고아 첨부 정리 액션 todo_orphan_cleanup (@43)</p>
       <p><strong>2026-06-03</strong> fix(g1): 결재 부서장 대기건이 GM 오늘할일에 오노출되던 버그 수정</p>
-      <p><strong>2026-06-03</strong> feat(cmo): 문의 클릭추적 + 마케팅현황대시보드 click_stats 라이브 연결</p>
     </div>
 <!-- AUTO:LATEST-END -->
         <table>
           <tr><th style="width:160px">날짜</th><th>변경 내용</th></tr>
           <!-- AUTO:TABLE-START -->
-      <tr><td><strong>2026-06-03 (자동)</strong></td><td>fix(coo): 3페이지 점검 — 필터카운트·결재대시보드 정합 수정 · feat(cmo): 검수 승인→즉시 발행 봇 콜백(pub:) + 검수 카드 발송기 — IG 폴링 감시기 대체 · feat(coo): 고아 첨부 정리 액션 todo_orphan_cleanup (@43) · fix(g1): 결재 부서장 대기건이 GM 오늘할일에 오노출되던 버그 수정 …</td></tr>
+      <tr><td><strong>2026-06-03 (자동)</strong></td><td>refactor(s2): 공통탭 참고 큰 덩어리 2개 기본 접힘 — 길이 축소(읽기 부담 해소) · fix(coo): 3페이지 점검 — 필터카운트·결재대시보드 정합 수정 · feat(cmo): 검수 승인→즉시 발행 봇 콜백(pub:) + 검수 카드 발송기 — IG 폴링 감시기 대체 · feat(coo): 고아 첨부 정리 액션 todo_orphan_cl…</td></tr>
       <!-- AUTO:TABLE-END -->
           <tr><td><strong>2026-05-28 (14차)</strong></td><td>공지/안내문 생성(COO 하위) · 오프라인 홍보물 디자인 제작(CMO 하위) 도구 신설 · 공지 서식 v2.0 독립 페이지화 · 회사소개서·전략로드맵 원본 「3. 웰페리온 가이드/회사문서/」로 이관(SSOT 단일화) · C-Level 부팅 R/R Notion API→가이드허브 g10 참조로 전환 · GitHub Pages 워크플로 폴더명 경로 수정 · 사이드바 "공통+7개 C-Level" 라벨 제거</td></tr>
           <tr><td>2026-05-27 (13차)</td><td>GitHub Pages 전환 · 사이드바 4섹터 · AI C-Level 통일 · 운영 통합 체계 · 공식채널·지출현황·취업규칙·SSOT 신설 · g2+g19·g9+g20·g12·g13 합병 · 김남욱 탭 확장 · v2.5</td></tr>
@@ -1507,6 +1507,32 @@
           <strong>📍 이 가이드 한눈 요약</strong> — <strong>공통 원칙(이 탭)</strong> + <strong>역할탭 7개</strong>(CEO·CMO·COO·CTO·CFO·CHRO·CPO). 각 C-Level은 부팅 시 <strong>공통탭 + 본인 탭</strong>만 흡수한다.<br>
           <span style="font-size:13px;color:var(--dim);">공통탭 구성: 절대원칙 3 · 보고 포맷 · 운영·검증 5단계 · 전 C-Level 통합원칙 9테마 · 데이터 입력금지 5종 · 에스컬레이션 3단계 · 주간 컨텍스트 정비 범위.</span>
         </div>
+        <!-- ══ AI 부팅 한눈에 (GM 최우선 · 2026-06-03 .bat 실측) ══ -->
+        <h3 style="margin-top:4px;"><span class="ico">🔌</span>AI 켜면 무슨 일이 일어나나 <span style="font-size:13px;color:var(--dim);font-weight:400;">— 부팅 한눈에</span></h3>
+        <div class="callout" style="background:#1a1a2a;border-left:3px solid #7C3AED;margin:10px 0 14px;">AI(웰리·각 C-Level)를 켜면 <strong>아래 6단계를 자동으로 밟고 대기</strong>합니다. 단계는 모두 같고 <strong>읽는 파일만 역할별로 다릅니다.</strong></div>
+        <table>
+          <tr><th style="width:44px">순서</th><th>켜면 하는 일</th><th>읽는 것</th></tr>
+          <tr><td>1</td><td>내가 누구인지 파악 (페르소나·담당)</td><td><code>ai-{역할}.md</code></td></tr>
+          <tr><td>2</td><td>회사 기본 규칙 로드</td><td><code>CLAUDE.md</code> (헌법·인덱스)</td></tr>
+          <tr><td>3</td><td><strong>운영 가이드 흡수</strong> (R/R·KPI·원칙)</td><td>가이드허브 <strong>S2 공통탭 + 내 역할탭</strong></td></tr>
+          <tr><td>4</td><td>내 할 일 확인</td><td><code>status/{역할}.json</code> + 대기열</td></tr>
+          <tr><td>5</td><td>나·KPI·권한을 표로 선언</td><td>—</td></tr>
+          <tr><td>6</td><td>남의 영역 침범 금지 선언 후 대기</td><td>—</td></tr>
+        </table>
+        <div class="callout tip" style="margin-top:10px;"><strong>👑 웰리(CEO)만 추가로:</strong> 켤 때 ① Claude·OMC 자동 업데이트(세션 없을 때만) ② <strong>텔레그램 봇 + 스케줄러 가동</strong> — 웰리가 켜져 있는 동안만 돌고, 끄면 같이 멈춥니다. (그래서 웰리 = 관제실)</div>
+        <table style="margin-top:6px;">
+          <tr><th>AI</th><th>설명서</th><th>흡수 탭</th><th>상태 파일</th></tr>
+          <tr><td>👑 웰리 (CEO)</td><td><code>ai-ceo.md</code></td><td>S2 공통 + CEO</td><td><code>ceo.json</code></td></tr>
+          <tr><td>📡 시모 (CMO)</td><td><code>ai-cmo.md</code></td><td>S2 공통 + CMO</td><td><code>cmo.json</code></td></tr>
+          <tr><td>🧑‍💻 시우 (COO)</td><td><code>ai-coo.md</code></td><td>S2 공통 + COO</td><td><code>coo.json</code></td></tr>
+          <tr><td>🖥️ 시토 (CTO)</td><td><code>ai-cto.md</code></td><td>S2 공통 + CTO</td><td><code>cto.json</code></td></tr>
+          <tr><td>💰 시뽀 (CFO)</td><td><code>ai-cfo.md</code></td><td>S2 공통 + CFO</td><td><code>cfo.json</code></td></tr>
+          <tr><td>👨‍💼 시로 (CHRO)</td><td><code>ai-chro.md</code></td><td>S2 공통 + CHRO</td><td><code>chro.json</code></td></tr>
+          <tr><td>❣️ 시포 (CPO)</td><td><code>ai-cpo.md</code></td><td>S2 공통 + CPO</td><td><code>cpo.json</code></td></tr>
+        </table>
+        <p style="font-size:12px;color:var(--dim);margin-top:6px;">※ 각 역할탭 하단 '세션 부팅 체크리스트'는 위 6단계의 역할별 상세판입니다.</p>
+        <!-- ══ /AI 부팅 한눈에 ══ -->
+
         <h3><span class="ico">🏢</span>AI 조직도</h3>
         <div class="card accent" style="text-align:center;padding:20px;margin-bottom:16px;">
           <h4>👑 AI CEO 경영지원자 <span style="font-size:13px;color:var(--accent);font-weight:600;">웰리</span></h4>
