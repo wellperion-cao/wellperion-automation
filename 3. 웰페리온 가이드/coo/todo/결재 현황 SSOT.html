@@ -672,6 +672,17 @@ function printApprovalCards() {
   window.print();
   setTimeout(_reset, 2000);  // afterprint 미발생 브라우저 폴백
 }
+// 카드 1건만 인쇄 (2026-06-03 GM) — 같은 카드 인쇄 포맷(서명칸 포함)으로 해당 건만.
+function printApprovalCard(id) {
+  var t = (ALL_TASKS || []).filter(function(x){ return String(x.id) === String(id); })[0];
+  if (!t) { alert('해당 건을 찾을 수 없습니다.'); return; }
+  document.getElementById('approvalPrintArea').innerHTML = buildApprovalPrint([t]);
+  document.body.setAttribute('data-print-mode', 'cards');
+  function _reset(){ document.body.removeAttribute('data-print-mode'); window.removeEventListener('afterprint', _reset); }
+  window.addEventListener('afterprint', _reset);
+  window.print();
+  setTimeout(_reset, 2000);
+}
 
 // 공유: 제목 + 내용 요약 + 링크 (모바일=Web Share 카톡/문자, 데스크톱=클립보드 폴백) (2026-06-01 GM)
 function shareLink(url, shareTitle, shareText) {
@@ -903,7 +914,11 @@ function renderApprovalCard(t, idx) {
   // 셋째 줄: 결재 대기 배지
   h += '<div class="approval-badge-line"><span class="' + chipCls + '">' + esc(chipText) + '</span></div>';
   h += '</div>';
-  // 🔗 링크 제거 (2026-06-03 GM — 불필요)
+  // 우측: 카드별 인쇄·링크 (2026-06-03 GM)
+  h += '<div class="card-meta-chips">';
+  h += '<button class="card-link-btn" title="이 카드만 인쇄" onclick="event.stopPropagation();printApprovalCard(\'' + escAttr(t.id) + '\')">🖨</button>';
+  h += '<button class="card-link-btn" title="이 건 링크 복사" onclick="event.stopPropagation();copyItemLink(\'' + escAttr(t.id) + '\')">🔗</button>';
+  h += '</div>';
   h += '</div>';
 
   // 메타 — 예산만 (카테고리·담당자는 제목 줄로 이동)
