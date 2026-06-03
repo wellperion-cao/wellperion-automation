@@ -1102,19 +1102,21 @@ function renderApprovalDashboard() {
 
   // 미결 건 — 다음 결재자별 대기 현황
   h += '<h3>미결 건 — 다음 결재자 대기 현황</h3>';
-  var waitByRole = { 'GM':[], '대표님':[] };
+  // 부서장(1단계)이 다수 대기이므로 GM·대표만 집계하면 누락 — 부서장 3명 실명 포함해 필터 버튼 카운트와 정합 (2026-06-03)
+  var waitByRole = { '이경연 실장':[], '이정헌 소장':[], '나우열M':[], 'GM':[], '대표님':[] };
   pending.forEach(function(t) {
     var parsed = parseContent(t.content);
     var route = buildEffectiveRoute(t, parsed.budget);
     var nxt = nextApprover(t, route);
-    if (nxt && waitByRole[nxt] !== undefined) {
-      waitByRole[nxt].push(t);
+    var key = (nxt === '부서장') ? deptHeadNameOf(t) : nxt;   // 부서장 차례면 담당자의 부서장 실명으로 귀속
+    if (key && waitByRole[key] !== undefined) {
+      waitByRole[key].push(t);
     }
   });
   h += '<table class="dash-table"><tr><th>결재자</th><th>대기 건수</th><th style="min-width:120px">비율</th></tr>';
-  var roleOrder = ['GM','대표님'];
+  var roleOrder = ['이경연 실장','이정헌 소장','나우열M','GM','대표님'];
   var maxWait = Math.max.apply(null, roleOrder.map(function(r){ return waitByRole[r].length; }).concat([1]));
-  var barColors = ['accent','blue'];  // roleOrder=2개(GM·대표님)뿐 — 뒤 3색은 도달불가 死폭이라 제거 (2026-06-02 COO)
+  var barColors = ['accent','blue','accent','blue','accent'];  // 가용 .dash-bar 클래스 2종 순환(시각용)
   roleOrder.forEach(function(role, ri) {
     var cnt = waitByRole[role].length;
     var pct = Math.round(cnt / maxWait * 100);
