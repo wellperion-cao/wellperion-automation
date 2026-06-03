@@ -631,17 +631,17 @@
     <!-- AUTO:LATEST-START -->
     <div class="card grow">
       <h4>최신 업데이트 — 2026-06-03 (자동 갱신)</h4>
+      <p><strong>2026-06-03</strong> refactor(guidehub): T4 상단 콜아웃 2개+표 → 접이식 토글 1개로 정리 (GM 지시)</p>
       <p><strong>2026-06-03</strong> fix(cmo): 블로그·카페 제목 연속표기 버그 수정 (_strip_leading_title)</p>
       <p><strong>2026-06-03</strong> chore(cmo): WJO 블로그·카페 발행완료 처리 — GM 수동 발행(2026-06-03)</p>
       <p><strong>2026-06-03</strong> fix(cmo): AI #4 재발행 발행완료 기록 (DZGzrMnEtjT) — 발행기 검증 오탐 수기 정정</p>
       <p><strong>2026-06-03</strong> feat(coo): S4 '최근 변동' 피드 — 업무·결재 SSOT 최근 수정 항목 간단 대시보드</p>
-      <p><strong>2026-06-03</strong> chore(guidehub): S4 맨 아래 업무자동화 현황 칸 삭제 (GM 지시)</p>
     </div>
 <!-- AUTO:LATEST-END -->
         <table>
           <tr><th style="width:160px">날짜</th><th>변경 내용</th></tr>
           <!-- AUTO:TABLE-START -->
-      <tr><td><strong>2026-06-03 (자동)</strong></td><td>fix(cmo): 블로그·카페 제목 연속표기 버그 수정 (_strip_leading_title) · chore(cmo): WJO 블로그·카페 발행완료 처리 — GM 수동 발행(2026-06-03) · fix(cmo): AI #4 재발행 발행완료 기록 (DZGzrMnEtjT) — 발행기 검증 오탐 수기 정정 · feat(coo): S4 '최근 변동' 피…</td></tr>
+      <tr><td><strong>2026-06-03 (자동)</strong></td><td>refactor(guidehub): T4 상단 콜아웃 2개+표 → 접이식 토글 1개로 정리 (GM 지시) · fix(cmo): 블로그·카페 제목 연속표기 버그 수정 (_strip_leading_title) · chore(cmo): WJO 블로그·카페 발행완료 처리 — GM 수동 발행(2026-06-03) · fix(cmo): AI #4 재발행 발행완료…</td></tr>
       <!-- AUTO:TABLE-END -->
           <tr><td><strong>2026-05-28 (14차)</strong></td><td>공지/안내문 생성(COO 하위) · 오프라인 홍보물 디자인 제작(CMO 하위) 도구 신설 · 공지 서식 v2.0 독립 페이지화 · 회사소개서·전략로드맵 원본 「3. 웰페리온 가이드/회사문서/」로 이관(SSOT 단일화) · C-Level 부팅 R/R Notion API→가이드허브 g10 참조로 전환 · GitHub Pages 워크플로 폴더명 경로 수정 · 사이드바 "공통+7개 C-Level" 라벨 제거</td></tr>
           <tr><td>2026-05-27 (13차)</td><td>GitHub Pages 전환 · 사이드바 4섹터 · AI C-Level 통일 · 운영 통합 체계 · 공식채널·지출현황·취업규칙·SSOT 신설 · g2+g19·g9+g20·g12·g13 합병 · 김남욱 탭 확장 · v2.5</td></tr>
@@ -4057,6 +4057,15 @@ Start-Process python -ArgumentList telegram_bot\daily_scheduler.py -WorkingDirec
             <tr><td>페이스</td><td>주 1~2회 · 임시저장 큐 0건 확인 후 가동</td></tr>
           </table>
         </div>
+        <div class="callout" style="margin-top:10px;background:#1a2a1a;border-left:3px solid #059669;">
+          <strong>📌 자동 발행 규칙 (GM 확정 2026-06-03)</strong>
+          <ul style="margin:8px 0 0;padding-left:18px;font-size:13px;line-height:1.9;">
+            <li><strong>이미지</strong> — 프로젝트 폴더의 <code>output(블로그)</code>에서 가져와 <strong>슬라이드로 본문 맨 아래</strong></li>
+            <li><strong>스티커 2개</strong> — 본문 맨 처음 1개 + "문의" 다음 줄 1개</li>
+            <li><strong>제목</strong> — 본문 첫 줄을 제목으로 (본문에 제목 반복 X)</li>
+            <li><strong>종착지</strong> — 임시저장까지. GM 검수 후 직접 등록</li>
+          </ul>
+        </div>
         <label style="display:block;font-size:12.5px;font-weight:700;color:var(--dim);margin:6px 0;">특성 학습 메모</label>
         <textarea class="cmopub-note" data-note="blog" rows="4" placeholder="이 채널에서 학습한 특성·주의사항을 기록…" style="width:100%;padding:12px;border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:13.5px;line-height:1.6;background:var(--paper);color:var(--text);box-sizing:border-box;resize:vertical;"></textarea>
       </div>
@@ -4071,6 +4080,15 @@ Start-Process python -ArgumentList telegram_bot\daily_scheduler.py -WorkingDirec
             <tr><td>톤</td><td>사실 기반 · 정중·격조 · 영업 문구 자제</td></tr>
             <tr><td>댓글</td><td>사실 기반 정중 응답</td></tr>
           </table>
+        </div>
+        <div class="callout" style="margin-top:10px;background:#1a2a1a;border-left:3px solid #059669;">
+          <strong>📌 자동 발행 규칙 (GM 확정 2026-06-03)</strong>
+          <ul style="margin:8px 0 0;padding-left:18px;font-size:13px;line-height:1.9;">
+            <li><strong>게시판</strong> — "웰페리온 Spa&amp;Fitness" 선택 → 우측에서 <strong>"웰페리온"</strong>까지 선택</li>
+            <li><strong>이미지</strong> — 프로젝트 폴더의 <code>output(카페)</code>에서 가져와 <strong>슬라이드로 본문 맨 아래</strong></li>
+            <li><strong>스티커 2개</strong> — 본문 맨 처음(인사) + "문의" 다음 줄(화이팅)</li>
+            <li><strong>종착지</strong> — 임시저장까지. GM 검수 후 직접 등록</li>
+          </ul>
         </div>
         <label style="display:block;font-size:12.5px;font-weight:700;color:var(--dim);margin:6px 0;">특성 학습 메모</label>
         <textarea class="cmopub-note" data-note="cafe" rows="4" placeholder="이 채널에서 학습한 특성·주의사항을 기록…" style="width:100%;padding:12px;border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:13.5px;line-height:1.6;background:var(--paper);color:var(--text);box-sizing:border-box;resize:vertical;"></textarea>
