@@ -233,9 +233,10 @@ function buildDashboard() {
   }
   var issueEnd = out.length;
 
-  // ---- 쓰기 ----
-  dash.clear();
-  dash.clearConditionalFormatRules();
+  // ---- 쓰기 (시트를 매번 새로 만들어 병합·서식 충돌을 원천 차단) ----
+  var existing = ss.getSheetByName(DASH_NAME);
+  if (existing) ss.deleteSheet(existing);
+  dash = ss.insertSheet(DASH_NAME);
   dash.getRange(1, 1, out.length, COLS).setValues(out);
 
   // ---- 서식 ----
