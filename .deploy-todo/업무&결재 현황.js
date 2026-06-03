@@ -737,6 +737,36 @@ function _processTodoAction(body) {
       return _json({ ok: true, message: '첨부가 삭제되었습니다.', remaining: remaining.length });
     }
 
+    // ─── 고아 첨부 정리 — 어떤 task에도 참조되지 않은 TODO_Files 파일 휴지통 이동 (2026-06-03 GM) ───
+    // 안전: dryRun=1 이면 목록만. maxBytes>0 이면 그 크기 이하만 대상(작은 테스트파일만, 실제 첨부 보호).
+    if (action === 'todo_orphan_cleanup') {
+      const dryRun = String(body.dryRun || '') === '1' || body.dryRun === true;
+      const maxBytes = Number(body.maxBytes || 0);
+      const folder = _getTodoFolder();
+      const sh = initTodoSheet();
+      const col = TODO_HEADERS.indexOf('파일URL') + 1;
+      const last = sh.getLastRow();
+      const referenced = {};
+      if (last >= 2) {
+        sh.getRange(2, col, last - 1, 1).getValues().forEach(function (r) {
+          String(r[0] || '').split('\n').forEach(function (u) { const m = String(u).match(/[-\w]{25,}/); if (m) referenced[m[0]] = 1; });
+        });
+      }
+      const files = folder.getFiles();
+      const report = [];
+      while (files.hasNext()) {
+        const f = files.next();
+        const fid = f.getId();
+        if (referenced[fid]) continue;                 // 참조됨 → 유지
+        const size = f.getSize();
+        if (maxBytes > 0 && size > maxBytes) continue;  // 크기 초과 → 유지(실제 첨부 보호)
+        const info = { id: fid, name: f.getName(), size: size, created: String(f.getDateCreated()) };
+        if (!dryRun) { try { f.setTrashed(true); info.trashed = true; } catch (e) { info.error = String(e); } }
+        report.push(info);
+      }
+      return _json({ ok: true, dryRun: dryRun, count: report.length, files: report });
+    }
+
     return _json({ ok: false, error: '알 수 없는 action: ' + action });
 }
 
