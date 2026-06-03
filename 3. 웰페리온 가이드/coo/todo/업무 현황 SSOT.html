@@ -392,7 +392,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
     <input type="hidden" id="editId">
     <div class="field">
       <label>업무명 *</label>
-      <input type="text" id="fTitle" placeholder="업무명을 입력하세요 (기존 업무명 입력 시 불러오기 제안)" list="fTitleList" autocomplete="off" onchange="checkDuplicateTitle()">
+      <input type="text" id="fTitle" placeholder="업무명을 입력하세요 (기존 업무명 입력 시 불러오기 제안)" list="fTitleList" autocomplete="off" oninput="filterTitleSuggest()" onchange="checkDuplicateTitle()">
       <datalist id="fTitleList"></datalist>
     </div>
     <div class="field">
@@ -531,7 +531,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
           <label><input type="checkbox" value="나우열M" onclick="warnApprovalCheck(this)">나우열M(파트너)</label>
         </div>
         <div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;border-top:1px dashed var(--border);padding-top:8px;">
-          <span style="font-size:11px;color:var(--accent);font-weight:700;min-width:60px;">운영 최종</span>
+          <span style="font-size:11px;color:var(--accent);font-weight:700;min-width:60px;">결재</span>
           <label><input type="checkbox" value="GM" onclick="warnApprovalCheck(this)">김남욱 GM</label>
           <span style="font-size:10px;color:var(--dim);">· 대표 최종결재는 결재현황 SSOT에서 자동 처리</span>
         </div>
@@ -2040,16 +2040,31 @@ function closeModal() {
   document.getElementById('taskModal').classList.remove('show');
 }
 
-/* 업무명 중복 방지 — 자동완성 + 기존 업무명 입력 시 불러오기 제안 (2026-06-01 GM) */
+/* 업무명 중복 방지 — 글자 입력 시에만 일치 제안 (포커스/클릭만으론 전체 목록 안 뜨게). 2026-06-03 GM */
+let _titleCandidates = [];
+function _buildTitleCandidates() {
+  const seen = {}; _titleCandidates = [];
+  ALL_TASKS.forEach(t => {
+    const ti = (t.title || '').trim();
+    if (ti && t.status !== '완료' && !seen[ti]) { seen[ti] = 1; _titleCandidates.push(ti); }
+  });
+}
 function populateTitleSuggest() {
   const dl = document.getElementById('fTitleList');
   if (!dl) return;
-  const seen = {}, opts = [];
-  ALL_TASKS.forEach(t => {
-    const ti = (t.title || '').trim();
-    if (ti && t.status !== '완료' && !seen[ti]) { seen[ti] = 1; opts.push(ti); }
-  });
-  dl.innerHTML = opts.map(ti => '<option value="' + escAttr(ti) + '"></option>').join('');
+  _buildTitleCandidates();
+  dl.innerHTML = '';  // 입력 전엔 비워둠 — 클릭만으로 전체 제목 노출 방지
+}
+/* 입력값 부분일치만 datalist에 채움(최대 20). input DOM 미수정 → 한글 조합 안전. */
+function filterTitleSuggest() {
+  const dl = document.getElementById('fTitleList');
+  if (!dl) return;
+  const raw = (document.getElementById('fTitle').value || '').trim();
+  if (!raw) { dl.innerHTML = ''; return; }
+  if (!_titleCandidates.length) _buildTitleCandidates();
+  const v = raw.toLowerCase();
+  const matches = _titleCandidates.filter(ti => ti.toLowerCase().indexOf(v) >= 0).slice(0, 20);
+  dl.innerHTML = matches.map(ti => '<option value="' + escAttr(ti) + '"></option>').join('');
 }
 function checkDuplicateTitle() {
   if (document.getElementById('editId').value) return; // 편집 모드면 무시
