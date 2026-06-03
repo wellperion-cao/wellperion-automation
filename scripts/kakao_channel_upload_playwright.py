@@ -315,8 +315,9 @@ async def run_setup() -> int:
             cookies = await context.cookies()
         except Exception:
             break  # 브라우저 창을 GM이 닫음
-        # 로그인 페이지를 벗어나 관리자 홈에 안착 + 쿠키 보유 = 세션 성립
-        if is_session_landed(current_url) and cookies:
+        # 카카오 인증 쿠키(_kau/_kawlt 등) 보유 = 로그인 성립
+        # (center-pf.kakao.com → business.kakao.com 리다이렉트라 URL 판정 대신 쿠키 판정, 실측 2026-06-03)
+        if any(c.get("name") in ("_kau", "_kawlt", "_kawltea", "_karmt") for c in cookies):
             has_session = True
             break
         await asyncio.sleep(3)
