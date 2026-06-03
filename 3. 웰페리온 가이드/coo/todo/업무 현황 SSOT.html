@@ -879,6 +879,20 @@ function setCatFilter(v, btn) {
    API
    ═══════════════════════════════════════════ */
 function apiCall(params) {
+  // 첨부 base64 등 대용량 페이로드는 GET 쿼리스트링 URL 길이 한계를 초과해 요청이 실패한다
+  // (→ 파일이 Drive에 안 올라가고 시트 파일URL 칸도 안 써져 '날아감'). POST 본문으로 전송해 회피.
+  // GAS doPost → _processTodoAction 가 동일 action 처리. text/plain = CORS preflight(OPTIONS) 회피.
+  if (params.base64 || params.file) {
+    return fetch(TODO_API_URL, {
+      method: 'POST',
+      redirect: 'follow',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify(params)
+    }).then(r => {
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.json();
+    });
+  }
   const qs = Object.keys(params).map(k => encodeURIComponent(k) + '=' + encodeURIComponent(params[k])).join('&');
   return fetch(TODO_API_URL + '?' + qs, { redirect: 'follow' })
     .then(r => {
