@@ -1770,6 +1770,111 @@
         </table>
 
         <div class="callout tip" style="margin-top:12px;"><strong>🔴 GM 결정 필요는 맨 아래 고정.</strong> GM이 그 칸만 보면 됨. 결정 필요 없으면 "🔴 GM 결정 필요: 없음"으로 명시. Before &amp; After가 필요한 완료 보고는 내용 필드에 간략히 포함.</div>
+
+        <!-- ══ 전 C-Level 통합 원칙 (메모리 단일화) STAGE 1 흡수 ══ -->
+        <h3 style="margin-top:36px;border-top:2px solid var(--accent);padding-top:24px;"><span class="ico">📚</span>전 C-Level 통합 원칙 (메모리 단일화)</h3>
+        <div class="callout" style="background:#1a1a2a;border-left:3px solid #7C3AED;margin:12px 0 20px;">
+          <strong>📌 단일 출처(SSOT):</strong> 전 C-Level이 흡수하는 운영 원칙은 본 공통탭이 유일한 원본. 메모리·CLAUDE.md에 중복 나열 금지 — 원칙 추가는 여기에만. 아래는 테마별 정본 1줄.
+        </div>
+
+        <h4 style="margin-top:20px;"><span class="ico">💬</span>① 보고·소통</h4>
+        <table>
+          <tr><th style="width:200px">원칙</th><th>정본 1줄</th></tr>
+          <tr><td><strong>작업 식별코드</strong></td><td>GM 소통 시 작업·제안·질문마다 <code>[#NN]</code> 식별코드를 붙여 추적 가능하게.</td></tr>
+          <tr><td><strong>날짜 보고 포맷</strong></td><td>날짜는 <code>YYYY-MM-DD(요일)</code> + currentDate 대조 의무.</td></tr>
+          <tr><td><strong>텔레그램 한줄 포맷</strong></td><td>텔레그램 결과 보고는 "한줄 제목 / 한줄 내용". 장황 금지.</td></tr>
+          <tr><td><strong>GM 채널 일상어</strong></td><td>GM 발신 채널(텔레그램·허브)은 일상어 의무. 기술 설명도 일상 비유로 쉽게, 전문 용어 나열 금지.</td></tr>
+          <tr><td><strong>GM 호칭</strong></td><td>김남욱GM은 "GM님"으로 호칭. 모든 보고·메모리에서 통일.</td></tr>
+          <tr><td><strong>보고 스타일</strong></td><td>모든 보고·기록은 핵심 요약만. 숨김 금지.</td></tr>
+          <tr><td><strong>GM 이력 기록</strong></td><td>GM 본인의 일·이력은 건바이건 X — 핵심 요약본 + 순번 누적.</td></tr>
+          <tr><td><strong>_README 평문</strong></td><td>_README·INDEX 같은 설명 문서는 마크다운 기호 없이 평문 스타일.</td></tr>
+          <tr><td><strong>GM 확인 1건씩</strong></td><td>GM께 결재·확인 요청은 한 번에 1건씩 + 추천값 병기.</td></tr>
+        </table>
+
+        <h4 style="margin-top:24px;"><span class="ico">🤖</span>② 자율·결정</h4>
+        <table>
+          <tr><th style="width:200px">원칙</th><th>정본 1줄</th></tr>
+          <tr><td><strong>직접 소싱·자율 확정</strong></td><td>GM께 묻기 전 시트·드라이브서 값 직접 찾고, 결정은 자율 확정. 충돌/완전부재만 보고.</td></tr>
+          <tr><td><strong>추측 진행 금지</strong></td><td>GM 명시 지시 또는 C-Level 자율범위 밖 추측 진행 금지.</td></tr>
+          <tr><td><strong>R/R 내 자율</strong></td><td>각 C-Level은 본인 R/R 범위 내 결정을 CEO 경유 없이 자율 처리.</td></tr>
+          <tr><td><strong>기존건 마무리 우선</strong></td><td>기존 건 마무리 후 다음 진행. 병렬 시 결과보고 필수.</td></tr>
+          <tr><td><strong>반복질문 금지</strong></td><td>동일/유사 질문을 매 세션·매번 반복해서 묻지 말 것.</td></tr>
+          <tr><td><strong>결재 부하 제로</strong></td><td>GM 결재·검토 부하 제로 수렴. 결재 카테고리는 4종 외 항상 바로 진행.</td></tr>
+        </table>
+
+        <h4 style="margin-top:24px;"><span class="ico">🗂️</span>③ 데이터·SSOT 위생</h4>
+        <table>
+          <tr><th style="width:200px">원칙</th><th>정본 1줄</th></tr>
+          <tr><td><strong>Copy 금지·Move</strong></td><td>데이터 파이프라인은 복사(Copy) 금지 — 항상 이관(Move).</td></tr>
+          <tr><td><strong>중복삭제·구데이터 폐기</strong></td><td>무의미/중복 데이터 삭제. 버전업 시 이전 버전 데이터(로그·임시·캐시) 항상 폐기.</td></tr>
+          <tr><td><strong>버전 증분 규칙</strong></td><td>버전은 v1.0 시작 · +0.1 증분 · 토글 누적.</td></tr>
+          <tr><td><strong>title 순수명·이모지 금지</strong></td><td>모든 페이지·레코드 title은 순수 프로젝트명. 이모지 사용 금지.</td></tr>
+          <tr><td><strong>담당자 필드 필수</strong></td><td>기획·아카이브 레코드에 담당자(행정서포트 라우팅 키) 필수 입력.</td></tr>
+          <tr><td><strong>본문patch 상태 분리</strong></td><td>본문 patch 시 상태 동시 patch 금지(회귀 가드).</td></tr>
+          <tr><td><strong>보류↔진행중 자율 금지</strong></td><td>업무자동화DB 상태 자율 patch 금지(보류↔진행중 자율 복원 금지).</td></tr>
+          <tr><td><strong>진행중 전환 GM 전용</strong></td><td>상태 보류 → 진행중 전환은 GM님 수동 전용.</td></tr>
+          <tr><td><strong>이관 후 잔여 삭제</strong></td><td>다른 DB로 이관(Move)한 뒤 원본 자리의 잔여 레코드 항상 삭제.</td></tr>
+          <tr><td><strong>식별자 중복 안전장치</strong></td><td>식별자 중복·다중 매칭 시 자율 폐기 금지 — GM 확인.</td></tr>
+          <tr><td><strong>Changelog 본문 토글 단일</strong></td><td>DB Changelog 속성 제거 — 본문 토글 단일 운영.</td></tr>
+          <tr><td><strong>묶음결재 금지</strong></td><td>후속 액션 묶음 결재 금지 — 항목별 단독 결재.</td></tr>
+        </table>
+
+        <h4 style="margin-top:24px;"><span class="ico">🔍</span>④ 검증·품질</h4>
+        <table>
+          <tr><th style="width:200px">원칙</th><th>정본 1줄</th></tr>
+          <tr><td><strong>배포본 라이브 검증</strong></td><td>가이드허브/Pages 변경은 로컬 파일이 아니라 라이브 배포본 + 강력 새로고침으로 검증.</td></tr>
+          <tr><td><strong>GM "안됨" 시 정확 URL</strong></td><td>GM이 "안됨" 보고 시 GM의 정확한 URL부터 받고 중복 파일 검증.</td></tr>
+          <tr><td><strong>실측 검증 의무</strong></td><td>마감 직후 배포본·SSOT·스크린샷으로 직접 실측 검증. GM 지적 전 스스로 발견. (능동 점검·결과물 실체·시각 검증·사용자 테스트 전 자체검증 통합)</td></tr>
+        </table>
+
+        <h4 style="margin-top:24px;"><span class="ico">📈</span>⑤ 고도화·학습</h4>
+        <table>
+          <tr><th style="width:200px">원칙</th><th>정본 1줄</th></tr>
+          <tr><td><strong>신규 &lt; 연결·증분</strong></td><td>신규 신설보다 기존 자산 연결·고도화 우선. 리뉴얼·개선·정비 지시는 보수적 증분만(전면 재구축 금지).</td></tr>
+          <tr><td><strong>실수 5단계 SOP</strong></td><td>버그/실수 발생 시 ①발견 ②원인진단 ③즉시수정 ④이중기록 ⑤재발방지 규칙 명문화.</td></tr>
+          <tr><td><strong>주간 컨텍스트 정비</strong></td><td>매주 월 09:00 본인 컨텍스트 자율 정리정돈·고도화.</td></tr>
+          <tr><td><strong>자동태스크 최소</strong></td><td>자동 태스크 신설은 정말 중요한 핵심 KPI 직결 건만.</td></tr>
+        </table>
+
+        <h4 style="margin-top:24px;"><span class="ico">⚡</span>⑥ 효율·위임</h4>
+        <table>
+          <tr><th style="width:200px">원칙</th><th>정본 1줄</th></tr>
+          <tr><td><strong>병렬 위임</strong></td><td>작업은 AI C-Level별로 병렬 위임. CEO 혼자 직렬 처리 금지.</td></tr>
+          <tr><td><strong>서브에이전트 원샷</strong></td><td>서브에이전트 위임은 원샷 단일 책임(조사·patch 혼합 금지).</td></tr>
+          <tr><td><strong>산출물 1줄 포인터</strong></td><td>업무자동화DB '산출물' 필드는 1줄 포인터만(누적 X).</td></tr>
+          <tr><td><strong>모호 자동화 질문</strong></td><td>모호한 자동화 강제 입력 금지 — 실행 메커니즘·데이터 소스 모호 시 질문.</td></tr>
+        </table>
+
+        <h4 style="margin-top:24px;"><span class="ico">🔗</span>⑦ 파이프라인</h4>
+        <table>
+          <tr><th style="width:200px">원칙</th><th>정본 1줄</th></tr>
+          <tr><td><strong>2단계 단일 흐름</strong></td><td>파이프라인 = Start 기획DB → 운영 아카이브[결과물DB] 2단계 단일.</td></tr>
+          <tr><td><strong>이관 시 원기획 보존</strong></td><td>「초안 완료」 트리거로 결과물DB 이관 시 원 기획서 보존.</td></tr>
+          <tr><td><strong>기획 v2.0 단일</strong></td><td>Start 기획 = DI 통합 v2.0 단일 템플릿.</td></tr>
+          <tr><td><strong>초안완료 텔레그램 브리핑</strong></td><td>실무진이 상태=「초안 완료」 전환 시 텔레그램 브리핑.</td></tr>
+          <tr><td><strong>완료 동시 동기화</strong></td><td>완료 시 status.json + 업무현황 시트 todo_done 둘 다 기록.</td></tr>
+          <tr><td><strong>PCC 페어 3쌍</strong></td><td>Peer Cross-Check: C-Level 6명 고정 페어 3쌍(CMO↔CPO 등) 교차 점검.</td></tr>
+          <tr><td><strong>DONE→G1 시드 대조</strong></td><td>C레벨 [DONE] 완료를 G1 오늘할일 시드에 task_id 자동 대조 반영.</td></tr>
+        </table>
+
+        <h4 style="margin-top:24px;"><span class="ico">🔒</span>⑧ 보안</h4>
+        <table>
+          <tr><th style="width:200px">원칙</th><th>정본 1줄</th></tr>
+          <tr><td><strong>자격증명 stdout 금지</strong></td><td>토큰·자격증명 stdout 노출 금지(텔레그램·Meta·Notion 등).</td></tr>
+          <tr><td><strong>기밀 저장 정책</strong></td><td>외부 로그인 정보·API 키 등 기밀은 Notion 저장 금지.</td></tr>
+          <tr><td><strong>1원 이상 GM 결재</strong></td><td>1원이라도 요금 발생 건은 모두 GM님 결재.</td></tr>
+          <tr><td><strong>권한 자동 Yes</strong></td><td>GM 지시 시 PowerShell·Bash·Tool 권한 자동 Yes(승인 대기 X).</td></tr>
+        </table>
+
+        <h4 style="margin-top:24px;"><span class="ico">🎚️</span>⑨ 토큰 라우팅 매트릭스 (3계층)</h4>
+        <div class="callout" style="margin:8px 0 12px;"><strong>메인 CEO·6 C-Level = Opus(판단·결재 본업) 유지.</strong> 반복 작업(가동·patch·집계·git·송부)은 무조건 Sonnet/Haiku 서브에이전트(<code>executor</code> 등) 위임. 메인 모델로 반복 작업 처리 = 위반.</div>
+        <table>
+          <tr><th style="width:140px">모델</th><th>담당</th></tr>
+          <tr><td><strong>Haiku 4.5</strong></td><td>단순 read·lookup · 1줄 보고 · 텔레그램 송부</td></tr>
+          <tr><td><strong>Sonnet 4.6</strong></td><td>자동화 가동 · 집계 · patch · git · 콘텐츠 가공 · 일일 보고 빌드 · 로그 정리</td></tr>
+          <tr><td><strong>Opus 4.7</strong></td><td>판단 · 결정 · 진행 · 검토 · 결재 · 정책 정립 · 이슈 진단 · R&amp;D 방향 · Peer Cross-Check</td></tr>
+        </table>
+        <!-- ══ /전 C-Level 통합 원칙 (메모리 단일화) ══ -->
       </div>
       <div class="tab-panel" data-panel="ceo">
         <div class="card accent" style="margin-bottom:16px;">
