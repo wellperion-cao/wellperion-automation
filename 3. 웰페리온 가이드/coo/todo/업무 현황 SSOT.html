@@ -523,6 +523,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
       </div>
     </div>
     <div class="modal-actions">
+      <button class="modal-btn cancel" id="modalPrintBtn" onclick="(function(){var id=document.getElementById('editId').value;if(id)printResultReport(id);})()" style="margin-right:auto;">🖨 인쇄 / PDF 저장</button>
       <button class="modal-btn cancel" onclick="closeModal()">취소</button>
       <button class="modal-btn save" id="modalSaveBtn" onclick="saveTask()">저장</button>
     </div>
@@ -1332,7 +1333,10 @@ function renderTaskCard(t, idx) {
     const _manual = String(t.approval || '').split(',').map(s => s.trim()).filter(Boolean);
     const _MID = ['이경연 실장','이정헌 소장','나우열M'];
     // 부서장 실명: 카테고리 매핑 우선, 없으면 수동 결재요청에 포함된 부서장
-    const _midName = deptHeadFor(t.category) || _manual.find(m => _MID.indexOf(m) >= 0) || '';
+    const _ownerStr = String(t.owner || '');
+    let _midName = deptHeadFor(t.category) || _manual.find(m => _MID.indexOf(m) >= 0) || '';
+    // 담당자가 GM(상위자)이거나 부서장 본인이면 부서장 단계 생략 (2026-06-03 웰리: GM 직속 업무 오배정 차단)
+    if (_midName && (_ownerStr.indexOf('GM') >= 0 || _ownerStr.indexOf(_midName) >= 0)) _midName = '';
     const _auto   = _parsed.budget ? routeApproval(_parsed.budget.category, _parsed.budget.amount) : [];
     const _needs  = _manual.length > 0 || _auto.length > 0;
     const _route  = [];
@@ -1515,6 +1519,7 @@ function renderDoneCard(t) {
   // 액션: 링크 · 보고서 (완료건도 활용 가능 데이터)
   html += '<div style="display:flex;gap:4px;flex-shrink:0;flex-wrap:wrap;">';
   html += '<button class="action-btn" title="이 업무 링크 복사" onclick="event.stopPropagation();copyItemLink(\'' + escAttr(t.id) + '\')" style="padding:4px 8px;font-size:11px;">🔗</button>';
+  html += '<button class="action-btn" title="업무 보고서 인쇄 / PDF" onclick="event.stopPropagation();printResultReport(\'' + escAttr(t.id) + '\')" style="padding:4px 8px;font-size:11px;background:var(--purple-bg);color:var(--purple);border-color:rgba(167,139,218,0.3);">🖨 보고서</button>';
   html += '</div></div>';
   // 내용 토글 — 본문·기획·진척·결과 열람
   const hasDetail = p.body || p.plan || (p.logs && p.logs.length) || p.result;
