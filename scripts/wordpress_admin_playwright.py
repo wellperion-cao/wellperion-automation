@@ -287,8 +287,16 @@ async def run_draft_inquiry(post_id_arg: "str | None" = None) -> int:
         print("[ERROR] 본문 주입 실패 — 저장 중단. 스크린샷 확인 필요.")
         await ctx.close(); await p.stop(); return 6
 
-    # 초안 저장 (발행 아님) — #save-post = '임시글로 저장'
-    await page.click("#save-post")
+    # 발행 상태면 업데이트(#publish)로 저장(발행 유지), 초안이면 임시저장(#save-post)
+    pre_status = await page.evaluate(
+        "() => (document.querySelector('#post-status-display')||{}).innerText || ''"
+    )
+    is_published = ("공개" in pre_status) or ("발행" in pre_status) or ("published" in pre_status.lower())
+    if is_published:
+        print(f"[INFO] 이미 발행됨('{pre_status}') → 업데이트로 저장(발행 유지)")
+        await page.click("#publish")
+    else:
+        await page.click("#save-post")
     # 저장 후 post.php?post=ID&action=edit 로 이동
     try:
         await page.wait_for_url("**/post.php?post=*", timeout=30_000)

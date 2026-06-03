@@ -5126,8 +5126,8 @@ function crTab(btn, panelId) {
     <div class="grid-3" style="margin:8px 0 28px; max-width:520px;">
       <div class="card grow">
         <h4>🟢 돌고 있음</h4>
-        <p style="font-size:36px; font-weight:700; margin:6px 0;">10</p>
-        <p style="font-size:13px; color:var(--dim);">상시 4 + 매일 5 + 매주 1</p>
+        <p style="font-size:36px; font-weight:700; margin:6px 0;">9</p>
+        <p style="font-size:13px; color:var(--dim);">상시 3 + 매일 5 + 매주 1</p>
       </div>
       <div class="card warm">
         <h4>🟡 보류 (미구현)</h4>
@@ -5149,9 +5149,8 @@ function crTab(btn, panelId) {
       <tr class="auto-detail" style="display:none;"><td colspan="5" style="background:var(--paper);padding:10px 14px;font-size:13px;color:var(--dim);"> daily_scheduler.py — 정각 보고 발사(6슬롯).</td></tr>
       <tr onclick="wpAutoToggle(this)" style="cursor:pointer;"><td>🟢</td><td>Start 기획 브리핑</td><td>AI CEO</td><td>1분 폴링</td><td style="color:var(--accent);font-size:12px;">펼치기 ▾</td></tr>
       <tr class="auto-detail" style="display:none;"><td colspan="5" style="background:var(--paper);padding:10px 14px;font-size:13px;color:var(--dim);"> 기획 상태변경 감지 시 즉시 GM 텔레그램 발송.</td></tr>
-      <tr onclick="wpAutoToggle(this)" style="cursor:pointer;"><td>🟢</td><td>IG 발행 감시기</td><td>CMO</td><td>120초 폴링</td><td style="color:var(--accent);font-size:12px;">펼치기 ▾</td></tr>
-      <tr class="auto-detail" style="display:none;"><td colspan="5" style="background:var(--paper);padding:10px 14px;font-size:13px;color:var(--dim);"> 검수 승인 감지 → 인스타 자동 발행. 숨김 런처 적용(검은 창 제거).</td></tr>
     </table>
+    <p style="font-size:12px;color:var(--dim);margin:6px 0 0;">※ 구 <strong>IG 발행 감시기(120초 폴링)</strong>는 2026-06-03 폐기. 자동발행 0건·git churn 유발로 잉여 판정 → 폴링 제거. 발행 엔진 스크립트는 <strong>승인 시 on-demand 1회 호출</strong>용으로 보존(아래 '실제 업무 산출' 참조). 상세 = 🗑️ 정리·폐기 이력.</p>
 
     <h4>매일</h4>
     <table>
@@ -5198,8 +5197,8 @@ function crTab(btn, panelId) {
     <h3><span class="ico">📢</span>실제 업무 산출 자동화</h3>
     <table>
       <tr><th style="width:48px">상태</th><th style="width:170px">자동화</th><th style="width:80px">담당</th><th style="width:130px">주기</th><th style="width:70px">상세</th></tr>
-      <tr onclick="wpAutoToggle(this)" style="cursor:pointer;"><td>🟢</td><td>인스타 콘텐츠 자동 발행</td><td>CMO</td><td>승인 시</td><td style="color:var(--accent);font-size:12px;">펼치기 ▾</td></tr>
-      <tr class="auto-detail" style="display:none;"><td colspan="5" style="background:var(--paper);padding:10px 14px;font-size:13px;color:var(--dim);"> 주제 → 슬라이드·캡션 생성 → GM 검수 → 자동 발행. 검수카드·발행 감시기 완성, 승인 중계 배선 완료.</td></tr>
+      <tr onclick="wpAutoToggle(this)" style="cursor:pointer;"><td>⚠️</td><td>인스타 콘텐츠 발행 (반자동)</td><td>CMO</td><td>승인 시</td><td style="color:var(--accent);font-size:12px;">펼치기 ▾</td></tr>
+      <tr class="auto-detail" style="display:none;"><td colspan="5" style="background:var(--paper);padding:10px 14px;font-size:13px;color:var(--dim);"> 주제 → 슬라이드·캡션 생성 → GM 검수 → 발행. <strong>자동발행 성공률 0%(Playwright IG 업로드 fragile) — 현재 전부 GM 수동 발행.</strong> 폴링 감시기 폐기(2026-06-03), 발행 엔진은 승인 시 on-demand 1회 호출 구조로 전환 예정(봇 콜백 배선 별도). 실패 시 발행 패키지+딥링크 폰 전달 폴백.</td></tr>
       <tr onclick="wpAutoToggle(this)" style="cursor:pointer;"><td>🟡</td><td>블로그·카페·인스타 통합 업로드</td><td>CMO</td><td>수시(기획)</td><td style="color:var(--accent);font-size:12px;">펼치기 ▾</td></tr>
       <tr class="auto-detail" style="display:none;"><td colspan="5" style="background:var(--paper);padding:10px 14px;font-size:13px;color:var(--dim);"> 채널별 생성 → 검수·승인 → 업로드. 자동 발행은 GM 수동 승인 정책으로 보류.</td></tr>
       <tr onclick="wpAutoToggle(this)" style="cursor:pointer;"><td>🟡</td><td>슬라이드 자동 합성·콘텐츠 수집</td><td>CMO</td><td>수시(만듦)</td><td style="color:var(--accent);font-size:12px;">펼치기 ▾</td></tr>
