@@ -75,6 +75,21 @@ IMAGE_TOOLBAR_BUTTON_SELECTORS = [
 ]
 IMAGE_TYPE_MODAL_SELECTORS = [".se-popup-image-type", '[data-group="popupLayer"] .se-popup-image-type']
 IMAGE_TYPE_SLIDE_SELECTOR = "#image-type-slide"
+# 스티커 (2026-06-03 블로그 발행기에서 이식 — 동일 SmartEditor 툴바 구조).
+# 툴바 '스티커' 버튼 클릭 → 우측 se-sidebar-container-sticker 패널 오픈.
+# 패널 그리드의 각 스티커 = button.se-sidebar-element-sticker. 클릭 시 본문에
+# se-component.se-sticker 컴포넌트가 삽입됨.
+STICKER_TOOLBAR_BUTTON_SELECTORS = [
+    'button[data-name="sticker"]',
+    "button.se-sticker-toolbar-button",
+    'button[data-log="dot.sticker"]',
+]
+# 카페는 GIF 스티커 버튼 클래스명이 블로그와 다름 (실측 2026-06-03).
+# 블로그: button.se-sidebar-element-sticker (exact class)
+# 카페:   button.se-sidebar-element-sticker-gif (class에 -gif 접미사 추가)
+# attribute substring selector로 양쪽 모두 커버.
+STICKER_ITEM_SELECTOR = 'button[class*="se-sidebar-element-sticker"]'
+STICKER_COUNT_DEFAULT = 3  # 본문에 삽입할 기본 스티커 개수 (GM 검수 시 교체 전제)
 # 카페 임시등록 버튼
 SAVE_DRAFT_SELECTORS = [
     "button.btn_temp_save",
@@ -104,13 +119,14 @@ IMAGE_EXTS = (".jpg", ".jpeg", ".png")
 # 본문 조립
 # -----------------------------------------------------------------
 class CafePost:
-    __slots__ = ("title", "body", "image_paths", "menu_id")
+    __slots__ = ("title", "body", "image_paths", "menu_id", "sticker_count")
 
-    def __init__(self, title: str, body: str, image_paths: list[Path], menu_id: int) -> None:
+    def __init__(self, title: str, body: str, image_paths: list[Path], menu_id: int, sticker_count: int = STICKER_COUNT_DEFAULT) -> None:
         self.title = title
         self.body = body
         self.image_paths = image_paths
         self.menu_id = menu_id
+        self.sticker_count = sticker_count
 
 
 def load_body(body_file: Path | None, body_inline: str | None) -> str:
@@ -154,7 +170,8 @@ def build_post(args: argparse.Namespace) -> CafePost:
     if image_dir and not image_dir.is_absolute():
         image_dir = ROOT / image_dir
     images = collect_images(image_dir, args.image_glob)
-    return CafePost(title, body, images, args.menuid)
+    sticker_count = getattr(args, "sticker_count", STICKER_COUNT_DEFAULT)
+    return CafePost(title, body, images, args.menuid, sticker_count)
 
 
 # 카페 톤 격상 룰 가드 (feedback_cafe_tone_elevated) — 게시 차단이 아닌 경고만.
@@ -289,12 +306,26 @@ async def _install_popup_killer(page) -> None:
                 kill();
                 const mo = new MutationObserver(kill);
                 mo.observe(document.documentElement, { childList: true, subtree: true });
+                window.__wpKillObserver = mo;
                 window.__wpKillTimer = setInterval(kill, 700);
             }""",
             POPUP_KILLER_SELECTORS,
         )
     except Exception as e:
         print(f"[WARN] popup killer 설치 실패(무시): {e}")
+
+
+async def _stop_popup_killer(page) -> None:
+    """팝업 킬러 일시 정지 — 스티커 모달처럼 '살려둬야 하는 팝업'을 열기 전 호출."""
+    try:
+        await page.evaluate(
+            """() => {
+                if (window.__wpKillTimer) { clearInterval(window.__wpKillTimer); window.__wpKillTimer = null; }
+                if (window.__wpKillObserver) { try { window.__wpKillObserver.disconnect(); } catch (e) {} window.__wpKillObserver = null; }
+            }"""
+        )
+    except Exception:
+        pass
 
 
 async def _first_locator(scope, selectors: list[str]):
@@ -414,8 +445,96 @@ async def _enter_write_and_fill(page, post: CafePost) -> None:
     except Exception:
         pass
 
+    # 스티커 삽입 (블로그 발행기에서 이식 — 본문 입력 직후, 이미지 첨부 전).
+    sticker_count = getattr(post, "sticker_count", STICKER_COUNT_DEFAULT)
+    if sticker_count > 0:
+        await _insert_stickers(page, scope, sticker_count)
+
     if post.image_paths:
         await _attach_images(page, scope, post.image_paths)
+
+
+async def _insert_stickers(page, scope, count: int) -> int:
+    """툴바 '스티커' 버튼 → 우측 패널 오픈 → 그리드에서 count개 클릭해 본문에 삽입.
+    삽입된 se-component.se-sticker 컴포넌트 수를 반환. (블로그 발행기 이식 2026-06-03)"""
+    # caret을 본문 끝으로 (스티커가 본문 아래 들어가게)
+    try:
+        await page.keyboard.press("Control+End")
+    except Exception:
+        pass
+    # 팝업 킬러가 스티커 모달(팝업 레이어)을 삭제하므로 잠시 정지 (실측 2026-06-03)
+    await _stop_popup_killer(page)
+    btn_loc, btn_sel = await _first_locator(scope, STICKER_TOOLBAR_BUTTON_SELECTORS)
+    if btn_loc is None:
+        print("[WARN] 스티커 버튼 미발견 — 스티커 삽입 건너뜀")
+        await _install_popup_killer(page)  # 킬러 복구
+        return 0
+
+    # 삽입 전 본문 내 스티커 컴포넌트 수
+    sticker_count_js = "() => document.querySelectorAll('.se-component.se-sticker').length"
+    try:
+        before = await scope.evaluate(sticker_count_js)
+    except Exception:
+        before = 0
+
+    # 카페 스티커는 중앙 팝업 모달이며 scope와 다른 프레임에 렌더됨(실측 2026-06-03) → 전 프레임 스캔
+    async def _find_sticker_items():
+        for ctx in [page] + list(page.frames):
+            try:
+                cand = ctx.locator(STICKER_ITEM_SELECTOR)
+                if await cand.count() > 0:
+                    return cand
+            except Exception:
+                continue
+        return None
+
+    # 스티커 하나 고르면 모달이 닫히므로 count만큼 패널을 재오픈하며 삽입
+    clicked = 0
+    for k in range(count):
+        try:
+            await btn_loc.click(force=True)  # 패널 열기
+            await page.wait_for_timeout(1500)
+        except Exception:
+            break
+        if k == 0:
+            print(f"[INFO] 스티커 패널 오픈 ({btn_sel!r})")
+        items = await _find_sticker_items()
+        if items is None:
+            await page.wait_for_timeout(2000)
+            items = await _find_sticker_items()
+        if items is None:
+            print("[WARN] 스티커 그리드 항목 0개 (전 프레임)")
+            break
+        n = await items.count()
+        idx = (k * 5) % n  # 매번 다른 스티커
+        picked = False
+        for off in range(n):
+            it = items.nth((idx + off) % n)
+            try:
+                if await it.is_visible():
+                    await it.click(force=True)
+                    clicked += 1
+                    picked = True
+                    await page.wait_for_timeout(1000)  # 삽입·모달 닫힘 반영
+                    break
+            except Exception:
+                continue
+        if not picked:
+            break
+    print(f"[INFO] 스티커 {clicked}개 삽입 (요청 {count}개)")
+    await _install_popup_killer(page)  # 킬러 복구 (이후 이미지 단계 보호)
+
+    # 실측 검증 — 본문 내 스티커 컴포넌트 증가분 확인
+    try:
+        after = await scope.evaluate(sticker_count_js)
+    except Exception:
+        after = before
+    inserted = after - before
+    if inserted < clicked:
+        print(f"[WARN] 스티커 삽입 검증 — 본문 스티커 {before}→{after} (클릭 {clicked}개 중 {inserted}개만 반영)")
+    else:
+        print(f"[INFO] 스티커 삽입 검증 OK — 본문 스티커 {before}→{after} ({inserted}개 추가)")
+    return inserted
 
 
 async def _attach_images(page, scope, image_paths: list[Path]) -> None:
@@ -585,6 +704,10 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--image-dir", dest="image_dir", default=None, help="이미지 폴더")
     parser.add_argument("--image-glob", dest="image_glob", default="cafe_*.jpg", help="이미지 파일명 패턴")
     parser.add_argument("--menuid", type=int, default=DEFAULT_MENU_ID, help=f"카페 게시판 menuid (기본 {DEFAULT_MENU_ID}=웰페리온)")
+    parser.add_argument(
+        "--sticker-count", dest="sticker_count", type=int, default=STICKER_COUNT_DEFAULT,
+        help=f"본문에 삽입할 스티커 개수 (기본 {STICKER_COUNT_DEFAULT}, 0이면 생략)",
+    )
     parser.add_argument(
         "--i-am-sure", dest="i_am_sure", action="store_true",
         help="publish 모드 GM go 가드 해제 플래그 (실 발행)",
