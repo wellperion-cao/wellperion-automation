@@ -48,9 +48,11 @@ PERSISTENT_PROFILE_DIR = ROOT / "profiles" / "naver-blog"  # 실제 저장된 �
 EVIDENCE_DIR = ROOT / "scripts" / "poc-evidence"
 
 NAVER_LOGIN_URL = "https://nid.naver.com/nidlogin.login"
-# 블로그 글쓰기 진입 — 본인 블로그 ID 기준. 미지정 시 PostWriteForm 일반 진입.
+# 블로그 글쓰기 진입 — 반드시 본인 블로그 ID 포함 URL 사용.
+# PostWriteForm.naver(blog_id 없음)는 "유효하지 않은 요청 — 블로그 아이디가 없습니다" 에러 페이지로
+# 빠져 SmartEditor가 로딩되지 않음(제목 셀렉터 미발견의 진짜 원인). 따라서 기본 blog_id를 강제한다.
 BLOG_WRITE_URL_TEMPLATE = "https://blog.naver.com/{blog_id}/postwrite"
-BLOG_WRITE_URL_GENERIC = "https://blog.naver.com/PostWriteForm.naver"
+DEFAULT_BLOG_ID = "wellperion"  # 웰페리온 공식 블로그 ID (세션 실측 2026-06-03)
 
 # 로그인 만료 시그널 (URL 기반)
 LOGIN_REDIRECT_SIGNALS = ("nid.naver.com/nidlogin", "nid.naver.com/login")
@@ -91,6 +93,14 @@ PUBLISH_CONFIRM_SELECTORS = [
     'button[data-click-area="tpb.publish"]',
     'div.layer_btn_area button.confirm_btn__WEaBq',
     'button.btn_check:has-text("발행")',
+]
+
+# "작성 중인 글이 있습니다 — 이어서 작성하시겠습니까?" (임시저장 큐 이어쓰기) 팝업.
+# 취소(=새 글로 시작)를 눌러야 에디터가 깨끗한 상태로 열려 제목 입력이 가능.
+DRAFT_RESUME_CANCEL_SELECTORS = [
+    "button.se-popup-button-cancel",
+    '.se-popup-alert-confirm button:has-text("취소")',
+    '.blog-se-alert button:has-text("취소")',
 ]
 
 # popup killer (project_smarteditor_auto_attach v3.0)
@@ -320,6 +330,21 @@ async def _first_locator(page, selectors: list[str]):
     return None, None
 
 
+async def _dismiss_draft_resume_popup(page) -> None:
+    """글쓰기 진입 시 뜨는 '작성 중인 글 이어쓰기' 팝업을 취소(새 글)로 닫는다.
+    팝업이 없으면 조용히 통과. (project_draft_queue_dependency)"""
+    cancel_loc, sel = await _first_locator(page, DRAFT_RESUME_CANCEL_SELECTORS)
+    if cancel_loc is None:
+        return
+    try:
+        if await cancel_loc.is_visible():
+            await cancel_loc.click(force=True)
+            print(f"[INFO] 이어쓰기 팝업 취소 — 새 글로 시작 ({sel!r})")
+            await page.wait_for_timeout(1000)
+    except Exception as e:
+        print(f"[WARN] 이어쓰기 팝업 취소 실패(무시): {e}")
+
+
 # -----------------------------------------------------------------
 # setup — GM 수동 로그인 후 세션 저장 (비밀번호 하드코딩 없음)
 # -----------------------------------------------------------------
@@ -373,14 +398,18 @@ async def run_setup() -> int:
 # 글쓰기 진입 + 제목·본문·이미지 입력 (draft·publish 공용 본체)
 # -----------------------------------------------------------------
 async def _enter_write_and_fill(page, post: BlogPost, blog_id: str | None) -> None:
-    write_url = BLOG_WRITE_URL_TEMPLATE.format(blog_id=blog_id) if blog_id else BLOG_WRITE_URL_GENERIC
+    write_url = BLOG_WRITE_URL_TEMPLATE.format(blog_id=blog_id or DEFAULT_BLOG_ID)
     print(f"[INFO] 글쓰기 진입: {write_url}")
     await page.goto(write_url, wait_until="domcontentloaded", timeout=30_000)
     await page.wait_for_timeout(3000)
-    await _install_popup_killer(page)
 
     if is_login_required(page.url):
         raise RuntimeError("로그인 필요 — --mode setup 으로 세션 재저장 필요")
+
+    # "작성 중인 글이 있습니다 — 이어서?" 팝업 먼저 취소(새 글). 안 닫으면 제목 입력 불가.
+    # popup killer로 dim만 지우면 에디터 상태가 모호해지므로 취소 버튼을 직접 클릭한다.
+    await _dismiss_draft_resume_popup(page)
+    await _install_popup_killer(page)
 
     # SmartEditor는 iframe(mainFrame) 안에 있을 수 있음 → frame 우선 탐색
     target = page
