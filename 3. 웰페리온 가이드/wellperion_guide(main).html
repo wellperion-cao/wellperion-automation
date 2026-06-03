@@ -3113,7 +3113,7 @@ kubectl get pods -o json | jq '.items[] | {name: .metadata.name}'</pre>
       <!-- ── 탭 7: 핵심 프롬프트 ── -->
       <div class="tab-panel" data-panel="g15prompt">
         <h3><span class="ico">🤖</span>핵심 프롬프트 (교육·방법론)</h3>
-        <div class="callout tip" style="margin:8px 0 16px;"><strong>📌 운영형 프롬프트는 S2로 이동.</strong> 컨텍스트 정비 실행·자기학습 사이클은 <strong>S2 AI C-Level 운영 가이드 ▸ 공통 ▸ 운영 프롬프트 ①</strong>에서 관리합니다(SSOT). 아래는 교육·범용 방법론 프롬프트만 둡니다.</div>
+        <div class="callout tip" style="margin:8px 0 16px;"><strong>📌 실행 프롬프트는 T2로 이동.</strong> 컨텍스트 정비 실행·자기학습 사이클은 <strong>T2 기술 인프라 상세 ▸ 핵심 프롬프트 ▸ 운영 실행 도구</strong>에서 관리합니다(SSOT). 아래는 교육·범용 방법론 프롬프트만 둡니다.</div>
 
         <h4>토큰·컨텍스트 효율 점검</h4>
         <pre style="background:#16181c; color:#e8e8e8; padding:14px 16px; border-radius:8px; font-size:13px; white-space:pre-wrap; line-height:1.7; border-left:3px solid var(--accent);">가이드허브 AI 교육자료 핵심요약 기준으로 현재 작업의 토큰·컨텍스트 효율을 점검해줘.</pre>
@@ -3396,9 +3396,77 @@ Start-Process python -ArgumentList telegram_bot\daily_scheduler.py -WorkingDirec
         <p style="font-size:12.5px; color:var(--dim); margin-bottom:12px;">정기 정비·자기학습을 실제로 돌리는 실행 프롬프트. 누가 무엇을 정비하나(R/R·범위표)는 S2 운영 가이드 ▸ 공통 ▸ 주간 컨텍스트 정비 범위 참조.</p>
 
         <div style="margin-bottom:16px; padding:13px 16px; background:#16181c; border-radius:8px; border-left:3px solid var(--accent);">
-          <div style="font-size:12px; font-weight:700; color:var(--accent); margin-bottom:6px;">컨텍스트 정비 실행 (STEP 1~5)</div>
+          <div style="font-size:12px; font-weight:700; color:var(--accent); margin-bottom:6px;">컨텍스트 정비 실행 (STEP 1~5) — 빠른 실행</div>
           <pre style="margin:0; color:#e8e8e8; font-size:12.5px; white-space:pre-wrap; line-height:1.6;">각 AI C-Level의 컨텍스트 파일(.md·.json·.log)을 스캔→단순화→자동화→고도화→통합 제안 5단계로 정비해줘. 고위험 작업은 제안만, GM 승인 후 반영.</pre>
         </div>
+
+        <details class="toggle" style="margin-bottom:16px;">
+          <summary style="font-weight:700; font-size:13px;">컨텍스트 정비 — 전체 SOP (STEP 1~5 상세 · 클릭해서 펼치기)</summary>
+          <div class="toggle-body">
+            <div class="callout tip"><strong>정기 일정 (반자동 모델 v2 · 2026-06-02 확정).</strong> 매주 월 09:00 텔레그램 알림 → CEO(웰리)가 6 C-Level에 일괄 위임 → 각자 STEP 1~5로 본인 영역 정비(각 30분) → <strong>CEO가 6건 취합해 GM께 1회 통합 보고</strong>. 결과는 가이드허브에 기록. <strong>별도 실행 프로그램 없음 — 아래 핵심 프롬프트를 세션에서 직접 실행.</strong></div>
+            <h4><span class="ico">🔍</span>STEP 1 · 스캔 — 대상 파일 인벤토리</h4>
+            <p>각 AI C-Level의 컨텍스트 파일을 빠짐없이 훑어 목록·크기·줄 수를 파악합니다.</p>
+            <table>
+              <tr><th style="width:300px">대상 파일</th><th>측정 항목</th><th>산출물</th></tr>
+              <tr><td><code>.log · .txt · .json · .md.bak · .md · .py</code></td><td>목록 · 크기 · 줄 수 · 수정일</td><td>파일 인벤토리</td></tr>
+            </table>
+            <h4><span class="ico">🧹</span>STEP 2 · 단순화 진단 (Clean)</h4>
+            <div class="grid-3">
+              <div class="card warm"><h4>무의미</h4><p>실제 의사결정에 안 쓰이는 장식·여백·중복 헤더</p></div>
+              <div class="card warm"><h4>불필요</h4><p>낡은 정보, 더 이상 유효하지 않은 규칙</p></div>
+              <div class="card warm"><h4>중복</h4><p>같은 정보가 여러 파일에 흩어짐</p></div>
+            </div>
+            <p style="margin-top:12px;font-size:13px;">줄 수 축소 원칙: 최대 200행 → 목표 50행.</p>
+            <h4><span class="ico">🔄</span>STEP 3 · 자동화 진단 (Fill)</h4>
+            <table>
+              <tr><th style="width:220px">트리거</th><th>채우는 컨텍스트</th></tr>
+              <tr><td>매일 06·09·12·15·18·21시</td><td>텔레그램 정각 보고 (daily_scheduler.py)</td></tr>
+              <tr><td>매일 08:00</td><td>AI CEO 통합 보고 (ceo_morning_pipeline.py)</td></tr>
+              <tr><td>매주 월 09:00</td><td>AI 교육자료 자동 정리 (education_archive_weekly.py)</td></tr>
+              <tr><td>120초 폴링 watcher</td><td>인스타 검수 승인 → 자동 발행 (ig_review_publish_watcher.py)</td></tr>
+              <tr><td>PC 부팅·종료</td><td>pc_boot_greeting.py · pc_shutdown_greeting.py</td></tr>
+            </table>
+            <h4><span class="ico">✨</span>STEP 4 · 고도화 진단 (Improve)</h4>
+            <ul>
+              <li>더 좋은 구조 (페르소나/KPI/권한 별도 섹션 분리)</li>
+              <li>더 명확한 표현 (모호 문장·추상 표현 구체화)</li>
+              <li>누락된 핵심 (실패 시 폴백, 결정 권한 명시 등)</li>
+            </ul>
+            <p style="font-size:13px;color:var(--dim);">고위험 작업이므로 직접 적용 금지 — 제안만, GM 승인 후 반영.</p>
+            <h4><span class="ico">📋</span>STEP 5 · 통합 제안서</h4>
+            <table>
+              <tr><th style="width:130px">우선순위</th><th>항목</th><th>처리</th></tr>
+              <tr><td>P0 · 즉시</td><td>잘못된 경로·0바이트·깨진 참조</td><td>백업 후 정리(저위험·자동)</td></tr>
+              <tr><td>P1 · 주간</td><td>내용 동일 중복·200행 초과 .md</td><td>GM 승인 후 고도화(고위험)</td></tr>
+              <tr><td>P2 · 정기</td><td>오래된 로그·백업본</td><td>백업 후 정리(저위험·자동)</td></tr>
+            </table>
+            <div class="callout fix"><strong>원칙.</strong> 추측 금지 · 파일 직접 읽고 보고 · 각 STEP 끝나면 중간보고 후 다음 STEP. 완료 후 가이드허브에 기록.</div>
+            <h4><span class="ico">🤖</span>핵심 프롬프트 (전문)</h4>
+            <pre style="background:#16181c;color:#e8e8e8;padding:14px 16px;border-radius:8px;font-size:13px;white-space:pre-wrap;line-height:1.7;border-left:3px solid var(--accent);overflow-x:auto;">[웰페리온 컨텍스트 정비 — 매주 월요일 09:00 · 30분]
+각 AI C-Level의 컨텍스트 파일(.log · .txt · .json · .md.bak · .md · .py)을 STEP 1~5로 정비하라.
+
+■ 안전장치 (필수)
+1. 파일을 수정·삭제하기 전 .bak 백업을 만든다.
+2. 작업 후 구문·구조를 검증한다 (HTML 태그 균형, JSON·Python 파싱 등).
+3. 검증 실패 시 즉시 백업으로 롤백한다.
+
+■ 위험도 분리
+- 정리(저위험): 7일 이상 된 로그 · .bak · 0바이트 · 임시 파일은 백업 후 삭제 — 자동 진행.
+- 고도화(고위험): .md·설정(setting) 파일 구조 개선, 200행 초과 → 50행 축소 등은 직접 적용 금지.
+  진단·개선안을 '정비 제안서'로만 정리하고 GM 승인을 기다린다.
+
+■ STEP 1~5
+STEP 1 — 스캔: 대상 파일 목록·크기·줄 수 → 파일 인벤토리
+STEP 2 — 단순화 진단(Clean) → 삭제·합칠 항목 list
+STEP 3 — 자동화 진단(Fill) → 트리거·자동화 가능 항목 list
+STEP 4 — 고도화 진단(Improve) → 구조·표현 개선안
+STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
+
+완료 후: 텔레그램 1줄 요약 보고 + 제안서를 가이드허브에 기록 (SSOT는 가이드허브).
+추측 금지 · 파일을 직접 읽고 보고하라.</pre>
+            <div class="callout tip"><strong>한 줄 요약.</strong> 훑고 → 비우고 → 채우고 → 다듬고 → 제안한다. 한 번이 아니라 매주 cycle.</div>
+          </div>
+        </details>
 
         <div style="padding:13px 16px; background:#16181c; border-radius:8px; border-left:3px solid var(--accent);">
           <div style="font-size:12px; font-weight:700; color:var(--accent); margin-bottom:6px;">자기학습 사이클 실행</div>
@@ -5183,70 +5251,7 @@ function crTab(btn, panelId) {
     <table>
       <tr><th style="width:48px">상태</th><th style="width:170px">자동화</th><th style="width:80px">담당</th><th style="width:130px">주기</th><th style="width:70px">상세</th></tr>
       <tr onclick="wpAutoToggle(this)" style="cursor:pointer;"><td>🟢</td><td>6 C-Level 컨텍스트 정비</td><td>6 C-Level</td><td>월 09:00</td><td style="color:var(--accent);font-size:12px;">펼치기 ▾</td></tr>
-      <tr class="auto-detail" style="display:none;"><td colspan="5" style="background:var(--paper);padding:12px 14px;">
-        <div class="callout tip"><strong>정기 일정 (반자동 모델 v2 · 2026-06-02 확정).</strong> 매주 월 09:00 텔레그램 알림 → CEO(웰리)가 6 C-Level에 일괄 위임 → 각자 STEP 1~5로 본인 영역 정비(각 30분) → <strong>CEO가 6건 취합해 GM께 1회 통합 보고</strong>. 결과는 가이드허브에 기록(SSOT는 가이드허브). <strong>별도 실행 프로그램 없음 — 아래 핵심 프롬프트를 세션에서 직접 실행.</strong></div>
-        <h4><span class="ico">🔍</span>STEP 1 · 스캔 — 대상 파일 인벤토리</h4>
-        <p>각 AI C-Level의 컨텍스트 파일을 빠짐없이 훑어 목록·크기·줄 수를 파악합니다.</p>
-        <table>
-          <tr><th style="width:300px">대상 파일</th><th>측정 항목</th><th>산출물</th></tr>
-          <tr><td><code>.log · .txt · .json · .md.bak · .md · .py</code></td><td>목록 · 크기 · 줄 수 · 수정일</td><td>파일 인벤토리</td></tr>
-        </table>
-        <h4><span class="ico">🧹</span>STEP 2 · 단순화 진단 (Clean)</h4>
-        <div class="grid-3">
-          <div class="card warm"><h4>무의미</h4><p>실제 의사결정에 안 쓰이는 장식·여백·중복 헤더</p></div>
-          <div class="card warm"><h4>불필요</h4><p>낡은 정보, 더 이상 유효하지 않은 규칙</p></div>
-          <div class="card warm"><h4>중복</h4><p>같은 정보가 여러 파일에 흩어짐</p></div>
-        </div>
-        <p style="margin-top:12px;font-size:13px;">줄 수 축소 원칙: 최대 200행 → 목표 50행.</p>
-        <h4><span class="ico">🔄</span>STEP 3 · 자동화 진단 (Fill)</h4>
-        <table>
-          <tr><th style="width:220px">트리거</th><th>채우는 컨텍스트</th></tr>
-          <tr><td>매일 06·09·12·15·18·21시</td><td>텔레그램 정각 보고 (daily_scheduler.py)</td></tr>
-          <tr><td>매일 08:00</td><td>AI CEO 통합 보고 (ceo_morning_pipeline.py)</td></tr>
-          <tr><td>매주 월 09:00</td><td>AI 교육자료 자동 정리 (education_archive_weekly.py)</td></tr>
-          <tr><td>120초 폴링 watcher</td><td>인스타 검수 승인 → 자동 발행 (ig_review_publish_watcher.py)</td></tr>
-          <tr><td>PC 부팅·종료</td><td>pc_boot_greeting.py · pc_shutdown_greeting.py</td></tr>
-        </table>
-        <h4><span class="ico">✨</span>STEP 4 · 고도화 진단 (Improve)</h4>
-        <ul>
-          <li>더 좋은 구조 (페르소나/KPI/권한 별도 섹션 분리)</li>
-          <li>더 명확한 표현 (모호 문장·추상 표현 구체화)</li>
-          <li>누락된 핵심 (실패 시 폴백, 결정 권한 명시 등)</li>
-        </ul>
-        <p style="font-size:13px;color:var(--dim);">고위험 작업이므로 직접 적용 금지 — 제안만, GM 승인 후 반영.</p>
-        <h4><span class="ico">📋</span>STEP 5 · 통합 제안서</h4>
-        <table>
-          <tr><th style="width:130px">우선순위</th><th>항목</th><th>처리</th></tr>
-          <tr><td>P0 · 즉시</td><td>잘못된 경로·0바이트·깨진 참조</td><td>백업 후 정리(저위험·자동)</td></tr>
-          <tr><td>P1 · 주간</td><td>내용 동일 중복·200행 초과 .md</td><td>GM 승인 후 고도화(고위험)</td></tr>
-          <tr><td>P2 · 정기</td><td>오래된 로그·백업본</td><td>백업 후 정리(저위험·자동)</td></tr>
-        </table>
-        <div class="callout fix"><strong>원칙.</strong> 추측 금지 · 파일 직접 읽고 보고 · 각 STEP 끝나면 중간보고 후 다음 STEP. 완료 후 가이드허브에 기록.</div>
-        <h4><span class="ico">🤖</span>핵심 프롬프트</h4>
-        <pre style="background:#16181c;color:#e8e8e8;padding:14px 16px;border-radius:8px;font-size:13px;white-space:pre-wrap;line-height:1.7;border-left:3px solid var(--accent);overflow-x:auto;">[웰페리온 컨텍스트 정비 — 매주 월요일 09:00 · 30분]
-각 AI C-Level의 컨텍스트 파일(.log · .txt · .json · .md.bak · .md · .py)을 STEP 1~5로 정비하라.
-
-■ 안전장치 (필수)
-1. 파일을 수정·삭제하기 전 .bak 백업을 만든다.
-2. 작업 후 구문·구조를 검증한다 (HTML 태그 균형, JSON·Python 파싱 등).
-3. 검증 실패 시 즉시 백업으로 롤백한다.
-
-■ 위험도 분리
-- 정리(저위험): 7일 이상 된 로그 · .bak · 0바이트 · 임시 파일은 백업 후 삭제 — 자동 진행.
-- 고도화(고위험): .md·설정(setting) 파일 구조 개선, 200행 초과 → 50행 축소 등은 직접 적용 금지.
-  진단·개선안을 '정비 제안서'로만 정리하고 GM 승인을 기다린다.
-
-■ STEP 1~5
-STEP 1 — 스캔: 대상 파일 목록·크기·줄 수 → 파일 인벤토리
-STEP 2 — 단순화 진단(Clean) → 삭제·합칠 항목 list
-STEP 3 — 자동화 진단(Fill) → 트리거·자동화 가능 항목 list
-STEP 4 — 고도화 진단(Improve) → 구조·표현 개선안
-STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
-
-완료 후: 텔레그램 1줄 요약 보고 + 제안서를 가이드허브에 기록 (SSOT는 가이드허브).
-추측 금지 · 파일을 직접 읽고 보고하라.</pre>
-        <div class="callout tip"><strong>한 줄 요약.</strong> 훑고 → 비우고 → 채우고 → 다듬고 → 제안한다. 한 번이 아니라 매주 cycle.</div>
-      </td></tr>
+      <tr class="auto-detail" style="display:none;"><td colspan="5" style="background:var(--paper);padding:12px 14px;font-size:13px;color:var(--dim);">반자동 모델 v2 (매주 월 09:00 텔레그램 알림 → CEO가 6 C-Level 일괄 위임 → 각자 정비 → CEO 1회 취합 보고). 범위·R/R = S2 운영가이드 ▸ 주간 컨텍스트 정비 범위표 / 실행 프롬프트(STEP 1~5) = T2 기술 인프라 상세 ▸ 핵심 프롬프트 ▸ 운영 실행 도구 참조.</td></tr>
     </table>
 
     <!-- 보류 -->
