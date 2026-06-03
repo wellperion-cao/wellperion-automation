@@ -109,6 +109,24 @@
   .done-banner{display:none;background:var(--green-bg);border:1px solid #bcd9bf;border-radius:11px;
     padding:11px 14px;font-size:12.5px;color:#3c6442;margin-top:13px;font-weight:600}
   .done-banner.show{display:block}
+
+  .guide{background:var(--surface);border:1px solid var(--line);border-radius:12px;margin-top:13px;overflow:hidden}
+  .guide>summary{list-style:none;cursor:pointer;padding:13px 15px;font-size:13.5px;font-weight:700;color:var(--gold-deep);
+    display:flex;align-items:center;justify-content:space-between;gap:8px;user-select:none}
+  .guide>summary::-webkit-details-marker{display:none}
+  .guide>summary::after{content:"▾";color:var(--ink-faint);font-size:12px;transition:transform .15s}
+  .guide[open]>summary::after{transform:rotate(180deg)}
+  .guide-body{padding:2px 15px 13px;border-top:1px solid var(--line-soft)}
+  .g-item{padding:11px 0;border-bottom:1px solid var(--line-soft)}
+  .g-item:last-of-type{border-bottom:none}
+  .g-name{font-size:14px;font-weight:750;margin-bottom:3px}
+  .g-pt{font-size:12.5px;color:var(--ink-soft);margin-bottom:7px;line-height:1.5}
+  .g-lv{font-size:12.5px;line-height:1.55;display:flex;gap:7px;align-items:flex-start;margin-top:4px}
+  .g-lv .lv{flex:0 0 auto;font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:20px;color:#fff;white-space:nowrap;margin-top:1px}
+  .lv.need{background:var(--red)} .lv.ok{background:var(--green)} .lv.best{background:var(--gold)}
+  .g-lv>span:last-child{color:var(--ink-soft)}
+  .g-note{font-size:11.5px;color:var(--ink-faint);margin-top:11px;line-height:1.55;background:var(--surface-2);
+    border-radius:8px;padding:9px 11px}
 </style>
 </head>
 <body>
@@ -144,6 +162,48 @@
       <span class="lg"><span class="dot dot-best"></span>우수</span>
     </div>
   </div>
+
+  <details class="guide">
+    <summary>📋 점검 기준 가이드 — 점검필요 / 양호 / 우수</summary>
+    <div class="guide-body">
+      <div class="g-item">
+        <div class="g-name">정리정돈</div>
+        <div class="g-pt">물품·기구·소도구가 제자리에 있고, 통로·동선에 장애물이 없는지.</div>
+        <div class="g-lv"><span class="lv need">점검필요</span><span>물품이 흩어져 있거나 통로를 막음 · 제자리 아님 → 즉시 정리</span></div>
+        <div class="g-lv"><span class="lv ok">양호</span><span>대부분 제자리, 동선 확보 · 사소한 흐트러짐만</span></div>
+        <div class="g-lv"><span class="lv best">우수</span><span>전부 제자리·배치 일관, 흐트러짐 전혀 없음</span></div>
+      </div>
+      <div class="g-item">
+        <div class="g-name">홍보물 <span style="font-weight:500;font-size:11px;color:var(--ink-faint)">(복도)</span></div>
+        <div class="g-pt">게시물·포스터·안내문이 최신인지, 훼손·기한만료·삐뚤어짐이 없는지.</div>
+        <div class="g-lv"><span class="lv need">점검필요</span><span>기한 지남·훼손·삐뚤어짐·빈 게시판 → 교체/정비</span></div>
+        <div class="g-lv"><span class="lv ok">양호</span><span>최신 게시물·부착 양호 · 정렬 일부 미흡</span></div>
+        <div class="g-lv"><span class="lv best">우수</span><span>최신·정렬·훼손 없음, 브랜드 톤 일관</span></div>
+      </div>
+      <div class="g-item">
+        <div class="g-name">청결</div>
+        <div class="g-pt">바닥·거울·유리·기구 표면·구석의 먼지·얼룩·이물질, 쓰레기통, 냄새.</div>
+        <div class="g-lv"><span class="lv need">점검필요</span><span>눈에 띄는 먼지·얼룩·이물질·악취·쓰레기 넘침 → 청소</span></div>
+        <div class="g-lv"><span class="lv ok">양호</span><span>전반적으로 깨끗 · 사소한 먼지만</span></div>
+        <div class="g-lv"><span class="lv best">우수</span><span>바닥·거울·기구까지 광택, 냄새 없음, 쓰레기통 비움</span></div>
+      </div>
+      <div class="g-item">
+        <div class="g-name">조명 및 냉난방</div>
+        <div class="g-pt">조명 전체 점등·깜빡임·고장, 적정 밝기, 실내 온도·환기 상태.</div>
+        <div class="g-lv"><span class="lv need">점검필요</span><span>조명 고장·깜빡임 · 너무 덥/추움 · 환기 안 됨 → 조치</span></div>
+        <div class="g-lv"><span class="lv ok">양호</span><span>조명 정상 · 온도 적정 · 환기 보통</span></div>
+        <div class="g-lv"><span class="lv best">우수</span><span>조명 균일·전체 정상, 온도·환기 쾌적</span></div>
+      </div>
+      <div class="g-item">
+        <div class="g-name">복장착용 <span style="font-weight:500;font-size:11px;color:var(--ink-faint)">(복도 외 업장)</span></div>
+        <div class="g-pt">강사·직원의 유니폼·명찰 착용, 청결·단정, 복장 규정 준수.</div>
+        <div class="g-lv"><span class="lv need">점검필요</span><span>유니폼 미착용·명찰 없음·복장 불량</span></div>
+        <div class="g-lv"><span class="lv ok">양호</span><span>유니폼·명찰 착용, 전반적으로 단정</span></div>
+        <div class="g-lv"><span class="lv best">우수</span><span>전원 규정 준수·청결·단정, 브랜드 이미지 부합</span></div>
+      </div>
+      <div class="g-note">※ 복도는 「홍보물」, 그 외 업장은 「복장착용」 항목이 적용됩니다. 판단이 애매하면 낮은 단계(점검필요)로 표시하고 이슈사항에 메모해 주세요.</div>
+    </div>
+  </details>
 
   <div id="sections"></div>
 
