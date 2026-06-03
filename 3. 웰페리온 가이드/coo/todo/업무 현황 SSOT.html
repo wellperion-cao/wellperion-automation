@@ -1328,8 +1328,9 @@ function renderTaskCard(t, idx) {
   if (t.approval) {
     // ── 결재 진행 표시 (2026-05-29 GM 지시) ─────────────────────────────
     const _parsed = parseContent(t.content);
-    // 결재선 = 부서장(카테고리→부서 자동) → GM → 대표 3단계. (2026-06-02 GM 확정 복원)
-    // 부서장: 카테고리가 부서에 매핑되면 자동 1단계. 매핑 없으면 생략(GM→대표 폴백).
+    // 결재선 = 부서장(카테고리→부서 자동) → GM. 운영현황 최종 결재권자 = 김남욱GM (2026-06-03 GM 확정)
+    // ※ 대표님 단계는 결재 현황 SSOT 전용(거기선 GM 다음 전응준 대표 종착). 운영현황은 GM에서 종결.
+    // 부서장: 카테고리가 부서에 매핑되면 자동 1단계. 매핑 없으면 생략(GM 폴백).
     const _manual = String(t.approval || '').split(',').map(s => s.trim()).filter(Boolean);
     const _MID = ['이경연 실장','이정헌 소장','나우열M'];
     // 부서장 실명: 카테고리 매핑 우선, 없으면 수동 결재요청에 포함된 부서장
@@ -1341,10 +1342,9 @@ function renderTaskCard(t, idx) {
     const _needs  = _manual.length > 0 || _auto.length > 0;
     const _route  = [];
     if (_needs) {
-      // 표준 결재선: (부서장 — 카테고리 매핑 시) → GM → 대표 (2026-06-02 GM 확정)
+      // 운영현황 결재선: (부서장 — 카테고리 매핑 시) → GM 종착 (2026-06-03 GM: 운영현황 최종=GM)
       if (_midName) _route.push('부서장');
       _route.push('GM');
-      _route.push('대표님');
     }
 
     if (_route.length > 0) {
