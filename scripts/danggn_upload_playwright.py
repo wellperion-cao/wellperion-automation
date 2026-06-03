@@ -2,6 +2,11 @@
 # v0.1 — 당근 비즈프로필 반자동 업로더 스캐폴드
 #         (네이버 발행기 패턴 차용: Playwright + Persistent Profile 1회 로그인 세션)
 #
+# ⚠️ 2026-06-03 GM 결정 — 당근은 B안(수동 업로드) 유지. 반자동 보류.
+#    사유: 당근비즈니스 PC 로그인 세션이 자동화 프로필에 영구 저장되지 않음(브라우저 재시작 시 login 리다이렉트).
+#    운영: CMO가 콘텐츠 패키지(output(당근)/ + danggn_copy.md) 준비 → GM이 당근 앱/웹에서 직접 업로드.
+#    본 스크립트의 dryrun(패키지 점검)만 활용. setup/draft/publish는 세션 미유지로 미사용.
+#
 # 정책: 종착지=임시저장(draft). 현 단계 목표 = 로그인 세션 저장(setup) + 골격까지.
 #       에디터 자동입력(draft/publish)은 GM 로그인 후 당근 비즈 글쓰기 DOM 실측 후 다음 단계 구현.
 #       비밀번호 하드코딩 없음. Persistent Profile 세션 재사용. 토큰 stdout 노출 금지.
