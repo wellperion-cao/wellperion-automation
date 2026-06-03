@@ -632,17 +632,17 @@
     <!-- AUTO:LATEST-START -->
     <div class="card grow">
       <h4>최신 업데이트 — 2026-06-03 (자동 갱신)</h4>
+      <p><strong>2026-06-03</strong> refactor(guidehub): 프롬프트 성격별 2분할 — 운영형 S2·기술형 T2</p>
       <p><strong>2026-06-03</strong> feat(guidehub): S2에 운영 프롬프트·컨텍스트정비 범위표 흡수처 신설</p>
       <p><strong>2026-06-03</strong> fix(coo): GM 직접 건 결재선 대표님만 + 결재카드 담당자 제목아래로</p>
       <p><strong>2026-06-03</strong> refactor(s2): STAGE4+5 CLAUDE.md 얇은인덱스 축소 + 부팅 단일출처 명시 (원칙 S2 단일화 완료)</p>
       <p><strong>2026-06-03</strong> refactor(guidehub): T4 자동화 표+행펼침 방식 전환 (GM 요청)</p>
-      <p><strong>2026-06-03</strong> fix(coo): 결재 SSOT 트렐로·캘린더 풀폭 — .content 720px 가운데 → 풀폭 좌측정렬 (업무현황 파리티)</p>
     </div>
 <!-- AUTO:LATEST-END -->
         <table>
           <tr><th style="width:160px">날짜</th><th>변경 내용</th></tr>
           <!-- AUTO:TABLE-START -->
-      <tr><td><strong>2026-06-03 (자동)</strong></td><td>feat(guidehub): S2에 운영 프롬프트·컨텍스트정비 범위표 흡수처 신설 · fix(coo): GM 직접 건 결재선 대표님만 + 결재카드 담당자 제목아래로 · refactor(s2): STAGE4+5 CLAUDE.md 얇은인덱스 축소 + 부팅 단일출처 명시 (원칙 S2 단일화 완료) · refactor(guidehub): T4 자동화 표+행펼…</td></tr>
+      <tr><td><strong>2026-06-03 (자동)</strong></td><td>refactor(guidehub): 프롬프트 성격별 2분할 — 운영형 S2·기술형 T2 · feat(guidehub): S2에 운영 프롬프트·컨텍스트정비 범위표 흡수처 신설 · fix(coo): GM 직접 건 결재선 대표님만 + 결재카드 담당자 제목아래로 · refactor(s2): STAGE4+5 CLAUDE.md 얇은인덱스 축소 + 부팅 단일출처 …</td></tr>
       <!-- AUTO:TABLE-END -->
           <tr><td><strong>2026-05-28 (14차)</strong></td><td>공지/안내문 생성(COO 하위) · 오프라인 홍보물 디자인 제작(CMO 하위) 도구 신설 · 공지 서식 v2.0 독립 페이지화 · 회사소개서·전략로드맵 원본 「3. 웰페리온 가이드/회사문서/」로 이관(SSOT 단일화) · C-Level 부팅 R/R Notion API→가이드허브 g10 참조로 전환 · GitHub Pages 워크플로 폴더명 경로 수정 · 사이드바 "공통+7개 C-Level" 라벨 제거</td></tr>
           <tr><td>2026-05-27 (13차)</td><td>GitHub Pages 전환 · 사이드바 4섹터 · AI C-Level 통일 · 운영 통합 체계 · 공식채널·지출현황·취업규칙·SSOT 신설 · g2+g19·g9+g20·g12·g13 합병 · 김남욱 탭 확장 · v2.5</td></tr>
@@ -824,39 +824,12 @@
   </article>
 
   <article class="doc" id="g1">
-    <div class="doc-header"><h2><span class="g-id">T1</span>Claude 설정 폴더</h2><div class="meta">최종 수정 2026-05-23 · 설정이 어디 있고 무슨 용도인지</div></div>
-    <p class="lead">Claude 설정은 메인 프로젝트 <code>welperion-automation</code>을 중심으로 봅니다.</p>
-
-    <div class="diagram">
-      <svg viewBox="0 0 720 360" xmlns="http://www.w3.org/2000/svg" role="img">
-        <style>text{font-family:"Pretendard","Apple SD Gothic Neo",system-ui,sans-serif}</style>
-        <rect x="20" y="14" width="14" height="14" rx="3" fill="#cdcbc1"/><text x="40" y="25" font-size="12" fill="#6b6a64">보호 (안 건드림)</text>
-        <rect x="180" y="14" width="14" height="14" rx="3" fill="#1e6fbf"/><text x="200" y="25" font-size="12" fill="#6b6a64">메인 (활성)</text>
-        <rect x="320" y="14" width="14" height="14" rx="3" fill="#9ec6ec"/><text x="340" y="25" font-size="12" fill="#6b6a64">하위 모듈</text>
-        <g><rect x="20" y="50" width="680" height="44" rx="10" fill="#ffffff" stroke="#cdcbc1"/><text x="38" y="76" font-size="14" font-weight="600" fill="#1f1f1d">C:\Users\jjky0\</text><text x="180" y="76" font-size="12" fill="#6b6a64">내 컴퓨터 홈 폴더</text></g>
-        <g><rect x="50" y="104" width="650" height="44" rx="10" fill="#eeece4" stroke="#cdcbc1"/><text x="68" y="130" font-size="14" font-weight="600" fill="#6b6a64">.claude · .omc</text><text x="240" y="130" font-size="12" fill="#8c8b83">Claude·OMC 전용. 절대 이동 금지</text></g>
-        <g><rect x="50" y="158" width="650" height="44" rx="10" fill="#e8f1fa" stroke="#1e6fbf" stroke-width="2"/><text x="68" y="184" font-size="14" font-weight="700" fill="#185fa5">welperion-automation — 메인 프로젝트</text><text x="430" y="184" font-size="12" fill="#1e6fbf">Claude Code가 여기서 가동</text></g>
-        <g><rect x="80" y="212" width="620" height="40" rx="10" fill="#e8f1fa" stroke="#9ec6ec"/><text x="98" y="237" font-size="13" font-weight="600" fill="#185fa5">.claude\settings.local.json</text><text x="340" y="237" font-size="11.5" fill="#1e6fbf">활성 설정 — 권한 + SessionStart 훅</text></g>
-        <g><rect x="80" y="258" width="620" height="40" rx="10" fill="#e8f1fa" stroke="#9ec6ec"/><text x="98" y="283" font-size="13" font-weight="600" fill="#185fa5">CLAUDE.md — 메인 헌법</text><text x="290" y="283" font-size="11.5" fill="#1e6fbf">회사 정보·R/R·운영 제약 통합</text></g>
-        <g><rect x="80" y="304" width="620" height="40" rx="10" fill="#ffffff" stroke="#cdcbc1"/><text x="98" y="329" font-size="13" font-weight="600" fill="#1f1f1d">wellperion-agents (sub-project)</text><text x="370" y="329" font-size="11.5" fill="#6b6a64">자체 CLAUDE.md (축약) + 7 C-Level 정의</text></g>
-      </svg>
-      <div class="caption">welperion-automation이 메인 · 보호 폴더는 절대 안 건드림</div>
+    <div class="doc-header"><h2><span class="g-id">T1</span>Claude 설정 폴더 <span style="font-size:13px;color:var(--dim);font-weight:400;">→ T2로 통합</span></h2><div class="meta">2026-06-03 · T2 기술 인프라 상세로 흡수됨</div></div>
+    <p class="lead">Claude 설정 폴더(설정 파일 위치·용도·구조도)는 <strong>T2 기술 인프라 상세 ▸ 설정 위치</strong> 탭으로 통합되었습니다. 기술 인프라를 한곳에서 보기 위함입니다.</p>
+    <div class="callout">
+      <strong>→ 이동:</strong> <a href="#" onclick="event.preventDefault();var t=document.querySelector('[data-id=T2]');if(t)t.click();" style="color:var(--accent);font-weight:700;text-decoration:none;">T2 기술 인프라 상세 ▸ 설정 위치 탭 열기</a>
     </div>
-
-    <h3><span class="ico">🗂️</span>설정은 어디에 있나</h3>
-    <table>
-      <tr><th style="width:170px">구분</th><th>위치</th><th>역할</th></tr>
-      <tr><td><span class="badge gray">전역 보호</span></td><td><code>C:\Users\jjky0\.claude\</code></td><td>모든 프로젝트 공통 · 보호</td></tr>
-      <tr><td><span class="badge blue">메인 설정 활성</span></td><td><code>welperion-automation\.claude\settings.local.json</code></td><td>권한 + SessionStart 훅</td></tr>
-      <tr><td><span class="badge blue">메인 헌법</span></td><td><code>welperion-automation\CLAUDE.md</code></td><td>회사 정보 · C-Level R/R · 자산 SSOT · 운영 제약</td></tr>
-      <tr><td><span class="badge gray">sub 헌법</span></td><td><code>wellperion-agents\CLAUDE.md</code></td><td>축약 · 메인 참조</td></tr>
-      <tr><td><span class="badge gray">C-Level 정의</span></td><td><code>wellperion-agents\.claude\agents\ai-*.md</code></td><td>AI 임원 7명 역할·성격</td></tr>
-    </table>
-    <div class="callout"><strong>핵심 한 줄.</strong> 메인은 <code>welperion-automation</code> · 활성 설정 1곳 · 헌법 1곳 · 메모리 1곳.</div>
-    <div style="margin-top:22px; padding:13px 16px; background:#16181c; border-radius:8px; border-left:3px solid var(--accent);">
-      <div style="font-size:12px; font-weight:700; color:var(--accent); margin-bottom:6px;">&#9656; Claude CLI 셋업 프롬프트</div>
-      <pre style="margin:0; color:#e8e8e8; font-size:12.5px; white-space:pre-wrap; line-height:1.6;">가이드허브 ① 기준으로 내 Claude 설정(CLAUDE.md·settings 위치와 내용)을 점검하고, 가이드와 어긋난 부분을 알려줘.</pre>
-    </div>
+    <p style="font-size:13px;color:var(--dim);">※ 셋업·점검 프롬프트는 S2 운영 가이드 ▸ 공통 ▸ 운영 프롬프트 ③에서 관리.</p>
   </article>
 
 
@@ -3266,7 +3239,8 @@ kubectl get pods -o json | jq '.items[] | {name: .metadata.name}'</pre>
 
     <div class="tabs" data-tabs="g16">
       <div class="tab-nav">
-        <button class="tab-btn active" data-tab="telegram">텔레그램 봇</button>
+        <button class="tab-btn active" data-tab="settings">설정 위치</button>
+        <button class="tab-btn" data-tab="telegram">텔레그램 봇</button>
         <button class="tab-btn" data-tab="scripts">scripts 구조</button>
         <button class="tab-btn" data-tab="paths">경로 표준화</button>
         <button class="tab-btn" data-tab="archive">CTO 개발 아카이브</button>
@@ -3274,7 +3248,42 @@ kubectl get pods -o json | jq '.items[] | {name: .metadata.name}'</pre>
         <button class="tab-btn" data-tab="prompts">핵심 프롬프트</button>
       </div>
 
-      <div class="tab-panel active" data-panel="telegram">
+      <!-- ── 탭: 설정 위치 (T1 g1에서 흡수 — STAGE 3) ── -->
+      <div class="tab-panel active" data-panel="settings">
+        <h3><span class="ico">🗂️</span>Claude 설정 폴더</h3>
+        <p>Claude 설정은 메인 프로젝트 <code>welperion-automation</code>을 중심으로 봅니다.</p>
+
+        <div class="diagram">
+          <svg viewBox="0 0 720 360" xmlns="http://www.w3.org/2000/svg" role="img">
+            <style>text{font-family:"Pretendard","Apple SD Gothic Neo",system-ui,sans-serif}</style>
+            <rect x="20" y="14" width="14" height="14" rx="3" fill="#cdcbc1"/><text x="40" y="25" font-size="12" fill="#6b6a64">보호 (안 건드림)</text>
+            <rect x="180" y="14" width="14" height="14" rx="3" fill="#1e6fbf"/><text x="200" y="25" font-size="12" fill="#6b6a64">메인 (활성)</text>
+            <rect x="320" y="14" width="14" height="14" rx="3" fill="#9ec6ec"/><text x="340" y="25" font-size="12" fill="#6b6a64">하위 모듈</text>
+            <g><rect x="20" y="50" width="680" height="44" rx="10" fill="#ffffff" stroke="#cdcbc1"/><text x="38" y="76" font-size="14" font-weight="600" fill="#1f1f1d">C:\Users\jjky0\</text><text x="180" y="76" font-size="12" fill="#6b6a64">내 컴퓨터 홈 폴더</text></g>
+            <g><rect x="50" y="104" width="650" height="44" rx="10" fill="#eeece4" stroke="#cdcbc1"/><text x="68" y="130" font-size="14" font-weight="600" fill="#6b6a64">.claude · .omc</text><text x="240" y="130" font-size="12" fill="#8c8b83">Claude·OMC 전용. 절대 이동 금지</text></g>
+            <g><rect x="50" y="158" width="650" height="44" rx="10" fill="#e8f1fa" stroke="#1e6fbf" stroke-width="2"/><text x="68" y="184" font-size="14" font-weight="700" fill="#185fa5">welperion-automation — 메인 프로젝트</text><text x="430" y="184" font-size="12" fill="#1e6fbf">Claude Code가 여기서 가동</text></g>
+            <g><rect x="80" y="212" width="620" height="40" rx="10" fill="#e8f1fa" stroke="#9ec6ec"/><text x="98" y="237" font-size="13" font-weight="600" fill="#185fa5">.claude\settings.local.json</text><text x="340" y="237" font-size="11.5" fill="#1e6fbf">활성 설정 — 권한 + SessionStart 훅</text></g>
+            <g><rect x="80" y="258" width="620" height="40" rx="10" fill="#e8f1fa" stroke="#9ec6ec"/><text x="98" y="283" font-size="13" font-weight="600" fill="#185fa5">CLAUDE.md — 메인 헌법</text><text x="290" y="283" font-size="11.5" fill="#1e6fbf">회사 정보·R/R·운영 제약 통합</text></g>
+            <g><rect x="80" y="304" width="620" height="40" rx="10" fill="#ffffff" stroke="#cdcbc1"/><text x="98" y="329" font-size="13" font-weight="600" fill="#1f1f1d">wellperion-agents (sub-project)</text><text x="370" y="329" font-size="11.5" fill="#6b6a64">자체 CLAUDE.md (축약) + 7 C-Level 정의</text></g>
+          </svg>
+          <div class="caption">welperion-automation이 메인 · 보호 폴더는 절대 안 건드림</div>
+        </div>
+
+        <h4>설정은 어디에 있나</h4>
+        <table>
+          <tr><th style="width:170px">구분</th><th>위치</th><th>역할</th></tr>
+          <tr><td><span class="badge gray">전역 보호</span></td><td><code>C:\Users\jjky0\.claude\</code></td><td>모든 프로젝트 공통 · 보호</td></tr>
+          <tr><td><span class="badge blue">메인 설정 활성</span></td><td><code>welperion-automation\.claude\settings.local.json</code></td><td>권한 + SessionStart 훅</td></tr>
+          <tr><td><span class="badge blue">메인 헌법</span></td><td><code>welperion-automation\CLAUDE.md</code></td><td>회사 정보 · C-Level R/R · 자산 SSOT · 운영 제약</td></tr>
+          <tr><td><span class="badge gray">sub 헌법</span></td><td><code>wellperion-agents\CLAUDE.md</code></td><td>축약 · 메인 참조</td></tr>
+          <tr><td><span class="badge gray">C-Level 정의</span></td><td><code>wellperion-agents\.claude\agents\ai-*.md</code></td><td>AI 임원 7명 역할·성격</td></tr>
+        </table>
+        <div class="callout"><strong>핵심 한 줄.</strong> 메인은 <code>welperion-automation</code> · 활성 설정 1곳 · 헌법 1곳 · 메모리 1곳.</div>
+        <p style="font-size:13px;color:var(--dim);margin-top:10px;">※ 셋업·점검 프롬프트는 <strong>S2 AI C-Level 운영 가이드 ▸ 공통 ▸ 운영 프롬프트 ③</strong>에서 관리.</p>
+      </div>
+      <!-- ── /탭: 설정 위치 ── -->
+
+      <div class="tab-panel" data-panel="telegram">
         <h3><span class="ico">🤖</span>텔레그램 봇 (@namuki_report_bot)</h3>
         <p>Chat ID 8254867551 · 단일 봇 · 용도: <strong>C-Level 보고 + 승인요청 전용</strong> (2026-05-25 GM 확정)</p>
 
