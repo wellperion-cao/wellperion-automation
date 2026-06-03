@@ -616,17 +616,17 @@
     <!-- AUTO:LATEST-START -->
     <div class="card grow">
       <h4>최신 업데이트 — 2026-06-03 (자동 갱신)</h4>
+      <p><strong>2026-06-03</strong> fix(cto): IG 폴링 감시기 폐기 잔여 참조 동기화 (감시기 4→3·인프라표·SOP트리거·CTO콜아웃)</p>
       <p><strong>2026-06-03</strong> fix(cto): T2 IG 폴링 감시기 폐기 반영 — 대시보드·상시가동·실제산출 현실 정정</p>
       <p><strong>2026-06-03</strong> fix(cmo): 문의 페이지 상단 여백 추가 확대(140px)·litt.ly 링크 삭제 + 발행유지 업데이트</p>
       <p><strong>2026-06-03</strong> refactor(coo): 결재현황 캘린더 뷰 제거 — 칸반 단일 (중복 뷰 정리)</p>
       <p><strong>2026-06-03</strong> feat(cmo): 워드프레스 문의 발행·홈 히어로 버튼 추가 완료</p>
-      <p><strong>2026-06-03</strong> fix(guidehub): S4→S3 재번호 동기화 + 핵심현황 KPI 정의 업무현황 일치</p>
     </div>
 <!-- AUTO:LATEST-END -->
         <table>
           <tr><th style="width:160px">날짜</th><th>변경 내용</th></tr>
           <!-- AUTO:TABLE-START -->
-      <tr><td><strong>2026-06-03 (자동)</strong></td><td>fix(cto): T2 IG 폴링 감시기 폐기 반영 — 대시보드·상시가동·실제산출 현실 정정 · fix(cmo): 문의 페이지 상단 여백 추가 확대(140px)·litt.ly 링크 삭제 + 발행유지 업데이트 · refactor(coo): 결재현황 캘린더 뷰 제거 — 칸반 단일 (중복 뷰 정리) · feat(cmo): 워드프레스 문의 발행·홈 히어로 버…</td></tr>
+      <tr><td><strong>2026-06-03 (자동)</strong></td><td>fix(cto): IG 폴링 감시기 폐기 잔여 참조 동기화 (감시기 4→3·인프라표·SOP트리거·CTO콜아웃) · fix(cto): T2 IG 폴링 감시기 폐기 반영 — 대시보드·상시가동·실제산출 현실 정정 · fix(cmo): 문의 페이지 상단 여백 추가 확대(140px)·litt.ly 링크 삭제 + 발행유지 업데이트 · refactor(coo): …</td></tr>
       <!-- AUTO:TABLE-END -->
           <tr><td><strong>2026-05-28 (14차)</strong></td><td>공지/안내문 생성(COO 하위) · 오프라인 홍보물 디자인 제작(CMO 하위) 도구 신설 · 공지 서식 v2.0 독립 페이지화 · 회사소개서·전략로드맵 원본 「3. 웰페리온 가이드/회사문서/」로 이관(SSOT 단일화) · C-Level 부팅 R/R Notion API→가이드허브 g10 참조로 전환 · GitHub Pages 워크플로 폴더명 경로 수정 · 사이드바 "공통+7개 C-Level" 라벨 제거</td></tr>
           <tr><td>2026-05-27 (13차)</td><td>GitHub Pages 전환 · 사이드바 4섹터 · AI C-Level 통일 · 운영 통합 체계 · 공식채널·지출현황·취업규칙·SSOT 신설 · g2+g19·g9+g20·g12·g13 합병 · 김남욱 탭 확장 · v2.5</td></tr>
@@ -5264,6 +5264,7 @@ function crTab(btn, panelId) {
         <h4>예약작업 정리 이력</h4>
         <table>
           <tr><th style="width:300px">예약작업</th><th style="width:100px">처리</th><th>사유</th></tr>
+          <tr><td><code>Wellperion-IG-Publish-Watcher</code></td><td>비활성(Disabled)</td><td>120초 폴링 자동발행 감시기. 자동발행 성공 0건·매 사이클 git pull churn 유발로 잉여 판정. 폴링 폐기, 발행 엔진 스크립트는 승인 시 on-demand 1회 호출용 보존. 봇 콜백 전환 예정 (06-03)</td></tr>
           <tr><td><code>Wellperion-CEO-Verify-Watcher</code></td><td>비활성 처리</td><td>ceo_verify_watcher.py git 미추적·부재 고아 → 매 로그인 실패. 부활 시 스크립트 재작성 선행 (06-03)</td></tr>
           <tr><td>AutoTask-Watcher-Start/Stop</td><td>UAC 삭제</td><td>유물 예약작업 (06-01, 13→9)</td></tr>
           <tr><td>구 CEO-Morning-Brief-0800</td><td>UAC 삭제</td><td>Live 버전으로 교체됨 (06-01)</td></tr>
@@ -6995,6 +6996,7 @@ function crTab(btn, panelId) {
                   id: base, title: title, status: status,
                   category: '업무', description: parsed.description,
                   progressLog: parsed.progressLog, budgetCat: parsed.budgetCat, budgetAmt: parsed.budgetAmt,
+                  apprReq: String(row['결재요청'] || ''), apprStatus: apr,
                   isToday: true, startDate: sd, ssotAuto: true, owner: owner,
                   _sheetsId: String(row['id'] || '')
                 });
@@ -7008,6 +7010,19 @@ function crTab(btn, panelId) {
     }
 
     function gm1UpdateStatus(id, status) {
+      // 결재요청된 업무는 자체완료 차단 — 결재 완료로만 종료 (2026-06-03 GM · 업무현황 일관)
+      if (status === '완료') {
+        var _ci = gm1SsotItems.find(function(x){ return x.id === id; });
+        if (!_ci) { var _ll = gm1Load().find(function(x){ return x.id === id; }); if (_ll) _ci = _ll; }
+        if (_ci) {
+          var _rq = String(_ci.apprReq || _ci.approval || '').trim();
+          var _ast = String(_ci.apprStatus || '').trim();
+          if (_rq && _ast !== '결재완료' && !/반려/.test(_ast)) {
+            alert('결재요청된 업무입니다.\n자체 완료할 수 없습니다 — 결재 현황 SSOT에서 결재가 완료되면 종료됩니다.');
+            return;
+          }
+        }
+      }
       // ssot-* 기원 항목은 localStorage 없음 → gm1SsotItems에서 낙관적 갱신 + Sheets sync
       if (String(id).indexOf('ssot-') === 0) {
         var ssotIdx = gm1SsotItems.findIndex(function(x){ return x.id === id; });
@@ -7203,8 +7218,10 @@ function crTab(btn, panelId) {
       }
       merged.sort(gm1SortCmp);
 
-      var active = merged.filter(function(t){ return t.status === '진행중'; });
-      var done   = merged.filter(function(t){ return t.status === '완료'; });
+      // 완료여도 결재 미완(결재요청 있고 결재완료·반려 아님)이면 진행으로 유지 (2026-06-03 GM · 업무현황 일관)
+      function _gm1ApprPending(t){ var rq=String(t.apprReq||t.approval||'').trim(), a=String(t.apprStatus||'').trim(); return rq && a !== '결재완료' && !/반려/.test(a); }
+      var active = merged.filter(function(t){ return t.status === '진행중' || (t.status === '완료' && _gm1ApprPending(t)); });
+      var done   = merged.filter(function(t){ return t.status === '완료' && !_gm1ApprPending(t); });
       var hold   = merged.filter(function(t){ return t.status === '보류'; });
 
       // ══ 도구 바 — 검색 input 포함 영역은 최초 1회만 생성(재렌더 시 손대지 않음 → IME 조합 유지) ══
