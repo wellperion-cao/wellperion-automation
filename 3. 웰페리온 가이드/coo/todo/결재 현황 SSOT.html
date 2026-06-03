@@ -475,7 +475,7 @@ function render() {
   let si = document.getElementById('searchInput');
   if (!si) {
     searchEl.innerHTML =
-      '<input type="text" id="searchInput" placeholder="업무명·내용·담당자 검색" style="flex:1;background:var(--paper);border:1px solid var(--border);color:var(--text);padding:7px 12px;border-radius:8px;font-size:13px;font-family:inherit;">'
+      '<input type="text" id="searchInput" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="업무명·내용·담당자 검색" style="flex:1;background:var(--paper);border:1px solid var(--border);color:var(--text);padding:7px 12px;border-radius:8px;font-size:13px;font-family:inherit;">'
       + '<button type="button" id="searchClearBtn" class="filter-btn" onclick="clearSearch()" style="display:none;">✕ 초기화</button>';
     si = document.getElementById('searchInput');
     si.value = searchQuery;  // 최초 1회만 (딥링크 q 반영)
