@@ -423,6 +423,15 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
       </div>
     </div>
     <div class="field">
+      <label>난이도 <span style="font-size:11px;color:var(--dim);font-weight:400;">(담당자 제안 — 부서장이 결재단계에서 확정)</span></label>
+      <select id="fDifficulty">
+        <option value="">미정</option>
+        <option value="하">하 (1점) · 루틴·단독·~1일</option>
+        <option value="중">중 (2점) · 수일·일부 조율·비정형</option>
+        <option value="상">상 (3점) · 전략·다부서·고난도</option>
+      </select>
+    </div>
+    <div class="field">
       <label>협조 담당자 (여러명)</label>
       <div class="checkbox-group" id="fCollabGroup">
         <label><input type="checkbox" value="이경연 실장">이경연 실장</label>
@@ -570,6 +579,17 @@ const FIELD_MAP = {
   '파일URL':'fileUrl','생성자':'creator','id':'id',
   '생성일':'createdAt','수정일':'updatedAt'
 };
+
+/* 난이도 3등급(하1·중2·상3) — 담당자 제안→부서장 확정. 가중점수=Σ완료 업무 난이도. (2026-06-03 GM) */
+const DIFF_WEIGHT = { '하': 1, '중': 2, '상': 3 };
+function diffWeight(t) { return DIFF_WEIGHT[String((t && t['난이도']) || '').trim()] || 0; }
+function diffBadgeHtml(t) {
+  const d = String((t && t['난이도']) || '').trim();
+  if (!d) return '';
+  const c  = d === '상' ? 'var(--red)'    : d === '중' ? 'var(--yellow)'    : 'var(--green)';
+  const bg = d === '상' ? 'var(--red-bg)' : d === '중' ? 'var(--yellow-bg)' : 'var(--green-bg)';
+  return '<span class="chip" title="업무 난이도 ' + d + ' (가중치 ' + (DIFF_WEIGHT[d] || 0) + ')" style="background:' + bg + ';color:' + c + ';font-weight:700;">⚙' + esc(d) + '</span>';
+}
 
 /* 담당자별 이름 배경색 (사람마다 고유색) */
 const OWNER_COLORS = {
@@ -1315,6 +1335,8 @@ function renderTaskCard(t, idx) {
     _cardParsed.collab.forEach(c => { if (c) html += '<span class="chip collab">' + esc(c) + '</span>'; });
   }
 
+  html += diffBadgeHtml(t);
+
   if (t.startDate || t.endDate) {
     const dateStr = formatDateRange(t.startDate, t.endDate);
     html += '<span class="chip date-chip" onclick="event.stopPropagation();openDateRangePicker(\'' + escAttr(t.id) + '\',\'' + escAttr(t.startDate || '') + '\',\'' + escAttr(t.endDate || '') + '\')" title="클릭하여 시작일·종료일 변경">' + esc(dateStr) + '</span>';
@@ -1911,6 +1933,7 @@ function openAddModal() {
   document.getElementById('fStartDate').value = new Date().toISOString().slice(0, 10);
   document.getElementById('fEndDate').value = '';
   document.getElementById('fContent').value = '';
+  document.getElementById('fDifficulty').value = '';
   document.getElementById('fLink').value = '';
   document.getElementById('fFile').value = '';
   document.getElementById('fFileStatus').textContent = '';
@@ -1963,6 +1986,7 @@ function openEditModal(id) {
   document.getElementById('editId').value = t.id;
   document.getElementById('fTitle').value = t.title || '';
   document.getElementById('fCategory').value = t.category || '';
+  document.getElementById('fDifficulty').value = t['난이도'] || t.difficulty || '';
   const ownerParts = (t.owner || '').split(',').map(s => s.trim()).filter(Boolean);
   const primaryOwner = ownerParts.slice(0, 1);
   const legacyCollab = ownerParts.slice(1);
@@ -2035,6 +2059,67 @@ function getCheckboxValues(groupId) {
   return vals.join(',');
 }
 
+/* 난이도 소급 일괄책정 모달 — 기존 전 업무에 난이도(하/중/상) 일괄 부여 (2026-06-03 GM, 전체 소급) */
+function openDifficultyBatchModal() {
+  const pool = excludeNonStaff(ALL_TASKS.filter(t => t.status !== '보류'));
+  // 미책정 건 우선 노출(공백 식별), 그다음 담당자·업무명
+  pool.sort((a, b) => ((diffWeight(a) ? 1 : 0) - (diffWeight(b) ? 1 : 0)) || String(a.owner||'').localeCompare(String(b.owner||'')));
+  const unrated = pool.filter(t => !diffWeight(t)).length;
+  const opt = (cur, v, lbl) => '<option value="' + v + '"' + (cur === v ? ' selected' : '') + '>' + lbl + '</option>';
+  const rowsHtml = pool.map(t => {
+    const cur = String(t['난이도'] || '').trim();
+    return '<tr data-id="' + escAttr(t.id) + '" data-orig="' + escAttr(cur) + '">' +
+      '<td style="font-size:12px;word-break:keep-all;">' + esc(t.title) + (t.status === '완료' ? ' <span style="color:var(--green);font-size:10px;">완료</span>' : '') + '</td>' +
+      '<td style="font-size:11px;color:var(--dim);white-space:nowrap;">' + esc(t.owner || '') + '</td>' +
+      '<td><select class="diffBatchSel" style="font-size:12px;padding:3px 6px;">' +
+        opt(cur, '', '미정') + opt(cur, '하', '하1') + opt(cur, '중', '중2') + opt(cur, '상', '상3') +
+      '</select></td></tr>';
+  }).join('');
+  const ov = document.createElement('div');
+  ov.id = 'diffBatchOverlay';
+  ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;';
+  ov.innerHTML =
+    '<div style="background:var(--paper);border:1px solid var(--border);border-radius:14px;max-width:680px;width:100%;max-height:86vh;display:flex;flex-direction:column;overflow:hidden;">' +
+      '<div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">' +
+        '<div><strong style="font-size:16px;">⚙ 난이도 일괄책정</strong>' +
+        '<div style="font-size:12px;color:var(--dim);margin-top:2px;">전체 ' + pool.length + '건 · 미책정 ' + unrated + '건 — 변경분만 저장됩니다.</div></div>' +
+        '<button onclick="document.getElementById(\'diffBatchOverlay\').remove()" style="background:none;border:none;font-size:22px;cursor:pointer;color:var(--dim);">&times;</button>' +
+      '</div>' +
+      '<div style="overflow-y:auto;flex:1;padding:0 20px;">' +
+        '<table class="dash-table" style="width:100%;"><tr><th>업무명</th><th>담당자</th><th style="width:84px;">난이도</th></tr>' + rowsHtml + '</table>' +
+      '</div>' +
+      '<div style="padding:14px 20px;border-top:1px solid var(--border);display:flex;gap:10px;justify-content:flex-end;">' +
+        '<button onclick="document.getElementById(\'diffBatchOverlay\').remove()" style="padding:8px 16px;border-radius:8px;border:1px solid var(--border);background:var(--bg);cursor:pointer;">취소</button>' +
+        '<button onclick="saveDifficultyBatch()" style="padding:8px 16px;border-radius:8px;border:none;background:var(--accent);color:#fff;font-weight:700;cursor:pointer;">변경분 저장</button>' +
+      '</div>' +
+    '</div>';
+  document.body.appendChild(ov);
+}
+
+async function saveDifficultyBatch() {
+  const rows = Array.from(document.querySelectorAll('#diffBatchOverlay tr[data-id]'));
+  const changes = [];
+  rows.forEach(tr => {
+    const sel = tr.querySelector('.diffBatchSel');
+    if (sel && sel.value !== (tr.getAttribute('data-orig') || '')) changes.push({ id: tr.getAttribute('data-id'), difficulty: sel.value });
+  });
+  if (changes.length === 0) { showToast('변경된 난이도가 없습니다.'); return; }
+  const ovBtn = document.querySelector('#diffBatchOverlay button[onclick="saveDifficultyBatch()"]');
+  if (ovBtn) { ovBtn.disabled = true; ovBtn.textContent = '저장 중...'; }
+  let ok = 0;
+  for (const c of changes) {
+    try {
+      const res = await apiCall({ action: 'todo_update', id: c.id, difficulty: c.difficulty });
+      if (res && res.ok) ok++;
+    } catch (e) { /* 개별 실패는 건너뜀 */ }
+    showToast('난이도 저장 중... (' + ok + '/' + changes.length + ')');
+  }
+  const ov = document.getElementById('diffBatchOverlay');
+  if (ov) ov.remove();
+  showToast('난이도 ' + ok + '/' + changes.length + '건 저장 완료');
+  await loadTasks();
+}
+
 async function saveTask() {
   const title = document.getElementById('fTitle').value.trim();
   const category = document.getElementById('fCategory').value;
@@ -2091,6 +2176,7 @@ async function saveTask() {
     content: composedContent,
     link: document.getElementById('fLink').value,
     approval: getCheckboxValues('fApprovalGroup'),
+    difficulty: document.getElementById('fDifficulty').value,
     creator: getUser()
   };
   if (editId) params.id = editId;
@@ -2456,23 +2542,33 @@ function renderDashboard() {
   h += '<div class="dash-stat-card"><div class="num" style="color:' + (deadlineRate >= 70 ? 'var(--green)' : 'var(--red)') + '">' + deadlineRate + '%</div><div class="label">마감 준수율</div></div>';
   h += '</div>';
 
-  // Per-member stats
-  h += '<h3>담당자별 통계</h3>';
-  h += '<table class="dash-table"><tr><th>담당자</th><th>총</th><th>진행중</th><th>완료</th><th>보류</th><th>완료율</th><th style="min-width:100px">그래프</th></tr>';
-  MEMBERS.forEach(m => {
+  // Per-member stats — 가중 완료 점수(Σ완료 난이도) + 순위 (2026-06-03 GM: 양·질 동시 포상 근거)
+  h += '<h3>담당자별 통계 <span style="font-size:11px;color:var(--dim);font-weight:400;">— 가중점수=Σ완료 업무 난이도(하1·중2·상3) · 포상 판단 근거</span>';
+  h += '<button class="dash-print-btn" onclick="openDifficultyBatchModal()" style="margin-left:8px;">⚙ 난이도 일괄책정</button></h3>';
+  h += '<table class="dash-table"><tr><th>순위</th><th>담당자</th><th>총</th><th>진행중</th><th>완료</th><th>보류</th><th>완료율</th><th>가중점수</th><th style="min-width:100px">가중점수 그래프</th></tr>';
+  const _memberStats = MEMBERS.map(m => {
     const mAll = all.filter(t => (t.owner||'').includes(m));
     const mDone = mAll.filter(t => t.status === '완료');
     const mActive = mAll.filter(t => t.status !== '완료' && t.status !== '보류');
     const mHold = mAll.filter(t => t.status === '보류');
     const mRate = mAll.length > 0 ? Math.round(mDone.length / mAll.length * 100) : 0;
+    const mWeight = mDone.reduce((s, t) => s + diffWeight(t), 0);                 // 가중 완료 점수
+    const mUnrated = mDone.filter(t => !diffWeight(t)).length;                    // 완료건 중 난이도 미책정
+    return { m: m, all: mAll.length, active: mActive.length, done: mDone.length, hold: mHold.length, rate: mRate, weight: mWeight, unrated: mUnrated };
+  });
+  const _maxWeight = Math.max(1, ..._memberStats.map(s => s.weight));
+  _memberStats.slice().sort((a, b) => b.weight - a.weight || b.done - a.done).forEach((s, i) => {
+    const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : (i + 1) + '위';
     h += '<tr>';
-    h += '<td><strong>' + esc(m) + '</strong></td>';
-    h += '<td>' + mAll.length + '</td>';
-    h += '<td>' + mActive.length + '</td>';
-    h += '<td>' + mDone.length + '</td>';
-    h += '<td>' + mHold.length + '</td>';
-    h += '<td>' + mRate + '%</td>';
-    h += '<td><div class="dash-bar-wrap"><div class="dash-bar green" style="width:' + mRate + '%"></div></div></td>';
+    h += '<td style="text-align:center;font-weight:700;">' + medal + '</td>';
+    h += '<td><strong>' + esc(s.m) + '</strong></td>';
+    h += '<td>' + s.all + '</td>';
+    h += '<td>' + s.active + '</td>';
+    h += '<td>' + s.done + '</td>';
+    h += '<td>' + s.hold + '</td>';
+    h += '<td>' + s.rate + '%</td>';
+    h += '<td style="font-weight:700;color:var(--accent);">' + s.weight + (s.unrated ? ' <span style="color:var(--dim);font-weight:400;font-size:10px;">(미책정 ' + s.unrated + ')</span>' : '') + '</td>';
+    h += '<td><div class="dash-bar-wrap"><div class="dash-bar" style="width:' + Math.round(s.weight / _maxWeight * 100) + '%;background:var(--accent)"></div></div></td>';
     h += '</tr>';
   });
   h += '</table>';
