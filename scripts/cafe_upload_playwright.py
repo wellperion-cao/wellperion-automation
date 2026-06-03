@@ -329,6 +329,12 @@ async def run_setup() -> int:
     print("[INFO] === 네이버 카페 SETUP — GM 수동 로그인 ===")
     print(f"[INFO] 프로필 저장: {PERSISTENT_PROFILE_DIR}")
     p, context = await _launch_context(async_playwright)
+    # 기존(옛 계정) 세션 제거 — 새 로그인만 감지하도록 로그아웃 상태로 시작
+    try:
+        await context.clear_cookies()
+        print("[INFO] 기존 세션 비움 — 새 계정으로 로그인하세요.")
+    except Exception as e:
+        print(f"[WARN] 기존 세션 비우기 실패(무시): {e}")
     page = await context.new_page()
     await page.goto(NAVER_LOGIN_URL, wait_until="domcontentloaded", timeout=30_000)
     print("[INFO] 브라우저에서 네이버 로그인을 완료하세요 — 로그인 감지 시 자동 저장됩니다.")

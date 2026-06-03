@@ -631,18 +631,17 @@
     <!-- AUTO:LATEST-START -->
     <div class="card grow">
       <h4>최신 업데이트 — 2026-06-03 (자동 갱신)</h4>
+      <p><strong>2026-06-03</strong> feat(coo): S4 진행 업무 건수 SSOT 시트 실시간 자동 동기화</p>
       <p><strong>2026-06-03</strong> fix(cmo): 네이버 블로그·카페 setup 로그인 자동 감지로 전환 (Enter 의존 제거)</p>
       <p><strong>2026-06-03</strong> fix(cmo): M5 #4 카드 미리보기 누락 수정 — montage를 cmo/review로 복사 + preview 필드 추가</p>
       <p><strong>2026-06-03</strong> feat(cto): T4 → 업무자동화SSOT 정립 — PC·업데이트·창 원리 + 예약작업 9건 실측 정정</p>
       <p><strong>2026-06-03</strong> fix(cto): 부팅 자동업데이트 강화 — 세션 0개일 때만 실행+검증+로그</p>
-      <p><strong>2026-06-03</strong> fix(cmo): M5 검수 상태 서버우선·발행실패 노출·처리완료 일자정렬 + 텔레그램 링크 정확화</p>
     </div>
 <!-- AUTO:LATEST-END -->
         <table>
           <tr><th style="width:160px">날짜</th><th>변경 내용</th></tr>
           <!-- AUTO:TABLE-START -->
-      <tr><td><strong>2026-06-03 (자동)</strong></td><td>fix(cmo): 네이버 블로그·카페 setup 로그인 자동 감지로 전환 (Enter 의존 제거) · fix(cmo): M5 #4 카드 미리보기 누락 수정 — montage를 cmo/review로 복사 + preview 필드 추가 · feat(cto): T4 → 업무자동화SSOT 정립 — PC·업데이트·창 원리 + 예약작업 9건 실측 정정 · fix(…</td></tr>
-      <tr><td><strong>2026-06-02 (자동)</strong></td><td>feat(coo): 점검 3단계(점검필요/양호/우수) 개편 — 항목별 컬럼 기록</td></tr>
+      <tr><td><strong>2026-06-03 (자동)</strong></td><td>feat(coo): S4 진행 업무 건수 SSOT 시트 실시간 자동 동기화 · fix(cmo): 네이버 블로그·카페 setup 로그인 자동 감지로 전환 (Enter 의존 제거) · fix(cmo): M5 #4 카드 미리보기 누락 수정 — montage를 cmo/review로 복사 + preview 필드 추가 · feat(cto): T4 → 업무자동화S…</td></tr>
       <!-- AUTO:TABLE-END -->
           <tr><td><strong>2026-05-28 (14차)</strong></td><td>공지/안내문 생성(COO 하위) · 오프라인 홍보물 디자인 제작(CMO 하위) 도구 신설 · 공지 서식 v2.0 독립 페이지화 · 회사소개서·전략로드맵 원본 「3. 웰페리온 가이드/회사문서/」로 이관(SSOT 단일화) · C-Level 부팅 R/R Notion API→가이드허브 g10 참조로 전환 · GitHub Pages 워크플로 폴더명 경로 수정 · 사이드바 "공통+7개 C-Level" 라벨 제거</td></tr>
           <tr><td>2026-05-27 (13차)</td><td>GitHub Pages 전환 · 사이드바 4섹터 · AI C-Level 통일 · 운영 통합 체계 · 공식채널·지출현황·취업규칙·SSOT 신설 · g2+g19·g9+g20·g12·g13 합병 · 김남욱 탭 확장 · v2.5</td></tr>
@@ -2885,15 +2884,14 @@ kubectl get pods -o json | jq '.items[] | {name: .metadata.name}'</pre>
           <tr><td><code>daily_scheduler.py</code></td><td>정각 보고 스케줄러 (6슬롯). MarkdownV2 + 평문 fallback.</td></tr>
         </table>
 
-        <h4>Watcher (자동 감시)</h4>
+        <h4>Watcher (자동 감시) — 실측 2026-06-03</h4>
         <table>
-          <tr><th>파일</th><th>주기</th><th>역할</th></tr>
-          <tr><td><code>auto_task_watcher.py</code></td><td>5분</td><td>업무자동화DB 자동 실행</td></tr>
-          <tr><td><code>archive_result_watcher.py</code></td><td>5분</td><td>결과물DB 이관 감지</td></tr>
-          <tr><td><code>planning_to_archive_watcher.py</code></td><td>5분</td><td>기획→아카이브 이관 감지</td></tr>
-          <tr><td><code>status_change_watcher.py</code></td><td>1분</td><td>상태 변경 텔레그램 알림</td></tr>
-          <tr><td><code>pre_task_notifier.py</code></td><td>5분</td><td>H-15분 실행 사전 알림</td></tr>
-          <tr><td><code>permission_watcher.py</code></td><td>15분</td><td>Notion 통합 권한 감시</td></tr>
+          <tr><th>파일</th><th>주기</th><th>상태 · 역할</th></tr>
+          <tr><td><code>pre_task_notifier.py</code></td><td>5분</td><td>🟢 가동 — H-15분 실행 사전 알림 (status/schedule.json SSOT · daily_scheduler 내장)</td></tr>
+          <tr><td><code>bot_health_check</code></td><td>15분</td><td>🟢 가동 — 봇 생존 점검 (daily_scheduler 내장)</td></tr>
+          <tr><td><code>env_reload_watcher</code></td><td>5분</td><td>🟢 가동 — .env 변경 감지 재적용 (daily_scheduler 내장)</td></tr>
+          <tr><td><code>ig_review_publish_watcher.py</code></td><td>120초</td><td>🟢 가동 — 인스타 검수 승인→자동 발행 (별도 예약작업)</td></tr>
+          <tr><td><code>auto_task_watcher · archive_result · planning_to_archive · status_change · permission</code></td><td>—</td><td>🗑️ 폐기 — 노션 폴링 의존, 노션 미사용으로 무력화·.pyc 제거 완료</td></tr>
         </table>
         <div class="callout"><strong>폐기.</strong> status_regression_guard.py (2026-05-22 GM 지시로 폐기. 진행예정 옵션도 삭제됨).</div>
 
@@ -4842,10 +4840,10 @@ function crTab(btn, panelId) {
             <p style="font-size:28px; font-weight:700; margin:4px 0;">7건</p>
             <p style="font-size:13px; color:var(--dim);">교육·아침보고·봇·스케줄러·인스타발행·종료인사·교육정리</p>
           </div>
-          <div class="card warm">
-            <h4>🔧 손볼 것</h4>
-            <p style="font-size:28px; font-weight:700; margin:4px 0;">2건</p>
-            <p style="font-size:13px; color:var(--dim);">CEO-Verify(고아→비활성) · Morning-Update(배터리→수정). <code>fix_task_windows.bat</code> 1회</p>
+          <div class="card">
+            <h4>✅ 06-03 적용 완료</h4>
+            <p style="font-size:28px; font-weight:700; margin:4px 0;">3건</p>
+            <p style="font-size:13px; color:var(--dim);">검은창 숨김 전환 · CEO-Verify 비활성 · Morning-Update 배터리 해제 (<code>fix_task_windows.bat</code> 실행 완료)</p>
           </div>
           <div class="card">
             <h4>🗑️ 정리 완료</h4>
