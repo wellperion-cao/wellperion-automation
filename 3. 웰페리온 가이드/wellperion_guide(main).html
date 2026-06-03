@@ -631,18 +631,18 @@
     <!-- AUTO:LATEST-START -->
     <div class="card grow">
       <h4>최신 업데이트 — 2026-06-03 (자동 갱신)</h4>
+      <p><strong>2026-06-03</strong> fix(cmo): M5 #4 카드 미리보기 누락 수정 — montage를 cmo/review로 복사 + preview 필드 추가</p>
       <p><strong>2026-06-03</strong> feat(cto): T4 → 업무자동화SSOT 정립 — PC·업데이트·창 원리 + 예약작업 9건 실측 정정</p>
       <p><strong>2026-06-03</strong> fix(cto): 부팅 자동업데이트 강화 — 세션 0개일 때만 실행+검증+로그</p>
       <p><strong>2026-06-03</strong> fix(cmo): M5 검수 상태 서버우선·발행실패 노출·처리완료 일자정렬 + 텔레그램 링크 정확화</p>
       <p><strong>2026-06-03</strong> fix(cmo): AI #4 검수승인 게이트 무시 발행분 회수 — M5 발행완료→검수대기 환원</p>
-      <p><strong>2026-06-03</strong> auto(cmo): 검수 승인 건 발행 0건 / 수동대기 0건</p>
     </div>
 <!-- AUTO:LATEST-END -->
         <table>
           <tr><th style="width:160px">날짜</th><th>변경 내용</th></tr>
           <!-- AUTO:TABLE-START -->
-      <tr><td><strong>2026-06-03 (자동)</strong></td><td>feat(cto): T4 → 업무자동화SSOT 정립 — PC·업데이트·창 원리 + 예약작업 9건 실측 정정 · fix(cto): 부팅 자동업데이트 강화 — 세션 0개일 때만 실행+검증+로그 · fix(cmo): M5 검수 상태 서버우선·발행실패 노출·처리완료 일자정렬 + 텔레그램 링크 정확화 · fix(cmo): AI #4 검수승인 게이트 무시 발행분…</td></tr>
-      <tr><td><strong>2026-06-02 (자동)</strong></td><td>feat(coo): 점검 3단계(점검필요/양호/우수) 개편 — 항목별 컬럼 기록 · fix(coo): 기록 시트 버튼을 점검기록 탭으로 연결 · feat(coo): 강습부 업장점검 ENDPOINT 연결 — 제출 시 구글시트 자동기록</td></tr>
+      <tr><td><strong>2026-06-03 (자동)</strong></td><td>fix(cmo): M5 #4 카드 미리보기 누락 수정 — montage를 cmo/review로 복사 + preview 필드 추가 · feat(cto): T4 → 업무자동화SSOT 정립 — PC·업데이트·창 원리 + 예약작업 9건 실측 정정 · fix(cto): 부팅 자동업데이트 강화 — 세션 0개일 때만 실행+검증+로그 · fix(cmo): M5 검수…</td></tr>
+      <tr><td><strong>2026-06-02 (자동)</strong></td><td>feat(coo): 점검 3단계(점검필요/양호/우수) 개편 — 항목별 컬럼 기록 · fix(coo): 기록 시트 버튼을 점검기록 탭으로 연결</td></tr>
       <!-- AUTO:TABLE-END -->
           <tr><td><strong>2026-05-28 (14차)</strong></td><td>공지/안내문 생성(COO 하위) · 오프라인 홍보물 디자인 제작(CMO 하위) 도구 신설 · 공지 서식 v2.0 독립 페이지화 · 회사소개서·전략로드맵 원본 「3. 웰페리온 가이드/회사문서/」로 이관(SSOT 단일화) · C-Level 부팅 R/R Notion API→가이드허브 g10 참조로 전환 · GitHub Pages 워크플로 폴더명 경로 수정 · 사이드바 "공통+7개 C-Level" 라벨 제거</td></tr>
           <tr><td>2026-05-27 (13차)</td><td>GitHub Pages 전환 · 사이드바 4섹터 · AI C-Level 통일 · 운영 통합 체계 · 공식채널·지출현황·취업규칙·SSOT 신설 · g2+g19·g9+g20·g12·g13 합병 · 김남욱 탭 확장 · v2.5</td></tr>
@@ -4341,12 +4341,14 @@ Start-Process python -ArgumentList telegram_bot\daily_scheduler.py -WorkingDirec
 • 진척 로그 — 카드별 날짜 누적 → 보고 자동 연계
 • 이슈/보류 — 별도 섹션 단독 노출, 묻히지 않게</div>
 
+        <div style="font-size:12px;font-weight:700;color:var(--green);margin-bottom:6px;">📊 실시간 현황 <span style="font-size:11px;font-weight:500;color:var(--dim);">업무 현황 SSOT 시트 자동 집계 — 변경 시 자동 반영</span></div>
+        <div id="hubLiveCount" style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin:0 0 16px 0;line-height:1.7;color:var(--dim);">불러오는 중…</div>
+
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
           <span style="font-size:12px;font-weight:700;color:var(--accent);">📝 현재 내용 기록</span>
           <button onclick="hubEditNotes('notes')" id="hubNotesEditBtn" style="font-size:11px;font-weight:600;padding:3px 10px;border-radius:7px;cursor:pointer;font-family:inherit;background:var(--accent-bg);color:var(--accent);border:1px solid rgba(183,159,138,0.3);">✏️ 편집</button>
         </div>
-        <div id="hubNotesView" style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin:0 0 6px 0;white-space:pre-line;line-height:1.7;">• 현재 진행 업무 41건 (Google 시트 "업무&결재 현황")
-• 최근 정비: 빈 시트 정리 · 결재 비밀번호 게이트 · 카드 결재 진행 표시 · 지원부 대시보드/항목추가 분리</div>
+        <div id="hubNotesView" style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin:0 0 6px 0;white-space:pre-line;line-height:1.7;">• 최근 정비: 빈 시트 정리 · 결재 비밀번호 게이트 · 카드 결재 진행 표시 · 지원부 대시보드/항목추가 분리</div>
         <p style="font-size:11px;color:var(--dim);margin:0 0 20px;">✏️ 보고 체계·현재 내용 기록은 위 편집 버튼으로 바로 수정·저장하면 GitHub에 자동 반영됩니다 (1~2분).</p>
 
         <!-- ②③ 바로가기 -->
@@ -4465,6 +4467,30 @@ Start-Process python -ArgumentList telegram_bot\daily_scheduler.py -WorkingDirec
     .then(function(r){ return r.ok ? r.json() : null; })
     .then(function(j){ if (!j) return; if (j.reporting != null){ LAST_NOTES.reporting = j.reporting; fill('hubReportingView', j.reporting); } if (j.notes != null){ LAST_NOTES.notes = j.notes; fill('hubNotesView', j.notes); } })
     .catch(function(){ /* 기본 텍스트 유지 */ });
+
+  // 진행 업무 실시간 집계 — 업무 현황 SSOT 시트와 동일 기준(실무진 담당·미완·미보류, '업무 현황 SSOT.html' buildFilters와 1:1).
+  // SSOT가 바뀌면 이 줄이 자동으로 따라가므로 수동 카운트 불일치 사고가 사라진다 (2026-06-03 GM 지시).
+  (function loadLiveCount(){
+    var STAFF = ['이경연 실장','나우열M','최준용M','임정은M','윤병현AM','이지영 사원','이정헌 소장'];
+    function isStaff(owner){
+      return String(owner || '').split(',').map(function(s){ return s.trim(); }).filter(Boolean)
+        .some(function(o){ return STAFF.indexOf(o) >= 0; });
+    }
+    function fail(){ var el = document.getElementById('hubLiveCount'); if (el) el.textContent = '집계 불러오기 실패 — 업무 현황 SSOT에서 직접 확인'; }
+    api({ action: 'todo_list' })
+      .then(function(res){
+        var el = document.getElementById('hubLiveCount'); if (!el) return;
+        if (!res || !res.ok || !Array.isArray(res.data)){ fail(); return; }
+        var active = res.data.filter(function(r){
+          var st = r.status || r['상태'] || '진행중';
+          return st !== '완료' && st !== '보류' && isStaff(r.owner || r['담당자'] || '');
+        });
+        var d = new Date(); var hhmm = String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
+        el.innerHTML = '• 현재 진행 업무 <b style="color:var(--accent);">' + active.length + '건</b>'
+          + ' <span style="color:var(--dim);font-size:12px;">(실무진 기준 · 완료/보류 제외 · ' + hhmm + ' 집계)</span>';
+      })
+      .catch(fail);
+  })();
 
   window.hubEditNotes = function(field){
     var view = document.getElementById(viewId(field)), btn = document.getElementById(btnId(field));

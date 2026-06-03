@@ -331,17 +331,32 @@ async def run_setup() -> int:
     p, context = await _launch_context(async_playwright)
     page = await context.new_page()
     await page.goto(NAVER_LOGIN_URL, wait_until="domcontentloaded", timeout=30_000)
-    print("[INFO] 브라우저에서 네이버 로그인 후 이 터미널에서 Enter 키를 누르세요.")
-    await asyncio.get_event_loop().run_in_executor(None, input, "")
-    cookies = await context.cookies()
-    has_session = any(
-        "naver.com" in c.get("domain", "") and c.get("name") in ("NID_AUT", "NID_SES") and c.get("value")
-        for c in cookies
-    )
+    print("[INFO] 브라우저에서 네이버 로그인을 완료하세요 — 로그인 감지 시 자동 저장됩니다.")
+    print("[INFO] (Enter 불필요. 최대 5분 대기, 로그인 끝나면 자동 마무리)")
+
+    def _has_naver_session(cookies):
+        return any(
+            "naver.com" in c.get("domain", "") and c.get("name") in ("NID_AUT", "NID_SES") and c.get("value")
+            for c in cookies
+        )
+
+    has_session = False
+    waited, deadline = 0, 300  # 초
+    while waited < deadline:
+        try:
+            cookies = await context.cookies()
+        except Exception:
+            break  # 브라우저 창을 GM이 닫음
+        if _has_naver_session(cookies):
+            has_session = True
+            break
+        await asyncio.sleep(3)
+        waited += 3
     if has_session:
+        await asyncio.sleep(2)  # 쿠키가 디스크 프로필에 안착할 여유
         print("[INFO] 네이버 세션 쿠키 확인 — 저장 완료 (값 비공개: ****)")
     else:
-        print("[WARN] NID_AUT/NID_SES 쿠키 미감지 — 로그인 미완료 가능.")
+        print("[WARN] 5분 내 NID_AUT/NID_SES 쿠키 미감지 — 로그인 미완료. 다시 실행하세요.")
     await context.close()
     await p.stop()
     print("[INFO] === SETUP 완료 ===")
