@@ -522,14 +522,19 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
       <div id="fFileStatus" style="font-size:12px;color:var(--dim);margin-top:4px;"></div>
     </div>
     <div class="field">
-      <label>결재요청 <span style="font-size:11px;color:var(--dim);font-weight:400;">(체크한 결재자 순서: 중간관리자 → GM → 대표)</span></label>
-      <div class="approval-group" id="fApprovalGroup">
-        <label><input type="checkbox" value="이경연 실장" onclick="warnApprovalCheck(this)">이경연 실장(운영)</label>
-        <label><input type="checkbox" value="이정헌 소장" onclick="warnApprovalCheck(this)">이정헌 소장(시설)</label>
-        <label><input type="checkbox" value="나우열M" onclick="warnApprovalCheck(this)">나우열M(파트너)</label>
-        <span style="display:inline-flex;align-items:center;font-size:11px;color:var(--accent);font-weight:700;padding:0 8px;margin-left:6px;border-left:2px solid var(--accent);">운영 최종 결재권자</span>
-        <label><input type="checkbox" value="GM" onclick="warnApprovalCheck(this)">김남욱 GM</label>
-        <label><input type="checkbox" value="대표" onclick="warnApprovalCheck(this)">전응준 대표</label>
+      <label>결재요청 <span style="font-size:11px;color:var(--dim);font-weight:400;">(체크 순서: 중간관리자 → 최종 결재)</span></label>
+      <div class="approval-group" id="fApprovalGroup" style="flex-direction:column;align-items:stretch;gap:8px;">
+        <div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;">
+          <span style="font-size:11px;color:var(--dim);font-weight:600;min-width:60px;">중간관리자</span>
+          <label><input type="checkbox" value="이경연 실장" onclick="warnApprovalCheck(this)">이경연 실장(운영)</label>
+          <label><input type="checkbox" value="이정헌 소장" onclick="warnApprovalCheck(this)">이정헌 소장(시설)</label>
+          <label><input type="checkbox" value="나우열M" onclick="warnApprovalCheck(this)">나우열M(파트너)</label>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;border-top:1px dashed var(--border);padding-top:8px;">
+          <span style="font-size:11px;color:var(--accent);font-weight:700;min-width:60px;">최종 결재</span>
+          <label><input type="checkbox" value="GM" onclick="warnApprovalCheck(this)">김남욱 GM</label>
+          <label><input type="checkbox" value="대표" onclick="warnApprovalCheck(this)">전응준 대표</label>
+        </div>
       </div>
     </div>
     <div class="modal-actions">
