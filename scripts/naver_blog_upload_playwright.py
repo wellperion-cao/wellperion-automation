@@ -63,10 +63,13 @@ TITLE_SELECTORS = [
     "span.__se_placeholder.se-fs32",
     ".se-section-documentTitle .se-text-paragraph",
 ]
+# ⚠ 제목 섹션(.se-section-documentTitle) 안에도 .se-text-paragraph 가 존재한다(2026-06-03 DOM 실측).
+#   따라서 ".se-text-paragraph" 단독은 .first 가 제목 문단으로 resolve → 본문 입력이 제목칸으로 흘러드는
+#   버그(제목+본문 연속 표기)의 root cause. 본문 컴포넌트(.se-component.se-text) 하위 문단으로 한정한다.
 BODY_SELECTORS = [
-    ".se-text-paragraph",
+    ".se-component.se-text .se-text-paragraph",
+    ".se-component-content .se-text-paragraph",
     "span.__se_placeholder.se-fs15",
-    'div[contenteditable="true"].se-content',
 ]
 IMAGE_TOOLBAR_BUTTON_SELECTORS = [
     "button.se-image-toolbar-button",
@@ -474,11 +477,43 @@ async def _enter_write_and_fill(page, post: BlogPost, blog_id: str | None) -> No
     print(f"[INFO] 제목 입력 ({title_sel!r})")
     await page.wait_for_timeout(800)
 
+    # 명시적 caret 분리 — 제목 입력 직후 caret/selection 이 제목 섹션에 남아 있어
+    # 본문 첫 글자가 제목칸으로 흘러드는 버그(제목+본문 연속 표기) 방지 (2026-06-03 DOM 실측).
+    try:
+        await target.evaluate(
+            """() => {
+                const ae = document.activeElement;
+                if (ae && ae.blur) ae.blur();
+                const sel = window.getSelection && window.getSelection();
+                if (sel && sel.removeAllRanges) sel.removeAllRanges();
+            }"""
+        )
+    except Exception:
+        pass
+
     # 본문 (임시저장 큐 누적 시 lazy load 차단 — project_draft_queue_dependency)
     body_loc, body_sel = await _first_locator(target, BODY_SELECTORS)
     if body_loc is None:
         raise RuntimeError("본문 셀렉터 미발견 (임시저장 큐 누적 시 lazy load 차단 가능 — 큐 비우기)")
     await body_loc.click()
+    await page.wait_for_timeout(300)
+    # caret 가드 — 클릭 후에도 selection 이 제목 섹션이면 본문 첫 글자가 제목으로 새므로 1회 재클릭.
+    try:
+        anchor_in_title = await target.evaluate(
+            """() => {
+                const s = window.getSelection && window.getSelection();
+                if (!s || !s.anchorNode) return null;
+                const n = s.anchorNode;
+                const el = n.nodeType === 1 ? n : n.parentElement;
+                return el ? !!el.closest('.se-section-documentTitle') : null;
+            }"""
+        )
+        if anchor_in_title:
+            print("[WARN] caret 가 아직 제목 섹션 — 본문 재클릭으로 분리")
+            await body_loc.click()
+            await page.wait_for_timeout(300)
+    except Exception:
+        pass
     await page.keyboard.type(post.body, delay=8)  # keyboard.type = 이모지 surrogate pair 대응
     print(f"[INFO] 본문 입력 ({body_sel!r}, {len(post.body)} chars)")
     await page.wait_for_timeout(800)
