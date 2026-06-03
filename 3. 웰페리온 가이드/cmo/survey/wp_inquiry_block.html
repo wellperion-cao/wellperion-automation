@@ -36,28 +36,28 @@
 
   <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px;">
 
-    <a href="https://docs.google.com/forms/d/1kvQqON12GTQssWsUZsb6l9sSfi5Up1jFW6T_GHiWer8/viewform" target="_blank" rel="noopener"
+    <a href="https://docs.google.com/forms/d/1kvQqON12GTQssWsUZsb6l9sSfi5Up1jFW6T_GHiWer8/viewform" target="_blank" rel="noopener" onclick="wpTrackClick('멤버십문의')"
        style="display:block;text-decoration:none;border:1px solid #e2e2e2;border-radius:14px;padding:22px 24px;background:#fff;transition:all .18s;box-shadow:0 1px 2px rgba(0,0,0,.03);">
       <div style="font-size:13px;font-weight:600;color:#b08d57;letter-spacing:.5px;margin-bottom:6px;">MEMBERSHIP</div>
       <div style="font-size:18px;font-weight:700;color:#1a1a1a;margin-bottom:4px;">멤버십 문의 →</div>
       <div style="font-size:14px;color:#777;line-height:1.5;">스포츠클럽 멤버십 가입·시설 투어 상담</div>
     </a>
 
-    <a href="https://forms.gle/ad6xrR9ECRRDnzmE9" target="_blank" rel="noopener"
+    <a href="https://forms.gle/ad6xrR9ECRRDnzmE9" target="_blank" rel="noopener" onclick="wpTrackClick('성인강습문의')"
        style="display:block;text-decoration:none;border:1px solid #e2e2e2;border-radius:14px;padding:22px 24px;background:#fff;transition:all .18s;box-shadow:0 1px 2px rgba(0,0,0,.03);">
       <div style="font-size:13px;font-weight:600;color:#b08d57;letter-spacing:.5px;margin-bottom:6px;">ADULT LESSON</div>
       <div style="font-size:18px;font-weight:700;color:#1a1a1a;margin-bottom:4px;">성인 강습 문의 →</div>
       <div style="font-size:14px;color:#777;line-height:1.5;">스쿼시·필라테스 등 성인 강습 프로그램</div>
     </a>
 
-    <a href="https://forms.gle/RaFbZLxypNMMV9f17" target="_blank" rel="noopener"
+    <a href="https://forms.gle/RaFbZLxypNMMV9f17" target="_blank" rel="noopener" onclick="wpTrackClick('유소년강습문의')"
        style="display:block;text-decoration:none;border:1px solid #e2e2e2;border-radius:14px;padding:22px 24px;background:#fff;transition:all .18s;box-shadow:0 1px 2px rgba(0,0,0,.03);">
       <div style="font-size:13px;font-weight:600;color:#b08d57;letter-spacing:.5px;margin-bottom:6px;">YOUTH LESSON</div>
       <div style="font-size:18px;font-weight:700;color:#1a1a1a;margin-bottom:4px;">유소년 강습 문의 →</div>
       <div style="font-size:14px;color:#777;line-height:1.5;">주니어 스쿼시 등 유소년 강습 프로그램</div>
     </a>
 
-    <a href="https://forms.gle/UEMcgWwsZVeTwVBg9" target="_blank" rel="noopener"
+    <a href="https://forms.gle/UEMcgWwsZVeTwVBg9" target="_blank" rel="noopener" onclick="wpTrackClick('여름방학특강문의')"
        style="display:block;text-decoration:none;border:1px solid #e2e2e2;border-radius:14px;padding:22px 24px;background:#fff;transition:all .18s;box-shadow:0 1px 2px rgba(0,0,0,.03);">
       <div style="font-size:13px;font-weight:600;color:#b08d57;letter-spacing:.5px;margin-bottom:6px;">SUMMER SPECIAL</div>
       <div style="font-size:18px;font-weight:700;color:#1a1a1a;margin-bottom:4px;">여름방학 특강 문의 →</div>
@@ -70,3 +70,19 @@
     전화 문의 및 방문은 사전 예약제로 운영됩니다.
   </p>
 </div>
+
+<!-- 클릭 추적 — 4종 버튼 onclick → Apps Script track_click(클릭로그 시트). 마케팅현황대시보드 click_stats 집계용. -->
+<script>
+(function(){
+  var T='https://script.google.com/macros/s/AKfycbzdwSCCSSJ6JXLDoWuo7HG0JmBM2iy10TujFQ_O5JbTjnWaN7gOk-ddA4IAvsNfelg0xA/exec';
+  window.wpTrackClick=function(name){
+    try{
+      var d=/Mobi|Android|iPhone|iPad/i.test(navigator.userAgent)?'mobile':'desktop';
+      var q='action=track_click&linkName='+encodeURIComponent(name)
+           +'&linkUrl='+encodeURIComponent('wp-inquiry')
+           +'&utmSource=homepage&utmMedium=inquiry_page&device='+d;
+      fetch(T+'?'+q,{mode:'no-cors'}).catch(function(){});
+    }catch(e){}
+  };
+})();
+</script>
