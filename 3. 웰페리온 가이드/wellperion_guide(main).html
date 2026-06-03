@@ -617,17 +617,17 @@
     <!-- AUTO:LATEST-START -->
     <div class="card grow">
       <h4>최신 업데이트 — 2026-06-03 (자동 갱신)</h4>
+      <p><strong>2026-06-03</strong> refactor(s2): 🎯키트 탭 흡수 — 9탭→8탭</p>
       <p><strong>2026-06-03</strong> fix(coo): 부서장=담당자의 부서장(owner 우선)·본인이라도 승인부터 — 카테고리 짐작 오배정 정정</p>
       <p><strong>2026-06-03</strong> fix(g1): 종료일 저장이 화면에 반영 안 되던 버그 수정</p>
       <p><strong>2026-06-03</strong> feat(cmo): 워드프레스 관리자 반자동 setup 스크립트 (세션 로그인 방식)</p>
       <p><strong>2026-06-03</strong> docs(cto): ai-cto.md T-메뉴 4축 재번호 동기화 (T1기술·T2자동화·T3교육, 구 설정·프롬프트 삭제)</p>
-      <p><strong>2026-06-03</strong> refactor(guidehub): CTO 섹터 식별자 연속 재번호 T1·T2·T3 (기술·자동화·교육) + 주소·참조 동기화</p>
     </div>
 <!-- AUTO:LATEST-END -->
         <table>
           <tr><th style="width:160px">날짜</th><th>변경 내용</th></tr>
           <!-- AUTO:TABLE-START -->
-      <tr><td><strong>2026-06-03 (자동)</strong></td><td>fix(coo): 부서장=담당자의 부서장(owner 우선)·본인이라도 승인부터 — 카테고리 짐작 오배정 정정 · fix(g1): 종료일 저장이 화면에 반영 안 되던 버그 수정 · feat(cmo): 워드프레스 관리자 반자동 setup 스크립트 (세션 로그인 방식) · docs(cto): ai-cto.md T-메뉴 4축 재번호 동기화 (T1기술·T2자동…</td></tr>
+      <tr><td><strong>2026-06-03 (자동)</strong></td><td>refactor(s2): 🎯키트 탭 흡수 — 9탭→8탭 · fix(coo): 부서장=담당자의 부서장(owner 우선)·본인이라도 승인부터 — 카테고리 짐작 오배정 정정 · fix(g1): 종료일 저장이 화면에 반영 안 되던 버그 수정 · feat(cmo): 워드프레스 관리자 반자동 setup 스크립트 (세션 로그인 방식) · docs(cto): ai-…</td></tr>
       <!-- AUTO:TABLE-END -->
           <tr><td><strong>2026-05-28 (14차)</strong></td><td>공지/안내문 생성(COO 하위) · 오프라인 홍보물 디자인 제작(CMO 하위) 도구 신설 · 공지 서식 v2.0 독립 페이지화 · 회사소개서·전략로드맵 원본 「3. 웰페리온 가이드/회사문서/」로 이관(SSOT 단일화) · C-Level 부팅 R/R Notion API→가이드허브 g10 참조로 전환 · GitHub Pages 워크플로 폴더명 경로 수정 · 사이드바 "공통+7개 C-Level" 라벨 제거</td></tr>
           <tr><td>2026-05-27 (13차)</td><td>GitHub Pages 전환 · 사이드바 4섹터 · AI C-Level 통일 · 운영 통합 체계 · 공식채널·지출현황·취업규칙·SSOT 신설 · g2+g19·g9+g20·g12·g13 합병 · 김남욱 탭 확장 · v2.5</td></tr>
@@ -1606,22 +1606,6 @@
         <h4 style="margin-top:20px;"><span class="ico">📊</span>CEO 보고 형식</h4>
         <div class="callout"><strong>표 + 요약 + 추천 3요소 (산문 X, 식별자 N줄 X):</strong> GM이 1초 안에 파악 가능하게. 옵션 3개 이상이면 CEO 추천값 명시. GM은 선택만.</div>
 
-        <h4 style="margin-top:20px;"><span class="ico">🖥️</span>C-Level 작업 완료·대기 보고 형식 (PowerShell/CLI 공통)</h4>
-        <div class="callout" style="background:#1a2a1a;border-left:3px solid #059669;">AI CEO와 동일하게, <strong>모든 C-Level(+CEO)은 작업을 마치고 대기로 들어갈 때마다</strong> 아래 4블록으로 정리해 보고한다. (CLAUDE.md 헌법 명문화 · 본 탭이 포맷 정본)</div>
-        <table>
-          <tr><th style="width:140px">블록</th><th>내용</th></tr>
-          <tr><td><strong>① 기록 위치</strong></td><td>GitHub commit(메시지) · 가이드허브 반영 위치 — 어디서 확인 가능한지</td></tr>
-          <tr><td><strong>② Before &amp; After</strong></td><td>변경 전 → 후 핵심 1줄 (<strong>완료건만</strong>)</td></tr>
-          <tr><td><strong>③ 진행 현황</strong></td><td>✅ 오늘 완료건 · 🔄 진행 중/위임건 · ⏳ 대기 큐건 · ⬜ 미시작건</td></tr>
-          <tr><td><strong>④ 남은 할 일</strong></td><td>표로 정리: <strong>상태 · ID · 담당(AI) · 최종책임자(사람) · 일(내용)</strong></td></tr>
-        </table>
-        <table>
-          <tr><th style="width:70px">상태</th><th style="width:100px">ID</th><th style="width:110px">담당(AI)</th><th style="width:130px">최종책임자(사람)</th><th>일</th></tr>
-          <tr><td>⏳ 대기</td><td>COO-007</td><td>AI COO</td><td>최준용M·윤병현AM</td><td>(예시) 주차 동선 개선</td></tr>
-        </table>
-        <div class="callout" style="margin-top:10px;"><strong>📌 "누가" = 두 칼럼 분리 의무:</strong> <strong>담당(AI)</strong> = 자동화·DB·집계·검증 후방 서포트를 수행하는 AI C-Level / <strong>최종책임자(사람)</strong> = 실무진. R/R 대전환(서포트 vs 책임)을 표에 그대로 반영. 사람 이름만 적고 담당 AI를 빠뜨리지 말 것.</div>
-        <p style="font-size:13px;color:var(--dim);margin-top:6px;">※ GM 발신 채널(텔레그램·허브)이면 식별자·commit 해시는 최소화하고 일상어로. 내부 기록(git·세션 로그)엔 식별자 유지.</p>
-
         <h4 style="margin-top:20px;"><span class="ico">🎯</span>GM 결재 영역 (4종 외 자율 진행)</h4>
         <div class="grid-3">
           <div class="card"><h4>💰 결제</h4><p>1원 이상 모든 결제</p></div>
@@ -1677,6 +1661,7 @@
           <tr><td><strong>링크</strong></td><td>SSOT 이름 — 업무 SSOT / 결재 SSOT / G1 / 가이드허브 S2 등. 없으면 <code>—</code></td></tr>
         </table>
 
+        <div class="callout" style="margin-top:12px;"><strong>📌 "누가" = 두 칼럼 분리 의무:</strong> <strong>담당(AI)</strong> = 자동화·DB·집계·검증 후방 서포트를 수행하는 AI C-Level / <strong>최종책임자(사람)</strong> = 실무진. R/R 대전환(서포트 vs 책임)을 표에 그대로 반영. 사람 이름만 적고 담당 AI를 빠뜨리지 말 것.</div>
         <div class="callout tip" style="margin-top:12px;"><strong>🔴 GM 결정 필요는 맨 아래 고정.</strong> GM이 그 칸만 보면 됨. 결정 필요 없으면 "🔴 GM 결정 필요: 없음"으로 명시. Before &amp; After가 필요한 완료 보고는 내용 필드에 간략히 포함.</div>
 
         <!-- ══ 전 C-Level 통합 원칙 (메모리 단일화) STAGE 1 흡수 ══ -->
