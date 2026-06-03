@@ -288,6 +288,11 @@ const CAT_DEPT_HEAD = {
   '[2] 인사 & 파트너': '나우열M'
 };
 function deptHeadFor(category) { return CAT_DEPT_HEAD[category] || ''; }
+const DEPT_HEADS = ['이경연 실장','이정헌 소장','나우열M'];
+// 항목의 부서장 실명 — 카테고리 매핑 우선, 없으면 결재요청에 포함된 부서장 (결재자 필터·카운트용, 2026-06-03 GM)
+function deptHeadNameOf(t) {
+  return deptHeadFor(t && t.category) || String((t && (t.approval || t['결재요청'])) || '').split(',').map(function(s){ return s.trim(); }).find(function(m){ return DEPT_HEADS.indexOf(m) >= 0; }) || '';
+}
 
 let ALL_TASKS = [];
 let activeFilter = '전체';      // '전체' | '결재완료' | '반려' | '미결'
@@ -295,8 +300,8 @@ let activeRoleFilter = '전체';  // '전체' | 'GM' | '대표님'
 let activeCatFilter = '전체';   // '전체' | 카테고리
 let searchQuery = '';            // 키워드
 let activeSortBy = '최신순';    // '최신순' | '결재상태' | '카테고리' | '시작일순'
-// [결재-뷰] 뷰 모드: 'list'(기본) | 'kanban' | 'calendar'. localStorage 유지 (2026-06-02 시모)
-let currentView = (function(){ try { var v = localStorage.getItem('approval_view'); return (v === 'kanban' || v === 'calendar') ? v : 'list'; } catch(e){ return 'list'; } })();
+// [결재-뷰] 뷰 모드: 'kanban'(기본) | 'calendar'. 리스트 폐지(2026-06-03 GM·업무현황 파리티). localStorage 유지
+let currentView = (function(){ try { var v = localStorage.getItem('approval_view'); return (v === 'calendar') ? v : 'kanban'; } catch(e){ return 'kanban'; } })();
 let calViewYear, calViewMonth;  // 캘린더 표시 연·월 (init은 첫 렌더에서)
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -378,13 +383,14 @@ function render() {
   // 통계 카드 제거 (2026-05-30 GM: 업무현황 SSOT처럼) — 상태 필터(전체/진행중/결재완료/반려)와 중복.
   // 툴바(필터·정렬·검색)를 제목 아래 최상단으로. GM·대표 세분 수치는 '결재 현황 대시보드'에서 확인.
 
-  // 결재자별 카운트 (미결만)
-  const pendingByRole = { 'GM':0, '대표님':0 };
+  // 결재자별 카운트 (미결만) — 부서장 3명(결재선 1단계) + GM + 대표님 (2026-06-03 GM)
+  const pendingByRole = { '이경연 실장':0, '이정헌 소장':0, '나우열M':0, 'GM':0, '대표님':0 };
   pending.forEach(t => {
     const parsed = parseContent(t.content);
     const route = buildEffectiveRoute(t, parsed.budget);
     const nxt = nextApprover(t, route);
-    if (nxt && nxt in pendingByRole) pendingByRole[nxt]++;
+    if (nxt === '부서장') { const dn = deptHeadNameOf(t); if (dn && dn in pendingByRole) pendingByRole[dn]++; }
+    else if (nxt && nxt in pendingByRole) pendingByRole[nxt]++;
   });
 
   // 카테고리 목록 (실측)
@@ -401,7 +407,6 @@ function render() {
   stHtml += '<div style="display:flex;gap:4px;margin-left:auto;align-items:center;flex-shrink:0;">';
   // [결재-뷰] 뷰 토글: 트렐로(칸반) / 캘린더. 선택 뷰는 localStorage 유지 (2026-06-02 시모)
   stHtml += '<div style="display:inline-flex;border:1px solid var(--border);border-radius:8px;overflow:hidden;flex-shrink:0;margin-right:4px;">';
-  stHtml += '<button class="view-toggle-btn' + (currentView==='list'?' active':'') + '" onclick="setView(\'list\')" title="리스트 보기">📋 리스트</button>';
   stHtml += '<button class="view-toggle-btn' + (currentView==='kanban'?' active':'') + '" onclick="setView(\'kanban\')" title="트렐로(칸반) 보드 — 결재상태별 컬럼">🗂 트렐로</button>';
   stHtml += '<button class="view-toggle-btn' + (currentView==='calendar'?' active':'') + '" onclick="setView(\'calendar\')" title="월별 캘린더">🗓 캘린더</button>';
   stHtml += '</div>';
@@ -421,6 +426,10 @@ function render() {
   // 2줄 — 결재자(담당자) 버튼 — 업무현황 담당자 줄처럼 라벨 없이 버튼만 (2026-06-01 GM)
   let owHtml = '';
   owHtml += '<button class="filter-btn ' + (activeRoleFilter==='전체'?'active':'') + '" onclick="setRoleFilter(\'전체\')">전체</button>';
+  // 부서장 3명 — 결재선 1단계(GM 앞). 운영부=이경연([1][3])·시설부=이정헌([4])·파트너팀=나우열([2]) (2026-06-03 GM)
+  DEPT_HEADS.forEach(function(dh){
+    owHtml += '<button class="filter-btn ' + (activeRoleFilter===dh?'active':'') + '" onclick="setRoleFilter(\'' + dh + '\')">' + dh + ' (' + pendingByRole[dh] + ')</button>';
+  });
   owHtml += '<button class="filter-btn ' + (activeRoleFilter==='GM'?'active':'') + '" onclick="setRoleFilter(\'GM\')">김남욱GM (' + pendingByRole['GM'] + ')</button>';
   owHtml += '<button class="filter-btn ' + (activeRoleFilter==='대표님'?'active':'') + '" onclick="setRoleFilter(\'대표님\')">전응준 대표 (' + pendingByRole['대표님'] + ')</button>';
   document.getElementById('ownerFilters').innerHTML = owHtml;
@@ -461,13 +470,16 @@ function render() {
     list = list.filter(t => t.category === activeCatFilter);
   }
 
-  // [결재] 결재자별 차례 필터 (미결 한정) — GM·대표님
+  // [결재] 결재자별 차례 필터 (미결 한정) — 부서장 3명·GM·대표님 (2026-06-03 GM)
   if (activeRoleFilter !== '전체') {
+    const _isDeptHead = DEPT_HEADS.indexOf(activeRoleFilter) >= 0;
     list = list.filter(t => {
       if (t.approvalStatus === '결재완료' || /반려/.test(t.approvalStatus)) return false;
       const parsed = parseContent(t.content);
       const route = buildEffectiveRoute(t, parsed.budget);
-      return nextApprover(t, route) === activeRoleFilter;
+      const nxt = nextApprover(t, route);
+      if (_isDeptHead) return nxt === '부서장' && deptHeadNameOf(t) === activeRoleFilter;
+      return nxt === activeRoleFilter;
     });
   }
 
@@ -1054,6 +1066,8 @@ function printApprovalDashboard() {
    [결재-뷰] 뷰 토글 (리스트 / 트렐로 칸반 / 캘린더) — 2026-06-02 시모
    ═══════════════════════════════════════════ */
 function setView(v) {
+  // 리스트 뷰 폐지(2026-06-03 GM·업무현황 파리티) — 'list' 들어오면 트렐로로 폴백. 트렐로/캘린더 2뷰만.
+  if (v !== 'kanban' && v !== 'calendar') v = 'kanban';
   currentView = v;
   try { localStorage.setItem('approval_view', v); } catch(e) {}
   render();
@@ -1133,14 +1147,12 @@ function initKanbanDrag() {
 /* ── 캘린더 뷰 (G1 gm1CalRender 패턴 이식) ──
    날짜 기준 = 결재완료 건은 결재완료시각, 그 외는 시작일. 미일정 건은 하단 목록.
    배지/일자 클릭 → 해당 카드로 딥링크(리스트 전환 후 스크롤·하이라이트). */
-function calDateKey(t) {
-  if (t.approvalStatus === '결재완료' && t.completeTime) return String(t.completeTime).slice(0, 10);
-  return String(t.startDate || '').slice(0, 10);
-}
 function calColumnColor(t) {
   const c = CAT_COLORS[t.category];
-  if (c) return 'background:' + c.bg + ';color:' + c.color + ';';
-  return 'background:var(--accent-bg);color:var(--accent);';
+  const base = c ? ('background:' + c.bg + ';color:' + c.color + ';') : 'background:var(--accent-bg);color:var(--accent);';
+  // 결재완료·반려 건은 흐리게(업무현황 SSOT 완료 흐림 파리티, 2026-06-03 GM)
+  const s = String(t.approvalStatus || '');
+  return base + ((s === '결재완료' || /반려/.test(s)) ? 'opacity:0.5;' : '');
 }
 function renderCalendar(list) {
   const now = new Date();
@@ -1151,14 +1163,23 @@ function renderCalendar(list) {
   const lastDate = new Date(calViewYear, calViewMonth + 1, 0).getDate();
   const prevLast = new Date(calViewYear, calViewMonth, 0).getDate();
 
-  // 날짜 맵
+  // 날짜 맵 — 시작일~종료일 기간 전체 칸에 분배(업무현황 SSOT 파리티). 종료일 없으면 시작일 1칸. (2026-06-03 GM)
   const evMap = {};
   const undated = [];
+  const calPad2 = function(n){ return ('0' + n).slice(-2); };
   list.forEach(t => {
-    const key = calDateKey(t);
-    if (!key || key.length < 10) { undated.push(t); return; }
-    if (!evMap[key]) evMap[key] = [];
-    evMap[key].push(t);
+    const sd = String(t.startDate || '').slice(0, 10);
+    if (!sd || sd.length < 10) { undated.push(t); return; }
+    const ed = String(t.endDate || '').slice(0, 10) || sd;
+    let cur = sd, guard = 0;
+    while (cur <= ed && guard < 60) {
+      if (!evMap[cur]) evMap[cur] = [];
+      evMap[cur].push(t);
+      const dp = cur.split('-');
+      const dObj = new Date(Number(dp[0]), Number(dp[1]) - 1, Number(dp[2]) + 1);
+      cur = dObj.getFullYear() + '-' + calPad2(dObj.getMonth() + 1) + '-' + calPad2(dObj.getDate());
+      guard++;
+    }
   });
 
   const cells = [];
@@ -1176,7 +1197,7 @@ function renderCalendar(list) {
   h += '<span class="cal-month-label">' + calViewYear + '년 ' + (calViewMonth + 1) + '월</span>';
   h += '<button class="cal-nav-btn" onclick="calNextMonth()">다음 달 →</button>';
   h += '<button class="cal-nav-btn" onclick="calToday()" style="font-weight:600;color:var(--dim);">오늘로</button>';
-  h += '<span class="cal-legend">완료건=결재완료시각 · 그 외=시작일 기준</span>';
+  h += '<span class="cal-legend">시작일~종료일 기간 표시 · 배지 클릭 시 트렐로에서 상세</span>';
   h += '</div>';
   h += '<div style="overflow-x:auto;"><table class="cal-table"><thead><tr>';
   h += '<th style="color:#e85555;">일</th><th>월</th><th>화</th><th>수</th><th>목</th><th>금</th><th style="color:#5588ee;">토</th>';
@@ -1222,10 +1243,10 @@ function renderCalendar(list) {
 function calPrevMonth() { if (calViewMonth === 0) { calViewMonth = 11; calViewYear--; } else { calViewMonth--; } render(); }
 function calNextMonth() { if (calViewMonth === 11) { calViewMonth = 0; calViewYear++; } else { calViewMonth++; } render(); }
 function calToday() { const n = new Date(); calViewYear = n.getFullYear(); calViewMonth = n.getMonth(); render(); }
-/* 캘린더 배지 클릭 → 리스트 뷰로 전환 후 해당 카드 딥링크(스크롤·하이라이트·상세 펼침) */
+/* 캘린더 배지 클릭 → 트렐로 뷰로 전환 후 해당 카드 딥링크(스크롤·하이라이트·상세 펼침). 리스트 폐지(2026-06-03 GM) */
 function calGotoItem(id) {
-  currentView = 'list';
-  try { localStorage.setItem('approval_view', 'list'); } catch(e) {}
+  currentView = 'kanban';
+  try { localStorage.setItem('approval_view', 'kanban'); } catch(e) {}
   _deepLinkId = id;
   render();
   handleDeepLink();
