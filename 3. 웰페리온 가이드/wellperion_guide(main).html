@@ -616,17 +616,17 @@
     <!-- AUTO:LATEST-START -->
     <div class="card grow">
       <h4>최신 업데이트 — 2026-06-03 (자동 갱신)</h4>
+      <p><strong>2026-06-03</strong> fix(coo): 3페이지 점검 — 필터카운트·결재대시보드 정합 수정</p>
       <p><strong>2026-06-03</strong> feat(cmo): 검수 승인→즉시 발행 봇 콜백(pub:) + 검수 카드 발송기 — IG 폴링 감시기 대체</p>
       <p><strong>2026-06-03</strong> feat(coo): 고아 첨부 정리 액션 todo_orphan_cleanup (@43)</p>
       <p><strong>2026-06-03</strong> fix(g1): 결재 부서장 대기건이 GM 오늘할일에 오노출되던 버그 수정</p>
       <p><strong>2026-06-03</strong> feat(cmo): 문의 클릭추적 + 마케팅현황대시보드 click_stats 라이브 연결</p>
-      <p><strong>2026-06-03</strong> feat(coo): 첨부파일 삭제 + 인쇄에 첨부·외부링크 포함</p>
     </div>
 <!-- AUTO:LATEST-END -->
         <table>
           <tr><th style="width:160px">날짜</th><th>변경 내용</th></tr>
           <!-- AUTO:TABLE-START -->
-      <tr><td><strong>2026-06-03 (자동)</strong></td><td>feat(cmo): 검수 승인→즉시 발행 봇 콜백(pub:) + 검수 카드 발송기 — IG 폴링 감시기 대체 · feat(coo): 고아 첨부 정리 액션 todo_orphan_cleanup (@43) · fix(g1): 결재 부서장 대기건이 GM 오늘할일에 오노출되던 버그 수정 · feat(cmo): 문의 클릭추적 + 마케팅현황대시보드 click_st…</td></tr>
+      <tr><td><strong>2026-06-03 (자동)</strong></td><td>fix(coo): 3페이지 점검 — 필터카운트·결재대시보드 정합 수정 · feat(cmo): 검수 승인→즉시 발행 봇 콜백(pub:) + 검수 카드 발송기 — IG 폴링 감시기 대체 · feat(coo): 고아 첨부 정리 액션 todo_orphan_cleanup (@43) · fix(g1): 결재 부서장 대기건이 GM 오늘할일에 오노출되던 버그 수정 …</td></tr>
       <!-- AUTO:TABLE-END -->
           <tr><td><strong>2026-05-28 (14차)</strong></td><td>공지/안내문 생성(COO 하위) · 오프라인 홍보물 디자인 제작(CMO 하위) 도구 신설 · 공지 서식 v2.0 독립 페이지화 · 회사소개서·전략로드맵 원본 「3. 웰페리온 가이드/회사문서/」로 이관(SSOT 단일화) · C-Level 부팅 R/R Notion API→가이드허브 g10 참조로 전환 · GitHub Pages 워크플로 폴더명 경로 수정 · 사이드바 "공통+7개 C-Level" 라벨 제거</td></tr>
           <tr><td>2026-05-27 (13차)</td><td>GitHub Pages 전환 · 사이드바 4섹터 · AI C-Level 통일 · 운영 통합 체계 · 공식채널·지출현황·취업규칙·SSOT 신설 · g2+g19·g9+g20·g12·g13 합병 · 김남욱 탭 확장 · v2.5</td></tr>
@@ -1553,7 +1553,9 @@
         </table>
         <div class="callout"><strong>매 단계에 "중복 금지" 원칙 적용.</strong></div>
 
-        <h3 style="margin-top:28px;border-top:1px solid var(--border);padding-top:24px;"><span class="ico">🛡️</span>운영 원칙·검증 5단계</h3>
+        <details class="toggle" style="margin-top:28px;border-top:1px solid var(--border);padding-top:24px;">
+          <summary style="cursor:pointer;font-weight:700;font-size:16px;"><span class="ico">🛡️</span>운영 원칙·검증 5단계 <span style="font-size:12px;color:var(--dim);font-weight:400;">— 참고 (클릭해서 펼치기)</span></summary>
+          <div class="toggle-body" style="margin-top:12px;">
         <div class="callout" style="background:#1a2a1a;border-left:3px solid #059669;margin:12px 0 20px;">
           <strong>📌 흐름:</strong> ① 체크 → ② 표 보고 → ③ 보완 보고 → ④ GM 승인 시 진행 → ⑤ 기록·정리·학습
         </div>
@@ -1612,6 +1614,7 @@
           <div class="card"><h4>🚫 금지</h4><p>전략·브랜드·공식값 변경</p></div>
         </div>
         <p style="font-size:13px;color:var(--dim);margin-top:8px;">그 외 모든 작업은 CEO·C-Level 자율 진행 후 결과 보고. 결재 카테고리 외 GM께 묻지 말 것.</p>
+        </div></details>
 
         <!-- ── 협업매뉴얼 v1.0 흡수: Data Boundary + 에스컬레이션 ── -->
         <h3 style="margin-top:28px;border-top:1px solid var(--border);padding-top:24px;"><span class="ico">🚫</span>AI 절대 입력 금지 5종 (Data Boundary)</h3>
@@ -1664,7 +1667,9 @@
         <div class="callout tip" style="margin-top:12px;"><strong>🔴 GM 결정 필요는 맨 아래 고정.</strong> GM이 그 칸만 보면 됨. 결정 필요 없으면 "🔴 GM 결정 필요: 없음"으로 명시. Before &amp; After가 필요한 완료 보고는 내용 필드에 간략히 포함.</div>
 
         <!-- ══ 전 C-Level 통합 원칙 (메모리 단일화) STAGE 1 흡수 ══ -->
-        <h3 style="margin-top:36px;border-top:2px solid var(--accent);padding-top:24px;"><span class="ico">📚</span>전 C-Level 통합 원칙 (메모리 단일화)</h3>
+        <details class="toggle" style="margin-top:36px;border-top:2px solid var(--accent);padding-top:24px;">
+          <summary style="cursor:pointer;font-weight:700;font-size:16px;"><span class="ico">📚</span>전 C-Level 통합 원칙 (메모리 단일화) <span style="font-size:12px;color:var(--dim);font-weight:400;">— 9테마 참고 (클릭해서 펼치기)</span></summary>
+          <div class="toggle-body" style="margin-top:12px;">
         <div class="callout" style="background:#1a1a2a;border-left:3px solid #7C3AED;margin:12px 0 20px;">
           <strong>📌 단일 출처(SSOT):</strong> 전 C-Level이 흡수하는 운영 원칙은 본 공통탭이 유일한 원본. 메모리·CLAUDE.md에 중복 나열 금지 — 원칙 추가는 여기에만. 아래는 테마별 정본 1줄.
         </div>
@@ -1770,6 +1775,7 @@
           <tr><td><strong>Sonnet 4.6</strong></td><td>자동화 가동 · 집계 · patch · git · 콘텐츠 가공 · 일일 보고 빌드 · 로그 정리</td></tr>
           <tr><td><strong>Opus 4.7</strong></td><td>판단 · 결정 · 진행 · 검토 · 결재 · 정책 정립 · 이슈 진단 · R&amp;D 방향 · Peer Cross-Check</td></tr>
         </table>
+        </div></details>
         <!-- ══ /전 C-Level 통합 원칙 (메모리 단일화) ══ -->
 
         <!-- ══ 결과물 3대 기준 (구 🎯키트 탭 흡수, 2026-06-03) ══ -->
