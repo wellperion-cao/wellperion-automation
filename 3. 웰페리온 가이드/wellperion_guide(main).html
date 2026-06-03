@@ -465,9 +465,8 @@
 
     <a data-toggle="cto-nav" data-has-sub="true"><span class="num">🔧</span><span class="label">AI CTO 기술<span class="tag">김남욱 GM</span></span></a>
     <div class="sub-nav" data-parent="cto-nav">
-      <a data-doc="g1" data-id="T1">🔧 Claude 설정 폴더</a>
-      <a data-doc="g16" data-id="T2">🖥️ 기술 인프라 상세</a>
-      <a data-doc="g18" data-id="T3">⚡ 핵심 프롬프트 모음</a>
+      <a data-doc="g16" data-id="T2">🖥️ 기술 인프라 상세 <span class="tag">+ 설정 위치(T1)</span></a>
+      <a data-doc="g18" data-id="T3">⚡ 핵심 프롬프트 인덱스</a>
       <a data-doc="g19" data-id="T4">🤖 업무자동화SSOT</a>
       <a data-doc="g15" data-id="T5">📚 AI 교육자료 핵심요약</a>
     </div>
@@ -570,9 +569,9 @@
         <h4 style="color:var(--accent);margin:12px 0 8px;">AI CTO 기술 <span style="font-size:12px;color:var(--dim);font-weight:400;">김남욱 GM</span></h4>
         <table>
           <tr><th style="width:44px"></th><th style="width:64px">식별자</th><th style="width:200px">제목</th><th>한 줄 설명</th></tr>
-          <tr><td>🔧</td><td><span class="g-id">T1</span></td><td><a href="#" onclick="event.preventDefault();document.querySelector('[data-id=T1]').click();" style="color:var(--accent);text-decoration:none;font-weight:600;">Claude 설정 폴더</a></td><td>설정 파일 위치와 용도</td></tr>
-          <tr><td>🖥️</td><td><span class="g-id">T2</span></td><td><a href="#" onclick="event.preventDefault();document.querySelector('[data-id=T2]').click();" style="color:var(--accent);text-decoration:none;font-weight:600;">기술 인프라 상세</a></td><td>텔레그램봇·scripts·모바일CLI</td></tr>
-          <tr><td>⚡</td><td><span class="g-id">T3</span></td><td><a href="#" onclick="event.preventDefault();document.querySelector('[data-id=T3]').click();" style="color:var(--accent);text-decoration:none;font-weight:600;">핵심 프롬프트 모음</a></td><td>정비·고도화 복붙 프롬프트</td></tr>
+          <tr><td>🔧</td><td><span class="g-id">T1</span></td><td><a href="#" onclick="event.preventDefault();document.querySelector('[data-id=T2]').click();" style="color:var(--accent);text-decoration:none;font-weight:600;">Claude 설정 폴더</a></td><td>→ T2 기술 인프라 ▸ 설정 위치 탭으로 통합</td></tr>
+          <tr><td>🖥️</td><td><span class="g-id">T2</span></td><td><a href="#" onclick="event.preventDefault();document.querySelector('[data-id=T2]').click();" style="color:var(--accent);text-decoration:none;font-weight:600;">기술 인프라 상세</a></td><td>설정 위치 · 텔레그램봇 · scripts · 모바일CLI · 기술 프롬프트</td></tr>
+          <tr><td>⚡</td><td><span class="g-id">T3</span></td><td><a href="#" onclick="event.preventDefault();document.querySelector('[data-id=T3]').click();" style="color:var(--accent);text-decoration:none;font-weight:600;">핵심 프롬프트 인덱스</a></td><td>운영형 S2 · 기술형 T2 · 방법론 T5 이관 인덱스</td></tr>
           <tr><td>🤖</td><td><span class="g-id">T4</span></td><td><a href="#" onclick="event.preventDefault();document.querySelector('[data-id=T4]').click();" style="color:var(--accent);text-decoration:none;font-weight:600;">업무자동화SSOT</a></td><td>시스템 구조 · 캘린더 · 예약작업 · PC·업데이트 원리</td></tr>
           <tr><td>📚</td><td><span class="g-id">T5</span></td><td><a href="#" onclick="event.preventDefault();document.querySelector('[data-id=T5]').click();" style="color:var(--accent);text-decoration:none;font-weight:600;">AI 교육자료 핵심요약</a></td><td>토큰 절약·컨텍스트 관리·비용 절감</td></tr>
         </table>
@@ -632,17 +631,17 @@
     <!-- AUTO:LATEST-START -->
     <div class="card grow">
       <h4>최신 업데이트 — 2026-06-03 (자동 갱신)</h4>
+      <p><strong>2026-06-03</strong> refactor(guidehub): T3 → 프롬프트 인덱스 축소</p>
       <p><strong>2026-06-03</strong> refactor(guidehub): watcher·컨텍스트정비 T4·S2 단일화 포인터</p>
       <p><strong>2026-06-03</strong> refactor(guidehub): T1 설정 → T2 기술인프라 흡수</p>
       <p><strong>2026-06-03</strong> refactor(guidehub): 프롬프트 성격별 2분할 — 운영형 S2·기술형 T2</p>
       <p><strong>2026-06-03</strong> feat(guidehub): S2에 운영 프롬프트·컨텍스트정비 범위표 흡수처 신설</p>
-      <p><strong>2026-06-03</strong> fix(coo): GM 직접 건 결재선 대표님만 + 결재카드 담당자 제목아래로</p>
     </div>
 <!-- AUTO:LATEST-END -->
         <table>
           <tr><th style="width:160px">날짜</th><th>변경 내용</th></tr>
           <!-- AUTO:TABLE-START -->
-      <tr><td><strong>2026-06-03 (자동)</strong></td><td>refactor(guidehub): watcher·컨텍스트정비 T4·S2 단일화 포인터 · refactor(guidehub): T1 설정 → T2 기술인프라 흡수 · refactor(guidehub): 프롬프트 성격별 2분할 — 운영형 S2·기술형 T2 · feat(guidehub): S2에 운영 프롬프트·컨텍스트정비 범위표 흡수처 신설 · fix(c…</td></tr>
+      <tr><td><strong>2026-06-03 (자동)</strong></td><td>refactor(guidehub): T3 → 프롬프트 인덱스 축소 · refactor(guidehub): watcher·컨텍스트정비 T4·S2 단일화 포인터 · refactor(guidehub): T1 설정 → T2 기술인프라 흡수 · refactor(guidehub): 프롬프트 성격별 2분할 — 운영형 S2·기술형 T2 · feat(guidehub)…</td></tr>
       <!-- AUTO:TABLE-END -->
           <tr><td><strong>2026-05-28 (14차)</strong></td><td>공지/안내문 생성(COO 하위) · 오프라인 홍보물 디자인 제작(CMO 하위) 도구 신설 · 공지 서식 v2.0 독립 페이지화 · 회사소개서·전략로드맵 원본 「3. 웰페리온 가이드/회사문서/」로 이관(SSOT 단일화) · C-Level 부팅 R/R Notion API→가이드허브 g10 참조로 전환 · GitHub Pages 워크플로 폴더명 경로 수정 · 사이드바 "공통+7개 C-Level" 라벨 제거</td></tr>
           <tr><td>2026-05-27 (13차)</td><td>GitHub Pages 전환 · 사이드바 4섹터 · AI C-Level 통일 · 운영 통합 체계 · 공식채널·지출현황·취업규칙·SSOT 신설 · g2+g19·g9+g20·g12·g13 합병 · 김남욱 탭 확장 · v2.5</td></tr>
@@ -3183,7 +3182,7 @@ kubectl get pods -o json | jq '.items[] | {name: .metadata.name}'</pre>
 
     </div>
 
-    <div class="source">SSOT: 본 섹션 = AI 교육자료·고도화 프롬프트 단일 원본 (웰페리온_AI교육자료_핵심정리.md 609줄 전수 반영 · 2026-05-26)</div>
+    <div class="source">SSOT: 본 섹션 = AI 교육자료 + 범용 방법론 프롬프트 단일 원본 (웰페리온_AI교육자료_핵심정리.md 609줄 전수 반영 · 2026-05-26). 운영형 프롬프트·정비 범위표는 S2, 기술 인프라 프롬프트는 T2 참조.</div>
   </article>
 
   <!-- g16 기술 인프라 상세 -->
@@ -5419,6 +5418,8 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
     const pub = a.getAttribute('data-id'), doc = a.getAttribute('data-doc');
     if (pub && doc) { PUB_TO_DOC[pub] = doc; DOC_TO_PUB[doc] = pub; }
   });
+  // T1 메뉴는 T2로 흡수됨(2026-06-03). 깊은링크 #T1 보호 — g1 포인터 article로 매핑 유지.
+  if (!PUB_TO_DOC['T1']) PUB_TO_DOC['T1'] = 'g1';
 
   function activateDoc(id, tabName) {
     docs.forEach(d => d.classList.toggle('active', d.id === id));
