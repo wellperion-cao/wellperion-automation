@@ -77,6 +77,22 @@ IMAGE_TOOLBAR_BUTTON_SELECTORS = [
 IMAGE_TYPE_MODAL_SELECTORS = [".se-popup-image-type", '[data-group="popupLayer"] .se-popup-image-type']
 IMAGE_TYPE_SLIDE_SELECTOR = "#image-type-slide"
 IMAGE_TYPE_LIST_SELECTOR = "#image-type-list"
+
+# 스티커 (2026-06-03 실측 — 사진 버튼과 동일한 툴바 구조).
+# 툴바 '스티커' 버튼 클릭 → 우측 se-sidebar-container-sticker 패널 오픈.
+# 패널 그리드의 각 스티커 = button.se-sidebar-element-sticker. 클릭 시 본문에
+# se-component.se-sticker 컴포넌트가 삽입됨(실측 검증).
+STICKER_TOOLBAR_BUTTON_SELECTORS = [
+    'button[data-name="sticker"]',
+    "button.se-sticker-toolbar-button",
+    'button[data-log="dot.sticker"]',
+]
+STICKER_ITEM_SELECTOR = "button.se-sidebar-element-sticker"
+STICKER_PANEL_CLOSE_SELECTORS = [
+    ".se-sidebar-container-sticker button.se-sidebar-close-button",
+    'button[data-name="sticker"]',  # 토글 — 다시 누르면 패널 닫힘
+]
+STICKER_COUNT_DEFAULT = 3  # 본문에 삽입할 기본 스티커 개수 (GM 검수 시 교체 전제)
 # 임시저장 버튼
 SAVE_DRAFT_SELECTORS = [
     "button.save_btn__bzc5B",
@@ -128,12 +144,13 @@ IMAGE_EXTS = (".jpg", ".jpeg", ".png")
 # 본문 조립 — body-file(가공완료 최종본) + 제목. (feedback_final_content_only_for_publish)
 # -----------------------------------------------------------------
 class BlogPost:
-    __slots__ = ("title", "body", "image_paths")
+    __slots__ = ("title", "body", "image_paths", "sticker_count")
 
-    def __init__(self, title: str, body: str, image_paths: list[Path]) -> None:
+    def __init__(self, title: str, body: str, image_paths: list[Path], sticker_count: int = STICKER_COUNT_DEFAULT) -> None:
         self.title = title
         self.body = body
         self.image_paths = image_paths
+        self.sticker_count = sticker_count
 
 
 def load_body(body_file: Path | None, body_inline: str | None) -> str:
@@ -179,7 +196,8 @@ def build_post(args: argparse.Namespace) -> BlogPost:
     if image_dir and not image_dir.is_absolute():
         image_dir = ROOT / image_dir
     images = collect_images(image_dir, args.image_glob)
-    return BlogPost(title, body, images)
+    sticker_count = getattr(args, "sticker_count", STICKER_COUNT_DEFAULT)
+    return BlogPost(title, body, images, sticker_count)
 
 
 def validate_post(post: BlogPost, require_images: bool) -> list[str]:
@@ -450,9 +468,85 @@ async def _enter_write_and_fill(page, post: BlogPost, blog_id: str | None) -> No
     except Exception:
         pass
 
-    # 이미지 첨부 (슬라이드 모달 단계 포함 — v3.0)
+    # 스티커 삽입 (우선 — GM 지시 2026-06-03). 본문 끝에 STICKER_COUNT개 삽입.
+    sticker_count = getattr(post, "sticker_count", STICKER_COUNT_DEFAULT)
+    if sticker_count > 0:
+        await _insert_stickers(page, target, sticker_count)
+
+    # 이미지 첨부 (부차적 — 슬라이드 모달 단계 포함 v3.0). 실패해도 draft 진행.
     if post.image_paths:
         await _attach_images(page, target, post.image_paths)
+
+
+async def _insert_stickers(page, target, count: int) -> int:
+    """툴바 '스티커' 버튼 → 우측 패널 오픈 → 그리드에서 count개 클릭해 본문에 삽입.
+    삽입된 se-component.se-sticker 컴포넌트 수를 반환. (실측 검증 2026-06-03)"""
+    # caret을 본문 끝으로 (스티커가 본문 아래 들어가게)
+    try:
+        await page.keyboard.press("Control+End")
+    except Exception:
+        pass
+    btn_loc, btn_sel = await _first_locator(target, STICKER_TOOLBAR_BUTTON_SELECTORS)
+    if btn_loc is None:
+        print("[WARN] 스티커 버튼 미발견 — 스티커 삽입 건너뜀")
+        return 0
+
+    # 삽입 전 본문 내 스티커 컴포넌트 수
+    sticker_count_js = "() => document.querySelectorAll('.se-component.se-sticker').length"
+    try:
+        before = await target.evaluate(sticker_count_js)
+    except Exception:
+        before = 0
+
+    try:
+        await btn_loc.click(force=True)
+        await page.wait_for_timeout(2000)  # 패널 그리드 로딩
+        print(f"[INFO] 스티커 패널 오픈 ({btn_sel!r})")
+    except Exception as e:
+        print(f"[WARN] 스티커 패널 오픈 실패: {e}")
+        return 0
+
+    items = target.locator(STICKER_ITEM_SELECTOR)
+    try:
+        n = await items.count()
+    except Exception:
+        n = 0
+    if n == 0:
+        print("[WARN] 스티커 그리드 항목 0개 — 삽입 불가")
+        return 0
+
+    clicked = 0
+    for i in range(min(n, count + 10)):  # 일부 비가시 항목 건너뛸 여유
+        if clicked >= count:
+            break
+        it = items.nth(i)
+        try:
+            if await it.is_visible():
+                await it.click(force=True)
+                clicked += 1
+                await page.wait_for_timeout(900)  # 본문 삽입 반영 대기
+        except Exception:
+            continue
+    print(f"[INFO] 스티커 {clicked}개 클릭 (요청 {count}개)")
+
+    # 패널 닫기 (스티커 버튼 토글) — 이후 임시저장 버튼 클릭 방해 방지
+    try:
+        await btn_loc.click(force=True)
+        await page.wait_for_timeout(600)
+    except Exception:
+        pass
+
+    # 실측 검증 — 본문 내 스티커 컴포넌트 증가분 확인
+    try:
+        after = await target.evaluate(sticker_count_js)
+    except Exception:
+        after = before
+    inserted = after - before
+    if inserted < clicked:
+        print(f"[WARN] 스티커 삽입 검증 — 본문 스티커 {before}→{after} (클릭 {clicked}개 중 {inserted}개만 반영)")
+    else:
+        print(f"[INFO] 스티커 삽입 검증 OK — 본문 스티커 {before}→{after} ({inserted}개 추가)")
+    return inserted
 
 
 async def _attach_images(page, target, image_paths: list[Path]) -> None:
@@ -628,6 +722,10 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--image-dir", dest="image_dir", default=None, help="이미지 폴더")
     parser.add_argument("--image-glob", dest="image_glob", default="blog_*.jpg", help="이미지 파일명 패턴")
     parser.add_argument("--blog-id", dest="blog_id", default=None, help="본인 블로그 ID (글쓰기 URL용)")
+    parser.add_argument(
+        "--sticker-count", dest="sticker_count", type=int, default=STICKER_COUNT_DEFAULT,
+        help=f"본문에 삽입할 스티커 개수 (기본 {STICKER_COUNT_DEFAULT}, 0이면 생략)",
+    )
     parser.add_argument(
         "--i-am-sure", dest="i_am_sure", action="store_true",
         help="publish 모드 GM go 가드 해제 플래그 (실 발행)",
