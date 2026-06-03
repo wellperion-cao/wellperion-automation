@@ -195,7 +195,7 @@ function buildDashboard() {
   var countAreaStart = 0, countAreaEnd = 0;
 
   push(["📊 강습부 업장점검 대시보드"]); var titleRow = out.length;
-  push(["최종 업데이트: " + Utilities.formatDate(new Date(), tz, "yyyy. M. d a/p h:mm")]); var timeRow = out.length;
+  push(["최종 업데이트: " + Utilities.formatDate(new Date(), tz, "yyyy. M. d a h:mm")]); var timeRow = out.length;
   push([""]);
 
   fmtSection.push(push(["■ 월별 · 업장별 · 항목별 「점검필요」 횟수"]));
