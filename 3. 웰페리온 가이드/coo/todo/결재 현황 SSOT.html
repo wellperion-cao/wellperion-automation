@@ -198,7 +198,26 @@ html,body{background:var(--bg);color:var(--text);font-family:"Pretendard","Apple
   .header h1{font-size:15px}
   .approval-card .title-row .card-meta-chips{max-width:130px;}
 }
+#approvalPrintArea{display:none}
 @media print{
+  /* ── [결재 카드 인쇄] 카드 기준 + 남은 결재자별 서명칸 (2026-06-03 GM) ── */
+  body[data-print-mode="cards"] .sticky-top,
+  body[data-print-mode="cards"] .content,
+  body[data-print-mode="cards"] .header,
+  body[data-print-mode="cards"] .dash-overlay{display:none!important}
+  body[data-print-mode="cards"] #approvalPrintArea{display:block!important}
+  #approvalPrintArea .ap-doc-title{font-size:16px;font-weight:800;margin:0 0 14px;color:#111}
+  #approvalPrintArea .ap-doc-title span{font-size:12px;font-weight:500;color:#555;margin-left:8px}
+  .print-card{border:1px solid #333;border-radius:6px;padding:12px 14px;margin-bottom:12px;page-break-inside:avoid}
+  .print-card .pc-title{font-size:14px;font-weight:700;margin-bottom:5px;color:#111}
+  .print-card .pc-cat{font-size:10px;font-weight:600;color:#444;border:1px solid #aaa;border-radius:4px;padding:1px 5px;margin-left:6px;white-space:nowrap}
+  .print-card .pc-meta,.print-card .pc-budget,.print-card .pc-body{font-size:11.5px;color:#222;margin-bottom:4px;line-height:1.55}
+  .print-card .pc-body{white-space:pre-wrap}
+  .print-card .pc-signs{display:flex;gap:10px;margin-top:10px;flex-wrap:wrap}
+  .print-card .pc-sign-box{border:1px solid #333;border-radius:4px;min-width:130px}
+  .print-card .pc-sign-label{font-size:11px;font-weight:700;text-align:center;border-bottom:1px solid #333;padding:3px 4px;background:#f0f0f0;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .print-card .pc-sign-space{height:46px}
+  .print-card .pc-done{font-size:12px;font-weight:700;color:#0b8043;margin-top:8px}
   /* 칸반 보드 → 인쇄 시 컬럼을 세로 나열(클리핑 방지) */
   .kanban-board{display:block!important;overflow:visible!important;padding:0!important}
   .kanban-board > .kanban-col{width:auto!important;margin-bottom:8px!important;break-inside:avoid}
@@ -264,6 +283,9 @@ html,body{background:var(--bg);color:var(--text);font-family:"Pretendard","Apple
 <div class="dash-overlay" id="approvalDashOverlay">
   <div class="dash-panel" id="approvalDashPanel"></div>
 </div>
+
+<!-- 결재 카드 인쇄 영역 — 화면 숨김, 인쇄(cards 모드)에서만 표시 (2026-06-03 GM) -->
+<div id="approvalPrintArea"></div>
 
 <script>
 const TODO_API_URL = 'https://script.google.com/macros/s/AKfycbxDwFkrxK1YIaEoSNcuw2MiHiZQ-7o5N6311ytksSyeEd86ZFOhLknOWqQgNArQvZ-7/exec';
@@ -416,8 +438,7 @@ function render() {
   });
   stHtml += '</select>';
   stHtml += '<button class="share-btn" onclick="openApprovalDashboard()" style="background:var(--purple-bg);color:var(--purple);border-color:rgba(167,139,218,0.3);">결재 현황 대시보드</button>';
-  stHtml += '<button class="share-btn" onclick="window.print()" style="background:var(--accent-bg);color:var(--accent);border-color:rgba(183,159,138,0.3);">인쇄</button>';
-  stHtml += '<button class="share-btn" onclick="copyShareLink()" style="background:var(--green-bg);color:var(--green);border-color:rgba(106,191,123,0.3);">🔗 링크</button>';
+  stHtml += '<button class="share-btn" onclick="printApprovalCards()" style="background:var(--accent-bg);color:var(--accent);border-color:rgba(183,159,138,0.3);">🖨 인쇄</button>';
   stHtml += '<button class="share-btn" onclick="shareReport()" style="background:var(--purple-bg);color:var(--purple);border-color:rgba(167,139,218,0.3);">보고용</button>';
   stHtml += '<button class="share-btn" onclick="shareList()">공유용</button>';
   stHtml += '</div>';
@@ -522,6 +543,9 @@ function render() {
     list.sort((a, b) => sortKey(b).localeCompare(sortKey(a)));
   }
 
+  // 인쇄(카드 기준)용 — 현재 필터·정렬 반영 리스트 보관 (2026-06-03 GM)
+  window._lastApprovalList = list;
+
   // [결재-뷰] 칸반·캘린더 뷰 — 필터·검색·정렬이 적용된 list를 그대로 그린다 (2026-06-02 시모)
   if (currentView === 'kanban') {
     el.innerHTML = renderKanban(list);
@@ -606,6 +630,49 @@ function buildShareUrl() {
   if (searchQuery && searchQuery.trim()) u.searchParams.set('q', searchQuery.trim());
   return u.toString();
 }
+// ── [결재 카드 인쇄] 카드 기준 + 남은 결재자별 서명칸 (2026-06-03 GM) ──
+// 현재 필터·정렬 반영된 카드를 한꺼번에 인쇄. 각 카드에 '아직 서명 안 한 결재자'만 서명칸으로 표시.
+function buildApprovalPrint(list) {
+  var nameMap = { 'GM': '김남욱 GM', '대표님': '전응준 대표' };
+  var h = '<div class="ap-doc-title">웰페리온 결재 문서 <span>총 ' + list.length + '건 · ' + todayDateStr() + '</span></div>';
+  if (!list.length) return h + '<div style="font-size:13px;color:#555;">인쇄할 결재 건이 없습니다.</div>';
+  list.forEach(function(t, i) {
+    var parsed = parseContent(t.content || '');
+    var route = buildEffectiveRoute(t, parsed.budget);
+    var signMap = { '부서장': t.deptSign, 'GM': t.gmSign, '대표님': t.repSign };
+    var pending = route.filter(function(r){ return !String(signMap[r] || '').trim(); });
+    h += '<div class="print-card">';
+    h += '<div class="pc-title">' + (i + 1) + '. ' + esc(t.title || '(제목 없음)')
+       + (t.category ? '<span class="pc-cat">' + esc(t.category) + '</span>' : '') + '</div>';
+    h += '<div class="pc-meta">담당: ' + esc(t.owner || '-');
+    var sd = String(t.startDate || '').slice(0, 10), ed = String(t.endDate || '').slice(0, 10);
+    if (sd || ed) h += ' &nbsp;|&nbsp; 기간: ' + sd + (ed ? ' ~ ' + ed : '');
+    h += '</div>';
+    if (parsed.budget) h += '<div class="pc-budget">💰 ' + esc(parsed.budget.category) + ' · ' + formatKRW(parsed.budget.amount) + '</div>';
+    if (parsed.body && parsed.body.trim()) h += '<div class="pc-body">' + esc(parsed.body.trim()).slice(0, 600) + '</div>';
+    h += '<div class="pc-signs">';
+    if (!pending.length) {
+      h += '<div class="pc-done">✅ 결재 완료 (서명 대기 없음)</div>';
+    } else {
+      pending.forEach(function(r){
+        var label = (r === '부서장') ? (deptHeadNameOf(t) || '부서장') : (nameMap[r] || r);
+        h += '<div class="pc-sign-box"><div class="pc-sign-label">' + esc(label) + ' (인)</div><div class="pc-sign-space"></div></div>';
+      });
+    }
+    h += '</div></div>';
+  });
+  return h;
+}
+function printApprovalCards() {
+  var list = window._lastApprovalList || [];
+  document.getElementById('approvalPrintArea').innerHTML = buildApprovalPrint(list);
+  document.body.setAttribute('data-print-mode', 'cards');
+  function _reset(){ document.body.removeAttribute('data-print-mode'); window.removeEventListener('afterprint', _reset); }
+  window.addEventListener('afterprint', _reset);
+  window.print();
+  setTimeout(_reset, 2000);  // afterprint 미발생 브라우저 폴백
+}
+
 // 공유: 제목 + 내용 요약 + 링크 (모바일=Web Share 카톡/문자, 데스크톱=클립보드 폴백) (2026-06-01 GM)
 function shareLink(url, shareTitle, shareText) {
   if (navigator.share) { navigator.share({ title: shareTitle, text: shareText, url: url }).catch(function(){}); return; }
@@ -836,10 +903,7 @@ function renderApprovalCard(t, idx) {
   // 셋째 줄: 결재 대기 배지
   h += '<div class="approval-badge-line"><span class="' + chipCls + '">' + esc(chipText) + '</span></div>';
   h += '</div>';
-  // 우측: 이 건 링크만 (담당자는 제목 아래로 이동)
-  h += '<div class="card-meta-chips">';
-  h += '<button class="card-link-btn" title="이 건 링크 복사" onclick="event.stopPropagation();copyItemLink(\'' + escAttr(t.id) + '\')">🔗</button>';
-  h += '</div>';
+  // 🔗 링크 제거 (2026-06-03 GM — 불필요)
   h += '</div>';
 
   // 메타 — 예산만 (카테고리·담당자는 제목 줄로 이동)
