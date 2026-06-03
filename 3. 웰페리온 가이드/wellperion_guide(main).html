@@ -4751,27 +4751,18 @@ function crTab(btn, panelId) {
     <div class="doc-header"><h2><span class="g-id">T4</span>업무자동화SSOT</h2><div class="meta">자동화·예약작업·PC·업데이트 단일 진실 원장 · 2026-06-03 종합 정립</div></div>
     <p class="lead">Windows 스케줄러 + Python 프로세스 실측 기반. 무엇이 언제 자동으로 도는지, PC·업데이트·창은 어떻게 동작하는지를 한곳에 모은 SSOT.</p>
 
-    <!-- ── PC·업데이트·창 동작 원리 (2026-06-03 GM 이해 정립) ── -->
-    <div class="callout" style="background:#16181c;border-left:3px solid var(--accent);margin:6px 0 18px;">
-      <strong style="color:var(--accent);">🖥️ PC·업데이트·창은 이렇게 돕니다 (쉬운 설명)</strong>
-      <p style="margin:8px 0 0;font-size:13px;line-height:1.7;">자동화는 <b>① 부팅 → ② 상시 프로그램 → ③ 정해진 시각 작업</b> 순서로 흐릅니다. 아래 3가지는 그동안 헷갈리던 부분을 GM님이 한눈에 보시도록 정리한 것입니다.</p>
-    </div>
-    <table>
-      <tr><th style="width:150px">주제</th><th>핵심 (일상어)</th></tr>
-      <tr>
-        <td><strong>① 검은 창</strong><br><span style="font-size:12px;color:var(--dim);">왜 떴나</span></td>
-        <td>예약작업이 <b>"보이는 화면에서 + 창 있는 방식"</b>으로 등록돼 검은 cmd 창이 떴습니다(프로그램 잘못 아님, 등록 방식 문제). 특히 인스타 발행 감시기는 72시간 상주라 창이 내내 떠 있었습니다. → <b>숨김 런처</b>(<code>launchers/*.vbs</code>)로 바꿔 <b>창 없이</b> 돌도록 정리. 적용은 <code>fix_task_windows.bat</code> 관리자 1회 실행.</td>
-      </tr>
-      <tr>
-        <td><strong>② 자동 업데이트</strong><br><span style="font-size:12px;color:var(--dim);">언제 되나</span></td>
-        <td>업데이트는 <b>PC 켤 때 CEO 배치(Start-AI CEO.bat)가 단 한 번</b> 합니다. <b>중요한 규칙: 실행 중인 Claude는 못 바꿉니다</b>(Windows가 켜진 프로그램 파일을 잠금). 그래서 창을 여러 개 켜두면 어떤 방법으로도 교체 불가 → <b>업데이트하려면 모든 Claude 창을 닫고 PC를 다시 켜야</b> 합니다. 세션 안에서 뜨던 "업데이트 실패" 알림은 이 잠금 때문에 항상 실패하던 잉여 기능이라 <b>꺼버렸습니다</b>.</td>
-      </tr>
-      <tr>
-        <td><strong>③ 부팅 업데이트 안전장치</strong><br><span style="font-size:12px;color:var(--dim);">새로 강화</span></td>
-        <td>CEO 배치는 이제 <b>Claude 창이 0개일 때만</b> 업데이트하고(절전 복귀 시 켜둔 세션 보호), 성공 여부를 <code>logs\claude_update.log</code>에 <b>기록·검증</b>합니다. 됐는지 안 됐는지 언제든 로그로 확인 가능.</td>
-      </tr>
-    </table>
-    <div class="callout tip" style="margin:10px 0 20px;"><strong>한 줄 요약.</strong> 검은 창 = 숨김 런처로 제거 · 업데이트 = PC 켤 때 1회(창 다 닫아야 적용) · 세션 내 자동 업데이터 = OFF(잉여). 관련 자산: <code>launchers/</code> · <code>scripts/fix_task_windows.ps1</code> · <code>fix_task_windows.bat</code> · <code>Start-AI CEO.bat</code> [0/4].</div>
+    <!-- ── PC·업데이트·창 동작 원리 (접이식) ── -->
+    <details class="toggle" style="margin:6px 0 18px;">
+      <summary>🖥️ PC·업데이트·창 동작 원리 <span style="color:var(--dim);font-size:12px;font-weight:400;">— 검은 창·자동 업데이트가 왜 그런지 (펼쳐보기)</span></summary>
+      <div class="toggle-body">
+        <table>
+          <tr><th style="width:150px">주제</th><th>핵심 (일상어)</th></tr>
+          <tr><td><strong>① 검은 창</strong></td><td>예약작업이 <b>"보이는 화면 + 창 있는 방식"</b>으로 등록돼 검은 cmd 창이 떴습니다(특히 인스타 감시기는 72시간 상주). → <b>숨김 런처</b>(<code>launchers/*.vbs</code>)로 창 없이 전환. 적용: <code>fix_task_windows.bat</code> 관리자 1회.</td></tr>
+          <tr><td><strong>② 자동 업데이트</strong></td><td>업데이트는 <b>PC 켤 때 CEO 배치가 1회</b>만. <b>실행 중인 Claude는 못 바꿉니다</b>(Windows가 켜진 파일 잠금) → 업데이트하려면 <b>모든 Claude 창 닫고 PC 재시작</b>. 세션 내 자동 업데이터는 항상 실패하던 잉여라 OFF.</td></tr>
+          <tr><td><strong>③ 부팅 안전장치</strong></td><td>CEO 배치는 <b>Claude 창 0개일 때만</b> 업데이트(절전 복귀 세션 보호) + <code>logs\claude_update.log</code> 기록·검증.</td></tr>
+        </table>
+      </div>
+    </details>
 
     <div class="tabs" data-tabs="g19">
       <div class="tab-nav">
