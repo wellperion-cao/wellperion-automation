@@ -329,7 +329,7 @@ let activeCatFilter = '전체';   // '전체' | 카테고리
 let searchQuery = '';            // 키워드
 let activeSortBy = '최신순';    // '최신순' | '결재상태' | '카테고리' | '시작일순'
 // [결재-뷰] 뷰 모드: 'kanban'(기본) | 'calendar'. 리스트 폐지(2026-06-03 GM·업무현황 파리티). localStorage 유지
-let currentView = (function(){ try { var v = localStorage.getItem('approval_view'); return (v === 'calendar') ? v : 'kanban'; } catch(e){ return 'kanban'; } })();
+let currentView = 'kanban';  // 캘린더 뷰 제거(2026-06-03 GM 정리) — 칸반 단일
 let calViewYear, calViewMonth;  // 캘린더 표시 연·월 (init은 첫 렌더에서)
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -435,8 +435,8 @@ function render() {
   stHtml += '<div style="display:flex;gap:4px;margin-left:auto;align-items:center;flex-shrink:0;">';
   // [결재-뷰] 뷰 토글: 트렐로(칸반) / 캘린더. 선택 뷰는 localStorage 유지 (2026-06-02 시모)
   stHtml += '<div style="display:inline-flex;border:1px solid var(--border);border-radius:8px;overflow:hidden;flex-shrink:0;margin-right:4px;">';
-  stHtml += '<button class="view-toggle-btn' + (currentView==='kanban'?' active':'') + '" onclick="setView(\'kanban\')" title="트렐로(칸반) 보드 — 결재상태별 컬럼">🗂 트렐로</button>';
-  stHtml += '<button class="view-toggle-btn' + (currentView==='calendar'?' active':'') + '" onclick="setView(\'calendar\')" title="월별 캘린더">🗓 캘린더</button>';
+  
+  
   stHtml += '</div>';
   stHtml += '<select onchange="setSort(this.value)" style="background:var(--paper);border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:8px;font-size:12px;font-family:inherit;font-weight:600;cursor:pointer;flex-shrink:0;">';
   ['최신순','결재상태','카테고리','시작일순'].forEach(function(opt) {
