@@ -317,7 +317,9 @@ function deptHeadNameOf(t) {
   var owners = String((t && t.owner) || '').split(',').map(function(s){ return s.trim(); });
   var ownerDH = owners.find(function(o){ return DEPT_HEADS.indexOf(o) >= 0; });
   if (ownerDH) return ownerDH;
-  return deptHeadFor(t && t.category) || String((t && (t.approval || t['결재요청'])) || '').split(',').map(function(s){ return s.trim(); }).find(function(m){ return DEPT_HEADS.indexOf(m) >= 0; }) || '';
+  // 결재요청에 명시된 부서장(GM 직접 지정) 최우선 → 없으면 카테고리 자동매핑 (2026-06-03 웰리)
+  var _reqDH = String((t && (t.approval || t['결재요청'])) || '').split(',').map(function(s){ return s.trim(); }).find(function(m){ return DEPT_HEADS.indexOf(m) >= 0; });
+  return _reqDH || deptHeadFor(t && t.category) || '';
 }
 
 let ALL_TASKS = [];
