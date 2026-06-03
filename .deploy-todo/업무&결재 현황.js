@@ -332,12 +332,13 @@ function _buildApprovalRoute(record) {
   var MID = ['이경연 실장','이정헌 소장','나우열M'];
   var midName = _deptHeadFor(record['카테고리']) || manual.filter(function(m){ return MID.indexOf(m) >= 0; })[0] || '';
 
-  // 표준 결재선: (부서장) → GM → 대표님. 담당자 GM이면 GM 단계 생략.
-  const ownerIsGM = String(record['담당자'] || '').split(',').map(s => s.trim()).indexOf('김남욱GM') >= 0;
+  // 표준 결재선: (부서장) → GM → 대표님. 자기결재 방지(2026-06-03 GM).
+  var owners = String(record['담당자'] || '').split(',').map(function(s){ return s.trim(); });
+  const ownerIsGM = owners.indexOf('김남욱GM') >= 0;
+  const midIsSelf = midName && owners.indexOf(midName) >= 0;  // 부서장==담당자 → 자기 부서장결재 스킵
   const route = [];
-  // GM 직접 진행 건(담당자=김남욱GM)은 부서장·GM 단계 스킵 → 대표님 결재만 (2026-06-03 GM).
-  // 부서장(하급자)이 GM 직접 건을 결재하는 역전 방지.
-  if (midName && !ownerIsGM) route.push('부서장');
+  // ① 담당자=김남욱GM → 부서장·GM 스킵(대표만). ② 부서장==담당자 → 부서장 스킵. 본인의 자기 단계 결재 역전/중복 차단.
+  if (midName && !ownerIsGM && !midIsSelf) route.push('부서장');
   if (!ownerIsGM) route.push('GM');
   route.push('대표님');
   return route;

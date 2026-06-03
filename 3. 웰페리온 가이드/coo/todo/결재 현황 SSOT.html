@@ -724,11 +724,13 @@ function buildEffectiveRoute(t, budget) {
   // 부서장: 카테고리 매핑 우선, 없으면 수동 결재요청에 포함된 부서장. 매핑 없으면 생략(GM→대표 폴백).
   const MID = ['이경연 실장','이정헌 소장','나우열M'];
   const midName = deptHeadFor(t.category) || manual.find(m => MID.indexOf(m) >= 0) || '';
-  // 담당자=김남욱GM(직접 진행 건)이면 부서장·GM 단계 스킵 → 대표님 결재만 (2026-06-03 GM).
-  // 부서장(하급자)이 GM 직접 건을 결재하는 역전 방지 + GM 본인 결재 중복 방지.
-  const ownerIsGM = String(t.owner || '').split(',').map(s => s.trim()).indexOf('김남욱GM') >= 0;
+  const owners = String(t.owner || '').split(',').map(s => s.trim());
+  // 자기결재 방지(2026-06-03 GM): ① 담당자=김남욱GM → 부서장·GM 스킵(대표만) ② 부서장==담당자 → 부서장 스킵.
+  // 본인이 본인 업무를 자기 단계로 결재하는 역전/중복 차단.
+  const ownerIsGM = owners.indexOf('김남욱GM') >= 0;
+  const midIsSelf = midName && owners.indexOf(midName) >= 0;
   const route = [];
-  if (midName && !ownerIsGM) route.push('부서장');
+  if (midName && !ownerIsGM && !midIsSelf) route.push('부서장');
   if (!ownerIsGM) route.push('GM');
   route.push('대표님');
   return route;
