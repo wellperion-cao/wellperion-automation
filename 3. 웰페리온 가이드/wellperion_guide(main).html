@@ -632,17 +632,17 @@
     <!-- AUTO:LATEST-START -->
     <div class="card grow">
       <h4>최신 업데이트 — 2026-06-03 (자동 갱신)</h4>
+      <p><strong>2026-06-03</strong> refactor(guidehub): T1 설정 → T2 기술인프라 흡수</p>
       <p><strong>2026-06-03</strong> refactor(guidehub): 프롬프트 성격별 2분할 — 운영형 S2·기술형 T2</p>
       <p><strong>2026-06-03</strong> feat(guidehub): S2에 운영 프롬프트·컨텍스트정비 범위표 흡수처 신설</p>
       <p><strong>2026-06-03</strong> fix(coo): GM 직접 건 결재선 대표님만 + 결재카드 담당자 제목아래로</p>
       <p><strong>2026-06-03</strong> refactor(s2): STAGE4+5 CLAUDE.md 얇은인덱스 축소 + 부팅 단일출처 명시 (원칙 S2 단일화 완료)</p>
-      <p><strong>2026-06-03</strong> refactor(guidehub): T4 자동화 표+행펼침 방식 전환 (GM 요청)</p>
     </div>
 <!-- AUTO:LATEST-END -->
         <table>
           <tr><th style="width:160px">날짜</th><th>변경 내용</th></tr>
           <!-- AUTO:TABLE-START -->
-      <tr><td><strong>2026-06-03 (자동)</strong></td><td>refactor(guidehub): 프롬프트 성격별 2분할 — 운영형 S2·기술형 T2 · feat(guidehub): S2에 운영 프롬프트·컨텍스트정비 범위표 흡수처 신설 · fix(coo): GM 직접 건 결재선 대표님만 + 결재카드 담당자 제목아래로 · refactor(s2): STAGE4+5 CLAUDE.md 얇은인덱스 축소 + 부팅 단일출처 …</td></tr>
+      <tr><td><strong>2026-06-03 (자동)</strong></td><td>refactor(guidehub): T1 설정 → T2 기술인프라 흡수 · refactor(guidehub): 프롬프트 성격별 2분할 — 운영형 S2·기술형 T2 · feat(guidehub): S2에 운영 프롬프트·컨텍스트정비 범위표 흡수처 신설 · fix(coo): GM 직접 건 결재선 대표님만 + 결재카드 담당자 제목아래로 · refactor(s…</td></tr>
       <!-- AUTO:TABLE-END -->
           <tr><td><strong>2026-05-28 (14차)</strong></td><td>공지/안내문 생성(COO 하위) · 오프라인 홍보물 디자인 제작(CMO 하위) 도구 신설 · 공지 서식 v2.0 독립 페이지화 · 회사소개서·전략로드맵 원본 「3. 웰페리온 가이드/회사문서/」로 이관(SSOT 단일화) · C-Level 부팅 R/R Notion API→가이드허브 g10 참조로 전환 · GitHub Pages 워크플로 폴더명 경로 수정 · 사이드바 "공통+7개 C-Level" 라벨 제거</td></tr>
           <tr><td>2026-05-27 (13차)</td><td>GitHub Pages 전환 · 사이드바 4섹터 · AI C-Level 통일 · 운영 통합 체계 · 공식채널·지출현황·취업규칙·SSOT 신설 · g2+g19·g9+g20·g12·g13 합병 · 김남욱 탭 확장 · v2.5</td></tr>
@@ -3133,53 +3133,7 @@ kubectl get pods -o json | jq '.items[] | {name: .metadata.name}'</pre>
         <div class="callout"><strong>핵심 원칙.</strong> 모든 자동 고도화는 GM님 승인을 거쳐야 반영됨. AI는 제안까지만, 실행은 승인 후.</div>
 
         <h3><span class="ico">🔧</span>컨텍스트 정비 범위 정의 (매주 월 09:00)</h3>
-        <p>6 C-Level 각각이 매주 월요일 09:00에 수행하는 핵심 본업. 자기 영역 누적 자료를 검토·정리·고도화.</p>
-
-        <div class="callout"><strong>반자동 실행 모델 v2 (2026-06-02 GM 확정 · 이 흐름이 SSOT).</strong> 자동으로 혼자 돌아가는 게 아니라, <strong>월요일 알림 → 세션에서 사람이 실행 → CEO가 모아 한 번에 보고</strong>하는 구조입니다.</div>
-        <table>
-          <tr><th style="width:90px">단계</th><th>누가</th><th>무엇을</th></tr>
-          <tr><td>1. 알림(리마인더)</td><td>시스템</td><td>매주 월 09:00 텔레그램으로 "주간 정비 시작" 알림 (<code>pre_task_notifier</code> + <code>status/schedule.json</code> 6건). 자동 실행이 아니라 사람에게 알려주는 리마인더.</td></tr>
-          <tr><td>2. 일괄 위임</td><td>AI CEO(웰리)</td><td>그 주 월요일 Claude 세션이 열리면, CEO가 6 C-Level에게 "주간 정비 시작"을 한 번에 위임.</td></tr>
-          <tr><td>3. 정비 실행</td><td>각 C-Level</td><td>아래 범위표 기준으로 본인 영역을 정비(핵심 프롬프트 STEP 1~5를 세션에서 직접 수행). 정비 전·후 + 발견·개선안을 CEO에 보고.</td></tr>
-          <tr><td>4. CEO 취합 → GM 1보고</td><td>AI CEO(웰리)</td><td>6 C-Level 결과 6건을 모아 GM님께 <strong>1회 통합 보고</strong>. (이 취합 경로가 본 모델의 핵심.)</td></tr>
-        </table>
-        <div class="callout tip"><strong>세션이 안 열린 주는?</strong> 다음 가능한 날에 수행합니다. 밀린 주를 거슬러 추적하지 않습니다. <strong>정비 엔진은 별도 프로그램(.py)이 아니라</strong>, 아래 핵심 프롬프트(STEP 1~5)를 사람이 세션에서 직접 실행하는 방식입니다.</div>
-        <div class="callout"><strong>식별자 SSOT.</strong> 아래 범위표의 식별자(CMO-002·CPO-002·COO-001·CHRO-005·CFO-004·CTO-003)가 단일 기준입니다. 노션 조직 DB는 폐기됐으므로, 식별자는 이 범위표를 따릅니다. (<code>status/schedule.json</code>의 코드·작업스케줄러 이름 등은 내부 부품일 뿐 식별자 SSOT가 아닙니다.)</div>
-
-        <table>
-          <tr><th>C-Level</th><th>식별자</th><th>정비 범위</th><th>체크포인트</th></tr>
-          <tr>
-            <td><strong>AI CMO</strong></td><td>CMO-002</td>
-            <td>마케팅 SOP·콘텐츠 파이프라인·채널별 성과·베이스라인</td>
-            <td>콘텐츠 캘린더 정합성 / 3채널 SOP 현행화 / 검수 피드백 누적 반영 / 베이스라인 톤 갱신</td>
-          </tr>
-          <tr>
-            <td><strong>AI CPO</strong></td><td>CPO-002</td>
-            <td>회원·CS SOP·상품 아카이브·문의 응대 프로세스</td>
-            <td>회원 상품 가격표 현행화 / CS 응대 매뉴얼 업데이트 / 문의 유형별 FAQ 정비 / 예약 정책 정합성</td>
-          </tr>
-          <tr>
-            <td><strong>AI COO</strong></td><td>COO-001</td>
-            <td>운영 SOP·체크리스트·이슈 응답·리셉션 매뉴얼</td>
-            <td>일일 점검 체크리스트 항목 현행화 / 이슈 응답 시트 패턴 분석 / 운영 가이드라인 갱신 / 교대 인수인계 절차</td>
-          </tr>
-          <tr>
-            <td><strong>AI CHRO</strong></td><td>CHRO-005</td>
-            <td>인사·파트너 SOP·계약 관리·조직도·복지 정책</td>
-            <td>파트너 계약 현황 갱신 / 레벨링 체계 점검 / 복장·복지 정책 현행화 / 근태 관리 프로세스 정비</td>
-          </tr>
-          <tr>
-            <td><strong>AI CFO</strong></td><td>CFO-004</td>
-            <td>재무·지출·수익 SOP·예산 관리·세무 체크리스트</td>
-            <td>월별 지출 집계 정합성 / 수익화 KPI 갱신 / 세무 일정 체크 / 예산 vs 실적 비교 정비</td>
-          </tr>
-          <tr>
-            <td><strong>AI CTO</strong></td><td>CTO-003</td>
-            <td>전사 인프라·자동화·시설 SOP·개발 아카이브</td>
-            <td>scripts/ 폴더 구조 정비 / 자동화 태스크 가동 상태 점검 / 시설 유지보수 현황 갱신 / 기술 문서 현행화</td>
-          </tr>
-        </table>
-        <p><strong>공통 의무:</strong> 중복·구식·과잉 항목 정리 / 업무 흐름 명확화 / GM 지시 이상 자율 진화·고도화 안 자체 제안·반영</p>
+        <div class="callout"><strong>→ 범위표·실행 모델 SSOT는 S2.</strong> 주간 컨텍스트 정비 범위표(6 C-Level 식별자·정비 범위·체크포인트)와 반자동 실행 모델 v2는 <a href="#" onclick="event.preventDefault();var t=document.querySelector('[data-id=S2]');if(t)t.click();" style="color:var(--accent);font-weight:700;text-decoration:none;">S2 AI C-Level 운영 가이드 ▸ 공통 ▸ 주간 컨텍스트 정비 범위</a>에서 단일 관리합니다. 실행 프롬프트(STEP 1~5)도 같은 곳(운영 프롬프트 ①). 범위표 중복 기재 금지.</div>
       </div>
 
       <!-- ── 탭 7: 핵심 프롬프트 ── -->
@@ -3305,16 +3259,8 @@ kubectl get pods -o json | jq '.items[] | {name: .metadata.name}'</pre>
           <tr><td><code>daily_scheduler.py</code></td><td>정각 보고 스케줄러 (6슬롯). MarkdownV2 + 평문 fallback.</td></tr>
         </table>
 
-        <h4>Watcher (자동 감시) — 실측 2026-06-03</h4>
-        <table>
-          <tr><th>파일</th><th>주기</th><th>상태 · 역할</th></tr>
-          <tr><td><code>pre_task_notifier.py</code></td><td>5분</td><td>🟢 가동 — H-15분 실행 사전 알림 (status/schedule.json SSOT · daily_scheduler 내장)</td></tr>
-          <tr><td><code>bot_health_check</code></td><td>15분</td><td>🟢 가동 — 봇 생존 점검 (daily_scheduler 내장)</td></tr>
-          <tr><td><code>env_reload_watcher</code></td><td>5분</td><td>🟢 가동 — .env 변경 감지 재적용 (daily_scheduler 내장)</td></tr>
-          <tr><td><code>ig_review_publish_watcher.py</code></td><td>120초</td><td>🟢 가동 — 인스타 검수 승인→자동 발행 (별도 예약작업)</td></tr>
-          <tr><td><code>auto_task_watcher · archive_result · planning_to_archive · status_change · permission</code></td><td>—</td><td>🗑️ 폐기 — 노션 폴링 의존, 노션 미사용으로 무력화·.pyc 제거 완료</td></tr>
-        </table>
-        <div class="callout"><strong>폐기.</strong> status_regression_guard.py (2026-05-22 GM 지시로 폐기. 진행예정 옵션도 삭제됨).</div>
+        <h4>Watcher (자동 감시) 현황</h4>
+        <div class="callout"><strong>→ 현황 SSOT는 T4 업무자동화SSOT.</strong> 가동 중 Watcher(pre_task_notifier·bot_health_check·env_reload_watcher·ig_review_publish_watcher)와 폐기 목록의 실측 현황은 <a href="#" onclick="event.preventDefault();var t=document.querySelector('[data-id=T4]');if(t)t.click();" style="color:var(--accent);font-weight:700;text-decoration:none;">T4 업무자동화SSOT</a>에서 단일 관리합니다. 현황 중복 기재 금지.</div>
 
         <h4>재기동 방법</h4>
         <pre>Stop-Process -Id (PID) -Force
