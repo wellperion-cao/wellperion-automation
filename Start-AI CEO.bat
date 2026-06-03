@@ -9,11 +9,25 @@ echo    Wellperion GM Control Room Starting
 echo  ========================================
 echo.
 
-REM -- 0. Auto-update Claude Code + OMC (run BEFORE any claude session; claude.exe must be 0) --
+REM -- 0. Auto-update Claude Code + OMC --
+REM    Windows locks a running .exe, so updating while ANY claude session is open
+REM    silently fails. Guard: update ONLY when claude.exe count = 0, then verify
+REM    and log, so we can always see whether the boot update actually happened.
 echo  [0/4] Checking Claude Code and OMC updates...
-call claude update
-call claude plugin marketplace update omc
-call claude plugin update oh-my-claudecode@omc
+set "UPDLOG=%WORK%\logs\claude_update.log"
+if not exist "%WORK%\logs" mkdir "%WORK%\logs"
+tasklist /fi "imagename eq claude.exe" 2>nul | find /i "claude.exe" >nul
+if errorlevel 1 (
+  echo [%DATE% %TIME%] no claude session - running update >> "%UPDLOG%"
+  call claude update >> "%UPDLOG%" 2>&1
+  call claude plugin marketplace update omc >> "%UPDLOG%" 2>&1
+  call claude plugin update oh-my-claudecode@omc >> "%UPDLOG%" 2>&1
+  for /f "tokens=*" %%v in ('claude --version 2^>nul') do echo [%DATE% %TIME%] now -^> %%v >> "%UPDLOG%"
+  echo   update done. see logs\claude_update.log
+) else (
+  echo [%DATE% %TIME%] claude session active - update SKIPPED >> "%UPDLOG%"
+  echo   skipped: a Claude session is already running ^(cannot replace a running exe^).
+)
 echo.
 
 REM -- 1. Telegram CEO Bot --
