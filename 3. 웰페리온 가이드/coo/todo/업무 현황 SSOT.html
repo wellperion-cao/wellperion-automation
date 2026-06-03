@@ -729,10 +729,11 @@ function buildFilters() {
     si.value = searchQuery;  // 최초 1회만 (딥링크 q 반영)
     // 한글 IME: 조합 중(compositionstart~end)에는 재렌더 금지 — 조합 중 input→renderTasks가 자모 'ㄱ' 잔존 버그 유발(2026-06-03 GM).
     // 조합 끝(compositionend)·일반(영문 등) 입력에서만 검색 실행.
-    var _composing = false;
+    var _composing = false, _searchT = null;
+    function _runSearch(){ clearTimeout(_searchT); _searchT = setTimeout(function(){ if (!_composing) setSearchQuery(si.value); }, 280); }
     si.addEventListener('compositionstart', function(){ _composing = true; });
-    si.addEventListener('compositionend', function(){ _composing = false; setSearchQuery(si.value); });
-    si.addEventListener('input', function(){ if (!_composing) setSearchQuery(si.value); });
+    si.addEventListener('compositionend', function(){ _composing = false; _runSearch(); });
+    si.addEventListener('input', _runSearch);
   }
   // 초기화 버튼만 토글 (input 요소는 손대지 않음 → 조합 유지)
   const clearBtn = document.getElementById('searchClearBtn');

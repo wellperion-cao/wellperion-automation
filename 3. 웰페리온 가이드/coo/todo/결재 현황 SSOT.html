@@ -476,10 +476,11 @@ function render() {
     si = document.getElementById('searchInput');
     si.value = searchQuery;  // 최초 1회만 (딥링크 q 반영)
     // 한글 IME: 조합 중에는 재렌더 금지 — 조합 중 input→render가 자모 'ㄱ' 잔존 버그 유발(2026-06-03 GM).
-    var _composing = false;
+    var _composing = false, _searchT = null;
+    function _runSearch(){ clearTimeout(_searchT); _searchT = setTimeout(function(){ if (!_composing) setSearch(si.value); }, 280); }
     si.addEventListener('compositionstart', function(){ _composing = true; });
-    si.addEventListener('compositionend', function(){ _composing = false; setSearch(si.value); });
-    si.addEventListener('input', function(){ if (!_composing) setSearch(si.value); });
+    si.addEventListener('compositionend', function(){ _composing = false; _runSearch(); });
+    si.addEventListener('input', _runSearch);
   }
   const clearBtn = document.getElementById('searchClearBtn');
   if (clearBtn) clearBtn.style.display = searchQuery ? '' : 'none';
@@ -808,12 +809,13 @@ function buildEffectiveRoute(t, budget) {
   const MID = ['이경연 실장','이정헌 소장','나우열M'];
   const midName = deptHeadFor(t.category) || manual.find(m => MID.indexOf(m) >= 0) || '';
   const owners = String(t.owner || '').split(',').map(s => s.trim());
-  // 자기결재 방지(2026-06-03 GM): ① 담당자=김남욱GM → 부서장·GM 스킵(대표만) ② 부서장==담당자 → 부서장 스킵.
-  // 본인이 본인 업무를 자기 단계로 결재하는 역전/중복 차단.
+  // 자기결재·오배정 방지(2026-06-03 GM): ① 담당자=김남욱GM → 부서장·GM 스킵(대표만)
+  // ② 담당자가 부서장(이경연/이정헌/나우열) 본인이면 부서장 스킵 → GM→대표.
+  //   (예: 이경연 실장 업무를 카테고리[4]시설 짐작으로 이정헌 소장에게 보내는 cross-부서 오배정 차단)
   const ownerIsGM = owners.indexOf('김남욱GM') >= 0;
-  const midIsSelf = midName && owners.indexOf(midName) >= 0;
+  const ownerIsDeptHead = owners.some(function(o){ return MID.indexOf(o) >= 0; });
   const route = [];
-  if (midName && !ownerIsGM && !midIsSelf) route.push('부서장');
+  if (midName && !ownerIsGM && !ownerIsDeptHead) route.push('부서장');
   if (!ownerIsGM) route.push('GM');
   route.push('대표님');
   return route;
@@ -914,11 +916,7 @@ function renderApprovalCard(t, idx) {
   // 셋째 줄: 결재 대기 배지
   h += '<div class="approval-badge-line"><span class="' + chipCls + '">' + esc(chipText) + '</span></div>';
   h += '</div>';
-  // 우측: 카드별 인쇄·링크 (2026-06-03 GM)
-  h += '<div class="card-meta-chips">';
-  h += '<button class="card-link-btn" title="이 카드만 인쇄" onclick="event.stopPropagation();printApprovalCard(\'' + escAttr(t.id) + '\')">🖨</button>';
-  h += '<button class="card-link-btn" title="이 건 링크 복사" onclick="event.stopPropagation();copyItemLink(\'' + escAttr(t.id) + '\')">🔗</button>';
-  h += '</div>';
+  // 결재현황 SSOT는 결재만 집중 — 카드별 인쇄/링크 버튼 제거 (2026-06-03 GM). 전체 결재 문서 인쇄는 툴바 🖨 인쇄 유지.
   h += '</div>';
 
   // 메타 — 예산만 (카테고리·담당자는 제목 줄로 이동)

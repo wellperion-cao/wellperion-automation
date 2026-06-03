@@ -335,10 +335,10 @@ function _buildApprovalRoute(record) {
   // 표준 결재선: (부서장) → GM → 대표님. 자기결재 방지(2026-06-03 GM).
   var owners = String(record['담당자'] || '').split(',').map(function(s){ return s.trim(); });
   const ownerIsGM = owners.indexOf('김남욱GM') >= 0;
-  const midIsSelf = midName && owners.indexOf(midName) >= 0;  // 부서장==담당자 → 자기 부서장결재 스킵
+  const ownerIsDeptHead = owners.some(function(o){ return MID.indexOf(o) >= 0; });  // 담당자가 부서장 본인이면 부서장 스킵
   const route = [];
-  // ① 담당자=김남욱GM → 부서장·GM 스킵(대표만). ② 부서장==담당자 → 부서장 스킵. 본인의 자기 단계 결재 역전/중복 차단.
-  if (midName && !ownerIsGM && !midIsSelf) route.push('부서장');
+  // ① 담당자=김남욱GM → 부서장·GM 스킵(대표만). ② 담당자가 부서장 본인 → 부서장 스킵(카테고리 짐작 cross-부서 오배정 차단, 2026-06-03 GM).
+  if (midName && !ownerIsGM && !ownerIsDeptHead) route.push('부서장');
   if (!ownerIsGM) route.push('GM');
   route.push('대표님');
   return route;
