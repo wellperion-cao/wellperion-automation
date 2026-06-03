@@ -617,17 +617,17 @@
     <!-- AUTO:LATEST-START -->
     <div class="card grow">
       <h4>최신 업데이트 — 2026-06-03 (자동 갱신)</h4>
+      <p><strong>2026-06-03</strong> feat(cmo): 카카오 채널 소식 자동입력 구현 — 임시저장 반자동 완성</p>
       <p><strong>2026-06-03</strong> refactor(cmo): M5에서 특성 학습 메모·인스타 업로드(계정별) 섹션 삭제 (GM 지시)</p>
       <p><strong>2026-06-03</strong> fix(coo): 부서장 본인 업무 부서장스킵(cross-부서 오배정 차단) + 검색 IME 디바운스 + 결재카드 결재집중</p>
       <p><strong>2026-06-03</strong> fix(g1): 보고서 인쇄 격리 셀렉터 교정 — body[data-print-mode] 직접 매칭</p>
       <p><strong>2026-06-03</strong> docs(cmo): 당근 B안(수동) 유지 명시 — 반자동 보류 (GM 결정 2026-06-03)</p>
-      <p><strong>2026-06-03</strong> feat(guidehub): S2 ④ 웰리 실행 프롬프트 완결화 — 8원칙 + 실행 4단계 + 안전규칙</p>
     </div>
 <!-- AUTO:LATEST-END -->
         <table>
           <tr><th style="width:160px">날짜</th><th>변경 내용</th></tr>
           <!-- AUTO:TABLE-START -->
-      <tr><td><strong>2026-06-03 (자동)</strong></td><td>refactor(cmo): M5에서 특성 학습 메모·인스타 업로드(계정별) 섹션 삭제 (GM 지시) · fix(coo): 부서장 본인 업무 부서장스킵(cross-부서 오배정 차단) + 검색 IME 디바운스 + 결재카드 결재집중 · fix(g1): 보고서 인쇄 격리 셀렉터 교정 — body[data-print-mode] 직접 매칭 · docs(cmo):…</td></tr>
+      <tr><td><strong>2026-06-03 (자동)</strong></td><td>feat(cmo): 카카오 채널 소식 자동입력 구현 — 임시저장 반자동 완성 · refactor(cmo): M5에서 특성 학습 메모·인스타 업로드(계정별) 섹션 삭제 (GM 지시) · fix(coo): 부서장 본인 업무 부서장스킵(cross-부서 오배정 차단) + 검색 IME 디바운스 + 결재카드 결재집중 · fix(g1): 보고서 인쇄 격리 셀렉터 …</td></tr>
       <!-- AUTO:TABLE-END -->
           <tr><td><strong>2026-05-28 (14차)</strong></td><td>공지/안내문 생성(COO 하위) · 오프라인 홍보물 디자인 제작(CMO 하위) 도구 신설 · 공지 서식 v2.0 독립 페이지화 · 회사소개서·전략로드맵 원본 「3. 웰페리온 가이드/회사문서/」로 이관(SSOT 단일화) · C-Level 부팅 R/R Notion API→가이드허브 g10 참조로 전환 · GitHub Pages 워크플로 폴더명 경로 수정 · 사이드바 "공통+7개 C-Level" 라벨 제거</td></tr>
           <tr><td>2026-05-27 (13차)</td><td>GitHub Pages 전환 · 사이드바 4섹터 · AI C-Level 통일 · 운영 통합 체계 · 공식채널·지출현황·취업규칙·SSOT 신설 · g2+g19·g9+g20·g12·g13 합병 · 김남욱 탭 확장 · v2.5</td></tr>
@@ -1490,7 +1490,7 @@
 
   <article class="doc" id="g10">
     <div class="doc-header"><h2><span class="g-id">S2</span>AI C-Level 운영 가이드</h2><div class="meta">협업 매뉴얼 v1.0 + 실무 가이드라인 v1.1 통합 · 7개 C-Level별 협업 리듬 + 실무 지침</div></div>
-    <p class="lead">웰페리온 실무진(최종 책임자)들이 AI C-Level 에이전트와 협업 및 서포트를 받는 기준을 가이드라인한 운영 가이드입니다. <span style="font-size:12px;color:var(--dim);">(이 페이지가 통합본 — 원본 archive: <a href="웰페리온_AI_C레벨_협업매뉴얼_2026-04-24.html" target="_blank" style="color:var(--dim);text-decoration:underline;">협업 매뉴얼</a> · <a href="웰페리온_C레벨_실무가이드라인_2026-04-24.html" target="_blank" style="color:var(--dim);text-decoration:underline;">실무 가이드라인</a>)</span></p>
+    <p class="lead">웰페리온 실무진(최종 책임자)들이 AI C-Level 에이전트와 협업 및 서포트를 받는 기준을 가이드라인한 운영 가이드입니다.</p>
 
     <div class="tabs" data-tabs="g10">
       <div class="tab-nav">
@@ -1505,6 +1505,10 @@
         <button class="tab-btn" data-tab="g4-kit">🎯 3대 원칙·키트</button>
       </div>
       <div class="tab-panel active" data-panel="common">
+        <div class="callout accent" style="margin-bottom:18px;background:#1a1a2a;border-left:3px solid #7C3AED;">
+          <strong>📍 이 가이드 한눈 요약</strong> — <strong>공통 원칙(이 탭)</strong> + <strong>역할탭 7개</strong>(CEO·CMO·COO·CTO·CFO·CHRO·CPO). 각 C-Level은 부팅 시 <strong>공통탭 + 본인 탭</strong>만 흡수한다.<br>
+          <span style="font-size:13px;color:var(--dim);">공통탭 구성: 절대원칙 3 · 보고 포맷 · 운영·검증 5단계 · 전 C-Level 통합원칙 9테마 · 데이터 입력금지 5종 · 에스컬레이션 3단계 · 주간 컨텍스트 정비 범위.</span>
+        </div>
         <h3><span class="ico">🏢</span>AI 조직도</h3>
         <div class="card accent" style="text-align:center;padding:20px;margin-bottom:16px;">
           <h4>👑 AI CEO 경영지원자 <span style="font-size:13px;color:var(--accent);font-weight:600;">웰리</span></h4>
@@ -2450,7 +2454,7 @@
     <div class="source">SSOT: AI C-Level 협업 매뉴얼 v1.0 + C-Level 실무 가이드라인 v1.1 (2026-04-24) 통합 + AI 운영 원칙·검증 5단계 + 3대 원칙 프레임워크·에이전트 키트 (2026-05-28 g4 흡수) · 관련 메모리 11건 cross-link</div>
     <div style="margin-top:22px; padding:13px 16px; background:#16181c; border-radius:8px; border-left:3px solid var(--accent);">
       <div style="font-size:12px; font-weight:700; color:var(--accent); margin-bottom:6px;">&#9656; Claude CLI 셋업 프롬프트</div>
-      <pre style="margin:0; color:#e8e8e8; font-size:12.5px; white-space:pre-wrap; line-height:1.6;">가이드허브 ⑨ AI C-Level 운영 가이드대로 각 C-Level의 오늘 산출물을 협업 리듬에 맞춰 점검하고 AI CEO가 GM에게 통합 보고하게 해줘.</pre>
+      <pre style="margin:0; color:#e8e8e8; font-size:12.5px; white-space:pre-wrap; line-height:1.6;">가이드허브 S2 AI C-Level 운영 가이드대로 각 C-Level의 오늘 산출물을 협업 리듬에 맞춰 점검하고 AI CEO가 GM에게 통합 보고하게 해줘.</pre>
     </div>
   </article>
 
