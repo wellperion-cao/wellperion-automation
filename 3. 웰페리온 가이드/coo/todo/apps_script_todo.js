@@ -55,6 +55,8 @@ const TODO_HEADERS = [
   '생성자', '생성일', '수정일',
   // 결재 체계 (2026-05-28 신설)
   '부서장싸인', 'GM싸인', '대표싸인', '결재상태', '결재완료시각',
+  // 결과보고서 자동 생성 (2026-05-29 신설)
+  '결과보고서URL',
   // 난이도 평가 (2026-06-03 신설) — 하1·중2·상3. 담당자 제안 → 부서장 결재단계 확정.
   // append-only: 기존 컬럼 인덱스 불변. initTodoSheet 자동 마이그레이션이 재배포 시 시트에 컬럼 추가.
   '난이도'
@@ -114,7 +116,7 @@ function initTodoSheet() {
   sh.getRange(1, 15, 1, 5).setBackground('#0b8043');
 
   const widths = [130, 200, 130, 80, 100, 100, 300, 70, 70, 200, 200, 80, 130, 130,
-                  130, 130, 130, 100, 150];
+                  130, 130, 130, 100, 150, 200];
   widths.forEach((w, i) => sh.setColumnWidth(i + 1, w));
 
   sh.setFrozenRows(1);
@@ -206,6 +208,97 @@ function _json(obj) {
     .setMimeType(ContentService.MimeType.JSON);
 }
 
+// ═══ GitHub 콘텐츠 파일 중계 (GM 편집 → 자동 커밋·push) — 2026-05-29 ═══
+// 보안: ① 커밋 가능 경로는 coo 하위 .json 으로 한정(코드 조작 차단)
+//       ② EDIT_KEY 일치 필수  ③ 토큰은 ScriptProperties 서버측 보관(브라우저 비노출)
+function _ghHeaders() {
+  const token = _prop('GITHUB_TOKEN');
+  if (!token) return null;
+  return { 'Authorization': 'Bearer ' + token, 'Accept': 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28' };
+}
+function _ghUrl(path) {
+  const repo = _prop('GITHUB_REPO') || 'wellperion-cao/wellperion-automation';
+  const apiPath = String(path).split('/').map(encodeURIComponent).join('/');
+  return 'https://api.github.com/repos/' + repo + '/contents/' + apiPath;
+}
+function _ghPathAllowed(path) {
+  // 가이드허브 coo 하위 .json + cmo 검수 큐 .json 만 허용
+  var p = String(path);
+  if (/^3\. 웰페리온 가이드\/coo\/.+\.json$/.test(p)) return true;
+  if (/^3\. 웰페리온 가이드\/cmo\/review\/.+\.json$/.test(p)) return true;
+  return false;
+}
+function _githubReadFile(path) {
+  const headers = _ghHeaders();
+  if (!headers) return { ok: false, error: 'GITHUB_TOKEN 미설정' };
+  if (!_ghPathAllowed(path)) return { ok: false, error: '허용되지 않은 경로' };
+  const branch = _prop('GITHUB_BRANCH') || 'master';
+  const r = UrlFetchApp.fetch(_ghUrl(path) + '?ref=' + branch, { method: 'get', headers: headers, muteHttpExceptions: true });
+  const code = r.getResponseCode();
+  if (code === 200) {
+    const j = JSON.parse(r.getContentText());
+    const text = Utilities.newBlob(Utilities.base64Decode(j.content)).getDataAsString('UTF-8');
+    return { ok: true, content: text, sha: j.sha };
+  }
+  if (code === 404) return { ok: true, content: '', sha: null };  // 아직 없음
+  return { ok: false, error: 'GitHub ' + code };
+}
+function _githubCommitFile(path, contentText, message, key) {
+  const headers = _ghHeaders();
+  if (!headers) return { ok: false, error: 'GITHUB_TOKEN 미설정 — Apps Script 속성에 추가 필요' };
+  const editKey = _prop('EDIT_KEY');
+  if (editKey && String(key) !== editKey) return { ok: false, error: '편집 키 불일치' };
+  if (!_ghPathAllowed(path)) return { ok: false, error: '허용되지 않은 경로(coo 하위 .json 만 가능)' };
+  const branch = _prop('GITHUB_BRANCH') || 'master';
+  // 현재 sha 조회 (있으면 갱신, 없으면 신규 생성)
+  let sha = null;
+  const getR = UrlFetchApp.fetch(_ghUrl(path) + '?ref=' + branch, { method: 'get', headers: headers, muteHttpExceptions: true });
+  if (getR.getResponseCode() === 200) sha = JSON.parse(getR.getContentText()).sha;
+  const payload = {
+    message: message || ('edit via SSOT ' + _now()),
+    content: Utilities.base64Encode(contentText, Utilities.Charset.UTF_8),
+    branch: branch
+  };
+  if (sha) payload.sha = sha;
+  const putR = UrlFetchApp.fetch(_ghUrl(path), {
+    method: 'put', contentType: 'application/json', headers: headers,
+    payload: JSON.stringify(payload), muteHttpExceptions: true
+  });
+  const code = putR.getResponseCode();
+  if (code === 200 || code === 201) {
+    const j = JSON.parse(putR.getContentText());
+    return { ok: true, commit: (j.commit && j.commit.sha) || null, path: path };
+  }
+  return { ok: false, error: 'GitHub ' + code + ': ' + putR.getContentText().slice(0, 160) };
+}
+
+// ═══ 인스타 검수 큐 status 중계 (검수카드 [승인]/[반려] → GitHub 기록) — 2026-05-30 ═══
+// review_queue.json 에서 해당 id 의 status 를 승인|반려 로 갱신 후 GitHub commit.
+// 토큰은 기존 GITHUB_TOKEN 재사용(서버측 ScriptProperties). 경로는 cmo/review/*.json 만 허용.
+function _reviewSetStatus(id, status, key) {
+  if (!id) return { ok: false, error: 'id 필수' };
+  var allowed = { '승인': true, '반려': true };
+  if (!allowed[status]) return { ok: false, error: 'status 는 승인|반려 만 허용' };
+  var editKey = _prop('EDIT_KEY');
+  if (editKey && String(key) !== editKey) return { ok: false, error: '편집 키 불일치' };
+  var path = '3. 웰페리온 가이드/cmo/review/review_queue.json';
+  var rf = _githubReadFile(path);
+  if (!rf.ok) return { ok: false, error: '큐 읽기 실패: ' + (rf.error || '') };
+  var arr;
+  try { arr = JSON.parse(rf.content || '[]'); } catch (e) { return { ok: false, error: '큐 JSON 파싱 실패' }; }
+  if (!Array.isArray(arr)) return { ok: false, error: '큐 형식 오류(배열 아님)' };
+  var found = false, prev = '';
+  for (var i = 0; i < arr.length; i++) {
+    if (String(arr[i].id) === String(id)) { prev = arr[i].status; arr[i].status = status; found = true; break; }
+  }
+  if (!found) return { ok: false, error: '해당 id 없음: ' + id };
+  var body = JSON.stringify(arr, null, 2) + '\n';
+  var msg = 'review: ' + id + ' status ' + (prev || '?') + '→' + status + ' (검수카드 중계)';
+  var cr = _githubCommitFile(path, body, msg, key);
+  if (!cr.ok) return { ok: false, error: '커밋 실패: ' + (cr.error || '') };
+  return { ok: true, id: id, status: status, prev: prev, commit: cr.commit || null };
+}
+
 // ─── 텔레그램 알림 전면 폐기 (2026-05-28 GM 결재) — 결재 SSOT 페이지 단일 운영 ───
 // 함수 시그니처는 보존 — 향후 복구 시 본체만 복원하면 됨.
 function _notifyTelegram(text, opts) {
@@ -226,7 +319,7 @@ function _deptHeadFor(category) { return CAT_DEPT_HEAD[String(category || '')] |
 // ─── 결재 라인 자동 산출 — 부서장 → GM → 대표 3단계 (2026-06-02 GM 확정 복원) ───
 // 부서장: 카테고리→부서 매핑 시 자동 1단계(매핑 없으면 생략).
 // 결재 필요 여부 = 수동 결재요청 또는 예산(BUDGET 마커) 존재.
-// 담당자=김남욱GM이면 GM 단계 생략 (프론트 buildEffectiveRoute와 동일).
+// 담당자=김남욱GM이면 GM 단계 생략 (본인 결재 중복 방지).
 function _buildApprovalRoute(record) {
   const content = String(record['내용'] || '');
   const hasBudget = /===BUDGET===\s*\n[^|]+\|\s*\d+/.test(content);
@@ -239,10 +332,11 @@ function _buildApprovalRoute(record) {
   var MID = ['이경연 실장','이정헌 소장','나우열M'];
   var midName = _deptHeadFor(record['카테고리']) || manual.filter(function(m){ return MID.indexOf(m) >= 0; })[0] || '';
 
-  // 표준 결재선: (부서장) → GM → 대표님
+  // 표준 결재선: (부서장) → GM → 대표님. 담당자 GM이면 GM 단계 생략.
+  const ownerIsGM = String(record['담당자'] || '').split(',').map(s => s.trim()).indexOf('김남욱GM') >= 0;
   const route = [];
   if (midName) route.push('부서장');
-  route.push('GM');
+  if (!ownerIsGM) route.push('GM');
   route.push('대표님');
   return route;
 }
@@ -290,9 +384,8 @@ function _nextApprover(record, route) {
   return null; // 전원 서명 완료
 }
 
-// ─── 파일 업로드 (Base64 → Drive) ───
-function _uploadFile(base64, fileName, mimeType) {
-  // 폴더 ID 조회 또는 자동 생성
+// ─── TODO_Files Drive 폴더 확보 (없으면 생성) ───
+function _getTodoFolder() {
   let folderId = _prop('TODO_FILES_FOLDER');
   let folder;
 
@@ -315,6 +408,12 @@ function _uploadFile(base64, fileName, mimeType) {
     // 폴더 ID 저장
     PropertiesService.getScriptProperties().setProperty('TODO_FILES_FOLDER', folder.getId());
   }
+  return folder;
+}
+
+// ─── 파일 업로드 (Base64 → Drive) ───
+function _uploadFile(base64, fileName, mimeType) {
+  const folder = _getTodoFolder();
 
   const blob = Utilities.newBlob(
     Utilities.base64Decode(base64),
@@ -325,6 +424,7 @@ function _uploadFile(base64, fileName, mimeType) {
   file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
   return file.getUrl();
 }
+
 
 // ═══════════════════════════════════════════
 //  doGet — 조회
@@ -361,6 +461,25 @@ function doGet(e) {
     // 카테고리 목록 조회
     if (action === 'todo_categories') {
       return _json({ ok: true, data: CATEGORIES });
+    }
+
+    // ─── 콘텐츠 파일 읽기 (GM 편집 페이지용) — 2026-05-29 ───
+    if (action === 'read_file') {
+      const r = _githubReadFile(e.parameter.path || '');
+      return _json(r);
+    }
+
+    // ─── 콘텐츠 파일 커밋 (GM 편집 → GitHub 자동 push) — 2026-05-29 ───
+    if (action === 'commit_file') {
+      const r = _githubCommitFile(e.parameter.path || '', e.parameter.content || '',
+                                  e.parameter.message || '', e.parameter.key || '');
+      return _json(r);
+    }
+
+    // ─── 인스타 검수 status 중계 (검수카드 [승인]/[반려]) — 2026-05-30 ───
+    if (action === 'review_set_status') {
+      const r = _reviewSetStatus(e.parameter.id || '', e.parameter.status || '', e.parameter.key || '');
+      return _json(r);
     }
 
     // POST redirect 우회: URL에 todo_ write action이 오면 doPost 로직 실행
@@ -417,7 +536,7 @@ function _processTodoAction(body) {
       row[13] = now;
       // 결재 컬럼 14~18: 신설 — 결재요청 있으면 '대기', 없으면 빈칸
       row[17] = body['결재요청'] ? '대기' : '';
-      // 난이도(index 19): 담당자 제안값(하/중/상). 부서장 결재단계에서 확정·조정 가능.
+      // 난이도: 담당자 제안값(하/중/상). 부서장 결재단계에서 확정·조정 가능. (index는 indexOf로 안전 산출)
       row[TODO_HEADERS.indexOf('난이도')] = body['난이도'] || '';
       const newRow = sh.getLastRow() + 1;
       sh.getRange(newRow, 1, 1, row.length).setValues([row]);
@@ -455,6 +574,7 @@ function _processTodoAction(body) {
       sh.getRange(rowNum, 1, 1, TODO_HEADERS.length).setValues([existing]);
       _applyStatusColor(sh, rowNum, existing[TODO_HEADERS.indexOf('상태')]);
 
+      // 결과보고서는 자동 생성하지 않음 — 페이지의 "인쇄/PDF 저장" 버튼으로 수동 생성 (2026-05-29 GM 결재)
       // 텔레그램 결재 발송 폐기 (2026-05-28 GM 결재). 결재는 결재 SSOT 페이지에서만 진행.
       return _json({ ok: true, id: id, message: '업무가 수정되었습니다.' });
     }
@@ -479,23 +599,27 @@ function _processTodoAction(body) {
       if (!signCol) return _json({ ok: false, error: '알 수 없는 결재자: ' + role });
 
       // ── 결재 비밀번호 서버 검증 (GM·대표님) — 평문 PIN은 서버 ScriptProperties에만 저장 (2026-05-29 COO 보안) ──
-      // GM 콘솔: 프로젝트 설정 → 스크립트 속성에 PIN 등록 후 사용.
-      //   APPROVAL_PIN_GM(김남욱 GM) · APPROVAL_PIN_REP(전응준 대표)
-      //   APPROVAL_PIN_OPS(이경연 실장) · APPROVAL_PIN_FAC(이정헌 소장) · APPROVAL_PIN_PARTNER(나우열M)
+      // GM 콘솔: 프로젝트 설정 → 스크립트 속성에 APPROVAL_PIN_GM, APPROVAL_PIN_REP 등록 후 사용.
       // 승인·반려 공통 게이트 (이 아래 reject/approve 분기보다 먼저 차단).
       var _pinKey = { 'GM': 'APPROVAL_PIN_GM', '대표님': 'APPROVAL_PIN_REP' }[role];
+      // 부서장 PIN(선택): 카테고리→부서장 매핑으로 키 결정. 속성 미설정 시 PIN 없이 통과(정책 미확정 — GM 확인 포인트, 2026-06-02).
+      var _deptPinOptional = false;
       if (role === '부서장') {
-        // 부서장 PIN 키 = 카테고리→부서장 매핑 우선, 없으면 결재요청에 체크된 본인 이름 (2026-06-02 GM 복원)
         var _MID_PIN = { '이경연 실장':'APPROVAL_PIN_OPS', '이정헌 소장':'APPROVAL_PIN_FAC', '나우열M':'APPROVAL_PIN_PARTNER' };
         var _mid = _deptHeadFor(record['카테고리'])
           || String(record['결재요청'] || '').split(',').map(function(s){ return s.trim(); }).filter(function(m){ return _MID_PIN[m]; })[0];
         _pinKey = (_mid && _MID_PIN[_mid]) ? _MID_PIN[_mid] : null;
+        _deptPinOptional = true;  // 부서장은 속성 미설정 시 차단하지 않음(graceful)
       }
       if (_pinKey) {
         var _expected = _prop(_pinKey);
         var _submitted = String(body.pin || '');
-        if (!_expected) return _json({ ok: false, error: role + ' 결재 비밀번호가 서버에 설정되지 않았습니다(관리자 설정 필요).' });
-        if (_submitted !== _expected) return _json({ ok: false, error: '비밀번호가 일치하지 않습니다.' });
+        // 부서장: PIN 속성 미설정이면 PIN 없이 통과(정책 확정 전 차단 방지). GM/대표는 종전대로 필수.
+        if (!_expected) {
+          if (!_deptPinOptional) return _json({ ok: false, error: role + ' 결재 비밀번호가 서버에 설정되지 않았습니다(관리자 설정 필요).' });
+        } else if (_submitted !== _expected) {
+          return _json({ ok: false, error: '비밀번호가 일치하지 않습니다.' });
+        }
       }
 
       const now = _now();
@@ -520,6 +644,7 @@ function _processTodoAction(body) {
       existing[TODO_HEADERS.indexOf('수정일')] = now;
       sh.getRange(rowNum, 1, 1, TODO_HEADERS.length).setValues([existing]);
 
+      // 결과보고서는 자동 생성하지 않음 — 페이지 "인쇄/PDF 저장" 버튼으로 수동 (2026-05-29 GM 결재)
       // 텔레그램 결재 카드 폐기 (2026-05-28). 단순 진행 알림만 유지.
       if (next) {
         _notifyTelegram('✅ <b>[' + role + ' 싸인 완료]</b> → ' + next + ' 결재 대기\n📌 ' + (record['업무명']||'-') + '\n🆔 ' + id);

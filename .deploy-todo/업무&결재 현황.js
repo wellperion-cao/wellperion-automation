@@ -56,7 +56,10 @@ const TODO_HEADERS = [
   // 결재 체계 (2026-05-28 신설)
   '부서장싸인', 'GM싸인', '대표싸인', '결재상태', '결재완료시각',
   // 결과보고서 자동 생성 (2026-05-29 신설)
-  '결과보고서URL'
+  '결과보고서URL',
+  // 난이도 평가 (2026-06-03 신설) — 하1·중2·상3. 담당자 제안 → 부서장 결재단계 확정.
+  // append-only: 기존 컬럼 인덱스 불변. initTodoSheet 자동 마이그레이션이 재배포 시 시트에 컬럼 추가.
+  '난이도'
 ];
 
 // 카테고리 목록
@@ -501,7 +504,7 @@ function doGet(e) {
 // ═══════════════════════════════════════════
 // 영문 → 한글 필드 매핑
 function _mapFields(body) {
-  const map = {title:'업무명',name:'업무명',category:'카테고리',owner:'담당자',startDate:'시작일',endDate:'종료일',content:'내용',status:'상태',approval:'결재요청',link:'링크',fileUrl:'파일URL',creator:'생성자'};
+  const map = {title:'업무명',name:'업무명',category:'카테고리',owner:'담당자',startDate:'시작일',endDate:'종료일',content:'내용',status:'상태',approval:'결재요청',link:'링크',fileUrl:'파일URL',creator:'생성자',difficulty:'난이도'};
   Object.keys(map).forEach(en => { if (body[en] !== undefined && !body[map[en]]) body[map[en]] = body[en]; });
   return body;
 }
@@ -533,6 +536,8 @@ function _processTodoAction(body) {
       row[13] = now;
       // 결재 컬럼 14~18: 신설 — 결재요청 있으면 '대기', 없으면 빈칸
       row[17] = body['결재요청'] ? '대기' : '';
+      // 난이도: 담당자 제안값(하/중/상). 부서장 결재단계에서 확정·조정 가능. (index는 indexOf로 안전 산출)
+      row[TODO_HEADERS.indexOf('난이도')] = body['난이도'] || '';
       const newRow = sh.getLastRow() + 1;
       sh.getRange(newRow, 1, 1, row.length).setValues([row]);
       _applyStatusColor(sh, newRow, row[7]);
