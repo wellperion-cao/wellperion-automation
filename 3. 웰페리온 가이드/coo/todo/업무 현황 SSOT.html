@@ -723,10 +723,16 @@ function buildFilters() {
   let si = document.getElementById('searchInput');
   if (!si) {
     searchEl.innerHTML =
-      '<input type="text" id="searchInput" placeholder="업무명·내용·담당자 검색" oninput="setSearchQuery(this.value)" style="flex:1;background:var(--paper);border:1px solid var(--border);color:var(--text);padding:7px 12px;border-radius:8px;font-size:13px;font-family:inherit;">'
+      '<input type="text" id="searchInput" placeholder="업무명·내용·담당자 검색" style="flex:1;background:var(--paper);border:1px solid var(--border);color:var(--text);padding:7px 12px;border-radius:8px;font-size:13px;font-family:inherit;">'
       + '<button type="button" id="searchClearBtn" class="filter-btn" onclick="clearSearch()" style="display:none;">✕ 초기화</button>';
     si = document.getElementById('searchInput');
-    si.value = searchQuery;  // 최초 1회만 (딥링크 q 반영) — 조합 중이 아니므로 안전
+    si.value = searchQuery;  // 최초 1회만 (딥링크 q 반영)
+    // 한글 IME: 조합 중(compositionstart~end)에는 재렌더 금지 — 조합 중 input→renderTasks가 자모 'ㄱ' 잔존 버그 유발(2026-06-03 GM).
+    // 조합 끝(compositionend)·일반(영문 등) 입력에서만 검색 실행.
+    var _composing = false;
+    si.addEventListener('compositionstart', function(){ _composing = true; });
+    si.addEventListener('compositionend', function(){ _composing = false; setSearchQuery(si.value); });
+    si.addEventListener('input', function(){ if (!_composing) setSearchQuery(si.value); });
   }
   // 초기화 버튼만 토글 (input 요소는 손대지 않음 → 조합 유지)
   const clearBtn = document.getElementById('searchClearBtn');
