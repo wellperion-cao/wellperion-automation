@@ -303,10 +303,10 @@ async def run_setup() -> int:
     page = await context.new_page()
     await page.goto(DANGGN_BIZ_URL, wait_until="domcontentloaded", timeout=30_000)
     print("[INFO] 브라우저에서 당근 로그인을 완료하세요 — 로그인 감지 시 자동 저장됩니다.")
-    print("[INFO] (Enter 불필요. 최대 5분 대기, 로그인 끝나면 자동 마무리)")
+    print("[INFO] (Enter 불필요. 최대 10분 대기 — OAuth 로그인 시간 여유. 비즈프로필 홈 도달 시 자동 마무리)")
 
     has_session = False
-    waited, deadline = 0, 300  # 초
+    waited, deadline = 0, 600  # 초 (당근비즈 OAuth 로그인 여유 — 2026-06-03)
     while waited < deadline:
         try:
             current_url = page.url
