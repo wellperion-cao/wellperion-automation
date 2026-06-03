@@ -8409,8 +8409,8 @@ function crTab(btn, panelId) {
       style.textContent =
         '#gm1ResultReportPrint{display:none}' +
         '@media print {' +
-        '  [data-print-mode="gm1result"] body > *:not(#gm1ResultReportPrint){display:none!important}' +
-        '  [data-print-mode="gm1result"] #gm1ResultReportPrint{display:block!important}' +
+        '  body[data-print-mode="gm1result"] > *:not(#gm1ResultReportPrint){display:none!important}' +
+        '  body[data-print-mode="gm1result"] #gm1ResultReportPrint{display:block!important}' +
         '  .gm1rr-page{font-family:"Malgun Gothic",sans-serif;color:#111;font-size:11px;line-height:1.6;padding:0}' +
         '  .gm1rr-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:14px;padding-bottom:10px;border-bottom:2px solid #111}' +
         '  .gm1rr-wordmark{font-size:15px;font-weight:900;letter-spacing:0.18em;text-transform:uppercase;color:#111}' +
