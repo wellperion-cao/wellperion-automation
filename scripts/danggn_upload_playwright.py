@@ -41,13 +41,14 @@ ROOT = Path(r"C:\Users\jjky0\welperion-automation")
 PERSISTENT_PROFILE_DIR = ROOT / "profiles" / "danggn"  # 당근 비즈 로그인 세션
 EVIDENCE_DIR = ROOT / "scripts" / "poc-evidence"
 
-# 당근 비즈 홈. 미로그인 시 로그인 페이지로 이동한다.
-# setup은 비즈 홈으로 goto 후 "로그인 페이지 이탈(biz.daangn.com 안착) + 쿠키 존재"를 세션 시그널로 본다.
-DANGGN_BIZ_URL = "https://biz.daangn.com/"
+# 당근 비즈프로필 관리 홈 (GM 제공 2026-06-03). 미로그인 시 로그인 페이지로 이동한다.
+# setup은 이 URL로 goto 후 "로그인 페이지 이탈(bizprofile.daangn.com 안착) + 쿠키 존재"를 세션 시그널로 본다.
+DANGGN_BIZ_ACCOUNT_ID = "2769927"  # 웰페리온 당근 비즈계정 ID
+DANGGN_BIZ_URL = f"https://bizprofile.daangn.com/biz_accounts/{DANGGN_BIZ_ACCOUNT_ID}/manager/home/"
 # 로그인 페이지(미인증 상태) 시그널 — URL 기반
-LOGIN_REDIRECT_SIGNALS = ("/login", "accounts.daangn.com", "logon", "auth.daangn.com")
-# 로그인 성공 안착 시그널 — 비즈 홈 도메인으로 돌아옴
-SESSION_LANDED_HOST = "biz.daangn.com"
+LOGIN_REDIRECT_SIGNALS = ("/login", "accounts.daangn.com", "logon", "auth.daangn.com", "nid.daangn.com")
+# 로그인 성공 안착 시그널 — 비즈프로필 도메인으로 돌아옴
+SESSION_LANDED_HOST = "bizprofile.daangn.com"
 
 # 콘텐츠 소스 — instagram/{폴더}/output(당근)/ + danggn_copy.md
 OUTPUT_SUBDIR_NAME = "output(당근)"
