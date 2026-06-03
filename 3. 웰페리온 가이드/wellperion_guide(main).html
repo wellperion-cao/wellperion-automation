@@ -631,17 +631,17 @@
     <!-- AUTO:LATEST-START -->
     <div class="card grow">
       <h4>최신 업데이트 — 2026-06-03 (자동 갱신)</h4>
+      <p><strong>2026-06-03</strong> fix(cmo): M5 #4 미리보기 캐시 우회 — preview 파일명 v2로 교체</p>
       <p><strong>2026-06-03</strong> fix(cmo): AI #4 마지막장 슬로건 교체 — 'AI를 다루는 대표가 살아남는다' (GM 지시, 검수대기 유지)</p>
       <p><strong>2026-06-03</strong> fix(cmo): 네이버 setup 시작 시 기존 세션 비움 — 옛 계정 즉시감지로 조기종료 방지</p>
       <p><strong>2026-06-03</strong> feat(coo): S4 진행 업무 건수 SSOT 시트 실시간 자동 동기화</p>
       <p><strong>2026-06-03</strong> fix(cmo): 네이버 블로그·카페 setup 로그인 자동 감지로 전환 (Enter 의존 제거)</p>
-      <p><strong>2026-06-03</strong> fix(cmo): M5 #4 카드 미리보기 누락 수정 — montage를 cmo/review로 복사 + preview 필드 추가</p>
     </div>
 <!-- AUTO:LATEST-END -->
         <table>
           <tr><th style="width:160px">날짜</th><th>변경 내용</th></tr>
           <!-- AUTO:TABLE-START -->
-      <tr><td><strong>2026-06-03 (자동)</strong></td><td>fix(cmo): AI #4 마지막장 슬로건 교체 — 'AI를 다루는 대표가 살아남는다' (GM 지시, 검수대기 유지) · fix(cmo): 네이버 setup 시작 시 기존 세션 비움 — 옛 계정 즉시감지로 조기종료 방지 · feat(coo): S4 진행 업무 건수 SSOT 시트 실시간 자동 동기화 · fix(cmo): 네이버 블로그·카페 setup …</td></tr>
+      <tr><td><strong>2026-06-03 (자동)</strong></td><td>fix(cmo): M5 #4 미리보기 캐시 우회 — preview 파일명 v2로 교체 · fix(cmo): AI #4 마지막장 슬로건 교체 — 'AI를 다루는 대표가 살아남는다' (GM 지시, 검수대기 유지) · fix(cmo): 네이버 setup 시작 시 기존 세션 비움 — 옛 계정 즉시감지로 조기종료 방지 · feat(coo): S4 진행 업무 건…</td></tr>
       <!-- AUTO:TABLE-END -->
           <tr><td><strong>2026-05-28 (14차)</strong></td><td>공지/안내문 생성(COO 하위) · 오프라인 홍보물 디자인 제작(CMO 하위) 도구 신설 · 공지 서식 v2.0 독립 페이지화 · 회사소개서·전략로드맵 원본 「3. 웰페리온 가이드/회사문서/」로 이관(SSOT 단일화) · C-Level 부팅 R/R Notion API→가이드허브 g10 참조로 전환 · GitHub Pages 워크플로 폴더명 경로 수정 · 사이드바 "공통+7개 C-Level" 라벨 제거</td></tr>
           <tr><td>2026-05-27 (13차)</td><td>GitHub Pages 전환 · 사이드바 4섹터 · AI C-Level 통일 · 운영 통합 체계 · 공식채널·지출현황·취업규칙·SSOT 신설 · g2+g19·g9+g20·g12·g13 합병 · 김남욱 탭 확장 · v2.5</td></tr>
@@ -4471,26 +4471,46 @@ Start-Process python -ArgumentList telegram_bot\daily_scheduler.py -WorkingDirec
     .then(function(j){ if (!j) return; if (j.reporting != null){ LAST_NOTES.reporting = j.reporting; fill('hubReportingView', j.reporting); } if (j.notes != null){ LAST_NOTES.notes = j.notes; fill('hubNotesView', j.notes); } })
     .catch(function(){ /* 기본 텍스트 유지 */ });
 
-  // 진행 업무 실시간 집계 — 업무 현황 SSOT 시트와 동일 기준(실무진 담당·미완·미보류, '업무 현황 SSOT.html' buildFilters와 1:1).
-  // SSOT가 바뀌면 이 줄이 자동으로 따라가므로 수동 카운트 불일치 사고가 사라진다 (2026-06-03 GM 지시).
-  (function loadLiveCount(){
+  // ⭐ 핵심 KPI 스트립 — 업무·결재 SSOT 대시보드 핵심 지표를 todo_list 한 번 호출로 집계해 최상단 표시.
+  // 집계 기준은 각 SSOT 대시보드와 1:1 (업무=업무 현황 SSOT renderDashboard / 결재=결재 현황 SSOT renderApprovalDashboard).
+  // SSOT가 바뀌면 카드가 자동으로 따라가므로 수동 수치 불일치 사고가 사라진다 (2026-06-03 GM 지시).
+  (function loadKpiStrip(){
+    var WORK_URL = 'https://wellperion-cao.github.io/wellperion-automation/coo/todo/%EC%97%85%EB%AC%B4%20%ED%98%84%ED%99%A9%20SSOT.html';
+    var APPR_URL = 'https://wellperion-cao.github.io/wellperion-automation/coo/todo/%EA%B2%B0%EC%9E%AC%20%ED%98%84%ED%99%A9%20SSOT.html';
     var STAFF = ['이경연 실장','나우열M','최준용M','임정은M','윤병현AM','이지영 사원','이정헌 소장'];
-    function isStaff(owner){
-      return String(owner || '').split(',').map(function(s){ return s.trim(); }).filter(Boolean)
-        .some(function(o){ return STAFF.indexOf(o) >= 0; });
+    function isStaff(o){ return String(o||'').split(',').map(function(s){return s.trim();}).filter(Boolean).some(function(x){ return STAFF.indexOf(x) >= 0; }); }
+    function st(r){ return r.status || r['상태'] || '진행중'; }
+    function as(r){ return r['결재상태'] || r.approvalStatus || ''; }
+    function req(r){ return r['결재요청'] || r.approval || ''; }
+    function fail(){ var el = document.getElementById('s4KpiCards'); if (el) el.innerHTML = '<div style="color:var(--dim);font-size:13px;padding:10px 2px;">집계 불러오기 실패 — 업무·결재 현황 SSOT에서 직접 확인</div>'; }
+    function card(num, label, color, href, tag){
+      return '<a href="' + href + '" target="_blank" title="' + tag + ' 열기" '
+        + 'style="flex:1;min-width:104px;text-decoration:none;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:12px 10px;text-align:center;display:block;">'
+        + '<div style="font-size:24px;font-weight:700;color:' + color + ';">' + num + '</div>'
+        + '<div style="font-size:11px;color:var(--text);margin-top:2px;font-weight:600;">' + label + '</div>'
+        + '<div style="font-size:9px;color:var(--dim);opacity:0.75;margin-top:3px;letter-spacing:0.03em;">' + tag + '</div></a>';
     }
-    function fail(){ var el = document.getElementById('hubLiveCount'); if (el) el.textContent = '집계 불러오기 실패 — 업무 현황 SSOT에서 직접 확인'; }
     api({ action: 'todo_list' })
       .then(function(res){
-        var el = document.getElementById('hubLiveCount'); if (!el) return;
+        var el = document.getElementById('s4KpiCards'); if (!el) return;
         if (!res || !res.ok || !Array.isArray(res.data)){ fail(); return; }
-        var active = res.data.filter(function(r){
-          var st = r.status || r['상태'] || '진행중';
-          return st !== '완료' && st !== '보류' && isStaff(r.owner || r['담당자'] || '');
-        });
-        var d = new Date(); var hhmm = String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
-        el.innerHTML = '• 현재 진행 업무 <b style="color:var(--accent);">' + active.length + '건</b>'
-          + ' <span style="color:var(--dim);font-size:12px;">(실무진 기준 · 완료/보류 제외 · ' + hhmm + ' 집계)</span>';
+        var rows = res.data;
+        // 업무 KPI (실무진 기준)
+        var work = rows.filter(function(r){ return isStaff(r.owner || r['담당자'] || ''); });
+        var workActive = work.filter(function(r){ return st(r) !== '완료' && st(r) !== '보류'; });
+        var workDone = work.filter(function(r){ return st(r) === '완료'; });
+        var workRate = work.length ? Math.round(workDone.length / work.length * 100) : 0;
+        // 결재 KPI (결재상태 또는 결재요청 있는 건)
+        var appr = rows.filter(function(r){ return String(as(r)).trim() || String(req(r)).trim(); });
+        var apprDone = appr.filter(function(r){ return as(r) === '결재완료'; });
+        var apprRej  = appr.filter(function(r){ return /반려/.test(as(r)); });
+        var apprPend = appr.filter(function(r){ return as(r) !== '결재완료' && !/반려/.test(as(r)); });
+        el.innerHTML =
+            card(workActive.length, '진행 업무', 'var(--accent)', WORK_URL, '업무 SSOT')
+          + card(workRate + '%', '완료율', 'var(--grow)', WORK_URL, '업무 SSOT')
+          + card(apprPend.length, '결재 대기', 'var(--warm)', APPR_URL, '결재 SSOT')
+          + card(apprDone.length, '결재 완료', 'var(--grow)', APPR_URL, '결재 SSOT')
+          + card(apprRej.length, '반려', 'var(--dim)', APPR_URL, '결재 SSOT');
       })
       .catch(fail);
   })();
