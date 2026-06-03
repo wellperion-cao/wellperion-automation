@@ -1847,13 +1847,9 @@
         </div>
 
         <details class="toggle" style="margin:12px 0;">
-          <summary style="font-weight:700;"><span class="ico">🔧</span>① 컨텍스트 정비·자기학습 실행 (클릭해서 펼치기)</summary>
+          <summary style="font-weight:700;"><span class="ico">🔧</span>① 컨텍스트 정비·자기학습 — 범위·원칙 (클릭해서 펼치기)</summary>
           <div class="toggle-body">
-            <p style="font-size:13px;color:var(--dim);">매주 월 09:00 주간 정비(아래 범위표)와 자기학습 사이클에서 세션에 직접 붙여넣어 사용. STEP 1~5(스캔→단순화→자동화→고도화→통합) 단일 실행 프롬프트. <strong>상세 STEP 1~5 정의·진단 기준 = T4 업무자동화SSOT ▸ 6 C-Level 컨텍스트 정비 참조</strong>(상세 원본은 T4 단일).</p>
-            <h4>컨텍스트 정비 실행 (STEP 1~5)</h4>
-            <pre style="background:#16181c; color:#e8e8e8; padding:14px 16px; border-radius:8px; font-size:13px; white-space:pre-wrap; line-height:1.7; border-left:3px solid var(--accent);">각 AI C-Level의 컨텍스트 파일(.md·.json·.log)을 스캔→단순화→자동화→고도화→통합 제안 5단계로 정비해줘. 고위험 작업은 제안만, GM 승인 후 반영.</pre>
-            <h4>자기학습 사이클 실행</h4>
-            <pre style="background:#16181c; color:#e8e8e8; padding:14px 16px; border-radius:8px; font-size:13px; white-space:pre-wrap; line-height:1.7; border-left:3px solid var(--accent);">ai_education_auto_learner.py를 실행해서 최신 AI 정보를 수집·요약한 뒤, 각 C-Level R/R 기준으로 고도화 제안을 정리해줘. 제안은 텔레그램으로 GM님께 발송.</pre>
+            <p style="font-size:13px;color:var(--dim);">누가 무엇을 정비하나(R/R)는 아래 범위표에 정의됩니다. 실제 실행 프롬프트(STEP 1~5 정비·자기학습 사이클)는 기술 실행 도구이므로 <strong>T2 기술 인프라 상세 ▸ 핵심 프롬프트 ▸ 운영 실행 도구</strong>에서 관리합니다.</p>
           </div>
         </details>
 
@@ -1890,7 +1886,7 @@
 
         <!-- ══ 주간 컨텍스트 정비 범위표 (T5 g15에서 복제 이동 — STAGE 1) ══ -->
         <h3 style="margin-top:32px;border-top:1px solid var(--border);padding-top:24px;"><span class="ico">🗂️</span>주간 컨텍스트 정비 범위 (매주 월 09:00)</h3>
-        <div class="callout"><strong>반자동 실행 모델 v2 (2026-06-02 GM 확정 · 이 흐름이 SSOT).</strong> 월요일 알림 → 세션에서 사람이 실행 → CEO가 모아 한 번에 보고하는 구조. 6 C-Level 각각이 아래 범위표 기준으로 본인 영역을 정비(위 운영 프롬프트 ① STEP 1~5를 세션에서 직접 수행)하고, 정비 전·후 + 발견·개선안을 CEO에 보고. CEO는 6건을 모아 GM께 1회 통합 보고.</div>
+        <div class="callout"><strong>반자동 실행 모델 v2 (2026-06-02 GM 확정 · 이 흐름이 SSOT).</strong> 월요일 알림 → 세션에서 사람이 실행 → CEO가 모아 한 번에 보고하는 구조. 6 C-Level 각각이 아래 범위표 기준으로 본인 영역을 정비(실행 프롬프트 STEP 1~5는 T2 기술 인프라 상세 ▸ 핵심 프롬프트 ▸ 운영 실행 도구 참조)하고, 정비 전·후 + 발견·개선안을 CEO에 보고. CEO는 6건을 모아 GM께 1회 통합 보고.</div>
         <div class="callout"><strong>식별자 SSOT.</strong> 아래 범위표의 식별자(CMO-002·CPO-002·COO-001·CHRO-005·CFO-004·CTO-003)가 단일 기준입니다. (<code>status/schedule.json</code>의 코드·작업스케줄러 이름 등은 내부 부품일 뿐 식별자 SSOT가 아닙니다.)</div>
         <table>
           <tr><th>C-Level</th><th>식별자</th><th>정비 범위</th><th>체크포인트</th></tr>
@@ -3403,6 +3399,19 @@ Start-Process python -ArgumentList telegram_bot\daily_scheduler.py -WorkingDirec
         <div style="padding:13px 16px; background:#16181c; border-radius:8px; border-left:3px solid var(--accent);">
           <div style="font-size:12px; font-weight:700; color:var(--accent); margin-bottom:6px;">전체 인프라 상태 보고</div>
           <pre style="margin:0; color:#e8e8e8; font-size:12.5px; white-space:pre-wrap; line-height:1.6;">가이드허브 g16 기술 인프라 기준으로 텔레그램봇·스크립트·경로·Watcher·체크리스트 API 상태를 전수 점검하고 이상을 보고해줘.</pre>
+        </div>
+
+        <h4 style="margin-top:22px; padding-top:16px; border-top:1px solid var(--border);">운영 실행 도구</h4>
+        <p style="font-size:12.5px; color:var(--dim); margin-bottom:12px;">정기 정비·자기학습을 실제로 돌리는 실행 프롬프트. 누가 무엇을 정비하나(R/R·범위표)는 S2 운영 가이드 ▸ 공통 ▸ 주간 컨텍스트 정비 범위 참조.</p>
+
+        <div style="margin-bottom:16px; padding:13px 16px; background:#16181c; border-radius:8px; border-left:3px solid var(--accent);">
+          <div style="font-size:12px; font-weight:700; color:var(--accent); margin-bottom:6px;">컨텍스트 정비 실행 (STEP 1~5)</div>
+          <pre style="margin:0; color:#e8e8e8; font-size:12.5px; white-space:pre-wrap; line-height:1.6;">각 AI C-Level의 컨텍스트 파일(.md·.json·.log)을 스캔→단순화→자동화→고도화→통합 제안 5단계로 정비해줘. 고위험 작업은 제안만, GM 승인 후 반영.</pre>
+        </div>
+
+        <div style="padding:13px 16px; background:#16181c; border-radius:8px; border-left:3px solid var(--accent);">
+          <div style="font-size:12px; font-weight:700; color:var(--accent); margin-bottom:6px;">자기학습 사이클 실행</div>
+          <pre style="margin:0; color:#e8e8e8; font-size:12.5px; white-space:pre-wrap; line-height:1.6;">ai_education_auto_learner.py를 실행해서 최신 AI 정보를 수집·요약한 뒤, 각 C-Level R/R 기준으로 고도화 제안을 정리해줘. 제안은 텔레그램으로 GM님께 발송.</pre>
         </div>
       </div>
     </div>
