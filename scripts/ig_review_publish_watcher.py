@@ -139,8 +139,8 @@ def save_queue(items: list) -> None:
     QUEUE.write_text(json.dumps(items, ensure_ascii=False, indent=2), encoding="utf-8")
 
 
-def publish_item(it: dict) -> str | None:
-    """발행 서브프로세스 실행 → 게시 URL 반환(실패 시 None).
+def publish_item(it: dict) -> tuple[str | None, int]:
+    """발행 서브프로세스 실행 → (게시 URL|None, exit code) 반환.
     it 에서 folder / location / mentions / account / collaborators 를 추출해 발행기에 CLI 인자로 전달."""
     folder: str = it.get("folder", "")
     location: str = it.get("location", "").strip()
@@ -176,7 +176,8 @@ def publish_item(it: dict) -> str | None:
     out = (proc.stdout or "") + (proc.stderr or "")
     print(out)
     m = POST_URL_RE.search(out)
-    return m.group(1).rstrip("/") + "/" if m else None
+    url = m.group(1).rstrip("/") + "/" if m else None
+    return url, proc.returncode
 
 
 def publish_blog(it: dict) -> tuple[bool, str | None]:
@@ -298,14 +299,20 @@ def dispatch_publish(it: dict, events: list) -> None:
         events.append(f"📦 {title}: 수동 업로드 대기(GM) [{ch}]")
 
     else:
-        # 기존 IG 경로 — publish_item 결과(URL) 기준으로 성공 판정
-        url = publish_item(it)
+        # 기존 IG 경로 — publish_item 결과(URL, exit code) 기준으로 성공 판정
+        url, rc = publish_item(it)
         if url:
             it["status"] = "발행완료"
             it["post_url"] = url
             it["published_at"] = datetime.now().isoformat(timespec="seconds")
             it.pop("note", None)
             events.append(f"✅ {title} 발행 완료 — {url}")
+        elif rc == 9:
+            # (FIX2) 확인필요 — 성공 토스트는 떴으나 그리드 신규 shortcode 윈도우 내 미확정.
+            # 발행됐을 가능성 높음 → '발행실패' 단정·자동 재발행 금지(중복 방지). GM 수동 URL 확인.
+            it["status"] = "확인필요"
+            it["note"] = "발행됐을 가능성 높음(검증 캐시지연) — 게시물 직접 확인 후 발행완료/재승인 결정. 자동 재발행 안 함."
+            events.append(f"🔎 {title}: 발행 확인필요 — URL 수동확인(중복발행 금지)")
         else:
             it["status"] = "발행실패"
             it["note"] = "게시 URL 미회수 — 수동 점검 필요"

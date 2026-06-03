@@ -291,6 +291,11 @@ def collect_post_images(content_folder: Path, slot: str) -> list[Path]:
        영상(mp4)은 항상 마지막 슬롯으로 정렬.
     2) post_{slot}_N 매칭 없으면 ig_NN 형식 fallback (바레 등 단일 슬롯 폴더).
        ig_NN.jpg/png/mp4 파일을 숫자 순으로 수집하고 mp4는 가장 뒤로 이동.
+    3) (FIX1) ig_NN 도 없으면 슬롯 글자 없는 평이름 post_N 형식 fallback.
+       build_slides.py 가 재빌드하며 post_A_* 를 지우고 post_N.jpg 만 남겨도
+       단일 슬롯(post A) 콘텐츠가 발행 가능하게. mp4 는 항상 뒤로.
+       (post_{slot}_N 과 평이름 post_N 의 정규식 충돌 없음 — 1차는 슬롯 글자 필수,
+        3차는 'post_' 뒤 숫자 시작만 매칭.)
     """
     output_dir = content_folder / "output"
     if not output_dir.exists():
@@ -340,6 +345,28 @@ def collect_post_images(content_folder: Path, slot: str) -> list[Path]:
         # 영상은 항상 마지막 슬롯
         return [p for _, p in ig_images] + [p for _, p in ig_videos]
 
+    # --- 3) (FIX1) 평이름 post_N 형식 fallback (슬롯 글자 없음) ---
+    # build_slides 재빌드가 post_A_* 를 지우고 post_1.jpg..post_N.jpg 만 남긴 경우.
+    # 'post_' 직후가 숫자인 것만 매칭 → post_A_1 등 슬롯형은 1차에서 이미 처리되어 충돌 없음.
+    plain_pattern = re.compile(r"^post_(\d+)", re.IGNORECASE)
+    plain_images: list[tuple[int, Path]] = []
+    plain_videos: list[tuple[int, Path]] = []
+    for p in output_dir.iterdir():
+        if not p.is_file() or p.suffix.lower() not in ALLOWED_EXTS:
+            continue
+        m = plain_pattern.match(p.name)
+        if m:
+            idx = int(m.group(1))
+            if p.suffix.lower() in VIDEO_EXTS:
+                plain_videos.append((idx, p))
+            else:
+                plain_images.append((idx, p))
+    if plain_images or plain_videos:
+        plain_images.sort(key=lambda t: t[0])
+        plain_videos.sort(key=lambda t: t[0])
+        # 영상은 항상 마지막 슬롯
+        return [p for _, p in plain_images] + [p for _, p in plain_videos]
+
     return []
 
 
@@ -362,7 +389,7 @@ def validate_post_spec(spec: PostSpec) -> list[str]:
         slot_label = spec.slot
         errors.append(
             f"post {slot_label}: 파일 미존재 "
-            f"(output/post_{slot_label}_*.jpg/mp4 또는 ig_NN.jpg/mp4)"
+            f"(output/post_{slot_label}_*.jpg/mp4 또는 ig_NN.jpg/mp4 또는 post_N.jpg/mp4)"
         )
     if not spec.caption.strip() and not spec.hashtags:
         errors.append(f"post {spec.slot}: 캡션·해시태그 모두 비어 있음")
@@ -808,13 +835,14 @@ async def run_publish(
             spec = posts[slot]
             print(f"\n[INFO] ── post {slot} 발행 시작 ── images={len(spec.image_paths)} / collab={len(spec.collaborators)}")
             try:
-                url = await _publish_single_post(page, spec, content_folder, location=location, mentions=mentions, account=account)
+                url, outcome = await _publish_single_post(page, spec, content_folder, location=location, mentions=mentions, account=account)
             except Exception as e:
                 print(f"[ERROR] post {slot} 발행 예외: {e}")
-                # 자동 재시도 1회 (지시 v1.0)
+                # 자동 재시도 1회 (지시 v1.0) — 예외(UI 크래시)에만 재시도.
+                # (FIX2) '확인필요' 는 예외가 아니라 정상 반환이므로 여기로 오지 않음 = 중복 발행 안 됨.
                 print(f"[INFO] post {slot} 자동 재시도 1회 시작")
                 try:
-                    url = await _publish_single_post(page, spec, content_folder, location=location, mentions=mentions, account=account)
+                    url, outcome = await _publish_single_post(page, spec, content_folder, location=location, mentions=mentions, account=account)
                 except Exception as e2:
                     print(f"[ERROR] post {slot} 재시도 실패: {e2}")
                     telegram_report(
@@ -823,17 +851,35 @@ async def run_publish(
                     await context.close()
                     sys.exit(7)
 
-            if not url:
-                # (수정 4) 신규 shortcode 미확인 = 게시 미확정. review_queue 발행완료 기록 절대 금지.
-                # exit 비0 + 텔레그램 실패 보고 (토큰 stdout 노출 금지 — telegram_report 내부 처리).
+            if outcome == "확인필요":
+                # (FIX2) 토스트 확인됐으나 신규 shortcode 미확정 → 발행됐을 가능성 높음.
+                # '발행실패'로 단정·재시도 절대 금지(중복 발행 사고 방지). review_queue 도
+                # '발행완료'로 갱신하지 않음(URL 없음). status='확인필요' 안내만.
                 print(
-                    f"[ERROR] post {slot} 신규 게시물(shortcode) 미확인 → 게시 실패로 판정 "
+                    f"[WARN] post {slot} 확인필요 — 성공 토스트는 떴으나 신규 shortcode 윈도우 내 미확정. "
+                    f"발행됐을 가능성 높음 → URL 수동확인 필요. (재시도/발행실패 단정 안 함)"
+                )
+                telegram_report(
+                    f"⚠️ AI CTO 인스타 publish 확인필요 — 발행됐을 가능성 높음\n"
+                    f"post: {slot}\n폴더: {content_folder.name}\n"
+                    f"조치: 성공 토스트 확인 / 신규 shortcode 윈도우 내 미회수 → "
+                    f"프로필에서 게시물 URL 수동 확인 요망 (재발행 금지)"
+                )
+                await context.close()
+                # exit 비0(미확정) 이되, '실패' 와 구분되는 코드(9)로 종료.
+                sys.exit(9)
+
+            if not url:
+                # (수정 4) 신규 shortcode 미확인 + 토스트도 없음 = 게시 미확정(발행실패).
+                # review_queue 발행완료 기록 절대 금지. exit 비0 + 텔레그램 실패 보고.
+                print(
+                    f"[ERROR] post {slot} 신규 게시물(shortcode)·성공 토스트 모두 미확인 → 게시 실패로 판정 "
                     f"(false-positive 사고 재발 방지 — exit 0/핀글 URL 단정 금지). review_queue 갱신 안 함."
                 )
                 telegram_report(
-                    f"⛔ AI CTO 인스타 publish 실패 — 신규 게시물 미확인\n"
+                    f"⛔ AI CTO 인스타 publish 실패 — 게시 미확정\n"
                     f"post: {slot}\n폴더: {content_folder.name}\n"
-                    f"조치: 그리드 신규 shortcode 미등장 → 발행완료 미기록 (수동 확인 필요)"
+                    f"조치: 성공 토스트·신규 shortcode 모두 미등장 → 발행완료 미기록 (수동 확인 필요)"
                 )
                 await context.close()
                 sys.exit(8)
@@ -872,8 +918,16 @@ async def _publish_single_post(
     location: str = "",
     mentions: list[str] | None = None,
     account: str = DEFAULT_ACCOUNT,
-) -> str | None:
-    """단일 post 발행. 게시 URL 반환 (실패 시 None)."""
+) -> tuple[str | None, str]:
+    """단일 post 발행. (게시 URL, outcome) 반환.
+
+    outcome (FIX2 — 3분류):
+      "발행완료"  — 신규 shortcode 확인(URL 회수 성공). url=실게시 URL.
+      "확인필요"  — 성공 토스트는 떴으나 윈도우 내 신규 shortcode 미확정.
+                    발행됐을 가능성 높음 → '발행실패'로 단정·재시도 금지(중복 발행 방지).
+                    url=None, 상위에서 status='확인필요'로 기록 + 수동 URL 확인 안내.
+      "발행실패"  — 토스트도 신규 shortcode 도 없음(게시 미확정 가능성). url=None.
+    """
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     evidence_prefix = EVIDENCE_DIR / f"instagram-publish-{content_folder.name}-post{spec.slot}-{timestamp}"
 
@@ -1035,17 +1089,20 @@ async def _publish_single_post(
         )
     await page.screenshot(path=str(evidence_prefix.with_suffix(".post_share.png")))
 
-    # (수정 1+2) 확정 검증: 발행계정 그리드에 '발행 전엔 없던' 신규 shortcode 등장 폴링.
+    # (수정 1+2 · FIX2) 확정 검증: 발행계정 그리드에 '발행 전엔 없던' 신규 shortcode 등장 폴링.
     # 토스트가 확인됐어도 실게시 URL(신규 shortcode) 회수를 끝까지 시도한다.
-    # 신규 shortcode 가 끝내 없으면 None 반환 → 상위에서 실패 처리(성공 단정 금지).
-    grid_polls = 6 if toast_confirmed else max(1, (MAX_WAIT_SEC - waited) // 5)
+    # FIX2: 캐시 지연 오탐 방지를 위해 폴링 윈도우 확대(총 대기 ~90s).
+    #       각 폴 사이 ~5s 대기 × 18회 = 약 90s. (구: 6회×5s≈30s)
+    #       _collect_grid_shortcodes 가 매 폴마다 캐시 우회 reload 하므로 캐시지연을 흡수.
+    GRID_POLL_INTERVAL_MS = 5000
+    grid_polls = 18 if toast_confirmed else max(1, (MAX_WAIT_SEC - waited) // 5)
     new_url: str | None = None
     for attempt in range(grid_polls):
         new_url = await _capture_new_post_url(page, account, before_shortcodes)
         if new_url:
             break
         if attempt < grid_polls - 1:
-            await page.wait_for_timeout(5000)
+            await page.wait_for_timeout(GRID_POLL_INTERVAL_MS)
             print(f"[INFO]   신규 shortcode 미등장 — 재폴링 ({attempt + 1}/{grid_polls})")
 
     # (수정 5: 2026-06-02 false-negative 사고 재발방지)
@@ -1060,7 +1117,19 @@ async def _publish_single_post(
             "(그리드 스크랩 false-negative 가드)"
         )
         new_url = await _verify_via_latest_post(page, account, attempt_started_utc)
-    return new_url
+
+    # (FIX2) outcome 3분류 — 신규 shortcode 미확정 시 '발행실패' 단정 금지.
+    if new_url:
+        return new_url, "발행완료"
+    if toast_confirmed:
+        # 성공 토스트는 떴는데 신규 shortcode 를 윈도우 내 못 잡음 = 캐시지연/스크랩 한계.
+        # 발행됐을 가능성 높음 → '확인필요'(미확정). 재시도 트리거 금지(중복 발행 사고 방지).
+        print(
+            "[WARN]   성공 토스트 확인됐으나 신규 shortcode 윈도우 내 미회수 → "
+            "'확인필요'(발행됐을 가능성 높음, URL 수동확인). 발행실패 단정·재시도 안 함."
+        )
+        return None, "확인필요"
+    return None, "발행실패"
 
 
 async def _add_location(page, location: str, evidence_prefix: Path) -> None:
@@ -1188,8 +1257,17 @@ async def _collect_grid_shortcodes(page, account: str) -> set[str]:
     """
     shortcodes: set[str] = set()
     try:
-        profile_url = f"https://www.instagram.com/{account}/"
+        # (FIX2) 캐시 우회 — 발행 후 그리드가 캐시된 옛 목록을 반환해
+        # 신규 shortcode 가 안 보이는 false-negative(오늘 #4 사고) 방지.
+        # 타임스탬프 쿼리로 URL 유니크화 + reload(no-cache 의도).
+        cache_buster = int(datetime.now().timestamp() * 1000)
+        profile_url = f"https://www.instagram.com/{account}/?__r={cache_buster}"
         await page.goto(profile_url, wait_until="domcontentloaded", timeout=20_000)
+        # 하드 리로드로 캐시 강제 우회 (bypass cache)
+        try:
+            await page.reload(wait_until="domcontentloaded", timeout=20_000)
+        except Exception:
+            pass
         # 그리드 로딩 대기 (최대 10초 폴링)
         for _ in range(10):
             await page.wait_for_timeout(1000)

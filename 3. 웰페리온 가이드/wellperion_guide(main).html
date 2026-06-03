@@ -631,17 +631,17 @@
     <!-- AUTO:LATEST-START -->
     <div class="card grow">
       <h4>최신 업데이트 — 2026-06-03 (자동 갱신)</h4>
+      <p><strong>2026-06-03</strong> feat(coo): S4 '마감 임박' 섹션 — 진행 중 업무 종료일 D-7 이내(+지연) 표시</p>
       <p><strong>2026-06-03</strong> docs(cmo): M5 블로그·카페 탭에 자동 발행 규칙 카드 추가 (GM 확정 2026-06-03)</p>
       <p><strong>2026-06-03</strong> refactor(guidehub): T4 상단 콜아웃 2개+표 → 접이식 토글 1개로 정리 (GM 지시)</p>
       <p><strong>2026-06-03</strong> fix(cmo): 블로그·카페 제목 연속표기 버그 수정 (_strip_leading_title)</p>
       <p><strong>2026-06-03</strong> chore(cmo): WJO 블로그·카페 발행완료 처리 — GM 수동 발행(2026-06-03)</p>
-      <p><strong>2026-06-03</strong> fix(cmo): AI #4 재발행 발행완료 기록 (DZGzrMnEtjT) — 발행기 검증 오탐 수기 정정</p>
     </div>
 <!-- AUTO:LATEST-END -->
         <table>
           <tr><th style="width:160px">날짜</th><th>변경 내용</th></tr>
           <!-- AUTO:TABLE-START -->
-      <tr><td><strong>2026-06-03 (자동)</strong></td><td>docs(cmo): M5 블로그·카페 탭에 자동 발행 규칙 카드 추가 (GM 확정 2026-06-03) · refactor(guidehub): T4 상단 콜아웃 2개+표 → 접이식 토글 1개로 정리 (GM 지시) · fix(cmo): 블로그·카페 제목 연속표기 버그 수정 (_strip_leading_title) · chore(cmo): WJO 블로그·…</td></tr>
+      <tr><td><strong>2026-06-03 (자동)</strong></td><td>feat(coo): S4 '마감 임박' 섹션 — 진행 중 업무 종료일 D-7 이내(+지연) 표시 · docs(cmo): M5 블로그·카페 탭에 자동 발행 규칙 카드 추가 (GM 확정 2026-06-03) · refactor(guidehub): T4 상단 콜아웃 2개+표 → 접이식 토글 1개로 정리 (GM 지시) · fix(cmo): 블로그·카페 제목 …</td></tr>
       <!-- AUTO:TABLE-END -->
           <tr><td><strong>2026-05-28 (14차)</strong></td><td>공지/안내문 생성(COO 하위) · 오프라인 홍보물 디자인 제작(CMO 하위) 도구 신설 · 공지 서식 v2.0 독립 페이지화 · 회사소개서·전략로드맵 원본 「3. 웰페리온 가이드/회사문서/」로 이관(SSOT 단일화) · C-Level 부팅 R/R Notion API→가이드허브 g10 참조로 전환 · GitHub Pages 워크플로 폴더명 경로 수정 · 사이드바 "공통+7개 C-Level" 라벨 제거</td></tr>
           <tr><td>2026-05-27 (13차)</td><td>GitHub Pages 전환 · 사이드바 4섹터 · AI C-Level 통일 · 운영 통합 체계 · 공식채널·지출현황·취업규칙·SSOT 신설 · g2+g19·g9+g20·g12·g13 합병 · 김남욱 탭 확장 · v2.5</td></tr>
@@ -4161,8 +4161,8 @@ Start-Process python -ArgumentList telegram_bot\daily_scheduler.py -WorkingDirec
       // 정렬용 일자 키 (최신순)
       function dateKey(it){return it.published_at||it.assigned_at||it.enqueued_at||'';}
       // 처리완료(terminal) = 발행완료 + 반려만. 승인(발행 진행 중)·발행실패는 위쪽에 노출.
-      function isDone(st){return st==='발행완료'||st==='rejected'||st==='반려';}
-      function badgeOf(e){return e==='발행완료'?'<span style="color:var(--green);font-weight:700;">✅ 발행완료</span>':(e==='approved'||e==='승인')?'<span style="color:var(--accent);font-weight:700;">🟡 승인됨 · 발행 진행 중</span>':e==='발행실패'?'<span style="color:#dc2626;font-weight:700;">❌ 발행 실패 · 재시도 필요</span>':e==='수동발행대기'?'<span style="color:var(--accent);font-weight:700;">📦 수동 발행 대기</span>':(e==='rejected'||e==='반려')?'<span style="color:var(--warm,#d98c5f);font-weight:700;">↩ 반려됨</span>':'<span style="color:var(--accent);font-weight:700;">🟡 검수 대기</span>';}
+      function isDone(st){return st==='발행완료'||st==='rejected'||st==='반려'||st==='확인필요';}
+      function badgeOf(e){return e==='발행완료'?'<span style="color:var(--green);font-weight:700;">✅ 발행완료</span>':(e==='approved'||e==='승인')?'<span style="color:var(--accent);font-weight:700;">🟡 승인됨 · 발행 진행 중</span>':e==='발행실패'?'<span style="color:#dc2626;font-weight:700;">❌ 발행 실패 · 재시도 필요</span>':e==='수동발행대기'?'<span style="color:var(--accent);font-weight:700;">📦 수동 발행 대기</span>':(e==='rejected'||e==='반려')?'<span style="color:var(--warm,#d98c5f);font-weight:700;">↩ 반려됨</span>':e==='확인필요'?'<span style="color:#d98c5f;font-weight:700;">🔎 발행 확인필요 · URL 수동확인</span>':'<span style="color:var(--accent);font-weight:700;">🟡 검수 대기</span>';}
       function render(items){
         var list=document.getElementById('cmopub-review-list');if(!list)return;
         var d=dec();var cnt=document.getElementById('cmopub-review-count');

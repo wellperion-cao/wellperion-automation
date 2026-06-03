@@ -14,9 +14,33 @@ from PIL import Image
 ROOT = Path(r"C:\Users\jjky0\welperion-automation")
 sys.path.insert(0, str(ROOT / "scripts"))
 from slide_compositor import compose_text_slide  # noqa: E402
+from publish_register import register_publish  # noqa: E402  (FIX3 제작완료 자동 등록·알림)
 
 FOLDER = ROOT / "instagram" / "260603_AI4_역할분담"
 OUT = FOLDER / "output"
+
+# (FIX3) 제작완료 자동 등록용 메타 — 기존 M5 큐 엔트리와 id 일치(중복 아닌 갱신).
+# 이미 '발행완료' 인 엔트리는 register_publish 내부에서 status 강등 안 됨(회귀 가드).
+QUEUE_ID = "CMO-2026-06-03-AI4-역할분담"
+QUEUE_TITLE = "AI #4편 — 역할 분담(개인계정)"
+QUEUE_CHANNEL = "인스타그램 (namuk.wellperion)"
+ACCOUNT = "namuk.wellperion"
+LOCATION = "웰페리온 스포츠클럽"
+MENTIONS = ["dietcamp_pt", "na_daeng", "wellperion"]
+# 캡션 SSOT = 큐레이션_추천.md / review_queue 와 동일 본문(개인계정 톤·DM CTA).
+CAPTION = (
+    "뭘 맡기고, 뭘 내가 하나 — AI와 역할 분담하는 제 방식.\n\n"
+    "처음엔 정말 헷갈렸어요. AI를 켜놓고도 '이걸 시켜도 되나?' 한참 망설였거든요.\n"
+    "그러다 찾은 기준이 하나예요. '어, 이거 또 하네?' 싶은 건 AI한테, "
+    "'이건 내가 정해야지' 싶은 건 제가.\n반복은 AI, 결정은 저.\n\n"
+    "AI한테 맡기는 것들: 인스타·블로그 글 초안, 매일 보고 취합·정리, "
+    "매출·출결 집계, 검수 자료 정리.\n"
+    "제가 하는 것들: 직원·회원과 직접 소통, 마지막 검수와 최종 결정, 요즘 트렌드 파악.\n\n"
+    "AI한테 반복을 넘기면, 제 손엔 진짜 중요한 일만 남더라고요.\n"
+    "완벽하진 않아도, 함께 성장합시다.\n\n"
+    "운동시설 대표님, 궁금하시면 DM 주세요. 아는 선에선 돕겠습니다.\n\n"
+    "#AI #AI활용 #역할분담 #스포츠클럽 #일하는방식 #대표일상 #한남동 #웰페리온"
+)
 
 # compose_text_slide 분기: eng_title 있으면 표지, 없으면 본문(kor_title 헤딩 + body)
 # 정확히 6장 — 표지(1) + 헷갈림(2) + 기준(3) + AI가 하는 일(4) + 내가 하는 일(5) + 마무리/CTA(6, main() 별도)
@@ -100,6 +124,23 @@ def main() -> None:
     montage = OUT / f"_검수_미리보기_{len(paths)}장.png"
     build_montage(paths, montage, cols=3)
     print(f"\n총 {len(paths)}장 생성 + 미리보기 → {montage}")
+
+    # (FIX3) 제작완료 = 자동 등록(M5 upsert) + 텔레그램(1줄+montage) 발송.
+    # slides 는 ROOT 기준 정방향 슬래시 상대경로. 헬퍼가 어떤 단계 실패해도 빌드는 안 깨짐.
+    slides_rel = [p.relative_to(ROOT).as_posix() for p in paths]
+    register_publish(
+        content_folder=FOLDER,
+        slug="260603_AI4_역할분담",
+        montage_path=montage,
+        caption=CAPTION,
+        location=LOCATION,
+        mentions=MENTIONS,
+        account=ACCOUNT,
+        slides=slides_rel,
+        queue_id=QUEUE_ID,
+        title=QUEUE_TITLE,
+        channel=QUEUE_CHANNEL,
+    )
 
 
 if __name__ == "__main__":
