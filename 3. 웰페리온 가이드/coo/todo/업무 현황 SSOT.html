@@ -935,9 +935,11 @@ function renderTasks() {
 
   const el = document.getElementById('mainContent');
   // GM 단독 할일은 G1 전용 — 업무 현황(실무진용)에서 제외 (2026-06-01 GM 확정)
-  const active = excludeNonStaff(ALL_TASKS.filter(t => t.status !== '완료' && t.status !== '보류'));
+  // 업무 완료여도 결재가 진행 중(결재요청 있고 결재상태≠완료·≠반려)이면 활성으로 노출 — 결재 미완 건이 업무현황에서 묻히지 않게 (2026-06-03 GM)
+  const _apprPending = t => String(t.approval || '').trim() && t['결재상태'] !== '결재완료' && !/반려/.test(String(t['결재상태'] || ''));
+  const active = excludeNonStaff(ALL_TASKS.filter(t => (t.status !== '완료' && t.status !== '보류') || (t.status === '완료' && _apprPending(t))));
   const hold = excludeNonStaff(ALL_TASKS.filter(t => t.status === '보류'));
-  const done = excludeNonStaff(ALL_TASKS.filter(t => t.status === '완료'));
+  const done = excludeNonStaff(ALL_TASKS.filter(t => t.status === '완료' && !_apprPending(t)));
 
   // Apply filters to active
   let filtered = active;
