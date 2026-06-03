@@ -617,17 +617,17 @@
     <!-- AUTO:LATEST-START -->
     <div class="card grow">
       <h4>최신 업데이트 — 2026-06-03 (자동 갱신)</h4>
+      <p><strong>2026-06-03</strong> feat(cmo): 워드프레스 관리자 반자동 setup 스크립트 (세션 로그인 방식)</p>
       <p><strong>2026-06-03</strong> docs(cto): ai-cto.md T-메뉴 4축 재번호 동기화 (T1기술·T2자동화·T3교육, 구 설정·프롬프트 삭제)</p>
       <p><strong>2026-06-03</strong> refactor(guidehub): CTO 섹터 식별자 연속 재번호 T1·T2·T3 (기술·자동화·교육) + 주소·참조 동기화</p>
       <p><strong>2026-06-03</strong> refactor(s2): 죽은 포인터 삭제 + 공통탭 한눈 요약 신설</p>
       <p><strong>2026-06-03</strong> fix(coo): 대시보드 최종업데이트 시각 포맷 오류 수정(a/p→a) — 대시보드 정상 생성</p>
-      <p><strong>2026-06-03</strong> feat(cmo): 카카오 채널 소식 자동입력 구현 — 임시저장 반자동 완성</p>
     </div>
 <!-- AUTO:LATEST-END -->
         <table>
           <tr><th style="width:160px">날짜</th><th>변경 내용</th></tr>
           <!-- AUTO:TABLE-START -->
-      <tr><td><strong>2026-06-03 (자동)</strong></td><td>docs(cto): ai-cto.md T-메뉴 4축 재번호 동기화 (T1기술·T2자동화·T3교육, 구 설정·프롬프트 삭제) · refactor(guidehub): CTO 섹터 식별자 연속 재번호 T1·T2·T3 (기술·자동화·교육) + 주소·참조 동기화 · refactor(s2): 죽은 포인터 삭제 + 공통탭 한눈 요약 신설 · fix(coo): 대시…</td></tr>
+      <tr><td><strong>2026-06-03 (자동)</strong></td><td>feat(cmo): 워드프레스 관리자 반자동 setup 스크립트 (세션 로그인 방식) · docs(cto): ai-cto.md T-메뉴 4축 재번호 동기화 (T1기술·T2자동화·T3교육, 구 설정·프롬프트 삭제) · refactor(guidehub): CTO 섹터 식별자 연속 재번호 T1·T2·T3 (기술·자동화·교육) + 주소·참조 동기화 · ref…</td></tr>
       <!-- AUTO:TABLE-END -->
           <tr><td><strong>2026-05-28 (14차)</strong></td><td>공지/안내문 생성(COO 하위) · 오프라인 홍보물 디자인 제작(CMO 하위) 도구 신설 · 공지 서식 v2.0 독립 페이지화 · 회사소개서·전략로드맵 원본 「3. 웰페리온 가이드/회사문서/」로 이관(SSOT 단일화) · C-Level 부팅 R/R Notion API→가이드허브 g10 참조로 전환 · GitHub Pages 워크플로 폴더명 경로 수정 · 사이드바 "공통+7개 C-Level" 라벨 제거</td></tr>
           <tr><td>2026-05-27 (13차)</td><td>GitHub Pages 전환 · 사이드바 4섹터 · AI C-Level 통일 · 운영 통합 체계 · 공식채널·지출현황·취업규칙·SSOT 신설 · g2+g19·g9+g20·g12·g13 합병 · 김남욱 탭 확장 · v2.5</td></tr>
@@ -8137,7 +8137,7 @@ function crTab(btn, panelId) {
         var ssotIdx = gm1SsotItems.findIndex(function(x){ return x.id === id; });
         if (ssotIdx >= 0) {
           gm1SsotItems[ssotIdx] = Object.assign({}, gm1SsotItems[ssotIdx], {
-            title: title, status: status, startDate: start
+            title: title, status: status, startDate: start, endDate: (end || ''), category: cat, description: desc
           });
         }
         gm1RenderToday();
@@ -8191,6 +8191,14 @@ function crTab(btn, panelId) {
       }
 
       window.gm1CloseDateRange();
+      // ssot-* 항목도 즉시 화면 반영(낙관적) + 백그라운드 재fetch (2026-06-03 종료일 저장 버그 수정)
+      if (isSsotOrigin) {
+        var drIdx = gm1SsotItems.findIndex(function(x){ return x.id === id; });
+        if (drIdx >= 0) {
+          gm1SsotItems[drIdx] = Object.assign({}, gm1SsotItems[drIdx], { startDate: s, endDate: (e || '') });
+        }
+        setTimeout(function(){ gm1FetchSsot(); }, 1500);
+      }
       gm1RenderToday();
       gm1CalRender();
     };
