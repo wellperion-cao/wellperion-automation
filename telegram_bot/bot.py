@@ -27,7 +27,7 @@ from pathlib import Path
 
 import requests
 
-from telegram import Update, constants
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update, constants
 from telegram.ext import (
     Application,
     CallbackQueryHandler,
@@ -921,6 +921,105 @@ async def cmd_approval_callback(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
             pass
 
 
+# ─── 콘텐츠 검수 발행 콜백 (pub:) — 2026-06-03 IG 폴링 감시기 폐기 대체 ───
+# sign:(업무 결재, 옵션A로 웹 단일)와 별개. 승인 상태 SSOT = review_queue.json.
+# GM이 검수 카드 [✅승인] 탭 → 그 순간 발행 엔진 1회 호출(폴링 제거). 봇은 상시 상주.
+REVIEW_QUEUE = WORKDIR / "3. 웰페리온 가이드" / "cmo" / "review" / "review_queue.json"
+_VENV_PY = WORKDIR / ".venv" / "Scripts" / "python.exe"
+_PUBLISH_ENGINE = WORKDIR / "scripts" / "ig_review_publish_watcher.py"
+
+
+async def _git_async(*args: str) -> None:
+    """비차단 git 호출 (봇 이벤트 루프 안 막음)."""
+    try:
+        p = await asyncio.create_subprocess_exec(
+            "git", "-C", str(WORKDIR), *args,
+            stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE,
+        )
+        await p.communicate()
+    except Exception as exc:
+        log.error(f"[pub] git {args[:1]} 실패: {exc}")
+
+
+async def cmd_publish_callback(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
+    """콘텐츠 검수 카드 [✅승인]/[❌반려] 클릭 처리.
+
+    callback_data: ``pub:<id>:<approve|reject>``
+    승인 → review_queue.json status='승인' 기록·커밋·푸시 → 발행 엔진
+           (ig_review_publish_watcher.py --once) 비차단 호출. 엔진이 채널 분기
+           발행·자체 텔레그램 보고(IG 0% 시 수동발행대기 폴백). 폴링 감시기 폐기 대체.
+    반려 → status='반려' 기록·커밋.
+    """
+    q = update.callback_query
+    if not q or not q.data or not q.data.startswith("pub:"):
+        return
+    await q.answer()
+    parts = q.data.split(":", 2)
+    if len(parts) < 3:
+        await q.answer("형식 오류", show_alert=False)
+        return
+    _, item_id, decision = parts
+
+    try:
+        items = json.loads(REVIEW_QUEUE.read_text(encoding="utf-8"))
+    except Exception as exc:
+        await ctx.bot.send_message(chat_id=q.message.chat_id,
+            text=f"⚠️ 발행 큐 로드 실패: {exc}\n🆔 {item_id}")
+        return
+    target = next((it for it in items if it.get("id") == item_id), None)
+    if target is None:
+        await ctx.bot.send_message(chat_id=q.message.chat_id,
+            text=f"⚠️ 큐에서 항목을 찾지 못함: {item_id}")
+        return
+
+    new_status = "승인" if decision == "approve" else "반려"
+    target["status"] = new_status
+    try:
+        REVIEW_QUEUE.write_text(
+            json.dumps(items, ensure_ascii=False, indent=2), encoding="utf-8")
+    except Exception as exc:
+        await ctx.bot.send_message(chat_id=q.message.chat_id,
+            text=f"⚠️ 큐 저장 실패: {exc}")
+        return
+
+    title = target.get("title", item_id)
+    channel = target.get("channel", "")
+    log.info(f"[pub] decision={decision} id={item_id} ch={channel}")
+
+    await _git_async("add", str(REVIEW_QUEUE))
+    await _git_async("commit", "-m", f"auto(cmo): 검수 {new_status} — {title} [{channel}]")
+    await _git_async("pull", "--rebase", "--autostash", "origin", "master")
+    await _git_async("push", "origin", "master")
+
+    label = "✅ 승인" if decision == "approve" else "❌ 반려"
+    try:
+        await q.edit_message_text(
+            text=(q.message.text or title) + f"\n\n━━━━━━━━\n{label} 처리됨",
+            reply_markup=None)
+    except Exception:
+        try:
+            await q.edit_message_reply_markup(reply_markup=None)
+        except Exception:
+            pass
+
+    if decision == "approve":
+        try:
+            await asyncio.create_subprocess_exec(
+                str(_VENV_PY), "-u", str(_PUBLISH_ENGINE), "--once",
+                cwd=str(WORKDIR),
+                stdout=asyncio.subprocess.DEVNULL,
+                stderr=asyncio.subprocess.DEVNULL,
+                env=dict(os.environ, PYTHONIOENCODING="utf-8",
+                         TELEGRAM_BOT_TOKEN=(TOKEN or "")),
+            )
+            await ctx.bot.send_message(chat_id=q.message.chat_id,
+                text=f"⏳ <b>{title}</b> 발행 처리 시작 — 결과는 발행 엔진이 곧 보고합니다.",
+                parse_mode="HTML")
+        except Exception as exc:
+            await ctx.bot.send_message(chat_id=q.message.chat_id,
+                text=f"⚠️ 발행 엔진 기동 실패: {exc}\n수동 발행 필요: {title}")
+
+
 # ── 중복 기동 방지 PID 락 (daily_scheduler.py와 동일 패턴, 2026-06-02) ──────────
 _PID_FILE = BASE / "bot.pid"
 
@@ -964,6 +1063,8 @@ def main():
     # 결재 콜백 등록은 옵션 A(2026-05-28)로 비활성 — 결재 처리는 결재 SSOT 페이지에서 단일 진행.
     # cmd_approval_callback 함수는 보존 (텔레그램 인라인 ✅/❌ 패턴 복원 시 재등록).
     # app.add_handler(CallbackQueryHandler(cmd_approval_callback, pattern=r"^sign:"))
+    # 콘텐츠 검수 발행 콜백 (pub:) — IG 폴링 감시기 폐기 대체 (2026-06-03). 결재(sign:)와 별개.
+    app.add_handler(CallbackQueryHandler(cmd_publish_callback, pattern=r"^pub:"))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
     app.add_error_handler(error_handler)
 
