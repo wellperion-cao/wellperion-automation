@@ -415,7 +415,6 @@
     <a data-doc="home" class="active"><span class="num">홈</span><span class="label">홈 · 사용법</span></a>
     <a data-doc="update" data-id="S1"><span class="num">📝</span><span class="label">공통 가이드라인</span></a>
     <a data-doc="g10" data-id="S2"><span class="num">📋</span><span class="label">AI C-Level 운영 가이드</span></a>
-    <a data-doc="g6" data-id="S3"><span class="num">📖</span><span class="label">용어 사전</span></a>
     <a data-doc="gcoo-todo" data-id="S4"><span class="num">📝</span><span class="label">업무&결재 현황 SSOT</span></a>
   </nav>
 
@@ -514,7 +513,7 @@
           <tr><th style="width:44px"></th><th style="width:64px">식별자</th><th style="width:200px">제목</th><th>한 줄 설명</th></tr>
           <tr><td>📝</td><td><span class="g-id">S1</span></td><td><a href="#" onclick="event.preventDefault();document.querySelector('[data-id=S1]').click();" style="color:var(--accent);text-decoration:none;font-weight:600;">공통 가이드라인</a></td><td>전사 기준 + 직원 에티켓 + 브랜드 디자인 + 업데이트 방법</td></tr>
           <tr><td>📋</td><td><span class="g-id">S2</span></td><td><a href="#" onclick="event.preventDefault();document.querySelector('[data-id=S2]').click();" style="color:var(--accent);text-decoration:none;font-weight:600;">AI C-Level 운영 가이드</a></td><td>AI 조직도 + 7개 C-Level 협업·실무</td></tr>
-          <tr><td>📖</td><td><span class="g-id">S3</span></td><td><a href="#" onclick="event.preventDefault();document.querySelector('[data-id=S3]').click();" style="color:var(--accent);text-decoration:none;font-weight:600;">용어 사전</a></td><td>문서·조직·시스템·운영·파일 확장자</td></tr>
+          <tr><td>📖</td><td><span class="g-id">S3</span></td><td><a href="#" onclick="event.preventDefault();document.querySelector('[data-id=S1]').click();" style="color:var(--accent);text-decoration:none;font-weight:600;">용어 사전 (S1 포함)</a></td><td>문서·조직·시스템·운영·파일 확장자 → 공통 가이드라인 내 탭으로 통합</td></tr>
           <tr><td>📝</td><td><span class="g-id">S4</span></td><td><a href="#" onclick="event.preventDefault();document.querySelector('[data-id=S4]').click();" style="color:var(--accent);text-decoration:none;font-weight:600;">업무&amp;결재 현황 SSOT</a></td><td>핵심멤버 업무 배분·추적 + 결재 현황 통합 (Apps Script 연동)</td></tr>
         </table>
 
@@ -655,6 +654,9 @@
         <button class="tab-btn active" data-tab="how-to">업데이트 방법</button>
         <button class="tab-btn" data-tab="company-guide">직원&파트너 기본 에티켓</button>
         <button class="tab-btn" data-tab="brand-design">브랜드 디자인</button>
+        <button class="tab-btn" data-tab="terms-doc">문서 관리</button>
+        <button class="tab-btn" data-tab="terms-vocab">조직·시스템·운영</button>
+        <button class="tab-btn" data-tab="terms-ext">파일 확장자</button>
       </div>
 
       <div class="tab-panel active" data-panel="how-to">
