@@ -157,7 +157,7 @@
 <div class="footbar">
   <div class="inner">
     <div class="prog-wrap">
-      <div class="prog-txt" id="progTxt">평가 0 / 35</div>
+      <div class="prog-txt" id="progTxt">평가 0 / 28</div>
       <div class="prog"><span id="progBar" style="width:0%"></span></div>
     </div>
     <button class="btn" id="submitBtn">전송</button>
@@ -176,20 +176,21 @@ var ENDPOINT = "https://script.google.com/macros/s/AKfycbySsnbKDtOI7ktGd-qQrZ3y7
 var SHEET_URL = "https://docs.google.com/spreadsheets/d/19fyGlLvYjO_PWZGGxPa6S33PJ0dn5nwvBrdqYNPK7oI/edit?gid=2068795804#gid=2068795804";
 
 /* ====== 점검 항목 / 3단계 ====== */
-var ITEMS = ["정리정돈","홍보물","청결","조명 및 냉난방","복장착용"];
+var ITEMS_HALL  = ["정리정돈","홍보물","청결","조명 및 냉난방"];   // 복도 — 복장착용 제외
+var ITEMS_VENUE = ["정리정돈","청결","조명 및 냉난방","복장착용"]; // 그 외 업장 — 홍보물 제외
 var LEVELS = [
   {v:"점검필요", cls:"on-need"},
   {v:"양호",     cls:"on-ok"},
   {v:"우수",     cls:"on-best"}
 ];
 var SECTIONS = [
-  {id:"hallway",    kind:"common", name:"복도",     items:ITEMS},
-  {id:"pilates",    kind:"venue",  name:"필라테스", items:ITEMS},
-  {id:"gym",        kind:"venue",  name:"헬스장",   items:ITEMS},
-  {id:"golf",       kind:"venue",  name:"골프장",   items:ITEMS},
-  {id:"pool",       kind:"venue",  name:"수영장",   items:ITEMS},
-  {id:"gymnastics", kind:"venue",  name:"체조장",   items:ITEMS},
-  {id:"squash",     kind:"venue",  name:"스쿼시장", items:ITEMS}
+  {id:"hallway",    kind:"common", name:"복도",     items:ITEMS_HALL},
+  {id:"pilates",    kind:"venue",  name:"필라테스", items:ITEMS_VENUE},
+  {id:"gym",        kind:"venue",  name:"헬스장",   items:ITEMS_VENUE},
+  {id:"golf",       kind:"venue",  name:"골프장",   items:ITEMS_VENUE},
+  {id:"pool",       kind:"venue",  name:"수영장",   items:ITEMS_VENUE},
+  {id:"gymnastics", kind:"venue",  name:"체조장",   items:ITEMS_VENUE},
+  {id:"squash",     kind:"venue",  name:"스쿼시장", items:ITEMS_VENUE}
 ];
 
 var TOTAL_ITEMS = SECTIONS.reduce(function(s,x){return s+x.items.length;},0);
@@ -328,10 +329,11 @@ function init(){
 
   var dbBtn=document.getElementById("dbBtn");
   dbBtn.addEventListener("click",function(ev){
-    if(SHEET_URL){window.open(SHEET_URL,"_blank");}
-    else{ev.preventDefault();toast("기록 시트 주소(SHEET_URL)를 먼저 설정해 주세요.",true);}
+    ev.preventDefault();   // 현재 페이지는 그대로 두고 새 탭만 열기
+    if(SHEET_URL){window.open(SHEET_URL,"_blank","noopener");}
+    else{toast("기록 시트 주소(SHEET_URL)를 먼저 설정해 주세요.",true);}
   });
-  if(SHEET_URL)dbBtn.setAttribute("href",SHEET_URL);
+  if(SHEET_URL){dbBtn.setAttribute("href",SHEET_URL);dbBtn.setAttribute("target","_blank");dbBtn.setAttribute("rel","noopener");}
 
   if(ENDPOINT)document.getElementById("setupNote").style.display="none";
 }

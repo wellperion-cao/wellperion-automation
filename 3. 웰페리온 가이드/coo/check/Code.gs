@@ -1,10 +1,11 @@
 /**
- * 웰페리온 업장점검 — 구글 시트 자동 기록 (항목별 3단계)
+ * 웰페리온 업장점검 — 구글 시트 자동 기록 (업장별 항목, 3단계)
  * 모바일 입력폼(강습부 업장관리.html)이 보낸 점검 결과를 받아
  * "점검기록" 시트에 하루 한 줄씩 기록합니다.
  *
- * 각 항목(업장 × 정리정돈/홍보물/청결/조명 및 냉난방)을 별도 컬럼에
- * 점검필요 / 양호 / 우수 3단계 값으로 기록합니다.
+ * 각 항목(업장 × 점검항목)을 별도 컬럼에 점검필요 / 양호 / 우수 값으로 기록합니다.
+ * - 복도: 정리정돈 · 홍보물 · 청결 · 조명 및 냉난방   (복장착용 제외)
+ * - 그 외 업장: 정리정돈 · 청결 · 조명 및 냉난방 · 복장착용 (홍보물 제외)
  *
  * 같은 날짜 + 같은 점검자의 기록이 이미 있으면 그 줄을 덮어씁니다(수정 재전송).
  *
@@ -12,19 +13,19 @@
  *    "점검기록" 시트의 헤더를 새로 맞춰주세요.
  */
 
-// 업장 순서 (입력폼과 동일하게 유지)
-var SECTION_ORDER = [
-  ["hallway", "복도"],
-  ["pilates", "필라테스"],
-  ["gym", "헬스장"],
-  ["golf", "골프장"],
-  ["pool", "수영장"],
-  ["gymnastics", "체조장"],
-  ["squash", "스쿼시장"]
-];
+// 업장 + 항목 정의 (입력폼과 동일하게 유지)
+var ITEMS_HALL  = ["정리정돈", "홍보물", "청결", "조명 및 냉난방"];   // 복도
+var ITEMS_VENUE = ["정리정돈", "청결", "조명 및 냉난방", "복장착용"]; // 그 외 업장
 
-// 각 업장 공통 점검 항목 (입력폼과 동일하게 유지)
-var ITEMS = ["정리정돈", "홍보물", "청결", "조명 및 냉난방", "복장착용"];
+var SECTIONS = [
+  { id: "hallway",    name: "복도",     items: ITEMS_HALL },
+  { id: "pilates",    name: "필라테스", items: ITEMS_VENUE },
+  { id: "gym",        name: "헬스장",   items: ITEMS_VENUE },
+  { id: "golf",       name: "골프장",   items: ITEMS_VENUE },
+  { id: "pool",       name: "수영장",   items: ITEMS_VENUE },
+  { id: "gymnastics", name: "체조장",   items: ITEMS_VENUE },
+  { id: "squash",     name: "스쿼시장", items: ITEMS_VENUE }
+];
 
 var SHEET_NAME = "점검기록";
 // 기록 대상 스프레드시트 ID (강습부 업장관리 체크)
@@ -34,12 +35,12 @@ function ss_() {
   return SPREADSHEET_ID ? SpreadsheetApp.openById(SPREADSHEET_ID) : SpreadsheetApp.getActiveSpreadsheet();
 }
 
-// 헤더: 날짜 · 점검자 · (업장 · 항목)×n · 업장 이슈 · ... · 기록시각
+// 헤더: 날짜 · 점검자 · (업장 · 항목)… · 업장 이슈 · … · 기록시각
 function buildHeader_() {
   var header = ["날짜", "점검자"];
-  SECTION_ORDER.forEach(function (s) {
-    ITEMS.forEach(function (it) { header.push(s[1] + " · " + it); });
-    header.push(s[1] + " 이슈");
+  SECTIONS.forEach(function (s) {
+    s.items.forEach(function (it) { header.push(s.name + " · " + it); });
+    header.push(s.name + " 이슈");
   });
   header.push("기록시각");
   return header;
@@ -51,7 +52,7 @@ function writeHeader_(sh) {
   sh.appendRow(header);
   sh.getRange(1, 1, 1, header.length).setFontWeight("bold").setBackground("#f0ece2");
   sh.setFrozenRows(1);
-  sh.getRange("A:A").setNumberFormat("yyyy. m. d");                                   // 날짜
+  sh.getRange("A:A").setNumberFormat("yyyy. m. d");                                       // 날짜
   sh.getRange(1, header.length, sh.getMaxRows()).setNumberFormat("yyyy. m. d  a/p h:mm"); // 기록시각
   return header;
 }
@@ -73,13 +74,13 @@ function setup() {
 
 function buildRow_(data) {
   var row = [parseDate_(data.date), data.inspector || ""];   // 날짜(실제 Date) · 점검자
-  SECTION_ORDER.forEach(function (s) {
-    var sec = (data.sections && data.sections[s[0]]) || {};
+  SECTIONS.forEach(function (s) {
+    var sec = (data.sections && data.sections[s.id]) || {};
     var items = sec.items || {};
-    ITEMS.forEach(function (it) { row.push(items[it] || ""); });   // 항목별 3단계 값
-    row.push(sec.issue || "");                                     // 업장 이슈
+    s.items.forEach(function (it) { row.push(items[it] || ""); });   // 항목별 3단계 값
+    row.push(sec.issue || "");                                       // 업장 이슈
   });
-  row.push(new Date());                                            // 기록시각
+  row.push(new Date());                                              // 기록시각
   return row;
 }
 
