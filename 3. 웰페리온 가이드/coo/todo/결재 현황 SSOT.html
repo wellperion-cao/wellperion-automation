@@ -1080,34 +1080,35 @@ function setView(v) {
   render();
 }
 
-/* 결재상태 컬럼 분류 — 백엔드 결재상태 문자열 우선, 없으면 싸인 실측 보강.
-   컬럼: waiting(대기) | gm(GM 완료) | rep(대표님 완료) | done(결재완료) | reject(반려). */
-function approvalColumnOf(t) {
+/* 결재 컬럼 분류 — '다음 서명자'별(2026-06-03 GM). 결재자 필터 버튼과 1:1 정합.
+   반려 → reject / 결재완료 → done / 그 외 → 다음 서명할 사람 실명(부서장 실명·GM·대표님). */
+function approvalBucketOf(t) {
   const s = String(t.approvalStatus || '');
   if (/반려/.test(s)) return 'reject';
   if (s === '결재완료') return 'done';
-  // 싸인 실측 — 가장 진행된 단계 우선 (결재상태 컬럼이 비어 있어도 산출)
-  if (String(t.repSign || '').trim()) return 'rep';   // 대표 서명 있으나 미완료(중간)
-  if (String(t.gmSign || '').trim())  return 'gm';    // GM 서명 완료
-  // GM 직접 건(담당자=김남욱GM, 결재선=대표님만): 부서장·GM 단계 없음 → 대표 차례 = 'GM 완료' 컬럼 (2026-06-03 GM)
-  if (String(t.owner || '').split(',').map(function(x){ return x.trim(); }).indexOf('김남욱GM') >= 0) return 'gm';
-  if (/대표님?\s*완료/.test(s)) return 'rep';          // 상태 문자열 보강
-  if (/GM\s*완료/.test(s) || /부서장\s*완료/.test(s)) return 'gm';
-  return 'waiting';                                    // 미서명·대기
+  const route = buildEffectiveRoute(t, parseContent(t.content || '').budget);
+  const nx = nextApprover(t, route);  // '부서장' | 'GM' | '대표님' | null
+  if (nx === '부서장') return deptHeadNameOf(t) || '나우열M';
+  if (nx === 'GM') return 'GM';
+  if (nx === '대표님') return '대표님';
+  return 'done';  // 전원 서명됐으나 상태 미반영 → 완료로 귀속
 }
 
-/* 트렐로(칸반) 뷰 — 결재상태별 컬럼(대기 | GM 완료 | 대표님 완료 | 결재완료 | 반려).
+/* 트렐로(칸반) 뷰 — 다음 서명자별 컬럼(이경연·이정헌·나우열 서명대기 | GM | 대표 | 결재완료 | 반려).
    각 카드는 리스트와 동일한 renderApprovalCard 사용 → PIN·승인/반려 버튼·진행바 전부 보존. */
 function renderKanban(list) {
   const COLS = [
-    { key:'waiting', cls:'col-waiting', icon:'⏳', label:'대기' },
-    { key:'gm',      cls:'col-gm',      icon:'🔵', label:'GM 완료' },
-    { key:'rep',     cls:'col-rep',     icon:'🟣', label:'대표님 완료' },
-    { key:'done',    cls:'col-done',    icon:'✅', label:'결재완료' },
-    { key:'reject',  cls:'col-reject',  icon:'❌', label:'반려' }
+    { key:'이경연 실장', cls:'col-waiting', icon:'⏳', label:'이경연 실장 서명 대기' },
+    { key:'이정헌 소장', cls:'col-waiting', icon:'⏳', label:'이정헌 소장 서명 대기' },
+    { key:'나우열M',     cls:'col-waiting', icon:'⏳', label:'나우열M 서명 대기' },
+    { key:'GM',          cls:'col-gm',      icon:'🔵', label:'김남욱GM 서명 대기' },
+    { key:'대표님',      cls:'col-rep',     icon:'🟣', label:'전응준 대표 서명 대기' },
+    { key:'done',        cls:'col-done',    icon:'✅', label:'결재완료' },
+    { key:'reject',      cls:'col-reject',  icon:'❌', label:'반려' }
   ];
-  const buckets = { waiting:[], gm:[], rep:[], done:[], reject:[] };
-  list.forEach(t => { (buckets[approvalColumnOf(t)] || buckets.waiting).push(t); });
+  const buckets = {};
+  COLS.forEach(c => { buckets[c.key] = []; });
+  list.forEach(t => { const b = approvalBucketOf(t); (buckets[b] || buckets['대표님']).push(t); });
 
   let h = '<div class="kanban-board" id="kanbanBoard">';
   COLS.forEach(col => {
