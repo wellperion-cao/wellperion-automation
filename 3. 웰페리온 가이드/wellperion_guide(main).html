@@ -631,17 +631,17 @@
     <!-- AUTO:LATEST-START -->
     <div class="card grow">
       <h4>최신 업데이트 — 2026-06-03 (자동 갱신)</h4>
+      <p><strong>2026-06-03</strong> refactor(guidehub): S4 업무자동화 현황 → T4 업무자동화SSOT 일원화 (중복·stale 제거)</p>
       <p><strong>2026-06-03</strong> feat(coo): S4 최상단 핵심 KPI 스트립 — 업무·결재 SSOT 대시보드 지표 실시간 집계</p>
       <p><strong>2026-06-03</strong> fix(cmo): M5 #4 미리보기 캐시 우회 — preview 파일명 v2로 교체</p>
       <p><strong>2026-06-03</strong> fix(cmo): AI #4 마지막장 슬로건 교체 — 'AI를 다루는 대표가 살아남는다' (GM 지시, 검수대기 유지)</p>
       <p><strong>2026-06-03</strong> fix(cmo): 네이버 setup 시작 시 기존 세션 비움 — 옛 계정 즉시감지로 조기종료 방지</p>
-      <p><strong>2026-06-03</strong> feat(coo): S4 진행 업무 건수 SSOT 시트 실시간 자동 동기화</p>
     </div>
 <!-- AUTO:LATEST-END -->
         <table>
           <tr><th style="width:160px">날짜</th><th>변경 내용</th></tr>
           <!-- AUTO:TABLE-START -->
-      <tr><td><strong>2026-06-03 (자동)</strong></td><td>feat(coo): S4 최상단 핵심 KPI 스트립 — 업무·결재 SSOT 대시보드 지표 실시간 집계 · fix(cmo): M5 #4 미리보기 캐시 우회 — preview 파일명 v2로 교체 · fix(cmo): AI #4 마지막장 슬로건 교체 — 'AI를 다루는 대표가 살아남는다' (GM 지시, 검수대기 유지) · fix(cmo): 네이버 setup…</td></tr>
+      <tr><td><strong>2026-06-03 (자동)</strong></td><td>refactor(guidehub): S4 업무자동화 현황 → T4 업무자동화SSOT 일원화 (중복·stale 제거) · feat(coo): S4 최상단 핵심 KPI 스트립 — 업무·결재 SSOT 대시보드 지표 실시간 집계 · fix(cmo): M5 #4 미리보기 캐시 우회 — preview 파일명 v2로 교체 · fix(cmo): AI #4 마지막장 …</td></tr>
       <!-- AUTO:TABLE-END -->
           <tr><td><strong>2026-05-28 (14차)</strong></td><td>공지/안내문 생성(COO 하위) · 오프라인 홍보물 디자인 제작(CMO 하위) 도구 신설 · 공지 서식 v2.0 독립 페이지화 · 회사소개서·전략로드맵 원본 「3. 웰페리온 가이드/회사문서/」로 이관(SSOT 단일화) · C-Level 부팅 R/R Notion API→가이드허브 g10 참조로 전환 · GitHub Pages 워크플로 폴더명 경로 수정 · 사이드바 "공통+7개 C-Level" 라벨 제거</td></tr>
           <tr><td>2026-05-27 (13차)</td><td>GitHub Pages 전환 · 사이드바 4섹터 · AI C-Level 통일 · 운영 통합 체계 · 공식채널·지출현황·취업규칙·SSOT 신설 · g2+g19·g9+g20·g12·g13 합병 · 김남욱 탭 확장 · v2.5</td></tr>
@@ -4825,15 +4825,15 @@ function crTab(btn, panelId) {
         <h4>📋 현재 등록된 9건 (실측)</h4>
         <table>
           <tr><th style="width:300px">예약작업</th><th style="width:84px">상태</th><th>역할 · 비고</th></tr>
-          <tr><td><code>WellperionTelegramBot</code></td><td>🟢 상시</td><td>텔레그램 봇 — C-Level 보고·GM 지시 중계 <span style="color:var(--dim);">(숨김 런처 적용 대기)</span></td></tr>
-          <tr><td><code>WellperionDailyScheduler</code></td><td>🟢 상시</td><td>정각 보고 스케줄러 <span style="color:var(--dim);">(숨김 런처 적용 대기)</span></td></tr>
-          <tr><td><code>Wellperion-IG-Publish-Watcher</code></td><td>🟢 상시</td><td>인스타 검수 승인→자동 발행 감시(120초 폴링). 그동안 떠 있던 검은 창의 주범 → <span style="color:var(--dim);">숨김 런처 적용 대기</span></td></tr>
+          <tr><td><code>WellperionTelegramBot</code></td><td>🟢 상시</td><td>텔레그램 봇 — C-Level 보고·GM 지시 중계 <span style="color:var(--dim);">(숨김 런처 적용됨 ✅)</span></td></tr>
+          <tr><td><code>WellperionDailyScheduler</code></td><td>🟢 상시</td><td>정각 보고 스케줄러 <span style="color:var(--dim);">(숨김 런처 적용됨 ✅)</span></td></tr>
+          <tr><td><code>Wellperion-IG-Publish-Watcher</code></td><td>🟢 상시</td><td>인스타 검수 승인→자동 발행 감시(120초 폴링). 그동안 떠 있던 검은 창의 주범 → <span style="color:var(--dim);">숨김 런처 적용됨 ✅ (검은 창 제거)</span></td></tr>
           <tr><td><code>Wellperion-CEO-Morning-Brief-0800-Live</code></td><td>✅ 정상</td><td>매일 08:00 아침 통합보고 (ceo_morning_pipeline.py)</td></tr>
           <tr><td><code>Wellperion-PC-Shutdown-Greeting-Live</code></td><td>✅ 정상</td><td>22:25 퇴근 인사</td></tr>
           <tr><td><code>Wellperion-AI-Education-Weekly</code></td><td>✅ 정상</td><td>매주 월 09:30 교육자료 학습 수집</td></tr>
           <tr><td><code>Wellperion-Education-Archive-Weekly</code></td><td>✅ 정상</td><td>매주 월 09:00 교육자료 정리</td></tr>
-          <tr><td><code>Wellperion-Morning-Update</code></td><td>🔧 수정</td><td>매일 05:40 claude/npm 업데이트. 배터리 거부(0x800710E0) 실패 → 배터리조건 해제 수정 <span style="color:var(--dim);">(적용 대기)</span></td></tr>
-          <tr><td><code>Wellperion-CEO-Verify-Watcher</code></td><td>🔧 비활성</td><td>대상 스크립트(ceo_verify_watcher.py) git 미추적·부재 고아 → 매 로그인 실패. 비활성 처리 <span style="color:var(--dim);">(적용 대기)</span>. 부활 시 스크립트 재작성 선행</td></tr>
+          <tr><td><code>Wellperion-Morning-Update</code></td><td>🔧 수정</td><td>매일 05:40 claude/npm 업데이트. 배터리 거부(0x800710E0) 실패 → 배터리조건 해제 수정 <span style="color:var(--dim);">(적용 완료 ✅)</span></td></tr>
+          <tr><td><code>Wellperion-CEO-Verify-Watcher</code></td><td>🔧 비활성</td><td>대상 스크립트(ceo_verify_watcher.py) git 미추적·부재 고아 → 매 로그인 실패. 비활성 처리 <span style="color:var(--dim);">(적용 완료 ✅)</span>. 부활 시 스크립트 재작성 선행</td></tr>
         </table>
         <div class="callout tip" style="margin-top:10px;"><strong>🔧 손볼 것 2건 + 검은창 숨김 = <code>fix_task_windows.bat</code> 관리자 1회 실행으로 한 번에 적용.</strong> 봇·스케줄러·인스타발행을 숨김 런처로 전환 + CEO-Verify 비활성 + Morning-Update 배터리 해제 + 검은 창 즉시 제거.</div>
         <div class="callout"><strong>🗑️ 이미 정리 완료.</strong> 유물 예약작업 4건(AutoTask-Watcher-Start/Stop · 구 CEO-Morning-Brief-0800 · 구 PC-Shutdown-Greeting) UAC 삭제 완료(2026-06-01, 13→9). Weekly-Context-Arm도 폐기(06-02) — 주간 컨텍스트 정비는 월 09:00 텔레그램 반자동 모델로 운영. CEO_DAILY_CLEVEL_CHECK은 소스 소실로 무력.</div>
