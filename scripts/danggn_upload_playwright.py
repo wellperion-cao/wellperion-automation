@@ -2,10 +2,10 @@
 # v0.1 — 당근 비즈프로필 반자동 업로더 스캐폴드
 #         (네이버 발행기 패턴 차용: Playwright + Persistent Profile 1회 로그인 세션)
 #
-# ⚠️ 2026-06-03 GM 결정 — 당근은 B안(수동 업로드) 유지. 반자동 보류.
-#    사유: 당근비즈니스 PC 로그인 세션이 자동화 프로필에 영구 저장되지 않음(브라우저 재시작 시 login 리다이렉트).
-#    운영: CMO가 콘텐츠 패키지(output(당근)/ + danggn_copy.md) 준비 → GM이 당근 앱/웹에서 직접 업로드.
-#    본 스크립트의 dryrun(패키지 점검)만 활용. setup/draft/publish는 세션 미유지로 미사용.
+# 🔁 2026-06-03 재시도 — 쿠키 기반 세션 판정으로 개편 (GM 재시도 결재).
+#    1차 실패 원인 추정: URL 안착만으로 세션 판정 → OAuth 경유 URL을 오판해 반쪽 세션 저장.
+#    개편: setup이 '비즈홈 안착 + 실제 인증 쿠키 보유'까지 확인하고, 쿠키 이름(값 비공개) 덤프.
+#    검증: --mode check 로 브라우저 재시작 후 세션 유지 여부 실측 → 유지 시 반자동, 미유지 시 B안(수동) 확정.
 #
 # 정책: 종착지=임시저장(draft). 현 단계 목표 = 로그인 세션 저장(setup) + 골격까지.
 #       에디터 자동입력(draft/publish)은 GM 로그인 후 당근 비즈 글쓰기 DOM 실측 후 다음 단계 구현.
@@ -54,6 +54,9 @@ DANGGN_BIZ_URL = f"https://bizprofile.daangn.com/biz_accounts/{DANGGN_BIZ_ACCOUN
 LOGIN_REDIRECT_SIGNALS = ("/login", "accounts.daangn.com", "logon", "auth.daangn.com", "nid.daangn.com")
 # 로그인 성공 안착 시그널 — 비즈프로필 도메인으로 돌아옴
 SESSION_LANDED_HOST = "bizprofile.daangn.com"
+# 인증 쿠키 후보 — 당근/카카오 OAuth 로그인 시 발급되는 영속 인증 쿠키 이름 조각.
+# (URL 안착만으론 OAuth 경유 URL을 오판 → 실제 인증 쿠키 보유까지 확인)
+AUTH_COOKIE_HINTS = ("session", "sid", "token", "auth", "_kau", "_kawlt", "access", "refresh")
 
 # 콘텐츠 소스 — instagram/{폴더}/output(당근)/ + danggn_copy.md
 OUTPUT_SUBDIR_NAME = "output(당근)"
@@ -210,6 +213,31 @@ def is_session_landed(current_url: str) -> bool:
     return SESSION_LANDED_HOST in current_url and not is_login_required(current_url)
 
 
+def _auth_cookies(cookies) -> "list[str]":
+    """인증 쿠키 후보(이름 조각 매칭) 목록 — 값은 절대 반환하지 않고 이름만."""
+    names = []
+    for c in cookies:
+        n = (c.get("name") or "")
+        if any(h in n.lower() for h in AUTH_COOKIE_HINTS):
+            names.append(n)
+    return names
+
+
+def _dump_cookie_names(cookies) -> None:
+    """진단용 — 보유 쿠키 '이름·도메인'만 출력(값 비공개). 인증 쿠키 식별에 사용."""
+    if not cookies:
+        print("        (쿠키 0개)")
+        return
+    seen = set()
+    for c in cookies:
+        key = (c.get("name") or "", c.get("domain") or "")
+        if key in seen:
+            continue
+        seen.add(key)
+        mark = " ★auth후보" if any(h in (c.get("name") or "").lower() for h in AUTH_COOKIE_HINTS) else ""
+        print(f"        · {c.get('name')}  @{c.get('domain')}{mark}")
+
+
 # -----------------------------------------------------------------
 # dryrun — 브라우저/로그인 없이 본문 조립·이미지·경로·가드 점검
 # (playwright import 안 함 — 미설치 환경에서도 실행 가능)
@@ -312,27 +340,68 @@ async def run_setup() -> int:
 
     has_session = False
     waited, deadline = 0, 600  # 초 (당근비즈 OAuth 로그인 여유 — 2026-06-03)
+    auth_names: "list[str]" = []
     while waited < deadline:
         try:
             current_url = page.url
             cookies = await context.cookies()
         except Exception:
             break  # 브라우저 창을 GM이 닫음
-        # 로그인 페이지를 벗어나 비즈 홈에 안착 + 쿠키 보유 = 세션 성립
-        if is_session_landed(current_url) and cookies:
+        # 비즈 홈 안착 + '인증 쿠키' 보유 = 세션 성립 (URL 안착만으론 OAuth 경유 URL 오판)
+        auth_names = _auth_cookies(cookies)
+        if is_session_landed(current_url) and auth_names:
             has_session = True
             break
         await asyncio.sleep(3)
         waited += 3
     if has_session:
         await asyncio.sleep(2)  # 쿠키가 디스크 프로필에 안착할 여유
-        print("[INFO] 당근 비즈 세션 확인 — 저장 완료 (값 비공개: ****)")
+        print(f"[INFO] 당근 비즈 세션 확인 — 인증 쿠키 {len(auth_names)}종 보유 (값 비공개: ****)")
+        print("[INFO] --- 보유 쿠키 진단 (이름·도메인만, 값 비공개) ---")
+        try:
+            _dump_cookie_names(await context.cookies())
+        except Exception:
+            pass
+        print("[INFO] → 위 ★auth후보 중 영속 쿠키가 check에서 살아있으면 반자동 성립.")
     else:
-        print("[WARN] 5분 내 로그인 미완료(비즈 홈 미안착) — 다시 실행하세요.")
+        print("[WARN] 10분 내 로그인 미완료(비즈 홈 안착 + 인증 쿠키 미검출) — 다시 실행하세요.")
     await context.close()
     await p.stop()
     print("[INFO] === SETUP 완료 ===")
-    return 0
+    return 0 if has_session else 2
+
+
+# -----------------------------------------------------------------
+# check — 저장된 세션으로 비즈 홈 접속해 로그인 유지 여부만 확인 (읽기 전용)
+# 핵심 검증: 브라우저 재시작 후에도 세션이 살아있는지 = 반자동 가능 여부 판단
+# -----------------------------------------------------------------
+async def run_check() -> int:
+    import asyncio
+    async_playwright = _import_playwright()
+    print("[INFO] === 당근 비즈 세션 CHECK (읽기 전용) ===")
+    if not PERSISTENT_PROFILE_DIR.exists():
+        print("[ERROR] 프로필 미존재 — 먼저 --mode setup 실행 필요.")
+        return 3
+    p, context = await _launch_context(async_playwright)
+    page = context.pages[0] if context.pages else await context.new_page()
+    await page.goto(DANGGN_BIZ_URL, wait_until="domcontentloaded", timeout=30_000)
+    await asyncio.sleep(3)
+    url = page.url
+    cookies = await context.cookies()
+    auth_names = _auth_cookies(cookies)
+    logged_in = is_session_landed(url) and bool(auth_names)
+    print(f"[INFO] 최종 URL: {url}")
+    print(f"[INFO] 로그인 페이지 리다이렉트: {is_login_required(url)}")
+    print(f"[INFO] 인증 쿠키 후보 {len(auth_names)}종 / 로그인 유지: {logged_in}")
+    print("[INFO] --- 보유 쿠키 진단 (이름·도메인만) ---")
+    _dump_cookie_names(cookies)
+    await context.close()
+    await p.stop()
+    if logged_in:
+        print("[INFO] ✅ 세션 유지됨 — 반자동(draft/publish) 진행 가능.")
+    else:
+        print("[WARN] ❌ 세션 미유지 — 당근은 영속 세션 불가 → 수동(B안) 확정.")
+    return 0 if logged_in else 2
 
 
 # -----------------------------------------------------------------
@@ -377,10 +446,11 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--mode",
-        choices=["setup", "dryrun", "draft", "publish"],
+        choices=["setup", "check", "dryrun", "draft", "publish"],
         default="dryrun",
         help=(
             "setup: GM 수동 로그인 세션 저장 / "
+            "check: 저장 세션 유지 여부 검증(읽기 전용) / "
             "dryrun: 브라우저 없이 본문·이미지·경로·가드 점검 (기본) / "
             "draft: 임시저장 [스텁] / "
             "publish: 실 발행 [스텁] (--i-am-sure 또는 WELLPERION_PUBLISH_GO=1 필요)"
@@ -408,6 +478,8 @@ def main() -> int:
         return run_dryrun(args)
     if args.mode == "setup":
         return asyncio.run(run_setup())
+    if args.mode == "check":
+        return asyncio.run(run_check())
     if args.mode == "draft":
         return asyncio.run(run_draft(args))
     if args.mode == "publish":

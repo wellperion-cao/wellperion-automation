@@ -30,8 +30,9 @@ except Exception:
 ROOT = Path(r"C:\Users\jjky0\welperion-automation")
 PROFILE_DIR = ROOT / "profiles" / "wordpress"
 
-WP_ADMIN_URL = "https://wellperion.com/wp/wp-admin/"
-WP_LOGIN_URL = "https://wellperion.com/wp/wp-login.php"
+# 주의: wellperion.com 은 HTTPS 미동작(SSL 연결 실패). HTTP 전용 사이트 → http:// 고정.
+WP_ADMIN_URL = "http://wellperion.com/wp/wp-admin/"
+WP_LOGIN_URL = "http://wellperion.com/wp/wp-login.php"
 # 로그인 성공 = wordpress_logged_in_* 쿠키 존재 (워드프레스 표준 인증 쿠키)
 AUTH_COOKIE_PREFIX = "wordpress_logged_in"
 
