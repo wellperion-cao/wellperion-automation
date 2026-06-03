@@ -1,10 +1,19 @@
 # scripts/kakao_channel_upload_playwright.py
-# v0.1 — 카카오 채널(소식) 반자동 업로더 스캐폴드
+# v0.2 — 카카오 채널(소식) 반자동 업로더
 #         (네이버 발행기 패턴 차용: Playwright + Persistent Profile 1회 로그인 세션)
 #
-# 정책: 종착지=임시저장(draft). 현 단계 목표 = 로그인 세션 저장(setup) + 골격까지.
-#       에디터 자동입력(draft/publish)은 GM 로그인 후 center-pf 소식 작성 DOM 실측 후 다음 단계 구현.
+# 정책: 종착지=임시저장(draft). draft 모드 = '발행시간:임시저장' 선택 후 등록(=임시저장, 비공개).
+#       publish 모드 = GM go 가드 통과 시에만 '발행시간:지금' 선택 후 등록(실 발행).
 #       비밀번호 하드코딩 없음. Persistent Profile 세션 재사용. 토큰 stdout 노출 금지.
+#
+# 소식 작성 경로 (2026-06-03 DOM 실측):
+#   center-pf.kakao.com → business.kakao.com 자동 리다이렉트 → /_{채널ID}/posts (소식 올리기)
+#   페이지 상단 인라인 에디터. iframe 없음(단일 SPA).
+#   - 제목: input.tf_g[placeholder='제목']
+#   - 본문: textarea.textbox___...  (placeholder '...새 이야기를 들려주세요.')
+#   - 이미지: input[type=file].uploadInput  (multiple, 직접 set_input_files)
+#   - 발행시간 radio: input[name='status'] value=published(지금)/draft(임시저장)/scheduled(예약)
+#   - 등록 버튼: button[type=submit] 텍스트 '등록' (입력 채워지면 활성화)
 #
 # 사전 설치 (GM 로컬 1회):
 #   python -m venv .venv ; .venv\Scripts\activate
@@ -48,6 +57,20 @@ KAKAO_CHANNEL_ADMIN_URL = "https://center-pf.kakao.com/"
 LOGIN_REDIRECT_SIGNALS = ("accounts.kakao.com", "/login", "logon")
 # 로그인 성공 안착 시그널 — 관리자 홈 도메인으로 돌아옴
 SESSION_LANDED_HOST = "center-pf.kakao.com"
+
+# 웰페리온 채널 ID + 소식 작성(소식 올리기) 페이지 — center-pf → business.kakao.com 리다이렉트 (2026-06-03 실측)
+KAKAO_CHANNEL_ID = "_cgxiKj"  # 웰페리온 채널
+KAKAO_POSTS_URL = f"https://business.kakao.com/{KAKAO_CHANNEL_ID}/posts"
+
+# 소식 에디터 DOM selector (2026-06-03 실측)
+SEL_TITLE = "input.tf_g[placeholder='제목']"          # 제목 input
+SEL_BODY = "textarea.textbox___1Ig6T"                # 본문 textarea
+SEL_FILE = "input[type=file].uploadInput"            # 이미지 file input (multiple)
+SEL_STATUS_DRAFT = "input[name='status'][value='draft']"        # 발행시간: 임시저장
+SEL_STATUS_PUBLISH = "input[name='status'][value='published']"  # 발행시간: 지금
+SEL_LABEL_DRAFT = "label:has-text('임시저장')"
+SEL_LABEL_PUBLISH = "label:has-text('지금')"
+SEL_SUBMIT = "button[type='submit']:has-text('등록')"  # 등록 버튼
 
 # 콘텐츠 소스 — instagram/{폴더}/output(카카오 채널)/ + kakao_copy.md
 OUTPUT_SUBDIR_NAME = "output(카카오 채널)"
@@ -246,7 +269,8 @@ def run_dryrun(args: argparse.Namespace) -> int:
     print("[INFO] --- 모드 가드 점검 ---")
     print(f"        publish GM go 가드: --i-am-sure 또는 {PUBLISH_GO_ENV_KEY}=1 필요")
     print(f"        현재 --i-am-sure={args.i_am_sure} / env {PUBLISH_GO_ENV_KEY}={os.environ.get(PUBLISH_GO_ENV_KEY, '(unset)')}")
-    print("[INFO] ⚠ draft/publish 에디터 자동입력은 스텁 — GM 로그인 후 center-pf 소식 작성 DOM 실측 필요")
+    print(f"[INFO] 소식 작성 URL: {KAKAO_POSTS_URL}")
+    print("[INFO] draft = 임시저장 / publish = 실 발행(GM go 가드 필요). 에디터 자동입력 구현됨(v0.2).")
     print("[INFO] === DRYRUN 완료 (제출·발행 없음) ===")
     return 0
 
@@ -334,24 +358,120 @@ async def run_setup() -> int:
 
 
 # -----------------------------------------------------------------
-# draft — [스텁] 소식 임시저장 (에디터 자동입력 미구현)
-# 입력 인자(title/body/image)는 build_post로 배선만 해두고, 실제 DOM 자동입력은 다음 단계.
+# 에디터 자동입력 공통 — 소식 작성 페이지(/posts) 인라인 에디터
+#   제목 → 본문 → 이미지 첨부. 발행시간 radio 선택·등록 클릭은 호출부에서 결정.
+#   (press_sequentially 사용 — React onChange 트리거 + 한글 IME 안전)
+# -----------------------------------------------------------------
+async def _fill_editor(page, post: ChannelPost) -> None:
+    import asyncio
+    # 소식 작성 페이지 진입 (center-pf → business.kakao.com 리다이렉트 흡수)
+    await page.goto(KAKAO_POSTS_URL, wait_until="domcontentloaded", timeout=60_000)
+    await asyncio.sleep(6)  # SPA 에디터 렌더 대기
+
+    # 제목
+    title_loc = page.locator(SEL_TITLE)
+    await title_loc.first.click()
+    await title_loc.first.fill("")
+    await title_loc.first.press_sequentially(post.title, delay=15)
+    print(f"[INFO] 제목 입력 완료 ({len(post.title)}자)")
+
+    # 본문
+    body_loc = page.locator(SEL_BODY)
+    await body_loc.first.click()
+    await body_loc.first.fill("")
+    await body_loc.first.press_sequentially(post.body, delay=4)
+    print(f"[INFO] 본문 입력 완료 ({len(post.body)}자)")
+
+    # 이미지 첨부 (file input 직접 — 한 번에 multiple)
+    if post.image_paths:
+        file_loc = page.locator(SEL_FILE)
+        await file_loc.first.set_input_files([str(p) for p in post.image_paths])
+        # 업로드(썸네일 생성) 대기 — 장수에 비례
+        await asyncio.sleep(3 + min(len(post.image_paths), 10))
+        print(f"[INFO] 이미지 {len(post.image_paths)}장 첨부 완료")
+    else:
+        print("[WARN] 첨부 이미지 0장 — 텍스트만 입력")
+
+
+async def _select_status(page, want_draft: bool) -> bool:
+    """발행시간 radio 선택. want_draft=True → 임시저장, False → 지금(발행).
+    선택 성공 여부 반환."""
+    import asyncio
+    label_sel = SEL_LABEL_DRAFT if want_draft else SEL_LABEL_PUBLISH
+    radio_sel = SEL_STATUS_DRAFT if want_draft else SEL_STATUS_PUBLISH
+    try:
+        await page.locator(label_sel).first.click(timeout=5_000)
+    except Exception as e:
+        print(f"[WARN] 발행시간 라벨 클릭 실패: {e}")
+    await asyncio.sleep(0.5)
+    try:
+        checked = await page.locator(radio_sel).first.is_checked()
+    except Exception:
+        checked = False
+    return checked
+
+
+# -----------------------------------------------------------------
+# draft — 소식 임시저장. 제목·본문·이미지 입력 → '발행시간:임시저장' → 등록(임시저장, 비공개).
+#         발행(공개) 절대 안 함.
 # -----------------------------------------------------------------
 async def run_draft(args: argparse.Namespace) -> int:
+    import asyncio
     if not PERSISTENT_PROFILE_DIR.exists():
         print("[ERROR] 프로필 미존재 — 먼저 --mode setup 실행 필요.")
         return 3
     post = build_post(args)
-    print("[INFO] === 카카오 채널 DRAFT (스텁) ===")
+    print("[INFO] === 카카오 채널 DRAFT (임시저장) ===")
     print(f"[INFO] 제목: {post.title or '(비어 있음)'} / 본문 {len(post.body)} chars / 이미지 {len(post.image_paths)}장")
-    print("[TODO] 카카오 채널 소식 에디터 자동입력 미구현 — GM 로그인(setup) 후 center-pf 소식 작성 DOM 실측 필요")
-    return 0
+    errs = validate_post(post, require_images=False)
+    if errs:
+        print("[ERROR] 콘텐츠 검증 실패:")
+        for e in errs:
+            print(f"        · {e}")
+        return 4
+
+    async_playwright = _import_playwright()
+    p, context = await _launch_context(async_playwright)
+    page = context.pages[0] if context.pages else await context.new_page()
+    rc = 0
+    try:
+        await _fill_editor(page, post)
+        checked = await _select_status(page, want_draft=True)
+        if not checked:
+            print("[WARN] 임시저장 radio 미선택 — 안전상 등록 클릭 보류. 입력완료 상태로 정지.")
+        else:
+            print("[INFO] 발행시간 = 임시저장 선택 확인")
+        EVIDENCE_DIR.mkdir(parents=True, exist_ok=True)
+        shot_before = EVIDENCE_DIR / "kakao_draft_filled.png"
+        await page.screenshot(path=str(shot_before))
+        print(f"[INFO] 입력완료 스크린샷: {shot_before}")
+
+        if checked:
+            # 임시저장 radio가 선택된 등록 = 임시저장(비공개). 발행 아님.
+            await page.locator(SEL_SUBMIT).first.click(timeout=10_000)
+            await asyncio.sleep(4)
+            shot_after = EVIDENCE_DIR / "kakao_draft_saved.png"
+            await page.screenshot(path=str(shot_after))
+            print(f"[INFO] 임시저장 등록 클릭 완료 — 결과 스크린샷: {shot_after}")
+        print("[INFO] === DRAFT 완료 (공개 발행 없음) ===")
+    except Exception as e:
+        print(f"[ERROR] draft 실패: {e}")
+        try:
+            await page.screenshot(path=str(EVIDENCE_DIR / "kakao_draft_error.png"))
+        except Exception:
+            pass
+        rc = 5
+    finally:
+        await context.close()
+        await p.stop()
+    return rc
 
 
 # -----------------------------------------------------------------
-# publish — [스텁] 실 발행. GM go 가드 통과 시에만.
+# publish — 실 발행. GM go 가드 통과 시에만 '발행시간:지금' → 등록(공개).
 # -----------------------------------------------------------------
 async def run_publish(args: argparse.Namespace) -> int:
+    import asyncio
     if not publish_guard_ok(args):
         print("[ERROR] publish 거부 — GM go 가드 미충족.")
         print(f"        실 발행하려면 --i-am-sure 플래그 또는 {PUBLISH_GO_ENV_KEY}=1 환경변수 필요.")
@@ -360,10 +480,40 @@ async def run_publish(args: argparse.Namespace) -> int:
         print("[ERROR] 프로필 미존재 — 먼저 --mode setup 실행 필요.")
         return 3
     post = build_post(args)
-    print("[INFO] === 카카오 채널 PUBLISH (스텁·GM go 가드 통과) ===")
+    print("[INFO] === 카카오 채널 PUBLISH (GM go 가드 통과) ===")
     print(f"[INFO] 제목: {post.title or '(비어 있음)'} / 본문 {len(post.body)} chars / 이미지 {len(post.image_paths)}장")
-    print("[TODO] 카카오 채널 소식 에디터 자동입력 미구현 — GM 로그인(setup) 후 center-pf 소식 작성 DOM 실측 필요")
-    return 0
+    errs = validate_post(post, require_images=True)
+    if errs:
+        print("[ERROR] 콘텐츠 검증 실패:")
+        for e in errs:
+            print(f"        · {e}")
+        return 4
+
+    async_playwright = _import_playwright()
+    p, context = await _launch_context(async_playwright)
+    page = context.pages[0] if context.pages else await context.new_page()
+    rc = 0
+    try:
+        await _fill_editor(page, post)
+        checked = await _select_status(page, want_draft=False)
+        if not checked:
+            print("[ERROR] 발행시간 '지금' 미선택 — 발행 중단(안전).")
+            rc = 6
+        else:
+            print("[INFO] 발행시간 = 지금(발행) 선택 확인")
+            EVIDENCE_DIR.mkdir(parents=True, exist_ok=True)
+            await page.screenshot(path=str(EVIDENCE_DIR / "kakao_publish_filled.png"))
+            await page.locator(SEL_SUBMIT).first.click(timeout=10_000)
+            await asyncio.sleep(5)
+            await page.screenshot(path=str(EVIDENCE_DIR / "kakao_publish_done.png"))
+            print("[INFO] === PUBLISH 완료 (실 발행) ===")
+    except Exception as e:
+        print(f"[ERROR] publish 실패: {e}")
+        rc = 5
+    finally:
+        await context.close()
+        await p.stop()
+    return rc
 
 
 # -----------------------------------------------------------------
