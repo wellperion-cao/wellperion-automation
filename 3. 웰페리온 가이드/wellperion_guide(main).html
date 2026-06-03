@@ -631,17 +631,17 @@
     <!-- AUTO:LATEST-START -->
     <div class="card grow">
       <h4>최신 업데이트 — 2026-06-03 (자동 갱신)</h4>
+      <p><strong>2026-06-03</strong> chore(guidehub): S4 맨 아래 업무자동화 현황 칸 삭제 (GM 지시)</p>
       <p><strong>2026-06-03</strong> feat(cmo): 네이버 카페 발행기 스티커 삽입 — 팝업킬러 충돌·전프레임·모달재오픈 해결</p>
       <p><strong>2026-06-03</strong> feat(coo): 업무 난이도 평가 백엔드 — TODO 스키마 '난이도' 컬럼 append (Story 1/N)</p>
       <p><strong>2026-06-03</strong> auto(cmo): 검수 승인 건 발행 0건 / 수동대기 0건</p>
       <p><strong>2026-06-03</strong> feat(cmo): 네이버 블로그 발행기 스티커 삽입 + 이미지 슬라이드 안정화</p>
-      <p><strong>2026-06-03</strong> review: CMO-2026-06-03-AI4-역할분담 status 승인→승인 (검수카드 중계)</p>
     </div>
 <!-- AUTO:LATEST-END -->
         <table>
           <tr><th style="width:160px">날짜</th><th>변경 내용</th></tr>
           <!-- AUTO:TABLE-START -->
-      <tr><td><strong>2026-06-03 (자동)</strong></td><td>feat(cmo): 네이버 카페 발행기 스티커 삽입 — 팝업킬러 충돌·전프레임·모달재오픈 해결 · feat(coo): 업무 난이도 평가 백엔드 — TODO 스키마 '난이도' 컬럼 append (Story 1/N) · auto(cmo): 검수 승인 건 발행 0건 / 수동대기 0건 · feat(cmo): 네이버 블로그 발행기 스티커 삽입 + 이미지 슬라이…</td></tr>
+      <tr><td><strong>2026-06-03 (자동)</strong></td><td>chore(guidehub): S4 맨 아래 업무자동화 현황 칸 삭제 (GM 지시) · feat(cmo): 네이버 카페 발행기 스티커 삽입 — 팝업킬러 충돌·전프레임·모달재오픈 해결 · feat(coo): 업무 난이도 평가 백엔드 — TODO 스키마 '난이도' 컬럼 append (Story 1/N) · auto(cmo): 검수 승인 건 발행 0건 / …</td></tr>
       <!-- AUTO:TABLE-END -->
           <tr><td><strong>2026-05-28 (14차)</strong></td><td>공지/안내문 생성(COO 하위) · 오프라인 홍보물 디자인 제작(CMO 하위) 도구 신설 · 공지 서식 v2.0 독립 페이지화 · 회사소개서·전략로드맵 원본 「3. 웰페리온 가이드/회사문서/」로 이관(SSOT 단일화) · C-Level 부팅 R/R Notion API→가이드허브 g10 참조로 전환 · GitHub Pages 워크플로 폴더명 경로 수정 · 사이드바 "공통+7개 C-Level" 라벨 제거</td></tr>
           <tr><td>2026-05-27 (13차)</td><td>GitHub Pages 전환 · 사이드바 4섹터 · AI C-Level 통일 · 운영 통합 체계 · 공식채널·지출현황·취업규칙·SSOT 신설 · g2+g19·g9+g20·g12·g13 합병 · 김남욱 탭 확장 · v2.5</td></tr>
@@ -4318,6 +4318,14 @@ Start-Process python -ArgumentList telegram_bot\daily_scheduler.py -WorkingDirec
       </div>
     </div>
 
+    <!-- 🔄 최근 변동 — 업무·결재 SSOT 최근 수정 항목(수정일 순). 같은 todo_list 호출 재사용 (2026-06-03 GM) -->
+    <div id="s4ChangeFeed" style="margin:0 0 20px;">
+      <div style="font-size:11px;font-weight:700;letter-spacing:0.04em;color:var(--dim);margin-bottom:8px;text-transform:uppercase;">🔄 최근 변동 <span style="font-weight:500;text-transform:none;">— 최근 바뀐 업무·결재 (수정 순) · 항목 클릭 시 해당 SSOT로 이동</span></div>
+      <div id="s4ChangeList" style="background:var(--bg);border:1px solid var(--border);border-radius:10px;overflow:hidden;">
+        <div style="color:var(--dim);font-size:13px;padding:12px 14px;">불러오는 중…</div>
+      </div>
+    </div>
+
     <!-- 개요 · 보고 체계 SSOT (별도 페이지 패널 그대로 이관 · 기본 펼침) -->
     <div style="background:var(--paper);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin:8px 0;">
       <div onclick="gcooToggle('gcooOverviewBody','gcooOvArrow')" style="padding:13px 16px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none;border-left:3px solid var(--accent);">
@@ -4448,8 +4456,62 @@ Start-Process python -ArgumentList telegram_bot\daily_scheduler.py -WorkingDirec
           + card(apprPend.length, '결재 대기', 'var(--warm)', APPR_URL, '결재 SSOT')
           + card(apprDone.length, '결재 완료', 'var(--grow)', APPR_URL, '결재 SSOT')
           + card(apprRej.length, '반려', 'var(--dim)', APPR_URL, '결재 SSOT');
+
+        // 🔄 최근 변동 — 같은 rows 재사용. 수정일 desc 정렬 후 상위 6건. 이벤트 유형은 상태/결재상태로 추정.
+        // 주의: 시트엔 수정일만 있어 필드 단위 old→new diff는 없음(현재 스냅샷+유형만 표시).
+        var feedEl = document.getElementById('s4ChangeList');
+        if (feedEl) {
+          function relTime(s){
+            s = String(s || '').trim(); if (!s) return '';
+            var d = new Date(s.replace(' ', 'T'));
+            if (isNaN(d.getTime())) return s.slice(5, 16);
+            var now = new Date();
+            var d0 = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+            var n0 = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            var diff = Math.round((n0 - d0) / 86400000);
+            var hm = ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2);
+            if (diff <= 0) return '오늘 ' + hm;
+            if (diff === 1) return '어제 ' + hm;
+            if (diff < 7) return diff + '일 전';
+            return (d.getMonth() + 1) + '/' + d.getDate();
+          }
+          function changeType(r){
+            var s = st(r), a = String(as(r));
+            if (/반려/.test(a)) return { ic: '❌', t: '반려', c: 'var(--warm)' };
+            if (a === '결재완료') return { ic: '✍️', t: '결재완료', c: 'var(--grow)' };
+            if (/완료$/.test(a)) return { ic: '✍️', t: '결재진행', c: 'var(--accent)' };
+            if (s === '완료') return { ic: '✅', t: '완료', c: 'var(--grow)' };
+            if (s === '보류') return { ic: '⏸', t: '보류', c: 'var(--dim)' };
+            var cr = String(r['생성일'] || r.createdAt || '').slice(0, 16);
+            var up = String(r['수정일'] || r.updatedAt || '').slice(0, 16);
+            if (cr && up && cr === up) return { ic: '🆕', t: '신규', c: 'var(--accent)' };
+            return { ic: '✏️', t: '수정', c: 'var(--dim)' };
+          }
+          var recent = rows.filter(function(r){ return String(r['수정일'] || r.updatedAt || '').trim() && String(r['업무명'] || r.title || '').trim(); })
+            .sort(function(a, b){ return String(b['수정일'] || b.updatedAt || '').localeCompare(String(a['수정일'] || a.updatedAt || '')); })
+            .slice(0, 6);
+          if (!recent.length) {
+            feedEl.innerHTML = '<div style="color:var(--dim);font-size:13px;padding:12px 14px;">최근 변동 없음</div>';
+          } else {
+            feedEl.innerHTML = recent.map(function(r, i){
+              var typ = changeType(r);
+              var id = r.id || r['id'] || '';
+              var isAppr = String(as(r)).trim() !== '';
+              var href = (isAppr ? APPR_URL : WORK_URL) + (id ? '?item=' + encodeURIComponent(id) : '');
+              var title = String(r['업무명'] || r.title || '(제목 없음)');
+              var owner = String(r['담당자'] || r.owner || '-');
+              var when = relTime(r['수정일'] || r.updatedAt || '');
+              return '<a href="' + href + '" target="_blank" style="display:flex;align-items:center;gap:10px;padding:9px 14px;'
+                + (i ? 'border-top:1px solid var(--border);' : '') + 'text-decoration:none;color:var(--text);">'
+                + '<span style="font-size:11px;font-weight:700;color:' + typ.c + ';min-width:60px;">' + typ.ic + ' ' + typ.t + '</span>'
+                + '<span style="flex:1;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + esc(title) + '</span>'
+                + '<span style="font-size:11px;color:var(--dim);white-space:nowrap;">' + esc(owner) + '</span>'
+                + '<span style="font-size:11px;color:var(--dim);white-space:nowrap;min-width:52px;text-align:right;">' + when + '</span></a>';
+            }).join('');
+          }
+        }
       })
-      .catch(fail);
+      .catch(function(){ fail(); var f = document.getElementById('s4ChangeList'); if (f) f.innerHTML = '<div style="color:var(--dim);font-size:13px;padding:12px 14px;">변동 불러오기 실패</div>'; });
   })();
 
   window.hubEditNotes = function(field){
