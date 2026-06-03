@@ -189,9 +189,26 @@ def _glob_to_regex(glob: str) -> str:
     return "".join(out)
 
 
+def _strip_leading_title(title: str, body: str) -> str:
+    """본문 첫 비어있지 않은 줄이 제목과 같으면 제거 — 제목 연속 표기 버그 방지 (2026-06-03 GM)."""
+    if not title or not body:
+        return body
+    lines = body.split("\n")
+    i = 0
+    while i < len(lines) and not lines[i].strip():
+        i += 1
+    if i < len(lines) and lines[i].strip() == title.strip():
+        del lines[i]
+        while i < len(lines) and not lines[i].strip():
+            del lines[i]
+        return "\n".join(lines)
+    return body
+
+
 def build_post(args: argparse.Namespace) -> BlogPost:
     title = (args.title or "").strip()
     body = load_body(Path(args.body_file) if args.body_file else None, args.body)
+    body = _strip_leading_title(title, body)
     image_dir = Path(args.image_dir) if args.image_dir else None
     if image_dir and not image_dir.is_absolute():
         image_dir = ROOT / image_dir
