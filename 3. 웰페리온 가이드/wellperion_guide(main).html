@@ -617,17 +617,17 @@
     <!-- AUTO:LATEST-START -->
     <div class="card grow">
       <h4>최신 업데이트 — 2026-06-03 (자동 갱신)</h4>
+      <p><strong>2026-06-03</strong> refactor(s2): 완료·대기 보고 포맷 중복 제거 — 4블록→3섹션 정본 단일화</p>
       <p><strong>2026-06-03</strong> refactor(s2): 🎯키트 탭 흡수 — 9탭→8탭</p>
       <p><strong>2026-06-03</strong> fix(coo): 부서장=담당자의 부서장(owner 우선)·본인이라도 승인부터 — 카테고리 짐작 오배정 정정</p>
       <p><strong>2026-06-03</strong> fix(g1): 종료일 저장이 화면에 반영 안 되던 버그 수정</p>
       <p><strong>2026-06-03</strong> feat(cmo): 워드프레스 관리자 반자동 setup 스크립트 (세션 로그인 방식)</p>
-      <p><strong>2026-06-03</strong> docs(cto): ai-cto.md T-메뉴 4축 재번호 동기화 (T1기술·T2자동화·T3교육, 구 설정·프롬프트 삭제)</p>
     </div>
 <!-- AUTO:LATEST-END -->
         <table>
           <tr><th style="width:160px">날짜</th><th>변경 내용</th></tr>
           <!-- AUTO:TABLE-START -->
-      <tr><td><strong>2026-06-03 (자동)</strong></td><td>refactor(s2): 🎯키트 탭 흡수 — 9탭→8탭 · fix(coo): 부서장=담당자의 부서장(owner 우선)·본인이라도 승인부터 — 카테고리 짐작 오배정 정정 · fix(g1): 종료일 저장이 화면에 반영 안 되던 버그 수정 · feat(cmo): 워드프레스 관리자 반자동 setup 스크립트 (세션 로그인 방식) · docs(cto): ai-…</td></tr>
+      <tr><td><strong>2026-06-03 (자동)</strong></td><td>refactor(s2): 완료·대기 보고 포맷 중복 제거 — 4블록→3섹션 정본 단일화 · refactor(s2): 🎯키트 탭 흡수 — 9탭→8탭 · fix(coo): 부서장=담당자의 부서장(owner 우선)·본인이라도 승인부터 — 카테고리 짐작 오배정 정정 · fix(g1): 종료일 저장이 화면에 반영 안 되던 버그 수정 · feat(cmo): 워드…</td></tr>
       <!-- AUTO:TABLE-END -->
           <tr><td><strong>2026-05-28 (14차)</strong></td><td>공지/안내문 생성(COO 하위) · 오프라인 홍보물 디자인 제작(CMO 하위) 도구 신설 · 공지 서식 v2.0 독립 페이지화 · 회사소개서·전략로드맵 원본 「3. 웰페리온 가이드/회사문서/」로 이관(SSOT 단일화) · C-Level 부팅 R/R Notion API→가이드허브 g10 참조로 전환 · GitHub Pages 워크플로 폴더명 경로 수정 · 사이드바 "공통+7개 C-Level" 라벨 제거</td></tr>
           <tr><td>2026-05-27 (13차)</td><td>GitHub Pages 전환 · 사이드바 4섹터 · AI C-Level 통일 · 운영 통합 체계 · 공식채널·지출현황·취업규칙·SSOT 신설 · g2+g19·g9+g20·g12·g13 합병 · 김남욱 탭 확장 · v2.5</td></tr>
@@ -1995,17 +1995,21 @@
         </table>
         <div class="callout tip"><strong>원칙:</strong> 표 기반 직관·가독성. 단순 카운트 나열 금지. 항목별 prefix 번호로 GM 선택 가능.</div>
 
-        <h3 style="margin-top:24px;border-top:1px solid var(--border);padding-top:20px;"><span class="ico">✅</span>.bat 부팅 6단계 체크리스트</h3>
-        <div class="callout tip" style="margin:0 0 10px;font-size:12.5px;">실제 <code>Start-AI CEO.bat</code>이 전달하는 부팅 프롬프트와 1:1 일치 (2026-05-30 .bat 대조 검증·수정).</div>
-        <table>
-          <tr><th style="width:60px">#</th><th>단계</th></tr>
-          <tr><td>1</td><td>에이전트 md(<code>wellperion-agents/.claude/agents/ai-{role}.md</code>) 읽고 페르소나·R/R 동적 조회·운영 원칙 숙지</td></tr>
-          <tr><td>2</td><td>메인 CLAUDE.md 헌법 로드</td></tr>
-          <tr><td>3</td><td>가이드허브 <strong>g10 공통 탭 + AI CEO 탭</strong>의 <strong>운영 기본값(SSOT)</strong> 표에서 R/R·KPI·운영 기본값 흡수 (<code>#g10/ceo</code>)</td></tr>
-          <tr><td>4</td><td><code>status/ceo.json</code> + <code>status/_queue.json</code> 읽고 본인 task를 <strong>표 형식</strong>으로 표시</td></tr>
-          <tr><td>5</td><td>페르소나·KPI·권한 마크다운 표 선언</td></tr>
-          <tr><td>6</td><td>타 C-Level 침범 금지 선언 후 대기 (CEO 추가 본업: GitHub 백그라운드 SSOT + 가이드허브 프론트 SSOT 즉시 fetch)</td></tr>
-        </table>
+        <details class="toggle" style="margin-top:24px;border-top:1px solid var(--border);padding-top:20px;">
+          <summary style="cursor:pointer;font-weight:700;font-size:15px;"><span class="ico">✅</span>.bat 부팅 6단계 체크리스트 (실제 .bat 1:1 — 참고용, 접힘)</summary>
+          <div class="toggle-body" style="margin-top:10px;">
+          <div class="callout tip" style="margin:0 0 10px;font-size:12.5px;">실제 <code>Start-AI CEO.bat</code>이 전달하는 부팅 프롬프트와 1:1 일치 (2026-05-30 .bat 대조 검증·수정).</div>
+          <table>
+            <tr><th style="width:60px">#</th><th>단계</th></tr>
+            <tr><td>1</td><td>에이전트 md(<code>wellperion-agents/.claude/agents/ai-{role}.md</code>) 읽고 페르소나·R/R 동적 조회·운영 원칙 숙지</td></tr>
+            <tr><td>2</td><td>메인 CLAUDE.md 헌법 로드</td></tr>
+            <tr><td>3</td><td>가이드허브 <strong>g10 공통 탭 + AI CEO 탭</strong>의 <strong>운영 기본값(SSOT)</strong> 표에서 R/R·KPI·운영 기본값 흡수 (<code>#g10/ceo</code>)</td></tr>
+            <tr><td>4</td><td><code>status/ceo.json</code> + <code>status/_queue.json</code> 읽고 본인 task를 <strong>표 형식</strong>으로 표시</td></tr>
+            <tr><td>5</td><td>페르소나·KPI·권한 마크다운 표 선언</td></tr>
+            <tr><td>6</td><td>타 C-Level 침범 금지 선언 후 대기 (CEO 추가 본업: GitHub 백그라운드 SSOT + 가이드허브 프론트 SSOT 즉시 fetch)</td></tr>
+          </table>
+          </div>
+        </details>
 
         <details class="toggle" style="margin-top:24px;border-top:1px solid var(--border);padding-top:16px;"><summary style="cursor:pointer;font-weight:700;font-size:15px;">🔧 CEO 자동 검증 인프라 (기술 상세 — 평소엔 접힘)</summary>
         <div class="toggle-body" style="margin-top:12px;">
@@ -2313,7 +2317,7 @@
           <tr><td>핵심 스크립트 git 추적</td><td><code>clevel_post_action.py</code> 등 자동화 심장부 .py는 반드시 git 추적. <code>git ls-files</code> 빈 결과 = 위험. <code>__pycache__</code>에 .pyc만 있고 .py 없으면 소스 소실 신호 → 즉시 복원(.pyc 절대 삭제 금지).</td></tr>
           <tr><td>상시 프로세스 자동기동 <span style="font-size:11px;color:var(--accent);">(원칙·왜·언제 점검)</span></td><td>봇·스케줄러(<code>bot.py</code>·<code>daily_scheduler.py</code>)는 가동 여부뿐 아니라 <strong>재기동 경로</strong>(ONLOGON 예약작업) 등록 확인. schtasks 생성은 관리자 권한 필수 → GM 직접 실행 라우팅. <strong>재기동 방법 상세 = T2 텔레그램탭 / 가동 현황 = T2 업무자동화SSOT.</strong></td></tr>
           <tr><td>SSOT 하드코딩 동기화</td><td>업무 현황 SSOT 카테고리·예산 추가 시 흩어진 하드코딩 목록 전수 동기화(<code>CATEGORIES</code>·<code>CAT_COLORS</code>·<code>catOrder</code>·<code>BUDGET_CATEGORIES</code>·<code>routeApproval</code> 등). 가능하면 SSOT 상수 파생.</td></tr>
-          <tr><td>대기 보고 포맷</td><td>대기 보고 포맷(3섹션 + 🔴 GM 결정·5필드)은 <strong>공통 탭 '작업 사이클 보고 포맷'이 단일 원본</strong> → 참조. CTO는 식별자 시토-N, 링크는 가이드허브 식별자(S1·S2·S4·M5·T1~T5·G1) 적용.</td></tr>
+          <tr><td>대기 보고 포맷</td><td>대기 보고 포맷(3섹션 + 🔴 GM 결정·5필드)은 <strong>공통 탭 '작업 사이클 보고 포맷'이 단일 원본</strong> → 참조. CTO는 식별자 시토-N, 링크는 가이드허브 식별자(S1·S2·S4·M5·T1~T3·G1) 적용.</td></tr>
         </table>
 
         <h3 style="margin-top:20px;"><span class="ico">🚀</span>CTO 세션 부팅 체크리스트</h3>
