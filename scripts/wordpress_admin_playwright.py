@@ -120,12 +120,96 @@ async def run_check() -> int:
     return 0 if logged_in else 2
 
 
+INSPECT_DIR = ROOT / "scripts" / "poc-evidence"
+PAGES_LIST_URL = "http://wellperion.com/wp/wp-admin/edit.php?post_type=page"
+THEMES_URL = "http://wellperion.com/wp/wp-admin/themes.php"
+PLUGINS_URL = "http://wellperion.com/wp/wp-admin/plugins.php"
+
+
+async def run_inspect() -> int:
+    """읽기 전용 실측 — 워드프레스 버전·테마·플러그인·페이지 목록·편집기 종류 파악.
+    문의 페이지 신설/홈 편집 자동화 설계용. 어떤 변경도 가하지 않음."""
+    async_playwright = _import_playwright()
+    print("[INFO] === 워드프레스 관리자 INSPECT (읽기 전용·변경 없음) ===")
+    if not PROFILE_DIR.exists():
+        print("[ERROR] 프로필 미존재 — 먼저 --mode setup 실행 필요.")
+        return 3
+    INSPECT_DIR.mkdir(parents=True, exist_ok=True)
+    p, ctx = await _launch(async_playwright)
+    page = ctx.pages[0] if ctx.pages else await ctx.new_page()
+
+    # 1) 대시보드 — 로그인 유지 + 워드프레스 버전(우하단 #footer-thankyou / At a Glance)
+    await page.goto(WP_ADMIN_URL, wait_until="domcontentloaded", timeout=40_000)
+    await page.wait_for_timeout(2500)
+    if "wp-login" in page.url:
+        print("[ERROR] 세션 만료 — setup 재실행 필요.")
+        await ctx.close(); await p.stop(); return 2
+    ver = await page.evaluate(
+        "() => { const f=document.querySelector('#footer-upgrade'); return f? f.innerText.trim() : (window.tinymce? 'tinymce-present':''); }"
+    )
+    print(f"[INFO] 워드프레스 버전 영역: {ver or '(미검출)'}")
+    await page.screenshot(path=str(INSPECT_DIR / "wp_inspect_dashboard.png"))
+
+    # 2) 테마
+    await page.goto(THEMES_URL, wait_until="domcontentloaded", timeout=40_000)
+    await page.wait_for_timeout(1500)
+    active_theme = await page.evaluate(
+        "() => { const a=document.querySelector('.theme.active .theme-name'); return a? a.innerText.trim():''; }"
+    )
+    print(f"[INFO] 활성 테마: {active_theme or '(미검출)'}")
+
+    # 3) 플러그인 (페이지빌더·다국어 탐지)
+    await page.goto(PLUGINS_URL, wait_until="domcontentloaded", timeout=40_000)
+    await page.wait_for_timeout(1500)
+    plugins = await page.evaluate(
+        "() => Array.from(document.querySelectorAll('tr.active .plugin-title strong, tr[data-plugin].active .plugin-title strong')).map(e=>e.innerText.trim())"
+    )
+    print(f"[INFO] 활성 플러그인 {len(plugins)}개:")
+    for pl in plugins:
+        print(f"        · {pl}")
+
+    # 4) 페이지 목록 (제목·ID·편집링크)
+    await page.goto(PAGES_LIST_URL, wait_until="domcontentloaded", timeout=40_000)
+    await page.wait_for_timeout(1500)
+    pages = await page.evaluate(
+        """() => Array.from(document.querySelectorAll('#the-list tr')).map(tr => {
+            const a = tr.querySelector('a.row-title');
+            const id = (tr.id||'').replace('post-','');
+            return a ? {id, title: a.innerText.trim(), href: a.href} : null;
+        }).filter(Boolean)"""
+    )
+    print(f"[INFO] 페이지 {len(pages)}개:")
+    for pg in pages:
+        print(f"        · [{pg['id']}] {pg['title']}")
+    await page.screenshot(path=str(INSPECT_DIR / "wp_inspect_pages.png"))
+
+    # 5) 결과 저장 (설계 입력용)
+    import json
+    out = {
+        "wp_version_hint": ver,
+        "active_theme": active_theme,
+        "active_plugins": plugins,
+        "pages": pages,
+    }
+    (INSPECT_DIR / "wp_inspect.json").write_text(
+        json.dumps(out, ensure_ascii=False, indent=2), encoding="utf-8"
+    )
+    print(f"[INFO] 실측 결과 저장: {INSPECT_DIR / 'wp_inspect.json'}")
+    print(f"[INFO] 스크린샷: wp_inspect_dashboard.png / wp_inspect_pages.png")
+    await ctx.close()
+    await p.stop()
+    print("[INFO] === INSPECT 완료 (변경 없음) ===")
+    return 0
+
+
 def main() -> int:
-    ap = argparse.ArgumentParser(description="워드프레스 관리자 반자동 (setup/check)")
-    ap.add_argument("--mode", choices=["setup", "check"], default="setup")
+    ap = argparse.ArgumentParser(description="워드프레스 관리자 반자동 (setup/check/inspect)")
+    ap.add_argument("--mode", choices=["setup", "check", "inspect"], default="setup")
     args = ap.parse_args()
     if args.mode == "setup":
         return asyncio.run(run_setup())
+    if args.mode == "inspect":
+        return asyncio.run(run_inspect())
     return asyncio.run(run_check())
 
 
