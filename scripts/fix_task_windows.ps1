@@ -25,6 +25,18 @@ Set-Hidden "WellperionDailyScheduler"       "scheduler_hidden.vbs"
 Set-Hidden "Wellperion-IG-Publish-Watcher"  "ig_watcher_hidden.vbs"
 Set-Hidden "Wellperion-Morning-Update"      "morning_update_hidden.vbs"
 
+# Morning-Update: was failing with 0x800710E0 ("operator refused") because the
+# task is blocked on battery power (DisallowStartIfOnBatteries / StopIfGoingOnBatteries).
+# Clear battery conditions + wake the PC so the daily 05:40 update actually runs.
+try {
+  $mu = Get-ScheduledTask -TaskName "Wellperion-Morning-Update"
+  $mu.Settings.DisallowStartIfOnBatteries = $false
+  $mu.Settings.StopIfGoingOnBatteries     = $false
+  $mu.Settings.WakeToRun                   = $true
+  Set-ScheduledTask -TaskName "Wellperion-Morning-Update" -Settings $mu.Settings | Out-Null
+  Write-Host "[OK] Wellperion-Morning-Update  ->  battery conditions cleared + WakeToRun" -ForegroundColor Green
+} catch { Write-Host "[WARN] Morning-Update settings: $($_.Exception.Message)" -ForegroundColor Yellow }
+
 # CEO-Verify-Watcher: orphan (target script ceo_verify_watcher.py never in git,
 # absent on disk) -> only fails (result=2) and flashes a window each logon. Disable.
 try {
