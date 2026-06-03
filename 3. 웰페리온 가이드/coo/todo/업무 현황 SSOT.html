@@ -520,6 +520,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
       <label>첨부파일 <span style="font-size:11px;color:var(--dim);font-weight:400;">(최대 5MB)</span></label>
       <input type="file" id="fFile" multiple style="background:var(--bg);border:1px solid var(--border);color:var(--text);padding:8px;border-radius:8px;font-family:inherit;font-size:14px;width:100%;">
       <div id="fFileStatus" style="font-size:12px;color:var(--dim);margin-top:4px;"></div>
+      <div id="fExistingFiles" style="margin-top:8px;"></div>
     </div>
     <div class="field">
       <label>결재요청 <span style="font-size:11px;color:var(--dim);font-weight:400;">(체크 순서: 중간관리자 → 결재)</span></label>
@@ -1510,7 +1511,14 @@ function renderTaskCard(t, idx) {
   }
 
   if (t.fileUrl) {
-    html += '<div style="margin:6px 0;"><a class="chip link-chip" href="' + escAttr(t.fileUrl) + '" target="_blank" rel="noopener" onclick="event.stopPropagation()">첨부파일</a></div>';
+    var _cf = String(t.fileUrl).split('\n').map(function(s){ return s.trim(); }).filter(Boolean);
+    if (_cf.length) {
+      html += '<div style="margin:6px 0;">';
+      _cf.forEach(function(u, i){
+        html += '<a class="chip link-chip" href="' + escAttr(u) + '" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="margin-right:4px;">📎 첨부' + (_cf.length > 1 ? (i + 1) : '') + '</a>';
+      });
+      html += '</div>';
+    }
   }
 
   html += '</div>'; // task-detail
@@ -1957,6 +1965,8 @@ function openAddModal() {
   document.getElementById('fLink').value = '';
   document.getElementById('fFile').value = '';
   document.getElementById('fFileStatus').textContent = '';
+  _modalFileUrls = [];
+  var _efb = document.getElementById('fExistingFiles'); if (_efb) _efb.innerHTML = '';
   clearCheckboxGroup('fApprovalGroup');
   modalLogsCache = [];
   document.getElementById('progressLogDate').value = todayDateStr();
@@ -2029,6 +2039,8 @@ function openEditModal(id) {
   clearCheckboxGroup('fCollabGroup');
   setCheckboxGroup('fCollabGroup', mergedCollab);
   document.getElementById('fLink').value = t.link || '';
+  _modalFileUrls = String(t.fileUrl || t['파일URL'] || '').split('\n').map(s => s.trim()).filter(Boolean);
+  renderExistingFiles(t.id);
   setCheckboxGroup('fApprovalGroup', (t.approval || '').split(',').map(s => s.trim()));
   updateBudgetRoute();
   applyLifecycleLocks(t);  // 단계 기반 잠금 적용
@@ -2153,6 +2165,36 @@ async function saveDifficultyBatch() {
   if (ov) ov.remove();
   showToast('난이도 ' + ok + '/' + changes.length + '건 저장 완료');
   await loadTasks();
+}
+
+/* 모달 기존 첨부 목록·삭제 — 업로드된 첨부를 개별 삭제(시트 링크 제거 + Drive 휴지통). 2026-06-03 GM */
+let _modalFileUrls = [];
+function renderExistingFiles(id) {
+  const box = document.getElementById('fExistingFiles');
+  if (!box) return;
+  if (!_modalFileUrls.length) { box.innerHTML = ''; return; }
+  box.innerHTML = '<div style="font-size:11px;color:var(--dim);margin:2px 0 4px;">기존 첨부 (' + _modalFileUrls.length + ')</div>' +
+    _modalFileUrls.map((u, i) =>
+      '<div style="display:flex;align-items:center;gap:6px;margin:3px 0;">' +
+        '<a href="' + escAttr(u) + '" target="_blank" rel="noopener" class="chip link-chip" style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">📎 첨부 ' + (i + 1) + '</a>' +
+        '<button type="button" onclick="removeAttachment(\'' + escAttr(id) + '\',' + i + ')" style="border:1px solid var(--red);color:var(--red);background:var(--red-bg);border-radius:6px;font-size:11px;padding:3px 8px;cursor:pointer;flex-shrink:0;">삭제</button>' +
+      '</div>'
+    ).join('');
+}
+async function removeAttachment(id, idx) {
+  const url = _modalFileUrls[idx];
+  if (!url) return;
+  if (!confirm('이 첨부파일을 삭제할까요?\n(Drive 원본도 휴지통으로 이동됩니다)')) return;
+  showToast('첨부 삭제 중...');
+  try {
+    const res = await apiCall({ action: 'todo_remove_file', id: id, url: url });
+    if (res.ok) {
+      _modalFileUrls.splice(idx, 1);
+      renderExistingFiles(id);
+      showToast('첨부 삭제 완료');
+      loadTasks();  // 보드 갱신
+    } else { showToast('삭제 실패: ' + (res.error || ''), true); }
+  } catch (e) { showToast('삭제 실패: ' + e.message, true); }
 }
 
 async function saveTask() {
@@ -2808,6 +2850,19 @@ function printResultReport(taskId) {
       + '</table>';
   }
 
+  /* ── 첨부 · 외부 링크 (2026-06-03 GM: 인쇄에 포함) ── */
+  var attachRows = '';
+  if (String(t.link || '').trim()) {
+    var _lk = String(t.link).trim();
+    attachRows += '<tr><th>외부 링크</th><td style="word-break:break-all;"><a href="' + escAttr(_lk) + '">' + esc(_lk) + '</a></td></tr>';
+  }
+  String(t.fileUrl || t['파일URL'] || '').split('\n').map(function(s){ return s.trim(); }).filter(Boolean).forEach(function(u, i){
+    attachRows += '<tr><th>첨부 ' + (i + 1) + '</th><td style="word-break:break-all;"><a href="' + escAttr(u) + '">' + esc(u) + '</a></td></tr>';
+  });
+  var attachHtml = attachRows
+    ? '<div class="rr-section-title">첨부 · 링크</div><table class="rr-info-table">' + attachRows + '</table>'
+    : '';
+
   /* ── 발행일 ── */
   var today = (function(){
     var d = new Date();
@@ -2831,6 +2886,7 @@ function printResultReport(taskId) {
     + logsHtml
     + planHtml
     + budgetHtml
+    + attachHtml
     + '<div class="rr-footer">'
     +   '<span>A Day, Well Completed.</span>'
     +   '<span>발행일: ' + today + '</span>'

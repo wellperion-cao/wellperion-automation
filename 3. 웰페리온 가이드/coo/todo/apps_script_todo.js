@@ -719,6 +719,24 @@ function _processTodoAction(body) {
       return _json({ ok: true, url: fileUrl, message: '파일이 업로드되었습니다.' });
     }
 
+    // ─── 첨부 파일 삭제 — 파일URL 컬럼에서 해당 URL 제거 + Drive 원본 휴지통 이동 (2026-06-03 GM) ───
+    if (action === 'todo_remove_file') {
+      const id = body.id;
+      const url = String(body.url || '').trim();
+      if (!id || !url) return _json({ ok: false, error: 'id·url 필수' });
+      const sh = initTodoSheet();
+      const rowNum = _findRow(sh, id);
+      if (rowNum < 0) return _json({ ok: false, error: '해당 ID를 찾을 수 없습니다: ' + id });
+      const col = TODO_HEADERS.indexOf('파일URL') + 1;
+      const current = String(sh.getRange(rowNum, col).getValue() || '');
+      const remaining = current.split('\n').map(s => s.trim()).filter(Boolean).filter(u => u !== url);
+      sh.getRange(rowNum, col).setValue(remaining.join('\n'));
+      sh.getRange(rowNum, TODO_HEADERS.indexOf('수정일') + 1).setValue(_now());
+      // Drive 원본 휴지통 이동(파일 ID 추출 가능 시). 실패해도 시트 링크는 이미 제거됨.
+      try { const m = url.match(/[-\w]{25,}/); if (m) DriveApp.getFileById(m[0]).setTrashed(true); } catch (e) {}
+      return _json({ ok: true, message: '첨부가 삭제되었습니다.', remaining: remaining.length });
+    }
+
     return _json({ ok: false, error: '알 수 없는 action: ' + action });
 }
 
