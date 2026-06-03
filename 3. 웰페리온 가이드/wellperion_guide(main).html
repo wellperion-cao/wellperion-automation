@@ -3213,7 +3213,7 @@ kubectl get pods -o json | jq '.items[] | {name: .metadata.name}'</pre>
         </table>
 
         <h4>Watcher (자동 감시) 현황</h4>
-        <div class="callout"><strong>→ 현황 SSOT는 T2 업무자동화SSOT.</strong> 가동 중 Watcher(pre_task_notifier·bot_health_check·env_reload_watcher·ig_review_publish_watcher)와 폐기 목록의 실측 현황은 <a href="#" onclick="event.preventDefault();var t=document.querySelector('[data-id=T2]');if(t)t.click();" style="color:var(--accent);font-weight:700;text-decoration:none;">T2 업무자동화SSOT</a>에서 단일 관리합니다. 현황 중복 기재 금지.</div>
+        <div class="callout"><strong>→ 현황 SSOT는 T2 업무자동화SSOT.</strong> 가동 중 Watcher(pre_task_notifier·bot_health_check·env_reload_watcher)와 폐기 목록(ig_review_publish_watcher 폴링 2026-06-03 폐기 포함)의 실측 현황은 <a href="#" onclick="event.preventDefault();var t=document.querySelector('[data-id=T2]');if(t)t.click();" style="color:var(--accent);font-weight:700;text-decoration:none;">T2 업무자동화SSOT</a>에서 단일 관리합니다. 현황 중복 기재 금지.</div>
 
         <h4>재기동 방법</h4>
         <pre>Stop-Process -Id (PID) -Force
@@ -3402,7 +3402,7 @@ Start-Process python -ArgumentList telegram_bot\daily_scheduler.py -WorkingDirec
               <tr><td>매일 06·09·12·15·18·21시</td><td>텔레그램 정각 보고 (daily_scheduler.py)</td></tr>
               <tr><td>매일 08:00</td><td>AI CEO 통합 보고 (ceo_morning_pipeline.py)</td></tr>
               <tr><td>매주 월 09:00</td><td>AI 교육자료 자동 정리 (education_archive_weekly.py)</td></tr>
-              <tr><td>120초 폴링 watcher</td><td>인스타 검수 승인 → 자동 발행 (ig_review_publish_watcher.py)</td></tr>
+              <tr><td>승인 시 (on-demand)</td><td>인스타 검수 승인 → 발행 엔진 1회 호출 (ig_review_publish_watcher.py · 구 120초 폴링 2026-06-03 폐기, 봇 콜백 전환 예정)</td></tr>
               <tr><td>PC 부팅·종료</td><td>pc_boot_greeting.py · pc_shutdown_greeting.py</td></tr>
             </table>
             <h4><span class="ico">✨</span>STEP 4 · 고도화 진단 (Improve)</h4>
@@ -5115,7 +5115,7 @@ function crTab(btn, panelId) {
       <div class="toggle-body">
         <table>
           <tr><th style="width:150px">주제</th><th>핵심 (일상어)</th></tr>
-          <tr><td><strong>① 검은 창</strong></td><td>예약작업이 <b>"보이는 화면 + 창 있는 방식"</b>으로 등록돼 검은 cmd 창이 떴습니다(특히 인스타 감시기는 72시간 상주). → <b>숨김 런처</b>(<code>launchers/*.vbs</code>)로 창 없이 전환. 적용: <code>fix_task_windows.bat</code> 관리자 1회.</td></tr>
+          <tr><td><strong>① 검은 창</strong></td><td>예약작업이 <b>"보이는 화면 + 창 있는 방식"</b>으로 등록돼 검은 cmd 창이 떴습니다. → <b>숨김 런처</b>(<code>launchers/*.vbs</code>)로 창 없이 전환. 적용: <code>fix_task_windows.bat</code> 관리자 1회. <span style="color:var(--dim);">(검은 창 주범이던 인스타 폴링 감시기는 2026-06-03 폐기)</span></td></tr>
           <tr><td><strong>② 자동 업데이트</strong></td><td>업데이트는 <b>PC 켤 때 CEO 배치가 1회</b>만. <b>실행 중인 Claude는 못 바꿉니다</b>(Windows가 켜진 파일 잠금) → 업데이트하려면 <b>모든 Claude 창 닫고 PC 재시작</b>. 세션 내 자동 업데이터는 항상 실패하던 잉여라 OFF.</td></tr>
           <tr><td><strong>③ 부팅 안전장치</strong></td><td>CEO 배치는 <b>Claude 창 0개일 때만</b> 업데이트(절전 복귀 세션 보호) + <code>logs\claude_update.log</code> 기록·검증.</td></tr>
         </table>
@@ -5248,12 +5248,12 @@ function crTab(btn, panelId) {
           <tr><th style="width:280px">자원</th><th>설명</th></tr>
           <tr><td><code>telegram_bot/bot.py</code></td><td>텔레그램 봇 메인 (PID 가동)</td></tr>
           <tr><td><code>telegram_bot/daily_scheduler.py</code></td><td>정각 보고 스케줄러 (PID 가동)</td></tr>
-          <tr><td>Task Scheduler 정상 가동 <code>Wellperion-*</code></td><td>봇 · 스케줄러 · CEO-Morning-Brief · PC-Shutdown · Education-Archive · AI-Education · Morning-Update · IG-Publish-Watcher</td></tr>
+          <tr><td>Task Scheduler 정상 가동 <code>Wellperion-*</code></td><td>봇 · 스케줄러 · CEO-Morning-Brief · PC-Shutdown · Education-Archive · AI-Education · Morning-Update <span style="color:var(--dim);">(IG-Publish-Watcher = 2026-06-03 Disabled)</span></td></tr>
           <tr><td><code>profiles/{instagram,naver-cafe,naver-blog}/</code></td><td>Playwright 세션 271 MB</td></tr>
           <tr><td><code>telegram_bot/.env</code></td><td>토큰·환경변수 SSOT (3 HardLink)</td></tr>
         </table>
-        <h4>텔레그램 감시기 가동 4</h4>
-        <p style="font-size:13px;"><code>pre_task_notifier</code> · <code>bot_health_check</code> · <code>env_reload</code> (daily_scheduler 내장) · <code>ig_review_publish_watcher</code> (별도 예약작업) — 상세 T1 기술 인프라</p>
+        <h4>텔레그램 감시기 가동 3</h4>
+        <p style="font-size:13px;"><code>pre_task_notifier</code> · <code>bot_health_check</code> · <code>env_reload</code> (daily_scheduler 내장) — 상세 T1 기술 인프라. <span style="color:var(--dim);">(구 <code>ig_review_publish_watcher</code> 폴링 2026-06-03 폐기)</span></p>
       </div>
     </details>
 
