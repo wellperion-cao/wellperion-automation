@@ -4239,32 +4239,9 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
 
     <div class="callout"><strong>🚀 M5 운영 한눈에</strong><br><br><strong>핵심 흐름:</strong> ① 채널 선택 → ② 제목 입력 → ③ <strong>슬라이드+캡션 자동 생성</strong> → ④ 미리보기 검수 → ⑤ <strong>승인 시 업로드</strong>. 인스타그램은 2개 계정(브랜드 @wellperion · 개인 @namuk.wellperion) 계정별 발행.<br><br><strong>🏁 '제작 완료' 표준 종료 절차 (2026-06-02 GM 표준):</strong> 시모(CMO)가 제작을 완료하면 GM 별도 지시 없이도 <strong>① 텔레그램 1줄 알림+montage → ② 아래 검수 큐에 <code>status="검수 대기"</code> 자동 등록</strong>까지가 기본 종료. 즉 '인스타그램 검수 대기'에 새 콘텐츠가 자동으로 올라온다. GM은 시각 검수 후 <strong>[승인]</strong>만 누르면 되고, 승인 즉시 시모가 발행한다(승인 전 발행 절대 금지 — 비가역 게이트).<br><br><strong>연결 자산:</strong> 슬라이드 합성 <code>scripts/slide_compositor.py</code> · 발행기 <code>scripts/instagram_upload_playwright.py</code> · 검수 큐 <code>cmo/review/review_queue.json</code> · 승인 중계 <code>review_set_status</code> (Apps Script).</div>
 
-    <!-- ① 인스타 업로드 추가 UI (계정별, 1단계 골격) -->
-    <h3><span class="ico">📸</span>인스타그램 업로드 (계정별)</h3>
-    <div class="card accent" style="margin-bottom:8px;">
-      <div style="display:flex;flex-wrap:wrap;gap:14px;align-items:flex-end;">
-        <div style="flex:1;min-width:200px;">
-          <label style="display:block;font-size:12.5px;font-weight:700;color:var(--dim);margin-bottom:6px;">계정 선택</label>
-          <select id="cmopub-account" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:14px;background:var(--paper);color:var(--text);">
-            <option value="wellperion">@wellperion (브랜드 · 회사 계정)</option>
-            <option value="namuk.wellperion">@namuk.wellperion (개인 계정 · GM go 후 발행)</option>
-          </select>
-        </div>
-        <div style="flex:2;min-width:240px;">
-          <label style="display:block;font-size:12.5px;font-weight:700;color:var(--dim);margin-bottom:6px;">콘텐츠 제목</label>
-          <input id="cmopub-title" type="text" placeholder="예: 스포츠클럽에 왜 AI인가" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:14px;background:var(--paper);color:var(--text);box-sizing:border-box;">
-        </div>
-      </div>
-      <div style="display:flex;gap:10px;margin-top:14px;flex-wrap:wrap;">
-        <button id="cmopub-generate" style="flex:1;min-width:180px;background:var(--accent);color:#fff;border:none;border-radius:8px;padding:11px;font-weight:700;cursor:pointer;font-family:inherit;font-size:14px;">🎨 슬라이드 + 캡션 생성</button>
-        <button id="cmopub-approve" disabled style="flex:1;min-width:180px;background:none;color:var(--dim);border:1px solid var(--border);border-radius:8px;padding:11px;cursor:not-allowed;font-family:inherit;font-size:14px;font-weight:700;">✅ 승인 시 업로드</button>
-      </div>
-      <div id="cmopub-preview" style="margin-top:14px;font-size:13px;color:var(--dim);line-height:1.7;border-top:1px dashed var(--border);padding-top:12px;">제목을 입력하고 <strong>생성</strong>을 누르면 미리보기가 여기에 표시됩니다. (1단계: 흐름 배선 · 실제 생성은 다음 단계)</div>
-    </div>
-
-    <!-- ③ 채널별 구조 (5채널 탭) + 특성 학습 기록 -->
-    <h3><span class="ico">🌐</span>공식 5채널 — 특성 학습 기록</h3>
-    <p style="font-size:13px;color:var(--dim);margin-bottom:14px;">각 채널의 톤·이미지 규격·해시태그·글자수 등 특성을 학습해 기록합니다. 메모는 이 브라우저에 자동 저장됩니다.</p>
+    <!-- 채널별 구조 (5채널 탭) + 발행 규칙 -->
+    <h3><span class="ico">🌐</span>공식 5채널 — 발행 규칙·특성</h3>
+    <p style="font-size:13px;color:var(--dim);margin-bottom:14px;">각 채널의 톤·이미지 규격·해시태그·발행 규칙을 정리합니다.</p>
     <div class="tabs" data-tabs="cmopub-ch">
       <div class="tab-nav">
         <button class="tab-btn active" data-tab="ig-brand">📸 인스타 @wellperion</button>
@@ -4379,8 +4356,6 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
             </tr>
           </table>
         </details>
-        <label style="display:block;font-size:12.5px;font-weight:700;color:var(--dim);margin:6px 0;">특성 학습 메모</label>
-        <textarea class="cmopub-note" data-note="ig-brand" rows="4" placeholder="이 채널에서 학습한 특성·주의사항을 기록…" style="width:100%;padding:12px;border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:13.5px;line-height:1.6;background:var(--paper);color:var(--text);box-sizing:border-box;resize:vertical;"></textarea>
       </div>
 
       <div class="tab-panel" data-panel="ig-namuk">
@@ -4394,8 +4369,6 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
             <tr><td>검수</td><td>발행 전 montage 미리보기 → GM 검수 게이트 필수</td></tr>
           </table>
         </div>
-        <label style="display:block;font-size:12.5px;font-weight:700;color:var(--dim);margin:6px 0;">특성 학습 메모</label>
-        <textarea class="cmopub-note" data-note="ig-namuk" rows="4" placeholder="이 채널에서 학습한 특성·주의사항을 기록…" style="width:100%;padding:12px;border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:13.5px;line-height:1.6;background:var(--paper);color:var(--text);box-sizing:border-box;resize:vertical;"></textarea>
       </div>
 
       <div class="tab-panel" data-panel="blog">
@@ -4418,8 +4391,6 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
             <li><strong>종착지</strong> — 임시저장까지. GM 검수 후 직접 등록</li>
           </ul>
         </div>
-        <label style="display:block;font-size:12.5px;font-weight:700;color:var(--dim);margin:6px 0;">특성 학습 메모</label>
-        <textarea class="cmopub-note" data-note="blog" rows="4" placeholder="이 채널에서 학습한 특성·주의사항을 기록…" style="width:100%;padding:12px;border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:13.5px;line-height:1.6;background:var(--paper);color:var(--text);box-sizing:border-box;resize:vertical;"></textarea>
       </div>
 
       <div class="tab-panel" data-panel="cafe">
@@ -4442,8 +4413,6 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
             <li><strong>종착지</strong> — 임시저장까지. GM 검수 후 직접 등록</li>
           </ul>
         </div>
-        <label style="display:block;font-size:12.5px;font-weight:700;color:var(--dim);margin:6px 0;">특성 학습 메모</label>
-        <textarea class="cmopub-note" data-note="cafe" rows="4" placeholder="이 채널에서 학습한 특성·주의사항을 기록…" style="width:100%;padding:12px;border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:13.5px;line-height:1.6;background:var(--paper);color:var(--text);box-sizing:border-box;resize:vertical;"></textarea>
       </div>
 
       <div class="tab-panel" data-panel="kakao">
@@ -4456,8 +4425,6 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
             <tr><td>투어</td><td>예약 필수 · 워크인 불가 → 문의Survey 페이지</td></tr>
           </table>
         </div>
-        <label style="display:block;font-size:12.5px;font-weight:700;color:var(--dim);margin:6px 0;">특성 학습 메모</label>
-        <textarea class="cmopub-note" data-note="kakao" rows="4" placeholder="이 채널에서 학습한 특성·주의사항을 기록…" style="width:100%;padding:12px;border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:13.5px;line-height:1.6;background:var(--paper);color:var(--text);box-sizing:border-box;resize:vertical;"></textarea>
       </div>
     </div>
 
@@ -4470,33 +4437,6 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
 
     <script>
     (function(){
-      // ── 채널 특성 학습 메모 자동 저장 (localStorage) ──
-      var NOTE_KEY='cmopub_channel_notes';
-      function loadNotes(){try{return JSON.parse(localStorage.getItem(NOTE_KEY)||'{}');}catch(e){return {};}}
-      function saveNote(ch,v){var d=loadNotes();d[ch]=v;localStorage.setItem(NOTE_KEY,JSON.stringify(d));}
-      var notes=loadNotes();
-      document.querySelectorAll('#cmo-publish .cmopub-note').forEach(function(t){
-        var ch=t.getAttribute('data-note');
-        if(notes[ch])t.value=notes[ch];
-        t.addEventListener('input',function(){saveNote(ch,t.value);});
-      });
-
-      // ── 인스타 업로드 흐름 배선 (1단계: UI 흐름만, 실제 생성/업로드는 다음 단계) ──
-      var genBtn=document.getElementById('cmopub-generate');
-      var approveBtn=document.getElementById('cmopub-approve');
-      var prev=document.getElementById('cmopub-preview');
-      if(genBtn){genBtn.addEventListener('click',function(){
-        var acc=document.getElementById('cmopub-account').value;
-        var title=(document.getElementById('cmopub-title').value||'').trim();
-        if(!title){prev.innerHTML='<span style="color:var(--warm,#d98c5f);">제목을 입력해 주세요.</span>';return;}
-        prev.innerHTML='<strong>생성 요청 (배선됨):</strong><br>· 계정: '+acc+'<br>· 제목: '+title.replace(/</g,'&lt;')+'<br><span style="color:var(--dim-soft);">→ 다음 단계에서 slide_compositor.py + 캡션 생성기 호출 연결 예정. 생성 후 미리보기·검수가 여기에 표시됩니다.</span>';
-        approveBtn.disabled=false;approveBtn.style.background='var(--accent)';approveBtn.style.color='#fff';approveBtn.style.cursor='pointer';approveBtn.style.border='none';
-      });}
-      if(approveBtn){approveBtn.addEventListener('click',function(){
-        if(approveBtn.disabled)return;
-        prev.innerHTML+='<br><strong style="color:var(--green);">✅ 승인·업로드 요청 (배선됨)</strong> — 다음 단계에서 instagram_upload_playwright.py 발행 연결 예정.';
-      });}
-
       // ── 검수 큐 (G1에서 이관, 동일 로직 재사용) ──
       var URL='cmo/review/review_queue.json';
       var RELAY_URL='https://script.google.com/macros/s/AKfycbxDwFkrxK1YIaEoSNcuw2MiHiZQ-7o5N6311ytksSyeEd86ZFOhLknOWqQgNArQvZ-7/exec';
