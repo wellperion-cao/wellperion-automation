@@ -632,17 +632,17 @@
     <!-- AUTO:LATEST-START -->
     <div class="card grow">
       <h4>최신 업데이트 — 2026-06-03 (자동 갱신)</h4>
+      <p><strong>2026-06-03</strong> refactor(guidehub): watcher·컨텍스트정비 T4·S2 단일화 포인터</p>
       <p><strong>2026-06-03</strong> refactor(guidehub): T1 설정 → T2 기술인프라 흡수</p>
       <p><strong>2026-06-03</strong> refactor(guidehub): 프롬프트 성격별 2분할 — 운영형 S2·기술형 T2</p>
       <p><strong>2026-06-03</strong> feat(guidehub): S2에 운영 프롬프트·컨텍스트정비 범위표 흡수처 신설</p>
       <p><strong>2026-06-03</strong> fix(coo): GM 직접 건 결재선 대표님만 + 결재카드 담당자 제목아래로</p>
-      <p><strong>2026-06-03</strong> refactor(s2): STAGE4+5 CLAUDE.md 얇은인덱스 축소 + 부팅 단일출처 명시 (원칙 S2 단일화 완료)</p>
     </div>
 <!-- AUTO:LATEST-END -->
         <table>
           <tr><th style="width:160px">날짜</th><th>변경 내용</th></tr>
           <!-- AUTO:TABLE-START -->
-      <tr><td><strong>2026-06-03 (자동)</strong></td><td>refactor(guidehub): T1 설정 → T2 기술인프라 흡수 · refactor(guidehub): 프롬프트 성격별 2분할 — 운영형 S2·기술형 T2 · feat(guidehub): S2에 운영 프롬프트·컨텍스트정비 범위표 흡수처 신설 · fix(coo): GM 직접 건 결재선 대표님만 + 결재카드 담당자 제목아래로 · refactor(s…</td></tr>
+      <tr><td><strong>2026-06-03 (자동)</strong></td><td>refactor(guidehub): watcher·컨텍스트정비 T4·S2 단일화 포인터 · refactor(guidehub): T1 설정 → T2 기술인프라 흡수 · refactor(guidehub): 프롬프트 성격별 2분할 — 운영형 S2·기술형 T2 · feat(guidehub): S2에 운영 프롬프트·컨텍스트정비 범위표 흡수처 신설 · fix(c…</td></tr>
       <!-- AUTO:TABLE-END -->
           <tr><td><strong>2026-05-28 (14차)</strong></td><td>공지/안내문 생성(COO 하위) · 오프라인 홍보물 디자인 제작(CMO 하위) 도구 신설 · 공지 서식 v2.0 독립 페이지화 · 회사소개서·전략로드맵 원본 「3. 웰페리온 가이드/회사문서/」로 이관(SSOT 단일화) · C-Level 부팅 R/R Notion API→가이드허브 g10 참조로 전환 · GitHub Pages 워크플로 폴더명 경로 수정 · 사이드바 "공통+7개 C-Level" 라벨 제거</td></tr>
           <tr><td>2026-05-27 (13차)</td><td>GitHub Pages 전환 · 사이드바 4섹터 · AI C-Level 통일 · 운영 통합 체계 · 공식채널·지출현황·취업규칙·SSOT 신설 · g2+g19·g9+g20·g12·g13 합병 · 김남욱 탭 확장 · v2.5</td></tr>
@@ -3476,57 +3476,38 @@ Start-Process python -ArgumentList telegram_bot\daily_scheduler.py -WorkingDirec
   </article>
 
   <article class="doc" id="g18">
-    <div class="doc-header"><h2><span class="g-id">T3</span>핵심 프롬프트</h2><div class="meta">복사·붙여넣기용 프롬프트 단일 모음 · Claude CLI 셋업</div></div>
-    <p class="lead">자주 쓰는 핵심 프롬프트를 한곳에 모은 페이지입니다. 각 블록을 Claude CLI에 그대로 붙여넣어 사용하세요.</p>
+    <div class="doc-header"><h2><span class="g-id">T3</span>핵심 프롬프트 (이관 인덱스)</h2><div class="meta">2026-06-03 · 프롬프트 성격별 2분할 — 운영형 S2 · 기술형 T2 · 방법론 T5</div></div>
+    <p class="lead">핵심 프롬프트는 성격에 따라 <strong>운영형(S2) · 기술형(T2) · 범용 방법론(T5)</strong>로 이관되었습니다. 아래 인덱스에서 바로 이동하세요. (깊은링크 보호를 위해 본 페이지 주소는 유지됩니다.)</p>
 
-    <h3><span class="ico">🔧</span>일일 컨텍스트 정비</h3>
-    <p>컨텍스트 정비 핵심 프롬프트(STEP 1~5 · 안전장치 3종)는 <strong>⑥ 컨텍스트 정비 작업 ▸ ⑤ 핵심 프롬프트</strong> 탭에서 관리됩니다(SSOT — 한 곳에서만). 별도 실행 프로그램은 없으며, 그 프롬프트를 세션에서 직접 붙여넣어 STEP 1~5를 수행합니다.</p>
-
-    <h3><span class="ico">🚀</span>AI 고도화 프롬프트 7종</h3>
-    <p>출처: Code with Claude — London 2026 TOP 5. 1·3번은 핵심 행동 → 7번으로 CLAUDE.md에 영구 박제 권장.</p>
-    <h4>1. 검증 루프 — 지켜보지 않아도 알아서 일하게</h4>
-    <pre style="background:#16181c; color:#e8e8e8; padding:14px 16px; border-radius:8px; font-size:13px; white-space:pre-wrap; line-height:1.7; border-left:3px solid var(--accent); overflow-x:auto;">앞으로 모든 작업을 "검증 루프" 방식으로 진행해줘.
-1. 작업 시작 전에 "무엇이 나오면 성공인지" 성공 기준을 먼저 정의해 알려줘.
-2. 작업을 실행한 뒤, 네가 직접 결과를 확인해.
-3. 실패하면 에러 원인을 분석해 고치고 다시 시도해.
-4. 성공할 때까지 반복하되, 3회 시도 후에도 안 되면 진행 상황을 정리해 보고해.
-5. 중간 과정은 생략하고 최종 결과만 보고해.
-이 방식을 이번 세션 내내 기본 작업 규칙으로 적용해줘.</pre>
-    <h4>2. 검증 루프 영구화 (Skill로 패키지화)</h4>
-    <pre style="background:#16181c; color:#e8e8e8; padding:14px 16px; border-radius:8px; font-size:13px; white-space:pre-wrap; line-height:1.7; border-left:3px solid var(--accent); overflow-x:auto;">방금 적용한 검증 루프를 재사용 가능한 Skill로 만들어줘.
-- 스킬 이름: verification-loop
-- 앞으로 모든 작업에서 이 스킬이 자동 적용되도록 설정해줘.
-- 작업 중 반복되는 실패 패턴이 발견되면 이 스킬을 스스로 보완·업데이트해줘.</pre>
-    <h4>3. 에러 자가복구 루프</h4>
-    <pre style="background:#16181c; color:#e8e8e8; padding:14px 16px; border-radius:8px; font-size:13px; white-space:pre-wrap; line-height:1.7; border-left:3px solid var(--accent); overflow-x:auto;">앞으로 에러가 발생하면 다음 순서로 스스로 처리해줘.
-1. 에러 메시지를 끝까지 읽고 — 무슨 에러인지 / 어느 파일·어디서 났는지 / 어떻게 고치는지 파악해.
-2. 파악한 해결책을 바로 실행해 수정해.
-3. 최대 3회까지 자가 수정을 시도해.
-4. 3회 후에도 해결되지 않으면 그때 정확한 상황(에러 내용·시도한 것·막힌 지점)을 보고해.
-그리고 우리 코드에서 에러를 출력하는 부분은, 앞으로 "에러 종류 / 위치(파일·줄) / 해결 방법"이 함께 담기도록 점진적으로 개선해줘.</pre>
-    <h4>4. 폴더별 CLAUDE.md 분산 정비</h4>
-    <pre style="background:#16181c; color:#e8e8e8; padding:14px 16px; border-radius:8px; font-size:13px; white-space:pre-wrap; line-height:1.7; border-left:3px solid var(--accent); overflow-x:auto;">우리 프로젝트를 "폴더별 작업 매뉴얼" 구조로 정비해줘.
-거대한 단일 CLAUDE.md 하나에 모든 규칙을 담는 대신, 작업 폴더마다 그 폴더 작업에만 해당하는 규칙을 담은 CLAUDE.md를 두는 방식이야.
-1. 먼저 어떤 폴더에 전용 CLAUDE.md가 필요한지, 각 폴더에 어떤 규칙이 들어가면 좋을지 목록으로 제안해줘.
-2. 내가 승인하면 그때 각 폴더에 CLAUDE.md를 생성해줘.
-루트 CLAUDE.md에는 전사 공통 규칙만 남기는 방향으로.</pre>
-    <h4>5. 역할 기반 에이전트 점검 (split-brain 방지)</h4>
-    <pre style="background:#16181c; color:#e8e8e8; padding:14px 16px; border-radius:8px; font-size:13px; white-space:pre-wrap; line-height:1.7; border-left:3px solid var(--accent); overflow-x:auto;">우리 AI 에이전트(7 C-Level) 구성이 "역할 단위로 완결되어 있는지" 점검해줘.
-- 한 업무를 여러 에이전트가 조각내어 나눠 가져 서로 맥락을 모르는 split-brain 구조가 있으면 찾아내줘.
-- 각 에이전트가 자기 담당 영역 안에서는 모든 것을 완결적으로 책임지는 구조인지 확인해줘.
-- 에이전트에게 일을 위임할 때 항상 전체 컨텍스트(기획·목적·톤·대상)를 함께 넘기는지 확인해줘.
-문제가 있으면 재설계 방안을 제안하고, 실제 수정은 내 승인 후 진행해줘.</pre>
-    <h4>6. 메모리 정착 — 세션이 끊겨도 학습 유지</h4>
-    <pre style="background:#16181c; color:#e8e8e8; padding:14px 16px; border-radius:8px; font-size:13px; white-space:pre-wrap; line-height:1.7; border-left:3px solid var(--accent); overflow-x:auto;">이 프로젝트에서 반복되는 결정·규칙·내 작업 스타일·자주 하는 요청을 파악해서, 다음 세션에도 이어지도록 메모리에 정리해 저장해줘.
-1. 먼저 /memory 로 현재 저장된 내용을 보여줘.
-2. 빠졌거나 오래된 내용이 있으면 보완·갱신해줘.
-3. 앞으로도 "미래에 기억해두면 좋을 것"이 생기면 스스로 판단해 메모리에 추가해줘.</pre>
-    <h4>7. 핵심 규칙 영구화</h4>
-    <pre style="background:#16181c; color:#e8e8e8; padding:14px 16px; border-radius:8px; font-size:13px; white-space:pre-wrap; line-height:1.7; border-left:3px solid var(--accent); overflow-x:auto;">검증 루프와 에러 자가복구 규칙을 우리 프로젝트 루트 CLAUDE.md의 "토큰·실행 효율 규칙" 섹션 아래에 영구 규칙으로 추가해줘. 기존 내용은 유지하고, 적용 전 원본을 백업해줘.</pre>
-    <div class="card" style="margin-top:20px; border-left:3px solid var(--warm);">
-      <strong>⚠️ GM 목표 반영</strong> — GM은 "깊게 생각·병렬·자동화"를 우선한다. '비용 절감' 항목의 <code>MAX_THINKING_TOKENS 낮추기</code>는 사고량을 줄이므로 <strong>적용하지 않는다.</strong> 작업량은 "매우 높음" 유지.
-    </div>
-    <div class="source">SSOT: 핵심 프롬프트 단일 모음 (정비·고도화 프롬프트 통합)</div>
+    <table>
+      <tr><th style="width:200px">프롬프트 그룹</th><th>이동 위치</th><th style="width:90px">바로가기</th></tr>
+      <tr>
+        <td><strong>컨텍스트 정비 실행 (STEP 1~5) · 자기학습 사이클</strong></td>
+        <td>S2 운영 가이드 ▸ 공통 ▸ 운영 프롬프트 ①</td>
+        <td><a href="#" onclick="event.preventDefault();var t=document.querySelector('[data-id=S2]');if(t)t.click();" style="color:var(--accent);font-weight:700;text-decoration:none;">S2 →</a></td>
+      </tr>
+      <tr>
+        <td><strong>split-brain 점검 · 메모리 정착 · 핵심 규칙 영구화</strong> (구 5·6·7)</td>
+        <td>S2 운영 가이드 ▸ 공통 ▸ 운영 프롬프트 ②</td>
+        <td><a href="#" onclick="event.preventDefault();var t=document.querySelector('[data-id=S2]');if(t)t.click();" style="color:var(--accent);font-weight:700;text-decoration:none;">S2 →</a></td>
+      </tr>
+      <tr>
+        <td><strong>Claude 설정 점검 · S2 정합성 점검</strong> (셋업·단발)</td>
+        <td>S2 운영 가이드 ▸ 공통 ▸ 운영 프롬프트 ③</td>
+        <td><a href="#" onclick="event.preventDefault();var t=document.querySelector('[data-id=S2]');if(t)t.click();" style="color:var(--accent);font-weight:700;text-decoration:none;">S2 →</a></td>
+      </tr>
+      <tr>
+        <td><strong>검증 루프 · Skill화 · 에러 자가복구 · CLAUDE.md 분산</strong> (구 1·2·3·4)</td>
+        <td>T5 AI 교육자료 핵심요약 ▸ 핵심 프롬프트 ▸ 범용 방법론</td>
+        <td><a href="#" onclick="event.preventDefault();var t=document.querySelector('[data-id=T5]');if(t)t.click();" style="color:var(--accent);font-weight:700;text-decoration:none;">T5 →</a></td>
+      </tr>
+      <tr>
+        <td><strong>봇·시설·watcher·재기동·인프라 점검</strong></td>
+        <td>T2 기술 인프라 상세 ▸ 핵심 프롬프트</td>
+        <td><a href="#" onclick="event.preventDefault();var t=document.querySelector('[data-id=T2]');if(t)t.click();" style="color:var(--accent);font-weight:700;text-decoration:none;">T2 →</a></td>
+      </tr>
+    </table>
+    <div class="source">SSOT: 프롬프트는 성격별 단일 원본으로 분산 관리 (운영형 S2 · 기술형 T2 · 방법론 T5). 본 페이지 = 이관 인덱스.</div>
   </article>
   <!-- ── GM1: 김남욱 (할 일 + 루틴 + 건강 + 목표 통합) ── -->
   <article class="doc" id="gm1">
