@@ -149,7 +149,7 @@
   #noticePreviewFrame.landscape #noticePreview .ntool-pv-title-en{font-size:clamp(9px,1.3vw,16px);}
   #noticePreviewFrame.landscape .ntool-pv-subtitle{font-size:clamp(8px,0.9vw,12px);bottom:clamp(4px,0.8vw,10px);}
   /* v2.42 — 가로형 미리보기 본문 추가 압축 (콘텐츠 잘림 방지) */
-  #noticePreviewFrame.landscape #noticePreview .ntool-pv-body{padding:clamp(8px,1.4vw,18px) clamp(14px,2.2vw,26px) clamp(12px,1.6vw,18px);font-size:clamp(6.5px,0.75vw,10px);line-height:1.45;}
+  #noticePreviewFrame.landscape #noticePreview .ntool-pv-body{padding:clamp(8px,1.4vw,18px) clamp(14px,2.2vw,26px) clamp(12px,1.6vw,18px);font-size:clamp(6.5px,0.75vw,10px);line-height:1.45;justify-content:center;}
   #noticePreviewFrame.landscape #noticePreview .notice-subtitle{font-size:1.5em;margin-bottom:0.4em;}
   #noticePreviewFrame.landscape #noticePreview .ntool-pv-body p{margin:0 0 0.25em 0;}
   #noticePreviewFrame.landscape .ntool-pv-ftr{flex:0 0 6%;padding:clamp(6px,1.2vw,12px);}
@@ -345,39 +345,46 @@
     holiday: {
       kr: '정기 휴관일 안내',
       en: 'Regular Closure Notice',
-      body: '6월 정기 휴관 안내\n\n회원 여러분의 양해를 부탁드리며\n6월 정기 휴관일을 안내드립니다.\n\n1. 휴관 일자: **2026년 6월 14일** (둘째 주 일요일)\n2. 휴관 일자: **2026년 6월 28일** (넷째 주 일요일)\n3. 평일 정상 운영 — 06:00 ~ 22:30\n4. 주말·공휴일 정상 운영 — 08:00 ~ 20:00\n\n웰페리온은 회원님들의 더 나은 경험을 위해\n시설 유지·관리에 만전을 기하겠습니다. 감사합니다.'
+      sub: '6월 정기 휴관 안내',
+      body: '회원 여러분의 양해를 부탁드리며\n6월 정기 휴관일을 안내드립니다.\n\n1. 휴관 일자: **2026년 6월 14일** (둘째 주 일요일)\n2. 휴관 일자: **2026년 6월 28일** (넷째 주 일요일)\n3. 평일 정상 운영 — 06:00 ~ 22:30\n4. 주말·공휴일 정상 운영 — 08:00 ~ 20:00\n\n웰페리온은 회원님들의 더 나은 경험을 위해\n시설 유지·관리에 만전을 기하겠습니다. 감사합니다.'
     },
     program: {
       kr: '신규 프로그램 런칭',
       en: 'New Program Launch',
-      body: '신규 프로그램 런칭 안내\n\n회원 여러분께\n새로운 프로그램 개강을 안내드립니다.\n\n1. 프로그램명: **(프로그램명 입력)**\n2. 개강 일자: 2026년 0월 0일\n3. 담당 강사: (강사명)\n4. 정원: 0명 / **사전 예약 필수**\n\n프로그램 신청·문의는 리셉션으로 부탁드립니다.\n감사합니다.'
+      sub: '신규 프로그램 런칭 안내',
+      body: '회원 여러분께\n새로운 프로그램 개강을 안내드립니다.\n\n1. 프로그램명: **(프로그램명 입력)**\n2. 개강 일자: 2026년 0월 0일\n3. 담당 강사: (강사명)\n4. 정원: 0명 / **사전 예약 필수**\n\n프로그램 신청·문의는 리셉션으로 부탁드립니다.\n감사합니다.'
     },
     facility: {
       kr: '시설 점검 안내',
       en: 'Facility Maintenance Notice',
-      body: '시설 정기 점검 안내\n\n회원 여러분의 안전한 이용을 위해\n시설 정기 점검을 진행합니다.\n\n1. 점검 일자: **2026년 0월 0일**\n2. 점검 시간: 00:00 ~ 00:00\n3. 점검 범위: (해당 시설 입력)\n4. 점검 시간 중 해당 시설 일시 휴게 양해 부탁드립니다.\n\n쾌적한 환경 제공을 위한 정기 점검입니다.\n감사합니다.'
+      sub: '시설 정기 점검 안내',
+      body: '회원 여러분의 안전한 이용을 위해\n시설 정기 점검을 진행합니다.\n\n1. 점검 일자: **2026년 0월 0일**\n2. 점검 시간: 00:00 ~ 00:00\n3. 점검 범위: (해당 시설 입력)\n4. 점검 시간 중 해당 시설 일시 휴게 양해 부탁드립니다.\n\n쾌적한 환경 제공을 위한 정기 점검입니다.\n감사합니다.'
     },
     pricing: {
       kr: '요금 변경 안내',
       en: 'Pricing Update Notice',
-      body: '요금 정책 변경 안내\n\n회원 여러분께\n요금 정책 변경을 안내드립니다.\n\n1. 변경 일자: **2026년 0월 0일부터**\n2. 변경 내역: (변경 항목 입력)\n3. 기존 회원: 잔여 기간 종전 요금 적용\n4. 신규·재등록 회원: 변경 요금 적용\n\n자세한 사항은 리셉션 또는 담당자에게 문의 부탁드립니다.\n감사합니다.'
+      sub: '요금 정책 변경 안내',
+      body: '회원 여러분께\n요금 정책 변경을 안내드립니다.\n\n1. 변경 일자: **2026년 0월 0일부터**\n2. 변경 내역: (변경 항목 입력)\n3. 기존 회원: 잔여 기간 종전 요금 적용\n4. 신규·재등록 회원: 변경 요금 적용\n\n자세한 사항은 리셉션 또는 담당자에게 문의 부탁드립니다.\n감사합니다.'
     },
     etiquette: {
       kr: '이용 에티켓 안내',
       en: 'Etiquette Guide',
-      body: '쾌적한 이용을 위한 에티켓 안내\n\n모든 회원님의 편안한 이용을 위해\n다음 사항을 부탁드립니다.\n\n1. 운동 후 기구·매트는 원위치 및 정리 부탁드립니다.\n2. 락커룸·샤워실 사용 후 정돈 부탁드립니다.\n3. 큰 소리·통화는 라운지에서만 부탁드립니다.\n4. 공용 공간 음식물 반입 금지.\n\n서로를 배려하는 작은 매너가\n모두에게 더 좋은 공간을 만듭니다. 감사합니다.'
+      sub: '쾌적한 이용을 위한 에티켓 안내',
+      body: '모든 회원님의 편안한 이용을 위해\n다음 사항을 부탁드립니다.\n\n1. 운동 후 기구·매트는 원위치 및 정리 부탁드립니다.\n2. 락커룸·샤워실 사용 후 정돈 부탁드립니다.\n3. 큰 소리·통화는 라운지에서만 부탁드립니다.\n4. 공용 공간 음식물 반입 금지.\n\n서로를 배려하는 작은 매너가\n모두에게 더 좋은 공간을 만듭니다. 감사합니다.'
     },
     security: {
       kr: '개인 물품·보안 안내',
       en: 'Security Notice',
-      body: '개인 물품·보안 안내\n\n안전한 시설 이용을 위해\n다음 사항을 안내드립니다.\n\n1. 귀중품은 **리셉션 보관** 부탁드립니다.\n2. 개인 락커는 비밀번호 설정 후 이용 부탁드립니다.\n3. 개인 락커 개방 이용 시 분실 책임은 본인입니다.\n4. 분실·도난 발생 시 즉시 리셉션에 신고 부탁드립니다.\n\n웰페리온은 회원님의 안전을 최우선으로 합니다.\n감사합니다.'
+      sub: '개인 물품·보안 안내',
+      body: '안전한 시설 이용을 위해\n다음 사항을 안내드립니다.\n\n1. 귀중품은 **리셉션 보관** 부탁드립니다.\n2. 개인 락커는 비밀번호 설정 후 이용 부탁드립니다.\n3. 개인 락커 개방 이용 시 분실 책임은 본인입니다.\n4. 분실·도난 발생 시 즉시 리셉션에 신고 부탁드립니다.\n\n웰페리온은 회원님의 안전을 최우선으로 합니다.\n감사합니다.'
     },
     network: {
       kr: '시스템 점검 안내',
       en: 'System Maintenance Notice',
-      body: '시스템 점검 안내\n\n서비스 안정화를 위한\n시스템 점검을 진행합니다.\n\n1. 점검 일자: **2026년 0월 0일**\n2. 점검 시간: 00:00 ~ 00:00\n3. 점검 시간 중 예약·결제 시스템 일시 중단\n4. 점검 종료 후 정상 이용 가능\n\n불편을 드려 죄송합니다.\n감사합니다.'
+      sub: '시스템 점검 안내',
+      body: '서비스 안정화를 위한\n시스템 점검을 진행합니다.\n\n1. 점검 일자: **2026년 0월 0일**\n2. 점검 시간: 00:00 ~ 00:00\n3. 점검 시간 중 예약·결제 시스템 일시 중단\n4. 점검 종료 후 정상 이용 가능\n\n불편을 드려 죄송합니다.\n감사합니다.'
     },
-    custom: { kr: '', en: '', body: '' }
+    custom: { kr: '', en: '', sub: '', body: '' }
   };
   const noticeImages = [];
   function el(id){ return document.getElementById(id); }
@@ -505,13 +512,18 @@
         sel.addRange(range);
       }
     }
-    /* span wrap + font-size 적용 */
+    /* span wrap + font-size 적용 (v2.57 — px 절대값 폐기, 18px 기준 em 상대값.
+       이유: 인쇄/PDF/PNG 빌더는 본문을 vmin으로 환산하므로 px 고정이면 인쇄 시
+       크게가 오히려 작아지는 역전 발생. em이면 미리보기·인쇄가 같은 비율로 스케일됨) */
     document.execCommand('fontSize', false, '7'); /* 임시 큰 사이즈 마커 */
+    var emVal = ((parseFloat(px)||18) / 18).toFixed(3) + 'em';
     var marks = ed.querySelectorAll('font[size="7"]');
     marks.forEach(function(f){
       var span = document.createElement('span');
-      span.style.fontSize = px+'px';
+      span.style.fontSize = emVal;
       while(f.firstChild) span.appendChild(f.firstChild);
+      /* 내부에 이미 크기 span이 있으면 비워서 중첩 em 복리 방지 (재조정 시 바깥값만 적용) */
+      span.querySelectorAll('[style]').forEach(function(s){ if(s.style && s.style.fontSize) s.style.fontSize=''; });
       f.parentNode.replaceChild(span, f);
     });
     ntUpdatePreview();
@@ -604,6 +616,8 @@
     }
     el('noticeTitleKr').value = pr.kr;
     el('noticeTitleEn').value = pr.en;
+    /* v2.57 — 제목(소제목)은 본문이 아니라 소제목 칸 한 곳에서만. 본문 첫줄 중복 제거 */
+    if(el('noticeSubtitle')) el('noticeSubtitle').value = pr.sub || '';
     if(shouldReplaceBody) bodyEl.innerHTML = presetHtml;
     ntUpdatePreview();
   };
@@ -782,7 +796,7 @@
       html += '.ten{font-size:2vmin !important;}';
       html += '.sub{font-size:1.2vmin !important;bottom:1vmin !important;}';
       /* v2.40 — 본문 vmin 비율 0.13 → 0.15 (미리보기와 시각 정합) */
-      html += '.body{flex:0 0 72% !important;padding:2.4vmin 3vmin 2.8vmin !important;font-size:'+(((parseFloat(fs)||18)*0.15).toFixed(2))+'vmin !important;}';
+      html += '.body{flex:0 0 72% !important;padding:2.4vmin 3vmin 2.8vmin !important;font-size:'+(((parseFloat(fs)||18)*0.15).toFixed(2))+'vmin !important;justify-content:center !important;}';
       html += '.ftr{flex:0 0 6% !important;}';
       html += '.ftr img{height:3vmin !important;}';
     }
@@ -943,7 +957,7 @@
     if(el('noticeOrient')) el('noticeOrient').value = item.orient || 'portrait';
     el('noticeBody').innerHTML = item.body||'';
     el('noticeFontFamily').value = item.ff||'Pretendard';
-    el('noticeFontSize').value = item.fs||'16';
+    el('noticeFontSize').value = item.fs||'18';
     if(el('noticeLineHeight')) el('noticeLineHeight').value = item.lh||'1.85';
     ntUpdatePreview();
     window.scrollTo({top:0, behavior:'smooth'});
@@ -976,12 +990,16 @@
     container.innerHTML = html;
   };
 
-  // 초기화 — 본문은 빈 칸으로 시작 (GM 지시), 제목·날짜는 holiday 프리셋·오늘 자동
-  var today = new Date().toISOString().slice(0,10);
+  // 초기화 — 본문은 빈 칸으로 시작 (GM 지시), 제목·소제목·날짜는 holiday 프리셋 자동
+  // v2.57 — 게시기간 기본값: 시작=오늘, 종료=오늘+13일(2주 게시). 같은날 단일표시 해소
+  var _t0 = new Date();
+  var today = _t0.toISOString().slice(0,10);
+  var _t2 = new Date(_t0.getTime() + 13*86400000).toISOString().slice(0,10);
   if(el('noticeStartDate')) el('noticeStartDate').value = today;
-  if(el('noticeEndDate')) el('noticeEndDate').value = today;
+  if(el('noticeEndDate')) el('noticeEndDate').value = _t2;
   el('noticeTitleKr').value = NOTICE_PRESETS.holiday.kr;
   el('noticeTitleEn').value = NOTICE_PRESETS.holiday.en;
+  if(el('noticeSubtitle')) el('noticeSubtitle').value = NOTICE_PRESETS.holiday.sub || '';
   /* v2.33 — Enter 시 <p>가 자동 생성되도록 defaultParagraphSeparator=p (chrome 기본 'div' 또는 br만 삽입 회피).
      이렇게 해야 ntFmtSize/BoldLine이 줄 단위로만 동작 (1줄에 클릭 시 3줄에 영향 X) */
   try{ document.execCommand('defaultParagraphSeparator', false, 'p'); }catch(e){}
