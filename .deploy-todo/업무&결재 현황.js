@@ -217,6 +217,9 @@ function _getNoticeSheet() {
   var sh = ss.getSheetByName(NOTICE_SHEET);
   if (!sh) { sh = ss.insertSheet(NOTICE_SHEET); sh.appendRow(NOTICE_HEADERS); }
   else if (sh.getLastRow() === 0) { sh.appendRow(NOTICE_HEADERS); }
+  // 모든 값을 '텍스트'로 고정 — 시트가 날짜(startDate)·숫자(fs)·저장일을 자동 변환해
+  // 불러올 때 날짜칸 복원이 깨지는 것 방지.
+  try { sh.getRange(1, 1, Math.max(sh.getMaxRows(), 1000), NOTICE_HEADERS.length).setNumberFormat('@'); } catch (e) {}
   return sh;
 }
 function _processNoticeAction(body) {
