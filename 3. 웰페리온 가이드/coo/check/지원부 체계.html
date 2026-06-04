@@ -1886,17 +1886,24 @@ function updateSubmitButtonsG(sched,amStats,pmStats,gender){
   const sfx=gender==='f'?'F':'M';
   const btnAm=document.getElementById('submitAm'+sfx),btnPm=document.getElementById('submitPm'+sfx);
   const sub=getSubmitterForGender(gender);
+  /* 점검자 미선택 시: 드롭다운 강조 + 버튼에 사유 안내(회색 이유가 '점검자 미선택'임을 명시) */
+  const selEl=document.getElementById('submitter'+sfx);
+  if(selEl) selEl.style.boxShadow = sub ? '' : '0 0 0 2px var(--accent)';
   if(STATE._submitted_am){
     btnAm.textContent='오전조 제출 완료';btnAm.disabled=true;btnAm.className='submit-btn submitted';
+  }else if(!sub){
+    btnAm.textContent='↑ 점검자를 먼저 선택';btnAm.disabled=true;btnAm.className='submit-btn primary';
   }else{
     btnAm.textContent=amStats.done===amStats.total&&amStats.total>0?'오전조 제출':`오전조 제출 (${amStats.done}/${amStats.total})`;
-    btnAm.disabled=amStats.done===0||!sub;btnAm.className='submit-btn primary';
+    btnAm.disabled=amStats.done===0;btnAm.className='submit-btn primary';
   }
   if(STATE._submitted_pm){
     btnPm.textContent='오후조 제출 완료';btnPm.disabled=true;btnPm.className='submit-btn submitted';
+  }else if(!sub){
+    btnPm.textContent='↑ 점검자를 먼저 선택';btnPm.disabled=true;btnPm.className='submit-btn primary';
   }else{
     btnPm.textContent=pmStats.done===pmStats.total&&pmStats.total>0?'오후조 제출':`오후조 제출 (${pmStats.done}/${pmStats.total})`;
-    btnPm.disabled=pmStats.done===0||!sub;btnPm.className='submit-btn primary';
+    btnPm.disabled=pmStats.done===0;btnPm.className='submit-btn primary';
   }
 }
 
@@ -1906,9 +1913,11 @@ function updateNightSubmitButtonG(sched,nightStats,d,gender){
   const sub=getSubmitterForGender(gender);
   if(STATE._submitted_night){
     btnNight.textContent='야간조 제출 완료';btnNight.disabled=true;btnNight.className='submit-btn submitted';
+  }else if(!sub){
+    btnNight.textContent='↑ 점검자를 먼저 선택';btnNight.disabled=true;btnNight.className='submit-btn night-btn';
   }else{
     btnNight.textContent=nightStats.done===nightStats.total&&nightStats.total>0?'야간조 제출':`야간조 제출 (${nightStats.done}/${nightStats.total})`;
-    btnNight.disabled=nightStats.done===0||!sub;btnNight.className='submit-btn night-btn';
+    btnNight.disabled=nightStats.done===0;btnNight.className='submit-btn night-btn';
   }
 }
 
