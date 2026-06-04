@@ -1,10 +1,22 @@
 {
   "clevel": "chro",
-  "status": "IDLE",
-  "last_task_id": null,
+  "status": "ASSIGNED",
+  "last_task_id": "CHRO-2026-06-04-HR-NOTION-TO-SHEETS",
   "last_commit_sha": null,
   "last_pushed_at": null,
-  "active_tasks": [],
+  "active_tasks": [
+    {
+      "task_id": "CHRO-2026-06-04-HR-NOTION-TO-SHEETS",
+      "title": "인사 허브 노션 6개 DB → 구글시트 전면 이관 (노션 구독 2026-06-07 종료)",
+      "assigned_at": "2026-06-04",
+      "status": "IN_PROGRESS",
+      "priority": "P0",
+      "deadline": "2026-06-07",
+      "lead": "chro",
+      "tech": "cto",
+      "note": "GM 결정(일요일 전 총력 이관). 인사 허브(chro/hub/index.html)가 NOTION_FN(GAS)→노션 6 DB(임직원·채용·지원자·온보딩·평가·퇴사) 실의존 — 구독 끊으면 인사 페이지 마비(시토 실측 확정). 일부(임직원 명부)는 매출보고서 시트 이중기록. 시토=기술 이관(시트 스키마+GAS 재작성, 프론트 계약 유지), 시로=인사 데이터·정책. GM 액션=노션 6 DB export. 이관 명세 작성 중(docs/chro_notion_to_sheets_migration_spec.md). 민감정보(주민번호·생년월일·평가) 시트 보관 보안 주의(Data Boundary)."
+    }
+  ],
   "agent": "chro",
   "task_id": null,
   "title": null,
