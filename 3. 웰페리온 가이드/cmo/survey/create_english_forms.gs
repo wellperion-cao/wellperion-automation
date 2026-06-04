@@ -596,40 +596,76 @@ function _findFormByTitle_(title) {
   return FormApp.openById(newest.getId());
 }
 
+// 단일 편집 작업 재시도 래퍼 — "Failed to edit the form. Please wait and try again."(일시적) 대응.
+// 3회까지 3초 간격 재시도. 끝내 실패하면 'FAIL:<메시지>' 반환(→ 일시적 아님 = 정책 차단 의심).
+function _tryFormOp_(fn, label) {
+  for (var a = 1; a <= 3; a++) {
+    try { fn(); return 'OK'; }
+    catch (e) {
+      if (a < 3) { Utilities.sleep(3000); continue; }
+      return 'FAIL: ' + e.message;
+    }
+  }
+}
+
 function updateEnglishFormsAccess() {
-  Logger.log('=== [수정] 기존 영문 폼 4종 — 익명 허용 + CTA 갱신 (중복 생성 안 함) ===');
+  Logger.log('=== [수정v2·진단형] 영문 폼 4종 — 익명 허용 + CTA 갱신 (작업별 진단 + 자동 재시도) ===');
   var summary = [];
   for (var i = 0; i < EN_FORM_SPECS.length; i++) {
     var spec = EN_FORM_SPECS[i];
+    var rec = { title: spec.title, status: 'PENDING' };
     try {
       var form = _findFormByTitle_(spec.title);
       if (!form) {
         Logger.log('[누락] 폼 못 찾음: ' + spec.title);
-        summary.push({ title: spec.title, status: 'NOT_FOUND' });
+        rec.status = 'NOT_FOUND';
+        summary.push(rec);
         continue;
       }
-      var before = form.requiresLogin();
-      form.setRequireLogin(false);   // 익명 제출 허용(로그인벽 제거)
-      form.setCollectEmail(false);   // 이메일 수집(확인됨) 끄기 — 로그인 강제 부가요인 제거
-      form.setDescription(spec.desc); // CTA litt.ly→en/inquiry 반영
-      var after = form.requiresLogin();
-      Logger.log('[수정] ' + spec.title);
-      Logger.log('   requiresLogin: ' + before + ' → ' + after);
-      Logger.log('   published: ' + form.getPublishedUrl());
-      Logger.log('   edit: ' + form.getEditUrl());
-      summary.push({ title: spec.title, status: 'UPDATED', requiresLoginAfter: after,
-                     published: form.getPublishedUrl(), edit: form.getEditUrl() });
+      rec.published = form.getPublishedUrl();
+      rec.edit = form.getEditUrl();
+      try { rec.beforeLogin = form.requiresLogin(); } catch (e) { rec.beforeLogin = 'read-fail'; }
+
+      // ── 작업을 분리해 어느 설정이 막히는지 콕 집어 진단 ──
+      rec.opRequireLogin = _tryFormOp_(function () { form.setRequireLogin(false); }, 'setRequireLogin(false)');
+      rec.opCollectEmail = _tryFormOp_(function () { form.setCollectEmail(false); }, 'setCollectEmail(false)');
+      rec.opDescription  = _tryFormOp_(function () { form.setDescription(spec.desc); }, 'setDescription');
+
+      try { rec.afterLogin = form.requiresLogin(); } catch (e) { rec.afterLogin = 'read-fail'; }
+      rec.status = (rec.opRequireLogin === 'OK' && rec.afterLogin === false) ? 'LOGIN_FIXED'
+                 : (rec.opRequireLogin === 'OK') ? 'LOGIN_OP_OK_BUT_STILL_ON'
+                 : 'LOGIN_BLOCKED';
+
+      Logger.log('[' + rec.status + '] ' + spec.title);
+      Logger.log('   requiresLogin: ' + rec.beforeLogin + ' → ' + rec.afterLogin);
+      Logger.log('   setRequireLogin: ' + rec.opRequireLogin);
+      Logger.log('   setCollectEmail: ' + rec.opCollectEmail);
+      Logger.log('   setDescription:  ' + rec.opDescription);
+      Logger.log('   공개 URL: ' + rec.published);
     } catch (e) {
       Logger.log('[오류] ' + spec.title + ' — ' + e.message);
-      summary.push({ title: spec.title, status: 'ERROR', error: e.message });
+      rec.status = 'ERROR';
+      rec.error = e.message;
     }
+    summary.push(rec);
+    Utilities.sleep(2500); // 폼 간 간격 — 연속 편집 속도제한(rate-limit) 회피
   }
+
   Logger.log('');
   Logger.log('=== 수정 결과 요약 ===');
-  summary.forEach(function(s) {
-    Logger.log(s.status + ' | requiresLogin=' + (s.requiresLoginAfter) + ' | ' + s.title);
-    if (s.published) Logger.log('   ' + s.published);
+  var blocked = 0;
+  summary.forEach(function (s) {
+    Logger.log(s.status + ' | login(' + s.beforeLogin + '→' + s.afterLogin + ') | ' + s.title);
+    if (s.status === 'LOGIN_BLOCKED' || s.status === 'ERROR') blocked++;
   });
-  Logger.log('=== 완료 — 익명 브라우저로 4종 폼 로그인벽 없이 열리는지 재검증 필요 ===');
+  Logger.log('');
+  if (blocked === summary.length) {
+    Logger.log('!! 4종 모두 막힘 → 일시적 혼잡 아님. Google Workspace 관리정책이 폼 로그인을 강제하는 것으로 판단.');
+    Logger.log('   → 스크립트로 해제 불가. 폼 UI 수동 토글(설정▸응답▸"조직 제한" 해제) 또는 관리콘솔 정책 변경 필요.');
+  } else if (blocked > 0) {
+    Logger.log('일부만 성공 — 실패분은 잠시 후 다시 실행하면 풀릴 수 있음(일시적 가능성).');
+  } else {
+    Logger.log('=== 전부 성공 — 익명 시크릿창으로 4종 폼 로그인벽 없이 열리는지 재검증 ===');
+  }
   return summary;
 }
