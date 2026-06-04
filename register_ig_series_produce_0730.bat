@@ -36,12 +36,14 @@ SET LAUNCHER=%ROOT%\start_ig_series_producer.bat
 SET TASK_NAME=Wellperion-IG-Series-Produce-0730
 SET OLD_PRODUCE=Wellperion-IG-Series-Produce-2100
 SET OLD_PUBLISH=Wellperion-IG-Publish-0730
+SET OLD_WATCHER=Wellperion-IG-Publish-Watcher
 SET RUN_USER=%USERDOMAIN%\%USERNAME%
 
 echo.
-echo [1/3] Disabling retired tasks (%OLD_PRODUCE%, %OLD_PUBLISH%) ...
-schtasks /Change /TN "%OLD_PRODUCE%" /DISABLE 1>nul 2>nul && echo   OK: %OLD_PRODUCE% disabled. || echo   (skip) %OLD_PRODUCE% not present / already off.
-schtasks /Change /TN "%OLD_PUBLISH%" /DISABLE 1>nul 2>nul && echo   OK: %OLD_PUBLISH% disabled. || echo   (skip) %OLD_PUBLISH% not present / already off.
+echo [1/3] Deleting retired tasks (21:00 produce, 07:30 publish, publish-watcher) ...
+schtasks /Delete /TN "%OLD_PRODUCE%" /F 1>nul 2>nul && echo   OK: %OLD_PRODUCE% deleted. || echo   (skip) %OLD_PRODUCE% not present.
+schtasks /Delete /TN "%OLD_PUBLISH%" /F 1>nul 2>nul && echo   OK: %OLD_PUBLISH% deleted. || echo   (skip) %OLD_PUBLISH% not present.
+schtasks /Delete /TN "%OLD_WATCHER%" /F 1>nul 2>nul && echo   OK: %OLD_WATCHER% deleted. || echo   (skip) %OLD_WATCHER% not present.
 
 echo.
 echo [2/3] Registering %TASK_NAME% (DAILY 07:30, interactive) ...
