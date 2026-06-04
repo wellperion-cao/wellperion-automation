@@ -122,6 +122,32 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 .manual-body .schedule-table th{background:var(--accent-bg);color:var(--accent);font-weight:700}
 .day-focus-section{background:var(--paper);border:1px solid var(--blue);border-radius:12px;padding:14px 18px;margin:12px 0}
 .day-focus-section .day-focus-title{font-size:14px;font-weight:700;color:var(--blue);margin-bottom:8px}
+/* ── 요일별 트렐로 보드 (매뉴얼 탭 주 콘텐츠) ── */
+.board-intro{font-size:12px;color:var(--dim);margin:2px 0 12px;line-height:1.5}
+.board-scroll{display:flex;gap:12px;overflow-x:auto;-webkit-overflow-scrolling:touch;scroll-snap-type:x proximity;padding:2px 2px 14px;scrollbar-width:thin}
+.board-scroll::-webkit-scrollbar{height:8px}
+.board-scroll::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
+.board-col{flex:0 0 240px;min-width:240px;scroll-snap-align:start;background:var(--bg);border:1px solid var(--border);border-radius:12px;overflow:hidden;display:flex;flex-direction:column}
+.board-col.is-weekend{border-color:rgba(183,159,138,0.45)}
+.board-col-head{padding:10px 14px;display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--border);background:var(--paper)}
+.board-col-head .bday{font-size:15px;font-weight:700}
+.board-cell{padding:10px 12px;border-bottom:1px solid var(--border)}
+.board-cell:last-child{border-bottom:none}
+.board-cell-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+.board-cell-label{font-size:12px;font-weight:700;display:inline-flex;align-items:center;gap:4px}
+.board-cell-label.male{color:var(--blue)}
+.board-cell-label.female{color:var(--orange)}
+.board-edit-btn{font-size:11px;font-weight:600;padding:3px 9px;border-radius:7px;cursor:pointer;font-family:inherit;border:1px solid;background:var(--accent-bg);color:var(--accent);border-color:rgba(183,159,138,0.3)}
+.board-edit-btn:hover{background:rgba(183,159,138,0.22)}
+.board-edit-btn.save{background:var(--green-bg);color:var(--green);border-color:rgba(106,191,123,0.3)}
+.board-cell-list{margin:0;padding-left:16px;list-style:disc;font-size:12.5px;line-height:1.55}
+.board-cell-list li{margin-bottom:3px;word-break:break-word}
+.board-cell-empty{font-size:12px;color:var(--dim);font-style:italic}
+.board-cell-edit{display:none;width:100%;min-height:96px;background:var(--paper);border:1px solid var(--accent);color:var(--text);border-radius:8px;padding:8px 10px;font-size:12.5px;font-family:inherit;line-height:1.55;resize:vertical}
+.board-cell.editing .board-cell-edit{display:block}
+.board-cell.editing .board-cell-list,.board-cell.editing .board-cell-empty{display:none}
+.board-edit-hint{font-size:11px;color:var(--dim);margin-top:5px;display:none}
+.board-cell.editing .board-edit-hint{display:block}
 /* Admin shift card */
 .admin-shift-card{background:var(--paper);border:1px solid var(--border);border-radius:12px;padding:16px 18px;margin-bottom:12px}
 .admin-shift-card h3{font-size:15px;font-weight:700;margin-bottom:6px}
@@ -493,6 +519,17 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 
 <div id="tab-manual" class="content hidden">
 
+  <!-- ── 요일별 트렐로 보드 (주 콘텐츠) ── -->
+  <div style="font-size:16px;font-weight:700;color:var(--text);padding:2px 0 4px;">요일별 업무 보드</div>
+  <div class="board-intro">요일별 컬럼 안에 👨남 / 👩여 업무를 분리했습니다. 각 셀의 <strong>편집</strong> 버튼으로 항목을 추가·수정·삭제하고 저장하면 모든 기기에 반영됩니다. (가로로 스크롤)</div>
+  <div id="manual-board" class="board-scroll"></div>
+
+  <!-- ── 기존 상세 절차 참고 (접이식 · 운영 정보 보존) ── -->
+  <div class="manual-section" style="margin-top:18px;">
+    <div class="manual-header" onclick="togManual(this)"><h3>기존 상세 절차 참고 (구역별 매뉴얼·점검 항목)</h3><span class="arrow">&#9654;</span></div>
+    <div class="manual-body" style="padding:0;">
+    <div style="padding:14px 18px;">
+
   <!-- 공통 안전 유의사항 -->
   <div class="manual-section">
     <div class="manual-header" onclick="togManual(this)"><h3>공통 유의사항</h3><span class="arrow open">&#9654;</span></div>
@@ -699,6 +736,10 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
     <div style="font-size:12px;color:var(--dim);margin-bottom:14px;">항목 왼쪽 체크박스로 점검완료를 표시하면 모든 기기에 저장됩니다. 항목명을 누르면 상세 매뉴얼이 펼쳐집니다.</div>
     <div id="manual-items-sync"></div>
   </div>
+
+    </div><!-- /padding wrapper -->
+    </div><!-- /manual-body (기존 상세 절차 참고) -->
+  </div><!-- /manual-section (기존 상세 절차 참고) -->
 </div>
 
 <div id="tab-check-m" class="content">
@@ -2320,7 +2361,152 @@ function switchTab(tab, opts){
   if(tab==='check-m'){activeGenderTab='m';renderG('m')}
   if(tab==='check-f'){activeGenderTab='f';renderG('f')}
   if(tab==='admin')renderAdmin();
-  if(tab==='manual')renderManualItems();
+  if(tab==='manual'){renderBoard();renderManualItems();}
+}
+
+/* ═══════════════════════════════════════════════
+   요일별 트렐로 보드 (매뉴얼 탭) — 7컬럼 × 남/여 = 14셀
+   저장: localStorage(SUPPORT_MANUAL_BOARD) 즉시 영속 + 기존 패턴대로 API 베스트에포트 POST
+   ═══════════════════════════════════════════════ */
+const BOARD_STORAGE_KEY = 'SUPPORT_MANUAL_BOARD'; // 14셀 내용 영속 키 (신규)
+const BOARD_DAYS = [
+  {key:'mon',label:'월',weekend:false},
+  {key:'tue',label:'화',weekend:false},
+  {key:'wed',label:'수',weekend:false},
+  {key:'thu',label:'목',weekend:false},
+  {key:'fri',label:'금',weekend:false},
+  {key:'sat',label:'토',weekend:true},
+  {key:'sun',label:'일',weekend:true}
+];
+
+/* 시드(seed) — 기존 요일별 집중 청소 표 + 남/여 전담 항목을 요일·성별 셀로 분배.
+   각 값은 줄바꿈(\n) 구분 항목 리스트 텍스트. GM이 이후 직접 편집·저장. */
+const BOARD_SEED = {
+  mon:{
+    m:'화장실 전체 청소\n탈수기 물때·곰팡이 제거\nB-1 파우더 관리\nB-5 사우나 화장실 (탕 배수: 마개+스위치)\nE-4 헬스장: 런닝머신 바닥\nE-5 골프장: 타석(스크린천)\nD-3 메인 계단 (남 전담)',
+    f:'화장실 전체 청소\n탈수기 물때·곰팡이 제거\nB-1 파우더 관리\nB-5 사우나 화장실 (탕 배수: 마개+스위치)\nE-4 헬스장: 런닝머신 바닥\nE-5 골프장: 타석(스크린천)\nD-4 메인 복도 휴게공간 (여 전담)'
+  },
+  tue:{
+    m:'세면대 배수 파이프 청소\n배수구 소독·머리카락 제거\n탕 내 비품 점검\nE-2 거울·유리창 (화요일 집중)\nD-6 G.X룸 거울·바닥 (남 전담·화요일 집중)\nE-4 헬스장: 스트레칭 공간\nE-5 골프장: 타석(기계)',
+    f:'세면대 배수 파이프 청소\n배수구 소독·머리카락 제거\n탕 내 비품 점검\nE-2 거울·유리창 (화요일 집중)\nE-4 헬스장: 스트레칭 공간\nE-5 골프장: 타석(기계)'
+  },
+  wed:{
+    m:'건/습식 사우나 바닥 고압세척 (산성세제 금지)\nD-8 키즈 샤워실 (남 전담·2주1회 13:00)\nE-4 헬스장: 런닝머신 바닥\nE-5 골프장: 타석(스크린천)',
+    f:'건/습식 사우나 바닥 고압세척 (산성세제 금지)\nE-4 헬스장: 런닝머신 바닥\nE-5 골프장: 타석(스크린천)'
+  },
+  thu:{
+    m:'화장실 전체 청소\n탈수기 물때·곰팡이 제거\nB-1 파우더 관리\nB-5 사우나 화장실\nE-4 헬스장: 스트레칭 공간\nE-5 골프장: 타석(기계)',
+    f:'화장실 전체 청소\n탈수기 물때·곰팡이 제거\nB-1 파우더 관리\nB-5 사우나 화장실\nE-4 헬스장: 스트레칭 공간\nE-5 골프장: 타석(기계)'
+  },
+  fri:{
+    m:'세면대 배수 파이프 청소\n배수구 소독·머리카락 제거\n탕 내 비품 점검\nE-4 헬스장: 런닝머신 바닥\nE-5 골프장: 타석(스크린천)\nD-3 메인 계단 (남 전담)',
+    f:'세면대 배수 파이프 청소\n배수구 소독·머리카락 제거\n탕 내 비품 점검\nD-7 센터 화분 물 공급 (여 전담·금요일 집중)\nE-4 헬스장: 런닝머신 바닥\nE-5 골프장: 타석(스크린천)'
+  },
+  sat:{
+    m:'벽체 곰팡이·물때 제거\n거울·유리창 물때 제거\n천정 환기구 먼지 제거\n방제\nE-4 헬스장: 거울\nE-5 골프장: 레슨룸',
+    f:'벽체 곰팡이·물때 제거\n거울·유리창 물때 제거\n천정 환기구 먼지 제거\n방제\n여 사우나 청소\nE-4 헬스장: 거울\nE-5 골프장: 레슨룸'
+  },
+  sun:{
+    m:'탕청소 업체 휴무\nE-6 주차장 집중 (바닥·화장실·차단기)\n개인락커 + 미비 부분 보완\nE-4 헬스장: 거울\nE-5 골프장: 레슨룸',
+    f:'탕청소 업체 휴무\nE-6 주차장 집중 (바닥·화장실·차단기)\n개인락커 + 미비 부분 보완\n여 사우나 청소\nE-4 헬스장: 거울\nE-5 골프장: 레슨룸'
+  }
+};
+
+let BOARD_DATA = {}; // {dayKey:{m:'...', f:'...'}}
+
+function loadBoardData(){
+  let stored=null;
+  try{ stored=JSON.parse(localStorage.getItem(BOARD_STORAGE_KEY)); }catch(e){ stored=null; }
+  BOARD_DATA={};
+  BOARD_DAYS.forEach(d=>{
+    const s=(stored&&stored[d.key])||{};
+    const seed=BOARD_SEED[d.key]||{};
+    BOARD_DATA[d.key]={
+      m:(s.m!==undefined&&s.m!==null)?s.m:(seed.m||''),
+      f:(s.f!==undefined&&s.f!==null)?s.f:(seed.f||'')
+    };
+  });
+}
+
+function persistBoardData(){
+  // 1) localStorage 즉시 영속 (페이지 표준 오프라인 폴백 패턴)
+  localStorage.setItem(BOARD_STORAGE_KEY, JSON.stringify(BOARD_DATA));
+  // 2) 기존 저장 패턴대로 API 베스트에포트 POST (GAS가 action 미지원 시 무해히 무시)
+  if(!ONLINE) return;
+  const ind=document.getElementById('saveIndicator');
+  if(ind){ind.style.display='block';ind.textContent='보드 저장 중...';}
+  fetch(API_URL,{method:'POST',redirect:'follow',
+    headers:{'Content-Type':'text/plain'},
+    body:JSON.stringify({action:'saveBoard',key:BOARD_STORAGE_KEY,board:BOARD_DATA})
+  }).then(()=>{if(ind){ind.textContent='보드 저장 완료';setTimeout(()=>{ind.style.display='none'},1500);}})
+    .catch(()=>{if(ind){ind.textContent='보드 저장 (로컬 보관됨)';setTimeout(()=>{ind.style.display='none'},1500);}});
+}
+
+/* 텍스트(줄바꿈 항목) → 리스트 HTML */
+function boardCellListHTML(text){
+  const lines=(text||'').split('\n').map(l=>l.trim()).filter(l=>l.length);
+  if(!lines.length) return '<div class="board-cell-empty">항목 없음 — 편집으로 추가</div>';
+  return '<ul class="board-cell-list">'+lines.map(l=>'<li>'+escapeHTML(l)+'</li>').join('')+'</ul>';
+}
+
+/* 보드 1회 렌더 (DOM 생성). 편집 textarea는 셀당 1개 생성·재사용 → IME 조합 안전 */
+function renderBoard(){
+  const wrap=document.getElementById('manual-board');
+  if(!wrap)return;
+  let html='';
+  BOARD_DAYS.forEach(d=>{
+    const cell=BOARD_DATA[d.key]||{m:'',f:''};
+    html+='<div class="board-col'+(d.weekend?' is-weekend':'')+'">';
+    html+='<div class="board-col-head"><span class="bday">'+d.label+'</span>'
+        +'<span class="day-type '+(d.weekend?'weekend':'weekday')+'">'+(d.weekend?'주말':'평일')+'</span></div>';
+    [['m','male','👨 남'],['f','female','👩 여']].forEach(g=>{
+      const gk=g[0], cls=g[1], lab=g[2];
+      const cid=d.key+'_'+gk;
+      const val=cell[gk]||'';
+      html+='<div class="board-cell" id="cell_'+cid+'">';
+      html+='<div class="board-cell-head"><span class="board-cell-label '+cls+'">'+lab+'</span>'
+          +'<button type="button" class="board-edit-btn" id="btn_'+cid+'" onclick="boardToggleEdit(\''+d.key+'\',\''+gk+'\')">편집</button></div>';
+      html+=boardCellListHTML(val);
+      html+='<textarea class="board-cell-edit" id="ta_'+cid+'" '
+          +'placeholder="한 줄에 한 항목씩 입력">'+escapeHTML(val)+'</textarea>';
+      html+='<div class="board-edit-hint">한 줄에 한 항목. 저장을 누르면 모든 기기에 반영됩니다.</div>';
+      html+='</div>';
+    });
+    html+='</div>';
+  });
+  wrap.innerHTML=html;
+}
+
+/* 편집 토글 + 저장. editing 클래스만 토글 → textarea는 재생성되지 않음(IME 안전) */
+function boardToggleEdit(dayKey,gk){
+  const cid=dayKey+'_'+gk;
+  const cell=document.getElementById('cell_'+cid);
+  const btn=document.getElementById('btn_'+cid);
+  const ta=document.getElementById('ta_'+cid);
+  if(!cell||!btn||!ta)return;
+  const editing=cell.classList.contains('editing');
+  if(!editing){
+    // 편집 진입 — 게이트(기존 항목 편집과 동일 비밀번호)
+    if(typeof requireEditAuth==='function' && !requireEditAuth()) return;
+    cell.classList.add('editing');
+    btn.textContent='저장';
+    btn.classList.add('save');
+    ta.focus();
+  }else{
+    // 저장 — 값 반영 후 리스트만 갱신(textarea는 그대로, 재생성 없음)
+    BOARD_DATA[dayKey][gk]=ta.value;
+    cell.classList.remove('editing');
+    btn.textContent='편집';
+    btn.classList.remove('save');
+    // 리스트 노드만 교체 (textarea·버튼 보존)
+    const oldList=cell.querySelector('.board-cell-list, .board-cell-empty');
+    if(oldList){
+      const tmp=document.createElement('div');
+      tmp.innerHTML=boardCellListHTML(ta.value);
+      oldList.replaceWith(tmp.firstElementChild);
+    }
+    persistBoardData();
+  }
 }
 
 /* ── Init ── */
@@ -2345,6 +2531,7 @@ else if(savedOld)document.getElementById('submitterF').value=savedOld;
 
 loadStaffFromSheet();
 loadItemMasterFromSheet(); // 점검 항목 마스터를 시트에서 로드 (비동기 — 완료 시 화면 갱신)
+loadBoardData(); renderBoard(); // 요일별 트렐로 보드 로드·렌더
 renderG('m');
 
 /* ═══════════════════════════════════════════════
