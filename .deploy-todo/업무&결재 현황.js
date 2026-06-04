@@ -208,6 +208,52 @@ function _json(obj) {
     .setMimeType(ContentService.MimeType.JSON);
 }
 
+// ═══ 공지 서식 공용 저장 (전 PC 공유) — 2026-06-04 ═══
+// 브라우저 localStorage(PC별 개별) → 공용 시트탭으로 이전. notice_list/save/delete.
+var NOTICE_SHEET = '공지서식저장';
+var NOTICE_HEADERS = ['id','savedAt','brand','type','orient','titleKr','titleEn','subtitle','startDate','endDate','ff','fs','lh','body'];
+function _getNoticeSheet() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sh = ss.getSheetByName(NOTICE_SHEET);
+  if (!sh) { sh = ss.insertSheet(NOTICE_SHEET); sh.appendRow(NOTICE_HEADERS); }
+  else if (sh.getLastRow() === 0) { sh.appendRow(NOTICE_HEADERS); }
+  return sh;
+}
+function _processNoticeAction(body) {
+  var action = body.action || '';
+  var sh = _getNoticeSheet();
+  var data = sh.getDataRange().getValues();
+  var headers = (data[0] && data[0].length) ? data[0] : NOTICE_HEADERS;
+  if (action === 'notice_list') {
+    var items = [];
+    for (var r = 1; r < data.length; r++) {
+      if (!String(data[r][0])) continue;
+      var o = {};
+      for (var c = 0; c < headers.length; c++) o[headers[c]] = data[r][c];
+      items.push(o);
+    }
+    items.reverse(); // 최근 저장이 위로
+    return _json({ ok: true, count: items.length, data: items });
+  }
+  if (action === 'notice_save') {
+    var id = String(body.id || '');
+    if (!id) return _json({ ok: false, error: 'id 필수' });
+    var rowArr = NOTICE_HEADERS.map(function(h){ return h === 'id' ? id : (body[h] !== undefined ? body[h] : ''); });
+    var foundRow = -1;
+    for (var r2 = 1; r2 < data.length; r2++) { if (String(data[r2][0]) === id) { foundRow = r2 + 1; break; } }
+    if (foundRow > 0) sh.getRange(foundRow, 1, 1, NOTICE_HEADERS.length).setValues([rowArr]);
+    else sh.appendRow(rowArr);
+    return _json({ ok: true, id: id });
+  }
+  if (action === 'notice_delete') {
+    var did = String(body.id || '');
+    if (!did) return _json({ ok: false, error: 'id 필수' });
+    for (var r3 = 1; r3 < data.length; r3++) { if (String(data[r3][0]) === did) { sh.deleteRow(r3 + 1); return _json({ ok: true, id: did }); } }
+    return _json({ ok: false, error: '해당 id 없음' });
+  }
+  return _json({ ok: false, error: '알 수 없는 notice action: ' + action });
+}
+
 // ═══ GitHub 콘텐츠 파일 중계 (GM 편집 → 자동 커밋·push) — 2026-05-29 ═══
 // 보안: ① 커밋 가능 경로는 coo 하위 .json 으로 한정(코드 조작 차단)
 //       ② EDIT_KEY 일치 필수  ③ 토큰은 ScriptProperties 서버측 보관(브라우저 비노출)
@@ -495,6 +541,17 @@ function doGet(e) {
       return _processTodoAction(body);
     }
 
+    // 공지 서식 공용 저장 — list/save/delete (GET·POST 공용)
+    if (action.startsWith('notice_')) {
+      const nbody = {};
+      Object.keys(e.parameter).forEach(k => nbody[k] = e.parameter[k]);
+      if (e.postData && e.postData.contents) {
+        try { const pb2 = JSON.parse(e.postData.contents); Object.keys(pb2).forEach(k => nbody[k] = pb2[k]); } catch(ignored2){}
+      }
+      nbody.action = action;
+      return _processNoticeAction(nbody);
+    }
+
     return _json({ ok: false, error: '알 수 없는 action: ' + action });
   } catch (err) {
     return _json({ ok: false, error: err.message });
@@ -773,6 +830,7 @@ function _processTodoAction(body) {
 function doPost(e) {
   try {
     const body = JSON.parse(e.postData.contents);
+    if ((body.action || '').indexOf('notice_') === 0) return _processNoticeAction(body);
     return _processTodoAction(body);
   } catch (err) {
     return _json({ ok: false, error: err.message });
