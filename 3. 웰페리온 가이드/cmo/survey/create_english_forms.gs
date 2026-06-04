@@ -866,14 +866,15 @@ var EN_COPY_MAP = [
 // FormApp.create/addItem/deleteItem 없음 → 신규 폼·항목 0. 멱등.
 function fixEnglishFormsCopyByScan() {
   Logger.log('=== [스캔·진단+수정] fixEnglishFormsCopyByScan ===');
-  var KW = [
-    { kw: 'membership inquiry', idx: 0, tag: 'membership' },
-    { kw: 'adult lesson',       idx: 1, tag: 'adult' },
-    { kw: 'youth',              idx: 2, tag: 'youth' },
-    { kw: 'summer special',     idx: 3, tag: 'summer' }
+  // 영문 폼은 내부 제목(getTitle)이 비어 있어 제목 매칭 불가 → 발행URL에 박힌 폼 고유ID로 매칭(100%).
+  var TARGETS = [
+    { id: '1FAIpQLSfOFxaqO5zSmoYa9TkfBlkDPbGjaTXm3duh7w5NwuBMhlJb6A', idx: 0, tag: 'membership' },
+    { id: '1FAIpQLSdirIB05ecVGkqJCIfJaw5yn7nIwVQe8ZeKbzQzKqKg83AUNw', idx: 1, tag: 'adult' },
+    { id: '1FAIpQLScqZum8zrhqKC0m2S0IKElYez-aJuPMQHM-JKF867UADF9X3A', idx: 2, tag: 'youth' },
+    { id: '1FAIpQLSchg7_9bmLTjCA-gfSj_anjklaNr_OpYBcmHzQJCTndIzgJPA', idx: 3, tag: 'summer' }
   ];
   var done = {};
-  Logger.log('--- cao@ 접근 가능 폼 인벤토리 ---');
+  Logger.log('--- cao@ 접근 가능 폼 인벤토리 (제목 | 발행URL) ---');
   var it = DriveApp.searchFiles('mimeType = "application/vnd.google-apps.form" and trashed = false');
   var scanned = 0;
   while (it.hasNext()) {
@@ -883,12 +884,12 @@ function fixEnglishFormsCopyByScan() {
     var op = _tryFormOp_(function () { form = FormApp.openById(fid); }, 'open');
     if (op !== 'OK' || !form) { Logger.log('[열기실패] ' + f.getName() + ' | ' + fid + ' | ' + op); continue; }
     var ftitle = ''; try { ftitle = form.getTitle(); } catch (e) { ftitle = '(제목읽기실패)'; }
-    Logger.log('· ' + ftitle + ' | id=' + fid);
-    var low = String(ftitle).toLowerCase();
-    for (var m = 0; m < KW.length; m++) {
-      if (done[KW[m].tag]) continue;
-      if (low.indexOf(KW[m].kw) < 0) continue;
-      var map = EN_COPY_MAP[KW[m].idx];
+    var pub = ''; try { pub = form.getPublishedUrl(); } catch (e) { pub = ''; }
+    Logger.log('· "' + ftitle + '" | id=' + fid + ' | pub=' + pub);
+    for (var m = 0; m < TARGETS.length; m++) {
+      if (done[TARGETS[m].tag]) continue;
+      if (pub.indexOf(TARGETS[m].id) < 0) continue;   // 발행 URL의 폼 고유ID 매칭 (제목 무관)
+      var map = EN_COPY_MAP[TARGETS[m].idx];
       var updated = [];
       var items = form.getItems();
       for (var j = 0; j < items.length; j++) {
@@ -898,14 +899,14 @@ function fixEnglishFormsCopyByScan() {
         (function (item, v) { _tryFormOp_(function () { item.asTextItem().setHelpText(v); }, 'help'); })(items[j], val);
         updated.push(t);
       }
-      done[KW[m].tag] = true;
-      Logger.log('  [FIXED] ' + KW[m].tag + ' → ' + ftitle + ' | updated: ' + updated.join(' | '));
+      done[TARGETS[m].tag] = true;
+      Logger.log('  [FIXED] ' + TARGETS[m].tag + ' → "' + ftitle + '" | updated: ' + updated.join(' | '));
       Utilities.sleep(1500);
       break;
     }
   }
   Logger.log('--- 요약 ---  스캔 폼 수: ' + scanned);
-  KW.forEach(function (k) { Logger.log((done[k.tag] ? '[FIXED] ' : '[STILL_MISSING] ') + k.tag); });
+  TARGETS.forEach(function (k) { Logger.log((done[k.tag] ? '[FIXED] ' : '[STILL_MISSING] ') + k.tag); });
   Logger.log('=== 완료 ===');
 }
 
