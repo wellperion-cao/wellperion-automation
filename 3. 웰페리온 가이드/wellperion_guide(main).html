@@ -1586,14 +1586,14 @@
         </div>
         <table>
           <tr><th style="width:44px">#</th><th>브릿지가 하는 일</th></tr>
-          <tr><td><strong>잇기</strong></td><td>모든 완료([DONE])는 반드시 <strong>'다음'</strong>을 남긴다 → status 큐 또는 세션 로그 '다음 할일'에 기록. 그 한 줄이 내일의 첫 줄.</td></tr>
-          <tr><td><strong>옮기기</strong></td><td>GM의 의도를 <strong>작업 카드</strong>(ID·무엇·왜(북극성)·담당·완료 정의·다음·상태)로 번역. 추측의 빈칸 제거.</td></tr>
-          <tr><td><strong>맞추기</strong></td><td>집기 전 <strong>북극성과 대조</strong>. <strong>왜(북극성) 칸이 빈 카드는 집지 않는다.</strong> 어긋나면 멈추고 GM에 1건 보고.</td></tr>
+          <tr><td><strong>① 이어주기</strong></td><td>모든 완료는 반드시 <strong>'다음'</strong>을 남긴다 → status 큐(대기열) 또는 세션 로그 '다음 할일'에 기록. 그 한 줄이 내일의 첫 줄.</td></tr>
+          <tr><td><strong>② 풀어주기</strong></td><td>GM이 시킨 걸 일하는 사람이 바로 알아듣게 <strong>작업 카드</strong>(번호·무엇·왜(목표)·담당·어디까지 하면 끝·다음·상태)로 또박또박 옮긴다. 헷갈릴 빈칸 제거.</td></tr>
+          <tr><td><strong>③ 방향 보기</strong></td><td>집기 전 <strong>목표(북극성)와 대조</strong>. <strong>왜(북극성) 칸이 빈 카드는 집지 않는다.</strong> 어긋나면 멈추고 GM께 1건 보고.</td></tr>
         </table>
         <table style="margin-top:10px;">
-          <tr><th style="width:110px">검수 (웰리)</th><th>묻는 질문</th></tr>
-          <tr><td><strong>작동검수</strong></td><td>"됐나? 돌아가나?" — 응답 200·push success만으로 마감 금지(실측 의무).</td></tr>
-          <tr><td><strong>방향검수</strong></td><td>"북극성 쪽인가? '다음'이 말이 되나?" — 됐는데 방향이 틀린 일은 쌓지 말고 GM에 1건 올림.</td></tr>
+          <tr><th style="width:110px">확인 (웰리)</th><th>무엇을 묻나</th></tr>
+          <tr><td><strong>됐나 확인</strong></td><td>"잘 되나? 제대로 돌아가나?" — 응답코드·push 성공만으로 마감 금지(실제로 눈으로 확인 의무).</td></tr>
+          <tr><td><strong>방향 확인</strong></td><td>"목표(북극성) 쪽 맞나? '다음'이 말이 되나?" — 됐어도 방향이 틀린 일은 쌓지 말고 GM께 1건 올림.</td></tr>
         </table>
         <div class="callout tip" style="margin-top:10px;"><strong>부팅 시:</strong> "뭘 할까"를 새로 추론하지 말고 — <code>status/{역할}.json</code> + <code>_queue.json</code>의 <strong>내 PENDING·'다음' 카드</strong>를 먼저 집는다. 새 일은 GM 입력일 때만. (절대원칙 ②중복 금지 + 검증 ②신규&lt;연결 과 동일 정신.)</div>
         <!-- ══ /일의 브릿지 ══ -->
@@ -3628,24 +3628,24 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
         <span style="color:#fff;font-weight:800;font-size:16px;letter-spacing:0.02em;">일의 브릿지</span>
         <span style="color:#9fd8e0;font-size:12px;font-weight:400;">— 어제와 오늘을 잇는 단 하나의 규칙</span>
       </div>
-      <p style="color:#cfe9ee;font-size:13px;line-height:1.65;margin:0 0 12px;">C레벨이 자꾸 엉뚱한 일을 잡아오는 건 능력 문제가 아니라 <strong style="color:#7fdbe8;">연결 문제</strong>입니다. 켤 때마다 0에서 "뭘 할까"를 새로 지어내기 때문이죠. <strong style="color:#fff;">브릿지는 일을 기억이 아니라 구조로 잇습니다.</strong></p>
+      <p style="color:#cfe9ee;font-size:13px;line-height:1.7;margin:0 0 12px;">개울을 <strong style="color:#7fdbe8;">징검다리</strong>로 건넌다고 생각해 보세요. 한 칸 갈 때마다 <strong style="color:#fff;">다음 돌</strong>을 놓아야 계속 건널 수 있죠. 일도 똑같아요 — 어제 한 일과 오늘 할 일이 안 이어지면, 아침마다 개울 앞에서 "어디로 가지?"를 처음부터 다시 헤매게 돼요.<br><strong style="color:#fff;">브릿지 = 일 끝낼 때마다 '다음 돌'을 꼭 놓게 만드는 다리예요.</strong></p>
 
       <!-- 핵심 규칙 1줄 -->
       <div style="background:rgba(56,182,196,0.12);border-left:3px solid #38b6c4;border-radius:0 8px 8px 0;padding:12px 14px;margin:0 0 14px;">
         <div style="color:#7fdbe8;font-size:12px;font-weight:700;margin-bottom:5px;">🔑 단 하나의 규칙</div>
-        <div style="color:#eaf6f8;font-size:14px;line-height:1.6;">오늘 할 일 = <strong style="color:#fff;">① 어제 완료가 남긴 '다음'</strong> + <strong style="color:#fff;">② GM이 새로 넣은 입력</strong>.<br><span style="color:#9fd8e0;">이 둘이 아니면 새 일을 만들지 않는다.</span></div>
+        <div style="color:#eaf6f8;font-size:14px;line-height:1.6;">오늘 할 일은 딱 <strong style="color:#fff;">2곳</strong>에서만 나와요:<br><strong style="color:#fff;">① 어제 끝내며 남긴 '다음'</strong> + <strong style="color:#fff;">② GM이 새로 시킨 것</strong>.<br><span style="color:#9fd8e0;">이 둘 말고는 새 일을 만들지 않아요.</span></div>
       </div>
 
       <!-- 흐름 한 줄 -->
       <div style="display:flex;flex-wrap:wrap;align-items:center;gap:7px;font-size:12.5px;font-weight:700;color:#cfe9ee;margin:0 0 6px;">
-        <span style="background:#26404e;padding:5px 11px;border-radius:7px;">입력</span><span style="color:#38b6c4;">→</span>
-        <span style="background:#26404e;padding:5px 11px;border-radius:7px;">옮기기</span><span style="color:#38b6c4;">→</span>
-        <span style="background:#26404e;padding:5px 11px;border-radius:7px;">처리</span><span style="color:#38b6c4;">→</span>
-        <span style="background:#26404e;padding:5px 11px;border-radius:7px;">검수</span><span style="color:#38b6c4;">→</span>
-        <span style="background:#26404e;padding:5px 11px;border-radius:7px;">완료</span><span style="color:#38b6c4;">→</span>
-        <span style="background:#2d5160;padding:5px 11px;border-radius:7px;color:#7fdbe8;">다음 ↻</span>
+        <span style="background:#26404e;padding:5px 11px;border-radius:7px;">일 받기</span><span style="color:#38b6c4;">→</span>
+        <span style="background:#26404e;padding:5px 11px;border-radius:7px;">또박또박 적기</span><span style="color:#38b6c4;">→</span>
+        <span style="background:#26404e;padding:5px 11px;border-radius:7px;">하기</span><span style="color:#38b6c4;">→</span>
+        <span style="background:#26404e;padding:5px 11px;border-radius:7px;">확인</span><span style="color:#38b6c4;">→</span>
+        <span style="background:#26404e;padding:5px 11px;border-radius:7px;">끝!</span><span style="color:#38b6c4;">→</span>
+        <span style="background:#2d5160;padding:5px 11px;border-radius:7px;color:#7fdbe8;">다음 돌 놓기 ↻</span>
       </div>
-      <p style="color:#7f9aa3;font-size:11.5px;margin:0 0 12px;">'완료'는 끝이 아니라 '다음'을 낳고, 그 '다음'이 내일의 '입력'이 됩니다. 그래서 끊기지 않습니다.</p>
+      <p style="color:#7f9aa3;font-size:11.5px;margin:0 0 12px;">'끝!'은 진짜 끝이 아니에요. 끝낼 때마다 <strong style="color:#9fd8e0;">다음 돌</strong>을 하나 놓고, 그 돌이 내일 첫걸음이 돼요. 그래서 안 끊겨요.</p>
 
       <details class="toggle" open style="margin:0;">
         <summary style="cursor:pointer;font-weight:700;font-size:13px;color:#7fdbe8;">📋 브릿지 상세 — 접기/펼치기</summary>
@@ -3653,10 +3653,10 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
 
           <p style="font-size:13px;color:var(--text-soft);margin:2px 0 6px;font-weight:700;">① 브릿지가 하는 일 — 딱 3가지</p>
           <table>
-            <tr><th style="width:88px">일</th><th>뜻</th></tr>
-            <tr><td><strong>잇기</strong></td><td>모든 완료는 반드시 <strong>'다음'</strong>을 남긴다 → 그 한 줄이 내일의 첫 줄이 된다. (연속성)</td></tr>
-            <tr><td><strong>옮기기</strong></td><td>GM의 <strong>의도</strong>를 C레벨이 바로 집을 수 있는 <strong>카드</strong>로 번역한다 (담당·완료 정의·기대 결과까지). 추측의 빈칸을 없앤다.</td></tr>
-            <tr><td><strong>맞추기</strong></td><td>일을 집기 전에 <strong>북극성과 대조</strong>한다. 어긋나면 멈추고 한 줄로 GM에 올린다. (방향 고정)</td></tr>
+            <tr><th style="width:104px">하는 일</th><th>쉽게 말하면</th></tr>
+            <tr><td><strong>① 이어주기</strong></td><td>일을 끝낼 때마다 <strong>'다음은 이거!'</strong>를 한 줄 꼭 남겨요 → 그게 내일 첫 번째 할 일이 돼요.</td></tr>
+            <tr><td><strong>② 풀어주기</strong></td><td>GM이 시킨 걸 일하는 사람이 바로 알아듣게 <strong>또박또박</strong> 적어줘요 (누가 / 어디까지 하면 끝인지까지). 헷갈릴 빈칸을 없애요.</td></tr>
+            <tr><td><strong>③ 방향 보기</strong></td><td>일을 잡기 전에 <strong>우리 목표(북극성) 쪽인지</strong> 봐요. 아니면 멈추고 GM께 한 줄로 물어봐요.</td></tr>
           </table>
 
           <p style="font-size:13px;color:var(--text-soft);margin:18px 0 6px;font-weight:700;">② 작업 카드 — 7칸이면 끝</p>
@@ -3671,16 +3671,16 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
             <tr><td><strong>상태</strong></td><td>입력 → 진행 → 검수 → 완료</td></tr>
           </table>
 
-          <p style="font-size:13px;color:var(--text-soft);margin:18px 0 6px;font-weight:700;">③ 두 개의 검수 — 웰리가 본다</p>
+          <p style="font-size:13px;color:var(--text-soft);margin:18px 0 6px;font-weight:700;">③ 두 가지 확인 — 웰리가 한다</p>
           <table>
-            <tr><th style="width:110px">검수</th><th>묻는 질문</th><th style="width:120px">비고</th></tr>
-            <tr><td><strong>작동검수</strong></td><td>"됐나? 돌아가나?"</td><td>지금까지 하던 것</td></tr>
-            <tr><td><strong>방향검수</strong></td><td>"북극성 쪽인가? '다음'이 말이 되나?"</td><td style="color:var(--accent);font-weight:600;">새로 더하는 것</td></tr>
+            <tr><th style="width:110px">확인</th><th>무엇을 묻나</th><th style="width:120px">비고</th></tr>
+            <tr><td><strong>됐나 확인</strong></td><td>"잘 되나? 제대로 돌아가나?"</td><td>원래 하던 것</td></tr>
+            <tr><td><strong>방향 확인</strong></td><td>"우리 목표 쪽 맞나? 적어둔 '다음'이 말이 되나?"</td><td style="color:var(--accent);font-weight:600;">새로 더한 것</td></tr>
           </table>
-          <div class="callout tip" style="margin-top:10px;"><strong>방향검수에서 어긋나면</strong> → C레벨 자율 진행 멈추고 <strong>GM에 1건만</strong> 올림(추천값 병기). 됐는데 방향이 틀린 일을 쌓지 않는 게 핵심.</div>
-          <div class="callout tip" style="margin-top:10px;"><strong>🔧 이제 약속이 아니라 장치입니다 (2026-06-04):</strong> 완료 보고(<code>clevel_post_action.py</code>)가 <code>--next "다음 한 줄"</code> 또는 <code>--terminal</code>(종결)을 <strong>강제</strong>합니다. 둘 다 없으면 큐에 <strong style="color:var(--warm);">⚠️ 다음 미정 — 브릿지 끊김</strong>이 떠서 <strong>끊김이 눈에 보입니다</strong>. <code>--next</code>는 큐에 <strong>PENDING으로 자동 등록</strong>(<code>origin:bridge</code>·<code>depends_on</code>) → 다음 부팅이 그대로 집습니다. <strong>웰리 기억력이 아니라 구조가 잇습니다.</strong></div>
+          <div class="callout tip" style="margin-top:10px;"><strong>방향이 틀리면</strong> → 일을 멈추고 <strong>GM께 딱 1건만</strong> 물어봐요 ("이렇게 하면 어떨까요?"까지 같이). <strong>잘 만들었어도 엉뚱한 일이면 안 쌓는 게</strong> 핵심이에요.</div>
+          <div class="callout tip" style="margin-top:10px;"><strong>🔧 이제 '약속'이 아니라 '자동 장치'예요 (2026-06-04):</strong> 일을 끝낼 때 '다음 돌'을 안 놓으면 <strong style="color:var(--warm);">빨간불(⚠️ 다음 미정)</strong>이 저절로 켜져요 — "어, 다리 끊겼네"가 바로 눈에 보여요. '다음'을 적으면 그게 <strong>내일 할 일 목록에 저절로</strong> 들어가요. 그래서 <strong>누가 깜빡해도 다리가 안 끊겨요.</strong></div>
 
-          <div class="callout" style="margin-top:12px;"><strong>📍 '다음'은 어디에 사나:</strong> ① <strong>세션 로그 탭 → '다음 할일' 칸</strong>(하루 흐름의 기준) + ② <strong>status 큐</strong>(C레벨이 부팅 때 읽는 대기열). 이 두 곳에 '다음'이 남아 있으면, 내일 누가 켜도 어제와 이어집니다.</div>
+          <div class="callout" style="margin-top:12px;"><strong>📍 적어둔 '다음'은 어디 있나:</strong> 두 군데에 같이 남아요 — ① <strong>오늘 일지의 '다음 할일' 칸</strong>, ② <strong>대기 목록</strong>(다음에 켜는 사람이 제일 먼저 보는 곳). 두 곳에 '다음'이 있으면, 내일 누가 켜도 어제와 자연스럽게 이어져요.</div>
         </div>
       </details>
     </div>
