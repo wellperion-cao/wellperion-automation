@@ -11,7 +11,7 @@
 - 동네생활·이웃 톤 유지. "안녕하세요, 한남동에 있는 웰페리온입니다" 식 첫 문장.
 - 격조는 유지하되 과한 홍보 문구·가격·할인 강조 금지 (VVIP 브랜드 이미지 보호).
 - 브랜드 용어 준수: "피트니스" 금지 → "스포츠클럽". "현대하이페리온" 금지 → "웰페리온".
-- 개인번호 노출 금지. CTA는 "문의: litt.ly/wellperion" 단일.
+- 개인번호 노출 금지. CTA는 "문의: wellperion.com/ko/inquiry/" 단일.
 - 동네 신뢰·경험 중심. 수치·가격보다 라이프스타일·공간 분위기를 앞세운다.
 
 ---
@@ -51,7 +51,7 @@ A안(Playwright 반자동) 전환 조건:
     본문 (200~400자, 이웃 대화체, 1문단 3~4줄 이하)
     동네 키워드 자연 삽입 (한남동, 이촌동, 용산)
     ---
-    문의: litt.ly/wellperion
+    문의: wellperion.com/ko/inquiry/
 
 단계 2. CMO 검수
 
@@ -63,7 +63,7 @@ A안(Playwright 반자동) 전환 조건:
     - "피트니스" / "현대하이페리온" 사용 여부 (있으면 반려)
 
   ② CTA·개인정보 체크
-    - 마지막 줄: "문의: litt.ly/wellperion" 단일 여부
+    - 마지막 줄: "문의: wellperion.com/ko/inquiry/" 단일 여부
     - 전화번호·카카오 링크·할인 코드 없는지
 
   ③ 이미지 규격 체크
@@ -110,7 +110,7 @@ A안(Playwright 반자동) 전환 조건:
 본문     : 200~400자. 이웃 대화체. 1문단 3~4줄 이하.
 이미지   : 1~5장. 정방형(1:1) 또는 가로형(4:3) 권장.
 키워드   : 본문 말미에 동네 키워드 자연 삽입. 해시태그보다 지역명 직접 노출이 유효.
-CTA      : 마지막 줄 고정 — "문의: litt.ly/wellperion"
+CTA      : 마지막 줄 고정 — "문의: wellperion.com/ko/inquiry/"
 
 ---
 
@@ -131,7 +131,7 @@ CTA      : 마지막 줄 고정 — "문의: litt.ly/wellperion"
 한남동, 이촌동 주변에 사시는 분들이라면 한 번 들러보시거나,
 궁금한 점 편하게 문의 주세요.
 
-문의: litt.ly/wellperion
+문의: wellperion.com/ko/inquiry/
 
 ---
 
@@ -146,7 +146,7 @@ CTA      : 마지막 줄 고정 — "문의: litt.ly/wellperion"
   - 첫 문장: 지역 + 브랜드 소개 ✓
   - 가격·할인 언급 없음 ✓
   - "피트니스" / "현대하이페리온" 없음 ✓
-  - CTA 단일 ("문의: litt.ly/wellperion") ✓
+  - CTA 단일 ("문의: wellperion.com/ko/inquiry/") ✓
   - 동네 키워드 자연 삽입 (한남동, 이촌동) ✓
 
 ---
@@ -154,7 +154,7 @@ CTA      : 마지막 줄 고정 — "문의: litt.ly/wellperion"
 6. CTA 규칙
 
 모든 당근 게시물 마지막 줄:
-  문의: litt.ly/wellperion
+  문의: wellperion.com/ko/inquiry/
 
 금지:
   - 전화번호 직접 노출
