@@ -11,7 +11,7 @@
 - 정중·신뢰 톤. "안녕하세요, 웰페리온입니다." 식 안내형 첫 문장.
 - 격조 유지, 과한 홍보·가격·할인 강조 금지 (VVIP 브랜드 보호).
 - 브랜드 용어 준수: "피트니스" 금지 → "스포츠클럽". "현대하이페리온" 금지 → "웰페리온".
-- 개인번호 노출 금지. CTA는 "문의: wellperion.com/ko/inquiry/" 단일.
+- 개인번호 노출 금지. CTA는 한·영 2줄 표준 (문의 : / (한) wellperion.com/ko/inquiry / (영) wellperion.com/en/inquiry).
 - 소식(포스트)은 정보 가치 중심. 스팸성 반복 발송 금지.
 
 ---
@@ -44,11 +44,13 @@ A안(반자동) 전환 조건: GM이 PC 브라우저에서 카카오 채널 관�
     ---
     본문 (200~500자, 정중 안내체, 1문단 3~4줄)
     ---
-    문의: wellperion.com/ko/inquiry/
+    문의 : 
+    (한) wellperion.com/ko/inquiry
+    (영) wellperion.com/en/inquiry
 
 단계 2. CMO 검수 (통과 시에만 다음 단계)
   ① 톤: 정중 안내체 / 가격·할인 강조 없음 / "피트니스"·"현대하이페리온" 없음(있으면 반려)
-  ② CTA·개인정보: 마지막 줄 "문의: wellperion.com/ko/inquiry/" 단일 / 전화번호·외부 할인링크 없음
+  ② CTA·개인정보: 마지막 줄 한·영 2줄 CTA 표준 여부 (문의 : / (한) wellperion.com/ko/inquiry / (영) wellperion.com/en/inquiry) / 전화번호·외부 할인링크 없음
   ③ 이미지 규격: 수(1~5)·크기·용량 충족
   검수 완료 후 채널별 업로드 캘린더 상태 → "가공완료".
 
@@ -70,7 +72,10 @@ A안(반자동) 전환 조건: GM이 PC 브라우저에서 카카오 채널 관�
   제목   : 20자 이내.
   본문   : 200~500자. 정중 안내체. 1문단 3~4줄 이하.
   이미지 : 1~5장. 정방형(1:1) 권장.
-  CTA    : 마지막 줄 고정 — "문의: wellperion.com/ko/inquiry/"
+  CTA    : 마지막 줄 고정 — 한·영 2줄 표준:
+             문의 : 
+             (한) wellperion.com/ko/inquiry
+             (영) wellperion.com/en/inquiry
 
 ---
 
@@ -84,7 +89,10 @@ A안(반자동) 전환 조건: GM이 PC 브라우저에서 카카오 채널 관�
 ---
 
 6. CTA 규칙
-  모든 카카오 채널 소식 마지막 줄: 문의: wellperion.com/ko/inquiry/
+  모든 카카오 채널 소식 마지막 줄 — 한·영 2줄 표준:
+    문의 : 
+    (한) wellperion.com/ko/inquiry
+    (영) wellperion.com/en/inquiry
   금지: 전화번호 직접 노출 / 외부 할인 코드·이벤트 URL(GM 결재 없이 불가) / 가격·요금 직접 표기
 
 ---

@@ -11,7 +11,7 @@
 - 동네생활·이웃 톤 유지. "안녕하세요, 한남동에 있는 웰페리온입니다" 식 첫 문장.
 - 격조는 유지하되 과한 홍보 문구·가격·할인 강조 금지 (VVIP 브랜드 이미지 보호).
 - 브랜드 용어 준수: "피트니스" 금지 → "스포츠클럽". "현대하이페리온" 금지 → "웰페리온".
-- 개인번호 노출 금지. CTA는 "문의: wellperion.com/ko/inquiry/" 단일.
+- 개인번호 노출 금지. CTA는 한·영 2줄 표준 (문의 : / (한) wellperion.com/ko/inquiry / (영) wellperion.com/en/inquiry).
 - 동네 신뢰·경험 중심. 수치·가격보다 라이프스타일·공간 분위기를 앞세운다.
 
 ---
@@ -46,12 +46,14 @@ A안(Playwright 반자동) 전환 조건:
     - 텍스트 파일: danggn_copy.md (제목·본문 최종본)
 
   danggn_copy.md 구성:
-    제목 (15자 이내, 지역명 포함 권장)
+    제목 (소식 제목칸 ~27자 제한 — "WELLPERION JUNIOR OPEN 2026" 수준이 최대. 긴 제목은 본문 첫 줄에 별도 작성, 제목칸에는 짧은 요약 제목만. 지역명 포함 권장)
     ---
     본문 (200~400자, 이웃 대화체, 1문단 3~4줄 이하)
     동네 키워드 자연 삽입 (한남동, 이촌동, 용산)
     ---
-    문의: wellperion.com/ko/inquiry/
+    문의 : 
+    (한) wellperion.com/ko/inquiry
+    (영) wellperion.com/en/inquiry
 
 단계 2. CMO 검수
 
@@ -63,7 +65,7 @@ A안(Playwright 반자동) 전환 조건:
     - "피트니스" / "현대하이페리온" 사용 여부 (있으면 반려)
 
   ② CTA·개인정보 체크
-    - 마지막 줄: "문의: wellperion.com/ko/inquiry/" 단일 여부
+    - 마지막 줄: 한·영 2줄 CTA 표준 여부 (문의 : / (한) wellperion.com/ko/inquiry / (영) wellperion.com/en/inquiry)
     - 전화번호·카카오 링크·할인 코드 없는지
 
   ③ 이미지 규격 체크
@@ -105,12 +107,15 @@ A안(Playwright 반자동) 전환 조건:
 
 당근 비즈프로필 게시물 구성:
 
-제목     : 15자 이내. 지역명 포함 권장.
-           예) "한남동 스포츠클럽 오픈 프로그램", "이촌동 근처 하이엔드 헬스"
+제목     : 소식 제목칸 ~27자 제한. 긴 제목(예: "WELLPERION JUNIOR OPEN 2026" 수준이 최대)은 본문 첫 줄에 별도 작성 — 제목칸에는 짧은 요약 제목만 넣는다. 지역명 포함 권장.
+           예) "한남동 스포츠클럽 주니어 대회", "이촌동 근처 하이엔드 스포츠클럽"
 본문     : 200~400자. 이웃 대화체. 1문단 3~4줄 이하.
 이미지   : 1~5장. 정방형(1:1) 또는 가로형(4:3) 권장.
 키워드   : 본문 말미에 동네 키워드 자연 삽입. 해시태그보다 지역명 직접 노출이 유효.
-CTA      : 마지막 줄 고정 — "문의: wellperion.com/ko/inquiry/"
+CTA      : 마지막 줄 고정 — 한·영 2줄 표준:
+             문의 : 
+             (한) wellperion.com/ko/inquiry
+             (영) wellperion.com/en/inquiry
 
 ---
 
@@ -131,7 +136,9 @@ CTA      : 마지막 줄 고정 — "문의: wellperion.com/ko/inquiry/"
 한남동, 이촌동 주변에 사시는 분들이라면 한 번 들러보시거나,
 궁금한 점 편하게 문의 주세요.
 
-문의: wellperion.com/ko/inquiry/
+문의 : 
+(한) wellperion.com/ko/inquiry
+(영) wellperion.com/en/inquiry
 
 ---
 
@@ -146,7 +153,7 @@ CTA      : 마지막 줄 고정 — "문의: wellperion.com/ko/inquiry/"
   - 첫 문장: 지역 + 브랜드 소개 ✓
   - 가격·할인 언급 없음 ✓
   - "피트니스" / "현대하이페리온" 없음 ✓
-  - CTA 단일 ("문의: wellperion.com/ko/inquiry/") ✓
+  - CTA 한·영 2줄 표준 (문의 : / (한) wellperion.com/ko/inquiry / (영) wellperion.com/en/inquiry) ✓
   - 동네 키워드 자연 삽입 (한남동, 이촌동) ✓
 
 ---
