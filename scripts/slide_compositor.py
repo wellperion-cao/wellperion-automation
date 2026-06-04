@@ -581,7 +581,7 @@ def compose_unified_slide(
     Args:
         label_eng: 영문 라벨 (정보 영역 상단, 대문자, 작게)
         body_text: 한글 본문 (줄바꿈 \\n 구분 다중 줄)
-        footer_meta: 풋터 라인 (예: "litt.ly/wellperion") — 옵션
+        footer_meta: 풋터 라인 (예: "http://wellperion.com/ko/inquiry/") — 옵션
     """
     if aspect not in ASPECT_PRESETS:
         raise ValueError(f"Unknown aspect: {aspect}")

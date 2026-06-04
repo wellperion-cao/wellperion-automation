@@ -93,4 +93,4 @@
 ---
 
 *Tour appointments are available by prior reservation only. Walk-in visits are not accepted.*
-*For immediate assistance, please contact us via the official Wellperion channel: https://litt.ly/wellperion*
+*For immediate assistance, please contact us via the official Wellperion channel: http://wellperion.com/ko/inquiry/*

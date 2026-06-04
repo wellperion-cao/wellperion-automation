@@ -83,7 +83,7 @@ function createMembershipFormEN_() {
     'Thank you for your interest in Wellperion, Seoul\'s premier private sports club. ' +
     'Please complete the following to schedule your exclusive club tour and consultation.\n\n' +
     'Tour appointments are available by prior reservation only. Walk-in visits are not accepted.\n' +
-    'For immediate assistance: https://litt.ly/wellperion'
+    'For immediate assistance: http://wellperion.com/ko/inquiry/'
   );
   form.setCollectEmail(false);
   form.setAllowResponseEdits(false);
@@ -167,7 +167,7 @@ function createAdultLessonFormEN_() {
     'Interested in private or group lessons at Wellperion? ' +
     'Fill in the details below and our program consultants will reach out to arrange a session tailored to your schedule and goals.\n\n' +
     'All lessons are by prior reservation only. Walk-in visits are not accepted.\n' +
-    'For immediate assistance: https://litt.ly/wellperion'
+    'For immediate assistance: http://wellperion.com/ko/inquiry/'
   );
   form.setCollectEmail(false);
   form.setAllowResponseEdits(false);
@@ -273,7 +273,7 @@ function createYouthLessonFormEN_() {
     'Enroll your child in Wellperion\'s exclusive youth sports programs. ' +
     'Please provide the details below and our WSC program team will contact you to discuss the best fit.\n\n' +
     'All youth programs are by prior reservation only. Walk-in visits are not accepted.\n' +
-    'For immediate assistance: https://litt.ly/wellperion'
+    'For immediate assistance: http://wellperion.com/ko/inquiry/'
   );
   form.setCollectEmail(false);
   form.setAllowResponseEdits(false);
@@ -373,7 +373,7 @@ function createSummerSpecialFormEN_() {
     'Our Summer Special programs offer intensive sessions across five premium sports disciplines. ' +
     'Submit your inquiry and our team will reach out with program details and scheduling options.\n\n' +
     'All Summer Special programs are by prior reservation only. Availability is limited — early inquiry is encouraged.\n' +
-    'For immediate assistance: https://litt.ly/wellperion'
+    'For immediate assistance: http://wellperion.com/ko/inquiry/'
   );
   form.setCollectEmail(false);
   form.setAllowResponseEdits(false);
