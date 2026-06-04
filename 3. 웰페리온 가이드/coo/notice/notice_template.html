@@ -1073,16 +1073,16 @@
     }
   };
 
-  /* 최초 서버 가용 시: 서버가 비어있고 로컬에 저장본이 있으면 1회 자동 이전(GM 기존 저장 보존) */
+  /* 최초 서버 가용 시: 서버에 '없는' 로컬 저장본을 1회 공유 서버로 합침(merge).
+     v2.64 — 서버가 비어있을 때만이 아니라, 서버에 없는 GM 기존 로컬 저장본을 id 기준으로 올림. */
   function ntMigrateIfNeeded(serverList){
     if(localStorage.getItem('wp_notice_migrated')) return false;
     var local = ntGetSaved();
-    if(serverList.length === 0 && local.length){
-      local.slice().reverse().forEach(function(it){ if(!it.id) it.id=String(Date.now()+Math.floor(local.indexOf(it))); ntServerSave(it); });
-      localStorage.setItem('wp_notice_migrated','1');
-      return true;
-    }
+    if(!local.length){ localStorage.setItem('wp_notice_migrated','1'); return false; }
+    var serverIds = {}; serverList.forEach(function(s){ serverIds[String(s.id)] = 1; });
+    var toPush = local.filter(function(it){ return it.id && !serverIds[String(it.id)]; });
     localStorage.setItem('wp_notice_migrated','1');
+    if(toPush.length){ toPush.slice().reverse().forEach(function(it){ ntServerSave(it); }); return true; }
     return false;
   }
 
