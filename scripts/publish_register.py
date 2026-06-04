@@ -152,7 +152,8 @@ def _telegram_send_message(text: str) -> None:
 def _copy_preview(montage_path: Path, slug: str) -> str | None:
     """montage 를 review 폴더로 캐시우회 파일명(타임스탬프)으로 복사.
 
-    반환: ROOT 기준 정방향 슬래시 상대경로 문자열 (review_queue.preview 용).
+    반환: 배포루트(`3. 웰페리온 가이드`) 기준 정방향 슬래시 상대경로 (review_queue.preview = M5 img src 호환).
+    ※ ROOT 기준이면 '3. 웰페리온 가이드/' 접두사가 붙어 M5에서 404(미리보기 깨짐) — 배포루트 기준 필수.
     실패 시 None (등록은 계속 진행).
     """
     try:
@@ -164,7 +165,7 @@ def _copy_preview(montage_path: Path, slug: str) -> str | None:
         ext = montage_path.suffix or ".png"
         dest = REVIEW_DIR / f"{slug}_preview_{ts}{ext}"
         shutil.copyfile(montage_path, dest)
-        rel = dest.relative_to(ROOT).as_posix()
+        rel = dest.relative_to(REVIEW_DIR.parent.parent).as_posix()  # 배포루트(가이드 폴더) 기준 → cmo/review/...
         print(f"[INFO] preview 복사 완료(캐시우회) → {rel}")
         return rel
     except Exception as exc:
