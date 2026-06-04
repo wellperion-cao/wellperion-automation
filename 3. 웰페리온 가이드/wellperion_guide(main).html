@@ -616,17 +616,17 @@
     <!-- AUTO:LATEST-START -->
     <div class="card grow">
       <h4>최신 업데이트 — 2026-06-04 (자동 갱신)</h4>
+      <p><strong>2026-06-04</strong> feat(cmo): finalizeEnglishForms() — 영문폼 로그인해제+응답시트 연결보장(멱등·중복0)</p>
       <p><strong>2026-06-04</strong> feat(hr): 인사 허브 노션→구글시트 전면 이관 프로젝트 착수 (P0, 일요일 데드라인)</p>
       <p><strong>2026-06-04</strong> 긴급 보호: instagram 콘텐츠 원본 전체 git 추적 시작 — 동시세션 rebase untracked 유실 차단 (WJO/발레 손실…</p>
       <p><strong>2026-06-04</strong> fix(inquiry): updateEnglishFormsAccess 진단형 보강 — 작업별 try/catch + 3회 자동 재시도 + 정…</p>
       <p><strong>2026-06-04</strong> feat(cmo): 발레 클래스 런칭 폴더 복구 — 동시세션 rebase 유실분 구글드라이브 원본 기반 재생성 + git 추적 시작</p>
-      <p><strong>2026-06-04</strong> fix(inquiry): 영문 폼 CTA를 영문 페이지로 교정(/ko→/en) + EN 블록 stale TODO 주석 제거</p>
     </div>
 <!-- AUTO:LATEST-END -->
         <table>
           <tr><th style="width:160px">날짜</th><th>변경 내용</th></tr>
           <!-- AUTO:TABLE-START -->
-      <tr><td><strong>2026-06-04 (자동)</strong></td><td>feat(hr): 인사 허브 노션→구글시트 전면 이관 프로젝트 착수 (P0, 일요일 데드라인) · 긴급 보호: instagram 콘텐츠 원본 전체 git 추적 시작 — 동시세션 rebase untracked 유실 차단 (WJO/발레 손실 대응) · fix(inquiry): updateEnglishFormsAccess 진단형 보강 — 작업별 try/ca…</td></tr>
+      <tr><td><strong>2026-06-04 (자동)</strong></td><td>feat(cmo): finalizeEnglishForms() — 영문폼 로그인해제+응답시트 연결보장(멱등·중복0) · feat(hr): 인사 허브 노션→구글시트 전면 이관 프로젝트 착수 (P0, 일요일 데드라인) · 긴급 보호: instagram 콘텐츠 원본 전체 git 추적 시작 — 동시세션 rebase untracked 유실 차단 (WJO/발레 손…</td></tr>
       <!-- AUTO:TABLE-END -->
           <tr><td><strong>2026-05-28 (14차)</strong></td><td>공지/안내문 생성(COO 하위) · 오프라인 홍보물 디자인 제작(CMO 하위) 도구 신설 · 공지 서식 v2.0 독립 페이지화 · 회사소개서·전략로드맵 원본 「3. 웰페리온 가이드/회사문서/」로 이관(SSOT 단일화) · C-Level 부팅 R/R Notion API→가이드허브 g10 참조로 전환 · GitHub Pages 워크플로 폴더명 경로 수정 · 사이드바 "공통+7개 C-Level" 라벨 제거</td></tr>
           <tr><td>2026-05-27 (13차)</td><td>GitHub Pages 전환 · 사이드바 4섹터 · AI C-Level 통일 · 운영 통합 체계 · 공식채널·지출현황·취업규칙·SSOT 신설 · g2+g19·g9+g20·g12·g13 합병 · 김남욱 탭 확장 · v2.5</td></tr>
@@ -5329,8 +5329,6 @@ function crTab(btn, panelId) {
       <tr class="auto-detail" style="display:none;"><td colspan="5" style="background:var(--paper);padding:10px 14px;font-size:13px;color:var(--dim);"> 일일 C-Level 진행현황 자동 체크.</td></tr>
       <tr onclick="wpAutoToggle(this)" style="cursor:pointer;"><td>🟢</td><td>종료 인사·자동 종료</td><td>CTO</td><td>22:25 / 22:30</td><td style="color:var(--accent);font-size:12px;">펼치기 ▾</td></tr>
       <tr class="auto-detail" style="display:none;"><td colspan="5" style="background:var(--paper);padding:10px 14px;font-size:13px;color:var(--dim);"> 22:25 Shutdown-Greeting 텔레그램 발송 → 22:30 Auto-Shutdown 실행.</td></tr>
-      <tr onclick="wpAutoToggle(this)" style="cursor:pointer;"><td>🟢</td><td>IG 개인계정 AI 시리즈 제작·검수카드</td><td>CMO</td><td>07:30</td><td style="color:var(--accent);font-size:12px;">펼치기 ▾</td></tr>
-      <tr class="auto-detail" style="display:none;"><td colspan="5" style="background:var(--paper);padding:10px 14px;font-size:13px;color:var(--dim);"><strong>예약작업 <code>Wellperion-IG-Series-Produce-0730</code></strong> (인터랙티브 · GM PC 로그온 필요). 흐름(2026-06-04 GM 정정 · 무폴링): <b>매일 07:30 <code>ig_series_producer.py</code> 가 시모(헤드리스)에게 다음 편 제작 위임 → 빌드 → M5 검수큐 등록(검수대기) → 로드맵 행 '제작완료(자동생성)' 자동표시 → 텔레그램 [✅승인]/[❌반려] 버튼 카드 발송.</b> 그 뒤 <b>GM이 M5에서 슬라이드 검토 → 텔레그램 카드 [✅승인] 탭 → 봇 <code>pub:</code> 콜백이 그 순간 즉시 발행</b>(<code>ig_review_publish_watcher.py --once</code>, 폴링 없음). 봇은 GM 로그온 user 세션 상주라 headful 발행 가능. <b>발행 트리거 = 오직 텔레그램 [✅승인] 탭</b>(스케줄·폴링 자동 발행 폐기). <b>안전판:</b> <code>register_publish</code>가 <code>큐레이션_추천.md</code> 자동 생성 + 발행기 큐 caption 폴백 → 큐레이션 누락 영구 차단. 소진(#6~#8 전부 제작완료) 시 생성 금지 + 텔레그램 경고. 대상=개인계정 namuk.wellperion. 정본=<code>instagram/_AI시리즈_로드맵.md</code>. <span style="color:var(--dim);">(구 <code>IG-Series-Produce-2100</code> 제작 · <code>IG-Publish-0730</code> 일괄발행 = 2026-06-04 Disabled)</span></td></tr>
     </table>
 
     <h4>매주</h4>
