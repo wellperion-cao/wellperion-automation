@@ -9,7 +9,7 @@
 | 포지셔닝 | 하이엔드 프라이빗 스포츠클럽 멤버십 커뮤니티 |
 | 브랜드 용어 | "피트니스" 금지 → "스포츠클럽" / "현대하이페리온" 금지 → "웰페리온" |
 | 미션 | 지속되지 않는 건강 문제를 해결한다 |
-| 공식 링크 | https://litt.ly/wellperion |
+| 공식 링크 | http://wellperion.com/ (회사 대표 홈, HTTP 전용) · 문의 진입점 → http://wellperion.com/ko/inquiry/ |
 | 업무보고 봇 | @namuki_report_bot (Chat ID 8254867551) |
 
 
