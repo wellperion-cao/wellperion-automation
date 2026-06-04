@@ -547,30 +547,20 @@
       span.querySelectorAll('[style]').forEach(function(s){ if(s.style && s.style.fontSize) s.style.fontSize=''; });
       b.appendChild(span);
     }
+    var topBlocks = Array.prototype.slice.call(ed.children).filter(function(b){ return BLK.test(b.nodeName); });
     var startB = blockOf(range.startContainer), endB = blockOf(range.endContainer);
-    /* v2.60 — 여러 줄(블록) 선택 또는 커서만 있을 때: 선택된 모든 줄을 통째로 크기 적용.
-       execCommand('fontSize')는 전체선택(Ctrl+A) 시 '마지막 줄'을 누락하는 브라우저 버그가
-       있어, 블록을 직접 열거해 적용 → 맨 아랫줄까지 포함 보장. (네이티브 Ctrl+A·마우스
-       드래그 등 어떤 선택 방식이든 동일) 한 줄 안 부분 선택만 execCommand 유지(부분 크기). */
-    if(range.collapsed || (startB && endB && startB !== endB)){
-      var blocks = [];
-      if(startB && endB){
-        var b = startB, guard = 0;
-        while(b && guard++ < 2000){ blocks.push(b); if(b === endB) break; b = b.nextElementSibling; }
-        if(!blocks.length || blocks[blocks.length-1] !== endB) blocks = Array.prototype.slice.call(ed.children);
-      } else {
-        blocks = Array.prototype.slice.call(ed.children);
-      }
-      blocks.forEach(sizeWholeBlock);
-      var sized = blocks.filter(function(b){ return BLK.test(b.nodeName) && b.querySelector('span[style*="font-size"]'); });
-      if(sized.length){
-        var r2 = document.createRange();
-        r2.setStart(sized[0], 0);
-        r2.setEnd(sized[sized.length-1], sized[sized.length-1].childNodes.length);
-        sel.removeAllRanges(); sel.addRange(r2);
-        if(typeof _saveCurSelection === 'function') _saveCurSelection();
-      }
-    } else {
+    /* v2.62 — 선택이 '닿는' 모든 줄을 range.intersectsNode로 직접 판정.
+       핵심: Ctrl+A 전체선택은 범위 양끝점이 '편집칸 자체'(블록 아님)라 blockOf가 null →
+       이전(v2.60) 분기가 마지막 줄 누락 execCommand로 빠졌음(브라우저별로 재현). intersectsNode는
+       양끝점 형태와 무관하게 닿는 블록을 모두 잡아 '막내줄'까지 포함. 한 줄 안 '부분' 선택만 부분 크기. */
+    var singlePartial = false;
+    if(!range.collapsed && startB && startB === endB){
+      var whole = document.createRange(); whole.selectNodeContents(startB);
+      var coversAll = range.compareBoundaryPoints(Range.START_TO_START, whole) <= 0 &&
+                      range.compareBoundaryPoints(Range.END_TO_END, whole) >= 0;
+      singlePartial = !coversAll; /* 같은 줄 안에서 일부만 선택한 경우 */
+    }
+    if(singlePartial){
       /* 한 줄 안 부분 선택 — 선택 영역만 크기 적용 */
       document.execCommand('fontSize', false, '7');
       ed.querySelectorAll('font[size="7"]').forEach(function(f){
@@ -580,6 +570,25 @@
         span.querySelectorAll('[style]').forEach(function(s){ if(s.style && s.style.fontSize) s.style.fontSize=''; });
         f.parentNode.replaceChild(span, f);
       });
+    } else {
+      /* 여러 줄·전체선택·커서: 닿는 모든 줄을 통째로 크기 적용 (막내줄 포함 보장) */
+      var touched;
+      if(range.collapsed){
+        var cb = blockOf(range.startContainer);
+        touched = cb ? [cb] : topBlocks;
+      } else {
+        touched = topBlocks.filter(function(b){ try{ return range.intersectsNode(b); }catch(e){ return true; } });
+        if(!touched.length) touched = topBlocks;
+      }
+      touched.forEach(sizeWholeBlock);
+      var sized = touched.filter(function(b){ return b.querySelector('span[style*="font-size"]'); });
+      if(sized.length){
+        var r2 = document.createRange();
+        r2.setStartBefore(sized[0]);
+        r2.setEndAfter(sized[sized.length-1]);
+        sel.removeAllRanges(); sel.addRange(r2);
+        if(typeof _saveCurSelection === 'function') _saveCurSelection();
+      }
     }
     ntUpdatePreview();
   };
@@ -1016,6 +1025,9 @@
     if(el('noticeSubtitle')) el('noticeSubtitle').value = item.subtitle||'';
     if(el('noticeOrient')) el('noticeOrient').value = item.orient || 'portrait';
     el('noticeBody').innerHTML = item.body||'';
+    /* v2.62 — 불러온 본문 구조 정규화: 저장본이 <p> 없는 맨몸 줄을 포함하면 Ctrl+A 후
+       줄단위 서식이 그 줄을 건너뜀. 불러오는 즉시 모든 줄을 <p>로 통일해 예방. */
+    if(typeof ntNormalizeBlocks === 'function') ntNormalizeBlocks(el('noticeBody'));
     el('noticeFontFamily').value = item.ff||'Pretendard';
     el('noticeFontSize').value = item.fs||'18';
     if(el('noticeLineHeight')) el('noticeLineHeight').value = item.lh||'1.85';
