@@ -1023,22 +1023,23 @@
     var data = ntCollectSaveData();
     /* 로컬 백업(오프라인·미배포 대비) */
     var arr = ntGetSaved(); arr.unshift(data); if(arr.length>20) arr=arr.slice(0,20); ntSetSaved(arr);
-    ntServerList().then(function(list){
-      if(list === null){ /* 서버 미가용 → 로컬 저장만 */ ntRenderSavedList(); alert('저장되었습니다. (이 PC 전용 — 공용 저장 서버 준비 전)'); return; }
-      ntServerSave(data).then(function(){
-        setTimeout(function(){ ntRenderSavedList(); }, 900);
-        alert('저장되었습니다. (전 PC 공용)');
-      });
-    });
+    /* v2.64 — 서버 확인(list)에 의존하지 않고 항상 서버 저장 시도(no-cors POST).
+       list 호출이 가끔 실패해도 저장이 누락되지 않도록. 서버 가용 시 전 PC 공유, 미가용 시 로컬 백업 유지. */
+    ntServerSave(data);
+    setTimeout(function(){ ntRenderSavedList(); }, 1300);
+    alert('저장되었습니다.');
   };
 
   function ntApplyItem(item){
     if(!item) return;
     el('noticeBrand').value = item.brand||'main';
     if(item.type) el('noticeType').value = item.type;
-    if(item.startDate) el('noticeStartDate').value = item.startDate;
-    else if(item.date) el('noticeStartDate').value = item.date;
-    if(item.endDate) el('noticeEndDate').value = item.endDate;
+    /* 날짜는 정상 형식(YYYY-MM-DD)일 때만 적용 — 레거시 자동변환(ISO) 행 대비 */
+    var _vd = function(v){ v = String(v||''); return /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : ''; };
+    var _sd = _vd(item.startDate) || _vd(item.date);
+    if(_sd) el('noticeStartDate').value = _sd;
+    var _ed = _vd(item.endDate);
+    if(_ed) el('noticeEndDate').value = _ed;
     el('noticeTitleKr').value = item.titleKr||'';
     el('noticeTitleEn').value = item.titleEn||'';
     if(el('noticeSubtitle')) el('noticeSubtitle').value = item.subtitle||'';

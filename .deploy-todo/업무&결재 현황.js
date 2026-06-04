@@ -217,9 +217,6 @@ function _getNoticeSheet() {
   var sh = ss.getSheetByName(NOTICE_SHEET);
   if (!sh) { sh = ss.insertSheet(NOTICE_SHEET); sh.appendRow(NOTICE_HEADERS); }
   else if (sh.getLastRow() === 0) { sh.appendRow(NOTICE_HEADERS); }
-  // 모든 값을 '텍스트'로 고정 — 시트가 날짜(startDate)·숫자(fs)·저장일을 자동 변환해
-  // 불러올 때 날짜칸 복원이 깨지는 것 방지.
-  try { sh.getRange(1, 1, Math.max(sh.getMaxRows(), 1000), NOTICE_HEADERS.length).setNumberFormat('@'); } catch (e) {}
   return sh;
 }
 function _processNoticeAction(body) {
@@ -241,11 +238,14 @@ function _processNoticeAction(body) {
   if (action === 'notice_save') {
     var id = String(body.id || '');
     if (!id) return _json({ ok: false, error: 'id 필수' });
-    var rowArr = NOTICE_HEADERS.map(function(h){ return h === 'id' ? id : (body[h] !== undefined ? body[h] : ''); });
+    var rowArr = NOTICE_HEADERS.map(function(h){ return h === 'id' ? id : (body[h] !== undefined && body[h] !== null ? String(body[h]) : ''); });
     var foundRow = -1;
     for (var r2 = 1; r2 < data.length; r2++) { if (String(data[r2][0]) === id) { foundRow = r2 + 1; break; } }
-    if (foundRow > 0) sh.getRange(foundRow, 1, 1, NOTICE_HEADERS.length).setValues([rowArr]);
-    else sh.appendRow(rowArr);
+    var targetRow = foundRow > 0 ? foundRow : sh.getLastRow() + 1;
+    var rng = sh.getRange(targetRow, 1, 1, NOTICE_HEADERS.length);
+    // 대상 행을 '텍스트'로 고정한 뒤 기록 → 날짜(startDate)·숫자(fs)·저장일 자동변환 방지
+    try { rng.setNumberFormat('@'); } catch (e) {}
+    rng.setValues([rowArr]);
     return _json({ ok: true, id: id });
   }
   if (action === 'notice_delete') {
