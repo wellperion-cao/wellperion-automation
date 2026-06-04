@@ -16,7 +16,7 @@
 #   register_publish(
 #       content_folder=FOLDER, slug="260603_AI4_역할분담",
 #       montage_path=montage, caption=CAPTION, location="웰페리온 스포츠클럽",
-#       mentions=["dietcamp_pt", "na_daeng", "wellperion"],
+#       mentions=[],  # 기본 없음. 실제 협업 상대가 있는 편에만 그때 지정
 #       account="namuk.wellperion",
 #       slides=[p.relative_to(ROOT).as_posix() for p in paths],
 #       queue_id="CMO-2026-06-03-AI4-역할분담", title="AI #4편 — 역할 분담(개인계정)",

@@ -25,7 +25,7 @@ QUEUE_TITLE = "AI #5편 — 깨진 환상들(개인계정)"
 QUEUE_CHANNEL = "인스타그램 (namuk.wellperion)"
 ACCOUNT = "namuk.wellperion"
 LOCATION = "웰페리온 스포츠클럽"
-MENTIONS = ["dietcamp_pt", "na_daeng", "wellperion"]
+MENTIONS = []  # 기본 없음. 실제 협업 상대가 있는 편에만 그때 지정
 
 CAPTION = (
     "AI를 쓰며 깨진 환상들 — 솔직하게 털어놓을게요.\n\n"
