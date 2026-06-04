@@ -214,6 +214,7 @@ function doGet(e) {
   var action = e.parameter.action || '';
   if (action === 'todo_list') return handleTodoGet(e.parameter);
   if (action === 'items')     return getItems();
+  if (action === 'board')     return getBoard(e.parameter);
 
   var date = e.parameter.date;
   if (!date) return jsonRes({ error: 'date required' });
@@ -284,6 +285,7 @@ function doPost(e) {
     if (body.action === 'notify')    return handleNotify(body);
     if (body.action === 'seed')      return handleSeed(body);
     if (body.action === 'saveItems') return saveItems(body);
+    if (body.action === 'saveBoard') return saveBoard(body);
     return jsonRes({ error: 'unknown action' });
   } catch (err) {
     return jsonRes({ error: err.message });
@@ -570,6 +572,36 @@ function saveItems(body) {
     sheet.getRange(2, 1, rows.length, ITEM_HEADERS.length).setValues(rows);
   }
   return jsonRes({ ok: true, count: rows.length });
+}
+
+// ════════════════════════════════════════════
+// 요일별 트렐로 보드 (매뉴얼 탭) — 모든 기기 동기화
+// 저장소: ScriptProperties (단일 JSON blob, 9KB 한도 내 — 14셀 짧은 텍스트)
+// 한글은 영문키(action/key/board) + UTF-8 POST 본문으로만 처리(GET 쿼리 한글 금지)
+// ════════════════════════════════════════════
+
+const BOARD_PROP_PREFIX = 'BOARD_';   // ScriptProperties 키 접두사
+const BOARD_DEFAULT_KEY  = 'SUPPORT_MANUAL_BOARD';
+
+// ─── 보드 조회 (GET ?action=board[&key=SUPPORT_MANUAL_BOARD]) ───
+function getBoard(params) {
+  var key = (params && params.key) ? String(params.key) : BOARD_DEFAULT_KEY;
+  var raw = PropertiesService.getScriptProperties().getProperty(BOARD_PROP_PREFIX + key);
+  var board = null;
+  if (raw) {
+    try { board = JSON.parse(raw); } catch (err) { board = null; }
+  }
+  // board=null → 프론트가 시드/로컬 폴백 사용
+  return jsonRes({ ok: true, key: key, board: board });
+}
+
+// ─── 보드 저장 (POST {action:'saveBoard', key, board}) — last-write-wins 전체 덮어쓰기 ───
+function saveBoard(body) {
+  var key = body.key ? String(body.key) : BOARD_DEFAULT_KEY;
+  var board = body.board || {};
+  PropertiesService.getScriptProperties()
+    .setProperty(BOARD_PROP_PREFIX + key, JSON.stringify(board));
+  return jsonRes({ ok: true, key: key, savedAt: Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy-MM-dd HH:mm:ss') });
 }
 
 // ─── 항목 마스터 1회 시드 (Apps Script 에디터에서 1회 실행) ───

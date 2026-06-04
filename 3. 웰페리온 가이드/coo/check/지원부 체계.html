@@ -7,7 +7,7 @@
 <style>
 :root{--bg:#221F20;--paper:#2a2725;--text:#f5f2ef;--dim:#8c8b83;--accent:#B79F8A;--accent-bg:rgba(183,159,138,0.12);--border:#3d3835;--green:#6abf7b;--green-bg:rgba(106,191,123,0.12);--red:#ED5B3F;--red-bg:rgba(237,91,63,0.12);--yellow:#e6c84e;--yellow-bg:rgba(230,200,78,0.12);--blue:#5b9fd5;--blue-bg:rgba(91,159,213,0.12);--purple:#a78bda;--purple-bg:rgba(167,139,218,0.12);--orange:#e6944e;--orange-bg:rgba(230,148,78,0.12)}
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.6;font-size:15px;min-height:100vh}
+body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.6;font-size:15px;min-height:100vh;overflow-x:hidden}
 .sticky-top{position:sticky;top:0;z-index:10;background:var(--bg);border-bottom:1px solid var(--border);}
 .header{background:var(--paper);padding:10px 20px}
 .header-top{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
@@ -124,6 +124,9 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 .day-focus-section .day-focus-title{font-size:14px;font-weight:700;color:var(--blue);margin-bottom:8px}
 /* ── 요일별 트렐로 보드 (매뉴얼 탭 주 콘텐츠) ── */
 .board-intro{font-size:12px;color:var(--dim);margin:2px 0 12px;line-height:1.5}
+/* 보드 풀폭 탈출(엣지투엣지): .content(720px·중앙) 제약을 벗어나 화면 좌측 끝~우측 끝까지 꽉 채움.
+   기준 = 업무 현황 SSOT.html 풀폭 방식(좌우 여백 최소 20px). 이 래퍼 안 보드에만 적용 → 다른 탭·헤더 영향 0. */
+.board-fullwidth{width:100vw;max-width:100vw;margin-left:calc(50% - 50vw);margin-right:calc(50% - 50vw);padding:0 20px;box-sizing:border-box}
 .board-scroll{display:flex;gap:12px;overflow-x:auto;-webkit-overflow-scrolling:touch;scroll-snap-type:x proximity;padding:2px 2px 14px;scrollbar-width:thin}
 .board-scroll::-webkit-scrollbar{height:8px}
 .board-scroll::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
@@ -148,6 +151,16 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 .board-cell.editing .board-cell-list,.board-cell.editing .board-cell-empty{display:none}
 .board-edit-hint{font-size:11px;color:var(--dim);margin-top:5px;display:none}
 .board-cell.editing .board-edit-hint{display:block}
+/* 데스크탑(≥980px): 7컬럼을 풀폭에 균등 분배 → 스크롤 없이 한눈에.
+   컬럼 최소폭 충분(요일 헤더+남/여 셀 가독). 안 들어가면 자동 가로 스크롤. */
+@media(min-width:980px){
+  .board-scroll{flex-wrap:nowrap}
+  .board-scroll .board-col{flex:1 1 0;min-width:148px}
+}
+/* 초대형 화면에서 컬럼 과확장 방지(가독 폭 상한) */
+@media(min-width:1700px){
+  .board-scroll .board-col{max-width:280px}
+}
 /* Admin shift card */
 .admin-shift-card{background:var(--paper);border:1px solid var(--border);border-radius:12px;padding:16px 18px;margin-bottom:12px}
 .admin-shift-card h3{font-size:15px;font-weight:700;margin-bottom:6px}
@@ -258,6 +271,8 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   .header,.tabs,.submit-bar,.saving,.toast-msg,.header-util-btns,.util-btn,.sheet-links{display:none!important}
   .content{padding:0!important;max-width:100%!important}
   .content.hidden{display:none!important}
+  /* 인쇄 시 보드 풀폭 탈출 해제(페이지 폭 안에 정렬) */
+  .board-fullwidth{width:auto!important;max-width:100%!important;margin:0!important;padding:0!important}
   /* 활성 탭만 표시 */
   .content[data-print-active="true"]{display:block!important}
   .category{border:1px solid #ccc;break-inside:avoid;margin-bottom:6px}
@@ -521,8 +536,11 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 
   <!-- ── 요일별 트렐로 보드 (주 콘텐츠) ── -->
   <div style="font-size:16px;font-weight:700;color:var(--text);padding:2px 0 4px;">요일별 업무 보드</div>
-  <div class="board-intro">요일별 컬럼 안에 👨남 / 👩여 업무를 분리했습니다. 각 셀의 <strong>편집</strong> 버튼으로 항목을 추가·수정·삭제하고 저장하면 모든 기기에 반영됩니다. (가로로 스크롤)</div>
-  <div id="manual-board" class="board-scroll"></div>
+  <div class="board-intro">요일별 컬럼 안에 👨남 / 👩여 업무를 분리했습니다. 각 셀의 <strong>편집</strong> 버튼으로 항목을 추가·수정·삭제하고 저장하면 모든 기기에 반영됩니다. (PC는 7개 요일 한눈에 · 모바일은 가로 스크롤)</div>
+  <!-- 보드만 720px 제약 탈출(풀폭) — 데스크탑 7컬럼 한눈에 -->
+  <div class="board-fullwidth">
+    <div id="manual-board" class="board-scroll"></div>
+  </div>
 
   <!-- ── 기존 상세 절차 참고 (접이식 · 운영 정보 보존) ── -->
   <div class="manual-section" style="margin-top:18px;">
@@ -2414,9 +2432,8 @@ const BOARD_SEED = {
 
 let BOARD_DATA = {}; // {dayKey:{m:'...', f:'...'}}
 
-function loadBoardData(){
-  let stored=null;
-  try{ stored=JSON.parse(localStorage.getItem(BOARD_STORAGE_KEY)); }catch(e){ stored=null; }
+/* stored(객체) → BOARD_DATA 병합 (없으면 시드 폴백) */
+function applyBoardStored(stored){
   BOARD_DATA={};
   BOARD_DAYS.forEach(d=>{
     const s=(stored&&stored[d.key])||{};
@@ -2426,6 +2443,32 @@ function loadBoardData(){
       f:(s.f!==undefined&&s.f!==null)?s.f:(seed.f||'')
     };
   });
+}
+
+/* 로컬 폴백 로드 (오프라인·동기 초기 렌더용) */
+function loadBoardData(){
+  let stored=null;
+  try{ stored=JSON.parse(localStorage.getItem(BOARD_STORAGE_KEY)); }catch(e){ stored=null; }
+  applyBoardStored(stored);
+}
+
+/* 백엔드에서 보드 로드 → 있으면 사용·로컬 캐시, 없거나 실패 시 localStorage 폴백.
+   모든 기기 동기화의 핵심: 페이지 로드마다 백엔드를 진실 소스로 사용(last-write-wins). */
+async function loadBoardFromBackend(){
+  loadBoardData(); // 즉시 로컬/시드로 1차 렌더 가능하게
+  if(!ONLINE) return;
+  try{
+    const res=await fetch(API_URL+'?action=board&key='+encodeURIComponent(BOARD_STORAGE_KEY),{method:'GET',redirect:'follow'});
+    const data=await res.json();
+    if(data && data.ok && data.board && typeof data.board==='object'){
+      applyBoardStored(data.board);
+      localStorage.setItem(BOARD_STORAGE_KEY, JSON.stringify(BOARD_DATA)); // 오프라인 폴백 캐시 갱신
+    }
+    // data.board===null → 백엔드에 아직 없음 → 로컬/시드 유지(이후 첫 저장 시 백엔드에 기록)
+  }catch(e){ /* 네트워크 실패 → 이미 로드된 localStorage/시드 유지 */ }
+  // 편집 중인 셀이 있으면 재렌더 보류(IME 조합·입력 보호). 없을 때만 갱신.
+  const wrap=document.getElementById('manual-board');
+  if(wrap && !wrap.querySelector('.board-cell.editing')) renderBoard();
 }
 
 function persistBoardData(){
@@ -2531,7 +2574,7 @@ else if(savedOld)document.getElementById('submitterF').value=savedOld;
 
 loadStaffFromSheet();
 loadItemMasterFromSheet(); // 점검 항목 마스터를 시트에서 로드 (비동기 — 완료 시 화면 갱신)
-loadBoardData(); renderBoard(); // 요일별 트렐로 보드 로드·렌더
+loadBoardData(); renderBoard(); loadBoardFromBackend(); // 요일별 보드: 로컬 즉시 렌더 후 백엔드 동기화(모든 기기 반영)
 renderG('m');
 
 /* ═══════════════════════════════════════════════
