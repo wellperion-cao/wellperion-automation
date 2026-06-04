@@ -8143,8 +8143,14 @@ function crTab(btn, panelId) {
       var sheetsId = gm1SheetsId(localId);
       if (!sheetsId) return;
       var params = Object.assign({ action: 'todo_update', id: sheetsId }, fields);
-      var qs = Object.keys(params).map(function(k){
-        return encodeURIComponent(k) + '=' + encodeURIComponent(params[k] == null ? '' : params[k]);
+      // 🛡 빈값(미편집·미로드) 필드는 전송 제외 → 서버가 기존값 보존(초기화 버그 방지 2026-06-04).
+      //   action·id는 항상 전송. 한 필드 편집 시 다른 필드가 ''로 덮어써지던 문제 차단.
+      var qs = Object.keys(params).filter(function(k){
+        if (k === 'action' || k === 'id') return true;
+        var v = params[k];
+        return v != null && v !== '';
+      }).map(function(k){
+        return encodeURIComponent(k) + '=' + encodeURIComponent(params[k]);
       }).join('&');
       fetch(SSOT_API_URL + '?' + qs, { mode: 'no-cors', redirect: 'follow' }).catch(function(){});
     }
