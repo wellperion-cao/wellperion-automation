@@ -204,6 +204,27 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 .dv-ts-chip{font-size:12px;font-weight:700;padding:4px 10px;border-radius:8px;cursor:pointer;font-family:inherit;
   border:1.5px solid rgba(183,159,138,0.4);background:var(--accent-bg);color:var(--accent);transition:background .12s}
 .dv-ts-chip:hover{background:rgba(183,159,138,0.22)}
+/* ── 표 직접 편집 그리드 (편집 모드에서만 노출 · 행 단위 [시간 | 내용 | 삭제]) ── */
+.dv-grid{display:none;margin:0}
+.dv-cell.editing .dv-grid{display:block}
+.dv-grid-table{width:100%;border-collapse:collapse;font-size:13px;table-layout:fixed}
+.dv-grid-table col.dv-g-timecol{width:40%}
+.dv-grid-table col.dv-g-delcol{width:34px}
+.dv-grid-table td{border:1px solid var(--border);padding:0;vertical-align:top}
+.dv-grid-th{background:var(--accent-bg);color:var(--accent);font-weight:700;font-size:11px;text-align:left;padding:5px 7px;border:1px solid var(--border)}
+.dv-g-time,.dv-g-task{width:100%;background:var(--bg);border:none;color:var(--text);
+  padding:8px 7px;font-size:13px;font-family:inherit;line-height:1.5;box-sizing:border-box;resize:none}
+.dv-g-time:focus,.dv-g-task:focus{outline:none;background:rgba(183,159,138,0.10)}
+.dv-g-task{overflow:hidden;word-break:break-word;min-height:38px;display:block}
+.dv-cell.male .dv-g-time:focus{background:var(--blue-bg)}
+.dv-cell.female .dv-g-time:focus{background:var(--orange-bg)}
+.dv-cell.outer .dv-g-time:focus{background:var(--green-bg)}
+.dv-g-del{width:100%;height:100%;min-height:38px;background:transparent;border:none;color:var(--red);
+  font-size:16px;font-weight:700;cursor:pointer;font-family:inherit;padding:4px}
+.dv-g-del:hover{background:var(--red-bg)}
+.dv-g-addrow{margin-top:8px;font-size:12.5px;font-weight:700;padding:7px 14px;border-radius:8px;cursor:pointer;
+  font-family:inherit;border:1.5px dashed rgba(106,191,123,0.5);background:var(--green-bg);color:var(--green);width:100%}
+.dv-g-addrow:hover{background:rgba(106,191,123,0.2)}
 
 /* 모바일: 요일 탭 폭 축소 + 컬럼 폭 화면맞춤(가로 스크롤·스냅) */
 @media(max-width:560px){
@@ -644,7 +665,38 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
     </tr>
   </table>
 
-  <p style="font-size:12px;color:var(--dim);margin:0 0 4px;">※ 1인 근무·3인 이상 케이스는 GM 추후 지정 예정</p>
+  <p style="font-size:12px;color:var(--dim);margin:0 0 4px;">※ 위는 2인 동시 근무 시 적용하는 <strong>원칙(예시)</strong>입니다 · 1인 근무·3인 이상 케이스는 GM 추후 지정 예정</p>
+
+  <!-- ── 실제 운영(평일·여) 근무조 ── -->
+  <p style="font-size:14px;font-weight:700;color:var(--accent);margin:18px 0 8px;">실제 운영 (평일 · 여직원 근무조)</p>
+  <p style="font-size:13px;color:var(--text);margin:0 0 10px;line-height:1.7;">아래 <strong>근무시간 안에서 매뉴얼대로 업무를 수행</strong>하며, 각자 <strong>10분 휴게를 고정</strong>으로 가집니다. 마감조 2명은 휴게를 <strong>엇갈려</strong> 운영해 업장을 비우지 않습니다.</p>
+  <table style="width:100%;border-collapse:collapse;margin-bottom:10px;font-size:13px;">
+    <tr style="background:var(--paper);">
+      <th style="padding:10px;border:1px solid var(--border);width:64px;">근무조</th>
+      <th style="padding:10px;border:1px solid var(--border);">담당</th>
+      <th style="padding:10px;border:1px solid var(--border);width:120px;">근무시간</th>
+      <th style="padding:10px;border:1px solid var(--border);">고정 휴게(10분)</th>
+    </tr>
+    <tr>
+      <td style="padding:8px;border:1px solid var(--border);font-weight:700;color:var(--accent);">오전</td>
+      <td style="padding:8px;border:1px solid var(--border);">우춘화 주임</td>
+      <td style="padding:8px;border:1px solid var(--border);white-space:nowrap;">05:20 ~ 14:00</td>
+      <td style="padding:8px;border:1px solid var(--border);">10분 고정</td>
+    </tr>
+    <tr>
+      <td style="padding:8px;border:1px solid var(--border);font-weight:700;color:var(--green);">중간</td>
+      <td style="padding:8px;border:1px solid var(--border);">이연희 반장</td>
+      <td style="padding:8px;border:1px solid var(--border);white-space:nowrap;">11:00 ~ 19:40</td>
+      <td style="padding:8px;border:1px solid var(--border);">10분 고정</td>
+    </tr>
+    <tr>
+      <td style="padding:8px;border:1px solid var(--border);font-weight:700;color:var(--orange);">마감</td>
+      <td style="padding:8px;border:1px solid var(--border);">김미영 주임 · 이경미 주임</td>
+      <td style="padding:8px;border:1px solid var(--border);white-space:nowrap;">14:00 ~ 22:40</td>
+      <td style="padding:8px;border:1px solid var(--border);"><strong style="color:var(--orange);">2명 엇갈림</strong> — 1명 50분~정시 / 1명 정시~10분</td>
+    </tr>
+  </table>
+  <p style="font-size:12px;color:var(--dim);margin:0 0 4px;line-height:1.6;">※ 마감조 2명은 <strong>위 '2인 동시 근무 — 교대 휴게 규칙'</strong>(근무자 A=50분~정시 / 근무자 B=정시~10분)을 그대로 적용해 항상 1명이 업장을 지킵니다.</p>
 
 </div>
 
@@ -652,7 +704,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 
   <!-- ── 요일별 업무 보드 (주 콘텐츠 · 요일 다중선택 + 트렐로 칸반) ── -->
   <div style="font-size:16px;font-weight:700;color:var(--text);padding:2px 0 4px;">요일별 업무 보드 (트렐로 칸반)</div>
-  <div class="board-intro">위 <strong>요일 버튼</strong>을 켜고 끄면(여러 개 동시 선택 가능) 켠 요일이 <strong>트렐로 컬럼</strong>으로 나란히 표시됩니다. 컬럼이 많으면 가로로 스크롤하세요. 각 컬럼 안에 👨남 / 👩여 / 🏢외곽 카드가 세로로 있고, 카드의 <strong>편집</strong> 버튼으로 항목을 추가·수정·삭제·저장하면 모든 기기에 반영됩니다. 선택한 요일은 다음에 다시 와도 기억됩니다. 시간대는 <code>오전::</code> 처럼 줄 맨 앞에 <code>시간대::</code>로 표기하면 자동으로 묶입니다.</div>
+  <div class="board-intro">위 <strong>요일 버튼</strong>을 켜고 끄면(여러 개 동시 선택 가능) 켠 요일이 <strong>트렐로 컬럼</strong>으로 나란히 표시됩니다. 컬럼이 많으면 가로로 스크롤하세요. 각 컬럼 안에 👨남 / 👩여 / 🏢외곽 카드가 세로로 있고, 카드의 <strong>편집</strong> 버튼을 누르면 <strong>표(시간 칸 | 내용 칸)를 바로 편집</strong>할 수 있고, <strong>＋ 행 추가</strong>/<strong>✕ 삭제</strong>로 항목을 늘리거나 지운 뒤 <strong>저장</strong>하면 모든 기기에 반영됩니다. 선택한 요일은 다음에 다시 와도 기억됩니다. 저장 시 시간 순으로 자동 정렬됩니다.</div>
 
   <!-- 요일 툴바 (7요일 다중선택 toggle + 전체 토글) -->
   <div id="day-toolbar" class="day-toolbar"></div>
@@ -2697,27 +2749,6 @@ function boardCellBodyHTML(text){
   return html;
 }
 
-/* 편집 textarea에 표준 시간대 프리픽스를 빠르게 삽입(커서 줄 맨 앞에 '시간대::' 부착).
-   기록형: 클릭 1번으로 항목에 시간대 속성을 지정 → 저장 시 BOARD_DATA에 영속. */
-function boardInsertTimeslot(cid, slotKey){
-  const ta=document.getElementById('ta_'+cid);
-  if(!ta) return;
-  const val=ta.value;
-  let pos=(typeof ta.selectionStart==='number')?ta.selectionStart:val.length;
-  // 커서가 위치한 줄의 시작 인덱스
-  let lineStart=val.lastIndexOf('\n',pos-1)+1;
-  let lineEnd=val.indexOf('\n',pos); if(lineEnd<0) lineEnd=val.length;
-  let lineText=val.slice(lineStart,lineEnd);
-  // 이미 '시간대::'가 있으면 교체, 없으면 앞에 부착
-  const pIdx=lineText.indexOf('::');
-  if(pIdx>0 && pIdx<=20) lineText=lineText.slice(pIdx+2).replace(/^\s+/,'');
-  const newLine=slotKey+'::'+lineText;
-  ta.value=val.slice(0,lineStart)+newLine+val.slice(lineEnd);
-  const caret=lineStart+newLine.length;
-  ta.focus();
-  try{ ta.setSelectionRange(caret,caret); }catch(e){}
-}
-
 /* 요일 툴바 렌더 (7요일 다중선택 toggle + 전체 선택/해제 토글) */
 function renderDayToolbar(){
   const bar=document.getElementById('day-toolbar');
@@ -2773,21 +2804,91 @@ function renderBoard(){
           +'<button type="button" class="dv-edit-btn cancel" id="cancelbtn_'+cid+'" style="display:none" onclick="boardCancelEdit(\''+d.key+'\',\''+gk+'\')">취소</button>'
           +'</div></div>';
       html+='<div class="dv-body">'+boardCellBodyHTML(val)+'</div>';
-      html+='<textarea class="dv-edit" id="ta_'+cid+'" '
-          +'placeholder="한 줄에 한 항목. 시간대는 \'오전::내용\' 형식으로 표기">'+escapeHTML(val)+'</textarea>';
-      // 시간대 빠른 지정 칩 — 클릭하면 커서 줄 맨 앞에 '시간대::' 부착(항목 속성으로 저장)
-      let chips='<div class="dv-ts-chips">시간대:';
-      BOARD_TIMESLOTS.forEach(ts=>{
-        chips+='<button type="button" class="dv-ts-chip" onclick="boardInsertTimeslot(\''+cid+'\',\''+ts.key+'\')">'+escapeHTML(ts.short)+'</button>';
-      });
-      chips+='</div>';
-      html+=chips;
-      html+='<div class="dv-edit-hint">한 줄에 한 항목 · 위 <b>시간대 칩</b>을 누르면 그 줄에 시간대가 기록됩니다(예: <b>오전(08:00~12:00)::B-1 파우더 관리</b>). 직접 <b>시간대::</b> 입력도 가능. 저장 시 모든 기기에 반영·시간 순 정렬됩니다.</div>';
+      // 표 직접 편집 그리드 — 행 단위 [시간 | 내용 | 삭제]. 편집 진입 시 buildGridRows로 행 생성(IME 안전: 입력 중 재생성 안 함)
+      html+='<div class="dv-grid" id="grid_'+cid+'">'
+          +'<table class="dv-grid-table"><colgroup><col class="dv-g-timecol"><col><col class="dv-g-delcol"></colgroup>'
+          +'<thead><tr><th class="dv-grid-th">시간대</th><th class="dv-grid-th">내용</th><th class="dv-grid-th"></th></tr></thead>'
+          +'<tbody id="gridbody_'+cid+'"></tbody></table>'
+          +'<button type="button" class="dv-g-addrow" onclick="boardGridAddRow(\''+cid+'\')">＋ 행 추가</button>'
+          +'</div>';
+      html+='<div class="dv-edit-hint">각 행의 <b>시간대 칸</b>(예: 오전(08:00~12:00) · 비워도 됨)과 <b>내용 칸</b>을 표에서 바로 수정하세요. <b>＋ 행 추가</b>/<b>✕</b>로 행을 늘리거나 지웁니다. 저장 시 모든 기기에 반영·시간 순 정렬됩니다.</div>';
       html+='</div>';
     });
     html+='</div></div>';
   });
+  // 시간대 프리셋 datalist (모든 시간 칸 공유 — 입력 시 표준 시간대 자동완성)
+  html+='<datalist id="dv-timeslot-options">';
+  BOARD_TIMESLOTS.forEach(ts=>{ html+='<option value="'+escapeHTML(ts.key)+'">'+escapeHTML(ts.short)+'</option>'; });
+  html+='</datalist>';
   wrap.innerHTML=html;
+}
+
+/* ── 표 직접 편집: 그리드 행 빌드·추가·삭제·직렬화 ──
+   행 1개 = [시간 input | 내용 textarea(자동 높이) | 삭제]. 편집 진입 시 1회 빌드(IME 안전). */
+function boardMakeGridRow(tb,text){
+  const tr=document.createElement('tr');
+  // 시간 칸
+  const tdT=document.createElement('td');
+  const inT=document.createElement('input');
+  inT.type='text'; inT.className='dv-g-time'; inT.value=tb||'';
+  inT.setAttribute('list','dv-timeslot-options');
+  inT.placeholder='시간대(선택)';
+  tdT.appendChild(inT); tr.appendChild(tdT);
+  // 내용 칸 (textarea — 길면 칸 안에서 줄바꿈·높이 자동 확장)
+  const tdC=document.createElement('td');
+  const taC=document.createElement('textarea');
+  taC.className='dv-g-task'; taC.rows=1; taC.value=text||'';
+  taC.addEventListener('input',function(){ boardGridAutoSize(taC); });
+  tdC.appendChild(taC); tr.appendChild(tdC);
+  // 삭제 칸
+  const tdD=document.createElement('td');
+  const btnD=document.createElement('button');
+  btnD.type='button'; btnD.className='dv-g-del'; btnD.textContent='✕';
+  btnD.title='행 삭제';
+  btnD.onclick=function(){ const tb2=tr.parentNode; tr.remove(); };
+  tdD.appendChild(btnD); tr.appendChild(tdD);
+  return {tr:tr, ta:taC};
+}
+/* 내용 textarea 높이를 내용에 맞게 자동 조정(칸 밖으로 넘침 방지) */
+function boardGridAutoSize(ta){
+  ta.style.height='auto';
+  ta.style.height=Math.max(38,ta.scrollHeight)+'px';
+}
+/* 그리드를 현재 텍스트 값으로 채움 (편집 진입 시 1회). 시간 순 정렬·하위호환 파싱 유지 */
+function boardGridBuild(cid,text){
+  const body=document.getElementById('gridbody_'+cid);
+  if(!body) return;
+  body.innerHTML='';
+  const lines=(text||'').split('\n').map(l=>l.trim()).filter(l=>l.length);
+  let rows=lines.map(l=>parseBoardLine(l));
+  rows.sort((a,b)=>{ const ka=timeslotSortKey(a.tb||'기타'),kb=timeslotSortKey(b.tb||'기타'); return ka<kb?-1:(ka>kb?1:0); });
+  if(!rows.length) rows=[{tb:'',text:''}]; // 빈 셀이면 빈 행 1개 제공
+  rows.forEach(r=>{ const made=boardMakeGridRow(r.tb,r.text); body.appendChild(made.tr); boardGridAutoSize(made.ta); });
+}
+/* 행 추가 — 기존 행 보존하고 빈 행 1개 append(IME 안전: 기존 입력칸 재생성 없음) */
+function boardGridAddRow(cid){
+  const body=document.getElementById('gridbody_'+cid);
+  if(!body) return;
+  const made=boardMakeGridRow('','');
+  body.appendChild(made.tr);
+  boardGridAutoSize(made.ta);
+  made.ta.focus();
+}
+/* 그리드 → "시간대::내용" 라인 문자열로 직렬화(기존 저장/백엔드 포맷·하위호환 유지).
+   시간 없는 행은 내용만, 내용 빈 행은 제외. */
+function boardGridSerialize(cid){
+  const body=document.getElementById('gridbody_'+cid);
+  if(!body) return '';
+  const out=[];
+  body.querySelectorAll('tr').forEach(tr=>{
+    const t=tr.querySelector('.dv-g-time'); const c=tr.querySelector('.dv-g-task');
+    if(!c) return;
+    const tb=(t?t.value:'').trim();
+    const text=c.value.replace(/\n/g,' ').trim(); // 셀 내 줄바꿈은 공백으로(라인 포맷 보호)
+    if(!text) return; // 내용 없는 행은 저장 제외
+    out.push(tb?(tb+'::'+text):text);
+  });
+  return out.join('\n');
 }
 
 /* 편집 중인 셀이 있으면 토글 보류(저장/닫기 유도) */
@@ -2820,50 +2921,49 @@ function toggleAllBoardDays(){
   renderBoard();
 }
 
-/* 편집 토글 + 저장. editing 클래스만 토글 → textarea는 재생성되지 않음(IME 안전) */
+/* 편집 토글 + 저장. 표 그리드(행 단위 [시간|내용]) 직접 편집.
+   진입 시 그리드를 현재 값으로 1회 빌드(IME 안전), 저장 시 그리드→라인 직렬화. */
 function boardToggleEdit(dayKey,gk){
   const cid=dayKey+'_'+gk;
   const cell=document.getElementById('cell_'+cid);
   const btn=document.getElementById('btn_'+cid);
   const cancelbtn=document.getElementById('cancelbtn_'+cid);
-  const ta=document.getElementById('ta_'+cid);
-  if(!cell||!btn||!ta)return;
+  if(!cell||!btn)return;
   const editing=cell.classList.contains('editing');
   if(!editing){
     // 편집 진입 — 게이트(기존 항목 편집과 동일 비밀번호)
     if(typeof requireEditAuth==='function' && !requireEditAuth()) return;
+    // 먼저 editing 노출(그리드 display:block) → 그래야 textarea 높이 자동조정(scrollHeight) 정상 측정
     cell.classList.add('editing');
+    // 그리드를 현재 저장값으로 빌드(편집 진입 시 1회 — 입력 중 재빌드 안 함)
+    boardGridBuild(cid,(BOARD_DATA[dayKey]&&BOARD_DATA[dayKey][gk])||'');
     btn.textContent='저장';
     btn.classList.add('save');
     if(cancelbtn) cancelbtn.style.display='';
-    ta.focus();
+    const firstTask=cell.querySelector('.dv-g-task');
+    if(firstTask) firstTask.focus();
   }else{
-    // 저장 — 값 반영 후 본문만 갱신(textarea는 그대로, 재생성 없음)
-    BOARD_DATA[dayKey][gk]=ta.value;
+    // 저장 — 그리드를 라인 포맷으로 직렬화 후 반영(기존 저장/백엔드 포맷 유지)
+    const serialized=boardGridSerialize(cid);
+    BOARD_DATA[dayKey][gk]=serialized;
     cell.classList.remove('editing');
     btn.textContent='편집';
     btn.classList.remove('save');
     if(cancelbtn) cancelbtn.style.display='none';
-    // 본문 노드만 교체 (textarea·버튼 보존)
+    // 본문(표) 노드만 갱신 — 시간 순 정렬·하위호환 렌더
     const oldBody=cell.querySelector('.dv-body');
-    if(oldBody){
-      oldBody.innerHTML=boardCellBodyHTML(ta.value);
-    }
+    if(oldBody) oldBody.innerHTML=boardCellBodyHTML(serialized);
     persistBoardData();
   }
 }
 
-/* 취소 — 편집 중 미저장 변경분 폐기, textarea를 편집 진입 전 원본으로 복원 후 편집 모드 종료 */
+/* 취소 — 편집 중 미저장 변경분 폐기, 편집 모드 종료(다음 진입 시 저장값으로 다시 빌드됨) */
 function boardCancelEdit(dayKey,gk){
   const cid=dayKey+'_'+gk;
   const cell=document.getElementById('cell_'+cid);
   const btn=document.getElementById('btn_'+cid);
   const cancelbtn=document.getElementById('cancelbtn_'+cid);
-  const ta=document.getElementById('ta_'+cid);
-  if(!cell||!btn||!ta)return;
-  // BOARD_DATA에 저장된 원본값(저장 전 상태)으로 textarea 복원
-  const originalVal=(BOARD_DATA[dayKey]&&BOARD_DATA[dayKey][gk])||'';
-  ta.value=originalVal;
+  if(!cell||!btn)return;
   cell.classList.remove('editing');
   btn.textContent='편집';
   btn.classList.remove('save');
