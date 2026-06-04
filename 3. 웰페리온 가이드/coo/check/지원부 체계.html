@@ -171,6 +171,8 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   border:1.5px solid;background:var(--accent-bg);color:var(--accent);border-color:rgba(183,159,138,0.4)}
 .dv-edit-btn:hover{background:rgba(183,159,138,0.22)}
 .dv-edit-btn.save{background:var(--green-bg);color:var(--green);border-color:rgba(106,191,123,0.4)}
+.dv-edit-btn.cancel{background:var(--paper);color:var(--dim);border-color:rgba(140,139,131,0.4);margin-left:6px}
+.dv-edit-btn.cancel:hover{background:rgba(140,139,131,0.15)}
 /* 시간대 그룹 */
 .dv-timeblock{margin:0 0 10px}
 .dv-timeblock:last-child{margin-bottom:0}
@@ -2691,7 +2693,10 @@ function renderBoard(){
       const val=cell[gk]||'';
       html+='<div class="dv-cell '+cls+'" id="cell_'+cid+'">';
       html+='<div class="dv-cell-head"><span class="dv-cell-label '+cls+'">'+lab+'</span>'
-          +'<button type="button" class="dv-edit-btn" id="btn_'+cid+'" onclick="boardToggleEdit(\''+d.key+'\',\''+gk+'\')">편집</button></div>';
+          +'<div style="display:flex;align-items:center;gap:4px">'
+          +'<button type="button" class="dv-edit-btn" id="btn_'+cid+'" onclick="boardToggleEdit(\''+d.key+'\',\''+gk+'\')">편집</button>'
+          +'<button type="button" class="dv-edit-btn cancel" id="cancelbtn_'+cid+'" style="display:none" onclick="boardCancelEdit(\''+d.key+'\',\''+gk+'\')">취소</button>'
+          +'</div></div>';
       html+='<div class="dv-body">'+boardCellBodyHTML(val)+'</div>';
       html+='<textarea class="dv-edit" id="ta_'+cid+'" '
           +'placeholder="한 줄에 한 항목. 시간대는 \'오전::내용\' 형식으로 표기">'+escapeHTML(val)+'</textarea>';
@@ -2745,6 +2750,7 @@ function boardToggleEdit(dayKey,gk){
   const cid=dayKey+'_'+gk;
   const cell=document.getElementById('cell_'+cid);
   const btn=document.getElementById('btn_'+cid);
+  const cancelbtn=document.getElementById('cancelbtn_'+cid);
   const ta=document.getElementById('ta_'+cid);
   if(!cell||!btn||!ta)return;
   const editing=cell.classList.contains('editing');
@@ -2754,6 +2760,7 @@ function boardToggleEdit(dayKey,gk){
     cell.classList.add('editing');
     btn.textContent='저장';
     btn.classList.add('save');
+    if(cancelbtn) cancelbtn.style.display='';
     ta.focus();
   }else{
     // 저장 — 값 반영 후 본문만 갱신(textarea는 그대로, 재생성 없음)
@@ -2761,6 +2768,7 @@ function boardToggleEdit(dayKey,gk){
     cell.classList.remove('editing');
     btn.textContent='편집';
     btn.classList.remove('save');
+    if(cancelbtn) cancelbtn.style.display='none';
     // 본문 노드만 교체 (textarea·버튼 보존)
     const oldBody=cell.querySelector('.dv-body');
     if(oldBody){
@@ -2768,6 +2776,23 @@ function boardToggleEdit(dayKey,gk){
     }
     persistBoardData();
   }
+}
+
+/* 취소 — 편집 중 미저장 변경분 폐기, textarea를 편집 진입 전 원본으로 복원 후 편집 모드 종료 */
+function boardCancelEdit(dayKey,gk){
+  const cid=dayKey+'_'+gk;
+  const cell=document.getElementById('cell_'+cid);
+  const btn=document.getElementById('btn_'+cid);
+  const cancelbtn=document.getElementById('cancelbtn_'+cid);
+  const ta=document.getElementById('ta_'+cid);
+  if(!cell||!btn||!ta)return;
+  // BOARD_DATA에 저장된 원본값(저장 전 상태)으로 textarea 복원
+  const originalVal=(BOARD_DATA[dayKey]&&BOARD_DATA[dayKey][gk])||'';
+  ta.value=originalVal;
+  cell.classList.remove('editing');
+  btn.textContent='편집';
+  btn.classList.remove('save');
+  if(cancelbtn) cancelbtn.style.display='none';
 }
 
 /* ── Init ── */
