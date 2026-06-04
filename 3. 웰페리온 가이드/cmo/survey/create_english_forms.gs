@@ -590,8 +590,18 @@ var EN_FORM_SPECS = [
           'For immediate assistance: http://wellperion.com/en/inquiry/' }
 ];
 
-// Drive에서 정확한 제목의 Google Form을 찾아 폼 객체 반환(없으면 null, 다수면 가장 최근 1개)
+// 제목 정규화 — 대시(em/en/hyphen) 통일 + 연속공백 1칸 + 소문자 + trim.
+// 드라이브 파일이름과 폼 실제 제목 간 미세 차이(드리프트)에도 매칭되도록.
+function _normTitle_(t) {
+  return String(t).replace(/[—–-]/g, '-').replace(/\s+/g, ' ').trim().toLowerCase();
+}
+
+// 폼 찾기 — (1)파일이름 정확일치(빠른 경로) → (2)실패 시 모든 폼을 '폼 실제 제목'으로 매칭(드리프트 대응).
+// 파일이름이 폼 제목과 달라져도(rename drift) 찾아낸다. create/add/delete 없음(찾기만) — 멱등·안전 유지.
+// 진단: 전역 _LAST_MATCH_VIA_ 에 'name' | 'title' | '(none)' 기록(호출부에서 로그).
+var _LAST_MATCH_VIA_ = '(none)';
 function _findFormByTitle_(title) {
+  // 1) 빠른 경로: 드라이브 '파일 이름' 정확일치
   var it = DriveApp.getFilesByName(title);
   var newest = null, newestTime = 0;
   while (it.hasNext()) {
@@ -600,8 +610,25 @@ function _findFormByTitle_(title) {
     var t = f.getLastUpdated().getTime();
     if (t >= newestTime) { newestTime = t; newest = f; }
   }
-  if (!newest) return null;
-  return FormApp.openById(newest.getId());
+  if (newest) { _LAST_MATCH_VIA_ = 'name'; return FormApp.openById(newest.getId()); }
+
+  // 2) 폴백: 전체 폼을 '폼 실제 제목'으로 매칭(파일이름 drift 대응)
+  var key = _normTitle_(title);
+  var bestForm = null, bestTime = 0;
+  var fi = DriveApp.searchFiles('mimeType="application/vnd.google-apps.form" and trashed=false');
+  while (fi.hasNext()) {
+    var ff = fi.next();
+    try {
+      var fm = FormApp.openById(ff.getId());
+      if (_normTitle_(fm.getTitle()) !== key) continue;
+      var ut = ff.getLastUpdated().getTime();   // 동명 다수면 가장 최근 1개
+      if (ut >= bestTime) { bestTime = ut; bestForm = fm; }
+    } catch (e) { /* 권한·접근 불가 폼은 건너뜀 */ }
+  }
+  if (bestForm) { _LAST_MATCH_VIA_ = 'title'; return bestForm; }
+
+  _LAST_MATCH_VIA_ = '(none)';
+  return null;
 }
 
 // 단일 편집 작업 재시도 래퍼 — "Failed to edit the form. Please wait and try again."(일시적) 대응.
@@ -624,12 +651,14 @@ function updateEnglishFormsAccess() {
     var rec = { title: spec.title, status: 'PENDING' };
     try {
       var form = _findFormByTitle_(spec.title);
+      rec.matchedVia = _LAST_MATCH_VIA_;
       if (!form) {
-        Logger.log('[누락] 폼 못 찾음: ' + spec.title);
+        Logger.log('[누락] 폼 못 찾음(name·title 둘 다 불일치): ' + spec.title);
         rec.status = 'NOT_FOUND';
         summary.push(rec);
         continue;
       }
+      Logger.log('   matched via: ' + rec.matchedVia + ' — ' + spec.title);
       rec.published = form.getPublishedUrl();
       rec.edit = form.getEditUrl();
       try { rec.beforeLogin = form.requiresLogin(); } catch (e) { rec.beforeLogin = 'read-fail'; }
@@ -740,12 +769,14 @@ function finalizeEnglishForms() {
     var rec = { title: map.title, status: 'PENDING' };
     try {
       var form = _findFormByTitle_(map.title);
+      rec.matchedVia = _LAST_MATCH_VIA_;
       if (!form) {
-        Logger.log('[누락] 폼 못 찾음: ' + map.title);
+        Logger.log('[누락] 폼 못 찾음(name·title 둘 다 불일치): ' + map.title);
         rec.status = 'NOT_FOUND';
         summary.push(rec);
         continue;
       }
+      Logger.log('   matched via: ' + rec.matchedVia + ' — ' + map.title);
       rec.published = form.getPublishedUrl();
       rec.edit = form.getEditUrl();
 
@@ -838,12 +869,14 @@ function updateEnglishFormsCopy() {
     var rec = { title: map.title, status: 'PENDING', updated: [], missing: [] };
     try {
       var form = _findFormByTitle_(map.title);
+      rec.matchedVia = _LAST_MATCH_VIA_;
       if (!form) {
-        Logger.log('[누락] 폼 못 찾음: ' + map.title);
+        Logger.log('[누락] 폼 못 찾음(name·title 둘 다 불일치): ' + map.title);
         rec.status = 'NOT_FOUND';
         summary.push(rec);
         continue;
       }
+      Logger.log('   matched via: ' + rec.matchedVia + ' — ' + map.title);
       rec.published = form.getPublishedUrl();
 
       var items = form.getItems(); // 모든 항목 순회 — 추가/삭제 없음
