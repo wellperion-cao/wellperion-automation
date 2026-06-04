@@ -204,7 +204,10 @@ async def run_inspect() -> int:
 
 NEW_PAGE_URL = "http://wellperion.com/wp/wp-admin/post-new.php?post_type=page"
 INQUIRY_BLOCK_FILE = ROOT / "3. 웰페리온 가이드" / "cmo" / "survey" / "wp_inquiry_block.html"
+INQUIRY_BLOCK_FILE_EN = ROOT / "3. 웰페리온 가이드" / "cmo" / "survey" / "wp_inquiry_block_en.html"
 INQUIRY_PAGE_TITLE = "문의"
+INQUIRY_PAGE_TITLE_EN = "Inquiry"
+KO_INQUIRY_POST_ID = "8394"  # 한국어 문의 페이지 고정 ID
 
 
 def _wrap_vc_raw_html(html: str) -> str:
@@ -369,7 +372,297 @@ async def run_publish_inquiry(post_id_arg: str, slug: str = "inquiry") -> int:
     print(f"[INFO] 글 상태: {status or '(미검출)'}")
     print(f"[INFO] 공개 URL: {permalink or '(미검출)'}")
     await ctx.close(); await p.stop()
-    published = "공개" in status or "published" in status.lower()
+    published = "공개" in status or "published" in status.lower() or "발행" in status
+    print(f"[INFO] === 발행 {'완료' if published else '확인 필요'} ===")
+    return 0 if published else 8
+
+
+async def run_wpml_create_en_translation() -> int:
+    """WPML "+번역 추가" 자동 시도: 한국어 문의 페이지(8394) 편집화면에서
+    WPML 메타박스의 영어 '+' 아이콘을 클릭해 영어 번역 페이지 생성.
+    성공 시 생성된 영어 post_id를 출력. 실패 시 GM 수동 절차 안내."""
+    async_playwright = _import_playwright()
+    print("[INFO] === WPML 영어 번역 페이지 자동 생성 시도 (post=8394) ===")
+    if not PROFILE_DIR.exists():
+        print("[ERROR] 프로필 미존재 — 먼저 --mode setup 실행 필요.")
+        return 3
+    INSPECT_DIR.mkdir(parents=True, exist_ok=True)
+    p, ctx = await _launch(async_playwright)
+    page = ctx.pages[0] if ctx.pages else await ctx.new_page()
+
+    # 한국어 문의 편집화면 진입
+    edit_url = f"http://wellperion.com/wp/wp-admin/post.php?post={KO_INQUIRY_POST_ID}&action=edit&lang=ko"
+    await page.goto(edit_url, wait_until="domcontentloaded", timeout=40_000)
+    await page.wait_for_timeout(3000)
+    if "wp-login" in page.url:
+        print("[ERROR] 세션 만료 — setup 재실행 필요.")
+        await ctx.close(); await p.stop(); return 2
+
+    await page.screenshot(path=str(INSPECT_DIR / "wpml_ko_edit_before.png"))
+
+    # WPML 언어 메타박스에서 영어 '+' 아이콘 탐색
+    # WPML은 .icl_lang_duplicate_links / .add_icl_post_link / a[href*="lang=en"] 등 다양한 셀렉터 사용
+    wpml_probe = await page.evaluate("""() => {
+        // '+' 번역 추가 링크 후보들
+        const selectors = [
+            'a.icl_post_link[data-lang="en"]',
+            'a.add_icl_post_link',
+            '.wpml-langmeta a[data-lang="en"]',
+            '#icl_post_language_metabox a[data-lang="en"]',
+            'a[href*="new_lang=en"]',
+            'a[href*="lang=en"][href*="trid"]',
+            '.wpml-translation-options a',
+        ];
+        for (const sel of selectors) {
+            const els = document.querySelectorAll(sel);
+            if (els.length) return {found: sel, count: els.length, href: els[0].href || ''};
+        }
+        // 전체 WPML 영역 HTML 덤프 (진단용)
+        const box = document.querySelector('#icl_post_language_metabox, .wpml-post-language-metabox, #wpml-post-status-language');
+        return {found: null, html: box ? box.innerHTML.substring(0,2000) : 'no-metabox'};
+    }""")
+    print(f"[INFO] WPML 메타박스 탐색: {wpml_probe}")
+    await page.screenshot(path=str(INSPECT_DIR / "wpml_ko_edit_meta.png"))
+
+    en_link = None
+    if wpml_probe.get("found"):
+        sel = wpml_probe["found"]
+        try:
+            en_link = await page.query_selector(sel)
+        except Exception:
+            pass
+
+    # href 직접 추출 후 page.goto() 사용 (숨김 요소 클릭 실패 우회)
+    en_href = None
+    if wpml_probe.get("found") and wpml_probe.get("href"):
+        en_href = wpml_probe["href"]
+    if not en_href:
+        # href에 new_lang=en 또는 lang=en+trid 포함 링크 전체 스캔
+        hrefs = await page.evaluate("""() => {
+            return Array.from(document.querySelectorAll('a')).map(a=>({text:a.innerText.trim(), href:a.href}))
+                .filter(o=> o.href && (o.href.includes('new_lang=en') || (o.href.includes('lang=en') && o.href.includes('trid'))));
+        }""")
+        print(f"[INFO] href 스캔 결과: {hrefs}")
+        if hrefs:
+            en_href = hrefs[0]["href"]
+    if en_href:
+        print(f"[INFO] WPML 영어 '+' 링크: {en_href}")
+        await page.goto(en_href, wait_until="domcontentloaded", timeout=40_000)
+        await page.wait_for_timeout(3000)
+    else:
+        print("[WARN] WPML '+번역 추가' 링크 자동 탐색 실패.")
+        print()
+        print("=" * 60)
+        print("  GM 수동 조치 필요 (1회)")
+        print("=" * 60)
+        print(f"  1. 브라우저에서 아래 URL 접속:")
+        print(f"     {edit_url}")
+        print(f"  2. 편집 화면 우측 'WPML Language' 메타박스 확인")
+        print(f"  3. 영어(English) 행 옆 '+' 아이콘 클릭")
+        print(f"  4. 제목: 'Inquiry', 슬러그: 'inquiry' 입력")
+        print(f"  5. 임시글(Draft)로 저장 → URL의 post=XXXX 값을 메모")
+        print(f"  6. 메모한 ID로: python scripts\\wordpress_admin_playwright.py")
+        print(f"     --mode draft-inquiry-en --post-id <EN_ID>")
+        print("=" * 60)
+        await ctx.close(); await p.stop(); return 20
+
+    # 현재 페이지가 영어 편집화면인지 확인
+    cur_url = page.url
+    print(f"[INFO] 이동 후 URL: {cur_url}")
+    await page.screenshot(path=str(INSPECT_DIR / "wpml_en_edit_opened.png"))
+
+    # WPML Translation Editor로 열렸으면 "Edit in WordPress" 클릭
+    if "wpml-translation-editor" in cur_url or "WPML" in await page.title():
+        wp_edit_btn = await page.query_selector("a.wpml-edit-in-wordpress, a[href*='action=edit']")
+        if wp_edit_btn:
+            await wp_edit_btn.click()
+            await page.wait_for_timeout(3000)
+            cur_url = page.url
+            print(f"[INFO] Classic 편집기 전환 후 URL: {cur_url}")
+
+    import re as _re
+    m = _re.search(r"[?&]post=(\d+)", cur_url)
+    en_post_id = m.group(1) if m else None
+
+    # post-new.php 상태 = 아직 저장 전 → 제목 입력 후 임시저장해 post_id 획득
+    if not en_post_id and "post-new.php" in cur_url:
+        print("[INFO] 신규 페이지 편집화면 — 제목 입력 후 임시저장으로 post_id 획득")
+        probe = await page.evaluate(
+            "() => ({title: !!document.querySelector('#title'), save_draft: !!document.querySelector('#save-post')})"
+        )
+        print(f"[INFO] 편집기 감지: {probe}")
+        if probe.get("title"):
+            await page.fill("#title", INQUIRY_PAGE_TITLE_EN)
+            await page.wait_for_timeout(500)
+        if probe.get("save_draft"):
+            await page.click("#save-post")
+            try:
+                await page.wait_for_url("**/post.php?post=*", timeout=30_000)
+            except Exception:
+                await page.wait_for_timeout(4000)
+            await page.wait_for_timeout(1500)
+            cur_url = page.url
+            print(f"[INFO] 임시저장 후 URL: {cur_url}")
+            m = _re.search(r"[?&]post=(\d+)", cur_url)
+            en_post_id = m.group(1) if m else None
+        await page.screenshot(path=str(INSPECT_DIR / "wpml_en_draft_saved.png"))
+
+    if en_post_id and en_post_id != KO_INQUIRY_POST_ID:
+        print(f"[INFO] 영어 페이지 ID 확인: {en_post_id}")
+        print(f"[INFO] === WPML 영어 번역 페이지 자동 생성 성공 — translation pair 자동 등록됨 ===")
+        print(f"[INFO] 다음 단계: python scripts\\wordpress_admin_playwright.py --mode draft-inquiry-en --post-id {en_post_id}")
+    else:
+        print(f"[WARN] 영어 post_id 추출 실패 (cur_url={cur_url}). URL에서 post= 값을 수동 확인.")
+
+    await ctx.close(); await p.stop()
+    return 0 if (en_post_id and en_post_id != KO_INQUIRY_POST_ID) else 21
+
+
+async def run_draft_inquiry_en(post_id_arg: str) -> int:
+    """영어 문의 페이지를 비공개 초안으로 생성/갱신.
+    wp_inquiry_block_en.html을 [vc_raw_html]로 주입. &lang=en 컨텍스트 사용."""
+    async_playwright = _import_playwright()
+    print(f"[INFO] === 워드프레스 영어 문의 페이지 — 비공개 초안 생성/갱신 (post={post_id_arg}) ===")
+    if not PROFILE_DIR.exists():
+        print("[ERROR] 프로필 미존재 — 먼저 --mode setup 실행 필요.")
+        return 3
+    if not INQUIRY_BLOCK_FILE_EN.exists():
+        print(f"[ERROR] 영어 문의 블록 HTML 부재: {INQUIRY_BLOCK_FILE_EN}")
+        return 4
+    raw_html = INQUIRY_BLOCK_FILE_EN.read_text(encoding="utf-8")
+    html = _wrap_vc_raw_html(raw_html)
+    INSPECT_DIR.mkdir(parents=True, exist_ok=True)
+    p, ctx = await _launch(async_playwright)
+    page = ctx.pages[0] if ctx.pages else await ctx.new_page()
+    target = f"http://wellperion.com/wp/wp-admin/post.php?post={post_id_arg}&action=edit&lang=en"
+    print(f"[INFO] 대상: post={post_id_arg} (lang=en)")
+    await page.goto(target, wait_until="domcontentloaded", timeout=40_000)
+    await page.wait_for_timeout(2500)
+    if "wp-login" in page.url:
+        print("[ERROR] 세션 만료 — setup 재실행 필요.")
+        await ctx.close(); await p.stop(); return 2
+
+    probe = await page.evaluate(
+        """() => ({
+            title_classic: !!document.querySelector('#title'),
+            content_textarea: !!document.querySelector('#content'),
+            text_tab: !!document.querySelector('#content-html'),
+            save_draft_btn: !!document.querySelector('#save-post'),
+        })"""
+    )
+    print(f"[INFO] 편집기 감지: {probe}")
+    await page.screenshot(path=str(INSPECT_DIR / "wp_en_inquiry_editor.png"))
+
+    if not probe.get("title_classic") or not probe.get("content_textarea"):
+        print("[ERROR] Classic 편집기 미검출 — 스크린샷: wp_en_inquiry_editor.png")
+        await ctx.close(); await p.stop(); return 5
+
+    # 제목 설정 (비어있으면)
+    cur_title = await page.evaluate("() => (document.querySelector('#title')||{}).value || ''")
+    if not cur_title.strip():
+        await page.fill("#title", INQUIRY_PAGE_TITLE_EN)
+        await page.wait_for_timeout(500)
+
+    # Text 모드 전환 후 본문 주입
+    if probe.get("text_tab"):
+        await page.click("#content-html")
+        await page.wait_for_timeout(800)
+    await page.evaluate(
+        """(html) => { const ta = document.querySelector('#content');
+            ta.value = html; ta.dispatchEvent(new Event('input', {bubbles:true}));
+            ta.dispatchEvent(new Event('change', {bubbles:true})); }""",
+        html,
+    )
+    await page.wait_for_timeout(500)
+    injected = await page.evaluate("() => (document.querySelector('#content')||{}).value || ''")
+    ok_inject = "vc_raw_html" in injected and len(injected) > 200
+    print(f"[INFO] 본문 주입 검증: {ok_inject} (길이 {len(injected)})")
+    if not ok_inject:
+        print("[ERROR] 본문 주입 실패 — 저장 중단.")
+        await ctx.close(); await p.stop(); return 6
+
+    # 발행 상태면 업데이트(발행 유지), 초안이면 임시저장
+    pre_status = await page.evaluate(
+        "() => (document.querySelector('#post-status-display')||{}).innerText || ''"
+    )
+    is_published = ("공개" in pre_status) or ("발행" in pre_status) or ("published" in pre_status.lower())
+    if is_published:
+        print(f"[INFO] 이미 발행됨('{pre_status}') → 업데이트로 저장(발행 유지)")
+        await page.click("#publish")
+    else:
+        await page.click("#save-post")
+    try:
+        await page.wait_for_url("**/post.php?post=*", timeout=30_000)
+    except Exception:
+        await page.wait_for_timeout(4000)
+    await page.wait_for_timeout(1500)
+    cur = page.url
+    import re as _re
+    m = _re.search(r"[?&]post=(\d+)", cur)
+    saved_post_id = m.group(1) if m else None
+    status = await page.evaluate(
+        "() => (document.querySelector('#post-status-display')||{}).innerText || ''"
+    )
+    await page.screenshot(path=str(INSPECT_DIR / "wp_en_inquiry_draft_saved.png"))
+    print(f"[INFO] 저장 후 URL: {cur}")
+    print(f"[INFO] 글 상태: {status or '(미검출)'}  /  page_id: {saved_post_id or '(미검출)'}")
+    if saved_post_id:
+        preview = f"http://wellperion.com/wp/?page_id={saved_post_id}&preview=true"
+        edit = f"http://wellperion.com/wp/wp-admin/post.php?post={saved_post_id}&action=edit&lang=en"
+        print("[INFO] === GM 검수 링크 ===")
+        print(f"        미리보기: {preview}")
+        print(f"        편집화면: {edit}")
+        print(f"[INFO] 발행 명령: python scripts\\wordpress_admin_playwright.py --mode publish-inquiry-en --post-id {saved_post_id}")
+    print("[INFO] (※ 초안 상태 — 외부 미공개. 발행은 GM 확인 후 별도 진행)")
+    await ctx.close(); await p.stop()
+    print("[INFO] === 영어 초안 생성 완료 (발행 안 함) ===")
+    return 0 if saved_post_id else 7
+
+
+async def run_publish_inquiry_en(post_id_arg: str, slug: str = "inquiry") -> int:
+    """영어 문의 초안을 슬러그 'inquiry' 설정 후 공개 발행.
+    WPML /en/ prefix 적용 → 최종 URL: /en/inquiry/"""
+    async_playwright = _import_playwright()
+    print(f"[INFO] === 워드프레스 영어 문의 페이지 발행 (post={post_id_arg}, slug={slug}) ===")
+    if not PROFILE_DIR.exists():
+        print("[ERROR] 프로필 미존재 — 먼저 --mode setup 실행 필요.")
+        return 3
+    p, ctx = await _launch(async_playwright)
+    page = ctx.pages[0] if ctx.pages else await ctx.new_page()
+    await page.goto(f"http://wellperion.com/wp/wp-admin/post.php?post={post_id_arg}&action=edit&lang=en",
+                    wait_until="domcontentloaded", timeout=40_000)
+    await page.wait_for_timeout(2500)
+    if "wp-login" in page.url:
+        print("[ERROR] 세션 만료 — setup 재실행 필요.")
+        await ctx.close(); await p.stop(); return 2
+
+    # 슬러그 설정
+    try:
+        if await page.query_selector("#edit-slug-buttons button.edit-slug"):
+            await page.click("#edit-slug-buttons button.edit-slug")
+            await page.wait_for_timeout(600)
+            await page.fill("#new-post-slug", slug)
+            await page.click("#edit-slug-buttons button.save")
+            await page.wait_for_timeout(1200)
+            print(f"[INFO] 슬러그 설정: {slug}")
+    except Exception as e:
+        print(f"[WARN] 슬러그 설정 경고(무시): {e}")
+
+    await page.click("#publish")
+    try:
+        await page.wait_for_url("**/post.php?post=*", timeout=30_000)
+    except Exception:
+        await page.wait_for_timeout(4000)
+    await page.wait_for_timeout(1500)
+    status = await page.evaluate("() => (document.querySelector('#post-status-display')||{}).innerText || ''")
+    permalink = await page.evaluate(
+        "() => { const a=document.querySelector('#sample-permalink a, #sample-permalink'); return a? (a.href||a.innerText):''; }"
+    )
+    await page.screenshot(path=str(INSPECT_DIR / "wp_en_inquiry_published.png"))
+    print(f"[INFO] 글 상태: {status or '(미검출)'}")
+    print(f"[INFO] 공개 URL: {permalink or '(미검출)'}")
+    await ctx.close(); await p.stop()
+    published = "공개" in status or "published" in status.lower() or "발행" in status
     print(f"[INFO] === 발행 {'완료' if published else '확인 필요'} ===")
     return 0 if published else 8
 
@@ -588,14 +881,18 @@ async def run_swap_href(post_id_arg: str, find: str, repl: str) -> int:
 
 
 def main() -> int:
-    ap = argparse.ArgumentParser(description="워드프레스 관리자 반자동 (setup/check/inspect/draft-inquiry/publish-inquiry/add-menu/swap-href)")
-    ap.add_argument("--mode", choices=["setup", "check", "inspect", "draft-inquiry", "publish-inquiry", "add-menu", "swap-href"], default="setup")
+    ap = argparse.ArgumentParser(description="워드프레스 관리자 반자동 (setup/check/inspect/draft-inquiry/publish-inquiry/add-menu/swap-href/wpml-create-en/draft-inquiry-en/publish-inquiry-en)")
+    ap.add_argument("--mode", choices=[
+        "setup", "check", "inspect",
+        "draft-inquiry", "publish-inquiry", "add-menu", "swap-href",
+        "wpml-create-en", "draft-inquiry-en", "publish-inquiry-en",
+    ], default="setup")
     ap.add_argument("--find", dest="find", default=None, help="swap-href 찾을 문자열")
     ap.add_argument("--repl", dest="repl", default=None, help="swap-href 바꿀 문자열")
     ap.add_argument("--slug", dest="slug", default="inquiry", help="publish-inquiry 슬러그(기본 inquiry)")
     ap.add_argument("--menu-id", dest="menu_id", default=KOREAN_MENU_ID, help="add-menu 대상 메뉴 ID(기본 59=한글메인)")
     ap.add_argument("--post-id", dest="post_id", default=None,
-                    help="draft-inquiry 갱신 대상 페이지 ID (미지정 시 신규 생성)")
+                    help="draft/publish 갱신 대상 페이지 ID")
     args = ap.parse_args()
     if args.mode == "setup":
         return asyncio.run(run_setup())
@@ -615,6 +912,16 @@ def main() -> int:
         if not args.post_id or not args.find or not args.repl:
             print("[ERROR] swap-href는 --post-id --find --repl 모두 필요"); return 1
         return asyncio.run(run_swap_href(args.post_id, args.find, args.repl))
+    if args.mode == "wpml-create-en":
+        return asyncio.run(run_wpml_create_en_translation())
+    if args.mode == "draft-inquiry-en":
+        if not args.post_id:
+            print("[ERROR] --post-id 필요 (영어 페이지 ID)"); return 1
+        return asyncio.run(run_draft_inquiry_en(args.post_id))
+    if args.mode == "publish-inquiry-en":
+        if not args.post_id:
+            print("[ERROR] --post-id 필요 (영어 페이지 ID)"); return 1
+        return asyncio.run(run_publish_inquiry_en(args.post_id, args.slug))
     return asyncio.run(run_check())
 
 
