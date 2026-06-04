@@ -234,6 +234,48 @@ def _upsert_queue(
     return result
 
 
+def _write_curation_md(
+    content_folder: Path,
+    caption: str,
+    location: str,
+    mentions: list[str],
+    collaborators: list[str],
+) -> None:
+    """발행기 필수 입력 큐레이션_추천.md 자동 생성 (2026-06-04 누락 재발방지 A-i).
+
+    제작완료 시점에 항상 생성 → 사람이 '잊을 수 없게' 한다(오늘 3회 실패 원인 #1 차단).
+    review_queue 의 caption 단일 출처를 그대로 ## post A 단일 슬롯으로 직렬화.
+    이미 존재하면 덮어써 최신 caption 과 동기화한다(desync 방지).
+    실패해도 빌드/등록은 깨지 않음(상위 try/except 격리).
+    """
+    md_path = Path(content_folder) / "큐레이션_추천.md"
+    lines: list[str] = [
+        "# 큐레이션_추천 (자동 생성 — register_publish · 발행기 필수 입력)",
+        "",
+        "> 이 파일은 제작완료 시 자동 생성됩니다. review_queue.json 의 caption 단일 출처를 직렬화한 것.",
+        "> 수동 발행기(--mode publish)가 큐레이션 누락으로 즉사하지 않게 하는 안전판입니다.",
+        "",
+        "## post A",
+        "",
+        "### 캡션",
+        caption.strip(),
+        "",
+        "### 위치",
+        (location or "").strip(),
+        "",
+        "### 멘션",
+        " ".join(("@" + m.lstrip("@")) for m in mentions) if mentions else "",
+        "",
+        "### Collaborator",
+        "\n".join(("@" + c.lstrip("@")) for c in collaborators) if collaborators else "",
+        "",
+        "### 종목",
+        "",
+    ]
+    md_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    print(f"[INFO] 큐레이션_추천.md 자동 생성/갱신 → {md_path}")
+
+
 def register_publish(
     content_folder: Path,
     slug: str,
@@ -267,6 +309,12 @@ def register_publish(
             folder_rel = content_folder.relative_to(ROOT).as_posix()
         except Exception:
             folder_rel = content_folder.as_posix()
+
+        # (a0) 발행기 필수 입력 큐레이션_추천.md 자동 생성 (누락 재발방지 A-i)
+        try:
+            _write_curation_md(content_folder, caption, location, mentions, collaborators)
+        except Exception as exc:
+            print(f"[WARN] 큐레이션_추천.md 자동 생성 예외 (등록 계속 — 큐 caption 폴백 가능): {exc}")
 
         # (a) preview 복사 (캐시우회 파일명)
         preview_rel = _copy_preview(montage_path, slug)

@@ -28,6 +28,9 @@ telegram_bot/routing_rules.json
 *.bat
 # 예외: 8 .bat 진입점 = SSOT 자산 (2026-05-29 GM 옵션 A)
 !Start-AI*.bat
+# 예외: IG 발행 디스패처 등록·런처 = GM admin 실행 SSOT 자산 (2026-06-04 AI CTO)
+!register_ig_publish_dispatcher_0730.bat
+!start_ig_publish_dispatcher.bat
 profiles/
 temp_*.txt
 # 경로가 파일명이 된 오류 산출물 (U+F03A PUA 문자 포함, 재발 차단)

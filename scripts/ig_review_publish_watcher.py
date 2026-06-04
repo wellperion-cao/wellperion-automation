@@ -170,9 +170,34 @@ def publish_item(it: dict) -> tuple[str | None, int]:
     if collab_str:
         cmd += ["--collaborators", collab_str]
 
-    env = dict(os.environ, PYTHONIOENCODING="utf-8")
-    proc = subprocess.run(cmd, cwd=str(ROOT), capture_output=True, text=True,
-                          encoding="utf-8", errors="replace", env=env, timeout=600)
+    # 입력 단일화 (2026-06-04) — 큐의 caption 을 임시파일로 발행기에 전달.
+    # 콘텐츠 폴더에 큐레이션_추천.md 가 없어도 review_queue.caption 으로 발행 가능
+    # → '큐레이션 누락' FileNotFoundError 즉사 재발방지(오늘 실패 원인 #1).
+    # 폴더에 큐레이션_추천.md 가 있으면 발행기가 그쪽을 우선 사용(이 파일 무시).
+    caption_text: str = it.get("caption", "") or ""
+    caption_tmp: Path | None = None
+    if caption_text.strip():
+        try:
+            import tempfile
+            fd, tmp_name = tempfile.mkstemp(prefix="ig_caption_", suffix=".txt")
+            os.close(fd)
+            caption_tmp = Path(tmp_name)
+            caption_tmp.write_text(caption_text, encoding="utf-8")
+            cmd += ["--caption-file", str(caption_tmp)]
+        except Exception as exc:
+            print(f"[WARN] caption 임시파일 생성 실패(큐레이션 md 폴백 의존): {exc}")
+            caption_tmp = None
+
+    try:
+        env = dict(os.environ, PYTHONIOENCODING="utf-8")
+        proc = subprocess.run(cmd, cwd=str(ROOT), capture_output=True, text=True,
+                              encoding="utf-8", errors="replace", env=env, timeout=600)
+    finally:
+        if caption_tmp is not None:
+            try:
+                caption_tmp.unlink()
+            except Exception:
+                pass
     out = (proc.stdout or "") + (proc.stderr or "")
     print(out)
     m = POST_URL_RE.search(out)

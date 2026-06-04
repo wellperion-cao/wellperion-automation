@@ -240,6 +240,20 @@ class PostSpec:
         return "\n\n".join(parts)
 
 
+def build_spec_from_caption(caption_text: str) -> dict[str, PostSpec]:
+    """큐레이션_추천.md 없이 caption 문자열만으로 단일 슬롯(post A) 스펙 생성.
+
+    AI 시리즈(개인계정) 단순화 — review_queue.json 의 caption 이 단일 출처가 된다.
+    caption 본문 안에 #해시태그 줄이 포함돼 있으면 그대로 캡션에 둔다(merged_caption
+    이 hashtags 를 별도 처리하지 않아도 본문에 이미 포함 → 중복 없음).
+    이미지·종목·collaborator 는 호출부(run_publish)가 채운다.
+    """
+    spec = PostSpec("A")
+    spec.caption = (caption_text or "").strip()
+    # 해시태그는 caption 본문에 이미 포함되므로 별도 추출하지 않음(중복 방지).
+    return {"A": spec}
+
+
 def parse_curation_md(md_path: Path) -> dict[str, PostSpec]:
     if not md_path.exists():
         raise FileNotFoundError(f"큐레이션 파일 부재: {md_path}")
@@ -766,6 +780,7 @@ async def run_publish(
     mentions: list[str] | None = None,
     account: str = DEFAULT_ACCOUNT,
     extra_collaborators: list[str] | None = None,
+    caption_file: Path | None = None,
 ) -> dict[str, str]:
     profile_dir = get_profile_dir(account)
     if not profile_dir.exists():
@@ -777,13 +792,34 @@ async def run_publish(
 
     print(f"[INFO] === PUBLISH 모드 시작 === folder={content_folder} account={account}")
 
-    # 1. 큐레이션 파싱 + 사진 매핑 + 종목 collaborator 강제 + 검증
+    # 1. 입력 소스 단일화 (2026-06-04 단순화) — 우선순위:
+    #    (a) 큐레이션_추천.md 존재 → 기존 파싱(다중 슬롯 A/B/C 지원, 수동 경로 호환)
+    #    (b) 없으면 caption_file(=review_queue.json caption) → 단일 슬롯 post A 합성
+    #    → '큐레이션_추천.md 누락' FileNotFoundError 즉사 재발방지(오늘 3회 실패 원인 #1).
+    #      review_queue 의 caption 이 항상 채워지므로(register_publish) 누락 불가.
     md_path = content_folder / "큐레이션_추천.md"
-    posts = parse_curation_md(md_path)
+    if md_path.exists():
+        posts = parse_curation_md(md_path)
+        print(f"[INFO] 입력 소스: 큐레이션_추천.md ({md_path.name})")
+    elif caption_file is not None and Path(caption_file).exists():
+        caption_text = Path(caption_file).read_text(encoding="utf-8")
+        posts = build_spec_from_caption(caption_text)
+        print(f"[INFO] 입력 소스: caption_file 단일화 (큐레이션 md 부재 → 큐 caption 합성, {len(caption_text)} chars)")
+    else:
+        print(
+            "[ERROR] 발행 입력 소스 없음 — 큐레이션_추천.md 도 caption_file 도 부재. "
+            "(review_queue.json 의 caption 또는 폴더의 큐레이션_추천.md 중 하나 필수)"
+        )
+        telegram_report(
+            f"⛔ AI CTO 인스타 publish 차단 — 입력 소스 부재\n"
+            f"폴더: {content_folder.name}\n"
+            f"사유: 큐레이션_추천.md·caption_file 모두 없음(누락 사전차단)"
+        )
+        sys.exit(5)
     # 발행 대상 = 존재하는 슬롯(A/B/C 순). 단일 포스트(post A만)도 허용 (2026-05-29 시드 #09).
     present_slots = [s for s in POST_SLOTS if s in posts]
     if not present_slots:
-        print("[ERROR] 큐레이션에 post 섹션 없음 (## post A/B/C 중 최소 1개 필요)")
+        print("[ERROR] 발행 대상 post 섹션 없음 (## post A/B/C 중 최소 1개 또는 caption 필요)")
         sys.exit(5)
     print(f"[INFO] 발행 대상 post: {present_slots}")
 
@@ -1484,6 +1520,15 @@ def parse_args() -> argparse.Namespace:
             "watcher가 review_queue의 collaborators 필드를 전달할 때 사용."
         ),
     )
+    parser.add_argument(
+        "--caption-file",
+        default=None,
+        help=(
+            "큐레이션_추천.md 부재 시 단일화 입력 — caption 텍스트 파일 경로. "
+            "watcher/dispatcher가 review_queue.json 의 caption 을 임시파일로 전달. "
+            "폴더에 큐레이션_추천.md 가 있으면 그쪽이 우선(이 인자 무시)."
+        ),
+    )
     return parser.parse_args()
 
 
@@ -1503,6 +1548,7 @@ if __name__ == "__main__":
             folder = Path.cwd() / folder
         mentions_list = [m.strip() for m in args.mentions.split(",") if m.strip()] if args.mentions else []
         collab_list = [c.strip() for c in args.collaborators.split(",") if c.strip()] if args.collaborators else []
-        asyncio.run(run_publish(folder, location=args.location, mentions=mentions_list, account=args.account, extra_collaborators=collab_list))
+        caption_file_path = Path(args.caption_file) if args.caption_file else None
+        asyncio.run(run_publish(folder, location=args.location, mentions=mentions_list, account=args.account, extra_collaborators=collab_list, caption_file=caption_file_path))
     else:
         asyncio.run(run_dryrun(account=args.account))

@@ -48,6 +48,14 @@
 |---|---|---|
 | ① 텔레그램 알림 | 1줄 보고(한줄 제목/한줄 내용) + montage 미리보기 송부 | telegram_notifier.send_photo, 토큰 stdout 노출 금지 |
 | ② M5 검수 큐 자동 등록 | `3. 웰페리온 가이드/cmo/review/review_queue.json`에 항목 추가, `status="검수 대기"` | review_set_status 호환 스키마 |
+| ③ 발행기 필수 입력 자동 생성·검증 | `register_publish`가 `큐레이션_추천.md`를 콘텐츠 폴더에 자동 생성(큐 caption 단일 출처 직렬화). 발행기는 md 부재 시 큐 caption(`--caption-file`)으로 폴백 → 입력 누락 즉사 불가 | 2026-06-04 AI CTO. 원인 #1(큐레이션 누락) 영구 차단 |
+
+### AI 시리즈 폴더 표준 산출물 체크리스트 (제작 완료 = 아래 전부 충족)
+- `output/post_1.jpg … post_N.jpg` (+ 마지막 장 시그니처 슬로건) · `_검수_미리보기_N장.png`
+- `큐레이션_추천.md` (register_publish 자동 생성 — 발행기 필수 입력, 누락 금지)
+- `review_queue.json` 엔트리: `id·title·channel·account·folder·preview·slides[]·caption·location·collaborators[]·mentions[]·status`
+- caption 은 review_queue 가 단일 출처. `큐레이션_추천.md`는 그 caption 의 직렬화(자동 동기화).
+- 발행 경로: M5 [승인] → status='승인' → (즉시 봇 pub: 또는) **매일 07:30 `ig_publish_dispatcher.py`**(인터랙티브 데스크톱 세션)가 일괄 발행.
 
 - 자동 등록 = GM이 M5(콘텐츠 검수·자동업로드, cmo-publish)에서 [승인] 누르면 시모가 즉시 발행할 수 있는 상태로 둔다.
 - review_queue 항목 스키마(기존 재사용·신규 포맷 금지): `id` · `title` · `channel` · `account` · `folder` · `preview`(montage를 `cmo/review/`로 복사한 배포루트 상대경로) · `slides[]` · `caption` · `location` · `collaborators[]` · `mentions[]` · `status="검수 대기"`.
