@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>문의 채널 현황 — 웰페리온</title>
+<style>
+:root{
+  --bg:#221F20;--paper:#2a2725;--text:#f5f2ef;--dim:#8c8b83;
+  --accent:#B79F8A;--accent-bg:rgba(183,159,138,0.12);--border:#3d3835;
+  --green:#6abf7b;--green-bg:rgba(106,191,123,0.12);
+  --red:#ED5B3F;--red-bg:rgba(237,91,63,0.12);
+  --yellow:#e6c84e;--yellow-bg:rgba(230,200,78,0.12);
+  --blue:#5b9fd5;--blue-bg:rgba(91,159,213,0.12);
+  --orange:#e6944e;--orange-bg:rgba(230,148,78,0.12);
+  --purple:#a78bda;--purple-bg:rgba(167,139,218,0.12);
+  --ko:#5b9fd5;--ko-bg:rgba(91,159,213,0.13);
+  --en:#a78bda;--en-bg:rgba(167,139,218,0.13);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.6;font-size:15px;min-height:100vh}
+a{color:var(--accent);text-decoration:none}
+a:hover{text-decoration:underline;color:var(--text)}
+
+/* ── Header ── */
+.header{background:var(--paper);padding:14px 20px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100}
+.header-left{display:flex;align-items:center;gap:10px}
+.header h1{font-size:17px;font-weight:700}
+.header-sub{font-size:12px;color:var(--dim);margin-top:1px}
+.version-badge{font-size:11px;padding:2px 8px;border-radius:8px;background:var(--accent-bg);color:var(--accent);font-weight:700;border:1px solid rgba(183,159,138,0.25)}
+.header-meta{font-size:12px;color:var(--dim)}
+.back-link{font-size:12px;color:var(--dim);display:flex;align-items:center;gap:4px;transition:color .15s}
+.back-link:hover{color:var(--accent);text-decoration:none}
+
+/* ── Content ── */
+.content{padding:20px 20px 80px;max-width:900px;margin:0 auto}
+
+/* ── Section ── */
+.section{margin-bottom:32px}
+.section-title{font-size:13px;font-weight:700;color:var(--dim);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.section-title::after{content:"";flex:1;height:1px;background:var(--border)}
+
+/* ── Lang badge ── */
+.lang-badge{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;padding:3px 9px;border-radius:20px}
+.lang-badge.ko{background:var(--ko-bg);color:var(--ko);border:1px solid rgba(91,159,213,.25)}
+.lang-badge.en{background:var(--en-bg);color:var(--en);border:1px solid rgba(167,139,218,.25)}
+.badge-wip{display:inline-block;font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px;background:var(--yellow-bg);color:var(--yellow);border:1px solid rgba(230,200,78,.25);margin-left:6px;vertical-align:middle}
+
+/* ── Survey 정리 표 ── */
+.survey-wrap{background:var(--paper);border:1px solid var(--border);border-radius:14px;overflow:hidden}
+.survey-table{width:100%;border-collapse:collapse;font-size:13px}
+.survey-table thead th{background:#1e1c1d;padding:11px 14px;text-align:left;font-size:11px;font-weight:700;color:var(--dim);letter-spacing:.04em;border-bottom:1px solid var(--border)}
+.survey-table tbody td{padding:13px 14px;border-bottom:1px solid var(--border);vertical-align:middle}
+.survey-table tbody tr:last-child td{border-bottom:none}
+.survey-table tbody tr:hover td{background:var(--accent-bg)}
+.survey-table .landing-cell{min-width:140px}
+.survey-table .form-link{display:inline-flex;align-items:center;gap:5px;color:var(--accent);font-size:13px;font-weight:500;padding:3px 0;transition:color .15s}
+.survey-table .form-link:hover{color:var(--text);text-decoration:none}
+.survey-table .form-link .icon{font-size:11px;opacity:.6}
+.na-cell{color:var(--dim);font-style:italic;font-size:12px}
+
+/* ── Click KPI 카드 ── */
+.click-kpi-row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+.click-kpi{flex:1;min-width:130px;background:var(--paper);border:1px solid var(--border);border-radius:10px;padding:14px 14px 12px;position:relative}
+.click-kpi .ck-lang{font-size:10px;font-weight:700;margin-bottom:6px}
+.click-kpi .ck-num{font-size:26px;font-weight:700;line-height:1}
+.click-kpi .ck-label{font-size:11px;color:var(--dim);margin-top:5px}
+.click-kpi .ck-unit{font-size:12px;font-weight:400;color:var(--dim);margin-left:2px}
+
+/* ── Breakdown 표 ── */
+.breakdown-wrap{background:var(--paper);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+.breakdown-table{width:100%;border-collapse:collapse;font-size:13px}
+.breakdown-table thead th{background:#1e1c1d;padding:10px 16px;text-align:left;font-size:11px;font-weight:700;color:var(--dim);letter-spacing:.04em;border-bottom:1px solid var(--border)}
+.breakdown-table thead th:last-child,.breakdown-table td:last-child{text-align:right}
+.breakdown-table td{padding:11px 16px;border-bottom:1px solid var(--border)}
+.breakdown-table tr:last-child td{border-bottom:none}
+.breakdown-table tr:hover td{background:var(--accent-bg)}
+.breakdown-table .row-total td{background:rgba(183,159,138,.06);font-weight:700}
+.click-num{font-size:15px;font-weight:700}
+.click-num.loading{color:var(--dim);font-weight:400;font-size:13px}
+
+/* ── Status badge in click table ── */
+.status-dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:6px;flex-shrink:0}
+
+/* ── Info box ── */
+.info-box{background:var(--accent-bg);border:1px solid rgba(183,159,138,0.2);border-radius:10px;padding:13px 16px;margin-bottom:20px;font-size:13px;line-height:1.65}
+.info-box strong{color:var(--accent)}
+
+/* ── Refresh btn ── */
+.refresh-row{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.refresh-btn{background:var(--accent-bg);border:1px solid rgba(183,159,138,.3);color:var(--accent);font-size:12px;font-weight:700;padding:5px 12px;border-radius:7px;cursor:pointer;transition:all .15s;font-family:inherit}
+.refresh-btn:hover{background:rgba(183,159,138,.22)}
+.refresh-ts{font-size:11px;color:var(--dim)}
+
+/* ── Footer ── */
+.page-footer{text-align:center;padding:20px;font-size:11px;color:var(--dim);border-top:1px solid var(--border);margin-top:20px}
+
+/* ── Responsive ── */
+@media(max-width:680px){
+  .survey-table{font-size:12px}
+  .survey-table thead th,.survey-table tbody td{padding:10px 10px}
+  .click-kpi .ck-num{font-size:20px}
+  .breakdown-table td,.breakdown-table th{padding:9px 10px}
+}
+@media(max-width:480px){
+  .survey-table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .breakdown-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <div class="header-left">
+      <h1>문의 채널 현황</h1>
+      <span class="version-badge">v1.0</span>
+    </div>
+    <div class="header-sub">한·영 문의 진입점 + 폼 + 클릭 추적</div>
+  </div>
+  <a class="back-link" href="마케팅현황대시보드.html">← 마케팅 대시보드</a>
+</div>
+
+<div class="content">
+
+  <!-- 문의 Survey 정리 표 -->
+  <div class="section">
+    <div class="section-title">문의 Survey 정리</div>
+    <div class="info-box">
+      모든 문의는 <strong>wellperion.com 문의 페이지</strong>를 통해 진입합니다.
+      한국어·영어 각 페이지에서 4종 폼으로 연결되며, 각 폼 링크는 새 탭에서 열립니다.
+      영어 페이지는 현재 <strong>활성화 진행 중</strong>입니다.
+    </div>
+    <div class="survey-wrap">
+      <table class="survey-table">
+        <thead>
+          <tr>
+            <th style="width:80px">언어</th>
+            <th class="landing-cell">진입 페이지</th>
+            <th>멤버십</th>
+            <th>성인 강습</th>
+            <th>유소년</th>
+            <th>여름 특강</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- 한국어 -->
+          <tr>
+            <td><span class="lang-badge ko">한국어</span></td>
+            <td>
+              <a class="form-link" href="http://wellperion.com/ko/inquiry/" target="_blank" rel="noopener">
+                wellperion.com<br>/ko/inquiry/
+                <span class="icon">↗</span>
+              </a>
+            </td>
+            <td>
+              <a class="form-link" href="https://docs.google.com/forms/d/1kvQqON12GTQssWsUZsb6l9sSfi5Up1jFW6T_GHiWer8/viewform" target="_blank" rel="noopener">
+                멤버십 문의 폼 <span class="icon">↗</span>
+              </a>
+            </td>
+            <td>
+              <a class="form-link" href="https://forms.gle/ad6xrR9ECRRDnzmE9" target="_blank" rel="noopener">
+                성인 강습 폼 <span class="icon">↗</span>
+              </a>
+            </td>
+            <td>
+              <a class="form-link" href="https://forms.gle/RaFbZLxypNMMV9f17" target="_blank" rel="noopener">
+                유소년 폼 <span class="icon">↗</span>
+              </a>
+            </td>
+            <td>
+              <a class="form-link" href="https://forms.gle/UEMcgWwsZVeTwVBg9" target="_blank" rel="noopener">
+                여름 특강 폼 <span class="icon">↗</span>
+              </a>
+            </td>
+          </tr>
+          <!-- 영어 -->
+          <tr>
+            <td>
+              <span class="lang-badge en">English</span>
+              <span class="badge-wip">준비중</span>
+            </td>
+            <td>
+              <a class="form-link" href="http://wellperion.com/en/inquiry/" target="_blank" rel="noopener">
+                wellperion.com<br>/en/inquiry/
+                <span class="icon">↗</span>
+              </a>
+            </td>
+            <td>
+              <a class="form-link" href="https://docs.google.com/forms/d/e/1FAIpQLSfOFxaqO5zSmoYa9TkfBlkDPbGjaTXm3duh7w5NwuBMhlJb6A/viewform" target="_blank" rel="noopener">
+                Membership Form <span class="icon">↗</span>
+              </a>
+            </td>
+            <td>
+              <a class="form-link" href="https://docs.google.com/forms/d/e/1FAIpQLSdirIB05ecVGkqJCIfJaw5yn7nIwVQe8ZeKbzQzKqKg83AUNw/viewform" target="_blank" rel="noopener">
+                Adult Form <span class="icon">↗</span>
+              </a>
+            </td>
+            <td>
+              <a class="form-link" href="https://docs.google.com/forms/d/e/1FAIpQLScqZum8zrhqKC0m2S0IKElYez-aJuPMQHM-JKF867UADF9X3A/viewform" target="_blank" rel="noopener">
+                Youth Form <span class="icon">↗</span>
+              </a>
+            </td>
+            <td>
+              <a class="form-link" href="https://docs.google.com/forms/d/e/1FAIpQLSchg7_9bmLTjCA-gfSj_anjklaNr_OpYBcmHzQJCTndIzgJPA/viewform" target="_blank" rel="noopener">
+                Summer Form <span class="icon">↗</span>
+              </a>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- 클릭 현황 대시보드 -->
+  <div class="section">
+    <div class="section-title">클릭 현황 대시보드</div>
+
+    <!-- KPI 카드 -->
+    <div class="click-kpi-row">
+      <div class="click-kpi">
+        <div class="ck-lang" style="color:var(--ko)">한국어 문의 페이지</div>
+        <div class="ck-num" id="kpi-ko-total" style="color:var(--ko)">—</div>
+        <div class="ck-label">문의 버튼 클릭 합계<span class="ck-unit">(누적)</span></div>
+      </div>
+      <div class="click-kpi">
+        <div class="ck-lang" style="color:var(--en)">영어 문의 페이지</div>
+        <div class="ck-num" id="kpi-en-total" style="color:var(--en)">—</div>
+        <div class="ck-label">문의 버튼 클릭 합계<span class="ck-unit">(누적)</span></div>
+      </div>
+      <div class="click-kpi">
+        <div class="ck-lang" style="color:var(--accent)">전체 합계</div>
+        <div class="ck-num" id="kpi-all-total" style="color:var(--accent)">—</div>
+        <div class="ck-label">한·영 전체<span class="ck-unit">(누적)</span></div>
+      </div>
+    </div>
+
+    <!-- 갱신 버튼 -->
+    <div class="refresh-row">
+      <button class="refresh-btn" onclick="loadClickStats(true)">새로고침</button>
+      <span class="refresh-ts" id="refresh-ts">불러오는 중…</span>
+    </div>
+
+    <!-- 상세 표 -->
+    <div class="breakdown-wrap">
+      <table class="breakdown-table">
+        <thead>
+          <tr>
+            <th style="width:80px">언어</th>
+            <th>버튼 / 폼 종류</th>
+            <th>linkName 키</th>
+            <th>클릭 수</th>
+          </tr>
+        </thead>
+        <tbody id="click-breakdown-body">
+          <tr><td colspan="4" style="padding:16px;color:var(--dim);text-align:center">불러오는 중…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<div class="page-footer">
+  웰페리온 문의 채널 현황 · AI CMO · 실무진: 김남욱 GM<br>
+  클릭 데이터 출처: Apps Script 클릭로그 자동 집계 (action=click_stats)
+</div>
+
+<script>
+// ── Apps Script 엔드포인트 (마케팅현황대시보드.html과 동일) ──────────────────
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbzdwSCCSSJ6JXLDoWuo7HG0JmBM2iy10TujFQ_O5JbTjnWaN7gOk-ddA4IAvsNfelg0xA/exec';
+
+// ── 버튼 정의 ───────────────────────────────────────────────────────────────
+// linkUrl 기준 그룹: wp-inquiry(한국어), wp-inquiry-en(영어)
+// linkName 기준 집계 — GAS click_stats 응답의 data.byLink 키와 대응
+const KO_BUTTONS = [
+  { key: '멤버십문의',       label: '멤버십 문의',       url: 'https://docs.google.com/forms/d/1kvQqON12GTQssWsUZsb6l9sSfi5Up1jFW6T_GHiWer8/viewform' },
+  { key: '성인강습문의',     label: '성인 강습 문의',     url: 'https://forms.gle/ad6xrR9ECRRDnzmE9' },
+  { key: '유소년강습문의',   label: '유소년 강습 문의',   url: 'https://forms.gle/RaFbZLxypNMMV9f17' },
+  { key: '여름방학특강문의', label: '여름방학 특강 문의', url: 'https://forms.gle/UEMcgWwsZVeTwVBg9' },
+];
+
+const EN_BUTTONS = [
+  { key: 'membership-en',          label: 'Membership',    url: 'https://docs.google.com/forms/d/e/1FAIpQLSfOFxaqO5zSmoYa9TkfBlkDPbGjaTXm3duh7w5NwuBMhlJb6A/viewform' },
+  { key: 'adult-lesson-en',        label: 'Adult Lesson',  url: 'https://docs.google.com/forms/d/e/1FAIpQLSdirIB05ecVGkqJCIfJaw5yn7nIwVQe8ZeKbzQzKqKg83AUNw/viewform' },
+  { key: 'youth-lesson-en',        label: 'Youth Lesson',  url: 'https://docs.google.com/forms/d/e/1FAIpQLScqZum8zrhqKC0m2S0IKElYez-aJuPMQHM-JKF867UADF9X3A/viewform' },
+  { key: 'summer-special-inquiry-en', label: 'Summer Special', url: 'https://docs.google.com/forms/d/e/1FAIpQLSchg7_9bmLTjCA-gfSj_anjklaNr_OpYBcmHzQJCTndIzgJPA/viewform' },
+];
+
+function fmtNum(n) {
+  if (n == null || isNaN(n)) return '0';
+  return Number(n).toLocaleString('ko-KR');
+}
+
+function setKpi(id, val) {
+  var el = document.getElementById(id);
+  if (!el) return;
+  el.textContent = fmtNum(val);
+}
+
+function buildRows(buttons, byLink, lang, color) {
+  var html = '';
+  var total = 0;
+  buttons.forEach(function(btn, i) {
+    var cnt = byLink[btn.key];
+    var hasCnt = cnt !== undefined && cnt !== null;
+    var num = hasCnt ? cnt : 0;
+    total += num;
+    var dotColor = hasCnt ? color : 'var(--dim)';
+    var numClass = hasCnt ? 'click-num' : 'click-num loading';
+    var numTxt = hasCnt ? fmtNum(num) : '측정 대기';
+    html += '<tr>';
+    if (i === 0) {
+      html += '<td rowspan="' + buttons.length + '" style="vertical-align:top;padding-top:14px">';
+      if (lang === 'ko') {
+        html += '<span class="lang-badge ko">한국어</span>';
+      } else {
+        html += '<span class="lang-badge en">English</span><span class="badge-wip">준비중</span>';
+      }
+      html += '</td>';
+    }
+    html += '<td>';
+    html += '<span class="status-dot" style="background:' + dotColor + '"></span>';
+    html += btn.label;
+    html += '</td>';
+    html += '<td style="color:var(--dim);font-size:12px;font-family:monospace">' + btn.key + '</td>';
+    html += '<td><span class="' + numClass + '" style="color:' + (hasCnt ? color : 'var(--dim)') + '">' + numTxt + '</span></td>';
+    html += '</tr>';
+  });
+  // 소계 행
+  html += '<tr class="row-total">';
+  html += '<td></td>';
+  html += '<td colspan="2" style="color:var(--dim);font-size:12px">';
+  if (lang === 'ko') html += '한국어 소계';
+  else html += 'English 소계';
+  html += '</td>';
+  html += '<td><span class="click-num" style="color:' + color + '">' + fmtNum(total) + '</span></td>';
+  html += '</tr>';
+  return { html: html, total: total };
+}
+
+// divider row
+function dividerRow() {
+  return '<tr><td colspan="4" style="height:6px;background:var(--bg)"></td></tr>';
+}
+
+async function loadClickStats(forceRefresh) {
+  var tsEl = document.getElementById('refresh-ts');
+  if (tsEl) tsEl.textContent = '불러오는 중…';
+
+  try {
+    var url = GAS_URL + '?action=click_stats' + (forceRefresh ? '&t=' + Date.now() : '');
+    var res = await fetch(url, { redirect: 'follow' });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    var data = await res.json();
+    if (!data || !data.ok) throw new Error('응답 오류');
+
+    var byLink = data.byLink || {};
+
+    var koResult = buildRows(KO_BUTTONS, byLink, 'ko', 'var(--ko)');
+    var enResult = buildRows(EN_BUTTONS, byLink, 'en', 'var(--en)');
+
+    var tbody = document.getElementById('click-breakdown-body');
+    if (tbody) tbody.innerHTML = koResult.html + dividerRow() + enResult.html;
+
+    setKpi('kpi-ko-total', koResult.total);
+    setKpi('kpi-en-total', enResult.total);
+    setKpi('kpi-all-total', koResult.total + enResult.total);
+
+    var now = new Date();
+    var hh = String(now.getHours()).padStart(2, '0');
+    var mm = String(now.getMinutes()).padStart(2, '0');
+    if (tsEl) tsEl.textContent = '마지막 갱신: 오늘 ' + hh + ':' + mm + ' · 누적 합계 ' + fmtNum(data.total || 0) + '클릭';
+
+  } catch (e) {
+    console.warn('[click_stats] 로드 실패:', e.message);
+
+    // 우아한 fallback — 표는 "측정 대기/0" 으로 렌더
+    var koFallback = buildRows(KO_BUTTONS, {}, 'ko', 'var(--ko)');
+    var enFallback = buildRows(EN_BUTTONS, {}, 'en', 'var(--en)');
+    var tbody = document.getElementById('click-breakdown-body');
+    if (tbody) tbody.innerHTML = koFallback.html + dividerRow() + enFallback.html;
+
+    setKpi('kpi-ko-total', 0);
+    setKpi('kpi-en-total', 0);
+    setKpi('kpi-all-total', 0);
+    var tsEl2 = document.getElementById('refresh-ts');
+    if (tsEl2) tsEl2.textContent = '데이터 불러오기 실패 — 새로고침을 눌러 재시도';
+  }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  loadClickStats(false);
+});
+</script>
+</body>
+</html>
