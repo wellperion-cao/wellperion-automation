@@ -133,7 +133,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 .board-scroll::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
 .board-scroll.is-empty{display:block}
 /* 트렐로 컬럼 = 요일 1개. 헤더(요일)+남/여/외곽 카드그룹 세로 */
-.board-col{flex:0 0 340px;min-width:340px;max-width:340px;scroll-snap-align:start;background:var(--paper);border:1px solid var(--border);border-radius:14px;overflow:hidden;display:flex;flex-direction:column}
+.board-col{flex:0 0 410px;min-width:410px;max-width:410px;scroll-snap-align:start;background:var(--paper);border:1px solid var(--border);border-radius:14px;overflow:hidden;display:flex;flex-direction:column}
 .board-col.is-weekend{border-color:rgba(230,148,78,0.45)}
 .board-col-head{padding:12px 16px;display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--border);background:var(--bg)}
 .board-col-head .bday{font-size:20px;font-weight:800}
@@ -185,6 +185,12 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 .dv-cell.editing .dv-body{display:none}
 .dv-edit-hint{font-size:12px;color:var(--dim);margin-top:7px;display:none;line-height:1.5}
 .dv-cell.editing .dv-edit-hint{display:block}
+/* 시간대 빠른 지정 칩 (편집 모드에서만 노출) */
+.dv-ts-chips{display:none;flex-wrap:wrap;gap:6px;align-items:center;margin-top:8px;font-size:12px;color:var(--dim)}
+.dv-cell.editing .dv-ts-chips{display:flex}
+.dv-ts-chip{font-size:12px;font-weight:700;padding:4px 10px;border-radius:8px;cursor:pointer;font-family:inherit;
+  border:1.5px solid rgba(183,159,138,0.4);background:var(--accent-bg);color:var(--accent);transition:background .12s}
+.dv-ts-chip:hover{background:rgba(183,159,138,0.22)}
 
 /* 모바일: 요일 탭 폭 축소 + 컬럼 폭 화면맞춤(가로 스크롤·스냅) */
 @media(max-width:560px){
@@ -367,10 +373,10 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 </div>
 <div class="toast-msg" id="toastMsg"></div>
 <div class="tabs">
-  <button class="tab" onclick="switchTab('policy')">지원부 규정</button>
+  <button class="tab active" onclick="switchTab('policy')">지원부 규정</button>
   <button class="tab" onclick="switchTab('guide')">가이드</button>
   <button class="tab" onclick="switchTab('manual')">매뉴얼</button>
-  <button class="tab active" onclick="switchTab('check-m','lock')">점검(남) 🔒</button>
+  <button class="tab" onclick="switchTab('check-m','lock')">점검(남) 🔒</button>
   <button class="tab" onclick="switchTab('check-f','lock')">점검(여) 🔒</button>
   <div style="display:flex;gap:4px;margin-left:auto;">
     <button class="util-btn print-btn" onclick="printCurrentTab()">인쇄</button>
@@ -381,7 +387,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 </div><!-- /sticky-top -->
 <div class="saving" id="saveIndicator">저장 중...</div>
 
-<div id="tab-policy" class="content hidden">
+<div id="tab-policy" class="content">
   <h2 style="font-size:20px;margin-bottom:16px;">지원부 규정</h2>
   <table style="width:100%;border-collapse:collapse;margin-bottom:16px;">
     <tr style="background:var(--paper);"><th style="padding:10px;border:1px solid var(--border);width:200px;">정책</th><th style="padding:10px;border:1px solid var(--border);">내용</th><th style="padding:10px;border:1px solid var(--border);width:80px;">상태</th></tr>
@@ -582,7 +588,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 
   <!-- ── 기존 상세 절차 참고 (접이식 · 운영 정보 보존) ── -->
   <div class="manual-section" style="margin-top:18px;">
-    <div class="manual-header" onclick="togManual(this)"><h3>기존 상세 절차 참고 (구역별 매뉴얼·점검 항목)</h3><span class="arrow">&#9654;</span></div>
+    <div class="manual-header" onclick="togManual(this)"><h3>기존 상세 절차 참고 (구역별 매뉴얼)</h3><span class="arrow">&#9654;</span></div>
     <div class="manual-body" style="padding:0;">
     <div style="padding:14px 18px;">
 
@@ -786,12 +792,8 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
     </div>
   </div>
 
-  <!-- 현재 전체 점검 항목 (기본 + 추가 · 점검완료 체크) -->
-  <div style="margin-top:10px;">
-    <div style="font-size:16px;font-weight:700;color:var(--text);padding:12px 0 8px;border-bottom:2px solid var(--accent);margin-bottom:12px;">현재 전체 점검 항목</div>
-    <div style="font-size:12px;color:var(--dim);margin-bottom:14px;">항목 왼쪽 체크박스로 점검완료를 표시하면 모든 기기에 저장됩니다. 항목명을 누르면 상세 매뉴얼이 펼쳐집니다.</div>
-    <div id="manual-items-sync"></div>
-  </div>
+  <!-- '현재 전체 점검 항목 체크리스트'는 점검(남)/점검(여) 탭 전용으로 이관(매뉴얼 탭에선 중복이라 제거).
+       데이터·체크상태는 점검 탭이 동일 소스(WEEKDAY+CUSTOM_ITEMS·STATE)로 렌더하므로 손실 없음. -->
 
     </div><!-- /padding wrapper -->
     </div><!-- /manual-body (기존 상세 절차 참고) -->
@@ -2543,7 +2545,7 @@ function persistBoardData(){
 const DOW_TO_DAYKEY=['sun','mon','tue','wed','thu','fri','sat'];
 const BOARD_SELDAYS_KEY='SUPPORT_MANUAL_BOARD_SELDAYS'; // 선택 요일 영속 키(localStorage)
 const ALL_DAY_KEYS=BOARD_DAYS.map(d=>d.key);
-/* 선택 요일 Set. localStorage에 기억된 값 우선, 없으면 기본 = 전체 켜둠(트렐로 보드 느낌) */
+/* 선택 요일 Set. localStorage에 기억된 값 우선, 없으면 기본 = 오늘 요일 1개만 켬 */
 function loadSelectedDays(){
   let saved=null;
   try{ saved=JSON.parse(localStorage.getItem(BOARD_SELDAYS_KEY)); }catch(e){ saved=null; }
@@ -2551,13 +2553,33 @@ function loadSelectedDays(){
     const valid=saved.filter(k=>ALL_DAY_KEYS.indexOf(k)>=0);
     return new Set(valid); // 비어있어도(전부 해제 상태) 그대로 존중
   }
-  return new Set(ALL_DAY_KEYS); // 최초 방문: 전체 켜둔 상태로 시작
+  // 최초 방문(저장값 없음): 오늘 요일 1개만 켜둔 상태로 시작
+  const todayKey=DOW_TO_DAYKEY[new Date().getDay()];
+  return new Set([todayKey]);
 }
 let SELECTED_DAYS = loadSelectedDays();
 function saveSelectedDays(){
   // BOARD_DAYS 순서 보존하여 저장
   const ordered=ALL_DAY_KEYS.filter(k=>SELECTED_DAYS.has(k));
   try{ localStorage.setItem(BOARD_SELDAYS_KEY, JSON.stringify(ordered)); }catch(e){}
+}
+
+/* ── 시간대(time slot) = 항목의 저장 속성 ──
+   저장 형식: 각 줄 맨 앞 "시간대::내용". BOARD_DATA(localStorage+백엔드)에 그대로 영속 → 시간대가 항목 속성으로 기록됨.
+   표준 시간대 프리셋(편집 시 빠른 지정용). 기존 시드·저장값의 임의 라벨도 하위호환 파싱됨. */
+const BOARD_TIMESLOTS=[
+  {key:'오전(08:00~12:00)', short:'오전', t:'08:00'},
+  {key:'오전후반(10:00~12:00)', short:'오전후반', t:'10:00'},
+  {key:'오후(13:00~)', short:'오후(13시)', t:'13:00'},
+  {key:'오후(14:00~18:00)', short:'오후', t:'14:00'},
+  {key:'야간(18:00~)', short:'야간', t:'18:00'},
+  {key:'종일(휴관일 집중)', short:'종일', t:'24:00'}
+];
+/* 라벨 → 정렬 기준 시각. 라벨 안 'HH:MM' 첫 등장 시각으로 시간 순 정렬(없으면 맨 뒤) */
+function timeslotSortKey(label){
+  if(!label||label==='기타') return '99:99';
+  const m=String(label).match(/(\d{1,2}):(\d{2})/);
+  return m ? (m[1].padStart(2,'0')+':'+m[2]) : '98:98';
 }
 
 /* 한 줄 파싱: "시간대::내용" → {tb:'시간대', text:'내용'}. 표기 없으면 tb='' (기타로 묶음) */
@@ -2569,7 +2591,7 @@ function parseBoardLine(line){
   return {tb:'', text:line};
 }
 
-/* 텍스트(줄바꿈 항목) → 시간대 그룹 HTML. 시간대 표기 순서(첫 등장순) 유지 */
+/* 텍스트(줄바꿈 항목) → 시간대 그룹 HTML. 시간대 = 카드별 뱃지로 표시 + 시간 순 정렬(그룹 유지) */
 function boardCellBodyHTML(text){
   const lines=(text||'').split('\n').map(l=>l.trim()).filter(l=>l.length);
   if(!lines.length) return '<div class="dv-empty">항목 없음 — 편집으로 추가</div>';
@@ -2580,16 +2602,43 @@ function boardCellBodyHTML(text){
     if(!groups[key]){groups[key]=[];order.push(key);}
     groups[key].push(p.text);
   });
+  // 시간 순 정렬(라벨 내 HH:MM 기준, 동률은 첫 등장순 유지). '기타'는 항상 맨 뒤
+  const sorted=order.slice().sort((a,b)=>{
+    const ka=timeslotSortKey(a), kb=timeslotSortKey(b);
+    if(ka!==kb) return ka<kb?-1:1;
+    return order.indexOf(a)-order.indexOf(b);
+  });
   // 시간대 라벨 1개(기타뿐)면 라벨 숨기고 단순 리스트
-  const onlyEtc = order.length===1 && order[0]==='기타';
+  const onlyEtc = sorted.length===1 && sorted[0]==='기타';
   let html='';
-  order.forEach(tb=>{
+  sorted.forEach(tb=>{
     html+='<div class="dv-timeblock">';
     if(!onlyEtc) html+='<span class="dv-tb-label">'+escapeHTML(tb)+'</span>';
     html+='<ul class="dv-list">'+groups[tb].map(t=>'<li>'+escapeHTML(t)+'</li>').join('')+'</ul>';
     html+='</div>';
   });
   return html;
+}
+
+/* 편집 textarea에 표준 시간대 프리픽스를 빠르게 삽입(커서 줄 맨 앞에 '시간대::' 부착).
+   기록형: 클릭 1번으로 항목에 시간대 속성을 지정 → 저장 시 BOARD_DATA에 영속. */
+function boardInsertTimeslot(cid, slotKey){
+  const ta=document.getElementById('ta_'+cid);
+  if(!ta) return;
+  const val=ta.value;
+  let pos=(typeof ta.selectionStart==='number')?ta.selectionStart:val.length;
+  // 커서가 위치한 줄의 시작 인덱스
+  let lineStart=val.lastIndexOf('\n',pos-1)+1;
+  let lineEnd=val.indexOf('\n',pos); if(lineEnd<0) lineEnd=val.length;
+  let lineText=val.slice(lineStart,lineEnd);
+  // 이미 '시간대::'가 있으면 교체, 없으면 앞에 부착
+  const pIdx=lineText.indexOf('::');
+  if(pIdx>0 && pIdx<=20) lineText=lineText.slice(pIdx+2).replace(/^\s+/,'');
+  const newLine=slotKey+'::'+lineText;
+  ta.value=val.slice(0,lineStart)+newLine+val.slice(lineEnd);
+  const caret=lineStart+newLine.length;
+  ta.focus();
+  try{ ta.setSelectionRange(caret,caret); }catch(e){}
 }
 
 /* 요일 툴바 렌더 (7요일 다중선택 toggle + 전체 선택/해제 토글) */
@@ -2646,7 +2695,14 @@ function renderBoard(){
       html+='<div class="dv-body">'+boardCellBodyHTML(val)+'</div>';
       html+='<textarea class="dv-edit" id="ta_'+cid+'" '
           +'placeholder="한 줄에 한 항목. 시간대는 \'오전::내용\' 형식으로 표기">'+escapeHTML(val)+'</textarea>';
-      html+='<div class="dv-edit-hint">한 줄에 한 항목 · 시간대는 줄 맨 앞 <b>시간대::</b> (예: <b>오전(08:00~12:00)::B-1 파우더 관리</b>). 저장을 누르면 모든 기기에 반영됩니다.</div>';
+      // 시간대 빠른 지정 칩 — 클릭하면 커서 줄 맨 앞에 '시간대::' 부착(항목 속성으로 저장)
+      let chips='<div class="dv-ts-chips">시간대:';
+      BOARD_TIMESLOTS.forEach(ts=>{
+        chips+='<button type="button" class="dv-ts-chip" onclick="boardInsertTimeslot(\''+cid+'\',\''+ts.key+'\')">'+escapeHTML(ts.short)+'</button>';
+      });
+      chips+='</div>';
+      html+=chips;
+      html+='<div class="dv-edit-hint">한 줄에 한 항목 · 위 <b>시간대 칩</b>을 누르면 그 줄에 시간대가 기록됩니다(예: <b>오전(08:00~12:00)::B-1 파우더 관리</b>). 직접 <b>시간대::</b> 입력도 가능. 저장 시 모든 기기에 반영·시간 순 정렬됩니다.</div>';
       html+='</div>';
     });
     html+='</div></div>';
