@@ -1016,10 +1016,15 @@ const STAFF_CSV_URL = 'https://docs.google.com/spreadsheets/d/1DKEKRrpsi9Nit7dNd
 let activeGenderTab = 'm';
 
 /* ── A: Staff list (fallback + dynamic) ── */
-// 점검자 = 지원팀 반장 2명 고정 (GM 2026-05-29). 여=이경연 실장 / 남=최준용M.
+// 점검자 명단 (HTML 고정 · 시트 동적로드 비활성 GM 2026-05-29).
+// 여: 이경연 실장·이연희 반장·임정은M / 남: 최준용M·김남욱GM·윤병현AM (GM 2026-06-04 추가)
 const FALLBACK_STAFF = [
   {name:'지원팀 반장(여) · 이경연 실장', role:'반장', shift:'all', gender:'f'},
-  {name:'지원팀 반장(남) · 최준용M', role:'반장', shift:'all', gender:'m'}
+  {name:'이연희 반장', role:'반장', shift:'all', gender:'f'},
+  {name:'임정은M', role:'점검자', shift:'all', gender:'f'},
+  {name:'지원팀 반장(남) · 최준용M', role:'반장', shift:'all', gender:'m'},
+  {name:'김남욱GM', role:'점검자', shift:'all', gender:'m'},
+  {name:'윤병현AM', role:'점검자', shift:'all', gender:'m'}
 ];
 let STAFF_LIST = [...FALLBACK_STAFF];
 
