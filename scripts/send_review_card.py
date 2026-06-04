@@ -28,6 +28,8 @@ M5_URL = "https://wellperion-cao.github.io/wellperion-automation/wellperion_guid
 
 TELEGRAM_TOKEN_ENV_KEY = "TELEGRAM_BOT_TOKEN"
 TELEGRAM_CHAT_ID = "8254867551"  # @namuki_report_bot (GM)
+# 건별 마지막 카드 message_id 저장 — 같은 건 재발송 시 이전 카드 자동 삭제(카드 1개만 유지)
+CARD_MSGID_STORE = ROOT / "scripts" / ".review_card_msgids.json"
 
 
 def _token() -> str:
@@ -62,8 +64,49 @@ def _preview_photo(item: dict) -> Path | None:
     return None
 
 
-def _send_text_card(token: str, caption: str, keyboard: dict, item_id: str) -> bool:
-    """이미지 없을 때 텍스트 카드 폴백."""
+def _load_msgids() -> dict:
+    try:
+        if CARD_MSGID_STORE.exists():
+            return json.loads(CARD_MSGID_STORE.read_text(encoding="utf-8"))
+    except Exception:
+        pass
+    return {}
+
+
+def _save_msgids(d: dict) -> None:
+    try:
+        CARD_MSGID_STORE.write_text(
+            json.dumps(d, ensure_ascii=False, indent=2), encoding="utf-8")
+    except Exception:
+        pass
+
+
+def _extract_msg_id(resp) -> int | None:
+    """텔레그램 API 응답 본문에서 result.message_id 추출."""
+    try:
+        payload = json.loads(resp.read().decode("utf-8"))
+        if payload.get("ok"):
+            return payload.get("result", {}).get("message_id")
+    except Exception:
+        pass
+    return None
+
+
+def _delete_message(token: str, msg_id: int) -> bool:
+    """봇이 보낸 이전 카드 삭제(48시간 내 가능). 실패는 무시(이미 지웠거나 만료)."""
+    data = urllib.parse.urlencode(
+        {"chat_id": TELEGRAM_CHAT_ID, "message_id": msg_id}).encode("utf-8")
+    req = urllib.request.Request(
+        f"https://api.telegram.org/bot{token}/deleteMessage", data=data, method="POST")
+    try:
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            return resp.status == 200
+    except Exception:
+        return False
+
+
+def _send_text_card(token: str, caption: str, keyboard: dict, item_id: str) -> int | None:
+    """이미지 없을 때 텍스트 카드 폴백. message_id 반환(실패 None)."""
     data = urllib.parse.urlencode({
         "chat_id": TELEGRAM_CHAT_ID, "text": caption, "parse_mode": "HTML",
         "disable_web_page_preview": "true",
@@ -73,17 +116,44 @@ def _send_text_card(token: str, caption: str, keyboard: dict, item_id: str) -> b
         f"https://api.telegram.org/bot{token}/sendMessage", data=data, method="POST")
     try:
         with urllib.request.urlopen(req, timeout=10) as resp:
-            ok = resp.status == 200
-            print(f"[INFO] 카드(텍스트 폴백) 발송 {'성공' if ok else '실패'}: {item_id}")
-            return ok
+            mid = _extract_msg_id(resp)
+            print(f"[INFO] 카드(텍스트 폴백) 발송 {'성공' if mid else '실패'}: {item_id}")
+            return mid
     except Exception:
         print("[WARN] 카드 발송 실패 (토큰 trace 노출 방지로 상세 미출력)")
-        return False
+        return None
+
+
+def _send_photo_card(token: str, caption: str, keyboard: dict,
+                     photo: Path, item_id: str) -> int | None:
+    """sendPhoto multipart (montage 이미지 + caption + 인라인 버튼). message_id 반환(실패 None)."""
+    boundary = "----WellperionCard" + os.urandom(12).hex()
+    pre = []
+    for name, value in (("chat_id", TELEGRAM_CHAT_ID), ("caption", caption),
+                        ("parse_mode", "HTML"),
+                        ("reply_markup", json.dumps(keyboard, ensure_ascii=False))):
+        pre.append(
+            f"--{boundary}\r\nContent-Disposition: form-data; name=\"{name}\"\r\n\r\n{value}\r\n"
+            .encode("utf-8"))
+    head = (f"--{boundary}\r\nContent-Disposition: form-data; name=\"photo\"; "
+            f"filename=\"{photo.name}\"\r\nContent-Type: image/png\r\n\r\n").encode("utf-8")
+    body = b"".join(pre) + head + photo.read_bytes() + f"\r\n--{boundary}--\r\n".encode("utf-8")
+    req = urllib.request.Request(
+        f"https://api.telegram.org/bot{token}/sendPhoto", data=body, method="POST")
+    req.add_header("Content-Type", f"multipart/form-data; boundary={boundary}")
+    try:
+        with urllib.request.urlopen(req, timeout=20) as resp:
+            mid = _extract_msg_id(resp)
+            print(f"[INFO] 검수카드(이미지) 발송 {'성공' if mid else '실패'}: {item_id}")
+            return mid
+    except Exception:
+        print("[WARN] 검수카드(이미지) 발송 실패 — 텍스트 폴백 시도")
+        return None
 
 
 def send_card(item: dict) -> bool:
     """검수 카드 1건 발송 — montage 미리보기 이미지 + [승인]/[반려] 버튼.
-    GM이 텔레그램에서 슬라이드를 바로 보고 승인. 이미지 없으면 텍스트 폴백. (토큰 stdout 노출 금지)"""
+    같은 건 재발송 시 이전 카드를 자동 삭제(카드 1개만 유지). 이미지 없으면 텍스트 폴백. (토큰 stdout 노출 금지)"""
     token = _token()
     if not token:
         print("[WARN] 텔레그램 토큰 미설정 — 발송 생략")
@@ -111,31 +181,24 @@ def send_card(item: dict) -> bool:
     photo = _preview_photo(item)
     if photo is None:
         print(f"[INFO] 미리보기 이미지 없음 — 텍스트 카드 폴백: {item_id}")
-        return _send_text_card(token, caption, keyboard, item_id)
+        new_id = _send_text_card(token, caption, keyboard, item_id)
+    else:
+        new_id = _send_photo_card(token, caption, keyboard, photo, item_id)
+        if new_id is None:  # 이미지 발송 실패 → 텍스트 폴백
+            new_id = _send_text_card(token, caption, keyboard, item_id)
 
-    # sendPhoto multipart/form-data (montage 이미지 + caption + 인라인 버튼)
-    boundary = "----WellperionCard" + os.urandom(12).hex()
-    pre = []
-    for name, value in (("chat_id", TELEGRAM_CHAT_ID), ("caption", caption),
-                        ("parse_mode", "HTML"),
-                        ("reply_markup", json.dumps(keyboard, ensure_ascii=False))):
-        pre.append(
-            f"--{boundary}\r\nContent-Disposition: form-data; name=\"{name}\"\r\n\r\n{value}\r\n"
-            .encode("utf-8"))
-    head = (f"--{boundary}\r\nContent-Disposition: form-data; name=\"photo\"; "
-            f"filename=\"{photo.name}\"\r\nContent-Type: image/png\r\n\r\n").encode("utf-8")
-    body = b"".join(pre) + head + photo.read_bytes() + f"\r\n--{boundary}--\r\n".encode("utf-8")
-    req = urllib.request.Request(
-        f"https://api.telegram.org/bot{token}/sendPhoto", data=body, method="POST")
-    req.add_header("Content-Type", f"multipart/form-data; boundary={boundary}")
-    try:
-        with urllib.request.urlopen(req, timeout=20) as resp:
-            ok = resp.status == 200
-            print(f"[INFO] 검수카드(이미지) 발송 {'성공' if ok else '실패'}: {item_id}")
-            return ok
-    except Exception:
-        print("[WARN] 검수카드(이미지) 발송 실패 — 텍스트 폴백 시도")
-        return _send_text_card(token, caption, keyboard, item_id)
+    if new_id is None:
+        return False
+
+    # 같은 건의 이전 카드 자동 삭제 후 새 message_id 저장 (카드 1개만 유지)
+    store = _load_msgids()
+    prev_id = store.get(item_id)
+    if prev_id and prev_id != new_id:
+        if _delete_message(token, prev_id):
+            print(f"[INFO] 이전 카드 자동 삭제: {item_id} msg_id={prev_id}")
+    store[item_id] = new_id
+    _save_msgids(store)
+    return True
 
 
 def load_queue() -> list:
