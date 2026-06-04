@@ -583,6 +583,69 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
       </ul>
     </div>
   </div>
+
+  <!-- ── 근무·휴게 시간 ── -->
+  <h3 style="font-size:17px;margin:24px 0 10px;padding-top:8px;border-top:1px solid var(--border);">근무·휴게 시간</h3>
+
+  <!-- 핵심 원칙 강조 박스 -->
+  <div style="background:var(--red-bg);border:2px solid rgba(237,91,63,0.5);border-radius:12px;padding:16px 18px;margin-bottom:16px;">
+    <p style="font-size:16px;font-weight:800;color:var(--red);margin:0 0 6px;">⚠ 업장을 절대 비우지 않는다</p>
+    <p style="font-size:14px;font-weight:600;color:var(--text);margin:0;line-height:1.7;">담당 구역(업장)에는 항상 최소 1명이 자리를 지킵니다.<br>
+    2인 이상 근무 시 <strong>휴게를 반드시 엇갈려</strong> 진행하고, 한 명이 쉬는 동안 나머지 한 명은 업장을 지킵니다.</p>
+  </div>
+
+  <!-- 2인 동시 근무 소제목 -->
+  <p style="font-size:14px;font-weight:700;color:var(--accent);margin:0 0 8px;">2인 동시 근무 — 교대 휴게 규칙</p>
+
+  <!-- 타임라인 도식 -->
+  <div style="background:var(--paper);border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin-bottom:12px;">
+    <p style="font-size:12px;color:var(--dim);margin:0 0 10px;">매 시간(정시~정시) 기준 — 10분 단위 엇갈림</p>
+    <!-- A 라인 -->
+    <div style="margin-bottom:8px;">
+      <div style="font-size:12px;font-weight:700;color:var(--accent);margin-bottom:4px;">근무자 A</div>
+      <div style="display:flex;height:22px;border-radius:6px;overflow:hidden;font-size:11px;font-weight:700;">
+        <div style="flex:5;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;">근무 (정시~50분)</div>
+        <div style="flex:1;background:var(--red);color:#fff;display:flex;align-items:center;justify-content:center;">휴게</div>
+      </div>
+      <div style="display:flex;font-size:10px;color:var(--dim);margin-top:2px;justify-content:space-between;">
+        <span>:00</span><span>:10</span><span>:20</span><span>:30</span><span>:40</span><span>:50</span><span>:00</span>
+      </div>
+    </div>
+    <!-- B 라인 -->
+    <div>
+      <div style="font-size:12px;font-weight:700;color:var(--green);margin-bottom:4px;">근무자 B</div>
+      <div style="display:flex;height:22px;border-radius:6px;overflow:hidden;font-size:11px;font-weight:700;">
+        <div style="flex:1;background:var(--red);color:#fff;display:flex;align-items:center;justify-content:center;">휴게</div>
+        <div style="flex:5;background:var(--green);color:#fff;display:flex;align-items:center;justify-content:center;">근무 (10분~정시)</div>
+      </div>
+      <div style="display:flex;font-size:10px;color:var(--dim);margin-top:2px;justify-content:space-between;">
+        <span>:00</span><span>:10</span><span>:20</span><span>:30</span><span>:40</span><span>:50</span><span>:00</span>
+      </div>
+    </div>
+    <p style="font-size:12px;color:var(--dim);margin:10px 0 0;">→ A·B 휴게가 겹치지 않아 업장이 항상 1명 이상 커버됩니다.</p>
+  </div>
+
+  <!-- 표 -->
+  <table style="width:100%;border-collapse:collapse;margin-bottom:8px;font-size:13px;">
+    <tr style="background:var(--paper);">
+      <th style="padding:10px;border:1px solid var(--border);width:90px;">구분</th>
+      <th style="padding:10px;border:1px solid var(--border);">근무</th>
+      <th style="padding:10px;border:1px solid var(--border);">휴게</th>
+    </tr>
+    <tr>
+      <td style="padding:8px;border:1px solid var(--border);font-weight:700;color:var(--accent);">근무자 A</td>
+      <td style="padding:8px;border:1px solid var(--border);">정시 ~ 50분</td>
+      <td style="padding:8px;border:1px solid var(--border);">50분 ~ 정시 <span style="font-size:11px;color:var(--dim);">(매시 끝 10분)</span></td>
+    </tr>
+    <tr>
+      <td style="padding:8px;border:1px solid var(--border);font-weight:700;color:var(--green);">근무자 B</td>
+      <td style="padding:8px;border:1px solid var(--border);">10분 ~ 정시</td>
+      <td style="padding:8px;border:1px solid var(--border);">정시 ~ 10분 <span style="font-size:11px;color:var(--dim);">(매시 처음 10분)</span></td>
+    </tr>
+  </table>
+
+  <p style="font-size:12px;color:var(--dim);margin:0 0 4px;">※ 1인 근무·3인 이상 케이스는 GM 추후 지정 예정</p>
+
 </div>
 
 <div id="tab-manual" class="content hidden">
