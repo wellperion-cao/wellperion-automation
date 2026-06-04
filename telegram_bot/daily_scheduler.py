@@ -136,6 +136,9 @@ TELEGRAM_API = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}"
 # 12시 시설·지원·주차 현황용 (Google Sheets Apps Script 단일 소스)
 CHECKLIST_API_URL = ENV.get("CHECKLIST_API_URL", "")
 
+# 업무현황 SSOT API (G1 할일, 09·15시 공용)
+SSOT_API_URL = "https://script.google.com/macros/s/AKfycbxDwFkrxK1YIaEoSNcuw2MiHiZQ-7o5N6311ytksSyeEd86ZFOhLknOWqQgNArQvZ-7/exec"
+
 
 # ── state.json 읽기/쓰기 ─────────────────────────────────────────────────────
 def read_state() -> dict:
@@ -400,6 +403,41 @@ def fetch_yesterday_summary() -> str:
     if total > 10:
         lines.append(f"  ... 외 {total - 10}건")
     return "\n".join(lines)
+
+
+# ── G1 할일 fetch (09·15시 공용, 업무현황 SSOT API) ──────────────────────────
+_TODO_DONE_STATUSES = {"완료", "폐기", "DONE", "완료됨"}
+
+
+def fetch_gm_todos() -> list[str] | None:
+    """
+    업무현황 SSOT API에서 GM(김남욱) 담당 미완료 항목 제목 리스트 반환.
+    - 담당자 필드에 '김남욱' 포함 AND 상태가 완료·폐기·DONE 아님
+    - 실패 시 None 반환
+    """
+    try:
+        resp = requests.get(
+            SSOT_API_URL,
+            params={"action": "todo_list"},
+            timeout=15,
+        )
+        if resp.status_code != 200:
+            logger.warning(f"fetch_gm_todos HTTP {resp.status_code}")
+            return None
+        data = resp.json()
+        if not data.get("ok"):
+            logger.warning(f"fetch_gm_todos ok=False: {data}")
+            return None
+        items = data.get("data", [])
+        open_items = [
+            x for x in items
+            if "김남욱" in str(x.get("담당자", ""))
+            and x.get("상태", "") not in _TODO_DONE_STATUSES
+        ]
+        return [str(x.get("업무명", "(제목없음)"))[:60] for x in open_items[:15]]
+    except Exception as e:
+        logger.warning(f"fetch_gm_todos 예외: {e}")
+        return None
 
 
 # ── status/*: C-Level별 현재 업무 진행현황 (15시용, 노션 DB 폐기 대체) ────────
@@ -681,14 +719,33 @@ def _build_06_body() -> str:
 
 
 def _build_09_body() -> str:
-    """09시 — 전날 업무 전체 정리"""
-    yesterday = (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d")
-    summary = fetch_yesterday_summary()
+    """09시 — 오늘 할 일 + 전날 완료 정리"""
+    now = datetime.now()
+    today_str = now.strftime("%Y-%m-%d")
+    yesterday = (now - timedelta(days=1)).strftime("%Y-%m-%d")
+    weekday_kor = _WEEKDAY_KOR[now.weekday()]
+
+    # 섹션1: GM 오늘 할 일
+    todos = fetch_gm_todos()
+    if todos is None:
+        todo_section = "  (API 조회 실패 — 업무현황 연결 확인)"
+    elif not todos:
+        todo_section = "  오늘 등록된 할 일 없음"
+    else:
+        todo_section = "\n".join(f"  {i}. {t}" for i, t in enumerate(todos, 1))
+
+    # 섹션2: 어제 완료 git 커밋
+    yesterday_summary = fetch_yesterday_summary()
+
     return (
-        f"[웰페리온] 09시 전날 업무 정리\n"
+        f"📋 [웰페리온] 09시 오늘 할 일\n"
         f"━━━━━━━━━━━━━━━━\n"
-        f"기준일: {yesterday}\n\n"
-        f"{summary}\n\n"
+        f"📅 {today_str} ({weekday_kor})\n\n"
+        f"✅ GM 진행 중 업무 ({len(todos) if todos else 0}건)\n"
+        f"{todo_section}\n\n"
+        f"━━━━━━━━━━━━━━━━\n"
+        f"📁 전날({yesterday}) 완료 내역\n"
+        f"{yesterday_summary}\n\n"
         f"_본 메시지는 자동 발송입니다._"
     )
 
@@ -781,40 +838,77 @@ def _build_12_body() -> str:
 
 
 def _build_15_body() -> str:
-    """15시 — C-Level별 현재 업무 진행현황"""
+    """15시 — GM 할일 진행 체크 + C-Level별 진행현황"""
+    now = datetime.now()
+    now_str = now.strftime("%Y-%m-%d %H:%M")
+    weekday_kor = _WEEKDAY_KOR[now.weekday()]
+
+    # 섹션1: GM 진행 중 업무
+    todos = fetch_gm_todos()
+    if todos is None:
+        todo_section = "  (API 조회 실패 — 업무현황 연결 확인)"
+    elif not todos:
+        todo_section = "  진행 중 업무 없음"
+    else:
+        todo_section = "\n".join(f"  {i}. {t}" for i, t in enumerate(todos, 1))
+
+    # 섹션2: C-Level 진행현황
     progress = fetch_current_progress()
-    now_str = datetime.now().strftime("%Y-%m-%d %H:%M")
+
     return (
-        f"[웰페리온] 15시 업무 진행현황\n"
+        f"⏳ [웰페리온] 15시 진행 체크\n"
         f"━━━━━━━━━━━━━━━━\n"
-        f"기준: {now_str}\n\n"
+        f"기준: {now_str} ({weekday_kor})\n\n"
+        f"👤 GM 진행 중 업무 ({len(todos) if todos else 0}건)\n"
+        f"{todo_section}\n\n"
+        f"━━━━━━━━━━━━━━━━\n"
+        f"🏢 C-Level 진행현황\n"
         f"{progress}\n\n"
         f"_본 메시지는 자동 발송입니다._"
     )
 
 
 def _build_18_body() -> str:
-    """18시 — 퇴근당부·가족·건강 + 오늘 운동 부위 점검 안내 (v1.5)"""
+    """18시 — 오늘 성과 요약 + 운동 점검 + 명언"""
+    now = datetime.now()
+    today_str = now.strftime("%Y-%m-%d")
+    weekday_kor = _WEEKDAY_KOR[now.weekday()]
+
+    # 오늘 성과: 오늘자 git 커밋 집계
+    today = now.strftime("%Y-%m-%d")
+    tomorrow = (now + timedelta(days=1)).strftime("%Y-%m-%d")
+    today_commits = _git_log_between(f"{today} 00:00", f"{tomorrow} 00:00", max_lines=10)
+    if today_commits:
+        commit_section = f"  커밋 {len(today_commits)}건\n" + "\n".join(f"  - {c}" for c in today_commits[:7])
+        if len(today_commits) > 7:
+            commit_section += f"\n  ... 외 {len(today_commits) - 7}건"
+    else:
+        commit_section = "  오늘 기록된 커밋 없음"
+
+    # 명언
     quote = fetch_random_quote("18시")
     if quote:
-        quote_line = f'\n\n> "{quote}"\n'
+        quote_line = f'\n> "{quote}"\n'
     else:
-        quote_line = "\n\n(추후 데이터 연결 필요 — 문구 DB 등록 후 활성화)\n"
+        quote_line = "\n"
 
-    now = datetime.now()
-    weekday_kor = _WEEKDAY_KOR[now.weekday()]
-    today_str = now.strftime("%Y-%m-%d")
+    # 운동 5종목 체크
+    workout_lines = "🏋️ 오늘 운동 점검 — 매일 고정 5종목\n"
+    for name, unit in DAILY_WORKOUT_ITEMS:
+        workout_lines += f"  • {name}  ___{unit}  ☐\n"
+    workout_lines += "  · 7일 중 5일이면 충분하다 — 꾸준함이 곧 루틴이다."
 
     return (
-        f"[웰페리온] 18시 퇴근 인사\n"
+        f"🌙 [웰페리온] 18시 퇴근 인사\n"
         f"━━━━━━━━━━━━━━━━\n"
-        f"{today_str} ({weekday_kor})\n"
-        f"오늘 하루도 수고 많으셨습니다."
+        f"📅 {today_str} ({weekday_kor})\n"
+        f"오늘 하루도 수고 많으셨습니다.\n\n"
+        f"📊 오늘 성과\n"
+        f"{commit_section}\n"
         f"{quote_line}"
-        f"\n🌙 오늘 운동 점검 — 매일 고정 5종목\n"
-        f"  • 했다면 좋은 마무리, 못 했다면 내일은 챙겨보자.\n"
-        f"  • 7일 중 5일이면 충분하다 — 꾸준함이 곧 루틴이다.\n"
-        f"\n_본 메시지는 자동 발송입니다._"
+        f"━━━━━━━━━━━━━━━━\n"
+        f"{workout_lines}\n\n"
+        f"_본 메시지는 자동 발송입니다._"
     )
 
 
@@ -1009,20 +1103,15 @@ def main():
             next_run_time=datetime.now(),
         )
     else:
-        logger.info("=== 정규 스케줄 시작: 06 / 09 / 12 / 15 / 18시 (21시 비활성) ===")
-        # 정기 슬롯 스케줄
-        # [2026-05-30 CTO 비활성] 21시 고정 마감 보고 슬롯 제거 — 세션종료(off)
-        #   마감 루틴(ceo_evening_wrap.py, 5b58f9b)으로 단일화(GM 결정 "합쳐줘").
-        #   06·09·12·15·18시 정기 보고는 그대로 유지. _build_21_body 함수·
-        #   SLOT_BUILDERS["21"]는 보존(가역적 — '21' 키만 schedule_map에서 제외).
-        #   --manual-test 21 수동 발송은 여전히 가능.
+        logger.info("=== 정규 스케줄 시작: 06 / 09 / 12 / 15 / 18 / 21시 ===")
+        # [2026-06-04 GM 승인] 21시 슬롯 부활 — 6슬롯 개편에 따라 마감 보고 재등록
         schedule_map = {
             "06": (6, 0),
             "09": (9, 0),
             "12": (12, 0),
             "15": (15, 0),
             "18": (18, 0),
-            # "21": (21, 0),  # 비활성 — 세션종료 마감 루틴으로 단일화 (위 주석 참조)
+            "21": (21, 0),
         }
         for slot, (hour, minute) in schedule_map.items():
             scheduler.add_job(
