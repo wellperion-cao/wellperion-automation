@@ -37,4 +37,6 @@ WELLPERION JUNIOR OPEN은 경쟁의 결과보다 과정의 가치에 무게를 �
 서울 한남동에 위치한 하이엔드 프라이빗 스포츠클럽 멤버십 커뮤니티입니다.
 스쿼시·필라테스·헬스 등 다양한 스포츠 프로그램을 갖추고 있으며, 회원 중심의 프라이빗 환경을 제공합니다.
 
-문의 : litt.ly/wellperion
+문의 : 
+(한) wellperion.com/ko/inquiry
+(영) wellperion.com/en/inquiry
