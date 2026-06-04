@@ -86,6 +86,7 @@ function createMembershipFormEN_() {
     'For immediate assistance: http://wellperion.com/ko/inquiry/'
   );
   form.setCollectEmail(false);
+  form.setRequireLogin(false);   // 익명 제출 허용(조직 로그인벽 제거) — 외국인 방문자 접근 가능
   form.setAllowResponseEdits(false);
   form.setConfirmationMessage(
     'Thank you for your inquiry. Our consultant will contact you within one business day to schedule your tour.'
@@ -170,6 +171,7 @@ function createAdultLessonFormEN_() {
     'For immediate assistance: http://wellperion.com/ko/inquiry/'
   );
   form.setCollectEmail(false);
+  form.setRequireLogin(false);   // 익명 제출 허용(조직 로그인벽 제거) — 외국인 방문자 접근 가능
   form.setAllowResponseEdits(false);
   form.setConfirmationMessage(
     'Thank you! Our program consultant will contact you within one business day.'
@@ -276,6 +278,7 @@ function createYouthLessonFormEN_() {
     'For immediate assistance: http://wellperion.com/ko/inquiry/'
   );
   form.setCollectEmail(false);
+  form.setRequireLogin(false);   // 익명 제출 허용(조직 로그인벽 제거) — 외국인 방문자 접근 가능
   form.setAllowResponseEdits(false);
   form.setConfirmationMessage(
     'Thank you! Our WSC program team will contact you within one business day.'
@@ -376,6 +379,7 @@ function createSummerSpecialFormEN_() {
     'For immediate assistance: http://wellperion.com/ko/inquiry/'
   );
   form.setCollectEmail(false);
+  form.setRequireLogin(false);   // 익명 제출 허용(조직 로그인벽 제거) — 외국인 방문자 접근 가능
   form.setAllowResponseEdits(false);
   form.setConfirmationMessage(
     'Thank you for your interest in our Summer Special programs! We will be in touch shortly with details and availability.'
@@ -543,4 +547,89 @@ function createEnglishForms() {
   Logger.log('=== 완료 ===');
 
   return results;
+}
+
+// ═══════════════════════════════════════════════════════════
+//  [중요] 기존 라이브 폼 4종 — 설정만 수정(중복 생성 금지)
+//  목적: 익명 로그인벽 제거(setRequireLogin=false) + CTA litt.ly→ko/inquiry 갱신
+//  방식: 소유자 Drive에서 정확한 제목으로 기존 폼을 찾아 openById → 설정 변경.
+//        새 폼을 만들지 않음(FormApp.create 호출 없음).
+//  실행: GM이 GAS 에디터에서 updateEnglishFormsAccess() 1회 실행(폼 소유자 계정).
+// ═══════════════════════════════════════════════════════════
+
+// 생성 시 사용한 정확한 폼 제목 → 수정 후 description(이미 litt.ly→ko/inquiry 반영본)
+var EN_FORM_SPECS = [
+  { title: 'Wellperion Private Sports Club — Membership Inquiry',
+    desc: 'Thank you for your interest in Wellperion, Seoul\'s premier private sports club. ' +
+          'Please complete the following to schedule your exclusive club tour and consultation.\n\n' +
+          'Tour appointments are available by prior reservation only. Walk-in visits are not accepted.\n' +
+          'For immediate assistance: http://wellperion.com/ko/inquiry/' },
+  { title: 'Wellperion Private Sports Club — Adult Lesson Inquiry',
+    desc: 'Interested in private or group lessons at Wellperion? ' +
+          'Fill in the details below and our program consultants will reach out to arrange a session tailored to your schedule and goals.\n\n' +
+          'All lessons are by prior reservation only. Walk-in visits are not accepted.\n' +
+          'For immediate assistance: http://wellperion.com/ko/inquiry/' },
+  { title: 'Wellperion Private Sports Club — Youth (WSC) Lesson Inquiry',
+    desc: 'Enroll your child in Wellperion\'s exclusive youth sports programs. ' +
+          'Please provide the details below and our WSC program team will contact you to discuss the best fit.\n\n' +
+          'All youth programs are by prior reservation only. Walk-in visits are not accepted.\n' +
+          'For immediate assistance: http://wellperion.com/ko/inquiry/' },
+  { title: 'Wellperion Private Sports Club — Summer Special Programs',
+    desc: 'Make the most of your summer at Wellperion. ' +
+          'Our Summer Special programs offer intensive sessions across five premium sports disciplines. ' +
+          'Submit your inquiry and our team will reach out with program details and scheduling options.\n\n' +
+          'All Summer Special programs are by prior reservation only. Availability is limited — early inquiry is encouraged.\n' +
+          'For immediate assistance: http://wellperion.com/ko/inquiry/' }
+];
+
+// Drive에서 정확한 제목의 Google Form을 찾아 폼 객체 반환(없으면 null, 다수면 가장 최근 1개)
+function _findFormByTitle_(title) {
+  var it = DriveApp.getFilesByName(title);
+  var newest = null, newestTime = 0;
+  while (it.hasNext()) {
+    var f = it.next();
+    if (f.getMimeType() !== MimeType.GOOGLE_FORMS) continue;
+    var t = f.getLastUpdated().getTime();
+    if (t >= newestTime) { newestTime = t; newest = f; }
+  }
+  if (!newest) return null;
+  return FormApp.openById(newest.getId());
+}
+
+function updateEnglishFormsAccess() {
+  Logger.log('=== [수정] 기존 영문 폼 4종 — 익명 허용 + CTA 갱신 (중복 생성 안 함) ===');
+  var summary = [];
+  for (var i = 0; i < EN_FORM_SPECS.length; i++) {
+    var spec = EN_FORM_SPECS[i];
+    try {
+      var form = _findFormByTitle_(spec.title);
+      if (!form) {
+        Logger.log('[누락] 폼 못 찾음: ' + spec.title);
+        summary.push({ title: spec.title, status: 'NOT_FOUND' });
+        continue;
+      }
+      var before = form.requiresLogin();
+      form.setRequireLogin(false);   // 익명 제출 허용(로그인벽 제거)
+      form.setCollectEmail(false);   // 이메일 수집(확인됨) 끄기 — 로그인 강제 부가요인 제거
+      form.setDescription(spec.desc); // CTA litt.ly→ko/inquiry 반영
+      var after = form.requiresLogin();
+      Logger.log('[수정] ' + spec.title);
+      Logger.log('   requiresLogin: ' + before + ' → ' + after);
+      Logger.log('   published: ' + form.getPublishedUrl());
+      Logger.log('   edit: ' + form.getEditUrl());
+      summary.push({ title: spec.title, status: 'UPDATED', requiresLoginAfter: after,
+                     published: form.getPublishedUrl(), edit: form.getEditUrl() });
+    } catch (e) {
+      Logger.log('[오류] ' + spec.title + ' — ' + e.message);
+      summary.push({ title: spec.title, status: 'ERROR', error: e.message });
+    }
+  }
+  Logger.log('');
+  Logger.log('=== 수정 결과 요약 ===');
+  summary.forEach(function(s) {
+    Logger.log(s.status + ' | requiresLogin=' + (s.requiresLoginAfter) + ' | ' + s.title);
+    if (s.published) Logger.log('   ' + s.published);
+  });
+  Logger.log('=== 완료 — 익명 브라우저로 4종 폼 로그인벽 없이 열리는지 재검증 필요 ===');
+  return summary;
 }
