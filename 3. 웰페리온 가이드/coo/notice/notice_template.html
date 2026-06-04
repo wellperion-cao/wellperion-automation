@@ -528,32 +528,57 @@
     var sel = window.getSelection();
     if(!sel || sel.rangeCount === 0) return;
     var range = sel.getRangeAt(0);
-    /* 선택 없으면 현재 줄(블록 부모) 선택 */
-    if(range.collapsed){
-      var block = range.startContainer;
-      while(block && block.nodeType !== 1) block = block.parentNode;
-      while(block && block !== ed && !/^(P|DIV|LI|BLOCKQUOTE|H[1-6])$/i.test(block.nodeName)) block = block.parentNode;
-      if(block && block !== ed){
-        range = document.createRange();
-        range.selectNodeContents(block);
-        sel.removeAllRanges();
-        sel.addRange(range);
-      }
-    }
-    /* span wrap + font-size 적용 (v2.57 — px 절대값 폐기, 18px 기준 em 상대값.
-       이유: 인쇄/PDF/PNG 빌더는 본문을 vmin으로 환산하므로 px 고정이면 인쇄 시
-       크게가 오히려 작아지는 역전 발생. em이면 미리보기·인쇄가 같은 비율로 스케일됨) */
-    document.execCommand('fontSize', false, '7'); /* 임시 큰 사이즈 마커 */
+    /* v2.57 — px 절대값 폐기, 18px 기준 em 상대값(인쇄 vmin 환산과 비례 일치) */
     var emVal = ((parseFloat(px)||18) / 18).toFixed(3) + 'em';
-    var marks = ed.querySelectorAll('font[size="7"]');
-    marks.forEach(function(f){
+    var BLK = /^(P|DIV|LI|BLOCKQUOTE|H[1-6])$/i;
+    function blockOf(node){
+      var b = (node && node.nodeType === 1) ? node : (node ? node.parentNode : null);
+      while(b && b !== ed && !BLK.test(b.nodeName)) b = b.parentNode;
+      return (b && b !== ed) ? b : null;
+    }
+    function sizeWholeBlock(b){
+      if(!b || !BLK.test(b.nodeName)) return;
+      if(!(b.textContent||'').trim() && !b.querySelector('img')) return; /* 빈 줄 skip */
       var span = document.createElement('span');
       span.style.fontSize = emVal;
-      while(f.firstChild) span.appendChild(f.firstChild);
-      /* 내부에 이미 크기 span이 있으면 비워서 중첩 em 복리 방지 (재조정 시 바깥값만 적용) */
+      while(b.firstChild) span.appendChild(b.firstChild);
       span.querySelectorAll('[style]').forEach(function(s){ if(s.style && s.style.fontSize) s.style.fontSize=''; });
-      f.parentNode.replaceChild(span, f);
-    });
+      b.appendChild(span);
+    }
+    var startB = blockOf(range.startContainer), endB = blockOf(range.endContainer);
+    /* v2.60 — 여러 줄(블록) 선택 또는 커서만 있을 때: 선택된 모든 줄을 통째로 크기 적용.
+       execCommand('fontSize')는 전체선택(Ctrl+A) 시 '마지막 줄'을 누락하는 브라우저 버그가
+       있어, 블록을 직접 열거해 적용 → 맨 아랫줄까지 포함 보장. (네이티브 Ctrl+A·마우스
+       드래그 등 어떤 선택 방식이든 동일) 한 줄 안 부분 선택만 execCommand 유지(부분 크기). */
+    if(range.collapsed || (startB && endB && startB !== endB)){
+      var blocks = [];
+      if(startB && endB){
+        var b = startB, guard = 0;
+        while(b && guard++ < 2000){ blocks.push(b); if(b === endB) break; b = b.nextElementSibling; }
+        if(!blocks.length || blocks[blocks.length-1] !== endB) blocks = Array.prototype.slice.call(ed.children);
+      } else {
+        blocks = Array.prototype.slice.call(ed.children);
+      }
+      blocks.forEach(sizeWholeBlock);
+      var sized = blocks.filter(function(b){ return BLK.test(b.nodeName) && b.querySelector('span[style*="font-size"]'); });
+      if(sized.length){
+        var r2 = document.createRange();
+        r2.setStart(sized[0], 0);
+        r2.setEnd(sized[sized.length-1], sized[sized.length-1].childNodes.length);
+        sel.removeAllRanges(); sel.addRange(r2);
+        if(typeof _saveCurSelection === 'function') _saveCurSelection();
+      }
+    } else {
+      /* 한 줄 안 부분 선택 — 선택 영역만 크기 적용 */
+      document.execCommand('fontSize', false, '7');
+      ed.querySelectorAll('font[size="7"]').forEach(function(f){
+        var span = document.createElement('span');
+        span.style.fontSize = emVal;
+        while(f.firstChild) span.appendChild(f.firstChild);
+        span.querySelectorAll('[style]').forEach(function(s){ if(s.style && s.style.fontSize) s.style.fontSize=''; });
+        f.parentNode.replaceChild(span, f);
+      });
+    }
     ntUpdatePreview();
   };
   /* v2.37 — ntFmtBoldLine 폐기 (강조 그룹 "B 굵게"와 기능 중복) */
@@ -1061,7 +1086,8 @@
   /* v2.59 — Ctrl/Cmd+A: 모든 줄을 <p>로 정규화한 뒤 편집칸 전체를 선택.
      맨몸 노드(예: 첫 줄)가 전체선택 후 줄단위 서식에서 빠지던 문제 해소 */
   el('noticeBody').addEventListener('keydown', function(e){
-    if((e.ctrlKey || e.metaKey) && (e.key === 'a' || e.key === 'A')){
+    /* e.code='KeyA' = 물리 키 기준 → 한글 IME 입력 중(e.key가 'ㅁ' 등)에도 정상 감지 */
+    if((e.ctrlKey || e.metaKey) && (e.code === 'KeyA' || e.key === 'a' || e.key === 'A')){
       e.preventDefault();
       ntNormalizeBlocks(this);
       var r = document.createRange();
