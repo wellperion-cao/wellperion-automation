@@ -3583,7 +3583,7 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
       <details class="toggle" open style="margin:0;">
         <summary style="cursor:pointer;font-weight:700;font-size:13px;color:var(--accent);">📋 7대 자동화 모듈 (목표) — 접기/펼치기</summary>
         <div class="toggle-body" style="margin-top:10px;">
-          <table>
+          <table id="g1-modules-table">
             <tr><th style="width:132px">모듈</th><th>완성 시 자동화</th></tr>
             <tr><td>👥 회원 (CPO)</td><td>가입·갱신 자동 · 이탈징후 감지→케어 · NPS 자동수집 · 갱신율 추적</td></tr>
             <tr><td>📡 마케팅 (CMO)</td><td>콘텐츠 초안→슬라이드→3채널 자동발행 · 문의 퍼널 추적 · 전환 매칭</td></tr>
@@ -3598,6 +3598,26 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
       </details>
     </div>
     <!-- ══ /북극성 ══ -->
+    <script>
+    /* G1 7대 자동화 모듈 — 클릭 편집 + 자동저장(localStorage) (2026-06-04) */
+    (function(){
+      var KEY='G1_MODULES_V1';
+      var tbl=document.getElementById('g1-modules-table');
+      if(!tbl) return;
+      var cells=tbl.querySelectorAll('tr td');
+      if(!cells.length) return;
+      try{ var s=JSON.parse(localStorage.getItem(KEY)||'null');
+        if(s && s.length===cells.length){ cells.forEach(function(c,i){ c.innerHTML=s[i]; }); }
+      }catch(e){}
+      cells.forEach(function(c){ c.setAttribute('contenteditable','true'); c.style.cursor='text'; });
+      function save(){ var a=[]; cells.forEach(function(c){ a.push(c.innerHTML); }); try{ localStorage.setItem(KEY, JSON.stringify(a)); }catch(e){} }
+      tbl.addEventListener('input', save);
+      var hint=document.createElement('div');
+      hint.style.cssText='font-size:11px;color:var(--accent);margin-top:6px;';
+      hint.textContent='✏️ 칸을 클릭해 바로 편집 · 자동 저장됩니다';
+      if(tbl.parentNode) tbl.parentNode.appendChild(hint);
+    })();
+    </script>
 
     <!-- ══ 🌉 일의 브릿지 (어제와 오늘을 잇기 — 2026-06-04) ══ -->
     <div style="background:linear-gradient(135deg,#13212c 0%,#1b3340 100%);border:1px solid #38b6c4;border-radius:14px;padding:18px 22px;margin:8px 0 20px;">
