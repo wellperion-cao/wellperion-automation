@@ -226,6 +226,21 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   font-family:inherit;border:1.5px dashed rgba(106,191,123,0.5);background:var(--green-bg);color:var(--green);width:100%}
 .dv-g-addrow:hover{background:rgba(106,191,123,0.2)}
 
+/* ── 규정 트렐로 보드 (규정 탭) — 카드 본문/편집 폼. dv-cell·board-col 재사용 ── */
+.pol-line{font-size:14px;line-height:1.6;color:var(--text);padding:3px 0;word-break:break-word}
+.pol-line+.pol-line{border-top:1px solid var(--border)}
+.pol-edit{display:none;margin-top:4px}
+.dv-cell.editing .pol-edit{display:block}
+.dv-cell.editing .dv-body{display:none}
+.pol-edit-lab{display:block;font-size:11.5px;font-weight:700;color:var(--accent);margin:8px 0 4px}
+.pol-edit-title,.pol-edit-body{width:100%;background:var(--paper);border:1.5px solid var(--accent);color:var(--text);
+  border-radius:9px;padding:9px 11px;font-size:14px;font-family:inherit;line-height:1.55;box-sizing:border-box}
+.pol-edit-body{resize:vertical;min-height:96px}
+.pol-edit-title:focus,.pol-edit-body:focus{outline:none;background:rgba(183,159,138,0.10)}
+.pol-del-btn{margin-top:10px;font-size:12px;font-weight:700;padding:6px 13px;border-radius:8px;cursor:pointer;
+  font-family:inherit;border:1.5px solid rgba(224,108,90,0.45);background:var(--red-bg);color:var(--red)}
+.pol-del-btn:hover{background:rgba(224,108,90,0.18)}
+
 /* 모바일: 요일 탭 폭 축소 + 컬럼 폭 화면맞춤(가로 스크롤·스냅) */
 @media(max-width:560px){
   .day-tab{min-width:40px;font-size:15px;padding:9px 3px}
@@ -422,27 +437,13 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 <div class="saving" id="saveIndicator">저장 중...</div>
 
 <div id="tab-policy" class="content">
-  <h2 style="font-size:20px;margin-bottom:16px;">지원부 규정</h2>
-  <table style="width:100%;border-collapse:collapse;margin-bottom:16px;">
-    <tr style="background:var(--paper);"><th style="padding:10px;border:1px solid var(--border);width:200px;">정책</th><th style="padding:10px;border:1px solid var(--border);">내용</th><th style="padding:10px;border:1px solid var(--border);width:80px;">상태</th></tr>
-    <tr><td style="padding:8px;border:1px solid var(--border);"><strong>운영시간</strong></td><td style="padding:8px;border:1px solid var(--border);">평일 06:00~22:30 / 주말·공휴일 08:00~20:00<br><span style="font-size:12px;color:#888;">휴관: 신정·명절·매월 2·4번째 일요일</span></td><td style="padding:8px;border:1px solid var(--border);color:var(--green);" contenteditable="true">확정</td></tr>
-    <tr><td style="padding:8px;border:1px solid var(--border);"><strong>근무조 편성</strong></td><td style="padding:8px;border:1px solid var(--border);">오전조 05:30~14:15 / 중간조 10:00 또는 12:00~ / 오후조 14:00~22:30</td><td style="padding:8px;border:1px solid var(--border);color:var(--green);" contenteditable="true">확정</td></tr>
-    <tr><td style="padding:8px;border:1px solid var(--border);"><strong>담당 구역</strong></td><td style="padding:8px;border:1px solid var(--border);">A(사우나) B(락커룸) C(세탁물) D(사우나 외부) E(외곽+헬스장+골프장)</td><td style="padding:8px;border:1px solid var(--border);color:var(--green);" contenteditable="true">확정</td></tr>
-    <tr><td style="padding:8px;border:1px solid var(--border);"><strong>위생·청결</strong></td><td style="padding:8px;border:1px solid var(--border);">대리석·코팅면 산성세제 금지 / 전기설비 비닐 포장 후 청소</td><td style="padding:8px;border:1px solid var(--border);color:var(--green);" contenteditable="true">확정</td></tr>
-    <tr><td style="padding:8px;border:1px solid var(--border);"><strong>안전 보고</strong></td><td style="padding:8px;border:1px solid var(--border);">즉시 조치 불가 시 팀장·소장 즉시 보고 의무</td><td style="padding:8px;border:1px solid var(--border);color:var(--green);" contenteditable="true">확정</td></tr>
-    <tr><td style="padding:8px;border:1px solid var(--border);"><strong>마감 경고</strong></td><td style="padding:8px;border:1px solid var(--border);">사우나·파우더 마감 미비 시 경고 / 3회 → 경징계</td><td style="padding:8px;border:1px solid var(--border);color:var(--green);" contenteditable="true">확정</td></tr>
-    <tr><td style="padding:8px;border:1px solid var(--border);"><strong>탕청소 위탁</strong></td><td style="padding:8px;border:1px solid var(--border);">야간 업체 위탁 / 평일 23:00 / 주말 20:30 출근</td><td style="padding:8px;border:1px solid var(--border);color:var(--green);" contenteditable="true">확정</td></tr>
-  </table>
+  <h2 style="font-size:20px;margin-bottom:6px;">지원부 규정</h2>
+  <p style="font-size:13px;color:var(--dim);margin-bottom:14px;line-height:1.6;">주제별 칸(컬럼)에 규정·회의를 카드로 정리했습니다. 각 카드의 <b>편집</b> 버튼으로 내용을 바로 수정·저장하면 모든 기기에 반영됩니다. <span style="color:var(--accent);">운영시간 등 공식값은 임의 변경 금지.</span></p>
+  <div class="board-fullwidth">
+    <div id="policy-board" class="board-scroll"></div>
+  </div>
 
-  <h3 style="font-size:17px;margin:20px 0 10px;">정기 회의</h3>
-  <table style="width:100%;border-collapse:collapse;margin-bottom:16px;">
-    <tr style="background:var(--paper);"><th style="padding:10px;border:1px solid var(--border);">구분</th><th style="padding:10px;border:1px solid var(--border);">주기</th><th style="padding:10px;border:1px solid var(--border);">참석</th><th style="padding:10px;border:1px solid var(--border);">안건</th></tr>
-    <tr><td style="padding:8px;border:1px solid var(--border);"><strong>주간 브리핑</strong></td><td style="padding:8px;border:1px solid var(--border);">매주 월 오전</td><td style="padding:8px;border:1px solid var(--border);">최준용M·윤병현AM·오전조</td><td style="padding:8px;border:1px solid var(--border);">지난주 이슈 / 이번주 집중 구역 / 비품 현황</td></tr>
-    <tr><td style="padding:8px;border:1px solid var(--border);"><strong>월간 운영 회의</strong></td><td style="padding:8px;border:1px solid var(--border);">매월 첫째주 화</td><td style="padding:8px;border:1px solid var(--border);">최준용M·윤병현AM</td><td style="padding:8px;border:1px solid var(--border);">이슈·노하우 취합 / 매뉴얼 개정 여부</td></tr>
-    <tr><td style="padding:8px;border:1px solid var(--border);"><strong>긴급 회의</strong></td><td style="padding:8px;border:1px solid var(--border);">이슈 발생 즉시</td><td style="padding:8px;border:1px solid var(--border);">해당 담당자+팀장</td><td style="padding:8px;border:1px solid var(--border);">원인 분석 / 즉시 조치</td></tr>
-  </table>
-
-  <h3 style="font-size:17px;margin:20px 0 10px;">고도화 정의</h3>
+  <h3 style="font-size:17px;margin:24px 0 10px;">고도화 정의</h3>
   <div style="background:var(--paper);padding:16px;border-radius:8px;border-left:4px solid var(--accent);margin-bottom:12px;">
     <p><strong>고도화</strong> = 현재 규정·가이드·매뉴얼·체크리스트를 현장 데이터와 피드백 기반으로 지속 개선하는 것. 대규모 재설계 금지 — 보수적 증분 업데이트 원칙.</p>
   </div>
@@ -2970,6 +2971,223 @@ function boardCancelEdit(dayKey,gk){
   if(cancelbtn) cancelbtn.style.display='none';
 }
 
+/* ═══════════════════════════════════════════════
+   지원부 규정 트렐로 보드 (규정 탭) — 주제별 칸(컬럼) × 편집 카드
+   상태(확정) 열 폐기. 매뉴얼 보드와 동일 영속 패턴(localStorage + 백엔드 best-effort).
+   저장키: SUPPORT_POLICY_BOARD. 인증 게이트 requireEditAuth(1234) 재사용.
+   ═══════════════════════════════════════════════ */
+const POLICY_STORAGE_KEY = 'SUPPORT_POLICY_BOARD';
+/* 주제별 칸(컬럼) 정의. cls = 좌측 색 바 클래스(dv-cell 재사용) */
+const POLICY_COLS = [
+  {key:'ops',   label:'운영 기준', cls:'male'},
+  {key:'meet',  label:'정기 회의', cls:'female'}
+];
+/* 시드 — 기존 규정 표·정기회의 표 내용 무손실 이관.
+   각 카드 = {id, title, body}. 공식값(운영시간 등)은 원문 그대로. GM이 이후 직접 편집·저장. */
+const POLICY_SEED = {
+  ops:[
+    {id:'op_hours', title:'운영시간', body:'평일 06:00~22:30 / 주말·공휴일 08:00~20:00\n휴관: 신정·명절·매월 2·4번째 일요일'},
+    {id:'op_shift', title:'근무조 편성', body:'오전조 05:30~14:15 / 중간조 10:00 또는 12:00~ / 오후조 14:00~22:30'},
+    {id:'op_zone',  title:'담당 구역', body:'A(사우나) B(락커룸) C(세탁물) D(사우나 외부) E(외곽+헬스장+골프장)'},
+    {id:'op_clean', title:'위생·청결', body:'대리석·코팅면 산성세제 금지 / 전기설비 비닐 포장 후 청소'},
+    {id:'op_safe',  title:'안전 보고', body:'즉시 조치 불가 시 팀장·소장 즉시 보고 의무'},
+    {id:'op_warn',  title:'마감 경고', body:'사우나·파우더 마감 미비 시 경고 / 3회 → 경징계'},
+    {id:'op_tub',   title:'탕청소 위탁', body:'야간 업체 위탁 / 평일 23:00 / 주말 20:30 출근'}
+  ],
+  meet:[
+    {id:'mt_week',  title:'주간 브리핑', body:'주기: 매주 월 오전\n참석: 최준용M·윤병현AM·오전조\n안건: 지난주 이슈 / 이번주 집중 구역 / 비품 현황'},
+    {id:'mt_month', title:'월간 운영 회의', body:'주기: 매월 첫째주 화\n참석: 최준용M·윤병현AM\n안건: 이슈·노하우 취합 / 매뉴얼 개정 여부'},
+    {id:'mt_urgent',title:'긴급 회의', body:'주기: 이슈 발생 즉시\n참석: 해당 담당자+팀장\n안건: 원인 분석 / 즉시 조치'}
+  ]
+};
+
+let POLICY_DATA = {}; // {colKey:[{id,title,body}, ...]}
+
+/* stored(객체) → POLICY_DATA 병합 (없으면 시드 폴백) */
+function applyPolicyStored(stored){
+  POLICY_DATA={};
+  POLICY_COLS.forEach(c=>{
+    const arr=(stored&&Array.isArray(stored[c.key]))?stored[c.key]:null;
+    if(arr){
+      POLICY_DATA[c.key]=arr.map(card=>({
+        id:card&&card.id?String(card.id):policyGenId(),
+        title:card&&card.title!=null?String(card.title):'',
+        body:card&&card.body!=null?String(card.body):''
+      }));
+    }else{
+      POLICY_DATA[c.key]=(POLICY_SEED[c.key]||[]).map(card=>({id:card.id,title:card.title,body:card.body}));
+    }
+  });
+}
+function policyGenId(){ return 'pol_'+Date.now()+'_'+Math.random().toString(36).slice(2,7); }
+
+/* 로컬 폴백 로드 (오프라인·동기 초기 렌더용) */
+function loadPolicyData(){
+  let stored=null;
+  try{ stored=JSON.parse(localStorage.getItem(POLICY_STORAGE_KEY)); }catch(e){ stored=null; }
+  applyPolicyStored(stored);
+}
+
+/* 백엔드 로드 → 있으면 사용·로컬 캐시, 없거나 실패 시 localStorage 폴백(매뉴얼 보드와 동일 패턴) */
+async function loadPolicyFromBackend(){
+  loadPolicyData(); // 즉시 로컬/시드로 1차 렌더
+  if(!ONLINE) return;
+  try{
+    const res=await fetch(API_URL+'?action=board&key='+encodeURIComponent(POLICY_STORAGE_KEY),{method:'GET',redirect:'follow'});
+    const data=await res.json();
+    if(data && data.ok && data.board && typeof data.board==='object'){
+      applyPolicyStored(data.board);
+      localStorage.setItem(POLICY_STORAGE_KEY, JSON.stringify(POLICY_DATA));
+    }
+  }catch(e){ /* 네트워크 실패 → 로컬/시드 유지 */ }
+  const wrap=document.getElementById('policy-board');
+  if(wrap && !wrap.querySelector('.dv-cell.editing')) renderPolicyBoard();
+}
+
+function persistPolicyData(){
+  localStorage.setItem(POLICY_STORAGE_KEY, JSON.stringify(POLICY_DATA));
+  if(!ONLINE) return;
+  const ind=document.getElementById('saveIndicator');
+  if(ind){ind.style.display='block';ind.textContent='규정 저장 중...';}
+  fetch(API_URL,{method:'POST',redirect:'follow',
+    headers:{'Content-Type':'text/plain'},
+    body:JSON.stringify({action:'saveBoard',key:POLICY_STORAGE_KEY,board:POLICY_DATA})
+  }).then(()=>{if(ind){ind.textContent='규정 저장 완료';setTimeout(()=>{ind.style.display='none'},1500);}})
+    .catch(()=>{if(ind){ind.textContent='규정 저장 (로컬 보관됨)';setTimeout(()=>{ind.style.display='none'},1500);}});
+}
+
+/* 카드 본문(줄바꿈) → 표시 HTML. 빈 값이면 안내. */
+function policyCardBodyHTML(body){
+  const lines=(body||'').split('\n').map(l=>l.trim()).filter(l=>l.length);
+  if(!lines.length) return '<div class="dv-empty">내용 없음 — 편집으로 추가</div>';
+  return lines.map(l=>'<div class="pol-line">'+escapeHTML(l)+'</div>').join('');
+}
+
+/* 트렐로 칸반 렌더 — 칸(컬럼)마다 카드 세로. 카드별 편집/취소/저장 + 카드 추가/삭제.
+   textarea는 편집 진입 시 1회 생성·재사용(IME 안전). */
+function renderPolicyBoard(){
+  const wrap=document.getElementById('policy-board');
+  if(!wrap)return;
+  let html='';
+  POLICY_COLS.forEach(col=>{
+    const cards=POLICY_DATA[col.key]||[];
+    html+='<div class="board-col">';
+    html+='<div class="board-col-head"><span class="bday" style="font-size:17px;">'+escapeHTML(col.label)+'</span>'
+        +'<span class="day-type weekday">'+cards.length+'개</span></div>';
+    html+='<div class="board-col-body">';
+    cards.forEach(card=>{
+      const cid=col.key+'__'+card.id;
+      html+='<div class="dv-cell '+col.cls+'" id="polcell_'+cid+'">';
+      html+='<div class="dv-cell-head"><span class="dv-cell-label '+col.cls+'">'+escapeHTML(card.title||'(제목 없음)')+'</span>'
+          +'<div style="display:flex;align-items:center;gap:4px">'
+          +'<button type="button" class="dv-edit-btn" id="polbtn_'+cid+'" onclick="policyToggleEdit(\''+col.key+'\',\''+card.id+'\')">편집</button>'
+          +'<button type="button" class="dv-edit-btn cancel" id="polcancel_'+cid+'" style="display:none" onclick="policyCancelEdit(\''+col.key+'\',\''+card.id+'\')">취소</button>'
+          +'</div></div>';
+      html+='<div class="dv-body">'+policyCardBodyHTML(card.body)+'</div>';
+      // 편집 폼 — 제목 input + 본문 textarea + 카드 삭제 (편집 진입 시 값 채움, IME 안전: 입력 중 재생성 없음)
+      html+='<div class="pol-edit" id="poledit_'+cid+'">'
+          +'<label class="pol-edit-lab">제목</label>'
+          +'<input type="text" class="pol-edit-title" id="poltitle_'+cid+'" placeholder="카드 제목">'
+          +'<label class="pol-edit-lab">내용 (줄바꿈으로 항목 구분)</label>'
+          +'<textarea class="pol-edit-body" id="polbody_'+cid+'" rows="4" placeholder="내용을 입력하세요"></textarea>'
+          +'<button type="button" class="pol-del-btn" onclick="policyDeleteCard(\''+col.key+'\',\''+card.id+'\')">이 카드 삭제</button>'
+          +'</div>';
+      html+='<div class="dv-edit-hint">제목·내용을 수정하고 <b>저장</b>을 누르면 모든 기기에 반영됩니다. 공식값(운영시간 등)은 임의 변경하지 마세요.</div>';
+      html+='</div>';
+    });
+    html+='<button type="button" class="dv-g-addrow" onclick="policyAddCard(\''+col.key+'\')">＋ 카드 추가</button>';
+    html+='</div></div>';
+  });
+  wrap.innerHTML=html;
+}
+
+function policyFindCard(colKey,id){
+  const arr=POLICY_DATA[colKey]||[];
+  for(let i=0;i<arr.length;i++){ if(arr[i].id===id) return {arr:arr,idx:i,card:arr[i]}; }
+  return null;
+}
+
+/* 편집 중인 카드가 있는지 */
+function policyHasEditing(){
+  const wrap=document.getElementById('policy-board');
+  return !!(wrap && wrap.querySelector('.dv-cell.editing'));
+}
+
+/* 편집 토글 + 저장. 진입 시 폼에 현재값 채움(1회), 저장 시 폼값 → 데이터 반영. */
+function policyToggleEdit(colKey,id){
+  const cid=colKey+'__'+id;
+  const cell=document.getElementById('polcell_'+cid);
+  const btn=document.getElementById('polbtn_'+cid);
+  const cancelbtn=document.getElementById('polcancel_'+cid);
+  const found=policyFindCard(colKey,id);
+  if(!cell||!btn||!found)return;
+  const editing=cell.classList.contains('editing');
+  if(!editing){
+    if(typeof requireEditAuth==='function' && !requireEditAuth()) return;
+    cell.classList.add('editing');
+    // 폼에 현재값 채움 (편집 진입 시 1회 — 입력 중 재생성 안 함)
+    const ti=document.getElementById('poltitle_'+cid);
+    const bo=document.getElementById('polbody_'+cid);
+    if(ti) ti.value=found.card.title||'';
+    if(bo) bo.value=found.card.body||'';
+    btn.textContent='저장';
+    btn.classList.add('save');
+    if(cancelbtn) cancelbtn.style.display='';
+    if(ti) ti.focus();
+  }else{
+    const ti=document.getElementById('poltitle_'+cid);
+    const bo=document.getElementById('polbody_'+cid);
+    found.card.title=ti?ti.value.trim():found.card.title;
+    found.card.body=bo?bo.value:found.card.body;
+    cell.classList.remove('editing');
+    btn.textContent='편집';
+    btn.classList.remove('save');
+    if(cancelbtn) cancelbtn.style.display='none';
+    // 제목·본문 노드만 갱신
+    const labEl=cell.querySelector('.dv-cell-label');
+    if(labEl) labEl.textContent=found.card.title||'(제목 없음)';
+    const bodyEl=cell.querySelector('.dv-body');
+    if(bodyEl) bodyEl.innerHTML=policyCardBodyHTML(found.card.body);
+    persistPolicyData();
+  }
+}
+
+/* 취소 — 미저장 변경분 폐기, 편집 모드 종료(다음 진입 시 저장값으로 다시 채움) */
+function policyCancelEdit(colKey,id){
+  const cid=colKey+'__'+id;
+  const cell=document.getElementById('polcell_'+cid);
+  const btn=document.getElementById('polbtn_'+cid);
+  const cancelbtn=document.getElementById('polcancel_'+cid);
+  if(!cell||!btn)return;
+  cell.classList.remove('editing');
+  btn.textContent='편집';
+  btn.classList.remove('save');
+  if(cancelbtn) cancelbtn.style.display='none';
+}
+
+/* 카드 추가 — 빈 카드 1개 추가 후 재렌더·편집 진입 */
+function policyAddCard(colKey){
+  if(typeof requireEditAuth==='function' && !requireEditAuth()) return;
+  if(policyHasEditing()){ alert('편집 중인 카드를 먼저 저장하거나 닫아주세요.'); return; }
+  if(!Array.isArray(POLICY_DATA[colKey])) POLICY_DATA[colKey]=[];
+  const nid=policyGenId();
+  POLICY_DATA[colKey].push({id:nid,title:'새 카드',body:''});
+  persistPolicyData();
+  renderPolicyBoard();
+  policyToggleEdit(colKey,nid); // 바로 편집 진입
+}
+
+/* 카드 삭제 */
+function policyDeleteCard(colKey,id){
+  if(typeof requireEditAuth==='function' && !requireEditAuth()) return;
+  if(!confirm('이 카드를 삭제할까요?')) return;
+  const found=policyFindCard(colKey,id);
+  if(!found) return;
+  found.arr.splice(found.idx,1);
+  persistPolicyData();
+  renderPolicyBoard();
+}
+
 /* ── Init ── */
 const today=new Date().toISOString().slice(0,10);
 document.getElementById('checkDateM').value=today;
@@ -2993,6 +3211,7 @@ else if(savedOld)document.getElementById('submitterF').value=savedOld;
 loadStaffFromSheet();
 loadItemMasterFromSheet(); // 점검 항목 마스터를 시트에서 로드 (비동기 — 완료 시 화면 갱신)
 loadBoardData(); renderBoard(); loadBoardFromBackend(); // 요일별 보드: 로컬 즉시 렌더 후 백엔드 동기화(모든 기기 반영)
+loadPolicyData(); renderPolicyBoard(); loadPolicyFromBackend(); // 규정 트렐로 보드: 로컬 즉시 렌더 후 백엔드 동기화
 renderG('m');
 
 /* ═══════════════════════════════════════════════
