@@ -7,6 +7,18 @@
 
 ---
 
+## 0. 진척 업데이트 (2026-06-04 CMO 시모 — B 결재 반영)
+
+✅ **완료·라이브 검증**: 제목(`#title-input`) + 본문(`[contenteditable="true"]`) 자동입력 + **임시저장**(`button:has-text("저장")`) 작동 확정. `--mode setup --then-draft` 원샷(cao@wellperion.com 구글 로그인)으로 실행. 임시저장 글은 소식목록 아닌 "작성 중인 소식 이어쓰기"로 복원됨.
+
+⚠️ **잔여 핵심 과제 = 이미지 5장 자동첨부** (이것이 B 결재의 본체). 당근 이미지 버튼이 `input[type=file]` **0개** = **Shadow DOM / canvas 기반** 추정. `page.evaluate`로 shadowRoot 침투 탐색 or 업로드 버튼 클릭→`expect_file_chooser` 방식 R&D 필요. `scripts/poc-evidence/danggn_write_page.png` 참조.
+
+⚠️ **세션 제약 정정**: 1차 "TTL 8~9h"보다 엄격 — bizprofile 별도 goto 시 강제 sign-out. **반드시 `--mode setup --then-draft` 원샷**(로그인→같은 context 즉시 글쓰기), 작업마다 **GM 재로그인 1회**(구글 계정 선택). publish 자동화보다 이 세션/이미지 문제 우선.
+
+실측 증거 = `scripts/poc-evidence/danggn_*.png` · 메모리 `project_danggn_manual_b_confirmed`.
+
+---
+
 ## 1. 목표
 
 당근 비즈프로필 소식글 **반자동 발행** 파이프라인 완성.

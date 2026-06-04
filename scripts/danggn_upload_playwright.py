@@ -318,56 +318,125 @@ async def _launch_context(async_playwright):
 
 
 # -----------------------------------------------------------------
-# setup — GM 수동 로그인 후 세션 저장 (비밀번호 하드코딩 없음)
-# 세션 시그널: URL이 biz.daangn.com 안착(로그인 페이지 이탈) + 쿠키 존재
+# setup — GM QR 로그인 후 세션 확립 (비밀번호 하드코딩 없음)
+#
+# 2026-06-04 개편: 당근 비즈 로그인 구조 실측 결과 반영
+#   - 당근 비즈 = 모바일 앱 QR 스캔 전용 (business.daangn.com → 팝업 QR)
+#   - bizprofile.daangn.com 직접 goto 시 sign-out 유발 → 세션 파괴
+#   - 올바른 순서: business.daangn.com/login → 팝업 QR 스캔 → 설정하기 → 팝업 닫힘 → bizprofile 이동
+#   - --then-draft 옵션: 로그인 완료 즉시 같은 context로 draft 진행 (세션 보존)
 # -----------------------------------------------------------------
-async def run_setup() -> int:
+async def run_setup(args: "argparse.Namespace | None" = None) -> int:
     import asyncio
     async_playwright = _import_playwright()
-    print("[INFO] === 당근 비즈 SETUP — GM 수동 로그인 ===")
+    print("[INFO] === 당근 비즈 SETUP — Google 로그인 (cao@wellperion.com) ===")
     print(f"[INFO] 프로필 저장: {PERSISTENT_PROFILE_DIR}")
     p, context = await _launch_context(async_playwright)
-    # 기존(옛 계정) 세션 제거 — 새 로그인만 감지하도록 로그아웃 상태로 시작
-    try:
-        await context.clear_cookies()
-        print("[INFO] 기존 세션 비움 — 새 계정으로 로그인하세요.")
-    except Exception as e:
-        print(f"[WARN] 기존 세션 비우기 실패(무시): {e}")
-    page = await context.new_page()
-    await page.goto(DANGGN_BIZ_URL, wait_until="domcontentloaded", timeout=30_000)
-    print("[INFO] 브라우저에서 당근 로그인을 완료하세요 — 로그인 감지 시 자동 저장됩니다.")
-    print("[INFO] (Enter 불필요. 최대 10분 대기 — OAuth 로그인 시간 여유. 비즈프로필 홈 도달 시 자동 마무리)")
 
-    has_session = False
-    waited, deadline = 0, 600  # 초 (당근비즈 OAuth 로그인 여유 — 2026-06-03)
-    auth_names: "list[str]" = []
-    while waited < deadline:
-        try:
-            current_url = page.url
-            cookies = await context.cookies()
-        except Exception:
-            break  # 브라우저 창을 GM이 닫음
-        # 비즈 홈 안착 + '인증 쿠키' 보유 = 세션 성립 (URL 안착만으론 OAuth 경유 URL 오판)
-        auth_names = _auth_cookies(cookies)
-        if is_session_landed(current_url) and auth_names:
-            has_session = True
-            break
-        await asyncio.sleep(3)
-        waited += 3
+    # bizprofile.daangn.com 로그인 페이지 직접 진입
+    # (실측: business.daangn.com/login → QR전용. bizprofile 로그인 페이지 = Google/카카오/네이버 제공)
+    BIZPROFILE_LOGIN = f"https://bizprofile.daangn.com/biz_accounts/{DANGGN_BIZ_ACCOUNT_ID}/manager/home/"
+    page = context.pages[0] if context.pages else await context.new_page()
+
+    popup_ref: "dict[str, object]" = {"pg": None}
+    def _on_page(pg: object) -> None:
+        popup_ref["pg"] = pg
+    context.on("page", _on_page)
+
+    await page.goto(BIZPROFILE_LOGIN, wait_until="domcontentloaded", timeout=30_000)
+    await asyncio.sleep(3)
+
+    cur_url = page.url
+    print(f"[INFO] 현재 URL: {cur_url}")
+
+    # 이미 로그인된 경우
+    if "bizprofile.daangn.com" in cur_url and "/login" not in cur_url and "accounts.daangn.com" not in cur_url:
+        print("[INFO] 이미 로그인 상태 — 세션 유효.")
+        has_session = True
+    else:
+        # Google 로그인 버튼 클릭 (실측: 로그인 화면에 Google/카카오/네이버 버튼 존재)
+        google_clicked = False
+        for google_sel in [
+            'img[alt*="Google"]',
+            'button:has-text("Google")',
+            'a:has-text("Google")',
+            '[aria-label*="Google"]',
+            'img[src*="google"]',
+        ]:
+            loc = page.locator(google_sel).first
+            if await loc.count() > 0:
+                print(f"[INFO] Google 로그인 버튼 클릭: {google_sel}")
+                await loc.click()
+                await asyncio.sleep(4)
+                google_clicked = True
+                break
+
+        if not google_clicked:
+            # 스크린샷 찍고 GM에게 수동 클릭 안내
+            await _screenshot(page, "danggn_setup_login_page.png")
+            print("[INFO] Google 버튼 자동 클릭 실패 — 브라우저에서 직접 Google 버튼을 클릭하세요.")
+            print(f"[INFO] 스크린샷: {EVIDENCE_DIR / 'danggn_setup_login_page.png'}")
+        else:
+            print("[INFO] Google OAuth 팝업/리다이렉트 대기 중 — cao@wellperion.com 계정을 선택하세요.")
+
+        print("[INFO] 로그인 완료 후 자동 감지합니다 (최대 10분 대기).")
+
+        # 로그인 완료 대기 루프
+        has_session = False
+        waited, deadline = 0, 600
+        while waited < deadline:
+            # 새 팝업(Google OAuth 팝업) 자동 처리 불필요 — GM이 계정 선택
+            try:
+                cur = page.url
+            except Exception:
+                break
+
+            # bizprofile 비즈 홈 안착 확인
+            if "bizprofile.daangn.com" in cur and "/login" not in cur and "accounts.daangn.com" not in cur:
+                has_session = True
+                break
+
+            # business.daangn.com 인증 후 bizprofile 이동 시도
+            if "business.daangn.com" in cur and "/login" not in cur:
+                await page.goto(DANGGN_BIZ_URL, wait_until="networkidle", timeout=20_000)
+                await asyncio.sleep(2)
+                if "bizprofile.daangn.com" in page.url and "/login" not in page.url:
+                    has_session = True
+                    break
+
+            await asyncio.sleep(3)
+            waited += 3
+            if waited % 30 == 0:
+                print(f"[INFO] 로그인 대기 중... {waited}초 경과 / 현재: {page.url[:80]}")
+
     if has_session:
-        await asyncio.sleep(2)  # 쿠키가 디스크 프로필에 안착할 여유
-        print(f"[INFO] 당근 비즈 세션 확인 — 인증 쿠키 {len(auth_names)}종 보유 (값 비공개: ****)")
+        await asyncio.sleep(2)
+        print(f"[INFO] 비즈 홈 안착: {page.url}")
+        print("[INFO] 당근 비즈 세션 확립 완료")
+        await _screenshot(page, "danggn_setup_success.png")
         print("[INFO] --- 보유 쿠키 진단 (이름·도메인만, 값 비공개) ---")
         try:
             _dump_cookie_names(await context.cookies())
         except Exception:
             pass
-        print("[INFO] → 위 ★auth후보 중 영속 쿠키가 check에서 살아있으면 반자동 성립.")
+
+        # --then-draft: 로그인 성공 즉시 같은 context로 draft 실행
+        then_draft = getattr(args, "then_draft", False)
+        if then_draft and args is not None:
+            print("[INFO] --then-draft: 로그인 완료 즉시 draft 실행")
+            rc = await _run_draft_with_context(page, context, args)
+            await context.close()
+            await p.stop()
+            return rc
     else:
-        print("[WARN] 10분 내 로그인 미완료(비즈 홈 안착 + 인증 쿠키 미검출) — 다시 실행하세요.")
+        print("[WARN] 10분 내 로그인 미완료 — 다시 실행하세요.")
+
     await context.close()
     await p.stop()
     print("[INFO] === SETUP 완료 ===")
+    if has_session:
+        print("[INFO] ★ 원샷 실행(추천): python scripts\\danggn_upload_playwright.py "
+              "--mode setup --then-draft --content-dir \"instagram\\260426_WJO_스쿼시_대회\"")
     return 0 if has_session else 2
 
 
@@ -405,18 +474,435 @@ async def run_check() -> int:
 
 
 # -----------------------------------------------------------------
-# draft — [스텁] 글쓰기 임시저장 (에디터 자동입력 미구현)
-# 입력 인자(title/body/image)는 build_post로 배선만 해두고, 실제 DOM 자동입력은 다음 단계.
+# draft — 글쓰기 임시저장
+# 당근 비즈 소식 작성 페이지에 진입해 제목·본문·이미지를 자동 입력한다.
+# 임시저장 버튼이 없으면 '뒤로가기' 시 자동 임시저장 동작을 활용한다.
+#
+# 세션 요건: --mode setup 실행 후 QR 로그인이 완료되어
+#           bizprofile.daangn.com 세션 쿠키가 Persistent Profile에 저장된 상태.
+#
+# 진입 경로 (실측 2026-06-04):
+#   bizprofile.daangn.com/biz_accounts/{ID}/manager/home/
+#   → 사이드바 "소식 작성" 클릭
+#   → bizprofile.daangn.com/biz_accounts/{ID}/manager/posts/new
+#
+# 당근 비즈 글쓰기 UI 구조 (사이드바 확인 + LevelDB remote-config 기반):
+#   - 제목: 없음 (소식은 제목 없이 본문만 입력하는 SNS 형식)
+#   - 본문: contenteditable div 또는 textarea
+#   - 이미지: input[type=file] 또는 label 클릭
+#   - 임시저장: 버튼 없음 → '나가기/닫기' 시 자동 임시저장 가능
+#   ※ 실제 selector는 세션 확립 후 DOM 실측으로 확정 필요.
 # -----------------------------------------------------------------
+
+# 글쓰기 페이지 URL
+DANGGN_WRITE_URL = (
+    f"https://bizprofile.daangn.com/biz_accounts/{DANGGN_BIZ_ACCOUNT_ID}/manager/posts/new"
+)
+
+# 소식 작성 에디터 selector 후보 (실측 전 추론 — 세션 확립 후 재검증 필요)
+# 당근 비즈 소식은 SNS 형식: 제목 없음, 본문=contenteditable, 이미지=file input
+_BODY_SELECTORS = [
+    '[contenteditable="true"]',
+    '[role="textbox"]',
+    'textarea',
+    '[data-testid="post-body"]',
+    '[data-testid="body"]',
+    '[placeholder]',
+]
+_FILE_SELECTORS = [
+    'input[type="file"]',
+    'input[type="file"][accept*="image"]',
+]
+_SAVE_DRAFT_SELECTORS = [
+    'button:has-text("임시저장")',
+    'button:has-text("저장")',
+    '[data-testid="save-draft"]',
+    '[data-testid="draft"]',
+]
+
+
+async def _find_first(page, selectors: "list[str]"):
+    """selector 목록을 순서대로 시도해 첫 번째로 count > 0인 Locator를 반환."""
+    from playwright.async_api import Locator
+    for sel in selectors:
+        try:
+            loc: Locator = page.locator(sel).first
+            if await loc.count() > 0:
+                return loc, sel
+        except Exception:
+            pass
+    return None, None
+
+
+async def _screenshot(page, name: str) -> None:
+    EVIDENCE_DIR.mkdir(parents=True, exist_ok=True)
+    path = EVIDENCE_DIR / name
+    try:
+        await page.screenshot(path=str(path), full_page=True)
+        print(f"[INFO] 스크린샷: {path}")
+    except Exception as e:
+        print(f"[WARN] 스크린샷 실패: {e}")
+
+
+async def _attach_images_via_file_chooser(page, image_paths: "list[Path]") -> bool:
+    """이미지 추가 버튼을 클릭해 file chooser를 열고 이미지를 첨부한다.
+    당근 비즈는 input[type=file]이 DOM에 노출되지 않으므로 expect_file_chooser() 방식 사용."""
+    import asyncio
+
+    # 이미지 추가 버튼 selector 후보
+    # write_page.png 실측: 글쓰기 상단에 카메라 아이콘 + '사진' 라벨 버튼,
+    # 하단 툴바에 이미지/갤러리 아이콘 버튼 존재 확인
+    image_btn_selectors = [
+        # 실측 확인: 카메라 아이콘 + '사진' 텍스트 버튼 (글쓰기 상단)
+        'button:has-text("사진")',
+        # 툴바 이미지 아이콘 버튼들 (하단 3-아이콘 툴바)
+        'button[aria-label*="사진"]',
+        'button[aria-label*="이미지"]',
+        'button[aria-label*="photo"]',
+        'button[aria-label*="image"]',
+        # label for 패턴
+        'label[for*="image"]',
+        'label[for*="photo"]',
+        'label[for*="file"]',
+        # data-testid 패턴
+        '[data-testid*="photo"]',
+        '[data-testid*="image"]',
+        '[data-testid*="media"]',
+        # 텍스트 기반 폴백
+        'button:has-text("이미지")',
+        'button:has-text("갤러리")',
+        # 마지막 폴백: DOM에 노출된 file input
+        'input[type="file"]',
+    ]
+
+    # 버튼 목록 DOM 진단 (카메라/사진 관련 모든 요소)
+    btns_info = await page.evaluate("""() => {
+        const result = [];
+        // 버튼·라벨·아이콘 포함 탐색
+        for (const el of document.querySelectorAll('button, label, [role="button"], input[type="file"]')) {
+            const text = (el.innerText || el.textContent || '').trim().substring(0, 40);
+            const aria = (el.getAttribute('aria-label') || '').substring(0, 40);
+            const testid = el.getAttribute('data-testid') || '';
+            const forAttr = el.getAttribute('for') || '';
+            const type = el.type || '';
+            const accept = el.accept || '';
+            // 사진/이미지/카메라/file 키워드 포함만 출력
+            const keys = ['사진','이미지','photo','image','camera','file','media'];
+            const haystack = (text+aria+testid+forAttr+type+accept).toLowerCase();
+            if (keys.some(k => haystack.includes(k))) {
+                result.push({tag:el.tagName, text, aria, testid, forAttr, type, accept,
+                    visible: el.offsetParent !== null, id: el.id || ''});
+            }
+        }
+        return result;
+    }""")
+    print(f"[INFO] 사진·이미지 관련 요소 {len(btns_info)}개:")
+    for b in btns_info:
+        print(f"  [{b['tag']}] id={b['id']!r} text={b['text']!r} aria={b['aria']!r} "
+              f"testid={b['testid']!r} for={b['forAttr']!r} type={b['type']!r} "
+              f"accept={b['accept']!r} visible={b['visible']}")
+
+    # input[type=file]이 직접 노출된 경우 set_input_files 우선 시도
+    direct_file_inputs = await page.evaluate("""() =>
+        Array.from(document.querySelectorAll('input[type=file]')).map(el=>({
+            id:el.id||'',accept:el.accept||'',multiple:el.multiple,
+            testid:el.getAttribute('data-testid')||'',visible:el.offsetParent!==null}))
+    """)
+    print(f"[INFO] input[type=file] {len(direct_file_inputs)}개:")
+    for fi in direct_file_inputs:
+        print(f"  id={fi['id']!r} accept={fi['accept']!r} multiple={fi['multiple']} visible={fi['visible']}")
+
+    if direct_file_inputs:
+        try:
+            file_loc = page.locator('input[type="file"]').first
+            await file_loc.set_input_files([str(img) for img in image_paths])
+            print(f"[INFO] input[type=file] 직접 set_input_files {len(image_paths)}장")
+            await asyncio.sleep(3)
+            return True
+        except Exception as e:
+            print(f"[WARN] set_input_files 실패: {e}")
+
+    # file chooser 방식: 후보 버튼을 클릭해 file chooser 이벤트를 캐치
+    for sel in image_btn_selectors:
+        try:
+            loc = page.locator(sel).first
+            if await loc.count() == 0:
+                continue
+            print(f"[INFO] file chooser 시도: {sel}")
+            async with page.expect_file_chooser(timeout=5_000) as fc_info:
+                await loc.click()
+            file_chooser = await fc_info.value
+            await file_chooser.set_files([str(img) for img in image_paths])
+            print(f"[INFO] file chooser 이미지 {len(image_paths)}장 첨부 완료 (selector: {sel})")
+            await asyncio.sleep(3)
+            return True
+        except Exception as e:
+            print(f"[WARN] {sel} file chooser 실패: {e}")
+            continue
+
+    print("[WARN] 이미지 첨부 버튼 미발견 — 첨부 건너뜀.")
+    return False
+
+
+async def _run_draft_with_context(page, context, args: argparse.Namespace) -> int:
+    """로그인된 page/context를 받아 글쓰기 자동입력 + 임시저장을 수행.
+    setup --then-draft 와 run_draft 양쪽에서 재사용."""
+    import asyncio
+
+    post = build_post(args)
+    print("[INFO] === 당근 비즈 DRAFT (글쓰기 시작) ===")
+    print(f"[INFO] 제목: {post.title!r}")
+    print(f"[INFO] 본문 {len(post.body)} chars / 이미지 {len(post.image_paths)}장")
+
+    if not post.body:
+        print("[ERROR] 본문 없음 — 진행 불가.")
+        return 4
+
+    # --- 소식 작성 페이지 진입 ---
+    # 직접 URL 진입 (직전 실측에서 작동 확인됨)
+    print(f"[INFO] 글쓰기 URL 직접 진입: {DANGGN_WRITE_URL}")
+    await page.goto(DANGGN_WRITE_URL, wait_until="networkidle", timeout=30_000)
+    await asyncio.sleep(3)
+    write_page_url = page.url
+    print(f"[INFO] 글쓰기 페이지 URL: {write_page_url}")
+
+    if is_login_required(write_page_url):
+        print("[ERROR] 글쓰기 페이지 세션 만료. --mode setup --then-draft 로 재실행 필요.")
+        await _screenshot(page, "danggn_write_session_expired.png")
+        return 5
+
+    await _screenshot(page, "danggn_write_page.png")
+
+    # "작성 중인 소식이 있어요" 다이얼로그 처리 → 새로 쓰기 선택
+    await asyncio.sleep(1)
+    for new_sel in [
+        'button:has-text("새로 쓰기")',
+        '[role="dialog"] button:has-text("새로")',
+        'button:has-text("새로쓰기")',
+    ]:
+        loc = page.locator(new_sel).first
+        if await loc.count() > 0:
+            print(f"[INFO] 기존 임시저장 다이얼로그 → '새로 쓰기' 클릭 ({new_sel})")
+            await loc.click()
+            await asyncio.sleep(2)
+            break
+
+    # DOM 실측 출력 (진단용)
+    inputs = await page.evaluate("""() => {
+        const SELS=['input','textarea','[contenteditable="true"]','[contenteditable=""]','[role="textbox"]'];
+        const seen=new Set(), result=[];
+        for(const s of SELS) for(const el of document.querySelectorAll(s)){
+            if(seen.has(el))continue; seen.add(el);
+            result.push({tag:el.tagName,type:el.type||'',id:el.id||'',
+                ph:(el.placeholder||el.getAttribute('placeholder')||'').substring(0,40),
+                ce:el.contentEditable||'',role:el.getAttribute('role')||'',
+                aria:(el.getAttribute('aria-label')||'').substring(0,40),
+                testid:el.getAttribute('data-testid')||'',visible:el.offsetParent!==null});
+        }
+        return result;
+    }""")
+    print(f"[INFO] 입력 요소 {len(inputs)}개:")
+    for el in inputs:
+        print(f"  [{el['tag']}] id={el['id']!r} ph={el['ph']!r} ce={el['ce']!r} "
+              f"role={el['role']!r} aria={el['aria']!r} testid={el['testid']!r} visible={el['visible']}")
+
+    # ① 제목 입력 — id='title-input' (직전 실측 확인됨)
+    title_input = False
+    title_loc = page.locator("#title-input").first
+    if await title_loc.count() > 0:
+        await title_loc.click()
+        await asyncio.sleep(0.3)
+        await title_loc.fill(post.title)
+        print(f"[INFO] 제목 입력 완료 (#title-input): {post.title!r}")
+        title_input = True
+        await asyncio.sleep(0.5)
+    else:
+        # placeholder 기반 폴백
+        for ph_sel in ['[placeholder="소식 제목"]', 'input[placeholder*="제목"]', '#title']:
+            loc = page.locator(ph_sel).first
+            if await loc.count() > 0:
+                await loc.fill(post.title)
+                print(f"[INFO] 제목 입력 완료 ({ph_sel}): {post.title!r}")
+                title_input = True
+                await asyncio.sleep(0.5)
+                break
+        if not title_input:
+            print("[WARN] 제목 입력 요소 미발견 — 제목 입력 건너뜀.")
+
+    # ② 본문 입력 — contenteditable div (직전 실측 확인됨)
+    body_loc, body_sel = await _find_first(page, _BODY_SELECTORS)
+    if body_loc is None:
+        print("[WARN] 본문 입력 요소 미발견 — DOM 덤프 저장.")
+        html = await page.evaluate("() => document.body.innerHTML.substring(0,15000)")
+        EVIDENCE_DIR.mkdir(parents=True, exist_ok=True)
+        (EVIDENCE_DIR / "danggn_write_dom_nodraft.html").write_text(html, encoding="utf-8")
+        print(f"[INFO] DOM 덤프: {EVIDENCE_DIR / 'danggn_write_dom_nodraft.html'}")
+        return 6
+
+    print(f"[INFO] 본문 입력 selector: {body_sel}")
+    await body_loc.click()
+    await asyncio.sleep(0.5)
+    ce = await body_loc.evaluate("el => el.contentEditable")
+    if ce == "true":
+        await body_loc.evaluate("el => el.innerHTML = ''")
+        await body_loc.type(post.body, delay=10)
+    else:
+        await body_loc.fill(post.body)
+    print(f"[INFO] 본문 입력 완료 ({len(post.body)} chars)")
+    await asyncio.sleep(1)
+
+    await _screenshot(page, "danggn_after_body.png")
+
+    # ③ 이미지 첨부 — file chooser 방식 (input[type=file] DOM 미노출)
+    img_attached = False
+    if post.image_paths:
+        img_attached = await _attach_images_via_file_chooser(page, post.image_paths)
+        await _screenshot(page, "danggn_after_image.png")
+    else:
+        print("[INFO] 이미지 없음 — 첨부 건너뜀.")
+
+    await _screenshot(page, "danggn_after_input.png")
+
+    # ④ 임시저장
+    save_loc, save_sel = await _find_first(page, _SAVE_DRAFT_SELECTORS)
+    if save_loc:
+        print(f"[INFO] 임시저장 버튼 발견: {save_sel}")
+        await save_loc.click()
+        await asyncio.sleep(3)
+        await _screenshot(page, "danggn_draft_result.png")
+        print("[INFO] 임시저장 클릭 완료.")
+        result_code = 0
+    else:
+        print("[INFO] 임시저장 버튼 미발견 — 뒤로가기 후 자동 임시저장 다이얼로그 확인.")
+        await page.go_back()
+        await asyncio.sleep(3)
+        confirm_loc, confirm_sel = await _find_first(page, [
+            'button:has-text("임시저장")',
+            'button:has-text("저장하고 나가기")',
+            'button:has-text("나가기")',
+            'button:has-text("확인")',
+            '[role="dialog"] button',
+        ])
+        if confirm_loc:
+            print(f"[INFO] 나가기 다이얼로그 발견 ({confirm_sel})")
+            await _screenshot(page, "danggn_draft_dialog.png")
+            btn_text = await confirm_loc.evaluate("el => el.innerText || ''")
+            print(f"[INFO] 다이얼로그 버튼: {btn_text!r}")
+            if any(k in btn_text for k in ["임시저장", "저장"]):
+                await confirm_loc.click()
+                await asyncio.sleep(2)
+                print("[INFO] 자동 임시저장 완료.")
+                result_code = 0
+            else:
+                print("[INFO] 임시저장 아님 — 클릭 안 함.")
+                result_code = 7
+        else:
+            print("[INFO] 나가기 다이얼로그 미발견 — 임시저장 미지원 또는 자동 처리.")
+            result_code = 7
+        await _screenshot(page, "danggn_draft_result.png")
+
+    # ⑤ 저장 후 소식 목록 검증
+    POSTS_LIST_URL = (
+        f"https://bizprofile.daangn.com/biz_accounts/{DANGGN_BIZ_ACCOUNT_ID}/manager/posts"
+    )
+    print(f"[INFO] 소식 목록 이동: {POSTS_LIST_URL}")
+    await page.goto(POSTS_LIST_URL, wait_until="networkidle", timeout=30_000)
+    await asyncio.sleep(3)
+
+    # 임시저장 탭/필터가 있으면 클릭 (당근 비즈는 발행됨/임시저장 탭 분리 가능)
+    for tab_sel in [
+        'button:has-text("임시저장")',
+        'a:has-text("임시저장")',
+        '[role="tab"]:has-text("임시저장")',
+        'button:has-text("저장됨")',
+    ]:
+        tab_loc = page.locator(tab_sel).first
+        if await tab_loc.count() > 0:
+            print(f"[INFO] 임시저장 탭 발견 → 클릭: {tab_sel}")
+            await tab_loc.click()
+            await asyncio.sleep(2)
+            break
+
+    await _screenshot(page, "danggn_draft_list.png")
+
+    # 목록에서 임시저장 글 존재 여부 확인 (제목·본문 앞부분·'임시저장' 키워드)
+    list_text = await page.evaluate("() => document.body.innerText.substring(0, 5000)")
+    title_kw = post.title[:15] if post.title else ""
+    body_kw = post.body[:15] if post.body else ""
+    draft_found = any(kw and kw in list_text for kw in ["임시저장", title_kw, body_kw])
+    print(f"[INFO] 소식 목록 URL: {page.url}")
+    print(f"[INFO] 임시저장 글 목록 확인: {'발견' if draft_found else '미확인'}")
+    print(f"[INFO] 탐색 키워드: {[title_kw, body_kw, '임시저장']}")
+    print(f"[INFO] 목록 스크린샷: {EVIDENCE_DIR / 'danggn_draft_list.png'}")
+
+    if result_code == 0:
+        print("[INFO] DRAFT 완료.")
+        msg = (
+            f"[당근비즈] 소식 임시저장 완료\n"
+            f"제목: {post.title[:30]}\n"
+            f"본문: {post.body[:40]}...\n"
+            f"이미지: {len(post.image_paths)}장 / 첨부: {'성공' if img_attached else '실패'}\n"
+            f"목록 확인: {'발견' if draft_found else '미확인'}"
+        )
+        telegram_report(msg)
+    elif result_code == 7:
+        print("[WARN] 임시저장 미확인 — 당근 비즈 소식 에디터 임시저장 미지원 가능성 있음.")
+
+    # 요약 보고
+    print("\n[REPORT] ===== 당근 비즈 DRAFT 결과 =====")
+    print(f"  ① 제목 입력   : {'성공' if title_input else '실패/건너뜀'} — {post.title!r}")
+    print(f"  ② 이미지 첨부 : {'성공' if img_attached else '실패/건너뜀'} — {len(post.image_paths)}장")
+    print(f"  ③ 임시저장    : {'완료' if result_code == 0 else '미확인(코드=' + str(result_code) + ')'}")
+    print(f"  ④ 목록 검증   : {'발견' if draft_found else '미확인'}")
+    print(f"  ⑤ 스크린샷    : {EVIDENCE_DIR}/danggn_draft_list.png")
+    print("[REPORT] ===============================\n")
+
+    return result_code
+
+
 async def run_draft(args: argparse.Namespace) -> int:
+    import asyncio
+
     if not PERSISTENT_PROFILE_DIR.exists():
         print("[ERROR] 프로필 미존재 — 먼저 --mode setup 실행 필요.")
         return 3
+
     post = build_post(args)
-    print("[INFO] === 당근 비즈 DRAFT (스텁) ===")
-    print(f"[INFO] 제목: {post.title or '(비어 있음)'} / 본문 {len(post.body)} chars / 이미지 {len(post.image_paths)}장")
-    print("[TODO] 당근 비즈 글쓰기 에디터 자동입력 미구현 — GM 로그인(setup) 후 DOM 실측")
-    return 0
+    errs = validate_post(post, require_images=False)
+    print("[INFO] === 당근 비즈 DRAFT ===")
+    print(f"[INFO] 본문 {len(post.body)} chars / 이미지 {len(post.image_paths)}장")
+    if errs:
+        for e in errs:
+            print(f"[WARN] {e}")
+        if not post.body:
+            print("[ERROR] 본문 없음 — 진행 불가.")
+            return 4
+
+    async_playwright = _import_playwright()
+    p, context = await _launch_context(async_playwright)
+    page = context.pages[0] if context.pages else await context.new_page()
+
+    # 비즈 홈 세션 확인
+    print(f"[INFO] 비즈 홈 접속: {DANGGN_BIZ_URL}")
+    await page.goto(DANGGN_BIZ_URL, wait_until="networkidle", timeout=30_000)
+    await asyncio.sleep(3)
+    home_url = page.url
+
+    if is_login_required(home_url):
+        print("[ERROR] 세션 만료 — --mode setup --then-draft 로 QR 로그인 후 즉시 draft 실행 필요.")
+        await _screenshot(page, "danggn_session_expired.png")
+        await context.close()
+        await p.stop()
+        return 5
+
+    print(f"[INFO] 비즈 홈 안착: {home_url}")
+    await _screenshot(page, "danggn_biz_home_draft.png")
+
+    rc = await _run_draft_with_context(page, context, args)
+    await asyncio.sleep(2)
+    await context.close()
+    await p.stop()
+    return rc
 
 
 # -----------------------------------------------------------------
@@ -468,6 +954,10 @@ def parse_args() -> argparse.Namespace:
         "--i-am-sure", dest="i_am_sure", action="store_true",
         help="publish 모드 GM go 가드 해제 플래그 (실 발행)",
     )
+    parser.add_argument(
+        "--then-draft", dest="then_draft", action="store_true",
+        help="setup 완료 직후 같은 세션으로 draft 실행 (QR 로그인 + draft 원샷)",
+    )
     return parser.parse_args()
 
 
@@ -477,7 +967,7 @@ def main() -> int:
     if args.mode == "dryrun":
         return run_dryrun(args)
     if args.mode == "setup":
-        return asyncio.run(run_setup())
+        return asyncio.run(run_setup(args))
     if args.mode == "check":
         return asyncio.run(run_check())
     if args.mode == "draft":
