@@ -409,10 +409,11 @@ def fetch_yesterday_summary() -> str:
 _TODO_DONE_STATUSES = {"완료", "폐기", "DONE", "완료됨"}
 
 
-def fetch_gm_todos() -> list[str] | None:
+def fetch_gm_todos(only_in_progress: bool = False) -> list[str] | None:
     """
     업무현황 SSOT API에서 GM(김남욱) 담당 미완료 항목 제목 리스트 반환.
     - 담당자 필드에 '김남욱' 포함 AND 상태가 완료·폐기·DONE 아님
+    - only_in_progress=True 면 상태에 '진행' 포함 건만(보류·대기 제외) — 15시 진행 체크용
     - 실패 시 None 반환
     """
     try:
@@ -433,6 +434,7 @@ def fetch_gm_todos() -> list[str] | None:
             x for x in items
             if "김남욱" in str(x.get("담당자", ""))
             and x.get("상태", "") not in _TODO_DONE_STATUSES
+            and (not only_in_progress or "진행" in str(x.get("상태", "")))
         ]
         return [str(x.get("업무명", "(제목없음)"))[:60] for x in open_items[:15]]
     except Exception as e:
@@ -741,7 +743,7 @@ def _build_09_body() -> str:
         f"📋 [웰페리온] 09시 오늘 할 일\n"
         f"━━━━━━━━━━━━━━━━\n"
         f"📅 {today_str} ({weekday_kor})\n\n"
-        f"✅ GM 진행 중 업무 ({len(todos) if todos else 0}건)\n"
+        f"📌 GM 오늘 할 일 ({len(todos) if todos else 0}건)\n"
         f"{todo_section}\n\n"
         f"━━━━━━━━━━━━━━━━\n"
         f"📁 전날({yesterday}) 완료 내역\n"
@@ -843,8 +845,8 @@ def _build_15_body() -> str:
     now_str = now.strftime("%Y-%m-%d %H:%M")
     weekday_kor = _WEEKDAY_KOR[now.weekday()]
 
-    # 섹션1: GM 진행 중 업무
-    todos = fetch_gm_todos()
+    # 섹션1: GM 진행 중 업무 (진행중만 — 09시 전체와 차별화)
+    todos = fetch_gm_todos(only_in_progress=True)
     if todos is None:
         todo_section = "  (API 조회 실패 — 업무현황 연결 확인)"
     elif not todos:
