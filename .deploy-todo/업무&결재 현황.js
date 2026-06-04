@@ -621,7 +621,9 @@ function _processTodoAction(body) {
       const prevApproval = existing[TODO_HEADERS.indexOf('결재요청')];
       TODO_HEADERS.forEach((h, i) => {
         if (h === 'id' || h === '생성일' || h === '생성자') return;
-        if (body[h] !== undefined && body[h] !== null) existing[i] = body[h];
+        // 빈 문자열('')은 기존값 보존 — 편집 시 빈값 전송으로 다른 필드 초기화되는 버그 근본 차단
+        // (2026-06-05 COO). G1·업무현황 SSOT 모든 호출 경로 공통 방어. 의도적 비우기는 별도 센티넬 필요.
+        if (body[h] !== undefined && body[h] !== null && body[h] !== '') existing[i] = body[h];
       });
       existing[TODO_HEADERS.indexOf('수정일')] = _now();
 
