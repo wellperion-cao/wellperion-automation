@@ -443,6 +443,100 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
     <div id="policy-board" class="board-scroll"></div>
   </div>
 
+  <!-- ── 근무·휴게 시간 ── -->
+  <h3 style="font-size:17px;margin:24px 0 10px;padding-top:8px;border-top:1px solid var(--border);">근무·휴게 시간</h3>
+
+  <!-- 핵심 원칙 강조 박스 -->
+  <div style="background:var(--red-bg);border:2px solid rgba(237,91,63,0.5);border-radius:12px;padding:16px 18px;margin-bottom:16px;">
+    <p style="font-size:16px;font-weight:800;color:var(--red);margin:0 0 6px;">⚠ 업장을 절대 비우지 않는다</p>
+    <p style="font-size:14px;font-weight:600;color:var(--text);margin:0;line-height:1.7;">담당 구역(업장)에는 항상 최소 1명이 자리를 지킵니다.<br>
+    2인 이상 근무 시 <strong>휴게를 반드시 엇갈려</strong> 진행하고, 한 명이 쉬는 동안 나머지 한 명은 업장을 지킵니다.</p>
+  </div>
+
+  <!-- 2인 동시 근무 소제목 -->
+  <p style="font-size:14px;font-weight:700;color:var(--accent);margin:0 0 8px;">2인 동시 근무 — 교대 휴게 규칙</p>
+
+  <!-- 타임라인 도식 -->
+  <div style="background:var(--paper);border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin-bottom:12px;">
+    <p style="font-size:12px;color:var(--dim);margin:0 0 10px;">매 시간(정시~정시) 기준 — 10분 단위 엇갈림</p>
+    <!-- A 라인 -->
+    <div style="margin-bottom:8px;">
+      <div style="font-size:12px;font-weight:700;color:var(--accent);margin-bottom:4px;">근무자 A</div>
+      <div style="display:flex;height:22px;border-radius:6px;overflow:hidden;font-size:11px;font-weight:700;">
+        <div style="flex:5;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;">근무 (정시~50분)</div>
+        <div style="flex:1;background:var(--red);color:#fff;display:flex;align-items:center;justify-content:center;">휴게</div>
+      </div>
+      <div style="display:flex;font-size:10px;color:var(--dim);margin-top:2px;justify-content:space-between;">
+        <span>:00</span><span>:10</span><span>:20</span><span>:30</span><span>:40</span><span>:50</span><span>:00</span>
+      </div>
+    </div>
+    <!-- B 라인 -->
+    <div>
+      <div style="font-size:12px;font-weight:700;color:var(--green);margin-bottom:4px;">근무자 B</div>
+      <div style="display:flex;height:22px;border-radius:6px;overflow:hidden;font-size:11px;font-weight:700;">
+        <div style="flex:1;background:var(--red);color:#fff;display:flex;align-items:center;justify-content:center;">휴게</div>
+        <div style="flex:5;background:var(--green);color:#fff;display:flex;align-items:center;justify-content:center;">근무 (10분~정시)</div>
+      </div>
+      <div style="display:flex;font-size:10px;color:var(--dim);margin-top:2px;justify-content:space-between;">
+        <span>:00</span><span>:10</span><span>:20</span><span>:30</span><span>:40</span><span>:50</span><span>:00</span>
+      </div>
+    </div>
+    <p style="font-size:12px;color:var(--dim);margin:10px 0 0;">→ A·B 휴게가 겹치지 않아 업장이 항상 1명 이상 커버됩니다.</p>
+  </div>
+
+  <!-- 표 -->
+  <table style="width:100%;border-collapse:collapse;margin-bottom:8px;font-size:13px;">
+    <tr style="background:var(--paper);">
+      <th style="padding:10px;border:1px solid var(--border);width:90px;">구분</th>
+      <th style="padding:10px;border:1px solid var(--border);">근무</th>
+      <th style="padding:10px;border:1px solid var(--border);">휴게</th>
+    </tr>
+    <tr>
+      <td style="padding:8px;border:1px solid var(--border);font-weight:700;color:var(--accent);">근무자 A</td>
+      <td style="padding:8px;border:1px solid var(--border);">정시 ~ 50분</td>
+      <td style="padding:8px;border:1px solid var(--border);">50분 ~ 정시 <span style="font-size:11px;color:var(--dim);">(매시 끝 10분)</span></td>
+    </tr>
+    <tr>
+      <td style="padding:8px;border:1px solid var(--border);font-weight:700;color:var(--green);">근무자 B</td>
+      <td style="padding:8px;border:1px solid var(--border);">10분 ~ 정시</td>
+      <td style="padding:8px;border:1px solid var(--border);">정시 ~ 10분 <span style="font-size:11px;color:var(--dim);">(매시 처음 10분)</span></td>
+    </tr>
+  </table>
+
+  <p style="font-size:12px;color:var(--dim);margin:0 0 4px;">※ 위는 2인 동시 근무 시 적용하는 <strong>원칙(예시)</strong>입니다 · 1인 근무·3인 이상 케이스는 GM 추후 지정 예정</p>
+
+  <!-- ── 실제 운영(평일·여) 근무조 ── -->
+  <p style="font-size:14px;font-weight:700;color:var(--accent);margin:18px 0 8px;">실제 운영 (평일 · 여직원 근무조)</p>
+  <p style="font-size:13px;color:var(--text);margin:0 0 10px;line-height:1.7;">아래 <strong>근무시간 안에서 매뉴얼대로 업무를 수행</strong>하며, 각자 <strong>10분 휴게를 고정</strong>으로 가집니다. 마감조 2명은 휴게를 <strong>엇갈려</strong> 운영해 업장을 비우지 않습니다.</p>
+  <table style="width:100%;border-collapse:collapse;margin-bottom:10px;font-size:13px;">
+    <tr style="background:var(--paper);">
+      <th style="padding:10px;border:1px solid var(--border);width:64px;">근무조</th>
+      <th style="padding:10px;border:1px solid var(--border);">담당</th>
+      <th style="padding:10px;border:1px solid var(--border);width:120px;">근무시간</th>
+      <th style="padding:10px;border:1px solid var(--border);">고정 휴게(10분)</th>
+    </tr>
+    <tr>
+      <td style="padding:8px;border:1px solid var(--border);font-weight:700;color:var(--accent);">오전</td>
+      <td style="padding:8px;border:1px solid var(--border);">우춘화 주임</td>
+      <td style="padding:8px;border:1px solid var(--border);white-space:nowrap;">05:20 ~ 14:00</td>
+      <td style="padding:8px;border:1px solid var(--border);">10분 고정</td>
+    </tr>
+    <tr>
+      <td style="padding:8px;border:1px solid var(--border);font-weight:700;color:var(--green);">중간</td>
+      <td style="padding:8px;border:1px solid var(--border);">이연희 반장</td>
+      <td style="padding:8px;border:1px solid var(--border);white-space:nowrap;">11:00 ~ 19:40</td>
+      <td style="padding:8px;border:1px solid var(--border);">10분 고정</td>
+    </tr>
+    <tr>
+      <td style="padding:8px;border:1px solid var(--border);font-weight:700;color:var(--orange);">마감</td>
+      <td style="padding:8px;border:1px solid var(--border);">김미영 주임 · 이경미 주임</td>
+      <td style="padding:8px;border:1px solid var(--border);white-space:nowrap;">14:00 ~ 22:40</td>
+      <td style="padding:8px;border:1px solid var(--border);"><strong style="color:var(--orange);">2명 엇갈림</strong> — 1명 50분~정시 / 1명 정시~10분</td>
+    </tr>
+  </table>
+  <p style="font-size:12px;color:var(--dim);margin:0 0 4px;line-height:1.6;">※ 마감조 2명은 <strong>위 '2인 동시 근무 — 교대 휴게 규칙'</strong>(근무자 A=50분~정시 / 근무자 B=정시~10분)을 그대로 적용해 항상 1명이 업장을 지킵니다.</p>
+
+
   <h3 style="font-size:17px;margin:24px 0 10px;">고도화 정의</h3>
   <div style="background:var(--paper);padding:16px;border-radius:8px;border-left:4px solid var(--accent);margin-bottom:12px;">
     <p><strong>고도화</strong> = 현재 규정·가이드·매뉴얼·체크리스트를 현장 데이터와 피드백 기반으로 지속 개선하는 것. 대규모 재설계 금지 — 보수적 증분 업데이트 원칙.</p>
@@ -605,99 +699,6 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
       </ul>
     </div>
   </div>
-
-  <!-- ── 근무·휴게 시간 ── -->
-  <h3 style="font-size:17px;margin:24px 0 10px;padding-top:8px;border-top:1px solid var(--border);">근무·휴게 시간</h3>
-
-  <!-- 핵심 원칙 강조 박스 -->
-  <div style="background:var(--red-bg);border:2px solid rgba(237,91,63,0.5);border-radius:12px;padding:16px 18px;margin-bottom:16px;">
-    <p style="font-size:16px;font-weight:800;color:var(--red);margin:0 0 6px;">⚠ 업장을 절대 비우지 않는다</p>
-    <p style="font-size:14px;font-weight:600;color:var(--text);margin:0;line-height:1.7;">담당 구역(업장)에는 항상 최소 1명이 자리를 지킵니다.<br>
-    2인 이상 근무 시 <strong>휴게를 반드시 엇갈려</strong> 진행하고, 한 명이 쉬는 동안 나머지 한 명은 업장을 지킵니다.</p>
-  </div>
-
-  <!-- 2인 동시 근무 소제목 -->
-  <p style="font-size:14px;font-weight:700;color:var(--accent);margin:0 0 8px;">2인 동시 근무 — 교대 휴게 규칙</p>
-
-  <!-- 타임라인 도식 -->
-  <div style="background:var(--paper);border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin-bottom:12px;">
-    <p style="font-size:12px;color:var(--dim);margin:0 0 10px;">매 시간(정시~정시) 기준 — 10분 단위 엇갈림</p>
-    <!-- A 라인 -->
-    <div style="margin-bottom:8px;">
-      <div style="font-size:12px;font-weight:700;color:var(--accent);margin-bottom:4px;">근무자 A</div>
-      <div style="display:flex;height:22px;border-radius:6px;overflow:hidden;font-size:11px;font-weight:700;">
-        <div style="flex:5;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;">근무 (정시~50분)</div>
-        <div style="flex:1;background:var(--red);color:#fff;display:flex;align-items:center;justify-content:center;">휴게</div>
-      </div>
-      <div style="display:flex;font-size:10px;color:var(--dim);margin-top:2px;justify-content:space-between;">
-        <span>:00</span><span>:10</span><span>:20</span><span>:30</span><span>:40</span><span>:50</span><span>:00</span>
-      </div>
-    </div>
-    <!-- B 라인 -->
-    <div>
-      <div style="font-size:12px;font-weight:700;color:var(--green);margin-bottom:4px;">근무자 B</div>
-      <div style="display:flex;height:22px;border-radius:6px;overflow:hidden;font-size:11px;font-weight:700;">
-        <div style="flex:1;background:var(--red);color:#fff;display:flex;align-items:center;justify-content:center;">휴게</div>
-        <div style="flex:5;background:var(--green);color:#fff;display:flex;align-items:center;justify-content:center;">근무 (10분~정시)</div>
-      </div>
-      <div style="display:flex;font-size:10px;color:var(--dim);margin-top:2px;justify-content:space-between;">
-        <span>:00</span><span>:10</span><span>:20</span><span>:30</span><span>:40</span><span>:50</span><span>:00</span>
-      </div>
-    </div>
-    <p style="font-size:12px;color:var(--dim);margin:10px 0 0;">→ A·B 휴게가 겹치지 않아 업장이 항상 1명 이상 커버됩니다.</p>
-  </div>
-
-  <!-- 표 -->
-  <table style="width:100%;border-collapse:collapse;margin-bottom:8px;font-size:13px;">
-    <tr style="background:var(--paper);">
-      <th style="padding:10px;border:1px solid var(--border);width:90px;">구분</th>
-      <th style="padding:10px;border:1px solid var(--border);">근무</th>
-      <th style="padding:10px;border:1px solid var(--border);">휴게</th>
-    </tr>
-    <tr>
-      <td style="padding:8px;border:1px solid var(--border);font-weight:700;color:var(--accent);">근무자 A</td>
-      <td style="padding:8px;border:1px solid var(--border);">정시 ~ 50분</td>
-      <td style="padding:8px;border:1px solid var(--border);">50분 ~ 정시 <span style="font-size:11px;color:var(--dim);">(매시 끝 10분)</span></td>
-    </tr>
-    <tr>
-      <td style="padding:8px;border:1px solid var(--border);font-weight:700;color:var(--green);">근무자 B</td>
-      <td style="padding:8px;border:1px solid var(--border);">10분 ~ 정시</td>
-      <td style="padding:8px;border:1px solid var(--border);">정시 ~ 10분 <span style="font-size:11px;color:var(--dim);">(매시 처음 10분)</span></td>
-    </tr>
-  </table>
-
-  <p style="font-size:12px;color:var(--dim);margin:0 0 4px;">※ 위는 2인 동시 근무 시 적용하는 <strong>원칙(예시)</strong>입니다 · 1인 근무·3인 이상 케이스는 GM 추후 지정 예정</p>
-
-  <!-- ── 실제 운영(평일·여) 근무조 ── -->
-  <p style="font-size:14px;font-weight:700;color:var(--accent);margin:18px 0 8px;">실제 운영 (평일 · 여직원 근무조)</p>
-  <p style="font-size:13px;color:var(--text);margin:0 0 10px;line-height:1.7;">아래 <strong>근무시간 안에서 매뉴얼대로 업무를 수행</strong>하며, 각자 <strong>10분 휴게를 고정</strong>으로 가집니다. 마감조 2명은 휴게를 <strong>엇갈려</strong> 운영해 업장을 비우지 않습니다.</p>
-  <table style="width:100%;border-collapse:collapse;margin-bottom:10px;font-size:13px;">
-    <tr style="background:var(--paper);">
-      <th style="padding:10px;border:1px solid var(--border);width:64px;">근무조</th>
-      <th style="padding:10px;border:1px solid var(--border);">담당</th>
-      <th style="padding:10px;border:1px solid var(--border);width:120px;">근무시간</th>
-      <th style="padding:10px;border:1px solid var(--border);">고정 휴게(10분)</th>
-    </tr>
-    <tr>
-      <td style="padding:8px;border:1px solid var(--border);font-weight:700;color:var(--accent);">오전</td>
-      <td style="padding:8px;border:1px solid var(--border);">우춘화 주임</td>
-      <td style="padding:8px;border:1px solid var(--border);white-space:nowrap;">05:20 ~ 14:00</td>
-      <td style="padding:8px;border:1px solid var(--border);">10분 고정</td>
-    </tr>
-    <tr>
-      <td style="padding:8px;border:1px solid var(--border);font-weight:700;color:var(--green);">중간</td>
-      <td style="padding:8px;border:1px solid var(--border);">이연희 반장</td>
-      <td style="padding:8px;border:1px solid var(--border);white-space:nowrap;">11:00 ~ 19:40</td>
-      <td style="padding:8px;border:1px solid var(--border);">10분 고정</td>
-    </tr>
-    <tr>
-      <td style="padding:8px;border:1px solid var(--border);font-weight:700;color:var(--orange);">마감</td>
-      <td style="padding:8px;border:1px solid var(--border);">김미영 주임 · 이경미 주임</td>
-      <td style="padding:8px;border:1px solid var(--border);white-space:nowrap;">14:00 ~ 22:40</td>
-      <td style="padding:8px;border:1px solid var(--border);"><strong style="color:var(--orange);">2명 엇갈림</strong> — 1명 50분~정시 / 1명 정시~10분</td>
-    </tr>
-  </table>
-  <p style="font-size:12px;color:var(--dim);margin:0 0 4px;line-height:1.6;">※ 마감조 2명은 <strong>위 '2인 동시 근무 — 교대 휴게 규칙'</strong>(근무자 A=50분~정시 / 근무자 B=정시~10분)을 그대로 적용해 항상 1명이 업장을 지킵니다.</p>
 
 </div>
 
