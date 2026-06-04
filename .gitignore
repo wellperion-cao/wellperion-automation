@@ -37,7 +37,11 @@ scripts/.review_card_msgids.json
 # 예외: 07:30 제작+검수카드 재구성 등록기 = GM admin 실행 SSOT (2026-06-04 GM 정정, 2100 대체)
 !register_ig_series_produce_0730.bat
 !start_ig_series_producer.bat
-profiles/
+profiles/*
+# 예외: Bing 그림 생성 프로필 폴더 구조만 추적 (.gitkeep) — 세션 쿠키는 아래 규칙으로 계속 제외
+!profiles/bing/
+profiles/bing/*
+!profiles/bing/.gitkeep
 temp_*.txt
 # 경로가 파일명이 된 오류 산출물 (U+F03A PUA 문자 포함, 재발 차단)
 C*Usersjjky0welperion-automation*.txt
