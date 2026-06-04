@@ -5190,8 +5190,8 @@ function crTab(btn, panelId) {
     <div class="grid-3" style="margin:8px 0 28px; max-width:520px;">
       <div class="card grow">
         <h4>🟢 돌고 있음</h4>
-        <p style="font-size:36px; font-weight:700; margin:6px 0;">9</p>
-        <p style="font-size:13px; color:var(--dim);">상시 3 + 매일 5 + 매주 1</p>
+        <p style="font-size:36px; font-weight:700; margin:6px 0;">10</p>
+        <p style="font-size:13px; color:var(--dim);">상시 3 + 매일 6 + 매주 1</p>
       </div>
       <div class="card warm">
         <h4>🟡 보류 (미구현)</h4>
@@ -5229,6 +5229,8 @@ function crTab(btn, panelId) {
       <tr class="auto-detail" style="display:none;"><td colspan="5" style="background:var(--paper);padding:10px 14px;font-size:13px;color:var(--dim);"> 일일 C-Level 진행현황 자동 체크.</td></tr>
       <tr onclick="wpAutoToggle(this)" style="cursor:pointer;"><td>🟢</td><td>종료 인사·자동 종료</td><td>CTO</td><td>22:25 / 22:30</td><td style="color:var(--accent);font-size:12px;">펼치기 ▾</td></tr>
       <tr class="auto-detail" style="display:none;"><td colspan="5" style="background:var(--paper);padding:10px 14px;font-size:13px;color:var(--dim);"> 22:25 Shutdown-Greeting 텔레그램 발송 → 22:30 Auto-Shutdown 실행.</td></tr>
+      <tr onclick="wpAutoToggle(this)" style="cursor:pointer;"><td>🟢</td><td>IG 개인계정 AI 시리즈 발행</td><td>CMO</td><td>07:30</td><td style="color:var(--accent);font-size:12px;">펼치기 ▾</td></tr>
+      <tr class="auto-detail" style="display:none;"><td colspan="5" style="background:var(--paper);padding:10px 14px;font-size:13px;color:var(--dim);"><strong>예약작업 <code>Wellperion-IG-Publish-0730</code></strong> (인터랙티브 · GM PC 로그온 필요). 흐름: <b>시모 제작 → M5 검수큐 등록(검수대기) → GM이 M5에서 [승인](status='승인') → 매일 07:30 <code>ig_publish_dispatcher.py</code> 자동 발행 → 발행완료.</b> 발행기는 headful(데스크톱 필요)이라 숨김/세션0 불가 → 인터랙티브 예약작업으로만 가동. GM 검수·승인은 아무때나, 발행은 07:30 일괄. <b>안전판:</b> <code>register_publish</code>가 <code>큐레이션_추천.md</code> 자동 생성 + 발행기 큐 caption 폴백 → 큐레이션 누락 영구 차단. 봇 즉시발행(<code>pub:</code>)은 백그라운드 headful 불가로 비정식 — <b>07:30 배치가 정식 경로</b>. 대상=개인계정 namuk.wellperion. 정본=<code>instagram/_AI시리즈_로드맵.md</code>.</td></tr>
     </table>
 
     <h4>매주</h4>
@@ -5312,7 +5314,7 @@ function crTab(btn, panelId) {
           <tr><th style="width:280px">자원</th><th>설명</th></tr>
           <tr><td><code>telegram_bot/bot.py</code></td><td>텔레그램 봇 메인 (PID 가동)</td></tr>
           <tr><td><code>telegram_bot/daily_scheduler.py</code></td><td>정각 보고 스케줄러 (PID 가동)</td></tr>
-          <tr><td>Task Scheduler 정상 가동 <code>Wellperion-*</code></td><td>봇 · 스케줄러 · CEO-Morning-Brief · PC-Shutdown · Education-Archive · AI-Education · Morning-Update <span style="color:var(--dim);">(IG-Publish-Watcher = 2026-06-03 Disabled)</span></td></tr>
+          <tr><td>Task Scheduler 정상 가동 <code>Wellperion-*</code></td><td>봇 · 스케줄러 · CEO-Morning-Brief · PC-Shutdown · Education-Archive · AI-Education · Morning-Update · <strong>IG-Publish-0730</strong>(인터랙티브 발행) · <strong>IG-Series-Produce-2100</strong>(다음편 제작·M5 등록) <span style="color:var(--dim);">(구 IG-Publish-Watcher 폴링 = 2026-06-03 Disabled)</span></td></tr>
           <tr><td><code>profiles/{instagram,naver-cafe,naver-blog}/</code></td><td>Playwright 세션 271 MB</td></tr>
           <tr><td><code>telegram_bot/.env</code></td><td>토큰·환경변수 SSOT (3 HardLink)</td></tr>
         </table>
