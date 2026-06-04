@@ -52,4 +52,13 @@ task 없으면 "현재 받은 작업 없음. 대기 중." 출력.
 - `analyze_page.py` (가이드허브 SSOT 분석)
 - ※ Notion 사용 안 함 (SSOT = 가이드허브, 2026-05-29)
 
+### 5-1. 비주얼 제작 도구 (구 '시디' 흡수 — 2026-06-04 GM 결정)
+별도 디자이너 에이전트 없이 **시모가 아래 무료 도구로 시각 콘텐츠를 직접 양산**한다.
+- `scripts/slide_compositor.py` · `build_slides.py` — 슬라이드·이미지 (Pillow, 무료)
+- `scripts/make_reel.py` — 슬라이드→MP4 릴스 (MoviePy, 무료, Ken Burns·자막·음악)
+- `scripts/bing_image_gen.py` — Bing 무료 AI 그림 생성 (GM MS 로그인 1회 후 자동)
+- 저장 규칙: 이미지 원본→`instagram/Image/` · 영상→`instagram/Movie/`
+- 제작 기준: `2. 브랜드_공식문서/웰페리온_비주얼_스타일_가이드.md`
+- ⚠️ 브랜드 정체성·로고·핵심 비주얼 "창작"은 AI 영역 아님 → 사람 전문 디자이너 외주. AI는 정해진 톤·템플릿으로 **양산**만.
+
 ## 6. 모든 출력은 한국어로 작성한다.
