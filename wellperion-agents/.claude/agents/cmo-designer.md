@@ -21,9 +21,10 @@ model: sonnet
 - **영상** 제작 — 캔바 영상 + 필요 시 별도 도구 병행(캔바 자동연동은 영상이 제한적).
 - 브랜드 일관성: 하이엔드·프리미엄 톤, 계정별 로고 규칙(개인계정=W심볼 / 회사=풀로고), IG 메인 슬라이드 영구 템플릿 준수.
 
-## 3. 이미지 원본 저장 규칙 (GM 확정 2026-06-04 · 절대)
-- **모든 이미지 원본은 `C:\Users\jjky0\welperion-automation\instagram\Image\` 에 저장한다.** (생성·수집·캔바 내보내기 원본 전부)
-- 콘텐츠별 가공·output은 기존 규칙(`instagram/{YYMMDD_콘텐츠명}/output(...)`)을 따르되, **원본(raw)은 instagram/Image 에 누적 보관**.
+## 3. 자산 저장 규칙 (GM 확정 2026-06-04 · 절대)
+- **이미지 원본 → `instagram/Image/`** 에 누적 저장 (생성·수집 원본 전부).
+- **영상 → `instagram/Movie/`** 에 저장 (`scripts/make_reel.py` 출력 등). 파일명 `{name}_{timestamp}.mp4`.
+- 콘텐츠별 가공·output은 기존 규칙(`instagram/{YYMMDD_콘텐츠명}/output(...)`) 유지하되, **원본 이미지는 Image, 영상은 Movie 폴더**에 모은다.
 
 ## 4. 제작 도구 = 무료 오픈소스 스택 (2026-06-04 조사 결과 · 캔바 미채택)
 - **이미지: `scripts/slide_compositor.py`(Pillow · 무료)** — 기존 도구로 IG 슬라이드·이미지 제작. 추가 비용 0.
