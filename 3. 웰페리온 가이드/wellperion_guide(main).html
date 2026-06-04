@@ -616,17 +616,17 @@
     <!-- AUTO:LATEST-START -->
     <div class="card grow">
       <h4>최신 업데이트 — 2026-06-04 (자동 갱신)</h4>
+      <p><strong>2026-06-04</strong> fix(coo): 업무·결재 현황 SSOT 무한 새로고침 버그 수정 — __PV 루프가드 pv===__PV → has('pv')로 교체 (…</p>
       <p><strong>2026-06-04</strong> feat(ig): AI시리즈 발행 단순화 — 큐레이션 누락 영구차단 + M5승인 07:30 디스패처</p>
       <p><strong>2026-06-04</strong> fix(cmo): AI5 발행 성공 확정(발행완료) + 누락된 큐레이션_추천.md 추가 — 발행기 필수 입력 보완</p>
       <p><strong>2026-06-04</strong> auto(cmo): 검수 승인 건 발행 0건 / 수동대기 0건</p>
       <p><strong>2026-06-04</strong> auto(cmo): 검수 승인 건 발행 0건 / 수동대기 0건</p>
-      <p><strong>2026-06-04</strong> review: CMO-2026-06-04-AI5-깨진환상들 status 승인→승인 (검수카드 중계)</p>
     </div>
 <!-- AUTO:LATEST-END -->
         <table>
           <tr><th style="width:160px">날짜</th><th>변경 내용</th></tr>
           <!-- AUTO:TABLE-START -->
-      <tr><td><strong>2026-06-04 (자동)</strong></td><td>feat(ig): AI시리즈 발행 단순화 — 큐레이션 누락 영구차단 + M5승인 07:30 디스패처 · fix(cmo): AI5 발행 성공 확정(발행완료) + 누락된 큐레이션_추천.md 추가 — 발행기 필수 입력 보완 · auto(cmo): 검수 승인 건 발행 0건 / 수동대기 0건 · auto(cmo): 검수 승인 건 발행 0건 / 수동대기 0건 ·…</td></tr>
+      <tr><td><strong>2026-06-04 (자동)</strong></td><td>fix(coo): 업무·결재 현황 SSOT 무한 새로고침 버그 수정 — __PV 루프가드 pv===__PV → has('pv')로 교체 (CDN 버전 불일치 시 무한 redirect 차단) · feat(ig): AI시리즈 발행 단순화 — 큐레이션 누락 영구차단 + M5승인 07:30 디스패처 · fix(cmo): AI5 발행 성공 확정(발행완료) + …</td></tr>
       <tr><td><strong>2026-06-03 (자동)</strong></td><td>feat(g1): '우리의 북극성' 패널 고정 — ERP 7대 자동화 모듈 목표 (GM 비전) · feat(s2): 'AI 켜면 무슨 일이 일어나나(부팅 한눈에)' 섹션 신설 — 공통탭 최상단 · refactor(s2): 공통탭 참고 큰 덩어리 2개 기본 접힘 — 길이 축소(읽기 부담 해소) · fix(coo): 3페이지 점검 — 필터카운트·결재대시보…</td></tr>
       <!-- AUTO:TABLE-END -->
           <tr><td><strong>2026-05-28 (14차)</strong></td><td>공지/안내문 생성(COO 하위) · 오프라인 홍보물 디자인 제작(CMO 하위) 도구 신설 · 공지 서식 v2.0 독립 페이지화 · 회사소개서·전략로드맵 원본 「3. 웰페리온 가이드/회사문서/」로 이관(SSOT 단일화) · C-Level 부팅 R/R Notion API→가이드허브 g10 참조로 전환 · GitHub Pages 워크플로 폴더명 경로 수정 · 사이드바 "공통+7개 C-Level" 라벨 제거</td></tr>
@@ -4505,8 +4505,10 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
       function esc(s){return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
       // 서버 큐 상태 우선 — 브라우저 로컬의 옛 승인/반려 클릭은 서버 상태가 없을 때만 폴백 (stale 박제 방지)
       function effState(it){return it.status||(d[it.id]&&d[it.id].decision)||'검수대기';}
-      // 정렬용 일자 키 (최신순)
-      function dateKey(it){return it.published_at||it.assigned_at||it.enqueued_at||'';}
+      // 정렬용 발행일 키 (발행 시각 최신순 · 발행일 없으면 id의 날짜 폴백)
+      function dateKey(it){return it.published_at||(((it.id||'').match(/\d{4}-\d{2}-\d{2}/)||[''])[0])||it.assigned_at||it.enqueued_at||'';}
+      // 화면 표시용 발행일 (YYYY-MM-DD)
+      function pubDate(it){var k=dateKey(it);return k?k.slice(0,10):'';}
       // 처리완료(terminal) = 발행완료 + 반려만. 승인(발행 진행 중)·발행실패는 위쪽에 노출.
       function isDone(st){return st==='발행완료'||st==='rejected'||st==='반려'||st==='확인필요';}
       function badgeOf(e){return e==='발행완료'?'<span style="color:var(--green);font-weight:700;">✅ 발행완료</span>':(e==='approved'||e==='승인')?'<span style="color:var(--accent);font-weight:700;">🟡 승인됨 · 발행 진행 중</span>':e==='발행실패'?'<span style="color:#dc2626;font-weight:700;">❌ 발행 실패 · 재시도 필요</span>':e==='수동발행대기'?'<span style="color:var(--accent);font-weight:700;">📦 수동 발행 대기</span>':(e==='rejected'||e==='반려')?'<span style="color:var(--warm,#d98c5f);font-weight:700;">↩ 반려됨</span>':e==='확인필요'?'<span style="color:#d98c5f;font-weight:700;">🔎 발행 확인필요 · URL 수동확인</span>':'<span style="color:var(--accent);font-weight:700;">🟡 검수 대기</span>';}
@@ -4530,13 +4532,15 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
           c.innerHTML=h;list.appendChild(c);
         });
         if(done.length){
-          done.sort(function(a,b){return dateKey(b).localeCompare(dateKey(a));});  // 일자 최신순 (2026-06-03 GM)
+          done.sort(function(a,b){return dateKey(b).localeCompare(dateKey(a));});  // 발행일 최신순 (2026-06-04 GM)
           var det=document.createElement('details');
           det.style.cssText='margin-top:6px;border:1px solid rgba(183,159,138,0.18);border-radius:10px;padding:10px 12px;background:var(--paper);';
           var inner='<summary style="cursor:pointer;font-size:13px;color:var(--dim);font-weight:600;">처리완료 '+done.length+'건 (펼쳐 보기)</summary><div style="padding-top:10px;display:flex;flex-direction:column;gap:10px;">';
           done.forEach(function(it){
             var e=effState(it);
             inner+='<div style="border-top:1px solid rgba(183,159,138,0.12);padding-top:8px;font-size:12.5px;"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px;"><strong>'+esc(it.title)+'</strong>'+badgeOf(e)+'</div>';
+            var pd=pubDate(it);
+            inner+='<div style="font-size:11px;color:var(--dim);margin-top:3px;">📅 발행일 '+(pd?esc(pd):'미상')+'</div>';
             if(it.post_url)inner+='<div style="margin-top:4px;"><a href="'+esc(it.post_url)+'" target="_blank" style="color:var(--accent);font-size:12px;">게시물 보기 ↗</a></div>';
             inner+='<details style="margin-top:4px;"><summary style="cursor:pointer;font-size:11.5px;color:var(--dim);">캡션·미리보기 보기</summary>'+(it.preview?'<img src="'+esc(it.preview)+'" style="width:100%;border-radius:6px;margin-top:6px;" loading="lazy">':'')+(it.caption?'<div style="font-size:12px;color:var(--text-soft);white-space:pre-wrap;line-height:1.6;padding-top:6px;">'+esc(it.caption)+'</div>':'')+'</details></div>';
           });
