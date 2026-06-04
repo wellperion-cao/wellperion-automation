@@ -6,6 +6,16 @@
   "last_pushed_at": "2026-06-04",
   "active_tasks": [
     {
+      "task_id": "COO-2026-06-04-SUPPORT-ISSUE-SAVE",
+      "title": "지원부 점검 앱 이슈 저장 유실 위험 수정 (탭 전환 시 공용 항목 이슈 덮어쓰기)",
+      "assigned_at": "2026-06-04",
+      "status": "ASSIGNED",
+      "from": "cto",
+      "priority": "HIGH",
+      "brief": "status/briefs/COO-2026-06-04-SUPPORT-ISSUE-SAVE.md",
+      "note": "시토 진단 인계(GM 위임 승인). 코드 배선 정상·라이브 이슈 1건 저장 확인(완전 미저장 아님). 근본원인=프론트 pushToServer가 zone 미전송→GAS handleSave가 _handleSaveV2Compat(날짜 행 전체삭제 후 재기록) 폴백→남/여 탭 전환 시 공용(common) 항목 이슈 덮어쓰기 유실. 수정: V2Compat 비파괴화 또는 프론트 zone 기반 저장. GAS 웹앱 재배포 필수(clasp push≠배포). 상세 brief 참조."
+    },
+    {
       "task_id": "COO-2026-06-04-NOTICE-PRINT-FIX",
       "title": "공지 서식(O2) 인쇄 글씨크기 역전 + 제목중복 외 일괄 수정",
       "assigned_at": "2026-06-04",

@@ -130,6 +130,16 @@
     "note": "카드마다 🖨 결과보고 버튼(작성 전 비활성)·result 잠금 해제. 담당자 콤마→' · '(b235e27). 라이브 검증. 자동생성 옵션A 폐기."
   },
   {
+    "task_id": "CTO-2026-06-04-DANGGN-SEMIAUTO",
+    "clevel": "cto",
+    "title": "당근 비즈프로필 반자동 발행 구현 — danggn_upload_playwright.py draft/publish 에디터 DOM 실측 + 자동입력 완성. 상세 브리프: status/briefs/CTO-2026-06-04-DANGGN-SEMIAUTO.md",
+    "status": "PENDING",
+    "depends_on": null,
+    "priority": "NORMAL",
+    "brief": "status/briefs/CTO-2026-06-04-DANGGN-SEMIAUTO.md",
+    "enqueued_at": "2026-06-04T00:00:00"
+  },
+  {
     "task_id": "GM-2026-06-01-04-SCHEDULER-AUTOSTART",
     "clevel": "gm1",
     "owner": "김남욱GM",
@@ -139,5 +149,16 @@
     "enqueued_at": "2026-06-01",
     "processed_at": "2026-06-01",
     "note": "GM 관리자 실행 완료(2026-06-01). 실측 검증: WellperionDailyScheduler·WellperionTelegramBot 둘 다 Ready·LogonTrigger·C:\\Python314\\python.exe 경로 정확. 재부팅 시 봇·스케줄러 자동기동 + 노션 뗀 새 pre_task_notifier 코드 적용. 재부팅 위험 해소."
+  },
+  {
+    "task_id": "COO-2026-06-04-SUPPORT-ISSUE-SAVE",
+    "clevel": "coo",
+    "title": "지원부 점검 앱 이슈 저장 유실 위험 수정 (시토 진단 인계)",
+    "status": "PENDING",
+    "priority": "HIGH",
+    "from": "cto",
+    "brief": "status/briefs/COO-2026-06-04-SUPPORT-ISSUE-SAVE.md",
+    "enqueued_at": "2026-06-04",
+    "note": "근본원인=프론트 zone 미전송→GAS V2Compat(날짜행 전체삭제 재기록) 폴백→탭 전환 시 공용 항목 이슈 덮어쓰기. 라이브 이슈 1건 저장은 확인됨. GAS 재배포 필수."
   }
 ]
