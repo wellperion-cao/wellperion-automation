@@ -266,9 +266,11 @@ def build_interior(src: Path, out: Path, page: int,
 
     head_lines = wrap_text(headline, head_font, SIZE - 2 * margin)
     head_lh = int(SIZE * 0.050 * 1.30)
+    sub_line_count = len(subline.split("\n"))
+    sub_lh = int(SIZE * 0.030 * 1.45)
     block_h = (len(head_lines) * head_lh
-               + int(SIZE * 0.030 * 1.5)        # subline
-               + int(SIZE * 0.021 * 2.2))        # label
+               + sub_line_count * sub_lh        # subline (다중 줄 대응)
+               + int(SIZE * 0.021 * 2.2))       # label
     # 워드마크 위 여백 확보
     wm_zone = int(SIZE * 0.075)
     block_top = SIZE - wm_zone - block_h - int(SIZE * 0.02)
@@ -276,8 +278,8 @@ def build_interior(src: Path, out: Path, page: int,
     rule_y = block_top - int(SIZE * 0.03)
     draw.line([(margin, rule_y), (SIZE - margin, rule_y)], fill=BEIGE, width=2)
 
-    # 이벤트 라벨 (BALLET 2026.05 · 2026.05 OPEN)
-    label = "BALLET 2026.05  ·  2026.05 OPEN"
+    # 이벤트 라벨 (중복 제거: 2026.05 한 번만)
+    label = "BALLET  ·  2026.05 OPEN"
     draw.text((margin, block_top), label, font=label_font, fill=BEIGE)
 
     # 헤드라인
@@ -286,9 +288,12 @@ def build_interior(src: Path, out: Path, page: int,
         draw.text((margin, hy), ln, font=head_font, fill=WHITE)
         hy += head_lh
 
-    # 서브라인
-    draw.text((margin, hy + int(SIZE * 0.006)), subline,
-              font=sub_font, fill=BEIGE)
+    # 서브라인 (줄바꿈 \n 지원 — CTA 한/영 2줄 등)
+    sub_lh = int(SIZE * 0.030 * 1.45)
+    sy = hy + int(SIZE * 0.006)
+    for sl in subline.split("\n"):
+        draw.text((margin, sy), sl, font=sub_font, fill=BEIGE)
+        sy += sub_lh
 
     # 좌하단 워드마크 WELLPERION · BALLET
     wm_font = load_font("bold", int(SIZE * 0.022))
@@ -310,16 +315,17 @@ COVER_SRC = SRC / "KakaoTalk_20260512_142029503.png"
 INTERIORS = [
     dict(page=2, src=SRC / "KakaoTalk_20260512_142029503_02.jpg",
          headline="클래식 발레의 정수", subline="균형 · 자세 · 우아한 움직임",
-         x_bias=0.5, y_bias=0.42),
+         x_bias=0.5, y_bias=0.25),   # 상단 크롭 — 얼굴·상체 중심
     dict(page=3, src=SRC / "KakaoTalk_20260519_155452092.png",
          headline="전문가의 1:1 교정", subline="이수지 INSTRUCTOR",
          x_bias=1.0, y_bias=0.5, zoom=1.28),   # 우측으로 — 벽사인 좌측 탈락
     dict(page=4, src=SRC / "KakaoTalk_20260519_155452092_03.png",
          headline="최대 8인 프라이빗", subline="매주 금요일 오전 10시 · 11시",
          x_bias=0.5, y_bias=0.5),
-    dict(page=5, src=SRC / "KakaoTalk_20260519_155452092_08.png",
-         headline="특별한 움직임의 여정", subline="문의 : litt.ly/wellperion",
-         x_bias=1.0, y_bias=0.30, zoom=1.55),   # 우측 발레리나 타이트 — 벽사인 완전 탈락
+    dict(page=5, src=SRC / "KakaoTalk_20260512_142029503_02.jpg",
+         headline="특별한 움직임의 여정",
+         subline="문의 (한) wellperion.com/ko/inquiry\n       (영) wellperion.com/en/inquiry",
+         x_bias=0.5, y_bias=0.78),   # 하단 크롭 — 치마·발 중심, 2p와 다른 앵글
     dict(page=6, src=SRC / "KakaoTalk_20260519_155452092_04.png",
          headline="한남동 웰니스 스튜디오", subline="지금, 발레를 시작하세요",
          x_bias=0.5, y_bias=0.5),
