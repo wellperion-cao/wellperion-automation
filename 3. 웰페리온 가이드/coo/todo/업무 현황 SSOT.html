@@ -8,13 +8,14 @@
 <meta http-equiv="Expires" content="0">
 <script>
 /* 최신본 자동 보장 — HTTP 캐시로 옛 버전이 떠 'GM 화면만 미반영'되는 문제 방지 (2026-05-29 COO).
-   서버 최신본 버전과 비교해 다르면 1회만 강제 갱신. 루프 방지: ?pv 가 현재 버전과 같으면 종료. */
-window.__PV='20260602-1';
+   서버 최신본 버전과 비교해 다르면 1회만 강제 갱신. 루프 방지: ?pv 파라미터가 있으면(=1회 redirect 완료) 무조건 종료.
+   (2026-06-04 CEO 수정: 기존 pv===__PV 가드가 CDN 버전 불일치 시 무한 새로고침 유발 → has('pv')로 교체) */
+window.__PV='20260604-1';
 (function(){
   window.addEventListener('pageshow',function(e){ if(e.persisted) location.reload(); });
   try{
     var u=new URL(location.href);
-    if(u.searchParams.get('pv')===window.__PV) return;
+    if(u.searchParams.has('pv')) return;
     fetch(location.pathname,{cache:'no-store'}).then(function(r){return r.text();}).then(function(t){
       var m=t.match(/window\.__PV='([^']+)'/);
       if(m&&m[1]&&m[1]!==window.__PV){ u.searchParams.set('pv',m[1]); location.replace(u.toString()); }
