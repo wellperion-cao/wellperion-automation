@@ -1794,10 +1794,7 @@
         <h4 style="margin-top:24px;"><span class="ico">🔗</span>⑦ 파이프라인</h4>
         <table>
           <tr><th style="width:200px">원칙</th><th>정본 1줄</th></tr>
-          <tr><td><strong>2단계 단일 흐름</strong></td><td>파이프라인 = Start 기획DB → 운영 아카이브[결과물DB] 2단계 단일.</td></tr>
-          <tr><td><strong>이관 시 원기획 보존</strong></td><td>「초안 완료」 트리거로 결과물DB 이관 시 원 기획서 보존.</td></tr>
-          <tr><td><strong>기획 v2.0 단일</strong></td><td>Start 기획 = DI 통합 v2.0 단일 템플릿.</td></tr>
-          <tr><td><strong>초안완료 텔레그램 브리핑</strong></td><td>실무진이 상태=「초안 완료」 전환 시 텔레그램 브리핑.</td></tr>
+          <tr><td><strong>기획→완료 흐름</strong></td><td>가이드허브 시드 + G1 기반. <span style="color:var(--dim);">(구 노션 Start 기획DB → 결과물DB 2단계 파이프라인·초안완료 텔레그램 브리핑 = 노션 폐기로 2026-06-04 폐지)</span></td></tr>
           <tr><td><strong>완료 동시 동기화</strong></td><td>완료 시 status.json + 업무현황 시트 todo_done 둘 다 기록.</td></tr>
           <tr><td><strong>PCC 페어 3쌍</strong></td><td>Peer Cross-Check: C-Level 6명 고정 페어 3쌍(CMO↔CPO 등) 교차 점검.</td></tr>
           <tr><td><strong>DONE→G1 시드 대조</strong></td><td>C레벨 [DONE] 완료를 G1 오늘할일 시드에 task_id 자동 대조 반영.</td></tr>
@@ -5324,6 +5321,8 @@ function crTab(btn, panelId) {
       <tr class="auto-detail" style="display:none;"><td colspan="5" style="background:var(--paper);padding:10px 14px;font-size:13px;color:var(--dim);"> BIOS RTC → 자동 부팅. 부팅 후 봇·스케줄러 자동기동.</td></tr>
       <tr onclick="wpAutoToggle(this)" style="cursor:pointer;"><td>🟢</td><td>정각 통합보고</td><td>인프라</td><td>06·09·12·15·18시</td><td style="color:var(--accent);font-size:12px;">펼치기 ▾</td></tr>
       <tr class="auto-detail" style="display:none;"><td colspan="5" style="background:var(--paper);padding:10px 14px;font-size:13px;color:var(--dim);"> daily_scheduler 정각 6슬롯 텔레그램 발송.</td></tr>
+      <tr onclick="wpAutoToggle(this)" style="cursor:pointer;"><td>🟢</td><td>IG 개인계정 AI 시리즈 제작·검수카드</td><td>CMO</td><td>07:30</td><td style="color:var(--accent);font-size:12px;">펼치기 ▾</td></tr>
+      <tr class="auto-detail" style="display:none;"><td colspan="5" style="background:var(--paper);padding:10px 14px;font-size:13px;color:var(--dim);"><strong>예약작업 <code>Wellperion-IG-Series-Produce-0730</code></strong> (인터랙티브 · GM PC 로그온 필요). 흐름(2026-06-04 GM 정정 · 무폴링): <b>매일 07:30 <code>ig_series_producer.py</code> 가 시모(헤드리스)에게 다음 편 제작 위임 → 빌드 → M5 검수큐 등록(검수대기) → 로드맵 행 '제작완료(자동생성)' 자동표시 → 텔레그램 [✅승인]/[❌반려] 버튼 카드 발송.</b> 그 뒤 <b>GM이 M5에서 슬라이드 검토 → 텔레그램 카드 [✅승인] 탭 → 봇 <code>pub:</code> 콜백이 그 순간 즉시 발행</b>(<code>ig_review_publish_watcher.py --once</code>, 폴링 없음). 봇은 GM 로그온 user 세션 상주라 headful 발행 가능. <b>발행 트리거 = 오직 텔레그램 [✅승인] 탭</b>(스케줄·폴링 자동 발행 폐기). <b>안전판:</b> <code>register_publish</code>가 <code>큐레이션_추천.md</code> 자동 생성 + 발행기 큐 caption 폴백 → 큐레이션 누락 영구 차단. 소진(#6~#8 전부 제작완료) 시 생성 금지 + 텔레그램 경고. 대상=개인계정 namuk.wellperion. 정본=<code>instagram/_AI시리즈_로드맵.md</code>. <span style="color:var(--dim);">(구 <code>IG-Series-Produce-2100</code> 제작 · <code>IG-Publish-0730</code> 일괄발행 = 2026-06-04 Disabled)</span></td></tr>
       <tr onclick="wpAutoToggle(this)" style="cursor:pointer;"><td>🟢</td><td>CEO 통합보고</td><td>AI CEO</td><td>08:00</td><td style="color:var(--accent);font-size:12px;">펼치기 ▾</td></tr>
       <tr class="auto-detail" style="display:none;"><td colspan="5" style="background:var(--paper);padding:10px 14px;font-size:13px;color:var(--dim);"> ceo_morning_pipeline.py — 전날 정리·오늘 업무·이슈 3섹션 텔레그램 발송.</td></tr>
       <tr onclick="wpAutoToggle(this)" style="cursor:pointer;"><td>🟢</td><td>C-Level 진행 체크</td><td>AI CEO</td><td>22:00</td><td style="color:var(--accent);font-size:12px;">펼치기 ▾</td></tr>

@@ -669,3 +669,123 @@ function updateEnglishFormsAccess() {
   }
   return summary;
 }
+
+// ═══════════════════════════════════════════════════════════
+//  [최종·멱등] finalizeEnglishForms() — 로그인해제 + 시트연결 보장 통합
+//  목적: 영문 폼 4종에 대해 (1)익명 허용 (2)이메일수집 끄기 (3)응답 시트 연결 보장
+//        (4)description CTA 유지 — 를 한 번에, 여러 번 실행해도 안전(멱등)하게 처리.
+//  중복 방지 핵심: setDestination 은 "현재 미연결/오연결"일 때만 호출.
+//        이미 올바른 시트에 연결돼 있으면 절대 재호출 안 함(중복 응답탭 생성 위험 차단).
+//        FormApp.create 호출 없음(중복 폼 0).
+//  실행: GM이 GAS 에디터에서 finalizeEnglishForms() 1회 실행(폼 소유자 cao@ 계정).
+// ═══════════════════════════════════════════════════════════
+
+// 폼 제목 → 연결돼야 할 응답 시트 ID 매핑 (생성 스크립트 _linkToSheet_ 규칙과 동일)
+//   멤버십 → MEMBER_SS / 성인·유소년·여름 → LESSON_SS
+var EN_FORM_SHEET_MAP = [
+  { title: 'Wellperion Private Sports Club — Membership Inquiry',      ss: MEMBER_SS_ID },
+  { title: 'Wellperion Private Sports Club — Adult Lesson Inquiry',    ss: LESSON_SS_ID },
+  { title: 'Wellperion Private Sports Club — Youth (WSC) Lesson Inquiry', ss: LESSON_SS_ID },
+  { title: 'Wellperion Private Sports Club — Summer Special Programs', ss: LESSON_SS_ID }
+];
+
+// 제목으로 spec(description)을 찾아 반환 (EN_FORM_SPECS 재사용)
+function _specForTitle_(title) {
+  for (var i = 0; i < EN_FORM_SPECS.length; i++) {
+    if (EN_FORM_SPECS[i].title === title) return EN_FORM_SPECS[i];
+  }
+  return null;
+}
+
+// 응답 시트 연결 보장(멱등) — 이미 올바른 시트면 손대지 않음.
+// 반환: { link, before, target } / link ∈ already-linked | newly-linked | relinked | link-failed
+function _ensureSheetLinked_(form, targetSsId) {
+  var curType, curId = null;
+  try { curType = form.getDestinationType(); } catch (e) { curType = null; }
+  // getDestinationId(): 목적지 없으면 예외 발생 → try로 감싸 안전 처리
+  try { curId = form.getDestinationId(); } catch (e) { curId = null; }
+
+  var isSpreadsheet = (curType === FormApp.DestinationType.SPREADSHEET);
+  var beforeStr = (isSpreadsheet && curId) ? curId : '(none)';
+
+  // 이미 올바른 시트에 연결됨 → 절대 재호출 안 함(중복 응답탭 방지)
+  if (isSpreadsheet && curId === targetSsId) {
+    return { link: 'already-linked', before: beforeStr, target: targetSsId };
+  }
+  // 미연결 또는 오연결 → 올바른 시트로 (재)연결
+  var wasLinkedElsewhere = (isSpreadsheet && curId && curId !== targetSsId);
+  var op = _tryFormOp_(function () {
+    form.setDestination(FormApp.DestinationType.SPREADSHEET, targetSsId);
+  }, 'setDestination');
+  if (op !== 'OK') {
+    return { link: 'link-failed', before: beforeStr, target: targetSsId, error: op };
+  }
+  return { link: wasLinkedElsewhere ? 'relinked' : 'newly-linked', before: beforeStr, target: targetSsId };
+}
+
+function finalizeEnglishForms() {
+  Logger.log('=== [최종·멱등] finalizeEnglishForms — 로그인해제 + 시트연결 보장 (중복 0) ===');
+  var summary = [];
+  for (var i = 0; i < EN_FORM_SHEET_MAP.length; i++) {
+    var map = EN_FORM_SHEET_MAP[i];
+    var spec = _specForTitle_(map.title);
+    var rec = { title: map.title, status: 'PENDING' };
+    try {
+      var form = _findFormByTitle_(map.title);
+      if (!form) {
+        Logger.log('[누락] 폼 못 찾음: ' + map.title);
+        rec.status = 'NOT_FOUND';
+        summary.push(rec);
+        continue;
+      }
+      rec.published = form.getPublishedUrl();
+      rec.edit = form.getEditUrl();
+
+      // (1) 익명 허용 + (2) 이메일수집 끄기 (멱등 — 이미 그 값이어도 무해)
+      rec.opRequireLogin = _tryFormOp_(function () { form.setRequireLogin(false); }, 'setRequireLogin(false)');
+      rec.opCollectEmail = _tryFormOp_(function () { form.setCollectEmail(false); }, 'setCollectEmail(false)');
+      try { rec.requiresLogin = form.requiresLogin(); } catch (e) { rec.requiresLogin = 'read-fail'; }
+
+      // (3) 응답 시트 연결 보장 — 이미 올바르면 건드리지 않음
+      var dr = _ensureSheetLinked_(form, map.ss);
+      rec.destination = dr.target;
+      rec.destinationBefore = dr.before;
+      rec.linkResult = dr.link;
+      if (dr.error) rec.linkError = dr.error;
+
+      // (4) description CTA 유지/보정 (멱등)
+      if (spec) rec.opDescription = _tryFormOp_(function () { form.setDescription(spec.desc); }, 'setDescription');
+
+      var linkOk = (dr.link === 'already-linked' || dr.link === 'newly-linked' || dr.link === 'relinked');
+      rec.status = (rec.opRequireLogin === 'OK' && rec.requiresLogin === false && linkOk)
+                 ? 'FINALIZED' : 'NEEDS_ATTENTION';
+
+      Logger.log('[' + rec.status + '] ' + map.title);
+      Logger.log('   requiresLogin(after): ' + rec.requiresLogin + ' | setRequireLogin: ' + rec.opRequireLogin + ' | setCollectEmail: ' + rec.opCollectEmail);
+      Logger.log('   destination: ' + rec.destination + ' (' + rec.linkResult + ')  [before: ' + rec.destinationBefore + ']');
+      if (rec.linkError) Logger.log('   !! 시트연결 실패: ' + rec.linkError);
+      Logger.log('   공개 URL: ' + rec.published);
+    } catch (e) {
+      Logger.log('[오류] ' + map.title + ' — ' + e.message);
+      rec.status = 'ERROR';
+      rec.error = e.message;
+    }
+    summary.push(rec);
+    Utilities.sleep(2500); // 폼 간 간격 — 연속 편집 rate-limit 회피
+  }
+
+  Logger.log('');
+  Logger.log('=== finalize 결과 요약 ===');
+  var notReady = 0;
+  summary.forEach(function (s) {
+    Logger.log(s.status + ' | login=' + s.requiresLogin + ' | destination: ' + s.destination + ' (' + s.linkResult + ') | ' + s.title);
+    if (s.status !== 'FINALIZED') notReady++;
+  });
+  Logger.log('');
+  if (notReady === 0) {
+    Logger.log('=== 전부 FINALIZED — 익명 시크릿창 제출 테스트 후 해당 시트 탭 적재 확인 권장 ===');
+  } else {
+    Logger.log('!! ' + notReady + '건 미완 — 위 로그의 NEEDS_ATTENTION/ERROR 항목 확인. 잠시 후 재실행(멱등) 또는 폼 UI 점검.');
+  }
+  return summary;
+}
