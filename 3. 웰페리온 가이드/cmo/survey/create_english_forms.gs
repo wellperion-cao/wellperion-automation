@@ -83,7 +83,7 @@ function createMembershipFormEN_() {
     'Thank you for your interest in Wellperion, Seoul\'s premier private sports club. ' +
     'Please complete the following to schedule your exclusive club tour and consultation.\n\n' +
     'Tour appointments are available by prior reservation only. Walk-in visits are not accepted.\n' +
-    'For immediate assistance: http://wellperion.com/ko/inquiry/'
+    'For immediate assistance: http://wellperion.com/en/inquiry/'
   );
   form.setCollectEmail(false);
   form.setRequireLogin(false);   // 익명 제출 허용(조직 로그인벽 제거) — 외국인 방문자 접근 가능
@@ -168,7 +168,7 @@ function createAdultLessonFormEN_() {
     'Interested in private or group lessons at Wellperion? ' +
     'Fill in the details below and our program consultants will reach out to arrange a session tailored to your schedule and goals.\n\n' +
     'All lessons are by prior reservation only. Walk-in visits are not accepted.\n' +
-    'For immediate assistance: http://wellperion.com/ko/inquiry/'
+    'For immediate assistance: http://wellperion.com/en/inquiry/'
   );
   form.setCollectEmail(false);
   form.setRequireLogin(false);   // 익명 제출 허용(조직 로그인벽 제거) — 외국인 방문자 접근 가능
@@ -275,7 +275,7 @@ function createYouthLessonFormEN_() {
     'Enroll your child in Wellperion\'s exclusive youth sports programs. ' +
     'Please provide the details below and our WSC program team will contact you to discuss the best fit.\n\n' +
     'All youth programs are by prior reservation only. Walk-in visits are not accepted.\n' +
-    'For immediate assistance: http://wellperion.com/ko/inquiry/'
+    'For immediate assistance: http://wellperion.com/en/inquiry/'
   );
   form.setCollectEmail(false);
   form.setRequireLogin(false);   // 익명 제출 허용(조직 로그인벽 제거) — 외국인 방문자 접근 가능
@@ -376,7 +376,7 @@ function createSummerSpecialFormEN_() {
     'Our Summer Special programs offer intensive sessions across five premium sports disciplines. ' +
     'Submit your inquiry and our team will reach out with program details and scheduling options.\n\n' +
     'All Summer Special programs are by prior reservation only. Availability is limited — early inquiry is encouraged.\n' +
-    'For immediate assistance: http://wellperion.com/ko/inquiry/'
+    'For immediate assistance: http://wellperion.com/en/inquiry/'
   );
   form.setCollectEmail(false);
   form.setRequireLogin(false);   // 익명 제출 허용(조직 로그인벽 제거) — 외국인 방문자 접근 가능
@@ -551,35 +551,35 @@ function createEnglishForms() {
 
 // ═══════════════════════════════════════════════════════════
 //  [중요] 기존 라이브 폼 4종 — 설정만 수정(중복 생성 금지)
-//  목적: 익명 로그인벽 제거(setRequireLogin=false) + CTA litt.ly→ko/inquiry 갱신
+//  목적: 익명 로그인벽 제거(setRequireLogin=false) + CTA litt.ly→en/inquiry 갱신
 //  방식: 소유자 Drive에서 정확한 제목으로 기존 폼을 찾아 openById → 설정 변경.
 //        새 폼을 만들지 않음(FormApp.create 호출 없음).
 //  실행: GM이 GAS 에디터에서 updateEnglishFormsAccess() 1회 실행(폼 소유자 계정).
 // ═══════════════════════════════════════════════════════════
 
-// 생성 시 사용한 정확한 폼 제목 → 수정 후 description(이미 litt.ly→ko/inquiry 반영본)
+// 생성 시 사용한 정확한 폼 제목 → 수정 후 description(이미 litt.ly→en/inquiry 반영본)
 var EN_FORM_SPECS = [
   { title: 'Wellperion Private Sports Club — Membership Inquiry',
     desc: 'Thank you for your interest in Wellperion, Seoul\'s premier private sports club. ' +
           'Please complete the following to schedule your exclusive club tour and consultation.\n\n' +
           'Tour appointments are available by prior reservation only. Walk-in visits are not accepted.\n' +
-          'For immediate assistance: http://wellperion.com/ko/inquiry/' },
+          'For immediate assistance: http://wellperion.com/en/inquiry/' },
   { title: 'Wellperion Private Sports Club — Adult Lesson Inquiry',
     desc: 'Interested in private or group lessons at Wellperion? ' +
           'Fill in the details below and our program consultants will reach out to arrange a session tailored to your schedule and goals.\n\n' +
           'All lessons are by prior reservation only. Walk-in visits are not accepted.\n' +
-          'For immediate assistance: http://wellperion.com/ko/inquiry/' },
+          'For immediate assistance: http://wellperion.com/en/inquiry/' },
   { title: 'Wellperion Private Sports Club — Youth (WSC) Lesson Inquiry',
     desc: 'Enroll your child in Wellperion\'s exclusive youth sports programs. ' +
           'Please provide the details below and our WSC program team will contact you to discuss the best fit.\n\n' +
           'All youth programs are by prior reservation only. Walk-in visits are not accepted.\n' +
-          'For immediate assistance: http://wellperion.com/ko/inquiry/' },
+          'For immediate assistance: http://wellperion.com/en/inquiry/' },
   { title: 'Wellperion Private Sports Club — Summer Special Programs',
     desc: 'Make the most of your summer at Wellperion. ' +
           'Our Summer Special programs offer intensive sessions across five premium sports disciplines. ' +
           'Submit your inquiry and our team will reach out with program details and scheduling options.\n\n' +
           'All Summer Special programs are by prior reservation only. Availability is limited — early inquiry is encouraged.\n' +
-          'For immediate assistance: http://wellperion.com/ko/inquiry/' }
+          'For immediate assistance: http://wellperion.com/en/inquiry/' }
 ];
 
 // Drive에서 정확한 제목의 Google Form을 찾아 폼 객체 반환(없으면 null, 다수면 가장 최근 1개)
@@ -611,7 +611,7 @@ function updateEnglishFormsAccess() {
       var before = form.requiresLogin();
       form.setRequireLogin(false);   // 익명 제출 허용(로그인벽 제거)
       form.setCollectEmail(false);   // 이메일 수집(확인됨) 끄기 — 로그인 강제 부가요인 제거
-      form.setDescription(spec.desc); // CTA litt.ly→ko/inquiry 반영
+      form.setDescription(spec.desc); // CTA litt.ly→en/inquiry 반영
       var after = form.requiresLogin();
       Logger.log('[수정] ' + spec.title);
       Logger.log('   requiresLogin: ' + before + ' → ' + after);
