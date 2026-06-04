@@ -225,12 +225,12 @@
       </div>
       <div class="ntool-row">
         <div>
-          <label class="ntool-label">제목 (한글)</label>
-          <input class="ntool-input" id="noticeTitleKr" placeholder="예: 사우나 내 개인 물품 관리" oninput="ntUpdatePreview()">
+          <label class="ntool-label">제목 (한글) <span style="font-weight:400;color:var(--accent);">— Enter로 줄바꿈</span></label>
+          <textarea class="ntool-input" id="noticeTitleKr" rows="1" placeholder="예: 사우나 내 개인 물품 관리" oninput="ntUpdatePreview()" style="resize:vertical;min-height:42px;line-height:1.45;font-family:inherit;overflow:hidden;"></textarea>
         </div>
         <div>
-          <label class="ntool-label">제목 (영문)</label>
-          <input class="ntool-input" id="noticeTitleEn" placeholder="예: Responsibility on Personal Item" oninput="ntUpdatePreview()">
+          <label class="ntool-label">제목 (영문) <span style="font-weight:400;color:var(--accent);">— Enter로 줄바꿈</span></label>
+          <textarea class="ntool-input" id="noticeTitleEn" rows="1" placeholder="예: Responsibility on Personal Item" oninput="ntUpdatePreview()" style="resize:vertical;min-height:42px;line-height:1.45;font-family:inherit;overflow:hidden;"></textarea>
         </div>
       </div>
       <div class="ntool-row">
@@ -389,6 +389,8 @@
   const noticeImages = [];
   function el(id){ return document.getElementById(id); }
   function esc(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+  /* v2.61 — 제목 줄바꿈 지원: 이스케이프 후 개행(\n)을 <br>로. 제목칸 textarea Enter 반영 */
+  function escBr(s){ return esc(s).replace(/\r\n|\r|\n/g, '<br>'); }
   /* 게시기간 표시 — '게시기간 : 시작일 - 종료일' 고정 형식 */
   function ntFormatDateRange(){
     var s = el('noticeStartDate') ? el('noticeStartDate').value : '';
@@ -593,8 +595,8 @@
     var hdr = el('noticeHdr');
     if(hdr) hdr.style.background = brand.hdr;
     var kr = el('noticePvTitleKr'); var en = el('noticePvTitleEn');
-    kr.textContent = el('noticeTitleKr').value || '국문 공지 제목';
-    en.textContent = el('noticeTitleEn').value || 'ENG NOTICE TITLE';
+    kr.innerHTML = escBr(el('noticeTitleKr').value) || '국문 공지 제목';
+    en.innerHTML = escBr(el('noticeTitleEn').value) || 'ENG NOTICE TITLE';
     kr.style.color = brand.logo;
     en.style.color = brand.logo;
     /* 헤더 우상단 mark = 사업부별 mark.png (img) / 푸터 배경 = 사업부 BG / 푸터 corner = 흰색 고정 */
@@ -863,8 +865,8 @@
     html += '<div class="hdr" style="background:'+brand.hdr+';">';
     html += '<div class="notice-label-top">NOTICE</div>';
     html += '<img class="wmark" src="'+WM_BASE+brand.mark+'" alt="W">';
-    html += '<div class="tkr">'+esc(titleKr)+'</div>';
-    html += '<div class="ten">'+esc(titleEn)+'</div>';
+    html += '<div class="tkr">'+escBr(titleKr)+'</div>';
+    html += '<div class="ten">'+escBr(titleEn)+'</div>';
     html += '<div class="sub"><em>A Day, Well Completed.</em> 하루의 완성, 웰페리온</div>';
     html += '</div>';
     html += '<div class="body">'+bodyHtml+imgHtml+'</div>';
@@ -923,7 +925,7 @@
   }
 
   function ntDownloadFileName(ext){
-    var titleKr = (el('noticeTitleKr').value || '공지').replace(/[\\\/:\*\?"<>\|]/g,'').trim();
+    var titleKr = (el('noticeTitleKr').value || '공지').replace(/[\r\n]+/g,' ').replace(/[\\\/:\*\?"<>\|]/g,'').trim();
     var d = new Date().toISOString().slice(0,10).replace(/-/g,'');
     return 'WELLPERION_'+titleKr+'_'+d+'.'+ext;
   }
