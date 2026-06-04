@@ -53,6 +53,14 @@ var PIPA_SUMMER =
   'You have the right to refuse consent; however, doing so may prevent us from processing your inquiry.\n\n' +
   'I have read and agree to the above terms for the collection and use of my personal information.';
 
+// ─── 공통 helpText (하이엔드 톤 · 개인 실명/시시한 예시 금지) ───
+// 이름칸: 안내 불필요(필드명 자체로 자명) → 빈 값으로 깔끔하게.
+var HT_NAME = '';
+// 전화칸: 형식 예시("010-0000-0000") 대신 목적만 정중히 안내.
+var HT_PHONE = 'For consultation scheduling only.';
+// 나이칸: "e.g., 8" 같은 시시한 예시 제거.
+var HT_AGE = '';
+
 // ─── 유틸: Language 고정값 항목 추가 ───
 function _addLanguageField_(form) {
   var item = form.addTextItem();
@@ -95,13 +103,13 @@ function createMembershipFormEN_() {
   // Q1 Full Name
   form.addTextItem()
     .setTitle('Full Name')
-    .setHelpText('e.g., Kim Namwook')
+    .setHelpText(HT_NAME)
     .setRequired(true);
 
   // Q2 Mobile Phone Number
   form.addTextItem()
     .setTitle('Mobile Phone Number')
-    .setHelpText('e.g., 010-0000-0000 — Used for consultation scheduling only.')
+    .setHelpText(HT_PHONE)
     .setRequired(true);
 
   // Q3 Areas of Interest (checkbox)
@@ -180,13 +188,13 @@ function createAdultLessonFormEN_() {
   // Q1 Full Name
   form.addTextItem()
     .setTitle('Full Name')
-    .setHelpText('e.g., Kim Namwook')
+    .setHelpText(HT_NAME)
     .setRequired(true);
 
   // Q2 Mobile Phone Number
   form.addTextItem()
     .setTitle('Mobile Phone Number')
-    .setHelpText('e.g., 010-0000-0000')
+    .setHelpText(HT_PHONE)
     .setRequired(true);
 
   // Q3 Age Group (MC)
@@ -287,19 +295,19 @@ function createYouthLessonFormEN_() {
   // Q1 Child's Full Name
   form.addTextItem()
     .setTitle("Child's Full Name")
-    .setHelpText('e.g., Kim Sieun')
+    .setHelpText(HT_NAME)
     .setRequired(true);
 
   // Q2 Guardian's Mobile Phone Number
   form.addTextItem()
     .setTitle("Guardian's Mobile Phone Number")
-    .setHelpText('e.g., 010-0000-0000')
+    .setHelpText(HT_PHONE)
     .setRequired(true);
 
   // Q3 Child's Age
   form.addTextItem()
     .setTitle("Child's Age (years)")
-    .setHelpText('e.g., 8')
+    .setHelpText(HT_AGE)
     .setRequired(true);
 
   // Q4 WSC Program of Interest (checkbox)
@@ -333,7 +341,7 @@ function createYouthLessonFormEN_() {
   // Q6 Guardian's Full Name
   form.addTextItem()
     .setTitle("Guardian's Full Name")
-    .setHelpText('e.g., Kim Namwook')
+    .setHelpText(HT_NAME)
     .setRequired(true);
 
   // Q7 Guardian's Relationship to Child (MC, optional)
@@ -388,13 +396,13 @@ function createSummerSpecialFormEN_() {
   // Q1 Full Name
   form.addTextItem()
     .setTitle('Full Name')
-    .setHelpText('e.g., Kim Namwook')
+    .setHelpText(HT_NAME)
     .setRequired(true);
 
   // Q2 Mobile Phone Number
   form.addTextItem()
     .setTitle('Mobile Phone Number')
-    .setHelpText('e.g., 010-0000-0000')
+    .setHelpText(HT_PHONE)
     .setRequired(true);
 
   // Q3 Participant Type (MC)
@@ -786,6 +794,101 @@ function finalizeEnglishForms() {
     Logger.log('=== 전부 FINALIZED — 익명 시크릿창 제출 테스트 후 해당 시트 탭 적재 확인 권장 ===');
   } else {
     Logger.log('!! ' + notReady + '건 미완 — 위 로그의 NEEDS_ATTENTION/ERROR 항목 확인. 잠시 후 재실행(멱등) 또는 폼 UI 점검.');
+  }
+  return summary;
+}
+
+// ═══════════════════════════════════════════════════════════
+//  [카피정리·멱등] updateEnglishFormsCopy() — 기존 폼 helpText만 정리
+//  목적: 라이브 영문 폼 4종에서 (1)GM 실명 예시 제거(privacy) (2)시시한 예시 정리
+//        — 를 항목 추가/삭제 없이 helpText 텍스트만 덮어써 반영.
+//  안전성: FormApp.create 없음 · addItem/deleteItem 없음 · 제목으로 기존 폼·항목을 찾아
+//          setHelpText만 호출. 여러 번 실행해도 결과 동일(멱등). 응답/시트연결 영향 0.
+//  실행: GM이 GAS 에디터에서 updateEnglishFormsCopy() 1회 실행(폼 소유자 cao@ 계정).
+// ═══════════════════════════════════════════════════════════
+
+// 폼 제목 → { 항목 제목 : 새 helpText } 매핑. 여기 없는 항목은 손대지 않음.
+// (긴 안내문[목표·요청·일정 등]은 의도적으로 미포함 = 기존 유지)
+var EN_COPY_MAP = [
+  { title: 'Wellperion Private Sports Club — Membership Inquiry', help: {
+      'Full Name': HT_NAME,
+      'Mobile Phone Number': HT_PHONE
+    } },
+  { title: 'Wellperion Private Sports Club — Adult Lesson Inquiry', help: {
+      'Full Name': HT_NAME,
+      'Mobile Phone Number': HT_PHONE
+    } },
+  { title: 'Wellperion Private Sports Club — Youth (WSC) Lesson Inquiry', help: {
+      "Child's Full Name": HT_NAME,
+      "Guardian's Mobile Phone Number": HT_PHONE,
+      "Child's Age (years)": HT_AGE,
+      "Guardian's Full Name": HT_NAME
+    } },
+  { title: 'Wellperion Private Sports Club — Summer Special Programs', help: {
+      'Full Name': HT_NAME,
+      'Mobile Phone Number': HT_PHONE
+    } }
+];
+
+function updateEnglishFormsCopy() {
+  Logger.log('=== [카피정리·멱등] updateEnglishFormsCopy — helpText만 정리(실명 제거 + 예시 정돈) ===');
+  var summary = [];
+  for (var i = 0; i < EN_COPY_MAP.length; i++) {
+    var map = EN_COPY_MAP[i];
+    var rec = { title: map.title, status: 'PENDING', updated: [], missing: [] };
+    try {
+      var form = _findFormByTitle_(map.title);
+      if (!form) {
+        Logger.log('[누락] 폼 못 찾음: ' + map.title);
+        rec.status = 'NOT_FOUND';
+        summary.push(rec);
+        continue;
+      }
+      rec.published = form.getPublishedUrl();
+
+      var items = form.getItems(); // 모든 항목 순회 — 추가/삭제 없음
+      var titlesNeeded = {};
+      for (var k in map.help) { titlesNeeded[k] = true; }
+
+      for (var j = 0; j < items.length; j++) {
+        var it = items[j];
+        var t = it.getTitle();
+        if (!(t in map.help)) continue;
+        var newHelp = map.help[t];
+        // setHelpText는 TextItem/ParagraphTextItem 등 항목 타입에 따라 캐스팅 필요.
+        // 여기 매핑 대상은 모두 단답 텍스트 항목(addTextItem) → asTextItem()으로 접근.
+        var op = _tryFormOp_(function () { it.asTextItem().setHelpText(newHelp); }, 'setHelpText:' + t);
+        if (op === 'OK') { rec.updated.push(t); } else { rec.missing.push(t + ' (' + op + ')'); }
+        delete titlesNeeded[t];
+      }
+      // 매핑에 있었으나 폼에서 못 찾은 항목 = 제목 불일치(보고용)
+      for (var rem in titlesNeeded) { rec.missing.push(rem + ' (NOT_IN_FORM)'); }
+
+      rec.status = (rec.missing.length === 0) ? 'COPY_UPDATED' : 'PARTIAL';
+      Logger.log('[' + rec.status + '] ' + map.title);
+      Logger.log('   updated: ' + rec.updated.join(' | '));
+      if (rec.missing.length) Logger.log('   missing: ' + rec.missing.join(' | '));
+    } catch (e) {
+      Logger.log('[오류] ' + map.title + ' — ' + e.message);
+      rec.status = 'ERROR';
+      rec.error = e.message;
+    }
+    summary.push(rec);
+    Utilities.sleep(2500); // 폼 간 간격 — rate-limit 회피
+  }
+
+  Logger.log('');
+  Logger.log('=== 카피정리 결과 요약 ===');
+  var notDone = 0;
+  summary.forEach(function (s) {
+    Logger.log(s.status + ' | updated=' + (s.updated ? s.updated.length : 0) + ' | ' + s.title);
+    if (s.status !== 'COPY_UPDATED') notDone++;
+  });
+  Logger.log('');
+  if (notDone === 0) {
+    Logger.log('=== 전부 COPY_UPDATED — 폼에서 이름/전화/나이칸 예시에 실명·시시한 예시 사라졌는지 육안 확인 ===');
+  } else {
+    Logger.log('!! ' + notDone + '건 미완(PARTIAL/NOT_FOUND/ERROR) — 항목 제목 불일치 가능. 위 missing 확인 후 재실행(멱등).');
   }
   return summary;
 }
