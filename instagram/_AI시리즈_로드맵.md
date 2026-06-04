@@ -55,7 +55,7 @@
 - `큐레이션_추천.md` (register_publish 자동 생성 — 발행기 필수 입력, 누락 금지)
 - `review_queue.json` 엔트리: `id·title·channel·account·folder·preview·slides[]·caption·location·collaborators[]·mentions[]·status`
 - caption 은 review_queue 가 단일 출처. `큐레이션_추천.md`는 그 caption 의 직렬화(자동 동기화).
-- 발행 경로: M5 [승인] → status='승인' → (즉시 봇 pub: 또는) **매일 07:30 `ig_publish_dispatcher.py`**(인터랙티브 데스크톱 세션)가 일괄 발행.
+- 발행 경로(2026-06-04 GM 정정 · 무폴링): **매일 07:30 `ig_series_producer.py`** 제작 → M5 검수대기 등록 + 로드맵 행 '제작완료(자동생성)' 자동표시 + 텔레그램 [✅승인] 버튼 카드 발송 → GM이 M5 슬라이드 검토 → **텔레그램 카드 [✅승인] 탭** → 봇 `pub:` 콜백이 그 순간 즉시 발행. 스케줄 일괄발행(`ig_publish_dispatcher.py` 07:30) 폐기 · review_queue 폴링 감시기 부활 금지.
 
 - 자동 등록 = GM이 M5(콘텐츠 검수·자동업로드, cmo-publish)에서 [승인] 누르면 시모가 즉시 발행할 수 있는 상태로 둔다.
 - review_queue 항목 스키마(기존 재사용·신규 포맷 금지): `id` · `title` · `channel` · `account` · `folder` · `preview`(montage를 `cmo/review/`로 복사한 배포루트 상대경로) · `slides[]` · `caption` · `location` · `collaborators[]` · `mentions[]` · `status="검수 대기"`.
@@ -84,6 +84,6 @@
 - #4 역할분담(260603): 제작완료·GM검수대기. 로드맵 번호 2026-06-04 GM 확정으로 #4 고정.
 - #5 깨진환상들(260604): 제작완료·GM검수대기. #4와 메시지 중복 점검 완료(역할경계 vs 한계경험 차별화).
 - #6~#8 제목·메시지는 초안. 매 편 제작 직전 직전편과 중복 점검 후 확정.
-- 발행 게이트: 전 편 GM 회사 시각 검수 후 직접 발행. 사전 자동 발행 금지.
+- 발행 게이트(무폴링): 발행 트리거는 오직 GM 텔레그램 [✅승인] 탭(봇 `pub:` 콜백). 스케줄·폴링 자동 발행 금지. 제작(07:30)은 검수대기 등록 + 버튼 카드 발송까지만.
 - 매 편 마무리 장 슬로건·CTA는 GM 결정에 따름(개인계정 = litt.ly 강제 없음).
 - 보류건: 260602_지속되는건강(건강 철학) = 시리즈 외 보류(폐기 아님). 추후 별도 판단.

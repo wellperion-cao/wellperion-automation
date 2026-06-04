@@ -1,12 +1,15 @@
 """AI 시리즈 다음 편 자동 제작 → M5 검수큐 등록 (제작만 · 발행 절대 자동 아님)
 
-GM 직접 지시(2026-06-04, AI CTO 위임). 매일 21:00(전날 저녁) 예약작업으로 가동되어
+GM 정정 지시(2026-06-04, AI CTO 위임). 매일 07:30 예약작업으로 가동되어
 로드맵상 '다음 예정 편'을 시모(헤드리스 claude)가 GM 1인칭 보이스로 초안 제작 → 빌드 →
-register_publish 로 M5 검수큐(status='검수대기') 적재까지 자동. 그 뒤 GM 저녁~아침 검토 →
-M5 [승인] → 다음날 07:30 ig_publish_dispatcher 가 발행. 발행 게이트는 GM 수동 승인 불변.
+register_publish 로 M5 검수큐(status='검수대기') 적재 → 로드맵 행 '제작완료(자동생성)' 자동 표시 →
+send_review_card 로 GM 텔레그램에 [✅승인]/[❌반려] 버튼 카드 발송까지 자동. 그 뒤 GM 이 M5 에서
+슬라이드 검토 → 텔레그램 카드 [✅승인] 탭 → 봇 pub: 콜백이 그 순간 즉시 발행(무폴링). 발행 게이트는
+GM 텔레그램 탭(수동 승인) 불변 — 스케줄 발행 없음.
 
 ★ 안전 원칙 (절대 위반 금지):
-  - 자동 발행 없음. 이 스크립트는 status='검수대기' 까지만 만든다.
+  - 자동 발행 없음. 이 스크립트는 status='검수대기' 적재 + [승인] 버튼 카드 발송까지만 한다.
+  - 발행 트리거는 오직 GM 텔레그램 [✅승인] 탭(봇 pub: 콜백). review_queue 폴링 감시기 부활 금지.
   - 로드맵 '기획예정' 소진 시 생성 금지 + 텔레그램 1줄 경고 후 종료(쓰레기/중복 생성 금지).
   - 생성 실패(로드맵 파싱·헤드리스 호출·빌드 등) 시 텔레그램 경고 + 중단. 불량 항목 M5 미등록.
 
@@ -183,6 +186,17 @@ def make_folder_slug(ep: dict) -> str:
     return f"{today}_AI{ep['num']}_{safe}"
 
 
+def make_queue_id(ep: dict) -> str:
+    """이 편의 review_queue id 를 결정적으로 재구성.
+
+    ★ build_producer_prompt 의 QUEUE_ID 공식과 반드시 동일해야 한다(시모가 쓴 build_slides.py
+    의 queue_id 와 일치해야 카드를 정확히 그 엔트리로 발송·발행 가능). 공식 변경 시 양쪽 동시 수정.
+    예: #6 「작은 가게도 AI 팀을 가질 수 있다」 → CMO-2026-06-04-AI6-작은가게도AI팀을가
+    """
+    head = re.sub(r"[^0-9A-Za-z가-힣]", "", ep["title"].split(":")[0])[:10]
+    return f"CMO-{datetime.now().strftime('%Y-%m-%d')}-AI{ep['num']}-{head}"
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 # 시모(헤드리스 claude) 호출 — build_slides.py 작성 위임
 # ─────────────────────────────────────────────────────────────────────────────
@@ -309,6 +323,105 @@ def invoke_simo_producer(ep: dict, prev: dict | None, folder_slug: str, timeout:
 
 
 # ─────────────────────────────────────────────────────────────────────────────
+# 로드맵 자동 갱신 (생산·등록 성공 시 해당 편 행 상태 → 제작완료, 다음날 다음 편 선정)
+# ─────────────────────────────────────────────────────────────────────────────
+PRODUCED_STATUS = "제작완료·GM검수대기(자동생성)"  # 생산 성공 후 로드맵 행 상태값
+
+
+def mark_episode_produced(ep: dict, folder_slug: str) -> bool:
+    """로드맵 편별 표에서 ep['num'] 행의 일자·폴더·상태를 '제작완료(자동생성)'로 갱신.
+
+    현재 상태가 PLANNED_STATUS('기획예정') 인 행만 손댄다(이미 발행완료 등은 강등 금지).
+    그래야 다음날 가동 시 pick_next_episode 가 그 다음 '기획예정' 편을 고른다(중복 재생성 차단).
+    반환: 갱신 성공 여부. 실패해도 빌드/등록은 이미 끝났으므로 죽지 않음(상위에서 경고만).
+    """
+    try:
+        text = ROADMAP.read_text(encoding="utf-8")
+    except Exception as exc:
+        print(f"[WARN] 로드맵 읽기 실패 — 자동표시 건너뜀: {exc}")
+        return False
+
+    today_iso = datetime.now().strftime("%Y-%m-%d")
+    out_lines: list[str] = []
+    updated = False
+    for raw in text.splitlines():
+        line = raw.rstrip("\n")
+        stripped = line.strip()
+        # 표 데이터 행만 검사 (| 로 시작, 구분선·헤더 제외)
+        if updated or not stripped.startswith("|"):
+            out_lines.append(line)
+            continue
+        if set(stripped.replace("|", "").replace("-", "").replace(":", "").strip()) == set():
+            out_lines.append(line)
+            continue
+        cells = [c.strip() for c in stripped.strip("|").split("|")]
+        if len(cells) < 6:
+            out_lines.append(line)
+            continue
+        m = re.match(r"^\s*(\d+)", cells[0])
+        if not m or int(m.group(1)) != ep["num"]:
+            out_lines.append(line)
+            continue
+        # 매칭 — 단 '기획예정' 행만 갱신(회귀 가드)
+        if cells[5] != PLANNED_STATUS:
+            print(f"[INFO] 로드맵 #{ep['num']} 행 상태='{cells[5]}' (기획예정 아님) — 자동표시 생략(강등 금지).")
+            out_lines.append(line)
+            updated = True  # 더 갱신 안 함(첫 매칭 행만)
+            continue
+        cells[1] = today_iso
+        cells[2] = folder_slug
+        cells[5] = PRODUCED_STATUS
+        out_lines.append("| " + " | ".join(cells) + " |")
+        updated = True
+        print(f"[INFO] 로드맵 #{ep['num']} 행 자동 갱신 → 일자={today_iso} 폴더={folder_slug} 상태={PRODUCED_STATUS}")
+
+    if not updated:
+        print(f"[WARN] 로드맵에서 #{ep['num']} 행을 찾지 못함 — 자동표시 실패(다음날 중복 재생성 위험).")
+        return False
+    try:
+        # 끝 개행 보존
+        new_text = "\n".join(out_lines)
+        if text.endswith("\n") and not new_text.endswith("\n"):
+            new_text += "\n"
+        ROADMAP.write_text(new_text, encoding="utf-8")
+        return True
+    except Exception as exc:
+        print(f"[WARN] 로드맵 쓰기 실패 — 자동표시 미반영: {exc}")
+        return False
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# 검수 카드 발송 (제작완료 시 [✅승인]/[❌반려] 버튼 카드 → 텔레그램, 무폴링 발행 트리거)
+# ─────────────────────────────────────────────────────────────────────────────
+def send_review_card(queue_id: str) -> bool:
+    """scripts/send_review_card.py --id <queue_id> 호출 → GM 텔레그램에 [✅승인] 버튼 카드 발송.
+
+    register_publish 의 montage 사진(버튼 없음) 와 별개로, 이 버튼 카드 탭이 유일한 무폴링 발행
+    트리거다(bot.py pub: 콜백). 실패해도 제작·등록은 이미 끝났으므로 죽지 않음(경고만).
+    """
+    script = ROOT / "scripts" / "send_review_card.py"
+    try:
+        env = dict(os.environ, PYTHONIOENCODING="utf-8")
+        proc = subprocess.run(
+            [str(PY), str(script), "--id", queue_id],
+            cwd=str(ROOT),
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            env=env,
+            timeout=30,
+        )
+        print((proc.stdout or "") + (proc.stderr or ""))
+        ok = proc.returncode == 0
+        print(f"[{'OK' if ok else 'WARN'}] 검수 카드 발송 {'성공' if ok else '실패'} — id={queue_id}")
+        return ok
+    except Exception as exc:
+        print(f"[WARN] 검수 카드 발송 예외 (제작·등록은 완료): {exc}")
+        return False
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 # 빌드 실행 (생성된 build_slides.py → register_publish → M5 검수대기)
 # ─────────────────────────────────────────────────────────────────────────────
 def run_build_slides(build_path: Path, timeout: int = 300) -> None:
@@ -416,11 +529,27 @@ def run(dry_run: bool, plan_only: bool) -> int:
         telegram(msg)
         return 1
 
-    # 6) 성공 — register_publish 가 이미 텔레그램 카드(montage)를 보냄.
-    #    여기서는 추가 1줄로 '검수 대기까지 = 발행 아님' 명확화.
+    # 6) 로드맵 자동 갱신 — 이 편 행을 '제작완료(자동생성)'로 표시(다음날 다음 편 선정·중복 차단).
+    #    실패해도 제작·등록은 끝났으므로 경고만.
+    if not mark_episode_produced(nxt, folder_slug):
+        telegram(
+            f"⚠️ AI 시리즈 #{nxt['num']} 로드맵 자동표시 실패 — 다음날 같은 편 재생성 위험. "
+            f"로드맵 #{nxt['num']} 행 상태 수동 확인 요망."
+        )
+
+    # 7) 검수 카드 발송 — [✅승인]/[❌반려] 버튼 카드(무폴링 발행 트리거). register_publish montage 와 별개.
+    queue_id = make_queue_id(nxt)
+    if not send_review_card(queue_id):
+        telegram(
+            f"⚠️ AI 시리즈 #{nxt['num']} 검수 카드(버튼) 발송 실패 — id={queue_id}. "
+            f"M5 등록은 됨. 수동 카드 발송: send_review_card.py --id {queue_id}"
+        )
+
+    # 8) 성공 — register_publish montage + 위 [승인] 버튼 카드까지 발송됨.
+    #    발행은 GM 텔레그램 [✅승인] 탭 시 봇 pub: 콜백이 즉시 수행(무폴링). 이 스크립트는 발행 안 함.
     print(
-        f"[OK] AI 시리즈 #{nxt['num']} 「{nxt['title']}」 제작 완료 → M5 검수대기 등록. "
-        f"발행은 GM M5 [승인] 후 07:30 배치. (이 스크립트는 발행 안 함)"
+        f"[OK] AI 시리즈 #{nxt['num']} 「{nxt['title']}」 제작 완료 → M5 검수대기 등록 + 검수 카드 발송. "
+        f"발행은 GM 텔레그램 [✅승인] 탭 → 봇 pub: 즉시 발행(무폴링). (이 스크립트는 발행 안 함)"
     )
     return 0
 
