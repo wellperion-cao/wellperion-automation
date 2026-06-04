@@ -616,17 +616,17 @@
     <!-- AUTO:LATEST-START -->
     <div class="card grow">
       <h4>최신 업데이트 — 2026-06-04 (자동 갱신)</h4>
+      <p><strong>2026-06-04</strong> fix(cmo): 발레 슬라이드 3개 반려 항목 수정 — litt.ly 전면 교체·중복텍스트·벽사인</p>
       <p><strong>2026-06-04</strong> fix(g1): 재편집 후 화면 롤백 버그 근본수정 — 낙관적 갱신 정합 + 자동 재fetch 제거</p>
       <p><strong>2026-06-04</strong> feat(cmo): 발레 IG 슬라이드 7장 제작 — 바레 벤치마킹 합성 + 가이드카드 + 5채널</p>
       <p><strong>2026-06-04</strong> fix(cmo): 영문폼 스캔매칭을 발행URL 폼ID 기준으로 — 내부 제목 empty 대응</p>
       <p><strong>2026-06-04</strong> feat(cmo): 영문폼 카피정리 스캔형 함수 fixEnglishFormsCopyByScan</p>
-      <p><strong>2026-06-04</strong> chore(handoff): 업무 편집 빈값 초기화 근본차단 → 시우(COO) 위임</p>
     </div>
 <!-- AUTO:LATEST-END -->
         <table>
           <tr><th style="width:160px">날짜</th><th>변경 내용</th></tr>
           <!-- AUTO:TABLE-START -->
-      <tr><td><strong>2026-06-04 (자동)</strong></td><td>fix(g1): 재편집 후 화면 롤백 버그 근본수정 — 낙관적 갱신 정합 + 자동 재fetch 제거 · feat(cmo): 발레 IG 슬라이드 7장 제작 — 바레 벤치마킹 합성 + 가이드카드 + 5채널 · fix(cmo): 영문폼 스캔매칭을 발행URL 폼ID 기준으로 — 내부 제목 empty 대응 · feat(cmo): 영문폼 카피정리 스캔형 함수 f…</td></tr>
+      <tr><td><strong>2026-06-04 (자동)</strong></td><td>fix(cmo): 발레 슬라이드 3개 반려 항목 수정 — litt.ly 전면 교체·중복텍스트·벽사인 · fix(g1): 재편집 후 화면 롤백 버그 근본수정 — 낙관적 갱신 정합 + 자동 재fetch 제거 · feat(cmo): 발레 IG 슬라이드 7장 제작 — 바레 벤치마킹 합성 + 가이드카드 + 5채널 · fix(cmo): 영문폼 스캔매칭을 발행UR…</td></tr>
       <!-- AUTO:TABLE-END -->
           <tr><td><strong>2026-05-28 (14차)</strong></td><td>공지/안내문 생성(COO 하위) · 오프라인 홍보물 디자인 제작(CMO 하위) 도구 신설 · 공지 서식 v2.0 독립 페이지화 · 회사소개서·전략로드맵 원본 「3. 웰페리온 가이드/회사문서/」로 이관(SSOT 단일화) · C-Level 부팅 R/R Notion API→가이드허브 g10 참조로 전환 · GitHub Pages 워크플로 폴더명 경로 수정 · 사이드바 "공통+7개 C-Level" 라벨 제거</td></tr>
           <tr><td>2026-05-27 (13차)</td><td>GitHub Pages 전환 · 사이드바 4섹터 · AI C-Level 통일 · 운영 통합 체계 · 공식채널·지출현황·취업규칙·SSOT 신설 · g2+g19·g9+g20·g12·g13 합병 · 김남욱 탭 확장 · v2.5</td></tr>
@@ -8686,9 +8686,9 @@ function crTab(btn, panelId) {
 
     function init(){
       var paths = [
+        'https://raw.githubusercontent.com/wellperion-cao/wellperion-automation/master/status/_queue.json',
         './status/_queue.json',
-        '../../status/_queue.json',
-        '/wellperion-automation/status/_queue.json'
+        '../../status/_queue.json'
       ];
       function tryFetch(i){
         if(i >= paths.length){
