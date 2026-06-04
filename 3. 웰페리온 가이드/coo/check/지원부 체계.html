@@ -151,15 +151,60 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 .board-cell.editing .board-cell-list,.board-cell.editing .board-cell-empty{display:none}
 .board-edit-hint{font-size:11px;color:var(--dim);margin-top:5px;display:none}
 .board-cell.editing .board-edit-hint{display:block}
-/* 데스크탑(≥980px): 7컬럼을 풀폭에 균등 분배 → 스크롤 없이 한눈에.
-   컬럼 최소폭 충분(요일 헤더+남/여 셀 가독). 안 들어가면 자동 가로 스크롤. */
-@media(min-width:980px){
-  .board-scroll{flex-wrap:nowrap}
-  .board-scroll .board-col{flex:1 1 0;min-width:148px}
-}
-/* 초대형 화면에서 컬럼 과확장 방지(가독 폭 상한) */
-@media(min-width:1700px){
-  .board-scroll .board-col{max-width:280px}
+
+/* ── 요일 툴바 (매뉴얼 탭 상단 · 단일요일 뷰 선택) ── */
+.day-toolbar{display:flex;gap:8px;flex-wrap:wrap;margin:4px 0 16px}
+.day-tab{flex:1 1 0;min-width:54px;padding:11px 6px;border-radius:12px;border:1.5px solid var(--border);
+  background:var(--bg);color:var(--text);font-family:inherit;font-size:17px;font-weight:700;cursor:pointer;
+  display:flex;flex-direction:column;align-items:center;gap:4px;line-height:1.1;transition:all .12s}
+.day-tab .dt-sub{font-size:10px;font-weight:600;opacity:.7}
+.day-tab:hover{border-color:var(--accent)}
+.day-tab.is-weekend{background:var(--accent-bg)}
+.day-tab.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+.day-tab.active.is-weekend{background:var(--orange);border-color:var(--orange)}
+.day-tab.active .dt-sub{opacity:.9}
+
+/* ── 단일 요일 뷰 (선택 요일의 남/여/외곽 큰 카드) ── */
+.day-view{max-width:920px;margin:0 auto}
+.day-view-head{display:flex;align-items:center;gap:10px;margin:0 0 14px;padding-bottom:10px;border-bottom:1px solid var(--border)}
+.day-view-head .dv-day{font-size:24px;font-weight:800;color:var(--text)}
+.day-view-head .dv-today{font-size:12px;font-weight:700;color:var(--green);background:var(--green-bg);padding:3px 10px;border-radius:12px}
+.dv-grid{display:flex;flex-direction:column;gap:16px}
+.dv-cell{background:var(--bg);border:1px solid var(--border);border-radius:14px;padding:16px 18px}
+.dv-cell.male{border-left:4px solid var(--blue)}
+.dv-cell.female{border-left:4px solid var(--orange)}
+.dv-cell.outer{border-left:4px solid var(--green)}
+.dv-cell-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.dv-cell-label{font-size:19px;font-weight:800;display:inline-flex;align-items:center;gap:6px}
+.dv-cell-label.male{color:var(--blue)}
+.dv-cell-label.female{color:var(--orange)}
+.dv-cell-label.outer{color:var(--green)}
+.dv-edit-btn{font-size:14px;font-weight:700;padding:6px 16px;border-radius:9px;cursor:pointer;font-family:inherit;
+  border:1.5px solid;background:var(--accent-bg);color:var(--accent);border-color:rgba(183,159,138,0.4)}
+.dv-edit-btn:hover{background:rgba(183,159,138,0.22)}
+.dv-edit-btn.save{background:var(--green-bg);color:var(--green);border-color:rgba(106,191,123,0.4)}
+/* 시간대 그룹 */
+.dv-timeblock{margin:0 0 12px}
+.dv-timeblock:last-child{margin-bottom:0}
+.dv-tb-label{display:inline-block;font-size:14px;font-weight:800;color:var(--accent);
+  background:var(--accent-bg);padding:4px 12px;border-radius:8px;margin-bottom:7px}
+.dv-list{margin:0;padding-left:22px;list-style:disc;font-size:16px;line-height:1.7}
+.dv-list li{margin-bottom:6px;word-break:break-word}
+.dv-empty{font-size:15px;color:var(--dim);font-style:italic;padding:4px 0}
+.dv-edit{display:none;width:100%;min-height:200px;background:var(--paper);border:1.5px solid var(--accent);color:var(--text);
+  border-radius:10px;padding:12px 14px;font-size:15px;font-family:inherit;line-height:1.6;resize:vertical;box-sizing:border-box}
+.dv-cell.editing .dv-edit{display:block}
+.dv-cell.editing .dv-body{display:none}
+.dv-edit-hint{font-size:13px;color:var(--dim);margin-top:8px;display:none;line-height:1.5}
+.dv-cell.editing .dv-edit-hint{display:block}
+
+/* 모바일: 요일 탭 폭 축소 */
+@media(max-width:560px){
+  .day-tab{min-width:40px;font-size:15px;padding:9px 3px}
+  .day-tab .dt-sub{font-size:9px}
+  .dv-cell{padding:13px 14px}
+  .dv-list{font-size:15px}
+  .day-view-head .dv-day{font-size:21px}
 }
 /* Admin shift card */
 .admin-shift-card{background:var(--paper);border:1px solid var(--border);border-radius:12px;padding:16px 18px;margin-bottom:12px}
@@ -534,13 +579,15 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 
 <div id="tab-manual" class="content hidden">
 
-  <!-- ── 요일별 트렐로 보드 (주 콘텐츠) ── -->
+  <!-- ── 요일별 업무 보드 (주 콘텐츠 · 요일 툴바 + 단일요일 뷰) ── -->
   <div style="font-size:16px;font-weight:700;color:var(--text);padding:2px 0 4px;">요일별 업무 보드</div>
-  <div class="board-intro">요일별 컬럼 안에 👨남 / 👩여 업무를 분리했습니다. 각 셀의 <strong>편집</strong> 버튼으로 항목을 추가·수정·삭제하고 저장하면 모든 기기에 반영됩니다. (PC는 7개 요일 한눈에 · 모바일은 가로 스크롤)</div>
-  <!-- 보드만 720px 제약 탈출(풀폭) — 데스크탑 7컬럼 한눈에 -->
-  <div class="board-fullwidth">
-    <div id="manual-board" class="board-scroll"></div>
-  </div>
+  <div class="board-intro">위 <strong>요일 버튼</strong>을 눌러 그 요일의 👨남 / 👩여 / 🏢외곽 업무를 봅니다. (기본 = 오늘 요일) 각 카드의 <strong>편집</strong> 버튼으로 항목을 추가·수정·삭제하고 저장하면 모든 기기에 반영됩니다. 시간대는 <code>오전::</code> 처럼 줄 맨 앞에 <code>시간대::</code>로 표기하면 자동으로 묶입니다.</div>
+
+  <!-- 요일 툴바 (7요일 가로 한 줄) -->
+  <div id="day-toolbar" class="day-toolbar"></div>
+
+  <!-- 단일 요일 뷰 (선택 요일의 남/여/외곽 큰 카드) -->
+  <div id="manual-board" class="day-view"></div>
 
   <!-- ── 기존 상세 절차 참고 (접이식 · 운영 정보 보존) ── -->
   <div class="manual-section" style="margin-top:18px;">
@@ -2386,7 +2433,7 @@ function switchTab(tab, opts){
    요일별 트렐로 보드 (매뉴얼 탭) — 7컬럼 × 남/여 = 14셀
    저장: localStorage(SUPPORT_MANUAL_BOARD) 즉시 영속 + 기존 패턴대로 API 베스트에포트 POST
    ═══════════════════════════════════════════════ */
-const BOARD_STORAGE_KEY = 'SUPPORT_MANUAL_BOARD'; // 14셀 내용 영속 키 (신규)
+const BOARD_STORAGE_KEY = 'SUPPORT_MANUAL_BOARD'; // 21셀 내용 영속 키 (7요일×남/여/외곽)
 const BOARD_DAYS = [
   {key:'mon',label:'월',weekend:false},
   {key:'tue',label:'화',weekend:false},
@@ -2396,52 +2443,68 @@ const BOARD_DAYS = [
   {key:'sat',label:'토',weekend:true},
   {key:'sun',label:'일',weekend:true}
 ];
+/* 분류 3개: 남 / 여 / 외곽(외부·주차장·건물 외곽). cls = CSS 색 클래스 */
+const BOARD_GENDERS = [
+  {gk:'m',cls:'male',label:'👨 남'},
+  {gk:'f',cls:'female',label:'👩 여'},
+  {gk:'outer',cls:'outer',label:'🏢 외곽'}
+];
 
-/* 시드(seed) — 기존 요일별 집중 청소 표 + 남/여 전담 항목을 요일·성별 셀로 분배.
-   각 값은 줄바꿈(\n) 구분 항목 리스트 텍스트. GM이 이후 직접 편집·저장. */
+/* 시드(seed) — 기존 요일별 집중 청소 표 + 남/여 전담 + 외부·주차장·건물 외곽 항목을 요일·분류 셀로 분배.
+   각 값은 줄바꿈(\n) 구분 항목 리스트 텍스트. 줄 맨 앞 "시간대::" 표기 시 그 시간대 그룹으로 묶임.
+   GM이 이후 직접 편집·저장. */
 const BOARD_SEED = {
   mon:{
-    m:'화장실 전체 청소\n탈수기 물때·곰팡이 제거\nB-1 파우더 관리\nB-5 사우나 화장실 (탕 배수: 마개+스위치)\nE-4 헬스장: 런닝머신 바닥\nE-5 골프장: 타석(스크린천)\nD-3 메인 계단 (남 전담)',
-    f:'화장실 전체 청소\n탈수기 물때·곰팡이 제거\nB-1 파우더 관리\nB-5 사우나 화장실 (탕 배수: 마개+스위치)\nE-4 헬스장: 런닝머신 바닥\nE-5 골프장: 타석(스크린천)\nD-4 메인 복도 휴게공간 (여 전담)'
+    m:'오전(08:00~12:00)::화장실 전체 청소\n오전(08:00~12:00)::탈수기 물때·곰팡이 제거\n오전(08:00~12:00)::B-1 파우더 관리\n오전(08:00~12:00)::B-5 사우나 화장실 (탕 배수: 마개+스위치)\n오전(08:00~12:00)::E-4 헬스장: 런닝머신 바닥\n오전(08:00~12:00)::E-5 골프장: 타석(스크린천)',
+    f:'오전(08:00~12:00)::화장실 전체 청소\n오전(08:00~12:00)::탈수기 물때·곰팡이 제거\n오전(08:00~12:00)::B-1 파우더 관리\n오전(08:00~12:00)::B-5 사우나 화장실 (탕 배수: 마개+스위치)\n오전(08:00~12:00)::E-4 헬스장: 런닝머신 바닥\n오전(08:00~12:00)::E-5 골프장: 타석(스크린천)\n오후(14:00~18:00)::D-4 메인 복도 휴게공간 (여 전담)',
+    outer:'오전후반(10:00~12:00)::D-3 메인 계단 B1-B2 (남 전담)\n오전후반(10:00~12:00)::D-1 외부 화장실 (골프장/B1/B2)\n오전후반(10:00~12:00)::D-2 복도 휴지통 수거\n오전후반(10:00~12:00)::D-5 분리수거장\n오후(14:00~18:00)::E-6 주차장 바닥·화장실·차단기'
   },
   tue:{
-    m:'세면대 배수 파이프 청소\n배수구 소독·머리카락 제거\n탕 내 비품 점검\nE-2 거울·유리창 (화요일 집중)\nD-6 G.X룸 거울·바닥 (남 전담·화요일 집중)\nE-4 헬스장: 스트레칭 공간\nE-5 골프장: 타석(기계)',
-    f:'세면대 배수 파이프 청소\n배수구 소독·머리카락 제거\n탕 내 비품 점검\nE-2 거울·유리창 (화요일 집중)\nE-4 헬스장: 스트레칭 공간\nE-5 골프장: 타석(기계)'
+    m:'오전(08:00~12:00)::세면대 배수 파이프 청소\n오전(08:00~12:00)::배수구 소독·머리카락 제거\n오전(08:00~12:00)::탕 내 비품 점검\n오전(08:00~12:00)::E-2 거울·유리창 (화요일 집중)\n오후(14:00~18:00)::D-6 G.X룸 거울·바닥 (남 전담·화요일 집중)\n오전(08:00~12:00)::E-4 헬스장: 스트레칭 공간\n오전(08:00~12:00)::E-5 골프장: 타석(기계)',
+    f:'오전(08:00~12:00)::세면대 배수 파이프 청소\n오전(08:00~12:00)::배수구 소독·머리카락 제거\n오전(08:00~12:00)::탕 내 비품 점검\n오전(08:00~12:00)::E-2 거울·유리창 (화요일 집중)\n오전(08:00~12:00)::E-4 헬스장: 스트레칭 공간\n오전(08:00~12:00)::E-5 골프장: 타석(기계)',
+    outer:'오전후반(10:00~12:00)::D-1 외부 화장실 (골프장/B1/B2)\n오전후반(10:00~12:00)::D-2 복도 휴지통 수거\n오전후반(10:00~12:00)::D-5 분리수거장\n오후(14:00~18:00)::E-6 주차장 바닥·화장실·차단기'
   },
   wed:{
-    m:'건/습식 사우나 바닥 고압세척 (산성세제 금지)\nD-8 키즈 샤워실 (남 전담·2주1회 13:00)\nE-4 헬스장: 런닝머신 바닥\nE-5 골프장: 타석(스크린천)',
-    f:'건/습식 사우나 바닥 고압세척 (산성세제 금지)\nE-4 헬스장: 런닝머신 바닥\nE-5 골프장: 타석(스크린천)'
+    m:'오전(08:00~12:00)::건/습식 사우나 바닥 고압세척 (산성세제 금지)\n오후(13:00~)::D-8 키즈 샤워실 (남 전담·2주1회 13:00)\n오전(08:00~12:00)::E-4 헬스장: 런닝머신 바닥\n오전(08:00~12:00)::E-5 골프장: 타석(스크린천)',
+    f:'오전(08:00~12:00)::건/습식 사우나 바닥 고압세척 (산성세제 금지)\n오전(08:00~12:00)::E-4 헬스장: 런닝머신 바닥\n오전(08:00~12:00)::E-5 골프장: 타석(스크린천)',
+    outer:'오전후반(10:00~12:00)::D-1 외부 화장실 (골프장/B1/B2)\n오전후반(10:00~12:00)::D-2 복도 휴지통 수거\n오전후반(10:00~12:00)::D-5 분리수거장\n오후(14:00~18:00)::E-6 주차장 바닥·화장실·차단기'
   },
   thu:{
-    m:'화장실 전체 청소\n탈수기 물때·곰팡이 제거\nB-1 파우더 관리\nB-5 사우나 화장실\nE-4 헬스장: 스트레칭 공간\nE-5 골프장: 타석(기계)',
-    f:'화장실 전체 청소\n탈수기 물때·곰팡이 제거\nB-1 파우더 관리\nB-5 사우나 화장실\nE-4 헬스장: 스트레칭 공간\nE-5 골프장: 타석(기계)'
+    m:'오전(08:00~12:00)::화장실 전체 청소\n오전(08:00~12:00)::탈수기 물때·곰팡이 제거\n오전(08:00~12:00)::B-1 파우더 관리\n오전(08:00~12:00)::B-5 사우나 화장실\n오전(08:00~12:00)::E-4 헬스장: 스트레칭 공간\n오전(08:00~12:00)::E-5 골프장: 타석(기계)',
+    f:'오전(08:00~12:00)::화장실 전체 청소\n오전(08:00~12:00)::탈수기 물때·곰팡이 제거\n오전(08:00~12:00)::B-1 파우더 관리\n오전(08:00~12:00)::B-5 사우나 화장실\n오전(08:00~12:00)::E-4 헬스장: 스트레칭 공간\n오전(08:00~12:00)::E-5 골프장: 타석(기계)',
+    outer:'오전후반(10:00~12:00)::D-1 외부 화장실 (골프장/B1/B2)\n오전후반(10:00~12:00)::D-2 복도 휴지통 수거\n오전후반(10:00~12:00)::D-5 분리수거장\n오후(14:00~18:00)::E-6 주차장 바닥·화장실·차단기'
   },
   fri:{
-    m:'세면대 배수 파이프 청소\n배수구 소독·머리카락 제거\n탕 내 비품 점검\nE-4 헬스장: 런닝머신 바닥\nE-5 골프장: 타석(스크린천)\nD-3 메인 계단 (남 전담)',
-    f:'세면대 배수 파이프 청소\n배수구 소독·머리카락 제거\n탕 내 비품 점검\nD-7 센터 화분 물 공급 (여 전담·금요일 집중)\nE-4 헬스장: 런닝머신 바닥\nE-5 골프장: 타석(스크린천)'
+    m:'오전(08:00~12:00)::세면대 배수 파이프 청소\n오전(08:00~12:00)::배수구 소독·머리카락 제거\n오전(08:00~12:00)::탕 내 비품 점검\n오전(08:00~12:00)::E-4 헬스장: 런닝머신 바닥\n오전(08:00~12:00)::E-5 골프장: 타석(스크린천)',
+    f:'오전(08:00~12:00)::세면대 배수 파이프 청소\n오전(08:00~12:00)::배수구 소독·머리카락 제거\n오전(08:00~12:00)::탕 내 비품 점검\n오후(14:00~18:00)::D-7 센터 화분 물 공급 (여 전담·금요일 집중)\n오전(08:00~12:00)::E-4 헬스장: 런닝머신 바닥\n오전(08:00~12:00)::E-5 골프장: 타석(스크린천)',
+    outer:'오전후반(10:00~12:00)::D-3 메인 계단 B1-B2 (남 전담)\n오전후반(10:00~12:00)::D-1 외부 화장실 (골프장/B1/B2)\n오전후반(10:00~12:00)::D-2 복도 휴지통 수거\n오전후반(10:00~12:00)::D-5 분리수거장\n오후(14:00~18:00)::E-6 주차장 바닥·화장실·차단기'
   },
   sat:{
-    m:'벽체 곰팡이·물때 제거\n거울·유리창 물때 제거\n천정 환기구 먼지 제거\n방제\nE-4 헬스장: 거울\nE-5 골프장: 레슨룸',
-    f:'벽체 곰팡이·물때 제거\n거울·유리창 물때 제거\n천정 환기구 먼지 제거\n방제\n여 사우나 청소\nE-4 헬스장: 거울\nE-5 골프장: 레슨룸'
+    m:'오전(08:00~12:00)::벽체 곰팡이·물때 제거\n오전(08:00~12:00)::거울·유리창 물때 제거\n오전(08:00~12:00)::천정 환기구 먼지 제거\n오전(08:00~12:00)::방제\n오전(08:00~12:00)::E-4 헬스장: 거울\n오전(08:00~12:00)::E-5 골프장: 레슨룸',
+    f:'오전(08:00~12:00)::벽체 곰팡이·물때 제거\n오전(08:00~12:00)::거울·유리창 물때 제거\n오전(08:00~12:00)::천정 환기구 먼지 제거\n오전(08:00~12:00)::방제\n오전(08:00~12:00)::여 사우나 청소\n오전(08:00~12:00)::E-4 헬스장: 거울\n오전(08:00~12:00)::E-5 골프장: 레슨룸',
+    outer:'오전후반(10:00~12:00)::D-1 외부 화장실 (골프장/B1/B2)\n오전후반(10:00~12:00)::D-2 복도 휴지통 수거\n오전후반(10:00~12:00)::D-5 분리수거장\n오후(14:00~18:00)::E-6 주차장 바닥·화장실·차단기'
   },
   sun:{
-    m:'탕청소 업체 휴무\nE-6 주차장 집중 (바닥·화장실·차단기)\n개인락커 + 미비 부분 보완\nE-4 헬스장: 거울\nE-5 골프장: 레슨룸',
-    f:'탕청소 업체 휴무\nE-6 주차장 집중 (바닥·화장실·차단기)\n개인락커 + 미비 부분 보완\n여 사우나 청소\nE-4 헬스장: 거울\nE-5 골프장: 레슨룸'
+    m:'오전(08:00~12:00)::탕청소 업체 휴무\n오전(08:00~12:00)::개인락커 + 미비 부분 보완\n오전(08:00~12:00)::E-4 헬스장: 거울\n오전(08:00~12:00)::E-5 골프장: 레슨룸',
+    f:'오전(08:00~12:00)::탕청소 업체 휴무\n오전(08:00~12:00)::개인락커 + 미비 부분 보완\n오전(08:00~12:00)::여 사우나 청소\n오전(08:00~12:00)::E-4 헬스장: 거울\n오전(08:00~12:00)::E-5 골프장: 레슨룸',
+    outer:'종일(휴관일 집중)::E-6 주차장 집중 (바닥·화장실·차단기)\n오전후반(10:00~12:00)::D-1 외부 화장실 (골프장/B1/B2)\n오전후반(10:00~12:00)::D-2 복도 휴지통 수거\n오전후반(10:00~12:00)::D-5 분리수거장'
   }
 };
 
-let BOARD_DATA = {}; // {dayKey:{m:'...', f:'...'}}
+let BOARD_DATA = {}; // {dayKey:{m:'...', f:'...', outer:'...'}}
 
-/* stored(객체) → BOARD_DATA 병합 (없으면 시드 폴백) */
+/* stored(객체) → BOARD_DATA 병합 (없으면 시드 폴백) · 3분류(m/f/outer) */
 function applyBoardStored(stored){
   BOARD_DATA={};
   BOARD_DAYS.forEach(d=>{
     const s=(stored&&stored[d.key])||{};
     const seed=BOARD_SEED[d.key]||{};
-    BOARD_DATA[d.key]={
-      m:(s.m!==undefined&&s.m!==null)?s.m:(seed.m||''),
-      f:(s.f!==undefined&&s.f!==null)?s.f:(seed.f||'')
-    };
+    const cell={};
+    BOARD_GENDERS.forEach(g=>{
+      const gk=g.gk;
+      cell[gk]=(s[gk]!==undefined&&s[gk]!==null)?s[gk]:(seed[gk]||'');
+    });
+    BOARD_DATA[d.key]=cell;
   });
 }
 
@@ -2468,7 +2531,7 @@ async function loadBoardFromBackend(){
   }catch(e){ /* 네트워크 실패 → 이미 로드된 localStorage/시드 유지 */ }
   // 편집 중인 셀이 있으면 재렌더 보류(IME 조합·입력 보호). 없을 때만 갱신.
   const wrap=document.getElementById('manual-board');
-  if(wrap && !wrap.querySelector('.board-cell.editing')) renderBoard();
+  if(wrap && !wrap.querySelector('.dv-cell.editing')) renderBoard();
 }
 
 function persistBoardData(){
@@ -2485,39 +2548,97 @@ function persistBoardData(){
     .catch(()=>{if(ind){ind.textContent='보드 저장 (로컬 보관됨)';setTimeout(()=>{ind.style.display='none'},1500);}});
 }
 
-/* 텍스트(줄바꿈 항목) → 리스트 HTML */
-function boardCellListHTML(text){
-  const lines=(text||'').split('\n').map(l=>l.trim()).filter(l=>l.length);
-  if(!lines.length) return '<div class="board-cell-empty">항목 없음 — 편집으로 추가</div>';
-  return '<ul class="board-cell-list">'+lines.map(l=>'<li>'+escapeHTML(l)+'</li>').join('')+'</ul>';
+/* 선택된 요일 키 (기본 = 오늘 요일). JS getDay(): 0=일~6=토 → BOARD_DAYS 순서로 매핑 */
+const DOW_TO_DAYKEY=['sun','mon','tue','wed','thu','fri','sat'];
+let SELECTED_DAY = DOW_TO_DAYKEY[new Date().getDay()] || 'mon';
+
+/* 한 줄 파싱: "시간대::내용" → {tb:'시간대', text:'내용'}. 표기 없으면 tb='' (기타로 묶음) */
+function parseBoardLine(line){
+  const idx=line.indexOf('::');
+  if(idx>0 && idx<=20){ // 시간대 라벨은 짧음 → 오작동 방지(URL :: 등 회피)
+    return {tb:line.slice(0,idx).trim(), text:line.slice(idx+2).trim()};
+  }
+  return {tb:'', text:line};
 }
 
-/* 보드 1회 렌더 (DOM 생성). 편집 textarea는 셀당 1개 생성·재사용 → IME 조합 안전 */
-function renderBoard(){
-  const wrap=document.getElementById('manual-board');
-  if(!wrap)return;
+/* 텍스트(줄바꿈 항목) → 시간대 그룹 HTML. 시간대 표기 순서(첫 등장순) 유지 */
+function boardCellBodyHTML(text){
+  const lines=(text||'').split('\n').map(l=>l.trim()).filter(l=>l.length);
+  if(!lines.length) return '<div class="dv-empty">항목 없음 — 편집으로 추가</div>';
+  const order=[]; const groups={};
+  lines.forEach(l=>{
+    const p=parseBoardLine(l);
+    const key=p.tb||'기타';
+    if(!groups[key]){groups[key]=[];order.push(key);}
+    groups[key].push(p.text);
+  });
+  // 시간대 라벨 1개(기타뿐)면 라벨 숨기고 단순 리스트
+  const onlyEtc = order.length===1 && order[0]==='기타';
   let html='';
-  BOARD_DAYS.forEach(d=>{
-    const cell=BOARD_DATA[d.key]||{m:'',f:''};
-    html+='<div class="board-col'+(d.weekend?' is-weekend':'')+'">';
-    html+='<div class="board-col-head"><span class="bday">'+d.label+'</span>'
-        +'<span class="day-type '+(d.weekend?'weekend':'weekday')+'">'+(d.weekend?'주말':'평일')+'</span></div>';
-    [['m','male','👨 남'],['f','female','👩 여']].forEach(g=>{
-      const gk=g[0], cls=g[1], lab=g[2];
-      const cid=d.key+'_'+gk;
-      const val=cell[gk]||'';
-      html+='<div class="board-cell" id="cell_'+cid+'">';
-      html+='<div class="board-cell-head"><span class="board-cell-label '+cls+'">'+lab+'</span>'
-          +'<button type="button" class="board-edit-btn" id="btn_'+cid+'" onclick="boardToggleEdit(\''+d.key+'\',\''+gk+'\')">편집</button></div>';
-      html+=boardCellListHTML(val);
-      html+='<textarea class="board-cell-edit" id="ta_'+cid+'" '
-          +'placeholder="한 줄에 한 항목씩 입력">'+escapeHTML(val)+'</textarea>';
-      html+='<div class="board-edit-hint">한 줄에 한 항목. 저장을 누르면 모든 기기에 반영됩니다.</div>';
-      html+='</div>';
-    });
+  order.forEach(tb=>{
+    html+='<div class="dv-timeblock">';
+    if(!onlyEtc) html+='<span class="dv-tb-label">'+escapeHTML(tb)+'</span>';
+    html+='<ul class="dv-list">'+groups[tb].map(t=>'<li>'+escapeHTML(t)+'</li>').join('')+'</ul>';
     html+='</div>';
   });
+  return html;
+}
+
+/* 요일 툴바 렌더 (7요일 가로 한 줄) */
+function renderDayToolbar(){
+  const bar=document.getElementById('day-toolbar');
+  if(!bar)return;
+  const todayKey=DOW_TO_DAYKEY[new Date().getDay()];
+  let html='';
+  BOARD_DAYS.forEach(d=>{
+    const active=d.key===SELECTED_DAY?' active':'';
+    const we=d.weekend?' is-weekend':'';
+    const sub=(d.key===todayKey)?'오늘':(d.weekend?'주말':'평일');
+    html+='<button type="button" class="day-tab'+active+we+'" onclick="selectBoardDay(\''+d.key+'\')">'
+        +'<span class="dt-day">'+d.label+'</span><span class="dt-sub">'+sub+'</span></button>';
+  });
+  bar.innerHTML=html;
+}
+
+/* 단일 요일 뷰 렌더 — 선택 요일의 남/여/외곽 큰 카드. textarea 셀당 1개 재사용(IME 안전) */
+function renderBoard(){
+  renderDayToolbar();
+  const wrap=document.getElementById('manual-board');
+  if(!wrap)return;
+  const d=BOARD_DAYS.find(x=>x.key===SELECTED_DAY)||BOARD_DAYS[0];
+  const cell=BOARD_DATA[d.key]||{};
+  const todayKey=DOW_TO_DAYKEY[new Date().getDay()];
+  let html='';
+  html+='<div class="day-view-head"><span class="dv-day">'+d.label+'요일</span>'
+      +'<span class="day-type '+(d.weekend?'weekend':'weekday')+'">'+(d.weekend?'주말':'평일')+'</span>'
+      +(d.key===todayKey?'<span class="dv-today">오늘</span>':'')+'</div>';
+  html+='<div class="dv-grid">';
+  BOARD_GENDERS.forEach(g=>{
+    const gk=g.gk, cls=g.cls, lab=g.label;
+    const cid=d.key+'_'+gk;
+    const val=cell[gk]||'';
+    html+='<div class="dv-cell '+cls+'" id="cell_'+cid+'">';
+    html+='<div class="dv-cell-head"><span class="dv-cell-label '+cls+'">'+lab+'</span>'
+        +'<button type="button" class="dv-edit-btn" id="btn_'+cid+'" onclick="boardToggleEdit(\''+d.key+'\',\''+gk+'\')">편집</button></div>';
+    html+='<div class="dv-body">'+boardCellBodyHTML(val)+'</div>';
+    html+='<textarea class="dv-edit" id="ta_'+cid+'" '
+        +'placeholder="한 줄에 한 항목. 시간대는 \'오전::내용\' 형식으로 표기">'+escapeHTML(val)+'</textarea>';
+    html+='<div class="dv-edit-hint">한 줄에 한 항목 · 시간대는 줄 맨 앞 <b>시간대::</b> (예: <b>오전(08:00~12:00)::B-1 파우더 관리</b>). 저장을 누르면 모든 기기에 반영됩니다.</div>';
+    html+='</div>';
+  });
+  html+='</div>';
   wrap.innerHTML=html;
+}
+
+/* 요일 선택 → 단일 요일 뷰 전환 (편집 중인 셀 있으면 보류) */
+function selectBoardDay(dayKey){
+  const wrap=document.getElementById('manual-board');
+  if(wrap && wrap.querySelector('.dv-cell.editing')){
+    alert('편집 중인 카드를 먼저 저장하거나 닫아주세요.');
+    return;
+  }
+  SELECTED_DAY=dayKey;
+  renderBoard();
 }
 
 /* 편집 토글 + 저장. editing 클래스만 토글 → textarea는 재생성되지 않음(IME 안전) */
@@ -2536,17 +2657,15 @@ function boardToggleEdit(dayKey,gk){
     btn.classList.add('save');
     ta.focus();
   }else{
-    // 저장 — 값 반영 후 리스트만 갱신(textarea는 그대로, 재생성 없음)
+    // 저장 — 값 반영 후 본문만 갱신(textarea는 그대로, 재생성 없음)
     BOARD_DATA[dayKey][gk]=ta.value;
     cell.classList.remove('editing');
     btn.textContent='편집';
     btn.classList.remove('save');
-    // 리스트 노드만 교체 (textarea·버튼 보존)
-    const oldList=cell.querySelector('.board-cell-list, .board-cell-empty');
-    if(oldList){
-      const tmp=document.createElement('div');
-      tmp.innerHTML=boardCellListHTML(ta.value);
-      oldList.replaceWith(tmp.firstElementChild);
+    // 본문 노드만 교체 (textarea·버튼 보존)
+    const oldBody=cell.querySelector('.dv-body');
+    if(oldBody){
+      oldBody.innerHTML=boardCellBodyHTML(ta.value);
     }
     persistBoardData();
   }
