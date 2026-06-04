@@ -572,15 +572,6 @@
     bodyEl.style.fontFamily = ff==='serif' ? '"Noto Serif KR",serif' : '"Pretendard",sans-serif';
     var orient = el('noticeOrient') ? el('noticeOrient').value : 'portrait';
     var lh = el('noticeLineHeight');
-    /* v2.54 — px input은 선택 영역만 적용 (ntFmtSize). 본문 전체 fontSize 강제 적용 폐기. 줄간격은 본문 전체 유지 */
-    if(orient === 'landscape'){
-      bodyEl.style.lineHeight = '';
-    } else {
-      bodyEl.style.lineHeight = lh ? lh.value : '1.85';
-    }
-    bodyEl.style.fontSize = '';  /* CSS clamp 기본값 사용 (사용자 span style은 자체 적용) */
-    editor.style.fontFamily = ff==='serif' ? '"Noto Serif KR",serif' : '"Pretendard",sans-serif';
-    if(lh) editor.style.lineHeight = lh.value;
     /* v2.38 — 방향 (세로/가로) 미리보기 aspect-ratio 동적 변경 */
     var frame = el('noticePreviewFrame');
     if(frame){
@@ -588,7 +579,19 @@
       /* v2.39 — 가로형 전용 비율·폰트 축소 (.landscape CSS 룰 활성) */
       if(orient === 'landscape') frame.classList.add('landscape');
       else frame.classList.remove('landscape');
+      /* v2.58 — WYSIWYG: 미리보기 본문 기본 크기를 인쇄 빌더와 '동일 공식'으로 산출.
+         기존엔 미리보기=CSS clamp / 인쇄=vmin(×px입력칸 값) 이라 단위·기준이 달라
+         px칸을 건드리면 인쇄 본문 전체가 부풀어 미리보기와 전혀 달라졌음.
+         이제 둘 다 18 기준 비례(세로 0.17·가로 0.15 × 페이지 최소변)로 통일 → 미리보기=인쇄.
+         px입력칸은 '선택한 줄'만 em으로 키우고 본문 기본엔 영향 없음(인쇄도 동일). */
+      var frameMin = Math.min(frame.clientWidth, frame.clientHeight) || 0;
+      var factor = orient === 'landscape' ? 0.15 : 0.17;
+      bodyEl.style.fontSize = frameMin > 0 ? (18 * factor / 100 * frameMin).toFixed(2) + 'px' : '';
     }
+    /* 줄간격은 인쇄 빌더와 동일하게 select 값을 양 방향 모두 적용 */
+    bodyEl.style.lineHeight = lh ? lh.value : '1.85';
+    editor.style.fontFamily = ff==='serif' ? '"Noto Serif KR",serif' : '"Pretendard",sans-serif';
+    if(lh) editor.style.lineHeight = lh.value;
   };
 
   /* 마크다운 prefix를 wysiwyg HTML로 변환 (preset body 전용 — 사용자 입력은 그대로 wysiwyg) */
@@ -758,7 +761,9 @@
     html += '.sub em{font-family:"Playfair Display","Hudson NY Serif",Georgia,serif;font-style:italic;font-weight:500;letter-spacing:0.01em;font-size:1.08em;}';
     /* BODY — font-size를 vmin으로 환산해 미리보기와 동일 시각 배율 (사용자 fs px → vmin)
        v2.31 비율 0.22 → 0.17 (인쇄 콘텐츠가 종이 초과해 헤더·푸터 침범하던 이슈 정정) */
-    var fsVmin = ((parseFloat(fs)||18) * 0.17).toFixed(2);
+    /* v2.58 — 본문 기본 크기는 고정 18 기준(미리보기와 동일 공식). px입력칸(선택 줄 전용) 값에
+       인쇄 본문 전체가 따라가던 미리보기-인쇄 불일치 차단. 사용자 줄별 크기는 em span이 보존. */
+    var fsVmin = (18 * 0.17).toFixed(2);
     var lhRaw = el('noticeLineHeight'); var lh = lhRaw ? lhRaw.value : '1.85';
     html += '.body{flex:1;background:#fff;color:#1a1a1a;padding:4vmin 5vmin 5vmin;text-align:center;display:flex;flex-direction:column;justify-content:flex-start;align-items:stretch;line-height:'+lh+';font-size:'+fsVmin+'vmin;font-weight:500;overflow:hidden;position:relative;}';
     html += '.notice-date{position:absolute;right:3.5vmin;bottom:1.8vmin;font-size:0.78em;color:#B79F8A;font-weight:600;letter-spacing:0.06em;text-align:right;margin:0;}';
@@ -796,7 +801,7 @@
       html += '.ten{font-size:2vmin !important;}';
       html += '.sub{font-size:1.2vmin !important;bottom:1vmin !important;}';
       /* v2.40 — 본문 vmin 비율 0.13 → 0.15 (미리보기와 시각 정합) */
-      html += '.body{flex:0 0 72% !important;padding:2.4vmin 3vmin 2.8vmin !important;font-size:'+(((parseFloat(fs)||18)*0.15).toFixed(2))+'vmin !important;justify-content:center !important;}';
+      html += '.body{flex:0 0 72% !important;padding:2.4vmin 3vmin 2.8vmin !important;font-size:'+((18*0.15).toFixed(2))+'vmin !important;justify-content:center !important;}';
       html += '.ftr{flex:0 0 6% !important;}';
       html += '.ftr img{height:3vmin !important;}';
     }
@@ -1005,6 +1010,8 @@
   try{ document.execCommand('defaultParagraphSeparator', false, 'p'); }catch(e){}
   /* v2.56 — selection 변경 시점 자동 추적 (mouseup/keyup보다 robust) */
   document.addEventListener('selectionchange', _saveCurSelection);
+  /* v2.58 — 창 크기 변경 시 미리보기 본문 기본 크기 재산출(인쇄와 비례 유지). */
+  window.addEventListener('resize', function(){ if(typeof ntUpdatePreview==='function') ntUpdatePreview(); });
   /* 빈 contenteditable 첫 focus 시 <p><br></p> 자동 삽입 — block 식별 보장 */
   el('noticeBody').addEventListener('focus', function(){
     var inner = this.innerHTML.trim();
