@@ -181,6 +181,17 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 .dv-list{margin:0;padding-left:20px;list-style:disc;font-size:14px;line-height:1.6}
 .dv-list li{margin-bottom:5px;word-break:break-word}
 .dv-empty{font-size:13px;color:var(--dim);font-style:italic;padding:4px 0}
+/* 2열 시간표 테이블 (boardCellBodyHTML) */
+.dv-timetable{width:100%;border-collapse:collapse;font-size:13.5px;line-height:1.5;margin:0}
+.dv-timetable col.dv-tt-timecol{width:38%}
+.dv-timetable td{padding:5px 8px;border:1px solid var(--border);vertical-align:middle;word-break:break-word}
+.dv-timetable tr:first-child td{border-top-color:var(--border)}
+.dv-tt-time{color:var(--accent);font-weight:700;font-size:12px;background:var(--accent-bg);white-space:nowrap}
+.dv-tt-task{color:var(--text)}
+.dv-timetable tr:hover td{background:rgba(183,159,138,0.07)}
+.dv-cell.male .dv-tt-time{color:var(--blue);background:var(--blue-bg)}
+.dv-cell.female .dv-tt-time{color:var(--orange);background:var(--orange-bg)}
+.dv-cell.outer .dv-tt-time{color:var(--green);background:var(--green-bg)}
 .dv-edit{display:none;width:100%;min-height:170px;background:var(--paper);border:1.5px solid var(--accent);color:var(--text);
   border-radius:10px;padding:11px 12px;font-size:14px;font-family:inherit;line-height:1.55;resize:vertical;box-sizing:border-box}
 .dv-cell.editing .dv-edit{display:block}
@@ -2547,23 +2558,28 @@ function persistBoardData(){
 const DOW_TO_DAYKEY=['sun','mon','tue','wed','thu','fri','sat'];
 const BOARD_SELDAYS_KEY='SUPPORT_MANUAL_BOARD_SELDAYS'; // 선택 요일 영속 키(localStorage)
 const ALL_DAY_KEYS=BOARD_DAYS.map(d=>d.key);
-/* 선택 요일 Set. localStorage에 기억된 값 우선, 없으면 기본 = 오늘 요일 1개만 켬 */
+/* KST 오늘 날짜 문자열 (YYYY-MM-DD). UTC+9 보정 */
+function kstToday(){
+  const d=new Date(Date.now()+9*3600*1000);
+  return d.toISOString().slice(0,10);
+}
+/* 선택 요일 Set. 저장값이 오늘(KST) 날짜와 같을 때만 복원 — 날짜 바뀌면 오늘 요일로 리셋 */
 function loadSelectedDays(){
   let saved=null;
   try{ saved=JSON.parse(localStorage.getItem(BOARD_SELDAYS_KEY)); }catch(e){ saved=null; }
-  if(Array.isArray(saved)){
-    const valid=saved.filter(k=>ALL_DAY_KEYS.indexOf(k)>=0);
-    return new Set(valid); // 비어있어도(전부 해제 상태) 그대로 존중
+  if(saved&&saved.date===kstToday()&&Array.isArray(saved.days)){
+    const valid=saved.days.filter(k=>ALL_DAY_KEYS.indexOf(k)>=0);
+    if(valid.length) return new Set(valid);
   }
-  // 최초 방문(저장값 없음): 오늘 요일 1개만 켜둔 상태로 시작
-  const todayKey=DOW_TO_DAYKEY[new Date().getDay()];
+  // 저장값 없거나 날짜 달라졌으면: 오늘 요일(KST) 1개만 켬
+  const todayKey=DOW_TO_DAYKEY[new Date(Date.now()+9*3600*1000).getUTCDay()];
   return new Set([todayKey]);
 }
 let SELECTED_DAYS = loadSelectedDays();
 function saveSelectedDays(){
-  // BOARD_DAYS 순서 보존하여 저장
+  // BOARD_DAYS 순서 보존하여 날짜와 함께 저장
   const ordered=ALL_DAY_KEYS.filter(k=>SELECTED_DAYS.has(k));
-  try{ localStorage.setItem(BOARD_SELDAYS_KEY, JSON.stringify(ordered)); }catch(e){}
+  try{ localStorage.setItem(BOARD_SELDAYS_KEY, JSON.stringify({date:kstToday(),days:ordered})); }catch(e){}
 }
 
 /* ── 시간대(time slot) = 항목의 저장 속성 ──
@@ -2593,32 +2609,28 @@ function parseBoardLine(line){
   return {tb:'', text:line};
 }
 
-/* 텍스트(줄바꿈 항목) → 시간대 그룹 HTML. 시간대 = 카드별 뱃지로 표시 + 시간 순 정렬(그룹 유지) */
+/* 텍스트(줄바꿈 항목) → 2열 표(시간 | 내용) HTML. 시간 순 정렬·하위호환 파싱 유지 */
 function boardCellBodyHTML(text){
   const lines=(text||'').split('\n').map(l=>l.trim()).filter(l=>l.length);
   if(!lines.length) return '<div class="dv-empty">항목 없음 — 편집으로 추가</div>';
-  const order=[]; const groups={};
-  lines.forEach(l=>{
-    const p=parseBoardLine(l);
-    const key=p.tb||'기타';
-    if(!groups[key]){groups[key]=[];order.push(key);}
-    groups[key].push(p.text);
-  });
-  // 시간 순 정렬(라벨 내 HH:MM 기준, 동률은 첫 등장순 유지). '기타'는 항상 맨 뒤
-  const sorted=order.slice().sort((a,b)=>{
-    const ka=timeslotSortKey(a), kb=timeslotSortKey(b);
+  // 각 행을 {tb, text} 파싱 후 시간 순 정렬
+  const rows=lines.map(l=>parseBoardLine(l));
+  rows.sort((a,b)=>{
+    const ka=timeslotSortKey(a.tb||'기타'), kb=timeslotSortKey(b.tb||'기타');
     if(ka!==kb) return ka<kb?-1:1;
-    return order.indexOf(a)-order.indexOf(b);
+    return 0;
   });
-  // 시간대 라벨 1개(기타뿐)면 라벨 숨기고 단순 리스트
-  const onlyEtc = sorted.length===1 && sorted[0]==='기타';
-  let html='';
-  sorted.forEach(tb=>{
-    html+='<div class="dv-timeblock">';
-    if(!onlyEtc) html+='<span class="dv-tb-label">'+escapeHTML(tb)+'</span>';
-    html+='<ul class="dv-list">'+groups[tb].map(t=>'<li>'+escapeHTML(t)+'</li>').join('')+'</ul>';
-    html+='</div>';
+  // 모든 행이 시간대 없는 '기타'면 시간 열 숨김(단순 1열 표)
+  const allEtc=rows.every(r=>!r.tb);
+  let html='<table class="dv-timetable">';
+  if(!allEtc) html+='<colgroup><col class="dv-tt-timecol"><col></colgroup>';
+  rows.forEach(r=>{
+    html+='<tr>';
+    if(!allEtc) html+='<td class="dv-tt-time">'+(r.tb?escapeHTML(r.tb):'—')+'</td>';
+    html+='<td class="dv-tt-task">'+escapeHTML(r.text)+'</td>';
+    html+='</tr>';
   });
+  html+='</table>';
   return html;
 }
 
