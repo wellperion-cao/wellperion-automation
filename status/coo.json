@@ -1,10 +1,17 @@
 {
   "clevel": "coo",
   "status": "ASSIGNED",
-  "last_task_id": "COO-2026-06-01-MERGE009-AND-WORKSSOT-FIXES",
-  "last_commit_sha": "e9d3b6c",
-  "last_pushed_at": "2026-06-01T15:20:00",
+  "last_task_id": "COO-2026-06-04-NOTICE-PRINT-FIX",
+  "last_commit_sha": "7a20afc",
+  "last_pushed_at": "2026-06-04",
   "active_tasks": [
+    {
+      "task_id": "COO-2026-06-04-NOTICE-PRINT-FIX",
+      "title": "공지 서식(O2) 인쇄 글씨크기 역전 + 제목중복 외 일괄 수정",
+      "assigned_at": "2026-06-04",
+      "status": "DONE",
+      "result": "GM '문제 많다' 점검 지시. 라이브 실측(콘솔0·404 0·워터마크 정상)으로 '이미지 깨짐' 오진 기각 후, 출력물 실측에서 진짜 결함 발견·수정. ①핵심: 줄 크기 px 절대값→18px기준 em 상대값. 미리보기는 px·인쇄/PDF/PNG 빌더는 vmin 환산이라 '크게'가 인쇄에서 오히려 작아지던 역전 해소(작<보통<크 정상). ②프리셋 7종 첫 제목줄을 본문에서 제거→소제목 칸 자동 채움(제목 1곳, 중복 0). ③첫화면 소제목도 자동(일관성). ④게시기간 기본 오늘~오늘+13일(2주). ⑤가로 출력 본문 세로 중앙정렬(하단 여백 해소). ⑥중첩 em 복리 방지·저장본 기본 18 정합. commit 7a20afc push. 로컬 Playwright 출력 캡처로 크기순서·중복0·center·날짜 검증. 미수정(저위험 문서화): 로컬 file:// 워터마크 404(라이브 정상)·삭제비번 1234(localStorage 한정)."
+    },
     {
       "task_id": "COO-2026-05-29-ID-NUMBER-PREFIX",
       "title": "업무 현황 SSOT 카드 앞에 번호 표시 (#001 #002 ...)",
