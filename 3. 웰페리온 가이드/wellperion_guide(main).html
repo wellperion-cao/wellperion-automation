@@ -6205,6 +6205,7 @@ function crTab(btn, panelId) {
           const todo = todoCache.find(t => t.id === id);
           if (!todo) return;
           if (!confirm(todo.title + ' — 삭제할까요? 이 작업은 되돌릴 수 없습니다.')) return;
+          if (!window.gm1RequireDeletePin || !window.gm1RequireDeletePin()) return;
           todoApiCall({action:'todo_delete', id:id}, () => {
             todoCache = todoCache.filter(t => t.id !== id);
             localStorage.setItem(TODO_LS_KEY, JSON.stringify(todoCache));
@@ -6791,6 +6792,14 @@ function crTab(btn, panelId) {
 
   // 김남욱GM 전용 비밀번호 — 진입·삭제 단일 출처(SSOT). 값 변경 시 이 한 곳만 수정.
   window.GM1_PW = '1234';
+
+  // 삭제 PIN 게이트 — 모든 삭제 액션 공통(2026-06-04 GM: "삭제 시 항상 비밀번호"). 취소/오답 시 false 반환.
+  window.gm1RequireDeletePin = function(){
+    var pw = prompt('🔒 삭제하려면 비밀번호를 입력하세요 (페이지 진입 비밀번호와 동일)');
+    if (pw === null) return false;
+    if (pw !== window.GM1_PW) { alert('비밀번호가 일치하지 않습니다. 삭제가 취소되었습니다.'); return false; }
+    return true;
+  };
 
   // 김남욱GM 세션 인증 복원
   if (sessionStorage.getItem('gm1_auth') === '1') {
@@ -8062,6 +8071,9 @@ function crTab(btn, panelId) {
       input.focus();
     };
     window.gm1RemoveProgressLog = function(i) {
+      var lg = gm1ModalLogs[i];
+      if (!confirm('이 진척 로그를 삭제할까요?' + (lg ? '\n· ' + (lg.date||'') + ' ' + (lg.text||'') : ''))) return;
+      if (!window.gm1RequireDeletePin()) return;
       gm1ModalLogs.splice(i, 1);
       gm1RenderProgressList();
     };
