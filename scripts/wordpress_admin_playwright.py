@@ -463,9 +463,135 @@ async def run_add_menu(post_id_arg: str, menu_id: str = KOREAN_MENU_ID) -> int:
     return 0
 
 
+async def run_swap_href(post_id_arg: str, find: str, repl: str) -> int:
+    """외과적 치환: 지정 페이지 post_content에서 find→repl 단일 치환(count==1 가드).
+    Classic 편집기 Text탭(#content)만 사용. 원본을 타임스탬프 백업 후, 정확히 1건일 때만 저장.
+    나머지 본문(레이아웃·전체 버튼)은 일절 손대지 않음. 발행 상태 유지."""
+    import datetime
+    async_playwright = _import_playwright()
+    print(f"[INFO] === 외과적 href 치환 (post={post_id_arg}) ===")
+    print(f"[INFO] find: {find}")
+    print(f"[INFO] repl: {repl}")
+    if not PROFILE_DIR.exists():
+        print("[ERROR] 프로필 미존재 — 먼저 --mode setup 실행 필요.")
+        return 3
+    INSPECT_DIR.mkdir(parents=True, exist_ok=True)
+    p, ctx = await _launch(async_playwright)
+    page = ctx.pages[0] if ctx.pages else await ctx.new_page()
+    await page.goto(f"http://wellperion.com/wp/wp-admin/post.php?post={post_id_arg}&action=edit&lang=ko",
+                    wait_until="domcontentloaded", timeout=40_000)
+    await page.wait_for_timeout(2500)
+    if "wp-login" in page.url:
+        print("[ERROR] 세션 만료 — setup 재실행 필요.")
+        await ctx.close(); await p.stop(); return 2
+
+    probe = await page.evaluate(
+        "() => ({classic: !!document.querySelector('#content'), text_tab: !!document.querySelector('#content-html')})"
+    )
+    if not probe.get("classic"):
+        print("[ERROR] Classic 편집기 #content 미검출 — 중단(저장 안 함).")
+        await ctx.close(); await p.stop(); return 5
+    # Text(HTML) 탭 전환 — 백엔드 레이아웃이 길어 버튼이 뷰포트 밖일 수 있으므로
+    # WP 네이티브 switchEditors API(JS)로 전환(클릭 액셔너빌리티 회피). 실패 시 force 클릭 폴백.
+    switched = await page.evaluate(
+        """() => { try {
+            if (window.switchEditors && switchEditors.go) { switchEditors.go('content','html'); return 'api'; }
+            const b=document.querySelector('#content-html'); if(b){ b.click(); return 'click'; }
+            return 'none';
+        } catch(e){ return 'err:'+e.message; } }"""
+    )
+    await page.wait_for_timeout(800)
+    print(f"[INFO] Text탭 전환 방식: {switched}")
+    if switched in ("none", "") or str(switched).startswith("err:"):
+        try:
+            await page.click("#content-html", force=True, timeout=8000)
+            await page.wait_for_timeout(800)
+        except Exception as e:
+            print(f"[WARN] Text탭 클릭 폴백 경고: {e}")
+
+    original = await page.evaluate("() => (document.querySelector('#content')||{}).value || ''")
+    if not original or len(original) < 200:
+        print(f"[ERROR] post_content 비정상(길이 {len(original)}) — 중단(저장 안 함).")
+        await ctx.close(); await p.stop(); return 6
+
+    # 원본 타임스탬프 백업 (필수 안전장치)
+    ts = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+    backup_path = INSPECT_DIR / f"home_page{post_id_arg}_content_backup_{ts}.txt"
+    backup_path.write_text(original, encoding="utf-8")
+    print(f"[INFO] 원본 백업: {backup_path} (길이 {len(original)})")
+
+    # 단일 치환 가드: count != 1 이면 저장 말고 중단
+    count = original.count(find)
+    print(f"[INFO] find 출현 횟수: {count}")
+    if count != 1:
+        print(f"[ABORT] 치환 카운트 != 1 ({count}건) — 오인/중복 방지 위해 저장 안 함. 원본 무손상.")
+        await page.screenshot(path=str(INSPECT_DIR / f"wp_swap_abort_{ts}.png"))
+        await ctx.close(); await p.stop(); return 11
+    repl_before = original.count(repl)  # 동일 URL이 이미 본문에 있을 수 있음(상대 검증용)
+    print(f"[INFO] repl 사전 출현 횟수: {repl_before}")
+    new_content = original.replace(find, repl)
+    if new_content == original or new_content.count(repl) != repl_before + 1:
+        print(f"[ABORT] 치환 후 repl 증가 != 1 (전 {repl_before} → 후 {new_content.count(repl)}) — 저장 안 함.")
+        await ctx.close(); await p.stop(); return 12
+    # 길이 변화는 (repl-find) 길이차 * 1 이어야 함 (그 외 변형 차단)
+    expected_delta = len(repl) - len(find)
+    if len(new_content) - len(original) != expected_delta:
+        print(f"[ABORT] 길이 델타 불일치(기대 {expected_delta}, 실제 {len(new_content)-len(original)}) — 저장 안 함.")
+        await ctx.close(); await p.stop(); return 13
+
+    # TinyMCE(비주얼) 인스턴스가 살아 있으면 textarea를 재동기화해 우리 값을 덮어씀.
+    # → 'content' 에디터를 detach 하여 #content textarea를 단일 진실원으로 만든 뒤 되쓰기.
+    detached = await page.evaluate(
+        """() => { try {
+            if (window.tinymce && tinymce.get('content')) { tinymce.get('content').remove(); return 'removed'; }
+            return 'no-tinymce';
+        } catch(e){ return 'err:'+e.message; } }"""
+    )
+    await page.wait_for_timeout(400)
+    print(f"[INFO] TinyMCE detach: {detached}")
+    # textarea에 되쓰기 (WP 제출 시 #content.value 사용)
+    await page.evaluate(
+        """(html) => { const ta = document.querySelector('#content');
+            ta.value = html; ta.dispatchEvent(new Event('input', {bubbles:true}));
+            ta.dispatchEvent(new Event('change', {bubbles:true})); }""",
+        new_content,
+    )
+    await page.wait_for_timeout(500)
+    verify = await page.evaluate("() => (document.querySelector('#content')||{}).value || ''")
+    if verify.count(repl) != repl_before + 1 or find in verify:
+        print(f"[ABORT] textarea 반영 검증 실패(repl {verify.count(repl)}건/기대 {repl_before+1}, find잔존 {find in verify}) — 저장 안 함.")
+        await ctx.close(); await p.stop(); return 14
+    print(f"[INFO] textarea 치환 반영 확인 (repl {verify.count(repl)}건, find 0건)")
+
+    # 발행 상태 유지 → #publish(업데이트)로 저장
+    pre_status = await page.evaluate(
+        "() => (document.querySelector('#post-status-display')||{}).innerText || ''"
+    )
+    print(f"[INFO] 저장 전 상태: {pre_status or '(미검출)'}")
+    await page.click("#publish")
+    try:
+        await page.wait_for_url("**/post.php?post=*", timeout=30_000)
+    except Exception:
+        await page.wait_for_timeout(4000)
+    await page.wait_for_timeout(1500)
+    status = await page.evaluate(
+        "() => (document.querySelector('#post-status-display')||{}).innerText || ''"
+    )
+    saved = await page.evaluate("() => (document.querySelector('#content')||{}).value || ''")
+    await page.screenshot(path=str(INSPECT_DIR / f"wp_swap_saved_{ts}.png"))
+    print(f"[INFO] 저장 후 상태: {status or '(미검출)'}")
+    print(f"[INFO] 저장 후 본문 내 find 잔존: {saved.count(find)}건 / repl: {saved.count(repl)}건(기대 {repl_before+1})")
+    await ctx.close(); await p.stop()
+    ok = saved.count(find) == 0 and saved.count(repl) == repl_before + 1
+    print(f"[INFO] === 외과적 치환 {'완료' if ok else '확인 필요'} === (백업: {backup_path})")
+    return 0 if ok else 15
+
+
 def main() -> int:
-    ap = argparse.ArgumentParser(description="워드프레스 관리자 반자동 (setup/check/inspect/draft-inquiry/publish-inquiry/add-menu)")
-    ap.add_argument("--mode", choices=["setup", "check", "inspect", "draft-inquiry", "publish-inquiry", "add-menu"], default="setup")
+    ap = argparse.ArgumentParser(description="워드프레스 관리자 반자동 (setup/check/inspect/draft-inquiry/publish-inquiry/add-menu/swap-href)")
+    ap.add_argument("--mode", choices=["setup", "check", "inspect", "draft-inquiry", "publish-inquiry", "add-menu", "swap-href"], default="setup")
+    ap.add_argument("--find", dest="find", default=None, help="swap-href 찾을 문자열")
+    ap.add_argument("--repl", dest="repl", default=None, help="swap-href 바꿀 문자열")
     ap.add_argument("--slug", dest="slug", default="inquiry", help="publish-inquiry 슬러그(기본 inquiry)")
     ap.add_argument("--menu-id", dest="menu_id", default=KOREAN_MENU_ID, help="add-menu 대상 메뉴 ID(기본 59=한글메인)")
     ap.add_argument("--post-id", dest="post_id", default=None,
@@ -485,6 +611,10 @@ def main() -> int:
         if not args.post_id:
             print("[ERROR] --post-id 필요"); return 1
         return asyncio.run(run_add_menu(args.post_id, args.menu_id))
+    if args.mode == "swap-href":
+        if not args.post_id or not args.find or not args.repl:
+            print("[ERROR] swap-href는 --post-id --find --repl 모두 필요"); return 1
+        return asyncio.run(run_swap_href(args.post_id, args.find, args.repl))
     return asyncio.run(run_check())
 
 
