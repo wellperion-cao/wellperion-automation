@@ -529,7 +529,7 @@ async def _enter_write_and_fill(page, post: BlogPost, blog_id: str | None) -> No
         pass
 
     # 스티커 2개 위치 지정 삽입 (GM 지시 2026-06-03):
-    #   ① 본문 맨 처음 1개  ② '문의 : litt.ly/wellperion' 줄 다음 1개.
+    #   ① 본문 맨 처음 1개  ② '문의 : http://wellperion.com/ko/inquiry/' 줄 다음 1개.
     #   순서: 시작 스티커 먼저 → '문의' 줄 재탐색 후 그 다음에 삽입(텍스트 매칭이라 caret 충돌 없음).
     #   이미지는 맨 마지막에 본문 끝(Ctrl+End)으로 삽입하므로 스티커와 caret 충돌 없음.
     sticker_count = getattr(post, "sticker_count", STICKER_COUNT_DEFAULT)

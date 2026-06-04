@@ -119,4 +119,4 @@
 ---
 
 *All lessons are by prior reservation only. Walk-in visits are not accepted.*
-*For immediate assistance: https://litt.ly/wellperion*
+*For immediate assistance: http://wellperion.com/ko/inquiry/*

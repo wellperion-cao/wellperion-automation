@@ -118,4 +118,4 @@
 ---
 
 *All Summer Special programs are by prior reservation only. Availability is limited — early inquiry is encouraged.*
-*For immediate assistance: https://litt.ly/wellperion*
+*For immediate assistance: http://wellperion.com/ko/inquiry/*
