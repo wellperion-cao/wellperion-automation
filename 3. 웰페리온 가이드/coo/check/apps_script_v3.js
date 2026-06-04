@@ -345,7 +345,18 @@ function handleSave(body) {
     }
     added = newRows.length;
   }
+  _sortByDateDesc(sheet);
   return jsonRes({ success: true, updated: updated, added: added });
+}
+
+// ─── 시트를 날짜 내림차순 정렬(최신 날짜가 상위로 누적) — 2026-06-04 GM 지시 ───
+// 헤더(1행) 유지, 2행부터 [날짜 내림차순, 항목ID 오름차순]으로 정렬. 셀 서식도 함께 이동.
+function _sortByDateDesc(sheet) {
+  if (!sheet) return;
+  var last = sheet.getLastRow();
+  if (last < 3) return;  // 헤더 + 1행 이하면 정렬 불필요
+  sheet.getRange(2, 1, last - 1, HEADERS.length)
+       .sort([{ column: 1, ascending: false }, { column: 2, ascending: true }]);
 }
 
 // ─── v2 프론트엔드 하위 호환 (zone 없이 genderTab으로 호출) ───
@@ -420,6 +431,7 @@ function _handleSaveV2Compat(body) {
       }
       totalSaved += newRows.length;
     }
+    _sortByDateDesc(sheet);   // 최신 날짜가 상위로 누적
   });
 
   return jsonRes({ success: true, saved: totalSaved });
