@@ -861,6 +861,54 @@ var EN_COPY_MAP = [
     } }
 ];
 
+// ═══ [진단+수정] cao@ 전체 폼을 스캔해 키워드로 매칭 → 카피정리 (제목 정확일치 실패 대비) ═══
+// 1회 실행으로 (a) cao@가 보는 모든 폼 제목+ID 로그(진단) + (b) 키워드 contains 매칭 helpText 정리.
+// FormApp.create/addItem/deleteItem 없음 → 신규 폼·항목 0. 멱등.
+function fixEnglishFormsCopyByScan() {
+  Logger.log('=== [스캔·진단+수정] fixEnglishFormsCopyByScan ===');
+  var KW = [
+    { kw: 'membership inquiry', idx: 0, tag: 'membership' },
+    { kw: 'adult lesson',       idx: 1, tag: 'adult' },
+    { kw: 'youth',              idx: 2, tag: 'youth' },
+    { kw: 'summer special',     idx: 3, tag: 'summer' }
+  ];
+  var done = {};
+  Logger.log('--- cao@ 접근 가능 폼 인벤토리 ---');
+  var it = DriveApp.searchFiles('mimeType = "application/vnd.google-apps.form" and trashed = false');
+  var scanned = 0;
+  while (it.hasNext()) {
+    var f = it.next(); scanned++;
+    var fid = f.getId();
+    var form = null;
+    var op = _tryFormOp_(function () { form = FormApp.openById(fid); }, 'open');
+    if (op !== 'OK' || !form) { Logger.log('[열기실패] ' + f.getName() + ' | ' + fid + ' | ' + op); continue; }
+    var ftitle = ''; try { ftitle = form.getTitle(); } catch (e) { ftitle = '(제목읽기실패)'; }
+    Logger.log('· ' + ftitle + ' | id=' + fid);
+    var low = String(ftitle).toLowerCase();
+    for (var m = 0; m < KW.length; m++) {
+      if (done[KW[m].tag]) continue;
+      if (low.indexOf(KW[m].kw) < 0) continue;
+      var map = EN_COPY_MAP[KW[m].idx];
+      var updated = [];
+      var items = form.getItems();
+      for (var j = 0; j < items.length; j++) {
+        var t = items[j].getTitle();
+        if (!(t in map.help)) continue;
+        var val = map.help[t];
+        (function (item, v) { _tryFormOp_(function () { item.asTextItem().setHelpText(v); }, 'help'); })(items[j], val);
+        updated.push(t);
+      }
+      done[KW[m].tag] = true;
+      Logger.log('  [FIXED] ' + KW[m].tag + ' → ' + ftitle + ' | updated: ' + updated.join(' | '));
+      Utilities.sleep(1500);
+      break;
+    }
+  }
+  Logger.log('--- 요약 ---  스캔 폼 수: ' + scanned);
+  KW.forEach(function (k) { Logger.log((done[k.tag] ? '[FIXED] ' : '[STILL_MISSING] ') + k.tag); });
+  Logger.log('=== 완료 ===');
+}
+
 function updateEnglishFormsCopy() {
   Logger.log('=== [카피정리·멱등] updateEnglishFormsCopy — helpText만 정리(실명 제거 + 예시 정돈) ===');
   var summary = [];
