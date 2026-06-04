@@ -442,6 +442,174 @@ def fetch_gm_todos(only_in_progress: bool = False) -> list[str] | None:
         return None
 
 
+# ── G1 할일 카드형 fetch (09·15시 카드 빌더용) ───────────────────────────────
+def _parse_kst_date(iso_str: str):
+    """ISO 8601 UTC 문자열(Z 포함)을 KST(+9) date로 변환. 실패 시 None."""
+    from datetime import timezone, timedelta as _td
+    if not iso_str:
+        return None
+    try:
+        s = iso_str.rstrip("Z").replace("T", " ")
+        dt_utc = datetime.fromisoformat(s).replace(tzinfo=timezone.utc)
+        return (dt_utc + _td(hours=9)).date()
+    except Exception:
+        return None
+
+
+def _extract_continuity_note(content: str) -> str:
+    """
+    내용 필드에서 연속성 비고를 추출한다.
+    ① 날짜패턴(YYYY-MM-DD 또는 MM-DD) + 연속성 키워드 포함 줄 우선
+    ② 없으면 ===PROGRESS_LOG=== 이하 첫 줄(타임스탬프 포함 줄)
+    ③ 없으면 첫 줄 50자
+    ④ 빈 내용이면 빈 문자열
+    직렬화 마커(=== 포함 구분선) 제거.
+    """
+    import re
+    if not content:
+        return ""
+    # 마커 라인 제거
+    lines_raw = content.splitlines()
+    lines = [l for l in lines_raw if not re.match(r"^=+[A-Z_]+=+$", l.strip())]
+
+    _CONT_KW = re.compile(r"(흡수|통합|이어|후속|연장|계속|진척|완료|진행|전달|변경|확정)")
+    _DATE_PAT = re.compile(r"\d{4}-\d{2}-\d{2}|\d{2}-\d{2}|\d{4}\.\d{1,2}\.\d{1,2}")
+
+    # ① 날짜 + 키워드 줄 우선
+    for line in lines:
+        if _DATE_PAT.search(line) and _CONT_KW.search(line):
+            return line.strip()[:80]
+
+    # ② PROGRESS_LOG 블록 이후 내용 줄
+    prog_idx = next(
+        (i for i, l in enumerate(lines_raw) if "PROGRESS_LOG" in l), None
+    )
+    if prog_idx is not None:
+        for line in lines_raw[prog_idx + 1:]:
+            stripped = line.strip()
+            if stripped and not re.match(r"^=+", stripped):
+                return stripped[:80]
+
+    # ③ 첫 줄 50자
+    for line in lines:
+        if line.strip():
+            return line.strip()[:50]
+
+    return ""
+
+
+def fetch_gm_todo_cards(only_in_progress: bool = False) -> list[dict] | None:
+    """
+    업무현황 SSOT API에서 GM(김남욱) 담당 미완료 항목을 dict 리스트로 반환.
+    각 항목: id_short, 업무명, 담당자, 상태, due(MM/DD), start(date), 비고
+    실패 시 None 반환.
+    """
+    try:
+        resp = requests.get(
+            SSOT_API_URL,
+            params={"action": "todo_list"},
+            timeout=15,
+        )
+        if resp.status_code != 200:
+            logger.warning(f"fetch_gm_todo_cards HTTP {resp.status_code}")
+            return None
+        data = resp.json()
+        if not data.get("ok"):
+            logger.warning(f"fetch_gm_todo_cards ok=False: {data}")
+            return None
+        items = data.get("data", [])
+        open_items = [
+            x for x in items
+            if "김남욱" in str(x.get("담당자", ""))
+            and x.get("상태", "") not in _TODO_DONE_STATUSES
+            and (not only_in_progress or "진행" in str(x.get("상태", "")))
+        ]
+        cards = []
+        for idx, x in enumerate(open_items, 1):
+            raw_id = str(x.get("id", ""))
+            # id가 TODO-숫자 형태면 T-NN 순번 사용, 아니면 원본
+            id_short = f"T-{idx:02d}"
+
+            due_date = _parse_kst_date(x.get("종료일", ""))
+            due_str = due_date.strftime("%m/%d") if due_date else ""
+
+            start_date = _parse_kst_date(x.get("시작일", ""))
+
+            담당자_raw = str(x.get("담당자", ""))
+            # '김남욱GM' → '김남욱 GM' 정리
+            담당자 = 담당자_raw.replace("GM", " GM").strip()
+
+            cards.append({
+                "id_short": id_short,
+                "raw_id": raw_id,
+                "업무명": str(x.get("업무명", "(제목없음)"))[:50],
+                "담당자": 담당자,
+                "상태": str(x.get("상태", "")),
+                "due": due_str,
+                "due_date": due_date,
+                "start_date": start_date,
+                "비고": _extract_continuity_note(str(x.get("내용", ""))),
+            })
+        return cards
+    except Exception as e:
+        logger.warning(f"fetch_gm_todo_cards 예외: {e}")
+        return None
+
+
+def _classify_todo_cards(
+    cards: list[dict],
+) -> tuple[list[dict], list[dict]]:
+    """
+    카드 리스트를 오늘 / 내일 로 분류한다 (KST 기준).
+    오늘: 시작일 <= 오늘 <= 종료일  OR  종료일이 오늘/과거  OR  날짜 파싱 실패
+    내일: 시작일==내일 OR 종료일==내일  (오늘 목록과 중복 제외)
+    """
+    from datetime import date as _date
+    today = _date.today()
+    tomorrow = today + __import__("datetime").timedelta(days=1)
+
+    today_cards: list[dict] = []
+    tomorrow_cards: list[dict] = []
+
+    for c in cards:
+        start = c.get("start_date")
+        due = c.get("due_date")
+
+        # 오늘 분류
+        is_today = False
+        if start is None and due is None:
+            is_today = True  # 날짜 없음 → 오늘 포함
+        elif due is not None and due <= today:
+            is_today = True  # 마감 오늘 이하 미완료(지연 포함)
+        elif start is not None and start <= today and (due is None or due >= today):
+            is_today = True  # 진행 구간이 오늘 포함
+
+        # 내일 분류 (오늘과 별개)
+        is_tomorrow = (
+            (start is not None and start == tomorrow)
+            or (due is not None and due == tomorrow)
+        )
+
+        if is_today:
+            today_cards.append(c)
+        if is_tomorrow and not is_today:
+            tomorrow_cards.append(c)
+
+    return today_cards, tomorrow_cards
+
+
+def _render_card(c: dict, show_status: bool = True) -> str:
+    """단일 카드를 들여쓰기 텍스트로 렌더링."""
+    lines = [f"[{c['id_short']}] {c['업무명']}"]
+    status_part = f" · {c['상태']}" if show_status and c.get("상태") else ""
+    due_part = f" · ~{c['due']}" if c.get("due") else ""
+    sub = f"   담당 {c['담당자']}{status_part}{due_part}"
+    lines.append(sub)
+    if c.get("비고"):
+        lines.append(f"   비고: {c['비고']}")
+    return "\n".join(lines)
+
+
 # ── status/*: C-Level별 현재 업무 진행현황 (15시용, 노션 DB 폐기 대체) ────────
 # 미완료로 간주하는 상태값 (DONE/완료/폐기 외 전부 진행/대기로 집계)
 _OPEN_STATUSES = {"PENDING", "IN_PROGRESS", "ON_HOLD", "진행중", "대기", "보류", "진행예정"}
@@ -721,32 +889,59 @@ def _build_06_body() -> str:
 
 
 def _build_09_body() -> str:
-    """09시 — 오늘 할 일 + 전날 완료 정리"""
+    """09시 — 오늘/내일 할 일 카드형 + 전날 완료 정리"""
     now = datetime.now()
     today_str = now.strftime("%Y-%m-%d")
     yesterday = (now - timedelta(days=1)).strftime("%Y-%m-%d")
     weekday_kor = _WEEKDAY_KOR[now.weekday()]
 
-    # 섹션1: GM 오늘 할 일
-    todos = fetch_gm_todos()
-    if todos is None:
-        todo_section = "  (API 조회 실패 — 업무현황 연결 확인)"
-    elif not todos:
-        todo_section = "  오늘 등록된 할 일 없음"
+    # 카드 fetch + 분류
+    cards = fetch_gm_todo_cards()
+
+    if cards is None:
+        today_section = "  (API 조회 실패 — 업무현황 연결 확인)"
+        tmr_section = ""
+        n_today = 0
+        n_tmr = 0
     else:
-        todo_section = "\n".join(f"  {i}. {t}" for i, t in enumerate(todos, 1))
+        today_cards, tmr_cards = _classify_todo_cards(cards)
+        n_today = len(today_cards)
+        n_tmr = len(tmr_cards)
+
+        # 오늘 카드 (최대 10건)
+        if today_cards:
+            rendered = [_render_card(c) for c in today_cards[:10]]
+            if n_today > 10:
+                rendered.append(f"  ...외 {n_today - 10}건")
+            today_section = "\n\n".join(rendered)
+        else:
+            today_section = "  오늘 등록된 할 일 없음"
+
+        # 내일 카드 (최대 10건)
+        if tmr_cards:
+            rendered_t = [_render_card(c, show_status=False) for c in tmr_cards[:10]]
+            if n_tmr > 10:
+                rendered_t.append(f"  ...외 {n_tmr - 10}건")
+            tmr_section = "\n\n".join(rendered_t)
+        else:
+            tmr_section = "  없음"
 
     # 섹션2: 어제 완료 git 커밋
     yesterday_summary = fetch_yesterday_summary()
+
+    tmr_weekday = _WEEKDAY_KOR[(now + timedelta(days=1)).weekday()]
+    tmr_str = (now + timedelta(days=1)).strftime("%m/%d")
 
     return (
         f"📋 [웰페리온] 09시 오늘 할 일\n"
         f"━━━━━━━━━━━━━━━━\n"
         f"📅 {today_str} ({weekday_kor})\n\n"
-        f"📌 GM 오늘 할 일 ({len(todos) if todos else 0}건)\n"
-        f"{todo_section}\n\n"
+        f"📌 오늘 할 일 ({n_today}건)\n"
+        f"{today_section}\n\n"
+        f"⏭ 내일 시작/마감 ({tmr_str} {tmr_weekday}, {n_tmr}건)\n"
+        f"{tmr_section}\n\n"
         f"━━━━━━━━━━━━━━━━\n"
-        f"📁 전날({yesterday}) 완료 내역\n"
+        f"📁 전날 완료\n"
         f"{yesterday_summary}\n\n"
         f"_본 메시지는 자동 발송입니다._"
     )
@@ -840,19 +1035,27 @@ def _build_12_body() -> str:
 
 
 def _build_15_body() -> str:
-    """15시 — GM 할일 진행 체크 + C-Level별 진행현황"""
+    """15시 — GM 진행 중 오늘 카드형 + C-Level별 진행현황"""
     now = datetime.now()
     now_str = now.strftime("%Y-%m-%d %H:%M")
     weekday_kor = _WEEKDAY_KOR[now.weekday()]
 
-    # 섹션1: GM 진행 중 업무 (진행중만 — 09시 전체와 차별화)
-    todos = fetch_gm_todos(only_in_progress=True)
-    if todos is None:
-        todo_section = "  (API 조회 실패 — 업무현황 연결 확인)"
-    elif not todos:
-        todo_section = "  진행 중 업무 없음"
+    # 섹션1: GM 오늘 활성 + 진행중만 카드형
+    cards = fetch_gm_todo_cards(only_in_progress=True)
+
+    if cards is None:
+        gm_section = "  (API 조회 실패 — 업무현황 연결 확인)"
+        n_gm = 0
     else:
-        todo_section = "\n".join(f"  {i}. {t}" for i, t in enumerate(todos, 1))
+        today_cards, _ = _classify_todo_cards(cards)
+        n_gm = len(today_cards)
+        if today_cards:
+            rendered = [_render_card(c) for c in today_cards[:10]]
+            if n_gm > 10:
+                rendered.append(f"  ...외 {n_gm - 10}건")
+            gm_section = "\n\n".join(rendered)
+        else:
+            gm_section = "  진행 중 업무 없음"
 
     # 섹션2: C-Level 진행현황
     progress = fetch_current_progress()
@@ -860,9 +1063,9 @@ def _build_15_body() -> str:
     return (
         f"⏳ [웰페리온] 15시 진행 체크\n"
         f"━━━━━━━━━━━━━━━━\n"
-        f"기준: {now_str} ({weekday_kor})\n\n"
-        f"👤 GM 진행 중 업무 ({len(todos) if todos else 0}건)\n"
-        f"{todo_section}\n\n"
+        f"기준 {now_str} ({weekday_kor})\n\n"
+        f"👤 GM 진행 중 ({n_gm}건)\n"
+        f"{gm_section}\n\n"
         f"━━━━━━━━━━━━━━━━\n"
         f"🏢 C-Level 진행현황\n"
         f"{progress}\n\n"
