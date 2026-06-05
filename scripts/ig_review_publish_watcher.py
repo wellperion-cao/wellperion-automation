@@ -217,6 +217,7 @@ def publish_blog(it: dict) -> tuple[bool, str | None]:
         "--title", it["title"],
         "--body-file", str(ROOT / it["body_file"]),
         "--image-dir", str(ROOT / it["image_dir"]),
+        "--sticker-count", "0",  # 하이엔드 브랜드 — GIF 스티커 자동삽입 금지(본문 깨짐 방지, GM 2026-06-05)
         "--i-am-sure",
     ]
     # image_glob 필드가 있으면 추가
@@ -245,6 +246,7 @@ def publish_cafe(it: dict) -> tuple[bool, str | None]:
         "--title", it["title"],
         "--body-file", str(ROOT / it["body_file"]),
         "--image-dir", str(ROOT / it["image_dir"]),
+        "--sticker-count", "0",  # 하이엔드 브랜드 — GIF 스티커 자동삽입 금지(본문 깨짐 방지, GM 2026-06-05)
         "--i-am-sure",
     ]
     # menuid 필드가 있으면 추가
