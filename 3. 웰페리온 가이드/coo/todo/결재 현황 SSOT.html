@@ -312,6 +312,22 @@ const CAT_DEPT_HEAD = {
 };
 function deptHeadFor(category) { return CAT_DEPT_HEAD[category] || ''; }
 const DEPT_HEADS = ['이경연 실장','이정헌 소장','나우열M'];
+
+/* 담당자별 이름 배경색 (사람마다 고유색 — 업무현황 SSOT와 동일 맵, 2026-06-05 동기화) */
+const OWNER_COLORS = {
+  '이경연 실장': {bg:'var(--blue-bg)',   color:'var(--blue)'},
+  '이정헌 소장': {bg:'var(--green-bg)',  color:'var(--green)'},
+  '나우열M':     {bg:'var(--purple-bg)', color:'var(--purple)'},
+  '최준용M':     {bg:'var(--accent-bg)', color:'var(--accent)'},
+  '임정은M':     {bg:'var(--red-bg)',    color:'var(--red)'},
+  '윤병현AM':    {bg:'var(--yellow-bg)', color:'var(--yellow)'},
+  '이지영 사원': {bg:'var(--orange-bg)', color:'var(--orange)'}
+};
+function ownerChip(name) {
+  var c = OWNER_COLORS[name];
+  var style = c ? 'background:' + c.bg + ';color:' + c.color + ';' : '';
+  return '<span class="chip owner" style="' + style + '">' + esc(name) + '</span>';
+}
 // 항목의 부서장 실명 — 카테고리 매핑 우선, 없으면 결재요청에 포함된 부서장 (결재자 필터·카운트용, 2026-06-03 GM)
 function deptHeadNameOf(t) {
   // 담당자가 부서장(이경연/이정헌/나우열) 본인이면 그 부서장이 결재자 — 카테고리 짐작 오배정 우회(2026-06-03 GM).
@@ -925,8 +941,8 @@ function renderApprovalCard(t, idx) {
   h += '</div>';
   // 둘째 줄: 담당자 한 줄(· 구분) — 우측 칩에서 이동, 제목 줄바꿈 squeeze 해소 (2026-06-03 GM)
   if (t.owner && String(t.owner).trim()) {
-    var _owners = t.owner.split(',').map(function(o){ return o.trim(); }).filter(Boolean).join(' · ');
-    h += '<div class="card-owner-line" style="font-size:11px;color:var(--dim);line-height:1.4;">👤 ' + esc(_owners) + '</div>';
+    var _ownerChips = t.owner.split(',').map(function(o){ return ownerChip(o.trim()); }).filter(Boolean).join(' ');
+    h += '<div class="card-owner-line" style="font-size:11px;line-height:1.4;display:flex;flex-wrap:wrap;align-items:center;gap:4px;">👤 ' + _ownerChips + '</div>';
   }
   // 셋째 줄: 결재 대기 배지
   h += '<div class="approval-badge-line"><span class="' + chipCls + '">' + esc(chipText) + '</span></div>';
