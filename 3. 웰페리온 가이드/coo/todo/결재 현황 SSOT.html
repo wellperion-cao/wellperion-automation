@@ -11,7 +11,7 @@
 /* 최신본 자동 보장 — HTTP 캐시로 옛 버전이 떠 'GM 화면만 미반영'되는 문제 방지 (2026-05-29 COO).
    서버 최신본 버전과 비교해 다르면 1회만 강제 갱신. 루프 방지: ?pv 파라미터가 있으면(=1회 redirect 완료) 무조건 종료.
    (2026-06-04 CEO 수정: 기존 pv===__PV 가드가 CDN 버전 불일치 시 무한 새로고침 유발 → has('pv')로 교체) */
-window.__PV='20260605-10';
+window.__PV='20260605-11';
 (function(){
   window.addEventListener('pageshow',function(e){ if(e.persisted) location.reload(); });
   try{
@@ -881,6 +881,20 @@ async function rejectTask(taskId, role) {
   await signTask(taskId, role, 'reject', pin);
 }
 
+/* 결재 리셋 (GM 전용) — 어느 단계서든 결재요청 전으로 되돌려 업무현황에서 수정 가능. GM PIN 서버검증 (2026-06-05 GM) */
+async function resetTask(taskId) {
+  if (!confirm('이 업무를 결재요청 전으로 리셋합니다.\n부서장·GM·대표 싸인과 결재요청이 모두 지워지고, 업무현황에서 다시 수정할 수 있습니다.\n\n계속하시겠습니까?')) return;
+  const pin = prompt('GM 비밀번호를 입력하세요 (결재 리셋):');
+  if (pin === null || pin === '') return;
+  try {
+    const params = new URLSearchParams({ action: 'todo_reset', id: taskId, pin: pin });
+    const r = await fetch(TODO_API_URL + '?' + params.toString(), { redirect: 'follow' });
+    const res = await r.json();
+    if (res.ok) { alert('✅ 리셋 완료 — 업무 현황 SSOT에서 수정하세요.'); loadTasks(); }
+    else alert('리셋 실패: ' + (res.error || '알 수 없는 오류'));
+  } catch (e) { alert('연결 실패: ' + e.message); }
+}
+
 async function signTask(taskId, role, decision, pin) {
   const params = new URLSearchParams({
     action: 'todo_sign', id: taskId, role: role, decision: decision, signer: '페이지', pin: pin || ''
@@ -952,7 +966,9 @@ function renderApprovalCard(t, idx) {
     h += '<div class="card-owner-line" style="font-size:11px;line-height:1.4;display:flex;flex-wrap:wrap;align-items:center;gap:4px;">👤 ' + _ownerChips + '</div>';
   }
   // 셋째 줄: 결재 대기 배지
-  h += '<div class="approval-badge-line"><span class="' + chipCls + '">' + esc(chipText) + '</span></div>';
+  h += '<div class="approval-badge-line"><span class="' + chipCls + '">' + esc(chipText) + '</span>' +
+    '<button onclick="event.stopPropagation();resetTask(\'' + escAttr(t.id) + '\')" title="결재요청 전으로 리셋 (GM 전용) — 업무현황에서 수정 가능" style="margin-left:6px;background:transparent;color:var(--dim);border:1px solid var(--border);padding:2px 8px;border-radius:7px;font-size:10px;cursor:pointer;font-family:inherit;">↩ 리셋</button>' +
+    '</div>';
   h += '</div>';
   // 결재현황 SSOT는 결재만 집중 — 카드별 인쇄/링크 버튼 제거 (2026-06-03 GM). 전체 결재 문서 인쇄는 툴바 🖨 인쇄 유지.
   h += '</div>';

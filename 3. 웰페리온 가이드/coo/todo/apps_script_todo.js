@@ -670,6 +670,30 @@ function _processTodoAction(body) {
       return _json({ ok: true, id: id, message: role + ' 승인 처리됨', next: next || null, decision: 'approve' });
     }
 
+    // ─── 결재 리셋 (GM 전용) — 결재요청 전으로 복원, 업무현황에서 수정 가능 (2026-06-05 GM) ───
+    if (action === 'todo_reset') {
+      const sh = initTodoSheet();
+      const id = body.id;
+      if (!id) return _json({ ok: false, error: 'id 필수' });
+      const rowNum = _findRow(sh, id);
+      if (rowNum < 0) return _json({ ok: false, error: '해당 ID를 찾을 수 없습니다: ' + id });
+      var _expected = _prop('APPROVAL_PIN_GM');
+      if (!_expected) return _json({ ok: false, error: 'GM 비밀번호가 서버에 설정되지 않았습니다(관리자 설정 필요).' });
+      if (String(body.pin || '') !== _expected) return _json({ ok: false, error: '비밀번호가 일치하지 않습니다.' });
+      const existing = sh.getRange(rowNum, 1, 1, TODO_HEADERS.length).getValues()[0];
+      const _nm = existing[TODO_HEADERS.indexOf('업무명')];
+      existing[TODO_HEADERS.indexOf('결재요청')] = '';
+      existing[TODO_HEADERS.indexOf('부서장싸인')] = '';
+      existing[TODO_HEADERS.indexOf('GM싸인')] = '';
+      existing[TODO_HEADERS.indexOf('대표싸인')] = '';
+      existing[TODO_HEADERS.indexOf('결재상태')] = '';
+      existing[TODO_HEADERS.indexOf('결재완료시각')] = '';
+      existing[TODO_HEADERS.indexOf('수정일')] = _now();
+      sh.getRange(rowNum, 1, 1, TODO_HEADERS.length).setValues([existing]);
+      _notifyTelegram('↩ <b>[결재 리셋]</b> 결재요청 전으로 복원\n📌 ' + (_nm || '-') + '\n🆔 ' + id);
+      return _json({ ok: true, id: id, message: '결재 리셋됨 — 업무현황에서 수정 가능' });
+    }
+
     // ─── 삭제 ───
     if (action === 'todo_delete') {
       const sh = initTodoSheet();
