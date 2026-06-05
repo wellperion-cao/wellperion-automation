@@ -37,6 +37,7 @@ QUEUE = ROOT / "3. 웰페리온 가이드" / "cmo" / "review" / "review_queue.js
 PUBLISH_SCRIPT = ROOT / "scripts" / "instagram_upload_playwright.py"
 BLOG_SCRIPT = ROOT / "scripts" / "naver_blog_upload_playwright.py"   # 블로그 발행 스크립트
 CAFE_SCRIPT = ROOT / "scripts" / "cafe_upload_playwright.py"          # 카페 발행 스크립트
+DANGGN_SCRIPT = ROOT / "scripts" / "danggn_upload_playwright.py"      # 당근 반자동(자동입력+임시저장)
 PY = ROOT / ".venv" / "Scripts" / "python.exe"
 NOTIFIED_FILE = ROOT / "scripts" / ".review_notified.json"  # 검수대기 알림 발송 이력
 CARD_MSGID_STORE = ROOT / "scripts" / ".review_card_msgids.json"  # send_review_card 가 카드 보낸 id 저장
@@ -281,6 +282,30 @@ def publish_cafe(it: dict) -> tuple[bool, str | None]:
     return success, url
 
 
+def publish_danggn(it: dict) -> tuple[bool, str]:
+    """당근 반자동 임시저장 (자동입력+임시저장). danggn_upload_playwright.py --mode draft.
+    당근은 당일 QR 로그인 세션 필요 — 세션 만료(exit 5)면 (False, '세션만료')로 폴백.
+    반환: (성공여부, 사유). 이미지 첨부는 GM 수동(반자동 — 2026-06-04 WJO 선례)."""
+    folder = it.get("folder", "")
+    cmd = [
+        str(PY), str(DANGGN_SCRIPT),
+        "--mode", "draft",
+        "--content-dir", folder,
+    ]
+    env = dict(os.environ, PYTHONIOENCODING="utf-8")
+    try:
+        proc = subprocess.run(cmd, cwd=str(ROOT), capture_output=True, text=True,
+                              encoding="utf-8", errors="replace", env=env, timeout=600)
+    except Exception as exc:
+        return False, f"실행예외:{exc}"
+    print((proc.stdout or "") + (proc.stderr or ""))
+    if proc.returncode == 0:
+        return True, "ok"
+    if proc.returncode == 5:
+        return False, "세션만료"  # 당일 QR 로그인 필요
+    return False, f"exit={proc.returncode}"
+
+
 def dispatch_publish(it: dict, events: list) -> None:
     """채널 분기 발행 디스패처.
 
@@ -326,19 +351,36 @@ def dispatch_publish(it: dict, events: list) -> None:
             it["note"] = "카페 임시저장 스크립트 exit≠0"
             events.append(f"⚠️ {title} 카페 임시저장 실패 — exit code 비정상")
 
-    elif "카카오" in ch or "당근" in ch:
-        # 수동 발행 채널 — 자동발행 안 함, 텔레그램 알림만
+    elif "당근" in ch:
+        # 당근 반자동 — 자동입력+임시저장(이미지는 GM 수동 첨부, 2026-06-04 WJO 선례).
+        # 당일 QR 로그인 세션 필요 — 세션 만료 시 기존 수동 알림으로 안전 폴백.
+        ok, reason = publish_danggn(it)
+        folder = it.get("folder", "(폴더 미지정)")
+        if ok:
+            it["status"] = "임시저장"
+            it["published_at"] = datetime.now().isoformat(timespec="seconds")
+            it["note"] = "당근 글 자동입력+임시저장 완료 — GM 이미지 첨부 후 게시"
+            events.append(f"✅ {title} 당근 임시저장 완료 — GM 이미지 첨부·게시 대기")
+        else:
+            it["status"] = "수동발행대기"
+            it["note"] = f"당근 자동 임시저장 실패({reason}) — 수동 업로드 필요"
+            telegram(
+                f"📦 [당근채널] 승인됨 — 수동 업로드 필요({reason})\n"
+                f"폴더: {folder}\n본문: {it.get('body_file','(본문파일 미지정)')}"
+            )
+            events.append(f"📦 {title}: 당근 수동 업로드 대기(GM) — {reason}")
+
+    elif "카카오" in ch:
+        # 카카오 채널 — 자동 입력 스크립트 미구현, 수동 업로드 알림만
         folder = it.get("folder", "(폴더 미지정)")
         body_file = it.get("body_file", "(본문파일 미지정)")
-        msg = (
-            f"📦 [{ch}] 승인됨 — 수동 업로드 필요\n"
-            f"폴더: {folder}\n"
-            f"본문: {body_file}"
+        telegram(
+            f"📦 [카카오 채널] 승인됨 — 수동 업로드 필요\n"
+            f"폴더: {folder}\n본문: {body_file}"
         )
-        telegram(msg)
         it["status"] = "수동발행대기"
         it.pop("note", None)
-        events.append(f"📦 {title}: 수동 업로드 대기(GM) [{ch}]")
+        events.append(f"📦 {title}: 카카오 수동 업로드 대기(GM)")
 
     else:
         # 기존 IG 경로 — publish_item 결과(URL, exit code) 기준으로 성공 판정
