@@ -1700,7 +1700,6 @@ document.getElementById("gatePw").addEventListener("keydown",function(e){
   }
   var APPS_BY_NAME = {};
   window.__registerAppls = function(arr){
-    APPS_BY_NAME = {};
     (arr||[]).forEach(function(a){ if(a && a["지원자명"]) APPS_BY_NAME[a["지원자명"]] = a; });
   };
   window.openApplicantInfo = function(name, pid){
