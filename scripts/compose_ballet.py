@@ -94,16 +94,16 @@ def compose_cover(
     draw = ImageDraw.Draw(canvas)
 
     # 우상단 칩 — 바레 완성본 동일 (chip_font 28, chip_w 240, chip_h 52)
-    chip_font = load_font("bold", 28)
-    chip_w, chip_h = 240, 52
-    chip_x = W - 40 - chip_w
-    chip_y = 38
+    chip_font = load_font("bold", 24)
+    chip_w, chip_h = 180, 48          # 바레 정본 측정
+    chip_x = W - 50 - chip_w          # 우측끝 x=1030
+    chip_y = 60
     draw_chip(draw, "WELLPERION", chip_font, chip_x, chip_y, chip_w, chip_h)
 
     # 검정 정보영역 — 바레 완성본 y좌표 1:1
-    # 영문 대제목 (베이지·큰·위) — 바레 정본 중심 y=763
-    eng_font = load_font("bold", 88)
-    draw.text((W // 2, 763), title_eng, font=eng_font, fill=BEIGE, anchor="mm")
+    # 영문 대제목 (베이지·큰·위) — 바레 정본 측정: 글자높이41, 중심 y786
+    eng_font = load_font("bold", 58)
+    draw.text((W // 2, 786), title_eng, font=eng_font, fill=BEIGE, anchor="mm")
 
     # 한글 부제 (흰색·작은·아래) — 바레 정본 중심 y=860
     kor_font = load_font("semibold", 38)
@@ -116,7 +116,7 @@ def compose_cover(
     )
 
     date_font = load_font("medium", 26)
-    draw.text((W // 2, 962), date_location, font=date_font, fill=GRAY, anchor="mm")
+    draw.text((W // 2, 962), date_location, font=date_font, fill=(166, 151, 139), anchor="mm")
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
     canvas.convert("RGB").save(output_path, "JPEG", quality=93, optimize=True)
@@ -153,10 +153,10 @@ def compose_story(
     draw = ImageDraw.Draw(canvas)
 
     # 우상단 칩 — 바레 완성본 동일
-    chip_font = load_font("bold", 28)
-    chip_w, chip_h = 240, 52
-    chip_x = W - 40 - chip_w
-    chip_y = 38
+    chip_font = load_font("bold", 24)
+    chip_w, chip_h = 180, 48          # 바레 정본 측정
+    chip_x = W - 50 - chip_w          # 우측끝 x=1030
+    chip_y = 60
     draw_chip(draw, chip_label, chip_font, chip_x, chip_y, chip_w, chip_h)
 
     # 카운터 없음 (GM 지시 2026-06-05)
