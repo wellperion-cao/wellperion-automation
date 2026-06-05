@@ -1910,7 +1910,11 @@ function updateSubmitButtonsG(sched,amStats,pmStats,gender){
   const selEl=document.getElementById('submitter'+sfx);
   if(selEl) selEl.style.boxShadow = sub ? '' : '0 0 0 2px var(--accent)';
   if(STATE._submitted_am){
-    btnAm.textContent='오전조 제출 완료';btnAm.disabled=true;btnAm.className='submit-btn submitted';
+    if(amStats.done<amStats.total){
+      btnAm.textContent=`➕ 오전조 추가 제출 (남은 ${amStats.total-amStats.done}건)`;btnAm.disabled=!sub;btnAm.className='submit-btn primary';
+    }else{
+      btnAm.textContent='오전조 제출 완료';btnAm.disabled=true;btnAm.className='submit-btn submitted';
+    }
   }else if(!sub){
     btnAm.textContent='↑ 점검자를 먼저 선택';btnAm.disabled=true;btnAm.className='submit-btn primary';
   }else{
@@ -1918,7 +1922,11 @@ function updateSubmitButtonsG(sched,amStats,pmStats,gender){
     btnAm.disabled=amStats.done===0;btnAm.className='submit-btn primary';
   }
   if(STATE._submitted_pm){
-    btnPm.textContent='오후조 제출 완료';btnPm.disabled=true;btnPm.className='submit-btn submitted';
+    if(pmStats.done<pmStats.total){
+      btnPm.textContent=`➕ 오후조 추가 제출 (남은 ${pmStats.total-pmStats.done}건)`;btnPm.disabled=!sub;btnPm.className='submit-btn primary';
+    }else{
+      btnPm.textContent='오후조 제출 완료';btnPm.disabled=true;btnPm.className='submit-btn submitted';
+    }
   }else if(!sub){
     btnPm.textContent='↑ 점검자를 먼저 선택';btnPm.disabled=true;btnPm.className='submit-btn primary';
   }else{
@@ -1932,7 +1940,11 @@ function updateNightSubmitButtonG(sched,nightStats,d,gender){
   const btnNight=document.getElementById('submitNight'+sfx);
   const sub=getSubmitterForGender(gender);
   if(STATE._submitted_night){
-    btnNight.textContent='야간조 제출 완료';btnNight.disabled=true;btnNight.className='submit-btn submitted';
+    if(nightStats.done<nightStats.total){
+      btnNight.textContent=`➕ 야간조 추가 제출 (남은 ${nightStats.total-nightStats.done}건)`;btnNight.disabled=!sub;btnNight.className='submit-btn night-btn';
+    }else{
+      btnNight.textContent='야간조 제출 완료';btnNight.disabled=true;btnNight.className='submit-btn submitted';
+    }
   }else if(!sub){
     btnNight.textContent='↑ 점검자를 먼저 선택';btnNight.disabled=true;btnNight.className='submit-btn night-btn';
   }else{
@@ -2077,9 +2089,16 @@ function collectGroupSubmits(){
 // 그룹 제출 버튼/배지 HTML — cat-body 하단에 삽입
 function groupSubmitBarHtml(g, gender){
   const gk = groupKey(g);
+  const visItems = (g.items||[]).filter(it=>shouldShowItemForGender(it,gender));
+  const remain = visItems.length - visItems.filter(it=>STATE[it.id]).length;
   if(STATE['_gsub_' + gk]){
     const by = STATE['_gsubBy_' + gk] ? ' (' + STATE['_gsubBy_' + gk] + ')' : '';
     const at = STATE['_gsubAt_' + gk] ? new Date(STATE['_gsubAt_' + gk]).toLocaleString('ko-KR') : '';
+    // 제출됐지만 미완료(미흡) 항목이 남으면 '완료'로 막지 않고 추가 제출 허용 (2026-06-05 GM)
+    if(remain > 0){
+      return '<div class="group-submit-bar"><span class="group-submitted" style="color:var(--accent)">⚠ 일부 제출' + by + ' · 미흡 ' + remain + '건</span>' +
+        '<button class="group-submit-btn" onclick="submitGroup(\'' + gk + '\',\'' + gender + '\')">➕ 추가 제출 (남은 ' + remain + '건)</button></div>';
+    }
     return '<div class="group-submit-bar"><span class="group-submitted">✅ 제출됨' + by + ' ' + at + '</span></div>';
   }
   return '<div class="group-submit-bar"><button class="group-submit-btn" onclick="submitGroup(\'' + gk + '\',\'' + gender + '\')">이 항목 제출</button></div>';
@@ -2092,13 +2111,14 @@ async function submitShift(shift,gender){
   const labels={am:'오전조',pm:'오후조',night:'야간조'};
   const genderLabel=gender==='f'?'여':'남';
   const label=labels[shift]||shift;
+  const _isAdd=!!STATE['_submitted_'+shift];
   STATE['_submitted_'+shift]=true;
   STATE['_submittedAt_'+shift]=new Date().toISOString();
   STATE['_submitter_'+shift]=sub;
   saveLocal(d,STATE);
   if(ONLINE)await pushToServer(d);
   await sendTelegramNotify(d,shift,sub,gender);
-  alert(`${d} ${label} 점검(${genderLabel})이 ${sub}님 이름으로 제출되었습니다.`);
+  alert(`${d} ${label} 점검(${genderLabel})이 ${sub}님 이름으로 ${_isAdd?'추가 ':''}제출되었습니다.`);
   drawUI(d,gender);
 }
 
