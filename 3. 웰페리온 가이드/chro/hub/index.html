@@ -978,7 +978,7 @@ function renderHire(){
       var list=DB.appl.filter(function(a){return a["전형 단계"]===st;});
       html+='<div class="pipe-col"><div class="pipe-head"><span>'+badge(st)+
         '</span><span class="n">'+list.length+'</span></div>';
-      html+=(window.__registerAppls && window.__registerAppls(list)) , list.map(function(a){
+      (window.__registerAppls && window.__registerAppls(list));html+=list.map(function(a){
         return '<div class="appl" data-applname="'+esc(a["지원자명"]||"")+'" data-apppid="'+(((a["원본 Notion URL"]||"")+"").match(/[0-9a-f]{32}/i)||[""])[0].toLowerCase()+'" style="cursor:pointer" title="클릭하면 상세 정보"><div class="an">'+esc(txt(a["지원자명"]))+'</div>'+
           '<div class="ap">'+esc(txt(a["지원 포지션"]))+'</div>'+
           '<div class="ax">'+(a["면접 평점"]?badge(a["면접 평점"]):'<span class="muted">평점 —</span>')+
