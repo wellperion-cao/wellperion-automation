@@ -90,6 +90,10 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 .submit-btn.night-btn{background:var(--orange);color:#fff}
 .submit-btn.night-btn:disabled{opacity:0.4;cursor:not-allowed}
 .submit-btn.submitted{background:var(--green-bg);color:var(--green);border:1px solid rgba(106,191,123,0.3)}
+.group-submit-bar{display:flex;justify-content:flex-end;align-items:center;padding:8px 14px 4px;border-top:1px dashed var(--border);margin-top:6px}
+.group-submit-btn{padding:7px 16px;font-size:12.5px;font-weight:700;border:1px solid var(--accent);background:var(--accent-bg);color:var(--accent);border-radius:8px;cursor:pointer;font-family:inherit}
+.group-submit-btn:hover{background:var(--accent);color:#fff}
+.group-submitted{font-size:12px;font-weight:700;color:var(--green)}
 .saving{position:fixed;top:70px;right:20px;background:var(--green-bg);color:var(--green);padding:6px 14px;border-radius:8px;font-size:12px;font-weight:600;display:none;z-index:20}
 .admin-card{background:var(--paper);border:1px solid var(--border);border-radius:12px;padding:16px 18px;margin-bottom:12px}
 .admin-card h3{font-size:15px;font-weight:700;margin-bottom:10px}
@@ -1523,6 +1527,13 @@ async function loadState(d){
       if(row.submitted)STATE._submitted_am=true;
       if(row.submittedAt&&!STATE._submittedAt_am)STATE._submittedAt_am=row.submittedAt;
     });
+    // 그룹별 제출 복원 (서버 영속 → 새로고침해도 유지) — 2026-06-05 GM
+    if(j.groupSubmits){Object.keys(j.groupSubmits).forEach(key=>{
+      const v=j.groupSubmits[key]||{};
+      STATE['_gsub_'+key]=true;
+      if(v.by)STATE['_gsubBy_'+key]=v.by;
+      if(v.at)STATE['_gsubAt_'+key]=v.at;
+    });}
   }catch(e){STATE=loadLocal(d)}
 }
 
@@ -1560,6 +1571,7 @@ async function pushToServer(d){
       headers:{'Content-Type':'text/plain'},
       body:JSON.stringify({action:'save',date:d,checks,
         genderTab:g,
+        groupSubmits:collectGroupSubmits(),
         submitted_am:!!STATE._submitted_am,submittedAt_am:STATE._submittedAt_am||'',submitter_am:STATE._submitter_am||'',
         submitted_pm:!!STATE._submitted_pm,submittedAt_pm:STATE._submittedAt_pm||'',submitter_pm:STATE._submitter_pm||'',
         submitted_night:!!STATE._submitted_night,submittedAt_night:STATE._submittedAt_night||'',submitter_night:STATE._submitter_night||''
@@ -1701,6 +1713,7 @@ function drawUI(d,gender){
         const ok=gd===visItems.length,badge=ok?'<span class="cat-badge done">완료</span>':`<span class="cat-badge pending">${gd}/${visItems.length}</span>`;
         html+=`<div class="category"><div class="cat-header" onclick="tog(this)"><span class="cat-title">${g.title}</span>${badge}</div><div class="cat-body${ok?'':' open'}">`;
         visItems.forEach(it=>{html+=renderItem(it,slot.shift,gender)});
+        html+=groupSubmitBarHtml(g,gender);
         html+='</div></div>';
       });
       html+='</div>';
@@ -1751,6 +1764,7 @@ function drawUI(d,gender){
           const itemShift=slot.shift==='all'?'pm':slot.shift;
           html+=renderItem(it,itemShift,gender);
         });
+        html+=groupSubmitBarHtml(g,gender);
         html+='</div></div>';
       });
       html+='</div>';
@@ -2034,6 +2048,41 @@ function togManual(h){
   const arrow=h.querySelector('.arrow');
   body.classList.toggle('open');
   arrow.classList.toggle('open');
+}
+
+/* ── 그룹별 제출 (2026-06-05 GM: 항목 묶음 단위 제출, 조 마감은 별도 유지) ── */
+function groupKey(g){ return 'g_' + ((g.items && g.items[0]) ? g.items[0].id : ''); }
+function isGroupSubmitted(g){ return !!STATE['_gsub_' + groupKey(g)]; }
+async function submitGroup(gkey, gender){
+  const sub = getSubmitterForGender(gender);
+  if(!sub){ alert('점검자를 선택해주세요.'); return; }
+  const d = getDateG(gender);
+  STATE['_gsub_' + gkey] = true;
+  STATE['_gsubAt_' + gkey] = new Date().toISOString();
+  STATE['_gsubBy_' + gkey] = sub;
+  saveLocal(d, STATE);
+  if(ONLINE) await pushToServer(d);   // 텔레그램 알림 없음(조 마감 때만) — GM
+  drawUI(d, gender);
+}
+function collectGroupSubmits(){
+  const out = {};
+  Object.keys(STATE).forEach(k=>{
+    if(k.indexOf('_gsub_') === 0){
+      const key = k.slice(6);
+      out[key] = { by: STATE['_gsubBy_' + key] || '', at: STATE['_gsubAt_' + key] || '' };
+    }
+  });
+  return out;
+}
+// 그룹 제출 버튼/배지 HTML — cat-body 하단에 삽입
+function groupSubmitBarHtml(g, gender){
+  const gk = groupKey(g);
+  if(STATE['_gsub_' + gk]){
+    const by = STATE['_gsubBy_' + gk] ? ' (' + STATE['_gsubBy_' + gk] + ')' : '';
+    const at = STATE['_gsubAt_' + gk] ? new Date(STATE['_gsubAt_' + gk]).toLocaleString('ko-KR') : '';
+    return '<div class="group-submit-bar"><span class="group-submitted">✅ 제출됨' + by + ' ' + at + '</span></div>';
+  }
+  return '<div class="group-submit-bar"><button class="group-submit-btn" onclick="submitGroup(\'' + gk + '\',\'' + gender + '\')">이 항목 제출</button></div>';
 }
 
 async function submitShift(shift,gender){

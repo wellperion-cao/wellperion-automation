@@ -262,7 +262,23 @@ function doGet(e) {
       }
     }
   });
-  return jsonRes({ date: date, zone: zone || 'all', rows: rows });
+  return jsonRes({ date: date, zone: zone || 'all', rows: rows, groupSubmits: _getGroupSubmits(date) });
+}
+
+// ─── 그룹별 제출 영속 (2026-06-05 GM) — PropertiesService 날짜별 JSON, 병합·빈값 덮어쓰기 방지 ───
+var GSUB_PROP_PREFIX = 'gsub_';
+function _saveGroupSubmits(date, gs) {
+  if (!date || !gs || typeof gs !== 'object') return;
+  var props = PropertiesService.getScriptProperties();
+  var key = GSUB_PROP_PREFIX + date;
+  var existing = {};
+  try { existing = JSON.parse(props.getProperty(key) || '{}'); } catch (e) {}
+  Object.keys(gs).forEach(function (k) { if (gs[k]) existing[k] = gs[k]; });  // 제출분만 추가/갱신(해제 없음)
+  props.setProperty(key, JSON.stringify(existing));
+}
+function _getGroupSubmits(date) {
+  try { return JSON.parse(PropertiesService.getScriptProperties().getProperty(GSUB_PROP_PREFIX + date) || '{}'); }
+  catch (e) { return {}; }
 }
 
 // ════════════════════════════════════════════
@@ -282,6 +298,7 @@ function doPost(e) {
 }
 
 function handleSave(body) {
+  _saveGroupSubmits(body.date, body.groupSubmits);   // 그룹별 제출 영속(zone/v2 두 경로 공통) — 2026-06-05 GM
   if (!body.zone) return _handleSaveV2Compat(body);
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var date = body.date;
