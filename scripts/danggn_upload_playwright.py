@@ -404,6 +404,27 @@ async def run_setup(args: "argparse.Namespace | None" = None) -> int:
                     has_session = True
                     break
 
+            # 계정 선택 자동 클릭 — '경영지원 계정으로 계속'(구글 계정 기억됨·비번 없음, GM 2026-06-05)
+            # 못 찾으면 GM 수동 클릭 대기(기존 동작 유지·무회귀).
+            for _scope in (page, popup_ref.get("pg")):
+                if _scope is None:
+                    continue
+                for _acc_sel in [
+                    'text=경영지원 계정으로 계속',
+                    'button:has-text("경영지원")',
+                    '[role="button"]:has-text("경영지원")',
+                    'text=계정으로 계속',
+                ]:
+                    try:
+                        _loc = _scope.locator(_acc_sel).first
+                        if await _loc.count() > 0 and await _loc.is_visible():
+                            await _loc.click()
+                            print(f"[INFO] 계정 자동 선택 클릭: {_acc_sel!r}")
+                            await asyncio.sleep(3)
+                            break
+                    except Exception:
+                        continue
+
             await asyncio.sleep(3)
             waited += 3
             if waited % 30 == 0:

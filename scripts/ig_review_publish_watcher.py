@@ -38,6 +38,7 @@ PUBLISH_SCRIPT = ROOT / "scripts" / "instagram_upload_playwright.py"
 BLOG_SCRIPT = ROOT / "scripts" / "naver_blog_upload_playwright.py"   # 블로그 발행 스크립트
 CAFE_SCRIPT = ROOT / "scripts" / "cafe_upload_playwright.py"          # 카페 발행 스크립트
 DANGGN_SCRIPT = ROOT / "scripts" / "danggn_upload_playwright.py"      # 당근 반자동(자동입력+임시저장)
+KAKAO_SCRIPT = ROOT / "scripts" / "kakao_channel_upload_playwright.py"  # 카카오 채널(자동입력, publish 실구현)
 PY = ROOT / ".venv" / "Scripts" / "python.exe"
 NOTIFIED_FILE = ROOT / "scripts" / ".review_notified.json"  # 검수대기 알림 발송 이력
 CARD_MSGID_STORE = ROOT / "scripts" / ".review_card_msgids.json"  # send_review_card 가 카드 보낸 id 저장
@@ -306,6 +307,32 @@ def publish_danggn(it: dict) -> tuple[bool, str]:
     return False, f"exit={proc.returncode}"
 
 
+def publish_kakao(it: dict) -> tuple[bool, str]:
+    """카카오 채널 실 발행 (publish 실구현). kakao_channel_upload_playwright.py --mode publish --i-am-sure.
+    세션(persistent profile) 필요 — 만료/실패 시 (False, 사유)로 폴백.
+    ※ 2026-06-05 도입 — 발행 모드 첫 실전은 월요일 바레로 검증 예정."""
+    folder = it.get("folder", "")
+    body_file = it.get("body_file", "")
+    cmd = [
+        str(PY), str(KAKAO_SCRIPT),
+        "--mode", "publish",
+        "--content-dir", folder,
+        "--i-am-sure",
+    ]
+    if body_file:
+        cmd += ["--body-file", str(ROOT / body_file)]
+    env = dict(os.environ, PYTHONIOENCODING="utf-8")
+    try:
+        proc = subprocess.run(cmd, cwd=str(ROOT), capture_output=True, text=True,
+                              encoding="utf-8", errors="replace", env=env, timeout=600)
+    except Exception as exc:
+        return False, f"실행예외:{exc}"
+    print((proc.stdout or "") + (proc.stderr or ""))
+    if proc.returncode == 0:
+        return True, "ok"
+    return False, f"exit={proc.returncode}"
+
+
 def dispatch_publish(it: dict, events: list) -> None:
     """채널 분기 발행 디스패처.
 
@@ -371,16 +398,23 @@ def dispatch_publish(it: dict, events: list) -> None:
             events.append(f"📦 {title}: 당근 수동 업로드 대기(GM) — {reason}")
 
     elif "카카오" in ch:
-        # 카카오 채널 — 자동 입력 스크립트 미구현, 수동 업로드 알림만
+        # 카카오 채널 — 승인=바로 발행 (publish 실구현, GM 2026-06-05). 실패 시 수동 알림 폴백.
+        # ※ 발행 모드 첫 실전 = 월요일 바레로 검증 예정.
+        ok, reason = publish_kakao(it)
         folder = it.get("folder", "(폴더 미지정)")
-        body_file = it.get("body_file", "(본문파일 미지정)")
-        telegram(
-            f"📦 [카카오 채널] 승인됨 — 수동 업로드 필요\n"
-            f"폴더: {folder}\n본문: {body_file}"
-        )
-        it["status"] = "수동발행대기"
-        it.pop("note", None)
-        events.append(f"📦 {title}: 카카오 수동 업로드 대기(GM)")
+        if ok:
+            it["status"] = "발행완료"
+            it["published_at"] = datetime.now().isoformat(timespec="seconds")
+            it.pop("note", None)
+            events.append(f"✅ {title} 카카오 채널 발행 완료")
+        else:
+            it["status"] = "수동발행대기"
+            it["note"] = f"카카오 자동 발행 실패({reason}) — 수동 업로드 필요"
+            telegram(
+                f"📦 [카카오 채널] 승인됨 — 자동발행 실패({reason}), 수동 업로드 필요\n"
+                f"폴더: {folder}\n본문: {it.get('body_file','(본문파일 미지정)')}"
+            )
+            events.append(f"📦 {title}: 카카오 수동 업로드 대기(GM) — {reason}")
 
     else:
         # 기존 IG 경로 — publish_item 결과(URL, exit code) 기준으로 성공 판정
