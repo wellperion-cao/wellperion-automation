@@ -177,11 +177,14 @@
     "task_id": "COO-2026-06-04-TODO-UPDATE-EMPTY-OVERWRITE",
     "clevel": "coo",
     "title": "업무 편집 시 빈값 덮어쓰기(초기화) 근본 차단 — GAS todo_update + 업무현황 SSOT",
-    "status": "PENDING",
+    "status": "DONE",
     "priority": "HIGH",
     "from": "cto",
     "brief": "status/briefs/COO-2026-06-04-TODO-UPDATE-EMPTY-OVERWRITE.md",
     "enqueued_at": "2026-06-04",
-    "note": "GM 직접 제보. 시토 G1 프론트 핫픽스 완료(f28fb27). 근본=GAS todo_update 빈값 스킵(재배포 필수)+업무현황 SSOT.html 동일패턴 점검."
+    "note": "[2026-06-05 CEO 직접 처리] 시우 거짓완료(미수정)를 실측으로 발견→웰리 직접 수정. GAS todo_update 빈값 스킵(작업본+배포본 동기), clasp @47→@48 재배포, 라이브 회귀 실측 PASS(빈값 전송에도 전 필드 보존). G1·업무현황 SSOT 공통 차단.",
+    "commit_sha": "56aac0b",
+    "processed_at": "2026-06-05",
+    "next": "지원부 점검 앱 이슈 저장 유실 수정(COO-2026-06-04-SUPPORT-ISSUE-SAVE) — 같은 GAS 재배포 성격"
   }
 ]
