@@ -11,7 +11,7 @@
 /* 최신본 자동 보장 — HTTP 캐시로 옛 버전이 떠 'GM 화면만 미반영'되는 문제 방지 (2026-05-29 COO).
    서버 최신본 버전과 비교해 다르면 1회만 강제 갱신. 루프 방지: ?pv 파라미터가 있으면(=1회 redirect 완료) 무조건 종료.
    (2026-06-04 CEO 수정: 기존 pv===__PV 가드가 CDN 버전 불일치 시 무한 새로고침 유발 → has('pv')로 교체) */
-window.__PV='20260605-5';
+window.__PV='20260605-6';
 (function(){
   window.addEventListener('pageshow',function(e){ if(e.persisted) location.reload(); });
   try{
@@ -73,7 +73,7 @@ html,body{background:var(--bg);color:var(--text);font-family:"Pretendard","Apple
 .stat-card{background:var(--paper);border:1px solid var(--border);border-radius:12px;padding:12px 10px;text-align:center}
 .stat-card .num{font-size:22px;font-weight:700;line-height:1.1}
 .stat-card .label{font-size:11px;color:var(--dim);margin-top:4px}
-.approval-card{background:var(--paper);border:1px solid var(--border);border-left:3px solid var(--dim-soft);border-radius:12px;padding:12px 16px;margin-bottom:8px;transition:background 0.1s}
+.approval-card{background:var(--paper);border:1px solid var(--border);border-left:3px solid var(--dim-soft);border-radius:12px;padding:12px 16px;margin-bottom:16px;transition:background 0.1s}
 .approval-card.st-done{border-left-color:var(--green)}
 .approval-card.st-rejected,.approval-card.rejected{border-left-color:var(--red)}
 .approval-card.st-progress{border-left-color:var(--blue)}
@@ -181,7 +181,7 @@ html,body{background:var(--bg);color:var(--text);font-family:"Pretendard","Apple
 .kanban-col.col-done .kanban-col-head{border-top-color:var(--green);color:var(--green)}
 .kanban-col.col-reject .kanban-col-head{border-top-color:var(--red);color:var(--red)}
 .kanban-col-head .kcount{margin-left:auto;font-size:12px;font-weight:600;color:var(--dim)}
-.kanban-col-body{padding:10px 12px;display:flex;flex-direction:column;gap:8px;min-height:60px}
+.kanban-col-body{padding:10px 12px;display:flex;flex-direction:column;gap:16px;min-height:60px}
 .kanban-col-body .approval-card{margin-bottom:0}
 .kanban-col-empty{font-size:12px;color:var(--dim);padding:14px 4px;text-align:center}
 /* ── [결재-캘린더] 월별 달력 (G1 gm1CalRender 패턴 이식) ── */
@@ -450,10 +450,8 @@ function render() {
 
   // [결재-1] 1줄 — 상태 필터 + 정렬 드롭다운 + 대시보드·인쇄·보고용 (업무현황 정렬식 통일 · sticky 풀폭)
   let stHtml = '';
-  stHtml += '<button class="filter-btn ' + (activeFilter==='전체'?'active':'') + '" onclick="setFilter(\'전체\')">전체 (' + approvalTasks.length + ')</button>';
-  stHtml += '<button class="filter-btn ' + (activeFilter==='미결'?'active':'') + '" onclick="setFilter(\'미결\')">진행 중 (' + pending.length + ')</button>';
-  stHtml += '<button class="filter-btn ' + (activeFilter==='결재완료'?'active':'') + '" onclick="setFilter(\'결재완료\')">결재완료 (' + done.length + ')</button>';
-  stHtml += '<button class="filter-btn ' + (activeFilter==='반려'?'active':'') + '" onclick="setFilter(\'반려\')">반려 (' + rejected.length + ')</button>';
+  // 상태 필터 버튼(전체/진행중/결재완료/반려) 삭제 — 칸반에 완료·반려 칸이 이미 있어 중복·칸반서 미반영 (2026-06-05 GM)
+  // activeFilter 기본값 '전체' 유지 → 칸반에 전체 표시. 건수는 각 칸반 칸 머리글에 노출.
   stHtml += '<div style="display:flex;gap:4px;margin-left:auto;align-items:center;flex-shrink:0;">';
   // [결재-뷰] 뷰 토글: 트렐로(칸반) / 캘린더. 선택 뷰는 localStorage 유지 (2026-06-02 시모)
   stHtml += '<div style="display:inline-flex;border:1px solid var(--border);border-radius:8px;overflow:hidden;flex-shrink:0;margin-right:4px;">';
