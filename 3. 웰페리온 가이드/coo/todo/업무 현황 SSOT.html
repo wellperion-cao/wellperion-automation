@@ -10,7 +10,7 @@
 /* 최신본 자동 보장 — HTTP 캐시로 옛 버전이 떠 'GM 화면만 미반영'되는 문제 방지 (2026-05-29 COO).
    서버 최신본 버전과 비교해 다르면 1회만 강제 갱신. 루프 방지: ?pv 파라미터가 있으면(=1회 redirect 완료) 무조건 종료.
    (2026-06-04 CEO 수정: 기존 pv===__PV 가드가 CDN 버전 불일치 시 무한 새로고침 유발 → has('pv')로 교체) */
-window.__PV='20260605-6';
+window.__PV='20260605-7';
 (function(){
   window.addEventListener('pageshow',function(e){ if(e.persisted) location.reload(); });
   try{
@@ -211,8 +211,8 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 .detail-body.open{display:block}
 
 /* ── Toast ── */
-.toast{position:fixed;top:70px;right:20px;background:var(--green-bg);color:var(--green);padding:8px 16px;border-radius:8px;font-size:13px;font-weight:600;display:none;z-index:300;border:1px solid rgba(106,191,123,0.3)}
-.toast.error{background:var(--red-bg);color:var(--red);border-color:rgba(237,91,63,0.3)}
+.toast{position:fixed;top:16px;left:50%;transform:translateX(-50%);background:#2e7d46;color:#fff;padding:11px 22px;border-radius:10px;font-size:13.5px;font-weight:700;display:none;z-index:10000;border:none;box-shadow:0 6px 22px rgba(0,0,0,0.38);max-width:90vw;text-align:center;letter-spacing:0.01em}
+.toast.error{background:#c0392b;color:#fff}
 
 /* ── Date Picker Modal ── */
 .date-picker-modal .modal{max-width:320px}
