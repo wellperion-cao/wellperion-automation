@@ -407,14 +407,19 @@ function _handleSaveV2Compat(body) {
     if (!sheet) return;
 
     var data = sheet.getDataRange().getValues();
-    for (var i = data.length - 1; i >= 1; i--) {
+    // 비파괴 저장(2026-06-05 COO): 날짜 행 전체 삭제 금지 — itemId 단위 update/add 로 전환.
+    // 다른 push(탭 전환 등)가 먼저 저장한 같은 날짜 항목(특히 공용 이슈) 유실 차단.
+    var existingMap = {};
+    for (var i = 1; i < data.length; i++) {
       if (String(data[i][0]) === date || formatDate(data[i][0]) === date) {
-        sheet.deleteRow(i + 1);
+        existingMap[String(data[i][1])] = i + 1;
       }
     }
 
-    var newRows = items.map(function(c) {
-      return [
+    var newRows = [];
+    items.forEach(function(c) {
+      var rowNum = existingMap[c.itemId];
+      var values = [
         date, c.itemId, c.name, c.cat, c.slot,
         c.checked ? '완료' : '미완료',
         c.issue || '', c.tip || '',
@@ -422,6 +427,13 @@ function _handleSaveV2Compat(body) {
         submitter || defaultInspector(name, c.slot || ''),
         c.shift || slotToShift(c.slot || '')
       ];
+      if (rowNum) {
+        sheet.getRange(rowNum, 1, 1, HEADERS.length).setValues([values]);
+        _applyRowStyle(sheet, rowNum, values);
+        totalSaved++;
+      } else {
+        newRows.push(values);
+      }
     });
     if (newRows.length > 0) {
       var startRow = sheet.getLastRow() + 1;
