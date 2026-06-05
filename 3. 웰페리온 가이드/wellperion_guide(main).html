@@ -1861,7 +1861,7 @@
             <h4 style="margin-top:16px;"><span class="ico">🔄</span>시작과 끝 — 업무 흐름의 명확성</h4>
             <ol>
               <li>모든 업무에는 시작점과 종착점이 있어야 한다</li>
-              <li>시작: 기획DB 승인완료 → 착수 (장애·긴급은 예외)</li>
+              <li>시작: 가이드허브 시드 등록·GM 지시 → 착수 (장애·긴급은 예외)</li>
               <li>끝: 결과 보고 → 승인 → 유지보수 전환 → 종착지 정립 = Done</li>
             </ol>
             <div class="grid-3" style="margin-top:12px;">
@@ -1880,12 +1880,7 @@
           <strong>📌 운영형 프롬프트 SSOT.</strong> 컨텍스트 정비·조직규칙·split-brain 점검·메모리 정착·핵심규칙 영구화·셋업/점검 등 <strong>운영 성격</strong> 프롬프트는 본 섹션이 단일 원본. (기술 인프라 점검 프롬프트는 <strong>T1 기술 인프라 상세 ▸ 핵심 프롬프트</strong> 탭에서 관리.)
         </div>
 
-        <details class="toggle" style="margin:12px 0;">
-          <summary style="font-weight:700;"><span class="ico">🔧</span>① 컨텍스트 정비·자기학습 — 범위·원칙 (클릭해서 펼치기)</summary>
-          <div class="toggle-body">
-            <p style="font-size:13px;color:var(--dim);">누가 무엇을 정비하나(R/R)는 아래 범위표에 정의됩니다. 실제 실행 프롬프트(STEP 1~5 정비·자기학습 사이클)는 기술 실행 도구이므로 <strong>T1 기술 인프라 상세 ▸ 핵심 프롬프트 ▸ 운영 실행 도구</strong>에서 관리합니다.</p>
-          </div>
-        </details>
+        <p style="font-size:13px;color:var(--dim);margin:12px 0;"><span class="ico">🔧</span><strong>① 컨텍스트 정비·자기학습</strong> — 범위·R/R = <strong>T2 업무자동화SSOT ▸ 매주 ▸ 6 C-Level 컨텍스트 정비</strong>, 실행 프롬프트(STEP 1~5) = <strong>T1 기술 인프라 상세 ▸ 핵심 프롬프트 ▸ 운영 실행 도구</strong>.</p>
 
         <details class="toggle" style="margin:12px 0;">
           <summary style="font-weight:700;"><span class="ico">🧩</span>② 조직 규칙·split-brain·메모리·영구화 (클릭해서 펼치기)</summary>
@@ -3449,6 +3444,20 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
     <div class="doc-header"><h2><span class="g-id">G1</span>김남욱 GM</h2><div class="meta">할 일 · 루틴 · 건강 · 목표 통합</div></div>
     <p class="lead">개인·회사 구분 없이 김남욱님의 모든 업무와 루틴을 한곳에서 관리합니다. 팀 업무는 <a href="https://wellperion-cao.github.io/wellperion-automation/coo/todo/%EC%97%85%EB%AC%B4%20%ED%98%84%ED%99%A9%20SSOT.html" target="_blank" style="color:var(--accent);">업무 현황 SSOT</a>에서 확인.</p>
 
+    <!-- 오늘 할 일 (최상단 — GM 진입 즉시 노출, 2026-06-05) -->
+    <details id="gm1-todo-section" open style="margin:8px 0 24px;">
+      <summary style="cursor:pointer;list-style:none;"><h3 id="gm1-todo-date" style="display:inline;"><span class="ico">📌</span>오늘 할 일</h3></summary>
+      <div id="today-task-list">
+        <!-- 동적 렌더링 — gm1_unified_tasks localStorage 기반 -->
+      </div>
+      <details class="toggle" style="margin-top:10px;">
+        <summary style="color:var(--dim);"><span style="margin-right:6px;">📦</span>지난 기록</summary>
+        <div class="toggle-body" style="font-size:13px;color:var(--text-soft);">
+          완료·보류된 지난 항목은 오늘 할 일 목록에서 자동으로 빠지고, 상세 이력은 <strong>세션 로그</strong> 탭 + <strong>git 커밋 기록</strong>에 누적됩니다. (과거 하드코딩 목록은 2026-06-05 정리)
+        </div>
+      </details>
+    </details>
+
     <!-- ══ 🌟 우리의 북극성 (GM 비전 — 2026-06-03) ══ -->
     <div style="background:linear-gradient(135deg,#1a1830 0%,#2a2545 100%);border:1px solid var(--accent);border-radius:14px;padding:18px 22px;margin:8px 0 20px;">
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
@@ -3523,7 +3532,7 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
       </div>
       <p style="color:#7f9aa3;font-size:11.5px;margin:0 0 12px;">'끝!'은 진짜 끝이 아니에요. 끝낼 때마다 <strong style="color:#9fd8e0;">다음 돌</strong>을 하나 놓고, 그 돌이 내일 첫걸음이 돼요. 그래서 안 끊겨요.</p>
 
-      <details class="toggle" open style="margin:0;">
+      <details class="toggle" style="margin:0;">
         <summary style="cursor:pointer;font-weight:700;font-size:13px;color:#7fdbe8;">📋 브릿지 상세 — 접기/펼치기</summary>
         <div class="toggle-body" style="margin-top:10px;">
 
@@ -3612,16 +3621,6 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
     </details>
 
 
-    <!-- 위임 큐 (C-Level → GM 합류 항목) -->
-    <div id="gm1-delegated-queue" style="margin:0 0 16px; display:none;">
-      <h3 style="font-size:14.5px; color:var(--text); margin-bottom:10px;">
-        <span class="ico">📥</span>위임받은 일 (<span id="gm1-deleg-count">0</span>건)
-      </h3>
-      <div id="gm1-deleg-list" style="display:flex; flex-direction:column; gap:8px;"></div>
-    </div>
-
-    <!-- 인스타그램 검수 대기 박스 삭제 (2026-05-30 GM 지시) — 검수·자동업로드는 M5 cmo-publish 페이지 단일 운영 -->
-
     <!-- 오늘 할 일 (탭 밖 독립 영역) -->
     <details id="gm1-todo-section" open style="margin:18px 0 24px;">
       <summary style="cursor:pointer;list-style:none;"><h3 id="gm1-todo-date" style="display:inline;"><span class="ico">📌</span>오늘 할 일</h3></summary>
@@ -3629,18 +3628,9 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
         <!-- 동적 렌더링 — gm1_unified_tasks localStorage 기반 -->
       </div>
       <details class="toggle" style="margin-top:10px;">
-        <summary style="color:var(--dim);"><span style="margin-right:6px;">📦</span>과거 완료 / 과거 보류 기록</summary>
-        <div class="toggle-body" style="font-size:13px;">
-          <div style="font-size:11px;font-weight:700;color:var(--green);padding:6px 0 2px;">✅ 과거 완료</div>
-          <div style="padding:6px 0;border-bottom:1px dashed var(--border);"><span style="color:var(--green);font-weight:700;">✓</span> <span style="color:var(--text-soft);">AI 자동학습 주간 태스크 등록</span> <span style="font-size:11px;color:var(--dim);">· 05-27</span></div>
-          <div style="padding:6px 0;border-bottom:1px dashed var(--border);"><span style="color:var(--green);font-weight:700;">✓</span> <span style="color:var(--text-soft);">투두리스트 카톡→텔레그램 결재 변경</span> <span style="font-size:11px;color:var(--dim);">· 05-27</span></div>
-          <div style="padding:6px 0;border-bottom:1px dashed var(--border);"><span style="color:var(--green);font-weight:700;">✓</span> <span style="color:var(--text-soft);">GitHub Pages 셋업 + v2.5 대규모 업데이트</span> <span style="font-size:11px;color:var(--dim);">· 05-27</span></div>
-          <div style="padding:6px 0;border-bottom:1px dashed var(--border);"><span style="color:var(--green);font-weight:700;">✓</span> <span style="color:var(--text-soft);">Apps Script TODO 재배포</span> <span style="font-size:11px;color:var(--dim);">· 05-26</span></div>
-          <div style="padding:6px 0;border-bottom:1px dashed var(--border);"><span style="color:var(--green);font-weight:700;">✓</span> <span style="color:var(--text-soft);">Apps Script v3 재배포</span> <span style="font-size:11px;color:var(--dim);">· 05-26</span></div>
-          <div style="padding:6px 0;border-bottom:1px dashed var(--border);"><span style="color:var(--green);font-weight:700;">✓</span> <span style="color:var(--text-soft);">하루 일과표 공유</span> <span style="font-size:11px;color:var(--dim);">· 05-26</span></div>
-          <div style="font-size:11px;font-weight:700;color:var(--accent);padding:10px 0 2px;">⏸️ 과거 보류</div>
-          <div style="padding:6px 0;border-bottom:1px dashed var(--border);"><span style="color:var(--accent);font-weight:700;">⏸</span> <span style="color:var(--text-soft);">마그네슘 · 컨디션 불량</span> <span style="font-size:11px;color:var(--dim);">· 05-27</span></div>
-          <div style="padding:6px 0;"><span style="color:var(--accent);font-weight:700;">⏸</span> <span style="color:var(--text-soft);">가이드허브 Netlify 배포 · 크레딧 리밋</span> <span style="font-size:11px;color:var(--dim);">· 05-26</span></div>
+        <summary style="color:var(--dim);"><span style="margin-right:6px;">📦</span>지난 기록</summary>
+        <div class="toggle-body" style="font-size:13px;color:var(--text-soft);">
+          완료·보류된 지난 항목은 오늘 할 일 목록에서 자동으로 빠지고, 상세 이력은 <strong>세션 로그</strong> 탭 + <strong>git 커밋 기록</strong>에 누적됩니다. (과거 하드코딩 목록은 2026-06-05 정리)
         </div>
       </details>
     </details>
