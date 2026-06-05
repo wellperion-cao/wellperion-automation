@@ -575,6 +575,10 @@ function _processTodoAction(body) {
       if (approvalChanged && (currentApprovalStatus === '' || currentApprovalStatus === '대기')) {
         existing[approvalStatusIdx] = '대기';
       }
+      // 반려된 업무를 담당자가 수정·저장하면 자동 재상신 → 대기(부서장부터 재승인). 반려 시 싸인은 이미 초기화됨 (2026-06-05 GM)
+      if (newApproval && /반려/.test(currentApprovalStatus)) {
+        existing[approvalStatusIdx] = '대기';
+      }
       sh.getRange(rowNum, 1, 1, TODO_HEADERS.length).setValues([existing]);
       _applyStatusColor(sh, rowNum, existing[TODO_HEADERS.indexOf('상태')]);
 
@@ -630,11 +634,16 @@ function _processTodoAction(body) {
 
       const now = _now();
       if (decision === 'reject') {
+        // 반려 = 완전 리셋: 모든 싸인 초기화 → 담당자 반송. 수정·저장 시 대기로 재상신되어 부서장부터 재승인 (2026-06-05 GM)
+        existing[TODO_HEADERS.indexOf('부서장싸인')] = '';
+        existing[TODO_HEADERS.indexOf('GM싸인')] = '';
+        existing[TODO_HEADERS.indexOf('대표싸인')] = '';
+        existing[TODO_HEADERS.indexOf('결재완료시각')] = '';
         existing[TODO_HEADERS.indexOf('결재상태')] = role + ' 반려';
         existing[TODO_HEADERS.indexOf('수정일')] = now;
         sh.getRange(rowNum, 1, 1, TODO_HEADERS.length).setValues([existing]);
-        _notifyTelegram('❌ <b>[결재 반려]</b> ' + role + '\n📌 ' + (record['업무명']||'-') + '\n🆔 ' + id);
-        return _json({ ok: true, id: id, message: role + ' 반려 처리됨', decision: 'reject' });
+        _notifyTelegram('❌ <b>[결재 반려·리셋]</b> ' + role + ' → 담당자 반송(싸인 초기화)\n📌 ' + (record['업무명']||'-') + '\n🆔 ' + id);
+        return _json({ ok: true, id: id, message: role + ' 반려·리셋 처리됨', decision: 'reject' });
       }
 
       // approve
