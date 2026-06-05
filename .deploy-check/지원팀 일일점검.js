@@ -6,6 +6,9 @@ const SHEET_MALE   = '남성구역';
 const SHEET_FEMALE = '여성구역';
 const SHEET_COMMON = '공용구역';
 const SHEET_STAFF  = '점검자';
+const SHEET_ITEMS  = '점검항목';   // GM 편집 점검 항목 마스터 (시트 영구 저장)
+
+const ITEM_HEADERS = ['항목ID','카테고리','항목명','상세','성별','시간대','정렬'];
 
 const BOT_TOKEN = PropertiesService.getScriptProperties().getProperty('TELEGRAM_BOT_TOKEN');
 const CHAT_ID   = PropertiesService.getScriptProperties().getProperty('TELEGRAM_CHAT_ID');
@@ -208,9 +211,14 @@ function migrateFromOldSheet() {
 // ════════════════════════════════════════════
 
 function doGet(e) {
+  var action = e.parameter.action || '';
+  if (action === 'todo_list') return handleTodoGet(e.parameter);
+  if (action === 'items')     return getItems();
+  if (action === 'board')     return getBoard(e.parameter);
+
   var date = e.parameter.date;
   if (!date) return jsonRes({ error: 'date required' });
-  if (e.parameter.action === 'staff') return getStaff();
+  if (action === 'staff') return getStaff();
 
   var zone = e.parameter.zone;
   var ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -288,9 +296,12 @@ function _getGroupSubmits(date) {
 function doPost(e) {
   try {
     var body = JSON.parse(e.postData.contents);
-    if (body.action === 'save')   return handleSave(body);
-    if (body.action === 'notify') return handleNotify(body);
-    if (body.action === 'seed')   return handleSeed(body);
+    if (body.action && body.action.indexOf('todo_') === 0) return handleTodoPost(body);
+    if (body.action === 'save')      return handleSave(body);
+    if (body.action === 'notify')    return handleNotify(body);
+    if (body.action === 'seed')      return handleSeed(body);
+    if (body.action === 'saveItems') return saveItems(body);
+    if (body.action === 'saveBoard') return saveBoard(body);
     return jsonRes({ error: 'unknown action' });
   } catch (err) {
     return jsonRes({ error: err.message });
@@ -360,7 +371,7 @@ function handleSave(body) {
 function _sortByDateDesc(sheet) {
   if (!sheet) return;
   var last = sheet.getLastRow();
-  if (last < 3) return;
+  if (last < 3) return;  // 헤더 + 1행 이하면 정렬 불필요
   sheet.getRange(2, 1, last - 1, HEADERS.length)
        .sort([{ column: 1, ascending: false }, { column: 2, ascending: true }]);
 }
@@ -536,6 +547,128 @@ function getStaff() {
   return jsonRes({ staff: staff });
 }
 
+// ════════════════════════════════════════════
+// 점검 항목 마스터 (GM 편집 — 시트 영구 저장)
+// ════════════════════════════════════════════
+
+// ─── 점검항목 시트 자동 생성 ───
+function initItemSheet() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName(SHEET_ITEMS);
+  if (sheet) return sheet;
+  sheet = ss.insertSheet(SHEET_ITEMS);
+  sheet.appendRow(ITEM_HEADERS);
+  sheet.getRange(1, 1, 1, ITEM_HEADERS.length)
+    .setBackground('#2a2725').setFontColor('#B79F8A')
+    .setFontWeight('bold').setHorizontalAlignment('center');
+  sheet.setFrozenRows(1);
+  var widths = [180, 180, 240, 360, 80, 180, 70];
+  for (var i = 0; i < widths.length; i++) sheet.setColumnWidth(i + 1, widths[i]);
+  return sheet;
+}
+
+// ─── 항목 조회 (GET ?action=items) ───
+function getItems() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName(SHEET_ITEMS);
+  if (!sheet) return jsonRes({ items: [] });
+  var data = sheet.getDataRange().getValues();
+  var items = [];
+  for (var i = 1; i < data.length; i++) {
+    if (!data[i][0] && !data[i][2]) continue; // id·항목명 모두 없으면 건너뜀
+    items.push({
+      id:     String(data[i][0] || ''),
+      cat:    String(data[i][1] || ''),
+      name:   String(data[i][2] || ''),
+      detail: String(data[i][3] || ''),
+      gender: String(data[i][4] || 'all'),
+      slot:   String(data[i][5] || ''),
+      order:  data[i][6] !== '' && data[i][6] != null ? Number(data[i][6]) : (i)
+    });
+  }
+  return jsonRes({ items: items });
+}
+
+// ─── 항목 저장 (POST {action:'saveItems', items:[...]}) — 전체 재기록 ───
+function saveItems(body) {
+  var items = body.items || [];
+  var sheet = initItemSheet();
+  // 헤더만 남기고 기존 데이터 전체 삭제
+  var lastRow = sheet.getLastRow();
+  if (lastRow > 1) {
+    sheet.getRange(2, 1, lastRow - 1, ITEM_HEADERS.length).clearContent();
+  }
+  var rows = items.map(function (it, idx) {
+    return [
+      String(it.id || ''),
+      String(it.cat || ''),
+      String(it.name || ''),
+      String(it.detail || ''),
+      String(it.gender || 'all'),
+      String(it.slot || ''),
+      it.order !== undefined && it.order !== '' ? it.order : (idx + 1)
+    ];
+  });
+  if (rows.length > 0) {
+    sheet.getRange(2, 1, rows.length, ITEM_HEADERS.length).setValues(rows);
+  }
+  return jsonRes({ ok: true, count: rows.length });
+}
+
+// ════════════════════════════════════════════
+// 요일별 트렐로 보드 (매뉴얼 탭) — 모든 기기 동기화
+// 저장소: ScriptProperties (단일 JSON blob, 9KB 한도 내 — 14셀 짧은 텍스트)
+// 한글은 영문키(action/key/board) + UTF-8 POST 본문으로만 처리(GET 쿼리 한글 금지)
+// ════════════════════════════════════════════
+
+const BOARD_PROP_PREFIX = 'BOARD_';   // ScriptProperties 키 접두사
+const BOARD_DEFAULT_KEY  = 'SUPPORT_MANUAL_BOARD';
+
+// ─── 보드 조회 (GET ?action=board[&key=SUPPORT_MANUAL_BOARD]) ───
+function getBoard(params) {
+  var key = (params && params.key) ? String(params.key) : BOARD_DEFAULT_KEY;
+  var raw = PropertiesService.getScriptProperties().getProperty(BOARD_PROP_PREFIX + key);
+  var board = null;
+  if (raw) {
+    try { board = JSON.parse(raw); } catch (err) { board = null; }
+  }
+  // board=null → 프론트가 시드/로컬 폴백 사용
+  return jsonRes({ ok: true, key: key, board: board });
+}
+
+// ─── 보드 저장 (POST {action:'saveBoard', key, board}) — last-write-wins 전체 덮어쓰기 ───
+function saveBoard(body) {
+  var key = body.key ? String(body.key) : BOARD_DEFAULT_KEY;
+  var board = body.board || {};
+  PropertiesService.getScriptProperties()
+    .setProperty(BOARD_PROP_PREFIX + key, JSON.stringify(board));
+  return jsonRes({ ok: true, key: key, savedAt: Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy-MM-dd HH:mm:ss') });
+}
+
+// ─── 항목 마스터 1회 시드 (Apps Script 에디터에서 1회 실행) ───
+// 현재 기본 항목(ZONE_ITEMS + COMMON_ITEMS)을 점검항목 시트에 채운다.
+function seedItemMaster() {
+  var sheet = initItemSheet();
+  var lastRow = sheet.getLastRow();
+  if (lastRow > 1) {
+    sheet.getRange(2, 1, lastRow - 1, ITEM_HEADERS.length).clearContent();
+  }
+  var rows = [];
+  var order = 1;
+  // 남/여 공통 구역 항목
+  ZONE_ITEMS.forEach(function (it) {
+    rows.push([it.id, it.cat, it.name, '', 'all', it.slot, order++]);
+  });
+  // 공용 구역 항목
+  COMMON_ITEMS.forEach(function (it) {
+    rows.push([it.id, it.cat, it.name, '', 'all', it.slot, order++]);
+  });
+  if (rows.length > 0) {
+    sheet.getRange(2, 1, rows.length, ITEM_HEADERS.length).setValues(rows);
+  }
+  Logger.log('seedItemMaster 완료: ' + rows.length + '개 항목 시드');
+}
+
 // ─── 중복 제거 유틸 (신규 시트 대상, 1회 실행) ───
 function removeDuplicates() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -566,4 +699,165 @@ function setupTelegram() {
   var props = PropertiesService.getScriptProperties();
   Logger.log('BOT_TOKEN=' + props.getProperty('TELEGRAM_BOT_TOKEN'));
   Logger.log('CHAT_ID=' + props.getProperty('TELEGRAM_CHAT_ID'));
+}
+
+// ════════════════════════════════════════════
+// TO DO LIST CRUD (멀티유저 시스템)
+// ════════════════════════════════════════════
+
+const SHEET_TODO = 'TODO';
+const TODO_HEADERS = ['id','업무명','카테고리','담당자','시작일','종료일','내용','상태','결재요청','생성일','수정일'];
+
+// ─── TODO 시트 자동 생성 ───
+function initTodoSheet() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName(SHEET_TODO);
+  if (sheet) return sheet;
+  sheet = ss.insertSheet(SHEET_TODO);
+  sheet.appendRow(TODO_HEADERS);
+  sheet.getRange(1, 1, 1, TODO_HEADERS.length)
+    .setBackground('#2a2725').setFontColor('#B79F8A')
+    .setFontWeight('bold').setHorizontalAlignment('center');
+  sheet.setFrozenRows(1);
+  var widths = [120, 240, 130, 140, 110, 110, 300, 80, 80, 130, 130];
+  for (var i = 0; i < widths.length; i++) sheet.setColumnWidth(i + 1, widths[i]);
+  Logger.log('TODO 시트 생성 완료');
+  return sheet;
+}
+
+// ─── TODO 조회 (GET) ───
+function handleTodoGet(params) {
+  var sheet = initTodoSheet();
+  var data = sheet.getDataRange().getValues();
+  var owner = params.owner || '';
+  var rows = [];
+  for (var i = 1; i < data.length; i++) {
+    var row = data[i];
+    if (!row[0]) continue; // id 없으면 건너뜀
+    if (owner && String(row[3]).indexOf(owner) < 0) continue;
+    rows.push({
+      id: String(row[0]),
+      title: String(row[1] || ''),
+      category: String(row[2] || ''),
+      owner: String(row[3] || ''),
+      startDate: row[4] ? formatDate(row[4]) : '',
+      endDate: row[5] ? formatDate(row[5]) : '',
+      content: String(row[6] || ''),
+      status: String(row[7] || '진행중'),
+      approval: String(row[8] || ''),
+      createdAt: row[9] ? formatDate(row[9]) : '',
+      updatedAt: row[10] ? formatDate(row[10]) : ''
+    });
+  }
+  return jsonRes({ success: true, todos: rows });
+}
+
+// ─── TODO 쓰기 (POST) ───
+function handleTodoPost(body) {
+  var action = body.action;
+  if (action === 'todo_add')    return todoAdd(body);
+  if (action === 'todo_update') return todoUpdate(body);
+  if (action === 'todo_delete') return todoDelete(body);
+  if (action === 'todo_done')   return todoDone(body);
+  return jsonRes({ error: 'unknown todo action: ' + action });
+}
+
+// ─── 추가 ───
+function todoAdd(body) {
+  var sheet = initTodoSheet();
+  var now = Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy-MM-dd HH:mm');
+  var id = 'TD-' + new Date().getTime();
+  var row = [
+    id,
+    body.title || '',
+    body.category || '',
+    body.owner || '',
+    body.startDate || '',
+    body.endDate || '',
+    body.content || '',
+    body.status || '진행중',
+    body.approval || '',
+    now,
+    now
+  ];
+  sheet.appendRow(row);
+  var lastRow = sheet.getLastRow();
+  _applyTodoRowStyle(sheet, lastRow, row);
+  return jsonRes({ success: true, id: id, action: 'added' });
+}
+
+// ─── 수정 ───
+function todoUpdate(body) {
+  if (!body.id) return jsonRes({ error: 'id required' });
+  var sheet = initTodoSheet();
+  var data = sheet.getDataRange().getValues();
+  var now = Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy-MM-dd HH:mm');
+  for (var i = 1; i < data.length; i++) {
+    if (String(data[i][0]) === body.id) {
+      var row = [
+        body.id,
+        body.title !== undefined ? body.title : String(data[i][1]),
+        body.category !== undefined ? body.category : String(data[i][2]),
+        body.owner !== undefined ? body.owner : String(data[i][3]),
+        body.startDate !== undefined ? body.startDate : (data[i][4] ? formatDate(data[i][4]) : ''),
+        body.endDate !== undefined ? body.endDate : (data[i][5] ? formatDate(data[i][5]) : ''),
+        body.content !== undefined ? body.content : String(data[i][6]),
+        body.status !== undefined ? body.status : String(data[i][7]),
+        body.approval !== undefined ? body.approval : String(data[i][8]),
+        data[i][9] ? formatDate(data[i][9]) : now,
+        now
+      ];
+      sheet.getRange(i + 1, 1, 1, TODO_HEADERS.length).setValues([row]);
+      _applyTodoRowStyle(sheet, i + 1, row);
+      return jsonRes({ success: true, id: body.id, action: 'updated' });
+    }
+  }
+  return jsonRes({ error: 'not found: ' + body.id });
+}
+
+// ─── 삭제 ───
+function todoDelete(body) {
+  if (!body.id) return jsonRes({ error: 'id required' });
+  var sheet = initTodoSheet();
+  var data = sheet.getDataRange().getValues();
+  for (var i = 1; i < data.length; i++) {
+    if (String(data[i][0]) === body.id) {
+      sheet.deleteRow(i + 1);
+      return jsonRes({ success: true, id: body.id, action: 'deleted' });
+    }
+  }
+  return jsonRes({ error: 'not found: ' + body.id });
+}
+
+// ─── 완료 ───
+function todoDone(body) {
+  if (!body.id) return jsonRes({ error: 'id required' });
+  var sheet = initTodoSheet();
+  var data = sheet.getDataRange().getValues();
+  var now = Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy-MM-dd HH:mm');
+  for (var i = 1; i < data.length; i++) {
+    if (String(data[i][0]) === body.id) {
+      sheet.getRange(i + 1, 8).setValue('완료');  // 상태
+      sheet.getRange(i + 1, 11).setValue(now);     // 수정일
+      _applyTodoRowStyle(sheet, i + 1, data[i]);
+      return jsonRes({ success: true, id: body.id, action: 'done' });
+    }
+  }
+  return jsonRes({ error: 'not found: ' + body.id });
+}
+
+// ─── TODO 행 스타일 ───
+function _applyTodoRowStyle(sheet, row, values) {
+  var statusCell = sheet.getRange(row, 8);
+  var status = String(values[7] || '');
+  if (status === '완료') {
+    statusCell.setBackground('#e6f3ea').setFontColor('#2c8a4f');
+  } else if (status === '보류') {
+    statusCell.setBackground('#fef3e2').setFontColor('#c0851b');
+  } else {
+    statusCell.setBackground('#f5f2ef').setFontColor('#8c8b83');
+  }
+  if (String(values[8]) === 'Y') {
+    sheet.getRange(row, 9).setBackground('#fce8e4').setFontColor('#c0392b');
+  }
 }
