@@ -11,7 +11,7 @@
 /* 최신본 자동 보장 — HTTP 캐시로 옛 버전이 떠 'GM 화면만 미반영'되는 문제 방지 (2026-05-29 COO).
    서버 최신본 버전과 비교해 다르면 1회만 강제 갱신. 루프 방지: ?pv 파라미터가 있으면(=1회 redirect 완료) 무조건 종료.
    (2026-06-04 CEO 수정: 기존 pv===__PV 가드가 CDN 버전 불일치 시 무한 새로고침 유발 → has('pv')로 교체) */
-window.__PV='20260605-4';
+window.__PV='20260605-5';
 (function(){
   window.addEventListener('pageshow',function(e){ if(e.persisted) location.reload(); });
   try{
@@ -438,13 +438,9 @@ function render() {
   pending.forEach(t => {
     const parsed = parseContent(t.content);
     const route = buildEffectiveRoute(t, parsed.budget);
-    // 부서장: 담당 부서장 기준(서명 전·후 무관) — '그 사람 건' 전부 집계 (2026-06-05 GM)
-    const dn = deptHeadNameOf(t);
-    if (route.includes('부서장') && dn && dn in pendingByRole) pendingByRole[dn]++;
-    // GM·대표: 본인 결재 차례(미결)일 때만
-    const nxt = nextApprover(t, route);
-    if (nxt === 'GM') pendingByRole['GM']++;
-    else if (nxt === '대표님') pendingByRole['대표님']++;
+    const nxt = nextApprover(t, route);  // '지금 서명할 차례' 기준 — 버튼 숫자=클릭 결과 일치
+    if (nxt === '부서장') { const dn = deptHeadNameOf(t); if (dn && dn in pendingByRole) pendingByRole[dn]++; }
+    else if (nxt && nxt in pendingByRole) pendingByRole[nxt]++;
   });
 
   // 카테고리 목록 (실측)
@@ -537,10 +533,10 @@ function render() {
       if (t.approvalStatus === '결재완료' || /반려/.test(t.approvalStatus)) return false;
       const parsed = parseContent(t.content);
       const route = buildEffectiveRoute(t, parsed.budget);
-      // 부서장: 이 건의 담당 부서장이 본인이면 표시(차례 무관 — 서명 후 GM 단계여도 '그 사람 건') (2026-06-05 GM)
-      if (_isDeptHead) return route.includes('부서장') && deptHeadNameOf(t) === activeRoleFilter;
-      // GM·대표: 본인 결재 차례(미결)인 건
-      return nextApprover(t, route) === activeRoleFilter;
+      const nxt = nextApprover(t, route);
+      // 그 사람이 '지금 서명할 차례'인 건만 (칸반 본인 칸과 1:1) (2026-06-05 GM)
+      if (_isDeptHead) return nxt === '부서장' && deptHeadNameOf(t) === activeRoleFilter;
+      return nxt === activeRoleFilter;
     });
   }
 
@@ -1245,7 +1241,7 @@ function approvalBucketOf(t) {
 /* 트렐로(칸반) 뷰 — 다음 서명자별 컬럼(이경연·이정헌·나우열 서명대기 | GM | 대표 | 결재완료 | 반려).
    각 카드는 리스트와 동일한 renderApprovalCard 사용 → PIN·승인/반려 버튼·진행바 전부 보존. */
 function renderKanban(list) {
-  const COLS = [
+  let COLS = [
     { key:'이경연 실장', cls:'col-waiting', icon:'⏳', label:'이경연 실장 서명 대기' },
     { key:'이정헌 소장', cls:'col-waiting', icon:'⏳', label:'이정헌 소장 서명 대기' },
     { key:'나우열M',     cls:'col-waiting', icon:'⏳', label:'나우열M 서명 대기' },
@@ -1254,9 +1250,13 @@ function renderKanban(list) {
     { key:'done',        cls:'col-done',    icon:'✅', label:'결재완료' },
     { key:'reject',      cls:'col-reject',  icon:'❌', label:'반려' }
   ];
+  // 결재자 필터가 켜지면 해당 칸만 표시 — 나머지 칸('해당 건 없음') 숨겨 '그 사람 건만' 보이게 (2026-06-05 GM)
+  if (typeof activeRoleFilter !== 'undefined' && activeRoleFilter !== '전체') {
+    COLS = COLS.filter(function(c){ return c.key === activeRoleFilter; });
+  }
   const buckets = {};
   COLS.forEach(c => { buckets[c.key] = []; });
-  list.forEach(t => { const b = approvalBucketOf(t); (buckets[b] || buckets['대표님']).push(t); });
+  list.forEach(t => { const b = approvalBucketOf(t); if (buckets[b]) buckets[b].push(t); else if (buckets['대표님']) buckets['대표님'].push(t); });
 
   let h = '<div class="kanban-board" id="kanbanBoard">';
   COLS.forEach(col => {
