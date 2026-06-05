@@ -2052,46 +2052,8 @@
           <tr><td>3</td><td><strong>CEO는 상시 루프를 돌리지 않는다</strong> — GitHub push 완료 신호 시에만 깨어나 1회 검증·기록·알림</td></tr>
           <tr><td>4</td><td><strong>완료 신호 = 완료의 단일 정의(4요건)</strong> — ①커밋 <code>[DONE][clevel][task_id]</code> + ②status DONE + ③다음(<code>--next</code>/<code>--terminal</code>) + ④증거(<code>--artifact-url</code>). <strong>정의는 공통탭 "✅ 완료의 단일 정의(4요건)" 단일 출처</strong> — 여기 중복 정의하지 않는다. CEO는 이 4요건 충족 여부만 검증.</td></tr>
         </table>
-        <div class="callout tip" style="margin-top:12px;">위 4원칙의 상위 운영 기본값(호칭·핵심 4역할·진행 판단·작업 분배·채널·검증·보고·루틴·결재·변화 보고)은 <a href="#ceo-ssot" style="color:var(--accent);font-weight:700;">⭐ AI CEO 운영 기본값 (SSOT)</a> 표 한곳에 통합. (구 "📌 상시 대기 디스패처" · "🧭 CLI 핵심 역할 4가지" callout 흡수, 2026-05-30)</div>
-
-        <h3><span class="ico">🔔</span>CEO 깨어남 메커니즘 (트리거)</h3>
-        <table>
-          <tr><th style="width:120px">메커니즘</th><th>설명</th></tr>
-          <tr><td>Watcher</td><td>PowerShell <code>scripts/ceo_watcher.ps1</code> 백그라운드 폴링(polling) (15초 주기)</td></tr>
-          <tr><td>등록</td><td>Windows 예약 작업(scheduled task) <code>At log on</code> + 지연 60초 (claude.exe 종료 후 가동)</td></tr>
-          <tr><td>종료</td><td>PC 종료(shutdown) 시 자동 종료</td></tr>
-          <tr><td>트리거 조건</td><td><code>[DONE]</code> 태그 커밋 AND <code>status/&lt;clevel&gt;.json</code> 안 미처리(LOGGED 아닌) task_id 둘 다. (완료 자체의 정의는 공통탭 <strong>완료의 단일 정의(4요건)</strong> — ④증거 없으면 애초에 DONE 커밋이 생기지 않음.)</td></tr>
-          <tr><td>깨어남 후</td><td>큐 1건 꺼내기(pop) → 1층 기계 검증 → 2층 AI 검증 → ceo_log 누적 → 텔레그램 알림</td></tr>
-        </table>
-
-        <h3><span class="ico">🚦</span>C-Level 동시 push 경합 직렬화 — FIFO 큐</h3>
-        <table>
-          <tr><th style="width:120px">파일</th><th>구조</th></tr>
-          <tr><td><code>status/_queue.json</code></td><td>FIFO 배열 — 항목: <code>{task_id, clevel, push_time, commit_sha, processed_at}</code></td></tr>
-          <tr><td>처리 순서</td><td>CEO가 1건씩 꺼내기(pop). 처리 중 추가 push는 큐 끝에 추가(append)</td></tr>
-          <tr><td>잠금(락)</td><td>processed_at 갱신 시 단일 잠금(lock) — 다중 CEO 인스턴스 방지</td></tr>
-        </table>
-
-        <h3><span class="ico">🔄</span>상태 머신 (status/&lt;clevel&gt;.json)</h3>
-        <table>
-          <tr><th style="width:140px">상태</th><th>의미</th><th>전이</th></tr>
-          <tr><td><strong>DONE</strong></td><td>C-Level 작업 완료 + 커밋 푸시 직후</td><td>→ VERIFYING (CEO가 꺼낼 때)</td></tr>
-          <tr><td><strong>VERIFYING</strong></td><td>CEO 검증 중 (1층 + 2층)</td><td>→ VERIFIED · REJECTED</td></tr>
-          <tr><td><strong>VERIFIED</strong></td><td>검증 통과 + 기록 + 알림 완료</td><td>→ ARCHIVED (다음 사이클)</td></tr>
-          <tr><td><strong>REJECTED</strong></td><td>검증 실패. 자동 재작업 금지. GM 텔레그램 알림만</td><td>→ 가이드허브 시드 신규 + GM 결재 후 재시작 (새 task_id)</td></tr>
-          <tr><td><strong>ARCHIVED</strong></td><td>처리 종결. <code>_ceo_log.jsonl</code> 누적 후 정리</td><td>(종료)</td></tr>
-        </table>
-
-        <h3><span class="ico">🛡️</span>헛깨움·중복처리·반려 재시작 정책</h3>
-        <table>
-          <tr><th style="width:160px">정책</th><th>구현</th></tr>
-          <tr><td>헛깨움 방지</td><td>처리 완료 task_id는 <code>_ceo_log.jsonl</code>에 LOGGED 마킹. 트리거 시 미처리(미LOGGED) 큐 항목만 진행</td></tr>
-          <tr><td>중복 처리 방지</td><td>같은 task_id가 큐에 두 번 들어와도 LOGGED 마킹으로 1회만 처리</td></tr>
-          <tr><td>반려 시 재시작</td><td>자동 재작업 금지. GM 텔레그램 알림 + 가이드허브 시드 신규 등록 → GM 결재 → 새 task_id로 새 [DONE] 사이클</td></tr>
-          <tr><td>2층 검증</td><td>[1층 기계] 커밋 존재 확인 + URL 200 + SSOT 중복 grep → 실패 시 즉시 REJECTED / [2층 AI] 원칙 위반·의도 부합 판단 (Claude CLI <code>-p</code> 호출)</td></tr>
-          <tr><td>ceo_log 누적</td><td><code>status/_ceo_log.jsonl</code> JSON Lines, 1건씩 추가(append), 영구 보존</td></tr>
-        </table>
-        <div class="callout"><strong>가동 전 의무:</strong> ① <code>scripts/ceo_watcher.ps1</code> 등록 ② <code>status/</code> 디렉토리 + 7 json 초기화 ③ Windows 예약 작업(scheduled task) At log on 등록 ④ 1회 수동 테스트 (가짜 [DONE] 커밋으로 큐 진입·검증·로그·알림 흐름 확인)</div>
+        <div class="callout tip" style="margin-top:12px;">위 4원칙의 상위 운영 기본값(호칭·핵심 4역할·진행 판단·작업 분배·채널·검증·보고·루틴·결재·변화 보고)은 <a href="#ceo-ssot" style="color:var(--accent);font-weight:700;">⭐ AI CEO 운영 기본값 (SSOT)</a> 표 한곳에 통합.</div>
+        <div class="callout" style="margin-top:12px;background:#1a1a2a;border-left:3px solid #7C3AED;"><strong>📌 완료 검증 = 공통탭 '완료의 단일 정의(4요건)'만 본다.</strong> CEO는 ①커밋 ②status DONE ③다음 ④증거 4요건 충족 여부만 확인. 깨어남 메커니즘·FIFO 큐·상태 머신·헛깨움 방지 등 <strong>자동 검증 인프라 기술 동작은 T1 기술 인프라 상세 ▸ 핵심 프롬프트 ▸ 운영 실행 도구</strong>에서 관리(GM 판단탭에는 비노출).</div>
         </div></details>
 
         <!-- ── 역할 원칙 흡수 (메모리 단일화 STAGE2, 2026-06-03) ── -->
@@ -2104,26 +2066,18 @@
           <tr><td>본업 도구 직접 관리</td><td>통합 보고·집계·요약·diff·텔레그램 발송 헬퍼 등 CEO 본업 R/R 도구는 <strong>CEO가 직접 작성·수정</strong>. CTO 위임 금지(CTO는 시설·인프라·.bat·CI/CD 한정).</td></tr>
           <tr><td>운영 아카이브 동기화</td><td>운영 아카이브 승인 레코드 중 담당자=AI CEO 건은 「AI CEO 운영 프레임워크」 페이지에 산출물·잔여 액션 동기화(CEO 직접 본업).</td></tr>
           <tr><td>GM 본인 to-do 트래킹</td><td>GM이 명시한 본인 업무를 GM TO DO LIST DB에 추가 → 즉시 알림 → GM 확인 후 추적 시작. 추측 금지. 08:00 보고 D그룹으로 합류.</td></tr>
-          <tr><td>6 C-Level 목표 감독</td><td>6 C-Level 북극성 KPI(CFO 월 OCF 흑자 / CHRO 조직 만족도·채용 리드타임 / CMO 채널 문의 전환율 / COO 운영 사고 0·SLA / CPO NPS·갱신율 / CTO 시설 가동률·자동 태스크 가동 비율)를 SSOT로 묶어 지속 체크·통합 보고.</td></tr>
+          <tr><td>6 C-Level 목표 감독</td><td>6 C-Level 북극성 KPI(각 역할탭 '담당 KPI'가 정본)를 묶어 지속 체크·통합 보고. KPI 값은 여기 재나열하지 않고 각 역할탭 참조.</td></tr>
           <tr><td>08:00 일일 통합 보고</td><td>매일 08:00 @namuki_report_bot. 2 메인 섹션(① 전날 정리 — 항목 제목 직접 노출 ② 오늘 리스트업 A·B·C·D 그룹+번호) → GM 번호 선택 → CEO 서포트 모드. 단순 카운트·식별자 N줄 나열 금지.</td></tr>
           <tr><td>일간 파이프라인 감사</td><td>08:00 직전 4개 DB(신규기획·결과물·캘린더·업무자동화) 미진척 능동 점검. GM이 먼저 발견하면 CEO 100% 책임.</td></tr>
           <tr><td>통합 보고 포맷</td><td>상위 카테고리·부서 그룹 단위로 한눈 파악. 식별자 11~14줄 나열 금지. 이슈·보류·미진척만 단독 섹션.</td></tr>
-          <tr><td>사이클 마감 보고</td><td>완료·대기 전환 시 3섹션(✅오늘완료/🟡진행중/⏳내일) + 🔴GM 결정(맨 아래 고정) 5필드(식별자=웰리-N │ 내용 │ 상태 │ 담당자 │ 링크=SSOT명).</td></tr>
+          <tr><td>사이클 마감 보고</td><td><strong>보고 포맷 = 공통 탭 '작업 사이클 보고 포맷' 단일 원본 참조.</strong> CEO는 식별자만 <strong>웰리-N</strong> 적용.</td></tr>
           <tr><td>가이드허브 일일 정비</td><td>가이드허브 = 최우선 SSOT. 매일 1회 현행화·누락/구식/중복 자율 정리.</td></tr>
           <tr><td>주말 대형 작업</td><td>주말 = 전체 검증 → 문제 보완 → 고도화 하나씩(각 독립 검증). 결재·권한 필요건은 G1 내일 할일로 기록.</td></tr>
           <tr><td>텔레그램 회신 중계</td><td>C-Level 페르소나는 GM 텔레그램 회신 자동 수신 불가. CEO가 다음 턴에 수동 중계. 자체 polling 금지.</td></tr>
           <tr><td>세션 종료 제안 금지</td><td>"마무리할까요"·"여기서 끝낼까요"·"다른 지시 있으신지요" 등 종료·마무리 제안 절대 금지. 결과만 보고하고 대기.</td></tr>
         </table>
 
-        <h3 style="margin-top:20px;"><span class="ico">🚀</span>CEO 세션 부팅 체크리스트</h3>
-        <div class="callout tip"><strong>원칙 원본 = 공통 탭, 역할 R/R = 본 CEO 탭.</strong> 아래 4단계로 가동(상세 .bat 6단계는 위 표 참조).</div>
-        <table>
-          <tr><th style="width:48px">#</th><th>단계</th></tr>
-          <tr><td>1</td><td>에이전트 md(<code>ai-ceo.md</code>) 읽고 페르소나·R/R 동적 조회</td></tr>
-          <tr><td>2</td><td>가이드허브 <strong>공통 탭 원칙 + 본 CEO 탭</strong>(운영 기본값 SSOT·역할 원칙) 흡수</td></tr>
-          <tr><td>3</td><td><code>status/ceo.json</code> + <code>status/_queue.json</code> 읽고 본인 task 표시</td></tr>
-          <tr><td>4</td><td>부팅 선언(페르소나·KPI·권한) → 타 C-Level 침범 금지 선언 후 대기 (+ GitHub·가이드허브 SSOT 즉시 fetch)</td></tr>
-        </table>
+        <div class="callout tip" style="margin-top:20px;"><strong>🚀 세션 부팅 = 공통 탭 'AI 부팅 6단계' 정본.</strong> 읽는 파일만 <code>ai-ceo.md</code> · <code>status/ceo.json</code>(+ GitHub·가이드허브 SSOT 즉시 fetch). 흡수 탭 = 공통 + 본 CEO 탭. (상세 .bat 6단계는 위 토글 참조.)</div>
         <!-- ── /역할 원칙 흡수 STAGE2 ── -->
 
       </div>
@@ -2165,18 +2119,10 @@
           <tr><th style="width:200px">원칙</th><th>내용</th></tr>
           <tr><td>핵심멤버방 직접 소통</td><td>운영 이슈·공지·일일 보고는 핵심멤버방(텔레그램 그룹 <code>-5065206276</code>)에 COO가 <strong>직접 발송</strong> 가능. CEO 단일 창구 제약은 Stage 2~3 결재성 소통에만 적용. 업무 진행·완료 보고는 @namuki_report_bot 병행.</td></tr>
           <tr><td>식별자 형식</td><td>모든 작업·할일·진행 항목 식별자 = <strong>시우-N</strong>(시우-1, 시우-2 …). 긴 COO-YYYY-… 코드 대신 닉네임+순번.</td></tr>
-          <tr><td>대기 시 3섹션 요약</td><td>대기 전환 시마다 ① 오늘 완료 ② 진행 중 ③ 내일 할 일 3섹션 출력. 각 줄 = 식별자(시우-N) │ 내용 │ 상태 │ 담당자 │ 링크(SSOT 라벨: 업무 SSOT/결재 SSOT/G1). 항목 없으면 "없음".</td></tr>
+          <tr><td>대기 시 보고 포맷</td><td><strong>보고 포맷 = 공통 탭 '작업 사이클 보고 포맷' 단일 원본 참조.</strong> COO는 식별자만 <strong>시우-N</strong> 적용.</td></tr>
         </table>
 
-        <h3 style="margin-top:20px;"><span class="ico">🚀</span>COO 세션 부팅 체크리스트</h3>
-        <div class="callout tip"><strong>원칙 원본 = 공통 탭, 역할 R/R = 본 COO 탭.</strong></div>
-        <table>
-          <tr><th style="width:48px">#</th><th>단계</th></tr>
-          <tr><td>1</td><td>에이전트 md(<code>ai-coo.md</code>) 읽고 페르소나·R/R 동적 조회</td></tr>
-          <tr><td>2</td><td>가이드허브 <strong>공통 탭 원칙 + 본 COO 탭</strong>(Do/Don't·역할 원칙) 흡수</td></tr>
-          <tr><td>3</td><td><code>status/coo.json</code> + <code>status/_queue.json</code> 읽고 본인 task 표시</td></tr>
-          <tr><td>4</td><td>부팅 선언(시우 — 페르소나·KPI·권한) → 타 C-Level 침범 금지 선언 후 대기</td></tr>
-        </table>
+        <div class="callout tip" style="margin-top:20px;"><strong>🚀 세션 부팅 = 공통 탭 'AI 부팅 6단계' 정본.</strong> 읽는 파일만 <code>ai-coo.md</code> · <code>status/coo.json</code>. 흡수 탭 = 공통 + 본 COO 탭.</div>
         <!-- ── /골격 보강 + 역할 원칙 흡수 STAGE2 ── -->
       </div>
       <div class="tab-panel" data-panel="cfo">
@@ -2212,7 +2158,7 @@
           <tr><td><strong>1원 이상</strong> 모든 결제</td><td>GM님 결재 필수</td><td>1원이라도 외부 비용 발생 시</td></tr>
           <tr><td><strong>긴급 지출</strong></td><td>GM님 텔레그램 사전 승인</td><td>안전·시설 긴급 사안, 사후 즉시 보고</td></tr>
         </table>
-        <p style="font-size:12px;color:var(--dim);margin-top:6px;">※ 세부 금액 한도 기준은 Notion CFO DB 지출 승인 한도 레코드 참조 (상세 이관 권장)</p>
+        <p style="font-size:12px;color:var(--dim);margin-top:6px;">※ 세부 금액 한도·지출 내역 SSOT = 가이드허브 CFO 지출현황 페이지 + 업무 현황 SSOT(예산 카테고리). 위 표가 기본 결재선 정본.</p>
 
         <h3 style="margin-top:20px;"><span class="ico">✅</span>CFO Do / Don't</h3>
         <table>
@@ -2224,17 +2170,9 @@
         </table>
         <!-- ── /실무가이드라인 v1.1 흡수 ── -->
 
-        <!-- ── 세션 부팅 체크리스트 (STAGE2, 2026-06-03) ── -->
-        <h3 style="margin-top:20px;"><span class="ico">🚀</span>CFO 세션 부팅 체크리스트</h3>
-        <div class="callout tip"><strong>원칙 원본 = 공통 탭, 역할 R/R = 본 CFO 탭.</strong></div>
-        <table>
-          <tr><th style="width:48px">#</th><th>단계</th></tr>
-          <tr><td>1</td><td>에이전트 md(<code>ai-cfo.md</code>) 읽고 페르소나·R/R 동적 조회</td></tr>
-          <tr><td>2</td><td>가이드허브 <strong>공통 탭 원칙 + 본 CFO 탭</strong>(지출 한도표·Do/Don't) 흡수</td></tr>
-          <tr><td>3</td><td><code>status/cfo.json</code> + <code>status/_queue.json</code> 읽고 본인 task 표시</td></tr>
-          <tr><td>4</td><td>부팅 선언(시뽀 — 페르소나·KPI·권한) → 타 C-Level 침범 금지 선언 후 대기</td></tr>
-        </table>
-        <!-- ── /세션 부팅 체크리스트 STAGE2 ── -->
+        <!-- ── 세션 부팅 = 공통탭 정본 포인터 (2026-06-05 단순화) ── -->
+        <div class="callout tip" style="margin-top:20px;"><strong>🚀 세션 부팅 = 공통 탭 'AI 부팅 6단계' 정본.</strong> 읽는 파일만 <code>ai-cfo.md</code> · <code>status/cfo.json</code>. 흡수 탭 = 공통 + 본 CFO 탭.</div>
+        <!-- ── /세션 부팅 포인터 ── -->
       </div>
       <div class="tab-panel" data-panel="cmo">
         <div class="card accent" style="margin-bottom:16px;">
@@ -2294,18 +2232,10 @@
           <tr><td>채널별 CTA</td><td>채널마다 전환 구조 다름 — 동일 CTA 금지. 모든 채널 공통 CTA = <strong>한·영 2줄 표준</strong> (문의 : / (한) wellperion.com/ko/inquiry / (영) wellperion.com/en/inquiry). 개인 010 번호 노출 금지. 동부이촌동 카페 = 격조 있는 전문 톤(생활 잡담 톤 동조 금지), 블로그 = SEO 허브 롱폼.</td></tr>
           <tr><td>IG 스쿼시 collaborator</td><td>스쿼시 관련 IG 게시물은 collaborator 3개(@namuk.wellperion · @wellperion_squash · @glass_court) 항상 태깅. 누락 금지.</td></tr>
           <tr><td>개인 계정 톤</td><td>GM 개인 계정(namuk.wellperion) = 개인 인사이트·생각 리더십 톤만. 회사 WELLPERION GUIDE 카드 자동 첨부 금지(회사 브랜드 계정 전용). 발행 전 검수 게이트 필수.</td></tr>
-          <tr><td>대기 시 3구획 요약</td><td>대기 전환 시마다 ① 오늘 완료 ② 진행 중 ③ 내일 할 일 + 🔁 Before&After(완료건 전→후 1줄). 각 줄 = 식별자(시모-N) │ 내용 │ 상태 │ 담당자 │ 링크(SSOT 라벨).</td></tr>
+          <tr><td>대기 시 보고 포맷</td><td><strong>보고 포맷 = 공통 탭 '작업 사이클 보고 포맷' 단일 원본 참조.</strong> CMO는 식별자만 <strong>시모-N</strong> 적용 + 완료건에 🔁 Before&After 1줄.</td></tr>
         </table>
 
-        <h3 style="margin-top:20px;"><span class="ico">🚀</span>CMO 세션 부팅 체크리스트</h3>
-        <div class="callout tip"><strong>원칙 원본 = 공통 탭, 역할 R/R = 본 CMO 탭.</strong></div>
-        <table>
-          <tr><th style="width:48px">#</th><th>단계</th></tr>
-          <tr><td>1</td><td>에이전트 md(<code>ai-cmo.md</code>) 읽고 페르소나·R/R 동적 조회</td></tr>
-          <tr><td>2</td><td>가이드허브 <strong>공통 탭 원칙 + 본 CMO 탭</strong>(콘텐츠 승인·Do/Don't·역할 원칙) 흡수</td></tr>
-          <tr><td>3</td><td><code>status/cmo.json</code> + <code>status/_queue.json</code> 읽고 본인 task 표시</td></tr>
-          <tr><td>4</td><td>부팅 선언(시모 — 페르소나·KPI·권한) → 타 C-Level 침범 금지 선언 후 대기</td></tr>
-        </table>
+        <div class="callout tip" style="margin-top:20px;"><strong>🚀 세션 부팅 = 공통 탭 'AI 부팅 6단계' 정본.</strong> 읽는 파일만 <code>ai-cmo.md</code> · <code>status/cmo.json</code>. 흡수 탭 = 공통 + 본 CMO 탭.</div>
         <!-- ── /역할 원칙 흡수 STAGE2 ── -->
       </div>
       <div class="tab-panel" data-panel="cto">
@@ -2350,15 +2280,7 @@
           <tr><td>대기 보고 포맷</td><td>대기 보고 포맷(3섹션 + 🔴 GM 결정·5필드)은 <strong>공통 탭 '작업 사이클 보고 포맷'이 단일 원본</strong> → 참조. CTO는 식별자 시토-N, 링크는 가이드허브 식별자(S1·S2·S3·M5·T1~T3·G1) 적용.</td></tr>
         </table>
 
-        <h3 style="margin-top:20px;"><span class="ico">🚀</span>CTO 세션 부팅 체크리스트</h3>
-        <div class="callout tip"><strong>원칙 원본 = 공통 탭, 역할 R/R = 본 CTO 탭.</strong></div>
-        <table>
-          <tr><th style="width:48px">#</th><th>단계</th></tr>
-          <tr><td>1</td><td>에이전트 md(<code>ai-cto.md</code>) 읽고 페르소나·R/R 동적 조회</td></tr>
-          <tr><td>2</td><td>가이드허브 <strong>공통 탭 원칙 + 본 CTO 탭</strong>(Do/Don't·역할 원칙) 흡수</td></tr>
-          <tr><td>3</td><td><code>status/cto.json</code> + <code>status/_queue.json</code> 읽고 본인 task 표시</td></tr>
-          <tr><td>4</td><td>부팅 선언(시토 — 페르소나·KPI·권한) → 타 C-Level 침범 금지 선언 후 대기</td></tr>
-        </table>
+        <div class="callout tip" style="margin-top:20px;"><strong>🚀 세션 부팅 = 공통 탭 'AI 부팅 6단계' 정본.</strong> 읽는 파일만 <code>ai-cto.md</code> · <code>status/cto.json</code>. 흡수 탭 = 공통 + 본 CTO 탭.</div>
         <!-- ── /골격 보강 + 역할 원칙 흡수 STAGE2 ── -->
       </div>
       <div class="tab-panel" data-panel="chro">
@@ -2398,18 +2320,10 @@
         <div class="callout" style="background:#1a2a1a;border-left:3px solid #059669;margin-bottom:12px;"><strong>CHRO 고유 운영 원칙</strong> — 흩어진 메모리를 본 탭으로 흡수(2026-06-03). 공통 원칙은 <strong>공통 탭</strong>이 단일 원본, 여기는 <strong>CHRO 역할 한정분</strong>.</div>
         <table>
           <tr><th style="width:200px">원칙</th><th>내용</th></tr>
-          <tr><td>HR = 대표 최우선 영역</td><td>GM이 인사를 "정말 중요"하게 직접 명시 — Notion 사이드바에서 <strong>인사만 최상위 메뉴</strong>로 별도 배치(의도적 구조). 구조·SOP·KPI 논의에서 인사 관련 결정은 한 단계 <strong>상위 가중치</strong>로 취급. CHRO 별도 루트는 보존 기본값, 제거 제안은 GM 사전 승인 없이 금지.</td></tr>
+          <tr><td>HR = 대표 최우선 영역</td><td>GM이 인사를 "정말 중요"하게 직접 명시. 구조·SOP·KPI 논의에서 인사 관련 결정은 한 단계 <strong>상위 가중치</strong>로 취급. 인사 SSOT = 가이드허브 인사허브(취업규칙·임직원) + 업무 현황 SSOT, CHRO 별도 루트는 보존 기본값(제거 제안은 GM 사전 승인 없이 금지).</td></tr>
         </table>
 
-        <h3 style="margin-top:20px;"><span class="ico">🚀</span>CHRO 세션 부팅 체크리스트</h3>
-        <div class="callout tip"><strong>원칙 원본 = 공통 탭, 역할 R/R = 본 CHRO 탭.</strong></div>
-        <table>
-          <tr><th style="width:48px">#</th><th>단계</th></tr>
-          <tr><td>1</td><td>에이전트 md(<code>ai-chro.md</code>) 읽고 페르소나·R/R 동적 조회</td></tr>
-          <tr><td>2</td><td>가이드허브 <strong>공통 탭 원칙 + 본 CHRO 탭</strong>(Do/Don't·역할 원칙) 흡수</td></tr>
-          <tr><td>3</td><td><code>status/chro.json</code> + <code>status/_queue.json</code> 읽고 본인 task 표시</td></tr>
-          <tr><td>4</td><td>부팅 선언(시로 — 페르소나·KPI·권한) → 타 C-Level 침범 금지 선언 후 대기</td></tr>
-        </table>
+        <div class="callout tip" style="margin-top:20px;"><strong>🚀 세션 부팅 = 공통 탭 'AI 부팅 6단계' 정본.</strong> 읽는 파일만 <code>ai-chro.md</code> · <code>status/chro.json</code>. 흡수 탭 = 공통 + 본 CHRO 탭.</div>
         <!-- ── /골격 보강 + 역할 원칙 흡수 STAGE2 ── -->
       </div>
       <div class="tab-panel" data-panel="cpo">
@@ -2434,28 +2348,9 @@
         <p><strong>일일 회원 모니터링</strong> — 매일 08:30. 이탈 징후 · VIP 케어 · 신규/해지 · CS 접수.</p>
         <p style="margin-top:8px;font-size:13px;color:var(--dim);">회원은 숫자가 아니라 이름. VIP 케어 = "특별함"이 아니라 "기억". 이탈 징후 5 신호 감지.</p>
 
-        <!-- ── 골격 보강 (회원 라이프사이클 Do/Don't, STAGE2, 2026-06-03) ── -->
-        <h3 style="margin-top:24px;border-top:1px solid var(--border);padding-top:20px;"><span class="ico">✅</span>CPO Do / Don't — 회원 라이프사이클</h3>
-        <div class="callout tip" style="margin-bottom:12px;font-size:12.5px;">※ 본 표는 회원 라이프사이클(가입→활성→이탈징후→재등록) 역할 기반 작성 — CPO 전용 메모리 부재로 KPI(NPS·리텐션) 기반 합리적 추정(2026-06-03 신설, GM 검토 대상).</div>
-        <table>
-          <tr><th style="width:50%">Do</th><th>Don't</th></tr>
-          <tr><td>이탈 징후 5 신호(출석 급감·결제 지연·문의 침묵·불만 누적·갱신 임박 무응답) 선제 감지·케어</td><td>해지 통보 받은 뒤에야 대응(이미 늦은 회수)</td></tr>
-          <tr><td>VIP 케어 = "기억" 중심(개인 맥락·이름·이력 기반 응대)</td><td>전 회원 동일 매뉴얼 응대로 특별함 희석</td></tr>
-          <tr><td>회원 등급별 갱신율·NPS 일일 집계 후 추이 보고</td><td>단순 가입·해지 수치만 카운트 보고</td></tr>
-          <tr><td>CS 문의·불만을 분류·태깅해 패턴화(재발 방지)</td><td>건별 단발 응대 후 데이터 미축적</td></tr>
-          <tr><td>재등록·업그레이드 타이밍을 라이프사이클 단계로 설계</td><td>할인·프로모션으로만 리텐션 시도(락인 미창출)</td></tr>
-        </table>
+        <!-- ── CPO Do/Don't 추정 블록 삭제(2026-06-05): 전용 메모리 부재 추정이라 실 R/R 아님 ── -->
 
-        <h3 style="margin-top:20px;"><span class="ico">🚀</span>CPO 세션 부팅 체크리스트</h3>
-        <div class="callout tip"><strong>원칙 원본 = 공통 탭, 역할 R/R = 본 CPO 탭.</strong></div>
-        <table>
-          <tr><th style="width:48px">#</th><th>단계</th></tr>
-          <tr><td>1</td><td>에이전트 md(<code>ai-cpo.md</code>) 읽고 페르소나·R/R 동적 조회</td></tr>
-          <tr><td>2</td><td>가이드허브 <strong>공통 탭 원칙 + 본 CPO 탭</strong>(회원 라이프사이클 Do/Don't) 흡수</td></tr>
-          <tr><td>3</td><td><code>status/cpo.json</code> + <code>status/_queue.json</code> 읽고 본인 task 표시</td></tr>
-          <tr><td>4</td><td>부팅 선언(시포 — 페르소나·KPI·권한) → 타 C-Level 침범 금지 선언 후 대기</td></tr>
-        </table>
-        <!-- ── /골격 보강 STAGE2 ── -->
+        <div class="callout tip" style="margin-top:20px;"><strong>🚀 세션 부팅 = 공통 탭 'AI 부팅 6단계' 정본.</strong> 읽는 파일만 <code>ai-cpo.md</code> · <code>status/cpo.json</code>. 흡수 탭 = 공통 + 본 CPO 탭.</div>
       </div>
 
     </div>

@@ -68,10 +68,12 @@ from ceo_morning_pipeline import (  # noqa: E402
     stage2_assign,
     today_kr,
     summarize_title,
+    plainify,
     count_table,
     CLEVEL_OWNER,
     CLEVEL_ORDER,
     CLEVEL_NICK,
+    CLEVEL_DOMAIN,
 )
 
 CIRCLED = ["①", "②", "③", "④", "⑤", "⑥", "⑦", "⑧", "⑨", "⑩"]
@@ -177,45 +179,50 @@ def build_evening_report(commits: list[str], done_q: list[dict],
     ])
     lines.append("")
 
-    # ── GM 결정 필요 ──
+    # ── GM 결정 필요 (깨끗한 제목 + 실제 '왜' — 아침과 동일 분류 재사용) ──
     if gm_decision:
-        lines.append("🔴 GM 결정 필요")
+        lines.append("🔴 GM님이 정해주실 것")
         for i, a in enumerate(gm_decision, 1):
-            lines.append(f"{_circled(i)} {summarize_title(a.get('title'))}")
+            lines.append(f"{_circled(i)} {plainify(summarize_title(a.get('title')))}")
             lines.append(f"   └ 왜: {a.get('disposition_reason','')}")
         lines.append("")
     else:
-        lines.append("🔴 GM 결정 필요: 없음")
+        lines.append("🔴 GM님이 정해주실 것: 없음")
         lines.append("")
 
-    # ── 오늘 한 일: 압축 (개수 + 대표 3건) ──
+    # ── 오늘 한 일: 개수 + 대표 3건(쉬운 말) ──
     if done_total:
-        reps = []
-        for d in done_q[:3]:
-            reps.append(summarize_title(d.get("title")))
+        reps = [plainify(summarize_title(d.get("title"))) for d in done_q[:3]]
         if len(reps) < 3:
             for c in commits:
-                reps.append(summarize_title(c))
+                reps.append(plainify(summarize_title(c)))
                 if len(reps) >= 3:
                     break
         rep_str = " · ".join(reps[:3]) if reps else ""
-        lines.append(f"▶ 오늘 한 일: {done_total}건 ({rep_str})")
+        lines.append(f"✅ 오늘 한 일 {done_total}건 ({rep_str})")
     else:
-        lines.append("▶ 오늘 한 일: 기록된 완료 없음")
+        lines.append("✅ 오늘 한 일: 기록된 완료 없음")
+    lines.append("")
 
-    # ── 내일 이어서 할 일 (남은 자율 항목 → 우선순위순 + 닉네임) ──
-    # stage2_assign 으로 우선순위+clevel 정렬 재활용
+    # ── 내일 이어서 할 일 (사람별 개수 + 대표 — '…외 N건' 숨김 제거) ──
     todo_items = autonomous + deep_interview  # GM결정 제외
     if todo_items:
         assigned_todo = stage2_assign(todo_items)
-        lines.append("▶ 내일 이어서 할 일")
-        display = assigned_todo[:5]
-        for i, a in enumerate(display, 1):
-            cl = a.get("assigned_clevel", "")
-            nick = CLEVEL_NICK.get(cl, cl)
-            lines.append(f"{_circled(i)} {summarize_title(a.get('title'))} [{nick}]")
-        if len(assigned_todo) > 5:
-            lines.append(f"…외 {len(assigned_todo) - 5}건")
+        groups: dict[str, list] = {}
+        for a in assigned_todo:
+            groups.setdefault(a.get("assigned_clevel", ""), []).append(a)
+        ordered_cls = [c for c in CLEVEL_ORDER if c in groups] + \
+                      [c for c in groups if c not in CLEVEL_ORDER]
+        parts = []
+        for cl in ordered_cls:
+            nick = CLEVEL_NICK.get(cl, cl or "기타")
+            dom = CLEVEL_DOMAIN.get(cl, "")
+            parts.append(f"{nick}({dom}) {len(groups[cl])}" if dom else f"{nick} {len(groups[cl])}")
+        lines.append(f"▶ 내일 이어서 할 일 {len(assigned_todo)}건 — 사람별")
+        lines.append(" " + " · ".join(parts))
+        reps = [plainify(summarize_title(a.get("title"))) for a in assigned_todo[:2]]
+        if reps:
+            lines.append(" ↳ 예: " + " · ".join(reps))
     else:
         lines.append("▶ 내일 이어서 할 일: 없음 — 깔끔하게 마감!")
 

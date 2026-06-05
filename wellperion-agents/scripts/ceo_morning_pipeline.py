@@ -246,12 +246,22 @@ def fetch_g1_ssot() -> dict | None:
         # ① 결재 대기: GM싸인 없음 AND 결재상태∈{대기,"부서장"포함} — 날짜 무관 항상
         needs_gm = (not gm_sign) and apr and (apr == "대기" or "부서장" in apr)
         if needs_gm:
+            # 제목 앞에 이미 붙은 [결재] 중복 제거(🔴 GM 결정 섹션이 맥락 전달).
+            title_clean = re.sub(r"^\s*\[결재\]\s*", "", title)
+            # "왜" 문구를 실제 결재 단계로 채움(4건 동일 문구 방지). 카테고리 앞 [N] 번호 제거.
+            cat = re.sub(r"^\s*\[\d+\]\s*", "", str(row.get("카테고리") or "").strip())
+            if "부서장" in apr:
+                reason = "부서장 검토 끝 → GM 최종 결재 차례"
+            else:
+                reason = "결재 첫 단계 → GM 승인 필요"
+            if cat and "결재" not in cat:   # 카테고리가 '결재'면 '결재·결재' 중복 방지
+                reason = f"{cat} · {reason}"
             gm_decision.append({
-                "title": "[결재] " + title,
+                "title": title_clean,
                 "task_id": task_id,
                 "owner": owner,
                 "disposition": "GM_DECISION",
-                "disposition_reason": "결재 대기 — GM 직접 승인 필요",
+                "disposition_reason": reason,
                 "source": "g1_ssot",
             })
             continue
@@ -435,6 +445,94 @@ def summarize_title(title: str, limit: int = 45) -> str:
     if " " in head:
         head = head.rsplit(" ", 1)[0]
     return head.strip().rstrip(" →-·:[")
+
+
+# GM 대면 보고는 일상어 의무(전문용어·약어 금지). 자주 새는 용어를 쉬운 말로 치환.
+_JARGON = [
+    ("GAS Notion 쓰기", "구글서버에 노션 자료 저장"),
+    ("Notion", "노션"),
+    ("GAS", "구글서버"),
+    ("SSOT", "기준자료"),
+    ("DOM", "화면요소"),
+    ("API", "연동"),
+    ("watcher", "감시기"),
+    ("dry-run", "예행연습"),
+    ("퍼널", "유입경로"),
+    ("핫픽스", "긴급수정"),
+]
+
+
+def plainify(s: str) -> str:
+    """렌더 직전 제목 정리 — 앞머리 [결재] 태그 제거 + 전문용어·약어를 쉬운 말로 치환(GM 일상어 의무)."""
+    out = (s or "").strip()
+    out = re.sub(r"^\s*\[결재\]\s*", "", out)   # 식별자(시모-08 등)는 보존, [결재]만 제거
+    for k, v in _JARGON:
+        out = out.replace(k, v)
+    return out
+
+
+def recent_done(days: int = 3) -> list[dict]:
+    """
+    큐 + 보관소에서 최근 days 일 내 완료(DONE) 항목 — '어제 마무리'가 0건일 때 보강.
+    (완료가 새벽/오늘로 기록돼 '어제'에 안 잡히면 빈칸처럼 보이는 문제 방지.)
+    """
+    today = datetime.now().date()
+    out: list[dict] = []
+    seen: set = set()
+    for path in (QUEUE_PATH, QUEUE_PATH.with_name("_archive.json")):
+        try:
+            items = json.loads(path.read_text(encoding="utf-8"))
+        except Exception:
+            continue
+        for it in items if isinstance(items, list) else []:
+            if not isinstance(it, dict) or str(it.get("status", "")).upper() != "DONE":
+                continue
+            ds = it.get("processed_at") or it.get("completed_at") or it.get("updated_at")
+            if not (isinstance(ds, str) and len(ds) >= 10):
+                continue
+            try:
+                d = datetime.strptime(ds[:10], "%Y-%m-%d").date()
+            except ValueError:
+                continue
+            if 0 <= (today - d).days <= days:
+                k = it.get("task_id") or it.get("title")
+                if k and k not in seen:
+                    seen.add(k)
+                    out.append(it)
+    return out
+
+
+def urgent_deadlines(within_days: int = 3) -> list[dict]:
+    """
+    status/_queue.json 의 열린 항목 중 deadline 이 오늘~within_days 일 이내인 임박 마감 추출.
+    (시트 기반 G1 SSOT 에는 마감일이 없어, 마감 가시화는 큐의 deadline 필드에서 보강.)
+    """
+    try:
+        items = json.loads(QUEUE_PATH.read_text(encoding="utf-8"))
+    except Exception:
+        return []
+    today = datetime.now().date()
+    out = []
+    for it in items if isinstance(items, list) else []:
+        if not isinstance(it, dict):
+            continue
+        if str(it.get("status", "")).upper() in ("DONE", "REJECTED"):
+            continue
+        dl = it.get("deadline")
+        if not (isinstance(dl, str) and len(dl) >= 10):
+            continue
+        try:
+            d = datetime.strptime(dl[:10], "%Y-%m-%d").date()
+        except ValueError:
+            continue
+        if 0 <= (d - today).days <= within_days:
+            out.append({
+                "title": it.get("title", ""),
+                "deadline": dl[:10],
+                "owner": it.get("owner") or it.get("clevel", ""),
+            })
+    out.sort(key=lambda x: x["deadline"])
+    return out
 
 
 def count_table(rows: list[tuple[str, int]]) -> list[str]:
@@ -844,11 +942,19 @@ def build_telegram_report(s1: dict, assigned: list[dict], orch: dict) -> str:
     auto = s1["autonomous"]
     deep = s1["deep_interview"]
 
-    # 어제 마무리 — G1 SSOT 우선, fallback 시 queue 기반
+    # 어제 마무리 — G1 SSOT(시트) 완료 + 큐 완료를 합산(둘 중 한쪽만 잡혀 '완료 없음'으로
+    # 잘못 보이던 문제 해결). task_id/제목으로 중복 제거.
     if s1.get("_source") == "g1_ssot":
-        yday_items = s1.get("_g1_done_yesterday", [])
+        yday_items = list(s1.get("_g1_done_yesterday", []))
+        _yg, yday_queue = yesterday_done()
+        seen = {(d.get("task_id") or d.get("title")) for d in yday_items}
+        for q in yday_queue:
+            k = q.get("task_id") or q.get("title")
+            if k and k not in seen:
+                yday_items.append(q)
+                seen.add(k)
         followups = extract_followups([
-            {"title": d.get("title", ""), "note": "", "clevel": d.get("clevel", ""),
+            {"title": d.get("title", ""), "note": d.get("note", ""), "clevel": d.get("clevel", ""),
              "task_id": d.get("task_id", "")}
             for d in yday_items
         ])
@@ -868,28 +974,47 @@ def build_telegram_report(s1: dict, assigned: list[dict], orch: dict) -> str:
     ])
     lines.append("")
 
-    # ── GM 결정 필요 ──
+    # ── GM 결정 필요 (깨끗한 제목 + 실제 '왜') ──
     if gm_dec:
-        lines.append("🔴 GM 결정 필요")
+        lines.append("🔴 GM님이 정해주실 것")
         for i, a in enumerate(gm_dec, 1):
-            lines.append(f"{_circled(i)} {summarize_title(a.get('title'))}")
+            lines.append(f"{_circled(i)} {plainify(summarize_title(a.get('title')))}")
             lines.append(f"   └ 왜: {a.get('disposition_reason','')}")
+        lines.append("   ↳ 자세한 결재 카드는 따로 보내드려요")
     else:
-        lines.append("🔴 GM 결정 필요: 없음")
+        lines.append("🔴 GM님이 정해주실 것: 없음")
     lines.append("")
 
-    # ── 오늘 할 일 (CEO 추천순, 번호 + 닉네임) ──
+    # ── 오늘 제일 급한 것 (임박 마감, 큐 deadline 보강) ──
+    urg = urgent_deadlines()
+    if urg:
+        lines.append("⏰ 오늘 제일 급한 것")
+        for u in urg:
+            mmdd = u["deadline"][5:].replace("-", "/")
+            who = f" [{u['owner']}]" if u.get("owner") else ""
+            lines.append(f" · {plainify(summarize_title(u['title']))} ({mmdd} 마감){who}")
+        lines.append("")
+
+    # ── 오늘 맡긴 일 (사람별 개수 + 대표 — '…외 N건' 숨김 제거) ──
     if assigned:
-        lines.append("▶ 오늘 할 일 (CEO 추천순)")
-        display = assigned[:5]
-        for i, a in enumerate(display, 1):
-            cl = a.get("assigned_clevel", "")
-            nick = CLEVEL_NICK.get(cl, cl)
-            lines.append(f"{_circled(i)} {summarize_title(a.get('title'))} [{nick}]")
-        if len(assigned) > 5:
-            lines.append(f"…외 {len(assigned) - 5}건")
+        groups: dict[str, list] = {}
+        for a in assigned:
+            groups.setdefault(a.get("assigned_clevel", ""), []).append(a)
+        ordered_cls = [c for c in CLEVEL_ORDER if c in groups] + \
+                      [c for c in groups if c not in CLEVEL_ORDER]
+        parts = []
+        for cl in ordered_cls:
+            nick = CLEVEL_NICK.get(cl, cl or "기타")
+            dom = CLEVEL_DOMAIN.get(cl, "")
+            label = f"{nick}({dom})" if dom else nick
+            parts.append(f"{label} {len(groups[cl])}")
+        lines.append(f"▶ 오늘 맡긴 일 {len(assigned)}건 — 사람별")
+        lines.append(" " + " · ".join(parts))
+        reps = [plainify(summarize_title(a.get("title"))) for a in assigned[:2]]
+        if reps:
+            lines.append(" ↳ 예: " + " · ".join(reps))
     else:
-        lines.append("▶ 오늘 할 일: 없음")
+        lines.append("▶ 오늘 맡긴 일: 없음")
     if deep:
         lines.append(f"▶ 명확화 대기: {len(deep)}건 — 명확화 후 진행")
 
@@ -901,18 +1026,25 @@ def build_telegram_report(s1: dict, assigned: list[dict], orch: dict) -> str:
             cl = fu.get("clevel", "")
             nick = CLEVEL_NICK.get(cl, cl) if cl else ""
             suffix = f" [{nick}]" if nick else ""
-            lines.append(f"· {fu['quote']}{suffix}")
+            lines.append(f"· {plainify(fu['quote'])}{suffix}")
 
-    # ── 어제 마무리 (G1 SSOT 완료 기준 / fallback: queue 완료) ──
+    # ── 마무리 (어제 완료 우선, 0건이면 최근 3일로 보강해 '완료 없음' 빈칸 방지) ──
     yday_dt = datetime.now() - timedelta(days=1)
     yday_label = f"{yday_dt.month}/{yday_dt.day}"
     lines.append("")
     if yday_items:
-        reps = [summarize_title(d.get("title", "")) for d in yday_items[:3]]
-        rep_str = " · ".join(reps)
-        lines.append(f"📌 어제({yday_label}) 마무리: {len(yday_items)}건 ({rep_str})")
+        head, items_show = f"✅ 어제({yday_label}) 마무리", yday_items
     else:
-        lines.append(f"📌 어제({yday_label}) 마무리: 기록된 완료 없음")
+        rec = recent_done(3)
+        head, items_show = "✅ 최근 마무리 (3일)", rec
+    if items_show:
+        lines.append(f"{head} {len(items_show)}건")
+        for d in items_show[:3]:
+            lines.append(f" · {plainify(summarize_title(d.get('title', '')))}")
+        if len(items_show) > 3:
+            lines.append(f" …외 {len(items_show) - 3}건")
+    else:
+        lines.append(f"✅ 어제({yday_label}) 마무리: 기록된 완료 없음")
 
     return "\n".join(lines)
 
