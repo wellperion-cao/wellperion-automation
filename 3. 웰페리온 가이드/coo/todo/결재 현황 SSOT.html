@@ -11,7 +11,7 @@
 /* 최신본 자동 보장 — HTTP 캐시로 옛 버전이 떠 'GM 화면만 미반영'되는 문제 방지 (2026-05-29 COO).
    서버 최신본 버전과 비교해 다르면 1회만 강제 갱신. 루프 방지: ?pv 파라미터가 있으면(=1회 redirect 완료) 무조건 종료.
    (2026-06-04 CEO 수정: 기존 pv===__PV 가드가 CDN 버전 불일치 시 무한 새로고침 유발 → has('pv')로 교체) */
-window.__PV='20260605-6';
+window.__PV='20260605-7';
 (function(){
   window.addEventListener('pageshow',function(e){ if(e.persisted) location.reload(); });
   try{
@@ -73,11 +73,12 @@ html,body{background:var(--bg);color:var(--text);font-family:"Pretendard","Apple
 .stat-card{background:var(--paper);border:1px solid var(--border);border-radius:12px;padding:12px 10px;text-align:center}
 .stat-card .num{font-size:22px;font-weight:700;line-height:1.1}
 .stat-card .label{font-size:11px;color:var(--dim);margin-top:4px}
-.approval-card{background:var(--paper);border:1px solid var(--border);border-left:3px solid var(--dim-soft);border-radius:12px;padding:12px 16px;margin-bottom:16px;transition:background 0.1s}
+.approval-card{background:var(--paper);border:1px solid rgba(255,255,255,0.4);border-left:3px solid var(--dim-soft);border-radius:12px;padding:12px 16px;margin-bottom:16px;transition:background 0.1s}
 .approval-card.st-done{border-left-color:var(--green)}
 .approval-card.st-rejected,.approval-card.rejected{border-left-color:var(--red)}
 .approval-card.st-progress{border-left-color:var(--blue)}
 .approval-card.st-waiting{border-left-color:var(--yellow)}
+.kanban-col-body .approval-card:nth-child(even){background:rgba(255,255,255,0.09)}
 .approval-card:hover{background:rgba(183,159,138,0.04)}
 .approval-card .title{font-size:14px;font-weight:700;flex:1;line-height:1.4}
 .status-chip{font-size:11px;font-weight:700;padding:3px 9px;border-radius:10px;flex-shrink:0;white-space:nowrap}

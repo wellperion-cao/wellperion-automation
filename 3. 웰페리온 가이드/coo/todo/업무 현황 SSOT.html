@@ -10,7 +10,7 @@
 /* 최신본 자동 보장 — HTTP 캐시로 옛 버전이 떠 'GM 화면만 미반영'되는 문제 방지 (2026-05-29 COO).
    서버 최신본 버전과 비교해 다르면 1회만 강제 갱신. 루프 방지: ?pv 파라미터가 있으면(=1회 redirect 완료) 무조건 종료.
    (2026-06-04 CEO 수정: 기존 pv===__PV 가드가 CDN 버전 불일치 시 무한 새로고침 유발 → has('pv')로 교체) */
-window.__PV='20260605-9';
+window.__PV='20260605-10';
 (function(){
   window.addEventListener('pageshow',function(e){ if(e.persisted) location.reload(); });
   try{
@@ -127,7 +127,8 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 .task-summary-line{font-size:12px;color:var(--dim);line-height:1.5;margin-top:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
 /* ── Task Card ── */
-.task-card{padding:14px 16px;border-bottom:3px solid var(--dim-soft);transition:background 0.1s}
+.task-card{padding:14px 16px;border-bottom:3px solid rgba(255,255,255,0.5);transition:background 0.1s}
+.task-card:nth-child(even){background:rgba(255,255,255,0.06)}
 .task-card:last-child{border-bottom:none}
 .task-card:hover{background:rgba(183,159,138,0.04)}
 .task-detail.open{display:block!important}
