@@ -10,7 +10,7 @@
 /* 최신본 자동 보장 — HTTP 캐시로 옛 버전이 떠 'GM 화면만 미반영'되는 문제 방지 (2026-05-29 COO).
    서버 최신본 버전과 비교해 다르면 1회만 강제 갱신. 루프 방지: ?pv 파라미터가 있으면(=1회 redirect 완료) 무조건 종료.
    (2026-06-04 CEO 수정: 기존 pv===__PV 가드가 CDN 버전 불일치 시 무한 새로고침 유발 → has('pv')로 교체) */
-window.__PV='20260605-11';
+window.__PV='20260605-12';
 (function(){
   window.addEventListener('pageshow',function(e){ if(e.persisted) location.reload(); });
   try{
@@ -127,15 +127,19 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 .task-summary-line{font-size:12px;color:var(--dim);line-height:1.5;margin-top:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
 /* ── Task Card ── */
-.task-card{padding:14px 16px;border-bottom:3px solid rgba(255,255,255,0.5);transition:background 0.1s}
-.task-card:nth-child(even){background:rgba(255,255,255,0.06)}
+.task-card{padding:14px 16px;border-bottom:1px solid var(--border);transition:background 0.1s}
 .task-card:last-child{border-bottom:none}
 .task-card:hover{background:rgba(183,159,138,0.04)}
 .task-detail.open{display:block!important}
 .toggle-arrow.open{transform:rotate(90deg)}
 .task-top{display:flex;align-items:flex-start;gap:10px}
 .task-info{flex:1;min-width:0}
-.task-title{font-size:14px;font-weight:700;margin-bottom:4px;word-break:break-word}
+.task-title{font-size:14px;font-weight:700;margin-bottom:6px;word-break:break-word;background:rgba(255,255,255,0.06);color:var(--text);padding:6px 10px;border-radius:7px}
+/* 제목칸 배경 = 마감(D-day) 기준 색. 평상시 중립, 임박할수록 노랑→베이지→빨강 (2026-06-05 GM) */
+.task-card.is-due-soon .task-title{background:var(--yellow-bg);color:var(--yellow)}
+.task-card.is-due-warn .task-title{background:var(--accent-bg);color:var(--accent)}
+.task-card.is-overdue .task-title{background:var(--red-bg);color:var(--red)}
+.task-card.is-due-today .task-title{background:var(--red-bg);color:var(--red)}
 .task-meta{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px}
 .chip{display:inline-flex;align-items:center;font-size:10px;font-weight:600;padding:2px 8px;border-radius:10px;white-space:nowrap}
 .chip.owner{background:var(--blue-bg);color:var(--blue)}
