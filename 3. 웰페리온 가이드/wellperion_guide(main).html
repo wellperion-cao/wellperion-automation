@@ -4506,7 +4506,8 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
       function acctOf(it){
         var a=(it.account||'').toLowerCase();var ch=(it.channel||'').toLowerCase();
         if(a==='namuk.wellperion'||a==='namuk'||ch.indexOf('namuk')!==-1)return 'namuk';
-        if(a==='wellperion'||(ch.indexOf('wellperion')!==-1&&ch.indexOf('namuk')===-1))return 'brand';
+        // 웰페리온(brand): account/channel에 'wellperion' 포함(namuk 제외) — 부분일치로 'wellperion 비즈(cao)' 등 포함 (2026-06-05 GM)
+        if((a.indexOf('wellperion')!==-1&&a.indexOf('namuk')===-1)||(ch.indexOf('wellperion')!==-1&&ch.indexOf('namuk')===-1))return 'brand';
         return 'namuk';
       }
       window.rvSwitchTab=function(tab){

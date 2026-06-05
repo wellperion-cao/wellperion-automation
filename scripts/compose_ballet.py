@@ -27,11 +27,14 @@ from PIL import Image, ImageDraw, ImageEnhance, ImageOps
 # 스타일 상수·함수 전부 바레에서 가져온다. 발레 독자 정의 금지.
 import sys as _sys
 _sys.path.insert(0, str(Path(__file__).parent))
-from compose_barre import (
+# 색·폰트·경로 상수 = brand_constants SSOT (값 불변). 레이아웃 함수·W/H는 바레에서.
+from brand_constants import (
     PROJECT_ROOT,
-    W, H,
-    BEIGE, BLACK_BG, WHITE, GRAY, CHIP_BEIGE,
+    BEIGE, BLACK_BG, WHITE, GRAY, CHIP_BEIGE, SEP_LINE,
     FONT_BOLD, FONT_SEMIBOLD, FONT_MEDIUM,
+)
+from compose_barre import (
+    W, H,
     to_duotone,
     load_font,
     center_crop_fill,
@@ -88,7 +91,7 @@ def compose_cover(
 
     # 분리선 — 바레 완성본 실측: y=701~702, x=50~1030
     draw_base = ImageDraw.Draw(canvas)
-    draw_base.rectangle([(50, 701), (1030, 702)], fill=(171, 161, 151))
+    draw_base.rectangle([(50, 701), (1030, 702)], fill=SEP_LINE)
 
     canvas = paste_logo(canvas, logo_w=130)
     draw = ImageDraw.Draw(canvas)
