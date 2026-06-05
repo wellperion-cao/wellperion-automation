@@ -163,8 +163,9 @@ def draw_counter(draw: ImageDraw.ImageDraw, current: int, total: int,
     chip_right = chip_x + 240
     tx = chip_right - tw
     ty = chip_y + chip_h + 8
-    draw.text((tx, ty), text, font=font, fill=WHITE,
-              stroke_width=2, stroke_fill=BLACK_BG)
+    # 바레 정본: 베이지 카운터 + 옅은 그림자(두꺼운 검정 테두리 대신)
+    draw.text((tx + 1, ty + 1), text, font=font, fill=BLACK_BG)
+    draw.text((tx, ty), text, font=font, fill=BEIGE)
 
 
 # ---------------------------------------------------------------------------
@@ -257,6 +258,9 @@ def compose_story(
 
     counter_font = load_font("medium", 28)
     draw_counter(draw, current, total, counter_font, chip_x, chip_y, chip_h)
+
+    # 메타라인 위 풀폭 베이지 분리선 (바레 정본 — 헤드라인 영역 구분선)
+    draw.line([(40, 770), (W - 40, 770)], fill=BEIGE, width=2)
 
     meta_font = load_font("medium", 26)
     draw.text((40, 795), meta_line, font=meta_font, fill=GRAY)
