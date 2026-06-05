@@ -441,6 +441,20 @@ async def run_setup(args: "argparse.Namespace | None" = None) -> int:
         except Exception:
             pass
 
+        # --then-publish: 로그인 직후 발행(게시)까지 (GM go 가드 필요 — 공개 발행)
+        then_publish = getattr(args, "then_publish", False)
+        if then_publish and args is not None:
+            if not publish_guard_ok(args):
+                print("[ERROR] publish 거부 — --i-am-sure 또는 WELLPERION_PUBLISH_GO=1 필요(공개 발행).")
+                await context.close()
+                await p.stop()
+                return 9
+            print("[INFO] --then-publish: 로그인 완료 즉시 발행(게시) 실행")
+            rc = await _run_draft_with_context(page, context, args, publish=True)
+            await context.close()
+            await p.stop()
+            return rc
+
         # --then-draft: 로그인 성공 즉시 같은 context로 draft 실행
         then_draft = getattr(args, "then_draft", False)
         if then_draft and args is not None:
@@ -669,7 +683,57 @@ async def _attach_images_via_file_chooser(page, image_paths: "list[Path]") -> bo
     return False
 
 
-async def _run_draft_with_context(page, context, args: argparse.Namespace) -> int:
+async def _publish_via_next(page) -> int:
+    """발행: '다음' → 설정/확인 화면 → '게시/등록/발행' 클릭. 화면 진단 포함(첫 구현 실측용).
+    버튼 못 찾으면 발행 안 하고 7 반환(안전 — 공개 오발행 방지)."""
+    import asyncio
+
+    async def _dump(tag):
+        btns = await page.evaluate(r"""() => Array.from(document.querySelectorAll('button,[role="button"]'))
+            .filter(el => el.offsetParent !== null)
+            .map(el => (el.innerText || '').trim().substring(0, 24)).filter(t => t)""")
+        print(f"[DIAG/{tag}] 보이는 버튼: " + " | ".join(repr(b) for b in btns))
+
+    await _dump("작성후")
+    next_loc, next_sel = await _find_first(page, [
+        'button:has-text("다음")', '[role="button"]:has-text("다음")'])
+    if not next_loc:
+        print("[WARN] '다음' 버튼 미발견 — 발행 중단(안전).")
+        await _screenshot(page, "danggn_publish_no_next.png")
+        return 7
+    print(f"[INFO] '다음' 클릭 ({next_sel})")
+    await next_loc.click()
+    await asyncio.sleep(3)
+    await _screenshot(page, "danggn_publish_step2.png")
+    await _dump("다음화면")
+
+    pub_loc, pub_sel = await _find_first(page, [
+        'button:has-text("게시하기")', 'button:has-text("등록하기")',
+        'button:has-text("게시")', 'button:has-text("등록")',
+        'button:has-text("발행")', 'button:has-text("완료")'])
+    if not pub_loc:
+        print("[WARN] 게시/발행 버튼 미발견 — 발행 미완(위 진단 참고). 안전상 중단.")
+        return 7
+    btxt = (await pub_loc.evaluate("el => el.innerText || ''")).strip()
+    print(f"[INFO] 발행 버튼 클릭: {pub_sel} ({btxt!r})")
+    await pub_loc.click()
+    await asyncio.sleep(3)
+    # 확인 다이얼로그 가능성 처리
+    confirm_loc, _csel = await _find_first(page, [
+        '[role="dialog"] button:has-text("게시")',
+        '[role="dialog"] button:has-text("확인")',
+        '[role="dialog"] button:has-text("등록")'])
+    if confirm_loc:
+        ct = (await confirm_loc.evaluate("el => el.innerText || ''")).strip()
+        print(f"[INFO] 확인 다이얼로그 클릭: {ct!r}")
+        await confirm_loc.click()
+        await asyncio.sleep(3)
+    await _screenshot(page, "danggn_publish_done.png")
+    print("[INFO] === 발행(게시) 완료 ===")
+    return 0
+
+
+async def _run_draft_with_context(page, context, args: argparse.Namespace, publish: bool = False) -> int:
     """로그인된 page/context를 받아 글쓰기 자동입력 + 임시저장을 수행.
     setup --then-draft 와 run_draft 양쪽에서 재사용."""
     import asyncio
@@ -787,6 +851,10 @@ async def _run_draft_with_context(page, context, args: argparse.Namespace) -> in
         print("[INFO] 이미지 없음 — 첨부 건너뜀.")
 
     await _screenshot(page, "danggn_after_input.png")
+
+    # ④ 발행(publish=True) — '다음→게시' 흐름 / 아니면 임시저장
+    if publish:
+        return await _publish_via_next(page)
 
     # ④ 임시저장
     save_loc, save_sel = await _find_first(page, _SAVE_DRAFT_SELECTORS)
@@ -1013,6 +1081,10 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--then-draft", dest="then_draft", action="store_true",
         help="setup 완료 직후 같은 세션으로 draft 실행 (QR 로그인 + draft 원샷)",
+    )
+    parser.add_argument(
+        "--then-publish", dest="then_publish", action="store_true",
+        help="setup 완료 직후 같은 세션으로 발행(게시)까지 (로그인+발행 원샷, --i-am-sure 필요)",
     )
     parser.add_argument(
         "--keep-open", dest="keep_open", action="store_true",
