@@ -11,7 +11,7 @@
 /* 최신본 자동 보장 — HTTP 캐시로 옛 버전이 떠 'GM 화면만 미반영'되는 문제 방지 (2026-05-29 COO).
    서버 최신본 버전과 비교해 다르면 1회만 강제 갱신. 루프 방지: ?pv 파라미터가 있으면(=1회 redirect 완료) 무조건 종료.
    (2026-06-04 CEO 수정: 기존 pv===__PV 가드가 CDN 버전 불일치 시 무한 새로고침 유발 → has('pv')로 교체) */
-window.__PV='20260605-2';
+window.__PV='20260605-3';
 (function(){
   window.addEventListener('pageshow',function(e){ if(e.persisted) location.reload(); });
   try{
@@ -995,14 +995,16 @@ function renderApprovalCard(t, idx) {
   if (!isRejected) {
     const _diff = String(t['난이도'] || '').trim();
     const _deptSigned = !!String(t.deptSign || '').trim();
-    const _editable = route.includes('부서장') && !_deptSigned && !isDone;  // 부서장 미서명 시 확정/조정 가능
+    // 미설정 난이도는 결재현황(GM)에서 다 설정 가능 — 부서장 단계 유무 무관, 부서장 서명 전·미완료까지 (2026-06-05 GM)
+    const _hasDept = route.includes('부서장');
+    const _editable = !isDone && !_deptSigned;
     h += '<div class="meta-row" style="margin:6px 0 2px;align-items:center;gap:8px;flex-wrap:wrap;">';
     if (_editable) {
       const _o = (v, l) => '<option value="' + v + '"' + (_diff === v ? ' selected' : '') + '>' + l + '</option>';
-      h += '<span style="font-size:11px;color:var(--dim);">⚙ 난이도(' + esc(_midName) + ' 확정):</span>';
+      h += '<span style="font-size:11px;color:var(--dim);">⚙ 난이도(' + esc(_hasDept && _midName ? _midName : 'GM') + ' 확정):</span>';
       h += '<select onchange="setDifficulty(\'' + escAttr(t.id) + '\',this.value)" onclick="event.stopPropagation();" style="font-size:12px;padding:3px 8px;border-radius:6px;border:1px solid var(--border);background:var(--bg);color:var(--text);">'
         + _o('', '미정') + _o('하', '하 (1)') + _o('중', '중 (2)') + _o('상', '상 (3)') + '</select>';
-      if (!_diff) h += '<span style="font-size:10px;color:var(--red);">담당자 미제안</span>';
+      if (!_diff) h += '<span style="font-size:10px;color:var(--accent);">미설정 — 설정 가능</span>';
     } else {
       const _c = _diff === '상' ? 'var(--red)' : _diff === '중' ? 'var(--yellow)' : _diff === '하' ? 'var(--green)' : 'var(--dim)';
       h += '<span style="font-size:11px;color:var(--dim);">난이도:</span>';

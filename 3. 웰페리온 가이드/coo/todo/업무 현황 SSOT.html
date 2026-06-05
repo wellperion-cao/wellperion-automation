@@ -10,7 +10,7 @@
 /* 최신본 자동 보장 — HTTP 캐시로 옛 버전이 떠 'GM 화면만 미반영'되는 문제 방지 (2026-05-29 COO).
    서버 최신본 버전과 비교해 다르면 1회만 강제 갱신. 루프 방지: ?pv 파라미터가 있으면(=1회 redirect 완료) 무조건 종료.
    (2026-06-04 CEO 수정: 기존 pv===__PV 가드가 CDN 버전 불일치 시 무한 새로고침 유발 → has('pv')로 교체) */
-window.__PV='20260605-4';
+window.__PV='20260605-5';
 (function(){
   window.addEventListener('pageshow',function(e){ if(e.persisted) location.reload(); });
   try{
@@ -597,6 +597,30 @@ function diffBadgeHtml(t) {
   const c  = d === '상' ? 'var(--red)'    : d === '중' ? 'var(--yellow)'    : 'var(--green)';
   const bg = d === '상' ? 'var(--red-bg)' : d === '중' ? 'var(--yellow-bg)' : 'var(--green-bg)';
   return '<span class="chip" title="업무 난이도 ' + d + ' (가중치 ' + (DIFF_WEIGHT[d] || 0) + ')" style="background:' + bg + ';color:' + c + ';font-weight:700;">⚙' + esc(d) + '</span>';
+}
+// 카드 인라인 난이도 (2026-06-05 GM): 설정됨→칩 / 미설정+결재전→카드에서 바로 드롭다운 / 결재 넘어가면→잠금 안내
+function diffCardChip(t) {
+  const d = String((t && t['난이도']) || '').trim();
+  const inApproval = !!String((t && (t.approval || t['결재요청'])) || '').trim();
+  if (d) return diffBadgeHtml(t);
+  if (inApproval) {
+    return '<span class="chip" title="결재 요청되어 난이도는 결재 현황에서 GM이 확정합니다" style="background:transparent;color:var(--dim);border:1px dashed var(--border);font-weight:600;">⚙ 난이도 잠김</span>';
+  }
+  const opts = ['하','중','상'].map(function(o){ return '<option value="' + o + '">' + o + '</option>'; }).join('');
+  return '<select onclick="event.stopPropagation();" onchange="event.stopPropagation();setCardDifficulty(\'' + escAttr(t.id) + '\', this.value);" '
+       + 'title="난이도를 카드에서 바로 설정 (하·중·상)" '
+       + 'style="font-size:11px;padding:2px 6px;border:1px dashed var(--accent);border-radius:8px;background:var(--accent-bg);color:var(--accent);cursor:pointer;font-family:inherit;font-weight:600;">'
+       + '<option value="">⚙ 난이도?</option>' + opts + '</select>';
+}
+// 카드에서 난이도 1건 즉시 저장 (빈값 스킵 GAS라 다른 필드 무손상). 2026-06-05 GM
+async function setCardDifficulty(id, val) {
+  if (!val) return;
+  showToast('난이도 저장 중...');
+  try {
+    const res = await apiCall({ action: 'todo_update', id: id, difficulty: val });
+    if (res && res.ok) { showToast('난이도 "' + val + '" 저장됨'); await loadTasks(); }
+    else throw new Error((res && res.error) || '저장 실패');
+  } catch (e) { showToast('난이도 저장 실패: ' + e.message, true); }
 }
 
 /* 결재 진행중 판정 — 결재요청 있고 결재상태 미완·미반려. 활성/완료 분리·필터 카운트 공용(기준 드리프트 방지). 2026-06-03 */
@@ -1368,7 +1392,7 @@ function renderTaskCard(t, idx) {
     _cardParsed.collab.forEach(c => { if (c) html += '<span class="chip collab">' + esc(c) + '</span>'; });
   }
 
-  html += diffBadgeHtml(t);
+  html += diffCardChip(t);
 
   if (t.startDate || t.endDate) {
     const dateStr = formatDateRange(t.startDate, t.endDate);
@@ -1461,10 +1485,15 @@ function renderTaskCard(t, idx) {
   html += '<div class="task-actions" style="margin-top:8px;padding-top:8px;border-top:1px dashed var(--border);">';
   // 🔗 업무별 링크 — 클릭 한 번에 딥링크 복사(공유 팝업 없음). 열면 해당 카드로 스크롤+하이라이트. (2026-06-05 GM 개선·복원)
   html += '<button class="action-btn" title="이 업무로 바로 가는 링크 복사 (공유용)" onclick="event.stopPropagation();copyItemLink(\'' + escAttr(t.id) + '\')" style="padding:4px 10px;font-size:11px;background:transparent;color:var(--dim);border-color:var(--border);">🔗 링크</button>';
-  html += '<button class="action-btn edit" onclick="event.stopPropagation();openEditModal(\'' + escAttr(t.id) + '\')" style="padding:4px 10px;font-size:11px;">편집</button>';
-  html += '<button class="action-btn done" onclick="event.stopPropagation();markDone(\'' + escAttr(t.id) + '\')" style="padding:4px 10px;font-size:11px;">완료</button>';
-  html += '<button class="action-btn" onclick="event.stopPropagation();holdTask(\'' + escAttr(t.id) + '\')" style="padding:4px 10px;font-size:11px;background:var(--orange-bg);color:var(--orange);border-color:rgba(230,148,78,0.3);">보류</button>';
-  html += '<button class="action-btn" onclick="event.stopPropagation();deleteTaskWithAuth(\'' + escAttr(t.id) + '\',\'' + escAttr(t.title || '') + '\')" style="padding:4px 10px;font-size:11px;background:transparent;color:var(--dim);border-color:var(--border);">삭제</button>';
+  // 결재 넘어간 업무(결재요청됨) = 업무현황에선 잠금, 결재현황(GM)에서만 관리 (2026-06-05 GM 화면분리)
+  if (String(t.approval || '').trim()) {
+    html += '<span style="font-size:11px;color:var(--dim);padding:4px 10px;display:inline-flex;align-items:center;">🔒 결재 진행 중 — 수정·완료·삭제는 <b style="margin:0 3px;">결재 현황</b>에서 GM이 관리</span>';
+  } else {
+    html += '<button class="action-btn edit" onclick="event.stopPropagation();openEditModal(\'' + escAttr(t.id) + '\')" style="padding:4px 10px;font-size:11px;">편집</button>';
+    html += '<button class="action-btn done" onclick="event.stopPropagation();markDone(\'' + escAttr(t.id) + '\')" style="padding:4px 10px;font-size:11px;">완료</button>';
+    html += '<button class="action-btn" onclick="event.stopPropagation();holdTask(\'' + escAttr(t.id) + '\')" style="padding:4px 10px;font-size:11px;background:var(--orange-bg);color:var(--orange);border-color:rgba(230,148,78,0.3);">보류</button>';
+    html += '<button class="action-btn" onclick="event.stopPropagation();deleteTaskWithAuth(\'' + escAttr(t.id) + '\',\'' + escAttr(t.title || '') + '\')" style="padding:4px 10px;font-size:11px;background:transparent;color:var(--dim);border-color:var(--border);">삭제</button>';
+  }
   html += '</div>'; // task-actions
 
   // 토글 영역: 내용 + 진척 로그 + 링크 + 첨부
@@ -2346,7 +2375,7 @@ async function saveTask() {
    Actions: Done / Delete
    ═══════════════════════════════════════════ */
 function warnApprovalCheck(cb) {
-  if (cb.checked && !confirm('⚠️ 결재요청을 체크하면 이 업무는 자체 완료가 불가합니다.\n결재 현황에서 결재가 완료되어야 종료됩니다.\n\n계속하시겠습니까?')) {
+  if (cb.checked && !confirm('⚠️ 결재요청을 체크하면 이 업무는 자체 완료가 불가합니다.\n결재 현황에서 결재가 완료되어야 종료됩니다.\n\n• 난이도도 더 이상 변경할 수 없습니다 (결재 현황에서 GM이 확정).\n• 이후 수정·완료·삭제는 결재 현황에서 GM만 관리합니다.\n\n계속하시겠습니까?')) {
     cb.checked = false;
   }
 }
