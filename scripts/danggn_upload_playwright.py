@@ -553,6 +553,10 @@ async def _attach_images_via_file_chooser(page, image_paths: "list[Path]") -> bo
     # write_page.png 실측: 글쓰기 상단에 카메라 아이콘 + '사진' 라벨 버튼,
     # 하단 툴바에 이미지/갤러리 아이콘 버튼 존재 확인
     image_btn_selectors = [
+        # 카메라 위젯 — '0/10' 카운터를 가진 버튼 (실측: 글쓰기 상단 카메라 아이콘 + 0/10)
+        'button:has-text("/10")',
+        'label:has-text("/10")',
+        '[role="button"]:has-text("/10")',
         # 실측 확인: 카메라 아이콘 + '사진' 텍스트 버튼 (글쓰기 상단)
         'button:has-text("사진")',
         # 툴바 이미지 아이콘 버튼들 (하단 3-아이콘 툴바)
@@ -575,32 +579,32 @@ async def _attach_images_via_file_chooser(page, image_paths: "list[Path]") -> bo
         'input[type="file"]',
     ]
 
-    # 버튼 목록 DOM 진단 (카메라/사진 관련 모든 요소)
-    btns_info = await page.evaluate("""() => {
-        const result = [];
-        // 버튼·라벨·아이콘 포함 탐색
-        for (const el of document.querySelectorAll('button, label, [role="button"], input[type="file"]')) {
-            const text = (el.innerText || el.textContent || '').trim().substring(0, 40);
-            const aria = (el.getAttribute('aria-label') || '').substring(0, 40);
-            const testid = el.getAttribute('data-testid') || '';
-            const forAttr = el.getAttribute('for') || '';
-            const type = el.type || '';
-            const accept = el.accept || '';
-            // 사진/이미지/카메라/file 키워드 포함만 출력
-            const keys = ['사진','이미지','photo','image','camera','file','media'];
-            const haystack = (text+aria+testid+forAttr+type+accept).toLowerCase();
-            if (keys.some(k => haystack.includes(k))) {
-                result.push({tag:el.tagName, text, aria, testid, forAttr, type, accept,
-                    visible: el.offsetParent !== null, id: el.id || ''});
+    # 버튼 전수 + '/10' 카운터 진단 (카메라 위젯 셀렉터 확보용 — 키워드 미매칭 대비)
+    diag = await page.evaluate(r"""() => {
+        const buttons = [];
+        for (const el of document.querySelectorAll('button, label, [role="button"]')) {
+            buttons.push({tag:el.tagName,
+                text:(el.innerText||'').trim().substring(0,30),
+                cls:(el.className||'').toString().substring(0,55),
+                html: el.outerHTML.substring(0,130),
+                visible: el.offsetParent !== null});
+        }
+        const counters = [];
+        for (const el of document.querySelectorAll('*')) {
+            if (el.childElementCount === 0) {
+                const t = (el.innerText||'').trim();
+                if (/\d+\s*\/\s*10/.test(t)) counters.push({text:t.substring(0,15),
+                    tag:el.tagName, cls:(el.className||'').toString().substring(0,55),
+                    parent:(el.parentElement?el.parentElement.outerHTML:'').substring(0,220)});
             }
         }
-        return result;
+        return {buttons, counters};
     }""")
-    print(f"[INFO] 사진·이미지 관련 요소 {len(btns_info)}개:")
-    for b in btns_info:
-        print(f"  [{b['tag']}] id={b['id']!r} text={b['text']!r} aria={b['aria']!r} "
-              f"testid={b['testid']!r} for={b['forAttr']!r} type={b['type']!r} "
-              f"accept={b['accept']!r} visible={b['visible']}")
+    print(f"[INFO] 버튼 {len(diag['buttons'])}개 / '/10' 카운터 {len(diag['counters'])}개:")
+    for c in diag['counters']:
+        print(f"  [counter] {c['text']!r} <{c['tag']} {c['cls']!r}> parent={c['parent']!r}")
+    for b in diag['buttons'][:30]:
+        print(f"  [{b['tag']}] text={b['text']!r} cls={b['cls']!r} vis={b['visible']} html={b['html']!r}")
 
     # input[type=file]이 직접 노출된 경우 set_input_files 우선 시도
     direct_file_inputs = await page.evaluate("""() =>
@@ -899,7 +903,38 @@ async def run_draft(args: argparse.Namespace) -> int:
     await _screenshot(page, "danggn_biz_home_draft.png")
 
     rc = await _run_draft_with_context(page, context, args)
-    await asyncio.sleep(2)
+
+    # --keep-open: 핸드오프 대기 — GM이 같은 브라우저에서 이미지 첨부 후 발행
+    if getattr(args, "keep_open", False):
+        _, copy_file = _resolve_content_paths(args)
+        post_for_msg = build_post(args)
+        # 이미지 경로 안내: output(당근)/ 폴더 기준
+        image_dir, _ = _resolve_content_paths(args)
+        img_hint = ""
+        if image_dir and image_dir.exists():
+            imgs = collect_images(image_dir, args.image_glob)
+            if imgs:
+                first_name = imgs[0].name
+                last_name = imgs[-1].name
+                count = len(imgs)
+                img_hint = (
+                    f"{image_dir / first_name} ~ {last_name} ({count}장)"
+                )
+        if not img_hint and image_dir:
+            img_hint = str(image_dir)
+
+        HANDOFF_WAIT_SEC = 900  # 15분
+        print(
+            "\n[HAND-OFF] 글·임시저장 완료. "
+            "이제 이 브라우저에서 "
+            f"① 이미지 5장({img_hint})을 끌어넣고 "
+            "② 발행 버튼을 누르세요. "
+            f"(완료까지 최대 {HANDOFF_WAIT_SEC // 60}분 브라우저 유지)\n"
+        )
+        await asyncio.sleep(HANDOFF_WAIT_SEC)
+    else:
+        await asyncio.sleep(2)
+
     await context.close()
     await p.stop()
     return rc
@@ -957,6 +992,14 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--then-draft", dest="then_draft", action="store_true",
         help="setup 완료 직후 같은 세션으로 draft 실행 (QR 로그인 + draft 원샷)",
+    )
+    parser.add_argument(
+        "--keep-open", dest="keep_open", action="store_true",
+        help=(
+            "draft 완료 후 브라우저를 닫지 않고 15분 유지. "
+            "GM이 같은 창에서 이미지를 끌어넣고 발행할 수 있도록 핸드오프 대기. "
+            "(백그라운드 실행 — stdin 없음, asyncio.sleep 방식)"
+        ),
     )
     return parser.parse_args()
 
