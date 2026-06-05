@@ -39,8 +39,9 @@ CAPTION = (
     "맥락을 주고, 기준을 알려주고, 결과를 검수하는 건 결국 제 몫이더라고요.\n\n"
     "도구는 쓰는 사람을 닮아요.\n"
     "한계를 알아야 제대로 쓸 수 있어요. AI를 다루는 대표가 살아남습니다.\n"
+    "도움이 됐다면 저장해두고 딱 하나만 따라 해보세요.\n"
+    "혼자 고민 말고 DM 주세요 — 아는 선에서 같이 풀어드릴게요.\n"
     "완벽하진 않아도, 함께 성장합시다.\n\n"
-    "운동시설 대표님, DM 주세요. 아는 선에선 돕겠습니다.\n\n"
     "#AI #AI활용 #AI한계 #AI오해 #스포츠클럽 #일하는방식 #대표일상 #한남동 #웰페리온"
 )
 
@@ -111,14 +112,14 @@ def main() -> None:
         paths.append(out)
         print(f"[OK] {out.name} - {r['layout']} ({r['size_kb']}KB)")
 
-    # 마지막 장 = 시그니처 슬로건 고정(2026-06-04 GM 지시 — 전 편 공통) + 함께 성장 + DM 유도
+    # 마지막 장 = 시그니처 슬로건 고정(2026-06-04 GM 지시 — 전 편 공통) + 복합 바이럴 CTA(2026-06-05 GM 결정)
     last_out = OUT / f"post_{len(SLIDES) + 1}.jpg"
     r = compose_text_slide(
         output=last_out,
         brand_key="main",
         logo_style=LOGO_STYLE,
         kor_title="AI를 다루는 대표가\n살아남는다",
-        body="한계를 알아야 제대로 쓸 수 있어요.\n시키는 법이 곧 실력이에요.\n완벽하진 않아도, 함께 성장합시다.\n\n운동시설 대표님, 궁금하면\nDM 주세요. 아는 선에선 돕겠습니다.",
+        body="막막하면 일단 저장해두세요.\n딱 하나만 따라 해도 바뀝니다.\n혼자 고민 말고 DM 주세요.\n아는 선에서 같이 풀어드릴게요.",
     )
     print(f"[OK] {last_out.name} - slogan/DM card ({r['size_kb']}KB)")
     paths.append(last_out)
