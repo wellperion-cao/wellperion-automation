@@ -474,24 +474,124 @@
 <main class="main">
 
   <article class="doc active" id="home">
-    <div class="doc-header"><h2>웰페리온 가이드 허브 v2.7</h2><div class="meta">v2.7 · 최종 업데이트 2026-06-02 · 총 15개 섹션</div></div>
-    <p class="lead">웰페리온 운영에 필요한 가이드·정책·도구로 빠르게 이동하는 목차·허브입니다.</p>
-    <div class="card accent">
+    <div class="doc-header"><h2>🏢 웰페리온 ERP</h2><div class="meta">스포츠클럽 통합 운영 시스템 · 가이드허브 v2.7 · 최종 업데이트 2026-06-05</div></div>
+    <p class="lead">인사·재무·운영·회원·마케팅·업무결재·기술·경영 8개 모듈을 한 화면에서 잇는 통합 운영 시스템(ERP)입니다. 상단은 지금 회사가 어떻게 돌아가는지, 아래는 시스템 설계도.</p>
+
+    <!-- ② 경영 현황 라이브 스트립 — 실제 가져온 숫자만 표시(가짜 금지). 업무·결재=todo_list 1회 호출 집계(S3 KPI 스트립과 1:1), 그 외 소스없는 지표는 "측정 예정"으로 정직 표기 -->
+    <div style="display:flex;gap:12px;flex-wrap:wrap;margin:20px 0 8px;" id="homeErpStrip">
+      <div style="flex:1;min-width:150px;background:linear-gradient(135deg,var(--accent-bg),transparent);border:1px solid var(--border);border-radius:14px;padding:18px 16px;">
+        <div style="font-size:11px;font-weight:700;letter-spacing:0.04em;color:var(--dim);">📋 진행 업무</div>
+        <div style="font-size:34px;font-weight:800;color:var(--accent);line-height:1.1;margin:6px 0 2px;" id="erpWorkN">—</div>
+        <div style="font-size:10.5px;color:var(--dim);">업무 현황 SSOT 실시간</div>
+      </div>
+      <div style="flex:1;min-width:150px;background:linear-gradient(135deg,var(--warm-bg),transparent);border:1px solid var(--border);border-radius:14px;padding:18px 16px;">
+        <div style="font-size:11px;font-weight:700;letter-spacing:0.04em;color:var(--dim);">🧾 결재 대기</div>
+        <div style="font-size:34px;font-weight:800;color:var(--warm);line-height:1.1;margin:6px 0 2px;" id="erpApprN">—</div>
+        <div style="font-size:10.5px;color:var(--dim);">결재 현황 SSOT 실시간</div>
+      </div>
+      <div style="flex:1;min-width:150px;background:linear-gradient(135deg,var(--grow-bg),transparent);border:1px solid var(--border);border-radius:14px;padding:18px 16px;">
+        <div style="font-size:11px;font-weight:700;letter-spacing:0.04em;color:var(--dim);">💬 신규 문의</div>
+        <div style="font-size:34px;font-weight:800;color:var(--grow);line-height:1.1;margin:6px 0 2px;" id="erpInqN">—</div>
+        <div style="font-size:10.5px;color:var(--dim);">측정 예정 (문의 집계 연동 중)</div>
+      </div>
+    </div>
+    <div style="font-size:11px;color:var(--dim);margin:0 0 24px;">실시간 숫자는 업무·결재 SSOT(구글시트)에서 직접 집계합니다. 가져오지 못하면 "—"로 표시(가짜 수치 없음).</div>
+
+    <!-- ③ ERP 모듈 그리드 (시스템 설계도) — 8개 모듈, 넓으면 3열·좁으면 1열. 모든 링크는 home/수록가이드의 실제 URL 복사 -->
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px;margin:0 0 8px;">
+
+      <!-- 1. 인사 -->
+      <div class="erp-mod" style="--mc:#7c9cc4;background:var(--paper);border:1px solid var(--border);border-top:3px solid var(--mc);border-radius:14px;padding:18px 18px 16px;transition:transform .14s,box-shadow .14s,border-color .14s;" onmouseover="this.style.transform='translateY(-3px)';this.style.boxShadow='0 8px 22px rgba(0,0,0,0.18)';this.style.borderColor='var(--mc)';" onmouseout="this.style.transform='';this.style.boxShadow='';this.style.borderColor='var(--border)';this.style.borderTopColor='var(--mc)';">
+        <div style="display:flex;align-items:center;gap:10px;"><span style="font-size:26px;">👥</span><div><div style="font-weight:800;font-size:15.5px;">인사 <span style="font-size:11px;color:var(--dim);font-weight:600;">HR</span></div><div style="font-size:11px;color:var(--dim);">담당 · 나우열M</div></div></div>
+        <div style="display:flex;gap:7px;flex-wrap:wrap;margin-top:14px;">
+          <a href="#" onclick="event.preventDefault();document.querySelector('[data-id=H1]').click();" style="font-size:12px;font-weight:600;padding:6px 12px;background:var(--accent-bg);color:var(--accent);border-radius:99px;text-decoration:none;border:1px solid var(--border);">취업규칙</a>
+          <a href="https://wellperion-cao.github.io/wellperion-automation/chro/hub/" target="_blank" style="font-size:12px;font-weight:600;padding:6px 12px;background:var(--accent-bg);color:var(--accent);border-radius:99px;text-decoration:none;border:1px solid var(--border);">인사 운영 허브 ↗</a>
+        </div>
+      </div>
+
+      <!-- 2. 재무 -->
+      <div class="erp-mod" style="--mc:#6abf7b;background:var(--paper);border:1px solid var(--border);border-top:3px solid var(--mc);border-radius:14px;padding:18px 18px 16px;transition:transform .14s,box-shadow .14s,border-color .14s;" onmouseover="this.style.transform='translateY(-3px)';this.style.boxShadow='0 8px 22px rgba(0,0,0,0.18)';this.style.borderColor='var(--mc)';" onmouseout="this.style.transform='';this.style.boxShadow='';this.style.borderColor='var(--border)';this.style.borderTopColor='var(--mc)';">
+        <div style="display:flex;align-items:center;gap:10px;"><span style="font-size:26px;">💰</span><div><div style="font-weight:800;font-size:15.5px;">재무 <span style="font-size:11px;color:var(--dim);font-weight:600;">Finance</span></div><div style="font-size:11px;color:var(--dim);">담당 · 나우열M</div></div></div>
+        <div style="display:flex;gap:7px;flex-wrap:wrap;margin-top:14px;">
+          <a href="#" onclick="event.preventDefault();document.querySelector('[data-id=F1]').click();" style="font-size:12px;font-weight:600;padding:6px 12px;background:var(--accent-bg);color:var(--accent);border-radius:99px;text-decoration:none;border:1px solid var(--border);">지출현황</a>
+          <a href="cfo/sales/매출현황.html" target="_blank" style="font-size:12px;font-weight:600;padding:6px 12px;background:var(--accent-bg);color:var(--accent);border-radius:99px;text-decoration:none;border:1px solid var(--border);">매출현황 ↗</a>
+        </div>
+      </div>
+
+      <!-- 3. 운영 -->
+      <div class="erp-mod" style="--mc:#B79F8A;background:var(--paper);border:1px solid var(--border);border-top:3px solid var(--mc);border-radius:14px;padding:18px 18px 16px;transition:transform .14s,box-shadow .14s,border-color .14s;" onmouseover="this.style.transform='translateY(-3px)';this.style.boxShadow='0 8px 22px rgba(0,0,0,0.18)';this.style.borderColor='var(--mc)';" onmouseout="this.style.transform='';this.style.boxShadow='';this.style.borderColor='var(--border)';this.style.borderTopColor='var(--mc)';">
+        <div style="display:flex;align-items:center;gap:10px;"><span style="font-size:26px;">🏢</span><div><div style="font-weight:800;font-size:15.5px;">운영 <span style="font-size:11px;color:var(--dim);font-weight:600;">Operations</span></div><div style="font-size:11px;color:var(--dim);">담당 · 최준용M · 윤병현AM</div></div></div>
+        <div style="display:flex;gap:7px;flex-wrap:wrap;margin-top:14px;">
+          <a href="#" onclick="event.preventDefault();document.querySelector('[data-id=O1]').click();" style="font-size:12px;font-weight:600;padding:6px 12px;background:var(--accent-bg);color:var(--accent);border-radius:99px;text-decoration:none;border:1px solid var(--border);">운영 통합체계</a>
+          <a href="https://wellperion-cao.github.io/wellperion-automation/coo/check/%EC%A7%80%EC%9B%90%EB%B6%80%20%EC%B2%B4%EA%B3%84.html" target="_blank" style="font-size:12px;font-weight:600;padding:6px 12px;background:var(--accent-bg);color:var(--accent);border-radius:99px;text-decoration:none;border:1px solid var(--border);">지원부 체계 ↗</a>
+          <a href="https://wellperion-cao.github.io/wellperion-automation/coo/check/%EA%B0%95%EC%8A%B5%EB%B6%80%20%EC%97%85%EC%9E%A5%EA%B4%80%EB%A6%AC.html" target="_blank" style="font-size:12px;font-weight:600;padding:6px 12px;background:var(--accent-bg);color:var(--accent);border-radius:99px;text-decoration:none;border:1px solid var(--border);">강습부 업장관리 ↗</a>
+          <a href="#" onclick="event.preventDefault();document.querySelector('[data-id=O2]').click();" style="font-size:12px;font-weight:600;padding:6px 12px;background:var(--accent-bg);color:var(--accent);border-radius:99px;text-decoration:none;border:1px solid var(--border);">공지/안내문</a>
+        </div>
+      </div>
+
+      <!-- 4. 회원 -->
+      <div class="erp-mod" style="--mc:#c48f7c;background:var(--paper);border:1px solid var(--border);border-top:3px solid var(--mc);border-radius:14px;padding:18px 18px 16px;transition:transform .14s,box-shadow .14s,border-color .14s;" onmouseover="this.style.transform='translateY(-3px)';this.style.boxShadow='0 8px 22px rgba(0,0,0,0.18)';this.style.borderColor='var(--mc)';" onmouseout="this.style.transform='';this.style.boxShadow='';this.style.borderColor='var(--border)';this.style.borderTopColor='var(--mc)';">
+        <div style="display:flex;align-items:center;gap:10px;"><span style="font-size:26px;">🤝</span><div><div style="font-weight:800;font-size:15.5px;">회원 <span style="font-size:11px;color:var(--dim);font-weight:600;">Membership</span></div><div style="font-size:11px;color:var(--dim);">담당 · 임정은M</div></div></div>
+        <div style="display:flex;gap:7px;flex-wrap:wrap;margin-top:14px;">
+          <a href="cpo/member/회원관리.html" target="_blank" style="font-size:12px;font-weight:600;padding:6px 12px;background:var(--accent-bg);color:var(--accent);border-radius:99px;text-decoration:none;border:1px solid var(--border);">회원관리 ↗</a>
+        </div>
+      </div>
+
+      <!-- 5. 마케팅 -->
+      <div class="erp-mod" style="--mc:#ED5B3F;background:var(--paper);border:1px solid var(--border);border-top:3px solid var(--mc);border-radius:14px;padding:18px 18px 16px;transition:transform .14s,box-shadow .14s,border-color .14s;" onmouseover="this.style.transform='translateY(-3px)';this.style.boxShadow='0 8px 22px rgba(0,0,0,0.18)';this.style.borderColor='var(--mc)';" onmouseout="this.style.transform='';this.style.boxShadow='';this.style.borderColor='var(--border)';this.style.borderTopColor='var(--mc)';">
+        <div style="display:flex;align-items:center;gap:10px;"><span style="font-size:26px;">📣</span><div><div style="font-weight:800;font-size:15.5px;">마케팅 <span style="font-size:11px;color:var(--dim);font-weight:600;">Marketing</span></div><div style="font-size:11px;color:var(--dim);">담당 · 김남욱 GM</div></div></div>
+        <div style="display:flex;gap:7px;flex-wrap:wrap;margin-top:14px;">
+          <a href="#" onclick="event.preventDefault();document.querySelector('[data-id=M1]').click();" style="font-size:12px;font-weight:600;padding:6px 12px;background:var(--accent-bg);color:var(--accent);border-radius:99px;text-decoration:none;border:1px solid var(--border);">공식채널</a>
+          <a href="#" onclick="event.preventDefault();document.querySelector('[data-id=M2]').click();" style="font-size:12px;font-weight:600;padding:6px 12px;background:var(--accent-bg);color:var(--accent);border-radius:99px;text-decoration:none;border:1px solid var(--border);">콘텐츠</a>
+          <a href="#" onclick="event.preventDefault();document.querySelector('[data-id=M3]').click();" style="font-size:12px;font-weight:600;padding:6px 12px;background:var(--accent-bg);color:var(--accent);border-radius:99px;text-decoration:none;border:1px solid var(--border);">홍보물</a>
+          <a href="#" onclick="event.preventDefault();document.querySelector('[data-id=M5]').click();" style="font-size:12px;font-weight:600;padding:6px 12px;background:var(--accent-bg);color:var(--accent);border-radius:99px;text-decoration:none;border:1px solid var(--border);">검수·발행</a>
+          <a href="#" onclick="event.preventDefault();document.querySelector('[data-id=M4]').click();" style="font-size:12px;font-weight:600;padding:6px 12px;background:var(--accent-bg);color:var(--accent);border-radius:99px;text-decoration:none;border:1px solid var(--border);">현황 대시보드</a>
+        </div>
+      </div>
+
+      <!-- 6. 업무·결재 -->
+      <div class="erp-mod" style="--mc:#d4a017;background:var(--paper);border:1px solid var(--border);border-top:3px solid var(--mc);border-radius:14px;padding:18px 18px 16px;transition:transform .14s,box-shadow .14s,border-color .14s;" onmouseover="this.style.transform='translateY(-3px)';this.style.boxShadow='0 8px 22px rgba(0,0,0,0.18)';this.style.borderColor='var(--mc)';" onmouseout="this.style.transform='';this.style.boxShadow='';this.style.borderColor='var(--border)';this.style.borderTopColor='var(--mc)';">
+        <div style="display:flex;align-items:center;gap:10px;"><span style="font-size:26px;">📋</span><div><div style="font-weight:800;font-size:15.5px;">업무·결재 <span style="font-size:11px;color:var(--dim);font-weight:600;">Workflow</span></div><div style="font-size:11px;color:var(--dim);">업무 배분 · 결재 추적 SSOT</div></div></div>
+        <div style="display:flex;gap:7px;flex-wrap:wrap;margin-top:14px;">
+          <a href="https://wellperion-cao.github.io/wellperion-automation/coo/todo/%EC%97%85%EB%AC%B4%20%ED%98%84%ED%99%A9%20SSOT.html" target="_blank" style="font-size:12px;font-weight:600;padding:6px 12px;background:var(--accent-bg);color:var(--accent);border-radius:99px;text-decoration:none;border:1px solid var(--border);">업무 현황 SSOT ↗</a>
+          <a href="https://wellperion-cao.github.io/wellperion-automation/coo/todo/%EA%B2%B0%EC%9E%AC%20%ED%98%84%ED%99%A9%20SSOT.html" target="_blank" style="font-size:12px;font-weight:600;padding:6px 12px;background:var(--accent-bg);color:var(--accent);border-radius:99px;text-decoration:none;border:1px solid var(--border);">결재 현황 SSOT ↗</a>
+          <a href="#" onclick="event.preventDefault();document.querySelector('[data-id=S3]').click();" style="font-size:12px;font-weight:600;padding:6px 12px;background:var(--accent-bg);color:var(--accent);border-radius:99px;text-decoration:none;border:1px solid var(--border);">통합 SSOT</a>
+        </div>
+      </div>
+
+      <!-- 7. 기술·자동화 -->
+      <div class="erp-mod" style="--mc:#9c8ec4;background:var(--paper);border:1px solid var(--border);border-top:3px solid var(--mc);border-radius:14px;padding:18px 18px 16px;transition:transform .14s,box-shadow .14s,border-color .14s;" onmouseover="this.style.transform='translateY(-3px)';this.style.boxShadow='0 8px 22px rgba(0,0,0,0.18)';this.style.borderColor='var(--mc)';" onmouseout="this.style.transform='';this.style.boxShadow='';this.style.borderColor='var(--border)';this.style.borderTopColor='var(--mc)';">
+        <div style="display:flex;align-items:center;gap:10px;"><span style="font-size:26px;">🛠️</span><div><div style="font-weight:800;font-size:15.5px;">기술·자동화 <span style="font-size:11px;color:var(--dim);font-weight:600;">IT</span></div><div style="font-size:11px;color:var(--dim);">담당 · 김남욱 GM</div></div></div>
+        <div style="display:flex;gap:7px;flex-wrap:wrap;margin-top:14px;">
+          <a href="#" onclick="event.preventDefault();document.querySelector('[data-id=T1]').click();" style="font-size:12px;font-weight:600;padding:6px 12px;background:var(--accent-bg);color:var(--accent);border-radius:99px;text-decoration:none;border:1px solid var(--border);">기술 인프라</a>
+          <a href="#" onclick="event.preventDefault();document.querySelector('[data-id=T2]').click();" style="font-size:12px;font-weight:600;padding:6px 12px;background:var(--accent-bg);color:var(--accent);border-radius:99px;text-decoration:none;border:1px solid var(--border);">업무자동화</a>
+          <a href="#" onclick="event.preventDefault();document.querySelector('[data-id=T3]').click();" style="font-size:12px;font-weight:600;padding:6px 12px;background:var(--accent-bg);color:var(--accent);border-radius:99px;text-decoration:none;border:1px solid var(--border);">AI 교육</a>
+        </div>
+      </div>
+
+      <!-- 8. 경영 -->
+      <div class="erp-mod" style="--mc:#5fa8a8;background:var(--paper);border:1px solid var(--border);border-top:3px solid var(--mc);border-radius:14px;padding:18px 18px 16px;transition:transform .14s,box-shadow .14s,border-color .14s;" onmouseover="this.style.transform='translateY(-3px)';this.style.boxShadow='0 8px 22px rgba(0,0,0,0.18)';this.style.borderColor='var(--mc)';" onmouseout="this.style.transform='';this.style.boxShadow='';this.style.borderColor='var(--border)';this.style.borderTopColor='var(--mc)';">
+        <div style="display:flex;align-items:center;gap:10px;"><span style="font-size:26px;">📊</span><div><div style="font-weight:800;font-size:15.5px;">경영 <span style="font-size:11px;color:var(--dim);font-weight:600;">Executive</span></div><div style="font-size:11px;color:var(--dim);">담당 · 김남욱 GM</div></div></div>
+        <div style="display:flex;gap:7px;flex-wrap:wrap;margin-top:14px;">
+          <a href="#" onclick="event.preventDefault();document.querySelector('[data-doc=dashboard]').click();" style="font-size:12px;font-weight:600;padding:6px 12px;background:var(--accent-bg);color:var(--accent);border-radius:99px;text-decoration:none;border:1px solid var(--border);">전체 대시보드</a>
+          <a href="#" onclick="event.preventDefault();document.querySelector('[data-id=G1]').click();" style="font-size:12px;font-weight:600;padding:6px 12px;background:var(--accent-bg);color:var(--accent);border-radius:99px;text-decoration:none;border:1px solid var(--border);">GM 칵핏</a>
+          <a href="#" onclick="event.preventDefault();if(window.activateDoc){activateDoc('g9',null);location.hash='D1';}" style="font-size:12px;font-weight:600;padding:6px 12px;background:var(--accent-bg);color:var(--accent);border-radius:99px;text-decoration:none;border:1px solid var(--border);">회사소개·전략</a>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ④ 하단 운영 가이드 + 문서 위치 -->
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin:18px 0 14px;align-items:center;">
+      <span style="font-size:12px;color:var(--dim);font-weight:600;">📚 운영 가이드</span>
+      <a href="#" onclick="event.preventDefault();document.querySelector('[data-id=S1]').click();" style="font-size:12px;font-weight:600;padding:5px 12px;color:var(--accent);border-radius:99px;text-decoration:none;border:1px solid var(--border);">공통 가이드라인</a>
+      <a href="#" onclick="event.preventDefault();document.querySelector('[data-id=S2]').click();" style="font-size:12px;font-weight:600;padding:5px 12px;color:var(--accent);border-radius:99px;text-decoration:none;border:1px solid var(--border);">AI 운영가이드</a>
+    </div>
+    <div class="card accent" style="margin:0 0 8px;">
       <h4>이 문서 위치</h4>
       <pre>C:\Users\jjky0\welperion-automation\3. 웰페리온 가이드\wellperion_guide(main).html</pre>
       <p>메인 프로젝트 폴더 맨 위. 더블클릭하면 어디서든 열립니다.</p>
     </div>
-
-    <details open class="toggle" style="margin:18px 0 24px;">
-      <summary>⭐ 즐겨찾기</summary>
-      <div class="toggle-body" style="display:flex;gap:8px;flex-wrap:wrap;">
-        <a href="#" onclick="event.preventDefault();document.querySelector('[data-id=G1]').click();" style="display:inline-flex;align-items:center;gap:6px;padding:12px 20px;background:var(--accent);color:#fff;font-size:14px;font-weight:700;border-radius:10px;text-decoration:none;border:1px solid var(--accent);transition:background 0.12s;">📋 김남욱 GM</a>
-        <a href="https://wellperion-cao.github.io/wellperion-automation/coo/todo/%EC%97%85%EB%AC%B4%20%ED%98%84%ED%99%A9%20SSOT.html" target="_blank" style="display:inline-flex;align-items:center;gap:6px;padding:12px 20px;background:var(--accent-bg);color:var(--accent);font-size:14px;font-weight:700;border-radius:10px;text-decoration:none;border:1px solid rgba(183,159,138,0.3);transition:background 0.12s;">📝 업무 현황 SSOT</a>
-        <a href="https://wellperion-cao.github.io/wellperion-automation/coo/check/%EC%A7%80%EC%9B%90%EB%B6%80%20%EC%B2%B4%EA%B3%84.html" target="_blank" style="display:inline-flex;align-items:center;gap:6px;padding:12px 20px;background:var(--accent-bg);color:var(--accent);font-size:14px;font-weight:700;border-radius:10px;text-decoration:none;border:1px solid rgba(183,159,138,0.3);transition:background 0.12s;">✅ 지원부 체계</a> <a href="https://wellperion-cao.github.io/wellperion-automation/coo/check/%EA%B0%95%EC%8A%B5%EB%B6%80%20%EC%97%85%EC%9E%A5%EA%B4%80%EB%A6%AC.html" target="_blank" style="display:inline-flex;align-items:center;gap:6px;padding:12px 20px;background:var(--accent-bg);color:var(--accent);font-size:14px;font-weight:700;border-radius:10px;text-decoration:none;border:1px solid rgba(183,159,138,0.3);transition:background 0.12s;">🏟️ 강습부 업장관리</a>
-        <a href="https://wellperion-cao.github.io/wellperion-automation/cfo/expense/%EC%A7%80%EC%B6%9C%ED%98%84%ED%99%A9.html" target="_blank" style="display:inline-flex;align-items:center;gap:6px;padding:12px 20px;background:var(--accent-bg);color:var(--accent);font-size:14px;font-weight:700;border-radius:10px;text-decoration:none;border:1px solid rgba(183,159,138,0.3);transition:background 0.12s;">💰 지출현황</a>
-        <a href="#" onclick="event.preventDefault();document.querySelector('[data-id=D1]').click();" style="display:inline-flex;align-items:center;gap:6px;padding:12px 20px;background:var(--accent-bg);color:var(--accent);font-size:14px;font-weight:700;border-radius:10px;text-decoration:none;border:1px solid rgba(183,159,138,0.3);transition:background 0.12s;">🏢 회사소개서 &amp; 전략 로드맵</a>
-      </div>
-    </details>
 
     <!-- ONBOARDING-GAME LINK START (삭제 시 이 블록+onboarding/game.html 제거) -->
     <a href="onboarding/game.html" target="_blank" rel="noopener" style="display:flex;align-items:center;gap:14px;margin:0 0 24px;padding:16px 18px;background:linear-gradient(135deg,rgba(237,91,63,0.16),rgba(183,159,138,0.10));border:1px solid rgba(237,91,63,0.35);border-radius:14px;text-decoration:none;color:var(--text);transition:transform 0.12s,border-color 0.15s;" onmouseover="this.style.transform='translateY(-2px)';this.style.borderColor='var(--warm)';" onmouseout="this.style.transform='';this.style.borderColor='rgba(237,91,63,0.35)';">
@@ -504,103 +604,23 @@
     </a>
     <!-- ONBOARDING-GAME LINK END -->
 
-    <details class="toggle" style="margin:0 0 8px;">
-      <summary>📚 수록된 가이드</summary>
-      <div class="toggle-body">
-
-        <h4 style="color:var(--accent);margin:12px 0 8px;">시작하기</h4>
-        <table>
-          <tr><th style="width:44px"></th><th style="width:64px">식별자</th><th style="width:200px">제목</th><th>한 줄 설명</th></tr>
-          <tr><td>📝</td><td><span class="g-id">S1</span></td><td><a href="#" onclick="event.preventDefault();document.querySelector('[data-id=S1]').click();" style="color:var(--accent);text-decoration:none;font-weight:600;">공통 가이드라인</a></td><td>전사 기준 + 직원 에티켓 + 브랜드 디자인 + 업데이트 방법</td></tr>
-          <tr><td>📋</td><td><span class="g-id">S2</span></td><td><a href="#" onclick="event.preventDefault();document.querySelector('[data-id=S2]').click();" style="color:var(--accent);text-decoration:none;font-weight:600;">AI C-Level 운영 가이드</a></td><td>AI 조직도 + 7개 C-Level 협업·실무</td></tr>
-          <tr><td>📝</td><td><span class="g-id">S3</span></td><td><a href="#" onclick="event.preventDefault();document.querySelector('[data-id=S3]').click();" style="color:var(--accent);text-decoration:none;font-weight:600;">업무&amp;결재 현황 SSOT</a></td><td>핵심멤버 업무 배분·추적 + 결재 현황 통합 (Apps Script 연동)</td></tr>
-        </table>
-
-        <h4 style="color:var(--accent);margin:12px 0 8px;">AI CFO 재무 <span style="font-size:12px;color:var(--dim);font-weight:400;">나우열M</span></h4>
-        <table>
-          <tr><th style="width:44px"></th><th style="width:64px">식별자</th><th style="width:200px">제목</th><th>한 줄 설명</th></tr>
-          <tr><td>💰</td><td><span class="g-id">F1</span></td><td><a href="#" onclick="event.preventDefault();document.querySelector('[data-id=F1]').click();" style="color:var(--accent);text-decoration:none;font-weight:600;">지출현황</a></td><td>지출 등록·조회·승인 대시보드</td></tr>
-          <tr><td>📊</td><td><span class="g-id">F2</span></td><td><a href="cfo/sales/매출현황.html" target="_blank" style="color:var(--accent);text-decoration:none;font-weight:600;">매출현황 (v0.1)</a></td><td>월 OCF·채널별 분해·미수금 추적</td></tr>
-        </table>
-
-        <h4 style="color:var(--accent);margin:12px 0 8px;">AI CHRO 인사 <span style="font-size:12px;color:var(--dim);font-weight:400;">나우열M</span></h4>
-        <table>
-          <tr><th style="width:44px"></th><th style="width:64px">식별자</th><th style="width:200px">제목</th><th>한 줄 설명</th></tr>
-          <tr><td>📋</td><td><span class="g-id">H1</span></td><td><a href="#" onclick="event.preventDefault();document.querySelector('[data-id=H1]').click();" style="color:var(--accent);text-decoration:none;font-weight:600;">취업규칙</a></td><td>15장 98조 · 7탭 구조</td></tr>
-          <tr><td>👥</td><td><span class="g-id">H2</span></td><td><a href="https://wellperion-cao.github.io/wellperion-automation/chro/hub/" target="_blank" style="color:var(--accent);text-decoration:none;font-weight:600;">인사 운영 허브</a></td><td>채용·평가·온보딩 운영 허브</td></tr>
-        </table>
-
-        <h4 style="color:var(--accent);margin:12px 0 8px;">AI COO 운영 <span style="font-size:12px;color:var(--dim);font-weight:400;">최준용M · 윤병현AM</span></h4>
-        <table>
-          <tr><th style="width:44px"></th><th style="width:64px">식별자</th><th style="width:200px">제목</th><th>한 줄 설명</th></tr>
-          <tr><td>🏢</td><td><span class="g-id">O1</span></td><td><a href="#" onclick="event.preventDefault();document.querySelector('[data-id=O1]').click();" style="color:var(--accent);text-decoration:none;font-weight:600;">운영 통합 체계</a></td><td>부서별 체계 + 구축 가이드</td></tr>
-          <tr><td>📋</td><td><span class="g-id">O2</span></td><td><a href="#" onclick="event.preventDefault();document.querySelector('[data-id=O2]').click();" style="color:var(--accent);text-decoration:none;font-weight:600;">공지/안내문 생성</a></td><td>브랜드 가이드 기준 공지문 생성 도구 (9개 사업부 + 8개 프리셋 + A3/A4)</td></tr>
-        </table>
-
-        <h4 style="color:var(--accent);margin:12px 0 8px;">AI CPO 회원관리 <span style="font-size:12px;color:var(--dim);font-weight:400;">임정은M</span></h4>
-        <table>
-          <tr><th style="width:44px"></th><th style="width:64px">식별자</th><th style="width:200px">제목</th><th>한 줄 설명</th></tr>
-          <tr><td>🤝</td><td><span class="g-id">P1</span></td><td><a href="cpo/member/회원관리.html" target="_blank" style="color:var(--accent);text-decoration:none;font-weight:600;">회원관리</a></td><td>라이프사이클 6단계·이탈방지·NPS·도구</td></tr>
-        </table>
-
-        <h4 style="color:var(--accent);margin:12px 0 8px;">AI CMO 마케팅 <span style="font-size:12px;color:var(--dim);font-weight:400;">김남욱 GM</span></h4>
-        <table>
-          <tr><th style="width:44px"></th><th style="width:64px">식별자</th><th style="width:200px">제목</th><th>한 줄 설명</th></tr>
-          <tr><td>🌐</td><td><span class="g-id">M1</span></td><td><a href="#" onclick="event.preventDefault();document.querySelector('[data-id=M1]').click();" style="color:var(--accent);text-decoration:none;font-weight:600;">공식 채널</a></td><td>6채널 통합 + 채널별 운영 가이드</td></tr>
-          <tr><td>📂</td><td><span class="g-id">M2</span></td><td><a href="#" onclick="event.preventDefault();document.querySelector('[data-id=M2]').click();" style="color:var(--accent);text-decoration:none;font-weight:600;">콘텐츠 제작 프로세스</a></td><td>제작 절차 + 마케팅 자동화 + 문의 Survey</td></tr>
-          <tr><td>🎨</td><td><span class="g-id">M3</span></td><td><a href="#" onclick="event.preventDefault();document.querySelector('[data-id=M3]').click();" style="color:var(--accent);text-decoration:none;font-weight:600;">오프라인 홍보물 디자인 제작</a></td><td>배너·현수막·봉투·브로슈어 (브랜드 가이드 자동 적용)</td></tr>
-          <tr><td>🚀</td><td><span class="g-id">M5</span></td><td><a href="#" onclick="event.preventDefault();document.querySelector('[data-id=M5]').click();" style="color:var(--accent);text-decoration:none;font-weight:600;">콘텐츠 검수·자동업로드</a></td><td>5채널 통합 · 제목→슬라이드·캡션 생성→검수→승인 발행 (인스타 2계정)</td></tr>
-          <tr><td>🎯</td><td><span class="g-id">M4</span></td><td><a href="#" onclick="event.preventDefault();document.querySelector('[data-id=M4]').click();" style="color:var(--accent);text-decoration:none;font-weight:600;">마케팅 현황 대시보드</a></td><td>노출→인지→관심→문의→가입 5단계 추적</td></tr>
-        </table>
-
-        <h4 style="color:var(--accent);margin:12px 0 8px;">AI CTO 기술 <span style="font-size:12px;color:var(--dim);font-weight:400;">김남욱 GM</span></h4>
-        <table>
-          <tr><th style="width:44px"></th><th style="width:64px">식별자</th><th style="width:200px">제목</th><th>한 줄 설명</th></tr>
-          <tr><td>🖥️</td><td><span class="g-id">T1</span></td><td><a href="#" onclick="event.preventDefault();document.querySelector('[data-id=T1]').click();" style="color:var(--accent);text-decoration:none;font-weight:600;">기술 인프라 상세</a></td><td>설정 위치 · 텔레그램봇 · scripts · 모바일CLI · 기술 프롬프트</td></tr>
-          <tr><td>🤖</td><td><span class="g-id">T2</span></td><td><a href="#" onclick="event.preventDefault();document.querySelector('[data-id=T2]').click();" style="color:var(--accent);text-decoration:none;font-weight:600;">업무자동화SSOT</a></td><td>시스템 구조 · 캘린더 · 예약작업 · PC·업데이트 원리</td></tr>
-          <tr><td>📚</td><td><span class="g-id">T3</span></td><td><a href="#" onclick="event.preventDefault();document.querySelector('[data-id=T3]').click();" style="color:var(--accent);text-decoration:none;font-weight:600;">AI 교육자료 핵심요약</a></td><td>토큰 절약·컨텍스트 관리·비용 절감</td></tr>
-        </table>
-
-        <h4 style="color:var(--accent);margin:12px 0 8px;">회사 핵심 문서</h4>
-        <table>
-          <tr><th style="width:44px"></th><th style="width:64px">식별자</th><th style="width:200px">제목</th><th>한 줄 설명</th></tr>
-          <tr><td>🏢</td><td><span class="g-id">D1</span></td><td><a href="#" onclick="event.preventDefault();document.querySelector('[data-id=D1]').click();" style="color:var(--accent);text-decoration:none;font-weight:600;">회사소개서 &amp; 전략 로드맵</a></td><td>브랜드·사업·프로그램·3라인·6단계 통합</td></tr>
-        </table>
-
-        <h4 style="color:var(--accent);margin:12px 0 8px;">김남욱 GM</h4>
-        <table>
-          <tr><th style="width:44px"></th><th style="width:64px">식별자</th><th style="width:200px">제목</th><th>한 줄 설명</th></tr>
-          <tr><td>📋</td><td><span class="g-id">G1</span></td><td><a href="#" onclick="event.preventDefault();document.querySelector('[data-id=G1]').click();" style="color:var(--accent);text-decoration:none;font-weight:600;">김남욱 GM</a></td><td>할 일 · 평일루틴 · 주말 · 루틴트래커 · 영양 · 세션로그 · 목표·원칙</td></tr>
-        </table>
-
-      </div>
-    </details>
-
-    <details class="toggle" style="margin:8px 0;">
-      <summary>📊 대시보드 KPI 요약</summary>
-      <div class="toggle-body">
-        <div style="font-size:12px;color:var(--dim);margin-bottom:10px;">C-Level별 KPI(재무·인사·마케팅·운영·회원·기술)는 전체 대시보드에서 봅니다. 매일 08:00 자동 갱신.</div>
-        <a href="#" onclick="event.preventDefault();document.querySelector('[data-doc=dashboard]').click();" style="display:inline-flex;align-items:center;gap:6px;padding:9px 18px;background:var(--accent);color:#fff;font-size:13px;font-weight:700;border-radius:8px;text-decoration:none;">🎯 전체 대시보드 열기</a>
-      </div>
-    </details>
-
     <details class="toggle" style="margin:8px 0 0;">
       <summary>🕐 업데이트 (최신 · 기록)</summary>
       <div class="toggle-body">
     <!-- AUTO:LATEST-START -->
     <div class="card grow">
       <h4>최신 업데이트 — 2026-06-05 (자동 갱신)</h4>
+      <p><strong>2026-06-05</strong> feat(coo): O1 운영통합체계 — 파트너팀 체계 섹터 신설 + 강습부 업장관리 그 아래로 이동(부서별 체계서 분리)</p>
+      <p><strong>2026-06-05</strong> Update index.html</p>
       <p><strong>2026-06-05</strong> feat(coo): 지원부 규정탭 근무·휴게 시간을 보드 카드 스타일 접이식 카드로 통합(공식값 읽기전용 유지)</p>
       <p><strong>2026-06-05</strong> fix(cmo): M4 링크 색 정리 + 대시보드 클릭 출처링크 + 발레 M5 상태 정정</p>
       <p><strong>2026-06-05</strong> feat(coo): 지원부 점검 남/여 탭 카테고리별 항목 빠른추가(＋항목) — 셋업 편집기 데이터계층 재사용</p>
-      <p><strong>2026-06-05</strong> fix(coo): 결재현황 결재완료·반려 토글 글씨 12px→16px 확대(가독성), __PV 20260605-14</p>
-      <p><strong>2026-06-05</strong> feat(telegram): 발신 메시지 공용 로깅 + 30일 자동정리 — 전 발신부 계측</p>
     </div>
 <!-- AUTO:LATEST-END -->
         <table>
           <tr><th style="width:160px">날짜</th><th>변경 내용</th></tr>
           <!-- AUTO:TABLE-START -->
-      <tr><td><strong>2026-06-05 (자동)</strong></td><td>feat(coo): 지원부 규정탭 근무·휴게 시간을 보드 카드 스타일 접이식 카드로 통합(공식값 읽기전용 유지) · fix(cmo): M4 링크 색 정리 + 대시보드 클릭 출처링크 + 발레 M5 상태 정정 · feat(coo): 지원부 점검 남/여 탭 카테고리별 항목 빠른추가(＋항목) — 셋업 편집기 데이터계층 재사용 · fix(coo): 결재현황 결…</td></tr>
+      <tr><td><strong>2026-06-05 (자동)</strong></td><td>feat(coo): O1 운영통합체계 — 파트너팀 체계 섹터 신설 + 강습부 업장관리 그 아래로 이동(부서별 체계서 분리) · Update index.html · feat(coo): 지원부 규정탭 근무·휴게 시간을 보드 카드 스타일 접이식 카드로 통합(공식값 읽기전용 유지) · fix(cmo): M4 링크 색 정리 + 대시보드 클릭 출처링크 + 발레 …</td></tr>
       <!-- AUTO:TABLE-END -->
           <tr><td><strong>2026-05-28 (14차)</strong></td><td>공지/안내문 생성(COO 하위) · 오프라인 홍보물 디자인 제작(CMO 하위) 도구 신설 · 공지 서식 v2.0 독립 페이지화 · 회사소개서·전략로드맵 원본 「3. 웰페리온 가이드/회사문서/」로 이관(SSOT 단일화) · C-Level 부팅 R/R Notion API→가이드허브 g10 참조로 전환 · GitHub Pages 워크플로 폴더명 경로 수정 · 사이드바 "공통+7개 C-Level" 라벨 제거</td></tr>
           <tr><td>2026-05-27 (13차)</td><td>GitHub Pages 전환 · 사이드바 4섹터 · AI C-Level 통일 · 운영 통합 체계 · 공식채널·지출현황·취업규칙·SSOT 신설 · g2+g19·g9+g20·g12·g13 합병 · 김남욱 탭 확장 · v2.5</td></tr>
@@ -617,6 +637,35 @@
       </div>
     </details>
   </article>
+  <script>
+  /* 🏢 ERP 홈 경영 현황 라이브 스트립 — 업무·결재 SSOT(todo_list) 1회 호출 집계.
+     집계 기준은 S3 KPI 스트립(#s4KpiCards)과 1:1 동일(workActive·apprPend). 실제 가져온 숫자만 표기, 실패 시 "—"(가짜 금지). */
+  (function loadErpHomeStrip(){
+    var TODO_API_URL = 'https://script.google.com/macros/s/AKfycbxDwFkrxK1YIaEoSNcuw2MiHiZQ-7o5N6311ytksSyeEd86ZFOhLknOWqQgNArQvZ-7/exec';
+    var STAFF = ['이경연 실장','나우열M','최준용M','임정은M','윤병현AM','이지영 사원','이정헌 소장'];
+    function isStaff(o){ return String(o||'').split(',').map(function(s){return s.trim();}).filter(Boolean).some(function(x){ return STAFF.indexOf(x) >= 0; }); }
+    function st(r){ return r.status || r['상태'] || '진행중'; }
+    function as(r){ return r['결재상태'] || r.approvalStatus || ''; }
+    function req(r){ return r['결재요청'] || r.approval || ''; }
+    function set(id, v){ var el = document.getElementById(id); if (el) el.textContent = v; }
+    fetch(TODO_API_URL + '?action=todo_list', { redirect:'follow' })
+      .then(function(r){ return r.json(); })
+      .then(function(res){
+        if (!res || !(res.ok || res.success) || !Array.isArray(res.data || res.todos)) return; // 실패 시 "—" 유지
+        var rows = res.data || res.todos;
+        // 업무 진행: 실무진 기준 + 업무현황 SSOT와 동일 정의(완료여도 결재요청 미완이면 진행)
+        function apprPending(r){ return String(req(r)).trim() && as(r) !== '결재완료' && !/반려/.test(String(as(r))); }
+        var work = rows.filter(function(r){ return isStaff(r.owner || r['담당자'] || ''); });
+        var workActive = work.filter(function(r){ return (st(r) !== '완료' && st(r) !== '보류') || (st(r) === '완료' && apprPending(r)); });
+        // 결재 대기: 결재상태/결재요청 있는 건 중 결재완료·반려 아닌 것
+        var appr = rows.filter(function(r){ return String(as(r)).trim() || String(req(r)).trim(); });
+        var apprPend = appr.filter(function(r){ return as(r) !== '결재완료' && !/반려/.test(as(r)); });
+        set('erpWorkN', workActive.length);
+        set('erpApprN', apprPend.length);
+      })
+      .catch(function(){ /* 네트워크 실패 → "—" 유지(가짜 수치 없음) */ });
+  })();
+  </script>
 
   <article class="doc" id="update">
     <div class="doc-header"><h2>공통 가이드라인</h2><div class="meta">전사 공통 기준 + 문서 업데이트 방법 + 브랜드 디자인</div></div>
