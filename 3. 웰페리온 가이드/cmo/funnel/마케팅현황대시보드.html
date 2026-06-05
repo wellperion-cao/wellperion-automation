@@ -215,6 +215,15 @@ a{color:var(--accent);text-decoration:none}
     </table>
   </div>
 
+  <!-- 최근 변동사항 (콘텐츠 인게이지먼트 — 채널별 조회·관심·댓글 증감) -->
+  <div class="section">
+    <h2>📣 최근 변동사항 <span style="font-size:13px;color:var(--dim);font-weight:400" id="engagement-updated"></span></h2>
+    <p style="color:var(--dim);font-size:13px;margin:4px 0 14px">채널에 올린 콘텐츠의 조회·관심·댓글 증감(직전 수집 대비). 채널별 수집 시 갱신.</p>
+    <div id="engagement-feed-body" style="display:flex;flex-direction:column;gap:6px;max-width:560px">
+      <div style="color:var(--dim);font-size:13px">불러오는 중…</div>
+    </div>
+  </div>
+
   <!-- Funnel 시각화 -->
   <div class="section">
     <div class="section-title">단계별 현황</div>
@@ -752,9 +761,40 @@ async function loadClickStats() {
   }
 }
 
+// ─── 최근 변동사항 (engagement_feed.json — 채널 수집기가 생성) ───
+async function loadEngagementFeed() {
+  const box = document.getElementById('engagement-feed-body');
+  if (!box) return;
+  try {
+    const res = await fetch('engagement/engagement_feed.json?t=' + Date.now());
+    if (!res.ok) { box.innerHTML = '<div style="color:var(--dim);font-size:13px">아직 수집 데이터 없음 (채널 로그인 후 수집 시 표시)</div>'; return; }
+    const data = await res.json();
+    const events = (data && data.events) || [];
+    const icon = { '당근':'🥕', '블로그':'📘', '카페':'💬', '카카오':'💛', '인스타그램':'📷' };
+    if (!events.length) { box.innerHTML = '<div style="color:var(--dim);font-size:13px">변동 없음</div>'; return; }
+    let html = '';
+    events.slice(0, 30).forEach(function(e) {
+      const parts = [];
+      if (e.dViews) parts.push('+' + e.dViews + ' 조회');
+      if (e.dInterest) parts.push('+' + e.dInterest + ' 관심');
+      if (e.dComments) parts.push('+' + e.dComments + ' 댓글');
+      const delta = e.isNew ? '🆕 신규 게시' : (parts.join(' · ') || '변동 없음');
+      html += '<div style="display:flex;justify-content:space-between;gap:10px;padding:8px 10px;border-bottom:1px solid rgba(255,255,255,.07);font-size:13px">'
+            + '<span>' + (icon[e.channel]||'•') + ' <b>' + (e.channel||'') + '</b> <span style="color:var(--dim)">〈' + (e.title||'').substring(0,30) + '〉</span></span>'
+            + '<span style="color:var(--accent);white-space:nowrap;font-weight:600">' + delta + '</span></div>';
+    });
+    box.innerHTML = html;
+    const upd = document.getElementById('engagement-updated');
+    if (upd && data.updated_at) upd.textContent = '· ' + data.updated_at;
+  } catch (e) {
+    box.innerHTML = '<div style="color:var(--dim);font-size:13px">피드 로드 실패</div>';
+  }
+}
+
 document.addEventListener('DOMContentLoaded', function() {
   loadFunnelConversion();
   loadClickStats();
+  loadEngagementFeed();
 });
 </script>
 </body>

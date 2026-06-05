@@ -463,6 +463,15 @@ async def run_setup(args: "argparse.Namespace | None" = None) -> int:
             await p.stop()
             return rc
 
+        # --then-engagement: 로그인 직후 소식 목록 인게이지먼트 수집
+        then_engagement = getattr(args, "then_engagement", False)
+        if then_engagement and args is not None:
+            print("[INFO] --then-engagement: 로그인 완료 즉시 소식 목록 수집")
+            rc = await _run_engagement_with_context(page)
+            await context.close()
+            await p.stop()
+            return rc
+
         # --then-draft: 로그인 성공 즉시 같은 context로 draft 실행
         then_draft = getattr(args, "then_draft", False)
         if then_draft and args is not None:
@@ -1056,6 +1065,124 @@ async def run_publish(args: argparse.Namespace) -> int:
 
 
 # -----------------------------------------------------------------
+# engagement — 소식 목록 인게이지먼트(조회·관심·댓글) 수집 → JSON 스냅샷
+# -----------------------------------------------------------------
+async def run_engagement(args: "argparse.Namespace | None" = None) -> int:
+    async_playwright = _import_playwright()
+    print("[INFO] === 당근 인게이지먼트 수집 (소식 목록 조회·관심·댓글) ===")
+    if not PERSISTENT_PROFILE_DIR.exists():
+        print("[ERROR] 프로필 미존재 — 먼저 --mode setup 실행 필요.")
+        return 3
+    p, context = await _launch_context(async_playwright)
+    page = context.pages[0] if context.pages else await context.new_page()
+    rc = await _run_engagement_with_context(page)
+    await context.close()
+    await p.stop()
+    return rc
+
+
+async def _run_engagement_with_context(page) -> int:
+    """로그인된 page로 소식 목록 스크랩 → 스냅샷 JSON. setup --then-engagement 와 공용(닫기는 호출측)."""
+    import asyncio
+    import json
+    import datetime
+    posts_url = f"https://bizprofile.daangn.com/biz_accounts/{DANGGN_BIZ_ACCOUNT_ID}/manager/posts"
+    print(f"[INFO] 소식 목록 접속: {posts_url}")
+    await page.goto(posts_url, wait_until="networkidle", timeout=30_000)
+    await asyncio.sleep(3)
+    if is_login_required(page.url):
+        print("[ERROR] 세션 만료 — setup --then-engagement 로 로그인 후 수집 필요.")
+        await _screenshot(page, "danggn_engagement_session_expired.png")
+        return 5
+    await _screenshot(page, "danggn_engagement_list.png")
+
+    # 소식 목록 행 추출 — 당근 글은 클릭 시 '모달'이라 앵커가 없음 → 날짜 패턴(YYYY.MM.DD HH:MM)을
+    # 행 앵커로, 날짜 뒤 숫자 4개 = 조회/재밌/관심/댓글 (실측 스크린샷 2026-06-05 기준).
+    rows = await page.evaluate(r"""() => {
+        const dateRe = /\d{4}\.\d{2}\.\d{2}\s+\d{2}:\d{2}/;
+        const numRe = /(?<!\d)\d[\d,]*(?!\d)/g;
+        const leaves = Array.from(document.querySelectorAll('div,span,p,td,li'))
+            .filter(el => el.children.length === 0 && dateRe.test(el.textContent || ''));
+        const out = []; const seen = new Set();
+        leaves.forEach(dl => {
+            let row = dl;
+            for (let i = 0; i < 7 && row.parentElement; i++) {
+                row = row.parentElement;
+                const tt = row.innerText || '';
+                const dmx = tt.match(dateRe);
+                const aft = dmx ? tt.slice(tt.indexOf(dmx[0]) + dmx[0].length) : '';
+                if ((aft.match(numRe) || []).length >= 4) break;
+            }
+            if (seen.has(row)) return; seen.add(row);
+            const t = (row.innerText || '').trim();
+            const dm = t.match(dateRe);
+            if (!dm) return;
+            let title = '';
+            t.split('\n').map(s => s.trim()).filter(Boolean).forEach(ln => {
+                if (!dateRe.test(ln) && !/^\d[\d,]*$/.test(ln)
+                    && !/^(광고하기|운영불가|잔액없음|광고|>)$/.test(ln)
+                    && ln.length > title.length) title = ln;
+            });
+            const after = t.slice(t.indexOf(dm[0]) + dm[0].length);
+            const m = (after.match(numRe) || []).map(s => parseInt(s.replace(/,/g, ''), 10));
+            out.push({ title: title.substring(0, 80), date: dm[0],
+                       views: m[0] || 0, fun: m[1] || 0, interest: m[2] || 0, comments: m[3] || 0,
+                       rowText: t.replace(/\s+/g, ' ').substring(0, 160) });
+        });
+        return out;
+    }""")
+    print(f"[INFO] 추출 행 {len(rows)}개:")
+    for r in rows[:12]:
+        print(f"  · {r.get('title','')[:34]!r} 조회{r.get('views')} 관심{r.get('interest')} 댓글{r.get('comments')} ({r.get('date')})")
+
+    eng_dir = ROOT / "3. 웰페리온 가이드" / "cmo" / "funnel" / "engagement"
+    eng_dir.mkdir(parents=True, exist_ok=True)
+    ts = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    snap_path = eng_dir / "danggn_snapshot.json"
+    feed_path = eng_dir / "engagement_feed.json"
+
+    # 0건이면 셀렉터가 빗나간 것 → 본문 텍스트 덤프(다음 실행 확정용) 후 종료
+    if not rows:
+        dump = await page.evaluate("() => document.body.innerText.substring(0, 4000)")
+        (eng_dir / "danggn_posts_dump.txt").write_text(dump, encoding="utf-8")
+        print(f"[WARN] 0건 — 본문 덤프 저장(셀렉터 확정용): {eng_dir / 'danggn_posts_dump.txt'}")
+        return 7
+
+    # 이전 스냅샷 대비 delta → '최근 변동사항' 피드 이벤트
+    prev = {}
+    if snap_path.exists():
+        try:
+            for p_ in json.loads(snap_path.read_text(encoding="utf-8")).get("posts", []):
+                prev[p_.get("title", "")] = p_
+        except Exception:
+            pass
+    events = []
+    for r in rows:
+        o = prev.get(r["title"])
+        dv = r["views"] - (o["views"] if o else 0)
+        di = r["interest"] - (o["interest"] if o else 0)
+        dc = r["comments"] - (o["comments"] if o else 0)
+        if o is None or dv or di or dc:
+            events.append({"collected_at": ts, "channel": "당근", "title": r["title"],
+                           "views": r["views"], "interest": r["interest"], "comments": r["comments"],
+                           "dViews": dv, "dInterest": di, "dComments": dc, "isNew": o is None})
+
+    feed = []
+    if feed_path.exists():
+        try:
+            feed = json.loads(feed_path.read_text(encoding="utf-8")).get("events", [])
+        except Exception:
+            feed = []
+    feed = (events + feed)[:60]
+    feed_path.write_text(json.dumps({"updated_at": ts, "events": feed}, ensure_ascii=False, indent=2), encoding="utf-8")
+
+    snap = {"channel": "당근", "collected_at": ts, "count": len(rows), "posts": rows}
+    snap_path.write_text(json.dumps(snap, ensure_ascii=False, indent=2), encoding="utf-8")
+    print(f"[OK] 스냅샷 {len(rows)}건 / 변동 이벤트 {len(events)}건 → 피드 {len(feed)}건")
+    return 0
+
+
+# -----------------------------------------------------------------
 # 진입점
 # -----------------------------------------------------------------
 def parse_args() -> argparse.Namespace:
@@ -1064,7 +1191,7 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--mode",
-        choices=["setup", "check", "dryrun", "draft", "publish"],
+        choices=["setup", "check", "dryrun", "draft", "publish", "engagement"],
         default="dryrun",
         help=(
             "setup: GM 수동 로그인 세션 저장 / "
@@ -1095,6 +1222,10 @@ def parse_args() -> argparse.Namespace:
         help="setup 완료 직후 같은 세션으로 발행(게시)까지 (로그인+발행 원샷, --i-am-sure 필요)",
     )
     parser.add_argument(
+        "--then-engagement", dest="then_engagement", action="store_true",
+        help="setup 완료 직후 같은 세션으로 소식 목록 인게이지먼트(조회·관심·댓글) 수집",
+    )
+    parser.add_argument(
         "--keep-open", dest="keep_open", action="store_true",
         help=(
             "draft 완료 후 브라우저를 닫지 않고 15분 유지. "
@@ -1118,6 +1249,8 @@ def main() -> int:
         return asyncio.run(run_draft(args))
     if args.mode == "publish":
         return asyncio.run(run_publish(args))
+    if args.mode == "engagement":
+        return asyncio.run(run_engagement(args))
     return 1
 
 
