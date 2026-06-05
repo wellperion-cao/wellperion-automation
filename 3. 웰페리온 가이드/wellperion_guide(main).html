@@ -616,17 +616,17 @@
     <!-- AUTO:LATEST-START -->
     <div class="card grow">
       <h4>최신 업데이트 — 2026-06-05 (자동 갱신)</h4>
+      <p><strong>2026-06-05</strong> fix(coo): 결재현황 SSOT 캐시버전 __PV 20260605-1 — 담당자 색칩·툴바 수정 GM 화면 강제 반영</p>
       <p><strong>2026-06-05</strong> fix(coo): 결재현황 SSOT — 담당자 사람별 색칩 통일 + 툴바 동작 검증</p>
       <p><strong>2026-06-05</strong> feat(ceo): 아침·저녁 자동보고 글 다듬기 — GM 승인 5대 개선 전면 반영</p>
       <p><strong>2026-06-05</strong> feat(cmo): 발레 IG 슬라이드 7장 재합성 — GM 신규 사진 + 바레 디자인 학습</p>
       <p><strong>2026-06-05</strong> feat(done-def): 완료의 단일 정의(4요건) 단일화 + 증거(--artifact-url) 강제</p>
-      <p><strong>2026-06-05</strong> chore(cto): 당근 반자동 발행 할일 제외 — GM 시모와 테스트 후 재협업 예정(어제 마무리분)</p>
     </div>
 <!-- AUTO:LATEST-END -->
         <table>
           <tr><th style="width:160px">날짜</th><th>변경 내용</th></tr>
           <!-- AUTO:TABLE-START -->
-      <tr><td><strong>2026-06-05 (자동)</strong></td><td>fix(coo): 결재현황 SSOT — 담당자 사람별 색칩 통일 + 툴바 동작 검증 · feat(ceo): 아침·저녁 자동보고 글 다듬기 — GM 승인 5대 개선 전면 반영 · feat(cmo): 발레 IG 슬라이드 7장 재합성 — GM 신규 사진 + 바레 디자인 학습 · feat(done-def): 완료의 단일 정의(4요건) 단일화 + 증거(--ar…</td></tr>
+      <tr><td><strong>2026-06-05 (자동)</strong></td><td>fix(coo): 결재현황 SSOT 캐시버전 __PV 20260605-1 — 담당자 색칩·툴바 수정 GM 화면 강제 반영 · fix(coo): 결재현황 SSOT — 담당자 사람별 색칩 통일 + 툴바 동작 검증 · feat(ceo): 아침·저녁 자동보고 글 다듬기 — GM 승인 5대 개선 전면 반영 · feat(cmo): 발레 IG 슬라이드 7장 재합성…</td></tr>
       <!-- AUTO:TABLE-END -->
           <tr><td><strong>2026-05-28 (14차)</strong></td><td>공지/안내문 생성(COO 하위) · 오프라인 홍보물 디자인 제작(CMO 하위) 도구 신설 · 공지 서식 v2.0 독립 페이지화 · 회사소개서·전략로드맵 원본 「3. 웰페리온 가이드/회사문서/」로 이관(SSOT 단일화) · C-Level 부팅 R/R Notion API→가이드허브 g10 참조로 전환 · GitHub Pages 워크플로 폴더명 경로 수정 · 사이드바 "공통+7개 C-Level" 라벨 제거</td></tr>
           <tr><td>2026-05-27 (13차)</td><td>GitHub Pages 전환 · 사이드바 4섹터 · AI C-Level 통일 · 운영 통합 체계 · 공식채널·지출현황·취업규칙·SSOT 신설 · g2+g19·g9+g20·g12·g13 합병 · 김남욱 탭 확장 · v2.5</td></tr>
@@ -1530,7 +1530,7 @@
           <tr><td>👨‍💼 시로 (CHRO)</td><td><code>ai-chro.md</code></td><td>S2 공통 + CHRO</td><td><code>chro.json</code></td></tr>
           <tr><td>❣️ 시포 (CPO)</td><td><code>ai-cpo.md</code></td><td>S2 공통 + CPO</td><td><code>cpo.json</code></td></tr>
         </table>
-        <p style="font-size:12px;color:var(--dim);margin-top:6px;">※ 각 역할탭 하단 '세션 부팅 체크리스트'는 위 6단계의 역할별 상세판입니다.</p>
+        <p style="font-size:12px;color:var(--dim);margin-top:6px;">※ 각 역할탭은 위 6단계를 그대로 따르며, 읽는 파일(<code>ai-{역할}.md</code>·<code>status/{역할}.json</code>)만 다릅니다.</p>
         <!-- ══ /AI 부팅 한눈에 ══ -->
 
         <h3><span class="ico">🏢</span>AI 조직도</h3>
@@ -3621,20 +3621,6 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
     </details>
 
 
-    <!-- 오늘 할 일 (탭 밖 독립 영역) -->
-    <details id="gm1-todo-section" open style="margin:18px 0 24px;">
-      <summary style="cursor:pointer;list-style:none;"><h3 id="gm1-todo-date" style="display:inline;"><span class="ico">📌</span>오늘 할 일</h3></summary>
-      <div id="today-task-list">
-        <!-- 동적 렌더링 — gm1_unified_tasks localStorage 기반 -->
-      </div>
-      <details class="toggle" style="margin-top:10px;">
-        <summary style="color:var(--dim);"><span style="margin-right:6px;">📦</span>지난 기록</summary>
-        <div class="toggle-body" style="font-size:13px;color:var(--text-soft);">
-          완료·보류된 지난 항목은 오늘 할 일 목록에서 자동으로 빠지고, 상세 이력은 <strong>세션 로그</strong> 탭 + <strong>git 커밋 기록</strong>에 누적됩니다. (과거 하드코딩 목록은 2026-06-05 정리)
-        </div>
-      </details>
-    </details>
-
     <div class="tabs" data-tabs="gm1">
       <div class="tab-nav">
         <button class="tab-btn active" data-tab="morning">평일(월~토)</button>
@@ -3815,26 +3801,26 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
           <tr><th style="width:90px">날짜</th><th>핵심 변경</th><th style="width:280px">다음 할일</th></tr>
           <tr>
             <td><strong>05-29(금)</strong></td>
-            <td>INB DB 폐기(옵션 A) · 토큰 라우팅 매트릭스 정립(옵션 B: Haiku/Sonnet/Opus 3계층) · SSOT 이중 정립(백엔드=GitHub / 프론트=가이드허브) · AI CEO 마감 검증 의무 정립 · 시드 #06 합류 + KPI 대시보드 v1 골격(g10 카드 7장·JS fetch·토글) · 08:00 회복 보고 + 6 C-Level 자율 지시(이슈 4건) · 시드 #08 P1-A hotfix(isToday 잔존 차단·migration 보정·모달 정합) · CTO P3 Node.js 24 후속 지시(6.1 데드라인)</td>
-            <td>시드 #06 잔여(CTO JSON 빌더 + 6 KPI 함수) · #08 P1-B 세션 로그 자동 누적(=시드 #07) · P2-A 루틴 정합 · P2-B SSOT 재시도 멱등성 · P3 gm1 KPI 미니뷰 · 시드 #10·#01·#02·#11·#09·#04</td>
+            <td>보고·승인을 텔레그램으로 단일화하고, AI가 일을 마치면 스스로 검증하도록 규칙을 세웠습니다. 운영 현황을 한눈에 보는 대시보드 첫 화면을 만들었습니다.</td>
+            <td>대시보드 숫자 자동 채우기 · 세션 로그 자동 기록 · 오늘 할 일과 캘린더 정합</td>
           </tr>
           <tr>
             <td><strong>05-28(목)</strong></td>
-            <td>146 commits 대규모 작업. 시드 #06~#11 SSOT 등록(가이드허브 시드 시스템 가동) · 가이드허브 단일 SSOT 확립 · 공지 서식 v2.0~v2.55 완성(NOTICE 워터마크·가로형·인쇄 정합·줄단위 px input·색상 즐겨찾기·헤더 mark) · 결재 SSOT 통합(업무&결재 현황 SSOT 단일·텔레그램 결재 폐기·삭제 UI) · 인사허브 GitHub Pages 이전(CTO·임직원 모달·소속 드롭다운·비밀번호 게이트) · 김남욱 GM 페이지 Phase 1 통합(gm1_unified_tasks) · 슬로건 전수 통일("A Day, Well Completed.") · 회사소개서·전략로드맵 이관 · 4 C-Level 신규 페이지 통합</td>
-            <td>시드 11건 처리 시작(#06부터)</td>
+            <td>가이드허브를 회사의 단일 기준 문서로 확립했습니다. 공지 서식·결재 현황·인사허브를 정리하고, GM 페이지(G1)와 슬로건을 통일했습니다.</td>
+            <td>밀린 정리 항목 순차 처리 시작</td>
           </tr>
           <tr>
             <td><strong>05-27(수)</strong></td>
-            <td>v2.5 대규모 업데이트. GitHub Pages 전환·폴더 C-Level 정리·사이드바 4섹터·AI C-Level 순서 변경(CFO→CHRO→COO→CPO→CMO→CTO)·Notion 조직도 7명 반영·핵심업무 재정립·g2+g19·g9+g20·g12·g13 합병·공식채널 6채널·지출현황·취업규칙 7탭·운영 통합 체계 4탭·지원부 체계 구역별 매뉴얼·김남욱 탭 확장(루틴트래커·영양·세션로그)·공통 가이드라인·브랜드 디자인·직원 에티켓 5원칙·문서 계층 8단계·업무 현황 SSOT·AI 자동학습 주간 태스크·투두→텔레그램 결재</td>
-            <td>AI C-Level 개요 페이지 생성 / 전사 기준 & 회사 핵심 문서 통합 검토 / 운영부·시설부·주차관리부 체계 확장</td>
+            <td>대규모 개편. 웹사이트 방식 전환, 조직도·핵심업무 재정립, 공식 채널·취업규칙·운영 체계 정비, GM 페이지에 루틴·영양·세션 로그 추가.</td>
+            <td>AI C-Level 개요 페이지 · 회사 핵심 문서 통합 · 부서 체계 확장</td>
           </tr>
           <tr>
             <td><strong>05-26(화)</strong></td>
-            <td>Ralph 4건 완료 (CMO 파이프라인·지출현황·컨텍스트 정비·AI 교육 7탭), 투두리스트 4건 수정, GitHub Pages 전환 결정, 카톡 폐기→텔레그램 결재 결정</td>
-            <td>GitHub Pages 셋업, 투두리스트 텔레그램 변경, Apps Script v3 재배포</td>
+            <td>마케팅 파이프라인·지출 현황·AI 교육 정리 완료. 웹사이트 방식 전환과 결재 채널을 텔레그램으로 바꾸기로 결정.</td>
+            <td>웹 배포 셋업 · 결재 채널 전환 · 저장 서버 재배포</td>
           </tr>
         </table>
-        <div class="callout tip"><strong>규칙:</strong> 하루 1~2줄만. 상세 내용은 git log로 확인. 이 테이블이 흐름 추적의 유일한 기준.</div>
+        <div class="callout tip"><strong>규칙:</strong> 하루 1~2줄, GM이 바로 이해되는 말로만. 기술 상세·내부 코드는 git 커밋 기록에서 확인.</div>
       </div>
 
       <!-- 목표·원칙 -->
@@ -8550,79 +8536,7 @@ function crTab(btn, panelId) {
   })();
   // ── /GM1 통합 태스크 시스템 ─────────────────────────────────────
 
-  // ── 위임 큐 로더 (gm1-delegated-queue) ──────────────────────────
-  (function(){
-    function renderDelegated(items){
-      var container = document.getElementById('gm1-deleg-list');
-      var section   = document.getElementById('gm1-delegated-queue');
-      if(!container || !section) return;
-
-      var filtered = items.filter(function(t){
-        return t.clevel === 'gm1' || (t.task_id && t.task_id.indexOf('G1-') === 0);
-      });
-
-      document.getElementById('gm1-deleg-count').textContent = filtered.length;
-
-      if(filtered.length === 0){
-        section.style.display = 'none';
-        return;
-      }
-      section.style.display = 'block';
-
-      container.innerHTML = filtered.map(function(t){
-        var statusLabel = '⏸️ 대기';
-        var statusColor = 'var(--dim)';
-        if(t.status === 'ASSIGNED' || t.status === 'IN_PROGRESS'){
-          statusLabel = '🟡 진행 중';
-          statusColor = 'var(--accent)';
-        } else if(t.status === 'PENDING_DEPENDENCY'){
-          statusLabel = '⏸️ 대기 (선행 작업 후)';
-        } else if(t.status === 'VERIFIED' || t.status === 'DONE'){
-          statusLabel = '✅ 완료';
-          statusColor = 'var(--grow)';
-        }
-        var dependLine = t.depends_on
-          ? '<div style="font-size:11px;color:var(--dim);margin-top:2px;">↳ 선행: ' + t.depends_on + '</div>'
-          : '';
-        var nextLine = '';
-        if(t.next){ nextLine = '<div style="font-size:11px;color:var(--grow);margin-top:2px;">↳ 다음: ' + t.next + '</div>'; }
-        else if(t.terminal){ nextLine = '<div style="font-size:11px;color:var(--dim);margin-top:2px;">↳ 종결</div>'; }
-        else if(t.next_missing){ nextLine = '<div style="font-size:11px;color:var(--warm);font-weight:600;margin-top:2px;">⚠️ 다음 미정 — 브릿지 끊김</div>'; }
-        return '<div style="background:var(--paper);border:1px solid rgba(183,159,138,0.18);border-radius:10px;padding:10px 14px;">'
-          + '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">'
-            + '<span style="font-size:10.5px;font-weight:600;color:' + statusColor + ';background:rgba(183,159,138,0.12);padding:2px 7px;border-radius:4px;">' + statusLabel + '</span>'
-            + '<span style="font-size:11px;color:var(--dim);font-family:monospace;">' + (t.task_id || '') + '</span>'
-          + '</div>'
-          + '<div style="font-size:13.5px;color:var(--text);">' + (t.title || '(제목 없음)') + '</div>'
-          + dependLine
-          + nextLine
-          + '</div>';
-      }).join('');
-    }
-
-    function init(){
-      var paths = [
-        'https://raw.githubusercontent.com/wellperion-cao/wellperion-automation/master/status/_queue.json',
-        './status/_queue.json',
-        '../../status/_queue.json'
-      ];
-      function tryFetch(i){
-        if(i >= paths.length){
-          var s = document.getElementById('gm1-delegated-queue');
-          if(s) s.style.display = 'none';
-          return;
-        }
-        fetch(paths[i])
-          .then(function(r){ if(!r.ok) throw new Error('fail'); return r.json(); })
-          .then(function(d){ renderDelegated(d); })
-          .catch(function(){ tryFetch(i + 1); });
-      }
-      tryFetch(0);
-    }
-
-    setTimeout(init, 500);
-  })();
-  // ── /위임 큐 로더 ─────────────────────────────────────────────────
+  // ── 위임 큐 위젯 제거(2026-06-05): 항상 display:none 죽은 위젯 + 로더 폐기 ──
 
   // ── KPI 대시보드 v1 ──────────────────────────────────────────────
   (function(){
