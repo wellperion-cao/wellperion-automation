@@ -10,7 +10,7 @@
 /* 최신본 자동 보장 — HTTP 캐시로 옛 버전이 떠 'GM 화면만 미반영'되는 문제 방지 (2026-05-29 COO).
    서버 최신본 버전과 비교해 다르면 1회만 강제 갱신. 루프 방지: ?pv 파라미터가 있으면(=1회 redirect 완료) 무조건 종료.
    (2026-06-04 CEO 수정: 기존 pv===__PV 가드가 CDN 버전 불일치 시 무한 새로고침 유발 → has('pv')로 교체) */
-window.__PV='20260604-1';
+window.__PV='20260605-1';
 (function(){
   window.addEventListener('pageshow',function(e){ if(e.persisted) location.reload(); });
   try{
@@ -1450,7 +1450,7 @@ function renderTaskCard(t, idx) {
   const _parsedCard = parseContent(t.content);
   const _hasResult = !!(_parsedCard.result && _parsedCard.result.trim());
   html += '<div class="task-actions" style="margin-top:8px;padding-top:8px;border-top:1px dashed var(--border);">';
-  html += '<button class="action-btn" title="이 업무 링크 복사" onclick="event.stopPropagation();copyItemLink(\'' + escAttr(t.id) + '\')" style="padding:4px 10px;font-size:11px;">🔗</button>';
+  // 🔗 업무별 링크복사 버튼 제거 (2026-06-05 GM — 작동·활용도 낮음, 결재 현황 SSOT와 통일)
   html += '<button class="action-btn edit" onclick="event.stopPropagation();openEditModal(\'' + escAttr(t.id) + '\')" style="padding:4px 10px;font-size:11px;">편집</button>';
   html += '<button class="action-btn done" onclick="event.stopPropagation();markDone(\'' + escAttr(t.id) + '\')" style="padding:4px 10px;font-size:11px;">완료</button>';
   html += '<button class="action-btn" onclick="event.stopPropagation();holdTask(\'' + escAttr(t.id) + '\')" style="padding:4px 10px;font-size:11px;background:var(--orange-bg);color:var(--orange);border-color:rgba(230,148,78,0.3);">보류</button>';
@@ -1569,9 +1569,8 @@ function renderDoneCard(t) {
     html += '<span class="chip" style="background:var(--green-bg);color:var(--green)">완료: ' + esc(String(t.updatedAt).slice(0, 10)) + '</span>';
   }
   html += '</div></div>';
-  // 액션: 링크 · 보고서 (완료건도 활용 가능 데이터)
+  // 액션: 보고서 (🔗 링크복사 버튼 제거 — 2026-06-05 GM)
   html += '<div style="display:flex;gap:4px;flex-shrink:0;flex-wrap:wrap;">';
-  html += '<button class="action-btn" title="이 업무 링크 복사" onclick="event.stopPropagation();copyItemLink(\'' + escAttr(t.id) + '\')" style="padding:4px 8px;font-size:11px;">🔗</button>';
   html += '<button class="action-btn" title="업무 보고서 인쇄 / PDF" onclick="event.stopPropagation();printResultReport(\'' + escAttr(t.id) + '\')" style="padding:4px 8px;font-size:11px;background:var(--purple-bg);color:var(--purple);border-color:rgba(167,139,218,0.3);">🖨 보고서</button>';
   html += '</div></div>';
   // 내용 토글 — 본문·기획·진척·결과 열람
