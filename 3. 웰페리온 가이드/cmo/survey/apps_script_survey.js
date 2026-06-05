@@ -18,6 +18,59 @@ const INQUIRY_HEADERS = ['id', '시각', '이름', '연락처', '문의유형', 
 
 const INQUIRY_TYPES = ['투어 예약', '프로그램 문의', '멤버십 상담', '시설 안내', '기타'];
 
+// ─── 구글폼 응답 시트 (실제 문의 — 자체폼 휴면 대체, 2026-06-05) ───
+// 5채널 콘텐츠 → wellperion.com/ko/inquiry → 구글폼 작성 → 각 폼 응답시트 누적.
+// 대시보드(inquiry_list·funnel_conversion)가 이 응답들을 읽어 '문의수=0' 빈틈을 메움.
+// gid 기반 탭 조회(이름 변경에 강함). 컬럼은 헤더 키워드로 탐색(폼 문항 순서 변동 대비).
+// ※ 여름특강(5종 하위폼)은 구조 미확정 → 추후 추가.
+const FORM_SHEETS = [
+  { ssId: '12AWcAlgmmYKr2nUbWmVpa71_z3zi0BaU4ZdnOwrI_7U', gid: 953023270, type: '멤버십',     channelKeys: ['채널', '알게'] },
+  { ssId: '1b0XU1oTHlXzBhEzUOar5GEm44vjopdO25qfsh-awDXw', gid: 111889422, type: '성인강습',   channelKeys: ['경로', '채널'] },
+  { ssId: '1b0XU1oTHlXzBhEzUOar5GEm44vjopdO25qfsh-awDXw', gid: 268994754, type: '유소년강습', channelKeys: ['경로', '채널'] }
+];
+
+function _sheetByGid_(ssId, gid) {
+  var sheets = SpreadsheetApp.openById(ssId).getSheets();
+  for (var i = 0; i < sheets.length; i++) { if (sheets[i].getSheetId() === gid) return sheets[i]; }
+  return null;
+}
+
+function _findCol_(headers, keys) {
+  for (var i = 0; i < headers.length; i++) {
+    var h = String(headers[i] || '');
+    for (var k = 0; k < keys.length; k++) { if (h.indexOf(keys[k]) >= 0) return i; }
+  }
+  return -1;
+}
+
+// 4개 구글폼 응답 → 정규화 문의 배열 {시각, 연락처, 유입채널, 문의유형}. 접근 실패 폼은 건너뜀.
+function _collectFormInquiries_() {
+  var out = [];
+  FORM_SHEETS.forEach(function(cfg) {
+    try {
+      var sh = _sheetByGid_(cfg.ssId, cfg.gid);
+      if (!sh) return;
+      var last = sh.getLastRow();
+      var lastCol = sh.getLastColumn();
+      if (last < 2 || lastCol < 1) return;
+      var headers = sh.getRange(1, 1, 1, lastCol).getValues()[0];
+      var idxPhone = _findCol_(headers, ['연락처', '휴대폰', '핸드폰', '전화']);
+      var idxChan  = _findCol_(headers, cfg.channelKeys);
+      var rows = sh.getRange(2, 1, last - 1, lastCol).getValues();
+      rows.forEach(function(r) {
+        if (!r[0] && (idxPhone < 0 || !r[idxPhone])) return; // 빈 행 스킵
+        out.push({
+          시각:     r[0],  // 구글폼 응답 1열 = 타임스탬프
+          연락처:   idxPhone >= 0 ? r[idxPhone] : '',
+          유입채널: (idxChan >= 0 ? String(r[idxChan] || '').trim() : '') || '기타',
+          문의유형: cfg.type
+        });
+      });
+    } catch (e) { /* 폼 시트 접근 실패는 무시(대시보드 무중단) */ }
+  });
+  return out;
+}
+
 // ─── 시트 초기화 ───
 function _getSheet(name, headers) {
   const ss = SpreadsheetApp.openById(LANDING_SPREADSHEET_ID);
@@ -151,13 +204,18 @@ function _processAction(body) {
   if (action === 'inquiry_list') {
     const sh = _getSheet(INQUIRY_SHEET, INQUIRY_HEADERS);
     const last = sh.getLastRow();
-    if (last < 2) return _json({ ok: true, count: 0, data: [] });
-
-    const data = sh.getRange(2, 1, last - 1, INQUIRY_HEADERS.length).getValues();
-    const items = data.map(row => {
-      const obj = {};
-      INQUIRY_HEADERS.forEach((h, i) => { obj[h] = row[i]; });
-      return obj;
+    const items = [];
+    if (last >= 2) {
+      const data = sh.getRange(2, 1, last - 1, INQUIRY_HEADERS.length).getValues();
+      data.forEach(row => {
+        const obj = {};
+        INQUIRY_HEADERS.forEach((h, i) => { obj[h] = row[i]; });
+        items.push(obj);
+      });
+    }
+    // 구글폼 문의 합류 (개인정보 제외 — 시각·유형·채널만 노출)
+    _collectFormInquiries_().forEach(function(f) {
+      items.push({ id: '', 시각: f.시각, 이름: '', 연락처: '', 문의유형: f.문의유형, 내용: '', 유입채널: f.유입채널, 상태: '신규', 메모: '구글폼' });
     });
     return _json({ ok: true, count: items.length, data: items });
   }
@@ -207,6 +265,16 @@ function _processAction(body) {
         }
       });
     }
+
+    // ②-b 구글폼 응답 문의 합류 (실제 문의 — 자체폼 휴면 대체, 2026-06-05)
+    _collectFormInquiries_().forEach(function(f) {
+      var phone   = normalizePhone_(f.연락처);
+      var channel = String(f.유입채널 || '기타').trim() || '기타';
+      totalInq++;
+      if (!byChannel[channel]) byChannel[channel] = { inquiries: 0, converted: 0 };
+      byChannel[channel].inquiries++;
+      if (phone && memberSet[phone]) { totalConv++; byChannel[channel].converted++; }
+    });
 
     // ③ 반환 JSON — 집계 수치만, 개인정보 절대 미포함
     var rate = totalInq > 0 ? Math.round((totalConv / totalInq) * 1000) / 10 : 0;
