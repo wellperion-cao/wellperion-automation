@@ -1,7 +1,12 @@
-"""바레 런칭 슬라이드 합성 스크립트
-레퍼런스: instagram/260520_발레_런칭/output(인스타그램)/ (발레 완성본)
-           instagram/260426_WJO_스쿼시_대회/output(인스타그램)/ (스쿼시 완성본)
-완성본 1:1 구현 — Canva 완성본 픽셀 실측 기반.
+"""웰페리온 슬라이드 디자인 — 사진형 정본 엔진 (compose_barre)
+
+★ 디자인 정본 = 이 코드다 (2026-06-05 GM 결정 · 캔바(Canva) 의존 폐기).
+  - 바레 '정본'은 원래 캔바 제작본이었고 코드는 그걸 모방했으나, 캔바 원본 확보가 불가하여
+    영구 픽셀 불일치였다(GM 반복 미세수정의 근본 원인). → 캔바 추격 종료. 이 코드가 유일 SSOT(정본).
+  - "캔바와 다르다"는 더 이상 결함이 아니다. 전 사진형 콘텐츠(바레·발레·WJO 등)는 이 엔진을 단일
+    출처로 사용하고, compose_ballet 등은 이 모듈의 스타일 함수(draw_chip·paste_logo·to_duotone 등)를
+    import 재사용한다 → 콘텐츠 간 픽셀 100% 일치.
+  - 색·폰트·로고 상수 SSOT = scripts/brand_constants.py.
 
 캔버스: 1080x1080
 구조: 전체 사진 fill + 하단 그라디언트(y=600~) + 로고PNG 좌상단 + 우상단 칩 + 카운터
@@ -34,9 +39,14 @@ def _hex_to_rgb(h: str) -> tuple:
 
 def to_duotone(img: Image.Image,
                dark_hex: str = DUOTONE_DARK,
-               light_hex: str = DUOTONE_LIGHT) -> Image.Image:
-    """BLACK + BEIGE 듀오톤 변환 (발레·스쿼시 완성본 표준)."""
+               light_hex: str = DUOTONE_LIGHT,
+               normalize: bool = False) -> Image.Image:
+    """BLACK + BEIGE 듀오톤 변환 (정본 표준).
+    normalize=True: autocontrast로 원본 밝기·대비를 정규화 → 밝은 흰배경 표지가 듀오톤 후
+    흐려지고 로고·칩이 묻히는 문제 방지(콘텐츠 간 표지 톤 일관, 2026-06-05 정본 셋팅)."""
     gray = img.convert("L")
+    if normalize:
+        gray = ImageOps.autocontrast(gray, cutoff=1)
     dr, dg, db = _hex_to_rgb(dark_hex)
     lr, lg, lb = _hex_to_rgb(light_hex)
     r_lut = [int(dr + (lr - dr) * (i / 255)) for i in range(256)]
@@ -148,7 +158,7 @@ def compose_cover(
     # 2) 사진 영역 — 상단 65% (y=0~700), 듀오톤 BLACK+BEIGE
     PHOTO_H = 700  # 1080 × 0.648 ≈ 700 (발레 완성본 실측 y=701 경계)
     photo = center_crop_fill(photo_path, W, PHOTO_H)
-    photo = to_duotone(photo)
+    photo = to_duotone(photo, normalize=True)  # 표지 톤 일관 — 밝은 표지도 로고·칩 대비 확보
     canvas.paste(photo, (0, 0))
 
     # 3) 분리선 (발레 완성본 실측: y=701~702, 전폭 x=50~1030, RGB≈171,161,151)
