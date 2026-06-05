@@ -1,12 +1,13 @@
-"""발레 런칭 슬라이드 합성 스크립트 (바레 벤치마킹 1:1)
-레퍼런스: scripts/compose_barre.py (바레 완성본 generator) — 동일 레이아웃·톤·폰트·좌표.
-완성본 정합 목표: 바레 ig_01~05 와 톤·구성·타이포 100% 통일.
+"""발레 런칭 슬라이드 합성 스크립트 (바레 SSOT import)
+레퍼런스: scripts/compose_barre.py — 모든 스타일 함수를 import 재사용.
+발레 고유: 사진 경로·텍스트·표지 top_crop_fill(인물 보정)·full_dark 분기.
+스타일(좌표·폰트크기·색상·선굵기·칩정렬)은 바레 함수를 그대로 호출 — 추측 0.
 
 캔버스: 1080x1080
 구조:
   ig_01 표지   = 사진 상단 65%(듀오톤) + 검정 하단 35% 정보영역 (카운터 없음)
-  ig_02~04 본문 = 전체 사진 fill + 하단 그라디언트 + 좌하단 텍스트 + 우상단 칩 + 카운터
-  ig_05 가이드  = guideline_card.jpg 원본 복사 (카운터 없음)
+  ig_02~06 본문 = 전체 사진 fill + 하단 그라디언트 + 좌하단 텍스트 + 우상단 칩
+  ig_07 가이드  = guideline_card.jpg 원본 복사
 
 캡션 정본(큐레이션_추천.md) 기준 텍스트:
   - 일정: 매주 금요일 오전 10시 / 11시
@@ -20,80 +21,34 @@ from __future__ import annotations
 import sys
 import shutil
 from pathlib import Path
-from PIL import Image, ImageDraw, ImageFont, ImageEnhance, ImageOps
+from PIL import Image, ImageDraw, ImageEnhance, ImageOps
 
-PROJECT_ROOT = Path(r"C:\Users\jjky0\welperion-automation")
-LOGO_DIR = PROJECT_ROOT / "instagram" / "_assets" / "logo"
-LOGO_WHITE_ALPHA = LOGO_DIR / "wellperion_white_alpha.png"
-
-_FONT_DIR_CANDIDATES = [
-    PROJECT_ROOT / "brand" / "font",
-    PROJECT_ROOT / "2. 브랜드_공식문서" / "font",
-]
-FONT_DIR = next((d for d in _FONT_DIR_CANDIDATES if d.exists()), _FONT_DIR_CANDIDATES[0])
-FONT_BOLD = FONT_DIR / "Pretendard-Bold.otf"
-FONT_SEMIBOLD = FONT_DIR / "Pretendard-SemiBold.otf"
-FONT_MEDIUM = FONT_DIR / "Pretendard-Medium.otf"
-
-# 브랜드 색상 (바레 완성본과 동일)
-BEIGE = (183, 159, 138)       # #B79F8A
-BLACK_BG = (34, 31, 32)       # #221F20
-WHITE = (255, 255, 255)
-GRAY = (170, 160, 152)        # 날짜·메타 텍스트
-CHIP_BEIGE = (186, 162, 140)  # 우상단 칩 배경
-
-W, H = 1080, 1080
-
-
-def _hex_to_rgb(h: str) -> tuple:
-    h = h.lstrip("#")
-    return tuple(int(h[i:i + 2], 16) for i in (0, 2, 4))
-
-
-def to_duotone(img: Image.Image,
-               dark_hex: str = "#221F20",
-               light_hex: str = "#B79F8A") -> Image.Image:
-    """BLACK + BEIGE 듀오톤 변환 (바레·발레 완성본 표준)."""
-    gray = img.convert("L")
-    dr, dg, db = _hex_to_rgb(dark_hex)
-    lr, lg, lb = _hex_to_rgb(light_hex)
-    r_lut = [int(dr + (lr - dr) * (i / 255)) for i in range(256)]
-    g_lut = [int(dg + (lg - dg) * (i / 255)) for i in range(256)]
-    b_lut = [int(db + (lb - db) * (i / 255)) for i in range(256)]
-    return Image.merge("RGB", (
-        gray.point(r_lut), gray.point(g_lut), gray.point(b_lut)))
-
-
-def load_font(weight: str, size: int) -> ImageFont.FreeTypeFont:
-    path = {"bold": FONT_BOLD, "semibold": FONT_SEMIBOLD, "medium": FONT_MEDIUM}.get(weight, FONT_BOLD)
-    if not path.exists():
-        raise FileNotFoundError(f"Font not found: {path}")
-    return ImageFont.truetype(str(path), size)
-
-
-def center_crop_fill(img_path: Path, w: int, h: int) -> Image.Image:
-    """원본 이미지를 center-crop으로 w×h에 fill."""
-    img = Image.open(img_path)
-    img = ImageOps.exif_transpose(img).convert("RGB")
-    sw, sh = img.size
-    target_ratio = w / h
-    src_ratio = sw / sh
-    if src_ratio > target_ratio:
-        nw = int(sh * target_ratio)
-        x0 = (sw - nw) // 2
-        img = img.crop((x0, 0, x0 + nw, sh))
-    else:
-        nh = int(sw / target_ratio)
-        y0 = (sh - nh) // 2
-        img = img.crop((0, y0, sw, y0 + nh))
-    return img.resize((w, h), Image.LANCZOS)
+# ── 바레 SSOT import ─────────────────────────────────────────────────────────
+# 스타일 상수·함수 전부 바레에서 가져온다. 발레 독자 정의 금지.
+import sys as _sys
+_sys.path.insert(0, str(Path(__file__).parent))
+from compose_barre import (
+    PROJECT_ROOT,
+    W, H,
+    BEIGE, BLACK_BG, WHITE, GRAY, CHIP_BEIGE,
+    FONT_BOLD, FONT_SEMIBOLD, FONT_MEDIUM,
+    to_duotone,
+    load_font,
+    center_crop_fill,
+    apply_bottom_gradient,
+    paste_logo,
+    draw_chip,
+    draw_counter,
+    compose_guide_card,
+)
+# ─────────────────────────────────────────────────────────────────────────────
 
 
 def top_crop_fill(img_path: Path, w: int, h: int,
                   x_bias: float = 0.5, top_bias: float = 0.18,
                   zoom: float = 1.0) -> Image.Image:
     """표지용 — 상단(머리/얼굴)을 살리는 top-biased crop.
-    x_bias: 가로 크롭 위치(인물이 좌/우로 치우친 사진 보정). zoom>1: 인물 확대(빈 배경 축소)."""
+    x_bias: 가로 크롭 위치(인물이 좌/우로 치우친 사진 보정). zoom>1: 인물 확대."""
     img = Image.open(img_path)
     img = ImageOps.exif_transpose(img).convert("RGB")
     sw, sh = img.size
@@ -111,97 +66,41 @@ def top_crop_fill(img_path: Path, w: int, h: int,
     return img.resize((w, h), Image.LANCZOS)
 
 
-def apply_bottom_gradient(img: Image.Image, gradient_start_y: int = 555) -> Image.Image:
-    """하단 그라디언트 오버레이 — 바레 완성본 실측 기반."""
-    overlay = Image.new("RGBA", (W, H), (0, 0, 0, 0))
-    draw = ImageDraw.Draw(overlay)
-    for y in range(H):
-        if y < gradient_start_y:
-            alpha = 0
-        else:
-            t = (y - gradient_start_y) / (H - gradient_start_y)
-            alpha = int(255 * (t ** 1.2))
-            alpha = min(230, alpha)
-        draw.line([(0, y), (W, y)], fill=(*BLACK_BG, alpha))
-    return Image.alpha_composite(img.convert("RGBA"), overlay).convert("RGB")
-
-
-def paste_logo(canvas: Image.Image, logo_w: int = 130) -> Image.Image:
-    """공식 로고 PNG 좌상단 합성 — 박스 없이 직접 (바레 완성본 기준)."""
-    logo = Image.open(LOGO_WHITE_ALPHA).convert("RGBA")
-    orig_w, orig_h = logo.size
-    logo_h = int(orig_h * logo_w / orig_w)
-    logo = logo.resize((logo_w, logo_h), Image.LANCZOS)
-    x, y = 40, 36
-    base = canvas.convert("RGBA")
-    base.paste(logo, (x, y), mask=logo)
-    return base.convert("RGB")
-
-
-def draw_chip(draw: ImageDraw.ImageDraw, label: str, font: ImageFont.FreeTypeFont,
-              chip_x: int, chip_y: int, chip_w: int, chip_h: int) -> None:
-    """우상단 둥근 칩 — 베이지 fill, 흰색 텍스트."""
-    draw.rounded_rectangle(
-        [(chip_x, chip_y), (chip_x + chip_w, chip_y + chip_h)],
-        radius=chip_h // 2,
-        fill=CHIP_BEIGE,
-    )
-    bb = font.getbbox(label)
-    tw = bb[2] - bb[0]
-    th = bb[3] - bb[1]
-    tx = chip_x + (chip_w - tw) // 2
-    ty = chip_y + (chip_h - th) // 2 - 1
-    draw.text((tx, ty), label, font=font, fill=WHITE)
-
-
-def draw_counter(draw: ImageDraw.ImageDraw, current: int, total: int,
-                 font: ImageFont.FreeTypeFont, chip_x: int, chip_y: int, chip_h: int) -> None:
-    """카운터 — 배경 없이 텍스트만, 칩 아래 우측 정렬 (바레 완성본 기준)."""
-    text = f"{current:02d} / {total:02d}"
-    bb = font.getbbox(text)
-    tw = bb[2] - bb[0]
-    chip_right = chip_x + 240
-    tx = chip_right - tw
-    ty = chip_y + chip_h + 8
-    # 바레 정본: 베이지 카운터 + 옅은 그림자(두꺼운 검정 테두리 대신)
-    draw.text((tx + 1, ty + 1), text, font=font, fill=BLACK_BG)
-    draw.text((tx, ty), text, font=font, fill=BEIGE)
-
-
 # ---------------------------------------------------------------------------
-# 표지 (ig_01) — 바레 완성본 ig_01 1:1 정합 구조
+# 표지 (ig_01) — 바레 compose_cover 동일 구조
+# 발레 고유: top_crop_fill(인물 보정 인자), 텍스트 내용
 # ---------------------------------------------------------------------------
 def compose_cover(
     photo_path: Path,
-    title_eng: str,          # "BALLET"
-    title_kor: str,          # "발레"
-    date_location: str,      # "2026.05 OPEN  ·  한남동 웰니스 스튜디오"
+    title_eng: str,
+    title_kor: str,
+    date_location: str,
     output_path: Path,
     cover_x_bias: float = 0.5,
     cover_zoom: float = 1.0,
 ) -> None:
     canvas = Image.new("RGB", (W, H), BLACK_BG)
 
-    PHOTO_H = 700  # 바레 완성본 실측 경계 (y=701)
+    PHOTO_H = 700  # 바레 완성본 실측 동일
     photo = top_crop_fill(photo_path, W, PHOTO_H, x_bias=cover_x_bias, zoom=cover_zoom)
     photo = to_duotone(photo)
     canvas.paste(photo, (0, 0))
 
-    # 분리선 (바레 완성본 실측: y=701~702, x=50~1030)
+    # 분리선 — 바레 완성본 실측: y=701~702, x=50~1030
     draw_base = ImageDraw.Draw(canvas)
     draw_base.rectangle([(50, 701), (1030, 702)], fill=(171, 161, 151))
 
     canvas = paste_logo(canvas, logo_w=130)
     draw = ImageDraw.Draw(canvas)
 
-    # 우상단 칩
+    # 우상단 칩 — 바레 완성본 동일 (chip_font 28, chip_w 240, chip_h 52)
     chip_font = load_font("bold", 28)
     chip_w, chip_h = 240, 52
     chip_x = W - 40 - chip_w
     chip_y = 38
     draw_chip(draw, "WELLPERION", chip_font, chip_x, chip_y, chip_w, chip_h)
 
-    # 검정 정보영역 텍스트 — 바레 완성본 y좌표 1:1
+    # 검정 정보영역 — 바레 완성본 y좌표 1:1
     kor_font = load_font("semibold", 38)
     draw.text((W // 2, 789), title_kor, font=kor_font, fill=BEIGE, anchor="mm")
 
@@ -223,7 +122,9 @@ def compose_cover(
 
 
 # ---------------------------------------------------------------------------
-# 스토리 슬라이드 — 바레 완성본 ig_02~04 기준
+# 스토리 슬라이드 — 바레 compose_story 동일 구조
+# 발레 고유: full_dark 분기(어두운 사진용), 텍스트 내용
+# 바레와 다른 점 없음(분리선 제거, 카운터 제거 상태 유지)
 # ---------------------------------------------------------------------------
 def compose_story(
     photo_path: Path,
@@ -238,7 +139,6 @@ def compose_story(
     full_dark: bool = False,
 ) -> None:
     if full_dark:
-        # 다크 히어로(바레 ig_04 동등) — 듀오톤/그라디언트 대신 원본 어두운 톤 유지
         canvas = center_crop_fill(photo_path, W, H)
         canvas = ImageEnhance.Brightness(canvas).enhance(0.95)
         canvas = apply_bottom_gradient(canvas, gradient_start_y=600)
@@ -250,35 +150,35 @@ def compose_story(
     canvas = paste_logo(canvas, logo_w=130)
     draw = ImageDraw.Draw(canvas)
 
+    # 우상단 칩 — 바레 완성본 동일
     chip_font = load_font("bold", 28)
     chip_w, chip_h = 240, 52
     chip_x = W - 40 - chip_w
     chip_y = 38
     draw_chip(draw, chip_label, chip_font, chip_x, chip_y, chip_w, chip_h)
 
-    counter_font = load_font("medium", 28)
-    draw_counter(draw, current, total, counter_font, chip_x, chip_y, chip_h)
+    # 카운터 없음 (GM 지시 2026-06-05)
 
-    # 메타라인 위 풀폭 베이지 분리선 (바레 정본 — 헤드라인 영역 구분선)
-    draw.line([(40, 770), (W - 40, 770)], fill=BEIGE, width=2)
-
+    # 메타라인 — 바레 완성본 y=795
     meta_font = load_font("medium", 26)
     draw.text((40, 795), meta_line, font=meta_font, fill=GRAY)
 
+    # 한글 대제목 — 바레 완성본 y=860
     title_font = load_font("bold", 64)
     draw.text((40, 860), title_kor, font=title_font, fill=WHITE)
 
+    # 서브텍스트 — 바레 완성본 y=958
     sub_font = load_font("semibold", 30)
     sub_lines = sub_text.split("\n")
     if len(sub_lines) == 1:
         draw.text((40, 958), sub_text, font=sub_font, fill=BEIGE)
     else:
-        # CTA 한/영 2줄 — 좌표·폰트·색은 바레 동일, 시작만 살짝 올려 풋터와 간격 확보
         sy = 936
         for sl in sub_lines:
             draw.text((40, sy), sl, font=sub_font, fill=BEIGE)
             sy += 40
 
+    # 풋터 — 바레 완성본 y=1026
     footer_font = load_font("medium", 26)
     draw.text((40, 1026), footer_text, font=footer_font, fill=BEIGE)
 
@@ -288,45 +188,31 @@ def compose_story(
 
 
 # ---------------------------------------------------------------------------
-# GUIDE 카드 — 원본 자체가 완성본, 합성 없이 복사 (바레 완성본 동일)
-# ---------------------------------------------------------------------------
-def compose_guide_card(output_path: Path) -> None:
-    guide_src = PROJECT_ROOT / "instagram" / "_assets" / "guideline_card.jpg"
-    if not guide_src.exists():
-        raise FileNotFoundError(f"GUIDE 카드 없음: {guide_src}")
-    img = Image.open(guide_src).convert("RGB")
-    if img.size != (W, H):
-        img = center_crop_fill(guide_src, W, H)
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-    img.save(output_path, "JPEG", quality=95, optimize=True)
-    print(f"  [가이드] {output_path.name} ({output_path.stat().st_size // 1024}KB)")
-
-
-# ---------------------------------------------------------------------------
-# 발레 런칭 슬라이드 세트 — 바레 구성 그대로
+# 발레 런칭 슬라이드 세트
 #
 # ig_01  표지        BALLET / 발레          카운터 없음
-# ig_02  그룹 수업컷  02/05
-# ig_03  지도 수업컷  03/05
-# ig_04  다크 히어로  04/05
-# ig_05  GUIDE 카드   카운터 없음 (마지막)
+# ig_02  1:1 교정    02/07
+# ig_03  바 그룹     03/07
+# ig_04  팔 든 그룹  04/07
+# ig_05  단독 포즈   05/07
+# ig_06  파우더 점프 06/07  (full_dark)
+# ig_07  GUIDE 카드  카운터 없음
 # ---------------------------------------------------------------------------
-# GM이 직접 고른 새 사진 6장 (output(인스타그램)/_src_gm) — 2026-06-05
 SRC = PROJECT_ROOT / "instagram" / "260520_발레_런칭" / "output(인스타그램)" / "_src_gm"
 
-COVER = SRC / "ig_01.jpg"   # 발레복 전신(표지)
-P02   = SRC / "ig_02.png"   # 1:1 자세 교정
-P03   = SRC / "ig_03.png"   # 바 그룹 4인(정원)
-P04   = SRC / "ig_04.png"   # 팔 든 그룹(자세)
-P05   = SRC / "ig_05.png"   # 단독 우아한 포즈
-P06   = SRC / "ig_06.png"   # 파우더 점프 흑백(CTA·드라마틱)
+COVER = SRC / "ig_01.jpg"
+P02   = SRC / "ig_02.png"
+P03   = SRC / "ig_03.png"
+P04   = SRC / "ig_04.png"
+P05   = SRC / "ig_05.png"
+P06   = SRC / "ig_06.png"
 
 
 def main():
-    out_master = PROJECT_ROOT / "instagram" / "260520_발레_런칭" / "output"
     out_ig = PROJECT_ROOT / "instagram" / "260520_발레_런칭" / "output(인스타그램)"
-    out_master.mkdir(parents=True, exist_ok=True)
+    out_master = PROJECT_ROOT / "instagram" / "260520_발레_런칭" / "output"
     out_ig.mkdir(parents=True, exist_ok=True)
+    out_master.mkdir(parents=True, exist_ok=True)
 
     for p in [COVER, P02, P03, P04, P05, P06]:
         if not p.exists():
@@ -335,7 +221,7 @@ def main():
 
     TOTAL = 7  # 표지 + 본문5 + 가이드
 
-    print("=== 발레 런칭 슬라이드 합성 (바레 벤치마킹) ===")
+    print("=== 발레 런칭 슬라이드 합성 (바레 SSOT import) ===")
     print(f"출력(인스타): {out_ig}")
 
     # ig_01 — 표지
@@ -345,17 +231,17 @@ def main():
         title_kor="발레",
         date_location="2026.05 OPEN  ·  한남동 웰니스 스튜디오",
         output_path=out_ig / "ig_01.jpg",
-        cover_x_bias=0.60,   # 인물이 원본 우측 → 가로 크롭으로 중앙 정렬
-        cover_zoom=1.28,     # 인물 확대(빈 배경 축소)
+        cover_x_bias=0.60,
+        cover_zoom=1.28,
     )
 
-    # ig_02~06 — 본문 (큐레이션 정본 텍스트 / CTA는 마지막 본문)
+    # ig_02~06 — 본문
     story_data = [
-        (P02, "BALLET 2026.05  ·  2026.05 OPEN", "전문가의 1:1 교정", "이수지 BALLET INSTRUCTOR", False),
-        (P03, "BALLET 2026.05  ·  2026.05 OPEN", "최대 8인 프라이빗", "매주 금요일 오전 10시 / 11시", False),
-        (P04, "BALLET 2026.05  ·  2026.05 OPEN", "클래식 발레의 정수", "균형 · 자세 · 우아한 움직임", False),
-        (P05, "BALLET 2026.05  ·  2026.05 OPEN", "함께 완성하는 자세", "한남동 웰니스 스튜디오", False),
-        (P06, "BALLET 2026.05  ·  2026.05 OPEN", "특별한 움직임의 여정", "문의 wellperion.com/ko/inquiry", True),
+        (P02, "BALLET 2026.05  ·  2026.05 OPEN", "전문가의 1:1 교정",   "이수지 BALLET INSTRUCTOR",      False),
+        (P03, "BALLET 2026.05  ·  2026.05 OPEN", "최대 8인 프라이빗",   "매주 금요일 오전 10시 / 11시",  False),
+        (P04, "BALLET 2026.05  ·  2026.05 OPEN", "클래식 발레의 정수",  "균형 · 자세 · 우아한 움직임",   False),
+        (P05, "BALLET 2026.05  ·  2026.05 OPEN", "함께 완성하는 자세",  "한남동 웰니스 스튜디오",         False),
+        (P06, "BALLET 2026.05  ·  2026.05 OPEN", "특별한 움직임의 여정","문의 wellperion.com/ko/inquiry", True),
     ]
     for idx, (photo, meta, title_kor, sub, full_dark) in enumerate(story_data, start=2):
         compose_story(
@@ -370,10 +256,10 @@ def main():
             full_dark=full_dark,
         )
 
-    # ig_07 — GUIDE 카드 (마지막)
+    # ig_07 — GUIDE 카드
     compose_guide_card(output_path=out_ig / "ig_07.jpg")
 
-    # 마스터(output) 폴더에도 동일 배치
+    # 마스터 폴더 동기화
     print(f"\n출력(마스터): {out_master}")
     for f in sorted(out_ig.glob("ig_*.jpg")):
         shutil.copy2(f, out_master / f.name)
