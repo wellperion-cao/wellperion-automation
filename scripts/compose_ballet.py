@@ -101,11 +101,13 @@ def compose_cover(
     draw_chip(draw, "WELLPERION", chip_font, chip_x, chip_y, chip_w, chip_h)
 
     # 검정 정보영역 — 바레 완성본 y좌표 1:1
-    kor_font = load_font("semibold", 38)
-    draw.text((W // 2, 789), title_kor, font=kor_font, fill=BEIGE, anchor="mm")
-
+    # 영문 대제목 (베이지·큰·위) — 바레 정본 중심 y=763
     eng_font = load_font("bold", 88)
-    draw.text((W // 2, 859), title_eng, font=eng_font, fill=WHITE, anchor="mm")
+    draw.text((W // 2, 763), title_eng, font=eng_font, fill=BEIGE, anchor="mm")
+
+    # 한글 부제 (흰색·작은·아래) — 바레 정본 중심 y=860
+    kor_font = load_font("semibold", 38)
+    draw.text((W // 2, 860), title_kor, font=kor_font, fill=WHITE, anchor="mm")
 
     sub_line_y = 920
     draw.rectangle(
@@ -158,6 +160,9 @@ def compose_story(
     draw_chip(draw, chip_label, chip_font, chip_x, chip_y, chip_w, chip_h)
 
     # 카운터 없음 (GM 지시 2026-06-05)
+
+    # 메타라인 위 연한 분리선 (바레 정본 — 옅게)
+    draw.line([(40, 772), (W - 40, 772)], fill=(150, 138, 120), width=1)
 
     # 메타라인 — 바레 완성본 y=795
     meta_font = load_font("medium", 26)
