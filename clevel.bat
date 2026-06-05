@@ -1,8 +1,9 @@
 @echo off
 :: ============================================================
 :: clevel.bat -- Unified C-Level post-action wrapper
-:: Usage: clevel.bat <ROLE> [--dry-run] <task-id> <status> "<summary>" [<version>] ["<changelog>"]
-:: Example: clevel.bat CTO CTO-002 done "PC auto ON/OFF v1.0" v1.0 "2026-04-26 launched"
+:: Usage: clevel.bat <ROLE> [--dry-run] <task-id> <status> "<summary>" [<version>] ["<changelog>"] ["<artifact-url>"]
+:: Example: clevel.bat CTO CTO-002 done "PC auto ON/OFF v1.0" v1.0 "2026-04-26 launched" "https://.../proof.png"
+:: NOTE: status=done/완료 requires <artifact-url> (evidence). Without it post-action rejects DONE (4-요건 ④증거).
 :: ============================================================
 
 chcp 65001 > nul
@@ -26,6 +27,7 @@ set STATUS=%~2
 set SUMMARY=%~3
 set VERSION=%~4
 set CHANGELOG=%~5
+set ARTIFACT_URL=%~6
 
 if "%TASK_ID%"=="" (
     echo [clevel.bat ERROR] task-id missing.
@@ -66,10 +68,21 @@ if not exist "%POST_ACTION%" (
     exit /b 1
 )
 
+set ARTIFACT_FLAG=
+if not "%ARTIFACT_URL%"=="" set ARTIFACT_FLAG=--artifact-url "%ARTIFACT_URL%"
+
 echo [clevel.bat] Running post-action helper...
-python "%POST_ACTION%" --clevel %ROLE% --task-id "%TASK_ID%" --status "%STATUS%" --summary "%SUMMARY%" --version "%VERSION%" --changelog "%CHANGELOG%" %DRY_RUN_FLAG%
+python "%POST_ACTION%" --clevel %ROLE% --task-id "%TASK_ID%" --status "%STATUS%" --summary "%SUMMARY%" --version "%VERSION%" --changelog "%CHANGELOG%" %ARTIFACT_FLAG% %DRY_RUN_FLAG%
 
 set EXIT_CODE=%ERRORLEVEL%
+
+REM 완료의 단일 정의 ④증거 — post-action이 DONE을 거부(exit 2)하면 [DONE] 커밋/푸시 금지.
+REM 거짓완료가 watcher를 깨우지 않도록 여기서 중단(증거 URL 첨부 후 재실행 안내).
+if "%EXIT_CODE%"=="2" (
+    echo [clevel.bat ERROR] Completion REJECTED — evidence URL missing (4-요건 ④증거).
+    echo   Re-run with artifact: clevel.bat %ROLE% %TASK_ID% %STATUS% "%SUMMARY%" "%VERSION%" "%CHANGELOG%" "^<artifact-url^>"
+    exit /b 2
+)
 
 REM Auto commit + push (2026-05-28 GM 결재 — feedback_clevel_commit_on_completion)
 REM 듀얼 시그널(dual-signal): 완료/DONE 시 watcher 트리거 태그 포함

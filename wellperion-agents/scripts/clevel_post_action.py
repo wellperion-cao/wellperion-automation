@@ -173,6 +173,7 @@ def update_queue_with_bridge(
     next_desc: str | None,
     next_clevel: str | None,
     terminal: bool,
+    artifact_url: str | None,
     dry_run: bool,
 ) -> tuple[str, bool]:
     """
@@ -206,6 +207,9 @@ def update_queue_with_bridge(
         if isinstance(t, dict) and t.get("task_id") == task_id:
             t["status"] = "DONE"
             t.setdefault("processed_at", today)
+            # ④증거: 완료 단일 정의 4요건 — DONE 항목에 증거 URL 기록(거짓완료 추적)
+            if artifact_url and artifact_url.strip():
+                t["artifact"] = artifact_url.strip()
             if next_desc:
                 t["next"] = next_desc
                 t.pop("next_missing", None)
@@ -313,7 +317,8 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--changelog", default="",
                    help='Changelog 항목 1줄 (예: "2026-04-26 가동 시작") — note 로 기록')
     p.add_argument("--artifact-url", default=None,
-                   help="산출물 URL. 없으면 null 기록.")
+                   help="[완료 시 필수] 증거 URL(스크린샷/로그/라이브확인 링크). "
+                        "완료의 단일 정의 4요건 중 ④증거 — 없으면 DONE 등록 거부.")
     p.add_argument("--title", default=None,
                    help="작업 제목. 생략 시 --summary 값으로 대체.")
     # ── 일의 브릿지(Work Bridge): 완료 시 '다음'을 구조로 강제 ──────────────
@@ -335,6 +340,19 @@ def main() -> int:
         print("=" * 60)
         print("[DRY-RUN MODE] 실제 텔레그램(Telegram) 발송/status 파일쓰기 없음")
         print("=" * 60)
+
+    # ── 완료의 단일 정의 4요건 중 ④증거 강제 (2026-06-05 GM 결재, AI CTO) ──────
+    # status 가 DONE/완료 계열이면 --artifact-url(스크린샷/로그/라이브확인 링크)이
+    # 반드시 있어야 한다. 없으면 DONE 등록 거부(거짓완료 차단). 진행중/이슈는 비적용.
+    if normalize_status(args.status) == "DONE" and not (args.artifact_url and args.artifact_url.strip()):
+        print("=" * 60, file=sys.stderr)
+        print("[완료 거부] 완료(DONE)에는 증거 URL이 필수입니다 — 4요건 중 ④증거 누락.", file=sys.stderr)
+        print("  → 완료의 단일 정의(4요건): ①커밋 [DONE][clevel][task_id] ②status DONE", file=sys.stderr)
+        print("     ③다음(--next/--terminal) ④증거(--artifact-url). 하나라도 빠지면 완료 아님.", file=sys.stderr)
+        print('  → 증거 URL을 첨부하세요: --artifact-url "<스크린샷/로그/라이브확인 링크>"', file=sys.stderr)
+        print("  → 아직 증거가 없으면 --status 진행중 으로 보고하세요(완료 처리되지 않음).", file=sys.stderr)
+        print("=" * 60, file=sys.stderr)
+        return 2
 
     title = args.title if args.title else args.summary
     # changelog 는 note(상태 파일 메모) 로 흡수. 별도 변경이력 속성 없음(status json note로 단일화).
@@ -368,6 +386,7 @@ def main() -> int:
         next_desc=args.next_desc,
         next_clevel=args.next_clevel,
         terminal=args.terminal,
+        artifact_url=args.artifact_url,
         dry_run=args.dry_run,
     )
 

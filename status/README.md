@@ -16,11 +16,22 @@ DONE → VERIFYING → (VERIFIED | REJECTED) → ARCHIVED
 {
   "task_id": "string",
   "clevel": "cto|cfo|cmo|coo|chro|cpo",
-  "push_time": "ISO8601",
-  "commit_sha": "string",
-  "processed_at": null
+  "title": "string",
+  "status": "PENDING|DONE",
+  "depends_on": "string|null",
+  "origin": "bridge|null",
+  "enqueued_at": "ISO8601",
+  "processed_at": "YYYY-MM-DD",
+  "artifact": "증거 URL(스크린샷/로그/라이브확인) — 완료 단일 정의 ④요건. DONE 항목에 기록",
+  "next": "다음 한 줄(브릿지)",
+  "terminal": true,
+  "next_missing": true
 }
 ```
+
+> **완료의 단일 정의(4요건)** — DONE 등록 시 `clevel_post_action.py`는 `--artifact-url`(④증거)이
+> 없으면 **거부(exit 2)**한다. 큐 DONE 항목의 `artifact` 필드는 그 증거 URL을 보존한다.
+> (정의 단일 출처 = 가이드허브 S2 공통탭 "✅ 완료의 단일 정의(4요건)".)
 
 ## 로그 항목 스키마 (JSONL)
 ```json

@@ -616,18 +616,18 @@
     <!-- AUTO:LATEST-START -->
     <div class="card grow">
       <h4>최신 업데이트 — 2026-06-05 (자동 갱신)</h4>
+      <p><strong>2026-06-05</strong> chore(cto): 당근 반자동 발행 할일 제외 — GM 시모와 테스트 후 재협업 예정(어제 마무리분)</p>
       <p><strong>2026-06-05</strong> feat(cto): 끝난 일 자동 정리 장치 + 큐 정리 + 정비 범위표 S2→T2 이관</p>
       <p><strong>2026-06-05</strong> feat(cmo): 4채널 통합 발행 디스패처 골격 + 발레 폴더 당근 칸 정비</p>
       <p><strong>2026-06-05</strong> chore(coo): 지원부 이슈 저장 유실 DONE — 라이브 실측 PASS</p>
       <p><strong>2026-06-05</strong> fix(coo): 지원부 점검 이슈 저장 유실 차단 — V2Compat 비파괴 전환</p>
-      <p><strong>2026-06-05</strong> chore(coo): 빈칸 덮어쓰기 버그 DONE — 라이브 배포·실측 완료</p>
     </div>
 <!-- AUTO:LATEST-END -->
         <table>
           <tr><th style="width:160px">날짜</th><th>변경 내용</th></tr>
           <!-- AUTO:TABLE-START -->
-      <tr><td><strong>2026-06-05 (자동)</strong></td><td>feat(cto): 끝난 일 자동 정리 장치 + 큐 정리 + 정비 범위표 S2→T2 이관 · feat(cmo): 4채널 통합 발행 디스패처 골격 + 발레 폴더 당근 칸 정비 · chore(coo): 지원부 이슈 저장 유실 DONE — 라이브 실측 PASS · fix(coo): 지원부 점검 이슈 저장 유실 차단 — V2Compat 비파괴 전환 · cho…</td></tr>
-      <tr><td><strong>2026-06-04 (자동)</strong></td><td>docs(g1): 일의 브릿지 초등학생도 이해되게 전면 단순화 — 징검다리 비유 + 코드용어 제거 · feat(bridge): 일의 브릿지 장치화 — 완료 시 '다음' 강제 + 큐 자동등록 + 끊김 가시화</td></tr>
+      <tr><td><strong>2026-06-05 (자동)</strong></td><td>chore(cto): 당근 반자동 발행 할일 제외 — GM 시모와 테스트 후 재협업 예정(어제 마무리분) · feat(cto): 끝난 일 자동 정리 장치 + 큐 정리 + 정비 범위표 S2→T2 이관 · feat(cmo): 4채널 통합 발행 디스패처 골격 + 발레 폴더 당근 칸 정비 · chore(coo): 지원부 이슈 저장 유실 DONE — 라이브 실…</td></tr>
+      <tr><td><strong>2026-06-04 (자동)</strong></td><td>docs(g1): 일의 브릿지 초등학생도 이해되게 전면 단순화 — 징검다리 비유 + 코드용어 제거</td></tr>
       <!-- AUTO:TABLE-END -->
           <tr><td><strong>2026-05-28 (14차)</strong></td><td>공지/안내문 생성(COO 하위) · 오프라인 홍보물 디자인 제작(CMO 하위) 도구 신설 · 공지 서식 v2.0 독립 페이지화 · 회사소개서·전략로드맵 원본 「3. 웰페리온 가이드/회사문서/」로 이관(SSOT 단일화) · C-Level 부팅 R/R Notion API→가이드허브 g10 참조로 전환 · GitHub Pages 워크플로 폴더명 경로 수정 · 사이드바 "공통+7개 C-Level" 라벨 제거</td></tr>
           <tr><td>2026-05-27 (13차)</td><td>GitHub Pages 전환 · 사이드바 4섹터 · AI C-Level 통일 · 운영 통합 체계 · 공식채널·지출현황·취업규칙·SSOT 신설 · g2+g19·g9+g20·g12·g13 합병 · 김남욱 탭 확장 · v2.5</td></tr>
@@ -1599,6 +1599,21 @@
         <div class="callout tip" style="margin-top:10px;"><strong>부팅 시:</strong> "뭘 할까"를 새로 추론하지 말고 — <code>status/{역할}.json</code> + <code>_queue.json</code>의 <strong>내 PENDING·'다음' 카드</strong>를 먼저 집는다. 새 일은 GM 입력일 때만. (절대원칙 ②중복 금지 + 검증 ②신규&lt;연결 과 동일 정신.)</div>
         <!-- ══ /일의 브릿지 ══ -->
 
+        <!-- ══ ✅ 완료의 단일 정의 (4요건) — 거짓완료 차단 · SSOT (2026-06-05) ══ -->
+        <h3 style="margin-top:28px;border-top:1px solid var(--border);padding-top:24px;"><span class="ico">✅</span>완료의 단일 정의 <span style="font-size:13px;color:var(--dim);font-weight:400;">— 4요건 · 거짓완료 차단 · 전사 단일 출처</span></h3>
+        <div class="callout accent" style="margin:10px 0 14px;background:#1a2a1a;border-left:3px solid #059669;">
+          <strong>🔒 단 하나의 "완료" 정의</strong> — 아래 <strong>4요건을 모두 충족</strong>해야 '완료'다. <strong>하나라도 빠지면 완료가 아니다.</strong> (CEO탭·브릿지·post-action 등 모든 곳은 이 정의 하나만 가리킨다 — 별도 정의 추가 금지.)
+        </div>
+        <table>
+          <tr><th style="width:64px">#</th><th style="width:120px">요건</th><th>내용</th></tr>
+          <tr><td><strong>①</strong></td><td><strong>커밋</strong></td><td><code>[DONE][{clevel}][{task_id}]</code> 형식으로 git <strong>commit + push</strong>.</td></tr>
+          <tr><td><strong>②</strong></td><td><strong>상태</strong></td><td><code>status/{clevel}.json</code> + <code>status/_queue.json</code> 의 해당 task <code>status=DONE</code>.</td></tr>
+          <tr><td><strong>③</strong></td><td><strong>다음</strong></td><td>브릿지 <code>--next "다음 한 줄"</code> 또는 종결이면 <code>--terminal</code> — 빈칸 통과 금지(끊김 방지).</td></tr>
+          <tr><td><strong>④</strong></td><td><strong>증거</strong></td><td><code>--artifact-url</code> = 스크린샷·로그·라이브확인 <strong>링크 필수</strong>. <strong>없으면 post-action이 DONE 등록을 거부</strong>(응답코드·push 성공만으론 완료 아님).</td></tr>
+        </table>
+        <div class="callout" style="margin-top:10px;background:#2a1a1a;border-left:3px solid #c0392b;"><strong>❌ 완료 거부 조건:</strong> ④증거(<code>--artifact-url</code>) 없이 DONE을 올리면 <code>clevel_post_action.py</code>가 <strong>거부(exit 2)</strong>하고 <code>clevel.bat</code>이 <strong>[DONE] 커밋·푸시를 막는다</strong>. 증거가 아직 없으면 <code>--status 진행중</code>으로 보고(완료 처리되지 않음).</div>
+        <!-- ══ /완료의 단일 정의 ══ -->
+
         <details class="toggle" style="margin-top:28px;border-top:1px solid var(--border);padding-top:24px;">
           <summary style="cursor:pointer;font-weight:700;font-size:16px;"><span class="ico">🛡️</span>운영 원칙·검증 5단계 <span style="font-size:12px;color:var(--dim);font-weight:400;">— 참고 (클릭해서 펼치기)</span></summary>
           <div class="toggle-body" style="margin-top:12px;">
@@ -2036,7 +2051,7 @@
           <tr><td>1</td><td><strong>CEO는 직접 작업하지 않는다</strong> — 역할: ① 배분·조율 ② 검증 ③ 기록(업무현황 SSOT + 김남욱 할일) ④ 텔레그램 발신</td></tr>
           <tr><td>2</td><td><strong>실제 작업은 6 C-Level .bat 창 병렬 수행</strong></td></tr>
           <tr><td>3</td><td><strong>CEO는 상시 루프를 돌리지 않는다</strong> — GitHub push 완료 신호 시에만 깨어나 1회 검증·기록·알림</td></tr>
-          <tr><td>4</td><td><strong>완료 신호 = 이중 확인</strong> — ① 커밋 메시지 <code>[DONE][C-Level][task_id]</code> 태그 + ② <code>status/&lt;clevel&gt;.json</code> 안 <code>status:DONE</code> 둘 다 충족</td></tr>
+          <tr><td>4</td><td><strong>완료 신호 = 완료의 단일 정의(4요건)</strong> — ①커밋 <code>[DONE][clevel][task_id]</code> + ②status DONE + ③다음(<code>--next</code>/<code>--terminal</code>) + ④증거(<code>--artifact-url</code>). <strong>정의는 공통탭 "✅ 완료의 단일 정의(4요건)" 단일 출처</strong> — 여기 중복 정의하지 않는다. CEO는 이 4요건 충족 여부만 검증.</td></tr>
         </table>
         <div class="callout tip" style="margin-top:12px;">위 4원칙의 상위 운영 기본값(호칭·핵심 4역할·진행 판단·작업 분배·채널·검증·보고·루틴·결재·변화 보고)은 <a href="#ceo-ssot" style="color:var(--accent);font-weight:700;">⭐ AI CEO 운영 기본값 (SSOT)</a> 표 한곳에 통합. (구 "📌 상시 대기 디스패처" · "🧭 CLI 핵심 역할 4가지" callout 흡수, 2026-05-30)</div>
 
@@ -2046,7 +2061,7 @@
           <tr><td>Watcher</td><td>PowerShell <code>scripts/ceo_watcher.ps1</code> 백그라운드 폴링(polling) (15초 주기)</td></tr>
           <tr><td>등록</td><td>Windows 예약 작업(scheduled task) <code>At log on</code> + 지연 60초 (claude.exe 종료 후 가동)</td></tr>
           <tr><td>종료</td><td>PC 종료(shutdown) 시 자동 종료</td></tr>
-          <tr><td>트리거 조건</td><td><code>[DONE]</code> 태그 커밋 AND <code>status/&lt;clevel&gt;.json</code> 안 미처리(LOGGED 아닌) task_id 둘 다</td></tr>
+          <tr><td>트리거 조건</td><td><code>[DONE]</code> 태그 커밋 AND <code>status/&lt;clevel&gt;.json</code> 안 미처리(LOGGED 아닌) task_id 둘 다. (완료 자체의 정의는 공통탭 <strong>완료의 단일 정의(4요건)</strong> — ④증거 없으면 애초에 DONE 커밋이 생기지 않음.)</td></tr>
           <tr><td>깨어남 후</td><td>큐 1건 꺼내기(pop) → 1층 기계 검증 → 2층 AI 검증 → ceo_log 누적 → 텔레그램 알림</td></tr>
         </table>
 
