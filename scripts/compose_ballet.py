@@ -168,15 +168,15 @@ def compose_story(
     draw.line([(40, 772), (W - 40, 772)], fill=(150, 138, 120), width=1)
 
     # 메타라인 — 바레 완성본 y=795
-    meta_font = load_font("medium", 26)
-    draw.text((40, 795), meta_line, font=meta_font, fill=GRAY)
+    meta_font = load_font("medium", 26)  # 1·3줄 글꼴 = medium
+    draw.text((40, 795), meta_line, font=meta_font, fill=BEIGE)  # 1·3줄 색 = 베이지
 
     # 한글 대제목 — 바레 완성본 y=860
     title_font = load_font("bold", 64)
     draw.text((40, 860), title_kor, font=title_font, fill=WHITE)
 
     # 서브텍스트 — 바레 완성본 y=958
-    sub_font = load_font("semibold", 30)
+    sub_font = load_font("medium", 30)  # 1·3줄 글꼴 통일 = medium
     sub_lines = sub_text.split("\n")
     if len(sub_lines) == 1:
         draw.text((40, 958), sub_text, font=sub_font, fill=BEIGE)
@@ -187,8 +187,8 @@ def compose_story(
             sy += 40
 
     # 풋터 — 바레 완성본 y=1026
-    footer_font = load_font("medium", 26)
-    draw.text((40, 1026), footer_text, font=footer_font, fill=BEIGE)
+    footer_font = load_font("bold", 26)  # 2·4줄 글꼴 = bold
+    draw.text((40, 1026), footer_text, font=footer_font, fill=WHITE)  # 2·4줄 색 = 흰색
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
     canvas.convert("RGB").save(output_path, "JPEG", quality=93, optimize=True)
@@ -245,11 +245,11 @@ def main():
 
     # ig_02~06 — 본문
     story_data = [
-        (P02, "BALLET 2026.05  ·  2026.05 OPEN", "전문가의 1:1 교정",   "이수지 BALLET INSTRUCTOR",      False),
-        (P03, "BALLET 2026.05  ·  2026.05 OPEN", "최대 8인 프라이빗",   "매주 금요일 오전 10시 / 11시",  False),
-        (P04, "BALLET 2026.05  ·  2026.05 OPEN", "클래식 발레의 정수",  "균형 · 자세 · 우아한 움직임",   False),
-        (P05, "BALLET 2026.05  ·  2026.05 OPEN", "함께 완성하는 자세",  "한남동 웰니스 스튜디오",         False),
-        (P06, "BALLET 2026.05  ·  2026.05 OPEN", "특별한 움직임의 여정","문의 wellperion.com/ko/inquiry", True),
+        (P02, "BALLET  ·  2026.05 OPEN", "전문가의 1:1 교정",   "이수지 BALLET INSTRUCTOR",      False),
+        (P03, "BALLET  ·  2026.05 OPEN", "최대 8인 프라이빗",   "매주 금요일 오전 10시 / 11시",  False),
+        (P04, "BALLET  ·  2026.05 OPEN", "클래식 발레의 정수",  "균형 · 자세 · 우아한 움직임",   False),
+        (P05, "BALLET  ·  2026.05 OPEN", "함께 완성하는 자세",  "한남동 웰니스 스튜디오",         False),
+        (P06, "BALLET  ·  2026.05 OPEN", "특별한 움직임의 여정","문의 :  wellperion.com/ko/inquiry", True),
     ]
     for idx, (photo, meta, title_kor, sub, full_dark) in enumerate(story_data, start=2):
         compose_story(
