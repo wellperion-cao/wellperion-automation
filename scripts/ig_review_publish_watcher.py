@@ -14,8 +14,9 @@
   발행 없이 로직만(테스트):      python scripts\\ig_review_publish_watcher.py --once --dry-run
 
 채널 분기 정책:
-  블로그 → naver_blog_upload_playwright.py --mode publish (exit 0 = 완료)
-  카페   → cafe_upload_playwright.py --mode publish (exit 0 = 완료)
+  블로그 → naver_blog_upload_playwright.py --mode draft (임시저장, exit 0 = 완료)
+  카페   → cafe_upload_playwright.py --mode draft (임시저장, exit 0 = 완료)
+  ※ GM 정책(2026-06-05): 승인=임시저장까지만, 최종 게시는 GM 수동(시모 임시저장→GM 게시).
   카카오·당근 → 자동발행 안 함, 텔레그램 수동 업로드 알림 + status='수동발행대기'
   나머지(인스타 등) → instagram_upload_playwright.py --mode publish (기존 경로 유지)
 """
@@ -212,7 +213,7 @@ def publish_blog(it: dict) -> tuple[bool, str | None]:
     """
     cmd = [
         str(PY), str(BLOG_SCRIPT),
-        "--mode", "publish",
+        "--mode", "draft",
         "--title", it["title"],
         "--body-file", str(ROOT / it["body_file"]),
         "--image-dir", str(ROOT / it["image_dir"]),
@@ -240,7 +241,7 @@ def publish_cafe(it: dict) -> tuple[bool, str | None]:
     """
     cmd = [
         str(PY), str(CAFE_SCRIPT),
-        "--mode", "publish",
+        "--mode", "draft",
         "--title", it["title"],
         "--body-file", str(ROOT / it["body_file"]),
         "--image-dir", str(ROOT / it["image_dir"]),
@@ -280,34 +281,34 @@ def dispatch_publish(it: dict, events: list) -> None:
     ch = it.get("channel", "")
 
     if "블로그" in ch:
-        # 블로그 자동 발행
+        # 블로그 자동 임시저장 (GM 정책: 승인=임시저장, 최종 게시는 GM 수동)
         success, url = publish_blog(it)
         if success:
-            it["status"] = "발행완료"
+            it["status"] = "임시저장"
             if url:
                 it["post_url"] = url
             it["published_at"] = datetime.now().isoformat(timespec="seconds")
             it.pop("note", None)
-            events.append(f"✅ {title} 블로그 발행 완료" + (f" — {url}" if url else " (URL 미회수)"))
+            events.append(f"✅ {title} 블로그 임시저장 완료 — GM 최종 게시 대기")
         else:
-            it["status"] = "발행실패"
-            it["note"] = "블로그 발행 스크립트 exit≠0"
-            events.append(f"⚠️ {title} 블로그 발행 실패 — exit code 비정상")
+            it["status"] = "임시저장실패"
+            it["note"] = "블로그 임시저장 스크립트 exit≠0"
+            events.append(f"⚠️ {title} 블로그 임시저장 실패 — exit code 비정상")
 
     elif "카페" in ch:
-        # 카페 자동 발행
+        # 카페 자동 임시저장 (GM 정책: 승인=임시저장, 최종 게시는 GM 수동)
         success, url = publish_cafe(it)
         if success:
-            it["status"] = "발행완료"
+            it["status"] = "임시저장"
             if url:
                 it["post_url"] = url
             it["published_at"] = datetime.now().isoformat(timespec="seconds")
             it.pop("note", None)
-            events.append(f"✅ {title} 카페 발행 완료" + (f" — {url}" if url else " (URL 미회수)"))
+            events.append(f"✅ {title} 카페 임시저장 완료 — GM 최종 게시 대기")
         else:
-            it["status"] = "발행실패"
-            it["note"] = "카페 발행 스크립트 exit≠0"
-            events.append(f"⚠️ {title} 카페 발행 실패 — exit code 비정상")
+            it["status"] = "임시저장실패"
+            it["note"] = "카페 임시저장 스크립트 exit≠0"
+            events.append(f"⚠️ {title} 카페 임시저장 실패 — exit code 비정상")
 
     elif "카카오" in ch or "당근" in ch:
         # 수동 발행 채널 — 자동발행 안 함, 텔레그램 알림만

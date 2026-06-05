@@ -16,11 +16,6 @@
 — 정원 : 최대 8인 (프라이빗 소그룹)
 — 장소 : 한남동 웰페리온 웰니스 스튜디오
 
-· 발레 단독 : 66,000원 (월 2회)
-· 발레 + 바레 통합 : 132,000원 (월 4회)
-
 * 사전 예약제로 운영돼요.
 
-문의 :
-(한) wellperion.com/ko/inquiry
-(영) wellperion.com/en/inquiry
+문의 : wellperion.com/ko/inquiry
