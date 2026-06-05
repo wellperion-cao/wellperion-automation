@@ -13,25 +13,16 @@ from pathlib import Path
 from PIL import Image, ImageDraw, ImageFont, ImageEnhance, ImageOps, ImageFilter
 import numpy as np
 
-PROJECT_ROOT = Path(r"C:\Users\jjky0\welperion-automation")
-LOGO_DIR = PROJECT_ROOT / "instagram" / "_assets" / "logo"
-LOGO_WHITE_ALPHA = LOGO_DIR / "wellperion_white_alpha.png"
-
-_FONT_DIR_CANDIDATES = [
-    PROJECT_ROOT / "brand" / "font",
-    PROJECT_ROOT / "2. 브랜드_공식문서" / "font",
-]
-FONT_DIR = next((d for d in _FONT_DIR_CANDIDATES if d.exists()), _FONT_DIR_CANDIDATES[0])
-FONT_BOLD = FONT_DIR / "Pretendard-Bold.otf"
-FONT_SEMIBOLD = FONT_DIR / "Pretendard-SemiBold.otf"
-FONT_MEDIUM = FONT_DIR / "Pretendard-Medium.otf"
-
-# 브랜드 색상
-BEIGE = (183, 159, 138)       # #B79F8A
-BLACK_BG = (34, 31, 32)       # #221F20
-WHITE = (255, 255, 255)
-GRAY = (170, 160, 152)        # 날짜·메타 텍스트
-CHIP_BEIGE = (186, 162, 140)  # 우상단 칩 배경
+# 색·폰트·로고 상수 SSOT = scripts/brand_constants.py (값 불변 이관)
+import sys as _sys
+_sys.path.insert(0, str(Path(__file__).parent))
+from brand_constants import (  # noqa: E402
+    PROJECT_ROOT,
+    LOGO_DIR, LOGO_WHITE_ALPHA,
+    FONT_DIR, FONT_BOLD, FONT_SEMIBOLD, FONT_MEDIUM,
+    BEIGE, BLACK_BG, WHITE, GRAY, CHIP_BEIGE,
+    DUOTONE_DARK, DUOTONE_LIGHT,
+)
 
 W, H = 1080, 1080
 
@@ -42,8 +33,8 @@ def _hex_to_rgb(h: str) -> tuple:
 
 
 def to_duotone(img: Image.Image,
-               dark_hex: str = "#221F20",
-               light_hex: str = "#B79F8A") -> Image.Image:
+               dark_hex: str = DUOTONE_DARK,
+               light_hex: str = DUOTONE_LIGHT) -> Image.Image:
     """BLACK + BEIGE 듀오톤 변환 (발레·스쿼시 완성본 표준)."""
     gray = img.convert("L")
     dr, dg, db = _hex_to_rgb(dark_hex)
