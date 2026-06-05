@@ -978,8 +978,8 @@ function renderHire(){
       var list=DB.appl.filter(function(a){return a["전형 단계"]===st;});
       html+='<div class="pipe-col"><div class="pipe-head"><span>'+badge(st)+
         '</span><span class="n">'+list.length+'</span></div>';
-      html+=list.map(function(a){
-        return '<div class="appl"><div class="an">'+esc(txt(a["지원자명"]))+'</div>'+
+      html+=(window.__registerAppls && window.__registerAppls(list)) , list.map(function(a){
+        return '<div class="appl" data-applname="'+esc(a["지원자명"]||"")+'" data-apppid="'+(((a["원본 Notion URL"]||"")+"").match(/[0-9a-f]{32}/i)||[""])[0].toLowerCase()+'" style="cursor:pointer" title="클릭하면 상세 정보"><div class="an">'+esc(txt(a["지원자명"]))+'</div>'+
           '<div class="ap">'+esc(txt(a["지원 포지션"]))+'</div>'+
           '<div class="ax">'+(a["면접 평점"]?badge(a["면접 평점"]):'<span class="muted">평점 —</span>')+
           '<span class="t-sub">'+fmtD(dt(a,"면접 일정"))+'</span></div></div>';
@@ -996,6 +996,7 @@ function renderHire(){
     panel.addEventListener("click",function(ev){
       var t=ev.target;
       if(!t||!t.closest)return;
+      var __ap=t.closest("[data-applname]");if(__ap){if(typeof window.openApplicantInfo==="function"){window.openApplicantInfo(__ap.getAttribute("data-applname"), __ap.getAttribute("data-apppid"));}return;}
       var p=t.closest("[data-print]");
       if(p){openPrintView(p.getAttribute("data-print"));return;}
       var s=t.closest("[data-sched]");
@@ -1638,6 +1639,135 @@ document.getElementById("gatePw").addEventListener("keydown",function(e){
   var sp="";try{sp=sessionStorage.getItem("wp_hr_pw")||"";}catch(e){}
   if(sp){hideGate();attemptGate(sp);}
   else{showGate();document.getElementById("gatePw").focus();}
+})();
+</script>
+
+<!-- ★ 지원자 상세 모달 ★ -->
+<div class="modal-bg" id="aiModal" style="display:none">
+  <div class="modal" style="max-width:720px;max-height:85vh;overflow-y:auto">
+    <h3 id="aiName" style="margin:0 0 4px">지원자</h3>
+    <div class="msub" id="aiPosition" style="color:var(--ink-soft);margin-bottom:10px">—</div>
+    <div class="ai-grid" style="display:grid;grid-template-columns:auto 1fr auto 1fr;gap:6px 14px;margin:12px 0;font-size:13px;padding:10px;background:var(--bg-soft);border-radius:8px">
+      <b>전형 단계</b><span id="aiStage">—</span>
+      <b>면접 평점</b><span id="aiGrade">—</span>
+      <b>지원일</b><span id="aiApplyDate">—</span>
+      <b>지원 경로</b><span id="aiSource">—</span>
+      <b>연락처</b><span id="aiPhone">—</span>
+      <b>이메일</b><span id="aiEmail">—</span>
+      <b>면접 일정</b><span id="aiIveDate">—</span>
+      <b>담당 면접관</b><span id="aiIveer">—</span>
+      <b>합류 가능일</b><span id="aiJoinDate">—</span>
+      <b style="opacity:0">—</b><span></span>
+    </div>
+    <h4 style="margin:14px 0 6px;font-size:13.5px">개인정보 · 자기소개서 · 경력 · 메모</h4>
+    <div id="aiMemo" style="border:1px solid var(--line-soft);border-radius:8px;padding:12px;background:#fff;max-height:280px;overflow-y:auto;font-size:13px;line-height:1.65">—</div>
+    <hr style="margin:18px 0 12px;border:none;border-top:1px solid var(--line-soft)"/>
+    <h4 style="margin:0 0 8px;font-size:13.5px">면접 단계 전환 + 일정 등록</h4>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      <div><label style="font-size:12px;color:var(--ink-soft)">전환할 단계</label>
+        <select id="aiNewStage" style="width:100%"><option>1차 면접</option><option>2차 면접</option><option>최종 면접</option><option>최종 합격</option><option>탈락</option></select></div>
+      <div><label style="font-size:12px;color:var(--ink-soft)">면접 일시</label>
+        <input type="datetime-local" id="aiNewDate" style="width:100%"></div>
+      <div><label style="font-size:12px;color:var(--ink-soft)">담당 면접관 (선택)</label>
+        <input type="text" id="aiNewInterviewer" placeholder="예: 매니저, 운영부 팀장" style="width:100%"></div>
+      <div><label style="font-size:12px;color:var(--ink-soft)">특이사항 (선택)</label>
+        <input type="text" id="aiNewNote" placeholder="예: 활동 의지 확인 필요" style="width:100%"></div>
+    </div>
+    <div id="aiResult" style="margin-top:10px;font-size:13px"></div>
+    <div class="modal-act" style="margin-top:14px;display:flex;gap:8px;justify-content:flex-end">
+      <button class="btn btn-ghost" id="aiClose">닫기</button>
+      <button class="btn" id="aiSubmit">단계 전환 + 일정 등록</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  function escH(s){ return String(s==null?"":s).replace(/[&<>"\']/g, function(c){ return ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"})[c]; }); }
+  function fmtDate(v){ if(!v) return "—"; try { var s = String(v); var d = new Date(s); if(isNaN(d.getTime())) return s; var hh = String(d.getHours()).padStart(2,"0"), mm = String(d.getMinutes()).padStart(2,"0"); var yy = d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); return (s.indexOf(":")>=0 || s.indexOf("T")>=0) ? yy+" "+hh+":"+mm : yy; } catch(e){ return v; } }
+  function renderMemo(memo){
+    if(!memo) return '<div style="color:#999">메모 없음 — 시트의 "메모" 컬럼에 ■섹션 / •항목 형태로 입력하시면 여기 보입니다.</div>';
+    var lines = String(memo).split(/\n/);
+    var html = "";
+    lines.forEach(function(line){
+      var t = line.replace(/\r/g,"").trim();
+      if(!t) { html += '<div style="height:6px"></div>'; return; }
+      if(/^[■◆□▣]/.test(t)) html += '<h5 style="margin:10px 0 4px 0;color:#1f2a5b;font-size:13px">'+escH(t.replace(/^[■◆□▣]\s*/,""))+'</h5>';
+      else if(/^[•·\-]\s/.test(t)) html += '<div style="padding-left:14px;text-indent:-10px">• '+escH(t.replace(/^[•·\-]\s*/,""))+'</div>';
+      else html += '<div>'+escH(t)+'</div>';
+    });
+    return html;
+  }
+  var APPS_BY_NAME = {};
+  window.__registerAppls = function(arr){
+    APPS_BY_NAME = {};
+    (arr||[]).forEach(function(a){ if(a && a["지원자명"]) APPS_BY_NAME[a["지원자명"]] = a; });
+  };
+  window.openApplicantInfo = function(name, pid){
+    var a = APPS_BY_NAME[name];
+    if(!a){ alert("지원자 데이터를 찾을 수 없습니다: "+name); return; }
+    window.__currentAppl = a;
+    window.__currentApplPid = pid;
+    function S(id, v){ var el=document.getElementById(id); if(el) el.textContent = (v==null||v==="")?"—":String(v); }
+    S("aiName", a["지원자명"]);
+    S("aiPosition", a["지원 포지션"]);
+    S("aiStage", a["전형 단계"]);
+    S("aiGrade", a["면접 평점"]);
+    S("aiApplyDate", fmtDate(a["지원일"]));
+    S("aiSource", a["지원 경로"]);
+    S("aiPhone", a["연락처"]);
+    S("aiEmail", a["이메일"]);
+    S("aiJoinDate", fmtDate(a["합류 가능일"]));
+    S("aiIveDate", fmtDate(a["면접 일정"]));
+    S("aiIveer", a["담당 면접관"]);
+    document.getElementById("aiMemo").innerHTML = renderMemo(a["메모"]);
+    document.getElementById("aiNewDate").value = "";
+    document.getElementById("aiNewInterviewer").value = "";
+    document.getElementById("aiNewNote").value = "";
+    document.getElementById("aiResult").textContent = "";
+    var stg = a["전형 단계"] || "";
+    var nx = stg.indexOf("서류")>=0 ? "1차 면접" : stg.indexOf("1차")>=0 ? "2차 면접" : stg.indexOf("2차")>=0 ? "최종 면접" : "1차 면접";
+    var sel = document.getElementById("aiNewStage");
+    for(var i=0;i<sel.options.length;i++){ if(sel.options[i].value===nx||sel.options[i].text===nx){ sel.selectedIndex = i; break; } }
+    document.getElementById("aiModal").style.display = "flex";
+  };
+  document.addEventListener("click", function(e){
+    if(!e.target) return;
+    if(e.target.id==="aiClose" || e.target.id==="aiModal"){ document.getElementById("aiModal").style.display = "none"; return; }
+    if(e.target.id==="aiSubmit"){ submitSchedule(); return; }
+  });
+  async function submitSchedule(){
+    var a = window.__currentAppl, pid = window.__currentApplPid || "";
+    if(!a) return;
+    var stage = document.getElementById("aiNewStage").value;
+    var date = document.getElementById("aiNewDate").value;
+    var interviewer = document.getElementById("aiNewInterviewer").value.trim();
+    var note = document.getElementById("aiNewNote").value.trim();
+    if(!date){ alert("면접 일시를 입력해주세요."); return; }
+    var btn = document.getElementById("aiSubmit"); btn.disabled = true; btn.textContent = "등록 중…";
+    var msg = document.getElementById("aiResult"); msg.textContent = "";
+    try {
+      var uk = (window.__uk || (document.getElementById("gatePw") && document.getElementById("gatePw").value) || "");
+      var r1 = await fetch(NOTION_FN, { method:"POST", body: JSON.stringify({
+        action:"schedule-interview", userKey: uk,
+        applicantPageId: pid, applicant: a["지원자명"], name: a["지원자명"],
+        stage: stage, interviewDate: date, interviewer: interviewer
+      })}).then(function(r){return r.json();});
+      if(!r1.ok) throw new Error(r1.error||"schedule failed");
+      if(note){
+        await fetch(NOTION_FN, { method:"POST", body: JSON.stringify({
+          action:"update-interview", userKey: uk,
+          applicantPageId: pid, applicant: a["지원자명"], name: a["지원자명"], note: note, nextStage: stage
+        })}).then(function(r){return r.json();});
+      }
+      msg.style.color = "#0a6b3a"; msg.textContent = "✓ 등록 완료 — " + (r1.msg || "");
+      setTimeout(function(){ document.getElementById("aiModal").style.display = "none"; if(typeof loadAll==="function") loadAll(); }, 1400);
+    } catch(e){
+      msg.style.color = "#b00020"; msg.textContent = "❌ 실패: " + (e.message||e);
+    } finally {
+      btn.disabled = false; btn.textContent = "단계 전환 + 일정 등록";
+    }
+  }
 })();
 </script>
 </body>
