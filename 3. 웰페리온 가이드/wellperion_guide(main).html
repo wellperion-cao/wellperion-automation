@@ -1613,6 +1613,19 @@
         </table>
         <div class="callout" style="margin-top:10px;background:#2a1a1a;border-left:3px solid #c0392b;"><strong>❌ 완료 거부 조건:</strong> ④증거(<code>--artifact-url</code>) 없이 DONE을 올리면 <code>clevel_post_action.py</code>가 <strong>거부(exit 2)</strong>하고 <code>clevel.bat</code>이 <strong>[DONE] 커밋·푸시를 막는다</strong>. 증거가 아직 없으면 <code>--status 진행중</code>으로 보고(완료 처리되지 않음).</div>
 
+        <!-- ══ 🛡️ 위임 잘림 방어 — 백그라운드 사일런트 truncation 자동 탐지 (2026-06-05) ══ -->
+        <h3 style="margin-top:28px;border-top:1px solid var(--border);padding-top:24px;"><span class="ico">🛡️</span>위임 잘림 방어 <span style="font-size:13px;color:var(--dim);font-weight:400;">— 백그라운드 사일런트 truncation 자동 탐지 · 전 C레벨 공통</span></h3>
+        <div class="callout" style="margin:10px 0 14px;background:#2a1a1a;border-left:3px solid #c0392b;">
+          <strong>🛡️ 끊김은 에이전트 잘못이 아니라 런타임이 루프를 자른 것</strong> — 백그라운드 executor가 커밋 직전 잘려도(silent truncation) <code>status=completed</code>로 오라벨될 수 있다. <strong>도장과 재위임으로 자동 탐지</strong>한다. (오늘 2회 발생 — 근본진단 완료, 메모리 <code>feedback_background_agent_truncation_defense</code>.)
+        </div>
+        <table>
+          <tr><th style="width:140px">방어</th><th>내용</th></tr>
+          <tr><td><strong>종결 도장 의무</strong></td><td>executor·서브에이전트 위임 시, <strong>작업 끝을 반드시</strong> <code>DONE: &lt;commit-hash&gt;</code> 또는 <code>BLOCKED: &lt;사유&gt;</code>로 끝내도록 지시한다. 중간 서술 문장으로 끝내지 말 것.</td></tr>
+          <tr><td><strong>완료 불신</strong></td><td>백그라운드 완료 통지가 와도 결과에 <strong>종결 도장(커밋 해시)이 없으면 = 루프가 잘린 것</strong> → <code>completed</code> 신뢰 말고 <strong>재위임 + <code>git log</code> 독립검증</strong>.</td></tr>
+          <tr><td><strong>커밋 먼저</strong></td><td>되돌릴 수 없는 커밋을 <strong>가능한 일찍</strong> 수행 — 잘릴 창(window)을 축소한다.</td></tr>
+        </table>
+        <!-- ══ /위임 잘림 방어 ══ -->
+
         <!-- ══ 🗂️ 할 일 정리(큐 hygiene) 소유 — 시우(COO) (2026-06-05) ══ -->
         <h3 style="margin-top:28px;border-top:1px solid var(--border);padding-top:24px;"><span class="ico">🗂️</span>할 일 정리(큐 hygiene) 소유 <span style="font-size:13px;color:var(--dim);font-weight:400;">— 시우(COO) 상시 소유 · 충돌 방지 4규칙</span></h3>
         <div class="callout accent" style="margin:10px 0 14px;background:#1a2120;border-left:3px solid #10b981;">
