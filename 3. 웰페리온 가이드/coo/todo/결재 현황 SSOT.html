@@ -11,7 +11,7 @@
 /* 최신본 자동 보장 — HTTP 캐시로 옛 버전이 떠 'GM 화면만 미반영'되는 문제 방지 (2026-05-29 COO).
    서버 최신본 버전과 비교해 다르면 1회만 강제 갱신. 루프 방지: ?pv 파라미터가 있으면(=1회 redirect 완료) 무조건 종료.
    (2026-06-04 CEO 수정: 기존 pv===__PV 가드가 CDN 버전 불일치 시 무한 새로고침 유발 → has('pv')로 교체) */
-window.__PV='20260605-9';
+window.__PV='20260605-10';
 (function(){
   window.addEventListener('pageshow',function(e){ if(e.persisted) location.reload(); });
   try{
@@ -336,13 +336,13 @@ function ownerChip(name) {
 }
 // 항목의 부서장 실명 — 카테고리 매핑 우선, 없으면 결재요청에 포함된 부서장 (결재자 필터·카운트용, 2026-06-03 GM)
 function deptHeadNameOf(t) {
-  // 담당자가 부서장(이경연/이정헌/나우열) 본인이면 그 부서장이 결재자 — 카테고리 짐작 오배정 우회(2026-06-03 GM).
+  // 우선순위 (2026-06-05 GM: GM이 직접 고른 결재자가 최우선): ① 결재요청에 명시된 부서장 → ② 담당자가 부서장이면 본인 → ③ 카테고리 자동매핑.
+  var _reqDH = String((t && (t.approval || t['결재요청'])) || '').split(',').map(function(s){ return s.trim(); }).find(function(m){ return DEPT_HEADS.indexOf(m) >= 0; });
+  if (_reqDH) return _reqDH;
   var owners = String((t && t.owner) || '').split(',').map(function(s){ return s.trim(); });
   var ownerDH = owners.find(function(o){ return DEPT_HEADS.indexOf(o) >= 0; });
   if (ownerDH) return ownerDH;
-  // 결재요청에 명시된 부서장(GM 직접 지정) 최우선 → 없으면 카테고리 자동매핑 (2026-06-03 웰리)
-  var _reqDH = String((t && (t.approval || t['결재요청'])) || '').split(',').map(function(s){ return s.trim(); }).find(function(m){ return DEPT_HEADS.indexOf(m) >= 0; });
-  return _reqDH || deptHeadFor(t && t.category) || '';
+  return deptHeadFor(t && t.category) || '';
 }
 
 let ALL_TASKS = [];
