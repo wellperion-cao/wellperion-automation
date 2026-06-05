@@ -86,7 +86,7 @@ def compose_cover(
 
     PHOTO_H = 700  # 바레 완성본 실측 동일
     photo = top_crop_fill(photo_path, W, PHOTO_H, x_bias=cover_x_bias, zoom=cover_zoom)
-    photo = to_duotone(photo)
+    photo = to_duotone(photo, normalize=True)  # 표지 톤 일관(정본 셋팅) — 밝은 표지도 로고·칩 대비 확보
     canvas.paste(photo, (0, 0))
 
     # 분리선 — 바레 완성본 실측: y=701~702, x=50~1030
