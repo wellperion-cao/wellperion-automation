@@ -32,6 +32,12 @@ import time
 from datetime import datetime
 from pathlib import Path
 
+try:  # 발신 공용 로깅(best-effort) — 임포트 실패해도 발신 무영향
+    from tg_outbound_log import log_outbound
+except Exception:
+    def log_outbound(*a, **k):
+        pass
+
 ROOT = Path(r"C:\Users\jjky0\welperion-automation")
 QUEUE = ROOT / "3. 웰페리온 가이드" / "cmo" / "review" / "review_queue.json"
 PUBLISH_SCRIPT = ROOT / "scripts" / "instagram_upload_playwright.py"
@@ -70,7 +76,9 @@ def telegram(message: str) -> None:
             f"https://api.telegram.org/bot{token}/sendMessage", data=data, method="POST")
         with urllib.request.urlopen(req, timeout=10) as resp:
             print(f"[INFO] 텔레그램 보고 {'성공' if resp.status == 200 else '실패'}")
+            log_outbound(message, chat_id=TELEGRAM_CHAT_ID, source="ig_review_publish_watcher.telegram", ok=(resp.status == 200), kind="sendMessage")
     except Exception:
+        log_outbound(message, chat_id=TELEGRAM_CHAT_ID, source="ig_review_publish_watcher.telegram", ok=False, kind="sendMessage")
         print("[WARN] 텔레그램 보고 실패 (토큰 trace 노출 방지로 상세 미출력)")
 
 

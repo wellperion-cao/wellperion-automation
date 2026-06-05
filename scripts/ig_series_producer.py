@@ -51,6 +51,12 @@ INSTAGRAM_DIR = ROOT / "instagram"
 PY = ROOT / ".venv" / "Scripts" / "python.exe"
 ENV_PATH = ROOT / "telegram_bot" / ".env"
 
+try:  # 발신 공용 로깅(best-effort) — 임포트 실패해도 발신 무영향
+    from tg_outbound_log import log_outbound
+except Exception:
+    def log_outbound(*a, **k):
+        pass
+
 TELEGRAM_TOKEN_ENV_KEY = "TELEGRAM_BOT_TOKEN"
 TELEGRAM_CHAT_ID = "8254867551"  # @namuki_report_bot (CLAUDE.md §3)
 
@@ -99,7 +105,9 @@ def telegram(message: str) -> None:
         )
         with urllib.request.urlopen(req, timeout=10) as resp:
             print(f"[INFO] 텔레그램 보고 {'성공' if resp.status == 200 else '실패'}")
+            log_outbound(message, chat_id=TELEGRAM_CHAT_ID, source="ig_series_producer.telegram", ok=(resp.status == 200), kind="sendMessage")
     except Exception:
+        log_outbound(message, chat_id=TELEGRAM_CHAT_ID, source="ig_series_producer.telegram", ok=False, kind="sendMessage")
         print("[WARN] 텔레그램 보고 실패 (토큰 trace 노출 방지)")
 
 

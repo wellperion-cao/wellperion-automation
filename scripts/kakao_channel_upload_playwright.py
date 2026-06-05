@@ -77,6 +77,12 @@ OUTPUT_SUBDIR_NAME = "output(카카오 채널)"
 COPY_FILENAME = "kakao_copy.md"
 DEFAULT_IMAGE_GLOB = "*.jpg"
 
+try:  # 발신 공용 로깅(best-effort) — 임포트 실패해도 발신 무영향
+    from tg_outbound_log import log_outbound
+except Exception:
+    def log_outbound(*a, **k):
+        pass
+
 TELEGRAM_TOKEN_ENV_KEY = "TELEGRAM_BOT_TOKEN"
 TELEGRAM_CHAT_ID = "8254867551"  # @namuki_report_bot (CLAUDE.md §3-1)
 
@@ -214,8 +220,10 @@ def telegram_report(message: str) -> None:
         req = urllib.request.Request(url, data=data, method="POST")
         with urllib.request.urlopen(req, timeout=10) as resp:
             ok = resp.status == 200
+        log_outbound(message, chat_id=TELEGRAM_CHAT_ID, source="kakao_channel_upload_playwright.telegram_report", ok=ok, kind="sendMessage")
         print(f"[INFO] 텔레그램 보고 {'성공' if ok else '실패'} (chat={TELEGRAM_CHAT_ID})")
     except Exception:
+        log_outbound(message, chat_id=TELEGRAM_CHAT_ID, source="kakao_channel_upload_playwright.telegram_report", ok=False, kind="sendMessage")
         print("[WARN] 텔레그램 보고 실패 (상세 미출력 — 토큰 trace 노출 방지)")
 
 

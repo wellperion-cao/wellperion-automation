@@ -23,6 +23,15 @@ load_dotenv(os.path.join(os.path.dirname(__file__), '.env'))
 
 import requests  # send_telegram 발송용
 
+try:  # 발신 공용 로깅(best-effort) — 임포트 실패해도 발신 무영향
+    _scr = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'scripts'))
+    if _scr not in sys.path:
+        sys.path.insert(0, _scr)
+    from tg_outbound_log import log_outbound
+except Exception:
+    def log_outbound(*a, **k):
+        pass
+
 # ── 환경 변수 ──────────────────────────────────────────────────────────────────
 TELEGRAM_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN')
 OWNER_ID       = os.getenv('OWNER_ID')
@@ -146,8 +155,10 @@ def send_telegram(msg: str) -> bool:
             json={'chat_id': OWNER_ID, 'text': msg},
             timeout=10
         )
+        log_outbound(msg, chat_id=OWNER_ID, source='pre_task_notifier.send_telegram', ok=(resp.status_code == 200), kind='sendMessage')
         return resp.status_code == 200
     except Exception as e:
+        log_outbound(msg, chat_id=OWNER_ID, source='pre_task_notifier.send_telegram', ok=False, kind='sendMessage')
         logger.error(f'텔레그램 발송 실패: {e}')
         return False
 

@@ -70,6 +70,16 @@ from apscheduler.schedulers.blocking import BlockingScheduler
 from apscheduler.triggers.cron import CronTrigger
 from apscheduler.triggers.interval import IntervalTrigger
 
+try:  # 발신 공용 로깅(best-effort) — 임포트 실패해도 발신 무영향
+    import os as _os, sys as _sys
+    _scr = _os.path.abspath(_os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "..", "scripts"))
+    if _scr not in _sys.path:
+        _sys.path.insert(0, _scr)
+    from tg_outbound_log import log_outbound
+except Exception:
+    def log_outbound(*a, **k):
+        pass
+
 # ── v1.2 헬스체크 상수 ────────────────────────────────────────────────────────
 FAILURE_STATE_FILE = Path(__file__).parent / "telegram_failure.json"
 _ENV_MTIME: float = 0.0          # .env 마지막 수정 시각 추적용
@@ -286,6 +296,7 @@ def send_telegram(chat_id: int, text: str) -> bool:
                 if resp_json.get("ok"):
                     logger.info(f"Telegram 송신 성공 chat_id={chat_id} message_id={resp_json.get('result', {}).get('message_id')}")
                     record_send_success()
+                    log_outbound(text, chat_id=chat_id, source="daily_scheduler.send_telegram", ok=True, kind="sendMessage")
                     return True
                 else:
                     logger.warning(f"Telegram ok=false attempt={attempt} body={resp.text[:200]}")
@@ -297,6 +308,7 @@ def send_telegram(chat_id: int, text: str) -> bool:
                     if plain_resp.status_code == 200 and plain_resp.json().get("ok"):
                         logger.warning("MarkdownV2 escape 실패 → 평문 fallback 성공")
                         record_send_success()
+                        log_outbound(text, chat_id=chat_id, source="daily_scheduler.send_telegram", ok=True, kind="sendMessage")
                         return True
                     else:
                         logger.warning(
@@ -318,6 +330,7 @@ def send_telegram(chat_id: int, text: str) -> bool:
     if count >= 3:
         logger.critical(f"연속 실패 {count}회 — 스케줄러 자동 재기동 시도")
         _restart_scheduler()
+    log_outbound(text, chat_id=chat_id, source="daily_scheduler.send_telegram", ok=False, kind="sendMessage")
     return False
 
 

@@ -40,6 +40,51 @@ from telegram.ext import (
 from message_store import append_message as _inbox_log
 from bidirectional_handler import classify_message as _bidir_classify
 
+try:  # 발신 공용 로깅(best-effort) — 임포트 실패해도 발신 무영향
+    _scr = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "scripts"))
+    if _scr not in __import__("sys").path:
+        __import__("sys").path.insert(0, _scr)
+    from tg_outbound_log import log_outbound
+except Exception:
+    def log_outbound(*a, **k):
+        pass
+
+
+def _install_outbound_logging() -> None:
+    """PTB 발신 메서드(send_message/send_photo/reply_text)에 best-effort 로깅 래핑.
+    원본 동작·반환값·문구는 일절 변경하지 않는다(예외 무시). 1회만 설치."""
+    try:
+        from telegram import Bot, Message
+
+        def _wrap(cls, name, kind):
+            orig = getattr(cls, name, None)
+            if orig is None or getattr(orig, "_wp_logged", False):
+                return
+
+            async def wrapper(self, *args, **kwargs):
+                result = await orig(self, *args, **kwargs)
+                try:
+                    text = kwargs.get("text") or kwargs.get("caption")
+                    if text is None and args:
+                        text = args[0]
+                    cid = kwargs.get("chat_id", None)
+                    if cid is None:
+                        cid = getattr(getattr(self, "chat", None), "id", None)
+                    log_outbound(text, chat_id=cid, source="bot." + name, ok=True, kind=kind)
+                except Exception:
+                    pass
+                return result
+
+            wrapper._wp_logged = True
+            setattr(cls, name, wrapper)
+
+        _wrap(Bot, "send_message", "sendMessage")
+        _wrap(Bot, "send_photo", "sendPhoto")
+        _wrap(Message, "reply_text", "sendMessage")
+        _wrap(Message, "reply_photo", "sendPhoto")
+    except Exception:
+        pass
+
 BASE = Path(__file__).parent
 STATE_FILE = BASE / "state.json"
 ENV_FILE = BASE / ".env"
@@ -1045,6 +1090,7 @@ def _check_pid_lock() -> None:
 
 def main():
     _check_pid_lock()  # 중복 봇 기동 차단 (자동기동 + 수동 배치 충돌 방지)
+    _install_outbound_logging()  # 발신 공용 로깅 래핑(best-effort, 발신 무영향)
     # Python 3.14 호환성: run_polling 내부의 get_event_loop 호출 대응
     try:
         asyncio.get_event_loop()

@@ -25,6 +25,12 @@ import urllib.parse
 from datetime import datetime, timedelta
 from pathlib import Path
 
+try:  # 발신 공용 로깅(best-effort) — 임포트 실패해도 발신 무영향
+    from tg_outbound_log import log_outbound
+except Exception:
+    def log_outbound(*a, **k):
+        pass
+
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
 
 # ── 경로 상수 ──
@@ -296,9 +302,11 @@ def send_summary(summary_data: dict = None) -> bool:
     try:
         with urllib.request.urlopen(req, timeout=15) as resp:
             ok = json.loads(resp.read().decode()).get("ok", False)
+            log_outbound(text, chat_id=chat_id, source="ai_education_auto_learner.send_telegram", ok=ok, kind="sendMessage")
             print(f"[발송 {'성공' if ok else '실패'}]")
             return ok
     except Exception as e:
+        log_outbound(text, chat_id=chat_id, source="ai_education_auto_learner.send_telegram", ok=False, kind="sendMessage")
         print(f"[ERROR] 발송 실패: {type(e).__name__}")
         return False
 

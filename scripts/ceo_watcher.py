@@ -12,6 +12,12 @@ from datetime import datetime
 from dotenv import load_dotenv
 import requests
 
+try:  # 발신 공용 로깅(best-effort) — 임포트 실패해도 발신 무영향
+    from tg_outbound_log import log_outbound
+except Exception:
+    def log_outbound(*a, **k):
+        pass
+
 PROJECT_ROOT = Path(__file__).parent.parent
 load_dotenv(PROJECT_ROOT / 'telegram_bot' / '.env')
 
@@ -112,8 +118,10 @@ def notify_telegram(text: str) -> bool:
             json={'chat_id': CHAT_ID, 'text': text},
             timeout=10,
         )
+        log_outbound(text, chat_id=CHAT_ID, source='ceo_watcher.notify_telegram', ok=(r.status_code == 200), kind='sendMessage')
         return r.status_code == 200
     except Exception as e:
+        log_outbound(text, chat_id=CHAT_ID, source='ceo_watcher.notify_telegram', ok=False, kind='sendMessage')
         logger.warning(f'텔레그램 송부 실패: {e}')
         return False
 

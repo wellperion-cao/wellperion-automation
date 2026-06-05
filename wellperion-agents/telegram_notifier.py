@@ -9,6 +9,16 @@ load_dotenv()
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
 TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID", "")
 
+try:  # 발신 공용 로깅(best-effort) — 임포트 실패해도 발신 무영향
+    import sys as _sys
+    _scr = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "scripts"))
+    if _scr not in _sys.path:
+        _sys.path.insert(0, _scr)
+    from tg_outbound_log import log_outbound
+except Exception:
+    def log_outbound(*a, **k):
+        pass
+
 
 class TelegramNotifier:
     def __init__(self):
@@ -29,8 +39,11 @@ class TelegramNotifier:
             payload["reply_markup"] = reply_markup
         try:
             resp = httpx.post(f"{self.base_url}/sendMessage", json=payload, timeout=10)
-            return resp.json()
+            _r = resp.json()
+            log_outbound(message, chat_id=self.chat_id, source="telegram_notifier.send", ok=bool(_r.get("ok")), kind="sendMessage")
+            return _r
         except Exception:
+            log_outbound(message, chat_id=self.chat_id, source="telegram_notifier.send", ok=False, kind="sendMessage")
             return {}
 
     def send_approval_request(self, task_name: str, summary: str, task_key: str) -> int:
@@ -67,8 +80,11 @@ class TelegramNotifier:
                     files={"photo": f},
                     timeout=30,
                 )
-            return resp.json()
+            _r = resp.json()
+            log_outbound(caption or "", chat_id=self.chat_id, source="telegram_notifier.send_photo", ok=bool(_r.get("ok")), kind="sendPhoto")
+            return _r
         except Exception as e:
+            log_outbound(caption or "", chat_id=self.chat_id, source="telegram_notifier.send_photo", ok=False, kind="sendPhoto")
             return {"ok": False, "description": str(e)}
 
     def send_document(self, file_path: str, caption: str = None) -> dict:

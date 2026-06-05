@@ -22,6 +22,12 @@ from pathlib import Path
 import urllib.parse
 import urllib.request
 
+try:  # 발신 공용 로깅(best-effort) — 임포트 실패해도 발신 무영향
+    from tg_outbound_log import log_outbound
+except Exception:
+    def log_outbound(*a, **k):
+        pass
+
 ROOT = Path(r"C:\Users\jjky0\welperion-automation")
 QUEUE = ROOT / "3. 웰페리온 가이드" / "cmo" / "review" / "review_queue.json"
 M5_URL = "https://wellperion-cao.github.io/wellperion-automation/wellperion_guide(main).html#M5"
@@ -118,8 +124,10 @@ def _send_text_card(token: str, caption: str, keyboard: dict, item_id: str) -> i
         with urllib.request.urlopen(req, timeout=10) as resp:
             mid = _extract_msg_id(resp)
             print(f"[INFO] 카드(텍스트 폴백) 발송 {'성공' if mid else '실패'}: {item_id}")
+            log_outbound(caption, chat_id=TELEGRAM_CHAT_ID, source="send_review_card._send_text_card", ok=bool(mid), kind="sendMessage")
             return mid
     except Exception:
+        log_outbound(caption, chat_id=TELEGRAM_CHAT_ID, source="send_review_card._send_text_card", ok=False, kind="sendMessage")
         print("[WARN] 카드 발송 실패 (토큰 trace 노출 방지로 상세 미출력)")
         return None
 
@@ -145,8 +153,10 @@ def _send_photo_card(token: str, caption: str, keyboard: dict,
         with urllib.request.urlopen(req, timeout=20) as resp:
             mid = _extract_msg_id(resp)
             print(f"[INFO] 검수카드(이미지) 발송 {'성공' if mid else '실패'}: {item_id}")
+            log_outbound(caption, chat_id=TELEGRAM_CHAT_ID, source="send_review_card._send_photo_card", ok=bool(mid), kind="sendPhoto")
             return mid
     except Exception:
+        log_outbound(caption, chat_id=TELEGRAM_CHAT_ID, source="send_review_card._send_photo_card", ok=False, kind="sendPhoto")
         print("[WARN] 검수카드(이미지) 발송 실패 — 텍스트 폴백 시도")
         return None
 

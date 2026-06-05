@@ -31,6 +31,12 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
+try:  # 발신 공용 로깅(best-effort) — 임포트 실패해도 발신 무영향
+    from tg_outbound_log import log_outbound
+except Exception:
+    def log_outbound(*a, **k):
+        pass
+
 # -----------------------------------------------------------------
 # 콘솔 인코딩 하드닝 — Windows cp949 콘솔에서 대시(—)·이모지 print 시
 # UnicodeEncodeError 로 죽지 않게 stdout/stderr 를 UTF-8(replace)로 강제.
@@ -120,9 +126,11 @@ def _telegram_send_photo(photo_path: Path, caption: str) -> None:
         )
         with urllib.request.urlopen(req, timeout=20) as resp:
             ok = resp.status == 200
+        log_outbound(caption, chat_id=TELEGRAM_CHAT_ID, source="publish_register._telegram_send_photo", ok=ok, kind="sendPhoto")
         print(f"[INFO] 텔레그램 montage 발송 {'성공' if ok else '실패'} (chat={TELEGRAM_CHAT_ID})")
     except Exception:
         # 토큰 trace 노출 방지 — 예외 상세 미출력
+        log_outbound(caption, chat_id=TELEGRAM_CHAT_ID, source="publish_register._telegram_send_photo", ok=False, kind="sendPhoto")
         print("[WARN] 텔레그램 montage 발송 실패 (상세 미출력 — 토큰 trace 노출 방지)")
 
 
@@ -144,8 +152,10 @@ def _telegram_send_message(text: str) -> None:
         )
         with urllib.request.urlopen(req, timeout=10) as resp:
             ok = resp.status == 200
+        log_outbound(text, chat_id=TELEGRAM_CHAT_ID, source="publish_register._telegram_send_message", ok=ok, kind="sendMessage")
         print(f"[INFO] 텔레그램 보고 {'성공' if ok else '실패'}")
     except Exception:
+        log_outbound(text, chat_id=TELEGRAM_CHAT_ID, source="publish_register._telegram_send_message", ok=False, kind="sendMessage")
         print("[WARN] 텔레그램 보고 실패 (토큰 trace 노출 방지)")
 
 

@@ -35,6 +35,12 @@ try:
 except Exception:
     pass
 
+try:  # 발신 공용 로깅(best-effort) — 임포트 실패해도 발신 무영향
+    from tg_outbound_log import log_outbound
+except Exception:
+    def log_outbound(*a, **k):
+        pass
+
 # ─────────────────────────────────────────────
 # 경로 상수
 # ─────────────────────────────────────────────
@@ -119,8 +125,10 @@ def _send_telegram(text: str) -> None:
     data = urllib.parse.urlencode({"chat_id": TELEGRAM_CHAT_ID, "text": text}).encode()
     try:
         urllib.request.urlopen(url, data=data, timeout=10)
+        log_outbound(text, chat_id=TELEGRAM_CHAT_ID, source="publish_4channel_dispatcher._send_telegram", ok=True, kind="sendMessage")
         print("[텔레그램] 보고 완료")
     except Exception as e:
+        log_outbound(text, chat_id=TELEGRAM_CHAT_ID, source="publish_4channel_dispatcher._send_telegram", ok=False, kind="sendMessage")
         print(f"[텔레그램] 보고 실패(무시): {e}")
 
 
