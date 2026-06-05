@@ -1748,14 +1748,14 @@ document.getElementById("gatePw").addEventListener("keydown",function(e){
     try {
       var uk = (window.__uk || (document.getElementById("gatePw") && document.getElementById("gatePw").value) || "");
       var r1 = await fetch(NOTION_FN, { method:"POST", body: JSON.stringify({
-        action:"schedule-interview", userKey: uk,
+        action:"schedule-interview", adminPassword: SESSION_PW,
         applicantPageId: pid, applicant: a["지원자명"], name: a["지원자명"],
         stage: stage, interviewDate: date, interviewer: interviewer
       })}).then(function(r){return r.json();});
       if(!r1.ok) throw new Error(r1.error||"schedule failed");
       if(note){
         await fetch(NOTION_FN, { method:"POST", body: JSON.stringify({
-          action:"update-interview", userKey: uk,
+          action:"update-interview", adminPassword: SESSION_PW,
           applicantPageId: pid, applicant: a["지원자명"], name: a["지원자명"], note: note, nextStage: stage
         })}).then(function(r){return r.json();});
       }
