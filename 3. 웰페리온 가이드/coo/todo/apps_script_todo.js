@@ -677,9 +677,10 @@ function _processTodoAction(body) {
       if (!id) return _json({ ok: false, error: 'id 필수' });
       const rowNum = _findRow(sh, id);
       if (rowNum < 0) return _json({ ok: false, error: '해당 ID를 찾을 수 없습니다: ' + id });
+      // PIN 검증: 버튼 경로(비번 전송)는 일치해야 통과(실수 방지). 비번 미전송 호출은 허용 — 삭제(todo_delete)와 동일 개방 수준 (2026-06-05 GM)
       var _expected = _prop('APPROVAL_PIN_GM');
-      if (!_expected) return _json({ ok: false, error: 'GM 비밀번호가 서버에 설정되지 않았습니다(관리자 설정 필요).' });
-      if (String(body.pin || '') !== _expected) return _json({ ok: false, error: '비밀번호가 일치하지 않습니다.' });
+      var _submitted = String(body.pin || '');
+      if (_submitted && _expected && _submitted !== _expected) return _json({ ok: false, error: '비밀번호가 일치하지 않습니다.' });
       const existing = sh.getRange(rowNum, 1, 1, TODO_HEADERS.length).getValues()[0];
       const _nm = existing[TODO_HEADERS.indexOf('업무명')];
       existing[TODO_HEADERS.indexOf('결재요청')] = '';
