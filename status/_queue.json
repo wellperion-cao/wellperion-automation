@@ -154,12 +154,15 @@
     "task_id": "COO-2026-06-04-SUPPORT-ISSUE-SAVE",
     "clevel": "coo",
     "title": "지원부 점검 앱 이슈 저장 유실 위험 수정 (시토 진단 인계)",
-    "status": "PENDING",
+    "status": "DONE",
     "priority": "HIGH",
     "from": "cto",
     "brief": "status/briefs/COO-2026-06-04-SUPPORT-ISSUE-SAVE.md",
     "enqueued_at": "2026-06-04",
-    "note": "근본원인=프론트 zone 미전송→GAS V2Compat(날짜행 전체삭제 재기록) 폴백→탭 전환 시 공용 항목 이슈 덮어쓰기. 라이브 이슈 1건 저장은 확인됨. GAS 재배포 필수."
+    "note": "[2026-06-05 CEO 직접 처리] 근본=프론트 zone 미전송→V2Compat 폴백→날짜행 전체삭제. 수정: V2Compat 비파괴 전환(삭제 폐지, itemId update/add). 작업본+배포본 동기, clasp @4→@5 재배포. 라이브 실측 PASS(남/여탭 따로 저장한 공용 이슈 2건 모두 보존). 테스트행 2099-12-31 잔존(미래날짜·실사용 미표시·무해).",
+    "commit_sha": "930a017",
+    "processed_at": "2026-06-05",
+    "terminal": true
   },
   {
     "task_id": "CHRO-2026-06-04-HR-NOTION-TO-SHEETS",
