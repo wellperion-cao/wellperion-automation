@@ -11,7 +11,7 @@
 /* 최신본 자동 보장 — HTTP 캐시로 옛 버전이 떠 'GM 화면만 미반영'되는 문제 방지 (2026-05-29 COO).
    서버 최신본 버전과 비교해 다르면 1회만 강제 갱신. 루프 방지: ?pv 파라미터가 있으면(=1회 redirect 완료) 무조건 종료.
    (2026-06-04 CEO 수정: 기존 pv===__PV 가드가 CDN 버전 불일치 시 무한 새로고침 유발 → has('pv')로 교체) */
-window.__PV='20260605-12';
+window.__PV='20260605-13';
 (function(){
   window.addEventListener('pageshow',function(e){ if(e.persisted) location.reload(); });
   try{
@@ -121,7 +121,12 @@ html,body{background:var(--bg);color:var(--text);font-family:"Pretendard","Apple
 .approval-card .title-row{display:flex;align-items:flex-start;gap:8px;margin-bottom:6px;flex-wrap:nowrap;}
 .approval-card .title-row .card-title-area{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px;}
 .approval-card .title-row .card-title-area .title-line{display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
-.approval-card .title-row .card-title-area .title{font-size:14px;font-weight:700;min-width:0;word-break:break-word;line-height:1.4;}
+.approval-card .title-row .card-title-area .title{font-size:14px;font-weight:700;min-width:0;word-break:break-word;line-height:1.4;background:rgba(255,255,255,0.06);padding:5px 9px;border-radius:7px;}
+/* 카드 제목칸 배경 = 결재 상태 색 (업무현황 D-day 색 패턴, 2026-06-05 GM) */
+.approval-card.st-waiting  .title-row .card-title-area .title{background:var(--yellow-bg);color:var(--yellow)}
+.approval-card.st-progress .title-row .card-title-area .title{background:var(--blue-bg);color:var(--blue)}
+.approval-card.st-done     .title-row .card-title-area .title{background:var(--green-bg);color:var(--green)}
+.approval-card.st-rejected .title-row .card-title-area .title{background:var(--red-bg);color:var(--red)}
 .approval-card .title-row .card-title-area .approval-badge-line{display:flex;flex-wrap:wrap;gap:4px;}
 .approval-card .title-row .card-meta-chips{display:flex;flex-wrap:wrap;gap:4px;align-items:flex-start;flex-shrink:0;max-width:200px;}
 @media(max-width:400px){.approval-card .title-row{flex-wrap:wrap;}}
