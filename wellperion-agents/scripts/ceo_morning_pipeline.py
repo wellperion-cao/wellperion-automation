@@ -575,22 +575,58 @@ NORTHSTAR_KEYWORDS = [
     "전환", "가입", "북극성", "항로", "모듈", "상품화",
 ]
 
+# NORMAL priority 시 크루즈로 상향할 '프로젝트성' 키워드
+SHIP_UPGRADE_KEYWORDS = [
+    "이관", "구축", "셋업", "프로젝트", "상품화", "파이프라인", "자동화", "통합",
+]
+
+# NORMAL priority 시 돛단배로 하향할 '단발/짧은 작업' 키워드
+SHIP_DOWNGRADE_KEYWORDS = [
+    "수정", "교체", "정리", "색", "글씨", "링크", "오타", "확인", "반영",
+]
+
 
 def classify_ship(task: dict, urgent_titles: set | None = None) -> dict:
     """
     할일(task)을 항해 세계관의 '배'로 분류한다.
 
     반환: {icon, tier, urgent(bool), northstar(bool)}
-      - 무게(priority): HIGH→🛳️크루즈 / NORMAL→⛴️여객선 / LOW→⛵돛단배 (없으면 여객선)
-      - urgent: urgent_deadlines() 의 임박 마감 제목과 매칭되거나, task.deadline ≤ 3일이면 True
-      - northstar: 제목+note 에 NORTHSTAR_KEYWORDS 1개+ 매칭이면 True
+      - 무게(priority): HIGH→🛳️크루즈 / LOW→⛵돛단배 / NORMAL은 신호로 추론:
+          · northstar==True AND (deadline 있거나 SHIP_UPGRADE_KEYWORDS 매칭) → 🛳️크루즈
+          · SHIP_DOWNGRADE_KEYWORDS 매칭 AND deadline 없음 AND northstar 아님 → ⛵돛단배
+          · 그 외 → ⛴️여객선
+      - urgent: urgent_deadlines() 임박 마감 제목 매칭 또는 task.deadline ≤ 3일
+      - northstar: 제목+note 에 NORTHSTAR_KEYWORDS 1개+ 매칭
     """
     pri = str(task.get("priority") or "NORMAL").upper()
-    ship = SHIP_BY_WEIGHT.get(pri, SHIP_BY_WEIGHT["NORMAL"])
-
-    # 🔴 급함 — 임박 마감 제목 매칭 또는 task 자체 deadline ≤ within_days
-    urgent = False
     title = str(task.get("title") or "")
+    hay = f"{title} {task.get('note') or ''}"
+
+    # 🌟 북극성 먼저 계산 (무게 추론에 사용)
+    northstar = any(kw in hay for kw in NORTHSTAR_KEYWORDS)
+
+    # deadline 유무 판정
+    has_deadline = bool(task.get("deadline") and str(task.get("deadline", ""))[:4].isdigit())
+
+    # 무게(배 종류) 결정
+    if pri == "HIGH":
+        ship = SHIP_BY_WEIGHT["HIGH"]
+    elif pri == "LOW":
+        ship = SHIP_BY_WEIGHT["LOW"]
+    else:
+        # NORMAL — 신호로 추론
+        title_lower = title.lower()
+        has_upgrade = any(kw in title for kw in SHIP_UPGRADE_KEYWORDS)
+        has_downgrade = any(kw in title for kw in SHIP_DOWNGRADE_KEYWORDS)
+        if northstar and (has_deadline or has_upgrade):
+            ship = SHIP_BY_WEIGHT["HIGH"]   # 크루즈로 상향
+        elif has_downgrade and not has_deadline and not northstar:
+            ship = SHIP_BY_WEIGHT["LOW"]    # 돛단배로 하향
+        else:
+            ship = SHIP_BY_WEIGHT["NORMAL"]
+
+    # 🔴 급함 — 임박 마감 제목 매칭 또는 task 자체 deadline ≤ 3일
+    urgent = False
     if urgent_titles and title in urgent_titles:
         urgent = True
     if not urgent:
@@ -602,10 +638,6 @@ def classify_ship(task: dict, urgent_titles: set | None = None) -> dict:
                     urgent = True
             except ValueError:
                 pass
-
-    # 🌟 북극성 — 키워드 매칭
-    hay = f"{title} {task.get('note') or ''}"
-    northstar = any(kw in hay for kw in NORTHSTAR_KEYWORDS)
 
     return {"icon": ship["icon"], "tier": ship["tier"],
             "urgent": urgent, "northstar": northstar}
@@ -1077,6 +1109,15 @@ def build_telegram_report(s1: dict, assigned: list[dict], orch: dict) -> str:
     ])
     lines.append("")
 
+    # ── 🔴 급한 입항 (마감 임박 — 큐 deadline 기반, 항상 표 바로 아래 고정) ──
+    if urg:
+        lines.append("🔴 급한 입항  (마감 임박)")
+        for u in urg:
+            mmdd = u["deadline"][5:].replace("-", "/")
+            who = f" [{u['owner']}]" if u.get("owner") else ""
+            lines.append(f" · {plainify(summarize_title(u['title']))} ({mmdd} 마감){who}")
+        lines.append("")
+
     # ── ⚓ 지나온 항로 (어제 입항 → 다음 항로점) ──
     lines.append("⚓ 지나온 항로  (어제 입항 → 다음 항로점)")
     if yday_items:
@@ -1092,11 +1133,12 @@ def build_telegram_report(s1: dict, assigned: list[dict], orch: dict) -> str:
     # ── 🧭 오늘의 항로 (배 종류로 묶음: 크루즈→여객선→돛단배) ──
     lines.append("🧭 오늘의 항로  (무거운 배부터 · 🔴급함 🌟북극성)")
     if today_ships:
-        # 무게 큰 순, 같은 무게 내 급함🔴 먼저
+        # 배 무게(tier rank) 큰 순, 같은 무게 내 급함🔴 먼저
+        tier_rank = {"크루즈": 0, "여객선": 1, "돛단배": 2}
         ordered = sorted(
             today_ships,
             key=lambda s: (
-                SHIP_WEIGHT_RANK.get(str(s.get("priority") or "NORMAL").upper(), 1),
+                tier_rank.get(s["_ship"]["tier"], 1),
                 0 if s["_ship"]["urgent"] else 1,
             ),
         )
@@ -1129,14 +1171,19 @@ def build_telegram_report(s1: dict, assigned: list[dict], orch: dict) -> str:
     else:
         lines.append(" 없음 ✓")
 
-    # ── 🔴 선장(GM) 결정 (각 무엇 + 사유) ──
+    # ── 🔴 선장(GM) 결정 (제목 + 카테고리 한 줄 — 순환사유 제거) ──
     lines.append("")
     if gm_dec:
-        lines.append("🔴 선장(GM) 결정  (각 무엇 + 사유)")
+        lines.append("🔴 선장(GM) 결정")
         for i, a in enumerate(gm_dec, 1):
-            lines.append(f"{_circled(i)} {plainify(summarize_title(a.get('title')))}")
-            lines.append(f"   └ 왜: {a.get('disposition_reason','')}")
-        lines.append("   ↳ 자세한 결정 카드는 따로 보내드려요")
+            title_clean = plainify(summarize_title(a.get("title", "")))
+            # 카테고리를 사유에서 추출 — "X · 결재 첫 단계…" 형태면 X만 취함
+            raw_reason = a.get("disposition_reason", "")
+            # "카테고리 · 결재 단계" 에서 카테고리만 추출 (뒤 결재 설명 제거)
+            cat = raw_reason.split("·")[0].strip() if "·" in raw_reason else ""
+            suffix = f" — {cat}" if cat else ""
+            lines.append(f"{_circled(i)} {title_clean}{suffix}")
+        lines.append("   ↳ 결정 카드는 따로 보내드려요")
     else:
         lines.append("🔴 선장(GM) 결정: 없음")
 
