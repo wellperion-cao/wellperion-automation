@@ -556,6 +556,61 @@ def count_table(rows: list[tuple[str, int]]) -> list[str]:
     return out
 
 
+# ── 항해 세계관 — 배 분류 (2026-06-05 GM '오늘의 항해' 재설계) ────────────────────
+# 🌟북극성=목적지 · 🧭항로=과정 · 🚢배=할일 · ⚓항로점=어제가 남긴 '다음' · 🌀표류=완료했는데 다음 없음.
+# 무게(priority)=배 종류 / 🔴급함(마감임박)·🌟북극성직결 은 별개 축으로 겹쳐 표시.
+
+# 무게(priority) → 배 종류. priority 없으면 여객선(NORMAL) 기본.
+SHIP_BY_WEIGHT = {
+    "HIGH":   {"icon": "🛳️", "tier": "크루즈"},
+    "NORMAL": {"icon": "⛴️", "tier": "여객선"},
+    "LOW":    {"icon": "⛵", "tier": "돛단배"},
+}
+# 정렬용: 무게 큰 순(크루즈 먼저)
+SHIP_WEIGHT_RANK = {"HIGH": 0, "NORMAL": 1, "LOW": 2}
+
+# 🌟 북극성 직결 키워드 (heuristic — 상수로 빼서 튜닝 쉽게). 제목+note 에 1개+ 매칭.
+NORTHSTAR_KEYWORDS = [
+    "ERP", "erp", "자동화", "수익", "매출", "문의", "파이프라인",
+    "전환", "가입", "북극성", "항로", "모듈", "상품화",
+]
+
+
+def classify_ship(task: dict, urgent_titles: set | None = None) -> dict:
+    """
+    할일(task)을 항해 세계관의 '배'로 분류한다.
+
+    반환: {icon, tier, urgent(bool), northstar(bool)}
+      - 무게(priority): HIGH→🛳️크루즈 / NORMAL→⛴️여객선 / LOW→⛵돛단배 (없으면 여객선)
+      - urgent: urgent_deadlines() 의 임박 마감 제목과 매칭되거나, task.deadline ≤ 3일이면 True
+      - northstar: 제목+note 에 NORTHSTAR_KEYWORDS 1개+ 매칭이면 True
+    """
+    pri = str(task.get("priority") or "NORMAL").upper()
+    ship = SHIP_BY_WEIGHT.get(pri, SHIP_BY_WEIGHT["NORMAL"])
+
+    # 🔴 급함 — 임박 마감 제목 매칭 또는 task 자체 deadline ≤ within_days
+    urgent = False
+    title = str(task.get("title") or "")
+    if urgent_titles and title in urgent_titles:
+        urgent = True
+    if not urgent:
+        dl = task.get("deadline")
+        if isinstance(dl, str) and len(dl) >= 10:
+            try:
+                d = datetime.strptime(dl[:10], "%Y-%m-%d").date()
+                if 0 <= (d - datetime.now().date()).days <= 3:
+                    urgent = True
+            except ValueError:
+                pass
+
+    # 🌟 북극성 — 키워드 매칭
+    hay = f"{title} {task.get('note') or ''}"
+    northstar = any(kw in hay for kw in NORTHSTAR_KEYWORDS)
+
+    return {"icon": ship["icon"], "tier": ship["tier"],
+            "urgent": urgent, "northstar": northstar}
+
+
 def stage1_collect_classify() -> dict:
     """
     전체 미결 할일 수집 + 명확/모호 분류. dict 반환.
@@ -930,12 +985,32 @@ def extract_followups(queue_items: list[dict]) -> list[dict]:
     return results
 
 
+def _next_waypoint(item: dict) -> str:
+    """
+    어제 입항(완료)한 배가 남긴 '다음 항로점'(⚓)을 도출.
+      - note 의 후속 신호 문장(_FOLLOWUP_RE) 우선 — 어제가 남긴 '다음'.
+      - 없으면 '입항(종결)' (= 표류 아님, 정상 종결).
+    depends_on 역참조는 G1 SSOT 완료 항목엔 note 기반이 더 신뢰도 높아 note 우선 사용.
+    """
+    note = str(item.get("note") or "").strip()
+    if note:
+        for sent in re.split(r"[.\n。]", note):
+            sent = sent.strip()
+            if sent and _FOLLOWUP_RE.search(sent):
+                quote = _CC_PREFIX_RE.sub("", sent).strip()[:60].strip()
+                if quote:
+                    return quote
+    return "입항(종결)"
+
+
 def build_telegram_report(s1: dict, assigned: list[dict], orch: dict) -> str:
     """
-    GM 아침 보고 — spec v2 레이아웃 (2026-06-02 GM 승인).
-    상단: 한눈 카운트 표 / GM 결정 / 오늘 할 일 추천순 / 이어서 할 일 / 어제 마무리.
+    GM 아침 보고 — '오늘의 항해' 레이아웃 (2026-06-05 GM 재설계).
+    항해 세계관: 🌟북극성=목적지 · 🚢배=할일 · ⚓항로점=어제가 남긴 다음 · 🌀표류=다음없음.
+    무게(priority)=배종류(🛳️크루즈/⛴️여객선/⛵돛단배) · 🔴마감임박 · 🌟북극성직결.
+    ※ 데이터 수집·집계 변수(today_tasks/assigned/done_*/gm_decision/urgent)는 그대로 재사용.
 
-    G1 SSOT 경로: s1["_g1_done_yesterday"] 를 어제 마무리로 사용.
+    G1 SSOT 경로: s1["_g1_done_yesterday"] 를 '지나온 항로'로 사용.
     fallback 경로: yesterday_done() 큐 기반 유지.
     """
     gm_dec = s1["gm_decision"]
@@ -963,88 +1038,107 @@ def build_telegram_report(s1: dict, assigned: list[dict], orch: dict) -> str:
         yday_items = yday_queue
         followups = extract_followups(yday_queue)
 
-    lines = []
-    lines.append(f"🌅 아침 정리 — {today_kr()}")
+    # ── 항해 분류 준비 — 임박 마감 제목 셋(🔴 판정용) ──
+    urg = urgent_deadlines()
+    urgent_titles = {u.get("title", "") for u in urg if u.get("title")}
 
-    # ── 상단: 한눈 표 ──
+    # 오늘의 항로 = 배정된 today 항목을 classify_ship 으로 분류
+    today_ships: list[dict] = []
+    for a in assigned:
+        ship = classify_ship(a, urgent_titles)
+        today_ships.append({**a, "_ship": ship})
+
+    # 🌟 북극성 침로 = today 중 northstar 인 것
+    northstar_today = [s for s in today_ships if s["_ship"]["northstar"]]
+
+    # 🌀 표류 = 어제/오늘 완료 중 다음 항로점이 '입항(종결)' 도 후속신호도 아닌 것
+    #   (note 에 후속 신호가 없으면 다음 항로점이 비어 끊김 — '입항(종결)'은 정상 종결이라 표류 아님)
+    drift_pool = list(yday_items) + list(s1.get("_g1_done_today", []))
+    drift_seen: set = set()
+    drift: list[dict] = []
+    for d in drift_pool:
+        k = d.get("task_id") or d.get("title")
+        if k in drift_seen:
+            continue
+        drift_seen.add(k)
+        if _next_waypoint(d) == "입항(종결)" and not str(d.get("note") or "").strip():
+            drift.append(d)
+
+    lines = []
+    lines.append(f"🧭 오늘의 항해 — {today_kr()}")
+    lines.append("   북극성을 향해, 어제 항로에서 이어서")
+    lines.append("")
+
+    # ── 상단: 한눈 표 (선장 결정 · 오늘 항로 · 표류) ──
     lines += count_table([
-        ("GM 결정", len(gm_dec)),
-        ("오늘 할 일", len(auto)),
-        ("명확화 대기", len(deep)),
+        ("선장 결정", len(gm_dec)),
+        ("오늘 항로", len(today_ships)),
+        ("표류", len(drift)),
     ])
     lines.append("")
 
-    # ── GM 결정 필요 (깨끗한 제목 + 실제 '왜') ──
+    # ── ⚓ 지나온 항로 (어제 입항 → 다음 항로점) ──
+    lines.append("⚓ 지나온 항로  (어제 입항 → 다음 항로점)")
+    if yday_items:
+        for d in yday_items[:5]:
+            title = plainify(summarize_title(d.get("title", "")))
+            wp = _next_waypoint(d)
+            lines.append(f" ✅ {title}")
+            lines.append(f"   ↳ 다음 항로점: {plainify(wp)}")
+    else:
+        lines.append(" · 어제 입항한 배 없음")
+    lines.append("")
+
+    # ── 🧭 오늘의 항로 (배 종류로 묶음: 크루즈→여객선→돛단배) ──
+    lines.append("🧭 오늘의 항로  (무거운 배부터 · 🔴급함 🌟북극성)")
+    if today_ships:
+        # 무게 큰 순, 같은 무게 내 급함🔴 먼저
+        ordered = sorted(
+            today_ships,
+            key=lambda s: (
+                SHIP_WEIGHT_RANK.get(str(s.get("priority") or "NORMAL").upper(), 1),
+                0 if s["_ship"]["urgent"] else 1,
+            ),
+        )
+        for s in ordered:
+            ship = s["_ship"]
+            cl = s.get("assigned_clevel", "")
+            who = CLEVEL_NICK.get(cl, cl) if cl else ""
+            who_s = f" [{who}]" if who else ""
+            flags = ("🔴" if ship["urgent"] else "") + ("🌟" if ship["northstar"] else "")
+            title = plainify(summarize_title(s.get("title", "")))
+            lines.append(f" {ship['icon']} {title}{who_s} {flags}".rstrip())
+    else:
+        lines.append(" · 오늘 띄울 배 없음")
+    if deep:
+        lines.append(f" ⚓ 명확화 대기 {len(deep)}건 — 항로 확정 후 출항")
+
+    # ── 🌟 북극성 침로 (없으면 섹션 생략) ──
+    if northstar_today:
+        lines.append("")
+        lines.append("🌟 북극성 침로  (오늘 별에 가까워지는 일)")
+        for s in northstar_today:
+            lines.append(f" · {plainify(summarize_title(s.get('title', '')))}")
+
+    # ── 🌀 표류 주의 (완료했는데 다음 항로점 없음) ──
+    lines.append("")
+    lines.append("🌀 표류 주의  (입항했는데 다음 항로점이 없음)")
+    if drift:
+        for d in drift[:5]:
+            lines.append(f" · {plainify(summarize_title(d.get('title', '')))}")
+    else:
+        lines.append(" 없음 ✓")
+
+    # ── 🔴 선장(GM) 결정 (각 무엇 + 사유) ──
+    lines.append("")
     if gm_dec:
-        lines.append("🔴 GM님이 정해주실 것")
+        lines.append("🔴 선장(GM) 결정  (각 무엇 + 사유)")
         for i, a in enumerate(gm_dec, 1):
             lines.append(f"{_circled(i)} {plainify(summarize_title(a.get('title')))}")
             lines.append(f"   └ 왜: {a.get('disposition_reason','')}")
-        lines.append("   ↳ 자세한 결재 카드는 따로 보내드려요")
+        lines.append("   ↳ 자세한 결정 카드는 따로 보내드려요")
     else:
-        lines.append("🔴 GM님이 정해주실 것: 없음")
-    lines.append("")
-
-    # ── 오늘 제일 급한 것 (임박 마감, 큐 deadline 보강) ──
-    urg = urgent_deadlines()
-    if urg:
-        lines.append("⏰ 오늘 제일 급한 것")
-        for u in urg:
-            mmdd = u["deadline"][5:].replace("-", "/")
-            who = f" [{u['owner']}]" if u.get("owner") else ""
-            lines.append(f" · {plainify(summarize_title(u['title']))} ({mmdd} 마감){who}")
-        lines.append("")
-
-    # ── 오늘 맡긴 일 (사람별 개수 + 대표 — '…외 N건' 숨김 제거) ──
-    if assigned:
-        groups: dict[str, list] = {}
-        for a in assigned:
-            groups.setdefault(a.get("assigned_clevel", ""), []).append(a)
-        ordered_cls = [c for c in CLEVEL_ORDER if c in groups] + \
-                      [c for c in groups if c not in CLEVEL_ORDER]
-        parts = []
-        for cl in ordered_cls:
-            nick = CLEVEL_NICK.get(cl, cl or "기타")
-            dom = CLEVEL_DOMAIN.get(cl, "")
-            label = f"{nick}({dom})" if dom else nick
-            parts.append(f"{label} {len(groups[cl])}")
-        lines.append(f"▶ 오늘 맡긴 일 {len(assigned)}건 — 사람별")
-        lines.append(" " + " · ".join(parts))
-        reps = [plainify(summarize_title(a.get("title"))) for a in assigned[:2]]
-        if reps:
-            lines.append(" ↳ 예: " + " · ".join(reps))
-    else:
-        lines.append("▶ 오늘 맡긴 일: 없음")
-    if deep:
-        lines.append(f"▶ 명확화 대기: {len(deep)}건 — 명확화 후 진행")
-
-    # ── 이어서 할 일 (어제 완료 → 후속 신호) ──
-    if followups:
-        lines.append("")
-        lines.append("▶ 이어서 할 일 (어제에서 연결)")
-        for fu in followups:
-            cl = fu.get("clevel", "")
-            nick = CLEVEL_NICK.get(cl, cl) if cl else ""
-            suffix = f" [{nick}]" if nick else ""
-            lines.append(f"· {plainify(fu['quote'])}{suffix}")
-
-    # ── 마무리 (어제 완료 우선, 0건이면 최근 3일로 보강해 '완료 없음' 빈칸 방지) ──
-    yday_dt = datetime.now() - timedelta(days=1)
-    yday_label = f"{yday_dt.month}/{yday_dt.day}"
-    lines.append("")
-    if yday_items:
-        head, items_show = f"✅ 어제({yday_label}) 마무리", yday_items
-    else:
-        rec = recent_done(3)
-        head, items_show = "✅ 최근 마무리 (3일)", rec
-    if items_show:
-        lines.append(f"{head} {len(items_show)}건")
-        for d in items_show[:3]:
-            lines.append(f" · {plainify(summarize_title(d.get('title', '')))}")
-        if len(items_show) > 3:
-            lines.append(f" …외 {len(items_show) - 3}건")
-    else:
-        lines.append(f"✅ 어제({yday_label}) 마무리: 기록된 완료 없음")
+        lines.append("🔴 선장(GM) 결정: 없음")
 
     return "\n".join(lines)
 
@@ -1053,7 +1147,7 @@ def build_question_card(gm_decision: list[dict]) -> str:
     """GM 결정 필요(보안·결재) 항목 전용 카드 — 본보고와 별도 발송. 제목 잘림 없음."""
     if not gm_decision:
         return ""
-    lines = ["🔒 GM 결정 카드 (아침)"]
+    lines = ["🔴 선장 결정 카드 (아침)"]
     lines.append("아래는 GM 직접 결재 영역이라 자동으로 손대지 않았어요.")
     lines.append("")
     for i, a in enumerate(gm_decision, 1):
