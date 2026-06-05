@@ -41,6 +41,8 @@ DANGGN_SCRIPT = ROOT / "scripts" / "danggn_upload_playwright.py"      # 당근 �
 KAKAO_SCRIPT = ROOT / "scripts" / "kakao_channel_upload_playwright.py"  # 카카오 채널(자동입력, publish 실구현)
 PY = ROOT / ".venv" / "Scripts" / "python.exe"
 NOTIFIED_FILE = ROOT / "scripts" / ".review_notified.json"  # 검수대기 알림 발송 이력
+PUBLISH_LOCK_FILE = ROOT / "scripts" / ".publish.lock"  # 발행 직렬화 락(중복/허위 알림 근본 차단, 2026-06-05)
+PUBLISH_LOCK_STALE_SEC = 1200  # 락 잔존 한계(초) — 비정상 종료 시 자동 회수(발행 timeout 600초의 2배)
 CARD_MSGID_STORE = ROOT / "scripts" / ".review_card_msgids.json"  # send_review_card 가 카드 보낸 id 저장
 
 APPROVED_STATES = {"승인", "승인발행대기", "approved"}
@@ -467,7 +469,55 @@ def process_queue(items: list, dry_run: bool) -> tuple[list, list]:
     return items, events
 
 
+def acquire_publish_lock() -> bool:
+    """발행 직렬화 락 획득. 다른 발행 프로세스(승인 클릭 --once + 상시 watcher)가
+    동시에 같은 큐를 처리해 (a) lost-update로 status 되돌림 (b) 동일 업로드 동시 실행 →
+    한쪽 exit≠0을 '실패'로 오보 하는 사고 근본 차단(2026-06-05 발레 4채널 사고).
+    획득 실패 시 False 반환(이번 사이클은 조용히 스킵 — 이미 다른 프로세스가 처리 중)."""
+    try:
+        if PUBLISH_LOCK_FILE.exists():
+            age = time.time() - PUBLISH_LOCK_FILE.stat().st_mtime
+            if age > PUBLISH_LOCK_STALE_SEC:
+                print(f"[WARN] 발행 락 stale({int(age)}s) 회수")
+                try:
+                    PUBLISH_LOCK_FILE.unlink()
+                except FileNotFoundError:
+                    pass
+        # O_EXCL: 원자적 배타 생성 — 동시 두 프로세스 중 하나만 성공
+        fd = os.open(str(PUBLISH_LOCK_FILE), os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+        os.write(fd, str(os.getpid()).encode())
+        os.close(fd)
+        return True
+    except FileExistsError:
+        print("[INFO] 다른 발행 프로세스 진행 중 - 이번 사이클 스킵(중복 발행/알림 방지).")
+        return False
+    except Exception as exc:
+        print(f"[WARN] 발행 락 획득 예외({exc}) — 안전상 스킵")
+        return False
+
+
+def release_publish_lock() -> None:
+    try:
+        PUBLISH_LOCK_FILE.unlink()
+    except FileNotFoundError:
+        pass
+    except Exception as exc:
+        print(f"[WARN] 발행 락 해제 예외({exc})")
+
+
 def run_once(dry_run: bool) -> int:
+    # dry-run은 발행/알림이 없으므로 락 불필요(로직만 점검).
+    if dry_run:
+        return _run_once_inner(dry_run)
+    if not acquire_publish_lock():
+        return 0
+    try:
+        return _run_once_inner(dry_run)
+    finally:
+        release_publish_lock()
+
+
+def _run_once_inner(dry_run: bool) -> int:
     if not dry_run:
         pull_latest()
     items = load_queue()
