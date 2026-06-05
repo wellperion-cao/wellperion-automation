@@ -32,7 +32,7 @@
 - 공통 탭 (전 C-Level 필수): `data-panel="common"` — 절대 원칙 3대·업무 처리 3단계·보고 표 형식 의무
 - 본인 탭: `data-panel="{role}"` — 페르소나·핵심역할·담당 KPI·실무진·핵심업무·협업 리듬
 - 규칙: 작업 전 반드시 가이드허브 fetch. R/R 하드코딩 금지. Notion AI 조직 DB는 폐기 진행 중 — 호출 금지.
-- 본인 위임 task: `status/{role}.json` + `status/_queue.json` read
+- 본인 위임 task: **`status/_queue.json` 단일 출처**에서 본인 clevel의 PENDING·IN_PROGRESS만. `status/{role}.json`은 보조(메타)뿐 — 완료건 부활 금지, 큐 비면 '대기'.
 
 
 ## 3. 보고·승인
