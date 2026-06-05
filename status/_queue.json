@@ -1,76 +1,5 @@
 [
   {
-    "task_id": "COO-2026-05-29-ID-NUMBER-PREFIX",
-    "clevel": "coo",
-    "title": "업무 현황 SSOT 카드 앞에 번호 표시",
-    "status": "DONE",
-    "depends_on": null,
-    "enqueued_at": "2026-05-29T13:15:08.963032",
-    "commit_sha": null,
-    "processed_at": null
-  },
-  {
-    "task_id": "CTO-2026-05-29-SEED01-APPROVAL-PDF",
-    "clevel": "cto",
-    "title": "시드 #01 결재 자동 보고서",
-    "status": "DONE",
-    "depends_on": "CTO-2026-05-29-NOTION-DEPRECATE",
-    "enqueued_at": "2026-05-29T13:26:34.866039",
-    "processed_at": "2026-05-30"
-  },
-  {
-    "task_id": "CMO-2026-05-29-SEED09-AI-SLIDE-INSTA",
-    "clevel": "cmo",
-    "title": "시드 #09 AI 슬라이드 + 인스타 업로드",
-    "status": "DONE",
-    "depends_on": null,
-    "enqueued_at": "2026-05-29T13:31:20.040866",
-    "processed_at": "2026-05-29T19:17:13",
-    "note": "발행 완료(namuk.wellperion/p/DY6rZcgkqr6) + 검수카드 동기화. SYNC 후속 CMO-2026-05-29-REVIEW-PUBLISH-SYNC 완료."
-  },
-  {
-    "task_id": "CTO-2026-05-29-SEED04-STEP1-COLLECT",
-    "clevel": "cto",
-    "title": "시드 #04 1단계 수집 인프라",
-    "status": "DONE",
-    "depends_on": "CTO-2026-05-29-SEED01-APPROVAL-PDF",
-    "enqueued_at": "2026-05-29T14:04:41.843075",
-    "processed_at": "2026-05-30"
-  },
-  {
-    "task_id": "COO-2026-05-29-APPROVAL-UI-MARK-FIX",
-    "clevel": "coo",
-    "title": "결재 SSOT 카드 상태 마킹 수정",
-    "status": "DONE",
-    "priority": "HIGH",
-    "enqueued_at": "2026-05-29T14:35:17.136376",
-    "processed_at": "2026-05-30"
-  },
-  {
-    "task_id": "COO-2026-05-29-S4-SSOT-REVAMP",
-    "clevel": "coo",
-    "title": "S4 업무&결재 SSOT 2페이지 UI/UX 통일 + 업무현황 대표님 결제건 삭제 + 결재현황 GM·대표 승인/반려 PIN 게이트(Apps Script 서버검증, PIN은 스크립트 속성에 GM 직접 설정 — 평문 코드 금지)",
-    "status": "DONE",
-    "depends_on": null,
-    "priority": "HIGH",
-    "enqueued_at": "2026-05-29T17:17:17.961503",
-    "processed_at": "2026-05-31",
-    "note": "전 범위 완료·라이브검증(2026-05-31 CEO). 대표 결재건 제거(fb622ee)+PIN 게이트 서버검증 배선(prompt→signTask→todo_sign) 확인. APPROVAL_PIN_GM·APPROVAL_PIN_REP 설정 라이브 확정(오답 PIN→'불일치', '미설정' 아님). 배포본 작동."
-  },
-  {
-    "task_id": "CTO-2026-05-29-IG-APPROVAL-RELAY",
-    "clevel": "cto",
-    "title": "인스타 검수 [승인] 클릭 → review_queue.json status='승인' GitHub 기록 중계 (Phase 2 연결). 감시기·발행기·검수카드는 완성, 중계만. 🔒 GitHub 쓰기 토큰=GM 결재·Apps Script 스크립트속성 저장. 상세 브리프: status/briefs/CTO-2026-05-29-IG-APPROVAL-RELAY.md",
-    "status": "DONE",
-    "depends_on": null,
-    "priority": "NORMAL",
-    "brief": "status/briefs/CTO-2026-05-29-IG-APPROVAL-RELAY.md",
-    "enqueued_at": "2026-05-29T19:04:06.499898",
-    "commit_sha": null,
-    "processed_at": "2026-06-01",
-    "note": "[2026-06-01 종료] CTO 슬라이스(승인 중계+토큰 저장) 빌드·라이브검증 완료(2026-05-31 CEO). GITHUB_TOKEN 설정 확정, review_set_status 액션 배포·end-to-end 작동, gm1 검수카드 [승인]→relay() 완전 배선. CMO 발행 파이프라인(검수카드·감시기·발행기)도 완성. GM 결정(2026-06-01): CMO건 사실상 해결, 내일 GM 실발행 실측 예정·불안 시 재요청. CTO 미완 과제 아님(잔여 실발행 가동=CMO 파이프라인 외부공개 GM go 사안)."
-  },
-  {
     "task_id": "CEO-2026-05-30-REPORT-CONTENT-POLISH",
     "clevel": "ceo",
     "title": "아침/저녁 자동보고 내용 가다듬기",
@@ -81,55 +10,6 @@
     "note": "형식은 GM 승인 완료(표+결정중심·3분류·제목요약·운영기본값 SSOT). 내용 디테일은 GM 회사 출근 후 구체 피드백 예정 → 그때 반영."
   },
   {
-    "task_id": "NEXT-2026-05-30-01-결재SORT칸",
-    "clevel": "coo",
-    "title": "결재현황 SSOT에 정렬(Sort) 칸 추가 — 업무현황과 통일. COO executor 위임",
-    "status": "DONE",
-    "priority": "HIGH",
-    "enqueued_at": "2026-05-30",
-    "commit_sha": "5d365b1",
-    "note": "정렬 4옵션(최신순/결재상태/카테고리/시작일순) 추가. 라이브 grep 13건 검증(CEO 독립 재확인)."
-  },
-  {
-    "task_id": "NEXT-2026-05-30-02-G1필터수정",
-    "clevel": "ceo",
-    "title": "G1 '오늘 완료' 과거건 오염 수정 — gm1FetchSsot에 ssotDateLocal 추가, 김남욱GM 항목 중 시작일=오늘(KST)만 합류. (큐 오진 정정: 팀작업 15건은 owner=AI CEO라 무관, 진짜 범인은 GM 과거 완료건)",
-    "status": "DONE",
-    "priority": "HIGH",
-    "enqueued_at": "2026-05-30",
-    "commit_sha": "46fcd3a",
-    "note": "라이브 DOM 렌더 실측 검증 — 오늘 완료 1건(과거 제거), 검수박스 삭제 동반(#A)."
-  },
-  {
-    "task_id": "NEXT-2026-05-30-03-부서장요청",
-    "clevel": "coo",
-    "title": "부서장 명단·부서 매핑 — 운영부=이경연 실장 / 시설부=이정헌 소장 / 파트너팀=나우열M. 결재 1단계 부서장 자동 지정·표시. (deep-interview로 분실 요청 복원)",
-    "status": "DONE",
-    "enqueued_at": "2026-05-30",
-    "spec": ".omc/specs/deep-interview-부서장-매핑.md",
-    "commit_sha": "bf42d56",
-    "note": "카테고리→부서→부서장 자동 특정 표시. 라이브 grep 매핑 3종 노출 검증(CEO 독립 재확인). Apps Script 불필요."
-  },
-  {
-    "task_id": "NEXT-2026-05-30-04-운영SSOT·인덱스",
-    "clevel": "ceo",
-    "title": "운영기본값 SSOT에 '세션 시작=이 SSOT 읽기' 행 추가(#12) + MEMORY.md 인덱스 재생성",
-    "status": "DONE",
-    "enqueued_at": "2026-05-30",
-    "commit_sha": "34b1502",
-    "note": "운영기본값 11→12행. MEMORY.md 154줄=실제 154파일 일치, 23,717B(<24,400). 라이브 검증(CEO 독립 재확인)."
-  },
-  {
-    "task_id": "NEXT-2026-05-30-05-결과보고-초안자동생성",
-    "clevel": "coo",
-    "title": "결과보고서 = 결재와 분리, 담당자가 작성 + 인쇄/PDF 다운로드 — 업무 카드에 결과보고 버튼. 결재 무관 항상 가능. 담당자 표시 ' · ' 구분 정리.",
-    "status": "DONE",
-    "priority": "HIGH",
-    "enqueued_at": "2026-05-30",
-    "commit_sha": "c10d5d7",
-    "note": "카드마다 🖨 결과보고 버튼(작성 전 비활성)·result 잠금 해제. 담당자 콤마→' · '(b235e27). 라이브 검증. 자동생성 옵션A 폐기."
-  },
-  {
     "task_id": "CTO-2026-06-04-DANGGN-SEMIAUTO",
     "clevel": "cto",
     "title": "당근 비즈프로필 반자동 발행 구현 — danggn_upload_playwright.py draft/publish 에디터 DOM 실측 + 자동입력 완성. 상세 브리프: status/briefs/CTO-2026-06-04-DANGGN-SEMIAUTO.md",
@@ -138,17 +18,6 @@
     "priority": "NORMAL",
     "brief": "status/briefs/CTO-2026-06-04-DANGGN-SEMIAUTO.md",
     "enqueued_at": "2026-06-04T00:00:00"
-  },
-  {
-    "task_id": "GM-2026-06-01-04-SCHEDULER-AUTOSTART",
-    "clevel": "gm1",
-    "owner": "김남욱GM",
-    "title": "[관리자] 텔레그램 봇·스케줄러 부팅 자동기동 등록 — telegram_bot/register_task_scheduler.bat 우클릭 '관리자 권한으로 실행' 1회",
-    "status": "DONE",
-    "priority": "HIGH",
-    "enqueued_at": "2026-06-01",
-    "processed_at": "2026-06-01",
-    "note": "GM 관리자 실행 완료(2026-06-01). 실측 검증: WellperionDailyScheduler·WellperionTelegramBot 둘 다 Ready·LogonTrigger·C:\\Python314\\python.exe 경로 정확. 재부팅 시 봇·스케줄러 자동기동 + 노션 뗀 새 pre_task_notifier 코드 적용. 재부팅 위험 해소."
   },
   {
     "task_id": "COO-2026-06-04-SUPPORT-ISSUE-SAVE",

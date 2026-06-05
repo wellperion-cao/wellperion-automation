@@ -53,6 +53,9 @@ _QUEUE_PATH = _STATUS_DIR / "_queue.json"   # 중앙 큐(일의 브릿지 단일
 # (ceo_morning_pipeline.py 와 동일 패턴)
 if str(_PACKAGE_ROOT) not in sys.path:
     sys.path.insert(0, str(_PACKAGE_ROOT))
+# queue_archive(끝난 일 자동 정리) 등 동일 폴더 sibling 모듈 import 보장
+if str(_BASE) not in sys.path:
+    sys.path.insert(0, str(_BASE))
 
 # .env 로드(텔레그램 토큰/chat_id). 토큰 원문은 절대 stdout 출력하지 않는다.
 try:
@@ -242,6 +245,13 @@ def update_queue_with_bridge(
         tmp.write_text(json.dumps(queue, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
         os.replace(str(tmp), str(_QUEUE_PATH))
         print("[Bridge] _queue.json 갱신 — " + label)
+        # 끝난 일 자동 정리: 완료 2일 경과 DONE 을 _archive.json 으로 이동(오늘 완료는 보고용 잔류).
+        # 실패해도 브릿지 본 동작에는 영향 없게 best-effort.
+        try:
+            from queue_archive import sweep_old_done
+            sweep_old_done()
+        except Exception as _e:  # noqa: BLE001
+            print("[WARN] 끝난 일 자동 정리 건너뜀: " + str(_e), file=sys.stderr)
         return (label, True)
     except OSError as e:
         print("[ERROR] _queue.json 브릿지 갱신 실패: " + str(e), file=sys.stderr)
