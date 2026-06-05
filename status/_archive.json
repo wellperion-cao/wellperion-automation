@@ -142,5 +142,242 @@
     "processed_at": "2026-06-01",
     "note": "GM 관리자 실행 완료(2026-06-01). 실측 검증: WellperionDailyScheduler·WellperionTelegramBot 둘 다 Ready·LogonTrigger·C:\\Python314\\python.exe 경로 정확. 재부팅 시 봇·스케줄러 자동기동 + 노션 뗀 새 pre_task_notifier 코드 적용. 재부팅 위험 해소.",
     "archived_at": "2026-06-05"
+  },
+  {
+    "task_id": "CMO-2026-05-29-SEED09-AI-SLIDE-INSTA",
+    "title": "시드 #09 — AI 슬라이드 4-5장 + 캡션 자동 → GM 개인 인스타 자동 업로드",
+    "assigned_at": "2026-05-29T13:31:20.040866",
+    "status": "DONE",
+    "artifact_url": "https://www.instagram.com/namuk.wellperion/p/DY6rZcgkqr6/",
+    "blocks": [],
+    "clevel": "cmo",
+    "archived_at": "2026-06-05T08:59:54.566517+00:00"
+  },
+  {
+    "task_id": "CMO-2026-05-29-REVIEW-PUBLISH-SYNC",
+    "title": "검수 큐 발행완료 반영 + 발행 후처리 자동 갱신 hook + G1 라이브 검증",
+    "status": "DONE",
+    "artifact_url": "https://www.instagram.com/namuk.wellperion/p/DY6rZcgkqr6/",
+    "blocks": [],
+    "clevel": "cmo",
+    "archived_at": "2026-06-05T08:59:54.566517+00:00"
+  },
+  {
+    "task_id": "COO-2026-06-04-NOTICE-PRINT-FIX",
+    "title": "공지 서식(O2) 인쇄 글씨크기 역전 + 제목중복 외 일괄 수정",
+    "assigned_at": "2026-06-04",
+    "status": "DONE",
+    "result": "GM '문제 많다' 점검 지시. 라이브 실측(콘솔0·404 0·워터마크 정상)으로 '이미지 깨짐' 오진 기각 후, 출력물 실측에서 진짜 결함 발견·수정. ①핵심: 줄 크기 px 절대값→18px기준 em 상대값. 미리보기는 px·인쇄/PDF/PNG 빌더는 vmin 환산이라 '크게'가 인쇄에서 오히려 작아지던 역전 해소(작<보통<크 정상). ②프리셋 7종 첫 제목줄을 본문에서 제거→소제목 칸 자동 채움(제목 1곳, 중복 0). ③첫화면 소제목도 자동(일관성). ④게시기간 기본 오늘~오늘+13일(2주). ⑤가로 출력 본문 세로 중앙정렬(하단 여백 해소). ⑥중첩 em 복리 방지·저장본 기본 18 정합. commit 7a20afc push. 로컬 Playwright 출력 캡처로 크기순서·중복0·center·날짜 검증. 미수정(저위험 문서화): 로컬 file:// 워터마크 404(라이브 정상)·삭제비번 1234(localStorage 한정). [후속 v2.58 6b3c1ac] GM 재지시(입력칸/미리보기/인쇄 글씨크기 전혀 다름·미리보기=인쇄여야 정상). 웰리 독립감사 후 근본원인 재진단: 미리보기는 본문 기본크기 CSS고정·인쇄빌더는 px입력칸 값 기준 환산 → px칸 한번 건드리면 인쇄 본문 전체가 2배+ 폭발(34→76px), 미리보기 불변이라 불일치. 수정: 미리보기·인쇄 둘 다 18 기준 비례 동일공식으로 통일(세로0.17·가로0.15), px입력칸은 선택 줄만 em으로 키우고 본문 기본 무영향, 줄간격 양방향 일치, resize 재산출. Playwright 검증: px칸50 입력해도 미리보기기본 불변·인쇄 폭발0·미리보기:인쇄 비율1·출력 스크린샷 시각일치. [후속 v2.59 54a71ce] GM: Ctrl+A 전체선택 후 맨 아래(실제론 첫 줄 등) 한 줄이 서식에서 빠짐. 원인: 브라우저가 일부 줄을 <p> 없는 bare text/inline 노드로 둬(예 '첫줄<p>둘째</p>') 줄단위 서식이 블록 못 찾아 건너뜀. 수정: ntNormalizeBlocks로 최상위 맨몸 노드를 <p>로 정규화 + Ctrl/Cmd+A 가로채 정규화 후 전체선택 + 각 서식 직전·blur 시 정규화, 한글 IME 조합 중엔 미실행. 라이브 Playwright: 맨몸 4구조 Ctrl+A→크게 전 줄 <p>화·전 줄 적용, 부분선택 회귀0, 콘솔0. [후속 v2.60 1a2fa58] GM: v2.59 후에도 Ctrl+A 후 크기 적용 시 맨 아랫줄 누락 지속. 원인 2겹: ①한글 IME 입력 중 Ctrl+A는 e.key가 'a' 아닌 'ㅁ'으로 잡혀 가로채기 핸들러 미작동→브라우저 기본 전체선택 폴백 ②execCommand('fontSize')가 전체선택 시 마지막 줄 누락하는 브라우저 버그. 수정: Ctrl+A 감지를 물리키 e.code==='KeyA'로(IME 무관), ntFmtSize 여러줄/커서 선택 시 execCommand 대신 블록 직접 열거해 통째 em 적용(어떤 선택방식이든 막내줄 포함), 한 줄 부분선택만 execCommand 유지. 라이브 검증: 네이티브 전체선택·핸들러 둘 다 막내줄 포함 전부 적용, 부분/커서 회귀0, 콘솔0. GM '제목 띄어쓰기' 의도 확인 결과=두 줄 제목(줄바꿈). [후속 v2.61 c98464b] 제목칸(한글·영문) input→textarea 전환, Enter로 줄바꿈. escBr()(이스케이프+\\n→<br>)로 미리보기·인쇄/PDF/PNG·저장/불러오기 모두 줄바꿈 반영, 파일명은 줄바꿈→공백. 라이브 검증: textarea 전환·Enter 줄바꿈·미리보기 <br>·PNG출력 2줄·저장불러오기 보존·콘솔0. [후속 v2.62 5971eef] GM 정밀재현(저장본 '아파트&상가 소방점검 안내' 편집→Ctrl+A→작게 시 마지막 줄 '회원님 안전을 가장 먼저'만 안 줄어듦)으로 v2.60 미흡 확정. 진짜 원인: Ctrl+A 전체선택은 범위 양끝점이 편집칸 자체(블록 아님)라 blockOf(끝점)=null→여러줄 분기 미진입→막내줄 누락 execCommand 폴백(Playwright는 끝점 자동보정해 안 보였음). 수정: 선택이 닿는 줄을 range.intersectsNode로 직접 판정(끝점 형태 무관, 막내줄 포함), 한 줄 안 부분선택은 compareBoundaryPoints로 구분, 저장본 불러올 때 정규화 추가. 라이브 검증: 편집칸-레벨 전체선택서 5줄 전부 적용(막내 포함)·부분선택 회귀0·콘솔0. [후속 v2.63~64 f24959f] GM: 저장목록이 내 PC에서만 보이고 다른 PC엔 안 보임. 원인=localStorage(PC별 개별), 버그아님. 전 PC 공유로 전환: GAS(.deploy-todo 업무&결재현황.js)에 notice_list/save/delete + '공지서식저장' 시트탭 순수추가(todo 무영향), 본문 큰 HTML이라 save는 no-cors POST, 대상행 텍스트포맷후 setValues로 날짜/숫자/저장일 자동변환 차단. HTML은 서버우선+localStorage폴백, ntSave는 항상 서버POST(list확인 비의존), 날짜는 YYYY-MM-DD만 적용, 기존 로컬저장본 merge 이전. clasp 인증만료→GM 재로그인후 push+재배포(@47). 라이브 E2E: PC-A 저장버튼→새 컨텍스트(다른PC) 즉시 공유표시·한글/날짜/숫자 텍스트보존·todo_list 회귀0·콘솔0. 테스트잔재 정리, 공유목록=실공지 2건.",
+    "clevel": "coo",
+    "archived_at": "2026-06-05T08:59:54.566517+00:00"
+  },
+  {
+    "task_id": "COO-2026-05-29-ID-NUMBER-PREFIX",
+    "title": "업무 현황 SSOT 카드 앞에 번호 표시 (#001 #002 ...)",
+    "assigned_at": "2026-05-29T13:15:08.963032",
+    "status": "DONE",
+    "blocks": [],
+    "result": "기존 맨 숫자(1,2..) → #001 형식(# 접두+3자리 zero-pad)으로 변경. 카테고리 그룹 넘어 순번 누적. Playwright 37장 #001~#037 연속·형식 검증.",
+    "clevel": "coo",
+    "archived_at": "2026-06-05T08:59:54.566517+00:00"
+  },
+  {
+    "task_id": "COO-2026-05-29-APPROVAL-UI-MARK-FIX",
+    "title": "결재 SSOT 카드 상태 마킹 수정 — 모든 카드가 진행중으로만 표시되는 UI 문제",
+    "assigned_at": "2026-05-29T14:35:17.136376",
+    "status": "DONE",
+    "priority": "HIGH",
+    "blocks": [
+      "seed-2026-05-29-03"
+    ],
+    "result": "결재상태 컬럼이 비어 있어도 싸인 실측으로 단계 산출. 대기(노랑)·진행중(파랑)·완료(초록)·반려(빨강) 4색 칩+좌측 테두리. 라이브 10건 + Playwright 렌더 검증.",
+    "clevel": "coo",
+    "archived_at": "2026-06-05T08:59:54.566517+00:00"
+  },
+  {
+    "task_id": "COO-2026-05-29-S4-PIN-AND-CLEANUP",
+    "title": "S4 #003 결재 PIN 서버검증 보안 강화 + 업무 SSOT 시트 정리",
+    "assigned_at": "2026-05-29T15:30:00",
+    "status": "DONE",
+    "result": "A) 평문 PIN(0987/3211) HTML 제거 → 페이지는 입력만, Apps Script ScriptProperties 서버검증으로 이전(.deploy-todo todo_sign, SEED01 PDF hook 무충돌·구문검증). GM redeploy + APPROVAL_PIN_GM/APPROVAL_PIN_REP 속성 설정 필요. B) 시트 중복 2건 삭제(공지/안내문·AI C-Level 개요 진행중 dup, 내용 동일 확인)+AI학습시스템 완료갱신, 40→38건. 전사기준은 이미 완료.",
+    "clevel": "coo",
+    "archived_at": "2026-06-05T08:59:54.566517+00:00"
+  },
+  {
+    "task_id": "COO-2026-05-29-CHECKLIST-UI-REVAMP",
+    "title": "지원부 체계 페이지 개편 — 관리UI 삭제 + 점검 항목 상태 체크",
+    "assigned_at": "2026-05-29T16:30:00",
+    "status": "DONE",
+    "result": "삭제: PDF 원본 매뉴얼 링크·점검 항목 관리 섹션(추가폼·추가항목목록·JSON내보내기/가져오기/초기화)·헤더 항목추가 버튼 + 고아 JS 9개(mgmtAddItem/StartEdit/CancelEdit/ClearForm/DeleteItem/RenderList/ExportJSON/ImportJSON/ResetAll)+openMgmtAddForm. 보존: 텍스트 운영매뉴얼·데이터계층(CUSTOM_ITEMS·시트동기화·스케줄주입). 개편(GM 재지시 '수정 아니라 상태 체크'): 현재 전체 점검 항목을 항목별 체크박스(점검완료)+토글(상세) 구성, onManualCk가 기존 STATE/saveState/pushToServer 재사용해 시트 영구 저장(전체 41항목). Playwright 검증: 삭제 잔존0·고아함수 undefined·체크→save POST(checked:true)·에러0·스크린샷.",
+    "clevel": "coo",
+    "archived_at": "2026-06-05T08:59:54.566517+00:00"
+  },
+  {
+    "task_id": "COO-2026-06-01-APPROVAL-TOOLBAR-UNIFY",
+    "title": "결재 현황 SSOT 툴바 업무현황 정렬식 통일",
+    "assigned_at": "2026-06-01",
+    "status": "DONE",
+    "result": "툴바를 본문(720px)→sticky-top 풀폭으로 이동, filter-row(nowrap 가로스크롤) 구조로 교체. '차례:'/'카테고리:' 라벨 제거, 결재자 줄을 담당자 버튼 정렬식으로 통일, 상태탭 1줄 좌측 유지(GM Q1). 기능 전부 보존(상태/결재자/카테고리/정렬/검색). 로컬+라이브 Playwright 검증(에러0·상태탭4·담당자6·카테고리4·버튼4·카드10·sticky·라벨0). commit 6a86db4 push 8f30448.",
+    "clevel": "coo",
+    "archived_at": "2026-06-05T08:59:54.566517+00:00"
+  },
+  {
+    "task_id": "COO-2026-06-01-PRINT-AUDIT-FIX",
+    "title": "업무·결재 SSOT 인쇄/다운로드 전체 점검 + 인쇄 품질 버그 일괄 수정",
+    "assigned_at": "2026-06-01",
+    "status": "DONE",
+    "result": "전수 점검(인쇄/다운로드/대시보드/필터/콘솔). 발견·수정: ①업무현황 목록·대시보드 인쇄가 다크 카드 그대로 출력(@media print 변수 미재정의) → 라이트 :root 팔레트 추가 ②업무현황 인쇄 제목 헤더 표시(결재현황과 통일) ③결재현황 대시보드 인쇄 다크 패널 → 변수 재정의+.dash-panel 흰색 ④결재현황 네비링크 인쇄 잔존(선택자 오타 .sheet-links) → .header-right/.sheet-link 정정. 라이브 Playwright 검증(양 페이지 목록+대시보드: 배경 rgb(255,255,255)·네비숨김·콘솔0). commit eec24bb push f8b84a9. 다운로드=브라우저 인쇄→PDF저장 정상(별도 다운로드 버튼 없음=추천사항).",
+    "clevel": "coo",
+    "archived_at": "2026-06-05T08:59:54.566517+00:00"
+  },
+  {
+    "task_id": "COO-2026-06-01-SSOT-IMPROVE-BATCH",
+    "title": "두 SSOT 연속 점검·보완 — 검색/보고서/완료반려토글/결재진행바",
+    "assigned_at": "2026-06-01",
+    "status": "DONE",
+    "result": "GM 배치 요청 일괄 처리. ①양 페이지 검색 노이즈 제거: t.content 원본(마커 ===RESULT===등) 매칭 버그 → parseContent 깨끗한 필드만 검색(commit 3c9a073, 마커검색 0건/실단어 정상). ②업무현황 인쇄 보고서 '결과보고서'→'업무 보고서' + 버튼 '🖨 보고서' + 기간 ISO→날짜만(4103d0b). ③결재현황 전체보기 결재완료·반려 접이식 분류(ebe984e). ④결재현황 카드 결재 진행바 부서장→GM→대표 ●─●─○ 시각화(d842d9d). 제목옆 카테고리는 기존 존재 확인. 전부 로컬+라이브 Playwright 검증·콘솔0. 잔여: 공유링크 기능 deep-interview 파킹(딥링크=전체보기후 스크롤+하이라이트+상세펼침까지 확정).",
+    "clevel": "coo",
+    "archived_at": "2026-06-05T08:59:54.566517+00:00"
+  },
+  {
+    "task_id": "COO-2026-06-01-SHARELINK-AND-IMPROVE",
+    "title": "두 SSOT 공유링크/딥링크 + 개선후보(캐시버전)",
+    "assigned_at": "2026-06-01",
+    "status": "DONE",
+    "result": "공유링크 기능 양 페이지 구현(deep-interview 설계 확정분). ①툴바 '🔗 링크' = 현재 필터(담당자·결재자·상태·카테고리·정렬·검색) URL 생성·복사 → 받는 사람이 열면 동일 화면 재현(applyUrlParams 최초1회 가드). ②카드별 '🔗' = 개별 건 딥링크(?item=id) → 결재현황은 전체보기+스크롤+하이라이트+상세펼침, 업무현황은 소속 카테고리 아코디언 자동 열기까지. commit a85a34e(결재)+5421425(업무). 개선후보: __PV 캐시버전 20260531-1→20260601-1 양쪽 상향(426412a, 캐시 사용자 자동 갱신). 전부 로컬+라이브 Playwright 검증(버튼·링크생성·파라미터적용·딥링크·콘솔0). 미실행 개선후보: 진행바↔싸인라인 중복 간결화·두 페이지 카드액션 통일 = 현재 기능적 정상이라 GM 라이브 확인 후 판단 권장.",
+    "clevel": "coo",
+    "archived_at": "2026-06-05T08:59:54.566517+00:00"
+  },
+  {
+    "task_id": "COO-2026-06-01-MERGE009-AND-WORKSSOT-FIXES",
+    "title": "#009 합병 + 업무현황 3종(진척로그·완료건·중복방지)",
+    "assigned_at": "2026-06-01",
+    "status": "DONE",
+    "result": "①데이터 합병: #009 '운영 통합 체계 4부서 셋업'(id …953)에 #017 '지원부→운영부 이관'(…461)+#022 '운영부·시설부·주차관리부 체계 확장'(…765) 내용 합병→원본 2건 삭제(66→64). #009 담당자 김남욱GM 단독→이경연 실장·최준용M(excludeGmOnly로 숨겨지던 원인 해소, 업무현황 노출 확인). 카테고리 [2]·결재요청 대표님 보존. GM 확정안(카테고리유지·실무자지정·원본삭제). todo_update 부분업데이트+todo_delete, 라이브 검증. ②진척로그 멀티라인·빈줄 저장후 소실 버그→parseContent 연속줄 보존+pre-wrap(5a61f03, 양 페이지). ③완료건 선긋기 해제+내용 토글+🔗·🖨보고서(7fe4589). ④업무명 중복방지 datalist 자동완성+기존 불러오기(e9d3b6c). 전부 Playwright 검증·콘솔0.",
+    "clevel": "coo",
+    "archived_at": "2026-06-05T08:59:54.566517+00:00"
+  },
+  {
+    "task_id": "CTO-2026-05-29-NOTION-DEPRECATE",
+    "title": "노션 잔존 DB → 가이드허브 흡수 + 노션 원본 제목 앞 [폐기] 표기",
+    "assigned_at": "2026-05-29T12:06:00.781241",
+    "status": "DONE",
+    "completed_at": "2026-05-29T16:58:23",
+    "note": "단계적 폐기(GM 결재). 코드 참조 0건 콘텐츠 DB 6개 [폐기] 표기 완료. 업무자동화DB는 후속 AUTOMATION-DB-MIGRATE.",
+    "blocks": [
+      "G1-2026-05-29-04-SSOT-AUTO-JOIN"
+    ],
+    "clevel": "cto",
+    "archived_at": "2026-06-05T08:59:54.566517+00:00"
+  },
+  {
+    "task_id": "CTO-2026-05-29-SEED01-APPROVAL-PDF",
+    "title": "시드 #01 — 결재 완료 시 자동 결과보고서 PDF + 결재 현황 SSOT 첨부",
+    "assigned_at": "2026-05-29T13:26:34.866039",
+    "status": "DONE",
+    "completed_at": "2026-05-29T17:55:00",
+    "note": "Apps Script(업무&결재 현황.js)에 결과보고서URL 컬럼 + _generateResultReport(HTML→PDF→Drive) + todo_sign 결재완료 hook 추가. 프론트(결재 현황 SSOT.html)에 결과보고서 링크. clasp @12→@14 재배포. 라이브 실측: 결재완료→유효 PDF 105KB 생성·다운로드·신규 컬럼 노출 확인.",
+    "blocks": [],
+    "clevel": "cto",
+    "archived_at": "2026-06-05T08:59:54.566517+00:00"
+  },
+  {
+    "task_id": "CTO-2026-05-29-AUTOMATION-DB-MIGRATE",
+    "title": "업무자동화DB 폐기 2단계 — 텔레그램 자동화 6파일을 status/json 읽기로 전환 후 노션 업무자동화DB [폐기]",
+    "assigned_at": "2026-05-29T16:58:23",
+    "status": "DONE",
+    "completed_at": "2026-06-01T18:20:00",
+    "note": "GM 2026-06-01 옵션B(대체설계 후 노션 끊기) 결정. 1단계: pre_task_notifier 노션→status/schedule.json 이관(14건, commit 4312eb7). g19 반영. 종착: 코드 실측 검증 — pre_task_notifier=schedule.json 소스(노션 의존 0), auto_task_watcher.py=git 추적이력無·소스소실로 scheduler import 항시 실패(미등록), 결과 노션 업무자동화DB 라이브 reader 0건 확인 후 노션 데이터소스(4f19597f) 제목 '[폐기] 📅 업무자동화DB'+폐기설명 표기 완료(실측). 후속(GM 공식 폐지 결재): daily_scheduler 죽은 auto_task_watcher import 블록 제거(제거주석 대체)+pre_task_notifier 알림문구 노션/auto_task_watcher 구식표현→작업스케줄러 자동 체계로 정정(v1.0→v1.1). 양 파일 py_compile OK, auto_task_watcher 잔존참조 0(폐지주석만). 다음 스케줄러 재기동 시 적용.",
+    "depends_on": "CTO-2026-05-29-NOTION-DEPRECATE",
+    "blocks": [],
+    "clevel": "cto",
+    "archived_at": "2026-06-05T08:59:54.566517+00:00"
+  },
+  {
+    "task_id": "CTO-2026-05-29-SEED04-STEP1-COLLECT",
+    "title": "시드 #04 1단계 — 학습 자료 자동 수집 인프라 (learning/ 디렉토리 + 트리거 + 7개 소스 collector)",
+    "assigned_at": "2026-05-29T14:04:41.843075",
+    "status": "DONE",
+    "completed_at": "2026-05-29T18:12:00",
+    "note": "기존 ai_education_auto_learner.py 확장(중복 신설 금지). 소스 3→7, learning/sources.json(SSOT)+README, learner v1→v2(json 로드+폴백). 주간 트리거는 기존 작업 스케줄러 Wellperion-AI-Education-Weekly(월 09:30) 재사용. 실측: 7소스 전부 fetch 성공·84건 수집·--status 7소스 인식 확인.",
+    "depends_on": "CTO-2026-05-29-SEED01-APPROVAL-PDF",
+    "blocks": [],
+    "clevel": "cto",
+    "archived_at": "2026-06-05T08:59:54.566517+00:00"
+  },
+  {
+    "task_id": "CTO-2026-05-29-AUTOMATION-STATUS-FIX",
+    "title": "업무자동화 현황 SSOT 정비 (가이드허브 g19 — 실가동 대조)",
+    "assigned_at": "2026-05-29T18:20:00",
+    "status": "DONE",
+    "completed_at": "2026-05-29T18:25:00",
+    "note": "/team(워커1)로 진행. 점검 표 9→6행(노션 폐기 무력 3행 제거+근거 열), 자동화된 업무 표 8행 신설(예약작업), 노션 잔재 정리. 리드 실측: 상시 프로세스 bot+scheduler 2개, 예약작업 9개 Ready 확인.",
+    "blocks": [],
+    "clevel": "cto",
+    "archived_at": "2026-06-05T08:59:54.566517+00:00"
+  },
+  {
+    "task_id": "CTO-2026-05-29-GM-SSOT-AUTOSYNC",
+    "title": "seed#10 1차 — GM 오늘할일 ↔ 업무현황 SSOT 단방향 자동 합류",
+    "assigned_at": "2026-05-29T18:35:00",
+    "status": "DONE",
+    "completed_at": "2026-05-29T18:50:00",
+    "note": "/team(워커1·opus)로 진행. gm1FetchSsot로 담당자 김남욱GM(19건)+GM 결재차례 합류, 분류 필터 4종, 제목 dedup(SSOT 우선), SSOT 항목 read-only, 완료 동기화. 라이브 Playwright 실측: SSOT 뱃지 29·필터 동작·콘솔오류(내 변경발) 0. 2차(G1→SSOT 쓰기)는 별건. 참고: status/_queue.json 404는 무관한 기존 이슈(별도).",
+    "blocks": [],
+    "clevel": "cto",
+    "archived_at": "2026-06-05T08:59:54.566517+00:00"
+  },
+  {
+    "task_id": "CTO-2026-05-29-RESULT-REPORT-AUTOGEN",
+    "title": "결과보고 저장 시 결과보고서 PDF 자동생성 (SEED01 확장)",
+    "assigned_at": "2026-05-29T18:50:00",
+    "status": "DONE",
+    "completed_at": "2026-05-29T19:05:00",
+    "note": "/team(워커1·opus). _parseTodoContent 마커 파싱 + _generateResultReport 구조화(본문/결과보고 박스/진척 타임라인/계획/예산) + todo_update에 ===RESULT=== 훅(결재 없이 결과보고만 저장해도 PDF 생성). 카드에 결과보고서 링크 노출. clasp @12→@16 재배포. 라이브 실측: 결과보고+진척 저장→유효 PDF 생성·다운로드 확인→테스트행 삭제. [후속 RESULT-PRINT-MANUAL로 자동→수동 전환됨]",
+    "blocks": [],
+    "clevel": "cto",
+    "archived_at": "2026-06-05T08:59:54.566517+00:00"
+  },
+  {
+    "task_id": "CTO-2026-05-29-RESULT-PRINT-MANUAL",
+    "title": "결과보고서 자동생성 → 수동 인쇄/PDF 저장 버튼 전환 + 결재란 (GM 결재)",
+    "assigned_at": "2026-05-29T19:08:00",
+    "status": "DONE",
+    "completed_at": "2026-05-29T19:25:00",
+    "note": "GM '자동보단 수동' 결재. 백엔드 자동생성 트리거(todo_update·todo_sign) + 죽은 함수 제거, clasp @12→@17 재배포. 프론트: 편집 모달 '인쇄/PDF 저장' 버튼 + #resultReportPrint 인쇄뷰(parseContent 재사용) + 결재요청 시 우상단 결재란(담당·부서장·GM·대표). designer 에이전트 제작 + 옛 자동 링크 잔재 정리. 라이브 Playwright 실측: 29업무 렌더·오류0·결재란 조건부(승인8/비승인21)·역할4칸 확인.",
+    "blocks": [],
+    "clevel": "cto",
+    "archived_at": "2026-06-05T08:59:54.566517+00:00"
+  },
+  {
+    "task_id": "CTO-2026-06-01-POSTACTION-RESTORE",
+    "title": "clevel_post_action.py 소스 복원 - 자동 보고 파이프라인 부활",
+    "status": "DONE",
+    "note": "복원 실증",
+    "updated_at": "2026-06-01T06:17:04Z",
+    "blocks": [],
+    "clevel": "cto",
+    "archived_at": "2026-06-05T08:59:54.566517+00:00"
+  },
+  {
+    "task_id": "CTO-2026-06-01-IG-PUBLISH-HARDEN",
+    "title": "IG 발행기 하드닝",
+    "status": "DONE",
+    "note": "4대 false-positive 수정+dryrun검증, 실발행은 GM 시각승인 대기",
+    "updated_at": "2026-06-01T18:00:00",
+    "blocks": [],
+    "clevel": "cto",
+    "archived_at": "2026-06-05T08:59:54.566517+00:00"
+  },
+  {
+    "task_id": "CTO-2026-06-01-TRIGGER-WATCHER-CLEANUP",
+    "title": "트리거·감시기 정리",
+    "status": "DONE",
+    "completed_at": "2026-06-01T18:05:00",
+    "note": "폐기4 스크립트+죽은pyc5+기능복구2(pc_shutdown·education)+가이드허브 g19 반영. 유물 예약작업 4개(AutoTask-Watcher-Start/Stop·CEO-Morning-Brief-0800·PC-Shutdown-Greeting) 액션경로 실측=폐기된 notion-c-level-agents/ 죽은경로 확인 후 UAC로 삭제, ALL_DELETED 검증(13→9개). weekly 2개 진단: AI-Education-Weekly(수집,월0930) vs Education-Archive-Weekly(아카이브정리,월0900)=기능 별개라 중복 아님·둘 다 유지. Archive 작업 결과=2 실패는 오늘 0900 실행시 스크립트 복원 전 잔재였고, 복원본으로 수동·스케줄러 재실행 양쪽 결과=0 실측 검증·밀린 2건 이관 완료. 스레드 종료.",
+    "updated_at": "2026-06-01T18:05:00",
+    "blocks": [],
+    "clevel": "cto",
+    "archived_at": "2026-06-05T08:59:54.566517+00:00"
   }
 ]
