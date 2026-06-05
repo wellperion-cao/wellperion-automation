@@ -193,11 +193,13 @@ function _processAction(body) {
 
     const data = sh.getRange(2, 1, last - 1, CLICK_HEADERS.length).getValues();
     const byLink = {};
+    const byLinkUrl = {};  // 링크명 → 가장 최근 링크URL (대시보드 '↗ 보기' 링크 + litt.ly 등 출처 확인용)
     data.forEach(row => {
       const name = row[2] || '기타';
       byLink[name] = (byLink[name] || 0) + 1;
+      if (row[3]) byLinkUrl[name] = row[3];
     });
-    return _json({ ok: true, total: data.length, byLink: byLink });
+    return _json({ ok: true, total: data.length, byLink: byLink, byLinkUrl: byLinkUrl });
   }
 
   // ─── 문의 목록 ───

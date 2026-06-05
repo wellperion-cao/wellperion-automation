@@ -156,6 +156,13 @@ a{color:var(--accent);text-decoration:none}
 
 <div class="content">
 
+  <!-- 문의 채널 현황 링크 -->
+  <div style="margin-bottom:16px">
+    <a href="문의채널현황.html" style="display:inline-flex;align-items:center;gap:8px;background:var(--accent-bg);border:1px solid rgba(183,159,138,.25);border-radius:10px;padding:10px 16px;color:var(--accent);font-size:13px;font-weight:700;text-decoration:none;transition:background .15s" onmouseover="this.style.background='rgba(183,159,138,.2)'" onmouseout="this.style.background='var(--accent-bg)'">
+      문의 채널 현황 — 한·영 진입점 &amp; 폼 &amp; 클릭 추적 →
+    </a>
+  </div>
+
   <!-- INFO BOX -->
   <div class="info-box">
     <strong>핵심 병목:</strong> 웰페리온 마케팅의 문제는 노출 부족이 아니라 <strong>노출→문의 전환 설계 부재</strong>입니다.
@@ -725,13 +732,17 @@ async function loadClickStats() {
     if (box) {
       const labels = { '멤버십문의':'멤버십 문의', '성인강습문의':'성인 강습 문의', '유소년강습문의':'유소년 강습 문의', '여름방학특강문의':'여름방학 특강 문의', '페이지 진입':'페이지 진입(참고)' };
       const order = ['멤버십문의', '성인강습문의', '유소년강습문의', '여름방학특강문의', '페이지 진입'];
+      const byLinkUrl = data.byLinkUrl || {};  // 링크명→실제 기록 URL (GAS click_stats 확장, 재배포 후 채워짐)
+      const fallbackUrl = { '멤버십문의':'http://wellperion.com/ko/inquiry/', '성인강습문의':'http://wellperion.com/ko/inquiry/', '유소년강습문의':'http://wellperion.com/ko/inquiry/', '여름방학특강문의':'http://wellperion.com/ko/inquiry/', '페이지 진입':'http://wellperion.com/ko/inquiry/' };
+      const cellTd = 'padding:8px 10px;border-bottom:1px solid rgba(255,255,255,.07)';
+      function rowHtml(k) {
+        const url = byLinkUrl[k] || fallbackUrl[k] || '';
+        const link = url ? ' <a href="' + url + '" target="_blank" title="' + url + '" style="color:var(--accent);text-decoration:none;font-size:11px;white-space:nowrap">↗ 보기</a>' : '';
+        return '<tr><td style="' + cellTd + '">' + (labels[k]||k) + link + '</td><td style="text-align:right;' + cellTd + ';font-weight:700">' + byLink[k] + '</td></tr>';
+      }
       let html = '';
-      order.forEach(function(k) {
-        if (byLink[k] !== undefined) html += '<tr><td style="padding:8px 10px;border-bottom:1px solid rgba(255,255,255,.07)">' + (labels[k]||k) + '</td><td style="text-align:right;padding:8px 10px;border-bottom:1px solid rgba(255,255,255,.07);font-weight:700">' + byLink[k] + '</td></tr>';
-      });
-      Object.keys(byLink).forEach(function(k) {
-        if (order.indexOf(k) < 0) html += '<tr><td style="padding:8px 10px;border-bottom:1px solid rgba(255,255,255,.07)">' + k + '</td><td style="text-align:right;padding:8px 10px;border-bottom:1px solid rgba(255,255,255,.07);font-weight:700">' + byLink[k] + '</td></tr>';
-      });
+      order.forEach(function(k) { if (byLink[k] !== undefined) html += rowHtml(k); });
+      Object.keys(byLink).forEach(function(k) { if (order.indexOf(k) < 0) html += rowHtml(k); });
       box.innerHTML = html || '<tr><td colspan="2" style="padding:10px;color:var(--dim)">아직 클릭 데이터 없음</td></tr>';
       const upd = document.getElementById('click-updated');
       if (upd) upd.textContent = '· 누적 총 ' + data.total + '클릭';
