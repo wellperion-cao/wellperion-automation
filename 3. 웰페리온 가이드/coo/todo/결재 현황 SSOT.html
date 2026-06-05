@@ -11,7 +11,7 @@
 /* 최신본 자동 보장 — HTTP 캐시로 옛 버전이 떠 'GM 화면만 미반영'되는 문제 방지 (2026-05-29 COO).
    서버 최신본 버전과 비교해 다르면 1회만 강제 갱신. 루프 방지: ?pv 파라미터가 있으면(=1회 redirect 완료) 무조건 종료.
    (2026-06-04 CEO 수정: 기존 pv===__PV 가드가 CDN 버전 불일치 시 무한 새로고침 유발 → has('pv')로 교체) */
-window.__PV='20260605-13';
+window.__PV='20260605-14';
 (function(){
   window.addEventListener('pageshow',function(e){ if(e.persisted) location.reload(); });
   try{
@@ -106,9 +106,9 @@ html,body{background:var(--bg);color:var(--text);font-family:"Pretendard","Apple
 .detail-body{display:none;margin-top:10px;padding-top:10px;border-top:1px dashed var(--border)}
 .detail-body.open{display:block}
 /* [결재] 완료·반려 접이식 그룹 섹션 (전체 보기에서 진행중과 분리) */
-.group-toggle{cursor:pointer;font-size:12px;font-weight:700;color:var(--text);margin:18px 0 4px;padding:9px 12px;border-radius:8px;background:var(--paper);border:1px solid var(--border);display:flex;align-items:center;gap:6px;user-select:none}
+.group-toggle{cursor:pointer;font-size:16px;font-weight:700;color:var(--text);margin:18px 0 4px;padding:11px 14px;border-radius:8px;background:var(--paper);border:1px solid var(--border);display:flex;align-items:center;gap:8px;user-select:none}
 .group-toggle:hover{border-color:var(--accent)}
-.group-toggle .arrow{transition:transform 0.15s;font-size:10px;color:var(--dim)}
+.group-toggle .arrow{transition:transform 0.15s;font-size:13px;color:var(--dim)}
 .group-toggle.open .arrow{transform:rotate(90deg)}
 .group-toggle .gcount{margin-left:auto;font-weight:600;color:var(--dim)}
 .detail-body .body-text{font-size:13px;white-space:pre-wrap;line-height:1.55;color:var(--text)}
