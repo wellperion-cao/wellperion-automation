@@ -616,17 +616,17 @@
     <!-- AUTO:LATEST-START -->
     <div class="card grow">
       <h4>최신 업데이트 — 2026-06-05 (자동 갱신)</h4>
+      <p><strong>2026-06-05</strong> @ docs(s2/g1): 가이드허브 13개 정리 — 무의미·중복 제거 + 북극성 단순화</p>
       <p><strong>2026-06-05</strong> fix(coo): 결재현황 SSOT 캐시버전 __PV 20260605-1 — 담당자 색칩·툴바 수정 GM 화면 강제 반영</p>
       <p><strong>2026-06-05</strong> fix(coo): 결재현황 SSOT — 담당자 사람별 색칩 통일 + 툴바 동작 검증</p>
       <p><strong>2026-06-05</strong> feat(ceo): 아침·저녁 자동보고 글 다듬기 — GM 승인 5대 개선 전면 반영</p>
       <p><strong>2026-06-05</strong> feat(cmo): 발레 IG 슬라이드 7장 재합성 — GM 신규 사진 + 바레 디자인 학습</p>
-      <p><strong>2026-06-05</strong> feat(done-def): 완료의 단일 정의(4요건) 단일화 + 증거(--artifact-url) 강제</p>
     </div>
 <!-- AUTO:LATEST-END -->
         <table>
           <tr><th style="width:160px">날짜</th><th>변경 내용</th></tr>
           <!-- AUTO:TABLE-START -->
-      <tr><td><strong>2026-06-05 (자동)</strong></td><td>fix(coo): 결재현황 SSOT 캐시버전 __PV 20260605-1 — 담당자 색칩·툴바 수정 GM 화면 강제 반영 · fix(coo): 결재현황 SSOT — 담당자 사람별 색칩 통일 + 툴바 동작 검증 · feat(ceo): 아침·저녁 자동보고 글 다듬기 — GM 승인 5대 개선 전면 반영 · feat(cmo): 발레 IG 슬라이드 7장 재합성…</td></tr>
+      <tr><td><strong>2026-06-05 (자동)</strong></td><td>@ docs(s2/g1): 가이드허브 13개 정리 — 무의미·중복 제거 + 북극성 단순화 · fix(coo): 결재현황 SSOT 캐시버전 __PV 20260605-1 — 담당자 색칩·툴바 수정 GM 화면 강제 반영 · fix(coo): 결재현황 SSOT — 담당자 사람별 색칩 통일 + 툴바 동작 검증 · feat(ceo): 아침·저녁 자동보고 글 다듬…</td></tr>
       <!-- AUTO:TABLE-END -->
           <tr><td><strong>2026-05-28 (14차)</strong></td><td>공지/안내문 생성(COO 하위) · 오프라인 홍보물 디자인 제작(CMO 하위) 도구 신설 · 공지 서식 v2.0 독립 페이지화 · 회사소개서·전략로드맵 원본 「3. 웰페리온 가이드/회사문서/」로 이관(SSOT 단일화) · C-Level 부팅 R/R Notion API→가이드허브 g10 참조로 전환 · GitHub Pages 워크플로 폴더명 경로 수정 · 사이드바 "공통+7개 C-Level" 라벨 제거</td></tr>
           <tr><td>2026-05-27 (13차)</td><td>GitHub Pages 전환 · 사이드바 4섹터 · AI C-Level 통일 · 운영 통합 체계 · 공식채널·지출현황·취업규칙·SSOT 신설 · g2+g19·g9+g20·g12·g13 합병 · 김남욱 탭 확장 · v2.5</td></tr>
@@ -1596,6 +1596,7 @@
           <tr><td><strong>방향 확인</strong></td><td>"목표(북극성) 쪽 맞나? '다음'이 말이 되나?" — 됐어도 방향이 틀린 일은 쌓지 말고 GM께 1건 올림.</td></tr>
         </table>
         <div class="callout tip" style="margin-top:10px;"><strong>부팅 시:</strong> "뭘 할까"를 새로 추론하지 말고 — <code>status/{역할}.json</code> + <code>_queue.json</code>의 <strong>내 PENDING·'다음' 카드</strong>를 먼저 집는다. 새 일은 GM 입력일 때만. (절대원칙 ②중복 금지 + 검증 ②신규&lt;연결 과 동일 정신.)</div>
+        <div class="callout" style="margin-top:10px;background:#1a1a2a;border-left:3px solid #7C3AED;"><strong>🌉 브릿지 = 전 C레벨 공통 의무</strong> — CEO 전용이 아니다. <strong>모든 C레벨은</strong> 완료 시 <code>--next "다음 한 줄"</code>(다음 할일) 또는 <code>--terminal</code>(종결)을 반드시 남긴다 = 완료의 단일 정의 4요건 중 ③. 이걸로 어제와 오늘이 끊기지 않는다. → <a href="#" onclick="document.querySelector('[data-panel=common]').scrollIntoView();return false;">↑ 완료 4요건 참고</a></div>
         <!-- ══ /일의 브릿지 ══ -->
 
         <!-- ══ ✅ 완료의 단일 정의 (4요건) — 거짓완료 차단 · SSOT (2026-06-05) ══ -->
@@ -1611,7 +1612,20 @@
           <tr><td><strong>④</strong></td><td><strong>증거</strong></td><td><code>--artifact-url</code> = 스크린샷·로그·라이브확인 <strong>링크 필수</strong>. <strong>없으면 post-action이 DONE 등록을 거부</strong>(응답코드·push 성공만으론 완료 아님).</td></tr>
         </table>
         <div class="callout" style="margin-top:10px;background:#2a1a1a;border-left:3px solid #c0392b;"><strong>❌ 완료 거부 조건:</strong> ④증거(<code>--artifact-url</code>) 없이 DONE을 올리면 <code>clevel_post_action.py</code>가 <strong>거부(exit 2)</strong>하고 <code>clevel.bat</code>이 <strong>[DONE] 커밋·푸시를 막는다</strong>. 증거가 아직 없으면 <code>--status 진행중</code>으로 보고(완료 처리되지 않음).</div>
-        <!-- ══ /완료의 단일 정의 ══ -->
+
+        <!-- ══ 🗂️ 할 일 정리(큐 hygiene) 소유 — 시우(COO) (2026-06-05) ══ -->
+        <h3 style="margin-top:28px;border-top:1px solid var(--border);padding-top:24px;"><span class="ico">🗂️</span>할 일 정리(큐 hygiene) 소유 <span style="font-size:13px;color:var(--dim);font-weight:400;">— 시우(COO) 상시 소유 · 충돌 방지 4규칙</span></h3>
+        <div class="callout accent" style="margin:10px 0 14px;background:#1a2120;border-left:3px solid #10b981;">
+          <strong>🗂️ 할 일 정리(큐 hygiene)는 시우(COO)가 상시 소유</strong>한다. <strong>웰리(CEO) = 배정 + 완료 검증</strong>, <strong>시우 = 큐 정리·가시화·중복 정돈</strong>. 두 역할이 같은 큐를 동시에 건드리는 충돌을 막기 위해 아래 4규칙을 전사 적용한다.
+        </div>
+        <table>
+          <tr><th style="width:180px">규칙</th><th>내용</th></tr>
+          <tr><td><strong>① 권한 분리</strong></td><td>배정·완료 검증 = 웰리(CEO). 큐 정리·중복 정돈·가시화 = 시우(COO). 역할을 넘어 상대방 영역에 임의로 쓰지 않는다.</td></tr>
+          <tr><td><strong>② 쓰기 직전 재읽기</strong></td><td><code>_queue.json</code>을 수정하기 직전 항상 최신본을 읽고(read-before-write) 덮어쓰기 충돌을 방지한다.</td></tr>
+          <tr><td><strong>③ 원샷 커밋</strong></td><td>큐 변경은 한 번에 원자적으로 커밋. 반쯤 수정된 상태를 중간 저장하지 않는다(동시 세션 충돌 방지).</td></tr>
+          <tr><td><strong>④ status 임의변경 금지</strong></td><td>자신이 담당하지 않은 task의 <code>status</code>를 임의로 DONE/PENDING으로 바꾸지 않는다. 변경이 필요하면 CEO 또는 GM 승인 후 처리.</td></tr>
+        </table>
+        <!-- ══ /할 일 정리 소유 ══ -->
 
         <details class="toggle" style="margin-top:28px;border-top:1px solid var(--border);padding-top:24px;">
           <summary style="cursor:pointer;font-weight:700;font-size:16px;"><span class="ico">🛡️</span>운영 원칙·검증 5단계 <span style="font-size:12px;color:var(--dim);font-weight:400;">— 참고 (클릭해서 펼치기)</span></summary>
