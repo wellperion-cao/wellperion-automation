@@ -28,95 +28,17 @@ from pathlib import Path
 from PIL import Image, ImageDraw, ImageFont, ImageEnhance, ImageOps
 
 # -----------------------------------------------------------------
-# 경로
+# 경로·폰트·로고·브랜드 프리셋 = brand_constants SSOT (값 불변 이관)
+#   HIGHLIGHT(#ED5B3F) 액센트는 BRAND_PRESETS["main"]["accent"]로 보존됨.
 # -----------------------------------------------------------------
-PROJECT_ROOT = Path(r"C:\Users\jjky0\welperion-automation")
-# 폰트 위치 후보 (brand 통합 진행 중 — 실제 존재 경로 자동 선택)
-_FONT_DIR_CANDIDATES = [
-    PROJECT_ROOT / "brand" / "font",
-    PROJECT_ROOT / "2. 브랜드_공식문서" / "font",
-]
-FONT_DIR = next((d for d in _FONT_DIR_CANDIDATES if d.exists()), _FONT_DIR_CANDIDATES[0])
-FONT_BOLD = FONT_DIR / "Pretendard-Bold.otf"
-FONT_SEMIBOLD = FONT_DIR / "Pretendard-SemiBold.otf"
-FONT_MEDIUM = FONT_DIR / "Pretendard-Medium.otf"
-
-# 공식 로고 PNG (instagram/_assets/logo/)
-LOGO_DIR = PROJECT_ROOT / "instagram" / "_assets" / "logo"
-# 사진 위(반투명 오버레이용): 흰색 알파
-LOGO_WHITE_ALPHA = LOGO_DIR / "wellperion_white_alpha.png"
-# 어두운 배경용: 베이지 알파
-LOGO_BEIGE_ALPHA = LOGO_DIR / "wellperion_beige_alpha.png"
-
-# -----------------------------------------------------------------
-# 브랜드 프리셋 (241030 가이드)
-# -----------------------------------------------------------------
-BRAND_PRESETS = {
-    "main": {
-        "primary": (183, 159, 138),       # #B79F8A BEIGE
-        "background": (34, 31, 32),       # #221F20 BLACK
-        "accent": (237, 91, 63),          # #ED5B3F HIGHLIGHT
-        "text": (255, 255, 255),
-        "text_secondary": (183, 159, 138),
-        "wordmark": "W  WELLPERION",
-    },
-    "sports_club": {
-        "primary": (63, 113, 176),        # #3F71B0 LIGHT BLUE
-        "background": (37, 59, 108),      # #253B6C DARK BLUE
-        "accent": (183, 159, 138),        # #B79F8A 베이지 (메인 브랜드 액센트)
-        "text": (255, 255, 255),
-        "text_secondary": (210, 220, 240),
-        "wordmark": "WELLPERION SPORTS CLUB",
-    },
-    "squash": {
-        "primary": (210, 210, 210),       # #D2D2D2
-        "background": (119, 150, 142),    # #77968E
-        "accent": (183, 159, 138),
-        "text": (255, 255, 255),
-        "text_secondary": (220, 230, 225),
-        "wordmark": "W  SQUASH",
-    },
-    "pt": {
-        "primary": (181, 72, 64),
-        "background": (81, 43, 50),
-        "accent": (183, 159, 138),
-        "text": (255, 255, 255),
-        "text_secondary": (220, 200, 195),
-        "wordmark": "W  PT",
-    },
-    "golf": {
-        "primary": (51, 115, 66),
-        "background": (19, 33, 23),
-        "accent": (183, 159, 138),
-        "text": (255, 255, 255),
-        "text_secondary": (200, 215, 200),
-        "wordmark": "W  GOLF",
-    },
-    "swimming": {
-        "primary": (33, 87, 104),
-        "background": (23, 44, 66),
-        "accent": (183, 159, 138),
-        "text": (255, 255, 255),
-        "text_secondary": (200, 215, 225),
-        "wordmark": "W  SWIMMING",
-    },
-    "pilates": {
-        "primary": (196, 69, 88),
-        "background": (130, 42, 55),
-        "accent": (183, 159, 138),
-        "text": (255, 255, 255),
-        "text_secondary": (230, 200, 205),
-        "wordmark": "W  PILATES",
-    },
-    "gymnastic": {
-        "primary": (194, 186, 214),
-        "background": (86, 58, 97),
-        "accent": (183, 159, 138),
-        "text": (255, 255, 255),
-        "text_secondary": (220, 215, 230),
-        "wordmark": "W  GYMNASTIC",
-    },
-}
+sys.path.insert(0, str(Path(__file__).parent))
+from brand_constants import (  # noqa: E402
+    PROJECT_ROOT,
+    FONT_DIR, FONT_BOLD, FONT_SEMIBOLD, FONT_MEDIUM,
+    LOGO_DIR, LOGO_WHITE_ALPHA, LOGO_BEIGE_ALPHA,
+    BRAND_PRESETS,
+    DUOTONE_DARK, DUOTONE_LIGHT,
+)
 
 # -----------------------------------------------------------------
 # 비율 프리셋
@@ -216,8 +138,8 @@ def _hex_to_rgb(h: str) -> tuple[int, int, int]:
 
 
 def to_duotone(img: Image.Image,
-               dark_hex: str = "#221F20",
-               light_hex: str = "#B79F8A") -> Image.Image:
+               dark_hex: str = DUOTONE_DARK,
+               light_hex: str = DUOTONE_LIGHT) -> Image.Image:
     """BLACK + BEIGE 듀오톤 변환 (메인 페이지 영구 템플릿 v1 표준).
     어떤 사진이든 동일 브랜드 톤 유지 → 럭셔리 매거진 무드."""
     gray = img.convert("L")
