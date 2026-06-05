@@ -493,8 +493,12 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
     <div id="policy-board" class="board-scroll"></div>
   </div>
 
-  <!-- ── 근무·휴게 시간 ── -->
-  <h3 style="font-size:17px;margin:24px 0 10px;padding-top:8px;border-top:1px solid var(--border);">근무·휴게 시간</h3>
+  <!-- ── 근무·휴게 시간 (규정 보드 카드 스타일 접이식 카드 — 공식값 읽기전용) ── -->
+  <div class="manual-section" style="margin-top:18px;border-left:4px solid var(--red);">
+    <div class="manual-header" onclick="togManual(this)">
+      <h3 style="color:var(--red);">⏱ 근무·휴게 시간</h3><span class="arrow">&#9654;</span>
+    </div>
+    <div class="manual-body">
 
   <!-- 핵심 원칙 강조 박스 -->
   <div style="background:var(--red-bg);border:2px solid rgba(237,91,63,0.5);border-radius:12px;padding:16px 18px;margin-bottom:16px;">
@@ -585,6 +589,10 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
     </tr>
   </table>
   <p style="font-size:12px;color:var(--dim);margin:0 0 4px;line-height:1.6;">※ 마감조 2명은 <strong>위 '2인 동시 근무 — 교대 휴게 규칙'</strong>(근무자 A=50분~정시 / 근무자 B=정시~10분)을 그대로 적용해 항상 1명이 업장을 지킵니다.</p>
+
+    </div>
+  </div>
+  <!-- ── /근무·휴게 시간 카드 ── -->
 
 
   <h3 style="font-size:17px;margin:24px 0 10px;">고도화 정의</h3>
