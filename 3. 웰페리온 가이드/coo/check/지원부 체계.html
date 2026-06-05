@@ -342,6 +342,15 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 .setup-mini-btn{padding:4px 9px;font-size:11px;font-weight:700;border-radius:6px;cursor:pointer;font-family:inherit;border:1px solid var(--border);background:var(--bg);color:var(--dim)}
 .setup-mini-btn:hover{background:var(--accent-bg);color:var(--accent)}
 .setup-mini-btn.del{color:var(--red);border-color:rgba(237,91,63,0.3);background:var(--red-bg)}
+.quickadd-bar{padding:8px 16px 12px;border-top:1px dashed var(--border)}
+.quickadd-btn{width:100%;padding:8px 10px;font-size:12px;font-weight:700;border-radius:7px;cursor:pointer;font-family:inherit;border:1px dashed var(--border);background:transparent;color:var(--dim)}
+.quickadd-btn:hover{background:var(--accent-bg);color:var(--accent);border-color:var(--accent)}
+.quickadd-form{display:flex;flex-direction:column;gap:7px}
+.quickadd-form input{width:100%;background:var(--bg);border:1px solid var(--accent);color:var(--text);padding:8px 10px;border-radius:7px;font-size:13px;font-family:inherit;box-sizing:border-box}
+.quickadd-actions{display:flex;gap:7px}
+.quickadd-actions button{flex:1;padding:8px 10px;font-size:12px;font-weight:700;border-radius:7px;cursor:pointer;font-family:inherit;border:1px solid var(--border)}
+.quickadd-save{background:var(--accent);color:#fff;border-color:var(--accent)!important}
+.quickadd-cancel{background:var(--bg);color:var(--dim)}
 .setup-slot-input{width:100%;background:var(--bg);border:1px solid var(--accent);color:var(--text);padding:7px 10px;border-radius:7px;font-size:13px;font-family:inherit;box-sizing:border-box}
 .setup-item{padding:11px 14px;border-bottom:1px solid rgba(61,56,53,0.3)}
 .setup-item:last-child{border-bottom:none}
@@ -1777,6 +1786,7 @@ function drawUI(d,gender){
         html+=`<div class="category"><div class="cat-header" onclick="tog(this)"><span class="cat-title">${g.title}</span>${badge}</div><div class="cat-body${ok?'':' open'}">`;
         visItems.forEach(it=>{html+=renderItem(it,slot.shift,gender)});
         html+=groupSubmitBarHtml(g,gender);
+        html+=quickAddBarHtml(slot.slot,slot.shift,g.title,gender);
         html+='</div></div>';
       });
       html+='</div>';
@@ -1828,6 +1838,7 @@ function drawUI(d,gender){
           html+=renderItem(it,itemShift,gender);
         });
         html+=groupSubmitBarHtml(g,gender);
+        html+=quickAddBarHtml(slot.slot,slot.shift,g.title,gender);
         html+='</div></div>';
       });
       html+='</div>';
@@ -3399,6 +3410,62 @@ function mgmtSaveItems(items){
 
 function mgmtGenerateId(){
   return 'custom_' + Date.now() + '_' + Math.random().toString(36).slice(2,7);
+}
+
+/* ── 점검 화면 카테고리별 빠른 항목 추가 (셋업 편집기 데이터계층 재사용) ──
+   카테고리 하단 "＋ 항목 추가" → 인라인 입력칸 1회 생성(한글 IME 조합 중 재렌더 금지) →
+   CUSTOM_ITEMS push → mgmtSaveItems(기존 saveItems POST) → renderG 재렌더.
+   slot/shift는 렌더 루프의 라이브 값을 그대로 전달(형식 보존), gender는 탭(m/f). */
+function quickAddBarHtml(slot, shift, category, gender){
+  const args = "'"+setupAttr(slot)+"','"+setupAttr(shift)+"','"+setupAttr(category)+"','"+gender+"'";
+  return '<div class="quickadd-bar"><button class="quickadd-btn" onclick="quickAddOpen(this,'+args+')">＋ 항목 추가</button></div>';
+}
+
+function quickAddOpen(btn, slot, shift, category, gender){
+  const bar = btn.closest('.quickadd-bar');
+  if(!bar || bar.querySelector('.quickadd-form')) return; // 이미 열림
+  btn.style.display='none';
+  const form=document.createElement('div');
+  form.className='quickadd-form';
+  // 입력칸은 1회만 생성 후 재사용 — 조합 중 DOM 재생성 금지
+  form.innerHTML=
+    '<input type="text" class="quickadd-name" placeholder="항목명 (필수)" autocomplete="off">'+
+    '<input type="text" class="quickadd-detail" placeholder="상세 (선택)" autocomplete="off">'+
+    '<div class="quickadd-actions">'+
+      '<button class="quickadd-save">저장</button>'+
+      '<button class="quickadd-cancel">취소</button>'+
+    '</div>';
+  bar.appendChild(form);
+  const nameEl=form.querySelector('.quickadd-name');
+  const detailEl=form.querySelector('.quickadd-detail');
+  const meta={slot:slot, shift:shift, category:category, gender:gender};
+  form.querySelector('.quickadd-save').addEventListener('click',()=>quickAddSave(form,meta));
+  form.querySelector('.quickadd-cancel').addEventListener('click',()=>{ const b=bar.querySelector('.quickadd-btn'); if(b)b.style.display=''; form.remove(); });
+  // Enter=저장(IME 조합 확정 중 Enter는 무시: isComposing)
+  nameEl.addEventListener('keydown',e=>{ if(e.key==='Enter' && !e.isComposing){ e.preventDefault(); quickAddSave(form,meta); } });
+  detailEl.addEventListener('keydown',e=>{ if(e.key==='Enter' && !e.isComposing){ e.preventDefault(); quickAddSave(form,meta); } });
+  nameEl.focus();
+}
+
+function quickAddSave(form, meta){
+  const nameEl=form.querySelector('.quickadd-name');
+  const detailEl=form.querySelector('.quickadd-detail');
+  const name=(nameEl.value||'').trim();
+  if(!name){ alert('항목명을 입력해주세요.'); nameEl.focus(); return; }
+  const newItem={
+    id: mgmtGenerateId(),               // 신규 custom_… (기존 ID 재사용 금지 → STATE 유실 방지)
+    slot: meta.slot,
+    shift: meta.shift,
+    dayType: 'both',
+    gender: meta.gender,                // 점검(남)→'m' / 점검(여)→'f'
+    category: meta.category,
+    name: name,
+    detail: (detailEl.value||'').trim(),
+    order: undefined                    // 말미(itemToSheet가 idx+1 부여)
+  };
+  const next=(CUSTOM_ITEMS||[]).concat([newItem]);
+  mgmtSaveItems(next);                  // CUSTOM_ITEMS 갱신 + 시트 저장(saveItems POST)
+  renderG(meta.gender);                 // 재렌더 → 새 항목이 해당 카테고리에 체크박스로 합류
 }
 
 
