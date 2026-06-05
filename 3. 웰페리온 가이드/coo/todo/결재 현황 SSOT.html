@@ -11,7 +11,7 @@
 /* 최신본 자동 보장 — HTTP 캐시로 옛 버전이 떠 'GM 화면만 미반영'되는 문제 방지 (2026-05-29 COO).
    서버 최신본 버전과 비교해 다르면 1회만 강제 갱신. 루프 방지: ?pv 파라미터가 있으면(=1회 redirect 완료) 무조건 종료.
    (2026-06-04 CEO 수정: 기존 pv===__PV 가드가 CDN 버전 불일치 시 무한 새로고침 유발 → has('pv')로 교체) */
-window.__PV='20260605-11';
+window.__PV='20260605-12';
 (function(){
   window.addEventListener('pageshow',function(e){ if(e.persisted) location.reload(); });
   try{
@@ -1262,9 +1262,7 @@ function renderKanban(list) {
     { key:'이정헌 소장', cls:'col-waiting', icon:'⏳', label:'이정헌 소장 서명 대기' },
     { key:'나우열M',     cls:'col-waiting', icon:'⏳', label:'나우열M 서명 대기' },
     { key:'GM',          cls:'col-gm',      icon:'🔵', label:'김남욱GM 서명 대기' },
-    { key:'대표님',      cls:'col-rep',     icon:'🟣', label:'전응준 대표 서명 대기' },
-    { key:'done',        cls:'col-done',    icon:'✅', label:'결재완료' },
-    { key:'reject',      cls:'col-reject',  icon:'❌', label:'반려' }
+    { key:'대표님',      cls:'col-rep',     icon:'🟣', label:'전응준 대표 서명 대기' }
   ];
   // 결재자 필터가 켜지면 해당 칸만 표시 — 나머지 칸('해당 건 없음') 숨겨 '그 사람 건만' 보이게 (2026-06-05 GM)
   if (typeof activeRoleFilter !== 'undefined' && activeRoleFilter !== '전체') {
@@ -1272,7 +1270,14 @@ function renderKanban(list) {
   }
   const buckets = {};
   COLS.forEach(c => { buckets[c.key] = []; });
-  list.forEach(t => { const b = approvalBucketOf(t); if (buckets[b]) buckets[b].push(t); else if (buckets['대표님']) buckets['대표님'].push(t); });
+  // 결재완료·반려는 보드 칸이 아니라 보드 아래 접이식 토글로 (업무현황 보류·완료 로그 패턴, 2026-06-05 GM)
+  const doneList = [], rejectList = [];
+  list.forEach(t => {
+    const b = approvalBucketOf(t);
+    if (b === 'done') { doneList.push(t); return; }
+    if (b === 'reject') { rejectList.push(t); return; }
+    if (buckets[b]) buckets[b].push(t); else if (buckets['대표님']) buckets['대표님'].push(t);
+  });
 
   let h = '<div class="kanban-board" id="kanbanBoard">';
   COLS.forEach(col => {
@@ -1290,6 +1295,21 @@ function renderKanban(list) {
     h += '</div></div>';
   });
   h += '</div>';
+
+  // 결재완료·반려 = 보드 아래 접이식 토글 (눌러서 펼침 — 업무현황 보류·완료 로그처럼, 2026-06-05 GM)
+  if (doneList.length) {
+    h += '<div class="group-toggle" onclick="toggleDetail(this)" style="margin-top:16px;"><span class="arrow">▶</span>✅ 결재완료<span class="gcount">' + doneList.length + '건</span></div>';
+    h += '<div class="detail-body">';
+    doneList.forEach((t, i) => { h += renderApprovalCard(t, i + 1); });
+    h += '</div>';
+  }
+  if (rejectList.length) {
+    h += '<div class="group-toggle" onclick="toggleDetail(this)"><span class="arrow">▶</span>❌ 반려<span class="gcount">' + rejectList.length + '건</span></div>';
+    h += '<div class="detail-body">';
+    rejectList.forEach((t, i) => { h += renderApprovalCard(t, i + 1); });
+    h += '</div>';
+  }
+
   if (!list.length) {
     h = '<div class="empty-msg"><span class="ico">📂</span>해당 조건의 결재 건이 없습니다.</div>' + h;
   }
