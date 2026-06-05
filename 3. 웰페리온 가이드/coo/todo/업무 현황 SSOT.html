@@ -10,7 +10,7 @@
 /* 최신본 자동 보장 — HTTP 캐시로 옛 버전이 떠 'GM 화면만 미반영'되는 문제 방지 (2026-05-29 COO).
    서버 최신본 버전과 비교해 다르면 1회만 강제 갱신. 루프 방지: ?pv 파라미터가 있으면(=1회 redirect 완료) 무조건 종료.
    (2026-06-04 CEO 수정: 기존 pv===__PV 가드가 CDN 버전 불일치 시 무한 새로고침 유발 → has('pv')로 교체) */
-window.__PV='20260605-1';
+window.__PV='20260605-2';
 (function(){
   window.addEventListener('pageshow',function(e){ if(e.persisted) location.reload(); });
   try{
@@ -1855,6 +1855,13 @@ function addProgressLogEntry() {
 }
 
 function removeProgressLog(i) {
+  // 실수 삭제 방지: 무엇을 지우는지 보여주고 확인받음 (2026-06-05 GM — 진척 유실 방지)
+  const log = modalLogsCache[i];
+  if (!log) return;
+  const full = String(log.text || '');
+  const preview = full.slice(0, 50) + (full.length > 50 ? '…' : '');
+  if (!confirm('이 진척 로그를 삭제할까요?\n\n📅 ' + (log.date || '') + '\n' + preview +
+               '\n\n※ 삭제 후 [저장]하면 영구 삭제됩니다.')) return;
   modalLogsCache.splice(i, 1);
   renderProgressList();
 }
