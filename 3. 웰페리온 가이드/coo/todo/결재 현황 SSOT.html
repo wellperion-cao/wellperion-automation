@@ -11,7 +11,7 @@
 /* 최신본 자동 보장 — HTTP 캐시로 옛 버전이 떠 'GM 화면만 미반영'되는 문제 방지 (2026-05-29 COO).
    서버 최신본 버전과 비교해 다르면 1회만 강제 갱신. 루프 방지: ?pv 파라미터가 있으면(=1회 redirect 완료) 무조건 종료.
    (2026-06-04 CEO 수정: 기존 pv===__PV 가드가 CDN 버전 불일치 시 무한 새로고침 유발 → has('pv')로 교체) */
-window.__PV='20260605-8';
+window.__PV='20260605-9';
 (function(){
   window.addEventListener('pageshow',function(e){ if(e.persisted) location.reload(); });
   try{
@@ -837,11 +837,12 @@ function buildEffectiveRoute(t, budget) {
   // 부서장: 카테고리 매핑 우선, 없으면 수동 결재요청에 포함된 부서장. 매핑 없으면 생략(GM→대표 폴백).
   const owners = String(t.owner || '').split(',').map(s => s.trim());
   const ownerIsGM = owners.indexOf('김남욱GM') >= 0;
-  // 부서장 = 담당자의 부서장. 단, 부서장이 담당자 본인이면(나우열M가 본인 업무 등) 자기결재 불가 → 부서장 단계 스킵 (2026-06-05 GM).
+  // 부서장 단계: 결재요청에 부서장이 명시 지정됐으면 그대로 결재(이경연 본인 운영업무 등). 명시 없이 담당자=부서장이라 자동 삽입된 경우만 자기결재로 보고 스킵(나우열M 회의 등) (2026-06-05 GM).
   const midName = deptHeadNameOf(t);
-  const midIsOwner = midName && owners.indexOf(midName) >= 0;
+  const midExplicit = midName && manual.indexOf(midName) >= 0;
+  const skipMid = midName && owners.indexOf(midName) >= 0 && !midExplicit;
   const route = [];
-  if (midName && !ownerIsGM && !midIsOwner) route.push('부서장');
+  if (midName && !ownerIsGM && !skipMid) route.push('부서장');
   if (!ownerIsGM) route.push('GM');
   route.push('대표님');
   return route;

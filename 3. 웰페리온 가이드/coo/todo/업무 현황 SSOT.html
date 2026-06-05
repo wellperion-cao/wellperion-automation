@@ -10,7 +10,7 @@
 /* 최신본 자동 보장 — HTTP 캐시로 옛 버전이 떠 'GM 화면만 미반영'되는 문제 방지 (2026-05-29 COO).
    서버 최신본 버전과 비교해 다르면 1회만 강제 갱신. 루프 방지: ?pv 파라미터가 있으면(=1회 redirect 완료) 무조건 종료.
    (2026-06-04 CEO 수정: 기존 pv===__PV 가드가 CDN 버전 불일치 시 무한 새로고침 유발 → has('pv')로 교체) */
-window.__PV='20260605-10';
+window.__PV='20260605-11';
 (function(){
   window.addEventListener('pageshow',function(e){ if(e.persisted) location.reload(); });
   try{
@@ -1421,9 +1421,11 @@ function renderTaskCard(t, idx) {
     const _MID = ['이경연 실장','이정헌 소장','나우열M'];
     // 부서장 실명: 카테고리 매핑 우선, 없으면 수동 결재요청에 포함된 부서장
     const _ownerStr = String(t.owner || '');
-    let _midName = _manual.find(m => _MID.indexOf(m) >= 0) || deptHeadFor(t.category) || '';
-    // 담당자가 GM(상위자)이거나 부서장 본인이면 부서장 단계 생략 (2026-06-03 웰리: GM 직속 업무 오배정 차단)
-    if (_midName && (_ownerStr.indexOf('GM') >= 0 || _ownerStr.indexOf(_midName) >= 0)) _midName = '';
+    const _midFromManual = _manual.find(m => _MID.indexOf(m) >= 0) || '';
+    let _midName = _midFromManual || deptHeadFor(t.category) || '';
+    // 담당자가 GM이면 부서장 단계 생략. 담당자=부서장이라 자동지정된 경우만 자기결재로 스킵(명시 결재요청은 존중) (2026-06-05 GM)
+    if (_midName && _ownerStr.indexOf('GM') >= 0) _midName = '';
+    else if (_midName && !_midFromManual && _ownerStr.indexOf(_midName) >= 0) _midName = '';
     const _auto   = _parsed.budget ? routeApproval(_parsed.budget.category, _parsed.budget.amount) : [];
     const _needs  = _manual.length > 0 || _auto.length > 0;
     const _route  = [];
