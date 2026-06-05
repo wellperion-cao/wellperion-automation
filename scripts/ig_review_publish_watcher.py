@@ -39,6 +39,7 @@ BLOG_SCRIPT = ROOT / "scripts" / "naver_blog_upload_playwright.py"   # 블로그
 CAFE_SCRIPT = ROOT / "scripts" / "cafe_upload_playwright.py"          # 카페 발행 스크립트
 PY = ROOT / ".venv" / "Scripts" / "python.exe"
 NOTIFIED_FILE = ROOT / "scripts" / ".review_notified.json"  # 검수대기 알림 발송 이력
+CARD_MSGID_STORE = ROOT / "scripts" / ".review_card_msgids.json"  # send_review_card 가 카드 보낸 id 저장
 
 APPROVED_STATES = {"승인", "승인발행대기", "approved"}
 POST_URL_RE = re.compile(r"post\s+[A-C]:\s*(https?://\S+)", re.IGNORECASE)
@@ -87,15 +88,28 @@ def save_notified(notified: set) -> None:
     )
 
 
+def load_carded() -> set:
+    """send_review_card 가 인라인 카드를 이미 보낸 id 집합. 카드=알림이므로 중복 텍스트 알림 억제."""
+    if not CARD_MSGID_STORE.exists():
+        return set()
+    try:
+        data = json.loads(CARD_MSGID_STORE.read_text(encoding="utf-8"))
+        return set(data.keys()) if isinstance(data, dict) else set()
+    except Exception:
+        return set()
+
+
 def notify_pending_review(items: list) -> None:
-    """검수대기 항목 중 아직 알림 안 보낸 건만 텔레그램 발송 후 이력 기록."""
+    """검수대기 항목 중 아직 알림 안 보낸 건만 텔레그램 발송 후 이력 기록.
+    단, 이미 검수카드(인라인 버튼)를 보낸 id 는 건너뜀 — 중복 알림이 텔레그램을 복잡하게 만듦(GM 2026-06-05)."""
     notified = load_notified()
+    carded = load_carded()
     newly_notified: list[str] = []
     for it in items:
         if it.get("status") != "검수대기":
             continue
         item_id = it.get("id", "")
-        if not item_id or item_id in notified:
+        if not item_id or item_id in notified or item_id in carded:
             continue
         title = it.get("title", item_id)
         channel = it.get("channel", "")
