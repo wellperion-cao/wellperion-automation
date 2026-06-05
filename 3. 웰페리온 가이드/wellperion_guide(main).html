@@ -3514,7 +3514,7 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
 
     <!-- 오늘 할 일 (최상단 — GM 진입 즉시 노출, 2026-06-05) -->
     <details id="gm1-todo-section" open style="margin:8px 0 24px;">
-      <summary style="cursor:pointer;list-style:none;"><h3 id="gm1-todo-date" style="display:inline;"><span class="ico">📌</span>오늘 할 일</h3></summary>
+      <summary style="cursor:pointer;list-style:none;"><h3 id="gm1-todo-date" style="display:inline;"><span class="ico">🧭</span>항로</h3><span style="font-size:0.78em;color:#888;font-weight:400;margin-left:8px;">오늘의 항로 · 북극성으로 가는 오늘의 뱃길</span></summary>
       <div id="today-task-list">
         <!-- 동적 렌더링 — gm1_unified_tasks localStorage 기반 -->
       </div>
@@ -6931,7 +6931,7 @@ function crTab(btn, panelId) {
     var y = now.getFullYear();
     var m = ('0'+(now.getMonth()+1)).slice(-2);
     var d = ('0'+now.getDate()).slice(-2);
-    el.innerHTML = '<span class="ico">📌</span>오늘 할 일 (' + y + '-' + m + '-' + d + ' ' + dow + ')';
+    el.innerHTML = '<span class="ico">🧭</span>항로';
   })();
 
   // ── GM1 통합 태스크 시스템 (오늘 할 일 ↔ 캘린더 단일 데이터 소스) ──────────
