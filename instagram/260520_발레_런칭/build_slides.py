@@ -20,7 +20,7 @@ sys.path.insert(0, str(ROOT / "scripts"))
 from slide_compositor import load_font, wrap_text  # noqa: E402
 
 FOLDER = ROOT / "instagram" / "260520_발레_런칭"
-SRC = ROOT / "instagram" / "Image" / "발레_런칭(원본 이미지)"
+SRC = FOLDER / "output(인스타그램)" / "_src_gm"
 OUT_MASTER = FOLDER / "output"
 OUT_IG = FOLDER / "output(인스타그램)"
 GUIDE_CARD = ROOT / "instagram" / "_assets" / "guideline_card.jpg"
@@ -180,10 +180,14 @@ def tracked_width(text, font, track_ratio=0.08) -> int:
 # ----------------------------------------------------------------------
 # 1p — 표지 (상단 2/3 세피아 인물 + 하단 1/3 다크박스)
 # ----------------------------------------------------------------------
-def build_cover(src: Path, out: Path) -> None:
+def build_cover(src: Path, out: Path, y_bias: float = 0.5,
+                x_bias: float = 0.5, zoom: float = 1.0) -> None:
     canvas = Image.new("RGB", (SIZE, SIZE), BLACK)
     photo_h = int(SIZE * 0.66)
-    photo = sepia_duotone(fit_square(src, SIZE, photo_h))
+    # 톤 살짝 다운 — 밝은 흰 배경에서 흰 로고 가독성 확보 + scrim 경계 완화
+    photo = sepia_duotone(
+        fit_square(src, SIZE, photo_h, x_bias=x_bias, y_bias=y_bias, zoom=zoom),
+        dark="#332C25", light="#C7B095")
     canvas.paste(photo, (0, 0))
 
     margin = int(SIZE * 0.05)
@@ -307,28 +311,30 @@ def build_interior(src: Path, out: Path, page: int,
 # ----------------------------------------------------------------------
 # 슬라이드 매핑 (비용 언급 금지)
 # ----------------------------------------------------------------------
-# 표지 = 파우더 점프 컷 (좌상단 깨끗·드라마틱·프리미엄 — 바레 ig_04 톤)
-COVER_SRC = SRC / "KakaoTalk_20260512_142029503.png"
+# 표지 = 발레복 전신 여성 흰 배경 — 상체 중심 크롭(y_bias=0.12)
+COVER_SRC = SRC / "ig_01.jpg"
+COVER_Y_BIAS = 0.10   # 얼굴 위 여백 확보(상단 크롭)
+COVER_X_BIAS = 0.62   # 인물이 원본 우측 → 가로 크롭으로 중앙 정렬
+COVER_ZOOM = 1.30     # 인물 비중 확대(빈 배경 축소)
 
-# 내지 매핑. dict로 크롭 파라미터 포함.
-# 벽 사인이 좌상단 로고와 겹치는 컷(3·5)은 우측 바이어스 + 줌으로 사인을 프레임 밖/우측으로 밀어 충돌 제거.
+# 내지 매핑 (GM 새 사진 6장 기준)
 INTERIORS = [
-    dict(page=2, src=SRC / "KakaoTalk_20260512_142029503_02.jpg",
-         headline="클래식 발레의 정수", subline="균형 · 자세 · 우아한 움직임",
-         x_bias=0.5, y_bias=0.25),   # 상단 크롭 — 얼굴·상체 중심
-    dict(page=3, src=SRC / "KakaoTalk_20260519_155452092.png",
+    dict(page=2, src=SRC / "ig_02.png",
          headline="전문가의 1:1 교정", subline="이수지 INSTRUCTOR",
-         x_bias=1.0, y_bias=0.5, zoom=1.28),   # 우측으로 — 벽사인 좌측 탈락
-    dict(page=4, src=SRC / "KakaoTalk_20260519_155452092_03.png",
+         x_bias=0.5, y_bias=0.28),
+    dict(page=3, src=SRC / "ig_03.png",
          headline="최대 8인 프라이빗", subline="매주 금요일 오전 10시 · 11시",
-         x_bias=0.5, y_bias=0.5),
-    dict(page=5, src=SRC / "KakaoTalk_20260512_142029503_02.jpg",
-         headline="특별한 움직임의 여정",
-         subline="문의 (한) wellperion.com/ko/inquiry\n       (영) wellperion.com/en/inquiry",
-         x_bias=0.5, y_bias=0.78),   # 하단 크롭 — 치마·발 중심, 2p와 다른 앵글
-    dict(page=6, src=SRC / "KakaoTalk_20260519_155452092_04.png",
+         x_bias=0.5, y_bias=0.42),
+    dict(page=4, src=SRC / "ig_04.png",
+         headline="클래식 발레의 정수", subline="균형 · 자세 · 우아한 움직임",
+         x_bias=0.5, y_bias=0.35),
+    dict(page=5, src=SRC / "ig_05.png",
          headline="한남동 웰니스 스튜디오", subline="지금, 발레를 시작하세요",
-         x_bias=0.5, y_bias=0.5),
+         x_bias=0.55, y_bias=0.28),
+    dict(page=6, src=SRC / "ig_06.png",
+         headline="특별한 움직임의 여정",
+         subline="문의 (한) wellperion.com/ko/inquiry\n　　　(영) wellperion.com/en/inquiry",
+         x_bias=0.5, y_bias=0.42),
 ]
 
 
@@ -337,7 +343,8 @@ def main():
     OUT_IG.mkdir(parents=True, exist_ok=True)
 
     # 1p 표지
-    build_cover(COVER_SRC, OUT_MASTER / "ig_01.jpg")
+    build_cover(COVER_SRC, OUT_MASTER / "ig_01.jpg", y_bias=COVER_Y_BIAS,
+                x_bias=COVER_X_BIAS, zoom=COVER_ZOOM)
 
     # 2~6p 내지
     for it in INTERIORS:
