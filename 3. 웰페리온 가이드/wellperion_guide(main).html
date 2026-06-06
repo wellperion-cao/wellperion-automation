@@ -6159,6 +6159,25 @@ function crTab(btn, panelId) {
 
         todoApiCall(payload, (data) => {
           if (isEdit) {
+            // SSOT 기원 항목(ssot-* or gm1SsotItems에 존재) — 낙관적 즉시 반영
+            if (String(editTodo.id).indexOf('ssot-') === 0 ||
+                (typeof gm1SsotItems !== 'undefined' && gm1SsotItems.some(x => x.id === editTodo.id))) {
+              if (typeof gm1SsotItems !== 'undefined') {
+                var _si = gm1SsotItems.findIndex(x => x.id === editTodo.id);
+                if (_si >= 0) {
+                  var _patch = {};
+                  if (payload.title)    _patch.title    = payload.title;
+                  if (payload.category) _patch.category = payload.category;
+                  if (payload.owner)    _patch.owner    = payload.owner;
+                  if (payload.startDate) _patch.startDate = payload.startDate;
+                  if (payload.endDate)   _patch.endDate   = payload.endDate;
+                  if (payload.content)  _patch.content  = payload.content;
+                  if (payload.approval) _patch.approval = payload.approval;
+                  Object.assign(gm1SsotItems[_si], _patch);
+                }
+              }
+              if (typeof gm1RenderToday === 'function') gm1RenderToday();
+            }
             // 로컬 캐시 업데이트
             const idx = todoCache.findIndex(t => t.id === editTodo.id);
             if (idx >= 0) {
@@ -6871,7 +6890,7 @@ function crTab(btn, panelId) {
     }
 
     function gm1FetchSsot() {
-      fetch(SSOT_API_URL + '?action=todo_list', { redirect:'follow' })
+      fetch(SSOT_API_URL + '?action=todo_list&_=' + Date.now(), { redirect:'follow', cache:'no-store' })
         .then(function(r){ return r.ok ? r.json() : null; })
         .then(function(json){
           var items = [];
