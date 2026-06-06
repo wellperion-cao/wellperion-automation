@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>웰페리온 지출현황</title>
+<title>웰페리온 운영 지출현황</title>
 <style>
 :root {
   --bg:#221F20;--paper:#2a2725;--text:#f5f2ef;--dim:#8c8b83;
@@ -191,7 +191,7 @@ a { color: var(--accent); text-decoration: none; }
 <!-- ▸ 상단 고정 -->
 <div class="sticky-top">
   <div class="header">
-    <h1>웰페리온 지출현황</h1>
+    <h1>웰페리온 운영 지출현황</h1>
     <div class="header-btns">
       <a href="/"><span>&#127968;</span> 웰페리온 ERP</a>
       <button onclick="window.print()"><span>&#128424;</span> 인쇄</button>
@@ -683,7 +683,7 @@ function showShareModal(type) {
       content += `  ${e['날짜']} | ${e['카테고리']} | ${e['항목명']} | ${Number(e['금액']).toLocaleString()}원 | ${e['승인상태']}\n`;
     });
   } else {
-    content = `웰페리온 지출현황 (${label})\n`;
+    content = `웰페리온 운영 지출현황 (${label})\n`;
     content += `합계: ${total.toLocaleString()}원 / ${filtered.length}건\n\n`;
     filtered.forEach(e => {
       content += `${e['날짜']} ${e['항목명']} ${Number(e['금액']).toLocaleString()}원\n`;
