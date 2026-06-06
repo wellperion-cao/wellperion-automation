@@ -7253,7 +7253,8 @@ function crTab(btn, panelId) {
 
       // 완료여도 결재 미완(결재요청 있고 결재완료·반려 아님)이면 진행으로 유지 (2026-06-03 GM · 업무현황 일관)
       function _gm1ApprPending(t){ var rq=String(t.apprReq||t.approval||'').trim(), a=String(t.apprStatus||'').trim(); return rq && a !== '결재완료' && !/반려/.test(a); }
-      var active = merged.filter(function(t){ return t.status === '진행중' || (t.status === '완료' && _gm1ApprPending(t)); });
+      var apprWait = merged.filter(function(t){ return t.status === '완료' && _gm1ApprPending(t); });
+      var active = merged.filter(function(t){ return t.status === '진행중'; });
       var done   = merged.filter(function(t){ return t.status === '완료' && !_gm1ApprPending(t); });
       var hold   = merged.filter(function(t){ return t.status === '보류'; });
 
@@ -7297,6 +7298,21 @@ function crTab(btn, panelId) {
       gm1SyncCatFilterChips();
 
       var html = '';
+
+      // ── 🔴 결재 대기 (완료지만 GM 결재 미완) — 항로 맨 위 분리 (2026-06-06 GM 옵션1) ──
+      if (apprWait.length) {
+        html += '<details class="toggle" open style="margin-bottom:14px;border:1px solid rgba(232,163,61,0.35);border-radius:10px;background:rgba(232,163,61,0.06);">';
+        html += '<summary style="padding:10px 14px;font-weight:700;color:#e8a33d;cursor:pointer;"><span style="margin-right:6px;">🔴</span>결재 대기 ' + apprWait.length + '건 <span style="font-size:11px;color:var(--dim);font-weight:400;">— 작업은 끝, GM 결재만 남음</span></summary>';
+        html += '<div style="padding:2px 14px 12px;">';
+        apprWait.forEach(function(t){
+          html += '<div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-top:1px solid rgba(232,163,61,0.15);">';
+          html += '<span style="color:#e8a33d;font-weight:700;flex-shrink:0;">✅</span>';
+          html += '<span style="flex:1;font-size:13px;color:var(--text);word-break:break-word;">' + gm1Esc(t.title) + '</span>';
+          html += '<a href="https://wellperion-cao.github.io/wellperion-automation/coo/todo/%EA%B2%B0%EC%9E%AC%20%ED%98%84%ED%99%A9%20SSOT.html" target="_blank" style="font-size:11px;color:#e8a33d;text-decoration:none;flex-shrink:0;font-weight:600;">✍️ 결재 →</a>';
+          html += '</div>';
+        });
+        html += '</div></details>';
+      }
 
       // 진행중 카드 — 업무현황 SSOT 전체 기능 이식 (결과보고서 제외, 2026-06-01 GM 최종)
       var cardIdx = 0;
