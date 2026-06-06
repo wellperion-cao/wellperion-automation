@@ -476,6 +476,17 @@
   <article class="doc active" id="home">
     <div class="doc-header"><h2>🏢 웰페리온 ERP</h2><div class="meta">웰페리온 통합 운영 시스템 · 웰페리온 ERP v2.7 · 최종 업데이트 2026-06-05</div></div>
     <p class="lead"><strong>웰페리온 ERP</strong>(전사적 자원 관리 · Enterprise Resource Planning)는 웰페리온의 모든 일이 하나의 북극성을 향해 같은 항로로 나아가게 잇는 통합 플랫폼입니다. 인사·재무·운영·회원·마케팅·업무결재·기술·경영 8개 모듈을 한 화면에 모아 — 사람은 방향을 정하고, 시스템은 항해를 책임집니다.</p>
+    <!-- ══ 🌟 북극성 (전사 비전) — G1에서 이관 (2026-06-06) ══ -->
+    <div id="home-northstar" style="background:linear-gradient(135deg,#1a1830 0%,#2a2545 100%);border:1px solid var(--accent);border-radius:14px;padding:18px 22px;margin:14px 0 20px;">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+        <span style="font-size:20px;">🌟</span>
+        <span style="color:#fff;font-weight:800;font-size:16px;letter-spacing:0.02em;">우리의 북극성</span>
+      </div>
+      <p style="color:#e8e8e8;font-size:13.5px;line-height:1.6;margin:0 0 6px;"><strong style="color:var(--accent);">운영은 AI가 알아서 해주고, 직원들은 본질에 집중하고, GM은 판단과 결정 그리고 트렌드에 집중할 수 있는 시스템을 구축한다.</strong></p>
+      <p style="color:#e8e8e8;font-size:13px;line-height:1.6;margin:0 0 6px;">↳ AI 운영 ERP를 만들어 <strong style="color:var(--accent);">불필요한·무의미한·중복된 것들을 최소화</strong>한다.</p>
+      <p style="color:var(--dim);font-size:12px;margin:0;">GM은 G1(오늘의 항로) 하나만 보고, 👑웰리가 8개 모듈을 지시·검수·통합 보고한다. → 자동화 로드맵은 <strong>시토 업무자동화(T2)</strong>에서.</p>
+    </div>
+    <!-- ══ /북극성 ══ -->
 
     <!-- ② 경영 현황 라이브 스트립 — 실제 가져온 숫자만 표시(가짜 금지). 업무·결재=todo_list 1회 호출 집계(S3 KPI 스트립과 1:1), 그 외 소스없는 지표는 "측정 예정"으로 정직 표기 -->
     <div style="display:flex;gap:12px;flex-wrap:wrap;margin:20px 0 8px;" id="homeErpStrip">
@@ -3357,54 +3368,17 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
     <div class="doc-header"><h2><span class="g-id">G1</span>김남욱 GM</h2><div class="meta">할 일 · 루틴 · 건강 · 목표 통합</div></div>
     <p class="lead">개인·회사 구분 없이 김남욱님의 모든 업무와 루틴을 한곳에서 관리합니다. 팀 업무는 <a href="https://wellperion-cao.github.io/wellperion-automation/coo/todo/%EC%97%85%EB%AC%B4%20%ED%98%84%ED%99%A9%20SSOT.html" target="_blank" style="color:var(--accent);">업무 현황 SSOT</a>에서 확인.</p>
 
-    <!-- ══ 🌟 우리의 북극성 (GM 비전 — 2026-06-03) ══ -->
-    <div style="background:linear-gradient(135deg,#1a1830 0%,#2a2545 100%);border:1px solid var(--accent);border-radius:14px;padding:18px 22px;margin:8px 0 20px;">
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
-        <span style="font-size:20px;">🌟</span>
-        <span style="color:#fff;font-weight:800;font-size:16px;letter-spacing:0.02em;">우리의 북극성</span>
+    <!-- ══ 🌟 북극성 (정의 본체=홈) · G1엔 링크+범례만 (2026-06-06 이관) ══ -->
+    <div style="background:linear-gradient(135deg,#1a1830 0%,#2a2545 100%);border:1px solid var(--accent);border-radius:14px;padding:14px 18px;margin:8px 0 16px;">
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+        <span style="font-size:18px;">🌟</span>
+        <span style="color:#fff;font-weight:800;font-size:14px;">북극성 — 우리가 가는 곳</span>
+        <a href="#" onclick="event.preventDefault();var h=document.querySelector('[data-doc=home]');if(h)h.click();" style="color:var(--accent);font-size:12px;font-weight:700;text-decoration:none;margin-left:auto;">홈에서 보기 →</a>
       </div>
-      <p style="color:#e8e8e8;font-size:13.5px;line-height:1.6;margin:0 0 6px;"><strong style="color:var(--accent);">운영은 AI가 알아서 해주고, 직원들은 본질에 집중하고, GM은 판단과 결정 그리고 트렌드에 집중할 수 있는 시스템을 구축한다.</strong></p>
-      <p style="color:#e8e8e8;font-size:13px;line-height:1.6;margin:0 0 6px;">↳ AI 운영 ERP를 만들어 <strong style="color:var(--accent);">불필요한·무의미한·중복된 것들을 최소화</strong>한다.</p>
-      <p style="color:var(--dim);font-size:12px;margin:0 0 12px;">GM은 G1 하나만 보고, 👑웰리가 7개 모듈을 지시·검수·통합 보고한다. 아래 = 완성 시 자동화될 것들.</p>
-      <div style="display:flex;flex-wrap:wrap;gap:5px 12px;font-size:11.5px;color:#bbb;margin:2px 0 12px;padding-top:8px;border-top:1px solid rgba(255,255,255,0.08);"><span>🌟 <strong style="color:#cbb6f0;">북극성</strong>=목적지</span><span>🌊 항해=전체 여정</span><span>🧭 항로=오늘 할 일</span><span>🚢 배=개별 업무</span><span>⚓ 항구=일 끝낼 때 다음 정하는 곳</span></div>
-      <details class="toggle" open style="margin:0;">
-        <summary style="cursor:pointer;font-weight:700;font-size:13px;color:var(--accent);">📋 7대 자동화 모듈 (목표) — 접기/펼치기</summary>
-        <div class="toggle-body" style="margin-top:10px;">
-          <table id="g1-modules-table">
-            <tr><th style="width:132px">모듈</th><th>완성 시 자동화</th></tr>
-            <tr><td>👥 회원 (CPO)</td><td>가입·갱신 자동 · 이탈징후 감지→케어 · NPS 자동수집 · 갱신율 추적</td></tr>
-            <tr><td>📡 마케팅 (CMO)</td><td>콘텐츠 초안→슬라이드→3채널 자동발행 · 문의 퍼널 추적 · 전환 매칭</td></tr>
-            <tr><td>🧑‍💻 운영 (COO)</td><td>점검 체크리스트 자동배포 · 이슈 접수→배정→SLA 추적 · 인수인계</td></tr>
-            <tr><td>🖥️ 시설·IT (CTO)</td><td>출입·락커·키오스크 무인화 · 점검 자동알림 · 장애 감지</td></tr>
-            <tr><td>💰 재무 (CFO)</td><td>매출·지출 자동집계 · 이상지출 알림 · 예산 소진율 예측 · 세무일정</td></tr>
-            <tr><td>👨‍💼 인사 (CHRO)</td><td>채용 파이프라인 · 근태 집계 · 온보딩 30-60-90 · 계약만료 알림</td></tr>
-            <tr><td>🧾 업무·결재 (전사)</td><td>업무 등록→결재선 자동산출→승인→완료→결과보고서 자동생성</td></tr>
-          </table>
-          <p style="font-size:12px;color:var(--dim);margin-top:8px;">👑 그 위에 <strong>웰리(오케스트레이터)</strong> — 전 모듈 보고 통합 · 08시 브리핑 · 완료 자동검증 → GM은 G1만.</p>
-        </div>
-      </details>
+      <p style="color:#cfc7e8;font-size:12px;margin:6px 0 0;">오늘의 항로는 이 북극성을 향한 오늘의 뱃길입니다.</p>
+      <div style="display:flex;flex-wrap:wrap;gap:5px 12px;font-size:11.5px;color:#bbb;margin:10px 0 0;padding-top:8px;border-top:1px solid rgba(255,255,255,0.08);"><span>🌟 <strong style="color:#cbb6f0;">북극성</strong>=목적지</span><span>🌊 항해=전체 여정</span><span>🧭 항로=오늘 할 일</span><span>🚢 배=개별 업무</span><span>⚓ 항구=일 끝낼 때 다음 정하는 곳</span></div>
     </div>
-    <!-- ══ /북극성 ══ -->
-    <script>
-    /* G1 7대 자동화 모듈 — 클릭 편집 + 자동저장(localStorage) (2026-06-04) */
-    (function(){
-      var KEY='G1_MODULES_V1';
-      var tbl=document.getElementById('g1-modules-table');
-      if(!tbl) return;
-      var cells=tbl.querySelectorAll('tr td');
-      if(!cells.length) return;
-      try{ var s=JSON.parse(localStorage.getItem(KEY)||'null');
-        if(s && s.length===cells.length){ cells.forEach(function(c,i){ c.innerHTML=s[i]; }); }
-      }catch(e){}
-      cells.forEach(function(c){ c.setAttribute('contenteditable','true'); c.style.cursor='text'; });
-      function save(){ var a=[]; cells.forEach(function(c){ a.push(c.innerHTML); }); try{ localStorage.setItem(KEY, JSON.stringify(a)); }catch(e){} }
-      tbl.addEventListener('input', save);
-      var hint=document.createElement('div');
-      hint.style.cssText='font-size:11px;color:var(--accent);margin-top:6px;';
-      hint.textContent='✏️ 칸을 클릭해 바로 편집 · 자동 저장됩니다';
-      if(tbl.parentNode) tbl.parentNode.appendChild(hint);
-    })();
-    </script>
+    <!-- ══ /북극성 링크 ══ -->
 
     <!-- 오늘 할 일 (최상단 — GM 진입 즉시 노출, 2026-06-05) -->
     <details id="gm1-todo-section" open style="margin:8px 0 24px;">
@@ -5083,6 +5057,43 @@ function crTab(btn, panelId) {
     <div class="doc-header"><h2><span class="g-id">T2</span>업무자동화SSOT</h2><div class="meta">자동화·예약작업·PC·업데이트 단일 진실 원장 · 2026-06-03 종합 정립</div></div>
     <p class="lead">Windows 스케줄러 + Python 프로세스 실측 기반. 무엇이 언제 자동으로 도는지, PC·업데이트·창은 어떻게 동작하는지를 한곳에 모은 SSOT.</p>
 
+    <!-- ══ 📋 7대 자동화 모듈 (전사 로드맵) — G1에서 이관 (2026-06-06) ══ -->
+    <div style="background:var(--paper);border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:12px;padding:16px 20px;margin:6px 0 20px;">
+      <h3 style="margin-top:0;"><span class="ico">📋</span>7대 자동화 모듈 — 전사 로드맵 (목표)</h3>
+      <p style="font-size:12.5px;color:var(--dim);margin:0 0 10px;">웰페리온 ERP 완성 시 각 모듈이 자동화될 목표입니다. 👑 웰리가 전 모듈을 통합·검수하고 GM은 G1(오늘의 항로)만 봅니다.</p>
+      <table id="g1-modules-table">
+        <tr><th style="width:132px">모듈</th><th>완성 시 자동화</th></tr>
+        <tr><td>👥 회원 (CPO)</td><td>가입·갱신 자동 · 이탈징후 감지→케어 · NPS 자동수집 · 갱신율 추적</td></tr>
+        <tr><td>📡 마케팅 (CMO)</td><td>콘텐츠 초안→슬라이드→3채널 자동발행 · 문의 퍼널 추적 · 전환 매칭</td></tr>
+        <tr><td>🧑‍💻 운영 (COO)</td><td>점검 체크리스트 자동배포 · 이슈 접수→배정→SLA 추적 · 인수인계</td></tr>
+        <tr><td>🖥️ 시설·IT (CTO)</td><td>출입·락커·키오스크 무인화 · 점검 자동알림 · 장애 감지</td></tr>
+        <tr><td>💰 재무 (CFO)</td><td>매출·지출 자동집계 · 이상지출 알림 · 예산 소진율 예측 · 세무일정</td></tr>
+        <tr><td>👨‍💼 인사 (CHRO)</td><td>채용 파이프라인 · 근태 집계 · 온보딩 30-60-90 · 계약만료 알림</td></tr>
+        <tr><td>🧾 업무·결재 (전사)</td><td>업무 등록→결재선 자동산출→승인→완료→결과보고서 자동생성</td></tr>
+      </table>
+      <p style="font-size:12px;color:var(--dim);margin-top:8px;">👑 그 위에 <strong>웰리(오케스트레이터)</strong> — 전 모듈 보고 통합 · 08시 브리핑 · 완료 자동검증 → GM은 G1만.</p>
+    </div>
+    <script>
+    /* 7대 자동화 모듈 — 클릭 편집 + 자동저장(localStorage) (G1→T2 이관 2026-06-06) */
+    (function(){
+      var KEY='G1_MODULES_V1';
+      var tbl=document.getElementById('g1-modules-table');
+      if(!tbl) return;
+      var cells=tbl.querySelectorAll('tr td');
+      if(!cells.length) return;
+      try{ var s=JSON.parse(localStorage.getItem(KEY)||'null');
+        if(s && s.length===cells.length){ cells.forEach(function(c,i){ c.innerHTML=s[i]; }); }
+      }catch(e){}
+      cells.forEach(function(c){ c.setAttribute('contenteditable','true'); c.style.cursor='text'; });
+      function save(){ var a=[]; cells.forEach(function(c){ a.push(c.innerHTML); }); try{ localStorage.setItem(KEY, JSON.stringify(a)); }catch(e){} }
+      tbl.addEventListener('input', save);
+      var hint=document.createElement('div');
+      hint.style.cssText='font-size:11px;color:var(--accent);margin-top:6px;';
+      hint.textContent='✏️ 칸을 클릭해 바로 편집 · 자동 저장됩니다';
+      if(tbl.parentNode) tbl.parentNode.appendChild(hint);
+    })();
+    </script>
+    <!-- ══ /7대 자동화 모듈 ══ -->
     <!-- ── PC·업데이트·창 동작 원리 (접이식) ── -->
     <details class="toggle" style="margin:6px 0 18px;">
       <summary>🖥️ PC·업데이트·창 동작 원리 <span style="color:var(--dim);font-size:12px;font-weight:400;">— 검은 창·자동 업데이트가 왜 그런지 (펼쳐보기)</span></summary>
