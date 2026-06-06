@@ -7,8 +7,8 @@
 #    개편: setup이 '비즈홈 안착 + 실제 인증 쿠키 보유'까지 확인하고, 쿠키 이름(값 비공개) 덤프.
 #    검증: --mode check 로 브라우저 재시작 후 세션 유지 여부 실측 → 유지 시 반자동, 미유지 시 B안(수동) 확정.
 #
-# 정책: 종착지=임시저장(draft). 현 단계 목표 = 로그인 세션 저장(setup) + 골격까지.
-#       에디터 자동입력(draft/publish)은 GM 로그인 후 당근 비즈 글쓰기 DOM 실측 후 다음 단계 구현.
+# 정책: setup(로그인 세션 저장) + draft(글쓰기·이미지·임시저장) + publish(다음→게시) 구현 완료.
+#       에디터 자동입력(draft/publish)·이미지 첨부(file_chooser)·발행 = 2026-06-05 실측 검증.
 #       비밀번호 하드코딩 없음. Persistent Profile 세션 재사용. 토큰 stdout 노출 금지.
 #
 # 사전 설치 (GM 로컬 1회):
@@ -18,8 +18,8 @@
 # 모드:
 #   setup  : 최초 1회 GM 수동 로그인 → Persistent Profile 세션 저장 (Enter 불필요·자동 감지)
 #   dryrun : 브라우저/로그인 없이 본문 조립·이미지 수집·경로·모드 가드 점검만 (기본)
-#   draft  : [스텁] 글쓰기 → 임시저장 (에디터 자동입력 미구현 — DOM 실측 후 다음 단계)
-#   publish: [스텁] 실 발행 — GM go 가드(--i-am-sure 또는 WELLPERION_PUBLISH_GO=1) 통과 전제
+#   draft  : 글쓰기(제목·본문·이미지 자동입력) → 임시저장
+#   publish: 실 발행(다음→게시) — GM go 가드(--i-am-sure 또는 WELLPERION_PUBLISH_GO=1) 통과 전제
 #
 # 실행 예:
 #   python scripts\danggn_upload_playwright.py --mode setup
@@ -285,7 +285,7 @@ def run_dryrun(args: argparse.Namespace) -> int:
     print("[INFO] --- 모드 가드 점검 ---")
     print(f"        publish GM go 가드: --i-am-sure 또는 {PUBLISH_GO_ENV_KEY}=1 필요")
     print(f"        현재 --i-am-sure={args.i_am_sure} / env {PUBLISH_GO_ENV_KEY}={os.environ.get(PUBLISH_GO_ENV_KEY, '(unset)')}")
-    print("[INFO] ⚠ draft/publish 에디터 자동입력은 스텁 — GM 로그인 후 당근 비즈 글쓰기 DOM 실측 필요")
+    print("[INFO] draft/publish 자동입력·이미지 첨부·발행 구현됨 — 실행: --mode draft/publish 또는 --mode setup --then-draft/--then-publish")
     print("[INFO] === DRYRUN 완료 (제출·발행 없음) ===")
     return 0
 
@@ -1047,9 +1047,11 @@ async def run_draft(args: argparse.Namespace) -> int:
 
 
 # -----------------------------------------------------------------
-# publish — [스텁] 실 발행. GM go 가드 통과 시에만.
+# publish — 실 발행(글쓰기·이미지·다음→게시). GM go 가드 통과 시에만.
 # -----------------------------------------------------------------
 async def run_publish(args: argparse.Namespace) -> int:
+    import asyncio
+
     if not publish_guard_ok(args):
         print("[ERROR] publish 거부 — GM go 가드 미충족.")
         print(f"        실 발행하려면 --i-am-sure 플래그 또는 {PUBLISH_GO_ENV_KEY}=1 환경변수 필요.")
@@ -1057,11 +1059,41 @@ async def run_publish(args: argparse.Namespace) -> int:
     if not PERSISTENT_PROFILE_DIR.exists():
         print("[ERROR] 프로필 미존재 — 먼저 --mode setup 실행 필요.")
         return 3
+
     post = build_post(args)
-    print("[INFO] === 당근 비즈 PUBLISH (스텁·GM go 가드 통과) ===")
-    print(f"[INFO] 제목: {post.title or '(비어 있음)'} / 본문 {len(post.body)} chars / 이미지 {len(post.image_paths)}장")
-    print("[TODO] 당근 비즈 글쓰기 에디터 자동입력 미구현 — GM 로그인(setup) 후 DOM 실측")
-    return 0
+    errs = validate_post(post, require_images=False)
+    print("[INFO] === 당근 비즈 PUBLISH (GM go 가드 통과) ===")
+    print(f"[INFO] 본문 {len(post.body)} chars / 이미지 {len(post.image_paths)}장")
+    if errs:
+        for e in errs:
+            print(f"[WARN] {e}")
+        if not post.body:
+            print("[ERROR] 본문 없음 — 진행 불가.")
+            return 4
+
+    async_playwright = _import_playwright()
+    p, context = await _launch_context(async_playwright)
+    page = context.pages[0] if context.pages else await context.new_page()
+
+    print(f"[INFO] 비즈 홈 접속: {DANGGN_BIZ_URL}")
+    await page.goto(DANGGN_BIZ_URL, wait_until="networkidle", timeout=30_000)
+    await asyncio.sleep(3)
+    home_url = page.url
+
+    if is_login_required(home_url):
+        print("[ERROR] 세션 만료 — --mode setup --then-publish 로 재로그인 후 즉시 발행 필요.")
+        await _screenshot(page, "danggn_session_expired.png")
+        await context.close()
+        await p.stop()
+        return 5
+
+    print(f"[INFO] 비즈 홈 안착: {home_url}")
+    rc = await _run_draft_with_context(page, context, args, publish=True)
+
+    await asyncio.sleep(2)
+    await context.close()
+    await p.stop()
+    return rc
 
 
 # -----------------------------------------------------------------
@@ -1187,7 +1219,7 @@ async def _run_engagement_with_context(page) -> int:
 # -----------------------------------------------------------------
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="웰페리온 AI CMO — 당근 비즈프로필 반자동 업로더 v0.1 (setup·dryrun + draft/publish 스텁)"
+        description="웰페리온 AI CMO — 당근 비즈프로필 반자동 업로더 v0.2 (setup·dryrun·draft·publish 구현)"
     )
     parser.add_argument(
         "--mode",
@@ -1197,8 +1229,8 @@ def parse_args() -> argparse.Namespace:
             "setup: GM 수동 로그인 세션 저장 / "
             "check: 저장 세션 유지 여부 검증(읽기 전용) / "
             "dryrun: 브라우저 없이 본문·이미지·경로·가드 점검 (기본) / "
-            "draft: 임시저장 [스텁] / "
-            "publish: 실 발행 [스텁] (--i-am-sure 또는 WELLPERION_PUBLISH_GO=1 필요)"
+            "draft: 글쓰기+이미지+임시저장 / "
+            "publish: 실 발행(다음→게시) (--i-am-sure 또는 WELLPERION_PUBLISH_GO=1 필요)"
         ),
     )
     parser.add_argument("--content-dir", dest="content_dir", default=None,
