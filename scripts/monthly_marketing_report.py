@@ -25,6 +25,13 @@ import sys
 import json
 import datetime
 
+# Windows 콘솔(cp949)·예약작업 환경에서도 이모지·한글 print가 깨지거나 죽지 않도록
+try:
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+except Exception:
+    pass
+
 # requests 없으면 urllib 폴백
 try:
     import requests as _requests
@@ -165,14 +172,23 @@ def build_report_text(pb, fc):
         conv_cnt  = pb["conversion"]["month"].get("converted")
         conv_rate = pb["conversion"]["month"].get("rate")
 
-    # 채널별 top3 (byChannel은 배열: [{channel, inquiries, converted, rate}, ...])
+    # 이번 달 채널별 문의 (byChannelMonth — 월 단위, 월간 보고서 단위 일치)
+    by_ch_month = {}
+    if pb and "inquiries" in pb:
+        by_ch_month = pb["inquiries"].get("byChannelMonth", {}) or {}
+    ch_month_lines = ""
+    if by_ch_month:
+        sorted_chm = sorted(by_ch_month.items(), key=lambda x: x[1], reverse=True)[:5]
+        ch_month_lines = "\n".join(f"  · {ch}: {_fmt(cnt, '건')}" for ch, cnt in sorted_chm)
+
+    # 참고: 전체 누적 채널별 전환율 (funnel_conversion — 월 구분 없음, 누적값임을 명시)
     ch_list = (fc.get("byChannel") if fc else None) or []
-    top3_lines = ""
+    cum_lines = ""
     if isinstance(ch_list, list) and ch_list:
         top3 = sorted(ch_list, key=lambda d: d.get("inquiries", 0), reverse=True)[:3]
-        top3_lines = "\n".join(
-            f"  · {d.get('channel', '기타')}: {_fmt(d.get('inquiries', 0), '건')}"
-            f" (전환율 {_fmt_rate(d.get('rate'))})"
+        cum_lines = "\n".join(
+            f"  · {d.get('channel', '기타')}: 누적 {_fmt(d.get('inquiries', 0), '건')}"
+            f" · 전환율 {_fmt_rate(d.get('rate'))}"
             for d in top3
         )
 
@@ -209,11 +225,14 @@ def build_report_text(pb, fc):
         f"  · 전환율: {_fmt_rate(conv_rate)}" + (f" ({rate_comment})" if rate_comment else ""),
     ]
 
-    if top3_lines:
-        lines += ["", "📍 <b>채널별 문의 Top 3</b>", top3_lines]
+    if ch_month_lines:
+        lines += ["", "📍 <b>이번 달 채널별 문의</b>", ch_month_lines]
 
     if type_lines:
-        lines += ["", "🗂 <b>문의 유형별</b>", type_lines]
+        lines += ["", "🗂 <b>이번 달 문의 유형별</b>", type_lines]
+
+    if cum_lines:
+        lines += ["", "📈 <b>참고 · 전체 누적 채널별 전환율</b>", cum_lines]
 
     lines += [
         "",

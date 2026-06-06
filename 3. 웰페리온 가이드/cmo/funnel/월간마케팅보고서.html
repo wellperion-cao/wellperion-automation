@@ -216,12 +216,12 @@ a{color:var(--accent);text-decoration:none}
   <div class="section">
     <div class="section-title"><span class="section-num">④</span> 채널별 문의 · 전환</div>
     <div style="background:var(--paper);border:1px solid var(--border);border-radius:12px;padding:18px 20px">
-      <div style="font-size:12px;color:var(--dim);margin-bottom:14px">이달 유입 채널별 문의 건수 (funnel_conversion byChannel 기준)</div>
+      <div style="font-size:12px;color:var(--dim);margin-bottom:14px">이번 달 유입 채널별 문의 건수 (period_breakdown byChannelMonth 기준)</div>
       <div class="channel-bars" id="channelBars">
         <div style="color:var(--dim);font-style:italic;font-size:13px">로딩 중…</div>
       </div>
       <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border)">
-        <div style="font-size:12px;color:var(--dim);margin-bottom:10px">전환율 (문의 → 회원 등록)</div>
+        <div style="font-size:12px;color:var(--dim);margin-bottom:10px">전환율 (문의 → 회원 등록) · <b>전체 누적</b> 기준 (월 구분 없음)</div>
         <div id="conversionSummary" style="font-size:13px;color:var(--dim);font-style:italic">로딩 중…</div>
       </div>
     </div>
@@ -370,6 +370,7 @@ async function loadPeriodBreakdown() {
   }
   renderKpiTable(data);
   renderTypeBars(data);
+  renderChannelBars(data);
   renderSummary(data, null);
   renderComments(data, null);
 }
@@ -385,7 +386,6 @@ async function loadFunnelConversion() {
     showError("funnel_conversion 로드 실패 — 채널 데이터가 표시되지 않을 수 있습니다. (" + e.message + ")");
     data = null;
   }
-  renderChannelBars(data);
   renderConversionSummary(data);
 }
 
@@ -424,24 +424,22 @@ function renderKpiTable(pb) {
   }).join("");
 }
 
-/* ── 채널 바 렌더 ── */
-/* byChannel은 배열: [{channel, inquiries, converted, rate}, ...] */
-function renderChannelBars(fc) {
+/* ── 채널 바 렌더 (이번 달 — period_breakdown byChannelMonth, 월 단위 일치) ── */
+function renderChannelBars(pb) {
   const el = document.getElementById("channelBars");
-  const byChannel = Array.isArray(fc?.byChannel) ? fc.byChannel : null;
-  if (!byChannel || !byChannel.length) {
-    el.innerHTML = '<div style="color:var(--dim);font-style:italic;font-size:13px">채널 데이터 없음 (GAS funnel_conversion byChannel 미응답)</div>';
+  const byCh = pb?.inquiries?.byChannelMonth ?? null;
+  if (!byCh || typeof byCh !== "object" || Object.keys(byCh).length === 0) {
+    el.innerHTML = '<div style="color:var(--dim);font-style:italic;font-size:13px">이번 달 채널 데이터 없음</div>';
     return;
   }
-  const entries = byChannel.slice().sort((a, b) => (b.inquiries || 0) - (a.inquiries || 0));
-  const max     = Math.max(...entries.map(d => d.inquiries || 0), 1);
-  el.innerHTML = entries.map(d => {
-    const pct     = Math.round(((d.inquiries || 0) / max) * 100);
-    const rateStr = d.rate != null ? ` <span style="font-size:11px;color:var(--dim)">(전환율 ${fmtPct(d.rate)})</span>` : "";
+  const entries = Object.entries(byCh).sort((a, b) => b[1] - a[1]);
+  const max     = Math.max(...entries.map(e => e[1]), 1);
+  el.innerHTML = entries.map(([ch, cnt]) => {
+    const pct = Math.round((cnt / max) * 100);
     return `<div class="ch-row">
-      <span class="ch-name">${d.channel || "기타"}</span>
+      <span class="ch-name">${ch || "기타"}</span>
       <div class="ch-bar-wrap"><div class="ch-bar" style="width:${pct}%"></div></div>
-      <span class="ch-val">${fmtNum(d.inquiries || 0)}${rateStr}</span>
+      <span class="ch-val">${fmtNum(cnt)}</span>
     </div>`;
   }).join("");
 }
