@@ -4780,7 +4780,7 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
   <!-- ── COO 투두리스트 소개 ── -->
   <article class="doc" id="gcoo-todo">
     <div class="doc-header"><h2>업무&결재 현황 SSOT</h2><div class="meta">COO 관할 · 핵심멤버 업무 배분·추적 · Apps Script 연동</div></div>
-    <p class="lead">핵심멤버(매니저·AM)의 업무를 등록·배분·추적하는 업무 현황 SSOT입니다. 카테고리별 분류, 담당자 배정, 기간 설정, 결재 요청까지 한 페이지에서 처리합니다.</p>
+    <p class="lead">핵심멤버(매니저·AM)의 업무를 등록·배분·추적하는 업무 현황 SSOT입니다. <span style="color:var(--dim);">— 세부 기능·보고 체계는 아래 '개요 · 보고 체계 SSOT' 콜아웃에 정리.</span></p>
 
     <!-- ⭐ 핵심 KPI 스트립 — 업무·결재 SSOT 대시보드 핵심 지표 실시간 집계(최상단). SSOT 변경 시 자동 반영 (2026-06-03 GM) -->
     <div id="s4KpiStrip" style="margin:14px 0 20px;">
@@ -4823,31 +4823,27 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
 
         <div style="font-size:12px;font-weight:700;color:var(--blue);margin-bottom:6px;">🧩 기능 요약 <span style="font-weight:500;color:var(--dim);">— 이 페이지가 하는 일 한눈에</span></div>
         <ul style="margin:0 0 16px 18px;padding:0;">
-          <li>이 페이지 = <b>업무 현황</b>(실무 진행)과 <b>결재 현황</b>(승인 흐름) <b>두 SSOT를 한 화면에서 보는 관제 페이지</b>. 맨 위 KPI·피드는 두 SSOT를 실시간 집계한 값(수동 입력 없음).</li>
-          <li>전사 실무 업무를 <b>8개 카테고리</b>로 등록·추적 — [1] 매출·영업 · [2] 인사·파트너 · [3] 운영 정책 · [4] 시설·환경 · [5] 회원·CS · [6] IT·시스템·자동화 · [7] 교육·조직문화 · [8] 회의</li>
+          <li>핵심멤버(매니저·AM) 업무를 <b>8개 카테고리</b>로 등록·배분·추적 — [1] 매출·영업 · [2] 인사·파트너 · [3] 운영 정책 · [4] 시설·환경 · [5] 회원·CS · [6] IT·시스템·자동화 · [7] 교육·조직문화 · [8] 회의</li>
           <li>업무별 <b>담당자 · 기간 · 내용 · 진척 로그 · 난이도 · 예산 · 결과보고</b> 통합 관리 · <b>칸반/캘린더</b> 2가지 보기</li>
-          <li><b>마감 임박 자동 강조</b>(D-day) · 완료/보류 로그 분리 · 업무 현황엔 <b>실무진 업무만</b> 노출(AI·GM·결재 넘어간 건은 G1에서 관리)</li>
-          <li>결재요청 시 <b>결재선 자동 산출</b> — 부서장(카테고리 자동) → GM → (대표님). <b>업무 현황은 GM에서 종결</b>, 정식 <b>결재 현황은 전응준 대표까지</b>.</li>
-          <li><b>Google 시트 실시간 연동</b> · 인쇄 · 보고용 · 공유용 출력</li>
+          <li><b>마감 임박 자동 강조</b>(D-day) · 완료/보류 로그 분리 · <b>실무진 업무만</b> 노출(AI·GM·결재 넘어간 건은 G1에서 관리)</li>
+          <li>결재요청 시 <b>결재선 자동 산출</b> — 부서장 → GM → 대표님. <b>업무 현황은 GM 종결 / 결재 현황은 전응준 대표 종결</b>.</li>
+          <li>맨 위 <b>KPI·좌우 피드 = 두 SSOT 실시간 집계</b>(수동 입력 없음) · <b>Google 시트 연동</b> · 인쇄·공유 출력</li>
         </ul>
 
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
           <span style="font-size:12px;font-weight:700;color:var(--green);">📣 보고 체계</span>
           <button onclick="hubEditNotes('reporting')" id="hubReportingEditBtn" style="font-size:11px;font-weight:600;padding:3px 10px;border-radius:7px;cursor:pointer;font-family:inherit;background:var(--accent-bg);color:var(--accent);border:1px solid rgba(183,159,138,0.3);">✏️ 편집</button>
         </div>
-        <div id="hubReportingView" style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin:0 0 16px 0;white-space:pre-line;line-height:1.7;">• 이 페이지가 곧 보고서 — 맨 위 KPI + 좌우 피드(최근 변동·마감 임박·결재 대기)가 실시간 현황. 열면 바로 파악
-• 결재 — 결재 현황 SSOT에서 추적. 부서장 → GM → 대표님 순, GM·대표님 본인 비밀번호로 승인/반려
+        <div id="hubReportingView" style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin:0 0 16px 0;white-space:pre-line;line-height:1.7;">• 결재 — 결재 현황 SSOT에서 추적. 부서장 → GM → 대표님 순, GM·대표님 본인 비밀번호로 승인/반려
 • 진척 로그 — 카드별 날짜 누적
 • 이슈/보류 — 별도 섹션 단독 노출(묻히지 않게)
-• (연계) 이 SSOT의 진행·결재 대기는 CEO 08:00 통합보고에도 자동 요약 — 현재 텔레그램은 GM 단독 수신</div>
+• (연계) 진행·결재 대기는 CEO 08:00 통합보고에 자동 요약 — 현재 텔레그램은 GM 단독 수신</div>
 
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
           <span style="font-size:12px;font-weight:700;color:var(--accent);">📝 현재 내용 기록</span>
           <button onclick="hubEditNotes('notes')" id="hubNotesEditBtn" style="font-size:11px;font-weight:600;padding:3px 10px;border-radius:7px;cursor:pointer;font-family:inherit;background:var(--accent-bg);color:var(--accent);border:1px solid rgba(183,159,138,0.3);">✏️ 편집</button>
         </div>
-        <div id="hubNotesView" style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin:0 0 6px 0;white-space:pre-line;line-height:1.7;">[현재 확정 구조]
-• 두 SSOT 역할 분담 — 업무 현황=실무 진행(GM 종결) / 결재 현황=승인 흐름(전응준 대표 종결)
-• 결재선 1단계 부서장 — 운영부 이경연 실장([1][3]) · 시설부 이정헌 소장([4]) · 파트너팀 나우열M([2]). 그 외 카테고리는 부서장 생략 → GM
+        <div id="hubNotesView" style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin:0 0 6px 0;white-space:pre-line;line-height:1.7;">• 결재선 1단계 부서장 — 운영부 이경연 실장([1][3]) · 시설부 이정헌 소장([4]) · 파트너팀 나우열M([2]). 그 외 카테고리는 부서장 생략 → GM
 • 화면 분리 — 결재 넘어간 업무는 업무 현황에서 잠금, 결재 현황(GM·대표)에서만 관리
 • 안전장치 — 승인/반려 비밀번호 게이트 · 편집 빈값 덮어쓰기 차단 · 카드에 결재 진행 표시</div>
         <p style="font-size:11px;color:var(--dim);margin:0 0 20px;">✏️ 보고 체계·현재 내용 기록은 위 편집 버튼으로 바로 수정·저장하면 GitHub에 자동 반영됩니다 (1~2분).</p>
