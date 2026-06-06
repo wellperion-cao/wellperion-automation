@@ -496,48 +496,24 @@ a{color:var(--accent);text-decoration:none}
 
   </div>
 
-  <!-- 채널별 Funnel 비교 — 수기 열(월간 노출·Litt.ly 클릭) 숨김 -->
+  <!-- 채널별 Funnel 비교 — 실데이터 라이브 렌더 -->
   <div class="section">
-    <div class="section-title">채널별 비교</div>
+    <div class="section-title">채널별 비교 <span style="font-size:11px;font-weight:400;color:var(--accent);text-transform:none;letter-spacing:0">(라이브)</span></div>
     <div style="background:var(--paper);border:1px solid var(--border);border-radius:12px;overflow:hidden">
       <table class="channel-table">
         <thead>
           <tr>
             <th>채널</th>
-            <!-- B: 월간 노출 열 숨김 --><!-- <th style="display:none">월간 노출</th> -->
-            <!-- B: Litt.ly 클릭 열 숨김 --><!-- <th style="display:none">Litt.ly 클릭</th> -->
-            <th>문의 전환</th>
-            <th>문의→가입 전환율</th>
-            <th>주요 특이사항</th>
+            <th>이번 달 문의</th>
+            <th>누적 전환(명)</th>
+            <th>누적 전환율</th>
           </tr>
         </thead>
         <tbody id="channel-table-body">
-          <tr>
-            <td><span class="channel-dot" style="background:var(--f1)"></span>Instagram</td>
-            <!-- <td style="display:none" class="placeholder">—</td> -->
-            <!-- <td style="display:none" class="placeholder">—</td> -->
-            <td class="placeholder">—</td>
-            <td class="placeholder fc-ch" data-channel="Instagram">—</td>
-            <td style="font-size:12px;color:var(--dim)">비주얼 강점, CTA 클릭 마찰</td>
-          </tr>
-          <tr>
-            <td><span class="channel-dot" style="background:var(--green)"></span>네이버 블로그</td>
-            <!-- <td style="display:none" class="placeholder">—</td> -->
-            <!-- <td style="display:none" class="placeholder">—</td> -->
-            <td class="placeholder">—</td>
-            <td class="placeholder fc-ch" data-channel="네이버 블로그">—</td>
-            <td style="font-size:12px;color:var(--dim)">SEO 유입, 체류시간 긺</td>
-          </tr>
-          <tr>
-            <td><span class="channel-dot" style="background:var(--orange)"></span>네이버 카페</td>
-            <!-- <td style="display:none" class="placeholder">—</td> -->
-            <!-- <td style="display:none" class="placeholder">—</td> -->
-            <td class="placeholder">—</td>
-            <td class="placeholder fc-ch" data-channel="네이버 카페">—</td>
-            <td style="font-size:12px;color:var(--dim)">지역 커뮤니티, 신뢰도 높음</td>
-          </tr>
+          <tr><td colspan="4" style="padding:14px 16px;color:var(--dim);font-size:13px">불러오는 중…</td></tr>
         </tbody>
       </table>
+      <div style="padding:8px 16px 10px;font-size:11px;color:var(--dim);border-top:1px solid var(--border)">채널명은 문의 시 선택한 유입경로 기준 · 누적 전환은 전체 기간</div>
     </div>
   </div>
 
@@ -589,6 +565,66 @@ function toggleCard(header) {
 // ─── 문의→가입 전환율 자동 집계 ───────────────────────────────
 var FUNNEL_APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzdwSCCSSJ6JXLDoWuo7HG0JmBM2iy10TujFQ_O5JbTjnWaN7gOk-ddA4IAvsNfelg0xA/exec';
 
+// 채널별 비교 표 라이브 렌더 — 두 소스 모두 저장 후 합산
+var _fcData = null;   // funnel_conversion 응답 (byChannel 배열)
+var _pbData = null;   // period_breakdown 응답 (inquiries.byChannelMonth 객체)
+
+var _DOT_COLORS = ['--f1','--f2','--f3','--f4','--f5'];
+
+function renderChannelTableLive() {
+  var tbody = document.getElementById('channel-table-body');
+  if (!tbody) return;
+
+  // byChannelMonth: {채널명: 건수}
+  var byMonth = (_pbData && _pbData.inquiries && _pbData.inquiries.byChannelMonth) ? _pbData.inquiries.byChannelMonth : {};
+  // byChannel: [{channel, inquiries, converted, rate}, ...]
+  var byChannel = (_fcData && Array.isArray(_fcData.byChannel)) ? _fcData.byChannel : [];
+
+  // 채널 합집합
+  var chSet = {};
+  Object.keys(byMonth).forEach(function(ch) { chSet[ch] = true; });
+  byChannel.forEach(function(d) { if (d.channel) chSet[d.channel] = true; });
+  var channels = Object.keys(chSet);
+
+  if (!channels.length) {
+    tbody.innerHTML = '<tr><td colspan="4" style="padding:14px 16px;color:var(--dim);font-size:13px;font-style:italic">집계 준비 중</td></tr>';
+    return;
+  }
+
+  // 각 채널 데이터 조립
+  var rows = channels.map(function(ch) {
+    var monthInq = byMonth[ch] !== undefined ? byMonth[ch] : 0;
+    var fcRow = byChannel.find(function(d) { return d.channel === ch; });
+    var cumConverted = fcRow ? fcRow.converted : null;
+    var cumInquiries = fcRow ? fcRow.inquiries : null;
+    var cumRate      = fcRow ? fcRow.rate      : null;
+    return { ch: ch, monthInq: monthInq, cumConverted: cumConverted, cumInquiries: cumInquiries, cumRate: cumRate };
+  });
+
+  // 정렬: 이번 달 문의 desc → 누적 문의 desc
+  rows.sort(function(a, b) {
+    if (b.monthInq !== a.monthInq) return b.monthInq - a.monthInq;
+    var aCum = a.cumInquiries !== null ? a.cumInquiries : 0;
+    var bCum = b.cumInquiries !== null ? b.cumInquiries : 0;
+    return bCum - aCum;
+  });
+
+  var html = '';
+  rows.forEach(function(r, i) {
+    var colorVar = 'var(' + _DOT_COLORS[i % _DOT_COLORS.length] + ')';
+    var monthVal = r.monthInq > 0 ? r.monthInq + '건' : '<span class="placeholder">—</span>';
+    var convVal  = r.cumConverted !== null ? r.cumConverted + '명' : '<span class="placeholder">—</span>';
+    var rateVal  = r.cumRate      !== null ? r.cumRate + '%'       : '<span class="placeholder">—</span>';
+    html += '<tr>'
+          + '<td><span class="channel-dot" style="background:' + colorVar + '"></span>' + r.ch + '</td>'
+          + '<td>' + monthVal + '</td>'
+          + '<td>' + convVal  + '</td>'
+          + '<td>' + rateVal  + '</td>'
+          + '</tr>';
+  });
+  tbody.innerHTML = html;
+}
+
 async function loadFunnelConversion() {
   var elRate      = document.getElementById('fc-rate');
   var elConverted = document.getElementById('fc-converted');
@@ -628,20 +664,10 @@ async function loadFunnelConversion() {
       }
     }
 
-    if (Array.isArray(data.byChannel)) {
-      document.querySelectorAll('.fc-ch').forEach(function(td) {
-        var ch = (td.dataset.channel || '').trim();
-        var match = data.byChannel.find(function(d) {
-          return d.channel === ch
-            || d.channel.includes(ch)
-            || ch.includes(d.channel);
-        });
-        if (match) {
-          td.textContent = match.rate + '%';
-          td.classList.remove('placeholder');
-        }
-      });
-    }
+    // 채널별 비교 표 — 모듈 변수 저장 후 라이브 렌더
+    _fcData = data;
+    renderChannelTableLive();
+
   } catch (e) {
     console.warn('[funnel_conversion] 로드 실패:', e.message);
   }
@@ -769,6 +795,12 @@ async function loadPeriodBreakdown(period) {
 }
 
 function _applyPeriodData(data, period) {
+  // 채널별 비교 표 — period_breakdown 데이터 저장 후 라이브 렌더
+  if (period === 'month') {
+    _pbData = data;
+    renderChannelTableLive();
+  }
+
   var clickEl = document.getElementById('kpi-total-clicks');
   var inqEl   = document.getElementById('kpi-inquiries');
   var convEl  = document.getElementById('kpi-converted');
