@@ -621,17 +621,17 @@
     <!-- AUTO:LATEST-START -->
     <div class="card grow">
       <h4>최신 업데이트 — 2026-06-06 (자동 갱신)</h4>
+      <p><strong>2026-06-06</strong> refactor(T1→T2): 텔레그램 봇 탭 T2 합병 — 재기동 명령 T2 인라인, T1 텔레그램 탭 삭제</p>
       <p><strong>2026-06-06</strong> feat(g1): ⚓ 항구 간결판 — 핵심(제목+한줄+단 하나의 규칙)만, 상세 표 3개·흐름칩 제거(상세는 S2)</p>
       <p><strong>2026-06-06</strong> fix(cmo): 규모 정정 2,900평→3,000평 (GM 확인) — 채널 등록 팩 한/영 소개·키워드 반영</p>
       <p><strong>2026-06-06</strong> refactor(g1): 북극성 비전→홈 / 7대 자동화 모듈→시토 업무자동화(T2) 이관, G1엔 북극성 링크+항해 범례만 (회사 자산은…</p>
       <p><strong>2026-06-06</strong> fix(danggn): --mode publish 스텁→실 발행 배선 + 옛 '[스텁]' 표기 현행화</p>
-      <p><strong>2026-06-06</strong> feat(cmo): 실험#1 GM 승인 반영 — 문구 1번 확정, 진행 중(다음 발행부터 2주 A/B)</p>
     </div>
 <!-- AUTO:LATEST-END -->
         <table>
           <tr><th style="width:160px">날짜</th><th>변경 내용</th></tr>
           <!-- AUTO:TABLE-START -->
-      <tr><td><strong>2026-06-06 (자동)</strong></td><td>feat(g1): ⚓ 항구 간결판 — 핵심(제목+한줄+단 하나의 규칙)만, 상세 표 3개·흐름칩 제거(상세는 S2) · fix(cmo): 규모 정정 2,900평→3,000평 (GM 확인) — 채널 등록 팩 한/영 소개·키워드 반영 · refactor(g1): 북극성 비전→홈 / 7대 자동화 모듈→시토 업무자동화(T2) 이관, G1엔 북극성 링크+항해 …</td></tr>
+      <tr><td><strong>2026-06-06 (자동)</strong></td><td>refactor(T1→T2): 텔레그램 봇 탭 T2 합병 — 재기동 명령 T2 인라인, T1 텔레그램 탭 삭제 · feat(g1): ⚓ 항구 간결판 — 핵심(제목+한줄+단 하나의 규칙)만, 상세 표 3개·흐름칩 제거(상세는 S2) · fix(cmo): 규모 정정 2,900평→3,000평 (GM 확인) — 채널 등록 팩 한/영 소개·키워드 반영 · re…</td></tr>
       <!-- AUTO:TABLE-END -->
           <tr><td><strong>2026-05-28 (14차)</strong></td><td>공지/안내문 생성(COO 하위) · 오프라인 홍보물 디자인 제작(CMO 하위) 도구 신설 · 공지 서식 v2.0 독립 페이지화 · 회사소개서·전략로드맵 원본 「3. 웰페리온 가이드/회사문서/」로 이관(SSOT 단일화) · C-Level 부팅 R/R Notion API→웰페리온 ERP g10 참조로 전환 · GitHub Pages 워크플로 폴더명 경로 수정 · 사이드바 "공통+7개 C-Level" 라벨 제거</td></tr>
           <tr><td>2026-05-27 (13차)</td><td>GitHub Pages 전환 · 사이드바 4섹터 · AI C-Level 통일 · 운영 통합 체계 · 공식채널·지출현황·취업규칙·SSOT 신설 · g2+g19·g9+g20·g12·g13 합병 · 김남욱 탭 확장 · v2.5</td></tr>
@@ -3374,17 +3374,17 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
 
 
     <!-- ⚓ 항구 카드 (히어로 — 항상 보임) -->
-    <!-- ══ ⚓ 항구 (어제와 오늘을 잇기) — 간결판 (2026-06-06) ══ -->
+    <!-- ══ ⚓ 항구 (멈출 땐 항구에 기록) — GM 모델판 (2026-06-06) ══ -->
     <div style="background:linear-gradient(135deg,#13212c 0%,#1b3340 100%);border:1px solid #38b6c4;border-radius:14px;padding:16px 20px;margin:8px 0 20px;">
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap;">
         <span style="font-size:20px;">⚓</span>
         <span style="color:#fff;font-weight:800;font-size:16px;letter-spacing:0.02em;">항구</span>
-        <span style="color:#9fd8e0;font-size:12px;font-weight:400;">— 어제와 오늘을 잇는 곳</span>
+        <span style="color:#9fd8e0;font-size:12px;font-weight:400;">— 멈출 땐 바다 말고 항구에</span>
       </div>
-      <p style="color:#cfe9ee;font-size:13px;line-height:1.7;margin:0 0 12px;">일을 끝낼 때마다 항구에 들러 <strong style="color:#fff;">다음 항구(다음 할 일)</strong>를 정하고 출항해요. 그래서 항로가 안 끊겨요.</p>
+      <p style="color:#cfe9ee;font-size:13px;line-height:1.7;margin:0 0 12px;">오늘 갈 길(항로)을 받아 배(일)를 띄웠어요. 그러다 멈춰야 할 때 — <strong style="color:#fff;">바다 한복판에 멈추면 '표류'</strong>예요. 다음 날 "어디였더라?" 하고 처음부터 헤매죠.<br>그러지 말고 <strong style="color:#7fdbe8;">항구에 들러</strong> 멈추세요. 일을 끝냈든 잠깐 쉬든, <strong style="color:#fff;">'여기까지 했다 + 다음은 이것'을 항로에 적어두는 곳</strong>이 항구예요. 그게 적혀 있어야 — 다음 항구로 가든, 뱃길 끝(완료)에 닿든 — 이어서 나아갑니다.</p>
       <div style="background:rgba(56,182,196,0.12);border-left:3px solid #38b6c4;border-radius:0 8px 8px 0;padding:12px 14px;">
         <div style="color:#7fdbe8;font-size:12px;font-weight:700;margin-bottom:5px;">🔑 단 하나의 규칙</div>
-        <div style="color:#eaf6f8;font-size:14px;line-height:1.6;">오늘 할 일은 딱 <strong style="color:#fff;">2곳</strong>에서만 나와요 — <strong style="color:#fff;">① 어제 남긴 '다음'</strong> + <strong style="color:#fff;">② GM이 새로 시킨 것</strong>. 이 둘 말고는 새 일을 만들지 않아요.</div>
+        <div style="color:#eaf6f8;font-size:14px;line-height:1.6;">멈출 땐 꼭 <strong style="color:#fff;">항구에서</strong>. <strong style="color:#fff;">① 여기까지 했다(기록)</strong> + <strong style="color:#fff;">② 다음은 이것</strong> — 이 둘을 항로에 남기면 내일도 안 끊기고 이어져요.</div>
       </div>
     </div>
     <!-- ══ /항구 ══ -->
