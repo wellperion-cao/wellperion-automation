@@ -11,7 +11,7 @@
 |---|---|
 | 업체명 | 웰페리온 (Wellperion) |
 | 법인 | 주식회사 웰페리온 |
-| 규모 | 약 2,900평 종합 스포츠클럽 (한남동) |
+| 규모 | 3,000평 종합 스포츠클럽 (한남동) |
 | 주소 | 서울특별시 용산구 서빙고로 413, 101동 지1층 101호 외 2 (한남동) |
 | **대표 전화** | **02-6261-1200** (멤버십 문의, 회사 대표회선) |
 | 운영시간 | 평일(월~금) 06:00~22:30 · 주말/공휴일 08:00~20:00 |
@@ -30,10 +30,10 @@
 **업체명:** 웰페리온
 **카테고리(추천):** 종합 스포츠센터 (보조: 수영장 · 필라테스 · 스쿼시 · 골프연습 · PT)
 **한 줄 소개:**
-> 한남동 약 2,900평, 성공한 이들을 위한 하이엔드 프라이빗 스포츠클럽.
+> 한남동 3,000평, 성공한 이들을 위한 하이엔드 프라이빗 스포츠클럽.
 
 **상세 소개:**
-> 웰페리온은 한남동에 자리한 약 2,900평 규모의 하이엔드 프라이빗 스포츠클럽입니다. 퍼스널 트레이닝(PT)·필라테스·스쿼시·골프·체조·G.X에 더해 수영·사우나·스파까지, 한 공간에서 절제된 고급감과 프라이버시를 갖춘 멤버십으로 누리실 수 있습니다. 간판이 아니라 공간이 말하는 브랜드 — 회원 한 분 한 분의 지속되는 건강을 설계합니다. 투어·상담은 사전 예약제로 운영됩니다.
+> 웰페리온은 한남동에 자리한 3,000평 규모의 하이엔드 프라이빗 스포츠클럽입니다. 퍼스널 트레이닝(PT)·필라테스·스쿼시·골프·체조·G.X에 더해 수영·사우나·스파까지, 한 공간에서 절제된 고급감과 프라이버시를 갖춘 멤버십으로 누리실 수 있습니다. 간판이 아니라 공간이 말하는 브랜드 — 회원 한 분 한 분의 지속되는 건강을 설계합니다. 투어·상담은 사전 예약제로 운영됩니다.
 > 멤버십 문의: 02-6261-1200 · wellperion.com/ko/inquiry
 
 **대표 키워드:** 한남동 스포츠클럽, 한남동 PT, 한남동 필라테스, 한남동 스쿼시, 한남동 수영장, 용산 프라이빗 짐, 이촌동 스포츠클럽, 한남동 스파
@@ -48,7 +48,7 @@
 **Business name:** Wellperion
 **Category:** Sports Club (primary) + Swimming, Pilates, Squash, Golf
 **Short description (EN):**
-> Wellperion is a premium 2,900-pyeong (~9,600㎡) private sports club in Hannam-dong, Seoul — personal training, Pilates, squash, golf, swimming, sauna & spa in a discreet members-only space.
+> Wellperion is a premium 3,000-pyeong (~9,900㎡) private sports club in Hannam-dong, Seoul — personal training, Pilates, squash, golf, swimming, sauna & spa in a discreet members-only space.
 **상세 소개(한):** (위 네이버 상세 소개 동일)
 **Attributes:** Members-only · By appointment · Parking · Showers · Sauna · Swimming pool · Private
 **Phone / Hours / Address / Website:** 위 공통 정보 동일 (대표 02-6261-1200)

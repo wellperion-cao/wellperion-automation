@@ -621,17 +621,17 @@
     <!-- AUTO:LATEST-START -->
     <div class="card grow">
       <h4>최신 업데이트 — 2026-06-06 (자동 갱신)</h4>
+      <p><strong>2026-06-06</strong> refactor(g1): 북극성 비전→홈 / 7대 자동화 모듈→시토 업무자동화(T2) 이관, G1엔 북극성 링크+항해 범례만 (회사 자산은…</p>
       <p><strong>2026-06-06</strong> fix(danggn): --mode publish 스텁→실 발행 배선 + 옛 '[스텁]' 표기 현행화</p>
       <p><strong>2026-06-06</strong> feat(cmo): 실험#1 GM 승인 반영 — 문구 1번 확정, 진행 중(다음 발행부터 2주 A/B)</p>
       <p><strong>2026-06-06</strong> feat(cmo): 실험#1(IG 캡션 첫줄 CTA) 착수 준비 완료 — baseline·A/B 캡션 변형안·로그 구체화(GM 승인 후 착수)</p>
       <p><strong>2026-06-06</strong> feat(g1): 북극성+7대모듈 정의를 방향·기록 탭→항로 위로 이동 + 항해 세계관 범례 (정의 단일화: 북극성→항로→항구 한 흐름)</p>
-      <p><strong>2026-06-06</strong> feat(g1): '일의 브릿지' → ⚓ 항구 재정의 (항해 세계관 — 입항 시 다음 항구 정하기, 항로 보드 아래)</p>
     </div>
 <!-- AUTO:LATEST-END -->
         <table>
           <tr><th style="width:160px">날짜</th><th>변경 내용</th></tr>
           <!-- AUTO:TABLE-START -->
-      <tr><td><strong>2026-06-06 (자동)</strong></td><td>fix(danggn): --mode publish 스텁→실 발행 배선 + 옛 '[스텁]' 표기 현행화 · feat(cmo): 실험#1 GM 승인 반영 — 문구 1번 확정, 진행 중(다음 발행부터 2주 A/B) · feat(cmo): 실험#1(IG 캡션 첫줄 CTA) 착수 준비 완료 — baseline·A/B 캡션 변형안·로그 구체화(GM 승인 후 착수…</td></tr>
+      <tr><td><strong>2026-06-06 (자동)</strong></td><td>refactor(g1): 북극성 비전→홈 / 7대 자동화 모듈→시토 업무자동화(T2) 이관, G1엔 북극성 링크+항해 범례만 (회사 자산은 회사 자리로) · fix(danggn): --mode publish 스텁→실 발행 배선 + 옛 '[스텁]' 표기 현행화 · feat(cmo): 실험#1 GM 승인 반영 — 문구 1번 확정, 진행 중(다음 발행부터 …</td></tr>
       <!-- AUTO:TABLE-END -->
           <tr><td><strong>2026-05-28 (14차)</strong></td><td>공지/안내문 생성(COO 하위) · 오프라인 홍보물 디자인 제작(CMO 하위) 도구 신설 · 공지 서식 v2.0 독립 페이지화 · 회사소개서·전략로드맵 원본 「3. 웰페리온 가이드/회사문서/」로 이관(SSOT 단일화) · C-Level 부팅 R/R Notion API→웰페리온 ERP g10 참조로 전환 · GitHub Pages 워크플로 폴더명 경로 수정 · 사이드바 "공통+7개 C-Level" 라벨 제거</td></tr>
           <tr><td>2026-05-27 (13차)</td><td>GitHub Pages 전환 · 사이드바 4섹터 · AI C-Level 통일 · 운영 통합 체계 · 공식채널·지출현황·취업규칙·SSOT 신설 · g2+g19·g9+g20·g12·g13 합병 · 김남욱 탭 확장 · v2.5</td></tr>
@@ -3396,68 +3396,18 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
 
 
     <!-- ⚓ 항구 카드 (히어로 — 항상 보임) -->
-    <!-- ══ ⚓ 항구 (어제와 오늘을 잇기 — 2026-06-04) ══ -->
-    <div style="background:linear-gradient(135deg,#13212c 0%,#1b3340 100%);border:1px solid #38b6c4;border-radius:14px;padding:18px 22px;margin:8px 0 20px;">
+    <!-- ══ ⚓ 항구 (어제와 오늘을 잇기) — 간결판 (2026-06-06) ══ -->
+    <div style="background:linear-gradient(135deg,#13212c 0%,#1b3340 100%);border:1px solid #38b6c4;border-radius:14px;padding:16px 20px;margin:8px 0 20px;">
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap;">
         <span style="font-size:20px;">⚓</span>
         <span style="color:#fff;font-weight:800;font-size:16px;letter-spacing:0.02em;">항구</span>
-        <span style="color:#9fd8e0;font-size:12px;font-weight:400;">— 항해 중 들르는 곳 · 어제와 오늘을 잇는 항구</span>
+        <span style="color:#9fd8e0;font-size:12px;font-weight:400;">— 어제와 오늘을 잇는 곳</span>
       </div>
-      <p style="color:#cfe9ee;font-size:13px;line-height:1.7;margin:0 0 12px;">항해를 하다 보면 <strong style="color:#7fdbe8;">항구</strong>에 들릅니다. 항구에서 지나온 항해를 기록하고, <strong style="color:#fff;">다음 항구</strong>를 정한 뒤 다시 출항하죠. 일도 똑같아요 — 일을 끝낼 때(입항) <strong style="color:#fff;">다음 항구(다음 할 일)</strong>를 안 정하면, 다음 날 아침 항구에서 "어디로 가지?"를 처음부터 다시 헤매게 돼요.<br><strong style="color:#fff;">⚓ 항구 = 일 끝낼 때마다 '다음 항구'를 꼭 정하게 하는 곳이에요.</strong></p>
-
-      <!-- 핵심 규칙 1줄 -->
-      <div style="background:rgba(56,182,196,0.12);border-left:3px solid #38b6c4;border-radius:0 8px 8px 0;padding:12px 14px;margin:0 0 14px;">
+      <p style="color:#cfe9ee;font-size:13px;line-height:1.7;margin:0 0 12px;">일을 끝낼 때마다 항구에 들러 <strong style="color:#fff;">다음 항구(다음 할 일)</strong>를 정하고 출항해요. 그래서 항로가 안 끊겨요.</p>
+      <div style="background:rgba(56,182,196,0.12);border-left:3px solid #38b6c4;border-radius:0 8px 8px 0;padding:12px 14px;">
         <div style="color:#7fdbe8;font-size:12px;font-weight:700;margin-bottom:5px;">🔑 단 하나의 규칙</div>
-        <div style="color:#eaf6f8;font-size:14px;line-height:1.6;">오늘 할 일은 딱 <strong style="color:#fff;">2곳</strong>에서만 나와요:<br><strong style="color:#fff;">① 어제 끝내며 남긴 '다음'</strong> + <strong style="color:#fff;">② GM이 새로 시킨 것</strong>.<br><span style="color:#9fd8e0;">이 둘 말고는 새 일을 만들지 않아요.</span></div>
+        <div style="color:#eaf6f8;font-size:14px;line-height:1.6;">오늘 할 일은 딱 <strong style="color:#fff;">2곳</strong>에서만 나와요 — <strong style="color:#fff;">① 어제 남긴 '다음'</strong> + <strong style="color:#fff;">② GM이 새로 시킨 것</strong>. 이 둘 말고는 새 일을 만들지 않아요.</div>
       </div>
-
-      <!-- 흐름 한 줄 -->
-      <div style="display:flex;flex-wrap:wrap;align-items:center;gap:7px;font-size:12.5px;font-weight:700;color:#cfe9ee;margin:0 0 6px;">
-        <span style="background:#26404e;padding:5px 11px;border-radius:7px;">일 받기</span><span style="color:#38b6c4;">→</span>
-        <span style="background:#26404e;padding:5px 11px;border-radius:7px;">또박또박 적기</span><span style="color:#38b6c4;">→</span>
-        <span style="background:#26404e;padding:5px 11px;border-radius:7px;">하기</span><span style="color:#38b6c4;">→</span>
-        <span style="background:#26404e;padding:5px 11px;border-radius:7px;">확인</span><span style="color:#38b6c4;">→</span>
-        <span style="background:#26404e;padding:5px 11px;border-radius:7px;">끝!</span><span style="color:#38b6c4;">→</span>
-        <span style="background:#2d5160;padding:5px 11px;border-radius:7px;color:#7fdbe8;">다음 항구 정하기 ⚓</span>
-      </div>
-      <p style="color:#7f9aa3;font-size:11.5px;margin:0 0 12px;">'끝!'은 진짜 끝이 아니에요. 입항할 때마다 <strong style="color:#9fd8e0;">다음 항구</strong>를 하나 정하고, 그 항구가 내일 첫 목적지가 돼요. 그래서 안 끊겨요.</p>
-
-      <details class="toggle" style="margin:0;">
-        <summary style="cursor:pointer;font-weight:700;font-size:13px;color:#7fdbe8;">📋 항구 상세 — 접기/펼치기</summary>
-        <div class="toggle-body" style="margin-top:10px;">
-
-          <p style="font-size:13px;color:var(--text-soft);margin:2px 0 6px;font-weight:700;">① 항구가 하는 일 — 딱 3가지</p>
-          <table>
-            <tr><th style="width:104px">하는 일</th><th>쉽게 말하면</th></tr>
-            <tr><td><strong>① 이어주기</strong></td><td>일을 끝낼 때마다 <strong>'다음은 이거!'</strong>를 한 줄 꼭 남겨요 → 그게 내일 첫 번째 할 일이 돼요.</td></tr>
-            <tr><td><strong>② 풀어주기</strong></td><td>GM이 시킨 걸 일하는 사람이 바로 알아듣게 <strong>또박또박</strong> 적어줘요 (누가 / 어디까지 하면 끝인지까지). 헷갈릴 빈칸을 없애요.</td></tr>
-            <tr><td><strong>③ 방향 보기</strong></td><td>일을 잡기 전에 <strong>우리 목표(북극성) 쪽인지</strong> 봐요. 아니면 멈추고 GM께 한 줄로 물어봐요.</td></tr>
-          </table>
-
-          <p style="font-size:13px;color:var(--text-soft);margin:18px 0 6px;font-weight:700;">② 작업 카드 — 7칸이면 끝</p>
-          <table>
-            <tr><th style="width:96px">칸</th><th>적는 것</th></tr>
-            <tr><td><strong>ID</strong></td><td>식별자 (예: 시모-03). 추적의 기준</td></tr>
-            <tr><td><strong>무엇</strong></td><td>한 줄 제목</td></tr>
-            <tr><td><strong>왜 (북극성)</strong></td><td>이 일이 향하는 북극성. <strong style="color:var(--warm);">이 칸이 빈 카드는 집지 않는다</strong> — 흔들림 방지 장치</td></tr>
-            <tr><td><strong>담당</strong></td><td>어느 C레벨이 처리하나</td></tr>
-            <tr><td><strong>완료 정의</strong></td><td>"어디까지 되면 끝"인지 — 모호하면 검수가 불가능</td></tr>
-            <tr><td><strong>다음</strong></td><td>완료 후 이어질 한 줄. <strong>항구의 핵심</strong></td></tr>
-            <tr><td><strong>상태</strong></td><td>입력 → 진행 → 검수 → 완료</td></tr>
-          </table>
-
-          <p style="font-size:13px;color:var(--text-soft);margin:18px 0 6px;font-weight:700;">③ 두 가지 확인 — 웰리가 한다</p>
-          <table>
-            <tr><th style="width:110px">확인</th><th>무엇을 묻나</th><th style="width:120px">비고</th></tr>
-            <tr><td><strong>됐나 확인</strong></td><td>"잘 되나? 제대로 돌아가나?"</td><td>원래 하던 것</td></tr>
-            <tr><td><strong>방향 확인</strong></td><td>"우리 목표 쪽 맞나? 적어둔 '다음'이 말이 되나?"</td><td style="color:var(--accent);font-weight:600;">새로 더한 것</td></tr>
-          </table>
-          <div class="callout tip" style="margin-top:10px;"><strong>방향이 틀리면</strong> → 일을 멈추고 <strong>GM께 딱 1건만</strong> 물어봐요 ("이렇게 하면 어떨까요?"까지 같이). <strong>잘 만들었어도 엉뚱한 일이면 안 쌓는 게</strong> 핵심이에요.</div>
-          <div class="callout tip" style="margin-top:10px;"><strong>🔧 이제 '약속'이 아니라 '자동 장치'예요 (2026-06-04):</strong> 일을 끝낼 때 '다음 항구'를 안 정하면 <strong style="color:var(--warm);">빨간불(⚠️ 다음 미정)</strong>이 저절로 켜져요 — "어, 항로 끊겼네"가 바로 눈에 보여요. '다음'을 적으면 그게 <strong>내일 할 일 목록에 저절로</strong> 들어가요. 그래서 <strong>누가 깜빡해도 항로가 안 끊겨요.</strong></div>
-
-          <div class="callout" style="margin-top:12px;"><strong>📍 적어둔 '다음'은 어디 있나:</strong> 두 군데에 같이 남아요 — ① <strong>오늘 일지의 '다음 할일' 칸</strong>, ② <strong>대기 목록</strong>(다음에 켜는 사람이 제일 먼저 보는 곳). 두 곳에 '다음'이 있으면, 내일 누가 켜도 어제와 자연스럽게 이어져요.</div>
-        </div>
-      </details>
     </div>
     <!-- ══ /항구 ══ -->
 
