@@ -66,11 +66,14 @@
     "task_id": "CMO-2026-06-06-INQUIRY-DASHBOARD-PIPELINE",
     "clevel": "cmo",
     "title": "문의 페이지 + 대시보드 파악 파이프라인 — 오늘 시모 진행 중 멈춤분 이어서 완성",
-    "status": "PENDING",
+    "status": "DONE",
     "priority": "HIGH",
     "depends_on": null,
     "enqueued_at": "2026-06-05",
     "remind_on": "2026-06-06",
-    "note": "[GM 2026-06-05 지시: 내일(6/6) 꼭 리마인드] 오늘 시모(CMO)가 진행하다 멈춘 '문의 페이지 + 대시보드 파악' 파이프라인을 이어서 완성. ERP 홈 경영현황의 '신규 문의 —'(소스 없어 빈칸)를 실데이터로 연결하는 것과 직결. 내일 아침 브리핑·부팅 시 GM께 리마인드 의무."
+    "processed_at": "2026-06-06",
+    "terminal": true,
+    "commit_sha": "584b186",
+    "note": "[2026-06-06 시모 /team 완료·라이브검증] 홈 경영현황 '신규 문의' 실데이터 바인딩 완료(period_breakdown, 미배포 시 inquiry_list 이번달 카운트 폴백 — 라이브 작동). 추가 산출: 마케팅현황대시보드 일/주/월 토글(v0.2)·문의채널현황 일/주/월·월간마케팅보고서.html(인쇄)·monthly_marketing_report.py(자동발송)·GAS period_breakdown 액션. 🔴 GM 후속(관리자): ①survey GAS 새버전 재배포→period 기능 전면 점등 ②monthly_marketing_report 예약작업 등록(매월1일 09:00). ⚠️데이터품질: inquiry_list 구글폼 합산 count=8281 비정상 큼 — 폼 gid 점검 필요(COO/데이터)."
   }
 ]
