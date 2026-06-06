@@ -1,6 +1,6 @@
 _assets/logo — 웰페리온 공식 로고 자산 단일 SSOT
 
-이 폴더는 가이드허브 및 모든 하위 페이지(공지 서식·홍보물 등)에서 공통으로 참조하는 공식 로고 자산을 보관합니다.
+이 폴더는 웰페리온 ERP 및 모든 하위 페이지(공지 서식·홍보물 등)에서 공통으로 참조하는 공식 로고 자산을 보관합니다.
 새 페이지를 만들 때 base64 인라인 금지. 항상 이 폴더의 PNG 파일을 상대경로로 참조하세요.
 
 1. 자산 목록
@@ -16,7 +16,7 @@ _assets/logo — 웰페리온 공식 로고 자산 단일 SSOT
    - w_mark.png                    ← wellperion_brand_identity(최종시안).pdf 페이지 2 LOGO·VERTICAL 시안 PNG화
 
 3. 페이지에서 사용하는 법 (예시)
-   - 가이드허브 (현재 폴더 기준)
+   - 웰페리온 ERP (현재 폴더 기준)
      <img src="_assets/logo/wellperion_wordmark.png" alt="WELLPERION">
    - 1단계 하위 (예: cmo/)
      <img src="../_assets/logo/wellperion_wordmark.png" alt="WELLPERION">

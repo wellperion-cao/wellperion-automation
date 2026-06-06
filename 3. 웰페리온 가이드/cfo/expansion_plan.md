@@ -138,6 +138,6 @@
 
 ## 비고
 
-- 모든 페이지: 다크 테마(#221F20), Pretendard, 인쇄 가능, 가이드허브 링크 포함
+- 모든 페이지: 다크 테마(#221F20), Pretendard, 인쇄 가능, 웰페리온 ERP 링크 포함
 - 실측 수치 없는 구간은 placeholder 표기 후 나우열M이 직접 채워 넣음
 - 메인 HTML(wellperion_guide(main).html) 수정은 별도 결재 후 진행

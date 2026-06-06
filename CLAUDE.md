@@ -7,7 +7,7 @@
 | 상호 | 주식회사 웰페리온 (Wellperion) |
 | 주소 | 서울특별시 용산구 서빙고로 413, 101동 지1층 101호외 2 (한남동) |
 | 포지셔닝 | 하이엔드 프라이빗 스포츠클럽 멤버십 커뮤니티 |
-| 브랜드 용어 | "피트니스" 금지 → "스포츠클럽" / "현대하이페리온" 금지 → "웰페리온" |
+| 브랜드 용어 | "피트니스" 금지 → "스포츠클럽" / "현대하이페리온" 금지 → "웰페리온" / "가이드허브" 금지 → "웰페리온 ERP" |
 | 미션 | 지속되지 않는 건강 문제를 해결한다 |
 | 공식 링크 | http://wellperion.com/ (회사 대표 홈, HTTP 전용) · 문의 진입점 → http://wellperion.com/ko/inquiry/ |
 | 업무보고 봇 | @namuki_report_bot (Chat ID 8254867551) |
@@ -26,12 +26,12 @@
 | AI CTO | 시토 | ai-cto.md | 시설·기술 |
 
 
-## 2. R/R SSOT — 가이드허브
-> **운영 원칙·R/R 단일 출처 = S2 가이드허브 g10(공통탭 + 본인탭).** CLAUDE.md는 인덱스 — 원칙 상세 하드코딩 금지, 원칙 추가는 S2에만.
+## 2. R/R SSOT — 웰페리온 ERP
+> **운영 원칙·R/R 단일 출처 = S2 웰페리온 ERP g10(공통탭 + 본인탭).** CLAUDE.md는 인덱스 — 원칙 상세 하드코딩 금지, 원칙 추가는 S2에만.
 - AI C-Level 운영 가이드: `3. 웰페리온 가이드/wellperion_guide(main).html` → `id="g10"` 영역
 - 공통 탭 (전 C-Level 필수): `data-panel="common"` — 절대 원칙 3대·업무 처리 3단계·보고 표 형식 의무
 - 본인 탭: `data-panel="{role}"` — 페르소나·핵심역할·담당 KPI·실무진·핵심업무·협업 리듬
-- 규칙: 작업 전 반드시 가이드허브 fetch. R/R 하드코딩 금지. Notion AI 조직 DB는 폐기 진행 중 — 호출 금지.
+- 규칙: 작업 전 반드시 웰페리온 ERP fetch. R/R 하드코딩 금지. Notion AI 조직 DB는 폐기 진행 중 — 호출 금지.
 - 본인 위임 task: **`status/_queue.json` 단일 출처**에서 본인 clevel의 PENDING·IN_PROGRESS만. `status/{role}.json`은 보조(메타)뿐 — 완료건 부활 금지, 큐 비면 '대기'.
 
 
@@ -66,7 +66,7 @@
 - 반복 작업(가동·patch·집계·git·송부)은 무조건 Sonnet/Haiku 서브에이전트(`executor` 등) 위임 강화.
 - 메인 모델로 반복 작업 처리 시 토큰 사고 — 위임 누락 자체가 위반.
 
-상세 교육자료·고도화 프롬프트 → 가이드허브 참조 (6번)
+상세 교육자료·고도화 프롬프트 → 웰페리온 ERP 참조 (6번)
 
 ## 5. post-action 훅
 위치: `wellperion-agents/scripts/clevel_post_action.py`
@@ -74,7 +74,7 @@
 인자: `--clevel --task-id --status --summary [--version] [--changelog] [--dry-run]`
 
 
-## 6. 가이드허브 — GM·AI CEO 통합 SSOT
+## 6. 웰페리온 ERP — GM·AI CEO 통합 SSOT
 위치: `3. 웰페리온 가이드/wellperion_guide(main).html`
 배포: https://wellperion-cao.github.io/wellperion-automation/
 GM 업무·AI C-Level 협업 매뉴얼·교육자료·고도화 프롬프트의 단일 마스터 문서.

@@ -31,7 +31,7 @@ DONE → VERIFYING → (VERIFIED | REJECTED) → ARCHIVED
 
 > **완료의 단일 정의(4요건)** — DONE 등록 시 `clevel_post_action.py`는 `--artifact-url`(④증거)이
 > 없으면 **거부(exit 2)**한다. 큐 DONE 항목의 `artifact` 필드는 그 증거 URL을 보존한다.
-> (정의 단일 출처 = 가이드허브 S2 공통탭 "✅ 완료의 단일 정의(4요건)".)
+> (정의 단일 출처 = 웰페리온 ERP S2 공통탭 "✅ 완료의 단일 정의(4요건)".)
 
 ## 로그 항목 스키마 (JSONL)
 ```json

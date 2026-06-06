@@ -4,13 +4,13 @@
 정규 스케줄 (6개): 06 / 09 / 12 / 15 / 18 / 21시 정각 텔레그램 자동 보고
 테스트 모드: python daily_scheduler.py --test  →  1시간 주기 실행
 
-스케줄 설계 (SSOT = GitHub status/* + git log + 가이드허브, 노션 폐기 2026-05-29):
+스케줄 설계 (SSOT = GitHub status/* + git log + 웰페리온 ERP, 노션 폐기 2026-05-29):
   06시 — 하루 시작 다짐·좋은 문구 (status/quotes.json 06 시간대) + 운동 체크리스트
   09시 — 전날 업무 전체 정리 (git log 어제자 커밋 집계)
   12시 — 시설·지원·주차 점검 현황 (Google Sheets Apps Script 단일 소스)
   15시 — 현재 업무 진행현황 C-Level별 (status/_queue.json + status/*.json 필터링)
   18시 — 퇴근·가족·건강 좋은 문구 (status/quotes.json 18 시간대)
-  21시 — 하루 핵심 요약 Lv1 MVP (git log 오늘자 커밋 + Claude CLI 한줄요약 + 가이드허브 내일할일)
+  21시 — 하루 핵심 요약 Lv1 MVP (git log 오늘자 커밋 + Claude CLI 한줄요약 + 웰페리온 ERP 내일할일)
 
 운영 원칙:
 - 기존 워처 3종 (archive_result_watcher·planning_to_archive_watcher·permission_watcher) 유지
@@ -759,7 +759,7 @@ GUIDE_HUB_PATH = Path(__file__).parent.parent / "3. 웰페리온 가이드" / "w
 
 
 def _fetch_tomorrow_tasks_from_guidehub() -> tuple[str, list[str]]:
-    """가이드허브 HTML에서 내일 할 일 시드 목록을 반환한다.
+    """웰페리온 ERP HTML에서 내일 할 일 시드 목록을 반환한다.
 
     반환: (내일_날짜_문자열 'YYYY-MM-DD', 시드_제목_리스트)
     - status='진행중' + startDate == 내일 인 시드만 포함
@@ -771,13 +771,13 @@ def _fetch_tomorrow_tasks_from_guidehub() -> tuple[str, list[str]]:
     tomorrow_str = tomorrow.strftime("%Y-%m-%d")
 
     if not GUIDE_HUB_PATH.exists():
-        logger.warning(f"가이드허브 파일 없음: {GUIDE_HUB_PATH}")
+        logger.warning(f"웰페리온 ERP 파일 없음: {GUIDE_HUB_PATH}")
         return tomorrow_str, []
 
     try:
         text = GUIDE_HUB_PATH.read_text(encoding="utf-8")
     except Exception as e:
-        logger.warning(f"가이드허브 읽기 실패: {e}")
+        logger.warning(f"웰페리온 ERP 읽기 실패: {e}")
         return tomorrow_str, []
 
     # CEO_SEEDS 영역 추출
@@ -841,7 +841,7 @@ def fetch_daily_summary_lv1() -> str:
         if len(titles) > 5:
             lines.append(f"  · 외 {len(titles) - 5}건")
 
-    # 내일 할 일 (가이드허브 SSOT)
+    # 내일 할 일 (웰페리온 ERP SSOT)
     try:
         tomorrow_str, tomorrow_tasks = _fetch_tomorrow_tasks_from_guidehub()
         lines.append("")
@@ -854,7 +854,7 @@ def fetch_daily_summary_lv1() -> str:
                 lines.append(f"  · 외 {len(tomorrow_tasks) - 8}건")
         else:
             lines.append("🌅 내일 할 일")
-            lines.append("  (등록된 시드 없음 — 가이드허브 등록 필요)")
+            lines.append("  (등록된 시드 없음 — 웰페리온 ERP 등록 필요)")
     except Exception as e:
         logger.warning(f"내일 할 일 조회 실패: {e}")
 
@@ -1253,7 +1253,7 @@ def main():
     # [2026-05-31 CTO 제거] archive_result_watcher · planning_to_archive_watcher
     #   두 노션 추종 감지기는 노션 결과물DB·Start기획DB 폐기(2026-05-29)로 상시 0건·
     #   알림 0건 확정 → if False 사문(死文) 블록 삭제. 파일(archive_result_watcher.py·
-    #   planning_to_archive_watcher.py)은 디스크 보존(가역적). 참조: docs/노션_가이드허브_리뉴얼_계획.md.
+    #   planning_to_archive_watcher.py)은 디스크 보존(가역적). 참조: docs/노션_웰페리온 ERP_리뉴얼_계획.md.
 
     # [2026-06-01 CTO 공식 폐지] auto_task_watcher(노션 업무자동화DB 폴링→Claude CLI
     #   자동실행)는 노션 업무자동화DB '[폐기]'(2026-06-01)로 방식 자체가 구식.
@@ -1278,7 +1278,7 @@ def main():
 
     # [2026-05-31 CTO 제거] permission_watcher(노션 통합 권한 감시)는 노션 미사용
     #   확정으로 감시 가치 0·알림 0건 → if False 사문 블록 삭제. permission_watcher.py는
-    #   디스크 보존(가역적). 참조: docs/노션_가이드허브_리뉴얼_계획.md.
+    #   디스크 보존(가역적). 참조: docs/노션_웰페리온 ERP_리뉴얼_계획.md.
 
     # [2026-06-02 CTO 제거] status_change_watcher(C-Level 상태변경 1분주기 자동발송)는
     #   status_change_watcher.py가 미구현(git 이력·디스크 0)으로 매 부팅 ImportError만

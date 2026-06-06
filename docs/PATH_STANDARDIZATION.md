@@ -23,7 +23,7 @@
 | 환경변수 | `C:\Users\jjky0\welperion-automation\telegram_bot\.env` |
 
 ## 기획서 수정 요청 사항
-- 가이드허브(https://wellperion-cao.github.io/welperion-automation/) 내
+- 웰페리온 ERP(https://wellperion-cao.github.io/welperion-automation/) 내
   `Desktop\welperion-automation` 표기를 `C:\Users\jjky0\welperion-automation`으로 정정 필요.
 - 해당 수정은 AI CEO 경유 대표님 확인 후 반영.
 

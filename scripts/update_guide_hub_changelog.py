@@ -2,7 +2,7 @@
 """
 update_guide_hub_changelog.py
 ------------------------------
-git log 기반으로 가이드허브 home 페이지의
+git log 기반으로 웰페리온 ERP home 페이지의
   1) 최신 카드 (<!-- AUTO:LATEST-START --> ~ <!-- AUTO:LATEST-END -->)
   2) 업데이트 기록 표 (<!-- AUTO:TABLE-START --> ~ <!-- AUTO:TABLE-END -->)
 두 영역을 자동 갱신합니다.
@@ -36,7 +36,7 @@ LATEST_END   = "<!-- AUTO:LATEST-END -->"
 TABLE_START  = "<!-- AUTO:TABLE-START -->"
 TABLE_END    = "<!-- AUTO:TABLE-END -->"
 
-# ── git 커밋 제외 패턴 (가이드허브 자체 자동 커밋 제외) ──────────────────
+# ── git 커밋 제외 패턴 (웰페리온 ERP 자체 자동 커밋 제외) ──────────────────
 AUTO_COMMIT_PREFIX = "auto(changelog):"
 
 
@@ -187,7 +187,7 @@ def apply_table_rows(html: str, new_rows: str) -> str:
 
 
 def main():
-    parser = argparse.ArgumentParser(description="가이드허브 home 페이지 최신 카드 자동 갱신")
+    parser = argparse.ArgumentParser(description="웰페리온 ERP home 페이지 최신 카드 자동 갱신")
     parser.add_argument("--dry-run", action="store_true", help="실제 파일 수정 없이 변경 미리보기")
     args = parser.parse_args()
 

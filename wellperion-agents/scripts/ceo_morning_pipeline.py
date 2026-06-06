@@ -4,7 +4,7 @@
 ceo_morning_pipeline.py - AI CEO 아침 자동 파이프라인 (디스패처 오케스트레이터)
 v1.0 (2026-05-30)
 
-GM 결정(2026-05-30, 가이드허브 g10 "CEO = 상시 대기 디스패처"):
+GM 결정(2026-05-30, 웰페리온 ERP g10 "CEO = 상시 대기 디스패처"):
   CEO 메인 세션 1개만 떠도, 다른 C-Level .bat 창을 켜지 않고 CEO가
   서브에이전트로 전 과정을 자동 수행한다. CEO는 직접 작업하지 않고
   위임·검증·기록·발신만 한다.
@@ -166,22 +166,22 @@ def already_ran_today() -> bool:
     return today_marker().exists()
 
 
-# ── G1 SSOT API (가이드허브 gm1FetchSsot 동일 로직) ─────────────────────────
-# URL은 가이드허브 SSOT_API_URL 상수와 동일. stdout/텔레그램 노출 금지.
+# ── G1 SSOT API (웰페리온 ERP gm1FetchSsot 동일 로직) ─────────────────────────
+# URL은 웰페리온 ERP SSOT_API_URL 상수와 동일. stdout/텔레그램 노출 금지.
 _G1_API = (
     "https://script.google.com/macros/s/"
     "AKfycbxDwFkrxK1YIaEoSNcuw2MiHiZQ-7o5N6311ytksSyeEd86ZFOhLknOWqQgNArQvZ-7"
     "/exec?action=todo_list"
 )
 
-# 담당자 필드에서 G1 합류 대상 판정용 패턴 (가이드허브 gm1FetchSsot 100% 동일)
+# 담당자 필드에서 G1 합류 대상 판정용 패턴 (웰페리온 ERP gm1FetchSsot 100% 동일)
 _OWNER_GM_RE = re.compile(r"김남욱\s*GM")
 _OWNER_CLEVEL_RE = re.compile(r"AI\s+(CEO|CMO|CTO|COO|CFO|CPO|CHRO)")
 _OWNER_NICK_RE = re.compile(r"웰리|시모|시토|시우|시뽀|시포|시로")
 
 
 def _ssot_date_local(v: object) -> str:
-    """Apps Script ISO datetime → KST YYYY-MM-DD 변환 (가이드허브 ssotDateLocal 동일)."""
+    """Apps Script ISO datetime → KST YYYY-MM-DD 변환 (웰페리온 ERP ssotDateLocal 동일)."""
     if not v:
         return ""
     s = str(v)
@@ -197,7 +197,7 @@ def _ssot_date_local(v: object) -> str:
 
 def fetch_g1_ssot() -> dict | None:
     """
-    가이드허브 gm1FetchSsot()와 동일한 필터로 G1 SSOT 데이터를 수집한다.
+    웰페리온 ERP gm1FetchSsot()와 동일한 필터로 G1 SSOT 데이터를 수집한다.
 
     반환: {
         "gm_decision":   [{"title", "task_id", "owner", "disposition_reason"}],  # 결재 대기
@@ -648,7 +648,7 @@ def stage1_collect_classify() -> dict:
     전체 미결 할일 수집 + 명확/모호 분류. dict 반환.
 
     데이터 소스 우선순위 (2026-06-02 G1 SSOT 재배선):
-      1) G1 SSOT API (가이드허브 gm1FetchSsot와 동일 엔드포인트·필터)
+      1) G1 SSOT API (웰페리온 ERP gm1FetchSsot와 동일 엔드포인트·필터)
       2) fallback: status/_queue.json + status/{clevel}.json (네트워크 실패 시)
     """
     git_done = set(git_recent_done())
@@ -809,10 +809,10 @@ def stage2_assign(clear_items: list[dict]) -> list[dict]:
 # 같은 SSOT/파일군을 만지는 작업은 동시에 돌리면 충돌 → 같은 lock 키로 직렬화.
 # 키워드 → lock 키. 한 항목이 여러 키에 걸리면 가장 먼저 매칭된 키 1개 사용.
 CONFLICT_LOCKS = [
-    ("업무현황 SSOT / 결재 현황 SSOT (가이드허브 + Apps Script)",
+    ("업무현황 SSOT / 결재 현황 SSOT (웰페리온 ERP + Apps Script)",
      ["s4", "ssot", "결재 현황", "업무현황", "업무 현황", "gcoo-todo", "apps script", "결재"]),
-    ("가이드허브 메인 HTML (wellperion_guide(main).html)",
-     ["가이드허브", "guide(main)", "guidehub", "g10", "g19"]),
+    ("웰페리온 ERP 메인 HTML (wellperion_guide(main).html)",
+     ["웰페리온 ERP", "guide(main)", "guidehub", "g10", "g19"]),
     ("인스타/콘텐츠 발행 파이프라인 (review_queue + playwright)",
      ["인스타", "instagram", "ig", "슬라이드", "review_queue", "검수"]),
     ("네이버 블로그/카페 업로드 파이프라인",

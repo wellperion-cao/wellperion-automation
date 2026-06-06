@@ -2,7 +2,7 @@
 # 제작완료 → 자동 등록·알림 범용 헬퍼 (FIX3, 2026-06-03 AI CTO)
 #
 # 빌드(build_slides.py 등)가 슬라이드/몽타주 제작을 끝낸 직후 1회 호출하면:
-#   (a) montage(검수 미리보기)를 가이드허브 M5 review 폴더로 캐시우회 파일명으로 복사
+#   (a) montage(검수 미리보기)를 웰페리온 ERP M5 review 폴더로 캐시우회 파일명으로 복사
 #   (b) review_queue.json 을 id 기준 upsert (있으면 update·없으면 append)
 #       - status='검수대기' (단, 이미 '발행완료' 인 엔트리는 status 강등 금지)
 #       - preview/slides/caption/location/mentions/collaborators/account/folder/channel/title 세팅
@@ -356,7 +356,7 @@ def register_publish(
         msg = (
             f"🎨 제작완료 — {title}\n"
             f"M5 {action}(status={final_status}) · 채널 {channel}\n"
-            f"가이드허브 M5에서 미리보기·검수\n"
+            f"웰페리온 ERP M5에서 미리보기·검수\n"
             f"https://wellperion-cao.github.io/wellperion-automation/wellperion_guide(main).html#M5"
         )
         _telegram_send_photo(montage_path, msg)

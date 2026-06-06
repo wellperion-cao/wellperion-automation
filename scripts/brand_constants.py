@@ -8,7 +8,7 @@
   - compose_ballet.py (compose_barre 레이아웃 재사용)
   - slide_compositor.py (텍스트형 1080x1350 / BRAND_PRESETS)
 
-문서 정본: 가이드허브 M5(cmo-publish) "디자인 표준 마스터".
+문서 정본: 웰페리온 ERP M5(cmo-publish) "디자인 표준 마스터".
 """
 from __future__ import annotations
 

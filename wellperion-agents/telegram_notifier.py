@@ -201,14 +201,14 @@ class TelegramNotifier:
         self.send(
             f"🎯 <b>워크플로우 완료</b>\n"
             f"📋 {task_name}\n"
-            f"📊 가이드허브에서 확인하세요."
+            f"📊 웰페리온 ERP에서 확인하세요."
         )
 
     def notify_workflow_rejected(self, task_name: str):
         self.send(
             f"🚫 <b>태스크 반려됨</b>\n"
             f"📋 {task_name}\n"
-            f"💬 CEO가 반려했습니다. 가이드허브 또는 GitHub에서 이유를 확인하세요."
+            f"💬 CEO가 반려했습니다. 웰페리온 ERP 또는 GitHub에서 이유를 확인하세요."
         )
 
     def notify_confirmed(self, task_name: str):
@@ -227,5 +227,5 @@ class TelegramNotifier:
         self.send(
             f"{emoji} <b>[{role}] 일일 업무 보고</b>\n\n"
             f"{task_summary[:800]}\n\n"
-            f"📊 상세 내용 → 가이드허브"
+            f"📊 상세 내용 → 웰페리온 ERP"
         )

@@ -222,7 +222,7 @@ function _ghUrl(path) {
   return 'https://api.github.com/repos/' + repo + '/contents/' + apiPath;
 }
 function _ghPathAllowed(path) {
-  // 가이드허브 coo 하위 .json + cmo 검수 큐 .json 만 허용
+  // 웰페리온 ERP coo 하위 .json + cmo 검수 큐 .json 만 허용
   var p = String(path);
   if (/^3\. 웰페리온 가이드\/coo\/.+\.json$/.test(p)) return true;
   if (/^3\. 웰페리온 가이드\/cmo\/review\/.+\.json$/.test(p)) return true;
