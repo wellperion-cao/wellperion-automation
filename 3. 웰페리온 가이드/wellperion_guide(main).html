@@ -7446,7 +7446,10 @@ function crTab(btn, panelId) {
     var selectedDay = null;
 
     function gm1CalRender() {
-      var tasks = gm1Load();
+      var local = gm1Load();
+      var seen = {}; local.forEach(function(t){ seen[t.id] = true; });
+      var ssot = (typeof gm1SsotItems !== 'undefined' && Array.isArray(gm1SsotItems)) ? gm1SsotItems.filter(function(s){ return !seen[s.id]; }) : [];
+      var tasks = local.concat(ssot);
       gm1CalRenderGrid(tasks);
       gm1CalRenderList(tasks);
     }
@@ -7507,20 +7510,27 @@ function crTab(btn, panelId) {
 
           if (!cell.other && cell.dateStr && evMap[cell.dateStr]) {
             var evs = evMap[cell.dateStr];
-            var showCount = Math.min(evs.length, 3);
+            // 날짜 아래 일감 개수 뱃지
+            var cntBadge = document.createElement('div');
+            cntBadge.style.cssText = 'display:inline-block;font-size:9px;font-weight:700;background:var(--accent);color:#fff;border-radius:8px;padding:0 5px;margin-bottom:3px;line-height:16px;';
+            cntBadge.textContent = evs.length + '건';
+            dayNum.parentNode && dayNum.after ? dayNum.after(cntBadge) : tdEl.appendChild(cntBadge);
+            var showCount = Math.min(evs.length, 2);
             for (var ei = 0; ei < showCount; ei++) {
               var ev = evs[ei];
               var badge = document.createElement('div');
               var catStyle = CAT_COLORS[ev.category] || CAT_COLORS['기타'];
               var isDone = ev.status === '완료';
-              badge.style.cssText = 'font-size:10px;border-radius:4px;padding:1px 4px;margin-bottom:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;' + catStyle + (isDone ? 'opacity:0.45;' : '');
-              badge.textContent = (ev.time ? ev.time.slice(0,5) + ' ' : '') + ev.title;
+              var statusDot = isDone ? '✓ ' : (ev.status === '진행중' ? '▶ ' : '');
+              badge.style.cssText = 'font-size:11.5px;border-radius:5px;padding:2px 5px;margin-bottom:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:1.4;' + catStyle + (isDone ? 'opacity:0.5;text-decoration:line-through;' : '');
+              badge.title = ev.title;
+              badge.textContent = statusDot + (ev.time ? ev.time.slice(0,5) + ' ' : '') + ev.title;
               tdEl.appendChild(badge);
             }
-            if (evs.length > 3) {
+            if (evs.length > 2) {
               var more = document.createElement('div');
-              more.style.cssText = 'font-size:10px;color:var(--dim);';
-              more.textContent = '+' + (evs.length - 3) + '개';
+              more.style.cssText = 'font-size:10px;color:var(--dim);font-weight:600;';
+              more.textContent = '+' + (evs.length - 2) + '건 더';
               tdEl.appendChild(more);
             }
           }
@@ -7564,9 +7574,11 @@ function crTab(btn, panelId) {
 
         var info = document.createElement('div');
         info.style.cssText = 'flex:1;min-width:0;';
+        var statusChip = ev.status === '완료' ? '<span style="font-size:10px;background:#d4edda;color:#155724;border-radius:4px;padding:1px 5px;margin-left:6px;font-weight:600;">완료</span>'
+          : (ev.status === '진행중' ? '<span style="font-size:10px;background:#cce5ff;color:#004085;border-radius:4px;padding:1px 5px;margin-left:6px;font-weight:600;">진행중</span>' : '');
         info.innerHTML =
           '<div style="font-size:12px;color:var(--dim);">' + gm1Esc(ev.startDate) + (ev.time ? ' ' + gm1Esc(ev.time.slice(0,5)) : '') + '</div>' +
-          '<div style="font-size:14px;font-weight:700;white-space:normal;word-break:break-word;' + (isDone ? '' : '') + '">' + gm1Esc(ev.title) + '</div>' +
+          '<div style="font-size:14px;font-weight:700;white-space:normal;word-break:break-word;' + (isDone ? 'text-decoration:line-through;opacity:0.6;' : '') + '">' + gm1Esc(ev.title) + statusChip + '</div>' +
           (ev.description ? '<div style="font-size:12px;color:var(--dim);margin-top:2px;">' + gm1Esc(ev.description) + '</div>' : (ev.memo ? '<div style="font-size:12px;color:var(--dim);margin-top:2px;">' + gm1Esc(ev.memo) + '</div>' : ''));
 
         var btnWrap = document.createElement('div');
