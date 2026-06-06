@@ -299,6 +299,167 @@ function _processAction(body) {
     });
   }
 
+  // ─── 기간별 집계 (일/주/월) ───
+  if (action === 'period_breakdown') {
+    // ── 기간 시작 시각 계산 (Asia/Seoul 달력 기준) ──
+    function _periodStarts_() {
+      var now = new Date();
+      // Seoul 현지 날짜·요일 문자열로 기준점 산출
+      var seoulNowStr = Utilities.formatDate(now, 'Asia/Seoul', 'yyyy-MM-dd HH:mm:ss');
+      var todayStr    = seoulNowStr.substring(0, 10); // 'yyyy-MM-dd'
+
+      // 이번 주 월요일 계산 (Asia/Seoul 기준 요일)
+      var dow = parseInt(Utilities.formatDate(now, 'Asia/Seoul', 'u'), 10); // 1=월 … 7=일
+      var daysSinceMonday = dow - 1;
+      var monDate = new Date(now.getTime() - daysSinceMonday * 86400000);
+      var weekStr = Utilities.formatDate(monDate, 'Asia/Seoul', 'yyyy-MM-dd');
+
+      // 이번 달 1일
+      var monthStr = todayStr.substring(0, 7) + '-01';
+
+      // Date 객체 (ISO 8601 +09:00 파싱)
+      var dayStart   = new Date(todayStr  + 'T00:00:00+09:00');
+      var weekStart  = new Date(weekStr   + 'T00:00:00+09:00');
+      var monthStart = new Date(monthStr  + 'T00:00:00+09:00');
+
+      return { dayStart: dayStart, weekStart: weekStart, monthStart: monthStart,
+               dayStr: todayStr, weekStr: weekStr, monthStr: monthStr };
+    }
+
+    // 타임스탬프 배열(Date|string) → {day, week, month} 카운트
+    function _countByPeriod_(timestamps, ps) {
+      var day = 0, week = 0, month = 0;
+      timestamps.forEach(function(ts) {
+        var d;
+        if (ts instanceof Date) {
+          d = ts;
+        } else {
+          var s = String(ts).trim();
+          // 'yyyy-MM-dd HH:mm:ss' → ISO
+          d = new Date(s.replace(' ', 'T') + '+09:00');
+        }
+        if (isNaN(d.getTime())) return;
+        if (d >= ps.monthStart) month++;
+        if (d >= ps.weekStart)  week++;
+        if (d >= ps.dayStart)   day++;
+      });
+      return { day: day, week: week, month: month };
+    }
+
+    var ps = _periodStarts_();
+
+    // ── clicks 집계 ──
+    var clickSh   = _getSheet(CLICK_SHEET, CLICK_HEADERS);
+    var clickLast = clickSh.getLastRow();
+    var clickTs   = [];
+    if (clickLast >= 2) {
+      var clickData = clickSh.getRange(2, 1, clickLast - 1, CLICK_HEADERS.length).getValues();
+      clickData.forEach(function(r) { if (r[1]) clickTs.push(r[1]); }); // 인덱스 1 = 시각
+    }
+    var clickCounts = _countByPeriod_(clickTs, ps);
+
+    // ── inquiries 집계 ──
+    var inqSh2   = _getSheet(INQUIRY_SHEET, INQUIRY_HEADERS);
+    var inqLast2 = inqSh2.getLastRow();
+    var inqTs    = [];
+    var inqMonthRows = []; // {유입채널, 문의유형} — 이번달만 보관
+    if (inqLast2 >= 2) {
+      var inqData2 = inqSh2.getRange(2, 1, inqLast2 - 1, INQUIRY_HEADERS.length).getValues();
+      var idxChanI = INQUIRY_HEADERS.indexOf('유입채널'); // 6
+      var idxTypeI = INQUIRY_HEADERS.indexOf('문의유형'); // 4
+      inqData2.forEach(function(r) {
+        if (!r[1]) return;
+        inqTs.push(r[1]);
+        var d = (r[1] instanceof Date) ? r[1] : new Date(String(r[1]).trim().replace(' ', 'T') + '+09:00');
+        if (!isNaN(d.getTime()) && d >= ps.monthStart) {
+          inqMonthRows.push({ 유입채널: String(r[idxChanI] || '기타').trim() || '기타',
+                              문의유형: String(r[idxTypeI] || '기타').trim() || '기타' });
+        }
+      });
+    }
+
+    // 구글폼 문의 합산
+    _collectFormInquiries_().forEach(function(f) {
+      if (!f.시각) return;
+      inqTs.push(f.시각);
+      var d = (f.시각 instanceof Date) ? f.시각 : new Date(String(f.시각).trim().replace(' ', 'T') + '+09:00');
+      if (!isNaN(d.getTime()) && d >= ps.monthStart) {
+        inqMonthRows.push({ 유입채널: String(f.유입채널 || '기타').trim() || '기타',
+                            문의유형: String(f.문의유형  || '기타').trim() || '기타' });
+      }
+    });
+
+    var inqCounts = _countByPeriod_(inqTs, ps);
+
+    // byChannelMonth / byTypeMonth (이번달만)
+    var byChannelMonth = {};
+    var byTypeMonth    = {};
+    inqMonthRows.forEach(function(row) {
+      var ch = row.유입채널;
+      var tp = row.문의유형;
+      byChannelMonth[ch] = (byChannelMonth[ch] || 0) + 1;
+      byTypeMonth[tp]    = (byTypeMonth[tp]    || 0) + 1;
+    });
+
+    // ── conversion (월 단위만) — 회원 전화 Set 재사용 ──
+    var mbrSs2   = SpreadsheetApp.openById(MEMBER_SPREADSHEET_ID);
+    var mbrSh2   = mbrSs2.getSheetByName(MEMBER_SHEET);
+    var mbrLast2 = mbrSh2.getLastRow();
+    var mbrSet2  = {};
+    if (mbrLast2 >= 2) {
+      var mbrHeaders2  = mbrSh2.getRange(1, 1, 1, mbrSh2.getLastColumn()).getValues()[0];
+      var mbrPhoneIdx2 = mbrHeaders2.indexOf(MEMBER_PHONE_COL);
+      if (mbrPhoneIdx2 >= 0) {
+        var mbrPhones2 = mbrSh2.getRange(2, mbrPhoneIdx2 + 1, mbrLast2 - 1, 1).getValues();
+        mbrPhones2.forEach(function(r) { var n = normalizePhone_(r[0]); if (n) mbrSet2[n] = true; });
+      }
+    }
+
+    // 이번달 문의 전화번호 → 전환 카운트 (문의접수 시트)
+    var convInq = 0, convConv = 0;
+    if (inqLast2 >= 2) {
+      var inqData3 = inqSh2.getRange(2, 1, inqLast2 - 1, INQUIRY_HEADERS.length).getValues();
+      var idxPhoneI = INQUIRY_HEADERS.indexOf('연락처'); // 3
+      inqData3.forEach(function(r) {
+        var d = (r[1] instanceof Date) ? r[1] : new Date(String(r[1] || '').trim().replace(' ', 'T') + '+09:00');
+        if (isNaN(d.getTime()) || d < ps.monthStart) return;
+        convInq++;
+        var phone = normalizePhone_(r[idxPhoneI]);
+        if (phone && mbrSet2[phone]) convConv++;
+      });
+    }
+    // 구글폼 이번달 문의 전환 합산
+    _collectFormInquiries_().forEach(function(f) {
+      var d = (f.시각 instanceof Date) ? f.시각 : new Date(String(f.시각 || '').trim().replace(' ', 'T') + '+09:00');
+      if (isNaN(d.getTime()) || d < ps.monthStart) return;
+      convInq++;
+      var phone = normalizePhone_(f.연락처);
+      if (phone && mbrSet2[phone]) convConv++;
+    });
+    var convRate = convInq > 0 ? Math.round((convConv / convInq) * 1000) / 10 : 0;
+
+    return _json({
+      ok:          true,
+      generatedAt: _now(),
+      periods: {
+        dayStart:   ps.dayStr,
+        weekStart:  ps.weekStr,
+        monthStart: ps.monthStr
+      },
+      clicks:    { day: clickCounts.day, week: clickCounts.week, month: clickCounts.month },
+      inquiries: {
+        day:            inqCounts.day,
+        week:           inqCounts.week,
+        month:          inqCounts.month,
+        byChannelMonth: byChannelMonth,
+        byTypeMonth:    byTypeMonth
+      },
+      conversion: {
+        month: { inquiries: convInq, converted: convConv, rate: convRate }
+      }
+    });
+  }
+
   return _json({ ok: false, error: '알 수 없는 action: ' + action });
 }
 

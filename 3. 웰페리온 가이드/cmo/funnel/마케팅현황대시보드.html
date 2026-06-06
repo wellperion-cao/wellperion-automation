@@ -126,6 +126,20 @@ a{color:var(--accent);text-decoration:none}
 .info-box{background:var(--accent-bg);border:1px solid rgba(183,159,138,0.2);border-radius:10px;padding:14px 16px;margin-bottom:16px;font-size:13px}
 .info-box strong{color:var(--accent)}
 
+/* Period toggle */
+.period-bar{display:flex;align-items:center;gap:8px;margin-bottom:16px;flex-wrap:wrap}
+.period-btn{padding:6px 16px;border-radius:8px;border:1px solid var(--border);background:var(--paper);color:var(--dim);font-size:13px;font-weight:600;cursor:pointer;transition:background .15s,color .15s,border-color .15s}
+.period-btn:hover{background:var(--accent-bg);color:var(--accent);border-color:rgba(183,159,138,.35)}
+.period-btn.active{background:var(--accent-bg);color:var(--accent);border-color:rgba(183,159,138,.5)}
+.period-status{font-size:12px;color:var(--dim);margin-left:4px}
+
+/* 수기 입력 배지 */
+.manual-badge{display:inline-block;font-size:10px;font-weight:700;padding:1px 7px;border-radius:6px;background:var(--yellow-bg);color:var(--yellow);border:1px solid rgba(230,200,78,.25);margin-left:6px;vertical-align:middle;white-space:nowrap}
+
+/* 월간 보고서 버튼 */
+.report-btn{display:inline-flex;align-items:center;gap:8px;background:var(--paper);border:1px solid var(--border);border-radius:10px;padding:10px 16px;color:var(--text);font-size:13px;font-weight:700;text-decoration:none;transition:background .15s}
+.report-btn:hover{background:var(--accent-bg);color:var(--accent)}
+
 /* Footer */
 .page-footer{text-align:center;padding:20px;font-size:11px;color:var(--dim);border-top:1px solid var(--border);margin-top:20px}
 
@@ -149,18 +163,19 @@ a{color:var(--accent);text-decoration:none}
 <div class="header">
   <div class="header-left">
     <h1>마케팅 현황 대시보드</h1>
-    <span class="version-badge">v0.1</span>
+    <span class="version-badge">v0.2</span>
   </div>
-  <span class="header-meta">AI CMO · 2026-05-28 · 실무진: 김남욱 GM</span>
+  <span class="header-meta">AI CMO · 2026-06-06 일/주/월 체계 · 실무진: 김남욱 GM</span>
 </div>
 
 <div class="content">
 
-  <!-- 문의 채널 현황 링크 -->
-  <div style="margin-bottom:16px">
+  <!-- 문의 채널 현황 링크 + 월간 보고서 버튼 -->
+  <div style="margin-bottom:16px;display:flex;gap:10px;flex-wrap:wrap;align-items:center">
     <a href="문의채널현황.html" style="display:inline-flex;align-items:center;gap:8px;background:var(--accent-bg);border:1px solid rgba(183,159,138,.25);border-radius:10px;padding:10px 16px;color:var(--accent);font-size:13px;font-weight:700;text-decoration:none;transition:background .15s" onmouseover="this.style.background='rgba(183,159,138,.2)'" onmouseout="this.style.background='var(--accent-bg)'">
       문의 채널 현황 — 한·영 진입점 &amp; 폼 &amp; 클릭 추적 →
     </a>
+    <a href="월간마케팅보고서.html" class="report-btn">📄 월간 보고서</a>
   </div>
 
   <!-- INFO BOX -->
@@ -170,33 +185,41 @@ a{color:var(--accent);text-decoration:none}
     실측 수치 입력 전까지 모든 수치는 &lt;placeholder&gt;로 표기됩니다.
   </div>
 
+  <!-- 기간 세그먼트 토글 (클릭·문의·전환 3종에만 적용) -->
+  <div class="period-bar">
+    <button class="period-btn" data-period="day" onclick="switchPeriod('day')">일</button>
+    <button class="period-btn" data-period="week" onclick="switchPeriod('week')">주</button>
+    <button class="period-btn active" data-period="month" onclick="switchPeriod('month')">월</button>
+    <span class="period-status" id="period-status">월간 기준 · 집계 불러오는 중…</span>
+  </div>
+
   <!-- KPI 요약 -->
   <div class="section">
     <div class="section-title">북극성 KPI</div>
     <div class="kpi-row">
       <div class="kpi-card">
         <div class="num" style="color:var(--f1)"><span class="placeholder">&lt;placeholder&gt;</span></div>
-        <div class="label">월간 총 노출</div>
+        <div class="label">월간 총 노출 <span class="manual-badge">수기 입력</span></div>
         <div class="sub">IG 도달 + 블로그 방문 + 카페 방문</div>
       </div>
       <div class="kpi-card">
         <div class="num" style="color:var(--f3)"><span class="placeholder" id="kpi-total-clicks">&lt;placeholder&gt;</span></div>
-        <div class="label">문의 페이지 클릭</div>
+        <div class="label" id="kpi-clicks-label">월간 문의 페이지 클릭</div>
         <div class="sub">홈 → /inquiry 버튼 클릭(4종 합)</div>
       </div>
       <div class="kpi-card">
-        <div class="num" style="color:var(--f4)"><span class="placeholder">&lt;placeholder&gt;</span></div>
-        <div class="label">월간 문의</div>
+        <div class="num" style="color:var(--f4)"><span class="placeholder" id="kpi-inquiries">&lt;placeholder&gt;</span></div>
+        <div class="label" id="kpi-inquiries-label">월간 문의</div>
         <div class="sub">예약·상담 문의 완료</div>
       </div>
       <div class="kpi-card">
-        <div class="num" style="color:var(--f5)"><span class="placeholder">&lt;placeholder&gt;</span></div>
-        <div class="label">신규 가입</div>
-        <div class="sub">월간 멤버십 전환</div>
+        <div class="num" style="color:var(--f5)"><span class="placeholder" id="kpi-converted">&lt;placeholder&gt;</span></div>
+        <div class="label" id="kpi-converted-label">신규 가입(전환)</div>
+        <div class="sub">멤버십 전환 (월 단위 집계)</div>
       </div>
       <div class="kpi-card">
         <div class="num" style="color:var(--accent)"><span class="placeholder">&lt;%&gt;</span></div>
-        <div class="label">전체 문의 전환율</div>
+        <div class="label">전체 문의 전환율 <span class="manual-badge">수기 입력</span></div>
         <div class="sub">노출 대비 문의 완료 %</div>
       </div>
     </div>
@@ -241,11 +264,11 @@ a{color:var(--accent);text-decoration:none}
 
       <div class="funnel-stages">
 
-        <!-- Stage 1: 노출 -->
+        <!-- Stage 1: 노출 (외부 수기 지표) -->
         <div class="funnel-stage">
           <div class="funnel-bar-wrap">
             <div class="funnel-bar s1" style="width:100%">
-              <span class="funnel-bar-label">① 노출 (Reach)</span>
+              <span class="funnel-bar-label">① 노출 (Reach) <span class="manual-badge">🖊 수기 입력(외부 지표)</span></span>
               <span class="funnel-bar-val">&lt;placeholder&gt;</span>
             </div>
           </div>
@@ -257,11 +280,11 @@ a{color:var(--accent);text-decoration:none}
 
         <div class="funnel-arrow">↓</div>
 
-        <!-- Stage 2: 인지 -->
+        <!-- Stage 2: 인지 (외부 수기 지표) -->
         <div class="funnel-stage">
           <div class="funnel-bar-wrap">
             <div class="funnel-bar s2" style="width:75%">
-              <span class="funnel-bar-label">② 인지 (Awareness)</span>
+              <span class="funnel-bar-label">② 인지 (Awareness) <span class="manual-badge">🖊 수기 입력(외부 지표)</span></span>
               <span class="funnel-bar-val">&lt;placeholder&gt;</span>
             </div>
           </div>
@@ -274,11 +297,11 @@ a{color:var(--accent);text-decoration:none}
 
         <div class="funnel-arrow">↓</div>
 
-        <!-- Stage 3: 관심 -->
+        <!-- Stage 3: 관심 (외부 수기 지표) -->
         <div class="funnel-stage">
           <div class="funnel-bar-wrap">
             <div class="funnel-bar s3" style="width:50%">
-              <span class="funnel-bar-label">③ 관심 (Interest)</span>
+              <span class="funnel-bar-label">③ 관심 (Interest) <span class="manual-badge">🖊 수기 입력(외부 지표)</span></span>
               <span class="funnel-bar-val">&lt;placeholder&gt;</span>
             </div>
           </div>
@@ -335,28 +358,28 @@ a{color:var(--accent);text-decoration:none}
     <div class="detail-card">
       <div class="detail-card-header" onclick="toggleCard(this)">
         <span class="stage-badge" style="background:var(--f1-bg);color:var(--f1)">① 노출</span>
-        <h3>Reach — 잠재 고객이 웰페리온을 처음 접하는 단계</h3>
+        <h3>Reach — 잠재 고객이 웰페리온을 처음 접하는 단계 <span class="manual-badge">🖊 수기 입력(외부 지표)</span></h3>
         <span class="toggle-icon">▼</span>
       </div>
       <div class="detail-body open">
         <div class="metrics-grid">
           <div class="metric-cell">
-            <div class="m-label">IG 도달 수 (월간)</div>
+            <div class="m-label">IG 도달 수 (월간) <span class="manual-badge">수기</span></div>
             <div class="m-val placeholder">&lt;placeholder&gt;</div>
             <div class="m-src">출처: IG Insights</div>
           </div>
           <div class="metric-cell">
-            <div class="m-label">블로그 방문 수 (월간)</div>
+            <div class="m-label">블로그 방문 수 (월간) <span class="manual-badge">수기</span></div>
             <div class="m-val placeholder">&lt;placeholder&gt;</div>
             <div class="m-src">출처: 네이버 블로그 통계</div>
           </div>
           <div class="metric-cell">
-            <div class="m-label">카페 방문 수 (월간)</div>
+            <div class="m-label">카페 방문 수 (월간) <span class="manual-badge">수기</span></div>
             <div class="m-val placeholder">&lt;placeholder&gt;</div>
             <div class="m-src">출처: 네이버 카페 통계</div>
           </div>
           <div class="metric-cell">
-            <div class="m-label">노출 총합 (월간)</div>
+            <div class="m-label">노출 총합 (월간) <span class="manual-badge">수기</span></div>
             <div class="m-val placeholder">&lt;placeholder&gt;</div>
             <div class="m-src">3채널 합산</div>
           </div>
@@ -380,7 +403,7 @@ a{color:var(--accent);text-decoration:none}
     <div class="detail-card">
       <div class="detail-card-header" onclick="toggleCard(this)">
         <span class="stage-badge" style="background:var(--f2-bg);color:var(--f2)">② 인지</span>
-        <h3>Awareness — 브랜드·서비스를 인식하고 프로필·블로그를 탐색하는 단계</h3>
+        <h3>Awareness — 브랜드·서비스를 인식하고 프로필·블로그를 탐색하는 단계 <span class="manual-badge">🖊 수기 입력(외부 지표)</span></h3>
         <span class="toggle-icon">▼</span>
       </div>
       <div class="detail-body">
@@ -425,7 +448,7 @@ a{color:var(--accent);text-decoration:none}
     <div class="detail-card">
       <div class="detail-card-header" onclick="toggleCard(this)">
         <span class="stage-badge" style="background:var(--f3-bg);color:var(--f3)">③ 관심</span>
-        <h3>Interest — 시설·멤버십·혜택을 구체적으로 탐색하며 Litt.ly를 클릭하는 단계</h3>
+        <h3>Interest — 시설·멤버십·혜택을 구체적으로 탐색하며 Litt.ly를 클릭하는 단계 <span class="manual-badge">🖊 수기 입력(외부 지표)</span></h3>
         <span class="toggle-icon">▼</span>
       </div>
       <div class="detail-body">
@@ -729,12 +752,8 @@ async function loadClickStats() {
     if (!data || !data.ok) return;
     const byLink = data.byLink || {};
 
-    // 문의 버튼 4종 합 → KPI
-    const inqKeys = ['멤버십문의', '성인강습문의', '유소년강습문의', '여름방학특강문의'];
-    let inqClicks = 0;
-    inqKeys.forEach(function(k) { inqClicks += (byLink[k] || 0); });
-    const totalEl = document.getElementById('kpi-total-clicks');
-    if (totalEl) { totalEl.textContent = inqClicks.toLocaleString(); totalEl.classList.remove('placeholder'); }
+    // ※ KPI '문의 페이지 클릭' 카드(kpi-total-clicks)는 기간 로더(loadPeriodBreakdown)가 단독 소유 — 여기서 쓰지 않음(레이스 방지).
+    // loadClickStats는 아래 '실시간 클릭 현황' breakdown 표만 담당.
 
     // 버튼별 breakdown 표
     const box = document.getElementById('click-breakdown-body');
@@ -791,10 +810,110 @@ async function loadEngagementFeed() {
   }
 }
 
+// ─── 기간별 집계 (period_breakdown) ──────────────────────────────
+// period = 'day' | 'week' | 'month'
+// KPI 카드 3종(클릭·문의·전환)을 선택 기간 수치로 갱신.
+// 액션 미지원·네트워크 오류 시 해당 칸에 '집계 준비 중(재배포 대기)' 표기 후 조용히 종료.
+var _periodCache = {};  // { period: data } — 중복 fetch 방지
+
+var PERIOD_LABELS = { day: '일간', week: '주간', month: '월간' };
+
+function _setPeriodPlaceholder(msg) {
+  var els = ['kpi-total-clicks', 'kpi-inquiries', 'kpi-converted'];
+  els.forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) { el.textContent = msg; el.classList.add('placeholder'); }
+  });
+}
+
+async function loadPeriodBreakdown(period) {
+  period = period || 'month';
+
+  var statusEl = document.getElementById('period-status');
+  var label = PERIOD_LABELS[period] || period;
+
+  if (statusEl) statusEl.textContent = label + ' 기준 · 불러오는 중…';
+
+  // 라벨 갱신 (클릭·문의·전환 카드)
+  var clickLbl  = document.getElementById('kpi-clicks-label');
+  var inqLbl    = document.getElementById('kpi-inquiries-label');
+  var convLbl   = document.getElementById('kpi-converted-label');
+  if (clickLbl) clickLbl.textContent = label + ' 문의 페이지 클릭';
+  if (inqLbl)   inqLbl.textContent   = label + ' 문의';
+  if (convLbl)  convLbl.textContent  = label + ' 신규 가입(전환)' + (period !== 'month' ? ' ※월 집계만' : '');
+
+  // 캐시 히트
+  if (_periodCache[period]) {
+    _applyPeriodData(_periodCache[period], period);
+    if (statusEl) statusEl.textContent = label + ' 기준 · ' + (_periodCache[period].generatedAt || '');
+    return;
+  }
+
+  if (FUNNEL_APPS_SCRIPT_URL.includes('DEPLOY_ID_HERE')) {
+    _setPeriodPlaceholder('집계 준비 중(재배포 대기)');
+    if (statusEl) statusEl.textContent = label + ' 기준 · 배포 대기';
+    return;
+  }
+
+  try {
+    var url = FUNNEL_APPS_SCRIPT_URL + '?action=period_breakdown';
+    var res = await fetch(url, { redirect: 'follow' });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    var data = await res.json();
+    if (!data || !data.ok) throw new Error('ok=false');
+
+    _periodCache[period] = data;  // 전체 응답 캐시 (모든 기간 포함)
+    // 다른 기간도 미리 캐시
+    ['day', 'week', 'month'].forEach(function(p) { if (!_periodCache[p]) _periodCache[p] = data; });
+
+    _applyPeriodData(data, period);
+    if (statusEl) statusEl.textContent = label + ' 기준 · ' + (data.generatedAt || '');
+  } catch (e) {
+    // graceful: 해당 칸 안내 표기, 기존 로더(loadClickStats 등) 건드리지 않음
+    _setPeriodPlaceholder('집계 준비 중(재배포 대기)');
+    if (statusEl) statusEl.textContent = label + ' 기준 · 집계 준비 중(재배포 대기)';
+    console.warn('[period_breakdown] 로드 실패:', e.message);
+  }
+}
+
+function _applyPeriodData(data, period) {
+  var clickEl = document.getElementById('kpi-total-clicks');
+  var inqEl   = document.getElementById('kpi-inquiries');
+  var convEl  = document.getElementById('kpi-converted');
+
+  if (clickEl && data.clicks) {
+    var cv = data.clicks[period];
+    if (cv !== undefined) { clickEl.textContent = cv.toLocaleString() + '건'; clickEl.classList.remove('placeholder'); }
+  }
+  if (inqEl && data.inquiries) {
+    var iv = data.inquiries[period];
+    if (iv !== undefined) { inqEl.textContent = iv.toLocaleString() + '건'; inqEl.classList.remove('placeholder'); }
+  }
+  // 전환(conversion)은 month 단위만 유의미 — 다른 기간은 '월 집계만' 안내
+  if (convEl) {
+    if (period === 'month' && data.conversion && data.conversion.month) {
+      var convVal = data.conversion.month.converted;
+      if (convVal !== undefined) { convEl.textContent = convVal.toLocaleString() + '건'; convEl.classList.remove('placeholder'); }
+    } else {
+      convEl.textContent = '월 집계만 제공';
+      convEl.classList.add('placeholder');
+    }
+  }
+}
+
+// 기간 토글 버튼 전환
+function switchPeriod(period) {
+  document.querySelectorAll('.period-btn').forEach(function(btn) {
+    btn.classList.toggle('active', btn.dataset.period === period);
+  });
+  loadPeriodBreakdown(period);
+}
+
 document.addEventListener('DOMContentLoaded', function() {
   loadFunnelConversion();
   loadClickStats();
   loadEngagementFeed();
+  loadPeriodBreakdown('month');  // 기본 기간: 월
 });
 </script>
 </body>

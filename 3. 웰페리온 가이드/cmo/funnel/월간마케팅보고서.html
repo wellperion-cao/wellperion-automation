@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>웰페리온 마케팅 월간 보고서</title>
+<style>
+:root{
+  --bg:#221F20;--paper:#2a2725;--text:#f5f2ef;--dim:#8c8b83;
+  --accent:#B79F8A;--accent-bg:rgba(183,159,138,0.12);--border:#3d3835;
+  --green:#6abf7b;--green-bg:rgba(106,191,123,0.12);
+  --red:#ED5B3F;--red-bg:rgba(237,91,63,0.12);
+  --yellow:#e6c84e;--yellow-bg:rgba(230,200,78,0.12);
+  --blue:#5b9fd5;--blue-bg:rgba(91,159,213,0.12);
+  --f1:#5b9fd5;--f1-bg:rgba(91,159,213,0.13);
+  --f3:#e6944e;--f3-bg:rgba(230,148,78,0.13);
+  --f4:#e6c84e;--f4-bg:rgba(230,200,78,0.13);
+  --f5:#6abf7b;--f5-bg:rgba(106,191,123,0.13);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.6;font-size:15px;min-height:100vh}
+a{color:var(--accent);text-decoration:none}
+
+/* ── 화면 헤더 ── */
+.screen-header{background:var(--paper);padding:14px 20px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100}
+.screen-header-left{display:flex;align-items:center;gap:10px}
+.screen-header h1{font-size:17px;font-weight:700}
+.version-badge{font-size:11px;padding:2px 8px;border-radius:8px;background:var(--accent-bg);color:var(--accent);font-weight:700;border:1px solid rgba(183,159,138,0.25)}
+.screen-header-meta{font-size:12px;color:var(--dim)}
+
+.toolbar{padding:12px 20px;background:var(--paper);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.print-btn{display:inline-flex;align-items:center;gap:6px;background:var(--accent-bg);border:1px solid rgba(183,159,138,.35);border-radius:8px;padding:8px 16px;color:var(--accent);font-size:13px;font-weight:700;cursor:pointer;transition:background .15s}
+.print-btn:hover{background:rgba(183,159,138,.22)}
+.back-link{font-size:12px;color:var(--dim);display:inline-flex;align-items:center;gap:4px}
+.back-link:hover{color:var(--accent)}
+
+/* ── A4 보고서 ── */
+.report-wrap{padding:28px 20px 80px;max-width:860px;margin:0 auto}
+
+/* 표지 */
+.cover{background:var(--paper);border:1px solid var(--border);border-radius:14px;padding:36px 32px 32px;margin-bottom:24px;text-align:center}
+.cover-logo{font-size:11px;font-weight:700;letter-spacing:.15em;color:var(--accent);text-transform:uppercase;margin-bottom:8px}
+.cover-title{font-size:26px;font-weight:800;color:var(--text);margin-bottom:10px;line-height:1.3}
+.cover-period{font-size:20px;font-weight:700;color:var(--accent);margin-bottom:20px}
+.cover-meta-table{display:inline-grid;grid-template-columns:auto auto;gap:6px 20px;text-align:left;font-size:13px}
+.cover-meta-table .lbl{color:var(--dim)}
+.cover-meta-table .val{font-weight:600}
+.cover-divider{height:1px;background:var(--border);margin:24px 0}
+.cover-notice{font-size:11px;color:var(--dim);font-style:italic}
+
+/* 섹션 */
+.section{margin-bottom:24px}
+.section-title{font-size:14px;font-weight:700;color:var(--dim);text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.section-title::after{content:"";flex:1;height:1px;background:var(--border)}
+.section-num{font-size:12px;font-weight:800;padding:2px 8px;border-radius:6px;background:var(--accent-bg);color:var(--accent)}
+
+/* 한 줄 요약 */
+.summary-box{background:var(--paper);border:1px solid var(--border);border-radius:10px;padding:16px 18px;font-size:14px;font-weight:600;line-height:1.7}
+.summary-box .loading{color:var(--dim);font-weight:400;font-style:italic}
+
+/* 집계 표 */
+.data-table{width:100%;border-collapse:collapse;font-size:13px;background:var(--paper);border-radius:12px;overflow:hidden;border:1px solid var(--border)}
+.data-table th{padding:10px 14px;text-align:center;font-size:11px;font-weight:700;color:var(--dim);border-bottom:1px solid var(--border);background:var(--paper)}
+.data-table th.left{text-align:left}
+.data-table td{padding:10px 14px;border-bottom:1px solid var(--border);text-align:center}
+.data-table td.left{text-align:left}
+.data-table tr:last-child td{border-bottom:none}
+.data-table tr:hover td{background:var(--accent-bg)}
+.data-num{font-size:16px;font-weight:700;color:var(--accent)}
+.data-unit{font-size:11px;color:var(--dim);margin-left:2px}
+.placeholder-cell{color:var(--dim);font-style:italic;font-size:12px}
+.rate-chip{display:inline-block;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:700}
+.rate-ok{background:var(--green-bg);color:var(--green)}
+.rate-low{background:var(--red-bg);color:var(--red)}
+.rate-mid{background:var(--yellow-bg);color:var(--yellow)}
+
+/* 수기 입력 배지 */
+.manual-badge{display:inline-block;font-size:10px;font-weight:700;padding:1px 7px;border-radius:6px;background:var(--yellow-bg);color:var(--yellow);border:1px solid rgba(230,200,78,.25);margin-left:6px;vertical-align:middle;white-space:nowrap}
+
+/* 채널 바 차트 */
+.channel-bars{display:flex;flex-direction:column;gap:8px}
+.ch-row{display:flex;align-items:center;gap:10px;font-size:13px}
+.ch-name{width:110px;flex-shrink:0;color:var(--dim)}
+.ch-bar-wrap{flex:1;height:22px;background:var(--border);border-radius:4px;overflow:hidden}
+.ch-bar{height:100%;background:var(--f1-bg);border-right:2px solid var(--f1);border-radius:4px;transition:width .5s ease;min-width:4px}
+.ch-val{width:40px;text-align:right;font-weight:700;color:var(--accent)}
+
+/* 유형 바 차트 */
+.type-bars{display:flex;flex-direction:column;gap:8px}
+.tp-row{display:flex;align-items:center;gap:10px;font-size:13px}
+.tp-name{width:90px;flex-shrink:0;color:var(--dim)}
+.tp-bar-wrap{flex:1;height:22px;background:var(--border);border-radius:4px;overflow:hidden}
+.tp-bar{height:100%;background:var(--f3-bg);border-right:2px solid var(--f3);border-radius:4px;transition:width .5s ease;min-width:4px}
+.tp-val{width:40px;text-align:right;font-weight:700;color:var(--f3)}
+
+/* 수기 입력란 */
+.manual-section{background:var(--paper);border:1px solid rgba(230,200,78,.25);border-radius:12px;padding:18px 20px}
+.manual-row{display:grid;grid-template-columns:140px 1fr;gap:8px;align-items:center;border-bottom:1px solid var(--border);padding:10px 0;font-size:13px}
+.manual-row:first-child{padding-top:0}
+.manual-row:last-child{border-bottom:none;padding-bottom:0}
+.manual-lbl{color:var(--dim);font-size:12px;font-weight:600}
+.manual-input{background:transparent;border:none;border-bottom:1px dashed var(--border);color:var(--text);font-size:13px;font-family:inherit;width:100%;padding:2px 4px;outline:none}
+.manual-input:focus{border-bottom-color:var(--accent)}
+.manual-hint{font-size:10px;color:var(--dim);margin-top:3px}
+
+/* 코멘트·개선 액션 란 */
+.comment-box{background:var(--paper);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+.comment-row{display:grid;grid-template-columns:120px 1fr;min-height:56px;border-bottom:1px solid var(--border)}
+.comment-row:last-child{border-bottom:none}
+.comment-lbl{padding:12px 14px;background:var(--accent-bg);font-size:11px;font-weight:700;color:var(--accent);display:flex;align-items:center}
+.comment-val{padding:12px 14px;font-size:13px;color:var(--dim);font-style:italic}
+
+/* 오류 배너 */
+.error-notice{background:var(--red-bg);border:1px solid rgba(237,91,63,.25);border-radius:8px;padding:10px 14px;font-size:12px;color:var(--red);margin-bottom:16px;display:none}
+
+/* 페이지 푸터 */
+.page-footer{text-align:center;padding:20px;font-size:11px;color:var(--dim);border-top:1px solid var(--border);margin-top:20px}
+
+/* ── 인쇄 스타일 ── */
+@media print{
+  :root{
+    --bg:#fff;--paper:#fff;--text:#111;--dim:#555;
+    --accent:#6b5340;--accent-bg:rgba(107,83,64,0.07);--border:#d0cbc6;
+    --green:#2e7d32;--green-bg:rgba(46,125,50,0.08);
+    --red:#c62828;--red-bg:rgba(198,40,40,0.08);
+    --yellow:#f57f17;--yellow-bg:rgba(245,127,23,0.08);
+    --blue:#1565c0;--blue-bg:rgba(21,101,192,0.08);
+    --f1:#1565c0;--f1-bg:rgba(21,101,192,0.08);
+    --f3:#e65100;--f3-bg:rgba(230,81,0,0.08);
+  }
+  body{background:#fff!important;color:#111!important;font-size:12px}
+  .screen-header,.toolbar{display:none!important}
+  .report-wrap{padding:0;max-width:100%}
+  .cover{border:1px solid #ccc;border-radius:0;page-break-after:always}
+  .section{page-break-inside:avoid}
+  .data-table{border:1px solid #ccc}
+  .data-table th,.data-table td{border-bottom:1px solid #ccc}
+  .manual-section{border:1px solid #ccc;border-radius:0}
+  .comment-box{border:1px solid #ccc;border-radius:0}
+  .comment-lbl{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .ch-bar,.tp-bar{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .rate-chip{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .page-footer{border-top:1px solid #ccc}
+}
+@media(max-width:640px){
+  .manual-row{grid-template-columns:1fr;gap:4px}
+  .comment-row{grid-template-columns:1fr}
+  .comment-lbl{padding:8px 12px}
+}
+</style>
+</head>
+<body>
+
+<!-- 화면 전용 헤더 -->
+<div class="screen-header">
+  <div class="screen-header-left">
+    <h1>마케팅 월간 보고서</h1>
+    <span class="version-badge">v1.0</span>
+  </div>
+  <span class="screen-header-meta">AI CMO 시모 · 실무진 김남욱 GM</span>
+</div>
+
+<!-- 툴바 -->
+<div class="toolbar">
+  <button class="print-btn" onclick="window.print()">🖨 인쇄 / PDF</button>
+  <a href="마케팅현황대시보드.html" class="back-link">← 대시보드로 돌아가기</a>
+</div>
+
+<div class="report-wrap">
+
+  <!-- 오류 배너 -->
+  <div class="error-notice" id="errorNotice"></div>
+
+  <!-- ① 표지 -->
+  <div class="cover" id="coverSection">
+    <div class="cover-logo">WELLPERION</div>
+    <div class="cover-title">마케팅 월간 보고서</div>
+    <div class="cover-period" id="coverPeriod">—</div>
+    <div class="cover-divider"></div>
+    <div class="cover-meta-table">
+      <span class="lbl">작성</span><span class="val">AI CMO 시모</span>
+      <span class="lbl">실무진</span><span class="val">김남욱 GM</span>
+      <span class="lbl">생성일</span><span class="val" id="coverGenDate">—</span>
+      <span class="lbl">보고 대상</span><span class="val">대표 보고선</span>
+    </div>
+    <div class="cover-divider"></div>
+    <div class="cover-notice">본 보고서는 집계 카운트만 포함하며 개인정보(이름·연락처)는 일절 수록되지 않습니다.</div>
+  </div>
+
+  <!-- ② 한 줄 요약 -->
+  <div class="section">
+    <div class="section-title"><span class="section-num">②</span> 이달 핵심 요약</div>
+    <div class="summary-box" id="summaryBox">
+      <span class="loading">데이터 로딩 중…</span>
+    </div>
+  </div>
+
+  <!-- ③ 실데이터 3종 집계 표 -->
+  <div class="section">
+    <div class="section-title"><span class="section-num">③</span> 이달 실데이터 집계</div>
+    <table class="data-table" id="kpiTable">
+      <thead>
+        <tr>
+          <th class="left">지표</th>
+          <th>이달 누계</th>
+          <th>데이터 출처</th>
+        </tr>
+      </thead>
+      <tbody id="kpiBody">
+        <tr><td colspan="3" class="placeholder-cell" style="text-align:center;padding:20px">로딩 중…</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ④ 채널별 문의·전환 -->
+  <div class="section">
+    <div class="section-title"><span class="section-num">④</span> 채널별 문의 · 전환</div>
+    <div style="background:var(--paper);border:1px solid var(--border);border-radius:12px;padding:18px 20px">
+      <div style="font-size:12px;color:var(--dim);margin-bottom:14px">이달 유입 채널별 문의 건수 (funnel_conversion byChannel 기준)</div>
+      <div class="channel-bars" id="channelBars">
+        <div style="color:var(--dim);font-style:italic;font-size:13px">로딩 중…</div>
+      </div>
+      <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border)">
+        <div style="font-size:12px;color:var(--dim);margin-bottom:10px">전환율 (문의 → 회원 등록)</div>
+        <div id="conversionSummary" style="font-size:13px;color:var(--dim);font-style:italic">로딩 중…</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ⑤ 문의유형별 -->
+  <div class="section">
+    <div class="section-title"><span class="section-num">⑤</span> 문의 유형별 현황</div>
+    <div style="background:var(--paper);border:1px solid var(--border);border-radius:12px;padding:18px 20px">
+      <div style="font-size:12px;color:var(--dim);margin-bottom:14px">이달 문의 유형별 건수 (period_breakdown byTypeMonth 기준)</div>
+      <div class="type-bars" id="typeBars">
+        <div style="color:var(--dim);font-style:italic;font-size:13px">로딩 중…</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ⑥ 수기 입력란 (외부 지표) -->
+  <div class="section">
+    <div class="section-title"><span class="section-num">⑥</span> 외부 지표 <span class="manual-badge">수기 입력</span></div>
+    <div class="manual-section">
+      <div style="font-size:12px;color:var(--yellow);margin-bottom:14px;font-weight:600">노출·인지·관심은 외부 플랫폼 지표로 자동 수집이 불가합니다. GM 또는 담당자가 직접 입력하세요.</div>
+      <div class="manual-row">
+        <div>
+          <div class="manual-lbl">IG 도달 (Reach)</div>
+          <div class="manual-hint">인스타그램 인사이트 기준</div>
+        </div>
+        <div>
+          <input class="manual-input" type="text" placeholder="예) 1,240 명" />
+        </div>
+      </div>
+      <div class="manual-row">
+        <div>
+          <div class="manual-lbl">네이버 블로그 방문</div>
+          <div class="manual-hint">블로그 통계 페이지 기준</div>
+        </div>
+        <div>
+          <input class="manual-input" type="text" placeholder="예) 380 PV" />
+        </div>
+      </div>
+      <div class="manual-row">
+        <div>
+          <div class="manual-lbl">카페 방문</div>
+          <div class="manual-hint">네이버 카페 방문자 통계</div>
+        </div>
+        <div>
+          <input class="manual-input" type="text" placeholder="예) 92 명" />
+        </div>
+      </div>
+      <div class="manual-row">
+        <div>
+          <div class="manual-lbl">당근 노출</div>
+          <div class="manual-hint">당근 비즈프로필 통계</div>
+        </div>
+        <div>
+          <input class="manual-input" type="text" placeholder="예) 640 회" />
+        </div>
+      </div>
+      <div class="manual-row">
+        <div>
+          <div class="manual-lbl">기타 외부 지표</div>
+          <div class="manual-hint">기타 채널 직접 기재</div>
+        </div>
+        <div>
+          <input class="manual-input" type="text" placeholder="채널명: 수치" />
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ⑦ 코멘트 / 개선 액션 -->
+  <div class="section">
+    <div class="section-title"><span class="section-num">⑦</span> 코멘트 &amp; 개선 액션</div>
+    <div class="comment-box">
+      <div class="comment-row">
+        <div class="comment-lbl">이달 성과</div>
+        <div class="comment-val" id="commentAchieve">데이터 로딩 후 자동 생성됩니다.</div>
+      </div>
+      <div class="comment-row">
+        <div class="comment-lbl">주요 병목</div>
+        <div class="comment-val" id="commentBottleneck">데이터 로딩 후 자동 생성됩니다.</div>
+      </div>
+      <div class="comment-row">
+        <div class="comment-lbl">개선 액션</div>
+        <div class="comment-val" id="commentAction">데이터 로딩 후 자동 생성됩니다.</div>
+      </div>
+      <div class="comment-row">
+        <div class="comment-lbl">GM 메모</div>
+        <div class="comment-val"><input class="manual-input" type="text" placeholder="GM 코멘트를 입력하세요…" style="width:100%;font-style:normal" /></div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /report-wrap -->
+
+<div class="page-footer">
+  웰페리온 마케팅 월간 보고서 · AI CMO 시모 · 실무진 김남욱 GM<br>
+  본 보고서에는 개인정보가 포함되지 않습니다.
+</div>
+
+<script>
+/* ── 상수 ── */
+const GAS_URL = "https://script.google.com/macros/s/AKfycbzdwSCCSSJ6JXLDoWuo7HG0JmBM2iy10TujFQ_O5JbTjnWaN7gOk-ddA4IAvsNfelg0xA/exec";
+
+/* ── 유틸 ── */
+function fmtNum(n) {
+  if (n == null || isNaN(n)) return "—";
+  return Number(n).toLocaleString("ko-KR");
+}
+function fmtPct(n) {
+  if (n == null || isNaN(n)) return "—";
+  return Number(n).toFixed(1) + "%";
+}
+function getRateClass(rate) {
+  if (rate >= 15) return "rate-ok";
+  if (rate >= 5)  return "rate-mid";
+  return "rate-low";
+}
+
+/* ── 대상 월 표기 ── */
+(function setMonthLabel() {
+  const now = new Date();
+  const y   = now.getFullYear();
+  const m   = String(now.getMonth() + 1).padStart(2, "0");
+  document.getElementById("coverPeriod").textContent  = y + "년 " + Number(m) + "월";
+  document.getElementById("coverGenDate").textContent = y + "-" + m + "-" + String(now.getDate()).padStart(2, "0");
+})();
+
+/* ── 오류 배너 ── */
+function showError(msg) {
+  const el = document.getElementById("errorNotice");
+  el.textContent = msg;
+  el.style.display = "block";
+}
+
+/* ── period_breakdown 로드 ── */
+async function loadPeriodBreakdown() {
+  let data = null;
+  try {
+    const resp = await fetch(GAS_URL + "?action=period_breakdown");
+    if (!resp.ok) throw new Error("HTTP " + resp.status);
+    data = await resp.json();
+    if (!data.ok) throw new Error("GAS 응답 ok=false");
+  } catch (e) {
+    showError("period_breakdown 로드 실패 — 집계 칸은 '—'으로 표시됩니다. (" + e.message + ")");
+    data = null;
+  }
+  renderKpiTable(data);
+  renderTypeBars(data);
+  renderSummary(data, null);
+  renderComments(data, null);
+}
+
+/* ── funnel_conversion 로드 ── */
+async function loadFunnelConversion() {
+  let data = null;
+  try {
+    const resp = await fetch(GAS_URL + "?action=funnel_conversion");
+    if (!resp.ok) throw new Error("HTTP " + resp.status);
+    data = await resp.json();
+  } catch (e) {
+    showError("funnel_conversion 로드 실패 — 채널 데이터가 표시되지 않을 수 있습니다. (" + e.message + ")");
+    data = null;
+  }
+  renderChannelBars(data);
+  renderConversionSummary(data);
+}
+
+/* ── KPI 집계 표 렌더 ── */
+function renderKpiTable(pb) {
+  const clicks    = pb?.clicks?.month    ?? null;
+  const inquiries = pb?.inquiries?.month ?? null;
+  const convInq   = pb?.conversion?.month?.inquiries ?? null;
+  const convDone  = pb?.conversion?.month?.converted ?? null;
+  const convRate  = pb?.conversion?.month?.rate      ?? null;
+
+  const rows = [
+    { label: "문의 페이지 클릭",  val: clicks,    unit: "회",  src: "클릭로그 시트 (GAS)" },
+    { label: "문의 접수",         val: inquiries, unit: "건",  src: "문의접수 + 구글폼 합산 (GAS)" },
+    { label: "회원 전환",         val: convDone,  unit: "명",  src: "전화 매칭 기준 (GAS funnel_conversion)" },
+    { label: "전환율",            val: convRate,  unit: null,  src: "전환 / 문의 × 100", isRate: true,
+      rateVal: convRate },
+  ];
+
+  const tbody = document.getElementById("kpiBody");
+  tbody.innerHTML = rows.map(r => {
+    let valHtml;
+    if (r.isRate) {
+      const disp = r.val != null ? fmtPct(r.val) : "—";
+      const cls  = r.val != null ? getRateClass(r.val) : "";
+      valHtml = `<span class="rate-chip ${cls}">${disp}</span>`;
+    } else {
+      const disp = r.val != null ? fmtNum(r.val) : "—";
+      valHtml = `<span class="data-num">${disp}</span>${r.unit ? `<span class="data-unit">${r.unit}</span>` : ""}`;
+    }
+    return `<tr>
+      <td class="left" style="font-weight:600">${r.label}</td>
+      <td>${valHtml}</td>
+      <td class="placeholder-cell">${r.src}</td>
+    </tr>`;
+  }).join("");
+}
+
+/* ── 채널 바 렌더 ── */
+/* byChannel은 배열: [{channel, inquiries, converted, rate}, ...] */
+function renderChannelBars(fc) {
+  const el = document.getElementById("channelBars");
+  const byChannel = Array.isArray(fc?.byChannel) ? fc.byChannel : null;
+  if (!byChannel || !byChannel.length) {
+    el.innerHTML = '<div style="color:var(--dim);font-style:italic;font-size:13px">채널 데이터 없음 (GAS funnel_conversion byChannel 미응답)</div>';
+    return;
+  }
+  const entries = byChannel.slice().sort((a, b) => (b.inquiries || 0) - (a.inquiries || 0));
+  const max     = Math.max(...entries.map(d => d.inquiries || 0), 1);
+  el.innerHTML = entries.map(d => {
+    const pct     = Math.round(((d.inquiries || 0) / max) * 100);
+    const rateStr = d.rate != null ? ` <span style="font-size:11px;color:var(--dim)">(전환율 ${fmtPct(d.rate)})</span>` : "";
+    return `<div class="ch-row">
+      <span class="ch-name">${d.channel || "기타"}</span>
+      <div class="ch-bar-wrap"><div class="ch-bar" style="width:${pct}%"></div></div>
+      <span class="ch-val">${fmtNum(d.inquiries || 0)}${rateStr}</span>
+    </div>`;
+  }).join("");
+}
+
+/* ── 전환 요약 렌더 ── */
+function renderConversionSummary(fc) {
+  const el = document.getElementById("conversionSummary");
+  // funnel_conversion 응답 구조: { total: { inquiries, converted, rate }, byChannel:[...] }
+  const t    = fc?.total ?? null;
+  const inq  = t?.inquiries ?? null;
+  const conv = t?.converted ?? null;
+  const rate = t?.rate      ?? null;
+  if (inq == null && conv == null) {
+    el.textContent = "전환 데이터 없음";
+    return;
+  }
+  const cls = rate != null ? getRateClass(rate) : "";
+  el.innerHTML = `문의 <strong>${fmtNum(inq)}</strong>건 →
+    회원 전환 <strong>${fmtNum(conv)}</strong>명
+    <span class="rate-chip ${cls}" style="margin-left:6px">${rate != null ? fmtPct(rate) : "—"}</span>`;
+}
+
+/* ── 유형 바 렌더 ── */
+function renderTypeBars(pb) {
+  const el = document.getElementById("typeBars");
+  const byType = pb?.inquiries?.byTypeMonth ?? null;
+  if (!byType || typeof byType !== "object" || Object.keys(byType).length === 0) {
+    el.innerHTML = '<div style="color:var(--dim);font-style:italic;font-size:13px">유형 데이터 없음 (GAS period_breakdown byTypeMonth 미응답)</div>';
+    return;
+  }
+  const entries = Object.entries(byType).sort((a, b) => b[1] - a[1]);
+  const max     = Math.max(...entries.map(e => e[1]), 1);
+  el.innerHTML = entries.map(([tp, cnt]) => {
+    const pct = Math.round((cnt / max) * 100);
+    return `<div class="tp-row">
+      <span class="tp-name">${tp}</span>
+      <div class="tp-bar-wrap"><div class="tp-bar" style="width:${pct}%"></div></div>
+      <span class="tp-val">${fmtNum(cnt)}</span>
+    </div>`;
+  }).join("");
+}
+
+/* ── 한 줄 요약 렌더 ── */
+function renderSummary(pb) {
+  const el        = document.getElementById("summaryBox");
+  const inq       = pb?.inquiries?.month ?? null;
+  const conv      = pb?.conversion?.month?.converted ?? null;
+  const rate      = pb?.conversion?.month?.rate ?? null;
+  const clicks    = pb?.clicks?.month ?? null;
+  const monthStr  = document.getElementById("coverPeriod").textContent;
+
+  if (!pb) {
+    el.innerHTML = '<span class="loading">데이터 로드 실패 — GAS 연결을 확인하세요.</span>';
+    return;
+  }
+
+  const parts = [];
+  if (clicks    != null) parts.push(`문의 페이지 클릭 <strong>${fmtNum(clicks)}회</strong>`);
+  if (inq       != null) parts.push(`문의 접수 <strong>${fmtNum(inq)}건</strong>`);
+  if (conv      != null) parts.push(`회원 전환 <strong>${fmtNum(conv)}명</strong>`);
+  if (rate      != null) {
+    const cls = getRateClass(rate);
+    parts.push(`전환율 <span class="rate-chip ${cls}">${fmtPct(rate)}</span>`);
+  }
+
+  if (parts.length === 0) {
+    el.innerHTML = monthStr + " 집계 데이터가 아직 없습니다.";
+  } else {
+    el.innerHTML = monthStr + " — " + parts.join(" / ");
+  }
+}
+
+/* ── 코멘트 자동 생성 ── */
+function renderComments(pb) {
+  const inq    = pb?.inquiries?.month ?? null;
+  const conv   = pb?.conversion?.month?.converted ?? null;
+  const rate   = pb?.conversion?.month?.rate ?? null;
+  const clicks = pb?.clicks?.month ?? null;
+
+  // ② 성과
+  const ach = document.getElementById("commentAchieve");
+  if (inq != null) {
+    ach.innerHTML = `이달 총 <strong>${fmtNum(inq)}건</strong>의 문의가 접수되었으며,
+      클릭 ${fmtNum(clicks)}회 대비 문의 전환으로 연결되었습니다.`;
+    ach.style.fontStyle = "normal";
+    ach.style.color     = "var(--text)";
+  } else {
+    ach.textContent = "집계 데이터 로드 후 자동 생성됩니다.";
+  }
+
+  // ③ 병목
+  const bot = document.getElementById("commentBottleneck");
+  if (rate != null) {
+    const msg = rate < 5
+      ? `전환율 ${fmtPct(rate)}로 저조 — 문의→상담 연결 프로세스 점검 필요`
+      : rate < 15
+      ? `전환율 ${fmtPct(rate)}로 개선 여지 있음 — 응대 속도·CTA 강화 검토`
+      : `전환율 ${fmtPct(rate)}로 양호 — 유지 및 노출 확대 집중`;
+    bot.innerHTML = msg;
+    bot.style.fontStyle = "normal";
+    bot.style.color     = rate < 5 ? "var(--red)" : rate < 15 ? "var(--yellow)" : "var(--green)";
+  } else {
+    bot.textContent = "집계 데이터 로드 후 자동 생성됩니다.";
+  }
+
+  // ④ 액션
+  const act = document.getElementById("commentAction");
+  if (rate != null) {
+    const actions = [];
+    if (rate < 10) actions.push("• 문의 후 24시간 내 응답률 모니터링 강화");
+    actions.push("• 노출→문의 전환 CTA 개선 (wellperion.com/ko/inquiry/ 진입 유도)");
+    if (inq != null && inq < 10) actions.push("• 월 문의 건수 부족 — 콘텐츠 발행 빈도 점검");
+    act.innerHTML = actions.join("<br>");
+    act.style.fontStyle = "normal";
+    act.style.color     = "var(--text)";
+  } else {
+    act.textContent = "집계 데이터 로드 후 자동 생성됩니다.";
+  }
+}
+
+/* ── 진입점 ── */
+(async function init() {
+  await Promise.all([
+    loadPeriodBreakdown(),
+    loadFunnelConversion(),
+  ]);
+})();
+</script>
+</body>
+</html>

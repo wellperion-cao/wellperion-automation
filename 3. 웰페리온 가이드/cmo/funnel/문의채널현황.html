@@ -95,6 +95,25 @@ a:hover{text-decoration:underline;color:var(--text)}
 /* ── Footer ── */
 .page-footer{text-align:center;padding:20px;font-size:11px;color:var(--dim);border-top:1px solid var(--border);margin-top:20px}
 
+/* ── Period KPI ── */
+.period-kpi-row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px}
+.period-kpi{flex:1;min-width:120px;background:var(--paper);border:1px solid var(--border);border-radius:10px;padding:14px 14px 12px;text-align:center}
+.period-kpi .pk-label{font-size:11px;font-weight:700;color:var(--dim);margin-bottom:6px;text-transform:uppercase;letter-spacing:.05em}
+.period-kpi .pk-num{font-size:28px;font-weight:700;color:var(--accent);line-height:1}
+.period-kpi .pk-sub{font-size:11px;color:var(--dim);margin-top:5px}
+
+/* ── Period mini-table ── */
+.period-tables-row{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:4px}
+.period-mini-wrap{flex:1;min-width:200px;background:var(--paper);border:1px solid var(--border);border-radius:10px;overflow:hidden}
+.period-mini-title{font-size:11px;font-weight:700;color:var(--dim);padding:9px 14px 7px;border-bottom:1px solid var(--border);background:#1e1c1d;letter-spacing:.04em;text-transform:uppercase}
+.period-mini-table{width:100%;border-collapse:collapse;font-size:13px}
+.period-mini-table td{padding:9px 14px;border-bottom:1px solid var(--border)}
+.period-mini-table tr:last-child td{border-bottom:none}
+.period-mini-table tr:hover td{background:var(--accent-bg)}
+.period-mini-table .pm-name{color:var(--text)}
+.period-mini-table .pm-num{text-align:right;font-weight:700;color:var(--accent)}
+.period-status{font-size:12px;color:var(--dim);font-style:italic;padding:10px 14px}
+
 /* ── Responsive ── */
 @media(max-width:680px){
   .survey-table{font-size:12px}
@@ -122,6 +141,42 @@ a:hover{text-decoration:underline;color:var(--text)}
 </div>
 
 <div class="content">
+
+  <!-- 일/주/월 문의 유입 요약 -->
+  <div class="section" id="section-period">
+    <div class="section-title">문의 유입 요약 <span style="font-size:11px;font-weight:400;text-transform:none;letter-spacing:0;margin-left:4px" id="period-gen-ts"></span></div>
+
+    <!-- 3칸 KPI -->
+    <div class="period-kpi-row">
+      <div class="period-kpi">
+        <div class="pk-label">오늘</div>
+        <div class="pk-num" id="pk-day">—</div>
+        <div class="pk-sub">문의 건</div>
+      </div>
+      <div class="period-kpi">
+        <div class="pk-label">이번 주</div>
+        <div class="pk-num" id="pk-week">—</div>
+        <div class="pk-sub">문의 건 (월~오늘)</div>
+      </div>
+      <div class="period-kpi">
+        <div class="pk-label">이번 달</div>
+        <div class="pk-num" id="pk-month">—</div>
+        <div class="pk-sub">문의 건 (1일~오늘)</div>
+      </div>
+    </div>
+
+    <!-- 유입채널별 · 문의유형별 미니표 -->
+    <div class="period-tables-row">
+      <div class="period-mini-wrap">
+        <div class="period-mini-title">유입 채널별 — 이번 달</div>
+        <div id="by-channel-body"><p class="period-status">집계 준비 중…</p></div>
+      </div>
+      <div class="period-mini-wrap">
+        <div class="period-mini-title">문의 유형별 — 이번 달</div>
+        <div id="by-type-body"><p class="period-status">집계 준비 중…</p></div>
+      </div>
+    </div>
+  </div>
 
   <!-- 문의 Survey 정리 표 -->
   <div class="section">
@@ -389,8 +444,76 @@ async function loadClickStats(forceRefresh) {
   }
 }
 
+// ── 일/주/월 문의 유입 요약 ────────────────────────────────────────────────
+function buildMiniTable(map) {
+  // map: { "채널명": 숫자, ... }
+  var entries = Object.entries(map || {});
+  if (!entries.length) return '<p class="period-status">데이터 없음</p>';
+  // 내림차순 정렬
+  entries.sort(function(a, b) { return b[1] - a[1]; });
+  var html = '<table class="period-mini-table">';
+  entries.forEach(function(pair) {
+    html += '<tr>';
+    html += '<td class="pm-name">' + pair[0] + '</td>';
+    html += '<td class="pm-num">' + fmtNum(pair[1]) + '</td>';
+    html += '</tr>';
+  });
+  html += '</table>';
+  return html;
+}
+
+async function loadInquiryPeriods() {
+  try {
+    var url = GAS_URL + '?action=period_breakdown&t=' + Date.now();
+    var res = await fetch(url, { redirect: 'follow' });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    var data = await res.json();
+    if (!data || !data.ok) throw new Error('응답 오류');
+
+    var inq = data.inquiries || {};
+
+    // 3칸 KPI
+    var dayEl   = document.getElementById('pk-day');
+    var weekEl  = document.getElementById('pk-week');
+    var monthEl = document.getElementById('pk-month');
+    if (dayEl)   dayEl.textContent   = fmtNum(inq.day   != null ? inq.day   : 0);
+    if (weekEl)  weekEl.textContent  = fmtNum(inq.week  != null ? inq.week  : 0);
+    if (monthEl) monthEl.textContent = fmtNum(inq.month != null ? inq.month : 0);
+
+    // 유입채널별 미니표
+    var chEl = document.getElementById('by-channel-body');
+    if (chEl) chEl.innerHTML = buildMiniTable(inq.byChannelMonth);
+
+    // 문의유형별 미니표
+    var tyEl = document.getElementById('by-type-body');
+    if (tyEl) tyEl.innerHTML = buildMiniTable(inq.byTypeMonth);
+
+    // 생성 시각 표기
+    var tsEl = document.getElementById('period-gen-ts');
+    if (tsEl && data.generatedAt) tsEl.textContent = '· ' + data.generatedAt + ' 기준';
+
+  } catch (e) {
+    console.warn('[period_breakdown] 로드 실패:', e.message);
+
+    // graceful fallback — 기존 페이지 깨지지 않음
+    var dayEl   = document.getElementById('pk-day');
+    var weekEl  = document.getElementById('pk-week');
+    var monthEl = document.getElementById('pk-month');
+    var msg = '집계 준비 중';
+    if (dayEl)   dayEl.textContent   = msg;
+    if (weekEl)  weekEl.textContent  = msg;
+    if (monthEl) monthEl.textContent = msg;
+
+    var chEl = document.getElementById('by-channel-body');
+    var tyEl = document.getElementById('by-type-body');
+    if (chEl) chEl.innerHTML = '<p class="period-status">집계 준비 중</p>';
+    if (tyEl) tyEl.innerHTML = '<p class="period-status">집계 준비 중</p>';
+  }
+}
+
 document.addEventListener('DOMContentLoaded', function() {
   loadClickStats(false);
+  loadInquiryPeriods();
 });
 </script>
 </body>
