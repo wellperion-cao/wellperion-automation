@@ -610,17 +610,17 @@
     <!-- AUTO:LATEST-START -->
     <div class="card grow">
       <h4>최신 업데이트 — 2026-06-06 (자동 갱신)</h4>
+      <p><strong>2026-06-06</strong> refactor(coo): '강습부 업장관리' → '강습팀 가이드라인' 이름·내부 제목 변경 + 가이드 링크(운영통합체계·home) 새 경…</p>
       <p><strong>2026-06-06</strong> refactor(coo): 운영 통합체계 부서별 체계 순서 변경(운영부예정·시설부·지원부·주차예정) + 파트너팀 3팀(강습팀 가이드라인·루…</p>
       <p><strong>2026-06-06</strong> feat(cmo): #5 채널확장 실행 — 네이버 플레이스·구글 비즈니스 프로필 등록 콘텐츠 팩(바로 붙여넣기용) 작성</p>
       <p><strong>2026-06-06</strong> feat(home): 8개 모듈 카드에 실무 책임 + 지원 AI C-Level 병기 (인사=시로·재무=시뽀·운영=시우·회원=시포·마케팅=시…</p>
       <p><strong>2026-06-06</strong> refactor(home): ERP 소개문 철학 버전(항해 세계관) 적용 — 북극성·항로·"사람은 방향, 시스템은 항해"</p>
-      <p><strong>2026-06-06</strong> chore(cmo): 항로에 채널확장(#5)·실험#1(#4) GM 결정 대기 등록 + 대시보드 후속완료 기록</p>
     </div>
 <!-- AUTO:LATEST-END -->
         <table>
           <tr><th style="width:160px">날짜</th><th>변경 내용</th></tr>
           <!-- AUTO:TABLE-START -->
-      <tr><td><strong>2026-06-06 (자동)</strong></td><td>refactor(coo): 운영 통합체계 부서별 체계 순서 변경(운영부예정·시설부·지원부·주차예정) + 파트너팀 3팀(강습팀 가이드라인·루프메소드팀·이움팀 예정)로 재편, home 운영카드 짝 동기 · feat(cmo): #5 채널확장 실행 — 네이버 플레이스·구글 비즈니스 프로필 등록 콘텐츠 팩(바로 붙여넣기용) 작성 · feat(home): 8개 …</td></tr>
+      <tr><td><strong>2026-06-06 (자동)</strong></td><td>refactor(coo): '강습부 업장관리' → '강습팀 가이드라인' 이름·내부 제목 변경 + 가이드 링크(운영통합체계·home) 새 경로 동기 (데이터=시트ID 바인딩 불변) · refactor(coo): 운영 통합체계 부서별 체계 순서 변경(운영부예정·시설부·지원부·주차예정) + 파트너팀 3팀(강습팀 가이드라인·루프메소드팀·이움팀 예정)로 재편,…</td></tr>
       <!-- AUTO:TABLE-END -->
           <tr><td><strong>2026-05-28 (14차)</strong></td><td>공지/안내문 생성(COO 하위) · 오프라인 홍보물 디자인 제작(CMO 하위) 도구 신설 · 공지 서식 v2.0 독립 페이지화 · 회사소개서·전략로드맵 원본 「3. 웰페리온 가이드/회사문서/」로 이관(SSOT 단일화) · C-Level 부팅 R/R Notion API→웰페리온 ERP g10 참조로 전환 · GitHub Pages 워크플로 폴더명 경로 수정 · 사이드바 "공통+7개 C-Level" 라벨 제거</td></tr>
           <tr><td>2026-05-27 (13차)</td><td>GitHub Pages 전환 · 사이드바 4섹터 · AI C-Level 통일 · 운영 통합 체계 · 공식채널·지출현황·취업규칙·SSOT 신설 · g2+g19·g9+g20·g12·g13 합병 · 김남욱 탭 확장 · v2.5</td></tr>
@@ -2966,117 +2966,6 @@ kubectl get pods -o json | jq '.items[] | {name: .metadata.name}'</pre>
         <p><strong>예상 효과:</strong> 토큰 소비량 80~95% 감소, 안정성 100%, 월 비용 10배 이상 절감.</p>
       </div>
 
-      <!-- ── 탭 5: everything-claude-code 플러그인 (섹션 5 전수) ── -->
-      <div class="tab-panel" data-panel="plugin">
-        <h3><span class="ico">🔌</span>5. everything-claude-code 플러그인 가이드</h3>
-
-        <h4>5-1. 개요</h4>
-        <p>에이전트, 스킬, 훅, 룰, MCP 설정, 메모리 학습 시스템을 통째로 묶은 플러그인. 6개 AI 코딩 툴에서 동시 동작.</p>
-        <table>
-          <tr><th>지표</th><th>값</th></tr>
-          <tr><td>구성 요소</td><td>38 agents / 156 skills / 72 commands / 34 rules / 14 MCP servers</td></tr>
-          <tr><td>테스트</td><td>1,282 tests / 98% coverage</td></tr>
-          <tr><td>지원 하네스</td><td>Claude Code, Cursor, Codex, OpenCode, Antigravity, Gemini CLI</td></tr>
-        </table>
-
-        <h4>5-2. 비용 80% 절감 — settings.json 4줄</h4>
-        <table>
-          <tr><th>설정</th><th>변경</th><th>효과</th></tr>
-          <tr><td>model</td><td>opus → sonnet</td><td>약 60% 절감</td></tr>
-          <tr><td>MAX_THINKING_TOKENS</td><td>31999 → 10000</td><td>thinking 약 70% 절감</td></tr>
-          <tr><td>CLAUDE_AUTOCOMPACT_PCT_OVERRIDE</td><td>95 → 50</td><td>긴 세션 품질 향상</td></tr>
-          <tr><td>CLAUDE_CODE_SUBAGENT_MODEL</td><td>→ haiku</td><td>서브에이전트 약 80% 절감</td></tr>
-        </table>
-
-        <h4>5-3. 모델 선택</h4>
-        <table>
-          <tr><th>상황</th><th>모델</th><th>이유</th></tr>
-          <tr><td>일상 코딩, 리뷰, 테스트</td><td>Sonnet (기본)</td><td>품질/비용 균형 최적</td></tr>
-          <tr><td>아키텍처 설계, 깊은 디버깅</td><td>Opus (일시전환)</td><td>복잡한 추론에만</td></tr>
-          <tr><td>단순 조회, 반복 작업</td><td>Haiku (서브에이전트)</td><td>가장 저렴, 워커 역할</td></tr>
-        </table>
-
-        <h4>5-4. /clear vs /compact</h4>
-        <table>
-          <tr><th></th><th>/clear (무료, 즉시)</th><th>/compact (요약 압축)</th></tr>
-          <tr><td>언제</td><td>무관한 작업 사이</td><td>마일스톤 사이</td></tr>
-          <tr><td>효과</td><td>컨텍스트 통째로 비움</td><td>요약 후 압축 보존</td></tr>
-        </table>
-        <p><strong>절대 금지:</strong> 구현 도중에 /compact → 변수명·파일 경로·부분 상태 손실.</p>
-        <p>적정 시점 5가지: 리서치→구현 직전 / 마일스톤 사이 / 디버깅 후 기능 복귀 / 새 접근 시도 / 컨텍스트 50% 초과 시.</p>
-
-        <h4>5-7. 코어 스킬 5개 (처음 설치)</h4>
-        <table>
-          <tr><th>스킬</th><th>역할</th></tr>
-          <tr><td>search-first</td><td>코딩 전 리서치 워크플로 (가장 중요)</td></tr>
-          <tr><td>tdd-workflow</td><td>테스트 주도 개발 — 실패 테스트 먼저</td></tr>
-          <tr><td>strategic-compact</td><td>적절한 시점에 자동 /compact 제안</td></tr>
-          <tr><td>verification-loop</td><td>build·test·lint·typecheck·security 한 번에 검증</td></tr>
-          <tr><td>security-review</td><td>OWASP Top 10 보안 체크리스트</td></tr>
-        </table>
-
-        <h4>5-8. 핵심 슬래시 명령어 워크플로</h4>
-        <ul>
-          <li><strong>새 기능:</strong> /plan → /tdd → /code-review</li>
-          <li><strong>버그 수정:</strong> /tdd(재현) → 수정+통과 → /code-review</li>
-          <li><strong>출시 전:</strong> /security-scan → /e2e → /test-coverage</li>
-        </ul>
-
-        <h4>5-9. Continuous Learning v2 — 메모리 학습 시스템</h4>
-        <p>진짜 핵심. PreToolUse/PostToolUse 훅으로 사용자 작업을 100% 관찰하고 반복 패턴을 학습.</p>
-        <ul>
-          <li><strong>instinct(본능):</strong> 학습된 패턴 1개. 신뢰도 0.3~0.9. 자주+일관되면 점수 상승.</li>
-          <li><strong>instinct → skill 승격:</strong> 관련 instinct 3개+ → /evolve로 재사용 가능 skill 모듈 자동 승격.</li>
-        </ul>
-        <table>
-          <tr><th>명령</th><th>역할</th></tr>
-          <tr><td>/instinct-status</td><td>학습된 instinct 목록과 신뢰도 확인</td></tr>
-          <tr><td>/instinct-export</td><td>학습 결과 파일로 내보내기 (팀 공유용)</td></tr>
-          <tr><td>/instinct-import</td><td>동료의 학습 결과 가져오기</td></tr>
-          <tr><td>/evolve</td><td>instinct 묶음을 skill로 자동 승격</td></tr>
-          <tr><td>/prune</td><td>30일 TTL 지난 pending instinct 정리</td></tr>
-        </table>
-
-        <h4>5-10. AgentShield — 보안 스캐너</h4>
-        <p><code>npx ecc-agentshield scan</code> (--fix 자동수정 / --opus 적대적 검증). 5종 점검:</p>
-        <table>
-          <tr><th>카테고리</th><th>검사 내용</th></tr>
-          <tr><td>시크릿 탐지</td><td>14가지 패턴 — API 키, 토큰</td></tr>
-          <tr><td>권한 감사</td><td>너무 열려 있는 도구 권한</td></tr>
-          <tr><td>훅 인젝션</td><td>prompt injection 취약점</td></tr>
-          <tr><td>MCP 리스크</td><td>위험한 MCP 서버 프로파일링</td></tr>
-          <tr><td>에이전트 리뷰</td><td>agent definition 권한 범위</td></tr>
-        </table>
-
-        <h4>5-11. 크로스 하네스 — 6개 툴 동시 동작</h4>
-        <table>
-          <tr><th>툴</th><th>지원 범위</th></tr>
-          <tr><td>Claude Code</td><td>네이티브 (47 agents, 79 commands, 181 skills)</td></tr>
-          <tr><td>Cursor IDE</td><td>완전 지원, 15 hook events</td></tr>
-          <tr><td>Codex</td><td>AGENTS.md + .codex 설정, 3 멀티에이전트 롤</td></tr>
-          <tr><td>OpenCode</td><td>12 agents, 31 commands, 37 skills</td></tr>
-          <tr><td>Antigravity</td><td>flat rules + .agent 통합</td></tr>
-          <tr><td>Gemini CLI</td><td>실험적 .gemini/GEMINI.md</td></tr>
-        </table>
-
-        <h4>5-12. 팀 단위 적용</h4>
-        <ol>
-          <li>리드 개발자가 먼저 설정 (settings.json + 코어 스킬 5개 + instinct 시드)</li>
-          <li>1~2주 후 /instinct-export로 팀 노하우 파일 생성</li>
-          <li>신입 입사 시 /instinct-import로 컨벤션 즉시 주입</li>
-          <li>CI 게이트에 npx ecc-agentshield scan 추가 (exit 2)</li>
-          <li>월 1회 /evolve로 instinct → 정식 skill 승격</li>
-        </ol>
-
-        <h4>5-13. 주의사항</h4>
-        <ul>
-          <li>156개 스킬 한 번에 설치 금지 — 코어 5개부터 시작</li>
-          <li>plugin.json에 "hooks" 필드 직접 추가 금지 — 자동 로드와 충돌</li>
-          <li>구현 도중 /compact 금지 — 변수명/파일/상태 손실</li>
-          <li>MCP 전부 활성화 금지 — 200K 컨텍스트가 70K로 축소</li>
-        </ul>
-      </div>
-
       <!-- ── 탭 6: 자기학습 프로세스 (GM님 최종 목표) ── -->
       <div class="tab-panel" data-panel="selflearn">
         <h3><span class="ico">🔁</span>AI C-Level 자기학습 프로세스</h3>
@@ -3092,13 +2981,7 @@ kubectl get pods -o json | jq '.items[] | {name: .metadata.name}'</pre>
         </table>
 
         <h4>자동화 도구</h4>
-        <table>
-          <tr><th>도구</th><th>위치</th><th>역할</th></tr>
-          <tr><td>ai_education_auto_learner.py</td><td>scripts/</td><td>웹 수집 → 요약 → 텔레그램 배포 (수집 단계)</td></tr>
-          <tr><td>education_archive_weekly.py</td><td>scripts/</td><td>매주 월 09:00 로컬 교육자료 자동 정리</td></tr>
-          <tr><td>컨텍스트 주간 정비</td><td>각 C-Level (반자동)</td><td>매주 월 09:00 텔레그램 알림 → 세션에서 CEO가 6 C-Level에 일괄 위임 → 본인 영역 검토·고도화 → CEO 취합 (학습+제안 단계)</td></tr>
-          <tr><td>CEO 통합 보고</td><td>매일 08:00</td><td>C-Level 제안 취합 → GM님 보고 (제안 단계)</td></tr>
-        </table>
+        <div class="callout"><strong>가동 현황·주기는 T2 업무자동화SSOT 단일 출처</strong>(중복 표 제거 2026-06-06). 자기학습을 돌리는 자동화 = <code>ai_education_auto_learner.py</code>(웹 수집→요약→텔레그램) · <code>education_archive_weekly.py</code>(매주 월 09:00 교육자료 정리) · 컨텍스트 주간 정비(매주 월 09:00) · CEO 통합보고(매일 08:00). 무엇이 언제 도는지는 <a href="#" onclick="event.preventDefault();var t=document.querySelector('[data-id=T2]');if(t)t.click();" style="color:var(--accent);font-weight:700;text-decoration:none;">T2 업무자동화SSOT</a> 참조.</div>
 
         <h4>고도화 진화 로드맵</h4>
         <ul>
@@ -3153,7 +3036,7 @@ kubectl get pods -o json | jq '.items[] | {name: .metadata.name}'</pre>
 2. 내가 승인하면 그때 각 폴더에 CLAUDE.md를 생성해줘.
 루트 CLAUDE.md에는 전사 공통 규칙만 남기는 방향으로.</pre>
         <div class="card" style="margin-top:20px; border-left:3px solid var(--warm);">
-          <strong>⚠️ GM 목표 반영</strong> — GM은 "깊게 생각·병렬·자동화"를 우선한다. '비용 절감' 항목의 <code>MAX_THINKING_TOKENS 낮추기</code>는 사고량을 줄이므로 <strong>적용하지 않는다.</strong> 작업량은 "매우 높음" 유지.
+          <strong>⚠️ GM 목표 반영</strong> — GM은 "깊게 생각·병렬·자동화"를 우선한다. settings.json <code>MAX_THINKING_TOKENS 낮추기</code>는 사고량을 줄이므로 <strong>적용하지 않는다.</strong> 작업량은 "매우 높음" 유지.
         </div>
       </div>
 
