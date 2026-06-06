@@ -224,6 +224,11 @@ function _processAction(body) {
 
   // ─── 문의→가입 전환 집계 ───
   if (action === 'funnel_conversion') {
+    // 캐시 조회
+    var fcCache = CacheService.getScriptCache();
+    var fcHit = fcCache.get('fc_v1');
+    if (fcHit) return _json(JSON.parse(fcHit));
+
     // ① 회원부 전화번호 Set 생성
     var memberSs  = SpreadsheetApp.openById(MEMBER_SPREADSHEET_ID);
     var memberSh  = memberSs.getSheetByName(MEMBER_SHEET);
@@ -291,16 +296,28 @@ function _processAction(body) {
     });
     channelArr.sort(function(a, b) { return b.inquiries - a.inquiries; });
 
-    return _json({
+    var fcResult = {
       ok: true,
       total: { inquiries: totalInq, converted: totalConv, rate: rate },
       byChannel: channelArr,
       generatedAt: _now()
-    });
+    };
+    // 캐시 저장 (100KB 초과 시 생략)
+    try { fcCache.put('fc_v1', JSON.stringify(fcResult), 300); } catch (e) { /* 캐시 저장 실패 무시 */ }
+    return _json(fcResult);
   }
 
-  // ─── 기간별 집계 (일/주/월) ───
+  // ─── 기간별 집계 (일/주/월 + custom range) ───
   if (action === 'period_breakdown') {
+    var from = body.from || '';  // YYYY-MM-DD (optional)
+    var to   = body.to   || '';  // YYYY-MM-DD (optional)
+
+    // 캐시 조회
+    var pbCache = CacheService.getScriptCache();
+    var pbKey   = 'pb_' + from + '_' + to;
+    var pbHit   = pbCache.get(pbKey);
+    if (pbHit) return _json(JSON.parse(pbHit));
+
     // ── 기간 시작 시각 계산 (Asia/Seoul 달력 기준) ──
     function _periodStarts_() {
       var now = new Date();
@@ -346,46 +363,63 @@ function _processAction(body) {
       return { day: day, week: week, month: month };
     }
 
+    // 타임스탬프(Date|string) → Date 변환 헬퍼
+    function _toDate_(ts) {
+      if (ts instanceof Date) return ts;
+      var s = String(ts || '').trim();
+      if (!s) return new Date(NaN);
+      return new Date(s.replace(' ', 'T') + '+09:00');
+    }
+
     var ps = _periodStarts_();
 
     // ── clicks 집계 ──
     var clickSh   = _getSheet(CLICK_SHEET, CLICK_HEADERS);
     var clickLast = clickSh.getLastRow();
     var clickTs   = [];
+    var clickRows = []; // 전체 raw rows — custom range용
     if (clickLast >= 2) {
       var clickData = clickSh.getRange(2, 1, clickLast - 1, CLICK_HEADERS.length).getValues();
-      clickData.forEach(function(r) { if (r[1]) clickTs.push(r[1]); }); // 인덱스 1 = 시각
+      clickData.forEach(function(r) { if (r[1]) { clickTs.push(r[1]); clickRows.push(r); } }); // 인덱스 1 = 시각
     }
     var clickCounts = _countByPeriod_(clickTs, ps);
 
-    // ── inquiries 집계 ──
+    // ── inquiries 집계 — _collectFormInquiries_ 한 번만 호출 ──
+    var formInquiries = _collectFormInquiries_(); // 【중복 제거】 단일 호출 후 재사용
+
     var inqSh2   = _getSheet(INQUIRY_SHEET, INQUIRY_HEADERS);
     var inqLast2 = inqSh2.getLastRow();
     var inqTs    = [];
     var inqMonthRows = []; // {유입채널, 문의유형} — 이번달만 보관
+    var inqSheetRows = []; // {시각(Date), 연락처, 유입채널, 문의유형} — conversion·custom용
     if (inqLast2 >= 2) {
       var inqData2 = inqSh2.getRange(2, 1, inqLast2 - 1, INQUIRY_HEADERS.length).getValues();
-      var idxChanI = INQUIRY_HEADERS.indexOf('유입채널'); // 6
-      var idxTypeI = INQUIRY_HEADERS.indexOf('문의유형'); // 4
+      var idxChanI  = INQUIRY_HEADERS.indexOf('유입채널'); // 6
+      var idxTypeI  = INQUIRY_HEADERS.indexOf('문의유형'); // 4
+      var idxPhoneI = INQUIRY_HEADERS.indexOf('연락처');   // 3
       inqData2.forEach(function(r) {
         if (!r[1]) return;
         inqTs.push(r[1]);
-        var d = (r[1] instanceof Date) ? r[1] : new Date(String(r[1]).trim().replace(' ', 'T') + '+09:00');
+        var d = _toDate_(r[1]);
+        var ch = String(r[idxChanI] || '기타').trim() || '기타';
+        var tp = String(r[idxTypeI] || '기타').trim() || '기타';
+        inqSheetRows.push({ d: d, 연락처: r[idxPhoneI], 유입채널: ch, 문의유형: tp });
         if (!isNaN(d.getTime()) && d >= ps.monthStart) {
-          inqMonthRows.push({ 유입채널: String(r[idxChanI] || '기타').trim() || '기타',
-                              문의유형: String(r[idxTypeI] || '기타').trim() || '기타' });
+          inqMonthRows.push({ 유입채널: ch, 문의유형: tp });
         }
       });
     }
 
-    // 구글폼 문의 합산
-    _collectFormInquiries_().forEach(function(f) {
+    // 구글폼 문의 합산 (재사용)
+    formInquiries.forEach(function(f) {
       if (!f.시각) return;
       inqTs.push(f.시각);
-      var d = (f.시각 instanceof Date) ? f.시각 : new Date(String(f.시각).trim().replace(' ', 'T') + '+09:00');
+      var d = _toDate_(f.시각);
+      var ch = String(f.유입채널 || '기타').trim() || '기타';
+      var tp = String(f.문의유형  || '기타').trim() || '기타';
+      inqSheetRows.push({ d: d, 연락처: f.연락처, 유입채널: ch, 문의유형: tp });
       if (!isNaN(d.getTime()) && d >= ps.monthStart) {
-        inqMonthRows.push({ 유입채널: String(f.유입채널 || '기타').trim() || '기타',
-                            문의유형: String(f.문의유형  || '기타').trim() || '기타' });
+        inqMonthRows.push({ 유입채널: ch, 문의유형: tp });
       }
     });
 
@@ -415,30 +449,57 @@ function _processAction(body) {
       }
     }
 
-    // 이번달 문의 전화번호 → 전환 카운트 (문의접수 시트)
+    // 이번달 문의 전환 카운트 (inqSheetRows 재사용 — 시트 재읽기 없음)
     var convInq = 0, convConv = 0;
-    if (inqLast2 >= 2) {
-      var inqData3 = inqSh2.getRange(2, 1, inqLast2 - 1, INQUIRY_HEADERS.length).getValues();
-      var idxPhoneI = INQUIRY_HEADERS.indexOf('연락처'); // 3
-      inqData3.forEach(function(r) {
-        var d = (r[1] instanceof Date) ? r[1] : new Date(String(r[1] || '').trim().replace(' ', 'T') + '+09:00');
-        if (isNaN(d.getTime()) || d < ps.monthStart) return;
-        convInq++;
-        var phone = normalizePhone_(r[idxPhoneI]);
-        if (phone && mbrSet2[phone]) convConv++;
-      });
-    }
-    // 구글폼 이번달 문의 전환 합산
-    _collectFormInquiries_().forEach(function(f) {
-      var d = (f.시각 instanceof Date) ? f.시각 : new Date(String(f.시각 || '').trim().replace(' ', 'T') + '+09:00');
-      if (isNaN(d.getTime()) || d < ps.monthStart) return;
+    inqSheetRows.forEach(function(row) {
+      if (isNaN(row.d.getTime()) || row.d < ps.monthStart) return;
       convInq++;
-      var phone = normalizePhone_(f.연락처);
+      var phone = normalizePhone_(row.연락처);
       if (phone && mbrSet2[phone]) convConv++;
     });
     var convRate = convInq > 0 ? Math.round((convConv / convInq) * 1000) / 10 : 0;
 
-    return _json({
+    // ── custom range (from/to 둘 다 있을 때만) ──
+    var customObj = null;
+    if (from && to) {
+      var cFrom = new Date(from + 'T00:00:00+09:00');
+      var cTo   = new Date(to   + 'T23:59:59+09:00');
+
+      // custom clicks
+      var cClicks = 0;
+      clickRows.forEach(function(r) {
+        var d = _toDate_(r[1]);
+        if (!isNaN(d.getTime()) && d >= cFrom && d <= cTo) cClicks++;
+      });
+
+      // custom inquiries + byChannel + byType + conversion
+      var cInqTotal = 0;
+      var cByChannel = {};
+      var cByType    = {};
+      var cConvInq = 0, cConvConv = 0;
+      inqSheetRows.forEach(function(row) {
+        if (isNaN(row.d.getTime()) || row.d < cFrom || row.d > cTo) return;
+        cInqTotal++;
+        cByChannel[row.유입채널] = (cByChannel[row.유입채널] || 0) + 1;
+        cByType[row.문의유형]    = (cByType[row.문의유형]    || 0) + 1;
+        cConvInq++;
+        var phone = normalizePhone_(row.연락처);
+        if (phone && mbrSet2[phone]) cConvConv++;
+      });
+      var cConvRate = cConvInq > 0 ? Math.round((cConvConv / cConvInq) * 1000) / 10 : 0;
+
+      customObj = {
+        from: from,
+        to:   to,
+        clicks:    cClicks,
+        inquiries: cInqTotal,
+        byChannel: cByChannel,
+        byType:    cByType,
+        conversion: { inquiries: cConvInq, converted: cConvConv, rate: cConvRate }
+      };
+    }
+
+    var pbResult = {
       ok:          true,
       generatedAt: _now(),
       periods: {
@@ -457,7 +518,12 @@ function _processAction(body) {
       conversion: {
         month: { inquiries: convInq, converted: convConv, rate: convRate }
       }
-    });
+    };
+    if (customObj !== null) pbResult.custom = customObj;
+
+    // 캐시 저장 (100KB 초과 시 생략)
+    try { pbCache.put(pbKey, JSON.stringify(pbResult), 300); } catch (e) { /* 캐시 저장 실패 무시 */ }
+    return _json(pbResult);
   }
 
   return _json({ ok: false, error: '알 수 없는 action: ' + action });

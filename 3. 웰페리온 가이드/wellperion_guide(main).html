@@ -5319,22 +5319,30 @@ function crTab(btn, panelId) {
     </table>
     <p style="font-size:12px;color:var(--dim);margin:6px 0 0;">※ 구 <strong>IG 발행 감시기(120초 폴링)</strong>는 2026-06-03 폐기. 자동발행 0건·git churn 유발로 잉여 판정 → 폴링 제거. 발행 엔진 스크립트는 <strong>승인 시 on-demand 1회 호출</strong>용으로 보존(아래 '실제 업무 산출' 참조). 상세 = 🗑️ 정리·폐기 이력.</p>
 
-    <h4>매일</h4>
+    <h4>매일 <span style="font-size:12px;color:var(--dim);font-weight:400;">— 예약작업 시각순 타임라인 (6개)</span></h4>
+    <p style="font-size:12px;color:var(--dim);margin:2px 0 8px;">Windows 스케줄러가 매일 자동 실행하는 예약작업을 <strong>위→아래 = 이른 시각→늦은 시각</strong> 순으로 정리. 텔레그램 정각 보고는 <code>daily_scheduler.py</code> 1개가 6번 발사 → <strong>바로 아래 6슬롯 표</strong>.</p>
     <table>
-      <tr><th style="width:48px">상태</th><th style="width:170px">자동화</th><th style="width:80px">담당</th><th style="width:130px">주기</th><th style="width:70px">상세</th></tr>
-      <tr onclick="wpAutoToggle(this)" style="cursor:pointer;"><td>🟢</td><td>PC 자동 ON</td><td>CTO</td><td>05:50</td><td style="color:var(--accent);font-size:12px;">펼치기 ▾</td></tr>
-      <tr class="auto-detail" style="display:none;"><td colspan="5" style="background:var(--paper);padding:10px 14px;font-size:13px;color:var(--dim);"> BIOS RTC → 자동 부팅. 부팅 후 봇·스케줄러 자동기동.</td></tr>
-      <tr onclick="wpAutoToggle(this)" style="cursor:pointer;"><td>🟢</td><td>정각 통합보고</td><td>인프라</td><td>06·09·12·15·18시</td><td style="color:var(--accent);font-size:12px;">펼치기 ▾</td></tr>
-      <tr class="auto-detail" style="display:none;"><td colspan="5" style="background:var(--paper);padding:10px 14px;font-size:13px;color:var(--dim);"><strong><code>daily_scheduler.py</code></strong> — 매일 6회 정각 텔레그램 자동 발송(@namuki_report_bot). <b>시간대별 내용</b>: <b>06 하루 시작</b>(아침 인사·명언·운동 5종 체크) · <b>09 오늘 할 일</b>(GM 담당 미완료건 자동 연동 + 전날 완료 git 커밋) · <b>12 시설·지원·주차 점검현황</b>(구글시트 실시간) · <b>15 진행 체크</b>(GM 진행중 업무 + C-Level 진행현황) · <b>18 퇴근</b>(오늘 성과 git + 명언 + 운동) · <b>21 하루 마감</b>(핵심 요약). <b>데이터 소스</b>: GM 할일=업무현황 시트 <code>todo_list</code>(자동, GM 관리 불필요) · 명언=<code>status/quotes.json</code>(로컬) · 진행=<code>status/*.json</code>·git. <span style="color:var(--dim);">노션 의존 0.</span> <b>재기동</b>: 봇·스케줄러 재시작 또는 PC 부팅(ONLOGON 예약작업).</td></tr>
-      <tr onclick="wpAutoToggle(this)" style="cursor:pointer;"><td>🟢</td><td>IG 개인계정 AI 시리즈 제작·검수카드</td><td>CMO</td><td>07:30</td><td style="color:var(--accent);font-size:12px;">펼치기 ▾</td></tr>
-      <tr class="auto-detail" style="display:none;"><td colspan="5" style="background:var(--paper);padding:10px 14px;font-size:13px;color:var(--dim);"><strong>예약작업 <code>Wellperion-IG-Series-Produce-0730</code></strong> (인터랙티브 · GM PC 로그온 필요). 흐름(2026-06-04 GM 정정 · 무폴링): <b>매일 07:30 <code>ig_series_producer.py</code> 가 시모(헤드리스)에게 다음 편 제작 위임 → 빌드 → M5 검수큐 등록(검수대기) → 로드맵 행 '제작완료(자동생성)' 자동표시 → 텔레그램 [✅승인]/[❌반려] 버튼 카드 발송.</b> 그 뒤 <b>GM이 M5에서 슬라이드 검토 → 텔레그램 카드 [✅승인] 탭 → 봇 <code>pub:</code> 콜백이 그 순간 즉시 발행</b>(<code>ig_review_publish_watcher.py --once</code>, 폴링 없음). 봇은 GM 로그온 user 세션 상주라 headful 발행 가능. <b>발행 트리거 = 오직 텔레그램 [✅승인] 탭</b>(스케줄·폴링 자동 발행 폐기). <b>안전판:</b> <code>register_publish</code>가 <code>큐레이션_추천.md</code> 자동 생성 + 발행기 큐 caption 폴백 → 큐레이션 누락 영구 차단. 소진(#6~#8 전부 제작완료) 시 생성 금지 + 텔레그램 경고. 대상=개인계정 namuk.wellperion. 정본=<code>instagram/_AI시리즈_로드맵.md</code>. <span style="color:var(--dim);">(구 <code>IG-Series-Produce-2100</code> 제작 · <code>IG-Publish-0730</code> 일괄발행 = 2026-06-04 Disabled)</span></td></tr>
-      <tr onclick="wpAutoToggle(this)" style="cursor:pointer;"><td>🟢</td><td>CEO 통합보고</td><td>AI CEO</td><td>08:00</td><td style="color:var(--accent);font-size:12px;">펼치기 ▾</td></tr>
-      <tr class="auto-detail" style="display:none;"><td colspan="5" style="background:var(--paper);padding:10px 14px;font-size:13px;color:var(--dim);"> ceo_morning_pipeline.py — 전날 정리·오늘 업무·이슈 3섹션 텔레그램 발송.</td></tr>
-      <tr onclick="wpAutoToggle(this)" style="cursor:pointer;"><td>🟢</td><td>C-Level 진행 체크</td><td>AI CEO</td><td>22:00</td><td style="color:var(--accent);font-size:12px;">펼치기 ▾</td></tr>
-      <tr class="auto-detail" style="display:none;"><td colspan="5" style="background:var(--paper);padding:10px 14px;font-size:13px;color:var(--dim);"> 일일 C-Level 진행현황 자동 체크.</td></tr>
-      <tr onclick="wpAutoToggle(this)" style="cursor:pointer;"><td>🟢</td><td>종료 인사·자동 종료</td><td>CTO</td><td>22:25 / 22:30</td><td style="color:var(--accent);font-size:12px;">펼치기 ▾</td></tr>
-      <tr class="auto-detail" style="display:none;"><td colspan="5" style="background:var(--paper);padding:10px 14px;font-size:13px;color:var(--dim);"> 22:25 Shutdown-Greeting 텔레그램 발송 → 22:30 Auto-Shutdown 실행.</td></tr>
+      <tr><th style="width:90px">시각</th><th style="width:230px">자동화</th><th style="width:72px">담당</th><th>무엇을 하나</th></tr>
+      <tr><td>🟢 <strong>05:50</strong></td><td>PC 자동 ON</td><td>CTO</td><td>BIOS RTC로 자동 부팅 → 부팅 후 봇·스케줄러 자동기동(ONLOGON)</td></tr>
+      <tr><td>🟢 <strong>06~21시</strong></td><td>텔레그램 정각 통합보고 <span style="color:var(--accent);font-size:12px;">(6슬롯)</span></td><td>인프라</td><td><code>daily_scheduler.py</code>가 정각마다 텔레그램(@namuki_report_bot) 자동 발송 → <strong>아래 6슬롯 표 참조</strong></td></tr>
+      <tr><td>🟢 <strong>07:30</strong></td><td>IG AI시리즈 제작·검수카드</td><td>CMO</td><td>다음 편 자동 제작 → M5 검수큐 등록 → 텔레그램 [✅승인]/[❌반려] 카드 발송. <strong>발행은 [✅승인] 탭에서만</strong>(무폴링). 안전판: <code>큐레이션_추천.md</code> 자동생성 · 소진 시 생성 중지</td></tr>
+      <tr><td>🟢 <strong>08:00</strong></td><td>CEO 통합보고</td><td>AI CEO</td><td><code>ceo_morning_pipeline.py</code> — 전날 정리·오늘 업무·이슈 3섹션 텔레그램 발송</td></tr>
+      <tr><td>🟢 <strong>22:00</strong></td><td>C-Level 진행 체크</td><td>AI CEO</td><td>일일 C-Level 진행현황 자동 점검</td></tr>
+      <tr><td>🟢 <strong>22:25 → 22:30</strong></td><td>종료 인사 · 자동 종료</td><td>CTO</td><td>22:25 Shutdown-Greeting 텔레그램 발송 → 22:30 Auto-Shutdown(PC 절전) 실행</td></tr>
     </table>
+
+    <h4 style="margin-top:18px;">📨 텔레그램 정각 통합보고 6슬롯 <span style="font-size:12px;color:var(--dim);font-weight:400;">— 위 06~21시 항목의 상세 · GM이 매일 받는 보고</span></h4>
+    <table>
+      <tr><th style="width:90px">시각</th><th style="width:160px">슬롯</th><th>내용</th></tr>
+      <tr><td><strong>06:00</strong></td><td>① 하루 시작</td><td>아침 인사 · 명언 · 운동 5종 체크</td></tr>
+      <tr><td><strong>09:00</strong></td><td>② 오늘 할 일</td><td>GM 담당 미완료건 자동 연동 + 전날 완료 git 커밋</td></tr>
+      <tr><td><strong>12:00</strong></td><td>③ 시설·지원·주차 점검</td><td>구글시트 실시간 현황</td></tr>
+      <tr><td><strong>15:00</strong></td><td>④ 진행 체크</td><td>GM 진행중 업무 + C-Level 진행현황</td></tr>
+      <tr><td><strong>18:00</strong></td><td>⑤ 퇴근</td><td>오늘 성과(git) + 명언 + 운동</td></tr>
+      <tr><td><strong>21:00</strong></td><td>⑥ 하루 마감</td><td>핵심 요약</td></tr>
+    </table>
+    <div class="callout" style="margin-top:8px;font-size:13px;"><strong>📊 데이터 소스</strong> — GM 할일=업무현황 시트 <code>todo_list</code>(자동, GM 관리 불필요) · 명언=<code>status/quotes.json</code> · 진행=<code>status/*.json</code>·git. <strong style="color:var(--accent);">노션 의존 0.</strong><br><strong>🔄 재기동</strong> — 봇·스케줄러 재시작 또는 PC 부팅(ONLOGON 예약작업). <span style="color:var(--dim);">상세 = T2 텔레그램탭 / 점검 원칙(왜·언제) = S2 CTO탭.</span></div>
+    <p style="font-size:12px;color:var(--dim);margin:8px 0 0;">※ IG 07:30 전체 발행 흐름(시모 위임→빌드→<code>pub:</code> 콜백 등) 상세는 <code>instagram/_AI시리즈_로드맵.md</code> 정본 참조. <span>(구 <code>IG-Series-Produce-2100</code>·<code>IG-Publish-0730</code> 일괄발행 = 2026-06-04 Disabled)</span></p>
 
     <h4>매주</h4>
     <table>
