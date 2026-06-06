@@ -1097,7 +1097,7 @@ def build_telegram_report(s1: dict, assigned: list[dict], orch: dict) -> str:
             drift.append(d)
 
     lines = []
-    lines.append(f"🧭 오늘의 항해 — {today_kr()}")
+    lines.append(f"🧭 오늘의 항로 — {today_kr()}")
     lines.append("   북극성을 향해, 어제 항로에서 이어서")
     lines.append("")
 

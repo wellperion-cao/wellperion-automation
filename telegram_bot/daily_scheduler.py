@@ -853,7 +853,7 @@ def fetch_daily_summary_lv1() -> str:
             if len(tomorrow_tasks) > 8:
                 lines.append(f"  · 외 {len(tomorrow_tasks) - 8}건")
         else:
-            lines.append("🌅 내일 할 일")
+            lines.append("🌅 내일의 항로")
             lines.append("  (등록된 시드 없음 — 웰페리온 ERP 등록 필요)")
     except Exception as e:
         logger.warning(f"내일 할 일 조회 실패: {e}")
@@ -946,10 +946,10 @@ def _build_09_body() -> str:
     tmr_str = (now + timedelta(days=1)).strftime("%m/%d")
 
     return (
-        f"📋 [웰페리온] 09시 오늘 할 일\n"
+        f"🧭 [웰페리온] 09시 오늘의 항로\n"
         f"━━━━━━━━━━━━━━━━\n"
         f"📅 {today_str} ({weekday_kor})\n\n"
-        f"📌 오늘 할 일 ({n_today}건)\n"
+        f"📌 오늘의 항로 ({n_today}건)\n"
         f"{today_section}\n\n"
         f"⏭ 내일 시작/마감 ({tmr_str} {tmr_weekday}, {n_tmr}건)\n"
         f"{tmr_section}\n\n"
