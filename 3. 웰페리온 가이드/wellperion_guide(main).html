@@ -621,17 +621,17 @@
     <!-- AUTO:LATEST-START -->
     <div class="card grow">
       <h4>최신 업데이트 — 2026-06-06 (자동 갱신)</h4>
+      <p><strong>2026-06-06</strong> feat(g1): 항로 캘린더 = 항로 목록 일감(로컬+SSOT) 날짜표시 + 가독성 향상(제목 키움·카테고리/상태 칩)</p>
       <p><strong>2026-06-06</strong> chore(cmo): #5 네이버 파트 입항(완료) — 플레이스 보강+유입경로 추적 연결, 구글은 후속 보류</p>
       <p><strong>2026-06-06</strong> fix(g1): 편집 저장 후 화면 되돌아감 수정 — gm1FetchSsot 캐시우회 + SSOT 항목 편집값 낙관적 즉시반영(저장은 됐는…</p>
       <p><strong>2026-06-06</strong> chore(cmo): 항로 — 네이버 플레이스 GM 입력 완료(심사 대기), 남은 것=유입경로 옵션 추가</p>
       <p><strong>2026-06-06</strong> chore(cmo): 항로 — 구글 비즈니스 다음으로 보류(GM 지시), 네이버 플레이스 마무리 우선</p>
-      <p><strong>2026-06-06</strong> chore(cmo): 항로 동기화 — 채널확장·실험#1 IN_PROGRESS, 채널 engagement 수집(#2) PENDING 등록</p>
     </div>
 <!-- AUTO:LATEST-END -->
         <table>
           <tr><th style="width:160px">날짜</th><th>변경 내용</th></tr>
           <!-- AUTO:TABLE-START -->
-      <tr><td><strong>2026-06-06 (자동)</strong></td><td>chore(cmo): #5 네이버 파트 입항(완료) — 플레이스 보강+유입경로 추적 연결, 구글은 후속 보류 · fix(g1): 편집 저장 후 화면 되돌아감 수정 — gm1FetchSsot 캐시우회 + SSOT 항목 편집값 낙관적 즉시반영(저장은 됐는데 캐시로 옛값 표시되던 문제) · chore(cmo): 항로 — 네이버 플레이스 GM 입력 완료(심사…</td></tr>
+      <tr><td><strong>2026-06-06 (자동)</strong></td><td>feat(g1): 항로 캘린더 = 항로 목록 일감(로컬+SSOT) 날짜표시 + 가독성 향상(제목 키움·카테고리/상태 칩) · chore(cmo): #5 네이버 파트 입항(완료) — 플레이스 보강+유입경로 추적 연결, 구글은 후속 보류 · fix(g1): 편집 저장 후 화면 되돌아감 수정 — gm1FetchSsot 캐시우회 + SSOT 항목 편집값 낙관…</td></tr>
       <!-- AUTO:TABLE-END -->
           <tr><td><strong>2026-05-28 (14차)</strong></td><td>공지/안내문 생성(COO 하위) · 오프라인 홍보물 디자인 제작(CMO 하위) 도구 신설 · 공지 서식 v2.0 독립 페이지화 · 회사소개서·전략로드맵 원본 「3. 웰페리온 가이드/회사문서/」로 이관(SSOT 단일화) · C-Level 부팅 R/R Notion API→웰페리온 ERP g10 참조로 전환 · GitHub Pages 워크플로 폴더명 경로 수정 · 사이드바 "공통+7개 C-Level" 라벨 제거</td></tr>
           <tr><td>2026-05-27 (13차)</td><td>GitHub Pages 전환 · 사이드바 4섹터 · AI C-Level 통일 · 운영 통합 체계 · 공식채널·지출현황·취업규칙·SSOT 신설 · g2+g19·g9+g20·g12·g13 합병 · 김남욱 탭 확장 · v2.5</td></tr>
@@ -2819,14 +2819,13 @@
   <!-- g15 AI 교육자료 핵심요약 — 웰페리온_AI교육자료_핵심정리.md 전수 반영 -->
   <article class="doc" id="g15">
     <div class="doc-header"><h2><span class="g-id">T3</span>AI 교육자료 핵심요약</h2><div class="meta">AI 교육 SSOT · 원본 609줄 전수 반영 · 2026-05-26 크로스체크 완료</div></div>
-    <p class="lead">웰페리온_AI교육자료_핵심정리.md 전체를 반영한 실전 참조 문서. Claude Code 기본기 → 토큰 절약 32가지 → MCP→CLI 전환 → 자기학습 프로세스.</p>
+    <p class="lead">웰페리온_AI교육자료_핵심정리.md 전체를 반영한 실전 참조 문서. Claude Code 기본기 → 토큰 절약 32가지 → 자기학습 프로세스.</p>
 
     <div class="tabs" data-tabs="g15">
       <div class="tab-nav">
         <button class="tab-btn active" data-tab="basics">Claude Code 기본기</button>
         <button class="tab-btn" data-tab="token-mid">토큰 절약 중급 23가지</button>
         <button class="tab-btn" data-tab="token-adv">토큰 절약 고급 9가지</button>
-        <button class="tab-btn" data-tab="mcp-cli">MCP→CLI 전환</button>
         <button class="tab-btn" data-tab="selflearn">자기학습 프로세스</button>
         <button class="tab-btn" data-tab="g15prompt">핵심 프롬프트</button>
       </div>
@@ -2928,74 +2927,6 @@
       </div>
 
       <!-- ── 탭 4: MCP→CLI 전환 (섹션 4 전수) ── -->
-      <div class="tab-panel" data-panel="mcp-cli">
-        <h3><span class="ico">🔄</span>4. MCP→CLI 전환 핵심 가이드</h3>
-
-        <h4>4-1. MCP의 구조적 문제</h4>
-        <table>
-          <tr><th>문제</th><th>수치</th></tr>
-          <tr><td>토큰 블랙홀</td><td>GitHub MCP 43개 도구 ~55,000 토큰 / Atlassian 73개 ~45,000 / 2~3개 연결 시 컨텍스트 40~50% 소비</td></tr>
-          <tr><td>토큰 비교(동일 질문)</td><td>CLI(gh) 1,365 토큰 vs GitHub MCP 44,026 토큰 (<strong>32배</strong>)</td></tr>
-          <tr><td>안정성</td><td>CLI 100% 성공 vs MCP 72% 성공 (25회 반복 벤치마크). 좀비 프로세스 70개+ 발생 사례</td></tr>
-          <tr><td>인증 문제</td><td>gh auth 무시, 별도 PAT 요구. OAuth(gho_*)와 PAT(ghp_*) 비호환 — 미문서화</td></tr>
-          <tr><td>월 비용(10,000건)</td><td>CLI ~$3.20 / MCP Gateway ~$5.00(1.6x) / MCP 직접 ~$55.20(<strong>17.3x</strong>)</td></tr>
-        </table>
-
-        <h4>4-2. MCP→CLI 대체 목록</h4>
-        <table>
-          <tr><th>MCP 서버</th><th>CLI 대체</th><th>설치</th></tr>
-          <tr><td>GitHub MCP (43 tools)</td><td>gh</td><td>brew install gh</td></tr>
-          <tr><td>HTTP/Fetch MCP</td><td>curl + jq</td><td>기본 내장 / brew install jq</td></tr>
-          <tr><td>AWS MCP</td><td>aws</td><td>brew install awscli</td></tr>
-          <tr><td>Kubernetes MCP</td><td>kubectl</td><td>brew install kubectl</td></tr>
-          <tr><td>Docker MCP</td><td>docker</td><td>Docker Desktop 포함</td></tr>
-          <tr><td>Google Cloud MCP</td><td>gcloud</td><td>brew install google-cloud-sdk</td></tr>
-          <tr><td>Terraform MCP</td><td>terraform</td><td>brew install terraform</td></tr>
-          <tr><td>Jira MCP</td><td>jira</td><td>brew install jira-cli</td></tr>
-          <tr><td>파일 시스템 MCP</td><td>find, grep, cat</td><td>기본 내장</td></tr>
-        </table>
-
-        <h4>4-3~4-5. CLI 핵심 명령어</h4>
-        <pre style="background:#16181c; color:#e8e8e8; padding:14px 16px; border-radius:8px; font-size:12px; white-space:pre-wrap; line-height:1.6; border-left:3px solid var(--accent);"># GitHub CLI
-gh pr list / gh pr create --title "제목" --body "내용"
-gh issue list --label "bug" / gh issue create --title "제목"
-gh api repos/{owner}/{repo}/actions/runs
-
-# HTTP API: curl + jq
-curl -s https://api.example.com/data | jq '.results[] | {name, status}'
-curl -s -X POST url -H "Content-Type: application/json" -d '{"name":"test"}' | jq '.id'
-
-# Cloud CLI
-aws ec2 describe-instances --output json | jq '...'
-docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
-kubectl get pods -o json | jq '.items[] | {name: .metadata.name}'</pre>
-
-        <h4>4-7. MCP가 여전히 필요한 경우</h4>
-        <table>
-          <tr><th>상황</th><th>이유</th><th>예시</th></tr>
-          <tr><td>CLI 없는 서비스</td><td>공식 CLI 미존재</td><td>Figma, Notion, Slack API</td></tr>
-          <tr><td>멀티 테넌트 OAuth</td><td>사용자별 권한 분리</td><td>SaaS 고객별 접근</td></tr>
-          <tr><td>비개발자 환경</td><td>터미널 접근 불가</td><td>Claude Desktop 사용자</td></tr>
-          <tr><td>보안 규정</td><td>엄격한 입력 검증</td><td>금융/의료 규제 환경</td></tr>
-        </table>
-
-        <h4>4-8~4-9. ENABLE_TOOL_SEARCH &amp; MCP Gateway</h4>
-        <ul>
-          <li><strong>ENABLE_TOOL_SEARCH = "auto:0"</strong> — MCP 도구를 시작 시 모두 로드하지 않고 필요 시만 검색. 30,000+ 토큰 절약.</li>
-          <li><strong>MCP Gateway</strong> — 스키마 필터링(43→5~10개), 설명 압축, 캐싱. 벤치마크: MCP 직접 145,000 / Gateway ~15,000 / CLI 4,150 토큰.</li>
-        </ul>
-
-        <h4>4-10. 전환 체크리스트</h4>
-        <ol>
-          <li>/mcp → 현재 연결된 MCP 서버 목록 확인</li>
-          <li>각 서버에 대해 CLI 대체 가능 여부 확인</li>
-          <li>CLI 대체 가능한 MCP 비활성화</li>
-          <li>CLAUDE.md에 사용 가능한 CLI 도구 목록 명시</li>
-          <li>남은 MCP에 ENABLE_TOOL_SEARCH 적용</li>
-          <li>Gateway 도입 검토 → 스키마 필터링으로 추가 절감</li>
-        </ol>
-        <p><strong>예상 효과:</strong> 토큰 소비량 80~95% 감소, 안정성 100%, 월 비용 10배 이상 절감.</p>
-      </div>
 
       <!-- ── 탭 6: 자기학습 프로세스 (GM님 최종 목표) ── -->
       <div class="tab-panel" data-panel="selflearn">
