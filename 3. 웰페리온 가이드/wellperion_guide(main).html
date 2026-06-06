@@ -2953,6 +2953,18 @@
         </ul>
         <div class="callout"><strong>핵심 원칙.</strong> 모든 자동 고도화는 GM님 승인을 거쳐야 반영됨. AI는 제안까지만, 실행은 승인 후.</div>
 
+        <h3 style="margin-top:24px;border-top:1px solid var(--border);padding-top:20px;"><span class="ico">🛠️</span>커스텀 명령 도구함 <span style="font-size:12px;color:var(--dim);font-weight:400;">— 실제 작동하는 슬래시 명령 (자기학습으로 성장)</span></h3>
+        <div class="callout tip"><strong>진짜 명령입니다.</strong> SNS에 도는 '가짜 프롬프트 모음'과 달리, 아래는 <code>.claude/commands/</code>에 등록된 <strong>실제 작동 슬래시 명령</strong>. 세션에서 <code>/이름 [내용]</code>으로 바로 사용. <span style="color:var(--dim);">(새 명령은 자기학습 4단계로 발굴→GM 승인→추가되며 늘어남)</span></div>
+        <table>
+          <tr><th style="width:120px">명령</th><th>하는 일</th><th>예시</th></tr>
+          <tr><td><code>/eli5</code></td><td>어려운 걸 5살도 알 만큼 쉬운 일상어로</td><td><code>/eli5 ETF가 뭔지</code></td></tr>
+          <tr><td><code>/trim</code></td><td>군더더기 빼고 핵심만 (글자수 지정 가능)</td><td><code>/trim 이 보고서 500자로</code></td></tr>
+          <tr><td><code>/audit</code></td><td>작업물 문제점·어색한 곳 전부 점검</td><td><code>/audit 이 기획서 문제점</code></td></tr>
+          <tr><td><code>/ghost</code></td><td>AI 티 없애 사람이 쓴 듯 자연스럽게</td><td><code>/ghost 이 이메일</code></td></tr>
+          <tr><td><code>/premortem</code></td><td>계획이 실패했다 가정하고 원인 미리 분석</td><td><code>/premortem 이 사업안</code></td></tr>
+        </table>
+        <p style="font-size:12px;color:var(--dim);margin-top:6px;">※ 콘텐츠용(캡션·훅·바이럴)은 마케팅(시모/CMO) 영역으로 별도 추가 예정. 새 명령 추가는 <code>.claude/commands/</code>에 .md 한 장이면 끝.</p>
+
         <h3><span class="ico">🔧</span>컨텍스트 정비 범위 정의 (매주 월 09:00)</h3>
         <div class="callout"><strong>→ 범위표 단일출처 = T2 업무자동화SSOT, 실행 프롬프트 = T1 본 섹션.</strong> 주간 컨텍스트 정비 범위표(6 C-Level 식별자·정비 범위·체크포인트)는 <a href="#" onclick="event.preventDefault();var t=document.querySelector('[data-id=T2]');if(t)t.click();" style="color:var(--accent);font-weight:700;text-decoration:none;">T2 업무자동화SSOT ▸ 매주 ▸ 6 C-Level 컨텍스트 정비</a>에서 단일 관리합니다(2026-06-05 이관). 실행 프롬프트(STEP 1~5)는 <strong>T1 기술 인프라 상세 ▸ 핵심 프롬프트 ▸ 운영 실행 도구</strong>. 범위표 중복 기재 금지.</div>
       </div>
