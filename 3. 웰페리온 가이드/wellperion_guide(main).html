@@ -621,17 +621,17 @@
     <!-- AUTO:LATEST-START -->
     <div class="card grow">
       <h4>최신 업데이트 — 2026-06-06 (자동 갱신)</h4>
+      <p><strong>2026-06-06</strong> feat(T3): 자기학습 프로세스에 '커스텀 명령 도구함' 반영</p>
       <p><strong>2026-06-06</strong> feat(commands): 실제 작동 커스텀 슬래시 명령 5종 신설</p>
       <p><strong>2026-06-06</strong> report(cmo): 시모 오늘 입항 — 웰리/GM 텔레그램 보고 + _queue 항로 기록(종결). 실험#1 진행중·구글/채널수집 보류</p>
       <p><strong>2026-06-06</strong> fix(g1): '오늘 완료' 0건 수정 — SSOT 합류에 '완료 AND 수정일=오늘' 통과 추가(과거 시작+오늘 완료 누락 차단) Co…</p>
       <p><strong>2026-06-06</strong> fix(deploy): 루트 리다이렉트에 캐시버스트(?v=Date.now) — 옛 화면 고착 차단(1시간 미반영 근본 원인) Co-Auth…</p>
-      <p><strong>2026-06-06</strong> refactor(T3): mcp-cli 탭 삭제 — 개발자용 고급 교육, GM 미열람·운영 무영향</p>
     </div>
 <!-- AUTO:LATEST-END -->
         <table>
           <tr><th style="width:160px">날짜</th><th>변경 내용</th></tr>
           <!-- AUTO:TABLE-START -->
-      <tr><td><strong>2026-06-06 (자동)</strong></td><td>feat(commands): 실제 작동 커스텀 슬래시 명령 5종 신설 · report(cmo): 시모 오늘 입항 — 웰리/GM 텔레그램 보고 + _queue 항로 기록(종결). 실험#1 진행중·구글/채널수집 보류 · fix(g1): '오늘 완료' 0건 수정 — SSOT 합류에 '완료 AND 수정일=오늘' 통과 추가(과거 시작+오늘 완료 누락 차단) C…</td></tr>
+      <tr><td><strong>2026-06-06 (자동)</strong></td><td>feat(T3): 자기학습 프로세스에 '커스텀 명령 도구함' 반영 · feat(commands): 실제 작동 커스텀 슬래시 명령 5종 신설 · report(cmo): 시모 오늘 입항 — 웰리/GM 텔레그램 보고 + _queue 항로 기록(종결). 실험#1 진행중·구글/채널수집 보류 · fix(g1): '오늘 완료' 0건 수정 — SSOT 합류에 '완료…</td></tr>
       <!-- AUTO:TABLE-END -->
           <tr><td><strong>2026-05-28 (14차)</strong></td><td>공지/안내문 생성(COO 하위) · 오프라인 홍보물 디자인 제작(CMO 하위) 도구 신설 · 공지 서식 v2.0 독립 페이지화 · 회사소개서·전략로드맵 원본 「3. 웰페리온 가이드/회사문서/」로 이관(SSOT 단일화) · C-Level 부팅 R/R Notion API→웰페리온 ERP g10 참조로 전환 · GitHub Pages 워크플로 폴더명 경로 수정 · 사이드바 "공통+7개 C-Level" 라벨 제거</td></tr>
           <tr><td>2026-05-27 (13차)</td><td>GitHub Pages 전환 · 사이드바 4섹터 · AI C-Level 통일 · 운영 통합 체계 · 공식채널·지출현황·취업규칙·SSOT 신설 · g2+g19·g9+g20·g12·g13 합병 · 김남욱 탭 확장 · v2.5</td></tr>
@@ -3348,9 +3348,10 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
     </div><!-- /calendar panel -->
 
 
+    <details class="toggle" style="margin:8px 0 20px;border-top:1px solid var(--border);padding-top:14px;"><summary style="cursor:pointer;font-weight:700;font-size:15px;color:var(--accent);"><span class="ico">👤</span>내 개인 영역 <span style="font-size:12px;color:var(--dim);font-weight:400;">— 루틴·방향·기록·캘린더 (펼치기)</span></summary>
     <div class="tabs" data-tabs="gm1">
       <div class="tab-nav">
-        <button class="tab-btn active" data-tab="rhythm">💪 내 리듬</button>
+        <button class="tab-btn active" data-tab="rhythm">💪 내 루틴</button>
         <button class="tab-btn" data-tab="compass">📌 방향·기록</button>
       </div>
 
@@ -3755,6 +3756,7 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
       </div><!-- /compass -->
 
     </div><!-- /tabs gm1 -->
+    </details>
 
     <!-- ════ G1 업무 편집 모달 (업무SSOT 이식 · 진척 로그·예산·결재 라우팅) ════ -->
     <div id="gm1TaskModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.55);z-index:9997;align-items:center;justify-content:center;">
@@ -6870,7 +6872,7 @@ function crTab(btn, panelId) {
                 // 오늘 완료 누락 수정(2026-06-06 GM/시우): 과거 시작이어도 '오늘 완료'한 건은 합류 — 수정일(로컬)=오늘이면 통과
                 var _md = row['수정일'] ? new Date(row['수정일']) : null;
                 var _modLocal = _md ? (_md.getFullYear() + '-' + ('0'+(_md.getMonth()+1)).slice(-2) + '-' + ('0'+_md.getDate()).slice(-2)) : '';
-                if (sd !== TD && st !== '진행중' && !(st === '완료' && _modLocal === TD)) return;
+                if (sd !== TD && st !== '진행중' && !((st === '완료' || st === '보류') && _modLocal === TD)) return;
                 var status = (st === '완료') ? '완료' : (st === '보류') ? '보류' : '진행중';
                 items.push({
                   id: base, title: title, status: status,
