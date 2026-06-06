@@ -610,17 +610,17 @@
     <!-- AUTO:LATEST-START -->
     <div class="card grow">
       <h4>최신 업데이트 — 2026-06-06 (자동 갱신)</h4>
+      <p><strong>2026-06-06</strong> feat(cmo): 대시보드 속도·화면 정리 — GAS 캐시(5분)+중복읽기 제거+기간조회, KPI 간결·외부지표 숨김·placeholde…</p>
       <p><strong>2026-06-06</strong> fix(report): 일일 보고 제목 '오늘의 항해/오늘 할일' → '🧭 오늘의 항로' 통일 + CLAUDE.md §3-1 항해세계관 4…</p>
       <p><strong>2026-06-06</strong> docs(coo): S3 개요 무의미·중복 정리 — 메타문구('이 페이지가 곧 보고서' 등) 삭제·핵심멤버 정의로 기능요약 재구성·4블록 …</p>
       <p><strong>2026-06-06</strong> fix(cmo): 월간 보고서 단위 일치 — 채널별을 이번 달(byChannelMonth) 기준으로, 누적 전환율은 '참고'로 분리 + 콘…</p>
       <p><strong>2026-06-06</strong> docs(coo): S3 보고 체계 — 08:00 통합보고 헤드라인→연계 각주 강등(GM 단독 텔레그램 명시), '페이지 자체가 실시간 보…</p>
-      <p><strong>2026-06-06</strong> chore(cmo): 항로 CMO-2026-06-06-INQUIRY-DASHBOARD-PIPELINE 완료 처리 — 홈 신규문의 실데이터 …</p>
     </div>
 <!-- AUTO:LATEST-END -->
         <table>
           <tr><th style="width:160px">날짜</th><th>변경 내용</th></tr>
           <!-- AUTO:TABLE-START -->
-      <tr><td><strong>2026-06-06 (자동)</strong></td><td>fix(report): 일일 보고 제목 '오늘의 항해/오늘 할일' → '🧭 오늘의 항로' 통일 + CLAUDE.md §3-1 항해세계관 4층 영구 박제(어제 유실 복원) · docs(coo): S3 개요 무의미·중복 정리 — 메타문구('이 페이지가 곧 보고서' 등) 삭제·핵심멤버 정의로 기능요약 재구성·4블록 중복 제거 · fix(cmo): 월간 보고…</td></tr>
+      <tr><td><strong>2026-06-06 (자동)</strong></td><td>feat(cmo): 대시보드 속도·화면 정리 — GAS 캐시(5분)+중복읽기 제거+기간조회, KPI 간결·외부지표 숨김·placeholder 정리·기간설정(v0.3) · fix(report): 일일 보고 제목 '오늘의 항해/오늘 할일' → '🧭 오늘의 항로' 통일 + CLAUDE.md §3-1 항해세계관 4층 영구 박제(어제 유실 복원) · docs(…</td></tr>
       <!-- AUTO:TABLE-END -->
           <tr><td><strong>2026-05-28 (14차)</strong></td><td>공지/안내문 생성(COO 하위) · 오프라인 홍보물 디자인 제작(CMO 하위) 도구 신설 · 공지 서식 v2.0 독립 페이지화 · 회사소개서·전략로드맵 원본 「3. 웰페리온 가이드/회사문서/」로 이관(SSOT 단일화) · C-Level 부팅 R/R Notion API→웰페리온 ERP g10 참조로 전환 · GitHub Pages 워크플로 폴더명 경로 수정 · 사이드바 "공통+7개 C-Level" 라벨 제거</td></tr>
           <tr><td>2026-05-27 (13차)</td><td>GitHub Pages 전환 · 사이드바 4섹터 · AI C-Level 통일 · 운영 통합 체계 · 공식채널·지출현황·취업규칙·SSOT 신설 · g2+g19·g9+g20·g12·g13 합병 · 김남욱 탭 확장 · v2.5</td></tr>
@@ -2240,6 +2240,16 @@
           <tr><td>핵심멤버방 직접 소통</td><td>운영 이슈·공지·일일 보고는 핵심멤버방(텔레그램 그룹 <code>-5065206276</code>)에 COO가 <strong>직접 발송</strong> 가능. CEO 단일 창구 제약은 Stage 2~3 결재성 소통에만 적용. 업무 진행·완료 보고는 @namuki_report_bot 병행.</td></tr>
           <tr><td>식별자 형식</td><td>모든 작업·할일·진행 항목 식별자 = <strong>시우-N</strong>(시우-1, 시우-2 …). 긴 COO-YYYY-… 코드 대신 닉네임+순번.</td></tr>
           <tr><td>대기 시 보고 포맷</td><td><strong>보고 포맷 = 공통 탭 '작업 사이클 보고 포맷' 단일 원본 참조.</strong> COO는 식별자만 <strong>시우-N</strong> 적용.</td></tr>
+        </table>
+
+        <h3 style="margin-top:24px;border-top:1px solid var(--border);padding-top:20px;"><span class="ico">✍️</span>결재 요청·승인 체계 <span style="font-size:13px;color:var(--dim);font-weight:400;">(S3 업무·결재 현황 정책 단일 출처)</span></h3>
+        <div class="callout" style="background:#1a2a1a;border-left:3px solid #059669;margin-bottom:12px;">S3(업무&amp;결재 현황) 페이지는 이 정책대로 결재선을 <strong>자동 산출</strong>한다. 페이지엔 중복 기재하지 않고 <strong>여기(S2)가 원본</strong> (2026-06-06 GM — 페이지 안내 중복 제거·정책 S2 이관).</div>
+        <table>
+          <tr><th style="width:160px">항목</th><th>내용</th></tr>
+          <tr><td>결재선 1단계 부서장<br><span style="font-size:11px;color:var(--dim);">(카테고리→부서 자동)</span></td><td>운영부 <strong>이경연 실장</strong>([1] 매출·영업 · [3] 운영 정책) · 시설부 <strong>이정헌 소장</strong>([4] 시설·환경) · 파트너팀 <strong>나우열M</strong>([2] 인사·파트너). 그 외([5] 회원·CS · [6] IT · [7] 교육 · [8] 회의)는 부서장 생략 → GM</td></tr>
+          <tr><td>종착 분기<br><span style="font-size:11px;color:var(--dim);">(최종 결재권자)</span></td><td><strong>업무 현황 SSOT = GM 종결</strong>(대표 단계 없음) / <strong>결재 현황 SSOT = 전응준 대표 종결</strong>(GM 다음 대표). 한 모델로 합치지 말 것.</td></tr>
+          <tr><td>승인 게이트</td><td>GM·대표님 <strong>본인 비밀번호</strong>로 승인/반려. 결재 넘어간 업무는 업무 현황에서 <strong>잠금</strong>, 결재 현황에서만 관리.</td></tr>
+          <tr><td>보고 연계</td><td>진행·결재 대기는 CEO 08:00 통합보고에 자동 요약 — 현재 텔레그램은 <strong>GM 단독 수신</strong>.</td></tr>
         </table>
 
         <div class="callout tip" style="margin-top:20px;"><strong>🚀 세션 부팅 = 공통 탭 'AI 부팅 6단계' 정본.</strong> 읽는 파일만 <code>ai-coo.md</code> · <code>status/coo.json</code>. 흡수 탭 = 공통 + 본 COO 탭.</div>
@@ -4780,7 +4790,7 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
   <!-- ── COO 투두리스트 소개 ── -->
   <article class="doc" id="gcoo-todo">
     <div class="doc-header"><h2>업무&결재 현황 SSOT</h2><div class="meta">COO 관할 · 핵심멤버 업무 배분·추적 · Apps Script 연동</div></div>
-    <p class="lead">핵심멤버(매니저·AM)의 업무를 등록·배분·추적하는 업무 현황 SSOT입니다. <span style="color:var(--dim);">— 세부 기능·보고 체계는 아래 '개요 · 보고 체계 SSOT' 콜아웃에 정리.</span></p>
+    <p class="lead">핵심멤버(매니저·AM)의 업무를 등록·배분·추적하는 업무 현황 SSOT입니다. <span style="color:var(--dim);">— 아래 실시간 현황을 보고, 카드를 열어 등록·결재합니다. (결재 요청·승인 정책 = S2 AI COO 탭)</span></p>
 
     <!-- ⭐ 핵심 KPI 스트립 — 업무·결재 SSOT 대시보드 핵심 지표 실시간 집계(최상단). SSOT 변경 시 자동 반영 (2026-06-03 GM) -->
     <div id="s4KpiStrip" style="margin:14px 0 20px;">
@@ -4810,59 +4820,20 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
       </div>
     </div>
 
-    <!-- 개요 · 보고 체계 SSOT (별도 페이지 패널 그대로 이관 · 기본 펼침) -->
-    <div style="background:var(--paper);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin:8px 0;">
-      <div onclick="gcooToggle('gcooOverviewBody','gcooOvArrow')" style="padding:13px 16px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none;border-left:3px solid var(--accent);">
-        <span style="font-size:14px;font-weight:700;color:var(--accent);">📋 개요 · 보고 체계 SSOT</span>
-        <span id="gcooOvArrow" style="font-size:12px;color:var(--dim);transition:transform 0.2s;transform:rotate(90deg);">▶</span>
+    <!-- 바로가기 — 두 SSOT 진입. 세부 정책(결재 요청·승인 체계)은 S2 AI COO 탭 단일 출처 (2026-06-06 콜아웃 제거: 페이지 들어가면 보이는 안내 중복 정리) -->
+    <div style="display:flex;flex-wrap:wrap;gap:10px;margin:8px 0 6px;">
+      <div style="flex:1;min-width:220px;display:flex;flex-direction:column;background:var(--bg);border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:10px;padding:15px 16px;">
+        <div style="font-size:13px;font-weight:700;margin-bottom:5px;">② 업무 추가</div>
+        <div style="font-size:12px;color:var(--dim);margin-bottom:12px;line-height:1.5;flex:1;">업무 현황 SSOT에서 새 업무를 등록·배분·추적합니다.</div>
+        <a href="https://wellperion-cao.github.io/wellperion-automation/coo/todo/%EC%97%85%EB%AC%B4%20%ED%98%84%ED%99%A9%20SSOT.html" target="_blank" style="display:inline-flex;align-items:center;gap:6px;padding:10px 18px;background:var(--accent);color:#fff;font-size:13px;font-weight:700;border-radius:8px;text-decoration:none;">📝 업무 현황 SSOT 열기 →</a>
       </div>
-      <div id="gcooOverviewBody" style="display:block;border-top:1px solid var(--border);padding:16px;font-size:13px;line-height:1.65;">
-
-        <!-- ① 보고 체계 및 기능 요약 -->
-        <div style="font-size:13px;font-weight:800;color:var(--accent);margin-bottom:12px;padding-bottom:7px;border-bottom:1px solid var(--border);">① 보고 체계 및 기능 요약</div>
-
-        <div style="font-size:12px;font-weight:700;color:var(--blue);margin-bottom:6px;">🧩 기능 요약 <span style="font-weight:500;color:var(--dim);">— 이 페이지가 하는 일 한눈에</span></div>
-        <ul style="margin:0 0 16px 18px;padding:0;">
-          <li>핵심멤버(매니저·AM) 업무를 <b>8개 카테고리</b>로 등록·배분·추적 — [1] 매출·영업 · [2] 인사·파트너 · [3] 운영 정책 · [4] 시설·환경 · [5] 회원·CS · [6] IT·시스템·자동화 · [7] 교육·조직문화 · [8] 회의</li>
-          <li>업무별 <b>담당자 · 기간 · 내용 · 진척 로그 · 난이도 · 예산 · 결과보고</b> 통합 관리 · <b>칸반/캘린더</b> 2가지 보기</li>
-          <li><b>마감 임박 자동 강조</b>(D-day) · 완료/보류 로그 분리 · <b>실무진 업무만</b> 노출(AI·GM·결재 넘어간 건은 G1에서 관리)</li>
-          <li>결재요청 시 <b>결재선 자동 산출</b> — 부서장 → GM → 대표님. <b>업무 현황은 GM 종결 / 결재 현황은 전응준 대표 종결</b>.</li>
-          <li>맨 위 <b>KPI·좌우 피드 = 두 SSOT 실시간 집계</b>(수동 입력 없음) · <b>Google 시트 연동</b> · 인쇄·공유 출력</li>
-        </ul>
-
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
-          <span style="font-size:12px;font-weight:700;color:var(--green);">📣 보고 체계</span>
-          <button onclick="hubEditNotes('reporting')" id="hubReportingEditBtn" style="font-size:11px;font-weight:600;padding:3px 10px;border-radius:7px;cursor:pointer;font-family:inherit;background:var(--accent-bg);color:var(--accent);border:1px solid rgba(183,159,138,0.3);">✏️ 편집</button>
-        </div>
-        <div id="hubReportingView" style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin:0 0 16px 0;white-space:pre-line;line-height:1.7;">• 결재 — 결재 현황 SSOT에서 추적. 부서장 → GM → 대표님 순, GM·대표님 본인 비밀번호로 승인/반려
-• 진척 로그 — 카드별 날짜 누적
-• 이슈/보류 — 별도 섹션 단독 노출(묻히지 않게)
-• (연계) 진행·결재 대기는 CEO 08:00 통합보고에 자동 요약 — 현재 텔레그램은 GM 단독 수신</div>
-
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
-          <span style="font-size:12px;font-weight:700;color:var(--accent);">📝 현재 내용 기록</span>
-          <button onclick="hubEditNotes('notes')" id="hubNotesEditBtn" style="font-size:11px;font-weight:600;padding:3px 10px;border-radius:7px;cursor:pointer;font-family:inherit;background:var(--accent-bg);color:var(--accent);border:1px solid rgba(183,159,138,0.3);">✏️ 편집</button>
-        </div>
-        <div id="hubNotesView" style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin:0 0 6px 0;white-space:pre-line;line-height:1.7;">• 결재선 1단계 부서장 — 운영부 이경연 실장([1][3]) · 시설부 이정헌 소장([4]) · 파트너팀 나우열M([2]). 그 외 카테고리는 부서장 생략 → GM
-• 화면 분리 — 결재 넘어간 업무는 업무 현황에서 잠금, 결재 현황(GM·대표)에서만 관리
-• 안전장치 — 승인/반려 비밀번호 게이트 · 편집 빈값 덮어쓰기 차단 · 카드에 결재 진행 표시</div>
-        <p style="font-size:11px;color:var(--dim);margin:0 0 20px;">✏️ 보고 체계·현재 내용 기록은 위 편집 버튼으로 바로 수정·저장하면 GitHub에 자동 반영됩니다 (1~2분).</p>
-
-        <!-- ②③ 바로가기 -->
-        <div style="display:flex;flex-wrap:wrap;gap:10px;">
-          <div style="flex:1;min-width:220px;display:flex;flex-direction:column;background:var(--bg);border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:10px;padding:15px 16px;">
-            <div style="font-size:13px;font-weight:700;margin-bottom:5px;">② 업무 추가</div>
-            <div style="font-size:12px;color:var(--dim);margin-bottom:12px;line-height:1.5;flex:1;">업무 현황 SSOT에서 새 업무를 등록·배분·추적합니다.</div>
-            <a href="https://wellperion-cao.github.io/wellperion-automation/coo/todo/%EC%97%85%EB%AC%B4%20%ED%98%84%ED%99%A9%20SSOT.html" target="_blank" style="display:inline-flex;align-items:center;gap:6px;padding:10px 18px;background:var(--accent);color:#fff;font-size:13px;font-weight:700;border-radius:8px;text-decoration:none;">📝 업무 현황 SSOT 열기 →</a>
-          </div>
-          <div style="flex:1;min-width:220px;display:flex;flex-direction:column;background:var(--bg);border:1px solid var(--border);border-left:3px solid var(--green);border-radius:10px;padding:15px 16px;">
-            <div style="font-size:13px;font-weight:700;margin-bottom:5px;">③ 결재 확인</div>
-            <div style="font-size:12px;color:var(--dim);margin-bottom:12px;line-height:1.5;flex:1;">결재 진행·완료·반려를 확인하고, GM·대표님 비밀번호로 승인/반려합니다.</div>
-            <a href="https://wellperion-cao.github.io/wellperion-automation/coo/todo/%EA%B2%B0%EC%9E%AC%20%ED%98%84%ED%99%A9%20SSOT.html" target="_blank" style="display:inline-flex;align-items:center;gap:6px;padding:10px 18px;background:var(--accent);color:#fff;font-size:13px;font-weight:700;border-radius:8px;text-decoration:none;">✅ 결재 현황 SSOT 열기 →</a>
-          </div>
-        </div>
+      <div style="flex:1;min-width:220px;display:flex;flex-direction:column;background:var(--bg);border:1px solid var(--border);border-left:3px solid var(--green);border-radius:10px;padding:15px 16px;">
+        <div style="font-size:13px;font-weight:700;margin-bottom:5px;">③ 결재 확인</div>
+        <div style="font-size:12px;color:var(--dim);margin-bottom:12px;line-height:1.5;flex:1;">결재 진행·완료·반려를 확인하고, GM·대표님 비밀번호로 승인/반려합니다.</div>
+        <a href="https://wellperion-cao.github.io/wellperion-automation/coo/todo/%EA%B2%B0%EC%9E%AC%20%ED%98%84%ED%99%A9%20SSOT.html" target="_blank" style="display:inline-flex;align-items:center;gap:6px;padding:10px 18px;background:var(--accent);color:#fff;font-size:13px;font-weight:700;border-radius:8px;text-decoration:none;">✅ 결재 현황 SSOT 열기 →</a>
       </div>
     </div>
+    <p style="font-size:11px;color:var(--dim);margin:0 0 6px;">※ 결재 요청·승인 체계(결재선·부서장 매핑·종착 분기) 정책 원본 = <strong>S2 AI COO 탭</strong>. 페이지엔 중복 기재하지 않습니다.</p>
 
   </article>
 <script>
