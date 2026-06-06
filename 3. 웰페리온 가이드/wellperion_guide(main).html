@@ -408,7 +408,7 @@
 <aside class="sidebar">
   <div class="brand">
     <h1>웰페리온 ERP v2.7</h1>
-    <div class="sub">스포츠클럽 통합 운영 시스템</div>
+    <div class="sub">웰페리온 통합 운영 시스템</div>
   </div>
 
   <div class="nav-label">시작하기</div>
@@ -474,8 +474,8 @@
 <main class="main">
 
   <article class="doc active" id="home">
-    <div class="doc-header"><h2>🏢 웰페리온 ERP</h2><div class="meta">스포츠클럽 통합 운영 시스템 · 웰페리온 ERP v2.7 · 최종 업데이트 2026-06-05</div></div>
-    <p class="lead">인사·재무·운영·회원·마케팅·업무결재·기술·경영 8개 모듈을 한 화면에서 잇는 통합 운영 시스템(ERP)입니다. 상단은 지금 회사가 어떻게 돌아가는지, 아래는 시스템 설계도.</p>
+    <div class="doc-header"><h2>🏢 웰페리온 ERP</h2><div class="meta">웰페리온 통합 운영 시스템 · 웰페리온 ERP v2.7 · 최종 업데이트 2026-06-05</div></div>
+    <p class="lead"><strong>웰페리온 ERP</strong>(전사적 자원 관리 · Enterprise Resource Planning)는 기업의 모든 핵심 업무 프로세스를 하나의 통합된 플랫폼으로 관리하는 소프트웨어 시스템입니다. 인사·재무·운영·회원·마케팅·업무결재·기술·경영 8개 모듈을 한 화면에서 잇습니다. 상단은 지금 회사가 어떻게 돌아가는지, 아래는 시스템 설계도.</p>
 
     <!-- ② 경영 현황 라이브 스트립 — 실제 가져온 숫자만 표시(가짜 금지). 업무·결재=todo_list 1회 호출 집계(S3 KPI 스트립과 1:1), 그 외 소스없는 지표는 "측정 예정"으로 정직 표기 -->
     <div style="display:flex;gap:12px;flex-wrap:wrap;margin:20px 0 8px;" id="homeErpStrip">
@@ -610,17 +610,17 @@
     <!-- AUTO:LATEST-START -->
     <div class="card grow">
       <h4>최신 업데이트 — 2026-06-06 (자동 갱신)</h4>
+      <p><strong>2026-06-06</strong> refactor(brand): 사이드바 부제 '자동화 운영의 모든 것' → '스포츠클럽 통합 운영 시스템' (ERP 결 통일)</p>
       <p><strong>2026-06-06</strong> refactor(brand): Start-AI 부팅 배치 7개 '가이드허브' → '웰페리온 ERP' (UTF-8·CRLF 보존)</p>
       <p><strong>2026-06-06</strong> refactor(brand): 표시 용어 '가이드허브' → '웰페리온 ERP' 전면 교체 (URL/경로 불변, .bat·이력문서 제외) +…</p>
       <p><strong>2026-06-06</strong> chore(home): 경영 카드에서 GM 칵핏 버튼 제거 — 전체 대시보드+회사소개·전략 2개만 (경영진 카드와 결 정리)</p>
       <p><strong>2026-06-06</strong> chore(coo): S3 최근정비 로그에 시설부 체계 신설 반영 (ssot_notes+html 동기)</p>
-      <p><strong>2026-06-06</strong> docs(ssot): reporting 편집(허브)</p>
     </div>
 <!-- AUTO:LATEST-END -->
         <table>
           <tr><th style="width:160px">날짜</th><th>변경 내용</th></tr>
           <!-- AUTO:TABLE-START -->
-      <tr><td><strong>2026-06-06 (자동)</strong></td><td>refactor(brand): Start-AI 부팅 배치 7개 '가이드허브' → '웰페리온 ERP' (UTF-8·CRLF 보존) · refactor(brand): 표시 용어 '가이드허브' → '웰페리온 ERP' 전면 교체 (URL/경로 불변, .bat·이력문서 제외) + CLAUDE.md 브랜드 규칙 추가 · chore(home): 경영 카드에서 GM…</td></tr>
+      <tr><td><strong>2026-06-06 (자동)</strong></td><td>refactor(brand): 사이드바 부제 '자동화 운영의 모든 것' → '스포츠클럽 통합 운영 시스템' (ERP 결 통일) · refactor(brand): Start-AI 부팅 배치 7개 '가이드허브' → '웰페리온 ERP' (UTF-8·CRLF 보존) · refactor(brand): 표시 용어 '가이드허브' → '웰페리온 ERP' 전면 교체 …</td></tr>
       <tr><td><strong>2026-06-05 (자동)</strong></td><td>fix(report): 항해보고 3종 다듬기 — NORMAL 배종류 신호추론·🔴급한입항 전용섹션복원·선장결정 순환사유제거 · feat(report): 8시 아침보고를 '오늘의 항해'로 재설계 — 항해 세계관(배=할일/항로/북극성)+브릿지(지나온항로→항로점), priority=배종류·마감=🔴·북극성=🌟 (조립부만, 수집·발송 무손상) · feat(g1)…</td></tr>
       <!-- AUTO:TABLE-END -->
           <tr><td><strong>2026-05-28 (14차)</strong></td><td>공지/안내문 생성(COO 하위) · 오프라인 홍보물 디자인 제작(CMO 하위) 도구 신설 · 공지 서식 v2.0 독립 페이지화 · 회사소개서·전략로드맵 원본 「3. 웰페리온 가이드/회사문서/」로 이관(SSOT 단일화) · C-Level 부팅 R/R Notion API→웰페리온 ERP g10 참조로 전환 · GitHub Pages 워크플로 폴더명 경로 수정 · 사이드바 "공통+7개 C-Level" 라벨 제거</td></tr>
