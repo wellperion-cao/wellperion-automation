@@ -621,17 +621,17 @@
     <!-- AUTO:LATEST-START -->
     <div class="card grow">
       <h4>최신 업데이트 — 2026-06-06 (자동 갱신)</h4>
+      <p><strong>2026-06-06</strong> feat(g1): ⚓ 항구 간결판 — 핵심(제목+한줄+단 하나의 규칙)만, 상세 표 3개·흐름칩 제거(상세는 S2)</p>
       <p><strong>2026-06-06</strong> fix(cmo): 규모 정정 2,900평→3,000평 (GM 확인) — 채널 등록 팩 한/영 소개·키워드 반영</p>
       <p><strong>2026-06-06</strong> refactor(g1): 북극성 비전→홈 / 7대 자동화 모듈→시토 업무자동화(T2) 이관, G1엔 북극성 링크+항해 범례만 (회사 자산은…</p>
       <p><strong>2026-06-06</strong> fix(danggn): --mode publish 스텁→실 발행 배선 + 옛 '[스텁]' 표기 현행화</p>
       <p><strong>2026-06-06</strong> feat(cmo): 실험#1 GM 승인 반영 — 문구 1번 확정, 진행 중(다음 발행부터 2주 A/B)</p>
-      <p><strong>2026-06-06</strong> feat(cmo): 실험#1(IG 캡션 첫줄 CTA) 착수 준비 완료 — baseline·A/B 캡션 변형안·로그 구체화(GM 승인 후 착수)</p>
     </div>
 <!-- AUTO:LATEST-END -->
         <table>
           <tr><th style="width:160px">날짜</th><th>변경 내용</th></tr>
           <!-- AUTO:TABLE-START -->
-      <tr><td><strong>2026-06-06 (자동)</strong></td><td>fix(cmo): 규모 정정 2,900평→3,000평 (GM 확인) — 채널 등록 팩 한/영 소개·키워드 반영 · refactor(g1): 북극성 비전→홈 / 7대 자동화 모듈→시토 업무자동화(T2) 이관, G1엔 북극성 링크+항해 범례만 (회사 자산은 회사 자리로) · fix(danggn): --mode publish 스텁→실 발행 배선 + 옛 '[…</td></tr>
+      <tr><td><strong>2026-06-06 (자동)</strong></td><td>feat(g1): ⚓ 항구 간결판 — 핵심(제목+한줄+단 하나의 규칙)만, 상세 표 3개·흐름칩 제거(상세는 S2) · fix(cmo): 규모 정정 2,900평→3,000평 (GM 확인) — 채널 등록 팩 한/영 소개·키워드 반영 · refactor(g1): 북극성 비전→홈 / 7대 자동화 모듈→시토 업무자동화(T2) 이관, G1엔 북극성 링크+항해 …</td></tr>
       <!-- AUTO:TABLE-END -->
           <tr><td><strong>2026-05-28 (14차)</strong></td><td>공지/안내문 생성(COO 하위) · 오프라인 홍보물 디자인 제작(CMO 하위) 도구 신설 · 공지 서식 v2.0 독립 페이지화 · 회사소개서·전략로드맵 원본 「3. 웰페리온 가이드/회사문서/」로 이관(SSOT 단일화) · C-Level 부팅 R/R Notion API→웰페리온 ERP g10 참조로 전환 · GitHub Pages 워크플로 폴더명 경로 수정 · 사이드바 "공통+7개 C-Level" 라벨 제거</td></tr>
           <tr><td>2026-05-27 (13차)</td><td>GitHub Pages 전환 · 사이드바 4섹터 · AI C-Level 통일 · 운영 통합 체계 · 공식채널·지출현황·취업규칙·SSOT 신설 · g2+g19·g9+g20·g12·g13 합병 · 김남욱 탭 확장 · v2.5</td></tr>
@@ -3049,12 +3049,11 @@ kubectl get pods -o json | jq '.items[] | {name: .metadata.name}'</pre>
   <!-- g16 기술 인프라 상세 -->
   <article class="doc" id="g16">
     <div class="doc-header"><h2><span class="g-id">T1</span>기술 인프라 상세</h2><div class="meta">기술 SSOT · guide-hub.html 통합 · 2026-05-25</div></div>
-    <p class="lead">텔레그램 봇, scripts 폴더 구조, 경로 표준화, CTO 개발 아카이브 운영의 상세 기술 문서입니다.</p>
+    <p class="lead">scripts 폴더 구조, 경로 표준화, CTO 개발 아카이브 운영의 상세 기술 문서입니다. <span style="font-size:12px;color:var(--dim);">(텔레그램 봇 = T2 업무자동화SSOT로 합병 2026-06-06)</span></p>
 
     <div class="tabs" data-tabs="g16">
       <div class="tab-nav">
         <button class="tab-btn active" data-tab="settings">설정 위치</button>
-        <button class="tab-btn" data-tab="telegram">텔레그램 봇</button>
         <button class="tab-btn" data-tab="scripts">scripts 구조</button>
         <button class="tab-btn" data-tab="paths">경로 표준화</button>
         <button class="tab-btn" data-tab="archive">CTO 개발 아카이브</button>
@@ -3097,27 +3096,6 @@ kubectl get pods -o json | jq '.items[] | {name: .metadata.name}'</pre>
       </div>
       <!-- ── /탭: 설정 위치 ── -->
 
-      <div class="tab-panel" data-panel="telegram">
-        <h3><span class="ico">🤖</span>텔레그램 봇 (@namuki_report_bot) <span style="font-size:12px;color:var(--accent);font-weight:600;">(재기동 방법·기술 상세)</span></h3>
-        <p>Chat ID 8254867551 · 단일 봇 · 용도: <strong>C-Level 보고 + 승인요청 전용</strong> (2026-05-25 GM 확정) <span style="font-size:12px;color:var(--dim);">· 점검 원칙(왜·언제)=S2 CTO탭 / 가동 현황=T4</span></p>
-
-        <h4>정각 보고 스케줄 (6슬롯)</h4>
-        <div class="callout"><strong>→ 슬롯별 시각·내용 정본 = T2 업무자동화SSOT ▸ 매일 ▸ 📨 텔레그램 6슬롯</strong> (06 하루 시작 · 09 오늘 할 일 · 12 시설·지원·주차 점검 · 15 진행 체크 · 18 퇴근 · 21 하루 마감). 본 T1 탭은 <strong>재기동·기술 운영</strong>만 다룸 — 슬롯 내용 중복 기재 금지(2026-06-06 단일화). <a href="#" onclick="event.preventDefault();var t=document.querySelector('[data-id=T2]');if(t)t.click();" style="color:var(--accent);font-weight:700;text-decoration:none;">T2 업무자동화SSOT</a></div>
-
-        <h4>가동 중 프로세스</h4>
-        <table>
-          <tr><th>프로세스</th><th>역할</th></tr>
-          <tr><td><code>bot.py</code></td><td>텔레그램 봇 메인. telegram.ext + RotatingFileHandler.</td></tr>
-          <tr><td><code>daily_scheduler.py</code></td><td>정각 보고 스케줄러 (6슬롯). MarkdownV2 + 평문 fallback.</td></tr>
-        </table>
-
-        <h4>Watcher (자동 감시) 현황</h4>
-        <div class="callout"><strong>→ 현황 SSOT는 T2 업무자동화SSOT.</strong> 가동 중 Watcher(pre_task_notifier·bot_health_check·env_reload_watcher)와 폐기 목록(ig_review_publish_watcher 폴링 2026-06-03 폐기 포함)의 실측 현황은 <a href="#" onclick="event.preventDefault();var t=document.querySelector('[data-id=T2]');if(t)t.click();" style="color:var(--accent);font-weight:700;text-decoration:none;">T2 업무자동화SSOT</a>에서 단일 관리합니다. 현황 중복 기재 금지.</div>
-
-        <h4>재기동 방법</h4>
-        <pre>Stop-Process -Id (PID) -Force
-Start-Process python -ArgumentList telegram_bot\daily_scheduler.py -WorkingDirectory C:\Users\jjky0\welperion-automation -WindowStyle Hidden</pre>
-      </div>
 
       <div class="tab-panel" data-panel="scripts">
         <h3><span class="ico">📂</span>scripts/ 구조</h3>
@@ -5107,7 +5085,7 @@ function crTab(btn, panelId) {
       <tr><td><strong>18:00</strong></td><td>⑤ 퇴근</td><td>오늘 성과(git) + 명언 + 운동</td></tr>
       <tr><td><strong>21:00</strong></td><td>⑥ 하루 마감</td><td>핵심 요약</td></tr>
     </table>
-    <div class="callout" style="margin-top:8px;font-size:13px;"><strong>📊 데이터 소스</strong> — GM 할일=업무현황 시트 <code>todo_list</code>(자동, GM 관리 불필요) · 명언=<code>status/quotes.json</code> · 진행=<code>status/*.json</code>·git. <strong style="color:var(--accent);">노션 의존 0.</strong><br><strong>🔄 재기동</strong> — 봇·스케줄러 재시작 또는 PC 부팅(ONLOGON 예약작업). <span style="color:var(--dim);">상세 = T2 텔레그램탭 / 점검 원칙(왜·언제) = S2 CTO탭.</span></div>
+    <div class="callout" style="margin-top:8px;font-size:13px;"><strong>📊 데이터 소스</strong> — GM 할일=업무현황 시트 <code>todo_list</code>(자동, GM 관리 불필요) · 명언=<code>status/quotes.json</code> · 진행=<code>status/*.json</code>·git. <strong style="color:var(--accent);">노션 의존 0.</strong><br><strong>🔄 재기동</strong> — 봇·스케줄러 재시작 또는 PC 부팅(ONLOGON 예약작업). 수동 재기동: <code>Stop-Process -Id (PID) -Force</code> → <code>Start-Process python -ArgumentList telegram_bot\daily_scheduler.py -WorkingDirectory C:\Users\jjky0\welperion-automation -WindowStyle Hidden</code>. <span style="color:var(--dim);">점검 원칙(왜·언제) = S2 CTO탭.</span></div>
     <p style="font-size:12px;color:var(--dim);margin:8px 0 0;">※ IG 07:30 전체 발행 흐름(시모 위임→빌드→<code>pub:</code> 콜백 등) 상세는 <code>instagram/_AI시리즈_로드맵.md</code> 정본 참조. <span>(구 <code>IG-Series-Produce-2100</code>·<code>IG-Publish-0730</code> 일괄발행 = 2026-06-04 Disabled)</span></p>
 
     <h4>매주</h4>
