@@ -610,17 +610,17 @@
     <!-- AUTO:LATEST-START -->
     <div class="card grow">
       <h4>최신 업데이트 — 2026-06-06 (자동 갱신)</h4>
+      <p><strong>2026-06-06</strong> refactor(coo): 고도화 정의(개선 로드맵) 현장 규정 탭에서 제거 → 관리자 영역(O1 운영 통합 체계 구축 가이드)으로 이관</p>
       <p><strong>2026-06-06</strong> feat(cmo): 이미지 용량 제한 압축 유틸 — 화질 유지(q95·긴변 4500px)하며 10MB 아래로(원본 보존, web_10mb 출력)</p>
       <p><strong>2026-06-06</strong> fix(coo): 지원부·시설부 근무·휴게 타임라인 시간 눈금 정렬 — space-between→6칸 그리드로 :50 눈금을 근무/휴게 경…</p>
       <p><strong>2026-06-06</strong> fix(cmo): 채널 등록 팩 정정 — 기존 등록 확인(소유주 클레임), 대표번호 02-6261-1200·수영/사우나/스파·2900평 반…</p>
       <p><strong>2026-06-06</strong> feat(coo): S3 업무·결재 피드 3섹션화 — 최근변동(6,완료제외)/마감임박·결재대기(5)/완료·결재완료(5,최신순) 분리</p>
-      <p><strong>2026-06-06</strong> refactor(T3): AI교육 탭 군살 정리 — 플러그인 탭 삭제·기본기 축소·중복 포인터화</p>
     </div>
 <!-- AUTO:LATEST-END -->
         <table>
           <tr><th style="width:160px">날짜</th><th>변경 내용</th></tr>
           <!-- AUTO:TABLE-START -->
-      <tr><td><strong>2026-06-06 (자동)</strong></td><td>feat(cmo): 이미지 용량 제한 압축 유틸 — 화질 유지(q95·긴변 4500px)하며 10MB 아래로(원본 보존, web_10mb 출력) · fix(coo): 지원부·시설부 근무·휴게 타임라인 시간 눈금 정렬 — space-between→6칸 그리드로 :50 눈금을 근무/휴게 경계에 정확히 일치 · fix(cmo): 채널 등록 팩 정정 — 기존…</td></tr>
+      <tr><td><strong>2026-06-06 (자동)</strong></td><td>refactor(coo): 고도화 정의(개선 로드맵) 현장 규정 탭에서 제거 → 관리자 영역(O1 운영 통합 체계 구축 가이드)으로 이관 · feat(cmo): 이미지 용량 제한 압축 유틸 — 화질 유지(q95·긴변 4500px)하며 10MB 아래로(원본 보존, web_10mb 출력) · fix(coo): 지원부·시설부 근무·휴게 타임라인 시간 눈금 …</td></tr>
       <!-- AUTO:TABLE-END -->
           <tr><td><strong>2026-05-28 (14차)</strong></td><td>공지/안내문 생성(COO 하위) · 오프라인 홍보물 디자인 제작(CMO 하위) 도구 신설 · 공지 서식 v2.0 독립 페이지화 · 회사소개서·전략로드맵 원본 「3. 웰페리온 가이드/회사문서/」로 이관(SSOT 단일화) · C-Level 부팅 R/R Notion API→웰페리온 ERP g10 참조로 전환 · GitHub Pages 워크플로 폴더명 경로 수정 · 사이드바 "공통+7개 C-Level" 라벨 제거</td></tr>
           <tr><td>2026-05-27 (13차)</td><td>GitHub Pages 전환 · 사이드바 4섹터 · AI C-Level 통일 · 운영 통합 체계 · 공식채널·지출현황·취업규칙·SSOT 신설 · g2+g19·g9+g20·g12·g13 합병 · 김남욱 탭 확장 · v2.5</td></tr>
@@ -1777,8 +1777,7 @@
         </div>
         <div class="callout tip" style="margin-top:12px;"><strong>진단 오류 4규칙:</strong> 유사 명칭 단정 금지 · 진단 정정 시 자율 진행 · 결재 카테고리 엄격 적용 · log read 선행 의무</div>
 
-        <h4 style="margin-top:20px;"><span class="ico">②</span>고도화 체크 — 신규 < 연결·고도화</h4>
-        <div class="callout"><strong>원칙:</strong> 새 페이지·기능을 마구 만들지 말 것. 기존 자산을 연결하고 깊이를 더하는 방향이 우선. <strong>신규 신설 허용 조건:</strong> 기존 자산으로 흡수 불가능 + 명확한 단독 R/R + GM 직접 승인.</div>
+        <div class="callout tip" style="margin-top:20px;"><strong>② 고도화 체크 (신규 &lt; 연결·고도화)</strong> — 상세 원칙은 아래 <strong>「전 C-Level 통합원칙」 ⑤ 고도화·학습</strong>에 단일화(중복 제거 2026-06-06).</div>
 
         <h4 style="margin-top:20px;"><span class="ico">③</span>기록 — 언제든 확인 가능</h4>
         <table>
@@ -1789,16 +1788,7 @@
           <tr><td><strong>본문 토글 Changelog</strong></td><td>모든 C-Level DB 페이지 본문 토글 단일 누적</td></tr>
         </table>
 
-        <h4 style="margin-top:20px;"><span class="ico">④</span>중복·무분별·무의미 삭제</h4>
-        <table>
-          <tr><th style="width:200px">정리 정책</th><th>적용</th></tr>
-          <tr><td><strong>중복 데이터</strong></td><td>발견 시 흡수·통합 (연동 리스크 있으면 GM 질문)</td></tr>
-          <tr><td><strong>SSOT 단일화</strong></td><td>이관(Move) 사용, 복사(Copy) 금지</td></tr>
-          <tr><td><strong>무분별 자동화 금지</strong></td><td>자동 태스크 신설은 핵심 KPI 직결 건만</td></tr>
-        </table>
-
-        <h4 style="margin-top:20px;"><span class="ico">⑤</span>스스로 학습 진화</h4>
-        <div class="callout"><strong>5단계 SOP:</strong> 발견 → 진단 → 수정 → 이중기록(메모리+웰페리온 ERP) → 재발방지 규칙 명문화. 모호한 요청은 <code>/deep-interview</code> 선행.</div>
+        <div class="callout tip" style="margin-top:20px;"><strong>④ 중복·무분별 삭제 · ⑤ 스스로 학습 진화</strong> — 상세 원칙은 아래 <strong>「전 C-Level 통합원칙」 ③ 데이터·SSOT 위생 · ⑤ 고도화·학습</strong>에 단일화(중복 제거 2026-06-06). 위 5단계 표가 골격, 상세는 통합원칙 참조.</div>
 
         <h4 style="margin-top:20px;"><span class="ico">📊</span>CEO 보고 형식</h4>
         <div class="callout"><strong>표 + 요약 + 추천 3요소 (산문 X, 식별자 N줄 X):</strong> GM이 1초 안에 파악 가능하게. 옵션 3개 이상이면 CEO 추천값 명시. GM은 선택만.</div>
@@ -3101,15 +3091,7 @@ kubectl get pods -o json | jq '.items[] | {name: .metadata.name}'</pre>
         <p>Chat ID 8254867551 · 단일 봇 · 용도: <strong>C-Level 보고 + 승인요청 전용</strong> (2026-05-25 GM 확정) <span style="font-size:12px;color:var(--dim);">· 점검 원칙(왜·언제)=S2 CTO탭 / 가동 현황=T4</span></p>
 
         <h4>정각 보고 스케줄 (6슬롯)</h4>
-        <table>
-          <tr><th>시간</th><th>내용</th><th>상세</th><th>상태</th></tr>
-          <tr><td>06:00</td><td>기상 인사</td><td>"좋은 아침입니다" + 오늘 날씨/일정 요약</td><td>가동중</td></tr>
-          <tr><td>09:00</td><td>업무 시작 보고</td><td>08:00 AI CEO 통합 보고 결과 요약 + 오늘 진행 업무</td><td>가동중</td></tr>
-          <tr><td>12:00</td><td>시설·지원·주차 현황</td><td>COO 체크리스트 DB 기반 오전 점검 결과</td><td>가동중</td></tr>
-          <tr><td>15:00</td><td>오후 중간 보고</td><td>오전 업무 진행률 + 오후 예정</td><td>가동중</td></tr>
-          <tr><td>18:00</td><td>퇴근 인사</td><td>하루 마무리 + 내일 주요 일정</td><td>가동중</td></tr>
-          <tr><td>22:00</td><td>C-Level 진행 체크</td><td>일일 C-Level 진행 현황 요약</td><td>가동중</td></tr>
-        </table>
+        <div class="callout"><strong>→ 슬롯별 시각·내용 정본 = T2 업무자동화SSOT ▸ 매일 ▸ 📨 텔레그램 6슬롯</strong> (06 하루 시작 · 09 오늘 할 일 · 12 시설·지원·주차 점검 · 15 진행 체크 · 18 퇴근 · 21 하루 마감). 본 T1 탭은 <strong>재기동·기술 운영</strong>만 다룸 — 슬롯 내용 중복 기재 금지(2026-06-06 단일화). <a href="#" onclick="event.preventDefault();var t=document.querySelector('[data-id=T2]');if(t)t.click();" style="color:var(--accent);font-weight:700;text-decoration:none;">T2 업무자동화SSOT</a></div>
 
         <h4>가동 중 프로세스</h4>
         <table>
