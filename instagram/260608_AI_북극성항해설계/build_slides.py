@@ -22,7 +22,7 @@ FOLDER = ROOT / "instagram" / "260608_AI_북극성항해설계"
 OUT = FOLDER / "output"
 
 QUEUE_ID = "CMO-2026-06-08-AI-북극성항해설계"
-QUEUE_TITLE = "AI 시리즈 — 북극성 항해 설계(개인계정)"
+QUEUE_TITLE = "AI #8편 — 북극성 항해 설계(개인계정)"
 QUEUE_CHANNEL = "인스타그램 (namuk.wellperion)"
 ACCOUNT = "namuk.wellperion"
 LOCATION = "웰페리온 스포츠클럽"
