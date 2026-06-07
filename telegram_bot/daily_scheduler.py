@@ -1,7 +1,7 @@
 """
 웰페리온 일일 자동 보고 스케줄러 v2.0
 -------------------------------
-정규 스케줄 (10개): 06/07/09/12/15/18/21/22/23시 정각 텔레그램 자동 보고
+정규 스케줄 (9개): 06/07/09/12/15/18/21/22시 정각 텔레그램 자동 보고
 테스트 모드: python daily_scheduler.py --test  →  1시간 주기 실행
 ※ 08시(오늘의 항로)는 ceo_morning_pipeline.py (별도 Task Scheduler) 담당 — 여기서 중복 발송 없음
 
@@ -1471,22 +1471,9 @@ def _build_22_body() -> str:
     )
 
 
-def _build_23_body() -> str:
-    """23시 — 마감 점검 현황 (체크리스트 박스표) [회사]"""
-    now = datetime.now()
-    today = now.strftime("%Y-%m-%d")
-    weekday_kor = _WEEKDAY_KOR[now.weekday()]
-
-    checklist_block = _build_checklist_block("23:00")
-
-    return (
-        f"[웰페리온] 23시 마감 점검\n"
-        f"━━━━━━━━━━━━━━━━\n"
-        f"{today} ({weekday_kor}) 마감 기준\n\n"
-        f"{checklist_block}\n\n"
-        f"_본 메시지는 자동 발송입니다._"
-    )
-
+# _build_23_body 폐기 (2026-06-08 GM B안 결정)
+# 사유: Auto-Shutdown-2230 예약작업이 22:30 PC 강제 종료 → 23시 잡 실행 환경 없음.
+# 정본 9슬롯(06/07s/07/09/12/15/18/21/22)으로 정정. _build_checklist_block 함수는 12·18시가 공유 사용.
 
 SLOT_BUILDERS = {
     "06": _build_06_body,
@@ -1498,7 +1485,6 @@ SLOT_BUILDERS = {
     "18": _build_18_body,
     "21": _build_21_body,
     "22": _build_22_body,
-    "23": _build_23_body,
 }
 
 
@@ -1566,10 +1552,8 @@ def get_test_slot() -> str:
         return "18"
     elif h < 22:
         return "21"
-    elif h < 23:
-        return "22"
     else:
-        return "23"
+        return "22"
 
 
 # ── 수동 즉시 테스트 헬퍼 (--manual-test 옵션) ───────────────────────────────
@@ -1673,8 +1657,9 @@ def main():
             next_run_time=datetime.now(),
         )
     else:
-        logger.info("=== 정규 스케줄 시작: 06/07/09/12/15/18/21/22/23시 ===")
+        logger.info("=== 정규 스케줄 시작: 06/07/09/12/15/18/21/22시 (9슬롯) ===")
         # [2026-06-07 GM 확정] 10슬롯 개편 — 08시는 ceo_morning_pipeline(별도 Task Scheduler) 담당
+        # [2026-06-08 GM B안] 23시 슬롯 폐기 → 9슬롯. Auto-Shutdown-2230(22:30)으로 실행 불가.
         schedule_map = {
             "06": (6, 0),
             "07s": (7, 5),   # 직원 공유용 카드 — 07시 어제항로 직후 5분
@@ -1685,7 +1670,6 @@ def main():
             "18": (18, 0),
             "21": (21, 0),
             "22": (22, 0),
-            "23": (23, 0),
         }
         for slot, (hour, minute) in schedule_map.items():
             scheduler.add_job(

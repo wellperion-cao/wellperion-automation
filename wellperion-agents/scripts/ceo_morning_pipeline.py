@@ -975,7 +975,7 @@ def _next_waypoint(item: dict) -> str:
 
 def build_telegram_report(s1: dict, assigned: list[dict], orch: dict) -> str:
     """
-    GM 아침 보고 — '오늘의 항해' 레이아웃 (2026-06-05 GM 재설계).
+    GM 아침 보고 — '오늘의 항로' 레이아웃 (2026-06-05 GM 재설계).
     항해 세계관: 🌟북극성=목적지 · 🚢배=할일 · ⚓항로점=어제가 남긴 다음 · 🌀표류=다음없음.
     무게(priority)=배종류(🛳️크루즈/⛴️여객선/⛵돛단배) · 🔴마감임박 · 🌟북극성직결.
     ※ 데이터 수집·집계 변수(today_tasks/assigned/done_*/gm_decision/urgent)는 그대로 재사용.
