@@ -5,16 +5,8 @@
 테스트 모드: python daily_scheduler.py --test  →  1시간 주기 실행
 ※ 08시(오늘의 항로)는 ceo_morning_pipeline.py (별도 Task Scheduler) 담당 — 여기서 중복 발송 없음
 
-스케줄 설계 (SSOT = GitHub status/* + git log + 웰페리온 ERP, 노션 폐기 2026-05-29):
-  06시 — 아침 루틴+명언 (status/quotes.json 06 시간대) + 운동 체크리스트 [개인]
-  07시 — 어제 한 항로 정리 (git 완료 + todo_list 어제완료 머지) [개인&회사]
-  09시 — 업무·매출·지출 현황 (C-Level별 진행 + CFO 시트 연결) [회사]
-  12시 — 오전 점검 현황 (Google Sheets 체크리스트 박스표) [회사]
-  15시 — 오늘 진행 1차 정리 + C-Level 현황 [개인&회사]
-  18시 — 오후 점검 + 퇴근 인사 [회사]
-  21시 — 오늘 최종 정리 + 내일 항로점 브릿지 [개인&회사]
-  22시 — 취침·전자기기off + 북극성 + 핵심 동기부여 명언 [개인]
-  23시 — 마감 점검 현황 (체크리스트 박스표) [회사]
+슬롯 정본 = 웰페리온 ERP T2(업무자동화SSOT) 텔레그램탭 — 슬롯 변경 시 T2만 수정
+※ 08시(오늘의 항로)는 ceo_morning_pipeline.py 별도 Task Scheduler 담당 — 여기서 중복 발송 없음
 
 운영 원칙:
 - 기존 워처 3종 (archive_result_watcher·planning_to_archive_watcher·permission_watcher) 유지
