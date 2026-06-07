@@ -30,9 +30,7 @@ import argparse
 import io
 import json
 import os
-import re
 import sys
-import urllib.request
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -50,153 +48,6 @@ _PACKAGE_ROOT = _BASE.parent                      # wellperion-agents
 _REPO_ROOT = _PACKAGE_ROOT.parent                 # welperion-automation (repo root)
 _STATUS_DIR = _REPO_ROOT / "status"
 _QUEUE_PATH = _STATUS_DIR / "_queue.json"   # 중앙 큐(일의 브릿지 단일 진실)
-
-# ── GAS(구글시트) 동기화 — 2단계 AI 배 SSOT 이관 (2026-06-07) ───────────────
-# GAS URL: hangro_board.py / queue_sync_from_sheet.py 와 동일 SSOT
-_GAS_URL = (
-    "https://script.google.com/macros/s/"
-    "AKfycbxDwFkrxK1YIaEoSNcuw2MiHiZQ-7o5N6311ytksSyeEd86ZFOhLknOWqQgNArQvZ-7/exec"
-)
-_AI_CATEGORY = "[7]AI배(C레벨)"
-_EMBED_RE = re.compile(r"===AI_QUEUE===\s*(.+?)\s*===END===", re.DOTALL)
-
-# clevel → 시트 담당자 표시명
-_CLEVEL_DISPLAY = {
-    "ceo": "AI CEO(웰리)", "cfo": "AI CFO(시뽀)", "chro": "AI CHRO(시로)",
-    "cmo": "AI CMO(시모)", "coo": "AI COO(시우)", "cpo": "AI CPO(시포)",
-    "cto": "AI CTO(시토)",
-}
-# _queue status → 시트 상태
-_STATUS_TO_SHEET = {
-    "DONE": "완료", "IN_PROGRESS": "진행중", "PENDING": "대기",
-    "ON_HOLD": "보류", "폐기": "완료",
-}
-
-
-def _gas_post(payload: dict, timeout: int = 15) -> dict:
-    """GAS POST. 응답 dict 반환. 실패 시 {"ok": False, "error": ...}."""
-    try:
-        body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
-        req = urllib.request.Request(
-            _GAS_URL, data=body,
-            headers={"Content-Type": "application/json"}, method="POST",
-        )
-        with urllib.request.urlopen(req, timeout=timeout) as r:
-            return json.loads(r.read())
-    except Exception as e:
-        return {"ok": False, "error": str(e)}
-
-
-def _gas_get_sheet_id(task_id: str) -> str | None:
-    """
-    시트에서 task_id 임베드를 가진 AI배 행의 GAS id 반환. 없으면 None.
-    best-effort: 실패 시 None(폴백 경로가 처리).
-    """
-    try:
-        req = urllib.request.Request(_GAS_URL + "?action=todo_list")
-        with urllib.request.urlopen(req, timeout=15) as r:
-            data = json.loads(r.read())
-        rows = data.get("data", [])
-        for row in rows:
-            if _AI_CATEGORY not in str(row.get("카테고리", "")):
-                continue
-            m = _EMBED_RE.search(str(row.get("내용", "")))
-            if m:
-                try:
-                    embed = json.loads(m.group(1))
-                    if embed.get("task_id") == task_id:
-                        return str(row.get("id", ""))
-                except Exception:
-                    pass
-    except Exception as e:
-        print("[WARN] GAS 시트 조회 실패: " + str(e), file=sys.stderr)
-    return None
-
-
-def _gas_sync_bridge(
-    task_id: str,
-    clevel: str,
-    queue_after: list,
-    appended_id: str | None,
-    appended_item: dict | None,
-    next_desc: str | None,
-) -> None:
-    """
-    브릿지 완료를 GAS 시트에 동기화(best-effort — 실패해도 브릿지 미영향).
-
-    1) 기존 task_id 행을 todo_update(상태=완료, 내용=임베드 재생성).
-    2) next_desc 있으면 다음 항목을 todo_add(카테고리=[7]AI배(C레벨)).
-
-    _queue.json 직접쓰기가 이미 완료된 뒤 호출되므로 queue_after = 갱신된 큐.
-    """
-    # ① 기존 행 상태 업데이트
-    gas_id = _gas_get_sheet_id(task_id)
-    if gas_id:
-        # 완료된 항목의 최신 dict를 큐에서 찾아 임베드 재생성
-        done_item = next((t for t in queue_after
-                          if isinstance(t, dict) and t.get("task_id") == task_id), None)
-        if done_item:
-            omit = {"title", "clevel", "status", "deadline", "priority"}
-            embed = {k: v for k, v in done_item.items()
-                     if k not in omit and v is not None
-                     and not (isinstance(v, str) and not v.strip())}
-            embed_str = "===AI_QUEUE===\n" + json.dumps(embed, ensure_ascii=False) + "\n===END==="
-            note_body = str(done_item.get("note", ""))
-            content = (note_body + "\n" if note_body else "") + embed_str
-
-            resp = _gas_post({
-                "action": "todo_update",
-                "id": gas_id,
-                "status": "완료",
-                "content": content,
-            })
-            if resp.get("ok"):
-                print("[GAS] 시트 완료 업데이트 — " + task_id)
-            else:
-                print("[WARN] GAS 시트 업데이트 실패: " + str(resp.get("error", "")),
-                      file=sys.stderr)
-    else:
-        print("[WARN] GAS 시트에서 " + task_id + " 행을 찾지 못함 — 시트 동기 스킵",
-              file=sys.stderr)
-
-    # ② 다음 항목 추가(브릿지 next)
-    if next_desc and appended_id and appended_item:
-        nclevel = str(appended_item.get("clevel", clevel)).lower()
-        owner = _CLEVEL_DISPLAY.get(nclevel, "AI " + nclevel.upper())
-        omit2 = {"title", "clevel", "status", "deadline", "priority"}
-        embed2 = {k: v for k, v in appended_item.items()
-                  if k not in omit2 and v is not None
-                  and not (isinstance(v, str) and not v.strip())}
-        embed_str2 = "===AI_QUEUE===\n" + json.dumps(embed2, ensure_ascii=False) + "\n===END==="
-        note2 = str(appended_item.get("note", ""))
-        content2 = (note2 + "\n" if note2 else "") + embed_str2
-
-        resp2 = _gas_post({
-            "action": "todo_add",
-            "title": next_desc,
-            "category": _AI_CATEGORY,
-            "owner": owner,
-            "status": "대기",
-            "content": content2,
-        })
-        if resp2.get("ok"):
-            print("[GAS] 시트 다음 항목 추가 — " + appended_id)
-        else:
-            print("[WARN] GAS 다음 항목 추가 실패: " + str(resp2.get("error", "")),
-                  file=sys.stderr)
-
-
-def _trigger_mirror_refresh() -> None:
-    """
-    queue_sync_from_sheet --write 로 _queue.json 미러를 시트 기준으로 재생성.
-    best-effort: 실패해도 무시(직접쓰기로 이미 _queue.json 갱신됨).
-    시트 동기화 직후 호출 — GAS 캐시 지연(수 초) 고려해 임포트만 하고 즉시 실행하지 않음.
-    실제 재생성은 다음 8시 파이프라인 실행 전(Task Scheduler 또는 수동)에 별도 실행 권장.
-    """
-    # NOTE: 미러 재생성을 여기서 즉시 실행하면 GAS 캐시가 아직 반영 전일 수 있어
-    # 방금 추가한 행이 미러에서 누락됨 → 즉시 실행 생략, WARN 없음.
-    pass
-
 
 # telegram_notifier 가 wellperion-agents/ 에 있으므로 import 경로 추가
 # (ceo_morning_pipeline.py 와 동일 패턴)
@@ -370,11 +221,10 @@ def update_queue_with_bridge(
             break
 
     appended_id = None
-    appended_item: dict | None = None
     if next_desc:
         nclevel = (next_clevel or clevel).lower()
         appended_id = "NEXT-" + local_now.strftime("%Y%m%d-%H%M%S")
-        appended_item = {
+        queue.append({
             "task_id": appended_id,
             "clevel": nclevel,
             "title": next_desc,
@@ -383,8 +233,7 @@ def update_queue_with_bridge(
             "from": clevel.lower(),
             "origin": "bridge",
             "enqueued_at": now_iso,
-        }
-        queue.append(appended_item)
+        })
         label = "다음→ " + next_desc + " [" + appended_id + "]"
     elif terminal:
         label = "종결(다음 없음)"
@@ -407,20 +256,6 @@ def update_queue_with_bridge(
             sweep_old_done()
         except Exception as _e:  # noqa: BLE001
             print("[WARN] 끝난 일 자동 정리 건너뜀: " + str(_e), file=sys.stderr)
-        # ── GAS 시트 동기화(best-effort) — 2단계 AI 배 SSOT 이관 ─────────────
-        # _queue.json 직접쓰기가 이미 완료된 뒤 호출 → GAS 실패해도 데이터 유실 없음(폴백 완료).
-        try:
-            _gas_sync_bridge(
-                task_id=task_id,
-                clevel=clevel,
-                queue_after=queue,
-                appended_id=appended_id,
-                appended_item=appended_item,
-                next_desc=next_desc,
-            )
-        except Exception as _ge:  # noqa: BLE001
-            print("[WARN] GAS 시트 동기화 실패(브릿지 무영향 — _queue.json 이미 갱신됨): "
-                  + str(_ge), file=sys.stderr)
         return (label, True)
     except OSError as e:
         print("[ERROR] _queue.json 브릿지 갱신 실패: " + str(e), file=sys.stderr)
