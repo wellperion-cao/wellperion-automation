@@ -6875,12 +6875,13 @@ function crTab(btn, panelId) {
             var base    = 'ssot-' + (row['id'] || title);
             var rawContent = String(row['내용'] || '');
             var parsed  = gm1ParseContent(rawContent);  // D-1 역파서: 마커 분해 + 진척/예산 복원
+            var ed = ssotDateLocal(row['종료일']);  // endDate — 편집 모달에 채우기 위해 필수 (2026-06-07 수리)
             if (needsGm) {
               items.push({
                 id: base, title: (/^\s*\[결재\]/.test(title) ? title : '[결재] ' + title), status: '진행중',
                 category: '결재', description: parsed.description,
                 progressLog: parsed.progressLog, budgetCat: parsed.budgetCat, budgetAmt: parsed.budgetAmt,
-                isToday: true, startDate: sd, ssotAuto: true, owner: owner,
+                isToday: true, startDate: sd, endDate: ed, ssotAuto: true, owner: owner,
                 _sheetsId: String(row['id'] || '')
               });
             } else if (owner.indexOf('김남욱GM') >= 0 || /AI (CEO|CMO|CTO|COO|CFO|CPO|CHRO)/.test(owner) || /웰리|시모|시토|시우|시뽀|시포|시로/.test(owner)) {
@@ -6898,7 +6899,7 @@ function crTab(btn, panelId) {
                 category: '업무', description: parsed.description,
                 progressLog: parsed.progressLog, budgetCat: parsed.budgetCat, budgetAmt: parsed.budgetAmt,
                 apprReq: String(row['결재요청'] || ''), apprStatus: apr,
-                isToday: true, startDate: sd, ssotAuto: true, owner: owner,
+                isToday: true, startDate: sd, endDate: ed, ssotAuto: true, owner: owner,
                 _sheetsId: String(row['id'] || '')
               });
             }
