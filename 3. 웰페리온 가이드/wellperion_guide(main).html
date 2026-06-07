@@ -4176,7 +4176,7 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
       function effState(it){var d=dec();return it.status||(d[it.id]&&d[it.id].decision)||'검수대기';}
       function dateKey(it){return it.published_at||(((it.id||'').match(/\d{4}-\d{2}-\d{2}/)||[''])[0])||it.assigned_at||it.enqueued_at||'';}
       function pubDate(it){var k=dateKey(it);return k?k.slice(0,10):'';}
-      function isDone(st){return st==='발행완료'||st==='rejected'||st==='반려'||st==='확인필요';}
+      function isDone(st){return st==='발행완료'||st==='rejected'||st==='반려'||st==='확인필요'||st==='폐기';}
       function badgeOf(e){return e==='발행완료'?'<span style="color:var(--green);font-weight:700;">✅ 발행완료</span>':(e==='approved'||e==='승인')?'<span style="color:var(--accent);font-weight:700;">🟡 승인됨 · 발행 진행 중</span>':e==='발행실패'?'<span style="color:#dc2626;font-weight:700;">❌ 발행 실패 · 재시도 필요</span>':e==='수동발행대기'?'<span style="color:var(--accent);font-weight:700;">📦 수동 발행 대기</span>':(e==='rejected'||e==='반려')?'<span style="color:var(--warm,#d98c5f);font-weight:700;">↩ 반려됨</span>':e==='확인필요'?'<span style="color:#d98c5f;font-weight:700;">🔎 발행 확인필요 · URL 수동확인</span>':'<span style="color:var(--accent);font-weight:700;">🟡 검수 대기</span>';}
       // 계정 분류: account 필드 우선, 없으면 channel 문자열로 추론, 미분류는 namuk
       function acctOf(it){
