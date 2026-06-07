@@ -258,6 +258,62 @@ async def cmd_stop(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     os._exit(0)
 
 
+# ── /복구 (/restart): 죽은 원격 Claude 세션 재기동 (2026-06-07 CTO) ────────────
+# 봇·스케줄러는 Task Scheduler 로그온 트리거로 상시 생존 → 이 명령은 Claude 세션만
+# 숨김 런처로 다시 띄운다. 이미 살아있으면 중복 기동하지 않음(원격 통제 안전).
+_CLAUDE_RESTART_VBS = REPO_ROOT / "launchers" / "claude_session_hidden.vbs"
+
+
+def _claude_session_alive() -> bool:
+    """원격 Claude 세션(claude.exe --remote-control)이 가동 중인지 확인."""
+    try:
+        result = subprocess.run(
+            ["tasklist", "/FI", "IMAGENAME eq claude.exe", "/FO", "CSV"],
+            capture_output=True, text=True, shell=True, timeout=15,
+        )
+        return "claude.exe" in result.stdout
+    except Exception as e:
+        log.warning(f"[복구] claude.exe 가동 확인 실패: {e}")
+        return False
+
+
+async def cmd_recover(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
+    """/복구 또는 /restart — owner 전용. 깨진 원격 Claude 세션 재기동.
+
+    숨김 런처(claude_session_hidden.vbs)로 정리된 Start-AI CEO.bat을 호출 →
+    Claude 세션만 다시 뜸(봇·스케줄러는 영향 없음). 결과 1줄 회신.
+    """
+    if not await authorized(update):
+        return
+
+    if _claude_session_alive():
+        await update.message.reply_text(
+            "ℹ️ 원격 Claude 세션이 이미 가동 중입니다. 재기동 불필요."
+        )
+        return
+
+    if not _CLAUDE_RESTART_VBS.exists():
+        await update.message.reply_text(
+            f"⚠️ 복구 런처를 찾을 수 없습니다: {_CLAUDE_RESTART_VBS.name}"
+        )
+        log.error(f"[복구] 런처 부재: {_CLAUDE_RESTART_VBS}")
+        return
+
+    try:
+        # wscript 로 숨김 VBS 실행 → 검은 창 없이 Start-AI CEO.bat 재기동.
+        subprocess.Popen(
+            ["wscript.exe", str(_CLAUDE_RESTART_VBS)],
+            cwd=str(REPO_ROOT),
+        )
+        log.info(f"[복구] 원격 Claude 세션 재기동 트리거: {_CLAUDE_RESTART_VBS}")
+        await update.message.reply_text(
+            "🔄 원격 Claude 세션을 재기동했습니다. 약 1~2분 후 부팅 보고가 도착합니다."
+        )
+    except Exception as e:
+        log.error(f"[복구] 세션 재기동 실패: {e}")
+        await update.message.reply_text(f"⚠️ 재기동 실패: {e}")
+
+
 # ── 문구 명령어 (v2.0) — status/quotes.json SSOT (노션 문구 DB 폐기 2026-05-29) ──
 
 def _load_quotes() -> dict:
@@ -840,6 +896,13 @@ async def handle_message(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
 
     _inbox_log("in", "GM", prompt)
 
+    # ── 한글 /복구 명령 선처리 (telegram CommandHandler 는 ASCII 만 허용) ───────
+    # "/복구" 또는 "복구" 단독 입력 시 원격 Claude 세션 재기동으로 라우팅.
+    if prompt.strip() in ("/복구", "복구", "/재기동", "재기동"):
+        await cmd_recover(update, ctx)
+        return
+    # ────────────────────────────────────────────────────────────────────────
+
     # NOTE: 인박스 DB 적재는 양방향 분류 게이트에서 category별로 처리
     # (simple_ack 제외, directive/feedback만 적재)
 
@@ -1102,6 +1165,10 @@ def main():
     app.add_handler(CommandHandler("new", cmd_new))
     app.add_handler(CommandHandler("status", cmd_status))
     app.add_handler(CommandHandler("stopbot", cmd_stop))
+    # /복구 (/restart) — 깨진 원격 Claude 세션 재기동 (2026-06-07 CTO).
+    # 한글 /복구 는 telegram CommandHandler 가 ASCII 만 허용하므로 handle_message
+    # 선처리로 라우팅(아래). /restart 영문 별칭만 CommandHandler 로 등록.
+    app.add_handler(CommandHandler("restart", cmd_recover))
     # 문구 DB 명령어 (v1.1) — 영문 커맨드로 등록 (telegram 라이브러리 ASCII 전용 제약)
     app.add_handler(CommandHandler("quote_add", cmd_quote_add))
     app.add_handler(CommandHandler("quote_delete", cmd_quote_delete))
