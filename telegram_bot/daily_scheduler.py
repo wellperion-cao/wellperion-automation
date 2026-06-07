@@ -972,6 +972,32 @@ def _build_06_body() -> str:
     )
 
 
+def _build_share_card_body() -> str:
+    """07시 직원 공유용 카드 — 북극성+명언 복붙용 텍스트 (카카오톡 단톡방 반자동)"""
+    now = datetime.now()
+    today_str = now.strftime("%Y-%m-%d")
+    weekday_kor = _WEEKDAY_KOR[now.weekday()]
+
+    quote = fetch_random_quote("06시")
+    quote_line = f'"{quote}"' if quote else '"오늘 하루도 한 걸음씩, 꾸준함이 곧 실력입니다."'
+
+    # 복붙용 본문 — 헤더/서명 없이 깔끔하게
+    share_text = (
+        f"🌟 {today_str} ({weekday_kor}) 북극성\n"
+        f"지속되지 않는 건강 문제를 해결한다\n\n"
+        f"💬 오늘의 한 마디\n"
+        f"{quote_line}"
+    )
+
+    return (
+        f"📋 직원 공유용 (카톡 복붙)\n"
+        f"━━━━━━━━━━━━━━━━\n"
+        f"{share_text}\n"
+        f"━━━━━━━━━━━━━━━━\n"
+        f"↑ 위 텍스트를 직원 단톡방에 붙여넣기"
+    )
+
+
 def _build_07_body() -> str:
     """07시 — 어제 한 항로 정리 (git 완료 + todo_list 어제완료 머지) [개인&회사]"""
     now = datetime.now()
@@ -1441,6 +1467,7 @@ def _build_23_body() -> str:
 
 SLOT_BUILDERS = {
     "06": _build_06_body,
+    "07s": _build_share_card_body,
     "07": _build_07_body,
     "09": _build_09_body,
     "12": _build_12_body,
@@ -1627,6 +1654,7 @@ def main():
         # [2026-06-07 GM 확정] 10슬롯 개편 — 08시는 ceo_morning_pipeline(별도 Task Scheduler) 담당
         schedule_map = {
             "06": (6, 0),
+            "07s": (7, 5),   # 직원 공유용 카드 — 07시 어제항로 직후 5분
             "07": (7, 0),
             "09": (9, 0),
             "12": (12, 0),
