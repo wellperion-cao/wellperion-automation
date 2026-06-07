@@ -975,74 +975,131 @@ def _fetch_checklist_status_sheets(today: str) -> dict | None:
     return None
 
 
-def _compile_zone_summary(rows: list[dict]) -> str:
-    """Google Sheets 행 데이터 → 구역별 완료율 + 이슈 + 주차."""
-    zones: dict[str, dict] = {}
+def _count_table(rows: list[tuple]) -> list[str]:
+    """
+    텔레그램 고정폭 카운트 표 (좌측 라벨 + 우측 값).
+    한글/CJK 1자=2폭, ASCII 1폭으로 계산해 양쪽 칸 폭을 맞춘다.
+    rows: [(label, value_str), ...]
+    """
+    def w(s: str) -> int:
+        # CJK/한글 범위: U+1100 이상 또는 유니코드 동아시아 와이드 판정
+        import unicodedata
+        return sum(2 if unicodedata.east_asian_width(c) in ('W', 'F') else 1 for c in s)
+
+    label_w = max((w(str(lbl)) for lbl, _ in rows), default=4)
+    num_w = max((w(str(val)) for _, val in rows), default=1)
+    bar = "─"
+    top = f"┌─{bar * label_w}─┬─{bar * num_w}─┐"
+    bot = f"└─{bar * label_w}─┴─{bar * num_w}─┘"
+    out = [top]
+    for lbl, val in rows:
+        lpad = " " * (label_w - w(str(lbl)))
+        rpad = " " * (num_w - w(str(val)))
+        out.append(f"│ {lbl}{lpad} │ {rpad}{val} │")
+    out.append(bot)
+    return out
+
+
+def _compile_checklist_dashboard(rows: list[dict]) -> tuple[list[tuple], str, list[str]]:
+    """
+    Google Sheets 행 데이터를 집계해
+    (표_행_리스트, 주차_현황_문자열, 이슈_리스트) 반환.
+    - 지원부 체크 = 공용구역(세탁·복도·외부)
+    - 시설부 체크 = 남성구역 + 여성구역(사우나·락커)
+    - 주차 현황  = E-6 주차장 단일 항목
+    """
+    zones: dict[str, dict] = {"남성구역": {"total": 0, "done": 0},
+                               "여성구역": {"total": 0, "done": 0},
+                               "공용구역": {"total": 0, "done": 0}}
     issues: list[str] = []
-    parking: list[str] = []
+    parking_checked: bool | None = None
 
     for r in rows:
-        zone = r.get("zone", "기타")
-        checked = r.get("checked", False)
+        zone = r.get("zone", "")
+        checked = bool(r.get("checked", False))
         issue = r.get("issue", "")
         name = r.get("name", "")
 
-        if zone not in zones:
-            zones[zone] = {"total": 0, "done": 0}
-        zones[zone]["total"] += 1
-        if checked:
-            zones[zone]["done"] += 1
+        if zone in zones:
+            zones[zone]["total"] += 1
+            if checked:
+                zones[zone]["done"] += 1
+
+        # 주차 항목 별도 추적 (E-6 주차장)
+        if "주차" in name:
+            parking_checked = checked
+
         if issue:
             issues.append(f"  - {name}: {issue}")
-        if "주차" in name:
-            mark = "V" if checked else "_"
-            parking.append(f"  [{mark}] {name}")
 
-    labels = {"남성구역": "남성구역", "여성구역": "여성구역", "공용구역": "공용구역"}
-    lines: list[str] = []
-    for z, c in zones.items():
-        label = labels.get(z, z)
-        rate = int(c["done"] / c["total"] * 100) if c["total"] > 0 else 0
-        lines.append(f"  {label}: {rate}% ({c['done']}/{c['total']})")
+    # 지원부 = 공용구역, 시설부 = 남성+여성 합산
+    support = zones.get("공용구역", {"total": 0, "done": 0})
+    # 주차 항목은 공용구역에 포함되어 있으므로 별도 제외하지 않음 (통계상 무방)
+    facility_total = zones["남성구역"]["total"] + zones["여성구역"]["total"]
+    facility_done = zones["남성구역"]["done"] + zones["여성구역"]["done"]
 
-    result = ["[시설·지원 점검 현황]"] + lines
+    def fmt_score(done: int, total: int) -> str:
+        return f"{done}/{total}" if total > 0 else "-"
 
-    if parking:
-        result += ["", "[주차 관리]"] + parking
+    parking_str = "정상" if parking_checked else ("미완료" if parking_checked is False else "-")
 
-    if issues:
-        result += ["", "[이슈 발생]"] + issues[:5]
-        if len(issues) > 5:
-            result.append(f"  ... 외 {len(issues) - 5}건")
+    table_rows = [
+        ("지원부 체크", fmt_score(support["done"], support["total"])),
+        ("시설부 체크", fmt_score(facility_done, facility_total)),
+        ("주차 현황",   parking_str),
+    ]
+    return table_rows, parking_str, issues
 
-    return "\n".join(result)
+
+def _build_checklist_block(slot_label: str) -> str:
+    """
+    12시/18시 공용 — 체크리스트 대시보드 박스표 블록 생성.
+    slot_label: "12:00" | "18:00"
+    """
+    now = datetime.now()
+    today = now.strftime("%Y-%m-%d")
+    weekday_kor = _WEEKDAY_KOR[now.weekday()]
+    day_kor = ["월", "화", "수", "목", "금", "토", "일"][now.weekday()]
+
+    sheets_data = _fetch_checklist_status_sheets(today)
+    dashboard_url = "https://wellperion-cao.github.io/wellperion-automation/coo/check/%EC%A7%80%EC%9B%90%EB%B6%80%20%EC%B2%B4%EA%B3%84.html"
+
+    if sheets_data and sheets_data.get("rows"):
+        table_rows, parking_str, issues = _compile_checklist_dashboard(sheets_data["rows"])
+        table_lines = _count_table(table_rows)
+        table_str = "\n".join(table_lines)
+
+        issue_block = ""
+        if issues:
+            issue_block = "\n\n[이슈 발생]\n" + "\n".join(issues[:5])
+            if len(issues) > 5:
+                issue_block += f"\n  ... 외 {len(issues) - 5}건"
+    else:
+        table_str = "(점검 데이터 없음 — 실무진 점검앱 미입력 또는 API 미연결)"
+        issue_block = ""
+
+    return (
+        f"🛠 시설·지원 점검 현황 — {slot_label} ({day_kor})\n"
+        f"   체크리스트 진행 상황\n"
+        f"{table_str}"
+        f"{issue_block}\n"
+        f"🔗 대시보드: {dashboard_url}"
+    )
 
 
 def _build_12_body() -> str:
-    """12시 — 시설·지원·주차 점검 현황 (Google Sheets 단일 소스, 노션 폐기)"""
+    """12시 — 시설·지원 체크리스트 대시보드 진행현황 박스표"""
     now = datetime.now()
     today = now.strftime("%Y-%m-%d")
     weekday_kor = _WEEKDAY_KOR[now.weekday()]
 
-    sections: list[str] = []
-
-    sheets_data = _fetch_checklist_status_sheets(today)
-    if sheets_data and sheets_data.get("rows"):
-        sections.append(_compile_zone_summary(sheets_data["rows"]))
-
-    if not sections:
-        sections.append(
-            "(점검 데이터 미연결)\n"
-            "  .env CHECKLIST_API_URL 설정 후 활성화"
-        )
-
-    body = "\n\n".join(sections)
+    checklist_block = _build_checklist_block("12:00")
 
     return (
-        f"[웰페리온] 12시 시설·지원·주차 현황\n"
+        f"[웰페리온] 12시 점검 현황\n"
         f"━━━━━━━━━━━━━━━━\n"
-        f"{today} ({weekday_kor}) 12:00 기준\n\n"
-        f"{body}\n\n"
+        f"{today} ({weekday_kor}) 기준\n\n"
+        f"{checklist_block}\n\n"
         f"_본 메시지는 자동 발송입니다._"
     )
 
@@ -1087,10 +1144,13 @@ def _build_15_body() -> str:
 
 
 def _build_18_body() -> str:
-    """18시 — 오늘 성과 요약 + 운동 점검 + 명언"""
+    """18시 — 퇴근 인사 + 체크리스트 최종 현황 + 오늘 성과"""
     now = datetime.now()
     today_str = now.strftime("%Y-%m-%d")
     weekday_kor = _WEEKDAY_KOR[now.weekday()]
+
+    # 체크리스트 현황 (12시와 동일 소스, 18시 기준으로 재조회)
+    checklist_block = _build_checklist_block("18:00")
 
     # 오늘 성과: 오늘자 git 커밋 집계
     today = now.strftime("%Y-%m-%d")
@@ -1110,22 +1170,15 @@ def _build_18_body() -> str:
     else:
         quote_line = "\n"
 
-    # 운동 5종목 체크
-    workout_lines = "🏋️ 오늘 운동 점검 — 매일 고정 5종목\n"
-    for name, unit in DAILY_WORKOUT_ITEMS:
-        workout_lines += f"  • {name}  ___{unit}  ☐\n"
-    workout_lines += "  · 7일 중 5일이면 충분하다 — 꾸준함이 곧 루틴이다."
-
     return (
-        f"🌙 [웰페리온] 18시 퇴근 인사\n"
+        f"🌙 [웰페리온] 18시 — 오늘도 수고하셨습니다\n"
         f"━━━━━━━━━━━━━━━━\n"
-        f"📅 {today_str} ({weekday_kor})\n"
-        f"오늘 하루도 수고 많으셨습니다.\n\n"
+        f"📅 {today_str} ({weekday_kor})\n\n"
+        f"{checklist_block}\n\n"
+        f"━━━━━━━━━━━━━━━━\n"
         f"📊 오늘 성과\n"
         f"{commit_section}\n"
         f"{quote_line}"
-        f"━━━━━━━━━━━━━━━━\n"
-        f"{workout_lines}\n\n"
         f"_본 메시지는 자동 발송입니다._"
     )
 
