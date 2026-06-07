@@ -195,10 +195,54 @@ BALLET_CHANNELS = [
 ]
 
 
+BARRE_FOLDER = "instagram/260520_바레_런칭"
+BARRE_CHANNELS = [
+    {
+        "id": "CMO-2026-06-08-BARRE-BLOG",
+        "title": "바레 신규 클래스 런칭 — 네이버 블로그",
+        "channel": "네이버 블로그",
+        "body_file": "instagram/260520_바레_런칭/output(블로그)/_blog_body.txt",
+        "image_dir": "instagram/260520_바레_런칭/output(블로그)",
+    },
+    {
+        "id": "CMO-2026-06-08-BARRE-CAFE",
+        "title": "바레 신규 클래스 런칭 — 네이버 카페(동부이촌동)",
+        "channel": "네이버 카페 (동부이촌동)",
+        "body_file": "instagram/260520_바레_런칭/output(카페)/_cafe_body.txt",
+        "image_dir": "instagram/260520_바레_런칭/output(카페)",
+        "menuid": 659,
+    },
+    {
+        "id": "CMO-2026-06-08-BARRE-KAKAO",
+        "title": "바레 신규 클래스 런칭 — 카카오 채널",
+        "channel": "카카오 채널",
+        "body_file": "instagram/260520_바레_런칭/output(카카오 채널)/kakao_copy.md",
+        "image_dir": "instagram/260520_바레_런칭/output(카카오 채널)",
+    },
+    {
+        "id": "CMO-2026-06-08-BARRE-DANGGN",
+        "title": "바레 신규 클래스 런칭 — 당근채널",
+        "channel": "당근채널",
+        "body_file": "instagram/260520_바레_런칭/danggn_copy.md",
+        "image_dir": "instagram/260520_바레_런칭/output(당근)",
+    },
+]
+
+
 if __name__ == "__main__":
-    register_channels(
-        folder_rel=BALLET_FOLDER,
-        slide_glob="ig_*.jpg",
-        channels=BALLET_CHANNELS,
-        preview_slug="260520_발레_채널검수",
-    )
+    import sys
+    target = sys.argv[1] if len(sys.argv) > 1 else "barre"
+    if target == "ballet":
+        register_channels(
+            folder_rel=BALLET_FOLDER,
+            slide_glob="ig_*.jpg",
+            channels=BALLET_CHANNELS,
+            preview_slug="260520_발레_채널검수",
+        )
+    else:
+        register_channels(
+            folder_rel=BARRE_FOLDER,
+            slide_glob="ig_*.jpg",
+            channels=BARRE_CHANNELS,
+            preview_slug="260520_바레_채널검수",
+        )
