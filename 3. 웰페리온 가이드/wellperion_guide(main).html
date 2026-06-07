@@ -6908,11 +6908,14 @@ function crTab(btn, panelId) {
         }
       }
       // ssot-* 기원 항목은 localStorage 없음 → gm1SsotItems에서 낙관적 갱신 + Sheets sync
+      // (2026-06-07 시토) 낙관적 갱신 즉시 렌더 → sync 성공 후에만 재fetch (캐시 지연 덮어쓰기 방지)
       if (String(id).indexOf('ssot-') === 0) {
         var ssotIdx = gm1SsotItems.findIndex(function(x){ return x.id === id; });
         if (ssotIdx >= 0) { gm1SsotItems[ssotIdx].status = status; }
-        gm1SyncUpdate(id, { status: status });
         gm1RenderToday();
+        gm1SyncUpdate(id, { status: status }, function(ok){
+          if (ok) setTimeout(function(){ gm1FetchSsot(); }, 2000);
+        });
         return;
       }
       var tasks = gm1Load();
@@ -6921,9 +6924,11 @@ function crTab(btn, panelId) {
         if (tasks[i].id === id) { tasks[i].status = status; target = tasks[i]; break; }
       }
       gm1Save(tasks);
-      // Sheets 동기화: ssotSynced=true인 localStorage 항목
+      // Sheets 동기화: ssotSynced=true인 localStorage 항목 (2026-06-07 시토: 재fetch 캐시 지연 방지)
       if (target && target.ssotSynced && String(id).indexOf('seed-') !== 0) {
-        gm1SyncUpdate(id, { status: status });
+        gm1SyncUpdate(id, { status: status }, function(ok){
+          if (ok) setTimeout(function(){ gm1FetchSsot(); }, 2000);
+        });
       }
     }
 
@@ -7838,13 +7843,14 @@ function crTab(btn, panelId) {
       return s;
     }
 
-    /* todo_update fire-and-forget (mode:'no-cors' — 응답 불필요) */
-    function gm1SyncUpdate(localId, fields) {
+    /* todo_update — 응답 확인 fetch (2026-06-07 시토: no-cors→일반 fetch로 변경)
+       no-cors는 GAS redirect 후 opaque response라 ok 확인 불가 → 낙관적 갱신이
+       재fetch에 덮이는 버그의 원인. 일반 fetch로 성공 확인 후 onDone 콜백 호출.
+       🛡 빈값 필드 전송 제외 — action·id 항상 전송. */
+    function gm1SyncUpdate(localId, fields, onDone) {
       var sheetsId = gm1SheetsId(localId);
       if (!sheetsId) return;
       var params = Object.assign({ action: 'todo_update', id: sheetsId }, fields);
-      // 🛡 빈값(미편집·미로드) 필드는 전송 제외 → 서버가 기존값 보존(초기화 버그 방지 2026-06-04).
-      //   action·id는 항상 전송. 한 필드 편집 시 다른 필드가 ''로 덮어써지던 문제 차단.
       var qs = Object.keys(params).filter(function(k){
         if (k === 'action' || k === 'id') return true;
         var v = params[k];
@@ -7852,7 +7858,15 @@ function crTab(btn, panelId) {
       }).map(function(k){
         return encodeURIComponent(k) + '=' + encodeURIComponent(params[k]);
       }).join('&');
-      fetch(SSOT_API_URL + '?' + qs, { mode: 'no-cors', redirect: 'follow' }).catch(function(){});
+      fetch(SSOT_API_URL + '?' + qs, { redirect: 'follow' })
+        .then(function(r){ return r.json(); })
+        .then(function(res){
+          if (res && res.ok && typeof onDone === 'function') onDone(true);
+        })
+        .catch(function(){
+          // 실패해도 낙관적 갱신은 유지 — 재fetch 안 함
+          if (typeof onDone === 'function') onDone(false);
+        });
     }
 
     /* ══════════════════════════════════════════════
@@ -8126,21 +8140,21 @@ function crTab(btn, panelId) {
         var stored = gm1Load().find(function(x){ return x.id === id; });
         doSync = !!(stored && stored.ssotSynced && String(id).indexOf('seed-') !== 0);
       }
-      if (doSync) {
-        gm1SyncUpdate(id, { startDate: s, endDate: e || '' });
-      }
-
       window.gm1CloseDateRange();
-      // ssot-* 항목도 즉시 화면 반영(낙관적) + 백그라운드 재fetch (2026-06-03 종료일 저장 버그 수정)
+      // 낙관적 즉시 반영 (2026-06-07 시토: sync 성공 후에만 재fetch — 캐시 지연 덮어쓰기 방지)
       if (isSsotOrigin) {
         var drIdx = gm1SsotItems.findIndex(function(x){ return x.id === id; });
         if (drIdx >= 0) {
           gm1SsotItems[drIdx] = Object.assign({}, gm1SsotItems[drIdx], { startDate: s, endDate: (e || '') });
         }
-        setTimeout(function(){ gm1FetchSsot(); }, 1500);
       }
       gm1RenderToday();
       gm1CalRender();
+      if (doSync) {
+        gm1SyncUpdate(id, { startDate: s, endDate: e || '' }, function(ok){
+          if (ok) setTimeout(function(){ gm1FetchSsot(); }, 2000);
+        });
+      }
     };
 
     /* ── 정렬·검색 setter (담당자 필터 setter는 GM 단독 페이지라 제거 · 2026-06-02) ── */
