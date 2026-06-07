@@ -6895,6 +6895,8 @@ function crTab(btn, panelId) {
             var rawContent = String(row['내용'] || '');
             var parsed  = gm1ParseContent(rawContent);  // D-1 역파서: 마커 분해 + 진척/예산 복원
             var ed = ssotDateLocal(row['종료일']);  // endDate — 편집 모달에 채우기 위해 필수 (2026-06-07 수리)
+            // G1 합류 대상 = GM 본인 + AI C레벨. 타인(부서장·실무) 결재건은 G1 미표시(결재현황 SSOT 소관) (GM 2026-06-07)
+            var _isG1Owner = owner.indexOf('김남욱GM') >= 0 || /AI (CEO|CMO|CTO|COO|CFO|CPO|CHRO)/.test(owner) || /웰리|시모|시토|시우|시뽀|시포|시로/.test(owner);
             if (needsGm) {
               items.push({
                 id: base, title: (/\[결재\]/.test(title) ? title : '[결재] ' + title), status: '진행중',
@@ -6903,8 +6905,8 @@ function crTab(btn, panelId) {
                 isToday: true, startDate: sd, endDate: ed, ssotAuto: true, owner: owner,
                 _sheetsId: String(row['id'] || '')
               });
-            } else if (_aprInflightOther) {
-              // 결재 진행 중(타 결재자 대기) — category='결재'라 활성 항로에서 자동 제외, 배너서 'N건 진행중'으로만 집계
+            } else if (_aprInflightOther && _isG1Owner) {
+              // GM/AI 본인 발의 결재가 진행 중(타 결재자 대기) — category='결재'라 활성 항로 자동 제외, 배너서 'N건 진행중' 집계만
               items.push({
                 id: base, title: (/\[결재\]/.test(title) ? title : '[결재] ' + title), status: '진행중',
                 category: '결재', _apprKind: 'inflight', _nextApprover: _next, description: parsed.description,
@@ -6912,7 +6914,7 @@ function crTab(btn, panelId) {
                 isToday: true, startDate: sd, endDate: ed, ssotAuto: true, owner: owner,
                 _sheetsId: String(row['id'] || '')
               });
-            } else if (owner.indexOf('김남욱GM') >= 0 || /AI (CEO|CMO|CTO|COO|CFO|CPO|CHRO)/.test(owner) || /웰리|시모|시토|시우|시뽀|시포|시로/.test(owner)) {
+            } else if (_isG1Owner) {
               // ★ G1 합류: GM 본인 + AI C레벨 전체 (2026-06-01 GM 확정 v3)
               //   시작일=오늘 OR 상태=진행중이면 합류 — 과거 시작이어도 진행중인 건 항상 표시
               //   완료·보류는 제외 (오염 방지 유지)
