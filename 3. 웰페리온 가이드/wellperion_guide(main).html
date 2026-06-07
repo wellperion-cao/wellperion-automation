@@ -6907,8 +6907,15 @@ function crTab(btn, panelId) {
               // 오늘 완료 누락 수정(2026-06-06 GM/시우): 과거 시작이어도 '오늘 완료'한 건은 합류 — 수정일(로컬)=오늘이면 통과
               var _md = row['수정일'] ? new Date(row['수정일']) : null;
               var _modLocal = _md ? (_md.getFullYear() + '-' + ('0'+(_md.getMonth()+1)).slice(-2) + '-' + ('0'+_md.getDate()).slice(-2)) : '';
-              // 옛 완료·보류 = 이력(_history): 기본뷰선 숨기되 검색 대상엔 포함 (GM 2026-06-07)
-              var _isHist = (sd !== TD && st !== '진행중' && !((st === '완료' || st === '보류') && _modLocal === TD));
+              // 완료·보류: 최근 30일 내 = 입항(완료·보류) 토글에 표시 / 30일 초과 = 이력(검색전용).
+              //   진행중 등 활성은 항상 표시. (GM 2026-06-07: '오늘 완료만' 잡혀 완료가 안 보이던 문제 수정)
+              var _isHist;
+              if (st === '완료' || st === '보류') {
+                var _ageDays = _md ? (Date.now() - _md.getTime()) / 86400000 : 0;
+                _isHist = _ageDays > 30;
+              } else {
+                _isHist = false;
+              }
               var status = (st === '완료') ? '완료' : (st === '보류') ? '보류' : '진행중';
               items.push({
                 id: base, title: title, status: status,
@@ -6951,7 +6958,7 @@ function crTab(btn, panelId) {
             ssotAuto: true,
             queueSource: true,   // _queue 기원 마킹 (편집 차단용)
             owner: clvLabel,
-            _history: !_qActive,
+            _history: (q.status === '폐기'),   // 완료(DONE)=입항 토글 표시 / 폐기=이력(검색전용) (GM 2026-06-07)
             _sheetsId: ''
           });
         });
@@ -7427,7 +7434,7 @@ function crTab(btn, panelId) {
 
       // 완료·보류 통합 토글 (2026-05-28 GM 피드백 — 2칸 → 1칸)
       html += '<details class="toggle" style="margin-top:16px;">';
-      html += '<summary><span style="color:var(--green);"><span style="margin-right:4px;">✅</span>오늘 완료 ' + done.length + '건</span><span style="color:var(--dim);margin:0 8px;">·</span><span style="color:var(--accent);"><span style="margin-right:4px;">⏸️</span>오늘 보류 ' + hold.length + '건</span></summary>';
+      html += '<summary><span style="color:var(--green);"><span style="margin-right:4px;">⚓</span>입항(완료) ' + done.length + '건</span><span style="color:var(--dim);margin:0 8px;">·</span><span style="color:var(--accent);"><span style="margin-right:4px;">⏸️</span>보류 ' + hold.length + '건</span>' + (gm1Searching ? '' : '<span style="color:var(--dim);font-size:10.5px;font-weight:400;margin-left:6px;">(최근 30일 · 옛 기록은 검색)</span>') + '</summary>';
       html += '<div class="toggle-body" style="font-size:13px;">';
       // 완료 섹션
       if (done.length) {
@@ -7437,7 +7444,8 @@ function crTab(btn, panelId) {
           html += '<div style="padding:8px 0;border-bottom:1px dashed var(--border);">' +
             '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">' +
             '<span><span style="color:var(--green);font-weight:700;">✓</span> <span style="display:inline-block;background:rgba(100,180,120,0.13);color:var(--green);font-size:10.5px;font-weight:600;padding:2px 7px;border-radius:4px;margin:0 5px;">✅ 완료</span><span style="color:var(--text);font-weight:500;">' + gm1Esc(t.title) + '</span>' + (t.ssotAuto ? catChip(t) + SSOT_BADGE : '') + '</span>' +
-            '<button class="todo-act-btn today-act" data-id="' + gm1Esc(t.id) + '" data-action="restore" title="진행 중으로 되돌리기" style="font-size:11px;padding:2px 8px;flex-shrink:0;">↩ 복원</button>' +
+            // AI 배(queueSource)는 _queue 정본이라 G1서 복원 불가 → 버튼 숨김(무반응 방지). 시트 항목만 복원.
+            (t.queueSource ? '' : '<button class="todo-act-btn today-act" data-id="' + gm1Esc(t.id) + '" data-action="restore" title="진행 중으로 되돌리기" style="font-size:11px;padding:2px 8px;flex-shrink:0;">↩ 복원</button>') +
             '</div>' + descHtml +
             '</div>';
         });
@@ -7450,7 +7458,8 @@ function crTab(btn, panelId) {
           html += '<div style="padding:8px 0;border-bottom:1px dashed var(--border);">' +
             '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">' +
             '<span><span style="color:var(--accent);font-weight:700;">⏸</span> <span style="display:inline-block;background:rgba(183,159,138,0.15);color:var(--accent);font-size:10.5px;font-weight:600;padding:2px 7px;border-radius:4px;margin:0 5px;">⏸️ 보류</span><span style="color:var(--text);font-weight:500;">' + gm1Esc(t.title) + '</span>' + (t.ssotAuto ? catChip(t) + SSOT_BADGE : '') + '</span>' +
-            (t.ssotAuto ? '' : '<button class="todo-act-btn today-act" data-id="' + gm1Esc(t.id) + '" data-action="restore" style="font-size:11px;padding:2px 8px;flex-shrink:0;">되돌리기</button>') +
+            // AI 배(queueSource)만 복원 버튼 숨김(_queue 정본) — 시트 항목은 복원 가능
+            (t.queueSource ? '' : '<button class="todo-act-btn today-act" data-id="' + gm1Esc(t.id) + '" data-action="restore" style="font-size:11px;padding:2px 8px;flex-shrink:0;">되돌리기</button>') +
             '</div>' + descHtml +
             '</div>';
         });

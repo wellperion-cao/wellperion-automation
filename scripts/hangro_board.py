@@ -210,8 +210,9 @@ def fetch_queue_items() -> list[dict]:
 
 
 # ── 섹션 분류 ──────────────────────────────────────────────────────────────
-def _is_recent(date_str: str, days: int = 1) -> bool:
-    """완료일(수정일)이 KST 오늘~days일 전 이내인가. 입항 섹션 = 최근 완료만(8시 정본과 동일)."""
+def _is_recent(date_str: str, days: int = 3) -> bool:
+    """완료일(수정일)이 KST 오늘~days일 전 이내인가. 입항 섹션 = 최근 완료만(일일 다이제스트, 주말 커버 3일).
+    ※ G1 웹 대시보드는 30일 창(영구 보드) — 텔레그램 일일보고와 목적이 달라 창 크기 다름(의도)."""
     if not date_str:
         return False
     try:
