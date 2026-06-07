@@ -7357,15 +7357,23 @@ function crTab(btn, panelId) {
 
         // ── 액션 버튼: 하단 별도 줄 (결과보고서 제외) ──
         html += '<div class="gm1-task-actions">';
-        // 🔗 링크복사 (업무SSOT 동일: 현재 페이지 URL + id 앵커)
+        // 🔗 링크복사 (업무SSOT 동일: 현재 페이지 URL + id 앵커) — AI 배 포함 공통
         html += '<button class="gm1-action-btn" title="이 항목 링크 복사" data-id="' + gm1Esc(t.id) + '" data-action="copylink" style="padding:4px 10px;font-size:11px;">🔗</button>';
-        // 편집
-        html += '<button class="gm1-action-btn edit" data-id="' + gm1Esc(t.id) + '" data-action="edit" style="padding:4px 10px;font-size:11px;">편집</button>';
-        // 완료·보류: ssot 항목 포함 모두 표시 (Sheets sync) — 삭제는 SSOT 단방향 유지
-        html += '<button class="gm1-action-btn done" data-id="' + gm1Esc(t.id) + '" data-action="done" style="padding:4px 10px;font-size:11px;">완료</button>';
-        html += '<button class="gm1-action-btn hold" data-id="' + gm1Esc(t.id) + '" data-action="hold" style="padding:4px 10px;font-size:11px;">보류</button>';
-        // 삭제: 전 항목 노출 (SSOT 기원은 시트에서도 완전 삭제 · 2026-06-02 GM 확정)
-        html += '<button class="gm1-action-btn del" data-id="' + gm1Esc(t.id) + '" data-action="delete" style="padding:4px 10px;font-size:11px;">삭제</button>';
+        var _isQueue = !!t.queueSource || String(t.id).indexOf('queue-') === 0;
+        if (_isQueue) {
+          // AI 배 = _queue.json 정본(읽기전용). 편집/완료/삭제는 담당 C레벨·웰리가 _queue에서 처리.
+          //   G1은 브라우저라 _queue 파일을 직접 못 고침 → 무반응 버튼 대신 읽기전용 + 정리요청(클립보드)으로 명확화 (GM 2026-06-07)
+          html += '<span class="gm1-chip" style="background:rgba(126,87,194,0.13);color:#9575cd;font-size:10.5px;font-weight:600;">🤖 AI 배 · 웰리 관리</span>';
+          html += '<button class="gm1-action-btn" data-id="' + gm1Esc(t.id) + '" data-action="cleanup-request" title="이 AI 배를 웰리가 _queue에서 정리하도록 요청 문구 복사" style="padding:4px 10px;font-size:11px;">🧹 웰리에 정리요청</button>';
+        } else {
+          // 편집
+          html += '<button class="gm1-action-btn edit" data-id="' + gm1Esc(t.id) + '" data-action="edit" style="padding:4px 10px;font-size:11px;">편집</button>';
+          // 완료·보류: ssot 항목 포함 모두 표시 (Sheets sync) — 삭제는 SSOT 단방향 유지
+          html += '<button class="gm1-action-btn done" data-id="' + gm1Esc(t.id) + '" data-action="done" style="padding:4px 10px;font-size:11px;">완료</button>';
+          html += '<button class="gm1-action-btn hold" data-id="' + gm1Esc(t.id) + '" data-action="hold" style="padding:4px 10px;font-size:11px;">보류</button>';
+          // 삭제: 시트(ssot) 기원만 — 시트에서도 완전 삭제 · 2026-06-02 GM 확정
+          html += '<button class="gm1-action-btn del" data-id="' + gm1Esc(t.id) + '" data-action="delete" style="padding:4px 10px;font-size:11px;">삭제</button>';
+        }
         // ⚠️ 결과 보고서 버튼 의도적 제외 (GM 지시 2026-06-01)
         html += '</div>';
 
@@ -7500,6 +7508,21 @@ function crTab(btn, panelId) {
             return;
           }
           return;  // 그 외는 read-only 유지
+        }
+        // ── AI 배(_queue 기원) — G1은 브라우저라 _queue 파일 직접변경 불가. 읽기전용 + 정리요청만 (GM 2026-06-07) ──
+        if (String(id).indexOf('queue-') === 0 && act !== 'copylink') {
+          if (act === 'cleanup-request') {
+            var qi = gm1SsotItems.find(function(x){ return x.id === id; });
+            var qtitle = (qi && qi.title) || id;
+            var qtid = String(id).replace(/^queue-/, '');
+            if (!confirm('"' + qtitle + '"\n이 AI 배를 웰리가 _queue에서 정리(폐기)하도록 요청할까요?')) return;
+            var msg = '웰리야, AI 배 정리해줘 — task_id: ' + qtid + ' / 제목: ' + qtitle + ' (_queue.json에서 폐기 처리)';
+            var _ok = function(){ alert('정리요청 문구를 복사했어요.\n웰리(Claude Code · CLI/모바일)에 붙여넣으면 _queue에서 정리합니다.\n\n' + msg); };
+            if (navigator.clipboard && navigator.clipboard.writeText) { navigator.clipboard.writeText(msg).then(_ok, _ok); }
+            else { var ta2=document.createElement('textarea'); ta2.value=msg; document.body.appendChild(ta2); ta2.select(); try{document.execCommand('copy');}catch(ex){} document.body.removeChild(ta2); _ok(); }
+            return;
+          }
+          return;  // 편집/완료/보류/삭제 등은 AI 배에서 비활성 (버튼 자체를 안 그리지만 방어적 차단)
         }
         if (act === 'copylink') { var url=window.location.href.split('?')[0]+'?gm1='+encodeURIComponent(id); if(navigator.clipboard){navigator.clipboard.writeText(url);}else{var ta=document.createElement('textarea');ta.value=url;document.body.appendChild(ta);ta.select();try{document.execCommand('copy');}catch(ex){}document.body.removeChild(ta);} return; }
         if (act === 'edit')      { window.gm1OpenTaskModal(id); return; }
