@@ -141,6 +141,7 @@ def fetch_gas_items() -> list[dict]:
             "owner":     owner,
             "status":    st,
             "end_date":  end_kst,
+            "mod_date":  _to_kst_date(str(row.get("수정일", "") or "")),
             "priority":  str(row.get("난이도", "") or "NORMAL"),
             "needs_gm_appr": needs_gm,
             "source":    "gas",
@@ -160,9 +161,9 @@ def fetch_queue_items() -> list[dict]:
     items = []
     for q in rows:
         st = str(q.get("status", ""))
-        if st.upper() in {"DONE", "폐기"}:
+        if "폐기" in st:
             continue
-        if st.upper() not in {"PENDING", "IN_PROGRESS", "ON_HOLD"}:
+        if st.upper() not in {"PENDING", "IN_PROGRESS", "ON_HOLD", "DONE", "완료", "진행중", "대기"}:
             continue
         title = str(q.get("title", "")).strip()
         if not title:
@@ -173,6 +174,7 @@ def fetch_queue_items() -> list[dict]:
             "owner":    str(q.get("clevel", "")).upper(),
             "status":   st,
             "end_date": str(q.get("deadline") or ""),
+            "mod_date": str(q.get("processed_at") or ""),
             "priority": str(q.get("priority", "NORMAL")),
             "needs_gm_appr": False,
             "source":   "queue",
@@ -181,6 +183,20 @@ def fetch_queue_items() -> list[dict]:
 
 
 # ── 섹션 분류 ──────────────────────────────────────────────────────────────
+def _is_recent(date_str: str, days: int = 1) -> bool:
+    """완료일(수정일)이 KST 오늘~days일 전 이내인가. 입항 섹션 = 최근 완료만(8시 정본과 동일)."""
+    if not date_str:
+        return False
+    try:
+        from datetime import datetime, timedelta
+        d = datetime.strptime(date_str[:10], "%Y-%m-%d").date()
+        kst_today = (datetime.utcnow() + timedelta(hours=9)).date()
+        delta = (kst_today - d).days
+        return 0 <= delta <= days
+    except Exception:
+        return False
+
+
 def _classify(items: list[dict]) -> dict[str, list[dict]]:
     sections: dict[str, list[dict]] = {
         "urgent":  [],   # 🔴 급한 입항 (마감임박 ≤3일, 미완료)
@@ -215,7 +231,9 @@ def _classify(items: list[dict]) -> dict[str, list[dict]]:
         elif urgent_flag:
             sections["urgent"].append(item)
         elif done:
-            sections["done"].append(item)
+            # 입항(완료)은 최근(오늘·어제) 완료만 — 옛 완료건은 이력이라 보드서 제외
+            if _is_recent(item.get("mod_date", "")):
+                sections["done"].append(item)
         else:
             sections["today"].append(item)
 
