@@ -105,11 +105,11 @@
     "task_id": "CMO-2026-06-06-CHANNEL-ENGAGEMENT",
     "clevel": "cmo",
     "title": "[시모-13] 채널별 조회·반응 자동수집 (#2) — IG·블로그·카페·카카오·당근 engagement_feed 채우기",
-    "status": "PENDING",
+    "status": "IN_PROGRESS",
     "priority": "NORMAL",
     "depends_on": null,
     "enqueued_at": "2026-06-06",
-    "note": "대시보드 '최근 변동사항'(engagement_feed.json) 비어있음. 채널별 조회·반응 수집기 필요. 각 채널 로그인(cao SSO) 필요 → GM 인터랙티브 타이밍에 채널별 단계적. 검증 안된 스크레이퍼 눈감고 작성 금지."
+    "note": "[2026-06-07 1단계 완료] scripts/engagement_collector.py 구현+실측. 당근(공개HTML viewCount파싱·로그인불필요)·블로그(RSS신규감지·로그인불필요) 수집 동작확인. engagement_feed.json 1건(당근 WJO viewCount=4), blog_snapshot 10건, danggn_snapshot 저장 완료. 🔒 로그인 필요 채널(나머지): IG=Meta Graph API토큰(GM결재), 카페·카카오=cao SSO 인터랙티브 세션. 다음: GM 로그인 인터랙티브 타이밍에 카페·카카오 --channel 추가."
   },
   {
     "task_id": "CTO-2026-06-08-CFO-SHEET-LINK",
