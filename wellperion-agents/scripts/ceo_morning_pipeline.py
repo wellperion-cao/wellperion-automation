@@ -69,6 +69,11 @@ PLAN_DIR = STATUS_DIR / "morning_plans"          # 산출물: 일자별 계획 J
 if str(PACKAGE_ROOT) not in sys.path:
     sys.path.insert(0, str(PACKAGE_ROOT))
 
+# 공유 모듈 (ship_classify) 경로
+_SCRIPTS_ROOT = str(REPO / "scripts")
+if _SCRIPTS_ROOT not in sys.path:
+    sys.path.insert(0, _SCRIPTS_ROOT)
+
 # ── C-Level 닉네임 (spec ③ — 모든 항목 끝에 [닉네임] 부착) ─────────────────────
 CLEVEL_NICK = {
     "CEO": "웰리",
@@ -567,91 +572,13 @@ def count_table(rows: list[tuple[str, int]]) -> list[str]:
     return out
 
 
-# ── 항해 세계관 — 배 분류 (2026-06-05 GM '오늘의 항해' 재설계) ────────────────────
-# 🌟북극성=목적지 · 🧭항로=과정 · 🚢배=할일 · ⚓항로점=어제가 남긴 '다음' · 🌀표류=완료했는데 다음 없음.
-# 무게(priority)=배 종류 / 🔴급함(마감임박)·🌟북극성직결 은 별개 축으로 겹쳐 표시.
-
-# 무게(priority) → 배 종류. priority 없으면 여객선(NORMAL) 기본.
-SHIP_BY_WEIGHT = {
-    "HIGH":   {"icon": "🛳️", "tier": "크루즈"},
-    "NORMAL": {"icon": "⛴️", "tier": "여객선"},
-    "LOW":    {"icon": "⛵", "tier": "돛단배"},
-}
-# 정렬용: 무게 큰 순(크루즈 먼저)
-SHIP_WEIGHT_RANK = {"HIGH": 0, "NORMAL": 1, "LOW": 2}
-
-# 🌟 북극성 직결 키워드 (heuristic — 상수로 빼서 튜닝 쉽게). 제목+note 에 1개+ 매칭.
-NORTHSTAR_KEYWORDS = [
-    "ERP", "erp", "자동화", "수익", "매출", "문의", "파이프라인",
-    "전환", "가입", "북극성", "항로", "모듈", "상품화",
-]
-
-# NORMAL priority 시 크루즈로 상향할 '프로젝트성' 키워드
-SHIP_UPGRADE_KEYWORDS = [
-    "이관", "구축", "셋업", "프로젝트", "상품화", "파이프라인", "자동화", "통합",
-]
-
-# NORMAL priority 시 돛단배로 하향할 '단발/짧은 작업' 키워드
-SHIP_DOWNGRADE_KEYWORDS = [
-    "수정", "교체", "정리", "색", "글씨", "링크", "오타", "확인", "반영",
-]
-
-
-def classify_ship(task: dict, urgent_titles: set | None = None) -> dict:
-    """
-    할일(task)을 항해 세계관의 '배'로 분류한다.
-
-    반환: {icon, tier, urgent(bool), northstar(bool)}
-      - 무게(priority): HIGH→🛳️크루즈 / LOW→⛵돛단배 / NORMAL은 신호로 추론:
-          · northstar==True AND (deadline 있거나 SHIP_UPGRADE_KEYWORDS 매칭) → 🛳️크루즈
-          · SHIP_DOWNGRADE_KEYWORDS 매칭 AND deadline 없음 AND northstar 아님 → ⛵돛단배
-          · 그 외 → ⛴️여객선
-      - urgent: urgent_deadlines() 임박 마감 제목 매칭 또는 task.deadline ≤ 3일
-      - northstar: 제목+note 에 NORTHSTAR_KEYWORDS 1개+ 매칭
-    """
-    pri = str(task.get("priority") or "NORMAL").upper()
-    title = str(task.get("title") or "")
-    hay = f"{title} {task.get('note') or ''}"
-
-    # 🌟 북극성 먼저 계산 (무게 추론에 사용)
-    northstar = any(kw in hay for kw in NORTHSTAR_KEYWORDS)
-
-    # deadline 유무 판정
-    has_deadline = bool(task.get("deadline") and str(task.get("deadline", ""))[:4].isdigit())
-
-    # 무게(배 종류) 결정
-    if pri == "HIGH":
-        ship = SHIP_BY_WEIGHT["HIGH"]
-    elif pri == "LOW":
-        ship = SHIP_BY_WEIGHT["LOW"]
-    else:
-        # NORMAL — 신호로 추론
-        title_lower = title.lower()
-        has_upgrade = any(kw in title for kw in SHIP_UPGRADE_KEYWORDS)
-        has_downgrade = any(kw in title for kw in SHIP_DOWNGRADE_KEYWORDS)
-        if northstar and (has_deadline or has_upgrade):
-            ship = SHIP_BY_WEIGHT["HIGH"]   # 크루즈로 상향
-        elif has_downgrade and not has_deadline and not northstar:
-            ship = SHIP_BY_WEIGHT["LOW"]    # 돛단배로 하향
-        else:
-            ship = SHIP_BY_WEIGHT["NORMAL"]
-
-    # 🔴 급함 — 임박 마감 제목 매칭 또는 task 자체 deadline ≤ 3일
-    urgent = False
-    if urgent_titles and title in urgent_titles:
-        urgent = True
-    if not urgent:
-        dl = task.get("deadline")
-        if isinstance(dl, str) and len(dl) >= 10:
-            try:
-                d = datetime.strptime(dl[:10], "%Y-%m-%d").date()
-                if 0 <= (d - datetime.now().date()).days <= 3:
-                    urgent = True
-            except ValueError:
-                pass
-
-    return {"icon": ship["icon"], "tier": ship["tier"],
-            "urgent": urgent, "northstar": northstar}
+# ── 항해 세계관 — 배 분류 (공유 모듈 위임, 2026-06-07) ──────────────────────────
+# SSOT: scripts/ship_classify.py — 중복 구현 금지.
+from ship_classify import (  # noqa: E402
+    SHIP_BY_WEIGHT, SHIP_WEIGHT_RANK,
+    NORTHSTAR_KEYWORDS, SHIP_UPGRADE_KEYWORDS, SHIP_DOWNGRADE_KEYWORDS,
+    classify_ship, has_clevel_id, render_ship_line,
+)
 
 
 def stage1_collect_classify() -> dict:

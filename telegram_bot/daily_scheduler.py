@@ -76,6 +76,24 @@ except Exception:
     def log_outbound(*a, **k):
         pass
 
+# 배 분류 공유 모듈 (scripts/ship_classify.py)
+try:
+    import os as _os2, sys as _sys2
+    _scr2 = _os2.path.abspath(_os2.path.join(_os2.path.dirname(_os2.path.abspath(__file__)), "..", "scripts"))
+    if _scr2 not in _sys2.path:
+        _sys2.path.insert(0, _scr2)
+    from ship_classify import classify_ship, has_clevel_id, render_ship_line
+    _SHIP_CLASSIFY_OK = True
+except Exception as _e_ship:
+    _SHIP_CLASSIFY_OK = False
+    def classify_ship(task, urgent_titles=None):  # type: ignore[misc]
+        return {"icon": "🚢", "tier": "여객선", "urgent": False, "northstar": False}
+    def has_clevel_id(title):  # type: ignore[misc]
+        return False
+    def render_ship_line(title, owner, ship, due=""):  # type: ignore[misc]
+        owner_part = f" [{owner}]" if owner else ""
+        return f"🚢 {title}{owner_part}"
+
 # ── v1.2 헬스체크 상수 ────────────────────────────────────────────────────────
 FAILURE_STATE_FILE = Path(__file__).parent / "telegram_failure.json"
 _ENV_MTIME: float = 0.0          # .env 마지막 수정 시각 추적용
@@ -675,12 +693,22 @@ def _classify_todo_cards(
 
 
 def _render_card(c: dict, show_status: bool = True) -> str:
-    """단일 카드를 들여쓰기 텍스트로 렌더링."""
-    lines = [f"[{c['id_short']}] {c['업무명']}"]
+    """단일 카드를 들여쓰기 텍스트로 렌더링 (배 무게 이모지 포함)."""
+    ship = classify_ship(c)
+    title = c["업무명"]
+    owner = c.get("담당자", "")
+    due = c.get("due", "")
+    headline = render_ship_line(title, owner, ship, due)
+    lines = [headline]
     status_part = f" · {c['상태']}" if show_status and c.get("상태") else ""
-    due_part = f" · ~{c['due']}" if c.get("due") else ""
-    sub = f"   담당 {c['담당자']}{status_part}{due_part}"
-    lines.append(sub)
+    sub_parts = []
+    if owner and not has_clevel_id(title):
+        # owner는 이미 headline에 포함되었으므로 sub에는 상태만
+        pass
+    if show_status and c.get("상태"):
+        sub_parts.append(c["상태"])
+    if sub_parts:
+        lines.append(f"   {' · '.join(sub_parts)}")
     if c.get("비고"):
         lines.append(f"   비고: {c['비고']}")
     return "\n".join(lines)
@@ -1390,9 +1418,12 @@ def _build_21_body() -> str:
     # 내일 항로점 (미완료 → 이월)
     bridge_lines = []
     for c in open_cards[:8]:
-        due_part = f" · ~{c['due']}" if c.get("due") else ""
+        ship = classify_ship(c)
+        owner = c.get("담당자", "")
+        due = c.get("due", "")
+        line = render_ship_line(c["업무명"], owner, ship, due)
         st_part = f" [{c['상태']}]" if c.get("상태") else ""
-        bridge_lines.append(f"  🚢 {c['업무명']}{st_part}{due_part}")
+        bridge_lines.append(f"  {line}{st_part}")
     if len(open_cards) > 8:
         bridge_lines.append(f"  ... 외 {len(open_cards) - 8}건")
     bridge_block = "\n".join(bridge_lines) if bridge_lines else "  (미완료 이월 항목 없음 — 오늘 항로 완주)"

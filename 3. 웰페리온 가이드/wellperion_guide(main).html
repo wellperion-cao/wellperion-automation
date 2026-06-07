@@ -7095,6 +7095,45 @@ function crTab(btn, panelId) {
         var c = t.category;
         return (c === '업무' || c === '결재' || c === '기획' || c === '개인') ? c : '업무';
       }
+
+      // ── 배 무게 분류 (scripts/ship_classify.py 동일 로직 — 중복 구현 아님, JS 포트) ──
+      var NORTHSTAR_KW = ['ERP','erp','자동화','수익','매출','문의','파이프라인','전환','가입','북극성','항로','모듈','상품화'];
+      var UPGRADE_KW   = ['이관','구축','셋업','프로젝트','상품화','파이프라인','자동화','통합'];
+      var DOWNGRADE_KW = ['수정','교체','정리','색','글씨','링크','오타','확인','반영'];
+      var ID_RE = /\[[\w가-힣]+-\d+\]/;
+      function classifyShip(t) {
+        var title = (t.title || t['업무명'] || '');
+        var note  = (t.note  || t['내용']  || '');
+        var hay   = title + ' ' + note;
+        var pri   = (t.priority || 'NORMAL').toUpperCase();
+        var northstar = NORTHSTAR_KW.some(function(k){ return hay.indexOf(k) >= 0; });
+        var hasDl  = !!(t.endDate && String(t.endDate).length >= 10);
+        var icon, tier;
+        if (pri === 'HIGH') { icon = '🛳️'; tier = '크루즈'; }
+        else if (pri === 'LOW') { icon = '⛵'; tier = '돛단배'; }
+        else {
+          var up   = UPGRADE_KW.some(function(k){ return title.indexOf(k) >= 0; });
+          var down = DOWNGRADE_KW.some(function(k){ return title.indexOf(k) >= 0; });
+          if (northstar && (hasDl || up)) { icon = '🛳️'; tier = '크루즈'; }
+          else if (down && !hasDl && !northstar) { icon = '⛵'; tier = '돛단배'; }
+          else { icon = '⛴️'; tier = '여객선'; }
+        }
+        var urgent = false;
+        if (hasDl) {
+          try {
+            var dl = new Date(String(t.endDate).slice(0,10));
+            var diff = Math.floor((dl - new Date()) / 86400000);
+            if (diff >= 0 && diff <= 3) urgent = true;
+          } catch(e) {}
+        }
+        return { icon: icon, tier: tier, urgent: urgent, northstar: northstar };
+      }
+      function hasClevelId(title) { return ID_RE.test(title || ''); }
+      function renderShipPrefix(t) {
+        var s = classifyShip(t);
+        var badges = (s.northstar ? ' 🌟' : '') + (s.urgent ? ' 🔴' : '');
+        return s.icon + ' ';  // prefix only — badges appended after title in card
+      }
       // 분류 칩 (SSOT 항목 등에 표시)
       function catChip(t) {
         var c = catOf(t);
@@ -7235,16 +7274,20 @@ function crTab(btn, panelId) {
         html += '<span class="gm1-toggle-arrow" onclick="event.stopPropagation();var c=this.closest(\'.task-card\');var d=c.querySelector(\'.task-detail\');if(!d)return;d.classList.toggle(\'open\');this.classList.toggle(\'open\');">▶</span>';
         // 제목+meta 클릭 영역
         html += '<div style="flex:1;min-width:0;cursor:pointer;" onclick="var c=this.closest(\'.task-card\');var d=c.querySelector(\'.task-detail\');if(!d)return;d.classList.toggle(\'open\');c.querySelector(\'.gm1-toggle-arrow\').classList.toggle(\'open\');">';
-        html += '<div style="font-size:14px;font-weight:700;margin-bottom:4px;word-break:keep-all;overflow-wrap:anywhere;">' + gm1Esc(t.title) +
+        var _ship = classifyShip(t);
+        var _shipBadges = (_ship.northstar ? ' <span title="북극성 직결">🌟</span>' : '') + (_ship.urgent ? ' <span title="마감임박">🔴</span>' : '');
+        html += '<div style="font-size:14px;font-weight:700;margin-bottom:4px;word-break:keep-all;overflow-wrap:anywhere;">' +
+                '<span title="' + gm1Esc(_ship.tier) + '" style="margin-right:3px;">' + _ship.icon + '</span>' +
+                gm1Esc(t.title) + _shipBadges +
                 (t.time ? ' <span style="font-size:11px;color:var(--dim);font-weight:400;">(' + gm1Esc(t.time.slice(0,5)) + ')</span>' : '') + '</div>';
 
         // meta chips
         html += '<div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:3px;">';
         // 상태 chip
         html += '<span class="gm1-chip status-active">🟡 진행 중</span>';
-        // 담당자 chip (SSOT 기원이면 owner 필드, 일반은 GM)
+        // 담당자 chip (식별자 있으면 생략 — 제목에 이미 포함)
         var ownerStr = t.owner || (isSsot ? '' : '김남욱GM');
-        if (ownerStr) {
+        if (ownerStr && !hasClevelId(t.title)) {
           ownerStr.split(',').forEach(function(o){
             o = o.trim();
             if (o) html += '<span class="gm1-chip" style="background:rgba(91,159,213,0.13);color:#5b9fd5;">' + gm1Esc(o) + '</span>';
