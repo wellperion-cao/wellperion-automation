@@ -2143,6 +2143,88 @@
         })();
         </script>
 
+        <!-- ══ AI 배 시트 편집 (2단계 — 구글시트 SSOT 이관 2026-06-07) ══ -->
+        <h3 id="ai-ship-editor" style="margin-top:24px;border-top:1px solid var(--border);padding-top:20px;"><span class="ico">🚢</span>AI 배 현황 &amp; 편집 <span style="font-size:11px;font-weight:400;color:var(--dim);margin-left:8px;">구글시트 SSOT — GM 일처럼 편집</span></h3>
+        <div class="callout tip" style="font-size:12.5px;margin:0 0 10px;">AI C레벨 배는 구글시트에서 관리됩니다. 상태 변경·완료·보류를 여기서 직접 처리하세요.</div>
+        <div id="ai-ship-wrap" style="font-size:13px;">불러오는 중…</div>
+        <script>
+        (function(){
+          var GAS='https://script.google.com/macros/s/AKfycbxDwFkrxK1YIaEoSNcuw2MiHiZQ-7o5N6311ytksSyeEd86ZFOhLknOWqQgNArQvZ-7/exec';
+          var AI_CAT='[7]AI배(C레벨)';
+          var EMBED_RE=/===AI_QUEUE===\s*([\s\S]+?)\s*===END===/;
+          var ST_COLOR={진행중:'#b79f8a',완료:'#5cb85c',대기:'#999',보류:'#888'};
+          var ST_ICON={진행중:'🔄',완료:'✅',대기:'⏸️',보류:'⏸'};
+          function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+          function getEmbed(content){
+            var m=EMBED_RE.exec(String(content||''));
+            if(!m)return {};
+            try{return JSON.parse(m[1]);}catch(e){return {};}
+          }
+          function apiPost(payload,cb){
+            fetch(GAS,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)})
+              .then(function(r){return r.json();}).then(cb).catch(function(e){cb({ok:false,error:String(e)});});
+          }
+          function renderAiShip(rows){
+            var el=document.getElementById('ai-ship-wrap'); if(!el)return;
+            var ai=rows.filter(function(r){return String(r['카테고리']||'').indexOf('[7]')>=0||String(r['카테고리']||'').indexOf('AI배')>=0;});
+            if(!ai.length){el.innerHTML='<span style="color:var(--dim);">AI 배 항목 없음 (시트에 [7]AI배(C레벨) 카테고리 행이 없습니다)</span>';return;}
+            // 상태순 정렬: 진행중→대기→보류→완료
+            var ord={진행중:0,대기:1,보류:2,완료:3};
+            ai.sort(function(a,b){return (ord[a['상태']]||9)-(ord[b['상태']]||9);});
+            var h='<table><tr><th style="width:38%">업무명</th><th style="width:52px">담당</th><th style="width:56px">상태</th><th style="width:32px">우선</th><th>액션</th></tr>';
+            ai.forEach(function(r){
+              var id=r['id']||''; var st=r['상태']||'대기';
+              var embed=getEmbed(r['내용']||'');
+              var tid=embed.task_id||id;
+              var title=esc(r['업무명']||'(제목없음)');
+              var owner=esc((r['담당자']||'').replace('AI ','').replace('(','').replace(')',''));
+              var stColor=ST_COLOR[st]||'#999'; var stIcon=ST_ICON[st]||'•';
+              var note=esc((r['내용']||'').replace(/===AI_QUEUE===[\s\S]*?===END===/,'').trim().slice(0,60));
+              var noteEl=note?('<div style="font-size:10.5px;color:var(--dim);margin-top:2px;">'+note+'…</div>'):'';
+              // 액션 버튼: 상태에 따라 표시
+              var btns='';
+              if(st!=='완료'){
+                if(st!=='진행중') btns+='<button onclick="aiShipAction(\'status\',\''+esc(id)+'\',\'진행중\')" style="margin:1px 2px;padding:2px 7px;font-size:11px;background:#b79f8a;color:#fff;border:none;border-radius:3px;cursor:pointer;">진행중</button>';
+                if(st!=='보류')   btns+='<button onclick="aiShipAction(\'status\',\''+esc(id)+'\',\'보류\')"  style="margin:1px 2px;padding:2px 7px;font-size:11px;background:#888;color:#fff;border:none;border-radius:3px;cursor:pointer;">보류</button>';
+                btns+='<button onclick="aiShipAction(\'done\',\''+esc(id)+'\')" style="margin:1px 2px;padding:2px 7px;font-size:11px;background:#5cb85c;color:#fff;border:none;border-radius:3px;cursor:pointer;">완료</button>';
+              }
+              btns+='<button onclick="aiShipAction(\'delete\',\''+esc(id)+'\')" style="margin:1px 2px;padding:2px 7px;font-size:11px;background:#c0392b;color:#fff;border:none;border-radius:3px;cursor:pointer;">삭제</button>';
+              var tidBadge=tid?('<div style="font-size:9.5px;color:var(--dim);margin-top:1px;">'+esc(tid)+'</div>'):'';
+              h+='<tr><td>'+title+tidBadge+noteEl+'</td><td style="font-size:11px;">'+owner+'</td>';
+              h+='<td><span style="color:'+stColor+';font-weight:600;white-space:nowrap;">'+stIcon+' '+esc(st)+'</span></td>';
+              h+='<td style="font-size:11px;text-align:center;">'+(r['난이도']||'-')+'</td>';
+              h+='<td>'+btns+'</td></tr>';
+            });
+            h+='</table>';
+            el.innerHTML=h;
+          }
+          // 전역 액션 핸들러 (버튼 onclick 에서 호출)
+          window.aiShipAction=function(type,id,val){
+            var payload;
+            if(type==='status') payload={action:'todo_update',id:id,status:val};
+            else if(type==='done') payload={action:'todo_done',id:id};
+            else if(type==='delete'){if(!confirm('삭제하시겠습니까?'))return; payload={action:'todo_delete',id:id};}
+            else return;
+            apiPost(payload,function(resp){
+              if(resp.ok){loadAiShip();}
+              else{alert('처리 실패: '+(resp.error||'알 수 없는 오류'));}
+            });
+          };
+          function loadAiShip(){
+            var el=document.getElementById('ai-ship-wrap'); if(el)el.innerHTML='불러오는 중…';
+            var url=GAS+'?action=todo_list&category='+encodeURIComponent(AI_CAT);
+            fetch(url,{cache:'no-store'}).then(function(r){return r.json();}).then(function(d){
+              renderAiShip(d.data||[]);
+            }).catch(function(e){
+              var el=document.getElementById('ai-ship-wrap');
+              if(el)el.innerHTML='<span style="color:var(--dim);">AI 배를 불러오지 못했습니다: '+String(e)+'</span>';
+            });
+          }
+          loadAiShip();
+        })();
+        </script>
+        <!-- ══ /AI 배 시트 편집 ══ -->
+
         <h3 style="margin-top:24px;border-top:1px solid var(--border);padding-top:20px;"><span class="ico">📨</span>정기 텔레그램 보고 SOP (매일 2회)</h3>
         <table>
           <tr><th style="width:80px">시각</th><th>역할</th><th>형식</th></tr>
