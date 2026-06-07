@@ -6878,7 +6878,7 @@ function crTab(btn, panelId) {
             var ed = ssotDateLocal(row['종료일']);  // endDate — 편집 모달에 채우기 위해 필수 (2026-06-07 수리)
             if (needsGm) {
               items.push({
-                id: base, title: (/^\s*\[결재\]/.test(title) ? title : '[결재] ' + title), status: '진행중',
+                id: base, title: (/\[결재\]/.test(title) ? title : '[결재] ' + title), status: '진행중',
                 category: '결재', description: parsed.description,
                 progressLog: parsed.progressLog, budgetCat: parsed.budgetCat, budgetAmt: parsed.budgetAmt,
                 isToday: true, startDate: sd, endDate: ed, ssotAuto: true, owner: owner,
