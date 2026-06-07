@@ -611,17 +611,17 @@
     <!-- AUTO:LATEST-START -->
     <div class="card grow">
       <h4>최신 업데이트 — 2026-06-07 (자동 갱신)</h4>
+      <p><strong>2026-06-07</strong> fix(G1): 결재 진행중 집계를 GM/AI 본인 발의건으로 한정 — 타인 결재건(락커·칭찬사원 등) 누수 차단</p>
       <p><strong>2026-06-07</strong> fix(G1): 결재 진행 중(GM 차례 아님) 건을 활성 항로서 분리 — 배너 'N건 진행중'으로</p>
       <p><strong>2026-06-07</strong> fix(G1): 입항(완료) 섹션이 '오늘 완료'만 잡아 완료배가 안 보이던 문제 — 최근 30일 창으로 확대</p>
       <p><strong>2026-06-07</strong> fix(G1): AI 배(_queue) 카드 읽기전용화 — 무반응 삭제버튼 제거 + 🧹웰리정리요청 / [시로-01] 폐기</p>
       <p><strong>2026-06-07</strong> fix(G1): 결재 카운트를 SSOT nextApprover와 동기화 — owner=GM·부서장미서명건 GM결재 오버카운트 차단</p>
-      <p><strong>2026-06-07</strong> feat(g1): 결재 배 항로 개별표시 제거 → 카운트+SSOT 포인터 하나로 (GM 2026-06-07)</p>
     </div>
 <!-- AUTO:LATEST-END -->
         <table>
           <tr><th style="width:160px">날짜</th><th>변경 내용</th></tr>
           <!-- AUTO:TABLE-START -->
-      <tr><td><strong>2026-06-07 (자동)</strong></td><td>fix(G1): 결재 진행 중(GM 차례 아님) 건을 활성 항로서 분리 — 배너 'N건 진행중'으로 · fix(G1): 입항(완료) 섹션이 '오늘 완료'만 잡아 완료배가 안 보이던 문제 — 최근 30일 창으로 확대 · fix(G1): AI 배(_queue) 카드 읽기전용화 — 무반응 삭제버튼 제거 + 🧹웰리정리요청 / [시로-01] 폐기 · fix(G…</td></tr>
+      <tr><td><strong>2026-06-07 (자동)</strong></td><td>fix(G1): 결재 진행중 집계를 GM/AI 본인 발의건으로 한정 — 타인 결재건(락커·칭찬사원 등) 누수 차단 · fix(G1): 결재 진행 중(GM 차례 아님) 건을 활성 항로서 분리 — 배너 'N건 진행중'으로 · fix(G1): 입항(완료) 섹션이 '오늘 완료'만 잡아 완료배가 안 보이던 문제 — 최근 30일 창으로 확대 · fix(G1): …</td></tr>
       <!-- AUTO:TABLE-END -->
           <tr><td><strong>2026-05-28 (14차)</strong></td><td>공지/안내문 생성(COO 하위) · 오프라인 홍보물 디자인 제작(CMO 하위) 도구 신설 · 공지 서식 v2.0 독립 페이지화 · 회사소개서·전략로드맵 원본 「3. 웰페리온 가이드/회사문서/」로 이관(SSOT 단일화) · C-Level 부팅 R/R Notion API→웰페리온 ERP g10 참조로 전환 · GitHub Pages 워크플로 폴더명 경로 수정 · 사이드바 "공통+7개 C-Level" 라벨 제거</td></tr>
           <tr><td>2026-05-27 (13차)</td><td>GitHub Pages 전환 · 사이드바 4섹터 · AI C-Level 통일 · 운영 통합 체계 · 공식채널·지출현황·취업규칙·SSOT 신설 · g2+g19·g9+g20·g12·g13 합병 · 김남욱 탭 확장 · v2.5</td></tr>
@@ -6922,15 +6922,8 @@ function crTab(btn, panelId) {
               // 오늘 완료 누락 수정(2026-06-06 GM/시우): 과거 시작이어도 '오늘 완료'한 건은 합류 — 수정일(로컬)=오늘이면 통과
               var _md = row['수정일'] ? new Date(row['수정일']) : null;
               var _modLocal = _md ? (_md.getFullYear() + '-' + ('0'+(_md.getMonth()+1)).slice(-2) + '-' + ('0'+_md.getDate()).slice(-2)) : '';
-              // 완료·보류: 최근 30일 내 = 입항(완료·보류) 토글에 표시 / 30일 초과 = 이력(검색전용).
-              //   진행중 등 활성은 항상 표시. (GM 2026-06-07: '오늘 완료만' 잡혀 완료가 안 보이던 문제 수정)
-              var _isHist;
-              if (st === '완료' || st === '보류') {
-                var _ageDays = _md ? (Date.now() - _md.getTime()) / 86400000 : 0;
-                _isHist = _ageDays > 30;
-              } else {
-                _isHist = false;
-              }
+              // 완료·보류는 항상 합류(숨기지 않음). 완료는 _doneDate로 '오늘 입항' vs '지난 입항' 분리.
+              //   검색=전체라 _history 숨김은 안 씀(폐기만 검색전용 — 시트엔 폐기 없음). (GM 2026-06-07)
               var status = (st === '완료') ? '완료' : (st === '보류') ? '보류' : '진행중';
               items.push({
                 id: base, title: title, status: status,
@@ -6938,7 +6931,8 @@ function crTab(btn, panelId) {
                 progressLog: parsed.progressLog, budgetCat: parsed.budgetCat, budgetAmt: parsed.budgetAmt,
                 apprReq: String(row['결재요청'] || ''), apprStatus: apr,
                 isToday: true, startDate: sd, endDate: ed, ssotAuto: true, owner: owner,
-                _history: _isHist,
+                _doneDate: (st === '완료') ? _modLocal : '',
+                _history: false,
                 _sheetsId: String(row['id'] || '')
               });
             }
@@ -6963,6 +6957,7 @@ function crTab(btn, panelId) {
           if (items.some(function(it){ return it.id === qid; })) return;
           var clvLabel = CLEVEL_LABEL[String(q.clevel || '').toLowerCase()] || String(q.clevel || 'AI');
           var statusMap = { PENDING:'대기', IN_PROGRESS:'진행중', DONE:'완료' };
+          var _qDone = (q.status === 'DONE' || q.status === '완료');
           items.push({
             id: qid,
             title: String(q.title || tid),
@@ -6973,7 +6968,8 @@ function crTab(btn, panelId) {
             ssotAuto: true,
             queueSource: true,   // _queue 기원 마킹 (편집 차단용)
             owner: clvLabel,
-            _history: (q.status === '폐기'),   // 완료(DONE)=입항 토글 표시 / 폐기=이력(검색전용) (GM 2026-06-07)
+            _doneDate: _qDone ? String(q.processed_at || '').slice(0,10) : '',  // AI배 완료일(processed_at)
+            _history: (q.status === '폐기'),   // 완료(DONE)=입항 표시(오늘/지난 분리) / 폐기=이력(검색전용) (GM 2026-06-07)
             _sheetsId: ''
           });
         });
@@ -7255,8 +7251,13 @@ function crTab(btn, panelId) {
       function _gm1ApprPending(t){ var rq=String(t.apprReq||t.approval||'').trim(), a=String(t.apprStatus||'').trim(); return rq && a !== '결재완료' && !/반려/.test(a); }
       var apprWait = merged.filter(function(t){ return t.status === '완료' && _gm1ApprPending(t); });
       var active = merged.filter(function(t){ return t.status === '진행중'; });
-      var done   = merged.filter(function(t){ return t.status === '완료' && !_gm1ApprPending(t); });
+      var doneAll = merged.filter(function(t){ return t.status === '완료' && !_gm1ApprPending(t); });
+      // 입항 완료: 오늘 완료 = ⚓ 입항 완료 / 그 이전 = 🗄️ 지난 입항 완료 (GM 2026-06-07)
+      var _tdStr = todayStr();
+      var done     = doneAll.filter(function(t){ return (t._doneDate || '') === _tdStr; });   // 오늘 입항
+      var donePast = doneAll.filter(function(t){ return (t._doneDate || '') !== _tdStr; });   // 지난 입항
       var hold   = merged.filter(function(t){ return t.status === '보류'; });
+      var disposed = gm1Searching ? merged.filter(function(t){ return t.status === '폐기'; }) : [];  // 폐기=검색 시에만
       // 결재 배는 항로에 개별 표시 안 함 — 카운트+포인터 하나로(결재현황 SSOT에서 처리). GM 2026-06-07
       // 결재 배는 항로 활성카드서 제외 — GM 차례(gm)와 진행중(타 결재자 대기, inflight)을 분리 집계 (GM 2026-06-07)
       var apprActiveGm = active.filter(function(t){ return catOf(t) === '결재' && t._apprKind !== 'inflight'; });
@@ -7452,23 +7453,26 @@ function crTab(btn, panelId) {
         html += '<div style="color:var(--dim);font-size:13px;padding:12px 0;">오늘 진행 중인 항목이 없습니다.</div>';
       }
 
-      // 완료·보류 통합 토글 (2026-05-28 GM 피드백 — 2칸 → 1칸)
+      // ── 완료 라인 렌더 헬퍼 (오늘 입항·지난 입항 공통) ──
+      function _gm1DoneLineHtml(t, showDate){
+        var descHtml = t.description ? '<details style="margin-top:4px;font-size:12px;"><summary style="cursor:pointer;color:var(--accent);font-weight:600;font-size:11px;list-style:none;">▼ 내용 보기</summary><div style="padding:6px 8px;background:var(--paper-soft,#f5f3f0);border-radius:6px;margin-top:4px;line-height:1.5;white-space:pre-wrap;color:var(--text);">' + gm1Esc(t.description) + '</div></details>' : '';
+        var dateChip = (showDate && t._doneDate) ? '<span style="color:var(--dim);font-size:10.5px;margin-left:6px;">' + gm1Esc(String(t._doneDate).slice(5)) + ' 입항</span>' : '';
+        return '<div style="padding:8px 0;border-bottom:1px dashed var(--border);">' +
+          '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">' +
+          '<span><span style="color:var(--green);font-weight:700;">✓</span> <span style="display:inline-block;background:rgba(100,180,120,0.13);color:var(--green);font-size:10.5px;font-weight:600;padding:2px 7px;border-radius:4px;margin:0 5px;">✅ 완료</span><span style="color:var(--text);font-weight:500;">' + gm1Esc(t.title) + '</span>' + dateChip + (t.ssotAuto ? catChip(t) + SSOT_BADGE : '') + '</span>' +
+          // AI 배(queueSource)는 _queue 정본이라 G1서 복원 불가 → 버튼 숨김(무반응 방지). 시트 항목만 복원.
+          (t.queueSource ? '' : '<button class="todo-act-btn today-act" data-id="' + gm1Esc(t.id) + '" data-action="restore" title="진행 중으로 되돌리기" style="font-size:11px;padding:2px 8px;flex-shrink:0;">↩ 복원</button>') +
+          '</div>' + descHtml + '</div>';
+      }
+
+      // 오늘 입항 완료 · 보류 통합 토글 (GM 2026-06-07: '오늘 기준' 입항)
       html += '<details class="toggle" style="margin-top:16px;">';
-      html += '<summary><span style="color:var(--green);"><span style="margin-right:4px;">⚓</span>입항(완료) ' + done.length + '건</span><span style="color:var(--dim);margin:0 8px;">·</span><span style="color:var(--accent);"><span style="margin-right:4px;">⏸️</span>보류 ' + hold.length + '건</span>' + (gm1Searching ? '' : '<span style="color:var(--dim);font-size:10.5px;font-weight:400;margin-left:6px;">(최근 30일 · 옛 기록은 검색)</span>') + '</summary>';
+      html += '<summary><span style="color:var(--green);"><span style="margin-right:4px;">⚓</span>입항 완료 (오늘) ' + done.length + '건</span><span style="color:var(--dim);margin:0 8px;">·</span><span style="color:var(--accent);"><span style="margin-right:4px;">⏸️</span>보류 ' + hold.length + '건</span></summary>';
       html += '<div class="toggle-body" style="font-size:13px;">';
-      // 완료 섹션
+      // 오늘 완료 섹션
       if (done.length) {
-        html += '<div style="font-size:11px;font-weight:700;color:var(--green);padding:6px 0 2px;">✅ 완료</div>';
-        done.forEach(function(t){
-          var descHtml = t.description ? '<details style="margin-top:4px;font-size:12px;"><summary style="cursor:pointer;color:var(--accent);font-weight:600;font-size:11px;list-style:none;">▼ 내용 보기</summary><div style="padding:6px 8px;background:var(--paper-soft,#f5f3f0);border-radius:6px;margin-top:4px;line-height:1.5;white-space:pre-wrap;color:var(--text);">' + gm1Esc(t.description) + '</div></details>' : '';
-          html += '<div style="padding:8px 0;border-bottom:1px dashed var(--border);">' +
-            '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">' +
-            '<span><span style="color:var(--green);font-weight:700;">✓</span> <span style="display:inline-block;background:rgba(100,180,120,0.13);color:var(--green);font-size:10.5px;font-weight:600;padding:2px 7px;border-radius:4px;margin:0 5px;">✅ 완료</span><span style="color:var(--text);font-weight:500;">' + gm1Esc(t.title) + '</span>' + (t.ssotAuto ? catChip(t) + SSOT_BADGE : '') + '</span>' +
-            // AI 배(queueSource)는 _queue 정본이라 G1서 복원 불가 → 버튼 숨김(무반응 방지). 시트 항목만 복원.
-            (t.queueSource ? '' : '<button class="todo-act-btn today-act" data-id="' + gm1Esc(t.id) + '" data-action="restore" title="진행 중으로 되돌리기" style="font-size:11px;padding:2px 8px;flex-shrink:0;">↩ 복원</button>') +
-            '</div>' + descHtml +
-            '</div>';
-        });
+        html += '<div style="font-size:11px;font-weight:700;color:var(--green);padding:6px 0 2px;">✅ 오늘 완료</div>';
+        done.forEach(function(t){ html += _gm1DoneLineHtml(t, false); });
       }
       // 보류 섹션
       if (hold.length) {
@@ -7478,14 +7482,35 @@ function crTab(btn, panelId) {
           html += '<div style="padding:8px 0;border-bottom:1px dashed var(--border);">' +
             '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">' +
             '<span><span style="color:var(--accent);font-weight:700;">⏸</span> <span style="display:inline-block;background:rgba(183,159,138,0.15);color:var(--accent);font-size:10.5px;font-weight:600;padding:2px 7px;border-radius:4px;margin:0 5px;">⏸️ 보류</span><span style="color:var(--text);font-weight:500;">' + gm1Esc(t.title) + '</span>' + (t.ssotAuto ? catChip(t) + SSOT_BADGE : '') + '</span>' +
-            // AI 배(queueSource)만 복원 버튼 숨김(_queue 정본) — 시트 항목은 복원 가능
             (t.queueSource ? '' : '<button class="todo-act-btn today-act" data-id="' + gm1Esc(t.id) + '" data-action="restore" style="font-size:11px;padding:2px 8px;flex-shrink:0;">되돌리기</button>') +
             '</div>' + descHtml +
             '</div>';
         });
       }
-      if (!done.length && !hold.length) html += '<div style="color:var(--dim);padding:6px 0;">완료·보류 항목 없음</div>';
+      if (!done.length && !hold.length) html += '<div style="color:var(--dim);padding:6px 0;">오늘 입항·보류 항목 없음</div>';
       html += '</div></details>';
+
+      // 🗄️ 지난 입항 완료 (오늘 이전 완료 — 지난기록, 접힘) (GM 2026-06-07)
+      if (donePast.length) {
+        html += '<details class="toggle" style="margin-top:10px;">';
+        html += '<summary><span style="color:var(--dim);"><span style="margin-right:4px;">🗄️</span>지난 입항 완료 ' + donePast.length + '건</span></summary>';
+        html += '<div class="toggle-body" style="font-size:13px;">';
+        donePast.forEach(function(t){ html += _gm1DoneLineHtml(t, true); });
+        html += '</div></details>';
+      }
+
+      // 🗑️ 폐기 (검색 시에만 노출 — 전체 검색 대상) (GM 2026-06-07)
+      if (disposed.length) {
+        html += '<details class="toggle" style="margin-top:10px;" open>';
+        html += '<summary><span style="color:var(--dim);"><span style="margin-right:4px;">🗑️</span>폐기 ' + disposed.length + '건 (검색)</span></summary>';
+        html += '<div class="toggle-body" style="font-size:13px;">';
+        disposed.forEach(function(t){
+          html += '<div style="padding:8px 0;border-bottom:1px dashed var(--border);">' +
+            '<span style="color:var(--dim);font-weight:700;">🗑️</span> <span style="color:var(--dim);text-decoration:line-through;">' + gm1Esc(t.title) + '</span>' + (t.ssotAuto ? catChip(t) + SSOT_BADGE : '') +
+            '</div>';
+        });
+        html += '</div></details>';
+      }
 
       // 카드 목록만 갱신 — 도구바(#gm1-toolbar)와 그 안의 검색 input은 손대지 않으므로
       //   한글 IME 조합·포커스·캐럿이 그대로 유지된다(업무 현황 SSOT 패턴).
