@@ -6882,7 +6882,8 @@ function crTab(btn, panelId) {
               // 오늘 완료 누락 수정(2026-06-06 GM/시우): 과거 시작이어도 '오늘 완료'한 건은 합류 — 수정일(로컬)=오늘이면 통과
               var _md = row['수정일'] ? new Date(row['수정일']) : null;
               var _modLocal = _md ? (_md.getFullYear() + '-' + ('0'+(_md.getMonth()+1)).slice(-2) + '-' + ('0'+_md.getDate()).slice(-2)) : '';
-              if (sd !== TD && st !== '진행중' && !((st === '완료' || st === '보류') && _modLocal === TD)) return;
+              // 옛 완료·보류 = 이력(_history): 기본뷰선 숨기되 검색 대상엔 포함 (GM 2026-06-07)
+              var _isHist = (sd !== TD && st !== '진행중' && !((st === '완료' || st === '보류') && _modLocal === TD));
               var status = (st === '완료') ? '완료' : (st === '보류') ? '보류' : '진행중';
               items.push({
                 id: base, title: title, status: status,
@@ -6890,6 +6891,7 @@ function crTab(btn, panelId) {
                 progressLog: parsed.progressLog, budgetCat: parsed.budgetCat, budgetAmt: parsed.budgetAmt,
                 apprReq: String(row['결재요청'] || ''), apprStatus: apr,
                 isToday: true, startDate: sd, endDate: ed, ssotAuto: true, owner: owner,
+                _history: _isHist,
                 _sheetsId: String(row['id'] || '')
               });
             }
@@ -6903,7 +6905,9 @@ function crTab(btn, panelId) {
         items.forEach(function(it){ if (it._sheetsId) sheetIds[it._sheetsId] = true; });
         var CLEVEL_LABEL = { ceo:'AI CEO', cmo:'AI CMO', cto:'AI CTO', coo:'AI COO', cfo:'AI CFO', cpo:'AI CPO', chro:'AI CHRO' };
         queue.forEach(function(q){
-          if (q.status !== 'PENDING' && q.status !== 'IN_PROGRESS') return;
+          var _qActive = (q.status === 'PENDING' || q.status === 'IN_PROGRESS');
+          var _qHist = (q.status === 'DONE' || q.status === '완료' || q.status === '폐기');
+          if (!_qActive && !_qHist) return;  // 진행/대기=기본뷰 · 완료/폐기=이력(검색용)
           var tid = String(q.task_id || '');
           if (!tid) return;
           if (sheetIds[tid]) return;  // 시트에 이미 있으면 스킵
@@ -6911,17 +6915,18 @@ function crTab(btn, panelId) {
           // 동일 queue- 항목 중복 방지
           if (items.some(function(it){ return it.id === qid; })) return;
           var clvLabel = CLEVEL_LABEL[String(q.clevel || '').toLowerCase()] || String(q.clevel || 'AI');
-          var statusMap = { PENDING:'대기', IN_PROGRESS:'진행중' };
+          var statusMap = { PENDING:'대기', IN_PROGRESS:'진행중', DONE:'완료' };
           items.push({
             id: qid,
             title: String(q.title || tid),
-            status: statusMap[q.status] || '진행중',
+            status: (q.status === '폐기') ? '폐기' : (statusMap[q.status] || '진행중'),
             category: '업무',
             description: String(q.next || q.summary || ''),
             isToday: true,
             ssotAuto: true,
             queueSource: true,   // _queue 기원 마킹 (편집 차단용)
             owner: clvLabel,
+            _history: !_qActive,
             _sheetsId: ''
           });
         });
@@ -7078,9 +7083,10 @@ function crTab(btn, panelId) {
       }
 
       var td = todayStr();
+      var gm1Searching = !!(gm1SearchQuery && gm1SearchQuery.trim());
       var tasks = gm1Load();
       var manualTasks = tasks.filter(function(t){
-        return t.startDate === td || t.isToday === true;
+        return gm1Searching ? true : (t.startDate === td || t.isToday === true);
       });
 
       // 분류 4종 외 기존 카테고리는 '업무'로 취급 (필터 매칭용)
@@ -7164,6 +7170,11 @@ function crTab(btn, panelId) {
       gm1SsotItems.forEach(function(s){
         if (!matchedSsotKeys[gm1MergeKey(s)]) merged.push(s);
       });
+
+      // 이력(옛 완료·보류·폐기) — 기본뷰선 숨김, 검색 시에만 포함 (GM 2026-06-07)
+      if (!gm1Searching) {
+        merged = merged.filter(function(t){ return !t._history; });
+      }
 
       // 분류 필터 적용
       merged = merged.filter(function(t){ return gm1CatFilter[catOf(t)]; });
