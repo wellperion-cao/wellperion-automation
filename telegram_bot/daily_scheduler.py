@@ -1,16 +1,20 @@
 """
-웰페리온 일일 자동 보고 스케줄러 v1.2
+웰페리온 일일 자동 보고 스케줄러 v2.0
 -------------------------------
-정규 스케줄 (6개): 06 / 09 / 12 / 15 / 18 / 21시 정각 텔레그램 자동 보고
+정규 스케줄 (10개): 06/07/09/12/15/18/21/22/23시 정각 텔레그램 자동 보고
 테스트 모드: python daily_scheduler.py --test  →  1시간 주기 실행
+※ 08시(오늘의 항로)는 ceo_morning_pipeline.py (별도 Task Scheduler) 담당 — 여기서 중복 발송 없음
 
 스케줄 설계 (SSOT = GitHub status/* + git log + 웰페리온 ERP, 노션 폐기 2026-05-29):
-  06시 — 하루 시작 다짐·좋은 문구 (status/quotes.json 06 시간대) + 운동 체크리스트
-  09시 — 전날 업무 전체 정리 (git log 어제자 커밋 집계)
-  12시 — 시설·지원·주차 점검 현황 (Google Sheets Apps Script 단일 소스)
-  15시 — 현재 업무 진행현황 C-Level별 (status/_queue.json + status/*.json 필터링)
-  18시 — 퇴근·가족·건강 좋은 문구 (status/quotes.json 18 시간대)
-  21시 — 하루 핵심 요약 Lv1 MVP (git log 오늘자 커밋 + Claude CLI 한줄요약 + 웰페리온 ERP 내일할일)
+  06시 — 아침 루틴+명언 (status/quotes.json 06 시간대) + 운동 체크리스트 [개인]
+  07시 — 어제 한 항로 정리 (git 완료 + todo_list 어제완료 머지) [개인&회사]
+  09시 — 업무·매출·지출 현황 (C-Level별 진행 + CFO 시트 연결) [회사]
+  12시 — 오전 점검 현황 (Google Sheets 체크리스트 박스표) [회사]
+  15시 — 오늘 진행 1차 정리 + C-Level 현황 [개인&회사]
+  18시 — 오후 점검 + 퇴근 인사 [회사]
+  21시 — 오늘 최종 정리 + 내일 항로점 브릿지 [개인&회사]
+  22시 — 취침·전자기기off + 북극성 + 핵심 동기부여 명언 [개인]
+  23시 — 마감 점검 현황 (체크리스트 박스표) [회사]
 
 운영 원칙:
 - 기존 워처 3종 (archive_result_watcher·planning_to_archive_watcher·permission_watcher) 유지
@@ -145,6 +149,9 @@ TELEGRAM_API = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}"
 
 # 12시 시설·지원·주차 현황용 (Google Sheets Apps Script 단일 소스)
 CHECKLIST_API_URL = ENV.get("CHECKLIST_API_URL", "")
+
+# 9시 매출·지출 현황용 (CFO 시트 — GM이 시트 링크 제공 후 .env CFO_SHEET_URL에 등록)
+CFO_SHEET_URL = ENV.get("CFO_SHEET_URL", "")
 
 # 업무현황 SSOT API (G1 할일, 09·15시 공용)
 SSOT_API_URL = "https://script.google.com/macros/s/AKfycbxDwFkrxK1YIaEoSNcuw2MiHiZQ-7o5N6311ytksSyeEd86ZFOhLknOWqQgNArQvZ-7/exec"
@@ -416,6 +423,70 @@ def fetch_yesterday_summary() -> str:
     if total > 10:
         lines.append(f"  ... 외 {total - 10}건")
     return "\n".join(lines)
+
+
+def _fetch_yesterday_done_todos() -> list[str]:
+    """
+    todo_list API에서 어제 완료된 항목 제목 리스트 반환.
+    updatedAt == 어제 AND 상태 == 완료 기준.
+    실패 시 빈 리스트.
+    """
+    yesterday = (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d")
+    try:
+        resp = requests.get(SSOT_API_URL, params={"action": "todo_list"}, timeout=15)
+        if resp.status_code != 200:
+            return []
+        data = resp.json()
+        if not data.get("ok"):
+            return []
+        items = data.get("data", [])
+        done = []
+        for x in items:
+            st = str(x.get("상태", ""))
+            updated = str(x.get("수정일", "") or x.get("updatedAt", ""))
+            title = str(x.get("업무명", "")).strip()
+            if st in _TODO_DONE_STATUSES and updated.startswith(yesterday) and title:
+                done.append(title[:60])
+        return done[:15]
+    except Exception as e:
+        logger.warning(f"_fetch_yesterday_done_todos 예외: {e}")
+        return []
+
+
+def _fetch_open_todo_cards_for_tomorrow() -> list[dict]:
+    """
+    미완료(진행중·보류·대기) 항목 중 내일 항로점 브릿지 대상.
+    21시 '내일 항로점' 섹션용. 실패 시 빈 리스트.
+    """
+    try:
+        resp = requests.get(SSOT_API_URL, params={"action": "todo_list"}, timeout=15)
+        if resp.status_code != 200:
+            return []
+        data = resp.json()
+        if not data.get("ok"):
+            return []
+        items = data.get("data", [])
+        open_items = [
+            x for x in items
+            if str(x.get("상태", "")) not in _TODO_DONE_STATUSES
+        ]
+        cards = []
+        for idx, x in enumerate(open_items[:12], 1):
+            st = str(x.get("상태", ""))
+            owner = str(x.get("담당자", "")).replace("GM", " GM").strip()
+            due_date = _parse_kst_date(x.get("종료일", ""))
+            due_str = due_date.strftime("%m/%d") if due_date else ""
+            cards.append({
+                "id_short": f"T-{idx:02d}",
+                "업무명": str(x.get("업무명", "(제목없음)"))[:50],
+                "담당자": owner,
+                "상태": st,
+                "due": due_str,
+            })
+        return cards
+    except Exception as e:
+        logger.warning(f"_fetch_open_todo_cards_for_tomorrow 예외: {e}")
+        return []
 
 
 # ── G1 할일 fetch (09·15시 공용, 업무현황 SSOT API) ──────────────────────────
@@ -901,61 +972,123 @@ def _build_06_body() -> str:
     )
 
 
-def _build_09_body() -> str:
-    """09시 — 오늘/내일 할 일 카드형 + 전날 완료 정리"""
+def _build_07_body() -> str:
+    """07시 — 어제 한 항로 정리 (git 완료 + todo_list 어제완료 머지) [개인&회사]"""
     now = datetime.now()
-    today_str = now.strftime("%Y-%m-%d")
     yesterday = (now - timedelta(days=1)).strftime("%Y-%m-%d")
+    yesterday_wd = _WEEKDAY_KOR[(now - timedelta(days=1)).weekday()]
+    today_str = now.strftime("%Y-%m-%d")
     weekday_kor = _WEEKDAY_KOR[now.weekday()]
 
-    # 카드 fetch + 분류
-    cards = fetch_gm_todo_cards()
+    # ① git 커밋 (어제)
+    commits = _git_log_between(f"{yesterday} 00:00", f"{today_str} 00:00")
+    n_commits = len(commits)
 
-    if cards is None:
-        today_section = "  (API 조회 실패 — 업무현황 연결 확인)"
-        tmr_section = ""
-        n_today = 0
-        n_tmr = 0
-    else:
-        today_cards, tmr_cards = _classify_todo_cards(cards)
-        n_today = len(today_cards)
-        n_tmr = len(tmr_cards)
+    # ② todo_list 어제완료 항목
+    done_todos = _fetch_yesterday_done_todos()
+    n_todos = len(done_todos)
 
-        # 오늘 카드 (최대 10건)
-        if today_cards:
-            rendered = [_render_card(c) for c in today_cards[:10]]
-            if n_today > 10:
-                rendered.append(f"  ...외 {n_today - 10}건")
-            today_section = "\n\n".join(rendered)
-        else:
-            today_section = "  오늘 등록된 할 일 없음"
+    total = n_commits + n_todos
 
-        # 내일 카드 (최대 10건)
-        if tmr_cards:
-            rendered_t = [_render_card(c, show_status=False) for c in tmr_cards[:10]]
-            if n_tmr > 10:
-                rendered_t.append(f"  ...외 {n_tmr - 10}건")
-            tmr_section = "\n\n".join(rendered_t)
-        else:
-            tmr_section = "  없음"
+    # 박스표: 완료 요약
+    table_rows = [
+        ("코드·자동화 커밋", str(n_commits)),
+        ("업무 완료 항목",   str(n_todos)),
+        ("합계",            str(total)),
+    ]
+    table_str = "\n".join(_count_table(table_rows))
 
-    # 섹션2: 어제 완료 git 커밋
-    yesterday_summary = fetch_yesterday_summary()
+    # 커밋 목록
+    commit_lines = []
+    for c in commits[:8]:
+        commit_lines.append(f"  ⚓ {c}")
+    if n_commits > 8:
+        commit_lines.append(f"  ... 외 {n_commits - 8}건")
 
-    tmr_weekday = _WEEKDAY_KOR[(now + timedelta(days=1)).weekday()]
-    tmr_str = (now + timedelta(days=1)).strftime("%m/%d")
+    # 업무 완료 목록
+    todo_lines = []
+    for t in done_todos[:5]:
+        todo_lines.append(f"  ✅ {t}")
+    if n_todos > 5:
+        todo_lines.append(f"  ... 외 {n_todos - 5}건")
+
+    commit_block = "\n".join(commit_lines) if commit_lines else "  (어제 커밋 없음)"
+    todo_block = "\n".join(todo_lines) if todo_lines else "  (어제 완료 항목 없음)"
 
     return (
-        f"🧭 [웰페리온] 09시 오늘의 항로\n"
+        f"⚓ [웰페리온] 07시 — 어제의 항로\n"
         f"━━━━━━━━━━━━━━━━\n"
-        f"📅 {today_str} ({weekday_kor})\n\n"
-        f"📌 오늘의 항로 ({n_today}건)\n"
-        f"{today_section}\n\n"
-        f"⏭ 내일 시작/마감 ({tmr_str} {tmr_weekday}, {n_tmr}건)\n"
-        f"{tmr_section}\n\n"
+        f"📅 {yesterday} ({yesterday_wd}) 결산\n\n"
+        f"   완료 요약\n"
+        f"{table_str}\n\n"
+        f"🚢 코드·자동화\n"
+        f"{commit_block}\n\n"
+        f"✅ 업무 완료\n"
+        f"{todo_block}\n\n"
         f"━━━━━━━━━━━━━━━━\n"
-        f"📁 전날 완료\n"
-        f"{yesterday_summary}\n\n"
+        f"📅 오늘 출항: {today_str} ({weekday_kor})\n"
+        f"_본 메시지는 자동 발송입니다._"
+    )
+
+
+def _fetch_cfo_finance_block() -> str:
+    """
+    CFO 시트에서 매출·지출 현황 조회.
+    CFO_SHEET_URL 미설정 시 연결 대기 안내 반환.
+    """
+    if not CFO_SHEET_URL:
+        return (
+            "💰 매출·지출 현황\n"
+            "  연결 대기 중\n"
+            "  ※ 필요 사항: .env 파일에 CFO_SHEET_URL 등록\n"
+            "     (GM이 CFO 구글 시트 링크 제공 → CTO가 GAS 웹앱 배포 후 URL 등록)"
+        )
+    try:
+        resp = requests.get(CFO_SHEET_URL, params={"action": "summary"}, timeout=15)
+        if resp.status_code != 200:
+            return f"💰 매출·지출 현황\n  조회 실패 (HTTP {resp.status_code})"
+        data = resp.json()
+        # 응답 구조는 시트 배포 후 확정 — 현재는 raw 값 표시
+        revenue = data.get("revenue") or data.get("매출") or data.get("이번달매출")
+        expense = data.get("expense") or data.get("지출") or data.get("이번달지출")
+        if revenue is None and expense is None:
+            return (
+                "💰 매출·지출 현황\n"
+                f"  시트 응답 수신됨 (구조 미확정)\n"
+                f"  원본: {str(data)[:100]}"
+            )
+        table_rows = []
+        if revenue is not None:
+            table_rows.append(("이달 매출", str(revenue)))
+        if expense is not None:
+            table_rows.append(("이달 지출", str(expense)))
+        table_str = "\n".join(_count_table(table_rows)) if table_rows else "  (데이터 없음)"
+        return f"💰 매출·지출 현황\n{table_str}"
+    except Exception as e:
+        logger.warning(f"CFO 시트 조회 실패: {e}")
+        return f"💰 매출·지출 현황\n  조회 오류: {str(e)[:80]}"
+
+
+def _build_09_body() -> str:
+    """09시 — 업무·매출·지출 현황 [회사] (기존 오늘할일 → 08시 중복 폐기·대체)"""
+    now = datetime.now()
+    now_str = now.strftime("%Y-%m-%d %H:%M")
+    weekday_kor = _WEEKDAY_KOR[now.weekday()]
+
+    # ① 업무현황: C-Level별 진행 (_queue.json + status/*.json)
+    progress = fetch_current_progress()
+
+    # ② 매출·지출 (CFO 시트)
+    finance_block = _fetch_cfo_finance_block()
+
+    return (
+        f"🏢 [웰페리온] 09시 업무·매출·지출 현황\n"
+        f"━━━━━━━━━━━━━━━━\n"
+        f"기준 {now_str} ({weekday_kor})\n\n"
+        f"📋 C-Level 업무 진행현황\n"
+        f"{progress}\n\n"
+        f"━━━━━━━━━━━━━━━━\n"
+        f"{finance_block}\n\n"
         f"_본 메시지는 자동 발송입니다._"
     )
 
@@ -1184,28 +1317,138 @@ def _build_18_body() -> str:
 
 
 def _build_21_body() -> str:
-    """21시 — 하루 핵심 요약 (가독성 개선판)"""
+    """21시 — 오늘 최종 정리 + 내일 항로점 브릿지 [개인&회사]"""
     now = datetime.now()
     today_str = now.strftime("%Y-%m-%d")
     weekday_kor = _WEEKDAY_KOR[now.weekday()]
-    summary = fetch_daily_summary_lv1()
+    tmr_str = (now + timedelta(days=1)).strftime("%Y-%m-%d")
+    tmr_wd = _WEEKDAY_KOR[(now + timedelta(days=1)).weekday()]
+
+    # ① 오늘 git 커밋 (완료 성과)
+    tomorrow = (now + timedelta(days=1)).strftime("%Y-%m-%d")
+    today_commits = _git_log_between(f"{today_str} 00:00", f"{tomorrow} 00:00", max_lines=20)
+    n_commits = len(today_commits)
+
+    # ② 오늘 완료된 todo (updatedAt = 오늘 + 상태=완료)
+    try:
+        resp = requests.get(SSOT_API_URL, params={"action": "todo_list"}, timeout=15)
+        done_today: list[str] = []
+        if resp.status_code == 200:
+            data = resp.json()
+            if data.get("ok"):
+                for x in data.get("data", []):
+                    st = str(x.get("상태", ""))
+                    updated = str(x.get("수정일", "") or x.get("updatedAt", ""))
+                    title = str(x.get("업무명", "")).strip()
+                    if st in _TODO_DONE_STATUSES and updated.startswith(today_str) and title:
+                        done_today.append(title[:50])
+    except Exception as e:
+        logger.warning(f"21시 오늘완료 조회 실패: {e}")
+        done_today = []
+
+    # ③ 미완료 → 내일 항로점 (브릿지)
+    open_cards = _fetch_open_todo_cards_for_tomorrow()
+
+    # 박스표: 오늘 성과 요약
+    table_rows = [
+        ("코드·자동화", str(n_commits)),
+        ("업무 완료",   str(len(done_today))),
+        ("미완 이월",   str(len(open_cards))),
+    ]
+    table_str = "\n".join(_count_table(table_rows))
+
+    # 오늘 커밋 목록
+    commit_lines = [f"  ⚓ {c}" for c in today_commits[:7]]
+    if n_commits > 7:
+        commit_lines.append(f"  ... 외 {n_commits - 7}건")
+    commit_block = "\n".join(commit_lines) if commit_lines else "  (오늘 커밋 없음)"
+
+    # 업무 완료 목록
+    done_lines = [f"  ✅ {t}" for t in done_today[:5]]
+    if len(done_today) > 5:
+        done_lines.append(f"  ... 외 {len(done_today) - 5}건")
+    done_block = "\n".join(done_lines) if done_lines else "  (오늘 완료 항목 없음)"
+
+    # 내일 항로점 (미완료 → 이월)
+    bridge_lines = []
+    for c in open_cards[:8]:
+        due_part = f" · ~{c['due']}" if c.get("due") else ""
+        st_part = f" [{c['상태']}]" if c.get("상태") else ""
+        bridge_lines.append(f"  🚢 {c['업무명']}{st_part}{due_part}")
+    if len(open_cards) > 8:
+        bridge_lines.append(f"  ... 외 {len(open_cards) - 8}건")
+    bridge_block = "\n".join(bridge_lines) if bridge_lines else "  (미완료 이월 항목 없음 — 오늘 항로 완주)"
+
     return (
-        f"🌙 [웰페리온] 21시 하루 마감\n"
+        f"🌙 [웰페리온] 21시 — 오늘 최종 정리\n"
+        f"━━━━━━━━━━━━━━━━\n"
+        f"📅 {today_str} ({weekday_kor}) 마감\n\n"
+        f"   오늘의 성과\n"
+        f"{table_str}\n\n"
+        f"🚢 코드·자동화\n"
+        f"{commit_block}\n\n"
+        f"✅ 업무 완료\n"
+        f"{done_block}\n\n"
+        f"━━━━━━━━━━━━━━━━\n"
+        f"⚓ 내일 항로점 ({tmr_str} {tmr_wd})\n"
+        f"  (오늘 미완 → 내일 이월)\n"
+        f"{bridge_block}\n\n"
+        f"_본 메시지는 자동 발송입니다._"
+    )
+
+
+def _build_22_body() -> str:
+    """22시 — 취침·전자기기off + 북극성 + 핵심 동기부여 명언 [개인]"""
+    now = datetime.now()
+    today_str = now.strftime("%Y-%m-%d")
+    weekday_kor = _WEEKDAY_KOR[now.weekday()]
+
+    quote = fetch_random_quote("22시")
+    if quote:
+        quote_line = f'\n> "{quote}"\n'
+    else:
+        quote_line = "\n> \"충분한 수면이 내일의 판단력을 만듭니다.\"\n"
+
+    return (
+        f"🌙 [웰페리온] 22시 — 취침 준비\n"
         f"━━━━━━━━━━━━━━━━\n"
         f"📅 {today_str} ({weekday_kor})\n\n"
-        f"{summary}\n"
+        f"📵 전자기기 off — 수면 루틴 시작\n\n"
+        f"🌟 북극성\n"
+        f"  GM만 보는 G1 오케스트레이션 +\n"
+        f"  웰페리온 스포츠클럽 ERP 제품화\n"
+        f"{quote_line}"
+        f"_본 메시지는 자동 발송입니다._"
+    )
+
+
+def _build_23_body() -> str:
+    """23시 — 마감 점검 현황 (체크리스트 박스표) [회사]"""
+    now = datetime.now()
+    today = now.strftime("%Y-%m-%d")
+    weekday_kor = _WEEKDAY_KOR[now.weekday()]
+
+    checklist_block = _build_checklist_block("23:00")
+
+    return (
+        f"[웰페리온] 23시 마감 점검\n"
         f"━━━━━━━━━━━━━━━━\n"
-        f"_자동 발송 · 1단계 요약_"
+        f"{today} ({weekday_kor}) 마감 기준\n\n"
+        f"{checklist_block}\n\n"
+        f"_본 메시지는 자동 발송입니다._"
     )
 
 
 SLOT_BUILDERS = {
     "06": _build_06_body,
+    "07": _build_07_body,
     "09": _build_09_body,
     "12": _build_12_body,
     "15": _build_15_body,
     "18": _build_18_body,
     "21": _build_21_body,
+    "22": _build_22_body,
+    "23": _build_23_body,
 }
 
 
@@ -1259,8 +1502,10 @@ def run_report(slot: str, test_mode: bool = False) -> None:
 def get_test_slot() -> str:
     """현재 시각 기준으로 가장 가까운 보고 슬롯 반환 (테스트 레이블용)."""
     h = datetime.now().hour
-    if h < 9:
+    if h < 7:
         return "06"
+    elif h < 9:
+        return "07"
     elif h < 12:
         return "09"
     elif h < 15:
@@ -1269,8 +1514,12 @@ def get_test_slot() -> str:
         return "15"
     elif h < 21:
         return "18"
-    else:
+    elif h < 22:
         return "21"
+    elif h < 23:
+        return "22"
+    else:
+        return "23"
 
 
 # ── 수동 즉시 테스트 헬퍼 (--manual-test 옵션) ───────────────────────────────
@@ -1374,15 +1623,18 @@ def main():
             next_run_time=datetime.now(),
         )
     else:
-        logger.info("=== 정규 스케줄 시작: 06 / 09 / 12 / 15 / 18 / 21시 ===")
-        # [2026-06-04 GM 승인] 21시 슬롯 부활 — 6슬롯 개편에 따라 마감 보고 재등록
+        logger.info("=== 정규 스케줄 시작: 06/07/09/12/15/18/21/22/23시 ===")
+        # [2026-06-07 GM 확정] 10슬롯 개편 — 08시는 ceo_morning_pipeline(별도 Task Scheduler) 담당
         schedule_map = {
             "06": (6, 0),
+            "07": (7, 0),
             "09": (9, 0),
             "12": (12, 0),
             "15": (15, 0),
             "18": (18, 0),
             "21": (21, 0),
+            "22": (22, 0),
+            "23": (23, 0),
         }
         for slot, (hour, minute) in schedule_map.items():
             scheduler.add_job(
