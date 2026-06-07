@@ -100,6 +100,41 @@ def _days_left(date_str: str) -> int | None:
         return None
 
 
+# ── 결재 '다음 서명자' 판정 — 결재현황 SSOT nextApprover와 1:1 동일 (2026-06-07 웰리) ──
+_DEPT_HEADS = ["이경연 실장", "이정헌 소장", "나우열M"]
+_CAT_DEPT_HEAD = {
+    "[1] 매출 및 영업": "이경연 실장",
+    "[3] 운영 정책": "이경연 실장",
+    "[4] 시설 및 환경": "이정헌 소장",
+    "[2] 인사 & 파트너": "나우열M",
+}
+
+
+def _next_approver(row: dict):
+    """결재선의 '지금 서명할 차례' 반환('부서장'/'GM'/'대표님'/None)."""
+    approval = [s.strip() for s in str(row.get("결재요청", "")).split(",") if s.strip()]
+    if not approval:
+        return None
+    owners = [s.strip() for s in str(row.get("담당자", "")).split(",")]
+    owner_is_gm = "김남욱GM" in owners
+    mid = next((m for m in approval if m in _DEPT_HEADS), None) \
+        or next((o for o in owners if o in _DEPT_HEADS), None) \
+        or _CAT_DEPT_HEAD.get(str(row.get("카테고리", "")), "")
+    mid_explicit = bool(mid) and mid in approval
+    skip_mid = bool(mid) and mid in owners and not mid_explicit
+    route = []
+    if mid and not owner_is_gm and not skip_mid:
+        route.append("부서장")
+    if not owner_is_gm:
+        route.append("GM")
+    route.append("대표님")
+    sign = {"부서장": row.get("부서장싸인"), "GM": row.get("GM싸인"), "대표님": row.get("대표싸인")}
+    for r in route:
+        if not sign.get(r):
+            return r
+    return None
+
+
 # ── 데이터 fetch ───────────────────────────────────────────────────────────
 def fetch_gas_items() -> list[dict]:
     """GAS todo_list → GM·AI C레벨 전체 항목(완료 포함)."""
@@ -125,16 +160,8 @@ def fetch_gas_items() -> list[dict]:
         end_kst = _to_kst_date(end_raw)
         # 결재요청 GM 여부 → 결재 섹션
         apr = str(row.get("결재상태", ""))
-        gm_sign = row.get("GM싸인")
-        req_str = str(row.get("결재요청", ""))
-        req_is_gm = "GM" in req_str
-        needs_gm = (
-            not gm_sign
-            and apr
-            and "반려" not in apr
-            and apr != "결재완료"
-            and (req_is_gm or "부서장 완료" in apr)
-        )
+        # '지금 GM 차례'인 건만 결재 카운트 — SSOT nextApprover와 동일(결재요청=GM만 보면 오버카운트)
+        needs_gm = bool(apr) and "반려" not in apr and apr != "결재완료" and _next_approver(row) == "GM"
         items.append({
             "id":        str(row.get("id", "")),
             "title":     title,

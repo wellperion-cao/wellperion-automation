@@ -6832,6 +6832,30 @@ function crTab(btn, panelId) {
     // _queue.json AI 진행배 fetch URL (raw GitHub · no-cors 불필요)
     var GM1_QUEUE_URL = 'https://raw.githubusercontent.com/wellperion-cao/wellperion-automation/master/status/_queue.json';
 
+    // 결재 '다음 서명자' 판정 — 결재현황 SSOT(nextApprover)와 1:1 동일 로직 이식 (2026-06-07 웰리).
+    //   G1 결재 카운트가 SSOT와 어긋나던 버그 수정: '결재요청=GM'만 봐선 안 됨.
+    //   ① owner가 GM이면 GM단계 스킵(→대표 차례)  ② 부서장싸인 없으면 부서장 차례  ③ GM싸인 있으면 이미 GM 끝(→대표).
+    var GM1_DEPT_HEADS = ['이경연 실장','이정헌 소장','나우열M'];
+    var GM1_CAT_DEPT_HEAD = { '[1] 매출 및 영업':'이경연 실장','[3] 운영 정책':'이경연 실장','[4] 시설 및 환경':'이정헌 소장','[2] 인사 & 파트너':'나우열M' };
+    function gm1NextApprover(row) {
+      var approval = String(row['결재요청'] || '').split(',').map(function(s){ return s.trim(); }).filter(Boolean);
+      if (!approval.length) return null;  // 결재선 없음
+      var owners = String(row['담당자'] || '').split(',').map(function(s){ return s.trim(); });
+      var ownerIsGM = owners.indexOf('김남욱GM') >= 0;
+      var midName = approval.find(function(m){ return GM1_DEPT_HEADS.indexOf(m) >= 0; })
+                 || owners.find(function(o){ return GM1_DEPT_HEADS.indexOf(o) >= 0; })
+                 || (GM1_CAT_DEPT_HEAD[String(row['카테고리'] || '')] || '');
+      var midExplicit = midName && approval.indexOf(midName) >= 0;
+      var skipMid = midName && owners.indexOf(midName) >= 0 && !midExplicit;
+      var route = [];
+      if (midName && !ownerIsGM && !skipMid) route.push('부서장');
+      if (!ownerIsGM) route.push('GM');
+      route.push('대표님');
+      var map = { '부서장': row['부서장싸인'], 'GM': row['GM싸인'], '대표님': row['대표싸인'] };
+      for (var i = 0; i < route.length; i++) { if (!map[route[i]]) return route[i]; }
+      return null;  // 전원 서명 완료
+    }
+
     function gm1FetchSsot() {
       // ① 시트(todo_list) + ② _queue.json 병렬 fetch — 어느 쪽 실패해도 나머지는 표시
       var sheetP = fetch(SSOT_API_URL + '?action=todo_list&_=' + Date.now(), { redirect:'follow', cache:'no-store' })
@@ -6860,8 +6884,9 @@ function crTab(btn, panelId) {
             var reqStr  = String(row['결재요청'] || '');
             // GM 차례일 때만 노출: 결재요청이 GM 지정 OR 결재상태='부서장 완료'(부서장 끝→GM 차례).
             // ⚠️ 결재요청이 부서장(실장/소장/파트너)인 대기건은 제외 — 락커 등 부서장 결재건이 GM 결재함으로 새는 것 차단 (2026-06-07 시토 수정)
-            var reqIsGm = /GM/.test(reqStr);
-            var needsGm = !gmSign && apr && !/반려/.test(apr) && apr !== '결재완료' && (reqIsGm || apr.indexOf('부서장 완료') >= 0);
+            // ⚠️ '결재요청=GM'만으로 판정 금지 — 결재현황 SSOT의 nextApprover와 동일하게 '지금 GM 차례'인 건만 카운트.
+            //   (owner=GM이면 GM 스킵→대표 / 부서장싸인 없으면 부서장 차례 / GM싸인 있으면 이미 끝) (2026-06-07 웰리 동기화)
+            var needsGm = apr && !/반려/.test(apr) && apr !== '결재완료' && gm1NextApprover(row) === 'GM';
             var base    = 'ssot-' + (row['id'] || title);
             var rawContent = String(row['내용'] || '');
             var parsed  = gm1ParseContent(rawContent);  // D-1 역파서: 마커 분해 + 진척/예산 복원
