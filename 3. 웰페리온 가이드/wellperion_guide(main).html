@@ -6839,61 +6839,104 @@ function crTab(btn, panelId) {
       return d.getFullYear() + '-' + ('0'+(d.getMonth()+1)).slice(-2) + '-' + ('0'+d.getDate()).slice(-2);
     }
 
+    // _queue.json AI 진행배 fetch URL (raw GitHub · no-cors 불필요)
+    var GM1_QUEUE_URL = 'https://raw.githubusercontent.com/wellperion-cao/wellperion-automation/master/status/_queue.json';
+
     function gm1FetchSsot() {
-      fetch(SSOT_API_URL + '?action=todo_list&_=' + Date.now(), { redirect:'follow', cache:'no-store' })
+      // ① 시트(todo_list) + ② _queue.json 병렬 fetch — 어느 쪽 실패해도 나머지는 표시
+      var sheetP = fetch(SSOT_API_URL + '?action=todo_list&_=' + Date.now(), { redirect:'follow', cache:'no-store' })
         .then(function(r){ return r.ok ? r.json() : null; })
-        .then(function(json){
-          var items = [];
-          var TD = todayStr();
-          if (json && json.ok && Array.isArray(json.data)) {
-            json.data.forEach(function(row){
-              var owner   = String(row['담당자'] || '');
-              var title   = String(row['업무명'] || '').trim();
-              if (!title) return;
-              var apr     = String(row['결재상태'] || '');
-              var gmSign  = row['GM싸인'];
-              var sd      = ssotDateLocal(row['시작일']);
-              // GM 결재 차례 우선 판정 — 결재 대기는 날짜 무관 항상 노출(GM 액션 필요)
-              var reqStr  = String(row['결재요청'] || '');
-              // GM 차례일 때만 노출: 결재요청이 GM 지정 OR 결재상태='부서장 완료'(부서장 끝→GM 차례).
-              // ⚠️ 결재요청이 부서장(실장/소장/파트너)인 대기건은 제외 — 락커 등 부서장 결재건이 GM 결재함으로 새는 것 차단 (2026-06-07 시토 수정)
-              var reqIsGm = /GM/.test(reqStr);
-              var needsGm = !gmSign && apr && !/반려/.test(apr) && apr !== '결재완료' && (reqIsGm || apr.indexOf('부서장 완료') >= 0);
-              var base    = 'ssot-' + (row['id'] || title);
-              var rawContent = String(row['내용'] || '');
-              var parsed  = gm1ParseContent(rawContent);  // D-1 역파서: 마커 분해 + 진척/예산 복원
-              if (needsGm) {
-                items.push({
-                  id: base, title: (/^\s*\[결재\]/.test(title) ? title : '[결재] ' + title), status: '진행중',
-                  category: '결재', description: parsed.description,
-                  progressLog: parsed.progressLog, budgetCat: parsed.budgetCat, budgetAmt: parsed.budgetAmt,
-                  isToday: true, startDate: sd, ssotAuto: true, owner: owner,
-                  _sheetsId: String(row['id'] || '')
-                });
-              } else if (owner.indexOf('김남욱GM') >= 0 || /AI (CEO|CMO|CTO|COO|CFO|CPO|CHRO)/.test(owner) || /웰리|시모|시토|시우|시뽀|시포|시로/.test(owner)) {
-                // ★ G1 합류: GM 본인 + AI C레벨 전체 (2026-06-01 GM 확정 v3)
-                //   시작일=오늘 OR 상태=진행중이면 합류 — 과거 시작이어도 진행중인 건 항상 표시
-                //   완료·보류는 제외 (오염 방지 유지)
-                var st = String(row['상태'] || '');
-                // 오늘 완료 누락 수정(2026-06-06 GM/시우): 과거 시작이어도 '오늘 완료'한 건은 합류 — 수정일(로컬)=오늘이면 통과
-                var _md = row['수정일'] ? new Date(row['수정일']) : null;
-                var _modLocal = _md ? (_md.getFullYear() + '-' + ('0'+(_md.getMonth()+1)).slice(-2) + '-' + ('0'+_md.getDate()).slice(-2)) : '';
-                if (sd !== TD && st !== '진행중' && !((st === '완료' || st === '보류') && _modLocal === TD)) return;
-                var status = (st === '완료') ? '완료' : (st === '보류') ? '보류' : '진행중';
-                items.push({
-                  id: base, title: title, status: status,
-                  category: '업무', description: parsed.description,
-                  progressLog: parsed.progressLog, budgetCat: parsed.budgetCat, budgetAmt: parsed.budgetAmt,
-                  apprReq: String(row['결재요청'] || ''), apprStatus: apr,
-                  isToday: true, startDate: sd, ssotAuto: true, owner: owner,
-                  _sheetsId: String(row['id'] || '')
-                });
-              }
-            });
-          }
-          gm1SsotItems = items;
-        })
-        .catch(function(){ /* graceful: 수동 목록은 정상 표시 */ console.warn('[gm1] SSOT fetch 실패 — 수동 목록만 표시'); })
+        .catch(function(){ return null; });
+      var queueP = fetch(GM1_QUEUE_URL + '?_=' + Date.now(), { cache:'no-store' })
+        .then(function(r){ return r.ok ? r.json() : []; })
+        .catch(function(){ return []; });
+
+      Promise.all([sheetP, queueP]).then(function(results){
+        var json  = results[0];
+        var queue = Array.isArray(results[1]) ? results[1] : [];
+        var items = [];
+        var TD = todayStr();
+
+        // ── ① 시트 항목 (기존 로직 무손상) ──
+        if (json && json.ok && Array.isArray(json.data)) {
+          json.data.forEach(function(row){
+            var owner   = String(row['담당자'] || '');
+            var title   = String(row['업무명'] || '').trim();
+            if (!title) return;
+            var apr     = String(row['결재상태'] || '');
+            var gmSign  = row['GM싸인'];
+            var sd      = ssotDateLocal(row['시작일']);
+            // GM 결재 차례 우선 판정 — 결재 대기는 날짜 무관 항상 노출(GM 액션 필요)
+            var reqStr  = String(row['결재요청'] || '');
+            // GM 차례일 때만 노출: 결재요청이 GM 지정 OR 결재상태='부서장 완료'(부서장 끝→GM 차례).
+            // ⚠️ 결재요청이 부서장(실장/소장/파트너)인 대기건은 제외 — 락커 등 부서장 결재건이 GM 결재함으로 새는 것 차단 (2026-06-07 시토 수정)
+            var reqIsGm = /GM/.test(reqStr);
+            var needsGm = !gmSign && apr && !/반려/.test(apr) && apr !== '결재완료' && (reqIsGm || apr.indexOf('부서장 완료') >= 0);
+            var base    = 'ssot-' + (row['id'] || title);
+            var rawContent = String(row['내용'] || '');
+            var parsed  = gm1ParseContent(rawContent);  // D-1 역파서: 마커 분해 + 진척/예산 복원
+            if (needsGm) {
+              items.push({
+                id: base, title: (/^\s*\[결재\]/.test(title) ? title : '[결재] ' + title), status: '진행중',
+                category: '결재', description: parsed.description,
+                progressLog: parsed.progressLog, budgetCat: parsed.budgetCat, budgetAmt: parsed.budgetAmt,
+                isToday: true, startDate: sd, ssotAuto: true, owner: owner,
+                _sheetsId: String(row['id'] || '')
+              });
+            } else if (owner.indexOf('김남욱GM') >= 0 || /AI (CEO|CMO|CTO|COO|CFO|CPO|CHRO)/.test(owner) || /웰리|시모|시토|시우|시뽀|시포|시로/.test(owner)) {
+              // ★ G1 합류: GM 본인 + AI C레벨 전체 (2026-06-01 GM 확정 v3)
+              //   시작일=오늘 OR 상태=진행중이면 합류 — 과거 시작이어도 진행중인 건 항상 표시
+              //   완료·보류는 제외 (오염 방지 유지)
+              var st = String(row['상태'] || '');
+              // 오늘 완료 누락 수정(2026-06-06 GM/시우): 과거 시작이어도 '오늘 완료'한 건은 합류 — 수정일(로컬)=오늘이면 통과
+              var _md = row['수정일'] ? new Date(row['수정일']) : null;
+              var _modLocal = _md ? (_md.getFullYear() + '-' + ('0'+(_md.getMonth()+1)).slice(-2) + '-' + ('0'+_md.getDate()).slice(-2)) : '';
+              if (sd !== TD && st !== '진행중' && !((st === '완료' || st === '보류') && _modLocal === TD)) return;
+              var status = (st === '완료') ? '완료' : (st === '보류') ? '보류' : '진행중';
+              items.push({
+                id: base, title: title, status: status,
+                category: '업무', description: parsed.description,
+                progressLog: parsed.progressLog, budgetCat: parsed.budgetCat, budgetAmt: parsed.budgetAmt,
+                apprReq: String(row['결재요청'] || ''), apprStatus: apr,
+                isToday: true, startDate: sd, ssotAuto: true, owner: owner,
+                _sheetsId: String(row['id'] || '')
+              });
+            }
+          });
+        }
+
+        // ── ② _queue.json AI 진행배 머지 (PENDING·IN_PROGRESS만 · 완료 제외) ──
+        //   todo_list 제거 후에도 G1 항로에 AI 배가 살아있도록 (2026-06-07 GM 1단계 이관 대응)
+        //   시트에 동일 task_id가 이미 있으면 중복 제외 (ssot- prefix가 다르므로 _sheetsId 비교)
+        var sheetIds = {};
+        items.forEach(function(it){ if (it._sheetsId) sheetIds[it._sheetsId] = true; });
+        var CLEVEL_LABEL = { ceo:'AI CEO', cmo:'AI CMO', cto:'AI CTO', coo:'AI COO', cfo:'AI CFO', cpo:'AI CPO', chro:'AI CHRO' };
+        queue.forEach(function(q){
+          if (q.status !== 'PENDING' && q.status !== 'IN_PROGRESS') return;
+          var tid = String(q.task_id || '');
+          if (!tid) return;
+          if (sheetIds[tid]) return;  // 시트에 이미 있으면 스킵
+          var qid = 'queue-' + tid;
+          // 동일 queue- 항목 중복 방지
+          if (items.some(function(it){ return it.id === qid; })) return;
+          var clvLabel = CLEVEL_LABEL[String(q.clevel || '').toLowerCase()] || String(q.clevel || 'AI');
+          var statusMap = { PENDING:'대기', IN_PROGRESS:'진행중' };
+          items.push({
+            id: qid,
+            title: String(q.title || tid),
+            status: statusMap[q.status] || '진행중',
+            category: '업무',
+            description: String(q.next || q.summary || ''),
+            isToday: true,
+            ssotAuto: true,
+            queueSource: true,   // _queue 기원 마킹 (편집 차단용)
+            owner: clvLabel,
+            _sheetsId: ''
+          });
+        });
+
+        gm1SsotItems = items;
+      }).catch(function(){ console.warn('[gm1] fetch 실패 — 수동 목록만 표시'); })
         .then(function(){ gm1RenderToday(); });
     }
 
