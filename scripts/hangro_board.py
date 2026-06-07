@@ -333,13 +333,9 @@ def build_board(gas_items: list[dict], queue_items: list[dict]) -> tuple[str, di
     _section("🧭 오늘의 항로", secs["today"])
 
     if secs["appr"]:
-        # 결재 B-보강형: 건수 + 제목 한 줄 + 결재 현황 SSOT 포인터 (실제 결재는 거기서)
+        # 결재는 항로에 개별 표시 안 함 — 카운트+포인터만(실제 결재는 결재현황 SSOT에서). GM 2026-06-07
         lines.append("")
-        lines.append(f"🔴 GM 결재 대기 — {n_appr}건")
-        for it in secs["appr"]:
-            t = it["title"].replace("[결재]", "").replace("  ", " ").strip()
-            lines.append(f"  · {t}")
-        lines.append("  → 결재 현황 SSOT에서 확인·결재:")
+        lines.append(f"🔴 GM 결재 {n_appr}건 — 결재 현황 SSOT에서 확인·결재")
         lines.append("    https://wellperion-cao.github.io/wellperion-automation/coo/todo/%EA%B2%B0%EC%9E%AC%20%ED%98%84%ED%99%A9%20SSOT.html")
 
     _section("⚓ 입항 (완료)", secs["done"], show_status=False)

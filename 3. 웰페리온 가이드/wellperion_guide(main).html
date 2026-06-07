@@ -611,17 +611,17 @@
     <!-- AUTO:LATEST-START -->
     <div class="card grow">
       <h4>최신 업데이트 — 2026-06-07 (자동 갱신)</h4>
+      <p><strong>2026-06-07</strong> feat(g1): 검색 시 이력(완료·보류·폐기) 포함 — 기본뷰는 활성만 유지 (GM 2026-06-07)</p>
       <p><strong>2026-06-07</strong> feat(board): 결재 섹션 B-보강형 — 건수+제목+결재 현황 SSOT 포인터 (GM 2026-06-07)</p>
       <p><strong>2026-06-07</strong> feat(g1): 항로에 담당자 필터 추가 — 분류 필터 옆 드롭다운(전체/GM/시모/시로/시우/시토/시뽀/시포/웰리)</p>
       <p><strong>2026-06-07</strong> fix(home/g1): 홈 북극성 블록 삭제 + G1 '홈에서 보기' 링크 제거 (GM 2026-06-07)</p>
       <p><strong>2026-06-07</strong> fix(g1): 라이브 G1 [결재] 중복표시 수정 — 식별자([GM-05] 등) 앞에 와도 [결재] 감지</p>
-      <p><strong>2026-06-07</strong> fix(board): 항로 생성기 입항 섹션 정본화 — 최근(오늘·어제) 완료만 표시</p>
     </div>
 <!-- AUTO:LATEST-END -->
         <table>
           <tr><th style="width:160px">날짜</th><th>변경 내용</th></tr>
           <!-- AUTO:TABLE-START -->
-      <tr><td><strong>2026-06-07 (자동)</strong></td><td>feat(board): 결재 섹션 B-보강형 — 건수+제목+결재 현황 SSOT 포인터 (GM 2026-06-07) · feat(g1): 항로에 담당자 필터 추가 — 분류 필터 옆 드롭다운(전체/GM/시모/시로/시우/시토/시뽀/시포/웰리) · fix(home/g1): 홈 북극성 블록 삭제 + G1 '홈에서 보기' 링크 제거 (GM 2026-06-07) …</td></tr>
+      <tr><td><strong>2026-06-07 (자동)</strong></td><td>feat(g1): 검색 시 이력(완료·보류·폐기) 포함 — 기본뷰는 활성만 유지 (GM 2026-06-07) · feat(board): 결재 섹션 B-보강형 — 건수+제목+결재 현황 SSOT 포인터 (GM 2026-06-07) · feat(g1): 항로에 담당자 필터 추가 — 분류 필터 옆 드롭다운(전체/GM/시모/시로/시우/시토/시뽀/시포/웰리) ·…</td></tr>
       <!-- AUTO:TABLE-END -->
           <tr><td><strong>2026-05-28 (14차)</strong></td><td>공지/안내문 생성(COO 하위) · 오프라인 홍보물 디자인 제작(CMO 하위) 도구 신설 · 공지 서식 v2.0 독립 페이지화 · 회사소개서·전략로드맵 원본 「3. 웰페리온 가이드/회사문서/」로 이관(SSOT 단일화) · C-Level 부팅 R/R Notion API→웰페리온 ERP g10 참조로 전환 · GitHub Pages 워크플로 폴더명 경로 수정 · 사이드바 "공통+7개 C-Level" 라벨 제거</td></tr>
           <tr><td>2026-05-27 (13차)</td><td>GitHub Pages 전환 · 사이드바 4섹터 · AI C-Level 통일 · 운영 통합 체계 · 공식채널·지출현황·취업규칙·SSOT 신설 · g2+g19·g9+g20·g12·g13 합병 · 김남욱 탭 확장 · v2.5</td></tr>
@@ -7210,6 +7210,10 @@ function crTab(btn, panelId) {
       var active = merged.filter(function(t){ return t.status === '진행중'; });
       var done   = merged.filter(function(t){ return t.status === '완료' && !_gm1ApprPending(t); });
       var hold   = merged.filter(function(t){ return t.status === '보류'; });
+      // 결재 배는 항로에 개별 표시 안 함 — 카운트+포인터 하나로(결재현황 SSOT에서 처리). GM 2026-06-07
+      var apprActive = active.filter(function(t){ return catOf(t) === '결재'; });
+      active = active.filter(function(t){ return catOf(t) !== '결재'; });
+      var apprTotal = apprWait.length + apprActive.length;
 
       // ══ 도구 바 — 검색 input 포함 영역은 최초 1회만 생성(재렌더 시 손대지 않음 → IME 조합 유지) ══
       var FILTER_CATS = ['업무','결재','기획','개인'];
@@ -7258,19 +7262,13 @@ function crTab(btn, panelId) {
 
       var html = '';
 
-      // ── 🔴 결재 대기 (완료지만 GM 결재 미완) — 항로 맨 위 분리 (2026-06-06 GM 옵션1) ──
-      if (apprWait.length) {
-        html += '<details class="toggle" open style="margin-bottom:14px;border:1px solid rgba(232,163,61,0.35);border-radius:10px;background:rgba(232,163,61,0.06);">';
-        html += '<summary style="padding:10px 14px;font-weight:700;color:#e8a33d;cursor:pointer;"><span style="margin-right:6px;">🔴</span>결재 대기 ' + apprWait.length + '건 <span style="font-size:11px;color:var(--dim);font-weight:400;">— 작업은 끝, GM 결재만 남음</span></summary>';
-        html += '<div style="padding:2px 14px 12px;">';
-        apprWait.forEach(function(t){
-          html += '<div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-top:1px solid rgba(232,163,61,0.15);">';
-          html += '<span style="color:#e8a33d;font-weight:700;flex-shrink:0;">✅</span>';
-          html += '<span style="flex:1;font-size:13px;color:var(--text);word-break:break-word;">' + gm1Esc(t.title) + '</span>';
-          html += '<a href="https://wellperion-cao.github.io/wellperion-automation/coo/todo/%EA%B2%B0%EC%9E%AC%20%ED%98%84%ED%99%A9%20SSOT.html" target="_blank" style="font-size:11px;color:#e8a33d;text-decoration:none;flex-shrink:0;font-weight:600;">✍️ 결재 →</a>';
-          html += '</div>';
-        });
-        html += '</div></details>';
+      // ── 🔴 GM 결재 — 항로엔 카운트+포인터만(개별 표시 안 함), 실제 결재는 결재현황 SSOT (GM 2026-06-07) ──
+      if (apprTotal) {
+        html += '<a href="https://wellperion-cao.github.io/wellperion-automation/coo/todo/%EA%B2%B0%EC%9E%AC%20%ED%98%84%ED%99%A9%20SSOT.html" target="_blank" style="display:flex;align-items:center;gap:8px;margin-bottom:14px;padding:11px 14px;border:1px solid rgba(232,163,61,0.35);border-radius:10px;background:rgba(232,163,61,0.06);text-decoration:none;">';
+        html += '<span style="font-size:16px;">🔴</span>';
+        html += '<span style="flex:1;font-weight:700;color:#e8a33d;font-size:13.5px;">GM 결재 ' + apprTotal + '건</span>';
+        html += '<span style="font-size:12px;color:#e8a33d;font-weight:600;">결재 현황 SSOT에서 확인·결재 →</span>';
+        html += '</a>';
       }
 
       // 진행중 카드 — 업무현황 SSOT 전체 기능 이식 (결과보고서 제외, 2026-06-01 GM 최종)
