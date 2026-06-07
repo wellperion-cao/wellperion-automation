@@ -210,5 +210,16 @@
     "priority": "HIGH",
     "enqueued_at": "2026-06-08",
     "note": "[GM 2026-06-08 지시] AI #8 나와야 함. 대상=260608_AI_북극성항해설계(제작완료·검수대기·미발행, 06-07 조기발행→GM 삭제분). 산출물 실재 검수(output 슬라이드·큐레이션_추천.md·cmo/review preview) 후 M5 review_queue 검수대기 등록 + 텔레그램 [승인] 카드 콘텐츠당 1회 발송. 발행은 GM 텔레그램 [승인] 탭 경유(무폴링·자동재발행 금지). ※로드맵 번호: GM의일요일이 현재 #8로 기재돼 있어 번호 재정렬 필요 시 로드맵 동기화."
+  },
+  {
+    "task_id": "CTO-2026-06-08-QUEUE-SHEET-MIGRATION-RESUME",
+    "clevel": "cto",
+    "title": "[시토] AI 배 _queue→구글시트 SSOT 이관 재개 (조심히·단계마다 검증/커밋) — 어제 2단계 중복사고 revert 후 재시도",
+    "status": "IN_PROGRESS",
+    "depends_on": null,
+    "priority": "HIGH",
+    "enqueued_at": "2026-06-08",
+    "brief": "docs/queue_to_sheets_migration_plan.md",
+    "note": "[GM 2026-06-08 결정] 시트=원본/_queue=미러 이관 마저. 어제(06-07) 시토 2단계 1회 대량처리→배 중복사고→revert 복구(9458937). 교훈: 로드베어링은 잘게 쪼개 단계마다 검증·커밋, reader 한 소스+제목dedup. 1단계(미러생성기 queue_sync_from_sheet.py+계획서) 살아있음. 재개=① P1 생성기 현행 시트 대조 read-only 검증 ② 시트에 어제 사고 잔재(AI행 중복) 없는지 점검 ③ 미세 단계별 실행계획 산출(각 단계 검증·롤백·GM수동여부) → 위험·GM수동 단계 전 웰리/GM 확인. 대량 일괄처리·GAS 임의 재배포 금지."
   }
 ]
