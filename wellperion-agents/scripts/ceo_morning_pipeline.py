@@ -243,8 +243,19 @@ def fetch_g1_ssot() -> dict | None:
         st = str(row.get("상태") or "")
         task_id = str(row.get("id") or "")
 
-        # ① 결재 대기: GM싸인 없음 AND 결재상태∈{대기,"부서장"포함} — 날짜 무관 항상
-        needs_gm = (not gm_sign) and apr and (apr == "대기" or "부서장" in apr)
+        # ① 결재 대기(GM 차례만): GM싸인 없음 AND 반려/결재완료 아님 AND
+        #    (결재요청이 GM 지정 OR 결재상태='부서장 완료'(부서장 끝→GM 차례))
+        #    ⚠️ 결재요청이 부서장(실장/소장/파트너)인 대기건은 GM 결재함에서 제외 —
+        #    안 그러면 락커 등 부서장 결재건이 GM 결재함으로 샌다 (2026-06-07 시토 수정).
+        req_str = str(row.get("결재요청") or "")
+        req_is_gm = bool(re.search(r"GM", req_str))  # "GM"/"김남욱GM" 등
+        needs_gm = (
+            (not gm_sign)
+            and apr
+            and ("반려" not in apr)
+            and apr != "결재완료"
+            and (req_is_gm or "부서장 완료" in apr)
+        )
         if needs_gm:
             # 제목 앞에 이미 붙은 [결재] 중복 제거(🔴 GM 결정 섹션이 맥락 전달).
             title_clean = re.sub(r"^\s*\[결재\]\s*", "", title)

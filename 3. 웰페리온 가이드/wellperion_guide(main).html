@@ -6851,9 +6851,10 @@ function crTab(btn, panelId) {
               var sd      = ssotDateLocal(row['시작일']);
               // GM 결재 차례 우선 판정 — 결재 대기는 날짜 무관 항상 노출(GM 액션 필요)
               var reqStr  = String(row['결재요청'] || '');
-              var hasDeptStep = (reqStr.indexOf('이경연') >= 0 || reqStr.indexOf('이정헌') >= 0 || reqStr.indexOf('나우열') >= 0);
-              // GM 차례일 때만 노출: 부서장 완료(이제 GM) OR 부서장 단계 없이 GM 1순위. 부서장 대기건 오노출 차단 (2026-06-03 GM)
-              var needsGm = !gmSign && apr && !/반려/.test(apr) && (apr.indexOf('부서장 완료') >= 0 || (apr === '대기' && !hasDeptStep));
+              // GM 차례일 때만 노출: 결재요청이 GM 지정 OR 결재상태='부서장 완료'(부서장 끝→GM 차례).
+              // ⚠️ 결재요청이 부서장(실장/소장/파트너)인 대기건은 제외 — 락커 등 부서장 결재건이 GM 결재함으로 새는 것 차단 (2026-06-07 시토 수정)
+              var reqIsGm = /GM/.test(reqStr);
+              var needsGm = !gmSign && apr && !/반려/.test(apr) && apr !== '결재완료' && (reqIsGm || apr.indexOf('부서장 완료') >= 0);
               var base    = 'ssot-' + (row['id'] || title);
               var rawContent = String(row['내용'] || '');
               var parsed  = gm1ParseContent(rawContent);  // D-1 역파서: 마커 분해 + 진척/예산 복원

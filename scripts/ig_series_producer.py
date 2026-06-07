@@ -158,13 +158,56 @@ def parse_roadmap_episodes(text: str) -> list[dict]:
     return episodes
 
 
+# 이미 제작/검수/발행/폐기된 편으로 판정할 상태 키워드(부분일치) — 재선정 차단
+# (어제·오늘 #7 재탕 사고 방지: '기획예정' 완전일치 + 아래 키워드 미포함 + 폴더 미존재 3중 가드)
+_DONE_STATUS_KW = ("제작완료", "검수대기", "검수 대기", "발행완료", "폐기", "보류")
+
+
+def _episode_already_produced(ep: dict) -> bool:
+    """이 편 번호(AI{num})로 이미 제작된 폴더가 instagram/ 아래에 있으면 True.
+
+    make_folder_slug 가 매 가동 '오늘 날짜'로 폴더를 새로 만들기 때문에, 같은 편을 다른
+    날짜로 재제작하는 사고를 막으려면 날짜와 무관하게 'AI{num}_' 패턴 폴더 존재로 판정한다.
+    """
+    try:
+        marker = f"_AI{ep['num']}_"
+        for child in INSTAGRAM_DIR.iterdir():
+            if not child.is_dir():
+                continue
+            name = child.name
+            # 폐기 폴더(_폐기_DEPRECATED.md 보유)는 '제작됨'으로 간주(재선정 차단)
+            if marker in name or name.endswith(f"_AI{ep['num']}"):
+                return True
+    except Exception:
+        pass
+    return False
+
+
 def pick_next_episode(episodes: list[dict]) -> dict | None:
-    """상태='기획예정' 중 번호가 가장 빠른 편 1건 반환. 없으면 None (소진)."""
-    planned = [e for e in episodes if e["status"] == PLANNED_STATUS]
-    if not planned:
+    """진짜 미제작 '기획예정' 편 중 번호가 가장 빠른 1건 반환. 없으면 None (소진).
+
+    3중 가드(2026-06-07 시토 — #7 재탕 사고 수정):
+      ① 상태 == '기획예정' (완전일치)
+      ② 상태에 제작완료/검수대기/발행완료/폐기/보류 키워드 미포함(안전망)
+      ③ 해당 편(AI{num}) 제작 폴더가 instagram/ 아래에 아직 없음
+    """
+    candidates: list[dict] = []
+    for e in episodes:
+        st = e["status"]
+        if st != PLANNED_STATUS:
+            continue
+        if any(kw in st for kw in _DONE_STATUS_KW if kw != PLANNED_STATUS):
+            continue
+        if _episode_already_produced(e):
+            print(
+                f"[INFO] #{e['num']} 은 '기획예정'이나 제작 폴더가 이미 존재 — 재선정 스킵(중복 차단)."
+            )
+            continue
+        candidates.append(e)
+    if not candidates:
         return None
-    planned.sort(key=lambda e: e["num"])
-    return planned[0]
+    candidates.sort(key=lambda e: e["num"])
+    return candidates[0]
 
 
 def prev_published_episode(episodes: list[dict], next_num: int) -> dict | None:

@@ -14,9 +14,11 @@ CMO 가 콘텐츠를 review_queue.json 에 status='검수대기' 로 적재한 �
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 import sys
+import time
 from pathlib import Path
 
 import urllib.parse
@@ -34,8 +36,13 @@ M5_URL = "https://wellperion-cao.github.io/wellperion-automation/wellperion_guid
 
 TELEGRAM_TOKEN_ENV_KEY = "TELEGRAM_BOT_TOKEN"
 TELEGRAM_CHAT_ID = "8254867551"  # @namuki_report_bot (GM)
-# 건별 마지막 카드 message_id 저장 — 같은 건 재발송 시 이전 카드 자동 삭제(카드 1개만 유지)
+# 건별 마지막 카드 상태 저장 — 같은 건 재발송 시 이전 카드 자동 삭제(카드 1개만 유지)
+# 값 스키마: {item_id: {"msg_id": int, "sig": str(caption해시), "ts": float}}
+#   (구버전 평면 int 도 _load_msgids 에서 신스키마로 흡수 — 하위호환)
 CARD_MSGID_STORE = ROOT / "scripts" / ".review_card_msgids.json"
+# 동시 호출(11초 내 2회 발송 같은 사고) 직렬화용 파일 락 + 콘텐츠당 1회 재발송 차단 창(초)
+CARD_LOCK = ROOT / "scripts" / ".review_card.lock"
+DEDUP_WINDOW_SEC = 90  # 같은 콘텐츠·동일 내용 카드의 재발송을 막는 시간 창
 
 
 def _token() -> str:
@@ -70,13 +77,63 @@ def _preview_photo(item: dict) -> Path | None:
     return None
 
 
+def _caption_sig(item: dict) -> str:
+    """콘텐츠 동일성 판정용 서명. id + title + folder 로 안정 해시(내용 바뀌면 갱신).
+    교체·폐기 후 새 내용으로 다시 올리면 sig 가 달라져 새 카드 1장이 정상 발송된다."""
+    base = "|".join([
+        str(item.get("id", "")),
+        str(item.get("title", "")),
+        str(item.get("folder", "")),
+    ])
+    return hashlib.sha1(base.encode("utf-8")).hexdigest()[:16]
+
+
 def _load_msgids() -> dict:
+    """저장소 로드 + 신스키마({msg_id,sig,ts}) 정규화(구버전 평면 int 흡수)."""
+    raw = {}
     try:
         if CARD_MSGID_STORE.exists():
-            return json.loads(CARD_MSGID_STORE.read_text(encoding="utf-8"))
+            raw = json.loads(CARD_MSGID_STORE.read_text(encoding="utf-8"))
+    except Exception:
+        raw = {}
+    out: dict = {}
+    if isinstance(raw, dict):
+        for k, v in raw.items():
+            if isinstance(v, dict):
+                out[k] = v
+            else:  # 구버전: 값이 message_id(int) 단일
+                out[k] = {"msg_id": v, "sig": "", "ts": 0}
+    return out
+
+
+def _acquire_lock(timeout: float = 25.0) -> bool:
+    """카드 발송 직렬화 락 획득(동시 2회 발송 사고 방지). 획득 실패해도 발송은 진행(best-effort)."""
+    deadline = time.time() + timeout
+    while time.time() < deadline:
+        try:
+            fd = os.open(str(CARD_LOCK), os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+            os.write(fd, str(os.getpid()).encode("ascii"))
+            os.close(fd)
+            return True
+        except FileExistsError:
+            # 스테일 락(60초 초과) 회수
+            try:
+                if time.time() - CARD_LOCK.stat().st_mtime > 60:
+                    CARD_LOCK.unlink(missing_ok=True)
+                    continue
+            except Exception:
+                pass
+            time.sleep(0.3)
+        except Exception:
+            return False
+    return False
+
+
+def _release_lock() -> None:
+    try:
+        CARD_LOCK.unlink(missing_ok=True)
     except Exception:
         pass
-    return {}
 
 
 def _save_msgids(d: dict) -> None:
@@ -161,9 +218,13 @@ def _send_photo_card(token: str, caption: str, keyboard: dict,
         return None
 
 
-def send_card(item: dict) -> bool:
+def send_card(item: dict, force: bool = False) -> bool:
     """검수 카드 1건 발송 — montage 미리보기 이미지 + [승인]/[반려] 버튼.
-    같은 건 재발송 시 이전 카드를 자동 삭제(카드 1개만 유지). 이미지 없으면 텍스트 폴백. (토큰 stdout 노출 금지)"""
+
+    콘텐츠당 1회 보장: 동시 호출은 파일 락으로 직렬화하고, 같은 콘텐츠(동일 내용 sig)의
+    카드가 DEDUP_WINDOW_SEC 내 이미 나가 있으면 재발송을 스킵한다(11초 내 2회 발송 사고 차단).
+    내용이 바뀐 교체본은 sig 가 달라져 새 카드 1장만 발송(이전 카드는 삭제). force=True 면 가드 무시.
+    이미지 없으면 텍스트 폴백. (토큰 stdout 노출 금지)"""
     token = _token()
     if not token:
         print("[WARN] 텔레그램 토큰 미설정 — 발송 생략")
@@ -172,6 +233,31 @@ def send_card(item: dict) -> bool:
     title = item.get("title", item_id)
     channel = item.get("channel", "")
     folder = item.get("folder", "")
+    sig = _caption_sig(item)
+
+    locked = _acquire_lock()
+    try:
+        # 콘텐츠당 1회 가드: 동일 sig 카드가 최근(창 이내) 이미 발송됐으면 재발송 스킵
+        if not force:
+            store0 = _load_msgids()
+            prev = store0.get(item_id) or {}
+            if (
+                prev.get("msg_id")
+                and prev.get("sig") == sig
+                and (time.time() - float(prev.get("ts") or 0)) < DEDUP_WINDOW_SEC
+            ):
+                print(
+                    f"[INFO] 콘텐츠당 1회 가드 - 동일 카드 최근 발송됨(스킵): {item_id} "
+                    f"msg_id={prev.get('msg_id')}"
+                )
+                return True
+        return _do_send_card(token, item, item_id, title, channel, folder, sig)
+    finally:
+        if locked:
+            _release_lock()
+
+
+def _do_send_card(token, item, item_id, title, channel, folder, sig) -> bool:
 
     caption = (
         f"🔎 <b>콘텐츠 검수 요청</b>\n"
@@ -200,13 +286,13 @@ def send_card(item: dict) -> bool:
     if new_id is None:
         return False
 
-    # 같은 건의 이전 카드 자동 삭제 후 새 message_id 저장 (카드 1개만 유지)
+    # 같은 건의 이전 카드 자동 삭제 후 새 상태 저장 (카드 1개만 유지)
     store = _load_msgids()
-    prev_id = store.get(item_id)
+    prev_id = (store.get(item_id) or {}).get("msg_id")
     if prev_id and prev_id != new_id:
         if _delete_message(token, prev_id):
             print(f"[INFO] 이전 카드 자동 삭제: {item_id} msg_id={prev_id}")
-    store[item_id] = new_id
+    store[item_id] = {"msg_id": new_id, "sig": sig, "ts": time.time()}
     _save_msgids(store)
     return True
 
@@ -227,6 +313,8 @@ def main() -> None:
     p.add_argument("--id", help="발송할 큐 항목 id")
     p.add_argument("--all-pending", action="store_true",
                    help="status='검수대기' 전체 카드 발송")
+    p.add_argument("--force", action="store_true",
+                   help="콘텐츠당 1회 가드 무시하고 강제 재발송(이전 카드는 교체)")
     args = p.parse_args()
 
     items = load_queue()
@@ -235,13 +323,13 @@ def main() -> None:
         if not target:
             print(f"[ERROR] id 미발견: {args.id}")
             sys.exit(1)
-        sys.exit(0 if send_card(target) else 1)
+        sys.exit(0 if send_card(target, force=args.force) else 1)
     elif args.all_pending:
         pending = [it for it in items if it.get("status") == "검수대기"]
         if not pending:
             print("[INFO] 검수대기 항목 없음.")
             return
-        sent = sum(1 for it in pending if send_card(it))
+        sent = sum(1 for it in pending if send_card(it, force=args.force))
         print(f"[INFO] 검수대기 {len(pending)}건 중 {sent}건 발송.")
     else:
         p.print_help()
