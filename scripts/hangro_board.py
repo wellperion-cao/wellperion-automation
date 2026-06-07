@@ -24,6 +24,7 @@ import argparse
 import datetime as dt
 import io
 import json
+import re
 import sys
 import urllib.parse
 import urllib.request
@@ -241,12 +242,20 @@ def _classify(items: list[dict]) -> dict[str, list[dict]]:
         "drift":   [],   # 🌀 표류 (완료인데 담당 다음 없는 건 — 미구현, placeholder)
     }
     seen_ids: set[str] = set()
+    seen_titles: set[str] = set()
 
     for item in items:
         iid = item["id"]
         if iid in seen_ids:
             continue
         seen_ids.add(iid)
+        # 제목 기준 중복 차단 안전망 — 같은 AI배가 시트(GAS)와 _queue 양쪽에 있어도 1회만.
+        #   (시트행 id ≠ _queue task_id 라 id 중복검사만으론 못 잡힘. AI배 시트 이관 대비, 2026-06-07)
+        _tkey = re.sub(r"\s+", " ", str(item.get("title", "")).strip()).lower()
+        if _tkey:
+            if _tkey in seen_titles:
+                continue
+            seen_titles.add(_tkey)
 
         st = item["status"]
         done = st in STATUS_DONE
