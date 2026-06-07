@@ -6886,7 +6886,11 @@ function crTab(btn, panelId) {
             // ⚠️ 결재요청이 부서장(실장/소장/파트너)인 대기건은 제외 — 락커 등 부서장 결재건이 GM 결재함으로 새는 것 차단 (2026-06-07 시토 수정)
             // ⚠️ '결재요청=GM'만으로 판정 금지 — 결재현황 SSOT의 nextApprover와 동일하게 '지금 GM 차례'인 건만 카운트.
             //   (owner=GM이면 GM 스킵→대표 / 부서장싸인 없으면 부서장 차례 / GM싸인 있으면 이미 끝) (2026-06-07 웰리 동기화)
-            var needsGm = apr && !/반려/.test(apr) && apr !== '결재완료' && gm1NextApprover(row) === 'GM';
+            var _next   = gm1NextApprover(row);
+            var _aprPending = String(reqStr).trim() !== '' && apr !== '결재완료' && !/반려/.test(apr);
+            var needsGm = _aprPending && _next === 'GM';
+            // 결재 진행 중인데 GM 차례가 아닌 건(부서장·대표 대기) = 항로 활성카드 제외 + 배너 카운트만 (GM 2026-06-07)
+            var _aprInflightOther = _aprPending && _next !== null && _next !== 'GM';
             var base    = 'ssot-' + (row['id'] || title);
             var rawContent = String(row['내용'] || '');
             var parsed  = gm1ParseContent(rawContent);  // D-1 역파서: 마커 분해 + 진척/예산 복원
@@ -6894,8 +6898,17 @@ function crTab(btn, panelId) {
             if (needsGm) {
               items.push({
                 id: base, title: (/\[결재\]/.test(title) ? title : '[결재] ' + title), status: '진행중',
-                category: '결재', description: parsed.description,
+                category: '결재', _apprKind: 'gm', description: parsed.description,
                 progressLog: parsed.progressLog, budgetCat: parsed.budgetCat, budgetAmt: parsed.budgetAmt,
+                isToday: true, startDate: sd, endDate: ed, ssotAuto: true, owner: owner,
+                _sheetsId: String(row['id'] || '')
+              });
+            } else if (_aprInflightOther) {
+              // 결재 진행 중(타 결재자 대기) — category='결재'라 활성 항로에서 자동 제외, 배너서 'N건 진행중'으로만 집계
+              items.push({
+                id: base, title: (/\[결재\]/.test(title) ? title : '[결재] ' + title), status: '진행중',
+                category: '결재', _apprKind: 'inflight', _nextApprover: _next, description: parsed.description,
+                apprReq: reqStr, apprStatus: apr,
                 isToday: true, startDate: sd, endDate: ed, ssotAuto: true, owner: owner,
                 _sheetsId: String(row['id'] || '')
               });
@@ -7243,9 +7256,12 @@ function crTab(btn, panelId) {
       var done   = merged.filter(function(t){ return t.status === '완료' && !_gm1ApprPending(t); });
       var hold   = merged.filter(function(t){ return t.status === '보류'; });
       // 결재 배는 항로에 개별 표시 안 함 — 카운트+포인터 하나로(결재현황 SSOT에서 처리). GM 2026-06-07
-      var apprActive = active.filter(function(t){ return catOf(t) === '결재'; });
+      // 결재 배는 항로 활성카드서 제외 — GM 차례(gm)와 진행중(타 결재자 대기, inflight)을 분리 집계 (GM 2026-06-07)
+      var apprActiveGm = active.filter(function(t){ return catOf(t) === '결재' && t._apprKind !== 'inflight'; });
+      var apprInflight = active.filter(function(t){ return catOf(t) === '결재' && t._apprKind === 'inflight'; });
       active = active.filter(function(t){ return catOf(t) !== '결재'; });
-      var apprTotal = apprWait.length + apprActive.length;
+      var apprGmTotal = apprWait.length + apprActiveGm.length;   // GM이 지금 결재할 차례
+      var apprInflightTotal = apprInflight.length;               // 결재 진행 중(부서장·대표 대기)
 
       // ══ 도구 바 — 검색 input 포함 영역은 최초 1회만 생성(재렌더 시 손대지 않음 → IME 조합 유지) ══
       var FILTER_CATS = ['업무','결재','기획','개인'];
@@ -7294,12 +7310,14 @@ function crTab(btn, panelId) {
 
       var html = '';
 
-      // ── 🔴 GM 결재 — 항로엔 카운트+포인터만(개별 표시 안 함), 실제 결재는 결재현황 SSOT (GM 2026-06-07) ──
-      if (apprTotal) {
-        html += '<a href="https://wellperion-cao.github.io/wellperion-automation/coo/todo/%EA%B2%B0%EC%9E%AC%20%ED%98%84%ED%99%A9%20SSOT.html" target="_blank" style="display:flex;align-items:center;gap:8px;margin-bottom:14px;padding:11px 14px;border:1px solid rgba(232,163,61,0.35);border-radius:10px;background:rgba(232,163,61,0.06);text-decoration:none;">';
-        html += '<span style="font-size:16px;">🔴</span>';
-        html += '<span style="flex:1;font-weight:700;color:#e8a33d;font-size:13.5px;">GM 결재 ' + apprTotal + '건</span>';
-        html += '<span style="font-size:12px;color:#e8a33d;font-weight:600;">결재 현황 SSOT에서 확인·결재 →</span>';
+      // ── 🔴 결재 — 항로엔 카운트+포인터만(개별 표시 안 함). GM 차례 / 진행중(타 결재자 대기) 분리. 실제 결재는 결재현황 SSOT (GM 2026-06-07) ──
+      if (apprGmTotal || apprInflightTotal) {
+        var _apprParts = [];
+        if (apprGmTotal) _apprParts.push('<span style="font-weight:700;color:#e8a33d;">🔴 GM 결재 ' + apprGmTotal + '건</span>');
+        if (apprInflightTotal) _apprParts.push('<span style="font-weight:600;color:#c0a060;">⏳ 결재 진행 중 ' + apprInflightTotal + '건<span style="font-size:11px;font-weight:400;color:var(--dim);">(타 결재자 대기)</span></span>');
+        html += '<a href="https://wellperion-cao.github.io/wellperion-automation/coo/todo/%EA%B2%B0%EC%9E%AC%20%ED%98%84%ED%99%A9%20SSOT.html" target="_blank" style="display:flex;align-items:center;gap:10px;margin-bottom:14px;padding:11px 14px;border:1px solid rgba(232,163,61,0.35);border-radius:10px;background:rgba(232,163,61,0.06);text-decoration:none;flex-wrap:wrap;">';
+        html += '<span style="flex:1;font-size:13.5px;display:flex;gap:12px;flex-wrap:wrap;align-items:center;">' + _apprParts.join('') + '</span>';
+        html += '<span style="font-size:12px;color:#e8a33d;font-weight:600;">결재 현황 SSOT →</span>';
         html += '</a>';
       }
 

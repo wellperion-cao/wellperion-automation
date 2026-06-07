@@ -161,7 +161,12 @@ def fetch_gas_items() -> list[dict]:
         # 결재요청 GM 여부 → 결재 섹션
         apr = str(row.get("결재상태", ""))
         # '지금 GM 차례'인 건만 결재 카운트 — SSOT nextApprover와 동일(결재요청=GM만 보면 오버카운트)
-        needs_gm = bool(apr) and "반려" not in apr and apr != "결재완료" and _next_approver(row) == "GM"
+        _req = str(row.get("결재요청", "")).strip()
+        _nxt = _next_approver(row)
+        _apr_pending = _req != "" and apr != "결재완료" and "반려" not in apr
+        needs_gm = _apr_pending and _nxt == "GM"
+        # 결재 진행 중인데 GM 차례 아님(부서장·대표 대기) → 오늘 항로 제외 + 'N건 진행중' 집계 (GM 2026-06-07)
+        appr_inflight = _apr_pending and _nxt is not None and _nxt != "GM"
         items.append({
             "id":        str(row.get("id", "")),
             "title":     title,
@@ -171,6 +176,7 @@ def fetch_gas_items() -> list[dict]:
             "mod_date":  _to_kst_date(str(row.get("수정일", "") or "")),
             "priority":  str(row.get("난이도", "") or "NORMAL"),
             "needs_gm_appr": needs_gm,
+            "appr_inflight": appr_inflight,
             "source":    "gas",
         })
     return items
@@ -229,7 +235,8 @@ def _classify(items: list[dict]) -> dict[str, list[dict]]:
     sections: dict[str, list[dict]] = {
         "urgent":  [],   # 🔴 급한 입항 (마감임박 ≤3일, 미완료)
         "today":   [],   # 🧭 오늘의 항로 (진행·대기)
-        "appr":    [],   # 🔴 GM 결재 대기
+        "appr":    [],   # 🔴 GM 결재 대기 (GM 차례)
+        "appr_inflight": [],  # ⏳ 결재 진행 중 (타 결재자 대기)
         "done":    [],   # ⚓ 입항 (완료)
         "drift":   [],   # 🌀 표류 (완료인데 담당 다음 없는 건 — 미구현, placeholder)
     }
@@ -254,8 +261,11 @@ def _classify(items: list[dict]) -> dict[str, list[dict]]:
         })
         item["_ship"] = ship
 
+        inflight = item.get("appr_inflight", False)
         if appr and not done:
             sections["appr"].append(item)
+        elif inflight and not done:
+            sections["appr_inflight"].append(item)   # 결재 진행 중(타 결재자 대기) — 오늘 항로서 제외
         elif urgent_flag:
             sections["urgent"].append(item)
         elif done:
@@ -330,16 +340,22 @@ def build_board(gas_items: list[dict], queue_items: list[dict]) -> tuple[str, di
     n_urgent = len(secs["urgent"])
     n_today  = len(secs["today"])
     n_appr   = len(secs["appr"])
+    n_inflight = len(secs["appr_inflight"])
     n_done   = len(secs["done"])
     n_total  = n_urgent + n_today + n_appr
 
-    table = _box_table([
+    _rows = [
         ("🔴 급한 입항 (마감임박)",  str(n_urgent)),
         ("🧭 오늘의 항로 (진행·대기)", str(n_today)),
         ("🔴 GM 결재 대기",          str(n_appr)),
+    ]
+    if n_inflight:
+        _rows.append(("⏳ 결재 진행 중 (타 결재자)", str(n_inflight)))
+    _rows += [
         ("⚓ 입항 완료",             str(n_done)),
         ("진행 합계",               str(n_total)),
-    ])
+    ]
+    table = _box_table(_rows)
 
     lines: list[str] = []
     lines.append(f"🧭 오늘의 항로  {today} ({wd_kor})")
@@ -365,6 +381,11 @@ def build_board(gas_items: list[dict], queue_items: list[dict]) -> tuple[str, di
         lines.append("")
         lines.append(f"🔴 GM 결재 {n_appr}건 — 결재 현황 SSOT에서 확인·결재")
         lines.append("    https://wellperion-cao.github.io/wellperion-automation/coo/todo/%EA%B2%B0%EC%9E%AC%20%ED%98%84%ED%99%A9%20SSOT.html")
+
+    if secs["appr_inflight"]:
+        # GM 차례 아닌 진행 중 결재 — 카운트만(부서장·대표 대기). GM 2026-06-07
+        lines.append("")
+        lines.append(f"⏳ 결재 진행 중 {n_inflight}건 (타 결재자 대기) — 결재 현황 SSOT")
 
     _section("⚓ 입항 (완료)", secs["done"], show_status=False)
 
