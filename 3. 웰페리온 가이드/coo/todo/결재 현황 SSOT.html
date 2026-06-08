@@ -1025,7 +1025,7 @@ function renderApprovalCard(t, idx) {
       const _o = (v, l) => '<option value="' + v + '"' + (_diff === v ? ' selected' : '') + '>' + l + '</option>';
       h += '<span style="font-size:11px;color:var(--dim);">⚙ 난이도(' + esc(_hasDept && _midName ? _midName : 'GM') + ' 확정):</span>';
       h += '<select onchange="setDifficulty(\'' + escAttr(t.id) + '\',this.value)" onclick="event.stopPropagation();" style="font-size:12px;padding:3px 8px;border-radius:6px;border:1px solid var(--border);background:var(--bg);color:var(--text);">'
-        + _o('', '미정') + _o('하', '하 (1)') + _o('중', '중 (2)') + _o('상', '상 (3)') + '</select>';
+        + _o('', '미정') + _o('하', '하 (1)') + _o('중', '중 (3)') + _o('상', '상 (5)') + '</select>';
       if (!_diff) h += '<span style="font-size:10px;color:var(--accent);">미설정 — 설정 가능</span>';
     } else {
       const _c = _diff === '상' ? 'var(--red)' : _diff === '중' ? 'var(--yellow)' : _diff === '하' ? 'var(--green)' : 'var(--dim)';
