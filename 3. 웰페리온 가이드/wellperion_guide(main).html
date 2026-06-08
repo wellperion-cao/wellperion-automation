@@ -496,7 +496,16 @@
         <div style="font-size:10.5px;color:var(--dim);">이번 달 문의 (자동 집계)</div>
       </div>
     </div>
-    <div style="font-size:11px;color:var(--dim);margin:0 0 24px;">실시간 숫자는 업무·결재 SSOT(구글시트)에서 직접 집계합니다. 가져오지 못하면 "—"로 표시(가짜 수치 없음).</div>
+    <div style="font-size:11px;color:var(--dim);margin:0 0 16px;">실시간 숫자는 업무·결재 SSOT(구글시트)에서 직접 집계합니다. 가져오지 못하면 "—"로 표시(가짜 수치 없음).</div>
+
+    <!-- ⑤ 핵심 KPI 집약 — 부서별 점검 완료율 (라이브) — 업무·결재 대기 현황 바로 아래 상단 묶음 -->
+    <div style="margin:0 0 4px;display:flex;align-items:center;gap:8px;">
+      <span style="font-size:13px;font-weight:700;color:var(--dim);">📊 핵심 KPI 현황</span>
+      <span style="font-size:11px;color:var(--dim);">오늘 기준 실시간</span>
+    </div>
+    <div id="home-check-kpi" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;margin-bottom:24px;">
+      <div style="text-align:center;padding:16px;color:var(--dim);font-size:12px;grid-column:1/-1;">점검 현황 불러오는 중...</div>
+    </div>
 
     <!-- ③ ERP 모듈 그리드 (시스템 설계도) — 8개 모듈, 넓으면 3열·좁으면 1열. 모든 링크는 home/수록가이드의 실제 URL 복사 -->
     <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px;margin:0 0 8px;">
@@ -583,15 +592,6 @@
 
     </div>
 
-    <!-- ⑤ 핵심 KPI 집약 — 부서별 점검 완료율 (라이브) -->
-    <div style="margin:20px 0 4px;display:flex;align-items:center;gap:8px;">
-      <span style="font-size:13px;font-weight:700;color:var(--dim);">📊 핵심 KPI 현황</span>
-      <span style="font-size:11px;color:var(--dim);">오늘 기준 실시간</span>
-    </div>
-    <div id="home-check-kpi" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;margin-bottom:20px;">
-      <div style="text-align:center;padding:16px;color:var(--dim);font-size:12px;grid-column:1/-1;">점검 현황 불러오는 중...</div>
-    </div>
-
     <!-- ④ 하단 운영 가이드 + 문서 위치 -->
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin:18px 0 14px;align-items:center;">
       <span style="font-size:12px;color:var(--dim);font-weight:600;">📚 운영 가이드</span>
@@ -621,17 +621,17 @@
     <!-- AUTO:LATEST-START -->
     <div class="card grow">
       <h4>최신 업데이트 — 2026-06-08 (자동 갱신)</h4>
+      <p><strong>2026-06-08</strong> feat(cpo): home 회원 카드에 브로제이 CRM 버튼 추가</p>
       <p><strong>2026-06-08</strong> feat(coo/O1): 점검 KPI 카드 중심 수정 + home 핵심 KPI 집약</p>
       <p><strong>2026-06-08</strong> fix(coo): 업무 난이도 기준 개정 — 하1·중3·상5 팀범위 기준·간결화</p>
       <p><strong>2026-06-08</strong> fix(cto): 봇 pub:grp 콜백 파싱 수정 — split 4파트 그룹승인 정상화 (바레 4채널 일괄승인)</p>
       <p><strong>2026-06-08</strong> feat(cto): SSOT 시트 생성일 DESC 정렬 상시 유지 셋업</p>
-      <p><strong>2026-06-08</strong> fix(coo): 규정 탭 근무·휴게시간을 정기회의 우측(같은 행)으로 배치</p>
     </div>
 <!-- AUTO:LATEST-END -->
         <table>
           <tr><th style="width:160px">날짜</th><th>변경 내용</th></tr>
           <!-- AUTO:TABLE-START -->
-      <tr><td><strong>2026-06-08 (자동)</strong></td><td>feat(coo/O1): 점검 KPI 카드 중심 수정 + home 핵심 KPI 집약 · fix(coo): 업무 난이도 기준 개정 — 하1·중3·상5 팀범위 기준·간결화 · fix(cto): 봇 pub:grp 콜백 파싱 수정 — split 4파트 그룹승인 정상화 (바레 4채널 일괄승인) · feat(cto): SSOT 시트 생성일 DESC 정렬 상시 유…</td></tr>
+      <tr><td><strong>2026-06-08 (자동)</strong></td><td>feat(cpo): home 회원 카드에 브로제이 CRM 버튼 추가 · feat(coo/O1): 점검 KPI 카드 중심 수정 + home 핵심 KPI 집약 · fix(coo): 업무 난이도 기준 개정 — 하1·중3·상5 팀범위 기준·간결화 · fix(cto): 봇 pub:grp 콜백 파싱 수정 — split 4파트 그룹승인 정상화 (바레 4채널 일괄승…</td></tr>
       <!-- AUTO:TABLE-END -->
           <tr><td><strong>2026-05-28 (14차)</strong></td><td>공지/안내문 생성(COO 하위) · 오프라인 홍보물 디자인 제작(CMO 하위) 도구 신설 · 공지 서식 v2.0 독립 페이지화 · 회사소개서·전략로드맵 원본 「3. 웰페리온 가이드/회사문서/」로 이관(SSOT 단일화) · C-Level 부팅 R/R Notion API→웰페리온 ERP g10 참조로 전환 · GitHub Pages 워크플로 폴더명 경로 수정 · 사이드바 "공통+7개 C-Level" 라벨 제거</td></tr>
           <tr><td>2026-05-27 (13차)</td><td>GitHub Pages 전환 · 사이드바 4섹터 · AI C-Level 통일 · 운영 통합 체계 · 공식채널·지출현황·취업규칙·SSOT 신설 · g2+g19·g9+g20·g12·g13 합병 · 김남욱 탭 확장 · v2.5</td></tr>
