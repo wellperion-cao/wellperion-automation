@@ -111,7 +111,9 @@ def _build_embed(item: dict) -> str:
     """_queue 항목 → 내용 셀 임베드 블록 생성."""
     # title·status 는 시트 전용 컬럼으로 빠짐 — 임베드엔 나머지 전부
     embed = {k: v for k, v in item.items() if k not in ("title", "status")}
-    return "===AI_QUEUE===\n" + json.dumps(embed, ensure_ascii=False) + "\n===END==="
+    # 구글시트는 '=' 로 시작하는 셀을 수식으로 해석 → #ERROR!
+    # 앞에 개행 1개를 두어 첫 글자가 '\n' 이 되게 함. 파서(_EMBED_RE)는 search() 이므로 정상 인식.
+    return "\n===AI_QUEUE===\n" + json.dumps(embed, ensure_ascii=False) + "\n===END==="
 
 
 def _todo_add_payload(item: dict) -> dict:
