@@ -7,7 +7,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>
-window.__PV='20260608-01';
+window.__PV='20260608-02';
 (function(){
   window.addEventListener('pageshow',function(e){if(e.persisted)location.reload();});
   try{
@@ -23,7 +23,7 @@ window.__PV='20260608-01';
 <title>웰페리온 시설부 현황판</title>
 <meta property="og:type" content="website">
 <meta property="og:title" content="웰페리온 시설부 현황판">
-<meta property="og:description" content="시설부 일일 점검 현황 — 교대별 완료율·이슈·제출 현황 한눈에">
+<meta property="og:description" content="시설부 일일 점검 현황 — 교대별 완료율·이슈·주간 트렌드·미결 이슈대장 한눈에">
 <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" rel="stylesheet">
 <style>
 :root{--bg:#221F20;--paper:#2a2725;--text:#f5f2ef;--dim:#8c8b83;--accent:#B79F8A;--accent-bg:rgba(183,159,138,0.12);--border:#3d3835;--green:#6abf7b;--green-bg:rgba(106,191,123,0.12);--red:#ED5B3F;--red-bg:rgba(237,91,63,0.12);--yellow:#e6c84e;--yellow-bg:rgba(230,200,78,0.12);--blue:#5b9fd5;--blue-bg:rgba(91,159,213,0.12);--orange:#e6944e;--orange-bg:rgba(230,148,78,0.12)}
@@ -53,8 +53,10 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 .stat-num{font-size:28px;font-weight:800;line-height:1.1;margin-bottom:4px}
 .stat-label{font-size:12px;color:var(--dim);font-weight:600}
 
+/* 섹션 타이틀 */
+.section-title{font-size:13px;font-weight:700;color:var(--accent);padding:8px 0 6px;border-bottom:1px solid var(--border);margin:20px 0 10px}
+
 /* 교대별 테이블 */
-.section-title{font-size:13px;font-weight:700;color:var(--accent);padding:8px 0 6px;border-bottom:1px solid var(--border);margin:16px 0 10px}
 .shift-table{width:100%;border-collapse:collapse;font-size:13px;margin-bottom:4px}
 .shift-table th{padding:8px 10px;text-align:left;background:var(--bg);font-weight:700;color:var(--dim);font-size:12px;border:1px solid var(--border)}
 .shift-table td{padding:8px 10px;border:1px solid var(--border);vertical-align:middle}
@@ -68,6 +70,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 .chip{display:inline-block;font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px}
 .chip-green{background:var(--green-bg);color:var(--green)}
 .chip-red{background:var(--red-bg);color:var(--red)}
+.chip-yellow{background:var(--yellow-bg);color:var(--yellow)}
 .chip-dim{background:var(--border);color:var(--dim)}
 
 /* 이슈 */
@@ -88,6 +91,29 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 .refresh-bar{display:flex;align-items:center;gap:8px;margin-bottom:14px;font-size:12px;color:var(--dim)}
 .refresh-btn{padding:4px 10px;background:var(--paper);color:var(--dim);border:1px solid var(--border);border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit}
 .refresh-btn:hover{color:var(--accent);border-color:var(--accent)}
+
+/* 주간 바차트 */
+.weekly-chart{display:flex;align-items:flex-end;gap:6px;height:120px;padding:10px 0 4px;overflow-x:auto}
+.week-col{display:flex;flex-direction:column;align-items:center;gap:4px;flex:1;min-width:36px}
+.week-bar-wrap{flex:1;width:100%;display:flex;align-items:flex-end;justify-content:center}
+.week-bar{width:28px;border-radius:4px 4px 0 0;transition:height 0.3s;background:var(--accent);min-height:3px;cursor:default;position:relative}
+.week-bar:hover::after{content:attr(data-tip);position:absolute;bottom:calc(100% + 4px);left:50%;transform:translateX(-50%);background:#222;color:#fff;font-size:10px;padding:2px 6px;border-radius:4px;white-space:nowrap;pointer-events:none;z-index:5}
+.week-bar.today-bar{background:var(--green)}
+.week-label{font-size:10px;color:var(--dim);text-align:center}
+.week-pct{font-size:10px;font-weight:700;text-align:center;color:var(--text)}
+
+/* 이슈대장 */
+.issuelog-table{width:100%;border-collapse:collapse;font-size:12px;overflow-x:auto}
+.issuelog-table th{padding:7px 8px;text-align:left;background:var(--bg);font-weight:700;color:var(--dim);font-size:11px;border:1px solid var(--border);white-space:nowrap}
+.issuelog-table td{padding:7px 8px;border:1px solid var(--border);vertical-align:top;word-break:break-all}
+.issuelog-table tr:hover td{background:rgba(183,159,138,0.05)}
+
+/* 결재 대기 */
+.approval-list{display:flex;flex-direction:column;gap:8px}
+.approval-card{background:var(--paper);border:1px solid var(--border);border-radius:10px;padding:12px 14px}
+.approval-title{font-size:13px;font-weight:700;margin-bottom:4px}
+.approval-meta{font-size:11px;color:var(--dim)}
+.section-loading{text-align:center;padding:20px;color:var(--dim);font-size:13px}
 
 @media(max-width:500px){
   .stat-card{min-width:calc(50% - 10px)}
@@ -121,12 +147,26 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   </div>
 </div>
 
-<div class="content" id="view">
-  <div class="loading">날짜를 선택하고 조회하세요.</div>
+<div class="content">
+  <!-- 섹션 1: 오늘 요약 + 교대별 + 이슈 -->
+  <div id="view"><div class="loading">불러오는 중...</div></div>
+
+  <!-- 섹션 5: 주간 트렌드 -->
+  <div class="section-title">주간 트렌드 — 최근 7일 완료율</div>
+  <div id="weeklyView"><div class="section-loading">주간 데이터 불러오는 중...</div></div>
+
+  <!-- 섹션 6: 미결 이슈대장 -->
+  <div class="section-title">미결 이슈대장</div>
+  <div id="issuelogView"><div class="section-loading">이슈대장 불러오는 중...</div></div>
+
+  <!-- 섹션 7: 소장 결재 대기 -->
+  <div class="section-title">소장 결재 대기 — [4] 시설·환경</div>
+  <div id="approvalView"><div class="section-loading">결재 데이터 불러오는 중...</div></div>
 </div>
 
 <script>
-const API_URL = 'https://script.google.com/macros/s/AKfycbzcOTihPYfTWQ64rbNMpfgv9p2keav0mcf7x0LrPhHm8nOUIlsqPTwCOumzE-JIcv1F/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbyXw4ZaA6hLK567GC7NY33Y8SvNPW6kNtrXFz2OsSdFVBmCnZP-2oD-RQiX0IpekBu1/exec';
+const APPROVAL_URL = 'https://script.google.com/macros/s/AKfycbxDwFkrxK1YIaEoSNcuw2MiHiZQ-7o5N6311ytksSyeEd86ZFOhLknOWqQgNArQvZ-7/exec';
 const DEPT = 'facility';
 const DN = ['일','월','화','수','목','금','토'];
 
@@ -144,9 +184,9 @@ function getDayInfo(ds){
 }
 
 function escH(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
-
 function pct(done,total){return total?Math.round(done/total*100):0;}
 
+/* ── 섹션 1~4: 날짜별 집계 ── */
 async function load(){
   const d=document.getElementById('dateInput').value;
   if(!d){alert('날짜를 선택해주세요.');return;}
@@ -173,7 +213,6 @@ async function load(){
     return;
   }
 
-  // STATE 조립
   const STATE={};
   rows.forEach(row=>{
     if(row.checked)STATE[row.itemId]=true;
@@ -191,12 +230,10 @@ async function load(){
     if(row.submittedAt&&!STATE._submittedAt_am)STATE._submittedAt_am=row.submittedAt;
   });
 
-  // 교대별 집계
   const shifts={am:{done:0,total:0,issues:[],label:'오전'},pm:{done:0,total:0,issues:[],label:'오후'},night:{done:0,total:0,issues:[],label:'야간'},all:{done:0,total:0,issues:[],label:'상시'}};
-  const shiftMap={am:'am',pm:'pm',night:'night',all:'all'};
   rows.forEach(row=>{
     if(!row.itemId)return;
-    const s=shiftMap[row.shift]||'pm';
+    const s=({am:'am',pm:'pm',night:'night',all:'all'})[row.shift]||'pm';
     if(shifts[s]){
       shifts[s].total++;
       if(row.checked)shifts[s].done++;
@@ -204,20 +241,17 @@ async function load(){
     }
   });
 
-  // 전체 집계
   let total=0,done=0;
   const allIssues=[];
   Object.values(shifts).forEach(s=>{total+=s.total;done+=s.done;allIssues.push(...s.issues);});
   const overallPct=pct(done,total);
 
-  // 렌더
   let html='';
+  html+=`<div class="refresh-bar"><span>${dayLabel} <span class="day-type ${info.cls}">${info.label}</span></span><button class="refresh-btn" onclick="loadAll()">새로고침</button></div>`;
 
-  // 헤더 정보
-  html+=`<div class="refresh-bar"><span>${dayLabel} <span class="day-type ${info.cls}">${info.label}</span></span><button class="refresh-btn" onclick="load()">새로고침</button></div>`;
-
-  // 요약 카드
+  /* 섹션 1: 오늘 요약 */
   const pctColor=overallPct>=90?'var(--green)':overallPct>=60?'var(--yellow)':'var(--red)';
+  html+=`<div class="section-title">오늘 요약</div>`;
   html+=`<div class="summary-row">
     <div class="stat-card"><div class="stat-num">${total}</div><div class="stat-label">총 점검 항목</div></div>
     <div class="stat-card"><div class="stat-num" style="color:var(--green)">${done}</div><div class="stat-label">완료</div></div>
@@ -226,16 +260,10 @@ async function load(){
     <div class="stat-card"><div class="stat-num" style="color:var(--red)">${allIssues.length}</div><div class="stat-label">이슈</div></div>
   </div>`;
 
-  // 교대별 현황
+  /* 섹션 2: 교대별 현황 */
   html+=`<div class="section-title">교대별 현황</div>`;
   html+=`<table class="shift-table"><tr><th>교대</th><th>완료</th><th>총 항목</th><th>완료율</th><th>제출자</th><th>그래프</th></tr>`;
-  const shiftRows=[
-    {key:'am',label:'오전',barCls:'bar-green'},
-    {key:'pm',label:'오후',barCls:'bar-blue'},
-    {key:'night',label:'야간',barCls:'bar-orange'},
-    {key:'all',label:'상시',barCls:'bar-accent'}
-  ];
-  shiftRows.forEach(sr=>{
+  [{key:'am',label:'오전',barCls:'bar-green'},{key:'pm',label:'오후',barCls:'bar-blue'},{key:'night',label:'야간',barCls:'bar-orange'},{key:'all',label:'상시',barCls:'bar-accent'}].forEach(sr=>{
     const s=shifts[sr.key];
     if(s.total===0)return;
     const p=pct(s.done,s.total);
@@ -247,29 +275,18 @@ async function load(){
       const atStr=submittedAt?new Date(submittedAt).toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'}):'';
       subHtml=`<span class="chip chip-green">${escH(submitter)}${atStr?' '+atStr:''}</span>`;
     }
-    html+=`<tr>
-      <td><strong>${sr.label}</strong></td>
-      <td>${s.done}</td>
-      <td>${s.total}</td>
-      <td>${p}%</td>
-      <td>${subHtml}</td>
-      <td><div class="bar-wrap"><div class="bar-fill ${sr.barCls}" style="width:${p}%"></div></div></td>
-    </tr>`;
+    html+=`<tr><td><strong>${sr.label}</strong></td><td>${s.done}</td><td>${s.total}</td><td>${p}%</td><td>${subHtml}</td><td><div class="bar-wrap"><div class="bar-fill ${sr.barCls}" style="width:${p}%"></div></div></td></tr>`;
   });
   html+=`</table>`;
 
-  // 이슈 목록
-  html+=`<div class="section-title">이슈 목록 <span style="color:var(--red);font-size:12px;">${allIssues.length}건</span></div>`;
+  /* 섹션 3: 당일 이슈 목록 */
+  html+=`<div class="section-title">당일 이슈 목록 <span style="color:var(--red);font-size:12px;">${allIssues.length}건</span></div>`;
   if(allIssues.length===0){
     html+=`<div class="no-issue">오늘 보고된 이슈가 없습니다.</div>`;
   }else{
     html+=`<div class="issue-list">`;
     allIssues.forEach(iss=>{
-      html+=`<div class="issue-card">
-        <div class="issue-who">${escH(shifts[iss.shift]?.label||iss.shift)}조</div>
-        <div class="issue-name">${escH(iss.name)}</div>
-        <div class="issue-body">${escH(iss.body)}</div>
-      </div>`;
+      html+=`<div class="issue-card"><div class="issue-who">${escH(shifts[iss.shift]?.label||iss.shift)}조</div><div class="issue-name">${escH(iss.name)}</div><div class="issue-body">${escH(iss.body)}</div></div>`;
     });
     html+=`</div>`;
   }
@@ -278,14 +295,113 @@ async function load(){
   document.getElementById('lastUpdated').textContent='조회: '+new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'});
 }
 
+/* ── 섹션 5: 주간 트렌드 ── */
+async function loadWeekly(){
+  const el=document.getElementById('weeklyView');
+  try{
+    const r=await fetch(API_URL+'?action=weekly&dept='+DEPT,{redirect:'follow'});
+    const j=await r.json();
+    const data=j.data||[];
+    if(data.length===0){el.innerHTML='<div class="no-issue">주간 데이터가 없습니다.</div>';return;}
+    const today=todayStr();
+    const maxPct=Math.max(...data.map(x=>x.pct),1);
+    let html='<div class="weekly-chart">';
+    data.forEach(d=>{
+      const isToday=d.date===today;
+      const barH=Math.max(Math.round((d.pct/maxPct)*90),3);
+      const dateLabel=d.date.slice(5).replace('-','/');
+      const dt=new Date(d.date+'T00:00:00');
+      const dayName=DN[dt.getDay()];
+      const tip=`${d.date} ${d.pct}% (${d.done}/${d.total})`;
+      html+=`<div class="week-col">
+        <div class="week-pct" style="color:${d.pct>=90?'var(--green)':d.pct>=60?'var(--yellow)':'var(--red)'}">${d.pct}%</div>
+        <div class="week-bar-wrap"><div class="week-bar${isToday?' today-bar':''}" style="height:${barH}px" data-tip="${escH(tip)}"></div></div>
+        <div class="week-label">${dateLabel}<br><span style="color:${isToday?'var(--green)':'var(--dim)'}">(${dayName})</span></div>
+      </div>`;
+    });
+    html+='</div>';
+    el.innerHTML=html;
+  }catch(e){
+    el.innerHTML='<div class="error-msg">주간 데이터를 불러오지 못했습니다.</div>';
+  }
+}
+
+/* ── 섹션 6: 미결 이슈대장 ── */
+async function loadIssuelog(){
+  const el=document.getElementById('issuelogView');
+  try{
+    const r=await fetch(API_URL+'?action=issuelog&dept='+DEPT+'&open=1',{redirect:'follow'});
+    const j=await r.json();
+    const issues=j.issues||[];
+    if(issues.length===0){
+      el.innerHTML='<div class="no-issue">미결 이슈 없음 — 모든 이슈가 처리되었습니다.</div>';
+      return;
+    }
+    let html='<div style="overflow-x:auto"><table class="issuelog-table"><tr><th>등록일</th><th>구역</th><th>점검자</th><th>이슈내용</th><th>상태</th><th>처리일</th><th>비고</th></tr>';
+    issues.forEach(iss=>{
+      const statusCls=iss.status==='미처리'?'chip-red':iss.status==='처리중'?'chip-yellow':'chip-green';
+      html+=`<tr>
+        <td>${escH(iss.date)}</td>
+        <td>${escH(iss.zone)}</td>
+        <td>${escH(iss.inspector)}</td>
+        <td>${escH(iss.issue)}</td>
+        <td><span class="chip ${statusCls}">${escH(iss.status)}</span></td>
+        <td>${escH(iss.resolvedAt||'')}</td>
+        <td>${escH(iss.note||'')}</td>
+      </tr>`;
+    });
+    html+='</table></div>';
+    el.innerHTML=html;
+  }catch(e){
+    el.innerHTML='<div class="error-msg">이슈대장을 불러오지 못했습니다.</div>';
+  }
+}
+
+/* ── 섹션 7: 소장 결재 대기 ([4]시설·환경 필터) ── */
+async function loadApproval(){
+  const el=document.getElementById('approvalView');
+  try{
+    const r=await fetch(APPROVAL_URL+'?action=todo_list',{redirect:'follow'});
+    const j=await r.json();
+    const tasks=(j.data||[]).filter(t=>{
+      const cat=String(t.category||t['카테고리']||'');
+      const status=String(t.status||t['상태']||'');
+      return (cat.includes('시설')&&(status==='결재대기'||status==='승인대기'||status==='검토중'));
+    });
+    if(tasks.length===0){
+      el.innerHTML='<div class="no-issue">대기 중인 결재 건이 없습니다.</div>';
+      return;
+    }
+    let html='<div class="approval-list">';
+    tasks.forEach(t=>{
+      const title=escH(t.title||t['제목']||t['업무명']||'(제목없음)');
+      const owner=escH(t.owner||t['담당자']||'');
+      const cat=escH(t.category||t['카테고리']||'');
+      const status=escH(t.status||t['상태']||'');
+      html+=`<div class="approval-card"><div class="approval-title">${title}</div><div class="approval-meta">${cat} · ${owner} · <span class="chip chip-yellow">${status}</span></div></div>`;
+    });
+    html+='</div>';
+    el.innerHTML=html;
+  }catch(e){
+    el.innerHTML='<div class="error-msg">결재 데이터를 불러오지 못했습니다.</div>';
+  }
+}
+
 function goToday(){
   document.getElementById('dateInput').value=todayStr();
   load();
 }
 
+function loadAll(){
+  load();
+  loadWeekly();
+  loadIssuelog();
+  loadApproval();
+}
+
 // 초기 로드
 document.getElementById('dateInput').value=todayStr();
-goToday();
+loadAll();
 </script>
 </body>
 </html>
