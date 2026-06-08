@@ -218,6 +218,7 @@ function doGet(e) {
   if (action === 'board')     return getBoard(e.parameter);
   if (action === 'weekly')    return handleWeekly(e.parameter);
   if (action === 'issuelog')  return handleIssueLogGet(e.parameter);
+  if (action === 'setup_issue_tabs') { setupIssueLogSheets(); return jsonRes({ok:true,msg:'이슈대장 탭 생성 완료'}); }
 
   var date = e.parameter.date;
   if (!date) return jsonRes({ error: 'date required' });
