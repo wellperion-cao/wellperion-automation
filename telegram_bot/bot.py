@@ -1176,22 +1176,32 @@ _PID_FILE = BASE / "bot.pid"
 
 
 def _check_pid_lock() -> None:
-    """이미 실행 중인 bot.py 인스턴스가 있으면 즉시 종료 (중복 폴링 409 충돌 방지)."""
+    """재기동 시 기존 bot.py 인스턴스를 kill 후 자신이 단일 주인으로 기동.
+    (구 로직: 기존 있으면 자신 종료 → 재기동 시도 시 봇이 영영 안 뜨는 문제 수정)"""
+    my_pid = os.getpid()
     if _PID_FILE.exists():
         try:
             old_pid = int(_PID_FILE.read_text().strip())
+            if old_pid == my_pid:
+                # 자기 자신 — 재진입 없음
+                return
             result = subprocess.run(
                 ["tasklist", "/FI", f"PID eq {old_pid}", "/FO", "CSV"],
                 capture_output=True, text=True, shell=True,
             )
             if str(old_pid) in result.stdout:
-                print(f"[bot] 이미 실행 중 (PID {old_pid}). 중복 기동 차단 후 종료.", flush=True)
-                raise SystemExit(0)
+                # 기존 봇 프로세스 강제 종료 후 자신이 새 주인
+                subprocess.run(
+                    ["taskkill", "/F", "/PID", str(old_pid)],
+                    capture_output=True, shell=True,
+                )
+                print(f"[bot] 기존 인스턴스(PID {old_pid}) kill 완료 — 1초 대기", flush=True)
+                time.sleep(1)  # 소켓 해제 대기
         except SystemExit:
             raise
         except Exception:
             pass
-    _PID_FILE.write_text(str(os.getpid()))
+    _PID_FILE.write_text(str(my_pid))
 
 
 def _ensure_no_webhook() -> None:
