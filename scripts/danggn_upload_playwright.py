@@ -970,6 +970,69 @@ async def _run_draft_with_context(page, context, args: argparse.Namespace, publi
     return result_code
 
 
+async def _try_auto_relogin(page, context) -> bool:
+    """세션 만료 감지 시 '경영지원 계정으로 계속' 버튼 자동 클릭으로 무개입 재로그인 시도.
+    성공(bizprofile 안착)이면 True, 실패이면 False 반환.
+    headful(headless=False) 환경 전제 — headless에서는 Google 계정 선택 화면이 다를 수 있음.
+    GM이 'cao@wellperion.com 경영지원' 계정을 Chrome에 기억해둔 상태 전제."""
+    import asyncio
+
+    print("[INFO] 세션 만료 감지 — '경영지원 계정으로 계속' 자동 클릭 시도")
+    popup_ref: "dict[str, object]" = {"pg": None}
+
+    def _on_page(pg: object) -> None:
+        popup_ref["pg"] = pg
+    context.on("page", _on_page)
+
+    # 비즈 홈으로 이동하면 로그인 페이지로 리다이렉트됨 — 여기서 Google 버튼 자동 클릭
+    for google_sel in [
+        'img[alt*="Google"]',
+        'button:has-text("Google")',
+        'a:has-text("Google")',
+        '[aria-label*="Google"]',
+        'img[src*="google"]',
+    ]:
+        loc = page.locator(google_sel).first
+        if await loc.count() > 0:
+            print(f"[INFO] Google 로그인 버튼 자동 클릭: {google_sel}")
+            await loc.click()
+            await asyncio.sleep(4)
+            break
+
+    # Google 계정 선택 화면에서 '경영지원 계정으로 계속' 자동 클릭 (팝업·메인 페이지 양쪽)
+    deadline, waited = 60, 0
+    while waited < deadline:
+        for _scope in (page, popup_ref.get("pg")):
+            if _scope is None:
+                continue
+            for _acc_sel in [
+                'text=경영지원 계정으로 계속',
+                'button:has-text("경영지원")',
+                '[role="button"]:has-text("경영지원")',
+                'text=계정으로 계속',
+            ]:
+                try:
+                    _loc = _scope.locator(_acc_sel).first
+                    if await _loc.count() > 0 and await _loc.is_visible():
+                        await _loc.click()
+                        print(f"[INFO] 계정 자동 선택 클릭: {_acc_sel!r}")
+                        await asyncio.sleep(4)
+                        break
+                except Exception:
+                    continue
+
+        cur = page.url
+        if "bizprofile.daangn.com" in cur and "/login" not in cur and "accounts.daangn.com" not in cur:
+            print(f"[INFO] 자동 재로그인 성공: {cur}")
+            return True
+
+        await asyncio.sleep(3)
+        waited += 3
+
+    print("[WARN] 자동 재로그인 60초 내 미완료 — QR 로그인(--mode setup) 필요.")
+    return False
+
+
 async def run_draft(args: argparse.Namespace) -> int:
     import asyncio
 
@@ -999,11 +1062,15 @@ async def run_draft(args: argparse.Namespace) -> int:
     home_url = page.url
 
     if is_login_required(home_url):
-        print("[ERROR] 세션 만료 — --mode setup --then-draft 로 QR 로그인 후 즉시 draft 실행 필요.")
+        print("[INFO] 세션 만료 — 자동 재로그인 시도 ('경영지원 계정으로 계속' 자동 클릭)")
         await _screenshot(page, "danggn_session_expired.png")
-        await context.close()
-        await p.stop()
-        return 5
+        relogin_ok = await _try_auto_relogin(page, context)
+        if not relogin_ok:
+            print("[ERROR] 자동 재로그인 실패 — --mode setup --then-draft 로 QR 로그인 필요.")
+            await context.close()
+            await p.stop()
+            return 5
+        home_url = page.url
 
     print(f"[INFO] 비즈 홈 안착: {home_url}")
     await _screenshot(page, "danggn_biz_home_draft.png")
@@ -1081,11 +1148,15 @@ async def run_publish(args: argparse.Namespace) -> int:
     home_url = page.url
 
     if is_login_required(home_url):
-        print("[ERROR] 세션 만료 — --mode setup --then-publish 로 재로그인 후 즉시 발행 필요.")
+        print("[INFO] 세션 만료 — 자동 재로그인 시도 ('경영지원 계정으로 계속' 자동 클릭)")
         await _screenshot(page, "danggn_session_expired.png")
-        await context.close()
-        await p.stop()
-        return 5
+        relogin_ok = await _try_auto_relogin(page, context)
+        if not relogin_ok:
+            print("[ERROR] 자동 재로그인 실패 — --mode setup --then-publish 로 QR 로그인 필요.")
+            await context.close()
+            await p.stop()
+            return 5
+        home_url = page.url
 
     print(f"[INFO] 비즈 홈 안착: {home_url}")
     rc = await _run_draft_with_context(page, context, args, publish=True)
