@@ -224,14 +224,20 @@ function doGet(e) {
   if (action === 'staff') return getStaff();
 
   var zone = e.parameter.zone;
+  var dept = e.parameter.dept || 'support';
   var ss = SpreadsheetApp.getActiveSpreadsheet();
 
-  // v2 호환: zone 없으면 전체 병합 + v2 응답 필드
+  // dept 파라미터로 시설부/지원부 탭 분기 (2026-06-08 시토)
+  var baseMale   = dept === 'facility' ? SHEET_FACILITY_MALE   : SHEET_MALE;
+  var baseFemale = dept === 'facility' ? SHEET_FACILITY_FEMALE : SHEET_FEMALE;
+  var baseCommon = dept === 'facility' ? SHEET_FACILITY_COMMON : SHEET_COMMON;
+
+  // 시설부 탭이 없으면 데이터 부재로 빈 응답 (지원부 탭 폴백 제거)
   var names = [];
   if (!zone || zone === 'all') {
-    names = [SHEET_MALE, SHEET_FEMALE, SHEET_COMMON];
+    names = [baseMale, baseFemale, baseCommon];
   } else {
-    var zoneMap = { male: SHEET_MALE, female: SHEET_FEMALE, common: SHEET_COMMON };
+    var zoneMap = { male: baseMale, female: baseFemale, common: baseCommon };
     if (zoneMap[zone]) names.push(zoneMap[zone]);
   }
 
@@ -319,9 +325,16 @@ function handleSave(body) {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var date = body.date;
   var zone = body.zone;
+  var dept = body.dept || 'support';
   var checks = body.checks || [];
 
-  var sheetMap = { male: SHEET_MALE, female: SHEET_FEMALE, common: SHEET_COMMON };
+  // dept=facility면 시설부 전용 탭으로 라우팅 (2026-06-08 시토)
+  var isFacility = dept === 'facility';
+  var sheetMap = {
+    male:   isFacility ? SHEET_FACILITY_MALE   : SHEET_MALE,
+    female: isFacility ? SHEET_FACILITY_FEMALE : SHEET_FEMALE,
+    common: isFacility ? SHEET_FACILITY_COMMON : SHEET_COMMON
+  };
   var sheetName = sheetMap[zone];
   if (!sheetName) return jsonRes({ error: 'invalid zone: ' + zone });
 
@@ -399,6 +412,7 @@ function _handleSaveV2Compat(body) {
   var date = body.date;
   var checks = body.checks || [];
   var gender = body.genderTab || 'm';
+  var dept = body.dept || 'support';
 
   var parts = [];
   if (body.submitted_am) parts.push('오전조 제출완료');
@@ -412,17 +426,27 @@ function _handleSaveV2Compat(body) {
   if (body.submitter_night) submitters.push(body.submitter_night);
   var submitter = submitters.join(' / ');
 
+  // dept=facility면 시설부 전용 탭으로 라우팅 (2026-06-08 시토)
+  var isFacility = dept === 'facility';
+  var tMale   = isFacility ? SHEET_FACILITY_MALE   : SHEET_MALE;
+  var tFemale = isFacility ? SHEET_FACILITY_FEMALE : SHEET_FEMALE;
+  var tCommon = isFacility ? SHEET_FACILITY_COMMON : SHEET_COMMON;
+
   var buckets = {};
-  buckets[SHEET_MALE] = [];
-  buckets[SHEET_FEMALE] = [];
-  buckets[SHEET_COMMON] = [];
+  buckets[tMale] = [];
+  buckets[tFemale] = [];
+  buckets[tCommon] = [];
   checks.forEach(function(c) {
-    var target = _routeItem(c.itemId, c.cat, gender);
+    // _routeItem은 지원부 탭명 기준이므로 결과를 시설부 탭명으로 리매핑
+    var supportTarget = _routeItem(c.itemId, c.cat, gender);
+    var target = supportTarget === SHEET_MALE   ? tMale
+               : supportTarget === SHEET_FEMALE ? tFemale
+               : tCommon;
     buckets[target].push(c);
   });
 
   var totalSaved = 0;
-  [SHEET_MALE, SHEET_FEMALE, SHEET_COMMON].forEach(function(name) {
+  [tMale, tFemale, tCommon].forEach(function(name) {
     var items = buckets[name];
     if (items.length === 0) return;
     var sheet = ss.getSheetByName(name);
@@ -490,12 +514,20 @@ function _applyRowStyle(sheet, row, values) {
 function handleSeed(body) {
   var date = body.date;
   if (!date) return jsonRes({ error: 'date required' });
+  var dept = body.dept || 'support';
+  var isFacility = dept === 'facility';
   var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var zones = [
-    { name: SHEET_MALE,   items: ZONE_ITEMS },
-    { name: SHEET_FEMALE, items: ZONE_ITEMS },
-    { name: SHEET_COMMON, items: COMMON_ITEMS },
-  ];
+  var zones = isFacility
+    ? [
+        { name: SHEET_FACILITY_MALE,   items: ZONE_ITEMS },
+        { name: SHEET_FACILITY_FEMALE, items: ZONE_ITEMS },
+        { name: SHEET_FACILITY_COMMON, items: COMMON_ITEMS },
+      ]
+    : [
+        { name: SHEET_MALE,   items: ZONE_ITEMS },
+        { name: SHEET_FEMALE, items: ZONE_ITEMS },
+        { name: SHEET_COMMON, items: COMMON_ITEMS },
+      ];
   var seeded = 0;
   zones.forEach(function(z) {
     var sheet = ss.getSheetByName(z.name);
@@ -881,16 +913,12 @@ var SHEET_ISSUE_SUPPORT  = '지원_이슈대장';
 
 var ISSUE_HEADERS = ['등록일', '구역', '점검자', '이슈내용', '상태', '처리일', '비고'];
 
-// dept 파라미터 → 점검 데이터 시트 탭 배열 반환
-// facility: 시설_* 탭(없으면 기존 탭 폴백) / support 또는 미지정: 기존 탭
+// dept 파라미터 → 점검 데이터 시트 탭명 배열 반환
+// facility: 시설_* 탭만 (폴백 없음 — 탭 미존재 시 빈 데이터로 명확 분리)
+// support 또는 미지정: 기존 지원부 탭
 function _getSheetsForDept(dept) {
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
   if (dept === 'facility') {
-    var fm = ss.getSheetByName(SHEET_FACILITY_MALE);
-    var ff = ss.getSheetByName(SHEET_FACILITY_FEMALE);
-    var fc = ss.getSheetByName(SHEET_FACILITY_COMMON);
-    // 시설 전용 탭이 존재하면 사용, 없으면 기존 탭 폴백 (초기 마이그레이션 전 안전망)
-    if (fm && ff && fc) return [SHEET_FACILITY_MALE, SHEET_FACILITY_FEMALE, SHEET_FACILITY_COMMON];
+    return [SHEET_FACILITY_MALE, SHEET_FACILITY_FEMALE, SHEET_FACILITY_COMMON];
   }
   return [SHEET_MALE, SHEET_FEMALE, SHEET_COMMON];
 }

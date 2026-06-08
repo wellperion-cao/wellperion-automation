@@ -1648,6 +1648,7 @@ async function pushToServer(d){
     await fetch(API_URL,{method:'POST',redirect:'follow',
       headers:{'Content-Type':'text/plain'},
       body:JSON.stringify({action:'save',date:d,checks,
+        dept:DEPT,
         genderTab:g,
         groupSubmits:collectGroupSubmits(),
         submitted_am:!!STATE._submitted_am,submittedAt_am:STATE._submittedAt_am||'',submitter_am:STATE._submitter_am||'',
