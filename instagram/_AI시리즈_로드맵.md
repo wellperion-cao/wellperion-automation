@@ -39,11 +39,11 @@
 
 | 계정 | CTA | litt.ly |
 |---|---|---|
-| 개인계정 namuk.wellperion | **'DM 문의' + '함께 성장합시다'** | 미사용(예외) |
-| 회사/공식 IG wellperion | litt.ly 링크 유도 (기존대로) | 사용 |
+| 개인계정 namuk.wellperion | **'DM 문의' + '함께 성장합시다'** | 미사용 |
+| 회사/공식 IG wellperion | **wellperion.com/ko/inquiry (영문 /en/inquiry, 한·영 2줄)** | 미사용(폐기) |
 
 - 개인계정은 litt.ly를 쓰지 않는다. 마지막 장·캡션 CTA = "함께 성장합시다" + "DM 주시면 제가 아는 선에선 돕겠습니다" 톤으로 통일.
-- 본문·캡션에 litt.ly 링크 삽입 금지(개인계정 한정). 회사/공식 IG는 기존대로 litt.ly 유지.
+- **litt.ly는 전 채널 폐기(2026-06-08 GM).** 본문·캡션 litt.ly 링크 삽입 금지(전 계정). 회사/공식 채널 표준 문의 = **wellperion.com/ko/inquiry** (한·영 2줄, 단일 진입점).
 
 ### ★ 마지막 장 body·캡션 마무리 = 복합 바이럴 CTA 공식 (2026-06-05 GM 결정 — #7부터 적용)
 단순 'DM 주세요'에서 **훅(공감) + 저장 유도 + DM + 함께 성장** 복합형으로 표준화한다.
