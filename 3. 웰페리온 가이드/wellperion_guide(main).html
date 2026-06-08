@@ -611,17 +611,17 @@
     <!-- AUTO:LATEST-START -->
     <div class="card grow">
       <h4>최신 업데이트 — 2026-06-08 (자동 갱신)</h4>
+      <p><strong>2026-06-08</strong> fix(cto): 봇 pub:grp 콜백 파싱 수정 — split 4파트 그룹승인 정상화 (바레 4채널 일괄승인)</p>
       <p><strong>2026-06-08</strong> feat(cto): SSOT 시트 생성일 DESC 정렬 상시 유지 셋업</p>
       <p><strong>2026-06-08</strong> fix(coo): 규정 탭 근무·휴게시간을 정기회의 우측(같은 행)으로 배치</p>
       <p><strong>2026-06-08</strong> fix(cto): setup_issue_tabs doGet 엔드포인트 추가 — 이슈대장 탭 원격 생성용</p>
       <p><strong>2026-06-08</strong> fix(cmo): 바레 4채널 승인 버그 수정 — callback_data 64바이트 한계 우회</p>
-      <p><strong>2026-06-08</strong> fix(cmo/barre): review_queue 단일소스 output(인스타그램)+ig_06.mp4 재설정</p>
     </div>
 <!-- AUTO:LATEST-END -->
         <table>
           <tr><th style="width:160px">날짜</th><th>변경 내용</th></tr>
           <!-- AUTO:TABLE-START -->
-      <tr><td><strong>2026-06-08 (자동)</strong></td><td>feat(cto): SSOT 시트 생성일 DESC 정렬 상시 유지 셋업 · fix(coo): 규정 탭 근무·휴게시간을 정기회의 우측(같은 행)으로 배치 · fix(cto): setup_issue_tabs doGet 엔드포인트 추가 — 이슈대장 탭 원격 생성용 · fix(cmo): 바레 4채널 승인 버그 수정 — callback_data 64바이트 한계…</td></tr>
+      <tr><td><strong>2026-06-08 (자동)</strong></td><td>fix(cto): 봇 pub:grp 콜백 파싱 수정 — split 4파트 그룹승인 정상화 (바레 4채널 일괄승인) · feat(cto): SSOT 시트 생성일 DESC 정렬 상시 유지 셋업 · fix(coo): 규정 탭 근무·휴게시간을 정기회의 우측(같은 행)으로 배치 · fix(cto): setup_issue_tabs doGet 엔드포인트 추가 — …</td></tr>
       <!-- AUTO:TABLE-END -->
           <tr><td><strong>2026-05-28 (14차)</strong></td><td>공지/안내문 생성(COO 하위) · 오프라인 홍보물 디자인 제작(CMO 하위) 도구 신설 · 공지 서식 v2.0 독립 페이지화 · 회사소개서·전략로드맵 원본 「3. 웰페리온 가이드/회사문서/」로 이관(SSOT 단일화) · C-Level 부팅 R/R Notion API→웰페리온 ERP g10 참조로 전환 · GitHub Pages 워크플로 폴더명 경로 수정 · 사이드바 "공통+7개 C-Level" 라벨 제거</td></tr>
           <tr><td>2026-05-27 (13차)</td><td>GitHub Pages 전환 · 사이드바 4섹터 · AI C-Level 통일 · 운영 통합 체계 · 공식채널·지출현황·취업규칙·SSOT 신설 · g2+g19·g9+g20·g12·g13 합병 · 김남욱 탭 확장 · v2.5</td></tr>
@@ -2255,55 +2255,48 @@
           <tr><td>대기 시 보고 포맷</td><td><strong>보고 포맷 = 공통 탭 '작업 사이클 보고 포맷' 단일 원본 참조.</strong> COO는 식별자만 <strong>시우-N</strong> 적용.</td></tr>
         </table>
 
-        <!-- ── 업무 난이도 기준 정식화 (2026-06-08 GM 지시 · GM 확정 2026-06-08) ── -->
+        <!-- ── 업무 난이도 기준 정식화 (2026-06-08 GM 개정 · 팀범위 기준·간결화) ── -->
         <h3 style="margin-top:24px;border-top:1px solid var(--border);padding-top:20px;"><span class="ico">⚙️</span>업무 난이도 기준 <span style="font-size:13px;color:var(--dim);font-weight:400;">(S2 COO 탭 단일 출처 · 인사평가 연동)</span></h3>
-        <div class="callout" style="background:#1a2a1a;border-left:3px solid #059669;margin-bottom:12px;"><strong>정의 원칙:</strong> 난이도는 업무의 <strong>영향 범위 + 승인 필요 여부</strong>로 결정된다. 담당자가 제안 → 부서장(결재 1단계)이 결재 시 확정. 확정된 점수는 <strong>시로(CHRO) 인사평가 가중점수에 연동</strong>된다. S3 업무현황 SSOT의 GAS는 이 표를 기준으로 <code>DIFF_WEIGHT</code>(하=1·중=2·상=3)를 계산한다.</div>
+        <div class="callout" style="background:#1a2a1a;border-left:3px solid #059669;margin-bottom:12px;"><strong>정의 원칙:</strong> 난이도는 <strong>몇 개 팀이 얽히는가</strong>로 결정된다. 담당자가 제안 → 부서장(결재 1단계)이 결재 시 확정. 확정된 점수는 <strong>시로(CHRO) 인사평가 가중점수에 연동</strong>된다. S3 업무현황 SSOT의 GAS는 이 표를 기준으로 <code>DIFF_WEIGHT</code>(하=1·중=3·상=5)를 계산한다. ※ GAS 실제 가중치 수정은 <strong>시토(CTO) 후속 작업</strong>.</div>
         <table>
-          <tr><th style="width:64px">등급</th><th style="width:72px">점수</th><th style="width:200px">정의 (영향 범위)</th><th style="width:200px">판단 기준</th><th>실제 예시</th><th style="width:120px">경계 사례</th></tr>
+          <tr><th style="width:64px">등급</th><th style="width:72px">점수</th><th>기준</th><th style="width:180px">예시</th></tr>
           <tr>
             <td><strong style="color:var(--green);">하</strong></td>
             <td style="text-align:center;color:var(--green);font-weight:700;">1점</td>
-            <td><strong>개인 단위</strong> — 본인이 단독 책임지고 완수할 수 있는 업무. 타 부서·전사 승인 불필요.</td>
-            <td>① 혼자 시작~완료 가능<br>② 실패해도 영향이 본인·팀 내부에서 흡수 가능<br>③ 기존 SOP·루틴 범위 내</td>
-            <td>일일 점검 보고서 작성 · 공지문 1건 초안 · 단순 DB 입력 · 개인 일정 조정</td>
-            <td>루틴이지만 전사 공지로 나가는 경우 → <strong>중</strong>으로 상향</td>
+            <td>본인 역할 및 <strong>1개 팀</strong> 단위에서 끝나는 업무</td>
+            <td>일일 점검 보고</td>
           </tr>
           <tr>
             <td><strong style="color:var(--yellow);">중</strong></td>
-            <td style="text-align:center;color:var(--yellow);font-weight:700;">2점</td>
-            <td><strong>부서·팀 단위</strong> — 둘 이상의 담당자 또는 부서가 협업해야 하거나, 부서장 결재선을 통과해야 하는 업무.</td>
-            <td>① 2개 이상 부서 또는 C-Level 협업 필요<br>② 부서장(실장·소장·M) 결재 1단계 통과 대상<br>③ 실패 시 부서 운영에 영향</td>
-            <td>월간 KPI 집계 보고 · 부서 간 SOP 개정 · 채용 공고 게시 · 강습 일정 변경 안내</td>
-            <td>부서 내부 실험이라도 예산 수반 시 → <strong>상</strong>으로 상향</td>
+            <td style="text-align:center;color:var(--yellow);font-weight:700;">3점</td>
+            <td><strong>2개 팀 이상</strong>이 얽히는 업무</td>
+            <td>두 팀 합동 행사</td>
           </tr>
           <tr>
             <td><strong style="color:var(--red);">상</strong></td>
-            <td style="text-align:center;color:var(--red);font-weight:700;">3점</td>
-            <td><strong>전사 단위 또는 획기적 업무</strong> — 전사 방향·정책·시스템에 영향을 미치거나, GM 결재가 필수인 업무.</td>
-            <td>① 전사 채널·정책·예산에 영향<br>② GM 승인 게이트 통과 필수 (💰결제·🔒보안·🚫금지·전략·공식값)<br>③ 신규 자동화 도입·외부 계약·회원 정책 변경 등 되돌리기 어려운 결정</td>
-            <td>멤버십 요금 정책 변경 · 신규 채널 자동화 도입 · 시설 대규모 개선 공사 · 전사 ERP 구조 변경</td>
-            <td>획기적이어도 GM 승인 불필요한 내부 개선은 → <strong>중</strong> 유지 (단, GM이 결재선에 있으면 자동 상)</td>
+            <td style="text-align:center;color:var(--red);font-weight:700;">5점</td>
+            <td><strong>전사적 단위</strong> 업무</td>
+            <td>전사 정책·요금 변경</td>
           </tr>
         </table>
 
         <h4 style="margin-top:16px;">빠른 판단 흐름</h4>
         <table>
-          <tr><th>질문</th><th>Yes → 등급</th><th>No → 다음 질문</th></tr>
-          <tr><td>GM 결재 또는 전사 정책 변경이 필요한가?</td><td><strong style="color:var(--red);">상 (3점)</strong></td><td>↓</td></tr>
-          <tr><td>부서장 결재 또는 2개 이상 부서 협업이 필요한가?</td><td><strong style="color:var(--yellow);">중 (2점)</strong></td><td>↓</td></tr>
-          <tr><td>본인 단독으로 시작~완료 가능한가?</td><td><strong style="color:var(--green);">하 (1점)</strong></td><td>담당자·COO 협의 후 재분류</td></tr>
+          <tr><th>질문</th><th>Yes → 등급</th><th>No → 다음</th></tr>
+          <tr><td>① 전사적 단위인가?</td><td><strong style="color:var(--red);">상 (5점)</strong></td><td>↓</td></tr>
+          <tr><td>② 2개 팀 이상이 얽히는가?</td><td><strong style="color:var(--yellow);">중 (3점)</strong></td><td>↓</td></tr>
+          <tr><td>③ 1개 팀·본인 단위인가?</td><td><strong style="color:var(--green);">하 (1점)</strong></td><td>담당자·COO 협의 후 재분류</td></tr>
         </table>
 
         <h4 style="margin-top:16px;">시로(CHRO) 인사평가 연결 지점</h4>
-        <div class="callout" style="background:#1a1a2a;border-left:3px solid #7C3AED;margin-bottom:8px;"><strong>연계 구조:</strong> 업무현황 SSOT에서 완료된 업무의 난이도 점수 합산(Σ완료 업무 난이도) = 개인별 <strong>업무 가중점수</strong>. 이 값이 시로의 인사평가 다면평가 중 <strong>직무이해도·실행력(35점)</strong> 및 <strong>가산점(10점)</strong> 근거 데이터로 활용될 수 있다. 실제 반영 방식·가중치는 시로(CHRO)가 평가 체계와 정합 후 확정한다.</div>
+        <div class="callout" style="background:#1a1a2a;border-left:3px solid #7C3AED;margin-bottom:8px;"><strong>연계 구조:</strong> 업무현황 SSOT에서 완료된 업무의 난이도 점수 합산(Σ완료 업무 난이도) = 개인별 <strong>업무 가중점수</strong>. 예시 — 하(1)×3건 + 중(3)×2건 + 상(5)×1건 = 14점. 실제 반영 방식·비율은 시로(CHRO)가 평가 체계와 정합 후 확정한다.</div>
         <table>
           <tr><th style="width:200px">시로 인계 항목</th><th>내용</th><th style="width:100px">우선순위</th></tr>
-          <tr><td>난이도 가중점수 데이터 소스</td><td>S3 업무현황 GAS의 <code>DIFF_WEIGHT</code> 합산값 → 직원별 반기 집계 방법 설계 필요 (현재 GAS는 실시간 합산만, 반기 스냅샷 없음)</td><td>높음</td></tr>
-          <tr><td>다면평가 연동 비율</td><td>"업무 가중점수"를 직원평가 항목 중 어느 항목(직무이해도·실행력 35점? 가산점 10점?)에 어떤 비율로 반영할지 시로가 확정</td><td>높음</td></tr>
-          <tr><td>상 등급 업무 별도 플래그</td><td>상(3점) 업무는 GM 승인 필수 — 인사평가 시 "GM 승인 획득 건수"를 별도 지표로 쓸지 시로 판단</td><td>중간</td></tr>
-          <tr><td>부서장 확정 타임라인 연동</td><td>결재 완료(부서장 승인) 시점이 난이도 확정 시점 → 반기 컷오프 기준일 설정 필요</td><td>중간</td></tr>
+          <tr><td>난이도 가중점수 데이터 소스</td><td>S3 업무현황 GAS의 <code>DIFF_WEIGHT</code> 합산값 → 직원별 반기 집계 방법 설계 필요</td><td>높음</td></tr>
+          <tr><td>다면평가 연동 비율</td><td>업무 가중점수를 직무이해도·실행력(35점) 또는 가산점(10점) 중 어디에 반영할지 시로 확정</td><td>높음</td></tr>
+          <tr><td>상 등급 업무 별도 플래그</td><td>상(5점) 업무 GM 승인 획득 건수를 별도 지표로 쓸지 시로 판단</td><td>중간</td></tr>
         </table>
-        <div class="callout" style="margin-top:8px;background:#1a2a1a;border-left:3px solid #059669;"><strong>✅ GM 확정(2026-06-08).</strong> 시로(CHRO)는 인사평가 연계 4항목 검토 후 정합 결과를 CEO에 보고.</div>
+        <div class="callout" style="margin-top:8px;background:#1a2a1a;border-left:3px solid #059669;"><strong>✅ GM 개정 확정(2026-06-08) — 하1·중3·상5 팀범위 기준.</strong> 시로(CHRO)는 인사평가 연계 항목 검토 후 정합 결과를 CEO에 보고.</div>
         <!-- ── /업무 난이도 기준 정식화 ── -->
 
         <h3 style="margin-top:24px;border-top:1px solid var(--border);padding-top:20px;"><span class="ico">✍️</span>결재 요청·승인 체계 <span style="font-size:13px;color:var(--dim);font-weight:400;">(S3 업무·결재 현황 정책 단일 출처)</span></h3>
