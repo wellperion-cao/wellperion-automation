@@ -216,6 +216,8 @@ function doGet(e) {
   if (action === 'todo_list') return handleTodoGet(e.parameter);
   if (action === 'items')     return getItems();
   if (action === 'board')     return getBoard(e.parameter);
+  if (action === 'weekly')    return handleWeekly(e.parameter);
+  if (action === 'issuelog')  return handleIssueLogGet(e.parameter);
 
   var date = e.parameter.date;
   if (!date) return jsonRes({ error: 'date required' });
@@ -298,11 +300,13 @@ function doPost(e) {
   try {
     var body = JSON.parse(e.postData.contents);
     if (body.action && body.action.indexOf('todo_') === 0) return handleTodoPost(body);
-    if (body.action === 'save')      return handleSave(body);
-    if (body.action === 'notify')    return handleNotify(body);
-    if (body.action === 'seed')      return handleSeed(body);
-    if (body.action === 'saveItems') return saveItems(body);
-    if (body.action === 'saveBoard') return saveBoard(body);
+    if (body.action === 'save')           return handleSave(body);
+    if (body.action === 'notify')         return handleNotify(body);
+    if (body.action === 'seed')           return handleSeed(body);
+    if (body.action === 'saveItems')      return saveItems(body);
+    if (body.action === 'saveBoard')      return saveBoard(body);
+    if (body.action === 'issuelog_add')   return handleIssueLogAdd(body);
+    if (body.action === 'issuelog_update') return handleIssueLogUpdate(body);
     return jsonRes({ error: 'unknown action' });
   } catch (err) {
     return jsonRes({ error: err.message });
@@ -860,5 +864,217 @@ function _applyTodoRowStyle(sheet, row, values) {
   }
   if (String(values[8]) === 'Y') {
     sheet.getRange(row, 9).setBackground('#fce8e4').setFontColor('#c0392b');
+  }
+}
+
+// ════════════════════════════════════════════
+// 부서별 시트 탭 라우팅 헬퍼 (2026-06-08 시토)
+// dept='facility' → 시설_* 탭 / dept='support'(기본) → 기존 탭
+// ════════════════════════════════════════════
+
+var SHEET_FACILITY_MALE   = '시설_남성구역';
+var SHEET_FACILITY_FEMALE = '시설_여성구역';
+var SHEET_FACILITY_COMMON = '시설_공용구역';
+
+var SHEET_ISSUE_FACILITY = '시설_이슈대장';
+var SHEET_ISSUE_SUPPORT  = '지원_이슈대장';
+
+var ISSUE_HEADERS = ['등록일', '구역', '점검자', '이슈내용', '상태', '처리일', '비고'];
+
+// dept 파라미터 → 점검 데이터 시트 탭 배열 반환
+// facility: 시설_* 탭(없으면 기존 탭 폴백) / support 또는 미지정: 기존 탭
+function _getSheetsForDept(dept) {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  if (dept === 'facility') {
+    var fm = ss.getSheetByName(SHEET_FACILITY_MALE);
+    var ff = ss.getSheetByName(SHEET_FACILITY_FEMALE);
+    var fc = ss.getSheetByName(SHEET_FACILITY_COMMON);
+    // 시설 전용 탭이 존재하면 사용, 없으면 기존 탭 폴백 (초기 마이그레이션 전 안전망)
+    if (fm && ff && fc) return [SHEET_FACILITY_MALE, SHEET_FACILITY_FEMALE, SHEET_FACILITY_COMMON];
+  }
+  return [SHEET_MALE, SHEET_FEMALE, SHEET_COMMON];
+}
+
+// ════════════════════════════════════════════
+// action=weekly — 최근 7일 완료율 집계 (2026-06-08 시토)
+// GET ?action=weekly&dept=facility|support
+// 응답: { ok:true, dept, data:[{date, total, done, pct}, ...] }
+// ════════════════════════════════════════════
+
+function handleWeekly(params) {
+  var dept = params.dept || 'support';
+  var sheetNames = _getSheetsForDept(dept);
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+
+  // 최근 7일 날짜 배열 생성 (오늘 포함, 내림차순)
+  var today = new Date();
+  var tz = 'Asia/Seoul';
+  var days = [];
+  for (var i = 0; i < 7; i++) {
+    var d = new Date(today);
+    d.setDate(today.getDate() - i);
+    days.push(Utilities.formatDate(d, tz, 'yyyy-MM-dd'));
+  }
+
+  // 각 시트에서 날짜별 행 수집
+  var byDate = {};
+  days.forEach(function(dt) { byDate[dt] = { total: 0, done: 0 }; });
+
+  sheetNames.forEach(function(name) {
+    var sheet = ss.getSheetByName(name);
+    if (!sheet) return;
+    var data = sheet.getDataRange().getValues();
+    for (var i = 1; i < data.length; i++) {
+      var rowDate = formatDate(data[i][0]);
+      if (!byDate[rowDate]) continue;
+      byDate[rowDate].total++;
+      if (String(data[i][5]) === '완료') byDate[rowDate].done++;
+    }
+  });
+
+  // 날짜 오름차순으로 결과 배열 구성 (차트 표시용)
+  var result = days.slice().reverse().map(function(dt) {
+    var s = byDate[dt];
+    var pct = s.total > 0 ? Math.round(s.done / s.total * 100) : 0;
+    return { date: dt, total: s.total, done: s.done, pct: pct };
+  });
+
+  return jsonRes({ ok: true, dept: dept, data: result });
+}
+
+// ════════════════════════════════════════════
+// 이슈대장 시트 탭 초기화 (에디터 1회 실행용)
+// ════════════════════════════════════════════
+
+function initIssueLogSheet(tabName) {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName(tabName);
+  if (!sheet) { sheet = ss.insertSheet(tabName); }
+  // 이미 헤더가 있으면 건드리지 않음
+  if (sheet.getLastRow() === 0) {
+    sheet.appendRow(ISSUE_HEADERS);
+    sheet.getRange(1, 1, 1, ISSUE_HEADERS.length)
+      .setBackground('#2a2725').setFontColor('#B79F8A')
+      .setFontWeight('bold').setHorizontalAlignment('center');
+    sheet.setFrozenRows(1);
+    var widths = [110, 120, 100, 280, 80, 110, 180];
+    for (var i = 0; i < widths.length; i++) sheet.setColumnWidth(i + 1, widths[i]);
+  }
+  return sheet;
+}
+
+// 두 탭 일괄 신설 (Apps Script 에디터에서 1회 실행)
+function setupIssueLogSheets() {
+  initIssueLogSheet(SHEET_ISSUE_FACILITY);
+  initIssueLogSheet(SHEET_ISSUE_SUPPORT);
+  Logger.log('이슈대장 탭 신설 완료: ' + SHEET_ISSUE_FACILITY + ', ' + SHEET_ISSUE_SUPPORT);
+}
+
+// ════════════════════════════════════════════
+// action=issuelog — 이슈대장 조회 (2026-06-08 시토)
+// GET ?action=issuelog&dept=facility|support[&open=1]
+// open=1: 미처리·처리중만 / 생략: 전체
+// 응답: { ok:true, dept, open:bool, issues:[{id, date, zone, inspector, issue, status, resolvedAt, note}] }
+// ════════════════════════════════════════════
+
+function handleIssueLogGet(params) {
+  var dept = params.dept || 'support';
+  var onlyOpen = params.open === '1';
+  var tabName = dept === 'facility' ? SHEET_ISSUE_FACILITY : SHEET_ISSUE_SUPPORT;
+
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName(tabName);
+  if (!sheet) {
+    // 탭이 없으면 빈 배열 반환 (setupIssueLogSheets 미실행 상태 대응)
+    return jsonRes({ ok: true, dept: dept, open: onlyOpen, issues: [] });
+  }
+
+  var data = sheet.getDataRange().getValues();
+  var issues = [];
+  for (var i = 1; i < data.length; i++) {
+    if (!data[i][0] && !data[i][3]) continue; // 날짜·이슈내용 모두 없으면 건너뜀
+    var status = String(data[i][4] || '미처리');
+    if (onlyOpen && status === '완료') continue;
+    issues.push({
+      id: i,                                        // 시트 행 번호(1-based 헤더 제외)를 임시 식별자로 사용
+      date:       data[i][0] ? formatDate(data[i][0]) : '',
+      zone:       String(data[i][1] || ''),
+      inspector:  String(data[i][2] || ''),
+      issue:      String(data[i][3] || ''),
+      status:     status,
+      resolvedAt: data[i][5] ? formatDate(data[i][5]) : '',
+      note:       String(data[i][6] || '')
+    });
+  }
+  return jsonRes({ ok: true, dept: dept, open: onlyOpen, issues: issues });
+}
+
+// ════════════════════════════════════════════
+// action=issuelog_add — 이슈 등록 (2026-06-08 시토)
+// POST { action:'issuelog_add', dept, date, zone, inspector, issue, status, resolvedAt, note }
+// 응답: { ok:true, dept, row }
+// ════════════════════════════════════════════
+
+function handleIssueLogAdd(body) {
+  var dept = body.dept || 'support';
+  var tabName = dept === 'facility' ? SHEET_ISSUE_FACILITY : SHEET_ISSUE_SUPPORT;
+  var sheet = initIssueLogSheet(tabName);
+
+  var now = Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy-MM-dd');
+  var row = [
+    body.date       || now,
+    body.zone       || '',
+    body.inspector  || '',
+    body.issue      || '',
+    body.status     || '미처리',
+    body.resolvedAt || '',
+    body.note       || ''
+  ];
+  sheet.appendRow(row);
+  var addedRow = sheet.getLastRow();
+  _applyIssueRowStyle(sheet, addedRow, row);
+  return jsonRes({ ok: true, dept: dept, row: addedRow });
+}
+
+// ════════════════════════════════════════════
+// action=issuelog_update — 이슈 상태 갱신 (2026-06-08 시토)
+// POST { action:'issuelog_update', dept, row, status, resolvedAt, note }
+// row: 시트 데이터 행 번호 (헤더 제외 1-based, handleIssueLogGet의 id 필드)
+// 응답: { ok:true, dept, row }
+// ════════════════════════════════════════════
+
+function handleIssueLogUpdate(body) {
+  var dept = body.dept || 'support';
+  var tabName = dept === 'facility' ? SHEET_ISSUE_FACILITY : SHEET_ISSUE_SUPPORT;
+  var rowNum = parseInt(body.row, 10);
+  if (!rowNum || rowNum < 1) return jsonRes({ ok: false, error: 'row required' });
+
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName(tabName);
+  if (!sheet) return jsonRes({ ok: false, error: 'sheet not found: ' + tabName });
+
+  var sheetRow = rowNum + 1; // 헤더 1행 오프셋
+  if (sheetRow > sheet.getLastRow()) return jsonRes({ ok: false, error: 'row out of range' });
+
+  var existing = sheet.getRange(sheetRow, 1, 1, ISSUE_HEADERS.length).getValues()[0];
+  if (body.status     !== undefined) existing[4] = body.status;
+  if (body.resolvedAt !== undefined) existing[5] = body.resolvedAt;
+  if (body.note       !== undefined) existing[6] = body.note;
+
+  sheet.getRange(sheetRow, 1, 1, ISSUE_HEADERS.length).setValues([existing]);
+  _applyIssueRowStyle(sheet, sheetRow, existing);
+  return jsonRes({ ok: true, dept: dept, row: rowNum });
+}
+
+// ─── 이슈대장 행 스타일 ───
+function _applyIssueRowStyle(sheet, row, values) {
+  var statusCell = sheet.getRange(row, 5);
+  var status = String(values[4] || '미처리');
+  if (status === '완료') {
+    statusCell.setBackground('#e6f3ea').setFontColor('#2c8a4f');
+  } else if (status === '처리중') {
+    statusCell.setBackground('#fef3e2').setFontColor('#c0851b');
+  } else {
+    statusCell.setBackground('#fce8e4').setFontColor('#c0392b');
   }
 }
