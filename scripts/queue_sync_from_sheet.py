@@ -186,29 +186,86 @@ def row_to_queue_item(row: dict) -> dict:
             return
         item[key] = value
 
-    # depends_on: 임베드에 명시되면 그대로(None 도 의도값일 수 있어 'in' 으로 판정)
-    if "depends_on" in embed:
-        item["depends_on"] = embed["depends_on"]
+    # 선택 필드 전체를 임베드 키 순서대로 삽입한다.
+    # 이유: 현행 _queue.json 은 항목마다 키 순서가 제각각이라 고정 순서로는
+    # 줄단위 round-trip 동등 불가. 임베드 블록에 원본 키 순서를 그대로 인코딩하면
+    # 생성기가 임베드 순서대로 item 을 재구성하여 줄단위 동등이 보장됨.
+    #
+    # 처리 우선순위:
+    #   depends_on  — None 도 의도값(명시 'in' 판정, 값 없이 키만 보존)
+    #   priority    — 시트 난이도 컬럼 우선, 없으면 임베드, 둘 다 없으면 NORMAL
+    #   deadline / enqueued_at — 임베드 우선 → 시트 컬럼 폴백
+    #   processed_at — DONE 계열에만, 임베드 우선 → 시트 수정일 폴백
+    #   나머지 전체 — 임베드에 존재하는 키 순서대로 삽입(note_progress 포함)
+    #   note        — 임베드 note 우선, 없으면 사람용 본문
 
-    _set("priority", _norm_priority(row.get("난이도")) if row.get("난이도") else embed.get("priority"))
+    # ── 임베드의 모든 선택 필드를 순서 보존하며 처리 ─────────────────────────
+    # 고정 4개 (task_id·clevel·title·status) 이외 전부를 임베드 순서대로.
+    _FIXED = {"task_id", "clevel", "title", "status"}
+    # 시트 컬럼 파생값(임베드 없을 때 폴백)
+    _col_priority = _norm_priority(row.get("난이도")) if row.get("난이도") else None
+    _col_deadline = str(row.get("종료일", "") or "")[:10] or None
+    _col_enqueued = str(row.get("생성일", "") or "")[:10] or None
+    _col_processed = str(row.get("수정일", "") or "")[:10] or None
+
+    _handled: set[str] = set(_FIXED)
+
+    for key, val in embed.items():
+        if key in _FIXED:
+            continue
+        # depends_on: None 도 의도값 → 항상 삽입(empty 필터 없이)
+        if key == "depends_on":
+            item["depends_on"] = val
+        elif key == "priority":
+            resolved = _col_priority or (_norm_priority(str(val)) if val else "NORMAL")
+            item["priority"] = resolved
+        elif key == "deadline":
+            v = val or _col_deadline
+            if v:
+                item["deadline"] = v
+        elif key == "enqueued_at":
+            v = val or _col_enqueued
+            if v:
+                item["enqueued_at"] = v
+        elif key == "processed_at":
+            v = val or (_col_processed if status == "DONE" else None)
+            if v:
+                item["processed_at"] = v
+        elif key == "note":
+            # note 도 임베드 순서 그대로 제자리에 삽입
+            note_val = val or body
+            if note_val:
+                item["note"] = note_val
+            _handled.add("note")
+        else:
+            # 그 외 모든 임베드 필드(terminal, brief, next, next_missing, from, origin,
+            # artifact, commit_sha, remind_on, disposed_at, owner, tech,
+            # note_progress, approval, approved_at, approval_comment, archived_at 등)
+            if val is None:
+                pass  # None 은 omit(readers 기대값과 일치)
+            elif isinstance(val, str) and not val.strip():
+                pass
+            else:
+                item[key] = val
+        _handled.add(key)
+
+    # 임베드에 없던 시트 컬럼 파생 필드 보완(임베드에 키가 아예 없을 때만)
     if "priority" not in item:
-        item["priority"] = "NORMAL"
+        item["priority"] = _col_priority or "NORMAL"
+    if "depends_on" not in item and "depends_on" in embed:
+        item["depends_on"] = embed["depends_on"]
+    if "deadline" not in item and _col_deadline:
+        item["deadline"] = _col_deadline
+    if "enqueued_at" not in item and _col_enqueued:
+        item["enqueued_at"] = _col_enqueued
+    if "processed_at" not in item and status == "DONE" and _col_processed:
+        item["processed_at"] = _col_processed
 
-    _set("deadline", embed.get("deadline") or (str(row.get("종료일", "") or "")[:10] or None))
-    _set("enqueued_at", embed.get("enqueued_at") or (str(row.get("생성일", "") or "")[:10] or None))
-
-    # 완료 계열만 processed_at — readers(8시·21시)가 processed_at 으로 '어제/오늘 마무리' 집계
-    if status == "DONE":
-        _set("processed_at", embed.get("processed_at") or (str(row.get("수정일", "") or "")[:10] or None))
-
-    # 브릿지/메타 필드 — 임베드에서만(시트 컬럼 없음)
-    for key in ("terminal", "brief", "next", "next_missing", "from", "origin",
-                "artifact", "commit_sha", "remind_on", "disposed_at", "owner", "tech", "deadline"):
-        if key in embed:
-            _set(key, embed[key])
-
-    # note: 임베드 note 우선, 없으면 사람용 본문(임베드 블록 제거분)
-    _set("note", embed.get("note") or body)
+    # note: 임베드에 note 키가 없었던 경우에만 사람용 본문으로 보완
+    if "note" not in item:
+        note_val = embed.get("note") or body
+        if note_val:
+            item["note"] = note_val
 
     return item
 
