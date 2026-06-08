@@ -576,7 +576,7 @@
               <div style="font-size:22px;font-weight:800;color:var(--accent);line-height:1;" id="kpiInqDayConv">—</div>
             </div>
           </div>
-          <div style="font-size:10px;color:var(--dim);margin-top:8px;">⚑ 데이터 연결 대기 — 문의 SSOT(SURVEY GAS) 등록전환 집계 미구현(시모/CMO 후속)</div>
+          <div style="font-size:10px;color:var(--dim);margin-top:8px;">✅ 신규문의: 한+영 실연결(2026-06-08) | ⚑ 등록전환: 회원DB 매칭 후속 연결 예정(시모/CMO)</div>
         </div>
 
       </div>
@@ -878,21 +878,54 @@
       })
       .catch(function(){ /* "—" 유지 */ });
 
-    // 문의 — 총 신규문의/일일 신규문의. 등록전환은 데이터 연결 대기.
-    fetch(SURVEY_URL + '?action=inquiry_list', { redirect:'follow' })
-      .then(function(r){ return r.json(); })
-      .then(function(res){
-        if (!res || !res.ok || !Array.isArray(res.data)) return;
-        var today = todayStr();
-        var yStart = yearStart();
-        var all = res.data;
-        var totalInq = all.filter(function(it){ return String(it['시각']||'').slice(0,10) >= yStart; }).length;
-        var dayInq   = all.filter(function(it){ return String(it['시각']||'').slice(0,10) === today; }).length;
-        set('kpiInqTotal', totalInq);
-        set('kpiInqDay',   dayInq);
-        // 등록전환: 연결 대기 — "—" 유지
-      })
-      .catch(function(){ /* "—" 유지 */ });
+    // 문의 — 총 신규문의/일일 신규문의 (2026-06-08 실연결)
+    // 소스: 한국어 문의폼(gid 1902010032) + 영문 문의폼(gid 1887747109) CSV 직접 읽기 (한+영 합산)
+    // 등록전환: 회원DB 매칭 필요 — 후속 과제 (시모/CMO). 현재 "—" 유지.
+    (function loadInqKpi(){
+      var SS_ID  = '12AWcAlgmmYKr2nUbWmVpa71_z3zi0BaU4ZdnOwrI_7U';
+      var GID_KO = '1902010032';
+      var GID_EN = '1887747109';
+      var BASE   = 'https://docs.google.com/spreadsheets/d/' + SS_ID + '/export?format=csv&gid=';
+      // 구글폼 타임스탬프 형식: "2026. 6. 8 오후 2:15:48" → 파싱 후 날짜 비교
+      var TS_RE  = /(\d{4})\.\s*(\d{1,2})\.\s*(\d{1,2})/;
+      function parseDateStr(ts) {
+        var m = TS_RE.exec(String(ts || ''));
+        if (!m) return null;
+        // zero-pad → 'YYYY-MM-DD'
+        return m[1] + '-' + ('0'+m[2]).slice(-2) + '-' + ('0'+m[3]).slice(-2);
+      }
+      // CSV 텍스트 → 타임스탬프 컬럼 배열 반환 (헤더 행 제외)
+      // 한국어 탭: 컬럼B(인덱스1)가 타임스탬프 / 영문 탭: 컬럼A(인덱스0)가 타임스탬프
+      function countFromCsv(text, tsCol) {
+        var yStart = yearStart();   // 'YYYY-01-01'
+        var today  = todayStr();    // 'YYYY-MM-DD'
+        var total  = 0;
+        var day    = 0;
+        var lines  = text.split('\n');
+        // 단순 분리(멀티라인 셀 일부 존재하나 타임스탬프 행 식별엔 충분)
+        var seenHeader = false;
+        for (var i = 0; i < lines.length; i++) {
+          var line = lines[i];
+          if (!seenHeader) { seenHeader = true; continue; } // 1행=헤더 스킵
+          var cols = line.split(',');
+          if (!cols[tsCol]) continue;
+          var ds = parseDateStr(cols[tsCol]);
+          if (!ds) continue;
+          if (ds >= yStart) { total++; }
+          if (ds === today)  { day++; }
+        }
+        return { total: total, day: day };
+      }
+      var p1 = fetch(BASE + GID_KO + '&_pv=' + Date.now(), { redirect:'follow' }).then(function(r){ return r.text(); }).catch(function(){ return ''; });
+      var p2 = fetch(BASE + GID_EN + '&_pv=' + Date.now(), { redirect:'follow' }).then(function(r){ return r.text(); }).catch(function(){ return ''; });
+      Promise.all([p1, p2]).then(function(results){
+        var ko = countFromCsv(results[0], 1); // 한국어: B열
+        var en = countFromCsv(results[1], 0); // 영문: A열
+        set('kpiInqTotal', ko.total + en.total);
+        set('kpiInqDay',   ko.day   + en.day);
+        // 등록전환: 회원DB 매칭 후속 연결 예정 — "—" 유지
+      }).catch(function(){ /* "—" 유지 */ });
+    })();
   })();
   </script>
 
