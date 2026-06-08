@@ -611,17 +611,17 @@
     <!-- AUTO:LATEST-START -->
     <div class="card grow">
       <h4>최신 업데이트 — 2026-06-08 (자동 갱신)</h4>
+      <p><strong>2026-06-08</strong> feat(coo): 업무 난이도 기준 정식화 — 3등급 정의+예시+판단흐름+시로 연결 (S2 COO 탭 단일 출처, GM 승인 대기)</p>
       <p><strong>2026-06-08</strong> fix(cmo/barre): 비용삭제·문의한줄·영상정보 — 4채널 본문 최종</p>
       <p><strong>2026-06-08</strong> feat(s3): S3 업무현황 AI배 제외 안전망 필터 3곳 추가 — 2026-06-08 GM 방침</p>
       <p><strong>2026-06-08</strong> feat(cto): AI배 전용 탭 이관 완료 — AI배(C레벨) 탭 신규·20건 이동·todo_list 정리·GAS v@53</p>
       <p><strong>2026-06-08</strong> fix(cmo/barre): 옛 IG 엔트리 preview 깨진참조 ig_01→ig_main 정정 (원본 deck 복원 후속)</p>
-      <p><strong>2026-06-08</strong> chore(cmo/barre): 채널 폴더 원본 deck 정규화 — 재렌더 잔재 제거</p>
     </div>
 <!-- AUTO:LATEST-END -->
         <table>
           <tr><th style="width:160px">날짜</th><th>변경 내용</th></tr>
           <!-- AUTO:TABLE-START -->
-      <tr><td><strong>2026-06-08 (자동)</strong></td><td>fix(cmo/barre): 비용삭제·문의한줄·영상정보 — 4채널 본문 최종 · feat(s3): S3 업무현황 AI배 제외 안전망 필터 3곳 추가 — 2026-06-08 GM 방침 · feat(cto): AI배 전용 탭 이관 완료 — AI배(C레벨) 탭 신규·20건 이동·todo_list 정리·GAS v@53 · fix(cmo/barre): 옛 IG…</td></tr>
+      <tr><td><strong>2026-06-08 (자동)</strong></td><td>feat(coo): 업무 난이도 기준 정식화 — 3등급 정의+예시+판단흐름+시로 연결 (S2 COO 탭 단일 출처, GM 승인 대기) · fix(cmo/barre): 비용삭제·문의한줄·영상정보 — 4채널 본문 최종 · feat(s3): S3 업무현황 AI배 제외 안전망 필터 3곳 추가 — 2026-06-08 GM 방침 · feat(cto): AI배 전…</td></tr>
       <!-- AUTO:TABLE-END -->
           <tr><td><strong>2026-05-28 (14차)</strong></td><td>공지/안내문 생성(COO 하위) · 오프라인 홍보물 디자인 제작(CMO 하위) 도구 신설 · 공지 서식 v2.0 독립 페이지화 · 회사소개서·전략로드맵 원본 「3. 웰페리온 가이드/회사문서/」로 이관(SSOT 단일화) · C-Level 부팅 R/R Notion API→웰페리온 ERP g10 참조로 전환 · GitHub Pages 워크플로 폴더명 경로 수정 · 사이드바 "공통+7개 C-Level" 라벨 제거</td></tr>
           <tr><td>2026-05-27 (13차)</td><td>GitHub Pages 전환 · 사이드바 4섹터 · AI C-Level 통일 · 운영 통합 체계 · 공식채널·지출현황·취업규칙·SSOT 신설 · g2+g19·g9+g20·g12·g13 합병 · 김남욱 탭 확장 · v2.5</td></tr>
@@ -2255,7 +2255,7 @@
           <tr><td>대기 시 보고 포맷</td><td><strong>보고 포맷 = 공통 탭 '작업 사이클 보고 포맷' 단일 원본 참조.</strong> COO는 식별자만 <strong>시우-N</strong> 적용.</td></tr>
         </table>
 
-        <!-- ── 업무 난이도 기준 정식화 (2026-06-08 GM 지시 · 시우 초안 · GM 승인 대기) ── -->
+        <!-- ── 업무 난이도 기준 정식화 (2026-06-08 GM 지시 · GM 확정 2026-06-08) ── -->
         <h3 style="margin-top:24px;border-top:1px solid var(--border);padding-top:20px;"><span class="ico">⚙️</span>업무 난이도 기준 <span style="font-size:13px;color:var(--dim);font-weight:400;">(S2 COO 탭 단일 출처 · 인사평가 연동)</span></h3>
         <div class="callout" style="background:#1a2a1a;border-left:3px solid #059669;margin-bottom:12px;"><strong>정의 원칙:</strong> 난이도는 업무의 <strong>영향 범위 + 승인 필요 여부</strong>로 결정된다. 담당자가 제안 → 부서장(결재 1단계)이 결재 시 확정. 확정된 점수는 <strong>시로(CHRO) 인사평가 가중점수에 연동</strong>된다. S3 업무현황 SSOT의 GAS는 이 표를 기준으로 <code>DIFF_WEIGHT</code>(하=1·중=2·상=3)를 계산한다.</div>
         <table>
@@ -2303,7 +2303,7 @@
           <tr><td>상 등급 업무 별도 플래그</td><td>상(3점) 업무는 GM 승인 필수 — 인사평가 시 "GM 승인 획득 건수"를 별도 지표로 쓸지 시로 판단</td><td>중간</td></tr>
           <tr><td>부서장 확정 타임라인 연동</td><td>결재 완료(부서장 승인) 시점이 난이도 확정 시점 → 반기 컷오프 기준일 설정 필요</td><td>중간</td></tr>
         </table>
-        <div class="callout" style="margin-top:8px;background:#2a2a1a;border-left:3px solid var(--yellow);"><strong>⚠️ GM 승인 대기:</strong> 본 난이도 기준 정의는 2026-06-08 시우(COO) 초안. <strong>GM 확정 전까지는 참고용</strong>이며, 확정 후 본 섹션 상단 안내 문구를 제거한다. 시로(CHRO)는 연계 항목 검토 후 인사평가 체계 정합 결과를 CEO에 보고.</div>
+        <div class="callout" style="margin-top:8px;background:#1a2a1a;border-left:3px solid #059669;"><strong>✅ GM 확정(2026-06-08).</strong> 시로(CHRO)는 인사평가 연계 4항목 검토 후 정합 결과를 CEO에 보고.</div>
         <!-- ── /업무 난이도 기준 정식화 ── -->
 
         <h3 style="margin-top:24px;border-top:1px solid var(--border);padding-top:20px;"><span class="ico">✍️</span>결재 요청·승인 체계 <span style="font-size:13px;color:var(--dim);font-weight:400;">(S3 업무·결재 현황 정책 단일 출처)</span></h3>
