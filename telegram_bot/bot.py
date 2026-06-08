@@ -1066,16 +1066,16 @@ async def cmd_publish_callback(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     if not q or not q.data or not q.data.startswith("pub:"):
         return
     await q.answer()
-    parts = q.data.split(":", 2)
+    parts = q.data.split(":")
     if len(parts) < 3:
         await q.answer("형식 오류", show_alert=False)
         return
-    _, id_field, decision = parts
 
     # 그룹 해시 방식: pub:grp:<hash>:<decision> → .review_card_groups.json 역조회
     _GROUPS_STORE = WORKDIR / "scripts" / ".review_card_groups.json"
-    if id_field.startswith("grp:"):
-        grp_hash = id_field[4:]
+    if len(parts) >= 4 and parts[1] == "grp":
+        grp_hash = parts[2]
+        decision = parts[3]
         try:
             grp_map = json.loads(_GROUPS_STORE.read_text(encoding="utf-8"))
             item_ids = grp_map.get(grp_hash) or []
@@ -1087,6 +1087,8 @@ async def cmd_publish_callback(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
             return
     else:
         # 복수 id 지원: 콤마 구분 분리 (단일 id는 리스트 1개)
+        id_field = parts[1]
+        decision = parts[2]
         item_ids = [x.strip() for x in id_field.split(",") if x.strip()]
 
     try:
