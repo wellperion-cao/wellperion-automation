@@ -132,6 +132,69 @@ function _today() {
   return Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy-MM-dd');
 }
 
+// ─── 생성일 DESC 자동 정렬 (헤더 1행 고정, 데이터 행만) ───
+// 대상: 업무&결재 현황 탭 + AI배(C레벨) 탭 (이슈대장 제외).
+// 1차: 생성일 desc / 2차: id desc (타임스탬프 기반 ID라 최신=사전 후순).
+// 빈 생성일은 맨 아래로 밀림.
+function _sortSheetByCreated(sh) {
+  var lastRow = sh.getLastRow();
+  if (lastRow < 3) return; // 헤더 + 1행 이하는 정렬 불필요
+  var headers = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0];
+  var createdCol = headers.indexOf('생성일') + 1; // 1-based
+  var idCol = headers.indexOf('id') + 1;
+  if (createdCol < 1) return; // 생성일 컬럼 없으면 스킵
+  var dataRows = lastRow - 1; // 헤더 제외 데이터 행 수
+  var numCols = sh.getLastColumn();
+  var range = sh.getRange(2, 1, dataRows, numCols);
+  var values = range.getValues();
+  var backgrounds = range.getBackgrounds();
+  var fontColors = range.getFontColors();
+  var fontWeights = range.getFontWeights();
+
+  // 각 행에 배경·글자색·굵기를 붙여 정렬
+  var rows = values.map(function(v, i) {
+    return { v: v, bg: backgrounds[i], fc: fontColors[i], fw: fontWeights[i] };
+  });
+
+  // 셀값이 Date 객체일 수 있으므로 getTime()으로 숫자 변환, 아니면 문자열로 폴백
+  function _toTs(v) {
+    if (!v && v !== 0) return -Infinity;
+    if (v instanceof Date) return isNaN(v.getTime()) ? -Infinity : v.getTime();
+    var s = String(v).trim();
+    if (!s) return -Infinity;
+    var d = new Date(s);
+    return isNaN(d.getTime()) ? s : d.getTime(); // 파싱 실패 시 문자열 그대로(문자열 비교)
+  }
+
+  rows.sort(function(a, b) {
+    var ca = _toTs(a.v[createdCol - 1]);
+    var cb = _toTs(b.v[createdCol - 1]);
+    // 빈값(-Infinity)은 맨 아래
+    if (ca === -Infinity && cb === -Infinity) return 0;
+    if (ca === -Infinity) return 1;
+    if (cb === -Infinity) return -1;
+    // 생성일 desc (숫자는 숫자 비교, 문자열은 문자열 비교)
+    if (cb !== ca) return cb > ca ? 1 : -1;
+    // 보조: id desc (타임스탬프형 id)
+    if (idCol >= 1) {
+      var ia = String(a.v[idCol - 1] || '');
+      var ib = String(b.v[idCol - 1] || '');
+      return ib > ia ? 1 : ib < ia ? -1 : 0;
+    }
+    return 0;
+  });
+
+  var sortedValues = rows.map(function(r) { return r.v; });
+  var sortedBg     = rows.map(function(r) { return r.bg; });
+  var sortedFc     = rows.map(function(r) { return r.fc; });
+  var sortedFw     = rows.map(function(r) { return r.fw; });
+
+  range.setValues(sortedValues);
+  range.setBackgrounds(sortedBg);
+  range.setFontColors(sortedFc);
+  range.setFontWeights(sortedFw);
+}
+
 // 타임스탬프 기반 ID 생성 (TODO-yyyyMMddHHmmssSSS)
 function _genId() {
   return 'TODO-' + Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyyMMddHHmmss')
@@ -595,9 +658,71 @@ function doGet(e) {
     // ─── AI배(C레벨) 전용 탭 행 추가 ───
     // POST {action:'ai_add', sheet:'AI배(C레벨)', 업무명:..., 담당자:..., ...}
     // todo_add 와 동일한 필드 구조 — 전용 탭에만 기록.
+    if (action === 'ai_add') {
+      const sheetName = e.parameter.sheet || 'AI배(C레벨)';
+      const ss = SpreadsheetApp.getActiveSpreadsheet();
+      const ws = ss.getSheetByName(sheetName);
+      if (!ws) return _json({ ok: false, error: 'sheet_not_found: ' + sheetName });
+      const id = _genId();
+      const now = _now();
+      const row = new Array(TODO_HEADERS.length).fill('');
+      row[0] = id;
+      row[1] = e.parameter['업무명'] || e.parameter.title || e.parameter.name || '';
+      row[2] = e.parameter['카테고리'] || e.parameter.category || '';
+      row[3] = e.parameter['담당자'] || e.parameter.owner || '';
+      row[4] = e.parameter['시작일'] || e.parameter.startDate || _today();
+      row[5] = e.parameter['종료일'] || e.parameter.endDate || '';
+      row[6] = e.parameter['내용'] || e.parameter.content || '';
+      row[7] = e.parameter['상태'] || e.parameter.status || '진행중';
+      row[8] = e.parameter['결재요청'] || '';
+      row[9] = e.parameter['링크'] || '';
+      row[10] = e.parameter['파일URL'] || '';
+      row[11] = e.parameter['생성자'] || '';
+      row[12] = now;
+      row[13] = now;
+      row[17] = e.parameter['결재요청'] ? '대기' : '';
+      row[TODO_HEADERS.indexOf('난이도')] = e.parameter['난이도'] || e.parameter.difficulty || '';
+      const newRow = ws.getLastRow() + 1;
+      ws.getRange(newRow, 1, 1, row.length).setValues([row]);
+      _applyStatusColor(ws, newRow, row[7]);
+      // 행 추가 후 생성일 desc 자동 정렬 (상시 유지)
+      _sortSheetByCreated(ws);
+      return _json({ ok: true, id: id, sheet: sheetName, message: 'AI배 업무 추가 완료' });
+    }
 
     // ─── AI배(C레벨) 전용 탭 행 삭제 ───
     // POST {action:'ai_delete', sheet:'AI배(C레벨)', id:'ROW_ID'}
+    if (action === 'ai_delete') {
+      const sheetName = e.parameter.sheet || 'AI배(C레벨)';
+      const ss = SpreadsheetApp.getActiveSpreadsheet();
+      const ws = ss.getSheetByName(sheetName);
+      if (!ws) return _json({ ok: false, error: 'sheet_not_found: ' + sheetName });
+      const delId = e.parameter.id || '';
+      if (!delId) return _json({ ok: false, error: 'id 필수' });
+      const rowNum = _findRow(ws, delId);
+      if (rowNum < 0) return _json({ ok: false, error: '해당 ID를 찾을 수 없습니다: ' + delId });
+      ws.deleteRow(rowNum);
+      return _json({ ok: true, id: delId, message: 'AI배 업무 삭제 완료' });
+    }
+
+    // ─── 생성일 desc 일회 정렬 트리거 (초기 셋업용) ───
+    // GET ?action=sort_by_created[&sheet=탭명]  — 탭 미지정 시 기본 2개 탭 모두 정렬.
+    if (action === 'sort_by_created') {
+      const ss = SpreadsheetApp.getActiveSpreadsheet();
+      const targetName = e.parameter.sheet || '';
+      const targets = targetName
+        ? [targetName]
+        : ['업무&결재 현황', 'AI배(C레벨)'];
+      const results = [];
+      targets.forEach(function(name) {
+        const ws = ss.getSheetByName(name);
+        if (!ws) { results.push({ sheet: name, ok: false, error: 'sheet_not_found' }); return; }
+        const before = ws.getLastRow() - 1;
+        _sortSheetByCreated(ws);
+        results.push({ sheet: name, ok: true, rows: before });
+      });
+      return _json({ ok: true, results: results });
+    }
 
     return _json({ ok: false, error: '알 수 없는 action: ' + action });
   } catch (err) {
@@ -655,6 +780,9 @@ function _processTodoAction(body) {
       const newRow = sh.getLastRow() + 1;
       sh.getRange(newRow, 1, 1, row.length).setValues([row]);
       _applyStatusColor(sh, newRow, row[7]);
+
+      // 행 추가 후 생성일 desc 자동 정렬 (상시 유지)
+      _sortSheetByCreated(sh);
 
       // 텔레그램 결재 발송 폐기 (2026-05-28 GM 결재) — 결재 SSOT 페이지 단일 운영.
       // 일반 신규 알림만 유지 (결재요청 유무 무관, 짧은 알림).
@@ -925,10 +1053,60 @@ function _processTodoAction(body) {
     return _json({ ok: false, error: '알 수 없는 action: ' + action });
 }
 
+// doPost용 ai_ 액션 처리 (ai_add·ai_delete — doGet과 공용 로직)
+function _processAiAction(body) {
+  const action = body.action || '';
+  const sheetName = body.sheet || 'AI배(C레벨)';
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const ws = ss.getSheetByName(sheetName);
+  if (!ws) return _json({ ok: false, error: 'sheet_not_found: ' + sheetName });
+
+  if (action === 'ai_add') {
+    // _mapFields 이미 적용된 body 사용
+    const id = _genId();
+    const now = _now();
+    const row = new Array(TODO_HEADERS.length).fill('');
+    row[0] = id;
+    row[1] = body['업무명'] || '';
+    row[2] = body['카테고리'] || '';
+    row[3] = body['담당자'] || '';
+    row[4] = body['시작일'] || _today();
+    row[5] = body['종료일'] || '';
+    row[6] = body['내용'] || '';
+    row[7] = body['상태'] || '진행중';
+    row[8] = body['결재요청'] || '';
+    row[9] = body['링크'] || '';
+    row[10] = body['파일URL'] || '';
+    row[11] = body['생성자'] || '';
+    row[12] = now;
+    row[13] = now;
+    row[17] = body['결재요청'] ? '대기' : '';
+    row[TODO_HEADERS.indexOf('난이도')] = body['난이도'] || '';
+    const newRow = ws.getLastRow() + 1;
+    ws.getRange(newRow, 1, 1, row.length).setValues([row]);
+    _applyStatusColor(ws, newRow, row[7]);
+    _sortSheetByCreated(ws);
+    return _json({ ok: true, id: id, sheet: sheetName, message: 'AI배 업무 추가 완료' });
+  }
+
+  if (action === 'ai_delete') {
+    const delId = body.id || '';
+    if (!delId) return _json({ ok: false, error: 'id 필수' });
+    const rowNum = _findRow(ws, delId);
+    if (rowNum < 0) return _json({ ok: false, error: '해당 ID를 찾을 수 없습니다: ' + delId });
+    ws.deleteRow(rowNum);
+    return _json({ ok: true, id: delId, message: 'AI배 업무 삭제 완료' });
+  }
+
+  return _json({ ok: false, error: '알 수 없는 ai action: ' + action });
+}
+
 function doPost(e) {
   try {
     const body = JSON.parse(e.postData.contents);
-    if ((body.action || '').indexOf('notice_') === 0) return _processNoticeAction(body);
+    const act = body.action || '';
+    if (act.indexOf('notice_') === 0) return _processNoticeAction(body);
+    if (act.indexOf('ai_') === 0) return _processAiAction(_mapFields(body));
     return _processTodoAction(body);
   } catch (err) {
     return _json({ ok: false, error: err.message });
