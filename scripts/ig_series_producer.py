@@ -168,6 +168,11 @@ def _episode_already_produced(ep: dict) -> bool:
 
     make_folder_slug 가 매 가동 '오늘 날짜'로 폴더를 새로 만들기 때문에, 같은 편을 다른
     날짜로 재제작하는 사고를 막으려면 날짜와 무관하게 'AI{num}_' 패턴 폴더 존재로 판정한다.
+
+    ★ 판정 기준: 폴더 안에 build_slides.py 가 있어야 '제작됨'으로 간주.
+    기획_초안.md 만 있는 사전 기획 폴더(GM 수동 생성)는 미제작으로 통과시켜
+    producer 가 정상적으로 #10 을 선정할 수 있도록 한다(2026-06-08 버그 수정).
+    폐기 폴더(_폐기_DEPRECATED.md 보유)는 build_slides.py 유무와 무관하게 제작됨으로 간주.
     """
     try:
         marker = f"_AI{ep['num']}_"
@@ -175,8 +180,13 @@ def _episode_already_produced(ep: dict) -> bool:
             if not child.is_dir():
                 continue
             name = child.name
-            # 폐기 폴더(_폐기_DEPRECATED.md 보유)는 '제작됨'으로 간주(재선정 차단)
-            if marker in name or name.endswith(f"_AI{ep['num']}"):
+            if not (marker in name or name.endswith(f"_AI{ep['num']}")):
+                continue
+            # 폐기 폴더는 build_slides 유무 무관하게 '제작됨' (재선정 차단)
+            if (child / "_폐기_DEPRECATED.md").exists():
+                return True
+            # build_slides.py 가 있어야 실제 제작된 폴더
+            if (child / "build_slides.py").exists():
                 return True
     except Exception:
         pass
