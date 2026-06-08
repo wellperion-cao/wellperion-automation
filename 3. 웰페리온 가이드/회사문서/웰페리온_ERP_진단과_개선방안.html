@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>웰페리온 ERP 진단과 개선방안 · AI CEO 웰리</title>
+<style>
+  :root{
+    --bg:#221F20; --paper:#2a2725; --sidebar:#1a1817;
+    --text:#f5f2ef; --text-soft:#d4d0cc; --dim:#8c8b83; --dim-soft:#6b6a64;
+    --accent:#B79F8A; --accent-hover:#d4b89e; --accent-bg:rgba(183,159,138,0.12); --accent-line:#B79F8A;
+    --warm:#ED5B3F; --warm-bg:rgba(237,91,63,0.15); --warm-border:rgba(237,91,63,0.35);
+    --orange:#F5923A; --orange-bg:rgba(245,146,58,0.13); --orange-border:rgba(245,146,58,0.35);
+    --yellow:#F5C842; --yellow-bg:rgba(245,200,66,0.11); --yellow-border:rgba(245,200,66,0.3);
+    --grow:#6abf7b; --grow-bg:rgba(106,191,123,0.12); --grow-border:rgba(106,191,123,0.3);
+    --border:#3d3835; --border-strong:#4d4845; --gray-bg:#2a2725;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html{scroll-behavior:smooth;}
+  body{
+    font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
+    color:var(--text); background:var(--bg);
+    line-height:1.75; font-size:15.5px; -webkit-font-smoothing:antialiased;
+  }
+
+  /* ── 헤더 ── */
+  .page-header{
+    background:var(--paper); border-bottom:1px solid var(--border);
+    padding:36px 40px 28px; position:sticky; top:0; z-index:10;
+  }
+  .page-header .kicker{
+    font-size:11.5px; font-weight:700; letter-spacing:0.08em; text-transform:uppercase;
+    color:var(--accent); margin-bottom:6px;
+  }
+  .page-header h1{
+    font-size:26px; font-weight:800; letter-spacing:-0.02em; color:var(--text);
+    line-height:1.25;
+  }
+  .page-header .subtitle{
+    font-size:13.5px; color:var(--dim); margin-top:5px;
+  }
+  .page-header .toc-inline{
+    display:flex; flex-wrap:wrap; gap:6px 10px; margin-top:14px;
+  }
+  .page-header .toc-inline a{
+    font-size:13px; color:var(--accent); text-decoration:none;
+    padding:3px 10px; border:1px solid var(--accent-line); border-radius:20px;
+    background:var(--accent-bg); transition:background 0.12s;
+  }
+  .page-header .toc-inline a:hover{background:rgba(183,159,138,0.22);}
+
+  /* ── 본문 ── */
+  .main{max-width:860px; margin:0 auto; padding:44px 28px 80px;}
+
+  /* 섹션 */
+  .section{margin-bottom:52px;}
+  .section-title{
+    font-size:20px; font-weight:800; letter-spacing:-0.01em;
+    display:flex; align-items:center; gap:10px;
+    padding-bottom:10px; border-bottom:2px solid var(--border);
+    margin-bottom:22px;
+  }
+  .section-title .ico{font-size:22px;}
+
+  /* 카드 */
+  .card{
+    background:var(--paper); border:1px solid var(--border);
+    border-radius:12px; padding:20px 22px; margin:14px 0;
+  }
+  .card.accent{background:var(--accent-bg); border-color:var(--accent-line);}
+  .card.red{background:var(--warm-bg); border-color:var(--warm-border);}
+  .card.orange{background:var(--orange-bg); border-color:var(--orange-border);}
+  .card.yellow{background:var(--yellow-bg); border-color:var(--yellow-border);}
+  .card.green{background:var(--grow-bg); border-color:var(--grow-border);}
+
+  /* 총점 카드 */
+  .score-hero{
+    background:var(--paper); border:1px solid var(--border);
+    border-radius:16px; padding:28px 28px 24px; margin-bottom:24px;
+    display:flex; align-items:flex-start; gap:28px;
+  }
+  .score-big{
+    flex-shrink:0; text-align:center; min-width:90px;
+  }
+  .score-big .num{
+    font-size:56px; font-weight:900; letter-spacing:-0.03em;
+    color:var(--accent); line-height:1;
+  }
+  .score-big .denom{font-size:22px; color:var(--dim); font-weight:600;}
+  .score-big .label{font-size:11.5px; color:var(--dim); margin-top:4px; font-weight:600; letter-spacing:0.05em; text-transform:uppercase;}
+  .score-body{flex:1;}
+  .score-body p{font-size:15px; color:var(--text-soft); line-height:1.7; margin-bottom:10px;}
+  .score-body p:last-child{margin-bottom:0;}
+
+  /* 영역별 점수 표 */
+  .score-table{width:100%; border-collapse:collapse; margin:16px 0; font-size:14px;}
+  .score-table td{padding:8px 10px; vertical-align:middle;}
+  .score-table td:first-child{width:130px; font-weight:600; color:var(--text-soft);}
+  .score-table td:nth-child(2){width:56px; text-align:right; font-weight:800; font-size:16px;}
+  .score-table td:last-child{padding-left:12px;}
+
+  /* 점수 막대 */
+  .bar-wrap{height:10px; background:var(--border); border-radius:10px; overflow:hidden; min-width:120px;}
+  .bar-fill{height:100%; border-radius:10px; transition:width 0.8s cubic-bezier(.22,1,.36,1);}
+  .bar-fill.c9{background:var(--grow); width:90%;}
+  .bar-fill.c7{background:#6ab9bf; width:70%;}
+  .bar-fill.c5{background:var(--yellow); width:50%;}
+  .bar-fill.c4{background:var(--orange); width:40%;}
+  .bar-fill.c3{background:var(--warm); width:30%;}
+
+  /* 문제 카드 */
+  .issue-card{
+    background:var(--paper); border:1px solid var(--border);
+    border-radius:14px; margin:18px 0; overflow:hidden;
+  }
+  .issue-card .issue-head{
+    display:flex; align-items:center; gap:12px;
+    padding:16px 20px; border-bottom:1px solid var(--border);
+  }
+  .issue-card .issue-num{
+    flex-shrink:0; width:32px; height:32px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    font-size:14px; font-weight:800; line-height:1;
+  }
+  .issue-card .issue-title{font-size:17px; font-weight:700; flex:1;}
+  .badge{
+    display:inline-flex; align-items:center; gap:4px;
+    font-size:12px; font-weight:700; padding:4px 12px;
+    border-radius:20px; white-space:nowrap; flex-shrink:0;
+  }
+  .badge.red{background:var(--warm); color:#fff;}
+  .badge.orange{background:var(--orange); color:#fff;}
+  .badge.yellow{background:var(--yellow); color:#221F20;}
+
+  .issue-card .issue-body{padding:18px 20px;}
+  .issue-row{margin-bottom:16px;}
+  .issue-row:last-child{margin-bottom:0;}
+  .issue-row .row-label{
+    font-size:11px; font-weight:700; letter-spacing:0.07em; text-transform:uppercase;
+    color:var(--dim); margin-bottom:5px;
+  }
+  .issue-row .row-content{font-size:14.5px; color:var(--text-soft); line-height:1.7;}
+
+  /* 보완방안 박스 */
+  .fix-box{
+    background:var(--accent-bg); border-left:3px solid var(--accent);
+    border-radius:0 8px 8px 0; padding:12px 16px;
+    font-size:14.5px; color:var(--text-soft); line-height:1.7;
+    margin-top:6px;
+  }
+  .fix-box strong{color:var(--accent-hover);}
+
+  /* 결론 카드 */
+  .conclusion-list{counter-reset:cnum; list-style:none; padding:0; margin:10px 0;}
+  .conclusion-list li{
+    counter-increment:cnum; display:flex; align-items:flex-start; gap:14px;
+    padding:14px 0; border-bottom:1px solid var(--border);
+  }
+  .conclusion-list li:last-child{border-bottom:none;}
+  .conclusion-list li::before{
+    content:counter(cnum); flex-shrink:0;
+    width:28px; height:28px; border-radius:50%;
+    background:var(--accent); color:var(--bg);
+    font-size:13px; font-weight:800; line-height:28px; text-align:center;
+    margin-top:2px;
+  }
+  .conclusion-list li .ci-title{font-weight:700; font-size:15.5px; margin-bottom:3px;}
+  .conclusion-list li .ci-desc{font-size:14px; color:var(--text-soft); line-height:1.65;}
+
+  /* 마무리 callout */
+  .callout{
+    border-left:4px solid var(--accent); background:var(--accent-bg);
+    padding:16px 20px; border-radius:0 10px 10px 0;
+    font-size:15.5px; color:var(--text-soft); line-height:1.75; margin:22px 0;
+  }
+  .callout strong{color:var(--text);}
+  .callout.warn{border-left-color:var(--warm); background:var(--warm-bg);}
+
+  /* 꼬리말 */
+  .footer{
+    text-align:center; padding:28px 20px;
+    font-size:12.5px; color:var(--dim-soft);
+    border-top:1px solid var(--border); margin-top:16px;
+  }
+
+  /* 반응형 */
+  @media(max-width:700px){
+    .page-header{padding:24px 18px 20px;}
+    .page-header h1{font-size:20px;}
+    .main{padding:28px 14px 60px;}
+    .score-hero{flex-direction:column; gap:16px;}
+    .score-big .num{font-size:44px;}
+    .issue-card .issue-head{flex-wrap:wrap;}
+    .score-table td:first-child{width:90px;}
+  }
+</style>
+</head>
+<body>
+
+<!-- 헤더 -->
+<header class="page-header">
+  <div class="kicker">AI CEO 웰리 · 솔직 진단 보고서</div>
+  <h1>웰페리온 ERP 진단과 개선방안</h1>
+  <div class="subtitle">작성일 2026-06-08 &nbsp;·&nbsp; 추측·창작 없이 실제 운영 관찰 기반</div>
+  <nav class="toc-inline">
+    <a href="#sec-summary">① 한눈 요약</a>
+    <a href="#sec-issues">② 문제점 5가지</a>
+    <a href="#sec-action">③ 먼저 고칠 3가지</a>
+  </nav>
+</header>
+
+<!-- 본문 -->
+<main class="main">
+
+  <!-- ① 한눈 요약 -->
+  <section class="section" id="sec-summary">
+    <div class="section-title"><span class="ico">📊</span> 한눈 요약 — 총점</div>
+
+    <div class="score-hero">
+      <div class="score-big">
+        <div class="num">6.5</div>
+        <div class="denom">/ 10</div>
+        <div class="label">종합 점수</div>
+      </div>
+      <div class="score-body">
+        <p><strong>조종석으로서는 기대 이상입니다.</strong> 1인 오너가 회사 전체를 한 화면에서 보고 지시할 수 있는 구조 — 이건 제대로 작동하고 있습니다.</p>
+        <p>단, 북극성인 <strong>스포츠클럽 ERP 제품화</strong> 기준으로 보면 아직 <strong>프로토타입 수준(4/10)</strong>입니다. 비전과 속도는 좋은데, 제품이 되려면 바닥 공사가 필요합니다.</p>
+      </div>
+    </div>
+
+    <!-- 영역별 점수 -->
+    <div class="card">
+      <table class="score-table">
+        <tbody>
+          <tr>
+            <td>비전·방향성</td>
+            <td style="color:var(--grow);">9</td>
+            <td>
+              <div class="bar-wrap"><div class="bar-fill c9"></div></div>
+            </td>
+          </tr>
+          <tr>
+            <td>실사용 가치</td>
+            <td style="color:#6ab9bf;">7</td>
+            <td>
+              <div class="bar-wrap"><div class="bar-fill c7"></div></div>
+            </td>
+          </tr>
+          <tr>
+            <td>데이터 신뢰도</td>
+            <td style="color:var(--yellow);">5</td>
+            <td>
+              <div class="bar-wrap"><div class="bar-fill c5"></div></div>
+            </td>
+          </tr>
+          <tr>
+            <td>구조 견고함</td>
+            <td style="color:var(--orange);">4</td>
+            <td>
+              <div class="bar-wrap"><div class="bar-fill c4"></div></div>
+            </td>
+          </tr>
+          <tr>
+            <td>보안</td>
+            <td style="color:var(--warm);">3</td>
+            <td>
+              <div class="bar-wrap"><div class="bar-fill c3"></div></div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ② 문제점 5가지 -->
+  <section class="section" id="sec-issues">
+    <div class="section-title"><span class="ico">⚠️</span> 문제점 5가지 — 심각한 순</div>
+
+    <!-- 문제 1: 보안 -->
+    <div class="issue-card">
+      <div class="issue-head" style="background:var(--warm-bg);">
+        <div class="issue-num" style="background:var(--warm); color:#fff;">1</div>
+        <div class="issue-title">보안이 열려 있습니다</div>
+        <span class="badge red">🔴 최우선</span>
+      </div>
+      <div class="issue-body">
+        <div class="issue-row">
+          <div class="row-label">문제</div>
+          <div class="row-content">
+            업무 API와 매출·지출 API에 <strong>비밀번호나 인증이 없습니다.</strong> 웰페리온 ERP 홈은 GitHub Pages(외부 공개 서버)에 올라가 있어 URL만 알면 누구든 매출·지출·회원정보를 볼 수 있습니다. 업무 목록을 추가·수정·삭제하는 것도 마찬가지입니다.
+          </div>
+        </div>
+        <div class="issue-row">
+          <div class="row-label">왜 위험한가</div>
+          <div class="row-content">
+            재무 정보가 한 번 새어나가면 주워담을 수 없습니다. 외부인이 업무 상태를 몰래 바꿀 수도 있습니다.
+          </div>
+        </div>
+        <div class="issue-row">
+          <div class="row-label">보완방안</div>
+          <div class="fix-box">
+            <strong>접근 통제부터 시작:</strong> 비공개 토큰·로그인·IP 제한 중 하나 이상 적용. 매출·지출·회원정보 등 민감한 데이터는 인증을 통과한 뒤에만 볼 수 있게. 지금 당장은 GitHub Pages 공개 범위부터 점검하는 게 첫걸음입니다.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 문제 2: 데이터 신뢰도 -->
+    <div class="issue-card">
+      <div class="issue-head" style="background:var(--warm-bg);">
+        <div class="issue-num" style="background:var(--warm); color:#fff;">2</div>
+        <div class="issue-title">숫자를 믿기 어렵습니다</div>
+        <span class="badge red">🔴 긴급</span>
+      </div>
+      <div class="issue-body">
+        <div class="issue-row">
+          <div class="row-label">문제</div>
+          <div class="row-content">
+            오늘만 봐도 지출이 <strong>51,640원 → 309,400원</strong>으로 들쭉합니다. 원천 시트의 칸(열)이 밀려서 자동 집계가 제대로 안 되고 있고, 이슈 미처리 261건은 오늘 것만이 아니라 과거 누적이 섞여 있습니다.
+          </div>
+        </div>
+        <div class="issue-row">
+          <div class="row-label">왜 위험한가</div>
+          <div class="row-content">
+            GM이 보고서 숫자를 보고 결정을 내리는데, 그 숫자가 틀려 있으면 잘못된 판단으로 이어집니다.
+          </div>
+        </div>
+        <div class="issue-row">
+          <div class="row-label">보완방안</div>
+          <div class="fix-box">
+            <strong>집계 기준을 한 곳에 못 박고</strong>, "이 숫자는 맞다"를 보장하는 검증 루틴 도입. 원천 시트의 칸 정렬과 상태 표기를 통일. 아직 검증 안 된 칸은 <strong>'집계 보완 중'</strong>으로 명시해 GM이 혼동하지 않도록.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 문제 3: 구조 견고함 -->
+    <div class="issue-card">
+      <div class="issue-head" style="background:var(--orange-bg);">
+        <div class="issue-num" style="background:var(--orange); color:#fff;">3</div>
+        <div class="issue-title">한 파일에 너무 많이 담겨 있습니다</div>
+        <span class="badge orange">🟠 중요</span>
+      </div>
+      <div class="issue-body">
+        <div class="issue-row">
+          <div class="row-label">문제</div>
+          <div class="row-content">
+            현재 메인 파일 한 개가 <strong>약 9,000줄</strong>입니다. 여러 작업이 동시에 같은 파일을 수정하다 보니 충돌이 나서 파일이 깨진 적이 이미 있습니다(임시로 커밋 순서를 직렬화해서 막고 있는 상황). 자동 점검도 없습니다.
+          </div>
+        </div>
+        <div class="issue-row">
+          <div class="row-label">왜 위험한가</div>
+          <div class="row-content">
+            파일이 또 깨지면 ERP 전체가 순간 멈춥니다. 무엇이 깨졌는지 찾기도 어렵습니다.
+          </div>
+        </div>
+        <div class="issue-row">
+          <div class="row-label">보완방안</div>
+          <div class="fix-box">
+            <strong>데이터 로직과 화면을 분리</strong>하고, 핵심 흐름에 가벼운 자동 점검을 달아 "라이브가 안 깨졌는지" 바로 알 수 있게. 페이지를 기능 단위로 나눠서 한 파일이 터져도 나머지가 살아남게 하는 방향.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 문제 4: 중복·산만 -->
+    <div class="issue-card">
+      <div class="issue-head" style="background:var(--orange-bg);">
+        <div class="issue-num" style="background:var(--orange); color:#fff;">4</div>
+        <div class="issue-title">같은 정보가 여러 곳에 흩어져 있습니다</div>
+        <span class="badge orange">🟠 중요</span>
+      </div>
+      <div class="issue-body">
+        <div class="issue-row">
+          <div class="row-label">문제</div>
+          <div class="row-content">
+            "단일 출처(SSOT)"를 목표로 하지만 실제 상태값은 <strong>업무 목록 파일 · 구글시트 · 자동화 스크립트 · 브라우저 저장 공간 · HTML 본문</strong> 다섯 곳에 나뉘어 있습니다. 오늘도 '오늘 한눈에' 중복 항목을 제거했습니다.
+          </div>
+        </div>
+        <div class="issue-row">
+          <div class="row-label">왜 위험한가</div>
+          <div class="row-content">
+            어디가 진짜인지 헷갈려서 수정이 한 곳에만 반영되고 나머지는 옛날 정보로 남는 사고가 반복됩니다.
+          </div>
+        </div>
+        <div class="issue-row">
+          <div class="row-label">보완방안</div>
+          <div class="fix-box">
+            <strong>"기존 것 업데이트, 새로 만들지 않는다"</strong> 원칙 고정. 한 주제 = 한 곳. 정기적으로 중복을 점검하는 루틴 추가.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 문제 5: 자동화 미완성 -->
+    <div class="issue-card">
+      <div class="issue-head" style="background:var(--yellow-bg);">
+        <div class="issue-num" style="background:var(--yellow); color:#221F20;">5</div>
+        <div class="issue-title">자동화가 중간에서 끊깁니다</div>
+        <span class="badge yellow">🟡 개선</span>
+      </div>
+      <div class="issue-body">
+        <div class="issue-row">
+          <div class="row-label">문제</div>
+          <div class="row-content">
+            콘텐츠 발행·당근마켓 업로드·IG 슬라이드 생성 등 여러 자동화가 <strong>"시연은 되는데 실전에선 사람이 손으로"</strong> 하는 구간이 남아있습니다. 오늘 발레 콘텐츠도 결국 수동 업로드였습니다.
+          </div>
+        </div>
+        <div class="issue-row">
+          <div class="row-label">왜 위험한가</div>
+          <div class="row-content">
+            GM이나 실무진이 매번 반복 동작을 수동으로 해야 하고, 빠뜨리면 누락됩니다. 자동화의 이점이 반감됩니다.
+          </div>
+        </div>
+        <div class="issue-row">
+          <div class="row-label">보완방안</div>
+          <div class="fix-box">
+            <strong>끊긴 구간 목록화 후 우선순위 지정.</strong> 자동 임시저장 → 발행 트리거 연결 등 반복이 잦은 수동 구간부터 마무리. 완성 안 된 자동화는 "아직 수동" 표시로 혼동 방지.
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ③ 먼저 고칠 3가지 -->
+  <section class="section" id="sec-action">
+    <div class="section-title"><span class="ico">🎯</span> 먼저 고칠 3가지</div>
+
+    <ol class="conclusion-list">
+      <li>
+        <div>
+          <div class="ci-title">보안부터</div>
+          <div class="ci-desc">재무 정보는 한 번 새면 못 주워담습니다. GitHub Pages 공개 범위 점검과 API 접근 통제가 첫 번째입니다.</div>
+        </div>
+      </li>
+      <li>
+        <div>
+          <div class="ci-title">숫자 신뢰 확보</div>
+          <div class="ci-desc">집계 기준을 못 박고, 아직 검증 안 된 칸은 '집계 보완 중'으로 명시합니다. GM이 틀린 숫자로 결정 내리는 상황을 막습니다.</div>
+        </div>
+      </li>
+      <li>
+        <div>
+          <div class="ci-title">단일 HTML 분리 + 가벼운 자동 점검</div>
+          <div class="ci-desc">9,000줄 단일 파일을 기능별로 나누고, 배포 후 라이브가 정상인지 자동으로 확인하는 장치를 붙입니다.</div>
+        </div>
+      </li>
+    </ol>
+
+    <div class="callout" style="margin-top:28px;">
+      <strong>웰리의 한 줄 정리:</strong><br>
+      "비전과 속도는 정말 좋다. 지금은 <strong>'빠르게 쌓아올린 멋진 조종석'</strong>이고, 제품이 되려면 보안·신뢰·구조 바닥공사가 필요하다."
+    </div>
+  </section>
+
+</main>
+
+<footer class="footer">
+  웰페리온 ERP 진단 보고서 &nbsp;·&nbsp; AI CEO 웰리 작성 &nbsp;·&nbsp; 2026-06-08<br>
+  내용 추측·창작 없음 — 실제 운영 관찰 및 장애 기록 기반
+</footer>
+
+</body>
+</html>
