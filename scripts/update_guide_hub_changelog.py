@@ -2,10 +2,14 @@
 """
 update_guide_hub_changelog.py
 ------------------------------
-git log 기반으로 웰페리온 ERP home 페이지의
+status/_queue.json 의 DONE 항목을 기반으로 웰페리온 ERP home 페이지의
   1) 최신 카드 (<!-- AUTO:LATEST-START --> ~ <!-- AUTO:LATEST-END -->)
   2) 업데이트 기록 표 (<!-- AUTO:TABLE-START --> ~ <!-- AUTO:TABLE-END -->)
 두 영역을 자동 갱신합니다.
+
+소스: status/_queue.json  status=DONE 항목 (processed_at 내림차순)
+표시 형식: ✅ [시모] AI #9 북극성 항해 설계 발행 완료 — 2026-06-08
+커밋 해시·기술 prefix(fix/feat 등) 노출 없음.
 
 사용법:
     python scripts/update_guide_hub_changelog.py           # 실제 반영
@@ -13,7 +17,7 @@ git log 기반으로 웰페리온 ERP home 페이지의
 """
 
 import argparse
-import subprocess
+import json
 import sys
 import re
 import io
@@ -27,8 +31,9 @@ if sys.stderr.encoding and sys.stderr.encoding.lower() not in ("utf-8", "utf_8")
     sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding="utf-8", errors="replace")
 
 # ── 경로 설정 ──────────────────────────────────────────────────────────────
-REPO_ROOT = Path(__file__).resolve().parent.parent
+REPO_ROOT  = Path(__file__).resolve().parent.parent
 GUIDE_HTML = REPO_ROOT / "3. 웰페리온 가이드" / "wellperion_guide(main).html"
+QUEUE_JSON = REPO_ROOT / "status" / "_queue.json"
 
 # ── 마커 ───────────────────────────────────────────────────────────────────
 LATEST_START = "<!-- AUTO:LATEST-START -->"
@@ -36,102 +41,112 @@ LATEST_END   = "<!-- AUTO:LATEST-END -->"
 TABLE_START  = "<!-- AUTO:TABLE-START -->"
 TABLE_END    = "<!-- AUTO:TABLE-END -->"
 
-# ── git 커밋 제외 패턴 (웰페리온 ERP 자체 자동 커밋 제외) ──────────────────
-AUTO_COMMIT_PREFIX = "auto(changelog):"
+# ── C-Level 표시명 매핑 ────────────────────────────────────────────────────
+CLEVEL_LABEL = {
+    "ceo": "웰리",
+    "cfo": "시뽀",
+    "chro": "시로",
+    "cmo": "시모",
+    "coo": "시우",
+    "cpo": "시포",
+    "cto": "시토",
+}
 
 
-def run(cmd: list[str]) -> str:
-    result = subprocess.run(
-        cmd, capture_output=True, text=True,
-        encoding="utf-8", errors="replace",
-        cwd=REPO_ROOT
+def get_done_items(max_count: int = 10) -> list[dict]:
+    """
+    _queue.json 에서 status=DONE 항목을 processed_at 내림차순으로 최대 max_count건 반환.
+    폐기(ABANDONED) · 진행중(IN_PROGRESS) · 대기(PENDING) 제외.
+    """
+    if not QUEUE_JSON.exists():
+        print(f"[WARN] _queue.json 없음: {QUEUE_JSON}", file=sys.stderr)
+        return []
+
+    with open(QUEUE_JSON, encoding="utf-8") as f:
+        data = json.load(f)
+
+    done = [item for item in data if item.get("status") == "DONE"]
+    # processed_at 기준 내림차순 (없으면 enqueued_at fallback)
+    done.sort(
+        key=lambda x: x.get("processed_at") or x.get("enqueued_at") or "",
+        reverse=True,
     )
-    if result.returncode != 0:
-        print(f"[ERROR] {' '.join(cmd)}\n{result.stderr}", file=sys.stderr)
-        sys.exit(1)
-    return result.stdout.strip()
+    return done[:max_count]
 
 
-def get_commits(max_count: int = 15) -> list[dict]:
-    """최근 1주일 이내 커밋을 최대 max_count건 추출 (자동 커밋 제외)."""
-    raw = run([
-        "git", "log",
-        "--format=%H\x1f%ad\x1f%s",
-        "--date=format:%Y-%m-%d",
-        "--since=1 week ago",
-        f"--max-count={max_count * 2}",  # 필터 여유분
-    ])
-    commits = []
-    for line in raw.splitlines():
-        if not line.strip():
-            continue
-        parts = line.split("\x1f", 2)
-        if len(parts) != 3:
-            continue
-        sha, date, subject = parts
-        if subject.startswith(AUTO_COMMIT_PREFIX):
-            continue
-        commits.append({"sha": sha[:8], "date": date, "subject": subject})
-        if len(commits) >= max_count:
-            break
-    return commits
+def format_item(item: dict) -> dict:
+    """
+    항목 하나를 표시용 dict로 변환.
+    반환 키: date, label, title_clean
+    """
+    clevel_raw = (item.get("clevel") or "").lower()
+    label = CLEVEL_LABEL.get(clevel_raw, clevel_raw.upper())
+    date  = item.get("processed_at") or item.get("enqueued_at") or ""
+
+    # title 에서 이미 [XXX] 형태 prefix 가 들어있는 경우 그대로 사용,
+    # 없으면 앞에 붙임 (부분 매칭: [시모], [시모-08] 등 모두 포함)
+    title = (item.get("title") or "").strip()
+    # title이 [ 로 시작하면 이미 bracket prefix 있음
+    if title.startswith("["):
+        title_clean = title
+    else:
+        title_clean = f"[{label}] {title}"
+
+    # 80자 초과 시 말줄임
+    if len(title_clean) > 80:
+        title_clean = title_clean[:77] + "…"
+
+    return {"date": date, "label": label, "title_clean": title_clean}
 
 
-def build_latest_card(commits: list[dict]) -> str:
-    """최근 5건 커밋으로 최신 카드 HTML 생성."""
-    recent = commits[:5]
+def build_latest_card(items: list[dict]) -> str:
+    """최근 5건 완료 배(항로)로 최신 카드 HTML 생성."""
+    recent = items[:5]
     if not recent:
         return ""
 
-    today = datetime.now(tz=timedelta(hours=9).__class__ and
-                         timezone(timedelta(hours=9))).strftime("%Y-%m-%d")
+    today = datetime.now(tz=timezone(timedelta(hours=9))).strftime("%Y-%m-%d")
     lines = [LATEST_START]
-    lines.append(f'    <div class="card grow">')
-    lines.append(f'      <h4>최신 업데이트 — {today} (자동 갱신)</h4>')
-    for c in recent:
-        # 긴 제목은 80자 이내로 잘라 표시
-        subj = c["subject"]
-        if len(subj) > 80:
-            subj = subj[:77] + "…"
-        lines.append(f'      <p><strong>{c["date"]}</strong> {subj}</p>')
-    lines.append(f'    </div>')
+    lines.append('    <div class="card grow">')
+    lines.append(f'      <h4>✅ 오늘의 항로 — 완료된 배 ({today} 기준)</h4>')
+    for it in recent:
+        fmt = format_item(it)
+        lines.append(
+            f'      <p><strong>{fmt["date"]}</strong>'
+            f' ✅ {fmt["title_clean"]}</p>'
+        )
+    lines.append('    </div>')
     lines.append(LATEST_END)
     return "\n".join(lines)
 
 
-def build_table_row(commits: list[dict]) -> str:
-    """커밋 목록을 업데이트 기록 표 행(tr)으로 변환 — 날짜별 그룹화."""
-    if not commits:
+def build_table_rows(items: list[dict]) -> str:
+    """완료 배 목록을 업데이트 기록 표 행(tr)으로 변환 — 날짜별 그룹화."""
+    if not items:
         return ""
 
-    # 날짜별 그룹화
     grouped: dict[str, list[str]] = {}
-    for c in commits:
-        grouped.setdefault(c["date"], []).append(c["subject"])
+    for item in items:
+        fmt = format_item(item)
+        grouped.setdefault(fmt["date"], []).append(f'✅ {fmt["title_clean"]}')
 
     rows = []
     for date in sorted(grouped.keys(), reverse=True):
-        subjects = " · ".join(grouped[date])
-        if len(subjects) > 200:
-            subjects = subjects[:197] + "…"
+        entries = " · ".join(grouped[date])
+        if len(entries) > 200:
+            entries = entries[:197] + "…"
         rows.append(
-            f'      <tr><td><strong>{date} (자동)</strong></td>'
-            f'<td>{subjects}</td></tr>'
+            f'      <tr><td><strong>{date} (항로완료)</strong></td>'
+            f'<td>{entries}</td></tr>'
         )
     return "\n".join(rows)
 
 
 def ensure_markers(html: str) -> tuple[str, bool]:
-    """
-    마커가 없으면 HTML에 자동으로 삽입합니다.
-    반환: (수정된_html, 마커가_삽입됐는지_여부)
-    """
+    """마커가 없으면 HTML에 자동으로 삽입."""
     inserted = False
 
-    # 최신 카드 마커: 기존 <div class="card grow"> 최신 블록을 감쌈
     if LATEST_START not in html:
-        # 홈 article 안의 첫 번째 card grow 블록 (최신 카드) 앞뒤에 마커 삽입
-        # 패턴: <div class="card grow">\n      <h4>최신 으로 시작하는 블록
         pattern = r'(<div class="card grow">\s*<h4>최신.*?</div>)'
         match = re.search(pattern, html, re.DOTALL)
         if match:
@@ -143,9 +158,7 @@ def ensure_markers(html: str) -> tuple[str, bool]:
         else:
             print("[WARN] 최신 카드 블록을 찾지 못했습니다. 수동으로 마커를 추가하세요.")
 
-    # 업데이트 기록 표 마커: <h3>🕐 업데이트 기록</h3> 다음 table 안에 삽입
     if TABLE_START not in html:
-        # 테이블 헤더 행 다음에 마커 삽입
         pattern = r'(<h3><span class="ico">🕐</span>업데이트 기록</h3>\s*<table>.*?<tr><th[^>]*>날짜</th>.*?</tr>)'
         match = re.search(pattern, html, re.DOTALL)
         if match:
@@ -161,10 +174,9 @@ def ensure_markers(html: str) -> tuple[str, bool]:
 
 
 def apply_latest_card(html: str, card_html: str) -> str:
-    """최신 카드 영역을 새 내용으로 교체."""
     pattern = re.compile(
         re.escape(LATEST_START) + r".*?" + re.escape(LATEST_END),
-        re.DOTALL
+        re.DOTALL,
     )
     if not pattern.search(html):
         print("[WARN] 최신 카드 마커를 찾을 수 없습니다.")
@@ -173,11 +185,9 @@ def apply_latest_card(html: str, card_html: str) -> str:
 
 
 def apply_table_rows(html: str, new_rows: str) -> str:
-    """업데이트 기록 표에서 기존 자동 행을 제거하고 새 행을 맨 위에 삽입."""
-    # 마커 사이의 내용을 새 행으로 교체
     pattern = re.compile(
         re.escape(TABLE_START) + r".*?" + re.escape(TABLE_END),
-        re.DOTALL
+        re.DOTALL,
     )
     replacement = f"{TABLE_START}\n{new_rows}\n      {TABLE_END}"
     if not pattern.search(html):
@@ -187,7 +197,9 @@ def apply_table_rows(html: str, new_rows: str) -> str:
 
 
 def main():
-    parser = argparse.ArgumentParser(description="웰페리온 ERP home 페이지 최신 카드 자동 갱신")
+    parser = argparse.ArgumentParser(
+        description="웰페리온 ERP home — G1 항로 완료 배 narrative 갱신"
+    )
     parser.add_argument("--dry-run", action="store_true", help="실제 파일 수정 없이 변경 미리보기")
     args = parser.parse_args()
 
@@ -200,19 +212,20 @@ def main():
     # 2. 마커 확인 및 자동 삽입
     html, markers_inserted = ensure_markers(original_html)
 
-    # 3. git 커밋 추출
-    commits = get_commits(max_count=15)
-    if not commits:
-        print("[INFO] 최근 1주일 내 커밋 없음. 종료.")
+    # 3. _queue.json DONE 항목 추출
+    items = get_done_items(max_count=10)
+    if not items:
+        print("[INFO] DONE 항목 없음. 종료.")
         sys.exit(0)
 
-    print(f"[INFO] 커밋 {len(commits)}건 추출:")
-    for c in commits:
-        print(f"       {c['date']} {c['sha']} {c['subject'][:60]}")
+    print(f"[INFO] 항로 완료 배 {len(items)}건 추출:")
+    for it in items:
+        fmt = format_item(it)
+        print(f"       {fmt['date']} {fmt['title_clean'][:60]}")
 
     # 4. 새 HTML 조각 생성
-    card_html = build_latest_card(commits)
-    table_rows = build_table_row(commits)
+    card_html  = build_latest_card(items)
+    table_rows = build_table_rows(items)
 
     # 5. 교체
     new_html = apply_latest_card(html, card_html)
@@ -227,11 +240,9 @@ def main():
     if args.dry_run:
         print("\n[DRY-RUN] 변경 미리보기 (실제 파일 수정 없음):")
         print("-" * 60)
-        # 최신 카드 미리보기
         print("■ 최신 카드 영역:")
         print(card_html)
         print()
-        # 테이블 행 미리보기
         print("■ 업데이트 기록 표 자동 행:")
         print(table_rows)
         print("-" * 60)
