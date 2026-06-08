@@ -1,0 +1,3800 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>웰페리온 운영부 체계</title>
+<style>
+:root{--bg:#221F20;--paper:#2a2725;--text:#f5f2ef;--dim:#8c8b83;--accent:#B79F8A;--accent-bg:rgba(183,159,138,0.12);--border:#3d3835;--green:#6abf7b;--green-bg:rgba(106,191,123,0.12);--red:#ED5B3F;--red-bg:rgba(237,91,63,0.12);--yellow:#e6c84e;--yellow-bg:rgba(230,200,78,0.12);--blue:#5b9fd5;--blue-bg:rgba(91,159,213,0.12);--purple:#a78bda;--purple-bg:rgba(167,139,218,0.12);--orange:#e6944e;--orange-bg:rgba(230,148,78,0.12)}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.6;font-size:15px;min-height:100vh;overflow-x:hidden}
+.sticky-top{position:sticky;top:0;z-index:10;background:var(--bg);border-bottom:1px solid var(--border);}
+.header{background:var(--paper);padding:10px 20px}
+.header-top{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.header h1{font-size:17px;font-weight:700;margin:0}
+.header .sub{font-size:12px;color:var(--dim);margin-top:2px}
+.sheet-links{display:flex;gap:6px;margin-left:auto}
+.sheet-link{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;padding:4px 10px;border-radius:8px;background:var(--accent-bg);color:var(--accent);border:1px solid rgba(183,159,138,0.3);text-decoration:none;white-space:nowrap;cursor:pointer;transition:background 0.15s}
+.sheet-link:hover{background:rgba(183,159,138,0.22)}
+.sheet-link svg{width:12px;height:12px;fill:currentColor;flex-shrink:0}
+.day-type{display:inline-block;font-size:11px;font-weight:700;padding:3px 10px;border-radius:12px;margin-left:8px}
+.day-type.weekday{background:var(--blue-bg);color:var(--blue)}
+.day-type.weekend{background:var(--accent-bg);color:var(--accent)}
+.day-type.closed{background:var(--red-bg);color:var(--red)}
+.mode-badge{display:inline-block;font-size:10px;padding:2px 8px;border-radius:10px;margin-left:6px;background:var(--green-bg);color:var(--green)}
+.tabs{display:flex;gap:4px;background:var(--bg);padding:8px 20px;z-index:9;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{padding:8px 18px;font-size:14px;font-weight:600;color:var(--dim);background:none;border:none;border-radius:8px;cursor:pointer;font-family:inherit;white-space:nowrap;flex-shrink:0}
+.tab.active{background:var(--accent-bg);color:var(--accent)}
+.content{padding:16px 20px 140px;max-width:720px;margin:0 auto}
+.date-bar{display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap}
+.date-bar input{background:var(--paper);border:1px solid var(--border);color:var(--text);padding:8px 14px;border-radius:8px;font-size:15px;font-family:inherit}
+.btn{padding:8px 14px;background:var(--accent-bg);color:var(--accent);border:1px solid var(--accent);border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit}
+.submitter-bar{background:var(--paper);border:1px solid var(--border);border-radius:10px;padding:12px 16px;margin-bottom:12px;display:flex;align-items:center;gap:12px}
+.submitter-bar label{font-size:13px;font-weight:700;color:var(--accent);white-space:nowrap}
+.submitter-bar select{flex:1;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:10px 14px;border-radius:8px;font-size:15px;font-family:inherit;font-weight:600}
+.guide-cards{display:flex;gap:10px;margin-bottom:12px}
+.guide-card{flex:1;border-radius:10px;padding:12px 14px;border:1px solid}
+.guide-card.issue-guide{background:var(--red-bg);border-color:rgba(237,91,63,0.3)}
+.guide-card.tip-guide{background:var(--purple-bg);border-color:rgba(167,139,218,0.3)}
+.guide-card .guide-title{font-size:14px;font-weight:700;margin-bottom:4px}
+.guide-card.issue-guide .guide-title{color:var(--red)}
+.guide-card.tip-guide .guide-title{color:var(--purple)}
+.guide-card .guide-desc{font-size:12px;color:var(--dim);line-height:1.4}
+.shift-divider{background:var(--paper);border:1px solid var(--accent);border-radius:12px;padding:14px 18px;margin:20px 0 12px;position:relative}
+.shift-divider:first-of-type{margin-top:0}
+.shift-divider.night-shift{border-color:var(--orange)}
+.shift-label{font-size:15px;font-weight:700;color:var(--accent)}
+.shift-divider.night-shift .shift-label{color:var(--orange)}
+.shift-progress{margin-top:8px}
+.shift-progress .progress-text{font-size:13px;color:var(--dim);display:flex;justify-content:space-between}
+.shift-progress .progress-bar{height:8px;background:var(--border);border-radius:4px;overflow:hidden;margin-top:6px}
+.shift-progress .progress-fill{height:100%;border-radius:4px;transition:width 0.3s}
+.shift-submitted{font-size:12px;color:var(--green);font-weight:600;margin-top:6px}
+.progress{background:var(--paper);border-radius:12px;padding:14px 18px;margin-bottom:16px;border:1px solid var(--border)}
+.progress-bar{height:8px;background:var(--border);border-radius:4px;overflow:hidden;margin-top:8px}
+.progress-fill{height:100%;background:var(--green);border-radius:4px;transition:width 0.3s}
+.progress-text{font-size:13px;color:var(--dim);display:flex;justify-content:space-between}
+.time-slot{margin-bottom:16px}
+.slot-header{font-size:13px;font-weight:700;color:var(--accent);padding:8px 0 6px;border-bottom:1px solid var(--border);margin-bottom:8px}
+.slot-time{background:var(--accent-bg);padding:2px 10px;border-radius:10px;font-size:12px}
+.slot-time.night{background:var(--orange-bg);color:var(--orange)}
+.category{background:var(--paper);border:1px solid var(--border);border-radius:10px;margin-bottom:8px;overflow:hidden}
+.cat-header{padding:12px 16px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none}
+.cat-header:hover{background:var(--accent-bg)}
+.cat-title{font-size:14px;font-weight:700}
+.cat-badge{font-size:11px;padding:2px 8px;border-radius:10px;font-weight:600}
+.cat-badge.done{background:var(--green-bg);color:var(--green)}
+.cat-badge.pending{background:var(--yellow-bg);color:var(--yellow)}
+.cat-body{border-top:1px solid var(--border);display:none}
+.cat-body.open{display:block}
+.item{padding:10px 16px;border-bottom:1px solid rgba(61,56,53,0.4)}
+.item:last-child{border-bottom:none}
+.item-row{display:flex;align-items:flex-start;gap:10px}
+.item input[type=checkbox]{width:22px;height:22px;margin-top:2px;accent-color:var(--green);cursor:pointer;flex-shrink:0}
+.item label{flex:1;min-width:0;word-break:break-word;cursor:pointer;font-size:14px;font-weight:600}
+.item.checked label{color:var(--dim);text-decoration:line-through}
+.item-detail{font-size:12px;color:var(--dim);margin:4px 0 0 32px;line-height:1.5}
+.item-btns{display:flex;gap:6px;flex-shrink:0}
+.tiny-btn{font-size:13px;padding:8px 14px;border-radius:8px;cursor:pointer;font-family:inherit;border:1px solid;font-weight:600;min-width:52px;text-align:center}
+.tiny-btn.issue{background:var(--red-bg);color:var(--red);border-color:rgba(237,91,63,0.3)}
+.tiny-btn.tip{background:var(--purple-bg);color:var(--purple);border-color:rgba(167,139,218,0.3)}
+.extra-input{width:calc(100% - 32px);padding:8px 12px;background:var(--bg);border:1px solid var(--border);color:var(--text);border-radius:8px;font-size:13px;font-family:inherit;margin:6px 0 0 32px;display:none}
+.extra-input.show{display:block}
+.extra-input.issue-field{border-color:rgba(237,91,63,0.3)}
+.extra-input.tip-field{border-color:rgba(167,139,218,0.3)}
+.submit-bar{position:fixed;bottom:0;left:0;right:0;background:var(--paper);border-top:1px solid var(--border);padding:12px 20px;display:flex;gap:10px;justify-content:center;z-index:10}
+.submit-btn{padding:12px 24px;font-size:14px;font-weight:700;border:none;border-radius:10px;cursor:pointer;font-family:inherit;flex:1;max-width:220px}
+.submit-btn.primary{background:var(--accent);color:#fff}
+.submit-btn.primary:disabled{opacity:0.4;cursor:not-allowed}
+.submit-btn.night-btn{background:var(--orange);color:#fff}
+.submit-btn.night-btn:disabled{opacity:0.4;cursor:not-allowed}
+.submit-btn.submitted{background:var(--green-bg);color:var(--green);border:1px solid rgba(106,191,123,0.3)}
+.group-submit-bar{display:flex;justify-content:flex-end;align-items:center;padding:8px 14px 4px;border-top:1px dashed var(--border);margin-top:6px}
+.group-submit-btn{padding:7px 16px;font-size:12.5px;font-weight:700;border:1px solid var(--accent);background:var(--accent-bg);color:var(--accent);border-radius:8px;cursor:pointer;font-family:inherit}
+.group-submit-btn:hover{background:var(--accent);color:#fff}
+.group-submitted{font-size:12px;font-weight:700;color:var(--green)}
+.saving{position:fixed;top:70px;right:20px;background:var(--green-bg);color:var(--green);padding:6px 14px;border-radius:8px;font-size:12px;font-weight:600;display:none;z-index:20}
+.admin-card{background:var(--paper);border:1px solid var(--border);border-radius:12px;padding:16px 18px;margin-bottom:12px}
+.admin-card h3{font-size:15px;font-weight:700;margin-bottom:10px}
+.admin-row{display:flex;justify-content:space-between;padding:6px 0;font-size:14px;border-bottom:1px solid rgba(61,56,53,0.3)}
+.admin-row:last-child{border-bottom:none}
+.admin-row .admin-row-right{text-align:right;font-size:13px}
+.status-dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px}
+.status-dot.green{background:var(--green)}.status-dot.yellow{background:var(--yellow)}.status-dot.red{background:var(--red)}
+.tip-card{background:var(--purple-bg);border:1px solid rgba(167,139,218,0.3);border-radius:12px;padding:16px 18px;margin-bottom:12px}
+.tip-card h3{color:var(--purple);font-size:15px;font-weight:700;margin-bottom:10px}
+.closed-msg{text-align:center;padding:60px 20px;color:var(--dim);font-size:16px}
+.hidden{display:none}
+.loading{text-align:center;padding:40px;color:var(--dim)}
+/* Manual tab styles */
+.manual-section{background:var(--paper);border:1px solid var(--border);border-radius:12px;margin-bottom:12px;overflow:hidden}
+.manual-header{padding:14px 18px;cursor:pointer;user-select:none;display:flex;align-items:center;justify-content:space-between}
+.manual-header:hover{background:var(--accent-bg)}
+.manual-header h3{font-size:15px;font-weight:700;margin:0}
+.manual-header .arrow{font-size:12px;color:var(--dim);transition:transform 0.2s}
+.manual-header .arrow.open{transform:rotate(90deg)}
+.manual-body{border-top:1px solid var(--border);padding:14px 18px;display:none;font-size:13px;line-height:1.8;color:var(--text)}
+.manual-body.open{display:block}
+.manual-body ul{margin:6px 0 6px 18px;list-style:disc}
+.manual-body li{margin-bottom:4px}
+.manual-body .manual-label{font-weight:700;color:var(--accent);display:block;margin-top:10px;margin-bottom:4px}
+.manual-body .manual-label:first-child{margin-top:0}
+.manual-body .highlight{color:var(--red);font-weight:600}
+.manual-body .schedule-table{width:100%;border-collapse:collapse;margin:8px 0;font-size:12px}
+.manual-body .schedule-table td,.manual-body .schedule-table th{padding:6px 10px;border:1px solid var(--border);text-align:left}
+.manual-body .schedule-table th{background:var(--accent-bg);color:var(--accent);font-weight:700}
+.day-focus-section{background:var(--paper);border:1px solid var(--blue);border-radius:12px;padding:14px 18px;margin:12px 0}
+.day-focus-section .day-focus-title{font-size:14px;font-weight:700;color:var(--blue);margin-bottom:8px}
+/* ── 요일별 트렐로 칸반 보드 (매뉴얼 탭 주 콘텐츠 · 요일 다중선택) ── */
+.board-intro{font-size:12px;color:var(--dim);margin:2px 0 12px;line-height:1.5}
+/* 보드 풀폭 탈출(엣지투엣지): .content(720px·중앙) 제약을 벗어나 화면 좌측 끝~우측 끝까지 꽉 채움.
+   기준 = 업무 현황 SSOT.html 풀폭 방식(좌우 여백 최소 20px). 이 래퍼 안 보드에만 적용 → 다른 탭·헤더 영향 0. */
+.board-fullwidth{width:100vw;max-width:100vw;margin-left:calc(50% - 50vw);margin-right:calc(50% - 50vw);padding:0 20px;box-sizing:border-box}
+/* 칸반 스크롤 컨테이너 — 켠 요일 개수만큼 컬럼이 가로로. 컬럼 많으면 가로 스크롤·스냅 */
+.board-scroll{display:flex;gap:14px;overflow-x:auto;-webkit-overflow-scrolling:touch;scroll-snap-type:x proximity;padding:2px 2px 16px;scrollbar-width:thin;align-items:flex-start}
+.board-scroll::-webkit-scrollbar{height:8px}
+.board-scroll::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
+.board-scroll.is-empty{display:block}
+/* 트렐로 컬럼 = 요일 1개. 헤더(요일)+남/여/외곽 카드그룹 세로 */
+.board-col{flex:0 0 410px;min-width:410px;max-width:410px;scroll-snap-align:start;background:var(--paper);border:1px solid var(--border);border-radius:14px;overflow:hidden;display:flex;flex-direction:column}
+.board-col.is-weekend{border-color:rgba(230,148,78,0.45)}
+.board-col-head{padding:12px 16px;display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--border);background:var(--bg)}
+.board-col-head .bday{font-size:20px;font-weight:800}
+.board-col.is-weekend .board-col-head .bday{color:var(--orange)}
+.board-col-body{padding:12px 14px;display:flex;flex-direction:column;gap:12px}
+/* 보드 빈 상태(아무 요일도 안 켰을 때) */
+.board-empty{padding:34px 18px;text-align:center;color:var(--dim);font-size:14px;line-height:1.6;background:var(--paper);border:1px dashed var(--border);border-radius:14px}
+
+/* ── 요일 툴바 (매뉴얼 탭 상단 · 다중선택 toggle) ── */
+.day-toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:4px 0 16px}
+.day-tab{flex:1 1 0;min-width:54px;padding:11px 6px;border-radius:12px;border:1.5px solid var(--border);
+  background:var(--bg);color:var(--text);font-family:inherit;font-size:17px;font-weight:700;cursor:pointer;
+  display:flex;flex-direction:column;align-items:center;gap:4px;line-height:1.1;transition:all .12s}
+.day-tab .dt-sub{font-size:10px;font-weight:600;opacity:.7}
+.day-tab:hover{border-color:var(--accent)}
+.day-tab.is-weekend{background:var(--accent-bg)}
+.day-tab.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+.day-tab.active.is-weekend{background:var(--orange);border-color:var(--orange)}
+.day-tab.active .dt-sub{opacity:.9}
+/* 전체 선택/해제 토글 */
+.day-tab.day-all{flex:0 0 auto;min-width:70px;font-size:13px;font-weight:700;border-style:dashed;color:var(--accent)}
+.day-tab.day-all.active{background:var(--accent-bg);color:var(--accent);border-color:var(--accent);border-style:solid}
+
+/* ── 카드그룹(남/여/외곽) — 컬럼 안 카드리스트. 기존 dv-* 스타일 재사용(소형화) ── */
+.dv-cell{background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:13px 14px}
+.dv-cell.male{border-left:4px solid var(--blue)}
+.dv-cell.female{border-left:4px solid var(--orange)}
+.dv-cell.outer{border-left:4px solid var(--green)}
+.dv-cell-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:9px}
+.dv-cell-label{font-size:16px;font-weight:800;display:inline-flex;align-items:center;gap:6px}
+.dv-cell-label.male{color:var(--blue)}
+.dv-cell-label.female{color:var(--orange)}
+.dv-cell-label.outer{color:var(--green)}
+.dv-edit-btn{font-size:12px;font-weight:700;padding:5px 13px;border-radius:8px;cursor:pointer;font-family:inherit;
+  border:1.5px solid;background:var(--accent-bg);color:var(--accent);border-color:rgba(183,159,138,0.4)}
+.dv-edit-btn:hover{background:rgba(183,159,138,0.22)}
+.dv-edit-btn.save{background:var(--green-bg);color:var(--green);border-color:rgba(106,191,123,0.4)}
+.dv-edit-btn.cancel{background:var(--paper);color:var(--dim);border-color:rgba(140,139,131,0.4);margin-left:6px}
+.dv-edit-btn.cancel:hover{background:rgba(140,139,131,0.15)}
+/* 시간대 그룹 */
+.dv-timeblock{margin:0 0 10px}
+.dv-timeblock:last-child{margin-bottom:0}
+.dv-tb-label{display:inline-block;font-size:12.5px;font-weight:800;color:var(--accent);
+  background:var(--accent-bg);padding:3px 10px;border-radius:7px;margin-bottom:6px}
+.dv-list{margin:0;padding-left:20px;list-style:disc;font-size:14px;line-height:1.6}
+.dv-list li{margin-bottom:5px;word-break:break-word}
+.dv-empty{font-size:13px;color:var(--dim);font-style:italic;padding:4px 0}
+/* 2열 시간표 테이블 (boardCellBodyHTML) */
+.dv-timetable{width:100%;border-collapse:collapse;font-size:13.5px;line-height:1.5;margin:0}
+.dv-timetable col.dv-tt-timecol{width:38%}
+.dv-timetable td{padding:5px 8px;border:1px solid var(--border);vertical-align:middle;word-break:break-word}
+.dv-timetable tr:first-child td{border-top-color:var(--border)}
+.dv-tt-time{color:var(--accent);font-weight:700;font-size:12px;background:var(--accent-bg);white-space:nowrap}
+.dv-tt-task{color:var(--text)}
+.dv-timetable tr:hover td{background:rgba(183,159,138,0.07)}
+.dv-cell.male .dv-tt-time{color:var(--blue);background:var(--blue-bg)}
+.dv-cell.female .dv-tt-time{color:var(--orange);background:var(--orange-bg)}
+.dv-cell.outer .dv-tt-time{color:var(--green);background:var(--green-bg)}
+.dv-edit{display:none;width:100%;min-height:170px;background:var(--paper);border:1.5px solid var(--accent);color:var(--text);
+  border-radius:10px;padding:11px 12px;font-size:14px;font-family:inherit;line-height:1.55;resize:vertical;box-sizing:border-box}
+.dv-cell.editing .dv-edit{display:block}
+.dv-cell.editing .dv-body{display:none}
+.dv-edit-hint{font-size:12px;color:var(--dim);margin-top:7px;display:none;line-height:1.5}
+.dv-cell.editing .dv-edit-hint{display:block}
+/* 시간대 빠른 지정 칩 (편집 모드에서만 노출) */
+.dv-ts-chips{display:none;flex-wrap:wrap;gap:6px;align-items:center;margin-top:8px;font-size:12px;color:var(--dim)}
+.dv-cell.editing .dv-ts-chips{display:flex}
+.dv-ts-chip{font-size:12px;font-weight:700;padding:4px 10px;border-radius:8px;cursor:pointer;font-family:inherit;
+  border:1.5px solid rgba(183,159,138,0.4);background:var(--accent-bg);color:var(--accent);transition:background .12s}
+.dv-ts-chip:hover{background:rgba(183,159,138,0.22)}
+/* ── 표 직접 편집 그리드 (편집 모드에서만 노출 · 행 단위 [시간 | 내용 | 삭제]) ── */
+.dv-grid{display:none;margin:0}
+.dv-cell.editing .dv-grid{display:block}
+.dv-grid-table{width:100%;border-collapse:collapse;font-size:13px;table-layout:fixed}
+.dv-grid-table col.dv-g-timecol{width:40%}
+.dv-grid-table col.dv-g-delcol{width:34px}
+.dv-grid-table td{border:1px solid var(--border);padding:0;vertical-align:top}
+.dv-grid-th{background:var(--accent-bg);color:var(--accent);font-weight:700;font-size:11px;text-align:left;padding:5px 7px;border:1px solid var(--border)}
+.dv-g-time,.dv-g-task{width:100%;background:var(--bg);border:none;color:var(--text);
+  padding:8px 7px;font-size:13px;font-family:inherit;line-height:1.5;box-sizing:border-box;resize:none}
+.dv-g-time:focus,.dv-g-task:focus{outline:none;background:rgba(183,159,138,0.10)}
+.dv-g-task{overflow:hidden;word-break:break-word;min-height:38px;display:block}
+.dv-cell.male .dv-g-time:focus{background:var(--blue-bg)}
+.dv-cell.female .dv-g-time:focus{background:var(--orange-bg)}
+.dv-cell.outer .dv-g-time:focus{background:var(--green-bg)}
+.dv-g-del{width:100%;height:100%;min-height:38px;background:transparent;border:none;color:var(--red);
+  font-size:16px;font-weight:700;cursor:pointer;font-family:inherit;padding:4px}
+.dv-g-del:hover{background:var(--red-bg)}
+.dv-g-addrow{margin-top:8px;font-size:12.5px;font-weight:700;padding:7px 14px;border-radius:8px;cursor:pointer;
+  font-family:inherit;border:1.5px dashed rgba(106,191,123,0.5);background:var(--green-bg);color:var(--green);width:100%}
+.dv-g-addrow:hover{background:rgba(106,191,123,0.2)}
+
+/* ── 규정 트렐로 보드 (규정 탭) — 카드 본문/편집 폼. dv-cell·board-col 재사용 ── */
+.pol-line{font-size:14px;line-height:1.6;color:var(--text);padding:3px 0;word-break:break-word}
+.pol-line+.pol-line{border-top:1px solid var(--border)}
+.pol-edit{display:none;margin-top:4px}
+.dv-cell.editing .pol-edit{display:block}
+.dv-cell.editing .dv-body{display:none}
+.pol-edit-lab{display:block;font-size:11.5px;font-weight:700;color:var(--accent);margin:8px 0 4px}
+.pol-edit-title,.pol-edit-body{width:100%;background:var(--paper);border:1.5px solid var(--accent);color:var(--text);
+  border-radius:9px;padding:9px 11px;font-size:14px;font-family:inherit;line-height:1.55;box-sizing:border-box}
+.pol-edit-body{resize:vertical;min-height:96px}
+.pol-edit-title:focus,.pol-edit-body:focus{outline:none;background:rgba(183,159,138,0.10)}
+.pol-del-btn{margin-top:10px;font-size:12px;font-weight:700;padding:6px 13px;border-radius:8px;cursor:pointer;
+  font-family:inherit;border:1.5px solid rgba(224,108,90,0.45);background:var(--red-bg);color:var(--red)}
+.pol-del-btn:hover{background:rgba(224,108,90,0.18)}
+
+/* 모바일: 요일 탭 폭 축소 + 컬럼 폭 화면맞춤(가로 스크롤·스냅) */
+@media(max-width:560px){
+  .day-tab{min-width:40px;font-size:15px;padding:9px 3px}
+  .day-tab .dt-sub{font-size:9px}
+  .day-tab.day-all{min-width:58px;font-size:12px}
+  .board-col{flex:0 0 86vw;min-width:86vw;max-width:86vw;scroll-snap-align:center}
+  .board-scroll{scroll-snap-type:x mandatory}
+  .dv-list{font-size:13.5px}
+}
+/* Admin shift card */
+.admin-shift-card{background:var(--paper);border:1px solid var(--border);border-radius:12px;padding:16px 18px;margin-bottom:12px}
+.admin-shift-card h3{font-size:15px;font-weight:700;margin-bottom:6px}
+.admin-shift-card.am h3{color:var(--accent)}
+.admin-shift-card.pm h3{color:var(--green)}
+.admin-shift-card.night h3{color:var(--orange)}
+.admin-shift-card.am{border-color:rgba(183,159,138,0.4)}
+.admin-shift-card.pm{border-color:rgba(106,191,123,0.4)}
+.admin-shift-card.night{border-color:rgba(230,148,78,0.4)}
+.admin-shift-meta{font-size:12px;color:var(--dim);margin-bottom:8px}
+.admin-shift-meta .submitted-badge{color:var(--green);font-weight:600}
+.admin-shift-meta .not-submitted{color:var(--red);font-weight:600}
+.admin-progress-wrap{margin-bottom:10px}
+.admin-progress-wrap .progress-text{font-size:13px;color:var(--dim);display:flex;justify-content:space-between}
+.admin-progress-wrap .progress-bar{height:8px;background:var(--border);border-radius:4px;overflow:hidden;margin-top:4px}
+.admin-progress-wrap .progress-fill{height:100%;border-radius:4px;transition:width 0.3s}
+/* Admin management styles */
+.admin-mgmt-divider{margin:32px 0 16px;padding-top:16px;border-top:2px solid var(--accent)}
+.admin-mgmt-divider h2{font-size:17px;font-weight:700;color:var(--accent);margin-bottom:4px}
+.admin-mgmt-divider .mgmt-sub{font-size:12px;color:var(--dim)}
+.admin-mgmt-form{background:var(--paper);border:1px solid var(--border);border-radius:12px;padding:18px;margin-bottom:16px}
+.admin-mgmt-form h3{font-size:15px;font-weight:700;margin-bottom:14px;color:var(--accent)}
+.mgmt-field{margin-bottom:12px}
+.mgmt-field label{display:block;font-size:13px;font-weight:600;color:var(--dim);margin-bottom:4px}
+.mgmt-field select,.mgmt-field input[type=text],.mgmt-field textarea{width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:10px 14px;border-radius:8px;font-size:14px;font-family:inherit;resize:vertical}
+.mgmt-field textarea{min-height:80px;line-height:1.6}
+.mgmt-field select{cursor:pointer}
+.mgmt-row{display:flex;gap:10px}
+.mgmt-row .mgmt-field{flex:1}
+.mgmt-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:14px}
+.mgmt-btn{padding:10px 20px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;border:1px solid;transition:opacity 0.15s}
+.mgmt-btn:hover{opacity:0.85}
+.mgmt-btn.add{background:var(--green-bg);color:var(--green);border-color:rgba(106,191,123,0.3)}
+.mgmt-btn.cancel{background:var(--paper);color:var(--dim);border-color:var(--border)}
+.mgmt-btn.save{background:var(--accent-bg);color:var(--accent);border-color:rgba(183,159,138,0.3)}
+.mgmt-btn.delete{background:var(--red-bg);color:var(--red);border-color:rgba(237,91,63,0.3)}
+.mgmt-btn.export{background:var(--blue-bg);color:var(--blue);border-color:rgba(91,159,213,0.3)}
+.mgmt-btn.reset{background:var(--paper);color:var(--dim);border-color:var(--border)}
+.mgmt-item-list{background:var(--paper);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:16px}
+.mgmt-item-list h3{font-size:15px;font-weight:700;padding:14px 18px;margin:0;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.mgmt-item-list h3 .mgmt-count{font-size:12px;color:var(--dim);font-weight:600}
+.mgmt-filter-bar{display:flex;gap:8px;padding:10px 18px;border-bottom:1px solid var(--border);flex-wrap:wrap}
+.mgmt-filter-bar select{background:var(--bg);border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:6px;font-size:12px;font-family:inherit;cursor:pointer}
+.mgmt-filter-bar input[type=text]{background:var(--bg);border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:6px;font-size:12px;font-family:inherit;flex:1;min-width:100px}
+.mgmt-item{padding:12px 18px;border-bottom:1px solid rgba(61,56,53,0.3);transition:background 0.1s}
+.mgmt-item:last-child{border-bottom:none}
+.mgmt-item:hover{background:var(--accent-bg)}
+.mgmt-item-top{display:flex;align-items:flex-start;gap:10px}
+.mgmt-item-info{flex:1;min-width:0}
+.mgmt-item-name{font-size:14px;font-weight:700}
+.mgmt-item-meta{font-size:11px;color:var(--dim);margin-top:2px;display:flex;gap:8px;flex-wrap:wrap}
+.mgmt-item-meta .meta-tag{padding:1px 6px;border-radius:4px;font-weight:600}
+.mgmt-item-meta .meta-tag.slot{background:var(--accent-bg);color:var(--accent)}
+.mgmt-item-meta .meta-tag.day{background:var(--blue-bg);color:var(--blue)}
+.mgmt-item-meta .meta-tag.gender{background:var(--purple-bg);color:var(--purple)}
+.mgmt-item-detail{font-size:12px;color:var(--dim);margin-top:4px;white-space:pre-line;line-height:1.5}
+.mgmt-item-btns{display:flex;gap:6px;flex-shrink:0}
+.mgmt-item-btns .mgmt-btn{padding:6px 12px;font-size:12px;min-width:0}
+.mgmt-edit-inline{padding:12px 18px;border-bottom:1px solid rgba(61,56,53,0.3);background:rgba(183,159,138,0.06)}
+.mgmt-edit-inline .mgmt-field{margin-bottom:8px}
+.mgmt-empty{padding:24px 18px;text-align:center;color:var(--dim);font-size:13px}
+.mgmt-badge-custom{display:inline-block;font-size:10px;padding:2px 6px;border-radius:4px;font-weight:700;background:var(--yellow-bg);color:var(--yellow);margin-left:6px}
+/* ── 셋업 편집기 1단계 (좌=시간대 / 우=항목) ── */
+.setup-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:6px 0 12px}
+.setup-toggle-btn{padding:9px 16px;border-radius:9px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;border:1.5px solid var(--accent);background:var(--accent-bg);color:var(--accent);transition:all .15s}
+.setup-toggle-btn.on{background:var(--accent);color:#fff}
+.setup-save-btn{padding:9px 18px;border-radius:9px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;border:1.5px solid rgba(106,191,123,0.4);background:var(--green-bg);color:var(--green)}
+.setup-save-btn:hover{opacity:.88}
+.setup-hint{font-size:12px;color:var(--dim);line-height:1.5;flex:1;min-width:160px}
+.setup-wrap{display:flex;gap:14px;align-items:flex-start}
+@media(max-width:760px){.setup-wrap{flex-direction:column}.setup-col-slots,.setup-col-items{width:100%!important}}
+.setup-col-slots{flex:0 0 38%;width:38%}
+.setup-col-items{flex:1;min-width:0}
+.setup-panel{background:var(--paper);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+.setup-panel-head{padding:11px 16px;font-size:14px;font-weight:700;color:var(--accent);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:8px}
+.setup-slot{padding:10px 14px;border-bottom:1px solid rgba(61,56,53,0.3);cursor:pointer;transition:background .1s}
+.setup-slot:last-child{border-bottom:none}
+.setup-slot:hover{background:var(--accent-bg)}
+.setup-slot.active{background:var(--accent-bg);box-shadow:inset 3px 0 0 var(--accent)}
+.setup-slot.base{opacity:.72}
+.setup-slot-top{display:flex;align-items:center;gap:8px}
+.setup-slot-name{flex:1;min-width:0;font-size:13px;font-weight:700;word-break:break-word}
+.setup-slot-count{font-size:11px;color:var(--dim);font-weight:600}
+.setup-slot-shift{font-size:10px;padding:1px 6px;border-radius:5px;font-weight:700;background:var(--blue-bg);color:var(--blue)}
+.setup-slot-btns{display:flex;gap:4px;margin-top:6px;flex-wrap:wrap}
+.setup-mini-btn{padding:4px 9px;font-size:11px;font-weight:700;border-radius:6px;cursor:pointer;font-family:inherit;border:1px solid var(--border);background:var(--bg);color:var(--dim)}
+.setup-mini-btn:hover{background:var(--accent-bg);color:var(--accent)}
+.setup-mini-btn.del{color:var(--red);border-color:rgba(237,91,63,0.3);background:var(--red-bg)}
+.quickadd-bar{padding:8px 16px 12px;border-top:1px dashed var(--border)}
+.quickadd-btn{width:100%;padding:8px 10px;font-size:12px;font-weight:700;border-radius:7px;cursor:pointer;font-family:inherit;border:1px dashed var(--border);background:transparent;color:var(--dim)}
+.quickadd-btn:hover{background:var(--accent-bg);color:var(--accent);border-color:var(--accent)}
+.quickadd-form{display:flex;flex-direction:column;gap:7px}
+.quickadd-form input{width:100%;background:var(--bg);border:1px solid var(--accent);color:var(--text);padding:8px 10px;border-radius:7px;font-size:13px;font-family:inherit;box-sizing:border-box}
+.quickadd-actions{display:flex;gap:7px}
+.quickadd-actions button{flex:1;padding:8px 10px;font-size:12px;font-weight:700;border-radius:7px;cursor:pointer;font-family:inherit;border:1px solid var(--border)}
+.quickadd-save{background:var(--accent);color:#fff;border-color:var(--accent)!important}
+.quickadd-cancel{background:var(--bg);color:var(--dim)}
+.setup-slot-input{width:100%;background:var(--bg);border:1px solid var(--accent);color:var(--text);padding:7px 10px;border-radius:7px;font-size:13px;font-family:inherit;box-sizing:border-box}
+.setup-item{padding:11px 14px;border-bottom:1px solid rgba(61,56,53,0.3)}
+.setup-item:last-child{border-bottom:none}
+.setup-item.base{opacity:.7;background:rgba(140,139,131,0.05)}
+.setup-item-name-in{width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:7px 10px;border-radius:7px;font-size:13px;font-weight:600;font-family:inherit;box-sizing:border-box;margin-bottom:5px}
+.setup-item-detail-in{width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:7px 10px;border-radius:7px;font-size:12px;font-family:inherit;box-sizing:border-box;line-height:1.5;min-height:46px;resize:vertical}
+.setup-item-row2{display:flex;gap:8px;align-items:center;margin-top:6px;flex-wrap:wrap}
+.setup-item-row2 select{background:var(--bg);border:1px solid var(--border);color:var(--text);padding:5px 8px;border-radius:6px;font-size:11px;font-family:inherit;cursor:pointer}
+.setup-base-note{font-size:11px;color:var(--dim);background:var(--bg);padding:3px 8px;border-radius:5px}
+.setup-empty{padding:22px 16px;text-align:center;color:var(--dim);font-size:13px}
+@media print{.setup-bar,.setup-wrap{display:none!important}}
+/* ── Dashboard ── */
+.dash-stat-row{display:flex;gap:10px;flex-wrap:wrap;margin:8px 0 16px}
+.dash-stat-card{flex:1;min-width:80px;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:12px 14px;text-align:center}
+.dash-stat-card .num{font-size:24px;font-weight:700;color:var(--accent)}
+.dash-stat-card .label{font-size:11px;color:var(--dim);margin-top:2px}
+.dash-table{width:100%;border-collapse:collapse;font-size:13px;margin:8px 0 16px}
+.dash-table th,.dash-table td{padding:8px 10px;text-align:left;border:1px solid var(--border)}
+.dash-table th{background:var(--bg);font-weight:700;color:var(--accent);font-size:12px}
+.dash-table td{vertical-align:middle}
+.dash-bar-wrap{height:16px;background:var(--bg);border-radius:8px;overflow:hidden;min-width:60px}
+.dash-bar{height:100%;border-radius:8px;transition:width 0.3s}
+.dash-bar.green{background:var(--green)}
+.dash-bar.blue{background:var(--blue)}
+.dash-bar.accent{background:var(--accent)}
+.dash-bar.red{background:var(--red)}
+.dash-bar.yellow{background:var(--yellow)}
+.dash-bar.orange{background:var(--orange)}
+.dash-bar.purple{background:var(--purple)}
+.dash-section-title{font-size:15px;font-weight:700;margin:20px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--border)}
+.dash-issue-card{background:var(--paper);border:1px solid rgba(237,91,63,0.3);border-radius:10px;padding:14px 16px;margin-bottom:8px}
+.dash-issue-item{padding:6px 0;border-bottom:1px solid rgba(61,56,53,0.3);font-size:13px}
+.dash-issue-item:last-child{border-bottom:none}
+.dash-issue-name{font-weight:600}
+.dash-issue-memo{color:var(--red);font-size:12px;margin-top:2px}
+.dash-issue-meta{color:var(--dim);font-size:11px}
+/* ── Header utility buttons ── */
+.header-util-btns{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+.util-btn{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;padding:4px 10px;border-radius:8px;border:1px solid;cursor:pointer;font-family:inherit;white-space:nowrap;transition:background 0.15s}
+.util-btn.print-btn{background:var(--accent-bg);color:var(--accent);border-color:rgba(183,159,138,0.3)}
+.util-btn.print-btn:hover{background:rgba(183,159,138,0.22)}
+.util-btn.report-btn{background:var(--purple-bg);color:var(--purple);border-color:rgba(167,139,218,0.3)}
+.util-btn.report-btn:hover{background:rgba(167,139,218,0.22)}
+.util-btn.share-btn{background:var(--blue-bg);color:var(--blue);border-color:rgba(91,159,213,0.3)}
+.util-btn.share-btn:hover{background:rgba(91,159,213,0.22)}
+/* ── Toast ── */
+.toast-msg{position:fixed;top:70px;right:20px;background:var(--green-bg);color:var(--green);padding:8px 16px;border-radius:8px;font-size:13px;font-weight:600;display:none;z-index:300;border:1px solid rgba(106,191,123,0.3)}
+/* ── Print ── */
+@media print{
+  @page{margin:10mm;size:A4}
+  /* 다크 테마 변수 → 인쇄용 밝은 값 (어두운 배경·흰 글씨로 안 보이던 문제 해결) */
+  :root{--bg:#fff;--paper:#fff;--text:#222;--dim:#555;--border:#ccc;--accent-bg:#f3ede7;--green-bg:#eef7f0;--red-bg:#fdeeeb;--yellow-bg:#fbf6e2;--blue-bg:#eaf3fb;--purple-bg:#f1edfa;--orange-bg:#fbf0e6}
+  body{background:#fff!important;color:#222!important;font-size:11px;line-height:1.4;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  /* 가이드 등 본문 박스·표 강제 밝게 */
+  #tab-guide div,#tab-guide td,#tab-guide th,#tab-guide p{color:#222!important}
+  #tab-guide table th{background:#f0ece8!important;color:#222!important}
+  .header,.tabs,.submit-bar,.saving,.toast-msg,.header-util-btns,.util-btn,.sheet-links{display:none!important}
+  .content{padding:0!important;max-width:100%!important}
+  .content.hidden{display:none!important}
+  /* 인쇄 시 보드 풀폭 탈출 해제(페이지 폭 안에 정렬) */
+  .board-fullwidth{width:auto!important;max-width:100%!important;margin:0!important;padding:0!important}
+  /* 활성 탭만 표시 */
+  .content[data-print-active="true"]{display:block!important}
+  .category{border:1px solid #ccc;break-inside:avoid;margin-bottom:6px}
+  .cat-body{display:block!important}
+  .cat-header{padding:6px 12px}
+  .item{border-bottom:1px solid #eee;padding:6px 12px;break-inside:avoid}
+  .extra-input{display:none!important}
+  .extra-input.show{display:block!important;border:1px solid #ccc}
+  .shift-divider{border:1px solid #ccc;margin:8px 0}
+  .guide-cards,.submitter-bar{display:none!important}
+  /* 대시보드 인쇄 */
+  .admin-card,.admin-shift-card{border:1px solid #ccc!important;break-inside:avoid;margin-bottom:8px}
+  .dash-stat-card{border:1px solid #ccc!important;background:#f9f9f9!important;break-inside:avoid}
+  .dash-stat-card .num{color:#333!important}
+  .dash-table th,.dash-table td{border:1px solid #ccc!important;padding:4px 8px;font-size:10px}
+  .dash-bar-wrap{background:#eee!important}
+  .dash-bar{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .dash-issue-card{border:1px solid #ccc!important;break-inside:avoid}
+  .admin-mgmt-divider,.admin-mgmt-form,.mgmt-item-list,.mgmt-btn{display:none!important}
+  [style*="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:60px"]{display:none!important}
+  .progress-fill,.progress-bar{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+}
+@media(max-width:720px){
+  .dash-stat-card{min-width:70px;padding:8px 6px}
+  .dash-stat-card .num{font-size:18px}
+  .dash-table{font-size:11px}
+  .dash-table th,.dash-table td{padding:4px 6px}
+}
+/* 규정 탭 — 정기회의+근무휴게 같은 행: 좁은 화면에서 세로 전환 */
+@media(max-width:860px){
+  #tab-policy .board-fullwidth{flex-direction:column!important;}
+  #tab-policy .board-fullwidth .manual-section{flex:none!important;width:100%!important;}
+}
+</style>
+</head>
+<body>
+
+<div class="sticky-top">
+<div class="header">
+  <div class="header-top">
+    <h1>운영부 체계 <span style="font-size:11px;font-weight:500;color:var(--dim);margin-left:8px;letter-spacing:0.02em;">v1.0 · 2026-06-08</span> <span id="dayType"></span></h1>
+    <div class="sheet-links">
+      <a class="sheet-link" onclick="switchTab('admin')" style="cursor:pointer;background:var(--purple-bg);color:var(--purple);border-color:rgba(167,139,218,0.3);">
+        <svg viewBox="0 0 24 24"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
+        현황 대시보드
+      </a>
+      <a class="sheet-link" style="opacity:0.6;cursor:default;" title="운영부 전용 시트 연동 예정">
+        <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zM6 20V4h7v5h5v11H6zm2-6h8v2H8v-2zm0-3h8v2H8v-2z"/></svg>
+        시트(연동 예정)
+      </a>
+      <a class="sheet-link" href="../../wellperion_guide(main).html">
+        <svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+        웰페리온 ERP
+      </a>
+      <a class="sheet-link" href="../../wellperion_guide(main).html#gcoo-check">
+        <svg viewBox="0 0 24 24"><path d="M4 10h3v7h10v-7h3L12 3 4 10z"/></svg>
+        운영 통합 체계
+      </a>
+    </div>
+  </div>
+  <div class="sub" id="headerSub"></div>
+
+</div>
+<div class="toast-msg" id="toastMsg"></div>
+<div class="tabs">
+  <button class="tab active" onclick="switchTab('policy')">운영부 규정</button>
+  <button class="tab" onclick="switchTab('voc')">VOC 이슈 접수</button>
+  <button class="tab" onclick="switchTab('guide')">가이드</button>
+  <button class="tab" onclick="switchTab('manual')">매뉴얼</button>
+  <button class="tab" onclick="switchTab('check-m','lock')">점검(오전) 🔒</button>
+  <button class="tab" onclick="switchTab('check-f','lock')">점검(오후) 🔒</button>
+  <div style="display:flex;gap:4px;margin-left:auto;">
+    <button class="util-btn print-btn" onclick="printCurrentTab()">인쇄</button>
+    <button class="util-btn report-btn" onclick="copyReport()">보고용</button>
+    <button class="util-btn share-btn" onclick="copyShare()">공유용</button>
+  </div>
+</div>
+</div><!-- /sticky-top -->
+<div class="saving" id="saveIndicator">저장 중...</div>
+
+<div id="tab-policy" class="content">
+  <h2 style="font-size:20px;margin-bottom:6px;">운영부 규정</h2>
+  <p style="font-size:13px;color:var(--dim);margin-bottom:14px;line-height:1.6;">주제별 칸(컬럼)에 규정·회의를 카드로 정리했습니다. 각 카드의 <b>편집</b> 버튼으로 내용을 바로 수정·저장하면 모든 기기에 반영됩니다. <span style="color:var(--accent);">운영시간 등 공식값은 임의 변경 금지.</span></p>
+  <div class="board-fullwidth" style="display:flex;gap:14px;align-items:flex-start;">
+    <div id="policy-board" class="board-scroll" style="flex:0 0 auto;min-width:0;max-width:calc(100% - 694px);"></div>
+    <div class="manual-section" style="flex:0 0 680px;width:680px;margin-top:0;border-left:4px solid var(--red);align-self:flex-start;">
+    <div class="manual-header" onclick="togManual(this)">
+      <h3 style="color:var(--red);">⏱ 근무·휴게 시간</h3><span class="arrow">&#9654;</span>
+    </div>
+    <div class="manual-body">
+  <div style="background:var(--red-bg);border:2px solid rgba(237,91,63,0.5);border-radius:12px;padding:16px 18px;margin-bottom:16px;">
+    <p style="font-size:16px;font-weight:800;color:var(--red);margin:0 0 6px;">⚠ 리셉션을 절대 비우지 않는다</p>
+    <p style="font-size:14px;font-weight:600;color:var(--text);margin:0;line-height:1.7;">리셉션·프론트에는 항상 최소 1명이 자리를 지킵니다.<br>
+    2인 이상 근무 시 <strong>휴게를 반드시 엇갈려</strong> 진행하고, 한 명이 쉬는 동안 나머지 한 명은 리셉션을 지킵니다.</p>
+  </div>
+  <p style="font-size:14px;font-weight:700;color:var(--accent);margin:0 0 8px;">2인 동시 근무 — 교대 휴게 규칙</p>
+  <div style="background:var(--paper);border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin-bottom:12px;">
+    <p style="font-size:12px;color:var(--dim);margin:0 0 10px;">매 시간(정시~정시) 기준 — 10분 단위 엇갈림</p>
+    <div style="margin-bottom:8px;">
+      <div style="font-size:12px;font-weight:700;color:var(--accent);margin-bottom:4px;">근무자 A</div>
+      <div style="display:flex;height:22px;border-radius:6px;overflow:hidden;font-size:11px;font-weight:700;">
+        <div style="flex:5;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;">근무 (정시~50분)</div>
+        <div style="flex:1;background:var(--red);color:#fff;display:flex;align-items:center;justify-content:center;">휴게</div>
+      </div>
+    </div>
+    <div>
+      <div style="font-size:12px;font-weight:700;color:var(--green);margin-bottom:4px;">근무자 B</div>
+      <div style="display:flex;height:22px;border-radius:6px;overflow:hidden;font-size:11px;font-weight:700;">
+        <div style="flex:1;background:var(--red);color:#fff;display:flex;align-items:center;justify-content:center;">휴게</div>
+        <div style="flex:5;background:var(--green);color:#fff;display:flex;align-items:center;justify-content:center;">근무 (10분~정시)</div>
+      </div>
+    </div>
+    <p style="font-size:12px;color:var(--dim);margin:10px 0 0;">→ A·B 휴게가 겹치지 않아 리셉션이 항상 1명 이상 커버됩니다.</p>
+  </div>
+  <table style="width:100%;border-collapse:collapse;margin-bottom:8px;font-size:13px;">
+    <tr style="background:var(--paper);">
+      <th style="padding:10px;border:1px solid var(--border);width:90px;">구분</th>
+      <th style="padding:10px;border:1px solid var(--border);">근무</th>
+      <th style="padding:10px;border:1px solid var(--border);">휴게</th>
+    </tr>
+    <tr>
+      <td style="padding:8px;border:1px solid var(--border);font-weight:700;color:var(--accent);">근무자 A</td>
+      <td style="padding:8px;border:1px solid var(--border);">정시 ~ 50분</td>
+      <td style="padding:8px;border:1px solid var(--border);">50분 ~ 정시 <span style="font-size:11px;color:var(--dim);">(매시 끝 10분)</span></td>
+    </tr>
+    <tr>
+      <td style="padding:8px;border:1px solid var(--border);font-weight:700;color:var(--green);">근무자 B</td>
+      <td style="padding:8px;border:1px solid var(--border);">10분 ~ 정시</td>
+      <td style="padding:8px;border:1px solid var(--border);">정시 ~ 10분 <span style="font-size:11px;color:var(--dim);">(매시 처음 10분)</span></td>
+    </tr>
+  </table>
+  <p style="font-size:12px;color:var(--dim);margin:0 0 4px;">※ 위는 2인 동시 근무 시 적용하는 <strong>원칙(예시)</strong>입니다 · 1인 근무·3인 이상 케이스는 GM 추후 지정 예정</p>
+  <p style="font-size:14px;font-weight:700;color:var(--accent);margin:18px 0 8px;">실제 운영 근무조</p>
+  <table style="width:100%;border-collapse:collapse;margin-bottom:10px;font-size:13px;">
+    <tr style="background:var(--paper);">
+      <th style="padding:10px;border:1px solid var(--border);width:64px;">근무조</th>
+      <th style="padding:10px;border:1px solid var(--border);">담당</th>
+      <th style="padding:10px;border:1px solid var(--border);width:120px;">근무시간</th>
+      <th style="padding:10px;border:1px solid var(--border);">고정 휴게(10분)</th>
+    </tr>
+    <tr>
+      <td style="padding:8px;border:1px solid var(--border);font-weight:700;color:var(--accent);">오전</td>
+      <td style="padding:8px;border:1px solid var(--border);">이경연 실장</td>
+      <td style="padding:8px;border:1px solid var(--border);color:var(--dim);white-space:nowrap;">미정</td>
+      <td style="padding:8px;border:1px solid var(--border);color:var(--dim);">미정</td>
+    </tr>
+    <tr>
+      <td style="padding:8px;border:1px solid var(--border);font-weight:700;color:var(--green);">오후</td>
+      <td style="padding:8px;border:1px solid var(--border);color:var(--dim);">충원 예정</td>
+      <td style="padding:8px;border:1px solid var(--border);color:var(--dim);white-space:nowrap;">미정</td>
+      <td style="padding:8px;border:1px solid var(--border);color:var(--dim);">미정</td>
+    </tr>
+  </table>
+  <p style="font-size:12px;color:var(--dim);margin:0 0 4px;line-height:1.6;">※ 근무시간·담당자는 임의로 채우지 않고, GM 확정 후 갱신합니다.</p>
+    </div>
+  </div>
+  </div>
+</div>
+
+<div id="tab-voc" class="content hidden">
+  <h2 style="font-size:20px;margin-bottom:6px;">VOC 이슈 접수 · 처리 체계</h2>
+  <p style="font-size:13px;color:var(--dim);margin-bottom:18px;line-height:1.6;">회원 건의(VOC)는 접수 직원이 구글 폼에 기록 → 장소·부서 분류 → 해당 부서 전달 → 처리·완료. 접수·응답 현황은 이슈 응답 시트에서 확인합니다.</p>
+
+  <div style="display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap;">
+    <a href="https://docs.google.com/forms/d/e/1FAIpQLSd7mDzTyZT5FSXVcxmpMCaqv7M-RR3EmEu2lFqGRksUE77osA/viewform" target="_blank"
+       style="flex:1;min-width:200px;display:flex;align-items:center;justify-content:center;gap:8px;padding:14px 18px;background:var(--green-bg);color:var(--green);border:1.5px solid rgba(106,191,123,0.4);border-radius:12px;font-size:14px;font-weight:700;text-decoration:none;">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm-1 1.5L18.5 9H13V3.5zM6 20V4h5v7h7v9H6z"/></svg>
+      이슈 접수하기 (VOC 폼)
+    </a>
+    <a href="https://docs.google.com/spreadsheets/d/1akZLs7ITs3FZWFIzMQvSYrdRucGQglmerOvTC2TLEcQ/edit?gid=1576318230" target="_blank"
+       style="flex:1;min-width:200px;display:flex;align-items:center;justify-content:center;gap:8px;padding:14px 18px;background:var(--blue-bg);color:var(--blue);border:1.5px solid rgba(91,159,213,0.4);border-radius:12px;font-size:14px;font-weight:700;text-decoration:none;">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M3 3h18v18H3V3zm2 2v14h14V5H5zm2 2h10v2H7V7zm0 4h10v2H7v-2zm0 4h7v2H7v-2z"/></svg>
+      이슈 응답 시트 보기
+    </a>
+  </div>
+
+  <!-- 처리 흐름도 -->
+  <div style="background:var(--paper);border:1px solid var(--border);border-radius:12px;padding:16px 18px;margin-bottom:18px;">
+    <p style="font-size:15px;font-weight:700;color:var(--accent);margin:0 0 14px;">처리 흐름도</p>
+    <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;">
+      <div style="background:var(--green-bg);border:1.5px solid rgba(106,191,123,0.4);border-radius:10px;padding:10px 14px;text-align:center;min-width:90px;">
+        <div style="font-size:18px;margin-bottom:4px;">🙋</div>
+        <div style="font-size:12px;font-weight:700;color:var(--green);">회원 건의</div>
+      </div>
+      <div style="font-size:20px;color:var(--dim);">→</div>
+      <div style="background:var(--accent-bg);border:1.5px solid rgba(183,159,138,0.4);border-radius:10px;padding:10px 14px;text-align:center;min-width:90px;">
+        <div style="font-size:18px;margin-bottom:4px;">📝</div>
+        <div style="font-size:12px;font-weight:700;color:var(--accent);">직원 접수<br><span style="font-size:11px;font-weight:500;">(폼 기록)</span></div>
+      </div>
+      <div style="font-size:20px;color:var(--dim);">→</div>
+      <div style="background:var(--yellow-bg);border:1.5px solid rgba(230,200,78,0.4);border-radius:10px;padding:10px 14px;text-align:center;min-width:90px;">
+        <div style="font-size:18px;margin-bottom:4px;">🗂️</div>
+        <div style="font-size:12px;font-weight:700;color:var(--yellow);">장소·부서<br>분류</div>
+      </div>
+      <div style="font-size:20px;color:var(--dim);">→</div>
+      <div style="background:var(--blue-bg);border:1.5px solid rgba(91,159,213,0.4);border-radius:10px;padding:10px 14px;text-align:center;min-width:90px;">
+        <div style="font-size:18px;margin-bottom:4px;">📨</div>
+        <div style="font-size:12px;font-weight:700;color:var(--blue);">해당 부서<br>전달</div>
+      </div>
+      <div style="font-size:20px;color:var(--dim);">→</div>
+      <div style="background:var(--purple-bg);border:1.5px solid rgba(167,139,218,0.4);border-radius:10px;padding:10px 14px;text-align:center;min-width:90px;">
+        <div style="font-size:18px;margin-bottom:4px;">🔧</div>
+        <div style="font-size:12px;font-weight:700;color:var(--purple);">처리</div>
+      </div>
+      <div style="font-size:20px;color:var(--dim);">→</div>
+      <div style="background:var(--green-bg);border:1.5px solid rgba(106,191,123,0.4);border-radius:10px;padding:10px 14px;text-align:center;min-width:90px;">
+        <div style="font-size:18px;margin-bottom:4px;">✅</div>
+        <div style="font-size:12px;font-weight:700;color:var(--green);">완료/회신</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- VOC 폼 입력 항목 -->
+  <div style="background:var(--paper);border:1px solid var(--border);border-radius:12px;padding:16px 18px;margin-bottom:14px;">
+    <p style="font-size:15px;font-weight:700;color:var(--accent);margin:0 0 12px;">VOC 폼 입력 항목</p>
+    <table style="width:100%;border-collapse:collapse;font-size:13px;">
+      <tr style="background:var(--bg);">
+        <th style="padding:9px 12px;border:1px solid var(--border);color:var(--accent);font-weight:700;width:160px;">항목</th>
+        <th style="padding:9px 12px;border:1px solid var(--border);color:var(--accent);font-weight:700;">내용</th>
+        <th style="padding:9px 12px;border:1px solid var(--border);color:var(--accent);font-weight:700;width:60px;">필수</th>
+      </tr>
+      <tr><td style="padding:8px 12px;border:1px solid var(--border);">직원 &amp; 회원명</td><td style="padding:8px 12px;border:1px solid var(--border);color:var(--dim);">접수한 직원 이름 + 건의한 회원 이름</td><td style="padding:8px 12px;border:1px solid var(--border);text-align:center;color:var(--red);font-weight:700;">*</td></tr>
+      <tr><td style="padding:8px 12px;border:1px solid var(--border);">연락처</td><td style="padding:8px 12px;border:1px solid var(--border);color:var(--dim);">회원 연락처 (선택)</td><td style="padding:8px 12px;border:1px solid var(--border);text-align:center;color:var(--dim);">-</td></tr>
+      <tr><td style="padding:8px 12px;border:1px solid var(--border);">이슈 내용</td><td style="padding:8px 12px;border:1px solid var(--border);color:var(--dim);">불편 사항·건의 내용 상세 기술</td><td style="padding:8px 12px;border:1px solid var(--border);text-align:center;color:var(--red);font-weight:700;">*</td></tr>
+      <tr><td style="padding:8px 12px;border:1px solid var(--border);">불편했던 장소</td><td style="padding:8px 12px;border:1px solid var(--border);color:var(--dim);">해당 장소 복수 선택 (14개 분류)</td><td style="padding:8px 12px;border:1px solid var(--border);text-align:center;color:var(--red);font-weight:700;">*</td></tr>
+      <tr><td style="padding:8px 12px;border:1px solid var(--border);">접수자</td><td style="padding:8px 12px;border:1px solid var(--border);color:var(--dim);">폼을 기록한 직원 이름</td><td style="padding:8px 12px;border:1px solid var(--border);text-align:center;color:var(--red);font-weight:700;">*</td></tr>
+      <tr><td style="padding:8px 12px;border:1px solid var(--border);">전달 부서</td><td style="padding:8px 12px;border:1px solid var(--border);color:var(--dim);">처리 담당 부서 선택 (11개 분류)</td><td style="padding:8px 12px;border:1px solid var(--border);text-align:center;color:var(--red);font-weight:700;">*</td></tr>
+    </table>
+    <p style="font-size:12px;color:var(--dim);margin:8px 0 0;">* 표시 항목은 필수 입력</p>
+  </div>
+
+  <!-- 불편 장소 분류 14 -->
+  <div style="background:var(--paper);border:1px solid var(--border);border-radius:12px;padding:16px 18px;margin-bottom:14px;">
+    <p style="font-size:15px;font-weight:700;color:var(--accent);margin:0 0 10px;">불편 장소 분류 <span style="font-size:13px;font-weight:500;color:var(--dim);">(복수 선택 · 14개)</span></p>
+    <div style="display:flex;flex-wrap:wrap;gap:7px;">
+      <span style="display:inline-block;padding:5px 12px;background:var(--accent-bg);color:var(--accent);border-radius:20px;font-size:13px;font-weight:600;">카페</span>
+      <span style="display:inline-block;padding:5px 12px;background:var(--accent-bg);color:var(--accent);border-radius:20px;font-size:13px;font-weight:600;">운영부</span>
+      <span style="display:inline-block;padding:5px 12px;background:var(--accent-bg);color:var(--accent);border-radius:20px;font-size:13px;font-weight:600;">프론트</span>
+      <span style="display:inline-block;padding:5px 12px;background:var(--accent-bg);color:var(--accent);border-radius:20px;font-size:13px;font-weight:600;">주차장</span>
+      <span style="display:inline-block;padding:5px 12px;background:var(--accent-bg);color:var(--accent);border-radius:20px;font-size:13px;font-weight:600;">사우나</span>
+      <span style="display:inline-block;padding:5px 12px;background:var(--accent-bg);color:var(--accent);border-radius:20px;font-size:13px;font-weight:600;">헬스장</span>
+      <span style="display:inline-block;padding:5px 12px;background:var(--accent-bg);color:var(--accent);border-radius:20px;font-size:13px;font-weight:600;">필라테스룸</span>
+      <span style="display:inline-block;padding:5px 12px;background:var(--accent-bg);color:var(--accent);border-radius:20px;font-size:13px;font-weight:600;">G.X룸</span>
+      <span style="display:inline-block;padding:5px 12px;background:var(--accent-bg);color:var(--accent);border-radius:20px;font-size:13px;font-weight:600;">골프장</span>
+      <span style="display:inline-block;padding:5px 12px;background:var(--accent-bg);color:var(--accent);border-radius:20px;font-size:13px;font-weight:600;">수영장</span>
+      <span style="display:inline-block;padding:5px 12px;background:var(--accent-bg);color:var(--accent);border-radius:20px;font-size:13px;font-weight:600;">스쿼시장</span>
+      <span style="display:inline-block;padding:5px 12px;background:var(--accent-bg);color:var(--accent);border-radius:20px;font-size:13px;font-weight:600;">뮤지컬룸</span>
+      <span style="display:inline-block;padding:5px 12px;background:var(--accent-bg);color:var(--accent);border-radius:20px;font-size:13px;font-weight:600;">키즈샤워실</span>
+      <span style="display:inline-block;padding:5px 12px;background:var(--accent-bg);color:var(--accent);border-radius:20px;font-size:13px;font-weight:600;">본에스티스</span>
+    </div>
+  </div>
+
+  <!-- 전달 부서 분류 11 -->
+  <div style="background:var(--paper);border:1px solid var(--border);border-radius:12px;padding:16px 18px;">
+    <p style="font-size:15px;font-weight:700;color:var(--accent);margin:0 0 10px;">전달 부서 분류 <span style="font-size:13px;font-weight:500;color:var(--dim);">(11개)</span></p>
+    <div style="display:flex;flex-wrap:wrap;gap:7px;">
+      <span style="display:inline-block;padding:5px 12px;background:var(--blue-bg);color:var(--blue);border-radius:20px;font-size:13px;font-weight:600;">운영</span>
+      <span style="display:inline-block;padding:5px 12px;background:var(--blue-bg);color:var(--blue);border-radius:20px;font-size:13px;font-weight:600;">관리</span>
+      <span style="display:inline-block;padding:5px 12px;background:var(--blue-bg);color:var(--blue);border-radius:20px;font-size:13px;font-weight:600;">시설</span>
+      <span style="display:inline-block;padding:5px 12px;background:var(--blue-bg);color:var(--blue);border-radius:20px;font-size:13px;font-weight:600;">지원</span>
+      <span style="display:inline-block;padding:5px 12px;background:var(--blue-bg);color:var(--blue);border-radius:20px;font-size:13px;font-weight:600;">P.T</span>
+      <span style="display:inline-block;padding:5px 12px;background:var(--blue-bg);color:var(--blue);border-radius:20px;font-size:13px;font-weight:600;">필라테스</span>
+      <span style="display:inline-block;padding:5px 12px;background:var(--blue-bg);color:var(--blue);border-radius:20px;font-size:13px;font-weight:600;">수영</span>
+      <span style="display:inline-block;padding:5px 12px;background:var(--blue-bg);color:var(--blue);border-radius:20px;font-size:13px;font-weight:600;">골프</span>
+      <span style="display:inline-block;padding:5px 12px;background:var(--blue-bg);color:var(--blue);border-radius:20px;font-size:13px;font-weight:600;">스쿼시</span>
+      <span style="display:inline-block;padding:5px 12px;background:var(--blue-bg);color:var(--blue);border-radius:20px;font-size:13px;font-weight:600;">체조&amp;트램폴린</span>
+      <span style="display:inline-block;padding:5px 12px;background:var(--blue-bg);color:var(--blue);border-radius:20px;font-size:13px;font-weight:600;">기타</span>
+    </div>
+  </div>
+</div>
+
+<div id="tab-guide" class="content hidden">
+  <h2 style="font-size:20px;margin-bottom:16px;">가이드</h2>
+  <!-- 운영부 체계 가이드 탭 -->
+  <div style="background:var(--paper);padding:16px;border-radius:8px;border-left:4px solid var(--accent);margin-bottom:16px;">
+    <h3 style="font-size:15px;margin:0 0 10px;text-align:center;">직원&파트너 기본 에티켓</h3>
+    <p style="font-size:16px;font-weight:700;text-align:center;margin-bottom:12px;">"내가 지나간 자리는 항상 깨끗하게 정리정돈하자"</p>
+    <table style="width:100%;border-collapse:collapse;font-size:13px;">
+      <tr><td style="padding:6px;border-bottom:1px solid var(--border);"><strong>1. 회원이 먼저</strong></td><td style="padding:6px;border-bottom:1px solid var(--border);">회원이 보이면 하던 일을 멈추고 먼저 인사</td></tr>
+      <tr><td style="padding:6px;border-bottom:1px solid var(--border);"><strong>2. 한 발 앞서 행동</strong></td><td style="padding:6px;border-bottom:1px solid var(--border);">요청받기 전에 불편사항 발견·조치</td></tr>
+      <tr><td style="padding:6px;border-bottom:1px solid var(--border);"><strong>3. 모르면 바로 연결</strong></td><td style="padding:6px;border-bottom:1px solid var(--border);">"확인 후 안내드리겠습니다" → 담당자 즉시 연결</td></tr>
+      <tr><td style="padding:6px;border-bottom:1px solid var(--border);"><strong>4. 끝까지 책임</strong></td><td style="padding:6px;border-bottom:1px solid var(--border);">내가 접수한 건은 끝까지 추적</td></tr>
+      <tr><td style="padding:6px;"><strong>5. 하이엔드 격조</strong></td><td style="padding:6px;">말투·행동·복장 모두 스포츠클럽 수준</td></tr>
+    </table>
+    <div style="margin-top:14px;padding:14px 16px;background:rgba(183,159,138,0.10);border-left:4px solid var(--accent);border-radius:8px;">
+      <p style="font-size:15px;font-weight:700;text-align:center;margin:0 0 8px;">회원도 왕이지만, 우리도 품격 있는 프로다</p>
+      <p style="font-size:13px;line-height:1.75;margin:0;">회원을 최고로 모시는 것이 우리의 자부심입니다. 그러나 그것은 굴종이 아니라 <strong>당당한 프로페셔널의 서비스</strong>입니다. 직원·파트너 한 사람의 품격이 곧 웰페리온의 품격이며, <strong>스스로를 존중하는 사람만이 회원을 진심으로 존중</strong>할 수 있습니다.</p>
+      <p style="font-size:13px;line-height:1.75;margin:8px 0 0;">무례·폭언에는 <strong>정중하되 단호하게</strong> 선을 지키고(반복 시 팀장 보고), 회원과 직원이 서로 존중하는 하이엔드 커뮤니티 문화를 함께 지켜갑니다.</p>
+    </div>
+  </div>
+
+  <h3 style="font-size:17px;margin:16px 0 10px;">응대 태도</h3>
+  <table style="width:100%;border-collapse:collapse;margin-bottom:16px;">
+    <tr style="background:var(--paper);"><th style="padding:10px;border:1px solid var(--border);width:160px;">상황</th><th style="padding:10px;border:1px solid var(--border);">판단 기준</th></tr>
+    <tr><td style="padding:8px;border:1px solid var(--border);">회원 첫 인사</td><td style="padding:8px;border:1px solid var(--border);">눈 맞춤 + 미소 필수 / 먼저 인사 / 이름 알면 호칭 사용</td></tr>
+    <tr><td style="padding:8px;border:1px solid var(--border);">불편사항 접수</td><td style="padding:8px;border:1px solid var(--border);">끝까지 경청 → 즉시 해결 가능 여부 판단 → 처리 결과 반드시 고지</td></tr>
+    <tr><td style="padding:8px;border:1px solid var(--border);">에티켓 위반</td><td style="padding:8px;border:1px solid var(--border);">정중하되 단호하게 안내 / 반복 위반 시 팀장 보고</td></tr>
+    <tr><td style="padding:8px;border:1px solid var(--border);">긴급·안전</td><td style="padding:8px;border:1px solid var(--border);">즉시 팀장·소장 보고 → 지시 후 조치 / 자의 판단 금지</td></tr>
+  </table>
+
+  <h3 style="font-size:17px;margin:16px 0 10px;">복장·용모</h3>
+  <table style="width:100%;border-collapse:collapse;margin-bottom:16px;">
+    <tr style="background:var(--paper);"><th style="padding:10px;border:1px solid var(--border);width:160px;">항목</th><th style="padding:10px;border:1px solid var(--border);">기준</th></tr>
+    <tr><td style="padding:8px;border:1px solid var(--border);">유니폼</td><td style="padding:8px;border:1px solid var(--border);">웰페리온 지급 유니폼 착용 / 청결 유지</td></tr>
+    <tr><td style="padding:8px;border:1px solid var(--border);">명찰</td><td style="padding:8px;border:1px solid var(--border);">항상 패용 / 좌측 가슴</td></tr>
+    <tr><td style="padding:8px;border:1px solid var(--border);">신발</td><td style="padding:8px;border:1px solid var(--border);">미끄럼 방지 안전화 / 실외화 구역 내 착용 금지</td></tr>
+    <tr><td style="padding:8px;border:1px solid var(--border);">청소 구역</td><td style="padding:8px;border:1px solid var(--border);">고무장갑·마스크 필수 / 환기 후 작업</td></tr>
+  </table>
+
+  <h3 style="font-size:17px;margin:16px 0 10px;">구역별 관리 기준</h3>
+  <table style="width:100%;border-collapse:collapse;">
+    <tr style="background:var(--paper);"><th style="padding:10px;border:1px solid var(--border);width:160px;">구역</th><th style="padding:10px;border:1px solid var(--border);">관리 기준</th></tr>
+    <tr><td style="padding:8px;border:1px solid var(--border);"><strong>리셉션 카운터</strong></td><td style="padding:8px;border:1px solid var(--border);">PC·전화·POS 정상 / 안내물·비품 충분 / 카운터 청결 유지</td></tr>
+    <tr><td style="padding:8px;border:1px solid var(--border);"><strong>대기·로비 공간</strong></td><td style="padding:8px;border:1px solid var(--border);">좌석 청결·정돈 / 음료·안내물 보충 / 방문객 안내 즉시</td></tr>
+    <tr><td style="padding:8px;border:1px solid var(--border);"><strong>입구·안내 표지</strong></td><td style="padding:8px;border:1px solid var(--border);">운영시간 표지 정상 / 현수막·안내판 위치·상태 / 오픈·마감 안내</td></tr>
+    <tr><td style="padding:8px;border:1px solid var(--border);"><strong>방문자·문의 일지</strong></td><td style="padding:8px;border:1px solid var(--border);">방문·투어·전화 문의 당일 기록 완료 / VOC 폼 접수 확인</td></tr>
+    <tr><td style="padding:8px;border:1px solid var(--border);"><strong>VOC 전달</strong></td><td style="padding:8px;border:1px solid var(--border);">접수된 VOC는 당일 해당 부서 전달 / 처리 결과 회원 고지</td></tr>
+  </table>
+
+  <!-- 시간대별 업무 절차 -->
+  <h3 style="font-size:17px;margin:24px 0 10px;padding-top:8px;border-top:1px solid var(--border);">시간대별 업무 절차</h3>
+
+  <!-- 오전 오픈조 -->
+  <div class="manual-section">
+    <div class="manual-header" onclick="togManual(this)" style="background:var(--accent-bg);">
+      <h3 style="color:var(--accent);">오전조 (오픈~인수인계)</h3><span class="arrow">&#9654;</span>
+    </div>
+    <div class="manual-body">
+      <span class="manual-label">오픈 점검</span>
+      <ul>
+        <li>리셉션 조명·PC·전화·POS 전원 점검</li>
+        <li>당일 예약·방문 일정 확인 (투어·상담 사전 확인)</li>
+        <li>프론트 카운터·대기 공간 청결·비품(안내물·음료 등) 점검</li>
+        <li>입구 안내 표지·현수막 위치 점검</li>
+      </ul>
+      <span class="manual-label">회원 응대</span>
+      <ul>
+        <li>입장 회원 확인·인사 (눈 맞춤+미소 필수)</li>
+        <li>방문객·투어 문의 접수 → 안내 또는 담당자 연결</li>
+        <li>전화 문의 응대 — 예약 일정 안내·기록</li>
+      </ul>
+      <span class="manual-label">인수인계</span>
+      <ul>
+        <li>당일 접수된 VOC·건의 사항 기록 확인</li>
+        <li>오전조 → 오후조: 미결 문의·이슈 공유</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- 오후조 -->
+  <div class="manual-section">
+    <div class="manual-header" onclick="togManual(this)" style="background:var(--green-bg);">
+      <h3 style="color:var(--green);">오후조 (오후~마감)</h3><span class="arrow">&#9654;</span>
+    </div>
+    <div class="manual-body">
+      <span class="manual-label">오후 운영</span>
+      <ul>
+        <li>퇴장 회원 인사·물품 분실 확인</li>
+        <li>전화·방문 문의 응대 — 투어 예약 기록</li>
+        <li>VOC 접수 건 폼 기록 완료 확인 + 해당 부서 전달</li>
+      </ul>
+      <span class="manual-label">마감</span>
+      <ul>
+        <li>방문자 일지·문의 일지 마감 기록</li>
+        <li>리셉션 카운터 정리·비품 재고 확인</li>
+        <li>PC·전화·조명 오프 / 잠금 확인 후 마감 보고</li>
+      </ul>
+    </div>
+  </div>
+
+</div>
+
+</div>
+
+<div id="tab-manual" class="content hidden">
+
+  <!-- ── 요일별 업무 보드 (주 콘텐츠 · 요일 다중선택 + 트렐로 칸반) ── -->
+  <div style="font-size:16px;font-weight:700;color:var(--text);padding:2px 0 4px;">요일별 업무 보드 (트렐로 칸반)</div>
+  <div class="board-intro">위 <strong>요일 버튼</strong>을 켜고 끄면(여러 개 동시 선택 가능) 켠 요일이 <strong>트렐로 컬럼</strong>으로 나란히 표시됩니다. 컬럼이 많으면 가로로 스크롤하세요. 각 컬럼 안에 👨남 / 👩여 / 🏢외곽 카드가 세로로 있고, 카드의 <strong>편집</strong> 버튼을 누르면 <strong>표(시간 칸 | 내용 칸)를 바로 편집</strong>할 수 있고, <strong>＋ 행 추가</strong>/<strong>✕ 삭제</strong>로 항목을 늘리거나 지운 뒤 <strong>저장</strong>하면 모든 기기에 반영됩니다. 선택한 요일은 다음에 다시 와도 기억됩니다. 저장 시 시간 순으로 자동 정렬됩니다.</div>
+
+  <!-- 요일 툴바 (7요일 다중선택 toggle + 전체 토글) -->
+  <div id="day-toolbar" class="day-toolbar"></div>
+
+  <!-- 트렐로 칸반 보드 (켠 요일 = 컬럼 · 풀폭 엣지투엣지 · 가로 스크롤) -->
+  <div class="board-fullwidth">
+    <div id="manual-board" class="board-scroll"></div>
+  </div>
+
+  <!-- ── 점검 셋업 편집기 1단계 (좌=시간대 / 우=항목) ── -->
+  <div style="margin-top:22px;border-top:2px solid var(--accent);padding-top:14px;">
+    <div style="font-size:16px;font-weight:700;color:var(--text);padding:2px 0 4px;">점검 항목 셋업 편집</div>
+    <div class="setup-bar">
+      <button id="setupToggleBtn" class="setup-toggle-btn" onclick="toggleSetupEdit()">⚙ 셋업 편집</button>
+      <button id="setupSaveBtn" class="setup-save-btn" style="display:none;" onclick="setupSave()">저장 (전 기기 반영)</button>
+      <span class="setup-hint">시간대(좌)를 누르면 그 시간대의 점검 항목(우)이 보입니다. 추가·이름수정·삭제·순서이동이 가능합니다. <b>코드 기본 항목은 회색(읽기전용)</b>으로 참고만 표시되며, 추가/이동/삭제는 <b>커스텀 항목</b>에만 적용됩니다. 저장하면 구글시트에 기록되어 전 기기에 반영됩니다 (다른 기기는 Ctrl+Shift+R 새로고침).</span>
+    </div>
+    <div id="setupEditor" style="display:none;">
+      <div class="setup-wrap">
+        <div class="setup-col-slots">
+          <div class="setup-panel">
+            <div class="setup-panel-head"><span>시간대</span><button class="setup-mini-btn" onclick="setupAddSlot()">＋ 시간대 추가</button></div>
+            <div id="setupSlotList"></div>
+          </div>
+        </div>
+        <div class="setup-col-items">
+          <div class="setup-panel">
+            <div class="setup-panel-head"><span id="setupItemsHead">항목</span><button class="setup-mini-btn" id="setupAddItemBtn" onclick="setupAddItem()" style="display:none;">＋ 항목 추가</button></div>
+            <div id="setupItemList"><div class="setup-empty">왼쪽에서 시간대를 선택하세요.</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── 기존 상세 절차 참고 (접이식 · 운영 정보 보존) ── -->
+  <div class="manual-section" style="margin-top:18px;">
+    <div class="manual-header" onclick="togManual(this)"><h3>구역별 상세 절차 (주차 매뉴얼)</h3><span class="arrow">&#9654;</span></div>
+    <div class="manual-body" style="padding:0;">
+    <div style="padding:14px 18px;">
+
+  <!-- 공통 안전 유의사항 -->
+  <div class="manual-section">
+    <div class="manual-header" onclick="togManual(this)"><h3>공통 유의사항</h3><span class="arrow open">&#9654;</span></div>
+    <div class="manual-body open">
+      <ul>
+        <li><span class="highlight">차량 접촉/파손·차단기 고장·화재 위험은 즉시 조치 후 팀장·소장 보고</span> (자의 판단 금지)</li>
+        <li>차량번호·CCTV 영상은 회원 개인정보 — 외부 유출·임의 열람 금지</li>
+        <li>순찰 시 야광 조끼·안전화 착용 / 차량 이동 동선 주의</li>
+        <li>사고·민원 발생 시 현장 보존 + 사진 + CCTV 시각 기록 의무</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- 구역별 상세 절차 -->
+  <div style="font-size:13px;color:var(--dim);margin:8px 0 12px;">구역을 탭하면 상세 절차가 펼쳐집니다.</div>
+
+  <!-- 출입·차단기 -->
+  <div class="manual-section">
+    <div class="manual-header" onclick="togManual(this)">
+      <h3><span style="display:inline-block;width:26px;height:26px;border-radius:8px;background:var(--accent-bg);color:var(--accent);font-size:13px;font-weight:700;text-align:center;line-height:26px;margin-right:8px;">출</span>출입통제 · 차단기</h3>
+      <span class="arrow">&#9654;</span>
+    </div>
+    <div class="manual-body">
+      <span class="manual-label">차단기</span>
+      <ul>
+        <li>입·출차 차단기 바(barrier) 작동·손상 여부 확인</li>
+        <li>센서·리모컨 반응 점검 / 오작동 시 즉시 수동 개방 후 보고</li>
+      </ul>
+      <span class="manual-label">LPR(번호인식) 카메라</span>
+      <ul>
+        <li>렌즈 청결 / 번호 인식 정상 / 표시판 점등 확인</li>
+      </ul>
+      <span class="manual-label">회원/방문 운영</span>
+      <ul>
+        <li>회원 차량 자동개방 / 방문 차량 안내·등록 절차 준수</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- 정산·요금기 -->
+  <div class="manual-section">
+    <div class="manual-header" onclick="togManual(this)">
+      <h3><span style="display:inline-block;width:26px;height:26px;border-radius:8px;background:var(--blue-bg);color:var(--blue);font-size:13px;font-weight:700;text-align:center;line-height:26px;margin-right:8px;">정</span>정산 · 요금기</h3>
+      <span class="arrow">&#9654;</span>
+    </div>
+    <div class="manual-body">
+      <span class="manual-label">무인 정산기</span>
+      <ul>
+        <li>화면·버튼·카드리더 정상 / 지폐·동전 투입구 막힘 여부</li>
+        <li>잔돈 보유량 / 영수증 용지 잔량 확인</li>
+      </ul>
+      <span class="manual-label">현금 시재</span>
+      <ul>
+        <li>교대 시 현금 시재 인수인계·기록 의무</li>
+        <li><span class="highlight">미정산/미수 건 즉시 공유</span></li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- 지상 주차장 -->
+  <div class="manual-section">
+    <div class="manual-header" onclick="togManual(this)">
+      <h3><span style="display:inline-block;width:26px;height:26px;border-radius:8px;background:var(--green-bg);color:var(--green);font-size:13px;font-weight:700;text-align:center;line-height:26px;margin-right:8px;">지상</span>지상 주차장</h3>
+      <span class="arrow">&#9654;</span>
+    </div>
+    <div class="manual-body">
+      <span class="manual-label">순찰</span>
+      <ul>
+        <li>불법·이중·무단 장기 주차 계도 및 기록</li>
+        <li>통행로 적치물 / 바닥 주차선·번호 식별</li>
+      </ul>
+      <span class="manual-label">설비</span>
+      <ul>
+        <li>조명 점등 불량·깜빡임 구역 기록 (야간 대비)</li>
+        <li>배수구 막힘 / 천장·벽면 누수 / 결빙 위험(동절기)</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- 지하 주차장 -->
+  <div class="manual-section">
+    <div class="manual-header" onclick="togManual(this)">
+      <h3><span style="display:inline-block;width:26px;height:26px;border-radius:8px;background:var(--orange-bg);color:var(--orange);font-size:13px;font-weight:700;text-align:center;line-height:26px;margin-right:8px;">지하</span>지하 주차장 (층별)</h3>
+      <span class="arrow">&#9654;</span>
+    </div>
+    <div class="manual-body">
+      <span class="manual-label">층별 순찰</span>
+      <ul>
+        <li>B1·B2 등 층별 순회 / 불법·이중 주차 / 적치물</li>
+        <li>층별 빈자리 현황 파악 및 안내</li>
+      </ul>
+      <span class="manual-label">환기·누수</span>
+      <ul>
+        <li>조명 점등 / 환기·제연 팬 가동음·매연·악취</li>
+        <li>천장·벽면 누수 / 바닥 고임물 / 차수판(우수기) 상태</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- 우선·지정 구역 -->
+  <div class="manual-section">
+    <div class="manual-header" onclick="togManual(this)">
+      <h3><span style="display:inline-block;width:26px;height:26px;border-radius:8px;background:var(--purple-bg);color:var(--purple);font-size:13px;font-weight:700;text-align:center;line-height:26px;margin-right:8px;">우</span>우선 · 지정 구역</h3>
+      <span class="arrow">&#9654;</span>
+    </div>
+    <div class="manual-body">
+      <span class="manual-label">장애인 전용구역</span>
+      <ul><li>불법 점유 단속 / 표지·바닥도색 식별 / 비정상 주차 계도·기록</li></ul>
+      <span class="manual-label">여성우선 구역</span>
+      <ul><li>위치·조명 양호 / 표지 식별 / 불법 점유 점검</li></ul>
+      <span class="manual-label">전기차 충전구역</span>
+      <ul><li>충전기 작동 / 비충전 차량 점유 점검 / 케이블 정리</li></ul>
+    </div>
+  </div>
+
+  <!-- 안전·소방 -->
+  <div class="manual-section">
+    <div class="manual-header" onclick="togManual(this)">
+      <h3><span style="display:inline-block;width:26px;height:26px;border-radius:8px;background:var(--red-bg);color:var(--red);font-size:13px;font-weight:700;text-align:center;line-height:26px;margin-right:8px;">안</span>안전 · 소방 · CCTV</h3>
+      <span class="arrow">&#9654;</span>
+    </div>
+    <div class="manual-body">
+      <span class="manual-label">소방</span>
+      <ul>
+        <li>소화기·소화전 비치 위치·수량 / 압력게이지 / 통로 가림 여부</li>
+        <li>비상구 유도등 점등 / 피난통로 적치물 제거 / 비상벨 위치</li>
+      </ul>
+      <span class="manual-label">CCTV</span>
+      <ul>
+        <li>주차구역 CCTV 화면 이상 / 사각지대 / 녹화 정상 여부</li>
+        <li><span class="highlight">영상 열람은 사고·민원 처리 목적 + 책임자 승인 한정</span></li>
+      </ul>
+      <span class="manual-label">주차장 화장실</span>
+      <ul><li>청결 / 비품(화장지·손세정제) / 악취·조명</li></ul>
+    </div>
+  </div>
+
+  <!-- 요일별 집중 점검 -->
+  <div class="manual-section">
+    <div class="manual-header" onclick="togManual(this)">
+      <h3>요일별 집중 점검</h3><span class="arrow">&#9654;</span>
+    </div>
+    <div class="manual-body">
+      <table class="schedule-table">
+        <tr><th>요일</th><th>집중 점검 항목</th></tr>
+        <tr><td><strong>월</strong></td><td>바닥 주차선·표시 / 차단기 정밀 점검 / 장애인·여성우선 구역 집중</td></tr>
+        <tr><td><strong>화</strong></td><td>배수구·차수판 / 조명 전수 점검 / 안내·규정 게시물</td></tr>
+        <tr><td><strong>수</strong></td><td>CCTV 사각지대 / 환기·제연 설비 점검</td></tr>
+        <tr><td><strong>목</strong></td><td>바닥 청소·오염 제거 / 소화기·소화전 / 주차장 화장실 집중</td></tr>
+        <tr><td><strong>금</strong></td><td>정산기 정밀 점검 / 전기차 충전구역 / 비상구·피난통로 집중</td></tr>
+        <tr><td><strong>토</strong></td><td>천장·벽면 누수 전수 / 주차유도·만차 표시기 / 혼잡 대응</td></tr>
+        <tr><td><strong>일</strong></td><td>전 구역 대청소 / 장기 미출차 차량 정리 / 미비 부분 보완</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <!-- '현재 전체 점검 항목 체크리스트'는 점검(지상)/점검(지하) 탭 전용으로 이관(매뉴얼 탭에선 중복이라 제거).
+       데이터·체크상태는 점검 탭이 동일 소스(WEEKDAY+CUSTOM_ITEMS·STATE)로 렌더하므로 손실 없음. -->
+    </div><!-- /padding wrapper -->
+    </div><!-- /manual-body (기존 상세 절차 참고) -->
+  </div><!-- /manual-section (기존 상세 절차 참고) -->
+</div>
+
+<div id="tab-check-m" class="content hidden">
+  <div class="date-bar">
+    <input type="date" id="checkDateM">
+    <button class="btn" onclick="moveDateG('m',-1)">&lt;</button>
+    <button class="btn" onclick="setTodayG('m')">오늘</button>
+    <button class="btn" onclick="moveDateG('m',1)">&gt;</button>
+  </div>
+  <div class="submitter-bar">
+    <label>점검자</label>
+    <select id="submitterM" onchange="onSubmitterChangeG('m')">
+      <option value="">선택하세요</option>
+    </select>
+  </div>
+  <div class="guide-cards">
+    <div class="guide-card issue-guide">
+      <div class="guide-title">이슈</div>
+      <div class="guide-desc">고장, 부족, 이상 등 문제가 발생했을 때 기록</div>
+    </div>
+    <div class="guide-card tip-guide">
+      <div class="guide-title">노하우</div>
+      <div class="guide-desc">더 효율적인 방법, 개선 아이디어를 공유</div>
+    </div>
+  </div>
+  <div id="checklistM"></div>
+  <div class="submit-bar" id="submitBarM">
+    <button class="submit-btn primary" id="submitAmM" onclick="submitShift('am','m')" disabled>오전 제출</button>
+    <button class="submit-btn primary" id="submitPmM" onclick="submitShift('pm','m')" disabled>오후 제출</button>
+    <button class="submit-btn night-btn" id="submitNightM" onclick="submitShift('night','m')" disabled style="display:none">야간 제출</button>
+  </div>
+</div>
+
+<div id="tab-check-f" class="content hidden">
+  <div class="date-bar">
+    <input type="date" id="checkDateF">
+    <button class="btn" onclick="moveDateG('f',-1)">&lt;</button>
+    <button class="btn" onclick="setTodayG('f')">오늘</button>
+    <button class="btn" onclick="moveDateG('f',1)">&gt;</button>
+  </div>
+  <div class="submitter-bar">
+    <label>점검자</label>
+    <select id="submitterF" onchange="onSubmitterChangeG('f')">
+      <option value="">선택하세요</option>
+    </select>
+  </div>
+  <div class="guide-cards">
+    <div class="guide-card issue-guide">
+      <div class="guide-title">이슈</div>
+      <div class="guide-desc">고장, 부족, 이상 등 문제가 발생했을 때 기록</div>
+    </div>
+    <div class="guide-card tip-guide">
+      <div class="guide-title">노하우</div>
+      <div class="guide-desc">더 효율적인 방법, 개선 아이디어를 공유</div>
+    </div>
+  </div>
+  <div id="checklistF"></div>
+  <div class="submit-bar" id="submitBarF" style="display:none">
+    <button class="submit-btn primary" id="submitAmF" onclick="submitShift('am','f')" disabled>오전 제출</button>
+    <button class="submit-btn primary" id="submitPmF" onclick="submitShift('pm','f')" disabled>오후 제출</button>
+    <button class="submit-btn night-btn" id="submitNightF" onclick="submitShift('night','f')" disabled style="display:none">야간 제출</button>
+  </div>
+</div>
+
+<div id="tab-admin" class="content hidden">
+  <div class="date-bar">
+    <input type="date" id="adminDate">
+    <button class="btn" onclick="moveAdminDate(-1)">&lt;</button>
+    <button class="btn" onclick="setAdminToday()">오늘</button>
+    <button class="btn" onclick="moveAdminDate(1)">&gt;</button>
+  </div>
+  <div id="adminView"></div>
+
+  <!-- ── 고도화: 주간 트렌드 ── -->
+  <div class="dash-section-title" style="margin-top:24px;">주간 트렌드 — 최근 7일 완료율</div>
+  <div id="weeklyView" style="padding:10px 0;">
+    <div style="text-align:center;padding:20px;color:var(--dim);font-size:13px;">불러오는 중...</div>
+  </div>
+
+  <!-- ── 고도화: 미결 이슈대장 ── -->
+  <div class="dash-section-title" style="margin-top:8px;">미결 이슈대장</div>
+  <div id="issuelogView" style="margin-bottom:4px;">
+    <div style="text-align:center;padding:20px;color:var(--dim);font-size:13px;">불러오는 중...</div>
+  </div>
+
+</div>
+
+<!-- ── 항목 관리 탭 (매뉴얼 탭으로 통합 이전 · 2026-05-29) ──
+     폼/목록/유틸 UI는 매뉴얼 탭(tab-manual)으로 이동. 빈 패널 유지(switchTab 참조 보존). -->
+<div id="tab-manage" class="content hidden"></div>
+
+<script>
+const API_URL = 'https://script.google.com/macros/s/AKfycbyXw4ZaA6hLK567GC7NY33Y8SvNPW6kNtrXFz2OsSdFVBmCnZP-2oD-RQiX0IpekBu1/exec';
+const ONLINE = API_URL.length > 0;
+const STAFF_CSV_URL = 'https://docs.google.com/spreadsheets/d/1DKEKRrpsi9Nit7dNdNGsXLYtzie3PopbwD7EJzJCku0/gviz/tq?tqx=out:csv&sheet=%EC%A0%90%EA%B2%80%EC%9E%90';
+
+/* ── Track which gender tab is active ── */
+let activeGenderTab = 'm';
+
+/* ── A: Staff list (fallback + dynamic) ── */
+// 점검자 명단 — 운영부 직원 구성(2026-06-08).
+// 이경연 실장(오전 총괄) + 추가 담당(충원 예정). 오전=m / 오후=f.
+const FALLBACK_STAFF = [
+  {name:'이경연 실장', role:'실장(오전 총괄)', shift:'am', gender:'m'},
+  {name:'추가 담당(충원 예정)', role:'담당', shift:'pm', gender:'f'}
+];
+let STAFF_LIST = [...FALLBACK_STAFF];
+
+async function loadStaffFromSheet(){
+  // 운영부 담당자 — 이경연 실장(오전 총괄) 확정. 추가 담당 충원 예정.
+  // 시트 동적 로드 비활성화 — STAFF_LIST는 FALLBACK 고정 유지.
+  STAFF_LIST=[...FALLBACK_STAFF];
+  populateSubmitterDropdowns();
+}
+
+/* ── 점검 항목 마스터 (GM 편집 · 시트 영구 저장) ──
+   CUSTOM_ITEMS = 편집 가능한 항목 마스터. 시트(점검항목 탭)와 동기화.
+   프론트 항목 모델 {id, slot, shift, dayType, gender, category, name, detail}
+   ↔ 시트 컬럼 {항목ID, 카테고리, 항목명, 상세, 성별, 시간대, 정렬} 매핑. */
+let CUSTOM_ITEMS = [];
+const ITEM_CACHE_KEY = 'opscheck_items_cache'; // 오프라인 폴백 캐시
+
+/* 시간대(slot) → 교대조(shift) 추정 (기본 항목 배열의 slot 명명 규칙 기준) */
+function slotToShiftFront(slot){
+  var s = slot || '';
+  if(s.indexOf('야간')>=0||s.indexOf('23:')>=0||s.indexOf('00:')>=0||s.indexOf('01:')>=0||s.indexOf('02:')>=0||s.indexOf('03:')>=0||s.indexOf('20:30')>=0||s.indexOf('21:00')>=0||s.indexOf('22:00~23')>=0) return 'night';
+  if(s.indexOf('상시')>=0) return 'all';
+  if(s.indexOf('오픈')>=0||s.indexOf('오전')>=0||s.indexOf('05:30')>=0||s.indexOf('07:30')>=0||s.indexOf('인수인계')>=0||s.indexOf('08:00')>=0||s.indexOf('10:00')>=0) return 'am';
+  return 'pm';
+}
+
+/* 시트 행 → 프론트 항목 모델 */
+function itemFromSheet(row){
+  return {
+    id: row.id || mgmtGenerateId(),
+    slot: row.slot || '상시',
+    shift: row.shift || slotToShiftFront(row.slot),
+    dayType: row.dayType || 'both',
+    gender: row.gender || 'all',
+    category: row.cat || '추가 점검',
+    name: row.name || '',
+    detail: row.detail || '',
+    order: row.order
+  };
+}
+
+/* 프론트 항목 모델 → 시트 행(API 계약 필드) */
+function itemToSheet(it, idx){
+  return {
+    id: it.id,
+    cat: it.category || '',
+    name: it.name || '',
+    detail: it.detail || '',
+    gender: it.gender || 'all',
+    slot: it.slot || '',
+    order: (it.order !== undefined && it.order !== '') ? it.order : (idx + 1)
+  };
+}
+
+/* 시트에서 항목 마스터 로드 (loadStaffFromSheet 미러) */
+async function loadItemMasterFromSheet(){
+  if(!ONLINE){
+    try{ CUSTOM_ITEMS = JSON.parse(localStorage.getItem(ITEM_CACHE_KEY)) || []; }catch(e){ CUSTOM_ITEMS = []; }
+    return;
+  }
+  try{
+    const res = await fetch(API_URL+'?action=items',{method:'GET',redirect:'follow'});
+    const data = await res.json();
+    const items = Array.isArray(data.items) ? data.items : [];
+    CUSTOM_ITEMS = items.map(itemFromSheet);
+    localStorage.setItem(ITEM_CACHE_KEY, JSON.stringify(CUSTOM_ITEMS)); // 오프라인 폴백
+  }catch(e){
+    // 실패 시 캐시 폴백, 그래도 없으면 빈 배열 (기본 항목은 항상 렌더)
+    try{ CUSTOM_ITEMS = JSON.parse(localStorage.getItem(ITEM_CACHE_KEY)) || []; }catch(_){ CUSTOM_ITEMS = []; }
+  }
+  // 로드 후 현재 화면 갱신
+  if(typeof mgmtInjectCustomItems==='function') mgmtInjectCustomItems();
+  if(typeof renderManualItems==='function') renderManualItems();
+}
+
+function parseCSVLine(line){
+  const result=[];let cur='',inQ=false;
+  for(let i=0;i<line.length;i++){
+    const c=line[i];
+    if(c==='"'){if(inQ&&line[i+1]==='"'){cur+='"';i++}else{inQ=!inQ}}
+    else if(c===','&&!inQ){result.push(cur.trim());cur=''}
+    else{cur+=c}
+  }
+  result.push(cur.trim());
+  return result;
+}
+
+function getStaffForGender(g){
+  // g='m' or 'f'
+  // Show staff matching gender or gender='all' (지상/지하 공통 담당)
+  return STAFF_LIST.filter(s=>{
+    if(s.gender==='all') return true;
+    return s.gender===g;
+  });
+}
+
+function populateSubmitterDropdowns(){
+  populateOneDropdown('submitterM','m');
+  populateOneDropdown('submitterF','f');
+}
+
+function populateOneDropdown(selId,gender){
+  const sel=document.getElementById(selId);
+  const savedKey='opscheck_submitter_'+gender;
+  const saved=sel.value||localStorage.getItem(savedKey)||'';
+  sel.innerHTML='<option value="">선택하세요</option>';
+  const staff=getStaffForGender(gender);
+  staff.forEach(s=>{
+    const opt=document.createElement('option');
+    opt.value=s.name;opt.textContent=s.name;
+    sel.appendChild(opt);
+  });
+  if(saved){sel.value=saved}
+}
+
+function getStaffInfo(name){
+  return STAFF_LIST.find(s=>s.name===name)||null;
+}
+
+function getSubmitterForGender(g){
+  const selId=g==='f'?'submitterF':'submitterM';
+  return document.getElementById(selId).value;
+}
+
+function isNightShiftWorkerG(g){
+  const sub=getSubmitterForGender(g);
+  const info=getStaffInfo(sub);
+  return info&&info.shift==='night';
+}
+
+function shouldShowItemForGender(item,gender){
+  // gender = 'm' or 'f'
+  const itemGender=item.gender||'all';
+  if(itemGender==='all') return true;
+  return itemGender===gender;
+}
+
+/* ── Data: gender field added (m/f/all) ── */
+
+const WEEKDAY=[
+  {slot:"오픈 점검 07:30~08:30",shift:"am",groups:[
+    {title:"O-A 리셉션 오픈",items:[
+      {id:"oa1",name:"O-A1 PC·전화·POS 전원 점검",detail:"리셉션 PC·전화·POS 정상 부팅 | 당일 예약 일정 확인",gender:"m"},
+      {id:"oa2",name:"O-A2 카운터 청결·비품 점검",detail:"카운터 정돈·청결 | 안내물·음료·소모품 보충",gender:"m"},
+      {id:"oa3",name:"O-A3 입구·안내 표지 점검",detail:"입구 안내판·현수막 위치·상태 | 운영시간 표기 정상",gender:"m"}
+    ]}
+  ]},
+  {slot:"오전 응대 08:30~13:00",shift:"am",groups:[
+    {title:"O-B 회원 응대",items:[
+      {id:"ob1",name:"O-B1 입장 회원 확인·인사",detail:"눈 맞춤+미소 | 회원 카드 확인 | 이름 알면 호칭 사용",gender:"m"},
+      {id:"ob2",name:"O-B2 방문·투어 응대",detail:"방문 목적 파악 | 투어 안내 또는 담당자 연결 | 예약 기록",gender:"m"},
+      {id:"ob3",name:"O-B3 전화 문의 응대",detail:"3회 이내 응답 | 내용 기록 | 추후 연락 건 메모",gender:"m"}
+    ]},
+    {title:"O-C VOC 접수",items:[
+      {id:"oc1",name:"O-C1 VOC 폼 기록",detail:"회원 건의 즉시 구글 폼 기록 | 직원명·회원명·장소·부서 필수",gender:"all"},
+      {id:"oc2",name:"O-C2 해당 부서 전달",detail:"접수 당일 해당 부서에 전달 | 이슈 응답 시트 확인",gender:"all"}
+    ]}
+  ]},
+  {slot:"인수인계 13:00~14:00",shift:"am",groups:[
+    {title:"O-D 교대 인수인계",items:[
+      {id:"od1",name:"O-D1 미결 문의·이슈 인계",detail:"미처리 VOC | 방문 예정 | 전화 메모 | 이슈 공유",gender:"all"},
+      {id:"od2",name:"O-D2 카운터 점검 인계",detail:"비품 재고 | 현금/포스 상태 | 청결 상태 인계",gender:"all"}
+    ]}
+  ]},
+  {slot:"오후 응대 14:00~19:00",shift:"pm",groups:[
+    {title:"O-B 회원 응대",items:[
+      {id:"ob_pm1",name:"O-B1 입·퇴장 회원 응대",detail:"눈 맞춤+미소 | 퇴장 인사 | 분실물 확인",gender:"f"},
+      {id:"ob_pm2",name:"O-B2 방문·문의 응대",detail:"방문 목적 파악 | 투어 예약 기록 | 전화 문의 메모",gender:"f"}
+    ]},
+    {title:"O-C VOC 접수",items:[
+      {id:"oc_pm1",name:"O-C1 오후 VOC 기록",detail:"오후 접수 건의 즉시 폼 기록 | 전달 완료 확인",gender:"all"}
+    ]}
+  ]},
+  {slot:"마감 19:00~",shift:"pm",groups:[
+    {title:"O-E 마감",items:[
+      {id:"oe1",name:"O-E1 방문자·문의 일지 마감",detail:"당일 방문·문의·VOC 기록 최종 확인",gender:"f"},
+      {id:"oe2",name:"O-E2 카운터·비품 정리",detail:"카운터 정돈 | 소모품 재고 확인 | 쓰레기 처리",gender:"f"},
+      {id:"oe3",name:"O-E3 시스템·잠금 마감",detail:"PC·전화 오프 | 조명 소등 | 잠금 확인 | 마감 보고",gender:"f"}
+    ]}
+  ]},
+  {slot:"상시",shift:"all",groups:[
+    {title:"O-F 복장·에티켓",items:[
+      {id:"of1",name:"O-F1 유니폼·명찰",detail:"웰페리온 유니폼 청결 | 명찰 좌측 가슴 패용",gender:"all"},
+      {id:"of2",name:"O-F2 응대 태도",detail:"먼저 인사 | 끝까지 경청 | 처리 결과 반드시 고지",gender:"all"}
+    ]}
+  ]}
+]
+
+const WEEKEND=[
+  {slot:"오픈 점검 09:00~10:00",shift:"am",groups:[
+    {title:"O-A 리셉션 오픈",items:[
+      {id:"oa1w",name:"O-A1 PC·전화·POS 점검",detail:"전원 확인 | 주말 예약 일정 확인",gender:"m"},
+      {id:"oa2w",name:"O-A2 카운터·비품 점검",detail:"카운터 정돈 | 안내물·음료 보충",gender:"m"}
+    ]}
+  ]},
+  {slot:"주말 응대 10:00~17:00",shift:"am",groups:[
+    {title:"O-B 회원·방문 응대",items:[
+      {id:"ob_w1",name:"O-B1 회원 입장 응대",detail:"눈 맞춤+미소 | 혼잡 시 대기 안내",gender:"m"},
+      {id:"ob_w2",name:"O-B2 방문·투어 응대",detail:"방문 목적 파악 | 예약 기록 | 담당자 연결",gender:"m"},
+      {id:"ob_w3",name:"O-B3 VOC 접수",detail:"건의 즉시 폼 기록 | 해당 부서 전달",gender:"all"}
+    ]}
+  ]},
+  {slot:"마감 17:00~",shift:"pm",groups:[
+    {title:"O-E 마감",items:[
+      {id:"oe_w1",name:"O-E1 일지·VOC 마감 기록",detail:"당일 방문·문의·VOC 최종 확인",gender:"f"},
+      {id:"oe_w2",name:"O-E2 시스템·잠금 마감",detail:"PC·조명 오프 | 잠금 확인 | 마감 보고",gender:"f"}
+    ]}
+  ]}
+]
+/* ── D: Night shift (야간 무인/위탁 순찰) ── */
+const NIGHT_WEEKDAY=[];  // 운영부 야간 미운영
+
+const NIGHT_WEEKEND=[];  // 운영부 야간 미운영
+
+/* ── E: Day-of-week focused inspection ── */
+const DAY_FOCUS={
+  1:[ // 월
+    {id:"df_mon1",name:"VOC 미처리 건 정리",detail:"주말·전주 미처리 VOC 건 현황 확인·부서 재전달",gender:"all"},
+    {id:"df_mon2",name:"비품 재고 점검",detail:"안내물·음료·소모품 재고 확인·발주 요청",gender:"all"}
+  ],
+  2:[ // 화
+    {id:"df_tue1",name:"방문자 일지 정리",detail:"지난주 방문·문의·투어 일지 정리·백업",gender:"all"},
+    {id:"df_tue2",name:"PC·전화 상태 점검",detail:"리셉션 PC·전화 소프트웨어 업데이트 | 비정상 여부",gender:"all"}
+  ],
+  3:[ // 수
+    {id:"df_wed1",name:"카운터 정밀 청소",detail:"카운터 내부·서랍·비품함 정밀 정리",gender:"all"},
+    {id:"df_wed2",name:"안내물·현수막 점검",detail:"훼손·노후 안내물 교체 요청 | 표지 위치 점검",gender:"all"}
+  ],
+  4:[ // 목
+    {id:"df_thu1",name:"VOC 응답 시트 확인",detail:"이슈 응답 시트 미처리 건 점검 | 처리 완료 건 고지 여부",gender:"all"},
+    {id:"df_thu2",name:"로비·대기 공간 집중 청소",detail:"좌석·바닥·창문 청결 집중 관리",gender:"all"}
+  ],
+  5:[ // 금
+    {id:"df_fri1",name:"주간 VOC 현황 정리",detail:"이번 주 접수 건 요약 | 미결 건 실장 보고",gender:"all"},
+    {id:"df_fri2",name:"주간 방문·문의 현황 보고",detail:"방문자·투어 문의 주간 집계 기록",gender:"all"}
+  ],
+  6:[ // 토
+    {id:"df_sat1",name:"주말 방문 대비 점검",detail:"주말 예약·투어 일정 최종 확인 | 비품 보충",gender:"all"},
+    {id:"df_sat2",name:"VOC 폼 정상 작동 확인",detail:"폼 링크 정상 접속·제출 테스트",gender:"all"}
+  ],
+  0:[ // 일
+    {id:"df_sun1",name:"주간 일지 마감",detail:"전주 방문·문의·VOC 기록 최종 정리",gender:"all"},
+    {id:"df_sun2",name:"다음주 준비",detail:"안내물·비품 보충 | 다음주 예약 일정 확인",gender:"all"}
+  ]
+};
+
+/* ── Helper functions ── */
+
+function getDayInfo(ds){
+  const d=new Date(ds+'T00:00:00'),dow=d.getDay(),wk=Math.ceil(d.getDate()/7);
+  if(dow===0&&(wk===2||wk===4))return{type:'closed',label:'휴관일',cls:'closed'};
+  if(ds.slice(5)==='01-01')return{type:'closed',label:'휴관일',cls:'closed'};
+  if(dow===0||dow===6)return{type:'weekend',label:'주말',cls:'weekend'};
+  return{type:'weekday',label:'평일',cls:'weekday'};
+}
+
+function getDayOfWeek(ds){return new Date(ds+'T00:00:00').getDay()}
+
+function getSched(ds){
+  const i=getDayInfo(ds);
+  if(i.type==='closed')return null;
+  return i.type==='weekend'?WEEKEND:WEEKDAY;
+}
+
+function getNightSched(ds){
+  const i=getDayInfo(ds);
+  if(i.type==='closed')return null;
+  return i.type==='weekend'?NIGHT_WEEKEND:NIGHT_WEEKDAY;
+}
+
+function getActiveSchedG(ds,g){
+  if(isNightShiftWorkerG(g)){
+    return getNightSched(ds);
+  }
+  return getSched(ds);
+}
+
+function getAllItems(sched){
+  const items=[];
+  if(!sched)return items;
+  sched.forEach(slot=>{slot.groups.forEach(g=>{g.items.forEach(it=>{items.push({...it,shift:slot.shift,slot:slot.slot,cat:g.title})})})});
+  return items;
+}
+
+let STATE={};
+const LK=d=>`opscheck3_${d}`;
+
+function saveSubmitterG(g,v){localStorage.setItem('opscheck_submitter_'+g,v)}
+function onSubmitterChangeG(g){
+  const selId=g==='f'?'submitterF':'submitterM';
+  saveSubmitterG(g,document.getElementById(selId).value);
+  const d=getDateG(g);
+  drawUI(d,g);
+}
+
+function loadLocal(d){try{return JSON.parse(localStorage.getItem(LK(d)))||{}}catch{return{}}}
+function saveLocal(d,o){localStorage.setItem(LK(d),JSON.stringify(o))}
+
+async function loadState(d){
+  if(!ONLINE){STATE=loadLocal(d);return}
+  try{
+    const r=await fetch(API_URL+'?date='+d,{redirect:'follow'});
+    const j=await r.json();
+    STATE={};
+    (j.rows||[]).forEach(row=>{
+      if(row.checked)STATE[row.itemId]=true;
+      if(row.issue)STATE['iss_'+row.itemId]=row.issue;
+      if(row.tip)STATE['tip_'+row.itemId]=row.tip;
+      if(row.submitted_am)STATE._submitted_am=true;
+      if(row.submittedAt_am)STATE._submittedAt_am=row.submittedAt_am;
+      if(row.submitter_am)STATE._submitter_am=row.submitter_am;
+      if(row.submitted_pm)STATE._submitted_pm=true;
+      if(row.submittedAt_pm)STATE._submittedAt_pm=row.submittedAt_pm;
+      if(row.submitter_pm)STATE._submitter_pm=row.submitter_pm;
+      if(row.submitted_night)STATE._submitted_night=true;
+      if(row.submittedAt_night)STATE._submittedAt_night=row.submittedAt_night;
+      if(row.submitter_night)STATE._submitter_night=row.submitter_night;
+      if(row.submitted)STATE._submitted_am=true;
+      if(row.submittedAt&&!STATE._submittedAt_am)STATE._submittedAt_am=row.submittedAt;
+    });
+    // 그룹별 제출 복원 (서버 영속 → 새로고침해도 유지) — 2026-06-05 GM
+    if(j.groupSubmits){Object.keys(j.groupSubmits).forEach(key=>{
+      const v=j.groupSubmits[key]||{};
+      STATE['_gsub_'+key]=true;
+      if(v.by)STATE['_gsubBy_'+key]=v.by;
+      if(v.at)STATE['_gsubAt_'+key]=v.at;
+    });}
+  }catch(e){STATE=loadLocal(d)}
+}
+
+let saveTimer=null;
+function saveState(d){
+  saveLocal(d,STATE);
+  if(!ONLINE)return;
+  clearTimeout(saveTimer);
+  saveTimer=setTimeout(()=>pushToServer(d),1500);
+}
+
+async function pushToServer(d){
+  const ind=document.getElementById('saveIndicator');
+  ind.style.display='block';ind.textContent='저장 중...';
+  // Use the active gender tab's schedule for determining items
+  const g=activeGenderTab;
+  const sched=getActiveSchedG(d,g);
+  if(!sched){ind.style.display='none';return}
+  const checks=[];
+  const dow=getDayOfWeek(d);
+  // main sched items — push ALL items regardless of gender filter so server gets everything
+  sched.forEach(slot=>{slot.groups.forEach(gr=>{gr.items.forEach(it=>{
+    checks.push({itemId:it.id,name:it.name,cat:gr.title,slot:slot.slot,shift:slot.shift,
+      checked:!!STATE[it.id],issue:STATE['iss_'+it.id]||'',tip:STATE['tip_'+it.id]||''});
+  })})});
+  // day focus items
+  if(DAY_FOCUS[dow]){
+    DAY_FOCUS[dow].forEach(it=>{
+      checks.push({itemId:it.id,name:it.name,cat:'요일별 집중 청소',slot:'요일별',shift:'focus',
+        checked:!!STATE[it.id],issue:STATE['iss_'+it.id]||'',tip:STATE['tip_'+it.id]||''});
+    });
+  }
+  try{
+    await fetch(API_URL,{method:'POST',redirect:'follow',
+      headers:{'Content-Type':'text/plain'},
+      body:JSON.stringify({action:'save',date:d,checks,
+        genderTab:g,
+        groupSubmits:collectGroupSubmits(),
+        submitted_am:!!STATE._submitted_am,submittedAt_am:STATE._submittedAt_am||'',submitter_am:STATE._submitter_am||'',
+        submitted_pm:!!STATE._submitted_pm,submittedAt_pm:STATE._submittedAt_pm||'',submitter_pm:STATE._submitter_pm||'',
+        submitted_night:!!STATE._submitted_night,submittedAt_night:STATE._submittedAt_night||'',submitter_night:STATE._submitter_night||''
+      })
+    });
+    ind.textContent='저장 완료';
+  }catch(e){ind.textContent='저장 실패 (로컬 저장됨)'}
+  setTimeout(()=>{ind.style.display='none'},1500);
+}
+
+function getShiftStatsG(sched,sh,ds,gender){
+  let total=0,done=0;
+  const dow=ds?getDayOfWeek(ds):-1;
+  sched.forEach(slot=>{
+    const match=(sh==='am'&&(slot.shift==='am'||slot.shift==='all'))||(sh==='pm'&&(slot.shift==='pm'||slot.shift==='all'))||(sh==='night'&&slot.shift==='night');
+    if(match){
+      slot.groups.forEach(g=>{g.items.forEach(it=>{
+        if(shouldShowItemForGender(it,gender)){total++;if(STATE[it.id])done++}
+      })});
+    }
+  });
+  if((sh==='am'||sh==='pm')&&dow>=0&&DAY_FOCUS[dow]&&!isNightShiftWorkerG(gender)){
+    if(sh==='pm'){
+      DAY_FOCUS[dow].forEach(it=>{
+        if(shouldShowItemForGender(it,gender)){total++;if(STATE[it.id])done++}
+      });
+    }
+  }
+  if(sh==='night'&&dow>=0&&DAY_FOCUS[dow]){
+    DAY_FOCUS[dow].forEach(it=>{
+      if(shouldShowItemForGender(it,gender)){total++;if(STATE[it.id])done++}
+    });
+  }
+  return{total,done,pct:total?Math.round(done/total*100):0};
+}
+
+/* Admin uses "all" gender to count everything */
+function getShiftStatsAll(sched,sh,ds){
+  let total=0,done=0;
+  const dow=ds?getDayOfWeek(ds):-1;
+  sched.forEach(slot=>{
+    const match=(sh==='am'&&(slot.shift==='am'||slot.shift==='all'))||(sh==='pm'&&(slot.shift==='pm'||slot.shift==='all'))||(sh==='night'&&slot.shift==='night');
+    if(match){
+      slot.groups.forEach(g=>{g.items.forEach(it=>{
+        total++;if(STATE[it.id])done++;
+      })});
+    }
+  });
+  if((sh==='am'||sh==='pm')&&dow>=0&&DAY_FOCUS[dow]){
+    if(sh==='pm'){
+      DAY_FOCUS[dow].forEach(it=>{total++;if(STATE[it.id])done++});
+    }
+  }
+  if(sh==='night'&&dow>=0&&DAY_FOCUS[dow]){
+    DAY_FOCUS[dow].forEach(it=>{total++;if(STATE[it.id])done++});
+  }
+  return{total,done,pct:total?Math.round(done/total*100):0};
+}
+
+function getDateG(g){
+  const id=g==='f'?'checkDateF':'checkDateM';
+  return document.getElementById(id).value;
+}
+// v2.51 — 로컬(KST) 날짜 직렬화. toISOString()(UTC)은 9시간 차로 날짜가 어긋나 ±1일 이동이 깨짐.
+function fmtLocalDate(d){const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),day=String(d.getDate()).padStart(2,'0');return `${y}-${m}-${day}`}
+function setTodayG(g){
+  const id=g==='f'?'checkDateF':'checkDateM';
+  document.getElementById(id).value=fmtLocalDate(new Date());
+  renderG(g);
+}
+function moveDateG(g,n){
+  const id=g==='f'?'checkDateF':'checkDateM';
+  const e=document.getElementById(id),d=new Date(e.value+'T00:00:00');
+  d.setDate(d.getDate()+n);e.value=fmtLocalDate(d);
+  renderG(g);
+}
+function setAdminToday(){document.getElementById('adminDate').value=fmtLocalDate(new Date());renderAdmin()}
+function moveAdminDate(n){const e=document.getElementById('adminDate'),d=new Date(e.value+'T00:00:00');d.setDate(d.getDate()+n);e.value=fmtLocalDate(d);renderAdmin()}
+
+async function renderG(g){
+  const d=getDateG(g);
+  const elId=g==='f'?'checklistF':'checklistM';
+  const el=document.getElementById(elId);
+  el.innerHTML='<div class="loading">불러오는 중...</div>';
+  await loadState(d);
+  drawUI(d,g);
+}
+
+function drawUI(d,gender){
+  // gender = 'm' or 'f'
+  const info=getDayInfo(d),dn=['일','월','화','수','목','금','토'],dt=new Date(d+'T00:00:00');
+  const dow=dt.getDay();
+  document.getElementById('dayType').innerHTML=`<span class="day-type ${info.cls}">${info.label}</span>`;
+  document.getElementById('headerSub').textContent=`${d} (${dn[dow]})`;
+
+  const nightMode=isNightShiftWorkerG(gender);
+  const sched=nightMode?getNightSched(d):getSched(d);
+  const elId=gender==='f'?'checklistF':'checklistM';
+  const el=document.getElementById(elId);
+  const submitBarId=gender==='f'?'submitBarF':'submitBarM';
+
+  if(!sched){el.innerHTML='<div class="closed-msg">휴관일입니다.</div>';document.getElementById(submitBarId).style.display='none';return}
+  document.getElementById(submitBarId).style.display='flex';
+
+  const sfx=gender==='f'?'F':'M';
+  const btnAm=document.getElementById('submitAm'+sfx);
+  const btnPm=document.getElementById('submitPm'+sfx);
+  const btnNight=document.getElementById('submitNight'+sfx);
+
+  if(nightMode){
+    btnAm.style.display='none';btnPm.style.display='none';btnNight.style.display='block';
+  }else{
+    btnAm.style.display='block';btnPm.style.display='block';btnNight.style.display='none';
+  }
+
+  let html='';
+  let currentShift='';
+
+  if(nightMode){
+    const nightStats=getShiftStatsG(sched,'night',d,gender);
+    html+=`<div class="shift-divider night-shift"><div class="shift-label">야간조 (무인/위탁)</div>
+      <div class="shift-progress">
+        <div class="progress-text"><span>${nightStats.done}/${nightStats.total}</span><span>${nightStats.pct}%</span></div>
+        <div class="progress-bar"><div class="progress-fill" style="width:${nightStats.pct}%;background:var(--orange)"></div></div>
+      </div>`;
+    if(STATE._submitted_night){
+      const who=STATE._submitter_night?` (${STATE._submitter_night})`:'';
+      const when=STATE._submittedAt_night?new Date(STATE._submittedAt_night).toLocaleString('ko-KR'):'';
+      html+=`<div class="shift-submitted">제출 완료${who} ${when}</div>`;
+    }
+    html+=`</div>`;
+
+    sched.forEach(slot=>{
+      html+=`<div class="time-slot"><div class="slot-header"><span class="slot-time night">${slot.slot}</span></div>`;
+      slot.groups.forEach(g=>{
+        const visItems=g.items.filter(it=>shouldShowItemForGender(it,gender));
+        if(visItems.length===0)return;
+        let gd=0;visItems.forEach(it=>{if(STATE[it.id])gd++});
+        const ok=gd===visItems.length,badge=ok?'<span class="cat-badge done">완료</span>':`<span class="cat-badge pending">${gd}/${visItems.length}</span>`;
+        html+=`<div class="category"><div class="cat-header" onclick="tog(this)"><span class="cat-title">${g.title}</span>${badge}</div><div class="cat-body${ok?'':' open'}">`;
+        visItems.forEach(it=>{html+=renderItem(it,slot.shift,gender)});
+        html+=groupSubmitBarHtml(g,gender);
+        html+=quickAddBarHtml(slot.slot,slot.shift,g.title,gender);
+        html+='</div></div>';
+      });
+      html+='</div>';
+    });
+
+    if(DAY_FOCUS[dow]){
+      const focusItems=DAY_FOCUS[dow].filter(it=>shouldShowItemForGender(it,gender));
+      if(focusItems.length>0){
+        html+=renderDayFocusSection(dow,focusItems,'night',gender);
+      }
+    }
+
+    updateNightSubmitButtonG(sched,nightStats,d,gender);
+
+  }else{
+    const amStats=getShiftStatsG(sched,'am',d,gender),pmStats=getShiftStatsG(sched,'pm',d,gender);
+
+    sched.forEach((slot,si)=>{
+      const effectiveShift=(slot.shift==='all')?null:slot.shift;
+      if(effectiveShift&&effectiveShift!==currentShift){
+        currentShift=effectiveShift;
+        const st=currentShift==='am'?amStats:pmStats;
+        const label=currentShift==='am'?'오전조 (오픈~인수인계)':'오후조 (오후~마감)';
+        const subKey='_submitted_'+currentShift;
+        const subAtKey='_submittedAt_'+currentShift;
+        const subNameKey='_submitter_'+currentShift;
+        html+=`<div class="shift-divider"><div class="shift-label">${label}</div>
+          <div class="shift-progress">
+            <div class="progress-text"><span>${st.done}/${st.total}</span><span>${st.pct}%</span></div>
+            <div class="progress-bar"><div class="progress-fill" style="width:${st.pct}%;background:var(--green)"></div></div>
+          </div>`;
+        if(STATE[subKey]){
+          const who=STATE[subNameKey]?` (${STATE[subNameKey]})`:'';
+          const when=STATE[subAtKey]?new Date(STATE[subAtKey]).toLocaleString('ko-KR'):'';
+          html+=`<div class="shift-submitted">제출 완료${who} ${when}</div>`;
+        }
+        html+=`</div>`;
+      }
+
+      html+=`<div class="time-slot"><div class="slot-header"><span class="slot-time">${slot.slot}</span></div>`;
+      slot.groups.forEach(g=>{
+        const visItems=g.items.filter(it=>shouldShowItemForGender(it,gender));
+        if(visItems.length===0)return;
+        let gd=0;visItems.forEach(it=>{if(STATE[it.id])gd++});
+        const ok=gd===visItems.length,badge=ok?'<span class="cat-badge done">완료</span>':`<span class="cat-badge pending">${gd}/${visItems.length}</span>`;
+        html+=`<div class="category"><div class="cat-header" onclick="tog(this)"><span class="cat-title">${g.title}</span>${badge}</div><div class="cat-body${ok?'':' open'}">`;
+        visItems.forEach(it=>{
+          const itemShift=slot.shift==='all'?'pm':slot.shift;
+          html+=renderItem(it,itemShift,gender);
+        });
+        html+=groupSubmitBarHtml(g,gender);
+        html+=quickAddBarHtml(slot.slot,slot.shift,g.title,gender);
+        html+='</div></div>';
+      });
+      html+='</div>';
+    });
+
+    if(DAY_FOCUS[dow]){
+      const focusItems=DAY_FOCUS[dow].filter(it=>shouldShowItemForGender(it,gender));
+      if(focusItems.length>0){
+        html+=renderDayFocusSection(dow,focusItems,'pm',gender);
+      }
+    }
+
+    updateSubmitButtonsG(sched,amStats,pmStats,gender);
+  }
+
+  el.innerHTML=html;
+}
+
+/* v2.48 — 점검 항목 사용자 수정 기능 (localStorage override). v2.49 onclick HTML 충돌 fix */
+function getItemOverrides(){return{}} /* v2.50 — 항목은 소스 배열이 SSOT. localStorage override 비활성화 */
+function saveItemOverrides(o){/* v2.50 — 쓰기 비활성화. 항목 수정은 소스 직접 편집 */}
+function findBaseItem(id){
+  const today=new Date().toISOString().slice(0,10);
+  let found=null;
+  function scan(sched){
+    if(!sched||found)return;
+    sched.forEach(slot=>slot.groups.forEach(g=>g.items.forEach(it=>{
+      if(it.id===id)found={name:it.name,detail:it.detail,slot:slot.slot,shift:slot.shift,cat:g.title};
+    })));
+  }
+  scan(getSched(today));
+  scan(getNightSched(today));
+  if(!found&&typeof DAY_FOCUS!=='undefined'){
+    for(const dow in DAY_FOCUS){
+      DAY_FOCUS[dow].forEach(it=>{
+        if(it.id===id)found={name:it.name,detail:it.detail,slot:'요일별 집중 청소',shift:'focus',cat:'요일별 집중'};
+      });
+      if(found)break;
+    }
+  }
+  return found||{name:'',detail:'',slot:'',shift:'am',cat:''};
+}
+let _editingItemId=null;
+window.editItem=function(id){
+  const ov=getItemOverrides()[id]||{};
+  const base=findBaseItem(id);
+  _editingItemId=id;
+  document.getElementById('editName').value=ov.name||base.name;
+  document.getElementById('editDetail').value=ov.detail||base.detail;
+  document.getElementById('editSlot').value=ov.slot||base.slot||'';
+  document.getElementById('editShift').value=ov.shift||base.shift||'am';
+  document.getElementById('editCat').value=ov.cat||base.cat||'';
+  document.getElementById('itemEditModal').style.display='flex';
+};
+window.saveItemEdit=function(){
+  const id=_editingItemId;
+  if(!id)return;
+  const base=findBaseItem(id);
+  const newName=document.getElementById('editName').value.trim();
+  const newDetail=document.getElementById('editDetail').value;
+  const newSlot=document.getElementById('editSlot').value.trim();
+  const newShift=document.getElementById('editShift').value;
+  const newCat=document.getElementById('editCat').value.trim();
+  const all=getItemOverrides();
+  if(!all[id])all[id]={};
+  if(newName&&newName!==base.name)all[id].name=newName;else delete all[id].name;
+  if(newDetail!==base.detail)all[id].detail=newDetail;else delete all[id].detail;
+  if(newSlot&&newSlot!==base.slot)all[id].slot=newSlot;else delete all[id].slot;
+  if(newShift&&newShift!==base.shift)all[id].shift=newShift;else delete all[id].shift;
+  if(newCat&&newCat!==base.cat)all[id].cat=newCat;else delete all[id].cat;
+  if(Object.keys(all[id]).length===0)delete all[id];
+  saveItemOverrides(all);
+  document.getElementById('itemEditModal').style.display='none';
+  _editingItemId=null;
+  renderG(activeGenderTab);
+};
+window.cancelItemEdit=function(){
+  document.getElementById('itemEditModal').style.display='none';
+  _editingItemId=null;
+};
+window.resetItem=function(id){
+  if(!confirm('이 항목을 기본값으로 초기화할까요?'))return;
+  const ov=getItemOverrides();
+  delete ov[id];
+  saveItemOverrides(ov);
+  renderG(activeGenderTab);
+};
+
+function renderItem(it,shift,gender){
+  const g=gender||activeGenderTab;
+  const ck=STATE[it.id]?'checked':'',cls=STATE[it.id]?'item checked':'item';
+  const iss=STATE['iss_'+it.id]||'',tip=STATE['tip_'+it.id]||'';
+  /* v2.48 — 사용자 override 반영 */
+  const ov=getItemOverrides()[it.id]||{};
+  const itemName=ov.name||it.name;
+  const itemDetail=ov.detail||it.detail;
+  const isEdited=!!(ov.name||ov.detail);
+  const det=itemDetail.replace(/\n/g,'<br>');
+  const esc=escapeAttr;
+  // Use unique element ids per gender tab to avoid collisions
+  const pfx=g+'_';
+  const editBtn=`<button class="tiny-btn" style="background:rgba(91,159,213,0.12);color:#5b9fd5;border-color:rgba(91,159,213,0.3);font-size:12px;" title="이 항목 수정 (제목·내용·시간대·근무조)" onclick="editItem('${it.id}')">편집</button>`;
+  const resetBtn=isEdited?`<button class="tiny-btn" style="background:rgba(140,139,131,0.12);color:#8c8b83;border-color:rgba(140,139,131,0.3);font-size:12px;" title="기본값 복원" onclick="resetItem('${it.id}')">초기화</button>`:'';
+  const shiftLabel={am:'오전조',pm:'오후조',night:'야간조',focus:'요일집중',all:'전체'};
+  let metaInfo='';
+  if(ov.slot||ov.shift||ov.cat){
+    const m=[];
+    if(ov.slot)m.push('시간 '+ov.slot);
+    if(ov.shift)m.push(shiftLabel[ov.shift]||ov.shift);
+    if(ov.cat)m.push('카테고리 '+ov.cat);
+    metaInfo='<span style="font-size:10px;color:#5b9fd5;margin-left:6px;">('+m.join(' · ')+')</span>';
+  }
+  const editedTag=isEdited?'<span style="font-size:10px;color:#e6c84e;font-weight:700;margin-left:4px;">수정됨</span>'+metaInfo:'';
+  return `<div class="${cls}">
+    <div class="item-row"><input type="checkbox" id="cb_${pfx}${it.id}" ${ck} onchange="onCk('${it.id}','${shift}','${g}')"><label for="cb_${pfx}${it.id}">${itemName}${editedTag}</label>
+      <div class="item-btns">${editBtn}${resetBtn}<button class="tiny-btn issue" onclick="togX('${pfx}iss_${it.id}')">이슈</button><button class="tiny-btn tip" onclick="togX('${pfx}tip_${it.id}')">노하우</button></div>
+    </div>
+    <div class="item-detail">${det}</div>
+    <input class="extra-input issue-field${iss?' show':''}" id="${pfx}iss_${it.id}" placeholder="이슈 내용..." value="${esc(iss)}" onchange="onExtra('iss_${it.id}','${pfx}iss_${it.id}')">
+    <input class="extra-input tip-field${tip?' show':''}" id="${pfx}tip_${it.id}" placeholder="노하우/개선 의견..." value="${esc(tip)}" onchange="onExtra('tip_${it.id}','${pfx}tip_${it.id}')">
+  </div>`;
+}
+
+function escapeAttr(s){return s.replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+
+function renderDayFocusSection(dow,items,shift,gender){
+  const dayNames=['일','월','화','수','목','금','토'];
+  let gd=0;items.forEach(it=>{if(STATE[it.id])gd++});
+  const ok=gd===items.length,badge=ok?'<span class="cat-badge done">완료</span>':`<span class="cat-badge pending">${gd}/${items.length}</span>`;
+  let html=`<div class="day-focus-section">
+    <div class="day-focus-title">${dayNames[dow]}요일 집중 청소</div>
+    <div class="category"><div class="cat-header" onclick="tog(this)"><span class="cat-title">요일별 집중 청소 항목</span>${badge}</div><div class="cat-body${ok?'':' open'}">`;
+  items.forEach(it=>{html+=renderItem(it,shift,gender)});
+  html+='</div></div></div>';
+  return html;
+}
+
+function updateSubmitButtonsG(sched,amStats,pmStats,gender){
+  const sfx=gender==='f'?'F':'M';
+  const btnAm=document.getElementById('submitAm'+sfx),btnPm=document.getElementById('submitPm'+sfx);
+  const sub=getSubmitterForGender(gender);
+  /* 점검자 미선택 시: 드롭다운 강조 + 버튼에 사유 안내(회색 이유가 '점검자 미선택'임을 명시) */
+  const selEl=document.getElementById('submitter'+sfx);
+  if(selEl) selEl.style.boxShadow = sub ? '' : '0 0 0 2px var(--accent)';
+  if(STATE._submitted_am){
+    if(amStats.done<amStats.total){
+      btnAm.textContent=`➕ 오전조 추가 제출 (남은 ${amStats.total-amStats.done}건)`;btnAm.disabled=!sub;btnAm.className='submit-btn primary';
+    }else{
+      btnAm.textContent='오전조 제출 완료';btnAm.disabled=true;btnAm.className='submit-btn submitted';
+    }
+  }else if(!sub){
+    btnAm.textContent='↑ 점검자를 먼저 선택';btnAm.disabled=true;btnAm.className='submit-btn primary';
+  }else{
+    btnAm.textContent=amStats.done===amStats.total&&amStats.total>0?'오전조 제출':`오전조 제출 (${amStats.done}/${amStats.total})`;
+    btnAm.disabled=amStats.done===0;btnAm.className='submit-btn primary';
+  }
+  if(STATE._submitted_pm){
+    if(pmStats.done<pmStats.total){
+      btnPm.textContent=`➕ 오후조 추가 제출 (남은 ${pmStats.total-pmStats.done}건)`;btnPm.disabled=!sub;btnPm.className='submit-btn primary';
+    }else{
+      btnPm.textContent='오후조 제출 완료';btnPm.disabled=true;btnPm.className='submit-btn submitted';
+    }
+  }else if(!sub){
+    btnPm.textContent='↑ 점검자를 먼저 선택';btnPm.disabled=true;btnPm.className='submit-btn primary';
+  }else{
+    btnPm.textContent=pmStats.done===pmStats.total&&pmStats.total>0?'오후조 제출':`오후조 제출 (${pmStats.done}/${pmStats.total})`;
+    btnPm.disabled=pmStats.done===0;btnPm.className='submit-btn primary';
+  }
+}
+
+function updateNightSubmitButtonG(sched,nightStats,d,gender){
+  const sfx=gender==='f'?'F':'M';
+  const btnNight=document.getElementById('submitNight'+sfx);
+  const sub=getSubmitterForGender(gender);
+  if(STATE._submitted_night){
+    if(nightStats.done<nightStats.total){
+      btnNight.textContent=`➕ 야간조 추가 제출 (남은 ${nightStats.total-nightStats.done}건)`;btnNight.disabled=!sub;btnNight.className='submit-btn night-btn';
+    }else{
+      btnNight.textContent='야간조 제출 완료';btnNight.disabled=true;btnNight.className='submit-btn submitted';
+    }
+  }else if(!sub){
+    btnNight.textContent='↑ 점검자를 먼저 선택';btnNight.disabled=true;btnNight.className='submit-btn night-btn';
+  }else{
+    btnNight.textContent=nightStats.done===nightStats.total&&nightStats.total>0?'야간조 제출':`야간조 제출 (${nightStats.done}/${nightStats.total})`;
+    btnNight.disabled=nightStats.done===0;btnNight.className='submit-btn night-btn';
+  }
+}
+
+function onCk(id,shift,gender){
+  const d=getDateG(gender);
+  const pfx=gender+'_';
+  STATE[id]=document.getElementById('cb_'+pfx+id).checked;
+  saveState(d);
+  drawUI(d,gender);
+
+  const nightMode=isNightShiftWorkerG(gender);
+  const sched=nightMode?getNightSched(d):getSched(d);
+  if(!sched)return;
+
+  const effectiveShift=nightMode?'night':shift;
+  const stats=getShiftStatsG(sched,effectiveShift,d,gender);
+  const subKey='_submitted_'+effectiveShift;
+  if(stats.pct===100&&!STATE[subKey]){
+    const sub=getSubmitterForGender(gender);
+    if(!sub){alert('점검자를 선택해주세요.');return}
+    const labels={am:'오전조',pm:'오후조',night:'야간조'};
+    const label=labels[effectiveShift]||effectiveShift;
+    if(confirm(`${label} 항목을 모두 완료했습니다.\n${sub}님 이름으로 제출할까요?`)){
+      submitShift(effectiveShift,gender);
+    }
+  }
+}
+
+function onExtra(stateKey,elemId){
+  const d=getDateG(activeGenderTab);
+  STATE[stateKey]=document.getElementById(elemId).value;
+  saveState(d);
+}
+function togX(id){const e=document.getElementById(id);e.classList.toggle('show');if(e.classList.contains('show'))e.focus()}
+function tog(h){h.nextElementSibling.classList.toggle('open')}
+/* v2.50 — 매뉴얼 탭 현재 점검 항목 자동 동기화 */
+function renderManualItems(){
+  const el=document.getElementById('manual-items-sync');
+  if(!el)return;
+  // WEEKDAY를 기준으로 항목 수집 (평일 = 기본 표준 스케줄)
+  const sched=typeof WEEKDAY!=='undefined'?WEEKDAY:[];
+  // 카테고리별로 항목 모으기 (중복 id 제거)
+  const catMap={};
+  const catOrder=[];
+  const seen=new Set();
+  function pushItem(cat,it){
+    if(!catMap[cat]){catMap[cat]=[];catOrder.push(cat);}
+    if(!seen.has(it.id)){seen.add(it.id);catMap[cat].push(it);}
+  }
+  sched.forEach(slot=>{
+    slot.groups.forEach(grp=>{
+      grp.items.forEach(it=>pushItem(grp.title,it));
+    });
+  });
+  // GM이 추가한 항목(CUSTOM_ITEMS)도 함께 표시
+  if(typeof CUSTOM_ITEMS!=='undefined'){
+    CUSTOM_ITEMS.forEach(ci=>{
+      pushItem(ci.category||'추가 점검',{id:ci.id,name:ci.name,detail:ci.detail,gender:ci.gender,_custom:true});
+    });
+  }
+  let html='';
+  catOrder.forEach(cat=>{
+    const items=catMap[cat];
+    html+=`<div style="background:var(--paper);border:1px solid var(--border);border-radius:10px;margin-bottom:10px;overflow:hidden;">`;
+    html+=`<div style="padding:10px 16px;font-size:13px;font-weight:700;color:var(--accent);border-bottom:1px solid var(--border);">${cat}</div>`;
+    items.forEach(it=>{
+      const detHtml=it.detail?it.detail.replace(/\n/g,'<br>'):'';
+      const hasDet=!!detHtml;
+      const genderLabel=it.gender==='m'?' <span style="font-size:10px;color:var(--blue);background:var(--blue-bg);padding:1px 6px;border-radius:6px;">지상</span>':it.gender==='f'?' <span style="font-size:10px;color:var(--orange);background:var(--orange-bg);padding:1px 6px;border-radius:6px;">지하</span>':'';
+      const customLabel=it._custom?' <span style="font-size:10px;color:var(--accent);background:var(--accent-bg);padding:1px 6px;border-radius:6px;">추가</span>':'';
+      const checked=!!STATE[it.id];
+      const checkMark=checked?' <span style="color:var(--green);font-weight:700;">&#10003;</span>':'';
+      const nameStyle=checked?'font-size:13px;font-weight:600;color:var(--dim);text-decoration:line-through;':'font-size:13px;font-weight:600;';
+      const arrow=hasDet?`<span class="m-arrow" style="font-size:11px;color:var(--dim);transition:transform .2s;">&#9654;</span>`:'';
+      const nameCursor=hasDet?'cursor:pointer;':'';
+      html+=`<div style="padding:10px 16px;border-bottom:1px solid rgba(61,56,53,0.35);">`;
+      html+=`<div style="display:flex;align-items:flex-start;gap:10px;">`;
+      html+=`<input type="checkbox" id="mcb_${it.id}" ${checked?'checked':''} onchange="onManualCk('${it.id}')" style="width:18px;height:18px;margin-top:1px;flex:0 0 auto;cursor:pointer;accent-color:var(--green);">`;
+      html+=`<div style="flex:1 1 auto;${nameCursor}" ${hasDet?'onclick="togManualItem(this)"':''}><div style="${nameStyle}display:flex;align-items:center;gap:6px;justify-content:space-between;"><span>${it.name}${genderLabel}${customLabel}${checkMark}</span>${arrow}</div>`;
+      if(hasDet)html+=`<div class="manual-item-detail" style="display:none;font-size:12px;color:var(--dim);margin-top:5px;line-height:1.5;">${detHtml}</div>`;
+      html+=`</div></div></div>`;
+    });
+    html+=`</div>`;
+  });
+  el.innerHTML=html||'<div style="color:var(--dim);font-size:13px;">항목 없음</div>';
+}
+
+/* 매뉴얼 탭 개별 항목 점검완료 체크 → 기존 체크 저장 시스템(STATE+saveState+pushToServer) 재사용 */
+function onManualCk(id){
+  const d=getDateG(activeGenderTab)||new Date().toISOString().slice(0,10);
+  STATE[id]=document.getElementById('mcb_'+id).checked;
+  saveState(d);
+  renderManualItems();
+}
+
+/* 매뉴얼 탭 항목 상세 토글 (이름 영역 클릭, 체크박스는 제외) */
+function togManualItem(nameEl){
+  const det=nameEl.querySelector('.manual-item-detail');
+  if(!det)return;
+  const open=det.style.display!=='none';
+  det.style.display=open?'none':'block';
+  const arrow=nameEl.querySelector('.m-arrow');
+  if(arrow)arrow.style.transform=open?'rotate(0deg)':'rotate(90deg)';
+}
+
+function togManual(h){
+  const body=h.nextElementSibling;
+  const arrow=h.querySelector('.arrow');
+  body.classList.toggle('open');
+  arrow.classList.toggle('open');
+}
+
+/* ── 그룹별 제출 (2026-06-05 GM: 항목 묶음 단위 제출, 조 마감은 별도 유지) ── */
+function groupKey(g){ return 'g_' + ((g.items && g.items[0]) ? g.items[0].id : ''); }
+function isGroupSubmitted(g){ return !!STATE['_gsub_' + groupKey(g)]; }
+async function submitGroup(gkey, gender){
+  const sub = getSubmitterForGender(gender);
+  if(!sub){ alert('점검자를 선택해주세요.'); return; }
+  const d = getDateG(gender);
+  STATE['_gsub_' + gkey] = true;
+  STATE['_gsubAt_' + gkey] = new Date().toISOString();
+  STATE['_gsubBy_' + gkey] = sub;
+  saveLocal(d, STATE);
+  if(ONLINE) await pushToServer(d);   // 텔레그램 알림 없음(조 마감 때만) — GM
+  drawUI(d, gender);
+}
+function collectGroupSubmits(){
+  const out = {};
+  Object.keys(STATE).forEach(k=>{
+    if(k.indexOf('_gsub_') === 0){
+      const key = k.slice(6);
+      out[key] = { by: STATE['_gsubBy_' + key] || '', at: STATE['_gsubAt_' + key] || '' };
+    }
+  });
+  return out;
+}
+// 그룹 제출 버튼/배지 HTML — cat-body 하단에 삽입
+function groupSubmitBarHtml(g, gender){
+  const gk = groupKey(g);
+  const visItems = (g.items||[]).filter(it=>shouldShowItemForGender(it,gender));
+  const remain = visItems.length - visItems.filter(it=>STATE[it.id]).length;
+  if(STATE['_gsub_' + gk]){
+    const by = STATE['_gsubBy_' + gk] ? ' (' + STATE['_gsubBy_' + gk] + ')' : '';
+    const at = STATE['_gsubAt_' + gk] ? new Date(STATE['_gsubAt_' + gk]).toLocaleString('ko-KR') : '';
+    // 제출됐지만 미완료(미흡) 항목이 남으면 '완료'로 막지 않고 추가 제출 허용 (2026-06-05 GM)
+    if(remain > 0){
+      return '<div class="group-submit-bar"><span class="group-submitted" style="color:var(--accent)">⚠ 일부 제출' + by + ' · 미흡 ' + remain + '건</span>' +
+        '<button class="group-submit-btn" onclick="submitGroup(\'' + gk + '\',\'' + gender + '\')">➕ 추가 제출 (남은 ' + remain + '건)</button></div>';
+    }
+    return '<div class="group-submit-bar"><span class="group-submitted">✅ 제출됨' + by + ' ' + at + '</span></div>';
+  }
+  return '<div class="group-submit-bar"><button class="group-submit-btn" onclick="submitGroup(\'' + gk + '\',\'' + gender + '\')">이 항목 제출</button></div>';
+}
+
+async function submitShift(shift,gender){
+  const sub=getSubmitterForGender(gender);
+  if(!sub){alert('점검자를 선택해주세요.');return}
+  const d=getDateG(gender);
+  const labels={am:'오전조',pm:'오후조',night:'야간조'};
+  const genderLabel=gender==='f'?'지하':'지상';
+  const label=labels[shift]||shift;
+  const _isAdd=!!STATE['_submitted_'+shift];
+  STATE['_submitted_'+shift]=true;
+  STATE['_submittedAt_'+shift]=new Date().toISOString();
+  STATE['_submitter_'+shift]=sub;
+  saveLocal(d,STATE);
+  if(ONLINE)await pushToServer(d);
+  await sendTelegramNotify(d,shift,sub,gender);
+  alert(`${d} ${label} 점검(${genderLabel})이 ${sub}님 이름으로 ${_isAdd?'추가 ':''}제출되었습니다.`);
+  drawUI(d,gender);
+}
+
+async function sendTelegramNotify(date,shift,submitter,gender){
+  const nightMode=(shift==='night');
+  const sched=nightMode?getNightSched(date):getSched(date);
+  if(!sched)return;
+  const labels={am:'오전조',pm:'오후조',night:'야간조'};
+  const genderLabel=gender==='f'?'지하':'지상';
+  const label=labels[shift]||shift;
+  const stats=getShiftStatsG(sched,shift,date,gender);
+  let issues=[];
+  sched.forEach(slot=>{
+    const match=(shift==='am'&&(slot.shift==='am'||slot.shift==='all'))||(shift==='pm'&&(slot.shift==='pm'||slot.shift==='all'))||(shift==='night'&&slot.shift==='night');
+    if(match){
+      slot.groups.forEach(g=>{g.items.forEach(it=>{
+        if(STATE['iss_'+it.id])issues.push(`  - ${it.name}: ${STATE['iss_'+it.id]}`);
+      })});
+    }
+  });
+  const dow=getDayOfWeek(date);
+  if(DAY_FOCUS[dow]){
+    DAY_FOCUS[dow].forEach(it=>{
+      if(STATE['iss_'+it.id])issues.push(`  - ${it.name}: ${STATE['iss_'+it.id]}`);
+    });
+  }
+  let msg=`[운영부 체계 점검 ${label} 제출 (${genderLabel})]\n날짜: ${date}\n점검자: ${submitter}\n완료: ${stats.done}/${stats.total} (${stats.pct}%)`;
+  if(issues.length)msg+=`\n\n이슈 ${issues.length}건:\n${issues.join('\n')}`;
+  try{
+    if(ONLINE){
+      await fetch(API_URL,{method:'POST',redirect:'follow',
+        headers:{'Content-Type':'text/plain'},
+        body:JSON.stringify({action:'notify',date,shift,submitter,genderTab:gender,message:msg})
+      });
+    }
+  }catch(e){}
+}
+
+/* ── 대시보드 데이터 수집 헬퍼 ── */
+function collectDashboardData(d){
+  const info=getDayInfo(d),sched=getSched(d),nightSched=getNightSched(d);
+  const dn=['일','월','화','수','목','금','토'],dt=new Date(d+'T00:00:00');
+  const dow=dt.getDay();
+
+  if(!sched) return {closed:true,d,dow,dn,info};
+
+  let amTotal=0,amDone=0,pmTotal=0,pmDone=0,nightTotal=0,nightDone=0;
+  let closingTotal=0,closingDone=0;
+  sched.forEach(slot=>{slot.groups.forEach(g=>{g.items.forEach(it=>{
+    if(slot.shift==='am'){amTotal++;if(STATE[it.id])amDone++}
+    else if(slot.shift==='pm'||slot.shift==='all'){pmTotal++;if(STATE[it.id])pmDone++}
+  })})});
+  // 마감 항목 별도 카운트 (pm 포함이지만 별도 표시용)
+  sched.forEach(slot=>{
+    if(slot.slot.includes('마감')){
+      slot.groups.forEach(g=>{g.items.forEach(it=>{closingTotal++;if(STATE[it.id])closingDone++})});
+    }
+  });
+  if(nightSched){
+    nightSched.forEach(slot=>{slot.groups.forEach(g=>{g.items.forEach(it=>{
+      nightTotal++;if(STATE[it.id])nightDone++;
+    })})});
+  }
+  if(DAY_FOCUS[dow]){
+    DAY_FOCUS[dow].forEach(it=>{pmTotal++;if(STATE[it.id])pmDone++});
+  }
+
+  const total=amTotal+pmTotal+nightTotal,done=amDone+pmDone+nightDone;
+  const pct=total?Math.round(done/total*100):0;
+
+  // 이슈/노하우 수집
+  let issuesAm=[],issuesPm=[],issuesNight=[],issuesFocus=[];
+  let allTips=[];
+  sched.forEach(slot=>{slot.groups.forEach(g=>{g.items.forEach(it=>{
+    const issVal=STATE['iss_'+it.id],tipVal=STATE['tip_'+it.id];
+    if(issVal){
+      const entry={slot:slot.slot,shift:slot.shift,name:it.name,memo:issVal,cat:g.title,id:it.id};
+      if(slot.shift==='am') issuesAm.push(entry);
+      else issuesPm.push(entry);
+    }
+    if(tipVal) allTips.push({slot:slot.slot,shift:slot.shift,name:it.name,memo:tipVal});
+  })})});
+  if(nightSched){
+    nightSched.forEach(slot=>{slot.groups.forEach(g=>{g.items.forEach(it=>{
+      if(STATE['iss_'+it.id])issuesNight.push({slot:slot.slot,shift:'night',name:it.name,memo:STATE['iss_'+it.id],cat:g.title,id:it.id});
+      if(STATE['tip_'+it.id])allTips.push({slot:slot.slot,shift:'night',name:it.name,memo:STATE['tip_'+it.id]});
+    })})});
+  }
+  if(DAY_FOCUS[dow]){
+    DAY_FOCUS[dow].forEach(it=>{
+      if(STATE['iss_'+it.id])issuesFocus.push({slot:'요일별',shift:'focus',name:it.name,memo:STATE['iss_'+it.id],cat:'요일별 집중 청소',id:it.id});
+      if(STATE['tip_'+it.id])allTips.push({slot:'요일별',shift:'focus',name:it.name,memo:STATE['tip_'+it.id]});
+    });
+  }
+  const allIssues=[...issuesAm,...issuesPm,...issuesNight,...issuesFocus];
+
+  // 점검자별 통계 수집
+  const submitterStats={};
+  function countForSubmitter(name,shift){
+    if(!name)return;
+    if(!submitterStats[name])submitterStats[name]={done:0,total:0,issues:0,shifts:new Set()};
+    submitterStats[name].shifts.add(shift);
+  }
+  // 오전 제출자
+  if(STATE._submitter_am){
+    const name=STATE._submitter_am;
+    if(!submitterStats[name])submitterStats[name]={done:0,total:0,issues:0,shifts:new Set()};
+    submitterStats[name].done+=amDone;
+    submitterStats[name].total+=amTotal;
+    submitterStats[name].shifts.add('오전');
+    issuesAm.forEach(()=>submitterStats[name].issues++);
+  }
+  // 오후 제출자
+  if(STATE._submitter_pm){
+    const name=STATE._submitter_pm;
+    if(!submitterStats[name])submitterStats[name]={done:0,total:0,issues:0,shifts:new Set()};
+    submitterStats[name].done+=pmDone;
+    submitterStats[name].total+=pmTotal;
+    submitterStats[name].shifts.add('오후');
+    issuesPm.forEach(()=>submitterStats[name].issues++);
+    issuesFocus.forEach(()=>submitterStats[name].issues++);
+  }
+  // 야간 제출자
+  if(STATE._submitter_night){
+    const name=STATE._submitter_night;
+    if(!submitterStats[name])submitterStats[name]={done:0,total:0,issues:0,shifts:new Set()};
+    submitterStats[name].done+=nightDone;
+    submitterStats[name].total+=nightTotal;
+    submitterStats[name].shifts.add('야간');
+    issuesNight.forEach(()=>submitterStats[name].issues++);
+  }
+
+  return {
+    closed:false,d,dow,dn,info,sched,nightSched,
+    amTotal,amDone,pmTotal,pmDone,nightTotal,nightDone,closingTotal,closingDone,
+    total,done,pct,
+    issuesAm,issuesPm,issuesNight,issuesFocus,allIssues,allTips,
+    submitterStats,
+    amPct:amTotal?Math.round(amDone/amTotal*100):0,
+    pmPct:pmTotal?Math.round(pmDone/pmTotal*100):0,
+    nightPct:nightTotal?Math.round(nightDone/nightTotal*100):0,
+    closingPct:closingTotal?Math.round(closingDone/closingTotal*100):0
+  };
+}
+
+async function renderAdmin(){
+  const d=document.getElementById('adminDate').value;
+  const el=document.getElementById('adminView');
+  const info=getDayInfo(d);
+  const dn=['일','월','화','수','목','금','토'],dt=new Date(d+'T00:00:00');
+  const dow=dt.getDay();
+
+  if(!getSched(d)){el.innerHTML=`<div class="admin-card"><h3>${d} (${dn[dow]}) - 휴관일</h3></div>`;return}
+  el.innerHTML='<div class="loading">불러오는 중...</div>';
+  await loadState(d);
+
+  const data=collectDashboardData(d);
+  if(data.closed){el.innerHTML=`<div class="admin-card"><h3>${d} (${dn[dow]}) - 휴관일</h3></div>`;return}
+
+  let html='';
+
+  /* ━━━ 요약 카드 ━━━ */
+  html+=`<div class="dash-section-title">${d} (${dn[dow]}) <span class="day-type ${data.info.cls}">${data.info.label}</span> 현황 요약</div>`;
+  html+=`<div class="dash-stat-row">`;
+  html+=`<div class="dash-stat-card"><div class="num">${data.total}</div><div class="label">총 점검 항목</div></div>`;
+  html+=`<div class="dash-stat-card"><div class="num" style="color:var(--green)">${data.done}</div><div class="label">완료</div></div>`;
+  html+=`<div class="dash-stat-card"><div class="num" style="color:var(--red)">${data.total-data.done}</div><div class="label">미완료</div></div>`;
+  html+=`<div class="dash-stat-card"><div class="num">${data.pct}%</div><div class="label">완료율</div></div>`;
+  html+=`</div>`;
+
+  /* ━━━ 교대별 통계 ━━━ */
+  html+=`<div class="dash-section-title">교대별 통계</div>`;
+  html+=`<table class="dash-table"><tr><th>교대</th><th>완료</th><th>총 항목</th><th>완료율</th><th>제출</th><th style="min-width:80px">그래프</th></tr>`;
+
+  const shiftRows=[
+    {label:'오전',done:data.amDone,total:data.amTotal,pct:data.amPct,sub:STATE._submitted_am,who:STATE._submitter_am,color:'green'},
+    {label:'오후',done:data.pmDone,total:data.pmTotal,pct:data.pmPct,sub:STATE._submitted_pm,who:STATE._submitter_pm,color:'blue'},
+    {label:'야간',done:data.nightDone,total:data.nightTotal,pct:data.nightPct,sub:STATE._submitted_night,who:STATE._submitter_night,color:'orange'},
+    {label:'마감',done:data.closingDone,total:data.closingTotal,pct:data.closingPct,sub:null,who:null,color:'accent'}
+  ];
+  shiftRows.forEach(r=>{
+    if(r.total===0)return;
+    const subTxt=r.sub?`<span style="color:var(--green);font-weight:600">제출(${r.who||'-'})</span>`:(r.label==='마감'?'-':'<span style="color:var(--red);font-weight:600">미제출</span>');
+    html+=`<tr><td><strong>${r.label}</strong></td><td>${r.done}</td><td>${r.total}</td><td>${r.pct}%</td><td>${subTxt}</td>`;
+    html+=`<td><div class="dash-bar-wrap"><div class="dash-bar ${r.color}" style="width:${r.pct}%"></div></div></td></tr>`;
+  });
+  html+=`</table>`;
+
+  /* ━━━ 점검자별 통계 ━━━ */
+  const subs=Object.entries(data.submitterStats);
+  if(subs.length>0){
+    html+=`<div class="dash-section-title">점검자별 통계</div>`;
+    html+=`<table class="dash-table"><tr><th>점검자</th><th>교대</th><th>완료</th><th>총 항목</th><th>이슈</th><th style="min-width:80px">완료율</th></tr>`;
+    subs.forEach(([name,st])=>{
+      const pct=st.total?Math.round(st.done/st.total*100):0;
+      const shifts=[...st.shifts].join(', ');
+      html+=`<tr><td><strong>${escapeHTML(name)}</strong></td><td>${shifts}</td><td>${st.done}</td><td>${st.total}</td>`;
+      html+=`<td>${st.issues>0?'<span style="color:var(--red);font-weight:600">'+st.issues+'건</span>':'0건'}</td>`;
+      html+=`<td><div class="dash-bar-wrap"><div class="dash-bar green" style="width:${pct}%"></div></div> ${pct}%</td></tr>`;
+    });
+    html+=`</table>`;
+  }
+
+  /* ━━━ 교대별 상세 카드 (기존 기능 유지) ━━━ */
+  html+=`<div class="dash-section-title">교대별 상세</div>`;
+  html+=buildAdminShiftCard('am','오전조',data.amDone,data.amTotal,data.amPct,STATE._submitted_am,STATE._submitter_am,STATE._submittedAt_am?new Date(STATE._submittedAt_am).toLocaleString('ko-KR'):'-',data.sched,null,dow,dn);
+  html+=buildAdminShiftCard('pm','오후조',data.pmDone,data.pmTotal,data.pmPct,STATE._submitted_pm,STATE._submitter_pm,STATE._submittedAt_pm?new Date(STATE._submittedAt_pm).toLocaleString('ko-KR'):'-',data.sched,null,dow,dn);
+  if(data.nightSched){
+    html+=buildAdminShiftCard('night','야간조 (무인/위탁)',data.nightDone,data.nightTotal,data.nightPct,STATE._submitted_night,STATE._submitter_night,STATE._submittedAt_night?new Date(STATE._submittedAt_night).toLocaleString('ko-KR'):'-',null,data.nightSched,dow,dn);
+  }
+
+  /* ━━━ 이슈 목록 ━━━ */
+  if(data.allIssues.length){
+    html+=`<div class="dash-section-title" style="color:var(--red)">이슈 목록 (${data.allIssues.length}건)</div>`;
+    const shiftGroups=[
+      {key:'am',label:'오전조',items:data.issuesAm},
+      {key:'pm',label:'오후조',items:data.issuesPm},
+      {key:'night',label:'야간조',items:data.issuesNight},
+      {key:'focus',label:'요일별 집중',items:data.issuesFocus}
+    ];
+    shiftGroups.forEach(sg=>{
+      if(sg.items.length===0)return;
+      html+=`<div class="dash-issue-card"><div style="font-size:13px;font-weight:700;color:var(--accent);margin-bottom:8px">${sg.label} (${sg.items.length}건)</div>`;
+      sg.items.forEach(i=>{
+        html+=`<div class="dash-issue-item"><div class="dash-issue-name">${i.name} <span class="dash-issue-meta">${i.slot} | ${i.cat}</span></div><div class="dash-issue-memo">${i.memo}</div></div>`;
+      });
+      html+=`</div>`;
+    });
+  }else{
+    html+=`<div class="admin-card" style="border-color:rgba(106,191,123,0.3)"><h3 style="color:var(--green)">이슈 없음</h3><div style="font-size:13px;color:var(--dim)">오늘 보고된 이슈가 없습니다.</div></div>`;
+  }
+
+  /* ━━━ 노하우 ━━━ */
+  if(data.allTips.length){
+    html+='<div class="tip-card"><h3>노하우/개선 의견 ('+data.allTips.length+'건)</h3>';
+    data.allTips.forEach(t=>{const sl={am:'오전',pm:'오후',night:'야간',all:'상시',focus:'집중'}[t.shift]||t.shift;html+=`<div style="padding:6px 0;border-bottom:1px solid rgba(167,139,218,0.2)"><div style="font-size:13px;font-weight:600">${t.name} <span style="color:var(--dim);font-size:11px">${sl}</span></div><div style="color:var(--purple);font-size:12px">${t.memo}</div></div>`});
+    html+='</div>';
+  }
+
+  el.innerHTML=html;
+}
+
+function buildAdminShiftCard(shiftKey,label,done,total,pct,submitted,submitterName,submittedAt,daySched,nightSched,dow,dn){
+  const dotColor=pct===100?'green':pct>0?'yellow':'red';
+  const fillColor=shiftKey==='night'?'var(--orange)':'var(--green)';
+  let html=`<div class="admin-shift-card ${shiftKey}"><h3>${label}</h3>`;
+  // Submission status
+  html+=`<div class="admin-shift-meta">`;
+  if(submitted){
+    html+=`<span class="submitted-badge">제출 완료</span> (${submitterName||'-'}) ${submittedAt}`;
+  }else{
+    html+=`<span class="not-submitted">미제출</span>`;
+  }
+  html+=`</div>`;
+  // Progress
+  html+=`<div class="admin-progress-wrap">
+    <div class="progress-text"><span><span class="status-dot ${dotColor}"></span>${done}/${total}</span><span>${pct}%</span></div>
+    <div class="progress-bar"><div class="progress-fill" style="width:${pct}%;background:${fillColor}"></div></div>
+  </div>`;
+  // Category breakdown
+  const sched=nightSched||daySched;
+  if(sched){
+    sched.forEach(slot=>{
+      let match=false;
+      if(shiftKey==='am'&&(slot.shift==='am')) match=true;
+      if(shiftKey==='pm'&&(slot.shift==='pm'||slot.shift==='all')) match=true;
+      if(shiftKey==='night'&&slot.shift==='night') match=true;
+      if(!match)return;
+      slot.groups.forEach(g=>{
+        let gd=0,gt=g.items.length;g.items.forEach(it=>{if(STATE[it.id])gd++});
+        const d2=gd===gt?'green':gd>0?'yellow':'red';
+        const slotLabel=shiftKey==='night'?` ${slot.slot}`:'';
+        html+=`<div class="admin-row"><span><span class="status-dot ${d2}"></span>${g.title}<span style="color:var(--dim);font-size:11px">${slotLabel}</span></span><span>${gd}/${gt}</span></div>`;
+      });
+    });
+  }
+  // Day focus in pm card
+  if(shiftKey==='pm'&&DAY_FOCUS[dow]){
+    let dfDone=0,dfTotal=DAY_FOCUS[dow].length;
+    DAY_FOCUS[dow].forEach(it=>{if(STATE[it.id])dfDone++});
+    const dfDot=dfDone===dfTotal?'green':dfDone>0?'yellow':'red';
+    html+=`<div class="admin-row"><span><span class="status-dot ${dfDot}"></span>요일별 집중 청소 <span style="color:var(--dim);font-size:11px">${dn[dow]}요일</span></span><span>${dfDone}/${dfTotal}</span></div>`;
+  }
+  // Day focus in night card
+  if(shiftKey==='night'&&DAY_FOCUS[dow]){
+    let dfDone=0,dfTotal=DAY_FOCUS[dow].length;
+    DAY_FOCUS[dow].forEach(it=>{if(STATE[it.id])dfDone++});
+    const dfDot=dfDone===dfTotal?'green':dfDone>0?'yellow':'red';
+    html+=`<div class="admin-row"><span><span class="status-dot ${dfDot}"></span>요일별 집중 청소 <span style="color:var(--dim);font-size:11px">${dn[dow]}요일</span></span><span>${dfDone}/${dfTotal}</span></div>`;
+  }
+  html+='</div>';
+  return html;
+}
+
+/* ═══════════════════════════════════════════
+   Toast 메시지
+   ═══════════════════════════════════════════ */
+let _toastTimer=null;
+function showToast(msg){
+  const el=document.getElementById('toastMsg');
+  el.textContent=msg;el.style.display='block';
+  clearTimeout(_toastTimer);
+  _toastTimer=setTimeout(()=>{el.style.display='none'},2500);
+}
+
+function _copyToClipboard(text){
+  if(navigator.clipboard){
+    navigator.clipboard.writeText(text).then(()=>showToast('클립보드에 복사되었습니다'));
+  }else{
+    const ta=document.createElement('textarea');
+    ta.value=text;document.body.appendChild(ta);ta.select();
+    document.execCommand('copy');document.body.removeChild(ta);
+    showToast('클립보드에 복사되었습니다');
+  }
+}
+
+/* ═══════════════════════════════════════════
+   현재 활성 탭 판별
+   ═══════════════════════════════════════════ */
+function getActiveTab(){
+  const tabs=['manual','check-m','check-f','admin'];
+  for(const t of tabs){
+    const el=document.getElementById('tab-'+t);
+    if(el&&!el.classList.contains('hidden'))return t;
+  }
+  return 'check-m';
+}
+
+/* ═══════════════════════════════════════════
+   인쇄: 현재 활성 탭을 A4 맞춤 인쇄
+   ═══════════════════════════════════════════ */
+function printCurrentTab(){
+  const tab=getActiveTab();
+  // 모든 content에 data-print-active 제거
+  document.querySelectorAll('.content').forEach(c=>c.removeAttribute('data-print-active'));
+  // 활성 탭에 마킹
+  const activeEl=document.getElementById('tab-'+tab);
+  if(activeEl)activeEl.setAttribute('data-print-active','true');
+  // 카테고리 펼치기
+  activeEl.querySelectorAll('.cat-body').forEach(b=>{
+    if(!b.classList.contains('open')){b.classList.add('open','print-opened')}
+  });
+  window.print();
+  // 복원
+  activeEl.querySelectorAll('.cat-body.print-opened').forEach(b=>{
+    b.classList.remove('open','print-opened');
+  });
+  activeEl.removeAttribute('data-print-active');
+}
+
+/* ═══════════════════════════════════════════
+   보고용: 격식체 텍스트 클립보드 복사
+   ═══════════════════════════════════════════ */
+async function copyReport(){
+  const tab=getActiveTab();
+  const d=(tab==='admin')?document.getElementById('adminDate').value
+         :(tab==='check-f')?document.getElementById('checkDateF').value
+         :document.getElementById('checkDateM').value;
+  const dn=['일','월','화','수','목','금','토'];
+  const dow=new Date(d+'T00:00:00').getDay();
+
+  // 데이터 로드
+  await loadState(d);
+  const data=collectDashboardData(d);
+
+  if(data.closed){
+    _copyToClipboard('━━━ 운영부 체계 일일 점검 보고 ━━━\n보고일: '+d+' ('+dn[dow]+')\n\n휴관일입니다.');
+    return;
+  }
+
+  const lines=[];
+  lines.push('━━━ 운영부 체계 일일 점검 보고 ━━━');
+  lines.push('보고일: '+d+' ('+dn[dow]+')');
+  lines.push('');
+
+  // 교대별 상세
+  const shifts=[
+    {label:'오전 점검',done:data.amDone,total:data.amTotal,shift:'am',sched:data.sched},
+    {label:'오후 점검',done:data.pmDone,total:data.pmTotal,shift:'pm',sched:data.sched},
+    {label:'야간 점검',done:data.nightDone,total:data.nightTotal,shift:'night',sched:data.nightSched}
+  ];
+
+  shifts.forEach(s=>{
+    if(s.total===0)return;
+    lines.push('■ '+s.label+' ('+s.done+'/'+s.total+' '+(s.done===s.total?'완료':'진행중')+')');
+    if(s.sched){
+      s.sched.forEach(slot=>{
+        let match=false;
+        if(s.shift==='am'&&(slot.shift==='am'))match=true;
+        if(s.shift==='pm'&&(slot.shift==='pm'||slot.shift==='all'))match=true;
+        if(s.shift==='night'&&slot.shift==='night')match=true;
+        if(!match)return;
+        slot.groups.forEach(g=>{
+          g.items.forEach(it=>{
+            const ck=STATE[it.id]?'v':'_';
+            const iss=STATE['iss_'+it.id];
+            let line='  '+ck+' '+it.name;
+            if(iss) line+=' -- '+iss;
+            else if(STATE[it.id]) line+=' -- 양호';
+            lines.push(line);
+          });
+        });
+      });
+    }
+    lines.push('');
+  });
+
+  // 요일별 집중
+  if(DAY_FOCUS[dow]&&DAY_FOCUS[dow].length>0){
+    let dfDone=0;DAY_FOCUS[dow].forEach(it=>{if(STATE[it.id])dfDone++});
+    lines.push('■ '+dn[dow]+'요일 집중 청소 ('+dfDone+'/'+DAY_FOCUS[dow].length+')');
+    DAY_FOCUS[dow].forEach(it=>{
+      const ck=STATE[it.id]?'v':'_';
+      const iss=STATE['iss_'+it.id];
+      let line='  '+ck+' '+it.name;
+      if(iss) line+=' -- '+iss;
+      else if(STATE[it.id]) line+=' -- 양호';
+      lines.push(line);
+    });
+    lines.push('');
+  }
+
+  // 이슈 사항
+  if(data.allIssues.length>0){
+    lines.push('■ 이슈 사항');
+    data.allIssues.forEach(i=>{
+      const shLabel={am:'오전',pm:'오후',night:'야간',focus:'집중'}[i.shift]||i.shift;
+      lines.push('  ! '+i.name+' ('+shLabel+') -- '+i.memo);
+    });
+    lines.push('');
+  }
+
+  // 노하우
+  if(data.allTips.length>0){
+    lines.push('■ 노하우/개선 의견');
+    data.allTips.forEach(t=>{
+      lines.push('  * '+t.name+' -- '+t.memo);
+    });
+    lines.push('');
+  }
+
+  lines.push('━━━ 총 '+data.total+'건 | 완료 '+data.done+'건 ('+data.pct+'%) | 이슈 '+data.allIssues.length+'건 ━━━');
+
+  _copyToClipboard(lines.join('\n'));
+}
+
+/* ═══════════════════════════════════════════
+   공유용: 간단 1줄 형식
+   ═══════════════════════════════════════════ */
+async function copyShare(){
+  const tab=getActiveTab();
+  const d=(tab==='admin')?document.getElementById('adminDate').value
+         :(tab==='check-f')?document.getElementById('checkDateF').value
+         :document.getElementById('checkDateM').value;
+  const dn=['일','월','화','수','목','금','토'];
+  const dow=new Date(d+'T00:00:00').getDay();
+
+  await loadState(d);
+  const data=collectDashboardData(d);
+
+  if(data.closed){
+    _copyToClipboard(d+' ('+dn[dow]+') 휴관일');
+    return;
+  }
+
+  const parts=[];
+  if(data.amTotal>0){
+    parts.push('[오전] '+data.amDone+'/'+data.amTotal+(data.amDone===data.amTotal?' 완료':' 진행중'));
+  }
+  if(data.pmTotal>0){
+    parts.push('[오후] '+data.pmDone+'/'+data.pmTotal+(data.pmDone===data.pmTotal?' 완료':' 진행중'));
+  }
+  if(data.nightTotal>0){
+    parts.push('[야간] '+data.nightDone+'/'+data.nightTotal+(data.nightDone===data.nightTotal?' 완료':' 진행중'));
+  }
+
+  let line=d+' ('+dn[dow]+') '+parts.join(' | ');
+
+  if(data.allIssues.length>0){
+    const issueSummary=data.allIssues.map(i=>i.name+' '+i.memo).join(', ');
+    line+=' | 이슈 '+data.allIssues.length+'건: '+issueSummary;
+  }else{
+    line+=' | 이슈 없음';
+  }
+
+  _copyToClipboard(line);
+}
+
+function switchTab(tab, opts){
+  // 점검(남)·점검(여) 비밀번호 보호
+  if(opts==='lock' && sessionStorage.getItem('checkAuth')!=='1'){
+    var pw = prompt('점검 탭 비밀번호를 입력하세요');
+    if(pw !== '1234'){ if(pw !== null) alert('비밀번호가 틀립니다.'); return; }
+    sessionStorage.setItem('checkAuth','1');
+  }
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t=>{
+    var oc = t.getAttribute('onclick') || '';
+    if(oc.indexOf("'"+tab+"'") >= 0) t.classList.add('active');
+  });
+  document.getElementById('tab-policy').classList.toggle('hidden',tab!=='policy');
+  document.getElementById('tab-voc').classList.toggle('hidden',tab!=='voc');
+  document.getElementById('tab-guide').classList.toggle('hidden',tab!=='guide');
+  document.getElementById('tab-manual').classList.toggle('hidden',tab!=='manual');
+  document.getElementById('tab-check-m').classList.toggle('hidden',tab!=='check-m');
+  document.getElementById('tab-check-f').classList.toggle('hidden',tab!=='check-f');
+  document.getElementById('tab-admin').classList.toggle('hidden',tab!=='admin');
+  document.getElementById('tab-manage').classList.toggle('hidden',tab!=='manage');
+  // Show correct submit bar
+  document.getElementById('submitBarM').style.display=(tab==='check-m')?'flex':'none';
+  document.getElementById('submitBarF').style.display=(tab==='check-f')?'flex':'none';
+  if(tab==='check-m'){activeGenderTab='m';renderG('m')}
+  if(tab==='check-f'){activeGenderTab='f';renderG('f')}
+  if(tab==='admin'){renderAdmin();renderAdminExtra();}
+  if(tab==='manual'){renderBoard();renderManualItems();}
+}
+
+/* ═══════════════════════════════════════════════
+   요일별 트렐로 보드 (매뉴얼 탭) — 7컬럼 × 지상/지하/공통
+   저장: localStorage(PARKING_MANUAL_BOARD) 즉시 영속 + 기존 패턴대로 API 베스트에포트 POST
+   ═══════════════════════════════════════════════ */
+const BOARD_STORAGE_KEY = 'OPS_MANUAL_BOARD'; // 21셀 내용 영속 키 (7요일×지상/지하/공통)
+const BOARD_DAYS = [
+  {key:'mon',label:'월',weekend:false},
+  {key:'tue',label:'화',weekend:false},
+  {key:'wed',label:'수',weekend:false},
+  {key:'thu',label:'목',weekend:false},
+  {key:'fri',label:'금',weekend:false},
+  {key:'sat',label:'토',weekend:true},
+  {key:'sun',label:'일',weekend:true}
+];
+/* 분류 3개: 지상 / 지하 / 공통(출입·정산·안전·소방 등). cls = CSS 색 클래스 */
+const BOARD_GENDERS = [
+  {gk:'m',cls:'male',label:'🅿 지상'},
+  {gk:'f',cls:'female',label:'🅿 지하'},
+  {gk:'outer',cls:'outer',label:'🏢 공통'}
+];
+
+/* 시드(seed) — 기존 요일별 집중 청소 표 + 남/여 전담 + 외부·주차장·건물 외곽 항목을 요일·분류 셀로 분배.
+   각 값은 줄바꿈(\n) 구분 항목 리스트 텍스트. 줄 맨 앞 "시간대::" 표기 시 그 시간대 그룹으로 묶임.
+   GM이 이후 직접 편집·저장. */
+const BOARD_SEED = {
+  mon:{
+    m:'오전 순찰(08:00~12:00)::지상 바닥 주차선·번호 식별 점검\n오전 순찰(08:00~12:00)::지상 조명 점등 불량 구역 기록',
+    f:'오전 순찰(08:00~12:00)::지하 층별 순찰·빈자리 현황\n오전 순찰(08:00~12:00)::지하 누수·배수구 점검',
+    outer:'오전(08:00~12:00)::차단기 정밀 점검(바·센서·리모컨)\n오전(08:00~12:00)::장애인·여성우선 구역 집중 단속'
+  },
+  tue:{
+    m:'오전 순찰(08:00~12:00)::지상 배수구·차수판 점검\n오전 순찰(08:00~12:00)::지상 조명 전수 점검',
+    f:'오전 순찰(08:00~12:00)::지하 환기·제연 가동 점검\n오전 순찰(08:00~12:00)::지하 조명 전수 점검',
+    outer:'오전(08:00~12:00)::안내·규정 게시물 점검\n오후(14:00~18:00)::주차유도·만차 표시기 점검'
+  },
+  wed:{
+    m:'오후(14:00~18:00)::지상 CCTV 사각지대 점검\n오전 순찰(08:00~12:00)::지상 통행로 적치물 정리',
+    f:'오후(14:00~18:00)::지하 CCTV 사각지대 점검\n오전 순찰(08:00~12:00)::지하 환기·제연 설비 점검',
+    outer:'오후(14:00~18:00)::CCTV 녹화 보존 확인\n오전(08:00~12:00)::정산기 카드리더·시재 점검'
+  },
+  thu:{
+    m:'오전 순찰(08:00~12:00)::지상 바닥 청소·오염 제거\n오전 순찰(08:00~12:00)::지상 통행로 이물질 제거',
+    f:'오전 순찰(08:00~12:00)::지하 바닥 고임물·오염 제거\n오전 순찰(08:00~12:00)::지하 층별 재순찰',
+    outer:'오후(14:00~18:00)::소화기·소화전 점검\n오후(14:00~18:00)::주차장 화장실 집중 청소'
+  },
+  fri:{
+    m:'오전 순찰(08:00~12:00)::지상 전기차 충전구역 점검\n오전 순찰(08:00~12:00)::지상 비상구·피난통로 점검',
+    f:'오전 순찰(08:00~12:00)::지하 전기차 충전구역 점검\n오전 순찰(08:00~12:00)::지하 비상구·피난통로 점검',
+    outer:'오전(08:00~12:00)::정산기 정밀 점검(지폐·동전·영수증)\n오후(14:00~18:00)::비상벨·유도등 점검'
+  },
+  sat:{
+    m:'오전 순찰(09:00~14:00)::지상 천장·벽면 누수 전수\n오전 순찰(09:00~14:00)::지상 주말 혼잡 유도',
+    f:'오전 순찰(09:00~14:00)::지하 천장·벽면 누수 전수\n오전 순찰(09:00~14:00)::지하 주말 혼잡 유도',
+    outer:'오전(09:00~14:00)::주차유도·만차 표시기 전수\n오후(14:00~18:00)::혼잡 대응 동선·임시 안내 점검'
+  },
+  sun:{
+    m:'종일::지상 전 구역 대청소\n종일::지상 장기 미출차 차량 정리·기록',
+    f:'종일::지하 전 구역 대청소\n종일::지하 장기 미출차 차량 정리·기록',
+    outer:'종일::장기 주차 차량 안내 조치\n종일::한 주간 미결·미비 점검 보완'
+  }
+};
+
+let BOARD_DATA = {}; // {dayKey:{m:'...', f:'...', outer:'...'}}
+
+/* stored(객체) → BOARD_DATA 병합 (없으면 시드 폴백) · 3분류(m/f/outer) */
+function applyBoardStored(stored){
+  BOARD_DATA={};
+  BOARD_DAYS.forEach(d=>{
+    const s=(stored&&stored[d.key])||{};
+    const seed=BOARD_SEED[d.key]||{};
+    const cell={};
+    BOARD_GENDERS.forEach(g=>{
+      const gk=g.gk;
+      cell[gk]=(s[gk]!==undefined&&s[gk]!==null)?s[gk]:(seed[gk]||'');
+    });
+    BOARD_DATA[d.key]=cell;
+  });
+}
+
+/* 로컬 폴백 로드 (오프라인·동기 초기 렌더용) */
+function loadBoardData(){
+  let stored=null;
+  try{ stored=JSON.parse(localStorage.getItem(BOARD_STORAGE_KEY)); }catch(e){ stored=null; }
+  applyBoardStored(stored);
+}
+
+/* 백엔드에서 보드 로드 → 있으면 사용·로컬 캐시, 없거나 실패 시 localStorage 폴백.
+   모든 기기 동기화의 핵심: 페이지 로드마다 백엔드를 진실 소스로 사용(last-write-wins). */
+async function loadBoardFromBackend(){
+  loadBoardData(); // 즉시 로컬/시드로 1차 렌더 가능하게
+  if(!ONLINE) return;
+  try{
+    const res=await fetch(API_URL+'?action=board&key='+encodeURIComponent(BOARD_STORAGE_KEY),{method:'GET',redirect:'follow'});
+    const data=await res.json();
+    if(data && data.ok && data.board && typeof data.board==='object'){
+      applyBoardStored(data.board);
+      localStorage.setItem(BOARD_STORAGE_KEY, JSON.stringify(BOARD_DATA)); // 오프라인 폴백 캐시 갱신
+    }
+    // data.board===null → 백엔드에 아직 없음 → 로컬/시드 유지(이후 첫 저장 시 백엔드에 기록)
+  }catch(e){ /* 네트워크 실패 → 이미 로드된 localStorage/시드 유지 */ }
+  // 편집 중인 셀이 있으면 재렌더 보류(IME 조합·입력 보호). 없을 때만 갱신.
+  const wrap=document.getElementById('manual-board');
+  if(wrap && !wrap.querySelector('.dv-cell.editing')) renderBoard();
+}
+
+function persistBoardData(){
+  // 1) localStorage 즉시 영속 (페이지 표준 오프라인 폴백 패턴)
+  localStorage.setItem(BOARD_STORAGE_KEY, JSON.stringify(BOARD_DATA));
+  // 2) 기존 저장 패턴대로 API 베스트에포트 POST (GAS가 action 미지원 시 무해히 무시)
+  if(!ONLINE) return;
+  const ind=document.getElementById('saveIndicator');
+  if(ind){ind.style.display='block';ind.textContent='보드 저장 중...';}
+  fetch(API_URL,{method:'POST',redirect:'follow',
+    headers:{'Content-Type':'text/plain'},
+    body:JSON.stringify({action:'saveBoard',key:BOARD_STORAGE_KEY,board:BOARD_DATA})
+  }).then(()=>{if(ind){ind.textContent='보드 저장 완료';setTimeout(()=>{ind.style.display='none'},1500);}})
+    .catch(()=>{if(ind){ind.textContent='보드 저장 (로컬 보관됨)';setTimeout(()=>{ind.style.display='none'},1500);}});
+}
+
+/* 선택된 요일 집합(다중선택). JS getDay(): 0=일~6=토 → BOARD_DAYS 순서로 매핑 */
+const DOW_TO_DAYKEY=['sun','mon','tue','wed','thu','fri','sat'];
+const BOARD_SELDAYS_KEY='PARKING_MANUAL_BOARD_SELDAYS'; // 선택 요일 영속 키(localStorage)
+const ALL_DAY_KEYS=BOARD_DAYS.map(d=>d.key);
+/* KST 오늘 날짜 문자열 (YYYY-MM-DD). UTC+9 보정 */
+function kstToday(){
+  const d=new Date(Date.now()+9*3600*1000);
+  return d.toISOString().slice(0,10);
+}
+/* 선택 요일 Set. 저장값이 오늘(KST) 날짜와 같을 때만 복원 — 날짜 바뀌면 오늘 요일로 리셋 */
+function loadSelectedDays(){
+  let saved=null;
+  try{ saved=JSON.parse(localStorage.getItem(BOARD_SELDAYS_KEY)); }catch(e){ saved=null; }
+  if(saved&&saved.date===kstToday()&&Array.isArray(saved.days)){
+    const valid=saved.days.filter(k=>ALL_DAY_KEYS.indexOf(k)>=0);
+    if(valid.length) return new Set(valid);
+  }
+  // 저장값 없거나 날짜 달라졌으면: 오늘 요일(KST) 1개만 켬
+  const todayKey=DOW_TO_DAYKEY[new Date(Date.now()+9*3600*1000).getUTCDay()];
+  return new Set([todayKey]);
+}
+let SELECTED_DAYS = loadSelectedDays();
+function saveSelectedDays(){
+  // BOARD_DAYS 순서 보존하여 날짜와 함께 저장
+  const ordered=ALL_DAY_KEYS.filter(k=>SELECTED_DAYS.has(k));
+  try{ localStorage.setItem(BOARD_SELDAYS_KEY, JSON.stringify({date:kstToday(),days:ordered})); }catch(e){}
+}
+
+/* ── 시간대(time slot) = 항목의 저장 속성 ──
+   저장 형식: 각 줄 맨 앞 "시간대::내용". BOARD_DATA(localStorage+백엔드)에 그대로 영속 → 시간대가 항목 속성으로 기록됨.
+   표준 시간대 프리셋(편집 시 빠른 지정용). 기존 시드·저장값의 임의 라벨도 하위호환 파싱됨. */
+const BOARD_TIMESLOTS=[
+  {key:'오전(08:00~12:00)', short:'오전', t:'08:00'},
+  {key:'오전후반(10:00~12:00)', short:'오전후반', t:'10:00'},
+  {key:'오후(13:00~)', short:'오후(13시)', t:'13:00'},
+  {key:'오후(14:00~18:00)', short:'오후', t:'14:00'},
+  {key:'야간(18:00~)', short:'야간', t:'18:00'},
+  {key:'종일(휴관일 집중)', short:'종일', t:'24:00'}
+];
+/* 라벨 → 정렬 기준 시각. 라벨 안 'HH:MM' 첫 등장 시각으로 시간 순 정렬(없으면 맨 뒤) */
+function timeslotSortKey(label){
+  if(!label||label==='기타') return '99:99';
+  const m=String(label).match(/(\d{1,2}):(\d{2})/);
+  return m ? (m[1].padStart(2,'0')+':'+m[2]) : '98:98';
+}
+
+/* 한 줄 파싱: "시간대::내용" → {tb:'시간대', text:'내용'}. 표기 없으면 tb='' (기타로 묶음) */
+function parseBoardLine(line){
+  const idx=line.indexOf('::');
+  if(idx>0 && idx<=20){ // 시간대 라벨은 짧음 → 오작동 방지(URL :: 등 회피)
+    return {tb:line.slice(0,idx).trim(), text:line.slice(idx+2).trim()};
+  }
+  return {tb:'', text:line};
+}
+
+/* 텍스트(줄바꿈 항목) → 2열 표(시간 | 내용) HTML. 시간 순 정렬·하위호환 파싱 유지 */
+function boardCellBodyHTML(text){
+  const lines=(text||'').split('\n').map(l=>l.trim()).filter(l=>l.length);
+  if(!lines.length) return '<div class="dv-empty">항목 없음 — 편집으로 추가</div>';
+  // 각 행을 {tb, text} 파싱 후 시간 순 정렬
+  const rows=lines.map(l=>parseBoardLine(l));
+  rows.sort((a,b)=>{
+    const ka=timeslotSortKey(a.tb||'기타'), kb=timeslotSortKey(b.tb||'기타');
+    if(ka!==kb) return ka<kb?-1:1;
+    return 0;
+  });
+  // 모든 행이 시간대 없는 '기타'면 시간 열 숨김(단순 1열 표)
+  const allEtc=rows.every(r=>!r.tb);
+  let html='<table class="dv-timetable">';
+  if(!allEtc) html+='<colgroup><col class="dv-tt-timecol"><col></colgroup>';
+  rows.forEach(r=>{
+    html+='<tr>';
+    if(!allEtc) html+='<td class="dv-tt-time">'+(r.tb?escapeHTML(r.tb):'—')+'</td>';
+    html+='<td class="dv-tt-task">'+escapeHTML(r.text)+'</td>';
+    html+='</tr>';
+  });
+  html+='</table>';
+  return html;
+}
+
+/* 요일 툴바 렌더 (7요일 다중선택 toggle + 전체 선택/해제 토글) */
+function renderDayToolbar(){
+  const bar=document.getElementById('day-toolbar');
+  if(!bar)return;
+  const todayKey=DOW_TO_DAYKEY[new Date().getDay()];
+  const allOn=ALL_DAY_KEYS.every(k=>SELECTED_DAYS.has(k));
+  let html='';
+  BOARD_DAYS.forEach(d=>{
+    const active=SELECTED_DAYS.has(d.key)?' active':'';
+    const we=d.weekend?' is-weekend':'';
+    const sub=(d.key===todayKey)?'오늘':(d.weekend?'주말':'평일');
+    html+='<button type="button" class="day-tab'+active+we+'" onclick="toggleBoardDay(\''+d.key+'\')">'
+        +'<span class="dt-day">'+d.label+'</span><span class="dt-sub">'+sub+'</span></button>';
+  });
+  // 전체 선택/해제 토글 (전부 켜져 있으면 '전체 해제', 아니면 '전체 선택')
+  html+='<button type="button" class="day-tab day-all'+(allOn?' active':'')+'" onclick="toggleAllBoardDays()">'
+      +'<span class="dt-day">'+(allOn?'전체 해제':'전체 선택')+'</span></button>';
+  bar.innerHTML=html;
+}
+
+/* 트렐로 칸반 렌더 — 켠 요일마다 컬럼 1개. 각 컬럼 안 남/여/외곽 카드그룹 세로.
+   textarea는 셀당 1개씩만 생성·재사용(IME 안전 / 편집 중 재렌더는 호출부에서 차단). */
+function renderBoard(){
+  renderDayToolbar();
+  const wrap=document.getElementById('manual-board');
+  if(!wrap)return;
+  const todayKey=DOW_TO_DAYKEY[new Date().getDay()];
+  const days=BOARD_DAYS.filter(d=>SELECTED_DAYS.has(d.key)); // BOARD_DAYS 순서 유지
+  if(!days.length){
+    wrap.classList.add('is-empty');
+    wrap.innerHTML='<div class="board-empty">위 <b>요일 버튼</b>을 눌러 보고 싶은 요일을 켜세요. (여러 개 동시 선택 가능 · <b>전체 선택</b>으로 7요일 한 번에)</div>';
+    return;
+  }
+  wrap.classList.remove('is-empty');
+  let html='';
+  days.forEach(d=>{
+    const cell=BOARD_DATA[d.key]||{};
+    const we=d.weekend?' is-weekend':'';
+    const isToday=d.key===todayKey;
+    html+='<div class="board-col'+we+'">';
+    html+='<div class="board-col-head"><span class="bday">'+d.label+'</span>'
+        +'<span class="day-type '+(d.weekend?'weekend':'weekday')+'">'+(d.weekend?'주말':'평일')+'</span>'
+        +(isToday?'<span class="day-type" style="background:var(--green-bg);color:var(--green);margin-left:4px;">오늘</span>':'')+'</div>';
+    html+='<div class="board-col-body">';
+    BOARD_GENDERS.forEach(g=>{
+      const gk=g.gk, cls=g.cls, lab=g.label;
+      const cid=d.key+'_'+gk;
+      const val=cell[gk]||'';
+      html+='<div class="dv-cell '+cls+'" id="cell_'+cid+'">';
+      html+='<div class="dv-cell-head"><span class="dv-cell-label '+cls+'">'+lab+'</span>'
+          +'<div style="display:flex;align-items:center;gap:4px">'
+          +'<button type="button" class="dv-edit-btn" id="btn_'+cid+'" onclick="boardToggleEdit(\''+d.key+'\',\''+gk+'\')">편집</button>'
+          +'<button type="button" class="dv-edit-btn cancel" id="cancelbtn_'+cid+'" style="display:none" onclick="boardCancelEdit(\''+d.key+'\',\''+gk+'\')">취소</button>'
+          +'</div></div>';
+      html+='<div class="dv-body">'+boardCellBodyHTML(val)+'</div>';
+      // 표 직접 편집 그리드 — 행 단위 [시간 | 내용 | 삭제]. 편집 진입 시 buildGridRows로 행 생성(IME 안전: 입력 중 재생성 안 함)
+      html+='<div class="dv-grid" id="grid_'+cid+'">'
+          +'<table class="dv-grid-table"><colgroup><col class="dv-g-timecol"><col><col class="dv-g-delcol"></colgroup>'
+          +'<thead><tr><th class="dv-grid-th">시간대</th><th class="dv-grid-th">내용</th><th class="dv-grid-th"></th></tr></thead>'
+          +'<tbody id="gridbody_'+cid+'"></tbody></table>'
+          +'<button type="button" class="dv-g-addrow" onclick="boardGridAddRow(\''+cid+'\')">＋ 행 추가</button>'
+          +'</div>';
+      html+='<div class="dv-edit-hint">각 행의 <b>시간대 칸</b>(예: 오전(08:00~12:00) · 비워도 됨)과 <b>내용 칸</b>을 표에서 바로 수정하세요. <b>＋ 행 추가</b>/<b>✕</b>로 행을 늘리거나 지웁니다. 저장 시 모든 기기에 반영·시간 순 정렬됩니다.</div>';
+      html+='</div>';
+    });
+    html+='</div></div>';
+  });
+  // 시간대 프리셋 datalist (모든 시간 칸 공유 — 입력 시 표준 시간대 자동완성)
+  html+='<datalist id="dv-timeslot-options">';
+  BOARD_TIMESLOTS.forEach(ts=>{ html+='<option value="'+escapeHTML(ts.key)+'">'+escapeHTML(ts.short)+'</option>'; });
+  html+='</datalist>';
+  wrap.innerHTML=html;
+}
+
+/* ── 표 직접 편집: 그리드 행 빌드·추가·삭제·직렬화 ──
+   행 1개 = [시간 input | 내용 textarea(자동 높이) | 삭제]. 편집 진입 시 1회 빌드(IME 안전). */
+function boardMakeGridRow(tb,text){
+  const tr=document.createElement('tr');
+  // 시간 칸
+  const tdT=document.createElement('td');
+  const inT=document.createElement('input');
+  inT.type='text'; inT.className='dv-g-time'; inT.value=tb||'';
+  inT.setAttribute('list','dv-timeslot-options');
+  inT.placeholder='시간대(선택)';
+  tdT.appendChild(inT); tr.appendChild(tdT);
+  // 내용 칸 (textarea — 길면 칸 안에서 줄바꿈·높이 자동 확장)
+  const tdC=document.createElement('td');
+  const taC=document.createElement('textarea');
+  taC.className='dv-g-task'; taC.rows=1; taC.value=text||'';
+  taC.addEventListener('input',function(){ boardGridAutoSize(taC); });
+  tdC.appendChild(taC); tr.appendChild(tdC);
+  // 삭제 칸
+  const tdD=document.createElement('td');
+  const btnD=document.createElement('button');
+  btnD.type='button'; btnD.className='dv-g-del'; btnD.textContent='✕';
+  btnD.title='행 삭제';
+  btnD.onclick=function(){ const tb2=tr.parentNode; tr.remove(); };
+  tdD.appendChild(btnD); tr.appendChild(tdD);
+  return {tr:tr, ta:taC};
+}
+/* 내용 textarea 높이를 내용에 맞게 자동 조정(칸 밖으로 넘침 방지) */
+function boardGridAutoSize(ta){
+  ta.style.height='auto';
+  ta.style.height=Math.max(38,ta.scrollHeight)+'px';
+}
+/* 그리드를 현재 텍스트 값으로 채움 (편집 진입 시 1회). 시간 순 정렬·하위호환 파싱 유지 */
+function boardGridBuild(cid,text){
+  const body=document.getElementById('gridbody_'+cid);
+  if(!body) return;
+  body.innerHTML='';
+  const lines=(text||'').split('\n').map(l=>l.trim()).filter(l=>l.length);
+  let rows=lines.map(l=>parseBoardLine(l));
+  rows.sort((a,b)=>{ const ka=timeslotSortKey(a.tb||'기타'),kb=timeslotSortKey(b.tb||'기타'); return ka<kb?-1:(ka>kb?1:0); });
+  if(!rows.length) rows=[{tb:'',text:''}]; // 빈 셀이면 빈 행 1개 제공
+  rows.forEach(r=>{ const made=boardMakeGridRow(r.tb,r.text); body.appendChild(made.tr); boardGridAutoSize(made.ta); });
+}
+/* 행 추가 — 기존 행 보존하고 빈 행 1개 append(IME 안전: 기존 입력칸 재생성 없음) */
+function boardGridAddRow(cid){
+  const body=document.getElementById('gridbody_'+cid);
+  if(!body) return;
+  const made=boardMakeGridRow('','');
+  body.appendChild(made.tr);
+  boardGridAutoSize(made.ta);
+  made.ta.focus();
+}
+/* 그리드 → "시간대::내용" 라인 문자열로 직렬화(기존 저장/백엔드 포맷·하위호환 유지).
+   시간 없는 행은 내용만, 내용 빈 행은 제외. */
+function boardGridSerialize(cid){
+  const body=document.getElementById('gridbody_'+cid);
+  if(!body) return '';
+  const out=[];
+  body.querySelectorAll('tr').forEach(tr=>{
+    const t=tr.querySelector('.dv-g-time'); const c=tr.querySelector('.dv-g-task');
+    if(!c) return;
+    const tb=(t?t.value:'').trim();
+    const text=c.value.replace(/\n/g,' ').trim(); // 셀 내 줄바꿈은 공백으로(라인 포맷 보호)
+    if(!text) return; // 내용 없는 행은 저장 제외
+    out.push(tb?(tb+'::'+text):text);
+  });
+  return out.join('\n');
+}
+
+/* 편집 중인 셀이 있으면 토글 보류(저장/닫기 유도) */
+function boardHasEditing(){
+  const wrap=document.getElementById('manual-board');
+  return !!(wrap && wrap.querySelector('.dv-cell.editing'));
+}
+
+/* 요일 toggle (켜고 끄기) → 컬럼 증감. 편집 중이면 보류. 선택 상태 localStorage 영속 */
+function toggleBoardDay(dayKey){
+  if(boardHasEditing()){
+    alert('편집 중인 카드를 먼저 저장하거나 닫아주세요.');
+    return;
+  }
+  if(SELECTED_DAYS.has(dayKey)) SELECTED_DAYS.delete(dayKey);
+  else SELECTED_DAYS.add(dayKey);
+  saveSelectedDays();
+  renderBoard();
+}
+
+/* 전체 선택/해제 토글. 전부 켜져 있으면 모두 해제, 아니면 모두 켬 */
+function toggleAllBoardDays(){
+  if(boardHasEditing()){
+    alert('편집 중인 카드를 먼저 저장하거나 닫아주세요.');
+    return;
+  }
+  const allOn=ALL_DAY_KEYS.every(k=>SELECTED_DAYS.has(k));
+  SELECTED_DAYS = allOn ? new Set() : new Set(ALL_DAY_KEYS);
+  saveSelectedDays();
+  renderBoard();
+}
+
+/* 편집 토글 + 저장. 표 그리드(행 단위 [시간|내용]) 직접 편집.
+   진입 시 그리드를 현재 값으로 1회 빌드(IME 안전), 저장 시 그리드→라인 직렬화. */
+function boardToggleEdit(dayKey,gk){
+  const cid=dayKey+'_'+gk;
+  const cell=document.getElementById('cell_'+cid);
+  const btn=document.getElementById('btn_'+cid);
+  const cancelbtn=document.getElementById('cancelbtn_'+cid);
+  if(!cell||!btn)return;
+  const editing=cell.classList.contains('editing');
+  if(!editing){
+    // 편집 진입 — 게이트(기존 항목 편집과 동일 비밀번호)
+    if(typeof requireEditAuth==='function' && !requireEditAuth()) return;
+    // 먼저 editing 노출(그리드 display:block) → 그래야 textarea 높이 자동조정(scrollHeight) 정상 측정
+    cell.classList.add('editing');
+    // 그리드를 현재 저장값으로 빌드(편집 진입 시 1회 — 입력 중 재빌드 안 함)
+    boardGridBuild(cid,(BOARD_DATA[dayKey]&&BOARD_DATA[dayKey][gk])||'');
+    btn.textContent='저장';
+    btn.classList.add('save');
+    if(cancelbtn) cancelbtn.style.display='';
+    const firstTask=cell.querySelector('.dv-g-task');
+    if(firstTask) firstTask.focus();
+  }else{
+    // 저장 — 그리드를 라인 포맷으로 직렬화 후 반영(기존 저장/백엔드 포맷 유지)
+    const serialized=boardGridSerialize(cid);
+    BOARD_DATA[dayKey][gk]=serialized;
+    cell.classList.remove('editing');
+    btn.textContent='편집';
+    btn.classList.remove('save');
+    if(cancelbtn) cancelbtn.style.display='none';
+    // 본문(표) 노드만 갱신 — 시간 순 정렬·하위호환 렌더
+    const oldBody=cell.querySelector('.dv-body');
+    if(oldBody) oldBody.innerHTML=boardCellBodyHTML(serialized);
+    persistBoardData();
+  }
+}
+
+/* 취소 — 편집 중 미저장 변경분 폐기, 편집 모드 종료(다음 진입 시 저장값으로 다시 빌드됨) */
+function boardCancelEdit(dayKey,gk){
+  const cid=dayKey+'_'+gk;
+  const cell=document.getElementById('cell_'+cid);
+  const btn=document.getElementById('btn_'+cid);
+  const cancelbtn=document.getElementById('cancelbtn_'+cid);
+  if(!cell||!btn)return;
+  cell.classList.remove('editing');
+  btn.textContent='편집';
+  btn.classList.remove('save');
+  if(cancelbtn) cancelbtn.style.display='none';
+}
+
+/* ═══════════════════════════════════════════════
+   운영부 규정 트렐로 보드 (규정 탭) — 주제별 칸(컬럼) × 편집 카드
+   상태(확정) 열 폐기. 매뉴얼 보드와 동일 영속 패턴(localStorage + 백엔드 best-effort).
+   저장키: PARKING_POLICY_BOARD (지원부와 분리). 인증 게이트 requireEditAuth(1234) 재사용.
+   ═══════════════════════════════════════════════ */
+const POLICY_STORAGE_KEY = 'OPS_POLICY_BOARD';
+/* 주제별 칸(컬럼) 정의. cls = 좌측 색 바 클래스(dv-cell 재사용) */
+const POLICY_COLS = [
+  {key:'ops',   label:'운영 기준', cls:'male'},
+  {key:'voc',   label:'VOC 처리', cls:'outer'},
+  {key:'meet',  label:'정기 회의', cls:'female'}
+];
+/* 시드 — 운영부 규정·회의 기본값. 공식값 확정 후 GM이 직접 편집·저장. */
+const POLICY_SEED = {
+  ops:[
+    {id:'op_hours', title:'운영시간', body:'클럽 공식 운영시간 기준 리셉션 운영.\n자세한 운영시간은 웰페리온 ERP 공식값 참조.'},
+    {id:'op_shift', title:'근무조 편성', body:'오전조: 이경연 실장\n오후조: 충원 예정\n2인 이상 근무 시 교대 휴게(리셉션 비우지 않음).'},
+    {id:'op_zone',  title:'담당 구역', body:'리셉션 카운터 / 프론트 로비 / 입구 안내 / 방문자 응대 / VOC 접수'},
+    {id:'op_report',title:'이슈 보고', body:'회원 민원·안전 이슈 발생 시 즉시 조치 후 실장·GM 보고.\n자의 판단 금지.'},
+    {id:'op_priv',  title:'개인정보', body:'회원 연락처·예약 정보는 외부 유출 금지.\n열람은 업무 목적+책임자 승인 한정.'},
+    {id:'op_note',  title:'※ 규정 확정 안내', body:'본 규정은 기본값(placeholder)이며, 운영부 인원·세부 절차 확정 후 GM 검토를 거쳐 갱신됩니다.'}
+  ],
+  voc:[
+    {id:'voc_recv', title:'VOC 접수 원칙', body:'회원 건의 접수 즉시 구글 폼(멤버의 소리 VOC) 기록.\n직원명·회원명·이슈 내용·장소·전달 부서 필수 입력.'},
+    {id:'voc_fwd',  title:'부서 전달', body:'접수 당일 해당 부서에 전달.\n전달 기록은 이슈 응답 시트(리셉션 업무 시트 VOC 탭) 확인.'},
+    {id:'voc_close',title:'처리 완료 고지', body:'처리 완료 시 회원에게 결과 고지(가능한 경우).\n미처리 건은 다음 교대조에 인계.'},
+    {id:'voc_link', title:'폼/시트 링크', body:'VOC 폼: docs.google.com/forms/d/e/1FAIpQLSd7mDzTyZT5FSXVcxmpMCaqv7M-RR3EmEu2lFqGRksUE77osA/viewform\n응답 시트: spreadsheets/d/1akZLs7ITs3FZWFIzMQvSYrdRucGQglmerOvTC2TLEcQ (gid=1576318230)'}
+  ],
+  meet:[
+    {id:'mt_week',  title:'주간 운영 미팅(정의 예정)', body:'주기: 미정 (예: 매주 월 오전)\n참석: 운영부 직원 + 실장\n안건: 지난주 VOC 현황 / 이번주 방문 일정 / 이슈 공유'},
+    {id:'mt_month', title:'월간 운영 회의(정의 예정)', body:'주기: 미정 (예: 매월 첫째주)\n참석: 실장 + GM\n안건: VOC 트렌드 / 매뉴얼 개정 / 개선 사항'},
+    {id:'mt_urgent',title:'긴급 회의', body:'주기: 민원·사고 등 이슈 발생 즉시\n참석: 해당 담당자+실장\n안건: 원인 분석 / 즉시 조치'}
+  ]
+};
+
+let POLICY_DATA = {}; // {colKey:[{id,title,body}, ...]}
+
+/* stored(객체) → POLICY_DATA 병합 (없으면 시드 폴백) */
+function applyPolicyStored(stored){
+  POLICY_DATA={};
+  POLICY_COLS.forEach(c=>{
+    const arr=(stored&&Array.isArray(stored[c.key]))?stored[c.key]:null;
+    if(arr){
+      POLICY_DATA[c.key]=arr.map(card=>({
+        id:card&&card.id?String(card.id):policyGenId(),
+        title:card&&card.title!=null?String(card.title):'',
+        body:card&&card.body!=null?String(card.body):''
+      }));
+    }else{
+      POLICY_DATA[c.key]=(POLICY_SEED[c.key]||[]).map(card=>({id:card.id,title:card.title,body:card.body}));
+    }
+  });
+}
+function policyGenId(){ return 'pol_'+Date.now()+'_'+Math.random().toString(36).slice(2,7); }
+
+/* 로컬 폴백 로드 (오프라인·동기 초기 렌더용) */
+function loadPolicyData(){
+  let stored=null;
+  try{ stored=JSON.parse(localStorage.getItem(POLICY_STORAGE_KEY)); }catch(e){ stored=null; }
+  applyPolicyStored(stored);
+}
+
+/* 백엔드 로드 → 있으면 사용·로컬 캐시, 없거나 실패 시 localStorage 폴백(매뉴얼 보드와 동일 패턴) */
+async function loadPolicyFromBackend(){
+  loadPolicyData(); // 즉시 로컬/시드로 1차 렌더
+  if(!ONLINE) return;
+  try{
+    const res=await fetch(API_URL+'?action=board&key='+encodeURIComponent(POLICY_STORAGE_KEY),{method:'GET',redirect:'follow'});
+    const data=await res.json();
+    if(data && data.ok && data.board && typeof data.board==='object'){
+      applyPolicyStored(data.board);
+      localStorage.setItem(POLICY_STORAGE_KEY, JSON.stringify(POLICY_DATA));
+    }
+  }catch(e){ /* 네트워크 실패 → 로컬/시드 유지 */ }
+  const wrap=document.getElementById('policy-board');
+  if(wrap && !wrap.querySelector('.dv-cell.editing')) renderPolicyBoard();
+}
+
+function persistPolicyData(){
+  localStorage.setItem(POLICY_STORAGE_KEY, JSON.stringify(POLICY_DATA));
+  if(!ONLINE) return;
+  const ind=document.getElementById('saveIndicator');
+  if(ind){ind.style.display='block';ind.textContent='규정 저장 중...';}
+  fetch(API_URL,{method:'POST',redirect:'follow',
+    headers:{'Content-Type':'text/plain'},
+    body:JSON.stringify({action:'saveBoard',key:POLICY_STORAGE_KEY,board:POLICY_DATA})
+  }).then(()=>{if(ind){ind.textContent='규정 저장 완료';setTimeout(()=>{ind.style.display='none'},1500);}})
+    .catch(()=>{if(ind){ind.textContent='규정 저장 (로컬 보관됨)';setTimeout(()=>{ind.style.display='none'},1500);}});
+}
+
+/* 카드 본문(줄바꿈) → 표시 HTML. 빈 값이면 안내. */
+function policyCardBodyHTML(body){
+  const lines=(body||'').split('\n').map(l=>l.trim()).filter(l=>l.length);
+  if(!lines.length) return '<div class="dv-empty">내용 없음 — 편집으로 추가</div>';
+  return lines.map(l=>'<div class="pol-line">'+escapeHTML(l)+'</div>').join('');
+}
+
+/* 트렐로 칸반 렌더 — 칸(컬럼)마다 카드 세로. 카드별 편집/취소/저장 + 카드 추가/삭제.
+   textarea는 편집 진입 시 1회 생성·재사용(IME 안전). */
+function renderPolicyBoard(){
+  const wrap=document.getElementById('policy-board');
+  if(!wrap)return;
+  let html='';
+  POLICY_COLS.forEach(col=>{
+    const cards=POLICY_DATA[col.key]||[];
+    html+='<div class="board-col">';
+    html+='<div class="board-col-head"><span class="bday" style="font-size:17px;">'+escapeHTML(col.label)+'</span>'
+        +'<span class="day-type weekday">'+cards.length+'개</span></div>';
+    html+='<div class="board-col-body">';
+    cards.forEach(card=>{
+      const cid=col.key+'__'+card.id;
+      html+='<div class="dv-cell '+col.cls+'" id="polcell_'+cid+'">';
+      html+='<div class="dv-cell-head"><span class="dv-cell-label '+col.cls+'">'+escapeHTML(card.title||'(제목 없음)')+'</span>'
+          +'<div style="display:flex;align-items:center;gap:4px">'
+          +'<button type="button" class="dv-edit-btn" id="polbtn_'+cid+'" onclick="policyToggleEdit(\''+col.key+'\',\''+card.id+'\')">편집</button>'
+          +'<button type="button" class="dv-edit-btn cancel" id="polcancel_'+cid+'" style="display:none" onclick="policyCancelEdit(\''+col.key+'\',\''+card.id+'\')">취소</button>'
+          +'</div></div>';
+      html+='<div class="dv-body">'+policyCardBodyHTML(card.body)+'</div>';
+      // 편집 폼 — 제목 input + 본문 textarea + 카드 삭제 (편집 진입 시 값 채움, IME 안전: 입력 중 재생성 없음)
+      html+='<div class="pol-edit" id="poledit_'+cid+'">'
+          +'<label class="pol-edit-lab">제목</label>'
+          +'<input type="text" class="pol-edit-title" id="poltitle_'+cid+'" placeholder="카드 제목">'
+          +'<label class="pol-edit-lab">내용 (줄바꿈으로 항목 구분)</label>'
+          +'<textarea class="pol-edit-body" id="polbody_'+cid+'" rows="4" placeholder="내용을 입력하세요"></textarea>'
+          +'<button type="button" class="pol-del-btn" onclick="policyDeleteCard(\''+col.key+'\',\''+card.id+'\')">이 카드 삭제</button>'
+          +'</div>';
+      html+='<div class="dv-edit-hint">제목·내용을 수정하고 <b>저장</b>을 누르면 모든 기기에 반영됩니다. 공식값(운영시간 등)은 임의 변경하지 마세요.</div>';
+      html+='</div>';
+    });
+    html+='<button type="button" class="dv-g-addrow" onclick="policyAddCard(\''+col.key+'\')">＋ 카드 추가</button>';
+    html+='</div></div>';
+  });
+  wrap.innerHTML=html;
+}
+
+function policyFindCard(colKey,id){
+  const arr=POLICY_DATA[colKey]||[];
+  for(let i=0;i<arr.length;i++){ if(arr[i].id===id) return {arr:arr,idx:i,card:arr[i]}; }
+  return null;
+}
+
+/* 편집 중인 카드가 있는지 */
+function policyHasEditing(){
+  const wrap=document.getElementById('policy-board');
+  return !!(wrap && wrap.querySelector('.dv-cell.editing'));
+}
+
+/* 편집 토글 + 저장. 진입 시 폼에 현재값 채움(1회), 저장 시 폼값 → 데이터 반영. */
+function policyToggleEdit(colKey,id){
+  const cid=colKey+'__'+id;
+  const cell=document.getElementById('polcell_'+cid);
+  const btn=document.getElementById('polbtn_'+cid);
+  const cancelbtn=document.getElementById('polcancel_'+cid);
+  const found=policyFindCard(colKey,id);
+  if(!cell||!btn||!found)return;
+  const editing=cell.classList.contains('editing');
+  if(!editing){
+    if(typeof requireEditAuth==='function' && !requireEditAuth()) return;
+    cell.classList.add('editing');
+    // 폼에 현재값 채움 (편집 진입 시 1회 — 입력 중 재생성 안 함)
+    const ti=document.getElementById('poltitle_'+cid);
+    const bo=document.getElementById('polbody_'+cid);
+    if(ti) ti.value=found.card.title||'';
+    if(bo) bo.value=found.card.body||'';
+    btn.textContent='저장';
+    btn.classList.add('save');
+    if(cancelbtn) cancelbtn.style.display='';
+    if(ti) ti.focus();
+  }else{
+    const ti=document.getElementById('poltitle_'+cid);
+    const bo=document.getElementById('polbody_'+cid);
+    found.card.title=ti?ti.value.trim():found.card.title;
+    found.card.body=bo?bo.value:found.card.body;
+    cell.classList.remove('editing');
+    btn.textContent='편집';
+    btn.classList.remove('save');
+    if(cancelbtn) cancelbtn.style.display='none';
+    // 제목·본문 노드만 갱신
+    const labEl=cell.querySelector('.dv-cell-label');
+    if(labEl) labEl.textContent=found.card.title||'(제목 없음)';
+    const bodyEl=cell.querySelector('.dv-body');
+    if(bodyEl) bodyEl.innerHTML=policyCardBodyHTML(found.card.body);
+    persistPolicyData();
+  }
+}
+
+/* 취소 — 미저장 변경분 폐기, 편집 모드 종료(다음 진입 시 저장값으로 다시 채움) */
+function policyCancelEdit(colKey,id){
+  const cid=colKey+'__'+id;
+  const cell=document.getElementById('polcell_'+cid);
+  const btn=document.getElementById('polbtn_'+cid);
+  const cancelbtn=document.getElementById('polcancel_'+cid);
+  if(!cell||!btn)return;
+  cell.classList.remove('editing');
+  btn.textContent='편집';
+  btn.classList.remove('save');
+  if(cancelbtn) cancelbtn.style.display='none';
+}
+
+/* 카드 추가 — 빈 카드 1개 추가 후 재렌더·편집 진입 */
+function policyAddCard(colKey){
+  if(typeof requireEditAuth==='function' && !requireEditAuth()) return;
+  if(policyHasEditing()){ alert('편집 중인 카드를 먼저 저장하거나 닫아주세요.'); return; }
+  if(!Array.isArray(POLICY_DATA[colKey])) POLICY_DATA[colKey]=[];
+  const nid=policyGenId();
+  POLICY_DATA[colKey].push({id:nid,title:'새 카드',body:''});
+  persistPolicyData();
+  renderPolicyBoard();
+  policyToggleEdit(colKey,nid); // 바로 편집 진입
+}
+
+/* 카드 삭제 */
+function policyDeleteCard(colKey,id){
+  if(typeof requireEditAuth==='function' && !requireEditAuth()) return;
+  if(!confirm('이 카드를 삭제할까요?')) return;
+  const found=policyFindCard(colKey,id);
+  if(!found) return;
+  found.arr.splice(found.idx,1);
+  persistPolicyData();
+  renderPolicyBoard();
+}
+
+/* ── Init ── */
+const today=new Date().toISOString().slice(0,10);
+document.getElementById('checkDateM').value=today;
+document.getElementById('checkDateF').value=today;
+document.getElementById('adminDate').value=today;
+document.getElementById('checkDateM').addEventListener('change',()=>renderG('m'));
+document.getElementById('checkDateF').addEventListener('change',()=>renderG('f'));
+document.getElementById('adminDate').addEventListener('change',renderAdmin);
+
+// Populate fallback first, then load from sheet
+populateSubmitterDropdowns();
+const savedM=localStorage.getItem('opscheck_submitter_m');
+const savedF=localStorage.getItem('opscheck_submitter_f');
+// Migration: pick up old single submitter key
+const savedOld=localStorage.getItem('opscheck_submitter');
+if(savedM)document.getElementById('submitterM').value=savedM;
+else if(savedOld)document.getElementById('submitterM').value=savedOld;
+if(savedF)document.getElementById('submitterF').value=savedF;
+else if(savedOld)document.getElementById('submitterF').value=savedOld;
+
+loadStaffFromSheet();
+loadItemMasterFromSheet(); // 점검 항목 마스터를 시트에서 로드 (비동기 — 완료 시 화면 갱신)
+loadBoardData(); renderBoard(); loadBoardFromBackend(); // 요일별 보드: 로컬 즉시 렌더 후 백엔드 동기화(모든 기기 반영)
+loadPolicyData(); renderPolicyBoard(); loadPolicyFromBackend(); // 규정 트렐로 보드: 로컬 즉시 렌더 후 백엔드 동기화
+renderG('m');
+
+/* ═══════════════════════════════════════════════
+   항목 관리 (CRUD) — localStorage 기반
+   ═══════════════════════════════════════════════ */
+
+const MGMT_STORAGE_KEY = 'opscheck_custom_items';
+let mgmtEditingId = null; // null = 추가 모드, string = 편집 중인 ID
+
+/* ── 관리자 편집 게이트 (비밀번호 1234, 세션당 1회) ──
+   조회·열람은 게이트 없음. 추가/편집저장/삭제 등 변경 시에만 호출. */
+function requireEditAuth(){
+  if(sessionStorage.getItem('editAuth')==='1') return true;
+  var pw = prompt('항목 편집 비밀번호를 입력하세요');
+  if(pw !== '1234'){ if(pw !== null) alert('비밀번호가 틀립니다.'); return false; }
+  sessionStorage.setItem('editAuth','1');
+  return true;
+}
+
+/* mgmtLoadItems → 시트 동기화된 CUSTOM_ITEMS 반환 (localStorage 폐기) */
+function mgmtLoadItems(){
+  return CUSTOM_ITEMS;
+}
+/* mgmtSaveItems → CUSTOM_ITEMS 갱신 + 시트 저장(saveItems) + 오프라인 캐시 */
+function mgmtSaveItems(items){
+  CUSTOM_ITEMS = items;
+  localStorage.setItem(ITEM_CACHE_KEY, JSON.stringify(items)); // 오프라인 폴백 캐시
+  if(!ONLINE) return;
+  const payload = items.map(itemToSheet);
+  const ind = document.getElementById('saveIndicator');
+  if(ind){ ind.style.display='block'; ind.textContent='항목 저장 중...'; }
+  fetch(API_URL,{method:'POST',redirect:'follow',
+    headers:{'Content-Type':'text/plain'},
+    body:JSON.stringify({action:'saveItems',items:payload})
+  }).then(()=>{ if(ind){ind.textContent='항목 저장 완료';setTimeout(()=>{ind.style.display='none'},1500);} })
+    .catch(()=>{ if(ind){ind.textContent='항목 저장 실패 (로컬 보관됨)';setTimeout(()=>{ind.style.display='none'},1500);} });
+}
+
+function mgmtGenerateId(){
+  return 'custom_' + Date.now() + '_' + Math.random().toString(36).slice(2,7);
+}
+
+/* ── 점검 화면 카테고리별 빠른 항목 추가 (셋업 편집기 데이터계층 재사용) ──
+   카테고리 하단 "＋ 항목 추가" → 인라인 입력칸 1회 생성(한글 IME 조합 중 재렌더 금지) →
+   CUSTOM_ITEMS push → mgmtSaveItems(기존 saveItems POST) → renderG 재렌더.
+   slot/shift는 렌더 루프의 라이브 값을 그대로 전달(형식 보존), gender는 탭(m/f). */
+function quickAddBarHtml(slot, shift, category, gender){
+  const args = "'"+setupAttr(slot)+"','"+setupAttr(shift)+"','"+setupAttr(category)+"','"+gender+"'";
+  return '<div class="quickadd-bar"><button class="quickadd-btn" onclick="quickAddOpen(this,'+args+')">＋ 항목 추가</button></div>';
+}
+
+function quickAddOpen(btn, slot, shift, category, gender){
+  const bar = btn.closest('.quickadd-bar');
+  if(!bar || bar.querySelector('.quickadd-form')) return; // 이미 열림
+  btn.style.display='none';
+  const form=document.createElement('div');
+  form.className='quickadd-form';
+  // 입력칸은 1회만 생성 후 재사용 — 조합 중 DOM 재생성 금지
+  form.innerHTML=
+    '<input type="text" class="quickadd-name" placeholder="항목명 (필수)" autocomplete="off">'+
+    '<input type="text" class="quickadd-detail" placeholder="상세 (선택)" autocomplete="off">'+
+    '<div class="quickadd-actions">'+
+      '<button class="quickadd-save">저장</button>'+
+      '<button class="quickadd-cancel">취소</button>'+
+    '</div>';
+  bar.appendChild(form);
+  const nameEl=form.querySelector('.quickadd-name');
+  const detailEl=form.querySelector('.quickadd-detail');
+  const meta={slot:slot, shift:shift, category:category, gender:gender};
+  form.querySelector('.quickadd-save').addEventListener('click',()=>quickAddSave(form,meta));
+  form.querySelector('.quickadd-cancel').addEventListener('click',()=>{ const b=bar.querySelector('.quickadd-btn'); if(b)b.style.display=''; form.remove(); });
+  // Enter=저장(IME 조합 확정 중 Enter는 무시: isComposing)
+  nameEl.addEventListener('keydown',e=>{ if(e.key==='Enter' && !e.isComposing){ e.preventDefault(); quickAddSave(form,meta); } });
+  detailEl.addEventListener('keydown',e=>{ if(e.key==='Enter' && !e.isComposing){ e.preventDefault(); quickAddSave(form,meta); } });
+  nameEl.focus();
+}
+
+function quickAddSave(form, meta){
+  const nameEl=form.querySelector('.quickadd-name');
+  const detailEl=form.querySelector('.quickadd-detail');
+  const name=(nameEl.value||'').trim();
+  if(!name){ alert('항목명을 입력해주세요.'); nameEl.focus(); return; }
+  const newItem={
+    id: mgmtGenerateId(),               // 신규 custom_… (기존 ID 재사용 금지 → STATE 유실 방지)
+    slot: meta.slot,
+    shift: meta.shift,
+    dayType: 'both',
+    gender: meta.gender,                // 점검(지상)→'m' / 점검(지하)→'f'
+    category: meta.category,
+    name: name,
+    detail: (detailEl.value||'').trim(),
+    order: undefined                    // 말미(itemToSheet가 idx+1 부여)
+  };
+  const next=(CUSTOM_ITEMS||[]).concat([newItem]);
+  mgmtSaveItems(next);                  // CUSTOM_ITEMS 갱신 + 시트 저장(saveItems POST)
+  renderG(meta.gender);                 // 재렌더 → 새 항목이 해당 카테고리에 체크박스로 합류
+}
+
+
+function escapeHTML(s){
+  if(!s) return '';
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+/* ── 커스텀 항목을 기존 스케줄에 주입 ── */
+function mgmtGetCustomItemsForSchedule(schedType){
+  // schedType: 'weekday' or 'weekend'
+  // GM이 시트에 저장한 항목(CUSTOM_ITEMS)을 해당 스케줄에 주입.
+  const items = mgmtLoadItems();
+  return items.filter(item => {
+    if(!item.dayType || item.dayType === 'both') return true;
+    return item.dayType === schedType;
+  });
+}
+
+function mgmtBuildCustomSlots(customItems){
+  // 커스텀 아이템을 slot+shift+category 기준으로 그룹핑하여
+  // 기존 스케줄 포맷과 동일한 구조로 반환
+  const slotMap = {};
+  customItems.forEach(item => {
+    const key = item.slot + '|' + item.shift;
+    if(!slotMap[key]){
+      slotMap[key] = { slot: item.slot, shift: item.shift, groups: {} };
+    }
+    if(!slotMap[key].groups[item.category]){
+      slotMap[key].groups[item.category] = [];
+    }
+    slotMap[key].groups[item.category].push({
+      id: item.id,
+      name: item.name,
+      detail: item.detail || '',
+      gender: item.gender || 'all',
+      _custom: true
+    });
+  });
+
+  // 배열로 변환
+  return Object.values(slotMap).map(slot => ({
+    slot: slot.slot,
+    shift: slot.shift,
+    groups: Object.entries(slot.groups).map(([title, items]) => ({
+      title: title,
+      items: items,
+      _custom: true
+    }))
+  }));
+}
+
+/* 커스텀 항목을 WEEKDAY/WEEKEND 배열에 병합 (원본 변경 없이 합친 새 배열 반환) */
+function mgmtMergeSchedule(baseSched, customSlots){
+  if(!customSlots || customSlots.length === 0) return baseSched;
+
+  // 깊은 복사
+  const merged = baseSched.map(slot => ({
+    slot: slot.slot,
+    shift: slot.shift,
+    groups: slot.groups.map(g => ({
+      title: g.title,
+      items: [...g.items]
+    }))
+  }));
+
+  customSlots.forEach(cs => {
+    // 같은 slot+shift 슬롯 찾기
+    let existSlot = merged.find(s => s.slot === cs.slot && s.shift === cs.shift);
+    if(!existSlot){
+      // 없으면 새 슬롯 추가
+      merged.push({
+        slot: cs.slot,
+        shift: cs.shift,
+        groups: cs.groups.map(g => ({ title: g.title, items: [...g.items], _custom: true }))
+      });
+    } else {
+      cs.groups.forEach(cg => {
+        // 같은 카테고리 찾기
+        let existGroup = existSlot.groups.find(g => g.title === cg.title);
+        if(existGroup){
+          // 기존 그룹에 항목 추가
+          cg.items.forEach(item => existGroup.items.push(item));
+        } else {
+          // 새 그룹 추가
+          existSlot.groups.push({ title: cg.title, items: [...cg.items], _custom: true });
+        }
+      });
+    }
+  });
+
+  return merged;
+}
+
+/* 현재 스케줄에 커스텀 항목 반영 (이 함수를 getSched/getNightSched 래핑에 사용) */
+function mgmtInjectCustomItems(){
+  // 커스텀 항목이 변경될 때마다 현재 탭을 다시 그리기
+  const tab = document.querySelector('.tab.active');
+  if(!tab) return;
+  const onclick = tab.getAttribute('onclick') || '';
+  if(onclick.includes('check-m')) renderG('m');
+  else if(onclick.includes('check-f')) renderG('f');
+  else if(onclick.includes('admin')) renderAdmin();
+}
+
+/* getSched / getNightSched를 래핑하여 커스텀 항목 포함 */
+const _origGetSched = getSched;
+const _origGetNightSched = getNightSched;
+
+getSched = function(ds){
+  const base = _origGetSched(ds);
+  if(!base) return null;
+  const info = getDayInfo(ds);
+  const schedType = info.type; // 'weekday' or 'weekend'
+  const customItems = mgmtGetCustomItemsForSchedule(schedType).filter(i => i.shift !== 'night');
+  const customSlots = mgmtBuildCustomSlots(customItems);
+  return mgmtMergeSchedule(base, customSlots);
+};
+
+getNightSched = function(ds){
+  const base = _origGetNightSched(ds);
+  if(!base) return null;
+  const info = getDayInfo(ds);
+  const schedType = info.type;
+  const customItems = mgmtGetCustomItemsForSchedule(schedType).filter(i => i.shift === 'night');
+  const customSlots = mgmtBuildCustomSlots(customItems);
+  return mgmtMergeSchedule(base, customSlots);
+};
+
+/* 커스텀 항목 표시 시 뱃지 추가를 위해 renderItem 래핑 */
+const _origRenderItem = renderItem;
+renderItem = function(it, shift, gender){
+  let html = _origRenderItem(it, shift, gender);
+  if(it._custom){
+    // 항목명 뒤에 커스텀 뱃지 삽입
+    html = html.replace('</label>', '<span class="mgmt-badge-custom">커스텀</span></label>');
+  }
+  return html;
+};
+
+/* ═══════════════════════════════════════════════
+   점검 셋업 편집기 1단계 (좌=시간대 / 우=항목)
+   - 데이터 소스: CUSTOM_ITEMS(시트 동기화) 작업 복사본 setupItems
+   - 코드 기본세트(WEEKDAY/WEEKEND/NIGHT/DAY_FOCUS)는 읽기전용 참고로만 표시(회귀0)
+   - 저장: mgmtSaveItems(기존 saveItems POST) — 성별 필드 포함 전 필드 보존
+   - 시간대 라벨은 slotToShiftFront 명명규칙 유지 위해 shift를 라벨에서 재추정
+   ═══════════════════════════════════════════════ */
+let setupEditOn = false;
+let setupItems = [];          // CUSTOM_ITEMS 작업 복사본
+let setupSlotOrder = [];      // 커스텀 시간대 표시 순서 (slot|shift 키 배열)
+let setupActiveKey = null;    // 현재 선택된 시간대 키
+const SETUP_SHIFT_LABEL = {am:'오전조',pm:'오후조',night:'야간조',focus:'요일집중',all:'전체'};
+
+function setupKey(slot, shift){ return (slot||'') + '|' + (shift||''); }
+/* onclick 속성용: HTML 따옴표(escapeAttr) + JS 작은따옴표/역슬래시 이스케이프 (시간대 라벨에 ' 포함 시 깨짐 방지) */
+function setupAttr(s){ return escapeAttr(String(s)).replace(/\\/g,'\\\\').replace(/'/g,"\\'"); }
+
+/* 코드 기본세트의 시간대 목록(읽기전용 참고용) — 평일+주말+야간 합집합, 순서 보존 */
+function setupBaseSlots(){
+  const out=[]; const seen=new Set();
+  function scan(arr){ if(!arr)return; arr.forEach(s=>{ const k=setupKey(s.slot,s.shift); if(!seen.has(k)){seen.add(k); out.push({slot:s.slot,shift:s.shift,base:true});} }); }
+  scan(typeof WEEKDAY!=='undefined'?WEEKDAY:[]);
+  scan(typeof WEEKEND!=='undefined'?WEEKEND:[]);
+  scan(typeof NIGHT_WEEKDAY!=='undefined'?NIGHT_WEEKDAY:[]);
+  scan(typeof NIGHT_WEEKEND!=='undefined'?NIGHT_WEEKEND:[]);
+  return out;
+}
+
+/* 코드 기본세트 항목(읽기전용) — 특정 slot|shift 키에 속한 것 */
+function setupBaseItemsForKey(key){
+  const out=[];
+  function scan(arr){ if(!arr)return; arr.forEach(s=>{ if(setupKey(s.slot,s.shift)!==key)return; s.groups.forEach(g=>{ g.items.forEach(it=>{ out.push({id:it.id,name:it.name,detail:it.detail||'',gender:it.gender||'all',cat:g.title}); }); }); }); }
+  scan(typeof WEEKDAY!=='undefined'?WEEKDAY:[]);
+  scan(typeof WEEKEND!=='undefined'?WEEKEND:[]);
+  scan(typeof NIGHT_WEEKDAY!=='undefined'?NIGHT_WEEKDAY:[]);
+  scan(typeof NIGHT_WEEKEND!=='undefined'?NIGHT_WEEKEND:[]);
+  // 중복 id 제거(평일/주말 공통 id)
+  const seen=new Set(); return out.filter(it=>{ if(seen.has(it.id))return false; seen.add(it.id); return true; });
+}
+
+/* 작업 복사본에서 커스텀 시간대 순서 재구성 (기존 항목의 slot 등장 순 + 사용자 추가분 유지) */
+function setupRebuildSlotOrder(){
+  const present=[]; const seen=new Set();
+  setupItems.forEach(it=>{ const k=setupKey(it.slot,it.shift); if(!seen.has(k)){seen.add(k);present.push(k);} });
+  // 기존 order 중 아직 유효한(항목 없어도 사용자가 추가한 빈 시간대) 것 유지
+  const keep=setupSlotOrder.filter(k=>!seen.has(k));
+  setupSlotOrder = present.concat(keep);
+  if(setupActiveKey && setupSlotOrder.indexOf(setupActiveKey)<0) setupActiveKey=null;
+}
+
+function toggleSetupEdit(){
+  if(!setupEditOn){
+    if(typeof requireEditAuth==='function' && !requireEditAuth()) return;
+    // 시트에서 로드된 최신 CUSTOM_ITEMS로 작업 복사본 생성
+    setupItems = (CUSTOM_ITEMS||[]).map(it=>({
+      id: it.id, slot: it.slot||'상시', shift: it.shift||slotToShiftFront(it.slot),
+      dayType: it.dayType||'both', gender: it.gender||'all',
+      category: it.category||'추가 점검', name: it.name||'', detail: it.detail||'', order: it.order
+    }));
+    setupSlotOrder=[]; setupActiveKey=null;
+    setupRebuildSlotOrder();
+    if(!setupActiveKey && setupSlotOrder.length>0) setupActiveKey=setupSlotOrder[0];
+  }
+  setupEditOn=!setupEditOn;
+  document.getElementById('setupEditor').style.display=setupEditOn?'block':'none';
+  document.getElementById('setupSaveBtn').style.display=setupEditOn?'inline-block':'none';
+  const btn=document.getElementById('setupToggleBtn');
+  btn.classList.toggle('on',setupEditOn);
+  btn.textContent=setupEditOn?'⚙ 셋업 편집 닫기':'⚙ 셋업 편집';
+  if(setupEditOn) setupRenderSlots();
+}
+
+function setupRenderSlots(){
+  setupRebuildSlotOrder();
+  const el=document.getElementById('setupSlotList');
+  if(!el)return;
+  let html='';
+  // 커스텀(편집 가능) 시간대
+  setupSlotOrder.forEach((k,idx)=>{
+    const parts=k.split('|'); const slot=parts[0], shift=parts[1];
+    const cnt=setupItems.filter(it=>setupKey(it.slot,it.shift)===k).length;
+    const active=(k===setupActiveKey)?' active':'';
+    html+=`<div class="setup-slot${active}" onclick="setupSelectSlot('${setupAttr(k)}')">
+      <div class="setup-slot-top">
+        <span class="setup-slot-name">${escapeHTML(slot)}</span>
+        <span class="setup-slot-shift">${SETUP_SHIFT_LABEL[shift]||shift}</span>
+        <span class="setup-slot-count">${cnt}개</span>
+      </div>
+      <div class="setup-slot-btns" onclick="event.stopPropagation()">
+        <button class="setup-mini-btn" onclick="setupRenameSlot('${setupAttr(k)}')">이름수정</button>
+        <button class="setup-mini-btn" onclick="setupMoveSlot('${setupAttr(k)}',-1)" ${idx===0?'disabled style=opacity:.4':''}>▲</button>
+        <button class="setup-mini-btn" onclick="setupMoveSlot('${setupAttr(k)}',1)" ${idx===setupSlotOrder.length-1?'disabled style=opacity:.4':''}>▼</button>
+        <button class="setup-mini-btn del" onclick="setupDeleteSlot('${setupAttr(k)}')">삭제</button>
+      </div>
+    </div>`;
+  });
+  // 코드 기본 시간대(읽기전용 참고)
+  const baseSlots=setupBaseSlots().filter(b=>setupSlotOrder.indexOf(setupKey(b.slot,b.shift))<0);
+  if(baseSlots.length){
+    html+=`<div class="setup-slot base" style="cursor:default;background:var(--bg);"><div class="setup-base-note">아래는 코드 기본 시간대 (읽기전용 참고)</div></div>`;
+    baseSlots.forEach(b=>{
+      const k=setupKey(b.slot,b.shift);
+      const active=(k===setupActiveKey)?' active':'';
+      html+=`<div class="setup-slot base${active}" onclick="setupSelectSlot('${setupAttr(k)}')">
+        <div class="setup-slot-top">
+          <span class="setup-slot-name">${escapeHTML(b.slot)}</span>
+          <span class="setup-slot-shift">${SETUP_SHIFT_LABEL[b.shift]||b.shift}</span>
+        </div>
+      </div>`;
+    });
+  }
+  el.innerHTML=html||'<div class="setup-empty">시간대가 없습니다. ＋ 시간대 추가를 누르세요.</div>';
+  setupRenderItems();
+}
+
+function setupSelectSlot(k){ setupActiveKey=k; setupRenderSlots(); }
+
+function setupAddSlot(){
+  const name=prompt('새 시간대 이름을 입력하세요.\n예) 오전 순찰 10:00~12:00 / 저녁 점검 18:00~22:00 / 23:30~01:00 지상\n(이름에 따라 오전/오후/야간 자동 분류됩니다)');
+  if(name===null)return;
+  const slot=name.trim(); if(!slot){alert('이름을 입력하세요.');return;}
+  const shift=slotToShiftFront(slot);
+  const k=setupKey(slot,shift);
+  if(setupSlotOrder.indexOf(k)>=0){alert('이미 있는 시간대입니다.');setupActiveKey=k;setupRenderSlots();return;}
+  setupSlotOrder.push(k); setupActiveKey=k; setupRenderSlots();
+}
+
+function setupRenameSlot(k){
+  const parts=k.split('|'); const oldSlot=parts[0];
+  const name=prompt('시간대 이름 수정 (시간범위 포함 권장)', oldSlot);
+  if(name===null)return;
+  const slot=name.trim(); if(!slot){alert('이름을 입력하세요.');return;}
+  const shift=slotToShiftFront(slot); // 명명규칙 → 근무조 재추정(contract 유지)
+  const nk=setupKey(slot,shift);
+  if(nk!==k && setupSlotOrder.indexOf(nk)>=0){alert('같은 이름의 시간대가 이미 있습니다.');return;}
+  // 해당 시간대 항목 전부 이동
+  setupItems.forEach(it=>{ if(setupKey(it.slot,it.shift)===k){ it.slot=slot; it.shift=shift; } });
+  const i=setupSlotOrder.indexOf(k); if(i>=0) setupSlotOrder[i]=nk;
+  if(setupActiveKey===k) setupActiveKey=nk;
+  setupRenderSlots();
+}
+
+function setupMoveSlot(k,dir){
+  const i=setupSlotOrder.indexOf(k); if(i<0)return;
+  const j=i+dir; if(j<0||j>=setupSlotOrder.length)return;
+  const t=setupSlotOrder[i]; setupSlotOrder[i]=setupSlotOrder[j]; setupSlotOrder[j]=t;
+  setupRenderSlots();
+}
+
+function setupDeleteSlot(k){
+  const slot=k.split('|')[0];
+  const cnt=setupItems.filter(it=>setupKey(it.slot,it.shift)===k).length;
+  if(!confirm(`'${slot}' 시간대를 삭제할까요?`+(cnt?`\n포함된 커스텀 항목 ${cnt}개도 함께 삭제됩니다.`:'')))return;
+  setupItems=setupItems.filter(it=>setupKey(it.slot,it.shift)!==k);
+  setupSlotOrder=setupSlotOrder.filter(x=>x!==k);
+  if(setupActiveKey===k) setupActiveKey=setupSlotOrder[0]||null;
+  setupRenderSlots();
+}
+
+/* 입력 중 재렌더 금지(한글 IME) — 모델만 갱신, DOM 유지 */
+function setupUpdateItemField(id, field, val){
+  const it=setupItems.find(x=>x.id===id); if(it) it[field]=val;
+}
+
+function setupRenderItems(){
+  const el=document.getElementById('setupItemList');
+  const head=document.getElementById('setupItemsHead');
+  const addBtn=document.getElementById('setupAddItemBtn');
+  if(!el)return;
+  if(!setupActiveKey){ el.innerHTML='<div class="setup-empty">왼쪽에서 시간대를 선택하세요.</div>'; if(head)head.textContent='항목'; if(addBtn)addBtn.style.display='none'; return; }
+  const slot=setupActiveKey.split('|')[0];
+  if(head)head.textContent=slot+' 항목';
+  const isCustomSlot=setupSlotOrder.indexOf(setupActiveKey)>=0;
+  if(addBtn)addBtn.style.display=isCustomSlot?'inline-block':'none';
+  // 다른 시간대(이동 대상) 옵션 — 커스텀 시간대만
+  const moveOpts=setupSlotOrder.filter(k=>k!==setupActiveKey).map(k=>`<option value="${escapeAttr(k)}">${escapeHTML(k.split('|')[0])}</option>`).join('');
+  // (option value는 escapeAttr만으로 충분 — onchange는 this.value를 직접 전달)
+  let html='';
+  // 코드 기본 항목(읽기전용)
+  const baseItems=setupBaseItemsForKey(setupActiveKey);
+  baseItems.forEach(it=>{
+    const gl=it.gender==='m'?'지상':it.gender==='f'?'지하':'공통';
+    html+=`<div class="setup-item base">
+      <div style="display:flex;align-items:center;gap:8px;"><span style="font-size:13px;font-weight:600;flex:1;">${escapeHTML(it.name)}</span>
+      <span class="setup-base-note">기본·읽기전용</span><span class="setup-slot-shift" style="background:var(--purple-bg);color:var(--purple);">${gl}</span></div>
+      ${it.detail?`<div style="font-size:12px;color:var(--dim);margin-top:4px;white-space:pre-line;line-height:1.5;">${escapeHTML(it.detail)}</div>`:''}
+    </div>`;
+  });
+  // 커스텀 항목(편집 가능)
+  const custom=setupItems.filter(it=>setupKey(it.slot,it.shift)===setupActiveKey);
+  custom.forEach(it=>{
+    const sel=g=>it.gender===g?' selected':'';
+    html+=`<div class="setup-item" data-id="${escapeAttr(it.id)}">
+      <input class="setup-item-name-in" type="text" value="${escapeAttr(it.name)}" placeholder="항목명" oninput="setupUpdateItemField('${escapeAttr(it.id)}','name',this.value)">
+      <textarea class="setup-item-detail-in" placeholder="상세 설명" oninput="setupUpdateItemField('${escapeAttr(it.id)}','detail',this.value)">${escapeHTML(it.detail||'')}</textarea>
+      <div class="setup-item-row2">
+        <label style="font-size:11px;color:var(--dim);">성별</label>
+        <select onchange="setupUpdateItemField('${escapeAttr(it.id)}','gender',this.value)"><option value="all"${sel('all')}>공용</option><option value="m"${sel('m')}>남</option><option value="f"${sel('f')}>여</option></select>
+        <label style="font-size:11px;color:var(--dim);">카테고리</label>
+        <input type="text" value="${escapeAttr(it.category||'추가 점검')}" style="background:var(--bg);border:1px solid var(--border);color:var(--text);padding:5px 8px;border-radius:6px;font-size:11px;font-family:inherit;width:110px;" oninput="setupUpdateItemField('${escapeAttr(it.id)}','category',this.value)">
+        ${moveOpts?`<label style="font-size:11px;color:var(--dim);">이동</label><select onchange="setupMoveItem('${escapeAttr(it.id)}',this.value);this.value='';"><option value="">시간대 선택…</option>${moveOpts}</select>`:''}
+        <button class="setup-mini-btn del" style="margin-left:auto;" onclick="setupDeleteItem('${escapeAttr(it.id)}')">삭제</button>
+      </div>
+    </div>`;
+  });
+  if(!baseItems.length && !custom.length) html='<div class="setup-empty">이 시간대에 항목이 없습니다.'+(isCustomSlot?' ＋ 항목 추가를 누르세요.':'')+'</div>';
+  el.innerHTML=html;
+}
+
+function setupAddItem(){
+  if(!setupActiveKey || setupSlotOrder.indexOf(setupActiveKey)<0){alert('커스텀 시간대를 먼저 선택하세요.');return;}
+  const parts=setupActiveKey.split('|'); const slot=parts[0], shift=parts[1];
+  setupItems.push({ id:mgmtGenerateId(), slot:slot, shift:shift, dayType:'both', gender:'all', category:'추가 점검', name:'', detail:'', order:undefined });
+  setupRenderItems(); // 신규 추가만 재렌더(입력 중 아님 → IME 영향 없음)
+}
+
+function setupDeleteItem(id){
+  const it=setupItems.find(x=>x.id===id);
+  if(!confirm('이 항목을 삭제할까요?'+(it&&it.name?`\n('${it.name}')`:'')))return;
+  setupItems=setupItems.filter(x=>x.id!==id);
+  setupRenderSlots(); // 개수 갱신
+}
+
+function setupMoveItem(id,targetKey){
+  if(!targetKey)return;
+  const it=setupItems.find(x=>x.id===id); if(!it)return;
+  const parts=targetKey.split('|');
+  it.slot=parts[0]; it.shift=parts[1];
+  setupRenderSlots();
+}
+
+function setupSave(){
+  if(typeof requireEditAuth==='function' && !requireEditAuth())return;
+  const bad=setupItems.find(it=>!it.slot || !it.slot.trim());
+  if(bad){alert('시간대 이름이 비어있는 항목이 있습니다. 확인 후 다시 저장하세요.');return;}
+  const empties=setupItems.filter(it=>!it.name || !it.name.trim());
+  if(empties.length){
+    if(!confirm(`항목명이 비어있는 항목 ${empties.length}개가 있습니다. 저장 시 자동 제외됩니다. 계속할까요?`))return;
+  }
+  const payload=setupItems.filter(it=>it.name && it.name.trim());
+  // order 부여(시간대 순서 → 항목 순서)
+  let ord=0; const keyOrder={}; setupSlotOrder.forEach((k,i)=>keyOrder[k]=i);
+  payload.sort((a,b)=>{ const ka=(keyOrder[setupKey(a.slot,a.shift)]!==undefined?keyOrder[setupKey(a.slot,a.shift)]:999), kb=(keyOrder[setupKey(b.slot,b.shift)]!==undefined?keyOrder[setupKey(b.slot,b.shift)]:999); return ka-kb; });
+  payload.forEach(it=>{ it.order=++ord; });
+  mgmtSaveItems(payload);            // 기존 saveItems POST (성별 등 전 필드 itemToSheet로 보존)
+  setupItems=payload.map(it=>({...it}));
+  setupRebuildSlotOrder();
+  setupRenderSlots();
+  if(typeof mgmtInjectCustomItems==='function') mgmtInjectCustomItems();
+  alert('저장되었습니다. 전 기기 반영 완료 (다른 기기는 Ctrl+Shift+R 새로고침).');
+}
+
+/* 초기 렌더링 */
+renderManualItems();
+</script>
+
+<!-- v1.3 항목 편집 모달 (제목·내용·시간대·근무조·카테고리) -->
+<div id="itemEditModal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);z-index:1000;align-items:center;justify-content:center;padding:20px;">
+  <div style="background:var(--paper);padding:22px 24px;border-radius:14px;max-width:520px;width:100%;border:1px solid var(--accent);box-shadow:0 12px 40px rgba(0,0,0,0.5);max-height:90vh;overflow-y:auto;">
+    <h3 style="font-size:16px;font-weight:700;color:var(--accent);margin-bottom:14px;">항목 편집</h3>
+    <div style="margin-bottom:12px;">
+      <label style="display:block;font-size:13px;font-weight:600;color:var(--dim);margin-bottom:4px;">제목</label>
+      <input id="editName" type="text" style="width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:10px 14px;border-radius:8px;font-size:14px;font-family:inherit;">
+    </div>
+    <div style="margin-bottom:12px;">
+      <label style="display:block;font-size:13px;font-weight:600;color:var(--dim);margin-bottom:4px;">내용 (세부 설명)</label>
+      <textarea id="editDetail" style="width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:10px 14px;border-radius:8px;font-size:13px;font-family:inherit;min-height:80px;line-height:1.6;resize:vertical;"></textarea>
+    </div>
+    <div style="display:flex;gap:10px;margin-bottom:12px;">
+      <div style="flex:1;">
+        <label style="display:block;font-size:13px;font-weight:600;color:var(--dim);margin-bottom:4px;">근무조</label>
+        <select id="editShift" style="width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:10px 14px;border-radius:8px;font-size:14px;font-family:inherit;cursor:pointer;">
+          <option value="am">오전조 (05:30~14:15)</option>
+          <option value="pm">오후조 (14:00~22:30)</option>
+          <option value="night">야간조 (무인/위탁)</option>
+          <option value="focus">요일별 집중 청소</option>
+          <option value="all">전체 시간대</option>
+        </select>
+      </div>
+      <div style="flex:1;">
+        <label style="display:block;font-size:13px;font-weight:600;color:var(--dim);margin-bottom:4px;">시간대 라벨</label>
+        <input id="editSlot" type="text" placeholder="예: 10:00~12:00 오전 후반" style="width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:10px 14px;border-radius:8px;font-size:13px;font-family:inherit;">
+      </div>
+    </div>
+    <div style="margin-bottom:14px;">
+      <label style="display:block;font-size:13px;font-weight:600;color:var(--dim);margin-bottom:4px;">카테고리</label>
+      <input id="editCat" type="text" placeholder="예: P-A 출입통제 · 차단기" style="width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:10px 14px;border-radius:8px;font-size:13px;font-family:inherit;">
+    </div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;">
+      <button onclick="cancelItemEdit()" style="padding:10px 20px;background:var(--paper);color:var(--dim);border:1px solid var(--border);border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;">취소</button>
+      <button onclick="saveItemEdit()" style="padding:10px 22px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;">저장</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ── 대시보드 고도화: 주간 트렌드·이슈대장 ── */
+const DASH_API = API_URL;
+const DASH_DEPT = 'ops';
+const DASH_DN = ['일','월','화','수','목','금','토'];
+
+function dashEsc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function dashTodayStr(){const d=new Date();return d.getFullYear()+'-'+(''+(d.getMonth()+1)).padStart(2,'0')+'-'+(''+(d.getDate())).padStart(2,'0');}
+
+async function renderAdminExtra(){
+  renderWeekly();
+  renderIssuelog();
+}
+
+async function renderWeekly(){
+  const el=document.getElementById('weeklyView');
+  if(!el)return;
+  try{
+    const r=await fetch(DASH_API+'?action=weekly&dept='+DASH_DEPT,{redirect:'follow'});
+    const j=await r.json();
+    const data=j.data||[];
+    if(data.length===0){el.innerHTML='<div style="padding:14px;text-align:center;color:var(--green);font-size:13px;">주간 데이터 없음</div>';return;}
+    const today=dashTodayStr();
+    const maxPct=Math.max(...data.map(x=>x.pct),1);
+    let html='<div style="display:flex;align-items:flex-end;gap:6px;height:110px;padding:6px 0 4px;overflow-x:auto;">';
+    data.forEach(d=>{
+      const isToday=d.date===today;
+      const barH=Math.max(Math.round((d.pct/maxPct)*80),3);
+      const dateLabel=d.date.slice(5).replace('-','/');
+      const dayName=DASH_DN[new Date(d.date+'T00:00:00').getDay()];
+      const pctColor=d.pct>=90?'var(--green)':d.pct>=60?'var(--yellow)':'var(--red)';
+      html+=`<div style="display:flex;flex-direction:column;align-items:center;gap:3px;flex:1;min-width:34px;">
+        <div style="font-size:10px;font-weight:700;color:${pctColor};">${d.pct}%</div>
+        <div style="flex:1;width:100%;display:flex;align-items:flex-end;justify-content:center;">
+          <div style="width:26px;height:${barH}px;border-radius:4px 4px 0 0;background:${isToday?'var(--green)':'var(--accent)'};min-height:3px;" title="${dashEsc(d.date+' '+d.pct+'% ('+d.done+'/'+d.total+')')}"></div>
+        </div>
+        <div style="font-size:10px;color:var(--dim);text-align:center;line-height:1.3;">${dateLabel}<br><span style="color:${isToday?'var(--green)':'var(--dim)'};">(${dayName})</span></div>
+      </div>`;
+    });
+    html+='</div>';
+    el.innerHTML=html;
+  }catch(e){
+    el.innerHTML='<div style="padding:12px;color:var(--red);font-size:13px;">주간 데이터 로드 실패</div>';
+  }
+}
+
+async function renderIssuelog(){
+  const el=document.getElementById('issuelogView');
+  if(!el)return;
+  try{
+    const r=await fetch(DASH_API+'?action=issuelog&dept='+DASH_DEPT+'&open=1',{redirect:'follow'});
+    const j=await r.json();
+    const issues=j.issues||[];
+    if(issues.length===0){
+      el.innerHTML='<div class="admin-card" style="border-color:rgba(106,191,123,0.3);"><h3 style="color:var(--green);">미결 이슈 없음</h3><div style="font-size:13px;color:var(--dim);">모든 이슈가 처리되었습니다.</div></div>';
+      return;
+    }
+    let html='<div style="overflow-x:auto;"><table class="dash-table"><tr><th>등록일</th><th>구역</th><th>점검자</th><th>이슈내용</th><th>상태</th><th>처리일</th></tr>';
+    issues.forEach(iss=>{
+      const sColor=iss.status==='미처리'?'var(--red)':iss.status==='처리중'?'var(--yellow)':'var(--green)';
+      html+=`<tr><td>${dashEsc(iss.date)}</td><td>${dashEsc(iss.zone)}</td><td>${dashEsc(iss.inspector)}</td><td>${dashEsc(iss.issue)}</td><td style="color:${sColor};font-weight:700;">${dashEsc(iss.status)}</td><td>${dashEsc(iss.resolvedAt||'-')}</td></tr>`;
+    });
+    html+='</table></div>';
+    el.innerHTML=html;
+  }catch(e){
+    el.innerHTML='<div style="padding:12px;color:var(--red);font-size:13px;">이슈대장 로드 실패</div>';
+  }
+}
+</script>
+
+</body>
+</html>
