@@ -440,6 +440,11 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   .dash-table{font-size:11px}
   .dash-table th,.dash-table td{padding:4px 6px}
 }
+/* 규정 탭 — 정기회의+근무휴게 같은 행: 좁은 화면에서 세로 전환 */
+@media(max-width:860px){
+  #tab-policy .board-fullwidth{flex-direction:column!important;}
+  #tab-policy .board-fullwidth .manual-section{flex:none!important;width:100%!important;}
+}
 </style>
 </head>
 <body>
@@ -489,12 +494,10 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 <div id="tab-policy" class="content">
   <h2 style="font-size:20px;margin-bottom:6px;">지원부 규정</h2>
   <p style="font-size:13px;color:var(--dim);margin-bottom:14px;line-height:1.6;">주제별 칸(컬럼)에 규정·회의를 카드로 정리했습니다. 각 카드의 <b>편집</b> 버튼으로 내용을 바로 수정·저장하면 모든 기기에 반영됩니다. <span style="color:var(--accent);">운영시간 등 공식값은 임의 변경 금지.</span></p>
-  <div class="board-fullwidth">
-    <div id="policy-board" class="board-scroll"></div>
-  </div>
-
-  <!-- ── 근무·휴게 시간 (규정 보드 카드 스타일 접이식 카드 — 공식값 읽기전용) ── -->
-  <div class="manual-section" style="margin-top:18px;border-left:4px solid var(--red);">
+  <div class="board-fullwidth" style="display:flex;gap:14px;align-items:flex-start;">
+    <div id="policy-board" class="board-scroll" style="flex:1;min-width:0;"></div>
+    <!-- ── 근무·휴게 시간 (정기회의 우측 — 같은 행) ── -->
+    <div class="manual-section" style="flex:0 0 340px;width:340px;margin-top:0;border-left:4px solid var(--red);align-self:flex-start;">
     <div class="manual-header" onclick="togManual(this)">
       <h3 style="color:var(--red);">⏱ 근무·휴게 시간</h3><span class="arrow">&#9654;</span>
     </div>
@@ -593,7 +596,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
     </div>
   </div>
   <!-- ── /근무·휴게 시간 카드 ── -->
-
+  </div><!-- /board-fullwidth flex row -->
 
   <!-- 고도화 정의·개선 로드맵은 관리자 영역(웰페리온 ERP O1 운영 통합 체계 '구축 가이드')으로 이관 (2026-06-06 GM: 현장 규정 탭엔 뜬금없음) -->
 </div>
