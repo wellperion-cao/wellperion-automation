@@ -582,6 +582,15 @@
 
     </div>
 
+    <!-- ⑤ 핵심 KPI 집약 — 부서별 점검 완료율 (라이브) -->
+    <div style="margin:20px 0 4px;display:flex;align-items:center;gap:8px;">
+      <span style="font-size:13px;font-weight:700;color:var(--dim);">📊 핵심 KPI 현황</span>
+      <span style="font-size:11px;color:var(--dim);">오늘 기준 실시간</span>
+    </div>
+    <div id="home-check-kpi" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;margin-bottom:20px;">
+      <div style="text-align:center;padding:16px;color:var(--dim);font-size:12px;grid-column:1/-1;">점검 현황 불러오는 중...</div>
+    </div>
+
     <!-- ④ 하단 운영 가이드 + 문서 위치 -->
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin:18px 0 14px;align-items:center;">
       <span style="font-size:12px;color:var(--dim);font-weight:600;">📚 운영 가이드</span>
@@ -8763,68 +8772,107 @@ function crTab(btn, panelId) {
   })();
   // ── /대시보드 오늘 진행 현황 ─────────────────────────────────────
 
-  // ── O1 부서별 핵심 현황 요약 (라이브) ──────────────────────────────
+  // ── O1 부서별 핵심 현황 요약 + home KPI (라이브) ───────────────────
   (function(){
-    var O1_API = 'https://script.google.com/macros/s/AKfycbyXw4ZaA6hLK567GC7NY33Y8SvNPW6kNtrXFz2OsSdFVBmCnZP-2oD-RQiX0IpekBu1/exec';
+    var CHECK_API = 'https://script.google.com/macros/s/AKfycbw9k_yrVaT80ODna8cfojh0aMAHSK-_NMFHy7kT9rgXOftQ64mHkvTq_hX8zVAksEo/exec';
     var FACILITY_URL = 'https://wellperion-cao.github.io/wellperion-automation/coo/check/%EC%8B%9C%EC%84%A4%EB%B6%80%20%EC%B2%B4%EA%B3%84.html';
     var SUPPORT_URL  = 'https://wellperion-cao.github.io/wellperion-automation/coo/check/%EC%A7%80%EC%9B%90%EB%B6%80%20%EC%B2%B4%EA%B3%84.html';
 
     function todayStr(){var d=new Date();return d.getFullYear()+'-'+(''+(d.getMonth()+1)).padStart(2,'0')+'-'+(''+(d.getDate())).padStart(2,'0');}
 
-    function buildCard(icon,label,pct,issues,issueLabel,href,loaded){
-      var pctColor=pct>=90?'#6abf7b':pct>=60?'#e6c84e':'#ED5B3F';
-      var inner=loaded
-        ?('<div style="font-size:26px;font-weight:800;color:'+pctColor+';">'+pct+'%</div>'
-         +'<div style="font-size:11px;color:#8c8b83;margin-top:2px;">오늘 완료율</div>'
-         +'<div style="margin-top:8px;font-size:12px;font-weight:700;color:'+(issues>0?'#ED5B3F':'#6abf7b')+';">'
-         +(issues>0?'미결 '+issues+'건':'미결 없음')+'</div>'
-         +'<div style="font-size:10px;color:#8c8b83;">'+issueLabel+'</div>')
-        :'<div style="font-size:12px;color:#8c8b83;">불러오는 중...</div>';
-      return '<a href="'+href+'#tab-admin" target="_blank" style="flex:1;min-width:140px;background:#2a2725;border:1px solid #3d3835;border-radius:12px;padding:14px 16px;text-decoration:none;display:block;transition:border-color 0.15s;" onmouseover="this.style.borderColor=\'#B79F8A\'" onmouseout="this.style.borderColor=\'#3d3835\'">'
-        +'<div style="font-size:13px;font-weight:700;color:#f5f2ef;margin-bottom:8px;">'+icon+' '+label+'</div>'
+    // GAS 응답: {total, done, pct, ...} 형태 직접 사용
+    function parseKpi(data){
+      if(!data||data.ok===false) return null;
+      var total = typeof data.total==='number' ? data.total : 0;
+      var done  = typeof data.done ==='number' ? data.done  : 0;
+      var pct   = typeof data.pct  ==='number' ? data.pct   : (total?Math.round(done/total*100):0);
+      return {total:total, done:done, undone:total-done, pct:pct};
+    }
+
+    // O1 섹션용 KPI 카드 (클릭 → 체계 페이지)
+    function buildO1Card(icon, label, kpi, href){
+      var pctColor = kpi.pct>=90?'#6abf7b':kpi.pct>=60?'#e6c84e':'#ED5B3F';
+      var undoneColor = kpi.undone>0?'#ED5B3F':'#6abf7b';
+      var inner = '<div style="font-size:11px;color:#8c8b83;margin-bottom:6px;">총 점검항목</div>'
+        +'<div style="font-size:22px;font-weight:800;color:#f5f2ef;line-height:1.1;">'+kpi.total+'</div>'
+        +'<div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap;font-size:11px;font-weight:700;">'
+        +'<span style="color:#6abf7b;">완료 '+kpi.done+'건</span>'
+        +'<span style="color:'+undoneColor+';">미완료 '+kpi.undone+'건</span>'
+        +'</div>'
+        +'<div style="margin-top:6px;font-size:18px;font-weight:800;color:'+pctColor+';">'+kpi.pct+'%</div>'
+        +'<div style="font-size:10px;color:#8c8b83;">완료율</div>';
+      return '<a href="'+href+'" target="_blank" style="flex:1;min-width:160px;background:#2a2725;border:1px solid #3d3835;border-radius:12px;padding:16px 16px 14px;text-decoration:none;display:block;transition:border-color 0.15s;" onmouseover="this.style.borderColor=\'#B79F8A\'" onmouseout="this.style.borderColor=\'#3d3835\'">'
+        +'<div style="font-size:13px;font-weight:700;color:#f5f2ef;margin-bottom:10px;">'+icon+' '+label+'</div>'
         +inner
+        +'</a>';
+    }
+
+    // O1 섹션용 오류 카드
+    function buildO1ErrorCard(icon, label, href){
+      return '<a href="'+href+'" target="_blank" style="flex:1;min-width:160px;background:#2a2725;border:1px solid #3d3835;border-radius:12px;padding:16px 16px 14px;text-decoration:none;display:block;">'
+        +'<div style="font-size:13px;font-weight:700;color:#f5f2ef;margin-bottom:10px;">'+icon+' '+label+'</div>'
+        +'<div style="font-size:12px;color:#8c8b83;">로드 실패 — 클릭하여 체계 페이지 확인</div>'
         +'</a>';
     }
 
     function renderO1Summary(facilityData, supportData){
       var el=document.getElementById('o1-dept-summary');
       if(!el)return;
-      var today=todayStr();
+      var fKpi=parseKpi(facilityData);
+      var sKpi=parseKpi(supportData);
+      var html='';
+      html += fKpi ? buildO1Card('🏭','시설부',fKpi,FACILITY_URL) : buildO1ErrorCard('🏭','시설부',FACILITY_URL);
+      html += sKpi ? buildO1Card('✅','지원부',sKpi,SUPPORT_URL)  : buildO1ErrorCard('✅','지원부',SUPPORT_URL);
+      html += '<div style="font-size:10px;color:#8c8b83;align-self:flex-end;padding-bottom:4px;">클릭 → 체계 페이지</div>';
+      el.innerHTML=html;
+    }
 
-      // 시설부 집계
-      var fPct=0,fIssues=0,fLoaded=false;
-      if(facilityData&&facilityData.ok!==false){
-        var rows=facilityData.rows||[];
-        var total=0,done=0;
-        rows.forEach(function(r){if(r.itemId){total++;if(r.checked)done++;if(r.issue)fIssues++;}});
-        fPct=total?Math.round(done/total*100):0;
-        fLoaded=true;
-      }
+    // home KPI 그리드용 미니 카드 (확장 가능 구조)
+    function buildHomeKpiCard(icon, label, kpi, href){
+      var pctColor = kpi.pct>=90?'#6abf7b':kpi.pct>=60?'#e6c84e':'#ED5B3F';
+      var undoneColor = kpi.undone>0?'#ED5B3F':'#6abf7b';
+      return '<a href="'+href+'" target="_blank" style="background:var(--paper);border:1px solid var(--border);border-top:3px solid '+pctColor+';border-radius:12px;padding:14px 16px;text-decoration:none;display:block;transition:transform .12s,box-shadow .12s;" onmouseover="this.style.transform=\'translateY(-2px)\';this.style.boxShadow=\'0 6px 18px rgba(0,0,0,0.15)\'" onmouseout="this.style.transform=\'\';this.style.boxShadow=\'\'">'
+        +'<div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:8px;">'+icon+' '+label+' 점검</div>'
+        +'<div style="font-size:24px;font-weight:800;color:'+pctColor+';line-height:1;">'+kpi.pct+'<span style="font-size:13px;font-weight:600;">%</span></div>'
+        +'<div style="font-size:10.5px;color:var(--dim);margin-top:2px;">완료율</div>'
+        +'<div style="margin-top:8px;font-size:11px;display:flex;gap:8px;flex-wrap:wrap;">'
+        +'<span style="color:var(--dim);">총 '+kpi.total+'</span>'
+        +'<span style="color:#6abf7b;font-weight:600;">완료 '+kpi.done+'</span>'
+        +'<span style="color:'+undoneColor+';font-weight:600;">미완료 '+kpi.undone+'</span>'
+        +'</div>'
+        +'</a>';
+    }
 
-      // 지원부 집계
-      var sPct=0,sIssues=0,sLoaded=false;
-      if(supportData&&supportData.ok!==false){
-        var rows2=supportData.rows||[];
-        var total2=0,done2=0;
-        rows2.forEach(function(r){if(r.itemId){total2++;if(r.checked)done2++;if(r.issue)sIssues++;}});
-        sPct=total2?Math.round(done2/total2*100):0;
-        sLoaded=true;
-      }
+    function renderHomeKpi(facilityData, supportData){
+      var el=document.getElementById('home-check-kpi');
+      if(!el)return;
+      var fKpi=parseKpi(facilityData);
+      var sKpi=parseKpi(supportData);
+      var html='';
+      if(fKpi) html+=buildHomeKpiCard('🏭','시설부',fKpi,FACILITY_URL);
+      else html+='<div style="background:var(--paper);border:1px solid var(--border);border-radius:12px;padding:14px 16px;font-size:12px;color:var(--dim);">🏭 시설부 점검 — 로드 실패</div>';
+      if(sKpi) html+=buildHomeKpiCard('✅','지원부',sKpi,SUPPORT_URL);
+      else html+='<div style="background:var(--paper);border:1px solid var(--border);border-radius:12px;padding:14px 16px;font-size:12px;color:var(--dim);">✅ 지원부 점검 — 로드 실패</div>';
+      el.innerHTML=html;
+    }
 
-      el.innerHTML=buildCard('🏭','시설부',fPct,fIssues,'이슈대장',FACILITY_URL+'?tab=admin',fLoaded)
-                  +buildCard('✅','지원부',sPct,sIssues,'이슈대장',SUPPORT_URL+'?tab=admin',sLoaded)
-                  +'<div style="font-size:10px;color:#8c8b83;align-self:flex-end;padding-bottom:4px;">클릭 → 대시보드 탭</div>';
+    function fetchBoth(onSuccess){
+      var today=todayStr()+'&_pv='+Date.now();
+      var fP=fetch(CHECK_API+'?date='+today+'&dept=facility',{redirect:'follow'}).then(function(r){return r.json();}).catch(function(){return null;});
+      var sP=fetch(CHECK_API+'?date='+today+'&dept=support', {redirect:'follow'}).then(function(r){return r.json();}).catch(function(){return null;});
+      Promise.all([fP,sP]).then(function(res){onSuccess(res[0],res[1]);});
     }
 
     function loadO1Summary(){
       var el=document.getElementById('o1-dept-summary');
       if(!el)return;
-      var today=todayStr();
-      var facilityP=fetch(O1_API+'?date='+today+'&dept=facility',{redirect:'follow'}).then(function(r){return r.json();}).catch(function(){return null;});
-      var supportP =fetch(O1_API+'?date='+today+'&dept=support', {redirect:'follow'}).then(function(r){return r.json();}).catch(function(){return null;});
-      Promise.all([facilityP,supportP]).then(function(res){renderO1Summary(res[0],res[1]);}).catch(function(){
-        el.innerHTML='<div style="font-size:12px;color:#8c8b83;padding:8px;">현황 로드 실패 — 체계 페이지에서 직접 확인하세요.</div>';
-      });
+      fetchBoth(renderO1Summary);
+    }
+
+    function loadHomeKpi(){
+      var el=document.getElementById('home-check-kpi');
+      if(!el)return;
+      fetchBoth(renderHomeKpi);
     }
 
     // O1 섹션 진입 시 로드 (사이드바 클릭 감지)
@@ -8832,13 +8880,17 @@ function crTab(btn, panelId) {
       var link=e.target.closest('[data-id="O1"],[data-doc="gcoo-check"]');
       if(link)setTimeout(loadO1Summary,400);
     });
+
     // 페이지 로드 시 O1이 이미 표시 중이면 즉시 로드
     setTimeout(function(){
       var el=document.getElementById('o1-dept-summary');
       if(el&&el.offsetParent!==null)loadO1Summary();
     },800);
+
+    // home KPI는 항상 로드 (홈이 기본 active)
+    setTimeout(loadHomeKpi, 600);
   })();
-  // ── /O1 부서별 핵심 현황 요약 ────────────────────────────────────
+  // ── /O1 부서별 핵심 현황 요약 + home KPI ────────────────────────
 </script>
 </body>
 </html>
