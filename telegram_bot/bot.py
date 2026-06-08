@@ -1076,6 +1076,7 @@ async def cmd_publish_callback(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     if len(parts) >= 4 and parts[1] == "grp":
         grp_hash = parts[2]
         decision = parts[3]
+        id_field = "grp:" + grp_hash
         try:
             grp_map = json.loads(_GROUPS_STORE.read_text(encoding="utf-8"))
             item_ids = grp_map.get(grp_hash) or []
