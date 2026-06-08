@@ -555,6 +555,50 @@ function doGet(e) {
       return _processNoticeAction(nbody);
     }
 
+    // ─── AI배(C레벨) 전용 탭 조회 (2026-06-08 GM 결정: 탭 분리 설계) ───
+    // GET ?action=ai_list[&sheet=AI배(C레벨)]
+    // 전용 탭에서 모든 행을 todo_list 와 동일한 컬럼 구조로 반환한다.
+    if (action === 'ai_list') {
+      const sheetName = e.parameter.sheet || 'AI배(C레벨)';
+      const ss = SpreadsheetApp.getActiveSpreadsheet();
+      const ws = ss.getSheetByName(sheetName);
+      if (!ws) return _json({ ok: false, error: 'sheet_not_found: ' + sheetName });
+      const rows = _readAll(ws);
+      return _json({ ok: true, count: rows.length, data: rows });
+    }
+
+    // ─── AI배(C레벨) 전용 탭 생성 (1회성 · GM 승인 후 실행) ───
+    // GET ?action=ai_sheet_create[&sheet=AI배(C레벨)]
+    // 탭이 이미 있으면 ok:true + created:false 반환(idempotent).
+    // 없으면 신규 생성 + todo_list 와 동일 헤더 기록.
+    if (action === 'ai_sheet_create') {
+      const sheetName = e.parameter.sheet || 'AI배(C레벨)';
+      const ss = SpreadsheetApp.getActiveSpreadsheet();
+      const existing = ss.getSheetByName(sheetName);
+      if (existing) {
+        const rowCount = Math.max(0, existing.getLastRow() - 1); // 헤더 제외
+        return _json({ ok: true, created: false, sheet: sheetName, rows: rowCount, message: '이미 존재하는 탭' });
+      }
+      const ws = ss.insertSheet(sheetName);
+      ws.getRange(1, 1, 1, TODO_HEADERS.length).setValues([TODO_HEADERS]);
+      ws.getRange(1, 1, 1, TODO_HEADERS.length)
+        .setFontWeight('bold')
+        .setBackground('#7b1fa2')   // AI배 탭은 보라색(todo_list 파랑과 구분)
+        .setFontColor('#ffffff');
+      const widths = [130, 200, 130, 80, 100, 100, 300, 70, 70, 200, 200, 80, 130, 130,
+                      130, 130, 130, 100, 150, 200, 80];
+      widths.forEach((w, i) => { if (i < TODO_HEADERS.length) ws.setColumnWidth(i + 1, w); });
+      ws.setFrozenRows(1);
+      return _json({ ok: true, created: true, sheet: sheetName, rows: 0, message: '탭 생성 완료' });
+    }
+
+    // ─── AI배(C레벨) 전용 탭 행 추가 ───
+    // POST {action:'ai_add', sheet:'AI배(C레벨)', 업무명:..., 담당자:..., ...}
+    // todo_add 와 동일한 필드 구조 — 전용 탭에만 기록.
+
+    // ─── AI배(C레벨) 전용 탭 행 삭제 ───
+    // POST {action:'ai_delete', sheet:'AI배(C레벨)', id:'ROW_ID'}
+
     return _json({ ok: false, error: '알 수 없는 action: ' + action });
   } catch (err) {
     return _json({ ok: false, error: err.message });
@@ -578,7 +622,15 @@ function _processTodoAction(body) {
 
     // ─── 새 업무 추가 ───
     if (action === 'todo_add') {
-      const sh = initTodoSheet();
+      // sheet 파라미터 있으면 해당 탭에 insert (AI배(C레벨) 전용 탭 이관용)
+      let sh;
+      if (body['sheet']) {
+        const ss = SpreadsheetApp.getActiveSpreadsheet();
+        sh = ss.getSheetByName(body['sheet']);
+        if (!sh) return _json({ ok: false, error: 'sheet_not_found: ' + body['sheet'] });
+      } else {
+        sh = initTodoSheet();
+      }
       const id = _genId();
       const now = _now();
       const row = new Array(TODO_HEADERS.length).fill('');
@@ -757,7 +809,14 @@ function _processTodoAction(body) {
 
     // ─── 삭제 ───
     if (action === 'todo_delete') {
-      const sh = initTodoSheet();
+      let sh;
+      if (body['sheet']) {
+        const ss = SpreadsheetApp.getActiveSpreadsheet();
+        sh = ss.getSheetByName(body['sheet']);
+        if (!sh) return _json({ ok: false, error: 'sheet_not_found: ' + body['sheet'] });
+      } else {
+        sh = initTodoSheet();
+      }
       const id = body.id;
       if (!id) return _json({ ok: false, error: 'id 필수' });
       const rowNum = _findRow(sh, id);

@@ -1,13 +1,165 @@
 [
   {
-    "task_id": "CEO-2026-05-30-REPORT-CONTENT-POLISH",
-    "clevel": "ceo",
-    "title": "[웰리-01] 아침/저녁 자동보고 내용 가다듬기",
+    "task_id": "CTO-2026-06-08-TELEGRAM-ALERT-AUDIT",
+    "clevel": "cto",
+    "title": "[시토] 텔레그램 알림이 어제(06-07) 합의안과 다른지 점검 — 실제 발신 vs 10슬롯/시간대/배이미지 정본 대조",
     "status": "PENDING",
     "depends_on": null,
+    "priority": "HIGH",
+    "enqueued_at": "2026-06-08",
+    "note": "[GM 2026-06-08 지시] 어제 정한 텔레그램 알림 설계(10슬롯·07/09/12/18/21/22/23시 재설계·12/18시 체크리스트 박스표·7/15/21시 배 이미지, 커밋 a26002c·b1eee9d·20070b2·2e8d1c0)와 실제 발신되는 알림이 다른 부분을 전수 점검. 차이점 발견 시 목록화하여 웰리에 보고 → GM 판단."
+  },
+  {
+    "task_id": "CTO-2026-06-08-QUEUE-SHEET-MIGRATION-RESUME",
+    "clevel": "cto",
+    "title": "[시토] AI 배 _queue→구글시트 SSOT 이관 재개 (조심히·단계마다 검증/커밋) — 어제 2단계 중복사고 revert 후 재시도",
+    "status": "IN_PROGRESS",
+    "depends_on": null,
+    "priority": "HIGH",
+    "enqueued_at": "2026-06-08",
+    "brief": "docs/queue_to_sheets_migration_plan.md",
+    "note": "[GM 2026-06-08 결정] 시트=원본/_queue=미러 이관 마저. 어제(06-07) 시토 2단계 1회 대량처리→배 중복사고→revert 복구(9458937). 교훈: 로드베어링은 잘게 쪼개 단계마다 검증·커밋, reader 한 소스+제목dedup. 1단계(미러생성기 queue_sync_from_sheet.py+계획서) 살아있음. 재개=① P1 생성기 현행 시트 대조 read-only 검증 ② 시트에 어제 사고 잔재(AI행 중복) 없는지 점검 ③ 미세 단계별 실행계획 산출(각 단계 검증·롤백·GM수동여부) → 위험·GM수동 단계 전 웰리/GM 확인. 대량 일괄처리·GAS 임의 재배포 금지."
+  },
+  {
+    "task_id": "CMO-2026-06-08-AI8-RELEASE",
+    "clevel": "cmo",
+    "title": "[시모] AI 시리즈 #9편 오늘(06-08) 발행 — 북극성 항해 설계(260608) M5 검수 + 텔레그램 승인 → 발행완료",
+    "status": "DONE",
+    "processed_at": "2026-06-08",
+    "terminal": true,
+    "artifact": "namuk.wellperion 피드 게시(2026-06-08 GM 그리드 직접 확인)",
+    "note_progress": "[2026-06-08 시모 완료·웰리 검증] 산출물 실재 확인(슬라이드6·큐레이션_추천.md·preview·review_queue 검수대기). 텔레그램 검수카드 1회 발송 완료(08:05:10, msg_id 1817, @namuki_report_bot, montage+[승인][반려]). 06-07 카드(1797)는 조기발행 소진건이라 중복 아님. ⏳발행은 GM 텔레그램 [승인] 탭 대기(무폴링·자동재발행 금지). ※로드맵 번호: 북극성 실제 순번 #9(GM의일요일이 #8 발행완료), GM이 #8로 지칭 — GM 확인 후 로드맵 표만 조정.",
+    "depends_on": null,
+    "priority": "HIGH",
+    "enqueued_at": "2026-06-08",
+    "note": "[GM 2026-06-08 지시] AI #8 나와야 함. 대상=260608_AI_북극성항해설계(제작완료·검수대기·미발행, 06-07 조기발행→GM 삭제분). 산출물 실재 검수(output 슬라이드·큐레이션_추천.md·cmo/review preview) 후 M5 review_queue 검수대기 등록 + 텔레그램 [승인] 카드 콘텐츠당 1회 발송. 발행은 GM 텔레그램 [승인] 탭 경유(무폴링·자동재발행 금지). ※로드맵 번호: GM의일요일이 현재 #8로 기재돼 있어 번호 재정렬 필요 시 로드맵 동기화."
+  },
+  {
+    "task_id": "CTO-2026-06-08-CFO-SHEET-LINK",
+    "clevel": "cto",
+    "title": "[시토-01] 9시 보고 매출·지출 연결 — GM 매출·지출 시트 링크 받아 .env CFO_SHEET_URL 등록 + 파싱 구현",
+    "status": "PENDING",
     "priority": "NORMAL",
-    "enqueued_at": "2026-05-30",
-    "note": "형식은 GM 승인 완료(표+결정중심·3분류·제목요약·운영기본값 SSOT). 내용 디테일은 GM 회사 출근 후 구체 피드백 예정 → 그때 반영."
+    "depends_on": "GM 매출·지출 시트 링크(2026-06-08 제공 예정)",
+    "enqueued_at": "2026-06-07",
+    "note": "[GM 2026-06-07] 매출·지출 시트 내일 제공. 그 전까지 9시 보고는 매출·지출 \"연결 대기\" 표시(코드는 CFO_SHEET_URL 폴백 완비). 링크 받으면 .env 등록+시트 구조 보고 파싱 구현."
+  },
+  {
+    "task_id": "COO-2026-06-07-OPS-GUIDELINE",
+    "clevel": "coo",
+    "title": "[시우-01] 운영 가이드라인 정립 — 주차 규정·이용 가이드라인 등 운영 SOP 산출물",
+    "status": "IN_PROGRESS",
+    "priority": "NORMAL",
+    "enqueued_at": "2026-06-07",
+    "note": "[이관 2026-06-07 시우] todo_list TODO-20260526173316959에서 이관. 담당: 김남욱GM + AI COO(시우). S2 C레벨 원칙과 별개인 실제 운영 가이드 산출물 작업."
+  },
+  {
+    "task_id": "CMO-2026-06-07-UNPUBLISHED-CONTENT",
+    "clevel": "cmo",
+    "title": "[시모-09] 미발행 콘텐츠 정리 — 발레·스쿼시 발행 결정 + 바레 git 정리",
+    "status": "IN_PROGRESS",
+    "priority": "NORMAL",
+    "enqueued_at": "2026-06-07",
+    "note": "[이관 2026-06-07 시우] todo_list TODO-20260602194917329에서 이관. 발레(8장·미발행)·스쿼시(5주경과) 발행/보류 GM 결정 대기. 담당: AI CMO(시모) + 김남욱GM."
+  },
+  {
+    "task_id": "CMO-2026-06-07-KAKAO-PUBLISH-RND",
+    "clevel": "cmo",
+    "title": "[시모-08] 카카오채널 발행 방식 확정·자동화 R&D",
+    "status": "DONE",
+    "priority": "NORMAL",
+    "enqueued_at": "2026-06-07",
+    "processed_at": "2026-06-07",
+    "terminal": true,
+    "commit_sha": "e034852",
+    "artifact": "scripts/kakao_channel_upload_playwright.py",
+    "note": "[완료 확정 2026-06-07 시모 실측] 커밋 e034852(2026-06-03) — 카카오 파트너센터 인라인 에디터 DOM 실측, _fill_editor(제목·본문·이미지8장)·임시저장 반자동 완성. POC 스크린샷 2장 실재(kakao_draft_filled.png·kakao_draft_saved.png). WJO·발레 카카오 발행완료 2건 이력 확인. 방식 확정 = 반자동(임시저장→GM 검수→발행). 이관 2026-06-07 시우."
+  },
+  {
+    "task_id": "CMO-2026-06-07-GUIDE-PRICING-UPDATE",
+    "clevel": "cmo",
+    "title": "[시모-11] 안내가이드 요금·주차 확정값 반영",
+    "status": "IN_PROGRESS",
+    "priority": "NORMAL",
+    "enqueued_at": "2026-06-07",
+    "note": "[이관 2026-06-07 시우] todo_list TODO-20260602194922795에서 이관. 단체할인율 충돌(10%/30% vs 10%/15%) GM 확정 필요. 주차 대수·세부요금 확보. 담당: AI CMO(시모) + 김남욱GM."
+  },
+  {
+    "task_id": "CMO-2026-06-07-FUNNEL-DATA-CONNECT",
+    "clevel": "cmo",
+    "title": "[시모-10] 마케팅 대시보드 상단 퍼널 데이터 연동",
+    "status": "IN_PROGRESS",
+    "priority": "NORMAL",
+    "enqueued_at": "2026-06-07",
+    "note": "[이관 2026-06-07 시우] todo_list TODO-20260602194920193에서 이관. 노출·클릭 자동화. Meta·네이버 통계 API 토큰 필요(GM 결재). 담당: AI CMO(시모) + 김남욱GM."
+  },
+  {
+    "task_id": "CHRO-2026-06-07-OPS-STAFF-TRAINING",
+    "clevel": "chro",
+    "title": "[시로-02] 운영부 직원 교육(30분) — 가이드허브·업무SSOT·Claude AI 실습",
+    "status": "IN_PROGRESS",
+    "priority": "NORMAL",
+    "enqueued_at": "2026-06-07",
+    "note": "[이관 2026-06-07 시우] todo_list TODO-20260601135851080에서 이관. 대상: 이경연 실장·임정은M·최준용M. 담당: 김남욱GM + AI CHRO(시로). 종료일 2026-06-28."
+  },
+  {
+    "task_id": "CHRO-2026-06-07-GAS-SHEETS-REDEPLOY",
+    "clevel": "chro",
+    "title": "[결재] CHRO 허브 GAS Notion 쓰기 → Google Sheets 단일화 (외부 GAS 재배포)",
+    "status": "폐기",
+    "priority": "NORMAL",
+    "enqueued_at": "2026-06-07",
+    "disposed_at": "2026-06-07",
+    "note": "[이관 2026-06-07 시우] todo_list TODO-20260531111105225에서 이관. chro/hub GAS가 퇴사·입사·채용을 Notion에 씀. GAS 수정+재배포 결재 필요. 담당: AI CHRO(시로). [폐기 2026-06-07 GM 결정] 사유: 참조된 chro/hub GAS가 코드베이스에 실재하지 않는 유령 건. AI CHRO(시로)가 2026-05-31 자의적으로 생성 — GM 미인지. 식별자 번호 미부여."
+  },
+  {
+    "task_id": "CMO-2026-06-06-EXPERIMENT-01-IG-CTA",
+    "clevel": "cmo",
+    "title": "[시모-12] 실험#1 — IG 캡션 첫줄 문의 CTA 효과 측정 (#4)",
+    "status": "IN_PROGRESS",
+    "priority": "NORMAL",
+    "depends_on": null,
+    "brief": "status/briefs/CMO-2026-06-06-EXPERIMENT-01-IG-CTA.md",
+    "enqueued_at": "2026-06-06",
+    "note": "[GM 승인 2026-06-06·문구①번 확정] A=첫줄 '문의·투어 예약→wellperion.com/ko/inquiry' / B=말미. baseline=이번달 클릭57·문의2. 다음 IG 발행부터 2주 A/B→[기간]조회 비교→웰리 보고→GM 판단. 발행은 M5 검수+GM 승인 경유."
+  },
+  {
+    "task_id": "CMO-2026-06-06-CHANNEL-EXPANSION",
+    "clevel": "cmo",
+    "title": "채널 확장 — 네이버 플레이스·구글 비즈니스 프로필 추적·자동화 (#5)",
+    "status": "DONE",
+    "priority": "NORMAL",
+    "depends_on": null,
+    "brief": "status/briefs/CMO-2026-06-06-CHANNEL-REGISTRATION-PACK.md",
+    "enqueued_at": "2026-06-06",
+    "processed_at": "2026-06-06",
+    "terminal": true,
+    "note": "[2026-06-06 네이버 파트 완료] 소개문 deep-interview 확정(프리미엄 라이프스타일 클럽)·등록팩·시설사진 압축. 네이버 플레이스 GM 정보 보강 완료(심사 대기)+멤버십 문의폼 유입경로에 '네이버 플레이스' 옵션 추가(대시보드 자동 추적). 🔵 후속(보류, GM 지시): 구글 비즈니스 프로필 신규 생성(등록팩 그대로 사용) + 성인/유소년 폼에도 유입경로 옵션 추가. 재개 시 본 brief 사용."
+  },
+  {
+    "task_id": "CMO-2026-06-06-CHANNEL-ENGAGEMENT",
+    "clevel": "cmo",
+    "title": "[시모-13] 채널별 조회·반응 자동수집 (#2) — IG·블로그·카페·카카오·당근 engagement_feed 채우기",
+    "status": "IN_PROGRESS",
+    "priority": "NORMAL",
+    "depends_on": null,
+    "enqueued_at": "2026-06-06",
+    "note": "[2026-06-07 1단계 완료] scripts/engagement_collector.py 구현+실측. 당근(공개HTML viewCount파싱·로그인불필요)·블로그(RSS신규감지·로그인불필요) 수집 동작확인. engagement_feed.json 1건(당근 WJO viewCount=4), blog_snapshot 10건, danggn_snapshot 저장 완료. 🔒 로그인 필요 채널(나머지): IG=Meta Graph API토큰(GM결재), 카페·카카오=cao SSO 인터랙티브 세션. 다음: GM 로그인 인터랙티브 타이밍에 카페·카카오 --channel 추가."
+  },
+  {
+    "task_id": "CMO-2026-06-06-INQUIRY-DASHBOARD-PIPELINE",
+    "clevel": "cmo",
+    "title": "문의 페이지 + 대시보드 파악 파이프라인 — 오늘 시모 진행 중 멈춤분 이어서 완성",
+    "status": "DONE",
+    "priority": "HIGH",
+    "depends_on": null,
+    "enqueued_at": "2026-06-05",
+    "remind_on": "2026-06-06",
+    "processed_at": "2026-06-06",
+    "terminal": true,
+    "commit_sha": "584b186",
+    "note": "[2026-06-06 시모 /team 완료·라이브검증] 홈 경영현황 '신규 문의' 실데이터 바인딩 완료(period_breakdown, 미배포 시 inquiry_list 이번달 카운트 폴백 — 라이브 작동). 추가 산출: 마케팅현황대시보드 일/주/월 토글(v0.2)·문의채널현황 일/주/월·월간마케팅보고서.html(인쇄)·monthly_marketing_report.py(자동발송)·GAS period_breakdown 액션. [2026-06-06 후속완료] GM 재배포 2회 완료→period/캐시/기간조회 라이브 점등, 월간보고 예약작업 등록+테스트발송 OK, 대시보드 v0.3(속도캐시·KPI간결·외부지표숨김·기간조회), 채널비교표 라이브화(byChannelMonth+funnel byChannel). ⚠️데이터품질: 구글폼 누적 8281건(이번달은 2건 정상) — 폼 gid 점검은 COO/데이터 후속.",
+    "artifact": "https://wellperion-cao.github.io/wellperion-automation/cmo/funnel/문의흐름지도.html"
   },
   {
     "task_id": "CTO-2026-06-04-DANGGN-SEMIAUTO",
@@ -21,6 +173,20 @@
     "processed_at": "2026-06-05",
     "terminal": true,
     "note": "[2026-06-05 GM] 어제 마무리분. GM이 시모와 직접 테스트 예정 → 필요한 부분 나오면 시토 재협업 지시. 그 전까지 할 일에서 제외."
+  },
+  {
+    "task_id": "COO-2026-06-04-TODO-UPDATE-EMPTY-OVERWRITE",
+    "clevel": "coo",
+    "title": "업무 편집 시 빈값 덮어쓰기(초기화) 근본 차단 — GAS todo_update + 업무현황 SSOT",
+    "status": "DONE",
+    "priority": "HIGH",
+    "from": "cto",
+    "brief": "status/briefs/COO-2026-06-04-TODO-UPDATE-EMPTY-OVERWRITE.md",
+    "enqueued_at": "2026-06-04",
+    "note": "[담당=시우(COO) / 검증=웰리(CEO)] 시우 1차 '완료' 거짓보고(실제 미수정)를 웰리가 실측 발견. 이후 완료=증거 4요건을 구조로 강제(증거 없으면 거부)하여 동일 거짓완료 재발 차단. [2026-06-05 CEO 직접 처리] 시우 거짓완료(미수정)를 실측으로 발견→웰리 직접 수정. GAS todo_update 빈값 스킵(작업본+배포본 동기), clasp @47→@48 재배포, 라이브 회귀 실측 PASS(빈값 전송에도 전 필드 보존). G1·업무현황 SSOT 공통 차단.",
+    "commit_sha": "56aac0b",
+    "processed_at": "2026-06-05",
+    "next": "지원부 점검 앱 이슈 저장 유실 수정(COO-2026-06-04-SUPPORT-ISSUE-SAVE) — 같은 GAS 재배포 성격"
   },
   {
     "task_id": "COO-2026-06-04-SUPPORT-ISSUE-SAVE",
@@ -50,179 +216,13 @@
     "disposed_at": "2026-06-07"
   },
   {
-    "task_id": "COO-2026-06-04-TODO-UPDATE-EMPTY-OVERWRITE",
-    "clevel": "coo",
-    "title": "업무 편집 시 빈값 덮어쓰기(초기화) 근본 차단 — GAS todo_update + 업무현황 SSOT",
-    "status": "DONE",
-    "priority": "HIGH",
-    "from": "cto",
-    "brief": "status/briefs/COO-2026-06-04-TODO-UPDATE-EMPTY-OVERWRITE.md",
-    "enqueued_at": "2026-06-04",
-    "note": "[담당=시우(COO) / 검증=웰리(CEO)] 시우 1차 '완료' 거짓보고(실제 미수정)를 웰리가 실측 발견. 이후 완료=증거 4요건을 구조로 강제(증거 없으면 거부)하여 동일 거짓완료 재발 차단. [2026-06-05 CEO 직접 처리] 시우 거짓완료(미수정)를 실측으로 발견→웰리 직접 수정. GAS todo_update 빈값 스킵(작업본+배포본 동기), clasp @47→@48 재배포, 라이브 회귀 실측 PASS(빈값 전송에도 전 필드 보존). G1·업무현황 SSOT 공통 차단.",
-    "commit_sha": "56aac0b",
-    "processed_at": "2026-06-05",
-    "next": "지원부 점검 앱 이슈 저장 유실 수정(COO-2026-06-04-SUPPORT-ISSUE-SAVE) — 같은 GAS 재배포 성격"
-  },
-  {
-    "task_id": "CMO-2026-06-06-INQUIRY-DASHBOARD-PIPELINE",
-    "clevel": "cmo",
-    "title": "문의 페이지 + 대시보드 파악 파이프라인 — 오늘 시모 진행 중 멈춤분 이어서 완성",
-    "status": "DONE",
-    "priority": "HIGH",
-    "depends_on": null,
-    "enqueued_at": "2026-06-05",
-    "remind_on": "2026-06-06",
-    "processed_at": "2026-06-06",
-    "terminal": true,
-    "commit_sha": "584b186",
-    "note": "[2026-06-06 시모 /team 완료·라이브검증] 홈 경영현황 '신규 문의' 실데이터 바인딩 완료(period_breakdown, 미배포 시 inquiry_list 이번달 카운트 폴백 — 라이브 작동). 추가 산출: 마케팅현황대시보드 일/주/월 토글(v0.2)·문의채널현황 일/주/월·월간마케팅보고서.html(인쇄)·monthly_marketing_report.py(자동발송)·GAS period_breakdown 액션. [2026-06-06 후속완료] GM 재배포 2회 완료→period/캐시/기간조회 라이브 점등, 월간보고 예약작업 등록+테스트발송 OK, 대시보드 v0.3(속도캐시·KPI간결·외부지표숨김·기간조회), 채널비교표 라이브화(byChannelMonth+funnel byChannel). ⚠️데이터품질: 구글폼 누적 8281건(이번달은 2건 정상) — 폼 gid 점검은 COO/데이터 후속.",
-    "artifact": "https://wellperion-cao.github.io/wellperion-automation/cmo/funnel/문의흐름지도.html"
-  },
-  {
-    "task_id": "CMO-2026-06-06-CHANNEL-EXPANSION",
-    "clevel": "cmo",
-    "title": "채널 확장 — 네이버 플레이스·구글 비즈니스 프로필 추적·자동화 (#5)",
-    "status": "DONE",
-    "priority": "NORMAL",
-    "depends_on": null,
-    "brief": "status/briefs/CMO-2026-06-06-CHANNEL-REGISTRATION-PACK.md",
-    "enqueued_at": "2026-06-06",
-    "processed_at": "2026-06-06",
-    "terminal": true,
-    "note": "[2026-06-06 네이버 파트 완료] 소개문 deep-interview 확정(프리미엄 라이프스타일 클럽)·등록팩·시설사진 압축. 네이버 플레이스 GM 정보 보강 완료(심사 대기)+멤버십 문의폼 유입경로에 '네이버 플레이스' 옵션 추가(대시보드 자동 추적). 🔵 후속(보류, GM 지시): 구글 비즈니스 프로필 신규 생성(등록팩 그대로 사용) + 성인/유소년 폼에도 유입경로 옵션 추가. 재개 시 본 brief 사용."
-  },
-  {
-    "task_id": "CMO-2026-06-06-EXPERIMENT-01-IG-CTA",
-    "clevel": "cmo",
-    "title": "[시모-12] 실험#1 — IG 캡션 첫줄 문의 CTA 효과 측정 (#4)",
-    "status": "IN_PROGRESS",
-    "priority": "NORMAL",
-    "depends_on": null,
-    "brief": "status/briefs/CMO-2026-06-06-EXPERIMENT-01-IG-CTA.md",
-    "enqueued_at": "2026-06-06",
-    "note": "[GM 승인 2026-06-06·문구①번 확정] A=첫줄 '문의·투어 예약→wellperion.com/ko/inquiry' / B=말미. baseline=이번달 클릭57·문의2. 다음 IG 발행부터 2주 A/B→[기간]조회 비교→웰리 보고→GM 판단. 발행은 M5 검수+GM 승인 경유."
-  },
-  {
-    "task_id": "CMO-2026-06-06-CHANNEL-ENGAGEMENT",
-    "clevel": "cmo",
-    "title": "[시모-13] 채널별 조회·반응 자동수집 (#2) — IG·블로그·카페·카카오·당근 engagement_feed 채우기",
-    "status": "IN_PROGRESS",
-    "priority": "NORMAL",
-    "depends_on": null,
-    "enqueued_at": "2026-06-06",
-    "note": "[2026-06-07 1단계 완료] scripts/engagement_collector.py 구현+실측. 당근(공개HTML viewCount파싱·로그인불필요)·블로그(RSS신규감지·로그인불필요) 수집 동작확인. engagement_feed.json 1건(당근 WJO viewCount=4), blog_snapshot 10건, danggn_snapshot 저장 완료. 🔒 로그인 필요 채널(나머지): IG=Meta Graph API토큰(GM결재), 카페·카카오=cao SSO 인터랙티브 세션. 다음: GM 로그인 인터랙티브 타이밍에 카페·카카오 --channel 추가."
-  },
-  {
-    "task_id": "CTO-2026-06-08-CFO-SHEET-LINK",
-    "clevel": "cto",
-    "title": "[시토-01] 9시 보고 매출·지출 연결 — GM 매출·지출 시트 링크 받아 .env CFO_SHEET_URL 등록 + 파싱 구현",
-    "status": "PENDING",
-    "priority": "NORMAL",
-    "depends_on": "GM 매출·지출 시트 링크(2026-06-08 제공 예정)",
-    "enqueued_at": "2026-06-07",
-    "note": "[GM 2026-06-07] 매출·지출 시트 내일 제공. 그 전까지 9시 보고는 매출·지출 \"연결 대기\" 표시(코드는 CFO_SHEET_URL 폴백 완비). 링크 받으면 .env 등록+시트 구조 보고 파싱 구현."
-  },
-  {
-    "task_id": "COO-2026-06-07-OPS-GUIDELINE",
-    "clevel": "coo",
-    "title": "[시우-01] 운영 가이드라인 정립 — 주차 규정·이용 가이드라인 등 운영 SOP 산출물",
-    "status": "IN_PROGRESS",
-    "priority": "NORMAL",
-    "enqueued_at": "2026-06-07",
-    "note": "[이관 2026-06-07 시우] todo_list TODO-20260526173316959에서 이관. 담당: 김남욱GM + AI COO(시우). S2 C레벨 원칙과 별개인 실제 운영 가이드 산출물 작업."
-  },
-  {
-    "task_id": "CHRO-2026-06-07-GAS-SHEETS-REDEPLOY",
-    "clevel": "chro",
-    "title": "[결재] CHRO 허브 GAS Notion 쓰기 → Google Sheets 단일화 (외부 GAS 재배포)",
-    "status": "폐기",
-    "priority": "NORMAL",
-    "enqueued_at": "2026-06-07",
-    "disposed_at": "2026-06-07",
-    "note": "[이관 2026-06-07 시우] todo_list TODO-20260531111105225에서 이관. chro/hub GAS가 퇴사·입사·채용을 Notion에 씀. GAS 수정+재배포 결재 필요. 담당: AI CHRO(시로). [폐기 2026-06-07 GM 결정] 사유: 참조된 chro/hub GAS가 코드베이스에 실재하지 않는 유령 건. AI CHRO(시로)가 2026-05-31 자의적으로 생성 — GM 미인지. 식별자 번호 미부여."
-  },
-  {
-    "task_id": "CHRO-2026-06-07-OPS-STAFF-TRAINING",
-    "clevel": "chro",
-    "title": "[시로-02] 운영부 직원 교육(30분) — 가이드허브·업무SSOT·Claude AI 실습",
-    "status": "IN_PROGRESS",
-    "priority": "NORMAL",
-    "enqueued_at": "2026-06-07",
-    "note": "[이관 2026-06-07 시우] todo_list TODO-20260601135851080에서 이관. 대상: 이경연 실장·임정은M·최준용M. 담당: 김남욱GM + AI CHRO(시로). 종료일 2026-06-28."
-  },
-  {
-    "task_id": "CMO-2026-06-07-KAKAO-PUBLISH-RND",
-    "clevel": "cmo",
-    "title": "[시모-08] 카카오채널 발행 방식 확정·자동화 R&D",
-    "status": "DONE",
-    "priority": "NORMAL",
-    "enqueued_at": "2026-06-07",
-    "processed_at": "2026-06-07",
-    "terminal": true,
-    "commit_sha": "e034852",
-    "artifact": "scripts/kakao_channel_upload_playwright.py",
-    "note": "[완료 확정 2026-06-07 시모 실측] 커밋 e034852(2026-06-03) — 카카오 파트너센터 인라인 에디터 DOM 실측, _fill_editor(제목·본문·이미지8장)·임시저장 반자동 완성. POC 스크린샷 2장 실재(kakao_draft_filled.png·kakao_draft_saved.png). WJO·발레 카카오 발행완료 2건 이력 확인. 방식 확정 = 반자동(임시저장→GM 검수→발행). 이관 2026-06-07 시우."
-  },
-  {
-    "task_id": "CMO-2026-06-07-UNPUBLISHED-CONTENT",
-    "clevel": "cmo",
-    "title": "[시모-09] 미발행 콘텐츠 정리 — 발레·스쿼시 발행 결정 + 바레 git 정리",
-    "status": "IN_PROGRESS",
-    "priority": "NORMAL",
-    "enqueued_at": "2026-06-07",
-    "note": "[이관 2026-06-07 시우] todo_list TODO-20260602194917329에서 이관. 발레(8장·미발행)·스쿼시(5주경과) 발행/보류 GM 결정 대기. 담당: AI CMO(시모) + 김남욱GM."
-  },
-  {
-    "task_id": "CMO-2026-06-07-FUNNEL-DATA-CONNECT",
-    "clevel": "cmo",
-    "title": "[시모-10] 마케팅 대시보드 상단 퍼널 데이터 연동",
-    "status": "IN_PROGRESS",
-    "priority": "NORMAL",
-    "enqueued_at": "2026-06-07",
-    "note": "[이관 2026-06-07 시우] todo_list TODO-20260602194920193에서 이관. 노출·클릭 자동화. Meta·네이버 통계 API 토큰 필요(GM 결재). 담당: AI CMO(시모) + 김남욱GM."
-  },
-  {
-    "task_id": "CMO-2026-06-07-GUIDE-PRICING-UPDATE",
-    "clevel": "cmo",
-    "title": "[시모-11] 안내가이드 요금·주차 확정값 반영",
-    "status": "IN_PROGRESS",
-    "priority": "NORMAL",
-    "enqueued_at": "2026-06-07",
-    "note": "[이관 2026-06-07 시우] todo_list TODO-20260602194922795에서 이관. 단체할인율 충돌(10%/30% vs 10%/15%) GM 확정 필요. 주차 대수·세부요금 확보. 담당: AI CMO(시모) + 김남욱GM."
-  },
-  {
-    "task_id": "CTO-2026-06-08-TELEGRAM-ALERT-AUDIT",
-    "clevel": "cto",
-    "title": "[시토] 텔레그램 알림이 어제(06-07) 합의안과 다른지 점검 — 실제 발신 vs 10슬롯/시간대/배이미지 정본 대조",
+    "task_id": "CEO-2026-05-30-REPORT-CONTENT-POLISH",
+    "clevel": "ceo",
+    "title": "[웰리-01] 아침/저녁 자동보고 내용 가다듬기",
     "status": "PENDING",
     "depends_on": null,
-    "priority": "HIGH",
-    "enqueued_at": "2026-06-08",
-    "note": "[GM 2026-06-08 지시] 어제 정한 텔레그램 알림 설계(10슬롯·07/09/12/18/21/22/23시 재설계·12/18시 체크리스트 박스표·7/15/21시 배 이미지, 커밋 a26002c·b1eee9d·20070b2·2e8d1c0)와 실제 발신되는 알림이 다른 부분을 전수 점검. 차이점 발견 시 목록화하여 웰리에 보고 → GM 판단."
-  },
-  {
-    "task_id": "CMO-2026-06-08-AI8-RELEASE",
-    "clevel": "cmo",
-    "title": "[시모] AI 시리즈 #9편 오늘(06-08) 발행 — 북극성 항해 설계(260608) M5 검수 + 텔레그램 승인 → 발행완료",
-    "status": "DONE",
-    "processed_at": "2026-06-08",
-    "terminal": true,
-    "artifact": "namuk.wellperion 피드 게시(2026-06-08 GM 그리드 직접 확인)",
-    "note_progress": "[2026-06-08 시모 완료·웰리 검증] 산출물 실재 확인(슬라이드6·큐레이션_추천.md·preview·review_queue 검수대기). 텔레그램 검수카드 1회 발송 완료(08:05:10, msg_id 1817, @namuki_report_bot, montage+[승인][반려]). 06-07 카드(1797)는 조기발행 소진건이라 중복 아님. ⏳발행은 GM 텔레그램 [승인] 탭 대기(무폴링·자동재발행 금지). ※로드맵 번호: 북극성 실제 순번 #9(GM의일요일이 #8 발행완료), GM이 #8로 지칭 — GM 확인 후 로드맵 표만 조정.",
-    "depends_on": null,
-    "priority": "HIGH",
-    "enqueued_at": "2026-06-08",
-    "note": "[GM 2026-06-08 지시] AI #8 나와야 함. 대상=260608_AI_북극성항해설계(제작완료·검수대기·미발행, 06-07 조기발행→GM 삭제분). 산출물 실재 검수(output 슬라이드·큐레이션_추천.md·cmo/review preview) 후 M5 review_queue 검수대기 등록 + 텔레그램 [승인] 카드 콘텐츠당 1회 발송. 발행은 GM 텔레그램 [승인] 탭 경유(무폴링·자동재발행 금지). ※로드맵 번호: GM의일요일이 현재 #8로 기재돼 있어 번호 재정렬 필요 시 로드맵 동기화."
-  },
-  {
-    "task_id": "CTO-2026-06-08-QUEUE-SHEET-MIGRATION-RESUME",
-    "clevel": "cto",
-    "title": "[시토] AI 배 _queue→구글시트 SSOT 이관 재개 (조심히·단계마다 검증/커밋) — 어제 2단계 중복사고 revert 후 재시도",
-    "status": "IN_PROGRESS",
-    "depends_on": null,
-    "priority": "HIGH",
-    "enqueued_at": "2026-06-08",
-    "brief": "docs/queue_to_sheets_migration_plan.md",
-    "note": "[GM 2026-06-08 결정] 시트=원본/_queue=미러 이관 마저. 어제(06-07) 시토 2단계 1회 대량처리→배 중복사고→revert 복구(9458937). 교훈: 로드베어링은 잘게 쪼개 단계마다 검증·커밋, reader 한 소스+제목dedup. 1단계(미러생성기 queue_sync_from_sheet.py+계획서) 살아있음. 재개=① P1 생성기 현행 시트 대조 read-only 검증 ② 시트에 어제 사고 잔재(AI행 중복) 없는지 점검 ③ 미세 단계별 실행계획 산출(각 단계 검증·롤백·GM수동여부) → 위험·GM수동 단계 전 웰리/GM 확인. 대량 일괄처리·GAS 임의 재배포 금지."
+    "priority": "NORMAL",
+    "enqueued_at": "2026-05-30",
+    "note": "형식은 GM 승인 완료(표+결정중심·3분류·제목요약·운영기본값 SSOT). 내용 디테일은 GM 회사 출근 후 구체 피드백 예정 → 그때 반영."
   }
 ]

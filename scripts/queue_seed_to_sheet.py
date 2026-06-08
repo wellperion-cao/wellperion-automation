@@ -40,8 +40,9 @@ QUEUE_PATH = _REPO / "status" / "_queue.json"
 
 GAS_URL = (
     "https://script.google.com/macros/s/"
-    "AKfycbxDwFkrxK1YIaEoSNcuw2MiHiZQ-7o5N6311ytksSyeEd86ZFOhLknOWqQgNArQvZ-7/exec"
+    "AKfycbxwXMJ4ghYcJ6NR1mXnBi0CFBVMxfwKK0SvXsJkJlGG_t8aeJb4HXmiP4GL0HG2pTYa/exec"
 )
+# v@53 (2026-06-08): todo_add/todo_delete sheet 파라미터 + ai_list/ai_sheet_create 추가
 
 AI_CATEGORY = "[7]AI배(C레벨)"
 
@@ -75,15 +76,23 @@ def _gas_post(payload: dict) -> dict:
         return json.loads(r.read())
 
 
-def _fetch_ai_task_ids() -> set[str]:
-    """시트에서 현재 AI행의 task_id 집합 반환 (dedup 판정용)."""
-    data = _gas_get("todo_list")
+def _fetch_ai_task_ids(target_sheet: str | None = None) -> set[str]:
+    """시트에서 현재 AI행의 task_id 집합 반환 (dedup 판정용).
+    target_sheet 지정 시 전용 탭(ai_list), 미지정 시 todo_list 카테고리 필터.
+    """
+    if target_sheet:
+        import urllib.parse
+        params = urllib.parse.urlencode({"action": "ai_list", "sheet": target_sheet})
+        data = _gas_get_raw(params)
+    else:
+        data = _gas_get("todo_list")
     rows = list(data.get("data", []))
     ids: set[str] = set()
     for row in rows:
-        cat = str(row.get("카테고리", "") or "").strip()
-        if cat != AI_CATEGORY:
-            continue
+        if not target_sheet:
+            cat = str(row.get("카테고리", "") or "").strip()
+            if cat != AI_CATEGORY:
+                continue
         content = str(row.get("내용", "") or "")
         m = _EMBED_RE.search(content)
         if m:
@@ -101,10 +110,23 @@ def _fetch_ai_task_ids() -> set[str]:
     return ids
 
 
-def _count_ai_rows() -> int:
+def _count_sheet_rows(target_sheet: str | None = None) -> int:
+    """AI 배 행 수 반환. target_sheet 지정 시 전용 탭, 미지정 시 todo_list 카테고리."""
+    if target_sheet:
+        import urllib.parse
+        params = urllib.parse.urlencode({"action": "ai_list", "sheet": target_sheet})
+        data = _gas_get_raw(params)
+        return data.get("count", len(data.get("data", [])))
     data = _gas_get("todo_list")
     rows = list(data.get("data", []))
     return sum(1 for r in rows if str(r.get("카테고리", "") or "").strip() == AI_CATEGORY)
+
+
+def _gas_get_raw(query_string: str) -> dict:
+    """임의 쿼리스트링으로 GAS GET 호출."""
+    req = urllib.request.Request(GAS_URL + "?" + query_string)
+    with urllib.request.urlopen(req, timeout=20) as r:
+        return json.loads(r.read())
 
 
 def _build_embed(item: dict) -> str:
@@ -116,9 +138,11 @@ def _build_embed(item: dict) -> str:
     return "\n===AI_QUEUE===\n" + json.dumps(embed, ensure_ascii=False) + "\n===END==="
 
 
-def _todo_add_payload(item: dict) -> dict:
-    """GAS todo_add 에 보낼 payload 구성."""
-    return {
+def _todo_add_payload(item: dict, target_sheet: str | None = None) -> dict:
+    """GAS todo_add 에 보낼 payload 구성.
+    target_sheet 지정 시 해당 탭에 insert (전용 탭 이관용).
+    """
+    payload = {
         "action": "todo_add",
         "업무명": item.get("title", ""),
         "카테고리": AI_CATEGORY,
@@ -130,6 +154,18 @@ def _todo_add_payload(item: dict) -> dict:
         ),
         "종료일": item.get("deadline", ""),
     }
+    if target_sheet:
+        payload["sheet"] = target_sheet
+    return payload
+
+
+def _sort_by_enqueued_desc(items: list[dict]) -> list[dict]:
+    """enqueued_at 내림차순(최근 생성이 맨 앞) 정렬. 같은 날짜면 task_id 역순 보조정렬."""
+    def _key(it: dict) -> tuple:
+        ea = str(it.get("enqueued_at") or "")
+        tid = str(it.get("task_id") or "")
+        return (ea, tid)
+    return sorted(items, key=_key, reverse=True)
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -138,23 +174,33 @@ def main(argv: list[str] | None = None) -> int:
                     help="실제 insert 실행. 미지정 시 dry-run.")
     ap.add_argument("--limit", type=int, default=0,
                     help="insert 최대 건수 (0=전체). S1 검증용: --limit 1")
+    ap.add_argument("--target-sheet", default=None, metavar="SHEET",
+                    help="insert 대상 탭 (기본=todo_list). 예: --target-sheet 'AI배(C레벨)'")
     args = ap.parse_args(argv)
 
-    items = json.loads(QUEUE_PATH.read_text(encoding="utf-8"))
+    target_sheet: str | None = args.target_sheet
 
+    items = json.loads(QUEUE_PATH.read_text(encoding="utf-8"))
     print(f"[INFO] _queue.json 로드: {len(items)}건")
 
-    # 시트 현황 조회
+    if target_sheet:
+        print(f"[INFO] 대상 탭: '{target_sheet}' (전용 탭 모드)")
+        # enqueued_at 내림차순 정렬(최근 생성이 헤더 바로 아래 1행)
+        items = _sort_by_enqueued_desc(items)
+        top = items[0] if items else {}
+        print(f"[INFO] 정렬=생성일 desc, 1행 예정={top.get('task_id','')} enqueued_at={top.get('enqueued_at','')}")
+
+    # 시트 현황 조회 (dedup 판정)
     print("[INFO] 시트 AI행 현황 조회 중...")
-    existing_ids = _fetch_ai_task_ids()
+    existing_ids = _fetch_ai_task_ids(target_sheet)
     before_count = len(existing_ids)
-    print(f"[INFO] 시트 기존 AI행: {before_count}건 (task_id {sorted(existing_ids)[:3]}{'...' if len(existing_ids)>3 else ''})")
+    print(f"[INFO] 시트 기존 AI행: {before_count}건 (task_id 샘플: {sorted(existing_ids)[:3]}{'...' if len(existing_ids)>3 else ''})")
 
     # 추가 대상 선별
     to_add = [it for it in items if it.get("task_id", "") not in existing_ids]
-    skip = [it for it in items if it.get("task_id", "") in existing_ids]
+    skip_count = len(items) - len(to_add)
 
-    print(f"[INFO] 추가 예정: {len(to_add)}건 / SKIP(이미 있음): {len(skip)}건")
+    print(f"[INFO] 추가 예정: {len(to_add)}건 / SKIP(이미 있음): {skip_count}건")
 
     if args.limit and len(to_add) > args.limit:
         to_add = to_add[: args.limit]
@@ -167,20 +213,22 @@ def main(argv: list[str] | None = None) -> int:
     if not args.execute:
         print("\n[DRY-RUN] 실제 insert 없음. --execute 로 재실행하면 아래 항목 추가됨:")
         for it in to_add:
-            print(f"  - {it.get('task_id')} [{it.get('clevel')}] {it.get('status')} :: {str(it.get('title',''))[:40]}")
+            print(f"  - {it.get('task_id')} [{it.get('clevel')}] {it.get('status')} enqueued={it.get('enqueued_at','')} :: {str(it.get('title',''))[:40]}")
         return 0
 
     # 실제 insert — 1건씩 순차
     inserted = 0
+    inserted_ids: list[str] = []
     for it in to_add:
         tid = it.get("task_id", "?")
         print(f"[INSERT] {tid} ...", end=" ", flush=True)
         try:
-            payload = _todo_add_payload(it)
+            payload = _todo_add_payload(it, target_sheet)
             result = _gas_post(payload)
             if result.get("ok") or result.get("status") == "ok":
                 print("OK")
                 inserted += 1
+                inserted_ids.append(tid)
             else:
                 print(f"FAIL — {result}")
                 print(f"[ABORT] insert 실패. 이후 건 중단. 현재까지 {inserted}건 추가됨.")
@@ -193,7 +241,7 @@ def main(argv: list[str] | None = None) -> int:
 
     # insert 후 count assert
     print(f"\n[INFO] insert 완료 {inserted}건. 시트 AI행 count 재확인 중...")
-    after_count = _count_ai_rows()
+    after_count = _count_sheet_rows(target_sheet)
     expected = before_count + inserted
     if after_count == expected:
         print(f"[ASSERT] PASS — 시트 AI행 {after_count}건 (기대값 {expected})")
@@ -201,7 +249,8 @@ def main(argv: list[str] | None = None) -> int:
         print(f"[ASSERT] FAIL — 시트 AI행 {after_count}건 (기대값 {expected}) — 수동 확인 필요")
         return 1
 
-    print(f"[DONE] S2 시드 insert 완료. 다음: queue_sync_from_sheet.py --diff 로 미러 검증.")
+    tab_label = f"탭 '{target_sheet}'" if target_sheet else "todo_list 탭"
+    print(f"[DONE] {tab_label} insert 완료. 다음: queue_sync_from_sheet.py --sheet-name '{target_sheet or ''}' --diff 로 미러 검증.")
     return 0
 
 

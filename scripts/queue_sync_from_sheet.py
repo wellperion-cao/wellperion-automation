@@ -70,9 +70,10 @@ _REPO = _HERE.parent                             # welperion-automation/
 QUEUE_PATH = _REPO / "status" / "_queue.json"
 
 # todo_list GAS 엔드포인트 — hangro_board.py 와 동일 SSOT
+# v@53 (2026-06-08): todo_add/todo_delete sheet 파라미터 + ai_list/ai_sheet_create 추가
 GAS_URL = (
     "https://script.google.com/macros/s/"
-    "AKfycbxDwFkrxK1YIaEoSNcuw2MiHiZQ-7o5N6311ytksSyeEd86ZFOhLknOWqQgNArQvZ-7/exec"
+    "AKfycbxwXMJ4ghYcJ6NR1mXnBi0CFBVMxfwKK0SvXsJkJlGG_t8aeJb4HXmiP4GL0HG2pTYa/exec"
 )
 
 # ── AI 배 식별 ────────────────────────────────────────────────────────────
