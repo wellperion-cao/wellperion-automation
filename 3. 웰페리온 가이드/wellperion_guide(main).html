@@ -478,117 +478,30 @@
     <p class="lead"><strong>웰페리온 ERP</strong>(전사적 자원 관리 · Enterprise Resource Planning)는 웰페리온의 모든 일이 하나의 북극성을 향해 같은 항로로 나아가게 잇는 통합 플랫폼입니다. 인사·재무·운영·회원·마케팅·업무결재·기술·경영 8개 모듈을 한 화면에 모아 — 사람은 방향을 정하고, 시스템은 항해를 책임집니다.</p>
     <!-- (홈 북극성 블록 삭제 — GM 2026-06-07) -->
 
-    <!-- ② 경영 현황 라이브 스트립 — 실제 가져온 숫자만 표시(가짜 금지). 업무·결재=todo_list 1회 호출 집계(S3 KPI 스트립과 1:1), 그 외 소스없는 지표는 "측정 예정"으로 정직 표기 -->
-    <div style="display:flex;gap:12px;flex-wrap:wrap;margin:20px 0 8px;" id="homeErpStrip">
-      <div style="flex:1;min-width:150px;background:linear-gradient(135deg,var(--accent-bg),transparent);border:1px solid var(--border);border-radius:14px;padding:18px 16px;">
-        <div style="font-size:11px;font-weight:700;letter-spacing:0.04em;color:var(--dim);">📋 진행 업무</div>
-        <div style="font-size:34px;font-weight:800;color:var(--accent);line-height:1.1;margin:6px 0 2px;" id="erpWorkN">—</div>
-        <div style="font-size:10.5px;color:var(--dim);">업무 현황 SSOT 실시간</div>
-      </div>
-      <div style="flex:1;min-width:150px;background:linear-gradient(135deg,var(--warm-bg),transparent);border:1px solid var(--border);border-radius:14px;padding:18px 16px;">
-        <div style="font-size:11px;font-weight:700;letter-spacing:0.04em;color:var(--dim);">🧾 결재 대기</div>
-        <div style="font-size:34px;font-weight:800;color:var(--warm);line-height:1.1;margin:6px 0 2px;" id="erpApprN">—</div>
-        <div style="font-size:10.5px;color:var(--dim);">결재 현황 SSOT 실시간</div>
-      </div>
-      <div style="flex:1;min-width:150px;background:linear-gradient(135deg,var(--grow-bg),transparent);border:1px solid var(--border);border-radius:14px;padding:18px 16px;">
-        <div style="font-size:11px;font-weight:700;letter-spacing:0.04em;color:var(--dim);">💬 신규 문의</div>
-        <div style="font-size:34px;font-weight:800;color:var(--grow);line-height:1.1;margin:6px 0 2px;" id="erpInqN">—</div>
-        <div style="font-size:10.5px;color:var(--dim);">이번 달 문의 (자동 집계)</div>
-      </div>
+    <!-- ② 오늘 한눈에 (리디자인 2026-06-08) — 데이터 ID 보존 -->
+    <div style="display:flex;align-items:center;gap:11px;margin:22px 0 14px;"><span style="width:30px;height:30px;border-radius:8px;background:var(--accent-bg);color:var(--accent);display:flex;align-items:center;justify-content:center;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span><span style="font-size:17px;font-weight:800;letter-spacing:-0.01em;color:var(--text);">오늘 한눈에</span><span style="font-size:11.5px;color:var(--dim);">지금 바로 봐야 할 4가지 · 오늘 기준 실시간</span><span style="flex:1;height:1px;background:var(--border);"></span></div>
+    <div style="display:flex;gap:14px;flex-wrap:wrap;"><div style="flex:1;min-width:175px;background:var(--paper);border:1px solid var(--border);border-left:4px solid var(--accent);border-radius:14px;padding:16px 18px;"><div style="display:flex;align-items:center;gap:7px;color:var(--accent);font-size:12.5px;font-weight:700;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5h6M7 7H5v14h14V7h-2M9 5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2"/></svg> 진행 업무</div><div style="font-size:38px;font-weight:800;line-height:1.05;margin:8px 0 2px;letter-spacing:-0.02em;color:var(--text);"><span id="erpWorkN">—</span></div><div style="font-size:11.5px;color:var(--dim);">처리 중인 업무</div></div><div style="flex:1;min-width:175px;background:var(--paper);border:1px solid var(--border);border-left:4px solid var(--warm);border-radius:14px;padding:16px 18px;position:relative;"><span style="position:absolute;top:13px;right:13px;font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;background:var(--warm-bg);color:var(--warm);">확인 필요</span><div style="display:flex;align-items:center;gap:7px;color:var(--warm);font-size:12.5px;font-weight:700;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 4v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V7z"/><path d="M9 12l2 2 4-4"/></svg> 결재 대기</div><div style="font-size:38px;font-weight:800;line-height:1.05;margin:8px 0 2px;letter-spacing:-0.02em;color:var(--text);"><span id="erpApprN">—</span></div><div style="font-size:11.5px;color:var(--dim);">승인 대기 중</div></div><div style="flex:1;min-width:175px;background:var(--paper);border:1px solid var(--border);border-left:4px solid var(--grow);border-radius:14px;padding:16px 18px;"><div style="display:flex;align-items:center;gap:7px;color:var(--grow);font-size:12.5px;font-weight:700;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.5 8.5 0 0 1-12.5 7.5L3 21l2-5.5A8.5 8.5 0 1 1 21 11.5z"/></svg> 오늘 신규 문의</div><div style="font-size:38px;font-weight:800;line-height:1.05;margin:8px 0 2px;letter-spacing:-0.02em;color:var(--text);"><span id="heroInqDay">—</span></div><div style="font-size:11.5px;color:var(--dim);">오늘 들어온 상담</div></div><div style="flex:1;min-width:175px;background:var(--paper);border:1px solid var(--border);border-left:4px solid var(--accent);border-radius:14px;padding:16px 18px;"><div style="display:flex;align-items:center;gap:7px;color:var(--accent);font-size:12.5px;font-weight:700;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg> 점검 완료율</div><div style="font-size:38px;font-weight:800;line-height:1.05;margin:8px 0 2px;letter-spacing:-0.02em;color:var(--text);"><span id="heroCheckPct">—</span><span style="font-size:20px;font-weight:800;">%</span></div><div style="font-size:11.5px;color:var(--dim);">오늘 · 부서 평균</div></div></div>
+    <div style="font-size:11px;color:var(--dim);margin:10px 0 0;">실시간 숫자는 업무·결재·문의 SSOT(구글시트)에서 직접 집계합니다. 가져오지 못하면 "—"로 표시(가짜 수치 없음).</div>
+
+    <!-- ⑤ 운영 현황 상세 -->
+    <div style="display:flex;align-items:center;gap:11px;margin:30px 0 14px;"><span style="width:30px;height:30px;border-radius:8px;background:var(--accent-bg);color:var(--accent);display:flex;align-items:center;justify-content:center;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 14l3-3 3 3 5-6"/></svg></span><span style="font-size:17px;font-weight:800;letter-spacing:-0.01em;color:var(--text);">운영 현황 상세</span><span style="font-size:11.5px;color:var(--dim);">큰 그림은 위, 여기선 누적·완료까지 (총=올해 1/1부터)</span><span style="flex:1;height:1px;background:var(--border);"></span></div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px;"><div style="background:var(--paper);border:1px solid var(--border);border-radius:14px;padding:18px 20px;"><div style="display:flex;align-items:center;gap:9px;margin-bottom:14px;"><span style="width:30px;height:30px;border-radius:8px;background:var(--accent-bg);color:var(--accent);display:flex;align-items:center;justify-content:center;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5h6M7 7H5v14h14V7h-2M9 5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2"/></svg></span><div><div style="font-weight:800;font-size:15px;color:var(--text);">업무</div><div style="font-size:11px;color:var(--dim);font-weight:600;">Work · AI COO(시우)</div></div></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:12px 14px;"><div><div style="font-size:11px;color:var(--dim);margin-bottom:3px;">총 진행</div><div style="font-size:20px;font-weight:800;line-height:1;color:var(--accent);" id="kpiWorkTotalActive">—</div></div><div><div style="font-size:11px;color:var(--dim);margin-bottom:3px;">총 완료</div><div style="font-size:20px;font-weight:800;line-height:1;color:var(--grow);" id="kpiWorkTotalDone">—</div></div><div><div style="font-size:11px;color:var(--dim);margin-bottom:3px;">오늘 진행</div><div style="font-size:20px;font-weight:800;line-height:1;color:var(--text);" id="kpiWorkDayActive">—</div></div><div><div style="font-size:11px;color:var(--dim);margin-bottom:3px;">오늘 완료</div><div style="font-size:20px;font-weight:800;line-height:1;color:var(--grow);" id="kpiWorkDayDone">—</div></div></div></div><div style="background:var(--paper);border:1px solid var(--border);border-radius:14px;padding:18px 20px;"><div style="display:flex;align-items:center;gap:9px;margin-bottom:14px;"><span style="width:30px;height:30px;border-radius:8px;background:var(--warm-bg);color:var(--warm);display:flex;align-items:center;justify-content:center;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 4v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V7z"/><path d="M9 12l2 2 4-4"/></svg></span><div><div style="font-weight:800;font-size:15px;color:var(--text);">결재</div><div style="font-size:11px;color:var(--dim);font-weight:600;">Approval · AI CEO(웰리)</div></div></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:12px 14px;"><div><div style="font-size:11px;color:var(--dim);margin-bottom:3px;">총 대기</div><div style="font-size:20px;font-weight:800;line-height:1;color:var(--warm);" id="kpiApprTotalPend">—</div></div><div><div style="font-size:11px;color:var(--dim);margin-bottom:3px;">총 완료</div><div style="font-size:20px;font-weight:800;line-height:1;color:var(--grow);" id="kpiApprTotalDone">—</div></div><div><div style="font-size:11px;color:var(--dim);margin-bottom:3px;">오늘 대기</div><div style="font-size:20px;font-weight:800;line-height:1;color:var(--text);" id="kpiApprDayPend">—</div></div><div><div style="font-size:11px;color:var(--dim);margin-bottom:3px;">오늘 완료</div><div style="font-size:20px;font-weight:800;line-height:1;color:var(--grow);" id="kpiApprDayDone">—</div></div></div></div><div style="background:var(--paper);border:1px solid var(--border);border-radius:14px;padding:18px 20px;"><div style="display:flex;align-items:center;gap:9px;margin-bottom:14px;"><span style="width:30px;height:30px;border-radius:8px;background:var(--grow-bg);color:var(--grow);display:flex;align-items:center;justify-content:center;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.5 8.5 0 0 1-12.5 7.5L3 21l2-5.5A8.5 8.5 0 1 1 21 11.5z"/></svg></span><div><div style="font-weight:800;font-size:15px;color:var(--text);">문의</div><div style="font-size:11px;color:var(--dim);font-weight:600;">Inquiry · AI CMO(시모)</div></div></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:12px 14px;"><div><div style="font-size:11px;color:var(--dim);margin-bottom:3px;">이번달 신규</div><div style="font-size:20px;font-weight:800;line-height:1;color:var(--grow);" id="kpiInqTotal">—</div></div><div><div style="font-size:11px;color:var(--dim);margin-bottom:3px;">오늘 신규</div><div style="font-size:20px;font-weight:800;line-height:1;color:var(--text);" id="kpiInqDay">—</div></div><div><div style="font-size:11px;color:var(--dim);margin-bottom:3px;">이번달 등록전환</div><span style="font-size:11px;font-weight:700;color:var(--dim);background:var(--gray-bg);padding:2px 9px;border-radius:20px;display:inline-block;" id="kpiInqTotalConv">연결 예정</span></div><div><div style="font-size:11px;color:var(--dim);margin-bottom:3px;">오늘 등록전환</div><span style="font-size:11px;font-weight:700;color:var(--dim);background:var(--gray-bg);padding:2px 9px;border-radius:20px;display:inline-block;" id="kpiInqDayConv">연결 예정</span></div></div><div style="font-size:11px;color:var(--dim);margin-top:12px;">등록전환은 회원DB 매칭 후 연결 예정 (시모/CMO)</div></div></div>
+
+    <!-- 점검 현황 (리디자인) -->
+    <div style="display:flex;align-items:center;gap:11px;margin:30px 0 14px;"><span style="width:30px;height:30px;border-radius:8px;background:var(--accent-bg);color:var(--accent);display:flex;align-items:center;justify-content:center;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></span><span style="font-size:17px;font-weight:800;letter-spacing:-0.01em;color:var(--text);">일일 점검 현황</span><span style="font-size:11.5px;color:var(--dim);">오늘 기준 · 부서별 체크리스트 완료율</span><span style="flex:1;height:1px;background:var(--border);"></span></div>
+    <div id="home-check-kpi" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px;">
+      <div style="text-align:center;padding:16px;color:var(--dim);font-size:12px;grid-column:1/-1;">점검 현황 불러오는 중...</div>
     </div>
-    <div style="font-size:11px;color:var(--dim);margin:0 0 16px;">실시간 숫자는 업무·결재 SSOT(구글시트)에서 직접 집계합니다. 가져오지 못하면 "—"로 표시(가짜 수치 없음).</div>
+    <div style="font-size:11px;color:var(--dim);margin-top:8px;">주차관리부 점검 — GAS dept=parking 미구현, 연결 대기(시우/COO 후속)</div>
 
-    <!-- ⑤ 핵심 현황 재설계 — 운영부(업무/결재/문의) + 점검 3부서 (2026-06-08 GM) -->
-    <div style="margin:0 0 6px;display:flex;align-items:center;gap:8px;">
-      <span style="font-size:13px;font-weight:700;color:var(--dim);">📊 핵심 현황</span>
-      <span style="font-size:11px;color:var(--dim);">[총 = 올해 1월 1일부터 누적 / 일일 = 오늘 기준 실시간]</span>
-    </div>
-
-    <!-- 운영부 3블록 -->
-    <div style="margin:0 0 10px;">
-      <div style="font-size:11px;font-weight:700;letter-spacing:0.06em;color:var(--dim);margin-bottom:8px;">🏢 운영부</div>
-      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px;">
-
-        <!-- 업무 블록 -->
-        <div style="background:var(--paper);border:1px solid var(--border);border-top:3px solid var(--accent);border-radius:12px;padding:14px 16px;">
-          <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:10px;">📋 업무</div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-            <div style="background:var(--accent-bg);border-radius:8px;padding:10px;text-align:center;">
-              <div style="font-size:10px;color:var(--dim);margin-bottom:4px;">총 진행업무</div>
-              <div style="font-size:22px;font-weight:800;color:var(--accent);line-height:1;" id="kpiWorkTotalActive">—</div>
-            </div>
-            <div style="background:var(--accent-bg);border-radius:8px;padding:10px;text-align:center;">
-              <div style="font-size:10px;color:var(--dim);margin-bottom:4px;">총 완료업무</div>
-              <div style="font-size:22px;font-weight:800;color:var(--accent);line-height:1;" id="kpiWorkTotalDone">—</div>
-            </div>
-            <div style="background:var(--warm-bg);border-radius:8px;padding:10px;text-align:center;">
-              <div style="font-size:10px;color:var(--dim);margin-bottom:4px;">일일 진행업무</div>
-              <div style="font-size:22px;font-weight:800;color:var(--warm);line-height:1;" id="kpiWorkDayActive">—</div>
-            </div>
-            <div style="background:var(--warm-bg);border-radius:8px;padding:10px;text-align:center;">
-              <div style="font-size:10px;color:var(--dim);margin-bottom:4px;">일일 완료업무</div>
-              <div style="font-size:22px;font-weight:800;color:var(--warm);line-height:1;" id="kpiWorkDayDone">—</div>
-            </div>
-          </div>
-        </div>
-
-        <!-- 결재 블록 -->
-        <div style="background:var(--paper);border:1px solid var(--border);border-top:3px solid #d4a017;border-radius:12px;padding:14px 16px;">
-          <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:10px;">🧾 결재</div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-            <div style="background:rgba(212,160,23,0.10);border-radius:8px;padding:10px;text-align:center;">
-              <div style="font-size:10px;color:var(--dim);margin-bottom:4px;">총 결재대기</div>
-              <div style="font-size:22px;font-weight:800;color:#d4a017;line-height:1;" id="kpiApprTotalPend">—</div>
-            </div>
-            <div style="background:rgba(212,160,23,0.10);border-radius:8px;padding:10px;text-align:center;">
-              <div style="font-size:10px;color:var(--dim);margin-bottom:4px;">총 결재완료</div>
-              <div style="font-size:22px;font-weight:800;color:#d4a017;line-height:1;" id="kpiApprTotalDone">—</div>
-            </div>
-            <div style="background:rgba(106,191,123,0.10);border-radius:8px;padding:10px;text-align:center;">
-              <div style="font-size:10px;color:var(--dim);margin-bottom:4px;">일일 결재대기</div>
-              <div style="font-size:22px;font-weight:800;color:#6abf7b;line-height:1;" id="kpiApprDayPend">—</div>
-            </div>
-            <div style="background:rgba(106,191,123,0.10);border-radius:8px;padding:10px;text-align:center;">
-              <div style="font-size:10px;color:var(--dim);margin-bottom:4px;">일일 결재완료</div>
-              <div style="font-size:22px;font-weight:800;color:#6abf7b;line-height:1;" id="kpiApprDayDone">—</div>
-            </div>
-          </div>
-        </div>
-
-        <!-- 문의 블록 -->
-        <div style="background:var(--paper);border:1px solid var(--border);border-top:3px solid var(--grow);border-radius:12px;padding:14px 16px;">
-          <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:10px;">💬 문의</div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-            <div style="background:var(--grow-bg);border-radius:8px;padding:10px;text-align:center;">
-              <div style="font-size:10px;color:var(--dim);margin-bottom:4px;">총 신규문의</div>
-              <div style="font-size:22px;font-weight:800;color:var(--grow);line-height:1;" id="kpiInqTotal">—</div>
-            </div>
-            <div style="background:var(--grow-bg);border-radius:8px;padding:10px;text-align:center;">
-              <div style="font-size:10px;color:var(--dim);margin-bottom:4px;">총 등록전환</div>
-              <div style="font-size:22px;font-weight:800;color:var(--grow);line-height:1;" id="kpiInqTotalConv">—</div>
-            </div>
-            <div style="background:var(--accent-bg);border-radius:8px;padding:10px;text-align:center;">
-              <div style="font-size:10px;color:var(--dim);margin-bottom:4px;">일일 신규문의</div>
-              <div style="font-size:22px;font-weight:800;color:var(--accent);line-height:1;" id="kpiInqDay">—</div>
-            </div>
-            <div style="background:var(--accent-bg);border-radius:8px;padding:10px;text-align:center;">
-              <div style="font-size:10px;color:var(--dim);margin-bottom:4px;">일일 등록전환</div>
-              <div style="font-size:22px;font-weight:800;color:var(--accent);line-height:1;" id="kpiInqDayConv">—</div>
-            </div>
-          </div>
-          <div style="font-size:10px;color:var(--dim);margin-top:8px;">✅ 신규문의: 한+영 실연결(2026-06-08) | ⚑ 등록전환: 회원DB 매칭 후속 연결 예정(시모/CMO)</div>
-        </div>
-
-      </div>
-    </div>
-
-    <!-- 점검 3부서 -->
-    <div style="margin:0 0 20px;">
-      <div style="font-size:11px;font-weight:700;letter-spacing:0.06em;color:var(--dim);margin-bottom:8px;">🔍 일일 점검 현황 [오늘 기준]</div>
-      <div id="home-check-kpi" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;">
-        <div style="text-align:center;padding:16px;color:var(--dim);font-size:12px;grid-column:1/-1;">점검 현황 불러오는 중...</div>
-      </div>
-      <div style="font-size:10px;color:var(--dim);margin-top:6px;">⚑ 주차관리부 점검 — GAS dept=parking 미구현. 연결 대기(시우/COO 후속)</div>
+    <!-- 범례 (색=의미 · 데이터 출처) -->
+    <div style="display:flex;flex-wrap:wrap;gap:18px;align-items:center;margin:24px 0 4px;padding:13px 18px;background:var(--paper);border:1px solid var(--border);border-radius:12px;font-size:12px;color:var(--dim);">
+      <span style="font-weight:700;color:var(--text-soft);">색 = 의미</span>
+      <span style="display:flex;align-items:center;gap:7px;"><span style="width:12px;height:12px;border-radius:4px;background:var(--accent);"></span>업무·점검(중립)</span>
+      <span style="display:flex;align-items:center;gap:7px;"><span style="width:12px;height:12px;border-radius:4px;background:var(--warm);"></span>결재·확인 필요</span>
+      <span style="display:flex;align-items:center;gap:7px;"><span style="width:12px;height:12px;border-radius:4px;background:var(--grow);"></span>문의·완료(긍정)</span>
+      <span style="display:flex;align-items:center;gap:7px;"><span style="width:12px;height:12px;border-radius:4px;background:var(--gray-bg);border:1px solid var(--border);"></span>연결/측정 예정</span>
+      <span style="margin-left:auto;color:var(--dim-soft);">데이터 출처: 업무·결재·문의 SSOT(구글시트) · 가짜 수치 없음</span>
     </div>
 
     <!-- ③ ERP 모듈 그리드 (시스템 설계도) — 8개 모듈, 넓으면 3열·좁으면 1열. 모든 링크는 home/수록가이드의 실제 URL 복사 -->
@@ -933,6 +846,7 @@
         var en = countRows(parseCSV(results[1]), 0); // 영문: A열(인덱스0)
         set('kpiInqTotal', ko.total + en.total);
         set('kpiInqDay',   ko.day   + en.day);
+        set('heroInqDay', ko.day + en.day);
         // 등록전환: 회원DB 매칭 후속 연결 예정 — "—" 유지
       }).catch(function(){ /* "—" 유지 */ });
     })();
@@ -9058,9 +8972,9 @@ function crTab(btn, panelId) {
       var pctColor = kpi.pct>=90?'#6abf7b':kpi.pct>=60?'#e6c84e':'#ED5B3F';
       var undoneColor = kpi.undone>0?'#ED5B3F':'#6abf7b';
       return '<a href="'+href+'" target="_blank" style="background:var(--paper);border:1px solid var(--border);border-top:3px solid '+pctColor+';border-radius:12px;padding:14px 16px;text-decoration:none;display:block;transition:transform .12s,box-shadow .12s;" onmouseover="this.style.transform=\'translateY(-2px)\';this.style.boxShadow=\'0 6px 18px rgba(0,0,0,0.15)\'" onmouseout="this.style.transform=\'\';this.style.boxShadow=\'\'">'
-        +'<div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:8px;">'+icon+' '+label+' 점검</div>'
+        +'<div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:8px;">'+label+' 점검</div>'
         +'<div style="font-size:24px;font-weight:800;color:'+pctColor+';line-height:1;">'+kpi.pct+'<span style="font-size:13px;font-weight:600;">%</span></div>'
-        +'<div style="font-size:10.5px;color:var(--dim);margin-top:2px;">완료율</div>'
+        +'<div style="font-size:10.5px;color:var(--dim);margin:2px 0 8px;">완료율</div>'+'<div style="height:7px;border-radius:99px;background:var(--gray-bg);overflow:hidden;"><i style="display:block;height:100%;border-radius:99px;width:'+kpi.pct+'%;background:'+pctColor+';"></i></div>'
         +'<div style="margin-top:8px;font-size:11px;display:flex;gap:8px;flex-wrap:wrap;">'
         +'<span style="color:var(--dim);">총 '+kpi.total+'</span>'
         +'<span style="color:#6abf7b;font-weight:600;">완료 '+kpi.done+'</span>'
@@ -9074,6 +8988,7 @@ function crTab(btn, panelId) {
       if(!el)return;
       var fKpi=parseKpi(facilityData);
       var sKpi=parseKpi(supportData);
+      (function(){var _p=[];if(fKpi)_p.push(fKpi.pct);if(sKpi)_p.push(sKpi.pct);var _h=document.getElementById('heroCheckPct');if(_h&&_p.length)_h.textContent=Math.round(_p.reduce(function(a,b){return a+b;},0)/_p.length);})();
       var html='';
       if(fKpi) html+=buildHomeKpiCard('🏭','시설부',fKpi,FACILITY_URL);
       else html+='<div style="background:var(--paper);border:1px solid var(--border);border-radius:12px;padding:14px 16px;font-size:12px;color:var(--dim);">🏭 시설부 점검 — 로드 실패</div>';
