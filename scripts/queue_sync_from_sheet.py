@@ -82,6 +82,15 @@ GAS_URL = (
 AI_CATEGORY = "[7]AI배(C레벨)"
 AI_CATEGORY_ALIASES = {"[7]ai배(c레벨)", "[7]ai배", "ai배", "ai_clevel", "ai c레벨"}
 
+# ── 새 탭 설계 (GM 결정 2026-06-08) ──────────────────────────────────────
+# GM 결정: AI 배를 실무진 todo_list 탭과 분리 → 같은 스프레드시트의 전용 탭으로 이관.
+# 신규 탭명 상수 — 코드는 준비, 실제 탭 생성·GAS 배포는 GM 게이트 후 진행.
+AI_SHEET_NAME = "AI배(C레벨)"
+
+# 신규 탭용 GAS 액션명 (GAS 재배포 후 사용 가능, 현재는 준비 상태).
+# GAS 에 'ai_list' 액션이 배포되면 이 액션으로 전용 탭 행을 조회한다.
+AI_LIST_ACTION = "ai_list"
+
 # 내용 셀 임베드 센티넬 — BUDGET 마커와 동일한 발상.
 _EMBED_RE = re.compile(r"===AI_QUEUE===\s*(.+?)\s*===END===", re.DOTALL)
 
@@ -284,11 +293,34 @@ def fetch_todo_rows(mock_path: str | None = None) -> list[dict]:
     return list(data.get("data", []))
 
 
-def build_queue(rows: list[dict]) -> list[dict]:
-    """AI 배 행만 골라 _queue 항목 배열 생성."""
+def fetch_ai_sheet_rows(sheet_name: str = AI_SHEET_NAME) -> list[dict]:
+    """
+    전용 탭(AI배(C레벨))에서 AI 배 행을 직접 조회한다.
+    GAS 에 'ai_list' 액션이 배포된 후 사용 가능.
+    배포 전 호출 시 GAS 가 unknown action 오류를 반환하므로 ValueError 로 변환.
+
+    이 함수는 코드 준비 단계 — 실제 GAS 배포(GM 게이트)가 선행되어야 동작한다.
+    """
+    import urllib.parse
+    params = urllib.parse.urlencode({"action": AI_LIST_ACTION, "sheet": sheet_name})
+    req = urllib.request.Request(GAS_URL + "?" + params)
+    with urllib.request.urlopen(req, timeout=20) as r:
+        data = json.loads(r.read())
+    if not data.get("ok"):
+        msg = data.get("error") or data.get("message") or str(data)
+        raise ValueError(f"ai_list GAS 오류(배포 전?): {msg}")
+    return list(data.get("data", []))
+
+
+def build_queue(rows: list[dict], *, all_rows_are_ai: bool = False) -> list[dict]:
+    """
+    AI 배 행만 골라 _queue 항목 배열 생성.
+    all_rows_are_ai=True 이면 _is_ai_row 필터 없이 전 행을 처리한다
+    (전용 탭에서 읽은 경우 — 카테고리 컬럼 없이도 동작).
+    """
     out: list[dict] = []
     for row in rows:
-        if not _is_ai_row(row):
+        if not all_rows_are_ai and not _is_ai_row(row):
             continue
         title = str(row.get("업무명", "") or "").strip()
         if not title:
@@ -318,15 +350,36 @@ def main(argv: list[str] | None = None) -> int:
                     help="현재 status/_queue.json 과 줄 단위 비교만(쓰기 없음).")
     ap.add_argument("--write", action="store_true",
                     help="[주의] 실제 status/_queue.json 갱신. 1단계 검증 단계에선 사용 금지 권장.")
+    ap.add_argument(
+        "--sheet-name",
+        default=None,
+        metavar="SHEET",
+        help=(
+            f"전용 탭 이름으로 AI 배를 조회한다 (기본값: None = todo_list 카테고리 필터 방식 유지).\n"
+            f"예: --sheet-name '{AI_SHEET_NAME}'\n"
+            f"[주의] GAS ai_list 액션 배포(GM 게이트) 전에는 오류 발생."
+        ),
+    )
     args = ap.parse_args(argv)
 
+    all_rows_are_ai = False
     try:
-        rows = fetch_todo_rows(args.mock)
+        if args.sheet_name:
+            # 전용 탭 모드 — GAS ai_list 액션 경유(배포 후 사용 가능)
+            print(
+                f"[INFO] 전용 탭 모드: sheet='{args.sheet_name}' (ai_list 액션)",
+                file=sys.stderr,
+            )
+            rows = fetch_ai_sheet_rows(args.sheet_name)
+            all_rows_are_ai = True  # 전용 탭은 AI 배만 존재 → 카테고리 필터 불필요
+        else:
+            # 기존 방식 — todo_list 카테고리 필터
+            rows = fetch_todo_rows(args.mock)
     except Exception as e:  # noqa: BLE001
-        print(f"[ERROR] todo_list 수집 실패: {e}", file=sys.stderr)
+        print(f"[ERROR] 시트 수집 실패: {e}", file=sys.stderr)
         return 1
 
-    items = build_queue(rows)
+    items = build_queue(rows, all_rows_are_ai=all_rows_are_ai)
     generated = _dump(items)
 
     if args.diff:
