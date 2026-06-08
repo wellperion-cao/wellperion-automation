@@ -43,6 +43,8 @@ CARD_MSGID_STORE = ROOT / "scripts" / ".review_card_msgids.json"
 # 동시 호출(11초 내 2회 발송 같은 사고) 직렬화용 파일 락 + 콘텐츠당 1회 재발송 차단 창(초)
 CARD_LOCK = ROOT / "scripts" / ".review_card.lock"
 DEDUP_WINDOW_SEC = 90  # 같은 콘텐츠·동일 내용 카드의 재발송을 막는 시간 창
+# 그룹 id 매핑 저장소 — callback_data 64바이트 한계 우회용 (hash→[id,...])
+CARD_GROUPS_STORE = ROOT / "scripts" / ".review_card_groups.json"
 
 
 def _token() -> str:
@@ -218,8 +220,13 @@ def _send_photo_card(token: str, caption: str, keyboard: dict,
         return None
 
 
-def send_card(item: dict, force: bool = False) -> bool:
+def send_card(item: dict, force: bool = False,
+              group_ids: list | None = None) -> bool:
     """검수 카드 1건 발송 — montage 미리보기 이미지 + [승인]/[반려] 버튼.
+
+    group_ids: 복수 id 일괄 승인용. 지정 시 버튼 callback_data가
+               pub:<id1,id2,...>:approve 형태로 생성된다. 카드 대표 item(미리보기·제목)은
+               item 인자를 사용. 중복 가드 키는 item.id 기준.
 
     콘텐츠당 1회 보장: 동시 호출은 파일 락으로 직렬화하고, 같은 콘텐츠(동일 내용 sig)의
     카드가 DEDUP_WINDOW_SEC 내 이미 나가 있으면 재발송을 스킵한다(11초 내 2회 발송 사고 차단).
@@ -251,26 +258,59 @@ def send_card(item: dict, force: bool = False) -> bool:
                     f"msg_id={prev.get('msg_id')}"
                 )
                 return True
-        return _do_send_card(token, item, item_id, title, channel, folder, sig)
+        return _do_send_card(token, item, item_id, title, channel, folder, sig,
+                             group_ids=group_ids)
     finally:
         if locked:
             _release_lock()
 
 
-def _do_send_card(token, item, item_id, title, channel, folder, sig) -> bool:
+def _write_group(group_ids: list) -> str:
+    """group_ids 를 .review_card_groups.json 에 저장하고 10자 sha1 해시키를 반환.
+    callback_data 64바이트 한계 우회용 — bot.py 가 이 파일로 해시→id목록 역조회."""
+    key = hashlib.sha1(",".join(group_ids).encode("utf-8")).hexdigest()[:10]
+    try:
+        store: dict = {}
+        if CARD_GROUPS_STORE.exists():
+            try:
+                store = json.loads(CARD_GROUPS_STORE.read_text(encoding="utf-8"))
+            except Exception:
+                store = {}
+        store[key] = group_ids
+        CARD_GROUPS_STORE.write_text(
+            json.dumps(store, ensure_ascii=False, indent=2), encoding="utf-8")
+    except Exception:
+        pass
+    return key
+
+
+def _do_send_card(token, item, item_id, title, channel, folder, sig,
+                  group_ids: list | None = None) -> bool:
+    """group_ids 가 있으면 카드 1장으로 복수 id 일괄 승인 버튼을 생성한다.
+    callback_data 64바이트 한계 → 해시키 방식: pub:grp:<hash>:approve"""
+
+    if group_ids:
+        grp_hash = _write_group(group_ids)
+        cb_approve = f"pub:grp:{grp_hash}:approve"
+        cb_reject  = f"pub:grp:{grp_hash}:reject"
+        ch_label = f"{len(group_ids)}개 채널 일괄"
+    else:
+        cb_approve = f"pub:{item_id}:approve"
+        cb_reject  = f"pub:{item_id}:reject"
+        ch_label = channel
 
     caption = (
         f"🔎 <b>콘텐츠 검수 요청</b>\n"
         f"<b>{title}</b>\n"
-        f"채널: {channel}\n"
+        f"채널: {ch_label}\n"
         f"폴더: {folder}\n\n"
         f"슬라이드 미리보기 ↑ · <a href=\"{M5_URL}\">M5에서 전체 보기</a>\n"
         f"확인 후 아래에서 바로 발행 승인하세요."
     )
     keyboard = {
         "inline_keyboard": [[
-            {"text": "✅ 승인 (즉시 발행)", "callback_data": f"pub:{item_id}:approve"},
-            {"text": "❌ 반려", "callback_data": f"pub:{item_id}:reject"},
+            {"text": "✅ 승인 (즉시 발행)", "callback_data": cb_approve},
+            {"text": "❌ 반려", "callback_data": cb_reject},
         ]]
     }
 
@@ -310,7 +350,11 @@ def load_queue() -> list:
 
 def main() -> None:
     p = argparse.ArgumentParser(description="콘텐츠 검수 카드 발송기")
-    p.add_argument("--id", help="발송할 큐 항목 id")
+    p.add_argument("--id", help="발송할 큐 항목 id (카드 대표 항목 — 미리보기·제목 기준)")
+    p.add_argument("--group-ids", help=(
+        "콤마 구분 복수 id: 카드 1장으로 일괄 승인 버튼 생성. "
+        "--id 는 대표 항목(미리보기·제목)으로만 사용. "
+        "예: --id A --group-ids A,B,C,D"))
     p.add_argument("--all-pending", action="store_true",
                    help="status='검수대기' 전체 카드 발송")
     p.add_argument("--force", action="store_true",
@@ -323,7 +367,9 @@ def main() -> None:
         if not target:
             print(f"[ERROR] id 미발견: {args.id}")
             sys.exit(1)
-        sys.exit(0 if send_card(target, force=args.force) else 1)
+        group_ids = [x.strip() for x in args.group_ids.split(",") if x.strip()] \
+            if args.group_ids else None
+        sys.exit(0 if send_card(target, force=args.force, group_ids=group_ids) else 1)
     elif args.all_pending:
         pending = [it for it in items if it.get("status") == "검수대기"]
         if not pending:

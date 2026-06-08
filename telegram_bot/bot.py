@@ -1052,11 +1052,15 @@ async def _git_async(*args: str) -> None:
 async def cmd_publish_callback(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     """콘텐츠 검수 카드 [✅승인]/[❌반려] 클릭 처리.
 
-    callback_data: ``pub:<id>:<approve|reject>``
+    callback_data 형식:
+      단일:  ``pub:<id>:<approve|reject>``
+      복수:  ``pub:<id1,id2,...>:<approve|reject>``  (콤마 구분, 그룹 일괄 승인)
+
     승인 → review_queue.json status='승인' 기록·커밋·푸시 → 발행 엔진
            (ig_review_publish_watcher.py --once) 비차단 호출. 엔진이 채널 분기
            발행·자체 텔레그램 보고(IG 0% 시 수동발행대기 폴백). 폴링 감시기 폐기 대체.
     반려 → status='반려' 기록·커밋.
+    복수 id: 각 항목 모두 status 갱신 후 발행 엔진 1회 호출 (4채널 그룹 승인 지원).
     """
     q = update.callback_query
     if not q or not q.data or not q.data.startswith("pub:"):
@@ -1066,22 +1070,49 @@ async def cmd_publish_callback(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     if len(parts) < 3:
         await q.answer("형식 오류", show_alert=False)
         return
-    _, item_id, decision = parts
+    _, id_field, decision = parts
+
+    # 그룹 해시 방식: pub:grp:<hash>:<decision> → .review_card_groups.json 역조회
+    _GROUPS_STORE = WORKDIR / "scripts" / ".review_card_groups.json"
+    if id_field.startswith("grp:"):
+        grp_hash = id_field[4:]
+        try:
+            grp_map = json.loads(_GROUPS_STORE.read_text(encoding="utf-8"))
+            item_ids = grp_map.get(grp_hash) or []
+        except Exception:
+            item_ids = []
+        if not item_ids:
+            await ctx.bot.send_message(chat_id=q.message.chat_id,
+                text=f"⚠️ 그룹 해시를 찾지 못함: {grp_hash}")
+            return
+    else:
+        # 복수 id 지원: 콤마 구분 분리 (단일 id는 리스트 1개)
+        item_ids = [x.strip() for x in id_field.split(",") if x.strip()]
 
     try:
         items = json.loads(REVIEW_QUEUE.read_text(encoding="utf-8"))
     except Exception as exc:
         await ctx.bot.send_message(chat_id=q.message.chat_id,
-            text=f"⚠️ 발행 큐 로드 실패: {exc}\n🆔 {item_id}")
-        return
-    target = next((it for it in items if it.get("id") == item_id), None)
-    if target is None:
-        await ctx.bot.send_message(chat_id=q.message.chat_id,
-            text=f"⚠️ 큐에서 항목을 찾지 못함: {item_id}")
+            text=f"⚠️ 발행 큐 로드 실패: {exc}\n🆔 {id_field}")
         return
 
     new_status = "승인" if decision == "approve" else "반려"
-    target["status"] = new_status
+    targets = []
+    missing = []
+    for iid in item_ids:
+        t = next((it for it in items if it.get("id") == iid), None)
+        if t is None:
+            missing.append(iid)
+        else:
+            t["status"] = new_status
+            targets.append(t)
+
+    if missing:
+        await ctx.bot.send_message(chat_id=q.message.chat_id,
+            text=f"⚠️ 큐에서 항목을 찾지 못함: {', '.join(missing)}")
+        if not targets:
+            return
+
     try:
         REVIEW_QUEUE.write_text(
             json.dumps(items, ensure_ascii=False, indent=2), encoding="utf-8")
@@ -1090,19 +1121,29 @@ async def cmd_publish_callback(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
             text=f"⚠️ 큐 저장 실패: {exc}")
         return
 
-    title = target.get("title", item_id)
-    channel = target.get("channel", "")
-    log.info(f"[pub] decision={decision} id={item_id} ch={channel}")
+    # 대표 타이틀·채널 (복수면 첫 항목 + 건수 표시)
+    first = targets[0] if targets else {}
+    title = first.get("title", id_field)
+    channel = first.get("channel", "")
+    if len(targets) > 1:
+        title_label = f"{title} 외 {len(targets)-1}건"
+        channel_label = f"{len(targets)}개 채널"
+    else:
+        title_label = title
+        channel_label = channel
+
+    log.info(f"[pub] decision={decision} ids={item_ids} ch={channel_label}")
 
     await _git_async("add", str(REVIEW_QUEUE))
-    await _git_async("commit", "-m", f"auto(cmo): 검수 {new_status} — {title} [{channel}]")
+    await _git_async("commit", "-m",
+        f"auto(cmo): 검수 {new_status} — {title_label} [{channel_label}]")
     await _git_async("pull", "--rebase", "--autostash", "origin", "master")
     await _git_async("push", "origin", "master")
 
     label = "✅ 승인" if decision == "approve" else "❌ 반려"
     try:
         await q.edit_message_text(
-            text=(q.message.text or title) + f"\n\n━━━━━━━━\n{label} 처리됨",
+            text=(q.message.text or title_label) + f"\n\n━━━━━━━━\n{label} 처리됨",
             reply_markup=None)
     except Exception:
         try:
@@ -1121,11 +1162,11 @@ async def cmd_publish_callback(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
                          TELEGRAM_BOT_TOKEN=(TOKEN or "")),
             )
             await ctx.bot.send_message(chat_id=q.message.chat_id,
-                text=f"⏳ <b>{title}</b> 발행 처리 시작 — 결과는 발행 엔진이 곧 보고합니다.",
+                text=f"⏳ <b>{title_label}</b> 발행 처리 시작 — 결과는 발행 엔진이 곧 보고합니다.",
                 parse_mode="HTML")
         except Exception as exc:
             await ctx.bot.send_message(chat_id=q.message.chat_id,
-                text=f"⚠️ 발행 엔진 기동 실패: {exc}\n수동 발행 필요: {title}")
+                text=f"⚠️ 발행 엔진 기동 실패: {exc}\n수동 발행 필요: {title_label}")
 
 
 # ── 중복 기동 방지 PID 락 (daily_scheduler.py와 동일 패턴, 2026-06-02) ──────────
