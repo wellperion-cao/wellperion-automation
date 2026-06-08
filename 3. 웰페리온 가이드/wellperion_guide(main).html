@@ -497,12 +497,13 @@
       <!-- 이번달 지출 -->
       <div style="background:var(--paper);border:1px solid var(--border);border-left:4px solid var(--warm);border-radius:14px;padding:15px 16px;">
         <div style="display:flex;align-items:center;gap:7px;color:var(--warm);font-size:12px;font-weight:700;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20V10M18 20V4M6 20v-4"/></svg> 이번달 지출</div>
-        <div style="font-size:22px;font-weight:800;line-height:1.1;margin:7px 0 4px;letter-spacing:-0.02em;color:var(--text);"><span id="heroExpMonth">—</span></div>
+        <div style="margin:7px 0 4px;"><span id="heroExpMonth" style="font-size:13px;font-weight:700;color:var(--dim);background:var(--gray-bg);padding:3px 10px;border-radius:20px;display:inline-block;">집계 보완 중</span></div>
         <div style="font-size:11px;color:var(--dim);display:flex;gap:8px;flex-wrap:wrap;">
-          <span>오늘 <span id="heroExpDay" style="color:var(--warm);">—</span></span>
-          <span>집행률 <span id="heroExpRate" style="color:var(--warm);">—</span></span>
-          <span>연간 <span id="heroExpYear" style="color:var(--warm);">—</span></span>
+          <span id="heroExpDay" style="display:none;"></span>
+          <span id="heroExpRate" style="display:none;"></span>
+          <span id="heroExpYear" style="display:none;"></span>
         </div>
+        <div style="font-size:10.5px;color:var(--dim);margin-top:4px;">지출 시트 구조 정리 후 연결 예정</div>
       </div>
     </div>
 
@@ -984,12 +985,14 @@
           set('heroSalesYear',  krAmt(s.year));
 
           /* 지출 */
+          /* 지출 바인딩 비활성 — 시트 구조 정리 후 재연결 예정 (2026-06-08 GM 결정)
           var emVal = krAmt(e.month);
           set('heroExpMonth', emVal);
           setTitle('heroExpMonth', krExact(e.month));
           set('heroExpDay',  krAmt(e.today));
           set('heroExpRate',  (e.rate == null || e.budget == null) ? '예산 미설정' : pct(e.rate));
           set('heroExpYear',  krAmt(e.year));
+          */
 
           /* 이슈(VOC) */
           set('kpiIssueDayNew',  v.todayNew  != null ? String(v.todayNew)  : '—');
