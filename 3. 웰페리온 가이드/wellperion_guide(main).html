@@ -611,17 +611,17 @@
     <!-- AUTO:LATEST-START -->
     <div class="card grow">
       <h4>최신 업데이트 — 2026-06-08 (자동 갱신)</h4>
+      <p><strong>2026-06-08</strong> feat(cto): AI배 전용 탭 이관 완료 — AI배(C레벨) 탭 신규·20건 이동·todo_list 정리·GAS v@53</p>
       <p><strong>2026-06-08</strong> fix(cmo/barre): 옛 IG 엔트리 preview 깨진참조 ig_01→ig_main 정정 (원본 deck 복원 후속)</p>
       <p><strong>2026-06-08</strong> chore(cmo/barre): 채널 폴더 원본 deck 정규화 — 재렌더 잔재 제거</p>
       <p><strong>2026-06-08</strong> fix(cmo/barre): 원본 deck 복원 + litt.ly surgical 교체 (ig_04/ig_05)</p>
       <p><strong>2026-06-08</strong> fix(cmo/barre): ig_04 포함 전 슬라이드 litt.ly 제거 — compose_barre 재렌더 v3</p>
-      <p><strong>2026-06-08</strong> fix(cmo/barre): 바레 슬라이드 이미지 litt.ly→공식문의 반영 v2</p>
     </div>
 <!-- AUTO:LATEST-END -->
         <table>
           <tr><th style="width:160px">날짜</th><th>변경 내용</th></tr>
           <!-- AUTO:TABLE-START -->
-      <tr><td><strong>2026-06-08 (자동)</strong></td><td>fix(cmo/barre): 옛 IG 엔트리 preview 깨진참조 ig_01→ig_main 정정 (원본 deck 복원 후속) · chore(cmo/barre): 채널 폴더 원본 deck 정규화 — 재렌더 잔재 제거 · fix(cmo/barre): 원본 deck 복원 + litt.ly surgical 교체 (ig_04/ig_05) · fix(cmo/b…</td></tr>
+      <tr><td><strong>2026-06-08 (자동)</strong></td><td>feat(cto): AI배 전용 탭 이관 완료 — AI배(C레벨) 탭 신규·20건 이동·todo_list 정리·GAS v@53 · fix(cmo/barre): 옛 IG 엔트리 preview 깨진참조 ig_01→ig_main 정정 (원본 deck 복원 후속) · chore(cmo/barre): 채널 폴더 원본 deck 정규화 — 재렌더 잔재 제거 · f…</td></tr>
       <!-- AUTO:TABLE-END -->
           <tr><td><strong>2026-05-28 (14차)</strong></td><td>공지/안내문 생성(COO 하위) · 오프라인 홍보물 디자인 제작(CMO 하위) 도구 신설 · 공지 서식 v2.0 독립 페이지화 · 회사소개서·전략로드맵 원본 「3. 웰페리온 가이드/회사문서/」로 이관(SSOT 단일화) · C-Level 부팅 R/R Notion API→웰페리온 ERP g10 참조로 전환 · GitHub Pages 워크플로 폴더명 경로 수정 · 사이드바 "공통+7개 C-Level" 라벨 제거</td></tr>
           <tr><td>2026-05-27 (13차)</td><td>GitHub Pages 전환 · 사이드바 4섹터 · AI C-Level 통일 · 운영 통합 체계 · 공식채널·지출현황·취업규칙·SSOT 신설 · g2+g19·g9+g20·g12·g13 합병 · 김남욱 탭 확장 · v2.5</td></tr>
@@ -654,6 +654,13 @@
       .then(function(res){
         if (!res || !(res.ok || res.success) || !Array.isArray(res.data || res.todos)) return; // 실패 시 "—" 유지
         var rows = res.data || res.todos;
+        // S3 안전망: AI C레벨 배 제외 — 2026-06-08 GM 방침
+        var _aiOwnerRe = /웰리|시뽀|시로|시모|시우|시포|시토|ai\s*ceo|ai\s*cfo|ai\s*chro|ai\s*cmo|ai\s*coo|ai\s*cpo|ai\s*cto/i;
+        rows = rows.filter(function(r){
+          var cat = String(r['카테고리'] || r.category || '').trim();
+          var owner = String(r['담당자'] || r.owner || '').trim();
+          return cat !== '[7]AI배(C레벨)' && !_aiOwnerRe.test(owner);
+        });
         // 업무 진행: 실무진 기준 + 업무현황 SSOT와 동일 정의(완료여도 결재요청 미완이면 진행)
         function apprPending(r){ return String(req(r)).trim() && as(r) !== '결재완료' && !/반려/.test(String(as(r))); }
         var work = rows.filter(function(r){ return isStaff(r.owner || r['담당자'] || ''); });
@@ -4475,6 +4482,14 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
         var el = document.getElementById('s4KpiCards'); if (!el) return;
         if (!res || !res.ok || !Array.isArray(res.data)){ fail(); return; }
         var rows = res.data;
+        // S3 안전망: AI C레벨 배 제외 (카테고리 '[7]AI배(C레벨)' 또는 AI 담당자) — 2026-06-08 GM 방침
+        var _AI_CAT = '[7]AI배(C레벨)';
+        var _AI_OWNERS = /웰리|시뽀|시로|시모|시우|시포|시토|ai\s*ceo|ai\s*cfo|ai\s*chro|ai\s*cmo|ai\s*coo|ai\s*cpo|ai\s*cto/i;
+        rows = rows.filter(function(r){
+          var cat = String(r['카테고리'] || r.category || '').trim();
+          var owner = String(r['담당자'] || r.owner || '').trim();
+          return cat !== _AI_CAT && !_AI_OWNERS.test(owner);
+        });
         // 업무 KPI (실무진 기준)
         var work = rows.filter(function(r){ return isStaff(r.owner || r['담당자'] || ''); });
         // 업무현황 SSOT와 동일 정의: 완료여도 결재요청 미완(결재완료·반려 아님)이면 진행으로 집계 (2026-06-03 GM 동기화)
@@ -5908,6 +5923,9 @@ function crTab(btn, panelId) {
       CATEGORIES.forEach(c => grouped[c.value] = []);
       todoCache.forEach(t => {
         if (t.status === '완료') return; // 완료 항목은 제외
+        // S3 안전망: AI C레벨 배 제외 — 2026-06-08 GM 방침 (카테고리·담당자 이중 가드)
+        if (t.category === '[7]AI배(C레벨)') return;
+        if (/웰리|시뽀|시로|시모|시우|시포|시토|ai\s*ceo|ai\s*cfo|ai\s*chro|ai\s*cmo|ai\s*coo|ai\s*cpo|ai\s*cto/i.test(t.owner)) return;
         const cat = t.category || '[1]매출및영업';
         if (!grouped[cat]) grouped[cat] = [];
         grouped[cat].push(t);

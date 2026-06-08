@@ -5,6 +5,8 @@
 - `todo_list` AI배 잔여: **0건**
 - `status/_queue.json`: **20건** (새 탭 순서 반영)
 - 내용 동등: **PASS** (task_id 20건 일치·누락0·초과0·중복0)
+- S3 AI배: **0건** (todo_list 잔여 없음 실측)
+- S3 필터: **적용 완료** — 가이드 HTML 3군데 안전망 삽입 (KPI 스트립·renderSheetsTodos·경영현황 스트립)
 
 ---
 
