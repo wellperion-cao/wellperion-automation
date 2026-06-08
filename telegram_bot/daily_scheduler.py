@@ -1,7 +1,7 @@
 """
 웰페리온 일일 자동 보고 스케줄러 v2.0
 -------------------------------
-정규 스케줄 (9개): 06/07/09/12/15/18/21/22시 정각 텔레그램 자동 보고
+정규 스케줄 (10개): 06/07/09/12/15/18/21/22/23시 정각 텔레그램 자동 보고
 테스트 모드: python daily_scheduler.py --test  →  1시간 주기 실행
 ※ 08시(오늘의 항로)는 ceo_morning_pipeline.py (별도 Task Scheduler) 담당 — 여기서 중복 발송 없음
 
@@ -1447,7 +1447,12 @@ def _build_21_body() -> str:
 
 
 def _build_22_body() -> str:
-    """22시 — 취침·전자기기off + 북극성 + 핵심 동기부여 명언 [개인]"""
+    """22시 — 취침·전자기기off + 마무리(종료) 인사 통합 + 북극성 + 명언 [개인]
+
+    [2026-06-08 GM 지시] 기존 22:00 취침안내 + 22:25 종료인사(별도 예약작업)가
+    25분 내 중복 발송되던 것을 22:00 단일 메시지로 통합. 별도 22:25 종료인사
+    예약작업(Wellperion-PC-Shutdown-Greeting-Live)은 제거.
+    """
     now = datetime.now()
     today_str = now.strftime("%Y-%m-%d")
     weekday_kor = _WEEKDAY_KOR[now.weekday()]
@@ -1459,9 +1464,10 @@ def _build_22_body() -> str:
         quote_line = "\n> \"충분한 수면이 내일의 판단력을 만듭니다.\"\n"
 
     return (
-        f"🌙 [웰페리온] 22시 — 취침 준비\n"
+        f"🌙 [웰페리온] 22시 — 취침 준비·하루 마무리\n"
         f"━━━━━━━━━━━━━━━━\n"
         f"📅 {today_str} ({weekday_kor})\n\n"
+        f"오늘 하루도 고생 많으셨습니다, GM님.\n"
         f"📵 전자기기 off — 수면 루틴 시작\n\n"
         f"🌟 북극성\n"
         f"  GM만 보는 G1 오케스트레이션 +\n"
@@ -1471,9 +1477,26 @@ def _build_22_body() -> str:
     )
 
 
-# _build_23_body 폐기 (2026-06-08 GM B안 결정)
-# 사유: Auto-Shutdown-2230 예약작업이 22:30 PC 강제 종료 → 23시 잡 실행 환경 없음.
-# 정본 9슬롯(06/07s/07/09/12/15/18/21/22)으로 정정. _build_checklist_block 함수는 12·18시가 공유 사용.
+def _build_23_body() -> str:
+    """23시 — 마감 점검 현황 (체크리스트 박스표) [회사]
+
+    [2026-06-08 GM 지시] PC 종료 22:30→23:30 변경으로 23:00 발송 환경 확보 →
+    23시 마감 점검 슬롯 복원(10슬롯 정본). _build_checklist_block 공유 사용.
+    """
+    now = datetime.now()
+    today = now.strftime("%Y-%m-%d")
+    weekday_kor = _WEEKDAY_KOR[now.weekday()]
+
+    checklist_block = _build_checklist_block("23:00")
+
+    return (
+        f"[웰페리온] 23시 마감 점검\n"
+        f"━━━━━━━━━━━━━━━━\n"
+        f"{today} ({weekday_kor}) 마감 기준\n\n"
+        f"{checklist_block}\n\n"
+        f"_본 메시지는 자동 발송입니다._"
+    )
+
 
 SLOT_BUILDERS = {
     "06": _build_06_body,
@@ -1485,13 +1508,14 @@ SLOT_BUILDERS = {
     "18": _build_18_body,
     "21": _build_21_body,
     "22": _build_22_body,
+    "23": _build_23_body,
 }
 
 
 # ── 핵심 보고 실행 함수 ───────────────────────────────────────────────────────
 def run_report(slot: str, test_mode: bool = False) -> None:
     """
-    slot: "06" | "09" | "12" | "15" | "18" | "21"
+    slot: "06" | "07s" | "07" | "09" | "12" | "15" | "18" | "21" | "22" | "23"
     """
     now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     label = f"[{'TEST ' if test_mode else ''}{slot}시 보고]"
@@ -1552,8 +1576,10 @@ def get_test_slot() -> str:
         return "18"
     elif h < 22:
         return "21"
-    else:
+    elif h < 23:
         return "22"
+    else:
+        return "23"
 
 
 # ── 수동 즉시 테스트 헬퍼 (--manual-test 옵션) ───────────────────────────────
@@ -1657,9 +1683,10 @@ def main():
             next_run_time=datetime.now(),
         )
     else:
-        logger.info("=== 정규 스케줄 시작: 06/07/09/12/15/18/21/22시 (9슬롯) ===")
+        logger.info("=== 정규 스케줄 시작: 06/07/09/12/15/18/21/22/23시 (10슬롯) ===")
         # [2026-06-07 GM 확정] 10슬롯 개편 — 08시는 ceo_morning_pipeline(별도 Task Scheduler) 담당
-        # [2026-06-08 GM B안] 23시 슬롯 폐기 → 9슬롯. Auto-Shutdown-2230(22:30)으로 실행 불가.
+        # [2026-06-08 GM] 23시 슬롯 복원 → 10슬롯. PC 종료 22:30→23:30 변경으로 23:00 발송 가능.
+        #   동시에 22시는 취침안내+종료인사 통합(별도 22:25 종료인사 예약작업 제거).
         schedule_map = {
             "06": (6, 0),
             "07s": (7, 5),   # 직원 공유용 카드 — 07시 어제항로 직후 5분
@@ -1670,6 +1697,7 @@ def main():
             "18": (18, 0),
             "21": (21, 0),
             "22": (22, 0),
+            "23": (23, 0),
         }
         for slot, (hour, minute) in schedule_map.items():
             scheduler.add_job(

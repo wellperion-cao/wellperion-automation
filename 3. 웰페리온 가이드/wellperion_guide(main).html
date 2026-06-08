@@ -611,17 +611,17 @@
     <!-- AUTO:LATEST-START -->
     <div class="card grow">
       <h4>최신 업데이트 — 2026-06-08 (자동 갱신)</h4>
+      <p><strong>2026-06-08</strong> fix(queue-seed): 내용 셀 = 시작 수식오류 방지 — 임베드 앞 개행 추가</p>
       <p><strong>2026-06-08</strong> docs(cto): AI배 이관 안전진단 보고서 — 2026-06-08</p>
       <p><strong>2026-06-08</strong> feat(queue-sync): S2 dedup 가드 시드 insert 스크립트 추가</p>
       <p><strong>2026-06-08</strong> fix(queue-sync): round-trip 0줄 PASS — note_progress 보존 + 키순서 임베드 순서 보존</p>
       <p><strong>2026-06-08</strong> feat(cmo): AI #9 북극성 발행완료 확정(GM 그리드 확인) + 항로 입항 도장</p>
-      <p><strong>2026-06-08</strong> chore(ceo): 미션 배 등록 — 시트 이관 재개(CTO-2026-06-08-QUEUE-SHEET-MIGRATION-RESUME) G…</p>
     </div>
 <!-- AUTO:LATEST-END -->
         <table>
           <tr><th style="width:160px">날짜</th><th>변경 내용</th></tr>
           <!-- AUTO:TABLE-START -->
-      <tr><td><strong>2026-06-08 (자동)</strong></td><td>docs(cto): AI배 이관 안전진단 보고서 — 2026-06-08 · feat(queue-sync): S2 dedup 가드 시드 insert 스크립트 추가 · fix(queue-sync): round-trip 0줄 PASS — note_progress 보존 + 키순서 임베드 순서 보존 · feat(cmo): AI #9 북극성 발행완료 확정(GM …</td></tr>
+      <tr><td><strong>2026-06-08 (자동)</strong></td><td>fix(queue-seed): 내용 셀 = 시작 수식오류 방지 — 임베드 앞 개행 추가 · docs(cto): AI배 이관 안전진단 보고서 — 2026-06-08 · feat(queue-sync): S2 dedup 가드 시드 insert 스크립트 추가 · fix(queue-sync): round-trip 0줄 PASS — note_progress 보존…</td></tr>
       <!-- AUTO:TABLE-END -->
           <tr><td><strong>2026-05-28 (14차)</strong></td><td>공지/안내문 생성(COO 하위) · 오프라인 홍보물 디자인 제작(CMO 하위) 도구 신설 · 공지 서식 v2.0 독립 페이지화 · 회사소개서·전략로드맵 원본 「3. 웰페리온 가이드/회사문서/」로 이관(SSOT 단일화) · C-Level 부팅 R/R Notion API→웰페리온 ERP g10 참조로 전환 · GitHub Pages 워크플로 폴더명 경로 수정 · 사이드바 "공통+7개 C-Level" 라벨 제거</td></tr>
           <tr><td>2026-05-27 (13차)</td><td>GitHub Pages 전환 · 사이드바 4섹터 · AI C-Level 통일 · 운영 통합 체계 · 공식채널·지출현황·취업규칙·SSOT 신설 · g2+g19·g9+g20·g12·g13 합병 · 김남욱 탭 확장 · v2.5</td></tr>
@@ -4913,22 +4913,22 @@ function crTab(btn, panelId) {
       <tr onclick="wpAutoToggle(this)" style="cursor:pointer;"><td>🟢</td><td>텔레그램 봇</td><td>인프라</td><td>상시</td><td style="color:var(--accent);font-size:12px;">펼치기 ▾</td></tr>
       <tr class="auto-detail" style="display:none;"><td colspan="5" style="background:var(--paper);padding:10px 14px;font-size:13px;color:var(--dim);"> bot.py — C-Level 보고·GM 지시 중계. @namuki_report_bot 단일 채널.</td></tr>
       <tr onclick="wpAutoToggle(this)" style="cursor:pointer;"><td>🟢</td><td>일일 스케줄러</td><td>인프라</td><td>상시</td><td style="color:var(--accent);font-size:12px;">펼치기 ▾</td></tr>
-      <tr class="auto-detail" style="display:none;"><td colspan="5" style="background:var(--paper);padding:10px 14px;font-size:13px;color:var(--dim);"> daily_scheduler.py — 정각 보고 발사(9슬롯). 슬롯 정본 = 바로 아래 텔레그램 9슬롯 표.</td></tr>
+      <tr class="auto-detail" style="display:none;"><td colspan="5" style="background:var(--paper);padding:10px 14px;font-size:13px;color:var(--dim);"> daily_scheduler.py — 정각 보고 발사(10슬롯). 슬롯 정본 = 바로 아래 텔레그램 10슬롯 표.</td></tr>
     </table>
 
-    <h4>매일 <span style="font-size:12px;color:var(--dim);font-weight:400;">— 예약작업 시각순 타임라인 (9슬롯+)</span></h4>
-    <p style="font-size:12px;color:var(--dim);margin:2px 0 8px;">Windows 스케줄러가 매일 자동 실행하는 예약작업을 <strong>위→아래 = 이른 시각→늦은 시각</strong> 순으로 정리. 텔레그램 정각 보고는 <code>daily_scheduler.py</code> 1개가 9번 발사 → <strong>바로 아래 9슬롯 표</strong>.</p>
+    <h4>매일 <span style="font-size:12px;color:var(--dim);font-weight:400;">— 예약작업 시각순 타임라인 (10슬롯+)</span></h4>
+    <p style="font-size:12px;color:var(--dim);margin:2px 0 8px;">Windows 스케줄러가 매일 자동 실행하는 예약작업을 <strong>위→아래 = 이른 시각→늦은 시각</strong> 순으로 정리. 텔레그램 정각 보고는 <code>daily_scheduler.py</code> 1개가 10번 발사 → <strong>바로 아래 10슬롯 표</strong>.</p>
     <table>
       <tr><th style="width:90px">시각</th><th style="width:230px">자동화</th><th style="width:72px">담당</th><th>무엇을 하나</th></tr>
       <tr><td>🟢 <strong>05:50</strong></td><td>PC 자동 ON</td><td>CTO</td><td>BIOS RTC로 자동 부팅 → 부팅 후 봇·스케줄러 자동기동(ONLOGON)</td></tr>
-      <tr><td>🟢 <strong>06~22시 (9슬롯)</strong></td><td>텔레그램 정각 통합보고 <span style="color:var(--accent);font-size:12px;">(9슬롯)</span></td><td>인프라</td><td><code>daily_scheduler.py</code>가 정각마다 텔레그램(@namuki_report_bot) 자동 발송 → <strong>아래 9슬롯 표 참조</strong></td></tr>
+      <tr><td>🟢 <strong>06~23시 (10슬롯)</strong></td><td>텔레그램 정각 통합보고 <span style="color:var(--accent);font-size:12px;">(10슬롯)</span></td><td>인프라</td><td><code>daily_scheduler.py</code>가 정각마다 텔레그램(@namuki_report_bot) 자동 발송 → <strong>아래 10슬롯 표 참조</strong></td></tr>
       <tr><td>🟢 <strong>07:30</strong></td><td>IG AI시리즈 제작·검수카드</td><td>CMO</td><td>다음 편 자동 제작 → M5 검수큐 등록 → 텔레그램 [✅승인]/[❌반려] 카드 발송. <strong>발행은 [✅승인] 탭에서만</strong>(무폴링). 안전판: <code>큐레이션_추천.md</code> 자동생성 · 소진 시 생성 중지</td></tr>
       <tr><td>🟢 <strong>08:00</strong></td><td>CEO 통합보고</td><td>AI CEO</td><td><code>ceo_morning_pipeline.py</code> — 전날 정리·오늘 업무·이슈 3섹션 텔레그램 발송</td></tr>
       <tr><td>🟢 <strong>22:00</strong></td><td>C-Level 진행 체크</td><td>AI CEO</td><td>일일 C-Level 진행현황 자동 점검</td></tr>
-      <tr><td>🟢 <strong>22:25 → 22:30</strong></td><td>종료 인사 · 자동 종료</td><td>CTO</td><td>22:25 Shutdown-Greeting 텔레그램 발송 → 22:30 Auto-Shutdown(PC 절전) 실행</td></tr>
+      <tr><td>🟢 <strong>23:30</strong></td><td>PC 자동 종료</td><td>CTO</td><td>Auto-Shutdown-2330 (<code>shutdown.exe /s /f /t 0</code>) — PC 종료. 22:30→23:30 변경(2026-06-08 GM)으로 23:00 마감점검 슬롯 발송 환경 확보. <strong>종료 인사는 22:00 취침 슬롯에 통합</strong>(별도 22:25 Shutdown-Greeting 예약작업 제거).</td></tr>
     </table>
 
-    <h4 style="margin-top:18px;">📨 텔레그램 정각 통합보고 9슬롯 <span style="font-size:12px;color:var(--dim);font-weight:400;">— daily_scheduler.py 정본 · GM이 매일 받는 보고</span></h4>
+    <h4 style="margin-top:18px;">📨 텔레그램 정각 통합보고 10슬롯 <span style="font-size:12px;color:var(--dim);font-weight:400;">— daily_scheduler.py 정본 · GM이 매일 받는 보고</span></h4>
     <p style="font-size:12px;color:var(--dim);margin:2px 0 6px;">※ 08:00 오늘의 항로는 <code>ceo_morning_pipeline.py</code> (별도 Task Scheduler) 담당 — 이 표에 없음.</p>
     <table>
       <tr><th style="width:90px">시각</th><th style="width:70px">구분</th><th style="width:180px">슬롯명</th><th>내용</th></tr>
@@ -4940,7 +4940,8 @@ function crTab(btn, panelId) {
       <tr><td><strong>15:00</strong></td><td>개인&amp;회사</td><td>⑤ 오늘 1차 정리</td><td>오늘 진행 현황 + C-Level 진행 요약</td></tr>
       <tr><td><strong>18:00</strong></td><td>회사</td><td>⑥ 오후 점검+퇴근</td><td>COO 체크앱 박스표 + 퇴근 인사</td></tr>
       <tr><td><strong>21:00</strong></td><td>개인&amp;회사</td><td>⑦ 최종 정리+내일 항로점</td><td>오늘 완료 요약 + 내일 이어받을 PENDING 브릿지 확인</td></tr>
-      <tr><td><strong>22:00</strong></td><td>개인</td><td>⑧ 취침·전자기기 OFF</td><td>북극성 + <code>quotes.json</code> 22시대 핵심 동기부여 명언 · 취침 루틴</td></tr>
+      <tr><td><strong>22:00</strong></td><td>개인</td><td>⑧ 취침·전자기기 OFF + 하루 마무리 인사</td><td>북극성 + <code>quotes.json</code> 22시대 핵심 동기부여 명언 · 취침 루틴 + <strong>하루 마무리(종료) 인사 통합</strong>(구 22:25 별도 종료인사 폐지·여기로 합침)</td></tr>
+      <tr><td><strong>23:00</strong></td><td>회사</td><td>⑨ 마감 점검</td><td>COO 체크앱 지원부·시설부·주차 마감 박스표 대시보드 (PC 23:30 종료 전 발송)</td></tr>
     </table>
     <div class="callout" style="margin-top:8px;font-size:13px;"><strong>📊 데이터 소스</strong> — GM 할일=업무현황 시트 <code>todo_list</code>(자동, GM 관리 불필요) · 명언=<code>status/quotes.json</code> · 진행=<code>status/*.json</code>·git. <strong style="color:var(--accent);">노션 의존 0.</strong><br><strong>🔄 재기동</strong> — 봇·스케줄러 재시작 또는 PC 부팅(ONLOGON 예약작업). 수동 재기동: <code>Stop-Process -Id (PID) -Force</code> → <code>Start-Process python -ArgumentList telegram_bot\daily_scheduler.py -WorkingDirectory C:\Users\jjky0\welperion-automation -WindowStyle Hidden</code>. <span style="color:var(--dim);">점검 원칙(왜·언제) = S2 CTO탭.</span></div>
     <p style="font-size:12px;color:var(--dim);margin:8px 0 0;">※ IG 07:30 전체 발행 흐름(시모 위임→빌드→<code>pub:</code> 콜백 등) 상세는 <code>instagram/_AI시리즈_로드맵.md</code> 정본 참조.</p>
