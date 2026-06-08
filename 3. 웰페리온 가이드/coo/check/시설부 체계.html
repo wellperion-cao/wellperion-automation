@@ -786,6 +786,144 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 
 <div id="tab-manual" class="content hidden">
 
+  <!-- ══════════════════════════════════════════════════════════════
+       시설부 직원 구성·역할 매뉴얼  (소장·차장·과장 3인)
+       ⚠ 역할 분담은 웰리(AI CTO) 제안 v1 초안 — GM 확정 전.
+       기준값은 작업일지(2026-06-04) 실측 범위 기준. 불명확분은 '확정 예정'.
+       ══════════════════════════════════════════════════════════════ -->
+  <div style="font-size:16px;font-weight:700;color:var(--text);padding:2px 0 4px;">시설부 직원 구성 · 역할 매뉴얼</div>
+  <div class="board-intro">
+    시설부 3인의 담당 R/R(역할·책임)과 일일 점검·관리 항목을 정리했습니다.
+    <span style="display:inline-block;font-size:11px;font-weight:700;padding:2px 9px;border-radius:10px;background:var(--yellow-bg);color:var(--yellow);border:1px solid rgba(230,200,78,0.4);margin-left:4px;">v1 초안 · GM 확정 전</span>
+    <span style="color:var(--accent);"> 아래 역할 분담은 AI CTO 제안안으로, GM 검토·확정 후 정본화됩니다.</span>
+  </div>
+
+  <!-- 직원 구성표 -->
+  <div class="manual-section" style="margin-bottom:10px;">
+    <div class="manual-header" onclick="togManual(this)"><h3>👥 직원 구성 (3인)</h3><span class="arrow open">&#9654;</span></div>
+    <div class="manual-body open">
+      <table class="schedule-table">
+        <tr><th style="width:78px;">직책</th><th style="width:86px;">성명</th><th>역할 한 줄</th></tr>
+        <tr><td><strong>소장</strong></td><td>이정헌</td><td>시설 운영 총괄 · 안전/소방 총괄책임자 · 협력업체·공사·투자보수·작업일지 결재</td></tr>
+        <tr><td><strong>차장</strong></td><td>김종현</td><td>설비·기계 운영 (기계실·공조·수영장 수질·사우나 온도·에너지)</td></tr>
+        <tr><td><strong>과장</strong></td><td>박호균</td><td>현장 점검·정비 (순회점검·소방 작동점검 실무·CCTV/전기·비품·청소협력업체 감독·작업일지 작성)</td></tr>
+      </table>
+      <p style="font-size:12px;color:var(--dim);margin:8px 0 0;line-height:1.5;">결재 라인: 과장(작업일지 작성) → 차장(설비 검토) → <strong>소장(최종 결재)</strong>. 비상 시 지휘권은 소장, 소장 부재 시 차장이 대행합니다.</p>
+    </div>
+  </div>
+
+  <!-- 인별 역할+규정 매뉴얼 카드 -->
+  <!-- ① 이정헌 소장 -->
+  <div class="manual-section" style="margin-bottom:10px;border-left:4px solid var(--accent);">
+    <div class="manual-header" onclick="togManual(this)"><h3>① 이정헌 소장 — 시설 총괄</h3><span class="arrow">&#9654;</span></div>
+    <div class="manual-body">
+      <span class="manual-label">[담당 R/R]</span>
+      <ul>
+        <li>시설 운영 총괄 · 시설부 인력 관리</li>
+        <li><strong>안전·소방 총괄책임자</strong> (법정 선임자)</li>
+        <li>협력업체·공사 관리 (청소·정비·방제·탕청소 업체 계약·감독)</li>
+        <li>시설 투자·보수 계획 수립 및 집행</li>
+        <li>작업일지 <strong>최종 결재</strong></li>
+        <li>대외 대응: 소방서·법정점검기관·관리사무소</li>
+      </ul>
+      <span class="manual-label">[일일 점검·관리 항목]</span>
+      <ul>
+        <li>당일 작업일지 검토·결재 (마감 시)</li>
+        <li>차장·과장 보고 사항 점검, 이슈 에스컬레이션 판단</li>
+        <li>협력업체 출입·작업 결과 확인 (청소·정비 업체)</li>
+      </ul>
+      <span class="manual-label">[기준값 / 주기]</span>
+      <ul>
+        <li>작업일지 결재: <strong>매일 마감 시 1회</strong></li>
+        <li>법정점검(소방 작동점검·전기안전 등): 법정 주기 — <span class="highlight">기준값 확정 예정</span></li>
+        <li>투자·보수 계획 보고: 주기 <span class="highlight">확정 예정</span> (운영부 정기회의 연동 검토)</li>
+      </ul>
+      <span class="manual-label">[비상·예외 대응]</span>
+      <ul>
+        <li><strong>비상대응 지휘</strong> (화재·누수·정전·설비 중대고장 시 총괄 지휘)</li>
+        <li>소방서·119·관계기관 신고 및 대외 창구</li>
+        <li>부재 시: <strong>김종현 차장</strong>이 지휘 대행</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ② 김종현 차장 -->
+  <div class="manual-section" style="margin-bottom:10px;border-left:4px solid var(--blue);">
+    <div class="manual-header" onclick="togManual(this)"><h3>② 김종현 차장 — 설비·기계 운영</h3><span class="arrow">&#9654;</span></div>
+    <div class="manual-body">
+      <span class="manual-label">[담당 R/R]</span>
+      <ul>
+        <li><strong>기계실 총괄</strong>: 보일러·고온수기·열교환기·축열조·심야전기·가스점검·연동펌프</li>
+        <li><strong>공조설비</strong>: AHU 1~4 가동·상태 관리</li>
+        <li><strong>수영장 기계·여과·수질</strong>: pH·잔류염소(CL)·수온·온수탱크 온도</li>
+        <li><strong>사우나 온도 설정·관리</strong>: 온탕·열탕·건식사우나·습식·찜질방</li>
+        <li>에너지 관리 (심야전기 활용·열원 효율)</li>
+      </ul>
+      <span class="manual-label">[일일 점검·관리 항목]</span>
+      <ul>
+        <li>사우나/스파 온도 기록 — 시간대별 (07·09·12·15·18시): 온탕·열탕·건식·습식·찜질방 / 남·여 구분</li>
+        <li>수영장 수질 기록 — 시간대별: pH · 잔류염소(CL) · 수온 · 온수탱크 온도</li>
+        <li>공조 AHU 1~4 가동상태 점검 (ok / x)</li>
+        <li>기계실 설비 가동: 심야전기·열교환기·가스점검·고온수기·연동펌프·축열조</li>
+      </ul>
+      <span class="manual-label">[기준값 / 주기]</span>
+      <ul>
+        <li>온도·수질 기록: <strong>1일 5회</strong> (07·09·12·15·18시)</li>
+        <li>사우나 온도(작업일지 기준): 온탕 약 42°C · 열탕 약 47°C · 건식 약 78°C / 습식 약 48°C · 찜질방 약 68°C <span style="color:var(--dim);font-size:11px;">(작업일지 표기값 — 정식 설정 기준값 <span class="highlight">확정 예정</span>)</span></li>
+        <li>건식사우나 90~100°C / 습식 60~70°C (기존 매뉴얼 청소 기준) — 운영 설정값과 교차확인 <span class="highlight">확정 예정</span></li>
+        <li>수영장 pH·잔류염소 적정 범위: <span class="highlight">기준값 확정 예정</span> (법정 수질기준 확인 후 기입)</li>
+        <li>기계실 가동 시각: 심야전기 05:00 · 1번 열교환기 05:00 · 가스점검 05:00 · 고온수기 등 14:00 <span style="color:var(--dim);font-size:11px;">(작업일지 표기 — 표준 시각 확정 예정)</span></li>
+      </ul>
+      <span class="manual-label">[비상·예외 대응]</span>
+      <ul>
+        <li>설비 이상(온도·수질 기준 이탈, AHU 정지, 보일러 고장) 즉시 <strong>소장 보고</strong> 후 1차 조치</li>
+        <li>가스 누출 의심 시: 밸브 차단 → 환기 → 소장·119 통보</li>
+        <li>수질 기준 이탈 시: 약품 조정·여과 재가동, 회복 전까지 이용 제한 검토</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ③ 박호균 과장 -->
+  <div class="manual-section" style="margin-bottom:10px;border-left:4px solid var(--green);">
+    <div class="manual-header" onclick="togManual(this)"><h3>③ 박호균 과장 — 현장 점검·정비</h3><span class="arrow">&#9654;</span></div>
+    <div class="manual-body">
+      <span class="manual-label">[담당 R/R]</span>
+      <ul>
+        <li><strong>일일 시설 순회점검</strong>: 헬스장·휴게실·사우나·수영장 현장</li>
+        <li><strong>소방시설 작동점검 실무</strong> (소장 총괄책임 하 실무 수행)</li>
+        <li>CCTV · 전기 · 조명 점검</li>
+        <li>정수기 등 비품 관리</li>
+        <li>청소·정비 협력업체 <strong>현장 감독</strong></li>
+        <li><strong>작업일지 작성</strong> (당일 점검 결과 기록)</li>
+      </ul>
+      <span class="manual-label">[일일 점검·관리 항목]</span>
+      <ul>
+        <li>현장 순회: 헬스장·휴게실·사우나·수영장 이상유무</li>
+        <li>소방 작동점검 (작업일지 '소방 작동점검' 항목)</li>
+        <li>CCTV 작동·녹화 상태</li>
+        <li>정수기 등 비품 상태·재고</li>
+        <li>휴게실·정비 구역 정리, 청소업체 작업 결과 확인</li>
+        <li>작업일지 기록 후 차장·소장 보고</li>
+      </ul>
+      <span class="manual-label">[기준값 / 주기]</span>
+      <ul>
+        <li>현장 순회점검: <strong>일 1회 이상</strong> (시간대 <span class="highlight">확정 예정</span>)</li>
+        <li>소방 작동점검: 일일 확인 + 법정 작동점검 주기 <span class="highlight">확정 예정</span></li>
+        <li>비품(정수기 필터 등) 교체 주기: <span class="highlight">기준값 확정 예정</span></li>
+        <li>청소업체 작업 확인: 청소 전/후 사진 촬영 의무 (탕실·건습식 사우나·화장실)</li>
+      </ul>
+      <span class="manual-label">[비상·예외 대응]</span>
+      <ul>
+        <li>현장 이상(누수·미끄럼·고장·악취) 발견 시 즉시 <strong>차장·소장 보고</strong>, 1차 안전조치</li>
+        <li>소방·CCTV 작동 불량 시 즉시 보고 후 복구 의뢰</li>
+        <li>협력업체 작업 누락·불량 시 재작업 요청 및 일지 기록</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- 직원 매뉴얼 ↔ 기존 보드 구분선 -->
+  <div style="margin-top:18px;border-top:2px solid var(--accent);padding-top:14px;"></div>
+
   <!-- ── 요일별 업무 보드 (주 콘텐츠 · 요일 다중선택 + 트렐로 칸반) ── -->
   <div style="font-size:16px;font-weight:700;color:var(--text);padding:2px 0 4px;">요일별 업무 보드 (트렐로 칸반)</div>
   <div class="board-intro">위 <strong>요일 버튼</strong>을 켜고 끄면(여러 개 동시 선택 가능) 켠 요일이 <strong>트렐로 컬럼</strong>으로 나란히 표시됩니다. 컬럼이 많으면 가로로 스크롤하세요. 각 컬럼 안에 👨남 / 👩여 / 🏢외곽 카드가 세로로 있고, 카드의 <strong>편집</strong> 버튼을 누르면 <strong>표(시간 칸 | 내용 칸)를 바로 편집</strong>할 수 있고, <strong>＋ 행 추가</strong>/<strong>✕ 삭제</strong>로 항목을 늘리거나 지운 뒤 <strong>저장</strong>하면 모든 기기에 반영됩니다. 선택한 요일은 다음에 다시 와도 기억됩니다. 저장 시 시간 순으로 자동 정렬됩니다.</div>
