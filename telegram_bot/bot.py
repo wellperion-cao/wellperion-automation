@@ -1194,8 +1194,20 @@ def _check_pid_lock() -> None:
     _PID_FILE.write_text(str(os.getpid()))
 
 
+def _ensure_no_webhook() -> None:
+    """시작 시 웹훅이 걸려 있으면 자동 삭제 — getUpdates Conflict 재발 방지."""
+    try:
+        info = requests.get(f"https://api.telegram.org/bot{TOKEN}/getWebhookInfo", timeout=10).json()
+        if info.get("result", {}).get("url"):
+            requests.get(f"https://api.telegram.org/bot{TOKEN}/deleteWebhook", timeout=10)
+            log.info("[bot] 웹훅 자동 삭제 완료 (Conflict 방지)")
+    except Exception as exc:
+        log.warning(f"[bot] 웹훅 확인/삭제 실패(무시): {exc}")
+
+
 def main():
     _check_pid_lock()  # 중복 봇 기동 차단 (자동기동 + 수동 배치 충돌 방지)
+    _ensure_no_webhook()  # 웹훅 활성 시 자동 삭제 — getUpdates Conflict 재발 방지
     _install_outbound_logging()  # 발신 공용 로깅 래핑(best-effort, 발신 무영향)
     # Python 3.14 호환성: run_polling 내부의 get_event_loop 호출 대응
     try:
