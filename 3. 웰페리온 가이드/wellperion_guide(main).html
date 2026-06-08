@@ -493,6 +493,18 @@
           <span>달성률 <span id="heroSalesRate" style="color:var(--grow);">—</span></span>
           <span>연간 <span id="heroSalesYear" style="color:var(--grow);">—</span></span>
         </div>
+        <!-- 팀별 매출 토글 -->
+        <button id="salesBreakdownBtn" onclick="(function(){var p=document.getElementById('salesBreakdownPanel');var b=document.getElementById('salesBreakdownBtn');if(!p)return;var open=p.style.display!=='none';p.style.display=open?'none':'block';b.textContent=open?'팀별 보기 ▾':'팀별 접기 ▴';})()" style="display:none;margin-top:10px;font-size:11px;font-weight:700;color:var(--grow);background:var(--grow-bg,rgba(106,191,123,0.1));border:1px solid rgba(106,191,123,0.3);border-radius:20px;padding:3px 11px;cursor:pointer;">팀별 보기 ▾</button>
+        <div id="salesBreakdownPanel" style="display:none;margin-top:8px;border-top:1px dashed var(--border);padding-top:8px;">
+          <table style="width:100%;border-collapse:collapse;font-size:11px;">
+            <thead><tr style="color:var(--dim);font-weight:700;border-bottom:1px solid var(--border);">
+              <th style="text-align:left;padding:3px 4px;">항목</th>
+              <th style="text-align:right;padding:3px 4px;">이번달</th>
+              <th style="text-align:right;padding:3px 4px;">달성률</th>
+            </tr></thead>
+            <tbody id="salesBreakdownBody"><tr><td colspan="3" style="color:var(--dim);padding:6px 4px;">세부 없음</td></tr></tbody>
+          </table>
+        </div>
       </div>
       <!-- 이번달 지출 -->
       <div style="background:var(--paper);border:1px solid var(--border);border-left:4px solid var(--warm);border-radius:14px;padding:15px 16px;">
@@ -504,6 +516,11 @@
           <span id="heroExpYear" style="display:none;"></span>
         </div>
         <div style="font-size:10.5px;color:var(--dim);margin-top:4px;">지출 시트 구조 정리 후 연결 예정</div>
+        <!-- 지출 토글 — 구조만 -->
+        <button onclick="(function(b){var p=document.getElementById('expBreakdownPanel');if(!p)return;var open=p.style.display!=='none';p.style.display=open?'none':'block';b.textContent=open?'팀별 보기 ▾':'팀별 접기 ▴';})(this)" style="margin-top:10px;font-size:11px;font-weight:700;color:var(--dim);background:var(--gray-bg);border:1px solid var(--border);border-radius:20px;padding:3px 11px;cursor:pointer;">팀별 보기 ▾</button>
+        <div id="expBreakdownPanel" style="display:none;margin-top:8px;border-top:1px dashed var(--border);padding-top:8px;">
+          <div style="font-size:11.5px;color:var(--dim);padding:6px 2px;">집계 보완 중 — 지출 시트 정리 후 연결 예정</div>
+        </div>
       </div>
     </div>
 
@@ -983,6 +1000,32 @@
           set('heroSalesDay',   krAmt(s.today));
           set('heroSalesRate',  pct(s.rate));
           set('heroSalesYear',  krAmt(s.year));
+
+          /* 매출 팀별 breakdown */
+          (function(){
+            var btn = document.getElementById('salesBreakdownBtn');
+            var tbody = document.getElementById('salesBreakdownBody');
+            var bd = Array.isArray(s.breakdown) ? s.breakdown : [];
+            if(!btn || !tbody) return;
+            if(bd.length === 0) {
+              tbody.innerHTML = '<tr><td colspan="3" style="color:var(--dim);padding:6px 4px;">세부 없음</td></tr>';
+              return;
+            }
+            btn.style.display = 'inline-block';
+            var rows = '';
+            for(var i = 0; i < bd.length; i++) {
+              var item = bd[i];
+              var mVal = krAmt(item.month);
+              var rVal = pct(item.rate);
+              var odd = i % 2 === 1;
+              rows += '<tr style="' + (odd ? 'background:var(--accent-bg,rgba(183,159,138,0.06));' : '') + '">'
+                + '<td style="padding:4px 4px;font-weight:600;color:var(--text);">' + (item.name || '—') + '</td>'
+                + '<td style="text-align:right;padding:4px 4px;color:var(--grow);font-weight:700;" title="' + krExact(item.month) + '">' + mVal + '</td>'
+                + '<td style="text-align:right;padding:4px 4px;color:var(--dim);">' + rVal + '</td>'
+                + '</tr>';
+            }
+            tbody.innerHTML = rows;
+          })();
 
           /* 지출 */
           /* 지출 바인딩 비활성 — 시트 구조 정리 후 재연결 예정 (2026-06-08 GM 결정)
