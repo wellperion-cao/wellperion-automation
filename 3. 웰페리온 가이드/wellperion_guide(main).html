@@ -607,20 +607,19 @@
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
           <div style="background:rgba(90,138,159,0.08);border-radius:10px;padding:10px 12px;">
             <div style="font-size:10px;color:var(--dim);margin-bottom:4px;font-weight:600;">접수</div>
-            <span style="font-size:11px;font-weight:700;color:var(--dim);background:var(--gray-bg);padding:1px 8px;border-radius:20px;display:inline-block;">연결 예정</span>
-            <div style="display:flex;align-items:center;gap:4px;margin-top:4px;"><span style="font-size:10px;color:var(--dim);">미처리</span><span style="font-size:11px;font-weight:700;color:var(--dim);background:var(--gray-bg);padding:1px 7px;border-radius:20px;display:inline-block;">연결 예정</span></div>
+            <span id="kpiIssueDayNew" style="font-size:11px;font-weight:700;color:var(--dim);background:var(--gray-bg);padding:1px 8px;border-radius:20px;display:inline-block;">—</span>
+            <div style="display:flex;align-items:center;gap:4px;margin-top:4px;"><span style="font-size:10px;color:var(--dim);">미처리</span><span id="kpiIssuePending" style="font-size:11px;font-weight:700;color:var(--dim);background:var(--gray-bg);padding:1px 7px;border-radius:20px;display:inline-block;">—</span></div>
           </div>
           <div style="background:rgba(90,138,159,0.08);border-radius:10px;padding:10px 12px;">
             <div style="font-size:10px;color:var(--dim);margin-bottom:4px;font-weight:600;">처리</div>
-            <span style="font-size:11px;font-weight:700;color:var(--dim);background:var(--gray-bg);padding:1px 8px;border-radius:20px;display:inline-block;">연결 예정</span>
-            <div style="display:flex;align-items:center;gap:4px;margin-top:4px;"><span style="font-size:10px;color:var(--dim);">처리율</span><span style="font-size:11px;font-weight:700;color:var(--dim);background:var(--gray-bg);padding:1px 7px;border-radius:20px;display:inline-block;">연결 예정</span></div>
+            <span id="kpiIssueDone" style="font-size:11px;font-weight:700;color:var(--dim);background:var(--gray-bg);padding:1px 8px;border-radius:20px;display:inline-block;">—</span>
+            <div style="display:flex;align-items:center;gap:4px;margin-top:4px;"><span style="font-size:10px;color:var(--dim);">처리율</span><span id="kpiIssueRate" style="font-size:11px;font-weight:700;color:var(--dim);background:var(--gray-bg);padding:1px 7px;border-radius:20px;display:inline-block;">—</span></div>
           </div>
         </div>
         <div style="margin-top:11px;padding-top:10px;border-top:1px dashed var(--border);display:flex;gap:7px;flex-wrap:wrap;">
           <a href="https://docs.google.com/forms/d/e/1FAIpQLSd7mDzTyZT5FSXVcxmpMCaqv7M-RR3EmEu2lFqGRksUE77osA/viewform" target="_blank" style="font-size:11px;font-weight:700;padding:3px 10px;background:rgba(90,138,159,0.12);color:#5a8a9f;border-radius:20px;text-decoration:none;border:1px solid rgba(90,138,159,0.3);">이슈 접수(VOC) ↗</a>
           <a href="https://docs.google.com/spreadsheets/d/1akZLs7ITs3FZWFIzMQvSYrdRucGQglmerOvTC2TLEcQ/edit?gid=1576318230" target="_blank" style="font-size:11px;font-weight:700;padding:3px 10px;background:rgba(90,138,159,0.12);color:#5a8a9f;border-radius:20px;text-decoration:none;border:1px solid rgba(90,138,159,0.3);">이슈 응답 시트 ↗</a>
         </div>
-        <div style="font-size:10.5px;color:var(--dim);margin-top:8px;">VOC 이슈 자동 집계는 연결 예정 (운영부 이슈 응답 시트 연동 후)</div>
       </div>
 
     </div>
@@ -978,6 +977,59 @@
         set('heroInqDay', ko.day + en.day);
         // 등록전환: 회원DB 매칭 후속 연결 예정 — "—" 유지
       }).catch(function(){ /* "—" 유지 */ });
+    })();
+
+    // ── home_kpi: 매출·지출·이슈 연동 (2026-06-08) ─────────────────────────────
+    (function loadHomeKpi(){
+      var BASE = 'https://script.google.com/macros/s/AKfycbxDwFkrxK1YIaEoSNcuw2MiHiZQ-7o5N6311ytksSyeEd86ZFOhLknOWqQgNArQvZ-7/exec';
+      function set(id, v){ var el = document.getElementById(id); if(el) el.textContent = v; }
+      function setTitle(id, v){ var el = document.getElementById(id); if(el) el.title = v; }
+
+      /* 한국식 금액 표기: 150317501 → "1억 5,032만" */
+      function krAmt(n){
+        if(n == null || isNaN(n)) return '—';
+        n = Math.round(Number(n));
+        var eok = Math.floor(n / 100000000);
+        var man = Math.floor((n % 100000000) / 10000);
+        if(eok > 0 && man > 0) return eok + '억 ' + man.toLocaleString() + '만';
+        if(eok > 0) return eok + '억';
+        if(man > 0) return man.toLocaleString() + '만';
+        return n.toLocaleString() + '원';
+      }
+      /* 콤마+원 정확값 */
+      function krExact(n){ return (n == null || isNaN(n)) ? '' : Number(n).toLocaleString() + '원'; }
+      /* 소수1자리 % */
+      function pct(v){ return (v == null || isNaN(v)) ? '—' : Number(v).toFixed(1) + '%'; }
+
+      fetch(BASE + '?action=home_kpi&_pv=' + Date.now(), { redirect:'follow' })
+        .then(function(r){ return r.json(); })
+        .then(function(d){
+          if(!d || !d.ok) return;
+          var s = d.sales || {}, e = d.expense || {}, v = d.voc || {};
+
+          /* 매출 */
+          var smVal = krAmt(s.month);
+          set('heroSalesMonth', smVal);
+          setTitle('heroSalesMonth', krExact(s.month));
+          set('heroSalesDay',   krAmt(s.today));
+          set('heroSalesRate',  pct(s.rate));
+          set('heroSalesYear',  krAmt(s.year));
+
+          /* 지출 */
+          var emVal = krAmt(e.month);
+          set('heroExpMonth', emVal);
+          setTitle('heroExpMonth', krExact(e.month));
+          set('heroExpDay',  krAmt(e.today));
+          set('heroExpRate',  (e.rate == null || e.budget == null) ? '예산 미설정' : pct(e.rate));
+          set('heroExpYear',  krAmt(e.year));
+
+          /* 이슈(VOC) */
+          set('kpiIssueDayNew',  v.todayNew  != null ? String(v.todayNew)  : '—');
+          set('kpiIssuePending', v.pending   != null ? String(v.pending)   : '—');
+          set('kpiIssueDone',    v.done      != null ? String(v.done)      : '—');
+          set('kpiIssueRate',    pct(v.rate));
+        })
+        .catch(function(){ /* "—" 유지 */ });
     })();
   })();
   </script>
