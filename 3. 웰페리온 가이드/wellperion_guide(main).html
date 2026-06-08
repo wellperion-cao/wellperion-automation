@@ -886,41 +886,52 @@
       var GID_KO = '1902010032';
       var GID_EN = '1887747109';
       var BASE   = 'https://docs.google.com/spreadsheets/d/' + SS_ID + '/export?format=csv&gid=';
-      // 구글폼 타임스탬프 형식: "2026. 6. 8 오후 2:15:48" → 파싱 후 날짜 비교
-      var TS_RE  = /(\d{4})\.\s*(\d{1,2})\.\s*(\d{1,2})/;
-      function parseDateStr(ts) {
-        var m = TS_RE.exec(String(ts || ''));
+      // 구글폼 타임스탬프 형식: "2026. N. N ..." — 날짜 부분만 추출 → 'YYYY-MM-DD'
+      var TS_RE = /(\d{4})\.\s*(\d{1,2})\.\s*(\d{1,2})/;
+      function parseDs(s) {
+        var m = TS_RE.exec(String(s || ''));
         if (!m) return null;
-        // zero-pad → 'YYYY-MM-DD'
         return m[1] + '-' + ('0'+m[2]).slice(-2) + '-' + ('0'+m[3]).slice(-2);
       }
-      // CSV 텍스트 → 타임스탬프 컬럼 배열 반환 (헤더 행 제외)
-      // 한국어 탭: 컬럼B(인덱스1)가 타임스탬프 / 영문 탭: 컬럼A(인덱스0)가 타임스탬프
-      function countFromCsv(text, tsCol) {
-        var yStart = yearStart();   // 'YYYY-01-01'
-        var today  = todayStr();    // 'YYYY-MM-DD'
-        var total  = 0;
-        var day    = 0;
-        var lines  = text.split('\n');
-        // 단순 분리(멀티라인 셀 일부 존재하나 타임스탬프 행 식별엔 충분)
-        var seenHeader = false;
-        for (var i = 0; i < lines.length; i++) {
-          var line = lines[i];
-          if (!seenHeader) { seenHeader = true; continue; } // 1행=헤더 스킵
-          var cols = line.split(',');
-          if (!cols[tsCol]) continue;
-          var ds = parseDateStr(cols[tsCol]);
+      // RFC 4180 CSV 파서 — 멀티라인 셀(따옴표 내 개행) 정확히 처리
+      function parseCSV(text) {
+        var rows = [], row = [], field = '', inQ = false, i = 0;
+        while (i < text.length) {
+          var c = text[i];
+          if (inQ) {
+            if (c === '"') {
+              if (text[i+1] === '"') { field += '"'; i += 2; continue; } // escaped quote
+              inQ = false; i++; continue;
+            }
+            field += c; i++; continue;
+          }
+          if (c === '"') { inQ = true; i++; continue; }
+          if (c === ',') { row.push(field); field = ''; i++; continue; }
+          if (c === '\r' && text[i+1] === '\n') { row.push(field); rows.push(row); row=[]; field=''; i+=2; continue; }
+          if (c === '\n') { row.push(field); rows.push(row); row=[]; field=''; i++; continue; }
+          field += c; i++;
+        }
+        if (field || row.length) { row.push(field); rows.push(row); }
+        return rows;
+      }
+      // CSV rows → 타임스탬프 컬럼(tsCol) 기준 총/일일 카운트. 헤더 행(0번) 제외.
+      function countRows(rows, tsCol) {
+        var yStart = yearStart(), today = todayStr(), total = 0, day = 0;
+        for (var i = 1; i < rows.length; i++) {
+          var r = rows[i];
+          if (!r || r.length <= tsCol) continue;
+          var ds = parseDs(r[tsCol]);
           if (!ds) continue;
-          if (ds >= yStart) { total++; }
-          if (ds === today)  { day++; }
+          if (ds >= yStart) total++;
+          if (ds === today)  day++;
         }
         return { total: total, day: day };
       }
       var p1 = fetch(BASE + GID_KO + '&_pv=' + Date.now(), { redirect:'follow' }).then(function(r){ return r.text(); }).catch(function(){ return ''; });
       var p2 = fetch(BASE + GID_EN + '&_pv=' + Date.now(), { redirect:'follow' }).then(function(r){ return r.text(); }).catch(function(){ return ''; });
       Promise.all([p1, p2]).then(function(results){
-        var ko = countFromCsv(results[0], 1); // 한국어: B열
-        var en = countFromCsv(results[1], 0); // 영문: A열
+        var ko = countRows(parseCSV(results[0]), 1); // 한국어: B열(인덱스1)
+        var en = countRows(parseCSV(results[1]), 0); // 영문: A열(인덱스0)
         set('kpiInqTotal', ko.total + en.total);
         set('kpiInqDay',   ko.day   + en.day);
         // 등록전환: 회원DB 매칭 후속 연결 예정 — "—" 유지
