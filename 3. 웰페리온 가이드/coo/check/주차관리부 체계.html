@@ -562,8 +562,8 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 
   <p style="font-size:12px;color:var(--dim);margin:0 0 4px;">※ 위는 2인 동시 근무 시 적용하는 <strong>원칙(예시)</strong>입니다 · 1인 근무·3인 이상 케이스는 GM 추후 지정 예정</p>
 
-  <!-- ── 실제 운영 근무조 (충원/정의 예정) ── -->
-  <p style="font-size:14px;font-weight:700;color:var(--accent);margin:18px 0 8px;">실제 운영 근무조 — 충원/정의 예정</p>
+  <!-- ── 실제 운영 근무조 ── -->
+  <p style="font-size:14px;font-weight:700;color:var(--accent);margin:18px 0 8px;">실제 운영 근무조</p>
   <p style="font-size:13px;color:var(--text);margin:0 0 10px;line-height:1.7;">주차관리부 직원 구성·담당자·근무조는 <strong>아직 확정되지 않았습니다(충원/정의 예정)</strong>. 인원 확정 후 아래 표를 근무조·담당·근무시간 기준으로 채웁니다. 2인 이상 동시 근무 시에는 위 <strong>교대 휴게 규칙</strong>(근무자 A=50분~정시 / 근무자 B=정시~10분)을 적용해 정산 부스·주차장을 비우지 않습니다.</p>
   <table style="width:100%;border-collapse:collapse;margin-bottom:10px;font-size:13px;">
     <tr style="background:var(--paper);">
@@ -574,19 +574,19 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
     </tr>
     <tr>
       <td style="padding:8px;border:1px solid var(--border);font-weight:700;color:var(--accent);">오전</td>
-      <td style="padding:8px;border:1px solid var(--border);color:var(--dim);">충원/정의 예정</td>
+      <td style="padding:8px;border:1px solid var(--border);">양상규 고문</td>
       <td style="padding:8px;border:1px solid var(--border);color:var(--dim);white-space:nowrap;">미정</td>
       <td style="padding:8px;border:1px solid var(--border);color:var(--dim);">미정</td>
     </tr>
     <tr>
       <td style="padding:8px;border:1px solid var(--border);font-weight:700;color:var(--green);">오후</td>
-      <td style="padding:8px;border:1px solid var(--border);color:var(--dim);">충원/정의 예정</td>
+      <td style="padding:8px;border:1px solid var(--border);color:var(--dim);">충원 예정</td>
       <td style="padding:8px;border:1px solid var(--border);color:var(--dim);white-space:nowrap;">미정</td>
       <td style="padding:8px;border:1px solid var(--border);color:var(--dim);">미정</td>
     </tr>
     <tr>
       <td style="padding:8px;border:1px solid var(--border);font-weight:700;color:var(--orange);">야간</td>
-      <td style="padding:8px;border:1px solid var(--border);color:var(--dim);">충원/정의 예정 (무인/위탁 여부 포함)</td>
+      <td style="padding:8px;border:1px solid var(--border);color:var(--dim);">충원 예정 (무인/위탁 여부 포함)</td>
       <td style="padding:8px;border:1px solid var(--border);color:var(--dim);white-space:nowrap;">미정</td>
       <td style="padding:8px;border:1px solid var(--border);color:var(--dim);">미정</td>
     </tr>
@@ -1036,17 +1036,17 @@ const STAFF_CSV_URL = 'https://docs.google.com/spreadsheets/d/1DKEKRrpsi9Nit7dNd
 let activeGenderTab = 'm';
 
 /* ── A: Staff list (fallback + dynamic) ── */
-// 점검자 명단 — 주차관리부 직원 구성·담당자·근무조 미정(2026-06-08).
-// 충원/정의 예정. 실명 확정 시 아래 배열 교체(지상=m / 지하=f).
+// 점검자 명단 — 주차관리부 직원 구성(2026-06-08 GM 확정).
+// 양상규 고문(책임자) + 추가 담당 1명(충원 예정). 지상=m / 지하=f.
 const FALLBACK_STAFF = [
-  {name:'지상 주차 담당(충원/정의 예정)', role:'담당', shift:'all', gender:'m'},
-  {name:'지하 주차 담당(충원/정의 예정)', role:'담당', shift:'all', gender:'f'}
+  {name:'양상규 고문', role:'고문(책임자)', shift:'all', gender:'m'},
+  {name:'추가 담당(충원 예정)', role:'담당', shift:'all', gender:'f'}
 ];
 let STAFF_LIST = [...FALLBACK_STAFF];
 
 async function loadStaffFromSheet(){
-  // 주차관리부 담당자 미정 — 시트 동적 로드 비활성화(충원/정의 예정).
-  // 실명 확정 전까지 STAFF_LIST는 placeholder FALLBACK 고정 유지.
+  // 주차관리부 담당자 — 양상규 고문(책임자) 확정(2026-06-08 GM). 추가 담당 충원 예정.
+  // 시트 동적 로드 비활성화 — STAFF_LIST는 FALLBACK 고정 유지.
   STAFF_LIST=[...FALLBACK_STAFF];
   populateSubmitterDropdowns();
 }
