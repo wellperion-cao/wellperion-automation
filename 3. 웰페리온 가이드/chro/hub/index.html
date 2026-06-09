@@ -1800,7 +1800,7 @@ details.jobs-fold > summary > .jf-arrow{display:inline-block;transition:transfor
     var groups = document.querySelectorAll(".pipe-col");
     if(!groups.length) return false;
     if(document.getElementById("__appl_list")) return false;
-    var rows = [];
+    var allRows = [];
     groups.forEach(function(grp){
       var headSpans = grp.querySelectorAll(".pipe-head > span");
       var stage = "";
@@ -1814,49 +1814,105 @@ details.jobs-fold > summary > .jf-arrow{display:inline-block;transition:transfor
         var grade = a ? (a["면접 평점"] || "") : "";
         var applyDate = a ? (a["지원일"] || "") : "";
         var iveDate = a ? (a["면접 일정"] || "") : "";
-        rows.push({name:name, pid:pid, pos:pos, grade:grade, applyDate:applyDate, iveDate:iveDate, stage:stage});
+        allRows.push({name:name, pid:pid, pos:pos, grade:grade, applyDate:applyDate, iveDate:iveDate, stage:stage});
       });
     });
     var stageOrder = {"서류 검토":1,"서류":1,"1차 면접":2,"2차 면접":3,"최종 면접":4,"최종 합격":5,"합격":5,"보류":6,"불합격":7,"탈락":7};
-    rows.sort(function(a,b){return (stageOrder[a.stage]||99) - (stageOrder[b.stage]||99);});
+    allRows.sort(function(a,b){return (stageOrder[a.stage]||99) - (stageOrder[b.stage]||99);});
+
+    var container = document.createElement("div");
+    container.id = "__appl_list";
+    container.style.cssText = "margin-top:10px;grid-column:1 / -1;width:100%";
+
+    // 필터 옵션 추출 (유니크)
+    var stagesUniq = [], seenS = {};
+    allRows.forEach(function(r){if(r.stage && !seenS[r.stage]){seenS[r.stage]=1;stagesUniq.push(r.stage);}});
+    var gradesUniq = [], seenG = {};
+    allRows.forEach(function(r){if(r.grade && !seenG[r.grade]){seenG[r.grade]=1;gradesUniq.push(r.grade);}});
+    gradesUniq.sort();
+    var posUniq = [], seenP = {};
+    allRows.forEach(function(r){if(r.pos && !seenP[r.pos]){seenP[r.pos]=1;posUniq.push(r.pos);}});
+
+    var inpStyle = "font-family:inherit;font-size:12.5px;color:var(--ink,#1f1e1b);background:var(--surface,#fff);border:1px solid var(--line,#e7e4dc);border-radius:8px;padding:7px 10px;outline:none";
+    var filters = document.createElement("div");
+    filters.style.cssText = "display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;align-items:center";
+    filters.innerHTML =
+      '<input type="search" id="__af_q" placeholder="이름·포지션 검색" style="'+inpStyle+';min-width:200px;flex:1">' +
+      '<select id="__af_stage" style="'+inpStyle+'"><option value="">전형 단계 전체</option>' +
+        stagesUniq.map(function(s){return '<option>'+escH(s)+'</option>';}).join("") + '</select>' +
+      '<select id="__af_grade" style="'+inpStyle+'"><option value="">평점 전체</option>' +
+        gradesUniq.map(function(g){return '<option>'+escH(g)+'</option>';}).join("") + '</select>' +
+      '<select id="__af_pos" style="'+inpStyle+';max-width:200px"><option value="">포지션 전체</option>' +
+        posUniq.map(function(p){return '<option>'+escH(p)+'</option>';}).join("") + '</select>' +
+      '<span id="__af_count" style="font-size:11.5px;color:var(--ink-soft,#6c6961);background:var(--surface-2,#faf9f6);border:1px solid var(--line,#e7e4dc);border-radius:20px;padding:4px 11px;font-weight:600"></span>' +
+      '<button type="button" id="__af_clear" style="font-family:inherit;font-size:11.5px;font-weight:650;cursor:pointer;border-radius:8px;padding:6px 12px;border:1px solid var(--line,#e7e4dc);background:var(--surface,#fff);color:var(--ink-soft,#6c6961)">필터 초기화</button>';
+    container.appendChild(filters);
+
     var list = document.createElement("div");
-    list.id = "__appl_list";
-    list.style.cssText = "border:1px solid var(--line,#e7e4dc);border-radius:12px;background:var(--surface,#fff);overflow:hidden;margin-top:10px;grid-column:1 / -1;width:100%";
-    var header = document.createElement("div");
-    header.style.cssText = "display:grid;grid-template-columns:1.5fr 3fr 60px 1fr 1fr 130px;gap:12px;padding:11px 14px;background:var(--surface-2,#faf9f6);border-bottom:1px solid var(--line,#e7e4dc);font-size:11px;font-weight:700;color:var(--ink-soft,#6c6961);text-transform:uppercase;letter-spacing:.03em";
-    header.innerHTML = '<div>지원자</div><div>지원 포지션</div><div>평점</div><div>지원일</div><div>면접 일정</div><div style="text-align:right">상태</div>';
-    list.appendChild(header);
-    rows.forEach(function(rr){
-      var row = document.createElement("div");
-      row.className = "appl-row";
-      row.setAttribute("data-applname", rr.name);
-      row.setAttribute("data-apppid", rr.pid);
-      row.style.cssText = "display:grid;grid-template-columns:1.5fr 3fr 60px 1fr 1fr 130px;gap:12px;padding:12px 14px;border-bottom:1px solid var(--line-soft,#efece4);cursor:pointer;font-size:12.5px;align-items:center";
-      row.innerHTML = '<div style="font-weight:650">'+escH(rr.name||"-")+'</div>'
-        + '<div style="color:var(--ink-soft,#6c6961)">'+escH(rr.pos||"-")+'</div>'
-        + '<div>'+escH(rr.grade||"-")+'</div>'
-        + '<div>'+escH(fmtDate(rr.applyDate))+'</div>'
-        + '<div>'+escH(fmtDate(rr.iveDate))+'</div>'
-        + '<div style="text-align:right"><span style="display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;'+badgeStyle(rr.stage)+'">'+escH(rr.stage||"-")+'</span></div>';
-      list.appendChild(row);
-    });
-    if(list.lastChild) list.lastChild.style.borderBottom = "none";
-    if(rows.length===0){
-      var empty = document.createElement("div");
-      empty.style.cssText = "padding:40px 20px;text-align:center;color:var(--ink-faint,#9a978e);font-size:12.5px";
-      empty.textContent = "등록된 지원자가 없습니다.";
-      list.appendChild(empty);
+    list.style.cssText = "border:1px solid var(--line,#e7e4dc);border-radius:12px;background:var(--surface,#fff);overflow:hidden";
+    container.appendChild(list);
+
+    function renderRows(){
+      var q = (document.getElementById("__af_q").value||"").toLowerCase().trim();
+      var sf = document.getElementById("__af_stage").value;
+      var gf = document.getElementById("__af_grade").value;
+      var pf = document.getElementById("__af_pos").value;
+      var filtered = allRows.filter(function(r){
+        if(sf && r.stage !== sf) return false;
+        if(gf && r.grade !== gf) return false;
+        if(pf && r.pos !== pf) return false;
+        if(q){
+          var hay = ((r.name||"") + " " + (r.pos||"")).toLowerCase();
+          if(hay.indexOf(q) < 0) return false;
+        }
+        return true;
+      });
+      var html = '<div style="display:grid;grid-template-columns:1.5fr 3fr 60px 1fr 1fr 130px;gap:12px;padding:11px 14px;background:var(--surface-2,#faf9f6);border-bottom:1px solid var(--line,#e7e4dc);font-size:11px;font-weight:700;color:var(--ink-soft,#6c6961);text-transform:uppercase;letter-spacing:.03em">' +
+        '<div>지원자</div><div>지원 포지션</div><div>평점</div><div>지원일</div><div>면접 일정</div><div style="text-align:right">상태</div></div>';
+      if(filtered.length === 0){
+        html += '<div style="padding:40px 20px;text-align:center;color:var(--ink-faint,#9a978e);font-size:12.5px">조건에 맞는 지원자가 없습니다.</div>';
+      } else {
+        filtered.forEach(function(rr, idx){
+          var bb = idx === filtered.length - 1 ? "" : "border-bottom:1px solid var(--line-soft,#efece4);";
+          html += '<div class="appl-row" data-applname="'+escH(rr.name)+'" data-apppid="'+escH(rr.pid)+'" style="display:grid;grid-template-columns:1.5fr 3fr 60px 1fr 1fr 130px;gap:12px;padding:12px 14px;'+bb+'cursor:pointer;font-size:12.5px;align-items:center">' +
+            '<div style="font-weight:650">'+escH(rr.name||"-")+'</div>' +
+            '<div style="color:var(--ink-soft,#6c6961)">'+escH(rr.pos||"-")+'</div>' +
+            '<div>'+escH(rr.grade||"-")+'</div>' +
+            '<div>'+escH(fmtDate(rr.applyDate))+'</div>' +
+            '<div>'+escH(fmtDate(rr.iveDate))+'</div>' +
+            '<div style="text-align:right"><span style="display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;'+badgeStyle(rr.stage)+'">'+escH(rr.stage||"-")+'</span></div>' +
+          '</div>';
+        });
+      }
+      list.innerHTML = html;
+      document.getElementById("__af_count").textContent = filtered.length + " / " + allRows.length + " 명";
     }
+
     var firstGrp = groups[0];
     var grpParent = firstGrp.parentElement;
-    grpParent.insertBefore(list, firstGrp);
+    grpParent.insertBefore(container, firstGrp);
     groups.forEach(function(g){g.style.display = "none";});
+
+    document.getElementById("__af_q").addEventListener("input", renderRows);
+    document.getElementById("__af_stage").addEventListener("change", renderRows);
+    document.getElementById("__af_grade").addEventListener("change", renderRows);
+    document.getElementById("__af_pos").addEventListener("change", renderRows);
+    document.getElementById("__af_clear").addEventListener("click", function(){
+      document.getElementById("__af_q").value = "";
+      document.getElementById("__af_stage").value = "";
+      document.getElementById("__af_grade").value = "";
+      document.getElementById("__af_pos").value = "";
+      renderRows();
+    });
+
     list.addEventListener("click", function(e){
       var row = e.target.closest("[data-applname]");
       if(row && typeof window.openApplicantInfo === "function"){
         window.openApplicantInfo(row.getAttribute("data-applname"), row.getAttribute("data-apppid"));
       }
     });
+
+    renderRows();
     return true;
   }
   function arrangeJobs(){
