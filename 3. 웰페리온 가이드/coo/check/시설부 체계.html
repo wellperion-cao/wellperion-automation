@@ -2052,9 +2052,27 @@ function drawUI(d,gender){
   el.innerHTML=html;
 }
 
-/* v2.48 — 점검 항목 사용자 수정 기능 (localStorage override). v2.49 onclick HTML 충돌 fix */
-function getItemOverrides(){return{}} /* v2.50 — 항목은 소스 배열이 SSOT. localStorage override 비활성화 */
-function saveItemOverrides(o){/* v2.50 — 쓰기 비활성화. 항목 수정은 소스 직접 편집 */}
+/* v2.48 — 점검 항목 사용자 수정 기능. v2.49 onclick HTML 충돌 fix
+   v2.51 — 시트(saveItems) 기반 부활: 기본 항목 편집은 같은 id의 shadow 항목을
+   CUSTOM_ITEMS에 저장(시트 영구), renderItem이 override 맵으로 덮어쓴다.
+   shadow = id가 'custom_'으로 시작하지 않는 CUSTOM_ITEMS 항목(기본 항목 id 그대로). */
+function isShadowItem(it){ return it && it.id && String(it.id).indexOf('custom_')!==0; }
+/* getItemOverrides — CUSTOM_ITEMS의 shadow 항목에서 {id:{name,detail,slot,shift,cat}} 맵 구성.
+   renderItem이 이 맵으로 기본 항목 표시를 덮어쓴다(시트가 SSOT). */
+function getItemOverrides(){
+  const map={};
+  (CUSTOM_ITEMS||[]).forEach(it=>{
+    if(!isShadowItem(it)) return;
+    const o={};
+    if(it.name!==undefined && it.name!=='') o.name=it.name;
+    if(it.detail!==undefined && it.detail!=='') o.detail=it.detail;
+    if(it.slot!==undefined && it.slot!=='') o.slot=it.slot;
+    if(it.shift!==undefined && it.shift!=='') o.shift=it.shift;
+    if(it.category!==undefined && it.category!=='') o.cat=it.category;
+    map[it.id]=o;
+  });
+  return map;
+}
 function findBaseItem(id){
   const today=new Date().toISOString().slice(0,10);
   let found=null;
@@ -2097,15 +2115,31 @@ window.saveItemEdit=function(){
   const newSlot=document.getElementById('editSlot').value.trim();
   const newShift=document.getElementById('editShift').value;
   const newCat=document.getElementById('editCat').value.trim();
-  const all=getItemOverrides();
-  if(!all[id])all[id]={};
-  if(newName&&newName!==base.name)all[id].name=newName;else delete all[id].name;
-  if(newDetail!==base.detail)all[id].detail=newDetail;else delete all[id].detail;
-  if(newSlot&&newSlot!==base.slot)all[id].slot=newSlot;else delete all[id].slot;
-  if(newShift&&newShift!==base.shift)all[id].shift=newShift;else delete all[id].shift;
-  if(newCat&&newCat!==base.cat)all[id].cat=newCat;else delete all[id].cat;
-  if(Object.keys(all[id]).length===0)delete all[id];
-  saveItemOverrides(all);
+  const list=(CUSTOM_ITEMS||[]).slice();
+  let item=list.find(it=>it.id===id);
+  if(item){
+    /* 이미 CUSTOM_ITEMS에 존재(추가 항목 custom_… 또는 기존 shadow) → 필드 갱신 */
+    item.name=newName||item.name;
+    item.detail=newDetail;
+    if(newSlot)item.slot=newSlot;
+    if(newShift)item.shift=newShift;
+    if(newCat)item.category=newCat;
+  }else{
+    /* 기본 항목(시트에 없음) → 같은 id로 shadow 항목 생성(baseline 복사 후 편집값 반영) */
+    item={
+      id:id,
+      slot:newSlot||base.slot||'상시',
+      shift:newShift||base.shift||slotToShiftFront(newSlot||base.slot),
+      dayType:'both',
+      gender:'all',
+      category:newCat||base.cat||'추가 점검',
+      name:newName||base.name,
+      detail:newDetail!==undefined?newDetail:base.detail,
+      order:undefined
+    };
+    list.push(item);
+  }
+  mgmtSaveItems(list);   /* CUSTOM_ITEMS 갱신 + 시트 저장(saveItems POST) */
   document.getElementById('itemEditModal').style.display='none';
   _editingItemId=null;
   renderG(activeGenderTab);
@@ -2116,9 +2150,9 @@ window.cancelItemEdit=function(){
 };
 window.resetItem=function(id){
   if(!confirm('이 항목을 기본값으로 초기화할까요?'))return;
-  const ov=getItemOverrides();
-  delete ov[id];
-  saveItemOverrides(ov);
+  /* shadow(기본항목 편집분)면 제거 → 기본값 복귀. custom_ 추가항목은 초기화 버튼 미노출이라 여기 도달 안 함 */
+  const next=(CUSTOM_ITEMS||[]).filter(it=>it.id!==id);
+  mgmtSaveItems(next);   /* 시트에서도 shadow 제거 */
   renderG(activeGenderTab);
 };
 
@@ -3675,6 +3709,8 @@ function mgmtGetCustomItemsForSchedule(schedType){
   // GM이 시트에 저장한 항목(CUSTOM_ITEMS)을 해당 스케줄에 주입.
   const items = mgmtLoadItems();
   return items.filter(item => {
+    /* shadow(기본 항목 편집분, id가 custom_ 아님)는 신규 주입 제외 — renderItem override 맵으로만 반영(중복 방지) */
+    if(isShadowItem(item)) return false;
     if(!item.dayType || item.dayType === 'both') return true;
     return item.dayType === schedType;
   });
