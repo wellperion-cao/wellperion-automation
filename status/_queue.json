@@ -233,5 +233,25 @@
     "priority": "HIGH",
     "enqueued_at": "2026-06-08",
     "note": "[이관 2026-06-08 시우(COO)] 난이도 기준 GM 확정(2026-06-08) 후 시로 인계. S2 COO탭 '시로(CHRO) 인사평가 연결 지점' 4항목 검토 필요. ① GAS 반기 스냅샷 설계(현재 실시간 합산만·반기 컷오프 없음, 높음) ② 다면평가 연동 비율 확정(직무이해도·실행력 35점 vs 가산점 10점 어디에 반영, 높음) ③ 상 등급 별도 플래그(GM 승인 획득 건수 독립 지표 활용 여부, 중간) ④ 부서장 확정 타임라인(반기 컷오프 기준일 설정, 중간). 검토 결과 CEO에 보고."
+  },
+  {
+    "task_id": "CTO-2026-06-09-MEMORY-INDEX-FILE-RECONCILE",
+    "clevel": "cto",
+    "title": "[시토] 웰리 메모리 인덱스↔파일 짝 맞추기 — MEMORY.md 108행 vs .md 파일 110개, 미인덱스 2개 정리",
+    "status": "PENDING",
+    "depends_on": null,
+    "priority": "LOW",
+    "enqueued_at": "2026-06-09",
+    "note": "[GM 2026-06-09 지시] 메모리 압축 정리 중 발견. ~/.claude/projects/.../memory 폴더 .md 110개인데 MEMORY.md 인덱스는 108행 → 인덱스에 없는 고아 파일 2개 식별·정리(인덱스 추가 또는 삭제). 한가할 때. 비용 낮은 작업이므로 Sonnet/Haiku."
+  },
+  {
+    "task_id": "CTO-2026-06-09-CONTEXT-COMPRESSION-REVIEW",
+    "clevel": "cto",
+    "title": "[시토] 상시 컨텍스트(매 턴 로드 배경) 정리·압축 검토 — 메모리처럼 CLAUDE.md·자동주입 문서·OMC layer 슬림화 여지",
+    "status": "PENDING",
+    "depends_on": null,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-06-09",
+    "note": "[GM 2026-06-09 지시·기록만] 오늘 비용 출처=매 턴 거대 상시배경 반복처리(토큰 98%가 캐시) 확인. MEMORY.md는 압축 완료. 같은 원리로 매 턴 로드되는 컨텍스트(CLAUDE.md 인덱스·자동주입 문서·OMC layer·도구/스킬 스키마)도 슬림화 여지 검토. 무엇이 매 턴 실리는지 측정→중복·불필요 식별→정본 단일화(S2 포인터 원칙 유지, 원칙 하드카피 금지). 실행 전 GM 확인 — 지금은 기록만."
   }
 ]
