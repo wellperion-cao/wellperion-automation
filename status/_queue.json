@@ -18,7 +18,7 @@
     "priority": "HIGH",
     "enqueued_at": "2026-06-08",
     "brief": "docs/queue_to_sheets_migration_plan.md",
-    "note": "[GM 2026-06-08 결정] 시트=원본/_queue=미러 이관 마저. 어제(06-07) 시토 2단계 1회 대량처리→배 중복사고→revert 복구(9458937). 교훈: 로드베어링은 잘게 쪼개 단계마다 검증·커밋, reader 한 소스+제목dedup. 1단계(미러생성기 queue_sync_from_sheet.py+계획서) 살아있음. 재개=① P1 생성기 현행 시트 대조 read-only 검증 ② 시트에 어제 사고 잔재(AI행 중복) 없는지 점검 ③ 미세 단계별 실행계획 산출(각 단계 검증·롤백·GM수동여부) → 위험·GM수동 단계 전 웰리/GM 확인. 대량 일괄처리·GAS 임의 재배포 금지."
+    "note": "[GM 2026-06-08 결정] 시트=원본/_queue=미러 이관 마저. 어제(06-07) 시토 2단계 1회 대량처리→배 중복사고→revert 복구(9458937). 교훈: 로드베어링은 잘게 쪼개 단계마다 검증·커밋, reader 한 소스+제목dedup. 1단계(미러생성기 queue_sync_from_sheet.py+계획서) 살아있음. 재개=① P1 생성기 현행 시트 대조 read-only 검증 ② 시트에 어제 사고 잔재(AI행 중복) 없는지 점검 ③ 미세 단계별 실행계획 산출(각 단계 검증·롤백·GM수동여부) → 위험·GM수동 단계 전 웰리/GM 확인. 대량 일괄처리·GAS 임의 재배포 금지. [2026-06-09 GM 점검플래그] 오늘 _queue에 직접 등록한 2건(MEMORY-INDEX-FILE-RECONCILE·CONTEXT-COMPRESSION-REVIEW)이 시트 SSOT에도 반영돼야 하는지 / _queue가 미러로 덮어써질 때 유실되는지 = 이관 재개(토큰 리셋 후) 시 함께 점검. 현재 cutover 상태 미확인."
   },
   {
     "task_id": "CMO-2026-06-08-AI8-RELEASE",
