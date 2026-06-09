@@ -1665,7 +1665,7 @@ document.getElementById("gatePw").addEventListener("keydown",function(e){
     <h4 style="margin:0 0 8px;font-size:13.5px">면접 단계 전환 + 일정 등록</h4>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
       <div><label style="font-size:12px;color:var(--ink-soft)">전환할 단계</label>
-        <select id="aiNewStage" style="width:100%"><option>1차 면접</option><option>2차 면접</option><option>최종 면접</option><option>최종 합격</option><option>탈락</option></select></div>
+        <select id="aiNewStage" style="width:100%"><option>서류 검토</option><option>1차 면접</option><option>2차 면접</option><option>최종 합격</option><option>보류</option><option>불합격</option></select></div>
       <div><label style="font-size:12px;color:var(--ink-soft)">면접 일시</label>
         <input type="datetime-local" id="aiNewDate" style="width:100%"></div>
       <div><label style="font-size:12px;color:var(--ink-soft)">담당 면접관 (선택)</label>
@@ -1725,7 +1725,7 @@ document.getElementById("gatePw").addEventListener("keydown",function(e){
     document.getElementById("aiNewNote").value = "";
     document.getElementById("aiResult").textContent = "";
     var stg = a["전형 단계"] || "";
-    var nx = stg.indexOf("서류")>=0 ? "1차 면접" : stg.indexOf("1차")>=0 ? "2차 면접" : stg.indexOf("2차")>=0 ? "최종 면접" : "1차 면접";
+    var nx = stg.indexOf("서류")>=0 ? "1차 면접" : stg.indexOf("1차")>=0 ? "2차 면접" : stg.indexOf("2차")>=0 ? "최종 합격" : "1차 면접";
     var sel = document.getElementById("aiNewStage");
     for(var i=0;i<sel.options.length;i++){ if(sel.options[i].value===nx||sel.options[i].text===nx){ sel.selectedIndex = i; break; } }
     document.getElementById("aiModal").style.display = "flex";
@@ -1767,6 +1767,169 @@ document.getElementById("gatePw").addEventListener("keydown",function(e){
       btn.disabled = false; btn.textContent = "단계 전환 + 일정 등록";
     }
   }
+})();
+</script>
+
+<!-- 운영허브 v4 레이아웃 — 채용공고 접이식 + 지원자 리스트화 + 상태 배지 -->
+<style>
+details.jobs-fold > summary::-webkit-details-marker{display:none}
+details.jobs-fold > summary{list-style:none}
+details.jobs-fold[open] > summary > .jf-arrow{transform:rotate(90deg)}
+details.jobs-fold > summary > .jf-arrow{display:inline-block;transition:transform 0.15s}
+.appl-row:hover{background:var(--surface-2,#faf9f6)!important}
+</style>
+<script>
+(function(){
+  function escH(s){return String(s==null?"":s).replace(/[&<>"']/g,function(c){return ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[c];});}
+  function fmtDate(v){if(!v)return"-";var s=String(v);var d=new Date(s);if(isNaN(d.getTime()))return s.slice(0,10);return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");}
+  function badgeStyle(s){
+    if(/합격/.test(s)&&!/불/.test(s))return "background:#e9f1ea;color:#3c7a4a";
+    if(/불합격|탈락/.test(s))return "background:#edece8;color:#7c7a73";
+    if(/보류/.test(s))return "background:#f6efdd;color:#b07d24";
+    if(/면접/.test(s))return "background:#e8f0f6;color:#2f6d9e";
+    if(/서류/.test(s))return "background:#edece8;color:#7c7a73";
+    return "background:#f8f9fa;color:#6c6961";
+  }
+  if(!window.__APPS_BY_NAME) window.__APPS_BY_NAME = {};
+  var origReg = window.__registerAppls;
+  window.__registerAppls = function(arr){
+    if(origReg) try{origReg(arr);}catch(e){}
+    (arr||[]).forEach(function(a){if(a&&a["지원자명"]) window.__APPS_BY_NAME[a["지원자명"]] = a;});
+  };
+  function buildApplList(){
+    var groups = document.querySelectorAll(".pipe-col");
+    if(!groups.length) return false;
+    if(document.getElementById("__appl_list")) return false;
+    var rows = [];
+    groups.forEach(function(grp){
+      var headSpans = grp.querySelectorAll(".pipe-head > span");
+      var stage = "";
+      if(headSpans.length>0) stage = (headSpans[0].textContent||"").trim();
+      var apps = grp.querySelectorAll(".appl");
+      apps.forEach(function(appl){
+        var name = appl.getAttribute("data-applname") || (appl.querySelector(".an") ? appl.querySelector(".an").textContent.trim() : "");
+        var pid = appl.getAttribute("data-apppid") || "";
+        var pos = appl.querySelector(".ap") ? appl.querySelector(".ap").textContent.trim() : "";
+        var a = window.__APPS_BY_NAME[name] || null;
+        var grade = a ? (a["면접 평점"] || "") : "";
+        var applyDate = a ? (a["지원일"] || "") : "";
+        var iveDate = a ? (a["면접 일정"] || "") : "";
+        rows.push({name:name, pid:pid, pos:pos, grade:grade, applyDate:applyDate, iveDate:iveDate, stage:stage});
+      });
+    });
+    var stageOrder = {"서류 검토":1,"서류":1,"1차 면접":2,"2차 면접":3,"최종 면접":4,"최종 합격":5,"합격":5,"보류":6,"불합격":7,"탈락":7};
+    rows.sort(function(a,b){return (stageOrder[a.stage]||99) - (stageOrder[b.stage]||99);});
+    var list = document.createElement("div");
+    list.id = "__appl_list";
+    list.style.cssText = "border:1px solid var(--line,#e7e4dc);border-radius:12px;background:var(--surface,#fff);overflow:hidden;margin-top:10px";
+    var header = document.createElement("div");
+    header.style.cssText = "display:grid;grid-template-columns:1.5fr 3fr 60px 1fr 1fr 130px;gap:12px;padding:11px 14px;background:var(--surface-2,#faf9f6);border-bottom:1px solid var(--line,#e7e4dc);font-size:11px;font-weight:700;color:var(--ink-soft,#6c6961);text-transform:uppercase;letter-spacing:.03em";
+    header.innerHTML = '<div>지원자</div><div>지원 포지션</div><div>평점</div><div>지원일</div><div>면접 일정</div><div style="text-align:right">상태</div>';
+    list.appendChild(header);
+    rows.forEach(function(rr){
+      var row = document.createElement("div");
+      row.className = "appl-row";
+      row.setAttribute("data-applname", rr.name);
+      row.setAttribute("data-apppid", rr.pid);
+      row.style.cssText = "display:grid;grid-template-columns:1.5fr 3fr 60px 1fr 1fr 130px;gap:12px;padding:12px 14px;border-bottom:1px solid var(--line-soft,#efece4);cursor:pointer;font-size:12.5px;align-items:center";
+      row.innerHTML = '<div style="font-weight:650">'+escH(rr.name||"-")+'</div>'
+        + '<div style="color:var(--ink-soft,#6c6961)">'+escH(rr.pos||"-")+'</div>'
+        + '<div>'+escH(rr.grade||"-")+'</div>'
+        + '<div>'+escH(fmtDate(rr.applyDate))+'</div>'
+        + '<div>'+escH(fmtDate(rr.iveDate))+'</div>'
+        + '<div style="text-align:right"><span style="display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;'+badgeStyle(rr.stage)+'">'+escH(rr.stage||"-")+'</span></div>';
+      list.appendChild(row);
+    });
+    if(list.lastChild) list.lastChild.style.borderBottom = "none";
+    if(rows.length===0){
+      var empty = document.createElement("div");
+      empty.style.cssText = "padding:40px 20px;text-align:center;color:var(--ink-faint,#9a978e);font-size:12.5px";
+      empty.textContent = "등록된 지원자가 없습니다.";
+      list.appendChild(empty);
+    }
+    var firstGrp = groups[0];
+    var grpParent = firstGrp.parentElement;
+    grpParent.insertBefore(list, firstGrp);
+    groups.forEach(function(g){g.style.display = "none";});
+    list.addEventListener("click", function(e){
+      var row = e.target.closest("[data-applname]");
+      if(row && typeof window.openApplicantInfo === "function"){
+        window.openApplicantInfo(row.getAttribute("data-applname"), row.getAttribute("data-apppid"));
+      }
+    });
+    return true;
+  }
+  function arrangeJobs(){
+    var titles = Array.from(document.querySelectorAll(".sec-title"));
+    if(titles.length<2) return false;
+    var jobsT = null, applT = null;
+    titles.forEach(function(t){
+      var s = (t.textContent||"").trim();
+      if(s === "채용 공고") jobsT = t;
+      else if(s.indexOf("지원자 트래킹") === 0) applT = t;
+    });
+    if(!jobsT || !applT) return false;
+    if(jobsT.dataset.arranged === "1") return false;
+    var parent = jobsT.parentElement;
+    if(parent !== applT.parentElement) return false;
+    var children = Array.from(parent.children);
+    var jIdx = children.indexOf(jobsT), aIdx = children.indexOf(applT);
+    if(jIdx<0 || aIdx<0 || jIdx>=aIdx) return false;
+    var jGroup = children.slice(jIdx+1, aIdx);
+    var cnt = 0;
+    jGroup.forEach(function(el){
+      if(!el.querySelectorAll) return;
+      var inner = el.querySelectorAll(".item");
+      cnt += inner.length || (el.classList && el.classList.contains("item") ? 1 : 0);
+    });
+    if(cnt===0) cnt = jGroup.length;
+    var det = document.createElement("details");
+    det.className = "jobs-fold";
+    det.style.cssText = "margin-top:18px;background:var(--surface-2,#faf9f6);border:1px solid var(--line,#e7e4dc);border-radius:12px;padding:0";
+    var sum = document.createElement("summary");
+    sum.style.cssText = "cursor:pointer;padding:12px 16px;color:var(--ink-soft,#6c6961);font-size:13px;font-weight:700;user-select:none;letter-spacing:.03em";
+    sum.innerHTML = '<span class="jf-arrow" style="margin-right:8px">▸</span>채용 공고 <span style="background:var(--surface,#fff);color:var(--ink,#1f1e1b);padding:2px 10px;border-radius:20px;margin-left:6px;font-size:11px;font-weight:600">'+cnt+'건</span>';
+    det.appendChild(sum);
+    var wrap = document.createElement("div");
+    wrap.style.cssText = "padding:6px 14px 14px";
+    jGroup.forEach(function(el){wrap.appendChild(el);});
+    det.appendChild(wrap);
+    jobsT.remove();
+    var newKids = Array.from(parent.children);
+    var nA = newKids.indexOf(applT), ref = null;
+    for(var j=nA+1; j<newKids.length; j++){
+      if(newKids[j].classList && newKids[j].classList.contains("sec-title")){ref = newKids[j]; break;}
+    }
+    if(ref) parent.insertBefore(det, ref);
+    else parent.appendChild(det);
+    applT.dataset.arranged = "1";
+    return true;
+  }
+  var pend = false;
+  function trig(){
+    if(pend) return;
+    pend = true;
+    setTimeout(function(){
+      pend = false;
+      try{arrangeJobs();}catch(e){}
+      try{buildApplList();}catch(e){}
+    }, 80);
+  }
+  var mo = new MutationObserver(function(recs){
+    for(var k=0; k<recs.length; k++){
+      var ns = recs[k].addedNodes;
+      for(var m=0; m<ns.length; m++){
+        var n = ns[m];
+        if(n.nodeType !== 1) continue;
+        if((n.className||"").indexOf("sec-title")>=0 || (n.className||"").indexOf("pipe-col")>=0 || (n.querySelector && (n.querySelector(".sec-title") || n.querySelector(".pipe-col")))){
+          trig(); return;
+        }
+      }
+    }
+  });
+  mo.observe(document.body, {childList:true, subtree:true});
+  if(document.readyState === "loading") document.addEventListener("DOMContentLoaded", trig);
+  else trig();
 })();
 </script>
 </body>
