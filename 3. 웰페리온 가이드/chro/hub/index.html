@@ -972,7 +972,7 @@ function renderHire(){
   html+='<div class="sec-title">지원자 트래킹 — 전형 단계</div>';
   if(ERR.appl){html+=errCard("지원자 트래킹","appl");}
   else if(DB.appl.length){
-    var stages=["서류 검토","1차 면접","2차 면접","최종 합격","보류","불합격"];
+    var stages=["서류 검토","1차 면접","2차 면접","최종 합격","보류","불합격","탈락"];
     html+='<div class="pipe">';
     stages.forEach(function(st){
       var list=DB.appl.filter(function(a){return a["전형 단계"]===st;});
@@ -1821,7 +1821,7 @@ details.jobs-fold > summary > .jf-arrow{display:inline-block;transition:transfor
     rows.sort(function(a,b){return (stageOrder[a.stage]||99) - (stageOrder[b.stage]||99);});
     var list = document.createElement("div");
     list.id = "__appl_list";
-    list.style.cssText = "border:1px solid var(--line,#e7e4dc);border-radius:12px;background:var(--surface,#fff);overflow:hidden;margin-top:10px";
+    list.style.cssText = "border:1px solid var(--line,#e7e4dc);border-radius:12px;background:var(--surface,#fff);overflow:hidden;margin-top:10px;grid-column:1 / -1;width:100%";
     var header = document.createElement("div");
     header.style.cssText = "display:grid;grid-template-columns:1.5fr 3fr 60px 1fr 1fr 130px;gap:12px;padding:11px 14px;background:var(--surface-2,#faf9f6);border-bottom:1px solid var(--line,#e7e4dc);font-size:11px;font-weight:700;color:var(--ink-soft,#6c6961);text-transform:uppercase;letter-spacing:.03em";
     header.innerHTML = '<div>지원자</div><div>지원 포지션</div><div>평점</div><div>지원일</div><div>면접 일정</div><div style="text-align:right">상태</div>';
