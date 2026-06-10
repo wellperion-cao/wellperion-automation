@@ -1024,9 +1024,10 @@ function renderApprovalCard(t, idx) {
     if (_editable) {
       const _o = (v, l) => '<option value="' + v + '"' + (_diff === v ? ' selected' : '') + '>' + l + '</option>';
       h += '<span style="font-size:11px;color:var(--dim);">⚙ 업무 중요도(' + esc(_hasDept && _midName ? _midName : 'GM') + ' 확정):</span>';
-      h += '<select onchange="setDifficulty(\'' + escAttr(t.id) + '\',this.value)" onclick="event.stopPropagation();" style="font-size:12px;padding:3px 8px;border-radius:6px;border:1px solid var(--border);background:var(--bg);color:var(--text);">'
-        + _o('', '미정') + _o('하', '하 (1)') + _o('중', '중 (3)') + _o('상', '상 (5)') + '</select>';
+      h += '<select onchange="setDifficulty(\'' + escAttr(t.id) + '\',this.value)" onclick="event.stopPropagation();" title="업무 중요도 기준(팀 범위·S2 COO 탭): 하(1)=본인·1개 팀 / 중(5)=2개 팀 이상 / 상(10)=전사적 단위" style="font-size:12px;padding:3px 8px;border-radius:6px;border:1px solid var(--border);background:var(--bg);color:var(--text);">'
+        + _o('', '미정') + _o('하', '하 (1)·1팀') + _o('중', '중 (5)·2팀+') + _o('상', '상 (10)·전사') + '</select>';
       if (!_diff) h += '<span style="font-size:10px;color:var(--accent);">미설정 — 설정 가능</span>';
+      h += '<span style="flex-basis:100%;font-size:10px;color:var(--dim);line-height:1.6;margin-top:2px;"><strong>기준</strong> <span style="color:var(--green);font-weight:700;">하(1)</span> 본인·1개 팀 · <span style="color:var(--yellow);font-weight:700;">중(5)</span> 2개 팀 이상 · <span style="color:var(--red);font-weight:700;">상(10)</span> 전사적 단위 <span style="opacity:.7;">(S2 COO 탭)</span></span>';
     } else {
       const _c = _diff === '상' ? 'var(--red)' : _diff === '중' ? 'var(--yellow)' : _diff === '하' ? 'var(--green)' : 'var(--dim)';
       h += '<span style="font-size:11px;color:var(--dim);">업무 중요도:</span>';

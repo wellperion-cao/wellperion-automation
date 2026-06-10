@@ -433,9 +433,15 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
       <select id="fDifficulty">
         <option value="">미정</option>
         <option value="하">하 (1점) · 본인 역할 및 팀 단위(1개 팀)</option>
-        <option value="중">중 (3점) · 팀 단위(2개 팀 이상)</option>
-        <option value="상">상 (5점) · 전사적 단위</option>
+        <option value="중">중 (5점) · 팀 단위(2개 팀 이상)</option>
+        <option value="상">상 (10점) · 전사적 단위</option>
       </select>
+      <div style="margin-top:6px;font-size:11px;line-height:1.7;color:var(--dim);background:var(--accent-bg,#1a1a2a);border:1px dashed var(--border);border-radius:8px;padding:8px 10px;">
+        <strong style="color:var(--text);">업무 중요도 기준</strong> <span style="font-size:10px;">(몇 개 팀이 얽히는가 · S2 COO 탭 단일 출처)</span><br>
+        <span style="color:var(--green);font-weight:700;">하 (1점)</span> 본인 역할·<strong>1개 팀</strong> 단위 &nbsp;·&nbsp;
+        <span style="color:var(--yellow);font-weight:700;">중 (5점)</span> <strong>2개 팀 이상</strong> 협업 &nbsp;·&nbsp;
+        <span style="color:var(--red);font-weight:700;">상 (10점)</span> <strong>전사적</strong> 단위
+      </div>
     </div>
     <div class="field">
       <label>협조 담당자 (여러명)</label>
@@ -593,8 +599,8 @@ const FIELD_MAP = {
   '생성일':'createdAt','수정일':'updatedAt'
 };
 
-/* 업무 중요도 3등급(하1·중3·상5) — 담당자 제안→부서장 확정. 가중점수=Σ완료 업무 중요도. (2026-06-03 GM · 2026-06-08 확정: 하=1·중=3·상=5) */
-const DIFF_WEIGHT = { '하': 1, '중': 3, '상': 5 };
+/* 업무 중요도 3등급(하1·중5·상10) — 담당자 제안→부서장 확정. 가중점수=Σ완료 업무 중요도. (2026-06-03 GM · 2026-06-10 확정: 하=1·중=5·상=10, 팀범위 기준 S2 COO 탭) */
+const DIFF_WEIGHT = { '하': 1, '중': 5, '상': 10 };
 function diffWeight(t) { return DIFF_WEIGHT[String((t && t['난이도']) || '').trim()] || 0; }
 function diffBadgeHtml(t) {
   const d = String((t && t['난이도']) || '').trim();
@@ -2183,7 +2189,7 @@ function openDifficultyBatchModal() {
       '<td style="font-size:12px;word-break:keep-all;">' + esc(t.title) + (t.status === '완료' ? ' <span style="color:var(--green);font-size:10px;">완료</span>' : '') + '</td>' +
       '<td style="font-size:11px;color:var(--dim);white-space:nowrap;">' + esc(t.owner || '') + '</td>' +
       '<td><select class="diffBatchSel" style="font-size:12px;padding:3px 6px;">' +
-        opt(cur, '', '미정') + opt(cur, '하', '하(1)') + opt(cur, '중', '중(3)') + opt(cur, '상', '상(5)') +
+        opt(cur, '', '미정') + opt(cur, '하', '하(1)') + opt(cur, '중', '중(5)') + opt(cur, '상', '상(10)') +
       '</select></td></tr>';
   }).join('');
   const ov = document.createElement('div');
@@ -2700,7 +2706,7 @@ function renderDashboard() {
   h += '</div>';
 
   // Per-member stats — 가중 완료 점수(Σ완료 업무 중요도) + 순위 (2026-06-03 GM: 양·질 동시 포상 근거)
-  h += '<h3>담당자별 통계 <span style="font-size:11px;color:var(--dim);font-weight:400;">— 가중점수=Σ완료 업무 중요도(하1·중3·상5) · 포상 판단 근거</span>';
+  h += '<h3>담당자별 통계 <span style="font-size:11px;color:var(--dim);font-weight:400;">— 가중점수=Σ완료 업무 중요도(하1·중5·상10) · 포상 판단 근거</span>';
   h += '<button class="dash-print-btn" onclick="openDifficultyBatchModal()" style="margin-left:8px;">⚙ 업무 중요도 일괄책정</button></h3>';
   h += '<table class="dash-table"><tr><th>순위</th><th>담당자</th><th>총</th><th>진행중</th><th>완료</th><th>보류</th><th>완료율</th><th>가중점수</th><th style="min-width:100px">가중점수 그래프</th></tr>';
   const _memberStats = MEMBERS.map(m => {
