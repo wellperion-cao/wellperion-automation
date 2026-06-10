@@ -541,6 +541,310 @@ function _uploadFile(base64, fileName, mimeType) {
 
 
 // ═══════════════════════════════════════════
+//  home_kpi — 매출·지출·이슈(VOC) 자동 집계 (읽기 전용) — 2026-06-08 시뽀(CFO)
+//  3개 외부 시트를 openById 로 읽어 home 대시보드용 JSON 반환.
+//  ⚠️ 읽기 전용 — 어떤 시트도 변형하지 않음. 숫자 못 구하면 해당 필드 null.
+// ═══════════════════════════════════════════
+
+// 외부 시트 ID
+var KPI_SALES_SHEET_ID   = '1oG63rj17-RMk2cdiVbwp4TOp-yN73uc04jDV7RfN9BI';
+// 정식 지출 ERP 시트(cfo/expense/apps_script_expense.js와 동일). 탭 '지출현황' 12열.
+var KPI_EXPENSE_SHEET_ID = '17R_SjzG0BWCQYF21yIkR74xw8Wzajr54JFpEQ3h0_SE';
+var KPI_EXPENSE_TAB      = '지출현황';
+var KPI_VOC_SHEET_ID     = '1akZLs7ITs3FZWFIzMQvSYrdRucGQglmerOvTC2TLEcQ';
+var KPI_VOC_GID          = 1576318230;
+
+// 월 지출 예산 — GM 추후 입력. 숫자만 바꾸면 집행률 자동 계산. 미설정이면 null/0.
+var MONTHLY_EXPENSE_BUDGET = 0;
+
+// "12,007,816" · "25.43%" · 숫자 등을 number 로 파싱. 못 구하면 null.
+function _kpiNum(v) {
+  if (v === null || v === undefined || v === '') return null;
+  if (typeof v === 'number') return isNaN(v) ? null : v;
+  var s = String(v).replace(/,/g, '').replace(/%/g, '').replace(/[₩원\s]/g, '').trim();
+  if (s === '') return null;
+  var n = Number(s);
+  return isNaN(n) ? null : n;
+}
+
+// Date 객체 또는 "2026. 1. 5" · "2026-01-05" 문자열 → {y,m,d} 또는 null
+function _kpiParseDate(v) {
+  if (v instanceof Date && !isNaN(v.getTime())) {
+    return { y: v.getFullYear(), m: v.getMonth() + 1, d: v.getDate() };
+  }
+  var s = String(v || '').trim();
+  if (!s) return null;
+  // "2026. 1. 5" / "2026.1.5" / "2026-1-5" / "2026/1/5"
+  var m = s.match(/(\d{4})\s*[.\-\/]\s*(\d{1,2})\s*[.\-\/]\s*(\d{1,2})/);
+  if (m) return { y: +m[1], m: +m[2], d: +m[3] };
+  return null;
+}
+
+function _kpiToday() {
+  var n = new Date();
+  return { y: n.getFullYear(), m: n.getMonth() + 1, d: n.getDate() };
+}
+
+// ── 매출 ──
+// 월별 탭("N월" 포함) 중 현재 월 탭 자동 선택. 최신 날짜 블록 "총 매출 합계" 행 파싱.
+// year = 모든 "N월 매출보고" 탭 각 최신 블록 누적매출 합.
+
+// 라벨 셀(labelCol) 우측에서 비어있지 않은 값 최대 4개를 읽어
+// {today, month, target, rate} 로 반환하는 공용 헬퍼.
+function _kpiReadBlock(row, labelCol) {
+  var nums = [];
+  for (var cc = labelCol + 1; cc < row.length && nums.length < 4; cc++) {
+    var raw = row[cc];
+    if (raw === '' || raw === null || raw === undefined) continue;
+    nums.push({ raw: raw, parsed: _kpiNum(raw) });
+  }
+  if (nums.length < 2) return null;
+  var today  = nums[0] ? nums[0].parsed : null;
+  var month  = nums[1] ? nums[1].parsed : null;
+  var target = nums[2] ? nums[2].parsed : null;
+  var rate   = null;
+  if (nums[3]) {
+    var rraw = String(nums[3].raw || '');
+    var rp   = nums[3].parsed;
+    if (rp !== null) {
+      if (rraw.indexOf('%') < 0 && rp > 0 && rp <= 1) rate = Math.round(rp * 10000) / 100;
+      else rate = Math.round(rp * 100) / 100;
+    }
+  }
+  if (rate === null && month !== null && target) rate = Math.round((month / target) * 10000) / 100;
+  return { today: today, month: month, target: target, rate: rate };
+}
+
+// 팀별 breakdown 대상 라벨 목록 (시트 셀값에 포함되면 매칭)
+var BREAKDOWN_LABELS = [
+  '회원권 매출', '옵션 매출',
+  '수영팀 매출', 'P.T팀 매출', '골프팀 매출',
+  '스쿼시팀 매출', '체조팀 매출', 'P.L팀 매출', 'GXE'
+];
+// 표시 이름 정규화 (셀에 포함된 키 → 짧은 표시명)
+var BREAKDOWN_NAME_MAP = {
+  '회원권 매출': '회원권', '옵션 매출': '옵션',
+  '수영팀 매출': '수영팀', 'P.T팀 매출': 'PT팀', '골프팀 매출': '골프팀',
+  '스쿼시팀 매출': '스쿼시팀', '체조팀 매출': '체조팀',
+  'P.L팀 매출': 'PL팀', 'GXE': 'GXE'
+};
+
+function _kpiParseSalesTab(sheet) {
+  var lastRow = sheet.getLastRow();
+  var lastCol = sheet.getLastColumn();
+  if (lastRow < 2 || lastCol < 2) return null;
+  var values = sheet.getRange(1, 1, lastRow, lastCol).getValues();
+
+  // "총 매출 합계" 가 들어간 셀을 모두 찾고, 그중 가장 오른쪽(최신 블록)을 채택.
+  var best = null; // {r, c}
+  for (var r = 0; r < values.length; r++) {
+    for (var c = 0; c < values[r].length; c++) {
+      var cell = String(values[r][c] || '');
+      if (cell.indexOf('총 매출 합계') >= 0) {
+        if (!best || c > best.c) best = { r: r, c: c };
+      }
+    }
+  }
+  if (!best) return null;
+
+  // 합계 행 파싱
+  var summary = _kpiReadBlock(values[best.r], best.c);
+  if (!summary || summary.month === null) return null;
+
+  // 최신 블록 기준 컬럼(best.c). 같은 컬럼에서 아래 행들을 스캔해 breakdown 추출.
+  // 최대 15행 아래까지만 탐색 (블록 범위 이탈 방지).
+  var breakdown = [];
+  var seen = {};
+  for (var ri = best.r + 1; ri < Math.min(best.r + 16, values.length); ri++) {
+    var labelCell = String(values[ri][best.c] || '').trim();
+    for (var li = 0; li < BREAKDOWN_LABELS.length; li++) {
+      var key = BREAKDOWN_LABELS[li];
+      if (labelCell.indexOf(key) >= 0 && !seen[key]) {
+        seen[key] = true;
+        var blk = _kpiReadBlock(values[ri], best.c);
+        if (blk) {
+          var displayName = BREAKDOWN_NAME_MAP[key] || key;
+          breakdown.push({
+            name:   displayName,
+            today:  blk.today,
+            month:  blk.month,
+            target: blk.target,
+            rate:   blk.rate
+          });
+        }
+        break;
+      }
+    }
+  }
+
+  return {
+    today: summary.today, month: summary.month,
+    target: summary.target, rate: summary.rate,
+    breakdown: breakdown
+  };
+}
+
+// 실측 구조(2026-06-08): 매출 시트는 월별 탭이 아니라 단일 "보고" 탭 안에서
+// 날짜별 컬럼 블록이 가로로 반복(각 블록 7컬럼). 최신=가장 오른쪽 블록.
+// "총 매출 합계" 행의 우측 4칸 = 금일|누적|목표|달성률. → _kpiParseSalesTab 재사용.
+// year(연간 누적): 이 시트는 단일 연도 누적 운영 → 누적 매출(month)이 곧 연초~현재 누적.
+function _kpiSales() {
+  try {
+    var ss = SpreadsheetApp.openById(KPI_SALES_SHEET_ID);
+    // 우선순위: "보고" 탭 → "총 매출 합계" 포함 탭 자동탐지
+    var tab = ss.getSheetByName('보고');
+    if (!tab) {
+      var sheets = ss.getSheets();
+      for (var i = 0; i < sheets.length; i++) {
+        var p0 = _kpiParseSalesTab(sheets[i]);
+        if (p0 && p0.month !== null) { tab = sheets[i]; break; }
+      }
+    }
+    var cur = tab ? _kpiParseSalesTab(tab) : null;
+    if (!cur) return { today: null, month: null, year: null, target: null, rate: null, breakdown: [] };
+    // 누적 매출 = 연초~현재 누적 → year = month (단일 연도 누적 시트)
+    var year = cur.month;
+    return { today: cur.today, month: cur.month, year: year, target: cur.target, rate: cur.rate,
+             breakdown: cur.breakdown || [] };
+  } catch (err) {
+    return { today: null, month: null, year: null, target: null, rate: null, error: String(err) };
+  }
+}
+
+// ── 지출 ── (2026-06-10 시토·시뽀: 정식 지출 ERP 시트로 교체)
+// 정식 시트 '지출현황' 탭(12열: id·날짜·카테고리·항목명·금액·결제수단·비고·영수증URL·등록자·등록일·수정일·승인상태).
+// 헤더에서 날짜·금액·승인상태 컬럼 인덱스 탐지. 승인상태='승인' 행만 금액 합산. today/month/year + budget/rate.
+function _kpiExpense() {
+  try {
+    var ss = SpreadsheetApp.openById(KPI_EXPENSE_SHEET_ID);
+    var sh = ss.getSheetByName(KPI_EXPENSE_TAB) || ss.getSheets()[0];
+    var lastRow = sh.getLastRow();
+    var lastCol = sh.getLastColumn();
+    if (lastRow < 2 || lastCol < 2) {
+      return { today: null, month: null, year: null, budget: null, rate: null };
+    }
+    var values = sh.getRange(1, 1, lastRow, lastCol).getValues();
+    var hdr = values[0].map(function (h) { return String(h || '').trim(); });
+    function _col(names) {
+      for (var i = 0; i < hdr.length; i++) {
+        for (var j = 0; j < names.length; j++) {
+          if (hdr[i].indexOf(names[j]) >= 0) return i;
+        }
+      }
+      return -1;
+    }
+    var dateCol   = _col(['날짜']);
+    var priceCol  = _col(['금액', '가격']);
+    var statusCol = _col(['승인상태', '승인 상태']);
+    if (priceCol < 0 || statusCol < 0) {
+      return { today: null, month: null, year: null, budget: null, rate: null,
+               error: 'expense_cols_not_found' };
+    }
+    var t = _kpiToday();
+    var today = 0, month = 0, year = 0, any = false;
+    for (var r = 1; r < values.length; r++) {
+      var row = values[r];
+      var st = String(row[statusCol] || '').trim();
+      if (st.indexOf('승인') < 0) continue;
+      var price = _kpiNum(row[priceCol]);
+      if (price === null || price <= 0) continue;  // 음수(환불·반품)는 지출 합계에서 제외
+      any = true;
+      var d = dateCol >= 0 ? _kpiParseDate(row[dateCol]) : null;
+      if (!d) continue;
+      if (d.y === t.y) {
+        year += price;
+        if (d.m === t.m) {
+          month += price;
+          if (d.d === t.d) today += price;
+        }
+      }
+    }
+    var budget = (MONTHLY_EXPENSE_BUDGET && MONTHLY_EXPENSE_BUDGET > 0) ? MONTHLY_EXPENSE_BUDGET : null;
+    var rate = (budget && budget > 0) ? Math.round((month / budget) * 10000) / 100 : null;
+    if (!any) return { today: null, month: null, year: null, budget: budget, rate: rate };
+    return { today: today, month: month, year: year, budget: budget, rate: rate };
+  } catch (err) {
+    return { today: null, month: null, year: null, budget: null, rate: null, error: String(err) };
+  }
+}
+
+// ── 이슈(VOC) ──
+// gid 로 탭 찾고, 타임스탬프·진행 상황 컬럼 탐지.
+// todayNew/done/pending/rate.
+function _kpiVoc() {
+  try {
+    var ss = SpreadsheetApp.openById(KPI_VOC_SHEET_ID);
+    var sheets = ss.getSheets();
+    var sh = null;
+    for (var i = 0; i < sheets.length; i++) {
+      if (sheets[i].getSheetId() === KPI_VOC_GID) { sh = sheets[i]; break; }
+    }
+    if (!sh) {
+      // gid 미발견 → 이름 추정(응답/VOC/이슈 포함)
+      for (var k = 0; k < sheets.length; k++) {
+        var nm = sheets[k].getName();
+        if (/응답|VOC|이슈/i.test(nm)) { sh = sheets[k]; break; }
+      }
+    }
+    if (!sh) sh = sheets[0];
+    var lastRow = sh.getLastRow();
+    var lastCol = sh.getLastColumn();
+    if (lastRow < 2 || lastCol < 2) {
+      return { todayNew: null, pending: null, done: null, rate: null };
+    }
+    var values = sh.getRange(1, 1, lastRow, lastCol).getValues();
+    var hdr = values[0].map(function (h) { return String(h || '').trim(); });
+    function _col(names) {
+      for (var i2 = 0; i2 < hdr.length; i2++) {
+        for (var j = 0; j < names.length; j++) {
+          if (hdr[i2].indexOf(names[j]) >= 0) return i2;
+        }
+      }
+      return -1;
+    }
+    var tsCol     = _col(['타임스탬프', '타임 스탬프', '제출 시간', '제출시간']);
+    var statusCol = _col(['진행 상황', '진행상황']);
+    var t = _kpiToday();
+    var total = 0, todayNew = 0, done = 0;
+    for (var r = 1; r < values.length; r++) {
+      var row = values[r];
+      // 유효행 판정: 타임스탬프 또는 어떤 값이라도 있어야
+      var hasTs = tsCol >= 0 && row[tsCol] !== '' && row[tsCol] !== null;
+      var rowHasData = row.some(function (c) { return c !== '' && c !== null && c !== undefined; });
+      if (!rowHasData) continue;
+      total++;
+      if (hasTs) {
+        var d = _kpiParseDate(row[tsCol]);
+        if (d && d.y === t.y && d.m === t.m && d.d === t.d) todayNew++;
+      }
+      if (statusCol >= 0) {
+        var stv = String(row[statusCol] || '');
+        if (stv.indexOf('완료') >= 0) done++;
+      }
+    }
+    var pending = total - done;
+    var rate = total > 0 ? Math.round((done / total) * 10000) / 100 : null;
+    if (total === 0) return { todayNew: null, pending: null, done: null, rate: null };
+    return { todayNew: todayNew, pending: pending, done: done, rate: rate };
+  } catch (err) {
+    return { todayNew: null, pending: null, done: null, rate: null, error: String(err) };
+  }
+}
+
+function _homeKpi() {
+  var sales   = _kpiSales();
+  var expense = _kpiExpense();
+  var voc     = _kpiVoc();
+  return _json({
+    ok: true,
+    sales: sales,
+    expense: expense,
+    voc: voc,
+    asOf: _now()
+  });
+}
+
+// ═══════════════════════════════════════════
 //  doGet — 조회
 // ═══════════════════════════════════════════
 function doGet(e) {
@@ -570,6 +874,12 @@ function doGet(e) {
       }
 
       return _json({ ok: true, count: items.length, data: items });
+    }
+
+    // ─── home 대시보드 KPI 자동집계 (매출·지출·VOC) — 2026-06-08 시뽀(CFO) ───
+    // GET ?action=home_kpi → { ok, sales, expense, voc, asOf }. 읽기 전용.
+    if (action === 'home_kpi') {
+      return _homeKpi();
     }
 
     // 카테고리 목록 조회

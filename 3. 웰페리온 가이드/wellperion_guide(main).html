@@ -1027,15 +1027,13 @@
             tbody.innerHTML = rows;
           })();
 
-          /* 지출 */
-          /* 지출 바인딩 비활성 — 시트 구조 정리 후 재연결 예정 (2026-06-08 GM 결정)
+          /* 지출 — 정식 지출 ERP 시트 연동 (2026-06-10 시토·시뽀, GM 승인) */
           var emVal = krAmt(e.month);
           set('heroExpMonth', emVal);
           setTitle('heroExpMonth', krExact(e.month));
           set('heroExpDay',  krAmt(e.today));
           set('heroExpRate',  (e.rate == null || e.budget == null) ? '예산 미설정' : pct(e.rate));
           set('heroExpYear',  krAmt(e.year));
-          */
 
           /* 이슈(VOC) */
           set('kpiIssueDayNew',  v.todayNew  != null ? String(v.todayNew)  : '—');
