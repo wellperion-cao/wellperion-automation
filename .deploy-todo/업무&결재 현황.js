@@ -640,21 +640,32 @@ function _kpiParseSalesTab(sheet) {
   if (lastRow < 2 || lastCol < 2) return null;
   var values = sheet.getRange(1, 1, lastRow, lastCol).getValues();
 
-  // "총 매출 합계" 가 들어간 셀을 모두 찾고, 그중 가장 오른쪽(최신 블록)을 채택.
-  var best = null; // {r, c}
+  // "총 매출 합계" 가 들어간 셀을 모두 찾는다. 가장 오른쪽=최신(이번달) 블록 채택.
+  // year(연간 누적)은 모든 블록의 month(해당 월 누적)를 합산해 산출.
+  var best = null; // {r, c} 최신 블록
+  var anchors = []; // 모든 "총 매출 합계" 셀 위치
   for (var r = 0; r < values.length; r++) {
     for (var c = 0; c < values[r].length; c++) {
       var cell = String(values[r][c] || '');
       if (cell.indexOf('총 매출 합계') >= 0) {
+        anchors.push({ r: r, c: c });
         if (!best || c > best.c) best = { r: r, c: c };
       }
     }
   }
   if (!best) return null;
 
-  // 합계 행 파싱
+  // 합계 행 파싱(최신 블록)
   var summary = _kpiReadBlock(values[best.r], best.c);
   if (!summary || summary.month === null) return null;
+
+  // 연간 누적 = 모든 월 블록의 month 합산.
+  var yearSum = 0;
+  var yearHasData = false;
+  for (var ai = 0; ai < anchors.length; ai++) {
+    var ablk = _kpiReadBlock(values[anchors[ai].r], anchors[ai].c);
+    if (ablk && ablk.month !== null) { yearSum += ablk.month; yearHasData = true; }
+  }
 
   // 최신 블록 기준 컬럼(best.c). 같은 컬럼에서 아래 행들을 스캔해 breakdown 추출.
   // 최대 15행 아래까지만 탐색 (블록 범위 이탈 방지).
@@ -685,6 +696,7 @@ function _kpiParseSalesTab(sheet) {
   return {
     today: summary.today, month: summary.month,
     target: summary.target, rate: summary.rate,
+    year: yearHasData ? yearSum : summary.month,
     breakdown: breakdown
   };
 }
@@ -692,7 +704,8 @@ function _kpiParseSalesTab(sheet) {
 // 실측 구조(2026-06-08): 매출 시트는 월별 탭이 아니라 단일 "보고" 탭 안에서
 // 날짜별 컬럼 블록이 가로로 반복(각 블록 7컬럼). 최신=가장 오른쪽 블록.
 // "총 매출 합계" 행의 우측 4칸 = 금일|누적|목표|달성률. → _kpiParseSalesTab 재사용.
-// year(연간 누적): 이 시트는 단일 연도 누적 운영 → 누적 매출(month)이 곧 연초~현재 누적.
+// year(연간 누적): 시트의 모든 월 블록 "총 매출 합계" month 값을 합산(_kpiParseSalesTab.year).
+//   이번달(month)은 최신=가장 오른쪽 블록만. (2026-06-10 시토: year=month 버그 수정)
 function _kpiSales() {
   try {
     var ss = SpreadsheetApp.openById(KPI_SALES_SHEET_ID);
@@ -707,8 +720,8 @@ function _kpiSales() {
     }
     var cur = tab ? _kpiParseSalesTab(tab) : null;
     if (!cur) return { today: null, month: null, year: null, target: null, rate: null, breakdown: [] };
-    // 누적 매출 = 연초~현재 누적 → year = month (단일 연도 누적 시트)
-    var year = cur.month;
+    // 연간 누적 = 모든 월 블록 month 합산(_kpiParseSalesTab.year). 이번달(month)은 최신 블록 그대로.
+    var year = (cur.year !== null && cur.year !== undefined) ? cur.year : cur.month;
     return { today: cur.today, month: cur.month, year: year, target: cur.target, rate: cur.rate,
              breakdown: cur.breakdown || [] };
   } catch (err) {

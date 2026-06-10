@@ -485,7 +485,7 @@
     <!-- 매출·지출 스트립 (home_kpi 연동 — ID 보존) -->
     <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:14px;">
       <!-- 이번달 매출 -->
-      <div style="background:var(--paper);border:1px solid var(--border);border-left:4px solid var(--grow);border-radius:14px;padding:15px 16px;">
+      <div style="position:relative;background:var(--paper);border:1px solid var(--border);border-left:4px solid var(--grow);border-radius:14px;padding:15px 16px;">
         <div style="display:flex;align-items:center;gap:7px;color:var(--grow);font-size:12px;font-weight:700;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01z"/></svg> 이번달 매출</div>
         <div style="font-size:22px;font-weight:800;line-height:1.1;margin:7px 0 4px;letter-spacing:-0.02em;color:var(--text);"><span id="heroSalesMonth">—</span></div>
         <div style="font-size:11px;color:var(--dim);display:flex;gap:8px;flex-wrap:wrap;">
@@ -495,7 +495,7 @@
         </div>
         <!-- 팀별 매출 토글 -->
         <button id="salesBreakdownBtn" onclick="(function(){var p=document.getElementById('salesBreakdownPanel');var b=document.getElementById('salesBreakdownBtn');if(!p)return;var open=p.style.display!=='none';p.style.display=open?'none':'block';b.textContent=open?'팀별 보기 ▾':'팀별 접기 ▴';})()" style="display:none;margin-top:10px;font-size:11px;font-weight:700;color:var(--grow);background:var(--grow-bg,rgba(106,191,123,0.1));border:1px solid rgba(106,191,123,0.3);border-radius:20px;padding:3px 11px;cursor:pointer;">팀별 보기 ▾</button>
-        <div id="salesBreakdownPanel" style="display:none;margin-top:8px;border-top:1px dashed var(--border);padding-top:8px;">
+        <div id="salesBreakdownPanel" style="display:none;position:absolute;top:100%;left:0;right:0;z-index:50;background:var(--paper);box-shadow:0 8px 24px rgba(0,0,0,.12);border-radius:0 0 14px 14px;max-height:240px;overflow-y:auto;margin-top:0;border-top:1px dashed var(--border);padding:8px 16px 12px;">
           <table style="width:100%;border-collapse:collapse;font-size:11px;">
             <thead><tr style="color:var(--dim);font-weight:700;border-bottom:1px solid var(--border);">
               <th style="text-align:left;padding:3px 4px;">항목</th>
@@ -507,7 +507,7 @@
         </div>
       </div>
       <!-- 이번달 지출 (UI/UX = 매출 카드 벤치마킹 2026-06-10) -->
-      <div style="background:var(--paper);border:1px solid var(--border);border-left:4px solid var(--warm);border-radius:14px;padding:15px 16px;">
+      <div style="position:relative;background:var(--paper);border:1px solid var(--border);border-left:4px solid var(--warm);border-radius:14px;padding:15px 16px;">
         <div style="display:flex;align-items:center;gap:7px;color:var(--warm);font-size:12px;font-weight:700;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20V10M18 20V4M6 20v-4"/></svg> 이번달 지출</div>
         <div style="font-size:22px;font-weight:800;line-height:1.1;margin:7px 0 4px;letter-spacing:-0.02em;color:var(--text);"><span id="heroExpMonth">—</span></div>
         <div style="font-size:11px;color:var(--dim);display:flex;gap:8px;flex-wrap:wrap;">
@@ -517,7 +517,7 @@
         </div>
         <!-- 카테고리별 지출 토글 -->
         <button id="expBreakdownBtn" onclick="(function(){var p=document.getElementById('expBreakdownPanel');var b=document.getElementById('expBreakdownBtn');if(!p)return;var open=p.style.display!=='none';p.style.display=open?'none':'block';b.textContent=open?'카테고리별 보기 ▾':'카테고리별 접기 ▴';})()" style="display:none;margin-top:10px;font-size:11px;font-weight:700;color:var(--warm);background:var(--warm-bg,rgba(237,91,63,0.1));border:1px solid rgba(237,91,63,0.3);border-radius:20px;padding:3px 11px;cursor:pointer;">카테고리별 보기 ▾</button>
-        <div id="expBreakdownPanel" style="display:none;margin-top:8px;border-top:1px dashed var(--border);padding-top:8px;">
+        <div id="expBreakdownPanel" style="display:none;position:absolute;top:100%;left:0;right:0;z-index:50;background:var(--paper);box-shadow:0 8px 24px rgba(0,0,0,.12);border-radius:0 0 14px 14px;max-height:240px;overflow-y:auto;margin-top:0;border-top:1px dashed var(--border);padding:8px 16px 12px;">
           <table style="width:100%;border-collapse:collapse;font-size:11px;">
             <thead><tr style="color:var(--dim);font-weight:700;border-bottom:1px solid var(--border);">
               <th style="text-align:left;padding:3px 4px;">항목</th>
