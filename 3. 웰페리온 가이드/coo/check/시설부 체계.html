@@ -412,6 +412,10 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   .content.hidden{display:none!important}
   /* 인쇄 시 보드 풀폭 탈출 해제(페이지 폭 안에 정렬) */
   .board-fullwidth{width:auto!important;max-width:100%!important;margin:0!important;padding:0!important}
+  /* 인쇄: 칸반 흐름을 세로 적층(가로 스크롤 대신 — 겹침·잘림 방지) */
+  #policy-flow{display:block!important;overflow:visible!important}
+  #policy-board{display:block!important}
+  #policy-flow .board-col{flex:none!important;width:100%!important;min-width:0!important;max-width:100%!important;margin-bottom:12px!important;break-inside:avoid}
   /* 활성 탭만 표시 */
   .content[data-print-active="true"]{display:block!important}
   .category{border:1px solid #ccc;break-inside:avoid;margin-bottom:6px}
@@ -440,11 +444,13 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   .dash-table{font-size:11px}
   .dash-table th,.dash-table td{padding:4px 6px}
 }
-/* 규정 탭 — 정기회의+근무휴게 같은 행: 좁은 화면에서 세로 전환 */
-@media(max-width:860px){
-  #tab-policy .board-fullwidth{flex-direction:column!important;}
-  #tab-policy .board-fullwidth .manual-section{flex:none!important;width:100%!important;}
-}
+/* 규정 탭 — 단일 트렐로 칸반 흐름(2026-06-10 재설계 · 운영부와 한 세트).
+   정기회의(JS 렌더 컬럼) → 근무·휴게가 한 .board-scroll 안에서 같은 가로 흐름으로 이어짐.
+   #policy-board는 display:contents(인라인)라서 JS가 만든 .board-col이 부모 .board-scroll의
+   직접 flex 자식으로 합류 → 컬럼 폭·간격·모바일 스냅 규칙을 그대로 공유.
+   #policy-flow는 .board-scroll 그대로라 좁은 폭에선 가로 스크롤·스냅, 컬럼 침범 없음. */
+/* 고정 컬럼(근무휴게)도 JS 컬럼과 동일 폭. 모바일(≤560px)은 위 .board-col 86vw 규칙이 처리하므로 561px↑에서만 고정. */
+@media(min-width:561px){ #policy-flow > .board-col{flex:0 0 410px;min-width:410px;max-width:410px;} }
 </style>
 </head>
 <body>
@@ -503,14 +509,17 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 <div id="tab-policy" class="content">
   <h2 style="font-size:20px;margin-bottom:6px;">시설부 규정</h2>
   <p style="font-size:13px;color:var(--dim);margin-bottom:14px;line-height:1.6;">주제별 칸(컬럼)에 규정·회의를 카드로 정리했습니다. 각 카드의 <b>편집</b> 버튼으로 내용을 바로 수정·저장하면 모든 기기에 반영됩니다. <span style="color:var(--accent);">운영시간 등 공식값은 임의 변경 금지.</span></p>
-  <div class="board-fullwidth" style="display:flex;gap:14px;align-items:flex-start;">
-    <div id="policy-board" class="board-scroll" style="flex:0 0 auto;min-width:0;max-width:calc(100% - 694px);"></div>
-    <!-- ── 근무·휴게 시간 (정기회의 우측 — 같은 행) ── -->
-    <div class="manual-section" style="flex:0 0 680px;width:680px;margin-top:0;border-left:4px solid var(--red);align-self:flex-start;">
-    <div class="manual-header" onclick="togManual(this)">
-      <h3 style="color:var(--red);">⏱ 근무·휴게 시간</h3><span class="arrow">&#9654;</span>
-    </div>
-    <div class="manual-body">
+  <div class="board-fullwidth">
+    <!-- 단일 트렐로 칸반 흐름: 정기회의(JS 렌더 컬럼) → 근무·휴게가 한 줄로 자연스럽게 이어짐.
+         #policy-board는 display:contents → renderPolicyBoard()가 만든 .board-col들이 이 .board-scroll의
+         직접 자식처럼 흐름에 합류. 그 뒤 고정 카드 컬럼(근무·휴게)이 같은 줄에 이어진다. -->
+    <div class="board-scroll" id="policy-flow">
+    <div id="policy-board" style="display:contents"></div>
+
+    <!-- ── [칸반 컬럼] ⏱ 근무·휴게 시간 — 정기회의 다음 카드로 이어짐 ── -->
+    <div class="board-col" style="border-left:4px solid var(--red);">
+      <div class="board-col-head"><span class="bday" style="font-size:16px;color:var(--red);">⏱ 근무·휴게 시간</span></div>
+      <div class="board-col-body">
 
   <!-- 핵심 원칙 강조 박스 -->
   <div style="background:var(--red-bg);border:2px solid rgba(237,91,63,0.5);border-radius:12px;padding:16px 18px;margin-bottom:16px;">
@@ -632,10 +641,11 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
     </tr>
   </table>
 
-    </div>
-  </div>
-  <!-- ── /근무·휴게 시간 카드 ── -->
-  </div><!-- /board-fullwidth flex row -->
+      </div><!-- /board-col-body -->
+    </div><!-- ── /근무·휴게 컬럼 ── -->
+
+    </div><!-- /board-scroll (단일 칸반 흐름) -->
+  </div><!-- /board-fullwidth -->
 
   <!-- 고도화 정의·개선 로드맵은 관리자 영역(웰페리온 ERP O1 운영 통합 체계 '구축 가이드')으로 이관 (2026-06-06 GM: 현장 규정 탭엔 뜬금없음) -->
 </div>
