@@ -206,9 +206,10 @@ def compose_guide_card_pilates(output_path: Path) -> None:
     draw = ImageDraw.Draw(img)
 
     # ── ① WELLNESS STUDIO 헤더 → PILATES STUDIO 교체 ──────────────────────
-    # guideline_card.jpg 기준: WELLNESS STUDIO 제목 행 y ≈ 352~390, x ≈ 553~1035
+    # guideline_card.jpg 기준: WELLNESS STUDIO 제목 행 y ≈ 358~375, x ≈ 553~1035
+    # 첫 항목(신발·외투 락커룸) 시작 y=388 — 패치 하단을 387로 제한해 잘림 방지
     bg_sample = img.getpixel((560, 355))
-    ERASE_BOX = (553, 350, 1036, 388)
+    ERASE_BOX = (553, 348, 1036, 387)
     draw.rectangle(ERASE_BOX, fill=bg_sample)
 
     font_section_eng = load_font("bold", 22)
@@ -224,15 +225,17 @@ def compose_guide_card_pilates(output_path: Path) -> None:
     draw.text((kor_x, TEXT_Y), "필라테스 스튜디오 시설 이용", font=font_section_kor, fill=KOR_COLOR)
 
     # ── ② FOR MEMBERS 항목2 교체 ──────────────────────────────────────────
-    # 원본: "· 웰니스 컨텐츠 최대 1:8 (Up to 8 per Class)"  y≈412~424, x≈55~490
+    # 원본: "· 웰니스 컨텐츠 최대 1:8 (Up to 8 per Class)"  y≈413~425, x≈65~490
     # 교체: "· 그룹 콘텐츠 최대 1:3 (Up to 3 per Class)"
+    # 형제 항목 측정값: x_min=65, color=(200,198,199), font=medium 18, draw_y=410
     ITEM2_BG = (33, 31, 32)          # 배경 단색 (측정값)
-    ITEM2_ERASE = (55, 407, 495, 428)
+    # ITEM2_ERASE: draw_x=60 → JPEG 후 median first_x=80 (항목1 median=80 일치, 원샷 측정)
+    ITEM2_ERASE = (55, 408, 500, 430)
     draw.rectangle(ITEM2_ERASE, fill=ITEM2_BG)
 
     font_item = load_font("medium", 18)
     ITEM_TEXT_COLOR = (200, 198, 199)  # 원본 항목 텍스트 색(측정값)
-    draw.text((55, 409), "· 그룹 콘텐츠 최대 1:3 (Up to 3 per Class)", font=font_item, fill=ITEM_TEXT_COLOR)
+    draw.text((60, 410), "· 그룹 콘텐츠 최대 1:3 (Up to 3 per Class)", font=font_item, fill=ITEM_TEXT_COLOR)
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
     img.save(output_path, "JPEG", quality=95, optimize=True)
@@ -240,8 +243,8 @@ def compose_guide_card_pilates(output_path: Path) -> None:
 
 
 def main():
-    out_ig = PROJECT_ROOT / "instagram" / "260610_필라테스_어깨만들기" / "output(인스타그램)"
-    out_master = PROJECT_ROOT / "instagram" / "260610_필라테스_어깨만들기" / "output"
+    out_ig = PROJECT_ROOT / "instagram" / "260610_[필라테스편]_민소매가_잘_어울리는_어깨만들기" / "output(인스타그램)"
+    out_master = PROJECT_ROOT / "instagram" / "260610_[필라테스편]_민소매가_잘_어울리는_어깨만들기" / "output"
     out_ig.mkdir(parents=True, exist_ok=True)
     out_master.mkdir(parents=True, exist_ok=True)
 
@@ -260,7 +263,7 @@ def main():
     compose_cover(
         photo_path=COVER,
         title_eng="PILATES",
-        title_kor="[필라테스편] 민소매가 잘 어울리는 어깨만들기",
+        title_kor="민소매가 잘 어울리는 어깨만들기",
         date_location="최은지 원장  ·  한남동 웰페리온 스포츠클럽",
         output_path=out_ig / "ig_01.jpg",
     )
@@ -270,7 +273,7 @@ def main():
         (P02, "PILATES  ·  어깨 만들기", "스완",         "등 뒤 라인을 탄탄하게"),
         (P03, "PILATES  ·  어깨 만들기", "암워크",        "팔 라인을 단단하게"),
         (P04, "PILATES  ·  어깨 만들기", "가슴 열기",     "라운드숄더 교정 · 거북목 예방"),
-        (P05, "PILATES  ·  어깨 만들기", "래터럴 레이즈", "문의 : wellperion.com/ko/inquiry"),
+        (P05, "PILATES  ·  어깨 만들기", "래터럴 레이즈", "어깨 측면 라인을 또렷하게"),
     ]
     for idx, (photo, meta, title_kor, sub) in enumerate(story_data, start=2):
         compose_story(
