@@ -482,6 +482,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   <button class="tab" onclick="switchTab('manual')">매뉴얼</button>
   <button class="tab" onclick="switchTab('check-m','lock')">점검(남) 🔒</button>
   <button class="tab" onclick="switchTab('check-f','lock')">점검(여) 🔒</button>
+  <button class="tab" onclick="switchTab('vendor')">거래업체</button>
   <div style="display:flex;gap:4px;margin-left:auto;">
     <button class="util-btn print-btn" onclick="printCurrentTab()">인쇄</button>
     <button class="util-btn report-btn" onclick="copyReport()">보고용</button>
@@ -490,6 +491,14 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 </div>
 </div><!-- /sticky-top -->
 <div class="saving" id="saveIndicator">저장 중...</div>
+
+<div id="tab-vendor" class="content hidden">
+  <h2 style="font-size:20px;margin-bottom:6px;">거래업체 명부</h2>
+  <p style="font-size:13px;color:var(--dim);margin-bottom:14px;line-height:1.6;">분야별 컬럼에 협력업체 카드로 정리합니다. <b>편집</b> 버튼으로 내용을 수정·저장하면 모든 기기에 반영됩니다. <span style="color:var(--yellow);font-weight:700;">⚠ 단가·계약형태·갱신일은 GM 확정 후 입력 — 추측 금지.</span></p>
+  <div class="board-fullwidth">
+    <div id="vendor-board" class="board-scroll"></div>
+  </div>
+</div>
 
 <div id="tab-policy" class="content">
   <h2 style="font-size:20px;margin-bottom:6px;">시설부 규정</h2>
@@ -2993,6 +3002,7 @@ function switchTab(tab, opts){
   document.getElementById('tab-check-f').classList.toggle('hidden',tab!=='check-f');
   document.getElementById('tab-admin').classList.toggle('hidden',tab!=='admin');
   document.getElementById('tab-manage').classList.toggle('hidden',tab!=='manage');
+  document.getElementById('tab-vendor').classList.toggle('hidden',tab!=='vendor');
   // Show correct submit bar
   document.getElementById('submitBarM').style.display=(tab==='check-m')?'flex':'none';
   document.getElementById('submitBarF').style.display=(tab==='check-f')?'flex':'none';
@@ -3663,6 +3673,7 @@ loadStaffFromSheet();
 loadItemMasterFromSheet(); // 점검 항목 마스터를 시트에서 로드 (비동기 — 완료 시 화면 갱신)
 loadBoardData(); renderBoard(); loadBoardFromBackend(); // 요일별 보드: 로컬 즉시 렌더 후 백엔드 동기화(모든 기기 반영)
 loadPolicyData(); renderPolicyBoard(); loadPolicyFromBackend(); // 규정 트렐로 보드: 로컬 즉시 렌더 후 백엔드 동기화
+loadVendorData(); renderVendorBoard(); loadVendorFromBackend(); // 거래업체 보드: 로컬 즉시 렌더 후 백엔드 동기화
 renderG('m');
 
 /* ═══════════════════════════════════════════════
@@ -4298,6 +4309,255 @@ async function renderApproval(){
   }catch(e){
     el.innerHTML='<div style="padding:12px;color:var(--red);font-size:13px;">결재 데이터 로드 실패</div>';
   }
+}
+
+/* ═══════════════════════════════════════════════
+   거래업체 명부 보드 (거래업체 탭) — 분야별 칸(컬럼) × 업체 카드
+   저장키: FACILITY_VENDOR_BOARD. localStorage + GAS best-effort.
+   인증 게이트: requireEditAuth(1234) 재사용.
+   필드: 업체명 · 분야 · 담당자 · 연락처 · 계약형태/단가 · 갱신일 · 비고
+   ═══════════════════════════════════════════════ */
+const VENDOR_STORAGE_KEY = 'FACILITY_VENDOR_BOARD';
+
+const VENDOR_COLS = [
+  {key:'fire',    label:'소방',        cls:'red'},
+  {key:'cctv',    label:'CCTV/전기',   cls:'blue'},
+  {key:'hvac',    label:'공조설비',    cls:'male'},
+  {key:'water',   label:'수질',        cls:'outer'},
+  {key:'clean',   label:'청소',        cls:'female'},
+  {key:'pest',    label:'방제',        cls:'purple'},
+  {key:'tub',     label:'탕청소',      cls:'orange'},
+  {key:'maint',   label:'정비',        cls:'accent'}
+];
+
+/* 시드 — 작업일지(2026-06-04)·시설부 체계 본문 확인분만. 추측 금지. 단가·계약·담당자·갱신일=빈칸. */
+const VENDOR_SEED = {
+  fire:[
+    {id:'vnd_fire_01', name:'3S소방', contact:'010-3168-8030', manager:'', contract:'', price:'', renewal:'', note:'소방 작동점검·법정 검사기간 / 단가·계약형태·갱신일 GM 확정 필요'}
+  ],
+  cctv:[
+    {id:'vnd_cctv_01', name:'확인 필요', contact:'', manager:'', contract:'', price:'', renewal:'', note:'CCTV 고장처리 담당 업체 — 업체명·연락처 GM 확정 필요'}
+  ],
+  hvac:[
+    {id:'vnd_hvac_01', name:'확인 필요', contact:'', manager:'', contract:'', price:'', renewal:'', note:'공조설비 담당 업체 — GM 확정 필요'}
+  ],
+  water:[
+    {id:'vnd_water_01', name:'확인 필요', contact:'', manager:'', contract:'', price:'', renewal:'', note:'수질 점검 담당 업체 — GM 확정 필요'}
+  ],
+  clean:[
+    {id:'vnd_clean_01', name:'확인 필요', contact:'', manager:'', contract:'', price:'', renewal:'', note:'청소 협력업체 — 소장·과장 감독 / GM 확정 필요'}
+  ],
+  pest:[
+    {id:'vnd_pest_01', name:'확인 필요', contact:'', manager:'', contract:'', price:'', renewal:'', note:'방제 협력업체 — GM 확정 필요'}
+  ],
+  tub:[
+    {id:'vnd_tub_01', name:'확인 필요', contact:'', manager:'', contract:'', price:'', renewal:'', note:'야간 탕청소 위탁 — 평일 23:00 / 주말 20:30 출근 / 업체명·연락처 GM 확정 필요'}
+  ],
+  maint:[
+    {id:'vnd_maint_01', name:'확인 필요', contact:'', manager:'', contract:'', price:'', renewal:'', note:'정비 협력업체 — 과장 감독 / GM 확정 필요'}
+  ]
+};
+
+let VENDOR_DATA = {};
+
+function vendorGenId(){ return 'vnd_'+Date.now()+'_'+Math.random().toString(36).slice(2,7); }
+
+function applyVendorStored(stored){
+  VENDOR_DATA = {};
+  VENDOR_COLS.forEach(c=>{
+    const arr = (stored && Array.isArray(stored[c.key])) ? stored[c.key] : null;
+    if(arr){
+      VENDOR_DATA[c.key] = arr.map(v=>({
+        id:      v&&v.id      ? String(v.id)      : vendorGenId(),
+        name:    v&&v.name    != null ? String(v.name)    : '',
+        contact: v&&v.contact != null ? String(v.contact) : '',
+        manager: v&&v.manager != null ? String(v.manager) : '',
+        contract:v&&v.contract!= null ? String(v.contract): '',
+        price:   v&&v.price   != null ? String(v.price)   : '',
+        renewal: v&&v.renewal != null ? String(v.renewal) : '',
+        note:    v&&v.note    != null ? String(v.note)    : ''
+      }));
+    } else {
+      VENDOR_DATA[c.key] = (VENDOR_SEED[c.key]||[]).map(v=>Object.assign({},v));
+    }
+  });
+}
+
+function loadVendorData(){
+  let stored = null;
+  try{ stored = JSON.parse(localStorage.getItem(VENDOR_STORAGE_KEY)); }catch(e){ stored=null; }
+  applyVendorStored(stored);
+}
+
+async function loadVendorFromBackend(){
+  loadVendorData();
+  if(!ONLINE) return;
+  try{
+    const res = await fetch(API_URL+'?action=board&key='+encodeURIComponent(VENDOR_STORAGE_KEY),{method:'GET',redirect:'follow'});
+    const data = await res.json();
+    if(data && data.ok && data.board && typeof data.board==='object'){
+      applyVendorStored(data.board);
+      localStorage.setItem(VENDOR_STORAGE_KEY, JSON.stringify(VENDOR_DATA));
+    }
+  }catch(e){}
+  const wrap = document.getElementById('vendor-board');
+  if(wrap && !wrap.querySelector('.dv-cell.editing')) renderVendorBoard();
+}
+
+function persistVendorData(){
+  localStorage.setItem(VENDOR_STORAGE_KEY, JSON.stringify(VENDOR_DATA));
+  if(!ONLINE) return;
+  const ind = document.getElementById('saveIndicator');
+  if(ind){ind.style.display='block';ind.textContent='업체 저장 중...';}
+  fetch(API_URL,{method:'POST',redirect:'follow',
+    headers:{'Content-Type':'text/plain'},
+    body:JSON.stringify({action:'saveBoard',key:VENDOR_STORAGE_KEY,board:VENDOR_DATA})
+  }).then(()=>{if(ind){ind.textContent='업체 저장 완료';setTimeout(()=>{ind.style.display='none'},1500);}})
+    .catch(()=>{if(ind){ind.textContent='업체 저장 (로컬 보관됨)';setTimeout(()=>{ind.style.display='none'},1500);}});
+}
+
+/* 카드 요약 HTML (보기 모드) */
+function vendorCardBodyHTML(v){
+  const rows = [
+    ['담당자', v.manager],
+    ['연락처', v.contact],
+    ['계약형태/단가', v.price ? v.contract+' / '+v.price : v.contract],
+    ['갱신일(법정주기)', v.renewal],
+    ['비고', v.note]
+  ].filter(r=>r[1]&&r[1].trim());
+  if(!rows.length) return '<div class="dv-empty">내용 없음 — 편집으로 추가</div>';
+  return rows.map(r=>'<div class="pol-line"><span style="color:var(--accent);font-weight:700;font-size:12px;">'+escapeHTML(r[0])+'</span> '+escapeHTML(r[1])+'</div>').join('');
+}
+
+function renderVendorBoard(){
+  const wrap = document.getElementById('vendor-board');
+  if(!wrap) return;
+  let html = '';
+  VENDOR_COLS.forEach(col=>{
+    const cards = VENDOR_DATA[col.key] || [];
+    const colCls = col.cls === 'accent' ? '' : col.cls;
+    html += '<div class="board-col">';
+    html += '<div class="board-col-head"><span class="bday" style="font-size:17px;">'+escapeHTML(col.label)+'</span>'
+          + '<span class="day-type weekday">'+cards.length+'개</span></div>';
+    html += '<div class="board-col-body">';
+    cards.forEach(v=>{
+      const cid = col.key+'__'+v.id;
+      html += '<div class="dv-cell '+colCls+'" id="vndcell_'+cid+'">';
+      html += '<div class="dv-cell-head">'
+            + '<span class="dv-cell-label '+colCls+'" style="font-size:14px;">'+escapeHTML(v.name||'(업체명 없음)')+'</span>'
+            + '<div style="display:flex;align-items:center;gap:4px;">'
+            + '<button type="button" class="dv-edit-btn" id="vndbtn_'+cid+'" onclick="vendorToggleEdit(\''+col.key+'\',\''+v.id+'\')">편집</button>'
+            + '<button type="button" class="dv-edit-btn cancel" id="vndcancel_'+cid+'" style="display:none" onclick="vendorCancelEdit(\''+col.key+'\',\''+v.id+'\')">취소</button>'
+            + '</div></div>';
+      html += '<div class="dv-body">'+vendorCardBodyHTML(v)+'</div>';
+      html += '<div class="pol-edit" id="vndedit_'+cid+'">'
+            + '<label class="pol-edit-lab">업체명</label>'
+            + '<input type="text" class="pol-edit-title" id="vndname_'+cid+'" placeholder="업체명">'
+            + '<label class="pol-edit-lab">담당자</label>'
+            + '<input type="text" class="pol-edit-title" id="vndmgr_'+cid+'" placeholder="담당자명">'
+            + '<label class="pol-edit-lab">연락처</label>'
+            + '<input type="text" class="pol-edit-title" id="vndtel_'+cid+'" placeholder="010-0000-0000">'
+            + '<label class="pol-edit-lab">계약형태</label>'
+            + '<input type="text" class="pol-edit-title" id="vndctr_'+cid+'" placeholder="연간계약·수시 등">'
+            + '<label class="pol-edit-lab">단가</label>'
+            + '<input type="text" class="pol-edit-title" id="vndprc_'+cid+'" placeholder="GM 확정 필요">'
+            + '<label class="pol-edit-lab">갱신일(법정주기)</label>'
+            + '<input type="text" class="pol-edit-title" id="vndrwl_'+cid+'" placeholder="YYYY-MM-DD 또는 주기">'
+            + '<label class="pol-edit-lab">비고</label>'
+            + '<textarea class="pol-edit-body" id="vndnote_'+cid+'" rows="3" placeholder="기타 사항"></textarea>'
+            + '<button type="button" class="pol-del-btn" onclick="vendorDeleteCard(\''+col.key+'\',\''+v.id+'\')">이 카드 삭제</button>'
+            + '</div>';
+      html += '<div class="dv-edit-hint">각 필드를 수정하고 <b>저장</b>을 누르면 모든 기기에 반영됩니다. 단가·계약 공식값은 GM 확정 후 입력하세요.</div>';
+      html += '</div>';
+    });
+    html += '<button type="button" class="dv-g-addrow" onclick="vendorAddCard(\''+col.key+'\')">＋ 업체 추가</button>';
+    html += '</div></div>';
+  });
+  wrap.innerHTML = html;
+}
+
+function vendorFindCard(colKey, id){
+  const arr = VENDOR_DATA[colKey] || [];
+  for(let i=0;i<arr.length;i++){ if(arr[i].id===id) return {arr:arr,idx:i,card:arr[i]}; }
+  return null;
+}
+
+function vendorToggleEdit(colKey, id){
+  const cid = colKey+'__'+id;
+  const cell = document.getElementById('vndcell_'+cid);
+  const btn  = document.getElementById('vndbtn_'+cid);
+  const cancelbtn = document.getElementById('vndcancel_'+cid);
+  const found = vendorFindCard(colKey, id);
+  if(!cell||!btn||!found) return;
+  const editing = cell.classList.contains('editing');
+  if(!editing){
+    if(typeof requireEditAuth==='function' && !requireEditAuth()) return;
+    cell.classList.add('editing');
+    const v = found.card;
+    const set = (sid, val)=>{ const el=document.getElementById(sid+cid); if(el) el.value=val||''; };
+    set('vndname_', v.name);
+    set('vndmgr_',  v.manager);
+    set('vndtel_',  v.contact);
+    set('vndctr_',  v.contract);
+    set('vndprc_',  v.price);
+    set('vndrwl_',  v.renewal);
+    set('vndnote_', v.note);
+    btn.textContent='저장'; btn.classList.add('save');
+    if(cancelbtn) cancelbtn.style.display='';
+    const nameEl = document.getElementById('vndname_'+cid);
+    if(nameEl) nameEl.focus();
+  } else {
+    const get = (sid)=>{ const el=document.getElementById(sid+cid); return el?el.value:''; };
+    const v = found.card;
+    v.name     = get('vndname_').trim();
+    v.manager  = get('vndmgr_').trim();
+    v.contact  = get('vndtel_').trim();
+    v.contract = get('vndctr_').trim();
+    v.price    = get('vndprc_').trim();
+    v.renewal  = get('vndrwl_').trim();
+    v.note     = get('vndnote_');
+    cell.classList.remove('editing');
+    btn.textContent='편집'; btn.classList.remove('save');
+    if(cancelbtn) cancelbtn.style.display='none';
+    const labEl = cell.querySelector('.dv-cell-label');
+    if(labEl) labEl.textContent = v.name||'(업체명 없음)';
+    const bodyEl = cell.querySelector('.dv-body');
+    if(bodyEl) bodyEl.innerHTML = vendorCardBodyHTML(v);
+    persistVendorData();
+  }
+}
+
+function vendorCancelEdit(colKey, id){
+  const cid = colKey+'__'+id;
+  const cell = document.getElementById('vndcell_'+cid);
+  const btn  = document.getElementById('vndbtn_'+cid);
+  const cancelbtn = document.getElementById('vndcancel_'+cid);
+  if(!cell||!btn) return;
+  cell.classList.remove('editing');
+  btn.textContent='편집'; btn.classList.remove('save');
+  if(cancelbtn) cancelbtn.style.display='none';
+}
+
+function vendorAddCard(colKey){
+  if(typeof requireEditAuth==='function' && !requireEditAuth()) return;
+  const wrap = document.getElementById('vendor-board');
+  if(wrap && wrap.querySelector('.dv-cell.editing')){ alert('편집 중인 카드를 먼저 저장하거나 닫아주세요.'); return; }
+  if(!Array.isArray(VENDOR_DATA[colKey])) VENDOR_DATA[colKey]=[];
+  const nid = vendorGenId();
+  VENDOR_DATA[colKey].push({id:nid,name:'새 업체',contact:'',manager:'',contract:'',price:'',renewal:'',note:'GM 확정 필요'});
+  persistVendorData();
+  renderVendorBoard();
+  vendorToggleEdit(colKey, nid);
+}
+
+function vendorDeleteCard(colKey, id){
+  if(typeof requireEditAuth==='function' && !requireEditAuth()) return;
+  if(!confirm('이 업체 카드를 삭제할까요?')) return;
+  const found = vendorFindCard(colKey, id);
+  if(!found) return;
+  found.arr.splice(found.idx,1);
+  persistVendorData();
+  renderVendorBoard();
 }
 </script>
 
