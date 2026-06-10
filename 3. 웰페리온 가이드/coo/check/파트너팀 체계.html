@@ -2,6 +2,7 @@
 <html lang="ko">
 <head>
 
+
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>웰페리온 파트너팀 체계</title>
@@ -448,167 +449,195 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 }
 </style>
 
+<style id="claude-agent-animation-styles">
+      @keyframes claude-pulse {
+        0%, 100% { opacity: 0.6; }
+        50% { opacity: 1; }
+      }
+      #claude-agent-glow-border-inner {
+        animation: claude-pulse 2s ease-in-out infinite;
+      }
+      @media (prefers-reduced-motion: reduce) {
+        #claude-agent-glow-border-inner {
+          animation: none;
+        }
+      }
+    </style>
 </head>
 <body>
-<div class="sticky-top">
-  <div class="header">
-    <div class="header-top">
-      <h1>🏟️ 파트너팀 체계 <span style="color:var(--accent)">v1.0</span></h1>
-      <span class="sub" style="color:var(--dim);font-size:12px">강습 6개팀 · 매출·점검·업무 통합</span>
-      <span style="flex:1"></span>
-      <a class="sheet-link" href="../../wellperion_guide(main).html#gcoo-check">← 운영 통합 체계</a>
-      <a class="sheet-link" href="../../wellperion_guide(main).html">🏢 웰페리온 ERP</a>
-      <a class="sheet-link" id="sheetLink" href="#" target="_blank">📊 매출 시트</a>
-    </div>
-    <div class="header-top" style="margin-top:8px">
-      <button class="tab active" id="tab-btn-sales" onclick="switchTab('sales')">📈 매출현황</button>
-      <button class="tab" id="tab-btn-check" onclick="switchTab('check')">✅ 점검항목</button>
-      <button class="tab" id="tab-btn-work" onclick="switchTab('work')">🗂️ 업무현황</button>
-      <span style="flex:1"></span>
-      <button class="util-btn print-btn" onclick="window.print()">🖨 인쇄</button>
-    </div>
-  </div>
-</div>
-<div id="tab-sales" class="content">
-  <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:4px 0 14px">
-    <h2 style="margin:0">📈 강습부 매출현황</h2>
+<style>
+.content{max-width:1320px !important}
+.seg{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 18px}
+.seg button{background:var(--paper);border:1px solid var(--border);color:var(--dim);border-radius:8px;padding:6px 13px;font-size:13px;cursor:pointer;transition:.15s}
+.seg button.on{background:var(--accent-bg);border-color:var(--accent);color:var(--accent);font-weight:700}
+.seg button:hover{color:var(--text)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:start}
+.grid2>div{min-width:0}
+.statgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px}
+.sectit{font-size:14px;font-weight:700;color:var(--accent);margin:0 0 10px;padding-bottom:6px;border-bottom:1px solid var(--border)}
+.ck-table{width:100%;border-collapse:collapse;font-size:13px}
+.ck-table th,.ck-table td{border:1px solid var(--border);padding:6px 8px;text-align:center}
+.ck-table th{background:var(--accent-bg);color:var(--accent);font-weight:600}
+.ck-table td.zone{text-align:left;font-weight:600}
+.ck-hot{background:var(--red-bg);color:var(--red);font-weight:700}
+#workBoard{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;align-items:start}
+@media(max-width:1000px){.grid2{grid-template-columns:1fr}#workBoard{grid-template-columns:1fr}}
+</style>
+<div class="sticky-top"><div class="header">
+  <div class="header-top">
+    <h1>🏟️ 파트너팀 체계 <span style="color:var(--accent)">v1.1</span></h1>
+    <span class="sub" style="color:var(--dim);font-size:12px">강습 6개팀 · 매출·점검·업무 통합</span>
     <span style="flex:1"></span>
-    <span id="salesUpdated" style="color:var(--dim);font-size:12px">불러오는 중…</span>
-    <button class="util-btn" onclick="loadSales(true)">↻ 새로고침</button>
+    <a class="sheet-link" href="../../wellperion_guide(main).html#gcoo-check">← 운영 통합 체계</a>
+    <a class="sheet-link" href="../../wellperion_guide(main).html">🏢 웰페리온 ERP</a>
   </div>
-  <div id="salesError" style="display:none" class="callout"></div>
-  <h3 class="dash-section-title">전체 <span style="color:var(--dim);font-weight:400;font-size:13px">· 2026 누적</span></h3>
-  <div id="salesTotal" class="dash-stat-row" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:22px"></div>
-  <h3 class="dash-section-title">월별 <span style="color:var(--dim);font-weight:400;font-size:13px">· 강습부 총매출</span></h3>
-  <div id="salesMonthly" style="margin-bottom:24px"></div>
-  <h3 class="dash-section-title">부서별 <span style="color:var(--dim);font-weight:400;font-size:13px">· 누적매출 / 목표</span></h3>
-  <div id="salesTeam" style="margin-bottom:24px"></div>
-  <h3 class="dash-section-title">강사별 <span style="color:var(--dim);font-weight:400;font-size:13px">· 월평균매출 랭킹 (1~6월)</span></h3>
-  <div id="salesInstructor" style="margin-bottom:10px"></div>
+  <div class="header-top" style="margin-top:8px">
+    <button class="tab active" id="tab-btn-sales" onclick="switchTab('sales')">📈 매출현황</button>
+    <button class="tab" id="tab-btn-check" onclick="switchTab('check')">✅ 점검항목</button>
+    <button class="tab" id="tab-btn-work" onclick="switchTab('work')">🗂️ 업무현황</button>
+    <span style="flex:1"></span>
+    <button class="util-btn print-btn" onclick="window.print()">🖨 인쇄</button>
+  </div>
+</div></div>
+<div id="tab-sales" class="content">
+  <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:4px 0 2px"><h2 style="margin:0">📈 강습부 매출현황</h2><span style="flex:1"></span><span id="salesUpdated" style="color:var(--dim);font-size:12px">불러오는 중…</span><button class="util-btn" onclick="loadSales(true)">↻ 새로고침</button></div>
+  <div class="seg" id="salesSeg"></div>
+  <div id="salesError" class="callout" style="display:none"></div>
+  <div id="salesView"></div>
 </div>
 <div id="tab-check" class="content hidden">
-  <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:4px 0 14px">
-    <h2 style="margin:0">✅ 점검항목</h2>
-    <span style="flex:1"></span>
-    <a class="util-btn" href="강습팀 가이드라인.html">🏟️ 강습팀 가이드라인 점검 열기 →</a>
-  </div>
-  <p style="color:var(--dim);margin-bottom:14px">강습팀 가이드라인 점검 기준 요약입니다. 하루 1회 · <b style="color:var(--text)">복도 → 필라테스 → 헬스장 → 골프장 → 수영장 → 체조장 → 스쿼시장</b> 순으로 점검합니다.</p>
-  <h3 class="dash-section-title">점검 기준 <span style="color:var(--dim);font-weight:400;font-size:13px">· 5개 항목 · 3단계 평가</span></h3>
-  <div id="checkCriteria" style="margin-bottom:24px"></div>
-  <h3 class="dash-section-title">점검 업장 <span style="color:var(--dim);font-weight:400;font-size:13px">· 7개 구역</span></h3>
-  <div id="checkZones" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px"></div>
+  <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:4px 0 12px"><h2 style="margin:0">✅ 점검항목</h2><span id="checkUpdated" style="color:var(--dim);font-size:12px"></span><span style="flex:1"></span><button class="util-btn" onclick="loadCheck(true)">↻ 새로고침</button><a class="util-btn" href="강습팀 가이드라인.html">🏟️ 점검 입력 →</a></div>
+  <p style="color:var(--dim);margin:0 0 14px">강습부 업장점검 대시보드 — 업장별 「점검필요」 횟수와 이슈사항입니다.</p>
+  <div id="checkView"></div>
 </div>
 <div id="tab-work" class="content hidden">
-  <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:4px 0 14px">
-    <h2 style="margin:0">🗂️ 업무현황</h2>
-    <span style="color:var(--dim);font-size:12px">업무 SSOT · [2] 인사 & 파트너</span>
-    <span style="flex:1"></span>
-    <span id="workUpdated" style="color:var(--dim);font-size:12px"></span>
-    <a class="util-btn" href="../../wellperion_guide(main).html#gcoo-todo">🗂 업무 SSOT 열기 →</a>
-  </div>
-  <div id="workStats" class="dash-stat-row" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin-bottom:18px"></div>
-  <div id="workBoard" class="board-scroll" style="display:grid;grid-template-columns:repeat(3,minmax(220px,1fr));gap:12px"></div>
+  <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:4px 0 14px"><h2 style="margin:0">🗂️ 업무현황</h2><span style="color:var(--dim);font-size:12px">업무 SSOT · [2] 인사 & 파트너</span><span style="flex:1"></span><span id="workUpdated" style="color:var(--dim);font-size:12px"></span><a class="util-btn" href="../../wellperion_guide(main).html#gcoo-todo">🗂 업무 SSOT →</a></div>
+  <div id="workStats" class="statgrid" style="margin-bottom:18px"></div>
+  <div id="workBoard"></div>
 </div>
 <script>(function PAGE(){
-  var SHEET_ID='1nL1-Co-4VyNH_jPk0EVtKhxsWbKwTJ6E3tX91YH_qBo';
-  var GID='218650435';
-  var CSV='https://docs.google.com/spreadsheets/d/'+SHEET_ID+'/export?format=csv&gid='+GID;
-  var EDIT='https://docs.google.com/spreadsheets/d/'+SHEET_ID+'/edit#gid='+GID;
+  var SALES_ID='1nL1-Co-4VyNH_jPk0EVtKhxsWbKwTJ6E3tX91YH_qBo', SALES_GID='218650435';
+  var SALES_CSV='https://docs.google.com/spreadsheets/d/'+SALES_ID+'/export?format=csv&gid='+SALES_GID;
+  var CHECK_ID='19fyGlLvYjO_PWZGGxPa6S33PJ0dn5nwvBrdqYNPK7oI', CHECK_GID='638654541';
+  var CHECK_CSV='https://docs.google.com/spreadsheets/d/'+CHECK_ID+'/export?format=csv&gid='+CHECK_GID;
+  var TEAMS=['수영','P.T','P.L','골프','스쿼시','체조'];
+  var TEAM_LABEL={'수영':'수영팀 합계','P.T':'P.T팀 합계','P.L':'P.L팀 합계','골프':'골프팀 합계','스쿼시':'스쿼시팀 합계','체조':'체조팀 합계'};
+  var TEAM_BLOCK={'수영':'수영팀','P.T':'P.T팀','P.L':'필라테스팀','골프':'골프팀','스쿼시':'스쿼시팀','체조':'체조팀'};
   var TEAM_TARGET={'수영':110000000,'P.T':99000000,'P.L':33000000,'골프':33000000,'스쿼시':33000000,'체조':33000000};
-  var TEAM_LABELS={'수영':'수영팀 합계','P.T':'P.T팀 합계','P.L':'P.L팀 합계','골프':'골프팀 합계','스쿼시':'스쿼시팀 합계','체조':'체조팀 합계'};
   var TEAM_COLOR={'수영':'var(--blue)','P.T':'var(--red)','P.L':'var(--purple)','골프':'var(--green)','스쿼시':'var(--orange)','체조':'var(--yellow)'};
-  var CRITERIA=[
-    ['정리정돈','물품·기구·소도구가 제자리에 있고 통로·동선에 장애물이 없는지'],
-    ['홍보물 (복도)','게시물·포스터·안내문 최신 여부, 훼손·기한만료·삐뚤어짐 없는지'],
-    ['청결','바닥·거울·유리·기구 표면·구석 먼지·얼룩·이물질, 쓰레기통, 냄새'],
-    ['조명 및 냉난방','조명 점등·깜빡임·고장, 적정 밝기, 실내 온도·환기 상태'],
-    ['복장착용 (복도 외 업장)','강사·직원 유니폼·명찰 착용, 청결·단정, 복장 규정 준수']
-  ];
-  var LEVELS=[['점검필요','var(--red)'],['양호','var(--yellow)'],['우수','var(--green)']];
-  var ZONES=['복도','필라테스','헬스장','골프장','수영장','체조장','스쿼시장'];
-  var SEED=[
-    {title:'부서 업장관리 지원업무',owner:'나우열M',startDate:'2026-06-07',endDate:'2026-06-18',status:'진행중',난이도:'하'},
-    {title:'운영부 사원 채용',owner:'나우열M',startDate:'2026-06-02',endDate:'2026-06-09',status:'진행중',난이도:'하'},
-    {title:'강습부서 월1회 콘텐츠 (사진5장 + 내용)',owner:'나우열M',startDate:'2026-06-02',endDate:'',status:'진행중',난이도:'하'},
-    {title:'인사 - 직책수당 가이드 정비',owner:'나우열M',startDate:'2026-06-03',endDate:'',status:'진행중',난이도:'중'},
-    {title:'이지영사원 퇴사일정 조율 건',owner:'나우열M',startDate:'2026-05-28',endDate:'2026-05-29',status:'완료',난이도:'하',결재상태:'결재완료'},
-    {title:'루프팀 GXE줌바, 라인댄스 인수인계',owner:'나우열M',startDate:'2026-05-27',endDate:'2026-07-03',status:'진행중',난이도:'상',결재상태:'부서장 완료'},
-    {title:'지원부 김미영주임 채용',owner:'나우열M',startDate:'2026-05-26',endDate:'2026-05-28',status:'완료',난이도:'하',결재상태:'결재완료'},
-    {title:'지원부서 칭찬사원제도 기획 및 운영',owner:'나우열M',startDate:'2026-05-24',endDate:'2026-06-28',status:'진행중',난이도:'중',결재상태:'부서장 완료'},
-    {title:'운영부 급여조건변경 재계약',owner:'나우열M',startDate:'2026-05-24',endDate:'2026-05-29',status:'완료',난이도:'중'},
-    {title:'파트너 복장 지급',owner:'나우열M',startDate:'2026-04-26',endDate:'2026-05-26',status:'진행중',난이도:'중'}
-  ];
+  var CHECK_COLS=['정리정돈','홍보물','청결','조명 및 냉난방','복장착용','합계'];
+  var CHECK_SNAP={cols:['업장'].concat(CHECK_COLS), rows:[['복도',0,1,0,0,'–',1],['필라테스',0,'–',0,0,0,0],['헬스장',0,'–',0,0,0,0],['골프장',0,'–',0,0,0,0],['수영장',1,'–',0,0,0,1],['체조장',0,'–',0,0,0,0],['스쿼시장',1,'–',0,0,0,1],['합계',2,1,0,0,0,3]], issues:[['2026.6.9','복도','나우열','양승문트레이너 프로필 월 필요 / 프로모션존 홍보물 수정 필요 / gx룸 땀냄새 복도에 많이남'],['2026.6.9','필라테스','나우열','수업중'],['2026.6.9','수영장','나우열','중문에 회원개인물건 정리 필요'],['2026.6.9','스쿼시장','나우열','훈련용품 정리정돈 필요']]};
+  var SEED=[{title:'부서 업장관리 지원업무',owner:'나우열M',startDate:'2026-06-07',endDate:'2026-06-18',status:'진행중',난이도:'하'},{title:'운영부 사원 채용',owner:'나우열M',startDate:'2026-06-02',endDate:'2026-06-09',status:'진행중',난이도:'하'},{title:'인사 - 직책수당 가이드 정비',owner:'나우열M',startDate:'2026-06-03',status:'진행중',난이도:'중'},{title:'이지영사원 퇴사일정 조율',owner:'나우열M',startDate:'2026-05-28',endDate:'2026-05-29',status:'완료',난이도:'하'},{title:'지원부 김미영주임 채용',owner:'나우열M',startDate:'2026-05-26',status:'완료',난이도:'하'},{title:'파트너 복장 지급',owner:'나우열M',startDate:'2026-04-26',endDate:'2026-05-26',status:'진행중',난이도:'중'}];
+  var MONTH_TARGET_SUM=0;TEAMS.forEach(function(t){MONTH_TARGET_SUM+=TEAM_TARGET[t];});
+
   function esc(s){s=(s==null?'':''+s);return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
   function num(v){if(v==null)return 0;var n=parseFloat((''+v).replace(/[^0-9.\-]/g,''));return isNaN(n)?0:n;}
-  function won(n){n=Math.round(n);if(Math.abs(n)>=100000000)return (n/100000000).toFixed(2).replace(/\.00$/,'')+'억';if(Math.abs(n)>=10000)return Math.round(n/10000).toLocaleString()+'만';return n.toLocaleString();}
+  function ws(s){return (''+(s==null?'':s)).replace(/\s+/g,'');}
+  function won(n){n=Math.round(n);var a=Math.abs(n);if(a>=100000000)return (n/100000000).toFixed(2).replace(/\.?0+$/,'')+'억';if(a>=10000)return Math.round(n/10000).toLocaleString()+'만';return n.toLocaleString();}
   function parseCSV(t){var rows=[],row=[],f='',q=false;for(var i=0;i<t.length;i++){var c=t[i];if(q){if(c==='"'){if(t[i+1]==='"'){f+='"';i++;}else q=false;}else f+=c;}else{if(c==='"')q=true;else if(c===','){row.push(f);f='';}else if(c==='\n'){row.push(f);rows.push(row);row=[];f='';}else if(c==='\r'){}else f+=c;}}if(f.length||row.length){row.push(f);rows.push(row);}return rows;}
-  function bar(label,val,max,color,sub){var pct=max>0?Math.max(2,Math.round(val/max*100)):0;return '<div style="margin:7px 0"><div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:3px"><span>'+esc(label)+'</span><span style="color:var(--dim)">'+esc(sub||won(val))+'</span></div><div style="background:var(--border);border-radius:6px;height:16px;overflow:hidden"><div style="width:'+pct+'%;height:100%;background:'+(color||'var(--accent)')+';border-radius:6px"></div></div></div>';}
-  function statCard(label,val,sub,color){return '<div class="dash-stat-card" style="background:var(--paper);border:1px solid var(--border);border-radius:10px;padding:12px 14px"><div style="color:var(--dim);font-size:12px">'+esc(label)+'</div><div style="font-size:20px;font-weight:700;color:'+(color||'var(--text)')+';margin-top:3px">'+esc(val)+'</div>'+(sub?'<div style="color:var(--dim);font-size:11px;margin-top:2px">'+esc(sub)+'</div>':'')+'</div>';}
+  function bar(label,val,max,color,sub){var pct=max>0?Math.max(2,Math.round(val/max*100)):0;return '<div style="margin:7px 0"><div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:3px"><span>'+esc(label)+'</span><span style="color:var(--dim)">'+esc(sub!=null?sub:won(val))+'</span></div><div style="background:var(--border);border-radius:6px;height:15px;overflow:hidden"><div style="width:'+pct+'%;height:100%;background:'+(color||'var(--accent)')+';border-radius:6px"></div></div></div>';}
+  function tbar(label,val,target,max,color){var pct=Math.min(100,Math.max(2,max>0?Math.round(val/max*100):0));var tp=Math.min(100,target>0&&max>0?Math.round(target/max*100):0);var rate=target>0?Math.round(val/target*100):0;return '<div style="margin:9px 0"><div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:3px"><span><b>'+esc(label)+'</b></span><span style="color:var(--dim)">'+won(val)+' / '+won(target)+' · <span style="color:'+(val>=target?'var(--green)':'var(--yellow)')+'">'+rate+'%</span></span></div><div style="background:var(--border);border-radius:6px;height:17px;position:relative;overflow:hidden"><div style="width:'+pct+'%;height:100%;background:'+color+';border-radius:6px"></div><div style="position:absolute;top:0;height:100%;border-right:2px dashed var(--text);left:'+tp+'%"></div></div></div>';}
+  function card(label,val,sub,color){return '<div class="dash-stat-card" style="background:var(--paper);border:1px solid var(--border);border-radius:10px;padding:12px 14px"><div style="color:var(--dim);font-size:12px">'+esc(label)+'</div><div style="font-size:20px;font-weight:700;color:'+(color||'var(--text)')+';margin-top:3px">'+esc(val)+'</div>'+(sub?'<div style="color:var(--dim);font-size:11px;margin-top:2px">'+esc(sub)+'</div>':'')+'</div>';}
+  function panel(title,inner){return '<div class="panel"><div class="sectit">'+title+'</div>'+inner+'</div>';}
 
   window.switchTab=function(id){['sales','check','work'].forEach(function(t){var c=document.getElementById('tab-'+t);var b=document.getElementById('tab-btn-'+t);if(c)c.classList.toggle('hidden',t!==id);if(b)b.classList.toggle('active',t===id);});};
 
-  function renderCheck(){
-    var ch=document.getElementById('checkCriteria');
-    ch.innerHTML='<div style="display:grid;gap:8px">'+CRITERIA.map(function(c,i){return '<div style="background:var(--paper);border:1px solid var(--border);border-radius:10px;padding:11px 14px"><div style="display:flex;align-items:center;gap:8px"><span style="background:var(--accent-bg);color:var(--accent);border-radius:6px;padding:1px 8px;font-size:12px;font-weight:700">'+(i+1)+'</span><b>'+esc(c[0])+'</b></div><div style="color:var(--dim);font-size:13px;margin:6px 0 8px">'+esc(c[1])+'</div><div style="display:flex;gap:6px;flex-wrap:wrap">'+LEVELS.map(function(l){return '<span style="font-size:11px;border-radius:20px;padding:2px 10px;border:1px solid '+l[1]+';color:'+l[1]+'">'+l[0]+'</span>';}).join('')+'</div></div>';}).join('')+'</div>';
-    document.getElementById('checkZones').innerHTML=ZONES.map(function(z,i){return '<div style="background:var(--paper);border:1px solid var(--border);border-radius:10px;padding:12px;text-align:center"><div style="color:var(--dim);font-size:11px">'+(i+1)+'</div><div style="font-weight:600;margin-top:2px">'+esc(z)+'</div></div>';}).join('');
-  }
+  var MODEL=null, CUR='전체';
+  window.selectPeriod=function(p){CUR=p;[].forEach.call(document.querySelectorAll('#salesSeg button'),function(b){b.classList.toggle('on',b.getAttribute('data-p')===p);});renderPeriod();};
 
-  function renderWork(){
-    var arr=[];try{arr=JSON.parse(localStorage.getItem('todo_tasks')||'[]');}catch(e){}
-    var hr=arr.filter(function(t){var c=(t.category||'')+'';return /인사\s*&\s*파트너|인사·파트너|\[2\]/.test(c);});
-    var fromCache=hr.length>0; if(!fromCache)hr=SEED;
-    var groups={'진행중':[],'완료':[],'보류':[],'기타':[]};
-    hr.forEach(function(t){var s=(t.status||'').trim();if(groups[s])groups[s].push(t);else if(/완료/.test(s))groups['완료'].push(t);else if(/보류|대기/.test(s))groups['보류'].push(t);else if(/진행/.test(s))groups['진행중'].push(t);else groups['기타'].push(t);});
-    var diff={'상':'var(--red)','중':'var(--yellow)','하':'var(--green)'};
-    document.getElementById('workStats').innerHTML=statCard('전체',hr.length+'건','인사 & 파트너')+statCard('진행중',groups['진행중'].length+'건','',TEAM_COLOR['수영'])+statCard('완료',groups['완료'].length+'건','',('var(--green)'))+statCard('보류',(groups['보류'].length)+'건','',('var(--dim)'));
-    var cols=[['진행중','var(--blue)'],['완료','var(--green)'],['보류','var(--orange)']];
-    if(groups['기타'].length)cols.push(['기타','var(--dim)']);
-    document.getElementById('workBoard').innerHTML=cols.map(function(cc){var list=groups[cc[0]]||[];return '<div class="board-col" style="background:var(--paper);border:1px solid var(--border);border-radius:10px;overflow:hidden"><div class="board-col-head" style="padding:9px 12px;border-bottom:1px solid var(--border);font-weight:700;display:flex;justify-content:space-between"><span style="color:'+cc[1]+'">'+cc[0]+'</span><span style="color:var(--dim)">'+list.length+'</span></div><div class="board-col-body" style="padding:8px;display:flex;flex-direction:column;gap:8px">'+(list.length?list.map(function(t){var d=(''+(t.startDate||'')).slice(0,10)+(t.endDate?' ~ '+(''+t.endDate).slice(0,10):'');var lv=(t.난이도||'').trim();var ap=(t.결재상태||t.approval||'').trim();return '<div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:9px 10px"><div style="font-weight:600;font-size:13px;line-height:1.45">'+esc(t.title||'')+'</div><div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px;align-items:center">'+(lv?'<span style="font-size:10px;border-radius:5px;padding:1px 6px;background:var(--border);color:'+(diff[lv]||'var(--dim)')+'">난이도 '+lv+'</span>':'')+(ap?'<span style="font-size:10px;border-radius:5px;padding:1px 6px;background:var(--green-bg);color:var(--green)">'+esc(ap)+'</span>':'')+'<span style="flex:1"></span><span style="font-size:10px;color:var(--dim)">'+esc(t.owner||'')+'</span></div>'+(d.replace(/[~ ]/g,'')?'<div style="font-size:10px;color:var(--dim);margin-top:4px">📅 '+esc(d)+'</div>':'')+'</div>';}).join(''):'<div style="color:var(--dim);font-size:12px;text-align:center;padding:14px">없음</div>')+'</div></div>';}).join('');
-    document.getElementById('workUpdated').textContent=fromCache?'ERP 동기화 데이터':'기본 데이터 (ERP 미접속)';
+  function renderPeriod(){
+    if(!MODEL){document.getElementById('salesView').innerHTML='';return;}
+    var V=document.getElementById('salesView');
+    if(CUR==='전체'){
+      var nMon=MODEL.months.filter(function(m){return m.total>0;}).length||1;
+      var cum=MODEL.months.reduce(function(a,m){return a+m.total;},0);
+      var gt=MONTH_TARGET_SUM*nMon;
+      var cards=card('누적 매출',won(cum),nMon+'개월','var(--accent)')+card('월 평균',won(cum/nMon),'강습부 전체')+card('누적 목표',won(gt),nMon+'개월 환산')+card('목표 달성률',(gt?Math.round(cum/gt*100):0)+'%','',cum>=gt?'var(--green)':'var(--yellow)');
+      var maxM=Math.max.apply(null,MODEL.months.map(function(m){return m.total;}).concat([1]));
+      var monthly=MODEL.months.map(function(m){return bar(m.label,m.total,maxM,'var(--accent)');}).join('');
+      var teams=TEAMS.map(function(t){return {k:t,sum:MODEL.months.reduce(function(a,m){return a+(m.teams[t]||0);},0),target:TEAM_TARGET[t]*nMon};});
+      var maxT=Math.max.apply(null,teams.map(function(t){return Math.max(t.sum,t.target);}).concat([1]));
+      var teamBars=teams.map(function(t){return tbar(t.k,t.sum,t.target,maxT,TEAM_COLOR[t.k]);}).join('');
+      var ins=MODEL.instr.slice().sort(function(a,b){return b.sum-a.sum;}).slice(0,15);
+      var maxI=ins.length?ins[0].sum:1;
+      var insBars=ins.length?ins.map(function(p,i){return bar((i+1)+'. '+p.name+' ('+p.team+')',p.sum,maxI,i<3?'var(--accent)':'var(--blue)',won(p.sum));}).join(''):'<div style="color:var(--dim)">데이터 없음</div>';
+      V.innerHTML='<div class="statgrid" style="margin-bottom:16px">'+cards+'</div>'+
+        '<div class="grid2" style="margin-bottom:16px">'+panel('월별 추이',monthly)+panel('부서별 누적 / 목표',teamBars)+'</div>'+
+        panel('강사별 누적 랭킹 (6개월)',insBars);
+    } else {
+      var idx=parseInt(CUR,10)-1;var md=MODEL.months[idx];
+      if(!md||md.total<=0){V.innerHTML=panel(CUR+'월',' <div style="color:var(--dim)">데이터 없음</div>');return;}
+      var prev=idx>0?MODEL.months[idx-1]:null;
+      var diff=prev&&prev.total?Math.round((md.total-prev.total)/prev.total*100):null;
+      var cards=card(CUR+'월 매출',won(md.total),'강습부 전체','var(--accent)')+card('월 목표',won(MONTH_TARGET_SUM),'6개팀 합산')+card('달성률',Math.round(md.total/MONTH_TARGET_SUM*100)+'%','',md.total>=MONTH_TARGET_SUM?'var(--green)':'var(--yellow)')+card('전월 대비',diff==null?'—':(diff>0?'+':'')+diff+'%','',diff==null?'var(--dim)':(diff>=0?'var(--green)':'var(--red)'));
+      var teams=TEAMS.map(function(t){return {k:t,v:md.teams[t]||0,target:TEAM_TARGET[t]};});
+      var maxT=Math.max.apply(null,teams.map(function(t){return Math.max(t.v,t.target);}).concat([1]));
+      var teamBars=teams.map(function(t){return tbar(t.k,t.v,t.target,maxT,TEAM_COLOR[t.k]);}).join('');
+      var ins=MODEL.instr.map(function(p){return {name:p.name,team:p.team,v:p.monthly[idx]||0};}).filter(function(p){return p.v>0;}).sort(function(a,b){return b.v-a.v;}).slice(0,15);
+      var maxI=ins.length?ins[0].v:1;
+      var insBars=ins.length?ins.map(function(p,i){return bar((i+1)+'. '+p.name+' ('+p.team+')',p.v,maxI,i<3?'var(--accent)':'var(--blue)',won(p.v));}).join(''):'<div style="color:var(--dim)">강사별 데이터 없음</div>';
+      V.innerHTML='<div class="statgrid" style="margin-bottom:16px">'+cards+'</div>'+
+        '<div class="grid2">'+panel(CUR+'월 부서별 / 목표',teamBars)+panel(CUR+'월 강사별',insBars)+'</div>';
+    }
   }
 
   window.loadSales=function(force){
     var up=document.getElementById('salesUpdated');up.textContent='불러오는 중…';
-    var errEl=document.getElementById('salesError');errEl.style.display='none';
-    fetch(CSV+(force?('&_='+Date.now()):'')).then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.text();}).then(function(txt){
+    var err=document.getElementById('salesError');err.style.display='none';
+    fetch(SALES_CSV+(force?('&_='+Date.now()):'')).then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.text();}).then(function(txt){
       var M=parseCSV(txt);
-      function find(label){for(var r=0;r<M.length;r++)for(var c=0;c<M[r].length;c++){if((''+M[r][c]).trim()===label)return [r,c];}return null;}
-      var hdr=find('강습 매출 합계');if(!hdr)throw new Error('헤더(강습 매출 합계)를 찾지 못했습니다');
-      var hr=hdr[0],baseCol=hdr[1];
-      var monthCol=-1;for(var c=0;c<M[hr].length;c++){if((''+M[hr][c]).trim()==='월'){monthCol=c;break;}}if(monthCol<0)monthCol=1;
-      var teamCol={};Object.keys(TEAM_LABELS).forEach(function(k){var lbl=TEAM_LABELS[k];for(var c=0;c<M[hr].length;c++){if((''+M[hr][c]).trim()===lbl){teamCol[k]=c;break;}}});
-      // monthly rows
-      var months=[];for(var r=hr+1;r<M.length&&months.length<12;r++){var mm=(''+(M[r][monthCol]||'')).trim();if(/^\d{1,2}월$/.test(mm)){months.push(r);}else if(months.length){break;}}
-      var monthlyTotals=months.map(function(r){return {m:(''+M[r][monthCol]).trim(),v:num(M[r][baseCol])};});
-      var withData=monthlyTotals.filter(function(x){return x.v>0;});
-      var cumTotal=monthlyTotals.reduce(function(a,b){return a+b.v;},0);
-      var nMon=withData.length||1;
-      // teams cumulative
-      var teams=Object.keys(TEAM_LABELS).map(function(k){var col=teamCol[k];var sum=col!=null?months.reduce(function(a,r){return a+num(M[r][col]);},0):0;return {k:k,sum:sum,target:TEAM_TARGET[k]*nMon,color:TEAM_COLOR[k]};});
-      // instructor ranking
-      var rk=find('월 평균 매출');var insts=[];
-      if(rk){var rr=rk[0],cc=rk[1];for(var r=rr+1;r<M.length;r++){var nm=(''+(M[r][cc-1]||'')).trim();var v=num(M[r][cc]);if(nm&&!/^\d/.test(nm)&&v>0&&nm.length<=6){insts.push({name:nm,avg:v});}else if(insts.length&&!nm){break;}}}
-      insts.sort(function(a,b){return b.avg-a.avg;});insts=insts.slice(0,30);
-      // RENDER
-      var grandTarget=Object.keys(TEAM_TARGET).reduce(function(a,k){return a+TEAM_TARGET[k];},0)*nMon;
-      document.getElementById('salesTotal').innerHTML=
-        statCard('누적 매출',won(cumTotal),nMon+'개월','var(--accent)')+
-        statCard('월 평균',won(cumTotal/nMon),'강습부 전체')+
-        statCard('누적 목표',won(grandTarget),nMon+'개월 환산')+
-        statCard('목표 달성률',(grandTarget?Math.round(cumTotal/grandTarget*100):0)+'%','',cumTotal>=grandTarget?'var(--green)':'var(--yellow)');
-      var maxM=Math.max.apply(null,monthlyTotals.map(function(x){return x.v;}).concat([1]));
-      document.getElementById('salesMonthly').innerHTML=monthlyTotals.map(function(x){return bar(x.m,x.v,maxM,'var(--accent)');}).join('');
-      var maxT=Math.max.apply(null,teams.map(function(t){return Math.max(t.sum,t.target);}).concat([1]));
-      document.getElementById('salesTeam').innerHTML=teams.map(function(t){var pct=t.target?Math.round(t.sum/t.target*100):0;return '<div style="margin:9px 0"><div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:3px"><span><b>'+t.k+'</b></span><span style="color:var(--dim)">'+won(t.sum)+' / '+won(t.target)+' · <span style="color:'+(t.sum>=t.target?'var(--green)':'var(--yellow)')+'">'+pct+'%</span></span></div><div style="background:var(--border);border-radius:6px;height:18px;position:relative;overflow:hidden"><div style="width:'+Math.min(100,Math.max(2,Math.round(t.sum/maxT*100)))+'%;height:100%;background:'+t.color+';border-radius:6px"></div><div style="position:absolute;top:0;height:100%;border-right:2px dashed var(--text);left:'+Math.min(100,Math.round(t.target/maxT*100))+'%"></div></div></div>';}).join('');
-      var maxI=insts.length?insts[0].avg:1;
-      document.getElementById('salesInstructor').innerHTML=insts.length?insts.map(function(p,i){return bar((i+1)+'. '+p.name,p.avg,maxI,i<3?'var(--accent)':'var(--blue)','월 '+won(p.avg));}).join(''):'<div style="color:var(--dim)">랭킹 데이터를 찾지 못했습니다.</div>';
+      function find(lbl){for(var r=0;r<M.length;r++)for(var c=0;c<M[r].length;c++){if((''+M[r][c]).trim()===lbl)return[r,c];}return null;}
+      var h=find('강습 매출 합계');if(!h)throw new Error('헤더 없음');
+      var hr=h[0],base=h[1],monthCol=M[hr].indexOf('월');if(monthCol<0)monthCol=1;
+      var tc={};TEAMS.forEach(function(t){for(var c=0;c<M[hr].length;c++){if((''+M[hr][c]).trim()===TEAM_LABEL[t]){tc[t]=c;break;}}});
+      var months=[];for(var r=hr+1;r<M.length&&months.length<12;r++){var mm=(''+(M[r][monthCol]||'')).trim();if(/^\d{1,2}월$/.test(mm)){var o={label:mm,total:num(M[r][base]),teams:{}};TEAMS.forEach(function(t){o.teams[t]=tc[t]!=null?num(M[r][tc[t]]):0;});months.push(o);}else if(months.length)break;}
+      var instr=[];try{TEAMS.forEach(function(t){var key=TEAM_BLOCK[t];var bi=-1;for(var r=0;r<M.length;r++){if(ws(M[r][0]).indexOf(key)===0){bi=r;break;}}if(bi<0)return;var names=[];for(var c=4;c<M[bi].length;c+=2){var nm=(''+(M[bi][c]||'')).trim();if(!nm||nm==='가입(명)'||nm==='합계'||/^\d/.test(nm))break;names.push({name:nm,col:c});}var mrows=[];for(var r=bi+1;r<M.length&&mrows.length<12;r++){if(/^\d{1,2}월$/.test((''+(M[r][1]||'')).trim()))mrows.push(r);else if(mrows.length)break;}names.forEach(function(n){if(n.name==='아쿠아')return;var monthly=[],sum=0;for(var k=0;k<12;k++){var v=mrows[k]!=null?num(M[mrows[k]][n.col]):0;monthly.push(v);sum+=v;}instr.push({name:n.name,team:t,monthly:monthly,sum:sum});});});}catch(e){instr=[];}
+      MODEL={months:months,instr:instr};
+      // build seg buttons once
+      var seg=document.getElementById('salesSeg');
+      if(!seg.childNodes.length){var html='<button class="on" data-p="전체" onclick="selectPeriod(\'전체\')">전체</button>';for(var m=1;m<=12;m++){html+='<button data-p="'+m+'" onclick="selectPeriod(\''+m+'\')">'+m+'월</button>';}seg.innerHTML=html;}
+      renderPeriod();
       up.textContent='업데이트: '+new Date().toLocaleString('ko-KR',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});
-    }).catch(function(e){up.textContent='불러오기 실패';errEl.style.display='block';errEl.textContent='⚠ 매출 시트를 불러오지 못했습니다: '+e.message+' (시트 공유 설정이 \"링크가 있는 모든 사용자\"인지 확인해 주세요)';});
+    }).catch(function(e){up.textContent='불러오기 실패';err.style.display='block';err.textContent='⚠ 매출 시트를 불러오지 못했습니다: '+e.message;});
   };
 
-  // init
-  document.getElementById('sheetLink').href=EDIT;
-  renderCheck();renderWork();window.loadSales(false);
+  function renderCheck(data,live){
+    var cols=data.cols, rows=data.rows, issues=data.issues;
+    var head='<tr>'+cols.map(function(c){return '<th>'+esc(c)+'</th>';}).join('')+'</tr>';
+    var body=rows.map(function(row){var isTot=ws(row[0])==='합계';return '<tr'+(isTot?' style="font-weight:700;background:var(--bg)"':'')+'>'+row.map(function(cell,i){if(i===0)return '<td class="zone">'+esc(cell)+'</td>';var n=num(cell);var hot=(!isTot&&n>0&&(''+cell).trim()!=='–');return '<td class="'+(hot?'ck-hot':'')+'">'+esc(cell)+'</td>';}).join('')+'</tr>';}).join('');
+    var matrix='<table class="ck-table">'+head+body+'</table>';
+    var iss=issues.length?issues.map(function(it){return '<div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:9px 11px;margin-bottom:8px"><div style="display:flex;gap:8px;align-items:center;font-size:12px;color:var(--dim)"><span style="background:var(--accent-bg);color:var(--accent);border-radius:5px;padding:1px 7px;font-weight:700">'+esc(it[1])+'</span><span>'+esc(it[0])+'</span><span style="flex:1"></span><span>'+esc(it[2])+'</span></div><div style="font-size:13px;margin-top:5px;line-height:1.5">'+esc(it[3])+'</div></div>';}).join(''):'<div style="color:var(--dim)">이슈 없음</div>';
+    document.getElementById('checkView').innerHTML='<div class="grid2">'+panel('업장별 「점검필요」 횟수',matrix)+panel('이슈사항 ('+issues.length+'건)',iss)+'</div>'+(live?'':'<div class="callout" style="margin-top:14px;color:var(--dim)">※ 스냅샷(2026-06-09 기준)입니다. 실시간 연동을 원하시면 「강습부 업장관리 체크」 시트를 <b>링크가 있는 모든 사용자 - 뷰어</b>로 공유해 주세요.</div>');
+    document.getElementById('checkUpdated').textContent=live?('실시간 · '+new Date().toLocaleString('ko-KR',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})):'스냅샷';
+  }
+  window.loadCheck=function(force){
+    document.getElementById('checkUpdated').textContent='불러오는 중…';
+    fetch(CHECK_CSV+(force?('&_='+Date.now()):'')).then(function(r){if(!r.ok)throw new Error('x');return r.text();}).then(function(txt){
+      var M=parseCSV(txt);
+      var hr=-1,zc=-1;for(var r=0;r<M.length&&hr<0;r++){for(var c=0;c<M[r].length;c++){if((''+M[r][c]).trim()==='업장'&&M[r].join(',').indexOf('정리정돈')!==-1){hr=r;zc=c;break;}}}
+      if(hr<0)throw new Error('matrix');
+      var colIdx={};CHECK_COLS.forEach(function(name){for(var c=0;c<M[hr].length;c++){var h=(''+M[hr][c]).trim();if(h===name||(name==='조명 및 냉난방'&&h.indexOf('조명')===0)){colIdx[name]=c;break;}}});
+      var rows=[];for(var r=hr+1;r<M.length;r++){var z=(''+(M[r][zc]||'')).trim();if(!z)break;var row=[z];CHECK_COLS.forEach(function(name){var c=colIdx[name];row.push(c!=null?(''+(M[r][c]||'')).trim():'');});rows.push(row);if(z==='합계')break;}
+      var ihr=-1;for(var r=0;r<M.length&&ihr<0;r++){for(var c=0;c<M[r].length;c++){if((''+M[r][c]).trim()==='이슈내용'){ihr=r;break;}}}
+      var issues=[];if(ihr>=0){var jc=-1,zc2=-1,pc=-1,dc=-1;for(var c=0;c<M[ihr].length;c++){var h=(''+M[ihr][c]).trim();if(h==='이슈내용')jc=c;if(h==='업장')zc2=c;if(h==='점검자')pc=c;if(h==='날짜')dc=c;}for(var r=ihr+1;r<M.length;r++){var d=(''+(M[r][dc]||'')).trim();var iv=(''+(M[r][jc]||'')).trim();if(!d&&!iv)break;issues.push([d,(''+(M[r][zc2]||'')).trim(),(''+(M[r][pc]||'')).trim(),iv]);}}
+      renderCheck({cols:['업장'].concat(CHECK_COLS),rows:rows,issues:issues},true);
+    }).catch(function(e){renderCheck(CHECK_SNAP,false);});
+  };
+
+  function renderWork(){
+    var arr=[];try{arr=JSON.parse(localStorage.getItem('todo_tasks')||'[]');}catch(e){}
+    var hr=arr.filter(function(t){return /인사\s*&\s*파트너|인사·파트너|\[2\]/.test((t.category||'')+'');});
+    var cache=hr.length>0;if(!cache)hr=SEED;
+    var g={'진행중':[],'완료':[],'보류':[]};
+    hr.forEach(function(t){var s=(t.status||'').trim();if(/완료/.test(s))g['완료'].push(t);else if(/보류|대기/.test(s))g['보류'].push(t);else g['진행중'].push(t);});
+    document.getElementById('workStats').innerHTML=card('전체',hr.length+'건','인사 & 파트너','var(--accent)')+card('진행중',g['진행중'].length+'건','','var(--blue)')+card('완료',g['완료'].length+'건','','var(--green)')+card('보류',g['보류'].length+'건','','var(--orange)');
+    var diff={'상':'var(--red)','중':'var(--yellow)','하':'var(--green)'};
+    var cols=[['진행중','var(--blue)'],['완료','var(--green)'],['보류','var(--orange)']];
+    document.getElementById('workBoard').innerHTML=cols.map(function(cc){var list=g[cc[0]];return '<div style="background:var(--paper);border:1px solid var(--border);border-radius:10px;overflow:hidden"><div style="padding:9px 12px;border-bottom:1px solid var(--border);font-weight:700;display:flex;justify-content:space-between"><span style="color:'+cc[1]+'">'+cc[0]+'</span><span style="color:var(--dim)">'+list.length+'</span></div><div style="padding:8px;display:flex;flex-direction:column;gap:8px">'+(list.length?list.map(function(t){var d=(''+(t.startDate||'')).slice(0,10)+(t.endDate?' ~ '+(''+t.endDate).slice(0,10):'');var lv=(t.난이도||'').trim();return '<div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:9px 10px"><div style="font-weight:600;font-size:13px;line-height:1.45">'+esc(t.title||'')+'</div><div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px;align-items:center">'+(lv?'<span style="font-size:10px;border-radius:5px;padding:1px 6px;background:var(--border);color:'+(diff[lv]||'var(--dim)')+'">난이도 '+lv+'</span>':'')+'<span style="flex:1"></span><span style="font-size:10px;color:var(--dim)">'+esc(t.owner||'')+'</span></div>'+(d.replace(/[~ ]/g,'')?'<div style="font-size:10px;color:var(--dim);margin-top:4px">📅 '+esc(d)+'</div>':'')+'</div>';}).join(''):'<div style="color:var(--dim);font-size:12px;text-align:center;padding:14px">없음</div>')+'</div></div>';}).join('');
+    document.getElementById('workUpdated').textContent=cache?'ERP 동기화':'기본 데이터';
+  }
+
+  loadSales(false);loadCheck(false);renderWork();
 })();</script>
 </body>
 </html>
