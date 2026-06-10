@@ -238,7 +238,7 @@ def compose_guide_card_pilates(output_path: Path) -> None:
     font_item = load_font("medium", 16)  # 15→16px (GM 지시)
     ITEM_TEXT_COLOR = (200, 198, 199)  # 원본 항목 텍스트 색(측정값)
     # draw_x: 형제 불릿 좌측 엣지 x=65 맞춤 (기존 60 → 65, 원샷 측정)
-    draw.text((65, 408), "· 그룹 콘텐츠 최대 1:3 (Up to 3 per Class)", font=font_item, fill=ITEM_TEXT_COLOR)
+    draw.text((65, 408), "·  그룹 콘텐츠 최대 1:3 (Up to 3 per Class)", font=font_item, fill=ITEM_TEXT_COLOR)
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
     img.save(output_path, "JPEG", quality=95, optimize=True)
