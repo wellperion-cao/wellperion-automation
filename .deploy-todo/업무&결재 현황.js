@@ -559,7 +559,8 @@ var KPI_EXPENSE_GID      = 821406206;
 var KPI_VOC_SHEET_ID     = '1akZLs7ITs3FZWFIzMQvSYrdRucGQglmerOvTC2TLEcQ';
 var KPI_VOC_GID          = 1576318230;
 
-// 월 지출 예산 — GM 추후 입력. 숫자만 바꾸면 집행률 자동 계산. 미설정이면 null/0.
+// 월 지출 예산 — 1차 출처='지출 현황' 시트의 '예산' 라벨 셀(GM이 시트에서 수시 변경, 재배포 불필요).
+// 시트에 '예산' 셀이 없을 때만 이 상수 fallback 사용. 미설정이면 null/0.
 var MONTHLY_EXPENSE_BUDGET = 0;
 
 // "12,007,816" · "25.43%" · 숫자 등을 number 로 파싱. 못 구하면 null.
@@ -737,6 +738,115 @@ function _kpiSales() {
 // 합산 규칙: 진행상황이 정확히 '승인'인 행만(='미승인'·'캔슬' 제외). 가격 음수(환불·반품)는
 //   그대로 차감 — 시트의 월별 '승인건' 합계(예: 2026-06=5,907,240, 골프 -257,760 포함)와 일치.
 // 거래행 아래 부서별·월별 요약 블록은 1열이 날짜가 아니므로 _kpiParseDate 가드로 자동 제외.
+// '지출 현황' 탭 values 에서 '예산'(또는 '월 예산'·'월예산') 라벨 셀을 찾아 우측 첫 숫자값 반환.
+// 라벨과 같은 행 우측 셀(오른쪽으로 스캔) 우선, 없으면 바로 아래 셀. 못 찾으면 null.
+function _kpiExpenseBudget(values) {
+  for (var r = 0; r < values.length; r++) {
+    for (var c = 0; c < values[r].length; c++) {
+      var cell = String(values[r][c] || '').replace(/\s/g, '');
+      if (cell === '예산' || cell === '월예산' || cell === '월간예산' || cell.indexOf('월예산') >= 0) {
+        // 같은 행 우측 스캔
+        for (var cc = c + 1; cc < values[r].length; cc++) {
+          var rv = _kpiNum(values[r][cc]);
+          if (rv !== null && rv > 0) return rv;
+        }
+        // 바로 아래 셀
+        if (r + 1 < values.length) {
+          var dv = _kpiNum(values[r + 1][c]);
+          if (dv !== null && dv > 0) return dv;
+        }
+      }
+    }
+  }
+  return null;
+}
+
+// 진단 — '지출 현황' 탭의 월별 승인지출 합계(YYYY-MM → 합). 예산 산정 근거용.
+// GET ?action=expense_monthly → { ok, months:[{ym, sum, count}], avg3, avg6, max }
+function _kpiExpenseMonthly() {
+  try {
+    var ss = SpreadsheetApp.openById(KPI_EXPENSE_SHEET_ID);
+    var sheets = ss.getSheets();
+    var sh = null;
+    for (var i = 0; i < sheets.length; i++) {
+      if (sheets[i].getSheetId() === KPI_EXPENSE_GID) { sh = sheets[i]; break; }
+    }
+    if (!sh) return _json({ ok: false, error: 'expense_tab_not_found' });
+    var lastRow = sh.getLastRow(), lastCol = sh.getLastColumn();
+    var values = sh.getRange(1, 1, lastRow, lastCol).getValues();
+    var hdr = values[0].map(function (h) { return String(h || '').replace(/\s/g, '').trim(); });
+    function _col(names) {
+      for (var i2 = 0; i2 < hdr.length; i2++) {
+        for (var j = 0; j < names.length; j++) { if (hdr[i2].indexOf(names[j]) >= 0) return i2; }
+      }
+      return -1;
+    }
+    var dateCol = _col(['날짜']), priceCol = _col(['가격', '금액']), statusCol = _col(['진행상황', '승인상태']);
+    var agg = {};
+    for (var r = 1; r < values.length; r++) {
+      var row = values[r];
+      var st = String(row[statusCol] || '').replace(/\s/g, '').trim();
+      if (st !== '승인') continue;
+      var d = _kpiParseDate(row[dateCol]);
+      if (!d) continue;
+      var price = _kpiNum(row[priceCol]);
+      if (price === null) continue;
+      var ym = d.y + '-' + ('0' + d.m).slice(-2);
+      if (!agg[ym]) agg[ym] = { ym: ym, sum: 0, count: 0 };
+      agg[ym].sum += price; agg[ym].count++;
+    }
+    var months = [];
+    for (var k in agg) { if (agg.hasOwnProperty(k)) months.push(agg[k]); }
+    months.sort(function (a, b) { return a.ym < b.ym ? -1 : 1; });
+    function avgLast(n) {
+      var arr = months.slice(-n); if (!arr.length) return null;
+      var s = 0; for (var i3 = 0; i3 < arr.length; i3++) s += arr[i3].sum;
+      return Math.round(s / arr.length);
+    }
+    var maxSum = 0; for (var m2 = 0; m2 < months.length; m2++) if (months[m2].sum > maxSum) maxSum = months[m2].sum;
+    return _json({ ok: true, months: months, avg3: avgLast(3), avg6: avgLast(6), max: maxSum });
+  } catch (err) {
+    return _json({ ok: false, error: String(err) });
+  }
+}
+
+// '지출 현황' 탭에 '예산' 라벨+금액 기록(idempotent). 라벨 셀이 이미 있으면 그 우측에 덮어씀.
+// 없으면 헤더 우측 여백(데이터 영역 밖, 1행)에 '예산' | 금액 신설. POST ?action=expense_set_budget&amount=...&key=...
+function _expenseSetBudget(amount, key) {
+  try {
+    var editKey = _prop('EDIT_KEY');
+    if (editKey && String(key) !== editKey) return _json({ ok: false, error: '편집 키 불일치' });
+    var amt = _kpiNum(amount);
+    if (amt === null || amt <= 0) return _json({ ok: false, error: 'invalid_amount' });
+    var ss = SpreadsheetApp.openById(KPI_EXPENSE_SHEET_ID);
+    var sheets = ss.getSheets();
+    var sh = null;
+    for (var i = 0; i < sheets.length; i++) {
+      if (sheets[i].getSheetId() === KPI_EXPENSE_GID) { sh = sheets[i]; break; }
+    }
+    if (!sh) return _json({ ok: false, error: 'expense_tab_not_found' });
+    var lastRow = sh.getLastRow(), lastCol = sh.getLastColumn();
+    var values = sh.getRange(1, 1, lastRow, lastCol).getValues();
+    // 기존 '예산' 라벨 셀 탐색
+    for (var r = 0; r < values.length; r++) {
+      for (var c = 0; c < values[r].length; c++) {
+        var cell = String(values[r][c] || '').replace(/\s/g, '');
+        if (cell === '예산' || cell === '월예산' || cell === '월간예산') {
+          sh.getRange(r + 1, c + 2).setValue(amt);  // 라벨 우측 셀에 기록
+          return _json({ ok: true, mode: 'updated', row: r + 1, col: c + 2, amount: amt });
+        }
+      }
+    }
+    // 없으면 헤더행(1행) 우측 여백에 '예산' | 금액 신설
+    var lbl = lastCol + 2;  // 데이터 영역과 한 칸 띄움
+    sh.getRange(1, lbl).setValue('예산');
+    sh.getRange(1, lbl + 1).setValue(amt);
+    return _json({ ok: true, mode: 'created', row: 1, col: lbl + 1, amount: amt });
+  } catch (err) {
+    return _json({ ok: false, error: String(err) });
+  }
+}
+
 function _kpiExpense() {
   try {
     var ss = SpreadsheetApp.openById(KPI_EXPENSE_SHEET_ID);
@@ -771,12 +881,14 @@ function _kpiExpense() {
     var dateCol   = _col(['날짜']);
     var priceCol  = _col(['가격', '금액']);
     var statusCol = _col(['진행상황', '승인상태']);
+    var deptCol   = _col(['소속', '부서']);  // 부서별 breakdown용(없으면 -1 → '기타')
     if (priceCol < 0 || statusCol < 0 || dateCol < 0) {
       return { today: null, month: null, year: null, budget: null, rate: null,
                error: 'expense_cols_not_found' };
     }
     var t = _kpiToday();
     var today = 0, month = 0, year = 0, any = false;
+    var deptMonth = {};  // 부서명 → 이번달 승인지출 합
     for (var r = 1; r < values.length; r++) {
       var row = values[r];
       // 진행상황이 정확히 '승인'인 행만. '미승인'·'캔슬'은 제외(부분일치 금지).
@@ -792,13 +904,32 @@ function _kpiExpense() {
         if (d.m === t.m) {
           month += price;
           if (d.d === t.d) today += price;
+          // 이번달 부서별 합산(소속 4열). 빈 소속은 '기타'.
+          var dept = (deptCol >= 0) ? String(row[deptCol] || '').trim() : '';
+          if (!dept) dept = '기타';
+          deptMonth[dept] = (deptMonth[dept] || 0) + price;
         }
       }
     }
-    var budget = (MONTHLY_EXPENSE_BUDGET && MONTHLY_EXPENSE_BUDGET > 0) ? MONTHLY_EXPENSE_BUDGET : null;
+    // 부서별 breakdown — 이번달 합 큰 순. share=부서합/month(비중%). 매출 breakdown과 동형.
+    var breakdown = [];
+    for (var dn in deptMonth) {
+      if (!deptMonth.hasOwnProperty(dn)) continue;
+      breakdown.push({
+        name:  dn,
+        month: deptMonth[dn],
+        share: (month !== 0) ? Math.round((deptMonth[dn] / month) * 10000) / 100 : null
+      });
+    }
+    breakdown.sort(function (a, b) { return b.month - a.month; });
+    // 예산 — '지출 현황' 시트의 '예산' 라벨 셀 우측값 우선, 없으면 상수 fallback.
+    var budget = _kpiExpenseBudget(values);
+    if (budget === null && MONTHLY_EXPENSE_BUDGET && MONTHLY_EXPENSE_BUDGET > 0) {
+      budget = MONTHLY_EXPENSE_BUDGET;
+    }
     var rate = (budget && budget > 0) ? Math.round((month / budget) * 10000) / 100 : null;
-    if (!any) return { today: null, month: null, year: null, budget: budget, rate: rate };
-    return { today: today, month: month, year: year, budget: budget, rate: rate };
+    if (!any) return { today: null, month: null, year: null, budget: budget, rate: rate, breakdown: [] };
+    return { today: today, month: month, year: year, budget: budget, rate: rate, breakdown: breakdown };
   } catch (err) {
     return { today: null, month: null, year: null, budget: null, rate: null, error: String(err) };
   }
@@ -916,6 +1047,16 @@ function doGet(e) {
     // GET ?action=home_kpi → { ok, sales, expense, voc, asOf }. 읽기 전용.
     if (action === 'home_kpi') {
       return _homeKpi();
+    }
+
+    // ─── 지출 월별 패턴 진단 (예산 산정 근거용, 읽기전용) — 2026-06-10 시뽀 ───
+    if (action === 'expense_monthly') {
+      return _kpiExpenseMonthly();
+    }
+
+    // ─── 월 지출 예산 기록 ('지출 현황' 시트 '예산' 셀) — GET·POST 공용, EDIT_KEY ───
+    if (action === 'expense_set_budget') {
+      return _expenseSetBudget(e.parameter.amount || '', e.parameter.key || '');
     }
 
     // 카테고리 목록 조회

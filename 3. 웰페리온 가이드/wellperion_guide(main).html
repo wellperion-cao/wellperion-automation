@@ -577,12 +577,13 @@
         <div style="display:flex;align-items:center;gap:9px;margin-bottom:12px;"><span style="width:28px;height:28px;border-radius:8px;background:var(--grow-bg);color:var(--grow);display:flex;align-items:center;justify-content:center;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.5 8.5 0 0 1-12.5 7.5L3 21l2-5.5A8.5 8.5 0 1 1 21 11.5z"/></svg></span><div><div style="font-weight:800;font-size:14px;color:var(--text);">문의 현황</div><div style="font-size:10.5px;color:var(--dim);">Inquiry · AI CMO(시모)</div></div></div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
           <div style="background:var(--grow-bg);border-radius:10px;padding:10px 12px;">
-            <div style="font-size:10px;color:var(--dim);margin-bottom:4px;font-weight:600;">신규</div>
-            <div style="font-size:22px;font-weight:800;color:var(--grow);line-height:1;" id="kpiInqTotal">—</div>
-            <div style="display:flex;align-items:center;gap:4px;margin-top:4px;"><span style="font-size:10px;color:var(--dim);">오늘</span><span style="font-size:13px;font-weight:700;color:var(--grow);" id="kpiInqDay">—</span></div>
+            <div style="font-size:10px;color:var(--dim);margin-bottom:4px;font-weight:600;">이번달 신규</div>
+            <div style="font-size:22px;font-weight:800;color:var(--grow);line-height:1;" id="kpiInqMonth">—</div>
+            <div style="display:flex;align-items:center;gap:4px;margin-top:4px;"><span style="font-size:10px;color:var(--dim);">올해 누적</span><span style="font-size:13px;font-weight:700;color:var(--grow);" id="kpiInqTotal">—</span></div>
           </div>
           <div style="background:var(--grow-bg);border-radius:10px;padding:10px 12px;">
-            <div style="font-size:10px;color:var(--dim);margin-bottom:4px;font-weight:600;">등록전환</div>
+            <div style="font-size:10px;color:var(--dim);margin-bottom:4px;font-weight:600;">오늘 신규 / 등록전환</div>
+            <div style="font-size:22px;font-weight:800;color:var(--grow);line-height:1;" id="kpiInqDay">—</div>
             <span style="font-size:11px;font-weight:700;color:var(--dim);background:var(--gray-bg);padding:1px 8px;border-radius:20px;display:inline-block;margin-top:2px;" id="kpiInqTotalConv">연결 예정</span>
             <div style="display:flex;align-items:center;gap:4px;margin-top:4px;"><span style="font-size:10px;color:var(--dim);">오늘</span><span style="font-size:11px;font-weight:700;color:var(--dim);background:var(--gray-bg);padding:1px 7px;border-radius:20px;display:inline-block;" id="kpiInqDayConv">연결 예정</span></div>
           </div>
@@ -597,12 +598,12 @@
         <div style="display:flex;align-items:center;gap:9px;margin-bottom:12px;"><span style="width:28px;height:28px;border-radius:8px;background:rgba(90,138,159,0.12);color:#5a8a9f;display:flex;align-items:center;justify-content:center;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></span><div><div style="font-weight:800;font-size:14px;color:var(--text);">이슈 현황</div><div style="font-size:10.5px;color:var(--dim);">VOC · AI COO(시우)</div></div></div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
           <div style="background:rgba(90,138,159,0.08);border-radius:10px;padding:10px 12px;">
-            <div style="font-size:10px;color:var(--dim);margin-bottom:4px;font-weight:600;">접수</div>
+            <div style="font-size:10px;color:var(--dim);margin-bottom:4px;font-weight:600;">접수(오늘)</div>
             <span id="kpiIssueDayNew" style="font-size:11px;font-weight:700;color:var(--dim);background:var(--gray-bg);padding:1px 8px;border-radius:20px;display:inline-block;">—</span>
-            <div style="display:flex;align-items:center;gap:4px;margin-top:4px;"><span style="font-size:10px;color:var(--dim);">미처리</span><span id="kpiIssuePending" style="font-size:11px;font-weight:700;color:var(--dim);background:var(--gray-bg);padding:1px 7px;border-radius:20px;display:inline-block;">—</span></div>
+            <div style="display:flex;align-items:center;gap:4px;margin-top:4px;"><span style="font-size:10px;color:var(--dim);">누적 미처리</span><span id="kpiIssuePending" style="font-size:11px;font-weight:700;color:var(--dim);background:var(--gray-bg);padding:1px 7px;border-radius:20px;display:inline-block;">—</span></div>
           </div>
           <div style="background:rgba(90,138,159,0.08);border-radius:10px;padding:10px 12px;">
-            <div style="font-size:10px;color:var(--dim);margin-bottom:4px;font-weight:600;">처리</div>
+            <div style="font-size:10px;color:var(--dim);margin-bottom:4px;font-weight:600;">누적 처리</div>
             <span id="kpiIssueDone" style="font-size:11px;font-weight:700;color:var(--dim);background:var(--gray-bg);padding:1px 8px;border-radius:20px;display:inline-block;">—</span>
             <div style="display:flex;align-items:center;gap:4px;margin-top:4px;"><span style="font-size:10px;color:var(--dim);">처리율</span><span id="kpiIssueRate" style="font-size:11px;font-weight:700;color:var(--dim);background:var(--gray-bg);padding:1px 7px;border-radius:20px;display:inline-block;">—</span></div>
           </div>
@@ -946,26 +947,29 @@
         if (field || row.length) { row.push(field); rows.push(row); }
         return rows;
       }
-      // CSV rows → 타임스탬프 컬럼(tsCol) 기준 총/일일 카운트. 헤더 행(0번) 제외.
+      // CSV rows → 타임스탬프 컬럼(tsCol) 기준 올해누적(total)/이번달(month)/오늘(day) 카운트. 헤더 행(0번) 제외.
+      function curYM(){ var d=new Date(); return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2); }
       function countRows(rows, tsCol) {
-        var yStart = yearStart(), today = todayStr(), total = 0, day = 0;
+        var yStart = yearStart(), today = todayStr(), ym = curYM(), total = 0, month = 0, day = 0;
         for (var i = 1; i < rows.length; i++) {
           var r = rows[i];
           if (!r || r.length <= tsCol) continue;
           var ds = parseDs(r[tsCol]);
           if (!ds) continue;
           if (ds >= yStart) total++;
+          if (ds.slice(0,7) === ym) month++;
           if (ds === today)  day++;
         }
-        return { total: total, day: day };
+        return { total: total, month: month, day: day };
       }
       var p1 = fetch(BASE + GID_KO + '&_pv=' + Date.now(), { redirect:'follow' }).then(function(r){ return r.text(); }).catch(function(){ return ''; });
       var p2 = fetch(BASE + GID_EN + '&_pv=' + Date.now(), { redirect:'follow' }).then(function(r){ return r.text(); }).catch(function(){ return ''; });
       Promise.all([p1, p2]).then(function(results){
         var ko = countRows(parseCSV(results[0]), 1); // 한국어: B열(인덱스1)
         var en = countRows(parseCSV(results[1]), 0); // 영문: A열(인덱스0)
-        set('kpiInqTotal', ko.total + en.total);
-        set('kpiInqDay',   ko.day   + en.day);
+        set('kpiInqMonth', ko.month + en.month); // 이번달 신규
+        set('kpiInqTotal', ko.total + en.total); // 올해 누적
+        set('kpiInqDay',   ko.day   + en.day);   // 오늘 신규
         set('heroInqDay', ko.day + en.day);
         // 등록전환: 회원DB 매칭 후속 연결 예정 — "—" 유지
       }).catch(function(){ /* "—" 유지 */ });

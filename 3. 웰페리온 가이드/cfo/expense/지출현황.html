@@ -535,6 +535,11 @@ function renderDashboard(items) {
       <div class="dash-total">${total.toLocaleString()}원</div>
       <div class="dash-sub">${items.length}건</div>
     </div>
+    <div class="dash-card" id="budgetCard">
+      <h4>월 예산 · 집행률</h4>
+      <div class="dash-total" id="budgetMonthVal" style="font-size:20px;">불러오는 중...</div>
+      <div class="dash-sub" id="budgetRateVal">홈 대시보드 기준(승인 지출)</div>
+    </div>
     <div class="dash-card">
       <h4>승인 현황</h4>
       ${Object.entries(byApproval).map(([st, cnt]) =>
@@ -581,6 +586,32 @@ function renderDashboard(items) {
       ).join('')}
     </div>
   `;
+  fillBudgetCard();
+}
+
+// 월 예산 · 집행률 — home_kpi(승인 지출·예산 SSOT) 비동기 조회. 이 페이지 로컬 데이터와 무관하게
+// 홈 대시보드와 동일 값(승인 지출 month / 시트 '예산' 셀) 표시. 예산 미설정 시 안내.
+const HOME_KPI_URL = 'https://script.google.com/macros/s/AKfycbxDwFkrxK1YIaEoSNcuw2MiHiZQ-7o5N6311ytksSyeEd86ZFOhLknOWqQgNArQvZ-7/exec';
+function fillBudgetCard() {
+  const valEl = document.getElementById('budgetMonthVal');
+  const subEl = document.getElementById('budgetRateVal');
+  if (!valEl) return;
+  fetch(HOME_KPI_URL + '?action=home_kpi&_pv=' + Date.now(), { redirect: 'follow' })
+    .then(r => r.json())
+    .then(d => {
+      if (!d || !d.ok || !d.expense) { valEl.textContent = '-'; return; }
+      const e = d.expense;
+      const month = Number(e.month) || 0;
+      if (e.budget == null) {
+        valEl.textContent = '예산 미설정';
+        subEl.textContent = '이번달 승인 지출 ' + month.toLocaleString() + '원';
+        return;
+      }
+      const rate = (e.rate != null) ? e.rate : Math.round(month / e.budget * 1000) / 10;
+      valEl.innerHTML = month.toLocaleString() + '원 <span style="font-size:13px;color:var(--dim);">/ ' + Number(e.budget).toLocaleString() + '원</span>';
+      subEl.textContent = '집행률 ' + Number(rate).toFixed(1) + '% (이번달 승인 지출 기준)';
+    })
+    .catch(() => { valEl.textContent = '-'; });
 }
 
 // ─── 등록/수정 ───
