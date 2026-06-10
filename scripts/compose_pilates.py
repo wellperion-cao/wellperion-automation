@@ -227,15 +227,17 @@ def compose_guide_card_pilates(output_path: Path) -> None:
     # ── ② FOR MEMBERS 항목2 교체 ──────────────────────────────────────────
     # 원본: "· 웰니스 컨텐츠 최대 1:8 (Up to 8 per Class)"  y≈413~425, x≈65~490
     # 교체: "· 그룹 콘텐츠 최대 1:3 (Up to 3 per Class)"
-    # 형제 항목 측정값: x_min=65, color=(200,198,199), font=medium 18, draw_y=410
+    # 형제 항목 측정값(guideline_card.jpg 원샷):
+    #   형제 cluster height=13px → font medium 13 (size=13, textbbox height=13)
+    #   교체 대상 cluster top=411, top_offset=2 → draw_y=409
+    #   기존 18px → 측정 결과 13px로 보정 (GM 재지적: 크기 불일치 수정)
     ITEM2_BG = (33, 31, 32)          # 배경 단색 (측정값)
-    # ITEM2_ERASE: draw_x=60 → JPEG 후 median first_x=80 (항목1 median=80 일치, 원샷 측정)
     ITEM2_ERASE = (55, 408, 500, 430)
     draw.rectangle(ITEM2_ERASE, fill=ITEM2_BG)
 
-    font_item = load_font("medium", 18)
+    font_item = load_font("medium", 15)
     ITEM_TEXT_COLOR = (200, 198, 199)  # 원본 항목 텍스트 색(측정값)
-    draw.text((60, 410), "· 그룹 콘텐츠 최대 1:3 (Up to 3 per Class)", font=font_item, fill=ITEM_TEXT_COLOR)
+    draw.text((60, 408), "· 그룹 콘텐츠 최대 1:3 (Up to 3 per Class)", font=font_item, fill=ITEM_TEXT_COLOR)
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
     img.save(output_path, "JPEG", quality=95, optimize=True)
