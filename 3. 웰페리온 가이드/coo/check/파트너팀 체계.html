@@ -555,7 +555,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
       var cards=card('누적 매출',won(cum),nMon+'개월','var(--accent)')+card('월 평균',won(cum/nMon),'강습부 전체')+card('누적 목표',won(gt),nMon+'개월 환산')+card('목표 달성률',(gt?Math.round(cum/gt*100):0)+'%','',cum>=gt?'var(--green)':'var(--yellow)');
       var maxM=Math.max.apply(null,MODEL.months.map(function(m){return m.total;}).concat([1]));
       var monthly=MODEL.months.map(function(m){return bar(m.label,m.total,maxM,'var(--accent)');}).join('');
-      var teams=TEAMS.map(function(t){return {k:t,sum:MODEL.months.reduce(function(a,m){return a+(m.teams[t]||0);},0),target:TEAM_TARGET[t]*nMon};});
+      var teams=TEAMS.map(function(t){return {k:t,sum:MODEL.months.reduce(function(a,m){return a+(m.teams[t]||0);},0),target:TEAM_TARGET[t]*nMon};});teams.sort(function(a,b){return (b.sum/(b.target||1))-(a.sum/(a.target||1));});
       var maxT=Math.max.apply(null,teams.map(function(t){return Math.max(t.sum,t.target);}).concat([1]));
       var teamBars=teams.map(function(t){return tbar(t.k,t.sum,t.target,maxT,TEAM_COLOR[t.k]);}).join('');
       var ins=MODEL.instr.slice().sort(function(a,b){return b.sum-a.sum;}).slice(0,15);
@@ -570,14 +570,14 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
       var prev=idx>0?MODEL.months[idx-1]:null;
       var diff=prev&&prev.total?Math.round((md.total-prev.total)/prev.total*100):null;
       var cards=card(CUR+'월 매출',won(md.total),'강습부 전체','var(--accent)')+card('월 목표',won(MONTH_TARGET_SUM),'6개팀 합산')+card('달성률',Math.round(md.total/MONTH_TARGET_SUM*100)+'%','',md.total>=MONTH_TARGET_SUM?'var(--green)':'var(--yellow)')+card('전월 대비',diff==null?'—':(diff>0?'+':'')+diff+'%','',diff==null?'var(--dim)':(diff>=0?'var(--green)':'var(--red)'));
-      var teams=TEAMS.map(function(t){return {k:t,v:md.teams[t]||0,target:TEAM_TARGET[t]};});
+      var teams=TEAMS.map(function(t){return {k:t,v:md.teams[t]||0,target:TEAM_TARGET[t]};});teams.sort(function(a,b){return (b.v/(b.target||1))-(a.v/(a.target||1));});
       var maxT=Math.max.apply(null,teams.map(function(t){return Math.max(t.v,t.target);}).concat([1]));
       var teamBars=teams.map(function(t){return tbar(t.k,t.v,t.target,maxT,TEAM_COLOR[t.k]);}).join('');
       var ins=MODEL.instr.map(function(p){return {name:p.name,team:p.team,v:p.monthly[idx]||0};}).filter(function(p){return p.v>0;}).sort(function(a,b){return b.v-a.v;}).slice(0,15);
       var maxI=ins.length?ins[0].v:1;
       var insBars=ins.length?ins.map(function(p,i){return bar((i+1)+'. '+p.name+' ('+p.team+')',p.v,maxI,i<3?'var(--accent)':'var(--blue)',won(p.v));}).join(''):'<div style="color:var(--dim)">강사별 데이터 없음</div>';
       V.innerHTML='<div class="statgrid" style="margin-bottom:16px">'+cards+'</div>'+
-        '<div class="grid2">'+panel(CUR+'월 부서별 / 목표',teamBars)+panel(CUR+'월 강사별',insBars)+'</div>';
+        panel('강습부 전체 월별 매출 · '+CUR+'월 강조',MODEL.months.map(function(m,i){return bar(m.label,m.total,Math.max.apply(null,MODEL.months.map(function(x){return x.total;}).concat([1])),i===idx?'var(--accent)':'rgba(183,159,138,0.30)');}).join(''))+'<div class="grid2" style="margin-top:16px">'+panel(CUR+'월 부서별 / 목표',teamBars)+panel(CUR+'월 강사별',insBars)+'</div>';
     }
   }
 
