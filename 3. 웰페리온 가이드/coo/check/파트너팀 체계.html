@@ -562,7 +562,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
       var teamBars=teams.map(function(t){return tbar(t.k,t.sum,t.target,maxT,TEAM_COLOR[t.k]);}).join('');
       var ins=MODEL.instr.slice().sort(function(a,b){return b.sum-a.sum;});
       var maxI=ins.length?ins[0].sum:1;
-      var insBars=ins.length?ins.map(function(p,i){return bar((i+1)+'. '+p.name+' ('+p.team+')',p.sum,maxI,i<3?'var(--accent)':'var(--blue)',won(p.sum));}).join(''):'<div style="color:var(--dim)">데이터 없음</div>';
+      var insBars=ins.length?ins.map(function(p,i){return bar((i+1)+'. '+p.name+' ('+p.team+')',p.sum,maxI,(TEAM_COLOR[p.team]||'var(--accent)'),won(p.sum));}).join(''):'<div style="color:var(--dim)">데이터 없음</div>';
       V.innerHTML='<div class="statgrid" style="margin-bottom:16px">'+cards+'</div>'+
         '<div class="grid2" style="margin-bottom:16px">'+panel('월별 추이',monthly)+panel('부서별 누적 / 목표',teamBars)+'</div>'+
         panel('강사별 누적 랭킹 (6개월)',insBars);
@@ -577,7 +577,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
       var teamBars=teams.map(function(t){return tbar(t.k,t.v,t.target,maxT,TEAM_COLOR[t.k]);}).join('');
       var ins=MODEL.instr.map(function(p){return {name:p.name,team:p.team,v:p.monthly[idx]||0};}).filter(function(p){return p.v>0;}).sort(function(a,b){return b.v-a.v;});
       var maxI=ins.length?ins[0].v:1;
-      var insBars=ins.length?ins.map(function(p,i){return bar((i+1)+'. '+p.name+' ('+p.team+')',p.v,maxI,i<3?'var(--accent)':'var(--blue)',won(p.v));}).join(''):'<div style="color:var(--dim)">강사별 데이터 없음</div>';
+      var insBars=ins.length?ins.map(function(p,i){return bar((i+1)+'. '+p.name+' ('+p.team+')',p.v,maxI,(TEAM_COLOR[p.team]||'var(--accent)'),won(p.v));}).join(''):'<div style="color:var(--dim)">강사별 데이터 없음</div>';
       V.innerHTML='<div class="statgrid" style="margin-bottom:16px">'+cards+'</div>'+
         panel('강습부 전체 매출 · '+CUR+'월',bar(CUR+'월',md.total,Math.max.apply(null,MODEL.months.map(function(x){return x.total;}).concat([1])),'var(--accent)'))+(function(){var rates=teams.map(function(t){return {k:t.k,r:t.target?t.v/t.target:0};});var best=rates[0],worst=rates[rates.length-1];var avg=rates.reduce(function(a,b){return a+b.r;},0)/(rates.length||1);var hit=rates.filter(function(x){return x.r>=1;}).length;var sumHtml=card('평균 달성률',Math.round(avg*100)+'%','6개팀 평균',avg>=1?'var(--green)':'var(--yellow)')+card('목표 달성',hit+' / 6팀','월 목표 기준',hit>0?'var(--green)':'var(--dim)')+card('최고 달성',best.k,Math.round(best.r*100)+'%','var(--green)')+card('최저 달성',worst.k,Math.round(worst.r*100)+'%','var(--red)');var momHtml;if(!prev){momHtml='<div style="color:var(--dim);font-size:13px">전월 데이터가 없습니다.</div>';}else{momHtml=teams.map(function(t){var pv=prev.teams[t.k]||0;var d=pv?Math.round((t.v-pv)/pv*100):null;var col=d==null?'var(--dim)':(d>=0?'var(--green)':'var(--red)');return '<div style="display:flex;justify-content:space-between;font-size:13px;padding:6px 0;border-bottom:1px solid var(--border)"><span><b>'+t.k+'</b></span><span style="color:var(--dim)">'+won(t.v)+' · <span style="color:'+col+';font-weight:700">'+(d==null?'—':(d>0?'▲'+d:'▼'+Math.abs(d))+'%')+'</span></span></div>';}).join('');}return '<div class="grid2" style="margin-top:16px"><div>'+panel(CUR+'월 부서별 / 목표',teamBars)+'<div style="margin-top:16px">'+panel('전월 대비 증감',momHtml)+'</div><div style="margin-top:16px">'+panel('그 달 핵심 요약','<div class="statgrid">'+sumHtml+'</div>')+'</div></div>'+panel(CUR+'월 강사별',insBars)+'</div>';})();
     }
