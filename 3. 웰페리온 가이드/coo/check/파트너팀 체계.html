@@ -558,7 +558,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
       var teams=TEAMS.map(function(t){return {k:t,sum:MODEL.months.reduce(function(a,m){return a+(m.teams[t]||0);},0),target:TEAM_TARGET[t]*nMon};});teams.sort(function(a,b){return (b.sum/(b.target||1))-(a.sum/(a.target||1));});
       var maxT=Math.max.apply(null,teams.map(function(t){return Math.max(t.sum,t.target);}).concat([1]));
       var teamBars=teams.map(function(t){return tbar(t.k,t.sum,t.target,maxT,TEAM_COLOR[t.k]);}).join('');
-      var ins=MODEL.instr.slice().sort(function(a,b){return b.sum-a.sum;}).slice(0,15);
+      var ins=MODEL.instr.slice().sort(function(a,b){return b.sum-a.sum;});
       var maxI=ins.length?ins[0].sum:1;
       var insBars=ins.length?ins.map(function(p,i){return bar((i+1)+'. '+p.name+' ('+p.team+')',p.sum,maxI,i<3?'var(--accent)':'var(--blue)',won(p.sum));}).join(''):'<div style="color:var(--dim)">데이터 없음</div>';
       V.innerHTML='<div class="statgrid" style="margin-bottom:16px">'+cards+'</div>'+
@@ -573,7 +573,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
       var teams=TEAMS.map(function(t){return {k:t,v:md.teams[t]||0,target:TEAM_TARGET[t]};});teams.sort(function(a,b){return (b.v/(b.target||1))-(a.v/(a.target||1));});
       var maxT=Math.max.apply(null,teams.map(function(t){return Math.max(t.v,t.target);}).concat([1]));
       var teamBars=teams.map(function(t){return tbar(t.k,t.v,t.target,maxT,TEAM_COLOR[t.k]);}).join('');
-      var ins=MODEL.instr.map(function(p){return {name:p.name,team:p.team,v:p.monthly[idx]||0};}).filter(function(p){return p.v>0;}).sort(function(a,b){return b.v-a.v;}).slice(0,15);
+      var ins=MODEL.instr.map(function(p){return {name:p.name,team:p.team,v:p.monthly[idx]||0};}).filter(function(p){return p.v>0;}).sort(function(a,b){return b.v-a.v;});
       var maxI=ins.length?ins[0].v:1;
       var insBars=ins.length?ins.map(function(p,i){return bar((i+1)+'. '+p.name+' ('+p.team+')',p.v,maxI,i<3?'var(--accent)':'var(--blue)',won(p.v));}).join(''):'<div style="color:var(--dim)">강사별 데이터 없음</div>';
       V.innerHTML='<div class="statgrid" style="margin-bottom:16px">'+cards+'</div>'+
