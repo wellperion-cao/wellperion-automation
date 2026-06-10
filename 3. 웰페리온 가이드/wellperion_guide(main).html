@@ -582,14 +582,14 @@
             <div style="display:flex;align-items:center;gap:4px;margin-top:4px;"><span style="font-size:10px;color:var(--dim);">올해 누적</span><span style="font-size:13px;font-weight:700;color:var(--grow);" id="kpiInqTotal">—</span></div>
           </div>
           <div style="background:var(--grow-bg);border-radius:10px;padding:10px 12px;">
-            <div style="font-size:10px;color:var(--dim);margin-bottom:4px;font-weight:600;">오늘 신규 / 등록전환</div>
+            <div style="font-size:10px;color:var(--dim);margin-bottom:4px;font-weight:600;">오늘 신규</div>
             <div style="font-size:22px;font-weight:800;color:var(--grow);line-height:1;" id="kpiInqDay">—</div>
-            <span style="font-size:11px;font-weight:700;color:var(--dim);background:var(--gray-bg);padding:1px 8px;border-radius:20px;display:inline-block;margin-top:2px;" id="kpiInqTotalConv">연결 예정</span>
-            <div style="display:flex;align-items:center;gap:4px;margin-top:4px;"><span style="font-size:10px;color:var(--dim);">오늘</span><span style="font-size:11px;font-weight:700;color:var(--dim);background:var(--gray-bg);padding:1px 7px;border-radius:20px;display:inline-block;" id="kpiInqDayConv">연결 예정</span></div>
+            <div style="display:flex;align-items:center;gap:4px;margin-top:4px;"><span style="font-size:10px;color:var(--dim);">이번달</span><span style="font-size:13px;font-weight:700;color:var(--grow);" id="kpiInqMonth2">—</span></div>
           </div>
         </div>
-        <div style="margin-top:11px;padding-top:10px;border-top:1px dashed var(--border);">
+        <div style="margin-top:11px;padding-top:10px;border-top:1px dashed var(--border);display:flex;align-items:center;justify-content:space-between;gap:8px;">
           <a href="#" onclick="event.preventDefault();document.querySelector('[data-id=M4]').click();" style="font-size:11px;font-weight:700;padding:3px 10px;background:var(--grow-bg);color:var(--grow);border-radius:20px;text-decoration:none;border:1px solid var(--border);">문의 현황 →</a>
+          <span style="font-size:10px;color:var(--dim);">등록전환 — 준비 중</span>
         </div>
       </div>
 
@@ -599,13 +599,13 @@
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
           <div style="background:rgba(90,138,159,0.08);border-radius:10px;padding:10px 12px;">
             <div style="font-size:10px;color:var(--dim);margin-bottom:4px;font-weight:600;">접수(오늘)</div>
-            <span id="kpiIssueDayNew" style="font-size:11px;font-weight:700;color:var(--dim);background:var(--gray-bg);padding:1px 8px;border-radius:20px;display:inline-block;">—</span>
-            <div style="display:flex;align-items:center;gap:4px;margin-top:4px;"><span style="font-size:10px;color:var(--dim);">누적 미처리</span><span id="kpiIssuePending" style="font-size:11px;font-weight:700;color:var(--dim);background:var(--gray-bg);padding:1px 7px;border-radius:20px;display:inline-block;">—</span></div>
+            <div id="kpiIssueDayNew" style="font-size:22px;font-weight:800;color:#5a8a9f;line-height:1;">—</div>
+            <div style="display:flex;align-items:center;gap:4px;margin-top:4px;"><span style="font-size:10px;color:var(--dim);">누적 미처리</span><span id="kpiIssuePending" style="font-size:13px;font-weight:700;color:#5a8a9f;">—</span></div>
           </div>
           <div style="background:rgba(90,138,159,0.08);border-radius:10px;padding:10px 12px;">
             <div style="font-size:10px;color:var(--dim);margin-bottom:4px;font-weight:600;">누적 처리</div>
-            <span id="kpiIssueDone" style="font-size:11px;font-weight:700;color:var(--dim);background:var(--gray-bg);padding:1px 8px;border-radius:20px;display:inline-block;">—</span>
-            <div style="display:flex;align-items:center;gap:4px;margin-top:4px;"><span style="font-size:10px;color:var(--dim);">처리율</span><span id="kpiIssueRate" style="font-size:11px;font-weight:700;color:var(--dim);background:var(--gray-bg);padding:1px 7px;border-radius:20px;display:inline-block;">—</span></div>
+            <div id="kpiIssueDone" style="font-size:22px;font-weight:800;color:var(--grow);line-height:1;">—</div>
+            <div style="display:flex;align-items:center;gap:4px;margin-top:4px;"><span style="font-size:10px;color:var(--dim);">처리율</span><span id="kpiIssueRate" style="font-size:13px;font-weight:700;color:var(--grow);">—</span></div>
           </div>
         </div>
         <div style="margin-top:11px;padding-top:10px;border-top:1px dashed var(--border);display:flex;gap:7px;flex-wrap:wrap;">
@@ -968,6 +968,7 @@
         var ko = countRows(parseCSV(results[0]), 1); // 한국어: B열(인덱스1)
         var en = countRows(parseCSV(results[1]), 0); // 영문: A열(인덱스0)
         set('kpiInqMonth', ko.month + en.month); // 이번달 신규
+        set('kpiInqMonth2', ko.month + en.month); // 박스2 서브: 이번달
         set('kpiInqTotal', ko.total + en.total); // 올해 누적
         set('kpiInqDay',   ko.day   + en.day);   // 오늘 신규
         set('heroInqDay', ko.day + en.day);
