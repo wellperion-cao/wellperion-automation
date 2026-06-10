@@ -8,7 +8,9 @@ const SHEET_COMMON = '공용구역';
 const SHEET_STAFF  = '점검자';
 const SHEET_ITEMS  = '점검항목';   // GM 편집 점검 항목 마스터 (시트 영구 저장)
 
-const ITEM_HEADERS = ['항목ID','카테고리','항목명','상세','성별','시간대','정렬'];
+// S1(2026-06-10 시토): 측정형 항목 식별 — '타입'(check|measure) + '필드정의'(measure 영문키 목록) 2열 추가.
+// 기존 항목은 '타입' 빈값 → 'check' 안전 폴백. 이 단계는 동작 변화 없음(프론트가 아직 안 읽음).
+const ITEM_HEADERS = ['항목ID','카테고리','항목명','상세','성별','시간대','정렬','타입','필드정의'];
 
 const BOT_TOKEN = PropertiesService.getScriptProperties().getProperty('TELEGRAM_BOT_TOKEN');
 const CHAT_ID   = PropertiesService.getScriptProperties().getProperty('TELEGRAM_CHAT_ID');
@@ -16,7 +18,10 @@ const CHAT_ID   = PropertiesService.getScriptProperties().getProperty('TELEGRAM_
 const HEADERS = [
   '날짜','항목ID','항목명','카테고리','시간대',
   '점검결과','이슈메모','노하우','제출상태','제출시각',
-  '점검자','교대'
+  '점검자','교대',
+  // S2(2026-06-10 시토): 13열 측정값 — measure 영문키 JSON 문자열 패스스루(예 {"ph":7.2}).
+  // payload에 measure 없으면 빈칸. boolean 점검(6열 '완료'/'미완료')·완료율 판정 영향 0.
+  '측정값'
 ];
 
 // ─── 남성/여성 공통 항목 (A 사우나 + B 락커룸) ───
@@ -114,6 +119,15 @@ function jsonRes(obj) {
     .setMimeType(ContentService.MimeType.JSON);
 }
 
+// S2(2026-06-10 시토): measure 값을 13열 저장용 문자열로 정규화.
+// 문자열이면 그대로(클라가 보낸 영문키 JSON), 객체면 JSON.stringify, 없으면 빈문자.
+// boolean 점검·완료율 판정과 무관 — 단순 패스스루.
+function _measureStr(m) {
+  if (m === undefined || m === null || m === '') return '';
+  if (typeof m === 'string') return m;
+  try { return JSON.stringify(m); } catch (e) { return ''; }
+}
+
 // ════════════════════════════════════════════
 // 초기 세팅 (Apps Script 에디터에서 1회 실행)
 // ════════════════════════════════════════════
@@ -141,7 +155,7 @@ function _createCheckSheet(ss, name) {
     .setBackground('#2a2725').setFontColor('#B79F8A')
     .setFontWeight('bold').setHorizontalAlignment('center');
   sheet.setFrozenRows(1);
-  var widths = [100,70,220,140,150,80,200,200,110,130,100,70];
+  var widths = [100,70,220,140,150,80,200,200,110,130,100,70,180];  // 13열 측정값 추가
   for (var i = 0; i < widths.length; i++) sheet.setColumnWidth(i+1, widths[i]);
 }
 
@@ -165,7 +179,8 @@ function _seedDate(sheet, date, items, sheetName) {
       date, item.id, item.name, item.cat, item.slot,
       '미완료', '', '', '미제출', '',
       defaultInspector(sheetName, item.slot),
-      slotToShift(item.slot)
+      slotToShift(item.slot),
+      ''   // S2: 13열 측정값 — 시드 시 빈칸
     ];
   });
   if (rows.length > 0) {
@@ -201,7 +216,8 @@ function migrateFromOldSheet() {
       String(data[i][5]), String(data[i][6]||''), String(data[i][7]||''),
       String(data[i][8]), String(data[i][9]||''),
       String(data[i][10]) || defaultInspector(targetName, String(data[i][4])),
-      String(data[i][11]) || slotToShift(String(data[i][4]))
+      String(data[i][11]) || slotToShift(String(data[i][4])),
+      String(data[i][12] || '')   // S2: 13열 측정값(구 데이터엔 없음 → 빈칸)
     ]);
   }
   Logger.log('마이그레이션 완료 (중복 제거 포함). 기존 "일일점검"은 수동 삭제하세요.');
@@ -266,6 +282,7 @@ function doGet(e) {
           submittedAt: String(data[i][9] || ''),
           submitter: String(data[i][10] || ''),
           shift: String(data[i][11] || ''),
+          measure: String(data[i][12] || ''),   // S2: 13열 측정값(없으면 빈문자)
           gender: name === SHEET_MALE ? 'm' : name === SHEET_FEMALE ? 'f' : 'all',
           submitted_am: hasAm,
           submittedAt_am: hasAm ? String(data[i][9] || '') : '',
@@ -362,7 +379,8 @@ function handleSave(body) {
       c.issue || '', c.tip || '',
       body.submitStatus || '미제출',
       body.submittedAt || '',
-      inspector, shift
+      inspector, shift,
+      _measureStr(c.measure)   // S2: 13열 측정값 패스스루(없으면 빈칸)
     ];
     if (rowNum) {
       sheet.getRange(rowNum, 1, 1, HEADERS.length).setValues([values]);
@@ -472,7 +490,8 @@ function _handleSaveV2Compat(body) {
         c.issue || '', c.tip || '',
         submitStatus, submitAt,
         submitter || defaultInspector(name, c.slot || ''),
-        c.shift || slotToShift(c.slot || '')
+        c.shift || slotToShift(c.slot || ''),
+        _measureStr(c.measure)   // S2: 13열 측정값 패스스루(없으면 빈칸)
       ];
       if (rowNum) {
         sheet.getRange(rowNum, 1, 1, HEADERS.length).setValues([values]);
@@ -600,7 +619,7 @@ function initItemSheet() {
     .setBackground('#2a2725').setFontColor('#B79F8A')
     .setFontWeight('bold').setHorizontalAlignment('center');
   sheet.setFrozenRows(1);
-  var widths = [180, 180, 240, 360, 80, 180, 70];
+  var widths = [180, 180, 240, 360, 80, 180, 70, 90, 200];  // 타입·필드정의 추가
   for (var i = 0; i < widths.length; i++) sheet.setColumnWidth(i + 1, widths[i]);
   return sheet;
 }
@@ -614,6 +633,8 @@ function getItems() {
   var items = [];
   for (var i = 1; i < data.length; i++) {
     if (!data[i][0] && !data[i][2]) continue; // id·항목명 모두 없으면 건너뜀
+    // S1(2026-06-10 시토): type 빈값 → 'check' 폴백. fields = measure 입력 영문키 목록(없으면 빈문자).
+    var itemType = String(data[i][7] || '').trim() || 'check';
     items.push({
       id:     String(data[i][0] || ''),
       cat:    String(data[i][1] || ''),
@@ -621,7 +642,9 @@ function getItems() {
       detail: String(data[i][3] || ''),
       gender: String(data[i][4] || 'all'),
       slot:   String(data[i][5] || ''),
-      order:  data[i][6] !== '' && data[i][6] != null ? Number(data[i][6]) : (i)
+      order:  data[i][6] !== '' && data[i][6] != null ? Number(data[i][6]) : (i),
+      type:   itemType,
+      fields: String(data[i][8] || '')
     });
   }
   return jsonRes({ items: items });
@@ -644,7 +667,10 @@ function saveItems(body) {
       String(it.detail || ''),
       String(it.gender || 'all'),
       String(it.slot || ''),
-      it.order !== undefined && it.order !== '' ? it.order : (idx + 1)
+      it.order !== undefined && it.order !== '' ? it.order : (idx + 1),
+      // S1(2026-06-10 시토): 타입·필드정의 패스스루(빈값→'check' 폴백). 영문키만(한글 키 금지).
+      String(it.type || '').trim() || 'check',
+      String(it.fields || '')
     ];
   });
   if (rows.length > 0) {
@@ -693,13 +719,14 @@ function seedItemMaster() {
   }
   var rows = [];
   var order = 1;
+  // S1(2026-06-10 시토): 기존 시드 항목은 모두 check형(타입='check', 필드정의 빈값).
   // 남/여 공통 구역 항목
   ZONE_ITEMS.forEach(function (it) {
-    rows.push([it.id, it.cat, it.name, '', 'all', it.slot, order++]);
+    rows.push([it.id, it.cat, it.name, '', 'all', it.slot, order++, 'check', '']);
   });
   // 공용 구역 항목
   COMMON_ITEMS.forEach(function (it) {
-    rows.push([it.id, it.cat, it.name, '', 'all', it.slot, order++]);
+    rows.push([it.id, it.cat, it.name, '', 'all', it.slot, order++, 'check', '']);
   });
   if (rows.length > 0) {
     sheet.getRange(2, 1, rows.length, ITEM_HEADERS.length).setValues(rows);
@@ -947,7 +974,7 @@ function handleWeekly(params) {
 
   // 각 시트에서 날짜별 행 수집
   var byDate = {};
-  days.forEach(function(dt) { byDate[dt] = { total: 0, done: 0 }; });
+  days.forEach(function(dt) { byDate[dt] = { total: 0, done: 0, measure: [] }; });
 
   sheetNames.forEach(function(name) {
     var sheet = ss.getSheetByName(name);
@@ -957,7 +984,10 @@ function handleWeekly(params) {
       var rowDate = formatDate(data[i][0]);
       if (!byDate[rowDate]) continue;
       byDate[rowDate].total++;
-      if (String(data[i][5]) === '완료') byDate[rowDate].done++;
+      if (String(data[i][5]) === '완료') byDate[rowDate].done++;   // 완료율 판정 불변
+      // S2(2026-06-10 시토): 13열 측정값이 있는 행만 수집(없으면 무시). 완료율과 무관.
+      var mv = String(data[i][12] || '');
+      if (mv) byDate[rowDate].measure.push({ itemId: String(data[i][1]), name: String(data[i][2]), measure: mv });
     }
   });
 
@@ -965,7 +995,7 @@ function handleWeekly(params) {
   var result = days.slice().reverse().map(function(dt) {
     var s = byDate[dt];
     var pct = s.total > 0 ? Math.round(s.done / s.total * 100) : 0;
-    return { date: dt, total: s.total, done: s.done, pct: pct };
+    return { date: dt, total: s.total, done: s.done, pct: pct, measure: s.measure };  // S2: 측정값 배열(없으면 [])
   });
 
   return jsonRes({ ok: true, dept: dept, data: result });
