@@ -175,6 +175,58 @@ P04   = SRC / "4. 가슴열기(회전근개운동).jpg"
 P05   = SRC / "5. 래터럴레이즈.jpg"
 
 
+# ---------------------------------------------------------------------------
+# 필라테스 전용 가이드 카드 — 공용 guideline_card.jpg 기반,
+# "WELLNESS STUDIO / 웰니스 스튜디오" → "PILATES STUDIO / 필라테스 스튜디오" 명칭만 변경.
+# 공용 SSOT(guideline_card.jpg) 원본은 절대 수정하지 않음.
+# ---------------------------------------------------------------------------
+def compose_guide_card_pilates(output_path: Path) -> None:
+    """필라테스 포스트 전용 GUIDE 카드.
+    공용 guideline_card.jpg를 베이스로 열어 WELLNESS STUDIO 섹션 제목만
+    PILATES STUDIO 로 교체 렌더링. 나머지 항목은 건드리지 않음.
+    """
+    guide_src = PROJECT_ROOT / "instagram" / "_assets" / "guideline_card.jpg"
+    if not guide_src.exists():
+        raise FileNotFoundError(f"GUIDE 카드 없음: {guide_src}")
+
+    img = Image.open(guide_src).convert("RGB")
+    if img.size != (W, H):
+        img = center_crop_fill(guide_src, W, H)
+
+    draw = ImageDraw.Draw(img)
+
+    # ── 배경색 샘플 (섹션 제목 행 배경 — 카드 우측 컬럼 헤더 영역)
+    # guideline_card.jpg 기준: WELLNESS STUDIO 제목 행 y ≈ 352~390, x ≈ 553~1035
+    # 해당 영역 배경색을 좌상단 픽셀로 샘플링하여 덮어씀 (배경이 단색임)
+    bg_sample = img.getpixel((560, 355))  # 헤더 행 배경 픽셀 샘플
+    # 덮어쓸 사각형 — 헤더 행만 (항목 텍스트 침범 방지, y 범위 축소)
+    ERASE_BOX = (553, 350, 1036, 388)
+    draw.rectangle(ERASE_BOX, fill=bg_sample)
+
+    # ── 새 텍스트 렌더링 — 공용 카드와 동일한 bold 폰트 크기(22px) 사용
+    # 원본 "FOR MEMBERS" / "FOR INSTRUCTORS" 와 같은 스타일:
+    # 영문=bold 베이지(#B79F8A), 한글=medium 흰색, 동일 행 inline
+    font_section_eng = load_font("bold", 22)
+    font_section_kor = load_font("medium", 22)
+
+    ENG_COLOR = (183, 159, 138)   # BEIGE — 원본 섹션 헤더 영문 색
+    KOR_COLOR = (255, 255, 255)   # WHITE — 원본 섹션 헤더 한글 색
+
+    # 영문 "PILATES STUDIO" 그리기 (x=553 기준)
+    TEXT_Y = 357
+    draw.text((553, TEXT_Y), "PILATES STUDIO", font=font_section_eng, fill=ENG_COLOR)
+
+    # 한글 "  필라테스 스튜디오 시설 이용" — 영문 뒤 이어서
+    eng_bbox = draw.textbbox((0, 0), "PILATES STUDIO", font=font_section_eng)
+    eng_w = eng_bbox[2] - eng_bbox[0]
+    kor_x = 553 + eng_w + 12  # 영문 뒤 12px 간격
+    draw.text((kor_x, TEXT_Y), "필라테스 스튜디오 시설 이용", font=font_section_kor, fill=KOR_COLOR)
+
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    img.save(output_path, "JPEG", quality=95, optimize=True)
+    print(f"  [가이드-필라테스] {output_path.name} ({output_path.stat().st_size // 1024}KB)")
+
+
 def main():
     out_ig = PROJECT_ROOT / "instagram" / "260610_필라테스_어깨만들기" / "output(인스타그램)"
     out_master = PROJECT_ROOT / "instagram" / "260610_필라테스_어깨만들기" / "output"
@@ -220,8 +272,8 @@ def main():
             output_path=out_ig / f"ig_{idx:02d}.jpg",
         )
 
-    # ig_06 — GUIDE 카드
-    compose_guide_card(output_path=out_ig / "ig_06.jpg")
+    # ig_06 — GUIDE 카드 (필라테스 전용: WELLNESS STUDIO → PILATES STUDIO)
+    compose_guide_card_pilates(output_path=out_ig / "ig_06.jpg")
 
     # 마스터 폴더 동기화
     print(f"\n출력(마스터): {out_master}")
