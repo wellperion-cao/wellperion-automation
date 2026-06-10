@@ -406,13 +406,14 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
       <select id="fCategory" onchange="onCategoryChange()">
         <option value="">선택</option>
         <option value="[1] 매출 및 영업">[1] 매출 및 영업</option>
-        <option value="[2] 인사 & 파트너">[2] 인사 & 파트너</option>
-        <option value="[3] 운영 정책">[3] 운영 정책</option>
-        <option value="[4] 시설 및 환경">[4] 시설 및 환경</option>
-        <option value="[5] 회원·CS">[5] 회원·CS</option>
-        <option value="[6] IT·시스템·자동화">[6] IT·시스템·자동화</option>
-        <option value="[7] 교육·조직문화">[7] 교육·조직문화</option>
-        <option value="[8] 회의">[8] 회의</option>
+        <option value="[2] 인사">[2] 인사</option>
+        <option value="[3] 파트너팀">[3] 파트너팀</option>
+        <option value="[4] 운영 정책">[4] 운영 정책</option>
+        <option value="[5] 시설 및 환경">[5] 시설 및 환경</option>
+        <option value="[6] 회원·CS">[6] 회원·CS</option>
+        <option value="[7] IT·시스템·자동화">[7] IT·시스템·자동화</option>
+        <option value="[8] 교육·조직문화">[8] 교육·조직문화</option>
+        <option value="[9] 회의">[9] 회의</option>
       </select>
     </div>
     <div class="field">
@@ -575,19 +576,20 @@ const TODO_API_URL = 'https://script.google.com/macros/s/AKfycbxDwFkrxK1YIaEoSNc
 const MEMBERS = ['이경연 실장','나우열M','최준용M','임정은M','윤병현AM','이지영 사원','이정헌 소장'];
 
 const CATEGORIES = [
-  '[1] 매출 및 영업','[2] 인사 & 파트너','[3] 운영 정책',
-  '[4] 시설 및 환경','[5] 회원·CS','[6] IT·시스템·자동화','[7] 교육·조직문화','[8] 회의'
+  '[1] 매출 및 영업','[2] 인사','[3] 파트너팀','[4] 운영 정책',
+  '[5] 시설 및 환경','[6] 회원·CS','[7] IT·시스템·자동화','[8] 교육·조직문화','[9] 회의'
 ];
 
 const CAT_COLORS = {
   '[1] 매출 및 영업':  {bg:'var(--blue-bg)',   color:'var(--blue)'},
-  '[2] 인사 & 파트너': {bg:'var(--purple-bg)', color:'var(--purple)'},
-  '[3] 운영 정책':    {bg:'var(--accent-bg)', color:'var(--accent)'},
-  '[4] 시설 및 환경':  {bg:'var(--green-bg)',  color:'var(--green)'},
-  '[5] 회원·CS':       {bg:'var(--red-bg)',    color:'var(--red)'},
-  '[6] IT·시스템·자동화':{bg:'var(--blue-bg)',  color:'var(--blue)'},
-  '[7] 교육·조직문화': {bg:'var(--yellow-bg)', color:'var(--yellow)'},
-  '[8] 회의':          {bg:'var(--orange-bg)', color:'var(--orange)'}
+  '[2] 인사':          {bg:'var(--purple-bg)', color:'var(--purple)'},
+  '[3] 파트너팀':      {bg:'var(--accent-bg)', color:'var(--accent)'},
+  '[4] 운영 정책':    {bg:'var(--accent-bg)', color:'var(--accent)'},
+  '[5] 시설 및 환경':  {bg:'var(--green-bg)',  color:'var(--green)'},
+  '[6] 회원·CS':       {bg:'var(--red-bg)',    color:'var(--red)'},
+  '[7] IT·시스템·자동화':{bg:'var(--blue-bg)',  color:'var(--blue)'},
+  '[8] 교육·조직문화': {bg:'var(--yellow-bg)', color:'var(--yellow)'},
+  '[9] 회의':          {bg:'var(--orange-bg)', color:'var(--orange)'}
 };
 
 /* field mapping: API 한글 → 영문 */
@@ -647,14 +649,14 @@ const OWNER_COLORS = {
   '윤병현AM':    {bg:'var(--yellow-bg)', color:'var(--yellow)'},
   '이지영 사원': {bg:'var(--orange-bg)', color:'var(--orange)'}
 };
-/* 카테고리 → 부서장 매핑 (결재선 1단계 자동 지정, 2026-06-02 GM 확정).
-   운영부=이경연 실장([1][3]) / 시설부=이정헌 소장([4]) / 파트너팀=나우열M([2]).
-   매핑 없는 카테고리([5][6][7][8])는 부서장 생략 → GM→대표 폴백. */
+/* 카테고리 → 부서장 매핑 (결재선 1단계 자동 지정, 2026-06-10 GM 확정 9분류).
+   인사·파트너팀=나우열M([2][3]) / 운영부=이경연 실장([4]) / 시설부=이정헌 소장([5]).
+   매핑 없는 카테고리([1][6][7][8][9])는 부서장 생략 → GM→대표 폴백. */
 const CAT_DEPT_HEAD = {
-  '[1] 매출 및 영업': '이경연 실장',
-  '[3] 운영 정책':   '이경연 실장',
-  '[4] 시설 및 환경': '이정헌 소장',
-  '[2] 인사 & 파트너': '나우열M'
+  '[2] 인사':        '나우열M',
+  '[3] 파트너팀':    '나우열M',
+  '[4] 운영 정책':   '이경연 실장',
+  '[5] 시설 및 환경': '이정헌 소장'
 };
 function deptHeadFor(category) { return CAT_DEPT_HEAD[category] || ''; }
 function ownerChip(name) {
@@ -1054,7 +1056,7 @@ function renderTasks() {
 
   // Group by category
   const groups = {};
-  const catOrder = CATEGORIES.concat(['']);  // [8] 회의 포함 — 단일 SSOT(CATEGORIES) 기준
+  const catOrder = CATEGORIES.concat(['']);  // [9] 회의 포함 — 단일 SSOT(CATEGORIES) 기준
   filtered.forEach(t => {
     const cat = t.category || '';
     if (!groups[cat]) groups[cat] = [];
@@ -2057,13 +2059,14 @@ function openAddModal() {
    작성자가 직접 입력한 내용은 절대 덮어쓰지 않음. */
 const CATEGORY_TEMPLATES = {
   '[1] 매출 및 영업':   '🎯 목표 — \n📊 현황·실적 — \n💡 전략·액션 — \n📅 일정 — ',
-  '[2] 인사 & 파트너':  '👤 대상 — \n📋 사안 — \n✅ 조치·결정 — \n📅 일정 — ',
-  '[3] 운영 정책':     '📌 정책·사안 — \n🎯 목적 — \n🛠 적용 방안 — \n📅 시행 일정 — ',
-  '[4] 시설 및 환경':   '🏢 대상 시설 — \n🔍 점검·이슈 — \n🛠 조치 — \n📅 일정 — ',
-  '[5] 회원·CS':       '👥 회원·대상 — \n💬 내용·요청 — \n✅ 대응·해결 — \n📅 후속 — ',
-  '[6] IT·시스템·자동화':'⚙️ 대상 시스템 — \n🎯 목적 — \n🔧 작업·구현 — \n✅ 검증·배포 — ',
-  '[7] 교육·조직문화':  '📚 주제 — \n🎯 목표 — \n🧑‍🏫 진행 방식 — \n📅 일정 — ',
-  '[8] 회의':          '📌 안건 — \n👥 참석자 — \n✅ 결정사항 — \n📋 후속조치 — '
+  '[2] 인사':          '👤 대상 — \n📋 사안 — \n✅ 조치·결정 — \n📅 일정 — ',
+  '[3] 파트너팀':      '🤝 파트너·대상 — \n📋 사안 — \n✅ 조치·결정 — \n📅 일정 — ',
+  '[4] 운영 정책':     '📌 정책·사안 — \n🎯 목적 — \n🛠 적용 방안 — \n📅 시행 일정 — ',
+  '[5] 시설 및 환경':   '🏢 대상 시설 — \n🔍 점검·이슈 — \n🛠 조치 — \n📅 일정 — ',
+  '[6] 회원·CS':       '👥 회원·대상 — \n💬 내용·요청 — \n✅ 대응·해결 — \n📅 후속 — ',
+  '[7] IT·시스템·자동화':'⚙️ 대상 시스템 — \n🎯 목적 — \n🔧 작업·구현 — \n✅ 검증·배포 — ',
+  '[8] 교육·조직문화':  '📚 주제 — \n🎯 목표 — \n🧑‍🏫 진행 방식 — \n📅 일정 — ',
+  '[9] 회의':          '📌 안건 — \n👥 참석자 — \n✅ 결정사항 — \n📋 후속조치 — '
 };
 const ALL_TEMPLATE_VALUES = Object.values(CATEGORY_TEMPLATES).map(s => s.trim());
 function onCategoryChange() {

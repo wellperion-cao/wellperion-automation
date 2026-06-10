@@ -6161,12 +6161,15 @@ function crTab(btn, panelId) {
     const TODO_LS_KEY = 'wellperion-todo-sheets';
     const TODO_USER_KEY = 'wellperion-todo-user';
     const CATEGORIES = [
-      {value:'[1]매출및영업', label:'[1] 매출 및 영업 전략'},
-      {value:'[2]인사&파트너', label:'[2] 인사&파트너팀'},
-      {value:'[3]운영정책', label:'[3] 운영 정책 및 시스템'},
-      {value:'[4]시설및환경', label:'[4] 시설 및 환경'},
-      {value:'[5]3대비전', label:'[5] 대표님하달 추진'},
-      {value:'[6]회장님하달', label:'[6] 회장님 하달사항'},
+      {value:'[1] 매출 및 영업', label:'[1] 매출 및 영업'},
+      {value:'[2] 인사', label:'[2] 인사'},
+      {value:'[3] 파트너팀', label:'[3] 파트너팀'},
+      {value:'[4] 운영 정책', label:'[4] 운영 정책'},
+      {value:'[5] 시설 및 환경', label:'[5] 시설 및 환경'},
+      {value:'[6] 회원·CS', label:'[6] 회원·CS'},
+      {value:'[7] IT·시스템·자동화', label:'[7] IT·시스템·자동화'},
+      {value:'[8] 교육·조직문화', label:'[8] 교육·조직문화'},
+      {value:'[9] 회의', label:'[9] 회의'},
     ];
     const STAFF_LIST = [
       {name:'김남욱GM', cls:'gm'}, {name:'이경연 실장', cls:'dir'},
@@ -6174,16 +6177,20 @@ function crTab(btn, panelId) {
       {name:'이지영 사원', cls:''},
     ];
     const CAT_MAP = {
-      '[1]매출및영업':'[1] 매출 및 영업 전략',
-      '[2]인사&파트너':'[2] 인사&파트너팀',
-      '[3]운영정책':'[3] 운영 정책 및 시스템',
-      '[4]시설및환경':'[4] 시설 및 환경',
-      '[5]3대비전':'[5] 대표님하달 추진',
-      '[6]회장님하달':'[6] 회장님 하달사항',
+      '[1] 매출 및 영업':'[1] 매출 및 영업',
+      '[2] 인사':'[2] 인사',
+      '[3] 파트너팀':'[3] 파트너팀',
+      '[4] 운영 정책':'[4] 운영 정책',
+      '[5] 시설 및 환경':'[5] 시설 및 환경',
+      '[6] 회원·CS':'[6] 회원·CS',
+      '[7] IT·시스템·자동화':'[7] IT·시스템·자동화',
+      '[8] 교육·조직문화':'[8] 교육·조직문화',
+      '[9] 회의':'[9] 회의',
     };
     const CAT_ICONS = {
-      '[1]매출및영업':'💰','[2]인사&파트너':'👥','[3]운영정책':'⚙️',
-      '[4]시설및환경':'🏗️','[5]3대비전':'🎯','[6]회장님하달':'📌',
+      '[1] 매출 및 영업':'💰','[2] 인사':'👥','[3] 파트너팀':'🤝',
+      '[4] 운영 정책':'⚙️','[5] 시설 및 환경':'🏗️','[6] 회원·CS':'🧑‍🤝‍🧑',
+      '[7] IT·시스템·자동화':'🖥️','[8] 교육·조직문화':'📚','[9] 회의':'🗓️',
     };
     // 로컬 캐시
     let todoCache = JSON.parse(localStorage.getItem(TODO_LS_KEY) || '[]');
@@ -6318,7 +6325,7 @@ function crTab(btn, panelId) {
         // S3 안전망: AI C레벨 배 제외 — 2026-06-08 GM 방침 (카테고리·담당자 이중 가드)
         if (t.category === '[7]AI배(C레벨)') return;
         if (/웰리|시뽀|시로|시모|시우|시포|시토|ai\s*ceo|ai\s*cfo|ai\s*chro|ai\s*cmo|ai\s*coo|ai\s*cpo|ai\s*cto/i.test(t.owner)) return;
-        const cat = t.category || '[1]매출및영업';
+        const cat = t.category || '[1] 매출 및 영업';
         if (!grouped[cat]) grouped[cat] = [];
         grouped[cat].push(t);
       });
@@ -7170,10 +7177,10 @@ function crTab(btn, panelId) {
     ══════════════════════════════════════════════ */
     var SSOT_API_URL = 'https://script.google.com/macros/s/AKfycbxDwFkrxK1YIaEoSNcuw2MiHiZQ-7o5N6311ytksSyeEd86ZFOhLknOWqQgNArQvZ-7/exec';
     var SSOT_CAT_MAP = {
-      '업무':        '[3] 운영 정책',
-      '인사·파트너': '[2] 인사 & 파트너',
-      '회의':        '[3] 운영 정책',
-      '기타':        '[3] 운영 정책'
+      '업무':        '[4] 운영 정책',
+      '인사·파트너': '[2] 인사',
+      '회의':        '[9] 회의',
+      '기타':        '[4] 운영 정책'
     };
 
     function gm1PushToSSOT(task) {
@@ -7189,7 +7196,7 @@ function crTab(btn, panelId) {
       }
       gm1Save(tasks);
 
-      var ssotCategory = SSOT_CAT_MAP[task.category] || '[3] 운영 정책';
+      var ssotCategory = SSOT_CAT_MAP[task.category] || '[4] 운영 정책';
       var params = {
         action:    'todo_add',
         id:        task.id,
@@ -7246,7 +7253,7 @@ function crTab(btn, panelId) {
     //   G1 결재 카운트가 SSOT와 어긋나던 버그 수정: '결재요청=GM'만 봐선 안 됨.
     //   ① owner가 GM이면 GM단계 스킵(→대표 차례)  ② 부서장싸인 없으면 부서장 차례  ③ GM싸인 있으면 이미 GM 끝(→대표).
     var GM1_DEPT_HEADS = ['이경연 실장','이정헌 소장','나우열M'];
-    var GM1_CAT_DEPT_HEAD = { '[1] 매출 및 영업':'이경연 실장','[3] 운영 정책':'이경연 실장','[4] 시설 및 환경':'이정헌 소장','[2] 인사 & 파트너':'나우열M' };
+    var GM1_CAT_DEPT_HEAD = { '[2] 인사':'나우열M','[3] 파트너팀':'나우열M','[4] 운영 정책':'이경연 실장','[5] 시설 및 환경':'이정헌 소장' };
     function gm1NextApprover(row) {
       var approval = String(row['결재요청'] || '').split(',').map(function(s){ return s.trim(); }).filter(Boolean);
       if (!approval.length) return null;  // 결재선 없음
