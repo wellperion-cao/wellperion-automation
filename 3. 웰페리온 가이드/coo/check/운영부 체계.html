@@ -412,6 +412,9 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   .content.hidden{display:none!important}
   /* 인쇄 시 보드 풀폭 탈출 해제(페이지 폭 안에 정렬) */
   .board-fullwidth{width:auto!important;max-width:100%!important;margin:0!important;padding:0!important}
+  /* 인쇄는 단일 컬럼으로 — 보드/근무휴게 세로 적층(겹침·잘림 방지) */
+  .policy-row{display:block!important}
+  .policy-row > .manual-section{margin-top:14px!important;width:100%!important}
   /* 활성 탭만 표시 */
   .content[data-print-active="true"]{display:block!important}
   .category{border:1px solid #ccc;break-inside:avoid;margin-bottom:6px}
@@ -440,12 +443,19 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   .dash-table{font-size:11px}
   .dash-table th,.dash-table td{padding:4px 6px}
 }
-/* 규정 탭 — 정기회의(보드)+근무휴게(680px) 같은 행.
-   보드는 410px 카드 최소폭 — 사이드 680px와 같은 행에 두려면 ≈410+14(gap)+680+40(padding)=1144px 필요.
-   그 미만에선 보드가 짓눌려 카드가 잘리고 근무·휴게 칸과 시각적으로 겹침 → 1160px 이하에서 세로 전환. */
-@media(max-width:1160px){
-  #tab-policy .board-fullwidth{flex-direction:column!important;}
-  #tab-policy .board-fullwidth .manual-section{flex:none!important;width:100%!important;margin-top:14px!important;}
+/* 규정 탭 — 정기회의(보드)+근무휴게(680px).
+   ⚠ flex nowrap(과거)는 보드가 짓눌릴 때 보드 컬럼(정기회의)이 근무·휴게 칸 쪽으로 시각 침범(3회 신고).
+     근본 원인: 보드 3컬(410×3+gap=1258px)과 사이드 680px가 한 행에서 폭을 다퉈,
+     좁은 폭에선 정기회의 컬럼이 사이드 칸 경계에서 잘려 '침범'처럼 보임.
+   → CSS grid로 전환 + 기본은 보드 위 / 근무휴게 아래 1열 스택(보드는 항상 풀폭 → 3컬 온전, 절대 안 잘림·안 겹침).
+     사이드를 보드 우측에 같은 행으로 두는 건 보드 3컬이 온전히 들어갈 만큼 넓은 화면(≈1992px↑)에서만.
+   풀블리드(.board-fullwidth 100vw 음수마진·좌우 20px)는 래퍼가 유지, grid는 그 안에서 분할. */
+.policy-row{display:grid;grid-template-columns:minmax(0,1fr);gap:14px;align-items:start;}
+.policy-row > #policy-board{min-width:0;}                 /* 보드: 0까지 안전 수축 후 내부 가로 스크롤(겹침 불가) */
+.policy-row > .manual-section{min-width:0;width:auto;margin-top:0;}
+/* 보드 3컬 온전(1258)+gap14+사이드680+좌우패딩40 ≈ 1992px 이상에서만 우측 동행. 그 미만은 세로 스택(정기회의 절대 미침범). */
+@media(min-width:1992px){
+  #tab-policy .policy-row{grid-template-columns:minmax(0,1fr) 680px;}
 }
 </style>
 </head>
@@ -497,10 +507,10 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 <div id="tab-policy" class="content">
   <h2 style="font-size:20px;margin-bottom:6px;">운영부 규정</h2>
   <p style="font-size:13px;color:var(--dim);margin-bottom:14px;line-height:1.6;">주제별 칸(컬럼)에 규정·회의를 카드로 정리했습니다. 각 카드의 <b>편집</b> 버튼으로 내용을 바로 수정·저장하면 모든 기기에 반영됩니다. <span style="color:var(--accent);">운영시간 등 공식값은 임의 변경 금지.</span></p>
-  <div class="board-fullwidth" style="display:flex;flex-wrap:nowrap;gap:14px;align-items:flex-start;">
-    <div id="policy-board" class="board-scroll" style="flex:1 1 auto;min-width:0;"></div>
+  <div class="board-fullwidth policy-row">
+    <div id="policy-board" class="board-scroll"></div>
     <!-- ── 근무·휴게 시간 (정기회의 우측 — 같은 행) ── -->
-    <div class="manual-section" style="flex:0 0 680px;width:680px;margin-top:0;border-left:4px solid var(--red);align-self:flex-start;">
+    <div class="manual-section" style="margin-top:0;border-left:4px solid var(--red);align-self:flex-start;">
     <div class="manual-header" onclick="togManual(this)">
       <h3 style="color:var(--red);">⏱ 근무·휴게 시간</h3><span class="arrow">&#9654;</span>
     </div>
@@ -1383,6 +1393,21 @@ function getNightSched(ds){
   return i.type==='weekend'?NIGHT_WEEKEND:NIGHT_WEEKDAY;
 }
 
+/* ── 부서 격리(dept isolation) — 거짓 '제출 완료' 차단 ──
+   서버(GAS)가 dept 파라미터를 무시하고 전 부서 공통(지원팀 시설점검) rows를 반환 →
+   운영부(ops) 점검 탭이 남의 부서 submitted 플래그를 읽어 녹색 '제출 완료' 오표시(GM 신고).
+   방어: 운영부 자체 점검 항목 id 집합(아래)에 속한 row만 신뢰. 그 외 row의 checked·submitted_* 무시.
+   운영부 id는 모두 'o'/'df_' 접두사 — 지원팀 사우나(a1,a_pm,custom_…)와 절대 겹치지 않음. */
+const OPS_ITEM_IDS = (function(){
+  const ids = new Set();
+  [WEEKDAY, WEEKEND, NIGHT_WEEKDAY, NIGHT_WEEKEND].forEach(sched=>{
+    (sched||[]).forEach(slot=>{ (slot.groups||[]).forEach(g=>{ (g.items||[]).forEach(it=>{ if(it&&it.id) ids.add(it.id); }); }); });
+  });
+  Object.keys(DAY_FOCUS||{}).forEach(dow=>{ (DAY_FOCUS[dow]||[]).forEach(it=>{ if(it&&it.id) ids.add(it.id); }); });
+  return ids;
+})();
+function isOpsItem(itemId){ return !!itemId && OPS_ITEM_IDS.has(itemId); }
+
 function getActiveSchedG(ds,g){
   if(isNightShiftWorkerG(g)){
     return getNightSched(ds);
@@ -1418,22 +1443,18 @@ async function loadState(d){
     const j=await r.json();
     STATE={};
     (j.rows||[]).forEach(row=>{
+      // 부서 격리: 운영부 점검 항목이 아닌 row(타 부서 시설점검 등)는 통째로 무시.
+      if(!isOpsItem(row.itemId)) return;
+      // ⚠ 체크 여부(checked)·이슈·팁만 항목 단위로 신뢰.
+      //   row의 submitted_am/pm/night·submitted 플래그는 서버가 '전 부서 공통 제출 도장'으로
+      //   모든 row에 동일하게 찍어 보내므로(타 부서 제출이 운영부 항목 row에도 묻어옴) 신뢰 불가 → 무시.
+      //   운영부의 진짜 제출 상태는 아래 groupSubmits(그룹·부서 정합) + 세션 내 submitShift 로만 결정.
       if(row.checked)STATE[row.itemId]=true;
       if(row.issue)STATE['iss_'+row.itemId]=row.issue;
       if(row.tip)STATE['tip_'+row.itemId]=row.tip;
-      if(row.submitted_am)STATE._submitted_am=true;
-      if(row.submittedAt_am)STATE._submittedAt_am=row.submittedAt_am;
-      if(row.submitter_am)STATE._submitter_am=row.submitter_am;
-      if(row.submitted_pm)STATE._submitted_pm=true;
-      if(row.submittedAt_pm)STATE._submittedAt_pm=row.submittedAt_pm;
-      if(row.submitter_pm)STATE._submitter_pm=row.submitter_pm;
-      if(row.submitted_night)STATE._submitted_night=true;
-      if(row.submittedAt_night)STATE._submittedAt_night=row.submittedAt_night;
-      if(row.submitter_night)STATE._submitter_night=row.submitter_night;
-      if(row.submitted)STATE._submitted_am=true;
-      if(row.submittedAt&&!STATE._submittedAt_am)STATE._submittedAt_am=row.submittedAt;
     });
-    // 그룹별 제출 복원 (서버 영속 → 새로고침해도 유지) — 2026-06-05 GM
+    // 그룹별 제출 복원 (서버 영속 → 새로고침해도 유지) — 2026-06-05 GM.
+    // 운영부 그룹 키(groupKey)에 한해 신뢰 — 타 부서 그룹 키는 운영부 화면 렌더에 쓰이지 않음.
     if(j.groupSubmits){Object.keys(j.groupSubmits).forEach(key=>{
       const v=j.groupSubmits[key]||{};
       STATE['_gsub_'+key]=true;
