@@ -221,6 +221,95 @@ def is_session_landed(current_url: str) -> bool:
     return SESSION_LANDED_HOST in current_url and not is_login_required(current_url)
 
 
+# -----------------------------------------------------------------
+# Google OAuth 로그인 자동 클릭 (2026-06-10 보강)
+#   문제: "Google 버튼 자동 클릭 실패" 로그 — 셀렉터 후보 부족.
+#   1단계: 당근 로그인 화면의 Google 버튼 클릭.
+#   2단계: Google 계정 선택 화면(accounts.google.com)에서
+#          'cao@wellperion.com' 계정 + '계속/Continue' 확인 버튼 자동 클릭.
+#   기존 '경영지원 계정으로 계속'(Chrome 저장 계정) 케이스도 함께 시도(무회귀).
+# -----------------------------------------------------------------
+GOOGLE_LOGIN_EMAIL = "cao@wellperion.com"
+
+# 당근 로그인 화면의 'Google 로그인' 진입 버튼 후보
+GOOGLE_LOGIN_BUTTON_SELECTORS = [
+    'img[alt*="Google"]',
+    'button:has-text("Google")',
+    'a:has-text("Google")',
+    '[aria-label*="Google"]',
+    'img[src*="google"]',
+    'button:has-text("구글")',
+    'a:has-text("구글")',
+    '[data-provider="google"]',
+    'button[class*="google" i]',
+    'a[href*="accounts.google.com"]',
+    'a[href*="oauth"][href*="google" i]',
+]
+
+
+def _account_select_selectors() -> "list[str]":
+    """Google 계정 선택/확인 화면 자동 클릭 후보(팝업·메인 공용).
+    ① 당근측 Chrome 저장 계정 케이스 ② Google '계정 선택' 화면(이메일·이름 행)
+    ③ Google '계속/Continue' 확인 버튼 ④ '다른 계정 사용' 회피용 직접 이메일 행."""
+    email = GOOGLE_LOGIN_EMAIL
+    return [
+        # ① 당근/Chrome 저장 계정 케이스 (기존 동작 유지)
+        "text=경영지원 계정으로 계속",
+        'button:has-text("경영지원")',
+        '[role="button"]:has-text("경영지원")',
+        "text=계정으로 계속",
+        # ② Google '계정 선택' 화면 — 이메일 텍스트가 박힌 행/버튼 직접 클릭
+        f'div[role="link"]:has-text("{email}")',
+        f'li:has-text("{email}")',
+        f'[data-identifier="{email}"]',
+        f'[data-email="{email}"]',
+        f'div[data-authuser]:has-text("{email}")',
+        f'text={email}',
+        # ③ Google OAuth '계속'/'Continue' 동의·확인 버튼
+        'button:has-text("계속")',
+        'button:has-text("Continue")',
+        '#submit_approve_access button',
+        'button[jsname]:has-text("계속")',
+        'div[role="button"]:has-text("계속")',
+    ]
+
+
+async def _click_google_login(page) -> bool:
+    """당근 로그인 화면에서 Google 진입 버튼을 자동 클릭. 성공 시 True."""
+    import asyncio
+    for sel in GOOGLE_LOGIN_BUTTON_SELECTORS:
+        try:
+            loc = page.locator(sel).first
+            if await loc.count() > 0 and await loc.is_visible():
+                print(f"[INFO] Google 로그인 버튼 클릭: {sel}")
+                await loc.click()
+                await asyncio.sleep(4)
+                return True
+        except Exception:
+            continue
+    return False
+
+
+async def _select_google_account(scopes) -> bool:
+    """Google 계정 선택/확인 화면에서 cao@wellperion.com 행 또는 '계속' 버튼 자동 클릭.
+    scopes = (page, popup) 등 검사 대상 프레임/페이지 목록. 한 곳이라도 클릭하면 True."""
+    import asyncio
+    for _scope in scopes:
+        if _scope is None:
+            continue
+        for _acc_sel in _account_select_selectors():
+            try:
+                _loc = _scope.locator(_acc_sel).first
+                if await _loc.count() > 0 and await _loc.is_visible():
+                    await _loc.click()
+                    print(f"[INFO] 계정 자동 선택 클릭: {_acc_sel!r}")
+                    await asyncio.sleep(3)
+                    return True
+            except Exception:
+                continue
+    return False
+
+
 def _auth_cookies(cookies) -> "list[str]":
     """인증 쿠키 후보(이름 조각 매칭) 목록 — 값은 절대 반환하지 않고 이름만."""
     names = []
@@ -363,21 +452,7 @@ async def run_setup(args: "argparse.Namespace | None" = None) -> int:
         has_session = True
     else:
         # Google 로그인 버튼 클릭 (실측: 로그인 화면에 Google/카카오/네이버 버튼 존재)
-        google_clicked = False
-        for google_sel in [
-            'img[alt*="Google"]',
-            'button:has-text("Google")',
-            'a:has-text("Google")',
-            '[aria-label*="Google"]',
-            'img[src*="google"]',
-        ]:
-            loc = page.locator(google_sel).first
-            if await loc.count() > 0:
-                print(f"[INFO] Google 로그인 버튼 클릭: {google_sel}")
-                await loc.click()
-                await asyncio.sleep(4)
-                google_clicked = True
-                break
+        google_clicked = await _click_google_login(page)
 
         if not google_clicked:
             # 스크린샷 찍고 GM에게 수동 클릭 안내
@@ -412,26 +487,13 @@ async def run_setup(args: "argparse.Namespace | None" = None) -> int:
                     has_session = True
                     break
 
-            # 계정 선택 자동 클릭 — '경영지원 계정으로 계속'(구글 계정 기억됨·비번 없음, GM 2026-06-05)
+            # 계정 선택 자동 클릭 — Google 계정 선택(cao@wellperion.com)·'계속' 확인
+            # + '경영지원 계정으로 계속'(Chrome 저장 계정) 케이스. (2026-06-10 셀렉터 보강)
             # 못 찾으면 GM 수동 클릭 대기(기존 동작 유지·무회귀).
-            for _scope in (page, popup_ref.get("pg")):
-                if _scope is None:
-                    continue
-                for _acc_sel in [
-                    'text=경영지원 계정으로 계속',
-                    'button:has-text("경영지원")',
-                    '[role="button"]:has-text("경영지원")',
-                    'text=계정으로 계속',
-                ]:
-                    try:
-                        _loc = _scope.locator(_acc_sel).first
-                        if await _loc.count() > 0 and await _loc.is_visible():
-                            await _loc.click()
-                            print(f"[INFO] 계정 자동 선택 클릭: {_acc_sel!r}")
-                            await asyncio.sleep(3)
-                            break
-                    except Exception:
-                        continue
+            # 미클릭 시 Google 버튼이 다시 보이면 재클릭(리다이렉트로 로그인 화면 재진입 케이스).
+            if not await _select_google_account((page, popup_ref.get("pg"))):
+                if is_login_required(page.url):
+                    await _click_google_login(page)
 
             await asyncio.sleep(3)
             waited += 3
@@ -985,41 +1047,15 @@ async def _try_auto_relogin(page, context) -> bool:
     context.on("page", _on_page)
 
     # 비즈 홈으로 이동하면 로그인 페이지로 리다이렉트됨 — 여기서 Google 버튼 자동 클릭
-    for google_sel in [
-        'img[alt*="Google"]',
-        'button:has-text("Google")',
-        'a:has-text("Google")',
-        '[aria-label*="Google"]',
-        'img[src*="google"]',
-    ]:
-        loc = page.locator(google_sel).first
-        if await loc.count() > 0:
-            print(f"[INFO] Google 로그인 버튼 자동 클릭: {google_sel}")
-            await loc.click()
-            await asyncio.sleep(4)
-            break
+    await _click_google_login(page)
 
-    # Google 계정 선택 화면에서 '경영지원 계정으로 계속' 자동 클릭 (팝업·메인 페이지 양쪽)
+    # Google 계정 선택(cao@wellperion.com)·'계속' 확인 자동 클릭 (팝업·메인 양쪽, 셀렉터 보강 2026-06-10)
     deadline, waited = 60, 0
     while waited < deadline:
-        for _scope in (page, popup_ref.get("pg")):
-            if _scope is None:
-                continue
-            for _acc_sel in [
-                'text=경영지원 계정으로 계속',
-                'button:has-text("경영지원")',
-                '[role="button"]:has-text("경영지원")',
-                'text=계정으로 계속',
-            ]:
-                try:
-                    _loc = _scope.locator(_acc_sel).first
-                    if await _loc.count() > 0 and await _loc.is_visible():
-                        await _loc.click()
-                        print(f"[INFO] 계정 자동 선택 클릭: {_acc_sel!r}")
-                        await asyncio.sleep(4)
-                        break
-                except Exception:
-                    continue
+        await _select_google_account((page, popup_ref.get("pg")))
+        # 로그인 화면으로 되돌아온 경우 Google 버튼 재클릭
+        if is_login_required(page.url):
+            await _click_google_login(page)
 
         cur = page.url
         if "bizprofile.daangn.com" in cur and "/login" not in cur and "accounts.daangn.com" not in cur:
