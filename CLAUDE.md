@@ -1,6 +1,8 @@
 # 웰페리온 자동화 (welperion-automation)
 메인 SSOT. 모든 sub-project·자동화·콘텐츠·자산은 본 폴더 하위 통합. 자산 위치 상세 → `INDEX.md`.
 
+> 💰 **토큰 캐시 2규칙(고정)** — ① **모델 라우팅:** 루틴(read·patch·집계·송부)=Sonnet/Haiku, Opus=판단·검토만 (상세 매트릭스=S2 g10⑨). ② **idle:** 긴 작업 후 자리 비울 땐 `/clear`로 캐시 끊기.
+
 ## 0. 회사 정보
 | 항목 | 값 |
 |---|---|
