@@ -42,12 +42,10 @@ CAPTION = (
     "실제로 채널 하나당 따로 쓰던 시간이 절반 이상 줄었어요.\n"
     "완벽하진 않고, 가끔 수정도 해요.\n"
     "그래도 안 올리는 것보단 낫고, 빨라진 건 확실해요.\n\n"
-    "따라 해보고 싶으시면 딱 하나만: 글 하나를 써두고\n"
-    "\"이거 블로그 버전으로 바꿔줘\" AI한테 시켜보세요. 그게 시작이에요.\n\n"
-    "도움이 됐다면 저장해두세요.\n"
-    "혼자 고민 말고 DM 주세요 — 아는 선에서 같이 풀어드릴게요.\n"
-    "완벽하진 않아도, 함께 성장합시다.\n\n"
-    "문의 : wellperion.com/ko/inquiry\n\n"
+    "따라 해보고 싶으면 딱 하나만 — 글 하나 써두고 \"이거 블로그 버전으로 바꿔줘\" AI한테 시켜보세요. 그게 시작이에요.\n\n"
+    "📌 나중에 따라하려면 저장\n"
+    "💬 어떤 채널부터 자동화하고 싶으세요? 댓글로 알려주세요\n"
+    "👀 이런 AI 활용기 계속 보고 싶으면 팔로우\n\n"
     "#AI #AI활용 #마케팅자동화 #콘텐츠자동화 #SNS자동화 #스포츠클럽 #대표일상 #일하는방식 #한남동 #웰페리온"
 )
 
@@ -114,14 +112,14 @@ def main() -> None:
         paths.append(out)
         print(f"[OK] {out.name} - {r['layout']} ({r['size_kb']}KB)")
 
-    # 마지막 장 = 마무리 CTA (전 편 공통 시그니처 + 복합 바이럴)
+    # 마지막 장 = 저장·댓글·팔로우 유도형 CTA (2026-06-10 GM 결정 — DM/문의URL 제거)
     last_out = OUT / f"post_{len(SLIDES) + 1}.jpg"
     r = compose_text_slide(
         output=last_out,
         brand_key="main",
         logo_style=LOGO_STYLE,
         kor_title="1벌 만들면\n5채널이 움직입니다",
-        body="막막하면 일단 저장해두세요.\n딱 하나만 따라 해도 바뀝니다.\n혼자 고민 말고 DM 주세요.\n아는 선에서 같이 풀어드릴게요.",
+        body="나중에 따라하려면 저장\n어떤 채널부터 자동화할지\n댓글로 알려주세요\n이런 AI 활용기 계속 보고 싶으면\n팔로우",
     )
     print(f"[OK] {last_out.name} - slogan/DM card ({r['size_kb']}KB)")
     paths.append(last_out)
