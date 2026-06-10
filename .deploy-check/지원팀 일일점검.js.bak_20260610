@@ -241,7 +241,6 @@ function doGet(e) {
   if (action === 'issuelog')  return handleIssueLogGet(e.parameter);
   if (action === 'setup_issue_tabs') { setupIssueLogSheets(); return jsonRes({ok:true,msg:'이슈대장 탭 생성 완료'}); }
   if (action === 'setup_facility_tabs') { return setupFacilitySheets(); }
-  if (action === 'setup_dept_tabs') { return setupDeptSheets(e.parameter.dept || 'support'); }
   if (action === 'migrate_item_dept') { return jsonRes(migrateItemDept()); }
 
   var date = e.parameter.date;
@@ -252,13 +251,12 @@ function doGet(e) {
   var dept = e.parameter.dept || 'support';
   var ss = SpreadsheetApp.getActiveSpreadsheet();
 
-  // dept 파라미터로 전 부서 전용 탭 분기 (S5 거짓완료 차단 · 2026-06-10 시토)
-  var tabs = _deptTabs(dept);
-  var baseMale   = tabs.male;
-  var baseFemale = tabs.female;
-  var baseCommon = tabs.common;
+  // dept 파라미터로 시설부/지원부 탭 분기 (2026-06-08 시토)
+  var baseMale   = dept === 'facility' ? SHEET_FACILITY_MALE   : SHEET_MALE;
+  var baseFemale = dept === 'facility' ? SHEET_FACILITY_FEMALE : SHEET_FEMALE;
+  var baseCommon = dept === 'facility' ? SHEET_FACILITY_COMMON : SHEET_COMMON;
 
-  // 해당 부서 전용 탭이 없으면 데이터 부재로 빈 응답 (타 부서 탭 폴백 없음 → 거짓완료 0)
+  // 시설부 탭이 없으면 데이터 부재로 빈 응답 (지원부 탭 폴백 제거)
   var names = [];
   if (!zone || zone === 'all') {
     names = [baseMale, baseFemale, baseCommon];
@@ -292,7 +290,7 @@ function doGet(e) {
           submitter: String(data[i][10] || ''),
           shift: String(data[i][11] || ''),
           measure: String(data[i][12] || ''),   // S2: 13열 측정값(없으면 빈문자)
-          gender: name === baseMale ? 'm' : name === baseFemale ? 'f' : 'all',
+          gender: name === SHEET_MALE ? 'm' : name === SHEET_FEMALE ? 'f' : 'all',
           submitted_am: hasAm,
           submittedAt_am: hasAm ? String(data[i][9] || '') : '',
           submitter_am: hasAm ? String(data[i][10] || '') : '',
@@ -355,9 +353,13 @@ function handleSave(body) {
   var dept = body.dept || 'support';
   var checks = body.checks || [];
 
-  // dept별 전용 탭으로 라우팅 (S5 단일 출처 _deptTabs · 2026-06-10 시토)
-  // 읽기와 동일 맵 사용 → 부서별 저장 위치 = 읽기 위치 정합(거짓완료·데이터 유실 0).
-  var sheetMap = _deptTabs(dept);
+  // dept=facility면 시설부 전용 탭으로 라우팅 (2026-06-08 시토)
+  var isFacility = dept === 'facility';
+  var sheetMap = {
+    male:   isFacility ? SHEET_FACILITY_MALE   : SHEET_MALE,
+    female: isFacility ? SHEET_FACILITY_FEMALE : SHEET_FEMALE,
+    common: isFacility ? SHEET_FACILITY_COMMON : SHEET_COMMON
+  };
   var sheetName = sheetMap[zone];
   if (!sheetName) return jsonRes({ error: 'invalid zone: ' + zone });
 
@@ -450,11 +452,11 @@ function _handleSaveV2Compat(body) {
   if (body.submitter_night) submitters.push(body.submitter_night);
   var submitter = submitters.join(' / ');
 
-  // dept별 전용 탭으로 라우팅 (S5 단일 출처 _deptTabs · 2026-06-10 시토)
-  var _dt = _deptTabs(dept);
-  var tMale   = _dt.male;
-  var tFemale = _dt.female;
-  var tCommon = _dt.common;
+  // dept=facility면 시설부 전용 탭으로 라우팅 (2026-06-08 시토)
+  var isFacility = dept === 'facility';
+  var tMale   = isFacility ? SHEET_FACILITY_MALE   : SHEET_MALE;
+  var tFemale = isFacility ? SHEET_FACILITY_FEMALE : SHEET_FEMALE;
+  var tCommon = isFacility ? SHEET_FACILITY_COMMON : SHEET_COMMON;
 
   var buckets = {};
   buckets[tMale] = [];
@@ -540,14 +542,19 @@ function handleSeed(body) {
   var date = body.date;
   if (!date) return jsonRes({ error: 'date required' });
   var dept = body.dept || 'support';
+  var isFacility = dept === 'facility';
   var ss = SpreadsheetApp.getActiveSpreadsheet();
-  // dept별 전용 탭에 시드 (S5 단일 출처 _deptTabs · 2026-06-10 시토)
-  var _st = _deptTabs(dept);
-  var zones = [
-    { name: _st.male,   items: ZONE_ITEMS },
-    { name: _st.female, items: ZONE_ITEMS },
-    { name: _st.common, items: COMMON_ITEMS },
-  ];
+  var zones = isFacility
+    ? [
+        { name: SHEET_FACILITY_MALE,   items: ZONE_ITEMS },
+        { name: SHEET_FACILITY_FEMALE, items: ZONE_ITEMS },
+        { name: SHEET_FACILITY_COMMON, items: COMMON_ITEMS },
+      ]
+    : [
+        { name: SHEET_MALE,   items: ZONE_ITEMS },
+        { name: SHEET_FEMALE, items: ZONE_ITEMS },
+        { name: SHEET_COMMON, items: COMMON_ITEMS },
+      ];
   var seeded = 0;
   zones.forEach(function(z) {
     var sheet = ss.getSheetByName(z.name);
@@ -984,48 +991,24 @@ var SHEET_FACILITY_MALE   = '시설_남성구역';
 var SHEET_FACILITY_FEMALE = '시설_여성구역';
 var SHEET_FACILITY_COMMON = '시설_공용구역';
 
-// S5 거짓완료 차단(2026-06-10 시토): dept → 점검 데이터 시트 탭 3종 단일 출처.
-// 기존엔 facility만 분기, ops·parking은 분기 누락 → support 탭으로 폴백되어 '남의 부서 제출 도장'을
-// 자기 화면에 거짓완료 노출(GM 신고). dept별 전용 탭으로 완전 분리(미존재 탭 = 빈 데이터 = 정직).
-// support/facility 탭명은 종전과 100% 동일 → 두 부서 동작 불변(회귀 0). 읽기·쓰기 라우팅 공용.
-var DEPT_TAB_MAP = {
-  support:  { male: SHEET_MALE,            female: SHEET_FEMALE,            common: SHEET_COMMON },
-  facility: { male: SHEET_FACILITY_MALE,   female: SHEET_FACILITY_FEMALE,   common: SHEET_FACILITY_COMMON },
-  ops:      { male: '운영_남성구역',        female: '운영_여성구역',          common: '운영_공용구역' },
-  parking:  { male: '주차_남성구역',        female: '주차_여성구역',          common: '주차_공용구역' }
-};
-// dept 미지정·미등록 dept → support(레거시) 안전 폴백.
-function _deptTabs(dept) {
-  var d = String(dept == null ? '' : dept).trim();
-  return DEPT_TAB_MAP[d] || DEPT_TAB_MAP.support;
-}
-
 // ─── 시설부 데이터 탭 생성/보장 (2026-06-10 시토) ───
 // 지원부 setupNewStructure 패턴 재사용: _createCheckSheet(13열 HEADERS, 측정값 포함) + 오늘 시드.
 // 멱등: 이미 있으면 _createCheckSheet가 clear 후 헤더 재기록(데이터 보존 아님 → 최초 1회용).
 // GET ?action=setup_facility_tabs 로 호출(신규 배포 불필요, @HEAD 또는 에디터 실행).
 function setupFacilitySheets() {
-  return setupDeptSheets('facility');   // 하위호환: 기존 setup_facility_tabs 엔드포인트 유지
-}
-
-// ─── dept별 데이터 탭 생성/시드 (S5 일반화 · 2026-06-10 시토) ───
-// _deptTabs 단일 출처로 임의 dept(support/facility/ops/parking) 탭을 생성·시드.
-// _createCheckSheet는 clear 후 헤더 재기록(데이터 보존 아님) → 최초 1회용. GET ?action=setup_dept_tabs&dept=ops
-function setupDeptSheets(dept) {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var t = _deptTabs(dept);
   var created = [];
-  [t.male, t.female, t.common].forEach(function (name) {
+  [SHEET_FACILITY_MALE, SHEET_FACILITY_FEMALE, SHEET_FACILITY_COMMON].forEach(function (name) {
     var existed = !!ss.getSheetByName(name);
     _createCheckSheet(ss, name);   // 13열 HEADERS(측정값 포함) 헤더 기록
     created.push((existed ? '재생성:' : '신규:') + name);
   });
-  // 오늘 날짜 빈 데이터 시드(남/여=ZONE_ITEMS, 공용=COMMON_ITEMS)
+  // 오늘 날짜 빈 데이터 시드(지원부 setupNewStructure와 동일 — 남/여=ZONE_ITEMS, 공용=COMMON_ITEMS)
   var today = Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy-MM-dd');
-  _seedDate(ss.getSheetByName(t.male),   today, ZONE_ITEMS,   t.male);
-  _seedDate(ss.getSheetByName(t.female), today, ZONE_ITEMS,   t.female);
-  _seedDate(ss.getSheetByName(t.common), today, COMMON_ITEMS, t.common);
-  return jsonRes({ ok: true, dept: dept, created: created, seededDate: today });
+  _seedDate(ss.getSheetByName(SHEET_FACILITY_MALE),   today, ZONE_ITEMS,   SHEET_FACILITY_MALE);
+  _seedDate(ss.getSheetByName(SHEET_FACILITY_FEMALE), today, ZONE_ITEMS,   SHEET_FACILITY_FEMALE);
+  _seedDate(ss.getSheetByName(SHEET_FACILITY_COMMON), today, COMMON_ITEMS, SHEET_FACILITY_COMMON);
+  return jsonRes({ ok: true, created: created, seededDate: today });
 }
 
 var SHEET_ISSUE_FACILITY = '시설_이슈대장';
@@ -1033,11 +1016,14 @@ var SHEET_ISSUE_SUPPORT  = '지원_이슈대장';
 
 var ISSUE_HEADERS = ['등록일', '구역', '점검자', '이슈내용', '상태', '처리일', '비고'];
 
-// dept 파라미터 → 점검 데이터 시트 탭명 배열 반환 (DEPT_TAB_MAP 단일 출처)
-// 전 부서 전용 탭만 — 폴백 없음(탭 미존재 시 빈 데이터로 명확 분리, 거짓완료 0).
+// dept 파라미터 → 점검 데이터 시트 탭명 배열 반환
+// facility: 시설_* 탭만 (폴백 없음 — 탭 미존재 시 빈 데이터로 명확 분리)
+// support 또는 미지정: 기존 지원부 탭
 function _getSheetsForDept(dept) {
-  var t = _deptTabs(dept);
-  return [t.male, t.female, t.common];
+  if (dept === 'facility') {
+    return [SHEET_FACILITY_MALE, SHEET_FACILITY_FEMALE, SHEET_FACILITY_COMMON];
+  }
+  return [SHEET_MALE, SHEET_FEMALE, SHEET_COMMON];
 }
 
 // ════════════════════════════════════════════
