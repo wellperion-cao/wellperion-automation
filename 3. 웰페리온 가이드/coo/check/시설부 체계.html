@@ -1332,7 +1332,11 @@ function itemFromSheet(row){
     category: row.cat || '추가 점검',
     name: row.name || '',
     detail: row.detail || '',
-    order: row.order
+    order: row.order,
+    // S4(2026-06-10 시토): 측정형 항목 식별 — type('check'|'measure') + fields(영문키 목록 문자열).
+    // GAS getItems가 type 빈값→'check' 폴백하므로 여기선 그대로 보존(빈값 방어만).
+    type: row.type || 'check',
+    fields: row.fields || ''
   };
 }
 
@@ -1781,6 +1785,8 @@ async function loadState(d){
       if(row.checked)STATE[row.itemId]=true;
       if(row.issue)STATE['iss_'+row.itemId]=row.issue;
       if(row.tip)STATE['tip_'+row.itemId]=row.tip;
+      /* S4(2026-06-10 시토): measure JSON 복원 → m_<id>_<key> 로 펼쳐 입력칸 재현 */
+      if(row.measure){try{const mo=JSON.parse(row.measure);if(mo&&typeof mo==='object')Object.keys(mo).forEach(k=>{STATE['m_'+row.itemId+'_'+k]=mo[k];});}catch(_){}}
       if(row.submitted_am)STATE._submitted_am=true;
       if(row.submittedAt_am)STATE._submittedAt_am=row.submittedAt_am;
       if(row.submitter_am)STATE._submitter_am=row.submitter_am;
@@ -1811,6 +1817,19 @@ function saveState(d){
   saveTimer=setTimeout(()=>pushToServer(d),1500);
 }
 
+/* S4(2026-06-10 시토): 측정형 항목의 STATE 값을 {영문키:값} JSON 문자열로 조립.
+   type!=='measure'이거나 입력값이 하나도 없으면 빈문자(''). 숫자면 Number, 아니면 원문 문자열. */
+function collectMeasure(it){
+  if(!it || (it.type||'check')!=='measure') return '';
+  const keys=String(it.fields||'').split(',').map(s=>s.trim()).filter(Boolean);
+  const obj={};
+  let any=false;
+  keys.forEach(k=>{
+    const v=STATE['m_'+it.id+'_'+k];
+    if(v!==''&&v!=null){ const n=Number(v); obj[k]=isNaN(n)?v:n; any=true; }
+  });
+  return any?JSON.stringify(obj):'';
+}
 async function pushToServer(d){
   const ind=document.getElementById('saveIndicator');
   ind.style.display='block';ind.textContent='저장 중...';
@@ -1823,13 +1842,15 @@ async function pushToServer(d){
   // main sched items — push ALL items regardless of gender filter so server gets everything
   sched.forEach(slot=>{slot.groups.forEach(gr=>{gr.items.forEach(it=>{
     checks.push({itemId:it.id,name:it.name,cat:gr.title,slot:slot.slot,shift:slot.shift,
-      checked:!!STATE[it.id],issue:STATE['iss_'+it.id]||'',tip:STATE['tip_'+it.id]||''});
+      checked:!!STATE[it.id],issue:STATE['iss_'+it.id]||'',tip:STATE['tip_'+it.id]||'',
+      measure:collectMeasure(it)});   // S4: 측정형 항목이면 {key:val} JSON 문자열, 아니면 ''
   })})});
   // day focus items
   if(DAY_FOCUS[dow]){
     DAY_FOCUS[dow].forEach(it=>{
       checks.push({itemId:it.id,name:it.name,cat:'요일별 집중 청소',slot:'요일별',shift:'focus',
-        checked:!!STATE[it.id],issue:STATE['iss_'+it.id]||'',tip:STATE['tip_'+it.id]||''});
+        checked:!!STATE[it.id],issue:STATE['iss_'+it.id]||'',tip:STATE['tip_'+it.id]||'',
+        measure:collectMeasure(it)});
     });
   }
   try{
@@ -2181,10 +2202,31 @@ function renderItem(it,shift,gender){
     metaInfo='<span style="font-size:10px;color:#5b9fd5;margin-left:6px;">('+m.join(' · ')+')</span>';
   }
   const editedTag=isEdited?'<span style="font-size:10px;color:#e6c84e;font-weight:700;margin-left:4px;">수정됨</span>'+metaInfo:'';
-  return `<div class="${cls}">
-    <div class="item-row"><input type="checkbox" id="cb_${pfx}${it.id}" ${ck} onchange="onCk('${it.id}','${shift}','${g}')"><label for="cb_${pfx}${it.id}">${itemName}${editedTag}</label>
+  /* S4(2026-06-10 시토): type==='measure'면 체크박스 대신 fields(영문키) 숫자 입력칸 렌더.
+     값 입력 시 onMeasure가 STATE['m_'+id+'_'+key]에 저장 + 항목 완료(STATE[id]) 동기화.
+     type 빈값/'check'는 아래 기존 체크박스 경로 그대로(회귀 0). */
+  const itemType=(it.type||'check');
+  const fieldKeys=String(it.fields||'').split(',').map(s=>s.trim()).filter(Boolean);
+  let controlHTML;
+  if(itemType==='measure' && fieldKeys.length>0){
+    const inputs=fieldKeys.map(k=>{
+      const mv=STATE['m_'+it.id+'_'+k];
+      return `<span style="display:inline-flex;align-items:center;gap:4px;font-size:12px;color:var(--accent);font-weight:600;">
+        ${esc(k)}<input type="number" step="any" inputmode="decimal" style="width:78px;padding:6px 8px;background:var(--bg);border:1px solid var(--border);color:var(--text);border-radius:7px;font-size:13px;font-family:inherit;"
+          id="m_${pfx}${it.id}_${esc(k)}" value="${mv!==undefined&&mv!==null?esc(String(mv)):''}"
+          onchange="onMeasure('${it.id}','${esc(k)}','m_${pfx}${it.id}_${esc(k)}','${shift}','${g}')"></span>`;
+    }).join('');
+    controlHTML=`<div class="item-row"><label style="flex:1;">${itemName}${editedTag} <span style="font-size:10px;color:var(--blue);font-weight:700;">측정</span></label>
       <div class="item-btns">${editBtn}${resetBtn}<button class="tiny-btn issue" onclick="togX('${pfx}iss_${it.id}')">이슈</button><button class="tiny-btn tip" onclick="togX('${pfx}tip_${it.id}')">노하우</button></div>
     </div>
+    <div style="display:flex;flex-wrap:wrap;gap:12px;margin:8px 0 0 0;padding-left:2px;">${inputs}</div>`;
+  }else{
+    controlHTML=`<div class="item-row"><input type="checkbox" id="cb_${pfx}${it.id}" ${ck} onchange="onCk('${it.id}','${shift}','${g}')"><label for="cb_${pfx}${it.id}">${itemName}${editedTag}</label>
+      <div class="item-btns">${editBtn}${resetBtn}<button class="tiny-btn issue" onclick="togX('${pfx}iss_${it.id}')">이슈</button><button class="tiny-btn tip" onclick="togX('${pfx}tip_${it.id}')">노하우</button></div>
+    </div>`;
+  }
+  return `<div class="${cls}">
+    ${controlHTML}
     <div class="item-detail">${det}</div>
     <input class="extra-input issue-field${iss?' show':''}" id="${pfx}iss_${it.id}" placeholder="이슈 내용..." value="${esc(iss)}" onchange="onExtra('iss_${it.id}','${pfx}iss_${it.id}')">
     <input class="extra-input tip-field${tip?' show':''}" id="${pfx}tip_${it.id}" placeholder="노하우/개선 의견..." value="${esc(tip)}" onchange="onExtra('tip_${it.id}','${pfx}tip_${it.id}')">
@@ -2281,6 +2323,24 @@ function onCk(id,shift,gender){
   }
 }
 
+/* S4(2026-06-10 시토): 측정칸 입력 핸들러. 값을 STATE['m_'+id+'_'+key]에 저장,
+   해당 항목에 값이 1개 이상이면 완료(STATE[id]=true)로 동기화(빈칸이면 미완료).
+   pushToServer가 measure JSON({key:val})을 checks payload에 실어 보낸다. */
+function onMeasure(id,key,elemId,shift,gender){
+  const g=gender||activeGenderTab;
+  const d=getDateG(g);
+  const el=document.getElementById(elemId);
+  const v=el?el.value:'';
+  const sk='m_'+id+'_'+key;
+  if(v===''||v===null||v===undefined){ delete STATE[sk]; }
+  else{ STATE[sk]=v; }
+  /* 이 항목의 측정 필드 중 하나라도 값이 있으면 완료 처리(완료율 합류) */
+  let anyVal=false;
+  Object.keys(STATE).forEach(k=>{ if(k.indexOf('m_'+id+'_')===0 && STATE[k]!=='' && STATE[k]!=null) anyVal=true; });
+  STATE[id]=anyVal;
+  saveState(d);
+  drawUI(d,g);
+}
 function onExtra(stateKey,elemId){
   const d=getDateG(activeGenderTab);
   STATE[stateKey]=document.getElementById(elemId).value;
@@ -3733,6 +3793,8 @@ function mgmtBuildCustomSlots(customItems){
       name: item.name,
       detail: item.detail || '',
       gender: item.gender || 'all',
+      type: item.type || 'check',     // S4: 측정형 식별 전달
+      fields: item.fields || '',      // S4: measure 영문키 목록
       _custom: true
     });
   });

@@ -235,6 +235,7 @@ function doGet(e) {
   if (action === 'weekly')    return handleWeekly(e.parameter);
   if (action === 'issuelog')  return handleIssueLogGet(e.parameter);
   if (action === 'setup_issue_tabs') { setupIssueLogSheets(); return jsonRes({ok:true,msg:'이슈대장 탭 생성 완료'}); }
+  if (action === 'setup_facility_tabs') { return setupFacilitySheets(); }
 
   var date = e.parameter.date;
   if (!date) return jsonRes({ error: 'date required' });
@@ -935,6 +936,26 @@ function _applyTodoRowStyle(sheet, row, values) {
 var SHEET_FACILITY_MALE   = '시설_남성구역';
 var SHEET_FACILITY_FEMALE = '시설_여성구역';
 var SHEET_FACILITY_COMMON = '시설_공용구역';
+
+// ─── 시설부 데이터 탭 생성/보장 (2026-06-10 시토) ───
+// 지원부 setupNewStructure 패턴 재사용: _createCheckSheet(13열 HEADERS, 측정값 포함) + 오늘 시드.
+// 멱등: 이미 있으면 _createCheckSheet가 clear 후 헤더 재기록(데이터 보존 아님 → 최초 1회용).
+// GET ?action=setup_facility_tabs 로 호출(신규 배포 불필요, @HEAD 또는 에디터 실행).
+function setupFacilitySheets() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var created = [];
+  [SHEET_FACILITY_MALE, SHEET_FACILITY_FEMALE, SHEET_FACILITY_COMMON].forEach(function (name) {
+    var existed = !!ss.getSheetByName(name);
+    _createCheckSheet(ss, name);   // 13열 HEADERS(측정값 포함) 헤더 기록
+    created.push((existed ? '재생성:' : '신규:') + name);
+  });
+  // 오늘 날짜 빈 데이터 시드(지원부 setupNewStructure와 동일 — 남/여=ZONE_ITEMS, 공용=COMMON_ITEMS)
+  var today = Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy-MM-dd');
+  _seedDate(ss.getSheetByName(SHEET_FACILITY_MALE),   today, ZONE_ITEMS,   SHEET_FACILITY_MALE);
+  _seedDate(ss.getSheetByName(SHEET_FACILITY_FEMALE), today, ZONE_ITEMS,   SHEET_FACILITY_FEMALE);
+  _seedDate(ss.getSheetByName(SHEET_FACILITY_COMMON), today, COMMON_ITEMS, SHEET_FACILITY_COMMON);
+  return jsonRes({ ok: true, created: created, seededDate: today });
+}
 
 var SHEET_ISSUE_FACILITY = '시설_이슈대장';
 var SHEET_ISSUE_SUPPORT  = '지원_이슈대장';
