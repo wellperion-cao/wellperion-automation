@@ -1774,7 +1774,7 @@ function saveLocal(d,o){localStorage.setItem(LK(d),JSON.stringify(o))}
 async function loadState(d){
   if(!ONLINE){STATE=loadLocal(d);return}
   try{
-    const r=await fetch(API_URL+'?date='+d,{redirect:'follow'});
+    const r=await fetch(API_URL+'?date='+d+DEPT_Q,{redirect:'follow'});
     const j=await r.json();
     STATE={};
     (j.rows||[]).forEach(row=>{

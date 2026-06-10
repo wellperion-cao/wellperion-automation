@@ -1030,6 +1030,9 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 <script>
 const API_URL = 'https://script.google.com/macros/s/AKfycbyXw4ZaA6hLK567GC7NY33Y8SvNPW6kNtrXFz2OsSdFVBmCnZP-2oD-RQiX0IpekBu1/exec';
 const ONLINE = API_URL.length > 0;
+const DEPT = 'parking';
+function withDept(obj){ obj.dept = DEPT; return obj; }
+const DEPT_Q = '&dept=' + encodeURIComponent(DEPT);
 const STAFF_CSV_URL = 'https://docs.google.com/spreadsheets/d/1DKEKRrpsi9Nit7dNdNGsXLYtzie3PopbwD7EJzJCku0/gviz/tq?tqx=out:csv&sheet=%EC%A0%90%EA%B2%80%EC%9E%90';
 
 /* ── Track which gender tab is active ── */
@@ -1102,7 +1105,7 @@ async function loadItemMasterFromSheet(){
     return;
   }
   try{
-    const res = await fetch(API_URL+'?action=items',{method:'GET',redirect:'follow'});
+    const res = await fetch(API_URL+'?action=items'+DEPT_Q,{method:'GET',redirect:'follow'});
     const data = await res.json();
     const items = Array.isArray(data.items) ? data.items : [];
     CUSTOM_ITEMS = items.map(itemFromSheet);
@@ -1466,7 +1469,7 @@ function saveLocal(d,o){localStorage.setItem(LK(d),JSON.stringify(o))}
 async function loadState(d){
   if(!ONLINE){STATE=loadLocal(d);return}
   try{
-    const r=await fetch(API_URL+'?date='+d,{redirect:'follow'});
+    const r=await fetch(API_URL+'?date='+d+DEPT_Q,{redirect:'follow'});
     const j=await r.json();
     STATE={};
     (j.rows||[]).forEach(row=>{
@@ -1527,7 +1530,7 @@ async function pushToServer(d){
   try{
     await fetch(API_URL,{method:'POST',redirect:'follow',
       headers:{'Content-Type':'text/plain'},
-      body:JSON.stringify({action:'save',date:d,checks,
+      body:JSON.stringify({action:'save',date:d,checks,dept:DEPT,
         genderTab:g,
         groupSubmits:collectGroupSubmits(),
         submitted_am:!!STATE._submitted_am,submittedAt_am:STATE._submittedAt_am||'',submitter_am:STATE._submitter_am||'',
@@ -3826,7 +3829,7 @@ renderManualItems();
 <script>
 /* ── 대시보드 고도화: 주간 트렌드·이슈대장 ── */
 const DASH_API = API_URL;
-const DASH_DEPT = 'support';
+const DASH_DEPT = 'parking';
 const DASH_DN = ['일','월','화','수','목','금','토'];
 
 function dashEsc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
