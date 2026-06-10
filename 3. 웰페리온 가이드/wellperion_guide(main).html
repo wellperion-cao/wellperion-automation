@@ -9200,9 +9200,20 @@ function crTab(btn, panelId) {
     }
 
     function fetchBoth(onSuccess){
-      var today=todayStr()+'&_pv='+Date.now();
-      var fP=fetch(CHECK_API+'?date='+today+'&dept=facility',{redirect:'follow'}).then(function(r){return r.json();}).catch(function(){return null;});
-      var sP=fetch(CHECK_API+'?date='+today+'&dept=support', {redirect:'follow'}).then(function(r){return r.json();}).catch(function(){return null;});
+      var today=todayStr();
+      var pv=Date.now();
+      function pickToday(res){
+        if(!res||res.ok===false) return null;
+        // action=weekly → {ok:true, data:[{date,total,done,pct},...]}
+        if(Array.isArray(res.data)){
+          var row=res.data.find(function(d){return d.date===today;});
+          return row || {total:0,done:0,pct:0};
+        }
+        // fallback: 직접 객체 응답
+        return res.data || res;
+      }
+      var fP=fetch(CHECK_API+'?action=weekly&dept=facility&_pv='+pv,{redirect:'follow'}).then(function(r){return r.json();}).then(pickToday).catch(function(){return null;});
+      var sP=fetch(CHECK_API+'?action=weekly&dept=support&_pv='+pv, {redirect:'follow'}).then(function(r){return r.json();}).then(pickToday).catch(function(){return null;});
       Promise.all([fP,sP]).then(function(res){onSuccess(res[0],res[1]);});
     }
 
