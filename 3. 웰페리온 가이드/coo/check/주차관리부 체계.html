@@ -1094,7 +1094,9 @@ function itemToSheet(it, idx){
     detail: it.detail || '',
     gender: it.gender || 'all',
     slot: it.slot || '',
-    order: (it.order !== undefined && it.order !== '') ? it.order : (idx + 1)
+    order: (it.order !== undefined && it.order !== '') ? it.order : (idx + 1),
+    type: it.type || 'check',
+    fields: it.fields || ''
   };
 }
 
@@ -3326,7 +3328,7 @@ function mgmtSaveItems(items){
   if(ind){ ind.style.display='block'; ind.textContent='항목 저장 중...'; }
   fetch(API_URL,{method:'POST',redirect:'follow',
     headers:{'Content-Type':'text/plain'},
-    body:JSON.stringify({action:'saveItems',items:payload})
+    body:JSON.stringify(withDept({action:'saveItems',items:payload}))
   }).then(()=>{ if(ind){ind.textContent='항목 저장 완료';setTimeout(()=>{ind.style.display='none'},1500);} })
     .catch(()=>{ if(ind){ind.textContent='항목 저장 실패 (로컬 보관됨)';setTimeout(()=>{ind.style.display='none'},1500);} });
 }

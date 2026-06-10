@@ -1349,7 +1349,11 @@ function itemToSheet(it, idx){
     detail: it.detail || '',
     gender: it.gender || 'all',
     slot: it.slot || '',
-    order: (it.order !== undefined && it.order !== '') ? it.order : (idx + 1)
+    order: (it.order !== undefined && it.order !== '') ? it.order : (idx + 1),
+    // S4 갭①(2026-06-10 시토): type·fields 보존 — 누락 시 saveItems 전체재기록에서
+    // measure 메타 소실(편집 저장만으로 측정형→check 회귀). 빈값→'check'/'' 안전 폴백.
+    type: it.type || 'check',
+    fields: it.fields || ''
   };
 }
 
@@ -3692,7 +3696,8 @@ function mgmtSaveItems(items){
   if(ind){ ind.style.display='block'; ind.textContent='항목 저장 중...'; }
   fetch(API_URL,{method:'POST',redirect:'follow',
     headers:{'Content-Type':'text/plain'},
-    body:JSON.stringify({action:'saveItems',items:payload})
+    // S4 갭②(2026-06-10 시토): dept 부착 — 백엔드 saveItems가 본 dept 행만 재기록(타 dept 보존).
+    body:JSON.stringify(withDept({action:'saveItems',items:payload}))
   }).then(()=>{ if(ind){ind.textContent='항목 저장 완료';setTimeout(()=>{ind.style.display='none'},1500);} })
     .catch(()=>{ if(ind){ind.textContent='항목 저장 실패 (로컬 보관됨)';setTimeout(()=>{ind.style.display='none'},1500);} });
 }

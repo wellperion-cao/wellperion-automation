@@ -10,7 +10,12 @@ const SHEET_ITEMS  = '점검항목';   // GM 편집 점검 항목 마스터 (시
 
 // S1(2026-06-10 시토): 측정형 항목 식별 — '타입'(check|measure) + '필드정의'(measure 영문키 목록) 2열 추가.
 // 기존 항목은 '타입' 빈값 → 'check' 안전 폴백. 이 단계는 동작 변화 없음(프론트가 아직 안 읽음).
-const ITEM_HEADERS = ['항목ID','카테고리','항목명','상세','성별','시간대','정렬','타입','필드정의'];
+// S4 갭②(2026-06-10 시토): '부서'(dept) 10열 추가 — 점검항목 마스터가 전 dept 공유 시트라
+// getItems/saveItems가 dept 무필터면 시설 measure 항목이 지원·운영·주차 화면에 빈칸 노출.
+// 빈값 → 'support'(레거시 기존 항목=원본 지원부) 안전 폴백.
+const ITEM_HEADERS = ['항목ID','카테고리','항목명','상세','성별','시간대','정렬','타입','필드정의','부서'];
+const ITEM_DEPT_COL = 9;   // '부서' 0-based 인덱스(10번째 열)
+function _itemDept(v){ var d = String(v == null ? '' : v).trim(); return d || 'support'; }
 
 const BOT_TOKEN = PropertiesService.getScriptProperties().getProperty('TELEGRAM_BOT_TOKEN');
 const CHAT_ID   = PropertiesService.getScriptProperties().getProperty('TELEGRAM_CHAT_ID');
@@ -230,12 +235,13 @@ function migrateFromOldSheet() {
 function doGet(e) {
   var action = e.parameter.action || '';
   if (action === 'todo_list') return handleTodoGet(e.parameter);
-  if (action === 'items')     return getItems();
+  if (action === 'items')     return getItems(e.parameter);
   if (action === 'board')     return getBoard(e.parameter);
   if (action === 'weekly')    return handleWeekly(e.parameter);
   if (action === 'issuelog')  return handleIssueLogGet(e.parameter);
   if (action === 'setup_issue_tabs') { setupIssueLogSheets(); return jsonRes({ok:true,msg:'이슈대장 탭 생성 완료'}); }
   if (action === 'setup_facility_tabs') { return setupFacilitySheets(); }
+  if (action === 'migrate_item_dept') { return jsonRes(migrateItemDept()); }
 
   var date = e.parameter.date;
   if (!date) return jsonRes({ error: 'date required' });
@@ -620,13 +626,16 @@ function initItemSheet() {
     .setBackground('#2a2725').setFontColor('#B79F8A')
     .setFontWeight('bold').setHorizontalAlignment('center');
   sheet.setFrozenRows(1);
-  var widths = [180, 180, 240, 360, 80, 180, 70, 90, 200];  // 타입·필드정의 추가
+  var widths = [180, 180, 240, 360, 80, 180, 70, 90, 200, 90];  // 타입·필드정의·부서 추가
   for (var i = 0; i < widths.length; i++) sheet.setColumnWidth(i + 1, widths[i]);
   return sheet;
 }
 
-// ─── 항목 조회 (GET ?action=items) ───
-function getItems() {
+// ─── 항목 조회 (GET ?action=items[&dept=...]) ───
+// S4 갭②(2026-06-10 시토): dept 필터 — 요청 dept(기본 'support')와 일치하는 항목만 반환.
+// 항목 '부서' 빈값 = 레거시(원본 지원부) → 'support' 폴백. 시설/운영/주차 화면 교차노출 차단.
+function getItems(params) {
+  var reqDept = (params && params.dept) ? String(params.dept).trim() : 'support';
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var sheet = ss.getSheetByName(SHEET_ITEMS);
   if (!sheet) return jsonRes({ items: [] });
@@ -634,6 +643,7 @@ function getItems() {
   var items = [];
   for (var i = 1; i < data.length; i++) {
     if (!data[i][0] && !data[i][2]) continue; // id·항목명 모두 없으면 건너뜀
+    if (_itemDept(data[i][ITEM_DEPT_COL]) !== reqDept) continue; // dept 불일치 제외
     // S1(2026-06-10 시토): type 빈값 → 'check' 폴백. fields = measure 입력 영문키 목록(없으면 빈문자).
     var itemType = String(data[i][7] || '').trim() || 'check';
     items.push({
@@ -645,22 +655,36 @@ function getItems() {
       slot:   String(data[i][5] || ''),
       order:  data[i][6] !== '' && data[i][6] != null ? Number(data[i][6]) : (i),
       type:   itemType,
-      fields: String(data[i][8] || '')
+      fields: String(data[i][8] || ''),
+      dept:   _itemDept(data[i][ITEM_DEPT_COL])
     });
   }
   return jsonRes({ items: items });
 }
 
-// ─── 항목 저장 (POST {action:'saveItems', items:[...]}) — 전체 재기록 ───
+// ─── 항목 저장 (POST {action:'saveItems', dept, items:[...]}) — 본 dept만 재기록 ───
+// S4 갭②(2026-06-10 시토): 점검항목 마스터는 전 dept 공유 시트. 과거 '전체 재기록'은
+// 한 dept가 저장하면 타 dept 항목을 전부 소실시킴(잠재 데이터유실). → 본 dept 행만 교체,
+// 타 dept 행은 보존(읽어서 다시 기록). dept 빈값 → 'support'(레거시) 폴백.
 function saveItems(body) {
+  var reqDept = body.dept ? String(body.dept).trim() : 'support';
   var items = body.items || [];
   var sheet = initItemSheet();
-  // 헤더만 남기고 기존 데이터 전체 삭제
+
+  // 1) 기존 시트에서 타 dept 행 보존 수집
   var lastRow = sheet.getLastRow();
+  var preserved = [];
   if (lastRow > 1) {
-    sheet.getRange(2, 1, lastRow - 1, ITEM_HEADERS.length).clearContent();
+    var existing = sheet.getRange(2, 1, lastRow - 1, ITEM_HEADERS.length).getValues();
+    for (var e = 0; e < existing.length; e++) {
+      var r = existing[e];
+      if (!r[0] && !r[2]) continue; // 빈 행 스킵
+      if (_itemDept(r[ITEM_DEPT_COL]) !== reqDept) preserved.push(r); // 타 dept만 보존
+    }
   }
-  var rows = items.map(function (it, idx) {
+
+  // 2) 본 dept 신규 행 구성(부서 컬럼에 reqDept 박제)
+  var mine = items.map(function (it, idx) {
     return [
       String(it.id || ''),
       String(it.cat || ''),
@@ -671,13 +695,20 @@ function saveItems(body) {
       it.order !== undefined && it.order !== '' ? it.order : (idx + 1),
       // S1(2026-06-10 시토): 타입·필드정의 패스스루(빈값→'check' 폴백). 영문키만(한글 키 금지).
       String(it.type || '').trim() || 'check',
-      String(it.fields || '')
+      String(it.fields || ''),
+      reqDept   // S4 갭②: 부서
     ];
   });
+
+  // 3) 헤더 아래 전체 비우고 [보존 타 dept + 본 dept] 재기록
+  if (lastRow > 1) {
+    sheet.getRange(2, 1, lastRow - 1, ITEM_HEADERS.length).clearContent();
+  }
+  var rows = preserved.concat(mine);
   if (rows.length > 0) {
     sheet.getRange(2, 1, rows.length, ITEM_HEADERS.length).setValues(rows);
   }
-  return jsonRes({ ok: true, count: rows.length });
+  return jsonRes({ ok: true, count: mine.length, total: rows.length, dept: reqDept });
 }
 
 // ════════════════════════════════════════════
@@ -710,6 +741,29 @@ function saveBoard(body) {
   return jsonRes({ ok: true, key: key, savedAt: Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy-MM-dd HH:mm:ss') });
 }
 
+// ─── 점검항목 마스터 dept 1회 마이그레이션 (S4 갭② · 2026-06-10 시토) ───
+// 기존 시트는 '부서' 열 빈값 → getItems가 전부 'support'로 폴백(시설 항목이 지원부에 노출).
+// id 접두사로 dept 추정해 박제: 'fac'/'facility' → facility, 그 외 → support.
+// 에디터 1회 실행 또는 GET ?action=migrate_item_dept 로 호출(신규 배포 불필요).
+function migrateItemDept() {
+  var sheet = initItemSheet();   // 헤더 10열 보장
+  var lastRow = sheet.getLastRow();
+  if (lastRow < 2) return { ok: true, updated: 0, note: 'no data' };
+  var rng = sheet.getRange(2, 1, lastRow - 1, ITEM_HEADERS.length);
+  var data = rng.getValues();
+  var updated = 0;
+  for (var i = 0; i < data.length; i++) {
+    if (!data[i][0] && !data[i][2]) continue;
+    var cur = String(data[i][ITEM_DEPT_COL] == null ? '' : data[i][ITEM_DEPT_COL]).trim();
+    if (cur) continue;   // 이미 dept 있으면 보존(멱등)
+    var id = String(data[i][0] || '').toLowerCase();
+    data[i][ITEM_DEPT_COL] = (id.indexOf('fac') === 0) ? 'facility' : 'support';
+    updated++;
+  }
+  rng.setValues(data);
+  return { ok: true, updated: updated };
+}
+
 // ─── 항목 마스터 1회 시드 (Apps Script 에디터에서 1회 실행) ───
 // 현재 기본 항목(ZONE_ITEMS + COMMON_ITEMS)을 점검항목 시트에 채운다.
 function seedItemMaster() {
@@ -721,13 +775,13 @@ function seedItemMaster() {
   var rows = [];
   var order = 1;
   // S1(2026-06-10 시토): 기존 시드 항목은 모두 check형(타입='check', 필드정의 빈값).
-  // 남/여 공통 구역 항목
+  // 남/여 공통 구역 항목 (S4 갭②: 부서='support' — 기존 지원부 마스터)
   ZONE_ITEMS.forEach(function (it) {
-    rows.push([it.id, it.cat, it.name, '', 'all', it.slot, order++, 'check', '']);
+    rows.push([it.id, it.cat, it.name, '', 'all', it.slot, order++, 'check', '', 'support']);
   });
   // 공용 구역 항목
   COMMON_ITEMS.forEach(function (it) {
-    rows.push([it.id, it.cat, it.name, '', 'all', it.slot, order++, 'check', '']);
+    rows.push([it.id, it.cat, it.name, '', 'all', it.slot, order++, 'check', '', 'support']);
   });
   if (rows.length > 0) {
     sheet.getRange(2, 1, rows.length, ITEM_HEADERS.length).setValues(rows);
