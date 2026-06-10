@@ -511,7 +511,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   <div id="checkView"></div>
 </div>
 <div id="tab-work" class="content hidden">
-  <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:4px 0 14px"><h2 style="margin:0">🗂️ 업무현황</h2><span style="color:var(--dim);font-size:12px">업무 SSOT · [2] 인사 & 파트너</span><span style="flex:1"></span><span id="workUpdated" style="color:var(--dim);font-size:12px"></span><a class="util-btn" href="../../wellperion_guide(main).html#gcoo-todo">🗂 업무 SSOT →</a></div>
+  <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:4px 0 14px"><h2 style="margin:0">🗂️ 업무현황</h2><span style="color:var(--dim);font-size:12px">업무 SSOT · [2] 인사 · [3] 파트너팀</span><span style="flex:1"></span><span id="workUpdated" style="color:var(--dim);font-size:12px"></span><a class="util-btn" href="../../wellperion_guide(main).html#gcoo-todo">🗂 업무 SSOT →</a></div>
   <div id="workStats" class="statgrid" style="margin-bottom:18px"></div>
   <div id="workBoard"></div>
 </div>
@@ -630,7 +630,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
     var cache=hr.length>0;if(!cache)hr=SEED;
     var g={'진행중':[],'완료':[],'보류':[]};
     hr.forEach(function(t){var s=(t.status||'').trim();if(/완료/.test(s))g['완료'].push(t);else if(/보류|대기/.test(s))g['보류'].push(t);else g['진행중'].push(t);});
-    document.getElementById('workStats').innerHTML=card('전체',hr.length+'건','인사 & 파트너','var(--accent)')+card('진행중',g['진행중'].length+'건','','var(--blue)')+card('완료',g['완료'].length+'건','','var(--green)')+card('보류',g['보류'].length+'건','','var(--orange)');
+    document.getElementById('workStats').innerHTML=card('전체',hr.length+'건','인사 · 파트너팀','var(--accent)')+card('진행중',g['진행중'].length+'건','','var(--blue)')+card('완료',g['완료'].length+'건','','var(--green)')+card('보류',g['보류'].length+'건','','var(--orange)');
     var diff={'상':'var(--red)','중':'var(--yellow)','하':'var(--green)'};
     var cols=[['진행중','var(--blue)'],['완료','var(--green)'],['보류','var(--orange)']];
     document.getElementById('workBoard').innerHTML=cols.map(function(cc){var list=g[cc[0]];return '<div style="background:var(--paper);border:1px solid var(--border);border-radius:10px;overflow:hidden"><div style="padding:9px 12px;border-bottom:1px solid var(--border);font-weight:700;display:flex;justify-content:space-between"><span style="color:'+cc[1]+'">'+cc[0]+'</span><span style="color:var(--dim)">'+list.length+'</span></div><div style="padding:8px;display:flex;flex-direction:column;gap:8px">'+(list.length?list.map(function(t){var d=(''+(t.startDate||'')).slice(0,10)+(t.endDate?' ~ '+(''+t.endDate).slice(0,10):'');var lv=(t.난이도||'').trim();return '<div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:9px 10px"><div style="font-weight:600;font-size:13px;line-height:1.45">'+esc(t.title||'')+'</div><div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px;align-items:center">'+(lv?'<span style="font-size:10px;border-radius:5px;padding:1px 6px;background:var(--border);color:'+(diff[lv]||'var(--dim)')+'">난이도 '+lv+'</span>':'')+'<span style="flex:1"></span><span style="font-size:10px;color:var(--dim)">'+esc(t.owner||'')+'</span></div>'+(d.replace(/[~ ]/g,'')?'<div style="font-size:10px;color:var(--dim);margin-top:4px">📅 '+esc(d)+'</div>':'')+'</div>';}).join(''):'<div style="color:var(--dim);font-size:12px;text-align:center;padding:14px">없음</div>')+'</div></div>';}).join('');

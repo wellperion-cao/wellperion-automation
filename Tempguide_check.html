@@ -400,7 +400,6 @@
     .kpi-grid-ceo{grid-template-columns:1fr;}
   }
   /* ── /KPI 대시보드 v1 ──────────────────────────────────────── */
-  @media(max-width:600px){.ops-detail-grid{grid-template-columns:1fr;}}
 </style>
 </head>
 <body>
@@ -477,146 +476,28 @@
   <article class="doc active" id="home">
     <div class="doc-header"><h2>🏢 웰페리온 ERP</h2><div class="meta">웰페리온 통합 운영 시스템 · 웰페리온 ERP v2.7 · 최종 업데이트 2026-06-05</div></div>
     <p class="lead"><strong>웰페리온 ERP</strong>(전사적 자원 관리 · Enterprise Resource Planning)는 웰페리온의 모든 일이 하나의 북극성을 향해 같은 항로로 나아가게 잇는 통합 플랫폼입니다. 인사·재무·운영·회원·마케팅·업무결재·기술·경영 8개 모듈을 한 화면에 모아 — 사람은 방향을 정하고, 시스템은 항해를 책임집니다.</p>
-    <!-- (홈 북극성 블록 삭제 — GM 2026-06-07) -->
 
-    <!-- ⑤ 운영 현황 상세 (컴팩트 v2 2026-06-08) -->
-    <div style="display:flex;align-items:center;gap:11px;margin:22px 0 14px;"><span style="width:30px;height:30px;border-radius:8px;background:var(--accent-bg);color:var(--accent);display:flex;align-items:center;justify-content:center;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 14l3-3 3 3 5-6"/></svg></span><span style="font-size:17px;font-weight:800;letter-spacing:-0.01em;color:var(--text);">운영 현황 상세</span><span style="font-size:11.5px;color:var(--dim);">큰 숫자=총(올해 1/1~) · 작은 숫자=오늘</span><span style="flex:1;height:1px;background:var(--border);"></span></div>
-
-    <!-- 매출·지출 스트립 (home_kpi 연동 — ID 보존) -->
-    <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:14px;">
-      <!-- 이번달 매출 -->
-      <div style="background:var(--paper);border:1px solid var(--border);border-left:4px solid var(--grow);border-radius:14px;padding:15px 16px;">
-        <div style="display:flex;align-items:center;gap:7px;color:var(--grow);font-size:12px;font-weight:700;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01z"/></svg> 이번달 매출</div>
-        <div style="font-size:22px;font-weight:800;line-height:1.1;margin:7px 0 4px;letter-spacing:-0.02em;color:var(--text);"><span id="heroSalesMonth">—</span></div>
-        <div style="font-size:11px;color:var(--dim);display:flex;gap:8px;flex-wrap:wrap;">
-          <span>오늘 <span id="heroSalesDay" style="color:var(--grow);">—</span></span>
-          <span>달성률 <span id="heroSalesRate" style="color:var(--grow);">—</span></span>
-          <span>연간 <span id="heroSalesYear" style="color:var(--grow);">—</span></span>
-        </div>
-        <!-- 팀별 매출 토글 -->
-        <button id="salesBreakdownBtn" onclick="(function(){var p=document.getElementById('salesBreakdownPanel');var b=document.getElementById('salesBreakdownBtn');if(!p)return;var open=p.style.display!=='none';p.style.display=open?'none':'block';b.textContent=open?'팀별 보기 ▾':'팀별 접기 ▴';})()" style="display:none;margin-top:10px;font-size:11px;font-weight:700;color:var(--grow);background:var(--grow-bg,rgba(106,191,123,0.1));border:1px solid rgba(106,191,123,0.3);border-radius:20px;padding:3px 11px;cursor:pointer;">팀별 보기 ▾</button>
-        <div id="salesBreakdownPanel" style="display:none;margin-top:8px;border-top:1px dashed var(--border);padding-top:8px;">
-          <table style="width:100%;border-collapse:collapse;font-size:11px;">
-            <thead><tr style="color:var(--dim);font-weight:700;border-bottom:1px solid var(--border);">
-              <th style="text-align:left;padding:3px 4px;">항목</th>
-              <th style="text-align:right;padding:3px 4px;">이번달</th>
-              <th style="text-align:right;padding:3px 4px;">달성률</th>
-            </tr></thead>
-            <tbody id="salesBreakdownBody"><tr><td colspan="3" style="color:var(--dim);padding:6px 4px;">세부 없음</td></tr></tbody>
-          </table>
-        </div>
+    <!-- ② 경영 현황 라이브 스트립 — 실제 가져온 숫자만 표시(가짜 금지). 업무·결재=todo_list 1회 호출 집계(S3 KPI 스트립과 1:1), 그 외 소스없는 지표는 "측정 예정"으로 정직 표기 -->
+    <div style="display:flex;gap:12px;flex-wrap:wrap;margin:20px 0 8px;" id="homeErpStrip">
+      <div style="flex:1;min-width:150px;background:linear-gradient(135deg,var(--accent-bg),transparent);border:1px solid var(--border);border-radius:14px;padding:18px 16px;">
+        <div style="font-size:11px;font-weight:700;letter-spacing:0.04em;color:var(--dim);">📋 진행 업무</div>
+        <div style="font-size:34px;font-weight:800;color:var(--accent);line-height:1.1;margin:6px 0 2px;" id="erpWorkN">—</div>
+        <div style="font-size:10.5px;color:var(--dim);">업무 현황 SSOT 실시간</div>
       </div>
-      <!-- 이번달 지출 -->
-      <div style="background:var(--paper);border:1px solid var(--border);border-left:4px solid var(--warm);border-radius:14px;padding:15px 16px;">
-        <div style="display:flex;align-items:center;gap:7px;color:var(--warm);font-size:12px;font-weight:700;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20V10M18 20V4M6 20v-4"/></svg> 이번달 지출</div>
-        <div style="margin:7px 0 4px;"><span id="heroExpMonth" style="font-size:13px;font-weight:700;color:var(--dim);background:var(--gray-bg);padding:3px 10px;border-radius:20px;display:inline-block;">집계 보완 중</span></div>
-        <div style="font-size:11px;color:var(--dim);display:flex;gap:8px;flex-wrap:wrap;">
-          <span id="heroExpDay" style="display:none;"></span>
-          <span id="heroExpRate" style="display:none;"></span>
-          <span id="heroExpYear" style="display:none;"></span>
-        </div>
-        <div style="font-size:10.5px;color:var(--dim);margin-top:4px;">지출 시트 구조 정리 후 연결 예정</div>
-        <!-- 지출 토글 — 구조만 -->
-        <button onclick="(function(b){var p=document.getElementById('expBreakdownPanel');if(!p)return;var open=p.style.display!=='none';p.style.display=open?'none':'block';b.textContent=open?'팀별 보기 ▾':'팀별 접기 ▴';})(this)" style="margin-top:10px;font-size:11px;font-weight:700;color:var(--dim);background:var(--gray-bg);border:1px solid var(--border);border-radius:20px;padding:3px 11px;cursor:pointer;">팀별 보기 ▾</button>
-        <div id="expBreakdownPanel" style="display:none;margin-top:8px;border-top:1px dashed var(--border);padding-top:8px;">
-          <div style="font-size:11.5px;color:var(--dim);padding:6px 2px;">집계 보완 중 — 지출 시트 정리 후 연결 예정</div>
-        </div>
+      <div style="flex:1;min-width:150px;background:linear-gradient(135deg,var(--warm-bg),transparent);border:1px solid var(--border);border-radius:14px;padding:18px 16px;">
+        <div style="font-size:11px;font-weight:700;letter-spacing:0.04em;color:var(--dim);">🧾 결재 대기</div>
+        <div style="font-size:34px;font-weight:800;color:var(--warm);line-height:1.1;margin:6px 0 2px;" id="erpApprN">—</div>
+        <div style="font-size:10.5px;color:var(--dim);">결재 현황 SSOT 실시간</div>
+      </div>
+      <div style="flex:1;min-width:150px;background:linear-gradient(135deg,var(--grow-bg),transparent);border:1px solid var(--border);border-radius:14px;padding:18px 16px;">
+        <div style="font-size:11px;font-weight:700;letter-spacing:0.04em;color:var(--dim);">💬 신규 문의</div>
+        <div style="font-size:34px;font-weight:800;color:var(--grow);line-height:1.1;margin:6px 0 2px;" id="erpInqN">—</div>
+        <div style="font-size:10.5px;color:var(--dim);">이번 달 문의 (자동 집계)</div>
       </div>
     </div>
-
-    <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:14px;container-type:inline-size;" class="ops-detail-grid">
-
-      <!-- 업무 카드 -->
-      <div style="background:var(--paper);border:1px solid var(--border);border-radius:14px;padding:16px 18px;">
-        <div style="display:flex;align-items:center;gap:9px;margin-bottom:12px;"><span style="width:28px;height:28px;border-radius:8px;background:var(--accent-bg);color:var(--accent);display:flex;align-items:center;justify-content:center;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5h6M7 7H5v14h14V7h-2M9 5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2"/></svg></span><div><div style="font-weight:800;font-size:14px;color:var(--text);">업무 현황</div><div style="font-size:10.5px;color:var(--dim);">Work · AI COO(시우)</div></div></div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-          <div style="background:var(--accent-bg);border-radius:10px;padding:10px 12px;">
-            <div style="font-size:10px;color:var(--dim);margin-bottom:4px;font-weight:600;">진행</div>
-            <div style="font-size:22px;font-weight:800;color:var(--accent);line-height:1;" id="kpiWorkTotalActive">—</div>
-            <div style="display:flex;align-items:center;gap:4px;margin-top:4px;"><span style="font-size:10px;color:var(--dim);">오늘</span><span style="font-size:13px;font-weight:700;color:var(--text);" id="kpiWorkDayActive">—</span></div>
-          </div>
-          <div style="background:var(--accent-bg);border-radius:10px;padding:10px 12px;">
-            <div style="font-size:10px;color:var(--dim);margin-bottom:4px;font-weight:600;">완료</div>
-            <div style="font-size:22px;font-weight:800;color:var(--grow);line-height:1;" id="kpiWorkTotalDone">—</div>
-            <div style="display:flex;align-items:center;gap:4px;margin-top:4px;"><span style="font-size:10px;color:var(--dim);">오늘</span><span style="font-size:13px;font-weight:700;color:var(--grow);" id="kpiWorkDayDone">—</span></div>
-          </div>
-        </div>
-        <div style="margin-top:11px;padding-top:10px;border-top:1px dashed var(--border);">
-          <a href="https://wellperion-cao.github.io/wellperion-automation/coo/todo/%EC%97%85%EB%AC%B4%20%ED%98%84%ED%99%A9%20SSOT.html" target="_blank" style="font-size:11px;font-weight:700;padding:3px 10px;background:var(--accent-bg);color:var(--accent);border-radius:20px;text-decoration:none;border:1px solid var(--border);">업무 현황 SSOT ↗</a>
-        </div>
-      </div>
-
-      <!-- 결재 카드 -->
-      <div style="background:var(--paper);border:1px solid var(--border);border-radius:14px;padding:16px 18px;">
-        <div style="display:flex;align-items:center;gap:9px;margin-bottom:12px;"><span style="width:28px;height:28px;border-radius:8px;background:var(--warm-bg);color:var(--warm);display:flex;align-items:center;justify-content:center;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 4v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V7z"/><path d="M9 12l2 2 4-4"/></svg></span><div><div style="font-weight:800;font-size:14px;color:var(--text);">결재 현황</div><div style="font-size:10.5px;color:var(--dim);">Approval · AI CEO(웰리)</div></div></div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-          <div style="background:var(--warm-bg);border-radius:10px;padding:10px 12px;">
-            <div style="font-size:10px;color:var(--dim);margin-bottom:4px;font-weight:600;">대기</div>
-            <div style="font-size:22px;font-weight:800;color:var(--warm);line-height:1;" id="kpiApprTotalPend">—</div>
-            <div style="display:flex;align-items:center;gap:4px;margin-top:4px;"><span style="font-size:10px;color:var(--dim);">오늘</span><span style="font-size:13px;font-weight:700;color:var(--warm);" id="kpiApprDayPend">—</span></div>
-          </div>
-          <div style="background:var(--warm-bg);border-radius:10px;padding:10px 12px;">
-            <div style="font-size:10px;color:var(--dim);margin-bottom:4px;font-weight:600;">완료</div>
-            <div style="font-size:22px;font-weight:800;color:var(--grow);line-height:1;" id="kpiApprTotalDone">—</div>
-            <div style="display:flex;align-items:center;gap:4px;margin-top:4px;"><span style="font-size:10px;color:var(--dim);">오늘</span><span style="font-size:13px;font-weight:700;color:var(--grow);" id="kpiApprDayDone">—</span></div>
-          </div>
-        </div>
-        <div style="margin-top:11px;padding-top:10px;border-top:1px dashed var(--border);">
-          <a href="https://wellperion-cao.github.io/wellperion-automation/coo/todo/%EA%B2%B0%EC%9E%AC%20%ED%98%84%ED%99%A9%20SSOT.html" target="_blank" style="font-size:11px;font-weight:700;padding:3px 10px;background:var(--warm-bg);color:var(--warm);border-radius:20px;text-decoration:none;border:1px solid var(--border);">결재 현황 SSOT ↗</a>
-        </div>
-      </div>
-
-      <!-- 문의 카드 -->
-      <div style="background:var(--paper);border:1px solid var(--border);border-radius:14px;padding:16px 18px;">
-        <div style="display:flex;align-items:center;gap:9px;margin-bottom:12px;"><span style="width:28px;height:28px;border-radius:8px;background:var(--grow-bg);color:var(--grow);display:flex;align-items:center;justify-content:center;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.5 8.5 0 0 1-12.5 7.5L3 21l2-5.5A8.5 8.5 0 1 1 21 11.5z"/></svg></span><div><div style="font-weight:800;font-size:14px;color:var(--text);">문의 현황</div><div style="font-size:10.5px;color:var(--dim);">Inquiry · AI CMO(시모)</div></div></div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-          <div style="background:var(--grow-bg);border-radius:10px;padding:10px 12px;">
-            <div style="font-size:10px;color:var(--dim);margin-bottom:4px;font-weight:600;">신규</div>
-            <div style="font-size:22px;font-weight:800;color:var(--grow);line-height:1;" id="kpiInqTotal">—</div>
-            <div style="display:flex;align-items:center;gap:4px;margin-top:4px;"><span style="font-size:10px;color:var(--dim);">오늘</span><span style="font-size:13px;font-weight:700;color:var(--grow);" id="kpiInqDay">—</span></div>
-          </div>
-          <div style="background:var(--grow-bg);border-radius:10px;padding:10px 12px;">
-            <div style="font-size:10px;color:var(--dim);margin-bottom:4px;font-weight:600;">등록전환</div>
-            <span style="font-size:11px;font-weight:700;color:var(--dim);background:var(--gray-bg);padding:1px 8px;border-radius:20px;display:inline-block;margin-top:2px;" id="kpiInqTotalConv">연결 예정</span>
-            <div style="display:flex;align-items:center;gap:4px;margin-top:4px;"><span style="font-size:10px;color:var(--dim);">오늘</span><span style="font-size:11px;font-weight:700;color:var(--dim);background:var(--gray-bg);padding:1px 7px;border-radius:20px;display:inline-block;" id="kpiInqDayConv">연결 예정</span></div>
-          </div>
-        </div>
-        <div style="margin-top:11px;padding-top:10px;border-top:1px dashed var(--border);">
-          <a href="#" onclick="event.preventDefault();document.querySelector('[data-id=M4]').click();" style="font-size:11px;font-weight:700;padding:3px 10px;background:var(--grow-bg);color:var(--grow);border-radius:20px;text-decoration:none;border:1px solid var(--border);">문의 현황 →</a>
-        </div>
-      </div>
-
-      <!-- 이슈 카드 -->
-      <div style="background:var(--paper);border:1px solid var(--border);border-radius:14px;padding:16px 18px;">
-        <div style="display:flex;align-items:center;gap:9px;margin-bottom:12px;"><span style="width:28px;height:28px;border-radius:8px;background:rgba(90,138,159,0.12);color:#5a8a9f;display:flex;align-items:center;justify-content:center;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></span><div><div style="font-weight:800;font-size:14px;color:var(--text);">이슈 현황</div><div style="font-size:10.5px;color:var(--dim);">VOC · AI COO(시우)</div></div></div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-          <div style="background:rgba(90,138,159,0.08);border-radius:10px;padding:10px 12px;">
-            <div style="font-size:10px;color:var(--dim);margin-bottom:4px;font-weight:600;">접수</div>
-            <span id="kpiIssueDayNew" style="font-size:11px;font-weight:700;color:var(--dim);background:var(--gray-bg);padding:1px 8px;border-radius:20px;display:inline-block;">—</span>
-            <div style="display:flex;align-items:center;gap:4px;margin-top:4px;"><span style="font-size:10px;color:var(--dim);">미처리</span><span id="kpiIssuePending" style="font-size:11px;font-weight:700;color:var(--dim);background:var(--gray-bg);padding:1px 7px;border-radius:20px;display:inline-block;">—</span></div>
-          </div>
-          <div style="background:rgba(90,138,159,0.08);border-radius:10px;padding:10px 12px;">
-            <div style="font-size:10px;color:var(--dim);margin-bottom:4px;font-weight:600;">처리</div>
-            <span id="kpiIssueDone" style="font-size:11px;font-weight:700;color:var(--dim);background:var(--gray-bg);padding:1px 8px;border-radius:20px;display:inline-block;">—</span>
-            <div style="display:flex;align-items:center;gap:4px;margin-top:4px;"><span style="font-size:10px;color:var(--dim);">처리율</span><span id="kpiIssueRate" style="font-size:11px;font-weight:700;color:var(--dim);background:var(--gray-bg);padding:1px 7px;border-radius:20px;display:inline-block;">—</span></div>
-          </div>
-        </div>
-        <div style="margin-top:11px;padding-top:10px;border-top:1px dashed var(--border);display:flex;gap:7px;flex-wrap:wrap;">
-          <a href="https://docs.google.com/forms/d/e/1FAIpQLSd7mDzTyZT5FSXVcxmpMCaqv7M-RR3EmEu2lFqGRksUE77osA/viewform" target="_blank" style="font-size:11px;font-weight:700;padding:3px 10px;background:rgba(90,138,159,0.12);color:#5a8a9f;border-radius:20px;text-decoration:none;border:1px solid rgba(90,138,159,0.3);">이슈 접수(VOC) ↗</a>
-          <a href="https://docs.google.com/spreadsheets/d/1akZLs7ITs3FZWFIzMQvSYrdRucGQglmerOvTC2TLEcQ/edit?gid=1576318230" target="_blank" style="font-size:11px;font-weight:700;padding:3px 10px;background:rgba(90,138,159,0.12);color:#5a8a9f;border-radius:20px;text-decoration:none;border:1px solid rgba(90,138,159,0.3);">이슈 응답 시트 ↗</a>
-        </div>
-      </div>
-
-    </div>
-
-    <!-- 점검 현황 (리디자인) -->
-    <div style="display:flex;align-items:center;gap:11px;margin:30px 0 14px;"><span style="width:30px;height:30px;border-radius:8px;background:var(--accent-bg);color:var(--accent);display:flex;align-items:center;justify-content:center;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></span><span style="font-size:17px;font-weight:800;letter-spacing:-0.01em;color:var(--text);">일일 점검 현황</span><span style="font-size:11.5px;color:var(--dim);">오늘 기준 · 부서별 체크리스트 완료율</span><span style="flex:1;height:1px;background:var(--border);"></span></div>
-    <div id="home-check-kpi" style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;">
-      <div style="text-align:center;padding:16px;color:var(--dim);font-size:12px;grid-column:1/-1;">점검 현황 불러오는 중...</div>
-    </div>
+    <div style="font-size:11px;color:var(--dim);margin:0 0 24px;">실시간 숫자는 업무·결재 SSOT(구글시트)에서 직접 집계합니다. 가져오지 못하면 "—"로 표시(가짜 수치 없음).</div>
 
     <!-- ③ ERP 모듈 그리드 (시스템 설계도) — 8개 모듈, 넓으면 3열·좁으면 1열. 모든 링크는 home/수록가이드의 실제 URL 복사 -->
-    <div style="display:flex;align-items:center;gap:11px;margin:30px 0 14px;"><span style="width:30px;height:30px;border-radius:8px;background:var(--accent-bg);color:var(--accent);display:flex;align-items:center;justify-content:center;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg></span><span style="font-size:17px;font-weight:800;letter-spacing:-0.01em;color:var(--text);">ERP 모듈 바로가기</span><span style="font-size:11.5px;color:var(--dim);">8개 모듈 — 클릭해서 각 영역으로 이동</span><span style="flex:1;height:1px;background:var(--border);"></span></div>
     <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px;margin:0 0 8px;">
 
       <!-- 1. 인사 -->
@@ -644,8 +525,6 @@
           <a href="#" onclick="event.preventDefault();document.querySelector('[data-id=O1]').click();" style="font-size:12px;font-weight:600;padding:6px 12px;background:var(--accent-bg);color:var(--accent);border-radius:99px;text-decoration:none;border:1px solid var(--border);">운영 통합체계</a>
           <a href="https://wellperion-cao.github.io/wellperion-automation/coo/check/%EC%8B%9C%EC%84%A4%EB%B6%80%20%EC%B2%B4%EA%B3%84.html" target="_blank" style="font-size:12px;font-weight:600;padding:6px 12px;background:var(--accent-bg);color:var(--accent);border-radius:99px;text-decoration:none;border:1px solid var(--border);">시설부 체계 ↗</a>
           <a href="https://wellperion-cao.github.io/wellperion-automation/coo/check/%EC%A7%80%EC%9B%90%EB%B6%80%20%EC%B2%B4%EA%B3%84.html" target="_blank" style="font-size:12px;font-weight:600;padding:6px 12px;background:var(--accent-bg);color:var(--accent);border-radius:99px;text-decoration:none;border:1px solid var(--border);">지원부 체계 ↗</a>
-          <a href="https://wellperion-cao.github.io/wellperion-automation/coo/check/%EC%A3%BC%EC%B0%A8%EA%B4%80%EB%A6%AC%EB%B6%80%20%EC%B2%B4%EA%B3%84.html" target="_blank" style="font-size:12px;font-weight:600;padding:6px 12px;background:var(--accent-bg);color:var(--accent);border-radius:99px;text-decoration:none;border:1px solid var(--border);">주차관리부 체계 ↗</a>
-          <a href="https://wellperion-cao.github.io/wellperion-automation/coo/check/%EC%9A%B4%EC%98%81%EB%B6%80%20%EC%B2%B4%EA%B3%84.html" target="_blank" style="font-size:12px;font-weight:600;padding:6px 12px;background:var(--accent-bg);color:var(--accent);border-radius:99px;text-decoration:none;border:1px solid var(--border);">운영부 체계 ↗</a>
           <a href="https://wellperion-cao.github.io/wellperion-automation/coo/check/%EA%B0%95%EC%8A%B5%ED%8C%80%20%EA%B0%80%EC%9D%B4%EB%93%9C%EB%9D%BC%EC%9D%B8.html" target="_blank" style="font-size:12px;font-weight:600;padding:6px 12px;background:var(--accent-bg);color:var(--accent);border-radius:99px;text-decoration:none;border:1px solid var(--border);">강습팀 가이드라인 ↗</a>
           <a href="#" onclick="event.preventDefault();document.querySelector('[data-id=O2]').click();" style="font-size:12px;font-weight:600;padding:6px 12px;background:var(--accent-bg);color:var(--accent);border-radius:99px;text-decoration:none;border:1px solid var(--border);">공지/안내문</a>
         </div>
@@ -655,7 +534,6 @@
       <div class="erp-mod" style="--mc:#c48f7c;background:var(--paper);border:1px solid var(--border);border-top:3px solid var(--mc);border-radius:14px;padding:18px 18px 16px;transition:transform .14s,box-shadow .14s,border-color .14s;" onmouseover="this.style.transform='translateY(-3px)';this.style.boxShadow='0 8px 22px rgba(0,0,0,0.18)';this.style.borderColor='var(--mc)';" onmouseout="this.style.transform='';this.style.boxShadow='';this.style.borderColor='var(--border)';this.style.borderTopColor='var(--mc)';">
         <div style="display:flex;align-items:center;gap:10px;"><span style="font-size:26px;">🤝</span><div><div style="font-weight:800;font-size:15.5px;">회원 <span style="font-size:11px;color:var(--dim);font-weight:600;">Membership</span></div><div style="font-size:11px;color:var(--dim);">실무 책임 · 임정은M</div><div style="font-size:11px;color:var(--accent);font-weight:600;margin-top:2px;">🤖 AI CPO (시포)</div></div></div>
         <div style="display:flex;gap:7px;flex-wrap:wrap;margin-top:14px;">
-          <a href="https://crm.broj.co.kr/" target="_blank" rel="noopener" style="font-size:12px;font-weight:600;padding:6px 12px;background:var(--accent-bg);color:var(--accent);border-radius:99px;text-decoration:none;border:1px solid var(--border);">브로제이 ↗</a>
           <a href="cpo/member/회원관리.html" target="_blank" style="font-size:12px;font-weight:600;padding:6px 12px;background:var(--accent-bg);color:var(--accent);border-radius:99px;text-decoration:none;border:1px solid var(--border);">회원관리 ↗</a>
         </div>
       </div>
@@ -696,12 +574,24 @@
       <div class="erp-mod" style="--mc:#5fa8a8;background:var(--paper);border:1px solid var(--border);border-top:3px solid var(--mc);border-radius:14px;padding:18px 18px 16px;transition:transform .14s,box-shadow .14s,border-color .14s;" onmouseover="this.style.transform='translateY(-3px)';this.style.boxShadow='0 8px 22px rgba(0,0,0,0.18)';this.style.borderColor='var(--mc)';" onmouseout="this.style.transform='';this.style.boxShadow='';this.style.borderColor='var(--border)';this.style.borderTopColor='var(--mc)';">
         <div style="display:flex;align-items:center;gap:10px;"><span style="font-size:26px;">📊</span><div><div style="font-weight:800;font-size:15.5px;">경영 <span style="font-size:11px;color:var(--dim);font-weight:600;">Executive</span></div><div style="font-size:11px;color:var(--dim);">차의주 회장 · 전응준 대표 · 주영희 이사</div><div style="font-size:11px;color:var(--accent);font-weight:600;margin-top:2px;">🤖 AI CEO (웰리)</div></div></div>
         <div style="display:flex;gap:7px;flex-wrap:wrap;margin-top:14px;">
+          <a href="#" onclick="event.preventDefault();document.querySelector('[data-doc=dashboard]').click();" style="font-size:12px;font-weight:600;padding:6px 12px;background:var(--accent-bg);color:var(--accent);border-radius:99px;text-decoration:none;border:1px solid var(--border);">전체 대시보드</a>
           <a href="#" onclick="event.preventDefault();if(window.activateDoc){activateDoc('g9',null);location.hash='D1';}" style="font-size:12px;font-weight:600;padding:6px 12px;background:var(--accent-bg);color:var(--accent);border-radius:99px;text-decoration:none;border:1px solid var(--border);">회사소개·전략</a>
         </div>
       </div>
 
     </div>
 
+    <!-- ④ 하단 운영 가이드 + 문서 위치 -->
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin:18px 0 14px;align-items:center;">
+      <span style="font-size:12px;color:var(--dim);font-weight:600;">📚 운영 가이드</span>
+      <a href="#" onclick="event.preventDefault();document.querySelector('[data-id=S1]').click();" style="font-size:12px;font-weight:600;padding:5px 12px;color:var(--accent);border-radius:99px;text-decoration:none;border:1px solid var(--border);">공통 가이드라인</a>
+      <a href="#" onclick="event.preventDefault();document.querySelector('[data-id=S2]').click();" style="font-size:12px;font-weight:600;padding:5px 12px;color:var(--accent);border-radius:99px;text-decoration:none;border:1px solid var(--border);">AI 운영가이드</a>
+    </div>
+    <div class="card accent" style="margin:0 0 8px;">
+      <h4>이 문서 위치</h4>
+      <pre>C:\Users\jjky0\welperion-automation\3. 웰페리온 가이드\wellperion_guide(main).html</pre>
+      <p>메인 프로젝트 폴더 맨 위. 더블클릭하면 어디서든 열립니다.</p>
+    </div>
 
     <!-- ONBOARDING-GAME LINK START (삭제 시 이 블록+onboarding/game.html 제거) -->
     <a href="onboarding/game.html" target="_blank" rel="noopener" style="display:flex;align-items:center;gap:14px;margin:0 0 24px;padding:16px 18px;background:linear-gradient(135deg,rgba(237,91,63,0.16),rgba(183,159,138,0.10));border:1px solid rgba(237,91,63,0.35);border-radius:14px;text-decoration:none;color:var(--text);transition:transform 0.12s,border-color 0.15s;" onmouseover="this.style.transform='translateY(-2px)';this.style.borderColor='var(--warm)';" onmouseout="this.style.transform='';this.style.borderColor='rgba(237,91,63,0.35)';">
@@ -719,21 +609,18 @@
       <div class="toggle-body">
     <!-- AUTO:LATEST-START -->
     <div class="card grow">
-      <h4>✅ 오늘의 항로 — 완료된 배 (2026-06-10 기준)</h4>
-      <p><strong>2026-06-08</strong> ✅ [시모] AI 시리즈 #9편 오늘(06-08) 발행 — 북극성 항해 설계(260608) M5 검수 + 텔레그램 승인 → 발행완료</p>
-      <p><strong>2026-06-07</strong> ✅ [시모-08] 카카오채널 발행 방식 확정·자동화 R&D</p>
-      <p><strong>2026-06-06</strong> ✅ [시모] 채널 확장 — 네이버 플레이스·구글 비즈니스 프로필 추적·자동화 (#5)</p>
-      <p><strong>2026-06-06</strong> ✅ [시모] 문의 페이지 + 대시보드 파악 파이프라인 — 오늘 시모 진행 중 멈춤분 이어서 완성</p>
-      <p><strong>2026-06-05</strong> ✅ [시토] 당근 비즈프로필 반자동 발행 구현 — danggn_upload_playwright.py draft/publish 에디터 DOM 실…</p>
+      <h4>최신 업데이트 — 2026-06-06 (자동 갱신)</h4>
+      <p><strong>2026-06-06</strong> refactor(coo): '강습부 업장관리' → '강습팀 가이드라인' 이름·내부 제목 변경 + 가이드 링크(운영통합체계·home) 새 경…</p>
+      <p><strong>2026-06-06</strong> refactor(coo): 운영 통합체계 부서별 체계 순서 변경(운영부예정·시설부·지원부·주차예정) + 파트너팀 3팀(강습팀 가이드라인·루…</p>
+      <p><strong>2026-06-06</strong> feat(cmo): #5 채널확장 실행 — 네이버 플레이스·구글 비즈니스 프로필 등록 콘텐츠 팩(바로 붙여넣기용) 작성</p>
+      <p><strong>2026-06-06</strong> feat(home): 8개 모듈 카드에 실무 책임 + 지원 AI C-Level 병기 (인사=시로·재무=시뽀·운영=시우·회원=시포·마케팅=시…</p>
+      <p><strong>2026-06-06</strong> refactor(home): ERP 소개문 철학 버전(항해 세계관) 적용 — 북극성·항로·"사람은 방향, 시스템은 항해"</p>
     </div>
 <!-- AUTO:LATEST-END -->
         <table>
           <tr><th style="width:160px">날짜</th><th>변경 내용</th></tr>
           <!-- AUTO:TABLE-START -->
-      <tr><td><strong>2026-06-08 (항로완료)</strong></td><td>✅ [시모] AI 시리즈 #9편 오늘(06-08) 발행 — 북극성 항해 설계(260608) M5 검수 + 텔레그램 승인 → 발행완료</td></tr>
-      <tr><td><strong>2026-06-07 (항로완료)</strong></td><td>✅ [시모-08] 카카오채널 발행 방식 확정·자동화 R&D</td></tr>
-      <tr><td><strong>2026-06-06 (항로완료)</strong></td><td>✅ [시모] 채널 확장 — 네이버 플레이스·구글 비즈니스 프로필 추적·자동화 (#5) · ✅ [시모] 문의 페이지 + 대시보드 파악 파이프라인 — 오늘 시모 진행 중 멈춤분 이어서 완성</td></tr>
-      <tr><td><strong>2026-06-05 (항로완료)</strong></td><td>✅ [시토] 당근 비즈프로필 반자동 발행 구현 — danggn_upload_playwright.py draft/publish 에디터 DOM 실… · ✅ [시우] 업무 편집 시 빈값 덮어쓰기(초기화) 근본 차단 — GAS todo_update + 업무현황 SSOT · ✅ [시우] 지원부 점검 앱 이슈 저장 유실 위험 수정 (시토 진단 인계)</td></tr>
+      <tr><td><strong>2026-06-06 (자동)</strong></td><td>refactor(coo): '강습부 업장관리' → '강습팀 가이드라인' 이름·내부 제목 변경 + 가이드 링크(운영통합체계·home) 새 경로 동기 (데이터=시트ID 바인딩 불변) · refactor(coo): 운영 통합체계 부서별 체계 순서 변경(운영부예정·시설부·지원부·주차예정) + 파트너팀 3팀(강습팀 가이드라인·루프메소드팀·이움팀 예정)로 재편,…</td></tr>
       <!-- AUTO:TABLE-END -->
           <tr><td><strong>2026-05-28 (14차)</strong></td><td>공지/안내문 생성(COO 하위) · 오프라인 홍보물 디자인 제작(CMO 하위) 도구 신설 · 공지 서식 v2.0 독립 페이지화 · 회사소개서·전략로드맵 원본 「3. 웰페리온 가이드/회사문서/」로 이관(SSOT 단일화) · C-Level 부팅 R/R Notion API→웰페리온 ERP g10 참조로 전환 · GitHub Pages 워크플로 폴더명 경로 수정 · 사이드바 "공통+7개 C-Level" 라벨 제거</td></tr>
           <tr><td>2026-05-27 (13차)</td><td>GitHub Pages 전환 · 사이드바 4섹터 · AI C-Level 통일 · 운영 통합 체계 · 공식채널·지출현황·취업규칙·SSOT 신설 · g2+g19·g9+g20·g12·g13 합병 · 김남욱 탭 확장 · v2.5</td></tr>
@@ -766,13 +653,6 @@
       .then(function(res){
         if (!res || !(res.ok || res.success) || !Array.isArray(res.data || res.todos)) return; // 실패 시 "—" 유지
         var rows = res.data || res.todos;
-        // S3 안전망: AI C레벨 배 제외 — 2026-06-08 GM 방침
-        var _aiOwnerRe = /웰리|시뽀|시로|시모|시우|시포|시토|ai\s*ceo|ai\s*cfo|ai\s*chro|ai\s*cmo|ai\s*coo|ai\s*cpo|ai\s*cto/i;
-        rows = rows.filter(function(r){
-          var cat = String(r['카테고리'] || r.category || '').trim();
-          var owner = String(r['담당자'] || r.owner || '').trim();
-          return cat !== '[7]AI배(C레벨)' && !_aiOwnerRe.test(owner);
-        });
         // 업무 진행: 실무진 기준 + 업무현황 SSOT와 동일 정의(완료여도 결재요청 미완이면 진행)
         function apprPending(r){ return String(req(r)).trim() && as(r) !== '결재완료' && !/반려/.test(String(as(r))); }
         var work = rows.filter(function(r){ return isStaff(r.owner || r['담당자'] || ''); });
@@ -813,236 +693,6 @@
         }
       })
       .catch(fallbackList);
-  })();
-
-  /* 📊 핵심 현황 재설계 — 운영부(업무/결재/문의) KPI (2026-06-08 GM)
-     데이터: todo_list GAS 1회 호출로 총/일일 업무·결재 집계.
-     문의 총/일일: SURVEY GAS inquiry_list 호출 — 등록전환은 미구현(플래그 표시).
-     총 = 올해 1/1 이후 생성 건 기준 / 일일 = 오늘 생성 또는 오늘 완료 건. */
-  (function loadHomeKpiOps(){
-    var TODO_API_URL = 'https://script.google.com/macros/s/AKfycbxDwFkrxK1YIaEoSNcuw2MiHiZQ-7o5N6311ytksSyeEd86ZFOhLknOWqQgNArQvZ-7/exec';
-    var SURVEY_URL   = 'https://script.google.com/macros/s/AKfycbzdwSCCSSJ6JXLDoWuo7HG0JmBM2iy10TujFQ_O5JbTjnWaN7gOk-ddA4IAvsNfelg0xA/exec';
-    var STAFF = ['이경연 실장','나우열M','최준용M','임정은M','윤병현AM','이지영 사원','이정헌 소장'];
-    var _aiOwnerRe = /웰리|시뽀|시로|시모|시우|시포|시토|ai\s*ceo|ai\s*cfo|ai\s*chro|ai\s*cmo|ai\s*coo|ai\s*cpo|ai\s*cto/i;
-
-    function set(id, v){ var el = document.getElementById(id); if (el) el.textContent = (v === null || v === undefined) ? '—' : v; }
-    function todayStr(){ var d=new Date(); return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2); }
-    function yearStart(){ return new Date().getFullYear()+'-01-01'; }
-
-    function isStaff(o){ return String(o||'').split(',').map(function(s){return s.trim();}).filter(Boolean).some(function(x){return STAFF.indexOf(x)>=0;}); }
-    function getStatus(r){ return String(r.status||r['상태']||'진행중').trim(); }
-    function getApprStatus(r){ return String(r['결재상태']||r.approvalStatus||'').trim(); }
-    function getApprReq(r){ return String(r['결재요청']||r.approval||'').trim(); }
-    function getCreated(r){ return String(r['생성일']||r.createdAt||r.startDate||'').trim().slice(0,10); }
-    function getDoneDate(r){ return String(r['완료일']||r.doneAt||r.updatedAt||'').trim().slice(0,10); }
-
-    function apprPending(r){ return getApprReq(r) && getApprStatus(r) !== '결재완료' && !/반려/.test(getApprStatus(r)); }
-
-    fetch(TODO_API_URL + '?action=todo_list', { redirect:'follow' })
-      .then(function(r){ return r.json(); })
-      .then(function(res){
-        if (!res || !(res.ok||res.success) || !Array.isArray(res.data||res.todos)) return;
-        var rows = (res.data||res.todos).filter(function(r){
-          var cat = String(r['카테고리']||r.category||'').trim();
-          var owner = String(r['담당자']||r.owner||'').trim();
-          return cat !== '[7]AI배(C레벨)' && !_aiOwnerRe.test(owner);
-        });
-        var today = todayStr();
-        var yStart = yearStart();
-
-        // 실무진 기준 업무 행
-        var work = rows.filter(function(r){ return isStaff(r.owner||r['담당자']||''); });
-
-        // 총 진행업무: 올해 생성 + 완료 아닌 것(결재미완 포함)
-        var totalActive = work.filter(function(r){
-          var c = getCreated(r); var s = getStatus(r);
-          return c >= yStart && ((s!=='완료'&&s!=='보류') || (s==='완료'&&apprPending(r)));
-        }).length;
-        // 총 완료업무: 올해 생성 + 완료
-        var totalDone = work.filter(function(r){
-          var c = getCreated(r);
-          return c >= yStart && getStatus(r)==='완료' && !apprPending(r);
-        }).length;
-        // 일일 진행업무: 오늘 생성 + 진행중
-        var dayActive = work.filter(function(r){
-          return getCreated(r)===today && ((getStatus(r)!=='완료'&&getStatus(r)!=='보류')||apprPending(r));
-        }).length;
-        // 일일 완료업무: 오늘 완료(완료일 기준, 없으면 생성일)
-        var dayDone = work.filter(function(r){
-          var dd = getDoneDate(r)||getCreated(r);
-          return dd===today && getStatus(r)==='완료' && !apprPending(r);
-        }).length;
-
-        set('kpiWorkTotalActive', totalActive);
-        set('kpiWorkTotalDone',   totalDone);
-        set('kpiWorkDayActive',   dayActive);
-        set('kpiWorkDayDone',     dayDone);
-
-        // 결재 행 (전체 rows, 실무진 무관)
-        var apprRows = rows.filter(function(r){ return getApprReq(r)||getApprStatus(r); });
-        // 총 결재대기: 올해 생성 + 결재완료/반려 아님
-        var totalApprPend = apprRows.filter(function(r){
-          return getCreated(r)>=yStart && getApprStatus(r)!=='결재완료' && !/반려/.test(getApprStatus(r));
-        }).length;
-        // 총 결재완료: 올해 생성 + 결재완료
-        var totalApprDone = apprRows.filter(function(r){
-          return getCreated(r)>=yStart && getApprStatus(r)==='결재완료';
-        }).length;
-        // 일일 결재대기: 오늘 생성 + 대기
-        var dayApprPend = apprRows.filter(function(r){
-          return getCreated(r)===today && getApprStatus(r)!=='결재완료' && !/반려/.test(getApprStatus(r));
-        }).length;
-        // 일일 결재완료: 오늘 생성 + 완료
-        var dayApprDone = apprRows.filter(function(r){
-          return getCreated(r)===today && getApprStatus(r)==='결재완료';
-        }).length;
-
-        set('kpiApprTotalPend', totalApprPend);
-        set('kpiApprTotalDone', totalApprDone);
-        set('kpiApprDayPend',   dayApprPend);
-        set('kpiApprDayDone',   dayApprDone);
-      })
-      .catch(function(){ /* "—" 유지 */ });
-
-    // 문의 — 총 신규문의/일일 신규문의 (2026-06-08 실연결)
-    // 소스: 한국어 문의폼(gid 1902010032) + 영문 문의폼(gid 1887747109) CSV 직접 읽기 (한+영 합산)
-    // 등록전환: 회원DB 매칭 필요 — 후속 과제 (시모/CMO). 현재 "—" 유지.
-    (function loadInqKpi(){
-      var SS_ID  = '12AWcAlgmmYKr2nUbWmVpa71_z3zi0BaU4ZdnOwrI_7U';
-      var GID_KO = '1902010032';
-      var GID_EN = '1887747109';
-      var BASE   = 'https://docs.google.com/spreadsheets/d/' + SS_ID + '/export?format=csv&gid=';
-      // 구글폼 타임스탬프 형식: "2026. N. N ..." — 날짜 부분만 추출 → 'YYYY-MM-DD'
-      var TS_RE = /(\d{4})\.\s*(\d{1,2})\.\s*(\d{1,2})/;
-      function parseDs(s) {
-        var m = TS_RE.exec(String(s || ''));
-        if (!m) return null;
-        return m[1] + '-' + ('0'+m[2]).slice(-2) + '-' + ('0'+m[3]).slice(-2);
-      }
-      // RFC 4180 CSV 파서 — 멀티라인 셀(따옴표 내 개행) 정확히 처리
-      function parseCSV(text) {
-        var rows = [], row = [], field = '', inQ = false, i = 0;
-        while (i < text.length) {
-          var c = text[i];
-          if (inQ) {
-            if (c === '"') {
-              if (text[i+1] === '"') { field += '"'; i += 2; continue; } // escaped quote
-              inQ = false; i++; continue;
-            }
-            field += c; i++; continue;
-          }
-          if (c === '"') { inQ = true; i++; continue; }
-          if (c === ',') { row.push(field); field = ''; i++; continue; }
-          if (c === '\r' && text[i+1] === '\n') { row.push(field); rows.push(row); row=[]; field=''; i+=2; continue; }
-          if (c === '\n') { row.push(field); rows.push(row); row=[]; field=''; i++; continue; }
-          field += c; i++;
-        }
-        if (field || row.length) { row.push(field); rows.push(row); }
-        return rows;
-      }
-      // CSV rows → 타임스탬프 컬럼(tsCol) 기준 총/일일 카운트. 헤더 행(0번) 제외.
-      function countRows(rows, tsCol) {
-        var yStart = yearStart(), today = todayStr(), total = 0, day = 0;
-        for (var i = 1; i < rows.length; i++) {
-          var r = rows[i];
-          if (!r || r.length <= tsCol) continue;
-          var ds = parseDs(r[tsCol]);
-          if (!ds) continue;
-          if (ds >= yStart) total++;
-          if (ds === today)  day++;
-        }
-        return { total: total, day: day };
-      }
-      var p1 = fetch(BASE + GID_KO + '&_pv=' + Date.now(), { redirect:'follow' }).then(function(r){ return r.text(); }).catch(function(){ return ''; });
-      var p2 = fetch(BASE + GID_EN + '&_pv=' + Date.now(), { redirect:'follow' }).then(function(r){ return r.text(); }).catch(function(){ return ''; });
-      Promise.all([p1, p2]).then(function(results){
-        var ko = countRows(parseCSV(results[0]), 1); // 한국어: B열(인덱스1)
-        var en = countRows(parseCSV(results[1]), 0); // 영문: A열(인덱스0)
-        set('kpiInqTotal', ko.total + en.total);
-        set('kpiInqDay',   ko.day   + en.day);
-        set('heroInqDay', ko.day + en.day);
-        // 등록전환: 회원DB 매칭 후속 연결 예정 — "—" 유지
-      }).catch(function(){ /* "—" 유지 */ });
-    })();
-
-    // ── home_kpi: 매출·지출·이슈 연동 (2026-06-08) ─────────────────────────────
-    (function loadHomeKpi(){
-      var BASE = 'https://script.google.com/macros/s/AKfycbxDwFkrxK1YIaEoSNcuw2MiHiZQ-7o5N6311ytksSyeEd86ZFOhLknOWqQgNArQvZ-7/exec';
-      function set(id, v){ var el = document.getElementById(id); if(el) el.textContent = v; }
-      function setTitle(id, v){ var el = document.getElementById(id); if(el) el.title = v; }
-
-      /* 한국식 금액 표기: 150317501 → "1억 5,032만" */
-      function krAmt(n){
-        if(n == null || isNaN(n)) return '—';
-        n = Math.round(Number(n));
-        var eok = Math.floor(n / 100000000);
-        var man = Math.floor((n % 100000000) / 10000);
-        if(eok > 0 && man > 0) return eok + '억 ' + man.toLocaleString() + '만';
-        if(eok > 0) return eok + '억';
-        if(man > 0) return man.toLocaleString() + '만';
-        return n.toLocaleString() + '원';
-      }
-      /* 콤마+원 정확값 */
-      function krExact(n){ return (n == null || isNaN(n)) ? '' : Number(n).toLocaleString() + '원'; }
-      /* 소수1자리 % */
-      function pct(v){ return (v == null || isNaN(v)) ? '—' : Number(v).toFixed(1) + '%'; }
-
-      fetch(BASE + '?action=home_kpi&_pv=' + Date.now(), { redirect:'follow' })
-        .then(function(r){ return r.json(); })
-        .then(function(d){
-          if(!d || !d.ok) return;
-          var s = d.sales || {}, e = d.expense || {}, v = d.voc || {};
-
-          /* 매출 */
-          var smVal = krAmt(s.month);
-          set('heroSalesMonth', smVal);
-          setTitle('heroSalesMonth', krExact(s.month));
-          set('heroSalesDay',   krAmt(s.today));
-          set('heroSalesRate',  pct(s.rate));
-          set('heroSalesYear',  krAmt(s.year));
-
-          /* 매출 팀별 breakdown */
-          (function(){
-            var btn = document.getElementById('salesBreakdownBtn');
-            var tbody = document.getElementById('salesBreakdownBody');
-            var bd = Array.isArray(s.breakdown) ? s.breakdown : [];
-            if(!btn || !tbody) return;
-            if(bd.length === 0) {
-              tbody.innerHTML = '<tr><td colspan="3" style="color:var(--dim);padding:6px 4px;">세부 없음</td></tr>';
-              return;
-            }
-            btn.style.display = 'inline-block';
-            var rows = '';
-            for(var i = 0; i < bd.length; i++) {
-              var item = bd[i];
-              var mVal = krAmt(item.month);
-              var rVal = pct(item.rate);
-              var odd = i % 2 === 1;
-              rows += '<tr style="' + (odd ? 'background:var(--accent-bg,rgba(183,159,138,0.06));' : '') + '">'
-                + '<td style="padding:4px 4px;font-weight:600;color:var(--text);">' + (item.name || '—') + '</td>'
-                + '<td style="text-align:right;padding:4px 4px;color:var(--grow);font-weight:700;" title="' + krExact(item.month) + '">' + mVal + '</td>'
-                + '<td style="text-align:right;padding:4px 4px;color:var(--dim);">' + rVal + '</td>'
-                + '</tr>';
-            }
-            tbody.innerHTML = rows;
-          })();
-
-          /* 지출 — 정식 지출 ERP 시트 연동 (2026-06-10 시토·시뽀, GM 승인) */
-          var emVal = krAmt(e.month);
-          set('heroExpMonth', emVal);
-          setTitle('heroExpMonth', krExact(e.month));
-          set('heroExpDay',  krAmt(e.today));
-          set('heroExpRate',  (e.rate == null || e.budget == null) ? '예산 미설정' : pct(e.rate));
-          set('heroExpYear',  krAmt(e.year));
-
-          /* 이슈(VOC) */
-          set('kpiIssueDayNew',  v.todayNew  != null ? String(v.todayNew)  : '—');
-          set('kpiIssuePending', v.pending   != null ? String(v.pending)   : '—');
-          set('kpiIssueDone',    v.done      != null ? String(v.done)      : '—');
-          set('kpiIssueRate',    pct(v.rate));
-        })
-        .catch(function(){ /* "—" 유지 */ });
-    })();
   })();
   </script>
 
@@ -1973,21 +1623,6 @@
         </details>
         <!-- ══ /🔌 AI 부팅·조직도 ══ -->
 
-        <!-- 📱 GM 모바일·원격 접속 (T1→S2 합병 2026-06-06) -->
-        <details class="toggle" style="margin-top:18px;border-top:1px solid var(--border);padding-top:20px;">
-          <summary style="cursor:pointer;font-weight:700;font-size:16px;"><span class="ico">📱</span>GM 모바일·원격 접속 <span style="font-size:12px;color:var(--dim);font-weight:400;">— 퇴근 후 스마트폰에서 (클릭해서 펼치기)</span></summary>
-          <div class="toggle-body" style="margin-top:10px;">
-            <div class="callout tip"><strong>자동 연결.</strong> 아침 PC ON → <code>Start-AI CEO.bat</code> 실행 시 <code>--remote-control "Wellperion GM"</code> 자동 적용 → 모바일 claude.ai/code 앱에서 즉시 "Wellperion GM" 세션 접속.</div>
-            <table>
-              <tr><th style="width:160px">방법</th><th>내용</th></tr>
-              <tr><td><strong>① Claude Code 앱 (권장)</strong></td><td>모바일 브라우저 claude.ai/code → cao@wellperion.com 로그인 → Recents 세션 선택. 설치 불필요·PC와 동일 기능.</td></tr>
-              <tr><td><strong>② 원격 데스크톱</strong></td><td>Chrome 원격 데스크톱/Parsec. PC 전원 ON 필요. 터미널·파일탐색 그대로.</td></tr>
-              <tr><td><strong>③ 텔레그램 봇</strong></td><td>@namuki_report_bot 메시지 → AI CEO 인박스 → 다음 세션 처리(실시간 양방향 아님).</td></tr>
-            </table>
-            <p style="font-size:12px;color:var(--dim);">빠른 확인=앱 / 복잡 작업=원격 데스크톱 / 간단 지시=텔레그램.</p>
-          </div>
-        </details>
-
         <!-- ══ 📋 보고·업무 흐름 (토글 그룹) ══ -->
         <details class="toggle" style="margin-top:28px;border-top:1px solid var(--border);padding-top:24px;">
           <summary style="cursor:pointer;font-weight:700;font-size:16px;"><span class="ico">📋</span>보고·업무 흐름 <span style="font-size:12px;color:var(--dim);font-weight:400;">— 보고 표 형식 + 업무 3단계 + 사이클 보고 포맷 (클릭해서 펼치기)</span></summary>
@@ -2142,7 +1777,8 @@
         </div>
         <div class="callout tip" style="margin-top:12px;"><strong>진단 오류 4규칙:</strong> 유사 명칭 단정 금지 · 진단 정정 시 자율 진행 · 결재 카테고리 엄격 적용 · log read 선행 의무</div>
 
-        <div class="callout tip" style="margin-top:20px;"><strong>② 고도화 체크 (신규 &lt; 연결·고도화)</strong> — 상세 원칙은 아래 <strong>「전 C-Level 통합원칙」 ⑤ 고도화·학습</strong>에 단일화(중복 제거 2026-06-06).</div>
+        <h4 style="margin-top:20px;"><span class="ico">②</span>고도화 체크 — 신규 < 연결·고도화</h4>
+        <div class="callout"><strong>원칙:</strong> 새 페이지·기능을 마구 만들지 말 것. 기존 자산을 연결하고 깊이를 더하는 방향이 우선. <strong>신규 신설 허용 조건:</strong> 기존 자산으로 흡수 불가능 + 명확한 단독 R/R + GM 직접 승인.</div>
 
         <h4 style="margin-top:20px;"><span class="ico">③</span>기록 — 언제든 확인 가능</h4>
         <table>
@@ -2153,7 +1789,16 @@
           <tr><td><strong>본문 토글 Changelog</strong></td><td>모든 C-Level DB 페이지 본문 토글 단일 누적</td></tr>
         </table>
 
-        <div class="callout tip" style="margin-top:20px;"><strong>④ 중복·무분별 삭제 · ⑤ 스스로 학습 진화</strong> — 상세 원칙은 아래 <strong>「전 C-Level 통합원칙」 ③ 데이터·SSOT 위생 · ⑤ 고도화·학습</strong>에 단일화(중복 제거 2026-06-06). 위 5단계 표가 골격, 상세는 통합원칙 참조.</div>
+        <h4 style="margin-top:20px;"><span class="ico">④</span>중복·무분별·무의미 삭제</h4>
+        <table>
+          <tr><th style="width:200px">정리 정책</th><th>적용</th></tr>
+          <tr><td><strong>중복 데이터</strong></td><td>발견 시 흡수·통합 (연동 리스크 있으면 GM 질문)</td></tr>
+          <tr><td><strong>SSOT 단일화</strong></td><td>이관(Move) 사용, 복사(Copy) 금지</td></tr>
+          <tr><td><strong>무분별 자동화 금지</strong></td><td>자동 태스크 신설은 핵심 KPI 직결 건만</td></tr>
+        </table>
+
+        <h4 style="margin-top:20px;"><span class="ico">⑤</span>스스로 학습 진화</h4>
+        <div class="callout"><strong>5단계 SOP:</strong> 발견 → 진단 → 수정 → 이중기록(메모리+웰페리온 ERP) → 재발방지 규칙 명문화. 모호한 요청은 <code>/deep-interview</code> 선행.</div>
 
         <h4 style="margin-top:20px;"><span class="ico">📊</span>CEO 보고 형식</h4>
         <div class="callout"><strong>표 + 요약 + 추천 3요소 (산문 X, 식별자 N줄 X):</strong> GM이 1초 안에 파악 가능하게. 옵션 3개 이상이면 CEO 추천값 명시. GM은 선택만.</div>
@@ -2597,51 +2242,6 @@
           <tr><td>대기 시 보고 포맷</td><td><strong>보고 포맷 = 공통 탭 '작업 사이클 보고 포맷' 단일 원본 참조.</strong> COO는 식별자만 <strong>시우-N</strong> 적용.</td></tr>
         </table>
 
-        <!-- ── 업무 중요도 기준 정식화 (2026-06-08 GM 개정 · 팀범위 기준·간결화) ── -->
-        <h3 style="margin-top:24px;border-top:1px solid var(--border);padding-top:20px;"><span class="ico">⚙️</span>업무 중요도 기준 <span style="font-size:13px;color:var(--dim);font-weight:400;">(S2 COO 탭 단일 출처 · 인사평가 연동)</span></h3>
-        <div class="callout" style="background:#1a2a1a;border-left:3px solid #059669;margin-bottom:12px;"><strong>정의 원칙:</strong> 업무 중요도는 <strong>몇 개 팀이 얽히는가</strong>로 결정된다. 담당자가 제안 → 부서장(결재 1단계)이 결재 시 확정. 확정된 점수는 <strong>시로(CHRO) 인사평가 가중점수에 연동</strong>된다. S3 업무현황 SSOT의 프론트(<code>DIFF_WEIGHT</code> 하=1·중=5·상=10)가 이 표를 기준으로 가중점수를 계산한다(GAS는 난이도 원본값만 저장).</div>
-        <table>
-          <tr><th style="width:64px">등급</th><th style="width:72px">점수</th><th>기준</th><th style="width:180px">예시</th></tr>
-          <tr>
-            <td><strong style="color:var(--green);">하</strong></td>
-            <td style="text-align:center;color:var(--green);font-weight:700;">1점</td>
-            <td>본인 역할 및 <strong>1개 팀</strong> 단위에서 끝나는 업무</td>
-            <!-- 하=1 (불변) -->
-            <td>일일 점검 보고</td>
-          </tr>
-          <tr>
-            <td><strong style="color:var(--yellow);">중</strong></td>
-            <td style="text-align:center;color:var(--yellow);font-weight:700;">5점</td>
-            <td><strong>2개 팀 이상</strong>이 얽히는 업무</td>
-            <td>두 팀 합동 행사</td>
-          </tr>
-          <tr>
-            <td><strong style="color:var(--red);">상</strong></td>
-            <td style="text-align:center;color:var(--red);font-weight:700;">10점</td>
-            <td><strong>전사적 단위</strong> 업무</td>
-            <td>전사 정책·요금 변경</td>
-          </tr>
-        </table>
-
-        <h4 style="margin-top:16px;">빠른 판단 흐름</h4>
-        <table>
-          <tr><th>질문</th><th>Yes → 등급</th><th>No → 다음</th></tr>
-          <tr><td>① 전사적 단위인가?</td><td><strong style="color:var(--red);">상 (10점)</strong></td><td>↓</td></tr>
-          <tr><td>② 2개 팀 이상이 얽히는가?</td><td><strong style="color:var(--yellow);">중 (5점)</strong></td><td>↓</td></tr>
-          <tr><td>③ 1개 팀·본인 단위인가?</td><td><strong style="color:var(--green);">하 (1점)</strong></td><td>담당자·COO 협의 후 재분류</td></tr>
-        </table>
-
-        <h4 style="margin-top:16px;">시로(CHRO) 인사평가 연결 지점</h4>
-        <div class="callout" style="background:#1a1a2a;border-left:3px solid #7C3AED;margin-bottom:8px;"><strong>연계 구조:</strong> 업무현황 SSOT에서 완료된 업무의 업무 중요도 점수 합산(Σ완료 업무 중요도) = 개인별 <strong>업무 가중점수</strong>. 예시 — 하(1)×3건 + 중(5)×2건 + 상(10)×1건 = 23점. 실제 반영 방식·비율은 시로(CHRO)가 평가 체계와 정합 후 확정한다.</div>
-        <table>
-          <tr><th style="width:200px">시로 인계 항목</th><th>내용</th><th style="width:100px">우선순위</th></tr>
-          <tr><td>업무 중요도 가중점수 데이터 소스</td><td>S3 업무현황 GAS의 <code>DIFF_WEIGHT</code> 합산값 → 직원별 반기 집계 방법 설계 필요</td><td>높음</td></tr>
-          <tr><td>다면평가 연동 비율</td><td>업무 가중점수를 직무이해도·실행력(35점) 또는 가산점(10점) 중 어디에 반영할지 시로 확정</td><td>높음</td></tr>
-          <tr><td>상 등급 업무 별도 플래그</td><td>상(10점) 업무 GM 승인 획득 건수를 별도 지표로 쓸지 시로 판단</td><td>중간</td></tr>
-        </table>
-        <div class="callout" style="margin-top:8px;background:#1a2a1a;border-left:3px solid #059669;"><strong>✅ GM 개정 확정(2026-06-10) — 하1·중5·상10 팀범위 기준.</strong> 시로(CHRO)는 인사평가 연계 항목 검토 후 정합 결과를 CEO에 보고.</div>
-        <!-- ── /업무 중요도 기준 정식화 ── -->
-
         <h3 style="margin-top:24px;border-top:1px solid var(--border);padding-top:20px;"><span class="ico">✍️</span>결재 요청·승인 체계 <span style="font-size:13px;color:var(--dim);font-weight:400;">(S3 업무·결재 현황 정책 단일 출처)</span></h3>
         <div class="callout" style="background:#1a2a1a;border-left:3px solid #059669;margin-bottom:12px;">S3(업무&amp;결재 현황) 페이지는 이 정책대로 결재선을 <strong>자동 산출</strong>한다. 페이지엔 중복 기재하지 않고 <strong>여기(S2)가 원본</strong> (2026-06-06 GM — 페이지 안내 중복 제거·정책 S2 이관).</div>
         <table>
@@ -2809,21 +2409,6 @@
           <tr><td>SSOT 하드코딩 동기화</td><td>업무 현황 SSOT 카테고리·예산 추가 시 흩어진 하드코딩 목록 전수 동기화(<code>CATEGORIES</code>·<code>CAT_COLORS</code>·<code>catOrder</code>·<code>BUDGET_CATEGORIES</code>·<code>routeApproval</code> 등). 가능하면 SSOT 상수 파생.</td></tr>
           <tr><td>대기 보고 포맷</td><td>대기 보고 포맷(3섹션 + 🔴 GM 결정·5필드)은 <strong>공통 탭 '작업 사이클 보고 포맷'이 단일 원본</strong> → 참조. CTO는 식별자 시토-N, 링크는 웰페리온 ERP 식별자(S1·S2·S3·M5·T1~T3·G1) 적용.</td></tr>
         </table>
-
-        <h3 style="margin-top:24px;border-top:1px solid var(--border);padding-top:20px;"><span class="ico">💾</span>CTO 개발 아카이브 운영 <span style="font-size:12px;color:var(--dim);font-weight:400;">— T1→S2 합병 2026-06-06</span></h3>
-        <p style="font-size:13px;color:var(--dim);">DB: [CTO] 개발 아카이브 &amp; 거버넌스 · 흐름: 기획DB(승인) → 운영 아카이브(결과→유지보수) → 개발 아카이브(Done, 기술 SSOT)</p>
-        <details class="toggle" style="margin-top:8px;">
-          <summary style="font-weight:700;">스키마·본문·원칙 (펼쳐보기)</summary>
-          <div class="toggle-body">
-            <p style="font-size:13px;"><strong>필수 속성</strong> — Name(title) · 구분(거버넌스/개발배포/장애핫픽스/인프라변경) · 상태 · 담당(multi) · 버전 · 배포일 · 태그 · 보안등급(일반/내부/기밀/제한)</p>
-            <p style="font-size:13px;"><strong>본문 5섹션</strong> — ①무엇 ②왜(기획링크) ③어떻게(흐름·의존성) ④배포·검증(테스트·롤백) ⑤제한·후속</p>
-            <ul style="font-size:13px;">
-              <li>운영 아카이브 <code>유지보수</code> 전환 후에만 Done(장애·핫픽스는 즉시)</li>
-              <li>SSOT: 기획DB=기획 / 운영 아카이브=결과 / 이 DB=기술. 중복 금지</li>
-              <li>토큰·비밀번호·API 키 본문 기재 절대 금지 · 태그 성실 기입</li>
-            </ul>
-          </div>
-        </details>
 
         <div class="callout tip" style="margin-top:20px;"><strong>🚀 세션 부팅 = 공통 탭 'AI 부팅 6단계' 정본.</strong> 읽는 파일만 <code>ai-cto.md</code> · <code>status/cto.json</code>. 흡수 탭 = 공통 + 본 CTO 탭.</div>
         <!-- ── /골격 보강 + 역할 원칙 흡수 STAGE2 ── -->
@@ -3203,13 +2788,14 @@
   <!-- g15 AI 교육자료 핵심요약 — 웰페리온_AI교육자료_핵심정리.md 전수 반영 -->
   <article class="doc" id="g15">
     <div class="doc-header"><h2><span class="g-id">T3</span>AI 교육자료 핵심요약</h2><div class="meta">AI 교육 SSOT · 원본 609줄 전수 반영 · 2026-05-26 크로스체크 완료</div></div>
-    <p class="lead">웰페리온_AI교육자료_핵심정리.md 전체를 반영한 실전 참조 문서. Claude Code 기본기 → 토큰 절약 32가지 → 자기학습 프로세스.</p>
+    <p class="lead">웰페리온_AI교육자료_핵심정리.md 전체를 반영한 실전 참조 문서. Claude Code 기본기 → 토큰 절약 32가지 → MCP→CLI 전환 → 자기학습 프로세스.</p>
 
     <div class="tabs" data-tabs="g15">
       <div class="tab-nav">
         <button class="tab-btn active" data-tab="basics">Claude Code 기본기</button>
         <button class="tab-btn" data-tab="token-mid">토큰 절약 중급 23가지</button>
         <button class="tab-btn" data-tab="token-adv">토큰 절약 고급 9가지</button>
+        <button class="tab-btn" data-tab="mcp-cli">MCP→CLI 전환</button>
         <button class="tab-btn" data-tab="selflearn">자기학습 프로세스</button>
         <button class="tab-btn" data-tab="g15prompt">핵심 프롬프트</button>
       </div>
@@ -3311,6 +2897,74 @@
       </div>
 
       <!-- ── 탭 4: MCP→CLI 전환 (섹션 4 전수) ── -->
+      <div class="tab-panel" data-panel="mcp-cli">
+        <h3><span class="ico">🔄</span>4. MCP→CLI 전환 핵심 가이드</h3>
+
+        <h4>4-1. MCP의 구조적 문제</h4>
+        <table>
+          <tr><th>문제</th><th>수치</th></tr>
+          <tr><td>토큰 블랙홀</td><td>GitHub MCP 43개 도구 ~55,000 토큰 / Atlassian 73개 ~45,000 / 2~3개 연결 시 컨텍스트 40~50% 소비</td></tr>
+          <tr><td>토큰 비교(동일 질문)</td><td>CLI(gh) 1,365 토큰 vs GitHub MCP 44,026 토큰 (<strong>32배</strong>)</td></tr>
+          <tr><td>안정성</td><td>CLI 100% 성공 vs MCP 72% 성공 (25회 반복 벤치마크). 좀비 프로세스 70개+ 발생 사례</td></tr>
+          <tr><td>인증 문제</td><td>gh auth 무시, 별도 PAT 요구. OAuth(gho_*)와 PAT(ghp_*) 비호환 — 미문서화</td></tr>
+          <tr><td>월 비용(10,000건)</td><td>CLI ~$3.20 / MCP Gateway ~$5.00(1.6x) / MCP 직접 ~$55.20(<strong>17.3x</strong>)</td></tr>
+        </table>
+
+        <h4>4-2. MCP→CLI 대체 목록</h4>
+        <table>
+          <tr><th>MCP 서버</th><th>CLI 대체</th><th>설치</th></tr>
+          <tr><td>GitHub MCP (43 tools)</td><td>gh</td><td>brew install gh</td></tr>
+          <tr><td>HTTP/Fetch MCP</td><td>curl + jq</td><td>기본 내장 / brew install jq</td></tr>
+          <tr><td>AWS MCP</td><td>aws</td><td>brew install awscli</td></tr>
+          <tr><td>Kubernetes MCP</td><td>kubectl</td><td>brew install kubectl</td></tr>
+          <tr><td>Docker MCP</td><td>docker</td><td>Docker Desktop 포함</td></tr>
+          <tr><td>Google Cloud MCP</td><td>gcloud</td><td>brew install google-cloud-sdk</td></tr>
+          <tr><td>Terraform MCP</td><td>terraform</td><td>brew install terraform</td></tr>
+          <tr><td>Jira MCP</td><td>jira</td><td>brew install jira-cli</td></tr>
+          <tr><td>파일 시스템 MCP</td><td>find, grep, cat</td><td>기본 내장</td></tr>
+        </table>
+
+        <h4>4-3~4-5. CLI 핵심 명령어</h4>
+        <pre style="background:#16181c; color:#e8e8e8; padding:14px 16px; border-radius:8px; font-size:12px; white-space:pre-wrap; line-height:1.6; border-left:3px solid var(--accent);"># GitHub CLI
+gh pr list / gh pr create --title "제목" --body "내용"
+gh issue list --label "bug" / gh issue create --title "제목"
+gh api repos/{owner}/{repo}/actions/runs
+
+# HTTP API: curl + jq
+curl -s https://api.example.com/data | jq '.results[] | {name, status}'
+curl -s -X POST url -H "Content-Type: application/json" -d '{"name":"test"}' | jq '.id'
+
+# Cloud CLI
+aws ec2 describe-instances --output json | jq '...'
+docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
+kubectl get pods -o json | jq '.items[] | {name: .metadata.name}'</pre>
+
+        <h4>4-7. MCP가 여전히 필요한 경우</h4>
+        <table>
+          <tr><th>상황</th><th>이유</th><th>예시</th></tr>
+          <tr><td>CLI 없는 서비스</td><td>공식 CLI 미존재</td><td>Figma, Notion, Slack API</td></tr>
+          <tr><td>멀티 테넌트 OAuth</td><td>사용자별 권한 분리</td><td>SaaS 고객별 접근</td></tr>
+          <tr><td>비개발자 환경</td><td>터미널 접근 불가</td><td>Claude Desktop 사용자</td></tr>
+          <tr><td>보안 규정</td><td>엄격한 입력 검증</td><td>금융/의료 규제 환경</td></tr>
+        </table>
+
+        <h4>4-8~4-9. ENABLE_TOOL_SEARCH &amp; MCP Gateway</h4>
+        <ul>
+          <li><strong>ENABLE_TOOL_SEARCH = "auto:0"</strong> — MCP 도구를 시작 시 모두 로드하지 않고 필요 시만 검색. 30,000+ 토큰 절약.</li>
+          <li><strong>MCP Gateway</strong> — 스키마 필터링(43→5~10개), 설명 압축, 캐싱. 벤치마크: MCP 직접 145,000 / Gateway ~15,000 / CLI 4,150 토큰.</li>
+        </ul>
+
+        <h4>4-10. 전환 체크리스트</h4>
+        <ol>
+          <li>/mcp → 현재 연결된 MCP 서버 목록 확인</li>
+          <li>각 서버에 대해 CLI 대체 가능 여부 확인</li>
+          <li>CLI 대체 가능한 MCP 비활성화</li>
+          <li>CLAUDE.md에 사용 가능한 CLI 도구 목록 명시</li>
+          <li>남은 MCP에 ENABLE_TOOL_SEARCH 적용</li>
+          <li>Gateway 도입 검토 → 스키마 필터링으로 추가 절감</li>
+        </ol>
+        <p><strong>예상 효과:</strong> 토큰 소비량 80~95% 감소, 안정성 100%, 월 비용 10배 이상 절감.</p>
+      </div>
 
       <!-- ── 탭 6: 자기학습 프로세스 (GM님 최종 목표) ── -->
       <div class="tab-panel" data-panel="selflearn">
@@ -3336,18 +2990,6 @@
           <li><strong>v3.0:</strong> Continuous Learning(instinct) + 자동 SOP 업데이트 제안 + 승인 시 자동 반영 + 학습 루프 고도화</li>
         </ul>
         <div class="callout"><strong>핵심 원칙.</strong> 모든 자동 고도화는 GM님 승인을 거쳐야 반영됨. AI는 제안까지만, 실행은 승인 후.</div>
-
-        <h3 style="margin-top:24px;border-top:1px solid var(--border);padding-top:20px;"><span class="ico">🛠️</span>커스텀 명령 도구함 <span style="font-size:12px;color:var(--dim);font-weight:400;">— 실제 작동하는 슬래시 명령 (자기학습으로 성장)</span></h3>
-        <div class="callout tip"><strong>진짜 명령입니다.</strong> SNS에 도는 '가짜 프롬프트 모음'과 달리, 아래는 <code>.claude/commands/</code>에 등록된 <strong>실제 작동 슬래시 명령</strong>. 세션에서 <code>/이름 [내용]</code>으로 바로 사용. <span style="color:var(--dim);">(새 명령은 자기학습 4단계로 발굴→GM 승인→추가되며 늘어남)</span></div>
-        <table>
-          <tr><th style="width:120px">명령</th><th>하는 일</th><th>예시</th></tr>
-          <tr><td><code>/eli5</code></td><td>어려운 걸 5살도 알 만큼 쉬운 일상어로</td><td><code>/eli5 ETF가 뭔지</code></td></tr>
-          <tr><td><code>/trim</code></td><td>군더더기 빼고 핵심만 (글자수 지정 가능)</td><td><code>/trim 이 보고서 500자로</code></td></tr>
-          <tr><td><code>/audit</code></td><td>작업물 문제점·어색한 곳 전부 점검</td><td><code>/audit 이 기획서 문제점</code></td></tr>
-          <tr><td><code>/ghost</code></td><td>AI 티 없애 사람이 쓴 듯 자연스럽게</td><td><code>/ghost 이 이메일</code></td></tr>
-          <tr><td><code>/premortem</code></td><td>계획이 실패했다 가정하고 원인 미리 분석</td><td><code>/premortem 이 사업안</code></td></tr>
-        </table>
-        <p style="font-size:12px;color:var(--dim);margin-top:6px;">※ 콘텐츠용(캡션·훅·바이럴)은 마케팅(시모/CMO) 영역으로 별도 추가 예정. 새 명령 추가는 <code>.claude/commands/</code>에 .md 한 장이면 끝.</p>
 
         <h3><span class="ico">🔧</span>컨텍스트 정비 범위 정의 (매주 월 09:00)</h3>
         <div class="callout"><strong>→ 범위표 단일출처 = T2 업무자동화SSOT, 실행 프롬프트 = T1 본 섹션.</strong> 주간 컨텍스트 정비 범위표(6 C-Level 식별자·정비 범위·체크포인트)는 <a href="#" onclick="event.preventDefault();var t=document.querySelector('[data-id=T2]');if(t)t.click();" style="color:var(--accent);font-weight:700;text-decoration:none;">T2 업무자동화SSOT ▸ 매주 ▸ 6 C-Level 컨텍스트 정비</a>에서 단일 관리합니다(2026-06-05 이관). 실행 프롬프트(STEP 1~5)는 <strong>T1 기술 인프라 상세 ▸ 핵심 프롬프트 ▸ 운영 실행 도구</strong>. 범위표 중복 기재 금지.</div>
@@ -3406,12 +3048,16 @@
   <!-- g16 기술 인프라 상세 -->
   <article class="doc" id="g16">
     <div class="doc-header"><h2><span class="g-id">T1</span>기술 인프라 상세</h2><div class="meta">기술 SSOT · guide-hub.html 통합 · 2026-05-25</div></div>
-    <p class="lead">scripts 폴더 구조, 경로 표준화, CTO 개발 아카이브 운영의 상세 기술 문서입니다. <span style="font-size:12px;color:var(--dim);">(텔레그램 봇 = T2 업무자동화SSOT로 합병 2026-06-06)</span></p>
+    <p class="lead">텔레그램 봇, scripts 폴더 구조, 경로 표준화, CTO 개발 아카이브 운영의 상세 기술 문서입니다.</p>
 
     <div class="tabs" data-tabs="g16">
       <div class="tab-nav">
         <button class="tab-btn active" data-tab="settings">설정 위치</button>
+        <button class="tab-btn" data-tab="telegram">텔레그램 봇</button>
+        <button class="tab-btn" data-tab="scripts">scripts 구조</button>
         <button class="tab-btn" data-tab="paths">경로 표준화</button>
+        <button class="tab-btn" data-tab="archive">CTO 개발 아카이브</button>
+        <button class="tab-btn" data-tab="mobile">모바일 CLI 원격</button>
         <button class="tab-btn" data-tab="prompts">핵심 프롬프트</button>
       </div>
 
@@ -3450,7 +3096,68 @@
       </div>
       <!-- ── /탭: 설정 위치 ── -->
 
+      <div class="tab-panel" data-panel="telegram">
+        <h3><span class="ico">🤖</span>텔레그램 봇 (@namuki_report_bot) <span style="font-size:12px;color:var(--accent);font-weight:600;">(재기동 방법·기술 상세)</span></h3>
+        <p>Chat ID 8254867551 · 단일 봇 · 용도: <strong>C-Level 보고 + 승인요청 전용</strong> (2026-05-25 GM 확정) <span style="font-size:12px;color:var(--dim);">· 점검 원칙(왜·언제)=S2 CTO탭 / 가동 현황=T4</span></p>
 
+        <h4>정각 보고 스케줄 (6슬롯)</h4>
+        <table>
+          <tr><th>시간</th><th>내용</th><th>상세</th><th>상태</th></tr>
+          <tr><td>06:00</td><td>기상 인사</td><td>"좋은 아침입니다" + 오늘 날씨/일정 요약</td><td>가동중</td></tr>
+          <tr><td>09:00</td><td>업무 시작 보고</td><td>08:00 AI CEO 통합 보고 결과 요약 + 오늘 진행 업무</td><td>가동중</td></tr>
+          <tr><td>12:00</td><td>시설·지원·주차 현황</td><td>COO 체크리스트 DB 기반 오전 점검 결과</td><td>가동중</td></tr>
+          <tr><td>15:00</td><td>오후 중간 보고</td><td>오전 업무 진행률 + 오후 예정</td><td>가동중</td></tr>
+          <tr><td>18:00</td><td>퇴근 인사</td><td>하루 마무리 + 내일 주요 일정</td><td>가동중</td></tr>
+          <tr><td>22:00</td><td>C-Level 진행 체크</td><td>일일 C-Level 진행 현황 요약</td><td>가동중</td></tr>
+        </table>
+
+        <h4>가동 중 프로세스</h4>
+        <table>
+          <tr><th>프로세스</th><th>역할</th></tr>
+          <tr><td><code>bot.py</code></td><td>텔레그램 봇 메인. telegram.ext + RotatingFileHandler.</td></tr>
+          <tr><td><code>daily_scheduler.py</code></td><td>정각 보고 스케줄러 (6슬롯). MarkdownV2 + 평문 fallback.</td></tr>
+        </table>
+
+        <h4>Watcher (자동 감시) 현황</h4>
+        <div class="callout"><strong>→ 현황 SSOT는 T2 업무자동화SSOT.</strong> 가동 중 Watcher(pre_task_notifier·bot_health_check·env_reload_watcher)와 폐기 목록(ig_review_publish_watcher 폴링 2026-06-03 폐기 포함)의 실측 현황은 <a href="#" onclick="event.preventDefault();var t=document.querySelector('[data-id=T2]');if(t)t.click();" style="color:var(--accent);font-weight:700;text-decoration:none;">T2 업무자동화SSOT</a>에서 단일 관리합니다. 현황 중복 기재 금지.</div>
+
+        <h4>재기동 방법</h4>
+        <pre>Stop-Process -Id (PID) -Force
+Start-Process python -ArgumentList telegram_bot\daily_scheduler.py -WorkingDirectory C:\Users\jjky0\welperion-automation -WindowStyle Hidden</pre>
+      </div>
+
+      <div class="tab-panel" data-panel="scripts">
+        <h3><span class="ico">📂</span>scripts/ 구조</h3>
+        <p>웰페리온 운영 자동화 파이썬 모음.</p>
+
+        <h4>핵심 파일</h4>
+        <table>
+          <tr><th>파일</th><th>역할</th></tr>
+          <tr><td><code>telemetry_logger.py</code></td><td>wellperion.bat 진입 시 JSONL 적재 (8 sensitive 키워드 마스킹)</td></tr>
+          <tr><td><code>health_check_helper.py</code></td><td>wellperion.bat health의 실행 helper. Win32_Process로 정확 감지.</td></tr>
+          <tr><td><code>evolve_gate.py</code></td><td>Layer 3 자기 진화 게이트 스켈레톤. 자동 patch 영구 금지.</td></tr>
+          <tr><td><code>upload_with_images.py</code> (v3.12)</td><td>네이버 블로그 SmartEditor 자동 발행. Home .welperion-naver-profile 의존.</td></tr>
+          <tr><td><code>instagram_upload_playwright.py</code></td><td>IG 자동 발행. Home .welperion-instagram-profile 의존.</td></tr>
+        </table>
+
+        <h4>역할별 접두어</h4>
+        <table>
+          <tr><th>접두어</th><th>영역</th></tr>
+          <tr><td><code>cmo_*.py</code></td><td>CMO 콘텐츠 가공·검수·발행 파이프라인</td></tr>
+          <tr><td><code>coo_*.py</code></td><td>COO 운영 이슈 알림</td></tr>
+          <tr><td><code>chro_*.py</code></td><td>CHRO HR 보고</td></tr>
+          <tr><td><code>cto_*.py</code></td><td>CTO 인프라 관리</td></tr>
+          <tr><td><code>ceo_*.py</code></td><td>AI CEO 통합 보고·인박스</td></tr>
+        </table>
+
+        <h4>_archive (보존, 30일 후 폐기 검토)</h4>
+        <ul>
+          <li><code>audit_20260523</code> — 무의미·불필요·중복 14개</li>
+          <li><code>desktop_legacy_20260523</code> — Desktop 배포 BAT 7개 (메인 통합 완료)</li>
+          <li><code>telegram_report_bot_20260523</code> — 폐기 봇 사본</li>
+        </ul>
+        <div class="callout fix"><strong>보안.</strong> 모든 키·토큰은 telegram_bot/.env SSOT (3 위치 HardLink). 평문 stdout 절대 금지.</div>
+      </div>
 
       <div class="tab-panel" data-panel="paths">
         <h3><span class="ico">📍</span>경로 표준화 (SSOT 확정)</h3>
@@ -3467,7 +3174,79 @@
         <div class="callout"><strong>주의.</strong> 기획서 오표기 <code>Desktop\welperion-automation</code> → 실제 위치는 <code>C:\Users\jjky0\welperion-automation</code> (Desktop 아님).</div>
       </div>
 
+      <div class="tab-panel" data-panel="archive">
+        <h3><span class="ico">💾</span>CTO 개발 아카이브 운영</h3>
+        <p>DB: [CTO] 개발 아카이브 &amp; 거버넌스 DB · 경로: (주)웰페리온 > 3. 운영 체계 > 보안/IT</p>
 
+        <h4>워크플로우</h4>
+        <div class="card accent">
+          <p>기획DB(승인) → 운영 아카이브(결과보고→유지보수) → 개발 아카이브(Done, 기술 SSOT)</p>
+        </div>
+
+        <h4>DB 스키마 (필수 속성)</h4>
+        <table>
+          <tr><th>속성</th><th>타입</th><th>설명</th></tr>
+          <tr><td>Name</td><td>title</td><td>건명</td></tr>
+          <tr><td>구분</td><td>select</td><td>거버넌스 정책 / 개발·배포 / 장애·핫픽스 / 인프라 변경</td></tr>
+          <tr><td>상태</td><td>status</td><td>Not started → In progress → Done</td></tr>
+          <tr><td>담당</td><td>multi_select</td><td>CTO + 협업 C레벨</td></tr>
+          <tr><td>버전</td><td>number</td><td>배포 버전</td></tr>
+          <tr><td>배포일</td><td>date</td><td>실제 배포 완료일</td></tr>
+          <tr><td>태그</td><td>multi_select</td><td>신규 개발·업데이트·버그 수정·인프라·보안·자동화·Notion·텔레그램 등</td></tr>
+          <tr><td>보안 등급</td><td>select</td><td>일반(공개) / 내부 / 기밀 / 제한</td></tr>
+        </table>
+
+        <h4>본문 표준 구조</h4>
+        <ol>
+          <li>무엇을 만들었나 (요약 + 산출물)</li>
+          <li>왜 만들었나 (원 기획 링크 + 해결한 문제)</li>
+          <li>어떻게 동작하나 (흐름 + 의존성)</li>
+          <li>배포 &amp; 검증 (방법 + 테스트 결과 + 롤백)</li>
+          <li>알려진 제한 &amp; 후속 과제</li>
+        </ol>
+
+        <h4>핵심 원칙</h4>
+        <ul>
+          <li>운영 아카이브 <code>유지보수</code> 전환 후에만 Done 기록 (장애·핫픽스는 예외 즉시 기록)</li>
+          <li>SSOT 유지: 기획DB=기획, 운영 아카이브=결과, 이 DB=기술. 중복 금지</li>
+          <li>토큰·비밀번호·API 키 본문 기재 절대 금지</li>
+          <li>태그 성실 기입 (필터링 핵심)</li>
+        </ul>
+      </div>
+
+      <div class="tab-panel" data-panel="mobile">
+        <h3><span class="ico">📱</span>모바일 Claude CLI 원격 제어</h3>
+        <p>퇴근 후에도 스마트폰에서 Claude Code를 원격으로 사용할 수 있는 방법입니다.</p>
+
+        <div class="callout tip"><strong>자동 연결.</strong> 매일 아침 PC 전원 ON → <code>Start-AI CEO.bat</code> 실행하면, <code>--remote-control "Wellperion GM"</code> 옵션이 자동 적용되어 모바일 Claude Code 앱(claude.ai/code)에서 즉시 "Wellperion GM" 세션으로 접속됩니다. 별도 설정이나 추가 조작 없이 .bat 하나로 끝.</div>
+
+        <h4>방법 1: Claude Code 앱 (권장)</h4>
+        <table>
+          <tr><th>항목</th><th>내용</th></tr>
+          <tr><td>플랫폼</td><td>claude.ai/code (웹앱, 모바일 브라우저 지원)</td></tr>
+          <tr><td>장점</td><td>별도 설치 없음. 브라우저에서 바로 접속. PC와 동일 기능.</td></tr>
+          <tr><td>사용법</td><td>모바일 브라우저에서 claude.ai/code 접속 → cao@wellperion.com 로그인 → Recents에서 세션 선택 또는 새 세션 시작</td></tr>
+        </table>
+
+        <h4>방법 2: 원격 데스크톱 (PC 직접 제어)</h4>
+        <table>
+          <tr><th>항목</th><th>내용</th></tr>
+          <tr><td>앱</td><td>Chrome 원격 데스크톱 / Microsoft 원격 데스크톱 / Parsec</td></tr>
+          <tr><td>조건</td><td>PC 전원 켜져 있어야 함 (절전 모드 해제 권장)</td></tr>
+          <tr><td>장점</td><td>PC의 Claude Code CLI 터미널 그대로 사용. 파일 탐색도 가능.</td></tr>
+          <tr><td>설정</td><td>PC에서 Chrome 원격 데스크톱 설정 → PIN 설정 → 모바일에서 접속</td></tr>
+        </table>
+
+        <h4>방법 3: 텔레그램 봇 경유 (간단 명령)</h4>
+        <table>
+          <tr><th>항목</th><th>내용</th></tr>
+          <tr><td>채널</td><td>@namuki_report_bot (기존 봇)</td></tr>
+          <tr><td>기능</td><td>GM님 텔레그램 메시지 → AI CEO 인박스 → 다음 세션에서 처리</td></tr>
+          <tr><td>한계</td><td>실시간 양방향 아님. 메시지 전달 후 AI CEO 세션에서 실행.</td></tr>
+        </table>
+
+        <div class="callout tip"><strong>추천.</strong> 빠른 확인은 claude.ai/code 웹앱, 복잡한 작업은 원격 데스크톱, 간단 지시는 텔레그램 봇.</div>
+      </div>
 
       <div class="tab-panel" data-panel="prompts">
         <h3><span class="ico">⚡</span>기술 인프라 핵심 프롬프트</h3>
@@ -3526,7 +3305,7 @@
             <h4><span class="ico">🔄</span>STEP 3 · 자동화 진단 (Fill)</h4>
             <table>
               <tr><th style="width:220px">트리거</th><th>채우는 컨텍스트</th></tr>
-              <tr><td>매일 06·07·09·12·15·18·21·22시 (9슬롯)</td><td>텔레그램 정각 보고 (daily_scheduler.py) — 슬롯 정본 = T2 텔레그램탭</td></tr>
+              <tr><td>매일 06·09·12·15·18·21시</td><td>텔레그램 정각 보고 (daily_scheduler.py)</td></tr>
               <tr><td>매일 08:00</td><td>AI CEO 통합 보고 (ceo_morning_pipeline.py)</td></tr>
               <tr><td>매주 월 09:00</td><td>AI 교육자료 자동 정리 (education_archive_weekly.py)</td></tr>
               <tr><td>승인 시 (on-demand)</td><td>인스타 검수 승인 → 발행 엔진 1회 호출 (ig_review_publish_watcher.py · 구 120초 폴링 2026-06-03 폐기, 봇 콜백 전환 예정)</td></tr>
@@ -3596,29 +3375,6 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
     <div class="doc-header"><h2><span class="g-id">G1</span>김남욱 GM</h2><div class="meta">할 일 · 루틴 · 건강 · 목표 통합</div></div>
     <p class="lead">개인·회사 구분 없이 김남욱님의 모든 업무와 루틴을 한곳에서 관리합니다. 팀 업무는 <a href="https://wellperion-cao.github.io/wellperion-automation/coo/todo/%EC%97%85%EB%AC%B4%20%ED%98%84%ED%99%A9%20SSOT.html" target="_blank" style="color:var(--accent);">업무 현황 SSOT</a>에서 확인.</p>
 
-    <!-- ══ 🌟 북극성 (정의 본체=홈) · G1엔 링크+범례만 (2026-06-06 이관) ══ -->
-    <div style="background:linear-gradient(135deg,#1a1830 0%,#2a2545 100%);border:1px solid var(--accent);border-radius:14px;padding:14px 18px;margin:8px 0 16px;">
-      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-        <span style="font-size:18px;">🌟</span>
-        <span style="color:#fff;font-weight:800;font-size:14px;">북극성 — 우리가 가는 곳</span>
-      </div>
-      <p style="color:#cfc7e8;font-size:12px;margin:6px 0 0;">오늘의 항로는 이 북극성을 향한 오늘의 뱃길입니다.</p>
-      <div style="display:flex;flex-wrap:wrap;gap:5px 12px;font-size:11.5px;color:#bbb;margin:10px 0 0;padding-top:8px;border-top:1px solid rgba(255,255,255,0.08);"><span>🌟 <strong style="color:#cbb6f0;">북극성</strong>=목적지</span><span>🌊 항해=전체 여정</span><span>🧭 항로=오늘 할 일</span><span>🚢 배=개별 업무</span><span>⚓ 항구=일 끝낼 때 다음 정하는 곳</span></div>
-    </div>
-    <!-- ══ /북극성 링크 ══ -->
-
-    <!-- ══ ⚓ 항구 (멈출 땐 항구에 기록) — 북극성과 글꼴·사이즈 통일 (2026-06-06) ══ -->
-    <div style="background:linear-gradient(135deg,#13212c 0%,#1b3340 100%);border:1px solid #38b6c4;border-radius:14px;padding:14px 18px;margin:0 0 16px;">
-      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-        <span style="font-size:18px;">⚓</span>
-        <span style="color:#fff;font-weight:800;font-size:14px;">항구 — 멈출 땐 바다 말고 항구에</span>
-      </div>
-      <p style="color:#cfe9ee;font-size:12px;line-height:1.6;margin:6px 0 0;">멈출 땐 <strong style="color:#7fdbe8;">항구</strong>에 들러 <strong style="color:#fff;">'여기까지 했다 + 다음은 이것'</strong>을 항로에 적어요. 그래야 다음 항구든 뱃길 끝(완료)이든 이어서 나아갑니다.</p>
-      <div style="font-size:12px;color:#eaf6f8;line-height:1.6;margin:10px 0 0;padding-top:8px;border-top:1px solid rgba(255,255,255,0.08);"><strong style="color:#7fdbe8;">🔑 단 하나의 규칙</strong> · 오늘 할 일 = <strong style="color:#fff;">① 어제 남긴 '다음'</strong> + <strong style="color:#fff;">② GM이 새로 시킨 것</strong>. 이 둘뿐.</div>
-      <p style="color:#7f9aa3;font-size:11.5px;margin:8px 0 0;">⚠️ 바다 한복판에 멈추면 '표류' — 다음 날 "어디였더라?" 헤매요.</p>
-    </div>
-    <!-- ══ /항구 ══ -->
-
     <!-- 오늘 할 일 (최상단 — GM 진입 즉시 노출, 2026-06-05) -->
     <details id="gm1-todo-section" open style="margin:8px 0 24px;">
       <summary style="cursor:pointer;list-style:none;"><h3 id="gm1-todo-date" style="display:inline;"><span class="ico">🧭</span>항로</h3><span style="font-size:0.78em;color:#888;font-weight:400;margin-left:8px;">오늘의 항로 · 북극성으로 가는 오늘의 뱃길</span></summary>
@@ -3634,108 +3390,77 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
     </details>
 
 
-    <!-- ░░ 캘린더 (항로 툴바 토글로 표시/숨김) ░░ -->
-    <!-- 개인 캘린더 -->
-    <div id="gm1-cal-wrap" data-panel="calendar" style="display:none;margin:4px 0 20px;">
-      <h3><span class="ico">🗓️</span>개인 캘린더</h3>
+    <!-- 🌉 브릿지 카드 (히어로 — 항상 보임) -->
+    <!-- ══ 🌉 일의 브릿지 (어제와 오늘을 잇기 — 2026-06-04) ══ -->
+    <div style="background:linear-gradient(135deg,#13212c 0%,#1b3340 100%);border:1px solid #38b6c4;border-radius:14px;padding:18px 22px;margin:8px 0 20px;">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap;">
+        <span style="font-size:20px;">🌉</span>
+        <span style="color:#fff;font-weight:800;font-size:16px;letter-spacing:0.02em;">일의 브릿지</span>
+        <span style="color:#9fd8e0;font-size:12px;font-weight:400;">— 어제와 오늘을 잇는 단 하나의 규칙</span>
+      </div>
+      <p style="color:#cfe9ee;font-size:13px;line-height:1.7;margin:0 0 12px;">개울을 <strong style="color:#7fdbe8;">징검다리</strong>로 건넌다고 생각해 보세요. 한 칸 갈 때마다 <strong style="color:#fff;">다음 돌</strong>을 놓아야 계속 건널 수 있죠. 일도 똑같아요 — 어제 한 일과 오늘 할 일이 안 이어지면, 아침마다 개울 앞에서 "어디로 가지?"를 처음부터 다시 헤매게 돼요.<br><strong style="color:#fff;">브릿지 = 일 끝낼 때마다 '다음 돌'을 꼭 놓게 만드는 다리예요.</strong></p>
 
-      <!-- 컨트롤바 -->
-      <div id="gm1CalBar" style="display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:16px;">
-        <button id="gm1CalPrev" style="padding:6px 14px;font-size:13px;font-weight:700;border-radius:8px;cursor:pointer;font-family:inherit;background:var(--paper);color:var(--text);border:1px solid var(--border);">← 이전 달</button>
-        <span id="gm1CalMonthLabel" style="font-size:16px;font-weight:700;min-width:100px;text-align:center;"></span>
-        <button id="gm1CalNext" style="padding:6px 14px;font-size:13px;font-weight:700;border-radius:8px;cursor:pointer;font-family:inherit;background:var(--paper);color:var(--text);border:1px solid var(--border);">다음 달 →</button>
-        <button id="gm1CalToday" style="padding:6px 14px;font-size:13px;font-weight:600;border-radius:8px;cursor:pointer;font-family:inherit;background:var(--bg);color:var(--dim);border:1px solid var(--border);">오늘로</button>
-        <button id="gm1CalAddBtn" style="padding:6px 16px;font-size:13px;font-weight:700;border-radius:8px;cursor:pointer;font-family:inherit;background:var(--accent);color:#fff;border:none;margin-left:auto;">+ 일정 추가</button>
+      <!-- 핵심 규칙 1줄 -->
+      <div style="background:rgba(56,182,196,0.12);border-left:3px solid #38b6c4;border-radius:0 8px 8px 0;padding:12px 14px;margin:0 0 14px;">
+        <div style="color:#7fdbe8;font-size:12px;font-weight:700;margin-bottom:5px;">🔑 단 하나의 규칙</div>
+        <div style="color:#eaf6f8;font-size:14px;line-height:1.6;">오늘 할 일은 딱 <strong style="color:#fff;">2곳</strong>에서만 나와요:<br><strong style="color:#fff;">① 어제 끝내며 남긴 '다음'</strong> + <strong style="color:#fff;">② GM이 새로 시킨 것</strong>.<br><span style="color:#9fd8e0;">이 둘 말고는 새 일을 만들지 않아요.</span></div>
       </div>
 
-      <!-- 월별 그리드 -->
-      <div id="gm1CalGrid" style="overflow-x:auto;">
-        <table id="gm1CalTable" style="width:100%;border-collapse:collapse;table-layout:fixed;">
-          <thead>
-            <tr id="gm1CalHeader">
-              <th style="padding:6px 4px;text-align:center;font-size:12px;color:#e85555;">일</th>
-              <th style="padding:6px 4px;text-align:center;font-size:12px;">월</th>
-              <th style="padding:6px 4px;text-align:center;font-size:12px;">화</th>
-              <th style="padding:6px 4px;text-align:center;font-size:12px;">수</th>
-              <th style="padding:6px 4px;text-align:center;font-size:12px;">목</th>
-              <th style="padding:6px 4px;text-align:center;font-size:12px;">금</th>
-              <th style="padding:6px 4px;text-align:center;font-size:12px;color:#5588ee;">토</th>
-            </tr>
-          </thead>
-          <tbody id="gm1CalBody"></tbody>
-        </table>
+      <!-- 흐름 한 줄 -->
+      <div style="display:flex;flex-wrap:wrap;align-items:center;gap:7px;font-size:12.5px;font-weight:700;color:#cfe9ee;margin:0 0 6px;">
+        <span style="background:#26404e;padding:5px 11px;border-radius:7px;">일 받기</span><span style="color:#38b6c4;">→</span>
+        <span style="background:#26404e;padding:5px 11px;border-radius:7px;">또박또박 적기</span><span style="color:#38b6c4;">→</span>
+        <span style="background:#26404e;padding:5px 11px;border-radius:7px;">하기</span><span style="color:#38b6c4;">→</span>
+        <span style="background:#26404e;padding:5px 11px;border-radius:7px;">확인</span><span style="color:#38b6c4;">→</span>
+        <span style="background:#26404e;padding:5px 11px;border-radius:7px;">끝!</span><span style="color:#38b6c4;">→</span>
+        <span style="background:#2d5160;padding:5px 11px;border-radius:7px;color:#7fdbe8;">다음 돌 놓기 ↻</span>
       </div>
+      <p style="color:#7f9aa3;font-size:11.5px;margin:0 0 12px;">'끝!'은 진짜 끝이 아니에요. 끝낼 때마다 <strong style="color:#9fd8e0;">다음 돌</strong>을 하나 놓고, 그 돌이 내일 첫걸음이 돼요. 그래서 안 끊겨요.</p>
 
-      <!-- 이번 달 일정 목록 -->
-      <h4 style="margin-top:24px;margin-bottom:10px;"><span class="ico">📋</span>이번 달 일정</h4>
-      <div id="gm1CalList" style="display:flex;flex-direction:column;gap:6px;"></div>
-      <div id="gm1CalEmpty" style="display:none;color:var(--dim);font-size:13px;padding:12px 0;">이번 달 일정이 없습니다.</div>
+      <details class="toggle" style="margin:0;">
+        <summary style="cursor:pointer;font-weight:700;font-size:13px;color:#7fdbe8;">📋 브릿지 상세 — 접기/펼치기</summary>
+        <div class="toggle-body" style="margin-top:10px;">
 
-      <!-- 일정 추가/편집 모달 -->
-      <div id="gm1CalModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.55);z-index:9999;align-items:center;justify-content:center;">
-        <div style="background:var(--paper);border-radius:14px;padding:28px 24px;width:min(440px,92vw);box-shadow:0 8px 40px rgba(0,0,0,0.4);position:relative;">
-          <h4 id="gm1CalModalTitle" style="margin:0 0 18px;font-size:16px;">일정 추가</h4>
-          <input type="hidden" id="gm1CalEditId">
-          <div style="display:flex;flex-direction:column;gap:12px;">
-            <div>
-              <label style="font-size:12px;color:var(--dim);display:block;margin-bottom:4px;">날짜 <span style="color:var(--warm);">*</span></label>
-              <input type="date" id="gm1CalFDate" style="width:100%;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:14px;font-family:inherit;box-sizing:border-box;">
-            </div>
-            <div>
-              <label style="font-size:12px;color:var(--dim);display:block;margin-bottom:4px;">시간 (선택)</label>
-              <input type="time" id="gm1CalFTime" style="width:100%;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:14px;font-family:inherit;box-sizing:border-box;">
-            </div>
-            <div>
-              <label style="font-size:12px;color:var(--dim);display:block;margin-bottom:4px;">제목 <span style="color:var(--warm);">*</span></label>
-              <input type="text" id="gm1CalFTitle" placeholder="일정 제목" style="width:100%;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:14px;font-family:inherit;box-sizing:border-box;">
-            </div>
-            <div>
-              <label style="font-size:12px;color:var(--dim);display:block;margin-bottom:4px;">카테고리</label>
-              <select id="gm1CalFCat" style="width:100%;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:14px;font-family:inherit;box-sizing:border-box;">
-                <option value="개인">개인</option>
-                <option value="업무">업무</option>
-                <option value="인사·파트너">인사·파트너</option>
-                <option value="회의">회의</option>
-                <option value="기타">기타</option>
-              </select>
-            </div>
-            <div>
-              <label style="font-size:12px;color:var(--dim);display:block;margin-bottom:4px;">메모</label>
-              <textarea id="gm1CalFMemo" rows="3" placeholder="메모 (선택)" style="width:100%;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:14px;font-family:inherit;resize:vertical;box-sizing:border-box;"></textarea>
-            </div>
-            <div style="display:flex;align-items:center;gap:8px;">
-              <input type="checkbox" id="gm1CalFIsToday" style="width:16px;height:16px;cursor:pointer;accent-color:var(--accent);">
-              <label for="gm1CalFIsToday" style="font-size:13px;cursor:pointer;">오늘 할 일로 표시 (isToday)</label>
-            </div>
-          </div>
-          <div style="display:flex;gap:8px;margin-top:18px;justify-content:flex-end;">
-            <button id="gm1CalModalDel" style="display:none;padding:8px 16px;font-size:13px;font-weight:700;border-radius:8px;cursor:pointer;font-family:inherit;background:var(--warm);color:#fff;border:none;margin-right:auto;">삭제</button>
-            <button id="gm1CalModalCancel" style="padding:8px 16px;font-size:13px;font-weight:600;border-radius:8px;cursor:pointer;font-family:inherit;background:var(--bg);color:var(--dim);border:1px solid var(--border);">취소</button>
-            <button id="gm1CalModalSave" style="padding:8px 20px;font-size:13px;font-weight:700;border-radius:8px;cursor:pointer;font-family:inherit;background:var(--accent);color:#fff;border:none;">저장</button>
-          </div>
+          <p style="font-size:13px;color:var(--text-soft);margin:2px 0 6px;font-weight:700;">① 브릿지가 하는 일 — 딱 3가지</p>
+          <table>
+            <tr><th style="width:104px">하는 일</th><th>쉽게 말하면</th></tr>
+            <tr><td><strong>① 이어주기</strong></td><td>일을 끝낼 때마다 <strong>'다음은 이거!'</strong>를 한 줄 꼭 남겨요 → 그게 내일 첫 번째 할 일이 돼요.</td></tr>
+            <tr><td><strong>② 풀어주기</strong></td><td>GM이 시킨 걸 일하는 사람이 바로 알아듣게 <strong>또박또박</strong> 적어줘요 (누가 / 어디까지 하면 끝인지까지). 헷갈릴 빈칸을 없애요.</td></tr>
+            <tr><td><strong>③ 방향 보기</strong></td><td>일을 잡기 전에 <strong>우리 목표(북극성) 쪽인지</strong> 봐요. 아니면 멈추고 GM께 한 줄로 물어봐요.</td></tr>
+          </table>
+
+          <p style="font-size:13px;color:var(--text-soft);margin:18px 0 6px;font-weight:700;">② 작업 카드 — 7칸이면 끝</p>
+          <table>
+            <tr><th style="width:96px">칸</th><th>적는 것</th></tr>
+            <tr><td><strong>ID</strong></td><td>식별자 (예: 시모-03). 추적의 기준</td></tr>
+            <tr><td><strong>무엇</strong></td><td>한 줄 제목</td></tr>
+            <tr><td><strong>왜 (북극성)</strong></td><td>이 일이 향하는 북극성. <strong style="color:var(--warm);">이 칸이 빈 카드는 집지 않는다</strong> — 흔들림 방지 장치</td></tr>
+            <tr><td><strong>담당</strong></td><td>어느 C레벨이 처리하나</td></tr>
+            <tr><td><strong>완료 정의</strong></td><td>"어디까지 되면 끝"인지 — 모호하면 검수가 불가능</td></tr>
+            <tr><td><strong>다음</strong></td><td>완료 후 이어질 한 줄. <strong>브릿지의 핵심</strong></td></tr>
+            <tr><td><strong>상태</strong></td><td>입력 → 진행 → 검수 → 완료</td></tr>
+          </table>
+
+          <p style="font-size:13px;color:var(--text-soft);margin:18px 0 6px;font-weight:700;">③ 두 가지 확인 — 웰리가 한다</p>
+          <table>
+            <tr><th style="width:110px">확인</th><th>무엇을 묻나</th><th style="width:120px">비고</th></tr>
+            <tr><td><strong>됐나 확인</strong></td><td>"잘 되나? 제대로 돌아가나?"</td><td>원래 하던 것</td></tr>
+            <tr><td><strong>방향 확인</strong></td><td>"우리 목표 쪽 맞나? 적어둔 '다음'이 말이 되나?"</td><td style="color:var(--accent);font-weight:600;">새로 더한 것</td></tr>
+          </table>
+          <div class="callout tip" style="margin-top:10px;"><strong>방향이 틀리면</strong> → 일을 멈추고 <strong>GM께 딱 1건만</strong> 물어봐요 ("이렇게 하면 어떨까요?"까지 같이). <strong>잘 만들었어도 엉뚱한 일이면 안 쌓는 게</strong> 핵심이에요.</div>
+          <div class="callout tip" style="margin-top:10px;"><strong>🔧 이제 '약속'이 아니라 '자동 장치'예요 (2026-06-04):</strong> 일을 끝낼 때 '다음 돌'을 안 놓으면 <strong style="color:var(--warm);">빨간불(⚠️ 다음 미정)</strong>이 저절로 켜져요 — "어, 다리 끊겼네"가 바로 눈에 보여요. '다음'을 적으면 그게 <strong>내일 할 일 목록에 저절로</strong> 들어가요. 그래서 <strong>누가 깜빡해도 다리가 안 끊겨요.</strong></div>
+
+          <div class="callout" style="margin-top:12px;"><strong>📍 적어둔 '다음'은 어디 있나:</strong> 두 군데에 같이 남아요 — ① <strong>오늘 일지의 '다음 할일' 칸</strong>, ② <strong>대기 목록</strong>(다음에 켜는 사람이 제일 먼저 보는 곳). 두 곳에 '다음'이 있으면, 내일 누가 켜도 어제와 자연스럽게 이어져요.</div>
         </div>
-      </div>
+      </details>
+    </div>
+    <!-- ══ /일의 브릿지 ══ -->
 
-      <!-- 날짜 상세 모달 -->
-      <div id="gm1CalDayModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.55);z-index:9998;align-items:center;justify-content:center;">
-        <div style="background:var(--paper);border-radius:14px;padding:24px 22px;width:min(400px,90vw);box-shadow:0 8px 40px rgba(0,0,0,0.4);max-height:80vh;overflow-y:auto;">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
-            <h4 id="gm1CalDayTitle" style="margin:0;font-size:15px;"></h4>
-            <button id="gm1CalDayClose" style="background:none;border:none;font-size:18px;cursor:pointer;color:var(--dim);padding:2px 6px;">✕</button>
-          </div>
-          <div id="gm1CalDayList" style="display:flex;flex-direction:column;gap:8px;"></div>
-          <button id="gm1CalDayAdd" style="margin-top:14px;width:100%;padding:8px;font-size:13px;font-weight:700;border-radius:8px;cursor:pointer;font-family:inherit;background:var(--accent);color:#fff;border:none;">+ 이 날 일정 추가</button>
-        </div>
-      </div>
-
-    </div><!-- /calendar panel -->
-
-
-    <details class="toggle" style="margin:8px 0 20px;border-top:1px solid var(--border);padding-top:14px;"><summary style="cursor:pointer;font-weight:700;font-size:15px;color:var(--accent);"><span class="ico">👤</span>내 개인 영역 <span style="font-size:12px;color:var(--dim);font-weight:400;">— 루틴·방향·기록·캘린더 (펼치기)</span></summary>
     <div class="tabs" data-tabs="gm1">
       <div class="tab-nav">
-        <button class="tab-btn active" data-tab="rhythm">💪 내 루틴</button>
+        <button class="tab-btn active" data-tab="rhythm">💪 내 리듬</button>
         <button class="tab-btn" data-tab="compass">📌 방향·기록</button>
+        <button class="tab-btn" data-tab="calendar">🗓️ 캘린더</button>
       </div>
 
       <!-- ░░ 탭1: 내 리듬 = 평일+주말+트래커+영양 ░░ -->
@@ -4003,6 +3728,54 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
 
       <!-- ░░ 탭2: 방향·기록 = 북극성 모듈표 + 목표·원칙 + 세션 로그 + 사용법 ░░ -->
       <div class="tab-panel" data-panel="compass">
+    <!-- ══ 🌟 우리의 북극성 (GM 비전 — 2026-06-03) ══ -->
+    <div style="background:linear-gradient(135deg,#1a1830 0%,#2a2545 100%);border:1px solid var(--accent);border-radius:14px;padding:18px 22px;margin:8px 0 20px;">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+        <span style="font-size:20px;">🌟</span>
+        <span style="color:#fff;font-weight:800;font-size:16px;letter-spacing:0.02em;">우리의 북극성</span>
+      </div>
+      <p style="color:#e8e8e8;font-size:13.5px;line-height:1.6;margin:0 0 6px;"><strong style="color:var(--accent);">운영은 AI가 알아서 해주고, 직원들은 본질에 집중하고, GM은 판단과 결정 그리고 트렌드에 집중할 수 있는 시스템을 구축한다.</strong></p>
+      <p style="color:#e8e8e8;font-size:13px;line-height:1.6;margin:0 0 6px;">↳ AI 운영 ERP를 만들어 <strong style="color:var(--accent);">불필요한·무의미한·중복된 것들을 최소화</strong>한다.</p>
+      <p style="color:var(--dim);font-size:12px;margin:0 0 12px;">GM은 G1 하나만 보고, 👑웰리가 7개 모듈을 지시·검수·통합 보고한다. 아래 = 완성 시 자동화될 것들.</p>
+      <details class="toggle" open style="margin:0;">
+        <summary style="cursor:pointer;font-weight:700;font-size:13px;color:var(--accent);">📋 7대 자동화 모듈 (목표) — 접기/펼치기</summary>
+        <div class="toggle-body" style="margin-top:10px;">
+          <table id="g1-modules-table">
+            <tr><th style="width:132px">모듈</th><th>완성 시 자동화</th></tr>
+            <tr><td>👥 회원 (CPO)</td><td>가입·갱신 자동 · 이탈징후 감지→케어 · NPS 자동수집 · 갱신율 추적</td></tr>
+            <tr><td>📡 마케팅 (CMO)</td><td>콘텐츠 초안→슬라이드→3채널 자동발행 · 문의 퍼널 추적 · 전환 매칭</td></tr>
+            <tr><td>🧑‍💻 운영 (COO)</td><td>점검 체크리스트 자동배포 · 이슈 접수→배정→SLA 추적 · 인수인계</td></tr>
+            <tr><td>🖥️ 시설·IT (CTO)</td><td>출입·락커·키오스크 무인화 · 점검 자동알림 · 장애 감지</td></tr>
+            <tr><td>💰 재무 (CFO)</td><td>매출·지출 자동집계 · 이상지출 알림 · 예산 소진율 예측 · 세무일정</td></tr>
+            <tr><td>👨‍💼 인사 (CHRO)</td><td>채용 파이프라인 · 근태 집계 · 온보딩 30-60-90 · 계약만료 알림</td></tr>
+            <tr><td>🧾 업무·결재 (전사)</td><td>업무 등록→결재선 자동산출→승인→완료→결과보고서 자동생성</td></tr>
+          </table>
+          <p style="font-size:12px;color:var(--dim);margin-top:8px;">👑 그 위에 <strong>웰리(오케스트레이터)</strong> — 전 모듈 보고 통합 · 08시 브리핑 · 완료 자동검증 → GM은 G1만.</p>
+        </div>
+      </details>
+    </div>
+    <!-- ══ /북극성 ══ -->
+    <script>
+    /* G1 7대 자동화 모듈 — 클릭 편집 + 자동저장(localStorage) (2026-06-04) */
+    (function(){
+      var KEY='G1_MODULES_V1';
+      var tbl=document.getElementById('g1-modules-table');
+      if(!tbl) return;
+      var cells=tbl.querySelectorAll('tr td');
+      if(!cells.length) return;
+      try{ var s=JSON.parse(localStorage.getItem(KEY)||'null');
+        if(s && s.length===cells.length){ cells.forEach(function(c,i){ c.innerHTML=s[i]; }); }
+      }catch(e){}
+      cells.forEach(function(c){ c.setAttribute('contenteditable','true'); c.style.cursor='text'; });
+      function save(){ var a=[]; cells.forEach(function(c){ a.push(c.innerHTML); }); try{ localStorage.setItem(KEY, JSON.stringify(a)); }catch(e){} }
+      tbl.addEventListener('input', save);
+      var hint=document.createElement('div');
+      hint.style.cssText='font-size:11px;color:var(--accent);margin-top:6px;';
+      hint.textContent='✏️ 칸을 클릭해 바로 편집 · 자동 저장됩니다';
+      if(tbl.parentNode) tbl.parentNode.appendChild(hint);
+    })();
+    </script>
+
       <!-- 목표·원칙 -->
       <div data-panel="principles">
         <h3><span class="ico">🧭</span>결정을 위한 7대 원칙</h3>
@@ -4138,8 +3911,102 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
     </details>
       </div><!-- /compass -->
 
+      <!-- ░░ 탭3: 캘린더 ░░ -->
+      <!-- 개인 캘린더 -->
+      <div class="tab-panel" data-panel="calendar">
+        <h3><span class="ico">🗓️</span>개인 캘린더</h3>
+
+        <!-- 컨트롤바 -->
+        <div id="gm1CalBar" style="display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:16px;">
+          <button id="gm1CalPrev" style="padding:6px 14px;font-size:13px;font-weight:700;border-radius:8px;cursor:pointer;font-family:inherit;background:var(--paper);color:var(--text);border:1px solid var(--border);">← 이전 달</button>
+          <span id="gm1CalMonthLabel" style="font-size:16px;font-weight:700;min-width:100px;text-align:center;"></span>
+          <button id="gm1CalNext" style="padding:6px 14px;font-size:13px;font-weight:700;border-radius:8px;cursor:pointer;font-family:inherit;background:var(--paper);color:var(--text);border:1px solid var(--border);">다음 달 →</button>
+          <button id="gm1CalToday" style="padding:6px 14px;font-size:13px;font-weight:600;border-radius:8px;cursor:pointer;font-family:inherit;background:var(--bg);color:var(--dim);border:1px solid var(--border);">오늘로</button>
+          <button id="gm1CalAddBtn" style="padding:6px 16px;font-size:13px;font-weight:700;border-radius:8px;cursor:pointer;font-family:inherit;background:var(--accent);color:#fff;border:none;margin-left:auto;">+ 일정 추가</button>
+        </div>
+
+        <!-- 월별 그리드 -->
+        <div id="gm1CalGrid" style="overflow-x:auto;">
+          <table id="gm1CalTable" style="width:100%;border-collapse:collapse;table-layout:fixed;">
+            <thead>
+              <tr id="gm1CalHeader">
+                <th style="padding:6px 4px;text-align:center;font-size:12px;color:#e85555;">일</th>
+                <th style="padding:6px 4px;text-align:center;font-size:12px;">월</th>
+                <th style="padding:6px 4px;text-align:center;font-size:12px;">화</th>
+                <th style="padding:6px 4px;text-align:center;font-size:12px;">수</th>
+                <th style="padding:6px 4px;text-align:center;font-size:12px;">목</th>
+                <th style="padding:6px 4px;text-align:center;font-size:12px;">금</th>
+                <th style="padding:6px 4px;text-align:center;font-size:12px;color:#5588ee;">토</th>
+              </tr>
+            </thead>
+            <tbody id="gm1CalBody"></tbody>
+          </table>
+        </div>
+
+        <!-- 이번 달 일정 목록 -->
+        <h4 style="margin-top:24px;margin-bottom:10px;"><span class="ico">📋</span>이번 달 일정</h4>
+        <div id="gm1CalList" style="display:flex;flex-direction:column;gap:6px;"></div>
+        <div id="gm1CalEmpty" style="display:none;color:var(--dim);font-size:13px;padding:12px 0;">이번 달 일정이 없습니다.</div>
+
+        <!-- 일정 추가/편집 모달 -->
+        <div id="gm1CalModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.55);z-index:9999;align-items:center;justify-content:center;">
+          <div style="background:var(--paper);border-radius:14px;padding:28px 24px;width:min(440px,92vw);box-shadow:0 8px 40px rgba(0,0,0,0.4);position:relative;">
+            <h4 id="gm1CalModalTitle" style="margin:0 0 18px;font-size:16px;">일정 추가</h4>
+            <input type="hidden" id="gm1CalEditId">
+            <div style="display:flex;flex-direction:column;gap:12px;">
+              <div>
+                <label style="font-size:12px;color:var(--dim);display:block;margin-bottom:4px;">날짜 <span style="color:var(--warm);">*</span></label>
+                <input type="date" id="gm1CalFDate" style="width:100%;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:14px;font-family:inherit;box-sizing:border-box;">
+              </div>
+              <div>
+                <label style="font-size:12px;color:var(--dim);display:block;margin-bottom:4px;">시간 (선택)</label>
+                <input type="time" id="gm1CalFTime" style="width:100%;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:14px;font-family:inherit;box-sizing:border-box;">
+              </div>
+              <div>
+                <label style="font-size:12px;color:var(--dim);display:block;margin-bottom:4px;">제목 <span style="color:var(--warm);">*</span></label>
+                <input type="text" id="gm1CalFTitle" placeholder="일정 제목" style="width:100%;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:14px;font-family:inherit;box-sizing:border-box;">
+              </div>
+              <div>
+                <label style="font-size:12px;color:var(--dim);display:block;margin-bottom:4px;">카테고리</label>
+                <select id="gm1CalFCat" style="width:100%;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:14px;font-family:inherit;box-sizing:border-box;">
+                  <option value="개인">개인</option>
+                  <option value="업무">업무</option>
+                  <option value="인사·파트너">인사·파트너</option>
+                  <option value="회의">회의</option>
+                  <option value="기타">기타</option>
+                </select>
+              </div>
+              <div>
+                <label style="font-size:12px;color:var(--dim);display:block;margin-bottom:4px;">메모</label>
+                <textarea id="gm1CalFMemo" rows="3" placeholder="메모 (선택)" style="width:100%;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:14px;font-family:inherit;resize:vertical;box-sizing:border-box;"></textarea>
+              </div>
+              <div style="display:flex;align-items:center;gap:8px;">
+                <input type="checkbox" id="gm1CalFIsToday" style="width:16px;height:16px;cursor:pointer;accent-color:var(--accent);">
+                <label for="gm1CalFIsToday" style="font-size:13px;cursor:pointer;">오늘 할 일로 표시 (isToday)</label>
+              </div>
+            </div>
+            <div style="display:flex;gap:8px;margin-top:18px;justify-content:flex-end;">
+              <button id="gm1CalModalDel" style="display:none;padding:8px 16px;font-size:13px;font-weight:700;border-radius:8px;cursor:pointer;font-family:inherit;background:var(--warm);color:#fff;border:none;margin-right:auto;">삭제</button>
+              <button id="gm1CalModalCancel" style="padding:8px 16px;font-size:13px;font-weight:600;border-radius:8px;cursor:pointer;font-family:inherit;background:var(--bg);color:var(--dim);border:1px solid var(--border);">취소</button>
+              <button id="gm1CalModalSave" style="padding:8px 20px;font-size:13px;font-weight:700;border-radius:8px;cursor:pointer;font-family:inherit;background:var(--accent);color:#fff;border:none;">저장</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 날짜 상세 모달 -->
+        <div id="gm1CalDayModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.55);z-index:9998;align-items:center;justify-content:center;">
+          <div style="background:var(--paper);border-radius:14px;padding:24px 22px;width:min(400px,90vw);box-shadow:0 8px 40px rgba(0,0,0,0.4);max-height:80vh;overflow-y:auto;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+              <h4 id="gm1CalDayTitle" style="margin:0;font-size:15px;"></h4>
+              <button id="gm1CalDayClose" style="background:none;border:none;font-size:18px;cursor:pointer;color:var(--dim);padding:2px 6px;">✕</button>
+            </div>
+            <div id="gm1CalDayList" style="display:flex;flex-direction:column;gap:8px;"></div>
+            <button id="gm1CalDayAdd" style="margin-top:14px;width:100%;padding:8px;font-size:13px;font-weight:700;border-radius:8px;cursor:pointer;font-family:inherit;background:var(--accent);color:#fff;border:none;">+ 이 날 일정 추가</button>
+          </div>
+        </div>
+
+      </div><!-- /calendar panel -->
     </div><!-- /tabs gm1 -->
-    </details>
 
     <!-- ════ G1 업무 편집 모달 (업무SSOT 이식 · 진척 로그·예산·결재 라우팅) ════ -->
     <div id="gm1TaskModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.55);z-index:9997;align-items:center;justify-content:center;">
@@ -4263,22 +4130,17 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
     <div class="doc-header"><h2>운영 통합 체계</h2><div class="meta">COO 관할 · 부서별 운영 체계 · 지원부 우선 완성 → 확장</div></div>
     <p class="lead">전 부서 공통 운영 체계입니다. 지원부를 먼저 완성하고, 운영부(리셉션)·시설부·주차관리부로 확장합니다.</p>
 
-    <!-- ── 부서별 핵심 현황 요약 (라이브) ── -->
-    <div id="o1-dept-summary" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;">
-      <div style="text-align:center;padding:16px;color:var(--dim);font-size:13px;">현황 불러오는 중...</div>
-    </div>
-
     <h4 style="margin-bottom:10px;">부서별 체계</h4>
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
-      <a href="https://wellperion-cao.github.io/wellperion-automation/coo/check/%EC%9A%B4%EC%98%81%EB%B6%80%20%EC%B2%B4%EA%B3%84.html" target="_blank" style="display:inline-flex;align-items:center;gap:6px;padding:8px 16px;background:var(--accent);color:#fff;font-size:13px;font-weight:700;border-radius:10px;text-decoration:none;">🏢 운영부 체계</a>
+      <span class="badge gray" style="padding:6px 14px;font-size:13px;">운영부·리셉션 (예정)</span>
       <a href="https://wellperion-cao.github.io/wellperion-automation/coo/check/%EC%8B%9C%EC%84%A4%EB%B6%80%20%EC%B2%B4%EA%B3%84.html" target="_blank" style="display:inline-flex;align-items:center;gap:6px;padding:8px 16px;background:var(--accent);color:#fff;font-size:13px;font-weight:700;border-radius:10px;text-decoration:none;">🏭 시설부 체계</a>
       <a href="https://wellperion-cao.github.io/wellperion-automation/coo/check/%EC%A7%80%EC%9B%90%EB%B6%80%20%EC%B2%B4%EA%B3%84.html" target="_blank" style="display:inline-flex;align-items:center;gap:6px;padding:8px 16px;background:var(--accent);color:#fff;font-size:13px;font-weight:700;border-radius:10px;text-decoration:none;">✅ 지원부 체계</a>
-      <a href="https://wellperion-cao.github.io/wellperion-automation/coo/check/%EC%A3%BC%EC%B0%A8%EA%B4%80%EB%A6%AC%EB%B6%80%20%EC%B2%B4%EA%B3%84.html" target="_blank" style="display:inline-flex;align-items:center;gap:6px;padding:8px 16px;background:var(--accent);color:#fff;font-size:13px;font-weight:700;border-radius:10px;text-decoration:none;">🅿️ 주차관리부 체계</a>
+      <span class="badge gray" style="padding:6px 14px;font-size:13px;">주차관리부 (예정)</span>
     </div>
 
     <h4 style="margin-bottom:10px;">파트너팀 체계</h4>
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
-      <a href="https://wellperion-cao.github.io/wellperion-automation/coo/check/%ED%8C%8C%ED%8A%B8%EB%84%88%ED%8C%80%20%EC%B2%B4%EA%B3%84.html" target="_blank" style="display:inline-flex;align-items:center;gap:6px;padding:8px 16px;background:var(--accent);color:#fff;font-size:13px;font-weight:700;border-radius:10px;text-decoration:none;">📊 파트너팀 체계</a> <a href="https://wellperion-cao.github.io/wellperion-automation/coo/check/%EA%B0%95%EC%8A%B5%ED%8C%80%20%EA%B0%80%EC%9D%B4%EB%93%9C%EB%9D%BC%EC%9D%B8.html" target="_blank" style="display:inline-flex;align-items:center;gap:6px;padding:8px 16px;background:var(--accent);color:#fff;font-size:13px;font-weight:700;border-radius:10px;text-decoration:none;">🏟️ 강습팀 가이드라인</a>
+      <a href="https://wellperion-cao.github.io/wellperion-automation/coo/check/%EA%B0%95%EC%8A%B5%ED%8C%80%20%EA%B0%80%EC%9D%B4%EB%93%9C%EB%9D%BC%EC%9D%B8.html" target="_blank" style="display:inline-flex;align-items:center;gap:6px;padding:8px 16px;background:var(--accent);color:#fff;font-size:13px;font-weight:700;border-radius:10px;text-decoration:none;">🏟️ 강습팀 가이드라인</a>
       <span class="badge gray" style="padding:6px 14px;font-size:13px;">루프메소드팀 가이드라인 (예정)</span>
       <span class="badge gray" style="padding:6px 14px;font-size:13px;">이움팀 가이드라인 (예정)</span>
     </div>
@@ -4302,15 +4164,6 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
       <tr><td>2</td><td><strong>운영부(리셉션)</strong></td><td>지원부 체계 복제 → 규정·가이드·매뉴얼·체크리스트 제작</td><td><span class="badge gray">예정</span></td></tr>
       <tr><td>3</td><td><strong>시설부</strong></td><td>지원부 체계 복제 → 시설 점검·장비 관리 중심</td><td><span class="badge gray">예정</span></td></tr>
       <tr><td>4</td><td><strong>주차관리부</strong></td><td>지원부 체계 복제 → 입출차·정산·주차장 관리</td><td><span class="badge gray">예정</span></td></tr>
-    </table>
-
-    <h3 style="margin-top:24px;"><span class="ico">📈</span>고도화 정의 <span style="font-size:13px;color:var(--dim);font-weight:400;">— 관리자용 · 공통 (현장 규정 탭에서 이관)</span></h3>
-    <div class="callout" style="border-left:4px solid var(--accent);margin-bottom:12px;"><strong>고도화</strong> = 현재 규정·가이드·매뉴얼·체크리스트를 현장 데이터와 피드백 기반으로 지속 개선하는 것. 대규모 재설계 금지 — 보수적 증분 업데이트 원칙.</div>
-    <table>
-      <tr><th style="width:90px">구간</th><th>목표</th><th style="width:90px">시기</th></tr>
-      <tr><td><strong>단기</strong></td><td>인수인계 텔레그램 전환 / 응대 멘트 가이드 / 비품 기준 명문화</td><td>2026-07</td></tr>
-      <tr><td><strong>중기</strong></td><td>청소 전후 사진 자동 수집 / 비품 재고 자동화</td><td>2026-10</td></tr>
-      <tr><td><strong>장기</strong></td><td>데이터 기반 예방 정비 / 직원 퍼포먼스 대시보드</td><td>2027</td></tr>
     </table>
   </article>
 
@@ -4563,7 +4416,7 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
       function effState(it){var d=dec();return it.status||(d[it.id]&&d[it.id].decision)||'검수대기';}
       function dateKey(it){return it.published_at||(((it.id||'').match(/\d{4}-\d{2}-\d{2}/)||[''])[0])||it.assigned_at||it.enqueued_at||'';}
       function pubDate(it){var k=dateKey(it);return k?k.slice(0,10):'';}
-      function isDone(st){return st==='발행완료'||st==='rejected'||st==='반려'||st==='확인필요'||st==='폐기';}
+      function isDone(st){return st==='발행완료'||st==='rejected'||st==='반려'||st==='확인필요';}
       function badgeOf(e){return e==='발행완료'?'<span style="color:var(--green);font-weight:700;">✅ 발행완료</span>':(e==='approved'||e==='승인')?'<span style="color:var(--accent);font-weight:700;">🟡 승인됨 · 발행 진행 중</span>':e==='발행실패'?'<span style="color:#dc2626;font-weight:700;">❌ 발행 실패 · 재시도 필요</span>':e==='수동발행대기'?'<span style="color:var(--accent);font-weight:700;">📦 수동 발행 대기</span>':(e==='rejected'||e==='반려')?'<span style="color:var(--warm,#d98c5f);font-weight:700;">↩ 반려됨</span>':e==='확인필요'?'<span style="color:#d98c5f;font-weight:700;">🔎 발행 확인필요 · URL 수동확인</span>':'<span style="color:var(--accent);font-weight:700;">🟡 검수 대기</span>';}
       // 계정 분류: account 필드 우선, 없으면 channel 문자열로 추론, 미분류는 namuk
       function acctOf(it){
@@ -4781,9 +4634,7 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
         <div style="font-size:11px;font-weight:700;letter-spacing:0.04em;color:var(--dim);margin-bottom:6px;text-transform:uppercase;">🔄 최근 변동</div>
         <div id="s4WorkChange" style="background:var(--bg);border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:14px;"><div style="color:var(--dim);font-size:13px;padding:12px 14px;">불러오는 중…</div></div>
         <div style="font-size:11px;font-weight:700;letter-spacing:0.04em;color:var(--dim);margin-bottom:6px;text-transform:uppercase;">⏰ 마감 임박 <span style="font-weight:500;text-transform:none;">· 종료일 7일 내(+지연)</span></div>
-        <div id="s4WorkDeadline" style="background:var(--bg);border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:14px;"><div style="color:var(--dim);font-size:13px;padding:12px 14px;">불러오는 중…</div></div>
-        <div style="font-size:11px;font-weight:700;letter-spacing:0.04em;color:var(--dim);margin-bottom:6px;text-transform:uppercase;">✅ 완료 <span style="font-weight:500;text-transform:none;">· 최신순</span></div>
-        <div id="s4WorkDone" style="background:var(--bg);border:1px solid var(--border);border-radius:10px;overflow:hidden;"><div style="color:var(--dim);font-size:13px;padding:12px 14px;">불러오는 중…</div></div>
+        <div id="s4WorkDeadline" style="background:var(--bg);border:1px solid var(--border);border-radius:10px;overflow:hidden;"><div style="color:var(--dim);font-size:13px;padding:12px 14px;">불러오는 중…</div></div>
       </div>
       <!-- ▶ 결재 현황 -->
       <div style="flex:1;min-width:300px;">
@@ -4791,9 +4642,7 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
         <div style="font-size:11px;font-weight:700;letter-spacing:0.04em;color:var(--dim);margin-bottom:6px;text-transform:uppercase;">🔄 최근 변동</div>
         <div id="s4ApprChange" style="background:var(--bg);border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:14px;"><div style="color:var(--dim);font-size:13px;padding:12px 14px;">불러오는 중…</div></div>
         <div style="font-size:11px;font-weight:700;letter-spacing:0.04em;color:var(--dim);margin-bottom:6px;text-transform:uppercase;">⏳ 결재 대기 <span style="font-weight:500;text-transform:none;">· 오래 묵힌 순</span></div>
-        <div id="s4ApprPending" style="background:var(--bg);border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:14px;"><div style="color:var(--dim);font-size:13px;padding:12px 14px;">불러오는 중…</div></div>
-        <div style="font-size:11px;font-weight:700;letter-spacing:0.04em;color:var(--dim);margin-bottom:6px;text-transform:uppercase;">✅ 결재완료 <span style="font-weight:500;text-transform:none;">· 최신순</span></div>
-        <div id="s4ApprDone" style="background:var(--bg);border:1px solid var(--border);border-radius:10px;overflow:hidden;"><div style="color:var(--dim);font-size:13px;padding:12px 14px;">불러오는 중…</div></div>
+        <div id="s4ApprPending" style="background:var(--bg);border:1px solid var(--border);border-radius:10px;overflow:hidden;"><div style="color:var(--dim);font-size:13px;padding:12px 14px;">불러오는 중…</div></div>
       </div>
     </div>
 
@@ -4874,14 +4723,6 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
         var el = document.getElementById('s4KpiCards'); if (!el) return;
         if (!res || !res.ok || !Array.isArray(res.data)){ fail(); return; }
         var rows = res.data;
-        // S3 안전망: AI C레벨 배 제외 (카테고리 '[7]AI배(C레벨)' 또는 AI 담당자) — 2026-06-08 GM 방침
-        var _AI_CAT = '[7]AI배(C레벨)';
-        var _AI_OWNERS = /웰리|시뽀|시로|시모|시우|시포|시토|ai\s*ceo|ai\s*cfo|ai\s*chro|ai\s*cmo|ai\s*coo|ai\s*cpo|ai\s*cto/i;
-        rows = rows.filter(function(r){
-          var cat = String(r['카테고리'] || r.category || '').trim();
-          var owner = String(r['담당자'] || r.owner || '').trim();
-          return cat !== _AI_CAT && !_AI_OWNERS.test(owner);
-        });
         // 업무 KPI (실무진 기준)
         var work = rows.filter(function(r){ return isStaff(r.owner || r['담당자'] || ''); });
         // 업무현황 SSOT와 동일 정의: 완료여도 결재요청 미완(결재완료·반려 아님)이면 진행으로 집계 (2026-06-03 GM 동기화)
@@ -4965,8 +4806,8 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
 
         var named = rows.filter(function(r){ return nm(r).trim(); });
 
-        // ① 업무 최근변동 (수정일 desc, 완료 제외, 6)
-        var wc = named.filter(function(r){ return st(r)!=='완료'; }).sort(function(a,b){ return up(b).localeCompare(up(a)); }).slice(0,6);
+        // ① 업무 최근변동 (수정일 desc, 6)
+        var wc = named.slice().sort(function(a,b){ return up(b).localeCompare(up(a)); }).slice(0,6);
         fillList('s4WorkChange', wc.length ? wc.map(function(r,i){
           return rowHtml(i, workType(r), workTitleLink(nm(r), rid(r), ow(r)), ow(r), relTime(up(r)));
         }).join('') : emptyMsg('최근 변동 없음'));
@@ -4980,15 +4821,9 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
           return rowHtml(i, x.b, workTitleLink(nm(r), rid(r), ow(r)), ow(r), '~'+String(r['종료일']||r.endDate||'').slice(5,10));
         }).join('') : emptyMsg('마감 임박 업무 없음 (7일 내)'));
 
-        // ②-2 업무 완료 (status=완료, 수정일 desc=최신순, 5)
-        var wdone = named.filter(function(r){ return st(r)==='완료'; }).sort(function(a,b){ return up(b).localeCompare(up(a)); }).slice(0,5);
-        fillList('s4WorkDone', wdone.length ? wdone.map(function(r,i){
-          return rowHtml(i, { ic:'✅', t:'완료', c:'var(--grow)' }, workTitleLink(nm(r), rid(r), ow(r)), ow(r), relTime(up(r)));
-        }).join('') : emptyMsg('완료 업무 없음'));
-
-        // ③ 결재 최근변동 (결재완료 제외, 수정일 desc, 6)
+        // ③ 결재 최근변동 (결재상태/요청 있는 건, 수정일 desc, 6)
         var apprItems = named.filter(function(r){ return String(as(r)).trim() || String(req(r)).trim(); });
-        var ac = apprItems.filter(function(r){ return as(r)!=='결재완료'; }).sort(function(a,b){ return up(b).localeCompare(up(a)); }).slice(0,6);
+        var ac = apprItems.slice().sort(function(a,b){ return up(b).localeCompare(up(a)); }).slice(0,6);
         fillList('s4ApprChange', ac.length ? ac.map(function(r,i){
           return rowHtml(i, apprType(r), apprTitleLink(nm(r), rid(r)), ow(r), relTime(up(r)));
         }).join('') : emptyMsg('결재 변동 없음'));
@@ -4999,14 +4834,8 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
         fillList('s4ApprPending', ap.length ? ap.map(function(r,i){
           return rowHtml(i, { ic:'⏳', t:'대기', c:'var(--warm)' }, apprTitleLink(nm(r), rid(r)), ow(r), relTime(up(r)));
         }).join('') : emptyMsg('결재 대기 없음'));
-
-        // ④-2 결재완료 (결재상태=결재완료, 수정일 desc=최신순, 5)
-        var adone = apprItems.filter(function(r){ return as(r)==='결재완료'; }).sort(function(a,b){ return up(b).localeCompare(up(a)); }).slice(0,5);
-        fillList('s4ApprDone', adone.length ? adone.map(function(r,i){
-          return rowHtml(i, { ic:'✅', t:'결재완료', c:'var(--grow)' }, apprTitleLink(nm(r), rid(r)), ow(r), relTime(up(r)));
-        }).join('') : emptyMsg('결재완료 없음'));
       })
-      .catch(function(){ fail(); ['s4WorkChange','s4WorkDeadline','s4WorkDone','s4ApprChange','s4ApprPending','s4ApprDone'].forEach(function(fid){ var f = document.getElementById(fid); if (f) f.innerHTML = '<div style="color:var(--dim);font-size:13px;padding:12px 14px;">불러오기 실패 — SSOT에서 직접 확인</div>'; }); });
+      .catch(function(){ fail(); ['s4WorkChange','s4WorkDeadline','s4ApprChange','s4ApprPending'].forEach(function(fid){ var f = document.getElementById(fid); if (f) f.innerHTML = '<div style="color:var(--dim);font-size:13px;padding:12px 14px;">불러오기 실패 — SSOT에서 직접 확인</div>'; }); });
   })();
 
   window.hubEditNotes = function(field){
@@ -5246,50 +5075,13 @@ function crTab(btn, panelId) {
     <div class="doc-header"><h2><span class="g-id">T2</span>업무자동화SSOT</h2><div class="meta">자동화·예약작업·PC·업데이트 단일 진실 원장 · 2026-06-03 종합 정립</div></div>
     <p class="lead">Windows 스케줄러 + Python 프로세스 실측 기반. 무엇이 언제 자동으로 도는지, PC·업데이트·창은 어떻게 동작하는지를 한곳에 모은 SSOT.</p>
 
-    <!-- ══ 📋 7대 자동화 모듈 (전사 로드맵) — G1에서 이관 (2026-06-06) ══ -->
-    <div style="background:var(--paper);border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:12px;padding:16px 20px;margin:6px 0 20px;">
-      <h3 style="margin-top:0;"><span class="ico">📋</span>7대 자동화 모듈 — 전사 로드맵 (목표)</h3>
-      <p style="font-size:12.5px;color:var(--dim);margin:0 0 10px;">웰페리온 ERP 완성 시 각 모듈이 자동화될 목표입니다. 👑 웰리가 전 모듈을 통합·검수하고 GM은 G1(오늘의 항로)만 봅니다.</p>
-      <table id="g1-modules-table">
-        <tr><th style="width:132px">모듈</th><th>완성 시 자동화</th></tr>
-        <tr><td>👥 회원 (CPO)</td><td>가입·갱신 자동 · 이탈징후 감지→케어 · NPS 자동수집 · 갱신율 추적</td></tr>
-        <tr><td>📡 마케팅 (CMO)</td><td>콘텐츠 초안→슬라이드→3채널 자동발행 · 문의 퍼널 추적 · 전환 매칭</td></tr>
-        <tr><td>🧑‍💻 운영 (COO)</td><td>점검 체크리스트 자동배포 · 이슈 접수→배정→SLA 추적 · 인수인계</td></tr>
-        <tr><td>🖥️ 시설·IT (CTO)</td><td>출입·락커·키오스크 무인화 · 점검 자동알림 · 장애 감지</td></tr>
-        <tr><td>💰 재무 (CFO)</td><td>매출·지출 자동집계 · 이상지출 알림 · 예산 소진율 예측 · 세무일정</td></tr>
-        <tr><td>👨‍💼 인사 (CHRO)</td><td>채용 파이프라인 · 근태 집계 · 온보딩 30-60-90 · 계약만료 알림</td></tr>
-        <tr><td>🧾 업무·결재 (전사)</td><td>업무 등록→결재선 자동산출→승인→완료→결과보고서 자동생성</td></tr>
-      </table>
-      <p style="font-size:12px;color:var(--dim);margin-top:8px;">👑 그 위에 <strong>웰리(오케스트레이터)</strong> — 전 모듈 보고 통합 · 08시 브리핑 · 완료 자동검증 → GM은 G1만.</p>
-    </div>
-    <script>
-    /* 7대 자동화 모듈 — 클릭 편집 + 자동저장(localStorage) (G1→T2 이관 2026-06-06) */
-    (function(){
-      var KEY='G1_MODULES_V1';
-      var tbl=document.getElementById('g1-modules-table');
-      if(!tbl) return;
-      var cells=tbl.querySelectorAll('tr td');
-      if(!cells.length) return;
-      try{ var s=JSON.parse(localStorage.getItem(KEY)||'null');
-        if(s && s.length===cells.length){ cells.forEach(function(c,i){ c.innerHTML=s[i]; }); }
-      }catch(e){}
-      cells.forEach(function(c){ c.setAttribute('contenteditable','true'); c.style.cursor='text'; });
-      function save(){ var a=[]; cells.forEach(function(c){ a.push(c.innerHTML); }); try{ localStorage.setItem(KEY, JSON.stringify(a)); }catch(e){} }
-      tbl.addEventListener('input', save);
-      var hint=document.createElement('div');
-      hint.style.cssText='font-size:11px;color:var(--accent);margin-top:6px;';
-      hint.textContent='✏️ 칸을 클릭해 바로 편집 · 자동 저장됩니다';
-      if(tbl.parentNode) tbl.parentNode.appendChild(hint);
-    })();
-    </script>
-    <!-- ══ /7대 자동화 모듈 ══ -->
     <!-- ── PC·업데이트·창 동작 원리 (접이식) ── -->
     <details class="toggle" style="margin:6px 0 18px;">
       <summary>🖥️ PC·업데이트·창 동작 원리 <span style="color:var(--dim);font-size:12px;font-weight:400;">— 검은 창·자동 업데이트가 왜 그런지 (펼쳐보기)</span></summary>
       <div class="toggle-body">
         <table>
           <tr><th style="width:150px">주제</th><th>핵심 (일상어)</th></tr>
-          <tr><td><strong>① 검은 창</strong></td><td>예약작업이 <b>"보이는 화면 + 창 있는 방식"</b>으로 등록돼 검은 cmd 창이 떴습니다. → <b>숨김 런처</b>(<code>launchers/*.vbs</code>)로 창 없이 전환. 적용: <code>fix_task_windows.bat</code> 관리자 1회.</td></tr>
+          <tr><td><strong>① 검은 창</strong></td><td>예약작업이 <b>"보이는 화면 + 창 있는 방식"</b>으로 등록돼 검은 cmd 창이 떴습니다. → <b>숨김 런처</b>(<code>launchers/*.vbs</code>)로 창 없이 전환. 적용: <code>fix_task_windows.bat</code> 관리자 1회. <span style="color:var(--dim);">(검은 창 주범이던 인스타 폴링 감시기는 2026-06-03 폐기)</span></td></tr>
           <tr><td><strong>② 자동 업데이트</strong></td><td>업데이트는 <b>PC 켤 때 CEO 배치가 1회</b>만. <b>실행 중인 Claude는 못 바꿉니다</b>(Windows가 켜진 파일 잠금) → 업데이트하려면 <b>모든 Claude 창 닫고 PC 재시작</b>. 세션 내 자동 업데이터는 항상 실패하던 잉여라 OFF.</td></tr>
           <tr><td><strong>③ 부팅 안전장치</strong></td><td>CEO 배치는 <b>Claude 창 0개일 때만</b> 업데이트(절전 복귀 세션 보호) + <code>logs\claude_update.log</code> 기록·검증.</td></tr>
         </table>
@@ -5320,38 +5112,34 @@ function crTab(btn, panelId) {
       <tr onclick="wpAutoToggle(this)" style="cursor:pointer;"><td>🟢</td><td>텔레그램 봇</td><td>인프라</td><td>상시</td><td style="color:var(--accent);font-size:12px;">펼치기 ▾</td></tr>
       <tr class="auto-detail" style="display:none;"><td colspan="5" style="background:var(--paper);padding:10px 14px;font-size:13px;color:var(--dim);"> bot.py — C-Level 보고·GM 지시 중계. @namuki_report_bot 단일 채널.</td></tr>
       <tr onclick="wpAutoToggle(this)" style="cursor:pointer;"><td>🟢</td><td>일일 스케줄러</td><td>인프라</td><td>상시</td><td style="color:var(--accent);font-size:12px;">펼치기 ▾</td></tr>
-      <tr class="auto-detail" style="display:none;"><td colspan="5" style="background:var(--paper);padding:10px 14px;font-size:13px;color:var(--dim);"> daily_scheduler.py — 정각 보고 발사(10슬롯). 슬롯 정본 = 바로 아래 텔레그램 10슬롯 표.</td></tr>
+      <tr class="auto-detail" style="display:none;"><td colspan="5" style="background:var(--paper);padding:10px 14px;font-size:13px;color:var(--dim);"> daily_scheduler.py — 정각 보고 발사(6슬롯).</td></tr>
     </table>
+    <p style="font-size:12px;color:var(--dim);margin:6px 0 0;">※ 구 <strong>IG 발행 감시기(120초 폴링)</strong>는 2026-06-03 폐기. 자동발행 0건·git churn 유발로 잉여 판정 → 폴링 제거. 발행 엔진 스크립트는 <strong>승인 시 on-demand 1회 호출</strong>용으로 보존(아래 '실제 업무 산출' 참조). 상세 = 🗑️ 정리·폐기 이력.</p>
 
-    <h4>매일 <span style="font-size:12px;color:var(--dim);font-weight:400;">— 예약작업 시각순 타임라인 (10슬롯+)</span></h4>
-    <p style="font-size:12px;color:var(--dim);margin:2px 0 8px;">Windows 스케줄러가 매일 자동 실행하는 예약작업을 <strong>위→아래 = 이른 시각→늦은 시각</strong> 순으로 정리. 텔레그램 정각 보고는 <code>daily_scheduler.py</code> 1개가 10번 발사 → <strong>바로 아래 10슬롯 표</strong>.</p>
+    <h4>매일 <span style="font-size:12px;color:var(--dim);font-weight:400;">— 예약작업 시각순 타임라인 (6개)</span></h4>
+    <p style="font-size:12px;color:var(--dim);margin:2px 0 8px;">Windows 스케줄러가 매일 자동 실행하는 예약작업을 <strong>위→아래 = 이른 시각→늦은 시각</strong> 순으로 정리. 텔레그램 정각 보고는 <code>daily_scheduler.py</code> 1개가 6번 발사 → <strong>바로 아래 6슬롯 표</strong>.</p>
     <table>
       <tr><th style="width:90px">시각</th><th style="width:230px">자동화</th><th style="width:72px">담당</th><th>무엇을 하나</th></tr>
       <tr><td>🟢 <strong>05:50</strong></td><td>PC 자동 ON</td><td>CTO</td><td>BIOS RTC로 자동 부팅 → 부팅 후 봇·스케줄러 자동기동(ONLOGON)</td></tr>
-      <tr><td>🟢 <strong>06~23시 (10슬롯)</strong></td><td>텔레그램 정각 통합보고 <span style="color:var(--accent);font-size:12px;">(10슬롯)</span></td><td>인프라</td><td><code>daily_scheduler.py</code>가 정각마다 텔레그램(@namuki_report_bot) 자동 발송 → <strong>아래 10슬롯 표 참조</strong></td></tr>
+      <tr><td>🟢 <strong>06~21시</strong></td><td>텔레그램 정각 통합보고 <span style="color:var(--accent);font-size:12px;">(6슬롯)</span></td><td>인프라</td><td><code>daily_scheduler.py</code>가 정각마다 텔레그램(@namuki_report_bot) 자동 발송 → <strong>아래 6슬롯 표 참조</strong></td></tr>
       <tr><td>🟢 <strong>07:30</strong></td><td>IG AI시리즈 제작·검수카드</td><td>CMO</td><td>다음 편 자동 제작 → M5 검수큐 등록 → 텔레그램 [✅승인]/[❌반려] 카드 발송. <strong>발행은 [✅승인] 탭에서만</strong>(무폴링). 안전판: <code>큐레이션_추천.md</code> 자동생성 · 소진 시 생성 중지</td></tr>
       <tr><td>🟢 <strong>08:00</strong></td><td>CEO 통합보고</td><td>AI CEO</td><td><code>ceo_morning_pipeline.py</code> — 전날 정리·오늘 업무·이슈 3섹션 텔레그램 발송</td></tr>
       <tr><td>🟢 <strong>22:00</strong></td><td>C-Level 진행 체크</td><td>AI CEO</td><td>일일 C-Level 진행현황 자동 점검</td></tr>
-      <tr><td>🟢 <strong>23:30</strong></td><td>PC 자동 종료</td><td>CTO</td><td>Auto-Shutdown-2330 (<code>shutdown.exe /s /f /t 0</code>) — PC 종료. 22:30→23:30 변경(2026-06-08 GM)으로 23:00 마감점검 슬롯 발송 환경 확보. <strong>종료 인사는 22:00 취침 슬롯에 통합</strong>(별도 22:25 Shutdown-Greeting 예약작업 제거).</td></tr>
+      <tr><td>🟢 <strong>22:25 → 22:30</strong></td><td>종료 인사 · 자동 종료</td><td>CTO</td><td>22:25 Shutdown-Greeting 텔레그램 발송 → 22:30 Auto-Shutdown(PC 절전) 실행</td></tr>
     </table>
 
-    <h4 style="margin-top:18px;">📨 텔레그램 정각 통합보고 10슬롯 <span style="font-size:12px;color:var(--dim);font-weight:400;">— daily_scheduler.py 정본 · GM이 매일 받는 보고</span></h4>
-    <p style="font-size:12px;color:var(--dim);margin:2px 0 6px;">※ 08:00 오늘의 항로는 <code>ceo_morning_pipeline.py</code> (별도 Task Scheduler) 담당 — 이 표에 없음.</p>
+    <h4 style="margin-top:18px;">📨 텔레그램 정각 통합보고 6슬롯 <span style="font-size:12px;color:var(--dim);font-weight:400;">— 위 06~21시 항목의 상세 · GM이 매일 받는 보고</span></h4>
     <table>
-      <tr><th style="width:90px">시각</th><th style="width:70px">구분</th><th style="width:180px">슬롯명</th><th>내용</th></tr>
-      <tr><td><strong>06:00</strong></td><td>개인</td><td>① 아침 루틴+명언</td><td>기상 인사 · <code>quotes.json</code> 06시대 명언 · 운동 5종 체크리스트</td></tr>
-      <tr><td><strong>07:00</strong></td><td>개인&amp;회사</td><td>② 어제 항로 정리</td><td>어제 완료 git 커밋 + todo_list 어제 완료 머지 · 미완료 브릿지 확인</td></tr>
-      <tr><td><strong>07:05</strong></td><td>회사</td><td>② 직원 공유용 카드</td><td>북극성 + 명언 카톡 복붙용 카드 (07:00 슬롯 5분 후 자동 발송)</td></tr>
-      <tr><td><strong>09:00</strong></td><td>회사</td><td>③ 업무·매출·지출</td><td>C-Level별 진행 현황 + CFO 시트 매출·지출 요약</td></tr>
-      <tr><td><strong>12:00</strong></td><td>회사</td><td>④ 오전 점검</td><td>COO 체크앱 지원부·시설부·주차 박스표 대시보드</td></tr>
-      <tr><td><strong>15:00</strong></td><td>개인&amp;회사</td><td>⑤ 오늘 1차 정리</td><td>오늘 진행 현황 + C-Level 진행 요약</td></tr>
-      <tr><td><strong>18:00</strong></td><td>회사</td><td>⑥ 오후 점검+퇴근</td><td>COO 체크앱 박스표 + 퇴근 인사</td></tr>
-      <tr><td><strong>21:00</strong></td><td>개인&amp;회사</td><td>⑦ 최종 정리+내일 항로점</td><td>오늘 완료 요약 + 내일 이어받을 PENDING 브릿지 확인</td></tr>
-      <tr><td><strong>22:00</strong></td><td>개인</td><td>⑧ 취침·전자기기 OFF + 하루 마무리 인사</td><td>북극성 + <code>quotes.json</code> 22시대 핵심 동기부여 명언 · 취침 루틴 + <strong>하루 마무리(종료) 인사 통합</strong>(구 22:25 별도 종료인사 폐지·여기로 합침)</td></tr>
-      <tr><td><strong>23:00</strong></td><td>회사</td><td>⑨ 마감 점검</td><td>COO 체크앱 지원부·시설부·주차 마감 박스표 대시보드 (PC 23:30 종료 전 발송)</td></tr>
+      <tr><th style="width:90px">시각</th><th style="width:160px">슬롯</th><th>내용</th></tr>
+      <tr><td><strong>06:00</strong></td><td>① 하루 시작</td><td>아침 인사 · 명언 · 운동 5종 체크</td></tr>
+      <tr><td><strong>09:00</strong></td><td>② 오늘 할 일</td><td>GM 담당 미완료건 자동 연동 + 전날 완료 git 커밋</td></tr>
+      <tr><td><strong>12:00</strong></td><td>③ 시설·지원·주차 점검</td><td>구글시트 실시간 현황</td></tr>
+      <tr><td><strong>15:00</strong></td><td>④ 진행 체크</td><td>GM 진행중 업무 + C-Level 진행현황</td></tr>
+      <tr><td><strong>18:00</strong></td><td>⑤ 퇴근</td><td>오늘 성과(git) + 명언 + 운동</td></tr>
+      <tr><td><strong>21:00</strong></td><td>⑥ 하루 마감</td><td>핵심 요약</td></tr>
     </table>
-    <div class="callout" style="margin-top:8px;font-size:13px;"><strong>📊 데이터 소스</strong> — GM 할일=업무현황 시트 <code>todo_list</code>(자동, GM 관리 불필요) · 명언=<code>status/quotes.json</code> · 진행=<code>status/*.json</code>·git. <strong style="color:var(--accent);">노션 의존 0.</strong><br><strong>🔄 재기동</strong> — 봇·스케줄러 재시작 또는 PC 부팅(ONLOGON 예약작업). 수동 재기동: <code>Stop-Process -Id (PID) -Force</code> → <code>Start-Process python -ArgumentList telegram_bot\daily_scheduler.py -WorkingDirectory C:\Users\jjky0\welperion-automation -WindowStyle Hidden</code>. <span style="color:var(--dim);">점검 원칙(왜·언제) = S2 CTO탭.</span></div>
-    <p style="font-size:12px;color:var(--dim);margin:8px 0 0;">※ IG 07:30 전체 발행 흐름(시모 위임→빌드→<code>pub:</code> 콜백 등) 상세는 <code>instagram/_AI시리즈_로드맵.md</code> 정본 참조.</p>
+    <div class="callout" style="margin-top:8px;font-size:13px;"><strong>📊 데이터 소스</strong> — GM 할일=업무현황 시트 <code>todo_list</code>(자동, GM 관리 불필요) · 명언=<code>status/quotes.json</code> · 진행=<code>status/*.json</code>·git. <strong style="color:var(--accent);">노션 의존 0.</strong><br><strong>🔄 재기동</strong> — 봇·스케줄러 재시작 또는 PC 부팅(ONLOGON 예약작업). <span style="color:var(--dim);">상세 = T2 텔레그램탭 / 점검 원칙(왜·언제) = S2 CTO탭.</span></div>
+    <p style="font-size:12px;color:var(--dim);margin:8px 0 0;">※ IG 07:30 전체 발행 흐름(시모 위임→빌드→<code>pub:</code> 콜백 등) 상세는 <code>instagram/_AI시리즈_로드맵.md</code> 정본 참조. <span>(구 <code>IG-Series-Produce-2100</code>·<code>IG-Publish-0730</code> 일괄발행 = 2026-06-04 Disabled)</span></p>
 
     <h4>매주</h4>
     <table>
@@ -5417,7 +5205,7 @@ function crTab(btn, panelId) {
       <tr onclick="wpAutoToggle(this)" style="cursor:pointer;"><td>🟡</td><td>조직 만족도 서베이</td><td>CHRO</td><td>분기</td><td style="color:var(--accent);font-size:12px;">펼치기 ▾</td></tr>
       <tr class="auto-detail" style="display:none;"><td colspan="5" style="background:var(--paper);padding:10px 14px;font-size:13px;color:var(--dim);"> 미구현 — 별도 기획 대상.</td></tr>
     </table>
-    <p style="font-size:13px; color:var(--dim); margin-top:6px;">실제 구현은 해당 C-Level 별도 기획. <span style="color:var(--dim);">(구 헛알림 제거 이력 = 🗑️ 정리·폐기 이력)</span></p>
+    <p style="font-size:13px; color:var(--dim); margin-top:6px;">헛알림 4건 2026-06-03 제거 · 실제 구현은 해당 C-Level 별도 기획.</p>
 
     <!-- ③ 실제 업무 산출 자동화 -->
     <h3><span class="ico">📢</span>실제 업무 산출 자동화</h3>
@@ -5454,7 +5242,7 @@ function crTab(btn, panelId) {
             <g><rect x="260" y="205" width="200" height="70" rx="14" fill="#1e6fbf"/><text x="360" y="232" text-anchor="middle" font-size="14" font-weight="700" fill="#fff">공통 축</text><text x="360" y="252" text-anchor="middle" font-size="12" fill="#cfe2f6">Notion + 텔레그램</text><text x="360" y="268" text-anchor="middle" font-size="11" fill="#cfe2f6">+ AI CEO 인박스 DB</text></g>
             <g><rect x="20" y="300" width="210" height="100" rx="12" fill="#e8f1fa" stroke="#1e6fbf"/><text x="125" y="328" text-anchor="middle" font-size="14" font-weight="700" fill="#185fa5">wellperion-agents</text><text x="125" y="348" text-anchor="middle" font-size="12" fill="#1e6fbf">C-Level 에이전트 7명</text><text x="125" y="366" text-anchor="middle" font-size="11" fill="#6b6a64">CEO·CFO·CHRO·CMO·COO·CPO·CTO</text><text x="125" y="384" text-anchor="middle" font-size="11" fill="#6b6a64">Notion R/R 동기화</text></g>
             <line x1="230" y1="370" x2="260" y2="260" stroke="#9ec6ec" stroke-width="2"/>
-            <g><rect x="490" y="300" width="210" height="100" rx="12" fill="#e6f3ea" stroke="#2c8a4f"/><text x="595" y="328" text-anchor="middle" font-size="14" font-weight="700" fill="#1f6638">telegram_bot</text><text x="595" y="348" text-anchor="middle" font-size="12" fill="#2c8a4f">원격 통제 + 자동 보고</text><text x="595" y="366" text-anchor="middle" font-size="11" fill="#6b6a64">정각 9슬롯 보고 (T2 정본)</text><text x="595" y="384" text-anchor="middle" font-size="11" fill="#6b6a64">정각 보고 + 헬스체크</text></g>
+            <g><rect x="490" y="300" width="210" height="100" rx="12" fill="#e6f3ea" stroke="#2c8a4f"/><text x="595" y="328" text-anchor="middle" font-size="14" font-weight="700" fill="#1f6638">telegram_bot</text><text x="595" y="348" text-anchor="middle" font-size="12" fill="#2c8a4f">원격 통제 + 자동 보고</text><text x="595" y="366" text-anchor="middle" font-size="11" fill="#6b6a64">매일 06·09·12·15·18·21시</text><text x="595" y="384" text-anchor="middle" font-size="11" fill="#6b6a64">정각 보고 + 헬스체크</text></g>
             <line x1="490" y1="370" x2="460" y2="260" stroke="#b8d9bf" stroke-width="2"/>
             <g><rect x="255" y="410" width="210" height="60" rx="12" fill="#fbeee5" stroke="#c9612b"/><text x="360" y="436" text-anchor="middle" font-size="14" font-weight="700" fill="#8c401a">scripts/</text><text x="360" y="455" text-anchor="middle" font-size="11" fill="#6b6a64">자동화 300+ 파이썬</text></g>
             <line x1="360" y1="410" x2="360" y2="275" stroke="#ecc7ad" stroke-width="2"/>
@@ -5474,31 +5262,12 @@ function crTab(btn, panelId) {
           <tr><th style="width:280px">자원</th><th>설명</th></tr>
           <tr><td><code>telegram_bot/bot.py</code></td><td>텔레그램 봇 메인 (PID 가동)</td></tr>
           <tr><td><code>telegram_bot/daily_scheduler.py</code></td><td>정각 보고 스케줄러 (PID 가동)</td></tr>
-          <tr><td>Task Scheduler 정상 가동 <code>Wellperion-*</code></td><td>봇 · 스케줄러 · CEO-Morning-Brief · PC-Shutdown · Education-Archive · AI-Education · Morning-Update · <strong>IG-Series-Produce-0730</strong>(다음편 제작·M5 등록·검수카드 발송) <span style="color:var(--dim);">(비활성 예약작업 목록 = 🗑️ 정리·폐기 이력)</span></td></tr>
+          <tr><td>Task Scheduler 정상 가동 <code>Wellperion-*</code></td><td>봇 · 스케줄러 · CEO-Morning-Brief · PC-Shutdown · Education-Archive · AI-Education · Morning-Update · <strong>IG-Series-Produce-0730</strong>(다음편 제작·M5 등록·검수카드 발송) <span style="color:var(--dim);">(구 IG-Series-Produce-2100 제작 · IG-Publish-0730 일괄발행 · IG-Publish-Watcher 폴링 = Disabled. 발행은 텔레그램 [✅승인] 탭 무폴링 트리거)</span></td></tr>
           <tr><td><code>profiles/{instagram,naver-cafe,naver-blog}/</code></td><td>Playwright 세션 271 MB</td></tr>
           <tr><td><code>telegram_bot/.env</code></td><td>토큰·환경변수 SSOT (3 HardLink)</td></tr>
         </table>
         <h4>텔레그램 감시기 가동 3</h4>
-        <p style="font-size:13px;"><code>pre_task_notifier</code> · <code>bot_health_check</code> · <code>env_reload</code> (daily_scheduler 내장).</p>
-      </div>
-    </details>
-
-    <!-- scripts/ 코드 지도 (T1→T2 합병 2026-06-06) -->
-    <details class="toggle">
-      <summary>📂 scripts/ 코드 지도 <span style="color:var(--dim);font-size:12px;font-weight:400;">— 자동화 파이썬 구조 (펼쳐보기)</span></summary>
-      <div class="toggle-body">
-        <h4>핵심 파일</h4>
-        <table>
-          <tr><th>파일</th><th>역할</th></tr>
-          <tr><td><code>telemetry_logger.py</code></td><td>wellperion.bat 진입 JSONL 적재(8 민감키워드 마스킹)</td></tr>
-          <tr><td><code>health_check_helper.py</code></td><td>bat health 실행 helper(Win32_Process 감지)</td></tr>
-          <tr><td><code>evolve_gate.py</code></td><td>Layer3 자기진화 게이트 스켈레톤(자동 patch 영구 금지)</td></tr>
-          <tr><td><code>upload_with_images.py</code></td><td>네이버 블로그 자동 발행</td></tr>
-          <tr><td><code>instagram_upload_playwright.py</code></td><td>IG 자동 발행</td></tr>
-        </table>
-        <p style="font-size:13px;"><strong>역할별 접두어</strong> — <code>cmo_*</code> 콘텐츠 · <code>coo_*</code> 운영이슈 · <code>chro_*</code> HR · <code>cto_*</code> 인프라 · <code>ceo_*</code> 통합보고</p>
-        <p style="font-size:13px;color:var(--dim);"><code>_archive/</code>(30일 후 폐기 검토): audit_20260523 · desktop_legacy_20260523 · telegram_report_bot_20260523</p>
-        <div class="callout fix" style="font-size:13px;"><strong>보안.</strong> 모든 키·토큰 = <code>telegram_bot/.env</code> SSOT(3 HardLink). 평문 stdout 금지.</div>
+        <p style="font-size:13px;"><code>pre_task_notifier</code> · <code>bot_health_check</code> · <code>env_reload</code> (daily_scheduler 내장) — 상세 T1 기술 인프라. <span style="color:var(--dim);">(구 <code>ig_review_publish_watcher</code> 폴링 2026-06-03 폐기)</span></p>
       </div>
     </details>
 
@@ -5510,8 +5279,6 @@ function crTab(btn, panelId) {
         <table>
           <tr><th style="width:300px">예약작업</th><th style="width:100px">처리</th><th>사유</th></tr>
           <tr><td><code>Wellperion-IG-Publish-Watcher</code></td><td>비활성(Disabled)</td><td>120초 폴링 자동발행 감시기. 자동발행 성공 0건·매 사이클 git pull churn 유발로 잉여 판정. 폴링 폐기, 발행 엔진 스크립트는 승인 시 on-demand 1회 호출용 보존. 봇 콜백 전환 예정 (06-03)</td></tr>
-          <tr><td><code>Wellperion-IG-Series-Produce-2100</code></td><td>비활성(Disabled)</td><td>21:00 단일 제작 모델 → 07:30 제작+검수카드로 통합 (06-04)</td></tr>
-          <tr><td><code>Wellperion-IG-Publish-0730</code></td><td>비활성(Disabled)</td><td>07:30 일괄 자동발행 폐지 → 텔레그램 [✅승인] 탭 무폴링 트리거로 전환 (06-04)</td></tr>
           <tr><td><code>Wellperion-CEO-Verify-Watcher</code></td><td>비활성 처리</td><td>ceo_verify_watcher.py git 미추적·부재 고아 → 매 로그인 실패. 부활 시 스크립트 재작성 선행 (06-03)</td></tr>
           <tr><td>AutoTask-Watcher-Start/Stop</td><td>UAC 삭제</td><td>유물 예약작업 (06-01, 13→9)</td></tr>
           <tr><td>구 CEO-Morning-Brief-0800</td><td>UAC 삭제</td><td>Live 버전으로 교체됨 (06-01)</td></tr>
@@ -5525,8 +5292,6 @@ function crTab(btn, panelId) {
         <p style="font-size:13px;"><code>auto_task</code> · <code>status_change</code> · <code>archive_result</code> · <code>planning_to_archive</code> · <code>permission</code> · <code>archive_merge</code> · <code>inbox</code> — 노션 의존, 노션 미사용으로 폐기·.pyc 제거. <code>pre_task_notifier</code> 실행시간 알림 → <code>status/schedule.json</code> SSOT 전환, 노션 의존 0.</p>
         <h4>점검 완료 항목</h4>
         <p style="font-size:13px;">CMO-001-Calendar-Dispatcher (실행 이력 없음 확인) · CTO-008-MetaTokenRefresh (페북 영구 삭제로 불필요 확인)</p>
-        <h4>기타 정리</h4>
-        <p style="font-size:13px;">헛알림(미구현 자동 알림) 4건 2026-06-03 제거 — 실제 구현은 해당 C-Level 별도 기획.</p>
       </div>
     </details>
     <div class="source">점검 기준: Windows Task Scheduler + Python 프로세스 실측 (2026-06-03 S3 산출 자동화 이관·정합)</div>
@@ -6161,15 +5926,12 @@ function crTab(btn, panelId) {
     const TODO_LS_KEY = 'wellperion-todo-sheets';
     const TODO_USER_KEY = 'wellperion-todo-user';
     const CATEGORIES = [
-      {value:'[1] 매출 및 영업', label:'[1] 매출 및 영업'},
-      {value:'[2] 인사', label:'[2] 인사'},
-      {value:'[3] 파트너팀', label:'[3] 파트너팀'},
-      {value:'[4] 운영 정책', label:'[4] 운영 정책'},
-      {value:'[5] 시설 및 환경', label:'[5] 시설 및 환경'},
-      {value:'[6] 회원·CS', label:'[6] 회원·CS'},
-      {value:'[7] IT·시스템·자동화', label:'[7] IT·시스템·자동화'},
-      {value:'[8] 교육·조직문화', label:'[8] 교육·조직문화'},
-      {value:'[9] 회의', label:'[9] 회의'},
+      {value:'[1]매출및영업', label:'[1] 매출 및 영업 전략'},
+      {value:'[2]인사&파트너', label:'[2] 인사&파트너팀'},
+      {value:'[3]운영정책', label:'[3] 운영 정책 및 시스템'},
+      {value:'[4]시설및환경', label:'[4] 시설 및 환경'},
+      {value:'[5]3대비전', label:'[5] 대표님하달 추진'},
+      {value:'[6]회장님하달', label:'[6] 회장님 하달사항'},
     ];
     const STAFF_LIST = [
       {name:'김남욱GM', cls:'gm'}, {name:'이경연 실장', cls:'dir'},
@@ -6177,20 +5939,16 @@ function crTab(btn, panelId) {
       {name:'이지영 사원', cls:''},
     ];
     const CAT_MAP = {
-      '[1] 매출 및 영업':'[1] 매출 및 영업',
-      '[2] 인사':'[2] 인사',
-      '[3] 파트너팀':'[3] 파트너팀',
-      '[4] 운영 정책':'[4] 운영 정책',
-      '[5] 시설 및 환경':'[5] 시설 및 환경',
-      '[6] 회원·CS':'[6] 회원·CS',
-      '[7] IT·시스템·자동화':'[7] IT·시스템·자동화',
-      '[8] 교육·조직문화':'[8] 교육·조직문화',
-      '[9] 회의':'[9] 회의',
+      '[1]매출및영업':'[1] 매출 및 영업 전략',
+      '[2]인사&파트너':'[2] 인사&파트너팀',
+      '[3]운영정책':'[3] 운영 정책 및 시스템',
+      '[4]시설및환경':'[4] 시설 및 환경',
+      '[5]3대비전':'[5] 대표님하달 추진',
+      '[6]회장님하달':'[6] 회장님 하달사항',
     };
     const CAT_ICONS = {
-      '[1] 매출 및 영업':'💰','[2] 인사':'👥','[3] 파트너팀':'🤝',
-      '[4] 운영 정책':'⚙️','[5] 시설 및 환경':'🏗️','[6] 회원·CS':'🧑‍🤝‍🧑',
-      '[7] IT·시스템·자동화':'🖥️','[8] 교육·조직문화':'📚','[9] 회의':'🗓️',
+      '[1]매출및영업':'💰','[2]인사&파트너':'👥','[3]운영정책':'⚙️',
+      '[4]시설및환경':'🏗️','[5]3대비전':'🎯','[6]회장님하달':'📌',
     };
     // 로컬 캐시
     let todoCache = JSON.parse(localStorage.getItem(TODO_LS_KEY) || '[]');
@@ -6322,10 +6080,7 @@ function crTab(btn, panelId) {
       CATEGORIES.forEach(c => grouped[c.value] = []);
       todoCache.forEach(t => {
         if (t.status === '완료') return; // 완료 항목은 제외
-        // S3 안전망: AI C레벨 배 제외 — 2026-06-08 GM 방침 (카테고리·담당자 이중 가드)
-        if (t.category === '[7]AI배(C레벨)') return;
-        if (/웰리|시뽀|시로|시모|시우|시포|시토|ai\s*ceo|ai\s*cfo|ai\s*chro|ai\s*cmo|ai\s*coo|ai\s*cpo|ai\s*cto/i.test(t.owner)) return;
-        const cat = t.category || '[1] 매출 및 영업';
+        const cat = t.category || '[1]매출및영업';
         if (!grouped[cat]) grouped[cat] = [];
         grouped[cat].push(t);
       });
@@ -6515,25 +6270,6 @@ function crTab(btn, panelId) {
 
         todoApiCall(payload, (data) => {
           if (isEdit) {
-            // SSOT 기원 항목(ssot-* or gm1SsotItems에 존재) — 낙관적 즉시 반영
-            if (String(editTodo.id).indexOf('ssot-') === 0 ||
-                (typeof gm1SsotItems !== 'undefined' && gm1SsotItems.some(x => x.id === editTodo.id))) {
-              if (typeof gm1SsotItems !== 'undefined') {
-                var _si = gm1SsotItems.findIndex(x => x.id === editTodo.id);
-                if (_si >= 0) {
-                  var _patch = {};
-                  if (payload.title)    _patch.title    = payload.title;
-                  if (payload.category) _patch.category = payload.category;
-                  if (payload.owner)    _patch.owner    = payload.owner;
-                  if (payload.startDate) _patch.startDate = payload.startDate;
-                  if (payload.endDate)   _patch.endDate   = payload.endDate;
-                  if (payload.content)  _patch.content  = payload.content;
-                  if (payload.approval) _patch.approval = payload.approval;
-                  Object.assign(gm1SsotItems[_si], _patch);
-                }
-              }
-              if (typeof gm1RenderToday === 'function') gm1RenderToday();
-            }
             // 로컬 캐시 업데이트
             const idx = todoCache.findIndex(t => t.id === editTodo.id);
             if (idx >= 0) {
@@ -7044,7 +6780,6 @@ function crTab(btn, panelId) {
     var gm1CatFilter = { '업무':true, '결재':true, '기획':true, '개인':true };  // 분류 필터 체크 상태
     // 업무SSOT 이식 — 정렬·검색 상태 (2026-06-01) · 담당자 필터/정렬 UI 死코드 제거(2026-06-02 GM 단독 페이지)
     var gm1SortBy      = '최신순';  // '최신순' | '카테고리' | '시작일순'
-    var gm1OwnerFilter = '전체';   // 담당자 필터: 전체|GM|시모|시로|시우|시토|시뽀|시포|웰리
     var gm1SearchQuery = '';
     var gm1ModalLogs   = [];       // 편집 모달 진척 로그 캐시
 
@@ -7177,10 +6912,10 @@ function crTab(btn, panelId) {
     ══════════════════════════════════════════════ */
     var SSOT_API_URL = 'https://script.google.com/macros/s/AKfycbxDwFkrxK1YIaEoSNcuw2MiHiZQ-7o5N6311ytksSyeEd86ZFOhLknOWqQgNArQvZ-7/exec';
     var SSOT_CAT_MAP = {
-      '업무':        '[4] 운영 정책',
-      '인사·파트너': '[2] 인사',
-      '회의':        '[9] 회의',
-      '기타':        '[4] 운영 정책'
+      '업무':        '[3] 운영 정책',
+      '인사·파트너': '[2] 인사 & 파트너',
+      '회의':        '[3] 운영 정책',
+      '기타':        '[3] 운영 정책'
     };
 
     function gm1PushToSSOT(task) {
@@ -7196,7 +6931,7 @@ function crTab(btn, panelId) {
       }
       gm1Save(tasks);
 
-      var ssotCategory = SSOT_CAT_MAP[task.category] || '[4] 운영 정책';
+      var ssotCategory = SSOT_CAT_MAP[task.category] || '[3] 운영 정책';
       var params = {
         action:    'todo_add',
         id:        task.id,
@@ -7246,153 +6981,57 @@ function crTab(btn, panelId) {
       return d.getFullYear() + '-' + ('0'+(d.getMonth()+1)).slice(-2) + '-' + ('0'+d.getDate()).slice(-2);
     }
 
-    // _queue.json AI 진행배 fetch URL (raw GitHub · no-cors 불필요)
-    var GM1_QUEUE_URL = 'https://raw.githubusercontent.com/wellperion-cao/wellperion-automation/master/status/_queue.json';
-
-    // 결재 '다음 서명자' 판정 — 결재현황 SSOT(nextApprover)와 1:1 동일 로직 이식 (2026-06-07 웰리).
-    //   G1 결재 카운트가 SSOT와 어긋나던 버그 수정: '결재요청=GM'만 봐선 안 됨.
-    //   ① owner가 GM이면 GM단계 스킵(→대표 차례)  ② 부서장싸인 없으면 부서장 차례  ③ GM싸인 있으면 이미 GM 끝(→대표).
-    var GM1_DEPT_HEADS = ['이경연 실장','이정헌 소장','나우열M'];
-    var GM1_CAT_DEPT_HEAD = { '[2] 인사':'나우열M','[3] 파트너팀':'나우열M','[4] 운영 정책':'이경연 실장','[5] 시설 및 환경':'이정헌 소장' };
-    function gm1NextApprover(row) {
-      var approval = String(row['결재요청'] || '').split(',').map(function(s){ return s.trim(); }).filter(Boolean);
-      if (!approval.length) return null;  // 결재선 없음
-      var owners = String(row['담당자'] || '').split(',').map(function(s){ return s.trim(); });
-      var ownerIsGM = owners.indexOf('김남욱GM') >= 0;
-      var midName = approval.find(function(m){ return GM1_DEPT_HEADS.indexOf(m) >= 0; })
-                 || owners.find(function(o){ return GM1_DEPT_HEADS.indexOf(o) >= 0; })
-                 || (GM1_CAT_DEPT_HEAD[String(row['카테고리'] || '')] || '');
-      var midExplicit = midName && approval.indexOf(midName) >= 0;
-      var skipMid = midName && owners.indexOf(midName) >= 0 && !midExplicit;
-      var route = [];
-      if (midName && !ownerIsGM && !skipMid) route.push('부서장');
-      if (!ownerIsGM) route.push('GM');
-      route.push('대표님');
-      var map = { '부서장': row['부서장싸인'], 'GM': row['GM싸인'], '대표님': row['대표싸인'] };
-      for (var i = 0; i < route.length; i++) { if (!map[route[i]]) return route[i]; }
-      return null;  // 전원 서명 완료
-    }
-
     function gm1FetchSsot() {
-      // ① 시트(todo_list) + ② _queue.json 병렬 fetch — 어느 쪽 실패해도 나머지는 표시
-      var sheetP = fetch(SSOT_API_URL + '?action=todo_list&_=' + Date.now(), { redirect:'follow', cache:'no-store' })
+      fetch(SSOT_API_URL + '?action=todo_list', { redirect:'follow' })
         .then(function(r){ return r.ok ? r.json() : null; })
-        .catch(function(){ return null; });
-      var queueP = fetch(GM1_QUEUE_URL + '?_=' + Date.now(), { cache:'no-store' })
-        .then(function(r){ return r.ok ? r.json() : []; })
-        .catch(function(){ return []; });
-
-      Promise.all([sheetP, queueP]).then(function(results){
-        var json  = results[0];
-        var queue = Array.isArray(results[1]) ? results[1] : [];
-        var items = [];
-        var TD = todayStr();
-
-        // ── ① 시트 항목 (기존 로직 무손상) ──
-        if (json && json.ok && Array.isArray(json.data)) {
-          json.data.forEach(function(row){
-            var owner   = String(row['담당자'] || '');
-            var title   = String(row['업무명'] || '').trim();
-            if (!title) return;
-            var apr     = String(row['결재상태'] || '');
-            var gmSign  = row['GM싸인'];
-            var sd      = ssotDateLocal(row['시작일']);
-            // GM 결재 차례 우선 판정 — 결재 대기는 날짜 무관 항상 노출(GM 액션 필요)
-            var reqStr  = String(row['결재요청'] || '');
-            // GM 차례일 때만 노출: 결재요청이 GM 지정 OR 결재상태='부서장 완료'(부서장 끝→GM 차례).
-            // ⚠️ 결재요청이 부서장(실장/소장/파트너)인 대기건은 제외 — 락커 등 부서장 결재건이 GM 결재함으로 새는 것 차단 (2026-06-07 시토 수정)
-            // ⚠️ '결재요청=GM'만으로 판정 금지 — 결재현황 SSOT의 nextApprover와 동일하게 '지금 GM 차례'인 건만 카운트.
-            //   (owner=GM이면 GM 스킵→대표 / 부서장싸인 없으면 부서장 차례 / GM싸인 있으면 이미 끝) (2026-06-07 웰리 동기화)
-            var _next   = gm1NextApprover(row);
-            var _aprPending = String(reqStr).trim() !== '' && apr !== '결재완료' && !/반려/.test(apr);
-            var needsGm = _aprPending && _next === 'GM';
-            // 결재 진행 중인데 GM 차례가 아닌 건(부서장·대표 대기) = 항로 활성카드 제외 + 배너 카운트만 (GM 2026-06-07)
-            var _aprInflightOther = _aprPending && _next !== null && _next !== 'GM';
-            var base    = 'ssot-' + (row['id'] || title);
-            var rawContent = String(row['내용'] || '');
-            var parsed  = gm1ParseContent(rawContent);  // D-1 역파서: 마커 분해 + 진척/예산 복원
-            var ed = ssotDateLocal(row['종료일']);  // endDate — 편집 모달에 채우기 위해 필수 (2026-06-07 수리)
-            // G1 합류 대상 = GM 본인 + AI C레벨. 타인(부서장·실무) 결재건은 G1 미표시(결재현황 SSOT 소관) (GM 2026-06-07)
-            var _isG1Owner = owner.indexOf('김남욱GM') >= 0 || /AI (CEO|CMO|CTO|COO|CFO|CPO|CHRO)/.test(owner) || /웰리|시모|시토|시우|시뽀|시포|시로/.test(owner);
-            if (needsGm) {
-              items.push({
-                id: base, title: (/\[결재\]/.test(title) ? title : '[결재] ' + title), status: '진행중',
-                category: '결재', _apprKind: 'gm', description: parsed.description,
-                progressLog: parsed.progressLog, budgetCat: parsed.budgetCat, budgetAmt: parsed.budgetAmt,
-                isToday: true, startDate: sd, endDate: ed, ssotAuto: true, owner: owner,
-                _sheetsId: String(row['id'] || '')
-              });
-            } else if (_aprInflightOther && _isG1Owner) {
-              // GM/AI 본인 발의 결재가 진행 중(타 결재자 대기) — category='결재'라 활성 항로 자동 제외, 배너서 'N건 진행중' 집계만
-              items.push({
-                id: base, title: (/\[결재\]/.test(title) ? title : '[결재] ' + title), status: '진행중',
-                category: '결재', _apprKind: 'inflight', _nextApprover: _next, description: parsed.description,
-                apprReq: reqStr, apprStatus: apr,
-                isToday: true, startDate: sd, endDate: ed, ssotAuto: true, owner: owner,
-                _sheetsId: String(row['id'] || '')
-              });
-            } else if (_isG1Owner) {
-              // ★ G1 합류: GM 본인 + AI C레벨 전체 (2026-06-01 GM 확정 v3)
-              //   시작일=오늘 OR 상태=진행중이면 합류 — 과거 시작이어도 진행중인 건 항상 표시
-              //   완료·보류는 제외 (오염 방지 유지)
-              var st = String(row['상태'] || '');
-              // 오늘 완료 누락 수정(2026-06-06 GM/시우): 과거 시작이어도 '오늘 완료'한 건은 합류 — 수정일(로컬)=오늘이면 통과
-              var _md = row['수정일'] ? new Date(row['수정일']) : null;
-              var _modLocal = _md ? (_md.getFullYear() + '-' + ('0'+(_md.getMonth()+1)).slice(-2) + '-' + ('0'+_md.getDate()).slice(-2)) : '';
-              // 완료·보류는 항상 합류(숨기지 않음). 완료는 _doneDate로 '오늘 입항' vs '지난 입항' 분리.
-              //   검색=전체라 _history 숨김은 안 씀(폐기만 검색전용 — 시트엔 폐기 없음). (GM 2026-06-07)
-              var status = (st === '완료') ? '완료' : (st === '보류') ? '보류' : '진행중';
-              items.push({
-                id: base, title: title, status: status,
-                category: '업무', description: parsed.description,
-                progressLog: parsed.progressLog, budgetCat: parsed.budgetCat, budgetAmt: parsed.budgetAmt,
-                apprReq: String(row['결재요청'] || ''), apprStatus: apr,
-                isToday: true, startDate: sd, endDate: ed, ssotAuto: true, owner: owner,
-                _doneDate: (st === '완료') ? _modLocal : '',
-                _history: false,
-                _sheetsId: String(row['id'] || '')
-              });
-            }
-          });
-        }
-
-        // ── ② _queue.json AI 진행배 머지 (PENDING·IN_PROGRESS만 · 완료 제외) ──
-        //   todo_list 제거 후에도 G1 항로에 AI 배가 살아있도록 (2026-06-07 GM 1단계 이관 대응)
-        //   시트에 동일 task_id가 이미 있으면 중복 제외 (ssot- prefix가 다르므로 _sheetsId 비교)
-        var sheetIds = {};
-        items.forEach(function(it){ if (it._sheetsId) sheetIds[it._sheetsId] = true; });
-        var CLEVEL_LABEL = { ceo:'AI CEO', cmo:'AI CMO', cto:'AI CTO', coo:'AI COO', cfo:'AI CFO', cpo:'AI CPO', chro:'AI CHRO' };
-        queue.forEach(function(q){
-          var _qActive = (q.status === 'PENDING' || q.status === 'IN_PROGRESS');
-          var _qHist = (q.status === 'DONE' || q.status === '완료' || q.status === '폐기');
-          if (!_qActive && !_qHist) return;  // 진행/대기=기본뷰 · 완료/폐기=이력(검색용)
-          var tid = String(q.task_id || '');
-          if (!tid) return;
-          if (sheetIds[tid]) return;  // 시트에 이미 있으면 스킵
-          var qid = 'queue-' + tid;
-          // 동일 queue- 항목 중복 방지
-          if (items.some(function(it){ return it.id === qid; })) return;
-          var clvLabel = CLEVEL_LABEL[String(q.clevel || '').toLowerCase()] || String(q.clevel || 'AI');
-          var statusMap = { PENDING:'대기', IN_PROGRESS:'진행중', DONE:'완료' };
-          var _qDone = (q.status === 'DONE' || q.status === '완료');
-          items.push({
-            id: qid,
-            title: String(q.title || tid),
-            status: (q.status === '폐기') ? '폐기' : (statusMap[q.status] || '진행중'),
-            category: '업무',
-            description: String(q.next || q.summary || ''),
-            isToday: true,
-            ssotAuto: true,
-            queueSource: true,   // _queue 기원 마킹 (편집 차단용)
-            owner: clvLabel,
-            _doneDate: _qDone ? String(q.processed_at || '').slice(0,10) : '',  // AI배 완료일(processed_at)
-            _history: (q.status === '폐기'),   // 완료(DONE)=입항 표시(오늘/지난 분리) / 폐기=이력(검색전용) (GM 2026-06-07)
-            _sheetsId: ''
-          });
-        });
-
-        gm1SsotItems = items;
-      }).catch(function(){ console.warn('[gm1] fetch 실패 — 수동 목록만 표시'); })
+        .then(function(json){
+          var items = [];
+          var TD = todayStr();
+          if (json && json.ok && Array.isArray(json.data)) {
+            json.data.forEach(function(row){
+              var owner   = String(row['담당자'] || '');
+              var title   = String(row['업무명'] || '').trim();
+              if (!title) return;
+              var apr     = String(row['결재상태'] || '');
+              var gmSign  = row['GM싸인'];
+              var sd      = ssotDateLocal(row['시작일']);
+              // GM 결재 차례 우선 판정 — 결재 대기는 날짜 무관 항상 노출(GM 액션 필요)
+              var reqStr  = String(row['결재요청'] || '');
+              var hasDeptStep = (reqStr.indexOf('이경연') >= 0 || reqStr.indexOf('이정헌') >= 0 || reqStr.indexOf('나우열') >= 0);
+              // GM 차례일 때만 노출: 부서장 완료(이제 GM) OR 부서장 단계 없이 GM 1순위. 부서장 대기건 오노출 차단 (2026-06-03 GM)
+              var needsGm = !gmSign && apr && !/반려/.test(apr) && (apr.indexOf('부서장 완료') >= 0 || (apr === '대기' && !hasDeptStep));
+              var base    = 'ssot-' + (row['id'] || title);
+              var rawContent = String(row['내용'] || '');
+              var parsed  = gm1ParseContent(rawContent);  // D-1 역파서: 마커 분해 + 진척/예산 복원
+              if (needsGm) {
+                items.push({
+                  id: base, title: '[결재] ' + title, status: '진행중',
+                  category: '결재', description: parsed.description,
+                  progressLog: parsed.progressLog, budgetCat: parsed.budgetCat, budgetAmt: parsed.budgetAmt,
+                  isToday: true, startDate: sd, ssotAuto: true, owner: owner,
+                  _sheetsId: String(row['id'] || '')
+                });
+              } else if (owner.indexOf('김남욱GM') >= 0 || /AI (CEO|CMO|CTO|COO|CFO|CPO|CHRO)/.test(owner) || /웰리|시모|시토|시우|시뽀|시포|시로/.test(owner)) {
+                // ★ G1 합류: GM 본인 + AI C레벨 전체 (2026-06-01 GM 확정 v3)
+                //   시작일=오늘 OR 상태=진행중이면 합류 — 과거 시작이어도 진행중인 건 항상 표시
+                //   완료·보류는 제외 (오염 방지 유지)
+                var st = String(row['상태'] || '');
+                if (sd !== TD && st !== '진행중') return;
+                var status = (st === '완료') ? '완료' : (st === '보류') ? '보류' : '진행중';
+                items.push({
+                  id: base, title: title, status: status,
+                  category: '업무', description: parsed.description,
+                  progressLog: parsed.progressLog, budgetCat: parsed.budgetCat, budgetAmt: parsed.budgetAmt,
+                  apprReq: String(row['결재요청'] || ''), apprStatus: apr,
+                  isToday: true, startDate: sd, ssotAuto: true, owner: owner,
+                  _sheetsId: String(row['id'] || '')
+                });
+              }
+            });
+          }
+          gm1SsotItems = items;
+        })
+        .catch(function(){ /* graceful: 수동 목록은 정상 표시 */ console.warn('[gm1] SSOT fetch 실패 — 수동 목록만 표시'); })
         .then(function(){ gm1RenderToday(); });
     }
 
@@ -7411,14 +7050,11 @@ function crTab(btn, panelId) {
         }
       }
       // ssot-* 기원 항목은 localStorage 없음 → gm1SsotItems에서 낙관적 갱신 + Sheets sync
-      // (2026-06-07 시토) 낙관적 갱신 즉시 렌더 → sync 성공 후에만 재fetch (캐시 지연 덮어쓰기 방지)
       if (String(id).indexOf('ssot-') === 0) {
         var ssotIdx = gm1SsotItems.findIndex(function(x){ return x.id === id; });
         if (ssotIdx >= 0) { gm1SsotItems[ssotIdx].status = status; }
+        gm1SyncUpdate(id, { status: status });
         gm1RenderToday();
-        gm1SyncUpdate(id, { status: status }, function(ok){
-          if (ok) setTimeout(function(){ gm1FetchSsot(); }, 2000);
-        });
         return;
       }
       var tasks = gm1Load();
@@ -7427,11 +7063,9 @@ function crTab(btn, panelId) {
         if (tasks[i].id === id) { tasks[i].status = status; target = tasks[i]; break; }
       }
       gm1Save(tasks);
-      // Sheets 동기화: ssotSynced=true인 localStorage 항목 (2026-06-07 시토: 재fetch 캐시 지연 방지)
+      // Sheets 동기화: ssotSynced=true인 localStorage 항목
       if (target && target.ssotSynced && String(id).indexOf('seed-') !== 0) {
-        gm1SyncUpdate(id, { status: status }, function(ok){
-          if (ok) setTimeout(function(){ gm1FetchSsot(); }, 2000);
-        });
+        gm1SyncUpdate(id, { status: status });
       }
     }
 
@@ -7498,8 +7132,6 @@ function crTab(btn, panelId) {
       }
       var srt = document.getElementById('gm1-sort');
       if (srt) srt.onchange = function(){ gm1SortBy = this.value; gm1RenderToday(); };
-      var own = document.getElementById('gm1-owner');
-      if (own) own.onchange = function(){ gm1OwnerFilter = this.value; gm1RenderToday(); };
       var sr = document.getElementById('gm1-share-report');
       if (sr) sr.onclick = function(){ window.gm1ShareReport(); };
       var sl = document.getElementById('gm1-share-list');
@@ -7543,55 +7175,15 @@ function crTab(btn, panelId) {
       }
 
       var td = todayStr();
-      var gm1Searching = !!(gm1SearchQuery && gm1SearchQuery.trim());
       var tasks = gm1Load();
       var manualTasks = tasks.filter(function(t){
-        return gm1Searching ? true : (t.startDate === td || t.isToday === true);
+        return t.startDate === td || t.isToday === true;
       });
 
       // 분류 4종 외 기존 카테고리는 '업무'로 취급 (필터 매칭용)
       function catOf(t) {
         var c = t.category;
         return (c === '업무' || c === '결재' || c === '기획' || c === '개인') ? c : '업무';
-      }
-
-      // ── 배 무게 분류 (scripts/ship_classify.py 동일 로직 — 중복 구현 아님, JS 포트) ──
-      var NORTHSTAR_KW = ['ERP','erp','자동화','수익','매출','문의','파이프라인','전환','가입','북극성','항로','모듈','상품화'];
-      var UPGRADE_KW   = ['이관','구축','셋업','프로젝트','상품화','파이프라인','자동화','통합'];
-      var DOWNGRADE_KW = ['수정','교체','정리','색','글씨','링크','오타','확인','반영'];
-      var ID_RE = /\[[\w가-힣]+-\d+\]/;
-      function classifyShip(t) {
-        var title = (t.title || t['업무명'] || '');
-        var note  = (t.note  || t['내용']  || '');
-        var hay   = title + ' ' + note;
-        var pri   = (t.priority || 'NORMAL').toUpperCase();
-        var northstar = NORTHSTAR_KW.some(function(k){ return hay.indexOf(k) >= 0; });
-        var hasDl  = !!(t.endDate && String(t.endDate).length >= 10);
-        var icon, tier;
-        if (pri === 'HIGH') { icon = '🛳️'; tier = '크루즈'; }
-        else if (pri === 'LOW') { icon = '⛵'; tier = '돛단배'; }
-        else {
-          var up   = UPGRADE_KW.some(function(k){ return title.indexOf(k) >= 0; });
-          var down = DOWNGRADE_KW.some(function(k){ return title.indexOf(k) >= 0; });
-          if (northstar && (hasDl || up)) { icon = '🛳️'; tier = '크루즈'; }
-          else if (down && !hasDl && !northstar) { icon = '⛵'; tier = '돛단배'; }
-          else { icon = '⛴️'; tier = '여객선'; }
-        }
-        var urgent = false;
-        if (hasDl) {
-          try {
-            var dl = new Date(String(t.endDate).slice(0,10));
-            var diff = Math.floor((dl - new Date()) / 86400000);
-            if (diff >= 0 && diff <= 3) urgent = true;
-          } catch(e) {}
-        }
-        return { icon: icon, tier: tier, urgent: urgent, northstar: northstar };
-      }
-      function hasClevelId(title) { return ID_RE.test(title || ''); }
-      function renderShipPrefix(t) {
-        var s = classifyShip(t);
-        var badges = (s.northstar ? ' 🌟' : '') + (s.urgent ? ' 🔴' : '');
-        return s.icon + ' ';  // prefix only — badges appended after title in card
       }
       // 분류 칩 (SSOT 항목 등에 표시)
       function catChip(t) {
@@ -7631,20 +7223,8 @@ function crTab(btn, panelId) {
         if (!matchedSsotKeys[gm1MergeKey(s)]) merged.push(s);
       });
 
-      // 이력(옛 완료·보류·폐기) — 기본뷰선 숨김, 검색 시에만 포함 (GM 2026-06-07)
-      if (!gm1Searching) {
-        merged = merged.filter(function(t){ return !t._history; });
-      }
-
       // 분류 필터 적용
       merged = merged.filter(function(t){ return gm1CatFilter[catOf(t)]; });
-      // 담당자 필터 (전체면 통과) — 식별자[역할-NN]·담당자·clevel 어디든 매칭
-      merged = merged.filter(function(t){
-        if (gm1OwnerFilter === '전체') return true;
-        var hay = (t.title || t['업무명'] || '') + ' ' + (t.owner || t['담당자'] || '') + ' ' + (t.clevel || '');
-        if (gm1OwnerFilter === 'GM') return /\[GM-|김남욱\s*GM/.test(hay);
-        return hay.indexOf(gm1OwnerFilter) >= 0;
-      });
 
       // ── 검색 필터 (업무SSOT 이식) ──
       if (gm1SearchQuery && gm1SearchQuery.trim()) {
@@ -7666,22 +7246,9 @@ function crTab(btn, panelId) {
 
       // 완료여도 결재 미완(결재요청 있고 결재완료·반려 아님)이면 진행으로 유지 (2026-06-03 GM · 업무현황 일관)
       function _gm1ApprPending(t){ var rq=String(t.apprReq||t.approval||'').trim(), a=String(t.apprStatus||'').trim(); return rq && a !== '결재완료' && !/반려/.test(a); }
-      var apprWait = merged.filter(function(t){ return t.status === '완료' && _gm1ApprPending(t); });
-      var active = merged.filter(function(t){ return t.status === '진행중'; });
-      var doneAll = merged.filter(function(t){ return t.status === '완료' && !_gm1ApprPending(t); });
-      // 입항 완료: 오늘 완료 = ⚓ 입항 완료 / 그 이전 = 🗄️ 지난 입항 완료 (GM 2026-06-07)
-      var _tdStr = todayStr();
-      var done     = doneAll.filter(function(t){ return (t._doneDate || '') === _tdStr; });   // 오늘 입항
-      var donePast = doneAll.filter(function(t){ return (t._doneDate || '') !== _tdStr; });   // 지난 입항
+      var active = merged.filter(function(t){ return t.status === '진행중' || (t.status === '완료' && _gm1ApprPending(t)); });
+      var done   = merged.filter(function(t){ return t.status === '완료' && !_gm1ApprPending(t); });
       var hold   = merged.filter(function(t){ return t.status === '보류'; });
-      var disposed = gm1Searching ? merged.filter(function(t){ return t.status === '폐기'; }) : [];  // 폐기=검색 시에만
-      // 결재 배는 항로에 개별 표시 안 함 — 카운트+포인터 하나로(결재현황 SSOT에서 처리). GM 2026-06-07
-      // 결재 배는 항로 활성카드서 제외 — GM 차례(gm)와 진행중(타 결재자 대기, inflight)을 분리 집계 (GM 2026-06-07)
-      var apprActiveGm = active.filter(function(t){ return catOf(t) === '결재' && t._apprKind !== 'inflight'; });
-      var apprInflight = active.filter(function(t){ return catOf(t) === '결재' && t._apprKind === 'inflight'; });
-      active = active.filter(function(t){ return catOf(t) !== '결재'; });
-      var apprGmTotal = apprWait.length + apprActiveGm.length;   // GM이 지금 결재할 차례
-      var apprInflightTotal = apprInflight.length;               // 결재 진행 중(부서장·대표 대기)
 
       // ══ 도구 바 — 검색 input 포함 영역은 최초 1회만 생성(재렌더 시 손대지 않음 → IME 조합 유지) ══
       var FILTER_CATS = ['업무','결재','기획','개인'];
@@ -7694,11 +7261,6 @@ function crTab(btn, panelId) {
         tb += '<select id="gm1-sort" title="정렬" style="background:var(--bg);border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:8px;font-size:12px;font-family:inherit;font-weight:600;cursor:pointer;">';
         ['최신순','카테고리','시작일순'].forEach(function(opt){
           tb += '<option value="' + opt + '"' + (gm1SortBy === opt ? ' selected' : '') + '>' + opt + '</option>';
-        });
-        tb += '</select>';
-        tb += '<select id="gm1-owner" title="담당자" style="background:var(--bg);border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:8px;font-size:12px;font-family:inherit;font-weight:600;cursor:pointer;">';
-        ['전체','GM','시모','시로','시우','시토','시뽀','시포','웰리'].forEach(function(opt){
-          tb += '<option value="' + opt + '"' + (gm1OwnerFilter === opt ? ' selected' : '') + '>' + (opt === '전체' ? '담당:전체' : opt) + '</option>';
         });
         tb += '</select>';
         tb += '</div>';
@@ -7718,7 +7280,6 @@ function crTab(btn, panelId) {
         tb += '<div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;">';
         tb += '<button type="button" id="gm1-share-report" style="background:var(--accent-bg);color:var(--accent);border:1px solid rgba(183,159,138,0.3);padding:5px 12px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;">📋 보고용</button>';
         tb += '<button type="button" id="gm1-share-list" style="background:var(--bg);color:var(--text);border:1px solid var(--border);padding:5px 12px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;">🔗 공유용</button>';
-        tb += '<button type="button" id="gm1-cal-toggle" onclick="var w=document.getElementById(\'gm1-cal-wrap\');var l=document.getElementById(\'gm1-list\');if(w){var s=w.style.display===\'none\';w.style.display=s?\'block\':\'none\';if(l)l.style.display=s?\'none\':\'\';this.style.background=s?\'var(--accent)\':\'var(--bg)\';this.style.color=s?\'#fff\':\'var(--text)\';this.textContent=s?\'📋 목록 보기\':\'🗓️ 캘린더\';if(s){var t=document.getElementById(\'gm1-todo-section\');if(t)t.open=true;}}" style="background:var(--bg);color:var(--text);border:1px solid var(--border);padding:5px 12px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;">🗓️ 캘린더</button>';
         tb += '<a href="https://wellperion-cao.github.io/wellperion-automation/coo/todo/%EA%B2%B0%EC%9E%AC%20%ED%98%84%ED%99%A9%20SSOT.html" target="_blank" style="background:rgba(232,163,61,0.12);color:#e8a33d;border:1px solid rgba(232,163,61,0.3);padding:5px 12px;border-radius:8px;font-size:12px;font-weight:600;text-decoration:none;margin-left:auto;">✍️ 결재 현황 SSOT →</a>';
         tb += '</div>';
         tb += '</div>'; // 도구바 박스 끝
@@ -7729,17 +7290,6 @@ function crTab(btn, panelId) {
       gm1SyncCatFilterChips();
 
       var html = '';
-
-      // ── 🔴 결재 — 항로엔 카운트+포인터만(개별 표시 안 함). GM 차례 / 진행중(타 결재자 대기) 분리. 실제 결재는 결재현황 SSOT (GM 2026-06-07) ──
-      if (apprGmTotal || apprInflightTotal) {
-        var _apprParts = [];
-        if (apprGmTotal) _apprParts.push('<span style="font-weight:700;color:#e8a33d;">🔴 GM 결재 ' + apprGmTotal + '건</span>');
-        if (apprInflightTotal) _apprParts.push('<span style="font-weight:600;color:#c0a060;">⏳ 결재 진행 중 ' + apprInflightTotal + '건<span style="font-size:11px;font-weight:400;color:var(--dim);">(타 결재자 대기)</span></span>');
-        html += '<a href="https://wellperion-cao.github.io/wellperion-automation/coo/todo/%EA%B2%B0%EC%9E%AC%20%ED%98%84%ED%99%A9%20SSOT.html" target="_blank" style="display:flex;align-items:center;gap:10px;margin-bottom:14px;padding:11px 14px;border:1px solid rgba(232,163,61,0.35);border-radius:10px;background:rgba(232,163,61,0.06);text-decoration:none;flex-wrap:wrap;">';
-        html += '<span style="flex:1;font-size:13.5px;display:flex;gap:12px;flex-wrap:wrap;align-items:center;">' + _apprParts.join('') + '</span>';
-        html += '<span style="font-size:12px;color:#e8a33d;font-weight:600;">결재 현황 SSOT →</span>';
-        html += '</a>';
-      }
 
       // 진행중 카드 — 업무현황 SSOT 전체 기능 이식 (결과보고서 제외, 2026-06-01 GM 최종)
       var cardIdx = 0;
@@ -7758,20 +7308,16 @@ function crTab(btn, panelId) {
         html += '<span class="gm1-toggle-arrow" onclick="event.stopPropagation();var c=this.closest(\'.task-card\');var d=c.querySelector(\'.task-detail\');if(!d)return;d.classList.toggle(\'open\');this.classList.toggle(\'open\');">▶</span>';
         // 제목+meta 클릭 영역
         html += '<div style="flex:1;min-width:0;cursor:pointer;" onclick="var c=this.closest(\'.task-card\');var d=c.querySelector(\'.task-detail\');if(!d)return;d.classList.toggle(\'open\');c.querySelector(\'.gm1-toggle-arrow\').classList.toggle(\'open\');">';
-        var _ship = classifyShip(t);
-        var _shipBadges = (_ship.northstar ? ' <span title="북극성 직결">🌟</span>' : '') + (_ship.urgent ? ' <span title="마감임박">🔴</span>' : '');
-        html += '<div style="font-size:14px;font-weight:700;margin-bottom:4px;word-break:keep-all;overflow-wrap:anywhere;">' +
-                '<span title="' + gm1Esc(_ship.tier) + '" style="margin-right:3px;">' + _ship.icon + '</span>' +
-                gm1Esc(t.title) + _shipBadges +
+        html += '<div style="font-size:14px;font-weight:700;margin-bottom:4px;word-break:keep-all;overflow-wrap:anywhere;">' + gm1Esc(t.title) +
                 (t.time ? ' <span style="font-size:11px;color:var(--dim);font-weight:400;">(' + gm1Esc(t.time.slice(0,5)) + ')</span>' : '') + '</div>';
 
         // meta chips
         html += '<div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:3px;">';
         // 상태 chip
         html += '<span class="gm1-chip status-active">🟡 진행 중</span>';
-        // 담당자 chip (식별자 있으면 생략 — 제목에 이미 포함)
+        // 담당자 chip (SSOT 기원이면 owner 필드, 일반은 GM)
         var ownerStr = t.owner || (isSsot ? '' : '김남욱GM');
-        if (ownerStr && !hasClevelId(t.title)) {
+        if (ownerStr) {
           ownerStr.split(',').forEach(function(o){
             o = o.trim();
             if (o) html += '<span class="gm1-chip" style="background:rgba(91,159,213,0.13);color:#5b9fd5;">' + gm1Esc(o) + '</span>';
@@ -7802,14 +7348,14 @@ function crTab(btn, panelId) {
 
         // ── 액션 버튼: 하단 별도 줄 (결과보고서 제외) ──
         html += '<div class="gm1-task-actions">';
-        // 🔗 링크복사 (업무SSOT 동일: 현재 페이지 URL + id 앵커) — AI 배 포함 공통
+        // 🔗 링크복사 (업무SSOT 동일: 현재 페이지 URL + id 앵커)
         html += '<button class="gm1-action-btn" title="이 항목 링크 복사" data-id="' + gm1Esc(t.id) + '" data-action="copylink" style="padding:4px 10px;font-size:11px;">🔗</button>';
         // 편집
         html += '<button class="gm1-action-btn edit" data-id="' + gm1Esc(t.id) + '" data-action="edit" style="padding:4px 10px;font-size:11px;">편집</button>';
-        // 완료·보류: ssot 항목 포함 모두 표시 (Sheets sync)
+        // 완료·보류: ssot 항목 포함 모두 표시 (Sheets sync) — 삭제는 SSOT 단방향 유지
         html += '<button class="gm1-action-btn done" data-id="' + gm1Esc(t.id) + '" data-action="done" style="padding:4px 10px;font-size:11px;">완료</button>';
         html += '<button class="gm1-action-btn hold" data-id="' + gm1Esc(t.id) + '" data-action="hold" style="padding:4px 10px;font-size:11px;">보류</button>';
-        // 삭제
+        // 삭제: 전 항목 노출 (SSOT 기원은 시트에서도 완전 삭제 · 2026-06-02 GM 확정)
         html += '<button class="gm1-action-btn del" data-id="' + gm1Esc(t.id) + '" data-action="delete" style="padding:4px 10px;font-size:11px;">삭제</button>';
         // ⚠️ 결과 보고서 버튼 의도적 제외 (GM 지시 2026-06-01)
         html += '</div>';
@@ -7862,26 +7408,22 @@ function crTab(btn, panelId) {
         html += '<div style="color:var(--dim);font-size:13px;padding:12px 0;">오늘 진행 중인 항목이 없습니다.</div>';
       }
 
-      // ── 완료 라인 렌더 헬퍼 (오늘 입항·지난 입항 공통) ──
-      function _gm1DoneLineHtml(t, showDate){
-        var descHtml = t.description ? '<details style="margin-top:4px;font-size:12px;"><summary style="cursor:pointer;color:var(--accent);font-weight:600;font-size:11px;list-style:none;">▼ 내용 보기</summary><div style="padding:6px 8px;background:var(--paper-soft,#f5f3f0);border-radius:6px;margin-top:4px;line-height:1.5;white-space:pre-wrap;color:var(--text);">' + gm1Esc(t.description) + '</div></details>' : '';
-        var dateChip = (showDate && t._doneDate) ? '<span style="color:var(--dim);font-size:10.5px;margin-left:6px;">' + gm1Esc(String(t._doneDate).slice(5)) + ' 입항</span>' : '';
-        return '<div style="padding:8px 0;border-bottom:1px dashed var(--border);">' +
-          '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">' +
-          '<span><span style="color:var(--green);font-weight:700;">✓</span> <span style="display:inline-block;background:rgba(100,180,120,0.13);color:var(--green);font-size:10.5px;font-weight:600;padding:2px 7px;border-radius:4px;margin:0 5px;">✅ 완료</span><span style="color:var(--text);font-weight:500;">' + gm1Esc(t.title) + '</span>' + dateChip + (t.ssotAuto ? catChip(t) + SSOT_BADGE : '') + '</span>' +
-          // AI 배(queueSource)는 _queue 정본이라 G1서 복원 불가 → 버튼 숨김(무반응 방지). 시트 항목만 복원.
-          (t.queueSource ? '' : '<button class="todo-act-btn today-act" data-id="' + gm1Esc(t.id) + '" data-action="restore" title="진행 중으로 되돌리기" style="font-size:11px;padding:2px 8px;flex-shrink:0;">↩ 복원</button>') +
-          '</div>' + descHtml + '</div>';
-      }
-
-      // 오늘 입항 완료 · 보류 통합 토글 (GM 2026-06-07: '오늘 기준' 입항)
+      // 완료·보류 통합 토글 (2026-05-28 GM 피드백 — 2칸 → 1칸)
       html += '<details class="toggle" style="margin-top:16px;">';
-      html += '<summary><span style="color:var(--green);"><span style="margin-right:4px;">⚓</span>입항 완료 (오늘) ' + done.length + '건</span><span style="color:var(--dim);margin:0 8px;">·</span><span style="color:var(--accent);"><span style="margin-right:4px;">⏸️</span>보류 ' + hold.length + '건</span></summary>';
+      html += '<summary><span style="color:var(--green);"><span style="margin-right:4px;">✅</span>오늘 완료 ' + done.length + '건</span><span style="color:var(--dim);margin:0 8px;">·</span><span style="color:var(--accent);"><span style="margin-right:4px;">⏸️</span>오늘 보류 ' + hold.length + '건</span></summary>';
       html += '<div class="toggle-body" style="font-size:13px;">';
-      // 오늘 완료 섹션
+      // 완료 섹션
       if (done.length) {
-        html += '<div style="font-size:11px;font-weight:700;color:var(--green);padding:6px 0 2px;">✅ 오늘 완료</div>';
-        done.forEach(function(t){ html += _gm1DoneLineHtml(t, false); });
+        html += '<div style="font-size:11px;font-weight:700;color:var(--green);padding:6px 0 2px;">✅ 완료</div>';
+        done.forEach(function(t){
+          var descHtml = t.description ? '<details style="margin-top:4px;font-size:12px;"><summary style="cursor:pointer;color:var(--accent);font-weight:600;font-size:11px;list-style:none;">▼ 내용 보기</summary><div style="padding:6px 8px;background:var(--paper-soft,#f5f3f0);border-radius:6px;margin-top:4px;line-height:1.5;white-space:pre-wrap;color:var(--text);">' + gm1Esc(t.description) + '</div></details>' : '';
+          html += '<div style="padding:8px 0;border-bottom:1px dashed var(--border);">' +
+            '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">' +
+            '<span><span style="color:var(--green);font-weight:700;">✓</span> <span style="display:inline-block;background:rgba(100,180,120,0.13);color:var(--green);font-size:10.5px;font-weight:600;padding:2px 7px;border-radius:4px;margin:0 5px;">✅ 완료</span><span style="color:var(--text);font-weight:500;">' + gm1Esc(t.title) + '</span>' + (t.ssotAuto ? catChip(t) + SSOT_BADGE : '') + '</span>' +
+            '<button class="todo-act-btn today-act" data-id="' + gm1Esc(t.id) + '" data-action="restore" title="진행 중으로 되돌리기" style="font-size:11px;padding:2px 8px;flex-shrink:0;">↩ 복원</button>' +
+            '</div>' + descHtml +
+            '</div>';
+        });
       }
       // 보류 섹션
       if (hold.length) {
@@ -7891,35 +7433,13 @@ function crTab(btn, panelId) {
           html += '<div style="padding:8px 0;border-bottom:1px dashed var(--border);">' +
             '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">' +
             '<span><span style="color:var(--accent);font-weight:700;">⏸</span> <span style="display:inline-block;background:rgba(183,159,138,0.15);color:var(--accent);font-size:10.5px;font-weight:600;padding:2px 7px;border-radius:4px;margin:0 5px;">⏸️ 보류</span><span style="color:var(--text);font-weight:500;">' + gm1Esc(t.title) + '</span>' + (t.ssotAuto ? catChip(t) + SSOT_BADGE : '') + '</span>' +
-            (t.queueSource ? '' : '<button class="todo-act-btn today-act" data-id="' + gm1Esc(t.id) + '" data-action="restore" style="font-size:11px;padding:2px 8px;flex-shrink:0;">되돌리기</button>') +
+            (t.ssotAuto ? '' : '<button class="todo-act-btn today-act" data-id="' + gm1Esc(t.id) + '" data-action="restore" style="font-size:11px;padding:2px 8px;flex-shrink:0;">되돌리기</button>') +
             '</div>' + descHtml +
             '</div>';
         });
       }
-      if (!done.length && !hold.length) html += '<div style="color:var(--dim);padding:6px 0;">오늘 입항·보류 항목 없음</div>';
+      if (!done.length && !hold.length) html += '<div style="color:var(--dim);padding:6px 0;">완료·보류 항목 없음</div>';
       html += '</div></details>';
-
-      // 🗄️ 지난 입항 완료 (오늘 이전 완료 — 지난기록, 접힘) (GM 2026-06-07)
-      if (donePast.length) {
-        html += '<details class="toggle" style="margin-top:10px;">';
-        html += '<summary><span style="color:var(--dim);"><span style="margin-right:4px;">🗄️</span>지난 입항 완료 ' + donePast.length + '건</span></summary>';
-        html += '<div class="toggle-body" style="font-size:13px;">';
-        donePast.forEach(function(t){ html += _gm1DoneLineHtml(t, true); });
-        html += '</div></details>';
-      }
-
-      // 🗑️ 폐기 (검색 시에만 노출 — 전체 검색 대상) (GM 2026-06-07)
-      if (disposed.length) {
-        html += '<details class="toggle" style="margin-top:10px;" open>';
-        html += '<summary><span style="color:var(--dim);"><span style="margin-right:4px;">🗑️</span>폐기 ' + disposed.length + '건 (검색)</span></summary>';
-        html += '<div class="toggle-body" style="font-size:13px;">';
-        disposed.forEach(function(t){
-          html += '<div style="padding:8px 0;border-bottom:1px dashed var(--border);">' +
-            '<span style="color:var(--dim);font-weight:700;">🗑️</span> <span style="color:var(--dim);text-decoration:line-through;">' + gm1Esc(t.title) + '</span>' + (t.ssotAuto ? catChip(t) + SSOT_BADGE : '') +
-            '</div>';
-        });
-        html += '</div></details>';
-      }
 
       // 카드 목록만 갱신 — 도구바(#gm1-toolbar)와 그 안의 검색 input은 손대지 않으므로
       //   한글 IME 조합·포커스·캐럿이 그대로 유지된다(업무 현황 SSOT 패턴).
@@ -8001,10 +7521,7 @@ function crTab(btn, panelId) {
     var selectedDay = null;
 
     function gm1CalRender() {
-      var local = gm1Load();
-      var seen = {}; local.forEach(function(t){ seen[t.id] = true; });
-      var ssot = (typeof gm1SsotItems !== 'undefined' && Array.isArray(gm1SsotItems)) ? gm1SsotItems.filter(function(s){ return !seen[s.id]; }) : [];
-      var tasks = local.concat(ssot);
+      var tasks = gm1Load();
       gm1CalRenderGrid(tasks);
       gm1CalRenderList(tasks);
     }
@@ -8065,27 +7582,20 @@ function crTab(btn, panelId) {
 
           if (!cell.other && cell.dateStr && evMap[cell.dateStr]) {
             var evs = evMap[cell.dateStr];
-            // 날짜 아래 일감 개수 뱃지
-            var cntBadge = document.createElement('div');
-            cntBadge.style.cssText = 'display:inline-block;font-size:9px;font-weight:700;background:var(--accent);color:#fff;border-radius:8px;padding:0 5px;margin-bottom:3px;line-height:16px;';
-            cntBadge.textContent = evs.length + '건';
-            dayNum.parentNode && dayNum.after ? dayNum.after(cntBadge) : tdEl.appendChild(cntBadge);
-            var showCount = Math.min(evs.length, 2);
+            var showCount = Math.min(evs.length, 3);
             for (var ei = 0; ei < showCount; ei++) {
               var ev = evs[ei];
               var badge = document.createElement('div');
               var catStyle = CAT_COLORS[ev.category] || CAT_COLORS['기타'];
               var isDone = ev.status === '완료';
-              var statusDot = isDone ? '✓ ' : (ev.status === '진행중' ? '▶ ' : '');
-              badge.style.cssText = 'font-size:11.5px;border-radius:5px;padding:2px 5px;margin-bottom:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:1.4;' + catStyle + (isDone ? 'opacity:0.5;text-decoration:line-through;' : '');
-              badge.title = ev.title;
-              badge.textContent = statusDot + (ev.time ? ev.time.slice(0,5) + ' ' : '') + ev.title;
+              badge.style.cssText = 'font-size:10px;border-radius:4px;padding:1px 4px;margin-bottom:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;' + catStyle + (isDone ? 'opacity:0.45;' : '');
+              badge.textContent = (ev.time ? ev.time.slice(0,5) + ' ' : '') + ev.title;
               tdEl.appendChild(badge);
             }
-            if (evs.length > 2) {
+            if (evs.length > 3) {
               var more = document.createElement('div');
-              more.style.cssText = 'font-size:10px;color:var(--dim);font-weight:600;';
-              more.textContent = '+' + (evs.length - 2) + '건 더';
+              more.style.cssText = 'font-size:10px;color:var(--dim);';
+              more.textContent = '+' + (evs.length - 3) + '개';
               tdEl.appendChild(more);
             }
           }
@@ -8129,11 +7639,9 @@ function crTab(btn, panelId) {
 
         var info = document.createElement('div');
         info.style.cssText = 'flex:1;min-width:0;';
-        var statusChip = ev.status === '완료' ? '<span style="font-size:10px;background:#d4edda;color:#155724;border-radius:4px;padding:1px 5px;margin-left:6px;font-weight:600;">완료</span>'
-          : (ev.status === '진행중' ? '<span style="font-size:10px;background:#cce5ff;color:#004085;border-radius:4px;padding:1px 5px;margin-left:6px;font-weight:600;">진행중</span>' : '');
         info.innerHTML =
           '<div style="font-size:12px;color:var(--dim);">' + gm1Esc(ev.startDate) + (ev.time ? ' ' + gm1Esc(ev.time.slice(0,5)) : '') + '</div>' +
-          '<div style="font-size:14px;font-weight:700;white-space:normal;word-break:break-word;' + (isDone ? 'text-decoration:line-through;opacity:0.6;' : '') + '">' + gm1Esc(ev.title) + statusChip + '</div>' +
+          '<div style="font-size:14px;font-weight:700;white-space:normal;word-break:break-word;' + (isDone ? '' : '') + '">' + gm1Esc(ev.title) + '</div>' +
           (ev.description ? '<div style="font-size:12px;color:var(--dim);margin-top:2px;">' + gm1Esc(ev.description) + '</div>' : (ev.memo ? '<div style="font-size:12px;color:var(--dim);margin-top:2px;">' + gm1Esc(ev.memo) + '</div>' : ''));
 
         var btnWrap = document.createElement('div');
@@ -8443,14 +7951,13 @@ function crTab(btn, panelId) {
       return s;
     }
 
-    /* todo_update — 응답 확인 fetch (2026-06-07 시토: no-cors→일반 fetch로 변경)
-       no-cors는 GAS redirect 후 opaque response라 ok 확인 불가 → 낙관적 갱신이
-       재fetch에 덮이는 버그의 원인. 일반 fetch로 성공 확인 후 onDone 콜백 호출.
-       🛡 빈값 필드 전송 제외 — action·id 항상 전송. */
-    function gm1SyncUpdate(localId, fields, onDone) {
+    /* todo_update fire-and-forget (mode:'no-cors' — 응답 불필요) */
+    function gm1SyncUpdate(localId, fields) {
       var sheetsId = gm1SheetsId(localId);
       if (!sheetsId) return;
       var params = Object.assign({ action: 'todo_update', id: sheetsId }, fields);
+      // 🛡 빈값(미편집·미로드) 필드는 전송 제외 → 서버가 기존값 보존(초기화 버그 방지 2026-06-04).
+      //   action·id는 항상 전송. 한 필드 편집 시 다른 필드가 ''로 덮어써지던 문제 차단.
       var qs = Object.keys(params).filter(function(k){
         if (k === 'action' || k === 'id') return true;
         var v = params[k];
@@ -8458,15 +7965,7 @@ function crTab(btn, panelId) {
       }).map(function(k){
         return encodeURIComponent(k) + '=' + encodeURIComponent(params[k]);
       }).join('&');
-      fetch(SSOT_API_URL + '?' + qs, { redirect: 'follow' })
-        .then(function(r){ return r.json(); })
-        .then(function(res){
-          if (res && res.ok && typeof onDone === 'function') onDone(true);
-        })
-        .catch(function(){
-          // 실패해도 낙관적 갱신은 유지 — 재fetch 안 함
-          if (typeof onDone === 'function') onDone(false);
-        });
+      fetch(SSOT_API_URL + '?' + qs, { mode: 'no-cors', redirect: 'follow' }).catch(function(){});
     }
 
     /* ══════════════════════════════════════════════
@@ -8740,21 +8239,21 @@ function crTab(btn, panelId) {
         var stored = gm1Load().find(function(x){ return x.id === id; });
         doSync = !!(stored && stored.ssotSynced && String(id).indexOf('seed-') !== 0);
       }
+      if (doSync) {
+        gm1SyncUpdate(id, { startDate: s, endDate: e || '' });
+      }
+
       window.gm1CloseDateRange();
-      // 낙관적 즉시 반영 (2026-06-07 시토: sync 성공 후에만 재fetch — 캐시 지연 덮어쓰기 방지)
+      // ssot-* 항목도 즉시 화면 반영(낙관적) + 백그라운드 재fetch (2026-06-03 종료일 저장 버그 수정)
       if (isSsotOrigin) {
         var drIdx = gm1SsotItems.findIndex(function(x){ return x.id === id; });
         if (drIdx >= 0) {
           gm1SsotItems[drIdx] = Object.assign({}, gm1SsotItems[drIdx], { startDate: s, endDate: (e || '') });
         }
+        setTimeout(function(){ gm1FetchSsot(); }, 1500);
       }
       gm1RenderToday();
       gm1CalRender();
-      if (doSync) {
-        gm1SyncUpdate(id, { startDate: s, endDate: e || '' }, function(ok){
-          if (ok) setTimeout(function(){ gm1FetchSsot(); }, 2000);
-        });
-      }
     };
 
     /* ── 정렬·검색 setter (담당자 필터 setter는 GM 단독 페이지라 제거 · 2026-06-02) ── */
@@ -9112,145 +8611,6 @@ function crTab(btn, panelId) {
     setTimeout(maybeRender, 300);
   })();
   // ── /대시보드 오늘 진행 현황 ─────────────────────────────────────
-
-  // ── O1 부서별 핵심 현황 요약 + home KPI (라이브) ───────────────────
-  (function(){
-    var CHECK_API = 'https://script.google.com/macros/s/AKfycbw9k_yrVaT80ODna8cfojh0aMAHSK-_NMFHy7kT9rgXOftQ64mHkvTq_hX8zVAksEo/exec';
-    var FACILITY_URL = 'https://wellperion-cao.github.io/wellperion-automation/coo/check/%EC%8B%9C%EC%84%A4%EB%B6%80%20%EC%B2%B4%EA%B3%84.html';
-    var SUPPORT_URL  = 'https://wellperion-cao.github.io/wellperion-automation/coo/check/%EC%A7%80%EC%9B%90%EB%B6%80%20%EC%B2%B4%EA%B3%84.html';
-
-    function todayStr(){var d=new Date();return d.getFullYear()+'-'+(''+(d.getMonth()+1)).padStart(2,'0')+'-'+(''+(d.getDate())).padStart(2,'0');}
-
-    // GAS 응답: {total, done, pct, ...} 형태 직접 사용
-    function parseKpi(data){
-      if(!data||data.ok===false) return null;
-      var total = typeof data.total==='number' ? data.total : 0;
-      var done  = typeof data.done ==='number' ? data.done  : 0;
-      var pct   = typeof data.pct  ==='number' ? data.pct   : (total?Math.round(done/total*100):0);
-      return {total:total, done:done, undone:total-done, pct:pct};
-    }
-
-    // O1 섹션용 KPI 카드 (클릭 → 체계 페이지)
-    function buildO1Card(icon, label, kpi, href){
-      var pctColor = kpi.pct>=90?'#6abf7b':kpi.pct>=60?'#e6c84e':'#ED5B3F';
-      var undoneColor = kpi.undone>0?'#ED5B3F':'#6abf7b';
-      var inner = '<div style="font-size:11px;color:#8c8b83;margin-bottom:6px;">총 점검항목</div>'
-        +'<div style="font-size:22px;font-weight:800;color:#f5f2ef;line-height:1.1;">'+kpi.total+'</div>'
-        +'<div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap;font-size:11px;font-weight:700;">'
-        +'<span style="color:#6abf7b;">완료 '+kpi.done+'건</span>'
-        +'<span style="color:'+undoneColor+';">미완료 '+kpi.undone+'건</span>'
-        +'</div>'
-        +'<div style="margin-top:6px;font-size:18px;font-weight:800;color:'+pctColor+';">'+kpi.pct+'%</div>'
-        +'<div style="font-size:10px;color:#8c8b83;">완료율</div>';
-      return '<a href="'+href+'" target="_blank" style="flex:1;min-width:160px;background:#2a2725;border:1px solid #3d3835;border-radius:12px;padding:16px 16px 14px;text-decoration:none;display:block;transition:border-color 0.15s;" onmouseover="this.style.borderColor=\'#B79F8A\'" onmouseout="this.style.borderColor=\'#3d3835\'">'
-        +'<div style="font-size:13px;font-weight:700;color:#f5f2ef;margin-bottom:10px;">'+icon+' '+label+'</div>'
-        +inner
-        +'</a>';
-    }
-
-    // O1 섹션용 오류 카드
-    function buildO1ErrorCard(icon, label, href){
-      return '<a href="'+href+'" target="_blank" style="flex:1;min-width:160px;background:#2a2725;border:1px solid #3d3835;border-radius:12px;padding:16px 16px 14px;text-decoration:none;display:block;">'
-        +'<div style="font-size:13px;font-weight:700;color:#f5f2ef;margin-bottom:10px;">'+icon+' '+label+'</div>'
-        +'<div style="font-size:12px;color:#8c8b83;">로드 실패 — 클릭하여 체계 페이지 확인</div>'
-        +'</a>';
-    }
-
-    function renderO1Summary(facilityData, supportData){
-      var el=document.getElementById('o1-dept-summary');
-      if(!el)return;
-      var fKpi=parseKpi(facilityData);
-      var sKpi=parseKpi(supportData);
-      var html='';
-      html += fKpi ? buildO1Card('🏭','시설부',fKpi,FACILITY_URL) : buildO1ErrorCard('🏭','시설부',FACILITY_URL);
-      html += sKpi ? buildO1Card('✅','지원부',sKpi,SUPPORT_URL)  : buildO1ErrorCard('✅','지원부',SUPPORT_URL);
-      html += '<div style="font-size:10px;color:#8c8b83;align-self:flex-end;padding-bottom:4px;">클릭 → 체계 페이지</div>';
-      el.innerHTML=html;
-    }
-
-    // home KPI 그리드용 미니 카드 (확장 가능 구조)
-    function buildHomeKpiCard(icon, label, kpi, href){
-      var pctColor = kpi.pct>=90?'#6abf7b':kpi.pct>=60?'#e6c84e':'#ED5B3F';
-      var undoneColor = kpi.undone>0?'#ED5B3F':'#6abf7b';
-      return '<a href="'+href+'" target="_blank" style="background:var(--paper);border:1px solid var(--border);border-top:3px solid '+pctColor+';border-radius:12px;padding:14px 16px;text-decoration:none;display:block;transition:transform .12s,box-shadow .12s;" onmouseover="this.style.transform=\'translateY(-2px)\';this.style.boxShadow=\'0 6px 18px rgba(0,0,0,0.15)\'" onmouseout="this.style.transform=\'\';this.style.boxShadow=\'\'">'
-        +'<div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:8px;">'+label+' 점검</div>'
-        +'<div style="font-size:24px;font-weight:800;color:'+pctColor+';line-height:1;">'+kpi.pct+'<span style="font-size:13px;font-weight:600;">%</span></div>'
-        +'<div style="font-size:10.5px;color:var(--dim);margin:2px 0 8px;">완료율</div>'+'<div style="height:7px;border-radius:99px;background:var(--gray-bg);overflow:hidden;"><i style="display:block;height:100%;border-radius:99px;width:'+kpi.pct+'%;background:'+pctColor+';"></i></div>'
-        +'<div style="margin-top:8px;font-size:11px;display:flex;gap:8px;flex-wrap:wrap;">'
-        +'<span style="color:var(--dim);">총 '+kpi.total+'</span>'
-        +'<span style="color:#6abf7b;font-weight:600;">완료 '+kpi.done+'</span>'
-        +'<span style="color:'+undoneColor+';font-weight:600;">미완료 '+kpi.undone+'</span>'
-        +'</div>'
-        +'</a>';
-    }
-
-    function renderHomeKpi(facilityData, supportData){
-      var el=document.getElementById('home-check-kpi');
-      if(!el)return;
-      var fKpi=parseKpi(facilityData);
-      var sKpi=parseKpi(supportData);
-      (function(){var _p=[];if(fKpi)_p.push(fKpi.pct);if(sKpi)_p.push(sKpi.pct);var _h=document.getElementById('heroCheckPct');if(_h&&_p.length)_h.textContent=Math.round(_p.reduce(function(a,b){return a+b;},0)/_p.length);})();
-      var html='';
-      if(fKpi) html+=buildHomeKpiCard('🏭','시설부',fKpi,FACILITY_URL);
-      else html+='<div style="background:var(--paper);border:1px solid var(--border);border-top:3px solid var(--border);border-radius:12px;padding:14px 16px;font-size:12px;color:var(--dim);">시설부 점검 — 로드 실패</div>';
-      if(sKpi) html+=buildHomeKpiCard('✅','지원부',sKpi,SUPPORT_URL);
-      else html+='<div style="background:var(--paper);border:1px solid var(--border);border-top:3px solid var(--border);border-radius:12px;padding:14px 16px;font-size:12px;color:var(--dim);">지원부 점검 — 로드 실패</div>';
-      // 주차관리부 — GAS dept=parking 미구현, 자리 고정 (구현 시 buildHomeKpiCard로 교체)
-      html+='<div style="background:var(--paper);border:1px solid var(--border);border-top:3px solid var(--dim-soft);border-radius:12px;padding:14px 16px;">'
-        +'<div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:8px;">주차관리부 점검</div>'
-        +'<div style="font-size:11px;color:var(--dim);margin-bottom:10px;">입출차·주차</div>'
-        +'<span style="display:inline-block;font-size:11px;font-weight:700;color:var(--dim);background:var(--gray-bg);padding:3px 10px;border-radius:20px;">연결 대기</span>'
-        +'<div style="font-size:10.5px;color:var(--dim-soft);margin-top:8px;">GAS dept=parking 미구현 · 시우/COO 후속</div>'
-        +'</div>';
-      el.innerHTML=html;
-    }
-
-    function fetchBoth(onSuccess){
-      var today=todayStr();
-      var pv=Date.now();
-      function pickToday(res){
-        if(!res||res.ok===false) return null;
-        // action=weekly → {ok:true, data:[{date,total,done,pct},...]}
-        if(Array.isArray(res.data)){
-          var row=res.data.find(function(d){return d.date===today;});
-          return row || {total:0,done:0,pct:0};
-        }
-        // fallback: 직접 객체 응답
-        return res.data || res;
-      }
-      var fP=fetch(CHECK_API+'?action=weekly&dept=facility&_pv='+pv,{redirect:'follow'}).then(function(r){return r.json();}).then(pickToday).catch(function(){return null;});
-      var sP=fetch(CHECK_API+'?action=weekly&dept=support&_pv='+pv, {redirect:'follow'}).then(function(r){return r.json();}).then(pickToday).catch(function(){return null;});
-      Promise.all([fP,sP]).then(function(res){onSuccess(res[0],res[1]);});
-    }
-
-    function loadO1Summary(){
-      var el=document.getElementById('o1-dept-summary');
-      if(!el)return;
-      fetchBoth(renderO1Summary);
-    }
-
-    function loadHomeKpi(){
-      var el=document.getElementById('home-check-kpi');
-      if(!el)return;
-      fetchBoth(renderHomeKpi);
-    }
-
-    // O1 섹션 진입 시 로드 (사이드바 클릭 감지)
-    document.addEventListener('click',function(e){
-      var link=e.target.closest('[data-id="O1"],[data-doc="gcoo-check"]');
-      if(link)setTimeout(loadO1Summary,400);
-    });
-
-    // 페이지 로드 시 O1이 이미 표시 중이면 즉시 로드
-    setTimeout(function(){
-      var el=document.getElementById('o1-dept-summary');
-      if(el&&el.offsetParent!==null)loadO1Summary();
-    },800);
-
-    // home KPI는 항상 로드 (홈이 기본 active)
-    setTimeout(loadHomeKpi, 600);
-  })();
-  // ── /O1 부서별 핵심 현황 요약 + home KPI ────────────────────────
 </script>
 </body>
 </html>
