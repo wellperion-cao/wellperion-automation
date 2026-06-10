@@ -552,9 +552,10 @@ function _uploadFile(base64, fileName, mimeType) {
 
 // 외부 시트 ID
 var KPI_SALES_SHEET_ID   = '1oG63rj17-RMk2cdiVbwp4TOp-yN73uc04jDV7RfN9BI';
-// 정식 지출 ERP 시트(cfo/expense/apps_script_expense.js와 동일). 탭 '지출현황' 12열.
-var KPI_EXPENSE_SHEET_ID = '17R_SjzG0BWCQYF21yIkR74xw8Wzajr54JFpEQ3h0_SE';
-var KPI_EXPENSE_TAB      = '지출현황';
+// GM 확정 정본 지출 시트(2026-06-10). 빈 ERP 시트(17R_Sjz…) 아님 — 실제 구매·지출 거래행이 있는 시트.
+// '지출 현황' 탭(gid 821406206) = 거래행(승인건 포함) 표면. 첫 탭 자동선택 금지(칸밀림 오판 원인).
+var KPI_EXPENSE_SHEET_ID = '1umSF9rf3K0TuAvR5l0F_gvXHxcOLVKKvkSUfTtbRhdc';
+var KPI_EXPENSE_GID      = 821406206;
 var KPI_VOC_SHEET_ID     = '1akZLs7ITs3FZWFIzMQvSYrdRucGQglmerOvTC2TLEcQ';
 var KPI_VOC_GID          = 1576318230;
 
@@ -715,32 +716,49 @@ function _kpiSales() {
   }
 }
 
-// ── 지출 ── (2026-06-10 시토·시뽀: 정식 지출 ERP 시트로 교체)
-// 정식 시트 '지출현황' 탭(12열: id·날짜·카테고리·항목명·금액·결제수단·비고·영수증URL·등록자·등록일·수정일·승인상태).
-// 헤더에서 날짜·금액·승인상태 컬럼 인덱스 탐지. 승인상태='승인' 행만 금액 합산. today/month/year + budget/rate.
+// ── 지출 ── (2026-06-10 시토·시뽀: GM 확정 정본 '지출 현황' 탭으로 재연결)
+// 시트 1umSF… '지출 현황' 탭(gid 821406206) = 구매·지출 거래행 표면. 컬럼 구조(1-base):
+//   1 날짜 · 2 타임스탬프 · 3 구매요청자 · 4 소속 · 5 물품명 · 6 링크 · 7 가격 · 8 목적
+//   · 9 승인자 · 10 비고 · 11 이미지 · 12 "구매 진행상황"(=승인/미승인/캔슬) · 13 승인날짜 …
+// 헤더에서 날짜·가격·진행상황 컬럼을 키워드로 탐지(고정 인덱스 의존 금지).
+// 합산 규칙: 진행상황이 정확히 '승인'인 행만(='미승인'·'캔슬' 제외). 가격 음수(환불·반품)는
+//   그대로 차감 — 시트의 월별 '승인건' 합계(예: 2026-06=5,907,240, 골프 -257,760 포함)와 일치.
+// 거래행 아래 부서별·월별 요약 블록은 1열이 날짜가 아니므로 _kpiParseDate 가드로 자동 제외.
 function _kpiExpense() {
   try {
     var ss = SpreadsheetApp.openById(KPI_EXPENSE_SHEET_ID);
-    var sh = ss.getSheetByName(KPI_EXPENSE_TAB) || ss.getSheets()[0];
+    var sheets = ss.getSheets();
+    var sh = null;
+    for (var i = 0; i < sheets.length; i++) {
+      if (sheets[i].getSheetId() === KPI_EXPENSE_GID) { sh = sheets[i]; break; }
+    }
+    if (!sh) {
+      // gid 미발견 → 이름 추정('지출 현황' 포함). 첫 탭 자동선택은 칸밀림 오판 원인 → 최후수단.
+      for (var k = 0; k < sheets.length; k++) {
+        if (sheets[k].getName().replace(/\s/g, '').indexOf('지출현황') >= 0) { sh = sheets[k]; break; }
+      }
+    }
+    if (!sh) return { today: null, month: null, year: null, budget: null, rate: null,
+                      error: 'expense_tab_not_found' };
     var lastRow = sh.getLastRow();
     var lastCol = sh.getLastColumn();
     if (lastRow < 2 || lastCol < 2) {
       return { today: null, month: null, year: null, budget: null, rate: null };
     }
     var values = sh.getRange(1, 1, lastRow, lastCol).getValues();
-    var hdr = values[0].map(function (h) { return String(h || '').trim(); });
+    var hdr = values[0].map(function (h) { return String(h || '').replace(/\s/g, '').trim(); });
     function _col(names) {
-      for (var i = 0; i < hdr.length; i++) {
+      for (var i2 = 0; i2 < hdr.length; i2++) {
         for (var j = 0; j < names.length; j++) {
-          if (hdr[i].indexOf(names[j]) >= 0) return i;
+          if (hdr[i2].indexOf(names[j]) >= 0) return i2;
         }
       }
       return -1;
     }
     var dateCol   = _col(['날짜']);
-    var priceCol  = _col(['금액', '가격']);
-    var statusCol = _col(['승인상태', '승인 상태']);
-    if (priceCol < 0 || statusCol < 0) {
+    var priceCol  = _col(['가격', '금액']);
+    var statusCol = _col(['진행상황', '승인상태']);
+    if (priceCol < 0 || statusCol < 0 || dateCol < 0) {
       return { today: null, month: null, year: null, budget: null, rate: null,
                error: 'expense_cols_not_found' };
     }
@@ -748,13 +766,14 @@ function _kpiExpense() {
     var today = 0, month = 0, year = 0, any = false;
     for (var r = 1; r < values.length; r++) {
       var row = values[r];
-      var st = String(row[statusCol] || '').trim();
-      if (st.indexOf('승인') < 0) continue;
+      // 진행상황이 정확히 '승인'인 행만. '미승인'·'캔슬'은 제외(부분일치 금지).
+      var st = String(row[statusCol] || '').replace(/\s/g, '').trim();
+      if (st !== '승인') continue;
+      var d = _kpiParseDate(row[dateCol]);
+      if (!d) continue;  // 거래행이 아님(요약 블록 등) → 제외
       var price = _kpiNum(row[priceCol]);
-      if (price === null || price <= 0) continue;  // 음수(환불·반품)는 지출 합계에서 제외
+      if (price === null) continue;  // 음수(환불)는 유지, 빈 값만 제외
       any = true;
-      var d = dateCol >= 0 ? _kpiParseDate(row[dateCol]) : null;
-      if (!d) continue;
       if (d.y === t.y) {
         year += price;
         if (d.m === t.m) {
