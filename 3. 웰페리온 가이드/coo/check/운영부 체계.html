@@ -412,9 +412,10 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   .content.hidden{display:none!important}
   /* 인쇄 시 보드 풀폭 탈출 해제(페이지 폭 안에 정렬) */
   .board-fullwidth{width:auto!important;max-width:100%!important;margin:0!important;padding:0!important}
-  /* 인쇄는 단일 컬럼으로 — 보드/근무휴게 세로 적층(겹침·잘림 방지) */
-  .policy-row{display:block!important}
-  .policy-row > .manual-section{margin-top:14px!important;width:100%!important}
+  /* 인쇄: 칸반 흐름을 세로 적층(가로 스크롤 대신 — 겹침·잘림 방지) */
+  #policy-flow{display:block!important;overflow:visible!important}
+  #policy-board{display:block!important}
+  #policy-flow .board-col{flex:none!important;width:100%!important;min-width:0!important;max-width:100%!important;margin-bottom:12px!important;break-inside:avoid}
   /* 활성 탭만 표시 */
   .content[data-print-active="true"]{display:block!important}
   .category{border:1px solid #ccc;break-inside:avoid;margin-bottom:6px}
@@ -443,20 +444,14 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   .dash-table{font-size:11px}
   .dash-table th,.dash-table td{padding:4px 6px}
 }
-/* 규정 탭 — 정기회의(보드)+근무휴게(680px).
-   ⚠ flex nowrap(과거)는 보드가 짓눌릴 때 보드 컬럼(정기회의)이 근무·휴게 칸 쪽으로 시각 침범(3회 신고).
-     근본 원인: 보드 3컬(410×3+gap=1258px)과 사이드 680px가 한 행에서 폭을 다퉈,
-     좁은 폭에선 정기회의 컬럼이 사이드 칸 경계에서 잘려 '침범'처럼 보임.
-   → CSS grid로 전환 + 기본은 보드 위 / 근무휴게 아래 1열 스택(보드는 항상 풀폭 → 3컬 온전, 절대 안 잘림·안 겹침).
-     사이드를 보드 우측에 같은 행으로 두는 건 보드 3컬이 온전히 들어갈 만큼 넓은 화면(≈1992px↑)에서만.
-   풀블리드(.board-fullwidth 100vw 음수마진·좌우 20px)는 래퍼가 유지, grid는 그 안에서 분할. */
-.policy-row{display:grid;grid-template-columns:minmax(0,1fr);gap:14px;align-items:start;}
-.policy-row > #policy-board{min-width:0;}                 /* 보드: 0까지 안전 수축 후 내부 가로 스크롤(겹침 불가) */
-.policy-row > .manual-section{min-width:0;width:auto;margin-top:0;}
-/* 보드 3컬 온전(1258)+gap14+사이드680+좌우패딩40 ≈ 1992px 이상에서만 우측 동행. 그 미만은 세로 스택(정기회의 절대 미침범). */
-@media(min-width:1992px){
-  #tab-policy .policy-row{grid-template-columns:minmax(0,1fr) 680px;}
-}
+/* 규정 탭 — 단일 트렐로 칸반 흐름(2026-06-10 재설계).
+   정기회의(JS 렌더 3컬: 운영기준·VOC·정기회의) → 근무·휴게 → 점검 안내가 한 .board-scroll 안에서
+   같은 가로 흐름으로 이어짐. #policy-board는 display:contents(인라인)라서 JS가 만든 .board-col이
+   부모 .board-scroll의 직접 flex 자식으로 합류 → 컬럼 폭·간격·모바일 스냅 규칙을 그대로 공유.
+   과거 'grid 2열 + 우측 근무휴게 별도 패널' 방식은 폐기(정기회의 다음 카드로 자연스럽게 이어지도록).
+   #policy-flow는 .board-scroll 그대로라 좁은 폭에선 가로 스크롤·스냅, 컬럼 침범 없음. */
+/* 고정 컬럼(근무휴게·점검안내)도 JS 컬럼과 동일 폭. 모바일(≤560px)은 아래 .board-col 86vw 규칙이 처리하므로 561px↑에서만 고정. */
+@media(min-width:561px){ #policy-flow > .board-col{flex:0 0 410px;min-width:410px;max-width:410px;} }
 </style>
 </head>
 <body>
@@ -493,8 +488,6 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   <button class="tab" onclick="switchTab('guide')">가이드</button>
   <button class="tab" onclick="switchTab('manual')">매뉴얼</button>
   <button class="tab" onclick="switchTab('voc')">VOC 이슈 접수</button>
-  <button class="tab" onclick="switchTab('check-m','lock')">점검(오전) 🔒</button>
-  <button class="tab" onclick="switchTab('check-f','lock')">점검(오후) 🔒</button>
   <div style="display:flex;gap:4px;margin-left:auto;">
     <button class="util-btn print-btn" onclick="printCurrentTab()">인쇄</button>
     <button class="util-btn report-btn" onclick="copyReport()">보고용</button>
@@ -507,14 +500,17 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 <div id="tab-policy" class="content">
   <h2 style="font-size:20px;margin-bottom:6px;">운영부 규정</h2>
   <p style="font-size:13px;color:var(--dim);margin-bottom:14px;line-height:1.6;">주제별 칸(컬럼)에 규정·회의를 카드로 정리했습니다. 각 카드의 <b>편집</b> 버튼으로 내용을 바로 수정·저장하면 모든 기기에 반영됩니다. <span style="color:var(--accent);">운영시간 등 공식값은 임의 변경 금지.</span></p>
-  <div class="board-fullwidth policy-row">
-    <div id="policy-board" class="board-scroll"></div>
-    <!-- ── 근무·휴게 시간 (정기회의 우측 — 같은 행) ── -->
-    <div class="manual-section" style="margin-top:0;border-left:4px solid var(--red);align-self:flex-start;">
-    <div class="manual-header" onclick="togManual(this)">
-      <h3 style="color:var(--red);">⏱ 근무·휴게 시간</h3><span class="arrow">&#9654;</span>
-    </div>
-    <div class="manual-body">
+  <div class="board-fullwidth">
+    <!-- 단일 트렐로 칸반 흐름: 정기회의(JS 렌더 컬럼) → 근무·휴게 → 점검 안내가 한 줄로 자연스럽게 이어짐.
+         #policy-board는 display:contents → renderPolicyBoard()가 만든 .board-col들이 이 .board-scroll의
+         직접 자식처럼 흐름에 합류. 그 뒤 고정 카드 컬럼 2개(근무·휴게 / 점검 안내)가 같은 줄에 이어진다. -->
+    <div class="board-scroll" id="policy-flow">
+    <div id="policy-board" style="display:contents"></div>
+
+    <!-- ── [칸반 컬럼] ⏱ 근무·휴게 시간 — 정기회의 다음 카드로 이어짐 ── -->
+    <div class="board-col" style="border-left:4px solid var(--red);">
+      <div class="board-col-head"><span class="bday" style="font-size:16px;color:var(--red);">⏱ 근무·휴게 시간</span></div>
+      <div class="board-col-body">
   <div style="background:var(--red-bg);border:2px solid rgba(237,91,63,0.5);border-radius:12px;padding:16px 18px;margin-bottom:16px;">
     <p style="font-size:16px;font-weight:800;color:var(--red);margin:0 0 6px;">⚠ 리셉션을 절대 비우지 않는다</p>
     <p style="font-size:14px;font-weight:600;color:var(--text);margin:0;line-height:1.7;">리셉션·프론트에는 항상 최소 1명이 자리를 지킵니다.<br>
@@ -585,10 +581,43 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
     </tr>
   </table>
   <p style="font-size:12px;color:var(--dim);margin:0 0 4px;line-height:1.6;">※ 근무시간·담당자는 임의로 채우지 않고, GM 확정 후 갱신합니다.</p>
-    </div>
-  </div>
-  <!-- ── /근무·휴게 시간 카드 ── -->
-  </div><!-- /board-fullwidth flex row -->
+      </div><!-- /board-col-body -->
+    </div><!-- ── /근무·휴게 컬럼 ── -->
+
+    <!-- ── [칸반 컬럼] 🔎 점검 안내 (운영부는 점검 '제출' 주체가 아님 — 안내·매뉴얼) ── -->
+    <div class="board-col" style="border-left:4px solid var(--purple);">
+      <div class="board-col-head"><span class="bday" style="font-size:16px;color:var(--purple);">🔎 점검 안내</span></div>
+      <div class="board-col-body">
+        <div style="background:var(--purple-bg);border:1.5px solid rgba(167,139,218,0.4);border-radius:12px;padding:14px 16px;">
+          <p style="font-size:15px;font-weight:800;color:var(--purple);margin:0 0 6px;">운영부는 점검 ‘기록 주체’가 아닙니다</p>
+          <p style="font-size:13px;font-weight:600;color:var(--text);margin:0;line-height:1.7;">일일 시설점검 <strong>제출(체크·완료 도장)</strong>은 시설·지원팀이 담당합니다. 운영부(리셉션·프론트)는 회원 동선에서 발견한 이상을 <strong>VOC로 접수·전달</strong>하는 역할입니다.</p>
+        </div>
+        <p style="font-size:13.5px;font-weight:700;color:var(--accent);margin:16px 0 8px;">🌅 오전 점검 (오픈조)</p>
+        <div style="background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:12px;">
+          <ul style="margin:0;padding-left:18px;font-size:13px;line-height:1.7;">
+            <li>리셉션 조명·PC·전화·POS 전원 정상 확인</li>
+            <li>로비·카운터 청결·정돈 상태 눈으로 점검</li>
+            <li>입구 안내 표지·운영시간 게시 상태 확인</li>
+            <li>이상 발견 시 <strong style="color:var(--purple);">VOC 폼</strong>으로 접수 → 해당 부서 전달</li>
+          </ul>
+        </div>
+        <p style="font-size:13.5px;font-weight:700;color:var(--accent);margin:0 0 8px;">🌇 오후 점검 (마감 전)</p>
+        <div style="background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:12px;">
+          <ul style="margin:0;padding-left:18px;font-size:13px;line-height:1.7;">
+            <li>당일 방문·투어·전화 문의 일지 기록 완료 확인</li>
+            <li>접수한 VOC가 해당 부서에 전달됐는지 확인</li>
+            <li>리셉션·로비 정돈 후 다음 교대조 인계 사항 정리</li>
+            <li>미처리 건은 인수인계 메모로 명확히 남김</li>
+          </ul>
+        </div>
+        <div style="background:var(--accent-bg);border:1px solid rgba(183,159,138,0.3);border-radius:10px;padding:11px 14px;">
+          <p style="font-size:12.5px;color:var(--dim);margin:0;line-height:1.65;">📋 시설 점검 체크리스트 제출 화면이 필요하면 <strong>시설·지원팀 점검 페이지</strong>를 이용하세요. 운영부 페이지에는 점검 제출 기능이 없습니다(중복 제출·오집계 방지).</p>
+        </div>
+      </div><!-- /board-col-body -->
+    </div><!-- ── /점검 안내 컬럼 ── -->
+
+    </div><!-- /board-scroll (단일 칸반 흐름) -->
+  </div><!-- /board-fullwidth -->
 </div>
 
 <div id="tab-voc" class="content hidden">
@@ -1015,59 +1044,29 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   </div><!-- /manual-section (기존 상세 절차 참고) -->
 </div>
 
-<div id="tab-check-m" class="content hidden">
-  <div class="date-bar">
-    <input type="date" id="checkDateM">
-    <button class="btn" onclick="moveDateG('m',-1)">&lt;</button>
-    <button class="btn" onclick="setTodayG('m')">오늘</button>
-    <button class="btn" onclick="moveDateG('m',1)">&gt;</button>
-  </div>
-  <div class="submitter-bar">
-    <label>점검자</label>
-    <select id="submitterM" onchange="onSubmitterChangeG('m')">
-      <option value="">선택하세요</option>
-    </select>
-  </div>
-  <div class="guide-cards">
-    <div class="guide-card issue-guide">
-      <div class="guide-title">이슈</div>
-      <div class="guide-desc">고장, 부족, 이상 등 문제가 발생했을 때 기록</div>
-    </div>
-    <div class="guide-card tip-guide">
-      <div class="guide-title">노하우</div>
-      <div class="guide-desc">더 효율적인 방법, 개선 아이디어를 공유</div>
-    </div>
+<!-- ── 점검(오전/오후) 탭 제거됨 (2026-06-10) ──
+     운영부는 일일 시설점검 '제출 주체'가 아니다. 점검 제출 UI·녹색 완료 badge·OPS 점검 제출 흐름을
+     운영부 화면에서 들어냄. 대신 '점검 안내' 매뉴얼 칸반 카드(규정 탭 보드)로 대체.
+     아래 숨김 placeholder는 JS가 참조하는 id(checkDateM/F·submitterM/F·checklistM/F·submitBarM/F 등)를
+     보존하기 위함 — renderG·OPS_ITEM_IDS·submitShift 등 다른 부서 공용 함수는 그대로 유지(참조 오류 방지).
+     style="display:none"로 화면엔 절대 노출되지 않음. -->
+<div id="tab-check-m" class="content hidden" style="display:none" aria-hidden="true">
+  <div class="date-bar"><input type="date" id="checkDateM"></div>
+  <div class="submitter-bar"><label>점검자</label>
+    <select id="submitterM" onchange="onSubmitterChangeG('m')"><option value="">선택하세요</option></select>
   </div>
   <div id="checklistM"></div>
-  <div class="submit-bar" id="submitBarM">
+  <div class="submit-bar" id="submitBarM" style="display:none">
     <button class="submit-btn primary" id="submitAmM" onclick="submitShift('am','m')" disabled>오전 제출</button>
     <button class="submit-btn primary" id="submitPmM" onclick="submitShift('pm','m')" disabled>오후 제출</button>
     <button class="submit-btn night-btn" id="submitNightM" onclick="submitShift('night','m')" disabled style="display:none">야간 제출</button>
   </div>
 </div>
 
-<div id="tab-check-f" class="content hidden">
-  <div class="date-bar">
-    <input type="date" id="checkDateF">
-    <button class="btn" onclick="moveDateG('f',-1)">&lt;</button>
-    <button class="btn" onclick="setTodayG('f')">오늘</button>
-    <button class="btn" onclick="moveDateG('f',1)">&gt;</button>
-  </div>
-  <div class="submitter-bar">
-    <label>점검자</label>
-    <select id="submitterF" onchange="onSubmitterChangeG('f')">
-      <option value="">선택하세요</option>
-    </select>
-  </div>
-  <div class="guide-cards">
-    <div class="guide-card issue-guide">
-      <div class="guide-title">이슈</div>
-      <div class="guide-desc">고장, 부족, 이상 등 문제가 발생했을 때 기록</div>
-    </div>
-    <div class="guide-card tip-guide">
-      <div class="guide-title">노하우</div>
-      <div class="guide-desc">더 효율적인 방법, 개선 아이디어를 공유</div>
-    </div>
+<div id="tab-check-f" class="content hidden" style="display:none" aria-hidden="true">
+  <div class="date-bar"><input type="date" id="checkDateF"></div>
+  <div class="submitter-bar"><label>점검자</label>
+    <select id="submitterF" onchange="onSubmitterChangeG('f')"><option value="">선택하세요</option></select>
   </div>
   <div id="checklistF"></div>
   <div class="submit-bar" id="submitBarF" style="display:none">
@@ -3265,7 +3264,7 @@ loadStaffFromSheet();
 loadItemMasterFromSheet(); // 점검 항목 마스터를 시트에서 로드 (비동기 — 완료 시 화면 갱신)
 loadBoardData(); renderBoard(); loadBoardFromBackend(); // 요일별 보드: 로컬 즉시 렌더 후 백엔드 동기화(모든 기기 반영)
 loadPolicyData(); renderPolicyBoard(); loadPolicyFromBackend(); // 규정 트렐로 보드: 로컬 즉시 렌더 후 백엔드 동기화
-renderG('m');
+// renderG('m') 초기 호출 제거(2026-06-10): 운영부 점검 탭 화면 제거됨. 공용 함수(renderG·OPS_ITEM_IDS)는 정의 보존.
 
 /* ═══════════════════════════════════════════════
    항목 관리 (CRUD) — localStorage 기반
