@@ -429,7 +429,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
       </div>
     </div>
     <div class="field">
-      <label>난이도 <span style="font-size:11px;color:var(--dim);font-weight:400;">(담당자 제안 — 부서장이 결재단계에서 확정)</span></label>
+      <label>업무 중요도 <span style="font-size:11px;color:var(--dim);font-weight:400;">(담당자 제안 — 부서장이 결재단계에서 확정)</span></label>
       <select id="fDifficulty">
         <option value="">미정</option>
         <option value="하">하 (1점) · 본인 역할 및 팀 단위(1개 팀)</option>
@@ -593,7 +593,7 @@ const FIELD_MAP = {
   '생성일':'createdAt','수정일':'updatedAt'
 };
 
-/* 난이도 3등급(하1·중3·상5) — 담당자 제안→부서장 확정. 가중점수=Σ완료 업무 난이도. (2026-06-03 GM · 2026-06-08 확정: 하=1·중=3·상=5) */
+/* 업무 중요도 3등급(하1·중3·상5) — 담당자 제안→부서장 확정. 가중점수=Σ완료 업무 중요도. (2026-06-03 GM · 2026-06-08 확정: 하=1·중=3·상=5) */
 const DIFF_WEIGHT = { '하': 1, '중': 3, '상': 5 };
 function diffWeight(t) { return DIFF_WEIGHT[String((t && t['난이도']) || '').trim()] || 0; }
 function diffBadgeHtml(t) {
@@ -601,31 +601,31 @@ function diffBadgeHtml(t) {
   if (!d) return '';
   const c  = d === '상' ? 'var(--red)'    : d === '중' ? 'var(--yellow)'    : 'var(--green)';
   const bg = d === '상' ? 'var(--red-bg)' : d === '중' ? 'var(--yellow-bg)' : 'var(--green-bg)';
-  return '<span class="chip" title="업무 난이도 ' + d + ' (가중치 ' + (DIFF_WEIGHT[d] || 0) + ')" style="background:' + bg + ';color:' + c + ';font-weight:700;">⚙' + esc(d) + '</span>';
+  return '<span class="chip" title="업무 중요도 ' + d + ' (가중치 ' + (DIFF_WEIGHT[d] || 0) + ')" style="background:' + bg + ';color:' + c + ';font-weight:700;">⚙' + esc(d) + '</span>';
 }
-// 카드 인라인 난이도 (2026-06-05 GM): 설정됨→칩 / 미설정+결재전→카드에서 바로 드롭다운 / 결재 넘어가면→잠금 안내
+// 카드 인라인 업무 중요도 (2026-06-05 GM): 설정됨→칩 / 미설정+결재전→카드에서 바로 드롭다운 / 결재 넘어가면→잠금 안내
 function diffCardChip(t) {
   const d = String((t && t['난이도']) || '').trim();
   const inApproval = !!String((t && (t.approval || t['결재요청'])) || '').trim();
   if (d) return diffBadgeHtml(t);
   if (inApproval) {
-    return '<span class="chip" title="결재 요청되어 난이도는 결재 현황에서 GM이 확정합니다" style="background:transparent;color:var(--dim);border:1px dashed var(--border);font-weight:600;">⚙ 난이도 잠김</span>';
+    return '<span class="chip" title="결재 요청되어 업무 중요도는 결재 현황에서 GM이 확정합니다" style="background:transparent;color:var(--dim);border:1px dashed var(--border);font-weight:600;">⚙ 업무 중요도 잠김</span>';
   }
   const opts = ['하','중','상'].map(function(o){ return '<option value="' + o + '">' + o + '</option>'; }).join('');
   return '<select onclick="event.stopPropagation();" onchange="event.stopPropagation();setCardDifficulty(\'' + escAttr(t.id) + '\', this.value);" '
-       + 'title="난이도를 카드에서 바로 설정 (하·중·상)" '
+       + 'title="업무 중요도를 카드에서 바로 설정 (하·중·상)" '
        + 'style="font-size:11px;padding:2px 6px;border:1px dashed var(--accent);border-radius:8px;background:var(--accent-bg);color:var(--accent);cursor:pointer;font-family:inherit;font-weight:600;">'
-       + '<option value="">⚙ 난이도?</option>' + opts + '</select>';
+       + '<option value="">⚙ 업무 중요도?</option>' + opts + '</select>';
 }
-// 카드에서 난이도 1건 즉시 저장 (빈값 스킵 GAS라 다른 필드 무손상). 2026-06-05 GM
+// 카드에서 업무 중요도 1건 즉시 저장 (빈값 스킵 GAS라 다른 필드 무손상). 2026-06-05 GM
 async function setCardDifficulty(id, val) {
   if (!val) return;
-  showToast('난이도 저장 중...');
+  showToast('업무 중요도 저장 중...');
   try {
     const res = await apiCall({ action: 'todo_update', id: id, difficulty: val });
-    if (res && res.ok) { showToast('난이도 "' + val + '" 저장됨'); await loadTasks(); }
+    if (res && res.ok) { showToast('업무 중요도 "' + val + '" 저장됨'); await loadTasks(); }
     else throw new Error((res && res.error) || '저장 실패');
-  } catch (e) { showToast('난이도 저장 실패: ' + e.message, true); }
+  } catch (e) { showToast('업무 중요도 저장 실패: ' + e.message, true); }
 }
 
 /* 결재 진행중 판정 — 결재요청 있고 결재상태 미완·미반려. 활성/완료 분리·필터 카운트 공용(기준 드리프트 방지). 2026-06-03 */
@@ -2170,7 +2170,7 @@ function getCheckboxValues(groupId) {
   return vals.join(',');
 }
 
-/* 난이도 소급 일괄책정 모달 — 기존 전 업무에 난이도(하/중/상) 일괄 부여 (2026-06-03 GM, 전체 소급) */
+/* 업무 중요도 소급 일괄책정 모달 — 기존 전 업무에 업무 중요도(하/중/상) 일괄 부여 (2026-06-03 GM, 전체 소급) */
 function openDifficultyBatchModal() {
   const pool = excludeNonStaff(ALL_TASKS.filter(t => t.status !== '보류'));
   // 미책정 건 우선 노출(공백 식별), 그다음 담당자·업무명
@@ -2192,12 +2192,12 @@ function openDifficultyBatchModal() {
   ov.innerHTML =
     '<div style="background:var(--paper);border:1px solid var(--border);border-radius:14px;max-width:680px;width:100%;max-height:86vh;display:flex;flex-direction:column;overflow:hidden;">' +
       '<div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">' +
-        '<div><strong style="font-size:16px;">⚙ 난이도 일괄책정</strong>' +
+        '<div><strong style="font-size:16px;">⚙ 업무 중요도 일괄책정</strong>' +
         '<div style="font-size:12px;color:var(--dim);margin-top:2px;">전체 ' + pool.length + '건 · 미책정 ' + unrated + '건 — 변경분만 저장됩니다.</div></div>' +
         '<button onclick="document.getElementById(\'diffBatchOverlay\').remove()" style="background:none;border:none;font-size:22px;cursor:pointer;color:var(--dim);">&times;</button>' +
       '</div>' +
       '<div style="overflow-y:auto;flex:1;padding:0 20px;">' +
-        '<table class="dash-table" style="width:100%;"><tr><th>업무명</th><th>담당자</th><th style="width:84px;">난이도</th></tr>' + rowsHtml + '</table>' +
+        '<table class="dash-table" style="width:100%;"><tr><th>업무명</th><th>담당자</th><th style="width:84px;">업무 중요도</th></tr>' + rowsHtml + '</table>' +
       '</div>' +
       '<div style="padding:14px 20px;border-top:1px solid var(--border);display:flex;gap:10px;justify-content:flex-end;">' +
         '<button onclick="document.getElementById(\'diffBatchOverlay\').remove()" style="padding:8px 16px;border-radius:8px;border:1px solid var(--border);background:var(--bg);cursor:pointer;">취소</button>' +
@@ -2214,7 +2214,7 @@ async function saveDifficultyBatch() {
     const sel = tr.querySelector('.diffBatchSel');
     if (sel && sel.value !== (tr.getAttribute('data-orig') || '')) changes.push({ id: tr.getAttribute('data-id'), difficulty: sel.value });
   });
-  if (changes.length === 0) { showToast('변경된 난이도가 없습니다.'); return; }
+  if (changes.length === 0) { showToast('변경된 업무 중요도가 없습니다.'); return; }
   const ovBtn = document.querySelector('#diffBatchOverlay button[onclick="saveDifficultyBatch()"]');
   if (ovBtn) { ovBtn.disabled = true; ovBtn.textContent = '저장 중...'; }
   let ok = 0;
@@ -2223,11 +2223,11 @@ async function saveDifficultyBatch() {
       const res = await apiCall({ action: 'todo_update', id: c.id, difficulty: c.difficulty });
       if (res && res.ok) ok++;
     } catch (e) { /* 개별 실패는 건너뜀 */ }
-    showToast('난이도 저장 중... (' + ok + '/' + changes.length + ')');
+    showToast('업무 중요도 저장 중... (' + ok + '/' + changes.length + ')');
   }
   const ov = document.getElementById('diffBatchOverlay');
   if (ov) ov.remove();
-  showToast('난이도 ' + ok + '/' + changes.length + '건 저장 완료');
+  showToast('업무 중요도 ' + ok + '/' + changes.length + '건 저장 완료');
   await loadTasks();
 }
 
@@ -2390,7 +2390,7 @@ async function saveTask() {
    Actions: Done / Delete
    ═══════════════════════════════════════════ */
 function warnApprovalCheck(cb) {
-  if (cb.checked && !confirm('⚠️ 결재요청을 체크하면 이 업무는 자체 완료가 불가합니다.\n결재 현황에서 결재가 완료되어야 종료됩니다.\n\n• 난이도도 더 이상 변경할 수 없습니다 (결재 현황에서 GM이 확정).\n• 이후 수정·완료·삭제는 결재 현황에서 GM만 관리합니다.\n\n계속하시겠습니까?')) {
+  if (cb.checked && !confirm('⚠️ 결재요청을 체크하면 이 업무는 자체 완료가 불가합니다.\n결재 현황에서 결재가 완료되어야 종료됩니다.\n\n• 업무 중요도도 더 이상 변경할 수 없습니다 (결재 현황에서 GM이 확정).\n• 이후 수정·완료·삭제는 결재 현황에서 GM만 관리합니다.\n\n계속하시겠습니까?')) {
     cb.checked = false;
   }
 }
@@ -2699,9 +2699,9 @@ function renderDashboard() {
   h += '<div class="dash-stat-card"><div class="num" style="color:' + (deadlineRate >= 70 ? 'var(--green)' : 'var(--red)') + '">' + deadlineRate + '%</div><div class="label">마감 준수율</div></div>';
   h += '</div>';
 
-  // Per-member stats — 가중 완료 점수(Σ완료 난이도) + 순위 (2026-06-03 GM: 양·질 동시 포상 근거)
-  h += '<h3>담당자별 통계 <span style="font-size:11px;color:var(--dim);font-weight:400;">— 가중점수=Σ완료 업무 난이도(하1·중3·상5) · 포상 판단 근거</span>';
-  h += '<button class="dash-print-btn" onclick="openDifficultyBatchModal()" style="margin-left:8px;">⚙ 난이도 일괄책정</button></h3>';
+  // Per-member stats — 가중 완료 점수(Σ완료 업무 중요도) + 순위 (2026-06-03 GM: 양·질 동시 포상 근거)
+  h += '<h3>담당자별 통계 <span style="font-size:11px;color:var(--dim);font-weight:400;">— 가중점수=Σ완료 업무 중요도(하1·중3·상5) · 포상 판단 근거</span>';
+  h += '<button class="dash-print-btn" onclick="openDifficultyBatchModal()" style="margin-left:8px;">⚙ 업무 중요도 일괄책정</button></h3>';
   h += '<table class="dash-table"><tr><th>순위</th><th>담당자</th><th>총</th><th>진행중</th><th>완료</th><th>보류</th><th>완료율</th><th>가중점수</th><th style="min-width:100px">가중점수 그래프</th></tr>';
   const _memberStats = MEMBERS.map(m => {
     const mAll = all.filter(t => (t.owner||'').includes(m));
@@ -2710,7 +2710,7 @@ function renderDashboard() {
     const mHold = mAll.filter(t => t.status === '보류');
     const mRate = mAll.length > 0 ? Math.round(mDone.length / mAll.length * 100) : 0;
     const mWeight = mDone.reduce((s, t) => s + diffWeight(t), 0);                 // 가중 완료 점수
-    const mUnrated = mDone.filter(t => !diffWeight(t)).length;                    // 완료건 중 난이도 미책정
+    const mUnrated = mDone.filter(t => !diffWeight(t)).length;                    // 완료건 중 업무 중요도 미책정
     return { m: m, all: mAll.length, active: mActive.length, done: mDone.length, hold: mHold.length, rate: mRate, weight: mWeight, unrated: mUnrated };
   });
   const _maxWeight = Math.max(1, ..._memberStats.map(s => s.weight));

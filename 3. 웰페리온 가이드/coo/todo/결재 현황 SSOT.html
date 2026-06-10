@@ -917,14 +917,14 @@ async function signTask(taskId, role, decision, pin) {
   }
 }
 
-/* 난이도 부서장 확정 — 담당자 제안값을 부서장이 결재단계에서 확정·조정 (2026-06-03 GM ③). PIN 불필요(난이도는 결재 결정 아님), todo_update difficulty만 갱신(싸인·상태 무손상). */
+/* 업무 중요도 부서장 확정 — 담당자 제안값을 부서장이 결재단계에서 확정·조정 (2026-06-03 GM ③). PIN 불필요(업무 중요도는 결재 결정 아님), todo_update difficulty만 갱신(싸인·상태 무손상). */
 async function setDifficulty(id, val) {
   const params = new URLSearchParams({ action: 'todo_update', id: id, difficulty: val });
   try {
     const r = await fetch(TODO_API_URL + '?' + params.toString(), { redirect: 'follow' });
     const res = await r.json();
     if (res.ok) { loadTasks(); }
-    else { alert('난이도 저장 실패: ' + (res.error || '알 수 없는 오류')); }
+    else { alert('업무 중요도 저장 실패: ' + (res.error || '알 수 없는 오류')); }
   } catch (e) { alert('연결 실패: ' + e.message); }
 }
 
@@ -1013,23 +1013,23 @@ function renderApprovalCard(t, idx) {
   h += renderSignPill('대표님',       t.repSign,  t.id, nxt === '대표님',  route.includes('대표님'));
   h += '</div>';
 
-  // [난이도] 부서장 확정 게이트 — 담당자 제안 난이도를 부서장이 결재단계에서 확정·조정 (2026-06-03 GM ③)
+  // [업무 중요도] 부서장 확정 게이트 — 담당자 제안 업무 중요도를 부서장이 결재단계에서 확정·조정 (2026-06-03 GM ③)
   if (!isRejected) {
     const _diff = String(t['난이도'] || '').trim();
     const _deptSigned = !!String(t.deptSign || '').trim();
-    // 미설정 난이도는 결재현황(GM)에서 다 설정 가능 — 부서장 단계 유무 무관, 부서장 서명 전·미완료까지 (2026-06-05 GM)
+    // 미설정 업무 중요도는 결재현황(GM)에서 다 설정 가능 — 부서장 단계 유무 무관, 부서장 서명 전·미완료까지 (2026-06-05 GM)
     const _hasDept = route.includes('부서장');
     const _editable = !isDone && !_deptSigned;
     h += '<div class="meta-row" style="margin:6px 0 2px;align-items:center;gap:8px;flex-wrap:wrap;">';
     if (_editable) {
       const _o = (v, l) => '<option value="' + v + '"' + (_diff === v ? ' selected' : '') + '>' + l + '</option>';
-      h += '<span style="font-size:11px;color:var(--dim);">⚙ 난이도(' + esc(_hasDept && _midName ? _midName : 'GM') + ' 확정):</span>';
+      h += '<span style="font-size:11px;color:var(--dim);">⚙ 업무 중요도(' + esc(_hasDept && _midName ? _midName : 'GM') + ' 확정):</span>';
       h += '<select onchange="setDifficulty(\'' + escAttr(t.id) + '\',this.value)" onclick="event.stopPropagation();" style="font-size:12px;padding:3px 8px;border-radius:6px;border:1px solid var(--border);background:var(--bg);color:var(--text);">'
         + _o('', '미정') + _o('하', '하 (1)') + _o('중', '중 (3)') + _o('상', '상 (5)') + '</select>';
       if (!_diff) h += '<span style="font-size:10px;color:var(--accent);">미설정 — 설정 가능</span>';
     } else {
       const _c = _diff === '상' ? 'var(--red)' : _diff === '중' ? 'var(--yellow)' : _diff === '하' ? 'var(--green)' : 'var(--dim)';
-      h += '<span style="font-size:11px;color:var(--dim);">난이도:</span>';
+      h += '<span style="font-size:11px;color:var(--dim);">업무 중요도:</span>';
       h += '<span class="chip" style="font-weight:700;color:' + _c + ';">⚙ ' + (_diff || '미정') + (_deptSigned && _diff ? ' · 확정' : '') + '</span>';
     }
     h += '</div>';
