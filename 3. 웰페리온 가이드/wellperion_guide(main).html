@@ -3662,12 +3662,6 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
       <div id="today-task-list">
         <!-- 동적 렌더링 — gm1_unified_tasks localStorage 기반 -->
       </div>
-      <details class="toggle" style="margin-top:10px;">
-        <summary style="color:var(--dim);"><span style="margin-right:6px;">📦</span>지난 기록</summary>
-        <div class="toggle-body" style="font-size:13px;color:var(--text-soft);">
-          완료·보류된 지난 항목은 오늘 할 일 목록에서 자동으로 빠지고, 상세 이력은 <strong>세션 로그</strong> 탭 + <strong>git 커밋 기록</strong>에 누적됩니다. (과거 하드코딩 목록은 2026-06-05 정리)
-        </div>
-      </details>
     </details>
 
 
@@ -7373,9 +7367,10 @@ function crTab(btn, panelId) {
               //   시작일=오늘 OR 상태=진행중이면 합류 — 과거 시작이어도 진행중인 건 항상 표시
               //   완료·보류는 제외 (오염 방지 유지)
               var st = String(row['상태'] || '');
-              // 오늘 완료 누락 수정(2026-06-06 GM/시우): 과거 시작이어도 '오늘 완료'한 건은 합류 — 수정일(로컬)=오늘이면 통과
-              var _md = row['수정일'] ? new Date(row['수정일']) : null;
-              var _modLocal = _md ? (_md.getFullYear() + '-' + ('0'+(_md.getMonth()+1)).slice(-2) + '-' + ('0'+_md.getDate()).slice(-2)) : '';
+              // '오늘 입항' 판정은 신뢰 가능한 완료시각만 사용 — 수정일은 일괄편집(카테고리·중요도 마이그레이션 등)으로 갱신돼 옛 완료건이 '오늘'로 둔갑하던 버그(2026-06-10 웰리 수정).
+              //   시트에 일반 완료일 컬럼이 없어 '결재완료시각'(결재건만 존재)을 완료 기준일로 사용. 없으면 _doneDate=''→지난 입항으로 안전 분류(거짓 오늘 방지). ※후속: GAS가 상태→완료 시 완료일 스탬프하면 전 완료건 정확.
+              var _dc = row['결재완료시각'] ? new Date(row['결재완료시각']) : null;
+              var _doneLocal = _dc ? (_dc.getFullYear() + '-' + ('0'+(_dc.getMonth()+1)).slice(-2) + '-' + ('0'+_dc.getDate()).slice(-2)) : '';
               // 완료·보류는 항상 합류(숨기지 않음). 완료는 _doneDate로 '오늘 입항' vs '지난 입항' 분리.
               //   검색=전체라 _history 숨김은 안 씀(폐기만 검색전용 — 시트엔 폐기 없음). (GM 2026-06-07)
               var status = (st === '완료') ? '완료' : (st === '보류') ? '보류' : '진행중';
@@ -7385,7 +7380,7 @@ function crTab(btn, panelId) {
                 progressLog: parsed.progressLog, budgetCat: parsed.budgetCat, budgetAmt: parsed.budgetAmt,
                 apprReq: String(row['결재요청'] || ''), apprStatus: apr,
                 isToday: true, startDate: sd, endDate: ed, ssotAuto: true, owner: owner,
-                _doneDate: (st === '완료') ? _modLocal : '',
+                _doneDate: (st === '완료') ? _doneLocal : '',
                 _history: false,
                 _sheetsId: String(row['id'] || '')
               });
