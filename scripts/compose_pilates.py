@@ -80,8 +80,15 @@ def compose_cover(
     eng_font = load_font("bold", 58)
     draw.text((W // 2, 786), title_eng, font=eng_font, fill=BEIGE, anchor="mm")
 
-    # 한글 부제 (흰색, 중앙)
-    kor_font = load_font("semibold", 38)
+    # 한글 부제 (흰색, 중앙) — 텍스트 너비에 따라 폰트 자동 축소
+    KOR_MAX_W = W - 100  # 좌우 여백 50px
+    kor_size = 38
+    while kor_size > 20:
+        kor_font = load_font("semibold", kor_size)
+        _bb = draw.textbbox((0, 0), title_kor, font=kor_font)
+        if (_bb[2] - _bb[0]) <= KOR_MAX_W:
+            break
+        kor_size -= 2
     draw.text((W // 2, 860), title_kor, font=kor_font, fill=WHITE, anchor="mm")
 
     # 베이지 얇은 분리선
@@ -182,8 +189,11 @@ P05   = SRC / "5. 래터럴레이즈.jpg"
 # ---------------------------------------------------------------------------
 def compose_guide_card_pilates(output_path: Path) -> None:
     """필라테스 포스트 전용 GUIDE 카드.
-    공용 guideline_card.jpg를 베이스로 열어 WELLNESS STUDIO 섹션 제목만
-    PILATES STUDIO 로 교체 렌더링. 나머지 항목은 건드리지 않음.
+    공용 guideline_card.jpg를 베이스로:
+      1) WELLNESS STUDIO 섹션 제목 → PILATES STUDIO 교체
+      2) FOR MEMBERS 항목2 "웰니스 컨텐츠 최대 1:8 (Up to 8 per Class)"
+         → "그룹 콘텐츠 최대 1:3 (Up to 3 per Class)" 교체
+    나머지 항목·로고·CTA는 건드리지 않음.
     """
     guide_src = PROJECT_ROOT / "instagram" / "_assets" / "guideline_card.jpg"
     if not guide_src.exists():
@@ -195,32 +205,34 @@ def compose_guide_card_pilates(output_path: Path) -> None:
 
     draw = ImageDraw.Draw(img)
 
-    # ── 배경색 샘플 (섹션 제목 행 배경 — 카드 우측 컬럼 헤더 영역)
+    # ── ① WELLNESS STUDIO 헤더 → PILATES STUDIO 교체 ──────────────────────
     # guideline_card.jpg 기준: WELLNESS STUDIO 제목 행 y ≈ 352~390, x ≈ 553~1035
-    # 해당 영역 배경색을 좌상단 픽셀로 샘플링하여 덮어씀 (배경이 단색임)
-    bg_sample = img.getpixel((560, 355))  # 헤더 행 배경 픽셀 샘플
-    # 덮어쓸 사각형 — 헤더 행만 (항목 텍스트 침범 방지, y 범위 축소)
+    bg_sample = img.getpixel((560, 355))
     ERASE_BOX = (553, 350, 1036, 388)
     draw.rectangle(ERASE_BOX, fill=bg_sample)
 
-    # ── 새 텍스트 렌더링 — 공용 카드와 동일한 bold 폰트 크기(22px) 사용
-    # 원본 "FOR MEMBERS" / "FOR INSTRUCTORS" 와 같은 스타일:
-    # 영문=bold 베이지(#B79F8A), 한글=medium 흰색, 동일 행 inline
     font_section_eng = load_font("bold", 22)
     font_section_kor = load_font("medium", 22)
+    ENG_COLOR = (183, 159, 138)   # BEIGE
+    KOR_COLOR = (255, 255, 255)   # WHITE
 
-    ENG_COLOR = (183, 159, 138)   # BEIGE — 원본 섹션 헤더 영문 색
-    KOR_COLOR = (255, 255, 255)   # WHITE — 원본 섹션 헤더 한글 색
-
-    # 영문 "PILATES STUDIO" 그리기 (x=553 기준)
     TEXT_Y = 357
     draw.text((553, TEXT_Y), "PILATES STUDIO", font=font_section_eng, fill=ENG_COLOR)
-
-    # 한글 "  필라테스 스튜디오 시설 이용" — 영문 뒤 이어서
     eng_bbox = draw.textbbox((0, 0), "PILATES STUDIO", font=font_section_eng)
     eng_w = eng_bbox[2] - eng_bbox[0]
-    kor_x = 553 + eng_w + 12  # 영문 뒤 12px 간격
+    kor_x = 553 + eng_w + 12
     draw.text((kor_x, TEXT_Y), "필라테스 스튜디오 시설 이용", font=font_section_kor, fill=KOR_COLOR)
+
+    # ── ② FOR MEMBERS 항목2 교체 ──────────────────────────────────────────
+    # 원본: "· 웰니스 컨텐츠 최대 1:8 (Up to 8 per Class)"  y≈412~424, x≈55~490
+    # 교체: "· 그룹 콘텐츠 최대 1:3 (Up to 3 per Class)"
+    ITEM2_BG = (33, 31, 32)          # 배경 단색 (측정값)
+    ITEM2_ERASE = (55, 407, 495, 428)
+    draw.rectangle(ITEM2_ERASE, fill=ITEM2_BG)
+
+    font_item = load_font("medium", 18)
+    ITEM_TEXT_COLOR = (200, 198, 199)  # 원본 항목 텍스트 색(측정값)
+    draw.text((55, 409), "· 그룹 콘텐츠 최대 1:3 (Up to 3 per Class)", font=font_item, fill=ITEM_TEXT_COLOR)
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
     img.save(output_path, "JPEG", quality=95, optimize=True)
@@ -248,7 +260,7 @@ def main():
     compose_cover(
         photo_path=COVER,
         title_eng="PILATES",
-        title_kor="어깨 만들기",
+        title_kor="[필라테스편] 민소매가 잘 어울리는 어깨만들기",
         date_location="최은지 원장  ·  한남동 웰페리온 스포츠클럽",
         output_path=out_ig / "ig_01.jpg",
     )
