@@ -60,7 +60,11 @@ const TODO_HEADERS = [
   // 업무 중요도 평가 (2026-06-03 신설 · 2026-06-10 확정) — 하=1·중=5·상=10. 담당자 제안 → 부서장 결재단계 확정.
   // ※ 가중치 점수 계산은 프론트(업무 현황 SSOT.html DIFF_WEIGHT)에서 수행. GAS는 '난이도' 셀(하/중/상) 원본만 저장.
   // append-only: 기존 컬럼 인덱스 불변. initTodoSheet 자동 마이그레이션이 재배포 시 시트에 컬럼 추가.
-  '난이도'
+  '난이도',
+  // 완료일 (2026-06-10 시토) — 상태→'완료' 전환 시점의 날짜(yyyy-MM-dd, Asia/Seoul) 자동 스탬프.
+  // 결재완료시각과 별개: 결재 안 거친 업무도 완료일이 찍혀 G1 '오늘/지난 입항' 100% 정확.
+  // append-only 맨 끝 추가 → 기존 컬럼 인덱스 불변. initTodoSheet 자동 마이그레이션이 시트에 컬럼 추가.
+  '완료일'
 ];
 
 // 카테고리 목록 (2026-06-10 GM 확정 9분류 — 프론트(업무·결재·G1 SSOT)와 동일 라벨·띄어쓰기 통일)
@@ -1294,6 +1298,14 @@ function _processTodoAction(body) {
       });
       existing[TODO_HEADERS.indexOf('수정일')] = _now();
 
+      // 완료일 자동 스탬프 (2026-06-10 시토) — 상태가 '완료'이고 완료일이 비어있을 때만 오늘 날짜 기록.
+      //   이미 값 있으면 보존(덮어쓰기 X). 완료가 아니면 손대지 않음. G1 '오늘/지난 입항' 판정 정확도용.
+      var _doneIdx = TODO_HEADERS.indexOf('완료일');
+      if (_doneIdx >= 0 && String(existing[TODO_HEADERS.indexOf('상태')]) === '완료'
+          && !String(existing[_doneIdx] || '').trim()) {
+        existing[_doneIdx] = _today();
+      }
+
       // 결재요청 새로 추가/변경된 경우 + 결재상태가 미설정/대기인 경우 → 카드 발송
       const newApproval = existing[TODO_HEADERS.indexOf('결재요청')];
       const approvalStatusIdx = TODO_HEADERS.indexOf('결재상태');
@@ -1454,6 +1466,13 @@ function _processTodoAction(body) {
       sh.getRange(rowNum, statusCol).setValue('완료');
       sh.getRange(rowNum, modCol).setValue(_now());
       _applyStatusColor(sh, rowNum, '완료');
+
+      // 완료일 자동 스탬프 (2026-06-10 시토) — 비어있을 때만 오늘 날짜 기록(이미 있으면 보존).
+      const doneCol = TODO_HEADERS.indexOf('완료일') + 1;
+      if (doneCol >= 1) {
+        const prevDone = sh.getRange(rowNum, doneCol).getValue();
+        if (!String(prevDone || '').trim()) sh.getRange(rowNum, doneCol).setValue(_today());
+      }
 
       // TODO_완료 시트에 복사
       _copyToDoneSheet(sh, rowNum);
