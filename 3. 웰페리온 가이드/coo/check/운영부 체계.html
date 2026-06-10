@@ -440,10 +440,12 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   .dash-table{font-size:11px}
   .dash-table th,.dash-table td{padding:4px 6px}
 }
-/* 규정 탭 — 정기회의+근무휴게 같은 행: 좁은 화면에서 세로 전환 */
-@media(max-width:860px){
+/* 규정 탭 — 정기회의(보드)+근무휴게(680px) 같은 행.
+   보드는 410px 카드 최소폭 — 사이드 680px와 같은 행에 두려면 ≈410+14(gap)+680+40(padding)=1144px 필요.
+   그 미만에선 보드가 짓눌려 카드가 잘리고 근무·휴게 칸과 시각적으로 겹침 → 1160px 이하에서 세로 전환. */
+@media(max-width:1160px){
   #tab-policy .board-fullwidth{flex-direction:column!important;}
-  #tab-policy .board-fullwidth .manual-section{flex:none!important;width:100%!important;}
+  #tab-policy .board-fullwidth .manual-section{flex:none!important;width:100%!important;margin-top:14px!important;}
 }
 </style>
 </head>
