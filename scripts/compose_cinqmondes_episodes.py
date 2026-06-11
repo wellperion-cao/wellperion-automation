@@ -161,26 +161,23 @@ def compose_slide(photo_path: Path, title_kor: str, sub_text: str, output_path: 
     canvas = _paste_cinq_topright(canvas, logo_w=150, tint=CREAM)
     draw = ImageDraw.Draw(canvas)
 
-    # 정본 compose_story 3단 좌하단 블록(좌측정렬). 가독성 위해 외곽선 유지.
+    # 정본 compose_story 3단 좌하단 블록(좌측정렬). 외곽선 제거 — 하단 그라디언트만으로 가독성(GM: 윤곽 과함 2026-06-11).
     # 1) 메타라인 (작게·크림회색)
-    meta_font = _load_font("medium", 22)   # 소프트화: 26→22 (약 15% 축소)
-    draw.text((60, 808), meta_line, font=meta_font, fill=META_GRAY,
-              stroke_width=1, stroke_fill=STROKE)
+    meta_font = _load_font("medium", 22)
+    draw.text((60, 808), meta_line, font=meta_font, fill=META_GRAY)
 
     # 2) 한글 대제목 (크림 bold) — 2줄까지 래핑
-    title_font = _load_font("bold", 44)    # 소프트화: 52→44 (약 15% 축소)
-    title_line_h = 54                      # 소프트화: 64→54
+    title_font = _load_font("bold", 44)
+    title_line_h = 54
     title_lines = _wrap_text(draw, title_kor, title_font, max_w=W - 60 - 60)[:2]
     ty = 858
     for i, ln in enumerate(title_lines):
-        draw.text((60, ty + i * title_line_h), ln, font=title_font, fill=CREAM,
-                  stroke_width=2, stroke_fill=STROKE)
+        draw.text((60, ty + i * title_line_h), ln, font=title_font, fill=CREAM)
 
     # 3) 서브텍스트 (골드)
-    sub_font = _load_font("semibold", 26)  # 소프트화: 30→26 (약 13% 축소)
+    sub_font = _load_font("semibold", 26)
     sy = ty + len(title_lines) * title_line_h + 8
-    draw.text((60, sy), sub_text, font=sub_font, fill=GOLD,
-              stroke_width=1, stroke_fill=STROKE)
+    draw.text((60, sy), sub_text, font=sub_font, fill=GOLD)
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
     canvas.convert("RGB").save(output_path, "JPEG", quality=93, optimize=True)
