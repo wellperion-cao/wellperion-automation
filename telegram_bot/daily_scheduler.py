@@ -1051,10 +1051,12 @@ def _build_07_body() -> str:
     if n_commits > 8:
         commit_lines.append(f"  ... 외 {n_commits - 8}건")
 
-    # 업무 완료 목록
+    # 업무 완료 목록 (배 이모지 적용 — ship_classify 기준대로 분류)
     todo_lines = []
     for t in done_todos[:5]:
-        todo_lines.append(f"  ✅ {t}")
+        ship = classify_ship({"업무명": t})
+        line = render_ship_line(t, "", ship)
+        todo_lines.append(f"  ✅ {line}")
     if n_todos > 5:
         todo_lines.append(f"  ... 외 {n_todos - 5}건")
 

@@ -7,6 +7,11 @@ from __future__ import annotations
 import re
 from datetime import datetime
 
+# ── 배 이모지 분류 기준 (명시적 정의) ───────────────────────────────────────
+# 🛳️ 크루즈   — priority=HIGH  OR  북극성 키워드 + (마감≤3일 OR 구축·파이프라인 등 upgrade키워드)
+# ⛴️ 여객선   — priority=NORMAL (기본값), 명확한 up/downgrade 조건 없는 일반 업무
+# ⛵ 돛단배   — priority=LOW   OR  NORMAL이지만 수정·확인·정리 등 downgrade키워드 + 마감 없음 + 북극성 아님
+# 🚢 긴급/미분류 — fallback (ship_classify 임포트 실패 시 기본값, 정상 경로에서는 미사용)
 SHIP_BY_WEIGHT = {
     "HIGH":   {"icon": "🛳️", "tier": "크루즈"},
     "NORMAL": {"icon": "⛴️", "tier": "여객선"},
