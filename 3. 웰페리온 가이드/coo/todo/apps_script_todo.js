@@ -429,11 +429,213 @@ function _uploadFile(base64, fileName, mimeType) {
 
 
 // ═══════════════════════════════════════════
+//  gm_hangro — G1 '오늘의 항로' 서버 단일 머지 엔진 (2026-06-11 시토 · G1 신뢰성 고도화 ②a)
+//  ─────────────────────────────────────────────────────────────────────────────
+//  ⚠️ 추가만(미사용·비파괴). 기존 action·G1 JS·daily_scheduler·ceo_morning_pipeline 절대 미변경.
+//  현행 G1 머지 JS(wellperion_guide(main).html 7300~7460·7700~7745)를 GAS로 1:1 미러링.
+//  시트(todo_list) + _queue.json(raw GitHub, UrlFetchApp)을 서버에서 읽어 동일 결과 산출.
+//  ②c 라이브 검증 후 G1·텔레그램·08:00 파이프라인을 이 엔드포인트로 하나씩 전환.
+//  ※ 정본 = .deploy-todo/업무&결재 현황.js (이 작업본은 동기 미러). 매핑표는 정본 주석 참조.
+//  ※ _queue.json 은 GAS가 raw GitHub 로 직접 읽음(공개 URL · 인증 불필요). 실패 시 시트분만 폴백.
+// ═══════════════════════════════════════════
+var GM_HANGRO_QUEUE_URL = 'https://raw.githubusercontent.com/wellperion-cao/wellperion-automation/master/status/_queue.json';
+var GM_HANGRO_DEPT_HEADS = ['이경연 실장', '이정헌 소장', '나우열M'];
+var GM_HANGRO_CAT_DEPT_HEAD = { '[2] 인사': '나우열M', '[3] 파트너팀': '나우열M', '[4] 운영 정책': '이경연 실장', '[5] 시설 및 환경': '이정헌 소장' };
+
+function _gmHangroDateLocal(v) {
+  if (!v) return '';
+  if (v instanceof Date && !isNaN(v.getTime())) {
+    return Utilities.formatDate(v, 'Asia/Seoul', 'yyyy-MM-dd');
+  }
+  var s = String(v);
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+  var d = new Date(s);
+  if (isNaN(d.getTime())) return s.slice(0, 10);
+  return Utilities.formatDate(d, 'Asia/Seoul', 'yyyy-MM-dd');
+}
+
+function _gmHangroNextApprover(row) {
+  var approval = String(row['결재요청'] || '').split(',').map(function (s) { return s.trim(); }).filter(Boolean);
+  if (!approval.length) return null;
+  var owners = String(row['담당자'] || '').split(',').map(function (s) { return s.trim(); });
+  var ownerIsGM = owners.indexOf('김남욱GM') >= 0;
+  var midName = approval.filter(function (m) { return GM_HANGRO_DEPT_HEADS.indexOf(m) >= 0; })[0]
+    || owners.filter(function (o) { return GM_HANGRO_DEPT_HEADS.indexOf(o) >= 0; })[0]
+    || (GM_HANGRO_CAT_DEPT_HEAD[String(row['카테고리'] || '')] || '');
+  var midExplicit = midName && approval.indexOf(midName) >= 0;
+  var skipMid = midName && owners.indexOf(midName) >= 0 && !midExplicit;
+  var route = [];
+  if (midName && !ownerIsGM && !skipMid) route.push('부서장');
+  if (!ownerIsGM) route.push('GM');
+  route.push('대표님');
+  var map = { '부서장': row['부서장싸인'], 'GM': row['GM싸인'], '대표님': row['대표싸인'] };
+  for (var i = 0; i < route.length; i++) { if (!map[route[i]]) return route[i]; }
+  return null;
+}
+
+function _gmHangroIsG1Owner(owner) {
+  return owner.indexOf('김남욱GM') >= 0
+    || /AI (CEO|CMO|CTO|COO|CFO|CPO|CHRO)/.test(owner)
+    || /웰리|시모|시토|시우|시뽀|시포|시로/.test(owner);
+}
+
+function _gmHangroBuildItems(rows, queue) {
+  var items = [];
+
+  (rows || []).forEach(function (row) {
+    var owner = String(row['담당자'] || '');
+    var title = String(row['업무명'] || '').trim();
+    if (!title) return;
+    var apr = String(row['결재상태'] || '');
+    var sd = _gmHangroDateLocal(row['시작일']);
+    var ed = _gmHangroDateLocal(row['종료일']);
+    var reqStr = String(row['결재요청'] || '');
+    var _next = _gmHangroNextApprover(row);
+    var _aprPending = String(reqStr).trim() !== '' && apr !== '결재완료' && !/반려/.test(apr);
+    var needsGm = _aprPending && _next === 'GM';
+    var _aprInflightOther = _aprPending && _next !== null && _next !== 'GM';
+    var base = 'ssot-' + (row['id'] || title);
+    var _isG1Owner = _gmHangroIsG1Owner(owner);
+
+    if (needsGm) {
+      items.push({
+        id: base, title: (/\[결재\]/.test(title) ? title : '[결재] ' + title), status: '진행중',
+        category: '결재', _apprKind: 'gm',
+        isToday: true, startDate: sd, endDate: ed, ssotAuto: true, owner: owner,
+        _sheetsId: String(row['id'] || '')
+      });
+    } else if (_aprInflightOther && _isG1Owner) {
+      items.push({
+        id: base, title: (/\[결재\]/.test(title) ? title : '[결재] ' + title), status: '진행중',
+        category: '결재', _apprKind: 'inflight', _nextApprover: _next,
+        apprReq: reqStr, apprStatus: apr,
+        isToday: true, startDate: sd, endDate: ed, ssotAuto: true, owner: owner,
+        _sheetsId: String(row['id'] || '')
+      });
+    } else if (_isG1Owner) {
+      var st = String(row['상태'] || '');
+      var _doneRaw = String(row['완료일'] || '').trim() || row['결재완료시각'] || '';
+      if (_doneRaw instanceof Date && !isNaN(_doneRaw.getTime())) {
+        _doneRaw = Utilities.formatDate(_doneRaw, 'Asia/Seoul', 'yyyy-MM-dd');
+      }
+      var _doneLocal = _doneRaw ? String(_doneRaw).trim().slice(0, 10) : '';
+      var status = (st === '완료') ? '완료' : (st === '보류') ? '보류' : '진행중';
+      items.push({
+        id: base, title: title, status: status,
+        category: '업무',
+        apprReq: String(row['결재요청'] || ''), apprStatus: apr,
+        isToday: true, startDate: sd, endDate: ed, ssotAuto: true, owner: owner,
+        _doneDate: (st === '완료') ? _doneLocal : '',
+        _history: false,
+        _sheetsId: String(row['id'] || '')
+      });
+    }
+  });
+
+  var sheetIds = {};
+  items.forEach(function (it) { if (it._sheetsId) sheetIds[it._sheetsId] = true; });
+  var CLEVEL_LABEL = { ceo: 'AI CEO', cmo: 'AI CMO', cto: 'AI CTO', coo: 'AI COO', cfo: 'AI CFO', cpo: 'AI CPO', chro: 'AI CHRO' };
+  (queue || []).forEach(function (q) {
+    var _qActive = (q.status === 'PENDING' || q.status === 'IN_PROGRESS');
+    var _qHist = (q.status === 'DONE' || q.status === '완료' || q.status === '폐기');
+    if (!_qActive && !_qHist) return;
+    var tid = String(q.task_id || '');
+    if (!tid) return;
+    if (sheetIds[tid]) return;
+    var qid = 'queue-' + tid;
+    if (items.some(function (it) { return it.id === qid; })) return;
+    var clvLabel = CLEVEL_LABEL[String(q.clevel || '').toLowerCase()] || String(q.clevel || 'AI');
+    var statusMap = { PENDING: '대기', IN_PROGRESS: '진행중', DONE: '완료' };
+    var _qDone = (q.status === 'DONE' || q.status === '완료');
+    items.push({
+      id: qid,
+      title: String(q.title || tid),
+      status: (q.status === '폐기') ? '폐기' : (statusMap[q.status] || '진행중'),
+      category: '업무',
+      description: String(q.next || q.summary || ''),
+      isToday: true,
+      ssotAuto: true,
+      queueSource: true,
+      owner: clvLabel,
+      _doneDate: _qDone ? String(q.processed_at || '').slice(0, 10) : '',
+      _history: (q.status === '폐기'),
+      _sheetsId: ''
+    });
+  });
+
+  return items;
+}
+
+function _gmHangroClassify(items, todayStr) {
+  function _apprPending(t) {
+    var rq = String(t.apprReq || t.approval || '').trim(), a = String(t.apprStatus || '').trim();
+    return rq && a !== '결재완료' && !/반려/.test(a);
+  }
+  var apprWait = items.filter(function (t) { return t.status === '완료' && _apprPending(t); });
+  var active = items.filter(function (t) { return t.status === '진행중'; });
+  var doneAll = items.filter(function (t) { return t.status === '완료' && !_apprPending(t); });
+  var done = doneAll.filter(function (t) { return (t._doneDate || '') === todayStr; });
+  var donePast = doneAll.filter(function (t) { return (t._doneDate || '') !== todayStr; });
+  var hold = items.filter(function (t) { return t.status === '보류'; });
+  var disposed = items.filter(function (t) { return t.status === '폐기'; });
+  var apprActiveGm = active.filter(function (t) { return t.category === '결재' && t._apprKind !== 'inflight'; });
+  var apprInflight = active.filter(function (t) { return t.category === '결재' && t._apprKind === 'inflight'; });
+  active = active.filter(function (t) { return t.category !== '결재'; });
+  return {
+    active: active, done: done, donePast: donePast, hold: hold, disposed: disposed,
+    apprGm: apprActiveGm.concat(apprWait), apprInflight: apprInflight,
+    apprGmTotal: apprWait.length + apprActiveGm.length,
+    apprInflightTotal: apprInflight.length
+  };
+}
+
+function _gmHangro() {
+  try {
+    var sh = initTodoSheet();
+    var rows = _readAll(sh);
+    var queue = [];
+    var queueOk = false;
+    try {
+      var qr = UrlFetchApp.fetch(GM_HANGRO_QUEUE_URL + '?_=' + Date.now(), { muteHttpExceptions: true });
+      if (qr.getResponseCode() === 200) {
+        var parsed = JSON.parse(qr.getContentText());
+        if (Array.isArray(parsed)) { queue = parsed; queueOk = true; }
+      }
+    } catch (qe) { queue = []; queueOk = false; }
+
+    var items = _gmHangroBuildItems(rows, queue);
+    var td = _today();
+    var c = _gmHangroClassify(items, td);
+
+    return _json({
+      ok: true,
+      count: items.length,
+      data: items,
+      buckets: c,
+      meta: {
+        today: td,
+        queueOk: queueOk,
+        queueMerged: queueOk,
+        note: queueOk ? '시트+_queue 서버 머지 완료' : '_queue fetch 실패 — 시트분만(클라이언트 _queue 병합 잔류 필요)',
+        asOf: _now()
+      }
+    });
+  } catch (err) {
+    return _json({ ok: false, error: String(err) });
+  }
+}
+
+// ═══════════════════════════════════════════
 //  doGet — 조회
 // ═══════════════════════════════════════════
 function doGet(e) {
   try {
     const action = (e && e.parameter && e.parameter.action) || '';
+
+    // ─── G1 '오늘의 항로' 서버 단일 머지 (2026-06-11 시토 · ②a 미사용·비파괴) ───
+    if (action === 'gm_hangro') {
+      return _gmHangro();
+    }
 
     if (action === 'todo_list') {
       const sh = initTodoSheet();
