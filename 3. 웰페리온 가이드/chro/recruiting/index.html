@@ -52,7 +52,7 @@
 
   /* 섹션 공통 */
   .section{max-width:980px; margin:0 auto; padding:42px 32px 0}
-  .section.last{padding-bottom:70px}
+  .section.last{padding-bottom:14px}
   .section-head{display:flex; align-items:baseline; gap:12px; margin-bottom:22px}
   .section-head h2{font-size:22px; margin:0; font-weight:800; letter-spacing:-.4px}
   .section-head .sub{font-size:13px; color:var(--soft)}
@@ -75,6 +75,16 @@
   .stat .num{font-size:21px; font-weight:800; color:var(--gold-deep); letter-spacing:-.3px}
   .stat .lbl{font-size:12px; color:var(--soft); margin-top:5px; word-break:keep-all; line-height:1.5}
   @media (max-width:760px){ .about-stats{grid-template-columns:repeat(2,1fr)} }
+
+  /* 복지·성장 */
+  .perks2{display:grid; grid-template-columns:repeat(3,1fr); gap:16px}
+  .perkcard{background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:22px 20px;
+    transition:transform .15s, box-shadow .15s, border-color .15s}
+  .perkcard:hover{transform:translateY(-3px); box-shadow:0 10px 30px rgba(138,111,63,.1); border-color:var(--gold)}
+  .perkcard .ic{font-size:24px; margin-bottom:10px}
+  .perkcard h3{margin:0 0 6px; font-size:15px; font-weight:750}
+  .perkcard p{margin:0; font-size:12.5px; color:var(--muted); line-height:1.65; word-break:keep-all}
+  @media (max-width:760px){ .perks2{grid-template-columns:1fr} }
 
   /* 부서 채용 */
   .grid{display:grid; grid-template-columns:repeat(3,1fr); gap:18px}
@@ -99,6 +109,12 @@
   .dept.open .btn:hover{filter:brightness(1.06)}
   .dept.soon .btn{background:var(--cream); color:var(--soft); cursor:not-allowed; border:1px solid var(--line)}
   .dept.soon{opacity:.78}
+
+  /* 마무리 CTA */
+  .cta{max-width:980px; margin:46px auto 64px; padding:0 32px}
+  .cta-inner{background:linear-gradient(135deg,var(--gold-deep),#5c4a2e); color:#fff; border-radius:20px; padding:40px 36px; text-align:center}
+  .cta-inner h2{margin:0 0 10px; font-size:24px; font-weight:800; letter-spacing:-.5px}
+  .cta-inner p{margin:0; font-size:14.5px; color:#efe6d4; line-height:1.7; word-break:keep-all}
 
   footer{
     border-top:1px solid var(--line); padding:26px 32px; text-align:center;
@@ -156,6 +172,21 @@
     </div>
   </section>
 
+  <section class="section">
+    <div class="section-head">
+      <h2>웰페리온에서 일한다는 것</h2>
+      <span class="sub">이런 점이 좋아요</span>
+    </div>
+    <div class="perks2">
+      <div class="perkcard"><div class="ic">🚀</div><h3>성과로 크는 커리어</h3><p>연차가 아니라 성과로 평가합니다. 사원부터 부장까지, 노력한 만큼 공정하게 올라가는 6단계 진급 체계.</p></div>
+      <div class="perkcard"><div class="ic">🤖</div><h3>AI 업무 서포트</h3><p>반복 업무는 AI가 돕습니다. 전 직원에게 제공되어, 누구나 더 빠르고 똑똑하게 일할 수 있습니다.</p></div>
+      <div class="perkcard"><div class="ic">🍱</div><h3>일상의 혜택</h3><p>점심식사 50% 지원, 그리고 레슨·카페 직원 할인까지. 매일의 일상이 조금 더 가벼워집니다.</p></div>
+      <div class="perkcard"><div class="ic">🏆</div><h3>성과 포상</h3><p>센터의 성과를 함께 만든 만큼 나눕니다. 정직원 대상 연말 성과 포상을 운영합니다.</p></div>
+      <div class="perkcard"><div class="ic">🛡️</div><h3>안정적인 근무</h3><p>연·월차 제도와 퇴직금, 근무 유니폼 제공까지. 기본을 탄탄하게 받칩니다.</p></div>
+      <div class="perkcard"><div class="ic">✨</div><h3>프리미엄 환경</h3><p>한남동 3,000평, 리더들이 모이는 공간에서 일합니다. 머무는 환경이 곧 일의 품격이 됩니다.</p></div>
+    </div>
+  </section>
+
   <section class="section last">
     <div class="section-head">
       <h2>부서별 채용</h2>
@@ -167,4 +198,51 @@
         <div class="row"><h3>운영부</h3><span class="tag">● 채용중</span></div>
         <p class="desc">회원권 판매 및 회원 관리, 센터 운영 전반 업무를 담당하는 조직입니다.</p>
         <a class="btn" href="operations.html" target="_blank" rel="noopener">채용 공고 보기 ↗</a>
-      
+      </div>
+
+      <div class="dept soon">
+        <div class="row"><h3>경영지원부</h3><span class="tag">준비중</span></div>
+        <p class="desc">회사의 전략 기획과 인사 업무를 담당하는 조직입니다.</p>
+        <button class="btn" disabled>준비중</button>
+      </div>
+
+      <div class="dept soon">
+        <div class="row"><h3>지원부</h3><span class="tag">준비중</span></div>
+        <p class="desc">현장과 고객을 가장 가까이에서 돕고 응대하는 지원 업무를 담당합니다.</p>
+        <button class="btn" disabled>준비중</button>
+      </div>
+
+      <div class="dept soon">
+        <div class="row"><h3>관리부</h3><span class="tag">준비중</span></div>
+        <p class="desc">회계·예산·총무·감사 업무를 담당하는 조직입니다.</p>
+        <button class="btn" disabled>준비중</button>
+      </div>
+
+      <div class="dept soon">
+        <div class="row"><h3>강습부</h3><span class="tag">준비중</span></div>
+        <p class="desc">회원과 직접 만나 프로그램을 가르치고 이끄는 현장 중심 조직입니다.</p>
+        <button class="btn" disabled>준비중</button>
+      </div>
+
+      <div class="dept soon">
+        <div class="row"><h3>시설부</h3><span class="tag">준비중</span></div>
+        <p class="desc">안전하고 쾌적한 시설 환경을 유지·관리하여 모두의 일상을 받칩니다.</p>
+        <button class="btn" disabled>준비중</button>
+      </div>
+
+    </div>
+  </section>
+
+  <div class="cta">
+    <div class="cta-inner">
+      <h2>당신의 다음 이야기, 웰페리온에서</h2>
+      <p>건강의 기준을 만드는 사람들과 함께, 하루의 완성도를 설계하는 일.<br>지금 관심 있는 부서의 채용 공고를 확인해보세요.</p>
+    </div>
+  </div>
+
+  <footer>
+    웰페리온 (Welperion)<span class="sep">|</span>인재 채용<span class="sep">|</span>본 페이지는 웰페리온 ERP · AI CHRO 인사 챕터에서 운영됩니다
+  </footer>
+
+</body>
+</html>
