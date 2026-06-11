@@ -376,7 +376,13 @@ function _sendApprovalCard(record, route, currentRole) {
 }
 
 // ─── 결재 라인 다음 단계 산출 ───
-function _nextApprover(record, route) {
+// role(현재 서명자) 전달 시: 서명자가 결재선 마지막 단계(=종착, 보통 대표님)면
+// 앞선 단계에 미서명(phantom: 결재선엔 있으나 실제로 건너뛴 부서장 등)이 있어도
+// 최종 완료(null)로 확정한다. → 대표 사인 후 '대표님 완료'에 멈추던 버그 수정(2026-06-11 시우).
+function _nextApprover(record, route, role) {
+  if (!route || !route.length) return null;
+  // 현재 서명자가 결재선 마지막이면 최종 — phantom 미서명에 막히지 않음.
+  if (role && route[route.length - 1] === role) return null;
   // 싸인 컬럼 확인 → 미서명 첫 사람
   const map = { '부서장': '부서장싸인', 'GM': 'GM싸인', '대표님': '대표싸인' };
   for (let i = 0; i < route.length; i++) {
@@ -836,30 +842,36 @@ function _processTodoAction(body) {
 
       const now = _now();
       if (decision === 'reject') {
-        // 반려 = 완전 리셋: 모든 싸인 초기화 → 담당자 반송. 수정·저장 시 대기로 재상신되어 부서장부터 재승인 (2026-06-05 GM)
+        // 반려 = 싸인 초기화 + 결재요청 비움 → 업무현황 복귀(담당자가 수정·재상신 가능). '반려' 맥락은 결재상태에 남김.
+        // 결재완료시각도 비움. 업무 '상태'는 진행중 유지(완료 아님). (2026-06-11 시우 — 반려건이 업무현황에서 사라지던 문제 수정)
         existing[TODO_HEADERS.indexOf('부서장싸인')] = '';
         existing[TODO_HEADERS.indexOf('GM싸인')] = '';
         existing[TODO_HEADERS.indexOf('대표싸인')] = '';
         existing[TODO_HEADERS.indexOf('결재완료시각')] = '';
-        existing[TODO_HEADERS.indexOf('결재상태')] = role + ' 반려';
+        existing[TODO_HEADERS.indexOf('결재요청')] = '';        // 결재선 잠금해제 → 업무현황 복귀
+        existing[TODO_HEADERS.indexOf('결재상태')] = role + ' 반려';  // 반려 사실/주체 보존(재상신·수정 시 초기화됨)
         existing[TODO_HEADERS.indexOf('수정일')] = now;
         sh.getRange(rowNum, 1, 1, TODO_HEADERS.length).setValues([existing]);
-        _notifyTelegram('❌ <b>[결재 반려·리셋]</b> ' + role + ' → 담당자 반송(싸인 초기화)\n📌 ' + (record['업무명']||'-') + '\n🆔 ' + id);
-        return _json({ ok: true, id: id, message: role + ' 반려·리셋 처리됨', decision: 'reject' });
+        _notifyTelegram('❌ <b>[결재 반려]</b> ' + role + ' → 업무현황 복귀(수정·재상신 가능)\n📌 ' + (record['업무명']||'-') + '\n🆔 ' + id);
+        return _json({ ok: true, id: id, message: role + ' 반려 처리됨 — 업무현황 복귀', decision: 'reject' });
       }
 
       // approve
       existing[TODO_HEADERS.indexOf(signCol)] = now + (signer && signer !== role ? ' (' + signer + ')' : '');
       record[signCol] = existing[TODO_HEADERS.indexOf(signCol)];
-      const next = _nextApprover(record, route);
+      const next = _nextApprover(record, route, role);
       if (next) {
         existing[TODO_HEADERS.indexOf('결재상태')] = role + ' 완료';
       } else {
+        // 최종 승인 — 결재완료 + 업무 자동 완료 이관(상태=완료·완료일 오늘) → 업무현황 완료 라인·G1 '오늘 입항' 정확 (2026-06-11 시우)
         existing[TODO_HEADERS.indexOf('결재상태')] = '결재완료';
         existing[TODO_HEADERS.indexOf('결재완료시각')] = now;
+        existing[TODO_HEADERS.indexOf('상태')] = '완료';
+        existing[TODO_HEADERS.indexOf('완료일')] = _today();
       }
       existing[TODO_HEADERS.indexOf('수정일')] = now;
       sh.getRange(rowNum, 1, 1, TODO_HEADERS.length).setValues([existing]);
+      if (!next) _applyStatusColor(sh, rowNum, '완료');
 
       // 결과보고서는 자동 생성하지 않음 — 페이지 "인쇄/PDF 저장" 버튼으로 수동 (2026-05-29 GM 결재)
       // 텔레그램 결재 카드 폐기 (2026-05-28). 단순 진행 알림만 유지.
