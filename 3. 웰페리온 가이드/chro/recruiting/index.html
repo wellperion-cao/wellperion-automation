@@ -67,6 +67,15 @@
   .value h3{margin:0 0 7px; font-size:15.5px; font-weight:750; color:var(--gold-deep); word-break:keep-all}
   .value p{margin:0; font-size:12.5px; color:var(--muted); line-height:1.55; word-break:keep-all}
 
+  /* 회사 소개 */
+  .about-lead{font-size:15px; color:var(--muted); line-height:1.85; max-width:780px; word-break:keep-all; margin:0 0 22px}
+  .about-lead b{color:var(--gold-deep); font-weight:700}
+  .about-stats{display:grid; grid-template-columns:repeat(4,1fr); gap:14px}
+  .stat{background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:20px 16px; text-align:center}
+  .stat .num{font-size:21px; font-weight:800; color:var(--gold-deep); letter-spacing:-.3px}
+  .stat .lbl{font-size:12px; color:var(--soft); margin-top:5px; word-break:keep-all; line-height:1.5}
+  @media (max-width:760px){ .about-stats{grid-template-columns:repeat(2,1fr)} }
+
   /* 부서 채용 */
   .grid{display:grid; grid-template-columns:repeat(3,1fr); gap:18px}
   .dept{
@@ -122,6 +131,20 @@
 
   <section class="section">
     <div class="section-head">
+      <h2>웰페리온은 어떤 곳인가요</h2>
+      <span class="sub">하루의 완성, 웰페리온</span>
+    </div>
+    <p class="about-lead">웰페리온은 단순한 운동 시설이 아닙니다. 서울 <b>한남동</b>에 자리한, 하루 루틴에 자연스럽게 녹아들어 건강의 기준을 세우고 그날의 완성도를 채워주는 <b>프리미엄 건강 힐링 커뮤니티</b>입니다. 스포츠 · 스파 · 커뮤니티 · 공간이 하나로 통합된 라이프스타일 인프라를 9년간 가꿔왔습니다.</p>
+    <div class="about-stats">
+      <div class="stat"><div class="num">한남동</div><div class="lbl">Seoul · 프리미엄 입지</div></div>
+      <div class="stat"><div class="num">9년+</div><div class="lbl">검증된 운영</div></div>
+      <div class="stat"><div class="num">3,000평</div><div class="lbl">통합 라이프스타일 공간</div></div>
+      <div class="stat"><div class="num">4 in 1</div><div class="lbl">스포츠 · 스파 · 커뮤니티 · 카페</div></div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-head">
       <h2>웰페리온 인재상</h2>
       <span class="sub">이런 분과 함께하고 싶습니다</span>
     </div>
@@ -144,45 +167,4 @@
         <div class="row"><h3>운영부</h3><span class="tag">● 채용중</span></div>
         <p class="desc">회원권 판매 및 회원 관리, 센터 운영 전반 업무를 담당하는 조직입니다.</p>
         <a class="btn" href="operations.html" target="_blank" rel="noopener">채용 공고 보기 ↗</a>
-      </div>
-
-      <div class="dept soon">
-        <div class="row"><h3>경영지원부</h3><span class="tag">준비중</span></div>
-        <p class="desc">회사의 전략 기획과 인사 업무를 담당하는 조직입니다.</p>
-        <button class="btn" disabled>준비중</button>
-      </div>
-
-      <div class="dept soon">
-        <div class="row"><h3>지원부</h3><span class="tag">준비중</span></div>
-        <p class="desc">현장과 고객을 가장 가까이에서 돕고 응대하는 지원 업무를 담당합니다.</p>
-        <button class="btn" disabled>준비중</button>
-      </div>
-
-      <div class="dept soon">
-        <div class="row"><h3>관리부</h3><span class="tag">준비중</span></div>
-        <p class="desc">회계·예산·총무·감사 업무를 담당하는 조직입니다.</p>
-        <button class="btn" disabled>준비중</button>
-      </div>
-
-      <div class="dept soon">
-        <div class="row"><h3>강습부</h3><span class="tag">준비중</span></div>
-        <p class="desc">회원과 직접 만나 프로그램을 가르치고 이끄는 현장 중심 조직입니다.</p>
-        <button class="btn" disabled>준비중</button>
-      </div>
-
-      <div class="dept soon">
-        <div class="row"><h3>시설부</h3><span class="tag">준비중</span></div>
-        <p class="desc">안전하고 쾌적한 시설 환경을 유지·관리하여 모두의 일상을 받칩니다.</p>
-        <button class="btn" disabled>준비중</button>
-      </div>
-
-    </div>
-  </section>
-
-  <footer>
-    웰페리온 (Welperion)<span class="sep">|</span>인재 채용<span class="sep">|</span>본 페이지는 웰페리온 ERP · AI CHRO 인사 챕터에서 운영됩니다
-  </footer>
-
-</body>
-</html>
-                                                
+      
