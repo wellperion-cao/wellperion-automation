@@ -34,12 +34,14 @@ W, H = 1080, 1080
 
 SPA = BRAND_PRESETS["spa"]
 BG_IVORY = SPA["background"]
-BURGUNDY = SPA["accent"]
-GOLD = SPA["primary"]
 TEXT_DARK = SPA["text"]
 WHITE = (255, 255, 255)
 
 CINQ_LOGO = PROJECT_ROOT / "_assets" / "logo" / "cinq_mondes_logo_a.png"
+
+# 2026-06-11 GM 피드백: 색 소프트화 — 버건디를 뮤트/라이트 톤으로 오버라이드
+BURGUNDY = (162, 58, 76)          # 원본 #8B1A2F → 소프트 #A23A4C (명도↑·채도↓)
+GOLD = SPA["primary"]             # #C9A96E 유지
 
 
 def _load_font(weight: str, size: int) -> ImageFont.FreeTypeFont:
@@ -66,7 +68,7 @@ def _spa_duotone(img: Image.Image) -> Image.Image:
     autocontrast로 톤 정규화(밝은 표지도 로고·텍스트 대비 확보, 편별 표지 일관)."""
     from PIL import ImageOps
     gray = ImageOps.autocontrast(img.convert("L"), cutoff=1)
-    dr, dg, db = (74, 14, 25)        # 딥 버건디(버건디 #8B1A2F 보다 어둡게 — 그림자)
+    dr, dg, db = (90, 28, 42)        # 소프트화: 원본 (74,14,25) → 약간 밝게
     lr, lg, lb = BG_IVORY            # 크림 #FAF7F2
     r_lut = [int(dr + (lr - dr) * (i / 255)) for i in range(256)]
     g_lut = [int(dg + (lg - dg) * (i / 255)) for i in range(256)]
@@ -109,14 +111,14 @@ def _apply_gradient(img: Image.Image, start_y: int = 540) -> Image.Image:
     """하단 그라디언트 — 투명→버건디 초다크 오버레이(텍스트 가독성)."""
     overlay = Image.new("RGBA", (W, H), (0, 0, 0, 0))
     draw = ImageDraw.Draw(overlay)
-    dark = (24, 0, 11)
+    dark = (35, 8, 20)              # 소프트화: 원본 (24,0,11) → 약간 밝게
     full_y = 770  # 카피·풋터 밴드는 이 지점부터 최대 농도 유지(밝은 사진서도 흰 카피 가독 보장)
     for y in range(H):
         if y <= start_y:
             alpha = 0
         else:
             t = min(1.0, (y - start_y) / (full_y - start_y))
-            alpha = int(244 * (t ** 0.9))
+            alpha = int(210 * (t ** 0.9))  # 소프트화: 원본 244 → 210 (불투명도 약 14% 축소)
         draw.line([(0, y), (W, y)], fill=(*dark, alpha))
     return Image.alpha_composite(img.convert("RGBA"), overlay).convert("RGB")
 
@@ -161,21 +163,21 @@ def compose_slide(photo_path: Path, title_kor: str, sub_text: str, output_path: 
 
     # 정본 compose_story 3단 좌하단 블록(좌측정렬). 가독성 위해 외곽선 유지.
     # 1) 메타라인 (작게·크림회색)
-    meta_font = _load_font("medium", 26)
-    draw.text((60, 800), meta_line, font=meta_font, fill=META_GRAY,
+    meta_font = _load_font("medium", 22)   # 소프트화: 26→22 (약 15% 축소)
+    draw.text((60, 808), meta_line, font=meta_font, fill=META_GRAY,
               stroke_width=1, stroke_fill=STROKE)
 
     # 2) 한글 대제목 (크림 bold) — 2줄까지 래핑
-    title_font = _load_font("bold", 52)
-    title_line_h = 64
+    title_font = _load_font("bold", 44)    # 소프트화: 52→44 (약 15% 축소)
+    title_line_h = 54                      # 소프트화: 64→54
     title_lines = _wrap_text(draw, title_kor, title_font, max_w=W - 60 - 60)[:2]
-    ty = 856
+    ty = 858
     for i, ln in enumerate(title_lines):
         draw.text((60, ty + i * title_line_h), ln, font=title_font, fill=CREAM,
                   stroke_width=2, stroke_fill=STROKE)
 
     # 3) 서브텍스트 (골드)
-    sub_font = _load_font("semibold", 30)
+    sub_font = _load_font("semibold", 26)  # 소프트화: 30→26 (약 13% 축소)
     sy = ty + len(title_lines) * title_line_h + 8
     draw.text((60, sy), sub_text, font=sub_font, fill=GOLD,
               stroke_width=1, stroke_fill=STROKE)
@@ -215,16 +217,16 @@ def compose_cover(photo_path: Path, title_eng: str, title_kor: str,
 
     # 5) 버건디 제목밴드 텍스트 (버건디 배경 위 — 크림/골드, 브랜드색 확실 노출)
     # 한글 부제목 (크림, 중앙)
-    kor_font = _load_font("semibold", 38)
+    kor_font = _load_font("semibold", 32)   # 소프트화: 38→32 (약 16% 축소)
     draw.text((W // 2, 789), title_kor, font=kor_font, fill=CREAM, anchor="mm")
     # 영문 대제목 (크림 bold, 중앙)
-    eng_font = _load_font("bold", 76)
-    draw.text((W // 2, 859), title_eng, font=eng_font, fill=CREAM, anchor="mm")
+    eng_font = _load_font("bold", 64)       # 소프트화: 76→64 (약 16% 축소)
+    draw.text((W // 2, 853), title_eng, font=eng_font, fill=CREAM, anchor="mm")
     # 골드 짧은 분리선 (중앙)
-    draw.rectangle([(W // 2 - 30, 920), (W // 2 + 30, 922)], fill=GOLD)
+    draw.rectangle([(W // 2 - 30, 906), (W // 2 + 30, 908)], fill=GOLD)
     # 날짜·장소 (골드, 중앙)
-    date_font = _load_font("medium", 26)
-    draw.text((W // 2, 962), date_location, font=date_font, fill=GOLD, anchor="mm")
+    date_font = _load_font("medium", 22)    # 소프트화: 26→22 (약 15% 축소)
+    draw.text((W // 2, 948), date_location, font=date_font, fill=GOLD, anchor="mm")
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
     canvas.convert("RGB").save(output_path, "JPEG", quality=93, optimize=True)
@@ -249,8 +251,8 @@ def compose_closing(headline: list[str], coda: str, output_path: Path) -> None:
     draw.rectangle([(W // 2 - 40, 372), (W // 2 + 40, 376)], fill=GOLD)
 
     # 4) 헤드라인 — 강한 타이포(크림, bold, 중앙). 줄별 리스트로 정확 제어.
-    head_font = _load_font("bold", 62)
-    line_h = 86
+    head_font = _load_font("bold", 52)     # 소프트화: 62→52 (약 16% 축소)
+    line_h = 74                            # 소프트화: 86→74
     total_h = len(headline) * line_h
     y0 = H // 2 - total_h // 2 - 30
     for i, ln in enumerate(headline):
@@ -262,7 +264,7 @@ def compose_closing(headline: list[str], coda: str, output_path: Path) -> None:
     draw.rectangle([(W // 2 - 40, coda_line_y), (W // 2 + 40, coda_line_y + 4)], fill=GOLD)
 
     # 6) 우아한 여운 한 줄 (골드, medium, 중앙) — 문의 CTA 없음(세일즈 No, 감성만)
-    coda_font = _load_font("medium", 30)
+    coda_font = _load_font("medium", 26)   # 소프트화: 30→26 (약 13% 축소)
     draw.text((W // 2, coda_line_y + 56), coda, font=coda_font, fill=GOLD, anchor="mm")
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
