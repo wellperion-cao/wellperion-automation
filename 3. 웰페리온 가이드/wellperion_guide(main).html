@@ -858,29 +858,24 @@
           return cat !== '[7]AI배(C레벨)' && !_aiOwnerRe.test(owner);
         });
         var today = todayStr();
-        var yStart = yearStart();
+        var yStart = yearStart(); // 결재 카드(아래)에서 사용 — 업무 카드는 SSOT 정합으로 연도필터 미사용
 
-        // 실무진 기준 업무 행
-        var work = rows.filter(function(r){ return isStaff(r.owner||r['담당자']||''); });
+        // 실무진 기준 업무 행 — 업무현황 SSOT 대시보드(renderDashboard)와 동일 정의(정본):
+        // 실무진 토큰이 owner에 하나라도 있으면 포함(excludeNonStaff). 연도·AI정규식·[7]AI배 추가필터 없음.
+        // (rows는 위에서 [7]AI배·_aiOwnerRe 제거됨 → 동일 결과를 위해 원본 데이터에서 STAFF 토큰만으로 재선별)
+        var work = (res.data||res.todos).filter(function(r){ return isStaff(r.owner||r['담당자']||''); });
 
-        // 총 진행업무: 올해 생성 + 완료 아닌 것(결재미완 포함)
-        var totalActive = work.filter(function(r){
-          var c = getCreated(r); var s = getStatus(r);
-          return c >= yStart && ((s!=='완료'&&s!=='보류') || (s==='완료'&&apprPending(r)));
-        }).length;
-        // 총 완료업무: 올해 생성 + 완료
-        var totalDone = work.filter(function(r){
-          var c = getCreated(r);
-          return c >= yStart && getStatus(r)==='완료' && !apprPending(r);
-        }).length;
-        // 일일 진행업무: 오늘 생성 + 진행중
+        // 핵심 현황 정합(2026-06-11): home 큰숫자 = SSOT 대시보드 핵심값과 동일 로직·동일 결과.
+        // 진행 = 완료·보류 아닌 것 / 완료 = 상태 완료 (연도·결재미완 재분류 없음 — SSOT 정본 그대로).
+        var totalActive = work.filter(function(r){ var s=getStatus(r); return s!=='완료' && s!=='보류'; }).length;
+        var totalDone   = work.filter(function(r){ return getStatus(r)==='완료'; }).length;
+        // 오늘 보조값: SSOT 대시보드엔 일일분이 없어 home 고유 — 진행/완료 정의는 위 큰숫자와 일치(오늘 생성/완료 기준).
         var dayActive = work.filter(function(r){
-          return getCreated(r)===today && ((getStatus(r)!=='완료'&&getStatus(r)!=='보류')||apprPending(r));
+          var s=getStatus(r); return getCreated(r)===today && s!=='완료' && s!=='보류';
         }).length;
-        // 일일 완료업무: 오늘 완료(완료일 기준, 없으면 생성일)
         var dayDone = work.filter(function(r){
           var dd = getDoneDate(r)||getCreated(r);
-          return dd===today && getStatus(r)==='완료' && !apprPending(r);
+          return dd===today && getStatus(r)==='완료';
         }).length;
 
         set('kpiWorkTotalActive', totalActive);
