@@ -2343,6 +2343,15 @@
           <tr><td><strong>Sonnet 4.6</strong></td><td>자동화 가동 · 집계 · patch · git · 콘텐츠 가공 · 일일 보고 빌드 · 로그 정리</td></tr>
           <tr><td><strong>Opus 4.7</strong></td><td>판단 · 결정 · 진행 · 검토 · 결재 · 정책 정립 · 이슈 진단 · R&amp;D 방향 · Peer Cross-Check</td></tr>
         </table>
+
+        <h4 style="margin-top:24px;"><span class="ico">📌</span>⑩ 지적·교훈 박제 원리 (행동은 코드, 지식만 메모리)</h4>
+        <div class="callout" style="margin:8px 0 12px;"><strong>핵심 명제 — 같은 지적이 반복되면 메모리가 부족해서가 아니라 '행동을 코드로 강제하지 않아서'다.</strong> 박제 전에 먼저 가른다: 지식이냐 행동이냐.</div>
+        <table>
+          <tr><th style="width:200px">구분</th><th>박제 방식</th></tr>
+          <tr><td><strong>행동 (when X → do Y)</strong></td><td>특정 사건에 발화해야 하는 규칙은 코드·파이프라인·훅으로 <strong>자동 강제</strong>한다(예: '발행 후 검수 도장'은 봇 pub 콜백 코드가 자동 수행). 메모리·문서에 글로 적지 마라 — 그 순간 발화하지 못하고, 매 턴 로드되어 토큰만 늘린다.</td></tr>
+          <tr><td><strong>지식 (값·취향·일회성 판단)</strong></td><td>SSOT/메모리에 적되, <strong>기존 항목에 병합</strong>한다(새 줄 추가 금지 = net-zero).</td></tr>
+        </table>
+        <p style="margin-top:8px;"><strong>박제 층위 우선순위:</strong> ① 코드·파이프라인(항상 자동·매턴토큰 0·강제력 최강) → ② 훅(사건 시 발화) → ③ S2·CLAUDE.md(원칙 SSOT) → ④ 메모리(매 턴 통째 로드 = 가장 비싸고 가장 약함 → 최소·프루닝).</p>
         </div></details>
         <!-- ══ /전 C-Level 통합 원칙 (메모리 단일화) ══ -->
 
