@@ -90,7 +90,14 @@ def _paste_cinq_topright(canvas: Image.Image, logo_w: int = 150,
         logo = _tint_logo(logo, tint)
     base = canvas.convert("RGBA")
     x = W - 40 - logo_w
-    base.paste(logo, (x, 40), mask=logo.split()[3])
+    # 웰페리온 로고(좌상단 w=132·top=40)와 수직 '중앙' 정렬 (GM 2026-06-11)
+    _w = Image.open(LOGO_WHITE_ALPHA).convert("RGBA")
+    _wb = _w.split()[3].getbbox()
+    if _wb:
+        _w = _w.crop(_wb)
+    _wlh = int(_w.size[1] * 132 / _w.size[0])
+    y = 40 + (_wlh - lh) // 2
+    base.paste(logo, (x, y), mask=logo.split()[3])
     return base.convert("RGB")
 
 
