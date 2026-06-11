@@ -7398,8 +7398,9 @@ function crTab(btn, panelId) {
               // '오늘 입항' 판정은 신뢰 가능한 완료시각만 사용 — 수정일은 일괄편집(카테고리·중요도 마이그레이션 등)으로 갱신돼 옛 완료건이 '오늘'로 둔갑하던 버그(2026-06-10 웰리 수정).
               //   우선순위: '완료일'(2026-06-10 GAS가 상태→완료 시 yyyy-MM-dd 스탬프 — 결재 안 거친 건도 포함) → 없으면 '결재완료시각'(레거시·완료일 비어있는 구건) → 둘 다 없으면 ''→지난 입항으로 안전 분류(거짓 오늘 방지).
               var _doneRaw = String(row['완료일'] || '').trim() || row['결재완료시각'] || '';
-              var _dc = _doneRaw ? new Date(_doneRaw) : null;
-              var _doneLocal = (_dc && !isNaN(_dc.getTime())) ? (_dc.getFullYear() + '-' + ('0'+(_dc.getMonth()+1)).slice(-2) + '-' + ('0'+_dc.getDate()).slice(-2)) : '';
+              // slice(0,10) 우선: "YYYY-MM-DD" 순수날짜·"YYYY-MM-DDT..." ISO 모두 앞 10자=날짜부분.
+              // new Date() 로컬변환 금지 — UTC ISO(시트 자동파싱)를 KST로 변환하면 하루가 밀림(2026-06-11 시토).
+              var _doneLocal = _doneRaw ? _doneRaw.trim().slice(0, 10) : '';
               // 완료·보류는 항상 합류(숨기지 않음). 완료는 _doneDate로 '오늘 입항' vs '지난 입항' 분리.
               //   검색=전체라 _history 숨김은 안 씀(폐기만 검색전용 — 시트엔 폐기 없음). (GM 2026-06-07)
               var status = (st === '완료') ? '완료' : (st === '보류') ? '보류' : '진행중';
