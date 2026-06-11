@@ -111,7 +111,7 @@ def _apply_gradient(img: Image.Image, start_y: int = 540) -> Image.Image:
     """하단 그라디언트 — 투명→버건디 초다크 오버레이(텍스트 가독성)."""
     overlay = Image.new("RGBA", (W, H), (0, 0, 0, 0))
     draw = ImageDraw.Draw(overlay)
-    dark = (35, 8, 20)              # 소프트화: 원본 (24,0,11) → 약간 밝게
+    dark = (20, 18, 20)             # 중립 다크(GM 2026-06-11: 사진에 색상 X) — 가독성 스크림만, 버건디 X
     full_y = 770  # 카피·풋터 밴드는 이 지점부터 최대 농도 유지(밝은 사진서도 흰 카피 가독 보장)
     for y in range(H):
         if y <= start_y:
@@ -198,9 +198,8 @@ def compose_cover(photo_path: Path, title_eng: str, title_kor: str,
     # 1) 캔버스 — 하단 35% 정보영역에 생크몽드 브랜드색(버건디) 밴드를 입힘
     canvas = Image.new("RGB", (W, H), BURGUNDY)
 
-    # 2) 사진 영역(상단 65%) — 버건디×크림 듀오톤(SPA 톤, 표지 일관)
+    # 2) 사진 영역(상단 65%) — 자연색(GM 2026-06-11: 사진에 색상 넣지 말 것). 생크몽드색은 하단 버건디 밴드로만 노출.
     photo = center_crop_fill(photo_path, W, PHOTO_H)
-    photo = _spa_duotone(photo)
     canvas.paste(photo, (0, 0))
 
     # 3) 골드 분리선 (사진/버건디 제목밴드 경계)
