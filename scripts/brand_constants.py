@@ -119,4 +119,14 @@ BRAND_PRESETS = {
         "text_secondary": (220, 215, 230),
         "wordmark": "W  GYMNASTIC",
     },
+    "spa": {
+        # 생크몽드 스파 전용 톤 (2026-06-11 GM 결재)
+        # 배경 크림 아이보리 #FAF7F2 / 포인트 와인 버건디 #8B1A2F / 보조 브러시드 골드 #C9A96E
+        "primary": (201, 169, 110),       # #C9A96E 브러시드 골드
+        "background": (250, 247, 242),    # #FAF7F2 크림 아이보리
+        "accent": (139, 26, 47),          # #8B1A2F 와인 버건디
+        "text": (34, 31, 32),             # #221F20 다크 (밝은 배경 위)
+        "text_secondary": (139, 26, 47),  # 버건디 서브텍스트
+        "wordmark": "WELLPERION × Cinq Mondes",
+    },
 }
