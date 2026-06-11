@@ -735,12 +735,11 @@ def _load_queue_open() -> list[dict]:
         return []
 
 
-def fetch_current_progress() -> str:
+def _fetch_current_progress_local() -> str:
     """
-    status/_queue.json (대기 큐) + 각 C-Level status JSON의 active_tasks 중
-    미완료 항목을 C-Level별로 집계. SSOT = GitHub status/*.json.
+    [폴백 전용] status/_queue.json + 각 C-Level status JSON의 active_tasks 중
+    미완료 항목을 C-Level별로 집계. gm_hangro 실패 시 사용.
     """
-    # C-Level별 미완료 카운트 + 제목 수집
     per_clevel: dict[str, list[str]] = {}
 
     # 1) 대기 큐 (status != DONE)
@@ -784,6 +783,117 @@ def fetch_current_progress() -> str:
         if len(items) > 5:
             lines.append(f"  ... 외 {len(items) - 5}건")
     return "\n".join(lines)
+
+
+# gm_hangro owner → C-Level 레이블 매핑
+_GM_HANGRO_OWNER_TO_CLEVEL: dict[str, str] = {
+    "AI CEO": "CEO", "웰리": "CEO",
+    "AI CMO": "CMO", "시모": "CMO",
+    "AI CTO": "CTO", "시토": "CTO",
+    "AI COO": "COO", "시우": "COO",
+    "AI CFO": "CFO", "시뽀": "CFO",
+    "AI CPO": "CPO", "시포": "CPO",
+    "AI CHRO": "CHRO", "시로": "CHRO",
+}
+
+# GM 소유자 패턴 (C-Level 집계에서 제외)
+_GM_OWNER_KEYWORDS = ("김남욱", "GM")
+
+
+def _owner_to_clevel(owner: str) -> str | None:
+    """owner 문자열 → C-Level 레이블. GM이거나 매핑 없으면 None."""
+    # GM 제외
+    for kw in _GM_OWNER_KEYWORDS:
+        if kw in owner:
+            return None
+    # 정확 매핑 우선
+    for key, label in _GM_HANGRO_OWNER_TO_CLEVEL.items():
+        if key in owner:
+            return label
+    # 'AI XXX' 패턴 범용 추출
+    import re
+    m = re.search(r"AI\s+(CEO|CMO|CTO|COO|CFO|CPO|CHRO)", owner)
+    if m:
+        return m.group(1)
+    return None
+
+
+def _fetch_current_progress_hangro() -> str | None:
+    """
+    gm_hangro API에서 C-Level 활성 항목을 집계.
+    성공 시 포맷된 문자열 반환, 실패/빈응답/타임아웃 시 None 반환.
+    """
+    try:
+        resp = requests.get(
+            SSOT_API_URL,
+            params={"action": "gm_hangro"},
+            timeout=15,
+        )
+        if resp.status_code != 200:
+            logger.warning(f"gm_hangro HTTP {resp.status_code}")
+            return None
+        data = resp.json()
+        if not data.get("ok"):
+            logger.warning(f"gm_hangro ok=False: {str(data)[:200]}")
+            return None
+
+        items = data.get("data", [])
+        if not items:
+            return "• 현재 진행중·대기 항목 없음"
+
+        # C-Level 소유 + 활성(진행중·대기) + 업무 or 결재 inflight 필터
+        per_clevel: dict[str, list[str]] = {}
+        for item in items:
+            owner = str(item.get("owner", ""))
+            status = str(item.get("status", ""))
+            category = str(item.get("category", ""))
+            appr_kind = str(item.get("_apprKind", ""))
+            title = str(item.get("title", "(제목없음)")).split("\n")[0][:60]
+
+            # 활성 상태만 (완료·보류·폐기 제외)
+            if status not in ("진행중", "대기"):
+                continue
+
+            # 업무 카테고리 또는 결재 inflight만 포함
+            if category == "결재" and appr_kind not in ("inflight", "gm"):
+                continue
+
+            clevel = _owner_to_clevel(owner)
+            if clevel is None:
+                continue
+
+            per_clevel.setdefault(clevel, []).append(f"[{status}] {title}")
+
+        if not per_clevel:
+            return "• 현재 진행중·대기 항목 없음"
+
+        total = sum(len(v) for v in per_clevel.values())
+        lines = [f"• 진행중·대기 총 {total}건"]
+        for clevel in sorted(per_clevel):
+            clevel_items = per_clevel[clevel]
+            lines.append("")
+            lines.append(f"[{clevel}] {len(clevel_items)}건")
+            for it in clevel_items[:5]:
+                lines.append(f"  - {it}")
+            if len(clevel_items) > 5:
+                lines.append(f"  ... 외 {len(clevel_items) - 5}건")
+        return "\n".join(lines)
+
+    except Exception as e:
+        logger.warning(f"gm_hangro 호출 예외: {e}")
+        return None
+
+
+def fetch_current_progress() -> str:
+    """
+    C-Level 진행현황 집계. gm_hangro API(서버 단일 엔진) 우선 사용.
+    실패·빈응답·타임아웃 시 로컬 폴백(_fetch_current_progress_local) 자동 전환.
+    """
+    result = _fetch_current_progress_hangro()
+    if result is not None:
+        return result
+    logger.warning("gm_hangro 실패 — 로컬 폴백(_queue+status/*.json) 사용")
+    return _fetch_current_progress_local()
 
 
 # ── Claude CLI: 오늘자 요약 생성 (21시 Lv1용) ───────────────────────────────
