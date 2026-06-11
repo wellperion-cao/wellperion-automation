@@ -80,6 +80,9 @@ def _paste_cinq_topright(canvas: Image.Image, logo_w: int = 150,
                          tint: tuple[int, int, int] | None = None) -> Image.Image:
     """생크몽드 로고를 우측 상단에 배치. tint 지정 시 단색 적용(사진 위 가독성)."""
     logo = Image.open(CINQ_LOGO).convert("RGBA")
+    _bb = logo.split()[3].getbbox()      # 투명 여백 트림 — 웰페리온과 수직 정렬(생크몽드 처짐 방지 GM 2026-06-11)
+    if _bb:
+        logo = logo.crop(_bb)
     ow, oh = logo.size
     lh = int(oh * logo_w / ow)
     logo = logo.resize((logo_w, lh), Image.LANCZOS)
@@ -97,6 +100,9 @@ def _paste_wellperion_topleft(canvas: Image.Image, logo_w: int = 130,
     """웰페리온 로고를 좌측 상단에 배치(공동 브랜딩). tint 지정 시 단색 적용.
     (2026-06-11 GM 피드백: 좌하단→좌상단 이동 — 좌상단 웰페리온/우상단 생크몽드 공동 브랜딩.)"""
     logo = Image.open(LOGO_WHITE_ALPHA).convert("RGBA")
+    _bb = logo.split()[3].getbbox()      # 투명 여백 트림 — 생크몽드와 수직 정렬
+    if _bb:
+        logo = logo.crop(_bb)
     ow, oh = logo.size
     lh = int(oh * logo_w / ow)
     logo = logo.resize((logo_w, lh), Image.LANCZOS)
