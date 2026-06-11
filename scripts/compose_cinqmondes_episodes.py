@@ -5,9 +5,10 @@
 
 편당 디자인(2026-06-11 GM 피드백 반영 — 편당 6장):
   - ig_01 = 표지(커버) — 웰페리온 1p 정본 65/35 구조(compose_barre.compose_cover 구조 차용),
-    SPA 톤(크림 정보영역·버건디 영문대제목·골드 분리선) 적용
-  - ig_02~05 = 본문 사진 + 하단 그라디언트 + 카피
-  - ig_06 = 임팩트 클로징 — 강한 타이포 + 공동 로고 + CTA
+    제목 영역에 생크몽드 브랜드색(버건디) 밴드 + 크림 글자·골드 분리선(2026-06-11 GM 피드백)
+  - ig_02~05 = 본문 — 웰페리온 정본 본문(compose_barre.compose_story) 3단 구조 벤치마킹:
+    하단 그라디언트 위 메타라인(회색) → 한글 대제목(크림 bold) → 서브텍스트(골드)
+  - ig_06 = 임팩트 클로징 — 강한 타이포 + 공동 로고 + 우아한 여운 한 줄(문의 CTA 제거·세일즈 No)
   - 전 슬라이드: 좌상단 = 웰페리온 로고 / 우상단 = 생크몽드 로고 (공동 브랜딩)
   - 페이지 카운트 없음
   - 톤: 크림 #FAF7F2 / 버건디 #8B1A2F / 골드 #C9A96E
@@ -139,32 +140,45 @@ def _wrap_text(draw: ImageDraw.ImageDraw, text: str,
     return lines
 
 
-def compose_slide(photo_path: Path, caption: str, output_path: Path,
-                  brightness: float = 0.88) -> None:
-    """본문 슬라이드 — 풀 사진 + 하단 버건디 그라디언트 + 카피.
-    페이지 카운트 없음 / 웰페리온 로고(좌상단) / 생크몽드 로고(우상단) 공동 브랜딩."""
+def compose_slide(photo_path: Path, title_kor: str, sub_text: str, output_path: Path,
+                  brightness: float = 0.88, meta_line: str = "Cinq Mondes  ·  한남동 웰페리온") -> None:
+    """본문 슬라이드(ig_02~05) — 웰페리온 정본 본문 구조(compose_barre.compose_story) 벤치마킹.
+    풀 사진 + 하단 그라디언트 + 좌하단 3단 텍스트 블록(좌측정렬):
+      메타라인(작게·회색톤) → 한글 대제목(크림 bold) → 서브텍스트(골드).
+    페이지 카운트 없음 / 좌상단 웰페리온 / 우상단 생크몽드 공동 브랜딩.
+    SPA 톤 차용: 정본 흰색→크림, 베이지→골드로 치환(브랜드 일관)."""
+    CREAM = (250, 247, 242)
+    META_GRAY = (210, 196, 188)    # 크림빛 회색(버건디 그라디언트 위 가독)
+    STROKE = (24, 0, 11)
     canvas = center_crop_fill(photo_path, W, H)
     canvas = ImageEnhance.Brightness(canvas).enhance(brightness)
     canvas = _apply_gradient(canvas, start_y=480)
 
     # 상단 공동 브랜딩 — 좌상단 웰페리온 / 우상단 생크몽드 (둘 다 크림 tint, 사진 위 가독성)
-    canvas = _paste_wellperion_topleft(canvas, logo_w=132, tint=(250, 247, 242), x=44, y=40)
-    canvas = _paste_cinq_topright(canvas, logo_w=150, tint=(250, 247, 242))
+    canvas = _paste_wellperion_topleft(canvas, logo_w=132, tint=CREAM, x=44, y=40)
+    canvas = _paste_cinq_topright(canvas, logo_w=150, tint=CREAM)
     draw = ImageDraw.Draw(canvas)
 
-    # 카피 블록 — 하단 그라디언트 밴드 위. 골드 좌측 바 + 흰색 bold + 외곽선(가독성 정본 유지).
-    body_font = _load_font("bold", 45)
-    line_h = 58
-    lines = _wrap_text(draw, caption, body_font, max_w=W - 96 - 40)
-    n = len(lines)
-    last_line_top = 936            # 마지막 줄 상단 — 하단 여백 확보(풋터 제거로 하향)
-    start_y = last_line_top - (n - 1) * line_h
-    bar_top = start_y - 2
-    bar_bottom = last_line_top + 46
-    draw.rectangle([(60, bar_top), (64, bar_bottom)], fill=GOLD)
-    for i, ln in enumerate(lines):
-        draw.text((96, start_y + i * line_h), ln, font=body_font, fill=WHITE,
-                  stroke_width=2, stroke_fill=(24, 0, 11))
+    # 정본 compose_story 3단 좌하단 블록(좌측정렬). 가독성 위해 외곽선 유지.
+    # 1) 메타라인 (작게·크림회색)
+    meta_font = _load_font("medium", 26)
+    draw.text((60, 800), meta_line, font=meta_font, fill=META_GRAY,
+              stroke_width=1, stroke_fill=STROKE)
+
+    # 2) 한글 대제목 (크림 bold) — 2줄까지 래핑
+    title_font = _load_font("bold", 52)
+    title_line_h = 64
+    title_lines = _wrap_text(draw, title_kor, title_font, max_w=W - 60 - 60)[:2]
+    ty = 856
+    for i, ln in enumerate(title_lines):
+        draw.text((60, ty + i * title_line_h), ln, font=title_font, fill=CREAM,
+                  stroke_width=2, stroke_fill=STROKE)
+
+    # 3) 서브텍스트 (골드)
+    sub_font = _load_font("semibold", 30)
+    sy = ty + len(title_lines) * title_line_h + 8
+    draw.text((60, sy), sub_text, font=sub_font, fill=GOLD,
+              stroke_width=1, stroke_fill=STROKE)
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
     canvas.convert("RGB").save(output_path, "JPEG", quality=93, optimize=True)
@@ -174,35 +188,38 @@ def compose_slide(photo_path: Path, caption: str, output_path: Path,
 def compose_cover(photo_path: Path, title_eng: str, title_kor: str,
                   date_location: str, output_path: Path) -> None:
     """표지(ig_01) — 웰페리온 1p 정본 65/35 구조(compose_barre.compose_cover 차용),
-    SPA 톤 적용. 사진 상단 65%(듀오톤 크림×버건디) + 골드 분리선 + 크림 정보영역.
-    정보영역: 한글 부제(버건디) → 영문 대제목(버건디 bold) → 골드 짧은 선 → 날짜·장소(골드).
+    SPA 톤 적용. 사진 상단 65%(듀오톤 크림×버건디) + 골드 분리선.
+    제목 영역에 생크몽드 브랜드색(버건디) 밴드를 입혀 브랜드색을 확실히 노출
+    (2026-06-11 GM 피드백): 하단 35% = 버건디 풀밴드, 글자는 크림/골드.
+    버건디 밴드: 한글 부제(크림) → 영문 대제목(크림 bold) → 골드 짧은 선 → 날짜·장소(골드).
     상단 공동 브랜딩: 좌상단 웰페리온 / 우상단 생크몽드."""
     PHOTO_H = 700  # 1080 × 0.648 ≈ 700 (정본 65/35 경계)
+    CREAM = (250, 247, 242)
 
-    # 1) 캔버스 — 크림 아이보리 정보영역(하단 35%)
-    canvas = Image.new("RGB", (W, H), BG_IVORY)
+    # 1) 캔버스 — 하단 35% 정보영역에 생크몽드 브랜드색(버건디) 밴드를 입힘
+    canvas = Image.new("RGB", (W, H), BURGUNDY)
 
     # 2) 사진 영역(상단 65%) — 버건디×크림 듀오톤(SPA 톤, 표지 일관)
     photo = center_crop_fill(photo_path, W, PHOTO_H)
     photo = _spa_duotone(photo)
     canvas.paste(photo, (0, 0))
 
-    # 3) 골드 분리선 (사진/정보영역 경계)
+    # 3) 골드 분리선 (사진/버건디 제목밴드 경계)
     draw_base = ImageDraw.Draw(canvas)
     draw_base.rectangle([(50, PHOTO_H), (1030, PHOTO_H + 2)], fill=GOLD)
 
     # 4) 상단 공동 브랜딩 — 좌상단 웰페리온(크림) / 우상단 생크몽드(크림)
-    canvas = _paste_wellperion_topleft(canvas, logo_w=132, tint=(250, 247, 242), x=44, y=40)
-    canvas = _paste_cinq_topright(canvas, logo_w=150, tint=(250, 247, 242))
+    canvas = _paste_wellperion_topleft(canvas, logo_w=132, tint=CREAM, x=44, y=40)
+    canvas = _paste_cinq_topright(canvas, logo_w=150, tint=CREAM)
     draw = ImageDraw.Draw(canvas)
 
-    # 5) 정보영역 텍스트 (크림 배경 위 — 버건디/골드)
-    # 한글 부제목 (버건디, 중앙)
+    # 5) 버건디 제목밴드 텍스트 (버건디 배경 위 — 크림/골드, 브랜드색 확실 노출)
+    # 한글 부제목 (크림, 중앙)
     kor_font = _load_font("semibold", 38)
-    draw.text((W // 2, 789), title_kor, font=kor_font, fill=BURGUNDY, anchor="mm")
-    # 영문 대제목 (버건디 bold, 중앙)
+    draw.text((W // 2, 789), title_kor, font=kor_font, fill=CREAM, anchor="mm")
+    # 영문 대제목 (크림 bold, 중앙)
     eng_font = _load_font("bold", 76)
-    draw.text((W // 2, 859), title_eng, font=eng_font, fill=BURGUNDY, anchor="mm")
+    draw.text((W // 2, 859), title_eng, font=eng_font, fill=CREAM, anchor="mm")
     # 골드 짧은 분리선 (중앙)
     draw.rectangle([(W // 2 - 30, 920), (W // 2 + 30, 922)], fill=GOLD)
     # 날짜·장소 (골드, 중앙)
@@ -214,9 +231,11 @@ def compose_cover(photo_path: Path, title_eng: str, title_kor: str,
     print(f"  [표지 {output_path.parent.name}/{output_path.name}] {output_path.stat().st_size // 1024}KB")
 
 
-def compose_closing(headline: list[str], cta: str, output_path: Path) -> None:
-    """임팩트 클로징(ig_06) — 버건디 풀배경 + 강한 타이포 + 공동 로고 + CTA.
-    가이드 카드 대체. 카피 = 운동/회복 공동 메시지(편별 다름)."""
+def compose_closing(headline: list[str], coda: str, output_path: Path) -> None:
+    """임팩트 클로징(ig_06) — 버건디 풀배경 + 강한 타이포 + 공동 로고 + 우아한 여운 한 줄.
+    (2026-06-11 GM 피드백: 문의 CTA 제거 — 세일즈 No. '정말 좋은 공간'의 프리미엄
+    감성·여운만. 임팩트는 유지, 톤은 담백·고급.) 가이드 카드 대체.
+    coda = 헤드라인 아래 우아한 마무리 한 줄(골드)."""
     # 1) 버건디 풀배경 + 미묘한 골드 비네팅 텍스처
     canvas = Image.new("RGB", (W, H), BURGUNDY)
     draw = ImageDraw.Draw(canvas)
@@ -238,13 +257,13 @@ def compose_closing(headline: list[str], cta: str, output_path: Path) -> None:
         draw.text((W // 2, y0 + i * line_h + line_h // 2), ln,
                   font=head_font, fill=(250, 247, 242), anchor="mm")
 
-    # 5) 골드 짧은 하단 악센트 선 (CTA 위)
-    cta_line_y = y0 + total_h + 44
-    draw.rectangle([(W // 2 - 40, cta_line_y), (W // 2 + 40, cta_line_y + 4)], fill=GOLD)
+    # 5) 골드 짧은 하단 악센트 선 (여운 한 줄 위)
+    coda_line_y = y0 + total_h + 44
+    draw.rectangle([(W // 2 - 40, coda_line_y), (W // 2 + 40, coda_line_y + 4)], fill=GOLD)
 
-    # 6) CTA (골드, medium, 중앙)
-    cta_font = _load_font("semibold", 34)
-    draw.text((W // 2, cta_line_y + 56), cta, font=cta_font, fill=GOLD, anchor="mm")
+    # 6) 우아한 여운 한 줄 (골드, medium, 중앙) — 문의 CTA 없음(세일즈 No, 감성만)
+    coda_font = _load_font("medium", 30)
+    draw.text((W // 2, coda_line_y + 56), coda, font=coda_font, fill=GOLD, anchor="mm")
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
     canvas.convert("RGB").save(output_path, "JPEG", quality=93, optimize=True)
@@ -274,44 +293,44 @@ IMG = {
 }
 
 # 편당 6장 구성(2026-06-11 GM 피드백 보강):
-#   cover  = ig_01 표지(정본 65/35) — (photo_key, title_eng, title_kor, date_location)
-#   body   = ig_02~05 본문 4장 — (key, caption, brightness)
-#   closing= ig_06 임팩트 클로징 — (headline_lines, cta)
+#   cover  = ig_01 표지(정본 65/35·버건디 제목밴드) — (photo_key, title_eng, title_kor, date_location)
+#   body   = ig_02~05 본문 4장(정본 compose_story 3단 구조) — (key, title_kor, sub_text, brightness)
+#   closing= ig_06 임팩트 클로징 — (headline_lines, coda)  ※ 문의 CTA 제거, 여운 한 줄
 DATE_LOCATION = "한남동 웰페리온 × Cinq Mondes"
 
 EPISODES = {
     "ep1": {
         "cover": ("1-2", "PARIS, ARRIVED", "파리의 회복 의식이 한남동에", DATE_LOCATION),
         "body": [
-            ("1-1", "Cinq Mondes — 5개 대륙의 뷰티 리추얼이 머무는 자리", 0.88),
-            ("1-3", "서두름을 내려놓는 공간, 회복은 앉는 순간부터", 0.88),
-            ("1-4", "정직한 식물성 포뮬러, 피부에 꼭 필요한 것만", 0.88),
-            ("2-1", "발끝을 씻어내며 여는 환대 — 리추얼의 첫 인사", 0.88),
+            ("1-1", "5개 대륙의 뷰티 리추얼이 머무는 자리", "Cinq Mondes — 세계의 회복을 한 공간에", 0.88),
+            ("1-3", "회복은 앉는 순간부터", "서두름을 내려놓는 고요한 공간", 0.88),
+            ("1-4", "피부에 꼭 필요한 것만", "정직한 식물성 포뮬러", 0.88),
+            ("2-1", "리추얼의 첫 인사", "발끝을 씻어내며 여는 환대", 0.88),
         ],
         "closing": (["운동은 웰페리온,", "회복은 Cinq Mondes —", "한 곳에서."],
-                    "문의: wellperion.com/ko/inquiry"),
+                    "정말 좋은 공간은, 머무는 것만으로 충분합니다."),
     },
     "ep2": {
         "cover": ("2-2", "SLOW DOWN", "감각이 깨어나는 회복의 시간", DATE_LOCATION),
         "body": [
-            ("4-1", "멈춤도 회복입니다 — 호흡과 명상의 자리", 0.88),
-            ("4-2", "소리가 긴장을 풀어내는 동양의 회복 리추얼", 0.88),
-            ("6",   "머리끝부터 — 두피와 어깨의 피로를 덜어내는 손길", 0.88),
-            ("3",   "한 걸음마다 깊어지는 몰입, 파리의 결을 따라", 0.88),
+            ("4-1", "멈춤도 회복입니다", "호흡과 명상이 머무는 자리", 0.88),
+            ("4-2", "긴장을 풀어내는 소리", "동양의 결을 따른 회복 리추얼", 0.88),
+            ("6",   "머리끝부터 어깨까지", "피로를 덜어내는 깊은 손길", 0.88),
+            ("3",   "한 걸음마다 깊어지는 몰입", "파리의 결을 따라 걷는 시간", 0.88),
         ],
         "closing": (["운동은 웰페리온,", "회복은 Cinq Mondes —", "한 곳에서."],
-                    "문의: wellperion.com/ko/inquiry"),
+                    "잘 쉰 하루가, 가장 좋은 내일을 만듭니다."),
     },
     "ep3": {
         "cover": ("5-1", "THE RITUAL", "회복이 완성되는 자리", DATE_LOCATION),
         "body": [
-            ("7-1", "5개 세계의 식물이 한 벽에, 회복의 모든 단계", 0.88),
-            ("7-3", "고농축 식물 오일, 피부가 시간이 갈수록 건강해지도록", 0.88),
-            ("7-2", "향으로 마무리하는 리추얼, 회복의 여운을 가지고 돌아갑니다", 0.88),
-            ("5-2", "시그니처 리추얼 — 깊은 회복의 정점", 0.62),
+            ("7-1", "회복의 모든 단계", "5개 세계의 식물이 한 벽에", 0.88),
+            ("7-3", "시간이 갈수록 건강해지는 피부", "고농축 식물 오일의 정성", 0.88),
+            ("7-2", "향으로 마무리하는 리추얼", "회복의 여운을 가지고 돌아갑니다", 0.88),
+            ("5-2", "깊은 회복의 정점", "시그니처 리추얼", 0.62),
         ],
         "closing": (["운동은 웰페리온,", "회복은 Cinq Mondes —", "한 곳에서 완성됩니다."],
-                    "문의: wellperion.com/ko/inquiry"),
+                    "좋은 공간은, 오래 기억에 남습니다."),
     },
 }
 
@@ -331,17 +350,17 @@ def main():
             sys.exit(1)
         compose_cover(cover_photo, title_eng, title_kor, date_loc, out_dir / "ig_01.jpg")
 
-        # ig_02~05 — 본문 4장
-        for idx, (key, caption, bright) in enumerate(spec["body"], start=2):
+        # ig_02~05 — 본문 4장 (정본 compose_story 3단 구조)
+        for idx, (key, title_kor, sub_text, bright) in enumerate(spec["body"], start=2):
             photo = SRC / IMG[key]
             if not photo.exists():
                 print(f"[ERROR] 원본 없음: {photo}")
                 sys.exit(1)
-            compose_slide(photo, caption, out_dir / f"ig_{idx:02d}.jpg", brightness=bright)
+            compose_slide(photo, title_kor, sub_text, out_dir / f"ig_{idx:02d}.jpg", brightness=bright)
 
-        # ig_06 — 임팩트 클로징
-        headline, cta = spec["closing"]
-        compose_closing(headline, cta, out_dir / "ig_06.jpg")
+        # ig_06 — 임팩트 클로징 (문의 CTA 없음, 여운 한 줄)
+        headline, coda = spec["closing"]
+        compose_closing(headline, coda, out_dir / "ig_06.jpg")
 
     print("\n=== 합성 완료 (편당 6장) ===")
 
