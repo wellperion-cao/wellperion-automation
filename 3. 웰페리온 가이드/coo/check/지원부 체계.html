@@ -41,6 +41,9 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 .submitter-bar-split .sb-half+.sb-half{border-left:1px solid var(--border)}
 .submitter-bar-split .sb-half label{flex:0 0 auto}
 .submitter-bar-split .sb-time{flex:1;font-size:15px;font-weight:700;color:var(--text)}
+.timer-btn{flex:0 0 auto;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:8px 12px;border-radius:8px;font-size:14px;font-family:inherit;font-weight:700;cursor:pointer;white-space:nowrap}
+.timer-btn.running{background:#c0392b;border-color:#c0392b;color:#fff}
+.timer-btn.done{background:var(--paper);color:var(--accent)}
 .submitter-bar-split select{flex:1;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:10px 14px;border-radius:8px;font-size:15px;font-family:inherit;font-weight:600;min-width:0}
 .guide-cards{display:flex;gap:10px;margin-bottom:12px}
 .guide-card{flex:1;border-radius:10px;padding:12px 14px;border:1px solid}
@@ -1053,7 +1056,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   </div>
   <div class="submitter-bar submitter-bar-split">
     <div class="sb-half">
-      <label>점검시간</label>
+      <button class="timer-btn" id="timerBtnM" onclick="toggleCheckTimer('m')">▶ 점검 시작</button>
       <span class="sb-time" id="checkTimeM">--:--</span>
     </div>
     <div class="sb-half">
@@ -1117,7 +1120,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   </div>
   <div class="submitter-bar submitter-bar-split">
     <div class="sb-half">
-      <label>점검시간</label>
+      <button class="timer-btn" id="timerBtnF" onclick="toggleCheckTimer('f')">▶ 점검 시작</button>
       <span class="sb-time" id="checkTimeF">--:--</span>
     </div>
     <div class="sb-half">
@@ -1980,15 +1983,48 @@ function drawUI(d,gender){
   setCheckTime(gender);
 }
 
-/* 점검자 칸 좌측 '점검시간' = 현재 시각 표시 (점검자 반반 칸 · GM 2026-06-11) */
+/* 점검 타이머 — 시작 ▶ / 완료 ■ / 다시 ↺ 상태머신. 시작·완료 시각과 소요(분)을
+   날짜+성별별 STATE에 적립, 제출 스냅샷에 함께 기록 (시우·GM 2026-06-11). */
+function _hhmm(ms){const dt=new Date(ms);return String(dt.getHours()).padStart(2,'0')+':'+String(dt.getMinutes()).padStart(2,'0')}
+function _timerDuration(start,end){
+  if(!start||!end)return null;
+  const m=Math.round((end-start)/60000);
+  return (m>=0&&m<24*60)?m:null; // 음수·자정넘김 등 비정상은 빈값
+}
+/* 해당 날짜+성별 STATE 값으로 타이머 UI 복원 (없으면 idle). drawUI 끝에서 호출. */
 function setCheckTime(gender){
-  const id=gender==='f'?'checkTimeF':'checkTimeM';
-  const el=document.getElementById(id);
-  if(!el)return;
-  const now=new Date();
-  const hh=String(now.getHours()).padStart(2,'0');
-  const mm=String(now.getMinutes()).padStart(2,'0');
-  el.textContent=hh+':'+mm;
+  const d=getDateG(gender);
+  const btn=document.getElementById(gender==='f'?'timerBtnF':'timerBtnM');
+  const el=document.getElementById(gender==='f'?'checkTimeF':'checkTimeM');
+  if(!btn||!el)return;
+  const start=STATE['timerStart_'+d+'_'+gender];
+  const end=STATE['timerEnd_'+d+'_'+gender];
+  btn.classList.remove('running','done');
+  if(!start){
+    btn.textContent='▶ 점검 시작';el.textContent='--:--';
+  }else if(start&&!end){
+    btn.textContent='■ 점검 완료';btn.classList.add('running');
+    el.textContent='시작 '+_hhmm(start)+' (진행중)';
+  }else{
+    btn.textContent='↺ 다시';btn.classList.add('done');
+    const dur=_timerDuration(start,end);
+    el.textContent=_hhmm(start)+' → '+_hhmm(end)+(dur!=null?' ('+dur+'분)':'');
+  }
+}
+/* idle→running(시작 기록) → done(완료·소요분) → idle(리셋, 새 점검) */
+function toggleCheckTimer(gender){
+  const d=getDateG(gender);
+  const sk='timerStart_'+d+'_'+gender, ek='timerEnd_'+d+'_'+gender;
+  const start=STATE[sk], end=STATE[ek];
+  if(!start){                       // idle → running
+    STATE[sk]=Date.now();delete STATE[ek];
+  }else if(start&&!end){            // running → done
+    STATE[ek]=Date.now();
+  }else{                            // done → idle (새 점검)
+    delete STATE[sk];delete STATE[ek];
+  }
+  saveState(d);
+  setCheckTime(gender);
 }
 
 /* v2.48 — 점검 항목 사용자 수정 기능. v2.49 onclick HTML 충돌 fix
@@ -2407,13 +2443,19 @@ async function appendSubmitSnapshot(date,shift,submitter,gender){
   let issues=[];
   ids.forEach(id=>{ if(STATE['iss_'+id])issues.push(STATE['iss_'+id]); });
   const zone=gender==='f'?'f':gender==='m'?'m':'all';
+  // 점검 타이머 적립 (해당 date+gender STATE에서 읽음, 없으면 빈값)
+  const tStart=STATE['timerStart_'+date+'_'+gender], tEnd=STATE['timerEnd_'+date+'_'+gender];
+  const startedAt=tStart?new Date(tStart).toLocaleString('sv-SE').replace('T',' '):'';
+  const finishedAt=tEnd?new Date(tEnd).toLocaleString('sv-SE').replace('T',' '):'';
+  const dur=_timerDuration(tStart,tEnd);
   try{
     await fetch(API_URL,{method:'POST',redirect:'follow',
       headers:{'Content-Type':'text/plain'},
       body:JSON.stringify({action:'snapshot_append',dept:DEPT,date,zone,shift,submitter,
         submittedAt:new Date().toLocaleString('sv-SE').replace('T',' '),
         total:stats.total,done:stats.done,pct:stats.pct,
-        issuesCount:issues.length,issues:issues.join(' / ')})
+        issuesCount:issues.length,issues:issues.join(' / '),
+        startedAt,finishedAt,durationMin:(dur!=null?dur:'')})
     });
   }catch(e){}
 }

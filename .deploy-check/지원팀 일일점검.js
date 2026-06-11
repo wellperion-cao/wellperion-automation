@@ -1244,7 +1244,7 @@ function _applyIssueRowStyle(sheet, row, values) {
 // 집계(getShiftStatsG·handleWeekly)·텔레그램과 완전 독립(별도 시트). dept별 탭 분리.
 // ════════════════════════════════════════════
 
-var SNAPSHOT_HEADERS = ['제출시각','날짜','부서','구역','교대','점검자','총항목','완료','완료율(%)','이슈건수','이슈내용'];
+var SNAPSHOT_HEADERS = ['제출시각','날짜','부서','구역','교대','점검자','총항목','완료','완료율(%)','이슈건수','이슈내용','점검시작','점검완료','소요(분)'];
 
 function _snapshotTabName(dept) {
   var d = String(dept == null ? '' : dept).trim() || 'support';
@@ -1262,8 +1262,17 @@ function _initSnapshotSheet(dept) {
       .setBackground('#2a2725').setFontColor('#B79F8A')
       .setFontWeight('bold').setHorizontalAlignment('center');
     sheet.setFrozenRows(1);
-    var widths = [160, 100, 80, 70, 70, 110, 70, 60, 80, 80, 360];
+    var widths = [160, 100, 80, 70, 70, 110, 70, 60, 80, 80, 360, 140, 140, 80];
     for (var i = 0; i < widths.length; i++) sheet.setColumnWidth(i + 1, widths[i]);
+  } else if (sheet.getLastColumn() < SNAPSHOT_HEADERS.length) {
+    // 기존 11열 시트 보강 — 12~14열(점검시작·점검완료·소요(분)) 헤더 라벨 추가
+    var start = sheet.getLastColumn() + 1;
+    var labels = SNAPSHOT_HEADERS.slice(start - 1);
+    sheet.getRange(1, start, 1, labels.length).setValues([labels])
+      .setBackground('#2a2725').setFontColor('#B79F8A')
+      .setFontWeight('bold').setHorizontalAlignment('center');
+    var extra = [140, 140, 80];
+    for (var j = 0; j < labels.length; j++) sheet.setColumnWidth(start + j, extra[j] || 100);
   }
   return sheet;
 }
@@ -1283,7 +1292,10 @@ function handleSnapshotAppend(body) {
     (body.done != null ? body.done : ''),
     (body.pct != null ? body.pct : ''),
     (body.issuesCount != null ? body.issuesCount : ''),
-    body.issues || ''
+    body.issues || '',
+    body.startedAt || '',
+    body.finishedAt || '',
+    (body.durationMin != null ? body.durationMin : '')
   ];
   sheet.appendRow(row);
   return jsonRes({ ok: true, dept: dept, row: sheet.getLastRow() });
