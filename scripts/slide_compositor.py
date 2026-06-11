@@ -638,6 +638,7 @@ def compose_text_slide(
     brand_key: str = "main",
     aspect: str = "1080x1350",
     logo_style: str = "full",
+    credit: bool = False,
 ) -> dict:
     """사진 없는 텍스트 중심 슬라이드. 럭셔리 매거진 무드의 여백 중심 레이아웃.
 
@@ -645,6 +646,10 @@ def compose_text_slide(
         "full"   = 풀 로고 PNG(W심볼+WELLPERION+영문). 회사 공식계정 wellperion.
         "symbol" = 'W' 심볼만 미니멀(Pretendard Bold 텍스트). 개인계정 namuk.wellperion.
                    기존 개인계정 발행분(왜AI·AI직원효율)과 동일한 처리.
+
+    credit — 하단 풋터 WELLPERION 아래 작은 회색 1줄 "Made with Claude Code + OMC"
+        (2026-06-12 GM '하단 2줄' 결정). 기본 False → 회사 공식 콘텐츠 픽셀 무영향.
+        개인 AI 시리즈 build_slides 에서만 credit=True 로 호출(#13부터 자동생성기도 전달).
     """
     if aspect not in ASPECT_PRESETS:
         raise ValueError(f"Unknown aspect: {aspect}")
@@ -755,9 +760,19 @@ def compose_text_slide(
     footer_font = load_font("medium", footer_size)
     ftext = "WELLPERION"
     fb = footer_font.getbbox(ftext)
-    draw.text(((target_w - (fb[2] - fb[0])) // 2,
-               target_h - margin - (fb[3] - fb[1])),
+    footer_text_y = target_h - margin - (fb[3] - fb[1])
+    draw.text(((target_w - (fb[2] - fb[0])) // 2, footer_text_y),
               ftext, font=footer_font, fill=brand["primary"])
+
+    # 크레딧 1줄 (credit=True 일 때만 — 회사 공식 콘텐츠 무영향). 풋터 0.6배 작은 회색.
+    if credit:
+        credit_size = max(1, int(footer_size * 0.6))
+        credit_font = load_font("medium", credit_size)
+        ctext = "Made with Claude Code + OMC"
+        cb = credit_font.getbbox(ctext)
+        draw.text(((target_w - (cb[2] - cb[0])) // 2,
+                   footer_text_y + (fb[3] - fb[1]) + int(credit_size * 0.5)),
+                  ctext, font=credit_font, fill=brand["text_secondary"])
 
     output.parent.mkdir(parents=True, exist_ok=True)
     canvas.save(output, "JPEG", quality=92, optimize=True)

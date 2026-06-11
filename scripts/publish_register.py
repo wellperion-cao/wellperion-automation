@@ -300,11 +300,17 @@ def register_publish(
     title: str | None = None,
     channel: str | None = None,
     collaborators: list[str] | None = None,
+    send_card: bool = False,
 ) -> None:
     """제작완료 → 자동 등록(M5 upsert) + 텔레그램(1줄+montage) 발송 범용 헬퍼.
 
     어떤 단계가 실패해도 빌드 자체는 깨지 않음(광범위 try/except 격리).
     review_queue 다른 엔트리·파일은 절대 삭제하지 않음 (id 매칭 1건만 손댐).
+
+    send_card — True 면 montage 발송 뒤 scripts/send_review_card.py --id <queue_id> 를
+        subprocess 로 1회 호출해 [✅승인]/[❌반려] 버튼 카드까지 발송한다(실패해도 경고만).
+        ⚠️ 기본 False — 자동생성기(ig_series_producer.py)는 send_review_card 를 별도 호출하므로
+        절대 send_card=True 로 부르면 안 됨(카드 중복 방지). 수동 build_slides 경로만 True.
     """
     try:
         content_folder = Path(content_folder)
@@ -360,6 +366,28 @@ def register_publish(
             f"https://wellperion-cao.github.io/wellperion-automation/wellperion_guide(main).html#M5"
         )
         _telegram_send_photo(montage_path, msg)
+
+        # (d) 수동 경로 승인버튼 카드 — send_card=True 일 때만 (자동생성기는 별도 호출이라 무영향).
+        #     montage(버튼 없음) 뒤 [✅승인]/[❌반려] 버튼 카드 1회. 실패해도 등록은 유효(경고만).
+        if send_card:
+            try:
+                import subprocess
+
+                card_script = ROOT / "scripts" / "send_review_card.py"
+                proc = subprocess.run(
+                    [sys.executable, str(card_script), "--id", str(queue_id)],
+                    cwd=str(ROOT), timeout=60,
+                    capture_output=True, text=True, encoding="utf-8", errors="replace",
+                )
+                if proc.returncode == 0:
+                    print(f"[INFO] 승인버튼 카드 발송 호출 성공 — id={queue_id}")
+                else:
+                    print(f"[WARN] 승인버튼 카드 발송 실패(rc={proc.returncode}) — 등록은 유효. "
+                          f"수동: send_review_card.py --id {queue_id}")
+                if proc.stdout:
+                    print(proc.stdout.strip())
+            except Exception as exc:
+                print(f"[WARN] 승인버튼 카드 발송 예외(등록은 유효): {exc}")
 
         print(f"[OK] register_publish 완료 — id={queue_id} / status={final_status} / preview={preview_rel}")
     except Exception as exc:
