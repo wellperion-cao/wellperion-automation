@@ -91,13 +91,14 @@ def _apply_gradient(img: Image.Image, start_y: int = 540) -> Image.Image:
     """하단 그라디언트 — 투명→버건디 초다크 오버레이(텍스트 가독성)."""
     overlay = Image.new("RGBA", (W, H), (0, 0, 0, 0))
     draw = ImageDraw.Draw(overlay)
-    dark = (26, 0, 12)
+    dark = (24, 0, 11)
+    full_y = 770  # 카피·풋터 밴드는 이 지점부터 최대 농도 유지(밝은 사진서도 흰 카피 가독 보장)
     for y in range(H):
-        if y < start_y:
+        if y <= start_y:
             alpha = 0
         else:
-            t = (y - start_y) / (H - start_y)
-            alpha = min(215, int(220 * (t ** 1.15)))
+            t = min(1.0, (y - start_y) / (full_y - start_y))
+            alpha = int(244 * (t ** 0.9))
         draw.line([(0, y), (W, y)], fill=(*dark, alpha))
     return Image.alpha_composite(img.convert("RGBA"), overlay).convert("RGB")
 
@@ -138,7 +139,7 @@ def compose_slide(photo_path: Path, caption: str, output_path: Path,
     #   카피 블록              : 마지막 줄 baseline 이 풋터 위(y<=905)에서 끝나도록 위로 쌓음
     LOGO_W = 104
     FOOT_BASELINE = 1004
-    body_font = _load_font("medium", 44)
+    body_font = _load_font("bold", 45)
     line_h = 58
     lines = _wrap_text(draw, caption, body_font, max_w=W - 96 - 40)
     n = len(lines)
@@ -148,7 +149,8 @@ def compose_slide(photo_path: Path, caption: str, output_path: Path,
     bar_bottom = last_line_top + 46
     draw.rectangle([(60, bar_top), (64, bar_bottom)], fill=GOLD)
     for i, ln in enumerate(lines):
-        draw.text((96, start_y + i * line_h), ln, font=body_font, fill=WHITE)
+        draw.text((96, start_y + i * line_h), ln, font=body_font, fill=WHITE,
+                  stroke_width=2, stroke_fill=(24, 0, 11))
 
     # 웰페리온 로고(좌하단, 크림 tint) — 풋터 밴드
     logo = Image.open(LOGO_WHITE_ALPHA).convert("RGBA")
