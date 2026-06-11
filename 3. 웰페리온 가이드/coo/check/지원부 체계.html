@@ -45,6 +45,21 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 .timer-btn.running{background:#c0392b;border-color:#c0392b;color:#fff}
 .timer-btn.done{background:var(--paper);color:var(--accent)}
 .submitter-bar-split select{flex:1;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:10px 14px;border-radius:8px;font-size:15px;font-family:inherit;font-weight:600;min-width:0}
+.submitter-bar-split .submitter-input{flex:1;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:10px 14px;border-radius:8px;font-size:15px;font-family:inherit;font-weight:600;min-width:0}
+.submitter-input::placeholder{color:var(--dim);font-weight:500}
+/* ── 5조(라운드) 클릭형 선택바 (시우·GM 2026-06-11) ── */
+.round-bar{display:flex;gap:6px;margin-bottom:12px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding-bottom:2px}
+.round-bar::-webkit-scrollbar{display:none}
+.round-seg{flex:1 1 0;min-width:92px;padding:9px 8px;border-radius:10px;border:1.5px solid var(--border);background:var(--bg);color:var(--text);font-family:inherit;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px;line-height:1.15;transition:all .12s;white-space:nowrap}
+.round-seg .rs-name{font-size:13px;font-weight:700}
+.round-seg .rs-time{font-size:11px;font-weight:600;color:var(--dim)}
+.round-seg:hover{border-color:var(--accent)}
+.round-seg.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+.round-seg.active .rs-time{color:rgba(255,255,255,0.85)}
+.round-seg.done{border-color:var(--green)}
+.round-seg.done .rs-name::after{content:" ✓";color:var(--green)}
+.round-seg.active.done .rs-name::after{color:#fff}
+@media(max-width:560px){.round-seg{min-width:78px;padding:8px 5px}.round-seg .rs-name{font-size:12px}.round-seg .rs-time{font-size:10px}}
 .guide-cards{display:flex;gap:10px;margin-bottom:12px}
 .guide-card{flex:1;border-radius:10px;padding:12px 14px;border:1px solid}
 .guide-card.issue-guide{background:var(--red-bg);border-color:rgba(237,91,63,0.3)}
@@ -1061,11 +1076,11 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
     </div>
     <div class="sb-half">
       <label>점검자</label>
-      <select id="submitterM" onchange="onSubmitterChangeG('m')">
-        <option value="">선택하세요</option>
-      </select>
+      <input type="text" id="submitterM" class="submitter-input" placeholder="점검자 이름 입력" oninput="onSubmitterChangeG('m')" autocomplete="off">
     </div>
   </div>
+  <!-- ── 5조(라운드) 클릭형 선택바 (시우·GM 2026-06-11 · 1단계) ── -->
+  <div class="round-bar" id="roundBarM"></div>
   <div class="guide-cards">
     <div class="guide-card issue-guide">
       <div class="guide-title">이슈</div>
@@ -1125,11 +1140,11 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
     </div>
     <div class="sb-half">
       <label>점검자</label>
-      <select id="submitterF" onchange="onSubmitterChangeG('f')">
-        <option value="">선택하세요</option>
-      </select>
+      <input type="text" id="submitterF" class="submitter-input" placeholder="점검자 이름 입력" oninput="onSubmitterChangeG('f')" autocomplete="off">
     </div>
   </div>
+  <!-- ── 5조(라운드) 클릭형 선택바 (시우·GM 2026-06-11 · 1단계) ── -->
+  <div class="round-bar" id="roundBarF"></div>
   <div class="guide-cards">
     <div class="guide-card issue-guide">
       <div class="guide-title">이슈</div>
@@ -1334,23 +1349,20 @@ function getStaffForGender(g){
   });
 }
 
+/* R4(2026-06-11 시우): 점검자 = 자유 입력(text). 기존 명단 select 채우기는 무력화.
+   저장값(localStorage)만 input에 복원. STAFF_LIST/getStaffForGender는 admin 통계 등
+   참조 호환 위해 보존(호출돼도 input에는 영향 없음). */
 function populateSubmitterDropdowns(){
   populateOneDropdown('submitterM','m');
   populateOneDropdown('submitterF','f');
 }
 
 function populateOneDropdown(selId,gender){
-  const sel=document.getElementById(selId);
+  const el=document.getElementById(selId);
+  if(!el)return;
   const savedKey='wcheck_submitter_'+gender;
-  const saved=sel.value||localStorage.getItem(savedKey)||'';
-  sel.innerHTML='<option value="">선택하세요</option>';
-  const staff=getStaffForGender(gender);
-  staff.forEach(s=>{
-    const opt=document.createElement('option');
-    opt.value=s.name;opt.textContent=s.name;
-    sel.appendChild(opt);
-  });
-  if(saved){sel.value=saved}
+  const saved=el.value||localStorage.getItem(savedKey)||'';
+  if(saved)el.value=saved;   // 자유입력 input: 저장값 복원만(옵션 채우기 없음)
 }
 
 function getStaffInfo(name){
@@ -1684,6 +1696,106 @@ function getAllItems(sched){
   return items;
 }
 
+/* ════════════════════════════════════════════════════════════
+   5조(라운드) 분류 레이어 — 순수 분류만(기존 WEEKDAY/항목 id/셋업·집계 무변경).
+   조→기존슬롯 매핑은 slot 라벨 문자열 기반(roundOfSlot). 정상(주간)모드에만 적용,
+   야간(탕청소 업체)모드는 기존 그대로. (시우·GM 2026-06-11 · 1단계)
+   ════════════════════════════════════════════════════════════ */
+const ROUNDS=[
+  {key:'am1',name:'오전조[1]',time:'10시',baseShift:'am'},
+  {key:'am2',name:'오전조[2]',time:'12시',baseShift:'am'},
+  {key:'pm1',name:'오후조[1]',time:'15시',baseShift:'pm'},
+  {key:'pm2',name:'오후조[2]',time:'18시',baseShift:'pm'},
+  {key:'eve1',name:'저녁조[1]',time:'20시',baseShift:'pm'}
+];
+const ROUND_KEYS=ROUNDS.map(r=>r.key);
+function roundDef(rk){return ROUNDS.find(r=>r.key===rk)||null}
+function roundLabel(rk){const r=roundDef(rk);return r?(r.name+' '+r.time):rk}
+/* 슬롯 라벨(또는 shift)로 라운드 분류. 인식 못한 슬롯은 baseShift 기준 폴백
+   (am→am1, pm→eve1). 빈 조(pm2)는 어떤 기존 슬롯도 매핑되지 않음 → 안내문 표시. */
+function roundOfSlot(slotLabel,shift){
+  const s=String(slotLabel||'');
+  if(s.indexOf('오픈')>=0||s.indexOf('오전 후반')>=0||(s.indexOf('오전')>=0&&s.indexOf('08:00')>=0))return 'am1';
+  if(s.indexOf('인수인계')>=0)return 'am2';
+  if(s.indexOf('오후')>=0)return 'pm1';
+  if(s.indexOf('저녁')>=0||s.indexOf('마감')>=0)return 'eve1';
+  // 폴백: shift 기준
+  if(shift==='am')return 'am1';
+  if(shift==='pm')return 'eve1';
+  return 'am1';
+}
+/* 현재 시각으로 가장 가까운(직전/현재) 조 자동선택. 라운드 대표시각(분) 기준. */
+const ROUND_HOUR={am1:10,am2:12,pm1:15,pm2:18,eve1:20};
+function autoRoundForNow(){
+  const h=new Date().getHours();
+  let best='am1',bestGap=Infinity;
+  ROUND_KEYS.forEach(rk=>{
+    const gap=h-ROUND_HOUR[rk]; // 직전/현재 조 우선(>=0 작은 gap), 아직 안온 조는 큰 페널티
+    const score=gap>=0?gap:(100-gap);
+    if(score<bestGap){bestGap=score;best=rk}
+  });
+  return best;
+}
+/* 현재 선택된 라운드(성별별). localStorage 영속 → 새로고침/날짜이동해도 유지
+   (loadState가 STATE를 비워도 보존). 저장값 없으면 시간대 기준 자동 선택. */
+function roundLSKey(g){return 'wcheck_round_'+g}
+function getRoundG(g){
+  const v=localStorage.getItem(roundLSKey(g));
+  if(v&&ROUND_KEYS.indexOf(v)>=0)return v;
+  return autoRoundForNow();
+}
+function setRoundG(g,rk){
+  if(ROUND_KEYS.indexOf(rk)<0)return;
+  localStorage.setItem(roundLSKey(g),rk);
+  drawUI(getDateG(g),g);
+}
+/* 라운드별 제출 잠금 — STATE + localStorage 미러 영속.
+   loadState가 ONLINE 시 STATE를 서버값으로 덮어써도(라운드 락은 서버 미저장)
+   localStorage 미러로 새로고침·날짜이동 후에도 잠금 표시가 유지됨. GAS 스키마 무변경. */
+function roundSubKey(d,g,rk){return 'submitted_'+d+'_'+g+'_'+rk}
+function roundSubLSKey(d,g,rk){return 'wcheck_rsub_'+d+'_'+g+'_'+rk}
+function isRoundSubmitted(d,g,rk){
+  if(STATE[roundSubKey(d,g,rk)])return true;
+  return localStorage.getItem(roundSubLSKey(d,g,rk))==='1';
+}
+/* 라운드 제출 메타 읽기(제출자/시각) — STATE 우선, 없으면 localStorage 미러 */
+function roundSubMeta(d,g,rk){
+  const by=STATE['submitter_'+d+'_'+g+'_'+rk]||localStorage.getItem('wcheck_rsubBy_'+d+'_'+g+'_'+rk)||'';
+  const at=STATE['submittedAt_'+d+'_'+g+'_'+rk]||localStorage.getItem('wcheck_rsubAt_'+d+'_'+g+'_'+rk)||'';
+  return {by,at};
+}
+/* 특정 baseShift에 속한 라운드 키들 */
+function roundsOfShift(sh){return ROUNDS.filter(r=>r.baseShift===sh).map(r=>r.key)}
+/* 그 라운드에 가시 항목이 1개라도 있는지(성별 반영). 빈 조(pm2 등)는 false.
+   shift 완료 판정에서 빈 조는 '제출 불필요'로 간주(비어서 제출 불가한 조가
+   shift 집계를 영원히 막지 않도록). */
+function roundHasItems(date,g,rk){
+  const sched=getSched(date);
+  if(!sched)return false;
+  const slots=sched.filter(slot=>roundOfSlot(slot.slot,slot.shift)===rk);
+  let n=0;
+  slots.forEach(slot=>slot.groups.forEach(gr=>gr.items.forEach(it=>{if(shouldShowItemForGender(it,g))n++})));
+  if(rk==='eve1'){const dow=getDayOfWeek(date);if(DAY_FOCUS[dow])DAY_FOCUS[dow].forEach(it=>{if(shouldShowItemForGender(it,g))n++});}
+  return n>0;
+}
+/* 라운드별 타이머 키(확장: 날짜+성별+라운드). drawUI/타이머가 라운드 인지. */
+function timerKeys(d,g,rk){return {sk:'timerStart_'+d+'_'+g+'_'+rk, ek:'timerEnd_'+d+'_'+g+'_'+rk}}
+/* 5조 선택바 렌더 (성별별). 빈 조도 버튼 표시(클릭 시 안내문). */
+function renderRoundBar(g){
+  const bar=document.getElementById(g==='f'?'roundBarF':'roundBarM');
+  if(!bar)return;
+  const d=getDateG(g);
+  const cur=getRoundG(g);
+  let html='';
+  ROUNDS.forEach(r=>{
+    const act=r.key===cur?' active':'';
+    const done=isRoundSubmitted(d,g,r.key)?' done':'';
+    html+=`<button class="round-seg${act}${done}" onclick="setRoundG('${g}','${r.key}')">`
+        +`<span class="rs-name">${r.name}</span><span class="rs-time">${r.time}</span></button>`;
+  });
+  bar.innerHTML=html;
+}
+
 let STATE={};
 const LK=d=>`wcheck3_${d}`;
 
@@ -1884,6 +1996,11 @@ function drawUI(d,gender){
     btnAm.style.display='block';btnPm.style.display='block';btnNight.style.display='none';
   }
 
+  /* 5조 선택바: 정상(주간)모드만 노출·동작. 야간모드는 숨김(기존 흐름 보존). */
+  const roundBar=document.getElementById(gender==='f'?'roundBarF':'roundBarM');
+  if(roundBar)roundBar.style.display=nightMode?'none':'flex';
+  if(!nightMode)renderRoundBar(gender);
+
   let html='';
   let currentShift='';
 
@@ -1927,30 +2044,44 @@ function drawUI(d,gender){
     updateNightSubmitButtonG(sched,nightStats,d,gender);
 
   }else{
-    const amStats=getShiftStatsG(sched,'am',d,gender),pmStats=getShiftStatsG(sched,'pm',d,gender);
+    /* ── 5조(라운드) 단위 렌더 — 선택된 1개 조의 슬롯만 표시 ──
+       조 통계·잠금은 라운드 독립. 기존 am/pm 집계(getShiftStatsG)·_submitted_am/pm은
+       제출 시 submitRound가 함께 세팅(비회귀). 바닥 고정 버튼은 라운드 제출버튼으로 대체. */
+    const curRound=getRoundG(gender);
+    const rdef=roundDef(curRound)||ROUNDS[0];
+    /* 이 조에 속한 슬롯만 필터(순수 분류) */
+    const roundSlots=sched.filter(slot=>roundOfSlot(slot.slot,slot.shift)===curRound);
+    /* 요일별 집중청소는 저녁조(eve1)에 합류(기존 pm 통계 포함과 정합) */
+    const focusInRound=(curRound==='eve1'&&DAY_FOCUS[dow])?DAY_FOCUS[dow].filter(it=>shouldShowItemForGender(it,gender)):[];
 
-    sched.forEach((slot,si)=>{
-      const effectiveShift=(slot.shift==='all')?null:slot.shift;
-      if(effectiveShift&&effectiveShift!==currentShift){
-        currentShift=effectiveShift;
-        const st=currentShift==='am'?amStats:pmStats;
-        const label=currentShift==='am'?'오전조 (오픈~인수인계)':'오후조 (오후~마감)';
-        const subKey='_submitted_'+currentShift;
-        const subAtKey='_submittedAt_'+currentShift;
-        const subNameKey='_submitter_'+currentShift;
-        html+=`<div class="shift-divider"><div class="shift-label">${label}</div>
-          <div class="shift-progress">
-            <div class="progress-text"><span>${st.done}/${st.total}</span><span>${st.pct}%</span></div>
-            <div class="progress-bar"><div class="progress-fill" style="width:${st.pct}%;background:var(--green)"></div></div>
-          </div>`;
-        if(STATE[subKey]){
-          const who=STATE[subNameKey]?` (${STATE[subNameKey]})`:'';
-          const when=STATE[subAtKey]?new Date(STATE[subAtKey]).toLocaleString('ko-KR'):'';
-          html+=`<div class="shift-submitted">제출 완료${who} ${when}</div>`;
-        }
-        html+=`</div>`;
-      }
+    /* 이 조 진행도 계산(가시 항목 기준) */
+    let rTotal=0,rDone=0;
+    roundSlots.forEach(slot=>slot.groups.forEach(g=>g.items.forEach(it=>{
+      if(shouldShowItemForGender(it,gender)){rTotal++;if(STATE[it.id])rDone++}
+    })));
+    focusInRound.forEach(it=>{rTotal++;if(STATE[it.id])rDone++});
+    const rPct=rTotal?Math.round(rDone/rTotal*100):0;
+    const rSubmitted=isRoundSubmitted(d,gender,curRound);
 
+    /* 조 헤더(진행바 + 제출완료 표시) */
+    html+=`<div class="shift-divider"><div class="shift-label">${rdef.name} (${rdef.time})</div>
+      <div class="shift-progress">
+        <div class="progress-text"><span>${rDone}/${rTotal}</span><span>${rPct}%</span></div>
+        <div class="progress-bar"><div class="progress-fill" style="width:${rPct}%;background:var(--green)"></div></div>
+      </div>`;
+    if(rSubmitted){
+      const meta=roundSubMeta(d,gender,curRound);
+      const who=meta.by?` (${meta.by})`:'';
+      const when=meta.at?new Date(meta.at).toLocaleString('ko-KR'):'';
+      html+=`<div class="shift-submitted">제출 완료${who} ${when}</div>`;
+    }
+    html+=`</div>`;
+
+    if(roundSlots.length===0&&focusInRound.length===0){
+      html+=`<div class="closed-msg" style="padding:40px 20px;">이 시간대 점검 항목이 아직 없습니다.<br><span style="font-size:13px;color:var(--dim);">셋업 편집에서 추가할 수 있습니다.</span></div>`;
+    }
+
+    roundSlots.forEach(slot=>{
       html+=`<div class="time-slot"><div class="slot-header"><span class="slot-time">${slot.slot}</span></div>`;
       slot.groups.forEach(g=>{
         const visItems=g.items.filter(it=>shouldShowItemForGender(it,gender));
@@ -1969,14 +2100,28 @@ function drawUI(d,gender){
       html+='</div>';
     });
 
-    if(DAY_FOCUS[dow]){
-      const focusItems=DAY_FOCUS[dow].filter(it=>shouldShowItemForGender(it,gender));
-      if(focusItems.length>0){
-        html+=renderDayFocusSection(dow,focusItems,'pm',gender);
-      }
+    if(focusInRound.length>0){
+      html+=renderDayFocusSection(dow,focusInRound,'pm',gender);
     }
 
-    updateSubmitButtonsG(sched,amStats,pmStats,gender);
+    /* 라운드 제출 버튼(인-플로우) — 바닥 고정 버튼 대신. 점검자 입력 + 1건 이상 체크 시 활성. */
+    const sub=getSubmitterForGender(gender);
+    let rBtn='';
+    if(rSubmitted){
+      if(rDone<rTotal){
+        rBtn=`<button class="submit-btn primary" style="max-width:none;width:100%;" onclick="submitRound('${curRound}','${gender}')"${sub?'':' disabled'}>➕ 이 조 추가 제출 (남은 ${rTotal-rDone}건)</button>`;
+      }else{
+        rBtn=`<button class="submit-btn submitted" style="max-width:none;width:100%;" disabled>이 조 제출 완료</button>`;
+      }
+    }else if(!sub){
+      rBtn=`<button class="submit-btn primary" style="max-width:none;width:100%;" disabled>↑ 점검자 이름을 먼저 입력</button>`;
+    }else{
+      rBtn=`<button class="submit-btn primary" style="max-width:none;width:100%;" onclick="submitRound('${curRound}','${gender}')"${rDone===0?' disabled':''}>이 조 점검 제출 (${rDone}/${rTotal})</button>`;
+    }
+    html+=`<div style="margin:16px 0 8px;">${rBtn}</div>`;
+
+    /* 바닥 고정 제출바는 라운드 모드에서 숨김(라운드 버튼이 대체) */
+    document.getElementById(submitBarId).style.display='none';
   }
 
   el.innerHTML=html;
@@ -1991,14 +2136,25 @@ function _timerDuration(start,end){
   const m=Math.round((end-start)/60000);
   return (m>=0&&m<24*60)?m:null; // 음수·자정넘김 등 비정상은 빈값
 }
-/* 해당 날짜+성별 STATE 값으로 타이머 UI 복원 (없으면 idle). drawUI 끝에서 호출. */
-function setCheckTime(gender){
+/* 활성 타이머 키 결정: 정상(주간)모드=라운드별 독립 키, 야간모드=기존 날짜+성별 키.
+   라운드 전환 시 그 조의 타이머 상태가 자연히 복원됨(키가 라운드 포함). */
+function activeTimerKeys(gender){
   const d=getDateG(gender);
+  if(isNightShiftWorkerG(gender)){
+    return {sk:'timerStart_'+d+'_'+gender, ek:'timerEnd_'+d+'_'+gender};
+  }
+  const rk=getRoundG(gender);
+  const t=timerKeys(d,gender,rk);
+  return {sk:t.sk, ek:t.ek};
+}
+/* 해당 날짜+성별(+라운드) STATE 값으로 타이머 UI 복원 (없으면 idle). drawUI 끝에서 호출. */
+function setCheckTime(gender){
   const btn=document.getElementById(gender==='f'?'timerBtnF':'timerBtnM');
   const el=document.getElementById(gender==='f'?'checkTimeF':'checkTimeM');
   if(!btn||!el)return;
-  const start=STATE['timerStart_'+d+'_'+gender];
-  const end=STATE['timerEnd_'+d+'_'+gender];
+  const k=activeTimerKeys(gender);
+  const start=STATE[k.sk];
+  const end=STATE[k.ek];
   btn.classList.remove('running','done');
   if(!start){
     btn.textContent='▶ 점검 시작';el.textContent='--:--';
@@ -2014,7 +2170,8 @@ function setCheckTime(gender){
 /* idle→running(시작 기록) → done(완료·소요분) → idle(리셋, 새 점검) */
 function toggleCheckTimer(gender){
   const d=getDateG(gender);
-  const sk='timerStart_'+d+'_'+gender, ek='timerEnd_'+d+'_'+gender;
+  const k=activeTimerKeys(gender);
+  const sk=k.sk, ek=k.ek;
   const start=STATE[sk], end=STATE[ek];
   if(!start){                       // idle → running
     STATE[sk]=Date.now();delete STATE[ek];
@@ -2266,16 +2423,33 @@ function onCk(id,shift,gender){
   const sched=nightMode?getNightSched(d):getSched(d);
   if(!sched)return;
 
-  const effectiveShift=nightMode?'night':shift;
-  const stats=getShiftStatsG(sched,effectiveShift,d,gender);
-  const subKey='_submitted_'+effectiveShift;
-  if(stats.pct===100&&!STATE[subKey]){
+  if(nightMode){
+    // 야간모드: 기존 shift 단위 자동제출 유지
+    const stats=getShiftStatsG(sched,'night',d,gender);
+    if(stats.pct===100&&!STATE['_submitted_night']){
+      const sub=getSubmitterForGender(gender);
+      if(!sub){alert('점검자 이름을 먼저 입력하세요.');return}
+      if(confirm(`야간조 항목을 모두 완료했습니다.\n${sub}님 이름으로 제출할까요?`)){
+        submitShift('night',gender);
+      }
+    }
+    return;
+  }
+
+  // 정상(주간)모드: 현재 라운드(조) 100% 완료 시 그 조 제출 제안
+  const curRound=getRoundG(gender);
+  const rdef=roundDef(curRound)||ROUNDS[0];
+  const roundSlots=sched.filter(slot=>roundOfSlot(slot.slot,slot.shift)===curRound);
+  const dow=getDayOfWeek(d);
+  let total=0,done=0;
+  const tally=it=>{ if(shouldShowItemForGender(it,gender)){total++; if(STATE[it.id])done++;} };
+  roundSlots.forEach(slot=>slot.groups.forEach(g=>g.items.forEach(tally)));
+  if(curRound==='eve1'&&DAY_FOCUS[dow])DAY_FOCUS[dow].forEach(tally);
+  if(total>0&&done===total&&!isRoundSubmitted(d,gender,curRound)){
     const sub=getSubmitterForGender(gender);
-    if(!sub){alert('점검자를 선택해주세요.');return}
-    const labels={am:'오전조',pm:'오후조',night:'야간조'};
-    const label=labels[effectiveShift]||effectiveShift;
-    if(confirm(`${label} 항목을 모두 완료했습니다.\n${sub}님 이름으로 제출할까요?`)){
-      submitShift(effectiveShift,gender);
+    if(!sub){alert('점검자 이름을 먼저 입력하세요.');return}
+    if(confirm(`${rdef.name} ${rdef.time} 항목을 모두 완료했습니다.\n${sub}님 이름으로 제출할까요?`)){
+      submitRound(curRound,gender);
     }
   }
 }
@@ -2430,6 +2604,86 @@ async function submitShift(shift,gender){
   }
   alert(`${d} ${label} 점검(${genderLabel})이 ${sub}님 이름으로 ${_isAdd?'추가 ':''}제출되었습니다.`);
   drawUI(d,gender);
+}
+
+/* ── 라운드(조) 단위 제출·잠금 (시우·GM 2026-06-11 · 1단계) ──
+   1) 그 조 잠금(submitted_<date>_<gender>_<round>)+제출자·시각·타이머 적립
+   2) 스냅샷 1행 적립(shift 칸=라운드 라벨 '오전조[1]' 등 / 점검자=자유입력 / 타이머=그 라운드)
+   3) ⚠ 비회귀: 그 라운드가 속한 기존 shift(am/pm)의 모든 라운드가 제출되면
+      _submitted_<shift>를 세팅 + 기존 submitShift 백엔드 경로(스냅샷·텔레그램·집계)를 1회 호출
+      → getShiftStatsG·_submitted_am/pm·admin 대시보드·텔레그램이 계속 동작(0으로 안 떨어짐). */
+async function submitRound(round,gender){
+  const sub=getSubmitterForGender(gender);
+  if(!sub){alert('점검자 이름을 먼저 입력하세요.');return}
+  const d=getDateG(gender);
+  const rdef=roundDef(round); if(!rdef){alert('알 수 없는 조');return}
+  const genderLabel=gender==='f'?'여':'남';
+  const _isAdd=isRoundSubmitted(d,gender,round);
+  /* 1) 라운드 잠금 + 메타 (STATE + localStorage 미러 영속) */
+  const nowIso=new Date().toISOString();
+  STATE[roundSubKey(d,gender,round)]=true;
+  STATE['submittedAt_'+d+'_'+gender+'_'+round]=nowIso;
+  STATE['submitter_'+d+'_'+gender+'_'+round]=sub;
+  STATE['submitter_'+gender]=sub;                 // 자유입력 점검자 유지(R4)
+  localStorage.setItem(roundSubLSKey(d,gender,round),'1');
+  localStorage.setItem('wcheck_rsubBy_'+d+'_'+gender+'_'+round,sub);
+  localStorage.setItem('wcheck_rsubAt_'+d+'_'+gender+'_'+round,nowIso);
+  saveLocal(d,STATE);
+  if(ONLINE)await pushToServer(d);
+  /* 2) 라운드 스냅샷(최초 제출만) */
+  if(!_isAdd && ONLINE){
+    await appendRoundSnapshot(d,round,sub,gender);
+  }
+  /* 3) 비회귀: 같은 shift의 모든 라운드가 제출되면 기존 shift 제출 경로 1회 발화 */
+  const baseShift=rdef.baseShift;
+  const sibRounds=roundsOfShift(baseShift);
+  /* 빈 조(가시 항목 0)는 제출 불필요로 간주 → 항목 있는 조가 모두 제출되면 shift 완료 */
+  const allDone=sibRounds.every(rk=>!roundHasItems(d,gender,rk)||isRoundSubmitted(d,gender,rk));
+  if(allDone && !STATE['_submitted_'+baseShift]){
+    STATE['_submitted_'+baseShift]=true;
+    STATE['_submittedAt_'+baseShift]=new Date().toISOString();
+    STATE['_submitter_'+baseShift]=sub;
+    saveLocal(d,STATE);
+    if(ONLINE)await pushToServer(d);
+    await sendTelegramNotify(d,baseShift,sub,gender);     // 기존 조 마감 텔레그램(집계 정합)
+    if(ONLINE)await appendSubmitSnapshot(d,baseShift,sub,gender);  // 기존 shift 스냅샷(집계 무손상)
+  }
+  alert(`${d} ${rdef.name} ${rdef.time} 점검(${genderLabel})이 ${sub}님 이름으로 ${_isAdd?'추가 ':''}제출되었습니다.`);
+  drawUI(d,gender);
+}
+
+/* 라운드 스냅샷 1행 적립 — shift 칸에 라운드 라벨 기록(GAS 무변경: '교대' 컬럼에 들어감). */
+async function appendRoundSnapshot(date,round,submitter,gender){
+  if(!ONLINE)return;
+  const sched=getSched(date);
+  if(!sched)return;
+  const rdef=roundDef(round); if(!rdef)return;
+  /* 그 조의 가시 항목·이슈 수집 */
+  const roundSlots=sched.filter(slot=>roundOfSlot(slot.slot,slot.shift)===round);
+  const dow=getDayOfWeek(date);
+  let total=0,done=0,issues=[];
+  const tally=it=>{ if(shouldShowItemForGender(it,gender)){total++; if(STATE[it.id])done++; if(STATE['iss_'+it.id])issues.push(STATE['iss_'+it.id]);} };
+  roundSlots.forEach(slot=>slot.groups.forEach(g=>g.items.forEach(tally)));
+  if(round==='eve1'&&DAY_FOCUS[dow])DAY_FOCUS[dow].forEach(tally);
+  const pct=total?Math.round(done/total*100):0;
+  const zone=gender==='f'?'f':gender==='m'?'m':'all';
+  const t=timerKeys(date,gender,round);
+  const tStart=STATE[t.sk], tEnd=STATE[t.ek];
+  const startedAt=tStart?new Date(tStart).toLocaleString('sv-SE').replace('T',' '):'';
+  const finishedAt=tEnd?new Date(tEnd).toLocaleString('sv-SE').replace('T',' '):'';
+  const dur=_timerDuration(tStart,tEnd);
+  try{
+    await fetch(API_URL,{method:'POST',redirect:'follow',
+      headers:{'Content-Type':'text/plain'},
+      body:JSON.stringify({action:'snapshot_append',dept:DEPT,date,zone,
+        shift:rdef.name+' '+rdef.time,   // 라운드 라벨(예: '오전조[1] 10시') → 시트 '교대' 칸
+        submitter,
+        submittedAt:new Date().toLocaleString('sv-SE').replace('T',' '),
+        total,done,pct,
+        issuesCount:issues.length,issues:issues.join(' / '),
+        startedAt,finishedAt,durationMin:(dur!=null?dur:'')})
+    });
+  }catch(e){}
 }
 
 /* 제출 스냅샷을 점검일지 시트에 1행 적립 (집계와 독립) */
