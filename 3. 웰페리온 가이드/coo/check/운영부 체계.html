@@ -445,12 +445,12 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   .dash-table th,.dash-table td{padding:4px 6px}
 }
 /* 규정 탭 — 단일 트렐로 칸반 흐름(2026-06-10 재설계).
-   정기회의(JS 렌더 3컬: 운영기준·VOC·정기회의) → 근무·휴게 → 점검 안내가 한 .board-scroll 안에서
+   정기회의(JS 렌더 3컬: 운영기준·VOC·정기회의) → 근무·휴게가 한 .board-scroll 안에서
    같은 가로 흐름으로 이어짐. #policy-board는 display:contents(인라인)라서 JS가 만든 .board-col이
    부모 .board-scroll의 직접 flex 자식으로 합류 → 컬럼 폭·간격·모바일 스냅 규칙을 그대로 공유.
    과거 'grid 2열 + 우측 근무휴게 별도 패널' 방식은 폐기(정기회의 다음 카드로 자연스럽게 이어지도록).
    #policy-flow는 .board-scroll 그대로라 좁은 폭에선 가로 스크롤·스냅, 컬럼 침범 없음. */
-/* 고정 컬럼(근무휴게·점검안내)도 JS 컬럼과 동일 폭. 모바일(≤560px)은 아래 .board-col 86vw 규칙이 처리하므로 561px↑에서만 고정. */
+/* 고정 컬럼(근무휴게)도 JS 컬럼과 동일 폭(인라인 flex로 개별 너비 지정 가능). 모바일(≤560px)은 아래 .board-col 86vw 규칙이 처리하므로 561px↑에서만 고정. */
 @media(min-width:561px){ #policy-flow > .board-col{flex:0 0 410px;min-width:410px;max-width:410px;} }
 </style>
 </head>
@@ -501,9 +501,9 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   <h2 style="font-size:20px;margin-bottom:6px;">운영부 규정</h2>
   <p style="font-size:13px;color:var(--dim);margin-bottom:14px;line-height:1.6;">주제별 칸(컬럼)에 규정·회의를 카드로 정리했습니다. 각 카드의 <b>편집</b> 버튼으로 내용을 바로 수정·저장하면 모든 기기에 반영됩니다. <span style="color:var(--accent);">운영시간 등 공식값은 임의 변경 금지.</span></p>
   <div class="board-fullwidth">
-    <!-- 단일 트렐로 칸반 흐름: 정기회의(JS 렌더 컬럼) → 근무·휴게 → 점검 안내가 한 줄로 자연스럽게 이어짐.
+    <!-- 단일 트렐로 칸반 흐름: 정기회의(JS 렌더 컬럼) → 근무·휴게가 한 줄로 자연스럽게 이어짐.
          #policy-board는 display:contents → renderPolicyBoard()가 만든 .board-col들이 이 .board-scroll의
-         직접 자식처럼 흐름에 합류. 그 뒤 고정 카드 컬럼 2개(근무·휴게 / 점검 안내)가 같은 줄에 이어진다. -->
+         직접 자식처럼 흐름에 합류. 그 뒤 고정 카드 컬럼(근무·휴게)이 같은 줄에 이어진다. -->
     <div class="board-scroll" id="policy-flow">
     <div id="policy-board" style="display:contents"></div>
 
@@ -584,37 +584,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
       </div><!-- /board-col-body -->
     </div><!-- ── /근무·휴게 컬럼 ── -->
 
-    <!-- ── [칸반 컬럼] 🔎 점검 안내 (운영부는 점검 '제출' 주체가 아님 — 안내·매뉴얼) ── -->
-    <div class="board-col" style="border-left:4px solid var(--purple);">
-      <div class="board-col-head"><span class="bday" style="font-size:16px;color:var(--purple);">🔎 점검 안내</span></div>
-      <div class="board-col-body">
-        <div style="background:var(--purple-bg);border:1.5px solid rgba(167,139,218,0.4);border-radius:12px;padding:14px 16px;">
-          <p style="font-size:15px;font-weight:800;color:var(--purple);margin:0 0 6px;">운영부는 점검 ‘기록 주체’가 아닙니다</p>
-          <p style="font-size:13px;font-weight:600;color:var(--text);margin:0;line-height:1.7;">일일 시설점검 <strong>제출(체크·완료 도장)</strong>은 시설·지원팀이 담당합니다. 운영부(리셉션·프론트)는 회원 동선에서 발견한 이상을 <strong>VOC로 접수·전달</strong>하는 역할입니다.</p>
-        </div>
-        <p style="font-size:13.5px;font-weight:700;color:var(--accent);margin:16px 0 8px;">🌅 오전 점검 (오픈조)</p>
-        <div style="background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:12px;">
-          <ul style="margin:0;padding-left:18px;font-size:13px;line-height:1.7;">
-            <li>리셉션 조명·PC·전화·POS 전원 정상 확인</li>
-            <li>로비·카운터 청결·정돈 상태 눈으로 점검</li>
-            <li>입구 안내 표지·운영시간 게시 상태 확인</li>
-            <li>이상 발견 시 <strong style="color:var(--purple);">VOC 폼</strong>으로 접수 → 해당 부서 전달</li>
-          </ul>
-        </div>
-        <p style="font-size:13.5px;font-weight:700;color:var(--accent);margin:0 0 8px;">🌇 오후 점검 (마감 전)</p>
-        <div style="background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:12px;">
-          <ul style="margin:0;padding-left:18px;font-size:13px;line-height:1.7;">
-            <li>당일 방문·투어·전화 문의 일지 기록 완료 확인</li>
-            <li>접수한 VOC가 해당 부서에 전달됐는지 확인</li>
-            <li>리셉션·로비 정돈 후 다음 교대조 인계 사항 정리</li>
-            <li>미처리 건은 인수인계 메모로 명확히 남김</li>
-          </ul>
-        </div>
-        <div style="background:var(--accent-bg);border:1px solid rgba(183,159,138,0.3);border-radius:10px;padding:11px 14px;">
-          <p style="font-size:12.5px;color:var(--dim);margin:0;line-height:1.65;">📋 시설 점검 체크리스트 제출 화면이 필요하면 <strong>시설·지원팀 점검 페이지</strong>를 이용하세요. 운영부 페이지에는 점검 제출 기능이 없습니다(중복 제출·오집계 방지).</p>
-        </div>
-      </div><!-- /board-col-body -->
-    </div><!-- ── /점검 안내 컬럼 ── -->
+    <!-- ── '점검 안내' 컬럼 삭제됨 (2026-06-11 GM): 운영부는 점검 기록 주체가 아니며 VOC 탭이 그 역할을 대신함 → 중복 제거 ── -->
 
     </div><!-- /board-scroll (단일 칸반 흐름) -->
   </div><!-- /board-fullwidth -->
