@@ -27,6 +27,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 .tab{padding:8px 18px;font-size:14px;font-weight:600;color:var(--dim);background:none;border:none;border-radius:8px;cursor:pointer;font-family:inherit;white-space:nowrap;flex-shrink:0}
 .tab.active{background:var(--accent-bg);color:var(--accent)}
 .content{padding:16px 20px 140px;max-width:720px;margin:0 auto}
+#tab-guide.content{max-width:1200px}
 .date-bar{display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap}
 .date-bar input{background:var(--paper);border:1px solid var(--border);color:var(--text);padding:8px 14px;border-radius:8px;font-size:15px;font-family:inherit}
 .btn{padding:8px 14px;background:var(--accent-bg);color:var(--accent);border:1px solid var(--accent);border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit}
@@ -94,7 +95,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 .group-submit-btn{padding:7px 16px;font-size:12.5px;font-weight:700;border:1px solid var(--accent);background:var(--accent-bg);color:var(--accent);border-radius:8px;cursor:pointer;font-family:inherit}
 .group-submit-btn:hover{background:var(--accent);color:#fff}
 .group-submitted{font-size:12px;font-weight:700;color:var(--green)}
-.saving{position:fixed;top:70px;right:20px;background:var(--green-bg);color:var(--green);padding:6px 14px;border-radius:8px;font-size:12px;font-weight:600;display:none;z-index:20}
+.saving{position:fixed;top:70px;left:50%;transform:translateX(-50%);background:var(--green-bg);color:var(--green);padding:6px 14px;border-radius:8px;font-size:12px;font-weight:600;display:none;z-index:20}
 .admin-card{background:var(--paper);border:1px solid var(--border);border-radius:12px;padding:16px 18px;margin-bottom:12px}
 .admin-card h3{font-size:15px;font-weight:700;margin-bottom:10px}
 .admin-row{display:flex;justify-content:space-between;padding:6px 0;font-size:14px;border-bottom:1px solid rgba(61,56,53,0.3)}
@@ -508,7 +509,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
     <div id="policy-board" style="display:contents"></div>
 
     <!-- ── [칸반 컬럼] ⏱ 근무·휴게 시간 — 정기회의 다음 카드로 이어짐 ── -->
-    <div class="board-col" style="border-left:4px solid var(--red);flex:0 0 820px;min-width:820px;max-width:820px;">
+    <div class="board-col" style="border-left:4px solid var(--red);flex:1 1 100%;min-width:min(100%,860px);max-width:100%;">
       <div class="board-col-head"><span class="bday" style="font-size:16px;color:var(--red);">⏱ 근무·휴게 시간</span></div>
       <div class="board-col-body">
   <div style="background:var(--red-bg);border:2px solid rgba(237,91,63,0.5);border-radius:12px;padding:16px 18px;margin-bottom:16px;">
@@ -809,7 +810,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 
   <!-- ── 요일별 업무 보드 (주 콘텐츠 · 요일 다중선택 + 트렐로 칸반) ── -->
   <div style="font-size:16px;font-weight:700;color:var(--text);padding:2px 0 4px;">요일별 업무 보드 (트렐로 칸반)</div>
-  <div class="board-intro">위 <strong>요일 버튼</strong>을 켜고 끄면(여러 개 동시 선택 가능) 켠 요일이 <strong>트렐로 컬럼</strong>으로 나란히 표시됩니다. 컬럼이 많으면 가로로 스크롤하세요. 각 컬럼 안에 👨남 / 👩여 / 🏢외곽 카드가 세로로 있고, 카드의 <strong>편집</strong> 버튼을 누르면 <strong>표(시간 칸 | 내용 칸)를 바로 편집</strong>할 수 있고, <strong>＋ 행 추가</strong>/<strong>✕ 삭제</strong>로 항목을 늘리거나 지운 뒤 <strong>저장</strong>하면 모든 기기에 반영됩니다. 선택한 요일은 다음에 다시 와도 기억됩니다. 저장 시 시간 순으로 자동 정렬됩니다.</div>
+  <div class="board-intro">위 <strong>요일 버튼</strong>을 켜고 끄면(여러 개 동시 선택 가능) 켠 요일이 <strong>트렐로 컬럼</strong>으로 나란히 표시됩니다. 컬럼이 많으면 가로로 스크롤하세요. 각 컬럼 안에 🌅오전 응대 / 🌇오후 응대 / 📋상시·정기 카드가 세로로 있고, 카드의 <strong>편집</strong> 버튼을 누르면 <strong>표(시간 칸 | 내용 칸)를 바로 편집</strong>할 수 있고, <strong>＋ 행 추가</strong>/<strong>✕ 삭제</strong>로 항목을 늘리거나 지운 뒤 <strong>저장</strong>하면 모든 기기에 반영됩니다. 선택한 요일은 다음에 다시 와도 기억됩니다. 저장 시 시간 순으로 자동 정렬됩니다.</div>
 
   <!-- 요일 툴바 (7요일 다중선택 toggle + 전체 토글) -->
   <div id="day-toolbar" class="day-toolbar"></div>
@@ -845,169 +846,153 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
     </div>
   </div>
 
-  <!-- ── 기존 상세 절차 참고 (접이식 · 운영 정보 보존) ── -->
+  <!-- ── 시간대별 상세 절차 참고 (접이식 · 운영부 리셉션 정본) ── -->
   <div class="manual-section" style="margin-top:18px;">
-    <div class="manual-header" onclick="togManual(this)"><h3>구역별 상세 절차 (주차 매뉴얼)</h3><span class="arrow">&#9654;</span></div>
+    <div class="manual-header" onclick="togManual(this)"><h3>시간대별 상세 절차 (리셉션 매뉴얼)</h3><span class="arrow">&#9654;</span></div>
     <div class="manual-body" style="padding:0;">
     <div style="padding:14px 18px;">
 
-  <!-- 공통 안전 유의사항 -->
+  <!-- 공통 유의사항 (운영부 리셉션) -->
   <div class="manual-section">
     <div class="manual-header" onclick="togManual(this)"><h3>공통 유의사항</h3><span class="arrow open">&#9654;</span></div>
     <div class="manual-body open">
       <ul>
-        <li><span class="highlight">차량 접촉/파손·차단기 고장·화재 위험은 즉시 조치 후 팀장·소장 보고</span> (자의 판단 금지)</li>
-        <li>차량번호·CCTV 영상은 회원 개인정보 — 외부 유출·임의 열람 금지</li>
-        <li>순찰 시 야광 조끼·안전화 착용 / 차량 이동 동선 주의</li>
-        <li>사고·민원 발생 시 현장 보존 + 사진 + CCTV 시각 기록 의무</li>
+        <li><span class="highlight">리셉션·프론트는 항상 최소 1명이 자리를 지킨다</span> (절대 비우지 않음 · 휴게는 엇갈려)</li>
+        <li>회원이 보이면 하던 일을 멈추고 먼저 인사 — 눈 맞춤+미소 / 이름 알면 호칭 사용</li>
+        <li>모든 VOC·건의는 즉시 구글 폼 기록 후 당일 해당 부서 전달 / 처리 결과 회원 고지</li>
+        <li>회원 개인정보·예약 정보는 외부 유출·임의 열람 금지</li>
+        <li>긴급·안전·민원은 즉시 팀장·소장 보고 후 조치 (자의 판단 금지)</li>
       </ul>
     </div>
   </div>
 
-  <!-- 구역별 상세 절차 -->
-  <div style="font-size:13px;color:var(--dim);margin:8px 0 12px;">구역을 탭하면 상세 절차가 펼쳐집니다.</div>
+  <!-- 시간대별 상세 절차 -->
+  <div style="font-size:13px;color:var(--dim);margin:8px 0 12px;">시간대를 탭하면 상세 절차가 펼쳐집니다.</div>
 
-  <!-- 출입·차단기 -->
+  <!-- 오픈 점검 -->
   <div class="manual-section">
     <div class="manual-header" onclick="togManual(this)">
-      <h3><span style="display:inline-block;width:26px;height:26px;border-radius:8px;background:var(--accent-bg);color:var(--accent);font-size:13px;font-weight:700;text-align:center;line-height:26px;margin-right:8px;">출</span>출입통제 · 차단기</h3>
+      <h3><span style="display:inline-block;width:26px;height:26px;border-radius:8px;background:var(--accent-bg);color:var(--accent);font-size:13px;font-weight:700;text-align:center;line-height:26px;margin-right:8px;">오</span>오픈 점검 (평일 07:30 / 주말 09:00)</h3>
       <span class="arrow">&#9654;</span>
     </div>
     <div class="manual-body">
-      <span class="manual-label">차단기</span>
+      <span class="manual-label">리셉션 오픈</span>
       <ul>
-        <li>입·출차 차단기 바(barrier) 작동·손상 여부 확인</li>
-        <li>센서·리모컨 반응 점검 / 오작동 시 즉시 수동 개방 후 보고</li>
-      </ul>
-      <span class="manual-label">LPR(번호인식) 카메라</span>
-      <ul>
-        <li>렌즈 청결 / 번호 인식 정상 / 표시판 점등 확인</li>
-      </ul>
-      <span class="manual-label">회원/방문 운영</span>
-      <ul>
-        <li>회원 차량 자동개방 / 방문 차량 안내·등록 절차 준수</li>
+        <li>리셉션 PC·전화·POS 정상 부팅 / 당일 예약 일정 확인</li>
+        <li>카운터 정돈·청결 / 안내물·음료·소모품 보충</li>
+        <li>입구 안내판·현수막 위치·상태 / 운영시간 표기 정상</li>
       </ul>
     </div>
   </div>
 
-  <!-- 정산·요금기 -->
+  <!-- 오전 응대 -->
   <div class="manual-section">
     <div class="manual-header" onclick="togManual(this)">
-      <h3><span style="display:inline-block;width:26px;height:26px;border-radius:8px;background:var(--blue-bg);color:var(--blue);font-size:13px;font-weight:700;text-align:center;line-height:26px;margin-right:8px;">정</span>정산 · 요금기</h3>
+      <h3><span style="display:inline-block;width:26px;height:26px;border-radius:8px;background:var(--blue-bg);color:var(--blue);font-size:13px;font-weight:700;text-align:center;line-height:26px;margin-right:8px;">전</span>오전 응대 (평일 08:30~13:00 / 주말 10:00~)</h3>
       <span class="arrow">&#9654;</span>
     </div>
     <div class="manual-body">
-      <span class="manual-label">무인 정산기</span>
+      <span class="manual-label">회원 응대</span>
       <ul>
-        <li>화면·버튼·카드리더 정상 / 지폐·동전 투입구 막힘 여부</li>
-        <li>잔돈 보유량 / 영수증 용지 잔량 확인</li>
+        <li>입장 회원 확인·인사 (눈 맞춤+미소 / 이름 알면 호칭)</li>
+        <li>방문·투어 응대 — 목적 파악 → 안내 또는 담당자 연결 → 예약 기록</li>
+        <li>전화 문의 3회 이내 응답 / 내용 기록 / 추후 연락 건 메모</li>
       </ul>
-      <span class="manual-label">현금 시재</span>
+      <span class="manual-label">VOC 접수</span>
       <ul>
-        <li>교대 시 현금 시재 인수인계·기록 의무</li>
-        <li><span class="highlight">미정산/미수 건 즉시 공유</span></li>
+        <li>회원 건의 즉시 구글 폼 기록 — 직원명·회원명·장소·부서 필수</li>
+        <li>접수 당일 해당 부서 전달 / 이슈 응답 시트 확인</li>
       </ul>
     </div>
   </div>
 
-  <!-- 지상 주차장 -->
+  <!-- 인수인계 -->
   <div class="manual-section">
     <div class="manual-header" onclick="togManual(this)">
-      <h3><span style="display:inline-block;width:26px;height:26px;border-radius:8px;background:var(--green-bg);color:var(--green);font-size:13px;font-weight:700;text-align:center;line-height:26px;margin-right:8px;">지상</span>지상 주차장</h3>
+      <h3><span style="display:inline-block;width:26px;height:26px;border-radius:8px;background:var(--green-bg);color:var(--green);font-size:13px;font-weight:700;text-align:center;line-height:26px;margin-right:8px;">인</span>인수인계 (평일 13:00~14:00)</h3>
       <span class="arrow">&#9654;</span>
     </div>
     <div class="manual-body">
-      <span class="manual-label">순찰</span>
+      <span class="manual-label">교대 인수인계</span>
       <ul>
-        <li>불법·이중·무단 장기 주차 계도 및 기록</li>
-        <li>통행로 적치물 / 바닥 주차선·번호 식별</li>
-      </ul>
-      <span class="manual-label">설비</span>
-      <ul>
-        <li>조명 점등 불량·깜빡임 구역 기록 (야간 대비)</li>
-        <li>배수구 막힘 / 천장·벽면 누수 / 결빙 위험(동절기)</li>
+        <li>미처리 VOC / 방문 예정 / 전화 메모 / 이슈 공유</li>
+        <li>비품 재고 / 현금·POS 상태 / 청결 상태 인계</li>
       </ul>
     </div>
   </div>
 
-  <!-- 지하 주차장 -->
+  <!-- 오후 응대 -->
   <div class="manual-section">
     <div class="manual-header" onclick="togManual(this)">
-      <h3><span style="display:inline-block;width:26px;height:26px;border-radius:8px;background:var(--orange-bg);color:var(--orange);font-size:13px;font-weight:700;text-align:center;line-height:26px;margin-right:8px;">지하</span>지하 주차장 (층별)</h3>
+      <h3><span style="display:inline-block;width:26px;height:26px;border-radius:8px;background:var(--orange-bg);color:var(--orange);font-size:13px;font-weight:700;text-align:center;line-height:26px;margin-right:8px;">후</span>오후 응대 (평일 14:00~19:00)</h3>
       <span class="arrow">&#9654;</span>
     </div>
     <div class="manual-body">
-      <span class="manual-label">층별 순찰</span>
+      <span class="manual-label">회원 응대</span>
       <ul>
-        <li>B1·B2 등 층별 순회 / 불법·이중 주차 / 적치물</li>
-        <li>층별 빈자리 현황 파악 및 안내</li>
+        <li>입·퇴장 회원 응대 — 눈 맞춤+미소 / 퇴장 인사 / 분실물 확인</li>
+        <li>방문·문의 응대 — 목적 파악 / 투어 예약 기록 / 전화 문의 메모</li>
       </ul>
-      <span class="manual-label">환기·누수</span>
+      <span class="manual-label">VOC 접수</span>
       <ul>
-        <li>조명 점등 / 환기·제연 팬 가동음·매연·악취</li>
-        <li>천장·벽면 누수 / 바닥 고임물 / 차수판(우수기) 상태</li>
+        <li>오후 접수 건의 즉시 폼 기록 / 전달 완료 확인</li>
       </ul>
     </div>
   </div>
 
-  <!-- 우선·지정 구역 -->
+  <!-- 마감 -->
   <div class="manual-section">
     <div class="manual-header" onclick="togManual(this)">
-      <h3><span style="display:inline-block;width:26px;height:26px;border-radius:8px;background:var(--purple-bg);color:var(--purple);font-size:13px;font-weight:700;text-align:center;line-height:26px;margin-right:8px;">우</span>우선 · 지정 구역</h3>
+      <h3><span style="display:inline-block;width:26px;height:26px;border-radius:8px;background:var(--red-bg);color:var(--red);font-size:13px;font-weight:700;text-align:center;line-height:26px;margin-right:8px;">마</span>마감 (평일 19:00~ / 주말 17:00~)</h3>
       <span class="arrow">&#9654;</span>
     </div>
     <div class="manual-body">
-      <span class="manual-label">장애인 전용구역</span>
-      <ul><li>불법 점유 단속 / 표지·바닥도색 식별 / 비정상 주차 계도·기록</li></ul>
-      <span class="manual-label">여성우선 구역</span>
-      <ul><li>위치·조명 양호 / 표지 식별 / 불법 점유 점검</li></ul>
-      <span class="manual-label">전기차 충전구역</span>
-      <ul><li>충전기 작동 / 비충전 차량 점유 점검 / 케이블 정리</li></ul>
+      <span class="manual-label">일지 마감</span>
+      <ul>
+        <li>당일 방문·문의·VOC 기록 최종 확인</li>
+      </ul>
+      <span class="manual-label">정리·잠금</span>
+      <ul>
+        <li>카운터 정돈 / 소모품 재고 확인 / 쓰레기 처리</li>
+        <li><span class="highlight">PC·전화 오프 / 조명 소등 / 잠금 확인 / 마감 보고</span></li>
+      </ul>
     </div>
   </div>
 
-  <!-- 안전·소방 -->
+  <!-- 복장·에티켓 (상시) -->
   <div class="manual-section">
     <div class="manual-header" onclick="togManual(this)">
-      <h3><span style="display:inline-block;width:26px;height:26px;border-radius:8px;background:var(--red-bg);color:var(--red);font-size:13px;font-weight:700;text-align:center;line-height:26px;margin-right:8px;">안</span>안전 · 소방 · CCTV</h3>
+      <h3><span style="display:inline-block;width:26px;height:26px;border-radius:8px;background:var(--purple-bg);color:var(--purple);font-size:13px;font-weight:700;text-align:center;line-height:26px;margin-right:8px;">상</span>복장·에티켓 (상시)</h3>
       <span class="arrow">&#9654;</span>
     </div>
     <div class="manual-body">
-      <span class="manual-label">소방</span>
-      <ul>
-        <li>소화기·소화전 비치 위치·수량 / 압력게이지 / 통로 가림 여부</li>
-        <li>비상구 유도등 점등 / 피난통로 적치물 제거 / 비상벨 위치</li>
-      </ul>
-      <span class="manual-label">CCTV</span>
-      <ul>
-        <li>주차구역 CCTV 화면 이상 / 사각지대 / 녹화 정상 여부</li>
-        <li><span class="highlight">영상 열람은 사고·민원 처리 목적 + 책임자 승인 한정</span></li>
-      </ul>
-      <span class="manual-label">주차장 화장실</span>
-      <ul><li>청결 / 비품(화장지·손세정제) / 악취·조명</li></ul>
+      <span class="manual-label">유니폼·명찰</span>
+      <ul><li>웰페리온 유니폼 청결 / 명찰 좌측 가슴 패용</li></ul>
+      <span class="manual-label">응대 태도</span>
+      <ul><li>먼저 인사 / 끝까지 경청 / 처리 결과 반드시 고지</li></ul>
     </div>
   </div>
 
-  <!-- 요일별 집중 점검 -->
+  <!-- 요일별 집중 업무 -->
   <div class="manual-section">
     <div class="manual-header" onclick="togManual(this)">
-      <h3>요일별 집중 점검</h3><span class="arrow">&#9654;</span>
+      <h3>요일별 집중 업무</h3><span class="arrow">&#9654;</span>
     </div>
     <div class="manual-body">
       <table class="schedule-table">
-        <tr><th>요일</th><th>집중 점검 항목</th></tr>
-        <tr><td><strong>월</strong></td><td>바닥 주차선·표시 / 차단기 정밀 점검 / 장애인·여성우선 구역 집중</td></tr>
-        <tr><td><strong>화</strong></td><td>배수구·차수판 / 조명 전수 점검 / 안내·규정 게시물</td></tr>
-        <tr><td><strong>수</strong></td><td>CCTV 사각지대 / 환기·제연 설비 점검</td></tr>
-        <tr><td><strong>목</strong></td><td>바닥 청소·오염 제거 / 소화기·소화전 / 주차장 화장실 집중</td></tr>
-        <tr><td><strong>금</strong></td><td>정산기 정밀 점검 / 전기차 충전구역 / 비상구·피난통로 집중</td></tr>
-        <tr><td><strong>토</strong></td><td>천장·벽면 누수 전수 / 주차유도·만차 표시기 / 혼잡 대응</td></tr>
-        <tr><td><strong>일</strong></td><td>전 구역 대청소 / 장기 미출차 차량 정리 / 미비 부분 보완</td></tr>
+        <tr><th>요일</th><th>집중 업무 항목</th></tr>
+        <tr><td><strong>월</strong></td><td>주말·전주 미처리 VOC 정리·부서 재전달 / 비품 재고 점검·발주</td></tr>
+        <tr><td><strong>화</strong></td><td>지난주 방문·문의·투어 일지 정리·백업 / PC·전화 상태 점검</td></tr>
+        <tr><td><strong>수</strong></td><td>카운터 내부·서랍·비품함 정밀 정리 / 안내물·현수막 점검·교체</td></tr>
+        <tr><td><strong>목</strong></td><td>이슈 응답 시트 미처리 건 점검 / 로비·대기 공간 집중 청소</td></tr>
+        <tr><td><strong>금</strong></td><td>주간 VOC 현황 정리·미결 실장 보고 / 주간 방문·문의 집계 기록</td></tr>
+        <tr><td><strong>토</strong></td><td>주말 예약·투어 일정 최종 확인·비품 보충 / VOC 폼 정상 작동 확인</td></tr>
+        <tr><td><strong>일</strong></td><td>전주 일지 마감 정리 / 다음주 안내물·비품 보충·예약 일정 확인</td></tr>
       </table>
     </div>
   </div>
 
-  <!-- '현재 전체 점검 항목 체크리스트'는 점검(지상)/점검(지하) 탭 전용으로 이관(매뉴얼 탭에선 중복이라 제거).
+  <!-- '현재 전체 점검 항목 체크리스트'는 점검 탭 전용으로 이관(매뉴얼 탭에선 중복이라 제거).
        데이터·체크상태는 점검 탭이 동일 소스(WEEKDAY+CUSTOM_ITEMS·STATE)로 렌더하므로 손실 없음. -->
     </div><!-- /padding wrapper -->
     </div><!-- /manual-body (기존 상세 절차 참고) -->
@@ -2569,10 +2554,10 @@ function switchTab(tab, opts){
 }
 
 /* ═══════════════════════════════════════════════
-   요일별 트렐로 보드 (매뉴얼 탭) — 7컬럼 × 지상/지하/공통
-   저장: localStorage(PARKING_MANUAL_BOARD) 즉시 영속 + 기존 패턴대로 API 베스트에포트 POST
+   요일별 트렐로 보드 (매뉴얼 탭) — 7컬럼 × 오전 응대/오후 응대/상시·정기
+   저장: localStorage(OPS_MANUAL_BOARD) 즉시 영속 + 기존 패턴대로 API 베스트에포트 POST
    ═══════════════════════════════════════════════ */
-const BOARD_STORAGE_KEY = 'OPS_MANUAL_BOARD'; // 21셀 내용 영속 키 (7요일×지상/지하/공통)
+const BOARD_STORAGE_KEY = 'OPS_MANUAL_BOARD'; // 21셀 내용 영속 키 (7요일×오전/오후/상시)
 const BOARD_DAYS = [
   {key:'mon',label:'월',weekend:false},
   {key:'tue',label:'화',weekend:false},
@@ -2582,51 +2567,51 @@ const BOARD_DAYS = [
   {key:'sat',label:'토',weekend:true},
   {key:'sun',label:'일',weekend:true}
 ];
-/* 분류 3개: 지상 / 지하 / 공통(출입·정산·안전·소방 등). cls = CSS 색 클래스 */
+/* 분류 3개: 오전 응대 / 오후 응대 / 상시·정기(인수인계·VOC·일지 등). cls = CSS 색 클래스 (구 m/f/outer 키 유지 — 저장 데이터 호환) */
 const BOARD_GENDERS = [
-  {gk:'m',cls:'male',label:'🅿 지상'},
-  {gk:'f',cls:'female',label:'🅿 지하'},
-  {gk:'outer',cls:'outer',label:'🏢 공통'}
+  {gk:'m',cls:'male',label:'🌅 오전 응대'},
+  {gk:'f',cls:'female',label:'🌇 오후 응대'},
+  {gk:'outer',cls:'outer',label:'📋 상시·정기'}
 ];
 
-/* 시드(seed) — 기존 요일별 집중 청소 표 + 남/여 전담 + 외부·주차장·건물 외곽 항목을 요일·분류 셀로 분배.
+/* 시드(seed) — 운영부 리셉션 체크리스트(WEEKDAY/WEEKEND·DAY_FOCUS) 기준으로 요일·시간대 셀에 분배.
    각 값은 줄바꿈(\n) 구분 항목 리스트 텍스트. 줄 맨 앞 "시간대::" 표기 시 그 시간대 그룹으로 묶임.
    GM이 이후 직접 편집·저장. */
 const BOARD_SEED = {
   mon:{
-    m:'오전 순찰(08:00~12:00)::지상 바닥 주차선·번호 식별 점검\n오전 순찰(08:00~12:00)::지상 조명 점등 불량 구역 기록',
-    f:'오전 순찰(08:00~12:00)::지하 층별 순찰·빈자리 현황\n오전 순찰(08:00~12:00)::지하 누수·배수구 점검',
-    outer:'오전(08:00~12:00)::차단기 정밀 점검(바·센서·리모컨)\n오전(08:00~12:00)::장애인·여성우선 구역 집중 단속'
+    m:'오전(08:00~12:00)::오픈 점검 — PC·전화·POS·카운터·안내물\n오전(08:00~12:00)::입장 회원 응대·전화 문의 / VOC 폼 기록',
+    f:'오후(14:00~18:00)::입·퇴장 회원 응대·분실물 확인\n오후(14:00~18:00)::오후 VOC 접수·전달 확인',
+    outer:'오전(08:00~12:00)::주말·전주 미처리 VOC 정리·부서 재전달\n종일::안내물·음료·소모품 재고 점검·발주'
   },
   tue:{
-    m:'오전 순찰(08:00~12:00)::지상 배수구·차수판 점검\n오전 순찰(08:00~12:00)::지상 조명 전수 점검',
-    f:'오전 순찰(08:00~12:00)::지하 환기·제연 가동 점검\n오전 순찰(08:00~12:00)::지하 조명 전수 점검',
-    outer:'오전(08:00~12:00)::안내·규정 게시물 점검\n오후(14:00~18:00)::주차유도·만차 표시기 점검'
+    m:'오전(08:00~12:00)::오픈 점검·입장 회원 응대\n오전(08:00~12:00)::투어·방문 문의 응대·예약 기록',
+    f:'오후(14:00~18:00)::오후 회원·방문 응대\n오후(14:00~18:00)::전화 문의 메모·투어 예약 기록',
+    outer:'오전(08:00~12:00)::지난주 방문·문의·투어 일지 정리·백업\n종일::리셉션 PC·전화 상태 점검·업데이트'
   },
   wed:{
-    m:'오후(14:00~18:00)::지상 CCTV 사각지대 점검\n오전 순찰(08:00~12:00)::지상 통행로 적치물 정리',
-    f:'오후(14:00~18:00)::지하 CCTV 사각지대 점검\n오전 순찰(08:00~12:00)::지하 환기·제연 설비 점검',
-    outer:'오후(14:00~18:00)::CCTV 녹화 보존 확인\n오전(08:00~12:00)::정산기 카드리더·시재 점검'
+    m:'오전(08:00~12:00)::오픈 점검·입장 회원 응대\n오전(08:00~12:00)::VOC 폼 기록·해당 부서 전달',
+    f:'오후(14:00~18:00)::오후 회원 응대·VOC 접수\n오후(14:00~18:00)::방문·투어 예약 기록',
+    outer:'종일::카운터 내부·서랍·비품함 정밀 정리\n종일::안내물·현수막 점검·교체 요청'
   },
   thu:{
-    m:'오전 순찰(08:00~12:00)::지상 바닥 청소·오염 제거\n오전 순찰(08:00~12:00)::지상 통행로 이물질 제거',
-    f:'오전 순찰(08:00~12:00)::지하 바닥 고임물·오염 제거\n오전 순찰(08:00~12:00)::지하 층별 재순찰',
-    outer:'오후(14:00~18:00)::소화기·소화전 점검\n오후(14:00~18:00)::주차장 화장실 집중 청소'
+    m:'오전(08:00~12:00)::오픈 점검·입장 회원 응대\n오전(08:00~12:00)::투어·방문 응대·예약 기록',
+    f:'오후(14:00~18:00)::오후 회원 응대·전화 문의\n오후(14:00~18:00)::오후 VOC 기록·전달 확인',
+    outer:'오전(08:00~12:00)::이슈 응답 시트 미처리 건 점검·고지\n오후(14:00~18:00)::로비·대기 공간 집중 청소'
   },
   fri:{
-    m:'오전 순찰(08:00~12:00)::지상 전기차 충전구역 점검\n오전 순찰(08:00~12:00)::지상 비상구·피난통로 점검',
-    f:'오전 순찰(08:00~12:00)::지하 전기차 충전구역 점검\n오전 순찰(08:00~12:00)::지하 비상구·피난통로 점검',
-    outer:'오전(08:00~12:00)::정산기 정밀 점검(지폐·동전·영수증)\n오후(14:00~18:00)::비상벨·유도등 점검'
+    m:'오전(08:00~12:00)::오픈 점검·입장 회원 응대\n오전(08:00~12:00)::VOC 폼 기록·전달',
+    f:'오후(14:00~18:00)::오후 회원 응대·퇴장 인사\n오후(14:00~18:00)::오후 VOC 접수·전달 확인',
+    outer:'오후(14:00~18:00)::주간 VOC 현황 정리·미결 실장 보고\n오후(14:00~18:00)::주간 방문·문의 현황 집계 기록'
   },
   sat:{
-    m:'오전 순찰(09:00~14:00)::지상 천장·벽면 누수 전수\n오전 순찰(09:00~14:00)::지상 주말 혼잡 유도',
-    f:'오전 순찰(09:00~14:00)::지하 천장·벽면 누수 전수\n오전 순찰(09:00~14:00)::지하 주말 혼잡 유도',
-    outer:'오전(09:00~14:00)::주차유도·만차 표시기 전수\n오후(14:00~18:00)::혼잡 대응 동선·임시 안내 점검'
+    m:'오전(09:00~14:00)::주말 오픈 점검·회원 입장 응대\n오전(09:00~14:00)::방문·투어 응대·VOC 폼 기록',
+    f:'오후(14:00~18:00)::주말 회원·방문 응대\n오후(14:00~18:00)::혼잡 시 대기 안내·예약 기록',
+    outer:'오전(09:00~14:00)::주말 예약·투어 일정 최종 확인·비품 보충\n종일::VOC 폼 링크 정상 접속·제출 테스트'
   },
   sun:{
-    m:'종일::지상 전 구역 대청소\n종일::지상 장기 미출차 차량 정리·기록',
-    f:'종일::지하 전 구역 대청소\n종일::지하 장기 미출차 차량 정리·기록',
-    outer:'종일::장기 주차 차량 안내 조치\n종일::한 주간 미결·미비 점검 보완'
+    m:'오전(09:00~14:00)::주말 오픈 점검·회원 입장 응대\n오전(09:00~14:00)::방문·투어 응대·VOC 폼 기록',
+    f:'오후(14:00~17:00)::주말 회원 응대·퇴장 인사\n오후(14:00~17:00)::오후 VOC 접수·전달',
+    outer:'종일::전주 방문·문의·VOC 일지 마감 정리\n종일::다음주 안내물·비품 보충·예약 일정 확인'
   }
 };
 
@@ -3758,7 +3743,7 @@ renderManualItems();
     </div>
     <div style="margin-bottom:14px;">
       <label style="display:block;font-size:13px;font-weight:600;color:var(--dim);margin-bottom:4px;">카테고리</label>
-      <input id="editCat" type="text" placeholder="예: P-A 출입통제 · 차단기" style="width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:10px 14px;border-radius:8px;font-size:13px;font-family:inherit;">
+      <input id="editCat" type="text" placeholder="예: O-A 리셉션 오픈 · 회원 응대" style="width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:10px 14px;border-radius:8px;font-size:13px;font-family:inherit;">
     </div>
     <div style="display:flex;gap:8px;justify-content:flex-end;">
       <button onclick="cancelItemEdit()" style="padding:10px 20px;background:var(--paper);color:var(--dim);border:1px solid var(--border);border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;">취소</button>
