@@ -27,12 +27,21 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 .tab{padding:8px 18px;font-size:14px;font-weight:600;color:var(--dim);background:none;border:none;border-radius:8px;cursor:pointer;font-family:inherit;white-space:nowrap;flex-shrink:0}
 .tab.active{background:var(--accent-bg);color:var(--accent)}
 .content{padding:16px 20px 140px;max-width:720px;margin:0 auto}
+/* 가이드 탭 본문 풀폭 (S2 · 운영부 정합 · GM 2026-06-11) */
+#tab-guide{max-width:1200px}
 .date-bar{display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap}
 .date-bar input{background:var(--paper);border:1px solid var(--border);color:var(--text);padding:8px 14px;border-radius:8px;font-size:15px;font-family:inherit}
 .btn{padding:8px 14px;background:var(--accent-bg);color:var(--accent);border:1px solid var(--accent);border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit}
 .submitter-bar{background:var(--paper);border:1px solid var(--border);border-radius:10px;padding:12px 16px;margin-bottom:12px;display:flex;align-items:center;gap:12px}
 .submitter-bar label{font-size:13px;font-weight:700;color:var(--accent);white-space:nowrap}
 .submitter-bar select{flex:1;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:10px 14px;border-radius:8px;font-size:15px;font-family:inherit;font-weight:600}
+/* 점검자 칸 = 점검시간(좌) + 점검자 선택(우) 50:50 (GM 2026-06-11) */
+.submitter-bar-split{gap:0;padding:0}
+.submitter-bar-split .sb-half{flex:1 1 50%;width:50%;display:flex;align-items:center;gap:10px;padding:12px 16px}
+.submitter-bar-split .sb-half+.sb-half{border-left:1px solid var(--border)}
+.submitter-bar-split .sb-half label{flex:0 0 auto}
+.submitter-bar-split .sb-time{flex:1;font-size:15px;font-weight:700;color:var(--text)}
+.submitter-bar-split select{flex:1;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:10px 14px;border-radius:8px;font-size:15px;font-family:inherit;font-weight:600;min-width:0}
 .guide-cards{display:flex;gap:10px;margin-bottom:12px}
 .guide-card{flex:1;border-radius:10px;padding:12px 14px;border:1px solid}
 .guide-card.issue-guide{background:var(--red-bg);border-color:rgba(237,91,63,0.3)}
@@ -94,7 +103,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 .group-submit-btn{padding:7px 16px;font-size:12.5px;font-weight:700;border:1px solid var(--accent);background:var(--accent-bg);color:var(--accent);border-radius:8px;cursor:pointer;font-family:inherit}
 .group-submit-btn:hover{background:var(--accent);color:#fff}
 .group-submitted{font-size:12px;font-weight:700;color:var(--green)}
-.saving{position:fixed;top:70px;right:20px;background:var(--green-bg);color:var(--green);padding:6px 14px;border-radius:8px;font-size:12px;font-weight:600;display:none;z-index:20}
+.saving{position:fixed;top:70px;left:50%;transform:translateX(-50%);background:var(--green-bg);color:var(--green);padding:6px 14px;border-radius:8px;font-size:12px;font-weight:600;display:none;z-index:20}
 .admin-card{background:var(--paper);border:1px solid var(--border);border-radius:12px;padding:16px 18px;margin-bottom:12px}
 .admin-card h3{font-size:15px;font-weight:700;margin-bottom:10px}
 .admin-row{display:flex;justify-content:space-between;padding:6px 0;font-size:14px;border-bottom:1px solid rgba(61,56,53,0.3)}
@@ -669,6 +678,17 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
     <tr><td style="padding:8px;border:1px solid var(--border);">긴급·안전</td><td style="padding:8px;border:1px solid var(--border);">즉시 팀장·소장 보고 → 지시 후 조치 / 자의 판단 금지</td></tr>
   </table>
 
+  <!-- 상시 회원 응대 (점검 탭 '상시 F'에서 가이드로 이관·합병 · GM 2026-06-11) -->
+  <h3 style="font-size:17px;margin:16px 0 10px;">상시 회원 응대 (F)</h3>
+  <table style="width:100%;border-collapse:collapse;margin-bottom:16px;">
+    <tr style="background:var(--paper);"><th style="padding:10px;border:1px solid var(--border);width:160px;">구역</th><th style="padding:10px;border:1px solid var(--border);">응대 기준</th></tr>
+    <tr><td style="padding:8px;border:1px solid var(--border);"><strong>F-1 개인 락커</strong></td><td style="padding:8px;border:1px solid var(--border);">첫 인사 눈맞춤+미소 / 불편사항 접수 / 에티켓 위반 정중·단호 안내</td></tr>
+    <tr><td style="padding:8px;border:1px solid var(--border);"><strong>F-2 데일리 락커</strong></td><td style="padding:8px;border:1px solid var(--border);">락커 사용법 안내 / 분실물 민원 즉시 확인·기록</td></tr>
+    <tr><td style="padding:8px;border:1px solid var(--border);"><strong>F-3 사우나 내부</strong></td><td style="padding:8px;border:1px solid var(--border);">청결 즉시 조치 (바닥 미끄럼, 이물질)</td></tr>
+    <tr><td style="padding:8px;border:1px solid var(--border);"><strong>F-4 파우더 공간</strong></td><td style="padding:8px;border:1px solid var(--border);">소모품 요청 즉시 보충 / 드라이기 등 관리</td></tr>
+    <tr><td style="padding:8px;border:1px solid var(--border);"><strong>F-5 휴게공간</strong></td><td style="padding:8px;border:1px solid var(--border);">소파·테이블 관리 / 혼잡·소음 민원 양해 요청</td></tr>
+  </table>
+
   <h3 style="font-size:17px;margin:16px 0 10px;">복장·용모</h3>
   <table style="width:100%;border-collapse:collapse;margin-bottom:16px;">
     <tr style="background:var(--paper);"><th style="padding:10px;border:1px solid var(--border);width:160px;">항목</th><th style="padding:10px;border:1px solid var(--border);">기준</th></tr>
@@ -743,15 +763,15 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
     <div class="manual-body">
       <span class="manual-label">14:00~18:00 오후</span>
       <ul>
-        <li>A-1/A-2/A-3 오후 재점검 (수위·온도·바닥·배수) / 팀장 15분 점검 카톡 보고</li>
+        <li>A-1/A-2/A-3 오후 점검 (수위·온도·바닥·배수) / 팀장 15분 점검 카톡 보고</li>
         <li>D-6 G.X룸 거울·바닥 (남 전담 / 화요일 집중)</li>
         <li>D-7 센터 화분 물 공급 (여 전담 / 금요일 집중)</li>
         <li>D-9 수영장 계단 주 1회 청소</li>
-        <li>B-2/B-3/B-4/B-5 오후 재점검</li>
+        <li>B-2/B-3/B-4/B-5 오후 점검</li>
       </ul>
       <span class="manual-label">19:00~22:00 저녁</span>
       <ul>
-        <li>B-2/B-3/B-4 저녁 재점검</li>
+        <li>B-2/B-3/B-4 저녁 점검</li>
         <li>D-8 키즈 샤워실 파우더룸 정리 20:30 / 2주 1회 청소 수 13:00 (남 전담)</li>
         <li>E-6 주차장 바닥·화장실·차단기</li>
       </ul>
@@ -808,31 +828,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
     <div id="manual-board" class="board-scroll"></div>
   </div>
 
-  <!-- ── 점검 셋업 편집기 1단계 (좌=시간대 / 우=항목) ── -->
-  <div style="margin-top:22px;border-top:2px solid var(--accent);padding-top:14px;">
-    <div style="font-size:16px;font-weight:700;color:var(--text);padding:2px 0 4px;">점검 항목 셋업 편집</div>
-    <div class="setup-bar">
-      <button id="setupToggleBtn" class="setup-toggle-btn" onclick="toggleSetupEdit()">⚙ 셋업 편집</button>
-      <button id="setupSaveBtn" class="setup-save-btn" style="display:none;" onclick="setupSave()">저장 (전 기기 반영)</button>
-      <span class="setup-hint">시간대(좌)를 누르면 그 시간대의 점검 항목(우)이 보입니다. 추가·이름수정·삭제·순서이동이 가능합니다. <b>코드 기본 항목은 회색(읽기전용)</b>으로 참고만 표시되며, 추가/이동/삭제는 <b>커스텀 항목</b>에만 적용됩니다. 저장하면 구글시트에 기록되어 전 기기에 반영됩니다 (다른 기기는 Ctrl+Shift+R 새로고침).</span>
-    </div>
-    <div id="setupEditor" style="display:none;">
-      <div class="setup-wrap">
-        <div class="setup-col-slots">
-          <div class="setup-panel">
-            <div class="setup-panel-head"><span>시간대</span><button class="setup-mini-btn" onclick="setupAddSlot()">＋ 시간대 추가</button></div>
-            <div id="setupSlotList"></div>
-          </div>
-        </div>
-        <div class="setup-col-items">
-          <div class="setup-panel">
-            <div class="setup-panel-head"><span id="setupItemsHead">항목</span><button class="setup-mini-btn" id="setupAddItemBtn" onclick="setupAddItem()" style="display:none;">＋ 항목 추가</button></div>
-            <div id="setupItemList"><div class="setup-empty">왼쪽에서 시간대를 선택하세요.</div></div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
+  <!-- ── 점검 셋업 편집기는 '점검' 탭으로 이동(GM 2026-06-11). tab-check-m 상단 참조. ── -->
 
   <!-- ── 기존 상세 절차 참고 (접이식 · 운영 정보 보존) ── -->
   <div class="manual-section" style="margin-top:18px;">
@@ -1055,11 +1051,17 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
     <button class="btn" onclick="setTodayG('m')">오늘</button>
     <button class="btn" onclick="moveDateG('m',1)">&gt;</button>
   </div>
-  <div class="submitter-bar">
-    <label>점검자</label>
-    <select id="submitterM" onchange="onSubmitterChangeG('m')">
-      <option value="">선택하세요</option>
-    </select>
+  <div class="submitter-bar submitter-bar-split">
+    <div class="sb-half">
+      <label>점검시간</label>
+      <span class="sb-time" id="checkTimeM">--:--</span>
+    </div>
+    <div class="sb-half">
+      <label>점검자</label>
+      <select id="submitterM" onchange="onSubmitterChangeG('m')">
+        <option value="">선택하세요</option>
+      </select>
+    </div>
   </div>
   <div class="guide-cards">
     <div class="guide-card issue-guide">
@@ -1071,6 +1073,33 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
       <div class="guide-desc">더 효율적인 방법, 개선 아이디어를 공유</div>
     </div>
   </div>
+
+  <!-- ── 점검 항목 셋업 편집기 (매뉴얼 탭 → 점검 탭 이동 · GM 2026-06-11) ── -->
+  <div style="margin:4px 0 14px;border:1px solid var(--border);border-radius:12px;padding:12px 14px;background:var(--paper);">
+    <div style="font-size:14px;font-weight:700;color:var(--text);padding:0 0 4px;">점검 항목 셋업 편집</div>
+    <div class="setup-bar">
+      <button id="setupToggleBtn" class="setup-toggle-btn" onclick="toggleSetupEdit()">⚙ 셋업 편집</button>
+      <button id="setupSaveBtn" class="setup-save-btn" style="display:none;" onclick="setupSave()">저장 (전 기기 반영)</button>
+      <span class="setup-hint">시간대(좌)를 누르면 그 시간대의 점검 항목(우)이 보입니다. 추가·이름수정·삭제·순서이동이 가능합니다. <b>코드 기본 항목은 회색(읽기전용)</b>으로 참고만 표시되며, 추가/이동/삭제는 <b>커스텀 항목</b>에만 적용됩니다. 저장하면 구글시트에 기록되어 전 기기에 반영됩니다 (다른 기기는 Ctrl+Shift+R 새로고침). 점검(남)·점검(여) 항목을 함께 관리합니다.</span>
+    </div>
+    <div id="setupEditor" style="display:none;">
+      <div class="setup-wrap">
+        <div class="setup-col-slots">
+          <div class="setup-panel">
+            <div class="setup-panel-head"><span>시간대</span><button class="setup-mini-btn" onclick="setupAddSlot()">＋ 시간대 추가</button></div>
+            <div id="setupSlotList"></div>
+          </div>
+        </div>
+        <div class="setup-col-items">
+          <div class="setup-panel">
+            <div class="setup-panel-head"><span id="setupItemsHead">항목</span><button class="setup-mini-btn" id="setupAddItemBtn" onclick="setupAddItem()" style="display:none;">＋ 항목 추가</button></div>
+            <div id="setupItemList"><div class="setup-empty">왼쪽에서 시간대를 선택하세요.</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div id="checklistM"></div>
   <div class="submit-bar" id="submitBarM">
     <button class="submit-btn primary" id="submitAmM" onclick="submitShift('am','m')" disabled>오전조 제출</button>
@@ -1086,11 +1115,17 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
     <button class="btn" onclick="setTodayG('f')">오늘</button>
     <button class="btn" onclick="moveDateG('f',1)">&gt;</button>
   </div>
-  <div class="submitter-bar">
-    <label>점검자</label>
-    <select id="submitterF" onchange="onSubmitterChangeG('f')">
-      <option value="">선택하세요</option>
-    </select>
+  <div class="submitter-bar submitter-bar-split">
+    <div class="sb-half">
+      <label>점검시간</label>
+      <span class="sb-time" id="checkTimeF">--:--</span>
+    </div>
+    <div class="sb-half">
+      <label>점검자</label>
+      <select id="submitterF" onchange="onSubmitterChangeG('f')">
+        <option value="">선택하세요</option>
+      </select>
+    </div>
   </div>
   <div class="guide-cards">
     <div class="guide-card issue-guide">
@@ -1333,7 +1368,7 @@ const WEEKDAY=[
       {id:"d4",name:"D-4 메인 복도 휴게공간",detail:"소파/바닥 청결 (여 주임 전담)",gender:"f"},
       {id:"d5",name:"D-5 분리수거장",detail:"에스컬레이터 아래 분리수거 진행",gender:"all"}
     ]},
-    {title:"E 외곽 청결",items:[
+    {title:"E 내부 (오전)",items:[
       {id:"e1",name:"E-1 센터 복도 바닥",detail:"1F/B1/B2 에스컬레이터 공간 전체 복도",gender:"all"},
       {id:"e2",name:"E-2 센터 거울/유리창",detail:"거울/유리창 물때 | 손톱깍이장 청소 (화요일 집중)",gender:"all"},
       {id:"e3",name:"E-3 청소 비품 관리",detail:"비품 지정 위치 배치 | 깔끔하게 관리",gender:"all"},
@@ -1348,13 +1383,13 @@ const WEEKDAY=[
     ]}
   ]},
   {slot:"오후 14:00~18:00",shift:"pm",groups:[
-    {title:"A 사우나 재점검",items:[
-      {id:"a_pm",name:"A-1/A-2/A-3 오후 재점검",detail:"사우나 탕 수위/온도 | 건습식 온도 | 사우나 내부 바닥/배수\n팀장 15분 점검 (카톡 보고)",gender:"all"}
+    {title:"A 사우나 (오후)",items:[
+      {id:"a_pm",name:"A-1/A-2/A-3 오후 점검",detail:"사우나 탕 수위/온도 | 건습식 온도 | 사우나 내부 바닥/배수\n팀장 15분 점검 (카톡 보고)",gender:"all"}
     ]},
-    {title:"B 락커룸 재점검",items:[
-      {id:"b_pm",name:"B-2/B-3/B-4/B-5 오후 재점검",detail:"휴게실/찜질방(수면실)/마루바닥/사우나 화장실 오후 상태 확인",gender:"all"}
+    {title:"B 락커룸 (오후)",items:[
+      {id:"b_pm",name:"B-2/B-3/B-4/B-5 오후 점검",detail:"휴게실/찜질방(수면실)/마루바닥/사우나 화장실 오후 상태 확인",gender:"all"}
     ]},
-    {title:"D 외부 (오후)",items:[
+    {title:"D 내부 (오후)",items:[
       {id:"d6",name:"D-6 G.X룸",detail:"거울/바닥 청소 (남 주임 전담 / 화요일 집중)",gender:"m"},
       {id:"d7",name:"D-7 센터 화분",detail:"물 공급 (여 주임 전담 / 금요일 집중)",gender:"f"},
       {id:"d9",name:"D-9 수영장 계단",detail:"주 1회 청소",gender:"all"}
@@ -1362,7 +1397,7 @@ const WEEKDAY=[
   ]},
   {slot:"저녁 19:00~22:00",shift:"pm",groups:[
     {title:"저녁 점검",items:[
-      {id:"b_ev",name:"B 락커룸 저녁 재점검",detail:"B-2/B-3/B-4 상태 확인",gender:"all"},
+      {id:"b_ev",name:"B 락커룸 저녁 점검",detail:"B-2/B-3/B-4 상태 확인",gender:"all"},
       {id:"d8",name:"D-8 키즈 샤워실",detail:"파우더룸 정리 20:30\n2주 1회 샤워실 청소 수 13:00 (남 주임 전담)",gender:"m"},
       {id:"e6",name:"E-6 주차장",detail:"바닥 쓰레기 치우기 | 주차장 화장실 | 차단기 확인\n휴관일: 집중 청소",gender:"all"}
     ]}
@@ -1373,16 +1408,8 @@ const WEEKDAY=[
       {id:"cls2",name:"사우나/파우더 최종 체크",detail:"남/여 사우나 & 파우더 공간 청결 상태 체크\n시설/운영부 마감자 카톡 보고\n미비 시 경고 / 경고 3회 경징계",gender:"all"},
       {id:"cls3",name:"전 구역 마감 확인",detail:"전 구역 이상 유무 | 미수금 정산 | 다음날 일정 준비 완료 확인",gender:"all"}
     ]}
-  ]},
-  {slot:"상시",shift:"all",groups:[
-    {title:"F 회원 응대",items:[
-      {id:"f1",name:"F-1 개인 락커 응대",detail:"첫 인사 눈맞춤+미소 | 불편사항 접수 | 에티켓 위반 정중+단호 안내",gender:"all"},
-      {id:"f2",name:"F-2 데일리 락커 응대",detail:"락커 사용법 안내 | 분실물 민원 즉시 확인+기록",gender:"all"},
-      {id:"f3",name:"F-3 사우나 내부 응대",detail:"청결 즉시 조치 (바닥 미끄럼, 이물질)",gender:"all"},
-      {id:"f4",name:"F-4 파우더 공간 응대",detail:"소모품 요청 즉시 보충 | 드라이기 등 관리",gender:"all"},
-      {id:"f5",name:"F-5 휴게공간 응대",detail:"소파/테이블 관리 | 혼잡/소음 민원 양해 요청",gender:"all"}
-    ]}
   ]}
+  // '상시 F 회원 응대'는 점검 항목에서 제거 → '가이드' 탭으로 이관·합병 (GM 2026-06-11)
 ];
 
 const WEEKEND=[
@@ -1408,7 +1435,7 @@ const WEEKEND=[
     {title:"C 세탁물 (오전)",items:[
       {id:"c1a",name:"세탁물 입고 + 상태 체크",detail:"운동복/양말 사이즈별 배치 | 타올류 배치",gender:"all"}
     ]},
-    {title:"E 외곽 청결",items:[
+    {title:"E 내부 (오전)",items:[
       {id:"e1",name:"E-1 센터 복도 바닥",detail:"1F/B1/B2",gender:"all"},
       {id:"e3",name:"E-3 청소 비품 관리",detail:"지정 위치 배치",gender:"all"},
       {id:"e4",name:"E-4 헬스장",detail:"거울 청소 (주말)",gender:"all"},
@@ -1421,10 +1448,10 @@ const WEEKEND=[
     ]}
   ]},
   {slot:"오후 14:00~17:00",shift:"pm",groups:[
-    {title:"A 사우나 재점검",items:[
-      {id:"a_pm",name:"A-1/A-2/A-3 오후 재점검",detail:"수위/온도 | 건습식 | 바닥/배수",gender:"all"}
+    {title:"A 사우나 (오후)",items:[
+      {id:"a_pm",name:"A-1/A-2/A-3 오후 점검",detail:"수위/온도 | 건습식 | 바닥/배수",gender:"all"}
     ]},
-    {title:"D 외부",items:[
+    {title:"D 내부 (오후)",items:[
       {id:"d1",name:"D-1 외부 화장실",detail:"골프장/B1/B2",gender:"all"},
       {id:"d2",name:"D-2 복도 휴지통",detail:"운영사무실 앞 / B1 복도",gender:"all"},
       {id:"d3",name:"D-3 메인 계단",detail:"B1-B2 벽/바닥 (남 주임 전담)",gender:"m"},
@@ -1435,7 +1462,7 @@ const WEEKEND=[
   {slot:"저녁 17:00~20:00",shift:"pm",groups:[
     {title:"저녁 점검",items:[
       {id:"c_ev",name:"C 세탁물 마감",detail:"마감 세탁물 출고",gender:"all"},
-      {id:"b_ev",name:"B 락커룸 저녁 재점검",detail:"B-2/B-3/B-4/B-5 상태 확인",gender:"all"},
+      {id:"b_ev",name:"B 락커룸 저녁 점검",detail:"B-2/B-3/B-4/B-5 상태 확인",gender:"all"},
       {id:"e6",name:"E-6 주차장",detail:"바닥 쓰레기 | 화장실 | 차단기",gender:"all"}
     ]}
   ]},
@@ -1445,16 +1472,8 @@ const WEEKEND=[
       {id:"cls2",name:"사우나/파우더 최종 체크",detail:"남/여 사우나 & 파우더 청결 최종 체크 (카톡 보고)",gender:"all"},
       {id:"cls3",name:"마감 탕청소",detail:"별도 2인 1조 | 탕청소 업체 20:30 출근",gender:"all"}
     ]}
-  ]},
-  {slot:"상시",shift:"all",groups:[
-    {title:"F 회원 응대",items:[
-      {id:"f1",name:"F-1 개인 락커 응대",detail:"첫 인사 눈맞춤+미소 | 불편사항 접수 | 에티켓 위반 정중+단호 안내",gender:"all"},
-      {id:"f2",name:"F-2 데일리 락커 응대",detail:"락커 사용법 안내 | 분실물 민원 즉시 확인+기록",gender:"all"},
-      {id:"f3",name:"F-3 사우나 내부 응대",detail:"청결 즉시 조치 (바닥 미끄럼, 이물질)",gender:"all"},
-      {id:"f4",name:"F-4 파우더 공간 응대",detail:"소모품 요청 즉시 보충 | 드라이기 등 관리",gender:"all"},
-      {id:"f5",name:"F-5 휴게공간 응대",detail:"소파/테이블 관리 | 혼잡/소음 민원 양해 요청",gender:"all"}
-    ]}
   ]}
+  // '상시 F 회원 응대'는 점검 항목에서 제거 → '가이드' 탭으로 이관·합병 (GM 2026-06-11)
 ];
 
 /* ── D: Night shift (탕청소 업체) ── */
@@ -1914,6 +1933,18 @@ function drawUI(d,gender){
   }
 
   el.innerHTML=html;
+  setCheckTime(gender);
+}
+
+/* 점검자 칸 좌측 '점검시간' = 현재 시각 표시 (점검자 반반 칸 · GM 2026-06-11) */
+function setCheckTime(gender){
+  const id=gender==='f'?'checkTimeF':'checkTimeM';
+  const el=document.getElementById(id);
+  if(!el)return;
+  const now=new Date();
+  const hh=String(now.getHours()).padStart(2,'0');
+  const mm=String(now.getMinutes()).padStart(2,'0');
+  el.textContent=hh+':'+mm;
 }
 
 /* v2.48 — 점검 항목 사용자 수정 기능. v2.49 onclick HTML 충돌 fix
