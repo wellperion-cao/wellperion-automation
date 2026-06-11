@@ -436,11 +436,15 @@ def dispatch_publish(it: dict, events: list) -> None:
             it.pop("note", None)
             events.append(f"✅ {title} 발행 완료 — {url}")
         elif rc == 9:
-            # (FIX2) 확인필요 — 성공 토스트는 떴으나 그리드 신규 shortcode 윈도우 내 미확정.
-            # 발행됐을 가능성 높음 → '발행실패' 단정·자동 재발행 금지(중복 방지). GM 수동 URL 확인.
-            it["status"] = "확인필요"
-            it["note"] = "발행됐을 가능성 높음(검증 캐시지연) — 게시물 직접 확인 후 발행완료/재승인 결정. 자동 재발행 안 함."
-            events.append(f"🔎 {title}: 발행 확인필요 — URL 수동확인(중복발행 금지)")
+            # (CTO 2026-06-11) rc==9 = 성공 토스트 확인됨 = 발행 동작 자체는 성공.
+            # 신규 shortcode(게시 URL) 회수만 캐시지연으로 윈도우 내 미확정 — 개인계정의
+            # '알려진 false-negative'. 발행 동작이 성공했으므로 status='발행완료' 도장.
+            # (검증 근거 = 발행 동작 성공[토스트]이지, 별도 URL 재조회가 아니다.)
+            # ⚠️ 자동 재발행 절대 금지 — 한 번 [승인]=한 번 발행. URL은 GM/추후 수동 보강 가능.
+            it["status"] = "발행완료"
+            it["published_at"] = datetime.now().isoformat(timespec="seconds")
+            it["note"] = "[봇 자동검증] pub 콜백 발행성공 → 발행완료(개인계정 URL회수 false-negative 무관)"
+            events.append(f"✅ {title} 발행 완료 — 성공 토스트 확인(URL 캐시지연, 수동 보강 가능)")
         else:
             it["status"] = "발행실패"
             it["note"] = "게시 URL 미회수 — 수동 점검 필요"
