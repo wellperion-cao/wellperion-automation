@@ -1772,9 +1772,13 @@ function roundsOfShift(sh){return ROUNDS.filter(r=>r.baseShift===sh).map(r=>r.ke
 function roundHasItems(date,g,rk){
   const sched=getSched(date);
   if(!sched)return false;
-  const slots=sched.filter(slot=>roundOfSlot(slot.slot,slot.shift)===rk);
   let n=0;
-  slots.forEach(slot=>slot.groups.forEach(gr=>gr.items.forEach(it=>{if(shouldShowItemForGender(it,g))n++})));
+  /* 멤버십(itemRounds) 기준 — 렌더와 동일하게 이 조에 뜨는 항목 수 집계 */
+  sched.forEach(slot=>slot.groups.forEach(gr=>gr.items.forEach(it=>{
+    if(!shouldShowItemForGender(it,g))return;
+    const ctx={...it,slot:slot.slot,shift:slot.shift};
+    if(itemRounds(ctx).indexOf(rk)>=0)n++;
+  })));
   if(rk==='eve1'){const dow=getDayOfWeek(date);if(DAY_FOCUS[dow])DAY_FOCUS[dow].forEach(it=>{if(shouldShowItemForGender(it,g))n++});}
   return n>0;
 }
@@ -1794,6 +1798,71 @@ function renderRoundBar(g){
         +`<span class="rs-name">${r.name}</span><span class="rs-time">${r.time}</span></button>`;
   });
   bar.innerHTML=html;
+}
+
+/* ════════════════════════════════════════════════════════════
+   2a단계 — 항목 다회차(multi-round) 멤버십 + 구역별 그룹핑 (시우·GM 2026-06-11).
+   · ROUND_MAP: 항목 id → 등장할 라운드 키 배열. 없으면 roundOfSlot 폴백(단일 라운드).
+   · itemRounds(it): 그 항목이 멤버인 라운드 키 배열. CUSTOM override는 영향 없음.
+   · 사우나 내부 권역(a*·b1·b5) = 5회 전부. 락커룸 내부 = 오전/오후/저녁 3회. 등.
+   · 화면 렌더는 구역(group.title)별로 묶고, 옛 슬롯 시간 라벨은 표시하지 않음.
+   ════════════════════════════════════════════════════════════ */
+const ROUND_MAP={
+  /* 사우나 내부 권역 = 5회 전부 (오전조1·오전조2·오후조1·오후조2·저녁조1) */
+  a1:['am1','am2','pm1','pm2','eve1'],
+  a2:['am1','am2','pm1','pm2','eve1'],
+  a3:['am1','am2','pm1','pm2','eve1'],
+  b1:['am1','am2','pm1','pm2','eve1'],
+  b5:['am1','am2','pm1','pm2','eve1'],
+  a_pm:['am1','am2','pm1','pm2','eve1'],   /* 오후 사우나 묶음 = 사우나 권역 → 5회 전부 */
+  /* 락커룸 내부 = 오전·오후·저녁 3회 */
+  b2:['am1','pm1','eve1'],
+  b3_f:['am1','pm1','eve1'],
+  b3_m:['am1','pm1','eve1'],
+  b4:['am1','pm1','eve1'],
+  b_pm:['am1','pm1','eve1'],                /* 오후 락커룸 묶음 = 락커룸 내부 3회 */
+  b_ev:['am1','pm1','eve1'],                /* 저녁 락커룸 점검 = 락커룸 내부 3회 */
+  /* B-6 데일리 락커(요일별 청소) = 오전조1 1회 */
+  b6:['am1'],
+  /* C 세탁물 입고/배치 = 오전 2회(오전조1·오전조2) */
+  c1a:['am1','am2'], c1b:['am1','am2'], c1c:['am1','am2'],
+  c_ev:['eve1'],                            /* 주말 C 세탁물 마감 = 저녁 1회 */
+  /* 인수인계 = 오전조2(12시) 1회 */
+  hw1:['am2'], hw2:['am2'],
+  /* D 외부 = 오전조2·오후조2 2회 */
+  d1:['am2','pm2'], d2:['am2','pm2'], d3:['am2','pm2'], d4:['am2','pm2'], d5:['am2','pm2'],
+  /* D 내부(오후/저녁) 비-사우나 항목 = 성격에 맞는 라운드 */
+  d6:['pm1'], d7:['pm1'], d9:['pm1'],       /* D 내부(오후) → 오후조1 */
+  d8:['eve1'],                              /* 키즈 샤워실(저녁) → 저녁조1 */
+  /* E 내부 = 오전조1·오후조1 2회 */
+  e1:['am1','pm1'], e2:['am1','pm1'], e3:['am1','pm1'], e4:['am1','pm1'], e5:['am1','pm1'], e6:['eve1'],
+  /* 마감 = 저녁조1 1회 */
+  cls1:['eve1'], cls2:['eve1'], cls3:['eve1']
+};
+/* 항목 → 멤버 라운드 배열. ROUND_MAP 우선, 없으면 현재 슬롯 1개 라운드 폴백.
+   it 객체에 slot/shift가 묶여 들어옴(getAllItems/렌더 슬롯 기준). */
+function itemRounds(it){
+  if(it&&ROUND_MAP[it.id])return ROUND_MAP[it.id];
+  const r=roundOfSlot(it&&it.slot,it&&it.shift);
+  return [r];
+}
+/* 회차별 체크 키 — 같은 항목 id라도 라운드마다 독립(10시 체크해도 12시엔 미체크). */
+function chkKey(round,id){return 'chk_'+round+'_'+id}
+/* 특정 라운드에서 이 항목이 체크됐는지. 라운드 키 우선, 없으면 레거시 STATE[id] 폴백
+   (서버 복원·야간모드 호환: 서버는 항목단위만 저장 → 복원 시 모든 라운드에 반영). */
+function isChecked(id,round){
+  if(round&&STATE[chkKey(round,id)])return true;
+  return !!STATE[id];
+}
+/* 이 항목이 어느 라운드에서든 체크됐는지(shift 집계·스냅샷·텔레그램·서버푸시용 브리지).
+   레거시 STATE[id](서버 복원·야간) 또는 전 라운드 중 하나라도 체크 → true.
+   ⚠ 슬롯 컨텍스트 유무와 무관히 전 라운드를 스캔(over-approx) — '어디서든 체크'를
+   놓치지 않아 shift % 가 falsely 떨어지지 않게(비회귀 핵심). it=객체 또는 id 문자열. */
+function isCheckedAny(it){
+  const id=(typeof it==='object'&&it)?it.id:it;
+  if(STATE[id])return true;
+  for(let i=0;i<ROUND_KEYS.length;i++){if(STATE[chkKey(ROUND_KEYS[i],id)])return true;}
+  return false;
 }
 
 let STATE={};
@@ -1864,14 +1933,14 @@ async function pushToServer(d){
   // main sched items — push ALL items regardless of gender filter so server gets everything
   sched.forEach(slot=>{slot.groups.forEach(gr=>{gr.items.forEach(it=>{
     checks.push({itemId:it.id,name:it.name,cat:gr.title,slot:slot.slot,shift:slot.shift,
-      checked:!!STATE[it.id],issue:STATE['iss_'+it.id]||'',tip:STATE['tip_'+it.id]||'',
+      checked:isCheckedAny(it),issue:STATE['iss_'+it.id]||'',tip:STATE['tip_'+it.id]||'',
       measure:collectTempJSON(it.id),reflected:!!STATE['reflected_'+it.id]});
   })})});
   // day focus items
   if(DAY_FOCUS[dow]){
     DAY_FOCUS[dow].forEach(it=>{
       checks.push({itemId:it.id,name:it.name,cat:'요일별 집중 청소',slot:'요일별',shift:'focus',
-        checked:!!STATE[it.id],issue:STATE['iss_'+it.id]||'',tip:STATE['tip_'+it.id]||'',
+        checked:isCheckedAny(it),issue:STATE['iss_'+it.id]||'',tip:STATE['tip_'+it.id]||'',
         measure:collectTempJSON(it.id),reflected:!!STATE['reflected_'+it.id]});
     });
   }
@@ -1898,20 +1967,20 @@ function getShiftStatsG(sched,sh,ds,gender){
     const match=(sh==='am'&&(slot.shift==='am'||slot.shift==='all'))||(sh==='pm'&&(slot.shift==='pm'||slot.shift==='all'))||(sh==='night'&&slot.shift==='night');
     if(match){
       slot.groups.forEach(g=>{g.items.forEach(it=>{
-        if(shouldShowItemForGender(it,gender)){total++;if(STATE[it.id])done++}
+        if(shouldShowItemForGender(it,gender)){total++;if(isCheckedAny(it))done++}
       })});
     }
   });
   if((sh==='am'||sh==='pm')&&dow>=0&&DAY_FOCUS[dow]&&!isNightShiftWorkerG(gender)){
     if(sh==='pm'){
       DAY_FOCUS[dow].forEach(it=>{
-        if(shouldShowItemForGender(it,gender)){total++;if(STATE[it.id])done++}
+        if(shouldShowItemForGender(it,gender)){total++;if(isCheckedAny(it))done++}
       });
     }
   }
   if(sh==='night'&&dow>=0&&DAY_FOCUS[dow]){
     DAY_FOCUS[dow].forEach(it=>{
-      if(shouldShowItemForGender(it,gender)){total++;if(STATE[it.id])done++}
+      if(shouldShowItemForGender(it,gender)){total++;if(isCheckedAny(it))done++}
     });
   }
   return{total,done,pct:total?Math.round(done/total*100):0};
@@ -1925,17 +1994,17 @@ function getShiftStatsAll(sched,sh,ds){
     const match=(sh==='am'&&(slot.shift==='am'||slot.shift==='all'))||(sh==='pm'&&(slot.shift==='pm'||slot.shift==='all'))||(sh==='night'&&slot.shift==='night');
     if(match){
       slot.groups.forEach(g=>{g.items.forEach(it=>{
-        total++;if(STATE[it.id])done++;
+        total++;if(isCheckedAny(it))done++;
       })});
     }
   });
   if((sh==='am'||sh==='pm')&&dow>=0&&DAY_FOCUS[dow]){
     if(sh==='pm'){
-      DAY_FOCUS[dow].forEach(it=>{total++;if(STATE[it.id])done++});
+      DAY_FOCUS[dow].forEach(it=>{total++;if(isCheckedAny(it))done++});
     }
   }
   if(sh==='night'&&dow>=0&&DAY_FOCUS[dow]){
-    DAY_FOCUS[dow].forEach(it=>{total++;if(STATE[it.id])done++});
+    DAY_FOCUS[dow].forEach(it=>{total++;if(isCheckedAny(it))done++});
   }
   return{total,done,pct:total?Math.round(done/total*100):0};
 }
@@ -2049,17 +2118,31 @@ function drawUI(d,gender){
        제출 시 submitRound가 함께 세팅(비회귀). 바닥 고정 버튼은 라운드 제출버튼으로 대체. */
     const curRound=getRoundG(gender);
     const rdef=roundDef(curRound)||ROUNDS[0];
-    /* 이 조에 속한 슬롯만 필터(순수 분류) */
-    const roundSlots=sched.filter(slot=>roundOfSlot(slot.slot,slot.shift)===curRound);
+    /* ── 2a: 항목 다회차 멤버십 + 구역(group.title)별 그룹핑 ──
+       슬롯 필터 대신, 전 슬롯 항목 중 itemRounds(it)가 현재 조를 포함하는 것만 수집.
+       옛 슬롯 시간 라벨은 화면에서 비표시(데이터 slot 필드는 보존). 구역 title로 버킷팅. */
+    const zoneOrder=[];           // 구역 제목 등장 순서
+    const zoneMap={};             // title → { items:[{...it,slot,shift,itemShift}], group:<대표 group 객체> }
+    sched.forEach(slot=>{
+      const itemShift=slot.shift==='all'?'pm':slot.shift;
+      slot.groups.forEach(g=>{
+        g.items.forEach(it=>{
+          if(!shouldShowItemForGender(it,gender))return;
+          const ctx={...it,slot:slot.slot,shift:slot.shift};
+          if(itemRounds(ctx).indexOf(curRound)<0)return;   // 이 조 멤버 아님 → 스킵
+          const title=g.title;
+          if(!zoneMap[title]){zoneMap[title]={items:[],group:g,slot:slot.slot,shift:slot.shift};zoneOrder.push(title);}
+          zoneMap[title].items.push({it,itemShift});
+        });
+      });
+    });
     /* 요일별 집중청소는 저녁조(eve1)에 합류(기존 pm 통계 포함과 정합) */
     const focusInRound=(curRound==='eve1'&&DAY_FOCUS[dow])?DAY_FOCUS[dow].filter(it=>shouldShowItemForGender(it,gender)):[];
 
-    /* 이 조 진행도 계산(가시 항목 기준) */
+    /* 이 조 진행도 계산(가시 항목 기준, 회차별 체크 키) */
     let rTotal=0,rDone=0;
-    roundSlots.forEach(slot=>slot.groups.forEach(g=>g.items.forEach(it=>{
-      if(shouldShowItemForGender(it,gender)){rTotal++;if(STATE[it.id])rDone++}
-    })));
-    focusInRound.forEach(it=>{rTotal++;if(STATE[it.id])rDone++});
+    zoneOrder.forEach(title=>zoneMap[title].items.forEach(({it})=>{rTotal++;if(isChecked(it.id,curRound))rDone++;}));
+    focusInRound.forEach(it=>{rTotal++;if(isChecked(it.id,curRound))rDone++});
     const rPct=rTotal?Math.round(rDone/rTotal*100):0;
     const rSubmitted=isRoundSubmitted(d,gender,curRound);
 
@@ -2077,31 +2160,28 @@ function drawUI(d,gender){
     }
     html+=`</div>`;
 
-    if(roundSlots.length===0&&focusInRound.length===0){
+    if(zoneOrder.length===0&&focusInRound.length===0){
       html+=`<div class="closed-msg" style="padding:40px 20px;">이 시간대 점검 항목이 아직 없습니다.<br><span style="font-size:13px;color:var(--dim);">셋업 편집에서 추가할 수 있습니다.</span></div>`;
     }
 
-    roundSlots.forEach(slot=>{
-      html+=`<div class="time-slot"><div class="slot-header"><span class="slot-time">${slot.slot}</span></div>`;
-      slot.groups.forEach(g=>{
-        const visItems=g.items.filter(it=>shouldShowItemForGender(it,gender));
-        if(visItems.length===0)return;
-        let gd=0;visItems.forEach(it=>{if(STATE[it.id])gd++});
-        const ok=gd===visItems.length,badge=ok?'<span class="cat-badge done">완료</span>':`<span class="cat-badge pending">${gd}/${visItems.length}</span>`;
-        html+=`<div class="category"><div class="cat-header" onclick="tog(this)"><span class="cat-title">${g.title}</span>${badge}</div><div class="cat-body${ok?'':' open'}">`;
-        visItems.forEach(it=>{
-          const itemShift=slot.shift==='all'?'pm':slot.shift;
-          html+=renderItem(it,itemShift,gender);
-        });
-        html+=groupSubmitBarHtml(g,gender);
-        html+=quickAddBarHtml(slot.slot,slot.shift,g.title,gender);
-        html+='</div></div>';
+    /* 구역(title)별 카드 — 옛 슬롯 시간 헤더 없이 바로 구역 단위로 출력. 빈 구역은 위에서 미생성. */
+    zoneOrder.forEach(title=>{
+      const bucket=zoneMap[title];
+      const visItems=bucket.items;          // [{it,itemShift}]
+      let gd=0;visItems.forEach(({it})=>{if(isChecked(it.id,curRound))gd++});
+      const ok=gd===visItems.length,badge=ok?'<span class="cat-badge done">완료</span>':`<span class="cat-badge pending">${gd}/${visItems.length}</span>`;
+      html+=`<div class="category"><div class="cat-header" onclick="tog(this)"><span class="cat-title">${title}</span>${badge}</div><div class="cat-body${ok?'':' open'}">`;
+      visItems.forEach(({it,itemShift})=>{
+        html+=renderItem(it,itemShift,gender,curRound);
       });
-      html+='</div>';
+      html+=groupSubmitBarHtml(bucket.group,gender,curRound);
+      /* 빠른 항목 추가 — 대표 슬롯/시프트로 등록(커스텀은 roundOfSlot 폴백 단일 라운드) */
+      html+=quickAddBarHtml(bucket.slot,bucket.shift,title,gender);
+      html+='</div></div>';
     });
 
     if(focusInRound.length>0){
-      html+=renderDayFocusSection(dow,focusInRound,'pm',gender);
+      html+=renderDayFocusSection(dow,focusInRound,'pm',gender,curRound);
     }
 
     /* 라운드 제출 버튼(인-플로우) — 바닥 고정 버튼 대신. 점검자 입력 + 1건 이상 체크 시 활성. */
@@ -2288,9 +2368,11 @@ window.resetItem=function(id){
   renderG(activeGenderTab);
 };
 
-function renderItem(it,shift,gender){
+function renderItem(it,shift,gender,round){
   const g=gender||activeGenderTab;
-  const ck=STATE[it.id]?'checked':'',cls=STATE[it.id]?'item checked':'item';
+  /* 회차별 체크 독립: round 있으면 라운드 키, 없으면(야간·매뉴얼 등) 레거시 STATE[id]. */
+  const _ckd=round?isChecked(it.id,round):!!STATE[it.id];
+  const ck=_ckd?'checked':'',cls=_ckd?'item checked':'item';
   const iss=STATE['iss_'+it.id]||'',tip=STATE['tip_'+it.id]||'';
   /* v2.48 — 사용자 override 반영 */
   const ov=getItemOverrides()[it.id]||{};
@@ -2337,8 +2419,9 @@ function renderItem(it,shift,gender){
   const hasMemo=!!(iss||tip);
   const isRef=!!STATE['reflected_'+it.id];
   const refBtn=hasMemo?`<button class="tiny-btn" style="${isRef?'background:rgba(44,138,79,0.14);color:#2c8a4f;border-color:rgba(44,138,79,0.4);':'background:rgba(140,139,131,0.12);color:#8c8b83;border-color:rgba(140,139,131,0.3);'}font-size:12px;" title="이슈/노하우 후속 조치 완료 표시" onclick="toggleReflected('${it.id}','${g}')">${isRef?'✓ 반영완료':'반영완료'}</button>`:'';
+  const _rArg=round?`,'${round}'`:'';
   return `<div class="${cls}">
-    <div class="item-row"><input type="checkbox" id="cb_${pfx}${it.id}" ${ck} onchange="onCk('${it.id}','${shift}','${g}')"><label for="cb_${pfx}${it.id}">${itemName}${editedTag}</label>
+    <div class="item-row"><input type="checkbox" id="cb_${pfx}${it.id}" ${ck} onchange="onCk('${it.id}','${shift}','${g}'${_rArg})"><label for="cb_${pfx}${it.id}">${itemName}${editedTag}</label>
       <div class="item-btns">${editBtn}${resetBtn}<button class="tiny-btn issue" onclick="togX('${pfx}iss_${it.id}')">이슈</button><button class="tiny-btn tip" onclick="togX('${pfx}tip_${it.id}')">노하우</button>${refBtn}</div>
     </div>
     <div class="item-detail">${det}</div>${tempHtml}
@@ -2349,14 +2432,15 @@ function renderItem(it,shift,gender){
 
 function escapeAttr(s){return s.replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
 
-function renderDayFocusSection(dow,items,shift,gender){
+function renderDayFocusSection(dow,items,shift,gender,round){
   const dayNames=['일','월','화','수','목','금','토'];
-  let gd=0;items.forEach(it=>{if(STATE[it.id])gd++});
+  const _ck = it => round ? isChecked(it.id,round) : !!STATE[it.id];
+  let gd=0;items.forEach(it=>{if(_ck(it))gd++});
   const ok=gd===items.length,badge=ok?'<span class="cat-badge done">완료</span>':`<span class="cat-badge pending">${gd}/${items.length}</span>`;
   let html=`<div class="day-focus-section">
     <div class="day-focus-title">${dayNames[dow]}요일 집중 청소</div>
     <div class="category"><div class="cat-header" onclick="tog(this)"><span class="cat-title">요일별 집중 청소 항목</span>${badge}</div><div class="cat-body${ok?'':' open'}">`;
-  items.forEach(it=>{html+=renderItem(it,shift,gender)});
+  items.forEach(it=>{html+=renderItem(it,shift,gender,round)});
   html+='</div></div></div>';
   return html;
 }
@@ -2412,10 +2496,14 @@ function updateNightSubmitButtonG(sched,nightStats,d,gender){
   }
 }
 
-function onCk(id,shift,gender){
+function onCk(id,shift,gender,round){
   const d=getDateG(gender);
   const pfx=gender+'_';
-  STATE[id]=document.getElementById('cb_'+pfx+id).checked;
+  const val=document.getElementById('cb_'+pfx+id).checked;
+  /* 회차별 체크 독립: round 있으면 라운드 키에만 기록(다른 회차 미영향).
+     round 없으면(야간모드 등) 기존 레거시 키 유지(비회귀). */
+  if(round){ if(val)STATE[chkKey(round,id)]=true; else delete STATE[chkKey(round,id)]; }
+  else { STATE[id]=val; }
   saveState(d);
   drawUI(d,gender);
 
@@ -2439,12 +2527,16 @@ function onCk(id,shift,gender){
   // 정상(주간)모드: 현재 라운드(조) 100% 완료 시 그 조 제출 제안
   const curRound=getRoundG(gender);
   const rdef=roundDef(curRound)||ROUNDS[0];
-  const roundSlots=sched.filter(slot=>roundOfSlot(slot.slot,slot.shift)===curRound);
   const dow=getDayOfWeek(d);
   let total=0,done=0;
-  const tally=it=>{ if(shouldShowItemForGender(it,gender)){total++; if(STATE[it.id])done++;} };
-  roundSlots.forEach(slot=>slot.groups.forEach(g=>g.items.forEach(tally)));
-  if(curRound==='eve1'&&DAY_FOCUS[dow])DAY_FOCUS[dow].forEach(tally);
+  /* 멤버십(itemRounds) 기준 + 회차별 체크(isChecked) — 렌더 진행도와 정합 */
+  sched.forEach(slot=>slot.groups.forEach(g=>g.items.forEach(it=>{
+    if(!shouldShowItemForGender(it,gender))return;
+    const ctx={...it,slot:slot.slot,shift:slot.shift};
+    if(itemRounds(ctx).indexOf(curRound)<0)return;
+    total++; if(isChecked(it.id,curRound))done++;
+  })));
+  if(curRound==='eve1'&&DAY_FOCUS[dow])DAY_FOCUS[dow].forEach(it=>{ if(shouldShowItemForGender(it,gender)){total++; if(isChecked(it.id,curRound))done++;} });
   if(total>0&&done===total&&!isRoundSubmitted(d,gender,curRound)){
     const sub=getSubmitterForGender(gender);
     if(!sub){alert('점검자 이름을 먼저 입력하세요.');return}
@@ -2496,7 +2588,7 @@ function renderManualItems(){
       const hasDet=!!detHtml;
       const genderLabel=it.gender==='m'?' <span style="font-size:10px;color:var(--blue);background:var(--blue-bg);padding:1px 6px;border-radius:6px;">남</span>':it.gender==='f'?' <span style="font-size:10px;color:var(--orange);background:var(--orange-bg);padding:1px 6px;border-radius:6px;">여</span>':'';
       const customLabel=it._custom?' <span style="font-size:10px;color:var(--accent);background:var(--accent-bg);padding:1px 6px;border-radius:6px;">추가</span>':'';
-      const checked=!!STATE[it.id];
+      const checked=isCheckedAny(it);   /* 어느 회차든 체크되면 매뉴얼 동기화 뷰도 완료 표시 */
       const checkMark=checked?' <span style="color:var(--green);font-weight:700;">&#10003;</span>':'';
       const nameStyle=checked?'font-size:13px;font-weight:600;color:var(--dim);text-decoration:line-through;':'font-size:13px;font-weight:600;';
       const arrow=hasDet?`<span class="m-arrow" style="font-size:11px;color:var(--dim);transition:transform .2s;">&#9654;</span>`:'';
@@ -2563,10 +2655,12 @@ function collectGroupSubmits(){
   return out;
 }
 // 그룹 제출 버튼/배지 HTML — cat-body 하단에 삽입
-function groupSubmitBarHtml(g, gender){
+function groupSubmitBarHtml(g, gender, round){
   const gk = groupKey(g);
   const visItems = (g.items||[]).filter(it=>shouldShowItemForGender(it,gender));
-  const remain = visItems.length - visItems.filter(it=>STATE[it.id]).length;
+  /* 회차별 체크 독립: round 있으면 그 회차 체크 기준 미흡건 계산 */
+  const _ck = it => round ? isChecked(it.id,round) : !!STATE[it.id];
+  const remain = visItems.length - visItems.filter(_ck).length;
   if(STATE['_gsub_' + gk]){
     const by = STATE['_gsubBy_' + gk] ? ' (' + STATE['_gsubBy_' + gk] + ')' : '';
     const at = STATE['_gsubAt_' + gk] ? new Date(STATE['_gsubAt_' + gk]).toLocaleString('ko-KR') : '';
@@ -2659,12 +2753,17 @@ async function appendRoundSnapshot(date,round,submitter,gender){
   if(!sched)return;
   const rdef=roundDef(round); if(!rdef)return;
   /* 그 조의 가시 항목·이슈 수집 */
-  const roundSlots=sched.filter(slot=>roundOfSlot(slot.slot,slot.shift)===round);
   const dow=getDayOfWeek(date);
   let total=0,done=0,issues=[];
-  const tally=it=>{ if(shouldShowItemForGender(it,gender)){total++; if(STATE[it.id])done++; if(STATE['iss_'+it.id])issues.push(STATE['iss_'+it.id]);} };
-  roundSlots.forEach(slot=>slot.groups.forEach(g=>g.items.forEach(tally)));
-  if(round==='eve1'&&DAY_FOCUS[dow])DAY_FOCUS[dow].forEach(tally);
+  /* 멤버십(itemRounds) 기준 + 회차별 체크(isChecked) — 라운드 진행도·스냅샷 정합 */
+  sched.forEach(slot=>slot.groups.forEach(g=>g.items.forEach(it=>{
+    if(!shouldShowItemForGender(it,gender))return;
+    const ctx={...it,slot:slot.slot,shift:slot.shift};
+    if(itemRounds(ctx).indexOf(round)<0)return;
+    total++; if(isChecked(it.id,round))done++;
+    if(STATE['iss_'+it.id])issues.push(STATE['iss_'+it.id]);
+  })));
+  if(round==='eve1'&&DAY_FOCUS[dow])DAY_FOCUS[dow].forEach(it=>{ if(shouldShowItemForGender(it,gender)){total++; if(isChecked(it.id,round))done++; if(STATE['iss_'+it.id])issues.push(STATE['iss_'+it.id]);} });
   const pct=total?Math.round(done/total*100):0;
   const zone=gender==='f'?'f':gender==='m'?'m':'all';
   const t=timerKeys(date,gender,round);
@@ -2737,6 +2836,8 @@ function resetShiftChecks(date,shift,gender){
   ids.forEach(id=>{
     delete STATE[id];
     delete STATE['reflected_'+id];
+    /* 회차별 체크 키도 함께 비움(다음 점검 준비) */
+    ROUND_KEYS.forEach(rk=>delete STATE[chkKey(rk,id)]);
     const tf=tempFieldsFor(id);
     if(tf)tf.forEach(f=>delete STATE['temp_'+id+'_'+f.key]);
   });
@@ -2789,13 +2890,13 @@ function collectDashboardData(d){
   let amTotal=0,amDone=0,pmTotal=0,pmDone=0,nightTotal=0,nightDone=0;
   let closingTotal=0,closingDone=0;
   sched.forEach(slot=>{slot.groups.forEach(g=>{g.items.forEach(it=>{
-    if(slot.shift==='am'){amTotal++;if(STATE[it.id])amDone++}
-    else if(slot.shift==='pm'||slot.shift==='all'){pmTotal++;if(STATE[it.id])pmDone++}
+    if(slot.shift==='am'){amTotal++;if(isCheckedAny(it))amDone++}
+    else if(slot.shift==='pm'||slot.shift==='all'){pmTotal++;if(isCheckedAny(it))pmDone++}
   })})});
   // 마감 항목 별도 카운트 (pm 포함이지만 별도 표시용)
   sched.forEach(slot=>{
     if(slot.slot.includes('마감')){
-      slot.groups.forEach(g=>{g.items.forEach(it=>{closingTotal++;if(STATE[it.id])closingDone++})});
+      slot.groups.forEach(g=>{g.items.forEach(it=>{closingTotal++;if(isCheckedAny(it))closingDone++})});
     }
   });
   if(nightSched){
@@ -2804,7 +2905,7 @@ function collectDashboardData(d){
     })})});
   }
   if(DAY_FOCUS[dow]){
-    DAY_FOCUS[dow].forEach(it=>{pmTotal++;if(STATE[it.id])pmDone++});
+    DAY_FOCUS[dow].forEach(it=>{pmTotal++;if(isCheckedAny(it))pmDone++});
   }
 
   const total=amTotal+pmTotal+nightTotal,done=amDone+pmDone+nightDone;
@@ -3009,7 +3110,7 @@ function buildAdminShiftCard(shiftKey,label,done,total,pct,submitted,submitterNa
       if(shiftKey==='night'&&slot.shift==='night') match=true;
       if(!match)return;
       slot.groups.forEach(g=>{
-        let gd=0,gt=g.items.length;g.items.forEach(it=>{if(STATE[it.id])gd++});
+        let gd=0,gt=g.items.length;g.items.forEach(it=>{if(shiftKey==='night'?STATE[it.id]:isCheckedAny(it))gd++});
         const d2=gd===gt?'green':gd>0?'yellow':'red';
         const slotLabel=shiftKey==='night'?` ${slot.slot}`:'';
         html+=`<div class="admin-row"><span><span class="status-dot ${d2}"></span>${g.title}<span style="color:var(--dim);font-size:11px">${slotLabel}</span></span><span>${gd}/${gt}</span></div>`;
@@ -3019,7 +3120,7 @@ function buildAdminShiftCard(shiftKey,label,done,total,pct,submitted,submitterNa
   // Day focus in pm card
   if(shiftKey==='pm'&&DAY_FOCUS[dow]){
     let dfDone=0,dfTotal=DAY_FOCUS[dow].length;
-    DAY_FOCUS[dow].forEach(it=>{if(STATE[it.id])dfDone++});
+    DAY_FOCUS[dow].forEach(it=>{if(isCheckedAny(it))dfDone++});
     const dfDot=dfDone===dfTotal?'green':dfDone>0?'yellow':'red';
     html+=`<div class="admin-row"><span><span class="status-dot ${dfDot}"></span>요일별 집중 청소 <span style="color:var(--dim);font-size:11px">${dn[dow]}요일</span></span><span>${dfDone}/${dfTotal}</span></div>`;
   }
@@ -3134,11 +3235,12 @@ async function copyReport(){
         if(!match)return;
         slot.groups.forEach(g=>{
           g.items.forEach(it=>{
-            const ck=STATE[it.id]?'v':'_';
+            const _on=s.shift==='night'?!!STATE[it.id]:isCheckedAny(it);
+            const ck=_on?'v':'_';
             const iss=STATE['iss_'+it.id];
             let line='  '+ck+' '+it.name;
             if(iss) line+=' -- '+iss;
-            else if(STATE[it.id]) line+=' -- 양호';
+            else if(_on) line+=' -- 양호';
             lines.push(line);
           });
         });
@@ -3149,14 +3251,15 @@ async function copyReport(){
 
   // 요일별 집중
   if(DAY_FOCUS[dow]&&DAY_FOCUS[dow].length>0){
-    let dfDone=0;DAY_FOCUS[dow].forEach(it=>{if(STATE[it.id])dfDone++});
+    let dfDone=0;DAY_FOCUS[dow].forEach(it=>{if(isCheckedAny(it))dfDone++});
     lines.push('■ '+dn[dow]+'요일 집중 청소 ('+dfDone+'/'+DAY_FOCUS[dow].length+')');
     DAY_FOCUS[dow].forEach(it=>{
-      const ck=STATE[it.id]?'v':'_';
+      const _on=isCheckedAny(it);
+      const ck=_on?'v':'_';
       const iss=STATE['iss_'+it.id];
       let line='  '+ck+' '+it.name;
       if(iss) line+=' -- '+iss;
-      else if(STATE[it.id]) line+=' -- 양호';
+      else if(_on) line+=' -- 양호';
       lines.push(line);
     });
     lines.push('');
