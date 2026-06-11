@@ -312,7 +312,9 @@ function doGet(e) {
       }
     }
   });
-  return jsonRes({ date: date, zone: zone || 'all', rows: rows, groupSubmits: _getGroupSubmits(date) });
+  // checkedLedger(2026-06-11 시우): 정상완료 항목은 시트행 미기록 → 이 원장으로 STATE 체크 복원.
+  // 과거일/타기기 admin 완료율 회귀 방지(시트 col5 비의존). dept별 분리.
+  return jsonRes({ date: date, zone: zone || 'all', rows: rows, groupSubmits: _getGroupSubmits(date), checkedLedger: _getCheckLedger(dept, date) });
 }
 
 // ─── 그룹별 제출 영속 (2026-06-05 GM) — PropertiesService 날짜별 JSON, 병합·빈값 덮어쓰기 방지 ───
@@ -329,6 +331,82 @@ function _saveGroupSubmits(date, gs) {
 function _getGroupSubmits(date) {
   try { return JSON.parse(PropertiesService.getScriptProperties().getProperty(GSUB_PROP_PREFIX + date) || '{}'); }
   catch (e) { return {}; }
+}
+
+// ─── 완료 체크 원장(ledger) — 항목별 시트 최소화 대응(2026-06-11 시우, GM 옵션A) ───
+// 시트 행을 '이상치만' 기록하도록 바꾸면 정상완료 항목은 행이 사라져, 다른 기기/캐시 비운 뒤
+// 과거일 admin 대시보드가 STATE 복원 불가 → 완료율 회귀(거의 0%). 이를 막기 위해 날짜+dept별로
+// 체크된 itemId 집합을 ScriptProperties에 경량 적립(_saveGroupSubmits와 동일 패턴, merge-only 아님).
+// 키: chk_<dept>_<date>, 값: {"<itemId>":1,...}. col5 카운트가 아닌 이 원장으로 admin·복원 정합.
+// payload는 항상 활성 성별탭의 전체 스케줄을 보내므로, 이번 payload에 들어온 항목만 set/remove.
+// (타 성별 항목은 payload에 없어 그대로 보존 — 성별탭 단위 정합)
+var CHK_PROP_PREFIX = 'chk_';
+function _chkKey(dept, date) { return CHK_PROP_PREFIX + (String(dept || 'support').trim() || 'support') + '_' + date; }
+// 항상 { c:{...}, sub:{...}, subAt:{...} } 정규화 형태로 반환(구버전 평면 원장 승격).
+function _getCheckLedger(dept, date) {
+  var led = {};
+  try { led = JSON.parse(PropertiesService.getScriptProperties().getProperty(_chkKey(dept, date)) || '{}'); }
+  catch (e) { led = {}; }
+  if (!led.c) {
+    var flat = {};
+    Object.keys(led).forEach(function (k) { if (k !== 'c' && k !== 'sub' && k !== 'subAt' && led[k]) flat[k] = 1; });
+    led = { c: flat, sub: led.sub || {}, subAt: led.subAt || {} };
+  }
+  if (!led.sub) led.sub = {};
+  if (!led.subAt) led.subAt = {};
+  return led;
+}
+// 원장 구조: { c:{itemId:1,...}, sub:{am,pm,night}, subAt:{am,pm,night} }
+// c=체크된 itemId 집합, sub=교대별 제출자, subAt=교대별 제출시각. 무이슈 완전완료일(시트행 0건)에도
+// admin 제출자·완료율 카드를 복원하기 위해 제출 메타도 함께 적립.
+// body: 전체 save payload(submitter_am 등 포함). checks: 이번 payload 항목만 반영(set/remove).
+function _updateCheckLedger(dept, date, body) {
+  if (!date) return;
+  var checks = (body && body.checks) || [];
+  var props = PropertiesService.getScriptProperties();
+  var key = _chkKey(dept, date);
+  var led = {};
+  try { led = JSON.parse(props.getProperty(key) || '{}'); } catch (e) {}
+  // 하위호환: 구버전(평면 {itemId:1}) 원장이면 c 필드로 승격
+  if (!led.c) {
+    var flat = {};
+    Object.keys(led).forEach(function (k) { if (k !== 'c' && k !== 'sub' && k !== 'subAt' && led[k]) flat[k] = 1; });
+    led = { c: flat, sub: {}, subAt: {} };
+  }
+  if (!led.c) led.c = {};
+  if (!led.sub) led.sub = {};
+  if (!led.subAt) led.subAt = {};
+  checks.forEach(function (c) {
+    var id = String(c.itemId || '');
+    if (!id) return;
+    if (c.checked) led.c[id] = 1; else delete led.c[id];   // 이번 payload 범위 내에서만 set/remove
+  });
+  if (body) {
+    if (body.submitter_am)    led.sub.am = String(body.submitter_am);
+    if (body.submitter_pm)    led.sub.pm = String(body.submitter_pm);
+    if (body.submitter_night) led.sub.night = String(body.submitter_night);
+    if (body.submittedAt_am)    led.subAt.am = String(body.submittedAt_am);
+    if (body.submittedAt_pm)    led.subAt.pm = String(body.submittedAt_pm);
+    if (body.submittedAt_night) led.subAt.night = String(body.submittedAt_night);
+  }
+  props.setProperty(key, JSON.stringify(led));
+}
+
+// 정상완료(완료 & 이슈·노하우·측정 모두 없음) = 이상치 아님 → 신규 시트행 미기록 대상.
+// 미완료 / 이슈 / 노하우 / 측정값 중 하나라도 있으면 '이상치' → 행 기록 유지.
+function _isAnomalyCheck(c) {
+  if (!c.checked) return true;                       // 미완료
+  if (c.issue && String(c.issue).length > 0) return true;   // 이슈
+  if (c.tip && String(c.tip).length > 0) return true;       // 노하우
+  if (_measureStr(c.measure)) return true;           // 측정값
+  return false;                                      // 정상완료
+}
+
+// 이상치-필터(정상완료 스킵)는 스냅샷(점검일지) 기반 완료율 백업이 있는 부서에만 적용.
+// 지원부(support)만 5조·스냅샷 보유 → support 한정. 나머지 부서는 전체기록 유지(완료율 회귀 방지).
+// GM 2026-06-11: 스코프=지원부. 타 부서 스냅샷 도입 시 여기 확장.
+function _anomalyOnlyDept(dept) {
+  return String(dept || 'support') === 'support';
 }
 
 // ════════════════════════════════════════════
@@ -355,6 +433,7 @@ function doPost(e) {
 
 function handleSave(body) {
   _saveGroupSubmits(body.date, body.groupSubmits);   // 그룹별 제출 영속(zone/v2 두 경로 공통) — 2026-06-05 GM
+  _updateCheckLedger(body.dept, body.date, body);   // 완료 체크 원장 적립(2026-06-11 시우) — 과거일 복원·완료율 회귀 방지
   if (!body.zone) return _handleSaveV2Compat(body);
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var date = body.date;
@@ -396,10 +475,12 @@ function handleSave(body) {
       c.reflected ? 'Y' : ''   // F1: 14열 반영완료
     ];
     if (rowNum) {
+      // 기존 행은 제자리 갱신 유지(이력 보존 — 정상완료로 바뀐 기존 이상치 행도 정확히 반영).
       sheet.getRange(rowNum, 1, 1, HEADERS.length).setValues([values]);
       _applyRowStyle(sheet, rowNum, values);
       updated++;
-    } else {
+    } else if (!_anomalyOnlyDept(dept) || _isAnomalyCheck(c)) {
+      // support: 이상치(미완료/이슈/노하우/측정)만 신규기록(정상완료는 원장이 복원). 타 부서: 전체기록 유지.
       newRows.push(values);
     }
   });
@@ -508,10 +589,12 @@ function _handleSaveV2Compat(body) {
         c.reflected ? 'Y' : ''   // F1: 14열 반영완료
       ];
       if (rowNum) {
+        // 기존 행 제자리 갱신 유지(이력 보존).
         sheet.getRange(rowNum, 1, 1, HEADERS.length).setValues([values]);
         _applyRowStyle(sheet, rowNum, values);
         totalSaved++;
-      } else {
+      } else if (!_anomalyOnlyDept(dept) || _isAnomalyCheck(c)) {
+        // support: 이상치만 신규기록(정상완료는 원장 복원). 타 부서: 전체기록 유지(완료율 회귀 방지).
         newRows.push(values);
       }
     });
@@ -1055,6 +1138,17 @@ function _getSheetsForDept(dept) {
 // 응답: { ok:true, dept, data:[{date, total, done, pct}, ...] }
 // ════════════════════════════════════════════
 
+// 교대 라벨 정규화(2026-06-11 시우): 스냅샷 '교대' 열은 코드('am'/'pm'/'night')와
+// 한글 라벨('오전조[1]…','오후조…','야간…','마감…')이 섞여 들어옴(라운드 vs 제출 경로 상이).
+// 완료율 일·주 집계에서 같은 (구역,교대) 셀의 중복 라운드 행을 한 셀로 묶기 위한 버킷 키.
+function _shiftBucket(s) {
+  var v = String(s == null ? '' : s).trim();
+  if (v.indexOf('야간') === 0 || v === 'night') return 'night';
+  if (v.indexOf('오전') === 0 || v === 'am') return 'am';
+  // 오후/마감/all/그 외 → pm 버킷(마감은 pm 소속)
+  return 'pm';
+}
+
 function handleWeekly(params) {
   var dept = params.dept || 'support';
   var sheetNames = _getSheetsForDept(dept);
@@ -1069,31 +1163,67 @@ function handleWeekly(params) {
     d.setDate(today.getDate() - i);
     days.push(Utilities.formatDate(d, tz, 'yyyy-MM-dd'));
   }
+  var dayset = {};
+  days.forEach(function (dt) { dayset[dt] = true; });
 
-  // 각 시트에서 날짜별 행 수집
-  var byDate = {};
-  days.forEach(function(dt) { byDate[dt] = { total: 0, done: 0, measure: [] }; });
+  // ─── 1차 출처: 점검일지_<dept> 스냅샷(요약 1행/라운드)에서 일별 total/done 집계 ───
+  // 같은 날짜의 (구역 zone × 교대버킷) 셀별로 '최신 제출시각' 행만 채택(라운드 재제출=재진술이라
+  // 합산 시 중복카운트 위험) → 셀별 done/total을 날짜 단위로 Σ. 항목별 시트 col5 비의존.
+  // 셀 키: zone(m/f/all) + '|' + bucket(am/pm/night).
+  var snapByDate = {};   // { date: { cellKey: {total,done,at} } }
+  var snapSheet = ss.getSheetByName(_snapshotTabName(dept));
+  if (snapSheet) {
+    var sdata = snapSheet.getDataRange().getValues();
+    // 열: 0=제출시각,1=날짜,3=구역,4=교대,6=총항목,7=완료,8=완료율
+    for (var r = 1; r < sdata.length; r++) {
+      var sd = formatDate(sdata[r][1]);
+      if (!dayset[sd]) continue;
+      var zone = String(sdata[r][3] || '');
+      var bucket = _shiftBucket(sdata[r][4]);
+      var tot = Number(sdata[r][6]); if (isNaN(tot)) tot = 0;
+      var don = Number(sdata[r][7]); if (isNaN(don)) don = 0;
+      var at = String(sdata[r][0] || '');
+      var cellKey = zone + '|' + bucket;
+      if (!snapByDate[sd]) snapByDate[sd] = {};
+      var cell = snapByDate[sd][cellKey];
+      if (!cell || at >= cell.at) {   // 최신(또는 동률 시 후순위) 행 채택
+        snapByDate[sd][cellKey] = { total: tot, done: don, at: at };
+      }
+    }
+  }
 
-  sheetNames.forEach(function(name) {
+  // ─── 폴백 출처: 스냅샷 없는 날짜만 항목별 시트 col5 카운트(레거시/기능 이전 일자) ───
+  // 측정값(measure)은 항목별 시트에만 있으므로 전체 일자에 대해 함께 수집(완료율과 무관).
+  var legacyByDate = {};
+  days.forEach(function (dt) { legacyByDate[dt] = { total: 0, done: 0, measure: [] }; });
+  sheetNames.forEach(function (name) {
     var sheet = ss.getSheetByName(name);
     if (!sheet) return;
     var data = sheet.getDataRange().getValues();
     for (var i = 1; i < data.length; i++) {
       var rowDate = formatDate(data[i][0]);
-      if (!byDate[rowDate]) continue;
-      byDate[rowDate].total++;
-      if (String(data[i][5]) === '완료') byDate[rowDate].done++;   // 완료율 판정 불변
-      // S2(2026-06-10 시토): 13열 측정값이 있는 행만 수집(없으면 무시). 완료율과 무관.
+      if (!legacyByDate[rowDate]) continue;
+      legacyByDate[rowDate].total++;
+      if (String(data[i][5]) === '완료') legacyByDate[rowDate].done++;
       var mv = String(data[i][12] || '');
-      if (mv) byDate[rowDate].measure.push({ itemId: String(data[i][1]), name: String(data[i][2]), measure: mv });
+      if (mv) legacyByDate[rowDate].measure.push({ itemId: String(data[i][1]), name: String(data[i][2]), measure: mv });
     }
   });
 
   // 날짜 오름차순으로 결과 배열 구성 (차트 표시용)
-  var result = days.slice().reverse().map(function(dt) {
-    var s = byDate[dt];
-    var pct = s.total > 0 ? Math.round(s.done / s.total * 100) : 0;
-    return { date: dt, total: s.total, done: s.done, pct: pct, measure: s.measure };  // S2: 측정값 배열(없으면 [])
+  var result = days.slice().reverse().map(function (dt) {
+    var cells = snapByDate[dt];
+    var total = 0, done = 0, src = 'snapshot';
+    if (cells) {
+      Object.keys(cells).forEach(function (k) { total += cells[k].total; done += cells[k].done; });
+    }
+    // 스냅샷 셀이 없으면 폴백(항목별 시트 col5). 둘 다 0이면 데이터 없음(total=0 → pct=0).
+    if (total === 0) {
+      var lg = legacyByDate[dt];
+      total = lg.total; done = lg.done; src = 'sheet';
+    }
+    var pct = total > 0 ? Math.round(done / total * 100) : 0;
+    return { date: dt, total: total, done: done, pct: pct, src: src, measure: legacyByDate[dt].measure };
   });
 
   return jsonRes({ ok: true, dept: dept, data: result });

@@ -1903,6 +1903,20 @@ async function loadState(d){
       if(row.submitted)STATE._submitted_am=true;
       if(row.submittedAt&&!STATE._submittedAt_am)STATE._submittedAt_am=row.submittedAt;
     });
+    // 완료 체크 원장 복원(2026-06-11 시우): 정상완료 항목은 시트행이 없으므로(이상치만 기록)
+    // 서버 원장(chk_<dept>_<date>)으로 STATE[itemId] 복원 → 과거일/타기기 admin 완료율 회귀 방지.
+    // 구조: {c:체크itemId집합, sub:{am,pm,night}, subAt:{...}}. 제출 메타는 행이 없을 때만 보강(행 우선).
+    if(j.checkedLedger){
+      const cl=j.checkedLedger, cmap=cl.c||cl;
+      Object.keys(cmap).forEach(id=>{if(id!=='c'&&id!=='sub'&&id!=='subAt'&&cmap[id])STATE[id]=true;});
+      const sub=cl.sub||{}, subAt=cl.subAt||{};
+      if(sub.am&&!STATE._submitter_am){STATE._submitter_am=sub.am;STATE._submitted_am=true;}
+      if(sub.pm&&!STATE._submitter_pm){STATE._submitter_pm=sub.pm;STATE._submitted_pm=true;}
+      if(sub.night&&!STATE._submitter_night){STATE._submitter_night=sub.night;STATE._submitted_night=true;}
+      if(subAt.am&&!STATE._submittedAt_am)STATE._submittedAt_am=subAt.am;
+      if(subAt.pm&&!STATE._submittedAt_pm)STATE._submittedAt_pm=subAt.pm;
+      if(subAt.night&&!STATE._submittedAt_night)STATE._submittedAt_night=subAt.night;
+    }
     // 그룹별 제출 복원 (서버 영속 → 새로고침해도 유지) — 2026-06-05 GM
     if(j.groupSubmits){Object.keys(j.groupSubmits).forEach(key=>{
       const v=j.groupSubmits[key]||{};
