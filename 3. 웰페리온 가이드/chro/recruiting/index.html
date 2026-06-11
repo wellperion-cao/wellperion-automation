@@ -1,1 +1,187 @@
-placeholder
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>웰페리온 채용 | Welperion Recruiting</title>
+<style>
+  :root{
+    --bg:#faf9f6; --panel:#ffffff; --cream:#f4f3ef; --line:#e7e4dc;
+    --ink:#1f1e1b; --muted:#6c6961; --soft:#9a978e;
+    --gold:#a98a52; --gold-deep:#8a6f3f; --bronze:#b07d24;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",sans-serif;
+    line-height:1.6;
+  }
+  a{color:inherit; text-decoration:none}
+
+  /* 헤더 */
+  .top{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:18px 32px; border-bottom:1px solid var(--line);
+    background:rgba(250,249,246,.9); backdrop-filter:blur(6px);
+    position:sticky; top:0; z-index:10;
+  }
+  .brand{display:flex; align-items:center; gap:11px}
+  .brand .mark{
+    width:34px; height:34px; border-radius:9px;
+    background:linear-gradient(135deg,var(--gold),var(--gold-deep));
+    display:flex; align-items:center; justify-content:center;
+    color:#fff; font-weight:800; font-size:17px; letter-spacing:.5px;
+  }
+  .brand .name{font-weight:750; font-size:16px; letter-spacing:-.2px}
+  .brand .name small{display:block; font-size:10.5px; color:var(--soft); font-weight:500; letter-spacing:1.5px}
+  .top .back{font-size:12.5px; color:var(--muted); padding:7px 13px; border:1px solid var(--line); border-radius:8px; background:var(--panel)}
+  .top .back:hover{border-color:var(--gold); color:var(--gold-deep)}
+
+  /* 히어로 */
+  .hero{max-width:980px; margin:0 auto; padding:64px 32px 30px; text-align:center}
+  .hero .eyebrow{
+    display:inline-block; font-size:12px; letter-spacing:3px; color:var(--bronze);
+    font-weight:700; margin-bottom:18px; text-transform:uppercase;
+  }
+  .hero h1{font-size:38px; line-height:1.25; margin:0 0 18px; font-weight:800; letter-spacing:-.8px}
+  .hero h1 .accent{
+    background:linear-gradient(135deg,var(--gold),var(--bronze));
+    -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent;
+  }
+  .hero p{font-size:16px; color:var(--muted); max-width:600px; margin:0 auto}
+
+  /* 섹션 공통 */
+  .section{max-width:980px; margin:0 auto; padding:42px 32px 0}
+  .section.last{padding-bottom:70px}
+  .section-head{display:flex; align-items:baseline; gap:12px; margin-bottom:22px}
+  .section-head h2{font-size:22px; margin:0; font-weight:800; letter-spacing:-.4px}
+  .section-head .sub{font-size:13px; color:var(--soft)}
+
+  /* 인재상 */
+  .values{display:grid; grid-template-columns:repeat(4,1fr); gap:16px}
+  .value{
+    background:var(--panel); border:1px solid var(--line); border-radius:14px;
+    padding:24px 20px; text-align:center;
+  }
+  .value .ic{font-size:26px; margin-bottom:10px}
+  .value h3{margin:0 0 7px; font-size:15.5px; font-weight:750; color:var(--gold-deep); word-break:keep-all}
+  .value p{margin:0; font-size:12.5px; color:var(--muted); line-height:1.55; word-break:keep-all}
+
+  /* 부서 채용 */
+  .grid{display:grid; grid-template-columns:repeat(3,1fr); gap:18px}
+  .dept{
+    background:var(--panel); border:1px solid var(--line); border-radius:16px;
+    padding:24px 22px; display:flex; flex-direction:column; gap:13px;
+    transition:transform .15s, box-shadow .15s, border-color .15s;
+  }
+  .dept.open:hover{transform:translateY(-3px); box-shadow:0 10px 30px rgba(138,111,63,.12); border-color:var(--gold)}
+  .dept .row{display:flex; align-items:center; justify-content:space-between}
+  .dept .tag{font-size:11px; font-weight:700; padding:4px 10px; border-radius:20px; letter-spacing:.5px}
+  .dept.open .tag{background:#e9f1ea; color:#3c7a4a}
+  .dept.soon .tag{background:var(--cream); color:var(--soft)}
+  .dept h3{margin:0; font-size:18px; font-weight:800; letter-spacing:-.3px}
+  .dept .desc{font-size:12.5px; color:var(--muted); margin:0; min-height:52px}
+  .dept .btn{
+    margin-top:2px; display:inline-flex; align-items:center; justify-content:center; gap:7px;
+    padding:11px 16px; border-radius:10px; font-size:13.5px; font-weight:700; cursor:pointer;
+    border:none; font-family:inherit;
+  }
+  .dept.open .btn{background:linear-gradient(135deg,var(--gold),var(--gold-deep)); color:#fff}
+  .dept.open .btn:hover{filter:brightness(1.06)}
+  .dept.soon .btn{background:var(--cream); color:var(--soft); cursor:not-allowed; border:1px solid var(--line)}
+  .dept.soon{opacity:.78}
+
+  footer{
+    border-top:1px solid var(--line); padding:26px 32px; text-align:center;
+    color:var(--soft); font-size:12px; background:var(--cream);
+  }
+  footer .sep{margin:0 8px; color:var(--line)}
+
+  @media (max-width:760px){
+    .hero h1{font-size:29px}
+    .values{grid-template-columns:repeat(2,1fr)}
+    .grid{grid-template-columns:1fr}
+  }
+</style>
+</head>
+<body>
+
+  <header class="top">
+    <div class="brand">
+      <div class="mark">W</div>
+      <div class="name">웰페리온<small>WELPERION RECRUITING</small></div>
+    </div>
+    <a class="back" href="../../wellperion_guide(main).html">← ERP 메인</a>
+  </header>
+
+  <section class="hero">
+    <span class="eyebrow">We are hiring</span>
+    <h1>웰페리온과 함께 성장할<br><span class="accent">동료를 찾습니다</span></h1>
+    <p>각 부서의 채용 공고를 확인하고, 웰페리온에서 만들어갈 다음 이야기를 함께 시작하세요.</p>
+  </section>
+
+  <section class="section">
+    <div class="section-head">
+      <h2>웰페리온 인재상</h2>
+      <span class="sub">이런 분과 함께하고 싶습니다</span>
+    </div>
+    <div class="values">
+      <div class="value"><div class="ic">🧩</div><h3>문제해결능력</h3><p>본인 영역의 이슈를 회피하지 않고 끝까지 해결합니다</p></div>
+      <div class="value"><div class="ic">🤝</div><h3>팀워크</h3><p>동료의 도움 요청에 거절감 없이 응합니다</p></div>
+      <div class="value"><div class="ic">🚀</div><h3>주도성</h3><p>새로운 도구와 정책을 빠르게 익히고 활용합니다</p></div>
+      <div class="value"><div class="ic">📐</div><h3>프로세스</h3><p>규정과 매뉴얼을 따르되 개선은 정식 루트로 제안합니다</p></div>
+    </div>
+  </section>
+
+  <section class="section last">
+    <div class="section-head">
+      <h2>부서별 채용</h2>
+      <span class="sub">관심 있는 부서를 선택하세요</span>
+    </div>
+    <div class="grid">
+
+      <div class="dept open">
+        <div class="row"><h3>운영부</h3><span class="tag">● 채용중</span></div>
+        <p class="desc">회사 운영 전반을 설계하고 실행하는 핵심 조직. 프로세스·자동화·실행을 책임집니다.</p>
+        <a class="btn" href="operations.html" target="_blank" rel="noopener">채용 공고 보기 ↗</a>
+      </div>
+
+      <div class="dept soon">
+        <div class="row"><h3>경영지원부</h3><span class="tag">준비중</span></div>
+        <p class="desc">인사·총무·재무 등 조직이 원활히 돌아가도록 살림을 책임지는 조직입니다.</p>
+        <button class="btn" disabled>준비중</button>
+      </div>
+
+      <div class="dept soon">
+        <div class="row"><h3>지원부</h3><span class="tag">준비중</span></div>
+        <p class="desc">현장과 고객을 가장 가까이에서 돕고 응대하는 지원 업무를 담당합니다.</p>
+        <button class="btn" disabled>준비중</button>
+      </div>
+
+      <div class="dept soon">
+        <div class="row"><h3>관리부</h3><span class="tag">준비중</span></div>
+        <p class="desc">데이터·자산·프로세스를 체계적으로 관리하고 기준을 지켜냅니다.</p>
+        <button class="btn" disabled>준비중</button>
+      </div>
+
+      <div class="dept soon">
+        <div class="row"><h3>강습부</h3><span class="tag">준비중</span></div>
+        <p class="desc">회원과 직접 만나 프로그램을 가르치고 이끄는 현장 중심 조직입니다.</p>
+        <button class="btn" disabled>준비중</button>
+      </div>
+
+      <div class="dept soon">
+        <div class="row"><h3>시설부</h3><span class="tag">준비중</span></div>
+        <p class="desc">안전하고 쾌적한 시설 환경을 유지·관리하여 모두의 일상을 받칩니다.</p>
+        <button class="btn" disabled>준비중</button>
+      </div>
+
+    </div>
+  </section>
+
+  <footer>
+    웰페리온 (Welperion)<span class="sep">|</span>인재 채용<span class="sep">|</span>본 페이지는 웰페리온 ERP · AI CHRO 인사 챕터에서 운영됩니다
+  </footer>
+
+</body>
+</html>
