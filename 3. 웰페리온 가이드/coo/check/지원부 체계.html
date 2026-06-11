@@ -467,7 +467,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 <div class="sticky-top">
 <div class="header">
   <div class="header-top">
-    <h1>지원부 체계 <span style="font-size:11px;font-weight:500;color:var(--dim);margin-left:8px;letter-spacing:0.02em;">v1.0 · 2026-05-28</span> <span id="dayType"></span></h1>
+    <h1>지원부 체계 <span style="font-size:11px;font-weight:500;color:var(--dim);margin-left:8px;letter-spacing:0.02em;">v1.1 · 2026-06-11 (온도경고·반영완료·제출스냅샷)</span> <span id="dayType"></span></h1>
     <div class="sheet-links">
       <a class="sheet-link" onclick="switchTab('admin')" style="cursor:pointer;background:var(--purple-bg);color:var(--purple);border-color:rgba(167,139,218,0.3);">
         <svg viewBox="0 0 24 24"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
@@ -1210,6 +1210,46 @@ async function loadStaffFromSheet(){
 let CUSTOM_ITEMS = [];
 const ITEM_CACHE_KEY = 'wcheck_items_cache'; // 오프라인 폴백 캐시
 
+/* ── 온도 측정 대상 항목 설정 (2026-06-11 시우) ──
+   key=항목ID, fields=[{key(영문),label(표시),min,max,unit}].
+   매뉴얼 기준값: 건식 90~100℃ / 습식 60~70℃ / 온탕 39~42℃ / 열탕 43~45℃ / 냉탕 15~20℃.
+   measure 13열에 {"건식":95,...} JSON으로 영속(GAS 측정값 패스스루 재사용 — 스키마 변경 불필요).
+   기준 벗어나면 클라에서 빨간 경고만 표시(저장은 그대로 — 거짓완료 유발 안 함). */
+const TEMP_CONFIG = {
+  a1:   { fields:[ {key:'온탕',label:'온탕',min:39,max:42,unit:'℃'}, {key:'열탕',label:'열탕',min:43,max:45,unit:'℃'}, {key:'냉탕',label:'냉탕',min:15,max:20,unit:'℃'} ] },
+  a2:   { fields:[ {key:'건식',label:'건식',min:90,max:100,unit:'℃'}, {key:'습식',label:'습식',min:60,max:70,unit:'℃'} ] },
+  a_pm: { fields:[ {key:'온탕',label:'온탕',min:39,max:42,unit:'℃'}, {key:'열탕',label:'열탕',min:43,max:45,unit:'℃'}, {key:'건식',label:'건식',min:90,max:100,unit:'℃'}, {key:'습식',label:'습식',min:60,max:70,unit:'℃'} ] }
+};
+function tempFieldsFor(id){ return (TEMP_CONFIG[id] && TEMP_CONFIG[id].fields) || null; }
+/* STATE 온도값 키: temp_<id>_<fieldKey>. 측정값 JSON 직렬화(저장/푸시용). */
+function collectTempJSON(id){
+  const fields=tempFieldsFor(id); if(!fields) return '';
+  const obj={}; let any=false;
+  fields.forEach(f=>{ const v=STATE['temp_'+id+'_'+f.key]; if(v!==undefined&&v!==''&&v!==null){obj[f.key]=v;any=true;} });
+  return any?JSON.stringify(obj):'';
+}
+/* 측정값 JSON(measure) → STATE 온도값 복원. */
+function restoreTempFromMeasure(id,measureStr){
+  if(!measureStr) return; let obj=null;
+  try{ obj=JSON.parse(measureStr); }catch(e){ return; }
+  if(!obj||typeof obj!=='object') return;
+  Object.keys(obj).forEach(k=>{ STATE['temp_'+id+'_'+k]=obj[k]; });
+}
+/* 온도 입력 변경 핸들러 — 값 저장 후 즉시 재렌더(경고 갱신). */
+function onTemp(id,fieldKey,elemId,gender){
+  const d=getDateG(gender||activeGenderTab);
+  STATE['temp_'+id+'_'+fieldKey]=document.getElementById(elemId).value;
+  saveState(d);
+  drawUI(d,gender||activeGenderTab);
+}
+/* 반영완료 토글 (2026-06-11 시우) — 이슈/노하우 후속 조치 완료 표시. STATE reflected_<id>. */
+function toggleReflected(id,gender){
+  const d=getDateG(gender||activeGenderTab);
+  STATE['reflected_'+id]=!STATE['reflected_'+id];
+  saveState(d);
+  drawUI(d,gender||activeGenderTab);
+}
+
 /* 시간대(slot) → 교대조(shift) 추정 (기본 항목 배열의 slot 명명 규칙 기준) */
 function slotToShiftFront(slot){
   var s = slot || '';
@@ -1665,6 +1705,8 @@ async function loadState(d){
       if(row.checked)STATE[row.itemId]=true;
       if(row.issue)STATE['iss_'+row.itemId]=row.issue;
       if(row.tip)STATE['tip_'+row.itemId]=row.tip;
+      if(row.measure)restoreTempFromMeasure(row.itemId,row.measure);   // 온도 측정값 복원
+      if(row.reflected)STATE['reflected_'+row.itemId]=true;            // 반영완료 복원
       if(row.submitted_am)STATE._submitted_am=true;
       if(row.submittedAt_am)STATE._submittedAt_am=row.submittedAt_am;
       if(row.submitter_am)STATE._submitter_am=row.submitter_am;
@@ -1707,13 +1749,15 @@ async function pushToServer(d){
   // main sched items — push ALL items regardless of gender filter so server gets everything
   sched.forEach(slot=>{slot.groups.forEach(gr=>{gr.items.forEach(it=>{
     checks.push({itemId:it.id,name:it.name,cat:gr.title,slot:slot.slot,shift:slot.shift,
-      checked:!!STATE[it.id],issue:STATE['iss_'+it.id]||'',tip:STATE['tip_'+it.id]||''});
+      checked:!!STATE[it.id],issue:STATE['iss_'+it.id]||'',tip:STATE['tip_'+it.id]||'',
+      measure:collectTempJSON(it.id),reflected:!!STATE['reflected_'+it.id]});
   })})});
   // day focus items
   if(DAY_FOCUS[dow]){
     DAY_FOCUS[dow].forEach(it=>{
       checks.push({itemId:it.id,name:it.name,cat:'요일별 집중 청소',slot:'요일별',shift:'focus',
-        checked:!!STATE[it.id],issue:STATE['iss_'+it.id]||'',tip:STATE['tip_'+it.id]||''});
+        checked:!!STATE[it.id],issue:STATE['iss_'+it.id]||'',tip:STATE['tip_'+it.id]||'',
+        measure:collectTempJSON(it.id),reflected:!!STATE['reflected_'+it.id]});
     });
   }
   try{
@@ -2076,11 +2120,35 @@ function renderItem(it,shift,gender){
     metaInfo='<span style="font-size:10px;color:#5b9fd5;margin-left:6px;">('+m.join(' · ')+')</span>';
   }
   const editedTag=isEdited?'<span style="font-size:10px;color:#e6c84e;font-weight:700;margin-left:4px;">수정됨</span>'+metaInfo:'';
+  /* 온도 측정칸 (해당 항목만) — 기준 벗어나면 빨간 경고 */
+  const tempFields=tempFieldsFor(it.id);
+  let tempHtml='';
+  if(tempFields){
+    const cells=tempFields.map(f=>{
+      const tid=`${pfx}temp_${it.id}_${f.key}`;
+      const val=STATE['temp_'+it.id+'_'+f.key];
+      const hasVal=val!==undefined&&val!==''&&val!==null;
+      const num=hasVal?Number(val):NaN;
+      const bad=hasVal&&!isNaN(num)&&(num<f.min||num>f.max);
+      const warn=bad?`<span style="color:#c0392b;font-weight:700;font-size:11px;margin-left:4px;">⚠ 기준 ${f.min}~${f.max}${f.unit}</span>`:'';
+      const inStyle=bad?'border-color:#c0392b;color:#c0392b;background:#fce8e4;':'';
+      return `<div style="display:flex;align-items:center;gap:6px;margin:3px 0;">
+        <span style="font-size:12px;color:var(--dim);min-width:48px;">${f.label}</span>
+        <input type="number" step="0.1" inputmode="decimal" class="temp-input" id="${tid}" value="${hasVal?esc(String(val)):''}" placeholder="${f.min}~${f.max}" style="width:80px;padding:4px 6px;border:1px solid var(--border);border-radius:6px;font-size:13px;${inStyle}" onchange="onTemp('${it.id}','${f.key}','${tid}','${g}')">
+        <span style="font-size:12px;color:var(--dim);">${f.unit}</span>${warn}
+      </div>`;
+    }).join('');
+    tempHtml=`<div class="temp-box" style="margin-top:6px;padding:6px 8px;background:rgba(91,159,213,0.06);border-radius:8px;"><div style="font-size:11px;color:#5b9fd5;font-weight:700;margin-bottom:2px;">온도 측정</div>${cells}</div>`;
+  }
+  /* 반영완료 토글 — 이슈/노하우 입력이 있을 때만 노출 */
+  const hasMemo=!!(iss||tip);
+  const isRef=!!STATE['reflected_'+it.id];
+  const refBtn=hasMemo?`<button class="tiny-btn" style="${isRef?'background:rgba(44,138,79,0.14);color:#2c8a4f;border-color:rgba(44,138,79,0.4);':'background:rgba(140,139,131,0.12);color:#8c8b83;border-color:rgba(140,139,131,0.3);'}font-size:12px;" title="이슈/노하우 후속 조치 완료 표시" onclick="toggleReflected('${it.id}','${g}')">${isRef?'✓ 반영완료':'반영완료'}</button>`:'';
   return `<div class="${cls}">
     <div class="item-row"><input type="checkbox" id="cb_${pfx}${it.id}" ${ck} onchange="onCk('${it.id}','${shift}','${g}')"><label for="cb_${pfx}${it.id}">${itemName}${editedTag}</label>
-      <div class="item-btns">${editBtn}${resetBtn}<button class="tiny-btn issue" onclick="togX('${pfx}iss_${it.id}')">이슈</button><button class="tiny-btn tip" onclick="togX('${pfx}tip_${it.id}')">노하우</button></div>
+      <div class="item-btns">${editBtn}${resetBtn}<button class="tiny-btn issue" onclick="togX('${pfx}iss_${it.id}')">이슈</button><button class="tiny-btn tip" onclick="togX('${pfx}tip_${it.id}')">노하우</button>${refBtn}</div>
     </div>
-    <div class="item-detail">${det}</div>
+    <div class="item-detail">${det}</div>${tempHtml}
     <input class="extra-input issue-field${iss?' show':''}" id="${pfx}iss_${it.id}" placeholder="이슈 내용..." value="${esc(iss)}" onchange="onExtra('iss_${it.id}','${pfx}iss_${it.id}')">
     <input class="extra-input tip-field${tip?' show':''}" id="${pfx}tip_${it.id}" placeholder="노하우/개선 의견..." value="${esc(tip)}" onchange="onExtra('tip_${it.id}','${pfx}tip_${it.id}')">
   </div>`;
@@ -2316,8 +2384,67 @@ async function submitShift(shift,gender){
   saveLocal(d,STATE);
   if(ONLINE)await pushToServer(d);
   await sendTelegramNotify(d,shift,sub,gender);
+  /* F3(2026-06-11 시우): 제출 스냅샷 적립 + 체크박스 리셋 — 추가제출(_isAdd)이 아닌 최초 제출에만.
+     스냅샷=append-only 누적 기록(집계/텔레그램 무손상). 리셋=다음 점검 준비(체크/온도/반영 STATE만 비움,
+     제출완료 플래그·이슈/노하우는 보존 → 보드 '제출완료' 표시 유지). 오프라인이면 리셋 보류(중복 푸시 방지). */
+  if(!_isAdd && ONLINE){
+    await appendSubmitSnapshot(d,shift,sub,gender);
+    resetShiftChecks(d,shift,gender);
+    await pushToServer(d);   // 리셋된 체크 상태를 서버 반영(다음 점검 빈 체크)
+  }
   alert(`${d} ${label} 점검(${genderLabel})이 ${sub}님 이름으로 ${_isAdd?'추가 ':''}제출되었습니다.`);
   drawUI(d,gender);
+}
+
+/* 제출 스냅샷을 점검일지 시트에 1행 적립 (집계와 독립) */
+async function appendSubmitSnapshot(date,shift,submitter,gender){
+  if(!ONLINE)return;
+  const nightMode=(shift==='night');
+  const sched=nightMode?getNightSched(date):getSched(date);
+  if(!sched)return;
+  const stats=getShiftStatsG(sched,shift,date,gender);
+  const ids=collectShiftItemIds(date,shift,gender);
+  let issues=[];
+  ids.forEach(id=>{ if(STATE['iss_'+id])issues.push(STATE['iss_'+id]); });
+  const zone=gender==='f'?'f':gender==='m'?'m':'all';
+  try{
+    await fetch(API_URL,{method:'POST',redirect:'follow',
+      headers:{'Content-Type':'text/plain'},
+      body:JSON.stringify({action:'snapshot_append',dept:DEPT,date,zone,shift,submitter,
+        submittedAt:new Date().toLocaleString('sv-SE').replace('T',' '),
+        total:stats.total,done:stats.done,pct:stats.pct,
+        issuesCount:issues.length,issues:issues.join(' / ')})
+    });
+  }catch(e){}
+}
+
+/* 제출된 교대조에 속한 항목 id 수집 (체크 리셋·이슈 집계용) */
+function collectShiftItemIds(date,shift,gender){
+  const nightMode=(shift==='night');
+  const sched=nightMode?getNightSched(date):getSched(date);
+  const ids=[];
+  if(sched){
+    sched.forEach(slot=>{
+      const match=(shift==='am'&&(slot.shift==='am'||slot.shift==='all'))||(shift==='pm'&&(slot.shift==='pm'||slot.shift==='all'))||(shift==='night'&&slot.shift==='night');
+      if(match){slot.groups.forEach(g=>{g.items.forEach(it=>{ids.push(it.id)})})}
+    });
+  }
+  /* 요일별 집중 청소는 오후조 통계에 포함되므로 pm 리셋 시 함께 */
+  if(shift==='pm'){const dow=getDayOfWeek(date);if(DAY_FOCUS[dow])DAY_FOCUS[dow].forEach(it=>ids.push(it.id));}
+  return ids;
+}
+
+/* 제출 후 해당 교대조 항목의 체크/온도/반영 STATE 비움 — 다음 점검 준비.
+   제출완료 플래그(_submitted_*)·이슈/노하우(iss_/tip_)는 보존(기록·보드 표시 유지). */
+function resetShiftChecks(date,shift,gender){
+  const ids=collectShiftItemIds(date,shift,gender);
+  ids.forEach(id=>{
+    delete STATE[id];
+    delete STATE['reflected_'+id];
+    const tf=tempFieldsFor(id);
+    if(tf)tf.forEach(f=>delete STATE['temp_'+id+'_'+f.key]);
+  });
+  saveLocal(date,STATE);
 }
 
 async function sendTelegramNotify(date,shift,submitter,gender){

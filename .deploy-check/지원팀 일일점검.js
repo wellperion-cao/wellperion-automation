@@ -26,7 +26,10 @@ const HEADERS = [
   '점검자','교대',
   // S2(2026-06-10 시토): 13열 측정값 — measure 영문키 JSON 문자열 패스스루(예 {"ph":7.2}).
   // payload에 measure 없으면 빈칸. boolean 점검(6열 '완료'/'미완료')·완료율 판정 영향 0.
-  '측정값'
+  '측정값',
+  // F1(2026-06-11 시우): 14열 반영완료 — 이슈/노하우 후속조치 완료 플래그('Y'/빈값).
+  // 완료율·집계와 무관(별도 컬럼). payload에 reflected 없으면 빈칸.
+  '반영완료'
 ];
 
 // ─── 남성/여성 공통 항목 (A 사우나 + B 락커룸) ───
@@ -160,7 +163,7 @@ function _createCheckSheet(ss, name) {
     .setBackground('#2a2725').setFontColor('#B79F8A')
     .setFontWeight('bold').setHorizontalAlignment('center');
   sheet.setFrozenRows(1);
-  var widths = [100,70,220,140,150,80,200,200,110,130,100,70,180];  // 13열 측정값 추가
+  var widths = [100,70,220,140,150,80,200,200,110,130,100,70,180,90];  // 13열 측정값 + 14열 반영완료
   for (var i = 0; i < widths.length; i++) sheet.setColumnWidth(i+1, widths[i]);
 }
 
@@ -185,7 +188,8 @@ function _seedDate(sheet, date, items, sheetName) {
       '미완료', '', '', '미제출', '',
       defaultInspector(sheetName, item.slot),
       slotToShift(item.slot),
-      ''   // S2: 13열 측정값 — 시드 시 빈칸
+      '',  // S2: 13열 측정값 — 시드 시 빈칸
+      ''   // F1: 14열 반영완료 — 시드 시 빈칸
     ];
   });
   if (rows.length > 0) {
@@ -222,7 +226,8 @@ function migrateFromOldSheet() {
       String(data[i][8]), String(data[i][9]||''),
       String(data[i][10]) || defaultInspector(targetName, String(data[i][4])),
       String(data[i][11]) || slotToShift(String(data[i][4])),
-      String(data[i][12] || '')   // S2: 13열 측정값(구 데이터엔 없음 → 빈칸)
+      String(data[i][12] || ''),  // S2: 13열 측정값(구 데이터엔 없음 → 빈칸)
+      String(data[i][13] || '')   // F1: 14열 반영완료(구 데이터엔 없음 → 빈칸)
     ]);
   }
   Logger.log('마이그레이션 완료 (중복 제거 포함). 기존 "일일점검"은 수동 삭제하세요.');
@@ -292,6 +297,7 @@ function doGet(e) {
           submitter: String(data[i][10] || ''),
           shift: String(data[i][11] || ''),
           measure: String(data[i][12] || ''),   // S2: 13열 측정값(없으면 빈문자)
+          reflected: String(data[i][13] || '') === 'Y',   // F1: 14열 반영완료
           gender: name === baseMale ? 'm' : name === baseFemale ? 'f' : 'all',
           submitted_am: hasAm,
           submittedAt_am: hasAm ? String(data[i][9] || '') : '',
@@ -340,6 +346,7 @@ function doPost(e) {
     if (body.action === 'saveBoard')      return saveBoard(body);
     if (body.action === 'issuelog_add')   return handleIssueLogAdd(body);
     if (body.action === 'issuelog_update') return handleIssueLogUpdate(body);
+    if (body.action === 'snapshot_append') return handleSnapshotAppend(body);   // F3: 제출 스냅샷 적립
     return jsonRes({ error: 'unknown action' });
   } catch (err) {
     return jsonRes({ error: err.message });
@@ -385,7 +392,8 @@ function handleSave(body) {
       body.submitStatus || '미제출',
       body.submittedAt || '',
       inspector, shift,
-      _measureStr(c.measure)   // S2: 13열 측정값 패스스루(없으면 빈칸)
+      _measureStr(c.measure),  // S2: 13열 측정값 패스스루(없으면 빈칸)
+      c.reflected ? 'Y' : ''   // F1: 14열 반영완료
     ];
     if (rowNum) {
       sheet.getRange(rowNum, 1, 1, HEADERS.length).setValues([values]);
@@ -496,7 +504,8 @@ function _handleSaveV2Compat(body) {
         submitStatus, submitAt,
         submitter || defaultInspector(name, c.slot || ''),
         c.shift || slotToShift(c.slot || ''),
-        _measureStr(c.measure)   // S2: 13열 측정값 패스스루(없으면 빈칸)
+        _measureStr(c.measure),  // S2: 13열 측정값 패스스루(없으면 빈칸)
+        c.reflected ? 'Y' : ''   // F1: 14열 반영완료
       ];
       if (rowNum) {
         sheet.getRange(rowNum, 1, 1, HEADERS.length).setValues([values]);
@@ -1225,4 +1234,57 @@ function _applyIssueRowStyle(sheet, row, values) {
   } else {
     statusCell.setBackground('#fce8e4').setFontColor('#c0392b');
   }
+}
+
+// ════════════════════════════════════════════
+// F3(2026-06-11 시우): 제출 스냅샷 적립 — 점검일지 시트에 조 제출 시 1행 append
+// POST { action:'snapshot_append', dept, date, zone(gender:m/f/all), shift, submitter,
+//        submittedAt, total, done, pct, issuesCount, issues(텍스트) }
+// 기존 일별 덮어쓰기 모델(남/여/공용 시트)은 그대로 — 본 시트는 append-only 누적 기록 전용.
+// 집계(getShiftStatsG·handleWeekly)·텔레그램과 완전 독립(별도 시트). dept별 탭 분리.
+// ════════════════════════════════════════════
+
+var SNAPSHOT_HEADERS = ['제출시각','날짜','부서','구역','교대','점검자','총항목','완료','완료율(%)','이슈건수','이슈내용'];
+
+function _snapshotTabName(dept) {
+  var d = String(dept == null ? '' : dept).trim() || 'support';
+  return '점검일지_' + d;
+}
+
+function _initSnapshotSheet(dept) {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var name = _snapshotTabName(dept);
+  var sheet = ss.getSheetByName(name);
+  if (!sheet) { sheet = ss.insertSheet(name); }
+  if (sheet.getLastRow() === 0) {
+    sheet.appendRow(SNAPSHOT_HEADERS);
+    sheet.getRange(1, 1, 1, SNAPSHOT_HEADERS.length)
+      .setBackground('#2a2725').setFontColor('#B79F8A')
+      .setFontWeight('bold').setHorizontalAlignment('center');
+    sheet.setFrozenRows(1);
+    var widths = [160, 100, 80, 70, 70, 110, 70, 60, 80, 80, 360];
+    for (var i = 0; i < widths.length; i++) sheet.setColumnWidth(i + 1, widths[i]);
+  }
+  return sheet;
+}
+
+function handleSnapshotAppend(body) {
+  var dept = body.dept || 'support';
+  var sheet = _initSnapshotSheet(dept);
+  var at = body.submittedAt || Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy-MM-dd HH:mm:ss');
+  var row = [
+    at,
+    body.date || '',
+    dept,
+    body.zone || '',
+    body.shift || '',
+    body.submitter || '',
+    (body.total != null ? body.total : ''),
+    (body.done != null ? body.done : ''),
+    (body.pct != null ? body.pct : ''),
+    (body.issuesCount != null ? body.issuesCount : ''),
+    body.issues || ''
+  ];
+  sheet.appendRow(row);
+  return jsonRes({ ok: true, dept: dept, row: sheet.getLastRow() });
 }
