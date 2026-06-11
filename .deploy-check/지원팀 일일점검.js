@@ -13,8 +13,11 @@ const SHEET_ITEMS  = '점검항목';   // GM 편집 점검 항목 마스터 (시
 // S4 갭②(2026-06-10 시토): '부서'(dept) 10열 추가 — 점검항목 마스터가 전 dept 공유 시트라
 // getItems/saveItems가 dept 무필터면 시설 measure 항목이 지원·운영·주차 화면에 빈칸 노출.
 // 빈값 → 'support'(레거시 기존 항목=원본 지원부) 안전 폴백.
-const ITEM_HEADERS = ['항목ID','카테고리','항목명','상세','성별','시간대','정렬','타입','필드정의','부서'];
-const ITEM_DEPT_COL = 9;   // '부서' 0-based 인덱스(10번째 열)
+// 2b-1(2026-06-11 시우): '회차'(rounds) 11열 추가 — 이슈→항목 승격 시 선택한 5조(am1,pm1…)를
+// 보존. dept(인덱스9) 뒤에 붙여 기존 인덱스 불변. 빈값 → 프론트 itemRounds가 roundOfSlot 폴백(하위호환).
+const ITEM_HEADERS = ['항목ID','카테고리','항목명','상세','성별','시간대','정렬','타입','필드정의','부서','회차'];
+const ITEM_DEPT_COL = 9;    // '부서' 0-based 인덱스(10번째 열)
+const ITEM_ROUNDS_COL = 10; // '회차' 0-based 인덱스(11번째 열) — 구 10열 시트는 undefined → 빈값 폴백
 function _itemDept(v){ var d = String(v == null ? '' : v).trim(); return d || 'support'; }
 
 const BOT_TOKEN = PropertiesService.getScriptProperties().getProperty('TELEGRAM_BOT_TOKEN');
@@ -711,7 +714,7 @@ function initItemSheet() {
     .setBackground('#2a2725').setFontColor('#B79F8A')
     .setFontWeight('bold').setHorizontalAlignment('center');
   sheet.setFrozenRows(1);
-  var widths = [180, 180, 240, 360, 80, 180, 70, 90, 200, 90];  // 타입·필드정의·부서 추가
+  var widths = [180, 180, 240, 360, 80, 180, 70, 90, 200, 90, 120];  // 타입·필드정의·부서·회차 추가
   for (var i = 0; i < widths.length; i++) sheet.setColumnWidth(i + 1, widths[i]);
   return sheet;
 }
@@ -741,7 +744,9 @@ function getItems(params) {
       order:  data[i][6] !== '' && data[i][6] != null ? Number(data[i][6]) : (i),
       type:   itemType,
       fields: String(data[i][8] || ''),
-      dept:   _itemDept(data[i][ITEM_DEPT_COL])
+      dept:   _itemDept(data[i][ITEM_DEPT_COL]),
+      // 2b-1: 회차(rounds) — 구 10열 시트는 인덱스11 undefined → '' (프론트 폴백). 신규는 "am1,pm1" 형태.
+      rounds: String(data[i][ITEM_ROUNDS_COL] == null ? '' : data[i][ITEM_ROUNDS_COL])
     });
   }
   return jsonRes({ items: items });
@@ -781,7 +786,8 @@ function saveItems(body) {
       // S1(2026-06-10 시토): 타입·필드정의 패스스루(빈값→'check' 폴백). 영문키만(한글 키 금지).
       String(it.type || '').trim() || 'check',
       String(it.fields || ''),
-      reqDept   // S4 갭②: 부서
+      reqDept,   // S4 갭②: 부서
+      String(it.rounds || '')   // 2b-1: 회차(예 "am1,pm1") — 빈값이면 프론트 roundOfSlot 폴백
     ];
   });
 
@@ -861,12 +867,13 @@ function seedItemMaster() {
   var order = 1;
   // S1(2026-06-10 시토): 기존 시드 항목은 모두 check형(타입='check', 필드정의 빈값).
   // 남/여 공통 구역 항목 (S4 갭②: 부서='support' — 기존 지원부 마스터)
+  // 2b-1: 회차(11열) 빈값 — 기본 항목은 프론트 ROUND_MAP/roundOfSlot이 라운드 결정(시드 불필요).
   ZONE_ITEMS.forEach(function (it) {
-    rows.push([it.id, it.cat, it.name, '', 'all', it.slot, order++, 'check', '', 'support']);
+    rows.push([it.id, it.cat, it.name, '', 'all', it.slot, order++, 'check', '', 'support', '']);
   });
   // 공용 구역 항목
   COMMON_ITEMS.forEach(function (it) {
-    rows.push([it.id, it.cat, it.name, '', 'all', it.slot, order++, 'check', '', 'support']);
+    rows.push([it.id, it.cat, it.name, '', 'all', it.slot, order++, 'check', '', 'support', '']);
   });
   if (rows.length > 0) {
     sheet.getRange(2, 1, rows.length, ITEM_HEADERS.length).setValues(rows);
