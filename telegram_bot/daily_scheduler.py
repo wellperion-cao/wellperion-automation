@@ -720,12 +720,16 @@ _OPEN_STATUSES = {"PENDING", "IN_PROGRESS", "ON_HOLD", "진행중", "대기", "�
 
 
 def _load_queue_open() -> list[dict]:
-    """_queue.json 에서 미완료(status != DONE) 항목 반환."""
+    """_queue.json 에서 미완료 항목 반환 (DONE·완료·폐기·완료됨 제외).
+    active_tasks 경로(아래)와 동일 기준으로 통일 — 큐 경로만 '폐기'를 흘려보내
+    15시 진행현황에 죽은(폐기) 항목이 진행중으로 잡히던 버그 차단 (2026-06-11)."""
     if not QUEUE_FILE.exists():
         return []
     try:
         data = json.loads(QUEUE_FILE.read_text(encoding="utf-8"))
-        return [x for x in data if str(x.get("status", "")).upper() != "DONE"]
+        return [x for x in data
+                if str(x.get("status", "")).strip().upper() != "DONE"
+                and str(x.get("status", "")).strip() not in ("완료", "폐기", "완료됨")]
     except Exception as e:
         logger.warning(f"_queue.json 읽기 실패: {e}")
         return []
