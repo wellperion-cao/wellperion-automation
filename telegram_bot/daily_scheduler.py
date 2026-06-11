@@ -964,6 +964,33 @@ DAILY_WORKOUT_ITEMS = [
 ]
 _WEEKDAY_KOR = ["월", "화", "수", "목", "금", "토", "일"]
 
+# ── 통일 포맷 헬퍼 (2026-06-11 GM 지시) ────────────────────────────────────────
+# 9슬롯(06/07/09/12/15/18/21/22/23) 출력 포맷을 단일 템플릿으로 통일.
+#   · 공통 헤더:  [HH시 · {분류} · 한줄목적]  + 날짜줄 + 구분선
+#   · 분류 라벨:  개인 / 회사 / 개인&회사  (GM 한눈 파악 핵심)
+#   · 공통 구분선·푸터 단일화 (중복 제거)
+# ※ 07s(직원 공유 카드)는 GM 확정대로 제외 — 손대지 않음.
+# ※ 시간·내용 substance·로직은 불변. 시각 구조(헤더/구분/푸터)만 통일.
+_DIVIDER = "━━━━━━━━━━━━━━━━"
+_AUTO_FOOTER = "_본 메시지는 자동 발송입니다._"
+
+
+def _unified_header(hour: str, category: str, purpose: str) -> str:
+    """모든 슬롯 공통 헤더 — [HH시 · 분류 · 한줄목적] + 날짜줄 + 구분선.
+
+    hour:     "06" 등 2자리 시
+    category: "개인" | "회사" | "개인&회사"
+    purpose:  한 줄 목적 (예: "하루 시작 · 운동 점검")
+    """
+    now = datetime.now()
+    date_str = now.strftime("%Y-%m-%d")
+    weekday_kor = _WEEKDAY_KOR[now.weekday()]
+    return (
+        f"[{hour}시 · {category} · {purpose}]\n"
+        f"📅 {date_str} ({weekday_kor})\n"
+        f"{_DIVIDER}"
+    )
+
 
 def _build_06_body() -> str:
     """06시 — 하루 시작 아침당부·문구 + 매일 고정 운동 5종목 체크리스트 (v1.5)"""
@@ -973,22 +1000,16 @@ def _build_06_body() -> str:
     else:
         quote_line = "\n\n(추후 데이터 연결 필요 — 문구 DB 등록 후 활성화)\n"
 
-    now = datetime.now()
-    weekday_kor = _WEEKDAY_KOR[now.weekday()]
-    today_str = now.strftime("%Y-%m-%d")
-
-    workout_lines = ["\n🏋️ 오늘 운동 점검"]
+    workout_lines = ["🏋️ 오늘 운동 점검"]
     for name, unit in DAILY_WORKOUT_ITEMS:
         workout_lines.append(f"  • {name}  ___{unit}  ☐")
 
     return (
-        f"[웰페리온] 06시 하루 시작\n"
-        f"━━━━━━━━━━━━━━━━\n"
-        f"{today_str} ({weekday_kor})\n"
+        f"{_unified_header('06', '개인', '하루 시작 · 운동 점검')}\n"
         f"오늘도 좋은 하루 되십시오."
-        f"{quote_line}"
+        f"{quote_line}\n"
         + "\n".join(workout_lines)
-        + "\n\n_본 메시지는 자동 발송입니다._"
+        + f"\n\n{_AUTO_FOOTER}"
     )
 
 
@@ -1064,18 +1085,17 @@ def _build_07_body() -> str:
     todo_block = "\n".join(todo_lines) if todo_lines else "  (어제 완료 항목 없음)"
 
     return (
-        f"⚓ [웰페리온] 07시 — 어제의 항로\n"
-        f"━━━━━━━━━━━━━━━━\n"
-        f"📅 {yesterday} ({yesterday_wd}) 결산\n\n"
+        f"{_unified_header('07', '개인&회사', '어제의 항로 결산')}\n"
+        f"⚓ {yesterday} ({yesterday_wd}) 결산\n\n"
         f"   완료 요약\n"
         f"{table_str}\n\n"
         f"🚢 코드·자동화\n"
         f"{commit_block}\n\n"
         f"✅ 업무 완료\n"
         f"{todo_block}\n\n"
-        f"━━━━━━━━━━━━━━━━\n"
+        f"{_DIVIDER}\n"
         f"📅 오늘 출항: {today_str} ({weekday_kor})\n"
-        f"_본 메시지는 자동 발송입니다._"
+        f"{_AUTO_FOOTER}"
     )
 
 
@@ -1119,10 +1139,6 @@ def _fetch_cfo_finance_block() -> str:
 
 def _build_09_body() -> str:
     """09시 — 업무·매출·지출 현황 [회사] (기존 오늘할일 → 08시 중복 폐기·대체)"""
-    now = datetime.now()
-    now_str = now.strftime("%Y-%m-%d %H:%M")
-    weekday_kor = _WEEKDAY_KOR[now.weekday()]
-
     # ① 업무현황: C-Level별 진행 (_queue.json + status/*.json)
     progress = fetch_current_progress()
 
@@ -1130,14 +1146,12 @@ def _build_09_body() -> str:
     finance_block = _fetch_cfo_finance_block()
 
     return (
-        f"🏢 [웰페리온] 09시 업무·매출·지출 현황\n"
-        f"━━━━━━━━━━━━━━━━\n"
-        f"기준 {now_str} ({weekday_kor})\n\n"
+        f"{_unified_header('09', '회사', '업무·매출·지출 현황')}\n"
         f"📋 C-Level 업무 진행현황\n"
         f"{progress}\n\n"
-        f"━━━━━━━━━━━━━━━━\n"
+        f"{_DIVIDER}\n"
         f"{finance_block}\n\n"
-        f"_본 메시지는 자동 발송입니다._"
+        f"{_AUTO_FOOTER}"
     )
 
 
@@ -1270,27 +1284,17 @@ def _build_checklist_block(slot_label: str) -> str:
 
 def _build_12_body() -> str:
     """12시 — 시설·지원 체크리스트 대시보드 진행현황 박스표"""
-    now = datetime.now()
-    today = now.strftime("%Y-%m-%d")
-    weekday_kor = _WEEKDAY_KOR[now.weekday()]
-
     checklist_block = _build_checklist_block("12:00")
 
     return (
-        f"[웰페리온] 12시 점검 현황\n"
-        f"━━━━━━━━━━━━━━━━\n"
-        f"{today} ({weekday_kor}) 기준\n\n"
+        f"{_unified_header('12', '회사', '오전 시설·지원·주차 현황')}\n"
         f"{checklist_block}\n\n"
-        f"_본 메시지는 자동 발송입니다._"
+        f"{_AUTO_FOOTER}"
     )
 
 
 def _build_15_body() -> str:
     """15시 — GM 진행 중 오늘 카드형 + C-Level별 진행현황"""
-    now = datetime.now()
-    now_str = now.strftime("%Y-%m-%d %H:%M")
-    weekday_kor = _WEEKDAY_KOR[now.weekday()]
-
     # 섹션1: GM 오늘 활성 + 진행중만 카드형
     cards = fetch_gm_todo_cards(only_in_progress=True)
 
@@ -1312,15 +1316,13 @@ def _build_15_body() -> str:
     progress = fetch_current_progress()
 
     return (
-        f"⏳ [웰페리온] 15시 진행 체크\n"
-        f"━━━━━━━━━━━━━━━━\n"
-        f"기준 {now_str} ({weekday_kor})\n\n"
+        f"{_unified_header('15', '개인&회사', '오늘 항로 1차 정리 · 진행 체크')}\n"
         f"👤 GM 진행 중 ({n_gm}건)\n"
         f"{gm_section}\n\n"
-        f"━━━━━━━━━━━━━━━━\n"
+        f"{_DIVIDER}\n"
         f"🏢 C-Level 진행현황\n"
         f"{progress}\n\n"
-        f"_본 메시지는 자동 발송입니다._"
+        f"{_AUTO_FOOTER}"
     )
 
 
@@ -1352,15 +1354,14 @@ def _build_18_body() -> str:
         quote_line = "\n"
 
     return (
-        f"🌙 [웰페리온] 18시 — 오늘도 수고하셨습니다\n"
-        f"━━━━━━━━━━━━━━━━\n"
-        f"📅 {today_str} ({weekday_kor})\n\n"
+        f"{_unified_header('18', '회사', '오후 시설·지원·주차 · 퇴근 루틴')}\n"
+        f"🌙 오늘도 수고하셨습니다.\n\n"
         f"{checklist_block}\n\n"
-        f"━━━━━━━━━━━━━━━━\n"
+        f"{_DIVIDER}\n"
         f"📊 오늘 성과\n"
         f"{commit_section}\n"
         f"{quote_line}"
-        f"_본 메시지는 자동 발송입니다._"
+        f"{_AUTO_FOOTER}"
     )
 
 
@@ -1431,20 +1432,18 @@ def _build_21_body() -> str:
     bridge_block = "\n".join(bridge_lines) if bridge_lines else "  (미완료 이월 항목 없음 — 오늘 항로 완주)"
 
     return (
-        f"🌙 [웰페리온] 21시 — 오늘 최종 정리\n"
-        f"━━━━━━━━━━━━━━━━\n"
-        f"📅 {today_str} ({weekday_kor}) 마감\n\n"
+        f"{_unified_header('21', '개인&회사', '오늘 항로 최종 정리 · 내일 항로 정립')}\n"
         f"   오늘의 성과\n"
         f"{table_str}\n\n"
         f"🚢 코드·자동화\n"
         f"{commit_block}\n\n"
         f"✅ 업무 완료\n"
         f"{done_block}\n\n"
-        f"━━━━━━━━━━━━━━━━\n"
+        f"{_DIVIDER}\n"
         f"⚓ 내일 항로점 ({tmr_str} {tmr_wd})\n"
         f"  (오늘 미완 → 내일 이월)\n"
         f"{bridge_block}\n\n"
-        f"_본 메시지는 자동 발송입니다._"
+        f"{_AUTO_FOOTER}"
     )
 
 
@@ -1455,10 +1454,6 @@ def _build_22_body() -> str:
     25분 내 중복 발송되던 것을 22:00 단일 메시지로 통합. 별도 22:25 종료인사
     예약작업(Wellperion-PC-Shutdown-Greeting-Live)은 제거.
     """
-    now = datetime.now()
-    today_str = now.strftime("%Y-%m-%d")
-    weekday_kor = _WEEKDAY_KOR[now.weekday()]
-
     quote = fetch_random_quote("22시")
     if quote:
         quote_line = f'\n> "{quote}"\n'
@@ -1466,16 +1461,14 @@ def _build_22_body() -> str:
         quote_line = "\n> \"충분한 수면이 내일의 판단력을 만듭니다.\"\n"
 
     return (
-        f"🌙 [웰페리온] 22시 — 취침 준비·하루 마무리\n"
-        f"━━━━━━━━━━━━━━━━\n"
-        f"📅 {today_str} ({weekday_kor})\n\n"
+        f"{_unified_header('22', '개인', '전자기기 OFF · 취침 · 북극성')}\n"
         f"오늘 하루도 고생 많으셨습니다, GM님.\n"
         f"📵 전자기기 off — 수면 루틴 시작\n\n"
         f"🌟 북극성\n"
         f"  GM만 보는 G1 오케스트레이션 +\n"
         f"  웰페리온 스포츠클럽 ERP 제품화\n"
         f"{quote_line}"
-        f"_본 메시지는 자동 발송입니다._"
+        f"{_AUTO_FOOTER}"
     )
 
 
@@ -1485,18 +1478,12 @@ def _build_23_body() -> str:
     [2026-06-08 GM 지시] PC 종료 22:30→23:30 변경으로 23:00 발송 환경 확보 →
     23시 마감 점검 슬롯 복원(10슬롯 정본). _build_checklist_block 공유 사용.
     """
-    now = datetime.now()
-    today = now.strftime("%Y-%m-%d")
-    weekday_kor = _WEEKDAY_KOR[now.weekday()]
-
     checklist_block = _build_checklist_block("23:00")
 
     return (
-        f"[웰페리온] 23시 마감 점검\n"
-        f"━━━━━━━━━━━━━━━━\n"
-        f"{today} ({weekday_kor}) 마감 기준\n\n"
+        f"{_unified_header('23', '회사', '마감 시설·지원·주차 현황')}\n"
         f"{checklist_block}\n\n"
-        f"_본 메시지는 자동 발송입니다._"
+        f"{_AUTO_FOOTER}"
     )
 
 
