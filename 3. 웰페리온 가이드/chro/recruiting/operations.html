@@ -236,6 +236,17 @@
     .salary{flex-wrap:wrap;}
     .salary .s-note{margin-left:0;text-align:left;max-width:none;}
   }
+
+  /* 회사 소개 */
+  .company{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:30px 26px;margin-top:30px;box-shadow:0 8px 22px rgba(60,48,32,.06);}
+  .company .c-kicker{font-size:13px;letter-spacing:3px;color:var(--accent);font-weight:800;text-align:center;}
+  .company h2{font-size:23px;font-weight:800;margin:6px 0 12px;letter-spacing:-.5px;text-align:center;}
+  .company p{font-size:14.5px;color:var(--muted);line-height:1.85;word-break:keep-all;text-align:center;max-width:680px;margin:0 auto 22px;}
+  .c-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;}
+  .c-stat{background:var(--bg);border:1px solid var(--line);border-radius:14px;padding:16px 12px;text-align:center;}
+  .c-stat b{display:block;font-size:18px;font-weight:800;color:var(--navy);}
+  .c-stat span{display:block;font-size:11.5px;color:var(--muted);margin-top:4px;word-break:keep-all;line-height:1.45;}
+  @media(max-width:620px){ .c-stats{grid-template-columns:repeat(2,1fr);} }
 </style>
 </head>
 <body>
@@ -247,6 +258,19 @@
 </div>
 
 <div class="wrap">
+
+  <!-- 회사 소개 -->
+  <div class="company">
+    <div class="c-kicker">ABOUT WELPERION</div>
+    <h2>웰페리온은 어떤 곳인가요</h2>
+    <p>웰페리온은 단순한 운동 시설이 아닙니다. 서울 한남동에 자리한, 하루 루틴에 자연스럽게 녹아들어 건강의 기준을 세우고 그날의 완성도를 채워주는 프리미엄 멤버십 스포츠 클럽입니다. 스포츠 · 스파 · 커뮤니티 · 공간이 하나로 통합된 라이프스타일 인프라를 9년간 가꿔왔습니다.</p>
+    <div class="c-stats">
+      <div class="c-stat"><b>한남동</b><span>Seoul · 프리미엄 입지</span></div>
+      <div class="c-stat"><b>9년+</b><span>검증된 운영</span></div>
+      <div class="c-stat"><b>3,000평</b><span>통합 라이프스타일 공간</span></div>
+      <div class="c-stat"><b>4 in 1</b><span>스포츠 · 스파 · 커뮤니티 · 카페</span></div>
+    </div>
+  </div>
 
   <!-- ===================== TALENT PROFILE (TOP) ===================== -->
   <div class="talent">
