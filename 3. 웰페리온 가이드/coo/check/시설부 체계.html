@@ -589,7 +589,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
     <div id="policy-board" style="display:contents"></div>
 
     <!-- ── [칸반 컬럼] ⏱ 근무·휴게 시간 — 정기회의 다음 카드로 이어짐 ── -->
-    <div class="board-col" style="border-left:4px solid var(--red);">
+    <div class="board-col" style="border-left:4px solid var(--red);flex:0 0 820px;min-width:820px;max-width:820px;">
       <div class="board-col-head"><span class="bday" style="font-size:16px;color:var(--red);">⏱ 근무·휴게 시간</span></div>
       <div class="board-col-body">
 
@@ -4598,7 +4598,6 @@ function vendorToggleEdit(colKey, id){
   if(!cell||!btn||!found) return;
   const editing = cell.classList.contains('editing');
   if(!editing){
-    if(typeof requireEditAuth==='function' && !requireEditAuth()) return;
     cell.classList.add('editing');
     const v = found.card;
     const set = (sid, val)=>{ const el=document.getElementById(sid+cid); if(el) el.value=val||''; };
@@ -4655,7 +4654,6 @@ function vendorCancelEdit(colKey, id){
 }
 
 function vendorAddCard(colKey){
-  if(typeof requireEditAuth==='function' && !requireEditAuth()) return;
   const wrap = document.getElementById('vendor-board');
   if(wrap && wrap.querySelector('.dv-cell.editing')){ alert('편집 중인 카드를 먼저 저장하거나 닫아주세요.'); return; }
   if(!Array.isArray(VENDOR_DATA[colKey])) VENDOR_DATA[colKey]=[];
@@ -4667,7 +4665,6 @@ function vendorAddCard(colKey){
 }
 
 function vendorDeleteCard(colKey, id){
-  if(typeof requireEditAuth==='function' && !requireEditAuth()) return;
   if(!confirm('이 업체 카드를 삭제할까요?')) return;
   const found = vendorFindCard(colKey, id);
   if(!found) return;
@@ -4742,7 +4739,6 @@ function renderVendorList(){
 
 /* ── 등록 폼 열기/닫기/제출 ── */
 function vendorOpenAddForm(){
-  if(typeof requireEditAuth==='function' && !requireEditAuth()) return;
   const f = document.getElementById('vendor-add-form');
   if(!f) return;
   f.classList.remove('hidden');
