@@ -1203,14 +1203,14 @@ const WEEKDAY=[
     ]}
   ]},
   {slot:"오전 후반 10:00~12:00",shift:"am",groups:[
-    {title:"D 외부 (오전)",items:[
+    {title:"D 내부 (오전)",items:[
       {id:"d1",name:"D-1 외부 화장실",detail:"골프장/B1/B2 화장실 체크 | 악취 관리 최우선\n비품: 휴지통, 화장지, 핸드페이퍼, 손세정제",gender:"all"},
       {id:"d2",name:"D-2 복도 휴지통",detail:"운영사무실 앞 / B1 복도(헬스장 입구 구석)",gender:"all"},
       {id:"d3",name:"D-3 메인 계단",detail:"B1-B2 메인 계단 벽/바닥 청결 (남 주임 전담)",gender:"m"},
       {id:"d4",name:"D-4 메인 복도 휴게공간",detail:"소파/바닥 청결 (여 주임 전담)",gender:"f"},
       {id:"d5",name:"D-5 분리수거장",detail:"에스컬레이터 아래 분리수거 진행",gender:"all"}
     ]},
-    {title:"E 내부 (오전)",items:[
+    {title:"E 외부 (오전)",items:[
       {id:"e1",name:"E-1 센터 복도 바닥",detail:"1F/B1/B2 에스컬레이터 공간 전체 복도",gender:"all"},
       {id:"e2",name:"E-2 센터 거울/유리창",detail:"거울/유리창 물때 | 손톱깍이장 청소 (화요일 집중)",gender:"all"},
       {id:"e3",name:"E-3 청소 비품 관리",detail:"비품 지정 위치 배치 | 깔끔하게 관리",gender:"all"},
@@ -1277,7 +1277,7 @@ const WEEKEND=[
     {title:"C 세탁물 (오전)",items:[
       {id:"c1a",name:"세탁물 입고 + 상태 체크",detail:"운동복/양말 사이즈별 배치 | 타올류 배치",gender:"all"}
     ]},
-    {title:"E 내부 (오전)",items:[
+    {title:"E 외부 (오전)",items:[
       {id:"e1",name:"E-1 센터 복도 바닥",detail:"1F/B1/B2",gender:"all"},
       {id:"e3",name:"E-3 청소 비품 관리",detail:"지정 위치 배치",gender:"all"},
       {id:"e4",name:"E-4 헬스장",detail:"거울 청소 (주말)",gender:"all"},
@@ -1636,14 +1636,14 @@ const ROUND_MAP={
   /* C 세탁물 입고/배치 = 오전조 1회(am2 흡수) */
   c1a:['am1'], c1b:['am1'], c1c:['am1'],
   c_ev:['close1'],                          /* 주말 C 세탁물 마감 = 마감조 */
-  /* 인수인계(구 12시 am2) = 오전조 흡수 */
-  hw1:['am1'], hw2:['am1'],
-  /* D 외부(구 am2·pm2) = 오전조·마감조 흡수 */
+  /* 인수인계(구 12시 am2) = 오전조 + 오후조 (교대 인수인계 오전·오후 둘 다, 시우·GM 2026-06-12) */
+  hw1:['am1','pm1'], hw2:['am1','pm1'],
+  /* D 내부(구 am2·pm2) = 오전조·마감조 흡수 */
   d1:['am1','close1'], d2:['am1','close1'], d3:['am1','close1'], d4:['am1','close1'], d5:['am1','close1'],
   /* D 내부(오후/저녁) 비-사우나 항목 = 성격에 맞는 조 */
   d6:['pm1'], d7:['pm1'], d9:['pm1'],       /* D 내부(오후) → 오후조 */
   d8:['close1'],                            /* 키즈 샤워실(저녁) → 마감조 */
-  /* E 내부 = 오전조·오후조 2회 */
+  /* E 외부 = 오전조·오후조 2회 */
   e1:['am1','pm1'], e2:['am1','pm1'], e3:['am1','pm1'], e4:['am1','pm1'], e5:['am1','pm1'], e6:['close1'],
   /* 마감 = 마감조 1회 */
   cls1:['close1'], cls2:['close1'], cls3:['close1']
