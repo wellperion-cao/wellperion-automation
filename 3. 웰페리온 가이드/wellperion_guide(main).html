@@ -4933,7 +4933,7 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
   }
   function toast(msg){
     var t = document.getElementById('hubToast');
-    if (!t){ t = document.createElement('div'); t.id = 'hubToast'; t.style.cssText = 'position:fixed;top:20px;right:20px;background:var(--accent);color:#fff;padding:10px 16px;border-radius:8px;font-size:13px;font-weight:700;z-index:9999;box-shadow:0 4px 14px rgba(0,0,0,0.3);'; document.body.appendChild(t); }
+    if (!t){ t = document.createElement('div'); t.id = 'hubToast'; t.style.cssText = 'position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#15803d;color:#fff;padding:10px 22px;border-radius:8px;font-size:13px;font-weight:700;z-index:9999;box-shadow:0 4px 14px rgba(0,0,0,0.3);'; document.body.appendChild(t); }
     t.textContent = msg; t.style.display = 'block'; clearTimeout(t._h); t._h = setTimeout(function(){ t.style.display = 'none'; }, 3000);
   }
 
