@@ -27,6 +27,13 @@ const FORM_SHEETS = [
   { ssId: '12AWcAlgmmYKr2nUbWmVpa71_z3zi0BaU4ZdnOwrI_7U', gid: 953023270, type: '멤버십',     channelKeys: ['채널', '알게'] },
   { ssId: '1b0XU1oTHlXzBhEzUOar5GEm44vjopdO25qfsh-awDXw', gid: 111889422, type: '성인강습',   channelKeys: ['경로', '채널'] },
   { ssId: '1b0XU1oTHlXzBhEzUOar5GEm44vjopdO25qfsh-awDXw', gid: 268994754, type: '유소년강습', channelKeys: ['경로', '채널'] }
+  // ─── 신규 2종 틀 (시모·GM 2026-06-12 승인 — 공간 렌트·비즈니스 파트너) ───
+  // ★ 준비중: GM이 구글폼 2개 생성 후 ① ssId=실제 응답 스프레드시트 ID ② gid='__GID__'→실제 응답탭 gid(숫자)
+  //   로 교체하고, 아래 두 줄 앞의 주석(//)을 풀어 활성화한다.
+  //   ⚠️ gid 가 문자열 '__GID__' 인 상태에서는 _sheetByGid_ 매칭(=== 숫자 비교)이 실패 → 자동 스킵(무중단).
+  //   ⚠️ clasp push ≠ 웹앱 배포 — gid 교체 후 새 버전 웹앱 재배포 1회(GM/CTO) 필요. (명세: 문의_신규유형_폼설계_260612.md §5)
+  // , { ssId: '__SPACE_RENTAL_SS_ID__', gid: '__GID__', type: '공간렌트',       channelKeys: ['경로', '채널', '알게'] }
+  // , { ssId: '__BUSINESS_PARTNER_SS_ID__', gid: '__GID__', type: '비즈니스파트너', channelKeys: ['경로', '채널', '알게'] }
 ];
 
 function _sheetByGid_(ssId, gid) {
