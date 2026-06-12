@@ -514,7 +514,7 @@ a{color:var(--accent);text-decoration:none}
           <tr><td colspan="4" style="padding:14px 16px;color:var(--dim);font-size:13px">불러오는 중…</td></tr>
         </tbody>
       </table>
-      <div style="padding:8px 16px 10px;font-size:11px;color:var(--dim);border-top:1px solid var(--border)">채널명은 문의 시 선택한 유입경로 기준 · 누적 전환은 전체 기간</div>
+      <div style="padding:8px 16px 10px;font-size:11px;color:var(--dim);border-top:1px solid var(--border)">핵심 채널만 표시(비핵심·일회성 유입은 '기타'로 합산) · 채널명은 문의 시 선택한 유입경로 기준 · 누적 전환은 전체 기간</div>
     </div>
   </div>
 
@@ -577,6 +577,23 @@ var _pbData = null;   // period_breakdown 응답 (inquiries.byChannelMonth 객�
 
 var _DOT_COLORS = ['--f1','--f2','--f3','--f4','--f5'];
 
+// 경량화(2026-06-12 시모): 유입채널은 자유텍스트·폼별 상이값이라 합집합이 비대해짐.
+// 핵심 운영 채널만 표시하고, 비핵심·오타·일회성 값은 '기타'로 합산(수치 정확성 보존).
+var _CORE_CHANNELS = ['인스타그램', '블로그', '카페', '회원 소개', '온라인 검색', '지역 커뮤니티'];
+
+// 자유텍스트 원본값 → 핵심 채널명 정규화. 미매칭은 null(→ '기타' 합산)
+function _canonChannel(raw) {
+  var s = String(raw || '').trim();
+  if (!s) return null;
+  if (/인스타|insta|ig\b|sns/i.test(s))           return '인스타그램';
+  if (/블로그|blog|네이버\s*블로그/i.test(s))      return '블로그';
+  if (/카페|cafe/i.test(s))                        return '카페';
+  if (/회원\s*소개|지인|소개|추천/i.test(s))        return '회원 소개';
+  if (/온라인\s*검색|검색|search|네이버|구글|google/i.test(s)) return '온라인 검색';
+  if (/입주|지역|커뮤니티|community/i.test(s))      return '지역 커뮤니티';
+  return null; // 비핵심 → 기타로 합산
+}
+
 function renderChannelTableLive() {
   var tbody = document.getElementById('channel-table-body');
   if (!tbody) return;
@@ -586,33 +603,47 @@ function renderChannelTableLive() {
   // byChannel: [{channel, inquiries, converted, rate}, ...]
   var byChannel = (_fcData && Array.isArray(_fcData.byChannel)) ? _fcData.byChannel : [];
 
-  // 채널 합집합
-  var chSet = {};
-  Object.keys(byMonth).forEach(function(ch) { chSet[ch] = true; });
-  byChannel.forEach(function(d) { if (d.channel) chSet[d.channel] = true; });
-  var channels = Object.keys(chSet);
+  // 핵심 채널 + '기타' 버킷으로 집계(자유텍스트 합집합 비대화 차단)
+  var ETC = '기타';
+  var agg = {};   // {표시채널: {monthInq, cumInquiries, cumConverted}}
+  function bucket(ch) { return _canonChannel(ch) || ETC; }
+  function slot(name) {
+    if (!agg[name]) agg[name] = { monthInq: 0, cumInquiries: 0, cumConverted: 0, hasCum: false };
+    return agg[name];
+  }
+  Object.keys(byMonth).forEach(function(ch) { slot(bucket(ch)).monthInq += (byMonth[ch] || 0); });
+  byChannel.forEach(function(d) {
+    if (!d.channel) return;
+    var s = slot(bucket(d.channel));
+    s.cumInquiries += (d.inquiries || 0);
+    s.cumConverted += (d.converted || 0);
+    s.hasCum = true;
+  });
 
-  if (!channels.length) {
+  // 표시 대상: 핵심 채널(존재 시) + 기타(존재 시). 활동 없는 행은 제거.
+  var order = _CORE_CHANNELS.concat([ETC]);
+  var rows = order.filter(function(name) { return agg[name]; }).map(function(name) {
+    var s = agg[name];
+    var active = s.monthInq > 0 || s.cumInquiries > 0;
+    return active ? {
+      ch: name,
+      monthInq: s.monthInq,
+      cumInquiries: s.hasCum ? s.cumInquiries : null,
+      cumConverted: s.hasCum ? s.cumConverted : null,
+      cumRate: (s.hasCum && s.cumInquiries > 0) ? Math.round((s.cumConverted / s.cumInquiries) * 1000) / 10 : (s.hasCum ? 0 : null)
+    } : null;
+  }).filter(Boolean);
+
+  if (!rows.length) {
     tbody.innerHTML = '<tr><td colspan="4" style="padding:14px 16px;color:var(--dim);font-size:13px;font-style:italic">집계 준비 중</td></tr>';
     return;
   }
 
-  // 각 채널 데이터 조립
-  var rows = channels.map(function(ch) {
-    var monthInq = byMonth[ch] !== undefined ? byMonth[ch] : 0;
-    var fcRow = byChannel.find(function(d) { return d.channel === ch; });
-    var cumConverted = fcRow ? fcRow.converted : null;
-    var cumInquiries = fcRow ? fcRow.inquiries : null;
-    var cumRate      = fcRow ? fcRow.rate      : null;
-    return { ch: ch, monthInq: monthInq, cumConverted: cumConverted, cumInquiries: cumInquiries, cumRate: cumRate };
-  });
-
-  // 정렬: 이번 달 문의 desc → 누적 문의 desc
+  // 정렬: 이번 달 문의 desc → 누적 문의 desc (기타는 항상 맨 아래)
   rows.sort(function(a, b) {
+    if ((a.ch === ETC) !== (b.ch === ETC)) return a.ch === ETC ? 1 : -1;
     if (b.monthInq !== a.monthInq) return b.monthInq - a.monthInq;
-    var aCum = a.cumInquiries !== null ? a.cumInquiries : 0;
-    var bCum = b.cumInquiries !== null ? b.cumInquiries : 0;
-    return bCum - aCum;
+    return (b.cumInquiries || 0) - (a.cumInquiries || 0);
   });
 
   var html = '';
