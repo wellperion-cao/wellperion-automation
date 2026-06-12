@@ -2259,6 +2259,7 @@ window.saveItemEdit=function(){
     };
     list.push(item);
   }
+  if(typeof markEditTs==='function')markEditTs(id);   // '수정됨' 배지 = 오늘만 표시(다음날 사라짐)
   mgmtSaveItems(list);   /* CUSTOM_ITEMS 갱신 + 시트 저장(saveItems POST) */
   document.getElementById('itemEditModal').style.display='none';
   _editingItemId=null;
@@ -2373,6 +2374,15 @@ function getGroupRename(){ try{return JSON.parse(localStorage.getItem('wcheck_gr
 function getHiddenGroups(){ try{return new Set(JSON.parse(localStorage.getItem('wcheck_group_hidden')||'[]'))}catch(e){return new Set()} }
 function getAddedGroups(){ try{return JSON.parse(localStorage.getItem('wcheck_group_added')||'[]')||[]}catch(e){return []} }
 function groupDisplay(t){ const r=getGroupRename(); return r[t]||t; }
+/* 배지(수정됨/추가) 만료 — 하루만 표시, 다음날(KST) 사라짐. GM 2026-06-12.
+   추가=custom_ id의 생성 타임스탬프 기준 / 수정됨=편집 시각 localStorage 기록 기준. */
+function getEditTs(){ try{return JSON.parse(localStorage.getItem('wcheck_edit_ts')||'{}')||{}}catch(e){return {}} }
+function markEditTs(id){ const m=getEditTs(); m[id]=kstToday(); localStorage.setItem('wcheck_edit_ts',JSON.stringify(m)); }
+function isEditFresh(id){ return getEditTs()[id]===kstToday(); }
+function isCustomFresh(id){
+  const m=String(id).match(/^custom_(\d+)/); if(!m)return false;
+  try{ const d=new Date(Number(m[1])+9*3600*1000); return d.toISOString().slice(0,10)===kstToday(); }catch(e){ return false; }
+}
 window.addManualGroup=function(){
   const n=prompt('새 구역(그룹) 이름 — 예: F 주차장'); if(n==null)return;
   const t=n.trim(); if(!t){alert('이름을 입력하세요.');return;}
@@ -2435,7 +2445,7 @@ function renderItem(it,shift,gender,round){
     if(ov.cat)m.push('카테고리 '+ov.cat);
     metaInfo='<span style="font-size:10px;color:#5b9fd5;margin-left:6px;">('+m.join(' · ')+')</span>';
   }
-  const editedTag=isEdited?'<span style="font-size:10px;color:#e6c84e;font-weight:700;margin-left:4px;">수정됨</span>'+metaInfo:'';
+  const editedTag=(isEdited&&(typeof isEditFresh!=='function'||isEditFresh(it.id)))?'<span style="font-size:10px;color:#e6c84e;font-weight:700;margin-left:4px;">수정됨</span>'+metaInfo:'';
   /* 온도 측정칸 (해당 항목만) — 기준 벗어나면 빨간 경고 */
   const tempFields=tempFieldsFor(it.id);
   let tempHtml='';
@@ -2701,8 +2711,8 @@ function renderManualItems(){
       const detHtml=it.detail?it.detail.replace(/\n/g,'<br>'):'';
       const hasDet=!!detHtml;
       const genderLabel=it.gender==='m'?' <span style="font-size:10px;color:var(--blue);background:var(--blue-bg);padding:1px 6px;border-radius:6px;">남</span>':it.gender==='f'?' <span style="font-size:10px;color:var(--orange);background:var(--orange-bg);padding:1px 6px;border-radius:6px;">여</span>':'';
-      const customLabel=it._custom?' <span style="font-size:10px;color:var(--accent);background:var(--accent-bg);padding:1px 6px;border-radius:6px;">추가</span>':'';
-      const editedLabel=it._edited?' <span style="font-size:10px;color:#e6c84e;background:rgba(230,200,78,0.12);padding:1px 6px;border-radius:6px;">수정됨</span>':'';
+      const customLabel=(it._custom&&isCustomFresh(it.id))?' <span style="font-size:10px;color:var(--accent);background:var(--accent-bg);padding:1px 6px;border-radius:6px;">추가</span>':'';
+      const editedLabel=(it._edited&&isEditFresh(it.id))?' <span style="font-size:10px;color:#e6c84e;background:rgba(230,200,78,0.12);padding:1px 6px;border-radius:6px;">수정됨</span>':'';
       /* 매뉴얼 = 셋업/참조 전용(GM 2026-06-12): 체크박스·완료표시 없음. 체크는 점검 탭에서만. */
       const nameStyle='font-size:13px;font-weight:600;';
       const arrow=hasDet?`<span class="m-arrow" style="font-size:11px;color:var(--dim);transition:transform .2s;">&#9660;</span>`:'';
