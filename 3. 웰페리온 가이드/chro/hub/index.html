@@ -531,6 +531,33 @@ function applLinkedName(a){
   var raw=parseArr(a&&a["연결 공고"]).filter(function(r){var s=String(r||"").trim();return s&&s.charAt(0)!=="("&&s.length>=4;});
   return raw.length?raw.join(", "):"";
 }
+// 채용 채널 값을 개별 채널 토큰 배열로 (콤마/슬래시/、 구분)
+function chTokens(v){
+  var arr=parseArr(v), out=[];
+  arr.forEach(function(s){ String(s).split(/[,、\/]/).forEach(function(p){ p=p.trim(); if(p) out.push(p); }); });
+  return out;
+}
+// 채널 칩 클릭 → 게시/미게시 토글 (관리자 전용)
+async function onChannelToggle(ev){
+  var el=ev.target && ev.target.closest && ev.target.closest(".ch-toggle");
+  if(!el) return;
+  if(el.getAttribute("data-busy")==="1") return;
+  var row=el.getAttribute("data-chrow");
+  var chName=el.getAttribute("data-chname");
+  var jobName=el.getAttribute("data-jobname");
+  var nrm=function(s){return String(s||"").replace(/\s/g,"");};
+  var h=(window.DB&&DB.hire||[]).find(function(x){return String(x["_sheet_row"])===String(row);});
+  var cur=h?chTokens(h["채용 채널"]):[];
+  var match=function(x){var a=nrm(x),b=nrm(chName);return a&&b&&(a.indexOf(b)>=0||b.indexOf(a)>=0);};
+  var has=cur.some(match);
+  var next=has?cur.filter(function(x){return !match(x);}):cur.concat([chName]);
+  el.setAttribute("data-busy","1"); el.style.opacity="0.5";
+  try{
+    var r=await fetch(NOTION_FN,{method:"POST",body:JSON.stringify({action:"set-channels",adminPassword:SESSION_PW,sheetRow:Number(row),jobName:jobName,channels:next})}).then(function(x){return x.json();});
+    if(!r.ok) throw new Error(r.error||"set-channels 실패");
+    if(typeof loadAll==="function") loadAll(); // 새로고침 후 재렌더
+  }catch(e){ alert("채널 변경 실패: "+(e.message||e)); el.removeAttribute("data-busy"); el.style.opacity="1"; }
+}
 function daysBetween(a,b){return Math.round((a-b)/86400000);}
 function p2(n){return (n<10?"0":"")+n;}
 
@@ -760,13 +787,19 @@ function renderDash(){
   html+='<div class="card"><h3>지원자 유입 경로</h3><div class="chart-box"><canvas id="cSource"></canvas></div></div>';
   html+='<div class="card"><h3>채널 게시 현황 <span class="muted" style="font-weight:400;font-size:11.5px">· ✓ 게시 / · 미게시</span></h3>';
   if(activeHire.length){
+    var __chAdmin=(SESSION_ROLE==="admin");
     html+=activeHire.map(function(h){
-      var on=parseArr(h["채용 채널"]);
-      return '<div style="margin:10px 0 12px"><div style="font-weight:650;font-size:13px;margin-bottom:6px">'+esc(txt(h["포지션명"]))+'</div><div style="display:flex;flex-wrap:wrap;gap:6px">'+
+      var on=chTokens(h["채용 채널"]);
+      var hint=__chAdmin?'<span class="muted" style="font-weight:400;font-size:10.5px"> · 칩을 클릭해 게시/미게시 전환</span>':'';
+      return '<div style="margin:10px 0 12px"><div style="font-weight:650;font-size:13px;margin-bottom:6px">'+esc(txt(h["포지션명"]))+hint+'</div><div style="display:flex;flex-wrap:wrap;gap:6px">'+
         STD_CH.map(function(c){
           var cc=c.replace(/\s/g,"");
           var isOn=on.some(function(x){var xx=String(x).replace(/\s/g,"");return xx.indexOf(cc)>=0||cc.indexOf(xx)>=0;});
-          return '<span style="font-size:11.5px;padding:3px 10px;border-radius:20px;'+(isOn?"background:#e9f1ea;color:#3c7a4a;font-weight:700":"background:#f4f3ef;color:#b5b1a6")+'">'+(isOn?"✓ ":"· ")+esc(c)+'</span>';
+          var base='font-size:11.5px;padding:3px 10px;border-radius:20px;'+(isOn?"background:#e9f1ea;color:#3c7a4a;font-weight:700":"background:#f4f3ef;color:#b5b1a6");
+          var attr=__chAdmin
+            ? ' class="ch-toggle" data-chrow="'+esc(String(h["_sheet_row"]||""))+'" data-chname="'+esc(c)+'" data-jobname="'+esc(txt(h["포지션명"]))+'" style="cursor:pointer;user-select:none;'+base+'" title="클릭하면 게시/미게시 전환"'
+            : ' style="'+base+'"';
+          return '<span'+attr+'>'+(isOn?"✓ ":"· ")+esc(c)+'</span>';
         }).join("")+'</div></div>';
     }).join("");
   }else{html+='<div class="muted" style="font-size:12.5px;padding:10px 0">진행 중인 공고가 없습니다.</div>';}
@@ -788,6 +821,10 @@ function renderDash(){
     :'<div class="card">'+emptyState("진행 중인 채용 공고가 없습니다.","◔")+'</div>';
 
   setPanel("dash",html);
+  if(SESSION_ROLE==="admin"){
+    var __dp=document.querySelector('.panel[data-panel="dash"]');
+    if(__dp) __dp.addEventListener("click",onChannelToggle);
+  }
   drawBar("cDept",groupCount(active,"부서"));
   drawDonut("cType",groupCount(active,"고용 형태"));
   drawBar("cFunnel",funnel);
@@ -1969,36 +2006,4 @@ details.jobs-fold > summary > .jf-arrow{display:inline-block;transition:transfor
         if(pf && r.pos !== pf) return false;
         if(q){
           var hay = ((r.name||"") + " " + (r.pos||"")).toLowerCase();
-          if(hay.indexOf(q) < 0) return false;
-        }
-        return true;
-      });
-      var html = '<div style="display:grid;grid-template-columns:1.5fr 3fr 60px 1fr 1fr 130px;gap:12px;padding:11px 14px;background:var(--surface-2,#faf9f6);border-bottom:1px solid var(--line,#e7e4dc);font-size:11px;font-weight:700;color:var(--ink-soft,#6c6961);text-transform:uppercase;letter-spacing:.03em">' +
-        '<div>지원자</div><div>지원 포지션</div><div>평점</div><div>지원일</div><div>면접 일정</div><div style="text-align:right">상태</div></div>';
-      if(filtered.length === 0){
-        html += '<div style="padding:40px 20px;text-align:center;color:var(--ink-faint,#9a978e);font-size:12.5px">조건에 맞는 지원자가 없습니다.</div>';
-      } else {
-        filtered.forEach(function(rr, idx){
-          var bb = idx === filtered.length - 1 ? "" : "border-bottom:1px solid var(--line-soft,#efece4);";
-          html += '<div class="appl-row" data-applname="'+escH(rr.name)+'" data-apppid="'+escH(rr.pid)+'" style="display:grid;grid-template-columns:1.5fr 3fr 60px 1fr 1fr 130px;gap:12px;padding:12px 14px;'+bb+'cursor:pointer;font-size:12.5px;align-items:center">' +
-            '<div style="font-weight:650">'+escH(rr.name||"-")+'</div>' +
-            '<div style="color:var(--ink-soft,#6c6961)">'+escH(rr.pos||"-")+'</div>' +
-            '<div>'+escH(rr.grade||"-")+'</div>' +
-            '<div>'+escH(fmtDate(rr.applyDate))+'</div>' +
-            '<div>'+escH(fmtDate(rr.iveDate))+'</div>' +
-            '<div style="text-align:right"><span style="display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;'+badgeStyle(rr.stage)+'">'+escH(rr.stage||"-")+'</span></div>' +
-          '</div>';
-        });
-      }
-      list.innerHTML = html;
-      document.getElementById("__af_count").textContent = filtered.length + " / " + allRows.length + " 명";
-    }
-
-    var firstGrp = groups[0];
-    var grpParent = firstGrp.parentElement;
-    grpParent.insertBefore(container, firstGrp);
-    groups.forEach(function(g){g.style.display = "none";});
-
-    document.getElementById("__af_q").addEventListener("input", renderRows);
-    document.getElementById("__af_stage").addEventListener("change", renderRows);
-    document.getElementByI
+    
