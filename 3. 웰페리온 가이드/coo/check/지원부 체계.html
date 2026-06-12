@@ -2384,6 +2384,35 @@ window.moveManualGroup=function(title,dir){
   if(typeof renderManualItems==='function')renderManualItems();
   if(typeof renderG==='function')renderG(activeGenderTab);
 };
+/* 일정 배지 — 항목명/상세에 적은 요일·주기를 배지로(헬스장 월화수목금처럼). GM 2026-06-12.
+   요일(월~일): 'X요일'·'월수금'·'화목'·'월화수목금' / df_ id. 주기: 격주·둘째주·주N회·월N회·2·4주·매주·휴관일. */
+function scheduleBadges(it, name, detail){
+  const M={mon:'월',tue:'화',wed:'수',thu:'목',fri:'금',sat:'토',sun:'일'};
+  const order=['월','화','수','목','금','토','일']; const dset={};
+  const idm=String((it&&it.id)||'').match(/^df_(mon|tue|wed|thu|fri|sat|sun)/);
+  if(idm)dset[M[idm[1]]]=1;
+  const txt=String(name||'')+' '+String(detail||'');
+  (txt.match(/[월화수목금토일]요일/g)||[]).forEach(function(s){dset[s[0]]=1;});
+  (txt.match(/[월화수목금토일]{2,7}/g)||[]).forEach(function(s){for(var i=0;i<s.length;i++)dset[s[i]]=1;});
+  let html='';
+  order.filter(function(d){return dset[d];}).forEach(function(d){
+    html+=' <span style="font-size:10px;color:#7b5ea7;background:rgba(123,94,167,0.16);padding:1px 6px;border-radius:6px;font-weight:700;">'+d+'</span>';
+  });
+  /* 주기(반복) 배지 */
+  const per=[]; const seen={};
+  function addP(p){ if(p&&!seen[p]){seen[p]=1;per.push(p);} }
+  if(/격주/.test(txt))addP('격주');
+  (txt.match(/[첫둘셋넷]째\s*주/g)||[]).forEach(function(s){addP(s.replace(/\s+/g,''));});
+  var jm=txt.match(/주\s*([0-9])\s*회/); if(jm)addP('주'+jm[1]+'회');
+  var mm=txt.match(/월\s*([0-9])\s*회/); if(mm)addP('월'+mm[1]+'회');
+  var nw=txt.match(/([0-9])\s*[·,]\s*([0-9])\s*주/); if(nw)addP(nw[1]+'·'+nw[2]+'주');
+  if(/매주/.test(txt))addP('매주');
+  if(/휴관일/.test(txt))addP('휴관일');
+  per.forEach(function(p){
+    html+=' <span style="font-size:10px;color:#1f8a70;background:rgba(31,138,112,0.14);padding:1px 6px;border-radius:6px;font-weight:700;">'+p+'</span>';
+  });
+  return html;
+}
 /* ── 구역(그룹) 자체 CRUD — 추가/이름변경/삭제(숨김). 매뉴얼·점검 동일 반영. GM 2026-06-12.
    rename = 원본 구역명→표시명 맵(아이템 데이터 무변경, 표시단계 매핑). hidden = 구역 통째 숨김. added = 빈 구역 등록. */
 function getGroupRename(){ try{return JSON.parse(localStorage.getItem('wcheck_group_rename')||'{}')||{}}catch(e){return {}} }
@@ -2491,19 +2520,8 @@ function renderItem(it,shift,gender,round){
   PROMOTE_CTX[it.id]={cat:(ov.cat||it.cat||it.category||''),slot:(ov.slot||it.slot||''),shift:(ov.shift||it.shift||shift||''),round:round||'',gender:g};
   const promoteBtn=iss?`<button class="tiny-btn" style="background:rgba(91,159,213,0.12);color:#5b9fd5;border-color:rgba(91,159,213,0.35);font-size:12px;" title="이 이슈를 점검표·매뉴얼 항목으로 추가" onclick="openPromoteFromIssue('${it.id}','${g}')">➕ 점검·매뉴얼 항목으로</button>`:'';
   const _rArg=round?`,'${round}'`:'';
-  /* 요일에만 하는 특수 항목 = 요일 배지(월~일)로 눈에 띄게. df_ id의 요일 + 상세의 월수금·화목·X요일 패턴. GM 2026-06-12 */
-  const _dayChips=(function(){
-    const M={mon:'월',tue:'화',wed:'수',thu:'목',fri:'금',sat:'토',sun:'일'};
-    const order=['월','화','수','목','금','토','일']; const set={};
-    const idm=String(it.id||'').match(/^df_(mon|tue|wed|thu|fri|sat|sun)/);
-    if(idm)set[M[idm[1]]]=1;
-    const txt=String(itemName||'')+' '+String(itemDetail||'');
-    (txt.match(/[월화수목금토일]요일/g)||[]).forEach(function(s){set[s[0]]=1;});
-    (txt.match(/[월화수목금토일]{2,4}/g)||[]).forEach(function(s){for(var i=0;i<s.length;i++)set[s[i]]=1;});
-    const days=order.filter(function(d){return set[d];});
-    if(!days.length)return '';
-    return ' '+days.map(function(d){return '<span style="font-size:10px;color:#7b5ea7;background:rgba(123,94,167,0.16);padding:1px 6px;border-radius:6px;font-weight:700;">'+d+'</span>';}).join('');
-  })();
+  /* 요일·주기 일정 배지 (편집 시 '월수금'·'둘째주'·'격주' 입력하면 헬스장처럼 배지로 표시). GM 2026-06-12 */
+  const _dayChips=(typeof scheduleBadges==='function')?scheduleBadges(it,itemName,itemDetail):'';
   return `<div class="${cls}">
     <div class="item-row"><input type="checkbox" id="cb_${pfx}${it.id}" ${ck} onchange="onCk('${it.id}','${shift}','${g}'${_rArg})"><label for="cb_${pfx}${it.id}">${itemName}${_dayChips}${editedTag}</label>
       <div class="item-btns"><button class="tiny-btn issue" onclick="togX('${pfx}iss_${it.id}')">이슈</button><button class="tiny-btn tip" onclick="togX('${pfx}tip_${it.id}')">노하우</button>${refBtn}</div>
@@ -2742,7 +2760,7 @@ function renderManualItems(){
       const _up=idx>0?`<button onclick="event.stopPropagation();moveManualItem('${it.id}',-1)" style="${_mvBtn}" title="위로">▲</button>`:`<button disabled style="${_mvBtn}opacity:.25;cursor:default;">▲</button>`;
       const _dn=idx<items.length-1?`<button onclick="event.stopPropagation();moveManualItem('${it.id}',1)" style="${_mvBtn}" title="아래로">▼</button>`:`<button disabled style="${_mvBtn}opacity:.25;cursor:default;">▼</button>`;
       html+=`<div style="padding:10px 16px;border-bottom:1px solid rgba(61,56,53,0.35);">`;
-      html+=`<div style="${nameCursor}min-width:0;" ${hasDet?'onclick="togManualItem(this)"':''}><div style="${nameStyle}display:flex;align-items:center;gap:6px;justify-content:space-between;"><span>${it.name}${genderLabel}${customLabel}${editedLabel}</span>${arrow}</div>`;
+      html+=`<div style="${nameCursor}min-width:0;" ${hasDet?'onclick="togManualItem(this)"':''}><div style="${nameStyle}display:flex;align-items:center;gap:6px;justify-content:space-between;"><span>${it.name}${genderLabel}${customLabel}${editedLabel}${(typeof scheduleBadges==='function')?scheduleBadges(it,it.name,it.detail):''}</span>${arrow}</div>`;
       if(hasDet)html+=`<div class="manual-item-detail" style="font-size:12px;color:var(--dim);margin-top:5px;line-height:1.5;">${detHtml}</div>`;
       html+=`</div>`;
       /* 편집 모드: 항목명 아래 별도 줄에 액션바(▲▼ · 편집 · 삭제) — overflow 잘림 방지, 항상 보임 */
