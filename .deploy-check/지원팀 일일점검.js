@@ -32,7 +32,9 @@ const HEADERS = [
   '측정값',
   // F1(2026-06-11 시우): 14열 반영완료 — 이슈/노하우 후속조치 완료 플래그('Y'/빈값).
   // 완료율·집계와 무관(별도 컬럼). payload에 reflected 없으면 빈칸.
-  '반영완료'
+  '반영완료',
+  // 15열 담당자(2026-06-12 시우·GM): 규정 운영근무조 담당자(payload.duty). 점검자와 별개.
+  '담당자'
 ];
 
 // ─── 남성/여성 공통 항목 (A 사우나 + B 락커룸) ───
@@ -251,6 +253,7 @@ function doGet(e) {
   if (action === 'setup_facility_tabs') { return setupFacilitySheets(); }
   if (action === 'setup_dept_tabs') { return setupDeptSheets(e.parameter.dept || 'support'); }
   if (action === 'migrate_item_dept') { return jsonRes(migrateItemDept()); }
+  if (action === 'purge_custom') { return purgeCustomItems(e.parameter.dept || 'support'); }
 
   var date = e.parameter.date;
   if (!date) return jsonRes({ error: 'date required' });
@@ -317,7 +320,17 @@ function doGet(e) {
   });
   // checkedLedger(2026-06-11 시우): 정상완료 항목은 시트행 미기록 → 이 원장으로 STATE 체크 복원.
   // 과거일/타기기 admin 완료율 회귀 방지(시트 col5 비의존). dept별 분리.
-  return jsonRes({ date: date, zone: zone || 'all', rows: rows, groupSubmits: _getGroupSubmits(date), checkedLedger: _getCheckLedger(dept, date) });
+  // 2026-06-12 시토: 남/여 동기화 근본수정 — gender 파라미터로 해당 성별 원장만 반환(미지정 시 성별맵 전체).
+  // 프론트(loadState)는 &gender=<m|f>로 단일 성별을 요청 → 남↔여 체크 섞임 0.
+  var gParam = String(e.parameter.gender || '').trim();
+  var checkedLedger;
+  if (gParam) {
+    checkedLedger = _getCheckLedger(dept, date, gParam);
+  } else {
+    // 성별 미지정(레거시·admin 집계): 성별맵 전체 반환 — 호출부가 필요 성별을 선택.
+    checkedLedger = { m: _getCheckLedger(dept, date, 'm'), f: _getCheckLedger(dept, date, 'f'), all: _getCheckLedger(dept, date, 'all') };
+  }
+  return jsonRes({ date: date, zone: zone || 'all', rows: rows, groupSubmits: _getGroupSubmits(date), checkedLedger: checkedLedger });
 }
 
 // ─── 그룹별 제출 영속 (2026-06-05 GM) — PropertiesService 날짜별 JSON, 병합·빈값 덮어쓰기 방지 ───
@@ -344,11 +357,16 @@ function _getGroupSubmits(date) {
 // payload는 항상 활성 성별탭의 전체 스케줄을 보내므로, 이번 payload에 들어온 항목만 set/remove.
 // (타 성별 항목은 payload에 없어 그대로 보존 — 성별탭 단위 정합)
 var CHK_PROP_PREFIX = 'chk_';
-function _chkKey(dept, date) { return CHK_PROP_PREFIX + (String(dept || 'support').trim() || 'support') + '_' + date; }
+// 2026-06-12 시토: 남/여 동기화 근본수정 — 원장 키에 gender 삽입(성별별 분리 저장).
+// gender 미지정/구버전 호출은 'all' 슬롯으로 격리(레거시 평면 원장과 별개). round 누수는 c 구조로 2순위 대응.
+function _chkGender(g) { g = String(g || '').trim(); return (g === 'm' || g === 'f') ? g : 'all'; }
+function _chkKey(dept, date, gender) {
+  return CHK_PROP_PREFIX + (String(dept || 'support').trim() || 'support') + '_' + _chkGender(gender) + '_' + date;
+}
 // 항상 { c:{...}, sub:{...}, subAt:{...} } 정규화 형태로 반환(구버전 평면 원장 승격).
-function _getCheckLedger(dept, date) {
+function _getCheckLedger(dept, date, gender) {
   var led = {};
-  try { led = JSON.parse(PropertiesService.getScriptProperties().getProperty(_chkKey(dept, date)) || '{}'); }
+  try { led = JSON.parse(PropertiesService.getScriptProperties().getProperty(_chkKey(dept, date, gender)) || '{}'); }
   catch (e) { led = {}; }
   if (!led.c) {
     var flat = {};
@@ -365,9 +383,11 @@ function _getCheckLedger(dept, date) {
 // body: 전체 save payload(submitter_am 등 포함). checks: 이번 payload 항목만 반영(set/remove).
 function _updateCheckLedger(dept, date, body) {
   if (!date) return;
+  // 2026-06-12 시토: 저장 payload의 활성 성별탭(body.genderTab)으로 원장 키 분리 → 남/여 섞임 차단.
+  var gender = (body && body.genderTab) || 'm';
   var checks = (body && body.checks) || [];
   var props = PropertiesService.getScriptProperties();
-  var key = _chkKey(dept, date);
+  var key = _chkKey(dept, date, gender);
   var led = {};
   try { led = JSON.parse(props.getProperty(key) || '{}'); } catch (e) {}
   // 하위호환: 구버전(평면 {itemId:1}) 원장이면 c 필드로 승격
@@ -475,7 +495,8 @@ function handleSave(body) {
       body.submittedAt || '',
       inspector, shift,
       _measureStr(c.measure),  // S2: 13열 측정값 패스스루(없으면 빈칸)
-      c.reflected ? 'Y' : ''   // F1: 14열 반영완료
+      c.reflected ? 'Y' : '',  // F1: 14열 반영완료
+      body.duty || ''          // 15열 담당자(규정 근무조)
     ];
     if (rowNum) {
       // 기존 행은 제자리 갱신 유지(이력 보존 — 정상완료로 바뀐 기존 이상치 행도 정확히 반영).
@@ -567,6 +588,7 @@ function _handleSaveV2Compat(body) {
     if (items.length === 0) return;
     var sheet = ss.getSheetByName(name);
     if (!sheet) return;
+    _ensureHeaders(sheet);   // 담당자(15열) 등 신규 컬럼 헤더 자동 보강(기존 시트 마이그레이션)
 
     var data = sheet.getDataRange().getValues();
     // 비파괴 저장(2026-06-05 COO): 날짜 행 전체 삭제 금지 — itemId 단위 update/add 로 전환.
@@ -589,7 +611,8 @@ function _handleSaveV2Compat(body) {
         submitter || defaultInspector(name, c.slot || ''),
         c.shift || slotToShift(c.slot || ''),
         _measureStr(c.measure),  // S2: 13열 측정값 패스스루(없으면 빈칸)
-        c.reflected ? 'Y' : ''   // F1: 14열 반영완료
+        c.reflected ? 'Y' : '',  // F1: 14열 반영완료
+        body.duty || ''          // 15열 담당자(규정 근무조) — payload.duty
       ];
       if (rowNum) {
         // 기존 행 제자리 갱신 유지(이력 보존).
@@ -613,6 +636,44 @@ function _handleSaveV2Compat(body) {
   });
 
   return jsonRes({ success: true, saved: totalSaved });
+}
+
+// 기존 점검 시트 헤더 자동 보강 — HEADERS가 늘어나면(예 담당자 15열) 헤더행만 갱신(데이터 무변경·멱등).
+function _ensureHeaders(sheet) {
+  if (!sheet) return;
+  if (sheet.getLastColumn() < HEADERS.length) {
+    sheet.getRange(1, 1, 1, HEADERS.length).setValues([HEADERS]);
+  }
+}
+
+// custom_ 항목 일괄 삭제(GM 2026-06-12): ① 점검항목 마스터(해당 dept의 custom_만) ② 구역 시트(남/여/공용)의 custom_ 행.
+// GET ?action=purge_custom&dept=support 로 호출(배포 후). 기본항목 수정분(custom_ 아닌 shadow)은 보존.
+function purgeCustomItems(dept) {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var d = String(dept || 'support');
+  var removed = { items: 0, rows: 0 };
+  // 1) 점검항목 마스터: 항목ID(0열)=custom_ AND 부서(9열)=dept 인 행 삭제
+  var itemSheet = ss.getSheetByName(SHEET_ITEMS);
+  if (itemSheet) {
+    var idata = itemSheet.getDataRange().getValues();
+    for (var i = idata.length - 1; i >= 1; i--) {
+      var iid = String(idata[i][0] || '');
+      var idept = String(idata[i][9] || '');
+      if (iid.indexOf('custom_') === 0 && (idept === d || idept === '')) {
+        itemSheet.deleteRow(i + 1); removed.items++;
+      }
+    }
+  }
+  // 2) 구역 시트: 항목ID(1열)=custom_ 행 삭제
+  var t = _deptTabs(d);
+  [t.male, t.female, t.common].forEach(function (name) {
+    var sh = ss.getSheetByName(name); if (!sh) return;
+    var zd = sh.getDataRange().getValues();
+    for (var j = zd.length - 1; j >= 1; j--) {
+      if (String(zd[j][1] || '').indexOf('custom_') === 0) { sh.deleteRow(j + 1); removed.rows++; }
+    }
+  });
+  return jsonRes({ ok: true, dept: d, removed: removed });
 }
 
 function _applyRowStyle(sheet, row, values) {
