@@ -4754,8 +4754,8 @@ function vendorSetView(v){
   const lw = document.getElementById('vendor-list-wrap');
   const bk = document.getElementById('vendorViewKanban');
   const bl = document.getElementById('vendorViewList');
-  if(kw) kw.classList.remove('hidden');             // 칸반 상시 표시(GM 2026-06-12)
-  if(lw) lw.classList.toggle('hidden', v!=='list'); // 목록 선택 시 칸반 아래에 추가로 표시
+  if(kw) kw.classList.toggle('hidden', v!=='kanban');   // 칸반/목록 배타 토글(둘 동시 노출 방지) — GM 2026-06-12
+  if(lw) lw.classList.toggle('hidden', v!=='list');
   if(bk){ bk.classList.toggle('save', v==='kanban'); }
   if(bl){ bl.classList.toggle('save', v==='list'); }
   if(v==='list') renderVendorList();

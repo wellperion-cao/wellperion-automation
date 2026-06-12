@@ -1802,7 +1802,7 @@ async function loadState(d,g){
 }
 
 let saveTimer=null, _pendingPushDate=null;
-/* 대기 중인 저장을 즉시 서버로 밀어냄(탭/날짜 이동 전 호출) — 미저장 체크 유실(나) 방지. GM 2026-06-12 */
+/* 대기 중인 저장을 서버로 밀어냄(탭/날짜 이동 전). drawUI/렌더는 절대 호출 안 함(즉시 리셋 회귀 방지). GM 2026-06-12 */
 function flushPendingSave(){
   if(saveTimer){ clearTimeout(saveTimer); saveTimer=null; const _d=_pendingPushDate; _pendingPushDate=null; if(ONLINE && _d)return pushToServer(_d); }
   return Promise.resolve();
@@ -1812,7 +1812,7 @@ function saveState(d,g){
   if(!ONLINE)return;
   clearTimeout(saveTimer);
   _pendingPushDate=d;
-  saveTimer=setTimeout(()=>{_pendingPushDate=null;pushToServer(d);},400);
+  saveTimer=setTimeout(()=>{_pendingPushDate=null;pushToServer(d);},1200);
 }
 
 async function pushToServer(d){
@@ -1932,7 +1932,6 @@ function setAdminToday(){document.getElementById('adminDate').value=fmtLocalDate
 function moveAdminDate(n){const e=document.getElementById('adminDate'),d=new Date(e.value+'T00:00:00');d.setDate(d.getDate()+n);e.value=fmtLocalDate(d);renderAdmin()}
 
 async function renderG(g){
-  if(typeof flushPendingSave==='function')await flushPendingSave();   // 날짜 이동 등 재로드 전 미저장 체크 서버반영 완료까지 대기(나 방지)
   const d=getDateG(g);
   const elId=g==='f'?'checklistF':'checklistM';
   const el=document.getElementById(elId);
@@ -3518,8 +3517,7 @@ async function copyShare(){
   _copyToClipboard(line);
 }
 
-async function switchTab(tab, opts){
-  if(typeof flushPendingSave==='function')await flushPendingSave();   // 탭 이동 전 미저장 체크 서버 반영 완료까지 대기(나 방지)
+function switchTab(tab, opts){
   // 점검(남)·점검(여) 비밀번호 보호
   if(opts==='lock' && sessionStorage.getItem('checkAuth')!=='1'){
     var pw = prompt('점검 탭 비밀번호를 입력하세요');
