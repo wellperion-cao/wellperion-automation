@@ -254,6 +254,7 @@ function doGet(e) {
   if (action === 'setup_dept_tabs') { return setupDeptSheets(e.parameter.dept || 'support'); }
   if (action === 'migrate_item_dept') { return jsonRes(migrateItemDept()); }
   if (action === 'purge_custom') { return purgeCustomItems(e.parameter.dept || 'support'); }
+  if (action === 'ensure_headers') { return ensureAllHeaders(e.parameter.dept || 'support'); }
 
   var date = e.parameter.date;
   if (!date) return jsonRes({ error: 'date required' });
@@ -644,6 +645,17 @@ function _ensureHeaders(sheet) {
   if (sheet.getLastColumn() < HEADERS.length) {
     sheet.getRange(1, 1, 1, HEADERS.length).setValues([HEADERS]);
   }
+}
+// 해당 dept의 구역 시트 3종에 담당자(15열) 등 신규 헤더 즉시 보강. GET ?action=ensure_headers&dept=support
+function ensureAllHeaders(dept) {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var t = _deptTabs(dept);
+  var done = [];
+  [t.male, t.female, t.common].forEach(function (name) {
+    var sh = ss.getSheetByName(name); if (!sh) return;
+    _ensureHeaders(sh); done.push(name);
+  });
+  return jsonRes({ ok: true, dept: dept, sheets: done, headers: HEADERS });
 }
 
 // custom_ 항목 일괄 삭제(GM 2026-06-12): ① 점검항목 마스터(해당 dept의 custom_만) ② 구역 시트(남/여/공용)의 custom_ 행.
