@@ -3195,9 +3195,9 @@ function switchTab(tab, opts){
 
 /* ═══════════════════════════════════════════════
    요일별 트렐로 보드 (매뉴얼 탭) — 7컬럼 × 남/여 = 14셀
-   저장: localStorage(SUPPORT_MANUAL_BOARD) 즉시 영속 + 기존 패턴대로 API 베스트에포트 POST
+   저장: localStorage(FACILITY_MANUAL_BOARD) 즉시 영속 + 기존 패턴대로 API 베스트에포트 POST
    ═══════════════════════════════════════════════ */
-const BOARD_STORAGE_KEY = 'SUPPORT_MANUAL_BOARD'; // 21셀 내용 영속 키 (7요일×남/여/외곽)
+const BOARD_STORAGE_KEY = 'FACILITY_MANUAL_BOARD'; // 21셀 내용 영속 키 (7요일×남/여/외곽)
 const BOARD_DAYS = [
   {key:'mon',label:'월',weekend:false},
   {key:'tue',label:'화',weekend:false},
@@ -3314,7 +3314,7 @@ function persistBoardData(){
 
 /* 선택된 요일 집합(다중선택). JS getDay(): 0=일~6=토 → BOARD_DAYS 순서로 매핑 */
 const DOW_TO_DAYKEY=['sun','mon','tue','wed','thu','fri','sat'];
-const BOARD_SELDAYS_KEY='SUPPORT_MANUAL_BOARD_SELDAYS'; // 선택 요일 영속 키(localStorage)
+const BOARD_SELDAYS_KEY='FACILITY_MANUAL_BOARD_SELDAYS'; // 선택 요일 영속 키(localStorage)
 const ALL_DAY_KEYS=BOARD_DAYS.map(d=>d.key);
 /* KST 오늘 날짜 문자열 (YYYY-MM-DD). UTC+9 보정 */
 function kstToday(){
@@ -3616,9 +3616,9 @@ function boardCancelEdit(dayKey,gk){
 /* ═══════════════════════════════════════════════
    지원부 규정 트렐로 보드 (규정 탭) — 주제별 칸(컬럼) × 편집 카드
    상태(확정) 열 폐기. 매뉴얼 보드와 동일 영속 패턴(localStorage + 백엔드 best-effort).
-   저장키: SUPPORT_POLICY_BOARD. 인증 게이트 requireEditAuth(1234) 재사용.
+   저장키: FACILITY_POLICY_BOARD. 인증 게이트 requireEditAuth(1234) 재사용.
    ═══════════════════════════════════════════════ */
-const POLICY_STORAGE_KEY = 'SUPPORT_POLICY_BOARD';
+const POLICY_STORAGE_KEY = 'FACILITY_POLICY_BOARD';
 /* 주제별 칸(컬럼) 정의. cls = 좌측 색 바 클래스(dv-cell 재사용) */
 const POLICY_COLS = [
   {key:'ops',   label:'운영 기준', cls:'male'},
