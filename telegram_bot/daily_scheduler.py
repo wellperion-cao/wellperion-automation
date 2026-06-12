@@ -739,17 +739,32 @@ def _fetch_current_progress_local() -> str:
     """
     [폴백 전용] status/_queue.json + 각 C-Level status JSON의 active_tasks 중
     미완료 항목을 C-Level별로 집계. gm_hangro 실패 시 사용.
+
+    gm_hangro(서버 권위 경로)와 동일 기준으로 정합 (2026-06-12 시토):
+    - GM 소유 항목 제외 (_owner_to_clevel — 9시는 C-Level 현황만)
+    - 활성 상태를 '진행중·대기' 계열만 인정 (보류·ON_HOLD는 비활성으로 빼서 두 경로 일치)
     """
+    # 두 경로 일치: 폐기·완료·DONE 외에 보류/ON_HOLD도 9시 활성에서 제외
+    _ACTIVE_LOCAL = {"PENDING", "IN_PROGRESS", "진행중", "대기"}
     per_clevel: dict[str, list[str]] = {}
 
-    # 1) 대기 큐 (status != DONE)
+    _VALID_CLEVELS = {"CEO", "CFO", "CHRO", "CMO", "COO", "CPO", "CTO"}
+    # 1) 대기 큐 (status != DONE, 폐기·보류 제외, GM 소유 제외)
     for item in _load_queue_open():
-        clevel = str(item.get("clevel", "?")).upper()
+        status = str(item.get("status", "")).strip()
+        if status and status.upper() not in {s.upper() for s in _ACTIVE_LOCAL}:
+            continue
+        # owner 우선 매핑(GM이면 None) → 없으면 clevel 필드. GM/미상은 제외.
+        owner = str(item.get("owner", ""))
+        clevel = _owner_to_clevel(owner) if owner else None
+        if clevel is None:
+            clevel = str(item.get("clevel", "")).upper()
+        if clevel not in _VALID_CLEVELS:
+            continue
         title = str(item.get("title", "(제목없음)")).split("\n")[0][:60]
-        status = item.get("status", "")
         per_clevel.setdefault(clevel, []).append(f"[{status}] {title}")
 
-    # 2) 각 C-Level active_tasks (status not in 완료군)
+    # 2) 각 C-Level active_tasks (status 진행중·대기만)
     for name in _CLEVEL_FILES:
         f = STATUS_DIR / f"{name}.json"
         if not f.exists():
@@ -761,9 +776,7 @@ def _fetch_current_progress_local() -> str:
             continue
         for t in d.get("active_tasks", []):
             st = str(t.get("status", ""))
-            if st.upper() == "DONE" or st in ("완료", "폐기"):
-                continue
-            if st and st.upper() not in {s.upper() for s in _OPEN_STATUSES}:
+            if st and st.upper() not in {s.upper() for s in _ACTIVE_LOCAL}:
                 continue
             clevel = name.upper()
             title = str(t.get("title", "(제목없음)")).split("\n")[0][:60]
@@ -1213,42 +1226,68 @@ def _build_07_body() -> str:
     )
 
 
+def _kr_amt(n) -> str:
+    """한국식 금액 표기: 271488886 → '2억 7,148만'. ERP home krAmt와 동일 규칙."""
+    try:
+        n = round(float(n))
+    except (TypeError, ValueError):
+        return "—"
+    sign = "-" if n < 0 else ""
+    n = abs(n)
+    eok = n // 100000000
+    man = (n % 100000000) // 10000
+    if eok > 0 and man > 0:
+        return f"{sign}{eok}억 {man:,}만"
+    if eok > 0:
+        return f"{sign}{eok}억"
+    if man > 0:
+        return f"{sign}{man:,}만"
+    return f"{sign}{n:,}원"
+
+
 def _fetch_cfo_finance_block() -> str:
     """
-    CFO 시트에서 매출·지출 현황 조회.
-    CFO_SHEET_URL 미설정 시 연결 대기 안내 반환.
+    매출·지출 현황 조회 — ERP home과 동일 소스(SSOT API home_kpi) 사용.
+    home(wellperion_guide)이 'action=home_kpi'의 sales/expense를 그대로 표시하므로
+    9시 보고도 같은 엔드포인트를 fetch해 home과 수치를 일치시킨다 (2026-06-12 시토).
+    CFO_SHEET_URL이 .env에 별도 등록돼 있으면 그것을 우선(override)한다.
     """
-    if not CFO_SHEET_URL:
-        return (
-            "💰 매출·지출 현황\n"
-            "  연결 대기 중\n"
-            "  ※ 필요 사항: .env 파일에 CFO_SHEET_URL 등록\n"
-            "     (GM이 CFO 구글 시트 링크 제공 → CTO가 GAS 웹앱 배포 후 URL 등록)"
-        )
+    src_url = CFO_SHEET_URL or SSOT_API_URL
+    action = "summary" if CFO_SHEET_URL else "home_kpi"
     try:
-        resp = requests.get(CFO_SHEET_URL, params={"action": "summary"}, timeout=15)
+        resp = requests.get(src_url, params={"action": action}, timeout=15)
         if resp.status_code != 200:
             return f"💰 매출·지출 현황\n  조회 실패 (HTTP {resp.status_code})"
         data = resp.json()
-        # 응답 구조는 시트 배포 후 확정 — 현재는 raw 값 표시
-        revenue = data.get("revenue") or data.get("매출") or data.get("이번달매출")
-        expense = data.get("expense") or data.get("지출") or data.get("이번달지출")
-        if revenue is None and expense is None:
-            return (
-                "💰 매출·지출 현황\n"
-                f"  시트 응답 수신됨 (구조 미확정)\n"
-                f"  원본: {str(data)[:100]}"
-            )
-        table_rows = []
-        if revenue is not None:
-            table_rows.append(("이달 매출", str(revenue)))
-        if expense is not None:
-            table_rows.append(("이달 지출", str(expense)))
-        table_str = "\n".join(_count_table(table_rows)) if table_rows else "  (데이터 없음)"
-        return f"💰 매출·지출 현황\n{table_str}"
     except Exception as e:
-        logger.warning(f"CFO 시트 조회 실패: {e}")
+        logger.warning(f"매출·지출(home_kpi) 조회 실패: {e}")
         return f"💰 매출·지출 현황\n  조회 오류: {str(e)[:80]}"
+
+    if not data.get("ok"):
+        return "💰 매출·지출 현황\n  소스 응답 ok=False (home_kpi 미연동 — 보완 중)"
+
+    sales = data.get("sales") or {}
+    expense = data.get("expense") or {}
+    s_month, s_today = sales.get("month"), sales.get("today")
+    e_month, e_today = expense.get("month"), expense.get("today")
+
+    if s_month is None and e_month is None:
+        # 구버전(CFO_SHEET_URL) raw 키 폴백
+        s_month = data.get("revenue") or data.get("매출")
+        e_month = data.get("expense") if isinstance(data.get("expense"), (int, float)) else None
+
+    if s_month is None and e_month is None:
+        return "💰 매출·지출 현황\n  데이터 없음 (home 소스 미연동 — 보완 중)"
+
+    table_rows = [
+        ("이달 매출", _kr_amt(s_month)),
+        ("이달 지출", _kr_amt(e_month)),
+    ]
+    table_str = "\n".join(_count_table(table_rows))
+    today_line = ""
+    if s_today is not None or e_today is not None:
+        today_line = f"\n  (오늘 매출 {_kr_amt(s_today)} · 지출 {_kr_amt(e_today)})"
+    return f"💰 매출·지출 현황 (ERP home 동일 소스)\n{table_str}{today_line}"
 
 
 def _build_09_body() -> str:
