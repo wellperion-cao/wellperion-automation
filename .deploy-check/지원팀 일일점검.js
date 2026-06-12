@@ -2,11 +2,12 @@
 // 3시트 구조: 남성구역 / 여성구역 / 공용구역 + 점검자
 // v2 → v3 변경: 성별구역 열 삭제, 제자리 갱신(중복 방지), 점검자 자동 배정, 근무시간 기입
 
-const SHEET_MALE   = '남성구역';
-const SHEET_FEMALE = '여성구역';
-const SHEET_COMMON = '공용구역';
+// 2026-06-12 GM: 지원부 시트 지원_ 접두사 통일 + 공용구역 폐기(점검(남)→남성/점검(여)→여성).
+const SHEET_MALE   = '지원_남성구역';
+const SHEET_FEMALE = '지원_여성구역';
+const SHEET_COMMON = '__support_common__';   // 폐기 sentinel(실제 시트 아님): 공용 라우팅분은 활성 성별탭으로 보냄(_handleSaveV2Compat remap).
 const SHEET_STAFF  = '점검자';
-const SHEET_ITEMS  = '점검항목';   // GM 편집 점검 항목 마스터 (시트 영구 저장)
+const SHEET_ITEMS  = '지원_매뉴얼';   // GM 편집 점검 항목 마스터(=매뉴얼 단일출처, 시트 영구 저장)
 
 // S1(2026-06-10 시토): 측정형 항목 식별 — '타입'(check|measure) + '필드정의'(measure 영문키 목록) 2열 추가.
 // 기존 항목은 '타입' 빈값 → 'check' 안전 폴백. 이 단계는 동작 변화 없음(프론트가 아직 안 읽음).
@@ -257,7 +258,8 @@ function doGet(e) {
   if (action === 'ensure_headers') { return ensureAllHeaders(e.parameter.dept || 'support'); }
   if (action === 'vendor_list') { return vendorList(); }
   if (action === 'clear_check_ledger') { return clearCheckLedger(e.parameter.dept || 'support'); }
-  if (action === 'clear_zone_checks') { return clearZoneCheckedRows(e.parameter.dept || 'support', e.parameter.date || ''); }
+  if (action === 'clear_zone_checks') { return clearZoneCheckedRows(e.parameter.dept || 'support', e.parameter.date || '', e.parameter.all === '1'); }
+  if (action === 'migrate_support_sheets') { return migrateSupportSheets(); }
 
   var date = e.parameter.date;
   if (!date) return jsonRes({ error: 'date required' });
@@ -369,21 +371,52 @@ function _chkKey(dept, date, gender) {
 }
 // 구역 시트의 '완료' 행 제거(GM 2026-06-12) — 정상완료는 시트에 남으면 안 되는데(원장이 복원원천) 옛 행이 남아
 // 가짜 완료로 복원되던 문제 정리. date 주면 그 날짜만, 없으면 전체. GET ?action=clear_zone_checks&dept=support[&date=YYYY-MM-DD]
-function clearZoneCheckedRows(dept, date) {
+function clearZoneCheckedRows(dept, date, all) {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var t = _deptTabs(dept);
   var removed = 0;
   [t.male, t.female, t.common].forEach(function (name) {
     var sh = ss.getSheetByName(name); if (!sh) return;
+    var last = sh.getLastRow();
+    // all=true(+날짜 없음)면 헤더 제외 전체 데이터 내용 비우기(행 전체삭제 제약 회피).
+    if (all && !date) {
+      if (last > 1) { var lc = sh.getLastColumn() || 1; sh.getRange(2, 1, last - 1, lc).clearContent(); removed += (last - 1);
+        if (sh.getMaxRows() > 2) sh.deleteRows(3, sh.getMaxRows() - 2); }
+      return;
+    }
     var data = sh.getDataRange().getValues();
     for (var i = data.length - 1; i >= 1; i--) {
       var isDone = String(data[i][5] || '') === '완료';
       var dateOk = !date || String(data[i][0]) === date || formatDate(data[i][0]) === date;
-      if (isDone && dateOk) { sh.deleteRow(i + 1); removed++; }
+      if (all ? dateOk : (isDone && dateOk)) { sh.deleteRow(i + 1); removed++; }
     }
   });
-  return jsonRes({ ok: true, dept: dept, date: date || '(전체)', removed: removed });
+  return jsonRes({ ok: true, dept: dept, date: date || '(전체)', all: !!all, removed: removed });
 }
+// 지원부 시트 리네임/정리 마이그레이션(GM 2026-06-12). 멱등: 이미 새 이름이면 스킵.
+//   남성구역→지원_남성구역 · 여성구역→지원_여성구역 · 점검항목→지원_매뉴얼 · 공용구역 삭제.
+// 검수안전: 기존행은 그대로 보존(탭 이름만 변경). 대상 새 이름이 이미 있으면 옛 탭 보존(수동확인 필요)으로 표시.
+// GET ?action=migrate_support_sheets
+function migrateSupportSheets() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var log = [];
+  function rename(oldName, newName) {
+    var oldSh = ss.getSheetByName(oldName);
+    var newSh = ss.getSheetByName(newName);
+    if (newSh) { log.push('이미존재(스킵):' + newName + (oldSh ? ' / 옛탭 ' + oldName + ' 잔존' : '')); return; }
+    if (!oldSh) { log.push('옛탭없음(스킵):' + oldName); return; }
+    oldSh.setName(newName);
+    log.push('리네임:' + oldName + '→' + newName);
+  }
+  rename('남성구역', SHEET_MALE);     // 지원_남성구역
+  rename('여성구역', SHEET_FEMALE);   // 지원_여성구역
+  rename('점검항목', SHEET_ITEMS);    // 지원_매뉴얼
+  var common = ss.getSheetByName('공용구역');
+  if (common) { ss.deleteSheet(common); log.push('삭제:공용구역'); }
+  else { log.push('공용구역없음(스킵)'); }
+  return jsonRes({ ok: true, log: log });
+}
+
 // 완료원장 일괄 비우기(GM 2026-06-12) — 오염된 체크 원장(전 날짜·성별) 제거. GET ?action=clear_check_ledger&dept=support
 function clearCheckLedger(dept) {
   var props = PropertiesService.getScriptProperties();
@@ -606,21 +639,25 @@ function _handleSaveV2Compat(body) {
   var tFemale = _dt.female;
   var tCommon = _dt.common;
 
+  // 2026-06-12 GM: 지원부 공용구역 폐기 → 공용 항목도 활성 성별탭(점검(남)→남성/점검(여)→여성)으로 라우팅.
+  var commonToGender = (dept === 'support');
   var buckets = {};
   buckets[tMale] = [];
   buckets[tFemale] = [];
-  buckets[tCommon] = [];
+  if (tCommon) buckets[tCommon] = [];
   checks.forEach(function(c) {
-    // _routeItem은 지원부 탭명 기준이므로 결과를 시설부 탭명으로 리매핑
+    // _routeItem은 지원부 탭명 기준이므로 결과를 dept별 탭명으로 리매핑
     var supportTarget = _routeItem(c.itemId, c.cat, gender);
     var target = supportTarget === SHEET_MALE   ? tMale
                : supportTarget === SHEET_FEMALE ? tFemale
+               : commonToGender ? (gender === 'f' ? tFemale : tMale)
                : tCommon;
+    if (!buckets[target]) buckets[target] = [];
     buckets[target].push(c);
   });
 
   var totalSaved = 0;
-  [tMale, tFemale, tCommon].forEach(function(name) {
+  [tMale, tFemale, tCommon].filter(function(n){return !!n;}).forEach(function(name) {
     var items = buckets[name];
     if (items.length === 0) return;
     var sheet = ss.getSheetByName(name);
@@ -816,6 +853,9 @@ function handleSeed(body) {
   var date = body.date;
   if (!date) return jsonRes({ error: 'date required' });
   var dept = body.dept || 'support';
+  // 2026-06-12 GM·시토: 이상치-only 부서(support)는 항목 사전시드 금지.
+  // 사전시드하면 모든 항목이 시트행으로 깔려 → 누적·거짓완료·체크리셋 재발("똑같은데"의 뿌리). 시트엔 이상치/이슈만.
+  if (_anomalyOnlyDept(dept)) return jsonRes({ success: true, seeded: 0, note: 'anomaly-only dept: no pre-seed' });
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   // dept별 전용 탭에 시드 (S5 단일 출처 _deptTabs · 2026-06-10 시토)
   var _st = _deptTabs(dept);
@@ -1269,7 +1309,7 @@ var SHEET_FACILITY_COMMON = '시설_공용구역';
 // 자기 화면에 거짓완료 노출(GM 신고). dept별 전용 탭으로 완전 분리(미존재 탭 = 빈 데이터 = 정직).
 // support/facility 탭명은 종전과 100% 동일 → 두 부서 동작 불변(회귀 0). 읽기·쓰기 라우팅 공용.
 var DEPT_TAB_MAP = {
-  support:  { male: SHEET_MALE,            female: SHEET_FEMALE,            common: SHEET_COMMON },
+  support:  { male: SHEET_MALE,            female: SHEET_FEMALE,            common: null },
   facility: { male: SHEET_FACILITY_MALE,   female: SHEET_FACILITY_FEMALE,   common: SHEET_FACILITY_COMMON },
   ops:      { male: '운영_남성구역',        female: '운영_여성구역',          common: '운영_공용구역' },
   parking:  { male: '주차_남성구역',        female: '주차_여성구역',          common: '주차_공용구역' }
@@ -1295,16 +1335,16 @@ function setupDeptSheets(dept) {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var t = _deptTabs(dept);
   var created = [];
-  [t.male, t.female, t.common].forEach(function (name) {
+  [t.male, t.female, t.common].filter(function(n){return !!n;}).forEach(function (name) {
     var existed = !!ss.getSheetByName(name);
     _createCheckSheet(ss, name);   // 13열 HEADERS(측정값 포함) 헤더 기록
     created.push((existed ? '재생성:' : '신규:') + name);
   });
-  // 오늘 날짜 빈 데이터 시드(남/여=ZONE_ITEMS, 공용=COMMON_ITEMS)
+  // 오늘 날짜 빈 데이터 시드(남/여=ZONE_ITEMS, 공용=COMMON_ITEMS) — common=null(지원부)이면 스킵
   var today = Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy-MM-dd');
-  _seedDate(ss.getSheetByName(t.male),   today, ZONE_ITEMS,   t.male);
-  _seedDate(ss.getSheetByName(t.female), today, ZONE_ITEMS,   t.female);
-  _seedDate(ss.getSheetByName(t.common), today, COMMON_ITEMS, t.common);
+  if (t.male)   _seedDate(ss.getSheetByName(t.male),   today, ZONE_ITEMS,   t.male);
+  if (t.female) _seedDate(ss.getSheetByName(t.female), today, ZONE_ITEMS,   t.female);
+  if (t.common) _seedDate(ss.getSheetByName(t.common), today, COMMON_ITEMS, t.common);
   return jsonRes({ ok: true, dept: dept, created: created, seededDate: today });
 }
 
