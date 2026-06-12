@@ -1,0 +1,148 @@
+{
+  "generated_at": "2026-06-09T23:00:04.753172+00:00",
+  "date": "2026-06-10 (수)",
+  "stage1_collect_classify": {
+    "collected": 6,
+    "gm_decision_count": 2,
+    "autonomous_count": 4,
+    "deep_interview_count": 0,
+    "gm_decision": [
+      {
+        "task_id": "TODO-20260526173336073",
+        "title": "리셉션 상담실 리뉴얼",
+        "reason": "시설 및 환경 · 결재 첫 단계 → GM 승인 필요"
+      },
+      {
+        "task_id": "TODO-20260526173308627",
+        "title": "[GM-05] 브로제이 시스템 도입",
+        "reason": "결재 첫 단계 → GM 승인 필요"
+      }
+    ],
+    "deep_interview": [],
+    "git_done_excluded": []
+  },
+  "stage2_assign": [
+    {
+      "task_id": "TODO-20260526173331522",
+      "clevel": "GM1",
+      "owner": "?",
+      "domain": "?",
+      "priority": "NORMAL",
+      "title": "[GM-04] 기구 A/S 및 유지보수"
+    },
+    {
+      "task_id": "TODO-20260526173246953",
+      "clevel": "GM1",
+      "owner": "?",
+      "domain": "?",
+      "priority": "NORMAL",
+      "title": "[GM-03] 운영 통합 체계 4부서 셋업 프로젝트"
+    },
+    {
+      "task_id": "TODO-20260526173233153",
+      "clevel": "GM1",
+      "owner": "?",
+      "domain": "?",
+      "priority": "NORMAL",
+      "title": "[GM-02] 쓰쿠루 파트너 정기 계약 해지 진행"
+    },
+    {
+      "task_id": "TODO-20260526173215570",
+      "clevel": "GM1",
+      "owner": "?",
+      "domain": "?",
+      "priority": "NORMAL",
+      "title": "[GM-01] 다이슨 방향 전환 대안 제품군 재검토"
+    }
+  ],
+  "stage3_orchestrate": {
+    "parallel_chains": 4,
+    "serialized_conflicts": 0,
+    "chains": [
+      {
+        "lock_key": "__solo__:TODO-20260526173331522",
+        "is_solo": true,
+        "tasks": [
+          {
+            "task_id": "TODO-20260526173331522",
+            "clevel": "GM1",
+            "owner": "?",
+            "title": "[GM-04] 기구 A/S 및 유지보수",
+            "depends_on": null,
+            "write_step": {
+              "executor": "claude 서브에이전트(executor) 위임 — dry-run에서는 호출 안 함",
+              "instruction_ref": "status/_queue.json note"
+            },
+            "verify_step": {
+              "by": "ceo_verify_watcher.py (push 신호 수신 후 LAYER1+LAYER2)",
+              "signal": "커밋 [DONE][CL][task_id] + status/{cl}.json status=DONE (이중 신호)"
+            }
+          }
+        ]
+      },
+      {
+        "lock_key": "__solo__:TODO-20260526173246953",
+        "is_solo": true,
+        "tasks": [
+          {
+            "task_id": "TODO-20260526173246953",
+            "clevel": "GM1",
+            "owner": "?",
+            "title": "[GM-03] 운영 통합 체계 4부서 셋업 프로젝트",
+            "depends_on": null,
+            "write_step": {
+              "executor": "claude 서브에이전트(executor) 위임 — dry-run에서는 호출 안 함",
+              "instruction_ref": "status/_queue.json note"
+            },
+            "verify_step": {
+              "by": "ceo_verify_watcher.py (push 신호 수신 후 LAYER1+LAYER2)",
+              "signal": "커밋 [DONE][CL][task_id] + status/{cl}.json status=DONE (이중 신호)"
+            }
+          }
+        ]
+      },
+      {
+        "lock_key": "__solo__:TODO-20260526173233153",
+        "is_solo": true,
+        "tasks": [
+          {
+            "task_id": "TODO-20260526173233153",
+            "clevel": "GM1",
+            "owner": "?",
+            "title": "[GM-02] 쓰쿠루 파트너 정기 계약 해지 진행",
+            "depends_on": null,
+            "write_step": {
+              "executor": "claude 서브에이전트(executor) 위임 — dry-run에서는 호출 안 함",
+              "instruction_ref": "status/_queue.json note"
+            },
+            "verify_step": {
+              "by": "ceo_verify_watcher.py (push 신호 수신 후 LAYER1+LAYER2)",
+              "signal": "커밋 [DONE][CL][task_id] + status/{cl}.json status=DONE (이중 신호)"
+            }
+          }
+        ]
+      },
+      {
+        "lock_key": "__solo__:TODO-20260526173215570",
+        "is_solo": true,
+        "tasks": [
+          {
+            "task_id": "TODO-20260526173215570",
+            "clevel": "GM1",
+            "owner": "?",
+            "title": "[GM-01] 다이슨 방향 전환 대안 제품군 재검토",
+            "depends_on": null,
+            "write_step": {
+              "executor": "claude 서브에이전트(executor) 위임 — dry-run에서는 호출 안 함",
+              "instruction_ref": "status/_queue.json note"
+            },
+            "verify_step": {
+              "by": "ceo_verify_watcher.py (push 신호 수신 후 LAYER1+LAYER2)",
+              "signal": "커밋 [DONE][CL][task_id] + status/{cl}.json status=DONE (이중 신호)"
+            }
+          }
+        ]
+      }
+    ]
+  }
+}
