@@ -1265,7 +1265,7 @@ const WEEKDAY=[
       {id:"b4",name:"B-4 마루바닥",detail:"바닥 미끄럼/청결 | 휴지통\n비품: 1회용 밀대 타올 (수시)",gender:"all"},
       {id:"b5",name:"B-5 사우나 화장실",detail:"소변기/대변기/바닥/세면공간\n비품: 휴지통, 화장지, 핸드페이퍼, 손세정제",gender:"all"}
     ]},
-    {title:"C 세탁물",items:[
+    {title:"오픈 점검",items:[
       {id:"c1a",name:"세탁물 입고 운반",detail:"입고된 세탁물을 세탁실로 운반",gender:"all"},
       {id:"c1b",name:"운동복/양말 상태 + 배치",detail:"상태 체크 후 사이즈별 배치",gender:"all"},
       {id:"c1c",name:"타올류 상태 + 배치",detail:"거품타올/타올/바스타올 상태 체크 후 배치",gender:"all"}
@@ -1324,7 +1324,7 @@ const WEEKEND=[
       {id:"b4",name:"B-4 마루바닥",detail:"미끄럼/청결 | 휴지통",gender:"all"},
       {id:"b5",name:"B-5 사우나 화장실",detail:"소변기/대변기/바닥/세면공간",gender:"all"}
     ]},
-    {title:"C 세탁물",items:[
+    {title:"오픈 점검",items:[
       {id:"c1a",name:"세탁물 입고 + 상태 체크",detail:"운동복/양말 사이즈별 배치 | 타올류 배치",gender:"all"}
     ]}
   ]},
@@ -1671,7 +1671,8 @@ const ROUND_MAP={
   b4:['am1','pm1','close1'],
   b5:['am1','pm1','close1'],
   /* C 세탁물 = 전 조 */
-  c1a:['am1','pm1','close1'], c1b:['am1','pm1','close1'], c1c:['am1','pm1','close1'],
+  /* 오픈 점검(세탁물 입고 등) = 오전조 전용 (마감 점검의 반대, GM 2026-06-12) */
+  c1a:['am1'], c1b:['am1'], c1c:['am1'],
   /* D 내부 D-1~D-11 + E 외부 E-1~E-3(헬스장·골프장·주차장) = 전 조(오전·오후·마감, GM 2026-06-12)
      id는 체크이력 보존 위해 유지(d*·e*), 표시명만 재배치. E-1+E-2→D-4 병합(e2 제거). */
   d1:['am1','pm1','close1'], d2:['am1','pm1','close1'], d3:['am1','pm1','close1'], d4:['am1','pm1','close1'], d5:['am1','pm1','close1'],
@@ -2345,7 +2346,7 @@ window.moveManualItem=function(id,dir){
   if(typeof renderG==='function')renderG(activeGenderTab);   // 점검에도 반영
 };
 /* 그룹(구역) 순서 — 기본값(GM 2026-06-12: C세탁물 상단·마감점검은 E외부 아래) + localStorage 사용자 조정. */
-const GROUP_ORDER_DEFAULT=['C 세탁물','A 사우나점검','B 락커룸','D 내부','E 외부','마감 점검','교대 인수인계'];
+const GROUP_ORDER_DEFAULT=['오픈 점검','A 사우나점검','B 락커룸','D 내부','E 외부','마감 점검','교대 인수인계'];
 function getGroupOrder(){ try{return JSON.parse(localStorage.getItem('wcheck_group_order')||'{}')||{}}catch(e){return {}} }
 function saveGroupOrder(m){ localStorage.setItem('wcheck_group_order',JSON.stringify(m)); }
 function groupRank(title){
@@ -2464,8 +2465,21 @@ function renderItem(it,shift,gender,round){
   PROMOTE_CTX[it.id]={cat:(ov.cat||it.cat||it.category||''),slot:(ov.slot||it.slot||''),shift:(ov.shift||it.shift||shift||''),round:round||'',gender:g};
   const promoteBtn=iss?`<button class="tiny-btn" style="background:rgba(91,159,213,0.12);color:#5b9fd5;border-color:rgba(91,159,213,0.35);font-size:12px;" title="이 이슈를 점검표·매뉴얼 항목으로 추가" onclick="openPromoteFromIssue('${it.id}','${g}')">➕ 점검·매뉴얼 항목으로</button>`:'';
   const _rArg=round?`,'${round}'`:'';
+  /* 요일에만 하는 특수 항목 = 요일 배지(월~일)로 눈에 띄게. df_ id의 요일 + 상세의 월수금·화목·X요일 패턴. GM 2026-06-12 */
+  const _dayChips=(function(){
+    const M={mon:'월',tue:'화',wed:'수',thu:'목',fri:'금',sat:'토',sun:'일'};
+    const order=['월','화','수','목','금','토','일']; const set={};
+    const idm=String(it.id||'').match(/^df_(mon|tue|wed|thu|fri|sat|sun)/);
+    if(idm)set[M[idm[1]]]=1;
+    const txt=String(itemName||'')+' '+String(itemDetail||'');
+    (txt.match(/[월화수목금토일]요일/g)||[]).forEach(function(s){set[s[0]]=1;});
+    (txt.match(/[월화수목금토일]{2,4}/g)||[]).forEach(function(s){for(var i=0;i<s.length;i++)set[s[i]]=1;});
+    const days=order.filter(function(d){return set[d];});
+    if(!days.length)return '';
+    return ' '+days.map(function(d){return '<span style="font-size:10px;color:#7b5ea7;background:rgba(123,94,167,0.16);padding:1px 6px;border-radius:6px;font-weight:700;">'+d+'</span>';}).join('');
+  })();
   return `<div class="${cls}">
-    <div class="item-row"><input type="checkbox" id="cb_${pfx}${it.id}" ${ck} onchange="onCk('${it.id}','${shift}','${g}'${_rArg})"><label for="cb_${pfx}${it.id}">${itemName}${editedTag}</label>
+    <div class="item-row"><input type="checkbox" id="cb_${pfx}${it.id}" ${ck} onchange="onCk('${it.id}','${shift}','${g}'${_rArg})"><label for="cb_${pfx}${it.id}">${itemName}${_dayChips}${editedTag}</label>
       <div class="item-btns"><button class="tiny-btn issue" onclick="togX('${pfx}iss_${it.id}')">이슈</button><button class="tiny-btn tip" onclick="togX('${pfx}tip_${it.id}')">노하우</button>${refBtn}</div>
     </div>
     <div class="item-detail">${det}</div>${tempHtml}
