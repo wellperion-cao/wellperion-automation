@@ -406,14 +406,21 @@ function wpRenderIssues(){
   box.innerHTML="이슈 불러오는 중…";
   fetch(ENDPOINT+"?action=issues&t="+Date.now()).then(function(r){return r.json();}).then(function(j){
     if(!j||!j.ok){ box.innerHTML="<span style=\"color:var(--red,#ED5B3F)\">이슈를 불러오지 못했습니다. Apps Script(doGet) 추가·재배포가 필요합니다.</span>"; return; }
-    var open=(j.issues||[]).filter(function(x){return !x.resolved;});
-    if(!open.length){ box.innerHTML="<span style=\"color:var(--green,#6abf7b)\">미처리 이슈가 없습니다 ✓</span>"; return; }
-    box.innerHTML=open.map(function(x){
-      return '<div style="display:flex;gap:10px;align-items:flex-start;padding:9px 0;border-bottom:1px solid var(--border,#3d3835)">'
-      +'<span style="background:var(--accent-bg,#3a322c);color:var(--accent,#B79F8A);border-radius:5px;padding:1px 7px;font-size:12px;font-weight:700;white-space:nowrap">'+wpEscI(x.venue)+'</span>'
-      +'<span style="color:var(--dim,#8c8b83);font-size:12px;white-space:nowrap">'+wpEscI(x.date)+'</span>'
-      +'<span style="flex:1;font-size:13px;line-height:1.5;color:var(--text,#f5f2ef)">'+wpEscI(x.text)+'</span>'
-      +'<button type="button" class="wp-resolve" data-id="'+encodeURIComponent(x.id)+'" style="background:var(--green,#6abf7b);color:#10240f;border:none;border-radius:6px;padding:4px 11px;font-weight:700;cursor:pointer;white-space:nowrap">처리</button></div>';
+    var issues=j.issues||[];
+    if(!issues.length){ box.innerHTML="<span style=\"color:var(--green,#6abf7b)\">등록된 이슈가 없습니다 ✓</span>"; return; }
+    var ORDER=["복도","필라테스","헬스장","골프장","수영장","체조장","스쿼시장"];
+    var groups={}; issues.forEach(function(x){ (groups[x.venue]=groups[x.venue]||[]).push(x); });
+    var venues=Object.keys(groups).sort(function(a,b){var ia=ORDER.indexOf(a),ib=ORDER.indexOf(b);return (ia<0?99:ia)-(ib<0?99:ib);});
+    box.innerHTML=venues.map(function(v){
+      var items=groups[v]; var openN=items.filter(function(i){return !i.resolved;}).length;
+      var rows=items.map(function(x){ var done=x.resolved;
+        return '<div style="display:flex;gap:9px;align-items:flex-start;padding:7px 0;border-top:1px solid var(--border,#3d3835)'+(done?";opacity:.5":"")+'">'
+        +'<span style="color:var(--dim,#8c8b83);font-size:11px;white-space:nowrap;min-width:72px">'+wpEscI(x.date)+'</span>'
+        +'<span style="flex:1;font-size:13px;line-height:1.5;color:var(--text,#f5f2ef)'+(done?";text-decoration:line-through":"")+'">'+wpEscI(x.text)+'</span>'
+        +(done?'<span style="background:var(--green,#6abf7b);color:#10240f;border-radius:6px;padding:2px 8px;font-size:11px;font-weight:700;white-space:nowrap">✓ 처리됨</span>':'<button type="button" class="wp-resolve" data-id="'+encodeURIComponent(x.id)+'" style="background:var(--green,#6abf7b);color:#10240f;border:none;border-radius:6px;padding:4px 11px;font-weight:700;cursor:pointer;white-space:nowrap">처리</button>')
+        +'</div>';
+      }).join("");
+      return '<div style="margin-bottom:13px"><div style="display:flex;align-items:center;gap:8px;margin-bottom:2px"><span style="background:var(--accent-bg,#3a322c);color:var(--accent,#B79F8A);border-radius:6px;padding:2px 9px;font-size:13px;font-weight:700">'+wpEscI(v)+'</span><span style="font-size:11px;color:var(--dim,#8c8b83)">미처리 '+openN+' / 전체 '+items.length+'</span></div>'+rows+'</div>';
     }).join("");
     [].slice.call(box.querySelectorAll(".wp-resolve")).forEach(function(b){ b.onclick=function(){ wpResolveIssue(b.getAttribute("data-id"), b); }; });
   }).catch(function(){ box.innerHTML="<span style=\"color:var(--red,#ED5B3F)\">네트워크 오류</span>"; });
