@@ -605,7 +605,22 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   };
 
   var CHECK_API="https://script.google.com/macros/s/AKfycbySsnbKDtOI7ktGd-qQrZ3y7V0AFu9SpGtzriL1bGTxafECrmDq2AbgK76OwXGh47r4Pw/exec";
-function loadCheckIssues(){var box=document.getElementById("ptIssueBox");if(!box)return;fetch(CHECK_API+"?action=issues&t="+Date.now()).then(function(r){return r.json();}).then(function(j){if(!j||!j.ok||!j.issues)return;if(!j.issues.length){box.innerHTML='<div style="color:var(--dim)">이슈 없음</div>';return;}box.innerHTML=j.issues.map(function(x){var done=x.resolved;return '<div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:9px 11px;margin-bottom:8px;opacity:'+(done?".55":"1")+'">'+'<div style="display:flex;gap:8px;align-items:center;font-size:12px;color:var(--dim)">'+'<span style="background:var(--accent-bg);color:var(--accent);border-radius:5px;padding:1px 7px;font-weight:700">'+esc(x.venue)+'</span>'+'<span>'+esc(x.date)+'</span><span style="flex:1"></span>'+(done?'<span style="background:var(--green);color:#10240f;border-radius:5px;padding:1px 7px;font-weight:700">처리됨</span>':'<span style="background:var(--red);color:#fff;border-radius:5px;padding:1px 7px;font-weight:700">미처리</span>')+'</div><div style="font-size:13px;margin-top:5px;line-height:1.5;'+(done?"text-decoration:line-through;color:var(--dim)":"")+'">'+esc(x.text)+'</div></div>';}).join("");}).catch(function(){});}
+function loadCheckIssues(){var box=document.getElementById("ptIssueBox");if(!box)return;
+fetch(CHECK_API+"?action=issues&t="+Date.now()).then(function(r){return r.json();}).then(function(j){
+if(!j||!j.ok||!j.issues)return;var issues=j.issues;
+if(!issues.length){box.innerHTML='<div style="color:var(--dim)">이슈 없음</div>';return;}
+var ORDER=["복도","필라테스","헬스장","골프장","수영장","체조장","스쿼시장"];
+var groups={};issues.forEach(function(x){(groups[x.venue]=groups[x.venue]||[]).push(x);});
+var venues=Object.keys(groups).sort(function(a,b){var ia=ORDER.indexOf(a),ib=ORDER.indexOf(b);return (ia<0?99:ia)-(ib<0?99:ib);});
+box.innerHTML=venues.map(function(v){var items=groups[v];var openN=items.filter(function(i){return !i.resolved;}).length;
+var rows=items.map(function(x){var done=x.resolved;
+return '<div style="display:flex;gap:8px;align-items:flex-start;padding:6px 0;border-top:1px solid var(--border)'+(done?";opacity:.55":"")+'">'+
+'<span style="color:var(--dim);font-size:11px;white-space:nowrap;min-width:72px">'+esc(x.date)+'</span>'+
+'<span style="flex:1;font-size:13px;line-height:1.5;'+(done?"text-decoration:line-through;color:var(--dim)":"")+'">'+esc(x.text)+'</span>'+
+(done?'<span style="background:var(--green);color:#10240f;border-radius:6px;padding:1px 7px;font-size:11px;font-weight:700;white-space:nowrap">✓ 처리</span>':'<span style="background:var(--red);color:#fff;border-radius:6px;padding:1px 7px;font-size:11px;font-weight:700;white-space:nowrap">미처리</span>')+
+'</div>';}).join("");
+return '<div style="margin-bottom:11px"><div style="display:flex;align-items:center;gap:8px;margin-bottom:2px"><span style="background:var(--accent-bg);color:var(--accent);border-radius:6px;padding:2px 9px;font-size:13px;font-weight:700">'+esc(v)+'</span><span style="font-size:11px;color:var(--dim)">미처리 '+openN+' / 전체 '+items.length+'</span></div>'+rows+'</div>';
+}).join("");}).catch(function(){});}
 function renderCheck(data,live){
     var cols=data.cols, rows=data.rows, issues=data.issues;
     var head='<tr>'+cols.map(function(c){return '<th>'+esc(c)+'</th>';}).join('')+'</tr>';
