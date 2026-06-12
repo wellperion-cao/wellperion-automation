@@ -604,13 +604,15 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
     }).catch(function(e){up.textContent='불러오기 실패';err.style.display='block';err.textContent='⚠ 매출 시트를 불러오지 못했습니다: '+e.message;});
   };
 
-  function renderCheck(data,live){
+  var CHECK_API="https://script.google.com/macros/s/AKfycbySsnbKDtOI7ktGd-qQrZ3y7V0AFu9SpGtzriL1bGTxafECrmDq2AbgK76OwXGh47r4Pw/exec";
+function loadCheckIssues(){var box=document.getElementById("ptIssueBox");if(!box)return;fetch(CHECK_API+"?action=issues&t="+Date.now()).then(function(r){return r.json();}).then(function(j){if(!j||!j.ok||!j.issues)return;if(!j.issues.length){box.innerHTML='<div style="color:var(--dim)">이슈 없음</div>';return;}box.innerHTML=j.issues.map(function(x){var done=x.resolved;return '<div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:9px 11px;margin-bottom:8px;opacity:'+(done?".55":"1")+'">'+'<div style="display:flex;gap:8px;align-items:center;font-size:12px;color:var(--dim)">'+'<span style="background:var(--accent-bg);color:var(--accent);border-radius:5px;padding:1px 7px;font-weight:700">'+esc(x.venue)+'</span>'+'<span>'+esc(x.date)+'</span><span style="flex:1"></span>'+(done?'<span style="background:var(--green);color:#10240f;border-radius:5px;padding:1px 7px;font-weight:700">처리됨</span>':'<span style="background:var(--red);color:#fff;border-radius:5px;padding:1px 7px;font-weight:700">미처리</span>')+'</div><div style="font-size:13px;margin-top:5px;line-height:1.5;'+(done?"text-decoration:line-through;color:var(--dim)":"")+'">'+esc(x.text)+'</div></div>';}).join("");}).catch(function(){});}
+function renderCheck(data,live){
     var cols=data.cols, rows=data.rows, issues=data.issues;
     var head='<tr>'+cols.map(function(c){return '<th>'+esc(c)+'</th>';}).join('')+'</tr>';
     var body=rows.map(function(row){var isTot=ws(row[0])==='합계';return '<tr'+(isTot?' style="font-weight:700;background:var(--bg)"':'')+'>'+row.map(function(cell,i){if(i===0)return '<td class="zone">'+esc(cell)+'</td>';var n=num(cell);var hot=(!isTot&&n>0&&(''+cell).trim()!=='–');return '<td class="'+(hot?'ck-hot':'')+'">'+esc(cell)+'</td>';}).join('')+'</tr>';}).join('');
     var matrix='<table class="ck-table">'+head+body+'</table>';
     var iss=issues.length?issues.map(function(it){return '<div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:9px 11px;margin-bottom:8px"><div style="display:flex;gap:8px;align-items:center;font-size:12px;color:var(--dim)"><span style="background:var(--accent-bg);color:var(--accent);border-radius:5px;padding:1px 7px;font-weight:700">'+esc(it[1])+'</span><span>'+esc(it[0])+'</span></div><div style="font-size:13px;margin-top:5px;line-height:1.5">'+esc(it[3])+'</div></div>';}).join(''):'<div style="color:var(--dim)">이슈 없음</div>';
-    document.getElementById('checkView').innerHTML='<div class="grid2">'+panel('업장별 「점검필요」 횟수',matrix)+panel('이슈사항 ('+issues.length+'건)',iss)+'</div>'+(live?'':'<div class="callout" style="margin-top:14px;color:var(--dim)">※ 스냅샷(2026-06-09 기준)입니다. 실시간 연동을 원하시면 「강습부 업장관리 체크」 시트를 <b>링크가 있는 모든 사용자 - 뷰어</b>로 공유해 주세요.</div>');
+    document.getElementById('checkView').innerHTML='<div class="grid2">'+panel('업장별 「점검필요」 횟수',matrix)+panel('이슈사항','<div id="ptIssueBox">'+iss+'</div>')+'</div>'+(live?'':'<div class="callout" style="margin-top:14px;color:var(--dim)">※ 스냅샷(2026-06-09 기준)입니다. 실시간 연동을 원하시면 「강습부 업장관리 체크」 시트를 <b>링크가 있는 모든 사용자 - 뷰어</b>로 공유해 주세요.</div>');
     document.getElementById('checkUpdated').textContent=live?('실시간 · '+new Date().toLocaleString('ko-KR',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})):'스냅샷';
   }
   window.loadCheck=function(force){
@@ -623,8 +625,8 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
       var rows=[];for(var r=hr+1;r<M.length;r++){var z=(''+(M[r][zc]||'')).trim();if(!z)break;var row=[z];CHECK_COLS.forEach(function(name){var c=colIdx[name];row.push(c!=null?(''+(M[r][c]||'')).trim():'');});rows.push(row);if(z==='합계')break;}
       var ihr=-1;for(var r=0;r<M.length&&ihr<0;r++){for(var c=0;c<M[r].length;c++){if((''+M[r][c]).trim()==='이슈내용'){ihr=r;break;}}}
       var issues=[];if(ihr>=0){var jc=-1,zc2=-1,pc=-1,dc=-1;for(var c=0;c<M[ihr].length;c++){var h=(''+M[ihr][c]).trim();if(h==='이슈내용')jc=c;if(h==='업장')zc2=c;if(h==='점검자')pc=c;if(h==='날짜')dc=c;}for(var r=ihr+1;r<M.length;r++){var d=(''+(M[r][dc]||'')).trim();var iv=(''+(M[r][jc]||'')).trim();if(!d&&!iv)break;issues.push([d,(''+(M[r][zc2]||'')).trim(),(''+(M[r][pc]||'')).trim(),iv]);}}
-      renderCheck({cols:['업장'].concat(CHECK_COLS),rows:rows,issues:issues},true);
-    }).catch(function(e){renderCheck(CHECK_SNAP,false);});
+      renderCheck({cols:['업장'].concat(CHECK_COLS),rows:rows,issues:issues},true);loadCheckIssues();
+    }).catch(function(e){renderCheck(CHECK_SNAP,false);loadCheckIssues();});
   };
 
   function renderWork(){
