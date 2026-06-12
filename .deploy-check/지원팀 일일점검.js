@@ -638,6 +638,7 @@ function _handleSaveV2Compat(body) {
     }
 
     var newRows = [];
+    var rowsToDelete = [];
     items.forEach(function(c) {
       var rowNum = existingMap[c.itemId];
       var values = [
@@ -652,15 +653,24 @@ function _handleSaveV2Compat(body) {
         body.duty || ''          // 15열 담당자(규정 근무조) — payload.duty
       ];
       if (rowNum) {
-        // 기존 행 제자리 갱신 유지(이력 보존).
-        sheet.getRange(rowNum, 1, 1, HEADERS.length).setValues([values]);
-        _applyRowStyle(sheet, rowNum, values);
-        totalSaved++;
+        if (_anomalyOnlyDept(dept) && !_isAnomalyCheck(c)) {
+          // support 정상완료(완료·무이슈)는 시트에 행을 남기지 않음 — 복원원천은 회차원장(cr)뿐.
+          // 옛 행이 완료로 갱신·누적되어 잘못된 회차로 복원되던 문제 차단. GM 2026-06-12.
+          rowsToDelete.push(rowNum);
+        } else {
+          sheet.getRange(rowNum, 1, 1, HEADERS.length).setValues([values]);
+          _applyRowStyle(sheet, rowNum, values);
+          totalSaved++;
+        }
       } else if (!_anomalyOnlyDept(dept) || _isAnomalyCheck(c)) {
         // support: 이상치만 신규기록(정상완료는 원장 복원). 타 부서: 전체기록 유지(완료율 회귀 방지).
         newRows.push(values);
       }
     });
+    if (rowsToDelete.length) {
+      rowsToDelete.sort(function(a, b){ return b - a; });   // 내림차순 삭제(인덱스 안정)
+      rowsToDelete.forEach(function(rn){ sheet.deleteRow(rn); });
+    }
     if (newRows.length > 0) {
       var startRow = sheet.getLastRow() + 1;
       sheet.getRange(startRow, 1, newRows.length, HEADERS.length).setValues(newRows);

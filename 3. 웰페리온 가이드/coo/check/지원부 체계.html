@@ -1746,8 +1746,8 @@ async function loadState(d,g){
       // 2026-06-12 시우: 서버 응답이 성별 구분돼 오면(row.gender) 현재 성별(gg)만 STATE 반영 —
       // 성별화 체크는 chkKey에 기록해 화면 격리 유지. gender 미동반(레거시·서버 미격리)이면 기존 동작.
       if(row.gender&&row.gender!==gg)return;
-      // 회차 격리(2026-06-12): 성별 동반 행은 그 슬롯의 회차키만(전 회차 동기화 방지). 레거시(성별無)만 bare 폴백.
-      if(row.checked){ if(row.gender)STATE[chkKey(roundOfSlot(row.slot,row.shift),row.itemId,gg)]=true; else STATE[row.itemId]=true; }
+      // 체크 복원은 '회차원장(cr)'만 사용(아래). 시트 행의 완료/미완료는 회차정보가 없어
+      // roundOfSlot로 잘못된 회차에 복원→리셋처럼 보이던 문제 → 행으로 체크 복원 안 함. GM 2026-06-12.
       if(row.issue)STATE['iss_'+row.itemId]=row.issue;
       if(row.tip)STATE['tip_'+row.itemId]=row.tip;
       if(row.measure)restoreTempFromMeasure(row.itemId,row.measure);   // 온도 측정값 복원
