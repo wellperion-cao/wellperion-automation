@@ -2021,7 +2021,8 @@ function drawUI(d,gender){
         });
       });
     });
-    /* 매뉴얼에서 정한 그룹(구역) 순서를 점검에도 적용 */
+    /* 매뉴얼에서 숨긴 구역 점검에서도 제외 + 그룹 순서 적용 */
+    if(typeof getHiddenGroups==='function'){const _hg=getHiddenGroups();for(let zi=zoneOrder.length-1;zi>=0;zi--){if(_hg.has(zoneOrder[zi]))zoneOrder.splice(zi,1);}}
     if(typeof groupRank==='function')zoneOrder.sort((a,b)=>groupRank(a)-groupRank(b));
     /* 요일별 집중청소는 마감조(close1)에 합류(기존 pm 통계 포함과 정합) */
     const focusInRound=(curRound==='close1'&&DAY_FOCUS[dow])?DAY_FOCUS[dow].filter(it=>shouldShowItemForGender(it,gender)):[];
@@ -2060,7 +2061,7 @@ function drawUI(d,gender){
       visItems.sort((a,b)=>{const oa=_om[a.it.id],ob=_om[b.it.id];if(oa==null&&ob==null)return 0;if(oa==null)return 1;if(ob==null)return -1;return oa-ob;});
       let gd=0;visItems.forEach(({it})=>{if(isChecked(it.id,curRound))gd++});
       const ok=gd===visItems.length,badge=ok?'<span class="cat-badge done">완료</span>':`<span class="cat-badge pending">${gd}/${visItems.length}</span>`;
-      html+=`<div class="category"><div class="cat-header" onclick="tog(this)"><span class="cat-title">${title}</span>${badge}</div><div class="cat-body${ok?'':' open'}">`;
+      html+=`<div class="category"><div class="cat-header" onclick="tog(this)"><span class="cat-title">${(typeof groupDisplay==='function')?groupDisplay(title):title}</span>${badge}</div><div class="cat-body${ok?'':' open'}">`;
       visItems.forEach(({it,itemShift})=>{
         html+=renderItem(it,itemShift,gender,curRound);
       });
@@ -2287,10 +2288,11 @@ window.manualAddItem=function(cat){
   const genEl=document.getElementById('promoteGender'); if(genEl)genEl.value='all';
   const catSel=document.getElementById('promoteCatSelect');
   if(catSel){
-    // 그룹 ＋ 추가 = 그 구역(A~E)에 고정. 기존 구역만 선택지(새 구역 임의생성 금지).
-    const titles=promoteZoneTitles();
+    // 그룹 ＋ 추가 = 그 구역에 고정. 기존 구역 + (사용자 추가 구역) 포함, 새 구역 임의생성은 금지.
+    const titles=promoteZoneTitles().slice();
+    if(cat&&titles.indexOf(cat)<0)titles.push(cat);
     catSel.innerHTML=titles.map(t2=>`<option value="${escapeAttr(t2)}">${escapeHTML(t2)}</option>`).join('');
-    if(cat&&titles.indexOf(cat)>=0)catSel.value=cat;
+    if(cat)catSel.value=cat;
     else if(titles.length)catSel.value=titles[0];
     catSel.disabled=true;   // 클릭한 구역으로 잠금
   }
@@ -2361,6 +2363,38 @@ window.moveManualGroup=function(title,dir){
   const o=getGroupOrder();
   order.forEach((t,k)=>{ o[t]=k; });   // 전체 그룹에 순차 순위 재부여
   saveGroupOrder(o);
+  if(typeof renderManualItems==='function')renderManualItems();
+  if(typeof renderG==='function')renderG(activeGenderTab);
+};
+/* ── 구역(그룹) 자체 CRUD — 추가/이름변경/삭제(숨김). 매뉴얼·점검 동일 반영. GM 2026-06-12.
+   rename = 원본 구역명→표시명 맵(아이템 데이터 무변경, 표시단계 매핑). hidden = 구역 통째 숨김. added = 빈 구역 등록. */
+function getGroupRename(){ try{return JSON.parse(localStorage.getItem('wcheck_group_rename')||'{}')||{}}catch(e){return {}} }
+function getHiddenGroups(){ try{return new Set(JSON.parse(localStorage.getItem('wcheck_group_hidden')||'[]'))}catch(e){return new Set()} }
+function getAddedGroups(){ try{return JSON.parse(localStorage.getItem('wcheck_group_added')||'[]')||[]}catch(e){return []} }
+function groupDisplay(t){ const r=getGroupRename(); return r[t]||t; }
+window.addManualGroup=function(){
+  const n=prompt('새 구역(그룹) 이름 — 예: F 주차장'); if(n==null)return;
+  const t=n.trim(); if(!t){alert('이름을 입력하세요.');return;}
+  const a=getAddedGroups(); if(a.indexOf(t)<0){a.push(t);localStorage.setItem('wcheck_group_added',JSON.stringify(a));}
+  if(typeof renderManualItems==='function')renderManualItems();
+  alert('빈 구역 "'+t+'" 추가됨. 그 구역의 ＋ 항목 추가로 항목을 넣으세요.');
+};
+window.renameManualGroup=function(orig){
+  const cur=groupDisplay(orig);
+  const n=prompt('구역 이름 변경', cur); if(n==null)return;
+  const t=n.trim(); if(!t)return;
+  const r=getGroupRename(); if(t===orig){delete r[orig];}else{r[orig]=t;} localStorage.setItem('wcheck_group_rename',JSON.stringify(r));
+  if(typeof renderManualItems==='function')renderManualItems();
+  if(typeof renderG==='function')renderG(activeGenderTab);
+};
+window.deleteManualGroup=function(orig){
+  if(!confirm('구역 "'+groupDisplay(orig)+'" 전체를 점검·매뉴얼에서 제거할까요?\n(이 구역의 모든 항목이 함께 빠집니다 — 하단 "숨긴 구역"에서 복구 가능)'))return;
+  const h=getHiddenGroups(); h.add(orig); localStorage.setItem('wcheck_group_hidden',JSON.stringify([...h]));
+  if(typeof renderManualItems==='function')renderManualItems();
+  if(typeof renderG==='function')renderG(activeGenderTab);
+};
+window.restoreManualGroup=function(orig){
+  const h=getHiddenGroups(); h.delete(orig); localStorage.setItem('wcheck_group_hidden',JSON.stringify([...h]));
   if(typeof renderManualItems==='function')renderManualItems();
   if(typeof renderG==='function')renderG(activeGenderTab);
 };
@@ -2578,7 +2612,7 @@ function renderManualItems(){
   const ovMap=typeof getItemOverrides==='function'?getItemOverrides():{};
   // 카테고리별로 항목 모으기 (중복 id 제거)
   const catMap={};
-  const catOrder=[];
+  let catOrder=[];
   const seen=new Set();
   const hidden=(typeof getHiddenIds==='function')?getHiddenIds():new Set();
   const hiddenItems=[];
@@ -2609,7 +2643,11 @@ function renderManualItems(){
       pushItem(ci.category||'추가 점검',{id:ci.id,name:ci.name,detail:ci.detail,gender:ci.gender,_custom:true});
     });
   }
-  /* 그룹(구역) 순서 적용 — groupRank 기준 안정정렬 + 이동용 목록 캡처 */
+  /* 빈 구역(사용자 추가) 합류 + 숨긴 구역 분리 + 순서 적용 */
+  (typeof getAddedGroups==='function'?getAddedGroups():[]).forEach(g=>{ if(!catMap[g]){catMap[g]=[];catOrder.push(g);} });
+  const _hiddenG=(typeof getHiddenGroups==='function')?getHiddenGroups():new Set();
+  const _hiddenGroupList=catOrder.filter(c=>_hiddenG.has(c));
+  catOrder=catOrder.filter(c=>!_hiddenG.has(c));
   catOrder.sort((a,b)=>groupRank(a)-groupRank(b));
   window._groupSorted=catOrder.slice();
   /* 그룹 내 정렬 적용(orderMap 우선, 없으면 등장순) + 그룹별 id목록 캡처(↑/↓ 이동용) */
@@ -2628,8 +2666,9 @@ function renderManualItems(){
   let html='';
   /* 셋업 안내 + 편집모드 토글 + 추가항목 일괄정리(GM 2026-06-12): 매뉴얼=항목 단일출처(시트 동기화). 점검은 읽기전용. */
   const _emBtn=`<button onclick="toggleManualEdit()" style="${_btn}${EM?'color:#fff;background:var(--accent);border-color:var(--accent);':'color:var(--accent);background:var(--bg);border-color:var(--accent);'}">${EM?'✓ 편집 모드 (끄기)':'✎ 편집 모드'}</button>`;
+  const _addGroupBtn=EM?`<button onclick="addManualGroup()" style="${_btn}color:var(--accent);background:var(--bg);border-color:var(--accent);">＋ 구역 추가</button>`:'';
   html+=`<div style="background:var(--accent-bg);border:1px solid var(--accent);border-radius:10px;padding:10px 14px;margin-bottom:12px;font-size:12px;color:var(--text);line-height:1.6;">
-    <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;"><span><b style="color:var(--accent);">매뉴얼 = 항목 단일출처</b> · 편집 모드를 켜면 <b>추가·편집·삭제·순서변경(▲▼)</b>이 나타납니다. 점검 화면은 체크+이슈/노하우만.</span>${_emBtn}</div>
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;"><span><b style="color:var(--accent);">매뉴얼 = 항목 단일출처</b> · 편집 모드를 켜면 구역(A·B…) <b>추가·이름변경·삭제·순서(▲▼)</b>와 항목 추가·편집·삭제가 나타납니다.</span><span style="display:inline-flex;gap:6px;">${_addGroupBtn}${_emBtn}</span></div>
   </div>`;
   catOrder.forEach((cat,gi)=>{
     const items=catMap[cat];
@@ -2638,7 +2677,12 @@ function renderManualItems(){
     const _gUp=gi>0?`<button onclick="moveManualGroup('${escapeAttr(cat)}',-1)" style="${_btn}color:var(--text);background:var(--bg);border-color:var(--border);" title="구역 위로">▲</button>`:`<button disabled style="${_btn}color:var(--text);background:var(--bg);border-color:var(--border);opacity:.25;cursor:default;">▲</button>`;
     const _gDn=gi<catOrder.length-1?`<button onclick="moveManualGroup('${escapeAttr(cat)}',1)" style="${_btn}color:var(--text);background:var(--bg);border-color:var(--border);" title="구역 아래로">▼</button>`:`<button disabled style="${_btn}color:var(--text);background:var(--bg);border-color:var(--border);opacity:.25;cursor:default;">▼</button>`;
     const _gMove=EM?`<span style="display:inline-flex;gap:3px;margin-right:6px;">${_gUp}${_gDn}</span>`:'';
-    html+=`<div style="padding:10px 16px;font-size:13px;font-weight:700;color:var(--accent);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:8px;"><span style="display:flex;align-items:center;">${_gMove}${cat}</span>${EM?`<button onclick="manualAddItem('${escapeAttr(cat)}')" style="${_btn}color:var(--accent);background:var(--bg);border-color:var(--accent);">＋ 항목 추가</button>`:''}</div>`;
+    const _gActions=EM?`<span style="display:inline-flex;gap:4px;flex-wrap:wrap;">`
+      +`<button onclick="renameManualGroup('${escapeAttr(cat)}')" style="${_btn}color:#5b9fd5;background:rgba(91,159,213,0.12);border-color:rgba(91,159,213,0.35);">이름변경</button>`
+      +`<button onclick="deleteManualGroup('${escapeAttr(cat)}')" style="${_btn}color:#c0392b;background:rgba(192,57,67,0.1);border-color:rgba(192,57,67,0.4);">구역삭제</button>`
+      +`<button onclick="manualAddItem('${escapeAttr(cat)}')" style="${_btn}color:var(--accent);background:var(--bg);border-color:var(--accent);">＋ 항목</button>`
+      +`</span>`:'';
+    html+=`<div style="padding:10px 16px;font-size:13px;font-weight:700;color:var(--accent);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;"><span style="display:flex;align-items:center;">${_gMove}${groupDisplay(cat)}</span>${_gActions}</div>`;
     items.forEach((it,idx)=>{
       const detHtml=it.detail?it.detail.replace(/\n/g,'<br>'):'';
       const hasDet=!!detHtml;
@@ -2673,6 +2717,15 @@ function renderManualItems(){
     html+=`<div style="padding:10px 16px;font-size:13px;font-weight:700;color:var(--dim);border-bottom:1px solid var(--border);">숨긴 항목 (${hiddenItems.length}) — 점검에서 제외됨</div>`;
     hiddenItems.forEach(hi=>{
       html+=`<div style="padding:8px 16px;border-bottom:1px solid rgba(61,56,53,0.25);display:flex;align-items:center;justify-content:space-between;gap:10px;"><span style="font-size:13px;color:var(--dim);text-decoration:line-through;">${hi.name} <span style="font-size:10px;">(${hi.cat})</span></span><button onclick="manualUnhideItem('${hi.id}')" style="${_btn}color:var(--accent);background:var(--accent-bg);border-color:var(--accent);">복구</button></div>`;
+    });
+    html+=`</div>`;
+  }
+  /* 숨긴 구역 — 복구 가능(편집 모드에서만) */
+  if(EM&&_hiddenGroupList.length){
+    html+=`<div style="background:var(--paper);border:1px dashed var(--border);border-radius:10px;margin-top:6px;overflow:hidden;opacity:.85;">`;
+    html+=`<div style="padding:10px 16px;font-size:13px;font-weight:700;color:var(--dim);border-bottom:1px solid var(--border);">숨긴 구역 (${_hiddenGroupList.length}) — 점검에서 제외됨</div>`;
+    _hiddenGroupList.forEach(g=>{
+      html+=`<div style="padding:8px 16px;border-bottom:1px solid rgba(61,56,53,0.25);display:flex;align-items:center;justify-content:space-between;gap:10px;"><span style="font-size:13px;color:var(--dim);text-decoration:line-through;">${groupDisplay(g)}</span><button onclick="restoreManualGroup('${escapeAttr(g)}')" style="${_btn}color:var(--accent);background:var(--accent-bg);border-color:var(--accent);">복구</button></div>`;
     });
     html+=`</div>`;
   }
