@@ -956,6 +956,7 @@ function openPromoteFromIssue(id,gender){
     let opts=titles.map(t=>`<option value="${escapeAttr(t)}">${escapeHTML(t)}</option>`).join('');
     opts+='<option value="__custom__">+ 직접 입력…</option>';
     catSel.innerHTML=opts;
+    catSel.disabled=false;   // 이슈 승격 경로는 구역 선택 가능(manualAddItem이 잠갔던 것 해제)
     const cur=ctx.cat||'';
     if(cur&&titles.indexOf(cur)>=0){catSel.value=cur;}
     else if(cur){catSel.value='__custom__';}
@@ -2284,17 +2285,16 @@ window.manualAddItem=function(cat){
   const genEl=document.getElementById('promoteGender'); if(genEl)genEl.value='all';
   const catSel=document.getElementById('promoteCatSelect');
   if(catSel){
+    // 그룹 ＋ 추가 = 그 구역(A~E)에 고정. 기존 구역만 선택지(새 구역 임의생성 금지).
     const titles=promoteZoneTitles();
-    let opts=titles.map(t2=>`<option value="${escapeAttr(t2)}">${escapeHTML(t2)}</option>`).join('');
-    opts+='<option value="__custom__">+ 직접 입력…</option>';
-    catSel.innerHTML=opts;
+    catSel.innerHTML=titles.map(t2=>`<option value="${escapeAttr(t2)}">${escapeHTML(t2)}</option>`).join('');
     if(cat&&titles.indexOf(cat)>=0)catSel.value=cat;
-    else if(cat)catSel.value='__custom__';
-    else catSel.value=titles.length?titles[0]:'__custom__';
+    else if(titles.length)catSel.value=titles[0];
+    catSel.disabled=true;   // 클릭한 구역으로 잠금
   }
   promoteOnCatChange();
   const catIn=document.getElementById('promoteCatCustom');
-  if(catIn&&catSel&&catSel.value==='__custom__')catIn.value=cat||'';
+  if(catIn)catIn.style.display='none';
   // 회차: 기본 오후조 1개 체크(GM이 자유 조정) — 최소 1개 강제는 promoteSave가 검증
   ROUND_KEYS.forEach(rk=>{const cb=document.getElementById('promoteRound_'+rk);if(cb)cb.checked=(rk==='pm1');});
   const hint=document.getElementById('promoteRoundHint'); if(hint)hint.style.display='none';
@@ -2626,16 +2626,13 @@ function renderManualItems(){
       const _mvBtn='font-size:12px;font-weight:700;border-radius:6px;padding:2px 7px;cursor:pointer;font-family:inherit;border:1px solid var(--border);background:var(--bg);color:var(--text);line-height:1.2;';
       const _up=idx>0?`<button onclick="event.stopPropagation();moveManualItem('${it.id}',-1)" style="${_mvBtn}" title="위로">▲</button>`:`<button disabled style="${_mvBtn}opacity:.25;cursor:default;">▲</button>`;
       const _dn=idx<items.length-1?`<button onclick="event.stopPropagation();moveManualItem('${it.id}',1)" style="${_mvBtn}" title="아래로">▼</button>`:`<button disabled style="${_mvBtn}opacity:.25;cursor:default;">▼</button>`;
-      const moveCol=EM?`<div style="flex:0 0 auto;display:flex;flex-direction:column;gap:2px;margin-top:1px;">${_up}${_dn}</div>`:'';
-      const setupCol=EM?`<div style="flex:0 0 auto;display:flex;gap:4px;">${setup}</div>`:'';
       html+=`<div style="padding:10px 16px;border-bottom:1px solid rgba(61,56,53,0.35);">`;
-      html+=`<div style="display:flex;align-items:flex-start;gap:10px;">`;
-      html+=moveCol;
-      html+=`<div style="flex:1 1 auto;${nameCursor}" ${hasDet?'onclick="togManualItem(this)"':''}><div style="${nameStyle}display:flex;align-items:center;gap:6px;justify-content:space-between;"><span>${it.name}${genderLabel}${customLabel}${editedLabel}</span>${arrow}</div>`;
+      html+=`<div style="${nameCursor}min-width:0;" ${hasDet?'onclick="togManualItem(this)"':''}><div style="${nameStyle}display:flex;align-items:center;gap:6px;justify-content:space-between;"><span>${it.name}${genderLabel}${customLabel}${editedLabel}</span>${arrow}</div>`;
       if(hasDet)html+=`<div class="manual-item-detail" style="font-size:12px;color:var(--dim);margin-top:5px;line-height:1.5;">${detHtml}</div>`;
       html+=`</div>`;
-      html+=setupCol;
-      html+=`</div></div>`;
+      /* 편집 모드: 항목명 아래 별도 줄에 액션바(▲▼ · 편집 · 삭제) — overflow 잘림 방지, 항상 보임 */
+      if(EM)html+=`<div style="display:flex;align-items:center;gap:6px;margin-top:8px;flex-wrap:wrap;">${_up}${_dn}<span style="display:inline-block;width:6px;"></span>${setup}</div>`;
+      html+=`</div>`;
     });
     html+=`</div>`;
   });
@@ -4350,11 +4347,9 @@ renderManualItems();
       <label style="display:block;font-size:13px;font-weight:600;color:var(--dim);margin-bottom:6px;">회차(조) — 점검에 등장할 조 (다중 선택)</label>
       <div id="editRounds" style="display:flex;flex-wrap:wrap;gap:8px;"></div>
     </div>
+    <!-- 시간대 라벨(editSlot)·근무조(editShift) = 회차(조)로 대체된 잔재 → 숨김(내부 호환용 hidden) GM 2026-06-12 -->
     <input type="hidden" id="editShift" value="pm">
-    <div style="margin-bottom:12px;">
-      <label style="display:block;font-size:13px;font-weight:600;color:var(--dim);margin-bottom:4px;">시간대 라벨 (선택)</label>
-      <input id="editSlot" type="text" placeholder="예: 10:00~12:00 오전 후반" style="width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:10px 14px;border-radius:8px;font-size:13px;font-family:inherit;">
-    </div>
+    <input type="hidden" id="editSlot" value="">
     <div style="display:flex;gap:10px;margin-bottom:14px;">
       <div style="flex:2;">
         <label style="display:block;font-size:13px;font-weight:600;color:var(--dim);margin-bottom:4px;">카테고리</label>
