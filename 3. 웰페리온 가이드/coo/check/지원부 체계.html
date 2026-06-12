@@ -2247,8 +2247,7 @@ function renderItem(it,shift,gender,round){
   const esc=escapeAttr;
   // Use unique element ids per gender tab to avoid collisions
   const pfx=g+'_';
-  const editBtn=`<button class="tiny-btn" style="background:rgba(91,159,213,0.12);color:#5b9fd5;border-color:rgba(91,159,213,0.3);font-size:12px;" title="이 항목 수정 (제목·내용·시간대·근무조)" onclick="editItem('${it.id}')">편집</button>`;
-  const resetBtn=isEdited?`<button class="tiny-btn" style="background:rgba(140,139,131,0.12);color:#8c8b83;border-color:rgba(140,139,131,0.3);font-size:12px;" title="기본값 복원" onclick="resetItem('${it.id}')">초기화</button>`:'';
+  /* 점검 화면 항목 편집/초기화 제거(GM 2026-06-12): 항목 수정·추가는 '매뉴얼' 탭 단일출처. 점검=체크+이슈/노하우만. */
   const shiftLabel={am:'오전조',pm:'오후조',night:'야간조',focus:'요일집중',all:'전체'};
   let metaInfo='';
   if(ov.slot||ov.shift||ov.cat){
@@ -2290,7 +2289,7 @@ function renderItem(it,shift,gender,round){
   const _rArg=round?`,'${round}'`:'';
   return `<div class="${cls}">
     <div class="item-row"><input type="checkbox" id="cb_${pfx}${it.id}" ${ck} onchange="onCk('${it.id}','${shift}','${g}'${_rArg})"><label for="cb_${pfx}${it.id}">${itemName}${editedTag}</label>
-      <div class="item-btns">${editBtn}${resetBtn}<button class="tiny-btn issue" onclick="togX('${pfx}iss_${it.id}')">이슈</button><button class="tiny-btn tip" onclick="togX('${pfx}tip_${it.id}')">노하우</button>${refBtn}</div>
+      <div class="item-btns"><button class="tiny-btn issue" onclick="togX('${pfx}iss_${it.id}')">이슈</button><button class="tiny-btn tip" onclick="togX('${pfx}tip_${it.id}')">노하우</button>${refBtn}</div>
     </div>
     <div class="item-detail">${det}</div>${tempHtml}
     <input class="extra-input issue-field${iss?' show':''}" id="${pfx}iss_${it.id}" placeholder="이슈 내용..." value="${esc(iss)}" onchange="onExtra('iss_${it.id}','${pfx}iss_${it.id}')">
@@ -3941,8 +3940,8 @@ function mgmtGenerateId(){
    CUSTOM_ITEMS push → mgmtSaveItems(기존 saveItems POST) → renderG 재렌더.
    slot/shift는 렌더 루프의 라이브 값을 그대로 전달(형식 보존), gender는 탭(m/f). */
 function quickAddBarHtml(slot, shift, category, gender){
-  const args = "'"+setupAttr(slot)+"','"+setupAttr(shift)+"','"+setupAttr(category)+"','"+gender+"'";
-  return '<div class="quickadd-bar"><button class="quickadd-btn" onclick="quickAddOpen(this,'+args+')">＋ 항목 추가</button></div>';
+  // 점검 화면 항목추가 제거(GM 2026-06-12): 항목 추가·수정은 '매뉴얼' 탭 단일출처. 점검=체크+이슈/노하우만.
+  return '';
 }
 
 function quickAddOpen(btn, slot, shift, category, gender){
