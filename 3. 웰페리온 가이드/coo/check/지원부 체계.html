@@ -2293,10 +2293,10 @@ window.manualAddItem=function(cat){
     // 그룹 ＋ 추가 = 그 구역에 고정. 기존 구역 + (사용자 추가 구역) 포함, 새 구역 임의생성은 금지.
     const titles=promoteZoneTitles().slice();
     if(cat&&titles.indexOf(cat)<0)titles.push(cat);
-    catSel.innerHTML=titles.map(t2=>`<option value="${escapeAttr(t2)}">${escapeHTML(t2)}</option>`).join('');
+    catSel.innerHTML=titles.map(t2=>`<option value="${escapeAttr(t2)}">${escapeHTML((typeof groupDisplay==='function')?groupDisplay(t2):t2)}</option>`).join('');
     if(cat)catSel.value=cat;
     else if(titles.length)catSel.value=titles[0];
-    catSel.disabled=true;   // 클릭한 구역으로 잠금
+    catSel.disabled=false;   // 기존 구역 중 선택 가능(클릭한 구역이 기본). 새 구역 임의생성만 금지(+직접입력 없음).
   }
   promoteOnCatChange();
   const catIn=document.getElementById('promoteCatCustom');
