@@ -703,6 +703,10 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
     </div>
   </div>
 
+  <!-- ── 전체 점검 항목 (매뉴얼=셋업 단일출처 · 한눈에 · GM 2026-06-12) ── -->
+  <div style="font-size:16px;font-weight:700;color:var(--text);padding:2px 0 4px;">전체 점검 항목 (셋업 · 한눈에)</div>
+  <div id="manual-items-sync" style="margin-bottom:18px;"></div>
+
   <!-- ── 요일별 업무 보드 (주 콘텐츠 · 요일 다중선택 + 트렐로 칸반) ── -->
   <div style="font-size:16px;font-weight:700;color:var(--text);padding:2px 0 4px;">요일별 업무 보드 (트렐로 칸반)</div>
   <div class="board-intro">위 <strong>요일 버튼</strong>을 켜고 끄면(여러 개 동시 선택 가능) 켠 요일이 <strong>트렐로 컬럼</strong>으로 나란히 표시됩니다. 컬럼이 많으면 가로로 스크롤하세요. 각 컬럼 안에 👨남 / 👩여 / 🏢외곽 카드가 세로로 있고, 카드의 <strong>편집</strong> 버튼을 누르면 <strong>표(시간 칸 | 내용 칸)를 바로 편집</strong>할 수 있고, <strong>＋ 행 추가</strong>/<strong>✕ 삭제</strong>로 항목을 늘리거나 지운 뒤 <strong>저장</strong>하면 모든 기기에 반영됩니다. 선택한 요일은 다음에 다시 와도 기억됩니다. 저장 시 시간 순으로 자동 정렬됩니다.</div>
@@ -2199,6 +2203,7 @@ window.saveItemEdit=function(){
   document.getElementById('itemEditModal').style.display='none';
   _editingItemId=null;
   renderG(activeGenderTab);
+  if(typeof renderManualItems==='function')renderManualItems();
 };
 window.cancelItemEdit=function(){
   document.getElementById('itemEditModal').style.display='none';
@@ -2210,6 +2215,34 @@ window.resetItem=function(id){
   const next=(CUSTOM_ITEMS||[]).filter(it=>it.id!==id);
   mgmtSaveItems(next);   /* 시트에서도 shadow 제거 */
   renderG(activeGenderTab);
+  if(typeof renderManualItems==='function')renderManualItems();
+};
+/* ── 매뉴얼 탭 셋업: 항목 추가/삭제/일괄정리 (GM 2026-06-12) — 시트(점검항목) 단일출처 ── */
+window.manualAddItem=function(cat){
+  _editingItemId=(typeof mgmtGenerateId==='function')?mgmtGenerateId():('custom_'+Date.now());
+  document.getElementById('editName').value='';
+  document.getElementById('editDetail').value='';
+  document.getElementById('editSlot').value='내부·외부 점검 (오후·마감)';
+  document.getElementById('editShift').value='pm';
+  document.getElementById('editCat').value=cat||'추가 점검';
+  document.getElementById('itemEditModal').style.display='flex';
+};
+window.manualDeleteItem=function(id){
+  if(!confirm('이 추가 항목을 삭제할까요? (시트에서도 제거)'))return;
+  const next=(CUSTOM_ITEMS||[]).filter(it=>it.id!==id);
+  mgmtSaveItems(next);
+  renderG(activeGenderTab);
+  if(typeof renderManualItems==='function')renderManualItems();
+};
+window.manualPurgeCustom=function(){
+  const customs=(CUSTOM_ITEMS||[]).filter(it=>String(it.id).indexOf('custom_')===0);
+  if(!customs.length){alert('정리할 추가항목(custom_)이 없습니다.');return;}
+  if(!confirm('점검 화면에서 즉석 추가돼 쌓인 추가항목(custom_) '+customs.length+'건을 모두 삭제합니다.\n(기본 항목 수정분=수정됨 은 유지됩니다.)\n계속할까요?'))return;
+  const next=(CUSTOM_ITEMS||[]).filter(it=>String(it.id).indexOf('custom_')!==0);
+  mgmtSaveItems(next);
+  renderG(activeGenderTab);
+  if(typeof renderManualItems==='function')renderManualItems();
+  alert(customs.length+'건 정리 완료. (다른 기기는 새로고침)');
 };
 
 function renderItem(it,shift,gender,round){
@@ -2427,7 +2460,8 @@ function renderManualItems(){
           id:it.id,
           name:ov.name||it.name,
           detail:ov.detail||it.detail,
-          gender:it.gender
+          gender:it.gender,
+          _edited:!!(ov.name||ov.detail)
         });
       });
     });
@@ -2438,27 +2472,42 @@ function renderManualItems(){
       pushItem(ci.category||'추가 점검',{id:ci.id,name:ci.name,detail:ci.detail,gender:ci.gender,_custom:true});
     });
   }
+  /* 셋업 버튼 공통 스타일(인라인) */
+  const _btn='font-size:11px;font-weight:700;border-radius:6px;padding:3px 8px;cursor:pointer;font-family:inherit;border:1px solid;white-space:nowrap;';
+  const _customCount=(typeof CUSTOM_ITEMS!=='undefined'?CUSTOM_ITEMS:[]).filter(it=>String(it.id).indexOf('custom_')===0).length;
   let html='';
+  /* 셋업 안내 + 추가항목 일괄정리(GM 2026-06-12): 매뉴얼=항목 단일출처(시트 동기화). 점검은 읽기전용. */
+  html+=`<div style="background:var(--accent-bg);border:1px solid var(--accent);border-radius:10px;padding:10px 14px;margin-bottom:12px;font-size:12px;color:var(--text);line-height:1.6;">
+    <b style="color:var(--accent);">매뉴얼 = 항목 단일출처(셋업)</b> · 여기서 <b>편집·추가·삭제</b>하면 점검항목 시트에 저장되고 점검 화면에 그대로 반영됩니다. 점검 화면은 체크+이슈/노하우만.
+    ${_customCount?`<div style="margin-top:8px;"><button onclick="manualPurgeCustom()" style="${_btn}color:#c0392b;background:rgba(192,57,67,0.1);border-color:rgba(192,57,67,0.4);">추가항목(custom_) ${_customCount}건 전체 정리</button> <span style="color:var(--dim);">점검 화면에서 즉석 추가돼 쌓인 항목을 한 번에 비웁니다.</span></div>`:''}
+  </div>`;
   catOrder.forEach(cat=>{
     const items=catMap[cat];
     html+=`<div style="background:var(--paper);border:1px solid var(--border);border-radius:10px;margin-bottom:10px;overflow:hidden;">`;
-    html+=`<div style="padding:10px 16px;font-size:13px;font-weight:700;color:var(--accent);border-bottom:1px solid var(--border);">${cat}</div>`;
+    html+=`<div style="padding:10px 16px;font-size:13px;font-weight:700;color:var(--accent);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:8px;"><span>${cat}</span><button onclick="manualAddItem('${escapeAttr(cat)}')" style="${_btn}color:var(--accent);background:var(--bg);border-color:var(--accent);">＋ 항목 추가</button></div>`;
     items.forEach(it=>{
       const detHtml=it.detail?it.detail.replace(/\n/g,'<br>'):'';
       const hasDet=!!detHtml;
       const genderLabel=it.gender==='m'?' <span style="font-size:10px;color:var(--blue);background:var(--blue-bg);padding:1px 6px;border-radius:6px;">남</span>':it.gender==='f'?' <span style="font-size:10px;color:var(--orange);background:var(--orange-bg);padding:1px 6px;border-radius:6px;">여</span>':'';
       const customLabel=it._custom?' <span style="font-size:10px;color:var(--accent);background:var(--accent-bg);padding:1px 6px;border-radius:6px;">추가</span>':'';
+      const editedLabel=it._edited?' <span style="font-size:10px;color:#e6c84e;background:rgba(230,200,78,0.12);padding:1px 6px;border-radius:6px;">수정됨</span>':'';
       const checked=isCheckedAny(it);   /* 어느 회차든 체크되면 매뉴얼 동기화 뷰도 완료 표시 */
       const checkMark=checked?' <span style="color:var(--green);font-weight:700;">&#10003;</span>':'';
       const nameStyle=checked?'font-size:13px;font-weight:600;color:var(--dim);text-decoration:line-through;':'font-size:13px;font-weight:600;';
-      const arrow=hasDet?`<span class="m-arrow" style="font-size:11px;color:var(--dim);transition:transform .2s;">&#9654;</span>`:'';
+      const arrow=hasDet?`<span class="m-arrow" style="font-size:11px;color:var(--dim);transition:transform .2s;">&#9660;</span>`:'';
       const nameCursor=hasDet?'cursor:pointer;':'';
+      /* 셋업 버튼: 편집(전체) + 초기화(기본항목 수정분만) / 삭제(추가항목만) */
+      let setup=`<button onclick="event.stopPropagation();editItem('${it.id}')" style="${_btn}color:#5b9fd5;background:rgba(91,159,213,0.12);border-color:rgba(91,159,213,0.35);">편집</button>`;
+      if(it._custom)setup+=`<button onclick="event.stopPropagation();manualDeleteItem('${it.id}')" style="${_btn}color:#c0392b;background:rgba(192,57,67,0.1);border-color:rgba(192,57,67,0.4);">삭제</button>`;
+      else if(it._edited)setup+=`<button onclick="event.stopPropagation();resetItem('${it.id}')" style="${_btn}color:#8c8b83;background:rgba(140,139,131,0.12);border-color:rgba(140,139,131,0.3);">초기화</button>`;
       html+=`<div style="padding:10px 16px;border-bottom:1px solid rgba(61,56,53,0.35);">`;
       html+=`<div style="display:flex;align-items:flex-start;gap:10px;">`;
       html+=`<input type="checkbox" id="mcb_${it.id}" ${checked?'checked':''} onchange="onManualCk('${it.id}')" style="width:18px;height:18px;margin-top:1px;flex:0 0 auto;cursor:pointer;accent-color:var(--green);">`;
-      html+=`<div style="flex:1 1 auto;${nameCursor}" ${hasDet?'onclick="togManualItem(this)"':''}><div style="${nameStyle}display:flex;align-items:center;gap:6px;justify-content:space-between;"><span>${it.name}${genderLabel}${customLabel}${checkMark}</span>${arrow}</div>`;
-      if(hasDet)html+=`<div class="manual-item-detail" style="display:none;font-size:12px;color:var(--dim);margin-top:5px;line-height:1.5;">${detHtml}</div>`;
-      html+=`</div></div></div>`;
+      html+=`<div style="flex:1 1 auto;${nameCursor}" ${hasDet?'onclick="togManualItem(this)"':''}><div style="${nameStyle}display:flex;align-items:center;gap:6px;justify-content:space-between;"><span>${it.name}${genderLabel}${customLabel}${editedLabel}${checkMark}</span>${arrow}</div>`;
+      if(hasDet)html+=`<div class="manual-item-detail" style="font-size:12px;color:var(--dim);margin-top:5px;line-height:1.5;">${detHtml}</div>`;
+      html+=`</div>`;
+      html+=`<div style="flex:0 0 auto;display:flex;gap:4px;">${setup}</div>`;
+      html+=`</div></div>`;
     });
     html+=`</div>`;
   });
