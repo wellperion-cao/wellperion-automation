@@ -7443,6 +7443,8 @@ function crTab(btn, panelId) {
                 isToday: true, startDate: sd, endDate: ed, ssotAuto: true, owner: owner,
                 createdAt: String(row['생성일'] || ''),
                 _doneDate: (st === '완료') ? _doneLocal : '',
+                // 보류 오늘/지난 분리용: 갱신일(수정일=보류전환 시 스탬프) 우선 → 없으면 생성일 폴백 (GM 2026-06-12)
+                _holdDate: (st === '보류') ? (String(row['수정일'] || '').trim().slice(0,10) || String(row['생성일'] || '').trim().slice(0,10)) : '',
                 _history: false,
                 _sheetsId: String(row['id'] || '')
               });
@@ -7480,6 +7482,7 @@ function crTab(btn, panelId) {
             queueSource: true,   // _queue 기원 마킹 (편집 차단용)
             owner: clvLabel,
             _doneDate: _qDone ? String(q.processed_at || '').slice(0,10) : '',  // AI배 완료일(processed_at)
+            _holdDate: '',  // AI배는 보류 상태 없음(statusMap에 보류 미포함) — 폴백만 유지 (GM 2026-06-12)
             createdAt: String(q.enqueued_at || q.assigned_at || ''),  // AI배 생성일 — 최신순 정렬 키 (GM 2026-06-12)
             _history: (q.status === '폐기'),   // 완료(DONE)=입항 표시(오늘/지난 분리) / 폐기=이력(검색전용) (GM 2026-06-07)
             _sheetsId: ''
@@ -7771,6 +7774,9 @@ function crTab(btn, panelId) {
       var done     = doneAll.filter(function(t){ return (t._doneDate || '') === _tdStr; });   // 오늘 입항
       var donePast = doneAll.filter(function(t){ return (t._doneDate || '') !== _tdStr; });   // 지난 입항
       var hold   = merged.filter(function(t){ return t.status === '보류'; });
+      // 보류 오늘/지난 분리: _holdD(갱신일/생성일 폴백)===오늘 → 오늘 보류 / 아니면 지난 보류 (완료의 _doneDate 패턴 동일) (GM 2026-06-12)
+      var holdToday = hold.filter(function(t){ return (t._holdDate || '') === _tdStr; });
+      var holdPast  = hold.filter(function(t){ return (t._holdDate || '') !== _tdStr; });
       var disposed = gm1Searching ? merged.filter(function(t){ return t.status === '폐기'; }) : [];  // 폐기=검색 시에만
       // 결재 배는 항로에 개별 표시 안 함 — 카운트+포인터 하나로(결재현황 SSOT에서 처리). GM 2026-06-07
       // 결재 배는 항로 활성카드서 제외 — GM 차례(gm)와 진행중(타 결재자 대기, inflight)을 분리 집계 (GM 2026-06-07)
@@ -7971,42 +7977,45 @@ function crTab(btn, panelId) {
           '</div>' + descHtml + '</div>';
       }
 
-      // ⚓ 입항 완료 (오늘) — 독립 토글 (GM 2026-06-12: 보류와 분리)
+      // ── 보류 라인 렌더 헬퍼 (오늘·지난 입항 토글 내 ⏸️ 보류 구분 섹션 공통) (GM 2026-06-12) ──
+      function _gm1HoldLineHtml(t){
+        var descHtml = t.description ? '<details style="margin-top:4px;font-size:12px;"><summary style="cursor:pointer;color:var(--accent);font-weight:600;font-size:11px;list-style:none;">▼ 내용 보기</summary><div style="padding:6px 8px;background:var(--paper-soft,#f5f3f0);border-radius:6px;margin-top:4px;line-height:1.5;white-space:pre-wrap;color:var(--text);">' + gm1Esc(t.description) + '</div></details>' : '';
+        return '<div style="padding:8px 0;border-bottom:1px dashed var(--border);">' +
+          '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">' +
+          '<span><span style="color:var(--accent);font-weight:700;">⏸</span> <span style="display:inline-block;background:rgba(183,159,138,0.15);color:var(--accent);font-size:10.5px;font-weight:600;padding:2px 7px;border-radius:4px;margin:0 5px;">⏸️ 보류</span><span style="color:var(--text);font-weight:500;">' + gm1Esc(t.title) + '</span>' + (t.ssotAuto ? catChip(t) + SSOT_BADGE : '') + '</span>' +
+          (t.queueSource ? '' : '<button class="todo-act-btn today-act" data-id="' + gm1Esc(t.id) + '" data-action="restore" style="font-size:11px;padding:2px 8px;flex-shrink:0;">되돌리기</button>') +
+          '</div>' + descHtml +
+          '</div>';
+      }
+      // ⏸️ 보류 구분 섹션 헤더 (보류건 1건+ 일 때만 — 빈 헤더 금지) (GM 2026-06-12)
+      function _gm1HoldSectionHtml(holdList){
+        if (!holdList.length) return '';
+        var s = '<div style="margin-top:10px;padding-top:8px;border-top:1px solid var(--border);">';
+        s += '<div style="font-size:11.5px;font-weight:700;color:var(--accent);margin-bottom:4px;"><span style="margin-right:4px;">⏸️</span>보류 ' + holdList.length + '건</div>';
+        holdList.forEach(function(t){ s += _gm1HoldLineHtml(t); });
+        s += '</div>';
+        return s;
+      }
+
+      // ⚓ 입항 완료 (오늘) — 오늘 완료건 + ⏸️ 보류(오늘) 구분 섹션 (GM 2026-06-12: 보류 독립토글 폐기, 날짜별 합류)
       html += '<details class="toggle" style="margin-top:16px;">';
       html += '<summary><span style="color:var(--green);"><span style="margin-right:4px;">⚓</span>입항 완료 (오늘) ' + done.length + '건</span></summary>';
       html += '<div class="toggle-body" style="font-size:13px;">';
       if (done.length) {
         done.forEach(function(t){ html += _gm1DoneLineHtml(t, false); });
-      } else {
+      } else if (!holdToday.length) {
         html += '<div style="color:var(--dim);padding:6px 0;">오늘 입항 항목 없음</div>';
       }
+      html += _gm1HoldSectionHtml(holdToday);
       html += '</div></details>';
 
-      // ⏸️ 보류 — 독립 토글 (GM 2026-06-12: 입항 완료와 분리)
-      html += '<details class="toggle" style="margin-top:10px;">';
-      html += '<summary><span style="color:var(--accent);"><span style="margin-right:4px;">⏸️</span>보류 ' + hold.length + '건</span></summary>';
-      html += '<div class="toggle-body" style="font-size:13px;">';
-      if (hold.length) {
-        hold.forEach(function(t){
-          var descHtml = t.description ? '<details style="margin-top:4px;font-size:12px;"><summary style="cursor:pointer;color:var(--accent);font-weight:600;font-size:11px;list-style:none;">▼ 내용 보기</summary><div style="padding:6px 8px;background:var(--paper-soft,#f5f3f0);border-radius:6px;margin-top:4px;line-height:1.5;white-space:pre-wrap;color:var(--text);">' + gm1Esc(t.description) + '</div></details>' : '';
-          html += '<div style="padding:8px 0;border-bottom:1px dashed var(--border);">' +
-            '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">' +
-            '<span><span style="color:var(--accent);font-weight:700;">⏸</span> <span style="display:inline-block;background:rgba(183,159,138,0.15);color:var(--accent);font-size:10.5px;font-weight:600;padding:2px 7px;border-radius:4px;margin:0 5px;">⏸️ 보류</span><span style="color:var(--text);font-weight:500;">' + gm1Esc(t.title) + '</span>' + (t.ssotAuto ? catChip(t) + SSOT_BADGE : '') + '</span>' +
-            (t.queueSource ? '' : '<button class="todo-act-btn today-act" data-id="' + gm1Esc(t.id) + '" data-action="restore" style="font-size:11px;padding:2px 8px;flex-shrink:0;">되돌리기</button>') +
-            '</div>' + descHtml +
-            '</div>';
-        });
-      } else {
-        html += '<div style="color:var(--dim);padding:6px 0;">보류 항목 없음</div>';
-      }
-      html += '</div></details>';
-
-      // 🗄️ 지난 입항 완료 (오늘 이전 완료 — 지난기록, 접힘) (GM 2026-06-07)
-      if (donePast.length) {
+      // 🗄️ 지난 입항 완료 (오늘 이전 완료) — 지난 완료건 + ⏸️ 보류(지난) 구분 섹션 (접힘) (GM 2026-06-07 · 06-12 보류합류)
+      if (donePast.length || holdPast.length) {
         html += '<details class="toggle" style="margin-top:10px;">';
         html += '<summary><span style="color:var(--dim);"><span style="margin-right:4px;">🗄️</span>지난 입항 완료 ' + donePast.length + '건</span></summary>';
         html += '<div class="toggle-body" style="font-size:13px;">';
         donePast.forEach(function(t){ html += _gm1DoneLineHtml(t, true); });
+        html += _gm1HoldSectionHtml(holdPast);
         html += '</div></details>';
       }
 
