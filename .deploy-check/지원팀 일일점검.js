@@ -257,6 +257,7 @@ function doGet(e) {
   if (action === 'ensure_headers') { return ensureAllHeaders(e.parameter.dept || 'support'); }
   if (action === 'vendor_list') { return vendorList(); }
   if (action === 'clear_check_ledger') { return clearCheckLedger(e.parameter.dept || 'support'); }
+  if (action === 'clear_zone_checks') { return clearZoneCheckedRows(e.parameter.dept || 'support', e.parameter.date || ''); }
 
   var date = e.parameter.date;
   if (!date) return jsonRes({ error: 'date required' });
@@ -365,6 +366,23 @@ var CHK_PROP_PREFIX = 'chk_';
 function _chkGender(g) { g = String(g || '').trim(); return (g === 'm' || g === 'f') ? g : 'all'; }
 function _chkKey(dept, date, gender) {
   return CHK_PROP_PREFIX + (String(dept || 'support').trim() || 'support') + '_' + _chkGender(gender) + '_' + date;
+}
+// 구역 시트의 '완료' 행 제거(GM 2026-06-12) — 정상완료는 시트에 남으면 안 되는데(원장이 복원원천) 옛 행이 남아
+// 가짜 완료로 복원되던 문제 정리. date 주면 그 날짜만, 없으면 전체. GET ?action=clear_zone_checks&dept=support[&date=YYYY-MM-DD]
+function clearZoneCheckedRows(dept, date) {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var t = _deptTabs(dept);
+  var removed = 0;
+  [t.male, t.female, t.common].forEach(function (name) {
+    var sh = ss.getSheetByName(name); if (!sh) return;
+    var data = sh.getDataRange().getValues();
+    for (var i = data.length - 1; i >= 1; i--) {
+      var isDone = String(data[i][5] || '') === '완료';
+      var dateOk = !date || String(data[i][0]) === date || formatDate(data[i][0]) === date;
+      if (isDone && dateOk) { sh.deleteRow(i + 1); removed++; }
+    }
+  });
+  return jsonRes({ ok: true, dept: dept, date: date || '(전체)', removed: removed });
 }
 // 완료원장 일괄 비우기(GM 2026-06-12) — 오염된 체크 원장(전 날짜·성별) 제거. GET ?action=clear_check_ledger&dept=support
 function clearCheckLedger(dept) {
