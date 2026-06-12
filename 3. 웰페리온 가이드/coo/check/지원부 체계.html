@@ -1088,7 +1088,8 @@ function itemFromSheet(row){
     name: row.name || '',
     detail: row.detail || '',
     order: row.order,
-    rounds: parseRoundsStr(row.rounds)   // 2b-1: 회차 다중선택(빈 배열=폴백)
+    rounds: parseRoundsStr(row.rounds),   // 2b-1: 회차 다중선택(빈 배열=폴백)
+    sched: row.sched || ''   // 일정(요일·몇째주) "mon,wed,fri|2"
   };
 }
 
@@ -1104,7 +1105,8 @@ function itemToSheet(it, idx){
     order: (it.order !== undefined && it.order !== '') ? it.order : (idx + 1),
     type: it.type || 'check',
     fields: it.fields || '',
-    rounds: roundsToStr(it.rounds)   // 2b-1: 회차 → "am1,pm1" (없으면 빈문자)
+    rounds: roundsToStr(it.rounds),   // 2b-1: 회차 → "am1,pm1" (없으면 빈문자)
+    sched: it.sched || ''   // 일정(요일·몇째주) → "mon,wed,fri|2"
   };
 }
 
@@ -2202,6 +2204,7 @@ function getItemOverrides(){
     if(it.category!==undefined && it.category!=='') o.cat=it.category;
     if(it.gender!==undefined && it.gender!=='') o.gender=it.gender;
     if(Array.isArray(it.rounds) && it.rounds.length) o.rounds=it.rounds;
+    if(it.sched!==undefined && it.sched!=='') o.sched=it.sched;
     map[it.id]=o;
   });
   return map;
@@ -2245,8 +2248,22 @@ window.editItem=function(id){
   try{ _curR=itemRounds({id:id, rounds:(_ci&&_ci.rounds)||ov.rounds, slot:ov.slot||base.slot, shift:ov.shift||base.shift})||[]; }catch(e){ _curR=[]; }
   const _rc=document.getElementById('editRounds');
   if(_rc)_rc.innerHTML=(typeof ROUND_KEYS!=='undefined'?ROUND_KEYS:[]).map(function(rk){return '<label style="display:flex;align-items:center;gap:4px;font-size:13px;cursor:pointer;background:var(--bg);border:1px solid var(--border);border-radius:7px;padding:6px 10px;"><input type="checkbox" class="editRoundCb" value="'+rk+'"'+(_curR.indexOf(rk)>=0?' checked':'')+'> '+roundLabel(rk)+'</label>';}).join('');
+  // 일정(요일·몇째주) 체크박스 렌더 — item.sched("mon,wed,fri|2") 우선, 없으면 빈값
+  renderSchedPickers((_ci&&_ci.sched)||ov.sched||'');
   document.getElementById('itemEditModal').style.display='flex';
 };
+/* 일정 구조저장 형식: "days|weeks" — days=요일csv(mon..sun), weeks=몇째주csv(1..5) 또는 'b'(격주). 빈=매일/매주. */
+const SCHED_DAYS=[['mon','월'],['tue','화'],['wed','수'],['thu','목'],['fri','금'],['sat','토'],['sun','일']];
+const SCHED_WEEKS=[['1','첫째'],['2','둘째'],['3','셋째'],['4','넷째'],['5','다섯째'],['b','격주']];
+function parseSched(s){ s=String(s||''); const p=s.split('|'); return { days:(p[0]||'').split(',').filter(Boolean), weeks:(p[1]||'').split(',').filter(Boolean) }; }
+function buildSched(days,weeks){ days=days||[];weeks=weeks||[]; if(!days.length&&!weeks.length)return ''; return days.join(',')+'|'+weeks.join(','); }
+function renderSchedPickers(sched){
+  const cur=parseSched(sched);
+  const dEl=document.getElementById('editDays');
+  if(dEl)dEl.innerHTML=SCHED_DAYS.map(function(d){return '<label style="display:flex;align-items:center;gap:4px;font-size:13px;cursor:pointer;background:var(--paper);border:1px solid var(--border);border-radius:7px;padding:5px 9px;"><input type="checkbox" class="editDayCb" value="'+d[0]+'"'+(cur.days.indexOf(d[0])>=0?' checked':'')+'> '+d[1]+'</label>';}).join('');
+  const wEl=document.getElementById('editWeeks');
+  if(wEl)wEl.innerHTML=SCHED_WEEKS.map(function(w){return '<label style="display:flex;align-items:center;gap:4px;font-size:13px;cursor:pointer;background:var(--paper);border:1px solid var(--border);border-radius:7px;padding:5px 9px;"><input type="checkbox" class="editWeekCb" value="'+w[0]+'"'+(cur.weeks.indexOf(w[0])>=0?' checked':'')+'> '+w[1]+(w[0]==='b'?'':'주')+'</label>';}).join('');
+}
 window.saveItemEdit=function(){
   const id=_editingItemId;
   if(!id)return;
@@ -2259,6 +2276,9 @@ window.saveItemEdit=function(){
   const _ge=document.getElementById('editGender');
   const newGender=_ge?(_ge.value||'all'):'all';
   const newRounds=[].slice.call(document.querySelectorAll('#editRounds .editRoundCb')).filter(function(c){return c.checked;}).map(function(c){return c.value;});
+  const newDays=[].slice.call(document.querySelectorAll('#editDays .editDayCb')).filter(function(c){return c.checked;}).map(function(c){return c.value;});
+  const newWeeks=[].slice.call(document.querySelectorAll('#editWeeks .editWeekCb')).filter(function(c){return c.checked;}).map(function(c){return c.value;});
+  const newSched=buildSched(newDays,newWeeks);
   const list=(CUSTOM_ITEMS||[]).slice();
   let item=list.find(it=>it.id===id);
   if(item){
@@ -2270,6 +2290,7 @@ window.saveItemEdit=function(){
     if(newCat)item.category=newCat;
     item.gender=newGender;
     if(newRounds.length)item.rounds=newRounds;
+    item.sched=newSched;   /* 일정(요일·몇째주) — 빈문자면 매일/상시로 복귀 */
   }else{
     /* 기본 항목(시트에 없음) → 같은 id로 shadow 항목 생성(baseline 복사 후 편집값 반영) */
     item={
@@ -2282,7 +2303,8 @@ window.saveItemEdit=function(){
       name:newName||base.name,
       detail:newDetail!==undefined?newDetail:base.detail,
       order:undefined,
-      rounds:newRounds.length?newRounds:undefined
+      rounds:newRounds.length?newRounds:undefined,
+      sched:newSched   /* 일정(요일·몇째주) */
     };
     list.push(item);
   }
@@ -2400,6 +2422,16 @@ window.moveManualGroup=function(title,dir){
 function scheduleBadges(it, name, detail){
   const M={mon:'월',tue:'화',wed:'수',thu:'목',fri:'금',sat:'토',sun:'일'};
   const order=['월','화','수','목','금','토','일']; const dset={};
+  // 구조저장(it.sched "mon,wed,fri|2") 우선 — 매뉴얼 편집 체크박스로 설정된 정식 일정.
+  const _sc=(it&&it.sched)?String(it.sched):'';
+  if(_sc){
+    const _p=_sc.split('|'); const _d=(_p[0]||'').split(',').filter(Boolean); const _w=(_p[1]||'').split(',').filter(Boolean);
+    let h2='';
+    _d.forEach(function(dk){ if(M[dk])h2+=' <span style="font-size:10px;color:#7b5ea7;background:rgba(123,94,167,0.16);padding:1px 6px;border-radius:6px;font-weight:700;">'+M[dk]+'</span>'; });
+    const WL={'1':'첫째주','2':'둘째주','3':'셋째주','4':'넷째주','5':'다섯째주','b':'격주'};
+    _w.forEach(function(wk){ if(WL[wk])h2+=' <span style="font-size:10px;color:#1f8a70;background:rgba(31,138,112,0.14);padding:1px 6px;border-radius:6px;font-weight:700;">'+WL[wk]+'</span>'; });
+    return h2;
+  }
   const idm=String((it&&it.id)||'').match(/^df_(mon|tue|wed|thu|fri|sat|sun)/);
   if(idm)dset[M[idm[1]]]=1;
   const txt=String(name||'')+' '+String(detail||'');
@@ -2709,7 +2741,8 @@ function renderManualItems(){
           name:ov.name||it.name,
           detail:ov.detail||it.detail,
           gender:ov.gender||it.gender,
-          _edited:!!(ov.name||ov.detail||ov.gender||ov.rounds)
+          sched:ov.sched||'',
+          _edited:!!(ov.name||ov.detail||ov.gender||ov.rounds||ov.sched)
         });
       });
     });
@@ -2718,7 +2751,7 @@ function renderManualItems(){
   if(typeof CUSTOM_ITEMS!=='undefined'){
     CUSTOM_ITEMS.forEach(ci=>{
       if(hidden.has(ci.id))return;   // 숨긴 항목 제외
-      pushItem(ci.category||'추가 점검',{id:ci.id,name:ci.name,detail:ci.detail,gender:ci.gender,_custom:true});
+      pushItem(ci.category||'추가 점검',{id:ci.id,name:ci.name,detail:ci.detail,gender:ci.gender,sched:ci.sched||'',_custom:true});
     });
   }
   /* 빈 구역(사용자 추가) 합류 + 숨긴 구역 분리 + 순서 적용 */
@@ -4510,6 +4543,13 @@ renderManualItems();
     <div style="margin-bottom:12px;">
       <label style="display:block;font-size:13px;font-weight:600;color:var(--dim);margin-bottom:6px;">회차(조) — 점검에 등장할 조 (다중 선택)</label>
       <div id="editRounds" style="display:flex;flex-wrap:wrap;gap:8px;"></div>
+    </div>
+    <!-- 일정(요일·몇째주) 체크 — 텍스트파싱이 아니라 직접 선택. 비우면 '매일/상시'. GM 2026-06-12 -->
+    <div style="margin-bottom:12px;padding:10px 12px;background:var(--bg);border:1px solid var(--border);border-radius:8px;">
+      <label style="display:block;font-size:13px;font-weight:600;color:var(--dim);margin-bottom:6px;">요일 <span style="font-weight:400;font-size:11px;">— 특정 요일만 하면 체크 (안 하면 매일/상시)</span></label>
+      <div id="editDays" style="display:flex;flex-wrap:wrap;gap:6px;"></div>
+      <label style="display:block;font-size:13px;font-weight:600;color:var(--dim);margin:10px 0 6px;">몇째주 <span style="font-weight:400;font-size:11px;">— "매월 둘째주 화요일"처럼 (안 하면 매주)</span></label>
+      <div id="editWeeks" style="display:flex;flex-wrap:wrap;gap:6px;"></div>
     </div>
     <!-- 시간대 라벨(editSlot)·근무조(editShift) = 회차(조)로 대체된 잔재 → 숨김(내부 호환용 hidden) GM 2026-06-12 -->
     <input type="hidden" id="editShift" value="pm">

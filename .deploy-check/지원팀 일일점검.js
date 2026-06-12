@@ -16,9 +16,10 @@ const SHEET_ITEMS  = '지원_매뉴얼';   // GM 편집 점검 항목 마스터(
 // 빈값 → 'support'(레거시 기존 항목=원본 지원부) 안전 폴백.
 // 2b-1(2026-06-11 시우): '회차'(rounds) 11열 추가 — 이슈→항목 승격 시 선택한 5조(am1,pm1…)를
 // 보존. dept(인덱스9) 뒤에 붙여 기존 인덱스 불변. 빈값 → 프론트 itemRounds가 roundOfSlot 폴백(하위호환).
-const ITEM_HEADERS = ['항목ID','카테고리','항목명','상세','성별','시간대','정렬','타입','필드정의','부서','회차'];
+const ITEM_HEADERS = ['항목ID','카테고리','항목명','상세','성별','시간대','정렬','타입','필드정의','부서','회차','일정'];
 const ITEM_DEPT_COL = 9;    // '부서' 0-based 인덱스(10번째 열)
 const ITEM_ROUNDS_COL = 10; // '회차' 0-based 인덱스(11번째 열) — 구 10열 시트는 undefined → 빈값 폴백
+const ITEM_SCHED_COL = 11;  // '일정' 0-based 인덱스(12번째 열) — 요일·몇째주 구조저장 "mon,wed,fri|2" 형식. 구시트 undefined → 빈값
 function _itemDept(v){ var d = String(v == null ? '' : v).trim(); return d || 'support'; }
 
 const BOT_TOKEN = PropertiesService.getScriptProperties().getProperty('TELEGRAM_BOT_TOKEN');
@@ -928,16 +929,23 @@ function getStaff() {
 function initItemSheet() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var sheet = ss.getSheetByName(SHEET_ITEMS);
-  if (sheet) return sheet;
+  if (sheet) { _ensureItemCols(sheet); return sheet; }
   sheet = ss.insertSheet(SHEET_ITEMS);
   sheet.appendRow(ITEM_HEADERS);
   sheet.getRange(1, 1, 1, ITEM_HEADERS.length)
     .setBackground('#2a2725').setFontColor('#B79F8A')
     .setFontWeight('bold').setHorizontalAlignment('center');
   sheet.setFrozenRows(1);
-  var widths = [180, 180, 240, 360, 80, 180, 70, 90, 200, 90, 120];  // 타입·필드정의·부서·회차 추가
+  var widths = [180, 180, 240, 360, 80, 180, 70, 90, 200, 90, 120, 140];  // 타입·필드정의·부서·회차·일정 추가
   for (var i = 0; i < widths.length; i++) sheet.setColumnWidth(i + 1, widths[i]);
   return sheet;
+}
+// 구버전 시트(11열 이하)에 '일정'(12열) 등 누락 열 보장 — saveItems 전체폭 read/write 전에 호출(범위오류 방지).
+function _ensureItemCols(sheet) {
+  var need = ITEM_HEADERS.length;
+  var have = sheet.getMaxColumns();
+  if (have < need) sheet.insertColumnsAfter(have, need - have);
+  sheet.getRange(1, 1, 1, need).setValues([ITEM_HEADERS]);   // 헤더 정합(신규 열 라벨 기록)
 }
 
 // ─── 항목 조회 (GET ?action=items[&dept=...]) ───
@@ -967,7 +975,9 @@ function getItems(params) {
       fields: String(data[i][8] || ''),
       dept:   _itemDept(data[i][ITEM_DEPT_COL]),
       // 2b-1: 회차(rounds) — 구 10열 시트는 인덱스11 undefined → '' (프론트 폴백). 신규는 "am1,pm1" 형태.
-      rounds: String(data[i][ITEM_ROUNDS_COL] == null ? '' : data[i][ITEM_ROUNDS_COL])
+      rounds: String(data[i][ITEM_ROUNDS_COL] == null ? '' : data[i][ITEM_ROUNDS_COL]),
+      // 일정(요일·몇째주) 구조저장 "mon,wed,fri|2" — 구시트 undefined → '' (프론트 텍스트파싱 폴백)
+      sched: String(data[i][ITEM_SCHED_COL] == null ? '' : data[i][ITEM_SCHED_COL])
     });
   }
   return jsonRes({ items: items });
@@ -1008,7 +1018,8 @@ function saveItems(body) {
       String(it.type || '').trim() || 'check',
       String(it.fields || ''),
       reqDept,   // S4 갭②: 부서
-      String(it.rounds || '')   // 2b-1: 회차(예 "am1,pm1") — 빈값이면 프론트 roundOfSlot 폴백
+      String(it.rounds || ''),   // 2b-1: 회차(예 "am1,pm1") — 빈값이면 프론트 roundOfSlot 폴백
+      String(it.sched || '')     // 일정(요일·몇째주) "mon,wed,fri|2" — 매뉴얼 편집 체크박스에서 설정
     ];
   });
 
