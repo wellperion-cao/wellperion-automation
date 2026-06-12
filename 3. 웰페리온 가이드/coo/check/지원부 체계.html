@@ -2540,6 +2540,9 @@ function togX(id){const e=document.getElementById(id);e.classList.toggle('show')
 function tog(h){h.nextElementSibling.classList.toggle('open')}
 /* v2.50 — 매뉴얼 탭 현재 점검 항목 자동 동기화 */
 /* v2.52 — 점검 탭 override(시트 편집분) 매뉴얼 뷰에도 반영 (방안 A) */
+/* 편집 모드(GM 2026-06-12): 평소엔 깔끔한 참조 뷰, 켜면 추가·편집·삭제·▲▼ 순서변경 노출. */
+let _manualEdit=false;
+window.toggleManualEdit=function(){ _manualEdit=!_manualEdit; renderManualItems(); };
 function renderManualItems(){
   const el=document.getElementById('manual-items-sync');
   if(!el)return;
@@ -2591,16 +2594,18 @@ function renderManualItems(){
   /* 셋업 버튼 공통 스타일(인라인) */
   const _btn='font-size:11px;font-weight:700;border-radius:6px;padding:3px 8px;cursor:pointer;font-family:inherit;border:1px solid;white-space:nowrap;';
   const _customCount=(typeof CUSTOM_ITEMS!=='undefined'?CUSTOM_ITEMS:[]).filter(it=>String(it.id).indexOf('custom_')===0).length;
+  const EM=_manualEdit;   // 편집 모드 여부
   let html='';
-  /* 셋업 안내 + 추가항목 일괄정리(GM 2026-06-12): 매뉴얼=항목 단일출처(시트 동기화). 점검은 읽기전용. */
+  /* 셋업 안내 + 편집모드 토글 + 추가항목 일괄정리(GM 2026-06-12): 매뉴얼=항목 단일출처(시트 동기화). 점검은 읽기전용. */
+  const _emBtn=`<button onclick="toggleManualEdit()" style="${_btn}${EM?'color:#fff;background:var(--accent);border-color:var(--accent);':'color:var(--accent);background:var(--bg);border-color:var(--accent);'}">${EM?'✓ 편집 모드 (끄기)':'✎ 편집 모드'}</button>`;
   html+=`<div style="background:var(--accent-bg);border:1px solid var(--accent);border-radius:10px;padding:10px 14px;margin-bottom:12px;font-size:12px;color:var(--text);line-height:1.6;">
-    <b style="color:var(--accent);">매뉴얼 = 항목 단일출처(셋업)</b> · 여기서 <b>편집·추가·삭제</b>하면 점검항목 시트에 저장되고 점검 화면에 그대로 반영됩니다. 점검 화면은 체크+이슈/노하우만.
-    ${_customCount?`<div style="margin-top:8px;"><button onclick="manualPurgeCustom()" style="${_btn}color:#c0392b;background:rgba(192,57,67,0.1);border-color:rgba(192,57,67,0.4);">추가항목(custom_) ${_customCount}건 전체 정리</button> <span style="color:var(--dim);">점검 화면에서 즉석 추가돼 쌓인 항목을 한 번에 비웁니다.</span></div>`:''}
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;"><span><b style="color:var(--accent);">매뉴얼 = 항목 단일출처</b> · 편집 모드를 켜면 <b>추가·편집·삭제·순서변경(▲▼)</b>이 나타납니다. 점검 화면은 체크+이슈/노하우만.</span>${_emBtn}</div>
+    ${(EM&&_customCount)?`<div style="margin-top:8px;"><button onclick="manualPurgeCustom()" style="${_btn}color:#c0392b;background:rgba(192,57,67,0.1);border-color:rgba(192,57,67,0.4);">추가항목(custom_) ${_customCount}건 전체 정리</button> <span style="color:var(--dim);">점검 화면에서 즉석 추가돼 쌓인 항목을 한 번에 비웁니다.</span></div>`:''}
   </div>`;
   catOrder.forEach(cat=>{
     const items=catMap[cat];
     html+=`<div style="background:var(--paper);border:1px solid var(--border);border-radius:10px;margin-bottom:10px;overflow:hidden;">`;
-    html+=`<div style="padding:10px 16px;font-size:13px;font-weight:700;color:var(--accent);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:8px;"><span>${cat}</span><button onclick="manualAddItem('${escapeAttr(cat)}')" style="${_btn}color:var(--accent);background:var(--bg);border-color:var(--accent);">＋ 항목 추가</button></div>`;
+    html+=`<div style="padding:10px 16px;font-size:13px;font-weight:700;color:var(--accent);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:8px;"><span>${cat}</span>${EM?`<button onclick="manualAddItem('${escapeAttr(cat)}')" style="${_btn}color:var(--accent);background:var(--bg);border-color:var(--accent);">＋ 항목 추가</button>`:''}</div>`;
     items.forEach((it,idx)=>{
       const detHtml=it.detail?it.detail.replace(/\n/g,'<br>'):'';
       const hasDet=!!detHtml;
@@ -2615,23 +2620,25 @@ function renderManualItems(){
       let setup=`<button onclick="event.stopPropagation();editItem('${it.id}')" style="${_btn}color:#5b9fd5;background:rgba(91,159,213,0.12);border-color:rgba(91,159,213,0.35);">편집</button>`;
       setup+=`<button onclick="event.stopPropagation();manualDeleteItem('${it.id}')" style="${_btn}color:#c0392b;background:rgba(192,57,67,0.1);border-color:rgba(192,57,67,0.4);">삭제</button>`;
       if(!it._custom&&it._edited)setup+=`<button onclick="event.stopPropagation();resetItem('${it.id}')" style="${_btn}color:#8c8b83;background:rgba(140,139,131,0.12);border-color:rgba(140,139,131,0.3);">초기화</button>`;
-      /* 그룹 내 순서 이동(위/아래) — 경계에서 비활성 */
+      /* 그룹 내 순서 이동(위/아래) — 편집 모드에서만, 경계에서 비활성 */
       const _mvBtn='font-size:12px;font-weight:700;border-radius:6px;padding:2px 7px;cursor:pointer;font-family:inherit;border:1px solid var(--border);background:var(--bg);color:var(--text);line-height:1.2;';
       const _up=idx>0?`<button onclick="event.stopPropagation();moveManualItem('${it.id}',-1)" style="${_mvBtn}" title="위로">▲</button>`:`<button disabled style="${_mvBtn}opacity:.25;cursor:default;">▲</button>`;
       const _dn=idx<items.length-1?`<button onclick="event.stopPropagation();moveManualItem('${it.id}',1)" style="${_mvBtn}" title="아래로">▼</button>`:`<button disabled style="${_mvBtn}opacity:.25;cursor:default;">▼</button>`;
+      const moveCol=EM?`<div style="flex:0 0 auto;display:flex;flex-direction:column;gap:2px;margin-top:1px;">${_up}${_dn}</div>`:'';
+      const setupCol=EM?`<div style="flex:0 0 auto;display:flex;gap:4px;">${setup}</div>`:'';
       html+=`<div style="padding:10px 16px;border-bottom:1px solid rgba(61,56,53,0.35);">`;
       html+=`<div style="display:flex;align-items:flex-start;gap:10px;">`;
-      html+=`<div style="flex:0 0 auto;display:flex;flex-direction:column;gap:2px;margin-top:1px;">${_up}${_dn}</div>`;
+      html+=moveCol;
       html+=`<div style="flex:1 1 auto;${nameCursor}" ${hasDet?'onclick="togManualItem(this)"':''}><div style="${nameStyle}display:flex;align-items:center;gap:6px;justify-content:space-between;"><span>${it.name}${genderLabel}${customLabel}${editedLabel}</span>${arrow}</div>`;
       if(hasDet)html+=`<div class="manual-item-detail" style="font-size:12px;color:var(--dim);margin-top:5px;line-height:1.5;">${detHtml}</div>`;
       html+=`</div>`;
-      html+=`<div style="flex:0 0 auto;display:flex;gap:4px;">${setup}</div>`;
+      html+=setupCol;
       html+=`</div></div>`;
     });
     html+=`</div>`;
   });
-  /* 숨긴 기본 항목 — 복구 가능 */
-  if(hiddenItems.length){
+  /* 숨긴 기본 항목 — 복구 가능(편집 모드에서만) */
+  if(EM&&hiddenItems.length){
     html+=`<div style="background:var(--paper);border:1px dashed var(--border);border-radius:10px;margin-top:6px;overflow:hidden;opacity:.85;">`;
     html+=`<div style="padding:10px 16px;font-size:13px;font-weight:700;color:var(--dim);border-bottom:1px solid var(--border);">숨긴 항목 (${hiddenItems.length}) — 점검에서 제외됨</div>`;
     hiddenItems.forEach(hi=>{
