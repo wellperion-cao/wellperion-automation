@@ -31,6 +31,10 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 #tab-guide{max-width:none;margin-left:0;margin-right:0}
 .date-bar{display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap}
 .date-bar input{background:var(--paper);border:1px solid var(--border);color:var(--text);padding:8px 14px;border-radius:8px;font-size:15px;font-family:inherit}
+/* 날짜 우측 담당자(명단 선택·기억) — GM 2026-06-12 */
+.duty-wrap{margin-left:auto;display:flex;align-items:center;gap:6px}
+.duty-label{font-size:13px;font-weight:700;color:var(--accent);white-space:nowrap}
+.duty-select{background:var(--paper);border:1px solid var(--border);color:var(--text);padding:8px 12px;border-radius:8px;font-size:14px;font-family:inherit;font-weight:600;max-width:46vw}
 .btn{padding:8px 14px;background:var(--accent-bg);color:var(--accent);border:1px solid var(--accent);border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit}
 .submitter-bar{background:var(--paper);border:1px solid var(--border);border-radius:10px;padding:12px 16px;margin-bottom:12px;display:flex;align-items:center;gap:12px}
 .submitter-bar label{font-size:13px;font-weight:700;color:var(--accent);white-space:nowrap}
@@ -721,6 +725,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
     <button class="btn" onclick="moveDateG('m',-1)">&lt;</button>
     <button class="btn" onclick="setTodayG('m')">오늘</button>
     <button class="btn" onclick="moveDateG('m',1)">&gt;</button>
+    <span class="duty-wrap"><span class="duty-label">담당자</span><select id="dutyM" class="duty-select" onchange="onDutyChangeG('m')" aria-label="담당자"></select></span>
   </div>
   <div class="submitter-bar submitter-bar-split">
     <div class="sb-half">
@@ -761,6 +766,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
     <button class="btn" onclick="moveDateG('f',-1)">&lt;</button>
     <button class="btn" onclick="setTodayG('f')">오늘</button>
     <button class="btn" onclick="moveDateG('f',1)">&gt;</button>
+    <span class="duty-wrap"><span class="duty-label">담당자</span><select id="dutyF" class="duty-select" onchange="onDutyChangeG('f')" aria-label="담당자"></select></span>
   </div>
   <div class="submitter-bar submitter-bar-split">
     <div class="sb-half">
@@ -848,6 +854,7 @@ async function loadStaffFromSheet(){
   // 기존 8명이 시트에서 다시 들어오지 않도록 STAFF_LIST는 FALLBACK 고정 유지.
   STAFF_LIST=[...FALLBACK_STAFF];
   populateSubmitterDropdowns();
+  populateDutyDropdowns();
 }
 
 /* ── 점검 항목 마스터 (GM 편집 · 시트 영구 저장) ──
@@ -1143,12 +1150,35 @@ function populateSubmitterDropdowns(){
   populateOneDropdown('submitterF','f');
 }
 
+/* 점검자 = 매번 빈칸 자유입력(GM 2026-06-12): 저장값 복원·옵션 채우기 모두 없음.
+   '담당자(아래)'가 기억 역할을 대신한다. */
 function populateOneDropdown(selId,gender){
   const el=document.getElementById(selId);
   if(!el)return;
-  const savedKey='wcheck_submitter_'+gender;
-  const saved=el.value||localStorage.getItem(savedKey)||'';
-  if(saved)el.value=saved;   // 자유입력 input: 저장값 복원만(옵션 채우기 없음)
+  el.value='';   // 자동복원 끔 — 매 진입 시 빈칸
+}
+
+/* 담당자(날짜 우측) = 점검자 명단 드롭다운, 선택값 localStorage 기억. GM 2026-06-12.
+   submit 게이트와 무관(점검자 입력만 제출 활성). */
+function populateDutyDropdowns(){
+  populateOneDuty('dutyM','m');
+  populateOneDuty('dutyF','f');
+}
+function populateOneDuty(selId,gender){
+  const el=document.getElementById(selId);
+  if(!el)return;
+  const saved=localStorage.getItem('wcheck_duty_'+gender)||'';
+  let html='<option value="">담당자 선택</option>';
+  getStaffForGender(gender).forEach(s=>{
+    const nm=s.name;
+    html+='<option value="'+nm+'"'+(nm===saved?' selected':'')+'>'+nm+'</option>';
+  });
+  el.innerHTML=html;
+  if(saved)el.value=saved;
+}
+function onDutyChangeG(g){
+  const el=document.getElementById(g==='f'?'dutyF':'dutyM');
+  if(el)localStorage.setItem('wcheck_duty_'+g,el.value||'');
 }
 
 function getStaffInfo(name){
@@ -1622,9 +1652,9 @@ const ROUND_MAP={
   b6:['am1','pm1','close1'],
   /* C 세탁물 = 전 조 */
   c1a:['am1','pm1','close1'], c1b:['am1','pm1','close1'], c1c:['am1','pm1','close1'],
-  /* D 내부 = 전 조 */
-  d1:['am1','pm1','close1'], d2:['am1','pm1','close1'], d3:['am1','pm1','close1'], d4:['am1','pm1','close1'], d5:['am1','pm1','close1'],
-  d6:['am1','pm1','close1'], d7:['am1','pm1','close1'], d8:['am1','pm1','close1'], d9:['am1','pm1','close1'],
+  /* D 내부 = 오후조·마감조 (오전조 제외, GM 2026-06-12) */
+  d1:['pm1','close1'], d2:['pm1','close1'], d3:['pm1','close1'], d4:['pm1','close1'], d5:['pm1','close1'],
+  d6:['pm1','close1'], d7:['pm1','close1'], d8:['pm1','close1'], d9:['pm1','close1'],
   /* E 외부 = 전 조 */
   e1:['am1','pm1','close1'], e2:['am1','pm1','close1'], e3:['am1','pm1','close1'], e4:['am1','pm1','close1'], e5:['am1','pm1','close1'], e6:['am1','pm1','close1'],
   /* 추가 — 오후조 전용 교대 인수인계(hw*) */
@@ -1675,8 +1705,7 @@ const LK=(d,g)=>`wcheck3_${g||activeGenderTab}_${d}`;
 
 function saveSubmitterG(g,v){localStorage.setItem('wcheck_submitter_'+g,v)}
 function onSubmitterChangeG(g){
-  const selId=g==='f'?'submitterF':'submitterM';
-  saveSubmitterG(g,document.getElementById(selId).value);
+  // 점검자 = 자동저장 안 함(매번 빈칸 자유입력). 입력 즉시 제출버튼만 재평가.
   const d=getDateG(g);
   drawUI(d,g);
 }
@@ -3857,16 +3886,9 @@ document.getElementById('checkDateM').addEventListener('change',()=>renderG('m')
 document.getElementById('checkDateF').addEventListener('change',()=>renderG('f'));
 document.getElementById('adminDate').addEventListener('change',renderAdmin);
 
-// Populate fallback first, then load from sheet
+// 점검자 입력칸 = 빈칸 시작(자동복원 없음). 담당자 드롭다운(명단·기억) 채우기.
 populateSubmitterDropdowns();
-const savedM=localStorage.getItem('wcheck_submitter_m');
-const savedF=localStorage.getItem('wcheck_submitter_f');
-// Migration: pick up old single submitter key
-const savedOld=localStorage.getItem('wcheck_submitter');
-if(savedM)document.getElementById('submitterM').value=savedM;
-else if(savedOld)document.getElementById('submitterM').value=savedOld;
-if(savedF)document.getElementById('submitterF').value=savedF;
-else if(savedOld)document.getElementById('submitterF').value=savedOld;
+populateDutyDropdowns();
 
 loadStaffFromSheet();
 loadItemMasterFromSheet(); // 점검 항목 마스터를 시트에서 로드 (비동기 — 완료 시 화면 갱신)
