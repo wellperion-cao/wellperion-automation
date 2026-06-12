@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>2026년 5월 결과보고 및 운영 보고 프로세스</title>
+<style>
+  :root{
+    --ink:#1a1f2b; --sub:#5b6472; --line:#d8dde6; --soft:#f4f6f9;
+    --brand:#1f4e79; --brand2:#2e6fb0; --ok:#1f8a4c; --warn:#c8860d; --bad:#c0392b;
+  }
+  *{box-sizing:border-box;}
+  body{font-family:"Malgun Gothic","맑은 고딕","Apple SD Gothic Neo",sans-serif;
+    color:var(--ink); margin:0; background:#e9edf2; line-height:1.55; font-size:13px;}
+  .page{background:#fff; width:210mm; min-height:297mm; margin:14px auto; padding:18mm 16mm;
+    box-shadow:0 2px 14px rgba(0,0,0,.12);}
+  h1{font-size:21px; margin:0 0 4px; color:var(--brand); letter-spacing:-.4px;}
+  h2{font-size:15px; margin:24px 0 8px; padding:7px 10px; background:var(--brand);
+    color:#fff; border-radius:4px; letter-spacing:-.3px;}
+  h3{font-size:13.5px; margin:16px 0 6px; color:var(--brand); border-left:4px solid var(--brand2);
+    padding-left:8px;}
+  .meta{color:var(--sub); font-size:12px; margin-bottom:2px;}
+  .docline{height:3px; background:linear-gradient(90deg,var(--brand),var(--brand2)); border-radius:2px; margin:8px 0 4px;}
+  table{width:100%; border-collapse:collapse; margin:8px 0; font-size:12px;}
+  th,td{border:1px solid var(--line); padding:6px 8px; text-align:center;}
+  th{background:var(--brand); color:#fff; font-weight:600;}
+  thead.soft th{background:var(--soft); color:var(--ink);}
+  td.l,th.l{text-align:left;}
+  td.r{text-align:right;}
+  tbody tr:nth-child(even){background:#fafbfc;}
+  tr.total{font-weight:700; background:#eef3f9 !important;}
+  tr.total td{border-top:2px solid var(--brand);}
+  .num{font-variant-numeric:tabular-nums;}
+  .pill{display:inline-block; padding:1px 8px; border-radius:10px; font-size:11px; font-weight:700; color:#fff;}
+  .p-ok{background:var(--ok);} .p-warn{background:var(--warn);} .p-bad{background:var(--bad);}
+  .bar{position:relative; height:14px; background:#eef1f5; border-radius:8px; overflow:hidden; min-width:90px;}
+  .bar > span{position:absolute; left:0; top:0; bottom:0; border-radius:8px;}
+  .cards{display:flex; gap:10px; margin:10px 0;}
+  .card{flex:1; border:1px solid var(--line); border-radius:8px; padding:10px 12px; background:var(--soft);}
+  .card .k{font-size:11px; color:var(--sub);}
+  .card .v{font-size:18px; font-weight:800; color:var(--brand); letter-spacing:-.5px;}
+  .card .d{font-size:11px; margin-top:2px;}
+  .down{color:var(--bad);} .up{color:var(--ok);}
+  ul{margin:6px 0 6px 0; padding-left:18px;} li{margin:3px 0;}
+  .note{background:#fff8e9; border:1px solid #f0dca6; border-radius:6px; padding:10px 12px; font-size:12px;}
+  .flow{display:flex; align-items:stretch; gap:0; margin:12px 0;}
+  .step{flex:1; border:1px solid var(--line); border-radius:8px; padding:10px; text-align:center; background:#fff; position:relative;}
+  .step .t{font-weight:700; color:var(--brand); font-size:12.5px;}
+  .step .when{display:inline-block; margin:5px 0; padding:2px 8px; background:var(--brand2); color:#fff; border-radius:10px; font-size:10.5px;}
+  .step .x{font-size:11px; color:var(--sub);}
+  .arrow{display:flex; align-items:center; color:var(--brand2); font-size:20px; padding:0 4px;}
+  .small{font-size:11px; color:var(--sub);}
+  .sign{margin-top:26px; display:flex; justify-content:flex-end; gap:30px; font-size:12px;}
+  .sign div{text-align:center;}
+  .sign .box{border-bottom:1px solid var(--ink); width:90px; height:42px;}
+  @media print{
+    body{background:#fff;}
+    .page{box-shadow:none; margin:0; width:auto; min-height:auto; padding:14mm 12mm;}
+    .pagebreak{page-break-before:always;}
+    h2{-webkit-print-color-adjust:exact; print-color-adjust:exact;}
+    th,.pill,.bar>span,.step .when,.docline{-webkit-print-color-adjust:exact; print-color-adjust:exact;}
+  }
+  .toolbar{max-width:210mm; margin:14px auto 0; text-align:right;}
+  .btn{background:var(--brand); color:#fff; border:none; padding:8px 16px; border-radius:6px; cursor:pointer; font-size:13px;}
+  @media print{.toolbar{display:none;}}
+</style>
+</head>
+<body>
+
+<div class="toolbar"><button class="btn" onclick="window.print()">🖨 인쇄 / PDF 저장</button></div>
+
+<!-- ============ PAGE 1 : 5월 결과보고서 ============ -->
+<div class="page">
+  <div class="meta">웰페리온 (WELLPERION) · 운영부</div>
+  <h1>2026년 5월 운영 결과보고서</h1>
+  <div class="meta">기준일: 2026. 5. 31 &nbsp;|&nbsp; 보고일: 2026. 6. 2 (화) &nbsp;|&nbsp; 보고: 운영부 실장 → 대표</div>
+  <div class="docline"></div>
+
+  <h2>1. 총괄 요약</h2>
+  <div class="cards">
+    <div class="card">
+      <div class="k">누적 총매출</div>
+      <div class="v">474,968,798</div>
+      <div class="d">목표 591,000,000원</div>
+    </div>
+    <div class="card">
+      <div class="k">목표 달성률</div>
+      <div class="v">80.4%</div>
+      <div class="d down">▼ 목표 미달 (-19.6%p)</div>
+    </div>
+    <div class="card">
+      <div class="k">목표 대비 부족액</div>
+      <div class="v down">-116,031,202</div>
+      <div class="d">추가 회수 필요 금액</div>
+    </div>
+    <div class="card" style="border-color:var(--brand2); background:#eef4fb;">
+      <div class="k">정회원 <span style="color:var(--sub)">(정원 1,000명 멤버십 클럽)</span></div>
+      <div class="v">999명</div>
+      <div class="d small">정원 대비 99.9% · 단기/법인 37 · 대기 11</div>
+    </div>
+  </div>
+  <p style="margin:8px 0 0;">5월 누적 총매출은 <b>474,968,798원</b>으로 목표 591,000,000원 대비 <b>80.4%</b> 달성에 그쳤습니다.
+  핵심 미달 요인은 <b>P.T팀(56.0%)</b>, <b>스쿼시팀(74.8%)</b>, <b>멤버십(84.2%)</b> 세 부문이며,
+  세 부문의 부족액 합계가 전체 부족액의 약 78%를 차지합니다.</p>
+
+  <h2>2. 부문별 실적 vs 목표</h2>
+  <table>
+    <thead>
+      <tr>
+        <th class="l">부문</th><th>누적 매출(원)</th><th>목표 매출(원)</th>
+        <th>달성률</th><th>달성 현황</th><th>부족액(원)</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="l">멤버십 (회원권+옵션)</td><td class="r num">210,399,498</td><td class="r num">250,000,000</td>
+        <td><span class="pill p-warn">84.2%</span></td>
+        <td><div class="bar"><span style="width:84.2%;background:var(--warn)"></span></div></td>
+        <td class="r num down">-39,600,502</td>
+      </tr>
+      <tr>
+        <td class="l">수영팀</td><td class="r num">100,604,500</td><td class="r num">110,000,000</td>
+        <td><span class="pill p-ok">91.5%</span></td>
+        <td><div class="bar"><span style="width:91.5%;background:var(--ok)"></span></div></td>
+        <td class="r num">-9,395,500</td>
+      </tr>
+      <tr>
+        <td class="l">P.T팀</td><td class="r num">55,391,100</td><td class="r num">99,000,000</td>
+        <td><span class="pill p-bad">56.0%</span></td>
+        <td><div class="bar"><span style="width:56%;background:var(--bad)"></span></div></td>
+        <td class="r num down">-43,608,900</td>
+      </tr>
+      <tr>
+        <td class="l">골프팀</td><td class="r num">27,163,000</td><td class="r num">33,000,000</td>
+        <td><span class="pill p-warn">82.3%</span></td>
+        <td><div class="bar"><span style="width:82.3%;background:var(--warn)"></span></div></td>
+        <td class="r num">-5,837,000</td>
+      </tr>
+      <tr>
+        <td class="l">스쿼시팀</td><td class="r num">24,678,600</td><td class="r num">33,000,000</td>
+        <td><span class="pill p-bad">74.8%</span></td>
+        <td><div class="bar"><span style="width:74.8%;background:var(--bad)"></span></div></td>
+        <td class="r num down">-8,321,400</td>
+      </tr>
+      <tr>
+        <td class="l">체조팀</td><td class="r num">27,038,000</td><td class="r num">33,000,000</td>
+        <td><span class="pill p-warn">81.9%</span></td>
+        <td><div class="bar"><span style="width:81.9%;background:var(--warn)"></span></div></td>
+        <td class="r num">-5,962,000</td>
+      </tr>
+      <tr>
+        <td class="l">P.L팀 (필라테스)</td><td class="r num">29,550,100</td><td class="r num">33,000,000</td>
+        <td><span class="pill p-ok">89.5%</span></td>
+        <td><div class="bar"><span style="width:89.5%;background:var(--ok)"></span></div></td>
+        <td class="r num">-3,449,900</td>
+      </tr>
+      <tr>
+        <td class="l">GXE (유료 G.X)</td><td class="r num">144,000</td><td class="r num">—</td>
+        <td><span class="small">참고</span></td>
+        <td><span class="small">신규 운영 항목</span></td>
+        <td class="r num">—</td>
+      </tr>
+      <tr class="total">
+        <td class="l">총 매출 합계</td><td class="r num">474,968,798</td><td class="r num">591,000,000</td>
+        <td><span class="pill p-warn">80.4%</span></td>
+        <td><div class="bar"><span style="width:80.4%;background:var(--brand)"></span></div></td>
+        <td class="r num down">-116,031,202</td>
+      </tr>
+    </tbody>
+  </table>
+  <p class="small">※ 멤버십 현재 매출 210,399,498원 = 회원권 201,913,448 + 옵션 8,486,050. 멤버십 금일 예상매출 3,000,000원 별도.
+  ※ 신규 등록 0명 / 재등록 0명 / 환불·로스 2명 — 신규 유입 부진이 멤버십 미달의 주요 배경.</p>
+
+  <h2>3. 4월 대비 5월 강습부 매출 증감</h2>
+  <table>
+    <thead>
+      <tr><th class="l">강습부</th><th>4월 매출(원)</th><th>5월 매출(원)</th><th>증감액(원)</th><th>증감률</th><th class="l" style="width:14%">추이</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="l">골프팀</td><td class="r num">18,726,000</td><td class="r num">27,163,000</td>
+        <td class="r num up">+8,437,000</td><td><span class="pill p-ok">▲ 45.1%</span></td>
+        <td class="l"><div class="bar"><span style="width:100%;background:var(--ok)"></span></div></td>
+      </tr>
+      <tr>
+        <td class="l">P.L팀 (필라테스)</td><td class="r num">20,978,500</td><td class="r num">29,550,100</td>
+        <td class="r num up">+8,571,600</td><td><span class="pill p-ok">▲ 40.9%</span></td>
+        <td class="l"><div class="bar"><span style="width:91%;background:var(--ok)"></span></div></td>
+      </tr>
+      <tr>
+        <td class="l">스쿼시팀</td><td class="r num">24,290,500</td><td class="r num">24,678,600</td>
+        <td class="r num up">+388,100</td><td><span class="pill p-ok">▲ 1.6%</span></td>
+        <td class="l"><div class="bar"><span style="width:6%;background:var(--ok)"></span></div></td>
+      </tr>
+      <tr>
+        <td class="l">체조팀</td><td class="r num">28,998,750</td><td class="r num">27,038,000</td>
+        <td class="r num down">-1,960,750</td><td><span class="pill p-bad">▼ 6.8%</span></td>
+        <td class="l"><div class="bar"><span style="width:15%;background:var(--bad)"></span></div></td>
+      </tr>
+      <tr>
+        <td class="l">수영팀</td><td class="r num">107,943,500</td><td class="r num">100,604,500</td>
+        <td class="r num down">-7,339,000</td><td><span class="pill p-bad">▼ 6.8%</span></td>
+        <td class="l"><div class="bar"><span style="width:50%;background:var(--bad)"></span></div></td>
+      </tr>
+      <tr>
+        <td class="l">P.T팀</td><td class="r num">63,273,500</td><td class="r num">55,391,100</td>
+        <td class="r num down">-7,882,400</td><td><span class="pill p-bad">▼ 12.5%</span></td>
+        <td class="l"><div class="bar"><span style="width:55%;background:var(--bad)"></span></div></td>
+      </tr>
+      <tr>
+        <td class="l">GXE (유료 G.X)</td><td class="r num">1,584,000</td><td class="r num">144,000</td>
+        <td class="r num down">-1,440,000</td><td><span class="pill p-bad">▼ 90.9%</span></td>
+        <td class="l"><div class="bar"><span style="width:100%;background:var(--bad)"></span></div></td>
+      </tr>
+      <tr class="total">
+        <td class="l">강습부 합계</td><td class="r num">265,794,750</td><td class="r num">264,569,300</td>
+        <td class="r num down">-1,225,450</td><td><span class="pill p-warn">▼ 0.5%</span></td>
+        <td class="l"><div class="bar"><span style="width:5%;background:var(--warn)"></span></div></td>
+      </tr>
+    </tbody>
+  </table>
+  <p class="small">※ 증가: <b>골프 +45.1%, P.L +40.9%, 스쿼시 +1.6%</b> / 감소: 수영·체조 -6.8%, P.T -12.5%, GXE -90.9%.
+  강습부 합계는 전월 대비 거의 보합(-0.5%)이나, <b>전체 총매출은 5월 474,968,798원으로 4월 548,041,330원 대비 -13.3%(-73,072,532원)</b> 감소했으며 이는 <b>멤버십 -25.5%(-71,847,082원)</b> 하락이 대부분을 차지합니다. 즉 5월 부진의 핵심은 강습부보다 <b>멤버십 갱신(재등록) 공백</b>입니다(정원 999/1,000 만석 구조).</p>
+
+  <h2>4. 미달 핵심 원인 분석</h2>
+  <table>
+    <thead class="soft">
+      <tr><th class="l" style="width:18%">부문</th><th class="l">현황 및 추정 원인</th><th style="width:16%">부족액</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="l"><b>P.T팀</b><br><span class="pill p-bad">56.0%</span></td>
+        <td class="l">전 부문 중 달성률 최저. 트레이너 신규/재계약 세션 회전 저조, 양도·이관·환불 로스 발생이 매출 정체로 직결. 단가·세션 구조 안정화 필요(보고서상 '담당자별 매출 구조 안정화' 과제 명시).</td>
+        <td class="r num down">-43,608,900</td>
+      </tr>
+      <tr>
+        <td class="l"><b>스쿼시팀</b><br><span class="pill p-bad">74.8%</span></td>
+        <td class="l">금일 매출(1,268,500)은 발생했으나 누적 회전이 목표 대비 부진. 회원 재등록·신규 유입 동력 부족.</td>
+        <td class="r num down">-8,321,400</td>
+      </tr>
+      <tr>
+        <td class="l"><b>멤버십</b><br><span class="pill p-warn">84.2%</span></td>
+        <td class="l">정원 1,000명에 거의 만석(999명)으로 신규 여력은 구조적으로 제한적 → 매출 동력은 <b>재등록(갱신) 회전</b>. 5월 재등록 0건으로 갱신 매출 공백 발생. 갱신 도래 회원 집중 관리 + 대기자(11명) 전환으로 회복 필요.</td>
+        <td class="r num down">-39,600,502</td>
+      </tr>
+      <tr>
+        <td class="l">골프팀 <span class="pill p-warn">82.3%</span></td>
+        <td class="l">목표 근접. 부족폭 크지 않아 6월 회복 가능 구간.</td>
+        <td class="r num">-5,837,000</td>
+      </tr>
+      <tr>
+        <td class="l">체조팀 <span class="pill p-warn">81.9%</span></td>
+        <td class="l">목표 근접. 현 회원 회전 유지 시 회복 가능.</td>
+        <td class="r num">-5,962,000</td>
+      </tr>
+      <tr>
+        <td class="l">수영팀 <span class="pill p-ok">91.5%</span></td>
+        <td class="l">상대적 양호. 현 운영 기조 유지 시 목표 근접 달성 전망.</td>
+        <td class="r num">-9,395,500</td>
+      </tr>
+      <tr>
+        <td class="l">P.L팀 <span class="pill p-ok">89.5%</span></td>
+        <td class="l">상대적 양호. 부족폭 최소(-345만), 6월 달성 유력.</td>
+        <td class="r num">-3,449,900</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>5. 6월 운영 방향</h2>
+  <ul>
+    <li><b>P.T팀 집중 관리</b>: 담당자별 세션 회전·재계약 목표 재설정, 로스(양도/환불) 사유 점검 및 단가 구조 안정화.</li>
+    <li><b>멤버십 갱신 회복</b>: 정원 만석(999/1,000) 구조상 재등록(갱신) 회전이 핵심 → 갱신 도래 회원 선제 관리·대기자 11명 전환.</li>
+    <li><b>부문별 책임 보고</b>: 각 담당자가 5월 결과 + 6월 개선안을 정량 목표로 제출(아래 양식·일정 참조).</li>
+    <li><b>회복 우선순위</b>: 부족액 기준 P.T &gt; 멤버십 &gt; 스쿼시 순으로 6월 집중 투입.</li>
+  </ul>
+
+  <div class="note">
+    <b>담당자 의견 취합 항목(6월 보고 시 각 팀 제출)</b><br>
+    ① 5월 미달/달성 요인 자기진단 &nbsp; ② 6월 정량 목표(매출·신규·재등록) &nbsp; ③ 구체 실행안 &nbsp; ④ 필요 지원사항
+  </div>
+
+  <div class="sign">
+    <div>작성<br><span class="small">이경연 실장 · 나우열M</span><br><div class="box"></div></div>
+    <div>승인<br><span class="small">GM</span><br><div class="box"></div></div>
+    <div>승인<br><span class="small">대표</span><br><div class="box"></div></div>
+  </div>
+  <p class="small" style="text-align:right; margin-top:4px;">결재 라인: 작성(이경연 실장·나우열M) → GM 보고 → 대표 보고</p>
+</div>
+
+<!-- ============ PAGE 2 : 정례 일정표/프로세스 ============ -->
+<div class="page pagebreak">
+  <div class="meta">웰페리온 (WELLPERION) · 운영부</div>
+  <h1>월간 매출·운영 보고 정례 프로세스</h1>
+  <div class="meta">운영부 실장 지시 기반 정례화 · 시행 2026. 6월~</div>
+  <div class="docline"></div>
+
+  <h2>1. 정례 회의 체계</h2>
+  <table>
+    <thead>
+      <tr><th class="l" style="width:22%">회의</th><th>주기 / 시간</th><th>진행</th><th class="l">역할</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="l"><b>운영부 회의</b></td>
+        <td>매주 화 14:00<br><span class="small">(다섯째 주 제외)</span></td>
+        <td>이경연 실장</td>
+        <td class="l">부문별 매출·운영 점검. 첫째 주=전월 결과보고, 넷째 주=익월 매출 준비.</td>
+      </tr>
+      <tr>
+        <td class="l"><b>부서장 회의<br><span class="small">(파트너팀)</span></b></td>
+        <td>매월 첫째 주 목 14:00</td>
+        <td>나우열M</td>
+        <td class="l">운영부 회의 결과 종합·부서 간 조율.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>2. 운영 원칙 및 보고 라인</h2>
+  <ul>
+    <li><b>당월 넷째 주 화요일(운영부 회의)</b> — 익월 매출 목표·계획 수립 및 준비.</li>
+    <li><b>익월 초 첫째 주 화요일(운영부 회의)</b> — 전월 결과보고 진행(각 담당자 결과 + 차월 개선안 발표).</li>
+    <li><b>첫째 주 목요일(부서장 회의)</b> — 운영부 결과 종합.</li>
+    <li><b>보고 라인</b>: 회의 내용 정리 → <b>GM 보고</b> → <b>대표 보고</b>.</li>
+    <li><b>보고 양식 작성</b>: 이경연 실장 · 나우열M.</li>
+    <li>모든 담당자는 결과보고 전일까지 부문별 실적·원인·계획을 정량 양식으로 제출.</li>
+  </ul>
+
+  <h2>3. 월간 사이클 (한 달 흐름)</h2>
+  <div class="flow">
+    <div class="step">
+      <div class="t">① 익월 매출 준비</div>
+      <div class="when">넷째 주 화 · 운영부</div>
+      <div class="x">차월 목표·프로모션·인력 배치 수립</div>
+    </div>
+    <div class="arrow">→</div>
+    <div class="step">
+      <div class="t">② 담당자 자료 제출</div>
+      <div class="when">결과보고 전일</div>
+      <div class="x">전월 결과 + 차월 개선안 양식 제출</div>
+    </div>
+    <div class="arrow">→</div>
+    <div class="step">
+      <div class="t">③ 결과보고 회의</div>
+      <div class="when">첫째 주 화 · 운영부</div>
+      <div class="x">이경연 실장 주재, 부문별 발표</div>
+    </div>
+    <div class="arrow">→</div>
+    <div class="step">
+      <div class="t">④ 부서장 회의</div>
+      <div class="when">첫째 주 목 · 파트너팀</div>
+      <div class="x">나우열M 진행, 내용 종합·정리</div>
+    </div>
+    <div class="arrow">→</div>
+    <div class="step">
+      <div class="t">⑤ 보고</div>
+      <div class="when">정리 후</div>
+      <div class="x">GM 보고 → 대표 보고</div>
+    </div>
+  </div>
+
+  <h2>4. 정례 일정표 (2026년)</h2>
+  <table>
+    <thead>
+      <tr><th style="width:14%">구분</th><th>일자</th><th class="l">내용</th><th class="l" style="width:24%">진행 / 담당</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="pill p-bad">결과보고</span></td><td>6/2 (화) 14:00</td>
+        <td class="l">5월 결과보고 — 각 담당자 5월 실적·미달 원인 + 6월 계획 발표</td>
+        <td class="l">이경연 실장 주재 / 전 팀</td>
+      </tr>
+      <tr>
+        <td><span class="pill p-warn">부서장</span></td><td>6/4 (목) 14:00</td>
+        <td class="l">부서장 회의 — 5월 결과 종합·부서 조율</td>
+        <td class="l">나우열M 진행 / 파트너팀</td>
+      </tr>
+      <tr>
+        <td><span class="pill p-warn">익월준비</span></td><td>6/23 (화) 14:00</td>
+        <td class="l">7월 매출 목표·계획 수립 (넷째 주 화)</td>
+        <td class="l">이경연 실장 / 각 팀장</td>
+      </tr>
+      <tr>
+        <td><span class="pill p-bad">결과보고</span></td><td>7/7 (화) 14:00</td>
+        <td class="l">6월 결과보고 (첫째 주 화)</td>
+        <td class="l">이경연 실장 주재 / 전 팀</td>
+      </tr>
+      <tr>
+        <td><span class="pill p-warn">부서장</span></td><td>7/2 (목) 14:00</td>
+        <td class="l">부서장 회의 — 6월 결과 종합</td>
+        <td class="l">나우열M 진행 / 파트너팀</td>
+      </tr>
+      <tr>
+        <td><span class="pill p-warn">익월준비</span></td><td>7/28 (화) 14:00</td>
+        <td class="l">8월 매출 목표·계획 수립</td>
+        <td class="l">이경연 실장 / 각 팀장</td>
+      </tr>
+      <tr>
+        <td><span class="pill p-bad">결과보고</span></td><td>8/4 (화) 14:00</td>
+        <td class="l">7월 결과보고</td>
+        <td class="l">이경연 실장 주재 / 전 팀</td>
+      </tr>
+      <tr>
+        <td><span class="pill p-warn">부서장</span></td><td>8/6 (목) 14:00</td>
+        <td class="l">부서장 회의 — 7월 결과 종합</td>
+        <td class="l">나우열M 진행 / 파트너팀</td>
+      </tr>
+    </tbody>
+  </table>
+  <p class="small">※ <b>운영부 회의</b>: 매주 화 14:00(다섯째 주 제외) — 첫째 주=전월 결과보고, 넷째 주=익월 준비. <b>부서장 회의</b>: 매월 첫째 주 목 14:00.
+  공휴일과 겹칠 경우 직전 영업일로 조정. 모든 결과는 정리 후 <b>GM → 대표</b> 보고.</p>
+
+  <h2>5. 담당자 제출 양식 (표준)</h2>
+  <table>
+    <thead class="soft">
+      <tr><th style="width:14%">팀</th><th>전월 실적</th><th>목표</th><th>달성률</th><th class="l">미달/달성 원인</th><th class="l" style="width:22%">차월 목표·실행안</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>수영팀</td><td></td><td></td><td></td><td class="l"></td><td class="l"></td></tr>
+      <tr><td>P.T팀</td><td></td><td></td><td></td><td class="l"></td><td class="l"></td></tr>
+      <tr><td>골프팀</td><td></td><td></td><td></td><td class="l"></td><td class="l"></td></tr>
+      <tr><td>스쿼시팀</td><td></td><td></td><td></td><td class="l"></td><td class="l"></td></tr>
+      <tr><td>체조팀</td><td></td><td></td><td></td><td class="l"></td><td class="l"></td></tr>
+      <tr><td>P.L팀</td><td></td><td></td><td></td><td class="l"></td><td class="l"></td></tr>
+      <tr><td>멤버십</td><td></td><td></td><td></td><td class="l"></td><td class="l"></td></tr>
+    </tbody>
+  </table>
+  <div class="note">
+    제출 항목: ① 전월 매출/목표/달성률 ② 신규·재등록·환불 현황 ③ 미달 또는 달성 핵심 원인 ④ 차월 정량 목표 ⑤ 구체 실행안 ⑥ 필요 지원사항
+  </div>
+
+  <p class="small" style="margin-top:18px;">웰페리온 운영부 · 본 프로세스는 매월 정례 적용되며 변경 시 실장 승인 후 갱신.</p>
+</div>
+
+</body>
+</html>

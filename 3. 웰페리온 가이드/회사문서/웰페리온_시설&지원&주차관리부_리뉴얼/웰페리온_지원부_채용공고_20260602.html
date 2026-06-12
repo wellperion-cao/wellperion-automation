@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600&family=Jost:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+<title>WELLPERION · 지원부 채용 공고 — 반장 · 주임</title>
+<style>
+  :root {
+    --beige:#B79F8A; --beige-soft:#E8DFD4; --beige-pale:#F7F2EC;
+    --black:#221F20; --black-soft:#3A3536; --coral:#ED5B3F;
+    --gray:#8A8587; --line:#D9CFC3; --white:#FBF9F6;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html,body{background:#E7E2DA;font-family:"Pretendard Variable","Pretendard",-apple-system,"Malgun Gothic",system-ui,sans-serif;font-weight:400;line-height:1.55;color:var(--black);-webkit-font-smoothing:antialiased;}
+
+  /* A4 PORTRAIT — 210×297mm */
+  .page{width:297mm;min-height:420mm;background:var(--white);margin:14px auto;padding:14mm 16mm 20mm;position:relative;overflow:visible;}
+
+  /* COVER */
+  .cover{background:var(--black);color:var(--beige);margin:-14mm -16mm 12px;padding:16mm 16mm 14mm;position:relative;overflow:hidden;}
+  .cover::after{content:"";position:absolute;bottom:-90px;right:-90px;width:280px;height:280px;background:radial-gradient(circle,rgba(237,91,63,0.14) 0%,transparent 70%);}
+  .cover-inner{position:relative;z-index:1;}
+  .era{font-family:"Playfair Display",Georgia,serif;font-size:14px;color:var(--coral);letter-spacing:0.3em;text-transform:uppercase;}
+  .cover h1{font-family:"Playfair Display",Georgia,serif;font-weight:400;font-size:46px;line-height:1.14;color:var(--white);margin-top:8px;letter-spacing:-0.01em;}
+  .cover .sub{margin-top:6px;font-size:16px;color:var(--beige-soft);letter-spacing:0.04em;}
+  .cover .pos{margin-top:14px;display:flex;gap:9px;flex-wrap:wrap;}
+  .cover .pos span{background:var(--coral);color:var(--white);font-family:"Jost",system-ui,sans-serif;font-size:14px;letter-spacing:0.22em;font-weight:700;padding:6px 14px;text-transform:uppercase;}
+
+  /* PHILOSOPHY */
+  .philo{background:var(--coral);color:var(--white);padding:13px 18px;margin-top:10px;display:grid;grid-template-columns:auto 1fr;gap:15px;align-items:center;}
+  .philo .pt{font-family:"Jost",system-ui,sans-serif;font-size:13px;letter-spacing:0.24em;text-transform:uppercase;font-weight:700;background:var(--black);color:var(--coral);padding:5px 10px;}
+  .philo .pm{font-family:"Playfair Display",Georgia,serif;font-size:21px;line-height:1.4;}
+  .philo .pm b{color:var(--black);}
+  .philo .pm small{display:block;font-family:"Pretendard",system-ui,sans-serif;font-size:14px;color:rgba(255,255,255,0.92);line-height:1.55;margin-top:5px;}
+
+  /* SECTION */
+  h2.sec{font-family:"Playfair Display",Georgia,serif;font-weight:400;font-size:23px;color:var(--black);margin:12px 0 5px;display:flex;align-items:baseline;gap:9px;border-top:1.5px solid var(--black);padding-top:7px;}
+  h2.sec .num{font-size:18px;color:var(--coral);letter-spacing:0.18em;}
+  h3.sub{font-size:15px;color:var(--black-soft);font-weight:600;margin:7px 0 4px;letter-spacing:0.01em;}
+
+  table{width:100%;border-collapse:collapse;font-size:14.5px;border:1px solid var(--line);margin:7px 0;}
+  th,td{border:1px solid var(--line);padding:5px 8px;text-align:left;vertical-align:top;line-height:1.5;}
+  thead th{background:var(--black);color:var(--beige);font-size:12.5px;letter-spacing:0.06em;text-transform:uppercase;font-weight:600;}
+  td{background:var(--white);color:var(--black-soft);}
+  td b{color:var(--black);font-weight:600;}
+  td.r,th.r{text-align:right;}
+
+  ul{padding-left:0;list-style:none;margin:4px 0;}
+  ul li{position:relative;padding:3px 0 3px 15px;font-size:14px;color:var(--black-soft);line-height:1.55;}
+  ul li::before{content:"—";position:absolute;left:0;color:var(--coral);font-weight:600;}
+
+  .twocol{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:8px;}
+  .role-card{background:var(--beige-pale);border-left:4px solid var(--coral);padding:11px 15px;}
+  .role-card .rt{font-family:"Playfair Display",Georgia,serif;font-size:19px;color:var(--black);}
+  .role-card .rsub{font-size:11.5px;letter-spacing:0.2em;text-transform:uppercase;color:var(--coral);font-weight:700;margin-top:3px;}
+  .role-card ul{margin-top:8px;}
+
+  .info-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:11px;margin-top:8px;}
+  .info-cell{border:1px solid var(--line);background:var(--white);padding:9px 13px;}
+  .info-cell .lb{font-size:11px;letter-spacing:0.2em;text-transform:uppercase;color:var(--coral);font-weight:700;}
+  .info-cell .vl{font-size:15px;color:var(--black);margin-top:5px;line-height:1.55;}
+  .info-cell .vl b{font-weight:600;}
+
+  .apply{background:var(--black);color:var(--beige);padding:14px 18px;margin-top:12px;}
+  .apply .al{font-size:12.5px;letter-spacing:0.22em;text-transform:uppercase;color:var(--coral);font-weight:700;}
+  .apply .av{margin-top:6px;font-size:15px;color:var(--white);line-height:1.7;}
+  .apply .av b{color:var(--coral);}
+
+  .pf{margin-top:14px;border-top:1px solid var(--line);padding-top:8px;display:flex;justify-content:space-between;font-size:11px;letter-spacing:0.06em;color:var(--gray);}
+
+  [contenteditable="true"]:hover{background:rgba(237,91,63,0.04);outline:1px dashed rgba(237,91,63,0.3);outline-offset:2px;}
+  [contenteditable="true"]:focus{background:rgba(237,91,63,0.08);outline:1px solid var(--coral);outline-offset:2px;}
+  .edit-banner{position:fixed;top:10px;right:10px;background:var(--black);color:var(--beige);font-size:10px;letter-spacing:0.18em;padding:6px 12px;z-index:999;}
+  .edit-banner .dot{display:inline-block;width:6px;height:6px;background:var(--coral);border-radius:50%;margin-right:6px;vertical-align:middle;}
+
+  @media print{
+    @page{size:A3;margin:0;}
+    .page{zoom:0.86;}
+    *{-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important;}
+    html,body{background:var(--white);}
+    .page{margin:0;width:297mm;min-height:420mm;}
+    [contenteditable="true"]:hover,[contenteditable="true"]:focus{background:transparent !important;outline:none !important;}
+    .edit-banner{display:none !important;}
+    table tr,h2.sec,.role-card,.apply,.philo{break-inside:avoid;}
+  }
+  @media (max-width:900px){
+    .page{width:100%;min-height:auto;padding:18px 14px;}
+    .cover{margin:-18px -14px 14px;padding:28px 14px 22px;}
+    .twocol,.info-grid{grid-template-columns:1fr;}
+    .pf{position:static;margin-top:18px;}
+  }
+</style>
+</head>
+<body>
+<div class="edit-banner"><span class="dot"></span>편집 모드 — 텍스트 클릭 → 수정</div>
+
+<div class="page">
+
+  <div class="cover">
+    <div class="cover-inner">
+      <div class="era">Wellperion · Recruitment</div>
+      <h1 contenteditable="true">함께 일할 분을 모십니다</h1>
+      <div class="sub" contenteditable="true">지원부 — 사우나 · 시설 · 외곽 운영팀 · 반장 / 주임</div>
+      <div class="pos"><span>반장</span><span>주임</span><span>상시 모집</span></div>
+    </div>
+  </div>
+
+  <div class="philo">
+    <div class="pt">철학 · Philosophy</div>
+    <div class="pm" contenteditable="true">
+      <b>회원님도 왕, 우리도 왕.</b>
+      <small>서비스 직원이 무조건 시달리는 자리는 웰페리온에 없습니다. 회원을 정성껏 모시되, 그 서비스를 만들어내는 우리 또한 같은 가치로 존중받습니다.</small>
+    </div>
+  </div>
+
+  <h2 class="sec" contenteditable="true"><span class="num">①</span>웰페리온 — 우리는 누구인가</h2>
+  <p style="font-size:14.5px;color:var(--black-soft);line-height:1.7;margin:6px 0 8px;" contenteditable="true">
+    <b>WELLPERION</b>은 회원의 일상에 균형과 회복을 더하는 <b>프리미엄 웰니스 클럽</b>입니다. 사우나 · 시설 · 외곽 운영의 모든 디테일이 회원 경험의 일부라고 믿습니다. <b>규정 · 가이드 · 매뉴얼 · 점검(체크리스트)</b>로 구성된 FM(필드 매뉴얼 — 원리원칙) 위에서 일하며, 모든 인원이 같은 기준으로 같은 품질을 만들어냅니다.
+  </p>
+
+  <h2 class="sec" contenteditable="true"><span class="num">②</span>모집 포지션 & 담당 업무</h2>
+  <div class="twocol">
+    <div class="role-card">
+      <div class="rsub">Position A</div>
+      <div class="rt" contenteditable="true">반장 (Team Lead)</div>
+      <ul contenteditable="true">
+        <li>현장 운영 <b>책임자</b> — 일일 점검 · 인력 배분</li>
+        <li>이슈 1차 대응 · 매뉴얼 적용 · 보고</li>
+        <li><b>비품 관리</b> 총괄</li>
+        <li>주임 인계 · 교육 · 사기 관리</li>
+      </ul>
+    </div>
+    <div class="role-card">
+      <div class="rsub">Position B</div>
+      <div class="rt" contenteditable="true">주임 (Staff)</div>
+      <ul contenteditable="true">
+        <li>현장 <b>실무</b> — 사우나 · 시설 · 외곽 청결</li>
+        <li>회원 응대 · 구역 관리 직접 수행</li>
+        <li>FM 체크리스트 점검 · 기록</li>
+        <li>월간 우수 주임 포상 대상</li>
+      </ul>
+    </div>
+  </div>
+
+  <h2 class="sec" contenteditable="true"><span class="num">③</span>근무 조건</h2>
+  <table>
+    <thead><tr><th>구분</th><th>근무시간</th><th>실근무</th><th>비고</th></tr></thead>
+    <tbody>
+      <tr><td contenteditable="true"><b>오전조</b></td><td contenteditable="true">05:20 ~ 14:00</td><td contenteditable="true">7시간 40분</td><td contenteditable="true">휴게 1시간 포함 · 고정 휴무</td></tr>
+      <tr><td contenteditable="true"><b>중간조</b></td><td contenteditable="true">10:00 ~ 18:40</td><td contenteditable="true">7시간 40분</td><td contenteditable="true">점검자 시간대 · 고정 휴무</td></tr>
+      <tr><td contenteditable="true"><b>마감조</b></td><td contenteditable="true">14:00 ~ 22:40</td><td contenteditable="true">7시간 40분</td><td contenteditable="true">휴게 1시간 포함 · 고정 휴무</td></tr>
+    </tbody>
+  </table>
+
+  <div class="info-grid">
+    <div class="info-cell">
+      <div class="lb">근무지</div>
+      <div class="vl" contenteditable="true"><b>웰페리온 스포츠 클럽</b> · 서울 용산구 서빙고로 413 (한남동 현대하이페리온 1차)</div>
+    </div>
+    <div class="info-cell">
+      <div class="lb">고용 형태</div>
+      <div class="vl" contenteditable="true">정규직 · 수습 3개월</div>
+    </div>
+    <div class="info-cell">
+      <div class="lb">급여</div>
+      <div class="vl" contenteditable="true"><b>반장</b> [급여 입력] · <b>주임</b> [급여 입력] / 면접 후 확정</div>
+    </div>
+    <div class="info-cell">
+      <div class="lb">자격 요건</div>
+      <div class="vl" contenteditable="true">성실 · 책임감 · 팀 협업 가능 / 사우나·시설 경력 우대 · <b>세신사 운영 가능자 우대</b></div>
+    </div>
+  </div>
+
+  <h2 class="sec" contenteditable="true"><span class="num">④</span>복지 & 성장</h2>
+  <ul contenteditable="true">
+    <li><b>4대 보험</b> · 연차 · 명절 상여 · 경조사 지원</li>
+    <li><b>유니폼 지급</b> — 단정 · 격식 + 활동성 컨셉</li>
+    <li><b>칭찬 사원 제도</b> — 월간 우수 주임 포상 · 분기·연 단위 확장</li>
+    <li><b>경력 사다리</b> — 주임 → 반장 → 팀장(총괄) · 내부 승진 우선</li>
+    <li><b>이익 공유 포상</b> — 회사 이윤 발생 시 <b>근무 1년 이상 전 직원</b> 포상</li>
+    <li><b>회원 팁(Tip) 수령 허용 검토 중</b> — 회장·대표 컨펌 후 시행 예정</li>
+    <li><b>매뉴얼 기반 운영</b> — 무리한 업무 · 비합리적 지시 없음. FM(필드 매뉴얼) 기준으로 움직입니다</li>
+    <li>간식 비치 · 정기 회식</li>
+  </ul>
+
+  <div class="apply">
+    <div class="al">지원 방법 · How to Apply</div>
+    <div class="av" contenteditable="true">
+      <b>이메일</b> &nbsp; cao@wellperion.com<br>
+      <b>전화 · 카톡</b> &nbsp; 010-7446-1318 (나우열 · 인사 담당자)<br>
+      <b>제출 서류</b> &nbsp; 이력서 1부 (사진 포함) · 자기소개서 자유 양식<br>
+      <b>전형 절차</b> &nbsp; 서류 검토 → 1차 면접(GM) → 현장 확인 → 최종 합격
+    </div>
+  </div>
+
+  <div class="pf">
+    <span>WELLPERION SPORTS CLUB · 지원부 채용 공고 · 2026.06.02</span>
+    <span>Recruitment</span>
+  </div>
+</div>
+
+</body>
+</html>
