@@ -2052,6 +2052,9 @@ function drawUI(d,gender){
     zoneOrder.forEach(title=>{
       const bucket=zoneMap[title];
       const visItems=bucket.items;          // [{it,itemShift}]
+      /* 매뉴얼에서 정한 그룹 내 순서(orderMap) 점검에도 적용 */
+      const _om=(typeof getItemOrder==='function')?getItemOrder():{};
+      visItems.sort((a,b)=>{const oa=_om[a.it.id],ob=_om[b.it.id];if(oa==null&&ob==null)return 0;if(oa==null)return 1;if(ob==null)return -1;return oa-ob;});
       let gd=0;visItems.forEach(({it})=>{if(isChecked(it.id,curRound))gd++});
       const ok=gd===visItems.length,badge=ok?'<span class="cat-badge done">완료</span>':`<span class="cat-badge pending">${gd}/${visItems.length}</span>`;
       html+=`<div class="category"><div class="cat-header" onclick="tog(this)"><span class="cat-title">${title}</span>${badge}</div><div class="cat-body${ok?'':' open'}">`;
@@ -2316,6 +2319,25 @@ window.manualUnhideItem=function(id){
   renderG(activeGenderTab);
   if(typeof renderManualItems==='function')renderManualItems();
 };
+/* 매뉴얼 그룹 내 항목 정렬(위/아래) — id→정렬값 맵. 매뉴얼·점검 양쪽 동일 순서. GM 2026-06-12.
+   ※ 현재 이 PC(localStorage) 기준. 전 기기 동기화는 후속. */
+function getItemOrder(){ try{return JSON.parse(localStorage.getItem('wcheck_item_order')||'{}')||{}}catch(e){return {}} }
+function saveItemOrder(m){ localStorage.setItem('wcheck_item_order',JSON.stringify(m)); }
+/* 같은 카테고리(그룹) 내에서 항목을 위(-1)/아래(+1)로 1칸 이동 */
+window.moveManualItem=function(id,dir){
+  const cats=window._catItemIds||{};
+  let cat=null; for(const c in cats){ if(cats[c].indexOf(id)>=0){cat=c;break;} }
+  if(!cat)return;
+  const ids=cats[cat].slice();
+  const i=ids.indexOf(id), j=i+dir;
+  if(j<0||j>=ids.length)return;
+  const tmp=ids[i]; ids[i]=ids[j]; ids[j]=tmp;
+  const om=getItemOrder();
+  ids.forEach((x,k)=>{ om[x]=k; });   // 해당 그룹 전체에 순차 정렬값 재부여(안정)
+  saveItemOrder(om);
+  if(typeof renderManualItems==='function')renderManualItems();
+  if(typeof renderG==='function')renderG(activeGenderTab);   // 점검에도 반영
+};
 window.manualPurgeCustom=function(){
   const customs=(CUSTOM_ITEMS||[]).filter(it=>String(it.id).indexOf('custom_')===0);
   if(!customs.length){alert('정리할 추가항목(custom_)이 없습니다.');return;}
@@ -2557,6 +2579,15 @@ function renderManualItems(){
       pushItem(ci.category||'추가 점검',{id:ci.id,name:ci.name,detail:ci.detail,gender:ci.gender,_custom:true});
     });
   }
+  /* 그룹 내 정렬 적용(orderMap 우선, 없으면 등장순) + 그룹별 id목록 캡처(↑/↓ 이동용) */
+  const _orderMap=(typeof getItemOrder==='function')?getItemOrder():{};
+  window._catItemIds={};
+  catOrder.forEach(cat=>{
+    const arr=catMap[cat];
+    arr.forEach((it,i)=>{ it._ord=(_orderMap[it.id]!=null)?_orderMap[it.id]:i; });
+    arr.sort((a,b)=>a._ord-b._ord);
+    window._catItemIds[cat]=arr.map(it=>it.id);
+  });
   /* 셋업 버튼 공통 스타일(인라인) */
   const _btn='font-size:11px;font-weight:700;border-radius:6px;padding:3px 8px;cursor:pointer;font-family:inherit;border:1px solid;white-space:nowrap;';
   const _customCount=(typeof CUSTOM_ITEMS!=='undefined'?CUSTOM_ITEMS:[]).filter(it=>String(it.id).indexOf('custom_')===0).length;
@@ -2570,7 +2601,7 @@ function renderManualItems(){
     const items=catMap[cat];
     html+=`<div style="background:var(--paper);border:1px solid var(--border);border-radius:10px;margin-bottom:10px;overflow:hidden;">`;
     html+=`<div style="padding:10px 16px;font-size:13px;font-weight:700;color:var(--accent);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:8px;"><span>${cat}</span><button onclick="manualAddItem('${escapeAttr(cat)}')" style="${_btn}color:var(--accent);background:var(--bg);border-color:var(--accent);">＋ 항목 추가</button></div>`;
-    items.forEach(it=>{
+    items.forEach((it,idx)=>{
       const detHtml=it.detail?it.detail.replace(/\n/g,'<br>'):'';
       const hasDet=!!detHtml;
       const genderLabel=it.gender==='m'?' <span style="font-size:10px;color:var(--blue);background:var(--blue-bg);padding:1px 6px;border-radius:6px;">남</span>':it.gender==='f'?' <span style="font-size:10px;color:var(--orange);background:var(--orange-bg);padding:1px 6px;border-radius:6px;">여</span>':'';
@@ -2584,8 +2615,13 @@ function renderManualItems(){
       let setup=`<button onclick="event.stopPropagation();editItem('${it.id}')" style="${_btn}color:#5b9fd5;background:rgba(91,159,213,0.12);border-color:rgba(91,159,213,0.35);">편집</button>`;
       setup+=`<button onclick="event.stopPropagation();manualDeleteItem('${it.id}')" style="${_btn}color:#c0392b;background:rgba(192,57,67,0.1);border-color:rgba(192,57,67,0.4);">삭제</button>`;
       if(!it._custom&&it._edited)setup+=`<button onclick="event.stopPropagation();resetItem('${it.id}')" style="${_btn}color:#8c8b83;background:rgba(140,139,131,0.12);border-color:rgba(140,139,131,0.3);">초기화</button>`;
+      /* 그룹 내 순서 이동(위/아래) — 경계에서 비활성 */
+      const _mvBtn='font-size:12px;font-weight:700;border-radius:6px;padding:2px 7px;cursor:pointer;font-family:inherit;border:1px solid var(--border);background:var(--bg);color:var(--text);line-height:1.2;';
+      const _up=idx>0?`<button onclick="event.stopPropagation();moveManualItem('${it.id}',-1)" style="${_mvBtn}" title="위로">▲</button>`:`<button disabled style="${_mvBtn}opacity:.25;cursor:default;">▲</button>`;
+      const _dn=idx<items.length-1?`<button onclick="event.stopPropagation();moveManualItem('${it.id}',1)" style="${_mvBtn}" title="아래로">▼</button>`:`<button disabled style="${_mvBtn}opacity:.25;cursor:default;">▼</button>`;
       html+=`<div style="padding:10px 16px;border-bottom:1px solid rgba(61,56,53,0.35);">`;
       html+=`<div style="display:flex;align-items:flex-start;gap:10px;">`;
+      html+=`<div style="flex:0 0 auto;display:flex;flex-direction:column;gap:2px;margin-top:1px;">${_up}${_dn}</div>`;
       html+=`<div style="flex:1 1 auto;${nameCursor}" ${hasDet?'onclick="togManualItem(this)"':''}><div style="${nameStyle}display:flex;align-items:center;gap:6px;justify-content:space-between;"><span>${it.name}${genderLabel}${customLabel}${editedLabel}</span>${arrow}</div>`;
       if(hasDet)html+=`<div class="manual-item-detail" style="font-size:12px;color:var(--dim);margin-top:5px;line-height:1.5;">${detHtml}</div>`;
       html+=`</div>`;
