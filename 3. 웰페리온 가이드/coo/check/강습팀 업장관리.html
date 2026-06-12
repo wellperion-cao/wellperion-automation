@@ -144,7 +144,7 @@
 </header>
 
 <main class="wrap">
-<div class="meta-card" id="issuePanelCard" style="display:none;background:var(--paper,#2a2725);border:1px solid var(--border,#3d3835);border-radius:14px;padding:14px 16px;margin-bottom:14px"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><strong style="font-size:15px;color:var(--text,#f5f2ef)">🗂 이슈 현황 <span style="color:var(--dim,#8c8b83);font-weight:500;font-size:12px">미처리 누적</span></strong><button type="button" id="issueReload" style="background:transparent;color:var(--dim,#8c8b83);border:1px solid var(--border,#3d3835);border-radius:8px;padding:4px 10px;font-size:12px;cursor:pointer">↻ 새로고침</button></div><div id="issueList" style="font-size:13px;color:var(--dim,#8c8b83)">이슈 불러오는 중…</div></div>
+<div class="meta-card" id="issuePanelCard" style="display:none;background:var(--paper,#2a2725);border:1px solid var(--line,#e7e4dc);border-radius:14px;padding:14px 16px;margin-bottom:14px"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><strong style="font-size:15px;color:var(--ink,#1f1e1b)">🗂 이슈 현황 <span style="color:var(--ink-soft,#6c6961);font-weight:500;font-size:12px">미처리 누적</span></strong><button type="button" id="issueReload" style="background:transparent;color:var(--ink-soft,#6c6961);border:1px solid var(--line,#e7e4dc);border-radius:8px;padding:4px 10px;font-size:12px;cursor:pointer">↻ 새로고침</button></div><div id="issueList" style="font-size:13px;color:var(--ink-soft,#6c6961)">이슈 불러오는 중…</div></div>
   <div class="meta-card">
     <div class="row2">
       <div class="field">
@@ -277,7 +277,7 @@ function render(){
       '<div class="sec-h"><div class="nm"><span class="seq">'+label+'</span>'+esc(sec.name)+'</div>'+
       '<span class="st warn" id="st_'+sec.id+'">미점검</span></div>'+
       items+
-      '<div class="previssue" style="margin-top:8px"><label style="color:var(--accent,#B79F8A);font-weight:700;font-size:13px">기존 이슈 (누적)</label><div class="prevbody" data-sec="'+sec.id+'" data-venue="'+esc(sec.name)+'" style="margin-top:4px">불러오는 중…</div></div>'+'<div class="issue"><label>이슈사항 (주관식)</label>'+
+      '<div class="previssue" style="margin-top:8px"><label style="color:var(--gold-deep,#8a6f3f);font-weight:700;font-size:13px">기존 이슈 (누적)</label><div class="prevbody" data-sec="'+sec.id+'" data-venue="'+esc(sec.name)+'" style="margin-top:4px">불러오는 중…</div></div>'+'<div class="issue"><label>이슈사항 (주관식)</label>'+
       '<textarea data-sec="'+sec.id+'" placeholder="특이사항이 있으면 적어주세요. 없으면 비워두세요."></textarea></div>'+
       '</div>';
   }).join("");
@@ -408,19 +408,19 @@ function wpRenderIssues(){
     if(j&&j.ok&&j.issues){ j.issues.forEach(function(x){ if(!x.resolved){ (byV[x.venue]=byV[x.venue]||[]).push(x); } }); }
     boxes.forEach(function(b){
       var v=b.getAttribute("data-venue"); var items=byV[v]||[];
-      if(!items.length){ b.innerHTML='<span style="color:var(--dim,#8c8b83);font-size:12px">없음</span>'; return; }
+      if(!items.length){ b.innerHTML='<span style="color:var(--ink-soft,#6c6961);font-size:12px">없음</span>'; return; }
       b.innerHTML=items.map(function(x){
-        return '<div style="display:flex;gap:8px;align-items:flex-start;padding:5px 0;border-top:1px solid var(--border,#3d3835)">'+
+        return '<div style="display:flex;gap:8px;align-items:flex-start;padding:5px 0;border-top:1px solid var(--line,#e7e4dc)">'+
 
-        '<span style="color:var(--dim,#8c8b83);font-size:11px;white-space:nowrap;min-width:64px">'+wpEscI(x.date)+'</span>'+
+        '<span style="color:var(--ink-soft,#6c6961);font-size:11px;white-space:nowrap;min-width:64px">'+wpEscI(x.date)+'</span>'+
 
-        '<span style="flex:1;font-size:13px;line-height:1.5;color:var(--text,#f5f2ef)">'+wpEscI(x.text)+'</span>'+
+        '<span style="flex:1;font-size:13px;line-height:1.5;color:var(--ink,#1f1e1b)">'+wpEscI(x.text)+'</span>'+
 
-        '<button type="button" class="wp-resolve" data-id="'+encodeURIComponent(x.id)+'" style="background:var(--green,#6abf7b);color:#10240f;border:none;border-radius:6px;padding:3px 10px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap">처리완료</button></div>';
+        '<button type="button" class="wp-resolve" data-id="'+encodeURIComponent(x.id)+'" style="background:var(--green,#3c7a4a);color:#fff;border:none;border-radius:6px;padding:3px 10px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap">처리완료</button></div>';
       }).join("");
     });
     [].slice.call(document.querySelectorAll(".prevbody .wp-resolve")).forEach(function(btn){ btn.onclick=function(){ wpResolveIssue(btn.getAttribute("data-id"), btn); }; });
-  }).catch(function(){ boxes.forEach(function(b){ b.innerHTML='<span style="color:var(--dim,#8c8b83);font-size:12px">불러오기 실패</span>'; }); });
+  }).catch(function(){ boxes.forEach(function(b){ b.innerHTML='<span style="color:var(--ink-soft,#6c6961);font-size:12px">불러오기 실패</span>'; }); });
 }
 function wpResolveIssue(encId, btn){
   if(!confirm("이 이슈를 처리 완료로 표시할까요?")) return;
