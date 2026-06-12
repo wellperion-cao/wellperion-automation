@@ -256,6 +256,7 @@ function doGet(e) {
   if (action === 'purge_custom') { return purgeCustomItems(e.parameter.dept || 'support'); }
   if (action === 'ensure_headers') { return ensureAllHeaders(e.parameter.dept || 'support'); }
   if (action === 'vendor_list') { return vendorList(); }
+  if (action === 'clear_check_ledger') { return clearCheckLedger(e.parameter.dept || 'support'); }
 
   var date = e.parameter.date;
   if (!date) return jsonRes({ error: 'date required' });
@@ -364,6 +365,15 @@ var CHK_PROP_PREFIX = 'chk_';
 function _chkGender(g) { g = String(g || '').trim(); return (g === 'm' || g === 'f') ? g : 'all'; }
 function _chkKey(dept, date, gender) {
   return CHK_PROP_PREFIX + (String(dept || 'support').trim() || 'support') + '_' + _chkGender(gender) + '_' + date;
+}
+// 완료원장 일괄 비우기(GM 2026-06-12) — 오염된 체크 원장(전 날짜·성별) 제거. GET ?action=clear_check_ledger&dept=support
+function clearCheckLedger(dept) {
+  var props = PropertiesService.getScriptProperties();
+  var all = props.getProperties();
+  var prefix = CHK_PROP_PREFIX + (String(dept || 'support').trim() || 'support') + '_';
+  var removed = 0;
+  Object.keys(all).forEach(function (k) { if (k.indexOf(prefix) === 0) { props.deleteProperty(k); removed++; } });
+  return jsonRes({ ok: true, dept: dept, removed: removed });
 }
 // 항상 { c:{...}, sub:{...}, subAt:{...} } 정규화 형태로 반환(구버전 평면 원장 승격).
 function _getCheckLedger(dept, date, gender) {

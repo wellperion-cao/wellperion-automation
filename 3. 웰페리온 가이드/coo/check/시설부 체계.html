@@ -4521,8 +4521,14 @@ async function loadVendorFromBackend(){
       const grouped={};
       data.vendors.forEach(v=>{
         const k=v.col||'maint'; if(!grouped[k])grouped[k]=[];
+        // 업체의 분류가 VENDOR_COLS에 없으면 추가(분류 미동기화 시에도 칸반에 보이게). GM 2026-06-12
+        if(k && !VENDOR_COLS.some(c=>c.key===k)){
+          const _cls=VENDOR_CAT_PALETTE[VENDOR_COLS.length % VENDOR_CAT_PALETTE.length];
+          VENDOR_COLS.push({key:k,label:v.label||k,cls:_cls});
+        }
         grouped[k].push({id:v.id,name:v.name,manager:v.manager,contact:v.contact,contract:v.contract,price:v.price,renewal:v.renewal,status:v.status,note:v.note,createdAt:v.createdAt,updatedAt:v.updatedAt});
       });
+      vendorRenderCategorySelects();
       applyVendorStored(grouped);
       localStorage.setItem(VENDOR_STORAGE_KEY, JSON.stringify(VENDOR_DATA));
     }

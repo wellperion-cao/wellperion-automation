@@ -1773,20 +1773,14 @@ async function loadState(d,g){
       // 만약 서버가 성별맵 전체({m,f,all})를 보낸 레거시 응답이면 현재 성별 슬롯만 선택.
       let cl=j.checkedLedger;
       if(cl&&!cl.c&&!cl.cr&&(cl.m||cl.f||cl.all))cl=cl[gg]||{};
+      // 회차별 복원만(2026-06-12): '<round>_<id>' → 그 회차에만. 레거시 led.c 전 회차 복원은
+      // 회차정보가 없어 '전 회차 동기화·전부 완료' 오염을 유발 → 제거. 옛 데이터는 다시 체크하면 정상화.
       if(cl&&cl.cr&&typeof cl.cr==='object'){
-        // 회차별 복원(신규·2026-06-12): '<round>_<id>' → 그 회차에만(오전·오후·마감 격리)
         Object.keys(cl.cr).forEach(k=>{
           if(!cl.cr[k])return;
           const us=String(k).indexOf('_'); if(us<0)return;
           const rk=k.slice(0,us), id=k.slice(us+1);
           if(ROUND_KEYS.indexOf(rk)>=0)STATE[chkKey(rk,id,gg)]=true;
-        });
-      }else{
-        // 레거시(회차정보 없는 옛 원장) — 항목 단위 → 전 회차 복원(하위호환)
-        const cmap=(cl&&cl.c)||cl||{};
-        Object.keys(cmap).forEach(id=>{
-          if(id==='c'||id==='cr'||id==='sub'||id==='subAt'||!cmap[id])return;
-          ROUND_KEYS.forEach(rk=>{STATE[chkKey(rk,id,gg)]=true;});
         });
       }
       const sub=cl.sub||{}, subAt=cl.subAt||{};
@@ -2490,7 +2484,8 @@ function renderItem(it,shift,gender,round){
     if(ov.cat)m.push('카테고리 '+ov.cat);
     metaInfo='<span style="font-size:10px;color:#5b9fd5;margin-left:6px;">('+m.join(' · ')+')</span>';
   }
-  const editedTag=(isEdited&&(typeof isEditFresh!=='function'||isEditFresh(it.id)))?'<span style="font-size:10px;color:#e6c84e;font-weight:700;margin-left:4px;">수정됨</span>'+metaInfo:'';
+  /* 수정됨 메타(시간·시간대·카테고리)는 길고 무의미 → 제거(GM 2026-06-12). 작은 '수정됨'만(하루 만료). */
+  const editedTag=(isEdited&&(typeof isEditFresh!=='function'||isEditFresh(it.id)))?'<span style="font-size:10px;color:#e6c84e;font-weight:700;margin-left:4px;">수정됨</span>':'';
   /* 온도 측정칸 (해당 항목만) — 기준 벗어나면 빨간 경고 */
   const tempFields=tempFieldsFor(it.id);
   let tempHtml='';
