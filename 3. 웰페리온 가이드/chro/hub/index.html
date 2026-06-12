@@ -1778,7 +1778,7 @@ document.getElementById("gatePw").addEventListener("keydown",function(e){
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
       <div><label style="font-size:12px;color:var(--ink-soft)">전환할 단계</label>
         <select id="aiNewStage" style="width:100%"><option>서류 검토</option><option>1차 면접</option><option>2차 면접</option><option>최종 합격</option><option>보류</option><option>불합격</option></select></div>
-      <div><label style="font-size:12px;color:var(--ink-soft)">면접 일시</label>
+      <div><label style="font-size:12px;color:var(--ink-soft)">면접 일시 <span style="color:var(--ink-faint)">(면접 단계만 필수)</span></label>
         <input type="datetime-local" id="aiNewDate" style="width:100%"></div>
       <div><label style="font-size:12px;color:var(--ink-soft)">담당 면접관 (선택)</label>
         <input type="text" id="aiNewInterviewer" placeholder="예: 매니저, 운영부 팀장" style="width:100%"></div>
@@ -1854,25 +1854,19 @@ document.getElementById("gatePw").addEventListener("keydown",function(e){
     var date = document.getElementById("aiNewDate").value;
     var interviewer = document.getElementById("aiNewInterviewer").value.trim();
     var note = document.getElementById("aiNewNote").value.trim();
-    if(!date){ alert("면접 일시를 입력해주세요."); return; }
-    var btn = document.getElementById("aiSubmit"); btn.disabled = true; btn.textContent = "등록 중…";
+    var needDate = /면접/.test(stage); // 1차·2차 면접 단계만 면접 일시 필수 (탈락·불합격·보류·합격·서류는 일시 없이 변경 가능)
+    if(needDate && !date){ alert("면접 단계는 면접 일시를 입력해주세요.\n(탈락·불합격·보류·합격·서류 검토는 일시 없이 변경됩니다)"); return; }
+    var btn = document.getElementById("aiSubmit"); btn.disabled = true; btn.textContent = "처리 중…";
     var msg = document.getElementById("aiResult"); msg.textContent = "";
     try {
-      var uk = (window.__uk || (document.getElementById("gatePw") && document.getElementById("gatePw").value) || "");
       var r1 = await fetch(NOTION_FN, { method:"POST", body: JSON.stringify({
-        action:"schedule-interview", adminPassword: SESSION_PW,
-        applicantPageId: pid, applicant: a["지원자명"], name: a["지원자명"],
-        stage: stage, interviewDate: date, interviewer: interviewer
+        action:"set-stage", adminPassword: SESSION_PW,
+        sheetRow: a["_sheet_row"], name: a["지원자명"], applyDate: (a["지원일"]||""),
+        stage: stage, interviewDate: date, interviewer: interviewer, note: note
       })}).then(function(r){return r.json();});
-      if(!r1.ok) throw new Error(r1.error||"schedule failed");
-      if(note){
-        await fetch(NOTION_FN, { method:"POST", body: JSON.stringify({
-          action:"update-interview", adminPassword: SESSION_PW,
-          applicantPageId: pid, applicant: a["지원자명"], name: a["지원자명"], note: note, nextStage: stage
-        })}).then(function(r){return r.json();});
-      }
-      msg.style.color = "#0a6b3a"; msg.textContent = "✓ 등록 완료 — " + (r1.msg || "");
-      setTimeout(function(){ document.getElementById("aiModal").style.display = "none"; if(typeof loadAll==="function") loadAll(); }, 1400);
+      if(!r1.ok) throw new Error(r1.error||"set-stage failed");
+      msg.style.color = "#0a6b3a"; msg.textContent = "✓ 변경 완료 — 단계: " + stage + (date? " · 면접 "+date.replace("T"," ") : "");
+      setTimeout(function(){ document.getElementById("aiModal").style.display = "none"; if(typeof loadAll==="function") loadAll(); }, 1200);
     } catch(e){
       msg.style.color = "#b00020"; msg.textContent = "❌ 실패: " + (e.message||e);
     } finally {
@@ -2006,4 +2000,5 @@ details.jobs-fold > summary > .jf-arrow{display:inline-block;transition:transfor
     groups.forEach(function(g){g.style.display = "none";});
 
     document.getElementById("__af_q").addEventListener("input", renderRows);
-    document.getElementById("__af_stage").addEventListener("change", renderRows
+    document.getElementById("__af_stage").addEventListener("change", renderRows);
+    document.getElementByI
