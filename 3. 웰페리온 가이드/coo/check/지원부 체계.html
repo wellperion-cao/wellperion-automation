@@ -1798,6 +1798,14 @@ async function loadState(d,g){
       if(v.by)STATE['_gsubBy_'+key]=v.by;
       if(v.at)STATE['_gsubAt_'+key]=v.at;
     });}
+    // (나) 방지: 이 날짜+성별에 서버 미반영 체크가 있으면 로컬 chkKey를 서버 위에 오버레이(미저장분 유실 방지).
+    // 저장 완료되면 _dirtyKeys 해제 → 이후엔 서버 우선(옛 데이터 부활 위험 없음). GM 2026-06-12
+    if(_dirtyKeys[d+'__'+gg]){
+      try{
+        Object.keys(STATE).forEach(k=>{ if(k.indexOf('chk_'+gg+'_')===0)delete STATE[k]; });   // 서버 체크 제거
+        const _loc=loadLocal(d,gg); Object.keys(_loc).forEach(k=>{ if(k.indexOf('chk_'+gg+'_')===0 && _loc[k]===true)STATE[k]=true; });   // 로컬(진실) 적용
+      }catch(e){}
+    }
   }catch(e){STATE=loadLocal(d,gg)}
 }
 
@@ -1807,8 +1815,10 @@ function flushPendingSave(){
   if(saveTimer){ clearTimeout(saveTimer); saveTimer=null; const _d=_pendingPushDate; _pendingPushDate=null; if(ONLINE && _d)return pushToServer(_d); }
   return Promise.resolve();
 }
+let _dirtyKeys={};   // '날짜__성별' → 서버 미저장 변경 있음(탭이동 시 로컬 보존용). GM 2026-06-12
 function saveState(d,g){
   saveLocal(d,STATE,g);
+  _dirtyKeys[d+'__'+(g||activeGenderTab)]=true;
   if(!ONLINE)return;
   clearTimeout(saveTimer);
   _pendingPushDate=d;
@@ -1857,6 +1867,7 @@ async function pushToServer(d){
         submitted_night:!!STATE._submitted_night,submittedAt_night:STATE._submittedAt_night||'',submitter_night:STATE._submitter_night||''
       })
     });
+    delete _dirtyKeys[d+'__'+g];   // 서버 반영 완료 → 이후 loadState는 서버 우선(로컬 오버레이 해제)
     ind.textContent='저장 완료';
   }catch(e){ind.textContent='저장 실패 (로컬 저장됨)'}
   setTimeout(()=>{ind.style.display='none'},1500);
@@ -2600,17 +2611,25 @@ function updateNightSubmitButtonG(sched,nightStats,d,gender){
   }
 }
 
+let _ckDrawTimer=null;
 function onCk(id,shift,gender,round){
   const d=getDateG(gender);
   const pfx=gender+'_';
-  const val=document.getElementById('cb_'+pfx+id).checked;
+  const cb=document.getElementById('cb_'+pfx+id);
+  const val=cb?cb.checked:false;
   /* 회차별 체크 독립: round 있으면 라운드 키에만 기록(다른 회차 미영향).
      round 없으면(야간모드 등) 기존 레거시 키 유지(비회귀). */
   if(round){ if(val)STATE[chkKey(round,id,gender)]=true; else delete STATE[chkKey(round,id,gender)]; }
   else { STATE[id]=val; }
   saveState(d,gender);
+  /* 빠른 연속체크 레이스 방지(GM 2026-06-12): 클릭한 항목 행만 즉시 가볍게 반영하고,
+     무거운 전체 redraw + 완료판정은 연속체크가 멈춘 뒤 1회만(디바운스). */
+  if(cb){ const _row=cb.closest('.item'); if(_row)_row.classList.toggle('checked',val); }
+  clearTimeout(_ckDrawTimer);
+  _ckDrawTimer=setTimeout(function(){ _ckDrawTimer=null; _onCkAfter(d,gender); },250);
+}
+function _onCkAfter(d,gender){
   drawUI(d,gender);
-
   const nightMode=isNightShiftWorkerG(gender);
   const sched=nightMode?getNightSched(d):getSched(d);
   if(!sched)return;
@@ -2840,8 +2859,10 @@ function collectGroupSubmits(){
   });
   return out;
 }
-// 그룹 제출 버튼/배지 HTML — cat-body 하단에 삽입
+// 그룹 제출 버튼/배지 HTML — '이 항목 제출' 기능 제거(GM 2026-06-12): 조 단위 제출만 사용(렌더 경량화).
 function groupSubmitBarHtml(g, gender, round){
+  return '';
+  // eslint-disable-next-line no-unreachable
   const gk = groupKey(g);
   const visItems = (g.items||[]).filter(it=>shouldShowItemForGender(it,gender));
   /* 회차별 체크 독립: round 있으면 그 회차 체크 기준 미흡건 계산 */
