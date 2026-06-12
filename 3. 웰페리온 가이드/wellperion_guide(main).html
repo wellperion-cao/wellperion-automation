@@ -536,13 +536,12 @@
       <!-- 업무 카드 -->
       <div style="background:var(--paper);border:1px solid var(--border);border-radius:14px;padding:16px 18px;">
         <div style="display:flex;align-items:center;gap:9px;margin-bottom:12px;"><span style="width:28px;height:28px;border-radius:8px;background:var(--accent-bg);color:var(--accent);display:flex;align-items:center;justify-content:center;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5h6M7 7H5v14h14V7h-2M9 5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2"/></svg></span><div><div style="font-weight:800;font-size:14px;color:var(--text);">업무 현황</div><div style="font-size:10.5px;color:var(--dim);">Work · AI COO(시우)</div></div></div>
-        <!-- 📊 SSOT 지표 스트립 (6지표) — 업무 현황 SSOT 대시보드와 동일 계산 (2026-06-11 GM) -->
-        <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:1px;background:var(--border);border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:10px;">
-          <div style="background:var(--paper);padding:7px 4px;text-align:center;"><div style="font-size:15px;font-weight:800;color:var(--accent);line-height:1.1;" id="kpiWorkStripActive">—</div><div style="font-size:9px;color:var(--dim);margin-top:2px;font-weight:600;">진행중</div></div>
+        <!-- 📊 SSOT 지표 스트립 (5칸: 총건수|진행중|완료(완료율%)|보류|마감준수율%) — SSOT 대시보드와 동일 계산 (2026-06-12 GM) -->
+        <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:1px;background:var(--border);border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:10px;">
           <div style="background:var(--paper);padding:7px 4px;text-align:center;"><div style="font-size:15px;font-weight:800;color:var(--text);line-height:1.1;" id="kpiWorkStripTotal">—</div><div style="font-size:9px;color:var(--dim);margin-top:2px;font-weight:600;">총건수</div></div>
-          <div style="background:var(--paper);padding:7px 4px;text-align:center;"><div style="font-size:15px;font-weight:800;color:var(--grow);line-height:1.1;" id="kpiWorkStripDone">—</div><div style="font-size:9px;color:var(--dim);margin-top:2px;font-weight:600;">완료</div></div>
+          <div style="background:var(--paper);padding:7px 4px;text-align:center;"><div style="font-size:15px;font-weight:800;color:var(--accent);line-height:1.1;" id="kpiWorkStripActive">—</div><div style="font-size:9px;color:var(--dim);margin-top:2px;font-weight:600;">진행중</div></div>
+          <div style="background:var(--paper);padding:7px 4px;text-align:center;"><div style="font-size:15px;font-weight:800;color:var(--grow);line-height:1.1;" id="kpiWorkStripDone">—</div><div style="font-size:9px;color:var(--dim);margin-top:2px;font-weight:600;">완료(완료율)</div></div>
           <div style="background:var(--paper);padding:7px 4px;text-align:center;"><div style="font-size:15px;font-weight:800;color:var(--dim);line-height:1.1;" id="kpiWorkStripHold">—</div><div style="font-size:9px;color:var(--dim);margin-top:2px;font-weight:600;">보류</div></div>
-          <div style="background:var(--paper);padding:7px 4px;text-align:center;"><div style="font-size:15px;font-weight:800;color:var(--text);line-height:1.1;" id="kpiWorkStripRate">—</div><div style="font-size:9px;color:var(--dim);margin-top:2px;font-weight:600;">완료율</div></div>
           <div style="background:var(--paper);padding:7px 4px;text-align:center;"><div style="font-size:15px;font-weight:800;color:var(--text);line-height:1.1;" id="kpiWorkStripDlRate">—</div><div style="font-size:9px;color:var(--dim);margin-top:2px;font-weight:600;">마감준수율</div></div>
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
@@ -912,9 +911,8 @@
 
         set('kpiWorkStripTotal',    sTotal);
         set('kpiWorkStripActive',   sActive);
-        set('kpiWorkStripDone',     sDone);
+        set('kpiWorkStripDone',     sDone + ' (' + sRate + '%)');  // 완료 + 완료율 괄호 병기(별도 칸 제거·흡수)
         set('kpiWorkStripHold',     sHold);
-        set('kpiWorkStripRate',     sRate + '%');
         set('kpiWorkStripDlRate',   sDlRate + '%');
 
         // 결재 행 (전체 rows, 실무진 무관)
