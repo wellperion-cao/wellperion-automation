@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="강습팀 가이드라인">
-<title>웰페리온 강습팀 가이드라인</title>
+<meta name="apple-mobile-web-app-title" content="강습팀 업장관리">
+<title>웰페리온 강습팀 업장관리</title>
 <style>
   :root{
     color-scheme: light;
@@ -135,7 +135,7 @@
     <div class="hd-top">
       <div class="brand">
         <span class="mark">Wellperion</span>
-        <h1>강습팀 가이드라인</h1>
+        <h1>강습팀 업장관리</h1>
       </div>
       <a class="db-btn" id="dbBtn" href="#">▦ 기록 시트</a>
     </div>
@@ -144,6 +144,7 @@
 </header>
 
 <main class="wrap">
+<div class="meta-card" id="issuePanelCard" style="background:var(--paper,#2a2725);border:1px solid var(--border,#3d3835);border-radius:14px;padding:14px 16px;margin-bottom:14px"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><strong style="font-size:15px;color:var(--text,#f5f2ef)">🗂 이슈 현황 <span style="color:var(--dim,#8c8b83);font-weight:500;font-size:12px">미처리 누적</span></strong><button type="button" id="issueReload" style="background:transparent;color:var(--dim,#8c8b83);border:1px solid var(--border,#3d3835);border-radius:8px;padding:4px 10px;font-size:12px;cursor:pointer">↻ 새로고침</button></div><div id="issueList" style="font-size:13px;color:var(--dim,#8c8b83)">이슈 불러오는 중…</div></div>
   <div class="meta-card">
     <div class="row2">
       <div class="field">
@@ -398,6 +399,32 @@ function init(){
   if(ENDPOINT)document.getElementById("setupNote").style.display="none";
 }
 init();
+
+function wpEscI(s){return (''+(s==null?'':s)).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
+function wpRenderIssues(){
+  var box=document.getElementById("issueList"); if(!box) return;
+  box.innerHTML="이슈 불러오는 중…";
+  fetch(ENDPOINT+"?action=issues&t="+Date.now()).then(function(r){return r.json();}).then(function(j){
+    if(!j||!j.ok){ box.innerHTML="<span style=\"color:var(--red,#ED5B3F)\">이슈를 불러오지 못했습니다. Apps Script(doGet) 추가·재배포가 필요합니다.</span>"; return; }
+    var open=(j.issues||[]).filter(function(x){return !x.resolved;});
+    if(!open.length){ box.innerHTML="<span style=\"color:var(--green,#6abf7b)\">미처리 이슈가 없습니다 ✓</span>"; return; }
+    box.innerHTML=open.map(function(x){
+      return '<div style="display:flex;gap:10px;align-items:flex-start;padding:9px 0;border-bottom:1px solid var(--border,#3d3835)">'
+      +'<span style="background:var(--accent-bg,#3a322c);color:var(--accent,#B79F8A);border-radius:5px;padding:1px 7px;font-size:12px;font-weight:700;white-space:nowrap">'+wpEscI(x.venue)+'</span>'
+      +'<span style="color:var(--dim,#8c8b83);font-size:12px;white-space:nowrap">'+wpEscI(x.date)+'</span>'
+      +'<span style="flex:1;font-size:13px;line-height:1.5;color:var(--text,#f5f2ef)">'+wpEscI(x.text)+'</span>'
+      +'<button type="button" class="wp-resolve" data-id="'+encodeURIComponent(x.id)+'" style="background:var(--green,#6abf7b);color:#10240f;border:none;border-radius:6px;padding:4px 11px;font-weight:700;cursor:pointer;white-space:nowrap">처리</button></div>';
+    }).join("");
+    [].slice.call(box.querySelectorAll(".wp-resolve")).forEach(function(b){ b.onclick=function(){ wpResolveIssue(b.getAttribute("data-id"), b); }; });
+  }).catch(function(){ box.innerHTML="<span style=\"color:var(--red,#ED5B3F)\">네트워크 오류</span>"; });
+}
+function wpResolveIssue(encId, btn){
+  if(!confirm("이 이슈를 처리 완료로 표시할까요?")) return;
+  btn.disabled=true; btn.textContent="처리중…";
+  var nameEl=document.getElementById("f_name"); var by=encodeURIComponent(nameEl?nameEl.value:"");
+  fetch(ENDPOINT+"?action=resolve&id="+encId+"&by="+by+"&t="+Date.now()).then(function(r){return r.json();}).then(function(){ wpRenderIssues(); }).catch(function(){ btn.disabled=false; btn.textContent="처리"; alert("처리 실패"); });
+}
+document.addEventListener("DOMContentLoaded",function(){ var rb=document.getElementById("issueReload"); if(rb) rb.onclick=wpRenderIssues; wpRenderIssues(); });
 </script>
 </body>
 </html>
