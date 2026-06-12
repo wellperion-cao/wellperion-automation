@@ -657,21 +657,57 @@ function diagCard(){
 
 /* ============ DASHBOARD ============ */
 function renderDash(){
-  var emp=DB.emp,hire=DB.hire,appl=DB.appl,onbo=DB.onbo;
+  var emp=DB.emp,hire=DB.hire,appl=DB.appl,onbo=DB.onbo,evl=DB.eval,exits=DB.exit;
   var active=emp.filter(function(e){return e["재직 상태"]!=="퇴사";});
+  var probation=emp.filter(function(e){return e["재직 상태"]==="수습중";});
   var activeHire=hire.filter(function(h){
     return ["공고 준비","공고중","서류심사","면접 진행","처우 협의"].indexOf(h["채용 상태"])>=0;});
   var obDone=onbo.filter(function(o){return isYes(o["완료 여부"]);}).length;
   var obRate=onbo.length?Math.round(obDone/onbo.length*100):0;
-  var today=new Date();
+  var today=new Date();today.setHours(0,0,0,0);
+  var in7=new Date(today.getTime()+7*86400000);
+  var d90=new Date(today.getTime()-90*86400000);
+
+  /* 채용 퍼널 */
+  var fStages=["서류 검토","1차 면접","2차 면접","최종 합격"];
+  var funnel={};fStages.forEach(function(s){funnel[s]=appl.filter(function(a){return a["전형 단계"]===s;}).length;});
+  var fMax=Math.max(1,funnel["서류 검토"],funnel["1차 면접"],funnel["2차 면접"],funnel["최종 합격"]);
+  var finalPass=funnel["최종 합격"]||0;
+  /* 평가 */
+  var gradeDist={};evl.forEach(function(e){var g=e["평가 등급"];if(g){gradeDist[g]=(gradeDist[g]||0)+1;}});
+  var rewarded=evl.filter(function(e){return isYes(e["포상 여부"]);}).length;
+  /* 이직 */
+  var exit90=exits.filter(function(e){var d=dt(e,"최종 근무일");return d&&new Date(d)>=d90;});
+  var exitTypes={};exit90.forEach(function(e){var t=e["퇴사 유형"]||"기타";exitTypes[t]=(exitTypes[t]||0)+1;});
+  var turnover=(active.length+exit90.length)?Math.round(exit90.length/(active.length+exit90.length)*1000)/10:0;
+  /* 이번 주 할 일 */
+  var todos=[];
+  appl.forEach(function(a){var d=dt(a,"면접 일정");if(d){var dd=new Date(d);if(dd>=today&&dd<=in7)todos.push({d:dd,ic:"🗓",txt:'<b>면접</b> '+esc(a["지원자명"]||"")+' · '+esc(a["전형 단계"]||"")+' — '+fmtD(d)});}});
+  hire.forEach(function(h){var d=dt(h,"공고 마감일");if(d&&h["채용 상태"]==="공고중"){var dd=new Date(d);if(dd>=today&&dd<=in7)todos.push({d:dd,ic:"⏰",txt:'<b>공고 마감</b> '+esc(h["포지션명"]||"")+' — '+fmtD(d)});}});
+  todos.sort(function(a,b){return a.d-b.d;});
+  /* 채용 채널 */
+  var STD_CH=["잡코리아","알바몬","호호요가","스포드림카페","자사 채용홈"];
+  var srcDist={};appl.forEach(function(a){var s=a["지원 경로"];if(s){srcDist[s]=(srcDist[s]||0)+1;}});
 
   var html=diagCard();
+
   html+='<div class="sec-title">핵심 지표</div><div class="kpi-grid">';
-  html+=kpi("재직 인원",active.length+'<small> 명</small>',"임직원 명부 기준");
+  html+=kpi("재직 인원",active.length+'<small> 명</small>',"수습 "+probation.length+"명 포함");
   html+=kpi("진행 중 채용",activeHire.length+'<small> 건</small>',"공고~처우협의 단계");
-  html+=kpi("지원자 풀",appl.length+'<small> 명</small>',"지원자 트래킹 기준");
+  html+=kpi("지원자 풀",appl.length+'<small> 명</small>',"최종 합격 대기 "+finalPass+"명");
   html+=kpi("온보딩 완료율",obRate+'<small> %</small>',obDone+" / "+onbo.length+" 항목");
+  html+=kpi("최근 90일 퇴사",exit90.length+'<small> 명</small>',"이직률 "+turnover+"%");
+  html+=kpi("평가 포상",rewarded+'<small> 건</small>',"인사평가 "+evl.length+"건 중");
   html+='</div>';
+
+  html+='<div class="sec-title">이번 주 할 일</div>';
+  if(todos.length){
+    html+='<div class="card"><div class="stack" style="gap:4px">'+todos.map(function(t){
+      return '<div style="display:flex;gap:9px;align-items:center;font-size:13px;padding:6px 2px;border-bottom:1px solid #efece4"><span>'+t.ic+'</span><span>'+t.txt+'</span></div>';
+    }).join("")+'</div></div>';
+  }else{
+    html+='<div class="card">'+emptyState("이번 주 예정된 면접·마감 일정이 없습니다.","◔")+'</div>';
+  }
 
   var overdue=hire.filter(function(h){
     var dl=dt(h,"공고 마감일");return h["채용 상태"]==="공고중"&&dl&&new Date(dl)<today;});
@@ -691,9 +727,41 @@ function renderDash(){
     html+='<div class="alert empty"><b>✓ 양호</b><div>즉시 조치가 필요한 채용·계약 항목이 없습니다.</div></div>';
   }
 
+  html+='<div class="sec-title">채용 퍼널</div>';
+  html+='<div class="card"><div class="grid-2"><div><div style="font-size:12.5px;color:#6c6961;margin-bottom:10px">전형 단계별 인원</div>';
+  html+=fStages.map(function(s){
+    var w=Math.round(funnel[s]/fMax*100);
+    return '<div style="display:flex;align-items:center;gap:10px;margin:6px 0">'+
+      '<span style="flex:0 0 88px;font-size:12px">'+badge(s)+'</span>'+
+      '<div style="flex:1;background:#efece4;border-radius:6px;height:16px;overflow:hidden"><div style="height:100%;background:#a98a52;border-radius:6px;width:'+(funnel[s]?Math.max(w,5):0)+'%"></div></div>'+
+      '<span style="flex:0 0 30px;text-align:right;font-weight:700;font-size:13px">'+funnel[s]+'</span></div>';
+  }).join("");
+  html+='</div><div class="chart-box"><canvas id="cFunnel"></canvas></div></div></div>';
+
+  html+='<div class="sec-title">채용 채널</div><div class="grid-2">';
+  html+='<div class="card"><h3>지원자 유입 경로</h3><div class="chart-box"><canvas id="cSource"></canvas></div></div>';
+  html+='<div class="card"><h3>채널 게시 현황 <span class="muted" style="font-weight:400;font-size:11.5px">· ✓ 게시 / · 미게시</span></h3>';
+  if(activeHire.length){
+    html+=activeHire.map(function(h){
+      var on=parseArr(h["채용 채널"]);
+      return '<div style="margin:10px 0 12px"><div style="font-weight:650;font-size:13px;margin-bottom:6px">'+esc(txt(h["포지션명"]))+'</div><div style="display:flex;flex-wrap:wrap;gap:6px">'+
+        STD_CH.map(function(c){
+          var cc=c.replace(/\s/g,"");
+          var isOn=on.some(function(x){var xx=String(x).replace(/\s/g,"");return xx.indexOf(cc)>=0||cc.indexOf(xx)>=0;});
+          return '<span style="font-size:11.5px;padding:3px 10px;border-radius:20px;'+(isOn?"background:#e9f1ea;color:#3c7a4a;font-weight:700":"background:#f4f3ef;color:#b5b1a6")+'">'+(isOn?"✓ ":"· ")+esc(c)+'</span>';
+        }).join("")+'</div></div>';
+    }).join("");
+  }else{html+='<div class="muted" style="font-size:12.5px;padding:10px 0">진행 중인 공고가 없습니다.</div>';}
+  html+='</div></div>';
+
   html+='<div class="sec-title">인력 구성</div><div class="grid-2">';
   html+='<div class="card"><h3>부서별 인원</h3><div class="chart-box"><canvas id="cDept"></canvas></div></div>';
   html+='<div class="card"><h3>고용 형태 분포</h3><div class="chart-box"><canvas id="cType"></canvas></div></div>';
+  html+='</div>';
+
+  html+='<div class="sec-title">성과 · 이직 동향</div><div class="grid-2">';
+  html+='<div class="card"><h3>인사평가 등급 분포</h3><div class="chart-box"><canvas id="cGrade"></canvas></div></div>';
+  html+='<div class="card"><h3>퇴사 유형 (최근 90일)</h3><div class="chart-box"><canvas id="cExit"></canvas></div></div>';
   html+='</div>';
 
   html+='<div class="sec-title">진행 중 채용</div>';
@@ -704,6 +772,10 @@ function renderDash(){
   setPanel("dash",html);
   drawBar("cDept",groupCount(active,"부서"));
   drawDonut("cType",groupCount(active,"고용 형태"));
+  drawBar("cFunnel",funnel);
+  drawDonut("cGrade",Object.keys(gradeDist).length?gradeDist:{"데이터 없음":1});
+  drawDonut("cExit",Object.keys(exitTypes).length?exitTypes:{"퇴사 없음":1});
+  drawDonut("cSource",Object.keys(srcDist).length?srcDist:{"데이터 없음":1});
 }
 function kpi(label,val,note){
   return '<div class="kpi"><div class="label">'+esc(label)+'</div>'+
@@ -830,8 +902,8 @@ function jobItem(h){
     (h["주요 업무"]?'<div style="margin-top:9px;font-size:12px;color:var(--ink-soft);white-space:pre-wrap">'+
       esc(h["주요 업무"])+'</div>':"")+
     (applicants.length
-      ? '<details class="appl-details" style="margin-top:12px;border-top:1px solid var(--line-soft);padding-top:10px">'+
-        '<summary style="cursor:pointer;font-weight:650;font-size:13px;color:var(--gold-deep)">▾ 지원자 '+applicants.length+'명 보기 (등급순)</summary>'+
+      ? '<details class="appl-details" open style="margin-top:12px;border-top:1px solid var(--line-soft);padding-top:10px">'+
+        '<summary style="cursor:pointer;font-weight:650;font-size:13px;color:var(--gold-deep)">지원자 '+applicants.length+'명 (등급순) — 접기/펴기</summary>'+
         '<div style="margin-top:10px;display:flex;flex-direction:column;gap:8px">'+
           applicants.map(applicantRow).join("")+
         '</div></details>'
@@ -932,7 +1004,7 @@ function openPrintView(pageId){
       '<h2>3. AI 서류 평가 — 종합 등급</h2>'+
       '<p style="font-size:11pt;margin:8px 0">종합 등급: <span class="grade">'+esc(grade)+'</span> &nbsp;&nbsp; <span style="color:#6c6961;font-size:9.5pt">(인재상별 평가 근거·강점·확인사항은 위 \'이력 요약\'에 포함)</span></p>'+
       '<h2>4. 면접 질문지 (표준 10문항 · 부서 맞춤 조정 가능)</h2>'+
-      '<div class="q-part">PART 1 — 주인의식 · 이직 동기 (15분)</div>'+
+      '<div class="q-part">PART 1 — 문제해결능력 · 이직 동기 (15분)</div>'+
       '<div class="q"><span class="q-num">Q1.</span> 이전 직장에서 "이건 내 일이 아니다"라고 회피하기 쉬운 상황을 끝까지 해결했던 구체적 사례를 들려주세요.</div>'+
       '<div class="q"><span class="q-num">Q2.</span> 이전 직장을 그만두신 결정적 계기는 무엇인가요?</div>'+
       '<div class="q"><span class="q-num">Q3.</span> 잡코리아에 등록된 본인 희망 직무와 우리 공고 직무가 다른 점이 있다면, 우리 회사에 지원하신 이유는?</div>'+
@@ -960,34 +1032,58 @@ function openPrintView(pageId){
 }
 function kv(k,v){return '<div><div class="k">'+esc(k)+'</div><div class="v">'+esc(v)+'</div></div>';}
 function renderHire(){
-  var html='<div class="sec-title">채용 공고</div>';
+  // 연결 공고 id → 포지션명 매핑
+  var jobName={};
+  (DB.hire||[]).forEach(function(h){ jobName[normId(h.url)]=txt(h["포지션명"]); });
+
+  var html=''+
+    '<style>'+
+    '.appl-table{display:flex;flex-direction:column}'+
+    '.appl-tr{display:grid;grid-template-columns:1.1fr 1.5fr .9fr 1fr .55fr .85fr 1.5fr;gap:8px;align-items:center;padding:9px 14px;border-bottom:1px solid var(--line-soft,#ececec);font-size:12.5px}'+
+    '.appl-th{font-weight:700;color:var(--ink-faint,#9a978e);background:var(--surface-2,#f7f5f0);font-size:11px;letter-spacing:.3px;position:sticky;top:0}'+
+    '.appl-tr:not(.appl-th):hover{background:var(--surface-2,#f7f5f0)}'+
+    '.appl-tr:last-child{border-bottom:none}'+
+    '@media(max-width:720px){.appl-tr{grid-template-columns:1.2fr 1fr .8fr;font-size:12px}'+
+    '.appl-tr>div:nth-child(3),.appl-tr>div:nth-child(6),.appl-tr>div:nth-child(7){display:none}}'+
+    '</style>';
+
+  /* ===== A. 전체 지원자 목록 ===== */
+  html+='<div class="sec-title">전체 지원자 <span style="font-weight:500;color:var(--ink-faint)">'+(DB.appl?DB.appl.length:0)+'명</span></div>';
+  if(ERR.appl){html+=errCard("지원자 트래킹","appl");}
+  else if(DB.appl && DB.appl.length){
+    var all=DB.appl.slice().sort(function(x,y){
+      var dx=dt(x,"지원일"), dy=dt(y,"지원일");
+      return (dy?new Date(dy).getTime():0)-(dx?new Date(dx).getTime():0); // 최신 지원순
+    });
+    (window.__registerAppls && window.__registerAppls(all));
+    html+='<div class="card" style="padding:0;overflow:hidden"><div class="appl-table">';
+    html+='<div class="appl-tr appl-th"><div>지원자</div><div>지원 포지션</div><div>지원 경로</div><div>전형 단계</div><div>평점</div><div>지원일</div><div>연결 공고</div></div>';
+    html+=all.map(function(a){
+      var apppid=(((a["원본 Notion URL"]||"")+"").match(/[0-9a-f]{32}/i)||[""])[0].toLowerCase();
+      var linked=parseArr(a["연결 공고"]).map(function(r){return jobName[normId(r)]||"";}).filter(Boolean).join(", ");
+      return '<div class="appl-tr" data-applname="'+esc(a["지원자명"]||"")+'" data-apppid="'+apppid+'" style="cursor:pointer" title="클릭하면 상세 정보">'+
+        '<div class="t-name">'+esc(txt(a["지원자명"]))+'</div>'+
+        '<div>'+esc(txt(a["지원 포지션"]))+'</div>'+
+        '<div>'+(a["지원 경로"]?badge(a["지원 경로"]):'<span class="muted">—</span>')+'</div>'+
+        '<div>'+(a["전형 단계"]?badge(a["전형 단계"]):'<span class="muted">—</span>')+'</div>'+
+        '<div>'+(a["면접 평점"]?badge(a["면접 평점"]):'<span class="muted">—</span>')+'</div>'+
+        '<div class="t-sub">'+fmtD(dt(a,"지원일"))+'</div>'+
+        '<div class="t-sub">'+(linked?esc(linked):'<span class="muted">미연결</span>')+'</div>'+
+      '</div>';
+    }).join("");
+    html+='</div></div>';
+  }else{html+='<div class="card">'+emptyState("등록된 지원자가 없습니다.","◔")+'</div>';}
+
+  /* ===== B. 공고별 지원자 ===== */
+  html+='<div class="sec-title">공고별 채용 현황</div>';
   if(ERR.hire){html+=errCard("채용 공고 DB","hire");}
   else if(DB.hire.length){
-    var order={"공고중":0,"서류심사":1,"면접 진행":2,"처우 협의":3,"공고 준비":4,"보류":5,"채용 완료":6};
+    var order={"공고중":0,"서류심사":1,"면접 진행":2,"처우 협의":3,"공고 준비":4,"보류":5,"채용 완료":6,"마감":7};
     var sorted=DB.hire.slice().sort(function(a,b){
       return (order[a["채용 상태"]]==null?9:order[a["채용 상태"]])-(order[b["채용 상태"]]==null?9:order[b["채용 상태"]]);});
     html+='<div class="stack">'+sorted.map(jobItem).join("")+'</div>';
   }else{html+='<div class="card">'+emptyState("등록된 채용 공고가 없습니다.","◔")+'</div>';}
 
-  html+='<div class="sec-title">지원자 트래킹 — 전형 단계</div>';
-  if(ERR.appl){html+=errCard("지원자 트래킹","appl");}
-  else if(DB.appl.length){
-    var stages=["서류 검토","1차 면접","2차 면접","최종 합격","보류","불합격","탈락"];
-    html+='<div class="pipe">';
-    stages.forEach(function(st){
-      var list=DB.appl.filter(function(a){return a["전형 단계"]===st;});
-      html+='<div class="pipe-col"><div class="pipe-head"><span>'+badge(st)+
-        '</span><span class="n">'+list.length+'</span></div>';
-      (window.__registerAppls && window.__registerAppls(list));html+=list.map(function(a){
-        return '<div class="appl" data-applname="'+esc(a["지원자명"]||"")+'" data-apppid="'+(((a["원본 Notion URL"]||"")+"").match(/[0-9a-f]{32}/i)||[""])[0].toLowerCase()+'" style="cursor:pointer" title="클릭하면 상세 정보"><div class="an">'+esc(txt(a["지원자명"]))+'</div>'+
-          '<div class="ap">'+esc(txt(a["지원 포지션"]))+'</div>'+
-          '<div class="ax">'+(a["면접 평점"]?badge(a["면접 평점"]):'<span class="muted">평점 —</span>')+
-          '<span class="t-sub">'+fmtD(dt(a,"면접 일정"))+'</span></div></div>';
-      }).join("")||'<div class="muted" style="font-size:11px">해당 없음</div>';
-      html+='</div>';
-    });
-    html+='</div>';
-  }else{html+='<div class="card">'+emptyState("등록된 지원자가 없습니다.","◔")+'</div>';}
   setPanel("hire",html);
 
   // 채용 탭 액션 버튼 클릭 위임
@@ -1090,7 +1186,7 @@ function criteriaSection(){
     '</div>';
   h+='<div class="card" style="margin-top:14px"><h3>4대 인재상 ↔ 평가 영역</h3>'+
     '<table><thead><tr><th>인재상</th><th>핵심 평가 영역</th></tr></thead><tbody>'+
-    [["주인의식","직원 직무이해도(35) · 상호 업무수행능력(35) · 리더 공정성(40)"],
+    [["문제해결능력","직원 직무이해도(35) · 상호 업무수행능력(35) · 리더 공정성(40)"],
      ["팀워크","직원 조직기여도(20) · 상호 협업능력(20) · 리더 조직문화(15)"],
      ["주도성","직원 성장가능성(20) · 상호 적극성 · 리더 지원·성장관리(15)"],
      ["프로세스","직원·상호 근무태도(15) · 상호 의사소통(20)"]]
@@ -1170,7 +1266,7 @@ function renderExit(){
 /* ============ STANDARDS ============ */
 function renderStd(){
   var talents=[
-    ["주인의식","30%","본인 영역의 이슈를 회피하지 않고 끝까지 해결한다."],
+    ["문제해결능력","30%","본인 영역의 이슈를 회피하지 않고 끝까지 해결한다."],
     ["팀워크","30%","동료의 도움 요청에 거절감 없이 응한다."],
     ["주도성","20%","새 도구·정책을 빠르게 익히고 활용한다."],
     ["프로세스","20%","규정·매뉴얼을 따르되 개선은 정식 루트로 제안한다."]
@@ -1916,77 +2012,4 @@ details.jobs-fold > summary > .jf-arrow{display:inline-block;transition:transfor
     return true;
   }
   function arrangeJobs(){
-    var titles = Array.from(document.querySelectorAll(".sec-title"));
-    if(titles.length<2) return false;
-    var jobsT = null, applT = null;
-    titles.forEach(function(t){
-      var s = (t.textContent||"").trim();
-      if(s === "채용 공고") jobsT = t;
-      else if(s.indexOf("지원자 트래킹") === 0) applT = t;
-    });
-    if(!jobsT || !applT) return false;
-    if(jobsT.dataset.arranged === "1") return false;
-    var parent = jobsT.parentElement;
-    if(parent !== applT.parentElement) return false;
-    var children = Array.from(parent.children);
-    var jIdx = children.indexOf(jobsT), aIdx = children.indexOf(applT);
-    if(jIdx<0 || aIdx<0 || jIdx>=aIdx) return false;
-    var jGroup = children.slice(jIdx+1, aIdx);
-    var cnt = 0;
-    jGroup.forEach(function(el){
-      if(!el.querySelectorAll) return;
-      var inner = el.querySelectorAll(".item");
-      cnt += inner.length || (el.classList && el.classList.contains("item") ? 1 : 0);
-    });
-    if(cnt===0) cnt = jGroup.length;
-    var det = document.createElement("details");
-    det.className = "jobs-fold";
-    det.style.cssText = "margin-top:18px;background:var(--surface-2,#faf9f6);border:1px solid var(--line,#e7e4dc);border-radius:12px;padding:0";
-    var sum = document.createElement("summary");
-    sum.style.cssText = "cursor:pointer;padding:12px 16px;color:var(--ink-soft,#6c6961);font-size:13px;font-weight:700;user-select:none;letter-spacing:.03em";
-    sum.innerHTML = '<span class="jf-arrow" style="margin-right:8px">▸</span>채용 공고 <span style="background:var(--surface,#fff);color:var(--ink,#1f1e1b);padding:2px 10px;border-radius:20px;margin-left:6px;font-size:11px;font-weight:600">'+cnt+'건</span>';
-    det.appendChild(sum);
-    var wrap = document.createElement("div");
-    wrap.style.cssText = "padding:6px 14px 14px";
-    jGroup.forEach(function(el){wrap.appendChild(el);});
-    det.appendChild(wrap);
-    jobsT.remove();
-    var newKids = Array.from(parent.children);
-    var nA = newKids.indexOf(applT), ref = null;
-    for(var j=nA+1; j<newKids.length; j++){
-      if(newKids[j].classList && newKids[j].classList.contains("sec-title")){ref = newKids[j]; break;}
-    }
-    if(ref) parent.insertBefore(det, ref);
-    else parent.appendChild(det);
-    applT.dataset.arranged = "1";
-    return true;
-  }
-  var pend = false;
-  function trig(){
-    if(pend) return;
-    pend = true;
-    setTimeout(function(){
-      pend = false;
-      try{arrangeJobs();}catch(e){}
-      try{buildApplList();}catch(e){}
-    }, 80);
-  }
-  var mo = new MutationObserver(function(recs){
-    for(var k=0; k<recs.length; k++){
-      var ns = recs[k].addedNodes;
-      for(var m=0; m<ns.length; m++){
-        var n = ns[m];
-        if(n.nodeType !== 1) continue;
-        if((n.className||"").indexOf("sec-title")>=0 || (n.className||"").indexOf("pipe-col")>=0 || (n.querySelector && (n.querySelector(".sec-title") || n.querySelector(".pipe-col")))){
-          trig(); return;
-        }
-      }
-    }
-  });
-  mo.observe(document.body, {childList:true, subtree:true});
-  if(document.readyState === "loading") document.addEventListener("DOMContentLoaded", trig);
-  else trig();
-})();
-</script>
-</body>
-</html>
+    var ti
