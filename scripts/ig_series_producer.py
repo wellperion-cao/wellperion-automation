@@ -48,6 +48,9 @@ for _stream_name in ("stdout", "stderr"):
 ROOT = Path(r"C:\Users\jjky0\welperion-automation")
 ROADMAP = ROOT / "instagram" / "_AI시리즈_로드맵.md"
 INSTAGRAM_DIR = ROOT / "instagram"
+# AI 시리즈(개인계정 namuk) 편들은 instagram/namuk.wellperion/ 하위에 거주(회사 콘텐츠와 분리).
+# 폴더 스캔(중복 가드)·신규편 생성·참고 빌더 모두 이 디렉터리를 기준으로 한다(2026-06-12 정리).
+NAMUK_DIR = INSTAGRAM_DIR / "namuk.wellperion"
 PY = ROOT / ".venv" / "Scripts" / "python.exe"
 ENV_PATH = ROOT / "telegram_bot" / ".env"
 
@@ -164,7 +167,7 @@ _DONE_STATUS_KW = ("제작완료", "검수대기", "검수 대기", "발행완�
 
 
 def _episode_already_produced(ep: dict) -> bool:
-    """이 편 번호(AI{num})로 이미 제작된 폴더가 instagram/ 아래에 있으면 True.
+    """이 편 번호(AI{num})로 이미 제작된 폴더가 instagram/namuk.wellperion/ 아래에 있으면 True.
 
     make_folder_slug 가 매 가동 '오늘 날짜'로 폴더를 새로 만들기 때문에, 같은 편을 다른
     날짜로 재제작하는 사고를 막으려면 날짜와 무관하게 'AI{num}_' 패턴 폴더 존재로 판정한다.
@@ -176,7 +179,8 @@ def _episode_already_produced(ep: dict) -> bool:
     """
     try:
         marker = f"_AI{ep['num']}_"
-        for child in INSTAGRAM_DIR.iterdir():
+        scan_dir = NAMUK_DIR if NAMUK_DIR.is_dir() else INSTAGRAM_DIR
+        for child in scan_dir.iterdir():
             if not child.is_dir():
                 continue
             name = child.name
@@ -280,8 +284,8 @@ def _find_claude() -> str:
 
 def build_producer_prompt(ep: dict, prev: dict | None, folder_slug: str) -> str:
     """시모에게 보낼 제작 지시 프롬프트. build_slides.py 1개 파일만 작성하도록 강제."""
-    folder_path = INSTAGRAM_DIR / folder_slug
-    ref_build = INSTAGRAM_DIR / "260604_AI5_깨진환상들" / "build_slides.py"
+    folder_path = NAMUK_DIR / folder_slug
+    ref_build = NAMUK_DIR / "260604_AI5_깨진환상들" / "build_slides.py"
     prev_block = (
         f"- 직전 편(#{prev['num']}): 제목「{prev['title']}」 / 핵심메시지「{prev['message']}」\n"
         f"  → 이 직전 편과 메시지·표현이 겹치지 않게 차별화하라(중복 점검 의무)."
@@ -316,7 +320,7 @@ GM 1인칭 진솔 보이스(생각 리더십)로, 초등학생도 이해할 일�
 7. QUEUE_ID="CMO-{datetime.now().strftime('%Y-%m-%d')}-AI{ep['num']}-{re.sub(r'[^0-9A-Za-z가-힣]', '', ep['title'].split(':')[0])[:10]}",
    slug="{folder_slug}", title="AI #{ep['num']}편 — (이번 편 한글 요약)(개인계정)",
    channel="인스타그램 (namuk.wellperion)", account="namuk.wellperion".
-8. FOLDER = ROOT / "instagram" / "{folder_slug}" 로 설정.
+8. FOLDER = ROOT / "instagram" / "namuk.wellperion" / "{folder_slug}" 로 설정.
 9. 웰페리온은 1인·소상공인·작은가게가 아니라 조직(대표+직원+실무팀)을 갖춘 하이엔드 프라이빗 스포츠클럽이다. 화자는 '조직을 이끄는 리더' 1인칭. '혼자/작은가게도/1인기업/소상공인' 프레임 금지.
 10. MENTIONS = [] (멘션 자동 삽입 금지). 실제 협업 상대가 있는 편에만 GM 지정 시 추가.
 11. 해시태그 금지: #소상공인 #1인기업 #작은가게. 권장 풀: #AI #AI활용 #스포츠클럽 #리더십 #조직운영 #한남동 #웰페리온 등 실체에 맞는 것만.
@@ -565,8 +569,8 @@ def run(dry_run: bool, plan_only: bool) -> int:
         print("----- (생략) -----")
         return 0
 
-    # 3) 폴더 스캐폴드
-    folder_path = INSTAGRAM_DIR / folder_slug
+    # 3) 폴더 스캐폴드 (namuk.wellperion/ 하위 — 회사 콘텐츠와 분리)
+    folder_path = NAMUK_DIR / folder_slug
     folder_path.mkdir(parents=True, exist_ok=True)
     build_path = folder_path / "build_slides.py"
 

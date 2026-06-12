@@ -10,7 +10,7 @@ ROOT = Path(r"C:\Users\jjky0\welperion-automation")
 sys.path.insert(0, str(ROOT / "scripts"))
 from slide_compositor import compose_text_slide  # noqa: E402
 
-FOLDER = ROOT / "instagram" / "260529_AI직원효율_핵심집중"
+FOLDER = ROOT / "instagram" / "namuk.wellperion" / "260529_AI직원효율_핵심집중"
 OUT = FOLDER / "output"
 GUIDE_CARD = ROOT / "instagram" / "_assets" / "guideline_card.jpg"
 

@@ -17,7 +17,7 @@ sys.path.insert(0, str(ROOT / "scripts"))
 from slide_compositor import compose_text_slide  # noqa: E402
 from publish_register import register_publish  # noqa: E402
 
-FOLDER = ROOT / "instagram" / "260607_AI_GM의일요일"
+FOLDER = ROOT / "instagram" / "namuk.wellperion" / "260607_AI8_GM의일요일"
 OUT = FOLDER / "output"
 
 QUEUE_ID = "CMO-2026-06-07-AI-GM의일요일"

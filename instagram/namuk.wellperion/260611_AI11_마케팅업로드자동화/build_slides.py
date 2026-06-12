@@ -17,7 +17,7 @@ sys.path.insert(0, str(ROOT / "scripts"))
 from slide_compositor import compose_text_slide  # noqa: E402
 from publish_register import register_publish  # noqa: E402
 
-FOLDER = ROOT / "instagram" / "260611_AI11_마케팅업로드자동화"
+FOLDER = ROOT / "instagram" / "namuk.wellperion" / "260611_AI11_마케팅업로드자동화"
 OUT = FOLDER / "output"
 
 # 제작완료 자동 등록용 메타

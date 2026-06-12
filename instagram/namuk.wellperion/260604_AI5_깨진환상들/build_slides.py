@@ -16,7 +16,7 @@ sys.path.insert(0, str(ROOT / "scripts"))
 from slide_compositor import compose_text_slide  # noqa: E402
 from publish_register import register_publish  # noqa: E402
 
-FOLDER = ROOT / "instagram" / "260604_AI5_깨진환상들"
+FOLDER = ROOT / "instagram" / "namuk.wellperion" / "260604_AI5_깨진환상들"
 OUT = FOLDER / "output"
 
 # 제작완료 자동 등록용 메타

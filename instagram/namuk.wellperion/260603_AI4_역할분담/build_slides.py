@@ -16,7 +16,7 @@ sys.path.insert(0, str(ROOT / "scripts"))
 from slide_compositor import compose_text_slide  # noqa: E402
 from publish_register import register_publish  # noqa: E402  (FIX3 제작완료 자동 등록·알림)
 
-FOLDER = ROOT / "instagram" / "260603_AI4_역할분담"
+FOLDER = ROOT / "instagram" / "namuk.wellperion" / "260603_AI4_역할분담"
 OUT = FOLDER / "output"
 
 # (FIX3) 제작완료 자동 등록용 메타 — 기존 M5 큐 엔트리와 id 일치(중복 아닌 갱신).

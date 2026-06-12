@@ -18,7 +18,7 @@ sys.path.insert(0, str(ROOT / "scripts"))
 from slide_compositor import compose_text_slide  # noqa: E402
 from publish_register import register_publish  # noqa: E402
 
-FOLDER = ROOT / "instagram" / "260608_AI_북극성항해설계"
+FOLDER = ROOT / "instagram" / "namuk.wellperion" / "260608_AI9_북극성항해설계"
 OUT = FOLDER / "output"
 
 QUEUE_ID = "CMO-2026-06-08-AI-북극성항해설계"

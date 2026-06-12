@@ -15,7 +15,7 @@ ROOT = Path(r"C:\Users\jjky0\welperion-automation")
 sys.path.insert(0, str(ROOT / "scripts"))
 from slide_compositor import compose_text_slide  # noqa: E402
 
-FOLDER = ROOT / "instagram" / "260602_AI3_초등생도AI"
+FOLDER = ROOT / "instagram" / "namuk.wellperion" / "260602_AI3_초등생도AI"
 OUT = FOLDER / "output"
 
 # compose_text_slide 분기: eng_title 있으면 표지, 없으면 본문(kor_title 헤딩 + body)
