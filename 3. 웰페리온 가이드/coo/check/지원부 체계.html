@@ -2302,12 +2302,14 @@ window.manualAddItem=function(cat){
 };
 window.manualDeleteItem=function(id){
   const isCustom=String(id).indexOf('custom_')===0;
-  if(isCustom){
-    if(!confirm('이 추가 항목을 삭제할까요? (시트에서도 제거)'))return;
+  const hasShadow=(CUSTOM_ITEMS||[]).some(it=>it.id===id);   // 시트에 같은 id 항목(추가 or 편집분·옛 b6)이 있나
+  if(isCustom||hasShadow){
+    if(!confirm('이 항목을 삭제할까요? (시트에서도 제거)'))return;
     const next=(CUSTOM_ITEMS||[]).filter(it=>it.id!==id);
     mgmtSaveItems(next);
+    if(!isCustom){ const h=getHiddenIds(); h.add(id); saveHiddenIds(h); }  // 코드 기본항목과 id 겹치면 숨김도 같이
   }else{
-    // 기본 항목 = 숨김(점검·매뉴얼에서 제외). 코드 기본값 보존 → 필요 시 '숨김 복구'로 되돌림.
+    // 순수 기본 항목(코드) = 숨김. 코드 기본값 보존 → 필요 시 '숨김 복구'로 되돌림.
     if(!confirm('이 기본 항목을 점검·매뉴얼에서 숨길까요? (하단 "숨긴 항목"에서 복구 가능)'))return;
     const h=getHiddenIds(); h.add(id); saveHiddenIds(h);
   }
@@ -2579,6 +2581,7 @@ function renderManualItems(){
   // GM이 추가한 항목(CUSTOM_ITEMS)도 함께 표시
   if(typeof CUSTOM_ITEMS!=='undefined'){
     CUSTOM_ITEMS.forEach(ci=>{
+      if(hidden.has(ci.id))return;   // 숨긴 항목 제외
       pushItem(ci.category||'추가 점검',{id:ci.id,name:ci.name,detail:ci.detail,gender:ci.gender,_custom:true});
     });
   }
@@ -2600,7 +2603,6 @@ function renderManualItems(){
   const _emBtn=`<button onclick="toggleManualEdit()" style="${_btn}${EM?'color:#fff;background:var(--accent);border-color:var(--accent);':'color:var(--accent);background:var(--bg);border-color:var(--accent);'}">${EM?'✓ 편집 모드 (끄기)':'✎ 편집 모드'}</button>`;
   html+=`<div style="background:var(--accent-bg);border:1px solid var(--accent);border-radius:10px;padding:10px 14px;margin-bottom:12px;font-size:12px;color:var(--text);line-height:1.6;">
     <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;"><span><b style="color:var(--accent);">매뉴얼 = 항목 단일출처</b> · 편집 모드를 켜면 <b>추가·편집·삭제·순서변경(▲▼)</b>이 나타납니다. 점검 화면은 체크+이슈/노하우만.</span>${_emBtn}</div>
-    ${(EM&&_customCount)?`<div style="margin-top:8px;"><button onclick="manualPurgeCustom()" style="${_btn}color:#c0392b;background:rgba(192,57,67,0.1);border-color:rgba(192,57,67,0.4);">추가항목(custom_) ${_customCount}건 전체 정리</button> <span style="color:var(--dim);">점검 화면에서 즉석 추가돼 쌓인 항목을 한 번에 비웁니다.</span></div>`:''}
   </div>`;
   catOrder.forEach(cat=>{
     const items=catMap[cat];
