@@ -2021,6 +2021,8 @@ function drawUI(d,gender){
         });
       });
     });
+    /* 매뉴얼에서 정한 그룹(구역) 순서를 점검에도 적용 */
+    if(typeof groupRank==='function')zoneOrder.sort((a,b)=>groupRank(a)-groupRank(b));
     /* 요일별 집중청소는 마감조(close1)에 합류(기존 pm 통계 포함과 정합) */
     const focusInRound=(curRound==='close1'&&DAY_FOCUS[dow])?DAY_FOCUS[dow].filter(it=>shouldShowItemForGender(it,gender)):[];
 
@@ -2340,6 +2342,28 @@ window.moveManualItem=function(id,dir){
   if(typeof renderManualItems==='function')renderManualItems();
   if(typeof renderG==='function')renderG(activeGenderTab);   // 점검에도 반영
 };
+/* 그룹(구역) 순서 — 기본값(GM 2026-06-12: C세탁물 상단·마감점검은 E외부 아래) + localStorage 사용자 조정. */
+const GROUP_ORDER_DEFAULT=['C 세탁물','A 사우나점검','B 락커룸','D 내부','E 외부','마감 점검','교대 인수인계'];
+function getGroupOrder(){ try{return JSON.parse(localStorage.getItem('wcheck_group_order')||'{}')||{}}catch(e){return {}} }
+function saveGroupOrder(m){ localStorage.setItem('wcheck_group_order',JSON.stringify(m)); }
+function groupRank(title){
+  const o=getGroupOrder();
+  if(o[title]!=null)return o[title];
+  const i=GROUP_ORDER_DEFAULT.indexOf(title);
+  return i>=0?i:90;   // 미정의 그룹은 뒤로(동순위는 안정정렬로 등장순 유지)
+}
+/* 그룹을 위(-1)/아래(+1)로 1칸 이동 — 매뉴얼·점검 동일 순서 */
+window.moveManualGroup=function(title,dir){
+  const order=(window._groupSorted||[]).slice();
+  const i=order.indexOf(title), j=i+dir;
+  if(i<0||j<0||j>=order.length)return;
+  const tmp=order[i]; order[i]=order[j]; order[j]=tmp;
+  const o=getGroupOrder();
+  order.forEach((t,k)=>{ o[t]=k; });   // 전체 그룹에 순차 순위 재부여
+  saveGroupOrder(o);
+  if(typeof renderManualItems==='function')renderManualItems();
+  if(typeof renderG==='function')renderG(activeGenderTab);
+};
 window.manualPurgeCustom=function(){
   const customs=(CUSTOM_ITEMS||[]).filter(it=>String(it.id).indexOf('custom_')===0);
   if(!customs.length){alert('정리할 추가항목(custom_)이 없습니다.');return;}
@@ -2585,6 +2609,9 @@ function renderManualItems(){
       pushItem(ci.category||'추가 점검',{id:ci.id,name:ci.name,detail:ci.detail,gender:ci.gender,_custom:true});
     });
   }
+  /* 그룹(구역) 순서 적용 — groupRank 기준 안정정렬 + 이동용 목록 캡처 */
+  catOrder.sort((a,b)=>groupRank(a)-groupRank(b));
+  window._groupSorted=catOrder.slice();
   /* 그룹 내 정렬 적용(orderMap 우선, 없으면 등장순) + 그룹별 id목록 캡처(↑/↓ 이동용) */
   const _orderMap=(typeof getItemOrder==='function')?getItemOrder():{};
   window._catItemIds={};
@@ -2604,10 +2631,14 @@ function renderManualItems(){
   html+=`<div style="background:var(--accent-bg);border:1px solid var(--accent);border-radius:10px;padding:10px 14px;margin-bottom:12px;font-size:12px;color:var(--text);line-height:1.6;">
     <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;"><span><b style="color:var(--accent);">매뉴얼 = 항목 단일출처</b> · 편집 모드를 켜면 <b>추가·편집·삭제·순서변경(▲▼)</b>이 나타납니다. 점검 화면은 체크+이슈/노하우만.</span>${_emBtn}</div>
   </div>`;
-  catOrder.forEach(cat=>{
+  catOrder.forEach((cat,gi)=>{
     const items=catMap[cat];
     html+=`<div style="background:var(--paper);border:1px solid var(--border);border-radius:10px;margin-bottom:10px;overflow:hidden;">`;
-    html+=`<div style="padding:10px 16px;font-size:13px;font-weight:700;color:var(--accent);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:8px;"><span>${cat}</span>${EM?`<button onclick="manualAddItem('${escapeAttr(cat)}')" style="${_btn}color:var(--accent);background:var(--bg);border-color:var(--accent);">＋ 항목 추가</button>`:''}</div>`;
+    /* 그룹 헤더: (편집모드) 그룹 ▲▼ 이동 + 구역명 + ＋항목추가 */
+    const _gUp=gi>0?`<button onclick="moveManualGroup('${escapeAttr(cat)}',-1)" style="${_btn}color:var(--text);background:var(--bg);border-color:var(--border);" title="구역 위로">▲</button>`:`<button disabled style="${_btn}color:var(--text);background:var(--bg);border-color:var(--border);opacity:.25;cursor:default;">▲</button>`;
+    const _gDn=gi<catOrder.length-1?`<button onclick="moveManualGroup('${escapeAttr(cat)}',1)" style="${_btn}color:var(--text);background:var(--bg);border-color:var(--border);" title="구역 아래로">▼</button>`:`<button disabled style="${_btn}color:var(--text);background:var(--bg);border-color:var(--border);opacity:.25;cursor:default;">▼</button>`;
+    const _gMove=EM?`<span style="display:inline-flex;gap:3px;margin-right:6px;">${_gUp}${_gDn}</span>`:'';
+    html+=`<div style="padding:10px 16px;font-size:13px;font-weight:700;color:var(--accent);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:8px;"><span style="display:flex;align-items:center;">${_gMove}${cat}</span>${EM?`<button onclick="manualAddItem('${escapeAttr(cat)}')" style="${_btn}color:var(--accent);background:var(--bg);border-color:var(--accent);">＋ 항목 추가</button>`:''}</div>`;
     items.forEach((it,idx)=>{
       const detHtml=it.detail?it.detail.replace(/\n/g,'<br>'):'';
       const hasDet=!!detHtml;
