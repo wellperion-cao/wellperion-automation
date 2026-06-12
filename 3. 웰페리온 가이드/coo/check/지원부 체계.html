@@ -963,7 +963,7 @@ function openPromoteFromIssue(id,gender){
     const cb=document.getElementById('promoteRound_'+rk);
     if(cb)cb.checked=defRounds.indexOf(rk)>=0;
   });
-  // 사우나 내부류 안내(5조 전부 권장)
+  // 사우나 내부류 안내(3조 전부 권장)
   const hint=document.getElementById('promoteRoundHint');
   if(hint){
     const c=(ctx.cat||'');
@@ -1301,14 +1301,14 @@ const WEEKEND=[
       {id:"d5",name:"D-5 분리수거장",detail:"에스컬레이터 아래",gender:"all"}
     ]}
   ]},
-  {slot:"저녁 17:00~20:00",shift:"pm",groups:[
+  {slot:"저녁 15:00~18:00",shift:"pm",groups:[
     {title:"저녁 점검",items:[
       {id:"c_ev",name:"C 세탁물 마감",detail:"마감 세탁물 출고",gender:"all"},
       {id:"b_ev",name:"B 락커룸 저녁 점검",detail:"B-2/B-3/B-4/B-5 상태 확인",gender:"all"},
       {id:"e6",name:"E-6 주차장",detail:"바닥 쓰레기 | 화장실 | 차단기",gender:"all"}
     ]}
   ]},
-  {slot:"마감 20:00",shift:"pm",groups:[
+  {slot:"마감 18:00",shift:"pm",groups:[
     {title:"마감 점검",items:[
       {id:"cls1",name:"세탁물 최종 출고",detail:"마감 세탁물 운반",gender:"all"},
       {id:"cls2",name:"사우나/파우더 최종 체크",detail:"남/여 사우나 & 파우더 청결 최종 체크 (카톡 보고)",gender:"all"},
@@ -1484,42 +1484,58 @@ function getAllItems(sched){
 }
 
 /* ════════════════════════════════════════════════════════════
-   5조(라운드) 분류 레이어 — 순수 분류만(기존 WEEKDAY/항목 id/셋업·집계 무변경).
+   3조(라운드) 분류 레이어 — 순수 분류만(기존 WEEKDAY/항목 id/셋업·집계 무변경).
    조→기존슬롯 매핑은 slot 라벨 문자열 기반(roundOfSlot). 정상(주간)모드에만 적용,
    야간(탕청소 업체)모드는 기존 그대로. (시우·GM 2026-06-11 · 1단계)
    ════════════════════════════════════════════════════════════ */
-const ROUNDS=[
-  {key:'am1',name:'오전조[1]',time:'10시',baseShift:'am'},
-  {key:'am2',name:'오전조[2]',time:'12시',baseShift:'am'},
-  {key:'pm1',name:'오후조[1]',time:'15시',baseShift:'pm'},
-  {key:'pm2',name:'오후조[2]',time:'18시',baseShift:'pm'},
-  {key:'eve1',name:'저녁조[1]',time:'20시',baseShift:'pm'}
+/* 3조(라운드) — 평일 3조(오전 10시 / 오후 15시 / 마감 20시) · 주말 2조(오전 12시 / 마감 18시).
+   ROUNDS = 전 키 마스터(am1·pm1·close1) — roundDef/roundLabel/promote 모달 등 전역 참조용.
+   날짜별 노출·시각은 getRoundsFor(date) / roundHourFor(date)가 분기(평일/주말). */
+const ROUNDS_WEEKDAY=[
+  {key:'am1',name:'오전조[1]',time:'10시',hour:10,baseShift:'am'},
+  {key:'pm1',name:'오후조[1]',time:'15시',hour:15,baseShift:'pm'},
+  {key:'close1',name:'마감조[1]',time:'20시',hour:20,baseShift:'pm'}
 ];
+const ROUNDS_WEEKEND=[
+  {key:'am1',name:'오전조[1]',time:'12시',hour:12,baseShift:'am'},
+  {key:'close1',name:'마감조[1]',time:'18시',hour:18,baseShift:'pm'}
+];
+/* 마스터(전 키) — 평일 라벨/시각 기준. 전역 참조부(roundDef·promote 등) 호환용. */
+const ROUNDS=ROUNDS_WEEKDAY.slice();
 const ROUND_KEYS=ROUNDS.map(r=>r.key);
+/* 날짜에 맞는 조 배열(평일 3조 / 주말 2조). 휴관일은 평일 폴백(렌더는 휴관 분기에서 차단). */
+function getRoundsFor(ds){
+  const i=(typeof getDayInfo==='function')?getDayInfo(ds):null;
+  return (i&&i.type==='weekend')?ROUNDS_WEEKEND:ROUNDS_WEEKDAY;
+}
 function roundDef(rk){return ROUNDS.find(r=>r.key===rk)||null}
+/* 날짜 인지 조 정의(주말 시각 반영). 날짜 없으면 마스터 폴백. */
+function roundDefFor(rk,ds){const arr=ds?getRoundsFor(ds):ROUNDS;return arr.find(r=>r.key===rk)||roundDef(rk)}
 function roundLabel(rk){const r=roundDef(rk);return r?(r.name+' '+r.time):rk}
 /* 슬롯 라벨(또는 shift)로 라운드 분류. 인식 못한 슬롯은 baseShift 기준 폴백
-   (am→am1, pm→eve1). 빈 조(pm2)는 어떤 기존 슬롯도 매핑되지 않음 → 안내문 표시. */
+   (am→am1, pm→close1). */
 function roundOfSlot(slotLabel,shift){
   const s=String(slotLabel||'');
   if(s.indexOf('오픈')>=0||s.indexOf('오전 후반')>=0||(s.indexOf('오전')>=0&&s.indexOf('08:00')>=0))return 'am1';
-  if(s.indexOf('인수인계')>=0)return 'am2';
+  if(s.indexOf('인수인계')>=0)return 'am1';
   if(s.indexOf('오후')>=0)return 'pm1';
-  if(s.indexOf('저녁')>=0||s.indexOf('마감')>=0)return 'eve1';
+  if(s.indexOf('저녁')>=0||s.indexOf('마감')>=0)return 'close1';
   // 폴백: shift 기준
   if(shift==='am')return 'am1';
-  if(shift==='pm')return 'eve1';
+  if(shift==='pm')return 'close1';
   return 'am1';
 }
-/* 현재 시각으로 가장 가까운(직전/현재) 조 자동선택. 라운드 대표시각(분) 기준. */
-const ROUND_HOUR={am1:10,am2:12,pm1:15,pm2:18,eve1:20};
-function autoRoundForNow(){
+/* 날짜별 조 대표시각(시). 주말 am1=12·close1=18 / 평일 am1=10·pm1=15·close1=20. */
+function roundHourFor(rk,ds){const r=roundDefFor(rk,ds);return r?r.hour:10}
+/* 현재 시각으로 가장 가까운(직전/현재) 조 자동선택 — 그 날짜의 조 집합 기준. */
+function autoRoundForNow(ds){
+  const arr=ds?getRoundsFor(ds):ROUNDS;
   const h=new Date().getHours();
-  let best='am1',bestGap=Infinity;
-  ROUND_KEYS.forEach(rk=>{
-    const gap=h-ROUND_HOUR[rk]; // 직전/현재 조 우선(>=0 작은 gap), 아직 안온 조는 큰 페널티
+  let best=arr[0].key,bestGap=Infinity;
+  arr.forEach(r=>{
+    const gap=h-r.hour; // 직전/현재 조 우선(>=0 작은 gap), 아직 안온 조는 큰 페널티
     const score=gap>=0?gap:(100-gap);
-    if(score<bestGap){bestGap=score;best=rk}
+    if(score<bestGap){bestGap=score;best=r.key}
   });
   return best;
 }
@@ -1527,12 +1543,16 @@ function autoRoundForNow(){
    (loadState가 STATE를 비워도 보존). 저장값 없으면 시간대 기준 자동 선택. */
 function roundLSKey(g){return 'wcheck_round_'+g}
 function getRoundG(g){
+  const ds=(typeof getDateG==='function')?getDateG(g):'';
+  const keys=ds?getRoundsFor(ds).map(r=>r.key):ROUND_KEYS;
   const v=localStorage.getItem(roundLSKey(g));
-  if(v&&ROUND_KEYS.indexOf(v)>=0)return v;
-  return autoRoundForNow();
+  if(v&&keys.indexOf(v)>=0)return v;        // 저장값이 그날 조 집합에 있으면 사용
+  return autoRoundForNow(ds);               // 없으면(주말↔평일 전환 등) 시간대 자동선택
 }
 function setRoundG(g,rk){
-  if(ROUND_KEYS.indexOf(rk)<0)return;
+  const ds=(typeof getDateG==='function')?getDateG(g):'';
+  const keys=ds?getRoundsFor(ds).map(r=>r.key):ROUND_KEYS;
+  if(keys.indexOf(rk)<0)return;
   localStorage.setItem(roundLSKey(g),rk);
   drawUI(getDateG(g),g);
 }
@@ -1566,19 +1586,19 @@ function roundHasItems(date,g,rk){
     const ctx={...it,slot:slot.slot,shift:slot.shift};
     if(itemRounds(ctx).indexOf(rk)>=0)n++;
   })));
-  if(rk==='eve1'){const dow=getDayOfWeek(date);if(DAY_FOCUS[dow])DAY_FOCUS[dow].forEach(it=>{if(shouldShowItemForGender(it,g))n++});}
+  if(rk==='close1'){const dow=getDayOfWeek(date);if(DAY_FOCUS[dow])DAY_FOCUS[dow].forEach(it=>{if(shouldShowItemForGender(it,g))n++});}
   return n>0;
 }
 /* 라운드별 타이머 키(확장: 날짜+성별+라운드). drawUI/타이머가 라운드 인지. */
 function timerKeys(d,g,rk){return {sk:'timerStart_'+d+'_'+g+'_'+rk, ek:'timerEnd_'+d+'_'+g+'_'+rk}}
-/* 5조 선택바 렌더 (성별별). 빈 조도 버튼 표시(클릭 시 안내문). */
+/* 조 선택바 렌더 (성별별) — 그 날짜의 조만(평일 3조 / 주말 2조), 주말 시각 반영. */
 function renderRoundBar(g){
   const bar=document.getElementById(g==='f'?'roundBarF':'roundBarM');
   if(!bar)return;
   const d=getDateG(g);
   const cur=getRoundG(g);
   let html='';
-  ROUNDS.forEach(r=>{
+  getRoundsFor(d).forEach(r=>{
     const act=r.key===cur?' active':'';
     const done=isRoundSubmitted(d,g,r.key)?' done':'';
     html+=`<button class="round-seg${act}${done}" onclick="setRoundG('${g}','${r.key}')">`
@@ -1594,37 +1614,39 @@ function renderRoundBar(g){
    · 사우나 내부 권역(a*·b1·b5) = 5회 전부. 락커룸 내부 = 오전/오후/저녁 3회. 등.
    · 화면 렌더는 구역(group.title)별로 묶고, 옛 슬롯 시간 라벨은 표시하지 않음.
    ════════════════════════════════════════════════════════════ */
+/* 3조 재매핑(5→3, 2026-06-12): am2(12시)→오전조 am1 흡수 · pm2(18시)→마감조 close1 흡수 · eve1→close1.
+   고아·누락 0 — 모든 항목이 am1·pm1·close1 중 하나 이상에 멤버. */
 const ROUND_MAP={
-  /* 사우나 내부 권역 = 5회 전부 (오전조1·오전조2·오후조1·오후조2·저녁조1) */
-  a1:['am1','am2','pm1','pm2','eve1'],
-  a2:['am1','am2','pm1','pm2','eve1'],
-  a3:['am1','am2','pm1','pm2','eve1'],
-  b1:['am1','am2','pm1','pm2','eve1'],
-  b5:['am1','am2','pm1','pm2','eve1'],
-  a_pm:['pm1','pm2','eve1'],               /* 오후 사우나 점검 = 오후·저녁 라운드만(오전조 노출 제거 2026-06-12) */
-  /* 락커룸 내부 = 오전·오후·저녁 3회 */
-  b2:['am1','pm1','eve1'],
-  b3_f:['am1','pm1','eve1'],
-  b3_m:['am1','pm1','eve1'],
-  b4:['am1','pm1','eve1'],
-  b_pm:['pm1','eve1'],                      /* 오후 락커룸 점검 = 오후·저녁 라운드만(오전조 제거 2026-06-12) */
-  b_ev:['eve1'],                            /* 저녁 락커룸 점검 = 저녁 라운드만(오전·오후 제거 2026-06-12) */
-  /* B-6 데일리 락커(요일별 청소) = 오전조1 1회 */
+  /* 사우나 내부 권역 = 전 조(오전·오후·마감) */
+  a1:['am1','pm1','close1'],
+  a2:['am1','pm1','close1'],
+  a3:['am1','pm1','close1'],
+  b1:['am1','pm1','close1'],
+  b5:['am1','pm1','close1'],
+  a_pm:['pm1','close1'],                    /* 오후 사우나 점검 = 오후·마감 */
+  /* 락커룸 내부 = 오전·오후·마감 3회 */
+  b2:['am1','pm1','close1'],
+  b3_f:['am1','pm1','close1'],
+  b3_m:['am1','pm1','close1'],
+  b4:['am1','pm1','close1'],
+  b_pm:['pm1','close1'],                    /* 오후 락커룸 점검 = 오후·마감 */
+  b_ev:['close1'],                          /* 저녁 락커룸 점검 = 마감조 */
+  /* B-6 데일리 락커(요일별 청소) = 오전조 1회 */
   b6:['am1'],
-  /* C 세탁물 입고/배치 = 오전 2회(오전조1·오전조2) */
-  c1a:['am1','am2'], c1b:['am1','am2'], c1c:['am1','am2'],
-  c_ev:['eve1'],                            /* 주말 C 세탁물 마감 = 저녁 1회 */
-  /* 인수인계 = 오전조2(12시) 1회 */
-  hw1:['am2'], hw2:['am2'],
-  /* D 외부 = 오전조2·오후조2 2회 */
-  d1:['am2','pm2'], d2:['am2','pm2'], d3:['am2','pm2'], d4:['am2','pm2'], d5:['am2','pm2'],
-  /* D 내부(오후/저녁) 비-사우나 항목 = 성격에 맞는 라운드 */
-  d6:['pm1'], d7:['pm1'], d9:['pm1'],       /* D 내부(오후) → 오후조1 */
-  d8:['eve1'],                              /* 키즈 샤워실(저녁) → 저녁조1 */
-  /* E 내부 = 오전조1·오후조1 2회 */
-  e1:['am1','pm1'], e2:['am1','pm1'], e3:['am1','pm1'], e4:['am1','pm1'], e5:['am1','pm1'], e6:['eve1'],
-  /* 마감 = 저녁조1 1회 */
-  cls1:['eve1'], cls2:['eve1'], cls3:['eve1']
+  /* C 세탁물 입고/배치 = 오전조 1회(am2 흡수) */
+  c1a:['am1'], c1b:['am1'], c1c:['am1'],
+  c_ev:['close1'],                          /* 주말 C 세탁물 마감 = 마감조 */
+  /* 인수인계(구 12시 am2) = 오전조 흡수 */
+  hw1:['am1'], hw2:['am1'],
+  /* D 외부(구 am2·pm2) = 오전조·마감조 흡수 */
+  d1:['am1','close1'], d2:['am1','close1'], d3:['am1','close1'], d4:['am1','close1'], d5:['am1','close1'],
+  /* D 내부(오후/저녁) 비-사우나 항목 = 성격에 맞는 조 */
+  d6:['pm1'], d7:['pm1'], d9:['pm1'],       /* D 내부(오후) → 오후조 */
+  d8:['close1'],                            /* 키즈 샤워실(저녁) → 마감조 */
+  /* E 내부 = 오전조·오후조 2회 */
+  e1:['am1','pm1'], e2:['am1','pm1'], e3:['am1','pm1'], e4:['am1','pm1'], e5:['am1','pm1'], e6:['close1'],
+  /* 마감 = 마감조 1회 */
+  cls1:['close1'], cls2:['close1'], cls3:['close1']
 };
 /* 항목 → 멤버 라운드 배열. 우선순위:
    1) 2b-1 CUSTOM 항목의 명시 rounds(이슈 승격 시 선택한 회차 다중) — 유효 키만.
@@ -1878,7 +1900,7 @@ function drawUI(d,gender){
     btnAm.style.display='block';btnPm.style.display='block';btnNight.style.display='none';
   }
 
-  /* 5조 선택바: 정상(주간)모드만 노출·동작. 야간모드는 숨김(기존 흐름 보존). */
+  /* 3조 선택바: 정상(주간)모드만 노출·동작. 야간모드는 숨김(기존 흐름 보존). */
   const roundBar=document.getElementById(gender==='f'?'roundBarF':'roundBarM');
   if(roundBar)roundBar.style.display=nightMode?'none':'flex';
   if(!nightMode)renderRoundBar(gender);
@@ -1926,7 +1948,7 @@ function drawUI(d,gender){
     updateNightSubmitButtonG(sched,nightStats,d,gender);
 
   }else{
-    /* ── 5조(라운드) 단위 렌더 — 선택된 1개 조의 슬롯만 표시 ──
+    /* ── 3조(라운드) 단위 렌더 — 선택된 1개 조의 슬롯만 표시 ──
        조 통계·잠금은 라운드 독립. 기존 am/pm 집계(getShiftStatsG)·_submitted_am/pm은
        제출 시 submitRound가 함께 세팅(비회귀). 바닥 고정 버튼은 라운드 제출버튼으로 대체. */
     const curRound=getRoundG(gender);
@@ -1949,8 +1971,8 @@ function drawUI(d,gender){
         });
       });
     });
-    /* 요일별 집중청소는 저녁조(eve1)에 합류(기존 pm 통계 포함과 정합) */
-    const focusInRound=(curRound==='eve1'&&DAY_FOCUS[dow])?DAY_FOCUS[dow].filter(it=>shouldShowItemForGender(it,gender)):[];
+    /* 요일별 집중청소는 마감조(close1)에 합류(기존 pm 통계 포함과 정합) */
+    const focusInRound=(curRound==='close1'&&DAY_FOCUS[dow])?DAY_FOCUS[dow].filter(it=>shouldShowItemForGender(it,gender)):[];
 
     /* 이 조 진행도 계산(가시 항목 기준, 회차별 체크 키) */
     let rTotal=0,rDone=0;
@@ -2354,7 +2376,7 @@ function onCk(id,shift,gender,round){
     if(itemRounds(ctx).indexOf(curRound)<0)return;
     total++; if(isChecked(it.id,curRound))done++;
   })));
-  if(curRound==='eve1'&&DAY_FOCUS[dow])DAY_FOCUS[dow].forEach(it=>{ if(shouldShowItemForGender(it,gender)){total++; if(isChecked(it.id,curRound))done++;} });
+  if(curRound==='close1'&&DAY_FOCUS[dow])DAY_FOCUS[dow].forEach(it=>{ if(shouldShowItemForGender(it,gender)){total++; if(isChecked(it.id,curRound))done++;} });
   if(total>0&&done===total&&!isRoundSubmitted(d,gender,curRound)){
     const sub=getSubmitterForGender(gender);
     if(!sub){alert('점검자 이름을 먼저 입력하세요.');return}
@@ -2581,7 +2603,7 @@ async function appendRoundSnapshot(date,round,submitter,gender){
     total++; if(isChecked(it.id,round,gender))done++;
     if(STATE['iss_'+it.id])issues.push(STATE['iss_'+it.id]);
   })));
-  if(round==='eve1'&&DAY_FOCUS[dow])DAY_FOCUS[dow].forEach(it=>{ if(shouldShowItemForGender(it,gender)){total++; if(isChecked(it.id,round,gender))done++; if(STATE['iss_'+it.id])issues.push(STATE['iss_'+it.id]);} });
+  if(round==='close1'&&DAY_FOCUS[dow])DAY_FOCUS[dow].forEach(it=>{ if(shouldShowItemForGender(it,gender)){total++; if(isChecked(it.id,round,gender))done++; if(STATE['iss_'+it.id])issues.push(STATE['iss_'+it.id]);} });
   const pct=total?Math.round(done/total*100):0;
   const zone=gender==='f'?'f':gender==='m'?'m':'all';
   const t=timerKeys(date,gender,round);
@@ -4152,13 +4174,11 @@ renderManualItems();
     <div style="margin-bottom:6px;">
       <label style="display:block;font-size:13px;font-weight:600;color:var(--dim);margin-bottom:6px;">회차(다중 선택)</label>
       <div style="display:flex;flex-wrap:wrap;gap:8px;">
-        <label style="display:inline-flex;align-items:center;gap:5px;font-size:13px;color:var(--text);background:var(--bg);border:1px solid var(--border);padding:7px 12px;border-radius:8px;cursor:pointer;"><input type="checkbox" id="promoteRound_am1">오전조[1] 10시</label>
-        <label style="display:inline-flex;align-items:center;gap:5px;font-size:13px;color:var(--text);background:var(--bg);border:1px solid var(--border);padding:7px 12px;border-radius:8px;cursor:pointer;"><input type="checkbox" id="promoteRound_am2">오전조[2] 12시</label>
-        <label style="display:inline-flex;align-items:center;gap:5px;font-size:13px;color:var(--text);background:var(--bg);border:1px solid var(--border);padding:7px 12px;border-radius:8px;cursor:pointer;"><input type="checkbox" id="promoteRound_pm1">오후조[1] 15시</label>
-        <label style="display:inline-flex;align-items:center;gap:5px;font-size:13px;color:var(--text);background:var(--bg);border:1px solid var(--border);padding:7px 12px;border-radius:8px;cursor:pointer;"><input type="checkbox" id="promoteRound_pm2">오후조[2] 18시</label>
-        <label style="display:inline-flex;align-items:center;gap:5px;font-size:13px;color:var(--text);background:var(--bg);border:1px solid var(--border);padding:7px 12px;border-radius:8px;cursor:pointer;"><input type="checkbox" id="promoteRound_eve1">저녁조[1] 20시</label>
+        <label style="display:inline-flex;align-items:center;gap:5px;font-size:13px;color:var(--text);background:var(--bg);border:1px solid var(--border);padding:7px 12px;border-radius:8px;cursor:pointer;"><input type="checkbox" id="promoteRound_am1">오전조[1] (평일 10시·주말 12시)</label>
+        <label style="display:inline-flex;align-items:center;gap:5px;font-size:13px;color:var(--text);background:var(--bg);border:1px solid var(--border);padding:7px 12px;border-radius:8px;cursor:pointer;"><input type="checkbox" id="promoteRound_pm1">오후조[1] 15시 (평일만)</label>
+        <label style="display:inline-flex;align-items:center;gap:5px;font-size:13px;color:var(--text);background:var(--bg);border:1px solid var(--border);padding:7px 12px;border-radius:8px;cursor:pointer;"><input type="checkbox" id="promoteRound_close1">마감조[1] (평일 20시·주말 18시)</label>
       </div>
-      <div id="promoteRoundHint" style="display:none;font-size:12px;color:#5b9fd5;margin-top:6px;">사우나 내부류는 5개 회차 전부 권장합니다.</div>
+      <div id="promoteRoundHint" style="display:none;font-size:12px;color:#5b9fd5;margin-top:6px;">사우나 내부류는 3개 조 전부 권장합니다.</div>
     </div>
     <div style="margin:12px 0 16px;">
       <label style="display:block;font-size:13px;font-weight:600;color:var(--dim);margin-bottom:4px;">상세 (선택)</label>
