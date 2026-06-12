@@ -7414,6 +7414,7 @@ function crTab(btn, panelId) {
                 category: '결재', _apprKind: 'gm', description: parsed.description,
                 progressLog: parsed.progressLog, budgetCat: parsed.budgetCat, budgetAmt: parsed.budgetAmt,
                 isToday: true, startDate: sd, endDate: ed, ssotAuto: true, owner: owner,
+                createdAt: String(row['생성일'] || ''),
                 _sheetsId: String(row['id'] || '')
               });
             } else if (_aprInflightOther && _isG1Owner) {
@@ -7423,6 +7424,7 @@ function crTab(btn, panelId) {
                 category: '결재', _apprKind: 'inflight', _nextApprover: _next, description: parsed.description,
                 apprReq: reqStr, apprStatus: apr,
                 isToday: true, startDate: sd, endDate: ed, ssotAuto: true, owner: owner,
+                createdAt: String(row['생성일'] || ''),
                 _sheetsId: String(row['id'] || '')
               });
             } else if (_isG1Owner) {
@@ -7445,6 +7447,7 @@ function crTab(btn, panelId) {
                 progressLog: parsed.progressLog, budgetCat: parsed.budgetCat, budgetAmt: parsed.budgetAmt,
                 apprReq: String(row['결재요청'] || ''), apprStatus: apr,
                 isToday: true, startDate: sd, endDate: ed, ssotAuto: true, owner: owner,
+                createdAt: String(row['생성일'] || ''),
                 _doneDate: (st === '완료') ? _doneLocal : '',
                 _history: false,
                 _sheetsId: String(row['id'] || '')
@@ -7483,6 +7486,7 @@ function crTab(btn, panelId) {
             queueSource: true,   // _queue 기원 마킹 (편집 차단용)
             owner: clvLabel,
             _doneDate: _qDone ? String(q.processed_at || '').slice(0,10) : '',  // AI배 완료일(processed_at)
+            createdAt: String(q.enqueued_at || q.assigned_at || ''),  // AI배 생성일 — 최신순 정렬 키 (GM 2026-06-12)
             _history: (q.status === '폐기'),   // 완료(DONE)=입항 표시(오늘/지난 분리) / 폐기=이력(검색전용) (GM 2026-06-07)
             _sheetsId: ''
           });
@@ -7757,7 +7761,9 @@ function crTab(btn, panelId) {
       function gm1SortCmp(a, b) {
         if (gm1SortBy === '시작일순') return String(b.startDate||'').localeCompare(String(a.startDate||''));
         if (gm1SortBy === '카테고리') return String(catOf(a)).localeCompare(String(catOf(b))) || String(a.title||'').localeCompare(String(b.title||''));
-        return String(b.startDate||'').localeCompare(String(a.startDate||'')) || String(a.title||'').localeCompare(String(b.title||''));  // 최신순
+        // 최신순(기본): 생성일(createdAt) 최신 상단 — GM 2026-06-12 (결측 시 시작일→제목 폴백)
+        var _ca = String(a.createdAt||a.startDate||''), _cb = String(b.createdAt||b.startDate||'');
+        return _cb.localeCompare(_ca) || String(a.title||'').localeCompare(String(b.title||''));
       }
       merged.sort(gm1SortCmp);
 

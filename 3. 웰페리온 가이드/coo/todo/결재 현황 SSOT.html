@@ -421,6 +421,7 @@ function normalizeTask(r) {
   t.completeTime = r['결재완료시각'] || '';
   t.reportUrl = r['결과보고서URL'] || '';
   t.updatedAt = r['수정일'] || r.updatedAt || '';
+  t.createdAt = r['생성일'] || r.createdAt || '';
   return t;
 }
 
@@ -575,8 +576,8 @@ function render() {
   } else if (activeSortBy === '시작일순') {
     list.sort((a, b) => String(b.startDate || '').localeCompare(String(a.startDate || '')));
   } else {
-    // 최신순(기본): 최근 활동(수정일→시작일) 최신순 — 업무 현황 SSOT와 동일 기준
-    const sortKey = t => String(t.updatedAt || t['수정일'] || t.startDate || t['시작일'] || t.completeTime || '');
+    // 최신순(기본): 생성일(createdAt) 최신 상단 — GM 2026-06-12 (생성일 결측 시 수정일→시작일→완료시각 폴백)
+    const sortKey = t => String(t.createdAt || t['생성일'] || t.updatedAt || t['수정일'] || t.startDate || t['시작일'] || t.completeTime || '');
     list.sort((a, b) => sortKey(b).localeCompare(sortKey(a)));
   }
 
