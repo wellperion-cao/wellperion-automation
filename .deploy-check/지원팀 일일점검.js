@@ -261,6 +261,8 @@ function doGet(e) {
   if (action === 'clear_check_ledger') { return clearCheckLedger(e.parameter.dept || 'support'); }
   if (action === 'clear_zone_checks') { return clearZoneCheckedRows(e.parameter.dept || 'support', e.parameter.date || '', e.parameter.all === '1'); }
   if (action === 'migrate_support_sheets') { return migrateSupportSheets(); }
+  if (action === 'purge_dept_items') { return purgeDeptItems(e.parameter.dept || ''); }
+  if (action === 'delete_facility_sheets') { return deleteFacilitySheets(); }
 
   var date = e.parameter.date;
   if (!date) return jsonRes({ error: 'date required' });
@@ -416,6 +418,38 @@ function migrateSupportSheets() {
   if (common) { ss.deleteSheet(common); log.push('삭제:공용구역'); }
   else { log.push('공용구역없음(스킵)'); }
   return jsonRes({ ok: true, log: log });
+}
+
+// 죽은 시설부 점검 시트 삭제(GM 2026-06-12) — 시설부 점검 미운영 → 4시트 데드. 거래업체(시설_거래업체)는 보존.
+// GET ?action=delete_facility_sheets
+function deleteFacilitySheets() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var targets = [SHEET_FACILITY_MALE, SHEET_FACILITY_FEMALE, SHEET_FACILITY_COMMON, SHEET_ISSUE_FACILITY];
+  var log = [];
+  targets.forEach(function (name) {
+    if (name === SHEET_VENDOR) return;   // 안전: 거래업체는 절대 삭제 안 함
+    var sh = ss.getSheetByName(name);
+    if (sh) { ss.deleteSheet(sh); log.push('삭제:' + name); }
+    else { log.push('없음(스킵):' + name); }
+  });
+  return jsonRes({ ok: true, log: log });
+}
+
+// 항목 마스터(지원_매뉴얼)에서 특정 dept 행 제거(GM 2026-06-12) — 깨진 인코딩 facility 데드행 정리·경량화.
+// 시설부 점검 미운영 → facility 16행(글자깨짐) 잔존 무의미. support 행만 남겨 매뉴얼 단일출처화.
+// GET ?action=purge_dept_items&dept=facility
+function purgeDeptItems(dept) {
+  dept = String(dept || '').trim();
+  if (!dept) return jsonRes({ ok: false, error: 'dept required' });
+  var sheet = initItemSheet();   // 12열 보장
+  var lastRow = sheet.getLastRow();
+  if (lastRow < 2) return jsonRes({ ok: true, dept: dept, removed: 0 });
+  var data = sheet.getRange(2, 1, lastRow - 1, ITEM_HEADERS.length).getValues();
+  var removed = 0;
+  for (var i = data.length - 1; i >= 0; i--) {
+    if (_itemDept(data[i][ITEM_DEPT_COL]) === dept) { sheet.deleteRow(i + 2); removed++; }
+  }
+  return jsonRes({ ok: true, dept: dept, removed: removed });
 }
 
 // 완료원장 일괄 비우기(GM 2026-06-12) — 오염된 체크 원장(전 날짜·성별) 제거. GET ?action=clear_check_ledger&dept=support
