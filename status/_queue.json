@@ -42,11 +42,13 @@
     "task_id": "CTO-2026-06-08-CFO-SHEET-LINK",
     "clevel": "cto",
     "title": "[시토-01] 9시 보고 매출·지출 연결 — GM 매출·지출 시트 링크 받아 .env CFO_SHEET_URL 등록 + 파싱 구현",
-    "status": "PENDING",
+    "status": "폐기",
     "priority": "NORMAL",
     "depends_on": "GM 매출·지출 시트 링크(2026-06-08 제공 예정)",
     "enqueued_at": "2026-06-07",
-    "note": "[GM 2026-06-07] 매출·지출 시트 내일 제공. 그 전까지 9시 보고는 매출·지출 \"연결 대기\" 표시(코드는 CFO_SHEET_URL 폴백 완비). 링크 받으면 .env 등록+시트 구조 보고 파싱 구현."
+    "disposed_at": "2026-06-12",
+    "note": "[GM 2026-06-07] 매출·지출 시트 내일 제공. 그 전까지 9시 보고는 매출·지출 \"연결 대기\" 표시(코드는 CFO_SHEET_URL 폴백 완비). 링크 받으면 .env 등록+시트 구조 보고 파싱 구현.",
+    "note_disposed": "[폐기 2026-06-12 GM] 오늘 9시보고 정합(7f7bb111)이 매출·지출을 home_kpi 소스로 연결 → CFO 전용 시트 링크 불필요해짐. CFO_SHEET_URL 등록 시 자동 override 하위호환은 코드에 유지."
   },
   {
     "task_id": "COO-2026-06-07-OPS-GUIDELINE",
@@ -61,10 +63,14 @@
     "task_id": "CMO-2026-06-07-UNPUBLISHED-CONTENT",
     "clevel": "cmo",
     "title": "[시모-09] 미발행 콘텐츠 정리 — 발레·스쿼시 발행 결정 + 바레 git 정리",
-    "status": "IN_PROGRESS",
+    "status": "DONE",
     "priority": "NORMAL",
     "enqueued_at": "2026-06-07",
-    "note": "[이관 2026-06-07 시우] todo_list TODO-20260602194917329에서 이관. 발레(8장·미발행)·스쿼시(5주경과) 발행/보류 GM 결정 대기. 담당: AI CMO(시모) + 김남욱GM."
+    "processed_at": "2026-06-12",
+    "terminal": true,
+    "next": "[GM 2026-06-12] 발레·스쿼시 옛 발행완료분 확인 종결",
+    "note": "[이관 2026-06-07 시우] todo_list TODO-20260602194917329에서 이관. 발레(8장·미발행)·스쿼시(5주경과) 발행/보류 GM 결정 대기. 담당: AI CMO(시모) + 김남욱GM.",
+    "note_done": "[완료 2026-06-12 GM 지시] 발행 이력 실측 확인. 발레(BALLET) 4채널: 블로그·카페·카카오·당근 모두 2026-06-05 발행완료(review_queue.json CMO-2026-05-20-BALLET-BLOG/CAFE/KAKAO/DANGGN, 각 GM 게시 완료 노트). 스쿼시 WJO 4채널: 블로그(2026-06-03 post_url 확인)·카페(2026-06-03 cafe.naver.com/ichon1dong/362833)·카카오(2026-06-03)·당근(2026-06-04 daangn.com/kr/business-posts/6a2141fd… 확인). 바레(BARRE) 4채널: 2026-06-08 GM 수동 발행완료(commit 7469e58e). 전 항목 발행완료 확정."
   },
   {
     "task_id": "CMO-2026-06-07-KAKAO-PUBLISH-RND",
