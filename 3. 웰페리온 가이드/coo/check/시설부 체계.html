@@ -452,8 +452,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   <button class="tab active" onclick="switchTab('policy')">시설부 규정</button>
   <button class="tab" onclick="switchTab('guide')">가이드</button>
   <button class="tab" onclick="switchTab('manual')">매뉴얼</button>
-  <button class="tab" onclick="switchTab('check-m','lock')">점검(남) 🔒</button>
-  <button class="tab" onclick="switchTab('check-f','lock')">점검(여) 🔒</button>
+  <!-- 점검(남)/(여) 탭 제거 — 시설부는 일일점검 미운영 (GM 2026-06-12). 콘텐츠 div는 비활성 잔존(switchTab 참조 보존) -->
   <button class="tab" onclick="switchTab('vendor')">거래업체</button>
   <div style="display:flex;gap:4px;margin-left:auto;">
     <button class="util-btn print-btn" onclick="printCurrentTab()">인쇄</button>
@@ -4748,8 +4747,8 @@ function vendorSetView(v){
   const lw = document.getElementById('vendor-list-wrap');
   const bk = document.getElementById('vendorViewKanban');
   const bl = document.getElementById('vendorViewList');
-  if(kw) kw.classList.toggle('hidden', v!=='kanban');
-  if(lw) lw.classList.toggle('hidden', v!=='list');
+  if(kw) kw.classList.remove('hidden');             // 칸반 상시 표시(GM 2026-06-12)
+  if(lw) lw.classList.toggle('hidden', v!=='list'); // 목록 선택 시 칸반 아래에 추가로 표시
   if(bk){ bk.classList.toggle('save', v==='kanban'); }
   if(bl){ bl.classList.toggle('save', v==='list'); }
   if(v==='list') renderVendorList();
