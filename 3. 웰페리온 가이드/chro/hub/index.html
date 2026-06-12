@@ -555,7 +555,13 @@ async function onChannelToggle(ev){
   try{
     var r=await fetch(NOTION_FN,{method:"POST",body:JSON.stringify({action:"set-channels",adminPassword:SESSION_PW,sheetRow:Number(row),jobName:jobName,channels:next})}).then(function(x){return x.json();});
     if(!r.ok) throw new Error(r.error||"set-channels 실패");
-    if(typeof loadAll==="function") loadAll(); // 새로고침 후 재렌더
+    if(h) h["채용 채널"]=next.join(", "); // 메모리 즉시 갱신 (다음 토글 정확도)
+    var nowOn=!has;                          // 클릭한 칩 즉시 시각 갱신
+    el.textContent=(nowOn?"✓ ":"· ")+chName;
+    el.style.background=nowOn?"#e9f1ea":"#f4f3ef";
+    el.style.color=nowOn?"#3c7a4a":"#b5b1a6";
+    el.style.fontWeight=nowOn?"700":"400";
+    el.removeAttribute("data-busy"); el.style.opacity="1";
   }catch(e){ alert("채널 변경 실패: "+(e.message||e)); el.removeAttribute("data-busy"); el.style.opacity="1"; }
 }
 function daysBetween(a,b){return Math.round((a-b)/86400000);}
@@ -1998,12 +2004,4 @@ details.jobs-fold > summary > .jf-arrow{display:inline-block;transition:transfor
     function renderRows(){
       var q = (document.getElementById("__af_q").value||"").toLowerCase().trim();
       var sf = document.getElementById("__af_stage").value;
-      var gf = document.getElementById("__af_grade").value;
-      var pf = document.getElementById("__af_pos").value;
-      var filtered = allRows.filter(function(r){
-        if(sf && r.stage !== sf) return false;
-        if(gf && r.grade !== gf) return false;
-        if(pf && r.pos !== pf) return false;
-        if(q){
-          var hay = ((r.name||"") + " " + (r.pos||"")).toLowerCase();
-    
+      var gf = document.getElementById("__a
