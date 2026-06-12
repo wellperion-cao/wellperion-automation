@@ -536,25 +536,26 @@
       <!-- 업무 카드 -->
       <div style="background:var(--paper);border:1px solid var(--border);border-radius:14px;padding:16px 18px;">
         <div style="display:flex;align-items:center;gap:9px;margin-bottom:12px;"><span style="width:28px;height:28px;border-radius:8px;background:var(--accent-bg);color:var(--accent);display:flex;align-items:center;justify-content:center;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5h6M7 7H5v14h14V7h-2M9 5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2"/></svg></span><div><div style="font-weight:800;font-size:14px;color:var(--text);">업무 현황</div><div style="font-size:10.5px;color:var(--dim);">Work · AI COO(시우)</div></div></div>
-        <!-- 📊 SSOT 지표 스트립 (5칸: 총건수|진행중|완료(완료율%)|보류|마감준수율%) — SSOT 대시보드와 동일 계산 (2026-06-12 GM) -->
-        <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:1px;background:var(--border);border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:10px;">
+        <!-- 🔼 위 칸: 큰 숫자(진행·완료) — GM이 한눈에 보는 핵심 (2026-06-12 GM "큰 숫자는 위 칸") -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">
+          <div style="background:var(--accent-bg);border-radius:10px;padding:10px 12px;">
+            <div style="font-size:10px;color:var(--dim);margin-bottom:4px;font-weight:600;">진행</div>
+            <div style="font-size:26px;font-weight:800;color:var(--accent);line-height:1;" id="kpiWorkTotalActive">—</div>
+            <div style="display:flex;align-items:center;gap:4px;margin-top:4px;"><span style="font-size:10px;color:var(--dim);">오늘</span><span style="font-size:13px;font-weight:700;color:var(--text);" id="kpiWorkDayActive">—</span></div>
+          </div>
+          <div style="background:var(--accent-bg);border-radius:10px;padding:10px 12px;">
+            <div style="font-size:10px;color:var(--dim);margin-bottom:4px;font-weight:600;">완료</div>
+            <div style="font-size:26px;font-weight:800;color:var(--grow);line-height:1;" id="kpiWorkTotalDone">—</div>
+            <div style="display:flex;align-items:center;gap:4px;margin-top:4px;"><span style="font-size:10px;color:var(--dim);">오늘</span><span style="font-size:13px;font-weight:700;color:var(--grow);" id="kpiWorkDayDone">—</span></div>
+          </div>
+        </div>
+        <!-- 🔽 아래 칸: 세부 SSOT 지표 스트립 (5칸: 총건수|진행중|완료(완료율%)|보류|마감준수율%) — 작게 (2026-06-12 GM) -->
+        <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:1px;background:var(--border);border:1px solid var(--border);border-radius:10px;overflow:hidden;">
           <div style="background:var(--paper);padding:7px 4px;text-align:center;"><div style="font-size:15px;font-weight:800;color:var(--text);line-height:1.1;" id="kpiWorkStripTotal">—</div><div style="font-size:9px;color:var(--dim);margin-top:2px;font-weight:600;">총건수</div></div>
           <div style="background:var(--paper);padding:7px 4px;text-align:center;"><div style="font-size:15px;font-weight:800;color:var(--accent);line-height:1.1;" id="kpiWorkStripActive">—</div><div style="font-size:9px;color:var(--dim);margin-top:2px;font-weight:600;">진행중</div></div>
           <div style="background:var(--paper);padding:7px 4px;text-align:center;"><div style="font-size:15px;font-weight:800;color:var(--grow);line-height:1.1;" id="kpiWorkStripDone">—</div><div style="font-size:9px;color:var(--dim);margin-top:2px;font-weight:600;">완료(완료율)</div></div>
           <div style="background:var(--paper);padding:7px 4px;text-align:center;"><div style="font-size:15px;font-weight:800;color:var(--dim);line-height:1.1;" id="kpiWorkStripHold">—</div><div style="font-size:9px;color:var(--dim);margin-top:2px;font-weight:600;">보류</div></div>
           <div style="background:var(--paper);padding:7px 4px;text-align:center;"><div style="font-size:15px;font-weight:800;color:var(--text);line-height:1.1;" id="kpiWorkStripDlRate">—</div><div style="font-size:9px;color:var(--dim);margin-top:2px;font-weight:600;">마감준수율</div></div>
-        </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-          <div style="background:var(--accent-bg);border-radius:10px;padding:10px 12px;">
-            <div style="font-size:10px;color:var(--dim);margin-bottom:4px;font-weight:600;">진행</div>
-            <div style="font-size:22px;font-weight:800;color:var(--accent);line-height:1;" id="kpiWorkTotalActive">—</div>
-            <div style="display:flex;align-items:center;gap:4px;margin-top:4px;"><span style="font-size:10px;color:var(--dim);">오늘</span><span style="font-size:13px;font-weight:700;color:var(--text);" id="kpiWorkDayActive">—</span></div>
-          </div>
-          <div style="background:var(--accent-bg);border-radius:10px;padding:10px 12px;">
-            <div style="font-size:10px;color:var(--dim);margin-bottom:4px;font-weight:600;">완료</div>
-            <div style="font-size:22px;font-weight:800;color:var(--grow);line-height:1;" id="kpiWorkTotalDone">—</div>
-            <div style="display:flex;align-items:center;gap:4px;margin-top:4px;"><span style="font-size:10px;color:var(--dim);">오늘</span><span style="font-size:13px;font-weight:700;color:var(--grow);" id="kpiWorkDayDone">—</span></div>
-          </div>
         </div>
         <div style="margin-top:11px;padding-top:10px;border-top:1px dashed var(--border);">
           <a href="https://wellperion-cao.github.io/wellperion-automation/coo/todo/%EC%97%85%EB%AC%B4%20%ED%98%84%ED%99%A9%20SSOT.html" target="_blank" style="font-size:11px;font-weight:700;padding:3px 10px;background:var(--accent-bg);color:var(--accent);border-radius:20px;text-decoration:none;border:1px solid var(--border);">업무 현황 SSOT ↗</a>
@@ -564,17 +565,31 @@
       <!-- 결재 카드 -->
       <div style="background:var(--paper);border:1px solid var(--border);border-radius:14px;padding:16px 18px;">
         <div style="display:flex;align-items:center;gap:9px;margin-bottom:12px;"><span style="width:28px;height:28px;border-radius:8px;background:var(--warm-bg);color:var(--warm);display:flex;align-items:center;justify-content:center;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 4v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V7z"/><path d="M9 12l2 2 4-4"/></svg></span><div><div style="font-weight:800;font-size:14px;color:var(--text);">결재 현황</div><div style="font-size:10.5px;color:var(--dim);">Approval · AI CEO(웰리)</div></div></div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+        <!-- 🔼 위 칸: 큰 숫자(대기·완료) — 업무현황 카드와 동일 2단 구조 (2026-06-12 GM) -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">
           <div style="background:var(--warm-bg);border-radius:10px;padding:10px 12px;">
             <div style="font-size:10px;color:var(--dim);margin-bottom:4px;font-weight:600;">대기</div>
-            <div style="font-size:22px;font-weight:800;color:var(--warm);line-height:1;" id="kpiApprTotalPend">—</div>
+            <div style="font-size:26px;font-weight:800;color:var(--warm);line-height:1;" id="kpiApprTotalPend">—</div>
             <div style="display:flex;align-items:center;gap:4px;margin-top:4px;"><span style="font-size:10px;color:var(--dim);">오늘</span><span style="font-size:13px;font-weight:700;color:var(--warm);" id="kpiApprDayPend">—</span></div>
           </div>
           <div style="background:var(--warm-bg);border-radius:10px;padding:10px 12px;">
             <div style="font-size:10px;color:var(--dim);margin-bottom:4px;font-weight:600;">완료</div>
-            <div style="font-size:22px;font-weight:800;color:var(--grow);line-height:1;" id="kpiApprTotalDone">—</div>
+            <div style="font-size:26px;font-weight:800;color:var(--grow);line-height:1;" id="kpiApprTotalDone">—</div>
             <div style="display:flex;align-items:center;gap:4px;margin-top:4px;"><span style="font-size:10px;color:var(--dim);">오늘</span><span style="font-size:13px;font-weight:700;color:var(--grow);" id="kpiApprDayDone">—</span></div>
           </div>
+        </div>
+        <!-- 🔽 아래 칸: 세부 결재 지표 스트립 (5칸: 총건수|대기|완료(완료율%)|반려|진행중) — 업무현황 톤 통일 (2026-06-12 GM) -->
+        <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:1px;background:var(--border);border:1px solid var(--border);border-radius:10px;overflow:hidden;">
+          <div style="background:var(--paper);padding:7px 4px;text-align:center;"><div style="font-size:15px;font-weight:800;color:var(--text);line-height:1.1;" id="kpiApprStripTotal">—</div><div style="font-size:9px;color:var(--dim);margin-top:2px;font-weight:600;">총건수</div></div>
+          <div style="background:var(--paper);padding:7px 4px;text-align:center;"><div style="font-size:15px;font-weight:800;color:var(--warm);line-height:1.1;" id="kpiApprStripPend">—</div><div style="font-size:9px;color:var(--dim);margin-top:2px;font-weight:600;">대기</div></div>
+          <div style="background:var(--paper);padding:7px 4px;text-align:center;"><div style="font-size:15px;font-weight:800;color:var(--grow);line-height:1.1;" id="kpiApprStripDone">—</div><div style="font-size:9px;color:var(--dim);margin-top:2px;font-weight:600;">완료(완료율)</div></div>
+          <div style="background:var(--paper);padding:7px 4px;text-align:center;"><div style="font-size:15px;font-weight:800;color:var(--dim);line-height:1.1;" id="kpiApprStripReject">—</div><div style="font-size:9px;color:var(--dim);margin-top:2px;font-weight:600;">반려</div></div>
+          <div style="background:var(--paper);padding:7px 4px;text-align:center;"><div style="font-size:15px;font-weight:800;color:var(--text);line-height:1.1;" id="kpiApprStripInflight">—</div><div style="font-size:9px;color:var(--dim);margin-top:2px;font-weight:600;">진행중</div></div>
+        </div>
+        <!-- 👤 누구 결재인지 — 다음 결재자(결재선 다음 서명자)별 대기건 분포 (2026-06-12 GM) -->
+        <div style="margin-top:8px;padding:8px 10px;background:var(--warm-bg);border-radius:10px;">
+          <div style="font-size:9px;color:var(--dim);font-weight:700;margin-bottom:4px;">👤 결재 대기 — 다음 결재자</div>
+          <div style="font-size:11px;color:var(--text);font-weight:600;line-height:1.5;" id="kpiApprNextSigners">—</div>
         </div>
         <div style="margin-top:11px;padding-top:10px;border-top:1px dashed var(--border);">
           <a href="https://wellperion-cao.github.io/wellperion-automation/coo/todo/%EA%B2%B0%EC%9E%AC%20%ED%98%84%ED%99%A9%20SSOT.html" target="_blank" style="font-size:11px;font-weight:700;padding:3px 10px;background:var(--warm-bg);color:var(--warm);border-radius:20px;text-decoration:none;border:1px solid var(--border);">결재 현황 SSOT ↗</a>
@@ -938,6 +953,58 @@
         set('kpiApprTotalDone', totalApprDone);
         set('kpiApprDayPend',   dayApprPend);
         set('kpiApprDayDone',   dayApprDone);
+
+        // 🔽 결재 세부 스트립(5칸: 총건수|대기|완료(완료율)|반려|진행중) — 올해 생성 결재건 기준 (2026-06-12 GM)
+        var apprYr = apprRows.filter(function(r){ return getCreated(r)>=yStart; });
+        var aTotal   = apprYr.length;
+        var aPend    = totalApprPend;   // 위 큰숫자와 동일 정의(대기)
+        var aDone    = totalApprDone;   // 위 큰숫자와 동일 정의(완료)
+        var aReject  = apprYr.filter(function(r){ return /반려/.test(getApprStatus(r)); }).length;
+        var aInflight= apprYr.filter(function(r){ return getApprReq(r) && getApprStatus(r)!=='결재완료' && !/반려/.test(getApprStatus(r)); }).length;
+        var aRate    = aTotal>0 ? Math.round(aDone/aTotal*100) : 0;
+        set('kpiApprStripTotal',    aTotal);
+        set('kpiApprStripPend',     aPend);
+        set('kpiApprStripDone',     aDone + ' (' + aRate + '%)');
+        set('kpiApprStripReject',   aReject);
+        set('kpiApprStripInflight', aInflight);
+
+        // 👤 누구 결재인지 — 다음 결재자(결재선 다음 서명자)별 대기건. 결재현황 SSOT nextApprover와 동일 로직 (2026-06-12 GM)
+        var _HEADS = ['이경연 실장','이정헌 소장','나우열M'];
+        var _CAT_HEAD = { '[2] 인사':'나우열M','[3] 파트너팀':'나우열M','[4] 운영 정책':'이경연 실장','[5] 시설 및 환경':'이정헌 소장' };
+        function homeNextApprover(row){
+          var approval = String(row['결재요청']||row.approval||'').split(',').map(function(s){return s.trim();}).filter(Boolean);
+          if (!approval.length) return null;
+          var owners = String(row['담당자']||row.owner||'').split(',').map(function(s){return s.trim();});
+          var ownerIsGM = owners.indexOf('김남욱GM')>=0;
+          var midName = approval.find(function(m){return _HEADS.indexOf(m)>=0;})
+                     || owners.find(function(o){return _HEADS.indexOf(o)>=0;})
+                     || (_CAT_HEAD[String(row['카테고리']||row.category||'')]||'');
+          var midExplicit = midName && approval.indexOf(midName)>=0;
+          var skipMid = midName && owners.indexOf(midName)>=0 && !midExplicit;
+          var route = [];
+          if (midName && !ownerIsGM && !skipMid) route.push(midName);
+          if (!ownerIsGM) route.push('김남욱GM');
+          route.push('전응준 대표');
+          var map = { };
+          map[route[0]] = midName ? row['부서장싸인'] : undefined;
+          // 명시적 매핑: 부서장→부서장싸인 / GM→GM싸인 / 대표→대표싸인
+          for (var i=0;i<route.length;i++){
+            var who = route[i];
+            var sign = (who==='김남욱GM') ? row['GM싸인'] : (who==='전응준 대표') ? row['대표싸인'] : row['부서장싸인'];
+            if (!sign) return who;
+          }
+          return null;
+        }
+        var _signerCnt = {};
+        apprRows.filter(function(r){ return getApprReq(r) && getApprStatus(r)!=='결재완료' && !/반려/.test(getApprStatus(r)); })
+          .forEach(function(r){ var n=homeNextApprover(r); if(n){ _signerCnt[n]=(_signerCnt[n]||0)+1; } });
+        var _signerEl = document.getElementById('kpiApprNextSigners');
+        if (_signerEl){
+          var _pairs = Object.keys(_signerCnt).sort(function(a,b){return _signerCnt[b]-_signerCnt[a];});
+          _signerEl.textContent = _pairs.length
+            ? _pairs.map(function(k){ return k+' '+_signerCnt[k]+'건'; }).join(' · ')
+            : '대기 결재 없음';
+        }
       })
       .catch(function(){ /* "—" 유지 */ });
 
