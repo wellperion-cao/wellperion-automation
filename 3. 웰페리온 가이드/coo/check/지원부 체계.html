@@ -936,6 +936,9 @@ function openPromoteFromIssue(id,gender){
   const ctx=PROMOTE_CTX[id]||{};
   const g=gender||ctx.gender||activeGenderTab;
   promoteSourceId=id;
+  // 헤더 복원(매뉴얼 신규추가 모드에서 바뀐 문구 되돌림)
+  const _t=document.getElementById('promoteTitle'); if(_t)_t.textContent='이슈 → 점검·매뉴얼 항목 추가';
+  const _st=document.getElementById('promoteSubtitle'); if(_st)_st.textContent='자주 발생하는 이슈를 점검표와 매뉴얼에 항목으로 등록합니다. 선택한 회차에 자동으로 등장합니다.';
   const issText=STATE['iss_'+id]||'';
   // 항목명: 이슈 텍스트 prefill(수정 가능)
   const nameEl=document.getElementById('promoteName');
@@ -2218,14 +2221,32 @@ window.resetItem=function(id){
   if(typeof renderManualItems==='function')renderManualItems();
 };
 /* ── 매뉴얼 탭 셋업: 항목 추가/삭제/일괄정리 (GM 2026-06-12) — 시트(점검항목) 단일출처 ── */
+/* 매뉴얼 '＋ 항목 추가' = 이슈승격과 동일한 모달 재사용(회차 다중선택 확보) — 원본 이슈 없이 신규.
+   회차를 골라야 점검의 그 조(오전/오후/마감)에 등장. mgmtGenerateId로 custom_ 1건 생성. */
 window.manualAddItem=function(cat){
-  _editingItemId=(typeof mgmtGenerateId==='function')?mgmtGenerateId():('custom_'+Date.now());
-  document.getElementById('editName').value='';
-  document.getElementById('editDetail').value='';
-  document.getElementById('editSlot').value='내부·외부 점검 (오후·마감)';
-  document.getElementById('editShift').value='pm';
-  document.getElementById('editCat').value=cat||'추가 점검';
-  document.getElementById('itemEditModal').style.display='flex';
+  promoteSourceId=null;   // 원본 이슈 없음(신규 추가) → promoteSave가 reflected 마킹 건너뜀
+  const t=document.getElementById('promoteTitle'); if(t)t.textContent='점검·매뉴얼 항목 추가';
+  const st=document.getElementById('promoteSubtitle'); if(st)st.textContent='새 점검 항목을 등록합니다. 선택한 회차(조)에 점검 화면과 매뉴얼에 함께 등장합니다.';
+  const nameEl=document.getElementById('promoteName'); if(nameEl)nameEl.value='';
+  const detEl=document.getElementById('promoteDetail'); if(detEl)detEl.value='';
+  const genEl=document.getElementById('promoteGender'); if(genEl)genEl.value='all';
+  const catSel=document.getElementById('promoteCatSelect');
+  if(catSel){
+    const titles=promoteZoneTitles();
+    let opts=titles.map(t2=>`<option value="${escapeAttr(t2)}">${escapeHTML(t2)}</option>`).join('');
+    opts+='<option value="__custom__">+ 직접 입력…</option>';
+    catSel.innerHTML=opts;
+    if(cat&&titles.indexOf(cat)>=0)catSel.value=cat;
+    else if(cat)catSel.value='__custom__';
+    else catSel.value=titles.length?titles[0]:'__custom__';
+  }
+  promoteOnCatChange();
+  const catIn=document.getElementById('promoteCatCustom');
+  if(catIn&&catSel&&catSel.value==='__custom__')catIn.value=cat||'';
+  // 회차: 기본 오후조 1개 체크(GM이 자유 조정) — 최소 1개 강제는 promoteSave가 검증
+  ROUND_KEYS.forEach(rk=>{const cb=document.getElementById('promoteRound_'+rk);if(cb)cb.checked=(rk==='pm1');});
+  const hint=document.getElementById('promoteRoundHint'); if(hint)hint.style.display='none';
+  const modal=document.getElementById('promoteModal'); if(modal)modal.style.display='flex';
 };
 window.manualDeleteItem=function(id){
   if(!confirm('이 추가 항목을 삭제할까요? (시트에서도 제거)'))return;
@@ -4212,8 +4233,8 @@ renderManualItems();
 <!-- 2b-1(2026-06-11 시우): 이슈 → 점검·매뉴얼 항목 승격 모달 -->
 <div id="promoteModal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);z-index:1000;align-items:center;justify-content:center;padding:20px;">
   <div style="background:var(--paper);padding:22px 24px;border-radius:14px;max-width:540px;width:100%;border:1px solid var(--accent);box-shadow:0 12px 40px rgba(0,0,0,0.5);max-height:90vh;overflow-y:auto;">
-    <h3 style="font-size:16px;font-weight:700;color:var(--accent);margin-bottom:6px;">이슈 → 점검·매뉴얼 항목 추가</h3>
-    <div style="font-size:12px;color:var(--dim);margin-bottom:14px;line-height:1.5;">자주 발생하는 이슈를 점검표와 매뉴얼에 항목으로 등록합니다. 선택한 회차에 자동으로 등장합니다.</div>
+    <h3 id="promoteTitle" style="font-size:16px;font-weight:700;color:var(--accent);margin-bottom:6px;">이슈 → 점검·매뉴얼 항목 추가</h3>
+    <div id="promoteSubtitle" style="font-size:12px;color:var(--dim);margin-bottom:14px;line-height:1.5;">자주 발생하는 이슈를 점검표와 매뉴얼에 항목으로 등록합니다. 선택한 회차에 자동으로 등장합니다.</div>
     <div style="margin-bottom:12px;">
       <label style="display:block;font-size:13px;font-weight:600;color:var(--dim);margin-bottom:4px;">항목명</label>
       <input id="promoteName" type="text" placeholder="점검 항목명" style="width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:10px 14px;border-radius:8px;font-size:14px;font-family:inherit;">
