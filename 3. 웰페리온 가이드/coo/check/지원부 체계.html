@@ -868,8 +868,7 @@ let promoteSourceId = null;   // 현재 승격 진행 중인 원본 이슈 항�
    기준 벗어나면 클라에서 빨간 경고만 표시(저장은 그대로 — 거짓완료 유발 안 함). */
 const TEMP_CONFIG = {
   a1:   { fields:[ {key:'온탕',label:'온탕',min:39,max:42,unit:'℃'}, {key:'열탕',label:'열탕',min:43,max:45,unit:'℃'}, {key:'냉탕',label:'냉탕',min:15,max:20,unit:'℃'} ] },
-  a2:   { fields:[ {key:'건식',label:'건식',min:90,max:100,unit:'℃'}, {key:'습식',label:'습식',min:60,max:70,unit:'℃'} ] },
-  a_pm: { fields:[ {key:'온탕',label:'온탕',min:39,max:42,unit:'℃'}, {key:'열탕',label:'열탕',min:43,max:45,unit:'℃'}, {key:'건식',label:'건식',min:90,max:100,unit:'℃'}, {key:'습식',label:'습식',min:60,max:70,unit:'℃'} ] }
+  a2:   { fields:[ {key:'건식',label:'건식',min:90,max:100,unit:'℃'}, {key:'습식',label:'습식',min:60,max:70,unit:'℃'} ] }
 };
 function tempFieldsFor(id){ return (TEMP_CONFIG[id] && TEMP_CONFIG[id].fields) || null; }
 /* STATE 온도값 키: temp_<id>_<fieldKey>. 측정값 JSON 직렬화(저장/푸시용). */
@@ -1178,13 +1177,13 @@ function shouldShowItemForGender(item,gender){
 
 const WEEKDAY=[
   {slot:"오픈 05:30~08:00",shift:"am",groups:[
-    {title:"A 사우나 점검",items:[
+    {title:"A 사우나점검",items:[
       {id:"a1",name:"A-1 사우나 탕",detail:"오픈 시 수위/온도 확인 후 오버풀 타이머 가동 | 탕 청결\n배수: 냉탕 매일 / 온탕·열탕 격일 (마개+스위치 확인) / 휴관일 전 냉·온·열탕 전부 배수\n[온탕 평일] 6회: 06:00, 10:00, 11:00, 12:00, 15:00, 20:00\n[열탕 평일] 6회: 06:00, 10:30, 11:30, 12:30, 15:30, 20:40\n[온탕 주말] 3회: 10:00, 14:00, 18:00 / [열탕 주말] 3회: 10:30, 14:30, 18:30",gender:"all"},
       {id:"a2",name:"A-2 건/습식 사우나",detail:"온도 체크 (건식 90~100°C / 습식 60~70°C 기준) | 건식/습식 내부 청결\n바닥·타일 물때 제거 | 수요일 고압세척 + 산성세제 금지\n비품: 모래시계 확인",gender:"all"},
       {id:"a3",name:"A-3 사우나 내부",detail:"배수로/배수구 청소 | 바닥 미끄럼 | 타일/유리 물때 | 탈수기 밑 | 좌식 의자 | 거울\n비품: 바가지, 목욕의자, 거품바구니, 쓰레기통, 치약, 소금, 샴푸, 린스, 바디워시, 비누",gender:"all"}
     ]},
-    {title:"B-6 데일리 락커",items:[
-      {id:"b6",name:"요일별 락커 청소",detail:"월 1~30 | 화 31~60 | 수 61~90 | 목 91~120 | 금 121~150 | 토 151~180\n데일리/개인 락커 키 위 먼지 청소",gender:"all"}
+    {title:"B 락커룸",items:[
+      {id:"b6",name:"B-6 데일리 락커 (요일별 청소)",detail:"월 1~30 | 화 31~60 | 수 61~90 | 목 91~120 | 금 121~150 | 토 151~180\n데일리/개인 락커 키 위 먼지 청소",gender:"all"}
     ]}
   ]},
   {slot:"오전 08:00~12:00",shift:"am",groups:[
@@ -1196,21 +1195,21 @@ const WEEKDAY=[
       {id:"b4",name:"B-4 마루바닥",detail:"바닥 미끄럼/청결 | 휴지통\n비품: 1회용 밀대 타올 (수시)",gender:"all"},
       {id:"b5",name:"B-5 사우나 화장실",detail:"소변기/대변기/바닥/세면공간\n비품: 휴지통, 화장지, 핸드페이퍼, 손세정제",gender:"all"}
     ]},
-    {title:"C 세탁물 (오전)",items:[
+    {title:"C 세탁물",items:[
       {id:"c1a",name:"세탁물 입고 운반",detail:"입고된 세탁물을 세탁실로 운반",gender:"all"},
       {id:"c1b",name:"운동복/양말 상태 + 배치",detail:"상태 체크 후 사이즈별 배치",gender:"all"},
       {id:"c1c",name:"타올류 상태 + 배치",detail:"거품타올/타올/바스타올 상태 체크 후 배치",gender:"all"}
     ]}
   ]},
   {slot:"오전 후반 10:00~12:00",shift:"am",groups:[
-    {title:"D 내부 (오전)",items:[
+    {title:"D 내부",items:[
       {id:"d1",name:"D-1 외부 화장실",detail:"골프장/B1/B2 화장실 체크 | 악취 관리 최우선\n비품: 휴지통, 화장지, 핸드페이퍼, 손세정제",gender:"all"},
       {id:"d2",name:"D-2 복도 휴지통",detail:"운영사무실 앞 / B1 복도(헬스장 입구 구석)",gender:"all"},
       {id:"d3",name:"D-3 메인 계단",detail:"B1-B2 메인 계단 벽/바닥 청결 (남 주임 전담)",gender:"m"},
       {id:"d4",name:"D-4 메인 복도 휴게공간",detail:"소파/바닥 청결 (여 주임 전담)",gender:"f"},
       {id:"d5",name:"D-5 분리수거장",detail:"에스컬레이터 아래 분리수거 진행",gender:"all"}
     ]},
-    {title:"E 외부 (오전)",items:[
+    {title:"E 외부",items:[
       {id:"e1",name:"E-1 센터 복도 바닥",detail:"1F/B1/B2 에스컬레이터 공간 전체 복도",gender:"all"},
       {id:"e2",name:"E-2 센터 거울/유리창",detail:"거울/유리창 물때 | 손톱깍이장 청소 (화요일 집중)",gender:"all"},
       {id:"e3",name:"E-3 청소 비품 관리",detail:"비품 지정 위치 배치 | 깔끔하게 관리",gender:"all"},
@@ -1218,29 +1217,24 @@ const WEEKDAY=[
       {id:"e5",name:"E-5 골프장",detail:"매일: 복도 청소 | 월수금: 타석(스크린천) | 화목: 타석(기계) | 주말: 레슨룸",gender:"all"}
     ]}
   ]},
-  {slot:"인수인계 13:00~14:00",shift:"am",groups:[
+  {slot:"인수인계 13:00~14:00",shift:"pm",groups:[
     {title:"교대 인수인계",items:[
       {id:"hw1",name:"세탁물 출고 운반",detail:"세탁물 출고 운반 + 카카오톡 인수인계 보고",gender:"all"},
       {id:"hw2",name:"인수인계 카톡 보고",detail:"오전조 → 오후조 인수사항 카카오톡 공유",gender:"all"}
     ]}
   ]},
   {slot:"오후 14:00~18:00",shift:"pm",groups:[
-    {title:"A 사우나 (오후)",items:[
-      {id:"a_pm",name:"A-1/A-2/A-3 오후 점검",detail:"사우나 탕 수위/온도 | 건습식 온도 | 사우나 내부 바닥/배수\n팀장 15분 점검 (카톡 보고)",gender:"all"}
-    ]},
-    {title:"B 락커룸 (오후)",items:[
-      {id:"b_pm",name:"B-2/B-3/B-4/B-5 오후 점검",detail:"휴게실/찜질방(수면실)/마루바닥/사우나 화장실 오후 상태 확인",gender:"all"}
-    ]},
-    {title:"D 내부 (오후)",items:[
+    {title:"D 내부",items:[
       {id:"d6",name:"D-6 G.X룸",detail:"거울/바닥 청소 (남 주임 전담 / 화요일 집중)",gender:"m"},
       {id:"d7",name:"D-7 센터 화분",detail:"물 공급 (여 주임 전담 / 금요일 집중)",gender:"f"},
       {id:"d9",name:"D-9 수영장 계단",detail:"주 1회 청소",gender:"all"}
     ]}
   ]},
   {slot:"저녁 19:00~22:00",shift:"pm",groups:[
-    {title:"저녁 점검",items:[
-      {id:"b_ev",name:"B 락커룸 저녁 점검",detail:"B-2/B-3/B-4 상태 확인",gender:"all"},
-      {id:"d8",name:"D-8 키즈 샤워실",detail:"파우더룸 정리 20:30\n2주 1회 샤워실 청소 수 13:00 (남 주임 전담)",gender:"m"},
+    {title:"D 내부",items:[
+      {id:"d8",name:"D-8 키즈 샤워실",detail:"파우더룸 정리 20:30\n2주 1회 샤워실 청소 수 13:00 (남 주임 전담)",gender:"m"}
+    ]},
+    {title:"E 외부",items:[
       {id:"e6",name:"E-6 주차장",detail:"바닥 쓰레기 치우기 | 주차장 화장실 | 차단기 확인\n휴관일: 집중 청소",gender:"all"}
     ]}
   ]},
@@ -1256,13 +1250,13 @@ const WEEKDAY=[
 
 const WEEKEND=[
   {slot:"오픈 07:30~08:00",shift:"am",groups:[
-    {title:"A 사우나 점검",items:[
+    {title:"A 사우나점검",items:[
       {id:"a1",name:"A-1 사우나 탕",detail:"수위/온도 체크 | 탕 청결 | 오버풀 관리\n[온탕 주말] 3회: 10:00, 14:00, 18:00\n[열탕 주말] 3회: 10:30, 14:30, 18:30",gender:"all"},
       {id:"a2",name:"A-2 건/습식 사우나",detail:"온도 체크 | 내부 청결",gender:"all"},
       {id:"a3",name:"A-3 사우나 내부",detail:"배수로/배수구 | 바닥 | 타일/유리 | 탈수기 | 거울",gender:"all"}
     ]},
-    {title:"B-6 데일리 락커",items:[
-      {id:"b6",name:"주말 락커 청소",detail:"토 151~180 / 데일리/개인 락커 키 위 먼지",gender:"all"}
+    {title:"B 락커룸",items:[
+      {id:"b6",name:"B-6 데일리 락커 (주말 청소)",detail:"토 151~180 / 데일리/개인 락커 키 위 먼지",gender:"all"}
     ]}
   ]},
   {slot:"오전 08:00~12:00",shift:"am",groups:[
@@ -1274,26 +1268,23 @@ const WEEKEND=[
       {id:"b4",name:"B-4 마루바닥",detail:"미끄럼/청결 | 휴지통",gender:"all"},
       {id:"b5",name:"B-5 사우나 화장실",detail:"소변기/대변기/바닥/세면공간",gender:"all"}
     ]},
-    {title:"C 세탁물 (오전)",items:[
+    {title:"C 세탁물",items:[
       {id:"c1a",name:"세탁물 입고 + 상태 체크",detail:"운동복/양말 사이즈별 배치 | 타올류 배치",gender:"all"}
     ]},
-    {title:"E 외부 (오전)",items:[
+    {title:"E 외부",items:[
       {id:"e1",name:"E-1 센터 복도 바닥",detail:"1F/B1/B2",gender:"all"},
       {id:"e3",name:"E-3 청소 비품 관리",detail:"지정 위치 배치",gender:"all"},
       {id:"e4",name:"E-4 헬스장",detail:"거울 청소 (주말)",gender:"all"},
       {id:"e5",name:"E-5 골프장",detail:"레슨룸 청소 (주말)",gender:"all"}
     ]}
   ]},
-  {slot:"인수인계 13:00~14:00",shift:"am",groups:[
+  {slot:"인수인계 13:00~14:00",shift:"pm",groups:[
     {title:"교대 인수인계",items:[
       {id:"hw1",name:"세탁물 출고 + 인수인계",detail:"카카오톡 보고 의무",gender:"all"}
     ]}
   ]},
   {slot:"오후 14:00~17:00",shift:"pm",groups:[
-    {title:"A 사우나 (오후)",items:[
-      {id:"a_pm",name:"A-1/A-2/A-3 오후 점검",detail:"수위/온도 | 건습식 | 바닥/배수",gender:"all"}
-    ]},
-    {title:"D 내부 (오후)",items:[
+    {title:"D 내부",items:[
       {id:"d1",name:"D-1 외부 화장실",detail:"골프장/B1/B2",gender:"all"},
       {id:"d2",name:"D-2 복도 휴지통",detail:"운영사무실 앞 / B1 복도",gender:"all"},
       {id:"d3",name:"D-3 메인 계단",detail:"B1-B2 벽/바닥 (남 주임 전담)",gender:"m"},
@@ -1302,9 +1293,7 @@ const WEEKEND=[
     ]}
   ]},
   {slot:"저녁 15:00~18:00",shift:"pm",groups:[
-    {title:"저녁 점검",items:[
-      {id:"c_ev",name:"C 세탁물 마감",detail:"마감 세탁물 출고",gender:"all"},
-      {id:"b_ev",name:"B 락커룸 저녁 점검",detail:"B-2/B-3/B-4/B-5 상태 확인",gender:"all"},
+    {title:"E 외부",items:[
       {id:"e6",name:"E-6 주차장",detail:"바닥 쓰레기 | 화장실 | 차단기",gender:"all"}
     ]}
   ]},
@@ -1614,38 +1603,33 @@ function renderRoundBar(g){
    · 사우나 내부 권역(a*·b1·b5) = 5회 전부. 락커룸 내부 = 오전/오후/저녁 3회. 등.
    · 화면 렌더는 구역(group.title)별로 묶고, 옛 슬롯 시간 라벨은 표시하지 않음.
    ════════════════════════════════════════════════════════════ */
-/* 3조 재매핑(5→3, 2026-06-12): am2(12시)→오전조 am1 흡수 · pm2(18시)→마감조 close1 흡수 · eve1→close1.
-   고아·누락 0 — 모든 항목이 am1·pm1·close1 중 하나 이상에 멤버. */
+/* A~E 5그룹 재편(2026-06-12, 시우·GM): A 사우나점검·B 락커룸·C 세탁물·D 내부·E 외부
+   = 전 조(오전조 am1·오후조 pm1·마감조 close1) 공통 기본5. + 오후조=인수인계(hw*),
+   마감조=마감점검(cls*) 추가. 잡묶음(a_pm·b_pm·b_ev·c_ev) 폐기 — 본 항목이 전 조 멤버라 변형 불필요.
+   B-6 데일리락커(b6)=B 락커룸 그룹 편입(전 조 멤버). 고아·누락 0. */
 const ROUND_MAP={
-  /* 사우나 내부 권역 = 전 조(오전·오후·마감) */
+  /* A 사우나점검 = 전 조 */
   a1:['am1','pm1','close1'],
   a2:['am1','pm1','close1'],
   a3:['am1','pm1','close1'],
+  /* B 락커룸(B-6 데일리락커 b6 포함) = 전 조 */
   b1:['am1','pm1','close1'],
-  b5:['am1','pm1','close1'],
-  a_pm:['pm1','close1'],                    /* 오후 사우나 점검 = 오후·마감 */
-  /* 락커룸 내부 = 오전·오후·마감 3회 */
   b2:['am1','pm1','close1'],
   b3_f:['am1','pm1','close1'],
   b3_m:['am1','pm1','close1'],
   b4:['am1','pm1','close1'],
-  b_pm:['pm1','close1'],                    /* 오후 락커룸 점검 = 오후·마감 */
-  b_ev:['close1'],                          /* 저녁 락커룸 점검 = 마감조 */
-  /* B-6 데일리 락커(요일별 청소) = 오전조 1회 */
-  b6:['am1'],
-  /* C 세탁물 입고/배치 = 오전조 1회(am2 흡수) */
-  c1a:['am1'], c1b:['am1'], c1c:['am1'],
-  c_ev:['close1'],                          /* 주말 C 세탁물 마감 = 마감조 */
-  /* 인수인계(구 12시 am2) = 오후조 전용 (교대 인수인계 오후조 이관, 오전조 제거, 시우·GM 2026-06-12) */
+  b5:['am1','pm1','close1'],
+  b6:['am1','pm1','close1'],
+  /* C 세탁물 = 전 조 */
+  c1a:['am1','pm1','close1'], c1b:['am1','pm1','close1'], c1c:['am1','pm1','close1'],
+  /* D 내부 = 전 조 */
+  d1:['am1','pm1','close1'], d2:['am1','pm1','close1'], d3:['am1','pm1','close1'], d4:['am1','pm1','close1'], d5:['am1','pm1','close1'],
+  d6:['am1','pm1','close1'], d7:['am1','pm1','close1'], d8:['am1','pm1','close1'], d9:['am1','pm1','close1'],
+  /* E 외부 = 전 조 */
+  e1:['am1','pm1','close1'], e2:['am1','pm1','close1'], e3:['am1','pm1','close1'], e4:['am1','pm1','close1'], e5:['am1','pm1','close1'], e6:['am1','pm1','close1'],
+  /* 추가 — 오후조 전용 교대 인수인계(hw*) */
   hw1:['pm1'], hw2:['pm1'],
-  /* D 내부(구 am2·pm2) = 오전조·마감조 흡수 */
-  d1:['am1','close1'], d2:['am1','close1'], d3:['am1','close1'], d4:['am1','close1'], d5:['am1','close1'],
-  /* D 내부(오후/저녁) 비-사우나 항목 = 성격에 맞는 조 */
-  d6:['pm1'], d7:['pm1'], d9:['pm1'],       /* D 내부(오후) → 오후조 */
-  d8:['close1'],                            /* 키즈 샤워실(저녁) → 마감조 */
-  /* E 외부 = 오전조·오후조 2회 */
-  e1:['am1','pm1'], e2:['am1','pm1'], e3:['am1','pm1'], e4:['am1','pm1'], e5:['am1','pm1'], e6:['close1'],
-  /* 마감 = 마감조 1회 */
+  /* 추가 — 마감조 전용 마감 점검(cls*) */
   cls1:['close1'], cls2:['close1'], cls3:['close1']
 };
 /* 항목 → 멤버 라운드 배열. 우선순위:
