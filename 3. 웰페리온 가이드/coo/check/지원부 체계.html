@@ -2394,11 +2394,14 @@ function onExtra(stateKey,elemId){
 function togX(id){const e=document.getElementById(id);e.classList.toggle('show');if(e.classList.contains('show'))e.focus()}
 function tog(h){h.nextElementSibling.classList.toggle('open')}
 /* v2.50 — 매뉴얼 탭 현재 점검 항목 자동 동기화 */
+/* v2.52 — 점검 탭 override(시트 편집분) 매뉴얼 뷰에도 반영 (방안 A) */
 function renderManualItems(){
   const el=document.getElementById('manual-items-sync');
   if(!el)return;
   // WEEKDAY를 기준으로 항목 수집 (평일 = 기본 표준 스케줄)
   const sched=typeof WEEKDAY!=='undefined'?WEEKDAY:[];
+  // 점검 탭 override 맵 — 시트 편집분(shadow 항목)을 단일출처로 적용
+  const ovMap=typeof getItemOverrides==='function'?getItemOverrides():{};
   // 카테고리별로 항목 모으기 (중복 id 제거)
   const catMap={};
   const catOrder=[];
@@ -2409,7 +2412,16 @@ function renderManualItems(){
   }
   sched.forEach(slot=>{
     slot.groups.forEach(grp=>{
-      grp.items.forEach(it=>pushItem(grp.title,it));
+      grp.items.forEach(it=>{
+        // 기본 항목: override가 있으면 name·detail 합성 (카테고리 변경은 미반영 — GM 기본)
+        const ov=ovMap[it.id]||{};
+        pushItem(grp.title,{
+          id:it.id,
+          name:ov.name||it.name,
+          detail:ov.detail||it.detail,
+          gender:it.gender
+        });
+      });
     });
   });
   // GM이 추가한 항목(CUSTOM_ITEMS)도 함께 표시
