@@ -513,6 +513,24 @@ function parseArr(v){
   return [];
 }
 function normId(u){var s=String(u||"").split(/[?#]/)[0].replace(/-/g,"");var m=s.match(/[0-9a-f]{32}$/i);return m?m[0].toLowerCase():"";}
+// 평문 날짜 지원: Notion식(date:필드:start) 없으면 일반 키 사용
+function dval(r,f){return (r&&(r["date:"+f+":start"]||r[f]))||"";}
+// 공고-지원자 이름 기반 매칭 (공백 무시 부분일치)
+function jobMatchesAppl(h,a){
+  var hk=String((h&&h["포지션명"])||"").replace(/\s/g,"");
+  if(!hk)return false;
+  return parseArr(a&&a["연결 공고"]).some(function(r){
+    var rn=String(r||"").replace(/\s/g,"");
+    return rn.length>=4 && (hk.indexOf(rn)>=0 || rn.indexOf(hk)>=0);
+  });
+}
+// 지원자의 연결 공고 표시명 (매칭된 공고명 우선, 없으면 실제 이름, 그것도 없으면 "")
+function applLinkedName(a){
+  var hit=(window.DB&&DB.hire||[]).find(function(h){return jobMatchesAppl(h,a);});
+  if(hit)return String(hit["포지션명"]||"");
+  var raw=parseArr(a&&a["연결 공고"]).filter(function(r){var s=String(r||"").trim();return s&&s.charAt(0)!=="("&&s.length>=4;});
+  return raw.length?raw.join(", "):"";
+}
 function daysBetween(a,b){return Math.round((a-b)/86400000);}
 function p2(n){return (n<10?"0":"")+n;}
 
@@ -876,10 +894,8 @@ function jobItem(h){
   var cl=parseArr(h["담당 C-Level"]).join(", ");
   var ch=parseArr(h["채용 채널"]).join(", ");
   var hireId=normId(h.url);
-  // 이 공고에 연결된 지원자 추출
-  var applicants=(DB.appl||[]).filter(function(a){
-    return parseArr(a["연결 공고"]).some(function(r){return normId(r)===hireId;});
-  });
+  // 이 공고에 연결된 지원자 추출 (이름 기반 매칭)
+  var applicants=(DB.appl||[]).filter(function(a){return jobMatchesAppl(h,a);});
   // 등급 우선순위 정렬 (A>B>C>D>E>F>미평가)
   var GRADE_ORDER={A:1,B:2,C:3,D:4,E:5,F:6};
   applicants.sort(function(x,y){
@@ -896,7 +912,7 @@ function jobItem(h){
       num(h["지원자 수"])+'</div><div class="t-sub">지원자</div></div></div>'+
     '<div class="kv">'+
     kv("모집 인원",txt(h["모집 인원"]))+kv("면접자 수",txt(h["면접자 수"]))+
-    kv("급여 범위",txt(h["급여 범위"]))+kv("공고 기간",fmtD(dt(h,"공고 시작일"))+" ~ "+fmtD(dt(h,"공고 마감일")))+
+    kv("급여 범위",txt(h["급여 범위"]))+kv("공고 기간",fmtD(dval(h,"공고 시작일"))+" ~ "+fmtD(dval(h,"공고 마감일")))+
     kv("채용 채널",txt(ch))+kv("담당 C-Level",txt(cl))+
     '</div>'+
     (h["주요 업무"]?'<div style="margin-top:9px;font-size:12px;color:var(--ink-soft);white-space:pre-wrap">'+
@@ -947,8 +963,8 @@ function applicantRow(a){
       kv("지원 포지션",txt(a["지원 포지션"]))+
       kv("연락처",txt(a["연락처"]))+
       kv("이메일",txt(a["이메일"]))+
-      kv("지원일",fmtD(dt(a,"지원일")))+
-      (dt(a,"면접 일정")?kv("면접 일정",fmtD(dt(a,"면접 일정"))):"")+
+      kv("지원일",fmtD(dval(a,"지원일")))+
+      (dval(a,"면접 일정")?kv("면접 일정",fmtD(dval(a,"면접 일정"))):"")+
       (a["담당 면접관"]?kv("담당 면접관",txt(a["담당 면접관"])):"")+
     '</div>'+
   '</div>';
@@ -1060,14 +1076,14 @@ function renderHire(){
     html+='<div class="appl-tr appl-th"><div>지원자</div><div>지원 포지션</div><div>지원 경로</div><div>전형 단계</div><div>평점</div><div>지원일</div><div>연결 공고</div></div>';
     html+=all.map(function(a){
       var apppid=(((a["원본 Notion URL"]||"")+"").match(/[0-9a-f]{32}/i)||[""])[0].toLowerCase();
-      var linked=parseArr(a["연결 공고"]).map(function(r){return jobName[normId(r)]||"";}).filter(Boolean).join(", ");
+      var linked=applLinkedName(a);
       return '<div class="appl-tr" data-applname="'+esc(a["지원자명"]||"")+'" data-apppid="'+apppid+'" style="cursor:pointer" title="클릭하면 상세 정보">'+
         '<div class="t-name">'+esc(txt(a["지원자명"]))+'</div>'+
         '<div>'+esc(txt(a["지원 포지션"]))+'</div>'+
         '<div>'+(a["지원 경로"]?badge(a["지원 경로"]):'<span class="muted">—</span>')+'</div>'+
         '<div>'+(a["전형 단계"]?badge(a["전형 단계"]):'<span class="muted">—</span>')+'</div>'+
         '<div>'+(a["면접 평점"]?badge(a["면접 평점"]):'<span class="muted">—</span>')+'</div>'+
-        '<div class="t-sub">'+fmtD(dt(a,"지원일"))+'</div>'+
+        '<div class="t-sub">'+fmtD(dval(a,"지원일"))+'</div>'+
         '<div class="t-sub">'+(linked?esc(linked):'<span class="muted">미연결</span>')+'</div>'+
       '</div>';
     }).join("");
@@ -1990,26 +2006,4 @@ details.jobs-fold > summary > .jf-arrow{display:inline-block;transition:transfor
     groups.forEach(function(g){g.style.display = "none";});
 
     document.getElementById("__af_q").addEventListener("input", renderRows);
-    document.getElementById("__af_stage").addEventListener("change", renderRows);
-    document.getElementById("__af_grade").addEventListener("change", renderRows);
-    document.getElementById("__af_pos").addEventListener("change", renderRows);
-    document.getElementById("__af_clear").addEventListener("click", function(){
-      document.getElementById("__af_q").value = "";
-      document.getElementById("__af_stage").value = "";
-      document.getElementById("__af_grade").value = "";
-      document.getElementById("__af_pos").value = "";
-      renderRows();
-    });
-
-    list.addEventListener("click", function(e){
-      var row = e.target.closest("[data-applname]");
-      if(row && typeof window.openApplicantInfo === "function"){
-        window.openApplicantInfo(row.getAttribute("data-applname"), row.getAttribute("data-apppid"));
-      }
-    });
-
-    renderRows();
-    return true;
-  }
-  function arrangeJobs(){
-    var ti
+    document.getElementById("__af_stage").addEventListener("change", renderRows
