@@ -1165,8 +1165,14 @@ function populateOneDropdown(selId,gender){
   el.value='';   // 자동복원 끔 — 매 진입 시 빈칸
 }
 
-/* 담당자(날짜 우측) = 점검자 명단 드롭다운, 선택값 localStorage 기억. GM 2026-06-12.
-   submit 게이트와 무관(점검자 입력만 제출 활성). */
+/* 담당자 명단 = 지원부 규정 '실제 운영 근무조'(tab-policy 표)와 일치 유지. GM 2026-06-12.
+   ※ 규정 근무조 변경 시 본 배열도 함께 갱신(단일 출처는 규정 표, 여기는 미러). */
+const DUTY_ROSTER={
+  f:[{shift:'오전',name:'우춘화 주임'},{shift:'중간',name:'이연희 반장'},{shift:'마감',name:'김미영 주임'},{shift:'마감',name:'이경미 주임'}],
+  m:[{shift:'오전',name:'천진석 주임'},{shift:'중간',name:'김유정 주임'},{shift:'마감',name:'박남일 주임'}]
+};
+/* 담당자(날짜 우측) = 규정 근무조 드롭다운, 선택값 localStorage 기억. GM 2026-06-12.
+   submit 게이트와 무관(점검자 입력만 제출 활성). 선택값=담당자명 → 제출 시 시트 담당자 칸에 기록. */
 function populateDutyDropdowns(){
   populateOneDuty('dutyM','m');
   populateOneDuty('dutyF','f');
@@ -1175,14 +1181,17 @@ function populateOneDuty(selId,gender){
   const el=document.getElementById(selId);
   if(!el)return;
   const saved=localStorage.getItem('wcheck_duty_'+gender)||'';
+  const roster=DUTY_ROSTER[gender]||[];
   let html='<option value="">담당자 선택</option>';
-  getStaffForGender(gender).forEach(s=>{
-    const nm=s.name;
-    html+='<option value="'+nm+'"'+(nm===saved?' selected':'')+'>'+nm+'</option>';
+  roster.forEach(r=>{
+    const label=r.shift+' · '+r.name;
+    html+='<option value="'+escapeAttr(r.name)+'"'+(r.name===saved?' selected':'')+'>'+escapeHTML(label)+'</option>';
   });
   el.innerHTML=html;
   if(saved)el.value=saved;
 }
+/* 현재 탭 담당자 선택값(시트 기록용) */
+function getDutyForGender(g){const el=document.getElementById(g==='f'?'dutyF':'dutyM');return el?el.value||'':'';}
 function onDutyChangeG(g){
   const el=document.getElementById(g==='f'?'dutyF':'dutyM');
   if(el)localStorage.setItem('wcheck_duty_'+g,el.value||'');
@@ -1238,7 +1247,7 @@ const WEEKDAY=[
       {id:"c1c",name:"타올류 상태 + 배치",detail:"거품타올/타올/바스타올 상태 체크 후 배치",gender:"all"}
     ]}
   ]},
-  {slot:"내부·외부 점검 (오후·마감)",shift:"pm",groups:[
+  {slot:"내부·외부 점검",shift:"all",groups:[
     {title:"D 내부",items:[
       {id:"d1",name:"D-1 외부 화장실",detail:"골프장/B1/B2 화장실 체크 | 악취 관리 최우선\n비품: 휴지통, 화장지, 핸드페이퍼, 손세정제",gender:"all"},
       {id:"d2",name:"D-2 복도 휴지통",detail:"운영사무실 앞 / B1 복도(헬스장 입구 구석)",gender:"all"},
@@ -1250,10 +1259,12 @@ const WEEKDAY=[
       {id:"d4",name:"D-8 메인 복도 휴게공간",detail:"소파/바닥 청결 (여 주임 전담)",gender:"f"},
       {id:"d7",name:"D-9 센터 화분",detail:"물 공급 (여 주임 전담 / 금요일 집중)",gender:"f"},
       {id:"d8",name:"D-10 키즈 샤워실",detail:"파우더룸 정리 20:30\n2주 1회 샤워실 청소 수 13:00 (남 주임 전담)",gender:"m"},
-      {id:"d9",name:"D-11 수영장 계단",detail:"주 1회 청소",gender:"all"},
-      {id:"e4",name:"D-12 헬스장",detail:"매일: 머신/런닝머신 땀 | 월수금: 런닝머신 바닥 | 화목: 스트레칭 공간 | 주말: 거울",gender:"all"},
-      {id:"e5",name:"D-13 골프장",detail:"매일: 복도 청소 | 월수금: 타석(스크린천) | 화목: 타석(기계) | 주말: 레슨룸",gender:"all"},
-      {id:"e6",name:"D-14 주차장",detail:"바닥 쓰레기 치우기 | 주차장 화장실 | 차단기 확인\n휴관일: 집중 청소",gender:"all"}
+      {id:"d9",name:"D-11 수영장 계단",detail:"주 1회 청소",gender:"all"}
+    ]},
+    {title:"E 외부",items:[
+      {id:"e4",name:"E-1 헬스장",detail:"매일: 머신/런닝머신 땀 | 월수금: 런닝머신 바닥 | 화목: 스트레칭 공간 | 주말: 거울",gender:"all"},
+      {id:"e5",name:"E-2 골프장",detail:"매일: 복도 청소 | 월수금: 타석(스크린천) | 화목: 타석(기계) | 주말: 레슨룸",gender:"all"},
+      {id:"e6",name:"E-3 주차장",detail:"바닥 쓰레기 치우기 | 주차장 화장실 | 차단기 확인\n휴관일: 집중 청소",gender:"all"}
     ]}
   ]},
   {slot:"인수인계 13:00~14:00",shift:"pm",groups:[
@@ -1301,7 +1312,7 @@ const WEEKEND=[
       {id:"hw1",name:"세탁물 출고 + 인수인계",detail:"카카오톡 보고 의무",gender:"all"}
     ]}
   ]},
-  {slot:"내부·외부 점검 (마감)",shift:"pm",groups:[
+  {slot:"내부·외부 점검",shift:"all",groups:[
     {title:"D 내부",items:[
       {id:"d1",name:"D-1 외부 화장실",detail:"골프장/B1/B2",gender:"all"},
       {id:"d2",name:"D-2 복도 휴지통",detail:"운영사무실 앞 / B1 복도",gender:"all"},
@@ -1309,10 +1320,12 @@ const WEEKEND=[
       {id:"e1",name:"D-4 센터 복도·거울/유리창",detail:"센터 복도 바닥: 1F/B1/B2\n거울/유리창 물때",gender:"all"},
       {id:"d5",name:"D-5 분리수거장",detail:"에스컬레이터 아래",gender:"all"},
       {id:"e3",name:"D-7 청소 비품 관리",detail:"지정 위치 배치",gender:"all"},
-      {id:"d4",name:"D-8 메인 복도 휴게공간",detail:"소파/바닥 (여 주임 전담)",gender:"f"},
-      {id:"e4",name:"D-12 헬스장",detail:"거울 청소 (주말)",gender:"all"},
-      {id:"e5",name:"D-13 골프장",detail:"레슨룸 청소 (주말)",gender:"all"},
-      {id:"e6",name:"D-14 주차장",detail:"바닥 쓰레기 | 화장실 | 차단기",gender:"all"}
+      {id:"d4",name:"D-8 메인 복도 휴게공간",detail:"소파/바닥 (여 주임 전담)",gender:"f"}
+    ]},
+    {title:"E 외부",items:[
+      {id:"e4",name:"E-1 헬스장",detail:"거울 청소 (주말)",gender:"all"},
+      {id:"e5",name:"E-2 골프장",detail:"레슨룸 청소 (주말)",gender:"all"},
+      {id:"e6",name:"E-3 주차장",detail:"바닥 쓰레기 | 화장실 | 차단기",gender:"all"}
     ]}
   ]},
   {slot:"마감 18:00",shift:"pm",groups:[
@@ -1447,7 +1460,7 @@ const DAY_FOCUS={
   ],
   0:[ // 일
     {id:"df_sun1",name:"탕청소 업체 휴무",detail:"탕청소 업체 휴무일",gender:"all"},
-    {id:"df_sun2",name:"D-14 주차장 집중",detail:"주차장 집중 청소",gender:"all"},
+    {id:"df_sun2",name:"E-3 주차장 집중",detail:"주차장 집중 청소",gender:"all"},
     {id:"df_sun3",name:"개인락커 + 미비 부분",detail:"개인락커 점검 및 미비 사항 보완",gender:"all"}
   ]
 };
@@ -1621,8 +1634,8 @@ function renderRoundBar(g){
    · 사우나 내부 권역(a*·b1·b5) = 5회 전부. 락커룸 내부 = 오전/오후/저녁 3회. 등.
    · 화면 렌더는 구역(group.title)별로 묶고, 옛 슬롯 시간 라벨은 표시하지 않음.
    ════════════════════════════════════════════════════════════ */
-/* A~D 4그룹(2026-06-12, 시우·GM): A 사우나점검·B 락커룸·C 세탁물(=전 조 am1·pm1·close1) +
-   D 내부 D-1~D-14(옛 E 외부 흡수, 오전조 제외=pm1·close1). 오후조=인수인계(hw*)·마감조=마감점검(cls*) 추가.
+/* A~E 5그룹(2026-06-12, 시우·GM): A 사우나점검·B 락커룸·C 세탁물·D 내부(D-1~D-11)·E 외부(E-1~E-3 헬스장/골프장/주차장)
+   = 전 조(오전조 am1·오후조 pm1·마감조 close1) 공통 기본. 오후조=인수인계(hw*)·마감조=마감점검(cls*) 추가.
    B-6 데일리락커(b6)=B 락커룸 편입. E-1+E-2→D-4 병합(e2 제거), id는 체크이력 보존 위해 유지. 고아·누락 0. */
 const ROUND_MAP={
   /* A 사우나점검 = 전 조 */
@@ -1639,11 +1652,11 @@ const ROUND_MAP={
   b6:['am1','pm1','close1'],
   /* C 세탁물 = 전 조 */
   c1a:['am1','pm1','close1'], c1b:['am1','pm1','close1'], c1c:['am1','pm1','close1'],
-  /* D 내부 D-1~D-14 = 오후조·마감조 (오전조 제외, 옛 E 외부 흡수·E-1+E-2→D-4 병합, GM 2026-06-12)
-     id는 체크이력 보존 위해 유지(d*·e*), 표시명만 D-1~D-14로 재배치. e2는 e1(D-4)에 병합·제거. */
-  d1:['pm1','close1'], d2:['pm1','close1'], d3:['pm1','close1'], d4:['pm1','close1'], d5:['pm1','close1'],
-  d6:['pm1','close1'], d7:['pm1','close1'], d8:['pm1','close1'], d9:['pm1','close1'],
-  e1:['pm1','close1'], e3:['pm1','close1'], e4:['pm1','close1'], e5:['pm1','close1'], e6:['pm1','close1'],
+  /* D 내부 D-1~D-11 + E 외부 E-1~E-3(헬스장·골프장·주차장) = 전 조(오전·오후·마감, GM 2026-06-12)
+     id는 체크이력 보존 위해 유지(d*·e*), 표시명만 재배치. E-1+E-2→D-4 병합(e2 제거). */
+  d1:['am1','pm1','close1'], d2:['am1','pm1','close1'], d3:['am1','pm1','close1'], d4:['am1','pm1','close1'], d5:['am1','pm1','close1'],
+  d6:['am1','pm1','close1'], d7:['am1','pm1','close1'], d8:['am1','pm1','close1'], d9:['am1','pm1','close1'],
+  e1:['am1','pm1','close1'], e3:['am1','pm1','close1'], e4:['am1','pm1','close1'], e5:['am1','pm1','close1'], e6:['am1','pm1','close1'],
   /* 추가 — 오후조 전용 교대 인수인계(hw*) */
   hw1:['pm1'], hw2:['pm1'],
   /* 추가 — 마감조 전용 마감 점검(cls*) */
@@ -1800,6 +1813,7 @@ async function pushToServer(d){
       headers:{'Content-Type':'text/plain'},
       body:JSON.stringify({action:'save',date:d,checks,dept:DEPT,
         genderTab:g,
+        duty:(typeof getDutyForGender==='function'?getDutyForGender(g):''),   // 담당자(규정 근무조) → 시트 담당자 칸 기록
         groupSubmits:collectGroupSubmits(),
         submitted_am:!!STATE._submitted_am,submittedAt_am:STATE._submittedAt_am||'',submitter_am:STATE._submitter_am||'',
         submitted_pm:!!STATE._submitted_pm,submittedAt_pm:STATE._submittedAt_pm||'',submitter_pm:STATE._submitter_pm||'',
