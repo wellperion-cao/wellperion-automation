@@ -537,6 +537,15 @@ function applLinkedName(a){
   var raw=parseArr(a&&a["연결 공고"]).filter(function(r){var s=String(r||"").trim();return s&&s.charAt(0)!=="("&&s.length>=4;});
   return raw.length?raw.join(", "):"";
 }
+// 임직원 전화번호 찾기: 표준 "연락처" 우선, 없으면 어떤 칸이든 전화번호 패턴을 탐색 (시트 헤더 깨짐 대비)
+function empPhone(e){
+  if(!e) return "";
+  var t=String(e["연락처"]||"").trim();
+  if(t) return t;
+  var re=/01[016789][\s\-]?\d{3,4}[\s\-]?\d{4}/;
+  for(var k in e){ if(k==="_sheet_row"||k==="url"||k==="이메일") continue; var m=String(e[k]||"").match(re); if(m) return m[0]; }
+  return "";
+}
 // 채용 채널 값을 개별 채널 토큰 배열로 (콤마/슬래시/、 구분)
 function chTokens(v){
   var arr=parseArr(v), out=[];
@@ -917,7 +926,7 @@ function renderEmp(){
         '<td>'+esc(txt(e["부서"]))+'</td><td>'+esc(txt(e["소속"]))+'</td>'+
         '<td>'+esc(txt(e["직급"]))+'</td><td>'+badge(e["고용 형태"])+'</td>'+
         '<td>'+badge(e["재직 상태"])+'</td><td>'+fmtD(dval(e,"입사일"))+'</td>'+
-        '<td class="t-sub">'+esc(txt(e["연락처"]))+'</td>'+
+        '<td class="t-sub">'+(isAdmin?esc(empPhone(e)||"—"):'<span class="muted" title="관리자 로그인 시 표시">•••</span>')+'</td>'+
         (isAdmin?'<td>'+(canResign
           ?'<button class="btn-sm" data-resign="'+esc(e.url||"")+'" data-name="'+esc(e["성명"]||"")+'">퇴사 처리</button>'
           :'<span class="muted">—</span>')+'</td>':'')+'</tr>';
@@ -1998,7 +2007,4 @@ details.jobs-fold > summary > .jf-arrow{display:inline-block;transition:transfor
       '<select id="__af_grade" style="'+inpStyle+'"><option value="">평점 전체</option>' +
         gradesUniq.map(function(g){return '<option>'+escH(g)+'</option>';}).join("") + '</select>' +
       '<select id="__af_pos" style="'+inpStyle+';max-width:200px"><option value="">포지션 전체</option>' +
-        posUniq.map(function(p){return '<option>'+escH(p)+'</option>';}).join("") + '</select>' +
-      '<span id="__af_count" style="font-size:11.5px;color:var(--ink-soft,#6c6961);background:var(--surface-2,#faf9f6);border:1px solid var(--line,#e7e4dc);border-radius:20px;padding:4px 11px;font-weight:600"></span>' +
-      '<button type="button" id="__af_clear" style="font-family:inherit;font-size:11.5px;font-weight:650;cursor:pointer;border-radius:8px;padding:6px 12px;border:1px solid var(--line,#e7e4dc);background:var(--surface,#fff);color:var(--ink-soft,#6c6961)">필터 초기화</button>';
-    container.app
+        posUniq.map(function(p){return '<option>'+escH(p)+'</option>';}).join("") 
