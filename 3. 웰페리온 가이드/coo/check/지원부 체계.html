@@ -1173,15 +1173,41 @@ const DUTY_ROSTER={
 };
 /* 담당자(날짜 우측) = 규정 근무조 드롭다운, 선택값 localStorage 기억. GM 2026-06-12.
    submit 게이트와 무관(점검자 입력만 제출 활성). 선택값=담당자명 → 제출 시 시트 담당자 칸에 기록. */
-function populateDutyDropdowns(){
-  populateOneDuty('dutyM','m');
-  populateOneDuty('dutyF','f');
+/* 규정 '실제 운영 근무조' 표를 DOM에서 파싱 → 담당자 명단 SSOT. 표 갱신 시 자동 반영(하드코딩 폴백). */
+function parseDutyRoster(){
+  try{
+    const out={m:[],f:[]};
+    const ps=[].slice.call(document.querySelectorAll('p'));
+    function parseAfter(marker,key){
+      const p=ps.find(x=>x.textContent.indexOf(marker)>=0);
+      if(!p)return;
+      let t=p.nextElementSibling;
+      while(t&&t.tagName!=='TABLE')t=t.nextElementSibling;
+      if(!t)return;
+      const rows=[].slice.call(t.querySelectorAll('tr')).slice(1);
+      rows.forEach(function(r){
+        const tds=r.querySelectorAll('td'); if(tds.length<2)return;
+        const shift=tds[0].textContent.trim();
+        const cleaned=tds[1].textContent.replace(/\([^)]*\)/g,'');
+        cleaned.split('·').forEach(function(n){ const nm=n.trim(); if(nm)out[key].push({shift:shift,name:nm}); });
+      });
+    }
+    parseAfter('여직원 근무조','f');
+    parseAfter('남직원 근무조','m');
+    return (out.m.length||out.f.length)?out:null;
+  }catch(e){ return null; }
 }
-function populateOneDuty(selId,gender){
+function populateDutyDropdowns(){
+  const live=parseDutyRoster();
+  const R=live||DUTY_ROSTER;
+  populateOneDuty('dutyM','m',R);
+  populateOneDuty('dutyF','f',R);
+}
+function populateOneDuty(selId,gender,roster0){
   const el=document.getElementById(selId);
   if(!el)return;
   const saved=localStorage.getItem('wcheck_duty_'+gender)||'';
-  const roster=DUTY_ROSTER[gender]||[];
+  const roster=(roster0||DUTY_ROSTER)[gender]||[];
   let html='<option value="">담당자 선택</option>';
   roster.forEach(r=>{
     const label=r.shift+' · '+r.name;
@@ -1227,9 +1253,6 @@ const WEEKDAY=[
       {id:"a1",name:"A-1 사우나 탕",detail:"오픈 시 수위/온도 확인 후 오버풀 타이머 가동 | 탕 청결\n배수: 냉탕 매일 / 온탕·열탕 격일 (마개+스위치 확인) / 휴관일 전 냉·온·열탕 전부 배수\n[온탕 평일] 6회: 06:00, 10:00, 11:00, 12:00, 15:00, 20:00\n[열탕 평일] 6회: 06:00, 10:30, 11:30, 12:30, 15:30, 20:40\n[온탕 주말] 3회: 10:00, 14:00, 18:00 / [열탕 주말] 3회: 10:30, 14:30, 18:30",gender:"all"},
       {id:"a2",name:"A-2 건/습식 사우나",detail:"온도 체크 (건식 90~100°C / 습식 60~70°C 기준) | 건식/습식 내부 청결\n바닥·타일 물때 제거 | 수요일 고압세척 + 산성세제 금지\n비품: 모래시계 확인",gender:"all"},
       {id:"a3",name:"A-3 사우나 내부",detail:"배수로/배수구 청소 | 바닥 미끄럼 | 타일/유리 물때 | 탈수기 밑 | 좌식 의자 | 거울\n비품: 바가지, 목욕의자, 거품바구니, 쓰레기통, 치약, 소금, 샴푸, 린스, 바디워시, 비누",gender:"all"}
-    ]},
-    {title:"B 락커룸",items:[
-      {id:"b6",name:"B-6 데일리 락커 (요일별 청소)",detail:"월 1~30 | 화 31~60 | 수 61~90 | 목 91~120 | 금 121~150 | 토 151~180\n데일리/개인 락커 키 위 먼지 청소",gender:"all"}
     ]}
   ]},
   {slot:"오전 08:00~12:00",shift:"am",groups:[
@@ -1289,9 +1312,6 @@ const WEEKEND=[
       {id:"a1",name:"A-1 사우나 탕",detail:"수위/온도 체크 | 탕 청결 | 오버풀 관리\n[온탕 주말] 3회: 10:00, 14:00, 18:00\n[열탕 주말] 3회: 10:30, 14:30, 18:30",gender:"all"},
       {id:"a2",name:"A-2 건/습식 사우나",detail:"온도 체크 | 내부 청결",gender:"all"},
       {id:"a3",name:"A-3 사우나 내부",detail:"배수로/배수구 | 바닥 | 타일/유리 | 탈수기 | 거울",gender:"all"}
-    ]},
-    {title:"B 락커룸",items:[
-      {id:"b6",name:"B-6 데일리 락커 (주말 청소)",detail:"토 151~180 / 데일리/개인 락커 키 위 먼지",gender:"all"}
     ]}
   ]},
   {slot:"오전 08:00~12:00",shift:"am",groups:[
@@ -1642,14 +1662,13 @@ const ROUND_MAP={
   a1:['am1','pm1','close1'],
   a2:['am1','pm1','close1'],
   a3:['am1','pm1','close1'],
-  /* B 락커룸(B-6 데일리락커 b6 포함) = 전 조 */
+  /* B 락커룸 = 전 조 (B-6 데일리락커 삭제, GM 2026-06-12) */
   b1:['am1','pm1','close1'],
   b2:['am1','pm1','close1'],
   b3_f:['am1','pm1','close1'],
   b3_m:['am1','pm1','close1'],
   b4:['am1','pm1','close1'],
   b5:['am1','pm1','close1'],
-  b6:['am1','pm1','close1'],
   /* C 세탁물 = 전 조 */
   c1a:['am1','pm1','close1'], c1b:['am1','pm1','close1'], c1c:['am1','pm1','close1'],
   /* D 내부 D-1~D-11 + E 외부 E-1~E-3(헬스장·골프장·주차장) = 전 조(오전·오후·마감, GM 2026-06-12)
@@ -2146,6 +2165,8 @@ function getItemOverrides(){
     if(it.slot!==undefined && it.slot!=='') o.slot=it.slot;
     if(it.shift!==undefined && it.shift!=='') o.shift=it.shift;
     if(it.category!==undefined && it.category!=='') o.cat=it.category;
+    if(it.gender!==undefined && it.gender!=='') o.gender=it.gender;
+    if(Array.isArray(it.rounds) && it.rounds.length) o.rounds=it.rounds;
     map[it.id]=o;
   });
   return map;
@@ -2156,7 +2177,7 @@ function findBaseItem(id){
   function scan(sched){
     if(!sched||found)return;
     sched.forEach(slot=>slot.groups.forEach(g=>g.items.forEach(it=>{
-      if(it.id===id)found={name:it.name,detail:it.detail,slot:slot.slot,shift:slot.shift,cat:g.title};
+      if(it.id===id)found={name:it.name,detail:it.detail,slot:slot.slot,shift:slot.shift,cat:g.title,gender:it.gender||'all'};
     })));
   }
   scan(getSched(today));
@@ -2181,6 +2202,9 @@ window.editItem=function(id){
   document.getElementById('editSlot').value=ov.slot||base.slot||'';
   document.getElementById('editShift').value=ov.shift||base.shift||'am';
   document.getElementById('editCat').value=ov.cat||base.cat||'';
+  const _ci=(CUSTOM_ITEMS||[]).find(x=>x.id===id);
+  const _gsel=document.getElementById('editGender');
+  if(_gsel)_gsel.value=(_ci&&_ci.gender)||ov.gender||base.gender||'all';
   document.getElementById('itemEditModal').style.display='flex';
 };
 window.saveItemEdit=function(){
@@ -2192,6 +2216,8 @@ window.saveItemEdit=function(){
   const newSlot=document.getElementById('editSlot').value.trim();
   const newShift=document.getElementById('editShift').value;
   const newCat=document.getElementById('editCat').value.trim();
+  const _ge=document.getElementById('editGender');
+  const newGender=_ge?(_ge.value||'all'):'all';
   const list=(CUSTOM_ITEMS||[]).slice();
   let item=list.find(it=>it.id===id);
   if(item){
@@ -2201,6 +2227,7 @@ window.saveItemEdit=function(){
     if(newSlot)item.slot=newSlot;
     if(newShift)item.shift=newShift;
     if(newCat)item.category=newCat;
+    item.gender=newGender;
   }else{
     /* 기본 항목(시트에 없음) → 같은 id로 shadow 항목 생성(baseline 복사 후 편집값 반영) */
     item={
@@ -2208,7 +2235,7 @@ window.saveItemEdit=function(){
       slot:newSlot||base.slot||'상시',
       shift:newShift||base.shift||slotToShiftFront(newSlot||base.slot),
       dayType:'both',
-      gender:'all',
+      gender:newGender,
       category:newCat||base.cat||'추가 점검',
       name:newName||base.name,
       detail:newDetail!==undefined?newDetail:base.detail,
@@ -2263,9 +2290,21 @@ window.manualAddItem=function(cat){
   const modal=document.getElementById('promoteModal'); if(modal)modal.style.display='flex';
 };
 window.manualDeleteItem=function(id){
-  if(!confirm('이 추가 항목을 삭제할까요? (시트에서도 제거)'))return;
-  const next=(CUSTOM_ITEMS||[]).filter(it=>it.id!==id);
-  mgmtSaveItems(next);
+  const isCustom=String(id).indexOf('custom_')===0;
+  if(isCustom){
+    if(!confirm('이 추가 항목을 삭제할까요? (시트에서도 제거)'))return;
+    const next=(CUSTOM_ITEMS||[]).filter(it=>it.id!==id);
+    mgmtSaveItems(next);
+  }else{
+    // 기본 항목 = 숨김(점검·매뉴얼에서 제외). 코드 기본값 보존 → 필요 시 '숨김 복구'로 되돌림.
+    if(!confirm('이 기본 항목을 점검·매뉴얼에서 숨길까요? (하단 "숨긴 항목"에서 복구 가능)'))return;
+    const h=getHiddenIds(); h.add(id); saveHiddenIds(h);
+  }
+  renderG(activeGenderTab);
+  if(typeof renderManualItems==='function')renderManualItems();
+};
+window.manualUnhideItem=function(id){
+  const h=getHiddenIds(); h.delete(id); saveHiddenIds(h);
   renderG(activeGenderTab);
   if(typeof renderManualItems==='function')renderManualItems();
 };
@@ -2482,6 +2521,8 @@ function renderManualItems(){
   const catMap={};
   const catOrder=[];
   const seen=new Set();
+  const hidden=(typeof getHiddenIds==='function')?getHiddenIds():new Set();
+  const hiddenItems=[];
   function pushItem(cat,it){
     if(!catMap[cat]){catMap[cat]=[];catOrder.push(cat);}
     if(!seen.has(it.id)){seen.add(it.id);catMap[cat].push(it);}
@@ -2489,14 +2530,15 @@ function renderManualItems(){
   sched.forEach(slot=>{
     slot.groups.forEach(grp=>{
       grp.items.forEach(it=>{
-        // 기본 항목: override가 있으면 name·detail 합성 (카테고리 변경은 미반영 — GM 기본)
+        // 기본 항목: override가 있으면 name·detail·성별 합성
         const ov=ovMap[it.id]||{};
+        if(hidden.has(it.id)){ if(!seen.has(it.id)){seen.add(it.id);hiddenItems.push({id:it.id,name:ov.name||it.name,cat:grp.title});} return; }
         pushItem(grp.title,{
           id:it.id,
           name:ov.name||it.name,
           detail:ov.detail||it.detail,
-          gender:it.gender,
-          _edited:!!(ov.name||ov.detail)
+          gender:ov.gender||it.gender,
+          _edited:!!(ov.name||ov.detail||ov.gender||ov.rounds)
         });
       });
     });
@@ -2526,19 +2568,17 @@ function renderManualItems(){
       const genderLabel=it.gender==='m'?' <span style="font-size:10px;color:var(--blue);background:var(--blue-bg);padding:1px 6px;border-radius:6px;">남</span>':it.gender==='f'?' <span style="font-size:10px;color:var(--orange);background:var(--orange-bg);padding:1px 6px;border-radius:6px;">여</span>':'';
       const customLabel=it._custom?' <span style="font-size:10px;color:var(--accent);background:var(--accent-bg);padding:1px 6px;border-radius:6px;">추가</span>':'';
       const editedLabel=it._edited?' <span style="font-size:10px;color:#e6c84e;background:rgba(230,200,78,0.12);padding:1px 6px;border-radius:6px;">수정됨</span>':'';
-      const checked=isCheckedAny(it);   /* 어느 회차든 체크되면 매뉴얼 동기화 뷰도 완료 표시 */
-      const checkMark=checked?' <span style="color:var(--green);font-weight:700;">&#10003;</span>':'';
-      const nameStyle=checked?'font-size:13px;font-weight:600;color:var(--dim);text-decoration:line-through;':'font-size:13px;font-weight:600;';
+      /* 매뉴얼 = 셋업/참조 전용(GM 2026-06-12): 체크박스·완료표시 없음. 체크는 점검 탭에서만. */
+      const nameStyle='font-size:13px;font-weight:600;';
       const arrow=hasDet?`<span class="m-arrow" style="font-size:11px;color:var(--dim);transition:transform .2s;">&#9660;</span>`:'';
       const nameCursor=hasDet?'cursor:pointer;':'';
-      /* 셋업 버튼: 편집(전체) + 초기화(기본항목 수정분만) / 삭제(추가항목만) */
+      /* 셋업 버튼: 편집(전체) + 삭제(전체 — 추가항목=완전삭제 / 기본항목=숨김) */
       let setup=`<button onclick="event.stopPropagation();editItem('${it.id}')" style="${_btn}color:#5b9fd5;background:rgba(91,159,213,0.12);border-color:rgba(91,159,213,0.35);">편집</button>`;
-      if(it._custom)setup+=`<button onclick="event.stopPropagation();manualDeleteItem('${it.id}')" style="${_btn}color:#c0392b;background:rgba(192,57,67,0.1);border-color:rgba(192,57,67,0.4);">삭제</button>`;
-      else if(it._edited)setup+=`<button onclick="event.stopPropagation();resetItem('${it.id}')" style="${_btn}color:#8c8b83;background:rgba(140,139,131,0.12);border-color:rgba(140,139,131,0.3);">초기화</button>`;
+      setup+=`<button onclick="event.stopPropagation();manualDeleteItem('${it.id}')" style="${_btn}color:#c0392b;background:rgba(192,57,67,0.1);border-color:rgba(192,57,67,0.4);">삭제</button>`;
+      if(!it._custom&&it._edited)setup+=`<button onclick="event.stopPropagation();resetItem('${it.id}')" style="${_btn}color:#8c8b83;background:rgba(140,139,131,0.12);border-color:rgba(140,139,131,0.3);">초기화</button>`;
       html+=`<div style="padding:10px 16px;border-bottom:1px solid rgba(61,56,53,0.35);">`;
       html+=`<div style="display:flex;align-items:flex-start;gap:10px;">`;
-      html+=`<input type="checkbox" id="mcb_${it.id}" ${checked?'checked':''} onchange="onManualCk('${it.id}')" style="width:18px;height:18px;margin-top:1px;flex:0 0 auto;cursor:pointer;accent-color:var(--green);">`;
-      html+=`<div style="flex:1 1 auto;${nameCursor}" ${hasDet?'onclick="togManualItem(this)"':''}><div style="${nameStyle}display:flex;align-items:center;gap:6px;justify-content:space-between;"><span>${it.name}${genderLabel}${customLabel}${editedLabel}${checkMark}</span>${arrow}</div>`;
+      html+=`<div style="flex:1 1 auto;${nameCursor}" ${hasDet?'onclick="togManualItem(this)"':''}><div style="${nameStyle}display:flex;align-items:center;gap:6px;justify-content:space-between;"><span>${it.name}${genderLabel}${customLabel}${editedLabel}</span>${arrow}</div>`;
       if(hasDet)html+=`<div class="manual-item-detail" style="font-size:12px;color:var(--dim);margin-top:5px;line-height:1.5;">${detHtml}</div>`;
       html+=`</div>`;
       html+=`<div style="flex:0 0 auto;display:flex;gap:4px;">${setup}</div>`;
@@ -2546,6 +2586,15 @@ function renderManualItems(){
     });
     html+=`</div>`;
   });
+  /* 숨긴 기본 항목 — 복구 가능 */
+  if(hiddenItems.length){
+    html+=`<div style="background:var(--paper);border:1px dashed var(--border);border-radius:10px;margin-top:6px;overflow:hidden;opacity:.85;">`;
+    html+=`<div style="padding:10px 16px;font-size:13px;font-weight:700;color:var(--dim);border-bottom:1px solid var(--border);">숨긴 항목 (${hiddenItems.length}) — 점검에서 제외됨</div>`;
+    hiddenItems.forEach(hi=>{
+      html+=`<div style="padding:8px 16px;border-bottom:1px solid rgba(61,56,53,0.25);display:flex;align-items:center;justify-content:space-between;gap:10px;"><span style="font-size:13px;color:var(--dim);text-decoration:line-through;">${hi.name} <span style="font-size:10px;">(${hi.cat})</span></span><button onclick="manualUnhideItem('${hi.id}')" style="${_btn}color:var(--accent);background:var(--accent-bg);border-color:var(--accent);">복구</button></div>`;
+    });
+    html+=`</div>`;
+  }
   el.innerHTML=html||'<div style="color:var(--dim);font-size:13px;">항목 없음</div>';
 }
 
@@ -4165,6 +4214,33 @@ function mgmtInjectCustomItems(){
 const _origGetSched = getSched;
 const _origGetNightSched = getNightSched;
 
+/* 매뉴얼 셋업에서 숨긴(삭제한) 기본 항목 id (GM 2026-06-12). 추가항목(custom_)은 완전삭제, 기본항목은 숨김. */
+function getHiddenIds(){ try{return new Set(JSON.parse(localStorage.getItem('wcheck_hidden_items')||'[]'))}catch(e){return new Set()} }
+function saveHiddenIds(set){ localStorage.setItem('wcheck_hidden_items',JSON.stringify([...set])); }
+/* 스케줄(기본 항목)에 매뉴얼 편집분(성별·이름·상세·회차) override 적용 + 숨김 항목 제거.
+   custom_ 항목은 자체 필드 보유라 패스. 빈 그룹은 제거. */
+function applyBaseOverrides(sched){
+  if(!sched) return sched;
+  const ov = (typeof getItemOverrides==='function')?getItemOverrides():{};
+  const hidden = getHiddenIds();
+  return sched.map(slot=>({
+    slot:slot.slot, shift:slot.shift, _custom:slot._custom,
+    groups: slot.groups.map(g=>({
+      title:g.title, _custom:g._custom,
+      items: g.items.filter(it=>!hidden.has(it.id)).map(it=>{
+        if(it._custom) return it;
+        const o=ov[it.id]; if(!o) return it;
+        const m={...it};
+        if(o.name) m.name=o.name;
+        if(o.detail!==undefined) m.detail=o.detail;
+        if(o.gender) m.gender=o.gender;          // 성별 편집 → 점검 표시 반영
+        if(Array.isArray(o.rounds)&&o.rounds.length) m.rounds=o.rounds;  // 회차 편집 → 등장 조 반영
+        return m;
+      })
+    })).filter(g=>g.items.length>0)
+  })).filter(slot=>slot.groups.length>0);
+}
+
 getSched = function(ds){
   const base = _origGetSched(ds);
   if(!base) return null;
@@ -4172,7 +4248,7 @@ getSched = function(ds){
   const schedType = info.type; // 'weekday' or 'weekend'
   const customItems = mgmtGetCustomItemsForSchedule(schedType).filter(i => i.shift !== 'night');
   const customSlots = mgmtBuildCustomSlots(customItems);
-  return mgmtMergeSchedule(base, customSlots);
+  return applyBaseOverrides(mgmtMergeSchedule(base, customSlots));
 };
 
 getNightSched = function(ds){
@@ -4182,7 +4258,7 @@ getNightSched = function(ds){
   const schedType = info.type;
   const customItems = mgmtGetCustomItemsForSchedule(schedType).filter(i => i.shift === 'night');
   const customSlots = mgmtBuildCustomSlots(customItems);
-  return mgmtMergeSchedule(base, customSlots);
+  return applyBaseOverrides(mgmtMergeSchedule(base, customSlots));
 };
 
 /* 커스텀 항목 표시 시 뱃지 추가를 위해 renderItem 래핑 */
@@ -4233,9 +4309,19 @@ renderManualItems();
         <input id="editSlot" type="text" placeholder="예: 10:00~12:00 오전 후반" style="width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:10px 14px;border-radius:8px;font-size:13px;font-family:inherit;">
       </div>
     </div>
-    <div style="margin-bottom:14px;">
-      <label style="display:block;font-size:13px;font-weight:600;color:var(--dim);margin-bottom:4px;">카테고리</label>
-      <input id="editCat" type="text" placeholder="예: A 사우나 탕" style="width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:10px 14px;border-radius:8px;font-size:13px;font-family:inherit;">
+    <div style="display:flex;gap:10px;margin-bottom:14px;">
+      <div style="flex:2;">
+        <label style="display:block;font-size:13px;font-weight:600;color:var(--dim);margin-bottom:4px;">카테고리</label>
+        <input id="editCat" type="text" placeholder="예: A 사우나 탕" style="width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:10px 14px;border-radius:8px;font-size:13px;font-family:inherit;">
+      </div>
+      <div style="flex:1;">
+        <label style="display:block;font-size:13px;font-weight:600;color:var(--dim);margin-bottom:4px;">성별(구역)</label>
+        <select id="editGender" style="width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:10px 14px;border-radius:8px;font-size:14px;font-family:inherit;cursor:pointer;">
+          <option value="all">공용</option>
+          <option value="m">남</option>
+          <option value="f">여</option>
+        </select>
+      </div>
     </div>
     <div style="display:flex;gap:8px;justify-content:flex-end;">
       <button onclick="cancelItemEdit()" style="padding:10px 20px;background:var(--paper);color:var(--dim);border:1px solid var(--border);border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;">취소</button>
