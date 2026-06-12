@@ -471,7 +471,24 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px;">
     <button type="button" id="vendorViewKanban" class="mgmt-btn save" style="padding:8px 16px;" onclick="vendorSetView('kanban')">칸반</button>
     <button type="button" id="vendorViewList"   class="mgmt-btn"      style="padding:8px 16px;" onclick="vendorSetView('list')">목록</button>
-    <button type="button" class="mgmt-btn add" style="padding:8px 16px;margin-left:auto;" onclick="vendorOpenAddForm()">＋ 업체 등록</button>
+    <button type="button" class="mgmt-btn" style="padding:8px 16px;margin-left:auto;" onclick="vendorToggleCatMgmt()">⚙ 분류 관리</button>
+    <button type="button" class="mgmt-btn add" style="padding:8px 16px;" onclick="vendorOpenAddForm()">＋ 업체 등록</button>
+  </div>
+  <!-- 분류 관리 폼 (기본 숨김) -->
+  <div id="vendor-cat-form" class="admin-mgmt-form hidden" style="margin-bottom:16px;">
+    <h3>⚙ 분류 관리</h3>
+    <p style="font-size:12px;color:var(--dim);margin:0 0 12px;line-height:1.6;">거래업체 분류(컬럼)를 추가·삭제합니다. <span style="color:var(--yellow);">업체가 등록된 분류는 삭제할 수 없습니다.</span></p>
+    <div class="mgmt-row">
+      <div class="mgmt-field" style="flex:2;"><label>새 분류 추가</label><input type="text" id="vcf-new-label" placeholder="분류 이름 (예: 엘리베이터)"></div>
+      <div class="mgmt-field" style="flex:0 0 auto;align-self:flex-end;"><button type="button" class="mgmt-btn add" style="padding:9px 16px;" onclick="vendorAddCategory()">＋ 추가</button></div>
+    </div>
+    <div class="mgmt-row">
+      <div class="mgmt-field" style="flex:2;"><label>분류 삭제</label><select id="vcf-del-key"><!-- 동적 렌더 --></select></div>
+      <div class="mgmt-field" style="flex:0 0 auto;align-self:flex-end;"><button type="button" class="mgmt-btn cancel" style="padding:9px 16px;" onclick="vendorDeleteCategory()">삭제</button></div>
+    </div>
+    <div class="mgmt-actions">
+      <button type="button" class="mgmt-btn" onclick="vendorToggleCatMgmt()">닫기</button>
+    </div>
   </div>
   <!-- 업체 등록 폼 (기본 숨김) -->
   <div id="vendor-add-form" class="admin-mgmt-form hidden" style="margin-bottom:16px;">
@@ -479,16 +496,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
     <div class="mgmt-row">
       <div class="mgmt-field"><label>업체명 *</label><input type="text" id="vaf-name" placeholder="업체명"></div>
       <div class="mgmt-field"><label>분류</label>
-        <select id="vaf-col">
-          <option value="fire">소방</option>
-          <option value="cctv">CCTV/전기</option>
-          <option value="hvac">공조설비</option>
-          <option value="water">수질</option>
-          <option value="clean">청소</option>
-          <option value="pest">방제</option>
-          <option value="tub">탕청소</option>
-          <option value="maint">정비</option>
-        </select>
+        <select id="vaf-col"><!-- 분류 옵션 런타임 동적 렌더 (vendorRenderCategorySelects) --></select>
       </div>
     </div>
     <div class="mgmt-row">
@@ -522,17 +530,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   <!-- 목록 뷰 -->
   <div id="vendor-list-wrap" class="hidden">
     <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px;">
-      <select id="vendor-filter-col" style="background:var(--bg);border:1px solid var(--border);color:var(--text);padding:7px 10px;border-radius:7px;font-size:13px;font-family:inherit;" onchange="renderVendorList()">
-        <option value="">전체 분류</option>
-        <option value="fire">소방</option>
-        <option value="cctv">CCTV/전기</option>
-        <option value="hvac">공조설비</option>
-        <option value="water">수질</option>
-        <option value="clean">청소</option>
-        <option value="pest">방제</option>
-        <option value="tub">탕청소</option>
-        <option value="maint">정비</option>
-      </select>
+      <select id="vendor-filter-col" style="background:var(--bg);border:1px solid var(--border);color:var(--text);padding:7px 10px;border-radius:7px;font-size:13px;font-family:inherit;" onchange="renderVendorList()"><!-- 분류 옵션 런타임 동적 렌더 (vendorRenderCategorySelects) --></select>
       <select id="vendor-filter-status" style="background:var(--bg);border:1px solid var(--border);color:var(--text);padding:7px 10px;border-radius:7px;font-size:13px;font-family:inherit;" onchange="renderVendorList()">
         <option value="">전체 상태</option>
         <option value="거래중">거래중</option>
@@ -3854,7 +3852,7 @@ loadStaffFromSheet();
 loadItemMasterFromSheet(); // 점검 항목 마스터를 시트에서 로드 (비동기 — 완료 시 화면 갱신)
 loadBoardData(); renderBoard(); loadBoardFromBackend(); // 요일별 보드: 로컬 즉시 렌더 후 백엔드 동기화(모든 기기 반영)
 loadPolicyData(); renderPolicyBoard(); loadPolicyFromBackend(); // 규정 트렐로 보드: 로컬 즉시 렌더 후 백엔드 동기화
-loadVendorData(); renderVendorBoard(); vendorSetView('kanban'); loadVendorFromBackend(); // 거래업체 보드: 로컬 즉시 렌더 후 백엔드 동기화
+loadVendorCategories(); loadVendorData(); vendorRenderCategorySelects(); renderVendorBoard(); vendorSetView('kanban'); loadVendorCategoriesFromBackend().then(()=>{ vendorRenderCategorySelects(); renderVendorBoard(); }); loadVendorFromBackend(); // 거래업체 보드: 분류·업체 로컬 즉시 렌더 후 백엔드 동기화
 renderG('m');
 
 /* ═══════════════════════════════════════════════
@@ -4252,8 +4250,12 @@ async function renderApproval(){
    필드: 업체명 · 분야 · 담당자 · 연락처 · 계약형태/단가 · 갱신일 · 비고
    ═══════════════════════════════════════════════ */
 const VENDOR_STORAGE_KEY = 'FACILITY_VENDOR_BOARD';
+/* 분류(컬럼) 저장키 — 거래업체 board와 동일 saveBoard/getBoard 범용 핸들러 재사용.
+   새 키라 GAS 재배포 불필요. 4부서 공용 GAS지만 이 키는 시설부 격리. */
+const VENDOR_CAT_KEY = 'FACILITY_VENDOR_CATEGORIES';
 
-const VENDOR_COLS = [
+/* 동적 분류 시드 — 기존 8개. localStorage·백엔드에 저장값 없을 때만 사용. */
+const VENDOR_COLS_SEED = [
   {key:'fire',    label:'소방',        cls:'red'},
   {key:'cctv',    label:'CCTV/전기',   cls:'blue'},
   {key:'hvac',    label:'공조설비',    cls:'male'},
@@ -4263,6 +4265,11 @@ const VENDOR_COLS = [
   {key:'tub',     label:'탕청소',      cls:'orange'},
   {key:'maint',   label:'정비',        cls:'accent'}
 ];
+/* 새 분류에 순환 배정할 색상 클래스 팔레트 (renderVendorBoard 사용 클래스와 동일군) */
+const VENDOR_CAT_PALETTE = ['red','blue','male','outer','female','purple','orange','accent'];
+
+/* 런타임 분류 배열 — 하드코딩 상수가 아니라 loadVendorCategories()로 채워짐 */
+let VENDOR_COLS = VENDOR_COLS_SEED.map(c=>Object.assign({},c));
 
 /* 시드 — 작업일지(2026-06-04)·시설부 체계 본문 확인분만. 추측 금지. 단가·계약·담당자·갱신일=빈칸. */
 const VENDOR_SEED = {
@@ -4296,6 +4303,160 @@ let VENDOR_DATA = {};
 
 function vendorGenId(){ return 'vnd_'+Date.now()+'_'+Math.random().toString(36).slice(2,7); }
 function vendorToday(){ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+
+/* ── 분류(컬럼) 동적 로드/저장 — 거래업체 board와 동일 패턴 ── */
+/* 저장 형태: VENDOR_COLS 배열 자체를 board로 저장({cols:[...]} 래핑). */
+function vendorSanitizeCols(arr){
+  if(!Array.isArray(arr)) return null;
+  const out = [];
+  const seen = {};
+  arr.forEach((c,i)=>{
+    if(!c || typeof c!=='object') return;
+    const key = c.key!=null ? String(c.key).trim() : '';
+    const label = c.label!=null ? String(c.label).trim() : '';
+    if(!key || !label || seen[key]) return;
+    seen[key] = 1;
+    const cls = (c.cls!=null && String(c.cls).trim()) ? String(c.cls).trim() : VENDOR_CAT_PALETTE[i % VENDOR_CAT_PALETTE.length];
+    out.push({key:key, label:label, cls:cls});
+  });
+  return out.length ? out : null;
+}
+
+function applyVendorCats(stored){
+  // stored 가 {cols:[...]} 또는 [...] 모두 허용
+  let arr = null;
+  if(stored){
+    if(Array.isArray(stored)) arr = stored;
+    else if(Array.isArray(stored.cols)) arr = stored.cols;
+  }
+  const clean = vendorSanitizeCols(arr);
+  VENDOR_COLS = clean ? clean : VENDOR_COLS_SEED.map(c=>Object.assign({},c));
+}
+
+function loadVendorCategories(){
+  let stored = null;
+  try{ stored = JSON.parse(localStorage.getItem(VENDOR_CAT_KEY)); }catch(e){ stored=null; }
+  applyVendorCats(stored);
+}
+
+async function loadVendorCategoriesFromBackend(){
+  loadVendorCategories();
+  if(!ONLINE) return;
+  try{
+    const res = await fetch(API_URL+'?action=board&key='+encodeURIComponent(VENDOR_CAT_KEY),{method:'GET',redirect:'follow'});
+    const data = await res.json();
+    if(data && data.ok && data.board && (Array.isArray(data.board) || Array.isArray(data.board.cols))){
+      applyVendorCats(data.board);
+      localStorage.setItem(VENDOR_CAT_KEY, JSON.stringify({cols:VENDOR_COLS}));
+    }
+  }catch(e){}
+}
+
+function persistVendorCategories(){
+  localStorage.setItem(VENDOR_CAT_KEY, JSON.stringify({cols:VENDOR_COLS}));
+  if(!ONLINE) return;
+  const ind = document.getElementById('saveIndicator');
+  if(ind){ind.style.display='block';ind.textContent='분류 저장 중...';}
+  fetch(API_URL,{method:'POST',redirect:'follow',
+    headers:{'Content-Type':'text/plain'},
+    body:JSON.stringify({action:'saveBoard',key:VENDOR_CAT_KEY,board:{cols:VENDOR_COLS}})
+  }).then(()=>{if(ind){ind.textContent='분류 저장 완료';setTimeout(()=>{ind.style.display='none'},1500);}})
+    .catch(()=>{if(ind){ind.textContent='분류 저장 (로컬 보관됨)';setTimeout(()=>{ind.style.display='none'},1500);}});
+}
+
+/* ── select(등록폼·필터·삭제목록) option 동적 렌더 ──
+   ⚠ 입력 폼 자체(input/textarea)는 재생성하지 않고 select option만 갱신 → 한글 IME 조합 보호. */
+function vendorRenderCategorySelects(){
+  // 등록폼 분류 select
+  const vaf = document.getElementById('vaf-col');
+  if(vaf){
+    const prev = vaf.value;
+    vaf.innerHTML = VENDOR_COLS.map(c=>'<option value="'+escapeHTML(c.key)+'">'+escapeHTML(c.label)+'</option>').join('');
+    if(prev && VENDOR_COLS.some(c=>c.key===prev)) vaf.value = prev;
+  }
+  // 목록 필터 select (전체 분류 옵션 포함)
+  const filt = document.getElementById('vendor-filter-col');
+  if(filt){
+    const prev = filt.value;
+    filt.innerHTML = '<option value="">전체 분류</option>'
+      + VENDOR_COLS.map(c=>'<option value="'+escapeHTML(c.key)+'">'+escapeHTML(c.label)+'</option>').join('');
+    if(prev==='' || VENDOR_COLS.some(c=>c.key===prev)) filt.value = prev;
+  }
+  // 분류 삭제 select
+  const del = document.getElementById('vcf-del-key');
+  if(del){
+    const prev = del.value;
+    del.innerHTML = VENDOR_COLS.map(c=>{
+      const cnt = (VENDOR_DATA[c.key]||[]).length;
+      return '<option value="'+escapeHTML(c.key)+'">'+escapeHTML(c.label)+(cnt?(' ('+cnt+'개 업체)'):'')+'</option>';
+    }).join('');
+    if(prev && VENDOR_COLS.some(c=>c.key===prev)) del.value = prev;
+  }
+}
+
+/* 라벨 → 안정적 key 자동생성 (영문/숫자 slug, 한글 등은 cat_타임스탬프 폴백). 중복 회피. */
+function vendorMakeCatKey(label){
+  let base = (label||'').toLowerCase().replace(/[^a-z0-9]+/g,'_').replace(/^_+|_+$/g,'');
+  if(!base) base = 'cat_'+Date.now().toString(36);
+  let key = base, n = 2;
+  const exists = k => VENDOR_COLS.some(c=>c.key===k);
+  while(exists(key)){ key = base+'_'+n; n++; }
+  return key;
+}
+
+/* ── 분류 관리 폼 토글 ── */
+function vendorToggleCatMgmt(){
+  const f = document.getElementById('vendor-cat-form');
+  if(!f) return;
+  const willShow = f.classList.contains('hidden');
+  if(willShow){
+    if(typeof requireEditAuth==='function' && !requireEditAuth()) return;
+    vendorRenderCategorySelects();
+    f.classList.remove('hidden');
+    const inp = document.getElementById('vcf-new-label'); if(inp){ inp.value=''; inp.focus(); }
+  } else {
+    f.classList.add('hidden');
+  }
+}
+
+/* ── 분류 추가 ── */
+function vendorAddCategory(){
+  if(typeof requireEditAuth==='function' && !requireEditAuth()) return;
+  const inp = document.getElementById('vcf-new-label');
+  const label = inp ? inp.value.trim() : '';
+  if(!label){ alert('분류 이름을 입력해 주세요.'); if(inp) inp.focus(); return; }
+  if(VENDOR_COLS.some(c=>c.label===label)){ alert('이미 같은 이름의 분류가 있습니다.'); return; }
+  const key = vendorMakeCatKey(label);
+  const cls = VENDOR_CAT_PALETTE[VENDOR_COLS.length % VENDOR_CAT_PALETTE.length];
+  VENDOR_COLS.push({key:key, label:label, cls:cls});
+  if(!Array.isArray(VENDOR_DATA[key])) VENDOR_DATA[key]=[];
+  persistVendorCategories();
+  vendorRenderCategorySelects();
+  renderVendorBoard();
+  if(typeof renderVendorList==='function') renderVendorList();
+  if(inp){ inp.value=''; inp.focus(); }
+  if(typeof showToast==='function') showToast('분류 "'+label+'"가 추가되었습니다.');
+}
+
+/* ── 분류 삭제 (업체 있으면 차단) ── */
+function vendorDeleteCategory(){
+  if(typeof requireEditAuth==='function' && !requireEditAuth()) return;
+  const del = document.getElementById('vcf-del-key');
+  const key = del ? del.value : '';
+  if(!key){ alert('삭제할 분류를 선택해 주세요.'); return; }
+  const col = VENDOR_COLS.find(c=>c.key===key);
+  if(!col){ alert('분류를 찾을 수 없습니다.'); return; }
+  const used = (VENDOR_DATA[key]||[]).length;
+  if(used>0){ alert(used+'개 업체가 이 분류를 쓰고 있어 삭제 불가. 업체를 다른 분류로 옮기거나 삭제한 뒤 다시 시도하세요.'); return; }
+  if(!confirm('분류 "'+col.label+'"를 삭제할까요?')) return;
+  VENDOR_COLS = VENDOR_COLS.filter(c=>c.key!==key);
+  delete VENDOR_DATA[key];
+  persistVendorCategories();
+  vendorRenderCategorySelects();
+  renderVendorBoard();
+  if(typeof renderVendorList==='function') renderVendorList();
+  if(typeof showToast==='function') showToast('분류 "'+col.label+'"가 삭제되었습니다.');
+}
 
 function applyVendorStored(stored){
   VENDOR_DATA = {};
