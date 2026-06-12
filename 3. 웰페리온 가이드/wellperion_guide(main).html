@@ -8003,7 +8003,7 @@ function crTab(btn, panelId) {
 
       // ⚓ 입항 완료 (오늘) — 오늘 완료건 + ⏸️ 보류(오늘) 구분 섹션 (GM 2026-06-12: 보류 독립토글 폐기, 날짜별 합류)
       html += '<details class="toggle" style="margin-top:16px;">';
-      html += '<summary><span style="color:var(--green);"><span style="margin-right:4px;">⚓</span>입항 완료 (오늘) ' + done.length + '건</span></summary>';
+      html += '<summary><span style="color:var(--green);"><span style="margin-right:4px;">⚓</span>입항 완료 (오늘) ' + done.length + '건 / 보류 (오늘) ' + holdToday.length + '건</span></summary>';
       html += '<div class="toggle-body" style="font-size:13px;">';
       if (done.length) {
         done.forEach(function(t){ html += _gm1DoneLineHtml(t, false); });
@@ -8016,7 +8016,7 @@ function crTab(btn, panelId) {
       // 🗄️ 지난 입항 완료 (오늘 이전 완료) — 지난 완료건 + ⏸️ 보류(지난) 구분 섹션 (접힘) (GM 2026-06-07 · 06-12 보류합류)
       if (donePast.length || holdPast.length) {
         html += '<details class="toggle" style="margin-top:10px;">';
-        html += '<summary><span style="color:var(--dim);"><span style="margin-right:4px;">🗄️</span>지난 입항 완료 ' + donePast.length + '건</span></summary>';
+        html += '<summary><span style="color:var(--dim);"><span style="margin-right:4px;">🗄️</span>지난 입항 완료 ' + donePast.length + '건 / 지난 보류 ' + holdPast.length + '건</span></summary>';
         html += '<div class="toggle-body" style="font-size:13px;">';
         donePast.forEach(function(t){ html += _gm1DoneLineHtml(t, true); });
         html += _gm1HoldSectionHtml(holdPast);
