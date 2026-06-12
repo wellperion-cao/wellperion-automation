@@ -1636,8 +1636,8 @@ const ROUND_MAP={
   /* C 세탁물 입고/배치 = 오전조 1회(am2 흡수) */
   c1a:['am1'], c1b:['am1'], c1c:['am1'],
   c_ev:['close1'],                          /* 주말 C 세탁물 마감 = 마감조 */
-  /* 인수인계(구 12시 am2) = 오전조 + 오후조 (교대 인수인계 오전·오후 둘 다, 시우·GM 2026-06-12) */
-  hw1:['am1','pm1'], hw2:['am1','pm1'],
+  /* 인수인계(구 12시 am2) = 오후조 전용 (교대 인수인계 오후조 이관, 오전조 제거, 시우·GM 2026-06-12) */
+  hw1:['pm1'], hw2:['pm1'],
   /* D 내부(구 am2·pm2) = 오전조·마감조 흡수 */
   d1:['am1','close1'], d2:['am1','close1'], d3:['am1','close1'], d4:['am1','close1'], d5:['am1','close1'],
   /* D 내부(오후/저녁) 비-사우나 항목 = 성격에 맞는 조 */
@@ -1701,13 +1701,17 @@ function loadLocal(d,g){try{return JSON.parse(localStorage.getItem(LK(d,g)))||{}
 function saveLocal(d,o,g){localStorage.setItem(LK(d,g),JSON.stringify(o))}
 
 async function loadState(d,g){
-  if(!ONLINE){STATE=loadLocal(d,g);return}
+  const gg=g||activeGenderTab;
+  if(!ONLINE){STATE=loadLocal(d,gg);return}
   try{
     const r=await fetch(API_URL+'?date='+d+DEPT_Q,{redirect:'follow'});
     const j=await r.json();
     STATE={};
     (j.rows||[]).forEach(row=>{
-      if(row.checked)STATE[row.itemId]=true;
+      // 2026-06-12 시우: 서버 응답이 성별 구분돼 오면(row.gender) 현재 성별(gg)만 STATE 반영 —
+      // 성별화 체크는 chkKey에 기록해 화면 격리 유지. gender 미동반(레거시·서버 미격리)이면 기존 동작.
+      if(row.gender&&row.gender!==gg)return;
+      if(row.checked){STATE[row.itemId]=true;if(row.gender)STATE[chkKey(roundOfSlot(row.slot,row.shift),row.itemId,gg)]=true;}
       if(row.issue)STATE['iss_'+row.itemId]=row.issue;
       if(row.tip)STATE['tip_'+row.itemId]=row.tip;
       if(row.measure)restoreTempFromMeasure(row.itemId,row.measure);   // 온도 측정값 복원
@@ -1745,7 +1749,7 @@ async function loadState(d,g){
       if(v.by)STATE['_gsubBy_'+key]=v.by;
       if(v.at)STATE['_gsubAt_'+key]=v.at;
     });}
-  }catch(e){STATE=loadLocal(d,g)}
+  }catch(e){STATE=loadLocal(d,gg)}
 }
 
 let saveTimer=null;
@@ -1766,16 +1770,19 @@ async function pushToServer(d){
   const checks=[];
   const dow=getDayOfWeek(d);
   // main sched items — push ALL items regardless of gender filter so server gets everything
+  // 2026-06-12 시우: 서버 전송 체크값을 현재 성별(g) 기준으로 — chkKey 성별화(30309942) 후에도
+  // pushToServer가 성별 무시(isCheckedAny(it))로 보내 서버 재로드 시 남↔여 섞이던 버그 차단.
+  // 각 check에 gender:g 포함(서버가 성별별 저장·조회 가능하게 정보 전달). 서버측 GAS 격리는 별도.
   sched.forEach(slot=>{slot.groups.forEach(gr=>{gr.items.forEach(it=>{
-    checks.push({itemId:it.id,name:it.name,cat:gr.title,slot:slot.slot,shift:slot.shift,
-      checked:isCheckedAny(it),issue:STATE['iss_'+it.id]||'',tip:STATE['tip_'+it.id]||'',
+    checks.push({itemId:it.id,name:it.name,cat:gr.title,slot:slot.slot,shift:slot.shift,gender:g,
+      checked:isCheckedAny(it,g),issue:STATE['iss_'+it.id]||'',tip:STATE['tip_'+it.id]||'',
       measure:collectTempJSON(it.id),reflected:!!STATE['reflected_'+it.id]});
   })})});
   // day focus items
   if(DAY_FOCUS[dow]){
     DAY_FOCUS[dow].forEach(it=>{
-      checks.push({itemId:it.id,name:it.name,cat:'요일별 집중 청소',slot:'요일별',shift:'focus',
-        checked:isCheckedAny(it),issue:STATE['iss_'+it.id]||'',tip:STATE['tip_'+it.id]||'',
+      checks.push({itemId:it.id,name:it.name,cat:'요일별 집중 청소',slot:'요일별',shift:'focus',gender:g,
+        checked:isCheckedAny(it,g),issue:STATE['iss_'+it.id]||'',tip:STATE['tip_'+it.id]||'',
         measure:collectTempJSON(it.id),reflected:!!STATE['reflected_'+it.id]});
     });
   }
