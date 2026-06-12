@@ -1704,7 +1704,8 @@ async function loadState(d,g){
   const gg=g||activeGenderTab;
   if(!ONLINE){STATE=loadLocal(d,gg);return}
   try{
-    const r=await fetch(API_URL+'?date='+d+DEPT_Q,{redirect:'follow'});
+    // 2026-06-12 시토: 남/여 동기화 근본수정 — 현재 성별(gg) 원장만 요청(&gender=). 서버가 성별별 분리 반환.
+    const r=await fetch(API_URL+'?date='+d+DEPT_Q+'&gender='+encodeURIComponent(gg),{redirect:'follow'});
     const j=await r.json();
     STATE={};
     (j.rows||[]).forEach(row=>{
@@ -1732,8 +1733,16 @@ async function loadState(d,g){
     // 서버 원장(chk_<dept>_<date>)으로 STATE[itemId] 복원 → 과거일/타기기 admin 완료율 회귀 방지.
     // 구조: {c:체크itemId집합, sub:{am,pm,night}, subAt:{...}}. 제출 메타는 행이 없을 때만 보강(행 우선).
     if(j.checkedLedger){
-      const cl=j.checkedLedger, cmap=cl.c||cl;
-      Object.keys(cmap).forEach(id=>{if(id!=='c'&&id!=='sub'&&id!=='subAt'&&cmap[id])STATE[id]=true;});
+      // 2026-06-12 시토: 남/여 동기화 근본수정 — &gender 요청으로 서버가 현재 성별(gg) 원장만 반환.
+      // bare STATE[id] 금지(남↔여 누수원). 성별키(chkKey) 전 라운드에 복원 → 탭 전환·재렌더 시 gg 격리 유지.
+      // 만약 서버가 성별맵 전체({m,f,all})를 보낸 레거시 응답이면 현재 성별 슬롯만 선택.
+      let cl=j.checkedLedger;
+      if(cl&&!cl.c&&(cl.m||cl.f||cl.all))cl=cl[gg]||{};
+      const cmap=(cl&&cl.c)||cl||{};
+      Object.keys(cmap).forEach(id=>{
+        if(id==='c'||id==='sub'||id==='subAt'||!cmap[id])return;
+        ROUND_KEYS.forEach(rk=>{STATE[chkKey(rk,id,gg)]=true;});
+      });
       const sub=cl.sub||{}, subAt=cl.subAt||{};
       if(sub.am&&!STATE._submitter_am){STATE._submitter_am=sub.am;STATE._submitted_am=true;}
       if(sub.pm&&!STATE._submitter_pm){STATE._submitter_pm=sub.pm;STATE._submitted_pm=true;}
