@@ -1746,7 +1746,8 @@ async function loadState(d,g){
       // 2026-06-12 시우: 서버 응답이 성별 구분돼 오면(row.gender) 현재 성별(gg)만 STATE 반영 —
       // 성별화 체크는 chkKey에 기록해 화면 격리 유지. gender 미동반(레거시·서버 미격리)이면 기존 동작.
       if(row.gender&&row.gender!==gg)return;
-      if(row.checked){STATE[row.itemId]=true;if(row.gender)STATE[chkKey(roundOfSlot(row.slot,row.shift),row.itemId,gg)]=true;}
+      // 회차 격리(2026-06-12): 성별 동반 행은 그 슬롯의 회차키만(전 회차 동기화 방지). 레거시(성별無)만 bare 폴백.
+      if(row.checked){ if(row.gender)STATE[chkKey(roundOfSlot(row.slot,row.shift),row.itemId,gg)]=true; else STATE[row.itemId]=true; }
       if(row.issue)STATE['iss_'+row.itemId]=row.issue;
       if(row.tip)STATE['tip_'+row.itemId]=row.tip;
       if(row.measure)restoreTempFromMeasure(row.itemId,row.measure);   // 온도 측정값 복원
@@ -1771,12 +1772,23 @@ async function loadState(d,g){
       // bare STATE[id] 금지(남↔여 누수원). 성별키(chkKey) 전 라운드에 복원 → 탭 전환·재렌더 시 gg 격리 유지.
       // 만약 서버가 성별맵 전체({m,f,all})를 보낸 레거시 응답이면 현재 성별 슬롯만 선택.
       let cl=j.checkedLedger;
-      if(cl&&!cl.c&&(cl.m||cl.f||cl.all))cl=cl[gg]||{};
-      const cmap=(cl&&cl.c)||cl||{};
-      Object.keys(cmap).forEach(id=>{
-        if(id==='c'||id==='sub'||id==='subAt'||!cmap[id])return;
-        ROUND_KEYS.forEach(rk=>{STATE[chkKey(rk,id,gg)]=true;});
-      });
+      if(cl&&!cl.c&&!cl.cr&&(cl.m||cl.f||cl.all))cl=cl[gg]||{};
+      if(cl&&cl.cr&&typeof cl.cr==='object'){
+        // 회차별 복원(신규·2026-06-12): '<round>_<id>' → 그 회차에만(오전·오후·마감 격리)
+        Object.keys(cl.cr).forEach(k=>{
+          if(!cl.cr[k])return;
+          const us=String(k).indexOf('_'); if(us<0)return;
+          const rk=k.slice(0,us), id=k.slice(us+1);
+          if(ROUND_KEYS.indexOf(rk)>=0)STATE[chkKey(rk,id,gg)]=true;
+        });
+      }else{
+        // 레거시(회차정보 없는 옛 원장) — 항목 단위 → 전 회차 복원(하위호환)
+        const cmap=(cl&&cl.c)||cl||{};
+        Object.keys(cmap).forEach(id=>{
+          if(id==='c'||id==='cr'||id==='sub'||id==='subAt'||!cmap[id])return;
+          ROUND_KEYS.forEach(rk=>{STATE[chkKey(rk,id,gg)]=true;});
+        });
+      }
       const sub=cl.sub||{}, subAt=cl.subAt||{};
       if(sub.am&&!STATE._submitter_am){STATE._submitter_am=sub.am;STATE._submitted_am=true;}
       if(sub.pm&&!STATE._submitter_pm){STATE._submitter_pm=sub.pm;STATE._submitted_pm=true;}
@@ -1829,11 +1841,15 @@ async function pushToServer(d){
         measure:collectTempJSON(it.id),reflected:!!STATE['reflected_'+it.id]});
     });
   }
+  // 회차별 체크맵 — 현재 성별(g)의 chkKey 전체('<round>_<id>') → 서버 led.cr 영속(회차 격리 복원용). GM 2026-06-12
+  const _cpfx='chk_'+g+'_';
+  const roundChecks=Object.keys(STATE).filter(k=>k.indexOf(_cpfx)===0&&STATE[k]===true).map(k=>k.slice(_cpfx.length));
   try{
     await fetch(API_URL,{method:'POST',redirect:'follow',
       headers:{'Content-Type':'text/plain'},
       body:JSON.stringify({action:'save',date:d,checks,dept:DEPT,
         genderTab:g,
+        roundChecks:roundChecks,   // 회차별 영속
         duty:(typeof getDutyForGender==='function'?getDutyForGender(g):''),   // 담당자(규정 근무조) → 시트 담당자 칸 기록
         groupSubmits:collectGroupSubmits(),
         submitted_am:!!STATE._submitted_am,submittedAt_am:STATE._submittedAt_am||'',submitter_am:STATE._submitter_am||'',

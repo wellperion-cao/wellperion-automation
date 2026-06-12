@@ -414,6 +414,12 @@ function _updateCheckLedger(dept, date, body) {
     if (body.submittedAt_pm)    led.subAt.pm = String(body.submittedAt_pm);
     if (body.submittedAt_night) led.subAt.night = String(body.submittedAt_night);
   }
+  // 회차별 영속(2026-06-12 시우·GM): roundChecks = 현재 성별의 전체 회차 체크 키('<round>_<id>') 목록.
+  // 프론트가 매 저장 시 현 상태 전체를 보내므로 led.cr 전체 교체 → 복원도 회차별(오전·오후·마감 격리).
+  if (body && body.roundChecks) {
+    led.cr = {};
+    (body.roundChecks || []).forEach(function (k) { if (k) led.cr[String(k)] = 1; });
+  }
   props.setProperty(key, JSON.stringify(led));
 }
 
