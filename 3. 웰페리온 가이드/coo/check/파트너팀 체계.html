@@ -604,7 +604,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
     }).catch(function(e){up.textContent='불러오기 실패';err.style.display='block';err.textContent='⚠ 매출 시트를 불러오지 못했습니다: '+e.message;});
   };
 
-  var CHECK_API="https://script.google.com/macros/s/AKfycbySsnbKDtOI7ktGd-qQrZ3y7V0AFu9SpGtzriL1bGTxafECrmDq2AbgK76OwXGh47r4Pw/exec";
+  var CHECK_API="https://script.google.com/macros/s/AKfycbzqh9S9cP-U7YArQl7HxDTDeQtJlp4nndkYOSh-AWlnxBb_fh77WSUCLxpTVZm75Drg-Q/exec";
 function loadCheckIssues(){var box=document.getElementById("ptIssueBox");if(!box)return;
 fetch(CHECK_API+"?action=issues&t="+Date.now()).then(function(r){return r.json();}).then(function(j){
 if(!j||!j.ok||!j.issues)return;var issues=j.issues;
