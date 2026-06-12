@@ -255,6 +255,7 @@ function doGet(e) {
   if (action === 'migrate_item_dept') { return jsonRes(migrateItemDept()); }
   if (action === 'purge_custom') { return purgeCustomItems(e.parameter.dept || 'support'); }
   if (action === 'ensure_headers') { return ensureAllHeaders(e.parameter.dept || 'support'); }
+  if (action === 'vendor_list') { return vendorList(); }
 
   var date = e.parameter.date;
   if (!date) return jsonRes({ error: 'date required' });
@@ -449,6 +450,7 @@ function doPost(e) {
     if (body.action === 'issuelog_add')   return handleIssueLogAdd(body);
     if (body.action === 'issuelog_update') return handleIssueLogUpdate(body);
     if (body.action === 'snapshot_append') return handleSnapshotAppend(body);   // F3: 제출 스냅샷 적립
+    if (body.action === 'vendor_save')    return vendorSave(body);               // 거래업체 전체 교체 저장(시설_거래업체 시트)
     return jsonRes({ error: 'unknown action' });
   } catch (err) {
     return jsonRes({ error: err.message });
@@ -656,6 +658,68 @@ function ensureAllHeaders(dept) {
     _ensureHeaders(sh); done.push(name);
   });
   return jsonRes({ ok: true, dept: dept, sheets: done, headers: HEADERS });
+}
+
+// ════════════════════════════════════════════
+// 거래업체 (시설부) — 시설_거래업체 시트 (GM 2026-06-12)
+// 미사용 '점검자' 시트를 전환(rename) 또는 신규 생성. 1행=1업체, 전체 교체 저장(레이스 없음).
+// ════════════════════════════════════════════
+var SHEET_VENDOR = '시설_거래업체';
+var VENDOR_HEADERS = ['id', '분류', 'colKey', '업체명', '담당자', '연락처', '계약형태', '단가', '갱신일', '거래상태', '비고', '생성일', '수정일'];
+function _vendorSheet() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sh = ss.getSheetByName(SHEET_VENDOR);
+  if (!sh) {
+    var old = ss.getSheetByName('점검자');   // 미사용 점검자 시트 전환(추천)
+    if (old) { old.setName(SHEET_VENDOR); sh = old; sh.clear(); }
+    else { sh = ss.insertSheet(SHEET_VENDOR); }
+    sh.getRange(1, 1, 1, VENDOR_HEADERS.length).setValues([VENDOR_HEADERS]);
+  } else if (sh.getLastColumn() < VENDOR_HEADERS.length) {
+    sh.getRange(1, 1, 1, VENDOR_HEADERS.length).setValues([VENDOR_HEADERS]);
+  }
+  return sh;
+}
+// GET ?action=vendor_list → { ok, vendors:[{id,col,label,name,...}] }
+function vendorList() {
+  var sh = _vendorSheet();
+  var data = sh.getDataRange().getValues();
+  var out = [];
+  for (var i = 1; i < data.length; i++) {
+    var r = data[i];
+    if (!String(r[0] || '') && !String(r[3] || '')) continue;   // 빈 행 스킵
+    out.push({
+      id: _vstr(r[0]), label: _vstr(r[1]), col: _vstr(r[2]) || _vstr(r[1]),
+      name: _vstr(r[3]), manager: _vstr(r[4]), contact: _vstr(r[5]),
+      contract: _vstr(r[6]), price: _vstr(r[7]), renewal: _vstr(r[8]),
+      status: _vstr(r[9]) || '거래중', note: _vstr(r[10]),
+      createdAt: _vstr(r[11]), updatedAt: _vstr(r[12])
+    });
+  }
+  return jsonRes({ ok: true, vendors: out });
+}
+// POST {action:'vendor_save', vendors:[...]} → 데이터행 전체 교체
+function vendorSave(body) {
+  var sh = _vendorSheet();
+  var vendors = (body && body.vendors) || [];
+  var last = sh.getLastRow();
+  if (last > 1) sh.getRange(2, 1, last - 1, VENDOR_HEADERS.length).clearContent();
+  if (vendors.length) {
+    var rows = vendors.map(function (v) {
+      return [String(v.id || ''), String(v.label || ''), String(v.col || ''), String(v.name || ''),
+        String(v.manager || ''), String(v.contact || ''), String(v.contract || ''), String(v.price || ''),
+        String(v.renewal || ''), String(v.status || '거래중'), String(v.note || ''),
+        String(v.createdAt || ''), String(v.updatedAt || '')];
+    });
+    var rng = sh.getRange(2, 1, rows.length, VENDOR_HEADERS.length);
+    rng.setNumberFormat('@');   // 텍스트 고정 — 날짜(생성일 등) 자동변환 방지
+    rng.setValues(rows);
+  }
+  return jsonRes({ ok: true, count: vendors.length });
+}
+// 셀값 안전 문자열화(Date면 yyyy-MM-dd)
+function _vstr(x) {
+  if (x instanceof Date) { return Utilities.formatDate(x, Session.getScriptTimeZone(), 'yyyy-MM-dd'); }
+  return String(x == null ? '' : x);
 }
 
 // custom_ 항목 일괄 삭제(GM 2026-06-12): ① 점검항목 마스터(해당 dept의 custom_만) ② 구역 시트(남/여/공용)의 custom_ 행.

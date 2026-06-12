@@ -4516,10 +4516,15 @@ async function loadVendorFromBackend(){
     return;
   }
   try{
-    const res = await fetch(API_URL+'?action=board&key='+encodeURIComponent(VENDOR_STORAGE_KEY),{method:'GET',redirect:'follow'});
+    const res = await fetch(API_URL+'?action=vendor_list',{method:'GET',redirect:'follow'});
     const data = await res.json();
-    if(data && data.ok && data.board && typeof data.board==='object'){
-      applyVendorStored(data.board);
+    if(data && data.ok && Array.isArray(data.vendors)){
+      const grouped={};
+      data.vendors.forEach(v=>{
+        const k=v.col||'maint'; if(!grouped[k])grouped[k]=[];
+        grouped[k].push({id:v.id,name:v.name,manager:v.manager,contact:v.contact,contract:v.contract,price:v.price,renewal:v.renewal,status:v.status,note:v.note,createdAt:v.createdAt,updatedAt:v.updatedAt});
+      });
+      applyVendorStored(grouped);
       localStorage.setItem(VENDOR_STORAGE_KEY, JSON.stringify(VENDOR_DATA));
     }
   }catch(e){
@@ -4529,6 +4534,17 @@ async function loadVendorFromBackend(){
   if(wrap && !wrap.querySelector('.dv-cell.editing')) renderVendorBoard();
 }
 
+/* 거래업체 = 시설_거래업체 시트 단일출처(GM 2026-06-12). VENDOR_DATA{분류key:[업체]} → 평탄화 후 전체 교체 저장. */
+function vendorFlatten(){
+  const labelMap={}; VENDOR_COLS.forEach(c=>{labelMap[c.key]=c.label;});
+  const out=[];
+  Object.keys(VENDOR_DATA||{}).forEach(key=>{
+    (VENDOR_DATA[key]||[]).forEach(v=>{
+      out.push(Object.assign({col:key,label:labelMap[key]||key},v));
+    });
+  });
+  return out;
+}
 function persistVendorData(){
   localStorage.setItem(VENDOR_STORAGE_KEY, JSON.stringify(VENDOR_DATA));
   if(!ONLINE) return;
@@ -4536,7 +4552,7 @@ function persistVendorData(){
   if(ind){ind.style.display='block';ind.textContent='업체 저장 중...';}
   fetch(API_URL,{method:'POST',redirect:'follow',
     headers:{'Content-Type':'text/plain'},
-    body:JSON.stringify({action:'saveBoard',key:VENDOR_STORAGE_KEY,board:VENDOR_DATA})
+    body:JSON.stringify({action:'vendor_save',vendors:vendorFlatten()})
   }).then(()=>{if(ind){ind.textContent='업체 저장 완료';setTimeout(()=>{ind.style.display='none'},1500);}})
     .catch(()=>{if(ind){ind.textContent='업체 저장 (로컬 보관됨)';setTimeout(()=>{ind.style.display='none'},1500);}});
 }
