@@ -4623,16 +4623,16 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
     <h3><span class="ico">📨</span>콘텐츠 검수 대기 <span id="cmopub-review-count" style="font-size:12px;color:var(--dim);font-weight:400;"></span></h3>
     <p style="font-size:13px;color:var(--dim);margin-bottom:12px;">생성된 콘텐츠를 검수하고 승인/반려합니다. 승인 결정은 GitHub 검수 큐에 기록됩니다. <span style="color:var(--dim-soft);">(G1 김남욱 페이지에서 이 페이지로 이관)</span></p>
 
-    <!-- 계정 2칸 탭 (2026-06-04 GM: 개인/웰페리온 분리) -->
+    <!-- 계정 2칸 탭 (2026-06-04 GM: 개인/웰페리온 분리 → 2026-06-12 좌=웰페리온/우=AI 재배치) -->
     <div style="display:flex;gap:0;margin-bottom:0;border-bottom:2px solid rgba(183,159,138,0.25);">
-      <button id="rv-tab-namuk" onclick="rvSwitchTab('namuk')" style="flex:1;padding:10px 8px;border:none;border-bottom:3px solid var(--accent);margin-bottom:-2px;background:none;cursor:pointer;font-family:inherit;font-size:13.5px;font-weight:700;color:var(--accent);transition:all .15s;">📸 개인 @namuk.wellperion</button>
-      <button id="rv-tab-brand" onclick="rvSwitchTab('brand')" style="flex:1;padding:10px 8px;border:none;border-bottom:3px solid transparent;margin-bottom:-2px;background:none;cursor:pointer;font-family:inherit;font-size:13.5px;font-weight:600;color:var(--dim);transition:all .15s;">🏢 웰페리온 @wellperion</button>
+      <button id="rv-tab-brand" onclick="rvSwitchTab('brand')" style="flex:1;padding:10px 8px;border:none;border-bottom:3px solid var(--accent);margin-bottom:-2px;background:none;cursor:pointer;font-family:inherit;font-size:13.5px;font-weight:700;color:var(--accent);transition:all .15s;">🏢 웰페리온 @wellperion</button>
+      <button id="rv-tab-namuk" onclick="rvSwitchTab('namuk')" style="flex:1;padding:10px 8px;border:none;border-bottom:3px solid transparent;margin-bottom:-2px;background:none;cursor:pointer;font-family:inherit;font-size:13.5px;font-weight:600;color:var(--dim);transition:all .15s;">🤖 AI @namuk.wellperion</button>
     </div>
-    <div id="rv-panel-namuk" style="margin-top:14px;">
-      <div id="cmopub-review-list-namuk" style="display:flex;flex-direction:column;gap:12px;"><div style="color:var(--dim);font-size:13px;">불러오는 중…</div></div>
-    </div>
-    <div id="rv-panel-brand" style="margin-top:14px;display:none;">
+    <div id="rv-panel-brand" style="margin-top:14px;">
       <div id="cmopub-review-list-brand" style="display:flex;flex-direction:column;gap:12px;"><div style="color:var(--dim);font-size:13px;">불러오는 중…</div></div>
+    </div>
+    <div id="rv-panel-namuk" style="margin-top:14px;display:none;">
+      <div id="cmopub-review-list-namuk" style="display:flex;flex-direction:column;gap:12px;"><div style="color:var(--dim);font-size:13px;">불러오는 중…</div></div>
     </div>
 
     <script>
@@ -4732,8 +4732,8 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
         var nWait=namukItems.filter(function(it){return !isDone(effState(it));}).length;
         var bWait=brandItems.filter(function(it){return !isDone(effState(it));}).length;
         var btnN=document.getElementById('rv-tab-namuk');var btnB=document.getElementById('rv-tab-brand');
-        if(btnN)btnN.textContent='📸 개인 @namuk.wellperion'+(nWait?' (대기 '+nWait+'건)':'');
         if(btnB)btnB.textContent='🏢 웰페리온 @wellperion'+(bWait?' (대기 '+bWait+'건)':'');
+        if(btnN)btnN.textContent='🤖 AI @namuk.wellperion'+(nWait?' (대기 '+nWait+'건)':'');
         renderPanel('cmopub-review-list-namuk',namukItems);
         renderPanel('cmopub-review-list-brand',brandItems);
       }
