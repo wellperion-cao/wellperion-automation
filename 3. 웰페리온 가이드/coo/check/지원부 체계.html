@@ -2205,6 +2205,11 @@ window.editItem=function(id){
   const _ci=(CUSTOM_ITEMS||[]).find(x=>x.id===id);
   const _gsel=document.getElementById('editGender');
   if(_gsel)_gsel.value=(_ci&&_ci.gender)||ov.gender||base.gender||'all';
+  // 회차(조) 다중선택 — 현재 등장 회차 pre-check
+  let _curR=[];
+  try{ _curR=itemRounds({id:id, rounds:(_ci&&_ci.rounds)||ov.rounds, slot:ov.slot||base.slot, shift:ov.shift||base.shift})||[]; }catch(e){ _curR=[]; }
+  const _rc=document.getElementById('editRounds');
+  if(_rc)_rc.innerHTML=(typeof ROUND_KEYS!=='undefined'?ROUND_KEYS:[]).map(function(rk){return '<label style="display:flex;align-items:center;gap:4px;font-size:13px;cursor:pointer;background:var(--bg);border:1px solid var(--border);border-radius:7px;padding:6px 10px;"><input type="checkbox" class="editRoundCb" value="'+rk+'"'+(_curR.indexOf(rk)>=0?' checked':'')+'> '+roundLabel(rk)+'</label>';}).join('');
   document.getElementById('itemEditModal').style.display='flex';
 };
 window.saveItemEdit=function(){
@@ -2218,6 +2223,7 @@ window.saveItemEdit=function(){
   const newCat=document.getElementById('editCat').value.trim();
   const _ge=document.getElementById('editGender');
   const newGender=_ge?(_ge.value||'all'):'all';
+  const newRounds=[].slice.call(document.querySelectorAll('#editRounds .editRoundCb')).filter(function(c){return c.checked;}).map(function(c){return c.value;});
   const list=(CUSTOM_ITEMS||[]).slice();
   let item=list.find(it=>it.id===id);
   if(item){
@@ -2228,6 +2234,7 @@ window.saveItemEdit=function(){
     if(newShift)item.shift=newShift;
     if(newCat)item.category=newCat;
     item.gender=newGender;
+    if(newRounds.length)item.rounds=newRounds;
   }else{
     /* 기본 항목(시트에 없음) → 같은 id로 shadow 항목 생성(baseline 복사 후 편집값 반영) */
     item={
@@ -2239,7 +2246,8 @@ window.saveItemEdit=function(){
       category:newCat||base.cat||'추가 점검',
       name:newName||base.name,
       detail:newDetail!==undefined?newDetail:base.detail,
-      order:undefined
+      order:undefined,
+      rounds:newRounds.length?newRounds:undefined
     };
     list.push(item);
   }
@@ -4293,21 +4301,14 @@ renderManualItems();
       <label style="display:block;font-size:13px;font-weight:600;color:var(--dim);margin-bottom:4px;">내용 (세부 설명)</label>
       <textarea id="editDetail" style="width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:10px 14px;border-radius:8px;font-size:13px;font-family:inherit;min-height:80px;line-height:1.6;resize:vertical;"></textarea>
     </div>
-    <div style="display:flex;gap:10px;margin-bottom:12px;">
-      <div style="flex:1;">
-        <label style="display:block;font-size:13px;font-weight:600;color:var(--dim);margin-bottom:4px;">근무조</label>
-        <select id="editShift" style="width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:10px 14px;border-radius:8px;font-size:14px;font-family:inherit;cursor:pointer;">
-          <option value="am">오전조 (05:30~14:15)</option>
-          <option value="pm">오후조 (14:00~22:30)</option>
-          <option value="night">야간조 (탕청소 업체)</option>
-          <option value="focus">요일별 집중 청소</option>
-          <option value="all">전체 시간대</option>
-        </select>
-      </div>
-      <div style="flex:1;">
-        <label style="display:block;font-size:13px;font-weight:600;color:var(--dim);margin-bottom:4px;">시간대 라벨</label>
-        <input id="editSlot" type="text" placeholder="예: 10:00~12:00 오전 후반" style="width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:10px 14px;border-radius:8px;font-size:13px;font-family:inherit;">
-      </div>
+    <div style="margin-bottom:12px;">
+      <label style="display:block;font-size:13px;font-weight:600;color:var(--dim);margin-bottom:6px;">회차(조) — 점검에 등장할 조 (다중 선택)</label>
+      <div id="editRounds" style="display:flex;flex-wrap:wrap;gap:8px;"></div>
+    </div>
+    <input type="hidden" id="editShift" value="pm">
+    <div style="margin-bottom:12px;">
+      <label style="display:block;font-size:13px;font-weight:600;color:var(--dim);margin-bottom:4px;">시간대 라벨 (선택)</label>
+      <input id="editSlot" type="text" placeholder="예: 10:00~12:00 오전 후반" style="width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:10px 14px;border-radius:8px;font-size:13px;font-family:inherit;">
     </div>
     <div style="display:flex;gap:10px;margin-bottom:14px;">
       <div style="flex:2;">
