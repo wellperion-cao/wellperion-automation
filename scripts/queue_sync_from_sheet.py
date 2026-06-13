@@ -351,6 +351,8 @@ def main(argv: list[str] | None = None) -> int:
                     help="현재 status/_queue.json 과 줄 단위 비교만(쓰기 없음).")
     ap.add_argument("--write", action="store_true",
                     help="[주의] 실제 status/_queue.json 갱신. 1단계 검증 단계에선 사용 금지 권장.")
+    ap.add_argument("--force", action="store_true",
+                    help="[위험] 안전가드(유실 방지) 무시하고 --write 강행. 시트가 _queue보다 낡았음을 인지한 경우만.")
     ap.add_argument(
         "--sheet-name",
         default=None,
@@ -399,8 +401,29 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     if args.write:
+        # ── 유실방지 안전가드 (2026-06-13 시토) ───────────────────────────────
+        # 시트(SSOT 후보)가 _queue보다 낡으면(예: 06-08 전용탭 화석) --write 시
+        # 시트에 없는 최신 _queue 항목이 통째로 사라진다(06-07 사고 메커니즘).
+        # 현 _queue에만 있고 생성본에 없는 task_id(=유실 대상)가 있으면 거부.
+        cur = json.loads(QUEUE_PATH.read_text(encoding="utf-8")) if QUEUE_PATH.exists() else []
+        gen_ids = {i.get("task_id") for i in items if i.get("task_id")}
+        cur_ids = {i.get("task_id") for i in cur if i.get("task_id")}
+        lost = sorted(cur_ids - gen_ids)
+        if lost and not args.force:
+            print(
+                f"[ABORT] --write 거부: 시트에 없어 유실될 _queue 항목 {len(lost)}건.",
+                file=sys.stderr,
+            )
+            print(f"        예: {lost[:8]}", file=sys.stderr)
+            print(
+                "        시트(SSOT)가 _queue보다 낡았을 수 있습니다(화석). "
+                "재seed로 동등화하거나, 의도적이면 --force.",
+                file=sys.stderr,
+            )
+            return 2
         _atomic_write(items)
-        print(f"[WRITE] status/_queue.json 갱신 — AI 배 {len(items)}건")
+        print(f"[WRITE] status/_queue.json 갱신 — AI 배 {len(items)}건"
+              + (f" (가드 우회 --force, 유실 {len(lost)}건)" if lost else ""))
         return 0
 
     # 기본: 미리보기
