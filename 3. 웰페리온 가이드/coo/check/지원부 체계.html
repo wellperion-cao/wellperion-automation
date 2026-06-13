@@ -1260,12 +1260,13 @@ const WEEKDAY=[
   ]},
   {slot:"오전 08:00~12:00",shift:"am",groups:[
     {title:"B 락커룸",items:[
-      {id:"b1",name:"B-1 파우더",detail:"선풍기 | 드라이기 | 휴지통 | 소독기 | 발건조기 | 청소 진행\n비품: 빗, 면봉, 휴지, 로션, 스킨",gender:"all"},
-      {id:"b2",name:"B-2 휴게실",detail:"TV 관리 | 소파 및 테이블 관리",gender:"all"},
-      {id:"b3_f",name:"B-3 찜질방 (여)",detail:"온도/청결 관리\n쑥 제거(휴관일 전) / 쑥 입고(휴관일 후)",gender:"f"},
-      {id:"b3_m",name:"B-3 수면실 (남)",detail:"청결 관리\n매트리스/바스타올 관리",gender:"m"},
-      {id:"b4",name:"B-4 마루바닥",detail:"바닥 미끄럼/청결 | 휴지통\n비품: 1회용 밀대 타올 (수시)",gender:"all"},
-      {id:"b5",name:"B-5 사우나 화장실",detail:"소변기/대변기/바닥/세면공간\n비품: 휴지통, 화장지, 핸드페이퍼, 손세정제",gender:"all"}
+      {id:"b1",name:"B-1 요일별 락커 청소",detail:"요일별 지정 락커 청소 진행",gender:"all"},
+      {id:"b2",name:"B-2 파우더",detail:"선풍기 | 드라이기 | 휴지통 | 소독기 | 발건조기 | 청소 진행\n비품: 빗, 면봉, 휴지, 로션, 스킨",gender:"all"},
+      {id:"b3",name:"B-3 휴게실",detail:"TV 관리 | 소파 및 테이블 관리",gender:"all"},
+      {id:"b4_f",name:"B-4 찜질방 (여)",detail:"온도/청결 관리\n쑥 제거(휴관일 전) / 쑥 입고(휴관일 후)",gender:"f"},
+      {id:"b4_m",name:"B-4 수면실 (남)",detail:"청결 관리\n매트리스/바스타올 관리",gender:"m"},
+      {id:"b5",name:"B-5 마루바닥",detail:"바닥 미끄럼/청결 | 휴지통\n비품: 1회용 밀대 타올 (수시)",gender:"all"},
+      {id:"b6",name:"B-6 사우나 화장실",detail:"소변기/대변기/바닥/세면공간\n비품: 휴지통, 화장지, 핸드페이퍼, 손세정제",gender:"all"}
     ]},
     {title:"오픈 점검",items:[
       {id:"c1a",name:"세탁물 입고 운반",detail:"입고된 세탁물을 세탁실로 운반",gender:"all"},
@@ -1274,23 +1275,25 @@ const WEEKDAY=[
     ]}
   ]},
   {slot:"내부·외부 점검",shift:"all",groups:[
-    {title:"D 내부",items:[
-      {id:"d1",name:"D-1 외부 화장실",detail:"골프장/B1/B2 화장실 체크 | 악취 관리 최우선\n비품: 휴지통, 화장지, 핸드페이퍼, 손세정제",gender:"all"},
-      {id:"d2",name:"D-2 복도 휴지통",detail:"운영사무실 앞 / B1 복도(헬스장 입구 구석)",gender:"all"},
-      {id:"d3",name:"D-3 메인 계단",detail:"B1-B2 메인 계단 벽/바닥 청결 (남 주임 전담)",gender:"m"},
-      {id:"e1",name:"D-4 센터 복도·거울/유리창",detail:"센터 복도 바닥: 1F/B1/B2 에스컬레이터 공간 전체 복도\n거울/유리창 물때 | 손톱깍이장 청소 (화요일 집중)",gender:"all"},
-      {id:"d5",name:"D-5 분리수거장",detail:"에스컬레이터 아래 분리수거 진행",gender:"all"},
-      {id:"d6",name:"D-6 G.X룸",detail:"거울/바닥 청소 (남 주임 전담 / 화요일 집중)",gender:"m"},
-      {id:"e3",name:"D-7 청소 비품 관리",detail:"비품 지정 위치 배치 | 깔끔하게 관리",gender:"all"},
-      {id:"d4",name:"D-8 메인 복도 휴게공간",detail:"소파/바닥 청결 (여 주임 전담)",gender:"f"},
-      {id:"d7",name:"D-9 센터 화분",detail:"물 공급 (여 주임 전담 / 금요일 집중)",gender:"f"},
-      {id:"d8",name:"D-10 키즈 샤워실",detail:"파우더룸 정리 20:30\n2주 1회 샤워실 청소 수 13:00 (남 주임 전담)",gender:"m"},
-      {id:"d9",name:"D-11 수영장 계단",detail:"주 1회 청소",gender:"all"}
+    {title:"C 내부",items:[
+      {id:"c1",name:"C-1 외부 화장실",detail:"골프장/B1/B2 화장실 체크 | 악취 관리 최우선\n비품: 휴지통, 화장지, 핸드페이퍼, 손세정제",gender:"all"},
+      {id:"c2",name:"C-2 복도 휴지통",detail:"운영사무실 앞 / B1 복도(헬스장 입구 구석)",gender:"all"},
+      {id:"c3",name:"C-3 메인 계단",detail:"B1-B2 메인 계단 벽/바닥 청결 (남 주임 전담)",gender:"m"},
+      {id:"c4",name:"C-4 센터 복도·거울/유리창",detail:"센터 복도 바닥: 1F/B1/B2 에스컬레이터 공간 전체 복도\n거울/유리창 물때 | 손톱깍이장 청소 (화요일 집중)",gender:"all"},
+      {id:"c5",name:"C-5 분리수거장",detail:"에스컬레이터 아래 분리수거 진행",gender:"all"},
+      {id:"c6",name:"C-6 청소 비품 관리",detail:"비품 지정 위치 배치 | 깔끔하게 관리",gender:"all"},
+      {id:"c7",name:"C-7 메인 복도 휴게공간",detail:"소파/바닥 청결 (여 주임 전담)",gender:"f"},
+      {id:"c8",name:"C-8 센터 화분",detail:"물 공급 (여 주임 전담 / 금요일 집중)",gender:"f"},
+      {id:"c9",name:"C-9 키즈 샤워실",detail:"파우더룸 정리 20:30\n2주 1회 샤워실 청소 수 13:00 (남 주임 전담)",gender:"m"},
+      {id:"c10",name:"C-10 수영장 계단",detail:"주 1회 청소",gender:"all"}
+    ]},
+    {title:"D 업장",items:[
+      {id:"d1",name:"D-1 헬스장",detail:"매일: 머신/런닝머신 땀 | 월수금: 런닝머신 바닥 | 화목: 스트레칭 공간 | 주말: 거울",gender:"all"},
+      {id:"d2",name:"D-2 골프장",detail:"매일: 복도 청소 | 월수금: 타석(스크린천) | 화목: 타석(기계) | 주말: 레슨룸",gender:"all"},
+      {id:"d3",name:"D-3 G.X룸",detail:"거울/바닥 청소 (남 주임 전담 / 화요일 집중)",gender:"m"}
     ]},
     {title:"E 외부",items:[
-      {id:"e4",name:"E-1 헬스장",detail:"매일: 머신/런닝머신 땀 | 월수금: 런닝머신 바닥 | 화목: 스트레칭 공간 | 주말: 거울",gender:"all"},
-      {id:"e5",name:"E-2 골프장",detail:"매일: 복도 청소 | 월수금: 타석(스크린천) | 화목: 타석(기계) | 주말: 레슨룸",gender:"all"},
-      {id:"e6",name:"E-3 주차장",detail:"바닥 쓰레기 치우기 | 주차장 화장실 | 차단기 확인\n휴관일: 집중 청소",gender:"all"}
+      {id:"e1",name:"E-1 주차장",detail:"바닥 쓰레기 치우기 | 주차장 화장실 | 차단기 확인\n휴관일: 집중 청소",gender:"all"}
     ]}
   ]},
   {slot:"인수인계 13:00~14:00",shift:"pm",groups:[
@@ -1319,12 +1322,13 @@ const WEEKEND=[
   ]},
   {slot:"오전 08:00~12:00",shift:"am",groups:[
     {title:"B 락커룸",items:[
-      {id:"b1",name:"B-1 파우더",detail:"선풍기 | 드라이기 | 휴지통 | 소독기 | 발건조기 | 청소 진행",gender:"all"},
-      {id:"b2",name:"B-2 휴게실",detail:"TV | 소파 | 테이블",gender:"all"},
-      {id:"b3_f",name:"B-3 찜질방 (여)",detail:"온도/청결 관리",gender:"f"},
-      {id:"b3_m",name:"B-3 수면실 (남)",detail:"청결 관리 | 매트리스/바스타올",gender:"m"},
-      {id:"b4",name:"B-4 마루바닥",detail:"미끄럼/청결 | 휴지통",gender:"all"},
-      {id:"b5",name:"B-5 사우나 화장실",detail:"소변기/대변기/바닥/세면공간",gender:"all"}
+      {id:"b1",name:"B-1 요일별 락커 청소",detail:"요일별 지정 락커 청소 진행",gender:"all"},
+      {id:"b2",name:"B-2 파우더",detail:"선풍기 | 드라이기 | 휴지통 | 소독기 | 발건조기 | 청소 진행",gender:"all"},
+      {id:"b3",name:"B-3 휴게실",detail:"TV | 소파 | 테이블",gender:"all"},
+      {id:"b4_f",name:"B-4 찜질방 (여)",detail:"온도/청결 관리",gender:"f"},
+      {id:"b4_m",name:"B-4 수면실 (남)",detail:"청결 관리 | 매트리스/바스타올",gender:"m"},
+      {id:"b5",name:"B-5 마루바닥",detail:"미끄럼/청결 | 휴지통",gender:"all"},
+      {id:"b6",name:"B-6 사우나 화장실",detail:"소변기/대변기/바닥/세면공간",gender:"all"}
     ]},
     {title:"오픈 점검",items:[
       {id:"c1a",name:"세탁물 입고 + 상태 체크",detail:"운동복/양말 사이즈별 배치 | 타올류 배치",gender:"all"}
@@ -1336,19 +1340,21 @@ const WEEKEND=[
     ]}
   ]},
   {slot:"내부·외부 점검",shift:"all",groups:[
-    {title:"D 내부",items:[
-      {id:"d1",name:"D-1 외부 화장실",detail:"골프장/B1/B2",gender:"all"},
-      {id:"d2",name:"D-2 복도 휴지통",detail:"운영사무실 앞 / B1 복도",gender:"all"},
-      {id:"d3",name:"D-3 메인 계단",detail:"B1-B2 벽/바닥 (남 주임 전담)",gender:"m"},
-      {id:"e1",name:"D-4 센터 복도·거울/유리창",detail:"센터 복도 바닥: 1F/B1/B2\n거울/유리창 물때",gender:"all"},
-      {id:"d5",name:"D-5 분리수거장",detail:"에스컬레이터 아래",gender:"all"},
-      {id:"e3",name:"D-7 청소 비품 관리",detail:"지정 위치 배치",gender:"all"},
-      {id:"d4",name:"D-8 메인 복도 휴게공간",detail:"소파/바닥 (여 주임 전담)",gender:"f"}
+    {title:"C 내부",items:[
+      {id:"c1",name:"C-1 외부 화장실",detail:"골프장/B1/B2",gender:"all"},
+      {id:"c2",name:"C-2 복도 휴지통",detail:"운영사무실 앞 / B1 복도",gender:"all"},
+      {id:"c3",name:"C-3 메인 계단",detail:"B1-B2 벽/바닥 (남 주임 전담)",gender:"m"},
+      {id:"c4",name:"C-4 센터 복도·거울/유리창",detail:"센터 복도 바닥: 1F/B1/B2\n거울/유리창 물때",gender:"all"},
+      {id:"c5",name:"C-5 분리수거장",detail:"에스컬레이터 아래",gender:"all"},
+      {id:"c6",name:"C-6 청소 비품 관리",detail:"지정 위치 배치",gender:"all"},
+      {id:"c7",name:"C-7 메인 복도 휴게공간",detail:"소파/바닥 (여 주임 전담)",gender:"f"}
+    ]},
+    {title:"D 업장",items:[
+      {id:"d1",name:"D-1 헬스장",detail:"거울 청소 (주말)",gender:"all"},
+      {id:"d2",name:"D-2 골프장",detail:"레슨룸 청소 (주말)",gender:"all"}
     ]},
     {title:"E 외부",items:[
-      {id:"e4",name:"E-1 헬스장",detail:"거울 청소 (주말)",gender:"all"},
-      {id:"e5",name:"E-2 골프장",detail:"레슨룸 청소 (주말)",gender:"all"},
-      {id:"e6",name:"E-3 주차장",detail:"바닥 쓰레기 | 화장실 | 차단기",gender:"all"}
+      {id:"e1",name:"E-1 주차장",detail:"바닥 쓰레기 | 화장실 | 차단기",gender:"all"}
     ]}
   ]},
   {slot:"마감 18:00",shift:"pm",groups:[
@@ -1449,31 +1455,31 @@ const DAY_FOCUS={
   1:[ // 월
     {id:"df_mon1",name:"화장실 전체 청소",detail:"남/여 화장실 전면 세척",gender:"all"},
     {id:"df_mon2",name:"탈수기 물때/곰팡이",detail:"탈수기 내부 물때 및 곰팡이 제거",gender:"all"},
-    {id:"df_mon3",name:"B-1 파우더 집중",detail:"파우더 공간 집중 청소",gender:"all"},
-    {id:"df_mon4",name:"B-5 사우나 화장실 집중",detail:"사우나 화장실 집중 세척 (탕 배수: 마개+스위치 확인)",gender:"all"}
+    {id:"df_mon3",name:"B-2 파우더 집중",detail:"파우더 공간 집중 청소",gender:"all"},
+    {id:"df_mon4",name:"B-6 사우나 화장실 집중",detail:"사우나 화장실 집중 세척 (탕 배수: 마개+스위치 확인)",gender:"all"}
   ],
   2:[ // 화
     {id:"df_tue1",name:"세면대 배수 파이프",detail:"세면대 배수 파이프 분해 청소",gender:"all"},
     {id:"df_tue2",name:"배수구 악취 소독/머리카락",detail:"배수구 악취 소독 및 머리카락 제거",gender:"all"},
     {id:"df_tue3",name:"탕 내 비품 점검",detail:"탕 내부 비품 상태 확인 및 교체",gender:"all"},
-    {id:"df_tue4",name:"D-4 거울/유리창 집중",detail:"센터 거울 및 유리창 집중 세척",gender:"all"},
-    {id:"df_tue5",name:"D-6 G.X룸 거울",detail:"G.X룸 거울 집중 세척",gender:"m"}
+    {id:"df_tue4",name:"C-4 거울/유리창 집중",detail:"센터 거울 및 유리창 집중 세척",gender:"all"},
+    {id:"df_tue5",name:"D-3 G.X룸 거울",detail:"G.X룸 거울 집중 세척",gender:"m"}
   ],
   3:[ // 수
     {id:"df_wed1",name:"건/습식 사우나 바닥",detail:"고압세척 + 산성세제 집중 세척",gender:"all"},
-    {id:"df_wed2",name:"D-10 키즈샤워실 집중",detail:"키즈샤워실 집중 청소",gender:"m"}
+    {id:"df_wed2",name:"C-9 키즈샤워실 집중",detail:"키즈샤워실 집중 청소",gender:"m"}
   ],
   4:[ // 목
     {id:"df_thu1",name:"화장실 전체 청소",detail:"남/여 화장실 전면 세척",gender:"all"},
     {id:"df_thu2",name:"탈수기 물때/곰팡이",detail:"탈수기 내부 물때 및 곰팡이 제거",gender:"all"},
-    {id:"df_thu3",name:"B-1 파우더 집중",detail:"파우더 공간 집중 청소",gender:"all"},
-    {id:"df_thu4",name:"B-5 사우나 화장실 집중",detail:"사우나 화장실 집중 세척",gender:"all"}
+    {id:"df_thu3",name:"B-2 파우더 집중",detail:"파우더 공간 집중 청소",gender:"all"},
+    {id:"df_thu4",name:"B-6 사우나 화장실 집중",detail:"사우나 화장실 집중 세척",gender:"all"}
   ],
   5:[ // 금
     {id:"df_fri1",name:"세면대 배수 파이프",detail:"세면대 배수 파이프 분해 청소",gender:"all"},
     {id:"df_fri2",name:"배수구 악취 소독/머리카락",detail:"배수구 악취 소독 및 머리카락 제거",gender:"all"},
     {id:"df_fri3",name:"탕 내 비품 점검",detail:"탕 내부 비품 상태 확인 및 교체",gender:"all"},
-    {id:"df_fri4",name:"D-9 센터 화분 집중",detail:"화분 물 공급 및 주변 정리 집중",gender:"f"}
+    {id:"df_fri4",name:"C-8 센터 화분 집중",detail:"화분 물 공급 및 주변 정리 집중",gender:"f"}
   ],
   6:[ // 토
     {id:"df_sat1",name:"벽체 곰팡이/물때",detail:"벽체 곰팡이 및 물때 제거",gender:"all"},
@@ -1483,7 +1489,7 @@ const DAY_FOCUS={
   ],
   0:[ // 일
     {id:"df_sun1",name:"탕청소 업체 휴무",detail:"탕청소 업체 휴무일",gender:"all"},
-    {id:"df_sun2",name:"E-3 주차장 집중",detail:"주차장 집중 청소",gender:"all"},
+    {id:"df_sun2",name:"E-1 주차장 집중",detail:"주차장 집중 청소",gender:"all"},
     {id:"df_sun3",name:"개인락커 + 미비 부분",detail:"개인락커 점검 및 미비 사항 보완",gender:"all"}
   ]
 };
