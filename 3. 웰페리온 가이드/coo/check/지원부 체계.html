@@ -2939,7 +2939,7 @@ async function submitShift(shift,gender){
   const label=labels[shift]||shift;
   const _isAdd=!!STATE['_submitted_'+shift];
   STATE['_submitted_'+shift]=true;
-  STATE['_submittedAt_'+shift]=new Date().toISOString();
+  STATE['_submittedAt_'+shift]=new Date().toLocaleString('sv-SE').replace('T',' ');
   STATE['_submitter_'+shift]=sub;
   saveLocal(d,STATE,gender);
   if(ONLINE)await pushToServer(d);
@@ -2991,7 +2991,7 @@ async function submitRound(round,gender){
   const allDone=sibRounds.every(rk=>!roundHasItems(d,gender,rk)||isRoundSubmitted(d,gender,rk));
   if(allDone && !STATE['_submitted_'+baseShift]){
     STATE['_submitted_'+baseShift]=true;
-    STATE['_submittedAt_'+baseShift]=new Date().toISOString();
+    STATE['_submittedAt_'+baseShift]=new Date().toLocaleString('sv-SE').replace('T',' ');
     STATE['_submitter_'+baseShift]=sub;
     saveLocal(d,STATE,gender);
     if(ONLINE)await pushToServer(d);
