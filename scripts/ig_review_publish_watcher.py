@@ -294,13 +294,14 @@ def publish_cafe(it: dict) -> tuple[bool, str | None]:
 
 
 def publish_danggn(it: dict) -> tuple[bool, str]:
-    """당근 반자동 임시저장 (자동입력+임시저장). danggn_upload_playwright.py --mode draft.
+    """당근 실 발행 (자동입력+이미지+게시). danggn_upload_playwright.py --mode publish --i-am-sure.
     당근은 당일 QR 로그인 세션 필요 — 세션 만료(exit 5)면 (False, '세션만료')로 폴백.
-    반환: (성공여부, 사유). 이미지 첨부는 GM 수동(반자동 — 2026-06-04 WJO 선례)."""
+    반환: (성공여부, 사유). 발레 2026-06-05 사진 7장 자동게시 실증 — 발행완료 처리."""
     folder = it.get("folder", "")
     cmd = [
         str(PY), str(DANGGN_SCRIPT),
-        "--mode", "draft",
+        "--mode", "publish",
+        "--i-am-sure",
         "--content-dir", folder,
     ]
     env = dict(os.environ, PYTHONIOENCODING="utf-8")
@@ -389,15 +390,15 @@ def dispatch_publish(it: dict, events: list) -> None:
             events.append(f"⚠️ {title} 카페 임시저장 실패 — exit code 비정상")
 
     elif "당근" in ch:
-        # 당근 반자동 — 자동입력+임시저장(이미지는 GM 수동 첨부, 2026-06-04 WJO 선례).
-        # 당일 QR 로그인 세션 필요 — 세션 만료 시 기존 수동 알림으로 안전 폴백.
+        # 당근 실 발행 — 자동입력+이미지+게시(발레 2026-06-05 사진 7장 실증).
+        # 당일 QR 로그인 세션 필요 — 세션 만료 시 수동 알림으로 안전 폴백.
         ok, reason = publish_danggn(it)
         folder = it.get("folder", "(폴더 미지정)")
         if ok:
-            it["status"] = "임시저장"
+            it["status"] = "발행완료"
             it["published_at"] = datetime.now().isoformat(timespec="seconds")
-            it["note"] = "당근 글 자동입력+임시저장 완료 — GM 이미지 첨부 후 게시"
-            events.append(f"✅ {title} 당근 임시저장 완료 — GM 이미지 첨부·게시 대기")
+            it.pop("note", None)
+            events.append(f"✅ {title} 당근 발행 완료")
         else:
             it["status"] = "수동발행대기"
             it["note"] = f"당근 자동 임시저장 실패({reason}) — 수동 업로드 필요"
