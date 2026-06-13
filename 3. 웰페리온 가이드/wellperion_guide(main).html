@@ -5587,7 +5587,7 @@ function crTab(btn, panelId) {
     <table>
       <tr><th style="width:48px">상태</th><th style="width:170px">자동화</th><th style="width:80px">담당</th><th style="width:130px">주기</th><th style="width:70px">상세</th></tr>
       <tr onclick="wpAutoToggle(this)" style="cursor:pointer;"><td>⚠️</td><td>인스타 콘텐츠 발행 (반자동)</td><td>CMO</td><td>승인 시</td><td style="color:var(--accent);font-size:12px;">펼치기 ▾</td></tr>
-      <tr class="auto-detail" style="display:none;"><td colspan="5" style="background:var(--paper);padding:10px 14px;font-size:13px;color:var(--dim);"> 주제 → 슬라이드·캡션 생성 → GM 검수 → 발행. <strong>자동발행 성공률 0%(Playwright IG 업로드 fragile) — 현재 전부 GM 수동 발행.</strong> 폴링 감시기 폐기(2026-06-03), 발행 엔진은 승인 시 on-demand 1회 호출 구조로 전환 예정(봇 콜백 배선 별도). 실패 시 발행 패키지+딥링크 폰 전달 폴백.</td></tr>
+      <tr class="auto-detail" style="display:none;"><td colspan="5" style="background:var(--paper);padding:10px 14px;font-size:13px;color:var(--dim);"> 제작 → 검수카드 → GM [✅승인] → 시모 자동발행 → 웰리 실측 대조 4단계. <strong>상세 흐름 = 바로 아래 📸 인스타그램 발행 파이프라인 SSOT 참조.</strong></td></tr>
       <tr onclick="wpAutoToggle(this)" style="cursor:pointer;"><td>🟡</td><td>블로그·카페·인스타 통합 업로드</td><td>CMO</td><td>수시(기획)</td><td style="color:var(--accent);font-size:12px;">펼치기 ▾</td></tr>
       <tr class="auto-detail" style="display:none;"><td colspan="5" style="background:var(--paper);padding:10px 14px;font-size:13px;color:var(--dim);"> 채널별 생성 → 검수·승인 → 업로드. 자동 발행은 GM 수동 승인 정책으로 보류.</td></tr>
       <tr onclick="wpAutoToggle(this)" style="cursor:pointer;"><td>🟡</td><td>슬라이드 자동 합성·콘텐츠 수집</td><td>CMO</td><td>수시(만듦)</td><td style="color:var(--accent);font-size:12px;">펼치기 ▾</td></tr>
@@ -5618,7 +5618,7 @@ function crTab(btn, panelId) {
     </div>
     <!-- ══ /IG 발행 파이프라인 SSOT ══ -->
 
-    <!-- ④ 시스템 구조 다이어그램 (접이식) -->    <!-- ④ 시스템 구조 다이어그램 (접이식) -->
+    <!-- ④ 시스템 구조 다이어그램 (접이식) -->
     <details class="toggle">
       <summary>🖥️ 시스템 구조 다이어그램 (펼쳐보기)</summary>
       <div class="toggle-body">
@@ -5629,26 +5629,26 @@ function crTab(btn, panelId) {
             <defs><marker id="ar2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="#9ec6ec"/></marker></defs>
             <text x="360" y="22" text-anchor="middle" font-size="13" font-weight="700" fill="#6b6a64">사용자 접근 채널 (3 입력)</text>
             <g><rect x="20" y="38" width="210" height="70" rx="12" fill="#fbeee5" stroke="#c9612b"/><text x="125" y="62" text-anchor="middle" font-size="13" font-weight="700" fill="#8c401a">텔레그램</text><text x="125" y="80" text-anchor="middle" font-size="11" fill="#c9612b">GM · 어디서든 스마트폰</text><text x="125" y="96" text-anchor="middle" font-size="11" fill="#6b6a64">@namuki_report_bot</text></g>
-            <g><rect x="255" y="38" width="210" height="70" rx="12" fill="#fbeee5" stroke="#c9612b"/><text x="360" y="62" text-anchor="middle" font-size="13" font-weight="700" fill="#8c401a">클로드 코워크</text><text x="360" y="80" text-anchor="middle" font-size="11" fill="#c9612b">실무진 · GM PC 웹·앱</text><text x="360" y="96" text-anchor="middle" font-size="11" fill="#6b6a64">claude.ai + Notion 동시</text></g>
+            <g><rect x="255" y="38" width="210" height="70" rx="12" fill="#fbeee5" stroke="#c9612b"/><text x="360" y="62" text-anchor="middle" font-size="13" font-weight="700" fill="#8c401a">클로드 코워크</text><text x="360" y="80" text-anchor="middle" font-size="11" fill="#c9612b">실무진 · GM PC 웹·앱</text><text x="360" y="96" text-anchor="middle" font-size="11" fill="#6b6a64">claude.ai 협업</text></g>
             <g><rect x="490" y="38" width="210" height="70" rx="12" fill="#fbeee5" stroke="#c9612b"/><text x="595" y="62" text-anchor="middle" font-size="13" font-weight="700" fill="#8c401a">클로드 CLI</text><text x="595" y="80" text-anchor="middle" font-size="11" fill="#c9612b">GM · PC 터미널</text><text x="595" y="96" text-anchor="middle" font-size="11" fill="#6b6a64">Start-AI {역할}.bat</text></g>
             <line x1="125" y1="108" x2="290" y2="195" stroke="#9ec6ec" stroke-width="2" marker-end="url(#ar2)"/>
             <line x1="360" y1="108" x2="360" y2="195" stroke="#9ec6ec" stroke-width="2" marker-end="url(#ar2)"/>
             <line x1="595" y1="108" x2="430" y2="195" stroke="#9ec6ec" stroke-width="2" marker-end="url(#ar2)"/>
-            <g><rect x="260" y="205" width="200" height="70" rx="14" fill="#1e6fbf"/><text x="360" y="232" text-anchor="middle" font-size="14" font-weight="700" fill="#fff">공통 축</text><text x="360" y="252" text-anchor="middle" font-size="12" fill="#cfe2f6">Notion + 텔레그램</text><text x="360" y="268" text-anchor="middle" font-size="11" fill="#cfe2f6">+ AI CEO 인박스 DB</text></g>
-            <g><rect x="20" y="300" width="210" height="100" rx="12" fill="#e8f1fa" stroke="#1e6fbf"/><text x="125" y="328" text-anchor="middle" font-size="14" font-weight="700" fill="#185fa5">wellperion-agents</text><text x="125" y="348" text-anchor="middle" font-size="12" fill="#1e6fbf">C-Level 에이전트 7명</text><text x="125" y="366" text-anchor="middle" font-size="11" fill="#6b6a64">CEO·CFO·CHRO·CMO·COO·CPO·CTO</text><text x="125" y="384" text-anchor="middle" font-size="11" fill="#6b6a64">Notion R/R 동기화</text></g>
+            <g><rect x="260" y="205" width="200" height="70" rx="14" fill="#1e6fbf"/><text x="360" y="232" text-anchor="middle" font-size="14" font-weight="700" fill="#fff">공통 축</text><text x="360" y="252" text-anchor="middle" font-size="12" fill="#cfe2f6">텔레그램 + GAS 시트</text><text x="360" y="268" text-anchor="middle" font-size="11" fill="#cfe2f6">+ status/_queue.json</text></g>
+            <g><rect x="20" y="300" width="210" height="100" rx="12" fill="#e8f1fa" stroke="#1e6fbf"/><text x="125" y="328" text-anchor="middle" font-size="14" font-weight="700" fill="#185fa5">wellperion-agents</text><text x="125" y="348" text-anchor="middle" font-size="12" fill="#1e6fbf">C-Level 에이전트 7명</text><text x="125" y="366" text-anchor="middle" font-size="11" fill="#6b6a64">CEO·CFO·CHRO·CMO·COO·CPO·CTO</text><text x="125" y="384" text-anchor="middle" font-size="11" fill="#6b6a64">_queue.json R/R 동기화</text></g>
             <line x1="230" y1="370" x2="260" y2="260" stroke="#9ec6ec" stroke-width="2"/>
-            <g><rect x="490" y="300" width="210" height="100" rx="12" fill="#e6f3ea" stroke="#2c8a4f"/><text x="595" y="328" text-anchor="middle" font-size="14" font-weight="700" fill="#1f6638">telegram_bot</text><text x="595" y="348" text-anchor="middle" font-size="12" fill="#2c8a4f">원격 통제 + 자동 보고</text><text x="595" y="366" text-anchor="middle" font-size="11" fill="#6b6a64">정각 9슬롯 보고 (T2 정본)</text><text x="595" y="384" text-anchor="middle" font-size="11" fill="#6b6a64">정각 보고 + 헬스체크</text></g>
+            <g><rect x="490" y="300" width="210" height="100" rx="12" fill="#e6f3ea" stroke="#2c8a4f"/><text x="595" y="328" text-anchor="middle" font-size="14" font-weight="700" fill="#1f6638">telegram_bot</text><text x="595" y="348" text-anchor="middle" font-size="12" fill="#2c8a4f">원격 통제 + 자동 보고</text><text x="595" y="366" text-anchor="middle" font-size="11" fill="#6b6a64">정각 10슬롯 보고 (T2 정본)</text><text x="595" y="384" text-anchor="middle" font-size="11" fill="#6b6a64">정각 보고 + 헬스체크</text></g>
             <line x1="490" y1="370" x2="460" y2="260" stroke="#b8d9bf" stroke-width="2"/>
             <g><rect x="255" y="410" width="210" height="60" rx="12" fill="#fbeee5" stroke="#c9612b"/><text x="360" y="436" text-anchor="middle" font-size="14" font-weight="700" fill="#8c401a">scripts/</text><text x="360" y="455" text-anchor="middle" font-size="11" fill="#6b6a64">자동화 300+ 파이썬</text></g>
             <line x1="360" y1="410" x2="360" y2="275" stroke="#ecc7ad" stroke-width="2"/>
           </svg>
-          <div class="caption">사용자 3 채널 → 공통 축(Notion + 텔레그램 + AI CEO 인박스) → 메인 3 영역</div>
+          <div class="caption">사용자 3 채널 → 공통 축(텔레그램 + GAS 시트 + _queue.json) → 메인 3 영역</div>
         </div>
         <h4>사용자 접근 채널</h4>
         <table>
           <tr><th style="width:140px">채널</th><th style="width:140px">누가</th><th>어디서</th><th>특징</th></tr>
           <tr><td>텔레그램</td><td>GM</td><td>스마트폰</td><td>@namuki_report_bot · 단답·승인·실시간 자동 보고</td></tr>
-          <tr><td>클로드 코워크</td><td>실무진 + GM</td><td>GM PC 웹·앱</td><td>Notion DB 직접 수정 + 클로드 코워크 작업</td></tr>
+          <tr><td>클로드 코워크</td><td>실무진 + GM</td><td>GM PC 웹·앱</td><td>claude.ai 협업 작업</td></tr>
           <tr><td>클로드 CLI</td><td>GM</td><td>GM PC 터미널</td><td>본격 결재·기획·인프라 · 메모리 누적</td></tr>
         </table>
         <div class="callout"><strong>채널 진화 방향 (2026-05-25 GM 결정).</strong> Claude CLI 모바일 연동 완료 시, 텔레그램 봇은 <strong>확인·승인 전용</strong>으로 기능 최소화.</div>
