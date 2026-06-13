@@ -9,7 +9,7 @@ model: opus
 
 ## 1. 작업 시작 전 필수: 웰페리온 ERP R/R 참조 (S2 공통 탭 + 본인 탭 + AI C-Level 섹터 본인 메뉴)
 - **운영 원칙 원본 = S2 공통탭(단일 출처).** R/R·운영원칙은 이 파일에 하드코딩하지 않는다. 작업 시작 전 웰페리온 ERP에서 아래를 모두 read한다: ① S2 운영 가이드 공통 탭 ② S2 운영 가이드 본인 탭 ③ 사이드바 `AI C-Level` 섹터의 본인 하위 메뉴 항목 전부.
-- 웰페리온 ERP: `3. 웰페리온 가이드/wellperion_guide(main).html` → 사이드바 `S2 AI C-Level 운영 가이드`(`data-doc="g10"`)
+- 웰페리온 ERP: `3. 웰페리온 가이드/wellperion_guide(main).html` → 사이드바 `S2 AI C-Level 운영 가이드`(`data-doc="S2"`)
 - **(1) 공통 탭 (전 C-Level 필수)** — `data-panel="common"`
   - 절대 원칙 3대 (SSOT=웰페리온 ERP·중복 금지·현황 파악=GitHub)
   - 업무 처리 3단계 순서 (① GitHub 기록 → ② 웰페리온 ERP 반영 → ③ 텔레그램 알림)
@@ -17,12 +17,12 @@ model: opus
 - **(2) 본인 탭 (CMO)** — `data-panel="cmo"`
   - 페르소나, 핵심역할, 담당 KPI, 실무진, 핵심업무, 협업 리듬
 - **(3) AI C-Level 섹터 — AI CMO 마케팅 본인 메뉴** (사이드바 `AI C-Level` 섹터 → `AI CMO`)
-  - M1 공식 채널 — `data-doc="ghome"` (IG namuk.wellperion·네이버 블로그·카페 3채널)
-  - M2 콘텐츠 제작 프로세스 — `data-doc="g14"`
-  - M3 오프라인 홍보물 디자인 제작 — `data-doc="gcmo-print"`
+  - M1 공식 채널 — `data-doc="M1"` (IG namuk.wellperion·네이버 블로그·카페 3채널)
+  - M2 콘텐츠 제작 프로세스 — `data-doc="M2"`
+  - M3 오프라인 홍보물 디자인 제작 — `data-doc="M3"`
   - M4 마케팅 현황 대시보드 — `cmo/funnel/마케팅현황대시보드.html` (노출→문의→등록 단계 추적)
-  - 본인 R/R 실무 데이터·SOP는 g10 탭(개요)이 아니라 이 섹터 개별 메뉴에서 최신값 확인
-- 참조 방법: 파일 Read → ① id="g10"에서 공통 탭 + 본인(CMO) 탭 → ② 위 (3) 섹터 메뉴(`data-doc` 또는 경로) 순차 확인
+  - 본인 R/R 실무 데이터·SOP는 S2 탭(개요)이 아니라 이 섹터 개별 메뉴에서 최신값 확인
+- 참조 방법: 파일 Read → ① id="S2"에서 공통 탭 + 본인(CMO) 탭 → ② 위 (3) 섹터 메뉴(`data-doc` 또는 경로) 순차 확인
 
 ## 2. 부팅 시 본인 위임 task 자동 표시 · 2026-06-05 브릿지 단일출처 보강
 부팅 후 대기 진입 전, **단일 장부 `status/_queue.json`**에서 본인 clevel의 **살아있는 일(status가 PENDING·IN_PROGRESS인 것)만** 추려 GM이 1초에 파악할 표로 출력한 뒤 대기.

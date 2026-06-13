@@ -4,7 +4,7 @@
 ceo_morning_pipeline.py - AI CEO 아침 자동 파이프라인 (디스패처 오케스트레이터)
 v1.0 (2026-05-30)
 
-GM 결정(2026-05-30, 웰페리온 ERP g10 "CEO = 상시 대기 디스패처"):
+GM 결정(2026-05-30, 웰페리온 ERP S2 "CEO = 상시 대기 디스패처"):
   CEO 메인 세션 1개만 떠도, 다른 C-Level .bat 창을 켜지 않고 CEO가
   서브에이전트로 전 과정을 자동 수행한다. CEO는 직접 작업하지 않고
   위임·검증·기록·발신만 한다.
@@ -748,9 +748,9 @@ def stage2_assign(clear_items: list[dict]) -> list[dict]:
 # 키워드 → lock 키. 한 항목이 여러 키에 걸리면 가장 먼저 매칭된 키 1개 사용.
 CONFLICT_LOCKS = [
     ("업무현황 SSOT / 결재 현황 SSOT (웰페리온 ERP + Apps Script)",
-     ["s4", "ssot", "결재 현황", "업무현황", "업무 현황", "gcoo-todo", "apps script", "결재"]),
+     ["s4", "s3", "ssot", "결재 현황", "업무현황", "업무 현황", "gcoo-todo", "apps script", "결재"]),
     ("웰페리온 ERP 메인 HTML (wellperion_guide(main).html)",
-     ["웰페리온 ERP", "guide(main)", "guidehub", "g10", "g19"]),
+     ["웰페리온 ERP", "guide(main)", "guidehub", "g10", "g19", "s2", "t2"]),
     ("인스타/콘텐츠 발행 파이프라인 (review_queue + playwright)",
      ["인스타", "instagram", "ig", "슬라이드", "review_queue", "검수"]),
     ("네이버 블로그/카페 업로드 파이프라인",
