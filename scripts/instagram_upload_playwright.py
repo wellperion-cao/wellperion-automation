@@ -1144,11 +1144,11 @@ async def _publish_single_post(
 
     # (수정 1+2 · FIX2) 확정 검증: 발행계정 그리드에 '발행 전엔 없던' 신규 shortcode 등장 폴링.
     # 토스트가 확인됐어도 실게시 URL(신규 shortcode) 회수를 끝까지 시도한다.
-    # FIX2: 캐시 지연 오탐 방지를 위해 폴링 윈도우 확대(총 대기 ~90s).
-    #       각 폴 사이 ~5s 대기 × 18회 = 약 90s. (구: 6회×5s≈30s)
-    #       _collect_grid_shortcodes 가 매 폴마다 캐시 우회 reload 하므로 캐시지연을 흡수.
+    # 2026-06-13: URL회수 폴링 최소화(18→3) — 발행 후 '계속 새로고침' UX 버그 해소.
+    #   미회수(false-negative) URL은 웰리 대조(WebFetch)가 사후 회수(파이프라인 §3.4 발행검증대기).
+    #   reload는 d14ec9a에서 제거됨(goto의 ?__r= 캐시버스터로 충분).
     GRID_POLL_INTERVAL_MS = 5000
-    grid_polls = 18 if toast_confirmed else max(1, (MAX_WAIT_SEC - waited) // 5)
+    grid_polls = 3 if toast_confirmed else max(1, (MAX_WAIT_SEC - waited) // 5)
     new_url: str | None = None
     for attempt in range(grid_polls):
         new_url = await _capture_new_post_url(page, account, before_shortcodes)
