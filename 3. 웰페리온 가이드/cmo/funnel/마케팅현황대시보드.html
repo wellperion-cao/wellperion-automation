@@ -225,6 +225,7 @@ a{color:var(--accent);text-decoration:none}
     <button class="period-btn" data-period="week" onclick="switchPeriod('week')">주</button>
     <button class="period-btn active" data-period="month" onclick="switchPeriod('month')">월</button>
     <button class="period-btn" data-period="custom" onclick="toggleCustomRange()">기간</button>
+    <button class="period-btn" onclick="loadYearToDate()">올해</button>
     <a href="월간마케팅보고서.html" class="period-btn" style="text-decoration:none">📄 월간 보고서</a>
     <span class="period-status" id="period-status">월간 기준 · 집계 불러오는 중…</span>
   </div>
@@ -279,6 +280,16 @@ a{color:var(--accent);text-decoration:none}
       </div>
       <div id="weekly-trend-chart" class="sparkline-wrap">
         <div style="color:var(--dim);font-size:13px">추세 데이터 집계 대기</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 월별 추세 (올해 1~현재월 · 문의 건수) -->
+  <div class="section" id="monthly-trend-section">
+    <div class="section-title">월별 추세 <span style="font-size:11px;font-weight:400;color:var(--accent);text-transform:none;letter-spacing:0">(올해 · 월별 문의)</span></div>
+    <div style="background:var(--paper);border:1px solid var(--border);border-radius:12px;padding:16px 18px">
+      <div id="monthly-trend-chart">
+        <div style="color:var(--dim);font-size:13px">월별 집계 불러오는 중…</div>
       </div>
     </div>
   </div>
@@ -1213,6 +1224,70 @@ async function loadWeeklyTrend() {
   }
 }
 
+// ─── '올해' 원클릭 — 연초~오늘 기간조회(기존 runCustomQuery 재사용) ──────
+function loadYearToDate() {
+  var now = new Date();
+  var y = now.getFullYear();
+  var mm = ('0' + (now.getMonth() + 1)).slice(-2);
+  var dd = ('0' + now.getDate()).slice(-2);
+  var f = document.getElementById('custom-from');
+  var t = document.getElementById('custom-to');
+  if (f) f.value = y + '-01-01';
+  if (t) t.value = y + '-' + mm + '-' + dd;
+  document.querySelectorAll('.period-btn').forEach(function(b) { b.classList.remove('active'); });
+  var nav = document.getElementById('month-nav-row');
+  if (nav) nav.style.display = 'none';
+  runCustomQuery();
+}
+
+// ─── 월별 추세 — 올해 1~현재월 각 달 기간조회 합산(GAS 변경 없이 custom range 재사용) ──
+async function loadMonthlyTrend() {
+  var el = document.getElementById('monthly-trend-chart');
+  if (!el) return;
+  var now = new Date();
+  var y = now.getFullYear();
+  var curM = now.getMonth() + 1;
+  var tasks = [];
+  for (var m = 1; m <= curM; m++) {
+    tasks.push((function(mm0) {
+      var mm = ('0' + mm0).slice(-2);
+      var last = ('0' + new Date(y, mm0, 0).getDate()).slice(-2);
+      var url = FUNNEL_APPS_SCRIPT_URL + '?action=period_breakdown&from=' + y + '-' + mm + '-01&to=' + y + '-' + mm + '-' + last;
+      return fetch(url, { redirect: 'follow' })
+        .then(function(r) { return r.json(); })
+        .then(function(d) { var c = d && d.custom; return { m: mm0, inq: (c && c.inquiries) || 0, conv: (c && c.conversion && c.conversion.converted) || 0 }; })
+        .catch(function() { return { m: mm0, inq: 0, conv: 0 }; });
+    })(m));
+  }
+  try {
+    var rows = await Promise.all(tasks);
+    renderMonthlyTrend(rows, curM);
+  } catch (e) {
+    el.innerHTML = '<div style="color:var(--dim);font-size:13px">월별 집계 대기</div>';
+  }
+}
+function renderMonthlyTrend(rows, curM) {
+  var el = document.getElementById('monthly-trend-chart');
+  if (!el) return;
+  if (!rows || !rows.length) { el.innerHTML = '<div style="color:var(--dim);font-size:13px">집계 대기</div>'; return; }
+  var maxInq = 1;
+  rows.forEach(function(r) { if (r.inq > maxInq) maxInq = r.inq; });
+  var BAR_H = 84;
+  var html = '<div style="display:flex;align-items:flex-end;gap:6px;min-height:' + (BAR_H + 36) + 'px">';
+  rows.forEach(function(r) {
+    var h = Math.max(3, Math.round(r.inq / maxInq * BAR_H));
+    var isLast = (r.m === curM);
+    var color = isLast ? 'var(--green)' : 'var(--accent)';
+    html += '<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:3px" title="' + r.m + '월: 문의 ' + r.inq + ' · 등록 ' + r.conv + '">'
+      + '<div style="font-size:11px;font-weight:700;color:' + color + '">' + r.inq + '</div>'
+      + '<div style="width:100%;max-width:36px;height:' + h + 'px;background:' + color + ';border-radius:4px 4px 0 0"></div>'
+      + '<div style="font-size:11px;color:var(--dim)' + (isLast ? ';font-weight:700' : '') + '">' + r.m + '월</div>'
+      + '</div>';
+  });
+  html += '</div><div style="font-size:11px;color:var(--dim);margin-top:8px">올해 월별 문의 건수 · 막대 hover 시 등록 수</div>';
+  el.innerHTML = html;
+}
+
 document.addEventListener('DOMContentLoaded', function() {
   // 월 네비게이터 초기화 — 오늘 달로 설정, 다음달 버튼 비활성
   _updateMonthNav();
@@ -1222,6 +1297,7 @@ document.addEventListener('DOMContentLoaded', function() {
   loadEngagementFeed();
   loadPeriodBreakdown('month');  // 기본 기간: 월
   loadWeeklyTrend();             // 주간 추세 스파크라인
+  loadMonthlyTrend();            // 월별 추세 (올해)
 });
 </script>
 </body>
