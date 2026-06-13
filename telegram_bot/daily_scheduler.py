@@ -1352,13 +1352,18 @@ def _compile_checklist_dashboard(rows: list[dict]) -> tuple[list[tuple], str, li
     """
     Google Sheets 행 데이터를 집계해
     (표_행_리스트, 주차_현황_문자열, 이슈_리스트) 반환.
-    - 지원부 체크 = 공용구역(세탁·복도·외부)
-    - 시설부 체크 = 남성구역 + 여성구역(사우나·락커)
+    - 지원부 체크 = 지원_남성구역 + 지원_여성구역 합산
+      (2026-06-12 지원부 공용구역 폐기 → 성별탭으로 라우팅. '공용구역' 시트는 sentinel/미존재.)
+    - 시설부 체크 = 시설_남성구역 + 시설_여성구역 합산
+      (단, 본 대시보드 API 호출은 dept=support 단일 → 시설부 행은 데이터 부재로 '-' 표기.)
     - 주차 현황  = E-6 주차장 단일 항목
+    GAS doGet은 rows[].zone 에 실제 시트명을 그대로 넣음(예 '지원_남성구역').
     """
-    zones: dict[str, dict] = {"남성구역": {"total": 0, "done": 0},
-                               "여성구역": {"total": 0, "done": 0},
-                               "공용구역": {"total": 0, "done": 0}}
+    # 실제 시트명(zone) → 집계 버킷. 지원부=지원_*, 시설부=시설_*.
+    SUPPORT_ZONES = ("지원_남성구역", "지원_여성구역")
+    FACILITY_ZONES = ("시설_남성구역", "시설_여성구역")
+    support = {"total": 0, "done": 0}
+    facility = {"total": 0, "done": 0}
     issues: list[str] = []
     parking_checked: bool | None = None
 
@@ -1368,10 +1373,14 @@ def _compile_checklist_dashboard(rows: list[dict]) -> tuple[list[tuple], str, li
         issue = r.get("issue", "")
         name = r.get("name", "")
 
-        if zone in zones:
-            zones[zone]["total"] += 1
+        if zone in SUPPORT_ZONES:
+            support["total"] += 1
             if checked:
-                zones[zone]["done"] += 1
+                support["done"] += 1
+        elif zone in FACILITY_ZONES:
+            facility["total"] += 1
+            if checked:
+                facility["done"] += 1
 
         # 주차 항목 별도 추적 (E-6 주차장)
         if "주차" in name:
@@ -1380,12 +1389,6 @@ def _compile_checklist_dashboard(rows: list[dict]) -> tuple[list[tuple], str, li
         if issue:
             issues.append(f"  - {name}: {issue}")
 
-    # 지원부 = 공용구역, 시설부 = 남성+여성 합산
-    support = zones.get("공용구역", {"total": 0, "done": 0})
-    # 주차 항목은 공용구역에 포함되어 있으므로 별도 제외하지 않음 (통계상 무방)
-    facility_total = zones["남성구역"]["total"] + zones["여성구역"]["total"]
-    facility_done = zones["남성구역"]["done"] + zones["여성구역"]["done"]
-
     def fmt_score(done: int, total: int) -> str:
         return f"{done}/{total}" if total > 0 else "-"
 
@@ -1393,7 +1396,7 @@ def _compile_checklist_dashboard(rows: list[dict]) -> tuple[list[tuple], str, li
 
     table_rows = [
         ("지원부 체크", fmt_score(support["done"], support["total"])),
-        ("시설부 체크", fmt_score(facility_done, facility_total)),
+        ("시설부 체크", fmt_score(facility["done"], facility["total"])),
         ("주차 현황",   parking_str),
     ]
     return table_rows, parking_str, issues
