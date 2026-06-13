@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>웰페리온 · 재등록 대시보드</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root{color-scheme:light;
+  --beige:#B79F8A;--charcoal:#221F20;--coral:#ED5B3F;
+  --bg:#FAF8F5;--card:#FFFFFF;--line:#E7E0D8;--muted:#8C8378;--soft:#F3EEE8}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Pretendard','Apple SD Gothic Neo','Malgun Gothic',-apple-system,system-ui,sans-serif;
+  background:var(--bg);color:var(--charcoal);-webkit-font-smoothing:antialiased;line-height:1.5}
+.wrap{max-width:1100px;margin:0 auto;padding:24px 18px 56px}
+.eyebrow{font-size:11px;letter-spacing:.22em;color:var(--beige);font-weight:700;text-transform:uppercase}
+h1{font-size:25px;font-weight:800;margin:6px 0 4px;letter-spacing:-.01em}
+.sub{color:var(--muted);font-size:13px}
+.status{display:inline-flex;align-items:center;gap:7px;margin-top:12px;font-size:12px;font-weight:600;
+  background:var(--card);border:1px solid var(--line);border-radius:999px;padding:5px 12px;flex-wrap:wrap}
+.dot-live{width:8px;height:8px;border-radius:50%;background:#2E8B57;box-shadow:0 0 0 3px rgba(46,139,87,.15)}
+.dot-live.err{background:var(--coral);box-shadow:0 0 0 3px rgba(237,91,63,.15)}
+.status .t{color:var(--muted);font-weight:500}
+header{border-bottom:1px solid var(--line);padding-bottom:20px;margin-bottom:20px}
+.tabs{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:22px}
+.tab{font:inherit;font-size:13px;font-weight:600;color:var(--charcoal);background:var(--card);
+  border:1px solid var(--line);border-radius:999px;padding:7px 15px;cursor:pointer}
+.tab.active{background:var(--charcoal);color:#fff;border-color:var(--charcoal)}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:13px;margin-bottom:22px}
+.kpi{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:17px 15px;position:relative;overflow:hidden}
+.kpi::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--beige)}
+.kpi.accent::before{background:var(--coral)}
+.kpi .label{font-size:12px;color:var(--muted);font-weight:600}
+.kpi .val{font-size:27px;font-weight:800;margin-top:6px;letter-spacing:-.02em}
+.kpi .val.sm{font-size:19px}
+.kpi .note{font-size:12px;color:var(--muted);margin-top:3px}
+.kpi .note.down{color:var(--coral)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px}
+.panel h2{font-size:15px;font-weight:700}
+.panel .tag{font-size:11px;color:var(--muted);margin-top:2px;display:block}
+.chartbox{position:relative;height:220px;margin-top:12px}
+.chartbox.sm{height:200px}
+table{width:100%;border-collapse:collapse;margin-top:12px;font-size:13px}
+th,td{text-align:right;padding:9px 7px;border-bottom:1px solid var(--soft)}
+th:first-child,td:first-child{text-align:left}
+thead th{font-size:11px;color:var(--muted);font-weight:600;border-bottom:1px solid var(--line)}
+tbody tr:last-child td{border-bottom:none}
+.legend{display:flex;flex-direction:column;gap:8px;margin-top:8px;font-size:13px}
+.legend .row{display:flex;align-items:center;justify-content:space-between}
+.legend .lab{display:flex;align-items:center;gap:8px}
+.legend .d{width:10px;height:10px;border-radius:3px}
+.legend .num{font-weight:700}
+.dot-cell{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:7px;vertical-align:middle}
+footer{margin-top:26px;border-top:1px solid var(--line);padding-top:16px;font-size:12px;color:var(--muted)}
+footer b{color:var(--charcoal)}
+.hidden{display:none!important}
+.skel{color:var(--muted);font-size:14px;padding:40px 0;text-align:center}
+#retry{display:none;font:inherit;font-size:11px;font-weight:600;margin-left:6px;padding:3px 10px;border:1px solid var(--line);background:var(--soft);border-radius:999px;cursor:pointer}
+@media(max-width:780px){.kpis{grid-template-columns:repeat(2,1fr)}.grid2{grid-template-columns:1fr}h1{font-size:21px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="eyebrow">WELLPERION · MEMBERSHIP OPERATIONS</div>
+    <h1>재등록 대시보드</h1>
+    <div class="sub">2026년 · 만기 회원 재등록 현황 · 시트 실시간(집계 지표)</div>
+    <div class="status"><span class="dot-live" id="dot"></span><span id="statusTxt">연결 중…</span><span class="t" id="updTxt"></span>
+      <button id="retry">다시 시도</button></div>
+  </header>
+  <div id="loading" class="skel">데이터를 불러오는 중입니다…</div>
+  <div id="app" class="hidden">
+    <div class="tabs" id="tabs"></div>
+    <div id="view-all">
+      <section class="kpis" id="allKpi"></section>
+      <section class="grid2">
+        <div class="panel"><h2>재등록률 추세</h2><span class="tag">월별 · 최신월 진행중</span><div class="chartbox"><canvas id="rateChart"></canvas></div></div>
+        <div class="panel"><h2>월별 확정매출</h2><span class="tag">단위: 원</span><div class="chartbox"><canvas id="revChart"></canvas></div></div>
+      </section>
+      <section class="panel"><h2>월별 재등록 현황</h2><span class="tag">멤버십 회원 · 완료 / 컨택완 / 가망 / 무응답 / 로스</span><div class="chartbox"><canvas id="statusBar"></canvas></div></section>
+      <section class="panel" id="lowPanelAll" style="display:none"><h2>90일 미만 저활동 관리</h2><span class="tag">정상가 결제 + 2개월 서비스 규정 대상 · 집중 관리</span>
+        <table><thead><tr><th>월</th><th>90일미만 대상</th><th>재등록</th><th>재등록률</th><th>전체 대비</th></tr></thead><tbody id="lowBodyAll"></tbody></table></section>
+      <section class="grid2">
+        <div class="panel"><h2>이탈 사유 Top</h2><span class="tag">로스 사유 누적</span><table><thead><tr><th>사유</th><th>건수</th><th style="width:46%">비중</th></tr></thead><tbody id="reasonBodyAll"></tbody></table></div>
+        <div class="panel"><h2>이용일수 구간별 재등록률</h2><span class="tag">저활동 위험 신호 · 누적</span><div class="chartbox sm"><canvas id="usageChart"></canvas></div></div>
+      </section>
+    </div>
+    <div id="view-month" class="hidden">
+      <section class="kpis" id="mKpi"></section>
+      <section class="grid2">
+        <div class="panel"><h2>재등록 현황</h2><span class="tag" id="mTag"></span><div class="chartbox sm"><canvas id="statusChart"></canvas></div><div class="legend" id="mLegend"></div></div>
+        <div class="panel"><h2>현황 요약</h2><span class="tag">멤버십 회원 기준</span><table><thead><tr><th>구분</th><th>인원</th><th>비중</th></tr></thead><tbody id="mBody"></tbody></table></div>
+      </section>
+      <section class="panel" id="lowPanelM" style="display:none"><h2>90일 미만 저활동 관리</h2><span class="tag" id="lowTagM"></span><div id="lowCardM"></div></section>
+      <section class="panel" id="reasonPanelM" style="display:none"><h2>이탈 사유</h2><span class="tag" id="reasonTagM"></span><table><thead><tr><th>사유</th><th>건수</th><th style="width:46%">비중</th></tr></thead><tbody id="reasonBodyM"></tbody></table></section>
+    </div>
+  </div>
+  <footer>호스팅 <b>GitHub Pages</b> · 데이터 <b>Google 시트(Apps Script)</b> · 집계 지표만 표시(개인정보 미포함) · <span id="foot"></span></footer>
+</div>
+
+<script>
+/* ===== 배포 후 이 값만 본인 Apps Script 웹앱 URL(.../exec)로 바꾸세요 ===== */
+const APPS_URL = '여기에_APPS_SCRIPT_웹앱_URL_붙여넣기';
+const SNAPSHOT = {"updated": "2026-06-08T10:03:46.391296", "months": [{"num": 2, "key": "2월", "target": 79, "done": 58, "rate": 73.42, "revenue": 174830000, "pipeline": 0, "status": {"완료": 58, "컨택완": 0, "가망": 0, "고민중": 0, "무응답": 0, "로스": 21}, "reasons": {"거주지변경": 8, "바쁜일정": 2, "금액·프로모션": 1, "무응답(기타)": 3, "낮은이용횟수": 3, "재등록혜택": 1}, "usage": [{"t": 4, "d": 0}, {"t": 4, "d": 3}, {"t": 21, "d": 17}, {"t": 25, "d": 21}], "low": {"target": 8, "done": 3, "rate": 37.5}}, {"num": 3, "key": "3월", "target": 94, "done": 66, "rate": 70.21, "revenue": 208167810, "pipeline": 0, "status": {"완료": 66, "컨택완": 0, "가망": 0, "고민중": 0, "무응답": 0, "로스": 28}, "reasons": {"무응답(기타)": 6, "거주지변경": 9, "낮은이용횟수": 6, "금액·프로모션": 3, "수신거절": 1, "바쁜일정": 2, "양도/강습전환": 2}, "usage": [{"t": 14, "d": 4}, {"t": 15, "d": 8}, {"t": 25, "d": 18}, {"t": 26, "d": 26}], "low": {"target": 26, "done": 10, "rate": 38.5}}, {"num": 4, "key": "4월", "target": 74, "done": 55, "rate": 74.32, "revenue": 180630000, "pipeline": 0, "status": {"완료": 55, "컨택완": 0, "가망": 0, "고민중": 0, "무응답": 0, "로스": 19}, "reasons": {"거주지변경": 2, "낮은이용횟수": 3, "재등록혜택": 2, "무응답(기타)": 4, "주차불만": 2, "바쁜일정": 3}, "usage": [{"t": 10, "d": 3}, {"t": 10, "d": 7}, {"t": 24, "d": 18}, {"t": 21, "d": 20}], "low": {"target": 18, "done": 8, "rate": 44.4}}, {"num": 5, "key": "5월", "target": 62, "done": 41, "rate": 66.13, "revenue": 122700000, "pipeline": 0, "status": {"완료": 41, "컨택완": 0, "가망": 0, "고민중": 0, "무응답": 0, "로스": 21}, "reasons": {"낮은이용횟수": 4, "타센터등록": 1, "바쁜일정": 5, "거주지변경": 3, "무응답(기타)": 3, "양도/강습전환": 1, "금액·프로모션": 1}, "usage": [{"t": 8, "d": 3}, {"t": 9, "d": 3}, {"t": 13, "d": 7}, {"t": 23, "d": 20}], "low": {"target": 13, "done": 4, "rate": 30.8}}, {"num": 6, "key": "6월", "target": 74, "done": 17, "rate": 22.97, "revenue": 59040000, "pipeline": 30880000, "status": {"완료": 17, "컨택완": 44, "가망": 9, "고민중": 0, "무응답": 0, "로스": 4}, "reasons": {"무응답(기타)": 2, "바쁜일정": 2}, "usage": [{"t": 11, "d": 2}, {"t": 11, "d": 0}, {"t": 21, "d": 5}, {"t": 28, "d": 9}], "low": {"target": 18, "done": 2, "rate": 11.1}}]};
+
+const CORAL='#ED5B3F',BEIGE='#B79F8A';
+const STC={'완료':'#4F9D7F','컨택완':'#5A86C2','가망':'#E6A93C','고민중':'#B58BBA','무응답':'#9C938A','로스':'#E8593C'};
+const SKEYS=['완료','컨택완','가망','고민중','무응답','로스'];
+const won=v=>'₩'+(v||0).toLocaleString('ko-KR');
+Chart.defaults.font.family="'Pretendard','Apple SD Gothic Neo','Malgun Gothic',sans-serif";
+Chart.defaults.color='#8C8378';Chart.defaults.font.size=12;
+
+let DATA=[],charts={};
+const destroy=k=>{if(charts[k]){charts[k].destroy();delete charts[k];}};
+
+function renderAll(){
+  const maxN=Math.max(...DATA.map(m=>m.num)),latest=DATA[DATA.length-1];
+  const closed=DATA.filter(m=>m.num<maxN);
+  const sd=closed.reduce((s,m)=>s+m.done,0),st=closed.reduce((s,m)=>s+m.target,0),avg=st?sd/st*100:0;
+  const closedRev=closed.reduce((s,m)=>s+m.revenue,0);
+  const totalLoss=DATA.reduce((s,m)=>s+(m.status['로스']||0),0);
+  document.getElementById('allKpi').innerHTML=`
+    <div class="kpi"><div class="label">평균 재등록률 (마감)</div><div class="val">${avg.toFixed(1)}%</div><div class="note">${closed.length}개월 가중 평균</div></div>
+    <div class="kpi"><div class="label">마감 누적 확정매출</div><div class="val sm">${won(closedRev)}</div><div class="note">${closed.map(m=>m.key).join('·')||'—'}</div></div>
+    <div class="kpi accent"><div class="label">${latest.key} 가망 기대매출</div><div class="val sm">${latest.pipeline?won(latest.pipeline):'—'}</div><div class="note">확정 전 · 클로징 대상</div></div>
+    <div class="kpi accent"><div class="label">누적 로스 인원</div><div class="val">${totalLoss}<span style="font-size:17px;color:var(--muted)">명</span></div><div class="note down">${DATA[0].key}~${latest.key}</div></div>`;
+  destroy('rate');charts.rate=new Chart(document.getElementById('rateChart'),{type:'line',
+    data:{labels:DATA.map(m=>m.key),datasets:[{data:DATA.map(m=>m.rate),borderColor:CORAL,backgroundColor:'rgba(237,91,63,.08)',fill:true,borderWidth:2.5,tension:.32,pointBackgroundColor:CORAL,pointRadius:4}]},
+    options:{maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>c.parsed.y+'%'}}},scales:{y:{min:0,max:100,ticks:{callback:v=>v+'%'},grid:{color:'#F3EEE8'}},x:{grid:{display:false}}}}});
+  destroy('rev');charts.rev=new Chart(document.getElementById('revChart'),{type:'bar',
+    data:{labels:DATA.map(m=>m.key),datasets:[{data:DATA.map(m=>m.revenue),backgroundColor:DATA.map(m=>m===latest?CORAL:BEIGE),borderRadius:6,maxBarThickness:46}]},
+    options:{maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>won(c.parsed.y)+'원'}}},scales:{y:{beginAtZero:true,ticks:{callback:v=>won(v)},grid:{color:'#F3EEE8'}},x:{grid:{display:false}}}}});
+  destroy('sbar');const stk=['완료','컨택완','가망','무응답','로스'];
+  charts.sbar=new Chart(document.getElementById('statusBar'),{type:'bar',
+    data:{labels:DATA.map(m=>m.key),datasets:stk.map(k=>({label:k,data:DATA.map(m=>m.status[k]||0),backgroundColor:STC[k],stack:'s',borderRadius:3,maxBarThickness:54}))},
+    options:{maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{boxWidth:12,boxHeight:12,padding:14}},tooltip:{callbacks:{label:c=>c.dataset.label+' '+c.parsed.y+'명'}}},scales:{x:{stacked:true,grid:{display:false}},y:{stacked:true,beginAtZero:true,grid:{color:'#F3EEE8'},ticks:{precision:0}}}}});
+  const lowMs=DATA.filter(m=>m.low),lp=document.getElementById('lowPanelAll');
+  if(lowMs.length){lp.style.display='';
+    document.getElementById('lowBodyAll').innerHTML=lowMs.map(m=>{const r=m.low,diff=r.rate-m.rate;
+      return `<tr><td>${m.key}</td><td>${r.target}명</td><td>${r.done}명</td><td style="font-weight:700;color:${r.rate<m.rate?CORAL:'inherit'}">${r.rate.toFixed(1)}%</td><td style="color:${diff<0?CORAL:'#4F9D7F'}">${diff>=0?'+':''}${diff.toFixed(1)}%p</td></tr>`;}).join('');
+  }else lp.style.display='none';
+  const agg={};DATA.forEach(m=>{const rs=m.reasons||{};Object.keys(rs).forEach(k=>agg[k]=(agg[k]||0)+rs[k]);});
+  const arr=Object.entries(agg).sort((a,b)=>b[1]-a[1]),rmax=Math.max(...arr.map(x=>x[1]),1);
+  document.getElementById('reasonBodyAll').innerHTML=arr.length?arr.map((r,i)=>`<tr><td>${r[0]}</td><td>${r[1]}</td><td><div style="height:7px;background:var(--soft);border-radius:6px;overflow:hidden"><span style="display:block;height:100%;width:${r[1]/rmax*100}%;background:${i===0?CORAL:BEIGE};border-radius:6px"></span></div></td></tr>`).join(''):`<tr><td colspan="3" style="text-align:center;color:var(--muted);padding:18px 0">사유 데이터 없음</td></tr>`;
+  const ub=[{t:0,d:0},{t:0,d:0},{t:0,d:0},{t:0,d:0}];
+  DATA.forEach(m=>(m.usage||[]).forEach((u,i)=>{if(ub[i]){ub[i].t+=u.t;ub[i].d+=u.d;}}));
+  const urate=ub.map(u=>u.t?+(u.d/u.t*100).toFixed(1):0);
+  destroy('usage');charts.usage=new Chart(document.getElementById('usageChart'),{type:'bar',
+    data:{labels:['0–50일','51–100일','101–200일','201일+'],datasets:[{data:urate,backgroundColor:urate.map(v=>v<50?CORAL:BEIGE),borderRadius:6,maxBarThickness:60}]},
+    options:{maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>{const u=ub[c.dataIndex];return c.parsed.y+'% ('+u.d+'/'+u.t+'명)';}}}},scales:{y:{min:0,max:100,ticks:{callback:v=>v+'%'},grid:{color:'#F3EEE8'}},x:{grid:{display:false}}}}});
+}
+function renderMonth(m){
+  document.getElementById('mKpi').innerHTML=`
+    <div class="kpi"><div class="label">재등록률</div><div class="val">${m.rate}%</div><div class="note">${m.key}</div></div>
+    <div class="kpi"><div class="label">확정매출</div><div class="val sm">${won(m.revenue)}</div><div class="note">${m.key} 누적</div></div>
+    <div class="kpi"><div class="label">완료 / 대상</div><div class="val">${m.done}<span style="font-size:17px;color:var(--muted)"> / ${m.target}</span></div><div class="note">멤버십+단기</div></div>
+    <div class="kpi accent"><div class="label">가망 기대매출</div><div class="val sm">${m.pipeline?won(m.pipeline):'—'}</div><div class="note">${m.pipeline?'확정 전':'해당 없음'}</div></div>`;
+  document.getElementById('mTag').textContent=m.key+' 멤버십 회원 기준';
+  const labs=SKEYS.filter(k=>(m.status[k]||0)>0),vals=labs.map(l=>m.status[l]);
+  document.getElementById('mLegend').innerHTML=labs.map(l=>`<div class="row"><span class="lab"><span class="d" style="background:${STC[l]}"></span>${l}</span><span class="num">${m.status[l]}명</span></div>`).join('');
+  destroy('status');charts.status=new Chart(document.getElementById('statusChart'),{type:'doughnut',
+    data:{labels:labs,datasets:[{data:vals,backgroundColor:labs.map(l=>STC[l]),borderWidth:2,borderColor:'#fff'}]},
+    options:{maintainAspectRatio:false,cutout:'62%',plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>c.label+' '+c.parsed+'명'}}}}});
+  const tot=SKEYS.reduce((s,k)=>s+(m.status[k]||0),0)||1;
+  document.getElementById('mBody').innerHTML=SKEYS.map(k=>`<tr><td><span class="dot-cell" style="background:${STC[k]}"></span>${k}</td><td>${m.status[k]||0}명</td><td>${((m.status[k]||0)/tot*100).toFixed(0)}%</td></tr>`).join('')+`<tr><td><b>대상</b></td><td><b>${tot}명</b></td><td>100%</td></tr>`;
+  const lpm=document.getElementById('lowPanelM');
+  if(m.low){lpm.style.display='';const r=m.low,diff=r.rate-m.rate;
+    document.getElementById('lowTagM').textContent=m.key+' · 정상가 결제 + 2개월 서비스 규정 대상';
+    document.getElementById('lowCardM').innerHTML=
+      `<div style="display:flex;gap:26px;flex-wrap:wrap;margin-top:12px;align-items:baseline">`+
+      `<div><div style="font-size:12px;color:var(--muted)">90일 미만 대상</div><div style="font-size:24px;font-weight:800">${r.target}명</div></div>`+
+      `<div><div style="font-size:12px;color:var(--muted)">재등록 완료</div><div style="font-size:24px;font-weight:800">${r.done}명</div></div>`+
+      `<div><div style="font-size:12px;color:var(--muted)">재등록률</div><div style="font-size:24px;font-weight:800;color:${r.rate<m.rate?CORAL:'inherit'}">${r.rate.toFixed(1)}%</div></div>`+
+      `<div style="flex:1;min-width:200px;font-size:12px;color:var(--muted)">전체 ${m.rate}% 대비 <b style="color:${diff<0?CORAL:'#4F9D7F'}">${diff>=0?'+':''}${diff.toFixed(1)}%p</b> · 저활동층은 만기 전 사전 컨택·혜택 안내로 집중 관리</div></div>`;
+  }else lpm.style.display='none';
+  const rp=document.getElementById('reasonPanelM'),rls=Object.entries(m.reasons||{}).sort((a,b)=>b[1]-a[1]);
+  if(rls.length){rp.style.display='';document.getElementById('reasonTagM').textContent=m.key+' 로스 사유';
+    const mx=Math.max(...rls.map(x=>x[1]),1);
+    document.getElementById('reasonBodyM').innerHTML=rls.map((r,i)=>`<tr><td>${r[0]}</td><td>${r[1]}</td><td><div style="height:7px;background:var(--soft);border-radius:6px;overflow:hidden"><span style="display:block;height:100%;width:${r[1]/mx*100}%;background:${i===0?CORAL:BEIGE};border-radius:6px"></span></div></td></tr>`).join('');
+  }else rp.style.display='none';
+}
+function buildTabs(){const el=document.getElementById('tabs');el.innerHTML='';
+  ['전체',...DATA.map(m=>m.key)].forEach((k,i)=>{const b=document.createElement('button');b.className='tab'+(i===0?' active':'');b.textContent=k;b.onclick=()=>select(k);el.appendChild(b);});}
+function select(key){document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.textContent===key));
+  const all=key==='전체';document.getElementById('view-all').classList.toggle('hidden',!all);document.getElementById('view-month').classList.toggle('hidden',all);
+  if(all)renderAll();else renderMonth(DATA.find(m=>m.key===key));}
+function paint(){buildTabs();document.getElementById('loading').classList.add('hidden');document.getElementById('app').classList.remove('hidden');
+  const a=document.querySelector('.tab.active');select(a?a.textContent:'전체');}
+
+const dot=document.getElementById('dot'),stx=document.getElementById('statusTxt');
+function ok(updated){dot.classList.remove('err');stx.textContent='라이브 · 시트 연동';
+  const t=updated?new Date(updated).toLocaleString('ko-KR',{hour12:false}):new Date().toLocaleString('ko-KR',{hour12:false});
+  document.getElementById('updTxt').textContent='· 업데이트 '+t;document.getElementById('foot').textContent='데이터 기준 '+t;document.getElementById('retry').style.display='none';}
+function fail(msg){dot.classList.add('err');stx.textContent='불러오기 실패: '+msg;document.getElementById('retry').style.display='';
+  if(!DATA.length)document.getElementById('loading').textContent='시트를 불러오지 못했습니다 — '+msg;}
+window.__wp=function(p){try{DATA=(p&&p.months)||[];if(!DATA.length){fail('데이터 없음');return;}
+  localStorage.setItem('wp_web',JSON.stringify(p));paint();ok(p&&p.updated);}catch(e){fail(e.message||e);}};
+function load(){
+  let shown=false;
+  try{const c=localStorage.getItem('wp_web');if(c){const p=JSON.parse(c);if(p.months&&p.months.length){DATA=p.months;paint();shown=true;}}}catch(e){}
+  if(!shown&&typeof SNAPSHOT!=='undefined'&&SNAPSHOT.months&&SNAPSHOT.months.length){DATA=SNAPSHOT.months;paint();shown=true;
+    dot.classList.remove('err');stx.textContent='미리보기 · 현재 데이터 스냅샷';
+    if(SNAPSHOT.updated)document.getElementById('updTxt').textContent='· '+new Date(SNAPSHOT.updated).toLocaleString('ko-KR',{hour12:false});}
+  if(!APPS_URL||APPS_URL.indexOf('http')!==0){if(shown){stx.textContent='미리보기(스냅샷) · Apps Script 연결 시 실시간';}else fail('APPS_URL 미설정 — 상단에 /exec URL을 넣어주세요');return;}
+  const s=document.createElement('script');let fin=false;
+  const to=setTimeout(()=>{if(!fin){fin=true;s.remove();fail('응답 시간 초과');}},12000);
+  s.onerror=()=>{if(!fin){fin=true;clearTimeout(to);s.remove();fail('네트워크/URL 오류');}};
+  s.onload=()=>{fin=true;clearTimeout(to);s.remove();};
+  s.src=APPS_URL+(APPS_URL.indexOf('?')<0?'?':'&')+'callback=__wp&_='+Date.now();
+  document.body.appendChild(s);
+}
+document.getElementById('retry').onclick=load;
+load();
+</script>
+</body>
+</html>
