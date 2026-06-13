@@ -303,89 +303,98 @@ def _parse_post_section(slot: str, body: str) -> PostSpec:
     return spec
 
 
-def collect_post_images(content_folder: Path, slot: str) -> list[Path]:
-    """output/ 디렉터리에서 슬롯에 해당하는 파일 목록을 반환.
-
-    우선순위:
-    1) post_{slot}_N 형식 (기존 표준) — .jpg/.jpeg/.png/.mp4 지원.
-       영상(mp4)은 항상 마지막 슬롯으로 정렬.
-    2) post_{slot}_N 매칭 없으면 ig_NN 형식 fallback (바레 등 단일 슬롯 폴더).
-       ig_NN.jpg/png/mp4 파일을 숫자 순으로 수집하고 mp4는 가장 뒤로 이동.
-    3) (FIX1) ig_NN 도 없으면 슬롯 글자 없는 평이름 post_N 형식 fallback.
-       build_slides.py 가 재빌드하며 post_A_* 를 지우고 post_N.jpg 만 남겨도
-       단일 슬롯(post A) 콘텐츠가 발행 가능하게. mp4 는 항상 뒤로.
-       (post_{slot}_N 과 평이름 post_N 의 정규식 충돌 없음 — 1차는 슬롯 글자 필수,
-        3차는 'post_' 뒤 숫자 시작만 매칭.)
-    """
-    output_dir = content_folder / "output"
-    if not output_dir.exists():
-        return []
-
-    IMAGE_EXTS = {".jpg", ".jpeg", ".png"}
-    VIDEO_EXTS = {".mp4"}
-    ALLOWED_EXTS = IMAGE_EXTS | VIDEO_EXTS
-
-    # --- 1) post_{slot}_N 형식 ---
-    pattern = re.compile(rf"^post_{re.escape(slot)}_(\d+)", re.IGNORECASE)
-    images: list[tuple[int, Path]] = []
-    videos: list[tuple[int, Path]] = []
-    for p in output_dir.iterdir():
-        if not p.is_file() or p.suffix.lower() not in ALLOWED_EXTS:
-            continue
-        m = pattern.match(p.name)
-        if m:
-            idx = int(m.group(1))
-            if p.suffix.lower() in VIDEO_EXTS:
-                videos.append((idx, p))
-            else:
-                images.append((idx, p))
-    if images or videos:
-        images.sort(key=lambda t: t[0])
-        videos.sort(key=lambda t: t[0])
-        # 영상은 항상 마지막 슬롯
-        return [p for _, p in images] + [p for _, p in videos]
-
-    # --- 2) ig_NN 형식 fallback (post_{slot}_N 미발견 시) ---
+def _scan_ig_pattern(search_dir: Path, allowed_exts: set, video_exts: set) -> list[Path]:
+    """ig_NN 패턴 파일을 search_dir 에서 수집. 없으면 []."""
     ig_pattern = re.compile(r"^ig_?(\d+)", re.IGNORECASE)
     ig_images: list[tuple[int, Path]] = []
     ig_videos: list[tuple[int, Path]] = []
-    for p in output_dir.iterdir():
-        if not p.is_file() or p.suffix.lower() not in ALLOWED_EXTS:
+    for p in search_dir.iterdir():
+        if not p.is_file() or p.suffix.lower() not in allowed_exts:
             continue
         m = ig_pattern.match(p.name)
         if m:
             idx = int(m.group(1))
-            if p.suffix.lower() in VIDEO_EXTS:
-                ig_videos.append((idx, p))
-            else:
-                ig_images.append((idx, p))
+            (ig_videos if p.suffix.lower() in video_exts else ig_images).append((idx, p))
     if ig_images or ig_videos:
         ig_images.sort(key=lambda t: t[0])
         ig_videos.sort(key=lambda t: t[0])
-        # 영상은 항상 마지막 슬롯
         return [p for _, p in ig_images] + [p for _, p in ig_videos]
+    return []
 
-    # --- 3) (FIX1) 평이름 post_N 형식 fallback (슬롯 글자 없음) ---
-    # build_slides 재빌드가 post_A_* 를 지우고 post_1.jpg..post_N.jpg 만 남긴 경우.
-    # 'post_' 직후가 숫자인 것만 매칭 → post_A_1 등 슬롯형은 1차에서 이미 처리되어 충돌 없음.
+
+def _scan_plain_pattern(search_dir: Path, allowed_exts: set, video_exts: set) -> list[Path]:
+    """post_N 패턴(슬롯 글자 없음) 파일을 search_dir 에서 수집. 없으면 []."""
     plain_pattern = re.compile(r"^post_(\d+)", re.IGNORECASE)
     plain_images: list[tuple[int, Path]] = []
     plain_videos: list[tuple[int, Path]] = []
-    for p in output_dir.iterdir():
-        if not p.is_file() or p.suffix.lower() not in ALLOWED_EXTS:
+    for p in search_dir.iterdir():
+        if not p.is_file() or p.suffix.lower() not in allowed_exts:
             continue
         m = plain_pattern.match(p.name)
         if m:
             idx = int(m.group(1))
-            if p.suffix.lower() in VIDEO_EXTS:
-                plain_videos.append((idx, p))
-            else:
-                plain_images.append((idx, p))
+            (plain_videos if p.suffix.lower() in video_exts else plain_images).append((idx, p))
     if plain_images or plain_videos:
         plain_images.sort(key=lambda t: t[0])
         plain_videos.sort(key=lambda t: t[0])
-        # 영상은 항상 마지막 슬롯
         return [p for _, p in plain_images] + [p for _, p in plain_videos]
+    return []
+
+
+def collect_post_images(content_folder: Path, slot: str) -> list[Path]:
+    """슬롯에 해당하는 파일 목록을 반환.
+
+    우선순위:
+    1) output/ 존재 시 — post_{slot}_N 형식 (기존 표준, namuk 경로).
+    2) output/ 존재 시 — ig_NN 형식 fallback (바레 등 output 하위 ig_NN).
+    3) output/ 존재 시 — 평이름 post_N 형식 fallback (슬롯 글자 없음).
+    4) (FIX2) output/ 없을 때 — 폴더 루트에서 ig_NN 탐색 (생크몽드 등 4채널형).
+    5) (FIX2) output/ 없을 때 — 폴더 루트에서 post_N 탐색.
+    영상(mp4)은 항상 마지막.
+    """
+    IMAGE_EXTS = {".jpg", ".jpeg", ".png"}
+    VIDEO_EXTS = {".mp4"}
+    ALLOWED_EXTS = IMAGE_EXTS | VIDEO_EXTS
+
+    output_dir = content_folder / "output"
+    if output_dir.exists():
+        # --- 1) post_{slot}_N 형식 (output/) ---
+        pattern = re.compile(rf"^post_{re.escape(slot)}_(\d+)", re.IGNORECASE)
+        images: list[tuple[int, Path]] = []
+        videos: list[tuple[int, Path]] = []
+        for p in output_dir.iterdir():
+            if not p.is_file() or p.suffix.lower() not in ALLOWED_EXTS:
+                continue
+            m = pattern.match(p.name)
+            if m:
+                idx = int(m.group(1))
+                (videos if p.suffix.lower() in VIDEO_EXTS else images).append((idx, p))
+        if images or videos:
+            images.sort(key=lambda t: t[0])
+            videos.sort(key=lambda t: t[0])
+            return [p for _, p in images] + [p for _, p in videos]
+
+        # --- 2) ig_NN 형식 fallback (output/) ---
+        result = _scan_ig_pattern(output_dir, ALLOWED_EXTS, VIDEO_EXTS)
+        if result:
+            return result
+
+        # --- 3) (FIX1) 평이름 post_N 형식 fallback (output/) ---
+        result = _scan_plain_pattern(output_dir, ALLOWED_EXTS, VIDEO_EXTS)
+        if result:
+            return result
+
+    # --- 4) (FIX2) output/ 없음 — 폴더 루트 ig_NN 탐색 (생크몽드 등 4채널형) ---
+    result = _scan_ig_pattern(content_folder, ALLOWED_EXTS, VIDEO_EXTS)
+    if result:
+        print(f"[INFO] 이미지 탐색: output/ 없음 → 폴더 루트 ig_NN 형식 사용 ({content_folder.name})")
+        return result
+
+    # --- 5) (FIX2) 폴더 루트 post_N 탐색 ---
+    result = _scan_plain_pattern(content_folder, ALLOWED_EXTS, VIDEO_EXTS)
+    if result:
+        print(f"[INFO] 이미지 탐색: output/ 없음 → 폴더 루트 post_N 형식 사용 ({content_folder.name})")
+        return result
 
     return []
 
