@@ -446,6 +446,9 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
    #policy-flow는 .board-scroll 그대로라 좁은 폭에선 가로 스크롤·스냅, 컬럼 침범 없음. */
 /* 고정 컬럼(근무휴게)도 JS 컬럼과 동일 폭. 모바일(≤560px)은 위 .board-col 86vw 규칙이 처리하므로 561px↑에서만 고정. */
 @media(min-width:561px){ #policy-flow > .board-col{flex:0 0 410px;min-width:410px;max-width:410px;} }
+/* 매뉴얼 칸반 좌우폭 최대화(GM 2026-06-13): 켠 요일 컬럼이 가용 폭을 꽉 채우도록 flex-grow.
+   min-width 410px 유지 → 컬럼 많으면(7요일) 가로 스크롤 그대로. 모바일(≤560px)은 86vw 규칙 유지. */
+@media(min-width:561px){ #manual-board.board-scroll > .board-col{flex:1 1 410px;min-width:410px;max-width:none;} }
 </style>
 </head>
 <body>
