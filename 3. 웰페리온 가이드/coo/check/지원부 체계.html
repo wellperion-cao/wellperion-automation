@@ -2707,7 +2707,9 @@ function _onCkAfter(d,gender){
     total++; if(isChecked(it.id,curRound))done++;
   })));
   if(curRound==='close1'&&DAY_FOCUS[dow])DAY_FOCUS[dow].forEach(it=>{ if(shouldShowItemForGender(it,gender)){total++; if(isChecked(it.id,curRound))done++;} });
-  if(total>0&&done===total&&!isRoundSubmitted(d,gender,curRound)){
+  /* 2026-06-13 인시던트: 라운드 100% 자동제출 confirm 오발화(항목 적은 라운드가 즉시 100% 도달 →
+     거짓제출·연쇄리셋). 자동제출 폐기 — 제출은 명시 '조 제출' 버튼으로만(체크 자동저장은 유지). */
+  if(false && total>0&&done===total&&!isRoundSubmitted(d,gender,curRound)){
     const sub=getSubmitterForGender(gender);
     if(!sub){alert('점검자 이름을 먼저 입력하세요.');return}
     if(confirm(`${rdef.name} ${rdef.time} 항목을 모두 완료했습니다.\n${sub}님 이름으로 제출할까요?`)){
