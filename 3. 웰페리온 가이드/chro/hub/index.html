@@ -1070,8 +1070,8 @@ function openPrintView(pageId){
       '<table>'+
         '<tr><th>성명</th><td>'+esc(a["지원자명"]||"")+'</td><th>지원 포지션</th><td>'+esc(a["지원 포지션"]||"")+'</td></tr>'+
         '<tr><th>연락처</th><td>'+esc(a["연락처"]||"")+'</td><th>이메일</th><td>'+esc(a["이메일"]||"")+'</td></tr>'+
-        '<tr><th>지원일</th><td>'+fmtD(dt(a,"지원일"))+'</td><th>전형 단계</th><td>'+esc(a["전형 단계"]||"")+'</td></tr>'+
-        (dt(a,"면접 일정")?'<tr><th>면접 일정</th><td>'+fmtD(dt(a,"면접 일정"))+'</td><th>담당 면접관</th><td>'+esc(a["담당 면접관"]||"")+'</td></tr>':"")+
+        '<tr><th>지원일</th><td>'+fmtD(dval(a,"지원일"))+'</td><th>전형 단계</th><td>'+esc(a["전형 단계"]||"")+'</td></tr>'+
+        (dval(a,"면접 일정")?'<tr><th>면접 일정</th><td>'+fmtD(dval(a,"면접 일정"))+'</td><th>담당 면접관</th><td>'+esc(a["담당 면접관"]||"")+'</td></tr>':"")+
       '</table>'+
       '<h2>2. 이력 요약 (잡코리아·자기소개서 기반)</h2>'+
       (memo?'<div class="memo">'+esc(memo)+'</div>':'<div class="memo" style="color:#9a978e">(이력 요약 없음)</div>')+
@@ -2007,4 +2007,150 @@ details.jobs-fold > summary > .jf-arrow{display:inline-block;transition:transfor
       '<select id="__af_grade" style="'+inpStyle+'"><option value="">평점 전체</option>' +
         gradesUniq.map(function(g){return '<option>'+escH(g)+'</option>';}).join("") + '</select>' +
       '<select id="__af_pos" style="'+inpStyle+';max-width:200px"><option value="">포지션 전체</option>' +
-        posUniq.map(function(p){return '<option>'+escH(p)+'</option>';}).join("") 
+        posUniq.map(function(p){return '<option>'+escH(p)+'</option>';}).join("") + '</select>' +
+      '<span id="__af_count" style="font-size:11.5px;color:var(--ink-soft,#6c6961);background:var(--surface-2,#faf9f6);border:1px solid var(--line,#e7e4dc);border-radius:20px;padding:4px 11px;font-weight:600"></span>' +
+      '<button type="button" id="__af_clear" style="font-family:inherit;font-size:11.5px;font-weight:650;cursor:pointer;border-radius:8px;padding:6px 12px;border:1px solid var(--line,#e7e4dc);background:var(--surface,#fff);color:var(--ink-soft,#6c6961)">필터 초기화</button>';
+    container.appendChild(filters);
+
+    var list = document.createElement("div");
+    list.style.cssText = "border:1px solid var(--line,#e7e4dc);border-radius:12px;background:var(--surface,#fff);overflow:hidden";
+    container.appendChild(list);
+
+    function renderRows(){
+      var q = (document.getElementById("__af_q").value||"").toLowerCase().trim();
+      var sf = document.getElementById("__af_stage").value;
+      var gf = document.getElementById("__af_grade").value;
+      var pf = document.getElementById("__af_pos").value;
+      var filtered = allRows.filter(function(r){
+        if(sf && r.stage !== sf) return false;
+        if(gf && r.grade !== gf) return false;
+        if(pf && r.pos !== pf) return false;
+        if(q){
+          var hay = ((r.name||"") + " " + (r.pos||"")).toLowerCase();
+          if(hay.indexOf(q) < 0) return false;
+        }
+        return true;
+      });
+      var html = '<div style="display:grid;grid-template-columns:1.5fr 3fr 60px 1fr 1fr 130px;gap:12px;padding:11px 14px;background:var(--surface-2,#faf9f6);border-bottom:1px solid var(--line,#e7e4dc);font-size:11px;font-weight:700;color:var(--ink-soft,#6c6961);text-transform:uppercase;letter-spacing:.03em">' +
+        '<div>지원자</div><div>지원 포지션</div><div>평점</div><div>지원일</div><div>면접 일정</div><div style="text-align:right">상태</div></div>';
+      if(filtered.length === 0){
+        html += '<div style="padding:40px 20px;text-align:center;color:var(--ink-faint,#9a978e);font-size:12.5px">조건에 맞는 지원자가 없습니다.</div>';
+      } else {
+        filtered.forEach(function(rr, idx){
+          var bb = idx === filtered.length - 1 ? "" : "border-bottom:1px solid var(--line-soft,#efece4);";
+          html += '<div class="appl-row" data-applname="'+escH(rr.name)+'" data-apppid="'+escH(rr.pid)+'" style="display:grid;grid-template-columns:1.5fr 3fr 60px 1fr 1fr 130px;gap:12px;padding:12px 14px;'+bb+'cursor:pointer;font-size:12.5px;align-items:center">' +
+            '<div style="font-weight:650">'+escH(rr.name||"-")+'</div>' +
+            '<div style="color:var(--ink-soft,#6c6961)">'+escH(rr.pos||"-")+'</div>' +
+            '<div>'+escH(rr.grade||"-")+'</div>' +
+            '<div>'+escH(fmtDate(rr.applyDate))+'</div>' +
+            '<div>'+escH(fmtDate(rr.iveDate))+'</div>' +
+            '<div style="text-align:right"><span style="display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;'+badgeStyle(rr.stage)+'">'+escH(rr.stage||"-")+'</span></div>' +
+          '</div>';
+        });
+      }
+      list.innerHTML = html;
+      document.getElementById("__af_count").textContent = filtered.length + " / " + allRows.length + " 명";
+    }
+
+    var firstGrp = groups[0];
+    var grpParent = firstGrp.parentElement;
+    grpParent.insertBefore(container, firstGrp);
+    groups.forEach(function(g){g.style.display = "none";});
+
+    document.getElementById("__af_q").addEventListener("input", renderRows);
+    document.getElementById("__af_stage").addEventListener("change", renderRows);
+    document.getElementById("__af_grade").addEventListener("change", renderRows);
+    document.getElementById("__af_pos").addEventListener("change", renderRows);
+    document.getElementById("__af_clear").addEventListener("click", function(){
+      document.getElementById("__af_q").value = "";
+      document.getElementById("__af_stage").value = "";
+      document.getElementById("__af_grade").value = "";
+      document.getElementById("__af_pos").value = "";
+      renderRows();
+    });
+
+    list.addEventListener("click", function(e){
+      var row = e.target.closest("[data-applname]");
+      if(row && typeof window.openApplicantInfo === "function"){
+        window.openApplicantInfo(row.getAttribute("data-applname"), row.getAttribute("data-apppid"));
+      }
+    });
+
+    renderRows();
+    return true;
+  }
+  function arrangeJobs(){
+    var titles = Array.from(document.querySelectorAll(".sec-title"));
+    if(titles.length<2) return false;
+    var jobsT = null, applT = null;
+    titles.forEach(function(t){
+      var s = (t.textContent||"").trim();
+      if(s === "채용 공고") jobsT = t;
+      else if(s.indexOf("지원자 트래킹") === 0) applT = t;
+    });
+    if(!jobsT || !applT) return false;
+    if(jobsT.dataset.arranged === "1") return false;
+    var parent = jobsT.parentElement;
+    if(parent !== applT.parentElement) return false;
+    var children = Array.from(parent.children);
+    var jIdx = children.indexOf(jobsT), aIdx = children.indexOf(applT);
+    if(jIdx<0 || aIdx<0 || jIdx>=aIdx) return false;
+    var jGroup = children.slice(jIdx+1, aIdx);
+    var cnt = 0;
+    jGroup.forEach(function(el){
+      if(!el.querySelectorAll) return;
+      var inner = el.querySelectorAll(".item");
+      cnt += inner.length || (el.classList && el.classList.contains("item") ? 1 : 0);
+    });
+    if(cnt===0) cnt = jGroup.length;
+    var det = document.createElement("details");
+    det.className = "jobs-fold";
+    det.style.cssText = "margin-top:18px;background:var(--surface-2,#faf9f6);border:1px solid var(--line,#e7e4dc);border-radius:12px;padding:0";
+    var sum = document.createElement("summary");
+    sum.style.cssText = "cursor:pointer;padding:12px 16px;color:var(--ink-soft,#6c6961);font-size:13px;font-weight:700;user-select:none;letter-spacing:.03em";
+    sum.innerHTML = '<span class="jf-arrow" style="margin-right:8px">▸</span>채용 공고 <span style="background:var(--surface,#fff);color:var(--ink,#1f1e1b);padding:2px 10px;border-radius:20px;margin-left:6px;font-size:11px;font-weight:600">'+cnt+'건</span>';
+    det.appendChild(sum);
+    var wrap = document.createElement("div");
+    wrap.style.cssText = "padding:6px 14px 14px";
+    jGroup.forEach(function(el){wrap.appendChild(el);});
+    det.appendChild(wrap);
+    jobsT.remove();
+    var newKids = Array.from(parent.children);
+    var nA = newKids.indexOf(applT), ref = null;
+    for(var j=nA+1; j<newKids.length; j++){
+      if(newKids[j].classList && newKids[j].classList.contains("sec-title")){ref = newKids[j]; break;}
+    }
+    if(ref) parent.insertBefore(det, ref);
+    else parent.appendChild(det);
+    applT.dataset.arranged = "1";
+    return true;
+  }
+  var pend = false;
+  function trig(){
+    if(pend) return;
+    pend = true;
+    setTimeout(function(){
+      pend = false;
+      try{arrangeJobs();}catch(e){}
+      try{buildApplList();}catch(e){}
+    }, 80);
+  }
+  var mo = new MutationObserver(function(recs){
+    for(var k=0; k<recs.length; k++){
+      var ns = recs[k].addedNodes;
+      for(var m=0; m<ns.length; m++){
+        var n = ns[m];
+        if(n.nodeType !== 1) continue;
+        if((n.className||"").indexOf("sec-title")>=0 || (n.className||"").indexOf("pipe-col")>=0 || (n.querySelector && (n.querySelector(".sec-title") || n.querySelector(".pipe-col")))){
+          trig(); return;
+        }
+      }
+    }
+  });
+  mo.observe(document.body, {childList:true, subtree:true});
+  if(document.readyState === "loading") document.addEventListener("DOMContentLoaded", trig);
+  else trig();
+})();
+</script>
+</body>
+</html>
