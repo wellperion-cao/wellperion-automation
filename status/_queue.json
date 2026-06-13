@@ -3,7 +3,7 @@
     "task_id": "CTO-2026-06-08-TELEGRAM-ALERT-AUDIT",
     "clevel": "cto",
     "title": "[시토] 텔레그램 알림이 어제(06-07) 합의안과 다른지 점검 — 실제 발신 vs 10슬롯/시간대/배이미지 정본 대조",
-    "status": "DONE",
+    "status": "폐기",
     "depends_on": null,
     "priority": "HIGH",
     "enqueued_at": "2026-06-08",
@@ -11,7 +11,9 @@
     "terminal": true,
     "next": "✅ 해결(2026-06-11 e16c59c): GM '전체 일관성' 결정 → 07시 _build_07_body done_todos에 배이모지 적용 + 배 기준 ship_classify.py 주석 명시(HIGH=🛳️크루즈/NORMAL=⛴️여객선/LOW·다운그레이드=⛵돛단배/fallback=🚢). 종결.",
     "note_progress": "[2026-06-11 시토 감사완료·웰리 검증] 4개 정본 커밋(b1eee9d·20070b2·2e8d1c0·a26002c) git show + 현재 코드 AST 실측 대조. 10슬롯(06/07s/07/09/12/15/18/21/22/23)·시간대·08시제거·12/18/23시 박스표(_build_checklist_block)·15/21시 배이모지 = 전부 정합. 차이 1건: 07시 _build_07_body에 ship_classify 미적용(정본 커밋 2e8d1c0은 _render_card[15시]·_build_21_body만 배이모지 명세 — 07시 빌더는 카드렌더 경로 미경유). ★중요 사실정정: '배 이미지'=실사진 sendPhoto 아님, 배 이모지(🚢/🛳️/⛴️/⛵) 텍스트 prefix임(sendPhoto 코드 미존재). → 07시 적용 여부 = GM 판단 사항.",
-    "note": "[GM 2026-06-08 지시] 어제 정한 텔레그램 알림 설계(10슬롯·07/09/12/18/21/22/23시 재설계·12/18시 체크리스트 박스표·7/15/21시 배 이미지, 커밋 a26002c·b1eee9d·20070b2·2e8d1c0)와 실제 발신되는 알림이 다른 부분을 전수 점검. 차이점 발견 시 목록화하여 웰리에 보고 → GM 판단."
+    "note": "[GM 2026-06-08 지시] 어제 정한 텔레그램 알림 설계(10슬롯·07/09/12/18/21/22/23시 재설계·12/18시 체크리스트 박스표·7/15/21시 배 이미지, 커밋 a26002c·b1eee9d·20070b2·2e8d1c0)와 실제 발신되는 알림이 다른 부분을 전수 점검. 차이점 발견 시 목록화하여 웰리에 보고 → GM 판단.",
+    "disposed_at": "2026-06-13",
+    "note_disposed": "[2026-06-13 GM 지시·시토] 완료 후 G1 입항완료 적체 정리 — 폐기 전환으로 G1 기본뷰에서 내림(검색이력·완료기록 보존, 원상태=DONE)."
   },
   {
     "task_id": "CTO-2026-06-08-QUEUE-SHEET-MIGRATION-RESUME",
@@ -179,14 +181,16 @@
     "task_id": "CTO-2026-06-04-DANGGN-SEMIAUTO",
     "clevel": "cto",
     "title": "당근 비즈프로필 반자동 발행 구현 — danggn_upload_playwright.py draft/publish 에디터 DOM 실측 + 자동입력 완성. 상세 브리프: status/briefs/CTO-2026-06-04-DANGGN-SEMIAUTO.md",
-    "status": "DONE",
+    "status": "폐기",
     "depends_on": null,
     "priority": "NORMAL",
     "brief": "status/briefs/CTO-2026-06-04-DANGGN-SEMIAUTO.md",
     "enqueued_at": "2026-06-04T00:00:00",
     "processed_at": "2026-06-05",
     "terminal": true,
-    "note": "[2026-06-05 GM] 어제 마무리분. GM이 시모와 직접 테스트 예정 → 필요한 부분 나오면 시토 재협업 지시. 그 전까지 할 일에서 제외."
+    "note": "[2026-06-05 GM] 어제 마무리분. GM이 시모와 직접 테스트 예정 → 필요한 부분 나오면 시토 재협업 지시. 그 전까지 할 일에서 제외.",
+    "disposed_at": "2026-06-13",
+    "note_disposed": "[2026-06-13 GM 지시·시토] 완료 후 G1 입항완료 적체 정리 — 폐기 전환으로 G1 기본뷰에서 내림(검색이력·완료기록 보존, 원상태=DONE)."
   },
   {
     "task_id": "COO-2026-06-04-TODO-UPDATE-EMPTY-OVERWRITE",
@@ -252,27 +256,31 @@
     "task_id": "CTO-2026-06-09-MEMORY-INDEX-FILE-RECONCILE",
     "clevel": "cto",
     "title": "[시토] 웰리 메모리 인덱스↔파일 짝 맞추기 — MEMORY.md 108행 vs .md 파일 110개, 미인덱스 2개 정리",
-    "status": "DONE",
+    "status": "폐기",
     "depends_on": null,
     "priority": "LOW",
     "enqueued_at": "2026-06-09",
     "processed_at": "2026-06-11",
     "terminal": true,
     "note_progress": "[2026-06-11 시토 완료·웰리 UTF-8 실측검증] 현재 메모리 폴더 .md 111개 / MEMORY.md 인덱스 포인터 111줄 / 고아 0 / 끊긴링크 0 = 완전 정합. GM 6/9 관측 불일치(108 vs 110)는 그새 정리돼 현재 깨끗 — 고칠 것 없음. ※웰리 1차 CP949 대조가 한글 파일명을 깨뜨려 거짓 고아 2개로 오탐 → UTF-8 재검증으로 정정(0 고아 확정). 박제: 한글 파일 대조는 UTF-8 강제.",
-    "note": "[GM 2026-06-09 지시] 메모리 압축 정리 중 발견. ~/.claude/projects/.../memory 폴더 .md 110개인데 MEMORY.md 인덱스는 108행 → 인덱스에 없는 고아 파일 2개 식별·정리(인덱스 추가 또는 삭제). 한가할 때. 비용 낮은 작업이므로 Sonnet/Haiku."
+    "note": "[GM 2026-06-09 지시] 메모리 압축 정리 중 발견. ~/.claude/projects/.../memory 폴더 .md 110개인데 MEMORY.md 인덱스는 108행 → 인덱스에 없는 고아 파일 2개 식별·정리(인덱스 추가 또는 삭제). 한가할 때. 비용 낮은 작업이므로 Sonnet/Haiku.",
+    "disposed_at": "2026-06-13",
+    "note_disposed": "[2026-06-13 GM 지시·시토] 완료 후 G1 입항완료 적체 정리 — 폐기 전환으로 G1 기본뷰에서 내림(검색이력·완료기록 보존, 원상태=DONE)."
   },
   {
     "task_id": "CTO-2026-06-09-CONTEXT-COMPRESSION-REVIEW",
     "clevel": "cto",
     "title": "[시토] 상시 컨텍스트(매 턴 로드 배경) 정리·압축 검토 — 메모리처럼 CLAUDE.md·자동주입 문서·OMC layer 슬림화 여지",
-    "status": "DONE",
+    "status": "폐기",
     "depends_on": null,
     "priority": "NORMAL",
     "enqueued_at": "2026-06-09",
     "note": "[GM 2026-06-09 지시·기록만] 오늘 비용 출처=매 턴 거대 상시배경 반복처리(토큰 98%가 캐시) 확인. MEMORY.md는 압축 완료. 같은 원리로 매 턴 로드되는 컨텍스트(CLAUDE.md 인덱스·자동주입 문서·OMC layer·도구/스킬 스키마)도 슬림화 여지 검토. 무엇이 매 턴 실리는지 측정→중복·불필요 식별→정본 단일화(S2 포인터 원칙 유지, 원칙 하드카피 금지). 실행 전 GM 확인 — 지금은 기록만. [2026-06-11 GM 범위 확장] 6 C-Level 컨텍스트뿐 아니라 매 턴 가장 무거운 '웰리(CEO) 상시 컨텍스트'(MEMORY.md 인덱스·wellperion-agents/.claude/agents/ai-ceo.md·CEO 부팅 주입)부터 슬림화 대상에 포함. 메모리 net-zero·행동의 코드 이관(박제 원리) 적용해 매 턴 로드량 측정·감축.",
     "processed_at": "2026-06-13",
     "terminal": true,
-    "next": "✅ 오늘 실행: review_queue 압축(691→446행)+아카이브 + 주간정비 범위에 캐시·상시컨텍스트 압축 박제(일회성→정규 루틴 정착). 상시 슬림화는 주간정비로 지속."
+    "next": "✅ 오늘 실행: review_queue 압축(691→446행)+아카이브 + 주간정비 범위에 캐시·상시컨텍스트 압축 박제(일회성→정규 루틴 정착). 상시 슬림화는 주간정비로 지속.",
+    "disposed_at": "2026-06-13",
+    "note_disposed": "[2026-06-13 GM 지시·시토] 완료 후 G1 입항완료 적체 정리 — 폐기 전환으로 G1 기본뷰에서 내림(검색이력·완료기록 보존, 원상태=DONE)."
   },
   {
     "task_id": "CMO-2026-06-12-AI12-PUBLISH",
@@ -318,31 +326,37 @@
     "task_id": "CTO-2026-06-12-BOARD-SORT",
     "clevel": "cto",
     "title": "[시토] 업무·결재 보드 생성일 최신 상단 정렬",
-    "status": "DONE",
+    "status": "폐기",
     "processed_at": "2026-06-12",
     "terminal": true,
     "next": "업무·결재 보드 생성일(createdAt) 최신순 상단 정렬 적용.",
-    "enqueued_at": "2026-06-12"
+    "enqueued_at": "2026-06-12",
+    "disposed_at": "2026-06-13",
+    "note_disposed": "[2026-06-13 GM 지시·시토] 완료 후 G1 입항완료 적체 정리 — 폐기 전환으로 G1 기본뷰에서 내림(검색이력·완료기록 보존, 원상태=DONE)."
   },
   {
     "task_id": "CTO-2026-06-12-REPORT-09-FIX",
     "clevel": "cto",
     "title": "[시토] 9시 보고 정합 — C레벨 죽은항목 제외 + 매출지출 home 소스 연결",
-    "status": "DONE",
+    "status": "폐기",
     "processed_at": "2026-06-12",
     "terminal": true,
     "next": "9시 보고 정합 완료 — C레벨 죽은항목 제외 + 매출·지출 home 소스 연결.",
-    "enqueued_at": "2026-06-12"
+    "enqueued_at": "2026-06-12",
+    "disposed_at": "2026-06-13",
+    "note_disposed": "[2026-06-13 GM 지시·시토] 완료 후 G1 입항완료 적체 정리 — 폐기 전환으로 G1 기본뷰에서 내림(검색이력·완료기록 보존, 원상태=DONE)."
   },
   {
     "task_id": "CTO-2026-06-12-WORKTREE-CLEAN",
     "clevel": "cto",
     "title": "[시토] 작업트리 오염 정리 — AI폴더 rename·#10중복·임시 정리(4커밋)",
-    "status": "DONE",
+    "status": "폐기",
     "processed_at": "2026-06-12",
     "terminal": true,
     "next": "작업트리 오염 정리 완료 — AI폴더 rename·#10중복·임시 4커밋.",
-    "enqueued_at": "2026-06-12"
+    "enqueued_at": "2026-06-12",
+    "disposed_at": "2026-06-13",
+    "note_disposed": "[2026-06-13 GM 지시·시토] 완료 후 G1 입항완료 적체 정리 — 폐기 전환으로 G1 기본뷰에서 내림(검색이력·완료기록 보존, 원상태=DONE)."
   },
   {
     "task_id": "COO-2026-06-12-CHECK-C1-BOARDKEY",
@@ -368,10 +382,12 @@
     "task_id": "CTO-2026-06-12-SAVE-TOAST",
     "clevel": "cto",
     "title": "[시토] 저장 알림 토스트 중앙상단·진녹 가시성 개선",
-    "status": "DONE",
+    "status": "폐기",
     "processed_at": "2026-06-12",
     "terminal": true,
     "next": "저장 알림 토스트 중앙상단·진녹 배치로 가시성 개선.",
-    "enqueued_at": "2026-06-12"
+    "enqueued_at": "2026-06-12",
+    "disposed_at": "2026-06-13",
+    "note_disposed": "[2026-06-13 GM 지시·시토] 완료 후 G1 입항완료 적체 정리 — 폐기 전환으로 G1 기본뷰에서 내림(검색이력·완료기록 보존, 원상태=DONE)."
   }
 ]
