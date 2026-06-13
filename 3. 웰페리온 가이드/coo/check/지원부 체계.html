@@ -2202,8 +2202,10 @@ function toggleCheckTimer(gender){
 /* v2.48 — 점검 항목 사용자 수정 기능. v2.49 onclick HTML 충돌 fix
    v2.51 — 시트(saveItems) 기반 부활: 기본 항목 편집은 같은 id의 shadow 항목을
    CUSTOM_ITEMS에 저장(시트 영구), renderItem이 override 맵으로 덮어쓴다.
-   shadow = id가 'custom_'으로 시작하지 않는 CUSTOM_ITEMS 항목(기본 항목 id 그대로). */
-function isShadowItem(it){ return it && it.id && String(it.id).indexOf('custom_')!==0; }
+   shadow = id가 'custom_' 또는 'cx_'으로 시작하지 않는 CUSTOM_ITEMS 항목(기본 항목 id 그대로). */
+/* isAddedItem — 추가 항목 판별. 레거시 custom_ 및 신규 cx_ 둘 다 인식. */
+function isAddedItem(id){ return /^(custom_|cx_)/.test(String(id||'')); }
+function isShadowItem(it){ return it && it.id && !isAddedItem(it.id); }
 /* getItemOverrides — CUSTOM_ITEMS의 shadow 항목에서 {id:{name,detail,slot,shift,cat}} 맵 구성.
    renderItem이 이 맵으로 기본 항목 표시를 덮어쓴다(시트가 SSOT). */
 function getItemOverrides(){
@@ -2370,7 +2372,7 @@ window.manualAddItem=function(cat){
   const modal=document.getElementById('promoteModal'); if(modal)modal.style.display='flex';
 };
 window.manualDeleteItem=function(id){
-  const isCustom=String(id).indexOf('custom_')===0;
+  const isCustom=isAddedItem(id);
   const hasShadow=(CUSTOM_ITEMS||[]).some(it=>it.id===id);   // 시트에 같은 id 항목(추가 or 편집분·옛 b6)이 있나
   if(isCustom||hasShadow){
     if(!confirm('이 항목을 삭제할까요? (시트에서도 제거)'))return;
@@ -2477,7 +2479,12 @@ function getEditTs(){ try{return JSON.parse(localStorage.getItem('wcheck_edit_ts
 function markEditTs(id){ const m=getEditTs(); m[id]=kstToday(); localStorage.setItem('wcheck_edit_ts',JSON.stringify(m)); }
 function isEditFresh(id){ return getEditTs()[id]===kstToday(); }
 function isCustomFresh(id){
-  const m=String(id).match(/^custom_(\d+)/); if(!m)return false;
+  const s=String(id||'');
+  // 신규 cx_YYYYMMDD_NNN 형식: 날짜를 id에서 직접 파싱
+  const cxm=s.match(/^cx_(\d{4})(\d{2})(\d{2})_/);
+  if(cxm){ return (cxm[1]+cxm[2]+cxm[3])===kstToday().replace(/-/g,''); }
+  // 레거시 custom_<ms>_<rand> 형식: 타임스탬프 기반
+  const m=s.match(/^custom_(\d+)/); if(!m)return false;
   try{ const d=new Date(Number(m[1])+9*3600*1000); return d.toISOString().slice(0,10)===kstToday(); }catch(e){ return false; }
 }
 window.addManualGroup=function(){
@@ -2507,10 +2514,10 @@ window.restoreManualGroup=function(orig){
   if(typeof renderG==='function')renderG(activeGenderTab);
 };
 window.manualPurgeCustom=function(){
-  const customs=(CUSTOM_ITEMS||[]).filter(it=>String(it.id).indexOf('custom_')===0);
-  if(!customs.length){alert('정리할 추가항목(custom_)이 없습니다.');return;}
-  if(!confirm('점검 화면에서 즉석 추가돼 쌓인 추가항목(custom_) '+customs.length+'건을 모두 삭제합니다.\n(기본 항목 수정분=수정됨 은 유지됩니다.)\n계속할까요?'))return;
-  const next=(CUSTOM_ITEMS||[]).filter(it=>String(it.id).indexOf('custom_')!==0);
+  const customs=(CUSTOM_ITEMS||[]).filter(it=>isAddedItem(it.id));
+  if(!customs.length){alert('정리할 추가항목(custom_/cx_)이 없습니다.');return;}
+  if(!confirm('점검 화면에서 즉석 추가돼 쌓인 추가항목(custom_/cx_) '+customs.length+'건을 모두 삭제합니다.\n(기본 항목 수정분=수정됨 은 유지됩니다.)\n계속할까요?'))return;
+  const next=(CUSTOM_ITEMS||[]).filter(it=>!isAddedItem(it.id));
   mgmtSaveItems(next);
   renderG(activeGenderTab);
   if(typeof renderManualItems==='function')renderManualItems();
@@ -2781,7 +2788,7 @@ function renderManualItems(){
   });
   /* 셋업 버튼 공통 스타일(인라인) */
   const _btn='font-size:11px;font-weight:700;border-radius:6px;padding:3px 8px;cursor:pointer;font-family:inherit;border:1px solid;white-space:nowrap;';
-  const _customCount=(typeof CUSTOM_ITEMS!=='undefined'?CUSTOM_ITEMS:[]).filter(it=>String(it.id).indexOf('custom_')===0).length;
+  const _customCount=(typeof CUSTOM_ITEMS!=='undefined'?CUSTOM_ITEMS:[]).filter(it=>isAddedItem(it.id)).length;
   const EM=_manualEdit;   // 편집 모드 여부
   let html='';
   /* 셋업 안내 + 편집모드 토글 + 추가항목 일괄정리(GM 2026-06-12): 매뉴얼=항목 단일출처(시트 동기화). 점검은 읽기전용. */
@@ -4303,7 +4310,14 @@ function mgmtSaveItems(items){
 }
 
 function mgmtGenerateId(){
-  return 'custom_' + Date.now() + '_' + Math.random().toString(36).slice(2,7);
+  const d=new Date();
+  const ymd=d.getFullYear().toString()
+    +(String(d.getMonth()+1).padStart(2,'0'))
+    +(String(d.getDate()).padStart(2,'0'));
+  // 당일 cx_ 항목 개수 기반 순번 (zero-pad 3자리)
+  const todayPrefix='cx_'+ymd;
+  const seq=((CUSTOM_ITEMS||[]).filter(it=>String(it.id||'').indexOf(todayPrefix)===0).length)+1;
+  return todayPrefix+'_'+String(seq).padStart(3,'0');
 }
 
 /* ── 점검 화면 카테고리별 빠른 항목 추가 (셋업 편집기 데이터계층 재사용) ──
