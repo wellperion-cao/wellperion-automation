@@ -36,6 +36,14 @@ import re
 import sys
 from pathlib import Path
 
+# UTM 딱지 헬퍼 — 본문 문의 CTA URL에 채널 출처 부착 (scripts/ 동일 디렉터리)
+try:
+    from cta_utm import apply_cta_utm
+except ImportError:
+    import sys as _sys, os as _os
+    _sys.path.insert(0, _os.path.dirname(_os.path.abspath(__file__)))
+    from cta_utm import apply_cta_utm
+
 # Windows 콘솔(cp949)에서 한글·em-dash 출력 깨짐 방지 — UTF-8 강제
 try:
     sys.stdout.reconfigure(encoding="utf-8")
@@ -185,6 +193,8 @@ def build_post(args: argparse.Namespace) -> ChannelPost:
         if not title:
             title = parsed_title
         body = parsed_body
+    # 문의 CTA URL에 카카오 채널 utm_source 부착 (발행 직전 원본 미변경·중복 안전)
+    body = apply_cta_utm(body, "kakao")
     images = collect_images(image_dir, args.image_glob)
     return ChannelPost(title, body, images)
 
