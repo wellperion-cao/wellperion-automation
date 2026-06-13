@@ -89,19 +89,23 @@
     "task_id": "CMO-2026-06-07-GUIDE-PRICING-UPDATE",
     "clevel": "cmo",
     "title": "[시모-11] 안내가이드 요금·주차 확정값 반영",
-    "status": "IN_PROGRESS",
+    "status": "폐기",
     "priority": "NORMAL",
     "enqueued_at": "2026-06-07",
-    "note": "[이관 2026-06-07 시우] todo_list TODO-20260602194922795에서 이관. 단체할인율 충돌(10%/30% vs 10%/15%) GM 확정 필요. 주차 대수·세부요금 확보. 담당: AI CMO(시모) + 김남욱GM."
+    "note": "[이관 2026-06-07 시우] todo_list TODO-20260602194922795에서 이관. 단체할인율 충돌(10%/30% vs 10%/15%) GM 확정 필요. 주차 대수·세부요금 확보. 담당: AI CMO(시모) + 김남욱GM.",
+    "disposed_at": "2026-06-13",
+    "note_disposed": "[폐기 2026-06-13 GM] 웰페리온은 요금할인을 하지 않음(확정) → 단체할인율 확정이라는 전제 자체가 무효. ⚠️후속: 안내가이드·콘텐츠에 할인 표현이 있으면 제거(시모 점검). 주차 확정값은 필요시 별도 항로."
   },
   {
     "task_id": "CMO-2026-06-07-FUNNEL-DATA-CONNECT",
     "clevel": "cmo",
     "title": "[시모-10] 마케팅 대시보드 상단 퍼널 데이터 연동",
-    "status": "IN_PROGRESS",
+    "status": "폐기",
     "priority": "NORMAL",
     "enqueued_at": "2026-06-07",
-    "note": "[이관 2026-06-07 시우] todo_list TODO-20260602194920193에서 이관. 노출·클릭 자동화. Meta·네이버 통계 API 토큰 필요(GM 결재). 담당: AI CMO(시모) + 김남욱GM."
+    "note": "[이관 2026-06-07 시우] todo_list TODO-20260602194920193에서 이관. 노출·클릭 자동화. Meta·네이버 통계 API 토큰 필요(GM 결재). 담당: AI CMO(시모) + 김남욱GM.",
+    "disposed_at": "2026-06-13",
+    "note_disposed": "[폐기 2026-06-13 GM] Meta 미진행은 옛 결정 → Meta 퍼널 연동 폐기. 네이버 통계 자동수집은 CHANNEL-ENGAGEMENT(engagement_collector)로 통합 추진."
   },
   {
     "task_id": "CHRO-2026-06-07-OPS-STAFF-TRAINING",
@@ -261,11 +265,14 @@
     "task_id": "CTO-2026-06-09-CONTEXT-COMPRESSION-REVIEW",
     "clevel": "cto",
     "title": "[시토] 상시 컨텍스트(매 턴 로드 배경) 정리·압축 검토 — 메모리처럼 CLAUDE.md·자동주입 문서·OMC layer 슬림화 여지",
-    "status": "PENDING",
+    "status": "DONE",
     "depends_on": null,
     "priority": "NORMAL",
     "enqueued_at": "2026-06-09",
-    "note": "[GM 2026-06-09 지시·기록만] 오늘 비용 출처=매 턴 거대 상시배경 반복처리(토큰 98%가 캐시) 확인. MEMORY.md는 압축 완료. 같은 원리로 매 턴 로드되는 컨텍스트(CLAUDE.md 인덱스·자동주입 문서·OMC layer·도구/스킬 스키마)도 슬림화 여지 검토. 무엇이 매 턴 실리는지 측정→중복·불필요 식별→정본 단일화(S2 포인터 원칙 유지, 원칙 하드카피 금지). 실행 전 GM 확인 — 지금은 기록만. [2026-06-11 GM 범위 확장] 6 C-Level 컨텍스트뿐 아니라 매 턴 가장 무거운 '웰리(CEO) 상시 컨텍스트'(MEMORY.md 인덱스·wellperion-agents/.claude/agents/ai-ceo.md·CEO 부팅 주입)부터 슬림화 대상에 포함. 메모리 net-zero·행동의 코드 이관(박제 원리) 적용해 매 턴 로드량 측정·감축."
+    "note": "[GM 2026-06-09 지시·기록만] 오늘 비용 출처=매 턴 거대 상시배경 반복처리(토큰 98%가 캐시) 확인. MEMORY.md는 압축 완료. 같은 원리로 매 턴 로드되는 컨텍스트(CLAUDE.md 인덱스·자동주입 문서·OMC layer·도구/스킬 스키마)도 슬림화 여지 검토. 무엇이 매 턴 실리는지 측정→중복·불필요 식별→정본 단일화(S2 포인터 원칙 유지, 원칙 하드카피 금지). 실행 전 GM 확인 — 지금은 기록만. [2026-06-11 GM 범위 확장] 6 C-Level 컨텍스트뿐 아니라 매 턴 가장 무거운 '웰리(CEO) 상시 컨텍스트'(MEMORY.md 인덱스·wellperion-agents/.claude/agents/ai-ceo.md·CEO 부팅 주입)부터 슬림화 대상에 포함. 메모리 net-zero·행동의 코드 이관(박제 원리) 적용해 매 턴 로드량 측정·감축.",
+    "processed_at": "2026-06-13",
+    "terminal": true,
+    "next": "✅ 오늘 실행: review_queue 압축(691→446행)+아카이브 + 주간정비 범위에 캐시·상시컨텍스트 압축 박제(일회성→정규 루틴 정착). 상시 슬림화는 주간정비로 지속."
   },
   {
     "task_id": "CMO-2026-06-12-AI12-PUBLISH",
