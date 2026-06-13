@@ -215,6 +215,13 @@ document.getElementById('retry').onclick=load;
 load();
 // 매일 오전 10시 자동 새로고침 (항상 켜둔 화면용)
 setInterval(function(){var n=new Date();if(n.getHours()===10&&n.getMinutes()===0)location.reload();},60000);
+// ERP(허브)에 끼워 넣었을 때: 내용 높이에 맞춰 iframe 자동 확장 → 안쪽 스크롤 제거(허브 스크롤 하나로)
+(function(){if(!window.frameElement)return;
+  function fit(){try{var h=document.documentElement.scrollHeight;var cur=parseInt(window.frameElement.style.height)||0;if(Math.abs(cur-h)>2){window.frameElement.style.height=h+'px';}}catch(e){}}
+  if(window.ResizeObserver){try{new ResizeObserver(fit).observe(document.body);}catch(e){}}
+  window.addEventListener('resize',fit);window.addEventListener('load',fit);
+  setTimeout(fit,200);setTimeout(fit,800);setTimeout(fit,1600);
+})();
 </script>
 </body>
 </html>
