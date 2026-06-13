@@ -514,7 +514,7 @@ a{color:var(--accent);text-decoration:none}
           <tr><td colspan="4" style="padding:14px 16px;color:var(--dim);font-size:13px">불러오는 중…</td></tr>
         </tbody>
       </table>
-      <div style="padding:8px 16px 10px;font-size:11px;color:var(--dim);border-top:1px solid var(--border)">핵심 채널만 표시(비핵심·일회성 유입은 '기타'로 합산) · 채널명은 문의 시 선택한 유입경로 기준 · 누적 전환은 전체 기간</div>
+      <div style="padding:8px 16px 10px;font-size:11px;color:var(--dim);border-top:1px solid var(--border)">표준 채널 10종 기준(GAS 단일 정규화) · 채널명은 문의 시 선택한 유입경로 기준 · 과거 '온라인' 뭉침분은 단일귀속 불가라 '기타·미상' · 누적 전환은 전체 기간</div>
     </div>
   </div>
 
@@ -577,22 +577,10 @@ var _pbData = null;   // period_breakdown 응답 (inquiries.byChannelMonth 객�
 
 var _DOT_COLORS = ['--f1','--f2','--f3','--f4','--f5'];
 
-// 경량화(2026-06-12 시모): 유입채널은 자유텍스트·폼별 상이값이라 합집합이 비대해짐.
-// 핵심 운영 채널만 표시하고, 비핵심·오타·일회성 값은 '기타'로 합산(수치 정확성 보존).
-var _CORE_CHANNELS = ['인스타그램', '블로그', '카페', '회원 소개', '온라인 검색', '지역 커뮤니티'];
-
-// 자유텍스트 원본값 → 핵심 채널명 정규화. 미매칭은 null(→ '기타' 합산)
-function _canonChannel(raw) {
-  var s = String(raw || '').trim();
-  if (!s) return null;
-  if (/인스타|insta|ig\b|sns/i.test(s))           return '인스타그램';
-  if (/블로그|blog|네이버\s*블로그/i.test(s))      return '블로그';
-  if (/카페|cafe/i.test(s))                        return '카페';
-  if (/회원\s*소개|지인|소개|추천/i.test(s))        return '회원 소개';
-  if (/온라인\s*검색|검색|search|네이버|구글|google/i.test(s)) return '온라인 검색';
-  if (/입주|지역|커뮤니티|community/i.test(s))      return '지역 커뮤니티';
-  return null; // 비핵심 → 기타로 합산
-}
+// 2026-06-13(시모·GM): 채널 표준화를 GAS(_canonicalChannel_)로 단일화 → 화면측 재정규화 폐지.
+// byChannel/byChannelMonth는 이미 표준 10버킷이므로 라벨 그대로 표시(이중 정규화 충돌 방지).
+// 10종: 네이버·동부이촌동 커뮤니티·인스타그램·카카오톡·당근마켓·소개·지인·기존·과거 회원·오프라인·유선전화·기타·미상.
+var ETC_CHANNEL = '기타·미상';
 
 function renderChannelTableLive() {
   var tbody = document.getElementById('channel-table-body');
@@ -603,25 +591,24 @@ function renderChannelTableLive() {
   // byChannel: [{channel, inquiries, converted, rate}, ...]
   var byChannel = (_fcData && Array.isArray(_fcData.byChannel)) ? _fcData.byChannel : [];
 
-  // 핵심 채널 + '기타' 버킷으로 집계(자유텍스트 합집합 비대화 차단)
-  var ETC = '기타';
-  var agg = {};   // {표시채널: {monthInq, cumInquiries, cumConverted}}
-  function bucket(ch) { return _canonChannel(ch) || ETC; }
+  // GAS가 이미 표준 10버킷으로 정규화 → 화면은 라벨 그대로 집계(재버킷 없음)
+  var ETC = ETC_CHANNEL;
+  var agg = {};   // {채널: {monthInq, cumInquiries, cumConverted}}
   function slot(name) {
     if (!agg[name]) agg[name] = { monthInq: 0, cumInquiries: 0, cumConverted: 0, hasCum: false };
     return agg[name];
   }
-  Object.keys(byMonth).forEach(function(ch) { slot(bucket(ch)).monthInq += (byMonth[ch] || 0); });
+  Object.keys(byMonth).forEach(function(ch) { slot(ch).monthInq += (byMonth[ch] || 0); });
   byChannel.forEach(function(d) {
     if (!d.channel) return;
-    var s = slot(bucket(d.channel));
+    var s = slot(d.channel);
     s.cumInquiries += (d.inquiries || 0);
     s.cumConverted += (d.converted || 0);
     s.hasCum = true;
   });
 
-  // 표시 대상: 핵심 채널(존재 시) + 기타(존재 시). 활동 없는 행은 제거.
-  var order = _CORE_CHANNELS.concat([ETC]);
+  // 표시 대상: 집계된 모든 표준 버킷(활동 없는 행은 아래에서 제거). '기타·미상'은 sort가 맨 아래로.
+  var order = Object.keys(agg);
   var rows = order.filter(function(name) { return agg[name]; }).map(function(name) {
     var s = agg[name];
     var active = s.monthInq > 0 || s.cumInquiries > 0;
