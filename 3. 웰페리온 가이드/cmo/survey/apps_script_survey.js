@@ -102,11 +102,13 @@ function _collectFormInquiries_() {
       var headers = sh.getRange(1, 1, 1, lastCol).getValues()[0];
       var idxPhone = _findCol_(headers, ['연락처', '휴대폰', '핸드폰', '전화']);
       var idxChan  = _findCol_(headers, cfg.channelKeys);
+      var idxDate  = _findCol_(headers, ['타임스탬프', 'timestamp', '시각', '일시', '접수일', '접수', '날짜']);
+      if (idxDate < 0) idxDate = 0;  // 못 찾으면 1열(구글폼 기본). 26년신규문의=B칸(타임스탬프) 자동 포착
       var rows = sh.getRange(2, 1, last - 1, lastCol).getValues();
       rows.forEach(function(r) {
-        if (!r[0] && (idxPhone < 0 || !r[idxPhone])) return; // 빈 행 스킵
+        if (!r[idxDate] && (idxPhone < 0 || !r[idxPhone])) return; // 빈 행 스킵
         out.push({
-          시각:     _parseAnyDate_(r[0]),  // 1열 = 타임스탬프(구글폼 Date / 수기로그 'YYYY. M. D')
+          시각:     _parseAnyDate_(r[idxDate]),  // 타임스탬프(구글폼 A칸 Date / 26년신규문의 B칸 'YYYY. M. D')
           연락처:   idxPhone >= 0 ? r[idxPhone] : '',
           유입채널: (idxChan >= 0 ? String(r[idxChan] || '').trim() : '') || '기타',
           문의유형: cfg.type
