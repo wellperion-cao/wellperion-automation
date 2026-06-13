@@ -188,6 +188,9 @@ a{color:var(--accent);text-decoration:none}
     <a href="문의흐름지도.html" class="report-btn">🗺️ 문의 흐름 지도</a>
   </div>
 
+  <!-- 인사이트 자동 코멘트 바 -->
+  <div id="insight-bar" style="background:var(--accent-bg);border:1px solid rgba(183,159,138,0.2);border-radius:10px;padding:11px 16px;margin-bottom:14px;font-size:13px;color:var(--text);line-height:1.7">분석 준비 중…</div>
+
   <!-- INFO BOX -->
   <div class="info-box">
     <strong>핵심 병목:</strong> 웰페리온 마케팅의 문제는 노출 부족이 아니라 <strong>노출→문의 전환 설계 부재</strong>입니다.
@@ -239,6 +242,9 @@ a{color:var(--accent);text-decoration:none}
       <!-- <div class="kpi-card"> ... 전체 문의 전환율 ... </div> -->
     </div>
   </div>
+
+  <!-- 월 목표 게이지 -->
+  <div id="goal-gauge" style="margin-bottom:20px"></div>
 
   <!-- 실시간 클릭 현황 (click_stats 자동 집계) -->
   <div class="section">
@@ -571,6 +577,11 @@ function toggleCard(header) {
 // ─── 문의→가입 전환율 자동 집계 ───────────────────────────────
 var FUNNEL_APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzdwSCCSSJ6JXLDoWuo7HG0JmBM2iy10TujFQ_O5JbTjnWaN7gOk-ddA4IAvsNfelg0xA/exec';
 
+// ─── GM 설정 — 월 목표 (null = 미설정) ──────────────────────────
+var MONTHLY_INQUIRY_TARGET = null;   // GM 설정 — 월 신규 문의 목표 건수(미설정=null)
+var MONTHLY_CONVERT_TARGET = null;   // GM 설정 — 월 신규 등록(전환) 목표 건수(미설정=null)
+// ────────────────────────────────────────────────────────────────
+
 // 채널별 비교 표 라이브 렌더 — 두 소스 모두 저장 후 합산
 var _fcData = null;   // funnel_conversion 응답 (byChannel 배열)
 var _pbData = null;   // period_breakdown 응답 (inquiries.byChannelMonth 객체)
@@ -581,6 +592,83 @@ var _DOT_COLORS = ['--f1','--f2','--f3','--f4','--f5'];
 // byChannel/byChannelMonth는 이미 표준 10버킷이므로 라벨 그대로 표시(이중 정규화 충돌 방지).
 // 10종: 네이버·동부이촌동 커뮤니티·인스타그램·카카오톡·당근마켓·소개·지인·기존·과거 회원·오프라인·유선전화·기타·미상.
 var ETC_CHANNEL = '기타·미상';
+
+// ─── 인사이트 자동 코멘트 바 ────────────────────────────────────
+function renderInsightBar() {
+  var el = document.getElementById('insight-bar');
+  if (!el) return;
+  if (!_fcData || !_pbData) { el.textContent = '데이터 집계 대기 중'; return; }
+
+  var byChannel = Array.isArray(_fcData.byChannel) ? _fcData.byChannel : [];
+  var candidates = byChannel.filter(function(d) { return (d.inquiries || 0) >= 20 && d.channel !== ETC_CHANNEL; });  // 기타·미상=실채널 아님 → 최강/약세 후보 제외
+
+  var parts = [];
+
+  if (candidates.length > 0) {
+    // 최강 전환 채널 — rate 최대
+    var best = candidates.reduce(function(a, b) { return (b.rate || 0) > (a.rate || 0) ? b : a; });
+    parts.push('🔥 ' + best.channel + ' 전환 ' + best.rate + '% — 최강 채널');
+
+    // 약세 채널 — rate 최저 (최강과 다를 때만)
+    var worst = candidates.reduce(function(a, b) { return (b.rate || 0) < (a.rate || 0) ? b : a; });
+    if (worst.channel !== best.channel) {
+      parts.push(worst.channel + ' ' + worst.rate + '% 약세 — 재점검 신호');
+    }
+  }
+
+  // 이번 달 현황
+  var inqMonth  = (_pbData.inquiries && _pbData.inquiries.month !== undefined) ? _pbData.inquiries.month : '—';
+  var clickMonth = (_pbData.clicks && _pbData.clicks.month !== undefined) ? _pbData.clicks.month : '—';
+  var convRate  = (_pbData.conversion && _pbData.conversion.month && _pbData.conversion.month.rate !== undefined)
+                  ? _pbData.conversion.month.rate : '—';
+  parts.push('이번 달 문의 ' + inqMonth + '건 · 클릭 ' + clickMonth + ' · 전환 ' + convRate + '%');
+
+  el.textContent = parts.length > 0 ? parts.join(' · ') : '데이터 집계 대기 중';
+}
+
+// ─── 월 목표 게이지 ──────────────────────────────────────────────
+function renderGoalGauge() {
+  var el = document.getElementById('goal-gauge');
+  if (!el) return;
+
+  // 두 목표 모두 미설정
+  if (MONTHLY_INQUIRY_TARGET === null && MONTHLY_CONVERT_TARGET === null) {
+    el.innerHTML = '<div style="font-size:12px;color:var(--dim);padding:6px 2px">목표 미설정 — GM 설정 시 진척 표시</div>';
+    return;
+  }
+
+  if (!_pbData) { el.innerHTML = '<div style="font-size:12px;color:var(--dim);padding:6px 2px">목표 데이터 로드 중…</div>'; return; }
+
+  function gaugeBar(label, current, target) {
+    var pct = Math.round((current / target) * 100);
+    var displayPct = pct;
+    var barPct = Math.min(pct, 100);
+    var barColor = pct >= 100 ? 'var(--green)' : (pct >= 50 ? 'var(--accent)' : 'var(--dim)');
+    var labelText = label + ' ' + current + '/' + target + '건 · ' + displayPct + '%';
+    return '<div style="margin-bottom:10px">'
+      + '<div style="font-size:12px;color:var(--dim);margin-bottom:4px">' + labelText + '</div>'
+      + '<div style="background:var(--border);border-radius:6px;height:10px;overflow:hidden">'
+      + '<div style="width:' + barPct + '%;height:100%;background:' + barColor + ';border-radius:6px;transition:width 0.4s ease"></div>'
+      + '</div>'
+      + '</div>';
+  }
+
+  var html = '<div style="background:var(--paper);border:1px solid var(--border);border-radius:10px;padding:14px 16px">'
+    + '<div style="font-size:12px;font-weight:700;color:var(--dim);margin-bottom:10px;text-transform:uppercase;letter-spacing:0.05em">이번 달 문의 목표</div>';
+
+  if (MONTHLY_INQUIRY_TARGET !== null) {
+    var inqCurrent = (_pbData.inquiries && _pbData.inquiries.month !== undefined) ? _pbData.inquiries.month : 0;
+    html += gaugeBar('문의', inqCurrent, MONTHLY_INQUIRY_TARGET);
+  }
+  if (MONTHLY_CONVERT_TARGET !== null) {
+    var convCurrent = (_pbData.conversion && _pbData.conversion.month && _pbData.conversion.month.converted !== undefined)
+                      ? _pbData.conversion.month.converted : 0;
+    html += gaugeBar('등록(전환)', convCurrent, MONTHLY_CONVERT_TARGET);
+  }
+
+  html += '</div>';
+  el.innerHTML = html;
+}
 
 function renderChannelTableLive() {
   var tbody = document.getElementById('channel-table-body');
@@ -691,6 +779,8 @@ async function loadFunnelConversion() {
     // 채널별 비교 표 — 모듈 변수 저장 후 라이브 렌더
     _fcData = data;
     renderChannelTableLive();
+    renderInsightBar();
+    renderGoalGauge();
 
   } catch (e) {
     console.warn('[funnel_conversion] 로드 실패:', e.message);
@@ -823,6 +913,8 @@ function _applyPeriodData(data, period) {
   if (period === 'month') {
     _pbData = data;
     renderChannelTableLive();
+    renderInsightBar();
+    renderGoalGauge();
   }
 
   var clickEl = document.getElementById('kpi-total-clicks');
