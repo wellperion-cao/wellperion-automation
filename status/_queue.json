@@ -87,11 +87,13 @@
     "task_id": "COO-2026-06-13-OPS-CHECK-CLONE-REMOVE",
     "clevel": "coo",
     "title": "[시우] 운영부 체계 점검 유령클론 외과제거 — 규정·매뉴얼 보드 보존",
-    "status": "IN_PROGRESS",
+    "status": "DONE",
     "priority": "NORMAL",
     "enqueued_at": "2026-06-13",
-    "note": "[2026-06-13] 시설부 동형(B안, 86a40a44 검증완료)의 운영부 적용 진행 중(백그라운드 실행). 점검 전용 DOM+JS 제거, 규정 보드(renderPolicyBoard)·매뉴얼 보존, 거래업체보드는 운영부에 없음.",
-    "next": "운영부 라이브 검증 후 종결(완료도장 웰리)"
+    "processed_at": "2026-06-13",
+    "terminal": true,
+    "artifact": "운영부 체계.html 3394→1909줄, 점검 전용 DOM+JS 전면제거(submitShift·onCk·loadState·pushToServer 0). 규정보드(renderPolicyBoard 6)·매뉴얼(4) 보존, JS 문법 정상·라이브 200 검증. ⚠️작업 중 watcher truncation 1회→복구(d8951756) 후 정합. 웰리 완료도장.",
+    "next": "표류 — 부서 체계 점검 클론 정리 완결(지원부만 점검 운영, 나머지 유령 전부 제거)"
   },
   {
     "task_id": "COO-2026-06-13-SUPPORT-CHECK-HARDENING",
