@@ -213,21 +213,6 @@ a{color:var(--accent);text-decoration:none}
 
 <div class="content">
 
-  <!-- 월간 보고서 버튼 (문의채널현황 링크는 대시보드에 통합됨) -->
-  <div style="margin-bottom:16px;display:flex;gap:10px;flex-wrap:wrap;align-items:center">
-    <a href="월간마케팅보고서.html" class="report-btn">📄 월간 보고서</a>
-    <a href="문의흐름지도.html" class="report-btn">🗺️ 문의 흐름 지도</a>
-  </div>
-
-  <!-- 인사이트 자동 코멘트 바 -->
-  <div id="insight-bar" style="background:var(--accent-bg);border:1px solid rgba(183,159,138,0.2);border-radius:10px;padding:11px 16px;margin-bottom:14px;font-size:13px;color:var(--text);line-height:1.7">분석 준비 중…</div>
-
-  <!-- INFO BOX -->
-  <div class="info-box">
-    <strong>핵심 병목:</strong> 웰페리온 마케팅의 문제는 노출 부족이 아니라 <strong>노출→문의 전환 설계 부재</strong>입니다.
-    이 페이지는 각 단계의 전환율을 측정해 병목 지점을 찾고 개선 우선순위를 결정합니다.
-  </div>
-
   <!-- 기간 세그먼트 토글 (클릭·문의·전환 3종에만 적용) -->
   <!-- 월 네비게이터 — 기본 선택(월) 위에 표시 -->
   <div class="month-nav" id="month-nav-row">
@@ -240,6 +225,7 @@ a{color:var(--accent);text-decoration:none}
     <button class="period-btn" data-period="week" onclick="switchPeriod('week')">주</button>
     <button class="period-btn active" data-period="month" onclick="switchPeriod('month')">월</button>
     <button class="period-btn" data-period="custom" onclick="toggleCustomRange()">기간</button>
+    <a href="월간마케팅보고서.html" class="period-btn" style="text-decoration:none">📄 월간 보고서</a>
     <span class="period-status" id="period-status">월간 기준 · 집계 불러오는 중…</span>
   </div>
 
@@ -254,7 +240,7 @@ a{color:var(--accent);text-decoration:none}
 
   <!-- KPI 요약 — 핵심 3카드 -->
   <div class="section">
-    <div class="section-title">북극성 KPI</div>
+    <div class="section-title">핵심 KPI</div>
     <div class="kpi-row">
       <!-- B: 월간 총 노출 카드 숨김 (수기 지표) -->
       <!-- <div class="kpi-card"> ... 월간 총 노출 ... </div> -->
@@ -322,6 +308,7 @@ a{color:var(--accent);text-decoration:none}
         <div id="utm-sources-body" style="background:var(--paper);border:1px solid var(--border);border-radius:12px;padding:16px 18px">
           <div style="color:var(--dim);font-size:13px">불러오는 중…</div>
         </div>
+        <div style="margin-top:8px;font-size:11px;color:var(--dim);line-height:1.6">현재 '직접·홈'만 보이는 것은 정상 — 채널 링크 출처 태깅(2026-06-13 적용)이 다음 발행분부터 쌓입니다. 글이 발행될수록 인스타·블로그·당근·카페·카카오로 갈라집니다.</div>
       </div>
     </div>
   </div>
@@ -329,245 +316,19 @@ a{color:var(--accent);text-decoration:none}
   <!-- 최근 변동사항 (콘텐츠 인게이지먼트 — 채널별 조회·관심·댓글 증감) -->
   <div class="section">
     <h2>📣 최근 변동사항 <span style="font-size:13px;color:var(--dim);font-weight:400" id="engagement-updated"></span></h2>
-    <p style="color:var(--dim);font-size:13px;margin:4px 0 14px">채널에 올린 콘텐츠의 조회·관심·댓글 증감(직전 수집 대비). 채널별 수집 시 갱신.</p>
+    <p style="color:var(--dim);font-size:13px;margin:4px 0 6px">채널에 올린 콘텐츠의 조회·관심·댓글 증감(직전 수집 대비). 채널별 수집 시 갱신.</p>
+    <p style="color:var(--dim);font-size:11px;margin:0 0 14px">현재 자동수집 채널 = 당근·블로그 (인스타·카페·카카오는 로그인 연동 대기 중)</p>
     <div id="engagement-feed-body" style="display:flex;flex-direction:column;gap:6px;max-width:560px">
       <div style="color:var(--dim);font-size:13px">불러오는 중…</div>
     </div>
   </div>
 
-  <!-- Funnel 시각화 — ①②③ 노출·인지·관심 숨김, ④⑤만 표시 -->
+  <!-- 핵심 전환 흐름 (문의흐름지도 합병) -->
   <div class="section">
-    <div class="section-title">단계별 현황</div>
-    <div class="funnel-wrap">
-      <div class="funnel-title-row">
-        <h2>전환 경로 (문의 · 가입)</h2>
-        <div class="funnel-legend">
-          <div class="legend-item"><div class="legend-dot" style="background:var(--f4)"></div>문의</div>
-          <div class="legend-item"><div class="legend-dot" style="background:var(--f5)"></div>가입</div>
-        </div>
-      </div>
-
-      <div class="funnel-stages">
-
-        <!-- B: ① 노출 스테이지 숨김 (수기 지표) -->
-        <!--
-        <div class="funnel-stage" style="display:none">
-          <div class="funnel-bar-wrap">
-            <div class="funnel-bar s1" style="width:100%">
-              <span class="funnel-bar-label">① 노출 (Reach)</span>
-              <span class="funnel-bar-val">—</span>
-            </div>
-          </div>
-          <div class="funnel-side">
-            <div class="conv-rate" style="color:var(--f1)">—</div>
-            <div class="conv-label">시작 단계</div>
-          </div>
-        </div>
-        <div class="funnel-arrow" style="display:none">↓</div>
-        -->
-
-        <!-- B: ② 인지 스테이지 숨김 (수기 지표) -->
-        <!--
-        <div class="funnel-stage" style="display:none">
-          <div class="funnel-bar-wrap">
-            <div class="funnel-bar s2" style="width:75%">
-              <span class="funnel-bar-label">② 인지 (Awareness)</span>
-              <span class="funnel-bar-val">—</span>
-            </div>
-          </div>
-          <div class="funnel-side">
-            <div class="conv-rate" style="color:var(--f2)">—</div>
-            <div class="conv-label">노출→인지 전환율</div>
-          </div>
-        </div>
-        <div class="funnel-arrow" style="display:none">↓</div>
-        -->
-
-        <!-- B: ③ 관심 스테이지 숨김 (수기 지표) -->
-        <!--
-        <div class="funnel-stage" style="display:none">
-          <div class="funnel-bar-wrap">
-            <div class="funnel-bar s3" style="width:50%">
-              <span class="funnel-bar-label">③ 관심 (Interest)</span>
-              <span class="funnel-bar-val">—</span>
-            </div>
-          </div>
-          <div class="funnel-side">
-            <div class="conv-rate" style="color:var(--f3)">—</div>
-            <div class="conv-label">인지→관심 전환율</div>
-          </div>
-        </div>
-        <div class="funnel-arrow" style="display:none">↓</div>
-        -->
-
-        <!-- Stage 4: 문의 -->
-        <div class="funnel-stage">
-          <div class="funnel-bar-wrap">
-            <div class="funnel-bar s4" style="width:60%">
-              <span class="funnel-bar-label">④ 문의 (Inquiry)</span>
-              <span class="funnel-bar-val" id="funnel-inquiries">—</span>
-            </div>
-          </div>
-          <div class="funnel-side">
-            <div class="conv-rate" style="color:var(--f4)" id="funnel-inq-rate">—</div>
-            <div class="conv-label">클릭→문의 전환율</div>
-            <div class="drop-label" id="funnel-inq-drop"></div>
-          </div>
-        </div>
-
-        <div class="funnel-arrow">↓</div>
-
-        <!-- Stage 5: 가입 -->
-        <div class="funnel-stage">
-          <div class="funnel-bar-wrap">
-            <div class="funnel-bar s5" style="width:28%">
-              <span class="funnel-bar-label">⑤ 가입 (Conversion)</span>
-              <span class="funnel-bar-val" id="funnel-converted">—</span>
-            </div>
-          </div>
-          <div class="funnel-side">
-            <div class="conv-rate" style="color:var(--f5)" id="funnel-conv-rate">—</div>
-            <div class="conv-label">문의→가입 전환율</div>
-            <div class="drop-label" id="funnel-conv-drop"></div>
-          </div>
-        </div>
-
-      </div>
+    <div class="section-title">핵심 전환 흐름</div>
+    <div id="conversion-flow-wrap" style="margin-bottom:6px">
+      <div style="color:var(--dim);font-size:13px">집계 불러오는 중…</div>
     </div>
-  </div>
-
-  <!-- 단계별 상세 — ①②③ 숨김, ④⑤만 표시 -->
-  <div class="section">
-    <div class="section-title">단계별 측정 지표 · 이탈 원인 · 개선안</div>
-
-    <!-- B: Stage 1 상세카드 숨김 (수기 지표) -->
-    <!--
-    <div class="detail-card" style="display:none">
-      <div class="detail-card-header" onclick="toggleCard(this)">
-        <span class="stage-badge" style="background:var(--f1-bg);color:var(--f1)">① 노출</span>
-        <h3>Reach — 잠재 고객이 웰페리온을 처음 접하는 단계</h3>
-        <span class="toggle-icon">▼</span>
-      </div>
-      <div class="detail-body open">
-        ...수기 지표...
-      </div>
-    </div>
-    -->
-
-    <!-- B: Stage 2 상세카드 숨김 (수기 지표) -->
-    <!--
-    <div class="detail-card" style="display:none">
-      <div class="detail-card-header" onclick="toggleCard(this)">
-        <span class="stage-badge" style="background:var(--f2-bg);color:var(--f2)">② 인지</span>
-        <h3>Awareness — 브랜드·서비스를 인식하고 프로필·블로그를 탐색하는 단계</h3>
-        <span class="toggle-icon">▼</span>
-      </div>
-      <div class="detail-body">...수기 지표...</div>
-    </div>
-    -->
-
-    <!-- B: Stage 3 상세카드 숨김 (수기 지표) -->
-    <!--
-    <div class="detail-card" style="display:none">
-      <div class="detail-card-header" onclick="toggleCard(this)">
-        <span class="stage-badge" style="background:var(--f3-bg);color:var(--f3)">③ 관심</span>
-        <h3>Interest — 시설·멤버십·혜택을 구체적으로 탐색하는 단계</h3>
-        <span class="toggle-icon">▼</span>
-      </div>
-      <div class="detail-body">...수기 지표...</div>
-    </div>
-    -->
-
-    <!-- Stage 4 -->
-    <div class="detail-card">
-      <div class="detail-card-header" onclick="toggleCard(this)">
-        <span class="stage-badge" style="background:var(--f4-bg);color:var(--f4)">④ 문의</span>
-        <h3>Inquiry — 실제 예약·상담 문의를 완료하는 단계</h3>
-        <span class="toggle-icon">▼</span>
-      </div>
-      <div class="detail-body">
-        <div class="metrics-grid">
-          <div class="metric-cell">
-            <div class="m-label">월간 문의 완료 건수</div>
-            <div class="m-val placeholder" id="fc-inquiries-detail">—</div>
-            <div class="m-src">출처: COO 이슈 응답 DB</div>
-          </div>
-          <div class="metric-cell">
-            <div class="m-label">예약 문의 비율</div>
-            <div class="m-val placeholder">—</div>
-            <div class="m-src">투어·상담 예약 %</div>
-          </div>
-          <div class="metric-cell">
-            <div class="m-label">클릭→문의 전환율</div>
-            <div class="m-val placeholder" id="fc-inq-rate-detail">—</div>
-            <div class="m-src">문의완료/클릭수</div>
-          </div>
-          <div class="metric-cell">
-            <div class="m-label">문의 응답 평균 시간</div>
-            <div class="m-val placeholder">—</div>
-            <div class="m-src">COO 운영 기록</div>
-          </div>
-        </div>
-        <div class="drop-section">
-          <h4>주요 이탈 원인</h4>
-          <div class="drop-item"><div class="drop-num">1</div>예약 프로세스 복잡 — 워크인 불가·사전 예약 필수 안내 불명확</div>
-          <div class="drop-item"><div class="drop-num">2</div>응답 지연 — 문의 후 즉각 응답 없을 경우 이탈</div>
-          <div class="drop-item"><div class="drop-num">3</div>가격 정보 부재 — 멤버십 비용 사전 노출 없어 결정 장벽 높음</div>
-        </div>
-        <div class="improve-section">
-          <h4>개선안</h4>
-          <div class="improve-item"><div class="improve-check">A</div>문의 페이지 "투어 예약" 버튼 클릭 즉시 예약 폼 연결 (마찰 최소화)</div>
-          <div class="improve-item"><div class="improve-check">B</div>문의 접수 즉시 자동 응답 메시지 설정 (COO 연계)</div>
-          <div class="improve-item"><div class="improve-check">C</div>콘텐츠에 "멤버십 문의하기" 단계별 안내 삽입</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Stage 5 -->
-    <div class="detail-card">
-      <div class="detail-card-header" onclick="toggleCard(this)">
-        <span class="stage-badge" style="background:var(--f5-bg);color:var(--f5)">⑤ 가입</span>
-        <h3>Conversion — 문의 후 실제 멤버십에 가입하는 최종 전환 단계</h3>
-        <span class="toggle-icon">▼</span>
-      </div>
-      <div class="detail-body">
-        <div class="metrics-grid">
-          <div class="metric-cell">
-            <div class="m-label">월간 신규 가입 건수</div>
-            <div class="m-val placeholder" id="fc-converted">—</div>
-            <div class="m-src">출처: 전화번호 매칭 집계</div>
-          </div>
-          <div class="metric-cell">
-            <div class="m-label">문의→가입 전환율</div>
-            <div class="m-val placeholder" id="fc-rate">—</div>
-            <div class="m-src">가입/문의완료</div>
-          </div>
-          <div class="metric-cell">
-            <div class="m-label">투어→가입 전환율</div>
-            <div class="m-val placeholder" id="fc-tour-rate">—</div>
-            <div class="m-src">투어 후 가입 %</div>
-          </div>
-          <div class="metric-cell">
-            <div class="m-label">평균 결정 소요 기간</div>
-            <div class="m-val placeholder">—</div>
-            <div class="m-src">첫문의→가입 일수</div>
-          </div>
-        </div>
-        <div class="drop-section">
-          <h4>주요 이탈 원인</h4>
-          <div class="drop-item"><div class="drop-num">1</div>투어 현장 경험 미흡 — 하이엔드 포지셔닝 대비 현장 설득 부족</div>
-          <div class="drop-item"><div class="drop-num">2</div>결정 기간 중 재접촉 없음 — 투어 후 팔로업 부재</div>
-          <div class="drop-item"><div class="drop-num">3</div>멤버십 옵션 복잡 — 비교 가능한 안내 자료 부재</div>
-        </div>
-        <div class="improve-section">
-          <h4>개선안</h4>
-          <div class="improve-item"><div class="improve-check">A</div>투어 후 24시간 내 팔로업 메시지 자동화 (COO 연계)</div>
-          <div class="improve-item"><div class="improve-check">B</div>멤버십 비교 안내 1페이지 카드 제작 (CPO 연계)</div>
-          <div class="improve-item"><div class="improve-check">C</div>현재 회원 후기·추천 콘텐츠 활용으로 결정 확신 강화</div>
-        </div>
-      </div>
-    </div>
-
   </div>
 
   <!-- 채널별 Funnel 비교 — 실데이터 라이브 렌더 -->
@@ -738,37 +499,42 @@ var _DOT_COLORS = ['--f1','--f2','--f3','--f4','--f5'];
 // 10종: 네이버·동부이촌동 커뮤니티·인스타그램·카카오톡·당근마켓·소개·지인·기존·과거 회원·오프라인·유선전화·기타·미상.
 var ETC_CHANNEL = '기타·미상';
 
-// ─── 인사이트 자동 코멘트 바 ────────────────────────────────────
-function renderInsightBar() {
-  var el = document.getElementById('insight-bar');
+// ─── 핵심 전환 흐름 (클릭→문의→등록 · 문의흐름지도 합병) ──────────
+function renderConversionFlow() {
+  var el = document.getElementById('conversion-flow-wrap');
   if (!el) return;
-  if (!_fcData || !_pbData) { el.textContent = '데이터 집계 대기 중'; return; }
+  if (!_pbData) { el.innerHTML = '<div style="color:var(--dim);font-size:13px">집계 대기 중</div>'; return; }
 
-  var byChannel = Array.isArray(_fcData.byChannel) ? _fcData.byChannel : [];
-  var candidates = byChannel.filter(function(d) { return (d.inquiries || 0) >= 20 && d.channel !== ETC_CHANNEL; });  // 기타·미상=실채널 아님 → 최강/약세 후보 제외
+  var clicks = (_pbData.clicks && _pbData.clicks.month) || 0;
+  var inq    = (_pbData.inquiries && _pbData.inquiries.month) || 0;
+  var conv   = (_pbData.conversion && _pbData.conversion.month && _pbData.conversion.month.converted) || 0;
+  var r1 = clicks > 0 ? Math.round(inq / clicks * 1000) / 10 : 0;   // 클릭→문의
+  var r2 = inq    > 0 ? Math.round(conv / inq  * 1000) / 10 : 0;    // 문의→등록
 
-  var parts = [];
-
-  if (candidates.length > 0) {
-    // 최강 전환 채널 — rate 최대
-    var best = candidates.reduce(function(a, b) { return (b.rate || 0) > (a.rate || 0) ? b : a; });
-    parts.push('🔥 ' + best.channel + ' 전환 ' + best.rate + '% — 최강 채널');
-
-    // 약세 채널 — rate 최저 (최강과 다를 때만)
-    var worst = candidates.reduce(function(a, b) { return (b.rate || 0) < (a.rate || 0) ? b : a; });
-    if (worst.channel !== best.channel) {
-      parts.push(worst.channel + ' ' + worst.rate + '% 약세 — 재점검 신호');
-    }
+  function card(icon, label, num, sub, color) {
+    return '<div style="flex:1;min-width:118px;background:var(--paper);border:1px solid var(--border);border-top:3px solid ' + color + ';border-radius:12px;padding:16px 14px;text-align:center">'
+      + '<div style="font-size:22px;margin-bottom:4px">' + icon + '</div>'
+      + '<div style="font-size:12px;font-weight:700;color:' + color + ';margin-bottom:6px">' + label + '</div>'
+      + '<div style="font-size:26px;font-weight:700;color:' + color + ';line-height:1">' + (num || 0).toLocaleString('ko-KR') + '</div>'
+      + '<div style="font-size:11px;color:var(--dim);margin-top:5px">' + sub + '</div>'
+      + '</div>';
+  }
+  function arrow(pct, note) {
+    return '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:62px;padding:0 2px">'
+      + '<div style="font-size:18px;color:var(--dim);line-height:1">→</div>'
+      + '<div style="font-size:13px;font-weight:700;color:var(--accent);margin-top:2px">' + pct + '%</div>'
+      + '<div style="font-size:10px;color:var(--dim)">' + note + '</div>'
+      + '</div>';
   }
 
-  // 이번 달 현황
-  var inqMonth  = (_pbData.inquiries && _pbData.inquiries.month !== undefined) ? _pbData.inquiries.month : '—';
-  var clickMonth = (_pbData.clicks && _pbData.clicks.month !== undefined) ? _pbData.clicks.month : '—';
-  var convRate  = (_pbData.conversion && _pbData.conversion.month && _pbData.conversion.month.rate !== undefined)
-                  ? _pbData.conversion.month.rate : '—';
-  parts.push('이번 달 문의 ' + inqMonth + '건 · 클릭 ' + clickMonth + ' · 전환 ' + convRate + '%');
-
-  el.textContent = parts.length > 0 ? parts.join(' · ') : '데이터 집계 대기 중';
+  el.innerHTML = '<div style="display:flex;align-items:stretch;gap:8px;flex-wrap:wrap">'
+    + card('🖱', '① 문의 페이지 클릭', clicks, '문의 버튼 누른 횟수', 'var(--f1)')
+    + arrow(r1, '클릭→문의')
+    + card('📝', '② 문의 접수', inq, '실제 문의 작성', 'var(--f2)')
+    + arrow(r2, '문의→등록')
+    + card('✅', '③ 회원 등록', conv, '전화번호 매칭(월)', 'var(--f5)')
+    + '</div>'
+    + '<div style="font-size:11px;color:var(--dim);margin-top:8px">이번 달 기준 · 등록은 전화번호 매칭으로 월 단위 집계</div>';
 }
 
 // ─── 월 목표 게이지 ──────────────────────────────────────────────
@@ -924,7 +690,7 @@ async function loadFunnelConversion() {
     // 채널별 비교 표 — 모듈 변수 저장 후 라이브 렌더
     _fcData = data;
     renderChannelTableLive();
-    renderInsightBar();
+    renderConversionFlow();
     renderGoalGauge();
 
   } catch (e) {
@@ -1118,7 +884,7 @@ function _applyPeriodData(data, period) {
   if (period === 'month') {
     _pbData = data;
     renderChannelTableLive();
-    renderInsightBar();
+    renderConversionFlow();
     renderGoalGauge();
   }
 

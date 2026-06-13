@@ -457,9 +457,22 @@ function renderConversionSummary(fc) {
     return;
   }
   const cls = rate != null ? getRateClass(rate) : "";
-  el.innerHTML = `문의 <strong>${fmtNum(inq)}</strong>건 →
+  let html = `문의 <strong>${fmtNum(inq)}</strong>건 →
     회원 전환 <strong>${fmtNum(conv)}</strong>명
     <span class="rate-chip ${cls}" style="margin-left:6px">${rate != null ? fmtPct(rate) : "—"}</span>`;
+  // 최강/약세 채널 한 줄 인사이트 (대시보드 상단 요약 이관 — 기타·미상 제외, 문의 20건+ 채널만)
+  const ch = Array.isArray(fc?.byChannel)
+    ? fc.byChannel.filter(d => (d.inquiries || 0) >= 20 && d.channel !== "기타·미상") : [];
+  if (ch.length) {
+    const best  = ch.reduce((a, b) => (b.rate || 0) > (a.rate || 0) ? b : a);
+    const worst = ch.reduce((a, b) => (b.rate || 0) < (a.rate || 0) ? b : a);
+    html += `<div style="margin-top:10px;font-size:13px;color:var(--dim)">🔥 최강 전환 <strong style="color:var(--text)">${best.channel} ${best.rate}%</strong>`;
+    if (worst.channel !== best.channel) {
+      html += ` · 약세 <strong style="color:var(--text)">${worst.channel} ${worst.rate}%</strong> (재점검)`;
+    }
+    html += ` <span style="font-size:11px">· 누적 전환율 기준</span></div>`;
+  }
+  el.innerHTML = html;
 }
 
 /* ── 유형 바 렌더 ── */
