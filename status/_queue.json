@@ -402,5 +402,25 @@
     "enqueued_at": "2026-06-12",
     "disposed_at": "2026-06-13",
     "note_disposed": "[2026-06-13 GM 지시·시토] 완료 후 G1 입항완료 적체 정리 — 폐기 전환으로 G1 기본뷰에서 내림(검색이력·완료기록 보존, 원상태=DONE)."
+  },
+  {
+    "task_id": "CTO-2026-06-13-BAT-FULL-REORG",
+    "clevel": "cto",
+    "title": "[시토] .bat 전체정리(B) 재개 — 활성 6개 ops/ig 이동 + 예약작업 경로 갱신 (GM 관리자 권한 필요)",
+    "status": "PENDING",
+    "priority": "NORMAL",
+    "depends_on": "GM 관리자 권한(schtasks /Change)",
+    "enqueued_at": "2026-06-13",
+    "note": "[2026-06-13 시토] 오늘 전체정리 B 시도 → schtasks 경로변경이 비관리자 세션서 무한대기(2회) → 안전 롤백(루트 15개 유지, 매일작동 정상). 비활성 6개는 _archive/ig_legacy/ 이관 완료(무위험). 재개 절차: ① register형 '관리자 실행' .bat 1개 작성 = ops/ig 폴더생성+활성6개 이동+schtasks /Change 3개(CEO_DAILY_CLEVEL_CHECK→ops, Wellperion-CEO-Verify-Watcher→ops, Wellperion-IG-Series-Produce-0730→ig)+VBS(morning_update_hidden.vbs)·register(LAUNCHER) 경로 동시 갱신을 원샷 ② GM 우클릭 '관리자 실행' 1회 ③ 검증=예약작업 Task To Run↔파일 정합 실측. 대상: ops/=morning_update·CEO_DAILY_CHECK·start_ceo_verify_watcher·fix_task_windows / ig/=start_ig_series_producer·register_ig_series_produce_0730. Start-AI*7·wellperion·clevel은 루트 유지(진입점)."
+  },
+  {
+    "task_id": "CTO-2026-06-13-KPI-AUTOMATION-METRIC",
+    "clevel": "cto",
+    "title": "[시토] 시토 KPI 자동화 지표 보강 — S2/cto KPI 시설편중 해소 (GM 결재 영역)",
+    "status": "PENDING",
+    "priority": "LOW",
+    "depends_on": "GM 결재(KPI 정의)",
+    "enqueued_at": "2026-06-13",
+    "note": "[2026-06-13 시토·architect 분석] S2 cto탭 담당 KPI='시설 관리·예산 조율·시설 점검'으로 시설 편중. CTO 본질인 자동화·IT 인프라 지표가 누락(예산 조율은 CFO와도 겹침). 제안: '자동화 가동률·장애 0건' 류 기술 지표 1개 추가. KPI 정의는 GM 결재 영역 → GM 승인 후 S2 cto탭(가이드 HTML) 수정. 미승인 시 현행 유지."
   }
 ]
