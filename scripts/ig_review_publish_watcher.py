@@ -57,13 +57,20 @@ POST_URL_RE = re.compile(r"post\s+[A-C]:\s*(https?://\S+)", re.IGNORECASE)
 TELEGRAM_TOKEN_ENV_KEY = "TELEGRAM_BOT_TOKEN"
 TELEGRAM_CHAT_ID = "8254867551"  # @namuki_report_bot
 
+def _safe_print(text: str) -> None:
+    """cp949 등 좁은 콘솔 인코딩에서 인코딩 불가 문자를 '?'로 대체해 출력."""
+    try:
+        print(text)
+    except UnicodeEncodeError:
+        print(text.encode(sys.stdout.encoding or "utf-8", errors="replace").decode(sys.stdout.encoding or "utf-8", errors="replace"))
+
 
 # ----------------------------------------------------------------------
 def telegram(message: str) -> None:
     """텔레그램 1줄 보고 — 토큰 stdout 노출 금지 (메모리 feedback_no_token_in_stdout)."""
     token = os.environ.get(TELEGRAM_TOKEN_ENV_KEY, "").strip()
     if not token:
-        print("[WARN] 텔레그램 토큰 미설정 — 보고 생략")
+        _safe_print("[WARN] 텔레그램 토큰 미설정 — 보고 생략")
         return
     try:
         import urllib.parse
@@ -75,11 +82,11 @@ def telegram(message: str) -> None:
         req = urllib.request.Request(
             f"https://api.telegram.org/bot{token}/sendMessage", data=data, method="POST")
         with urllib.request.urlopen(req, timeout=10) as resp:
-            print(f"[INFO] 텔레그램 보고 {'성공' if resp.status == 200 else '실패'}")
+            _safe_print(f"[INFO] 텔레그램 보고 {'성공' if resp.status == 200 else '실패'}")
             log_outbound(message, chat_id=TELEGRAM_CHAT_ID, source="ig_review_publish_watcher.telegram", ok=(resp.status == 200), kind="sendMessage")
     except Exception:
         log_outbound(message, chat_id=TELEGRAM_CHAT_ID, source="ig_review_publish_watcher.telegram", ok=False, kind="sendMessage")
-        print("[WARN] 텔레그램 보고 실패 (토큰 trace 노출 방지로 상세 미출력)")
+        _safe_print("[WARN] 텔레그램 보고 실패 (토큰 trace 노출 방지로 상세 미출력)")
 
 
 def load_notified() -> set:
@@ -132,7 +139,7 @@ def notify_pending_review(items: list) -> None:
         )
         telegram(msg)
         newly_notified.append(item_id)
-        print(f"[INFO] 검수대기 알림 발송: {item_id}")
+        _safe_print(f"[INFO] 검수대기 알림 발송: {item_id}")
     if newly_notified:
         notified.update(newly_notified)
         save_notified(notified)
@@ -148,7 +155,7 @@ def pull_latest() -> None:
     """승인 신호 동기화 — dirty tree여도 autostash로 안전 rebase (메모리 git 원샷 원칙)."""
     git("fetch", "origin", "master")
     r = git("pull", "--rebase", "--autostash", "origin", "master")
-    print(f"[INFO] git pull: {(r.stdout + r.stderr).strip().splitlines()[-1:] or ['(no output)']}")
+    _safe_print(f"[INFO] git pull: {(r.stdout + r.stderr).strip().splitlines()[-1:] or ['(no output)']}")
 
 
 def load_queue() -> list:
@@ -226,7 +233,7 @@ def publish_item(it: dict) -> tuple[str | None, int]:
             except Exception:
                 pass
     out = (proc.stdout or "") + (proc.stderr or "")
-    print(out)
+    _safe_print(out)
     m = POST_URL_RE.search(out)
     url = m.group(1).rstrip("/") + "/" if m else None
     return url, proc.returncode
@@ -253,7 +260,7 @@ def publish_blog(it: dict) -> tuple[bool, str | None]:
     proc = subprocess.run(cmd, cwd=str(ROOT), capture_output=True, text=True,
                           encoding="utf-8", errors="replace", env=env, timeout=600)
     out = (proc.stdout or "") + (proc.stderr or "")
-    print(out)
+    _safe_print(out)
     m = POST_URL_RE.search(out)
     url = m.group(1).rstrip("/") + "/" if m else None
     # exit code 0 이면 URL 미회수여도 발행완료
@@ -285,7 +292,7 @@ def publish_cafe(it: dict) -> tuple[bool, str | None]:
     proc = subprocess.run(cmd, cwd=str(ROOT), capture_output=True, text=True,
                           encoding="utf-8", errors="replace", env=env, timeout=600)
     out = (proc.stdout or "") + (proc.stderr or "")
-    print(out)
+    _safe_print(out)
     m = POST_URL_RE.search(out)
     url = m.group(1).rstrip("/") + "/" if m else None
     # exit code 0 이면 URL 미회수여도 발행완료
@@ -304,13 +311,17 @@ def publish_danggn(it: dict) -> tuple[bool, str]:
         "--i-am-sure",
         "--content-dir", folder,
     ]
+    if it.get("image_dir"):
+        cmd += ["--image-dir", str(ROOT / it["image_dir"])]
+    if it.get("image_glob"):
+        cmd += ["--image-glob", it["image_glob"]]
     env = dict(os.environ, PYTHONIOENCODING="utf-8")
     try:
         proc = subprocess.run(cmd, cwd=str(ROOT), capture_output=True, text=True,
                               encoding="utf-8", errors="replace", env=env, timeout=600)
     except Exception as exc:
         return False, f"실행예외:{exc}"
-    print((proc.stdout or "") + (proc.stderr or ""))
+    _safe_print((proc.stdout or "") + (proc.stderr or ""))
     if proc.returncode == 0:
         return True, "ok"
     if proc.returncode == 5:
@@ -332,13 +343,17 @@ def publish_kakao(it: dict) -> tuple[bool, str]:
     ]
     if body_file:
         cmd += ["--body-file", str(ROOT / body_file)]
+    if it.get("image_dir"):
+        cmd += ["--image-dir", str(ROOT / it["image_dir"])]
+    if it.get("image_glob"):
+        cmd += ["--image-glob", it["image_glob"]]
     env = dict(os.environ, PYTHONIOENCODING="utf-8")
     try:
         proc = subprocess.run(cmd, cwd=str(ROOT), capture_output=True, text=True,
                               encoding="utf-8", errors="replace", env=env, timeout=600)
     except Exception as exc:
         return False, f"실행예외:{exc}"
-    print((proc.stdout or "") + (proc.stderr or ""))
+    _safe_print((proc.stdout or "") + (proc.stderr or ""))
     if proc.returncode == 0:
         return True, "ok"
     return False, f"exit={proc.returncode}"
@@ -538,12 +553,12 @@ def _run_once_inner(dry_run: bool) -> int:
     notify_pending_review(items)
     approved = [it for it in items if it.get("status") in APPROVED_STATES]
     if not approved:
-        print("[INFO] 발행할 승인 건 없음.")
+        _safe_print("[INFO] 발행할 승인 건 없음.")
         return 0
-    print(f"[INFO] 승인 건 {len(approved)}개 처리 시작 (dry_run={dry_run})")
+    _safe_print(f"[INFO] 승인 건 {len(approved)}개 처리 시작 (dry_run={dry_run})")
     items, events = process_queue(items, dry_run)
     for e in events:
-        print("  " + e)
+        _safe_print("  " + e)
     published = [e for e in events if e.startswith("✅")]
     manual = [e for e in events if e.startswith("📦")]
     if not dry_run and events:
