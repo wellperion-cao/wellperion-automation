@@ -2970,7 +2970,7 @@
         <table>
           <tr><th style="width:200px">원칙</th><th>내용</th></tr>
           <tr><td>핵심 스크립트 git 추적</td><td><code>clevel_post_action.py</code> 등 자동화 심장부 .py는 반드시 git 추적. <code>git ls-files</code> 빈 결과 = 위험. <code>__pycache__</code>에 .pyc만 있고 .py 없으면 소스 소실 신호 → 즉시 복원(.pyc 절대 삭제 금지).</td></tr>
-          <tr><td>상시 프로세스 자동기동 <span style="font-size:11px;color:var(--accent);">(원칙·왜·언제 점검)</span></td><td>봇·스케줄러(<code>bot.py</code>·<code>daily_scheduler.py</code>)는 가동 여부뿐 아니라 <strong>재기동 경로</strong>(ONLOGON 예약작업) 등록 확인. schtasks 생성은 관리자 권한 필수 → GM 직접 실행 라우팅. <strong>재기동 방법 상세 = T2 텔레그램탭 / 가동 현황 = T2 업무자동화SSOT.</strong></td></tr>
+          <tr><td>상시 프로세스 자동기동 <span style="font-size:11px;color:var(--accent);">(원칙·왜·언제 점검)</span></td><td>봇·스케줄러(<code>bot.py</code>·<code>daily_scheduler.py</code>)는 가동 여부뿐 아니라 <strong>재기동 경로</strong>(ONLOGON 예약작업) 등록 확인. schtasks 생성은 관리자 권한 필수 → GM 직접 실행 라우팅. <strong>재기동 방법 상세 = T2 ▸ 📨 텔레그램 정각 통합보고 10슬롯(🔄 재기동) / 가동 현황 = T2 업무자동화SSOT.</strong></td></tr>
           <tr><td>SSOT 하드코딩 동기화</td><td>업무 현황 SSOT 카테고리·예산 추가 시 흩어진 하드코딩 목록 전수 동기화(<code>CATEGORIES</code>·<code>CAT_COLORS</code>·<code>catOrder</code>·<code>BUDGET_CATEGORIES</code>·<code>routeApproval</code> 등). 가능하면 SSOT 상수 파생.</td></tr>
           <tr><td>대기 보고 포맷</td><td>대기 보고 포맷(3섹션 + 🔴 GM 결정·5필드)은 <strong>공통 탭 '작업 사이클 보고 포맷'이 단일 원본</strong> → 참조. CTO는 식별자 시토-N, 링크는 웰페리온 ERP 식별자(S1·S2·S3·M5·T1~T3·G1) 적용.</td></tr>
         </table>
@@ -3691,7 +3691,7 @@
             <h4><span class="ico">🔄</span>STEP 3 · 자동화 진단 (Fill)</h4>
             <table>
               <tr><th style="width:220px">트리거</th><th>채우는 컨텍스트</th></tr>
-              <tr><td>매일 06·07·09·12·15·18·21·22시 (9슬롯)</td><td>텔레그램 정각 보고 (daily_scheduler.py) — 슬롯 정본 = T2 텔레그램탭</td></tr>
+              <tr><td>매일 06·07·09·12·15·18·21·22시 (9슬롯)</td><td>텔레그램 정각 보고 (daily_scheduler.py) — 슬롯 정본 = T2 ▸ 📨 텔레그램 정각 통합보고 10슬롯</td></tr>
               <tr><td>매일 08:00</td><td>AI CEO 통합 보고 (ceo_morning_pipeline.py)</td></tr>
               <tr><td>매주 월 09:00</td><td>AI 교육자료 자동 정리 (education_archive_weekly.py)</td></tr>
               <tr><td>승인 시 (on-demand)</td><td>인스타 검수 승인 → 발행 엔진 1회 호출 (ig_review_publish_watcher.py · 구 120초 폴링 2026-06-03 폐기, 봇 콜백 전환 예정)</td></tr>
@@ -5479,7 +5479,7 @@ function crTab(btn, panelId) {
 
     <!-- ② 지금 돌고 있는 자동화 -->
     <h3>🟢 지금 돌고 있는 자동화 <span style="font-size:12px;color:var(--accent);font-weight:600;">(가동 현황 — 무엇이 도는가)</span></h3>
-    <p style="font-size:12px;color:var(--dim);margin:4px 0 0;">※ 재기동 방법 상세 = <strong>T2 텔레그램탭</strong> / 점검 원칙(왜·언제) = <strong>S2 CTO탭</strong>. 본 표는 가동 현황만.</p>
+    <p style="font-size:12px;color:var(--dim);margin:4px 0 0;">※ 재기동 방법 상세 = <strong>아래 📨 10슬롯 표의 🔄 재기동 안내</strong> / 점검 원칙(왜·언제) = <strong>S2 CTO탭</strong>. 본 표는 가동 현황만.</p>
 
     <h4>상시 가동</h4>
     <table>
@@ -5617,7 +5617,7 @@ function crTab(btn, panelId) {
         <li><strong>무폴링</strong>: 발행 트리거 = GM [✅승인] 탭만. 자동 재발행·스케줄 일괄발행 금지.</li>
         <li><strong>안전</strong>: <code>발행검증대기</code>는 재처리 대상 아님(이중발행 차단). <code>발행완료</code>는 웰리 실측 후에만 (헌법 STEP 3.5).</li>
         <li><strong>계정 파라미터화</strong>: 발행은 <code>--account &lt;계정&gt;</code> + <code>profiles/instagram/&lt;계정&gt;/</code> 세션으로 동작 → 계정 무관 확장 기반.</li>
-        <li><strong>구현 위치</strong>: <code>telegram_bot/bot.py</code>(pub 콜백) → <code>scripts/ig_review_publish_watcher.py</code>(발행검증대기 게이트 433·444행) → M5 보드 <code>badgeOf</code>. 흐름 정본 = <code>instagram/_AI시리즈_로드맵.md</code> §3.4.</li>
+        <li><strong>구현 위치</strong>: <code>telegram_bot/bot.py</code>(pub 콜백) → <code>scripts/ig_review_publish_watcher.py</code>(발행검증대기 도장 분기) → M5 보드 <code>badgeOf</code>. 흐름 정본 = <code>instagram/_AI시리즈_로드맵.md</code> §3.4.</li>
       </ul>
     </div>
     <!-- ══ /IG 발행 파이프라인 SSOT ══ -->
@@ -5643,7 +5643,7 @@ function crTab(btn, panelId) {
             <line x1="230" y1="370" x2="260" y2="260" stroke="#9ec6ec" stroke-width="2"/>
             <g><rect x="490" y="300" width="210" height="100" rx="12" fill="#e6f3ea" stroke="#2c8a4f"/><text x="595" y="328" text-anchor="middle" font-size="14" font-weight="700" fill="#1f6638">telegram_bot</text><text x="595" y="348" text-anchor="middle" font-size="12" fill="#2c8a4f">원격 통제 + 자동 보고</text><text x="595" y="366" text-anchor="middle" font-size="11" fill="#6b6a64">정각 10슬롯 보고 (T2 정본)</text><text x="595" y="384" text-anchor="middle" font-size="11" fill="#6b6a64">정각 보고 + 헬스체크</text></g>
             <line x1="490" y1="370" x2="460" y2="260" stroke="#b8d9bf" stroke-width="2"/>
-            <g><rect x="255" y="410" width="210" height="60" rx="12" fill="#fbeee5" stroke="#c9612b"/><text x="360" y="436" text-anchor="middle" font-size="14" font-weight="700" fill="#8c401a">scripts/</text><text x="360" y="455" text-anchor="middle" font-size="11" fill="#6b6a64">자동화 300+ 파이썬</text></g>
+            <g><rect x="255" y="410" width="210" height="60" rx="12" fill="#fbeee5" stroke="#c9612b"/><text x="360" y="436" text-anchor="middle" font-size="14" font-weight="700" fill="#8c401a">scripts/</text><text x="360" y="455" text-anchor="middle" font-size="11" fill="#6b6a64">자동화 50+ 핵심 .py</text></g>
             <line x1="360" y1="410" x2="360" y2="275" stroke="#ecc7ad" stroke-width="2"/>
           </svg>
           <div class="caption">사용자 3 채널 → 공통 축(텔레그램 + GAS 시트 + _queue.json) → 메인 3 영역</div>
@@ -5714,6 +5714,7 @@ function crTab(btn, panelId) {
         <p style="font-size:13px;">CMO-001-Calendar-Dispatcher (실행 이력 없음 확인) · CTO-008-MetaTokenRefresh (페북 영구 삭제로 불필요 확인)</p>
         <h4>기타 정리</h4>
         <p style="font-size:13px;">헛알림(미구현 자동 알림) 4건 2026-06-03 제거 — 실제 구현은 해당 C-Level 별도 기획.</p>
+        <p style="font-size:13px;">IG 레거시 <code>.bat</code> 6종 2026-06-13 <code>_archive/ig_legacy/</code> 이관 (폴링 watcher·07:30 dispatcher·21:00 producer — 승인즉시발행/07:30통합으로 대체, 활성 예약작업 참조 0 실측).</p>
       </div>
     </details>
     <div class="source">점검 기준: Windows Task Scheduler + Python 프로세스 실측 (2026-06-03 S3 산출 자동화 이관·정합)</div>
