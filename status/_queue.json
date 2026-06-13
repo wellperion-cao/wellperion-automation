@@ -11,6 +11,41 @@
     "next": "GM 지시 시 재개 — ①당근 자동연결부터 또는 ②로그인·토큰 열어 외부지표 일괄."
   },
   {
+    "task_id": "CMO-2026-06-13-CHANNEL-STANDARDIZE",
+    "clevel": "cmo",
+    "title": "[시모] 유입채널 10종 표준화 + 출처 딱지(UTM) 자동부착",
+    "status": "DONE",
+    "priority": "NORMAL",
+    "enqueued_at": "2026-06-13",
+    "processed_at": "2026-06-13",
+    "terminal": true,
+    "artifact": "GAS _canonicalChannel_ 라이브(funnel 8329건→10버킷 실측) + scripts/cta_utm.py(blog/danggn/kakao 발행시 ?utm_source 자동부착, 문의페이지 캡처 연동). 커밋 0de527e3·db7276bf",
+    "next": "외부지표 자동화·멤버십 채널 세부화는 CMO-2026-06-13-FUNNEL-DASH-NEXT로 이관"
+  },
+  {
+    "task_id": "CMO-2026-06-13-DASH-UPGRADE",
+    "clevel": "cmo",
+    "title": "[시모] 마케팅 대시보드 고도화·개편 — 핵심KPI·월목표200게이지·UTM유입출처·주간/월별추세·핵심전환흐름 + 흐름지도·문의채널현황 합병(스텁)·월네비·올해버튼·클릭2단",
+    "status": "DONE",
+    "priority": "NORMAL",
+    "enqueued_at": "2026-06-13",
+    "processed_at": "2026-06-13",
+    "terminal": true,
+    "artifact": "라이브검증 …/cmo/funnel/마케팅현황대시보드.html (renderConversionFlow·goal-gauge·utm-sources-body·monthly-trend-chart 점등, 옛 단계별·병목 제거, 흐름지도/문의채널현황 meta-refresh 스텁). 커밋 d09c5069·2a4eb28b·8f4ebf45·245f4c72·3c178ed2·e2fd54ca"
+  },
+  {
+    "task_id": "CMO-2026-06-13-F1-MEMBERSHIP-MERGE",
+    "clevel": "cmo",
+    "title": "[시모] F1 멤버십 문의 소스 교체 — '26년 신규문의' 스태프 로그 연결(이번달 문의 3→102건 정상화)",
+    "status": "DONE",
+    "priority": "HIGH",
+    "enqueued_at": "2026-06-13",
+    "processed_at": "2026-06-13",
+    "terminal": true,
+    "artifact": "GAS period_breakdown 실측 이번달 102건(멤버십24=GM실측 일치·성인강습33·유소년45)·전환 11명/10.8%. 타임스탬프 B칸 헤더 동적탐색(idxDate)+한글날짜 파서. 커밋 83a8ec56·dd4f2b48",
+    "next": "멤버십 채널 세부화('문의 경로 중분류')는 CMO-2026-06-13-FUNNEL-DASH-NEXT로"
+  },
+  {
     "task_id": "COO-2026-06-13-CHECK-PAGES-LAYOUT-VERIFY",
     "clevel": "coo",
     "title": "[시우] 4개 부서 체계 레이아웃 표준화 — GM 라이브 검증 + 미세조정",
