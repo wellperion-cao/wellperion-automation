@@ -1811,68 +1811,82 @@ async function loadState(d,g){
   }catch(e){STATE=loadLocal(d,gg)}
 }
 
-let saveTimer=null, _pendingPushDate=null;
-/* 대기 중인 저장을 서버로 밀어냄(탭/날짜 이동 전). drawUI/렌더는 절대 호출 안 함(즉시 리셋 회귀 방지). GM 2026-06-12 */
-function flushPendingSave(){
-  if(saveTimer){ clearTimeout(saveTimer); saveTimer=null; const _d=_pendingPushDate; _pendingPushDate=null; if(ONLINE && _d)return pushToServer(_d); }
-  return Promise.resolve();
-}
-let _dirtyKeys={};   // '날짜__성별' → 서버 미저장 변경 있음(탭이동 시 로컬 보존용). GM 2026-06-12
-function saveState(d,g){
-  saveLocal(d,STATE,g);
-  _dirtyKeys[d+'__'+(g||activeGenderTab)]=true;
-  if(!ONLINE)return;
-  clearTimeout(saveTimer);
-  _pendingPushDate=d;
-  saveTimer=setTimeout(()=>{_pendingPushDate=null;pushToServer(d);},1200);
-}
+let saveTimer=null;
+let _stagedPush={};   // 성별(g) → 저장 페이로드 '스냅샷'. 저장 시점에 즉시 캡처 → 이후 STATE 초기화·탭전환 레이스에 면역. GM 2026-06-12
+let _dirtyKeys={};    // '날짜__성별' → 서버 미저장 변경 있음(탭이동 시 로컬 보존용). 서버 확정 후 해제.
 
-async function pushToServer(d){
-  const ind=document.getElementById('saveIndicator');
-  ind.style.display='block';ind.textContent='저장 중...';
-  // Use the active gender tab's schedule for determining items
-  const g=activeGenderTab;
+/* 현재 STATE에서 성별 g의 저장 페이로드를 만든다(스냅샷용·즉시 전송용 공용).
+   ⚠ 핵심: roundChecks·checks·이슈를 '지금' STATE에서 떠서 객체로 고정 → 디바운스가 늦게 떠도 그 성별의 그 시점 값이 정확히 전송. */
+function _buildPushPayload(d,g){
+  g=g||activeGenderTab;
   const sched=getActiveSchedG(d,g);
-  if(!sched){ind.style.display='none';return}
   const checks=[];
   const dow=getDayOfWeek(d);
-  // main sched items — push ALL items regardless of gender filter so server gets everything
-  // 2026-06-12 시우: 서버 전송 체크값을 현재 성별(g) 기준으로 — chkKey 성별화(30309942) 후에도
-  // pushToServer가 성별 무시(isCheckedAny(it))로 보내 서버 재로드 시 남↔여 섞이던 버그 차단.
-  // 각 check에 gender:g 포함(서버가 성별별 저장·조회 가능하게 정보 전달). 서버측 GAS 격리는 별도.
-  sched.forEach(slot=>{slot.groups.forEach(gr=>{gr.items.forEach(it=>{
-    checks.push({itemId:it.id,name:it.name,cat:gr.title,slot:slot.slot,shift:slot.shift,gender:g,
-      checked:isCheckedAny(it,g),issue:STATE['iss_'+it.id]||'',tip:STATE['tip_'+it.id]||'',
-      measure:collectTempJSON(it.id),reflected:!!STATE['reflected_'+it.id]});
-  })})});
-  // day focus items
-  if(DAY_FOCUS[dow]){
-    DAY_FOCUS[dow].forEach(it=>{
-      checks.push({itemId:it.id,name:it.name,cat:'요일별 집중 청소',slot:'요일별',shift:'focus',gender:g,
+  if(sched){
+    sched.forEach(slot=>{slot.groups.forEach(gr=>{gr.items.forEach(it=>{
+      // 타 성별 전용 항목은 전송 제외(여성시트에 남성탭 미완료가 쌓이던 누수 차단). 공용('all')은 포함.
+      if(typeof shouldShowItemForGender==='function'&&!shouldShowItemForGender(it,g))return;
+      checks.push({itemId:it.id,name:it.name,cat:gr.title,slot:slot.slot,shift:slot.shift,gender:g,
         checked:isCheckedAny(it,g),issue:STATE['iss_'+it.id]||'',tip:STATE['tip_'+it.id]||'',
         measure:collectTempJSON(it.id),reflected:!!STATE['reflected_'+it.id]});
-    });
+    })})});
+    if(DAY_FOCUS[dow]){
+      DAY_FOCUS[dow].forEach(it=>{
+        if(typeof shouldShowItemForGender==='function'&&!shouldShowItemForGender(it,g))return;
+        checks.push({itemId:it.id,name:it.name,cat:'요일별 집중 청소',slot:'요일별',shift:'focus',gender:g,
+          checked:isCheckedAny(it,g),issue:STATE['iss_'+it.id]||'',tip:STATE['tip_'+it.id]||'',
+          measure:collectTempJSON(it.id),reflected:!!STATE['reflected_'+it.id]});
+      });
+    }
   }
-  // 회차별 체크맵 — 현재 성별(g)의 chkKey 전체('<round>_<id>') → 서버 led.cr 영속(회차 격리 복원용). GM 2026-06-12
   const _cpfx='chk_'+g+'_';
   const roundChecks=Object.keys(STATE).filter(k=>k.indexOf(_cpfx)===0&&STATE[k]===true).map(k=>k.slice(_cpfx.length));
+  return {action:'save',date:d,checks,dept:DEPT,genderTab:g,roundChecks:roundChecks,
+    duty:(typeof getDutyForGender==='function'?getDutyForGender(g):''),
+    groupSubmits:collectGroupSubmits(),
+    submitted_am:!!STATE._submitted_am,submittedAt_am:STATE._submittedAt_am||'',submitter_am:STATE._submitter_am||'',
+    submitted_pm:!!STATE._submitted_pm,submittedAt_pm:STATE._submittedAt_pm||'',submitter_pm:STATE._submitter_pm||'',
+    submitted_night:!!STATE._submitted_night,submittedAt_night:STATE._submittedAt_night||'',submitter_night:STATE._submitter_night||''};
+}
+
+/* 페이로드 1건 실제 전송 */
+async function _postPayload(payload){
+  const d=payload.date, g=payload.genderTab;
+  const ind=document.getElementById('saveIndicator');
+  if(ind){ind.style.display='block';ind.textContent='저장 중...';}
   try{
-    await fetch(API_URL,{method:'POST',redirect:'follow',
-      headers:{'Content-Type':'text/plain'},
-      body:JSON.stringify({action:'save',date:d,checks,dept:DEPT,
-        genderTab:g,
-        roundChecks:roundChecks,   // 회차별 영속
-        duty:(typeof getDutyForGender==='function'?getDutyForGender(g):''),   // 담당자(규정 근무조) → 시트 담당자 칸 기록
-        groupSubmits:collectGroupSubmits(),
-        submitted_am:!!STATE._submitted_am,submittedAt_am:STATE._submittedAt_am||'',submitter_am:STATE._submitter_am||'',
-        submitted_pm:!!STATE._submitted_pm,submittedAt_pm:STATE._submittedAt_pm||'',submitter_pm:STATE._submitter_pm||'',
-        submitted_night:!!STATE._submitted_night,submittedAt_night:STATE._submittedAt_night||'',submitter_night:STATE._submitter_night||''
-      })
-    });
-    delete _dirtyKeys[d+'__'+g];   // 서버 반영 완료 → 이후 loadState는 서버 우선(로컬 오버레이 해제)
-    ind.textContent='저장 완료';
-  }catch(e){ind.textContent='저장 실패 (로컬 저장됨)'}
-  setTimeout(()=>{ind.style.display='none'},1500);
+    await fetch(API_URL,{method:'POST',redirect:'follow',headers:{'Content-Type':'text/plain'},body:JSON.stringify(payload)});
+    delete _dirtyKeys[d+'__'+g];   // 서버 확정 → 로컬 오버레이 해제
+    if(ind)ind.textContent='저장 완료';
+  }catch(e){ if(ind)ind.textContent='저장 실패 (로컬 저장됨)'; }
+  if(ind)setTimeout(()=>{ind.style.display='none'},1500);
+}
+
+/* 스테이징된(성별별) 스냅샷을 모두 전송. 탭전환 직전에도 호출(떠나는 탭 체크를 정확히 영속). */
+function flushStagedPush(){
+  clearTimeout(saveTimer); saveTimer=null;
+  const gs=Object.keys(_stagedPush);
+  if(!gs.length)return Promise.resolve();
+  return Promise.all(gs.map(function(g){ const p=_stagedPush[g]; delete _stagedPush[g]; return _postPayload(p); }));
+}
+/* 하위호환 별칭 */
+function flushPendingSave(){ return flushStagedPush(); }
+
+function saveState(d,g){
+  g=g||activeGenderTab;
+  saveLocal(d,STATE,g);
+  _dirtyKeys[d+'__'+g]=true;
+  if(!ONLINE)return;
+  _stagedPush[g]=_buildPushPayload(d,g);   // 즉시 스냅샷(성별 분리 — 남/여 안 섞임, STATE 초기화에 면역)
+  clearTimeout(saveTimer);
+  saveTimer=setTimeout(flushStagedPush,1200);
+}
+
+/* 직접·즉시 전송(제출·리셋 등 await 호출). 현재 STATE 기준으로 빌드해 바로 보냄. */
+async function pushToServer(d,g){
+  g=g||activeGenderTab;
+  if(_stagedPush[g])delete _stagedPush[g];   // 같은 성별 스테이징분은 즉시전송으로 대체(중복 방지)
+  return _postPayload(_buildPushPayload(d,g));
 }
 
 function getShiftStatsG(sched,sh,ds,gender){
@@ -3572,6 +3586,8 @@ async function copyShare(){
 }
 
 function switchTab(tab, opts){
+  // 탭 떠나기 전, 대기 중인 저장 스냅샷을 즉시 전송(떠나는 탭 체크 영속 보장 — 스냅샷이라 레이스 없음). GM 2026-06-12
+  try{ flushStagedPush(); }catch(e){}
   // 점검(남)·점검(여) 비밀번호 보호
   if(opts==='lock' && sessionStorage.getItem('checkAuth')!=='1'){
     var pw = prompt('점검 탭 비밀번호를 입력하세요');
