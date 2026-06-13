@@ -2448,24 +2448,9 @@ function scheduleBadges(it, name, detail){
     _w.forEach(function(wk){ if(WL[wk])h2+=' <span style="font-size:10px;color:#1f8a70;background:rgba(31,138,112,0.14);padding:1px 6px;border-radius:6px;font-weight:700;">'+WL[wk]+'</span>'; });
     return h2;
   }
-  // sched 미설정 시 요일 배지 없음 — detail/name 텍스트 요일 파싱 폐기(c5556e62 정합, GM 2026-06-13)
-  // txt는 주기(반복) 배지(격주·첫째주 등)에서만 사용 — 요일 파싱에는 더 이상 쓰지 않음
-  const txt=String(name||'')+' '+String(detail||'');
-  let html='';
-  /* 주기(반복) 배지 */
-  const per=[]; const seen={};
-  function addP(p){ if(p&&!seen[p]){seen[p]=1;per.push(p);} }
-  if(/격주/.test(txt))addP('격주');
-  (txt.match(/[첫둘셋넷]째\s*주/g)||[]).forEach(function(s){addP(s.replace(/\s+/g,''));});
-  var jm=txt.match(/주\s*([0-9])\s*회/); if(jm)addP('주'+jm[1]+'회');
-  var mm=txt.match(/월\s*([0-9])\s*회/); if(mm)addP('월'+mm[1]+'회');
-  var nw=txt.match(/([0-9])\s*[·,]\s*([0-9])\s*주/); if(nw)addP(nw[1]+'·'+nw[2]+'주');
-  if(/매주/.test(txt))addP('매주');
-  if(/휴관일/.test(txt))addP('휴관일');
-  per.forEach(function(p){
-    html+=' <span style="font-size:10px;color:#1f8a70;background:rgba(31,138,112,0.14);padding:1px 6px;border-radius:6px;font-weight:700;">'+p+'</span>';
-  });
-  return html;
+  // sched 미설정 = 배지 없음. 요일·주기(격주·몇째주·주N회·휴관일 등) 모두 sched 체크값에서만 표시.
+  // detail/name 텍스트 파싱 전면 폐기 — 체크 안 했는데 떠 보이던 버그 차단(GM 2026-06-13).
+  return '';
 }
 /* ── 구역(그룹) 자체 CRUD — 추가/이름변경/삭제(숨김). 매뉴얼·점검 동일 반영. GM 2026-06-12.
    rename = 원본 구역명→표시명 맵(아이템 데이터 무변경, 표시단계 매핑). hidden = 구역 통째 숨김. added = 빈 구역 등록. */
