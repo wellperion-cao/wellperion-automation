@@ -219,19 +219,33 @@ function _processAction(body) {
 
   // ─── 클릭 통계 ───
   if (action === 'click_stats') {
+    // 캐시 조회 (cs_v2 — byUtmSource 추가 버전)
+    var csCache = CacheService.getScriptCache();
+    var csHit = csCache.get('cs_v2');
+    if (csHit) return _json(JSON.parse(csHit));
+
     const sh = _getSheet(CLICK_SHEET, CLICK_HEADERS);
     const last = sh.getLastRow();
-    if (last < 2) return _json({ ok: true, total: 0, byLink: {} });
+    if (last < 2) return _json({ ok: true, total: 0, byLink: {}, byLinkUrl: {}, byUtmSource: {} });
 
     const data = sh.getRange(2, 1, last - 1, CLICK_HEADERS.length).getValues();
     const byLink = {};
     const byLinkUrl = {};  // 링크명 → 가장 최근 링크URL (대시보드 '↗ 보기' 링크 + litt.ly 등 출처 확인용)
-    data.forEach(row => {
-      const name = row[2] || '기타';
+    const byUtmSource = {};  // UTM 소스별 클릭 건수 집계
+    data.forEach(function(row) {
+      var name = row[2] || '기타';
       byLink[name] = (byLink[name] || 0) + 1;
       if (row[3]) byLinkUrl[name] = row[3];
+
+      // UTM 소스 집계 (인덱스 4): 'homepage' 또는 빈값 → '직접/홈', 그 외는 원문 그대로
+      var utmRaw = String(row[4] || '').trim();
+      var utmKey = (!utmRaw || utmRaw === 'homepage') ? '직접/홈' : utmRaw;
+      byUtmSource[utmKey] = (byUtmSource[utmKey] || 0) + 1;
     });
-    return _json({ ok: true, total: data.length, byLink: byLink, byLinkUrl: byLinkUrl });
+
+    var csResult = { ok: true, total: data.length, byLink: byLink, byLinkUrl: byLinkUrl, byUtmSource: byUtmSource };
+    try { csCache.put('cs_v2', JSON.stringify(csResult), 300); } catch (e) { /* 캐시 저장 실패 무시 */ }
+    return _json(csResult);
   }
 
   // ─── 문의 목록 ───
@@ -556,6 +570,96 @@ function _processAction(body) {
     // 캐시 저장 (100KB 초과 시 생략)
     try { pbCache.put(pbKey, JSON.stringify(pbResult), 300); } catch (e) { /* 캐시 저장 실패 무시 */ }
     return _json(pbResult);
+  }
+
+  // ─── 주간 추세 (최근 8주 시계열) ───
+  if (action === 'weekly_trend') {
+    // 캐시 조회
+    var wtCache = CacheService.getScriptCache();
+    var wtHit = wtCache.get('wt_v1');
+    if (wtHit) return _json(JSON.parse(wtHit));
+
+    // ── 이번 주 월요일 기준 8주 구간 산출 (Asia/Seoul) ──
+    var wtNow = new Date();
+    var wtDow = parseInt(Utilities.formatDate(wtNow, 'Asia/Seoul', 'u'), 10); // 1=월 … 7=일
+    var wtMonDate = new Date(wtNow.getTime() - (wtDow - 1) * 86400000);
+    var wtWeekStr = Utilities.formatDate(wtMonDate, 'Asia/Seoul', 'yyyy-MM-dd');
+    var wtThisWeekStart = new Date(wtWeekStr + 'T00:00:00+09:00');
+
+    // 8개 구간: 7주 전 월요일 ~ 이번 주 일요일
+    var wtBuckets = [];  // [{start: Date, end: Date, weekStart: 'YYYY-MM-DD', inquiries: 0, clicks: 0}]
+    for (var wi = 7; wi >= 0; wi--) {
+      var bucketStart = new Date(wtThisWeekStart.getTime() - wi * 7 * 86400000);
+      var bucketEnd   = new Date(bucketStart.getTime()     + 7 * 86400000);
+      var bucketStr   = Utilities.formatDate(bucketStart, 'Asia/Seoul', 'yyyy-MM-dd');
+      wtBuckets.push({ start: bucketStart, end: bucketEnd, weekStart: bucketStr, inquiries: 0, clicks: 0 });
+    }
+
+    // 타임스탬프(Date|string) → Date 변환 (period_breakdown 의 _toDate_ 와 동일 로직)
+    function _wtToDate_(ts) {
+      if (ts instanceof Date) return ts;
+      var s = String(ts || '').trim();
+      if (!s) return new Date(NaN);
+      return new Date(s.replace(' ', 'T') + '+09:00');
+    }
+
+    // ── 클릭 타임스탬프 집계 ──
+    var wtClickSh   = _getSheet(CLICK_SHEET, CLICK_HEADERS);
+    var wtClickLast = wtClickSh.getLastRow();
+    if (wtClickLast >= 2) {
+      var wtClickData = wtClickSh.getRange(2, 1, wtClickLast - 1, CLICK_HEADERS.length).getValues();
+      wtClickData.forEach(function(r) {
+        if (!r[1]) return;
+        var d = _wtToDate_(r[1]);
+        if (isNaN(d.getTime())) return;
+        for (var bi = 0; bi < wtBuckets.length; bi++) {
+          if (d >= wtBuckets[bi].start && d < wtBuckets[bi].end) {
+            wtBuckets[bi].clicks++;
+            break;
+          }
+        }
+      });
+    }
+
+    // ── 문의 타임스탬프 집계 — 문의접수 시트 + 구글폼 합산 ──
+    var wtInqSh   = _getSheet(INQUIRY_SHEET, INQUIRY_HEADERS);
+    var wtInqLast = wtInqSh.getLastRow();
+    if (wtInqLast >= 2) {
+      var wtInqData = wtInqSh.getRange(2, 1, wtInqLast - 1, INQUIRY_HEADERS.length).getValues();
+      wtInqData.forEach(function(r) {
+        if (!r[1]) return;
+        var d = _wtToDate_(r[1]);
+        if (isNaN(d.getTime())) return;
+        for (var bi = 0; bi < wtBuckets.length; bi++) {
+          if (d >= wtBuckets[bi].start && d < wtBuckets[bi].end) {
+            wtBuckets[bi].inquiries++;
+            break;
+          }
+        }
+      });
+    }
+
+    // 구글폼 문의 합산
+    _collectFormInquiries_().forEach(function(f) {
+      if (!f.시각) return;
+      var d = _wtToDate_(f.시각);
+      if (isNaN(d.getTime())) return;
+      for (var bi = 0; bi < wtBuckets.length; bi++) {
+        if (d >= wtBuckets[bi].start && d < wtBuckets[bi].end) {
+          wtBuckets[bi].inquiries++;
+          break;
+        }
+      }
+    });
+
+    // ── 응답 조립 (오래된→최신 순, start/end Date 는 제거) ──
+    var wtWeeks = wtBuckets.map(function(b) {
+      return { weekStart: b.weekStart, inquiries: b.inquiries, clicks: b.clicks };
+    });
+
+    var wtResult = { ok: true, weeks: wtWeeks, generatedAt: _now() };
+    try { wtCache.put('wt_v1', JSON.stringify(wtResult), 300); } catch (e) { /* 캐시 저장 실패 무시 */ }
+    return _json(wtResult);
   }
 
   return _json({ ok: false, error: '알 수 없는 action: ' + action });

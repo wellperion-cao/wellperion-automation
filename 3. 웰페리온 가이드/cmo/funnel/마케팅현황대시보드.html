@@ -149,6 +149,21 @@ a{color:var(--accent);text-decoration:none}
 .report-btn{display:inline-flex;align-items:center;gap:8px;background:var(--paper);border:1px solid var(--border);border-radius:10px;padding:10px 16px;color:var(--text);font-size:13px;font-weight:700;text-decoration:none;transition:background .15s}
 .report-btn:hover{background:var(--accent-bg);color:var(--accent)}
 
+/* UTM 출처 가로 막대 */
+.utm-bar-wrap{margin-bottom:7px}
+.utm-bar-label-row{display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px}
+.utm-bar-label-row .utm-name{color:var(--text)}
+.utm-bar-label-row .utm-count{color:var(--accent);font-weight:700}
+.utm-bar-track{background:var(--border);border-radius:4px;height:7px;overflow:hidden}
+.utm-bar-fill{height:100%;background:var(--accent);border-radius:4px;transition:width .4s ease}
+
+/* 주간 스파크라인 */
+.sparkline-wrap{display:flex;align-items:flex-end;gap:5px;height:52px;padding:0 2px}
+.spark-col{display:flex;flex-direction:column;align-items:center;gap:2px;flex:1;cursor:default}
+.spark-bar-inq{border-radius:3px 3px 0 0;min-height:2px;transition:height .3s ease}
+.spark-bar-clk{border-radius:3px 3px 0 0;min-height:2px;opacity:.38;transition:height .3s ease}
+.spark-week-label{font-size:9px;color:var(--dim);white-space:nowrap;margin-top:2px}
+
 /* Footer */
 .page-footer{text-align:center;padding:20px;font-size:11px;color:var(--dim);border-top:1px solid var(--border);margin-top:20px}
 
@@ -245,6 +260,20 @@ a{color:var(--accent);text-decoration:none}
 
   <!-- 월 목표 게이지 -->
   <div id="goal-gauge" style="margin-bottom:20px"></div>
+
+  <!-- 주간 추세 스파크라인 (최근 8주) -->
+  <div class="section" id="weekly-trend-section">
+    <div class="section-title">주간 추세 <span style="font-size:11px;font-weight:400;color:var(--accent);text-transform:none;letter-spacing:0">(최근 8주)</span></div>
+    <div style="background:var(--paper);border:1px solid var(--border);border-radius:12px;padding:16px 18px">
+      <div style="display:flex;gap:16px;margin-bottom:10px;font-size:11px">
+        <span style="display:flex;align-items:center;gap:5px"><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:var(--accent)"></span>문의</span>
+        <span style="display:flex;align-items:center;gap:5px"><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:var(--accent);opacity:.38"></span>클릭</span>
+      </div>
+      <div id="weekly-trend-chart" class="sparkline-wrap">
+        <div style="color:var(--dim);font-size:13px">추세 데이터 집계 대기</div>
+      </div>
+    </div>
+  </div>
 
   <!-- 실시간 클릭 현황 (click_stats 자동 집계) -->
   <div class="section">
@@ -501,6 +530,14 @@ a{color:var(--accent);text-decoration:none}
       </div>
     </div>
 
+  </div>
+
+  <!-- 유입 클릭 출처 (UTM 소스별) -->
+  <div class="section" id="utm-sources-section">
+    <div class="section-title">유입 클릭 출처 <span style="font-size:11px;font-weight:400;color:var(--accent);text-transform:none;letter-spacing:0">(UTM 누적)</span></div>
+    <div id="utm-sources-body" style="background:var(--paper);border:1px solid var(--border);border-radius:12px;padding:16px 18px">
+      <div style="color:var(--dim);font-size:13px">불러오는 중…</div>
+    </div>
   </div>
 
   <!-- 채널별 Funnel 비교 — 실데이터 라이브 렌더 -->
@@ -796,6 +833,9 @@ async function loadClickStats() {
     if (!data || !data.ok) return;
     var byLink = data.byLink || {};
 
+    // UTM 출처 섹션 렌더 (byUtmSource 존재 시)
+    if (data.byUtmSource) renderUtmSources(data.byUtmSource);
+
     var box = document.getElementById('click-breakdown-body');
     if (box) {
       var labels = { '멤버십문의':'멤버십 문의', '성인강습문의':'성인 강습 문의', '유소년강습문의':'유소년 강습 문의', '여름방학특강문의':'여름방학 특강 문의', '페이지 진입':'페이지 진입(참고)' };
@@ -1054,11 +1094,115 @@ function switchPeriod(period) {
   loadPeriodBreakdown(period);
 }
 
+// ─── 유입 클릭 출처 (UTM 소스) 렌더 ────────────────────────────────
+// UTM 소스 코드 → 한글 라벨 매핑
+var UTM_LABELS = {
+  'instagram':   '인스타그램',
+  'naver_blog':  '네이버 블로그',
+  'naver_cafe':  '동부이촌동 카페',
+  'kakao':       '카카오톡',
+  'danggn':      '당근마켓',
+  '직접/홈':     '직접·홈'
+};
+
+function renderUtmSources(byUtmSource) {
+  var wrap = document.getElementById('utm-sources-body');
+  if (!wrap) return;
+
+  // 데이터 유무 확인
+  var keys = Object.keys(byUtmSource || {});
+  if (!keys.length) {
+    wrap.innerHTML = '<div style="color:var(--dim);font-size:13px">아직 출처 태깅된 유입 없음 — 채널 링크에 ?utm_source 부착 후 집계</div>';
+    return;
+  }
+
+  // 건수 내림차순 정렬
+  var sorted = keys.map(function(k) {
+    return { key: k, label: UTM_LABELS[k] || k, count: byUtmSource[k] || 0 };
+  });
+  sorted.sort(function(a, b) { return b.count - a.count; });
+
+  var maxCount = sorted[0].count || 1;
+  var html = '';
+  sorted.forEach(function(item) {
+    var pct = Math.round((item.count / maxCount) * 100);
+    html += '<div class="utm-bar-wrap">'
+      + '<div class="utm-bar-label-row">'
+      + '<span class="utm-name">' + item.label + '</span>'
+      + '<span class="utm-count">' + item.count + '건</span>'
+      + '</div>'
+      + '<div class="utm-bar-track">'
+      + '<div class="utm-bar-fill" style="width:' + pct + '%"></div>'
+      + '</div>'
+      + '</div>';
+  });
+  wrap.innerHTML = html;
+}
+
+// ─── 주간 추세 스파크라인 렌더 ──────────────────────────────────────
+function renderWeeklyTrend(weeks) {
+  var wrap = document.getElementById('weekly-trend-chart');
+  if (!wrap) return;
+
+  if (!weeks || !weeks.length) {
+    wrap.innerHTML = '<div style="color:var(--dim);font-size:13px">추세 데이터 집계 대기</div>';
+    return;
+  }
+
+  // 문의·클릭 최댓값 (막대 높이 기준, 최소 1)
+  var maxInq = 1, maxClk = 1;
+  weeks.forEach(function(w) {
+    if ((w.inquiries || 0) > maxInq) maxInq = w.inquiries;
+    if ((w.clicks    || 0) > maxClk) maxClk = w.clicks;
+  });
+
+  // 스파크라인 전체 높이 (px) — CSS .sparkline-wrap height:52px 에서 레이블 15px 제외
+  var BAR_H = 36;
+
+  var html = '';
+  var lastIdx = weeks.length - 1;
+  weeks.forEach(function(w, i) {
+    var inqH = Math.max(2, Math.round((w.inquiries / maxInq) * BAR_H));
+    var clkH = Math.max(2, Math.round((w.clicks    / maxClk) * BAR_H));
+    var isLast = (i === lastIdx);
+    // 이번 주(마지막) 강조: 문의 막대 색 밝게
+    var inqColor = isLast ? 'var(--green)' : 'var(--accent)';
+    var weekLabel = w.weekStart ? w.weekStart.substring(5) : '';  // MM-DD
+    var titleAttr = 'title="주 시작 ' + (w.weekStart || '') + ': 문의 ' + (w.inquiries || 0) + '·클릭 ' + (w.clicks || 0) + '"';
+
+    html += '<div class="spark-col" ' + titleAttr + '>'
+      // 클릭 막대 (옅게, 뒤에 쌓임)
+      + '<div class="spark-bar-clk" style="height:' + clkH + 'px;background:var(--accent)"></div>'
+      // 문의 막대 (주력, 굵게)
+      + '<div class="spark-bar-inq" style="height:' + inqH + 'px;background:' + inqColor + ';font-weight:700"></div>'
+      + '<div class="spark-week-label"' + (isLast ? ' style="color:var(--accent);font-weight:700"' : '') + '>' + weekLabel + '</div>'
+      + '</div>';
+  });
+  wrap.innerHTML = html;
+}
+
+// ─── 주간 추세 fetch ─────────────────────────────────────────────────
+async function loadWeeklyTrend() {
+  try {
+    var url = FUNNEL_APPS_SCRIPT_URL + '?action=weekly_trend';
+    var res = await fetch(url, { redirect: 'follow' });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    var data = await res.json();
+    if (!data || !data.ok) throw new Error('ok=false');
+    renderWeeklyTrend(data.weeks);
+  } catch (e) {
+    var wrap = document.getElementById('weekly-trend-chart');
+    if (wrap) wrap.innerHTML = '<div style="color:var(--dim);font-size:13px">추세 데이터 집계 대기</div>';
+    console.warn('[weekly_trend] 로드 실패:', e.message);
+  }
+}
+
 document.addEventListener('DOMContentLoaded', function() {
   loadFunnelConversion();
   loadClickStats();
   loadEngagementFeed();
   loadPeriodBreakdown('month');  // 기본 기간: 월
+  loadWeeklyTrend();             // 주간 추세 스파크라인
 });
 </script>
 </body>
