@@ -50,6 +50,31 @@ function _findCol_(headers, keys) {
   return -1;
 }
 
+// ─── 유입채널 표준화 (시모·GM 2026-06-13 확정 — 마케팅용 10버킷) ───
+// 자유텍스트(과거 리셉션 + 구글폼 자유입력)로 300여 개 난립한 채널 원문을 표준 10종으로 정규화한다.
+// 비파괴: 시트 원본은 손대지 않고, 대시보드 집계(byChannel/byChannelMonth) '읽기 시점'에만 적용.
+// ⚠️ 과거 리셉션이 '온라인 (네이버/동커/카카오/인스타)'로 뭉뚱그린 묶음(약 26%)은 단일 채널 귀속이 불가능
+//    → '기타·미상'으로 보존(날조 금지). 채널별 ROI는 구글폼 드롭다운(Layer B) 이후 신규 데이터부터 정확해진다.
+var CANONICAL_CHANNELS = ['네이버', '동부이촌동 커뮤니티', '인스타그램', '카카오톡', '당근마켓',
+                          '소개·지인', '기존·과거 회원', '오프라인', '유선전화', '기타·미상'];
+
+function _canonicalChannel_(raw) {
+  var s = String(raw == null ? '' : raw).trim();
+  if (!s) return '기타·미상';
+  // 과거 '온라인 (...)' 묶음 = 다채널 합산 → 단일 귀속 불가
+  if (/^온라인\s*[\(（]/.test(s)) return '기타·미상';
+  if (/인스타|instagram|insta/i.test(s)) return '인스타그램';
+  if (/카카오|카톡|챗톡|쳇톡|챗봇|쳇봇|kakao/i.test(s)) return '카카오톡';
+  if (/당근|daangn/i.test(s)) return '당근마켓';
+  if (/동부이촌동|동커|동\.커|이촌동|카페/.test(s)) return '동부이촌동 커뮤니티';
+  if (/네이버|naver|플레이스|블로그|블러그|검색|인터넷/i.test(s)) return '네이버';  // '지도' 단독 제외('인지도' 오탐 방지·네이버지도는 '네이버'로 포착)
+  if (/소개|지인|친구|friend|추천|동기/i.test(s)) return '소개·지인';
+  if (/회원|가족|자녀|아이|아들|딸|형|누나|언니|동생|둘째|첫째|보호자|학부모|부모|母|수강|강습|다녔|다니|이용|경험|기존|과거|재수강|정회원|연회원|멤버십회원|멤버쉽|wsc|준회원|수강생/i.test(s)) return '기존·과거 회원';
+  if (/전화|유선|통화|문자/.test(s)) return '유선전화';
+  if (/간판|현수막|홍보물|우편|워크인|방문|지나가|지나는|집근처|근처|동네|거주|입주|하이페리온|길에|봤|보여서|아파트|오프라인/.test(s)) return '오프라인';
+  return '기타·미상';
+}
+
 // 4개 구글폼 응답 → 정규화 문의 배열 {시각, 연락처, 유입채널, 문의유형}. 접근 실패 폼은 건너뜀.
 function _collectFormInquiries_() {
   var out = [];
@@ -267,7 +292,7 @@ function _processAction(body) {
 
       inqData.forEach(function(row) {
         var phone   = normalizePhone_(row[idxPhone]);
-        var channel = String(row[idxChannel] || '기타').trim() || '기타';
+        var channel = _canonicalChannel_(row[idxChannel]);
 
         totalInq++;
         if (!byChannel[channel]) byChannel[channel] = { inquiries: 0, converted: 0 };
@@ -283,7 +308,7 @@ function _processAction(body) {
     // ②-b 구글폼 응답 문의 합류 (실제 문의 — 자체폼 휴면 대체, 2026-06-05)
     _collectFormInquiries_().forEach(function(f) {
       var phone   = normalizePhone_(f.연락처);
-      var channel = String(f.유입채널 || '기타').trim() || '기타';
+      var channel = _canonicalChannel_(f.유입채널);
       totalInq++;
       if (!byChannel[channel]) byChannel[channel] = { inquiries: 0, converted: 0 };
       byChannel[channel].inquiries++;
@@ -408,7 +433,7 @@ function _processAction(body) {
         if (!r[1]) return;
         inqTs.push(r[1]);
         var d = _toDate_(r[1]);
-        var ch = String(r[idxChanI] || '기타').trim() || '기타';
+        var ch = _canonicalChannel_(r[idxChanI]);
         var tp = String(r[idxTypeI] || '기타').trim() || '기타';
         inqSheetRows.push({ d: d, 연락처: r[idxPhoneI], 유입채널: ch, 문의유형: tp });
         if (!isNaN(d.getTime()) && d >= ps.monthStart) {
@@ -422,7 +447,7 @@ function _processAction(body) {
       if (!f.시각) return;
       inqTs.push(f.시각);
       var d = _toDate_(f.시각);
-      var ch = String(f.유입채널 || '기타').trim() || '기타';
+      var ch = _canonicalChannel_(f.유입채널);
       var tp = String(f.문의유형  || '기타').trim() || '기타';
       inqSheetRows.push({ d: d, 연락처: f.연락처, 유입채널: ch, 문의유형: tp });
       if (!isNaN(d.getTime()) && d >= ps.monthStart) {
