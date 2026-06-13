@@ -1213,7 +1213,7 @@ function populateOneDuty(selId,gender,roster0){
   const roster=(roster0||DUTY_ROSTER)[gender]||[];
   let html='<option value="">담당자 선택</option>';
   roster.forEach(r=>{
-    const label=r.shift+' · '+r.name;
+    const label=r.name;  // 직함+이름만 표시(오전/오후 등 shift 라벨 제거) — GM 2026-06-13
     html+='<option value="'+escapeAttr(r.name)+'"'+(r.name===saved?' selected':'')+'>'+escapeHTML(label)+'</option>';
   });
   el.innerHTML=html;
