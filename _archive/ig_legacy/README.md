@@ -9,4 +9,6 @@
 | `register_ig_series_produce_2100.bat` | 21:00 제작 → 07:30 통합(루트 `register_ig_series_produce_0730` 활성)으로 대체 |
 | `_kill_ig_watcher_permanent.bat` | 위 watcher 중지용 수동 도구 |
 
-**복구 시:** 경로·예약작업 재등록 필요. 관련 죽은 런처 `launchers/ig_watcher_hidden.vbs`(비활성)도 함께 정리 대상.
+**함께 이관:** 죽은 런처 `ig_watcher_hidden.vbs` (비활성, `start_ig_publish_watcher.bat` 전용 — 활성 예약작업 참조 0 실측).
+
+**복구 시:** 경로·예약작업 재등록 + 런처 `.vbs` 경로 복원 필요.
