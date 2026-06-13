@@ -1316,11 +1316,6 @@ async def _collect_grid_shortcodes(page, account: str) -> set[str]:
         cache_buster = int(datetime.now().timestamp() * 1000)
         profile_url = f"https://www.instagram.com/{account}/?__r={cache_buster}"
         await page.goto(profile_url, wait_until="domcontentloaded", timeout=20_000)
-        # 하드 리로드로 캐시 강제 우회 (bypass cache)
-        try:
-            await page.reload(wait_until="domcontentloaded", timeout=20_000)
-        except Exception:
-            pass
         # 그리드 로딩 대기 (최대 10초 폴링)
         for _ in range(10):
             await page.wait_for_timeout(1000)
