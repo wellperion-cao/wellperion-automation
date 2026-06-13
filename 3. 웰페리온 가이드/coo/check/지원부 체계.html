@@ -28,7 +28,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 .tab.active{background:var(--accent-bg);color:var(--accent)}
 .content{padding:16px 20px 140px;max-width:720px;margin:0 auto}
 /* 가이드 탭 본문 풀폭 (S2 · 운영부 정합 · GM 2026-06-11) */
-#tab-guide{max-width:none;margin-left:0;margin-right:0}
+#tab-guide,#tab-manual,#tab-check-m,#tab-check-f{max-width:none;margin-left:0;margin-right:0}
 .date-bar{display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap}
 .date-bar input{background:var(--paper);border:1px solid var(--border);color:var(--text);padding:8px 14px;border-radius:8px;font-size:15px;font-family:inherit}
 /* 날짜 우측 담당자(명단 선택·기억) — GM 2026-06-12 */
@@ -446,11 +446,14 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
    #policy-flow는 .board-scroll 그대로라 좁은 폭에선 가로 스크롤·스냅, 컬럼 침범 없음. */
 /* 고정 컬럼(근무휴게)도 JS 컬럼과 동일 폭. 모바일(≤560px)은 위 .board-col 86vw 규칙이 처리하므로 561px↑에서만 고정. */
 @media(min-width:561px){ #policy-flow > .board-col{flex:0 0 410px;min-width:410px;max-width:410px;} }
-/* 전체 점검 항목(셋업·한눈에) 좌우폭 최대화(GM 2026-06-13): tab-manual(.content 720px·중앙) 제약을
-   엣지투엣지로 탈출(요일별 보드 full-bleed와 동일 방식·좌우 여백 20px) + 구역 카드를 다열 그리드로 배치.
-   안내 콜아웃(첫 자식)은 전 열 span. 모바일(≤560px)은 단일 열 기본 흐름 유지. */
+/* 매뉴얼 셋업 항목 + 점검(남)/(여) 구역 카드 반응형 다열 그리드(GM 2026-06-13):
+   상위 탭(#tab-manual·#tab-check-m/f)이 풀폭·좌측정렬(위 #tab-* 규칙)이라 그리드는 부모 폭을 채움
+   → 위 소제목·선택내용이 그리드 좌측과 정렬. .category(구역 카드)만 다열, 진행바·제출버튼 등
+   비-구역 요소는 전 열 span. 모바일(≤560px)은 단일 열 기본 흐름 유지. */
 @media(min-width:561px){
-  #manual-items-sync{width:100vw;max-width:100vw;margin-left:calc(50% - 50vw);margin-right:calc(50% - 50vw);box-sizing:border-box;padding:0 20px;display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:12px;align-items:start;}
+  #manual-items-sync,#checklistM,#checklistF{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:12px;align-items:start;}
+  #checklistM > *,#checklistF > *{grid-column:1/-1;}
+  #checklistM > .category,#checklistF > .category{grid-column:auto;margin-bottom:0!important;}
   #manual-items-sync > div{margin-bottom:0!important;}
   #manual-items-sync > div:first-child{grid-column:1/-1;}
 }
