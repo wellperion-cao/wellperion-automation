@@ -1671,21 +1671,24 @@ const ROUND_MAP={
   a1:['am1','pm1','close1'],
   a2:['am1','pm1','close1'],
   a3:['am1','pm1','close1'],
-  /* B 락커룸 = 전 조 (B-6 데일리락커 삭제, GM 2026-06-12) */
+  /* B 락커룸 = 전 조 (b1 요일별락커 신규·b2~b6 +1시프트, 2026-06-13 ID정규화) */
   b1:['am1','pm1','close1'],
   b2:['am1','pm1','close1'],
-  b3_f:['am1','pm1','close1'],
-  b3_m:['am1','pm1','close1'],
-  b4:['am1','pm1','close1'],
+  b3:['am1','pm1','close1'],
+  b4_f:['am1','pm1','close1'],
+  b4_m:['am1','pm1','close1'],
   b5:['am1','pm1','close1'],
+  b6:['am1','pm1','close1'],
   /* C 세탁물 = 전 조 */
   /* 오픈 점검(세탁물 입고 등) = 오전조 전용 (마감 점검의 반대, GM 2026-06-12) */
   c1a:['am1'], c1b:['am1'], c1c:['am1'],
-  /* D 내부 D-1~D-11 + E 외부 E-1~E-3(헬스장·골프장·주차장) = 전 조(오전·오후·마감, GM 2026-06-12)
-     id는 체크이력 보존 위해 유지(d*·e*), 표시명만 재배치. E-1+E-2→D-4 병합(e2 제거). */
-  d1:['am1','pm1','close1'], d2:['am1','pm1','close1'], d3:['am1','pm1','close1'], d4:['am1','pm1','close1'], d5:['am1','pm1','close1'],
-  d6:['am1','pm1','close1'], d7:['am1','pm1','close1'], d8:['am1','pm1','close1'], d9:['am1','pm1','close1'],
-  e1:['am1','pm1','close1'], e3:['am1','pm1','close1'], e4:['am1','pm1','close1'], e5:['am1','pm1','close1'], e6:['am1','pm1','close1'],
+  /* C 내부(c1~c10) + D 업장(d1 헬스장·d2 골프장·d3 G.X) + E 외부(e1 주차장) = 전 조 (2026-06-13 ID정규화) */
+  c1:['am1','pm1','close1'], c2:['am1','pm1','close1'], c3:['am1','pm1','close1'], c4:['am1','pm1','close1'], c5:['am1','pm1','close1'],
+  c6:['am1','pm1','close1'], c7:['am1','pm1','close1'], c8:['am1','pm1','close1'], c9:['am1','pm1','close1'], c10:['am1','pm1','close1'],
+  d1:['am1','pm1','close1'], d2:['am1','pm1','close1'], d3:['am1','pm1','close1'],
+  e1:['am1','pm1','close1'],
+  /* 시트 custom 구역항목(웰니스 D-4·VIP D-5·분수대 E-2·신발장 B-7) = 전 조 */
+  custom_1781258818293_zmiwd:['am1','pm1','close1'], custom_1781261094618_l2ipe:['am1','pm1','close1'], custom_1781258912840_8z19q:['am1','pm1','close1'], custom_1781255718419_bxvec:['am1','pm1','close1'],
   /* 추가 — 오후조 전용 교대 인수인계(hw*) */
   hw1:['pm1'], hw2:['pm1'],
   /* 추가 — 마감조 전용 마감 점검(cls*) */
@@ -1861,9 +1864,14 @@ async function _postPayload(payload){
   const ind=document.getElementById('saveIndicator');
   if(ind){ind.style.display='block';ind.textContent='저장 중...';}
   try{
-    await fetch(API_URL,{method:'POST',redirect:'follow',headers:{'Content-Type':'text/plain'},body:JSON.stringify(payload)});
-    delete _dirtyKeys[d+'__'+g];   // 서버 확정 → 로컬 오버레이 해제
-    if(ind)ind.textContent='저장 완료';
+    const r=await fetch(API_URL,{method:'POST',redirect:'follow',headers:{'Content-Type':'text/plain'},body:JSON.stringify(payload)});
+    let ok=false; try{const j=await r.json(); ok=!!(j&&(j.success||j.ok)&&!j.error);}catch(_){ ok=false; }
+    if(ok){
+      delete _dirtyKeys[d+'__'+g];   // 서버 확정시에만 오버레이 해제(거짓완료·리셋 차단)
+      if(ind)ind.textContent='저장 완료';
+    }else{
+      if(ind)ind.textContent='저장 실패 (로컬 보관·재시도)';   // 서버 미확정 → _dirtyKeys 유지
+    }
   }catch(e){ if(ind)ind.textContent='저장 실패 (로컬 저장됨)'; }
   if(ind)setTimeout(()=>{ind.style.display='none'},1500);
 }
@@ -2232,7 +2240,7 @@ function getItemOverrides(){
   return map;
 }
 function findBaseItem(id){
-  const today=new Date().toISOString().slice(0,10);
+  const today=kstToday();   // KST 오늘(UTC 어긋남 차단)
   let found=null;
   function scan(sched){
     if(!sched||found)return;
@@ -2852,7 +2860,7 @@ function renderManualItems(){
 
 /* 매뉴얼 탭 개별 항목 점검완료 체크 → 기존 체크 저장 시스템(STATE+saveState+pushToServer) 재사용 */
 function onManualCk(id){
-  const d=getDateG(activeGenderTab)||new Date().toISOString().slice(0,10);
+  const d=getDateG(activeGenderTab)||kstToday();   // KST 오늘(UTC 어긋남 차단)
   STATE[id]=document.getElementById('mcb_'+id).checked;
   saveState(d);
   renderManualItems();
@@ -2883,7 +2891,7 @@ async function submitGroup(gkey, gender){
   if(!sub){ alert('점검자를 선택해주세요.'); return; }
   const d = getDateG(gender);
   STATE['_gsub_' + gkey] = true;
-  STATE['_gsubAt_' + gkey] = new Date().toISOString();
+  STATE['_gsubAt_' + gkey] = new Date().toLocaleString('sv-SE').replace('T',' ');   // KST(타 제출경로와 통일, UTC 9h어긋남 차단)
   STATE['_gsubBy_' + gkey] = sub;
   saveLocal(d, STATE, gender);
   if(ONLINE) await pushToServer(d);   // 텔레그램 알림 없음(조 마감 때만) — GM
@@ -2961,7 +2969,7 @@ async function submitRound(round,gender){
   const genderLabel=gender==='f'?'여':'남';
   const _isAdd=isRoundSubmitted(d,gender,round);
   /* 1) 라운드 잠금 + 메타 (STATE + localStorage 미러 영속) */
-  const nowIso=new Date().toISOString();
+  const nowIso=new Date().toLocaleString('sv-SE').replace('T',' ');   // KST(타 제출경로와 통일, UTC 9h어긋남 차단)
   STATE[roundSubKey(d,gender,round)]=true;
   STATE['submittedAt_'+d+'_'+gender+'_'+round]=nowIso;
   STATE['submitter_'+d+'_'+gender+'_'+round]=sub;
@@ -4246,7 +4254,7 @@ function policyDeleteCard(colKey,id){
 }
 
 /* ── Init ── */
-const today=new Date().toISOString().slice(0,10);
+const today=kstToday();   // KST 오늘(UTC toISOString는 자정~09시 어제로 어긋남 — 오전조 차단)
 document.getElementById('checkDateM').value=today;
 document.getElementById('checkDateF').value=today;
 document.getElementById('adminDate').value=today;
