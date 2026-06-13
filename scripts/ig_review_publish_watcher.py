@@ -430,7 +430,7 @@ def dispatch_publish(it: dict, events: list) -> None:
         # 기존 IG 경로 — publish_item 결과(URL, exit code) 기준으로 성공 판정
         url, rc = publish_item(it)
         if url:
-            it["status"] = "발행완료"
+            it["status"] = "발행검증대기"
             it["post_url"] = url
             it["published_at"] = datetime.now().isoformat(timespec="seconds")
             it.pop("note", None)
@@ -441,9 +441,9 @@ def dispatch_publish(it: dict, events: list) -> None:
             # '알려진 false-negative'. 발행 동작이 성공했으므로 status='발행완료' 도장.
             # (검증 근거 = 발행 동작 성공[토스트]이지, 별도 URL 재조회가 아니다.)
             # ⚠️ 자동 재발행 절대 금지 — 한 번 [승인]=한 번 발행. URL은 GM/추후 수동 보강 가능.
-            it["status"] = "발행완료"
+            it["status"] = "발행검증대기"
             it["published_at"] = datetime.now().isoformat(timespec="seconds")
-            it["note"] = "[봇 자동검증] pub 콜백 발행성공 → 발행완료(개인계정 URL회수 false-negative 무관)"
+            it["note"] = "[봇 자동검증] pub 콜백 발행성공 → 발행검증대기(개인계정 URL회수 false-negative 무관)"
             events.append(f"✅ {title} 발행 완료 — 성공 토스트 확인(URL 캐시지연, 수동 보강 가능)")
         else:
             it["status"] = "발행실패"
