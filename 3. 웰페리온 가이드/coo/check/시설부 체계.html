@@ -808,142 +808,20 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
       </div><!-- /board-col-body -->
     </div><!-- ── /직원 구성·역할 컬럼 ── -->
 
-    <!-- ── [칸반 컬럼] 🅿 주차 관리 가이드 (F1 운영부→시설부 이관 2026-06-11) ── -->
-    <div class="board-col" style="border-left:4px solid var(--blue);flex:0 0 820px;min-width:820px;max-width:820px;">
-      <div class="board-col-head"><span class="bday" style="font-size:16px;color:var(--blue);">🅿 주차 관리 가이드</span></div>
+    <!-- ── [칸반 컬럼] 🅿 주차 관리 → 「주차관리부 체계」로 이관 (2026-06-12 GM: 독립 부서 분리) ── -->
+    <div class="board-col" style="border-left:4px solid var(--blue);flex:0 0 420px;min-width:420px;max-width:420px;">
+      <div class="board-col-head"><span class="bday" style="font-size:16px;color:var(--blue);">🅿 주차 관리</span></div>
       <div class="board-col-body">
-
-        <!-- 공통 유의사항 -->
-        <div class="manual-section" style="margin-bottom:10px;border-left:4px solid var(--red);">
-          <div class="manual-header" onclick="togManual(this)" style="background:var(--red-bg);"><h3 style="color:var(--red);">⚠ 공통 유의사항</h3><span class="arrow open">&#9654;</span></div>
+        <div class="manual-section" style="margin-bottom:0;border-left:4px solid var(--blue);">
+          <div class="manual-header" style="background:var(--blue-bg);cursor:default;"><h3 style="color:var(--blue);">「주차관리부 체계」로 이관</h3></div>
           <div class="manual-body open">
-            <ul>
-              <li><strong>차량 접촉/파손·차단기 고장·화재 위험은 즉시 조치 후 팀장·소장 보고</strong> (자의 판단 금지)</li>
-              <li>차량번호·CCTV 영상은 회원 개인정보 — 외부 유출·임의 열람 금지</li>
-              <li>순찰 시 야광 조끼·안전화 착용 / 차량 이동 동선 주의</li>
-              <li>사고·민원 발생 시 현장 보존 + 사진 + CCTV 시각 기록 의무</li>
-            </ul>
+            <p style="font-size:14px;line-height:1.7;margin:0 0 10px;">주차 관리는 <strong>독립 부서(주차관리부)</strong>로 분리되었습니다(2026-06-12 GM). 주차 운영 기준·가이드·매뉴얼(출입·차단기, 정산·요금기, 지상·지하 주차장, 우선구역, 안전·소방·CCTV, 요일별 집중 점검)은 모두 <strong>주차관리부 체계</strong> 페이지에서 관리합니다.</p>
+            <a href="https://wellperion-cao.github.io/wellperion-automation/coo/check/%EC%A3%BC%EC%B0%A8%EA%B4%80%EB%A6%AC%EB%B6%80%20%EC%B2%B4%EA%B3%84.html" target="_blank" style="display:inline-flex;align-items:center;gap:6px;padding:9px 18px;background:var(--blue);color:#fff;font-size:13px;font-weight:700;border-radius:10px;text-decoration:none;">🅿 주차관리부 체계 열기 ↗</a>
+            <p style="font-size:12px;color:var(--dim);margin:10px 0 0;line-height:1.6;">※ 시설부의 <strong>E-6 주차장 청소</strong> 항목(바닥·화장실·차단기 청소)은 시설부 청소 매뉴얼에 그대로 유지됩니다.</p>
           </div>
         </div>
-
-        <!-- 구역별 상세 절차 -->
-        <div class="manual-section" style="margin-bottom:10px;">
-          <div class="manual-header" onclick="togManual(this)"><h3>출입통제 · 차단기 (출)</h3><span class="arrow">&#9654;</span></div>
-          <div class="manual-body">
-            <span class="manual-label">차단기</span>
-            <ul>
-              <li>입·출차 차단기 바(barrier) 작동·손상 여부 확인</li>
-              <li>센서·리모컨 반응 점검 / 오작동 시 즉시 수동 개방 후 보고</li>
-            </ul>
-            <span class="manual-label">LPR(번호인식) 카메라</span>
-            <ul>
-              <li>렌즈 청결 / 번호 인식 정상 / 표시판 점등 확인</li>
-            </ul>
-            <span class="manual-label">회원/방문 운영</span>
-            <ul>
-              <li>회원 차량 자동개방 / 방문 차량 안내·등록 절차 준수</li>
-            </ul>
-          </div>
-        </div>
-
-        <div class="manual-section" style="margin-bottom:10px;">
-          <div class="manual-header" onclick="togManual(this)"><h3>정산 · 요금기 (정)</h3><span class="arrow">&#9654;</span></div>
-          <div class="manual-body">
-            <span class="manual-label">무인 정산기</span>
-            <ul>
-              <li>화면·버튼·카드리더 정상 / 지폐·동전 투입구 막힘 여부</li>
-              <li>잔돈 보유량 / 영수증 용지 잔량 확인</li>
-            </ul>
-            <span class="manual-label">현금 시재</span>
-            <ul>
-              <li>교대 시 현금 시재 인수인계·기록 의무</li>
-              <li>미정산/미수 건 즉시 공유</li>
-            </ul>
-          </div>
-        </div>
-
-        <div class="manual-section" style="margin-bottom:10px;">
-          <div class="manual-header" onclick="togManual(this)"><h3>지상 주차장 (지상)</h3><span class="arrow">&#9654;</span></div>
-          <div class="manual-body">
-            <span class="manual-label">순찰</span>
-            <ul>
-              <li>불법·이중·무단 장기 주차 계도 및 기록</li>
-              <li>통행로 적치물 / 바닥 주차선·번호 식별</li>
-            </ul>
-            <span class="manual-label">설비</span>
-            <ul>
-              <li>조명 점등 불량·깜빡임 구역 기록 (야간 대비)</li>
-              <li>배수구 막힘 / 천장·벽면 누수 / 결빙 위험(동절기)</li>
-            </ul>
-          </div>
-        </div>
-
-        <div class="manual-section" style="margin-bottom:10px;">
-          <div class="manual-header" onclick="togManual(this)"><h3>지하 주차장 (층별) (지하)</h3><span class="arrow">&#9654;</span></div>
-          <div class="manual-body">
-            <span class="manual-label">층별 순찰</span>
-            <ul>
-              <li>B1·B2 등 층별 순회 / 불법·이중 주차 / 적치물</li>
-              <li>층별 빈자리 현황 파악 및 안내</li>
-            </ul>
-            <span class="manual-label">환기·누수</span>
-            <ul>
-              <li>조명 점등 / 환기·제연 팬 가동음·매연·악취</li>
-              <li>천장·벽면 누수 / 바닥 고임물 / 차수판(우수기) 상태</li>
-            </ul>
-          </div>
-        </div>
-
-        <div class="manual-section" style="margin-bottom:10px;">
-          <div class="manual-header" onclick="togManual(this)"><h3>우선 · 지정 구역 (우)</h3><span class="arrow">&#9654;</span></div>
-          <div class="manual-body">
-            <ul>
-              <li><strong>장애인 전용구역</strong>: 불법 점유 단속 / 표지·바닥도색 식별 / 비정상 주차 계도·기록</li>
-              <li><strong>여성우선 구역</strong>: 위치·조명 양호 / 표지 식별 / 불법 점유 점검</li>
-              <li><strong>전기차 충전구역</strong>: 충전기 작동 / 비충전 차량 점유 점검 / 케이블 정리</li>
-            </ul>
-          </div>
-        </div>
-
-        <div class="manual-section" style="margin-bottom:10px;">
-          <div class="manual-header" onclick="togManual(this)"><h3>안전 · 소방 · CCTV (안)</h3><span class="arrow">&#9654;</span></div>
-          <div class="manual-body">
-            <span class="manual-label">소방</span>
-            <ul>
-              <li>소화기·소화전 비치 위치·수량 / 압력게이지 / 통로 가림 여부</li>
-              <li>비상구 유도등 점등 / 피난통로 적치물 제거 / 비상벨 위치</li>
-            </ul>
-            <span class="manual-label">CCTV</span>
-            <ul>
-              <li>주차구역 CCTV 화면 이상 / 사각지대 / 녹화 정상 여부</li>
-              <li><strong>영상 열람은 사고·민원 처리 목적 + 책임자 승인 한정</strong></li>
-            </ul>
-            <span class="manual-label">주차장 화장실</span>
-            <ul>
-              <li>청결 / 비품(화장지·손세정제) / 악취·조명</li>
-            </ul>
-          </div>
-        </div>
-
-        <!-- 요일별 집중 점검 -->
-        <div class="manual-section" style="margin-bottom:0;">
-          <div class="manual-header" onclick="togManual(this)"><h3>요일별 집중 점검 (주차)</h3><span class="arrow">&#9654;</span></div>
-          <div class="manual-body">
-            <table class="schedule-table">
-              <tr><th style="width:48px;">요일</th><th>집중 점검 항목</th></tr>
-              <tr><td><strong>월</strong></td><td>바닥 주차선·표시 / 차단기 정밀 점검 / 장애인·여성우선 구역 집중</td></tr>
-              <tr><td><strong>화</strong></td><td>배수구·차수판 / 조명 전수 점검 / 안내·규정 게시물</td></tr>
-              <tr><td><strong>수</strong></td><td>CCTV 사각지대 / 환기·제연 설비 점검</td></tr>
-              <tr><td><strong>목</strong></td><td>바닥 청소·오염 제거 / 소화기·소화전 / 주차장 화장실 집중</td></tr>
-              <tr><td><strong>금</strong></td><td>정산기 정밀 점검 / 전기차 충전구역 / 비상구·피난통로 집중</td></tr>
-              <tr><td><strong>토</strong></td><td>천장·벽면 누수 전수 / 주차유도·만차 표시기 / 혼잡 대응</td></tr>
-              <tr><td><strong>일</strong></td><td>전 구역 대청소 / 장기 미출차 차량 정리 / 미비 부분 보완</td></tr>
-            </table>
-          </div>
-        </div>
-
       </div><!-- /board-col-body -->
-    </div><!-- ── /주차 관리 가이드 컬럼 ── -->
+    </div><!-- ── /주차 관리 이관 안내 컬럼 ── -->
 
     </div><!-- /board-scroll (단일 칸반 흐름) -->
   </div><!-- /board-fullwidth -->
