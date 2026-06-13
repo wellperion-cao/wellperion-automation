@@ -1,5 +1,27 @@
 [
   {
+    "task_id": "CTO-2026-06-13-COMMIT-SAFETY-GATE",
+    "clevel": "cto",
+    "title": "[시토] 커밋 truncation 안전망 — 파일 급감 시 커밋 차단·경고 (오늘 운영부 1400줄 유실 재발방지)",
+    "status": "DONE",
+    "priority": "HIGH",
+    "enqueued_at": "2026-06-13",
+    "processed_at": "2026-06-13",
+    "terminal": true,
+    "artifact": "tracer 진단: 'watcher'가 아니라 ①에이전트 stale Write ②git add -A 무검증 커밋 ③동시커밋. pre-commit 훅에 truncation 게이트(scripts/precommit_truncation_guard.py — HTML/JS가 HEAD대비 30%↑·200줄↑ 급감 시 커밋 차단+경고, fail-open). 데모 실증: 75%잘림 거부·운영부3394→1908 거부·정상커밋 통과·신규/전체삭제 통과. .gitignore /_*.html 추가. 커밋 b3d98ca1. 훅 백업 scripts/pre-commit.hook + install_hooks.sh.",
+    "next": "동시커밋 직렬화 lock(B)·clevel.bat add 화이트리스트는 후속(게이트로 catastrophic은 차단됨)"
+  },
+  {
+    "task_id": "CTO-2026-06-13-QUEUE-WATCHER-HARDENING-NEXT",
+    "clevel": "cto",
+    "title": "[시토] 커밋/큐 안정화 후속 — 동시커밋 직렬화 lock + 큐→시트 이관 재개",
+    "status": "PENDING",
+    "priority": "NORMAL",
+    "enqueued_at": "2026-06-13",
+    "note": "[2026-06-13 GM '둘 다' 지시] 오늘 truncation 게이트(CTO-COMMIT-SAFETY-GATE)로 catastrophic 손상은 차단. 남은 2건: ① 동시커밋 직렬화 lock(clevel.bat 커밋 블록 file-lock, bot.py는 라이브 PID라 재기동 타이밍 조율) ② 큐→시트 이관 재개(ON_HOLD CTO-2026-06-08 건) — 갈라진 데이터 재동기(최신12건 보존) 후 cutover, 'AI배 읽기전용' 방침과의 충돌 정리. tracer 안전수정안 B·D 보유.",
+    "next": "직렬화 lock 먼저(저위험) → 큐→시트는 분기 재동기 검증 후"
+  },
+  {
     "task_id": "COO-2026-06-13-SUPPORT-ID-NORMALIZE",
     "clevel": "coo",
     "title": "[시우] 지원부 점검 항목ID 전체 정규화 — C내부·D업장·E외부 재정렬+B시프트+중복병합·shadow폐기",
@@ -98,13 +120,14 @@
   {
     "task_id": "COO-2026-06-13-SUPPORT-CHECK-HARDENING",
     "clevel": "coo",
-    "title": "[시우] 지원부 점검 근본3 하드닝 — 거짓제출 차단·자기증식 차단·완료율 단일출처",
-    "status": "PENDING",
+    "title": "[시우] 지원부 점검 근본 하드닝 — 거짓제출 차단·자기증식(폐루프) 절단 [프론트 완료, GAS후속]",
+    "status": "DONE",
     "priority": "HIGH",
-    "depends_on": "GM go(프론트 즉시) / GAS 수정3은 장 종료 후 배포",
     "enqueued_at": "2026-06-13",
-    "note": "[2026-06-13 architect 설계완료] 근본=자동저장이 제출메타를 상시 재전송하는 단일 폐루프(_buildPushPayload html~1941)→복원→재도장(이경연 자기증식). 수정2(프론트만·GAS무변경)=자동저장에서 제출메타 분리→폐루프 절단(★핵심). 수정1=제출 가드(체크0시 경고). 수정3=GAS 1줄(support 시트 col5 폴백 제거·스냅샷 단일화, 장종료후·admin출처 실측선행). 롤아웃: 프론트(2+1) 즉시→관찰→GAS(3) 장종료후. 검증시나리오·백업·롤백 설계서 보유.",
-    "next": "GM go 시 수정2+1 프론트 우선 구현→라이브검증→GAS(수정3)는 장종료후 묶음배포"
+    "processed_at": "2026-06-13",
+    "terminal": true,
+    "artifact": "수정2(폐루프 절단·★핵심): _buildPushPayload(d,g,includeSubmitMeta) — 자동저장은 제출메타 미전송(2-arg), 명시적 제출(submitShift/submitRound 3곳)만 ,true로 전송 → 이경연 자기증식 차단. 수정1: 제출 가드(체크0시 confirm 경고). 커밋 32dc76d, 라이브 검증 PASS(폐루프 절단·보존마커 ROUND_MAP·gender가드·자동제출차단·KST 전부 잔존). architect 설계기반.",
+    "next": "GAS 수정3(완료율 단일출처 — support 시트 col5 폴백 제거·스냅샷 단일화) + 수정2 col8보존 보강 = 장 종료 후 묶음배포(admin출처 실측선행). 저빈도·저위험이라 후속."
   },
   {
     "task_id": "CMO-2026-06-13-FUNNEL-DASH-NEXT",
