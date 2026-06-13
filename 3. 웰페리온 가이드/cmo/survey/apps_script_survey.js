@@ -24,7 +24,7 @@ const INQUIRY_TYPES = ['투어 예약', '프로그램 문의', '멤버십 상담
 // gid 기반 탭 조회(이름 변경에 강함). 컬럼은 헤더 키워드로 탐색(폼 문항 순서 변동 대비).
 // ※ 여름특강(5종 하위폼)은 구조 미확정 → 추후 추가.
 const FORM_SHEETS = [
-  { ssId: '12AWcAlgmmYKr2nUbWmVpa71_z3zi0BaU4ZdnOwrI_7U', gid: 953023270, type: '멤버십',     channelKeys: ['채널', '알게'] },
+  { ssId: '12AWcAlgmmYKr2nUbWmVpa71_z3zi0BaU4ZdnOwrI_7U', gid: 1902010032, type: '멤버십',     channelKeys: ['채널', '경로', '알게'] },  // '26년 신규문의' 스태프 로그(멤버십 단일출처·날짜 'YYYY. M. D'·문의채널 드롭다운). 구 폼응답탭 953023270 대체 — 폼3건이 아닌 실제 로그 집계(2026-06-13 GM 확인)
   { ssId: '1b0XU1oTHlXzBhEzUOar5GEm44vjopdO25qfsh-awDXw', gid: 111889422, type: '성인강습',   channelKeys: ['경로', '채널'] },
   { ssId: '1b0XU1oTHlXzBhEzUOar5GEm44vjopdO25qfsh-awDXw', gid: 268994754, type: '유소년강습', channelKeys: ['경로', '채널'] }
   // ─── 신규 2종 틀 (시모·GM 2026-06-12 승인 — 공간 렌트·비즈니스 파트너) ───
@@ -75,7 +75,21 @@ function _canonicalChannel_(raw) {
   return '기타·미상';
 }
 
-// 4개 구글폼 응답 → 정규화 문의 배열 {시각, 연락처, 유입채널, 문의유형}. 접근 실패 폼은 건너뜀.
+// 날짜 정규화 — 구글폼(Date 또는 'YYYY-MM-DD HH:mm:ss') + 수기 로그('YYYY. M. D [오전/오후 H:MM:SS]') 모두 Date로.
+// '26년 신규문의' 탭 타임스탬프가 한글 형식(예: 2026. 6. 5)이라 기존 ISO 파서로는 NaN → 여기서 Date로 변환.
+function _parseAnyDate_(v) {
+  if (v instanceof Date) return v;
+  var s = String(v || '').trim();
+  if (!s) return v;
+  var m = s.match(/^(\d{4})\.\s*(\d{1,2})\.\s*(\d{1,2})/);   // 2026. 6. 5  /  2026. 6. 5 오후 3:27:41
+  if (m) {
+    var mm = ('0' + m[2]).slice(-2), dd = ('0' + m[3]).slice(-2);
+    return new Date(m[1] + '-' + mm + '-' + dd + 'T12:00:00+09:00');  // 정오 고정 — 일 경계 TZ 오차 방지
+  }
+  return v;  // ISO 등 그 외 형식은 원형 유지(하류 _toDate_/_countByPeriod_가 처리)
+}
+
+// 구글폼/스태프 로그 응답 → 정규화 문의 배열 {시각, 연락처, 유입채널, 문의유형}. 접근 실패 시트는 건너뜀.
 function _collectFormInquiries_() {
   var out = [];
   FORM_SHEETS.forEach(function(cfg) {
@@ -92,7 +106,7 @@ function _collectFormInquiries_() {
       rows.forEach(function(r) {
         if (!r[0] && (idxPhone < 0 || !r[idxPhone])) return; // 빈 행 스킵
         out.push({
-          시각:     r[0],  // 구글폼 응답 1열 = 타임스탬프
+          시각:     _parseAnyDate_(r[0]),  // 1열 = 타임스탬프(구글폼 Date / 수기로그 'YYYY. M. D')
           연락처:   idxPhone >= 0 ? r[idxPhone] : '',
           유입채널: (idxChan >= 0 ? String(r[idxChan] || '').trim() : '') || '기타',
           문의유형: cfg.type
