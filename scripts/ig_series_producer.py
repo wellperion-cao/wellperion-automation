@@ -161,6 +161,77 @@ def parse_roadmap_episodes(text: str) -> list[dict]:
     return episodes
 
 
+# ─────────────────────────────────────────────────────────────────────────────
+# 시즌2 규칙 단일 출처 읽기 (★ 재발방지 — 2026-06-15)
+# 로드맵 §2.6 의 ```producer-season-config 펜스 블록(KEY: 값)을 읽어 dict 반환.
+# 시즌 라벨·도입 캡션처럼 '변하는 규칙'을 로드맵에서만 관리 → producer 손 동시수정 폐지.
+# 파싱 실패·블록 부재 시 빈 dict(시즌 규칙 생략 — 안전 폴백, 기존 §2.5 규칙은 불변).
+# ※ 이 블록은 표(|...|)가 아니므로 parse_roadmap_episodes 파서에 전혀 영향 없음.
+# ─────────────────────────────────────────────────────────────────────────────
+def parse_season_config(text: str) -> dict[str, str]:
+    """로드맵의 ```producer-season-config 펜스 블록을 KEY: 값 dict 로 파싱."""
+    cfg: dict[str, str] = {}
+    in_block = False
+    for raw in text.splitlines():
+        line = raw.rstrip("\n")
+        stripped = line.strip()
+        if not in_block:
+            if stripped.startswith("```") and "producer-season-config" in stripped:
+                in_block = True
+            continue
+        # 블록 안
+        if stripped.startswith("```"):
+            break  # 펜스 종료
+        if ":" not in line:
+            continue
+        key, _, val = line.partition(":")
+        key = key.strip()
+        val = val.strip()
+        if key:
+            cfg[key] = val
+    return cfg
+
+
+def load_season_config() -> dict[str, str]:
+    """로드맵 파일에서 시즌 설정 읽기(best-effort). 실패해도 빈 dict 반환(폴백)."""
+    try:
+        return parse_season_config(ROADMAP.read_text(encoding="utf-8"))
+    except Exception as exc:
+        print(f"[WARN] 시즌 설정 읽기 실패 — 시즌 라벨 생략(기존 규칙 유지): {exc}")
+        return {}
+
+
+def season_label_block(ep: dict, cfg: dict[str, str]) -> str:
+    """이 편에 적용할 시즌2 라벨·도입 캡션 지시문 생성(로드맵 단일출처에서 조립).
+
+    cfg 가 비었거나 키가 없으면 빈 문자열 → 프롬프트에서 시즌 규칙 줄 자체가 생략(안전).
+    """
+    label = cfg.get("SEASON2_LABEL", "").strip()
+    if not label:
+        return ""  # 시즌 설정 부재 — 기존 동작 유지
+    parts: list[str] = []
+    # 라벨 실제 문자열을 항상 먼저 명시(시모가 어떤 텍스트인지 알도록), 이어서 로드맵 규칙 문구.
+    parts.append(f"- 시즌2 라벨 텍스트 = \"{label}\" (표지 부제/eng_sub 자리에 이 문자열을 넣는다).")
+    label_rule = cfg.get("SEASON2_LABEL_RULE", "").strip()
+    if label_rule:
+        parts.append(f"- {label_rule}")
+    # 도입 캡션: 자동제작 시즌2 첫 편(SEASON2_INTRO_FIRST_NUM)에서만
+    intro_caption = cfg.get("SEASON2_INTRO_CAPTION", "").strip()
+    intro_first = cfg.get("SEASON2_INTRO_FIRST_NUM", "").strip()
+    if intro_caption and intro_first.isdigit() and ep["num"] == int(intro_first):
+        intro_rule = cfg.get("SEASON2_INTRO_RULE", "").strip()
+        parts.append(
+            f"- 이 편은 시즌2 도입 첫 편 — CAPTION 첫 줄에 다음 한 줄을 그대로 넣어라: \"{intro_caption}\""
+            + (f" ({intro_rule})" if intro_rule else "")
+        )
+    elif intro_caption and intro_first.isdigit():
+        parts.append("- 시즌2 도입 캡션은 첫 편 전용 — 이 편엔 라벨만 유지하고 도입 멘트는 넣지 마라(간결 원칙).")
+    hashtag = cfg.get("SEASON2_HASHTAG", "").strip()
+    if hashtag:
+        parts.append(f"- 캡션 해시태그에 {hashtag} 1개를 권장 풀에 추가(시즌1과 검색·묶음 구분).")
+    return "\n".join(parts)
+
+
 # 이미 제작/검수/발행/폐기된 편으로 판정할 상태 키워드(부분일치) — 재선정 차단
 # (어제·오늘 #7 재탕 사고 방지: '기획예정' 완전일치 + 아래 키워드 미포함 + 폴더 미존재 3중 가드)
 _DONE_STATUS_KW = ("제작완료", "검수대기", "검수 대기", "발행완료", "폐기", "보류")
@@ -283,7 +354,11 @@ def _find_claude() -> str:
 
 
 def build_producer_prompt(ep: dict, prev: dict | None, folder_slug: str) -> str:
-    """시모에게 보낼 제작 지시 프롬프트. build_slides.py 1개 파일만 작성하도록 강제."""
+    """시모에게 보낼 제작 지시 프롬프트. build_slides.py 1개 파일만 작성하도록 강제.
+
+    ★ 시즌2 라벨·도입 캡션 등 '변하는 시즌 규칙'은 로드맵 §2.6(producer-season-config)에서
+    읽어 주입한다(2026-06-15 재발방지). 코드 하드코딩 중복 제거 → 로드맵 단일출처.
+    """
     folder_path = NAMUK_DIR / folder_slug
     ref_build = NAMUK_DIR / "260604_AI5_깨진환상들" / "build_slides.py"
     prev_block = (
@@ -291,6 +366,13 @@ def build_producer_prompt(ep: dict, prev: dict | None, folder_slug: str) -> str:
         f"  → 이 직전 편과 메시지·표현이 겹치지 않게 차별화하라(중복 점검 의무)."
         if prev
         else "- 직전 편 없음(이 편이 첫 편)."
+    )
+    # 시즌2 규칙(로드맵 단일출처에서 읽음). 설정 부재 시 빈 문자열 → 규칙 줄 생략(안전 폴백).
+    season_rules = season_label_block(ep, load_season_config())
+    season_block = (
+        f"\n## 시즌2 규칙 (로드맵 §2.6 단일출처 — 자동 주입)\n{season_rules}\n"
+        if season_rules
+        else ""
     )
     return f"""너는 웰페리온 AI CMO(시모)다. GM 개인계정 namuk.wellperion 의 'AI A~Z' 연재 다음 편을 제작한다.
 GM 1인칭 진솔 보이스(생각 리더십)로, 초등학생도 이해할 일상어로 쓴다. 광고·멤버십 모집 톤 금지.
@@ -327,7 +409,7 @@ GM 1인칭 진솔 보이스(생각 리더십)로, 초등학생도 이해할 일�
 12. CAPTION 본문·CTA 어디에도 무관한 @계정 멘션 줄을 넣지 마라.
 13. 글 간결·핵심만(2026-06-13 GM) — 군더더기·미사여구·반복·설명 늘이기 금지. 짧은 문장, 한 슬라이드 한 메시지. 캡션도 핵심만(분량 채우기 금지).
 14. 현실 반영(2026-06-13 GM) — 소재는 웰리(AI CEO)·AI C-Level과 실제로 한 작업에서만 가져온다(시간대별 자동보고·문의 반응 대시보드·M5 검수 파이프라인·항로 보드 등 진짜 한 일). 추상론·가상 시나리오·과장 금지. 안 해본 기능을 지어내지 마라.
-
+{season_block}
 ## 작업 방법
 - Write 도구로 위 build_slides.py 파일 하나만 생성하라. 다른 파일은 만들지 마라. 발행/커밋/push 하지 마라.
 - 코드만 작성한다. build_slides.py 실행은 이 호출 밖(상위 스케줄러)에서 한다.
