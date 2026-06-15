@@ -342,6 +342,15 @@ a{color:var(--accent);text-decoration:none}
     </div>
   </div>
 
+  <!-- 전환 단계 퍼널 (①문의→②응대→③예약→④방문→⑤가입) -->
+  <div class="section">
+    <div class="section-title">전환 단계 퍼널</div>
+    <p style="color:var(--dim);font-size:13px;margin:4px 0 10px">문의가 가입까지 어디서 떨어지는지</p>
+    <div id="stage-funnel-wrap">
+      <div style="color:var(--dim);font-size:13px">불러오는 중…</div>
+    </div>
+  </div>
+
   <!-- 문의 유형별 분포 (이번 달) — byTypeMonth 라이브 렌더 -->
   <div class="section">
     <div class="section-title">문의 유형별 분포 <span style="font-size:11px;font-weight:400;color:var(--accent);text-transform:none;letter-spacing:0">(이번 달)</span></div>
@@ -554,6 +563,116 @@ function renderConversionFlow() {
     + card('✅', '③ 회원 등록', conv, '전화번호 매칭(월)', 'var(--f5)')
     + '</div>'
     + '<div style="font-size:11px;color:var(--dim);margin-top:8px">이번 달 기준 · 등록은 전화번호 매칭으로 월 단위 집계</div>';
+}
+
+// ─── 전환 단계 퍼널 ─────────────────────────────────────────────
+var _stageFunnelLoaded = false;
+
+function loadStageFunnel() {
+  var el = document.getElementById('stage-funnel-wrap');
+  if (!el) return;
+
+  var STAGE_NAMES = ['문의', '응대', '예약', '방문', '가입'];
+  var STAGE_CLASSES = ['s1', 's2', 's3', 's4', 's5'];
+  var STAGE_COLORS = ['var(--f1)', 'var(--f2)', 'var(--f3)', 'var(--f4)', 'var(--f5)'];
+
+  function renderFallback() {
+    var inq  = (_pbData && _pbData.inquiries  && _pbData.inquiries.month)  || 0;
+    var conv = (_pbData && _pbData.conversion && _pbData.conversion.month && _pbData.conversion.month.converted) || 0;
+    var base = inq || 1;
+
+    function stageRow(idx, name, count, isPlaceholder) {
+      var pct   = isPlaceholder ? null : Math.round(count / base * 100);
+      var width = isPlaceholder ? 20 : Math.max(8, pct);
+      var barStyle = 'height:44px;border-radius:8px;display:flex;align-items:center;padding:0 14px;'
+        + 'background:var(--' + (isPlaceholder ? 'border' : 'f' + (idx + 1) + '-bg') + ');'
+        + 'width:' + width + '%;min-width:80px;transition:width 0.5s ease;position:relative;overflow:hidden;';
+      var labelColor = isPlaceholder ? 'var(--dim)' : STAGE_COLORS[idx];
+      var countHtml = isPlaceholder
+        ? '<span class="placeholder" style="font-size:11px;color:var(--dim);margin-left:8px">상태 입력 후 표시</span>'
+        : '<span style="font-size:12px;font-weight:600;margin-left:8px;opacity:0.75;color:' + labelColor + '">' + count.toLocaleString('ko-KR') + '건</span>';
+
+      return '<div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">'
+        + '<div style="width:26px;text-align:right;font-size:11px;font-weight:700;color:var(--dim);flex-shrink:0">' + ['①','②','③','④','⑤'][idx] + '</div>'
+        + '<div style="width:42px;font-size:12px;font-weight:700;color:' + labelColor + ';flex-shrink:0">' + name + '</div>'
+        + '<div style="flex:1">'
+        +   '<div style="' + barStyle + '">'
+        +     '<span style="font-size:13px;font-weight:700;color:' + labelColor + ';z-index:1;position:relative">' + (pct !== null ? pct + '%' : '') + '</span>'
+        +     countHtml
+        +   '</div>'
+        + '</div>'
+        + '</div>';
+    }
+
+    var html = '';
+    html += stageRow(0, '문의', inq, false);
+    html += stageRow(1, '응대', 0, true);
+    html += stageRow(2, '예약', 0, true);
+    html += stageRow(3, '방문', 0, true);
+    html += stageRow(4, '가입', conv, false);
+    html += '<div style="margin-top:10px;padding:10px 14px;background:var(--accent-bg);border:1px solid rgba(183,159,138,0.2);border-radius:8px;font-size:11px;color:var(--dim)">'
+      + '②~④는 리셉션 진행상태 입력 시작 후 채워집니다 (현재 대부분 ①=정상)'
+      + '</div>';
+    el.innerHTML = html;
+  }
+
+  function renderFull(month, retain) {
+    var stages = [
+      { name: '문의', count: month['문의'] || 0 },
+      { name: '응대', count: month['응대'] || 0 },
+      { name: '예약', count: month['예약'] || 0 },
+      { name: '방문', count: month['방문'] || 0 },
+      { name: '가입', count: month['가입'] || 0 }
+    ];
+    var base = stages[0].count || 1;
+    var retainKeys = ['응대', '예약', '방문', '가입'];
+
+    var html = '';
+    for (var i = 0; i < stages.length; i++) {
+      var s = stages[i];
+      var pct   = Math.round(s.count / base * 100);
+      var width = Math.max(8, pct);
+      var retPct = (i > 0 && retain && retain[stages[i].name] != null)
+        ? retain[stages[i].name] : null;
+      var prevCount = i > 0 ? stages[i - 1].count : 0;
+      var dropCount = i > 0 ? (stages[i - 1].count - s.count) : 0;
+      var circled = ['①', '②', '③', '④', '⑤'][i];
+      var color = STAGE_COLORS[i];
+
+      html += '<div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">'
+        + '<div style="width:26px;text-align:right;font-size:11px;font-weight:700;color:var(--dim);flex-shrink:0">' + circled + '</div>'
+        + '<div style="width:42px;font-size:12px;font-weight:700;color:' + color + ';flex-shrink:0">' + s.name + '</div>'
+        + '<div style="flex:1">'
+        +   '<div style="height:44px;border-radius:8px;display:flex;align-items:center;padding:0 14px;'
+        +        'background:var(--f' + (i + 1) + '-bg);width:' + width + '%;min-width:80px;'
+        +        'transition:width 0.5s ease;position:relative;overflow:hidden;">'
+        +     '<span style="font-size:13px;font-weight:700;color:' + color + ';z-index:1;position:relative">' + pct + '%</span>'
+        +     '<span style="font-size:12px;font-weight:600;margin-left:8px;opacity:0.75;color:' + color + ';z-index:1;position:relative">' + s.count.toLocaleString('ko-KR') + '건</span>'
+        +   '</div>'
+        + '</div>'
+        + '<div style="width:110px;flex-shrink:0;font-size:11px">'
+        + (retPct !== null ? '<span style="color:var(--green);font-weight:700">잔존 ' + retPct + '%</span>' : '')
+        + (i > 0 && dropCount > 0 ? '<span style="color:var(--red);margin-left:6px">−' + dropCount.toLocaleString('ko-KR') + '건 이탈</span>' : '')
+        + '</div>'
+        + '</div>';
+    }
+    html += '<div style="margin-top:4px;font-size:11px;color:var(--dim)">이번 달 기준 · 잔존%=직전 단계 대비</div>';
+    el.innerHTML = html;
+  }
+
+  // stage_funnel GAS 호출 시도 → 실패 시 _pbData 폴백
+  fetch(FUNNEL_APPS_SCRIPT_URL + '?action=stage_funnel', { redirect: 'follow' })
+    .then(function(res) { return res.ok ? res.json() : Promise.reject('HTTP ' + res.status); })
+    .then(function(data) {
+      if (data && data.ok && data.month) {
+        renderFull(data.month, data.retain || {});
+      } else {
+        renderFallback();
+      }
+    })
+    .catch(function() {
+      renderFallback();
+    });
 }
 
 // ─── 월 목표 게이지 ──────────────────────────────────────────────
@@ -956,6 +1075,7 @@ function _applyPeriodData(data, period) {
     renderConversionFlow();
     renderGoalGauge();
     renderTypeBreakdown();
+    loadStageFunnel();
   }
 
   var clickEl = document.getElementById('kpi-total-clicks');
@@ -1357,6 +1477,7 @@ document.addEventListener('DOMContentLoaded', function() {
   loadPeriodBreakdown('month');  // 기본 기간: 월
   loadWeeklyTrend();             // 주간 추세 스파크라인
   loadMonthlyTrend();            // 월별 추세 (올해)
+  loadStageFunnel();             // 전환 단계 퍼널 (stage_funnel · 폴백: _pbData)
 });
 </script>
 </body>

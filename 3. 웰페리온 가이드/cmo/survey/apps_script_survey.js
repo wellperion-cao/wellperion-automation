@@ -75,6 +75,20 @@ function _canonicalChannel_(raw) {
   return '기타·미상';
 }
 
+// ─── 진행상태 → 전환 단계 rank 매핑 (설계 SSOT 2026-06-15) ───
+// 0=이탈, 1=문의(기본), 2=응대, 3=예약, 4=방문, 5=가입
+function _stageOf_(raw) {
+  var s = String(raw == null ? '' : raw).trim();
+  if (!s) return 1; // 빈칸 → 최소단계(①문의)
+  if (/이탈|보류|포기|거절|취소/.test(s)) return 0;
+  if (/가입|등록|전환|회원/.test(s))       return 5;
+  if (/방문|내방|방문완료/.test(s))         return 4;
+  if (/예약|투어|상담/.test(s))             return 3;
+  if (/응대|연락|통화|문자|회신/.test(s))   return 2;
+  if (/신규|접수/.test(s))                  return 1;
+  return 1; // 미인식 → ① 문의(안전 처리)
+}
+
 // 날짜 정규화 — 구글폼(Date 또는 'YYYY-MM-DD HH:mm:ss') + 수기 로그('YYYY. M. D [오전/오후 H:MM:SS]') 모두 Date로.
 // '26년 신규문의' 탭 타임스탬프가 한글 형식(예: 2026. 6. 5)이라 기존 ISO 파서로는 NaN → 여기서 Date로 변환.
 function _parseAnyDate_(v) {
@@ -595,6 +609,138 @@ function _processAction(body) {
     // 캐시 저장 (100KB 초과 시 생략)
     try { pbCache.put(pbKey, JSON.stringify(pbResult), 300); } catch (e) { /* 캐시 저장 실패 무시 */ }
     return _json(pbResult);
+  }
+
+  // ─── 전환 단계 퍼널 (5단계 누적 깔때기) ───
+  if (action === 'stage_funnel') {
+    // 캐시 조회
+    var sfCache = CacheService.getScriptCache();
+    var sfHit   = sfCache.get('sf_v1');
+    if (sfHit) return _json(JSON.parse(sfHit));
+
+    // ① 회원부 전화번호 Set 생성 (funnel_conversion 방식 그대로)
+    var sfMemberSs   = SpreadsheetApp.openById(MEMBER_SPREADSHEET_ID);
+    var sfMemberSh   = sfMemberSs.getSheetByName(MEMBER_SHEET);
+    var sfMemberLast = sfMemberSh.getLastRow();
+    var sfMemberSet  = {};
+    if (sfMemberLast >= 2) {
+      var sfMemberHeaders  = sfMemberSh.getRange(1, 1, 1, sfMemberSh.getLastColumn()).getValues()[0];
+      var sfPhoneColIdx    = sfMemberHeaders.indexOf(MEMBER_PHONE_COL);
+      if (sfPhoneColIdx >= 0) {
+        var sfMemberPhones = sfMemberSh.getRange(2, sfPhoneColIdx + 1, sfMemberLast - 1, 1).getValues();
+        sfMemberPhones.forEach(function(r) {
+          var n = normalizePhone_(r[0]); if (n) sfMemberSet[n] = true;
+        });
+      }
+    }
+
+    // ② 이번달 기준일 산출 (period_breakdown 방식)
+    var sfNow       = new Date();
+    var sfMonthStr  = Utilities.formatDate(sfNow, 'Asia/Seoul', 'yyyy-MM') + '-01';
+    var sfMonthStart = new Date(sfMonthStr + 'T00:00:00+09:00');
+
+    // 타임스탬프 → Date 변환 헬퍼 (period_breakdown._toDate_ 동일 로직)
+    function _sfToDate_(ts) {
+      if (ts instanceof Date) return ts;
+      var s = String(ts || '').trim();
+      if (!s) return new Date(NaN);
+      return new Date(s.replace(' ', 'T') + '+09:00');
+    }
+
+    // ③ 집계 버킷 초기화
+    // total: 전체기간 / month: 이번달
+    // 각 단계 = 해당 rank 이상 도달한 문의 수(누적 깔때기). 이탈(rank 0)은 이탈 버킷만.
+    var sfTotal = { 문의: 0, 응대: 0, 예약: 0, 방문: 0, 가입: 0, 이탈: 0 };
+    var sfMonth = { 문의: 0, 응대: 0, 예약: 0, 방문: 0, 가입: 0, 이탈: 0 };
+
+    // 문의 1건 집계 내부 함수
+    function _sfCount_(rank, isThisMonth) {
+      var buckets = [sfTotal];
+      if (isThisMonth) buckets.push(sfMonth);
+      buckets.forEach(function(b) {
+        if (rank === 0) {
+          b.이탈++;
+          b.문의++; // 이탈도 ①문의에는 포함(SSOT §집계)
+        } else {
+          if (rank >= 1) b.문의++;
+          if (rank >= 2) b.응대++;
+          if (rank >= 3) b.예약++;
+          if (rank >= 4) b.방문++;
+          if (rank >= 5) b.가입++;
+        }
+      });
+    }
+
+    // ④-a INQUIRY_SHEET 순회
+    // 상태=INQUIRY_HEADERS idx9, 전화=idx3, 날짜=idx1
+    var sfInqSh   = _getSheet(INQUIRY_SHEET, INQUIRY_HEADERS);
+    var sfInqLast = sfInqSh.getLastRow();
+    if (sfInqLast >= 2) {
+      var sfInqData = sfInqSh.getRange(2, 1, sfInqLast - 1, INQUIRY_HEADERS.length).getValues();
+      sfInqData.forEach(function(row) {
+        var statusRaw = row[9]; // '상태' idx9
+        var phone     = normalizePhone_(row[3]);
+        var dateVal   = row[1];
+        var rank      = _stageOf_(statusRaw);
+        if (phone && sfMemberSet[phone]) rank = Math.max(rank, 5); // 회원 신뢰 우선
+        if (rank === 0 && phone && sfMemberSet[phone]) rank = 5;   // 이탈+회원매칭 → 가입 우선
+        var d = _sfToDate_(dateVal);
+        var isThisMonth = !isNaN(d.getTime()) && d >= sfMonthStart;
+        _sfCount_(rank, isThisMonth);
+      });
+    }
+
+    // ④-b FORM_SHEETS 순회 (상태 칸 _findCol_ 탐색, 없으면 rank=1)
+    FORM_SHEETS.forEach(function(cfg) {
+      try {
+        var sfSh = _sheetByGid_(cfg.ssId, cfg.gid);
+        if (!sfSh) return;
+        var sfLast    = sfSh.getLastRow();
+        var sfLastCol = sfSh.getLastColumn();
+        if (sfLast < 2 || sfLastCol < 1) return;
+        var sfHeaders  = sfSh.getRange(1, 1, 1, sfLastCol).getValues()[0];
+        var sfIdxStatus = _findCol_(sfHeaders, ['진행상태', '상태', '진행', '단계']);
+        var sfIdxPhone  = _findCol_(sfHeaders, ['연락처', '휴대폰', '핸드폰', '전화']);
+        var sfIdxDate   = _findCol_(sfHeaders, ['타임스탬프', 'timestamp', '시각', '일시', '접수일', '접수', '날짜']);
+        if (sfIdxDate < 0) sfIdxDate = 0;
+        var sfRows = sfSh.getRange(2, 1, sfLast - 1, sfLastCol).getValues();
+        sfRows.forEach(function(r) {
+          if (!r[sfIdxDate] && (sfIdxPhone < 0 || !r[sfIdxPhone])) return; // 빈 행 스킵
+          var statusRaw = sfIdxStatus >= 0 ? r[sfIdxStatus] : '';
+          var phone     = sfIdxPhone  >= 0 ? normalizePhone_(r[sfIdxPhone]) : '';
+          var rank      = _stageOf_(statusRaw); // 상태 칸 없으면 statusRaw='' → rank=1
+          if (phone && sfMemberSet[phone]) rank = Math.max(rank, 5);
+          if (rank === 0 && phone && sfMemberSet[phone]) rank = 5;
+          var dateRaw = _parseAnyDate_(r[sfIdxDate]);
+          var d = _sfToDate_(dateRaw);
+          var isThisMonth = !isNaN(d.getTime()) && d >= sfMonthStart;
+          _sfCount_(rank, isThisMonth);
+        });
+      } catch (e) { /* 폼 시트 접근 실패는 무시(대시보드 무중단) */ }
+    });
+
+    // ⑤ retain 계산 (이번달 기준, 각 단계/직전단계 × 100, 소수1자리)
+    function _pct_(num, den) {
+      if (!den) return 0;
+      return Math.round((num / den) * 1000) / 10;
+    }
+    var sfRetain = {
+      응대: _pct_(sfMonth.응대, sfMonth.문의),
+      예약: _pct_(sfMonth.예약, sfMonth.응대),
+      방문: _pct_(sfMonth.방문, sfMonth.예약),
+      가입: _pct_(sfMonth.가입, sfMonth.방문)
+    };
+
+    var sfResult = {
+      ok:          true,
+      generatedAt: _now(),
+      total:  sfTotal,
+      month:  sfMonth,
+      retain: sfRetain
+    };
+    // 캐시 저장 (100KB 초과 시 생략)
+    try { sfCache.put('sf_v1', JSON.stringify(sfResult), 300); } catch (e) { /* 캐시 저장 실패 무시 */ }
+    return _json(sfResult);
   }
 
   // ─── 주간 추세 (최근 8주 시계열) ───
