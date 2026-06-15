@@ -22,6 +22,7 @@ PROJECT_ROOT = Path(r"C:\Users\jjky0\welperion-automation")
 # 폰트 위치 후보 (brand 통합 진행 중 — 실제 존재 경로 자동 선택)
 _FONT_DIR_CANDIDATES = [
     PROJECT_ROOT / "brand" / "font",
+    PROJECT_ROOT / "2. 브랜드_공식문서" / "02_로고&워터마크&FONT" / "font",
     PROJECT_ROOT / "2. 브랜드_공식문서" / "font",
 ]
 FONT_DIR = next((d for d in _FONT_DIR_CANDIDATES if d.exists()), _FONT_DIR_CANDIDATES[0])
