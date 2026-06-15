@@ -990,6 +990,7 @@ function applicantRow(a){
   var gColor=COLOR[grade]||"gray";
   var stage=a["전형 단계"]||"";
   var pageId=normId(a.url);
+  var apppid=(((a["원본 Notion URL"]||"")+"").match(/[0-9a-f]{32}/i)||[""])[0].toLowerCase();
   var isAdmin=SESSION_ROLE==="admin";
   var actions='';
   // 인쇄용 평가지 (모두)
@@ -1009,7 +1010,7 @@ function applicantRow(a){
       actions+='<a href="'+esc(a.url)+'" target="_blank" class="btn-sm">Notion ↗</a>';
     }
   }
-  return '<div data-applicant="'+esc(pageId)+'" style="background:var(--surface-2);border:1px solid var(--line);border-radius:8px;padding:10px 12px">'+
+  return '<div data-applicant="'+esc(pageId)+'" data-applname="'+esc(a["지원자명"]||"")+'" data-apppid="'+apppid+'" title="클릭: 단계·면접일정 변경 / 불합격 처리" style="background:var(--surface-2);border:1px solid var(--line);border-radius:8px;padding:10px 12px;cursor:pointer">'+
     '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">'+
       '<div style="display:flex;align-items:center;gap:8px">'+
         '<span class="badge b-'+gColor+'" style="font-size:12px;font-weight:700">'+esc(grade)+'</span>'+
@@ -1111,6 +1112,35 @@ function renderHire(){
   var jobName={};
   (DB.hire||[]).forEach(function(h){ jobName[normId(h.url)]=txt(h["포지션명"]); });
 
+  /* 면접 캘린더 렌더러 (확정 면접 일정 표시) */
+  window.__renderIvCal=function(y,m){
+    var ev=window.__ivEvents||[];
+    var byDay={}; ev.forEach(function(e){ if(e.y===y&&e.m===m){ (byDay[e.d]=byDay[e.d]||[]).push(e); } });
+    var startDow=new Date(y,m,1).getDay(); var days=new Date(y,m+1,0).getDate();
+    var tdd=new Date(); var isToday=function(d){return tdd.getFullYear()===y&&tdd.getMonth()===m&&tdd.getDate()===d;};
+    var h='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">'+
+      '<button class="btn-sm" data-calnav="prev">‹</button>'+
+      '<div style="font-weight:700;font-size:13.5px">'+y+'년 '+(m+1)+'월 <span style="color:var(--ink-faint);font-weight:500;font-size:11px">면접 일정</span></div>'+
+      '<button class="btn-sm" data-calnav="next">›</button></div>';
+    h+='<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;text-align:center;font-size:10.5px;color:var(--ink-faint);margin-bottom:3px">'+
+      ['일','월','화','수','목','금','토'].map(function(w){return '<div>'+w+'</div>';}).join('')+'</div>';
+    h+='<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px">';
+    for(var i=0;i<startDow;i++){ h+='<div></div>'; }
+    for(var d=1;d<=days;d++){
+      var has=byDay[d];
+      var st='aspect-ratio:1;display:flex;flex-direction:column;align-items:center;justify-content:center;border-radius:6px;font-size:11px;'+(has?'background:var(--gold);color:#fff;font-weight:700':(isToday(d)?'background:var(--surface-2);outline:1px solid var(--gold)':''));
+      var tip=has?esc(has.map(function(e){return e.name+'('+e.stage+')';}).join(', ')):'';
+      h+='<div title="'+tip+'" style="'+st+'">'+d+(has?'<span style="font-size:7px;line-height:.8">●</span>':'')+'</div>';
+    }
+    h+='</div>';
+    var monthEv=ev.filter(function(e){return e.y===y&&e.m===m;}).sort(function(a,b){return a.t-b.t;});
+    h+='<div style="margin-top:10px;border-top:1px solid var(--line-soft);padding-top:8px;font-size:11.5px">';
+    if(monthEv.length){ h+=monthEv.map(function(e){return '<div style="display:flex;gap:7px;padding:3px 0;align-items:center"><span style="color:var(--gold-deep);font-weight:700;white-space:nowrap">'+(e.m+1)+'/'+e.d+'</span><span class="t-name">'+esc(e.name)+'</span><span class="t-sub">'+esc(e.stage)+'</span></div>';}).join(''); }
+    else { h+='<div class="t-sub">이 달 확정된 면접 일정이 없습니다.</div>'; }
+    h+='</div>';
+    return h;
+  };
+
   var html=''+
     '<style>'+
     '.appl-table{display:flex;flex-direction:column}'+
@@ -1131,12 +1161,15 @@ function renderHire(){
       return (dy?new Date(dy).getTime():0)-(dx?new Date(dx).getTime():0); // 최신 지원순
     });
     (window.__registerAppls && window.__registerAppls(all));
+    window.__ivEvents=(DB.appl||[]).map(function(a){var d=dval(a,"면접 일정");if(!d)return null;var dd=new Date(d);if(isNaN(dd.getTime()))return null;return {t:dd.getTime(),y:dd.getFullYear(),m:dd.getMonth(),d:dd.getDate(),name:a["지원자명"]||"",stage:a["전형 단계"]||""};}).filter(Boolean);
+    var __PG=5, __pages=Math.ceil(all.length/__PG);
+    html+='<div style="display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap">';
+    html+='<div style="flex:1.6 1 380px;min-width:300px">';
     html+='<div class="card" style="padding:0;overflow:hidden"><div class="appl-table">';
     html+='<div class="appl-tr appl-th"><div>지원자</div><div>지원 포지션</div><div>지원 경로</div><div>전형 단계</div><div>평점</div><div>지원일</div><div>연결 공고</div></div>';
-    html+=all.map(function(a){
-      var apppid=(((a["원본 Notion URL"]||"")+"").match(/[0-9a-f]{32}/i)||[""])[0].toLowerCase();
+    html+=all.map(function(a,idx){
       var linked=applLinkedName(a);
-      return '<div class="appl-tr" data-applname="'+esc(a["지원자명"]||"")+'" data-apppid="'+apppid+'" style="cursor:pointer" title="클릭하면 상세 정보">'+
+      return '<div class="appl-tr" data-applpgrow="'+idx+'"'+(idx<__PG?'':' style="display:none"')+'>'+
         '<div class="t-name">'+esc(txt(a["지원자명"]))+'</div>'+
         '<div>'+esc(txt(a["지원 포지션"]))+'</div>'+
         '<div>'+(a["지원 경로"]?badge(a["지원 경로"]):'<span class="muted">—</span>')+'</div>'+
@@ -1147,6 +1180,17 @@ function renderHire(){
       '</div>';
     }).join("");
     html+='</div></div>';
+    if(__pages>1){
+      html+='<div style="display:flex;gap:6px;justify-content:center;margin-top:10px;flex-wrap:wrap">';
+      for(var __pp=0;__pp<__pages;__pp++){ html+='<button class="btn-sm" data-applpage="'+__pp+'"'+(__pp===0?' style="background:var(--gold);color:#fff;border-color:var(--gold)"':'')+'>'+(__pp+1)+'</button>'; }
+      html+='</div>';
+    }
+    html+='</div>';
+    var __nowD=new Date();
+    var __up=window.__ivEvents.slice().filter(function(e){return e.t>=__nowD.getTime()-86400000;}).sort(function(a,b){return a.t-b.t;})[0];
+    window.__ivMonth={y:(__up?__up.y:__nowD.getFullYear()), m:(__up?__up.m:__nowD.getMonth())};
+    html+='<div style="flex:1 1 280px;min-width:270px"><div class="card" id="ivCalCard">'+window.__renderIvCal(window.__ivMonth.y,window.__ivMonth.m)+'</div></div>';
+    html+='</div>';
   }else{html+='<div class="card">'+emptyState("등록된 지원자가 없습니다.","◔")+'</div>';}
 
   /* ===== B. 공고별 지원자 ===== */
@@ -1167,7 +1211,6 @@ function renderHire(){
     panel.addEventListener("click",function(ev){
       var t=ev.target;
       if(!t||!t.closest)return;
-      var __ap=t.closest("[data-applname]");if(__ap){if(typeof window.openApplicantInfo==="function"){window.openApplicantInfo(__ap.getAttribute("data-applname"), __ap.getAttribute("data-apppid"));}return;}
       var p=t.closest("[data-print]");
       if(p){openPrintView(p.getAttribute("data-print"));return;}
       var s=t.closest("[data-sched]");
@@ -1176,6 +1219,18 @@ function renderHire(){
       if(iv){openInterviewEvalModal(iv.getAttribute("data-iveval"),iv.getAttribute("data-name"));return;}
       var h=t.closest("[data-hire]");
       if(h){openHireCompleteModal(h.getAttribute("data-hire"),h.getAttribute("data-name"));return;}
+      var pgb=t.closest("[data-applpage]");
+      if(pgb){var pi=parseInt(pgb.getAttribute("data-applpage"),10)||0;
+        panel.querySelectorAll("[data-applpgrow]").forEach(function(r){var ri=parseInt(r.getAttribute("data-applpgrow"),10);r.style.display=(ri>=pi*5&&ri<pi*5+5)?"":"none";});
+        panel.querySelectorAll("[data-applpage]").forEach(function(b){var bi=parseInt(b.getAttribute("data-applpage"),10);b.style.cssText=(bi===pi)?"background:var(--gold);color:#fff;border-color:var(--gold)":"";});
+        return;}
+      var cn=t.closest("[data-calnav]");
+      if(cn){var mm=window.__ivMonth||{y:new Date().getFullYear(),m:new Date().getMonth()};
+        mm.m+=(cn.getAttribute("data-calnav")==="next"?1:-1); if(mm.m<0){mm.m=11;mm.y--;} if(mm.m>11){mm.m=0;mm.y++;} window.__ivMonth=mm;
+        var cc=document.getElementById("ivCalCard"); if(cc&&window.__renderIvCal) cc.innerHTML=window.__renderIvCal(mm.y,mm.m);
+        return;}
+      if(t.closest("a"))return;
+      var __ap=t.closest("[data-applname]");if(__ap){if(typeof window.openApplicantInfo==="function"){window.openApplicantInfo(__ap.getAttribute("data-applname"), __ap.getAttribute("data-apppid"));}return;}
     });
   }
 }
