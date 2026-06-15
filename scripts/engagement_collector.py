@@ -461,9 +461,10 @@ def collect_cafe(dry_run: bool = False) -> list[dict]:
 
 
 # ════════════════════════════════════════════════════
-# 채널 4: 카카오 채널 (Persistent Profile 세션)
-# 실측(2026-06-15): business.kakao.com posts → 글 페이지 →
-#   span.icon.ico_like + span.num_g (좋아요), span.icon.ico_cmt + span.num_g (댓글)
+# 채널 4: 카카오 채널 — 발행 추적 전용
+# 카카오=발행 추적 전용. 공개채널이 글별 반응 비노출(2026-06-15 라이브 검증).
+# business.kakao.com/_cgxiKj/posts/{ID} → 개별 글 아닌 '채널 홈'으로 수렴.
+# 반응수치(좋아요·댓글·조회)는 관리자센터에만 존재 → 수집 불가.
 # ════════════════════════════════════════════════════
 async def _collect_kakao_async(dry_run: bool) -> list[dict]:
     async_playwright = _import_playwright()
@@ -499,7 +500,7 @@ async def _collect_kakao_async(dry_run: bool) -> list[dict]:
         )
         page = context.pages[0] if context.pages else await context.new_page()
 
-        # 소식 목록에서 글 링크 수집
+        # 소식 목록에서 글 링크 수집 (글 페이지 진입 없음 — 발행 감지만)
         print(f"  → 소식 목록: {KAKAO_POSTS_URL}")
         try:
             await page.goto(KAKAO_POSTS_URL, wait_until="domcontentloaded", timeout=25000)
@@ -517,166 +518,37 @@ async def _collect_kakao_async(dry_run: bool) -> list[dict]:
                     .filter(h => h.includes('/posts/') && /\\/posts\\/\\d+$/.test(h))
                     .slice(0, 10);
             }""")
-            print(f"  [글링크] {len(post_links)}건 발견")
+            print(f"  → 발행 추적: {len(post_links)}건 (반응지표=카카오 공개 비노출)")
         except Exception as e:
             print(f"  [ERROR] 목록 로드 실패: {e}")
             await context.close()
             return []
 
-        # 페이지에서 og:title / title / heading을 한 번에 뽑는 JS 헬퍼
-        _KAKAO_TITLE_JS = """() => {
-            // 쓰레기 값 필터: 사이트 공통명·네비 메뉴만 있으면 버림
-            const JUNK = ['전체 메뉴', '카카오', '카카오 채널', '카카오비즈니스', '카카오톡 채널'];
-            function isJunk(s) {
-                if (!s || s.trim() === '') return true;
-                const t = s.trim();
-                return JUNK.some(j => t === j || t.startsWith(j + ' ') || t.endsWith(' ' + j));
-            }
-            // ① og:title
-            const og = document.querySelector('meta[property="og:title"]');
-            if (og && !isJunk(og.getAttribute('content'))) return og.getAttribute('content').trim();
-            // ② <title> 태그
-            const tt = document.title;
-            if (!isJunk(tt)) return tt.trim();
-            // ③ 첫 heading
-            for (const sel of ['h1', 'h2', 'h3']) {
-                const el = document.querySelector(sel);
-                if (el && !isJunk(el.innerText)) return el.innerText.trim();
-            }
-            return null;
-        }"""
-
-        # 페이지에서 좋아요·댓글·조회수를 폭넓게 긁는 JS 헬퍼
-        _KAKAO_METRICS_JS = """() => {
-            const LIKE_KW  = ['좋아요', '추천', '공감', 'like', 'ico_like'];
-            const CMT_KW   = ['댓글', 'comment', 'ico_cmt', 'reply'];
-            const VIEW_KW  = ['조회', '뷰', 'view', 'read', 'ico_view'];
-
-            function parseNum(s) {
-                if (!s) return 0;
-                const m = s.replace(/,/g, '').match(/\\d+/);
-                return m ? parseInt(m[0], 10) : 0;
-            }
-            function hasKw(el, kws) {
-                const combined = [
-                    el.className || '',
-                    el.getAttribute('aria-label') || '',
-                    el.getAttribute('title') || '',
-                    el.innerText || ''
-                ].join(' ').toLowerCase();
-                return kws.some(k => combined.includes(k.toLowerCase()));
-            }
-
-            let likes = 0, comments = 0, views = 0;
-
-            // 전략 A: span.num_g 옆 형제·부모에서 키워드 매핑
-            document.querySelectorAll(
-                'span.num_g, [class*="num_"], [class*="_num"], [class*="count_"], [class*="_count"]'
-            ).forEach(numEl => {
-                const val = parseNum(numEl.innerText);
-                if (!val) return;
-                // 부모 또는 형제에서 키워드 확인
-                const ctx = numEl.parentElement;
-                if (!ctx) return;
-                if (!likes  && hasKw(ctx, LIKE_KW))  likes    = val;
-                if (!comments && hasKw(ctx, CMT_KW))  comments = val;
-                if (!views  && hasKw(ctx, VIEW_KW))  views    = val;
-            });
-
-            // 전략 B: aria-label / data-* 속성 기반 스캔
-            if (!likes || !comments || !views) {
-                document.querySelectorAll('[aria-label], [data-count], [data-like], [data-comment]').forEach(el => {
-                    const val = parseNum(el.getAttribute('aria-label') || el.getAttribute('data-count') || el.innerText);
-                    if (!val) return;
-                    if (!likes    && hasKw(el, LIKE_KW))  likes    = val;
-                    if (!comments && hasKw(el, CMT_KW))   comments = val;
-                    if (!views    && hasKw(el, VIEW_KW))  views    = val;
-                });
-            }
-
-            // 전략 C: 숫자 직전/직후 텍스트 노드 기반 — 텍스트 전체 스캔
-            if (!likes || !comments || !views) {
-                document.querySelectorAll('span, em, strong, div').forEach(el => {
-                    if (el.children.length > 3) return;  // 컨테이너 제외
-                    const txt = (el.innerText || '').trim();
-                    if (!/^[\\d,]+$/.test(txt)) return;  // 순수 숫자만
-                    const val = parseNum(txt);
-                    if (!val) return;
-                    const sibling = el.previousElementSibling || el.parentElement;
-                    if (sibling) {
-                        if (!likes    && hasKw(sibling, LIKE_KW))  likes    = val;
-                        if (!comments && hasKw(sibling, CMT_KW))   comments = val;
-                        if (!views    && hasKw(sibling, VIEW_KW))  views    = val;
-                    }
-                });
-            }
-
-            return {likes, comments, views};
-        }"""
-
+        # 글 페이지 개별 진입 없음 — 링크 목록만으로 신규 발행 감지
         for post_url in post_links:
-            like_count = 0
-            comment_count = 0
-            view_count = 0
             pid = post_url.rsplit("/", 1)[-1]
-
-            try:
-                await page.goto(post_url, wait_until="domcontentloaded", timeout=20000)
-                await page.wait_for_timeout(2500)
-
-                # ─ 제목 추출 (우선순위 5단계) ─
-                # ① review_queue 매핑
-                title = kakao_title_map.get(pid)
-                if not title:
-                    # ②③④ og:title / <title> / heading을 JS로 한 번에 뽑기
-                    title = await page.evaluate(_KAKAO_TITLE_JS)
-                # ⑤ 최후 폴백
-                if not title:
-                    title = f"카카오소식_{pid}"
-
-                # ─ 좋아요·댓글·조회수 수집 (다중 폴백) ─
-                metrics = await page.evaluate(_KAKAO_METRICS_JS)
-                like_count    = metrics.get("likes", 0)
-                comment_count = metrics.get("comments", 0)
-                view_count    = metrics.get("views", 0)
-
-                # 전부 0이면 DOM 구조 변경 경고
-                if like_count == 0 and comment_count == 0 and view_count == 0:
-                    print(f"  [카카오 DEBUG] 수치 미감지 — 페이지 구조 확인 필요: {post_url}")
-
-                print(f"    {title[:30]} → 좋아요={like_count} 댓글={comment_count} 조회={view_count}")
-
-            except Exception as e:
-                title = kakao_title_map.get(pid, f"카카오소식_{pid}")
-                print(f"    [ERROR] {post_url}: {e}")
-
-            prev = prev_posts.get(post_url, {})
+            title = kakao_title_map.get(pid, f"카카오소식_{pid}")
             is_new = post_url not in prev_posts
-            d_like    = like_count    - prev.get("likeCount", 0)
-            d_comment = comment_count - prev.get("commentCount", 0)
-            d_view    = view_count    - prev.get("viewCount", 0)
 
-            if is_new or d_like != 0 or d_comment != 0 or d_view != 0:
+            if is_new:
                 events.append({
                     "channel": "카카오",
                     "title": title,
                     "url": post_url,
                     "collected_at": ts,
-                    "isNew": is_new,
-                    "dViews": max(d_view, 0),
-                    "dInterest": max(d_like, 0),
-                    "dComments": max(d_comment, 0),
-                    "totalViews": view_count,
-                    "totalLikes": like_count,
-                    "totalComments": comment_count,
+                    "isNew": True,
+                    "flagOnly": True,
+                    "likeCount": None,
+                    "commentCount": None,
+                    "viewCount": None,
                 })
 
             new_snap_posts.append({
                 "url": post_url,
                 "title": title,
-                "likeCount": like_count,
-                "commentCount": comment_count,
-                "viewCount": view_count,
+                "likeCount": None,
+                "commentCount": None,
+                "viewCount": None,
                 "collected_at": ts,
             })
 
@@ -691,13 +563,13 @@ async def _collect_kakao_async(dry_run: bool) -> list[dict]:
         })
         print(f"  [저장] kakao_snapshot.json ({len(new_snap_posts)}건)")
 
-    print(f"  [완료] 이벤트 {len(events)}건")
+    print(f"  [완료] 신규 발행 {len(events)}건")
     return events
 
 
 def collect_kakao(dry_run: bool = False) -> list[dict]:
-    """카카오 채널 소식 좋아요·댓글 수집 (headful Playwright, GM 데스크톱)."""
-    print("[카카오] 수집 시작 (Persistent Profile 세션)")
+    """카카오 채널 발행 추적 전용 (headful Playwright, GM 데스크톱). 반응지표 수집 불가."""
+    print("[카카오] 발행 추적 시작 (Persistent Profile 세션)")
     return asyncio.run(_collect_kakao_async(dry_run))
 
 
@@ -763,7 +635,7 @@ def main() -> int:
             "engagement_collector.py 자동 생성 — "
             "당근:공개HTML파싱 / 블로그:RSS신규감지 / "
             "카페:Playwright iframe#cafe_main span.count / "
-            "카카오:Playwright 다중폴백(num_g/aria-label/텍스트노드) 좋아요·댓글·조회수"
+            "카카오:발행추적전용(반응 공개비노출)"
         )
         _save_feed(feed)
         print(f"\n[저장] engagement_feed.json — 총 {len(feed['events'])}건")
