@@ -297,7 +297,7 @@ function doGet(e) {
       // 입력=현재순서(담당자 이동됨): 0날짜 1ID 2명 3카테 4시간대 5결과 6이슈 7노하우 8제출상태 9제출시각 10담당자 11점검자 12교대 13측정 14반영
       _new.push([ r[0], r[1], r[2], r[3], _roundLabel(r[4], r[12]), r[5], r[6], r[7], r[8], r[9], r[10], r[11], r[13], r[14] ]);
     }
-    _mz.clearContent();
+    _mz.clearContents();
     _mz.getRange(1, 1, _new.length, HEADERS.length).setValues(_new);
     return jsonRes({ ok: true, sheet: _mz.getName(), rows: _new.length - 1 });
   }
