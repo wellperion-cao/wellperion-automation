@@ -242,7 +242,7 @@ a{color:var(--accent);text-decoration:none}
   <div class="section">
     <div class="section-title"><span class="section-num">⑥</span> 외부 지표 <span class="manual-badge">수기 입력</span></div>
     <div class="manual-section">
-      <div style="font-size:12px;color:var(--yellow);margin-bottom:14px;font-weight:600">노출·인지·관심은 외부 플랫폼 지표로 자동 수집이 불가합니다. GM 또는 담당자가 직접 입력하세요.</div>
+      <div style="font-size:12px;color:var(--yellow);margin-bottom:14px;font-weight:600">당근 노출은 공개 데이터라 자동 수집됩니다. IG 도달·블로그·카페 방문은 로그인 연동 대기 중 — GM 또는 담당자가 직접 입력하세요.</div>
       <div class="manual-row">
         <div>
           <div class="manual-lbl">IG 도달 (Reach)</div>
@@ -272,11 +272,11 @@ a{color:var(--accent);text-decoration:none}
       </div>
       <div class="manual-row">
         <div>
-          <div class="manual-lbl">당근 노출</div>
-          <div class="manual-hint">당근 비즈프로필 통계</div>
+          <div class="manual-lbl">당근 노출 <span class="manual-badge" style="background:#0f3d2e;color:#34d399">자동수집</span></div>
+          <div class="manual-hint" id="danggnHint">당근 비즈프로필 공개 조회수 · 자동 집계</div>
         </div>
         <div>
-          <input class="manual-input" type="text" placeholder="예) 640 회" />
+          <input class="manual-input" id="danggnViews" type="text" readonly placeholder="수집 중…" style="font-weight:700" />
         </div>
       </div>
       <div class="manual-row">
@@ -574,10 +574,31 @@ function renderComments(pb) {
 }
 
 /* ── 진입점 ── */
+async function loadDanggnViews() {
+  const el = document.getElementById('danggnViews');
+  const hint = document.getElementById('danggnHint');
+  if (!el) return;
+  try {
+    const res = await fetch('engagement/danggn_snapshot.json?t=' + Date.now());
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const snap = await res.json();
+    const posts = Array.isArray(snap.posts) ? snap.posts : [];
+    const views = posts.reduce((s, p) => s + (Number(p.viewCount) || 0), 0);
+    el.value = views.toLocaleString() + ' 회 (게시물 ' + posts.length + '개)';
+    if (hint && snap.collected_at) {
+      hint.textContent = '당근 비즈프로필 공개 조회수 · 자동 집계 · 갱신 ' + String(snap.collected_at).slice(5, 16);
+    }
+  } catch (e) {
+    el.value = '수집 실패 — 수기 확인';
+    if (hint) hint.textContent = '당근 데이터 로드 실패: ' + e.message;
+  }
+}
+
 (async function init() {
   await Promise.all([
     loadPeriodBreakdown(),
     loadFunnelConversion(),
+    loadDanggnViews(),
   ]);
 })();
 </script>
