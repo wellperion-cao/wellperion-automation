@@ -4783,10 +4783,13 @@ getNightSched = function(ds){
   return applyBaseOverrides(mgmtMergeSchedule(base, customSlots));
 };
 
-/* 커스텀 항목 표시 시 뱃지 추가를 위해 renderItem 래핑 */
+/* 커스텀 항목 표시 시 뱃지 추가를 위해 renderItem 래핑.
+   ⚠ 2026-06-15 치명버그 수정: 옛 래퍼가 (it,shift,gender)만 넘겨 4번째 round 인자를 유실 →
+   회차별 체크(_ckd=round?isChecked:STATE[id])가 전부 항목단위로 떨어져 '체크 다 풀림'.
+   rest-args로 전 인자(round 포함) 그대로 전달. */
 const _origRenderItem = renderItem;
-renderItem = function(it, shift, gender){
-  let html = _origRenderItem(it, shift, gender);
+renderItem = function(it, ...rest){
+  let html = _origRenderItem(it, ...rest);
   if(it._custom){
     // 항목명 뒤에 커스텀 뱃지 삽입
     html = html.replace('</label>', '<span class="mgmt-badge-custom">커스텀</span></label>');
