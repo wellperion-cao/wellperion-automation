@@ -94,6 +94,9 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 .round-seg.done{border-color:var(--green)}
 .round-seg.done .rs-name::after{content:" ✓";color:var(--green)}
 .round-seg.active.done .rs-name::after{color:#fff}
+.round-seg .rs-sub{font-size:11px;font-weight:700;color:var(--dim)}
+.round-seg.done .rs-sub{color:var(--green)}
+.round-seg.active .rs-sub{color:rgba(255,255,255,0.92)}
 @media(max-width:560px){.round-seg{min-width:78px;padding:8px 5px}.round-seg .rs-name{font-size:12px}.round-seg .rs-time{font-size:10px}}
 .guide-cards{display:flex;gap:10px;margin-bottom:12px}
 .guide-card{flex:1;border-radius:10px;padding:12px 14px;border:1px solid}
@@ -1761,9 +1764,12 @@ function renderRoundBar(g){
   let html='';
   getRoundsFor(d).forEach(r=>{
     const act=r.key===cur?' active':'';
-    const done=isRoundSubmitted(d,g,r.key)?' done':'';
+    const _sub=isRoundSubmitted(d,g,r.key);
+    const done=_sub?' done':'';
+    const _nm=String(r.name).replace(/\s*\[\d+\]/,'');   // '오전조[1]' → '오전조' (조 이름만, [1] 제거). GM 2026-06-15
     html+=`<button class="round-seg${act}${done}" onclick="setRoundG('${g}','${r.key}')">`
-        +`<span class="rs-name">${r.name}</span><span class="rs-time">${r.time}</span></button>`;
+        +`<span class="rs-name">${_nm}</span><span class="rs-time">${r.time}</span>`
+        +`<span class="rs-sub">${_sub?'(1/1)':'(0/1)'}</span></button>`;   // 조별 제출 여부 — 제출=(1/1)초록 / 미제출=(0/1). GM 2026-06-15
   });
   bar.innerHTML=html;
 }
