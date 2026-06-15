@@ -1015,7 +1015,7 @@ function applicantRow(a){
       '<div style="display:flex;align-items:center;gap:8px">'+
         '<span class="badge b-'+gColor+'" style="font-size:12px;font-weight:700">'+esc(grade)+'</span>'+
         '<span class="t-name">'+esc(txt(a["지원자명"]))+'</span>'+
-        (stage?badge(stage):"")+
+        (stage?badge(stage):"")+(a["지원 경로"]?badge(a["지원 경로"]):"")+
       '</div>'+
       '<div style="display:flex;gap:6px;flex-wrap:wrap">'+actions+'</div>'+
     '</div>'+
@@ -1036,6 +1036,7 @@ function openPrintView(pageId){
   if(!a){alert("지원자 정보를 찾을 수 없습니다.");return;}
   var grade=a["면접 평점"]||"미평가";
   var memo=String(a["메모"]||"").trim();
+  function fmtMemo(mm){ if(!mm) return '<div style="color:#9a978e">(이력 요약 없음)</div>'; return String(mm).split(/\n/).map(function(line){ var x=line.replace(/\r/g,"").trim(); if(!x) return '<div style="height:4px"></div>'; if(/^[■◆□▣]/.test(x)){ var c=x.replace(/^[■◆□▣]\s*/,""); var i=c.search(/[:：]/); if(i>0) return '<div class="rs-row"><span class="rs-k">'+esc(c.slice(0,i).trim())+'</span><span class="rs-v">'+esc(c.slice(i+1).trim())+'</span></div>'; return '<div class="rs-h">'+esc(c)+'</div>'; } if(/^[•·\-]\s/.test(x)) return '<div class="rs-li">• '+esc(x.replace(/^[•·\-]\s*/,""))+'</div>'; return '<div class="rs-p">'+esc(x)+'</div>'; }).join(""); }
   var w=window.open("","_blank","width=900,height=1100");
   if(!w){alert("팝업이 차단됐습니다. 브라우저에서 팝업을 허용해 주세요.");return;}
   var gradeColorMap={A:"#3c7a4a",B:"#2f6d9e",C:"#b07d24",D:"#c1702c",E:"#b14238",F:"#7c7a73"};
@@ -1055,8 +1056,8 @@ function openPrintView(pageId){
       'th,td{border:1px solid #d8d4c8;padding:5px 8px;text-align:left;vertical-align:top}'+
       'th{background:#f8f5ee;font-weight:600;width:80px;color:#6c6961}'+
       '.grade{display:inline-block;padding:3px 14px;border-radius:4px;font-weight:700;color:#fff;font-size:13pt;background:'+gColor+'}'+
-      '.memo{white-space:pre-wrap;font-size:9.5pt;line-height:1.7;padding:10px;background:#faf9f6;border-radius:4px;border:1px solid #efece4}'+
-      '.q{display:flex;gap:6px;margin:6px 0 4px;font-size:10pt}'+
+      '.memo{font-size:9.5pt;line-height:1.55;padding:12px 14px;background:#faf9f6;border-radius:4px;border:1px solid #efece4}'+'.rs-h{font-weight:700;color:#8a6f3f;font-size:10pt;margin:11px 0 4px;padding-bottom:2px;border-bottom:1px solid #e7ddc8}'+'.rs-row{display:flex;gap:10px;margin:3px 0;font-size:9.5pt;align-items:baseline}'+'.rs-k{flex:0 0 88px;font-weight:700;color:#6c6961}'+'.rs-v{flex:1;color:#1f1e1b}'+'.rs-li{margin:2px 0 2px 14px;text-indent:-9px;font-size:9.3pt;color:#3a3833}'+'.rs-p{margin:3px 0;font-size:9.3pt;color:#1f1e1b}'+
+      '.q{display:flex;gap:6px;margin:9px 0 0;font-size:10pt;font-weight:600;color:#2a2823;padding-bottom:15pt;border-bottom:1px dashed #d3cebf}'+
       '.q-num{color:#a98a52;font-weight:700;white-space:nowrap;flex-shrink:0}'+
       '.q-part{font-size:9pt;color:#a98a52;font-weight:700;margin-top:10px;text-transform:uppercase;letter-spacing:.05em}'+
       '.line{border-bottom:1px solid #c9c5b8;height:14pt;margin:4pt 0}'+
@@ -1075,8 +1076,8 @@ function openPrintView(pageId){
         '<tr><th>지원일</th><td>'+fmtD(dval(a,"지원일"))+'</td><th>전형 단계</th><td>'+esc(a["전형 단계"]||"")+'</td></tr>'+
         (dval(a,"면접 일정")?'<tr><th>면접 일정</th><td>'+fmtD(dval(a,"면접 일정"))+'</td><th>담당 면접관</th><td>'+esc(a["담당 면접관"]||"")+'</td></tr>':"")+
       '</table>'+
-      '<h2>2. 이력 요약 (잡코리아·자기소개서 기반)</h2>'+
-      (memo?'<div class="memo">'+esc(memo)+'</div>':'<div class="memo" style="color:#9a978e">(이력 요약 없음)</div>')+
+      '<h2>2. 이력서 요약 (잡코리아·자기소개서 기반)</h2>'+
+      '<div class="memo">'+fmtMemo(memo)+'</div>'+
       '<h2>3. AI 서류 평가 — 종합 등급</h2>'+
       '<p style="font-size:11pt;margin:8px 0">종합 등급: <span class="grade">'+esc(grade)+'</span> &nbsp;&nbsp; <span style="color:#6c6961;font-size:9.5pt">(인재상별 평가 근거·강점·확인사항은 위 \'이력 요약\'에 포함)</span></p>'+
       '<h2>4. 면접 질문지 (표준 10문항 · 부서 맞춤 조정 가능)</h2>'+
