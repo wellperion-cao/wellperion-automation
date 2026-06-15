@@ -32,8 +32,8 @@ const FORM_SHEETS = [
   //   로 교체하고, 아래 두 줄 앞의 주석(//)을 풀어 활성화한다.
   //   ⚠️ gid 가 문자열 '__GID__' 인 상태에서는 _sheetByGid_ 매칭(=== 숫자 비교)이 실패 → 자동 스킵(무중단).
   //   ⚠️ clasp push ≠ 웹앱 배포 — gid 교체 후 새 버전 웹앱 재배포 1회(GM/CTO) 필요. (명세: 문의_신규유형_폼설계_260612.md §5)
-  // , { ssId: '__SPACE_RENTAL_SS_ID__', gid: '__GID__', type: '공간렌트',       channelKeys: ['경로', '채널', '알게'] }
-  // , { ssId: '__BUSINESS_PARTNER_SS_ID__', gid: '__GID__', type: '비즈니스파트너', channelKeys: ['경로', '채널', '알게'] }
+  , { ssId: '1zkT_59Dn2xQm3Uikl_WgpP_OyiSDGa7gOY5Pxu8mI1o', gid: 1277569005, type: '공간렌트',       channelKeys: ['경로', '채널', '알게'] }  // 2026-06-15 폼 생성·활성화
+  , { ssId: '1zkT_59Dn2xQm3Uikl_WgpP_OyiSDGa7gOY5Pxu8mI1o', gid: 764775488,  type: '비즈니스파트너', channelKeys: ['경로', '채널', '알게'] }  // 2026-06-15 폼 생성·활성화
 ];
 
 function _sheetByGid_(ssId, gid) {
