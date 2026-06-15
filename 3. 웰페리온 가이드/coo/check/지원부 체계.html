@@ -1704,12 +1704,29 @@ function autoRoundForNow(ds){
 /* 현재 선택된 라운드(성별별). localStorage 영속 → 새로고침/날짜이동해도 유지
    (loadState가 STATE를 비워도 보존). 저장값 없으면 시간대 기준 자동 선택. */
 function roundLSKey(g){return 'wcheck_round_'+g}
+/* 그날 조 중 '데이터(체크·제출) 있는' 조 — 새로고침 시 작업한 조를 가려 보이지 않게 하는 버그 차단.
+   GM 2026-06-15: 오전조에 체크했는데 새로고침하면 시간기준(오후조)으로 바뀌어 '체크 사라짐'처럼 보이던 문제.
+   현재 시각 조에 데이터 있으면 그걸, 아니면 데이터 있는 마지막 조를 우선. 데이터 없으면 null(시간폴백). */
+function _bestRoundFor(d,g){
+  try{
+    const keys=getRoundsFor(d).map(r=>r.key);
+    const withData=keys.filter(rk=>{
+      for(const k in STATE){ if(k.indexOf('chk_'+g+'_'+rk+'_')===0 && STATE[k]===true) return true; }
+      return isRoundSubmitted(d,g,rk);
+    });
+    if(!withData.length)return null;
+    const now=autoRoundForNow(d);
+    return (withData.indexOf(now)>=0)?now:withData[withData.length-1];
+  }catch(e){return null;}
+}
 function getRoundG(g){
   const ds=(typeof getDateG==='function')?getDateG(g):'';
   const keys=ds?getRoundsFor(ds).map(r=>r.key):ROUND_KEYS;
   const v=localStorage.getItem(roundLSKey(g));
-  if(v&&keys.indexOf(v)>=0)return v;        // 저장값이 그날 조 집합에 있으면 사용
-  return autoRoundForNow(ds);               // 없으면(주말↔평일 전환 등) 시간대 자동선택
+  if(v&&keys.indexOf(v)>=0)return v;        // 저장값(명시 선택)이 그날 조 집합에 있으면 사용
+  const bd=_bestRoundFor(ds,g);
+  if(bd)return bd;                          // 명시 선택 없으면 데이터(체크·제출) 있는 조 우선
+  return autoRoundForNow(ds);               // 데이터도 없으면 시간대 자동선택
 }
 function setRoundG(g,rk){
   const ds=(typeof getDateG==='function')?getDateG(g):'';

@@ -5754,7 +5754,7 @@ function crTab(btn, panelId) {
       <tr><td><strong>23:00</strong></td><td>회사</td><td>⑨ 마감 점검</td><td>COO 체크앱 지원부·시설부·주차 마감 박스표 대시보드 (PC 23:30 종료 전 발송)</td></tr>
     </table>
     <div class="callout" style="margin-top:8px;font-size:13px;"><strong>📊 데이터 소스</strong> — GM 할일=업무현황 시트 <code>todo_list</code>(자동, GM 관리 불필요) · 명언=<code>status/quotes.json</code> · 진행=<code>status/*.json</code>·git. <strong style="color:var(--accent);">노션 의존 0.</strong><br><strong>🔄 재기동</strong> — 봇·스케줄러 재시작 또는 PC 부팅(ONLOGON 예약작업). 수동 재기동: <code>Stop-Process -Id (PID) -Force</code> → <code>Start-Process python -ArgumentList telegram_bot\daily_scheduler.py -WorkingDirectory C:\Users\jjky0\welperion-automation -WindowStyle Hidden</code>. <span style="color:var(--dim);">점검 원칙(왜·언제) = S2 CTO탭.</span></div>
-    <p style="font-size:12px;color:var(--dim);margin:8px 0 0;">※ IG 07:30 전체 발행 흐름(시모 위임→빌드→<code>pub:</code> 콜백 등) 상세는 <code>instagram/_AI시리즈_로드맵.md</code> 정본 참조.</p>
+    <!-- IG 07:30 전체 발행 흐름 포인터 제거 (2026-06-15 GM): M5 콘텐츠 검수·자동업로드 ▸ 📸 인스타그램 발행 파이프라인 블록이 흐름 정본(로드맵.md §3.4·pub 콜백 구현위치) 보유 → M5로 일원화. T2 매일 타임라인엔 07:30 '언제 도는가' 행만 유지. -->
 
     <h4>매주</h4>
     <table>
