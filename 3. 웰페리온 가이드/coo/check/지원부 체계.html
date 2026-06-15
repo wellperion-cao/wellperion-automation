@@ -3351,7 +3351,7 @@ async function sendTelegramRound(date,round,submitter,gender){
   try{
     await fetch(API_URL,{method:'POST',redirect:'follow',
       headers:{'Content-Type':'text/plain'},
-      body:JSON.stringify({action:'notify',date,shift:round,submitter,genderTab:gender,message:msg})
+      body:JSON.stringify({action:'notify_round',dept:DEPT,date,round,gender,genderTab:gender,submitter,message:msg,pageLink:link})
     });
   }catch(e){}
 }

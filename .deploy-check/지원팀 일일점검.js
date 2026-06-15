@@ -1208,13 +1208,19 @@ function handleNotifyRound(body) {
     issueText = s.length ? s : '없음';
   }
   var pct = (body.pct == null || body.pct === '') ? '' : String(body.pct);
-  var lines = [
-    '🧹 지원부 점검 — ' + roundLabel + ' 제출',
-    '완료율 ' + pct + '%',
-    '이슈: ' + issueText
-  ];
-  if (body.pageLink) lines.push(String(body.pageLink));
-  var msg = lines.join('\n');
+  // 프론트가 완성 메시지(message)를 보내면 그대로(plain). 없으면 서버 조립. URL의 &는 plain이라 안전(HTML 파싱 깨짐 없음).
+  var msg;
+  if (body.message) {
+    msg = String(body.message);
+  } else {
+    var lines = [
+      '🧹 지원부 점검 — ' + roundLabel + ' 제출',
+      '완료율 ' + pct + '%',
+      '이슈: ' + issueText
+    ];
+    if (body.pageLink) lines.push(String(body.pageLink));
+    msg = lines.join('\n');
+  }
   try {
     UrlFetchApp.fetch('https://api.telegram.org/bot' + BOT_TOKEN + '/sendMessage', {
       method: 'post', contentType: 'application/json',
