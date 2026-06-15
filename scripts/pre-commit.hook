@@ -69,6 +69,17 @@ if [ -f "$GUARD" ]; then
   fi
 fi
 
+# ── ①-2 _queue·review_queue 급감 가드 (스테일 덮어쓰기 차단 · 2026-06-15 AI CTO) ──
+# 배열형 status JSON 항목수가 HEAD 대비 급감(8개+ AND 15%+)하면 커밋 차단(exit 1).
+# 가드 없음/파이썬 없음/내부오류 = fail-open(통과). 우회: git commit --no-verify
+QUEUE_GUARD="$REPO_ROOT/scripts/precommit_queue_guard.py"
+if [ -f "$QUEUE_GUARD" ] && [ -n "$PYBIN" ]; then
+  PYTHONUTF8=1 "$PYBIN" "$QUEUE_GUARD"
+  if [ "$?" -eq 1 ]; then
+    exit 1
+  fi
+fi
+
 # ── ② incident 교훈 가드 (사고 재발 방지 경고 · fail-open) ──────────────────
 # 스테이징 파일이 watch_globs 와 매칭되면 해당 사건 요약을 경고 출력.
 # gate=warn → 출력만(exit 0). gate=block → exit 1. 가드 오류 → fail-open(통과).
