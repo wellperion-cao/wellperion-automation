@@ -2318,16 +2318,15 @@ function drawUI(d,gender){
     /* 라운드 제출 버튼(인-플로우) — 바닥 고정 버튼 대신. 점검자 입력 + 1건 이상 체크 시 활성. */
     const sub=getSubmitterForGender(gender);
     let rBtn='';
+    const _rlabel=`${rdef.name} (${rdef.time})`;   // 예: 오전조[1] (10시)
     if(rSubmitted){
-      if(rDone<rTotal){
-        rBtn=`<button class="submit-btn primary" style="max-width:none;width:100%;" onclick="submitRound('${curRound}','${gender}')"${sub?'':' disabled'}>➕ 이 조 추가 제출 (남은 ${rTotal-rDone}건)</button>`;
-      }else{
-        rBtn=`<button class="submit-btn submitted" style="max-width:none;width:100%;" disabled>이 조 제출 완료</button>`;
-      }
+      /* 2번 제출 금지(GM 2026-06-15): 제출되면 항상 잠금(추가 제출 폐지). 제출=(1/1) */
+      rBtn=`<button class="submit-btn submitted" style="max-width:none;width:100%;" disabled>${_rlabel} 제출완료 (1/1)</button>`;
     }else if(!sub){
       rBtn=`<button class="submit-btn primary" style="max-width:none;width:100%;" disabled>↑ 점검자 이름을 먼저 입력</button>`;
     }else{
-      rBtn=`<button class="submit-btn primary" style="max-width:none;width:100%;" onclick="submitRound('${curRound}','${gender}')"${rDone===0?' disabled':''}>이 조 점검 제출 (${rDone}/${rTotal})</button>`;
+      /* 미제출=(0/1) — 항목수(27/30) 대신 조 이름·시각·제출여부로 표시. GM 2026-06-15 */
+      rBtn=`<button class="submit-btn primary" style="max-width:none;width:100%;" onclick="submitRound('${curRound}','${gender}')"${rDone===0?' disabled':''}>${_rlabel} 점검 제출 (0/1)</button>`;
     }
     html+=`<div style="margin:16px 0 8px;">${rBtn}</div>`;
 
@@ -3178,6 +3177,8 @@ async function submitRound(round,gender){
   if(!sub){alert('점검자 이름을 먼저 입력하세요.');return}
   const d=getDateG(gender);
   const rdef=roundDef(round); if(!rdef){alert('알 수 없는 조');return}
+  /* 2번 제출 금지(GM 2026-06-15): 이미 제출된 조는 재제출 차단(버튼 비활성 + 함수 가드 이중). */
+  if(isRoundSubmitted(d,gender,round)){ alert(`${rdef.name}은 이미 제출되었습니다.\n(같은 조 2번 제출 불가)`); return; }
   const genderLabel=gender==='f'?'여':'남';
   /* 거짓제출 가드(시우 2026-06-13): 그 라운드 가시항목 체크 0이면 confirm 경고 — done>0이면 무조건 통과.
      집계는 appendRoundSnapshot의 itemRounds+isChecked 로직 재사용. */

@@ -261,6 +261,30 @@ function doGet(e) {
   if (action === 'clear_check_ledger') { return clearCheckLedger(e.parameter.dept || 'support'); }
   if (action === 'clear_zone_checks') { return clearZoneCheckedRows(e.parameter.dept || 'support', e.parameter.date || '', e.parameter.all === '1'); }
   if (action === 'delete_item_row') { return deleteItemRow(e.parameter.dept || 'support', e.parameter.date || '', e.parameter.zone || '', e.parameter.itemId || ''); }
+  if (action === 'list_tabs') { return jsonRes({ tabs: SpreadsheetApp.getActiveSpreadsheet().getSheets().map(function(s){ return { name: s.getName(), gid: s.getSheetId() }; }) }); }   // gid→탭 확인용. 2026-06-15 시우.
+  if (action === 'dump_zone') {   // 구역 시트 전체행(전 날짜) 덤프 — 진단용. 2026-06-15 시우.
+    var _dz = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(_deptTabs(e.parameter.dept || 'support')[e.parameter.zone || 'male']);
+    if (!_dz) return jsonRes({ error: 'no sheet' });
+    var _dd = _dz.getDataRange().getValues(), _out = [];
+    for (var _i = 1; _i < _dd.length; _i++) { _out.push({ date: String(_dd[_i][0]), id: String(_dd[_i][1]), status: String(_dd[_i][5]), inspector: String(_dd[_i][10] || ''), issue: String(_dd[_i][6] || '') }); }
+    return jsonRes({ sheet: _dz.getName(), total: _out.length, rows: _out });
+  }
+  if (action === 'clear_non_keep') {   // 지정 날짜(keep) 외 행 전부 삭제 — '오늘것만 남김'. 2026-06-15 시우.
+    var _kz = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(_deptTabs(e.parameter.dept || 'support')[e.parameter.zone || 'male']);
+    var _keep = e.parameter.date || '';
+    if (!_kz || !_keep) return jsonRes({ error: 'sheet/date 필수' });
+    var _kd = _kz.getDataRange().getValues(), _del = [];
+    for (var _j = _kd.length - 1; _j >= 1; _j--) { var _dv = String(_kd[_j][0]); if (!(_dv === _keep || formatDate(_kd[_j][0]) === _keep)) _del.push(_j + 1); }
+    var _rm = 0, _mode = 'delete';
+    if (_del.length > 0 && _del.length >= (_kd.length - 1)) {
+      // 전 데이터행 삭제 = 시트 빔(구글시트 '마지막행 삭제' 금지) → 내용만 비움. 마지막 빈행은 getDataRange서 제외돼 read 무영향. GM 2026-06-15.
+      _mode = 'clear';
+      _del.forEach(function(rn){ _kz.getRange(rn, 1, 1, Math.max(1, _kz.getLastColumn())).clearContent(); _rm++; });
+    } else {
+      _del.forEach(function(rn){ _kz.deleteRow(rn); _rm++; });   // 내림차순이라 안전
+    }
+    return jsonRes({ ok: true, sheet: _kz.getName(), kept: _keep, removed: _rm, mode: _mode });
+  }
   if (action === 'migrate_support_sheets') { return migrateSupportSheets(); }
   if (action === 'purge_dept_items') { return purgeDeptItems(e.parameter.dept || ''); }
   if (action === 'delete_facility_sheets') { return deleteFacilitySheets(); }
