@@ -5572,14 +5572,10 @@ function crTab(btn, panelId) {
     <table>
       <tr><th style="width:48px">상태</th><th style="width:170px">자동화</th><th style="width:80px">담당</th><th style="width:130px">주기</th><th style="width:70px">상세</th></tr>
       <tr onclick="wpAutoToggle(this)" style="cursor:pointer;"><td>🟢</td><td>7 C-Level 컨텍스트 정비</td><td>7 C-Level</td><td>일 09:00</td><td style="color:var(--accent);font-size:12px;">펼치기 ▾</td></tr>
-      <tr class="auto-detail" style="display:none;"><td colspan="5" style="background:var(--paper);padding:12px 14px;font-size:13px;color:var(--dim);">반자동 모델 v2 (매주 일 09:00 텔레그램 알림 → CEO가 6 C-Level 위임 + CEO 본인 컨텍스트도 정비 → 7건 → CEO 1회 취합 보고). <strong>범위·R/R·식별자 = 바로 아래 범위표(이 표가 단일 출처)</strong> / 실행 프롬프트(STEP 1~5) = T1 기술 인프라 상세 ▸ 핵심 프롬프트 ▸ 운영 실행 도구 참조.</td></tr>
-    </table>
-
-    <!-- ══ 주간 컨텍스트 정비 범위표 (2026-06-05 S2 → T2 이관 · 이 표가 단일 출처) ══ -->
-    <h4 style="margin-top:20px;"><span class="ico">🗂️</span>주간 컨텍스트 정비 범위 (매주 일 09:00)</h4>
-    <div class="callout"><strong>반자동 실행 모델 v2 (2026-06-02 GM 확정 · 이 흐름이 SSOT).</strong> 일요일 알림 → 세션에서 사람이 실행 → CEO가 모아 한 번에 보고하는 구조. 7 C-Level(CEO 포함) 각각이 아래 범위표 기준으로 본인 영역을 정비(실행 프롬프트 STEP 1~5는 T1 기술 인프라 상세 ▸ 핵심 프롬프트 ▸ 운영 실행 도구 참조)하고, 정비 전·후 + 발견·개선안을 CEO에 보고. CEO는 본인 정비 + 6건을 모아 GM께 1회 통합 보고.</div>
-    <div class="callout"><strong>식별자 SSOT.</strong> 아래 범위표의 식별자(CTX-CEO·CTX-CMO·CTX-COO·CTX-CTO·CTX-CFO·CTX-CHRO·CTX-CPO — CTX-{역할} 규칙, 2026-06-15 레거시 노션번호 폐기)가 단일 기준입니다. (<code>status/schedule.json</code>의 코드·작업스케줄러 이름 등은 내부 부품일 뿐 식별자 SSOT가 아닙니다.)</div>
-    <table>
+      <tr class="auto-detail" style="display:none;"><td colspan="5" style="background:var(--paper);padding:12px 14px;font-size:13px;color:var(--text);">
+        <div style="color:var(--dim);"><strong>반자동 모델 v2 (매주 일 09:00 · 이 흐름이 SSOT).</strong> 일요일 알림 → CEO가 6 C-Level 위임 + CEO 본인 컨텍스트도 정비 → 7건 → CEO가 모아 GM께 1회 통합 보고. 실행 프롬프트(STEP 1~5) = T1 기술 인프라 상세 ▸ 핵심 프롬프트 ▸ 운영 실행 도구 참조.</div>
+        <div style="margin-top:6px;color:var(--dim);"><strong>식별자 = CTX-{역할}</strong> (CTX-CEO·CTX-CMO·CTX-COO·CTX-CTO·CTX-CFO·CTX-CHRO·CTX-CPO · 2026-06-15 레거시 노션번호 폐기). <code>status/schedule.json</code>은 내부 부품일 뿐 식별자 SSOT 아님.</div>
+        <table style="margin-top:8px;">
       <tr><th>C-Level</th><th>식별자</th><th>정비 범위</th><th>체크포인트</th></tr>
       <tr>
         <td><strong>AI CEO(웰리)</strong></td><td>CTX-CEO</td>
@@ -5616,9 +5612,11 @@ function crTab(btn, panelId) {
         <td>전사 인프라·자동화·시설 SOP·개발 아카이브 / 🗜️ 캐시·상시 컨텍스트 압축</td>
         <td>scripts/ 폴더 구조 정비 / 자동화 태스크 가동 상태 점검 / 시설 유지보수 현황 갱신 / 기술 문서 현행화 / <strong>🗜️ 캐시·상시 컨텍스트 압축</strong> — 대상: 7 C레벨+웰리(CEO) 매 턴 로드 파일(review_queue.json·status/_queue.json·에이전트md·MEMORY.md·거대 SSOT 부분조회 등) / 기준: ① 죽은 이력 stub+아카이브 ② 정본 단일화(중복·구식 제거, S2 포인터 유지) ③ 측정→감축 / 안전: 행동=코드/멱등 스크립트(scripts/archive_review_queue.py 등), 원본 아카이브 보존, 살아있는 데이터 무손상 / 연결: CTO-2026-06-09-CONTEXT-COMPRESSION-REVIEW 정규 실행분 (첫 적용 2026-06-13: review_queue.json 691→446행)</td>
       </tr>
+        </table>
+        <p style="margin-top:6px;"><strong>공통 의무:</strong> 중복·구식·과잉 항목 정리 / 업무 흐름 명확화 / GM 지시 이상 자율 진화·고도화 안 자체 제안·반영</p>
+      </td></tr>
     </table>
-    <p><strong>공통 의무:</strong> 중복·구식·과잉 항목 정리 / 업무 흐름 명확화 / GM 지시 이상 자율 진화·고도화 안 자체 제안·반영</p>
-    <!-- ══ /주간 컨텍스트 정비 범위표 (T2 단일 출처) ══ -->
+    <!-- ══ /7 C-Level 컨텍스트 정비 (범위표 펼치기 통합 · 2026-06-15 · T2 단일 출처) ══ -->
 
     <!-- 보류 -->
     <h4 style="color:var(--dim); margin-top:20px;">🟡 보류 (미구현 · 해당 C-Level 기획 대상)</h4>
