@@ -117,28 +117,6 @@
   .detail-box.open { display: block; }
   .detail-label { font-weight: 700; color: #444; }
 
-  /* 약속 섹션 */
-  .promise-intro {
-    font-size: 13px; color: #3a3a5a;
-    background: var(--accent-light); border-radius: 6px; padding: 10px 14px;
-    border-left: 3px solid var(--accent); margin-bottom: 16px;
-  }
-  .promise-group { margin-bottom: 18px; }
-  .promise-group-label {
-    font-size: 11px; font-weight: 700; color: var(--accent);
-    letter-spacing: 0.06em; margin-bottom: 8px;
-    background: var(--accent-light); border-radius: 4px;
-    display: inline-block; padding: 3px 10px;
-  }
-  .promise-item {
-    display: flex; gap: 12px; align-items: flex-start;
-    background: var(--card); border: 1px solid var(--border); border-radius: 8px;
-    padding: 12px 16px; margin-bottom: 8px;
-  }
-  .promise-item:hover { background: #faf9f6; }
-  .promise-name { font-size: 14px; font-weight: 700; color: var(--text); min-width: 120px; flex-shrink: 0; }
-  .promise-desc { font-size: 13px; color: #444; line-height: 1.5; }
-
   /* 캐논 값 카드 그리드 */
   .canon-grid {
     display: grid;
@@ -178,14 +156,6 @@
 
   <!-- 발행 확인 배너 -->
   <div id="verify-banner" class="verify-banner">⏳ 발행 확인 현황 불러오는 중…</div>
-
-  <!-- 우리의 약속 -->
-  <div class="section">
-    <div class="section-title">📌 우리의 약속 (AI·실무진이 다같이 지키는 것)</div>
-    <div class="promise-intro">여기 적힌 건 우리 모두가 한 곳에서 보고 지키는 약속입니다. 새 약속이 생기면 여기 모입니다.</div>
-    <div id="promise-wrap"><div class="loading">불러오는 중…</div></div>
-    <div id="promise-updated" class="updated"></div>
-  </div>
 
   <!-- 문제 해결 현황 -->
   <div class="section">
@@ -334,44 +304,6 @@ async function loadVerifyBanner() {
   }
 }
 
-// ── 우리의 약속 ───────────────────────────────────────────────
-async function loadLessons() {
-  var wrap = document.getElementById("promise-wrap");
-  var updEl = document.getElementById("promise-updated");
-  try {
-    var data = await fetchJSON(BASE + "lessons.json");
-    var list = data.lessons || [];
-
-    // 분류별로 묶기
-    var groups = {};
-    var groupOrder = [];
-    list.forEach(function(l) {
-      var g = l["분류"] || "기타";
-      if (!groups[g]) { groups[g] = []; groupOrder.push(g); }
-      groups[g].push(l);
-    });
-
-    var html = "";
-    groupOrder.forEach(function(gname) {
-      html += '<div class="promise-group">';
-      html += '<div class="promise-group-label">' + esc(gname) + '</div>';
-      groups[gname].forEach(function(l) {
-        html += '<div class="promise-item">';
-        html += '<div class="promise-name">' + esc(l["약속"]) + '</div>';
-        html += '<div class="promise-desc">' + esc(l["내용"]) + '</div>';
-        html += '</div>';
-      });
-      html += '</div>';
-    });
-
-    wrap.innerHTML = html || '<div class="loading">약속 없음</div>';
-    updEl.textContent = "마지막 확인: " + new Date().toLocaleString("ko-KR");
-  } catch(e) {
-    wrap.innerHTML = '<div class="error">불러오기 실패: ' + esc(e.message) + '</div>';
-  }
-}
-
-loadLessons();
 loadIncidents();
 loadCanon();
 loadVerifyBanner();
