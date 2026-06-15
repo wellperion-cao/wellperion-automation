@@ -1,0 +1,8 @@
+{
+  "_doc": "캐논 값 단일출처 레지스트리. divergence_scan.py가 읽어 하드코딩 복사본을 탐지한다. 새 캐논값 = 여기 1줄 append. value=찾을 문자열, source=정본 위치, allow_globs=복사 허용(정본·설정) 경로.",
+  "values": [
+    {"key":"official_phone","value":"02-6261-1200","source":"ssot/canon_values.json","allow_globs":["ssot/**"],"note":"대표 전화 공식값"},
+    {"key":"inquiry_path","value":"wellperion.com/ko/inquiry","source":"ssot/canon_values.json","allow_globs":["ssot/**"],"note":"단일 문의 진입점"},
+    {"key":"telegram_chat_id","value":"8254867551","source":"telegram_bot/.env","allow_globs":["telegram_bot/**","ssot/**"],"note":"업무보고봇 Chat ID — env 단일출처"}
+  ]
+}
