@@ -3,11 +3,13 @@
     "task_id": "CTO-2026-06-15-CONTEXT-MAINT-SSOT-DESIGN",
     "clevel": "cto",
     "title": "[시토] 컨텍스트 정비·교육자료 SSOT 설계 — CEO 추가·식별자 정합·토큰소비 가시화",
-    "status": "IN_PROGRESS",
+    "status": "DONE",
+    "terminal": true,
+    "processed_at": "2026-06-15",
     "priority": "NORMAL",
     "enqueued_at": "2026-06-15",
-    "summary": "GM 지적 3건. ✅ A 적용완료(GM 승인): T2 범위표에 AI CEO(웰리) 행 추가 + 식별자 CTX-{역할} 7개 정합(레거시 노션번호 폐기, 6→7 라벨 정합). ⏳ B(승인대기): 교육자료 SSOT=status/education_index.json(AI가 키워드로 학습자료 조회·인용). ⏳ C(승인대기): 토큰소비 가시화 SSOT=status/context_budget.json + 측정기(scripts/context_budget_report.py) → 일요일 정비때 읽고 임계초과부터 슬림화(삭제는 사람 확인). 설계안=docs/context_maint_ssot_design.md.",
-    "next": "B·C GM 승인 대기 → 승인 시 P2 education_index.json+인덱싱 → P3 context_budget.json+측정기. 적용 후 제안문서 폐기(SSOT=T2)."
+    "summary": "GM 지적 3건 전부 적용·라이브. ✅ A: T2 범위표에 AI CEO(웰리) 행 추가 + 식별자 CTX-{역할} 7개 정합(레거시 노션번호 폐기, 6→7). ✅ B: T3에 '쉽게 읽는 학습 노트'(GM·C레벨 공용 plain-language — 토큰 쉬운설명+습관5+매주 학습루프, 각 C레벨 본인탭 학습 동선). ✅ C: 측정기 scripts/context_budget_report.py(상시컨텍스트 토큰 측정·추세, 실측 ~92.7K) + T2 주간정비(CTX-CTO)에 일요일 실행 명문화. 설계 제안문서 폐기(SSOT=T2/T3 단일).",
+    "next": "표류(완결). 후속 자동화 여지: 메모리 정합 체커·_queue 적체 자동 아카이브 후보 제시(삭제는 사람)."
   },
   {
     "task_id": "COO-2026-06-15-SUPPORT-CHECK-OVERHAUL",
