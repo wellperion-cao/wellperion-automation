@@ -1,7 +1,12 @@
 """ENG 버튼 HTML 구조 + WPML 스위처 위젯 위치 분석"""
 import asyncio
+import sys
 from pathlib import Path
 from playwright.async_api import async_playwright
+
+sys.path.insert(0, str(Path(__file__).parent.parent))
+from ssot.canon import canon_get
+_INQUIRY_URL = "http://" + canon_get("inquiry_path") + "/"
 
 EVIDENCE = Path(r"C:\Users\jjky0\welperion-automation\scripts\poc-evidence")
 EVIDENCE.mkdir(parents=True, exist_ok=True)
@@ -50,7 +55,7 @@ async def main():
             extra_http_headers={"Accept-Language": "ko-KR,ko;q=0.9"},
         )
         page = await ctx.new_page()
-        await page.goto("http://wellperion.com/ko/inquiry/", wait_until="networkidle", timeout=40000)
+        await page.goto(_INQUIRY_URL, wait_until="networkidle", timeout=40000)
         await page.wait_for_timeout(2000)
 
         print("=== ENG 버튼 구조 ===")

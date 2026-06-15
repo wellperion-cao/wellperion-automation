@@ -23,6 +23,11 @@ import shutil
 from pathlib import Path
 from PIL import Image, ImageDraw, ImageEnhance, ImageOps
 
+# 캐논 값 단일출처 직독 (ssot/canon_values.json)
+sys.path.insert(0, str(Path(__file__).parent.parent))
+from ssot.canon import canon_get
+_INQUIRY_URL = "문의 :  " + canon_get("inquiry_path")
+
 # ── 바레 SSOT import ─────────────────────────────────────────────────────────
 # 스타일 상수·함수 전부 바레에서 가져온다. 발레 독자 정의 금지.
 import sys as _sys
@@ -249,7 +254,7 @@ def main():
         (P03, "BALLET  ·  2026.05 OPEN", "최대 8인 프라이빗",   "매주 금요일 오전 10시 / 11시",  False),
         (P04, "BALLET  ·  2026.05 OPEN", "클래식 발레의 정수",  "균형 · 자세 · 우아한 움직임",   False),
         (P05, "BALLET  ·  2026.05 OPEN", "함께 완성하는 자세",  "한남동 웰니스 스튜디오",         False),
-        (P06, "BALLET  ·  2026.05 OPEN", "특별한 움직임의 여정","문의 :  wellperion.com/ko/inquiry", True),
+        (P06, "BALLET  ·  2026.05 OPEN", "특별한 움직임의 여정", _INQUIRY_URL, True),
     ]
     for idx, (photo, meta, title_kor, sub, full_dark) in enumerate(story_data, start=2):
         compose_story(

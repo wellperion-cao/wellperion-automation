@@ -13,6 +13,10 @@ from pathlib import Path
 from PIL import Image, ImageDraw, ImageFont, ImageEnhance, ImageOps, ImageFilter
 
 sys.path.insert(0, str(Path(__file__).parent))
+sys.path.insert(0, str(Path(__file__).parent.parent))
+from ssot.canon import canon_get
+_INQUIRY_CTA = "문의: " + canon_get("inquiry_path")
+
 from brand_constants import (
     PROJECT_ROOT,
     LOGO_WHITE_ALPHA,
@@ -160,7 +164,7 @@ def compose_spa_cover(
 
     # CTA 하단
     cta_font = _load_font("medium", 22)
-    draw.text((W // 2, 970), "문의: wellperion.com/ko/inquiry", font=cta_font, fill=GOLD, anchor="mm")
+    draw.text((W // 2, 970), _INQUIRY_CTA, font=cta_font, fill=GOLD, anchor="mm")
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
     canvas.convert("RGB").save(output_path, "JPEG", quality=93, optimize=True)
