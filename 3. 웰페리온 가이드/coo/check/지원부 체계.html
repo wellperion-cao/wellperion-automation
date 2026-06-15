@@ -1771,6 +1771,10 @@ function renderRoundBar(g){
         +`<span class="rs-name">${_nm}</span><span class="rs-time">${r.time}</span>`
         +`<span class="rs-sub">${_sub?'(1/1)':'(0/1)'}</span></button>`;   // 조별 제출 여부 — 제출=(1/1)초록 / 미제출=(0/1). GM 2026-06-15
   });
+  /* 진단(2026-06-15): 현재 조 복원 체크 수 + 예외 — GM 화면 실태 확인용. 추후 제거. */
+  const _dn=Object.keys(STATE).filter(k=>k.indexOf('chk_'+g+'_'+cur+'_')===0&&STATE[k]===true).length;
+  const _er=window._loadErr?(' ⚠'+window._loadErr):'';
+  html+=`<span style="font-size:9px;color:var(--dim);align-self:center;white-space:nowrap;padding-left:4px;">b0615f·복원${_dn}${_er}</span>`;
   bar.innerHTML=html;
 }
 
@@ -1877,6 +1881,7 @@ function saveLocal(d,o,g){localStorage.setItem(LK(d,g),JSON.stringify(o))}
 
 async function loadState(d,g){
   const gg=g||activeGenderTab;
+  window._loadErr='';   // 진단: 복원 예외 기록(2026-06-15)
   if(!ONLINE){STATE=loadLocal(d,gg);return}
   try{
     // 2026-06-12 시토: 남/여 동기화 근본수정 — 현재 성별(gg) 원장만 요청(&gender=). 서버가 성별별 분리 반환.
@@ -1974,7 +1979,7 @@ async function loadState(d,g){
         const _loc=loadLocal(d,gg); Object.keys(_loc).forEach(k=>{ if(k.indexOf('chk_'+gg+'_')===0 && _loc[k]===true)STATE[k]=true; });   // 로컬 미저장 체크 합집합
       }catch(e){}
     }
-  }catch(e){STATE=loadLocal(d,gg)}
+  }catch(e){window._loadErr=String((e&&e.message)||e).slice(0,60);STATE=loadLocal(d,gg)}
 }
 
 let saveTimer=null;
