@@ -19,13 +19,8 @@ from pathlib import Path
 # -----------------------------------------------------------------
 PROJECT_ROOT = Path(r"C:\Users\jjky0\welperion-automation")
 
-# 폰트 위치 후보 (brand 통합 진행 중 — 실제 존재 경로 자동 선택)
-_FONT_DIR_CANDIDATES = [
-    PROJECT_ROOT / "brand" / "font",
-    PROJECT_ROOT / "2. 브랜드_공식문서" / "02_로고&워터마크&FONT" / "font",
-    PROJECT_ROOT / "2. 브랜드_공식문서" / "font",
-]
-FONT_DIR = next((d for d in _FONT_DIR_CANDIDATES if d.exists()), _FONT_DIR_CANDIDATES[0])
+# 폰트 위치 (확정 — 2026-06-16 브랜드 폴더 재구성으로 02_로고&워터마크&FONT/font 로 이전, git 추적됨. 단일 출처)
+FONT_DIR = PROJECT_ROOT / "2. 브랜드_공식문서" / "02_로고&워터마크&FONT" / "font"
 FONT_BOLD = FONT_DIR / "Pretendard-Bold.otf"
 FONT_SEMIBOLD = FONT_DIR / "Pretendard-SemiBold.otf"
 FONT_MEDIUM = FONT_DIR / "Pretendard-Medium.otf"
