@@ -53,9 +53,9 @@ SCRIPT_CAFE   = SCRIPTS_DIR / "cafe_upload_playwright.py"
 SCRIPT_KAKAO  = SCRIPTS_DIR / "kakao_channel_upload_playwright.py"
 SCRIPT_DANGGN = SCRIPTS_DIR / "danggn_upload_playwright.py"
 
-# 텔레그램 상수 (SSOT: TELEGRAM_BOT_TOKEN 단일 키)
+# 텔레그램 상수 (SSOT: telegram_bot/.env 단일출처)
 TELEGRAM_TOKEN_ENV_KEY = "TELEGRAM_BOT_TOKEN"
-TELEGRAM_CHAT_ID = "8254867551"  # @namuki_report_bot (GM)
+TELEGRAM_CHAT_ID_ENV_KEY = "TELEGRAM_CHAT_ID"
 
 
 # ─────────────────────────────────────────────
@@ -99,17 +99,29 @@ def _derive_title(content_dir: Path) -> str:
     return parts[1] if len(parts) == 2 else name
 
 
+def _env_val(key: str) -> str:
+    """환경변수 → telegram_bot/.env 순서로 값 로드."""
+    val = os.environ.get(key, "").strip()
+    if val:
+        return val
+    env_file = ROOT / "telegram_bot" / ".env"
+    if env_file.exists():
+        for line in env_file.read_text(encoding="utf-8").splitlines():
+            line = line.strip()
+            if not line or line.startswith("#") or "=" not in line:
+                continue
+            k, _, v = line.partition("=")
+            if k.strip() == key:
+                return v.strip().strip('"').strip("'")
+    return ""
+
+
 def _telegram_token() -> str:
     """환경변수 → telegram_bot/.env 순서로 토큰 조회."""
-    tok = os.environ.get(TELEGRAM_TOKEN_ENV_KEY, "").strip()
-    if not tok:
-        env_file = ROOT / "telegram_bot" / ".env"
-        if env_file.exists():
-            for line in env_file.read_text(encoding="utf-8").splitlines():
-                if line.startswith(f"{TELEGRAM_TOKEN_ENV_KEY}="):
-                    tok = line.split("=", 1)[1].strip()
-                    break
-    return tok
+    return _env_val(TELEGRAM_TOKEN_ENV_KEY)
+
+
+TELEGRAM_CHAT_ID: str = _env_val(TELEGRAM_CHAT_ID_ENV_KEY)  # telegram_bot/.env SSOT
 
 
 def _send_telegram(text: str) -> None:

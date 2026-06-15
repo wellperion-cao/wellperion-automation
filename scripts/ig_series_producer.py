@@ -61,7 +61,7 @@ except Exception:
         pass
 
 TELEGRAM_TOKEN_ENV_KEY = "TELEGRAM_BOT_TOKEN"
-TELEGRAM_CHAT_ID = "8254867551"  # @namuki_report_bot (CLAUDE.md §3)
+TELEGRAM_CHAT_ID_ENV_KEY = "TELEGRAM_CHAT_ID"
 
 PLANNED_STATUS = "기획예정"  # 로드맵 편별 표에서 '아직 제작 안 한 다음 예정 편' 상태값
 
@@ -72,22 +72,30 @@ SIGNATURE_SLOGAN = "AI를 다루는 대표가\n살아남는다"
 # ─────────────────────────────────────────────────────────────────────────────
 # 텔레그램 (토큰 stdout 노출 금지 — 메모리 feedback_telegram_token_env_key)
 # ─────────────────────────────────────────────────────────────────────────────
-def _load_telegram_token() -> str:
-    token = os.environ.get(TELEGRAM_TOKEN_ENV_KEY, "").strip()
-    if token:
-        return token
+def _load_env_value(key: str) -> str:
+    """환경변수 → telegram_bot/.env 순서로 값 로드."""
+    val = os.environ.get(key, "").strip()
+    if val:
+        return val
     try:
         if ENV_PATH.exists():
             for raw in ENV_PATH.read_text(encoding="utf-8").splitlines():
                 line = raw.strip()
                 if not line or line.startswith("#") or "=" not in line:
                     continue
-                key, _, val = line.partition("=")
-                if key.strip() == TELEGRAM_TOKEN_ENV_KEY:
-                    return val.strip().strip('"').strip("'")
+                k, _, v = line.partition("=")
+                if k.strip() == key:
+                    return v.strip().strip('"').strip("'")
     except Exception:
         pass
     return ""
+
+
+def _load_telegram_token() -> str:
+    return _load_env_value(TELEGRAM_TOKEN_ENV_KEY)
+
+
+TELEGRAM_CHAT_ID: str = _load_env_value(TELEGRAM_CHAT_ID_ENV_KEY)  # telegram_bot/.env SSOT
 
 
 def telegram(message: str) -> None:

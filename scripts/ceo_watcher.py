@@ -28,7 +28,7 @@ CEO_META_PATH = STATUS_DIR / 'ceo.json'
 
 POLL_INTERVAL = 15  # seconds
 TELEGRAM_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN')
-CHAT_ID = '8254867551'
+CHAT_ID = os.getenv('TELEGRAM_CHAT_ID') or ''  # telegram_bot/.env SSOT (load_dotenv 위에서 로드)
 
 logger = logging.getLogger('ceo_watcher')
 logging.basicConfig(

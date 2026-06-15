@@ -60,7 +60,28 @@ APPROVED_STATES = {"승인", "승인발행대기", "approved"}
 POST_URL_RE = re.compile(r"post\s+[A-C]:\s*(https?://\S+)", re.IGNORECASE)
 
 TELEGRAM_TOKEN_ENV_KEY = "TELEGRAM_BOT_TOKEN"
-TELEGRAM_CHAT_ID = "8254867551"  # @namuki_report_bot
+TELEGRAM_CHAT_ID_ENV_KEY = "TELEGRAM_CHAT_ID"
+
+
+def _load_env_val(key: str) -> str:
+    """환경변수 → telegram_bot/.env 순서로 값 로드 (python-dotenv 불필요)."""
+    val = os.environ.get(key, "").strip()
+    if val:
+        return val
+    env_file = ROOT / "telegram_bot" / ".env"
+    if env_file.exists():
+        for line in env_file.read_text(encoding="utf-8").splitlines():
+            line = line.strip()
+            if not line or line.startswith("#") or "=" not in line:
+                continue
+            k, _, v = line.partition("=")
+            if k.strip() == key:
+                return v.strip().strip('"').strip("'")
+    return ""
+
+
+TELEGRAM_CHAT_ID: str = _load_env_val(TELEGRAM_CHAT_ID_ENV_KEY)  # telegram_bot/.env SSOT
+
 
 def _safe_print(text: str) -> None:
     """cp949 등 좁은 콘솔 인코딩에서 인코딩 불가 문자를 '?'로 대체해 출력."""

@@ -43,9 +43,9 @@
       "증상": "텔레그램 Chat ID(8254867551)가 발행/자동화 scripts 11개에 하드코딩 — telegram_bot/.env 단일출처 미사용. 발산 스캔 v1이 탐지(정본 밖 17건/17파일, scripts 11).",
       "본질": "같은 캐논값이 정본(env)과 11곳에 복사 → bot/chat 변경 시 11곳 동시수정 필요, 한 곳 누락 시 회귀(INC-001 동류).",
       "뿌리분류": "복사",
-      "차단조치": "제안(미구현, GM 확인 대기): 11 scripts를 os.environ TELEGRAM_CHAT_ID 직독(fallback 유지)으로 전환 + 발산 스캔 정기화(주간정비 편입).",
-      "상태": "OPEN",
-      "검증증거": "ssot/divergence_scan.py 실행 결과 telegram_chat_id 정본 밖 17건/17파일(scripts: ceo_watcher·ig_series_producer·send_review_card·publish_4channel_dispatcher 등 11). 발견 2026-06-15."
+      "차단조치": "11 scripts 전체 TELEGRAM_CHAT_ID 리터럴 제거 → telegram_bot/.env SSOT 직독(_load_env_val / _env_val / load_dotenv 경유). fallback 리터럴 없음. 커밋 원자적(단일 feat 커밋).",
+      "상태": "GUARDED",
+      "검증증거": "① py_compile 11개 ALL_COMPILE_OK ② publish_register·send_review_card import 실측 TELEGRAM_CHAT_ID='8254867551'(env 직독) ③ divergence_scan 재실행 → scripts 내 telegram_chat_id 0건(정본 밖 잔여 6건 = CLAUDE.md·INDEX.md 등 문서류·이번 범위 외) ④ 커밋 2026-06-15."
     }
   ]
 }

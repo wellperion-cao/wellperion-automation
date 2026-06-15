@@ -56,17 +56,17 @@ REVIEW_QUEUE_PATH = REVIEW_DIR / "review_queue.json"
 ENV_PATH = ROOT / "telegram_bot" / ".env"
 
 TELEGRAM_TOKEN_ENV_KEY = "TELEGRAM_BOT_TOKEN"
-TELEGRAM_CHAT_ID = "8254867551"  # @namuki_report_bot (CLAUDE.md §3)
+TELEGRAM_CHAT_ID_ENV_KEY = "TELEGRAM_CHAT_ID"
 
 # status='발행완료' 인 엔트리는 검수대기로 강등 금지 (회귀 가드)
 _TERMINAL_PUBLISHED = "발행완료"
 
 
-def _load_telegram_token() -> str:
-    """telegram_bot/.env 또는 환경변수에서 봇 토큰 로드. 토큰 값은 절대 출력 안 함."""
-    token = os.environ.get(TELEGRAM_TOKEN_ENV_KEY, "").strip()
-    if token:
-        return token
+def _load_env_value(key: str) -> str:
+    """환경변수 → telegram_bot/.env 순서로 값 로드. 값은 절대 stdout 미출력."""
+    val = os.environ.get(key, "").strip()
+    if val:
+        return val
     # .env 직접 파싱 (python-dotenv 미설치 환경 대비 — 의존성 없이 동작)
     try:
         if ENV_PATH.exists():
@@ -74,12 +74,20 @@ def _load_telegram_token() -> str:
                 line = raw.strip()
                 if not line or line.startswith("#") or "=" not in line:
                     continue
-                key, _, val = line.partition("=")
-                if key.strip() == TELEGRAM_TOKEN_ENV_KEY:
-                    return val.strip().strip('"').strip("'")
+                k, _, v = line.partition("=")
+                if k.strip() == key:
+                    return v.strip().strip('"').strip("'")
     except Exception:
         pass
     return ""
+
+
+def _load_telegram_token() -> str:
+    """telegram_bot/.env 또는 환경변수에서 봇 토큰 로드. 토큰 값은 절대 출력 안 함."""
+    return _load_env_value(TELEGRAM_TOKEN_ENV_KEY)
+
+
+TELEGRAM_CHAT_ID: str = _load_env_value(TELEGRAM_CHAT_ID_ENV_KEY)  # telegram_bot/.env SSOT
 
 
 def _telegram_send_photo(photo_path: Path, caption: str) -> None:

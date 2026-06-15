@@ -129,7 +129,27 @@ except Exception:
         pass
 
 TELEGRAM_TOKEN_ENV_KEY = "TELEGRAM_BOT_TOKEN"
-TELEGRAM_CHAT_ID = "8254867551"
+TELEGRAM_CHAT_ID_ENV_KEY = "TELEGRAM_CHAT_ID"
+
+
+def _load_env_val(key: str) -> str:
+    """환경변수 → telegram_bot/.env 순서로 값 로드 (python-dotenv 불필요)."""
+    val = os.environ.get(key, "").strip()
+    if val:
+        return val
+    env_file = ROOT / "telegram_bot" / ".env"
+    if env_file.exists():
+        for line in env_file.read_text(encoding="utf-8").splitlines():
+            line = line.strip()
+            if not line or line.startswith("#") or "=" not in line:
+                continue
+            k, _, v = line.partition("=")
+            if k.strip() == key:
+                return v.strip().strip('"').strip("'")
+    return ""
+
+
+TELEGRAM_CHAT_ID: str = _load_env_val(TELEGRAM_CHAT_ID_ENV_KEY)  # telegram_bot/.env SSOT
 
 PUBLISH_GO_ENV_KEY = "WELLPERION_PUBLISH_GO"
 IMAGE_EXTS = (".jpg", ".jpeg", ".png")

@@ -35,7 +35,7 @@ QUEUE = ROOT / "3. 웰페리온 가이드" / "cmo" / "review" / "review_queue.js
 M5_URL = "https://wellperion-cao.github.io/wellperion-automation/wellperion_guide(main).html#M5"
 
 TELEGRAM_TOKEN_ENV_KEY = "TELEGRAM_BOT_TOKEN"
-TELEGRAM_CHAT_ID = "8254867551"  # @namuki_report_bot (GM)
+TELEGRAM_CHAT_ID_ENV_KEY = "TELEGRAM_CHAT_ID"
 # 건별 마지막 카드 상태 저장 — 같은 건 재발송 시 이전 카드 자동 삭제(카드 1개만 유지)
 # 값 스키마: {item_id: {"msg_id": int, "sig": str(caption해시), "ts": float}}
 #   (구버전 평면 int 도 _load_msgids 에서 신스키마로 흡수 — 하위호환)
@@ -47,17 +47,28 @@ DEDUP_WINDOW_SEC = 90  # 같은 콘텐츠·동일 내용 카드의 재발송을 
 CARD_GROUPS_STORE = ROOT / "scripts" / ".review_card_groups.json"
 
 
+def _env_val(key: str) -> str:
+    """환경변수 → telegram_bot/.env 순서로 값 로드."""
+    val = os.environ.get(key, "").strip()
+    if val:
+        return val
+    env = ROOT / "telegram_bot" / ".env"
+    if env.exists():
+        for line in env.read_text(encoding="utf-8").splitlines():
+            line = line.strip()
+            if not line or line.startswith("#") or "=" not in line:
+                continue
+            k, _, v = line.partition("=")
+            if k.strip() == key:
+                return v.strip().strip('"').strip("'")
+    return ""
+
+
 def _token() -> str:
-    tok = os.environ.get(TELEGRAM_TOKEN_ENV_KEY, "").strip()
-    if not tok:
-        # .env 폴백 (봇과 동일 SSOT)
-        env = ROOT / "telegram_bot" / ".env"
-        if env.exists():
-            for line in env.read_text(encoding="utf-8").splitlines():
-                if line.startswith(f"{TELEGRAM_TOKEN_ENV_KEY}="):
-                    tok = line.split("=", 1)[1].strip()
-                    break
-    return tok
+    return _env_val(TELEGRAM_TOKEN_ENV_KEY)
+
+
+TELEGRAM_CHAT_ID: str = _env_val(TELEGRAM_CHAT_ID_ENV_KEY)  # telegram_bot/.env SSOT
 
 
 def _preview_photo(item: dict) -> Path | None:
