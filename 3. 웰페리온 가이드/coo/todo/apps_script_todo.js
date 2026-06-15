@@ -822,10 +822,11 @@ function _processTodoAction(body) {
       var _deptPinOptional = false;
       if (role === '부서장') {
         var _MID_PIN = { '이경연 실장':'APPROVAL_PIN_OPS', '이정헌 소장':'APPROVAL_PIN_FAC', '나우열M':'APPROVAL_PIN_PARTNER' };
-        // 부서장 = 담당자가 부서장이면 본인 우선(결재선 midName과 동일), 없으면 카테고리, 없으면 결재요청 (2026-06-03 GM)
+        // 부서장 PIN 키 = 화면이 표시하는 부서장과 동일 순서로 결정: ① 결재요청(GM 지정 최우선) → ② 담당자 → ③ 카테고리.
+        // deptHeadNameOf(프론트)와 정합 — 라벨은 '이정헌 소장'인데 서버는 담당자 기준 '이경연 실장' PIN과 대조해 거부되던 버그 수정 (2026-06-15 시우)
+        var _reqDH = String(record['결재요청'] || '').split(',').map(function(s){ return s.trim(); }).filter(function(m){ return _MID_PIN[m]; })[0];
         var _ownerDH = String(record['담당자'] || '').split(',').map(function(s){ return s.trim(); }).filter(function(m){ return _MID_PIN[m]; })[0];
-        var _mid = _ownerDH || _deptHeadFor(record['카테고리'])
-          || String(record['결재요청'] || '').split(',').map(function(s){ return s.trim(); }).filter(function(m){ return _MID_PIN[m]; })[0];
+        var _mid = _reqDH || _ownerDH || _deptHeadFor(record['카테고리']);
         _pinKey = (_mid && _MID_PIN[_mid]) ? _MID_PIN[_mid] : null;
         _deptPinOptional = true;  // 부서장은 속성 미설정 시 차단하지 않음(graceful)
       }
