@@ -772,5 +772,15 @@
     "title": "[시모] 전환 단계 퍼널 구축 — 단계정의+집계GAS+대시보드 틀",
     "note": "✅ ③전환진단 후속: 단계정의 SSOT(5단계 누적깔때기) + GAS stage_funnel 액션(_stageOf_ 매핑·이탈·월/전체·retain%) + 대시보드 전환단계 퍼널 섹션(폴백: 미배포시 ①문의·⑤가입만, ②③④는 상태입력 대기). 동그라미 인덱싱 버그 수정. 상태입력 운영=시포(CPO-...-STAGE-INPUT)·시우 협업. [배포] GAS 시모 직접 clasp 연동·재배포 @16(URL유지, period_breakdown 회귀無). 라이브 검증: stage_funnel 정상응답. 대시보드 honesty 안내(상태 미입력시 ②③④=가입자만) 추가.",
     "next": "리셉션 진행상태 입력 시작되면 ②③④ 자동 분리 점등 (시포/시우 PENDING). 추가 배포 불필요."
+  },
+  {
+    "task_id": "COO-2026-06-15-SUPPORT-CHECK-ROUTING-FIX",
+    "clevel": "coo",
+    "status": "PENDING",
+    "priority": "HIGH",
+    "enqueued_at": "2026-06-15",
+    "title": "[시우] 지원부 점검 라우팅 버그 근본수정 — 한 곳 고치면 타부서 회귀",
+    "summary": "원인 확정(웰리 추적·추측 아님): .deploy-check/지원팀 일일점검.js _routeItem()이 부분문자열 매칭(itemId에 _f/_m 우연 포함 시 오라우팅) + 지원부만 commonToGender로 공용항목을 성별탭에 강제저장(타부서는 공용탭) = 이중경로. 지원부 글로벌 변경이 타부서 완료율 회귀 유발.",
+    "next": "① _routeItem 부분문자열→정확매칭(접미사 경계) ② commonToGender 분기 범위 명시 ③ 변경 후 4부서(운영·시설·지원·주차) 완료율·라우팅 회귀 자동검사 추가 ④ WEEKDAY/WEEKEND 동시수정(충돌=2단계 토큰). 라이브 GAS=테스트 후 배포."
   }
 ]

@@ -1047,6 +1047,21 @@ def build_telegram_report(s1: dict, assigned: list[dict], orch: dict) -> str:
     ])
     lines.append("")
 
+    # 항로 정합경고 — 큐↔시트 불일치(유령·중복·상태·형식) 있으면 08:00 보고 상단에 1줄(다같이 봄). fail-open.
+    try:
+        import sys as _sys
+        from pathlib import Path as _P
+        _sc = _P(__file__).resolve().parent.parent.parent / "scripts"
+        if str(_sc) not in _sys.path:
+            _sys.path.insert(0, str(_sc))
+        from queue_integrity_check import board_banner as _bb
+        _bn = _bb()
+        if _bn:
+            lines.append(_bn)
+            lines.append("")
+    except Exception:
+        pass
+
     # ── 🔴 급한 입항 (마감 임박 — 큐 deadline 기반, 항상 표 바로 아래 고정) ──
     if urg:
         lines.append("🔴 급한 입항  (마감 임박)")
