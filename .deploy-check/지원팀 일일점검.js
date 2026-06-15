@@ -620,8 +620,13 @@ function _updateCheckLedger(dept, date, body) {
     (body.roundChecks || []).forEach(function (k) {
       if (!k) return;
       var m = _rcm[String(k)];
-      // 항목별 점검자·시각·담당 메타가 있으면 객체로, 없으면 1(레거시 하위호환). GM 2026-06-15 시우.
-      led.cr[String(k)] = (m && (m.by || m.at || m.du)) ? { by: String(m.by || ''), at: String(m.at || ''), du: String(m.du || '') } : 1;
+      // 항목별 점검자·시각·담당·이슈·노하우·온도측정·반영완료 메타가 있으면 객체로, 없으면 1(레거시 하위호환). GM 2026-06-15 시우.
+      // (회차×항목) 단위 메타 정합 저장 — read 응답에 props JSON 그대로 반영됨.
+      led.cr[String(k)] = (m && (m.by || m.at || m.du || m.iss || m.tip || m.measure || m.reflected))
+        ? { by: String(m.by || ''), at: String(m.at || ''), du: String(m.du || ''),
+            iss: String(m.iss || ''), tip: String(m.tip || ''),
+            measure: String(m.measure || ''), reflected: String(m.reflected || '') }
+        : 1;
     });
   }
   props.setProperty(key, JSON.stringify(led));
@@ -666,6 +671,7 @@ function doPost(e) {
     if (body.action && body.action.indexOf('todo_') === 0) return handleTodoPost(body);
     if (body.action === 'save')           return handleSave(body);
     if (body.action === 'notify')         return handleNotify(body);
+    if (body.action === 'notify_round')   return handleNotifyRound(body);
     if (body.action === 'seed')           return handleSeed(body);
     if (body.action === 'saveItems')      return saveItems(body);
     if (body.action === 'saveBoard')      return saveBoard(body);
@@ -713,12 +719,17 @@ function _writePerRoundRows(dept, date, body) {
     var inspector = mm.by || c.submitter || defaultInspector(target, c.slot || '');
     var at = mm.at ? (date + ' ' + mm.at) : (c.checkedAt || submitAt || '');
     var duty = mm.du || body.duty || '';
+    // (회차×항목) 단위 메타 우선(mm) — 이슈/노하우/온도측정/반영완료를 회차별로 격리. 없으면 항목단위(c.*) 폴백. GM 2026-06-15 시우.
+    var iss = (mm.iss != null && mm.iss !== '') ? String(mm.iss) : (c.issue || '');
+    var tip = (mm.tip != null && mm.tip !== '') ? String(mm.tip) : (c.tip || '');
+    var measure = (mm.measure != null && mm.measure !== '') ? _measureStr(mm.measure) : _measureStr(c.measure);
+    var reflected = (mm.reflected != null && mm.reflected !== '') ? (mm.reflected ? 'Y' : '') : (c.reflected ? 'Y' : '');
     var values = [
       date, id, c.name, c.cat, rl,
       checkedRound ? '완료' : '미완료',
-      c.issue || '', c.tip || '',
+      iss, tip,
       submitStatus, at, duty, inspector,
-      _measureStr(c.measure), c.reflected ? 'Y' : ''
+      measure, reflected
     ];
     var sk = target + ' ' + rl + ' ' + id;
     if (seen[sk]) return; seen[sk] = 1;
@@ -1170,6 +1181,44 @@ function handleNotify(body) {
     UrlFetchApp.fetch('https://api.telegram.org/bot' + BOT_TOKEN + '/sendMessage', {
       method: 'post', contentType: 'application/json',
       payload: JSON.stringify({ chat_id: CHAT_ID, text: msg, parse_mode: 'HTML' })
+    });
+    return jsonRes({ success: true });
+  } catch (err) {
+    return jsonRes({ success: false, reason: err.message });
+  }
+}
+
+// ─── 회차 제출 텔레그램 보고(2026-06-15 GM·시우) — 프론트 submitRound에서만 호출. 서버는 단순 전송(자기증식 금지).
+// body: { action:'notify_round', dept, date, gender, round(am1|pm1|close1), issues(JSON 배열 or 문자열), pct, pageLink }
+// 토큰 SSOT = handleNotify와 동일(ScriptProperties BOT_TOKEN/CHAT_ID). 봇/Chat 없으면 미발송 보고.
+function handleNotifyRound(body) {
+  if (!BOT_TOKEN || !CHAT_ID) return jsonRes({ success: false, reason: 'no telegram config' });
+  var roundLabel = _roundKeyLabel(body.round || '');
+  // 이슈: JSON 배열 문자열 / 배열 / 문자열 모두 수용 → 목록 문자열로 정규화.
+  var issues = body.issues;
+  if (typeof issues === 'string') {
+    try { var p = JSON.parse(issues); if (Array.isArray(p)) issues = p; } catch (e) {}
+  }
+  var issueText;
+  if (Array.isArray(issues)) {
+    var list = issues.map(function (x) { return String(x || '').trim(); }).filter(function (x) { return x.length; });
+    issueText = list.length ? list.join(', ') : '없음';
+  } else {
+    var s = String(issues == null ? '' : issues).trim();
+    issueText = s.length ? s : '없음';
+  }
+  var pct = (body.pct == null || body.pct === '') ? '' : String(body.pct);
+  var lines = [
+    '🧹 지원부 점검 — ' + roundLabel + ' 제출',
+    '완료율 ' + pct + '%',
+    '이슈: ' + issueText
+  ];
+  if (body.pageLink) lines.push(String(body.pageLink));
+  var msg = lines.join('\n');
+  try {
+    UrlFetchApp.fetch('https://api.telegram.org/bot' + BOT_TOKEN + '/sendMessage', {
+      method: 'post', contentType: 'application/json',
+      payload: JSON.stringify({ chat_id: CHAT_ID, text: msg, disable_web_page_preview: true })
     });
     return jsonRes({ success: true });
   } catch (err) {
