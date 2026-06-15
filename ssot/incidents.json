@@ -36,6 +36,16 @@
       "차단조치": "제안(미구현): 발행 게이트 단계4(웰리 IG↔M5 대조)를 현실-프로브로 강제 — 발행검증대기 건은 웰리 검증 없이 닫지 않음. 발행검증대기 적체를 자동 리마인더/스캔으로 노출.",
       "상태": "OPEN",
       "검증증거": "M5에서 #14 발행검증대기 실측. GM 지적으로 발견(웰리 선발견 실패가 사건의 일부). ★가드 미구현 — 현재는 수동 규칙(게이트 단계4)뿐."
+    },
+    {
+      "id": "INC-004",
+      "date": "2026-06-15",
+      "증상": "텔레그램 Chat ID(8254867551)가 발행/자동화 scripts 11개에 하드코딩 — telegram_bot/.env 단일출처 미사용. 발산 스캔 v1이 탐지(정본 밖 17건/17파일, scripts 11).",
+      "본질": "같은 캐논값이 정본(env)과 11곳에 복사 → bot/chat 변경 시 11곳 동시수정 필요, 한 곳 누락 시 회귀(INC-001 동류).",
+      "뿌리분류": "복사",
+      "차단조치": "제안(미구현, GM 확인 대기): 11 scripts를 os.environ TELEGRAM_CHAT_ID 직독(fallback 유지)으로 전환 + 발산 스캔 정기화(주간정비 편입).",
+      "상태": "OPEN",
+      "검증증거": "ssot/divergence_scan.py 실행 결과 telegram_chat_id 정본 밖 17건/17파일(scripts: ceo_watcher·ig_series_producer·send_review_card·publish_4channel_dispatcher 등 11). 발견 2026-06-15."
     }
   ]
 }
