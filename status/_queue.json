@@ -782,5 +782,17 @@
     "title": "[시우] 지원부 점검 라우팅 버그 근본수정 — 한 곳 고치면 타부서 회귀",
     "summary": "원인 확정(웰리 추적·추측 아님): .deploy-check/지원팀 일일점검.js _routeItem()이 부분문자열 매칭(itemId에 _f/_m 우연 포함 시 오라우팅) + 지원부만 commonToGender로 공용항목을 성별탭에 강제저장(타부서는 공용탭) = 이중경로. 지원부 글로벌 변경이 타부서 완료율 회귀 유발.",
     "next": "① _routeItem 부분문자열→정확매칭(접미사 경계) ② commonToGender 분기 범위 명시 ③ 변경 후 4부서(운영·시설·지원·주차) 완료율·라우팅 회귀 자동검사 추가 ④ WEEKDAY/WEEKEND 동시수정(충돌=2단계 토큰). 라이브 GAS=테스트 후 배포."
+  },
+  {
+    "task_id": "CMO-2026-06-16-STAGE-COL-SETUP",
+    "clevel": "cmo",
+    "status": "PENDING",
+    "terminal": false,
+    "priority": "⛵돛단배",
+    "enqueued_at": "2026-06-15",
+    "processed_at": null,
+    "title": "[시모] 멤버십 문의시트 진행상태 칸 GAS 셋업 (내일·GM 결정 대기)",
+    "note": "전환 퍼널을 살리려면 멤버십 문의관리(26) \"26년 신규문의\" 탭에 진행상태 드롭다운(신규/응대/예약/방문/가입/이탈) 칸 추가 필요. 시모가 GAS(데이터검증)로 직접 셋업할지, 시포/GM이 수동으로 할지 GM 결정 대기. 결정나면 시모가 칸 추가는 가능(GAS). 입력 운영은 시포(CPO-...-STAGE-INPUT).",
+    "next": "GM 결정 → 시모 직접이면 GAS 셋업 1회"
   }
 ]
