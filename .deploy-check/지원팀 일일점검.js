@@ -533,7 +533,13 @@ function _updateCheckLedger(dept, date, body) {
   // 프론트가 매 저장 시 현 상태 전체를 보내므로 led.cr 전체 교체 → 복원도 회차별(오전·오후·마감 격리).
   if (body && body.roundChecks) {
     led.cr = {};
-    (body.roundChecks || []).forEach(function (k) { if (k) led.cr[String(k)] = 1; });
+    var _rcm = body.roundCheckMeta || {};
+    (body.roundChecks || []).forEach(function (k) {
+      if (!k) return;
+      var m = _rcm[String(k)];
+      // 항목별 점검자·시각·담당 메타가 있으면 객체로, 없으면 1(레거시 하위호환). GM 2026-06-15 시우.
+      led.cr[String(k)] = (m && (m.by || m.at || m.du)) ? { by: String(m.by || ''), at: String(m.at || ''), du: String(m.du || '') } : 1;
+    });
   }
   props.setProperty(key, JSON.stringify(led));
 }
@@ -622,7 +628,7 @@ function handleSave(body) {
       c.checked ? '완료' : '미완료',
       c.issue || '', c.tip || '',
       body.submitStatus || '미제출',
-      body.submittedAt || '',
+      c.checkedAt || body.submittedAt || '',   // 항목별 체크시각 우선(없으면 제출시각). GM 2026-06-15
       inspector, shift,
       _measureStr(c.measure),  // S2: 13열 측정값 패스스루(없으면 빈칸)
       c.reflected ? 'Y' : '',  // F1: 14열 반영완료
@@ -747,8 +753,9 @@ function _handleSaveV2Compat(body) {
         date, c.itemId, c.name, c.cat, c.slot,
         c.checked ? '완료' : '미완료',
         c.issue || '', c.tip || '',
-        submitStatus, submitAt,
-        submitter || defaultInspector(name, c.slot || ''),
+        submitStatus, (c.checkedAt || submitAt),
+        c.submitter || submitter || defaultInspector(name, c.slot || ''),   // 항목별 점검자·체크시각 우선. GM 2026-06-15
+
         c.shift || slotToShift(c.slot || ''),
         _measureStr(c.measure),  // S2: 13열 측정값 패스스루(없으면 빈칸)
         c.reflected ? 'Y' : '',  // F1: 14열 반영완료

@@ -1841,6 +1841,16 @@ function isCheckedAny(it,g){
   for(let i=0;i<ROUND_KEYS.length;i++){if(STATE[chkKey(ROUND_KEYS[i],id,g)])return true;}
   return false;
 }
+/* 항목별 점검 기록(점검자·시각·담당) — 체크된 어느 라운드든 첫 메타 반환. 시트행 inspector/시각 기록용. GM 2026-06-15 */
+function _itemAttr(g,id){
+  for(let i=0;i<ROUND_KEYS.length;i++){
+    const rk=ROUND_KEYS[i];
+    if(STATE[chkKey(rk,id,g)]){
+      return {by:STATE['chkby_'+g+'_'+rk+'_'+id]||'',at:STATE['chkat_'+g+'_'+rk+'_'+id]||'',du:STATE['chkduty_'+g+'_'+rk+'_'+id]||''};
+    }
+  }
+  return {by:'',at:'',du:''};
+}
 
 let STATE={};
 /* 2026-06-12: localStorage 키 성별 분리 — 남/여 탭이 독립 STATE를 가져 새로고침 후에도 격리.
@@ -1903,7 +1913,16 @@ async function loadState(d,g){
           if(!cl.cr[k])return;
           const us=String(k).indexOf('_'); if(us<0)return;
           const rk=k.slice(0,us), id=k.slice(us+1);
-          if(ROUND_KEYS.indexOf(rk)>=0)STATE[chkKey(rk,id,gg)]=true;
+          if(ROUND_KEYS.indexOf(rk)>=0){
+            STATE[chkKey(rk,id,gg)]=true;
+            /* 항목별 기록 복원(점검자·시각·담당) — cr 메타가 객체면. 레거시 cr:1은 메타 없음(체크만). GM 2026-06-15 */
+            const _m=cl.cr[k];
+            if(_m&&typeof _m==='object'){
+              if(_m.by)STATE['chkby_'+gg+'_'+rk+'_'+id]=_m.by;
+              if(_m.at)STATE['chkat_'+gg+'_'+rk+'_'+id]=_m.at;
+              if(_m.du)STATE['chkduty_'+gg+'_'+rk+'_'+id]=_m.du;
+            }
+          }
         });
       }
       const sub=cl.sub||{}, subAt=cl.subAt||{};
@@ -1960,9 +1979,14 @@ function _buildPushPayload(d,g,includeSubmitMeta){
       });
     }
   }
+  /* 항목별 점검자·시각 부착(시트행 inspector/시각 기록 — 체크된 항목만 의미). GM 2026-06-15 */
+  checks.forEach(function(c){ const a=_itemAttr(g,c.itemId); if(a.by)c.submitter=a.by; if(a.at)c.checkedAt=a.at; });
   const _cpfx='chk_'+g+'_';
   const roundChecks=Object.keys(STATE).filter(k=>k.indexOf(_cpfx)===0&&STATE[k]===true).map(k=>k.slice(_cpfx.length));
-  const p={action:'save',date:d,checks,dept:DEPT,genderTab:g,roundChecks:roundChecks,
+  /* 회차별 항목 기록(점검자·시각·담당) → 원장 cr 메타로 영속 → 새로고침·타기기 복원. GM 2026-06-15 */
+  const roundCheckMeta={};
+  roundChecks.forEach(k=>{ roundCheckMeta[k]={by:STATE['chkby_'+g+'_'+k]||'',at:STATE['chkat_'+g+'_'+k]||'',du:STATE['chkduty_'+g+'_'+k]||''}; });
+  const p={action:'save',date:d,checks,dept:DEPT,genderTab:g,roundChecks:roundChecks,roundCheckMeta:roundCheckMeta,
     duty:(typeof getDutyForGender==='function'?getDutyForGender(g):''),
     groupSubmits:collectGroupSubmits()};
   /* ★폐루프 절단(시우 2026-06-13): 제출메타(submitted_ / submitter_ 키)는 '명시적 제출' 때만 전송.
@@ -2698,10 +2722,17 @@ function renderItem(it,shift,gender,round){
   const _rArg=round?`,'${round}'`:'';
   /* 요일·주기 일정 배지 (편집 시 '월수금'·'둘째주'·'격주' 입력하면 헬스장처럼 배지로 표시). GM 2026-06-12 */
   const _dayChips=(typeof scheduleBadges==='function')?scheduleBadges(it,itemName,itemDetail):'';
+  /* 항목별 점검 기록줄(점검자·시각·담당) — 체크된 항목 아래 회색. GM 2026-06-15 */
+  let _attrLine='';
+  if(_ckd&&round){
+    const _by=STATE['chkby_'+g+'_'+round+'_'+it.id]||'', _at=STATE['chkat_'+g+'_'+round+'_'+it.id]||'', _du=STATE['chkduty_'+g+'_'+round+'_'+it.id]||'';
+    const _pp=[]; if(_by)_pp.push('점검자 '+esc(_by)); if(_at)_pp.push(_at); if(_du)_pp.push('담당 '+esc(_du));
+    if(_pp.length)_attrLine=`<div class="check-attr" style="font-size:11px;color:#8c8b83;margin:3px 0 0 26px;">✓ ${_pp.join(' · ')}</div>`;
+  }
   return `<div class="${cls}">
     <div class="item-row"><input type="checkbox" id="cb_${pfx}${it.id}" ${ck} onchange="onCk('${it.id}','${shift}','${g}'${_rArg})"><label for="cb_${pfx}${it.id}">${itemName}${_dayChips}${editedTag}</label>
       <div class="item-btns"><button class="tiny-btn issue" onclick="togX('${pfx}iss_${it.id}')">이슈</button><button class="tiny-btn tip" onclick="togX('${pfx}tip_${it.id}')">노하우</button>${refBtn}</div>
-    </div>
+    </div>${_attrLine}
     <div class="item-detail">${det}</div>${tempHtml}
     <input class="extra-input issue-field${iss?' show':''}" id="${pfx}iss_${it.id}" placeholder="이슈 내용..." value="${esc(iss)}" onchange="onExtra('iss_${it.id}','${pfx}iss_${it.id}')">
     ${promoteBtn?`<div class="promote-bar" style="margin:4px 0 2px;">${promoteBtn}</div>`:''}
@@ -2783,7 +2814,20 @@ function onCk(id,shift,gender,round){
   const val=cb?cb.checked:false;
   /* 회차별 체크 독립: round 있으면 라운드 키에만 기록(다른 회차 미영향).
      round 없으면(야간모드 등) 기존 레거시 키 유지(비회귀). */
-  if(round){ if(val)STATE[chkKey(round,id,gender)]=true; else delete STATE[chkKey(round,id,gender)]; }
+  if(round){
+    if(val){
+      STATE[chkKey(round,id,gender)]=true;
+      /* 항목별 기록 캡처(점검자=상단 선택값·시각·담당) — 페이지+시트 영속, GM 2026-06-15 */
+      STATE['chkby_'+gender+'_'+round+'_'+id]=(typeof getSubmitterForGender==='function'?getSubmitterForGender(gender):'')||'';
+      STATE['chkat_'+gender+'_'+round+'_'+id]=_hhmm(Date.now());
+      STATE['chkduty_'+gender+'_'+round+'_'+id]=(typeof getDutyForGender==='function'?getDutyForGender(gender):'')||'';
+    }else{
+      delete STATE[chkKey(round,id,gender)];
+      delete STATE['chkby_'+gender+'_'+round+'_'+id];
+      delete STATE['chkat_'+gender+'_'+round+'_'+id];
+      delete STATE['chkduty_'+gender+'_'+round+'_'+id];
+    }
+  }
   else { STATE[id]=val; }
   saveState(d,gender);
   /* 빠른 연속체크 레이스 방지(GM 2026-06-12): 클릭한 항목 행만 즉시 가볍게 반영하고,
