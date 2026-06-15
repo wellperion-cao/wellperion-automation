@@ -2400,7 +2400,9 @@ function toggleCheckTimer(gender){
    shadow = id가 'custom_' 또는 'cx_'으로 시작하지 않는 CUSTOM_ITEMS 항목(기본 항목 id 그대로). */
 /* isAddedItem — 추가 항목 판별. 레거시 custom_ 및 신규 cx_ 둘 다 인식. */
 function isAddedItem(id){ return /^(custom_|cx_)/.test(String(id||'')); }
-function isShadowItem(it){ return it && it.id && !isAddedItem(it.id); }
+/* shadow = '기본 스케줄에 실재하는' 항목의 편집분만(ROUND_MAP 멤버). 정규화로 custom_→d4/e2 등
+   기본형 ID가 됐지만 ROUND_MAP엔 없는 항목은 shadow 아님 → 정상 주입(점검 페이지 표시). GM 2026-06-15. */
+function isShadowItem(it){ return !!(it && it.id && !isAddedItem(it.id) && typeof ROUND_MAP!=='undefined' && Object.prototype.hasOwnProperty.call(ROUND_MAP, it.id)); }
 /* getItemOverrides — CUSTOM_ITEMS의 shadow 항목에서 {id:{name,detail,slot,shift,cat}} 맵 구성.
    renderItem이 이 맵으로 기본 항목 표시를 덮어쓴다(시트가 SSOT). */
 function getItemOverrides(){
@@ -4642,7 +4644,7 @@ function mgmtBuildCustomSlots(customItems){
       detail: item.detail || '',
       gender: item.gender || 'all',
       rounds: Array.isArray(item.rounds) ? item.rounds : [],   // 2b-1: 회차 멤버십 전달(itemRounds용)
-      _custom: true
+      _custom: isAddedItem(item.id)   // 정규화 항목(d4·e2 등)은 커스텀 배지 제거. GM 2026-06-15
     });
   });
 
