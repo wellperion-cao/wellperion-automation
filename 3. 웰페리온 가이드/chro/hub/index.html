@@ -1159,9 +1159,10 @@ function renderHire(){
     for(var i=0;i<startDow;i++){ h+='<div></div>'; }
     for(var d=1;d<=days;d++){
       var has=byDay[d];
-      var st='aspect-ratio:1;display:flex;flex-direction:column;align-items:center;justify-content:center;border-radius:6px;font-size:11px;'+(has?'background:var(--gold);color:#fff;font-weight:700':(isToday(d)?'background:var(--surface-2);outline:1px solid var(--gold)':''));
+      var st='min-height:38px;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;border-radius:6px;font-size:11px;padding:2px 1px;'+(has?'background:var(--gold);color:#fff;font-weight:700':(isToday(d)?'background:var(--surface-2);outline:1px solid var(--gold)':''));
       var tip=has?esc(has.map(function(e){return e.name+'('+e.stage+')';}).join(', ')):'';
-      h+='<div title="'+tip+'" style="'+st+'">'+d+(has?'<span style="font-size:7px;line-height:.8">●</span>':'')+'</div>';
+      var nm=has?has.map(function(e){return esc(e.name);}).join('<br>'):'';
+      h+='<div title="'+tip+'" style="'+st+'">'+d+(has?'<span style="font-size:8px;line-height:1.1;font-weight:600;margin-top:1px;word-break:keep-all">'+nm+'</span>':'')+'</div>';
     }
     h+='</div>';
     var monthEv=ev.filter(function(e){return e.y===y&&e.m===m;}).sort(function(a,b){return a.t-b.t;});
@@ -1192,7 +1193,7 @@ function renderHire(){
       return (dy?new Date(dy).getTime():0)-(dx?new Date(dx).getTime():0); // 최신 지원순
     });
     (window.__registerAppls && window.__registerAppls(all));
-    window.__ivEvents=(DB.appl||[]).map(function(a){var d=dval(a,"면접 일정");if(!d)return null;var dd=new Date(d);if(isNaN(dd.getTime()))return null;return {t:dd.getTime(),y:dd.getFullYear(),m:dd.getMonth(),d:dd.getDate(),name:a["지원자명"]||"",stage:a["전형 단계"]||""};}).filter(Boolean);
+    window.__ivEvents=(DB.appl||[]).map(function(a){var d=dval(a,"면접 일정");if(!d)return null;if(/불합격|탈락/.test(a["전형 단계"]||""))return null;var dd=new Date(d);if(isNaN(dd.getTime()))return null;return {t:dd.getTime(),y:dd.getFullYear(),m:dd.getMonth(),d:dd.getDate(),name:a["지원자명"]||"",stage:a["전형 단계"]||""};}).filter(Boolean);
     var __PG=5, __pages=Math.ceil(all.length/__PG);
     html+='<div style="display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap">';
     html+='<div style="flex:1.6 1 380px;min-width:300px">';
