@@ -384,11 +384,14 @@
     "task_id": "CMO-2026-06-06-CHANNEL-ENGAGEMENT",
     "clevel": "cmo",
     "title": "[시모] 채널별 조회·반응 자동수집 (engagement_feed)",
-    "status": "IN_PROGRESS",
+    "status": "DONE",
     "priority": "NORMAL",
     "depends_on": null,
     "enqueued_at": "2026-06-06",
-    "note": "✅ 자동수집 가동 — 당근(공개 viewCount)·블로그(RSS), 로그인 불필요. 06-15 재가동해 피드 갱신(당근 WJO 7뷰·블로그 신규 3건) + 당근 지표를 월간보고서에 연결. ｜ ✋ 막힘 — IG=Meta 연동 폐기로 보류 / 카페·카카오=cao 로그인 세션 필요(인터랙티브 타이밍 대기). ｜ ⏭ GM 로그인 시 카페·카카오 채널 추가."
+    "note": "✅ 전 채널 반응수집 완결 — 당근·블로그(로그인 불필요) + 카페·카카오(발행세션 스크랩, 06-15 추가) 수집 가동, 당근 지표는 월간보고서 연결. 당근·블로그는 무인 정기수집 예약작업(Wellperion-Engagement-Collect-0930·DAILY 09:30) 구축·실측 검증(수집→커밋→push). ｜ ✋ IG만 Meta 연동 폐기로 제외. ｜ ⏭ GM 관리자 1회: ops/register_engagement_collect.bat 실행 → 정기 자동수집 가동(카페·카카오는 headful 반자동 유지).",
+    "terminal": true,
+    "processed_at": "2026-06-15",
+    "next": "GM 관리자로 ops/register_engagement_collect.bat 1회 실행 시 당근·블로그 정기 무인수집 라이브. 카페·카카오는 세션 있을 때 수동/반자동."
   },
   {
     "task_id": "CMO-2026-06-06-INQUIRY-DASHBOARD-PIPELINE",
