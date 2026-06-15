@@ -314,6 +314,7 @@ function doGet(e) {
           shift: String(data[i][11] || ''),
           measure: String(data[i][12] || ''),   // S2: 13열 측정값(없으면 빈문자)
           reflected: String(data[i][13] || '') === 'Y',   // F1: 14열 반영완료
+          duty: String(data[i][14] || ''),                 // 15열 담당(근무조) — 시트=페이지 동일시 복원용. 2026-06-15
           gender: name === baseMale ? 'm' : name === baseFemale ? 'f' : 'all',
           submitted_am: hasAm,
           submittedAt_am: hasAm ? String(data[i][9] || '') : '',

@@ -1841,6 +1841,8 @@ function isCheckedAny(it,g){
   for(let i=0;i<ROUND_KEYS.length;i++){if(STATE[chkKey(ROUND_KEYS[i],id,g)])return true;}
   return false;
 }
+/* 시트 시각문자열(예 'Mon Jun 15 2026 12:17:00...' 또는 '2026-06-15 11:28:28')에서 HH:MM 추출. GM 2026-06-15 */
+function _atHM(s){ if(!s)return''; const d=new Date(s); if(!isNaN(d.getTime()))return _hhmm(d.getTime()); const m=String(s).match(/(\d{1,2}):(\d{2})/); return m?(String(m[1]).padStart(2,'0')+':'+m[2]):''; }
 /* 항목별 점검 기록(점검자·시각·담당) — 체크된 어느 라운드든 첫 메타 반환. 시트행 inspector/시각 기록용. GM 2026-06-15 */
 function _itemAttr(g,id){
   for(let i=0;i<ROUND_KEYS.length;i++){
@@ -1934,6 +1936,22 @@ async function loadState(d,g){
       if(subAt.pm&&!STATE._submittedAt_pm)STATE._submittedAt_pm=subAt.pm;
       if(subAt.night&&!STATE._submittedAt_night)STATE._submittedAt_night=subAt.night;
     }
+    /* ── 시트=페이지 동일시(GM 2026-06-15): 시트 '완료' 기록을 페이지 체크로 복원 ──
+       cr(회차원장)에 없어도 시트가 완료면 체크 표시(과거 제출분·cr 누락분 유실 0 → 시트가 단일 출처).
+       시트엔 회차 구분이 없어 항목이 속한 회차 전체에 반영(하루 단위). 점검자·시각·담당은 cr 메타 우선, 없으면 행에서 복원. */
+    (j.rows||[]).forEach(row=>{
+      if(row.gender&&row.gender!==gg)return;
+      if(!row.checked)return;
+      const id=row.itemId; if(!id)return;
+      let rounds=[]; try{ rounds=itemRounds({id:id,slot:row.slot,shift:row.shift})||[]; }catch(e){}
+      rounds.forEach(rk=>{
+        if(ROUND_KEYS.indexOf(rk)<0)return;
+        STATE[chkKey(rk,id,gg)]=true;
+        if(!STATE['chkby_'+gg+'_'+rk+'_'+id]&&row.submitter)STATE['chkby_'+gg+'_'+rk+'_'+id]=row.submitter;
+        if(!STATE['chkat_'+gg+'_'+rk+'_'+id]){const _t=_atHM(row.submittedAt);if(_t)STATE['chkat_'+gg+'_'+rk+'_'+id]=_t;}
+        if(!STATE['chkduty_'+gg+'_'+rk+'_'+id]&&row.duty)STATE['chkduty_'+gg+'_'+rk+'_'+id]=row.duty;
+      });
+    });
     // 그룹별 제출 복원 (서버 영속 → 새로고침해도 유지) — 2026-06-05 GM
     if(j.groupSubmits){Object.keys(j.groupSubmits).forEach(key=>{
       const v=j.groupSubmits[key]||{};
