@@ -656,6 +656,13 @@ function loadStageFunnel() {
         + '</div>'
         + '</div>';
     }
+    // 중간단계(②③④)가 ⑤가입과 동일 = 리셉션 진행상태 미입력 (가입자 회원매칭만 반영) → 정직 안내
+    var collapsed = (stages[1].count === stages[4].count && stages[2].count === stages[4].count && stages[3].count === stages[4].count);
+    if (collapsed && stages[0].count > stages[4].count) {
+      html += '<div style="margin-top:10px;padding:10px 14px;background:var(--accent-bg);border:1px solid rgba(183,159,138,0.2);border-radius:8px;font-size:11px;color:var(--dim)">'
+        + '※ 리셉션 진행상태 입력 전 — ②응대·③예약·④방문은 현재 <b>가입자만</b> 반영됩니다. 실제 진행상태 입력이 시작되면 단계별로 분리 표시됩니다.'
+        + '</div>';
+    }
     html += '<div style="margin-top:4px;font-size:11px;color:var(--dim)">이번 달 기준 · 잔존%=직전 단계 대비</div>';
     el.innerHTML = html;
   }
