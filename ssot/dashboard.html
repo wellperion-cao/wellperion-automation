@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>진실 단일화 · 재발방지 현황 — 웰페리온 SSOT 대시보드</title>
+<title>같은 실수, 두 번 안 나게 — 웰페리온 점검 현황</title>
 <style>
   :root {
     --bg: #f8f7f4;
@@ -39,14 +39,12 @@
     margin-bottom: 28px;
   }
   .header h1 { font-size: 18px; font-weight: 700; color: var(--accent); margin-bottom: 4px; }
-  .header .sub { font-size: 12px; color: var(--muted); }
-  .header .constitution { font-size: 12px; color: var(--accent); margin-top: 8px; font-style: italic; }
+  .header .sub { font-size: 13px; color: #3a3a5a; margin-top: 4px; }
 
   /* 섹션 */
   .section { margin-bottom: 32px; }
   .section-title {
-    font-size: 13px; font-weight: 700; color: var(--muted);
-    text-transform: uppercase; letter-spacing: 0.08em;
+    font-size: 15px; font-weight: 700; color: var(--text);
     margin-bottom: 12px;
     display: flex; align-items: center; gap: 8px;
   }
@@ -66,50 +64,74 @@
     background: var(--orange-bg);
     border: 1px solid #f5c89a;
     border-radius: 8px;
-    padding: 12px 16px;
-    margin-bottom: 20px;
-    font-size: 13px;
+    padding: 14px 18px;
+    margin-bottom: 24px;
+    font-size: 14px;
     color: var(--orange);
+    font-weight: 600;
   }
   .verify-banner.clean { background: var(--green-bg); border-color: #b6dfc5; color: var(--green); }
 
-  /* 테이블 공통 */
+  /* 사건 카드 */
   .card { background: var(--card); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
-  table { width: 100%; border-collapse: collapse; }
-  thead { background: #f3f1ec; }
-  th {
-    padding: 10px 14px; text-align: left;
-    font-size: 11px; font-weight: 700; color: var(--muted);
-    text-transform: uppercase; letter-spacing: 0.06em;
+  .inc-row {
+    padding: 14px 18px;
     border-bottom: 1px solid var(--border);
   }
-  td {
-    padding: 11px 14px;
-    font-size: 13px;
-    border-bottom: 1px solid var(--border);
-    vertical-align: top;
-  }
-  tr:last-child td { border-bottom: none; }
-  tr:hover td { background: #faf9f6; }
+  .inc-row:last-child { border-bottom: none; }
+  .inc-row:hover { background: #faf9f6; }
 
-  /* 상태 뱃지 */
-  .status {
+  .inc-main { display: flex; align-items: flex-start; gap: 12px; }
+  .status-pill {
     display: inline-flex; align-items: center; gap: 4px;
-    padding: 3px 10px; border-radius: 12px;
-    font-size: 11px; font-weight: 700; white-space: nowrap;
+    padding: 4px 12px; border-radius: 14px;
+    font-size: 12px; font-weight: 700; white-space: nowrap;
+    flex-shrink: 0; margin-top: 2px;
   }
-  .guarded { background: var(--green-bg); color: var(--green); border: 1px solid #b6dfc5; }
-  .open { background: var(--orange-bg); color: var(--orange); border: 1px solid #f5c89a; }
+  .pill-done { background: var(--green-bg); color: var(--green); border: 1px solid #b6dfc5; }
+  .pill-open { background: var(--orange-bg); color: var(--orange); border: 1px solid #f5c89a; }
 
-  /* 뿌리 분류 태그 */
-  .tag {
-    display: inline-block;
-    padding: 2px 8px; border-radius: 10px;
-    font-size: 11px; background: #f0eee9; color: var(--muted);
+  .inc-summary { font-size: 14px; color: var(--text); line-height: 1.5; }
+
+  /* 자세히 토글 */
+  .detail-toggle {
+    margin-top: 8px;
+    font-size: 12px;
+    color: var(--accent);
+    cursor: pointer;
+    user-select: none;
+    background: none; border: none; padding: 0;
+    font-family: inherit;
   }
+  .detail-toggle:hover { text-decoration: underline; }
+  .detail-box {
+    display: none;
+    margin-top: 10px;
+    padding: 12px 14px;
+    background: #f4f2ed;
+    border-radius: 6px;
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.7;
+  }
+  .detail-box.open { display: block; }
+  .detail-label { font-weight: 700; color: #444; }
 
-  /* 캐논 값 */
-  .mono { font-family: var(--mono); font-size: 12px; color: #444; background: #f4f2ed; padding: 2px 6px; border-radius: 4px; }
+  /* 캐논 값 카드 그리드 */
+  .canon-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 12px;
+  }
+  .canon-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 16px;
+  }
+  .canon-name { font-size: 14px; font-weight: 700; color: var(--text); margin-bottom: 6px; }
+  .canon-value { font-family: var(--mono); font-size: 13px; color: #333; background: #f4f2ed; padding: 3px 8px; border-radius: 4px; display: inline-block; margin-bottom: 8px; word-break: break-all; }
+  .canon-tag { font-size: 11px; color: var(--green); background: var(--green-bg); border: 1px solid #b6dfc5; border-radius: 10px; padding: 2px 8px; display: inline-block; }
 
   /* 로딩·에러 */
   .loading { padding: 32px; text-align: center; color: var(--muted); }
@@ -119,8 +141,8 @@
   .updated { font-size: 11px; color: var(--muted); margin-top: 8px; }
 
   @media (max-width: 600px) {
-    th, td { padding: 8px 10px; }
-    .section-title { font-size: 12px; }
+    .canon-grid { grid-template-columns: 1fr 1fr; }
+    .inc-summary { font-size: 13px; }
   }
 </style>
 </head>
@@ -128,30 +150,26 @@
 <div class="container">
 
   <div class="header">
-    <h1>진실 단일화 · 재발방지 현황</h1>
-    <div class="sub">결정과 현실의 간극을 구조로 잠근다 — 웰페리온 SSOT 대시보드</div>
-    <div class="constitution">헌법 원칙: 한 진실 = 한 곳. 복사 금지. 결정·교훈은 즉시 '일하는 코드'에 박고 실제로 돌려 확인.</div>
+    <h1>같은 실수, 두 번 안 나게</h1>
+    <div class="sub">회사 곳곳에 흩어진 값과 실수를 한 곳에서 관리해, 같은 문제가 두 번 안 나게 막는 현황판입니다.</div>
   </div>
 
-  <!-- 발행검증 배너 -->
-  <div id="verify-banner" class="verify-banner">⏳ 발행검증 현황 로딩 중…</div>
+  <!-- 발행 확인 배너 -->
+  <div id="verify-banner" class="verify-banner">⏳ 발행 확인 현황 불러오는 중…</div>
 
-  <!-- 재발방지 로그 -->
+  <!-- 문제 해결 현황 -->
   <div class="section">
-    <div class="section-title">🔒 재발방지 로그 (incidents)</div>
+    <div class="section-title">🔒 문제 해결 현황</div>
     <div id="inc-count" class="count-row"></div>
-    <div class="card">
-      <div id="inc-table-wrap" class="loading">데이터 로딩 중…</div>
-    </div>
+    <div id="inc-list" class="card"><div class="loading">불러오는 중…</div></div>
     <div id="inc-updated" class="updated"></div>
   </div>
 
-  <!-- 캐논 단일출처 레지스트리 -->
+  <!-- 공식 값 관리 -->
   <div class="section">
-    <div class="section-title">📌 캐논 단일출처 레지스트리 (canon_values)</div>
-    <div class="card">
-      <div id="canon-table-wrap" class="loading">데이터 로딩 중…</div>
-    </div>
+    <div class="section-title">📌 공식 값 관리</div>
+    <p style="font-size:13px; color:var(--muted); margin-bottom:14px;">아래 값들은 딱 한 곳에서만 관리합니다. 바꿀 때도 한 곳만 고치면 전체에 반영됩니다.</p>
+    <div id="canon-grid" class="canon-grid"><div class="loading">불러오는 중…</div></div>
     <div id="canon-updated" class="updated"></div>
   </div>
 
@@ -159,129 +177,133 @@
 
 <script>
 const BASE = "https://raw.githubusercontent.com/wellperion-cao/wellperion-automation/master/ssot/";
-const QUEUE_BASE = "https://raw.githubusercontent.com/wellperion-cao/wellperion-automation/master/3.%20%EC%9B%B0%ED%8E%98%EB%A6%AC%EC%98%A8%20%EA%B0%80%EC%9D%B4%EB%93%9C/cmo/review/review_queue.json";
+const QUEUE_URL = "https://raw.githubusercontent.com/wellperion-cao/wellperion-automation/master/3.%20%EC%9B%B0%ED%8E%98%EB%A6%AC%EC%98%A8%20%EA%B0%80%EC%9D%B4%EB%93%9C/cmo/review/review_queue.json";
 
 async function fetchJSON(url) {
-  const res = await fetch(url + "?nocache=" + Date.now(), {cache: "no-store"});
-  if (!res.ok) throw new Error("HTTP " + res.status + " — " + url);
+  const res = await fetch(url + "?t=" + Date.now(), {cache: "no-store"});
+  if (!res.ok) throw new Error("HTTP " + res.status);
   return res.json();
 }
 
-function escHtml(s) {
-  return String(s || "")
-    .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+function esc(s) {
+  return String(s || "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
 }
 
-function statusBadge(s) {
-  if (s === "GUARDED") return '<span class="status guarded">🔒 GUARDED</span>';
-  if (s === "OPEN")    return '<span class="status open">⏳ OPEN</span>';
-  return '<span class="status">' + escHtml(s) + '</span>';
+var _detailCount = 0;
+
+function makeStatusPill(state) {
+  if (state === "GUARDED") {
+    return '<span class="status-pill pill-done">✅ 막음 완료</span>';
+  }
+  return '<span class="status-pill pill-open">⏳ 아직 진행 중</span>';
 }
 
-function tagBadge(s) {
-  return '<span class="tag">' + escHtml(s) + '</span>';
+function toggleDetail(id) {
+  var el = document.getElementById(id);
+  var btn = document.getElementById("btn-" + id);
+  if (!el) return;
+  if (el.classList.contains("open")) {
+    el.classList.remove("open");
+    btn.textContent = "▸ 자세히";
+  } else {
+    el.classList.add("open");
+    btn.textContent = "▴ 접기";
+  }
 }
 
-function truncate(s, n) {
-  s = String(s || "");
-  return s.length > n ? s.slice(0, n) + "…" : s;
-}
-
-// ── incidents ───────────────────────────────────────────────
+// ── 문제 해결 현황 ────────────────────────────────────────────
 async function loadIncidents() {
-  const wrap = document.getElementById("inc-table-wrap");
-  const countEl = document.getElementById("inc-count");
-  const updEl = document.getElementById("inc-updated");
+  var listEl = document.getElementById("inc-list");
+  var countEl = document.getElementById("inc-count");
+  var updEl = document.getElementById("inc-updated");
   try {
-    const data = await fetchJSON(BASE + "incidents.json");
-    const list = data.incidents || [];
-    const guarded = list.filter(i => i["상태"] === "GUARDED").length;
-    const open    = list.filter(i => i["상태"] === "OPEN").length;
+    var data = await fetchJSON(BASE + "incidents.json");
+    var list = data.incidents || [];
+    var done = list.filter(function(i){ return i["상태"] === "GUARDED"; }).length;
+    var going = list.filter(function(i){ return i["상태"] === "OPEN"; }).length;
 
     countEl.innerHTML =
-      '<span class="badge badge-green">🔒 GUARDED ' + guarded + '</span>' +
-      '<span class="badge badge-orange">⏳ OPEN ' + open + '</span>';
+      '<span class="badge badge-green">✅ 막음 완료 ' + done + '건</span>' +
+      (going > 0 ? '<span class="badge badge-orange">⏳ 진행 중 ' + going + '건</span>' : '');
 
-    let html = '<table><thead><tr>' +
-      '<th style="width:72px">ID</th>' +
-      '<th>증상 (요약)</th>' +
-      '<th style="width:90px">뿌리분류</th>' +
-      '<th style="width:120px">상태</th>' +
-      '<th>차단조치 (요약)</th>' +
-      '</tr></thead><tbody>';
-
+    var html = "";
     list.forEach(function(inc) {
-      html += '<tr>' +
-        '<td><strong>' + escHtml(inc.id) + '</strong></td>' +
-        '<td>' + escHtml(truncate(inc["증상"], 70)) + '</td>' +
-        '<td>' + tagBadge(inc["뿌리분류"]) + '</td>' +
-        '<td>' + statusBadge(inc["상태"]) + '</td>' +
-        '<td style="color:var(--muted)">' + escHtml(truncate(inc["차단조치"], 80)) + '</td>' +
-        '</tr>';
+      var summary = inc["요약"] || inc["증상"] || "";
+      var detId = "detail-" + (++_detailCount);
+
+      // 자세히 내용 (기술 세부)
+      var detailHtml = "";
+      if (inc["차단조치"]) detailHtml += '<div><span class="detail-label">조치:</span> ' + esc(inc["차단조치"]) + '</div>';
+      if (inc["검증증거"]) detailHtml += '<div style="margin-top:6px"><span class="detail-label">검증:</span> ' + esc(inc["검증증거"]) + '</div>';
+      if (inc["date"])     detailHtml += '<div style="margin-top:6px"><span class="detail-label">날짜:</span> ' + esc(inc["date"]) + '</div>';
+
+      html += '<div class="inc-row">';
+      html += '<div class="inc-main">';
+      html += makeStatusPill(inc["상태"]);
+      html += '<div class="inc-summary">' + esc(summary) + '</div>';
+      html += '</div>';
+      if (detailHtml) {
+        html += '<button class="detail-toggle" id="btn-' + detId + '" onclick="toggleDetail(\'' + detId + '\')">▸ 자세히</button>';
+        html += '<div class="detail-box" id="' + detId + '">' + detailHtml + '</div>';
+      }
+      html += '</div>';
     });
-    html += '</tbody></table>';
-    wrap.innerHTML = html;
-    updEl.textContent = "마지막 로드: " + new Date().toLocaleString("ko-KR");
+
+    listEl.innerHTML = html || '<div class="loading">문제 기록 없음</div>';
+    updEl.textContent = "마지막 확인: " + new Date().toLocaleString("ko-KR");
   } catch(e) {
-    wrap.innerHTML = '<div class="error">⚠️ 로드 실패: ' + escHtml(e.message) + '</div>';
+    listEl.innerHTML = '<div class="error">불러오기 실패: ' + esc(e.message) + '</div>';
   }
 }
 
-// ── canon_values ─────────────────────────────────────────────
+// ── 공식 값 관리 ──────────────────────────────────────────────
 async function loadCanon() {
-  const wrap = document.getElementById("canon-table-wrap");
-  const updEl = document.getElementById("canon-updated");
+  var gridEl = document.getElementById("canon-grid");
+  var updEl = document.getElementById("canon-updated");
   try {
-    const data = await fetchJSON(BASE + "canon_values.json");
-    const list = data.values || [];
+    var data = await fetchJSON(BASE + "canon_values.json");
+    var list = data.values || [];
 
-    let html = '<table><thead><tr>' +
-      '<th style="width:160px">키</th>' +
-      '<th>값</th>' +
-      '<th>정본 위치</th>' +
-      '<th>설명</th>' +
-      '</tr></thead><tbody>';
-
+    var html = "";
     list.forEach(function(v) {
-      html += '<tr>' +
-        '<td><span class="mono">' + escHtml(v.key) + '</span></td>' +
-        '<td><span class="mono">' + escHtml(v.value) + '</span></td>' +
-        '<td style="color:var(--muted);font-size:12px">' + escHtml(v.source) + '</td>' +
-        '<td style="color:var(--muted)">' + escHtml(truncate(v.note, 60)) + '</td>' +
-        '</tr>';
+      var label = v["이름"] || v.key;
+      html += '<div class="canon-card">';
+      html += '<div class="canon-name">' + esc(label) + '</div>';
+      html += '<div class="canon-value">' + esc(v.value) + '</div><br>';
+      html += '<span class="canon-tag">✅ 한 곳에서 관리</span>';
+      html += '</div>';
     });
-    html += '</tbody></table>';
-    wrap.innerHTML = html;
-    updEl.textContent = "마지막 로드: " + new Date().toLocaleString("ko-KR");
+
+    gridEl.innerHTML = html || '<div class="loading">값 없음</div>';
+    updEl.textContent = "마지막 확인: " + new Date().toLocaleString("ko-KR");
   } catch(e) {
-    wrap.innerHTML = '<div class="error">⚠️ 로드 실패: ' + escHtml(e.message) + '</div>';
+    gridEl.innerHTML = '<div class="error">불러오기 실패: ' + esc(e.message) + '</div>';
   }
 }
 
-// ── 발행검증 배너 ──────────────────────────────────────────
+// ── 발행 확인 배너 ────────────────────────────────────────────
 async function loadVerifyBanner() {
-  const banner = document.getElementById("verify-banner");
+  var banner = document.getElementById("verify-banner");
   try {
-    const queue = await fetchJSON(QUEUE_BASE);
-    const pending = (Array.isArray(queue) ? queue : []).filter(function(i) {
+    var queue = await fetchJSON(QUEUE_URL);
+    var pending = (Array.isArray(queue) ? queue : []).filter(function(i) {
       return i.status === "발행검증대기";
     });
     if (pending.length === 0) {
       banner.className = "verify-banner clean";
-      banner.textContent = "✅ 발행검증 대기 없음 — 모든 발행 건 검증 완료.";
+      banner.textContent = "✅ 올린 글 모두 확인 완료 — 확인 안 된 글 없음";
     } else {
       banner.className = "verify-banner";
-      const titles = pending.map(function(i) { return i.title || i.id || "?"; });
-      banner.innerHTML = "⚠️ 발행검증 대기 <strong>" + pending.length + "건</strong> — IG↔M5 대조 필요: " +
-        titles.map(function(t){ return escHtml(t); }).join(" / ");
+      var titles = pending.map(function(i){ return i.title || i.id || "?"; });
+      banner.innerHTML = "⚠️ 올렸는데 아직 확인 안 한 글 <strong>" + pending.length + "건</strong> — " +
+        titles.map(esc).join(", ");
     }
   } catch(e) {
     banner.className = "verify-banner";
-    banner.textContent = "⚠️ 발행검증 현황 로드 실패 — raw fetch 오류. ssot/publish_verify_pending.py 로컬 실행 권장.";
+    banner.textContent = "⚠️ 발행 확인 현황을 불러오지 못했습니다.";
   }
 }
 
-// 병렬 로드
 loadIncidents();
 loadCanon();
 loadVerifyBanner();
