@@ -32,7 +32,7 @@ REM ASCII only (no encoding issues).
 REM ============================================================
 
 SET ROOT=C:\Users\jjky0\welperion-automation
-SET LAUNCHER=%ROOT%\start_ig_series_producer.bat
+SET LAUNCHER=%ROOT%\ig\start_ig_series_producer.bat
 SET TASK_NAME=Wellperion-IG-Series-Produce-0730
 SET OLD_PRODUCE=Wellperion-IG-Series-Produce-2100
 SET OLD_PUBLISH=Wellperion-IG-Publish-0730

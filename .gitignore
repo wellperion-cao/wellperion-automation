@@ -38,8 +38,12 @@ logs/telegram_sent-*.log
 # 예외: AI 시리즈 제작기 등록·런처 = GM admin 실행 SSOT 자산 (2026-06-04 AI CTO)
 !register_ig_series_produce_2100.bat
 # 예외: 07:30 제작+검수카드 재구성 등록기 = GM admin 실행 SSOT (2026-06-04 GM 정정, 2100 대체)
-!register_ig_series_produce_0730.bat
-!start_ig_series_producer.bat
+!ig/register_ig_series_produce_0730.bat
+!ig/start_ig_series_producer.bat
+# 예외: ops 재편 .bat = SSOT 자산 (2026-06-15 AI CTO)
+!ops/morning_update.bat
+!ops/fix_task_windows.bat
+!ops/reorg_tasks_admin.bat
 # 예외: ccusage 라이브 토큰·캐시 대시보드 런처 = GM 상시 모니터링 SSOT (2026-06-10 AI CTO)
 !launchers/ccusage_dashboard.bat
 profiles/*
