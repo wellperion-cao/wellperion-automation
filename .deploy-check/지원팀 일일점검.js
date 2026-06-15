@@ -555,6 +555,12 @@ function _anomalyOnlyDept(dept) {
   return String(dept || 'support') === 'support';
 }
 
+// GM 2026-06-15: support 정상완료도 구역 시트에 기록(원장-only가 혼란 → 점검 페이지·시트 모두 보이게).
+// ⚠️ 사전시드(handleSeed)는 여전히 금지 — 저장 시 '실제 체크한 항목'만 행 생성(누적·거짓완료·체크리셋 뿌리 차단).
+// 완료율은 계속 원장(checkedLedger) 기반·시트 col5 비의존 → 시트 완료행 추가해도 중복집계·완료율 회귀 0.
+// 읽기는 날짜별 필터(과거일 행 무영향) → '하루 지나면 리셋' 전제 충족. 되돌리려면 false 반환.
+function _persistCompletions(dept) { return true; }
+
 // ════════════════════════════════════════════
 // API: 저장 (제자리 갱신 — 중복 방지)
 // ════════════════════════════════════════════
@@ -627,8 +633,8 @@ function handleSave(body) {
       sheet.getRange(rowNum, 1, 1, HEADERS.length).setValues([values]);
       _applyRowStyle(sheet, rowNum, values);
       updated++;
-    } else if (!_anomalyOnlyDept(dept) || _isAnomalyCheck(c)) {
-      // support: 이상치(미완료/이슈/노하우/측정)만 신규기록(정상완료는 원장이 복원). 타 부서: 전체기록 유지.
+    } else if (_persistCompletions(dept) || !_anomalyOnlyDept(dept) || _isAnomalyCheck(c)) {
+      // support: 정상완료도 신규기록(GM 2026-06-15·_persistCompletions). 이상치/타부서: 종전대로.
       newRows.push(values);
     }
   });
@@ -749,17 +755,16 @@ function _handleSaveV2Compat(body) {
         body.duty || ''          // 15열 담당자(규정 근무조) — payload.duty
       ];
       if (rowNum) {
-        if (_anomalyOnlyDept(dept) && !_isAnomalyCheck(c)) {
-          // support 정상완료(완료·무이슈)는 시트에 행을 남기지 않음 — 복원원천은 회차원장(cr)뿐.
-          // 옛 행이 완료로 갱신·누적되어 잘못된 회차로 복원되던 문제 차단. GM 2026-06-12.
+        if (!_persistCompletions(dept) && _anomalyOnlyDept(dept) && !_isAnomalyCheck(c)) {
+          // (비활성) support 정상완료 시트행 삭제 — GM 2026-06-15 _persistCompletions=true로 '보존'으로 전환.
           rowsToDelete.push(rowNum);
         } else {
           sheet.getRange(rowNum, 1, 1, HEADERS.length).setValues([values]);
           _applyRowStyle(sheet, rowNum, values);
           totalSaved++;
         }
-      } else if (!_anomalyOnlyDept(dept) || _isAnomalyCheck(c)) {
-        // support: 이상치만 신규기록(정상완료는 원장 복원). 타 부서: 전체기록 유지(완료율 회귀 방지).
+      } else if (_persistCompletions(dept) || !_anomalyOnlyDept(dept) || _isAnomalyCheck(c)) {
+        // support: 정상완료도 신규기록(GM 2026-06-15·_persistCompletions). 완료율은 원장 기반이라 회귀 0.
         newRows.push(values);
       }
     });
