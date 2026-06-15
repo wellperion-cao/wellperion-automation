@@ -312,7 +312,7 @@
     </select>
     <label>퇴사 사유 <span class="opt">(선택)</span></label>
     <input type="text" id="rmReason" placeholder="예: 개인 사정">
-    <div class="modal-warn">실행 시 Notion 임직원 명부 재직 상태가 ‘퇴사’로 바뀌고, 퇴사 처리 DB에 레코드가 생성됩니다. 매출보고서 시트 연동이 설정된 경우 현재근무자→퇴사자 이동도 함께 실행됩니다.</div>
+    <div class="modal-warn">실행 시 임직원 명부 재직 상태가 ‘퇴사’로 바뀌고, 퇴사 처리 DB에 레코드가 생성됩니다. 매출보고서 시트 연동이 설정된 경우 현재근무자→퇴사자 이동도 함께 실행됩니다.</div>
     <div class="modal-msg" id="rmMsg"></div>
     <div class="modal-act">
       <button class="btn btn-ghost" id="rmCancel">취소</button>
@@ -324,7 +324,7 @@
 <div class="modal-bg" id="hireModal">
   <div class="modal">
     <h3>신규 입사자 등록</h3>
-    <div class="msub">Notion 임직원 명부와 매출보고서 현재근무자 시트에 동시 등록됩니다.</div>
+    <div class="msub">임직원 명부와 매출보고서 현재근무자 시트에 동시 등록됩니다.</div>
     <label>성명</label>
     <input type="text" id="hireName" placeholder="홍길동">
     <label>부서</label>
@@ -396,7 +396,7 @@
     <input type="datetime-local" id="schDate">
     <label>담당 면접관</label>
     <input type="text" id="schInterviewer" placeholder="예: 나우열, 김남욱">
-    <div class="modal-warn">실행 시 Notion 지원자의 전형 단계가 선택한 차수로 바뀌고, 면접 일정·담당 면접관이 등록됩니다.</div>
+    <div class="modal-warn">실행 시 지원자의 전형 단계가 선택한 차수로 바뀌고, 면접 일정·담당 면접관이 등록됩니다.</div>
     <div class="modal-msg" id="schMsg"></div>
     <div class="modal-act">
       <button class="btn btn-ghost" id="schCancel">취소</button>
@@ -427,7 +427,7 @@
     </select>
     <label>면접 메모 <span class="opt">(선택)</span></label>
     <input type="text" id="iveNote" placeholder="예: 서비스마인드 우수, 사원직 수용 의지 확인">
-    <div class="modal-warn">실행 시 Notion 지원자의 면접 평점·전형 단계가 갱신되고, 메모에 면접 결과가 추가됩니다.</div>
+    <div class="modal-warn">실행 시 지원자의 면접 평점·전형 단계가 갱신되고, 메모에 면접 결과가 추가됩니다.</div>
     <div class="modal-msg" id="iveMsg"></div>
     <div class="modal-act">
       <button class="btn btn-ghost" id="iveCancel">취소</button>
@@ -478,7 +478,7 @@
     </select>
     <label>입사일</label>
     <input type="date" id="hcDate">
-    <div class="modal-warn">실행 시 ①Notion 임직원 명부에 신규 페이지 생성 ②매출보고서 현재근무자 시트에 행 추가 ③지원자 페이지 메모에 "입사 완료" 표시 — 세 작업이 동시 실행됩니다.</div>
+    <div class="modal-warn">실행 시 ①임직원 명부에 신규 페이지 생성 ②매출보고서 현재근무자 시트에 행 추가 ③지원자 페이지 메모에 "입사 완료" 표시 — 세 작업이 동시 실행됩니다.</div>
     <div class="modal-msg" id="hcMsg"></div>
     <div class="modal-act">
       <button class="btn btn-ghost" id="hcCancel">취소</button>
@@ -696,7 +696,7 @@ function diagCard(){
   var stales=DBMETA.filter(function(m){return STALE[m[0]];});
   if(errs.length===0&&stales.length===0){
     return '<div class="diag ok"><div class="diag-row">'+
-      '<span class="diag-dot dot-ok"></span><b>Notion 6개 DB 정상 연동</b>'+
+      '<span class="diag-dot dot-ok"></span><b>데이터 정상 연동</b>'+
       '<span class="muted"> · 임직원 '+(ROWCOUNT.emp||0)+' · 채용 '+(ROWCOUNT.hire||0)+
       ' · 지원자 '+(ROWCOUNT.appl||0)+' · 온보딩 '+(ROWCOUNT.onbo||0)+
       ' · 평가 '+(ROWCOUNT.eval||0)+' · 퇴사 '+(ROWCOUNT.exit||0)+'</span></div></div>';
@@ -713,7 +713,7 @@ function diagCard(){
   var head,hint;
   if(errs.length){
     head="⚠ 데이터 연동 상태 — 일부 DB 연동 실패";
-    hint="Notion 호출이 일부 실패했습니다. 헤더의 새로고침 버튼으로 다시 시도해 주세요. 반복되면 서버의 NOTION_TOKEN 설정 또는 통합(Integration) 권한, 해당 DB 공유 여부를 확인해야 합니다.";
+    hint="데이터 호출이 일부 실패했습니다. 헤더의 새로고침 버튼으로 다시 시도해 주세요. 반복되면 서버 설정 또는 권한을 확인해야 합니다.";
   }else{
     head="↻ 데이터 연동 상태 — 캐시 데이터 표시 중";
     hint="일시적으로 일부 데이터를 새로 받지 못해 마지막 정상 데이터를 표시하고 있습니다. 새로고침 버튼으로 최신화를 재시도하세요.";
@@ -744,7 +744,7 @@ function renderDash(){
   var gradeDist={};evl.forEach(function(e){var g=e["평가 등급"];if(g){gradeDist[g]=(gradeDist[g]||0)+1;}});
   var rewarded=evl.filter(function(e){return isYes(e["포상 여부"]);}).length;
   /* 이직 */
-  var exit90=exits.filter(function(e){var d=dt(e,"최종 근무일");return d&&new Date(d)>=d90;});
+  var exit90=exits.filter(function(e){var d=dval(e,"최종 근무일");return d&&new Date(d)>=d90;});
   var exitTypes={};exit90.forEach(function(e){var t=e["퇴사 유형"]||"기타";exitTypes[t]=(exitTypes[t]||0)+1;});
   var turnover=(active.length+exit90.length)?Math.round(exit90.length/(active.length+exit90.length)*1000)/10:0;
   /* 이번 주 할 일 */
@@ -777,14 +777,14 @@ function renderDash(){
   }
 
   var overdue=hire.filter(function(h){
-    var dl=dt(h,"공고 마감일");return h["채용 상태"]==="공고중"&&dl&&new Date(dl)<today;});
+    var dl=dval(h,"공고 마감일");return h["채용 상태"]==="공고중"&&dl&&new Date(dl)<today;});
   if(overdue.length){
     html+='<div class="alert"><b>⚠ 단계 전환 필요</b><div>'+
-      overdue.map(function(h){return esc(h["포지션명"])+" — 공고 마감일("+fmtD(dt(h,"공고 마감일"))+
+      overdue.map(function(h){return esc(h["포지션명"])+" — 공고 마감일("+fmtD(dval(h,"공고 마감일"))+
       ")이 지났으나 상태가 ‘공고중’입니다.";}).join("<br>")+'</div></div>';
   }
   var contractSoon=active.filter(function(e){
-    var c=dt(e,"계약 만료일");if(!c)return false;
+    var c=dval(e,"계약 만료일");if(!c)return false;
     var dd=daysBetween(new Date(c),today);return dd>=0&&dd<=60;});
   if(contractSoon.length){
     html+='<div class="alert"><b>⚠ 계약 만료 임박</b><div>60일 이내 계약 만료 예정 '+
@@ -1007,7 +1007,7 @@ function applicantRow(a){
       actions+='<button class="btn-sm" data-hire="'+esc(pageId)+'" data-name="'+esc(a["지원자명"]||"")+'" style="background:var(--gold);color:#fff;border-color:var(--gold)">✓ 입사 확정</button>';
     }
     if(a.url){
-      actions+='<a href="'+esc(a.url)+'" target="_blank" class="btn-sm">Notion ↗</a>';
+      actions+='<a href="'+esc(a.url)+'" target="_blank" class="btn-sm">원본 ↗</a>';
     }
   }
   return '<div data-applicant="'+esc(pageId)+'" data-applname="'+esc(a["지원자명"]||"")+'" data-apppid="'+apppid+'" title="클릭: 단계·면접일정 변경 / 불합격 처리" style="background:var(--surface-2);border:1px solid var(--line);border-radius:8px;padding:10px 12px;cursor:pointer">'+
@@ -1184,7 +1184,7 @@ function renderHire(){
   if(ERR.appl){html+=errCard("지원자 트래킹","appl");}
   else if(DB.appl && DB.appl.length){
     var all=DB.appl.slice().sort(function(x,y){
-      var dx=dt(x,"지원일"), dy=dt(y,"지원일");
+      var dx=dval(x,"지원일"), dy=dval(y,"지원일");
       return (dy?new Date(dy).getTime():0)-(dx?new Date(dx).getTime():0); // 최신 지원순
     });
     (window.__registerAppls && window.__registerAppls(all));
@@ -1284,7 +1284,7 @@ function renderOnbo(){
           '<div style="flex:1"><span class="ct">'+esc(txt(o["체크 항목"]))+'</span>'+
           '<div class="t-sub">'+(o["대상 신입 직원"]?"대상: "+esc(o["대상 신입 직원"])+" · ":"")+
           (o["담당자"]?"담당: "+esc(o["담당자"])+" · ":"")+
-          "기한: "+fmtD(dt(o,"완료 기한"))+'</div></div></div>';
+          "기한: "+fmtD(dval(o,"완료 기한"))+'</div></div></div>';
       }).join("")+'</div></div>';
   });
   setPanel("onbo",html);
@@ -1374,7 +1374,7 @@ function renderEval(){
         (e["총점"]!=null&&e["총점"]!==""?num(e["총점"]):"—")+'</div><div class="t-sub">총점</div></div></div>'+
       '<div class="kv">'+
       kv("대상자",txt(tgt))+kv("평가자",txt(e["평가자"]))+
-      kv("평가 기간",fmtD(dt(e,"평가 기간")))+kv("가산점",txt(e["가산점"]))+
+      kv("평가 기간",fmtD(dval(e,"평가 기간")))+kv("가산점",txt(e["가산점"]))+
       '</div>'+
       (e["포상 내역"]?'<div style="margin-top:8px;font-size:12px"><b>포상:</b> '+esc(e["포상 내역"])+'</div>':"")+
       (e["피드백"]?'<div style="margin-top:6px;font-size:12px;color:var(--ink-soft);white-space:pre-wrap">'+esc(e["피드백"])+'</div>':"")+
@@ -1403,8 +1403,8 @@ function renderExit(){
         (isYes(e["처리 완료 여부"])?'<span class="badge b-green">처리 완료</span>':'<span class="badge b-amber">처리 중</span>')+
       '</div></div></div>'+
       '<div class="kv">'+
-      kv("대상자",txt(who))+kv("최종 근무일",fmtD(dt(e,"최종 근무일")))+
-      kv("퇴사 신청일",fmtD(dt(e,"퇴사 신청일")))+kv("퇴사 사유",txt(e["퇴사 사유"]))+
+      kv("대상자",txt(who))+kv("최종 근무일",fmtD(dval(e,"최종 근무일")))+
+      kv("퇴사 신청일",fmtD(dval(e,"퇴사 신청일")))+kv("퇴사 사유",txt(e["퇴사 사유"]))+
       '</div>'+
       '<div class="item-meta" style="margin-top:10px">'+
       ck("퇴사 면담",e["퇴사 면담 여부"])+ck("장비 반납",e["장비 반납 여부"])+
@@ -1573,7 +1573,7 @@ async function submitResign(){
   var pageId=normId(resignTarget.url);
   if(!pageId){msg.className="modal-msg err";msg.textContent="임직원 페이지 정보를 찾을 수 없습니다.";return;}
   btn.disabled=true;btn.textContent="처리 중…";
-  msg.className="modal-msg";msg.textContent="Notion·시트에 반영하는 중입니다…";
+  msg.className="modal-msg";msg.textContent="시트에 반영하는 중입니다…";
   try{
     var r=await fetch(NOTION_FN,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},
       body:JSON.stringify({action:"resign",adminPassword:SESSION_PW,
@@ -1588,7 +1588,7 @@ async function submitResign(){
       msg.className="modal-msg err";msg.textContent=(data.error||("처리 실패 — 서버 오류 "+r.status));
       btn.disabled=false;btn.textContent="퇴사 처리 실행";return;
     }
-    var parts=["• Notion 임직원 명부: 퇴사 반영"];
+    var parts=["• 임직원 명부: 퇴사 반영"];
     parts.push(data.exitRecord?"• 퇴사 처리 DB: 레코드 생성":"• 퇴사 처리 DB: 실패 — "+(data.exitRecordMsg||""));
     if(data.sheet&&data.sheet.attempted){
       parts.push(data.sheet.ok?"• 매출보고서 시트: 현재근무자→퇴사자 이동 완료"
@@ -1646,7 +1646,7 @@ async function submitHire(){
   if(!empType){msg.className="modal-msg err";msg.textContent="고용 형태를 선택하세요.";return;}
   if(!date) {msg.className="modal-msg err";msg.textContent="입사일을 입력하세요.";return;}
   btn.disabled=true;btn.textContent="처리 중…";
-  msg.textContent="Notion·시트에 반영하는 중입니다…";
+  msg.textContent="시트에 반영하는 중입니다…";
   try{
     var r=await fetch(NOTION_FN,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},
       body:JSON.stringify({action:"register",adminPassword:SESSION_PW,
@@ -1661,7 +1661,7 @@ async function submitHire(){
       msg.className="modal-msg err";msg.textContent=(data.error||(data.notionMsg||"")||("처리 실패 — 서버 오류 "+r.status));
       btn.disabled=false;btn.textContent="등록 실행";return;
     }
-    var parts=[data.notionRoster?"• Notion 임직원 명부: 페이지 생성":"• Notion 임직원 명부: 실패 — "+(data.notionMsg||"")];
+    var parts=[data.notionRoster?"• 임직원 명부: 페이지 생성":"• 임직원 명부: 실패 — "+(data.notionMsg||"")];
     if(data.sheet&&data.sheet.attempted){
       parts.push(data.sheet.ok?"• 매출보고서 시트: "+(data.sheet.msg||"행 추가 완료")
                               :"• 매출보고서 시트: 실패 — "+(data.sheet.msg||""));
@@ -1705,7 +1705,7 @@ async function submitSchedule(){
   var btn=document.getElementById("schConfirm");
   if(!date){msg.className="modal-msg err";msg.textContent="면접 일정을 입력하세요.";return;}
   btn.disabled=true;btn.textContent="처리 중…";
-  msg.className="modal-msg";msg.textContent="Notion에 반영하는 중…";
+  msg.className="modal-msg";msg.textContent="시트에 반영하는 중…";
   try{
     var r=await fetch(NOTION_FN,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},
       body:JSON.stringify({action:"schedule-interview",adminPassword:SESSION_PW,
@@ -1750,7 +1750,7 @@ async function submitInterviewEval(){
   var msg=document.getElementById("iveMsg");
   var btn=document.getElementById("iveConfirm");
   btn.disabled=true;btn.textContent="처리 중…";
-  msg.className="modal-msg";msg.textContent="Notion에 반영하는 중…";
+  msg.className="modal-msg";msg.textContent="시트에 반영하는 중…";
   try{
     var r=await fetch(NOTION_FN,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},
       body:JSON.stringify({action:"update-interview",adminPassword:SESSION_PW,
@@ -1803,7 +1803,7 @@ async function submitHireComplete(){
   if(!empType){msg.className="modal-msg err";msg.textContent="고용 형태를 선택하세요.";return;}
   if(!date){msg.className="modal-msg err";msg.textContent="입사일을 입력하세요.";return;}
   btn.disabled=true;btn.textContent="처리 중…";
-  msg.className="modal-msg";msg.textContent="Notion·시트에 반영하는 중…";
+  msg.className="modal-msg";msg.textContent="시트에 반영하는 중…";
   try{
     var r=await fetch(NOTION_FN,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},
       body:JSON.stringify({action:"hire-complete",adminPassword:SESSION_PW,
@@ -1814,7 +1814,7 @@ async function submitHireComplete(){
       msg.className="modal-msg err";msg.textContent=(data.error||"입사 확정 실패");
       btn.disabled=false;btn.textContent="입사 확정 실행";return;
     }
-    var parts=["• Notion 임직원 명부: "+(data.empPage?"생성 완료":"실패 — "+(data.empPageMsg||""))];
+    var parts=["• 임직원 명부: "+(data.empPage?"생성 완료":"실패 — "+(data.empPageMsg||""))];
     parts.push("• 매출보고서 시트: "+(data.sheet&&data.sheet.ok?(data.sheet.msg||"행 추가 완료"):"실패 — "+((data.sheet&&data.sheet.msg)||"")));
     parts.push("• 지원자 페이지: 입사 완료 표시");
     msg.className="modal-msg ok";
