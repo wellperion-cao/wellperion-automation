@@ -75,12 +75,15 @@ body.page-id-8408 #header-outer #logo { margin-top: 32px !important; }
 <script>
 (function(){
   var T='https://script.google.com/macros/s/AKfycbzdwSCCSSJ6JXLDoWuo7HG0JmBM2iy10TujFQ_O5JbTjnWaN7gOk-ddA4IAvsNfelg0xA/exec';
+  function qp(k){ try{ return (new URLSearchParams(location.search).get(k)||'').slice(0,40); }catch(e){ return ''; } }
   window.wpTrackClick=function(name){
     try{
       var d=/Mobi|Android|iPhone|iPad/i.test(navigator.userAgent)?'mobile':'desktop';
+      var src=qp('utm_source')||'homepage';        // 인바운드 출처(채널 링크가 부착) — 없으면 직접/홈 유입 (KO 패리티)
+      var med=qp('utm_medium')||'inquiry_page';
       var q='action=track_click&linkName='+encodeURIComponent(name)
            +'&linkUrl='+encodeURIComponent('wp-inquiry-en')
-           +'&utmSource=homepage&utmMedium=inquiry_page&device='+d;
+           +'&utmSource='+encodeURIComponent(src)+'&utmMedium='+encodeURIComponent(med)+'&device='+d;
       fetch(T+'?'+q,{mode:'no-cors'}).catch(function(){});
     }catch(e){}
   };
