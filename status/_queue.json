@@ -1,5 +1,15 @@
 [
   {
+    "task_id": "CTO-2026-06-15-CONTEXT-MAINT-SSOT-DESIGN",
+    "clevel": "cto",
+    "title": "[시토] 컨텍스트 정비·교육자료 SSOT 설계 — CEO 추가·식별자 정합·토큰소비 가시화",
+    "status": "IN_PROGRESS",
+    "priority": "NORMAL",
+    "enqueued_at": "2026-06-15",
+    "summary": "GM 지적 3건 설계(승인 대기). ① 정비 범위표에 AI CEO(웰리) 누락 → 추가, 레거시 식별자(노션이관 임의번호 CMO-002 등, 코드 미참조 확인) → CTX-{역할} 규칙으로 정합. ② 교육자료 정리 SSOT = status/education_index.json(기계가독 매니페스트 — AI가 폴더 스캔 대신 키워드로 학습자료 조회·인용). ③ 토큰 많이 먹는 것(메모리·CLAUDE·에이전트 프롬프트·큰 가이드·review_queue·_queue·캐시) 가시화 SSOT = status/context_budget.json + 측정기 → 일요일 정비때 읽고 임계 초과부터 슬림화(삭제는 사람 확인). 설계안=docs/context_maint_ssot_design.md.",
+    "next": "GM 승인 → P1 T2 범위표(CEO행+식별자 CTX-*) → P2 education_index.json+인덱싱 → P3 context_budget.json+측정기. 적용 후 설계 제안문서 폐기(SSOT=T2 단일)."
+  },
+  {
     "task_id": "COO-2026-06-15-SUPPORT-CHECK-OVERHAUL",
     "clevel": "coo",
     "title": "[시우] 지원부 점검 페이지 대정비 — 성별누수·완료기록·점검자기록·항목순서·시트동일시",
