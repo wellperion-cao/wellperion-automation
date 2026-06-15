@@ -1112,6 +1112,30 @@ function renderHire(){
   var jobName={};
   (DB.hire||[]).forEach(function(h){ jobName[normId(h.url)]=txt(h["포지션명"]); });
 
+  /* 전체 지원자: 캘린더 높이에 맞춰 표시 인원 자동 계산 + 페이지네이션 */
+  window.__applShow=function(p){
+    var pg=window.__applPG||8;
+    var rows=document.querySelectorAll('[data-panel="hire"] [data-applpgrow]');
+    var total=rows.length, pages=Math.ceil(total/pg); if(p>=pages)p=pages-1; if(p<0)p=0;
+    rows.forEach(function(r){var i=parseInt(r.getAttribute("data-applpgrow"),10);r.style.display=(i>=p*pg&&i<p*pg+pg)?"":"none";});
+    var box=document.getElementById("applPagerBox");
+    if(box){var h="";if(pages>1){for(var i=0;i<pages;i++){h+='<button class="btn-sm" data-applpage="'+i+'"'+(i===p?' style="background:var(--gold);color:#fff;border-color:var(--gold)"':'')+'>'+(i+1)+'</button>';}}box.innerHTML=h;}
+  };
+  window.__fitApplPage=function(){
+    var cal=document.getElementById("ivCalCard");
+    var tbl=document.querySelector('[data-panel="hire"] .appl-table');
+    if(!tbl||!cal)return;
+    var rows=tbl.querySelectorAll("[data-applpgrow]"); if(!rows.length)return;
+    var calH=cal.scrollHeight;
+    var r0=rows[0], prev=r0.style.display; r0.style.display="";
+    var rowH=r0.getBoundingClientRect().height; r0.style.display=prev;
+    if(calH<60||rowH<5){ if((window.__fitTries=(window.__fitTries||0)+1)<12){setTimeout(window.__fitApplPage,200);} return; }
+    window.__fitTries=0;
+    var th=tbl.querySelector(".appl-th"); var headerH=th?th.getBoundingClientRect().height:34;
+    var pg=Math.max(3, Math.floor((calH-headerH-4)/rowH)); if(pg>rows.length)pg=rows.length;
+    if(pg===window.__applPG)return;
+    window.__applPG=pg; window.__applShow(0);
+  };
   /* 면접 캘린더 렌더러 (확정 면접 일정 표시) */
   window.__renderIvCal=function(y,m){
     var ev=window.__ivEvents||[];
@@ -1169,7 +1193,7 @@ function renderHire(){
     html+='<div class="appl-tr appl-th"><div>지원자</div><div>지원 포지션</div><div>지원 경로</div><div>전형 단계</div><div>평점</div><div>지원일</div><div>연결 공고</div></div>';
     html+=all.map(function(a,idx){
       var linked=applLinkedName(a);
-      return '<div class="appl-tr" data-applpgrow="'+idx+'"'+(idx<__PG?'':' style="display:none"')+'>'+
+      return '<div class="appl-tr" data-applpgrow="'+idx+'"'+(idx<8?'':' style="display:none"')+'>'+
         '<div class="t-name">'+esc(txt(a["지원자명"]))+'</div>'+
         '<div>'+esc(txt(a["지원 포지션"]))+'</div>'+
         '<div>'+(a["지원 경로"]?badge(a["지원 경로"]):'<span class="muted">—</span>')+'</div>'+
@@ -1180,11 +1204,7 @@ function renderHire(){
       '</div>';
     }).join("");
     html+='</div></div>';
-    if(__pages>1){
-      html+='<div style="display:flex;gap:6px;justify-content:center;margin-top:10px;flex-wrap:wrap">';
-      for(var __pp=0;__pp<__pages;__pp++){ html+='<button class="btn-sm" data-applpage="'+__pp+'"'+(__pp===0?' style="background:var(--gold);color:#fff;border-color:var(--gold)"':'')+'>'+(__pp+1)+'</button>'; }
-      html+='</div>';
-    }
+    html+='<div id="applPagerBox" style="display:flex;gap:6px;justify-content:center;margin-top:10px;flex-wrap:wrap"></div>';
     html+='</div>';
     var __nowD=new Date();
     var __up=window.__ivEvents.slice().filter(function(e){return e.t>=__nowD.getTime()-86400000;}).sort(function(a,b){return a.t-b.t;})[0];
@@ -1204,6 +1224,8 @@ function renderHire(){
   }else{html+='<div class="card">'+emptyState("등록된 채용 공고가 없습니다.","◔")+'</div>';}
 
   setPanel("hire",html);
+  if(window.__fitApplPage) setTimeout(window.__fitApplPage,30);
+  if(!window.__applRO && window.ResizeObserver){ var __hp=document.querySelector('[data-panel="hire"]'); if(__hp){ window.__applRO=new ResizeObserver(function(){ if(window.__fitApplPage) window.__fitApplPage(); }); window.__applRO.observe(__hp); } }
 
   // 채용 탭 액션 버튼 클릭 위임
   var panel=document.querySelector('.panel[data-panel="hire"]');
@@ -1220,10 +1242,7 @@ function renderHire(){
       var h=t.closest("[data-hire]");
       if(h){openHireCompleteModal(h.getAttribute("data-hire"),h.getAttribute("data-name"));return;}
       var pgb=t.closest("[data-applpage]");
-      if(pgb){var pi=parseInt(pgb.getAttribute("data-applpage"),10)||0;
-        panel.querySelectorAll("[data-applpgrow]").forEach(function(r){var ri=parseInt(r.getAttribute("data-applpgrow"),10);r.style.display=(ri>=pi*5&&ri<pi*5+5)?"":"none";});
-        panel.querySelectorAll("[data-applpage]").forEach(function(b){var bi=parseInt(b.getAttribute("data-applpage"),10);b.style.cssText=(bi===pi)?"background:var(--gold);color:#fff;border-color:var(--gold)":"";});
-        return;}
+      if(pgb){ if(window.__applShow) window.__applShow(parseInt(pgb.getAttribute("data-applpage"),10)||0); return;}
       var cn=t.closest("[data-calnav]");
       if(cn){var mm=window.__ivMonth||{y:new Date().getFullYear(),m:new Date().getMonth()};
         mm.m+=(cn.getAttribute("data-calnav")==="next"?1:-1); if(mm.m<0){mm.m=11;mm.y--;} if(mm.m>11){mm.m=0;mm.y++;} window.__ivMonth=mm;
