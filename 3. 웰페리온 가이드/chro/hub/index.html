@@ -1126,13 +1126,16 @@ function renderHire(){
     var tbl=document.querySelector('[data-panel="hire"] .appl-table');
     if(!tbl||!cal)return;
     var rows=tbl.querySelectorAll("[data-applpgrow]"); if(!rows.length)return;
-    var calH=cal.scrollHeight;
-    var r0=rows[0], prev=r0.style.display; r0.style.display="";
-    var rowH=r0.getBoundingClientRect().height; r0.style.display=prev;
-    if(calH<60||rowH<5){ if((window.__fitTries=(window.__fitTries||0)+1)<12){setTimeout(window.__fitApplPage,200);} return; }
-    window.__fitTries=0;
+    var calH=cal.getBoundingClientRect().height;
+    if(calH<60){ if((window.__fitTries=(window.__fitTries||0)+1)<12){setTimeout(window.__fitApplPage,200);} return; }
     var th=tbl.querySelector(".appl-th"); var headerH=th?th.getBoundingClientRect().height:34;
-    var pg=Math.max(3, Math.floor((calH-headerH-4)/rowH)); if(pg>rows.length)pg=rows.length;
+    var prev=[]; rows.forEach(function(r){prev.push(r.style.display); r.style.display="";});
+    var avail=calH-headerH-2, acc=0, pg=0, bad=false;
+    for(var i=0;i<rows.length;i++){ var hh=rows[i].getBoundingClientRect().height; if(hh<5){bad=true;break;} if(acc+hh<=avail){acc+=hh; pg++;} else break; }
+    rows.forEach(function(r,i){r.style.display=prev[i];});
+    if(bad||pg<1){ if((window.__fitTries=(window.__fitTries||0)+1)<12){setTimeout(window.__fitApplPage,200);} return; }
+    window.__fitTries=0;
+    pg=Math.max(3,pg);
     if(pg===window.__applPG)return;
     window.__applPG=pg; window.__applShow(0);
   };
@@ -1187,9 +1190,9 @@ function renderHire(){
     (window.__registerAppls && window.__registerAppls(all));
     window.__ivEvents=(DB.appl||[]).map(function(a){var d=dval(a,"면접 일정");if(!d)return null;var dd=new Date(d);if(isNaN(dd.getTime()))return null;return {t:dd.getTime(),y:dd.getFullYear(),m:dd.getMonth(),d:dd.getDate(),name:a["지원자명"]||"",stage:a["전형 단계"]||""};}).filter(Boolean);
     var __PG=5, __pages=Math.ceil(all.length/__PG);
-    html+='<div style="display:flex;gap:14px;align-items:stretch;flex-wrap:wrap">';
-    html+='<div style="flex:1.6 1 380px;min-width:300px;display:flex;flex-direction:column">';
-    html+='<div class="card" style="padding:0;overflow:hidden;flex:1"><div class="appl-table">';
+    html+='<div style="display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap">';
+    html+='<div style="flex:1.6 1 380px;min-width:300px">';
+    html+='<div class="card" style="padding:0;overflow:hidden"><div class="appl-table">';
     html+='<div class="appl-tr appl-th"><div>지원자</div><div>지원 포지션</div><div>지원 경로</div><div>전형 단계</div><div>평점</div><div>지원일</div><div>연결 공고</div></div>';
     html+=all.map(function(a,idx){
       var linked=applLinkedName(a);
@@ -1209,7 +1212,7 @@ function renderHire(){
     var __nowD=new Date();
     var __up=window.__ivEvents.slice().filter(function(e){return e.t>=__nowD.getTime()-86400000;}).sort(function(a,b){return a.t-b.t;})[0];
     window.__ivMonth={y:(__up?__up.y:__nowD.getFullYear()), m:(__up?__up.m:__nowD.getMonth())};
-    html+='<div style="flex:1 1 280px;min-width:270px;display:flex;flex-direction:column"><div class="card" id="ivCalCard" style="flex:1">'+window.__renderIvCal(window.__ivMonth.y,window.__ivMonth.m)+'</div></div>';
+    html+='<div style="flex:1 1 280px;min-width:270px"><div class="card" id="ivCalCard">'+window.__renderIvCal(window.__ivMonth.y,window.__ivMonth.m)+'</div></div>';
     html+='</div>';
   }else{html+='<div class="card">'+emptyState("등록된 지원자가 없습니다.","◔")+'</div>';}
 
