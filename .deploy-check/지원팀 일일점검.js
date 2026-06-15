@@ -260,6 +260,7 @@ function doGet(e) {
   if (action === 'vendor_list') { return vendorList(); }
   if (action === 'clear_check_ledger') { return clearCheckLedger(e.parameter.dept || 'support'); }
   if (action === 'clear_zone_checks') { return clearZoneCheckedRows(e.parameter.dept || 'support', e.parameter.date || '', e.parameter.all === '1'); }
+  if (action === 'delete_item_row') { return deleteItemRow(e.parameter.dept || 'support', e.parameter.date || '', e.parameter.zone || '', e.parameter.itemId || ''); }
   if (action === 'migrate_support_sheets') { return migrateSupportSheets(); }
   if (action === 'purge_dept_items') { return purgeDeptItems(e.parameter.dept || ''); }
   if (action === 'delete_facility_sheets') { return deleteFacilitySheets(); }
@@ -395,6 +396,24 @@ function clearZoneCheckedRows(dept, date, all) {
     }
   });
   return jsonRes({ ok: true, dept: dept, date: date || '(전체)', all: !!all, removed: removed });
+}
+// 특정 (zone 시트 × 날짜 × itemId) 한 행만 정밀 삭제 — 오라우팅으로 샌 행 청소용. 2026-06-15 시우.
+// GET ?action=delete_item_row&dept=support&date=YYYY-MM-DD&zone=female&itemId=custom_...
+function deleteItemRow(dept, date, zone, itemId) {
+  if (!date || !zone || !itemId) return jsonRes({ error: 'date·zone·itemId 필수' });
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var t = _deptTabs(dept);
+  var name = t[zone];
+  if (!name) return jsonRes({ error: 'invalid zone: ' + zone });
+  var sh = ss.getSheetByName(name);
+  if (!sh) return jsonRes({ error: 'sheet not found: ' + name });
+  var data = sh.getDataRange().getValues();
+  var removed = 0;
+  for (var i = data.length - 1; i >= 1; i--) {
+    var dateOk = String(data[i][0]) === date || formatDate(data[i][0]) === date;
+    if (dateOk && String(data[i][1]) === itemId) { sh.deleteRow(i + 1); removed++; }
+  }
+  return jsonRes({ ok: true, sheet: name, date: date, itemId: itemId, removed: removed });
 }
 // 지원부 시트 리네임/정리 마이그레이션(GM 2026-06-12). 멱등: 이미 새 이름이면 스킵.
 //   남성구역→지원_남성구역 · 여성구역→지원_여성구역 · 점검항목→지원_매뉴얼 · 공용구역 삭제.
@@ -639,8 +658,13 @@ function _sortByDateDesc(sheet) {
 // ─── v2 프론트엔드 하위 호환 (zone 없이 genderTab으로 호출) ───
 
 function _routeItem(itemId, cat, genderTab) {
-  if (itemId.indexOf('_f') >= 0) return SHEET_FEMALE;
-  if (itemId.indexOf('_m') >= 0) return SHEET_MALE;
+  // 추가항목(custom_/cx_)은 랜덤 id 접미사에 우연히 든 _f/_m 부분문자열로 오라우팅됨
+  // (실측 2026-06-15: custom_1780808043234_fpxs5 → '_f' 매칭 → 남자 점검이 여성 시트로 유실).
+  // id 기반 성별판정에서 제외하고 현재 탭(genderTab) 기준으로 라우팅. 2026-06-15 시우.
+  if (!/^(custom_|cx_)/.test(String(itemId))) {
+    if (itemId.indexOf('_f') >= 0) return SHEET_FEMALE;
+    if (itemId.indexOf('_m') >= 0) return SHEET_MALE;
+  }
   if (cat && (cat.charAt(0) === 'A' || cat.charAt(0) === 'B'
       || cat.indexOf('사우나') >= 0 || cat.indexOf('락커') >= 0
       || cat.indexOf('데일리') >= 0)) {
