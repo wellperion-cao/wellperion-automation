@@ -585,7 +585,7 @@
   {
     "task_id": "CTO-2026-06-13-BAT-FULL-REORG",
     "clevel": "cto",
-    "title": "[시토] .bat 전체정리(B) 재개 — 활성 6개 ops/ig 이동 + 예약작업 경로 갱신 (GM 관리자 권한 필요)",
+    "title": "[시토] .bat 정리 — ops·ig 폴더 재편 + 죽은 예약작업 4건 삭제 + IG 경로 재지정",
     "status": "DONE",
     "terminal": true,
     "processed_at": "2026-06-15",
@@ -593,7 +593,7 @@
     "depends_on": null,
     "enqueued_at": "2026-06-13",
     "artifact": "[2026-06-15 시토·GM admin 실측검증] .bat ops/ig 재편 완료. ops/(morning_update·fix_task_windows)·ig/(start_ig_series_producer·register_0730), 고아 2개 _archive/bat_dead_20260615/(CEO_DAILY_CHECK·start_ceo_verify_watcher). 루트 정리: shutdown 1회용 2개→_archive/shutdown_fix_20260615/, temp 잡파일 2개 삭제. 외부참조 갱신(morning_update_hidden.vbs·register_0730 LAUNCHER). 예약작업: 죽은작업 4/4 삭제 검증(3건 비관리자 PS+CEO-Verify-Watcher admin), IG-0730 exec=ig/ 재경로 검증(Set-ScheduledTask, schtasks /Change 암호프롬프트 회피). Morning-Update는 VBS경유라 admin불필요·즉시동작. 커밋 ef770a7f·a4143d47.",
-    "next": "Start-AI*7·wellperion·clevel은 루트 진입점 유지(의도). reorg_tasks_admin.bat는 ops/에 SSOT 보존(재실행 idempotent).",
+    "next": "✅ 루트에 흩어진 .bat을 폴더로 정리했습니다.\n▸ ops/ = morning_update · fix_task_windows\n▸ ig/ = IG 제작기 · 등록기\n▸ 안 쓰는 죽은 예약작업 4건 삭제 (관리자 권한으로 실측 검증)\n▸ IG 제작기를 새 ig/ 경로로 재지정\n▸ 루트의 1회용 shutdown 파일 · temp 잡파일도 치움\n(Start-AI · wellperion · clevel은 진입점이라 루트 유지)",
     "note_progress": "[2026-06-15 시토] 파일측 완료·커밋·푸시. 실측 reconcile: 살아있는 root-bat 작업 2개뿐(IG-0730·Morning-Update) — 옛 '활성6개' 중 CEO_DAILY_CLEVEL_CHECK·CEO-Verify-Watcher는 유령감사 삭제대상이라 ops/ 이동이 아닌 고아 아카이브 처리. 결과: ops/(morning_update·fix_task_windows)·ig/(start_ig_series_producer·register_0730), 고아 2개 _archive/bat_dead_20260615/. VBS·register LAUNCHER 경로 갱신완료(Morning-Update는 VBS경유라 admin 불필요·즉시동작). 실측 진행: 비관리자 PowerShell로 죽은작업 3건 삭제완료(CEO_DAILY_CLEVEL_CHECK·CTO-008-MetaTokenRefresh·CMO-001-Calendar-Dispatcher). ⚠️남은 admin 2건(액세스거부 실측)=ops\\reorg_tasks_admin.bat rev2(권한자가검사 내장) 관리자 1회 실행: ①Wellperion-CEO-Verify-Watcher 삭제(비활성·무해) ②IG-0730 /Change로 ig/ 경로 재경로. 실행 전까지 IG-0730(다음발화 06-16 07:30)은 옛 경로라 깨진 상태 — 오늘 실행 권장. rev1이 빈 결과였던 원인=관리자 미실행(rev2가 자가검사로 차단). 실행 후 reorg_tasks_result.txt 검증→완료.",
     "note": "[2026-06-13 시토] 오늘 전체정리 B 시도 → schtasks 경로변경이 비관리자 세션서 무한대기(2회) → 안전 롤백(루트 15개 유지, 매일작동 정상). 비활성 6개는 _archive/ig_legacy/ 이관 완료(무위험). 재개 절차: ① register형 '관리자 실행' .bat 1개 작성 = ops/ig 폴더생성+활성6개 이동+schtasks /Change 3개(CEO_DAILY_CLEVEL_CHECK→ops, Wellperion-CEO-Verify-Watcher→ops, Wellperion-IG-Series-Produce-0730→ig)+VBS(morning_update_hidden.vbs)·register(LAUNCHER) 경로 동시 갱신을 원샷 ② GM 우클릭 '관리자 실행' 1회 ③ 검증=예약작업 Task To Run↔파일 정합 실측. 대상: ops/=morning_update·CEO_DAILY_CHECK·start_ceo_verify_watcher·fix_task_windows / ig/=start_ig_series_producer·register_ig_series_produce_0730. Start-AI*7·wellperion·clevel은 루트 유지(진입점)."
   },
