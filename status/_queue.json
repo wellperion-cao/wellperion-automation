@@ -1,5 +1,39 @@
 [
   {
+    "task_id": "COO-2026-06-15-SUPPORT-CHECK-OVERHAUL",
+    "clevel": "coo",
+    "title": "[시우] 지원부 점검 페이지 대정비 — 성별누수·완료기록·점검자기록·항목순서·시트동일시",
+    "status": "IN_PROGRESS",
+    "priority": "HIGH",
+    "enqueued_at": "2026-06-15",
+    "note": "오늘 지원부 체계 점검(남/여) 페이지+GAS 연속 정비(전부 라이브 반영). ① 남자 점검이 여성 시트에 기록되던 버그 수정 ② 정상완료도 시트에 기록(원장만→시트+원장) ③ 체크 시 점검자·시각·담당 항목별 기록·표시(페이지+시트) ④ 점검 항목 순서를 매뉴얼과 일치 ⑤ 시트=페이지 동일시(회차별 분리)+체크가 사라지던 오버레이 버그 수정.",
+    "next": "GM 검증: 점검(남) '오전조' 선택 + 시크릿 창에서 오늘 완료 체크가 뜨는지 확인. 뜨면 종결, 안 뜨면 화면 진단값으로 추적."
+  },
+  {
+    "task_id": "COO-2026-06-15-APPROVAL-PIN-PARITY",
+    "clevel": "coo",
+    "title": "[시우] 결재현황 부서장 PIN 정합 — 맞는 비번도 거부되던 버그 수정",
+    "status": "DONE",
+    "priority": "HIGH",
+    "enqueued_at": "2026-06-15",
+    "processed_at": "2026-06-15",
+    "terminal": true,
+    "artifact": "부서장(이정헌 소장 등) 결재 시 화면 표시 부서장과 서버 비번대조 부서장 순서가 달라(결재요청 vs 담당자) 맞는 비번도 거부되던 버그. 서버를 화면과 동일(결재요청 우선)하게 정합 + 비번 공백방어. 업무·결재 GAS 재배포·라이브 검증 PASS.",
+    "next": "표류 — 결재 비번 정상화 완결."
+  },
+  {
+    "task_id": "COO-2026-06-15-CHECK-GAS-CLEANUP",
+    "clevel": "coo",
+    "title": "[시우] 점검 GAS 유령 중복본 3개 정리 + 루트 체계 백업 삭제",
+    "status": "DONE",
+    "priority": "NORMAL",
+    "enqueued_at": "2026-06-15",
+    "processed_at": "2026-06-15",
+    "terminal": true,
+    "artifact": "Apps Script '지원팀 일일점검' 4개 중 라이브(1FLQAzjq)만 남기고 미사용 중복본 3개를 배포 전수대조로 식별→GM 삭제. 루트 고아 백업 _시설부/_주차관리부 체계.html 2개도 삭제(정본은 coo/check/).",
+    "next": "표류 — 점검 GAS·체계 파일 단일화 완결."
+  },
+  {
     "task_id": "CTO-2026-06-13-COMMIT-SAFETY-GATE",
     "clevel": "cto",
     "title": "[시토] 커밋 truncation 안전망 — 파일 급감 시 커밋 차단·경고 (오늘 운영부 1400줄 유실 재발방지)",
