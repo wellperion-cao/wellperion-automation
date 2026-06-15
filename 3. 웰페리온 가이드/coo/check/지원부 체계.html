@@ -1340,7 +1340,14 @@ function populateOneDuty(selId,gender,roster0){
 function getDutyForGender(g){const el=document.getElementById(g==='f'?'dutyF':'dutyM');return el?el.value||'':'';}
 function onDutyChangeG(g){
   const el=document.getElementById(g==='f'?'dutyF':'dutyM');
-  if(el)localStorage.setItem('wcheck_duty_'+g,el.value||'');
+  if(el)localStorage.setItem('wcheck_duty_'+g+'_'+getRoundG(g),el.value||'');   // 회차별 담당자(GM 2026-06-15)
+}
+/* 회차 전환 시 점검자·담당자 입력칸을 그 회차 저장값으로 교체(빈칸=미입력). focus 중이면 건너뜀(한글IME 클로버링 차단). */
+function _applyRoundActor(g,round){
+  const se=document.getElementById(g==='f'?'submitterF':'submitterM');
+  if(se&&document.activeElement!==se)se.value=localStorage.getItem('wcheck_sub_'+g+'_'+round)||'';
+  const de=document.getElementById(g==='f'?'dutyF':'dutyM');
+  if(de&&document.activeElement!==de)de.value=localStorage.getItem('wcheck_duty_'+g+'_'+round)||'';
 }
 
 function getStaffInfo(name){
@@ -1901,7 +1908,9 @@ const LK=(d,g)=>`wcheck3_${g||activeGenderTab}_${d}`;
 
 function saveSubmitterG(g,v){localStorage.setItem('wcheck_submitter_'+g,v)}
 function onSubmitterChangeG(g){
-  // 점검자 = 자동저장 안 함(매번 빈칸 자유입력). 입력 즉시 제출버튼만 재평가.
+  // 점검자 = 회차별 저장(자유입력). 입력 즉시 제출버튼 재평가.
+  const el=document.getElementById(g==='f'?'submitterF':'submitterM');
+  if(el)localStorage.setItem('wcheck_sub_'+g+'_'+getRoundG(g),el.value||'');   // 회차별 점검자(GM 2026-06-15)
   const d=getDateG(g);
   drawUI(d,g);
 }
@@ -2313,6 +2322,7 @@ function drawUI(d,gender){
        제출 시 submitRound가 함께 세팅(비회귀). 바닥 고정 버튼은 라운드 제출버튼으로 대체. */
     const curRound=getRoundG(gender);
     const rdef=roundDef(curRound)||ROUNDS[0];
+    _applyRoundActor(gender,curRound);   // 점검자·담당자 = 이 회차 값으로(회차별 분리, GM 2026-06-15)
     /* ── 2a: 항목 다회차 멤버십 + 구역(group.title)별 그룹핑 ──
        슬롯 필터 대신, 전 슬롯 항목 중 itemRounds(it)가 현재 조를 포함하는 것만 수집.
        옛 슬롯 시간 라벨은 화면에서 비표시(데이터 slot 필드는 보존). 구역 title로 버킷팅. */
