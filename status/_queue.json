@@ -133,12 +133,12 @@
   {
     "task_id": "CMO-2026-06-13-FUNNEL-DASH-NEXT",
     "clevel": "cmo",
-    "title": "[시모] 마케팅 대시보드 후속 — 외부지표 자동화·멤버십 채널 세부화·공간렌트/파트너 폼",
+    "title": "[시모] 마케팅 대시보드 후속 — 외부지표·채널 세부화·신규 문의폼",
     "status": "PENDING",
     "depends_on": null,
     "priority": "NORMAL",
     "enqueued_at": "2026-06-13",
-    "note": "[2026-06-13 채널/문의 대시보드 대공사 완료 후 '항구에 멈춤'(GM 지시)·다음 단계 정리·대기] 오늘 완료(전부 라이브): 채널 10종 표준화+출처딱지 자동부착(blog/danggn/kakao), 대시보드 고도화(핵심KPI·월목표200게이지·주간추세·유입출처·핵심전환흐름), 개편(흐름지도+문의채널현황 합병→리디렉션 스텁·월네비·클릭2단·올해버튼·월별추세), F1 멤버십 소스 교체('26년신규문의' 탭 B칸 타임스탬프·이번달 문의 3→102건 정상화). === 남은 다음 단계 === ① 외부지표 자동화(월간보고서 ⑥칸): 당근 노출=공개라 지금 자동연결 가능(engagement_collector 재가동 필요·06-07부터 멈춤). IG도달=Meta API토큰(결재)·카페방문·블로그PV=cao 로그인 필요 → F3(CHANNEL-ENGAGEMENT)과 동일 장벽, GM 로그인/토큰 타이밍에 일괄. ② 멤버십 채널 세부화: 현 '문의 채널' 대분류(온라인 묶음)→기타·미상 뭉침. '26년신규문의' 탭 '문의 경로(중분류)' 칸으로 정밀 매핑(GAS _collectFormInquiries_ idxChan 중분류 우선화). ③ 공간렌트·비즈니스파트너 문의: 코드틀 준비됨(준비중 카드+FORM_SHEETS 주석줄). GM이 구글폼 2개 생성→ssId/gid 교체+활성화+재배포. ④ '이번 달 페이스' 예측(목표200 대비 월말 예상)=선택. 연관 IN_PROGRESS: 실험#1(CMO-2026-06-06-EXPERIMENT-01-IG-CTA·GM승인대기)·반응수집(CMO-2026-06-06-CHANNEL-ENGAGEMENT·로그인대기). 막힘: 카페 출처딱지(네이버 카페 전용 업로더 없음).",
+    "note": "✅ 오늘(06-15) 완료 — ①당근 노출 자동연결(월간보고서 ⑥칸) ②멤버십 채널 중분류 매핑(\"온라인 묶음→기타\"를 네이버 등으로 분리·라이브) ③공간렌트·비즈니스파트너 문의폼 신설(생성→멤버십시트 통합→집계검증→문의페이지 카드 활성) ④이번달 페이스 예측(대시보드 월말 예상치). ｜ ✋ 남은 것 — IG 도달 자동수집=Meta 연동 폐기(06-13 GM)로 수기 유지 / 네이버 블로그·카페 PV=cao 로그인 세션 시 가능(보류). ｜ ⏭ 자율 진행분 전부 완료 → 웰리 완료도장 대기.",
     "next": "GM 지시 시 재개 — ①당근 자동연결부터 또는 ②로그인·토큰 열어 외부지표 일괄."
   },
   {
@@ -323,13 +323,13 @@
   {
     "task_id": "CMO-2026-06-06-EXPERIMENT-01-IG-CTA",
     "clevel": "cmo",
-    "title": "[시모-12] 실험#1 — IG 캡션 첫줄 문의 CTA 효과 측정 (#4)",
+    "title": "[시모] 실험#1 — IG 캡션 첫줄 문의 CTA 효과 측정",
     "status": "IN_PROGRESS",
     "priority": "NORMAL",
     "depends_on": null,
     "brief": "status/briefs/CMO-2026-06-06-EXPERIMENT-01-IG-CTA.md",
     "enqueued_at": "2026-06-06",
-    "note": "[GM 승인 2026-06-06·문구①번 확정] A=첫줄 '문의·투어 예약→wellperion.com/ko/inquiry' / B=말미. baseline=이번달 클릭57·문의2. 다음 IG 발행부터 2주 A/B→[기간]조회 비교→웰리 보고→GM 판단. 발행은 M5 검수+GM 승인 경유."
+    "note": "🔄 측정 진행중(~06-29). ｜ 착수 — 회사 IG(wellperion 공식) 한정으로 06-15 시작(namuk 개인은 06-10 바이럴 CTA 정책이라 제외). 생크몽드 Ep2 캡션 첫줄에 문의 CTA 적용해 발행. ｜ 기준치 — 이번달 클릭 57·문의 2(약 3.5%). ｜ ⏭ 2주 뒤 [기간]조회로 클릭·문의 비교 → 웰리 보고 → GM 판단(발행은 M5 검수+GM 승인 경유)."
   },
   {
     "task_id": "CMO-2026-06-06-CHANNEL-EXPANSION",
@@ -347,12 +347,12 @@
   {
     "task_id": "CMO-2026-06-06-CHANNEL-ENGAGEMENT",
     "clevel": "cmo",
-    "title": "[시모-13] 채널별 조회·반응 자동수집 (#2) — IG·블로그·카페·카카오·당근 engagement_feed 채우기",
+    "title": "[시모] 채널별 조회·반응 자동수집 (engagement_feed)",
     "status": "IN_PROGRESS",
     "priority": "NORMAL",
     "depends_on": null,
     "enqueued_at": "2026-06-06",
-    "note": "[2026-06-07 1단계 완료] scripts/engagement_collector.py 구현+실측. 당근(공개HTML viewCount파싱·로그인불필요)·블로그(RSS신규감지·로그인불필요) 수집 동작확인. engagement_feed.json 1건(당근 WJO viewCount=4), blog_snapshot 10건, danggn_snapshot 저장 완료. 🔒 로그인 필요 채널(나머지): IG=Meta Graph API토큰(GM결재), 카페·카카오=cao SSO 인터랙티브 세션. 다음: GM 로그인 인터랙티브 타이밍에 카페·카카오 --channel 추가."
+    "note": "✅ 자동수집 가동 — 당근(공개 viewCount)·블로그(RSS), 로그인 불필요. 06-15 재가동해 피드 갱신(당근 WJO 7뷰·블로그 신규 3건) + 당근 지표를 월간보고서에 연결. ｜ ✋ 막힘 — IG=Meta 연동 폐기로 보류 / 카페·카카오=cao 로그인 세션 필요(인터랙티브 타이밍 대기). ｜ ⏭ GM 로그인 시 카페·카카오 채널 추가."
   },
   {
     "task_id": "CMO-2026-06-06-INQUIRY-DASHBOARD-PIPELINE",
@@ -607,5 +607,25 @@
     "depends_on": "GM 결재(KPI 정의)",
     "enqueued_at": "2026-06-13",
     "note": "[2026-06-13 시토·architect 분석] S2 cto탭 담당 KPI='시설 관리·예산 조율·시설 점검'으로 시설 편중. CTO 본질인 자동화·IT 인프라 지표가 누락(예산 조율은 CFO와도 겹침). 제안: '자동화 가동률·장애 0건' 류 기술 지표 1개 추가. KPI 정의는 GM 결재 영역 → GM 승인 후 S2 cto탭(가이드 HTML) 수정. 미승인 시 현행 유지."
+  },
+  {
+    "task_id": "CEO-2026-06-15-SSOT-TRUTH-UNIFICATION",
+    "clevel": "ceo",
+    "title": "[웰리] 진실 단일화·재발방지 구조 구축 — 결정과 현실의 간극을 코드로 잠그는 기계",
+    "status": "IN_PROGRESS",
+    "priority": "HIGH",
+    "enqueued_at": "2026-06-15",
+    "artifact": "ssot/ 신설: 헌법(CONSTITUTION.md)·사고로그(incidents.json)·캐논 레지스트리(canon_values.json 8종)·발산스캔(divergence_scan.py)·발행검증 체커·대시보드. 사고 5건 중 4 GUARDED(INC-001 IG producer 단일출처 / 003 발행검증 가시화 / 004 텔레그램 chat_id / 005 문의URL), 1 OPEN(INC-002). '복사' 부류 전사 청소 완료. GM 화면=ssot/dashboard.html(라이브).",
+    "next": "INC-002 PC종료 근본가드(내일 아침 oplog 대조) → 구조1(ERP→/ssot 직독 이관, GM게이트) → v2(브랜드 금지어 위반탐지 가드)"
+  },
+  {
+    "task_id": "CEO-2026-06-15-PC-SHUTDOWN-MINUS1H",
+    "clevel": "ceo",
+    "title": "[웰리] PC 자동종료 −1시간 버그 잠금 (INC-002) — 23:30 설정인데 매일 22:30 발화",
+    "status": "IN_PROGRESS",
+    "priority": "HIGH",
+    "enqueued_at": "2026-06-15",
+    "artifact": "종료작업 23:30 설정인데 3일 연속 22:30:01 발화(이벤트로그 1074 실측)해 23:00 텔레그램 보고 유실. 임시조치: 종료 00:30 이동(−1h 슬립 흡수해 보고 보호) + TaskScheduler 운영로그 ON(실제 발화시각 증거화). 근본원인 미확정.",
+    "next": "내일 아침 부팅 시 운영로그로 실제 발화시각 대조 → 근본원인 확정 → 영구 가드 박제 → INC-002 GUARDED"
   }
 ]
