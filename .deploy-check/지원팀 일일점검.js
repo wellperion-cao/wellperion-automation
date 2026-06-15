@@ -301,6 +301,16 @@ function doGet(e) {
     _mz.getRange(1, 1, _new.length, HEADERS.length).setValues(_new);
     return jsonRes({ ok: true, sheet: _mz.getName(), rows: _new.length - 1 });
   }
+  if (action === 'set_inspector') {   // 특정 날짜 행들의 점검자(12열)를 실제 이름으로 일괄 교체. 2026-06-15 시우.
+    var _sz = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(_deptTabs(e.parameter.dept || 'support')[e.parameter.zone || 'male']);
+    var _sdate = e.parameter.date || '', _sname = e.parameter.name || '';
+    if (!_sz || !_sdate || !_sname) return jsonRes({ error: 'sheet/date/name 필수' });
+    var _sd = _sz.getDataRange().getValues(), _sn = 0;
+    for (var _si = 1; _si < _sd.length; _si++) {
+      if (String(_sd[_si][0]) === _sdate || formatDate(_sd[_si][0]) === _sdate) { _sz.getRange(_si + 1, 12).setValue(_sname); _sn++; }   // 12열=점검자(v2)
+    }
+    return jsonRes({ ok: true, sheet: _sz.getName(), updated: _sn, name: _sname });
+  }
   if (action === 'migrate_support_sheets') { return migrateSupportSheets(); }
   if (action === 'purge_dept_items') { return purgeDeptItems(e.parameter.dept || ''); }
   if (action === 'delete_facility_sheets') { return deleteFacilitySheets(); }
