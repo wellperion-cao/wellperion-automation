@@ -611,7 +611,7 @@ function loadStageFunnel() {
     html += stageRow(3, '방문', 0, true);
     html += stageRow(4, '가입', conv, false);
     html += '<div style="margin-top:10px;padding:10px 14px;background:var(--accent-bg);border:1px solid rgba(183,159,138,0.2);border-radius:8px;font-size:11px;color:var(--dim)">'
-      + '②~④는 리셉션 진행상태 입력 시작 후 채워집니다 (현재 대부분 ①=정상)'
+      + '②~④는 멤버십 문의시트(26년 신규문의) 진행상태 입력 시작 후 채워집니다 (현재 대부분 ①=정상)'
       + '</div>';
     el.innerHTML = html;
   }
@@ -660,7 +660,7 @@ function loadStageFunnel() {
     var collapsed = (stages[1].count === stages[4].count && stages[2].count === stages[4].count && stages[3].count === stages[4].count);
     if (collapsed && stages[0].count > stages[4].count) {
       html += '<div style="margin-top:10px;padding:10px 14px;background:var(--accent-bg);border:1px solid rgba(183,159,138,0.2);border-radius:8px;font-size:11px;color:var(--dim)">'
-        + '※ 리셉션 진행상태 입력 전 — ②응대·③예약·④방문은 현재 <b>가입자만</b> 반영됩니다. 실제 진행상태 입력이 시작되면 단계별로 분리 표시됩니다.'
+        + '※ 멤버십 문의시트(26년 신규문의) 진행상태 입력 전 — ②응대·③예약·④방문은 현재 <b>가입자만</b> 반영됩니다. 진행상태 입력이 시작되면 단계별로 분리 표시됩니다.'
         + '</div>';
     }
     html += '<div style="margin-top:4px;font-size:11px;color:var(--dim)">이번 달 기준 · 잔존%=직전 단계 대비</div>';
