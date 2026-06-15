@@ -1903,6 +1903,7 @@ async function loadState(d,g){
     // 완료 체크 원장 복원(2026-06-11 시우): 정상완료 항목은 시트행이 없으므로(이상치만 기록)
     // 서버 원장(chk_<dept>_<date>)으로 STATE[itemId] 복원 → 과거일/타기기 admin 완료율 회귀 방지.
     // 구조: {c:체크itemId집합, sub:{am,pm,night}, subAt:{...}}. 제출 메타는 행이 없을 때만 보강(행 우선).
+    const _crIds=new Set();   // cr(회차원장)에 든 항목 id — 시트 복원 시 cr 우선(오회차·중복 방지). GM 2026-06-15
     if(j.checkedLedger){
       // 2026-06-12 시토: 남/여 동기화 근본수정 — &gender 요청으로 서버가 현재 성별(gg) 원장만 반환.
       // bare STATE[id] 금지(남↔여 누수원). 성별키(chkKey) 전 라운드에 복원 → 탭 전환·재렌더 시 gg 격리 유지.
@@ -1918,6 +1919,7 @@ async function loadState(d,g){
           const rk=k.slice(0,us), id=k.slice(us+1);
           if(ROUND_KEYS.indexOf(rk)>=0){
             STATE[chkKey(rk,id,gg)]=true;
+            _crIds.add(id);
             /* 항목별 기록 복원(점검자·시각·담당) — cr 메타가 객체면. 레거시 cr:1은 메타 없음(체크만). GM 2026-06-15 */
             const _m=cl.cr[k];
             if(_m&&typeof _m==='object'){
@@ -1936,21 +1938,19 @@ async function loadState(d,g){
       if(subAt.pm&&!STATE._submittedAt_pm)STATE._submittedAt_pm=subAt.pm;
       if(subAt.night&&!STATE._submittedAt_night)STATE._submittedAt_night=subAt.night;
     }
-    /* ── 시트=페이지 동일시(GM 2026-06-15): 시트 '완료' 기록을 페이지 체크로 복원 ──
-       cr(회차원장)에 없어도 시트가 완료면 체크 표시(과거 제출분·cr 누락분 유실 0 → 시트가 단일 출처).
-       시트엔 회차 구분이 없어 항목이 속한 회차 전체에 반영(하루 단위). 점검자·시각·담당은 cr 메타 우선, 없으면 행에서 복원. */
+    /* ── 시트=페이지 동일시(회차별 분리, GM 2026-06-15): 시트 '완료' 행을 '그 행의 회차 1개'에만 복원 ──
+       cr(회차원장)이 회차 정밀 출처 → cr에 있는 항목은 제외(우선). cr 누락분(레거시 제출 등)만 시트의 회차로 보충.
+       회차 = roundOfSlot(슬롯·교대). 회차별 독립 유지(오전 체크가 오후·마감에 안 번짐). 점검자·시각·담당은 행에서. */
     (j.rows||[]).forEach(row=>{
       if(row.gender&&row.gender!==gg)return;
       if(!row.checked)return;
-      const id=row.itemId; if(!id)return;
-      let rounds=[]; try{ rounds=itemRounds({id:id,slot:row.slot,shift:row.shift})||[]; }catch(e){}
-      rounds.forEach(rk=>{
-        if(ROUND_KEYS.indexOf(rk)<0)return;
-        STATE[chkKey(rk,id,gg)]=true;
-        if(!STATE['chkby_'+gg+'_'+rk+'_'+id]&&row.submitter)STATE['chkby_'+gg+'_'+rk+'_'+id]=row.submitter;
-        if(!STATE['chkat_'+gg+'_'+rk+'_'+id]){const _t=_atHM(row.submittedAt);if(_t)STATE['chkat_'+gg+'_'+rk+'_'+id]=_t;}
-        if(!STATE['chkduty_'+gg+'_'+rk+'_'+id]&&row.duty)STATE['chkduty_'+gg+'_'+rk+'_'+id]=row.duty;
-      });
+      const id=row.itemId; if(!id||_crIds.has(id))return;   // cr이 있으면 그게 회차 정답 → 시트 복원 생략
+      let rk=''; try{ rk=roundOfSlot(row.slot,row.shift); }catch(e){}
+      if(ROUND_KEYS.indexOf(rk)<0)return;
+      STATE[chkKey(rk,id,gg)]=true;
+      if(!STATE['chkby_'+gg+'_'+rk+'_'+id]&&row.submitter)STATE['chkby_'+gg+'_'+rk+'_'+id]=row.submitter;
+      if(!STATE['chkat_'+gg+'_'+rk+'_'+id]){const _t=_atHM(row.submittedAt);if(_t)STATE['chkat_'+gg+'_'+rk+'_'+id]=_t;}
+      if(!STATE['chkduty_'+gg+'_'+rk+'_'+id]&&row.duty)STATE['chkduty_'+gg+'_'+rk+'_'+id]=row.duty;
     });
     // 그룹별 제출 복원 (서버 영속 → 새로고침해도 유지) — 2026-06-05 GM
     if(j.groupSubmits){Object.keys(j.groupSubmits).forEach(key=>{
