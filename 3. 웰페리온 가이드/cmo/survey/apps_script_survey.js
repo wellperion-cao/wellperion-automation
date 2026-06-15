@@ -101,16 +101,25 @@ function _collectFormInquiries_() {
       if (last < 2 || lastCol < 1) return;
       var headers = sh.getRange(1, 1, 1, lastCol).getValues()[0];
       var idxPhone = _findCol_(headers, ['연락처', '휴대폰', '핸드폰', '전화']);
-      var idxChan  = _findCol_(headers, cfg.channelKeys);
+      var idxChan  = _findCol_(headers, cfg.channelKeys);          // 대분류(문의 채널) — 폴백 기준
+      var idxChanFine = _findCol_(headers, ['중분류']);             // 문의 경로(중분류) — 정밀(있을 때만, 멤버십 탭)
       var idxDate  = _findCol_(headers, ['타임스탬프', 'timestamp', '시각', '일시', '접수일', '접수', '날짜']);
       if (idxDate < 0) idxDate = 0;  // 못 찾으면 1열(구글폼 기본). 26년신규문의=B칸(타임스탬프) 자동 포착
       var rows = sh.getRange(2, 1, last - 1, lastCol).getValues();
       rows.forEach(function(r) {
         if (!r[idxDate] && (idxPhone < 0 || !r[idxPhone])) return; // 빈 행 스킵
+        // 채널 = 대분류 기본, 단 중분류가 '확실한 버킷'으로 표준화될 때만 중분류 우선(회귀 방지).
+        // 예) 대분류 '온라인 (네이버/…/당근)'→기타·미상 이지만 중분류 'N-플레이스(검색)'→네이버 로 정밀화.
+        //     중분류가 매핑 불가('옥외홍보' 등)면 대분류 유지 → 절대 후퇴 없음.
+        var chanRaw = (idxChan >= 0 ? String(r[idxChan] || '').trim() : '');
+        if (idxChanFine >= 0) {
+          var midRaw = String(r[idxChanFine] || '').trim();
+          if (midRaw && _canonicalChannel_(midRaw) !== '기타·미상') chanRaw = midRaw;
+        }
         out.push({
           시각:     _parseAnyDate_(r[idxDate]),  // 타임스탬프(구글폼 A칸 Date / 26년신규문의 B칸 'YYYY. M. D')
           연락처:   idxPhone >= 0 ? r[idxPhone] : '',
-          유입채널: (idxChan >= 0 ? String(r[idxChan] || '').trim() : '') || '기타',
+          유입채널: chanRaw || '기타',
           문의유형: cfg.type
         });
       });
