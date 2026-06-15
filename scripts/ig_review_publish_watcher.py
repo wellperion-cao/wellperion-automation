@@ -38,6 +38,11 @@ except Exception:
     def log_outbound(*a, **k):
         pass
 
+# 동시커밋 직렬화 lock (P2, 2026-06-15) — git_lock.py는 같은 scripts/ 폴더.
+# 하드 임포트(실패 시 시끄럽게): 락 없이 무방비 커밋되면 동시성 손상 방지 목적이 무력화됨.
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from git_lock import GitLock
+
 ROOT = Path(r"C:\Users\jjky0\welperion-automation")
 QUEUE = ROOT / "3. 웰페리온 가이드" / "cmo" / "review" / "review_queue.json"
 PUBLISH_SCRIPT = ROOT / "scripts" / "instagram_upload_playwright.py"
@@ -153,8 +158,9 @@ def git(*args: str, check: bool = False) -> subprocess.CompletedProcess:
 
 def pull_latest() -> None:
     """승인 신호 동기화 — dirty tree여도 autostash로 안전 rebase (메모리 git 원샷 원칙)."""
-    git("fetch", "origin", "master")
-    r = git("pull", "--rebase", "--autostash", "origin", "master")
+    with GitLock(holder="ig_review_publish:pull", repo_root=str(ROOT)):
+        git("fetch", "origin", "master")
+        r = git("pull", "--rebase", "--autostash", "origin", "master")
     _safe_print(f"[INFO] git pull: {(r.stdout + r.stderr).strip().splitlines()[-1:] or ['(no output)']}")
 
 
@@ -563,10 +569,11 @@ def _run_once_inner(dry_run: bool) -> int:
     manual = [e for e in events if e.startswith("📦")]
     if not dry_run and events:
         save_queue(items)
-        git("add", str(QUEUE))
-        git("commit", "-m", f"auto(cmo): 검수 승인 건 발행 {len(published)}건 / 수동대기 {len(manual)}건")
-        git("pull", "--rebase", "--autostash", "origin", "master")
-        git("push", "origin", "master")
+        with GitLock(holder="ig_review_publish:commit", repo_root=str(ROOT)):
+            git("add", str(QUEUE))
+            git("commit", "-m", f"auto(cmo): 검수 승인 건 발행 {len(published)}건 / 수동대기 {len(manual)}건")
+            git("pull", "--rebase", "--autostash", "origin", "master")
+            git("push", "origin", "master")
         telegram("📲 멀티채널 발행 결과\n" + "\n".join(events))
     return len(published)
 
