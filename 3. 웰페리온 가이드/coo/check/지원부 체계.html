@@ -1710,13 +1710,15 @@ function roundLSKey(g){return 'wcheck_round_'+g}
 function _bestRoundFor(d,g){
   try{
     const keys=getRoundsFor(d).map(r=>r.key);
-    const withData=keys.filter(rk=>{
-      for(const k in STATE){ if(k.indexOf('chk_'+g+'_'+rk+'_')===0 && STATE[k]===true) return true; }
-      return isRoundSubmitted(d,g,rk);
+    let best=null,bestN=0;
+    keys.forEach(rk=>{                                  // 체크 가장 많은 조 = 주작업 조
+      let n=0;
+      for(const k in STATE){ if(k.indexOf('chk_'+g+'_'+rk+'_')===0 && STATE[k]===true) n++; }
+      if(n>bestN){bestN=n;best=rk;}
     });
-    if(!withData.length)return null;
-    const now=autoRoundForNow(d);
-    return (withData.indexOf(now)>=0)?now:withData[withData.length-1];
+    if(best)return best;
+    for(let i=keys.length-1;i>=0;i--){ if(isRoundSubmitted(d,g,keys[i]))return keys[i]; }  // 체크없으면 제출된 조
+    return null;
   }catch(e){return null;}
 }
 function getRoundG(g){
@@ -2887,6 +2889,7 @@ function onCk(id,shift,gender,round){
     }
   }
   else { STATE[id]=val; }
+  if(round){try{localStorage.setItem(roundLSKey(gender),round);}catch(e){}}   // 체크한 조 기억 → 새로고침해도 그 조 유지(GM 2026-06-15)
   saveState(d,gender);
   /* 빠른 연속체크 레이스 방지(GM 2026-06-12): 클릭한 항목 행만 즉시 가볍게 반영하고,
      무거운 전체 redraw + 완료판정은 연속체크가 멈춘 뒤 1회만(디바운스). */
