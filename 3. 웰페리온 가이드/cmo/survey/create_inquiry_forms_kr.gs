@@ -151,3 +151,40 @@ function createInquiryFormsKR() {
   Logger.log('════════════════════════════════════');
   Logger.log('⚠️ 다음: 각 폼 UI > 설정 > 응답 > "조직으로 제한" 해제(비로그인 외부 제출). 시크릿창 제출 테스트.');
 }
+
+// ═══════════════════════════════════════════════════════════
+//  재지정 — 공간렌트·파트너 응답을 멤버십 관리 스프레드시트로 통합
+//  실행: GM이 repointInquiryFormsToMembership() 1회 실행 → 새 응답탭 gid 출력
+//  결과: 12AWcAlg 안에 새 응답탭 2개 생성. 기존 1zkT는 폐기 가능(테스트응답 포함).
+// ═══════════════════════════════════════════════════════════
+function repointInquiryFormsToMembership() {
+  var TARGET = '12AWcAlgmmYKr2nUbWmVpa71_z3zi0BaU4ZdnOwrI_7U';  // 1-1) 멤버십 문의 관리(26년도)
+  var forms = [
+    { name: '공간렌트',       id: '1u8MsWSZO_kRBNdJxjLLhbNnhdIZr73l-WlyPIPntcsc' },
+    { name: '비즈니스파트너', id: '1A7tDDFD0LJZFwqdrlHEYWQbOfd_un6uB8NIgcZNiEUE' }
+  ];
+  var out = [];
+  Logger.log('════════════════════════════════════');
+  Logger.log('대상 통합 스프레드시트 = ' + TARGET);
+  forms.forEach(function(f) {
+    var before = {};
+    SpreadsheetApp.openById(TARGET).getSheets().forEach(function(s) { before[s.getSheetId()] = true; });
+    var form = FormApp.openById(f.id);
+    form.setDestination(FormApp.DestinationType.SPREADSHEET, TARGET);
+    SpreadsheetApp.flush();
+    Utilities.sleep(1500);
+    var gid = null, nm = null;
+    SpreadsheetApp.openById(TARGET).getSheets().forEach(function(s) {
+      if (!before[s.getSheetId()]) { gid = s.getSheetId(); nm = s.getName(); }
+    });
+    Logger.log('[' + f.name + '] 새 응답탭 gid = ' + gid + '  (탭명: ' + nm + ')');
+    out.push({ type: f.name, gid: gid });
+  });
+  Logger.log('────────────────────────────────────');
+  Logger.log('▼ apps_script_survey.js FORM_SHEETS 교체값(ssId·gid 갱신):');
+  out.forEach(function(r) {
+    Logger.log("  , { ssId: '" + TARGET + "', gid: " + r.gid + ", type: '" + r.type + "', channelKeys: ['경로', '채널', '알게'] }");
+  });
+  Logger.log('════════════════════════════════════');
+  Logger.log('⚠️ 기존 1zkT 응답 스프레드시트는 이제 미사용 — 휴지통 이동 가능(테스트응답 2건 함께 폐기).');
+}
