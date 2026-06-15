@@ -749,8 +749,8 @@ function renderDash(){
   var turnover=(active.length+exit90.length)?Math.round(exit90.length/(active.length+exit90.length)*1000)/10:0;
   /* 이번 주 할 일 */
   var todos=[];
-  appl.forEach(function(a){var d=dt(a,"면접 일정");if(d){var dd=new Date(d);if(dd>=today&&dd<=in7)todos.push({d:dd,ic:"🗓",txt:'<b>면접</b> '+esc(a["지원자명"]||"")+' · '+esc(a["전형 단계"]||"")+' — '+fmtD(d)});}});
-  hire.forEach(function(h){var d=dt(h,"공고 마감일");if(d&&h["채용 상태"]==="공고중"){var dd=new Date(d);if(dd>=today&&dd<=in7)todos.push({d:dd,ic:"⏰",txt:'<b>공고 마감</b> '+esc(h["포지션명"]||"")+' — '+fmtD(d)});}});
+  appl.forEach(function(a){var d=dval(a,"면접 일정");if(d){var dd=new Date(d);if(dd>=today&&dd<=in7)todos.push({d:dd,ic:"🗓",txt:'<b>면접</b> '+esc(a["지원자명"]||"")+' · '+esc(a["전형 단계"]||"")+' — '+fmtD(d)});}});
+  hire.forEach(function(h){var d=dval(h,"공고 마감일");if(d&&h["채용 상태"]==="공고중"){var dd=new Date(d);if(dd>=today&&dd<=in7)todos.push({d:dd,ic:"⏰",txt:'<b>공고 마감</b> '+esc(h["포지션명"]||"")+' — '+fmtD(d)});}});
   todos.sort(function(a,b){return a.d-b.d;});
   /* 채용 채널 */
   var STD_CH=["잡코리아","알바몬","호호요가","스포드림카페","자사 채용홈"];
