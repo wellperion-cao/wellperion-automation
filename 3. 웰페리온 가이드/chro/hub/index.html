@@ -968,7 +968,7 @@ function jobItem(h){
     '<div class="item-meta">'+badge(h["채용 상태"])+(h["부서"]?badge(h["부서"]):"")+
       badge(h["채용 유형"])+(h["우선순위"]?badge(h["우선순위"]):"")+'</div></div>'+
     '<div style="text-align:right"><div class="t-name" style="font-size:18px">'+
-      num(h["지원자 수"])+'</div><div class="t-sub">지원자</div></div></div>'+
+      applicants.length+'</div><div class="t-sub">지원자</div></div></div>'+
     '<div class="kv">'+
     kv("모집 인원",txt(h["모집 인원"]))+kv("면접자 수",txt(h["면접자 수"]))+
     kv("급여 범위",txt(h["급여 범위"]))+kv("공고 기간",fmtD(dval(h,"공고 시작일"))+" ~ "+fmtD(dval(h,"공고 마감일")))+
@@ -1067,7 +1067,7 @@ function openPrintView(pageId){
     '<div class="page">'+
       '<h1>웰페리온 채용 면접 평가지</h1>'+
       '<div class="subtitle">'+esc(a["지원 포지션"]||"")+' · 작성일 '+new Date().toISOString().slice(0,10)+'</div>'+
-      '<h2>1. 지원자 정보</h2>'+
+      '<h2>1. 지원자 정보</h2>'+(a['사진']?"<div style='text-align:center;margin:6px 0 12px'><img src='"+a['사진']+"' alt='지원자 사진' style='width:120px;height:150px;object-fit:cover;border:1px solid #d8d4c8;border-radius:6px'/></div>":'')+
       '<table>'+
         '<tr><th>성명</th><td>'+esc(a["지원자명"]||"")+'</td><th>지원 포지션</th><td>'+esc(a["지원 포지션"]||"")+'</td></tr>'+
         '<tr><th>연락처</th><td>'+esc(a["연락처"]||"")+'</td><th>이메일</th><td>'+esc(a["이메일"]||"")+'</td></tr>'+
@@ -2142,4 +2142,16 @@ details.jobs-fold > summary > .jf-arrow{display:inline-block;transition:transfor
       for(var m=0; m<ns.length; m++){
         var n = ns[m];
         if(n.nodeType !== 1) continue;
-        if((n.cl
+        if((n.className||"").indexOf("sec-title")>=0 || (n.className||"").indexOf("pipe-col")>=0 || (n.querySelector && (n.querySelector(".sec-title") || n.querySelector(".pipe-col")))){
+          trig(); return;
+        }
+      }
+    }
+  });
+  mo.observe(document.body, {childList:true, subtree:true});
+  if(document.readyState === "loading") document.addEventListener("DOMContentLoaded", trig);
+  else trig();
+})();
+</script>
+</body>
+</html>
