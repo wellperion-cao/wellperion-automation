@@ -616,6 +616,52 @@ def run_build_slides(build_path: Path, timeout: int = 300) -> None:
 
 
 # ─────────────────────────────────────────────────────────────────────────────
+# 주제 이탈 검사 (2차 게이트) — 1차 프롬프트 잠금이 뚫렸을 때 GM이 승인 전 알게.
+#   휴리스틱(로드맵 핵심어가 산출물에 하나도 없으면 이탈 의심)이라 '경고만' — 하드블록 안 함.
+# ─────────────────────────────────────────────────────────────────────────────
+_DRIFT_STOP = {
+    "그리고", "하는", "에서", "으로", "합니다", "이런", "저런", "우리", "당신", "그것",
+    "에게", "까지", "부터", "대한", "위해", "통해", "바로", "정말", "매우", "오늘",
+    "지금", "해서", "해도", "대표", "리더", "방법", "이렇게", "그래서",
+}
+
+
+def _hangul_tokens(s: str) -> list[str]:
+    return re.findall(r"[가-힣]{2,}", str(s))
+
+
+def check_topic_drift(build_path: Path, ep: dict) -> str | None:
+    """생성된 build_slides.py 주제가 로드맵 확정편과 '완전히' 다른지 보수적 검사.
+    로드맵 제목 핵심어가 산출물에 하나도 안 나오면 이탈 의심. 판단 애매하면 None(경고 안 냄·fail-open)."""
+    try:
+        code = build_path.read_text(encoding="utf-8", errors="replace")
+    except Exception:
+        return None
+    parts: list[str] = []
+    m = re.search(r'title\s*=\s*["\']([^"\']+)["\']', code)
+    if m:
+        parts.append(m.group(1))
+    parts += re.findall(r'kor_title\s*=\s*["\']([^"\']+)["\']', code)
+    mc = re.search(r'CAPTION\s*=\s*(?:"""|\'\'\'|["\'])(.{0,160})', code, re.S)
+    if mc:
+        parts.append(mc.group(1))
+    blob = " ".join(parts)
+    if not blob.strip():
+        return None  # 주제 단서를 못 뽑음 → 판단 보류
+    title_core = str(ep.get("title", "")).split(":")[0]
+    key = [t for t in _hangul_tokens(title_core) if t not in _DRIFT_STOP]
+    key = list(dict.fromkeys(key))
+    if len(key) < 2:
+        return None  # 핵심어 빈약 → 오탐 위험, 보류
+    if any(t in blob for t in key):
+        return None  # 핵심어 하나라도 맞으면 정상으로 본다(보수적)
+    return (
+        f"⚠️ AI 시리즈 #{ep.get('num')} 주제 이탈 의심 — 로드맵 확정 「{ep.get('title', '')}」 의 "
+        f"핵심어({'·'.join(key[:4])})가 산출물에 하나도 없음. 검수카드 승인 전 주제 확인 요망."
+    )
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 # 메인
 # ─────────────────────────────────────────────────────────────────────────────
 def run(dry_run: bool, plan_only: bool) -> int:
@@ -688,6 +734,13 @@ def run(dry_run: bool, plan_only: bool) -> int:
         print(f"[ERROR] {msg}")
         telegram(msg)
         return 1
+
+    # 4-2) 주제 이탈 검사 (2차 게이트) — 1차 프롬프트 잠금이 뚫렸을 때 GM이 승인 전 알게.
+    #      경고만 — M5 등록·검수카드는 그대로 진행(하드블록 안 함). GM이 카드에서 판단.
+    _drift = check_topic_drift(build_path, nxt)
+    if _drift:
+        print(f"[WARN] {_drift}")
+        telegram(_drift)
 
     # 5) 빌드 실행 → register_publish 가 M5 검수대기 등록까지 (실패 시 경고 + 중단)
     try:
