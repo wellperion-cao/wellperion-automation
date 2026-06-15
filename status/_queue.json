@@ -18,7 +18,7 @@
     "status": "IN_PROGRESS",
     "priority": "NORMAL",
     "enqueued_at": "2026-06-13",
-    "note": "[2026-06-13 GM '둘 다'+'완전이관' 지시] ① truncation 게이트 완료(CTO-COMMIT-SAFETY-GATE). ② 동시커밋 직렬화 lock — [2026-06-15 시토] 설계완료(docs/git_serialize_lock_design.md): 단일 글로벌 git lock(atomic mkdir+PID/stale 회수), 공유모듈 scripts/git_lock.py, add→commit→push 전체 임계구역, pre-commit 훅 재진입금지. 롤아웃 P1(모듈+자기테스트·무게이트)→P2(단발주체)→P3(bot.py·봇재기동=GM게이트). 구현 대기. ③ 큐→시트 완전이관 R1~R3 시도 중 snag: seed(queue_seed_to_sheet.py)는 insert전용·dedup(clear/replace 없음)이라 'R1 시트 비우기'를 먼저 안 하면 화석잔존+순서불일치로 DIFF≠0. _queue(51척)는 읽기전용·무결 안전. 시트는 절반채움(SSOT아님·무해).",
+    "note": "[2026-06-13 GM '둘 다'+'완전이관' 지시] ① truncation 게이트 완료(CTO-COMMIT-SAFETY-GATE). ② 동시커밋 직렬화 lock — [2026-06-15 시토] 설계완료(docs/git_serialize_lock_design.md): 단일 글로벌 git lock(atomic mkdir+PID/stale 회수), 공유모듈 scripts/git_lock.py, add→commit→push 전체 임계구역, pre-commit 훅 재진입금지. 롤아웃 P1(모듈+자기테스트·무게이트)→P2(단발주체)→P3(bot.py·봇재기동=GM게이트). [2026-06-15] P1 구현·실증 완료(scripts/git_lock.py+test_git_lock.py, 격리 temp repo 3프로세스×50커밋 무손실·락누수0·steal0·timeout0 PASS). 다음=P2(clevel_post_action·IG·pipeline의 raw git→git_commit_push 전환, 재기동 불필요·라이브 1회실측)→P3(bot.py 전환·봇 재기동 GM게이트). ③ 큐→시트 완전이관 R1~R3 시도 중 snag: seed(queue_seed_to_sheet.py)는 insert전용·dedup(clear/replace 없음)이라 'R1 시트 비우기'를 먼저 안 하면 화석잔존+순서불일치로 DIFF≠0. _queue(51척)는 읽기전용·무결 안전. 시트는 절반채움(SSOT아님·무해).",
     "next": "재개(깨끗): R1=시트 전용탭 백업→비우기(ai_sheet_create 동작 확인 필요) → R2=51척 순서대로 seed → R3=queue_sync_from_sheet.py --diff=0(정렬 일치 확인). 그 후 R4(자동sync 스케줄러)·R5(clevel_post_action·bot.py·ceo_watcher 쓰기를 _queue→GAS 전환·이중화·GAS재배포)=라이브 인프라라 GM 확인+전용 작업. 한방 금지(과거 중복사고). _queue는 항상 읽기전용 truth."
   },
   {
