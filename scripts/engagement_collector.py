@@ -20,6 +20,7 @@
 #   python scripts/engagement_collector.py --channel blog
 #   python scripts/engagement_collector.py --channel cafe
 #   python scripts/engagement_collector.py --channel kakao
+#   python scripts/engagement_collector.py --channel desktop  # GM 데스크톱: danggn+blog+cafe+kakao 전부
 #   python scripts/engagement_collector.py --dry-run  # 파일 저장 없이 결과만 출력
 #
 # 출력: 3. 웰페리온 가이드/cmo/funnel/engagement/engagement_feed.json (대시보드 소비)
@@ -522,61 +523,150 @@ async def _collect_kakao_async(dry_run: bool) -> list[dict]:
             await context.close()
             return []
 
+        # 페이지에서 og:title / title / heading을 한 번에 뽑는 JS 헬퍼
+        _KAKAO_TITLE_JS = """() => {
+            // 쓰레기 값 필터: 사이트 공통명·네비 메뉴만 있으면 버림
+            const JUNK = ['전체 메뉴', '카카오', '카카오 채널', '카카오비즈니스', '카카오톡 채널'];
+            function isJunk(s) {
+                if (!s || s.trim() === '') return true;
+                const t = s.trim();
+                return JUNK.some(j => t === j || t.startsWith(j + ' ') || t.endsWith(' ' + j));
+            }
+            // ① og:title
+            const og = document.querySelector('meta[property="og:title"]');
+            if (og && !isJunk(og.getAttribute('content'))) return og.getAttribute('content').trim();
+            // ② <title> 태그
+            const tt = document.title;
+            if (!isJunk(tt)) return tt.trim();
+            // ③ 첫 heading
+            for (const sel of ['h1', 'h2', 'h3']) {
+                const el = document.querySelector(sel);
+                if (el && !isJunk(el.innerText)) return el.innerText.trim();
+            }
+            return null;
+        }"""
+
+        # 페이지에서 좋아요·댓글·조회수를 폭넓게 긁는 JS 헬퍼
+        _KAKAO_METRICS_JS = """() => {
+            const LIKE_KW  = ['좋아요', '추천', '공감', 'like', 'ico_like'];
+            const CMT_KW   = ['댓글', 'comment', 'ico_cmt', 'reply'];
+            const VIEW_KW  = ['조회', '뷰', 'view', 'read', 'ico_view'];
+
+            function parseNum(s) {
+                if (!s) return 0;
+                const m = s.replace(/,/g, '').match(/\\d+/);
+                return m ? parseInt(m[0], 10) : 0;
+            }
+            function hasKw(el, kws) {
+                const combined = [
+                    el.className || '',
+                    el.getAttribute('aria-label') || '',
+                    el.getAttribute('title') || '',
+                    el.innerText || ''
+                ].join(' ').toLowerCase();
+                return kws.some(k => combined.includes(k.toLowerCase()));
+            }
+
+            let likes = 0, comments = 0, views = 0;
+
+            // 전략 A: span.num_g 옆 형제·부모에서 키워드 매핑
+            document.querySelectorAll(
+                'span.num_g, [class*="num_"], [class*="_num"], [class*="count_"], [class*="_count"]'
+            ).forEach(numEl => {
+                const val = parseNum(numEl.innerText);
+                if (!val) return;
+                // 부모 또는 형제에서 키워드 확인
+                const ctx = numEl.parentElement;
+                if (!ctx) return;
+                if (!likes  && hasKw(ctx, LIKE_KW))  likes    = val;
+                if (!comments && hasKw(ctx, CMT_KW))  comments = val;
+                if (!views  && hasKw(ctx, VIEW_KW))  views    = val;
+            });
+
+            // 전략 B: aria-label / data-* 속성 기반 스캔
+            if (!likes || !comments || !views) {
+                document.querySelectorAll('[aria-label], [data-count], [data-like], [data-comment]').forEach(el => {
+                    const val = parseNum(el.getAttribute('aria-label') || el.getAttribute('data-count') || el.innerText);
+                    if (!val) return;
+                    if (!likes    && hasKw(el, LIKE_KW))  likes    = val;
+                    if (!comments && hasKw(el, CMT_KW))   comments = val;
+                    if (!views    && hasKw(el, VIEW_KW))  views    = val;
+                });
+            }
+
+            // 전략 C: 숫자 직전/직후 텍스트 노드 기반 — 텍스트 전체 스캔
+            if (!likes || !comments || !views) {
+                document.querySelectorAll('span, em, strong, div').forEach(el => {
+                    if (el.children.length > 3) return;  // 컨테이너 제외
+                    const txt = (el.innerText || '').trim();
+                    if (!/^[\\d,]+$/.test(txt)) return;  // 순수 숫자만
+                    const val = parseNum(txt);
+                    if (!val) return;
+                    const sibling = el.previousElementSibling || el.parentElement;
+                    if (sibling) {
+                        if (!likes    && hasKw(sibling, LIKE_KW))  likes    = val;
+                        if (!comments && hasKw(sibling, CMT_KW))   comments = val;
+                        if (!views    && hasKw(sibling, VIEW_KW))  views    = val;
+                    }
+                });
+            }
+
+            return {likes, comments, views};
+        }"""
+
         for post_url in post_links:
             like_count = 0
             comment_count = 0
+            view_count = 0
             pid = post_url.rsplit("/", 1)[-1]
-            # 제목: review_queue 매핑 우선, 없으면 post ID
-            title = kakao_title_map.get(pid, f"카카오소식_{pid}")
 
             try:
                 await page.goto(post_url, wait_until="domcontentloaded", timeout=20000)
                 await page.wait_for_timeout(2500)
 
-                # 실측 셀렉터: span.num_g (좋아요·댓글 수치)
-                # 구조: <span class="icon ico_like">좋아요수</span><span class="num_g">N</span>
-                num_els = await page.query_selector_all("span.num_g")
-                icons = await page.query_selector_all("span.icon")
+                # ─ 제목 추출 (우선순위 5단계) ─
+                # ① review_queue 매핑
+                title = kakao_title_map.get(pid)
+                if not title:
+                    # ②③④ og:title / <title> / heading을 JS로 한 번에 뽑기
+                    title = await page.evaluate(_KAKAO_TITLE_JS)
+                # ⑤ 최후 폴백
+                if not title:
+                    title = f"카카오소식_{pid}"
 
-                # 아이콘 텍스트와 num_g를 인덱스 기준으로 매핑
-                icon_texts = []
-                for icon_el in icons:
-                    txt = (await icon_el.inner_text()).strip()
-                    icon_texts.append(txt)
+                # ─ 좋아요·댓글·조회수 수집 (다중 폴백) ─
+                metrics = await page.evaluate(_KAKAO_METRICS_JS)
+                like_count    = metrics.get("likes", 0)
+                comment_count = metrics.get("comments", 0)
+                view_count    = metrics.get("views", 0)
 
-                num_vals = []
-                for num_el in num_els:
-                    txt = (await num_el.inner_text()).strip()
-                    num_vals.append(_parse_view_count(txt))
+                # 전부 0이면 DOM 구조 변경 경고
+                if like_count == 0 and comment_count == 0 and view_count == 0:
+                    print(f"  [카카오 DEBUG] 수치 미감지 — 페이지 구조 확인 필요: {post_url}")
 
-                # "좋아요수" 아이콘 인덱스 → 같은 인덱스의 num_g
-                for i, icon_txt in enumerate(icon_texts):
-                    if "좋아요" in icon_txt and i < len(num_vals):
-                        like_count = num_vals[i]
-                    elif "댓글" in icon_txt and i < len(num_vals):
-                        comment_count = num_vals[i]
-
-                print(f"    {title[:30]} → 좋아요={like_count} 댓글={comment_count}")
+                print(f"    {title[:30]} → 좋아요={like_count} 댓글={comment_count} 조회={view_count}")
 
             except Exception as e:
+                title = kakao_title_map.get(pid, f"카카오소식_{pid}")
                 print(f"    [ERROR] {post_url}: {e}")
 
             prev = prev_posts.get(post_url, {})
             is_new = post_url not in prev_posts
-            d_like = like_count - prev.get("likeCount", 0)
+            d_like    = like_count    - prev.get("likeCount", 0)
             d_comment = comment_count - prev.get("commentCount", 0)
+            d_view    = view_count    - prev.get("viewCount", 0)
 
-            if is_new or d_like != 0 or d_comment != 0:
+            if is_new or d_like != 0 or d_comment != 0 or d_view != 0:
                 events.append({
                     "channel": "카카오",
                     "title": title,
                     "url": post_url,
                     "collected_at": ts,
                     "isNew": is_new,
-                    "dViews": 0,
+                    "dViews": max(d_view, 0),
                     "dInterest": max(d_like, 0),
                     "dComments": max(d_comment, 0),
-                    "totalViews": 0,
+                    "totalViews": view_count,
                     "totalLikes": like_count,
                     "totalComments": comment_count,
                 })
@@ -586,6 +676,7 @@ async def _collect_kakao_async(dry_run: bool) -> list[dict]:
                 "title": title,
                 "likeCount": like_count,
                 "commentCount": comment_count,
+                "viewCount": view_count,
                 "collected_at": ts,
             })
 
@@ -630,7 +721,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="웰페리온 채널 engagement 수집기")
     parser.add_argument(
         "--channel",
-        choices=["danggn", "blog", "cafe", "kakao", "all"],
+        choices=["danggn", "blog", "cafe", "kakao", "all", "desktop"],
         default="all",
     )
     parser.add_argument("--dry-run", action="store_true", help="파일 저장 없이 결과만 출력")
@@ -648,16 +739,19 @@ def main() -> int:
     if args.channel in ("blog", "all"):
         events.extend(collect_blog(dry_run=args.dry_run))
 
-    if args.channel in ("cafe",):
+    if args.channel in ("cafe", "desktop"):
         events.extend(collect_cafe(dry_run=args.dry_run))
 
-    if args.channel in ("kakao",):
+    if args.channel in ("kakao", "desktop"):
         events.extend(collect_kakao(dry_run=args.dry_run))
 
     if args.channel == "all":
         print("\n[로그인 필요 채널 — FACEBOOK_ENABLED=OFF]")
         flag_login_required()
-        print("\n[카페·카카오] headful 세션 필요 — --channel cafe 또는 --channel kakao 로 개별 실행")
+        print("\n[카페·카카오] headful 세션 필요 — --channel cafe / --channel kakao / --channel desktop 으로 실행")
+
+    if args.channel == "desktop":
+        print("\n[desktop 모드] danggn+blog+cafe+kakao 전체 수집 완료 (GM 데스크톱 세션 활성 전제)")
 
     # engagement_feed.json 갱신
     if not args.dry_run:
@@ -669,7 +763,7 @@ def main() -> int:
             "engagement_collector.py 자동 생성 — "
             "당근:공개HTML파싱 / 블로그:RSS신규감지 / "
             "카페:Playwright iframe#cafe_main span.count / "
-            "카카오:Playwright span.num_g"
+            "카카오:Playwright 다중폴백(num_g/aria-label/텍스트노드) 좋아요·댓글·조회수"
         )
         _save_feed(feed)
         print(f"\n[저장] engagement_feed.json — 총 {len(feed['events'])}건")

@@ -328,7 +328,7 @@ a{color:var(--accent);text-decoration:none}
   <div class="section">
     <h2>📣 최근 변동사항 <span style="font-size:13px;color:var(--dim);font-weight:400" id="engagement-updated"></span></h2>
     <p style="color:var(--dim);font-size:13px;margin:4px 0 6px">채널에 올린 콘텐츠의 조회·관심·댓글 증감(직전 수집 대비). 채널별 수집 시 갱신.</p>
-    <p style="color:var(--dim);font-size:11px;margin:0 0 14px">현재 자동수집 채널 = 당근·블로그 (인스타·카페·카카오는 로그인 연동 대기 중)</p>
+    <p style="color:var(--dim);font-size:11px;margin:0 0 14px">현재 자동수집 채널 = 당근·블로그·카페·카카오 (인스타그램만 로그인 연동 대기)</p>
     <div id="engagement-feed-body" style="display:flex;flex-direction:column;gap:6px;max-width:560px">
       <div style="color:var(--dim);font-size:13px">불러오는 중…</div>
     </div>
@@ -339,6 +339,14 @@ a{color:var(--accent);text-decoration:none}
     <div class="section-title">핵심 전환 흐름</div>
     <div id="conversion-flow-wrap" style="margin-bottom:6px">
       <div style="color:var(--dim);font-size:13px">집계 불러오는 중…</div>
+    </div>
+  </div>
+
+  <!-- 문의 유형별 분포 (이번 달) — byTypeMonth 라이브 렌더 -->
+  <div class="section">
+    <div class="section-title">문의 유형별 분포 <span style="font-size:11px;font-weight:400;color:var(--accent);text-transform:none;letter-spacing:0">(이번 달)</span></div>
+    <div id="type-breakdown-wrap" style="background:var(--paper);border:1px solid var(--border);border-radius:12px;padding:16px">
+      <div style="color:var(--dim);font-size:13px">집계 준비 중</div>
     </div>
   </div>
 
@@ -359,7 +367,7 @@ a{color:var(--accent);text-decoration:none}
           <tr><td colspan="4" style="padding:14px 16px;color:var(--dim);font-size:13px">불러오는 중…</td></tr>
         </tbody>
       </table>
-      <div style="padding:8px 16px 10px;font-size:11px;color:var(--dim);border-top:1px solid var(--border)">표준 채널 10종 기준(GAS 단일 정규화) · 채널명은 문의 시 선택한 유입경로 기준 · 과거 '온라인' 뭉침분은 단일귀속 불가라 '기타·미상' · 누적 전환은 전체 기간</div>
+      <div style="padding:8px 16px 10px;font-size:11px;color:var(--dim);border-top:1px solid var(--border)">표준 채널 10종 기준(GAS 단일 정규화) · 채널명은 문의 시 선택한 유입경로 기준 · 과거 '온라인' 뭉침분은 단일귀속 불가라 '기타·미상' · 누적 전환은 전체 기간<br>※ 채널별 전환은 GAS 미제공 — 전체 전환율은 위 퍼널 참조</div>
     </div>
   </div>
 
@@ -416,7 +424,7 @@ a{color:var(--accent);text-decoration:none}
               <tr>
                 <td style="padding:12px 14px;vertical-align:middle">
                   <span style="display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;padding:3px 9px;border-radius:20px;background:rgba(167,139,218,.13);color:#a78bda;border:1px solid rgba(167,139,218,.25)">English</span>
-                  <span style="display:inline-block;font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px;background:var(--yellow-bg);color:var(--yellow);border:1px solid rgba(230,200,78,.25);margin-left:5px">준비중</span>
+                  <span style="display:inline-block;font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px;background:var(--accent-bg);color:var(--accent);border:1px solid rgba(183,159,138,.25);margin-left:5px">일부 운영</span>
                 </td>
                 <td style="padding:12px 14px;vertical-align:middle">
                   <a href="http://wellperion.com/en/inquiry/" target="_blank" rel="noopener" style="color:var(--accent);font-size:13px;font-weight:500">wellperion.com<br>/en/inquiry/ ↗</a>
@@ -431,7 +439,7 @@ a{color:var(--accent);text-decoration:none}
                   <a href="https://docs.google.com/forms/d/e/1FAIpQLScqZum8zrhqKC0m2S0IKElYez-aJuPMQHM-JKF867UADF9X3A/viewform" target="_blank" rel="noopener" style="color:var(--accent);font-size:13px">Youth Form ↗</a>
                 </td>
                 <td style="padding:12px 14px;vertical-align:middle">
-                  <a href="https://docs.google.com/forms/d/e/1FAIpQLSchg7_9bmLTjCA-gfSj_anjklaNr_OpYBcmHzQJCTndIzgJPA/viewform" target="_blank" rel="noopener" style="color:var(--accent);font-size:13px">Summer Form ↗</a>
+                  <span style="color:var(--dim)">— (운영 안 함)</span>
                 </td>
               </tr>
             </tbody>
@@ -604,6 +612,41 @@ function renderGoalGauge() {
   }
 
   html += '</div>';
+  el.innerHTML = html;
+}
+
+// ─── 문의 유형별 분포 (이번 달) ─────────────────────────────────
+function renderTypeBreakdown() {
+  var el = document.getElementById('type-breakdown-wrap');
+  if (!el) return;
+  if (!_pbData) { el.innerHTML = '<div style="color:var(--dim);font-size:13px">집계 준비 중</div>'; return; }
+
+  var byType = (_pbData.inquiries && _pbData.inquiries.byTypeMonth) ? _pbData.inquiries.byTypeMonth : {};
+  var keys = Object.keys(byType);
+  if (!keys.length) { el.innerHTML = '<div style="color:var(--dim);font-size:13px">집계 준비 중</div>'; return; }
+
+  var total = keys.reduce(function(s, k) { return s + (byType[k] || 0); }, 0);
+  var colors = ['var(--f2)', 'var(--f3)', 'var(--f1)'];
+  var colorBgs = ['var(--f2-bg)', 'var(--f3-bg)', 'var(--f1-bg)'];
+
+  var html = '<div style="display:flex;flex-direction:column;gap:10px">';
+  keys.forEach(function(k, i) {
+    var cnt = byType[k] || 0;
+    var pct = total > 0 ? Math.round(cnt / total * 1000) / 10 : 0;
+    var color = colors[i % colors.length];
+    var colorBg = colorBgs[i % colorBgs.length];
+    html += '<div>'
+      + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">'
+      + '<span style="font-size:13px;font-weight:600;color:var(--text)">' + k + '</span>'
+      + '<span style="font-size:13px;font-weight:700;color:' + color + '">' + cnt + '건 <span style="font-size:11px;font-weight:400;color:var(--dim)">(' + pct + '%)</span></span>'
+      + '</div>'
+      + '<div style="background:var(--border);border-radius:6px;height:10px;overflow:hidden">'
+      + '<div style="width:' + pct + '%;height:100%;background:' + color + ';border-radius:6px;transition:width 0.4s ease"></div>'
+      + '</div>'
+      + '</div>';
+  });
+  html += '</div>';
+  html += '<div style="font-size:11px;color:var(--dim);margin-top:10px">이번 달 기준 · 총 ' + total + '건 · 문의 시 선택한 상품 유형 기준</div>';
   el.innerHTML = html;
 }
 
@@ -912,6 +955,7 @@ function _applyPeriodData(data, period) {
     renderChannelTableLive();
     renderConversionFlow();
     renderGoalGauge();
+    renderTypeBreakdown();
   }
 
   var clickEl = document.getElementById('kpi-total-clicks');
