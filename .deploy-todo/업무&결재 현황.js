@@ -1598,13 +1598,14 @@ function _processTodoAction(body) {
         _deptPinOptional = true;  // 부서장은 속성 미설정 시 차단하지 않음(graceful)
       }
       if (_pinKey) {
-        var _expected = _prop(_pinKey);
-        var _submitted = String(body.pin || '');
+        var _expected = String(_prop(_pinKey) || '').trim();   // 저장값 앞뒤 공백/개행 방어
+        var _submitted = String(body.pin || '').trim();        // 입력값 앞뒤 공백/개행 방어
         // 부서장: PIN 속성 미설정이면 PIN 없이 통과(정책 확정 전 차단 방지). GM/대표는 종전대로 필수.
+        // 진단: 거부 시 어떤 비번 키로 대조했는지 반환(키 '이름'만 — 실제 PIN 값은 미노출, 보안 안전). 2026-06-15 시우.
         if (!_expected) {
-          if (!_deptPinOptional) return _json({ ok: false, error: role + ' 결재 비밀번호가 서버에 설정되지 않았습니다(관리자 설정 필요).' });
+          if (!_deptPinOptional) return _json({ ok: false, error: role + ' 결재 비밀번호가 서버에 설정되지 않았습니다(관리자 설정 필요).', pinKey: _pinKey });
         } else if (_submitted !== _expected) {
-          return _json({ ok: false, error: '비밀번호가 일치하지 않습니다.' });
+          return _json({ ok: false, error: '비밀번호가 일치하지 않습니다.', pinKey: _pinKey });
         }
       }
 
