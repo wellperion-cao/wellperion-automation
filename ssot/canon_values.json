@@ -1,8 +1,97 @@
 {
   "_doc": "캐논 값 단일출처 레지스트리. divergence_scan.py가 읽어 하드코딩 복사본을 탐지한다. 새 캐논값 = 여기 1줄 append. value=찾을 문자열, source=정본 위치, allow_globs=복사 허용(정본·설정) 경로.",
   "values": [
-    {"key":"official_phone","value":"02-6261-1200","source":"ssot/canon_values.json","allow_globs":["ssot/**"],"note":"대표 전화 공식값"},
-    {"key":"inquiry_path","value":"wellperion.com/ko/inquiry","source":"ssot/canon_values.json","allow_globs":["ssot/**"],"note":"단일 문의 진입점"},
-    {"key":"telegram_chat_id","value":"8254867551","source":"telegram_bot/.env","allow_globs":["telegram_bot/**","ssot/**"],"note":"업무보고봇 Chat ID — env 단일출처"}
+    {
+      "key": "official_phone",
+      "value": "02-6261-1200",
+      "source": "ssot/canon_values.json",
+      "allow_globs": ["ssot/**", "3. 웰페리온 가이드/**", "status/briefs/**", "Tempguide_check.html", "tmp/**"],
+      "note": "대표 전화 공식값 — 가이드·브리프·Tempguide 본문은 FP(정상사용)"
+    },
+    {
+      "key": "inquiry_path",
+      "value": "wellperion.com/ko/inquiry",
+      "source": "ssot/canon_values.json",
+      "allow_globs": [
+        "ssot/**",
+        "instagram/**",
+        "3. 웰페리온 가이드/**",
+        "status/briefs/**",
+        "status/_queue.json",
+        "scripts/cta_utm.py",
+        "scripts/naver_blog_upload_playwright.py",
+        "scripts/slide_compositor.py",
+        "CLAUDE.md",
+        "Tempguide_check.html",
+        "tmp/**",
+        "docs/**",
+        ".omc/**"
+      ],
+      "note": "단일 문의 진입점. 코드 하드코딩 복사 탐지 대상: compose_ballet.py·compose_spa_cinqmondes.py(INC-005). 나머지는 FP(주석·콘텐츠·가이드)"
+    },
+    {
+      "key": "telegram_chat_id",
+      "value": "8254867551",
+      "source": "telegram_bot/.env",
+      "allow_globs": ["telegram_bot/**", "ssot/**", "CLAUDE.md", "INDEX.md", "Tempguide_check.html", "tmp/**", "3. 웰페리온 가이드/**", ".omc/**"],
+      "note": "업무보고봇 Chat ID — env 단일출처. INC-004 GUARDED(2026-06-15). 잔여 문서류 6건은 FP"
+    },
+    {
+      "key": "bot_token_key",
+      "value": "TELEGRAM_BOT_TOKEN",
+      "source": "telegram_bot/.env",
+      "allow_globs": [
+        "telegram_bot/**",
+        "ssot/**",
+        "scripts/**",
+        "wellperion-agents/**",
+        "3. 웰페리온 가이드/**",
+        ".deploy-check/**",
+        ".deploy-todo/**",
+        "ig/**",
+        ".omc/**"
+      ],
+      "note": "봇 토큰 env 키명 — 코드에서 키명을 문자열로 참조하는 것은 정상(env 직독 패턴). 모든 출현이 정상 참조 패턴 확인됨"
+    },
+    {
+      "key": "company_scale",
+      "value": "3,000평",
+      "source": "ssot/canon_values.json",
+      "allow_globs": ["ssot/**", "3. 웰페리온 가이드/**", "tmp/**", "status/briefs/**", "instagram/**", "Tempguide_check.html"],
+      "note": "시설 규모 공식값 — 가이드·콘텐츠·Tempguide 본문은 FP. 코드/설정 내 출현만 복사 후보"
+    },
+    {
+      "key": "company_address",
+      "value": "서빙고로 413",
+      "source": "ssot/canon_values.json",
+      "allow_globs": ["ssot/**", "3. 웰페리온 가이드/**", "tmp/**", "CLAUDE.md", "INDEX.md", "instagram/**", "Tempguide_check.html", "status/briefs/**", ".omc/**"],
+      "note": "본사 주소 공식값 — .omc/research/*.json 은 연구 아카이브(FP)"
+    },
+    {
+      "key": "report_bot_handle",
+      "value": "@namuki_report_bot",
+      "source": "ssot/canon_values.json",
+      "allow_globs": [
+        "ssot/**",
+        "CLAUDE.md",
+        "INDEX.md",
+        "3. 웰페리온 가이드/**",
+        "tmp/**",
+        "Tempguide_check.html",
+        "wellperion-agents/**",
+        "docs/**",
+        "status/briefs/**",
+        "status/_queue.json",
+        ".omc/**"
+      ],
+      "note": "업무보고봇 핸들 — wellperion-agents 출현은 주석·docstring(FP). 실질 코드 복사 없음 확인"
+    },
+    {
+      "key": "naver_cafe_club_id",
+      "value": "11948735",
+      "source": "scripts/cafe_upload_playwright.py",
+      "allow_globs": ["scripts/cafe_upload_playwright.py", "ssot/**", ".omc/**"],
+      "note": "동부이촌동커뮤니티 카페 클럽ID — 현재 정본 1곳. .omc/research 는 아카이브(FP). 복사 확산 방지용 등록"
+    }
   ]
 }

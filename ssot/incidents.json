@@ -47,5 +47,16 @@
       "상태": "GUARDED",
       "검증증거": "① py_compile 11개 ALL_COMPILE_OK ② publish_register·send_review_card import 실측 TELEGRAM_CHAT_ID='8254867551'(env 직독) ③ divergence_scan 재실행 → scripts 내 telegram_chat_id 0건(정본 밖 잔여 6건 = CLAUDE.md·INDEX.md 등 문서류·이번 범위 외) ④ 커밋 2026-06-15."
     }
+  ,
+    {
+      "id": "INC-005",
+      "date": "2026-06-15",
+      "증상": "문의 CTA URL(wellperion.com/ko/inquiry)이 슬라이드 엔진 2개·검증 스크립트 2개에 하드코딩 복사 — 발산 스캔 전사 확장 시 탐지(정본 밖 4파일). URL 변경 시 4곳 동시수정 필요.",
+      "본질": "캐논 URL이 코드에 복사돼, 한쪽만 고치면 옛 복사본이 이긴다(INC-001 동류 — 복사 발산).",
+      "뿌리분류": "복사",
+      "차단조치": "제안(미구현, GM 결재 대기): ① scripts/compose_ballet.py:252·scripts/compose_spa_cinqmondes.py:163 — CTA 문자열을 ssot/canon_values.json 또는 공용 상수에서 직독하도록 리팩터. ② scripts/_verify_eng_btn.py:53·scripts/_verify_en_inquiry.py:54 — URL을 설정/상수 파일에서 읽도록 전환. 발산 스캔이 0건으로 확인돼야 GUARDED.",
+      "상태": "OPEN",
+      "검증증거": "divergence_scan.py 전사 확장 실행(2026-06-15) — inquiry_path 정본 밖 4건/4파일: compose_ballet.py L252·compose_spa_cinqmondes.py L163(슬라이드 CTA 하드코딩)·_verify_eng_btn.py L53·_verify_en_inquiry.py L54(검증 URL 하드코딩). ★차단 미구현."
+    }
   ]
 }
