@@ -6,8 +6,8 @@
     "status": "IN_PROGRESS",
     "priority": "NORMAL",
     "enqueued_at": "2026-06-15",
-    "summary": "GM 지적 3건 설계(승인 대기). ① 정비 범위표에 AI CEO(웰리) 누락 → 추가, 레거시 식별자(노션이관 임의번호 CMO-002 등, 코드 미참조 확인) → CTX-{역할} 규칙으로 정합. ② 교육자료 정리 SSOT = status/education_index.json(기계가독 매니페스트 — AI가 폴더 스캔 대신 키워드로 학습자료 조회·인용). ③ 토큰 많이 먹는 것(메모리·CLAUDE·에이전트 프롬프트·큰 가이드·review_queue·_queue·캐시) 가시화 SSOT = status/context_budget.json + 측정기 → 일요일 정비때 읽고 임계 초과부터 슬림화(삭제는 사람 확인). 설계안=docs/context_maint_ssot_design.md.",
-    "next": "GM 승인 → P1 T2 범위표(CEO행+식별자 CTX-*) → P2 education_index.json+인덱싱 → P3 context_budget.json+측정기. 적용 후 설계 제안문서 폐기(SSOT=T2 단일)."
+    "summary": "GM 지적 3건. ✅ A 적용완료(GM 승인): T2 범위표에 AI CEO(웰리) 행 추가 + 식별자 CTX-{역할} 7개 정합(레거시 노션번호 폐기, 6→7 라벨 정합). ⏳ B(승인대기): 교육자료 SSOT=status/education_index.json(AI가 키워드로 학습자료 조회·인용). ⏳ C(승인대기): 토큰소비 가시화 SSOT=status/context_budget.json + 측정기(scripts/context_budget_report.py) → 일요일 정비때 읽고 임계초과부터 슬림화(삭제는 사람 확인). 설계안=docs/context_maint_ssot_design.md.",
+    "next": "B·C GM 승인 대기 → 승인 시 P2 education_index.json+인덱싱 → P3 context_budget.json+측정기. 적용 후 제안문서 폐기(SSOT=T2)."
   },
   {
     "task_id": "COO-2026-06-15-SUPPORT-CHECK-OVERHAUL",
@@ -676,5 +676,29 @@
     "enqueued_at": "2026-06-15",
     "artifact": "PC 끄는 시각을 밤 11시 30분으로 맞췄는데도 3일 내내 10시 30분에 꺼져서, 밤 11시 보고가 안 나갔습니다. 우선 끄는 시각을 자정 30분으로 미뤄 보고가 무조건 나가게 해두고, 실제로 몇 시에 꺼지는지 기록이 남도록 켜뒀습니다. 진짜 원인은 아직 못 찾았습니다.",
     "next": "내일 아침 켜자마자 기록을 확인해 실제 꺼진 시각을 보고 → 원인 확정 → 다시는 안 그러게 영구 조치"
+  },
+  {
+    "task_id": "CMO-2026-06-15-CINQ-EP2-PUBLISH",
+    "clevel": "cmo",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-06-15",
+    "processed_at": "2026-06-15",
+    "title": "[시모] 생크몽드 Ep2 전채널 발행 (IG·블로그·카페·카카오·당근)",
+    "note": "✅ 생크몽드 Ep.2(동양의 회복 리추얼) 5채널 발행 — IG(wellperion 공식)·카카오·당근 라이브, 네이버 블로그·카페 GM 최종게시. 캡션 CTA=문의·투어 예약 02-6080-0091. IG는 실험#1 A군 첫줄 CTA 적용. 라이브·집계 검증 완료. ｜ Ep3은 검수대기 보류.",
+    "next": "생크몽드 Ep3 발행은 GM 지시 시."
+  },
+  {
+    "task_id": "CMO-2026-06-15-SUMMER-EN-CLEANUP",
+    "clevel": "cmo",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-06-15",
+    "processed_at": "2026-06-15",
+    "title": "[시모] 여름방학특강 영어버전 정리 (폼 삭제 + EN 페이지 카드 제거)",
+    "note": "✅ GM 지시 — 영어 여름특강 폼(Summer Special Programs) 휴지통 이동 + EN 문의 페이지(post 8408) Summer 카드 제거·재주입·라이브 검증. 한글 방특서베이 6종(수영·골프·스쿼시·체조·유소년PT·통합)·KO 문의 페이지는 미변경. 응답시트 해제는 GM 수동 완료.",
+    "next": "표류 — 영어 여름특강 정리 완결."
   }
 ]

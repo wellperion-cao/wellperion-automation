@@ -764,7 +764,7 @@
           <tr><th style="width:160px">날짜</th><th>변경 내용</th></tr>
           <!-- AUTO:TABLE-START -->
       <tr><td><strong>2026-06-15 (항로완료)</strong></td><td>✅ [시우] 결재현황 부서장 PIN 정합 — 맞는 비번도 거부되던 버그 수정 · ✅ [시우] 점검 GAS 유령 중복본 3개 정리 + 루트 체계 백업 삭제 · ✅ [시모] 마케팅 대시보드 후속 — 외부지표·채널 세부화·신규 문의폼 · ✅ [시모] 채널별 조회·반응 자동수집 (engagement_feed) · ✅ [시토] .bat 정리 — ops·ig 폴…</td></tr>
-      <tr><td><strong>2026-06-13 (항로완료)</strong></td><td>✅ [시토] 커밋 truncation 안전망 — 파일 급감 시 커밋 차단·경고 (오늘 운영부 1400줄 유실 재발방지) · ✅ [시우] 지원부 점검 항목ID 전체 정규화 — C내부·D업장·E외부 재정렬+B시프트+중복병합·shadow폐기 · ✅ [시우] 지원부 점검 회귀·잠재버그 수정 + 거짓 대량제출 인시던트 대응 · ✅ [시우] 주차관리부 체계 독립…</td></tr>
+      <tr><td><strong>2026-06-13 (항로완료)</strong></td><td>✅ [시토] 커밋 truncation 안전망 — 파일 급감 시 커밋 차단·경고 (오늘 운영부 1400줄 유실 재발방지) · ✅ [시우] 지원부 점검 항목ID 전체 정규화 — C내부·D업장·E외부 재정렬+B시프트+중복병합·shadow폐기 · ✅ [시우] 지원부 점검 회귀·잠재버그 수정 + 거짓 대량제출 인시던트 대응</td></tr>
       <!-- AUTO:TABLE-END -->
           <tr><td><strong>2026-05-28 (14차)</strong></td><td>공지/안내문 생성(COO 하위) · 오프라인 홍보물 디자인 제작(CMO 하위) 도구 신설 · 공지 서식 v2.0 독립 페이지화 · 회사소개서·전략로드맵 원본 「3. 웰페리온 가이드/회사문서/」로 이관(SSOT 단일화) · C-Level 부팅 R/R Notion API→웰페리온 ERP g10 참조로 전환 · GitHub Pages 워크플로 폴더명 경로 수정 · 사이드바 "공통+7개 C-Level" 라벨 제거</td></tr>
           <tr><td>2026-05-27 (13차)</td><td>GitHub Pages 전환 · 사이드바 4섹터 · AI C-Level 통일 · 운영 통합 체계 · 공식채널·지출현황·취업규칙·SSOT 신설 · g2+g19·g9+g20·g12·g13 합병 · 김남욱 탭 확장 · v2.5</td></tr>
@@ -5528,43 +5528,48 @@ function crTab(btn, panelId) {
     <h4>매주</h4>
     <table>
       <tr><th style="width:48px">상태</th><th style="width:170px">자동화</th><th style="width:80px">담당</th><th style="width:130px">주기</th><th style="width:70px">상세</th></tr>
-      <tr onclick="wpAutoToggle(this)" style="cursor:pointer;"><td>🟢</td><td>6 C-Level 컨텍스트 정비</td><td>6 C-Level</td><td>일 09:00</td><td style="color:var(--accent);font-size:12px;">펼치기 ▾</td></tr>
-      <tr class="auto-detail" style="display:none;"><td colspan="5" style="background:var(--paper);padding:12px 14px;font-size:13px;color:var(--dim);">반자동 모델 v2 (매주 일 09:00 텔레그램 알림 → CEO가 6 C-Level 일괄 위임 → 각자 정비 → CEO 1회 취합 보고). <strong>범위·R/R·식별자 = 바로 아래 범위표(이 표가 단일 출처)</strong> / 실행 프롬프트(STEP 1~5) = T1 기술 인프라 상세 ▸ 핵심 프롬프트 ▸ 운영 실행 도구 참조.</td></tr>
+      <tr onclick="wpAutoToggle(this)" style="cursor:pointer;"><td>🟢</td><td>7 C-Level 컨텍스트 정비</td><td>7 C-Level</td><td>일 09:00</td><td style="color:var(--accent);font-size:12px;">펼치기 ▾</td></tr>
+      <tr class="auto-detail" style="display:none;"><td colspan="5" style="background:var(--paper);padding:12px 14px;font-size:13px;color:var(--dim);">반자동 모델 v2 (매주 일 09:00 텔레그램 알림 → CEO가 6 C-Level 위임 + CEO 본인 컨텍스트도 정비 → 7건 → CEO 1회 취합 보고). <strong>범위·R/R·식별자 = 바로 아래 범위표(이 표가 단일 출처)</strong> / 실행 프롬프트(STEP 1~5) = T1 기술 인프라 상세 ▸ 핵심 프롬프트 ▸ 운영 실행 도구 참조.</td></tr>
     </table>
 
     <!-- ══ 주간 컨텍스트 정비 범위표 (2026-06-05 S2 → T2 이관 · 이 표가 단일 출처) ══ -->
     <h4 style="margin-top:20px;"><span class="ico">🗂️</span>주간 컨텍스트 정비 범위 (매주 일 09:00)</h4>
-    <div class="callout"><strong>반자동 실행 모델 v2 (2026-06-02 GM 확정 · 이 흐름이 SSOT).</strong> 일요일 알림 → 세션에서 사람이 실행 → CEO가 모아 한 번에 보고하는 구조. 6 C-Level 각각이 아래 범위표 기준으로 본인 영역을 정비(실행 프롬프트 STEP 1~5는 T1 기술 인프라 상세 ▸ 핵심 프롬프트 ▸ 운영 실행 도구 참조)하고, 정비 전·후 + 발견·개선안을 CEO에 보고. CEO는 6건을 모아 GM께 1회 통합 보고.</div>
-    <div class="callout"><strong>식별자 SSOT.</strong> 아래 범위표의 식별자(CMO-002·CPO-002·COO-001·CHRO-005·CFO-004·CTO-003)가 단일 기준입니다. (<code>status/schedule.json</code>의 코드·작업스케줄러 이름 등은 내부 부품일 뿐 식별자 SSOT가 아닙니다.)</div>
+    <div class="callout"><strong>반자동 실행 모델 v2 (2026-06-02 GM 확정 · 이 흐름이 SSOT).</strong> 일요일 알림 → 세션에서 사람이 실행 → CEO가 모아 한 번에 보고하는 구조. 7 C-Level(CEO 포함) 각각이 아래 범위표 기준으로 본인 영역을 정비(실행 프롬프트 STEP 1~5는 T1 기술 인프라 상세 ▸ 핵심 프롬프트 ▸ 운영 실행 도구 참조)하고, 정비 전·후 + 발견·개선안을 CEO에 보고. CEO는 본인 정비 + 6건을 모아 GM께 1회 통합 보고.</div>
+    <div class="callout"><strong>식별자 SSOT.</strong> 아래 범위표의 식별자(CTX-CEO·CTX-CMO·CTX-COO·CTX-CTO·CTX-CFO·CTX-CHRO·CTX-CPO — CTX-{역할} 규칙, 2026-06-15 레거시 노션번호 폐기)가 단일 기준입니다. (<code>status/schedule.json</code>의 코드·작업스케줄러 이름 등은 내부 부품일 뿐 식별자 SSOT가 아닙니다.)</div>
     <table>
       <tr><th>C-Level</th><th>식별자</th><th>정비 범위</th><th>체크포인트</th></tr>
       <tr>
-        <td><strong>AI CMO</strong></td><td>CMO-002</td>
+        <td><strong>AI CEO(웰리)</strong></td><td>CTX-CEO</td>
+        <td>웰리 상시 컨텍스트(MEMORY.md 인덱스·ai-ceo.md·CEO 부팅 주입) 슬림화 + 전사 정비 취합</td>
+        <td>MEMORY 인덱스↔파일 정합(고아·끊긴링크 0·net-zero) / ai-ceo.md·부팅 주입 군더더기 제거(S2 포인터화) / 6 C-Level 정비 결과 취합 → GM 1회 보고</td>
+      </tr>
+      <tr>
+        <td><strong>AI CMO</strong></td><td>CTX-CMO</td>
         <td>마케팅 SOP·콘텐츠 파이프라인·채널별 성과·베이스라인</td>
         <td>콘텐츠 캘린더 정합성 / 3채널 SOP 현행화 / 검수 피드백 누적 반영 / 베이스라인 톤 갱신</td>
       </tr>
       <tr>
-        <td><strong>AI CPO</strong></td><td>CPO-002</td>
+        <td><strong>AI CPO</strong></td><td>CTX-CPO</td>
         <td>회원·CS SOP·상품 아카이브·문의 응대 프로세스</td>
         <td>회원 상품 가격표 현행화 / CS 응대 매뉴얼 업데이트 / 문의 유형별 FAQ 정비 / 예약 정책 정합성</td>
       </tr>
       <tr>
-        <td><strong>AI COO</strong></td><td>COO-001</td>
+        <td><strong>AI COO</strong></td><td>CTX-COO</td>
         <td>운영 SOP·체크리스트·이슈 응답·리셉션 매뉴얼</td>
         <td>일일 점검 체크리스트 항목 현행화 / 이슈 응답 시트 패턴 분석 / 운영 가이드라인 갱신 / 교대 인수인계 절차</td>
       </tr>
       <tr>
-        <td><strong>AI CHRO</strong></td><td>CHRO-005</td>
+        <td><strong>AI CHRO</strong></td><td>CTX-CHRO</td>
         <td>인사·파트너 SOP·계약 관리·조직도·복지 정책</td>
         <td>파트너 계약 현황 갱신 / 레벨링 체계 점검 / 복장·복지 정책 현행화 / 근태 관리 프로세스 정비</td>
       </tr>
       <tr>
-        <td><strong>AI CFO</strong></td><td>CFO-004</td>
+        <td><strong>AI CFO</strong></td><td>CTX-CFO</td>
         <td>재무·지출·수익 SOP·예산 관리·세무 체크리스트</td>
         <td>월별 지출 집계 정합성 / 수익화 KPI 갱신 / 세무 일정 체크 / 예산 vs 실적 비교 정비</td>
       </tr>
       <tr>
-        <td><strong>AI CTO</strong></td><td>CTO-003</td>
+        <td><strong>AI CTO</strong></td><td>CTX-CTO</td>
         <td>전사 인프라·자동화·시설 SOP·개발 아카이브 / 🗜️ 캐시·상시 컨텍스트 압축</td>
         <td>scripts/ 폴더 구조 정비 / 자동화 태스크 가동 상태 점검 / 시설 유지보수 현황 갱신 / 기술 문서 현행화 / <strong>🗜️ 캐시·상시 컨텍스트 압축</strong> — 대상: 7 C레벨+웰리(CEO) 매 턴 로드 파일(review_queue.json·status/_queue.json·에이전트md·MEMORY.md·거대 SSOT 부분조회 등) / 기준: ① 죽은 이력 stub+아카이브 ② 정본 단일화(중복·구식 제거, S2 포인터 유지) ③ 측정→감축 / 안전: 행동=코드/멱등 스크립트(scripts/archive_review_queue.py 등), 원본 아카이브 보존, 살아있는 데이터 무손상 / 연결: CTO-2026-06-09-CONTEXT-COMPRESSION-REVIEW 정규 실행분 (첫 적용 2026-06-13: review_queue.json 691→446행)</td>
       </tr>
