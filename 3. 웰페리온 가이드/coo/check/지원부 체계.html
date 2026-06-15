@@ -1963,8 +1963,9 @@ async function loadState(d,g){
     // 저장 완료되면 _dirtyKeys 해제 → 이후엔 서버 우선(옛 데이터 부활 위험 없음). GM 2026-06-12
     if(_dirtyKeys[d+'__'+gg]){
       try{
-        Object.keys(STATE).forEach(k=>{ if(k.indexOf('chk_'+gg+'_')===0)delete STATE[k]; });   // 서버 체크 제거
-        const _loc=loadLocal(d,gg); Object.keys(_loc).forEach(k=>{ if(k.indexOf('chk_'+gg+'_')===0 && _loc[k]===true)STATE[k]=true; });   // 로컬(진실) 적용
+        // 합집합(GM 2026-06-15·시트=출처): 서버/시트로 복원한 체크는 보존하고 로컬 미저장 체크만 추가.
+        // (옛 방식은 chk 전부 삭제 후 로컬만 재적용 → 타세션·시트 체크가 사라지고 '제출완료' 배지만 남던 버그)
+        const _loc=loadLocal(d,gg); Object.keys(_loc).forEach(k=>{ if(k.indexOf('chk_'+gg+'_')===0 && _loc[k]===true)STATE[k]=true; });   // 로컬 미저장 체크 합집합
       }catch(e){}
     }
   }catch(e){STATE=loadLocal(d,gg)}
