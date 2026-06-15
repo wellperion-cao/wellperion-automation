@@ -581,6 +581,21 @@ function renderGoalGauge() {
   if (MONTHLY_INQUIRY_TARGET !== null) {
     var inqCurrent = (_pbData.inquiries && _pbData.inquiries.month !== undefined) ? _pbData.inquiries.month : 0;
     html += gaugeBar('문의', inqCurrent, MONTHLY_INQUIRY_TARGET);
+    // 이번 달 페이스 — 경과일 기준 월말 예상치(목표 200 대비)
+    var _now = new Date();
+    var _dom = _now.getDate();
+    var _dim = new Date(_now.getFullYear(), _now.getMonth() + 1, 0).getDate();
+    var _proj = _dom > 0 ? Math.round(inqCurrent / _dom * _dim) : inqCurrent;
+    var _diff = _proj - MONTHLY_INQUIRY_TARGET;
+    var _pacePct = Math.round(_proj / MONTHLY_INQUIRY_TARGET * 100);
+    var _paceColor = _proj >= MONTHLY_INQUIRY_TARGET ? 'var(--green)' : (_pacePct >= 80 ? 'var(--accent)' : 'var(--dim)');
+    var _sign = _diff >= 0 ? '+' : '';
+    var _paceLabel = _proj >= MONTHLY_INQUIRY_TARGET ? '목표 달성 페이스' : '목표 미달 페이스';
+    html += '<div style="font-size:11px;color:var(--dim);margin:-2px 0 6px">'
+      + '현재 페이스 → 월말 예상 <b style="color:' + _paceColor + '">' + _proj.toLocaleString('ko-KR') + '건</b>'
+      + ' · 목표 대비 ' + _sign + _diff + '건 (' + _pacePct + '%) · '
+      + '<span style="color:' + _paceColor + ';font-weight:600">' + _paceLabel + '</span>'
+      + ' <span style="color:var(--dim)">(' + _dom + '/' + _dim + '일 경과 기준)</span></div>';
   }
   if (MONTHLY_CONVERT_TARGET !== null) {
     var convCurrent = (_pbData.conversion && _pbData.conversion.month && _pbData.conversion.month.converted !== undefined)
