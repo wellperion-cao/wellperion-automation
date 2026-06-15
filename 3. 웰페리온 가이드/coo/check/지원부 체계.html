@@ -1895,7 +1895,8 @@ async function loadState(d,g){
       if(row.submittedAt_night)STATE._submittedAt_night=row.submittedAt_night;
       if(row.submitter_night)STATE._submitter_night=row.submitter_night;
       if(row.submitted)STATE._submitted_am=true;
-      if(row.submittedAt&&!STATE._submittedAt_am)STATE._submittedAt_am=row.submittedAt;
+      /* 제출된 행의 시각만 '조 제출시각'으로 복원 — 자동저장 행의 항목별 체크시각이 오염시키지 않게 가드. GM 2026-06-15 */
+      if(row.submitted&&row.submittedAt&&!STATE._submittedAt_am)STATE._submittedAt_am=row.submittedAt;
     });
     // 완료 체크 원장 복원(2026-06-11 시우): 정상완료 항목은 시트행이 없으므로(이상치만 기록)
     // 서버 원장(chk_<dept>_<date>)으로 STATE[itemId] 복원 → 과거일/타기기 admin 완료율 회귀 방지.
@@ -1980,7 +1981,7 @@ function _buildPushPayload(d,g,includeSubmitMeta){
     }
   }
   /* 항목별 점검자·시각 부착(시트행 inspector/시각 기록 — 체크된 항목만 의미). GM 2026-06-15 */
-  checks.forEach(function(c){ const a=_itemAttr(g,c.itemId); if(a.by)c.submitter=a.by; if(a.at)c.checkedAt=a.at; });
+  checks.forEach(function(c){ const a=_itemAttr(g,c.itemId); if(a.by)c.submitter=a.by; if(a.at)c.checkedAt=d+' '+a.at; });
   const _cpfx='chk_'+g+'_';
   const roundChecks=Object.keys(STATE).filter(k=>k.indexOf(_cpfx)===0&&STATE[k]===true).map(k=>k.slice(_cpfx.length));
   /* 회차별 항목 기록(점검자·시각·담당) → 원장 cr 메타로 영속 → 새로고침·타기기 복원. GM 2026-06-15 */
