@@ -5818,21 +5818,7 @@ function crTab(btn, panelId) {
 
     <!-- 보류 섹션 삭제 (2026-06-15 GM): 노션 이관 미구현 placeholder 트래시 전체 제거. 실제 구현은 필요 시 해당 C-Level이 새 항로로 발의. -->
 
-    <!-- ③ 실제 업무 산출 자동화 -->
-    <h3><span class="ico">📢</span>실제 업무 산출 자동화</h3>
-    <table>
-      <tr><th style="width:48px">상태</th><th style="width:170px">자동화</th><th style="width:80px">담당</th><th style="width:130px">주기</th><th style="width:70px">상세</th></tr>
-      <tr onclick="wpAutoToggle(this)" style="cursor:pointer;"><td>⚠️</td><td>인스타 콘텐츠 발행 (반자동)</td><td>CMO</td><td>승인 시</td><td style="color:var(--accent);font-size:12px;">펼치기 ▾</td></tr>
-      <tr class="auto-detail" style="display:none;"><td colspan="5" style="background:var(--paper);padding:10px 14px;font-size:13px;color:var(--dim);"> 제작 → 검수카드 → GM [✅승인] → 시모 자동발행 → 웰리 실측 대조 4단계. <strong>상세 흐름 = M5 콘텐츠 검수·자동업로드 ▸ 📸 인스타그램 발행 파이프라인 참조.</strong></td></tr>
-      <tr onclick="wpAutoToggle(this)" style="cursor:pointer;"><td>🟡</td><td>블로그·카페·인스타 통합 업로드</td><td>CMO</td><td>수시(기획)</td><td style="color:var(--accent);font-size:12px;">펼치기 ▾</td></tr>
-      <tr class="auto-detail" style="display:none;"><td colspan="5" style="background:var(--paper);padding:10px 14px;font-size:13px;color:var(--dim);"> 채널별 생성 → 검수·승인 → 업로드. 자동 발행은 GM 수동 승인 정책으로 보류.</td></tr>
-      <tr onclick="wpAutoToggle(this)" style="cursor:pointer;"><td>🟡</td><td>슬라이드 자동 합성·콘텐츠 수집</td><td>CMO</td><td>수시(만듦)</td><td style="color:var(--accent);font-size:12px;">펼치기 ▾</td></tr>
-      <tr class="auto-detail" style="display:none;"><td colspan="5" style="background:var(--paper);padding:10px 14px;font-size:13px;color:var(--dim);"> 사진+카피 → 슬라이드 생성, 채널 글 수집 엔진 완성. 정기 가동 미적용.</td></tr>
-      <tr onclick="wpAutoToggle(this)" style="cursor:pointer;"><td>⚠️</td><td>COO 이슈 → 핵심멤버방 알림</td><td>COO</td><td>이슈 등록 시</td><td style="color:var(--accent);font-size:12px;">펼치기 ▾</td></tr>
-      <tr class="auto-detail" style="display:none;"><td colspan="5" style="background:var(--paper);padding:10px 14px;font-size:13px;color:var(--dim);"> 시트 이슈 등록 시 텔레그램 통보. 코드 있음 — 구글 트리거 실가동 확인 필요.</td></tr>
-      <tr onclick="wpAutoToggle(this)" style="cursor:pointer;"><td>⚠️</td><td>CEO 매출 보고 자동 발송</td><td>CEO</td><td>정기(확인)</td><td style="color:var(--accent);font-size:12px;">펼치기 ▾</td></tr>
-      <tr class="auto-detail" style="display:none;"><td colspan="5" style="background:var(--paper);padding:10px 14px;font-size:13px;color:var(--dim);"> 매출 시트 → 이미지 변환 → 텔레그램 발송. 코드 있음 — 실가동 확인 필요.</td></tr>
-    </table>
+    <!-- '실제 업무 산출 자동화' 표 제거 (2026-06-15 GM): 비SSOT 상태 스냅샷·중복. IG=M5 정본 / 블로그·슬라이드 미적용분 폐기 / COO이슈알림·CEO매출보고 미검증 2건은 _queue 확인 task(COO-/CEO-2026-06-15-*-VERIFY)로 보존. -->
 
     
 
