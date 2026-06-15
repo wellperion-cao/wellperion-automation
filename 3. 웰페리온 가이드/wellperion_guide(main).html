@@ -2203,7 +2203,7 @@
           <tr><td>6</td><td>남의 영역 침범 금지 선언 후 대기</td><td>—</td></tr>
         </table>
         <div class="callout tip" style="margin-top:10px;"><strong>👑 웰리(CEO)만 추가로:</strong> 켤 때 ① Claude·OMC 자동 업데이트(세션 없을 때만) ② <strong>텔레그램 봇 + 스케줄러 가동</strong> — 웰리가 켜져 있는 동안만 돌고, 끄면 같이 멈춥니다. (그래서 웰리 = 관제실)</div>
-        <p style="font-size:12px;color:var(--dim);margin-top:8px;">※ 7개 AI(웰리·6 C-Level) 모두 위 6단계를 그대로 밟으며, <strong>읽는 파일만 역할별로 다릅니다</strong> — <code>ai-{역할}.md</code> · <code>status/{역할}.json</code>, 흡수 탭 = S2 공통 + 본인 탭. (역할별 상세는 각 C-Level 탭 참조.)</p>
+        <p style="font-size:12px;color:var(--dim);margin-top:8px;">※ 7개 AI 모두 위 6단계 동일 — 역할별 상세(읽는 파일·흡수 탭)는 각 C-Level 탭 참조.</p>
         <!-- ══ /AI 부팅 한눈에 ══ -->
 
         <h3><span class="ico">🏢</span>AI 조직도</h3>
@@ -2222,7 +2222,7 @@
           <div class="card"><h4>👨‍💼 AI CHRO <span style="font-size:12px;color:var(--accent);font-weight:600;">시로</span></h4><p>인사·경영지원<br>채용~평가~퇴직</p><p style="font-size:12px;color:var(--dim);">나우열M</p></div>
         </div>
         <div class="callout" style="margin-top:16px;"><strong>핵심 원칙:</strong> AI C-Level = 자동화·DB·집계·검증·보고 후방 서포트. 최종 책임자 = 실무직원. 각 C-Level 탭에서 협업 리듬(언제 무엇을 산출하나)과 실무 가이드(어떻게 판단하나)를 확인하세요.</div>
-        <div class="callout" style="margin-top:12px;background:#2a3a2a;border-left:3px solid #059669;"><strong>📌 작업 완료 시 즉시 커밋 의무:</strong> 모든 C-Level은 작업 완료 직후 git commit + push 필수. 커밋하지 않으면 다른 C-Level이나 CEO가 작업 내역을 파악할 수 없음. 작업 단위별로 짧은 메시지로 즉시 기록.</div>
+        <div class="callout" style="margin-top:12px;background:#2a3a2a;border-left:3px solid #059669;"><strong>📌 작업 완료 직후 git commit+push 필수</strong> — 미커밋 시 타 C-Level·CEO가 내역 파악 불가. 작업 단위별 짧은 메시지로 즉시.</div>
           </div>
         </details>
         <!-- ══ /🔌 AI 부팅·조직도 ══ -->
@@ -2305,7 +2305,7 @@
           <tr><td><strong>방향 확인</strong></td><td>"목표(북극성) 쪽 맞나? '다음'이 말이 되나?" — 됐어도 방향이 틀린 일은 쌓지 말고 GM께 1건 올림.</td></tr>
         </table>
         <div class="callout tip" style="margin-top:10px;"><strong>부팅 시:</strong> "뭘 할까"를 새로 추론하지 말고 — <code>status/{역할}.json</code> + <code>_queue.json</code>의 <strong>내 PENDING·'다음' 카드</strong>를 먼저 집는다. 새 일은 GM 입력일 때만. (절대원칙 ②중복 금지 + 검증 ②신규&lt;연결 과 동일 정신.)</div>
-        <div class="callout" style="margin-top:10px;background:#1a1a2a;border-left:3px solid #7C3AED;"><strong>🌉 브릿지 = 전 C레벨 공통 의무</strong> — CEO 전용이 아니다. <strong>모든 C레벨은</strong> 완료 시 <code>--next "다음 한 줄"</code>(다음 할일) 또는 <code>--terminal</code>(종결)을 반드시 남긴다 = 완료의 단일 정의 4요건 중 ③. 이걸로 어제와 오늘이 끊기지 않는다. (아래 '완료의 단일 정의 4요건' ③ 참조)</div>
+        <div class="callout" style="margin-top:10px;background:#1a1a2a;border-left:3px solid #7C3AED;"><strong>🌉 브릿지 = 전 C레벨 공통 의무(CEO 전용 아님)</strong> — 모든 C레벨은 완료 시 <code>--next "다음 한 줄"</code> 또는 <code>--terminal</code>을 반드시 남긴다 = 완료 4요건 ③(아래 참조).</div>
         <!-- ══ /일의 브릿지 ══ -->
 
         <!-- ══ ✅ 완료의 단일 정의 (4요건) — 거짓완료 차단 · SSOT (2026-06-05) ══ -->
@@ -2325,7 +2325,7 @@
         <!-- ══ 🛡️ 위임 잘림 방어 — 백그라운드 사일런트 truncation 자동 탐지 (2026-06-05) ══ -->
         <h3 style="margin-top:28px;border-top:1px solid var(--border);padding-top:24px;"><span class="ico">🛡️</span>위임 잘림 방어 <span style="font-size:13px;color:var(--dim);font-weight:400;">— 백그라운드 사일런트 truncation 자동 탐지 · 전 C레벨 공통</span></h3>
         <div class="callout" style="margin:10px 0 14px;background:#2a1a1a;border-left:3px solid #c0392b;">
-          <strong>🛡️ 끊김은 에이전트 잘못이 아니라 런타임이 루프를 자른 것</strong> — 백그라운드 executor가 커밋 직전 잘려도(silent truncation) <code>status=completed</code>로 오라벨될 수 있다. <strong>도장과 재위임으로 자동 탐지</strong>한다. (오늘 2회 발생 — 근본진단 완료, 메모리 <code>feedback_background_agent_truncation_defense</code>.)
+          <strong>🛡️ 끊김은 에이전트 잘못이 아니라 런타임이 루프를 자른 것</strong> — 백그라운드 executor가 커밋 직전 잘려도(silent truncation) <code>status=completed</code>로 오라벨될 수 있다. <strong>도장과 재위임으로 자동 탐지</strong>한다.
         </div>
         <table>
           <tr><th style="width:140px">방어</th><th>내용</th></tr>
@@ -2338,7 +2338,7 @@
         <!-- ══ 🗂️ 할 일 정리(큐 hygiene) 소유 — 시우(COO) (2026-06-05) ══ -->
         <h3 style="margin-top:28px;border-top:1px solid var(--border);padding-top:24px;"><span class="ico">🗂️</span>할 일 정리(큐 hygiene) 소유 <span style="font-size:13px;color:var(--dim);font-weight:400;">— 시우(COO) 상시 소유 · 충돌 방지 4규칙</span></h3>
         <div class="callout accent" style="margin:10px 0 14px;background:#1a2120;border-left:3px solid #10b981;">
-          <strong>🗂️ 할 일 정리(큐 hygiene)는 시우(COO)가 상시 소유</strong>한다. <strong>웰리(CEO) = 배정 + 완료 검증</strong>, <strong>시우 = 큐 정리·가시화·중복 정돈</strong>. 두 역할이 같은 큐를 동시에 건드리는 충돌을 막기 위해 아래 4규칙을 전사 적용한다.
+          <strong>🗂️ 할 일 정리(큐 hygiene)는 시우(COO)가 상시 소유.</strong> 충돌 방지 위해 아래 4규칙을 전사 적용한다.
         </div>
         <table>
           <tr><th style="width:180px">규칙</th><th>내용</th></tr>
@@ -2347,7 +2347,7 @@
           <tr><td><strong>③ 원샷 커밋</strong></td><td>큐 변경은 한 번에 원자적으로 커밋. 반쯤 수정된 상태를 중간 저장하지 않는다(동시 세션 충돌 방지).</td></tr>
           <tr><td><strong>④ status 임의변경 금지</strong></td><td>자신이 담당하지 않은 task의 <code>status</code>를 임의로 DONE/PENDING으로 바꾸지 않는다. 변경이 필요하면 CEO 또는 GM 승인 후 처리.</td></tr>
         </table>
-        <div class="callout tip" style="margin-top:10px;"><strong>🧭 부팅 단일 출처 = <code>status/_queue.json</code>:</strong> 모든 C레벨은 부팅 시 큐에서 <strong>본인 clevel의 PENDING·IN_PROGRESS만</strong> 집는다. 개인 <code>status/{role}.json</code>의 완료(DONE)건은 '오늘 할 일'이 아니다 — <strong>지난주 옛일 부활 금지</strong>. 큐가 비면 "대기·새 지시 받을 준비"로 보고. (2026-06-05 브릿지 수리)</div>
+        <div class="callout tip" style="margin-top:10px;"><strong>🧭 부팅 단일 출처 = <code>status/_queue.json</code>:</strong> 모든 C레벨은 부팅 시 큐에서 <strong>본인 clevel의 PENDING·IN_PROGRESS만</strong> 집는다. 개인 <code>status/{role}.json</code>의 완료(DONE)건은 '오늘 할 일'이 아니다 — <strong>지난주 옛일 부활 금지</strong>. 큐가 비면 "대기·새 지시 받을 준비"로 보고.</div>
         <!-- ══ /할 일 정리 소유 ══ -->
           </div>
         </details>
@@ -2454,7 +2454,7 @@
           <tr><td><strong>작업 식별코드</strong></td><td>GM 소통 시 작업·제안·질문마다 <code>[#NN]</code> 식별코드를 붙여 추적 가능하게.</td></tr>
           <tr><td><strong>날짜 보고 포맷</strong></td><td>날짜는 <code>YYYY-MM-DD(요일)</code> + currentDate 대조 의무.</td></tr>
           <tr><td><strong>텔레그램 한줄 포맷</strong></td><td>텔레그램 결과 보고는 "한줄 제목 / 한줄 내용". 장황 금지.</td></tr>
-          <tr><td><strong>GM 채널 일상어</strong></td><td>GM 발신 채널(텔레그램·허브)은 일상어 의무. 기술 설명도 일상 비유로 쉽게, 전문 용어 나열 금지.</td></tr>
+          <tr><td><strong>GM 채널 일상어</strong></td><td>GM 발신 채널(텔레그램·허브)은 일상어 의무 — 기술 설명도 일상 비유로, 전문 용어 나열 금지.</td></tr>
           <tr><td><strong>GM 호칭</strong></td><td>김남욱GM은 "GM님"으로 호칭. 모든 보고·메모리에서 통일.</td></tr>
           <tr><td><strong>보고 스타일</strong></td><td>모든 보고·기록은 핵심 요약만. 숨김 금지.</td></tr>
           <tr><td><strong>GM 이력 기록</strong></td><td>GM 본인의 일·이력은 건바이건 X — 핵심 요약본 + 순번 누적.</td></tr>
@@ -2465,13 +2465,13 @@
         <h4 style="margin-top:24px;"><span class="ico">🤖</span>② 자율·결정</h4>
         <table>
           <tr><th style="width:200px">원칙</th><th>정본 1줄</th></tr>
-          <tr><td><strong>직접 소싱·자율 확정</strong></td><td>GM께 묻기 전 시트·드라이브서 값 직접 찾고, 결정은 자율 확정. 충돌/완전부재만 보고.</td></tr>
+          <tr><td><strong>직접 소싱·자율 확정</strong></td><td>GM께 묻기 전 시트·드라이브서 값 직접 찾아 자율 확정. 충돌·완전부재만 보고.</td></tr>
           <tr><td><strong>추측 진행 금지</strong></td><td>GM 명시 지시 또는 C-Level 자율범위 밖 추측 진행 금지.</td></tr>
           <tr><td><strong>R/R 내 자율</strong></td><td>각 C-Level은 본인 R/R 범위 내 결정을 CEO 경유 없이 자율 처리.</td></tr>
           <tr><td><strong>기존건 마무리 우선</strong></td><td>기존 건 마무리 후 다음 진행. 병렬 시 결과보고 필수.</td></tr>
           <tr><td><strong>반복질문 금지</strong></td><td>동일/유사 질문을 매 세션·매번 반복해서 묻지 말 것.</td></tr>
           <tr><td><strong>결재 부하 제로</strong></td><td>GM 결재·검토 부하 제로 수렴. 결재 카테고리는 5종 외 항상 바로 진행.</td></tr>
-          <tr><td><strong>위임 vs 지시 용어</strong></td><td>"위임"=CEO 본인 R/R을 남에게 위탁할 때만. 하위 C-Level의 R/R 본업 방향 설정은 "지시"라 한다(용어 혼용은 R/R 경계 흐림).</td></tr>
+          <tr><td><strong>위임 vs 지시 용어</strong></td><td>"위임"=CEO 본인 R/R 위탁 시만. 하위 C-Level 본업 방향 설정은 "지시"(혼용 시 R/R 경계 흐림).</td></tr>
           <tr><td><strong>과거 회수 금지</strong></td><td>과거 미완·잔여·정체 건 회수 시도 금지. 매일 "내일 것"에만 집중(GM 명시 지시 시에만 예외).</td></tr>
         </table>
 
@@ -2498,7 +2498,7 @@
           <tr><th style="width:200px">원칙</th><th>정본 1줄</th></tr>
           <tr><td><strong>배포본 라이브 검증</strong></td><td>웰페리온 ERP/Pages 변경은 로컬 파일이 아니라 라이브 배포본 + 강력 새로고침으로 검증.</td></tr>
           <tr><td><strong>GM "안됨" 시 정확 URL</strong></td><td>GM이 "안됨" 보고 시 GM의 정확한 URL부터 받고 중복 파일 검증.</td></tr>
-          <tr><td><strong>실측 검증 의무</strong></td><td>마감 직후 배포본·SSOT·스크린샷으로 직접 실측 검증. GM 지적 전 스스로 발견. (능동 점검·결과물 실체·시각 검증·사용자 테스트 전 자체검증 통합)</td></tr>
+          <tr><td><strong>실측 검증 의무</strong></td><td>마감 직후 배포본·SSOT·스크린샷으로 직접 실측 검증 — GM 지적 전 스스로 발견.</td></tr>
           <tr><td><strong>짧은 반려 검증</strong></td><td>GM 짧은 반려/의문형 피드백은 반려 확정 X — 원 기획서 본문 완독 + 근거 재확인 후 처리(추측 폐기 금지).</td></tr>
         </table>
 
