@@ -25,19 +25,20 @@ function _itemDept(v){ var d = String(v == null ? '' : v).trim(); return d || 's
 const BOT_TOKEN = PropertiesService.getScriptProperties().getProperty('TELEGRAM_BOT_TOKEN');
 const CHAT_ID   = PropertiesService.getScriptProperties().getProperty('TELEGRAM_CHAT_ID');
 
+// 2026-06-15 GM 스키마 v2: 시간대→회차(조 단위) · 담당자를 점검자 앞으로 · 교대 열 삭제(14열).
 const HEADERS = [
-  '날짜','항목ID','항목명','카테고리','시간대',
+  '날짜','항목ID','항목명','카테고리','회차',
   '점검결과','이슈메모','노하우','제출상태','제출시각',
-  '점검자','교대',
-  // S2(2026-06-10 시토): 13열 측정값 — measure 영문키 JSON 문자열 패스스루(예 {"ph":7.2}).
-  // payload에 measure 없으면 빈칸. boolean 점검(6열 '완료'/'미완료')·완료율 판정 영향 0.
-  '측정값',
-  // F1(2026-06-11 시우): 14열 반영완료 — 이슈/노하우 후속조치 완료 플래그('Y'/빈값).
-  // 완료율·집계와 무관(별도 컬럼). payload에 reflected 없으면 빈칸.
-  '반영완료',
-  // 15열 담당자(2026-06-12 시우·GM): 규정 운영근무조 담당자(payload.duty). 점검자와 별개.
-  '담당자'
-];
+  '담당자','점검자','측정값','반영완료'
+]; // (닫힘 — 아래 _roundLabel)
+// 슬롯/교대 → 조(회차) 라벨. 프론트 roundOfSlot과 동일 매핑(오전조/오후조/마감조). GM 2026-06-15.
+function _roundLabel(slot, shift) {
+  var s = String(slot || '');
+  if (s.indexOf('마감') >= 0 || s.indexOf('저녁') >= 0) return '마감조';
+  if (s.indexOf('오후') >= 0) return '오후조';
+  if (String(shift || '') === 'pm') return '오후조';
+  return '오전조';   // 오픈·오전·인수인계·내부외부·all·am → 오전조
+}
 
 // ─── 남성/여성 공통 항목 (A 사우나 + B 락커룸) ───
 const ZONE_ITEMS = [
@@ -266,7 +267,7 @@ function doGet(e) {
     var _dz = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(_deptTabs(e.parameter.dept || 'support')[e.parameter.zone || 'male']);
     if (!_dz) return jsonRes({ error: 'no sheet' });
     var _dd = _dz.getDataRange().getValues(), _out = [];
-    for (var _i = 1; _i < _dd.length; _i++) { _out.push({ date: String(_dd[_i][0]), id: String(_dd[_i][1]), status: String(_dd[_i][5]), inspector: String(_dd[_i][10] || ''), issue: String(_dd[_i][6] || '') }); }
+    for (var _i = 1; _i < _dd.length; _i++) { _out.push({ date: String(_dd[_i][0]), id: String(_dd[_i][1]), round: String(_dd[_i][4] || ''), status: String(_dd[_i][5]), duty: String(_dd[_i][10] || ''), inspector: String(_dd[_i][11] || ''), issue: String(_dd[_i][6] || '') }); }
     return jsonRes({ sheet: _dz.getName(), total: _out.length, rows: _out });
   }
   if (action === 'clear_non_keep') {   // 지정 날짜(keep) 외 행 전부 삭제 — '오늘것만 남김'. 2026-06-15 시우.
@@ -284,6 +285,21 @@ function doGet(e) {
       _del.forEach(function(rn){ _kz.deleteRow(rn); _rm++; });   // 내림차순이라 안전
     }
     return jsonRes({ ok: true, sheet: _kz.getName(), kept: _keep, removed: _rm, mode: _mode });
+  }
+  if (action === 'migrate_schema') {   // GM 스키마 v2: 기존행(담당자 이동된 15열)을 새 14열(회차·교대삭제)로 재작성. 2026-06-15 시우.
+    var _mz = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(_deptTabs(e.parameter.dept || 'support')[e.parameter.zone || 'male']);
+    if (!_mz) return jsonRes({ error: 'no sheet' });
+    var _md = _mz.getDataRange().getValues();
+    var _new = [HEADERS.slice()];
+    for (var _mi = 1; _mi < _md.length; _mi++) {
+      var r = _md[_mi];
+      if (!String(r[0] || '')) continue;
+      // 입력=현재순서(담당자 이동됨): 0날짜 1ID 2명 3카테 4시간대 5결과 6이슈 7노하우 8제출상태 9제출시각 10담당자 11점검자 12교대 13측정 14반영
+      _new.push([ r[0], r[1], r[2], r[3], _roundLabel(r[4], r[12]), r[5], r[6], r[7], r[8], r[9], r[10], r[11], r[13], r[14] ]);
+    }
+    _mz.clearContent();
+    _mz.getRange(1, 1, _new.length, HEADERS.length).setValues(_new);
+    return jsonRes({ ok: true, sheet: _mz.getName(), rows: _new.length - 1 });
   }
   if (action === 'migrate_support_sheets') { return migrateSupportSheets(); }
   if (action === 'purge_dept_items') { return purgeDeptItems(e.parameter.dept || ''); }
@@ -334,11 +350,11 @@ function doGet(e) {
           tip: String(data[i][7] || ''),
           submitted: submitStr !== '미제출',
           submittedAt: String(data[i][9] || ''),
-          submitter: String(data[i][10] || ''),
-          shift: String(data[i][11] || ''),
-          measure: String(data[i][12] || ''),   // S2: 13열 측정값(없으면 빈문자)
-          reflected: String(data[i][13] || '') === 'Y',   // F1: 14열 반영완료
-          duty: String(data[i][14] || ''),                 // 15열 담당(근무조) — 시트=페이지 동일시 복원용. 2026-06-15
+          duty: String(data[i][10] || ''),                 // 11열 담당자(점검자 앞·v2)
+          submitter: String(data[i][11] || ''),            // 12열 점검자
+          shift: '',                                       // 교대 열 삭제(v2) — roundOfSlot은 slot(회차명)으로 동작
+          measure: String(data[i][12] || ''),              // 13열 측정값
+          reflected: String(data[i][13] || '') === 'Y',    // 14열 반영완료
           gender: name === baseMale ? 'm' : name === baseFemale ? 'f' : 'all',
           submitted_am: hasAm,
           submittedAt_am: hasAm ? String(data[i][9] || '') : '',
@@ -655,15 +671,14 @@ function handleSave(body) {
     var inspector = c.submitter || defaultInspector(sheetName, c.slot || '');
     var shift = c.shift || slotToShift(c.slot || '');
     var values = [
-      date, c.itemId, c.name, c.cat, c.slot,
+      date, c.itemId, c.name, c.cat, _roundLabel(c.slot, c.shift),   // 5열 회차(조 단위)
       c.checked ? '완료' : '미완료',
       c.issue || '', c.tip || '',
       body.submitStatus || '미제출',
-      c.checkedAt || body.submittedAt || '',   // 항목별 체크시각 우선(없으면 제출시각). GM 2026-06-15
-      inspector, shift,
-      _measureStr(c.measure),  // S2: 13열 측정값 패스스루(없으면 빈칸)
-      c.reflected ? 'Y' : '',  // F1: 14열 반영완료
-      body.duty || ''          // 15열 담당자(규정 근무조)
+      c.checkedAt || body.submittedAt || '',   // 항목별 체크시각 우선
+      body.duty || '', inspector,              // 11열 담당자 · 12열 점검자
+      _measureStr(c.measure),                  // 13열 측정값
+      c.reflected ? 'Y' : ''                   // 14열 반영완료
     ];
     if (rowNum) {
       // 기존 행은 제자리 갱신 유지(이력 보존 — 정상완료로 바뀐 기존 이상치 행도 정확히 반영).
@@ -781,16 +796,14 @@ function _handleSaveV2Compat(body) {
     items.forEach(function(c) {
       var rowNum = existingMap[c.itemId];
       var values = [
-        date, c.itemId, c.name, c.cat, c.slot,
+        date, c.itemId, c.name, c.cat, _roundLabel(c.slot, c.shift),   // 5열 회차(조 단위)
         c.checked ? '완료' : '미완료',
         c.issue || '', c.tip || '',
         submitStatus, (c.checkedAt || submitAt),
-        c.submitter || submitter || defaultInspector(name, c.slot || ''),   // 항목별 점검자·체크시각 우선. GM 2026-06-15
-
-        c.shift || slotToShift(c.slot || ''),
-        _measureStr(c.measure),  // S2: 13열 측정값 패스스루(없으면 빈칸)
-        c.reflected ? 'Y' : '',  // F1: 14열 반영완료
-        body.duty || ''          // 15열 담당자(규정 근무조) — payload.duty
+        body.duty || '',                                               // 11열 담당자
+        c.submitter || submitter || defaultInspector(name, c.slot || ''),  // 12열 점검자
+        _measureStr(c.measure),                                        // 13열 측정값
+        c.reflected ? 'Y' : ''                                         // 14열 반영완료
       ];
       if (rowNum) {
         if (!_shouldRow(dept, c)) {
