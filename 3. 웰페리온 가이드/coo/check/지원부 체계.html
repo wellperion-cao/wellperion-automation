@@ -1340,14 +1340,17 @@ function populateOneDuty(selId,gender,roster0){
 function getDutyForGender(g){const el=document.getElementById(g==='f'?'dutyF':'dutyM');return el?el.value||'':'';}
 function onDutyChangeG(g){
   const el=document.getElementById(g==='f'?'dutyF':'dutyM');
-  if(el)localStorage.setItem('wcheck_duty_'+g+'_'+getRoundG(g),el.value||'');   // 회차별 담당자(GM 2026-06-15)
+  if(el){const rk=getRoundG(g);localStorage.setItem('wcheck_duty_'+g+'_'+rk,el.value||'');localStorage.setItem('wcheck_duty_last_'+g,el.value||'');}   // 회차별 담당자 + 직전값(GM 2026-06-15)
 }
 /* 회차 전환 시 점검자·담당자 입력칸을 그 회차 저장값으로 교체(빈칸=미입력). focus 중이면 건너뜀(한글IME 클로버링 차단). */
 function _applyRoundActor(g,round){
+  // 이 회차 값 우선, 없으면 직전 입력값(_last) 유지 → 조 전환 시 빈칸으로 사라지지 않음(GM 2026-06-15).
+  // 제출완료 회차면 입력칸도 잠금(수정 차단).
+  const locked=!!(typeof isRoundSubmitted==='function'&&isRoundSubmitted(getDateG(g),g,round));
   const se=document.getElementById(g==='f'?'submitterF':'submitterM');
-  if(se&&document.activeElement!==se)se.value=localStorage.getItem('wcheck_sub_'+g+'_'+round)||'';
+  if(se){ if(document.activeElement!==se)se.value=localStorage.getItem('wcheck_sub_'+g+'_'+round)||localStorage.getItem('wcheck_sub_last_'+g)||''; se.disabled=locked; }
   const de=document.getElementById(g==='f'?'dutyF':'dutyM');
-  if(de&&document.activeElement!==de)de.value=localStorage.getItem('wcheck_duty_'+g+'_'+round)||'';
+  if(de){ if(document.activeElement!==de)de.value=localStorage.getItem('wcheck_duty_'+g+'_'+round)||localStorage.getItem('wcheck_duty_last_'+g)||''; de.disabled=locked; }
 }
 
 function getStaffInfo(name){
@@ -1910,7 +1913,7 @@ function saveSubmitterG(g,v){localStorage.setItem('wcheck_submitter_'+g,v)}
 function onSubmitterChangeG(g){
   // 점검자 = 회차별 저장(자유입력). 입력 즉시 제출버튼 재평가.
   const el=document.getElementById(g==='f'?'submitterF':'submitterM');
-  if(el)localStorage.setItem('wcheck_sub_'+g+'_'+getRoundG(g),el.value||'');   // 회차별 점검자(GM 2026-06-15)
+  if(el){const rk=getRoundG(g);localStorage.setItem('wcheck_sub_'+g+'_'+rk,el.value||'');localStorage.setItem('wcheck_sub_last_'+g,el.value||'');}   // 회차별 점검자 + 직전값(GM 2026-06-15)
   const d=getDateG(g);
   drawUI(d,g);
 }
@@ -1921,6 +1924,28 @@ function saveLocal(d,o,g){localStorage.setItem(LK(d,g),JSON.stringify(o))}
 /* 마이그레이션(1회·복원 직후): 옛 항목단위 이슈/노하우/온도/반영 키(iss_<id> 등)를
    그 항목이 체크된 회차 R의 회차키(iss_<g>_<R>_<id> 등)로 복사 후 옛 키 삭제.
    미체크면 roundOfSlot 단일 회차로. 야간(isNightShiftWorkerG)은 회차 개념 밖 → 제외(레거시 유지). GM 2026-06-15. */
+/* 옛 custom_ 항목ID → 정규화 새 ID 매핑(2026-06-13 rename). 브라우저 localStorage에 남은 옛ID 체크가
+   서버 새ID와 어긋나 '체크 안 뜸·갯수 줄어듦' 유발 → 클라이언트 1회 마이그레이션. GM 2026-06-15. */
+const _LEGACY_ID_MAP={
+  'custom_1781258818293_zmiwd':'d4','custom_1781261094618_l2ipe':'d5',
+  'custom_1781258912840_8z19q':'e2','custom_1781255718419_bxvec':'b7',
+  'custom_1781259775532_ibjd3':'op1','custom_1781259812050_aijw9':'op2'
+};
+function _migrateLegacyItemIds(gg){
+  try{
+    Object.keys(STATE).forEach(k=>{
+      if(k.indexOf('__test')>=0){ delete STATE[k]; return; }   // 테스트 잔재 제거
+      for(const oldId in _LEGACY_ID_MAP){
+        if(k.indexOf(oldId)>=0){
+          const nk=k.split(oldId).join(_LEGACY_ID_MAP[oldId]);
+          if(STATE[nk]===undefined||STATE[nk]===''||STATE[nk]===false)STATE[nk]=STATE[k];
+          delete STATE[k];
+          break;
+        }
+      }
+    });
+  }catch(e){}
+}
 function _migrateLegacyExtraKeys(d,gg){
   try{
     if(typeof isNightShiftWorkerG==='function'&&isNightShiftWorkerG(gg))return;   // 야간: 항목단위 유지
@@ -1960,7 +1985,7 @@ function _migrateLegacyExtraKeys(d,gg){
 async function loadState(d,g){
   const gg=g||activeGenderTab;
   window._loadErr='';   // 진단: 복원 예외 기록(2026-06-15)
-  if(!ONLINE){STATE=loadLocal(d,gg);_migrateLegacyExtraKeys(d,gg);return}
+  if(!ONLINE){STATE=loadLocal(d,gg);_migrateLegacyItemIds(gg);_migrateLegacyExtraKeys(d,gg);return}
   try{
     // 2026-06-12 시토: 남/여 동기화 근본수정 — 현재 성별(gg) 원장만 요청(&gender=). 서버가 성별별 분리 반환.
     const r=await fetch(API_URL+'?date='+d+DEPT_Q+'&gender='+encodeURIComponent(gg),{redirect:'follow'});
@@ -2061,8 +2086,9 @@ async function loadState(d,g){
         const _loc=loadLocal(d,gg); Object.keys(_loc).forEach(k=>{ if(k.indexOf('chk_'+gg+'_')===0 && _loc[k]===true)STATE[k]=true; });   // 로컬 미저장 체크 합집합
       }catch(e){}
     }
+    _migrateLegacyItemIds(gg);       // 복원 직후: 옛 custom_ID 체크 → 새ID(갯수 줄어듦·고아체크 차단)
     _migrateLegacyExtraKeys(d,gg);   // 복원 직후 1회: 옛 항목단위 키 → 회차키 이관
-  }catch(e){window._loadErr=String((e&&e.message)||e).slice(0,60);STATE=loadLocal(d,gg);_migrateLegacyExtraKeys(d,gg)}
+  }catch(e){window._loadErr=String((e&&e.message)||e).slice(0,60);STATE=loadLocal(d,gg);_migrateLegacyItemIds(gg);_migrateLegacyExtraKeys(d,gg)}
 }
 
 let saveTimer=null;
@@ -2807,6 +2833,8 @@ function renderItem(it,shift,gender,round){
   /* 회차별 체크 독립: round 있으면 라운드 키, 없으면(야간·매뉴얼 등) 레거시 STATE[id]. */
   const _ckd=round?isChecked(it.id,round):!!STATE[it.id];
   const ck=_ckd?'checked':'',cls=_ckd?'item checked':'item';
+  /* 제출 고정(GM 2026-06-15): 이 회차가 제출완료면 체크·이슈·노하우 읽기전용(수정 차단). */
+  const _locked=!!(round&&typeof isRoundSubmitted==='function'&&isRoundSubmitted(getDateG(g),g,round));
   const _rArg=round?`,'${round}'`:'';   // onclick/onchange에 회차 전달(온도·반영 등 함수 선두에서 필요)
   /* 이슈/노하우: round 있으면 회차별 키, 없으면 레거시. GM 2026-06-15. */
   const iss=(round?STATE[issKey(round,it.id,g)]:STATE['iss_'+it.id])||'',tip=(round?STATE[tipKey(round,it.id,g)]:STATE['tip_'+it.id])||'';
@@ -2869,13 +2897,13 @@ function renderItem(it,shift,gender,round){
     if(_pp.length)_attrLine=`<div class="check-attr" style="font-size:11px;color:#8c8b83;margin:3px 0 0 26px;">✓ ${_pp.join(' · ')}</div>`;
   }
   return `<div class="${cls}">
-    <div class="item-row"><input type="checkbox" id="cb_${pfx}${it.id}" ${ck} onchange="onCk('${it.id}','${shift}','${g}'${_rArg})"><label for="cb_${pfx}${it.id}">${itemName}${_dayChips}${editedTag}</label>
+    <div class="item-row"><input type="checkbox" id="cb_${pfx}${it.id}" ${ck} ${_locked?'disabled':''} onchange="onCk('${it.id}','${shift}','${g}'${_rArg})"><label for="cb_${pfx}${it.id}">${itemName}${_dayChips}${editedTag}${_locked?' <span style="font-size:10px;color:#2c8a4f;font-weight:700;">🔒제출됨</span>':''}</label>
       <div class="item-btns"><button class="tiny-btn issue" onclick="togX('${pfx}iss_${it.id}')">이슈</button><button class="tiny-btn tip" onclick="togX('${pfx}tip_${it.id}')">노하우</button>${refBtn}</div>
     </div>${_attrLine}
     <div class="item-detail">${det}</div>${tempHtml}
-    <input class="extra-input issue-field${iss?' show':''}" id="${pfx}iss_${it.id}" placeholder="이슈 내용..." value="${esc(iss)}" onchange="onExtra('iss','${it.id}',${round?`'${round}'`:'\'\''},'${g}','${pfx}iss_${it.id}')">
+    <input class="extra-input issue-field${iss?' show':''}" id="${pfx}iss_${it.id}" placeholder="이슈 내용..." value="${esc(iss)}" ${_locked?'readonly':''} onchange="onExtra('iss','${it.id}',${round?`'${round}'`:'\'\''},'${g}','${pfx}iss_${it.id}')">
     ${promoteBtn?`<div class="promote-bar" style="margin:4px 0 2px;">${promoteBtn}</div>`:''}
-    <input class="extra-input tip-field${tip?' show':''}" id="${pfx}tip_${it.id}" placeholder="노하우/개선 의견..." value="${esc(tip)}" onchange="onExtra('tip','${it.id}',${round?`'${round}'`:'\'\''},'${g}','${pfx}tip_${it.id}')">
+    <input class="extra-input tip-field${tip?' show':''}" id="${pfx}tip_${it.id}" placeholder="노하우/개선 의견..." value="${esc(tip)}" ${_locked?'readonly':''} onchange="onExtra('tip','${it.id}',${round?`'${round}'`:'\'\''},'${g}','${pfx}tip_${it.id}')">
   </div>`;
 }
 
@@ -2950,6 +2978,8 @@ function onCk(id,shift,gender,round){
   const d=getDateG(gender);
   const pfx=gender+'_';
   const cb=document.getElementById('cb_'+pfx+id);
+  /* 제출 고정 방어(GM 2026-06-15): 제출완료 회차는 체크 변경 차단(disabled 우회 대비). */
+  if(round&&typeof isRoundSubmitted==='function'&&isRoundSubmitted(d,gender,round)){ if(cb)cb.checked=isChecked(id,round,gender); alert('제출된 조는 수정할 수 없습니다.\n(수정하려면 관리자에게 잠금 해제를 요청하세요)'); return; }
   const val=cb?cb.checked:false;
   /* 회차별 체크 독립: round 있으면 라운드 키에만 기록(다른 회차 미영향).
      round 없으면(야간모드 등) 기존 레거시 키 유지(비회귀). */
