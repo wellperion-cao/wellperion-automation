@@ -1803,9 +1803,8 @@ const ROUND_MAP={
   c6:['am1','pm1','close1'], c7:['am1','pm1','close1'], c8:['am1','pm1','close1'], c9:['am1','pm1','close1'], c10:['am1','pm1','close1'],
   d1:['am1','pm1','close1'], d2:['am1','pm1','close1'], d3:['am1','pm1','close1'],
   e1:['am1','pm1','close1'],
-  /* 시트 custom 구역항목(웰니스 D-4·VIP D-5·분수대 E-2·신발장 B-7) = 전 조 */
-  custom_1781258818293_zmiwd:['am1','pm1','close1'], custom_1781261094618_l2ipe:['am1','pm1','close1'], custom_1781258912840_8z19q:['am1','pm1','close1'], custom_1781255718419_bxvec:['am1','pm1','close1'],
-  /* 추가 — 오후조 전용 교대 인수인계(hw*) */
+  /* 정규화 완료(2026-06-15): 웰니스 d4·VIP d5·분수대 e2·신발장 b7·오픈 op1/op2 = 마스터 rounds 필드가 회차 결정.
+     ROUND_MAP에 넣으면 isShadowItem이 '기본항목 편집분'으로 오인해 숨김 → 절대 추가 금지. */
   hw1:['pm1'], hw2:['pm1'],
   /* 추가 — 마감조 전용 마감 점검(cls*) */
   cls1:['close1'], cls2:['close1'], cls3:['close1']

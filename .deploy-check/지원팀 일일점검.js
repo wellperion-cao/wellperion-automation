@@ -39,6 +39,29 @@ function _roundLabel(slot, shift) {
   if (String(shift || '') === 'pm') return '오후조';
   return '오전조';   // 오픈·오전·인수인계·내부외부·all·am → 오전조
 }
+// ─── 회차 키(am1/pm1/close1) → 조 라벨. 시트 회차열(5열) 정본. GM 2026-06-15 시우 ───
+function _roundKeyLabel(rk) {
+  var r = String(rk || '');
+  if (r.indexOf('close') >= 0 || r.indexOf('night') >= 0) return '마감조';
+  if (r.indexOf('pm') >= 0) return '오후조';
+  return '오전조';   // am1·오픈 등
+}
+// ─── 조 라벨 → 회차 키. 이슈-단독(미체크) 항목의 1차 회차 추정용 ───
+function _roundLabelToKey(label) {
+  var l = String(label || '');
+  if (l.indexOf('마감') >= 0) return 'close1';
+  if (l.indexOf('오후') >= 0) return 'pm1';
+  return 'am1';
+}
+// ─── 항목 → 저장 대상 시트명 해석(부서·성별·라우팅 단일 출처). 2026-06-15 시우 ───
+function _resolveTarget(dept, itemId, cat, gender) {
+  var dt = _deptTabs(dept);
+  var st = _routeItem(itemId, cat, gender);   // SHEET_MALE/FEMALE/COMMON 센티넬
+  if (st === SHEET_MALE) return dt.male;
+  if (st === SHEET_FEMALE) return dt.female;
+  if (dept === 'support') return (gender === 'f' ? dt.female : dt.male);   // 지원부 공용 폐기 → 활성 성별탭
+  return dt.common;
+}
 
 // ─── 남성/여성 공통 항목 (A 사우나 + B 락커룸) ───
 const ZONE_ITEMS = [
@@ -310,6 +333,15 @@ function doGet(e) {
       if (String(_sd[_si][0]) === _sdate || formatDate(_sd[_si][0]) === _sdate) { _sz.getRange(_si + 1, 12).setValue(_sname); _sn++; }   // 12열=점검자(v2)
     }
     return jsonRes({ ok: true, sheet: _sz.getName(), updated: _sn, name: _sname });
+  }
+  if (action === 'rename_items') {   // custom_→기존ID 정규화: 매뉴얼 마스터 + 구역시트 itemID 일괄 변경. 2026-06-15 시우.
+    var _rmap; try { _rmap = JSON.parse(e.parameter.map || '{}'); } catch (_e) { return jsonRes({ error: 'map JSON 오류' }); }
+    var _rss = SpreadsheetApp.getActiveSpreadsheet();
+    var _ro = { master: 0, sheets: 0 };
+    var _rim = _rss.getSheetByName(SHEET_ITEMS);
+    if (_rim) { var _rid = _rim.getDataRange().getValues(); for (var i = 1; i < _rid.length; i++) { var id = String(_rid[i][0]); if (_rmap[id]) { _rim.getRange(i + 1, 1).setValue(_rmap[id]); _ro.master++; } } }
+    ['male', 'female', 'common'].forEach(function (z) { var nm = _deptTabs('support')[z]; if (!nm) return; var sh = _rss.getSheetByName(nm); if (!sh) return; var sd = sh.getDataRange().getValues(); for (var j = 1; j < sd.length; j++) { var id2 = String(sd[j][1]); if (_rmap[id2]) { sh.getRange(j + 1, 2).setValue(_rmap[id2]); _ro.sheets++; } } });
+    return jsonRes({ ok: true, master: _ro.master, sheets: _ro.sheets });
   }
   if (action === 'migrate_support_sheets') { return migrateSupportSheets(); }
   if (action === 'purge_dept_items') { return purgeDeptItems(e.parameter.dept || ''); }
@@ -647,9 +679,130 @@ function doPost(e) {
   }
 }
 
+// ─── 회차별 행 저장(2026-06-15 GM·시우): 시트 행 키 = (날짜+회차+항목ID). 원장(cr) 회차별 진실을
+//     시트가 그대로 미러링 → 오전조 op·마감조 cls 각각 독립 행. "시트=페이지 회차별 동일시" 정본.
+//     roundChecks(회차별 체크 진실)에서 행 생성 → 미완료·무이슈 노이즈 0. 활성 성별탭만 갱신(타성별 무영향).
+function _writePerRoundRows(dept, date, body) {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var gender = body.genderTab || 'm';
+  var checks = body.checks || [];
+  var roundChecks = body.roundChecks || [];
+  var rcm = body.roundCheckMeta || {};
+
+  // 제출 상태·시각·점검자(V2Compat과 동일 산출)
+  var parts = [];
+  if (body.submitted_am) parts.push('오전조 제출완료');
+  if (body.submitted_pm) parts.push('오후조 제출완료');
+  if (body.submitted_night) parts.push('마감조 제출완료');
+  var submitStatus = parts.length ? parts.join(' / ') : '미제출';
+  var submitAt = body.submittedAt_am || body.submittedAt_pm || body.submittedAt_night || '';
+
+  var meta = {};
+  checks.forEach(function (c) { meta[String(c.itemId)] = c; });
+
+  // 원할 행 — 대상 시트명별 그룹
+  var wantByTarget = {};   // target → [{rl,id,values}]
+  var seen = {};
+  var primaryTarget = _deptTabs(dept)[gender === 'f' ? 'female' : 'male'];
+  function pushWant(round, id, checkedRound) {
+    var c = meta[id] || { itemId: id, name: '', cat: '' };
+    var target = _resolveTarget(dept, id, c.cat, gender);
+    if (!target) return;
+    var rl = _roundKeyLabel(round);
+    var mm = rcm[round + '_' + id] || {};
+    var inspector = mm.by || c.submitter || defaultInspector(target, c.slot || '');
+    var at = mm.at ? (date + ' ' + mm.at) : (c.checkedAt || submitAt || '');
+    var duty = mm.du || body.duty || '';
+    var values = [
+      date, id, c.name, c.cat, rl,
+      checkedRound ? '완료' : '미완료',
+      c.issue || '', c.tip || '',
+      submitStatus, at, duty, inspector,
+      _measureStr(c.measure), c.reflected ? 'Y' : ''
+    ];
+    var sk = target + ' ' + rl + ' ' + id;
+    if (seen[sk]) return; seen[sk] = 1;
+    if (!wantByTarget[target]) wantByTarget[target] = [];
+    wantByTarget[target].push({ rl: rl, id: id, values: values });
+  }
+
+  // (1) 회차별 체크된 (회차,항목)
+  var checkedIds = {};
+  roundChecks.forEach(function (k) {
+    k = String(k); var us = k.indexOf('_'); if (us < 0) return;
+    var round = k.slice(0, us), id = k.slice(us + 1);
+    checkedIds[id] = 1;
+    pushWant(round, id, true);
+  });
+  // (2) 미체크지만 이슈/노하우/측정 있는 항목 → 1차 회차 행 보존
+  checks.forEach(function (c) {
+    var id = String(c.itemId);
+    if (checkedIds[id]) return;
+    if (c.issue || c.tip || _measureStr(c.measure)) {
+      pushWant(_roundLabelToKey(_roundLabel(c.slot, c.shift)), id, false);
+    }
+  });
+
+  // 기록: 대상별로 이 날짜 행을 회차별 진실로 교체
+  var total = 0;
+  Object.keys(wantByTarget).forEach(function (name) {
+    var sheet = ss.getSheetByName(name); if (!sheet) return;
+    _ensureHeaders(sheet);
+    var rows = wantByTarget[name].map(function (w) { return w.values; });
+    if (name === primaryTarget) {
+      // 활성 성별탭 = 이 제출의 전 항목 보유 → 날짜 행 전량 교체(안전: 타성별 시트는 별도)
+      var data = sheet.getDataRange().getValues();
+      var del = [];
+      for (var i = data.length - 1; i >= 1; i--) {
+        if (String(data[i][0]) === date || formatDate(data[i][0]) === date) del.push(i + 1);
+      }
+      var startRow;
+      if (del.length && del.length >= (data.length - 1)) {
+        // 전 데이터행 삭제 = 시트 빔(마지막행 삭제 금지) → 내용만 비우고 2행부터 기록
+        var cols = Math.max(HEADERS.length, sheet.getLastColumn());
+        if (data.length > 1) sheet.getRange(2, 1, data.length - 1, cols).clearContent();
+        startRow = 2;
+      } else {
+        del.forEach(function (rn) { sheet.deleteRow(rn); });
+        startRow = sheet.getLastRow() + 1;
+      }
+      if (rows.length) {
+        sheet.getRange(startRow, 1, rows.length, HEADERS.length).setValues(rows);
+        for (var k = 0; k < rows.length; k++) _applyRowStyle(sheet, startRow + k, rows[k]);
+        total += rows.length;
+      }
+    } else {
+      // 비주력 대상(드문 _f 라우팅 등) = 회차+항목 단위 업서트(대량삭제 금지 — 타항목 보호)
+      var d2 = sheet.getDataRange().getValues();
+      var exist = {};
+      for (var j = 1; j < d2.length; j++) {
+        if (String(d2[j][0]) === date || formatDate(d2[j][0]) === date) {
+          exist[String(d2[j][4]) + ' ' + String(d2[j][1])] = j + 1;
+        }
+      }
+      var add = [];
+      wantByTarget[name].forEach(function (w) {
+        var rn = exist[w.rl + ' ' + w.id];
+        if (rn) { sheet.getRange(rn, 1, 1, HEADERS.length).setValues([w.values]); _applyRowStyle(sheet, rn, w.values); total++; }
+        else add.push(w.values);
+      });
+      if (add.length) {
+        var sr = sheet.getLastRow() + 1;
+        sheet.getRange(sr, 1, add.length, HEADERS.length).setValues(add);
+        for (var m = 0; m < add.length; m++) _applyRowStyle(sheet, sr + m, add[m]);
+        total += add.length;
+      }
+    }
+    _sortByDateDesc(sheet);
+  });
+  return jsonRes({ success: true, perRound: true, saved: total });
+}
+
 function handleSave(body) {
   _saveGroupSubmits(body.date, body.groupSubmits);   // 그룹별 제출 영속(zone/v2 두 경로 공통) — 2026-06-05 GM
   _updateCheckLedger(body.dept, body.date, body);   // 완료 체크 원장 적립(2026-06-11 시우) — 과거일 복원·완료율 회귀 방지
+  // 회차별 행 저장(GM 2026-06-15): roundChecks 있으면 (날짜+회차+항목) 키로 시트=원장 미러. 빈 체크는 오삭제 방지 위해 구경로.
+  if (body.roundChecks && body.roundChecks.length > 0) return _writePerRoundRows(body.dept || 'support', body.date, body);
   if (!body.zone) return _handleSaveV2Compat(body);
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var date = body.date;
