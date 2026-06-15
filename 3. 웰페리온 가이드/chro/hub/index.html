@@ -1041,6 +1041,9 @@ function openPrintView(pageId){
   if(!w){alert("팝업이 차단됐습니다. 브라우저에서 팝업을 허용해 주세요.");return;}
   var gradeColorMap={A:"#3c7a4a",B:"#2f6d9e",C:"#b07d24",D:"#c1702c",E:"#b14238",F:"#7c7a73"};
   var gColor=gradeColorMap[grade]||"#7c7a73";
+  var __pi=String(memo||"");
+  var birth=""; var __bm=__pi.match(/(\d{4})\s*년\s*생/); if(__bm){ birth=__bm[1]+"년생"; } else { var __bm2=__pi.match(/((?:19|20)\d{2}[.\-\/]\d{1,2}[.\-\/]\d{1,2})/); if(__bm2) birth=__bm2[1]; }
+  var addr=""; var __am=__pi.match(/주소[:：]\s*([^\n·|]+)/); if(__am){ addr=__am[1].trim(); } else { var __am2=__pi.match(/((?:서울|경기|인천|부산|대구|광주|대전|울산|세종|강원|충북|충남|전북|전남|경북|경남|제주)(?:특별시|광역시|도)?[^\n·|■()]{0,30})/); if(__am2) addr=__am2[1].trim(); }
   var html='<!DOCTYPE html><html><head><meta charset="UTF-8">'+
     '<title>'+esc(a["지원자명"])+' — 면접 평가지</title>'+
     '<style>'+
@@ -1054,7 +1057,7 @@ function openPrintView(pageId){
       'h2{font-size:11pt;color:#8a6f3f;border-left:3px solid #a98a52;padding-left:8px;margin:16px 0 8px}'+
       'table{width:100%;border-collapse:collapse;margin:6px 0;font-size:9.5pt}'+
       'th,td{border:1px solid #d8d4c8;padding:5px 8px;text-align:left;vertical-align:top}'+
-      'th{background:#f8f5ee;font-weight:600;width:80px;color:#6c6961}'+
+      'th{background:#f8f5ee;font-weight:600;width:86px;white-space:nowrap;color:#6c6961}'+
       '.grade{display:inline-block;padding:3px 14px;border-radius:4px;font-weight:700;color:#fff;font-size:13pt;background:'+gColor+'}'+
       '.memo{font-size:9.5pt;line-height:1.55;padding:12px 14px;background:#faf9f6;border-radius:4px;border:1px solid #efece4}'+'.rs-h{font-weight:700;color:#8a6f3f;font-size:10pt;margin:11px 0 4px;padding-bottom:2px;border-bottom:1px solid #e7ddc8}'+'.rs-row{display:flex;gap:10px;margin:3px 0;font-size:9.5pt;align-items:baseline}'+'.rs-k{flex:0 0 88px;font-weight:700;color:#6c6961}'+'.rs-v{flex:1;color:#1f1e1b}'+'.rs-li{margin:2px 0 2px 14px;text-indent:-9px;font-size:9.3pt;color:#3a3833}'+'.rs-p{margin:3px 0;font-size:9.3pt;color:#1f1e1b}'+
       '.q{display:flex;gap:6px;margin:9px 0 0;font-size:10pt;font-weight:600;color:#2a2823;padding-bottom:15pt;border-bottom:1px dashed #d3cebf}'+
@@ -1071,7 +1074,7 @@ function openPrintView(pageId){
       '<div class="subtitle">'+esc(a["지원 포지션"]||"")+' · 작성일 '+new Date().toISOString().slice(0,10)+'</div>'+
       '<h2>1. 지원자 정보</h2>'+(a['사진']?"<div style='text-align:center;margin:6px 0 12px'><img src='"+a['사진']+"' alt='지원자 사진' style='width:120px;height:150px;object-fit:cover;border:1px solid #d8d4c8;border-radius:6px'/></div>":'')+
       '<table>'+
-        '<tr><th>성명</th><td>'+esc(a["지원자명"]||"")+'</td><th>지원 포지션</th><td>'+esc(a["지원 포지션"]||"")+'</td></tr>'+
+        '<tr><th>성명</th><td>'+esc(a["지원자명"]||"")+'</td><th>지원 포지션</th><td>'+esc(a["지원 포지션"]||"")+'</td></tr>'+'<tr><th>생년월일</th><td>'+esc(birth||"—")+'</td><th>주소</th><td>'+esc(addr||"—")+'</td></tr>'+
         '<tr><th>연락처</th><td>'+esc(a["연락처"]||"")+'</td><th>이메일</th><td>'+esc(a["이메일"]||"")+'</td></tr>'+
         '<tr><th>지원일</th><td>'+fmtD(dval(a,"지원일"))+'</td><th>전형 단계</th><td>'+esc(a["전형 단계"]||"")+'</td></tr>'+
         (dval(a,"면접 일정")?'<tr><th>면접 일정</th><td>'+fmtD(dval(a,"면접 일정"))+'</td><th>담당 면접관</th><td>'+esc(a["담당 면접관"]||"")+'</td></tr>':"")+
