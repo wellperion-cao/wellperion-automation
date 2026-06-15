@@ -37,11 +37,35 @@
     "task_id": "COO-2026-06-15-SUPPORT-CHECK-OVERHAUL",
     "clevel": "coo",
     "title": "[시우] 지원부 점검 페이지 대정비 — 성별누수·완료기록·점검자기록·항목순서·시트동일시",
-    "status": "IN_PROGRESS",
+    "status": "DONE",
     "priority": "HIGH",
     "enqueued_at": "2026-06-15",
-    "note": "오늘 지원부 체계 점검(남/여) 페이지+GAS 연속 정비(전부 라이브 반영). ① 남자 점검이 여성 시트에 기록되던 버그 수정 ② 정상완료도 시트에 기록(원장만→시트+원장) ③ 체크 시 점검자·시각·담당 항목별 기록·표시(페이지+시트) ④ 점검 항목 순서를 매뉴얼과 일치 ⑤ 시트=페이지 동일시(회차별 분리)+체크가 사라지던 오버레이 버그 수정.",
-    "next": "GM 검증: 점검(남) '오전조' 선택 + 시크릿 창에서 오늘 완료 체크가 뜨는지 확인. 뜨면 종결, 안 뜨면 화면 진단값으로 추적."
+    "processed_at": "2026-06-15",
+    "terminal": true,
+    "artifact": "오전 대정비 전부 라이브: ①남자점검→여성시트 누수 수정 ②정상완료도 시트기록(원장만→시트+원장) ③점검자·시각·담당 항목별 기록·표시(페이지+시트) ④항목순서 매뉴얼 일치 ⑤시트=페이지 동일시(회차별 분리)+체크 사라지던 오버레이 버그 수정.",
+    "next": "회차별 완전 정합 재설계로 이어짐 → COO-2026-06-15-SUPPORT-CHECK-ROUND-COHERENCE"
+  },
+  {
+    "task_id": "COO-2026-06-15-SUPPORT-CHECK-ROUND-COHERENCE",
+    "clevel": "coo",
+    "title": "[시우] 지원부 점검 회차별 완전 정합 재설계 — 체크·이슈·노하우·온도·반영·점검자·담당자 (성별×회차×항목)",
+    "status": "DONE",
+    "priority": "HIGH",
+    "enqueued_at": "2026-06-15",
+    "processed_at": "2026-06-15",
+    "terminal": true,
+    "artifact": "deep-interview(모호성4%)→team 병렬(프론트/백엔드 2라인)→ralph 검증. ①★치명버그: renderItem 커스텀뱃지 래퍼가 round 인자 유실→모든 회차체크가 미체크로 렌더('체크 다 풀림')→rest-args 수정 ②조 유지(_bestRoundFor=체크많은 조 우선+체크한 조 기억) ③이슈·노하우·온도·반영완료 회차별 완전독립(iss_<g>_<round>_<id> 등)+백엔드 cr메타 {by,at,du,iss,tip,measure,reflected}·시트행(7·8·13·14열) 정합 ④점검자·담당자 회차별(직전값 유지로 안 사라짐) ⑤제출 시 회차 고정(체크·이슈·점검자·담당자 읽기전용+🔒제출됨 배지+onCk 방어가드) ⑥옛 custom_ID 고아체크 클라+서버 마이그레이션('갯수 줄어듦' 해결) ⑦텔레그램 회차보고(토큰 ScriptProperties 주입+notify_round plain text+링크 encodeURI 짤림해결). 전부 라이브 실증(playwright 헤드리스+python urllib). GAS @50, 커밋 다수. 명세=.omc/specs/deep-interview-support-check-round-coherence.md.",
+    "next": "내일 후속 → COO-2026-06-16-SUPPORT-CHECK-FOLLOWUP"
+  },
+  {
+    "task_id": "COO-2026-06-16-SUPPORT-CHECK-FOLLOWUP",
+    "clevel": "coo",
+    "title": "[시우] 지원부 점검 회차별 재설계 후속 — 실사용 검증·여성구역·제출잠금 해제 UI",
+    "status": "PENDING",
+    "priority": "NORMAL",
+    "enqueued_at": "2026-06-15",
+    "note": "[2026-06-15 GM '오늘은 여기까지, 내일 할 것 항로 대기' 지시] 회차별 정합 재설계(ROUND-COHERENCE)의 다음. ① GM 실사용 검증: 온도측정·반영완료가 회차별로 따로 들어가는지(오늘 코드구현·개별 실측은 미완, GM 직접 확인 후 이상 시 보정) ② 여성구역(점검(여)/f탭) 동일 동작 확인(오늘 검증은 남자탭 위주) ③ 제출 잠금 '해제' UI — 현재 제출하면 읽기전용 고정인데 관리자 해제 버튼/흐름이 없음(alert만 안내). 해제 방식 GM과 확정 후 구현 ④ 텔레그램 회차보고 실제 '제출' 1회 GM 최종 확인.",
+    "next": "GM 실사용 피드백 받아 보정 + 제출잠금 해제 방식 GM 확정 후 구현."
   },
   {
     "task_id": "COO-2026-06-15-APPROVAL-PIN-PARITY",
