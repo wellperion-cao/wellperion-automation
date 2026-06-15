@@ -188,3 +188,28 @@ function repointInquiryFormsToMembership() {
   Logger.log('════════════════════════════════════');
   Logger.log('⚠️ 기존 1zkT 응답 스프레드시트는 이제 미사용 — 휴지통 이동 가능(테스트응답 2건 함께 폐기).');
 }
+
+// ═══════════════════════════════════════════════════════════
+//  정리 — 폼·스크립트를 지정 폴더로 이동(ID 보존, 링크 안 깨짐)
+//  실행: GM이 moveInquiryAssetsToFolder() 1회 실행
+//  대상 폴더 = 1bS0…(문의_survey 시트가 있는 폴더)
+// ═══════════════════════════════════════════════════════════
+function moveInquiryAssetsToFolder() {
+  var FOLDER_ID = '1bS0-WbF48DOoLHgFuDAdx6b4e4cqJrYd';
+  var folder = DriveApp.getFolderById(FOLDER_ID);
+  var assets = [
+    { name: 'create_inquiry_forms_kr (스크립트)', id: '1Nehj9Sy36C9_CkkDC2QIw5gH0Cp16ePTQnXNJaBwZ0SAc8yLZxAqnrf8' },
+    { name: '공간 렌트 문의 (폼)',                 id: '1u8MsWSZO_kRBNdJxjLLhbNnhdIZr73l-WlyPIPntcsc' },
+    { name: '비즈니스 파트너 문의 (폼)',           id: '1A7tDDFD0LJZFwqdrlHEYWQbOfd_un6uB8NIgcZNiEUE' }
+  ];
+  Logger.log('이동 대상 폴더: ' + folder.getName() + ' (' + FOLDER_ID + ')');
+  assets.forEach(function(a) {
+    try {
+      DriveApp.getFileById(a.id).moveTo(folder);
+      Logger.log('✅ 이동 완료: ' + a.name);
+    } catch (e) {
+      Logger.log('❌ 이동 실패: ' + a.name + ' — ' + e.message);
+    }
+  });
+  Logger.log('완료 — 3개 항목을 폴더로 이동(ID·링크 보존).');
+}
