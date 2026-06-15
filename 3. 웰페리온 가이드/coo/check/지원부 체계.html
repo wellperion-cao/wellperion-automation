@@ -2224,6 +2224,22 @@ function drawUI(d,gender){
     /* 매뉴얼에서 숨긴 구역 점검에서도 제외 + 그룹 순서 적용 */
     if(typeof getHiddenGroups==='function'){const _hg=getHiddenGroups();for(let zi=zoneOrder.length-1;zi>=0;zi--){if(_hg.has(zoneOrder[zi]))zoneOrder.splice(zi,1);}}
     if(typeof groupRank==='function')zoneOrder.sort((a,b)=>groupRank(a)-groupRank(b));
+    /* 그룹 내 항목 순서도 매뉴얼과 일치(GM 2026-06-15): 매뉴얼이 계산한 순서(_catItemIds) 우선,
+       없으면 항목순서 맵(getItemOrder) 폴백 → 점검(남/여)·매뉴얼 항목 순서 완전 동기화. */
+    {
+      const _imap=(typeof getItemOrder==='function')?getItemOrder():{};
+      zoneOrder.forEach(title=>{
+        const arr=zoneMap[title].items;
+        const ord=(window._catItemIds&&window._catItemIds[title])||null;
+        if(ord){
+          const _ix=id=>{const p=ord.indexOf(id);return p<0?9000:p;};
+          arr.sort((a,b)=>_ix(a.it.id)-_ix(b.it.id));
+        }else{
+          arr.forEach((o,i)=>{ o._ord=(_imap[o.it.id]!=null)?_imap[o.it.id]:i; });
+          arr.sort((a,b)=>a._ord-b._ord);
+        }
+      });
+    }
     /* 요일별 집중청소는 마감조(close1)에 합류(기존 pm 통계 포함과 정합) */
     const focusInRound=(curRound==='close1'&&DAY_FOCUS[dow])?DAY_FOCUS[dow].filter(it=>shouldShowItemForGender(it,gender)):[];
 
