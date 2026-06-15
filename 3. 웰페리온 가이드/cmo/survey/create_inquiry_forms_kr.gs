@@ -213,3 +213,20 @@ function moveInquiryAssetsToFolder() {
   });
   Logger.log('완료 — 3개 항목을 폴더로 이동(ID·링크 보존).');
 }
+
+// ═══════════════════════════════════════════════════════════
+//  삭제 — 영어 여름방학특강 폼만 휴지통(한글 여름특강·응답시트는 미변경)
+//  실행: GM이 trashEnglishSummerForm() 1회 실행. cao=공유드라이브 organizer라 가능.
+//  ⚠️ 응답시트 해제는 GM이 수동으로(이 함수는 폼만 휴지통).
+// ═══════════════════════════════════════════════════════════
+function trashEnglishSummerForm() {
+  var ID = '15vze1UWcCsk1LFqx61SOtoI-36UMzsQAUdk3kYl_rzk';  // Wellperion ... — Summer Special Programs (EN)
+  try {
+    var f = DriveApp.getFileById(ID);
+    Logger.log('대상 폼: ' + f.getName());
+    f.setTrashed(true);
+    Logger.log('✅ 휴지통 이동 완료(영어 여름특강 폼). 한글 여름특강 미변경. 응답시트 해제는 GM 수동.');
+  } catch (e) {
+    Logger.log('❌ 실패: ' + e.message + ' — 공유 드라이브 권한/휴지통 정책 확인. 안 되면 GM이 드라이브에서 직접 삭제.');
+  }
+}
