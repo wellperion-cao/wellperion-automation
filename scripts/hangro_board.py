@@ -39,8 +39,11 @@ if str(_HERE) not in sys.path:
 from ship_classify import classify_ship, has_clevel_id  # noqa: E402
 
 # stdout 한글 안전 처리 (Windows CP949 대응)
-if hasattr(sys.stdout, "buffer"):
+# ※ sys 싱글톤에 가드 — __main__ 실행 뒤 모듈로 재import돼도 두 번 감싸지 않게.
+#   이중래핑하면 먼저 만든 wrapper가 GC되며 버퍼를 닫아 'closed file' 버그가 난다.
+if hasattr(sys.stdout, "buffer") and not getattr(sys, "_welp_stdout_wrapped", False):
     sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
+    sys._welp_stdout_wrapped = True
 
 # ── 상수 ──────────────────────────────────────────────────────────────────
 GAS_URL = (
@@ -370,6 +373,16 @@ def build_board(gas_items: list[dict], queue_items: list[dict]) -> tuple[str, di
     lines.append(f"🧭 오늘의 항로  {today} ({wd_kor})")
     lines.append("━" * 36)
     lines.append(table)
+
+    # 항로 정합경고 — 큐↔시트 불일치(유령·중복·상태불일치)가 있으면 '그 순간' 1줄로 띄움.
+    # 보드가 이미 가진 gas_items 재사용(추가 네트워크 없음). 무슨 일이 있어도 보드는 안 깨짐(fail-open).
+    try:
+        from queue_integrity_check import board_banner
+        _bn = board_banner(gas_items=gas_items)
+        if _bn:
+            lines.append(_bn)
+    except Exception:
+        pass
 
     def _section(header: str, items: list[dict], show_status: bool = True) -> None:
         lines.append("")
