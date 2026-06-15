@@ -562,11 +562,17 @@ function _anomalyOnlyDept(dept) {
   return String(dept || 'support') === 'support';
 }
 
-// GM 2026-06-15: support 정상완료도 구역 시트에 기록(원장-only가 혼란 → 점검 페이지·시트 모두 보이게).
-// ⚠️ 사전시드(handleSeed)는 여전히 금지 — 저장 시 '실제 체크한 항목'만 행 생성(누적·거짓완료·체크리셋 뿌리 차단).
-// 완료율은 계속 원장(checkedLedger) 기반·시트 col5 비의존 → 시트 완료행 추가해도 중복집계·완료율 회귀 0.
-// 읽기는 날짜별 필터(과거일 행 무영향) → '하루 지나면 리셋' 전제 충족. 되돌리려면 false 반환.
-function _persistCompletions(dept) { return true; }
+// 시트에 행을 둘지 결정 — support는 '완료 또는 이슈/노하우/측정'만 기록(미완료·무이슈 노이즈 제외 → 시트=체크 일치).
+// GM 2026-06-15: 시트랑 체크 안 맞는 미완료-무이슈 행 차단. 완료율은 원장(checkedLedger) 기반이라 시트 행 가감과 무관(회귀 0).
+// 사전시드(handleSeed)는 여전히 금지. 읽기 날짜필터로 과거일 무영향.
+function _shouldRow(dept, c) {
+  if (!_anomalyOnlyDept(dept)) return true;                       // 타부서: 전체 기록
+  if (c.checked) return true;                                     // 완료
+  if (c.issue && String(c.issue).length) return true;             // 이슈
+  if (c.tip && String(c.tip).length) return true;                 // 노하우
+  if (c.measure && String(_measureStr(c.measure)).length) return true;  // 측정값
+  return false;                                                   // 미완료·무이슈 = 노이즈 → 행 안 둠
+}
 
 // ════════════════════════════════════════════
 // API: 저장 (제자리 갱신 — 중복 방지)
@@ -640,8 +646,8 @@ function handleSave(body) {
       sheet.getRange(rowNum, 1, 1, HEADERS.length).setValues([values]);
       _applyRowStyle(sheet, rowNum, values);
       updated++;
-    } else if (_persistCompletions(dept) || !_anomalyOnlyDept(dept) || _isAnomalyCheck(c)) {
-      // support: 정상완료도 신규기록(GM 2026-06-15·_persistCompletions). 이상치/타부서: 종전대로.
+    } else if (_shouldRow(dept, c)) {
+      // support: 완료·이슈있는 항목만 신규기록(미완료-무이슈 제외). 타부서: 전체. GM 2026-06-15.
       newRows.push(values);
     }
   });
@@ -763,16 +769,16 @@ function _handleSaveV2Compat(body) {
         body.duty || ''          // 15열 담당자(규정 근무조) — payload.duty
       ];
       if (rowNum) {
-        if (!_persistCompletions(dept) && _anomalyOnlyDept(dept) && !_isAnomalyCheck(c)) {
-          // (비활성) support 정상완료 시트행 삭제 — GM 2026-06-15 _persistCompletions=true로 '보존'으로 전환.
+        if (!_shouldRow(dept, c)) {
+          // 미완료·무이슈 = 시트에 둘 필요 없음 → 기존 행 삭제(시트=체크 일치). GM 2026-06-15.
           rowsToDelete.push(rowNum);
         } else {
           sheet.getRange(rowNum, 1, 1, HEADERS.length).setValues([values]);
           _applyRowStyle(sheet, rowNum, values);
           totalSaved++;
         }
-      } else if (_persistCompletions(dept) || !_anomalyOnlyDept(dept) || _isAnomalyCheck(c)) {
-        // support: 정상완료도 신규기록(GM 2026-06-15·_persistCompletions). 완료율은 원장 기반이라 회귀 0.
+      } else if (_shouldRow(dept, c)) {
+        // support: 완료·이슈있는 항목만 신규기록(미완료-무이슈 제외). 타부서: 전체. GM 2026-06-15.
         newRows.push(values);
       }
     });
