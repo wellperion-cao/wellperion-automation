@@ -764,7 +764,7 @@
           <tr><th style="width:160px">날짜</th><th>변경 내용</th></tr>
           <!-- AUTO:TABLE-START -->
       <tr><td><strong>2026-06-15 (항로완료)</strong></td><td>✅ [시우] 결재현황 부서장 PIN 정합 — 맞는 비번도 거부되던 버그 수정 · ✅ [시우] 점검 GAS 유령 중복본 3개 정리 + 루트 체계 백업 삭제 · ✅ [시모] 마케팅 대시보드 후속 — 외부지표·채널 세부화·신규 문의폼 · ✅ [시모] 채널별 조회·반응 자동수집 (engagement_feed) · ✅ [시토] .bat 정리 — ops·ig 폴…</td></tr>
-      <tr><td><strong>2026-06-13 (항로완료)</strong></td><td>✅ [시토] 커밋 truncation 안전망 — 파일 급감 시 커밋 차단·경고 (오늘 운영부 1400줄 유실 재발방지) · ✅ [시우] 지원부 점검 항목ID 전체 정규화 — C내부·D업장·E외부 재정렬+B시프트+중복병합·shadow폐기 · ✅ [시우] 지원부 점검 회귀·잠재버그 수정 + 거짓 대량제출 인시던트 대응</td></tr>
+      <tr><td><strong>2026-06-13 (항로완료)</strong></td><td>✅ [시토] 커밋 truncation 안전망 — 파일 급감 시 커밋 차단·경고 (오늘 운영부 1400줄 유실 재발방지) · ✅ [시우] 지원부 점검 항목ID 전체 정규화 — C내부·D업장·E외부 재정렬+B시프트+중복병합·shadow폐기</td></tr>
       <!-- AUTO:TABLE-END -->
           <tr><td><strong>2026-05-28 (14차)</strong></td><td>공지/안내문 생성(COO 하위) · 오프라인 홍보물 디자인 제작(CMO 하위) 도구 신설 · 공지 서식 v2.0 독립 페이지화 · 회사소개서·전략로드맵 원본 「3. 웰페리온 가이드/회사문서/」로 이관(SSOT 단일화) · C-Level 부팅 R/R Notion API→웰페리온 ERP g10 참조로 전환 · GitHub Pages 워크플로 폴더명 경로 수정 · 사이드바 "공통+7개 C-Level" 라벨 제거</td></tr>
           <tr><td>2026-05-27 (13차)</td><td>GitHub Pages 전환 · 사이드바 4섹터 · AI C-Level 통일 · 운영 통합 체계 · 공식채널·지출현황·취업규칙·SSOT 신설 · g2+g19·g9+g20·g12·g13 합병 · 김남욱 탭 확장 · v2.5</td></tr>
@@ -5821,7 +5821,7 @@ function crTab(btn, panelId) {
     <table>
       <tr><th style="width:48px">상태</th><th style="width:170px">자동화</th><th style="width:80px">담당</th><th style="width:130px">주기</th><th style="width:70px">상세</th></tr>
       <tr onclick="wpAutoToggle(this)" style="cursor:pointer;"><td>⚠️</td><td>인스타 콘텐츠 발행 (반자동)</td><td>CMO</td><td>승인 시</td><td style="color:var(--accent);font-size:12px;">펼치기 ▾</td></tr>
-      <tr class="auto-detail" style="display:none;"><td colspan="5" style="background:var(--paper);padding:10px 14px;font-size:13px;color:var(--dim);"> 제작 → 검수카드 → GM [✅승인] → 시모 자동발행 → 웰리 실측 대조 4단계. <strong>상세 흐름 = 바로 아래 📸 인스타그램 발행 파이프라인 SSOT 참조.</strong></td></tr>
+      <tr class="auto-detail" style="display:none;"><td colspan="5" style="background:var(--paper);padding:10px 14px;font-size:13px;color:var(--dim);"> 제작 → 검수카드 → GM [✅승인] → 시모 자동발행 → 웰리 실측 대조 4단계. <strong>상세 흐름 = M5 콘텐츠 검수·자동업로드 ▸ 📸 인스타그램 발행 파이프라인 참조.</strong></td></tr>
       <tr onclick="wpAutoToggle(this)" style="cursor:pointer;"><td>🟡</td><td>블로그·카페·인스타 통합 업로드</td><td>CMO</td><td>수시(기획)</td><td style="color:var(--accent);font-size:12px;">펼치기 ▾</td></tr>
       <tr class="auto-detail" style="display:none;"><td colspan="5" style="background:var(--paper);padding:10px 14px;font-size:13px;color:var(--dim);"> 채널별 생성 → 검수·승인 → 업로드. 자동 발행은 GM 수동 승인 정책으로 보류.</td></tr>
       <tr onclick="wpAutoToggle(this)" style="cursor:pointer;"><td>🟡</td><td>슬라이드 자동 합성·콘텐츠 수집</td><td>CMO</td><td>수시(만듦)</td><td style="color:var(--accent);font-size:12px;">펼치기 ▾</td></tr>
