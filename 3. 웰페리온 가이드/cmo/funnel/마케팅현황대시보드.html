@@ -1388,10 +1388,13 @@ function renderTypeFunnel() {
       + '</tr>';
   });
 
-  var footnote = '<div style="font-size:11px;color:var(--dim);margin-top:8px;line-height:1.7">'
-    + '① 클릭은 2026-06-13부터 집계 시작 — 이전 미태깅분 없어 문의보다 적을 수 있음<br>'
-    + '② 문의 유형분류는 멤버십·성인강습·유소년강습만 — 여름특강·공간렌트·비즈니스파트너·영어는 별도 폼이라 현재 「유형 문의」 미집계(클릭만 표시). 폼 출처/유형 통합 시 합류<br>'
-    + '③ 등록은 누적 정본(멤버십=유효회원 전화매칭 / 강습=종목 팀시트 수강등록). 문의(이번달)와 시간기준 달라 직접 나누지 말 것'
+  var footnote = '<div style="margin-top:12px;background:var(--accent-bg);border:1px solid rgba(183,159,138,0.28);border-radius:10px;padding:13px 15px">'
+    + '<div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:7px">ⓘ 이 표 읽는 법</div>'
+    + '<div style="font-size:12px;color:var(--text);line-height:1.8">'
+    +   '<b>클릭</b> — 문의 페이지 버튼을 누른 횟수. <span style="color:var(--dim)">2026-06-13부터 집계라, 그 전 유입은 빠져 문의보다 적게 보일 수 있습니다.</span><br>'
+    +   '<b>문의</b> — 이번 달 접수 건수. <span style="color:var(--dim)">유형 분류는 멤버십·성인강습·유소년강습만 됩니다 — 여름특강·공간렌트·비즈니스파트너·영어는 별도 폼이라 클릭만 보이고 문의는 아직 미집계입니다.</span><br>'
+    +   '<b>등록 (추정치)</b> — 누적. <span style="color:var(--dim)">문의자의 전화번호가 유효회원 명부(멤버십)·종목 팀시트(강습)에 있으면 \'등록\'으로 셉니다. </span><b style="color:var(--text)">문의가 등록을 일으켰다는 증명이 아니라</b><span style="color:var(--dim)">, 문의한 사람 중 지금 회원·수강생인 사람의 수입니다. 기존 회원이 문의해도 잡히고, 전화번호가 다르거나 비어 있으면 빠집니다. 그래서 이번 달 문의로 직접 나누면 안 됩니다.</span>'
+    + '</div>'
     + '</div>';
 
   wrap.innerHTML = '<div style="background:var(--paper);border:1px solid var(--border);border-radius:12px;overflow:hidden">'
@@ -1400,7 +1403,7 @@ function renderTypeFunnel() {
     + '<th>유형</th>'
     + '<th style="text-align:right">클릭(이번달)</th>'
     + '<th style="text-align:right">문의(이번달)</th>'
-    + '<th style="text-align:right">등록(누적)</th>'
+    + '<th style="text-align:right">등록(누적·추정)</th>'
     + '</tr></thead>'
     + '<tbody>' + rows + '</tbody>'
     + '</table>'
