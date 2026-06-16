@@ -287,6 +287,7 @@ function doGet(e) {
   if (action === 'clear_check_ledger') { return clearCheckLedger(e.parameter.dept || 'support'); }
   if (action === 'clear_zone_checks') { return clearZoneCheckedRows(e.parameter.dept || 'support', e.parameter.date || '', e.parameter.all === '1'); }
   if (action === 'delete_item_row') { return deleteItemRow(e.parameter.dept || 'support', e.parameter.date || '', e.parameter.zone || '', e.parameter.itemId || ''); }
+  if (action === 'purge_orphan_checks') { return purgeOrphanChecks(e.parameter.dept || 'support'); }   // 매뉴얼에 없는 고아/테스트 항목ID를 원장·시트에서 일괄 제거. 2026-06-16 시우.
   if (action === 'list_tabs') { return jsonRes({ tabs: SpreadsheetApp.getActiveSpreadsheet().getSheets().map(function(s){ return { name: s.getName(), gid: s.getSheetId() }; }) }); }   // gid→탭 확인용. 2026-06-15 시우.
   if (action === 'dump_zone') {   // 구역 시트 전체행(전 날짜) 덤프 — 진단용. 2026-06-15 시우.
     var _dz = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(_deptTabs(e.parameter.dept || 'support')[e.parameter.zone || 'male']);
@@ -507,6 +508,60 @@ function deleteItemRow(dept, date, zone, itemId) {
     match.forEach(function (rn) { sh.deleteRow(rn); removed++; });   // 내림차순이라 안전
   }
   return jsonRes({ ok: true, sheet: name, date: date, itemId: itemId, removed: removed });
+}
+// 매뉴얼(SHEET_ITEMS) 정상 id에 없는 고아·테스트 항목ID를 원장(cr)+구역시트 행에서 일괄 제거. 2026-06-16 시우.
+// 고아 체크가 원장에 남으면 복원→재저장 루프로 시트에 되살아남(검증 테스트 __v_* 등). GET ?action=purge_orphan_checks&dept=support
+function purgeOrphanChecks(dept) {
+  dept = dept || 'support';
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var valid = {};
+  var im = ss.getSheetByName(SHEET_ITEMS);
+  if (im) {
+    var idata = im.getDataRange().getValues();
+    for (var i = 1; i < idata.length; i++) {
+      var iid = String(idata[i][0] || ''); if (!iid) continue;
+      if (_itemDept(idata[i][ITEM_DEPT_COL]) !== dept) continue;
+      valid[iid] = 1;
+    }
+  }
+  if (Object.keys(valid).length === 0) return jsonRes({ ok: false, error: '매뉴얼 항목 0 — 안전상 중단(전수 삭제 방지)' });
+  var purgedLedger = 0, purgedRows = 0, orphanIds = {};
+  var props = PropertiesService.getScriptProperties();
+  var all = props.getProperties();
+  Object.keys(all).forEach(function (key) {
+    if (key.indexOf(CHK_PROP_PREFIX + dept + '_') !== 0) return;
+    var led; try { led = JSON.parse(all[key] || '{}'); } catch (e) { return; }
+    if (!led) return;
+    var changed = false;
+    if (led.cr && typeof led.cr === 'object') {
+      Object.keys(led.cr).forEach(function (ck) {
+        var us = String(ck).indexOf('_'); if (us < 0) return;
+        var id = ck.slice(us + 1);
+        if (!valid[id]) { delete led.cr[ck]; purgedLedger++; orphanIds[id] = 1; changed = true; }
+      });
+    }
+    if (led.c && typeof led.c === 'object') {
+      Object.keys(led.c).forEach(function (id) { if (!valid[id]) { delete led.c[id]; orphanIds[id] = 1; changed = true; } });
+    }
+    if (changed) props.setProperty(key, JSON.stringify(led));
+  });
+  var t = _deptTabs(dept);
+  [t.male, t.female, t.common].forEach(function (name) {
+    var sh = ss.getSheetByName(name); if (!sh) return;
+    var data = sh.getDataRange().getValues();
+    var del = [];
+    for (var r = data.length - 1; r >= 1; r--) {
+      var id2 = String(data[r][1] || '');
+      if (id2 && !valid[id2]) { del.push(r + 1); orphanIds[id2] = 1; }
+    }
+    if (del.length > 0 && del.length >= (data.length - 1)) {
+      var cols = Math.max(1, sh.getLastColumn());
+      del.forEach(function (rn) { sh.getRange(rn, 1, 1, cols).clearContent(); purgedRows++; });
+    } else {
+      del.forEach(function (rn) { try { sh.deleteRow(rn); } catch (e) { var c2 = Math.max(1, sh.getLastColumn()); sh.getRange(rn, 1, 1, c2).clearContent(); } purgedRows++; });
+    }
+  });
+  return jsonRes({ ok: true, dept: dept, purgedLedger: purgedLedger, purgedRows: purgedRows, orphanIds: Object.keys(orphanIds) });
 }
 // 지원부 시트 리네임/정리 마이그레이션(GM 2026-06-12). 멱등: 이미 새 이름이면 스킵.
 //   남성구역→지원_남성구역 · 여성구역→지원_여성구역 · 점검항목→지원_매뉴얼 · 공용구역 삭제.
@@ -1750,7 +1805,9 @@ function _shiftBucket(s) {
   var v = String(s == null ? '' : s).trim();
   if (v.indexOf('야간') === 0 || v === 'night') return 'night';
   if (v.indexOf('오전') === 0 || v === 'am') return 'am';
-  // 오후/마감/all/그 외 → pm 버킷(마감은 pm 소속)
+  // 마감조는 오후조와 별도 회차 — 같은 zone|pm 키 충돌로 한 회차 누락되던 버그 수정(2026-06-16).
+  if (v.indexOf('마감') === 0 || v.indexOf('close') >= 0) return 'close';
+  // 오후/all/그 외 → pm 버킷
   return 'pm';
 }
 
