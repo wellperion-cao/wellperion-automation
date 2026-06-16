@@ -5657,6 +5657,54 @@ function crTab(btn, panelId) {
     <div class="doc-header"><h2><span class="g-id">T2</span>업무자동화SSOT</h2><div class="meta">자동화·예약작업·PC·업데이트 단일 진실 원장 · 2026-06-03 종합 정립</div></div>
     <p class="lead">Windows 스케줄러 + Python 프로세스 실측 기반. 무엇이 언제 자동으로 도는지, PC·업데이트·창은 어떻게 동작하는지를 한곳에 모은 SSOT.</p>
 
+    <!-- ══ 🖥️ 시스템 현황 (status/erp_status.json native 렌더 · 2026-06-16) ══ -->
+    <div id="erp-sysstatus" style="background:var(--paper);border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:12px;padding:16px 20px;margin:6px 0 22px;">
+      <h3 style="margin-top:0;margin-bottom:4px;"><span class="ico">🖥️</span>시스템 현황 <span style="font-size:13px;font-weight:400;color:var(--dim);">(지금 잘 돌고 있나 — 서버가 자동 발행)</span></h3>
+      <div id="erp-sys-summary" style="font-size:15px;font-weight:800;margin:6px 0 12px;">불러오는 중…</div>
+      <div id="erp-sys-body" style="font-size:13px;margin-bottom:14px;"></div>
+      <h4 style="margin:0 0 6px;font-size:13px;font-weight:700;color:var(--dim);">🤖 지금 각 AI가 맡은 일</h4>
+      <div id="erp-sys-ai" style="font-size:13px;"></div>
+      <div id="erp-sys-time" style="font-size:11px;color:var(--dim);margin-top:10px;"></div>
+    </div>
+    <script>
+    (function(){
+      var URL='https://raw.githubusercontent.com/wellperion-cao/wellperion-automation/master/status/erp_status.json';
+      function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+      function badge(st){
+        var c = st==='정상' ? ['#1a7a3c','#edf7f0','#b6dfc5'] : st==='이상' ? ['#b42318','#fef3f2','#fecdc9'] : ['#b85c00','#fff4e6','#f5c89a'];
+        var ico = st==='정상'?'🟢':(st==='이상'?'🔴':'⚪');
+        return '<span style="background:'+c[1]+';color:'+c[0]+';border:1px solid '+c[2]+';border-radius:12px;padding:2px 9px;font-weight:700;font-size:12px;white-space:nowrap;">'+ico+' '+esc(st)+'</span>';
+      }
+      fetch(URL+'?t='+Date.now(),{cache:'no-store'})
+        .then(function(r){return r.json();})
+        .then(function(d){
+          var sm=document.getElementById('erp-sys-summary'); if(sm)sm.textContent=d.summary||'';
+          var b=document.getElementById('erp-sys-body'); var h='';
+          (d.systems||[]).forEach(function(s){
+            h+='<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:var(--bg,#fff);border:1px solid var(--border);border-radius:8px;padding:8px 12px;margin-bottom:6px;">';
+            h+='<div style="min-width:150px;font-weight:700;">'+esc(s.name)+'</div>'+badge(s.state);
+            h+='<div style="color:var(--dim);">'+esc(s.detail||'')+'</div>';
+            h+='</div>';
+          });
+          if(b)b.innerHTML=h;
+          var ai=document.getElementById('erp-sys-ai'); var ah='';
+          (d.ai_work||[]).forEach(function(a){
+            if(!a.count)return;
+            ah+='<div style="background:var(--bg,#fff);border:1px solid var(--border);border-radius:8px;padding:8px 12px;margin-bottom:6px;">';
+            ah+='<div style="font-weight:700;margin-bottom:'+((a.items&&a.items.length)?'4px':'0')+';">'+esc(a.name)+' <span style="color:var(--accent);font-weight:600;">'+a.count+'건</span>'+(a.doing?' <span style="font-size:11px;color:var(--dim);">진행 중 '+a.doing+'</span>':'')+'</div>';
+            if(a.items&&a.items.length){ah+='<div style="color:var(--dim);line-height:1.5;font-size:12px;">· '+a.items.map(esc).join('<br>· ')+'</div>';}
+            ah+='</div>';
+          });
+          if(ai)ai.innerHTML=ah||'<span style="color:var(--dim);">대기 중인 일 없음</span>';
+          var t=document.getElementById('erp-sys-time'); if(t)t.textContent='마지막 갱신: '+esc(d.generated_at_kst||'')+' (서버 발행)';
+        })
+        .catch(function(){
+          var sm=document.getElementById('erp-sys-summary'); if(sm)sm.innerHTML='<span style="color:var(--dim);font-weight:400;">현황을 아직 불러오지 못했습니다 (서버 발행 전일 수 있음).</span>';
+        });
+    })();
+    </script>
+    <!-- ══ /시스템 현황 ══ -->
+
     <!-- ══ 📋 7대 자동화 모듈 (전사 로드맵) — G1에서 이관 (2026-06-06) ══ -->
     <div style="background:var(--paper);border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:12px;padding:16px 20px;margin:6px 0 20px;">
       <h3 style="margin-top:0;"><span class="ico">📋</span>7대 자동화 모듈 — 전사 로드맵 (목표)</h3>
