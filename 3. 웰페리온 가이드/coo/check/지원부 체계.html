@@ -1495,14 +1495,15 @@ const WEEKEND=[
 ];
 
 /* ── D: Night shift (탕청소 업체) ── */
+// G 구역: 외주 야간 탕청소 (야간조 — 탕청소 업체 전담, A~E 직원 점검과 별도). GM 확정 2026-06-16.
 const NIGHT_WEEKDAY=[
   {slot:"23:00~23:30",shift:"night",groups:[
-    {title:"초기 점검 및 준비",items:[
+    {title:"G. 초기 점검 및 준비",items:[
       {id:"n_prep",name:"청소 도구 준비 및 초기 점검",detail:"청소 도구 상태 확인 | 세제/장비 준비 | 구역별 점검 시작",gender:"all"}
     ]}
   ]},
   {slot:"23:30~00:30 남 사우나",shift:"night",groups:[
-    {title:"남 사우나 탕청소",items:[
+    {title:"G. 남 사우나 탕청소",items:[
       {id:"n_m_tang",name:"냉탕/온탕/열탕 배수 + 탕 내부 청소",detail:"배수 후 탕 내부 벽면/바닥 세척 | 배수구 이물질 제거",gender:"all"},
       {id:"n_m_shower",name:"샤워부스 청소",detail:"샤워부스 벽면/바닥/배수구 세척",gender:"all"},
       {id:"n_m_floor",name:"바닥 + 배수구",detail:"전체 바닥 세척 | 배수구 이물질 제거 및 소독",gender:"all"},
@@ -1510,17 +1511,17 @@ const NIGHT_WEEKDAY=[
     ]}
   ]},
   {slot:"00:30~01:30",shift:"night",groups:[
-    {title:"요일별 집중 청소 (야간)",items:[
+    {title:"G. 요일별 집중 청소 (야간)",items:[
       {id:"n_daily_focus",name:"요일별 집중 청소",detail:"해당 요일 집중 청소 항목 수행 (요일별 항목 참고)",gender:"all"}
     ]}
   ]},
   {slot:"01:30~02:00",shift:"night",groups:[
-    {title:"휴게시간",items:[
+    {title:"G. 휴게시간",items:[
       {id:"n_break",name:"휴게시간",detail:"30분 휴식",gender:"all"}
     ]}
   ]},
   {slot:"02:00~03:00 여 사우나",shift:"night",groups:[
-    {title:"여 사우나 탕청소",items:[
+    {title:"G. 여 사우나 탕청소",items:[
       {id:"n_f_tang",name:"냉탕/온탕/열탕 배수 + 탕 내부 청소",detail:"배수 후 탕 내부 벽면/바닥 세척 | 배수구 이물질 제거",gender:"all"},
       {id:"n_f_shower",name:"샤워부스 청소",detail:"샤워부스 벽면/바닥/배수구 세척",gender:"all"},
       {id:"n_f_floor",name:"바닥 + 배수구",detail:"전체 바닥 세척 | 배수구 이물질 제거 및 소독",gender:"all"},
@@ -1528,7 +1529,7 @@ const NIGHT_WEEKDAY=[
     ]}
   ]},
   {slot:"03:00~04:00",shift:"night",groups:[
-    {title:"여 사우나 화장실 + 마감",items:[
+    {title:"G. 여 사우나 화장실 + 마감",items:[
       {id:"n_f_toilet",name:"여 사우나 화장실 청소",detail:"소변기/대변기/바닥/세면공간 세척",gender:"all"},
       {id:"n_daily_focus2",name:"요일별 청소 마무리",detail:"요일별 잔여 집중 청소 항목 마무리",gender:"all"},
       {id:"n_final",name:"최종 마감 점검",detail:"전 구역 최종 확인 | 탕 배수 일지 작성",gender:"all"}
@@ -1538,12 +1539,12 @@ const NIGHT_WEEKDAY=[
 
 const NIGHT_WEEKEND=[
   {slot:"20:30~21:00",shift:"night",groups:[
-    {title:"초기 점검 및 준비",items:[
+    {title:"G. 초기 점검 및 준비",items:[
       {id:"n_prep",name:"청소 도구 준비 및 초기 점검",detail:"청소 도구 상태 확인 | 세제/장비 준비 | 구역별 점검 시작",gender:"all"}
     ]}
   ]},
   {slot:"21:00~22:00 남 사우나",shift:"night",groups:[
-    {title:"남 사우나 탕청소",items:[
+    {title:"G. 남 사우나 탕청소",items:[
       {id:"n_m_tang",name:"냉탕/온탕/열탕 배수 + 탕 내부 청소",detail:"배수 후 탕 내부 벽면/바닥 세척 | 배수구 이물질 제거",gender:"all"},
       {id:"n_m_shower",name:"샤워부스 청소",detail:"샤워부스 벽면/바닥/배수구 세척",gender:"all"},
       {id:"n_m_floor",name:"바닥 + 배수구",detail:"전체 바닥 세척 | 배수구 이물질 제거 및 소독",gender:"all"},
@@ -1551,17 +1552,17 @@ const NIGHT_WEEKEND=[
     ]}
   ]},
   {slot:"22:00~23:00",shift:"night",groups:[
-    {title:"요일별 집중 청소 (야간)",items:[
+    {title:"G. 요일별 집중 청소 (야간)",items:[
       {id:"n_daily_focus",name:"요일별 집중 청소",detail:"해당 요일 집중 청소 항목 수행 (요일별 항목 참고)",gender:"all"}
     ]}
   ]},
   {slot:"23:00~23:30",shift:"night",groups:[
-    {title:"휴게시간",items:[
+    {title:"G. 휴게시간",items:[
       {id:"n_break",name:"휴게시간",detail:"30분 휴식",gender:"all"}
     ]}
   ]},
   {slot:"23:30~00:30 여 사우나",shift:"night",groups:[
-    {title:"여 사우나 탕청소",items:[
+    {title:"G. 여 사우나 탕청소",items:[
       {id:"n_f_tang",name:"냉탕/온탕/열탕 배수 + 탕 내부 청소",detail:"배수 후 탕 내부 벽면/바닥 세척 | 배수구 이물질 제거",gender:"all"},
       {id:"n_f_shower",name:"샤워부스 청소",detail:"샤워부스 벽면/바닥/배수구 세척",gender:"all"},
       {id:"n_f_floor",name:"바닥 + 배수구",detail:"전체 바닥 세척 | 배수구 이물질 제거 및 소독",gender:"all"},
@@ -1569,7 +1570,7 @@ const NIGHT_WEEKEND=[
     ]}
   ]},
   {slot:"00:30~01:30",shift:"night",groups:[
-    {title:"여 화장실 + 마감",items:[
+    {title:"G. 여 화장실 + 마감",items:[
       {id:"n_f_toilet",name:"여 사우나 화장실 청소",detail:"소변기/대변기/바닥/세면공간 세척",gender:"all"},
       {id:"n_daily_focus2",name:"요일별 청소 마무리",detail:"요일별 잔여 집중 청소 항목 마무리",gender:"all"},
       {id:"n_final",name:"최종 마감 점검",detail:"전 구역 최종 확인 | 탕 배수 일지 작성",gender:"all"}
@@ -1578,48 +1579,9 @@ const NIGHT_WEEKEND=[
 ];
 
 /* ── E: Day-of-week focused cleaning ── */
-const DAY_FOCUS={
-  1:[ // 월
-    {id:"df_mon1",name:"화장실 전체 청소",detail:"남/여 화장실 전면 세척",gender:"all"},
-    {id:"df_mon2",name:"탈수기 물때/곰팡이",detail:"탈수기 내부 물때 및 곰팡이 제거",gender:"all"},
-    {id:"df_mon3",name:"B-2 파우더 집중",detail:"파우더 공간 집중 청소",gender:"all"},
-    {id:"df_mon4",name:"B-6 사우나 화장실 집중",detail:"사우나 화장실 집중 세척 (탕 배수: 마개+스위치 확인)",gender:"all"}
-  ],
-  2:[ // 화
-    {id:"df_tue1",name:"세면대 배수 파이프",detail:"세면대 배수 파이프 분해 청소",gender:"all"},
-    {id:"df_tue2",name:"배수구 악취 소독/머리카락",detail:"배수구 악취 소독 및 머리카락 제거",gender:"all"},
-    {id:"df_tue3",name:"탕 내 비품 점검",detail:"탕 내부 비품 상태 확인 및 교체",gender:"all"},
-    {id:"df_tue4",name:"C-4 거울/유리창 집중",detail:"센터 거울 및 유리창 집중 세척",gender:"all"},
-    {id:"df_tue5",name:"D-3 G.X룸 거울",detail:"G.X룸 거울 집중 세척",gender:"m"}
-  ],
-  3:[ // 수
-    {id:"df_wed1",name:"건/습식 사우나 바닥",detail:"고압세척 + 산성세제 집중 세척",gender:"all"},
-    {id:"df_wed2",name:"C-9 키즈샤워실 집중",detail:"키즈샤워실 집중 청소",gender:"m"}
-  ],
-  4:[ // 목
-    {id:"df_thu1",name:"화장실 전체 청소",detail:"남/여 화장실 전면 세척",gender:"all"},
-    {id:"df_thu2",name:"탈수기 물때/곰팡이",detail:"탈수기 내부 물때 및 곰팡이 제거",gender:"all"},
-    {id:"df_thu3",name:"B-2 파우더 집중",detail:"파우더 공간 집중 청소",gender:"all"},
-    {id:"df_thu4",name:"B-6 사우나 화장실 집중",detail:"사우나 화장실 집중 세척",gender:"all"}
-  ],
-  5:[ // 금
-    {id:"df_fri1",name:"세면대 배수 파이프",detail:"세면대 배수 파이프 분해 청소",gender:"all"},
-    {id:"df_fri2",name:"배수구 악취 소독/머리카락",detail:"배수구 악취 소독 및 머리카락 제거",gender:"all"},
-    {id:"df_fri3",name:"탕 내 비품 점검",detail:"탕 내부 비품 상태 확인 및 교체",gender:"all"},
-    {id:"df_fri4",name:"C-8 센터 화분 집중",detail:"화분 물 공급 및 주변 정리 집중",gender:"f"}
-  ],
-  6:[ // 토
-    {id:"df_sat1",name:"벽체 곰팡이/물때",detail:"벽체 곰팡이 및 물때 제거",gender:"all"},
-    {id:"df_sat2",name:"거울/유리창 물때",detail:"거울 및 유리창 물때 집중 제거",gender:"all"},
-    {id:"df_sat3",name:"천정 환기구 먼지",detail:"천정 환기구 먼지 제거",gender:"all"},
-    {id:"df_sat4",name:"방제",detail:"방제 작업 실시",gender:"all"}
-  ],
-  0:[ // 일
-    {id:"df_sun1",name:"탕청소 업체 휴무",detail:"탕청소 업체 휴무일",gender:"all"},
-    {id:"df_sun2",name:"E-1 주차장 집중",detail:"주차장 집중 청소",gender:"all"},
-    {id:"df_sun3",name:"개인락커 + 미비 부분",detail:"개인락커 점검 및 미비 사항 보완",gender:"all"}
-  ]
-};
+/* 요일별 집중 청소 = 매뉴얼 'F 집중' 분류로 이관(GM 2026-06-16 시우): 시트 항목 + 요일(sched)로 관리,
+   요일칸(F1)으로 표시(평일=오후조/주말=마감조). 하드코딩 비움 — 기존 DAY_FOCUS[dow] 특수처리는 빈 객체라 자동 무력화(no-op). */
+const DAY_FOCUS={};
 
 /* ── Helper functions ── */
 
@@ -4924,6 +4886,8 @@ function mgmtBuildCustomSlots(customItems){
       detail: item.detail || '',
       gender: item.gender || 'all',
       rounds: Array.isArray(item.rounds) ? item.rounds : [],   // 2b-1: 회차 멤버십 전달(itemRounds용)
+      sched: item.sched || '',   // 요일 일정 전달 — 요일칸(F1)·요일필터(#3)가 커스텀 항목에도 적용. GM 2026-06-16 시우
+      cat: item.category || item.cat || '',   // 카테고리 보존(요일칸 이동 후에도 분류 식별)
       _custom: isAddedItem(item.id)   // 정규화 항목(d4·e2 등)은 커스텀 배지 제거. GM 2026-06-15
     });
   });
