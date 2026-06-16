@@ -1912,11 +1912,11 @@ function handleWeekly(params) {
 // GET ?action=today_live&dept=support[&date=YYYY-MM-DD]
 // 분자(done): cr 회차원장(키 '<round>_<id>')을 회차버킷(am/pm/close/night)별로 카운트 — 남/여/공용 합산.
 //   round→bucket: 라운드키 끝 숫자 제거('am1'→'am','pm1'→'pm','close1'→'close') 후 _shiftBucket 동일규칙.
-// 분모(total) P2: led.seen(자동저장 payload 가시 항목 전량 — 체크 여부 무관) 기준.
-//   키: '<bucket>_<id>', 버킷 = _shiftBucket(shift). 없으면 점검일지 스냅샷 total 폴백(handleWeekly 동일 출처).
-//   → 제출 전(체크만 한) 신선한 상태에서도 전체 점검수 정확 집계. 2026-06-16 architect 확정.
+// 분모(total) P2 rev: 매뉴얼 스케줄 전체(그날 요일 기준 고정) — 시작 안 한 회차도 포함. 2026-06-16 GM 확정.
+//   소스: 지원부 체계.html WEEKDAY/WEEKEND×NIGHT_WEEKDAY/NIGHT_WEEKEND + DAY_FOCUS(요일별 동적) + custom items.
+//   led.seen은 폐기(분모로 쓰지 않음). seen 적립 코드는 _updateCheckLedger에 남아있어도 무해.
 // ⚠ 쓰기 경로 무변경 — sub(제출도장) 절대 안 찍음(거짓 대량제출 사고 회피). support 한정.
-// 응답: { ok, dept, date, am, pm, close, night, total, done, pct, byGender:{m,f,all:{done,total,...}} }
+// 응답: { ok, dept, date, am, pm, close, night, amTotal, pmTotal, closeTotal, nightTotal, total, done, pct, byGender:{m,f,all:{...}} }
 // ════════════════════════════════════════════
 
 // 회차키(am1/pm1/close1/night…) → 완료율 버킷(am/pm/close/night). _shiftBucket과 동일 규칙 재사용.
@@ -1925,6 +1925,21 @@ function _roundBucket(roundKey) {
   var base = String(roundKey == null ? '' : roundKey).replace(/[0-9\[\]]+$/, '');
   return _shiftBucket(base);
 }
+
+// ─── 매뉴얼 스케줄 고정 분모 상수 ───────────────────────────────────────────
+// 출처: 지원부 체계.html WEEKDAY/WEEKEND×NIGHT_WEEKDAY/NIGHT_WEEKEND + custom items(op1,op2,cls1-8)
+// custom items: op1,op2(gender=all,am1)→+2 am 남/녀 각각; cls1-8(gender=all,close1)→+8 close 남/녀 각각.
+// 산출 기준: collectDashboardData 동일 로직(am=shift:am, pm=shift:pm|all+DAY_FOCUS, close=slot에'마감'포함, night=nightSched).
+// 'all' shift 항목은 am·pm 양쪽 카운트. DAY_FOCUS는 요일별 가변이므로 BASE는 DAY_FOCUS 제외 고정값.
+// WEEKDAY BASE (DAY_FOCUS 제외): m{am:26,pm:15,close:11,night:14} / f{am:25,pm:14,close:11,night:14}
+// WEEKEND BASE (DAY_FOCUS 제외): m{am:21,pm:12,close:11,night:14} / f{am:21,pm:12,close:11,night:14}
+// DAY_FOCUS 항목수(모두 gender=all → m/f 동일 추가): {0:3,1:4,2:5,3:2,4:4,5:4,6:4}
+var _TL_SCHED_BASE = {
+  weekday: { m: { am: 26, pm: 15, close: 11, night: 14 }, f: { am: 25, pm: 14, close: 11, night: 14 } },
+  weekend: { m: { am: 21, pm: 12, close: 11, night: 14 }, f: { am: 21, pm: 12, close: 11, night: 14 } }
+};
+// DAY_FOCUS 항목수 — 요일(0=일~6=토). 모두 gender=all이므로 m/f 동일하게 pm에 추가.
+var _TL_DAY_FOCUS_CNT = { 0: 3, 1: 4, 2: 5, 3: 2, 4: 4, 5: 4, 6: 4 };
 
 function handleTodayLive(params) {
   var dept = String(params.dept || 'support').trim() || 'support';
@@ -1941,7 +1956,7 @@ function handleTodayLive(params) {
   function newBuckets() { return { am: 0, pm: 0, close: 0, night: 0 }; }
   var doneByG = { m: newBuckets(), f: newBuckets(), all: newBuckets() };
   genders.forEach(function (g) {
-    var led = _getCheckLedger(dept, date, g);   // {c, cr, sub, subAt} 정규화 — 읽기 전용
+    var led = _getCheckLedger(dept, date, g);   // {c, cr, sub, subAt, seen} 정규화 — 읽기 전용
     var cr = (led && led.cr && typeof led.cr === 'object') ? led.cr : {};
     Object.keys(cr).forEach(function (k) {
       if (!cr[k]) return;                         // 0/falsy = 해제된 키
@@ -1954,50 +1969,26 @@ function handleTodayLive(params) {
     });
   });
 
-  // ─── 분모(total) P2: led.seen 1차, 스냅샷 폴백 ───
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  // ─── 분모(total): 매뉴얼 스케줄 전체(그날 요일 고정) — led.seen 폐기 ───
+  // KST 날짜에서 요일(0=일,1=월…6=토) 추출.
+  var dateObj = new Date(date + 'T00:00:00+09:00');
+  var dow = dateObj.getDay();   // 0=일, 6=토
+  var isWeekend = (dow === 0 || dow === 6);
+  var baseKey = isWeekend ? 'weekend' : 'weekday';
+  var focusCnt = _TL_DAY_FOCUS_CNT[dow] || 0;
+
+  // 성별별 분모 = BASE + DAY_FOCUS(pm에 추가). gender=all 원장은 분모 0(별도 원장이므로 base에 미포함).
   var totalByG = { m: newBuckets(), f: newBuckets(), all: newBuckets() };
-
-  // 1차: led.seen — 자동저장 payload 가시 항목 전량(체크 여부 무관), 키 '<bucket>_<id>'.
-  // 제출 전 신선한 상태에서도 전체 점검수 정확 집계. 2026-06-16 architect 확정.
-  var seenAvailable = false;
-  genders.forEach(function (g) {
-    var led = _getCheckLedger(dept, date, g);
-    var seen = (led && led.seen && typeof led.seen === 'object') ? led.seen : {};
-    if (Object.keys(seen).length > 0) {
-      seenAvailable = true;
-      Object.keys(seen).forEach(function (k) {
-        if (!seen[k]) return;
-        var us = String(k).indexOf('_');
-        if (us < 0) return;
-        var bk = k.slice(0, us);   // '<bucket>_<id>' → bucket은 앞부분
-        if (totalByG[g][bk] === undefined) bk = 'pm';   // 미인식 버킷 폴백
-        totalByG[g][bk]++;
-      });
-    }
+  ['m', 'f'].forEach(function (g) {
+    var base = _TL_SCHED_BASE[baseKey][g];
+    totalByG[g].am    = base.am;
+    totalByG[g].pm    = base.pm + focusCnt;   // DAY_FOCUS → pm 버킷
+    totalByG[g].close = base.close;
+    totalByG[g].night = base.night;
   });
-
-  // 폴백: seen 없는 성별/버킷은 점검일지 스냅샷 total 사용(handleWeekly 동일 출처 — 제출 후 일자·레거시 대응).
-  var snapCells = {};
-  genders.forEach(function (g) { snapCells[g] = {}; });
-  var snapSheet = ss.getSheetByName(_snapshotTabName(dept));
-  if (snapSheet && !seenAvailable) {
-    // seen 전혀 없으면 스냅샷에서 전 성별 채움
-    var sdata = snapSheet.getDataRange().getValues();
-    for (var r = 1; r < sdata.length; r++) {
-      if (formatDate(sdata[r][1]) !== date) continue;
-      var zone = String(sdata[r][3] || '');
-      if (zone !== 'm' && zone !== 'f' && zone !== 'all') continue;
-      var bucket = _shiftBucket(sdata[r][4]);
-      var tot = Number(sdata[r][6]); if (isNaN(tot)) tot = 0;
-      var at = String(sdata[r][0] || '');
-      var cell = snapCells[zone][bucket];
-      if (!cell || at >= cell.at) snapCells[zone][bucket] = { total: tot, at: at };
-    }
-    genders.forEach(function (g) {
-      buckets.forEach(function (b) { if (snapCells[g][b]) totalByG[g][b] = snapCells[g][b].total; });
-    });
-  }
+  // gender=all 원장(공용구역): 분모는 별도 원장에 실제 체크된 항목 수만큼(분자=분모로 취급 — 100%).
+  // 즉 all 분모를 분자와 같게 설정해 합산 왜곡 없앰.
+  buckets.forEach(function (b) { totalByG.all[b] = doneByG.all[b]; });
 
   // 최종 안전장치: 분모가 분자보다 작으면 분자로 올림(100% 초과 방지).
   genders.forEach(function (g) {
@@ -2018,7 +2009,7 @@ function handleTodayLive(params) {
   function genderSummary(g) {
     var gd = doneByG[g], gt = totalByG[g];
     var gdone = gd.am + gd.pm + gd.close + gd.night;
-    var gtot = gt.am + gt.pm + gt.close + gt.night;
+    var gtot  = gt.am + gt.pm + gt.close + gt.night;
     return { am: gd.am, pm: gd.pm, close: gd.close, night: gd.night,
              amTotal: gt.am, pmTotal: gt.pm, closeTotal: gt.close, nightTotal: gt.night,
              done: gdone, total: gtot, pct: gtot > 0 ? Math.round(gdone / gtot * 100) : 0 };
@@ -2026,9 +2017,8 @@ function handleTodayLive(params) {
 
   return jsonRes({
     ok: true, dept: dept, date: date,
-    // 버킷별 완료(분자) — am/pm/close/night
+    dow: dow, schedType: baseKey,         // 진단용
     am: sumDone.am, pm: sumDone.pm, close: sumDone.close, night: sumDone.night,
-    // 버킷별 분모
     amTotal: sumTotal.am, pmTotal: sumTotal.pm, closeTotal: sumTotal.close, nightTotal: sumTotal.night,
     total: total, done: done, pct: pct,
     byGender: { m: genderSummary('m'), f: genderSummary('f'), all: genderSummary('all') }
