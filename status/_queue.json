@@ -112,14 +112,26 @@
     "next": "내일 후속 → COO-2026-06-16-SUPPORT-CHECK-FOLLOWUP"
   },
   {
+    "task_id": "COO-2026-06-16-SUPPORT-CHECK-LIVE-FIXES",
+    "clevel": "coo",
+    "title": "[시우] 지원부 점검 실사용 버그 일괄 수정 — 담당자/점검자·취소·점검일지·매뉴얼동기·정렬·점검시간 (GM 라이브 6+3건)",
+    "status": "DONE",
+    "priority": "HIGH",
+    "enqueued_at": "2026-06-16",
+    "processed_at": "2026-06-16",
+    "terminal": true,
+    "artifact": "GM 실사용 6증상+추가3건 전부 처리(라이브 실증). ①담당자·점검자 새로고침 소실=복원키 정합(populateOneDuty/Dropdown 회차키, GM확인). ②점검시간 항목표시(🕐 라벨). ③제출→점검일지 누락=appendRoundSnapshot 제출마다 기록+실패 alert(getSched null/fetch 실패 조용한 스킵 제거). ④취소(여성) 미반영=전부취소 시 roundChecks=[]가 V2Compat 마지막행 deleteRow 예외로 새던 것→handleSave가 빈배열도 _writePerRoundRows 라우팅+deleteRow→clearContent 폴백(라이브 실증: 체크1행/전부취소0행·예외0). ⑤매뉴얼=페이지 동기: 시트 11→43(페이지 기본32 안전덧붙임, detail 빈값→하드코딩 보존·shadow override 무중복). ⑥오픈점검 c1a/b/c 정렬: _sortByDateDesc에 카테고리랭크 추가(ID유지, 라이브 실증 오픈→A→C). +점검일지_support append마다 제출시각↓ 항상최신(기존14행 정렬). +데이터청소(여성 테스트행·15일 잔여5행 제거). GAS @52~@56 재배포(URL유지). 커밋 b281984·3a2babf·70a637e·b94105a 푸시. 남성구역 GM '완벽' 확인.",
+    "next": "남은 후속 → COO-2026-06-16-SUPPORT-CHECK-FOLLOWUP(③제출잠금 해제 UI·④텔레그램 회차보고 실제 제출 1회 GM 확인)"
+  },
+  {
     "task_id": "COO-2026-06-16-SUPPORT-CHECK-FOLLOWUP",
     "clevel": "coo",
-    "title": "[시우] 지원부 점검 회차별 재설계 후속 — 실사용 검증·여성구역·제출잠금 해제 UI",
+    "title": "[시우] 지원부 점검 후속 — 제출잠금 해제 UI + 텔레그램 회차보고 실제 제출 1회 확인",
     "status": "PENDING",
     "priority": "NORMAL",
     "enqueued_at": "2026-06-15",
-    "note": "[2026-06-15 GM '오늘은 여기까지, 내일 할 것 항로 대기' 지시] 회차별 정합 재설계(ROUND-COHERENCE)의 다음. ① GM 실사용 검증: 온도측정·반영완료가 회차별로 따로 들어가는지(오늘 코드구현·개별 실측은 미완, GM 직접 확인 후 이상 시 보정) ② 여성구역(점검(여)/f탭) 동일 동작 확인(오늘 검증은 남자탭 위주) ③ 제출 잠금 '해제' UI — 현재 제출하면 읽기전용 고정인데 관리자 해제 버튼/흐름이 없음(alert만 안내). 해제 방식 GM과 확정 후 구현 ④ 텔레그램 회차보고 실제 '제출' 1회 GM 최종 확인.",
-    "next": "GM 실사용 피드백 받아 보정 + 제출잠금 해제 방식 GM 확정 후 구현."
+    "note": "[2026-06-16 갱신·시우] ROUND-COHERENCE 후속 중 ①실사용 검증·②여성구역 동작은 COO-2026-06-16-SUPPORT-CHECK-LIVE-FIXES에서 라이브 실증 처리 완료. 남은 것: ③ 제출 잠금 '해제' UI — 제출하면 읽기전용 고정인데 관리자 해제 버튼/흐름 없음(alert만). 해제 방식 GM 확정 후 구현 ④ 텔레그램 회차보고 실제 '제출' 1회 GM 최종 확인.",
+    "next": "제출잠금 해제 방식 GM 확정 후 구현 + 텔레그램 회차보고 1회 실측."
   },
   {
     "task_id": "COO-2026-06-15-APPROVAL-PIN-PARITY",
