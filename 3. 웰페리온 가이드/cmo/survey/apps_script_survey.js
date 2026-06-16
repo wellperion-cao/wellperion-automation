@@ -392,6 +392,93 @@ function _processAction(body) {
     return _json(fcResult);
   }
 
+  // ─── 유형×채널×등록 교차 집계 (마케팅 대시보드 고도화 2026-06-16) ───
+  // 멤버십·성인강습·유소년 각각 어느 채널로 문의가 들어와 등록(전환)까지 갔는지 매트릭스.
+  // 전환 기준 = 유효회원(멤버십) 전화 매칭. 멤버십=등록 정본 / 강습=멤버십 전환분만(수강등록 정본=종목별 팀시트, 연동 전 '미확인').
+  // 출처미상률 = '기타·미상' 비율(문의 시점 채널 미캡처 가시화 — INC-003 정직성, 날조 금지).
+  if (action === 'type_channel_breakdown') {
+    var tcCache = CacheService.getScriptCache();
+    var tcHit = tcCache.get('tc_v1');
+    if (tcHit) return _json(JSON.parse(tcHit));
+
+    var tcMemberSh = SpreadsheetApp.openById(MEMBER_SPREADSHEET_ID).getSheetByName(MEMBER_SHEET);
+    var tcMemberSet = {};
+    var tcML = tcMemberSh.getLastRow();
+    if (tcML >= 2) {
+      var tcMH = tcMemberSh.getRange(1, 1, 1, tcMemberSh.getLastColumn()).getValues()[0];
+      var tcPI = tcMH.indexOf(MEMBER_PHONE_COL);
+      if (tcPI >= 0) {
+        tcMemberSh.getRange(2, tcPI + 1, tcML - 1, 1).getValues().forEach(function(r) {
+          var n = normalizePhone_(r[0]); if (n) tcMemberSet[n] = true;
+        });
+      }
+    }
+
+    var tcRows = [];
+    var tcInqSh = _getSheet(INQUIRY_SHEET, INQUIRY_HEADERS);
+    var tcIL = tcInqSh.getLastRow();
+    if (tcIL >= 2) {
+      var tcID = tcInqSh.getRange(2, 1, tcIL - 1, INQUIRY_HEADERS.length).getValues();
+      var tcChI = INQUIRY_HEADERS.indexOf('유입채널');
+      var tcTpI = INQUIRY_HEADERS.indexOf('문의유형');
+      var tcPhI = INQUIRY_HEADERS.indexOf('연락처');
+      tcID.forEach(function(r) {
+        tcRows.push({ 유형: String(r[tcTpI] || '기타').trim() || '기타', 채널: _canonicalChannel_(r[tcChI]), 연락처: r[tcPhI] });
+      });
+    }
+    _collectFormInquiries_().forEach(function(f) {
+      tcRows.push({ 유형: String(f.문의유형 || '기타').trim() || '기타', 채널: _canonicalChannel_(f.유입채널), 연락처: f.연락처 });
+    });
+
+    var tcTypes = {};
+    tcRows.forEach(function(row) {
+      var tp = row.유형, ch = row.채널;
+      if (!tcTypes[tp]) tcTypes[tp] = { total: 0, memberMatched: 0, unknown: 0, channels: {} };
+      var T = tcTypes[tp];
+      T.total++;
+      if (ch === '기타·미상') T.unknown++;
+      if (!T.channels[ch]) T.channels[ch] = { inquiries: 0, memberMatched: 0 };
+      T.channels[ch].inquiries++;
+      var phone = normalizePhone_(row.연락처);
+      if (phone && tcMemberSet[phone]) { T.memberMatched++; T.channels[ch].memberMatched++; }
+    });
+
+    var tcOut = {};
+    var ovTotal = 0, ovMatched = 0, ovUnknown = 0;
+    Object.keys(tcTypes).forEach(function(tp) {
+      var T = tcTypes[tp];
+      ovTotal += T.total; ovMatched += T.memberMatched; ovUnknown += T.unknown;
+      var chArr = Object.keys(T.channels).map(function(ch) {
+        var c = T.channels[ch];
+        return { channel: ch, inquiries: c.inquiries, memberMatched: c.memberMatched,
+                 rate: c.inquiries > 0 ? Math.round((c.memberMatched / c.inquiries) * 1000) / 10 : 0 };
+      });
+      chArr.sort(function(a, b) { return b.inquiries - a.inquiries; });
+      tcOut[tp] = {
+        total: T.total, memberMatched: T.memberMatched,
+        rate: T.total > 0 ? Math.round((T.memberMatched / T.total) * 1000) / 10 : 0,
+        unknownChannel: T.unknown,
+        unknownRate: T.total > 0 ? Math.round((T.unknown / T.total) * 1000) / 10 : 0,
+        channels: chArr
+      };
+    });
+
+    var tcResult = {
+      ok: true,
+      generatedAt: _now(),
+      convBasis: '유효회원(멤버십) 전화매칭 — 강습 수강등록 정본은 종목별 팀시트(연동 전: 미확인)',
+      types: tcOut,
+      overall: {
+        total: ovTotal, memberMatched: ovMatched,
+        rate: ovTotal > 0 ? Math.round((ovMatched / ovTotal) * 1000) / 10 : 0,
+        unknownChannel: ovUnknown,
+        unknownRate: ovTotal > 0 ? Math.round((ovUnknown / ovTotal) * 1000) / 10 : 0
+      }
+    };
+    try { tcCache.put('tc_v1', JSON.stringify(tcResult), 300); } catch (e) { /* 캐시 실패 무시 */ }
+    return _json(tcResult);
+  }
+
   // ─── 기간별 집계 (일/주/월 + custom range) ───
   if (action === 'period_breakdown') {
     var from = body.from || '';  // YYYY-MM-DD (optional)
