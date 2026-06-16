@@ -344,16 +344,28 @@ function _processAction(body) {
 
   // ─── 클릭 통계 ───
   if (action === 'click_stats') {
-    // 캐시 조회 (cs_v2 — byUtmSource 추가 버전)
+    var csFrom = body.from || '';   // YYYY-MM-DD (optional) — 기간 필터
+    var csTo   = body.to   || '';
+    // 캐시 조회 (cs_v3 — from/to 기간 필터 버전, 범위별 키)
     var csCache = CacheService.getScriptCache();
-    var csHit = csCache.get('cs_v2');
+    var csCacheKey = 'cs_v3_' + csFrom + '_' + csTo;
+    var csHit = csCache.get(csCacheKey);
     if (csHit) return _json(JSON.parse(csHit));
 
     const sh = _getSheet(CLICK_SHEET, CLICK_HEADERS);
     const last = sh.getLastRow();
-    if (last < 2) return _json({ ok: true, total: 0, byLink: {}, byLinkUrl: {}, byUtmSource: {} });
+    if (last < 2) return _json({ ok: true, total: 0, byLink: {}, byLinkUrl: {}, byUtmSource: {}, from: csFrom, to: csTo });
 
-    const data = sh.getRange(2, 1, last - 1, CLICK_HEADERS.length).getValues();
+    var data = sh.getRange(2, 1, last - 1, CLICK_HEADERS.length).getValues();
+    // 기간 필터 (from/to 둘 다 있을 때만 · 시각=인덱스 1). 없으면 누적.
+    if (csFrom && csTo) {
+      var csF = new Date(csFrom + 'T00:00:00+09:00').getTime();
+      var csT = new Date(csTo + 'T23:59:59+09:00').getTime();
+      data = data.filter(function(row) {
+        var t = row[1] ? new Date(row[1]).getTime() : NaN;
+        return !isNaN(t) && t >= csF && t <= csT;
+      });
+    }
     const byLink = {};
     const byLinkUrl = {};  // 링크명 → 가장 최근 링크URL (대시보드 '↗ 보기' 링크 + litt.ly 등 출처 확인용)
     const byUtmSource = {};  // UTM 소스별 클릭 건수 집계
@@ -368,8 +380,8 @@ function _processAction(body) {
       byUtmSource[utmKey] = (byUtmSource[utmKey] || 0) + 1;
     });
 
-    var csResult = { ok: true, total: data.length, byLink: byLink, byLinkUrl: byLinkUrl, byUtmSource: byUtmSource };
-    try { csCache.put('cs_v2', JSON.stringify(csResult), 300); } catch (e) { /* 캐시 저장 실패 무시 */ }
+    var csResult = { ok: true, total: data.length, byLink: byLink, byLinkUrl: byLinkUrl, byUtmSource: byUtmSource, from: csFrom, to: csTo };
+    try { csCache.put(csCacheKey, JSON.stringify(csResult), 300); } catch (e) { /* 캐시 저장 실패 무시 */ }
     return _json(csResult);
   }
 
