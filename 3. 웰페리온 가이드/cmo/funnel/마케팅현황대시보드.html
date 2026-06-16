@@ -292,35 +292,30 @@ details.collapse > .collapse-body{border-top:1px solid var(--border);padding:16p
   </div>
 
   <!-- ════════════════════════════════════════════
-       📊 분석 구역 — 항상 펼침
-       ③ 주간추세 (유형별 분포는 핵심 지표 칩으로 통합·삭제 /
-        전환 단계 퍼널은 중간단계 데이터 부재로 삭제)
+       📁 디테일 구역 — 기본 접힘, 펼칠 때만 로드 (초기 로드 가벼움)
+       ③ 주간추세  ④ 월별추세  ⑤ 실시간클릭  ⑩ 유형별전환&교차
+       ⑪ 채널별비교  ⑫ 문의진입점  ⑬ 실험로그
+       (유형별 분포·전환 단계 퍼널·최근 변동사항은 중복/데이터부재로 삭제)
        ════════════════════════════════════════════ -->
-  <div class="zone-label">📊 분석</div>
-  <div class="analysis-grid">
+  <div class="zone-label">📁 디테일</div>
 
-    <!-- ③ 주간 추세 스파크라인 (최근 8주) -->
-    <div class="section" id="weekly-trend-section">
-      <div class="section-title">주간 추세 <span style="font-size:11px;font-weight:400;color:var(--accent);text-transform:none;letter-spacing:0">(최근 8주)</span></div>
-      <div style="background:var(--paper);border:1px solid var(--border);border-radius:12px;padding:16px 18px">
-        <div style="display:flex;gap:16px;margin-bottom:10px;font-size:11px">
-          <span style="display:flex;align-items:center;gap:5px"><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:var(--accent)"></span>문의</span>
-          <span style="display:flex;align-items:center;gap:5px"><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:var(--accent);opacity:.38"></span>클릭</span>
-        </div>
-        <div id="weekly-trend-chart" class="sparkline-wrap">
-          <div style="color:var(--dim);font-size:13px">추세 데이터 집계 대기</div>
+  <!-- ③ 주간 추세 (펼칠 때 1회 로드 — 초기 로드 속도 위해 지연) -->
+  <details class="collapse" id="details-weekly-trend">
+    <summary>주간 추세 <span style="font-size:11px;font-weight:400;color:var(--accent);text-transform:none;letter-spacing:0">(최근 8주)</span><span class="collapse-sub">— 문의·클릭</span></summary>
+    <div class="collapse-body">
+      <div id="weekly-trend-section">
+        <div style="background:var(--paper);border:1px solid var(--border);border-radius:12px;padding:16px 18px">
+          <div style="display:flex;gap:16px;margin-bottom:10px;font-size:11px">
+            <span style="display:flex;align-items:center;gap:5px"><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:var(--accent)"></span>문의</span>
+            <span style="display:flex;align-items:center;gap:5px"><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:var(--accent);opacity:.38"></span>클릭</span>
+          </div>
+          <div id="weekly-trend-chart" class="sparkline-wrap">
+            <div style="color:var(--dim);font-size:13px">펼치면 집계합니다…</div>
+          </div>
         </div>
       </div>
     </div>
-
-  </div><!-- /analysis-grid -->
-
-  <!-- ════════════════════════════════════════════
-       📁 디테일 구역 — 기본 접힘, 펼칠 때만 로드
-       ④ 월별추세  ⑤ 실시간클릭  ⑩ 유형별전환&교차
-       ⑪ 채널별비교  ⑥ 최근변동사항  ⑫ 문의진입점  ⑬ 실험로그
-       ════════════════════════════════════════════ -->
-  <div class="zone-label">📁 디테일</div>
+  </details>
 
   <!-- ④ 월별 추세 (무거움 — 펼칠 때 1회 로드) -->
   <details class="collapse" id="details-monthly-trend">
@@ -543,6 +538,7 @@ var MONTHLY_CONVERT_TARGET = null;   // GM 설정 — 월 신규 등록(전환) 
 // 채널별 비교 표 라이브 렌더 — 두 소스 모두 저장 후 합산
 var _fcData = null;   // funnel_conversion 응답 (byChannel 배열)
 var _pbData = null;   // period_breakdown 응답 (inquiries.byChannelMonth 객체)
+var _flow = null;     // 핵심 지표 전환 흐름의 현재 날짜뷰 정규화 데이터 {clicks,inq,conv,byType,mode,label}
 
 var _DOT_COLORS = ['--f1','--f2','--f3','--f4','--f5'];
 
@@ -555,30 +551,44 @@ var ETC_CHANNEL = '기타·미상';
 function renderConversionFlow() {
   var el = document.getElementById('conversion-flow-wrap');
   if (!el) return;
-  if (!_pbData) { el.innerHTML = '<div style="color:var(--dim);font-size:13px">집계 대기 중</div>'; return; }
 
-  var clicks = (_pbData.clicks && _pbData.clicks.month) || 0;
-  var inq    = (_pbData.inquiries && _pbData.inquiries.month) || 0;
-  var conv   = (_pbData.conversion && _pbData.conversion.month && _pbData.conversion.month.converted) || 0;
-  var r1 = clicks > 0 ? Math.round(inq / clicks * 1000) / 10 : 0;   // 클릭→문의
-  var r2 = inq    > 0 ? Math.round(conv / inq  * 1000) / 10 : 0;    // 문의→등록
+  // _flow = 현재 선택된 날짜뷰(월·지난달·기간)의 정규화 데이터 — 모든 경로가 갱신
+  var f = _flow;
+  if (!f && _pbData) {
+    f = { clicks: (_pbData.clicks && _pbData.clicks.month) || 0,
+          inq:    (_pbData.inquiries && _pbData.inquiries.month) || 0,
+          conv:   (_pbData.conversion && _pbData.conversion.month) ? _pbData.conversion.month.converted : null,
+          byType: (_pbData.inquiries && _pbData.inquiries.byTypeMonth) || {},
+          mode: 'month', label: '이번 달' };
+  }
+  if (!f) { el.innerHTML = '<div style="color:var(--dim);font-size:13px">집계 대기 중</div>'; return; }
 
-  // 문의 목표 접목 — 별도 게이지 박스 폐지, ② 문의 카드 하단에 흡수
-  var inqSub = '실제 문의 작성';
+  var clicks = f.clicks || 0;
+  var inq    = f.inq || 0;
+  var convAvail = (f.conv !== null && f.conv !== undefined);
+  var conv   = convAvail ? f.conv : 0;
+  var r1 = clicks > 0 ? Math.round(inq / clicks * 1000) / 10 : 0;             // 클릭→문의
+  var r2 = (inq > 0 && convAvail) ? Math.round(conv / inq * 1000) / 10 : null; // 문의→등록
+
+  // 문의 목표 접목 — 별도 게이지 박스 폐지, ② 문의 카드 하단에 흡수 (월 단위 뷰에서만)
+  var isMonthView = (f.mode === 'month' || f.mode === 'monthPast');
+  var inqSub = f.label || '문의 접수';
   var paceHtml = '';
-  if (typeof MONTHLY_INQUIRY_TARGET !== 'undefined' && MONTHLY_INQUIRY_TARGET !== null) {
+  if (isMonthView && typeof MONTHLY_INQUIRY_TARGET !== 'undefined' && MONTHLY_INQUIRY_TARGET !== null) {
     var gpct = Math.round(inq / MONTHLY_INQUIRY_TARGET * 100);
-    inqSub = '목표 ' + MONTHLY_INQUIRY_TARGET + ' · ' + gpct + '%';
-    var _now = new Date();
-    var _dom = _now.getDate();
-    var _dim = new Date(_now.getFullYear(), _now.getMonth() + 1, 0).getDate();
-    var _proj = _dom > 0 ? Math.round(inq / _dom * _dim) : inq;
-    var _diff = _proj - MONTHLY_INQUIRY_TARGET;
-    var _pacePct = Math.round(_proj / MONTHLY_INQUIRY_TARGET * 100);
-    var _paceColor = _proj >= MONTHLY_INQUIRY_TARGET ? 'var(--green)' : (_pacePct >= 80 ? 'var(--accent)' : 'var(--dim)');
-    var _sign = _diff >= 0 ? '+' : '';
-    var _paceLabel = _proj >= MONTHLY_INQUIRY_TARGET ? '목표 달성 페이스' : '목표 미달 페이스';
-    paceHtml = '<div style="font-size:11px;color:var(--dim);margin-top:8px">문의 페이스 → 월말 예상 <b style="color:' + _paceColor + '">' + _proj.toLocaleString('ko-KR') + '건</b> · 목표 대비 ' + _sign + _diff + '건 (' + _pacePct + '%) · <span style="color:' + _paceColor + ';font-weight:600">' + _paceLabel + '</span> <span>(' + _dom + '/' + _dim + '일 경과)</span></div>';
+    inqSub = '목표 ' + MONTHLY_INQUIRY_TARGET + ' · ' + gpct + '%' + (f.mode === 'monthPast' ? ' (최종)' : '');
+    if (f.mode === 'month') {
+      var _now = new Date();
+      var _dom = _now.getDate();
+      var _dim = new Date(_now.getFullYear(), _now.getMonth() + 1, 0).getDate();
+      var _proj = _dom > 0 ? Math.round(inq / _dom * _dim) : inq;
+      var _diff = _proj - MONTHLY_INQUIRY_TARGET;
+      var _pacePct = Math.round(_proj / MONTHLY_INQUIRY_TARGET * 100);
+      var _paceColor = _proj >= MONTHLY_INQUIRY_TARGET ? 'var(--green)' : (_pacePct >= 80 ? 'var(--accent)' : 'var(--dim)');
+      var _sign = _diff >= 0 ? '+' : '';
+      var _paceLabel = _proj >= MONTHLY_INQUIRY_TARGET ? '목표 달성 페이스' : '목표 미달 페이스';
+      paceHtml = '<div style="font-size:11px;color:var(--dim);margin-top:8px">문의 페이스 → 월말 예상 <b style="color:' + _paceColor + '">' + _proj.toLocaleString('ko-KR') + '건</b> · 목표 대비 ' + _sign + _diff + '건 (' + _pacePct + '%) · <span style="color:' + _paceColor + ';font-weight:600">' + _paceLabel + '</span> <span>(' + _dom + '/' + _dim + '일 경과)</span></div>';
+    }
   }
 
   function card(icon, label, num, sub, color) {
@@ -592,7 +602,7 @@ function renderConversionFlow() {
   function arrow(pct, note) {
     return '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:62px;padding:0 2px">'
       + '<div style="font-size:18px;color:var(--dim);line-height:1">→</div>'
-      + '<div style="font-size:13px;font-weight:700;color:var(--accent);margin-top:2px">' + pct + '%</div>'
+      + '<div style="font-size:13px;font-weight:700;color:var(--accent);margin-top:2px">' + (pct == null ? '—' : pct + '%') + '</div>'
       + '<div style="font-size:10px;color:var(--dim)">' + note + '</div>'
       + '</div>';
   }
@@ -602,11 +612,12 @@ function renderConversionFlow() {
     + arrow(r1, '클릭→문의')
     + card('📝', '② 문의 접수', inq, inqSub, 'var(--f2)')
     + arrow(r2, '문의→등록')
-    + card('✅', '③ 회원 등록', conv, '전화번호 매칭(월)', 'var(--f5)')
+    + card('✅', '③ 회원 등록', convAvail ? conv : '—', convAvail ? '전화번호 매칭(월)' : '월 단위만 집계', 'var(--f5)')
     + '</div>'
     + paceHtml
     + (function() {
-        var btm = (_pbData.inquiries && _pbData.inquiries.byTypeMonth) || {};
+        var btm = f.byType || {};
+        if (!Object.keys(btm).length) return '';
         var MAIN = ['멤버십', '성인강습', '유소년강습'];
         var COLORS = { '멤버십': 'var(--f1)', '성인강습': 'var(--f2)', '유소년강습': 'var(--f5)' };
         var etc = 0;
@@ -618,10 +629,10 @@ function renderConversionFlow() {
         }
         var html = MAIN.map(function(t) { return chip(t, btm[t] || 0, COLORS[t]); }).join('') + chip('별개', etc, 'var(--dim)');
         return '<div style="margin-top:14px;padding-top:12px;border-top:1px dashed var(--border)">'
-          + '<div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:2px">이번 달 문의 — 유형별 한눈에</div>'
+          + '<div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:2px">' + (f.label || '이번 달') + ' 문의 — 유형별 한눈에</div>'
           + html + '</div>';
       })()
-    + '<div style="font-size:11px;color:var(--dim);margin-top:8px">이번 달 기준 · 등록은 전화번호 매칭으로 월 단위 집계 · 별개 = 공간렌트·비즈니스파트너·기타</div>';
+    + '<div style="font-size:11px;color:var(--dim);margin-top:8px">' + (f.label || '이번 달') + ' 기준 · 등록은 전화번호 매칭으로 월 단위 집계 · 별개 = 공간렌트·비즈니스파트너·기타</div>';
 }
 
 function renderChannelTableLive() {
@@ -892,12 +903,26 @@ async function loadPeriodBreakdown(period) {
 }
 
 function _applyPeriodData(data, period) {
-  // 채널별 비교 표 — period_breakdown 데이터 저장 후 라이브 렌더
+  // 채널별 비교 표 — period_breakdown 데이터 저장 후 라이브 렌더 (월 기준)
   if (period === 'month') {
     _pbData = data;
     renderChannelTableLive();
-    renderConversionFlow();
   }
+
+  // 핵심 지표 전환 흐름 — 선택 기간에 맞춰 _flow 갱신 후 렌더
+  if (period === 'month') {
+    _flow = { clicks: (data.clicks && data.clicks.month) || 0,
+              inq:    (data.inquiries && data.inquiries.month) || 0,
+              conv:   (data.conversion && data.conversion.month) ? data.conversion.month.converted : null,
+              byType: (data.inquiries && data.inquiries.byTypeMonth) || {},
+              mode: 'month', label: '이번 달' };
+  } else {
+    _flow = { clicks: (data.clicks && data.clicks[period] !== undefined) ? data.clicks[period] : 0,
+              inq:    (data.inquiries && data.inquiries[period] !== undefined) ? data.inquiries[period] : 0,
+              conv:   null, byType: {}, mode: 'range',
+              label: (PERIOD_LABELS[period] || period) + ' 기준' };
+  }
+  renderConversionFlow();
 
   var clickEl = document.getElementById('kpi-total-clicks');
   var inqEl   = document.getElementById('kpi-inquiries');
@@ -997,7 +1022,7 @@ async function runCustomQuery() {
 }
 
 // GAS custom 응답 스키마: {from,to,clicks,inquiries,byChannel:{채널:N},byType:{유형:N},conversion:{inquiries,converted,rate}}
-function _applyCustom(data, from, to) {
+function _applyCustom(data, from, to, monthCtx) {
   var c = data.custom;
   var clickEl  = document.getElementById('kpi-total-clicks');
   var inqEl    = document.getElementById('kpi-inquiries');
@@ -1024,6 +1049,17 @@ function _applyCustom(data, from, to) {
     convEl.textContent = (c.conversion.converted !== undefined) ? c.conversion.converted.toLocaleString() + '건' : '—';
     convEl.classList.remove('placeholder');
   }
+
+  // 핵심 지표 전환 흐름 — 기간/지난달 뷰 갱신 (monthCtx.fullMonth면 월 단위로 목표 표시)
+  _flow = {
+    clicks: (c.clicks !== undefined) ? c.clicks : 0,
+    inq:    (c.inquiries !== undefined) ? c.inquiries : ((c.conversion && c.conversion.inquiries) || 0),
+    conv:   (c.conversion && c.conversion.converted !== undefined) ? c.conversion.converted : null,
+    byType: c.byType || {},
+    mode:   (monthCtx && monthCtx.fullMonth) ? 'monthPast' : 'range',
+    label:  (monthCtx && monthCtx.label) ? monthCtx.label : ('기간(' + from + '~' + to + ')')
+  };
+  renderConversionFlow();
 }
 
 // 기간 토글 버튼 전환
@@ -1111,7 +1147,7 @@ function _loadMonthRange(year, month) {
       var data = await res.json();
       if (!data || !data.ok) throw new Error('ok=false');
 
-      _applyCustom(data, from, to);
+      _applyCustom(data, from, to, { fullMonth: true, label: rangeLabel });
       if (statusEl) statusEl.textContent = rangeLabel + ' · ' + (data.generatedAt || '집계 완료');
     } catch (e) {
       _setPeriodPlaceholder('집계 준비 중');
@@ -1565,9 +1601,11 @@ document.addEventListener('DOMContentLoaded', function() {
   // ── 즉시 로드 (요약+분석 구역) ──────────────────────────────
   loadFunnelConversion();        // 핵심 지표(전환흐름)·채널표 내부 렌더 포함
   loadPeriodBreakdown('month');  // 기본 기간: 월 (채널표·전환흐름 내부 렌더 포함)
-  loadWeeklyTrend();             // 주간 추세 스파크라인
 
-  // ── 지연 로드 — 각 <details> 펼칠 때 1회만 fetch ───────────
+  // ── 지연 로드 — 각 <details> 펼칠 때 1회만 fetch (초기 로드 가벼움) ───────────
+  document.getElementById('details-weekly-trend').addEventListener('toggle', function() {
+    if (this.open && !this._loaded) { this._loaded = true; loadWeeklyTrend(); }
+  });
   document.getElementById('details-monthly-trend').addEventListener('toggle', function() {
     if (this.open && !this._loaded) { this._loaded = true; loadMonthlyTrend(); }
   });
