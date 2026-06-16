@@ -1512,12 +1512,64 @@ function renderMonthlyTrend(rows, curM) {
 var _tcData = null;
 var _tcOpenType = null;  // 현재 펼친 유형명(드릴다운 토글)
 
-// 유형 메타: 라벨·전환 정직성 톤(멤버십만 '정본')
-var _TC_TYPES = [
-  { key: '멤버십',   label: '멤버십',   canonical: true,  color: 'var(--blue)' },
-  { key: '성인강습', label: '성인 강습', canonical: false, color: 'var(--orange)' },
-  { key: '유소년강습', label: '유소년 강습', canonical: false, color: 'var(--purple)' },
-];
+// 유형 메타 lookup: 우선순위·색 정의. 응답에 있는 모든 유형을 렌더하되
+// lookup에 있는 유형은 이 순서로 앞에, 없는 유형은 기본 메타(회색)로 뒤에 표시.
+var _TC_TYPES = {
+  '멤버십':    { label: '멤버십',       color: 'var(--blue)',   order: 0 },
+  '성인강습':  { label: '성인 강습',    color: 'var(--orange)', order: 1 },
+  '유소년강습':{ label: '유소년 강습',  color: 'var(--purple)', order: 2 },
+};
+
+// 응답 types 객체에서 렌더 순서에 맞는 유형 배열 반환
+// lookup 유형 우선(order 순), 이후 나머지 alphabetical
+function _tcOrderedTypes(typesObj) {
+  if (!typesObj) return [];
+  var keys = Object.keys(typesObj);
+  var known = [], unknown = [];
+  keys.forEach(function(k) {
+    if (_TC_TYPES[k]) known.push(k);
+    else unknown.push(k);
+  });
+  known.sort(function(a, b) { return _TC_TYPES[a].order - _TC_TYPES[b].order; });
+  unknown.sort();
+  return known.concat(unknown).map(function(k) {
+    var meta = _TC_TYPES[k] || { label: k, color: 'var(--dim)', order: 99 };
+    return { key: k, label: meta.label, color: meta.color };
+  });
+}
+
+// 유형의 전환 정본 여부: convSource='종목시트 수강등록' 또는 '유효회원 매칭' 이면 정본
+function _tcIsCanonical(d) {
+  if (!d) return false;
+  var src = d.convSource || '';
+  return src === '유효회원 매칭' || src === '종목시트 수강등록';
+}
+
+// 전환수: converted 우선, 폴백 memberMatched
+function _tcConvNum(d) {
+  if (!d) return 0;
+  return (d.converted !== null && d.converted !== undefined) ? d.converted : (d.memberMatched || 0);
+}
+
+// 전환율: convRate 우선, 폴백 rate
+function _tcConvRate(d) {
+  if (!d) return null;
+  var r = (d.convRate !== null && d.convRate !== undefined) ? d.convRate : d.rate;
+  return (r === null || r === undefined) ? null : r;
+}
+
+// 채널 항목의 전환수: converted 우선, 폴백 memberMatched
+function _tcCellConv(c) {
+  if (!c) return 0;
+  return (c.converted !== null && c.converted !== undefined) ? c.converted : (c.memberMatched || 0);
+}
+
+// 채널 항목의 전환율: rate (응답이 이제 converted 기준이므로 그대로)
+function _tcCellRate(c) {
+  if (!c) return null;
+  var r = (c.rate !== null && c.rate !== undefined) ? c.rate : null;
+  return r;
+}
 
 function _tcNum(n) {
   return (n === null || n === undefined) ? '0' : Number(n).toLocaleString('ko-KR');
@@ -1526,7 +1578,7 @@ function _tcNum(n) {
 function _tcStub(msg) {
   var cards = document.getElementById('tc-type-cards');
   if (cards) cards.innerHTML = '<div style="background:var(--paper);border:1px solid var(--border);border-radius:12px;padding:16px;color:var(--dim);font-size:13px">'
-    + (msg || '신규 집계 — 웹앱 재배포 후 점등됩니다') + '</div>';
+    + (msg || '재배포 후 점등됩니다') + '</div>';
   var mtx = document.getElementById('tc-matrix-wrap');
   if (mtx) mtx.style.display = 'none';
   var unk = document.getElementById('tc-unknown-wrap');
@@ -1538,19 +1590,27 @@ function _tcStub(msg) {
 function renderTypeCards() {
   var wrap = document.getElementById('tc-type-cards');
   if (!wrap || !_tcData || !_tcData.types) return;
+  var orderedTypes = _tcOrderedTypes(_tcData.types);
   var html = '<div class="kpi-row">';
-  _TC_TYPES.forEach(function(t) {
+  orderedTypes.forEach(function(t) {
     var d = _tcData.types[t.key];
     if (!d) return;
     var inq  = _tcNum(d.total);
-    var conv = _tcNum(d.memberMatched);
-    var rate = (d.rate === null || d.rate === undefined) ? '—' : d.rate + '%';
+    var conv = _tcNum(_tcConvNum(d));
+    var rateVal = _tcConvRate(d);
+    var rate = rateVal === null ? '—' : rateVal + '%';
     var isOpen = _tcOpenType === t.key;
-    // 정직성: 강습은 등록 미확인 → 전환 수치를 흐리게(dim) + 주석
-    var convColor = t.canonical ? t.color : 'var(--dim)';
-    var subLabel = t.canonical
-      ? '<span class="kpi-honesty ok">등록 정본</span>'
-      : '<span class="kpi-honesty soft">멤버십 전환분 (수강등록 미확인)</span>';
+    var isCanon = _tcIsCanonical(d);
+    var convColor = isCanon ? t.color : 'var(--dim)';
+    var src = d.convSource || '';
+    var subLabel;
+    if (src === '유효회원 매칭') {
+      subLabel = '<span class="kpi-honesty ok">등록 정본 (유효회원)</span>';
+    } else if (src === '종목시트 수강등록') {
+      subLabel = '<span class="kpi-honesty ok">수강등록 (종목 팀시트)</span>';
+    } else {
+      subLabel = '<span class="kpi-honesty soft">전환 출처 미확인</span>';
+    }
     html += '<div class="tc-card' + (isOpen ? ' open' : '') + '" data-tc-type="' + t.key + '" onclick="toggleTypeDrill(\'' + t.key + '\')">'
       + '<div class="tc-card-head"><span class="channel-dot" style="background:' + t.color + '"></span>' + t.label
       + '<span class="tc-card-toggle">' + (isOpen ? '접기 ▲' : '상세 ▼') + '</span></div>'
@@ -1573,9 +1633,11 @@ function renderTypeDrilldown() {
   var dd = document.getElementById('tc-drilldown');
   if (!dd) return;
   if (!_tcOpenType || !_tcData || !_tcData.types) { dd.innerHTML = ''; return; }
-  var t = _TC_TYPES.filter(function(x) { return x.key === _tcOpenType; })[0];
   var d = _tcData.types[_tcOpenType];
-  if (!t || !d) { dd.innerHTML = ''; return; }
+  if (!d) { dd.innerHTML = ''; return; }
+  var meta = _TC_TYPES[_tcOpenType] || { label: _tcOpenType, color: 'var(--dim)' };
+  var isCanon = _tcIsCanonical(d);
+  var src = d.convSource || '';
   var channels = (d.channels || []).slice().sort(function(a, b) {
     return (b.inquiries || 0) - (a.inquiries || 0);
   });
@@ -1584,18 +1646,25 @@ function renderTypeDrilldown() {
     rowsHtml = '<tr><td colspan="3" style="padding:12px 14px;color:var(--dim);font-size:13px">채널 데이터 없음</td></tr>';
   } else {
     channels.forEach(function(c) {
-      var rate = (c.rate === null || c.rate === undefined) ? '—' : c.rate + '%';
-      var convColor = t.canonical ? 'var(--text)' : 'var(--dim)';
+      var convVal = _tcCellConv(c);
+      var rateVal = _tcCellRate(c);
+      var rate = rateVal === null ? '—' : rateVal + '%';
+      var convColor = isCanon ? 'var(--text)' : 'var(--dim)';
       rowsHtml += '<tr>'
         + '<td>' + c.channel + '</td>'
         + '<td style="text-align:right">' + _tcNum(c.inquiries) + '</td>'
-        + '<td style="text-align:right;color:' + convColor + '">' + _tcNum(c.memberMatched) + ' <span style="font-size:11px;color:var(--dim)">(' + rate + ')</span></td>'
+        + '<td style="text-align:right;color:' + convColor + '">' + _tcNum(convVal) + ' <span style="font-size:11px;color:var(--dim)">(' + rate + ')</span></td>'
         + '</tr>';
     });
   }
-  var note = t.canonical ? '' : '<div style="padding:8px 14px;font-size:11px;color:var(--dim);border-bottom:1px solid var(--border)">※ 전환 = 멤버십 전환분 기준. 수강등록 정본 미연동.</div>';
+  var noteText = src === '종목시트 수강등록'
+    ? '※ 전환 = 종목 팀시트 수강등록(등록/실패/컨택중) 집계'
+    : src === '유효회원 매칭'
+      ? '※ 전환 = 유효회원 매칭 정본'
+      : '※ 전환 출처 미확인';
+  var note = '<div style="padding:8px 14px;font-size:11px;color:var(--dim);border-bottom:1px solid var(--border)">' + noteText + '</div>';
   dd.innerHTML = '<div style="background:var(--paper);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:10px">'
-    + '<div style="padding:11px 14px;font-size:13px;font-weight:700;color:var(--accent);border-bottom:1px solid var(--border)">' + t.label + ' — 채널별 상세</div>'
+    + '<div style="padding:11px 14px;font-size:13px;font-weight:700;color:var(--accent);border-bottom:1px solid var(--border)">' + meta.label + ' — 채널별 상세</div>'
     + note
     + '<table class="channel-table"><thead><tr><th>채널</th><th style="text-align:right">문의</th><th style="text-align:right">전환(명·율)</th></tr></thead>'
     + '<tbody>' + rowsHtml + '</tbody></table></div>';
@@ -1605,8 +1674,8 @@ function renderTypeMatrix() {
   var wrap = document.getElementById('tc-matrix-wrap');
   if (!wrap || !_tcData || !_tcData.types) return;
   wrap.style.display = '';
-  // 활성 유형(데이터 존재)만
-  var activeTypes = _TC_TYPES.filter(function(t) { return _tcData.types[t.key]; });
+  // 응답에 있는 모든 유형을 순서에 맞게 렌더
+  var activeTypes = _tcOrderedTypes(_tcData.types).filter(function(t) { return _tcData.types[t.key]; });
   // 채널 버킷 합집합 — 유형 전체 문의수로 정렬
   var chTotals = {};
   activeTypes.forEach(function(t) {
@@ -1639,18 +1708,31 @@ function renderTypeMatrix() {
         if (inq === 0) {
           tbodyHtml += '<td style="text-align:right;color:var(--dim)">0</td>';
         } else {
-          var rate = (c.rate === null || c.rate === undefined) ? '—' : c.rate + '%';
-          var convColor = t.canonical ? 'var(--dim)' : 'var(--dim)';
+          var d = _tcData.types[t.key];
+          var isCanon = _tcIsCanonical(d);
+          var convVal = _tcCellConv(c);
+          var rateVal = _tcCellRate(c);
+          var rate = rateVal === null ? '—' : rateVal + '%';
+          var convColor = isCanon ? t.color : 'var(--dim)';
           tbodyHtml += '<td style="text-align:right">' + _tcNum(inq)
-            + '<br><span style="font-size:11px;color:' + convColor + '">' + _tcNum(c.memberMatched) + ' / ' + rate + '</span></td>';
+            + '<br><span style="font-size:11px;color:' + convColor + '">' + _tcNum(convVal) + ' / ' + rate + '</span></td>';
         }
       });
       tbodyHtml += '</tr>';
     });
   }
 
+  // 각주: convSource별로 요약
+  var basisParts = [];
+  activeTypes.forEach(function(t) {
+    var d = _tcData.types[t.key];
+    var src = (d && d.convSource) ? d.convSource : null;
+    if (src) basisParts.push(t.label + '=' + src);
+  });
+  var basisNote = basisParts.length ? '전환 기준: ' + basisParts.join(' / ') : '셀 = 문의수 · 작은 글씨 = 전환(명) / 전환율';
+
   wrap.innerHTML = '<table class="channel-table"><thead>' + thead + '</thead><tbody>' + tbodyHtml + '</tbody></table>'
-    + '<div style="padding:8px 14px 10px;font-size:11px;color:var(--dim);border-top:1px solid var(--border)">셀 = 문의수 · 작은 글씨 = 전환(명) / 전환율 · 문의 많은 채널 상단 정렬 · 강습 전환은 멤버십 전환분(수강등록 미확인)</div>';
+    + '<div style="padding:8px 14px 10px;font-size:11px;color:var(--dim);border-top:1px solid var(--border)">셀 = 문의수 · 작은 글씨 = 전환(명) / 전환율 · 문의 많은 채널 상단 정렬 · ' + basisNote + '</div>';
 }
 
 function renderUnknownCard() {
@@ -1662,7 +1744,7 @@ function renderUnknownCard() {
     + '<div style="font-size:34px;font-weight:800;color:var(--red);line-height:1">' + rate + '</div>'
     + '<div style="flex:1;min-width:200px;font-size:13px;color:var(--text)">'
     + '<strong style="color:var(--red)">출처미상률</strong> — 문의 ' + _tcNum(o.total) + '건 중 ' + _tcNum(o.unknownChannel) + '건의 유입경로가 기록되지 않았습니다.'
-    + '<div style="font-size:12px;color:var(--dim);margin-top:4px">콘텐츠 ROI(투자 대비 효과) 측정 불가 → 문의폼 ‘어떻게 알고 오셨나요?’ 항목 필수화 필요</div>'
+    + '<div style="font-size:12px;color:var(--dim);margin-top:4px">콘텐츠 ROI(투자 대비 효과) 측정 불가 → 문의폼 「어떻게 알고 오셨나요?」 항목 필수화 필요</div>'
     + '</div></div>';
 }
 
@@ -1680,9 +1762,9 @@ async function loadTypeChannel() {
   try {
     var url = FUNNEL_APPS_SCRIPT_URL + '?action=type_channel_breakdown';
     var res = await fetch(url, { redirect: 'follow' });
-    if (!res.ok) { _tcStub(); return; }
+    if (!res.ok) { _tcStub('HTTP ' + res.status + ' — 재배포 후 점등됩니다'); return; }
     var data = await res.json();
-    if (!data || !data.ok || !data.types) { _tcStub(); return; }
+    if (!data || !data.ok || !data.types) { _tcStub('응답 형식 오류 — 재배포 후 점등됩니다'); return; }
 
     _tcData = data;
     renderUnknownCard();
@@ -1691,8 +1773,8 @@ async function loadTypeChannel() {
     renderTypeMatrix();
     renderBasis();
   } catch (e) {
-    console.warn('[type_channel_breakdown] 로드 실패:', e.message);
-    _tcStub();
+    console.warn('[type_channel_breakdown] 로드 실패:', e && e.message);
+    _tcStub((e && e.message) ? e.message + ' — 재배포 후 점등됩니다' : '재배포 후 점등됩니다');
   }
 }
 
