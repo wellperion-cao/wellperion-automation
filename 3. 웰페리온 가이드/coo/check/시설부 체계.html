@@ -150,6 +150,10 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 .board-col{flex:0 0 410px;min-width:410px;max-width:410px;scroll-snap-align:start;background:var(--paper);border:1px solid var(--border);border-radius:14px;overflow:hidden;display:flex;flex-direction:column}
 .board-col.is-weekend{border-color:rgba(230,148,78,0.45)}
 .board-col-head{padding:12px 16px;display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--border);background:var(--bg)}
+#vendor-board .board-col-head{cursor:pointer;user-select:none}
+.vcol-caret{color:var(--accent);font-size:13px;display:inline-block;transition:transform .15s;transform:rotate(90deg)}
+.board-col.vcol-collapsed .vcol-caret{transform:rotate(0)}
+.board-col.vcol-collapsed .board-col-body{display:none}
 .board-col-head .bday{font-size:20px;font-weight:800}
 .board-col.is-weekend .board-col-head .bday{color:var(--orange)}
 .board-col-body{padding:12px 14px;display:flex;flex-direction:column;gap:12px}
@@ -2916,8 +2920,9 @@ function renderVendorBoard(){
   VENDOR_COLS.forEach(col=>{
     const cards = VENDOR_DATA[col.key] || [];
     const colCls = col.cls === 'accent' ? '' : col.cls;
-    html += '<div class="board-col">';
-    html += '<div class="board-col-head"><span class="bday" style="font-size:17px;">'+escapeHTML(col.label)+'</span>'
+    const _vcolColl = (_vendorCollapsed[col.key] !== false);   // 기본 접힘
+    html += '<div class="board-col'+(_vcolColl?' vcol-collapsed':'')+'" id="vcol_'+col.key+'">';
+    html += '<div class="board-col-head" onclick="vendorToggleCol(\''+col.key+'\')"><span class="vcol-caret">▸</span><span class="bday" style="font-size:17px;">'+escapeHTML(col.label)+'</span>'
           + '<span class="day-type weekday">'+cards.length+'개</span></div>';
     html += '<div class="board-col-body">';
     if(!cards.length){
@@ -3055,6 +3060,15 @@ function vendorDeleteCard(colKey, id){
   persistVendorData();
   renderVendorBoard();
   renderVendorList();
+}
+
+/* ── 칸반 분류 칸 접기/펼치기 (제목 클릭 토글, 기본 접힘 · GM 2026-06-16) ── */
+let _vendorCollapsed = {};   // 키=col.key, 값 false=펼침 / 그 외(미정·true)=접힘
+function vendorToggleCol(key){
+  const collapsedNow = (_vendorCollapsed[key] !== false);
+  _vendorCollapsed[key] = collapsedNow ? false : true;   // 상태 반전
+  const col = document.getElementById('vcol_'+key);
+  if(col) col.classList.toggle('vcol-collapsed', _vendorCollapsed[key]);
 }
 
 /* ── 뷰 전환 (칸반 / 목록) ── */
