@@ -1,5 +1,15 @@
 [
   {
+    "task_id": "CEO-2026-06-16-PC-SHUTDOWN-VERIFY-OVERNIGHT",
+    "clevel": "ceo",
+    "title": "[웰리] PC 종료 영구조치 행동확인 — 오늘밤 22:30 미종료·23:00 보고 생존 실측",
+    "status": "PENDING",
+    "priority": "NORMAL",
+    "enqueued_at": "2026-06-16",
+    "note": "[INC-002 봉인 게이트] 진범 22:30 작업 삭제·00:30 단일화 완료(2026-06-16). 내일 아침 켜자마자 이벤트로그 1074/6006 + TaskScheduler oplog로 ① 22:30에 안 꺼졌는지 ② 00:30에 단일 종료됐는지 ③ 23:00 텔레그램 보고가 나갔는지 실측. 셋 다 OK면 INC-002 완전 봉인(현 GUARDED 확정).",
+    "next": "실측 OK → INC-002 종결 보고 / 이상 시 재진단."
+  },
+  {
     "task_id": "CMO-2026-06-16-AISERIES-STAFF-AI-ADOPTION",
     "clevel": "cmo",
     "title": "[시모] AI 시리즈 후속편 후보 — 전 직원 AI 도입·협업 현장 스토리",
@@ -729,11 +739,14 @@
     "task_id": "CEO-2026-06-15-PC-SHUTDOWN-MINUS1H",
     "clevel": "ceo",
     "title": "[웰리] PC가 밤에 1시간 일찍 꺼지는 문제 잡기 — 밤 11시 30분으로 맞췄는데 매일 10시 30분에 꺼짐",
-    "status": "IN_PROGRESS",
+    "status": "DONE",
     "priority": "HIGH",
     "enqueued_at": "2026-06-15",
     "artifact": "PC 끄는 시각을 밤 11시 30분으로 맞췄는데도 3일 내내 10시 30분에 꺼져서, 밤 11시 보고가 안 나갔습니다. 우선 끄는 시각을 자정 30분으로 미뤄 보고가 무조건 나가게 해두고, 실제로 몇 시에 꺼지는지 기록이 남도록 켜뒀습니다. 진짜 원인은 아직 못 찾았습니다.",
-    "next": "내일 아침 켜자마자 기록을 확인해 실제 꺼진 시각을 보고 → 원인 확정 → 다시는 안 그러게 영구 조치"
+    "next": "내일 아침 oplog 재확인 — 22:30 미종료·00:30 단일종료·23:00 보고 생존 확인 시 INC-002 GUARDED 최종 봉인.",
+    "terminal": true,
+    "processed_at": "2026-06-16",
+    "summary": "[완료 2026-06-16: 진범 cto-daily-pc-power-cycle-shutdown(SYSTEM,22:30) 삭제·00:30 단일화. INC-002 GUARDED.]"
   },
   {
     "task_id": "CMO-2026-06-15-CINQ-EP2-PUBLISH",

@@ -1,8 +1,26 @@
 {
   "_schema": {
-    "fields": ["id", "date", "증상", "본질", "뿌리분류", "차단조치", "상태", "검증증거"],
-    "뿌리분류_enum": ["복사", "문서박제", "검증멈춤", "정합어긋남", "의식적예외"],
-    "상태_enum": ["OPEN", "GUARDED"],
+    "fields": [
+      "id",
+      "date",
+      "증상",
+      "본질",
+      "뿌리분류",
+      "차단조치",
+      "상태",
+      "검증증거"
+    ],
+    "뿌리분류_enum": [
+      "복사",
+      "문서박제",
+      "검증멈춤",
+      "정합어긋남",
+      "의식적예외"
+    ],
+    "상태_enum": [
+      "OPEN",
+      "GUARDED"
+    ],
     "규칙": "문서에 적었다로는 닫지 않는다. 차단조치를 실제 재현 검증해야 GUARDED. 같은 본질 2회+ = 구조로 안 막았다 = 자동 에스컬레이션.",
     "정본": "ssot/CONSTITUTION.md 구조2"
   },
@@ -10,7 +28,10 @@
     {
       "id": "INC-001",
       "date": "2026-06-15",
-      "watch_globs": ["scripts/ig_series_producer.py", "instagram/_AI시리즈_로드맵.md"],
+      "watch_globs": [
+        "scripts/ig_series_producer.py",
+        "instagram/_AI시리즈_로드맵.md"
+      ],
       "gate": "warn",
       "요약": "인스타 글을 자동으로 만들 때 옛 설정대로 잘못 만들던 문제. 규칙을 한 곳에서만 읽게 고쳐 다시는 안 그럽니다.",
       "증상": "IG 시리즈 자동제작(producer)이 로드맵에서 시즌 규칙·CTA를 바꿔도 producer 내부 하드코딩 옛 프롬프트로 생성 → 06-12 CTA 사고·06-13 주제이탈로 회귀.",
@@ -27,16 +48,18 @@
       "gate": "warn",
       "요약": "PC가 밤에 1시간 일찍 꺼져 보고가 안 가던 문제. 임시로 더 늦게 끄게 해두고, 원인은 아직 찾는 중입니다.",
       "증상": "PC 자동종료가 트리거 23:30 설정인데도 매일 22:30:01 발화 → 23:00 텔레그램 보고 3일+ 유실. GM 금요일 23:30 변경도 무력화.",
-      "본질": "트리거 표시값(23:30)과 실제 발화(22:30)가 어긋났고, 표시값만 믿고 실제(이벤트로그)를 안 봐 미발견. 원인 자체 미상.",
+      "본질": "종료작업이 2개 공존. 진범 = SYSTEM 권한 숨은 작업 'cto-daily-pc-power-cycle-shutdown'(매일 22:30 시간트리거→shutdown.exe /s /f). 그동안 조정해온 'Welperion\\\\Auto-Shutdown-2330'(23:30→00:30)은 헛다리 — PC가 이미 22:30에 꺼져 발화조차 못 함. '−1h 버그'는 두 작업 시각차(23:30 vs 22:30) 우연. 진범이 관리자권한 필요라 비관리자 세션·이전 AI 진단에 목록조차 안 보여 3일+ 미발견.",
       "뿌리분류": "검증멈춤",
-      "차단조치": "임시: 종료 00:30 이동(−1h 슬립 흡수해 23:00 보고 보호) + TaskScheduler 운영로그 ENABLED(실제 발화 시각 증거화). 근본: 오늘밤 oplog로 원인 확정 후 코드/설정 영구 가드.",
-      "상태": "OPEN",
-      "검증증거": "이벤트로그 1074 = 22:30:01 (06-12~14) 실측. NextRun=2026-06-16 00:30 확인. oplog IsEnabled=True 확인. ★근본 가드 미완 — 오늘밤 실제 발화 시각 증거 대기."
+      "차단조치": "TaskScheduler 운영로그(이벤트107/129/200, 06-15 22:30:01)로 진범 지목 → 관리자 UAC로 schtasks /delete 삭제 + 재조회로 부재 확정. 종료작업 00:30 단일화(Welperion\\\\Auto-Shutdown-2330 1개만 잔존, 트리거 00:30).",
+      "상태": "GUARDED",
+      "검증증거": "2026-06-16 09:09 관리자 실행: DELETE 성공('성공: ...삭제했습니다') + 재조회 '지정된 파일을 찾을 수 없습니다'(부재확정). 잔존 shutdown 작업 = Auto-Shutdown-2330 단 1개(State Ready, Trig 00:30, NextRun 2026-06-17 00:30). oplog 22:30:01 진범 실행기록=인과확정. ★최종 행동확인: 오늘밤(06-16) 22:30 미종료 + 23:00 보고 생존(내일 아침 oplog 재확인)으로 봉인."
     },
     {
       "id": "INC-003",
       "date": "2026-06-15",
-      "watch_globs": ["3. 웰페리온 가이드/cmo/review/review_queue.json"],
+      "watch_globs": [
+        "3. 웰페리온 가이드/cmo/review/review_queue.json"
+      ],
       "gate": "warn",
       "요약": "인스타에 글을 올렸는데 '올렸는지 확인'을 빠뜨려 GM이 먼저 발견한 문제. 확인 안 된 글을 자동으로 보여주게 고쳤습니다.",
       "증상": "IG #14가 IG에 발행(발행검증대기)됐는데 웰리가 IG↔M5 대조(발행완료 도장)를 안 함. 로드맵 상태도 stale(검수대기)였고 GM이 먼저 지적.",
@@ -49,7 +72,13 @@
     {
       "id": "INC-004",
       "date": "2026-06-15",
-      "watch_globs": ["scripts/*upload*playwright.py", "scripts/*watcher*.py", "scripts/publish*.py", "scripts/send_review_card.py", "scripts/ceo_watcher.py"],
+      "watch_globs": [
+        "scripts/*upload*playwright.py",
+        "scripts/*watcher*.py",
+        "scripts/publish*.py",
+        "scripts/send_review_card.py",
+        "scripts/ceo_watcher.py"
+      ],
       "gate": "warn",
       "요약": "보고 채팅방 번호가 자동화 프로그램 11개에 각각 따로 적혀 있던 문제. 한 곳에서만 읽게 모두 고쳤습니다.",
       "증상": "텔레그램 Chat ID(8254867551)가 발행/자동화 scripts 11개에 하드코딩 — telegram_bot/.env 단일출처 미사용. 발산 스캔 v1이 탐지(정본 밖 17건/17파일, scripts 11).",
@@ -62,7 +91,10 @@
     {
       "id": "INC-005",
       "date": "2026-06-15",
-      "watch_globs": ["scripts/compose_*.py", "scripts/_verify_*.py"],
+      "watch_globs": [
+        "scripts/compose_*.py",
+        "scripts/_verify_*.py"
+      ],
       "gate": "warn",
       "요약": "홈페이지 문의 주소가 이미지 만드는 프로그램 2개에 따로 적혀 있던 문제. 한 곳에서만 읽게 고쳐 다시는 안 그럽니다.",
       "증상": "문의 CTA URL(wellperion.com/ko/inquiry)이 슬라이드 엔진 2개·검증 스크립트 2개에 하드코딩 복사 — 발산 스캔 전사 확장 시 탐지(정본 밖 4파일). URL 변경 시 4곳 동시수정 필요.",
