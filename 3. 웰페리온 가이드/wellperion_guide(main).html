@@ -5663,9 +5663,8 @@ function crTab(btn, panelId) {
     <div id="erp-sysstatus" style="background:var(--paper);border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:12px;padding:16px 20px;margin:6px 0 22px;">
       <h3 style="margin-top:0;margin-bottom:4px;"><span class="ico">🖥️</span>시스템 현황 <span style="font-size:13px;font-weight:400;color:var(--dim);">(지금 잘 돌고 있나 — 서버가 자동 발행)</span></h3>
       <div id="erp-sys-summary" style="font-size:15px;font-weight:800;margin:6px 0 12px;">불러오는 중…</div>
-      <div id="erp-sys-body" style="font-size:13px;margin-bottom:14px;"></div>
-      <h4 style="margin:0 0 6px;font-size:13px;font-weight:700;color:var(--dim);">🤖 지금 각 AI가 맡은 일</h4>
-      <div id="erp-sys-ai" style="font-size:13px;"></div>
+      <div id="erp-sys-body" style="font-size:13px;margin-bottom:12px;"></div>
+      <div style="font-size:12px;color:var(--dim);margin-bottom:4px;">🤖 각 AI가 맡은 일·할 일은 <strong>G1 ▸ 오늘의 항로</strong>에서 봅니다 (한 곳만 — 여기 중복 표시 안 함).</div>
       <div id="erp-sys-time" style="font-size:11px;color:var(--dim);margin-top:10px;"></div>
     </div>
     <script>
@@ -5689,15 +5688,6 @@ function crTab(btn, panelId) {
             h+='</div>';
           });
           if(b)b.innerHTML=h;
-          var ai=document.getElementById('erp-sys-ai'); var ah='';
-          (d.ai_work||[]).forEach(function(a){
-            if(!a.count)return;
-            ah+='<div style="background:var(--bg,#fff);border:1px solid var(--border);border-radius:8px;padding:8px 12px;margin-bottom:6px;">';
-            ah+='<div style="font-weight:700;margin-bottom:'+((a.items&&a.items.length)?'4px':'0')+';">'+esc(a.name)+' <span style="color:var(--accent);font-weight:600;">'+a.count+'건</span>'+(a.doing?' <span style="font-size:11px;color:var(--dim);">진행 중 '+a.doing+'</span>':'')+'</div>';
-            if(a.items&&a.items.length){ah+='<div style="color:var(--dim);line-height:1.5;font-size:12px;">· '+a.items.map(esc).join('<br>· ')+'</div>';}
-            ah+='</div>';
-          });
-          if(ai)ai.innerHTML=ah||'<span style="color:var(--dim);">대기 중인 일 없음</span>';
           var t=document.getElementById('erp-sys-time'); if(t)t.textContent='마지막 갱신: '+esc(d.generated_at_kst||'')+' (서버 발행)';
         })
         .catch(function(){
@@ -9615,7 +9605,7 @@ function crTab(btn, panelId) {
       }
       // facility=weekly(스냅샷·무회귀 유지) / support=today_live(서버 실시간 단일값 — 대시보드와 동일). 2026-06-16 시우.
       var fP=fetch(CHECK_API+'?action=weekly&dept=facility&_pv='+pv,{redirect:'follow'}).then(function(r){return r.json();}).then(pickToday).catch(function(){return null;});
-      var sP=fetch(CHECK_API+'?action=today_live&dept=support&_pv='+pv, {redirect:'follow'}).then(function(r){return r.json();}).then(pickToday).catch(function(){return null;});
+      var sP=fetch(CHECK_API+'?action=today_live&dept=support&date='+encodeURIComponent(today)+'&_pv='+pv,{redirect:'follow'}).then(function(r){return r.json();}).then(pickToday).catch(function(){return null;});
       Promise.all([fP,sP]).then(function(res){onSuccess(res[0],res[1]);});
     }
 

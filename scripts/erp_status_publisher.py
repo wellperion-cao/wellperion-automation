@@ -5,10 +5,9 @@ ERP 시스템 현황 발행기 (erp_status_publisher)
 서버/로컬에서만 보이던 상태를 ERP가 읽을 수 있는 status/erp_status.json 으로 발행한다.
 GM은 파일을 못 여니, 이 한 파일이 ERP "🖥️ 시스템 현황" 섹션의 데이터 소스가 된다.
 
-수집 항목:
+수집 항목 (※ '기계 상태'만 — 업무/할일은 G1 오늘의 항로가 단일 출처라 여기서 다루지 않음):
   - 텔레그램 봇 / 일일 스케줄러 생존 (로그 파일 최신성)
   - 주요 예약작업 상태 (schtasks, 실패해도 '불명'으로 안전 처리)
-  - 각 AI 임원 현재 업무 (status/_queue.json 의 PENDING·IN_PROGRESS 를 clevel별 집계)
 
 사용:
   python scripts/erp_status_publisher.py            # status/erp_status.json 만 갱신
@@ -27,11 +26,6 @@ KST = timezone(timedelta(hours=9))
 ROOT = Path(__file__).resolve().parent.parent
 STATUS_DIR = ROOT / "status"
 OUT = STATUS_DIR / "erp_status.json"
-
-CLEVEL_NICK = {
-    "ceo": "웰리", "cfo": "시뽀", "chro": "시로",
-    "cmo": "시모", "coo": "시우", "cpo": "시포", "cto": "시토",
-}
 
 # 감시할 예약작업 (작업명 → 사람이 읽을 이름)
 WATCH_TASKS = {
@@ -103,45 +97,10 @@ def collect_tasks():
     return items
 
 
-def collect_ai_work():
-    """status/_queue.json 의 PENDING·IN_PROGRESS 를 clevel별 집계."""
-    by = {}
-    try:
-        data = json.loads((STATUS_DIR / "_queue.json").read_text(encoding="utf-8"))
-    except Exception:
-        return []
-    for row in data if isinstance(data, list) else []:
-        st = str(row.get("status", "")).upper()
-        if st not in ("PENDING", "IN_PROGRESS"):
-            continue
-        cl = str(row.get("clevel", "")).lower()
-        if cl not in CLEVEL_NICK:
-            continue
-        title = str(row.get("title", "")).strip()
-        # 식별자·대괄호 닉네임 접두 제거(가독성)
-        if title.startswith("["):
-            end = title.find("]")
-            if end != -1:
-                title = title[end + 1:].strip()
-        by.setdefault(cl, []).append({
-            "title": title,
-            "doing": st == "IN_PROGRESS",
-        })
-    out = []
-    for cl, nick in CLEVEL_NICK.items():
-        jobs = by.get(cl, [])
-        out.append({
-            "clevel": cl, "name": nick,
-            "count": len(jobs),
-            "doing": sum(1 for j in jobs if j["doing"]),
-            "items": [j["title"] for j in jobs[:4]],
-        })
-    return out
-
-
 def build():
+    # 시스템 현황 = '기계 상태'만(봇·스케줄러·예약작업). 각 AI 업무는 G1 오늘의 항로가 단일 출처
+    # → 여기서 중복 집계/표시하지 않는다(약속 L01 한 곳만, 2026-06-16 GM 지적).
     systems = collect_processes() + collect_tasks()
-    ai_work = collect_ai_work()
     abnormal = [s["name"] for s in systems if s["state"] == "이상"]
     if abnormal:
         summary = "⚠️ 점검 필요: " + ", ".join(abnormal)
@@ -156,7 +115,6 @@ def build():
         "generated_at_kst": now.strftime("%Y-%m-%d %H:%M"),
         "summary": summary,
         "systems": systems,
-        "ai_work": ai_work,
     }
 
 
