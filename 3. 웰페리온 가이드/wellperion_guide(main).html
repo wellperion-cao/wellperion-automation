@@ -2636,7 +2636,46 @@
           <strong>📌 운영형 프롬프트 SSOT.</strong> 컨텍스트 정비·조직규칙·split-brain 점검·메모리 정착·핵심규칙 영구화·셋업/점검 등 <strong>운영 성격</strong> 프롬프트는 본 섹션이 단일 원본. (기술 인프라 점검 프롬프트는 <strong>T1 기술 인프라 상세 ▸ 핵심 프롬프트</strong> 탭에서 관리.)
         </div>
 
-        <p style="font-size:13px;color:var(--dim);margin:12px 0;"><span class="ico">🔧</span><strong>① 컨텍스트 정비·자기학습</strong> — 범위·R/R = <strong>T2 업무자동화SSOT ▸ 매주 ▸ 7 C-Level 컨텍스트 정비</strong>, 실행 프롬프트(STEP 1~5) = <strong>T1 기술 인프라 상세 ▸ 핵심 프롬프트 ▸ 운영 실행 도구</strong>.</p>
+        <p style="font-size:13px;color:var(--text);margin:12px 0 6px;"><span class="ico">🔧</span><strong>① 컨텍스트 정비·자기학습</strong> — <strong>매주 일 09:00</strong> 반자동(일요일 알림 → CEO가 6 C-Level 위임 + 본인 정비 → 7건 → CEO가 GM께 1회 통합 보고). 식별자 = CTX-{역할}. 실행 프롬프트(STEP 1~5) = <strong>T1 기술 인프라 ▸ 운영 실행 도구</strong>. <span style="color:var(--dim);">이 표가 범위·R/R 단일 출처(모든 AI 부팅 흡수). 자동화가 언제 도는지만 T2 매주에 표기.</span></p>
+        <table style="margin-top:8px;">
+      <tr><th>C-Level</th><th>식별자</th><th>정비 범위</th><th>체크포인트</th></tr>
+      <tr>
+        <td><strong>AI CEO(웰리)</strong></td><td>CTX-CEO</td>
+        <td>웰리 상시 컨텍스트(MEMORY.md 인덱스·ai-ceo.md·CEO 부팅 주입) 슬림화 + 전사 정비 취합</td>
+        <td>MEMORY 인덱스↔파일 정합(고아·끊긴링크 0·net-zero) / ai-ceo.md·부팅 주입 군더더기 제거(S2 포인터화) / 6 C-Level 정비 결과 취합 → GM 1회 보고</td>
+      </tr>
+      <tr>
+        <td><strong>AI CMO</strong></td><td>CTX-CMO</td>
+        <td>마케팅 SOP·콘텐츠 파이프라인·채널별 성과·베이스라인</td>
+        <td>콘텐츠 캘린더 정합성 / 3채널 SOP 현행화 / 검수 피드백 누적 반영 / 베이스라인 톤 갱신</td>
+      </tr>
+      <tr>
+        <td><strong>AI CPO</strong></td><td>CTX-CPO</td>
+        <td>회원·CS SOP·상품 아카이브·문의 응대 프로세스</td>
+        <td>회원 상품 가격표 현행화 / CS 응대 매뉴얼 업데이트 / 문의 유형별 FAQ 정비 / 예약 정책 정합성</td>
+      </tr>
+      <tr>
+        <td><strong>AI COO</strong></td><td>CTX-COO</td>
+        <td>운영 SOP·체크리스트·이슈 응답·리셉션 매뉴얼</td>
+        <td>일일 점검 체크리스트 항목 현행화 / 이슈 응답 시트 패턴 분석 / 운영 가이드라인 갱신 / 교대 인수인계 절차</td>
+      </tr>
+      <tr>
+        <td><strong>AI CHRO</strong></td><td>CTX-CHRO</td>
+        <td>인사·파트너 SOP·계약 관리·조직도·복지 정책</td>
+        <td>파트너 계약 현황 갱신 / 레벨링 체계 점검 / 복장·복지 정책 현행화 / 근태 관리 프로세스 정비</td>
+      </tr>
+      <tr>
+        <td><strong>AI CFO</strong></td><td>CTX-CFO</td>
+        <td>재무·지출·수익 SOP·예산 관리·세무 체크리스트</td>
+        <td>월별 지출 집계 정합성 / 수익화 KPI 갱신 / 세무 일정 체크 / 예산 vs 실적 비교 정비</td>
+      </tr>
+      <tr>
+        <td><strong>AI CTO</strong></td><td>CTX-CTO</td>
+        <td>전사 인프라·자동화·시설 SOP·개발 아카이브 / 🗜️ 캐시·상시 컨텍스트 압축</td>
+        <td>scripts/ 폴더 구조 정비 / 자동화 태스크 가동 상태 점검 / 시설 유지보수 현황 갱신 / 기술 문서 현행화 / <strong>🗜️ 캐시·상시 컨텍스트 압축</strong> — 대상: 7 C레벨+웰리(CEO) 매 턴 로드 파일(review_queue.json·status/_queue.json·에이전트md·MEMORY.md·거대 SSOT 부분조회 등) / 기준: ① 죽은 이력 stub+아카이브 ② 정본 단일화(중복·구식 제거, S2 포인터 유지) ③ 측정→감축 (<strong>매주 일요일 정비 시작 시 <code>python scripts/context_budget_report.py --notify</code> 실행</strong> → <code>status/context_budget.json</code>에 항목별 토큰·추세 기록 → 임계초과 항목부터 슬림화. 측정=자동/삭제=사람 확인) / 안전: 행동=코드/멱등 스크립트(scripts/archive_review_queue.py · context_budget_report.py 등), 원본 아카이브 보존, 살아있는 데이터 무손상 / 연결: CTO-2026-06-09-CONTEXT-COMPRESSION-REVIEW 정규 실행분 (첫 적용 2026-06-13: review_queue.json 691→446행)</td>
+      </tr>
+        </table>
+        <p style="margin-top:6px;color:var(--dim);font-size:12px;"><strong>공통 의무:</strong> 중복·구식·과잉 항목 정리 / 업무 흐름 명확화 / GM 지시 이상 자율 진화·고도화 제안·반영</p>
 
         <details class="toggle" style="margin:12px 0;">
           <summary style="font-weight:700;"><span class="ico">🧩</span>② 조직 규칙·split-brain·메모리·영구화 (클릭해서 펼치기)</summary>
@@ -5830,50 +5869,7 @@ function crTab(btn, panelId) {
     <h4>매주</h4>
     <table>
       <tr><th style="width:48px">상태</th><th style="width:170px">자동화</th><th style="width:80px">담당</th><th style="width:130px">주기</th><th style="width:70px">상세</th></tr>
-      <tr onclick="wpAutoToggle(this)" style="cursor:pointer;"><td>🟢</td><td>7 C-Level 컨텍스트 정비</td><td>7 C-Level</td><td>일 09:00</td><td style="color:var(--accent);font-size:12px;">펼치기 ▾</td></tr>
-      <tr class="auto-detail" style="display:none;"><td colspan="5" style="background:var(--paper);padding:12px 14px;font-size:13px;color:var(--text);">
-        <div style="color:var(--dim);"><strong>반자동 모델 v2 (매주 일 09:00 · 이 흐름이 SSOT).</strong> 일요일 알림 → CEO가 6 C-Level 위임 + CEO 본인 컨텍스트도 정비 → 7건 → CEO가 모아 GM께 1회 통합 보고. 실행 프롬프트(STEP 1~5) = T1 기술 인프라 상세 ▸ 핵심 프롬프트 ▸ 운영 실행 도구 참조.</div>
-        <div style="margin-top:6px;color:var(--dim);"><strong>식별자 = CTX-{역할}</strong> (CTX-CEO·CTX-CMO·CTX-COO·CTX-CTO·CTX-CFO·CTX-CHRO·CTX-CPO · 2026-06-15 레거시 노션번호 폐기). <code>status/schedule.json</code>은 내부 부품일 뿐 식별자 SSOT 아님.</div>
-        <table style="margin-top:8px;">
-      <tr><th>C-Level</th><th>식별자</th><th>정비 범위</th><th>체크포인트</th></tr>
-      <tr>
-        <td><strong>AI CEO(웰리)</strong></td><td>CTX-CEO</td>
-        <td>웰리 상시 컨텍스트(MEMORY.md 인덱스·ai-ceo.md·CEO 부팅 주입) 슬림화 + 전사 정비 취합</td>
-        <td>MEMORY 인덱스↔파일 정합(고아·끊긴링크 0·net-zero) / ai-ceo.md·부팅 주입 군더더기 제거(S2 포인터화) / 6 C-Level 정비 결과 취합 → GM 1회 보고</td>
-      </tr>
-      <tr>
-        <td><strong>AI CMO</strong></td><td>CTX-CMO</td>
-        <td>마케팅 SOP·콘텐츠 파이프라인·채널별 성과·베이스라인</td>
-        <td>콘텐츠 캘린더 정합성 / 3채널 SOP 현행화 / 검수 피드백 누적 반영 / 베이스라인 톤 갱신</td>
-      </tr>
-      <tr>
-        <td><strong>AI CPO</strong></td><td>CTX-CPO</td>
-        <td>회원·CS SOP·상품 아카이브·문의 응대 프로세스</td>
-        <td>회원 상품 가격표 현행화 / CS 응대 매뉴얼 업데이트 / 문의 유형별 FAQ 정비 / 예약 정책 정합성</td>
-      </tr>
-      <tr>
-        <td><strong>AI COO</strong></td><td>CTX-COO</td>
-        <td>운영 SOP·체크리스트·이슈 응답·리셉션 매뉴얼</td>
-        <td>일일 점검 체크리스트 항목 현행화 / 이슈 응답 시트 패턴 분석 / 운영 가이드라인 갱신 / 교대 인수인계 절차</td>
-      </tr>
-      <tr>
-        <td><strong>AI CHRO</strong></td><td>CTX-CHRO</td>
-        <td>인사·파트너 SOP·계약 관리·조직도·복지 정책</td>
-        <td>파트너 계약 현황 갱신 / 레벨링 체계 점검 / 복장·복지 정책 현행화 / 근태 관리 프로세스 정비</td>
-      </tr>
-      <tr>
-        <td><strong>AI CFO</strong></td><td>CTX-CFO</td>
-        <td>재무·지출·수익 SOP·예산 관리·세무 체크리스트</td>
-        <td>월별 지출 집계 정합성 / 수익화 KPI 갱신 / 세무 일정 체크 / 예산 vs 실적 비교 정비</td>
-      </tr>
-      <tr>
-        <td><strong>AI CTO</strong></td><td>CTX-CTO</td>
-        <td>전사 인프라·자동화·시설 SOP·개발 아카이브 / 🗜️ 캐시·상시 컨텍스트 압축</td>
-        <td>scripts/ 폴더 구조 정비 / 자동화 태스크 가동 상태 점검 / 시설 유지보수 현황 갱신 / 기술 문서 현행화 / <strong>🗜️ 캐시·상시 컨텍스트 압축</strong> — 대상: 7 C레벨+웰리(CEO) 매 턴 로드 파일(review_queue.json·status/_queue.json·에이전트md·MEMORY.md·거대 SSOT 부분조회 등) / 기준: ① 죽은 이력 stub+아카이브 ② 정본 단일화(중복·구식 제거, S2 포인터 유지) ③ 측정→감축 (<strong>매주 일요일 정비 시작 시 <code>python scripts/context_budget_report.py --notify</code> 실행</strong> → <code>status/context_budget.json</code>에 항목별 토큰·추세 기록 → 임계초과 항목부터 슬림화. 측정=자동/삭제=사람 확인) / 안전: 행동=코드/멱등 스크립트(scripts/archive_review_queue.py · context_budget_report.py 등), 원본 아카이브 보존, 살아있는 데이터 무손상 / 연결: CTO-2026-06-09-CONTEXT-COMPRESSION-REVIEW 정규 실행분 (첫 적용 2026-06-13: review_queue.json 691→446행)</td>
-      </tr>
-        </table>
-        <p style="margin-top:6px;"><strong>공통 의무:</strong> 중복·구식·과잉 항목 정리 / 업무 흐름 명확화 / GM 지시 이상 자율 진화·고도화 안 자체 제안·반영</p>
-      </td></tr>
+      <tr><td>🟢</td><td>7 C-Level 컨텍스트 정비</td><td>7 C-Level</td><td>일 09:00</td><td style="font-size:12px;">범위·R/R 정본 = <strong>S2 ▸ 운영 프롬프트 ▸ ① 컨텍스트 정비</strong> <span style="color:var(--dim);">/ 실행 STEP1~5 = T1</span></td></tr>
     </table>
     <!-- ══ /7 C-Level 컨텍스트 정비 (범위표 펼치기 통합 · 2026-06-15 · T2 단일 출처) ══ -->
 
