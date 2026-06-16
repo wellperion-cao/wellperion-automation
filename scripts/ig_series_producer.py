@@ -754,6 +754,31 @@ def check_topic_drift(build_path: Path, ep: dict) -> str | None:
 
 
 # ─────────────────────────────────────────────────────────────────────────────
+# AI 시리즈 보드 데이터 동기화 (로드맵 → series_data.json 파생 미러)
+# ─────────────────────────────────────────────────────────────────────────────
+def refresh_series_board() -> bool:
+    """build_series_board_data.py 를 실행해 series_data.json 을 재생성(보드 동기화).
+
+    best-effort: 실패해도 제작·등록에 영향 주지 않음(False 반환 + 경고만).
+    """
+    try:
+        builder = ROOT / "scripts" / "build_series_board_data.py"
+        if not builder.exists():
+            print("[WARN] build_series_board_data.py 부재 — 보드 동기화 생략")
+            return False
+        import importlib.util
+
+        spec = importlib.util.spec_from_file_location("_series_board", builder)
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        mod.main()
+        return True
+    except Exception as exc:
+        print(f"[WARN] AI 시리즈 보드 데이터 동기화 실패(제작 영향 없음): {exc}")
+        return False
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 # 메인
 # ─────────────────────────────────────────────────────────────────────────────
 def run(dry_run: bool, plan_only: bool) -> int:
@@ -850,6 +875,9 @@ def run(dry_run: bool, plan_only: bool) -> int:
             f"⚠️ AI 시리즈 #{nxt['num']} 로드맵 자동표시 실패 — 다음날 같은 편 재생성 위험. "
             f"로드맵 #{nxt['num']} 행 상태 수동 확인 요망."
         )
+
+    # 6-1) AI 시리즈 보드 데이터 동기화(로드맵 → series_data.json). best-effort — 실패해도 제작 영향 없음.
+    refresh_series_board()
 
     # 7) 검수 카드 발송 — [✅승인]/[❌반려] 버튼 카드(무폴링 발행 트리거). register_publish montage 와 별개.
     queue_id = make_queue_id(nxt)

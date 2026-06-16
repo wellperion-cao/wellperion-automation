@@ -495,8 +495,11 @@ function _processAction(body) {
   // 전환 기준 = 멤버십·기타는 유효회원 전화매칭 / 강습은 종목별 팀시트 '등록'(정본).
   // 출처미상률 = '기타·미상' 비율(문의 시점 채널 미캡처 가시화 — INC-003 정직성, 날조 금지).
   if (action === 'type_channel_breakdown') {
+    var tcFrom = body.from || '';   // YYYY-MM-DD (optional) — 문의 날짜 기간 필터
+    var tcTo   = body.to   || '';
     var tcCache = CacheService.getScriptCache();
-    var tcHit = tcCache.get('tc_v4');
+    var tcCacheKey = 'tc_v5_' + tcFrom + '_' + tcTo;
+    var tcHit = tcCache.get(tcCacheKey);
     if (tcHit) return _json(JSON.parse(tcHit));
 
     // 회원부 전화 Set (유효회원 = 멤버십 등록 정본). 시트 미발견 시 빈 Set로 계속(throw 금지 — funnel_conversion 동일 패턴).
@@ -516,9 +519,9 @@ function _processAction(body) {
     }
 
     // 문의 수집: 문의접수 시트 + 구글폼/로그(유형 포함). (정규화전화+유형) 키로 dedup — 양쪽 중복 1건만(전화 빈값은 각각 카운트).
-    var tcRows = []; // {유형, 채널, 연락처}
+    var tcRows = []; // {유형, 채널, 연락처, 시각}
     var tcSeen = {};
-    function _tcPush_(유형, 채널raw, 연락처) {
+    function _tcPush_(유형, 채널raw, 연락처, 시각) {
       var tp = String(유형 || '기타').trim() || '기타';
       var ph = normalizePhone_(연락처);
       if (ph) {
@@ -526,7 +529,7 @@ function _processAction(body) {
         if (tcSeen[key]) return; // 같은 전화+유형 중복 제거
         tcSeen[key] = true;
       }
-      tcRows.push({ 유형: tp, 채널: _canonicalChannel_(채널raw), 연락처: 연락처 });
+      tcRows.push({ 유형: tp, 채널: _canonicalChannel_(채널raw), 연락처: 연락처, 시각: 시각 });
     }
     var tcInqSh = _getSheet(INQUIRY_SHEET, INQUIRY_HEADERS);
     var tcIL = tcInqSh.getLastRow();
@@ -535,29 +538,42 @@ function _processAction(body) {
       var tcChI = INQUIRY_HEADERS.indexOf('유입채널');
       var tcTpI = INQUIRY_HEADERS.indexOf('문의유형');
       var tcPhI = INQUIRY_HEADERS.indexOf('연락처');
+      var tcDtI = INQUIRY_HEADERS.indexOf('시각');
       tcID.forEach(function(r) {
-        _tcPush_(r[tcTpI], r[tcChI], r[tcPhI]);
+        _tcPush_(r[tcTpI], r[tcChI], r[tcPhI], _parseAnyDate_(r[tcDtI]));
       });
     }
     _collectFormInquiries_().forEach(function(f) {
-      _tcPush_(f.문의유형, f.유입채널, f.연락처);
+      _tcPush_(f.문의유형, f.유입채널, f.연락처, f.시각);
     });
 
-    // 강습 수강등록 정본(종목별 팀시트) — 강습 유형 전환 분자로 사용
+    // periodMode: from/to 둘 다 있으면 '문의'는 기간뷰, '등록(전환)'은 누적(등록일 데이터 없음 → 기간 산출 불가).
+    var tcPeriod = !!(tcFrom && tcTo);
+    var tcF = tcPeriod ? new Date(tcFrom + 'T00:00:00+09:00').getTime() : 0;
+    var tcT = tcPeriod ? new Date(tcTo + 'T23:59:59+09:00').getTime() : 0;
+    function _tcInPeriod(row) {
+      if (!tcPeriod) return true;
+      var t = (row.시각 instanceof Date) ? row.시각.getTime() : (row.시각 ? new Date(row.시각).getTime() : NaN);
+      return !isNaN(t) && t >= tcF && t <= tcT;
+    }
+
+    // 강습 수강등록 정본(종목별 팀시트) — 강습 유형 전환 분자로 사용(누적)
     var tcLessons = _collectLessonRegistrations_();
 
-    // 집계: types[유형] = {total, memberMatched, unknown, channels{채널:{inquiries, memberMatched}}}
+    // 집계: 문의(total/inquiries/unknown)=기간뷰 · 등록(memberMatched)=누적(전체 기간, 기간 무관)
     var tcTypes = {};
     tcRows.forEach(function(row) {
       var tp = row.유형, ch = row.채널;
       if (!tcTypes[tp]) tcTypes[tp] = { total: 0, memberMatched: 0, unknown: 0, channels: {} };
       var T = tcTypes[tp];
-      T.total++;
-      if (ch === '기타·미상') T.unknown++;
       if (!T.channels[ch]) T.channels[ch] = { inquiries: 0, memberMatched: 0 };
-      T.channels[ch].inquiries++;
       var phone = normalizePhone_(row.연락처);
-      if (phone && tcMemberSet[phone]) { T.memberMatched++; T.channels[ch].memberMatched++; }
+      if (phone && tcMemberSet[phone]) { T.memberMatched++; T.channels[ch].memberMatched++; }  // 등록=누적
+      if (_tcInPeriod(row)) {  // 문의=기간뷰
+        T.total++;
+        if (ch === '기타·미상') T.unknown++;
+        T.channels[ch].inquiries++;
+      }
     });
 
     // 강습 유형은 종목시트 '등록'을 전환 정본으로 사용(문의 total엔 미가산 — 분자만 대체)
@@ -582,15 +598,15 @@ function _processAction(body) {
         return { channel: ch, inquiries: c.inquiries,
                  memberMatched: c.memberMatched, // 하위호환 유지
                  converted: chConv,
-                 rate: c.inquiries > 0 ? Math.round((chConv / c.inquiries) * 1000) / 10 : 0 };
+                 rate: tcPeriod ? null : (c.inquiries > 0 ? Math.round((chConv / c.inquiries) * 1000) / 10 : 0) };
       });
       chArr.sort(function(a, b) { return b.inquiries - a.inquiries; });
       tcOut[tp] = {
         total: T.total,
         memberMatched: T.memberMatched, // 하위호환 유지
-        rate: T.total > 0 ? Math.round((T.memberMatched / T.total) * 1000) / 10 : 0, // 하위호환 유지
+        rate: tcPeriod ? null : (T.total > 0 ? Math.round((T.memberMatched / T.total) * 1000) / 10 : 0), // 하위호환 유지
         converted: converted,
-        convRate: T.total > 0 ? Math.round((converted / T.total) * 1000) / 10 : 0,
+        convRate: tcPeriod ? null : (T.total > 0 ? Math.round((converted / T.total) * 1000) / 10 : 0),
         convSource: lesson ? '종목시트 수강등록' : '유효회원 매칭',
         unknownChannel: T.unknown,
         unknownRate: T.total > 0 ? Math.round((T.unknown / T.total) * 1000) / 10 : 0,
@@ -601,7 +617,11 @@ function _processAction(body) {
     var tcResult = {
       ok: true,
       generatedAt: _now(),
-      convBasis: '멤버십=유효회원 매칭 / 강습=종목별 팀시트 수강등록(등록/실패/컨택중) 집계',
+      periodMode: tcPeriod,
+      period: { from: tcFrom, to: tcTo },
+      convBasis: tcPeriod
+        ? '문의·교차=선택기간 / 등록(전환)=누적(등록일 데이터 없음 → 기간 무관) · 전환율은 기간선택 시 숨김(분모·분자 시점 불일치)'
+        : '멤버십=유효회원 매칭 / 강습=종목별 팀시트 수강등록(등록/실패/컨택중) 집계',
       lessonDebug: _LESSON_DEBUG,
       types: tcOut,
       overall: {
@@ -612,7 +632,7 @@ function _processAction(body) {
         unknownRate: ovTotal > 0 ? Math.round((ovUnknown / ovTotal) * 1000) / 10 : 0
       }
     };
-    try { tcCache.put('tc_v4', JSON.stringify(tcResult), 300); } catch (e) { /* 캐시 실패 무시 */ }
+    try { tcCache.put(tcCacheKey, JSON.stringify(tcResult), 300); } catch (e) { /* 캐시 실패 무시 */ }
     return _json(tcResult);
   }
 

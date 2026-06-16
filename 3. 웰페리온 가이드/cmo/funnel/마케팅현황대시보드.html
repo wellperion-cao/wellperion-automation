@@ -968,6 +968,7 @@ function _applyPeriodData(data, period) {
     _rangeFromTo = { from: '', to: '' };
   }
   loadClickStats();
+  loadTypeChannel();
 }
 
 // ─── 기간 직접 설정 (custom range) ──────────────────────────────
@@ -1072,9 +1073,10 @@ function _applyCustom(data, from, to, monthCtx) {
   };
   renderConversionFlow();
 
-  // 기간 연동 — custom 기간을 저장 후 클릭 재조회 (순환 없음)
+  // 기간 연동 — custom 기간을 저장 후 클릭·유형채널 재조회 (순환 없음)
   _rangeFromTo = { from: from, to: to };
   loadClickStats();
+  loadTypeChannel();
 }
 
 // 기간 토글 버튼 전환
@@ -1639,8 +1641,13 @@ function renderTypeMatrix() {
           var rateVal = _tcCellRate(c);
           var rate = rateVal === null ? '—' : rateVal + '%';
           var convColor = isCanon ? t.color : 'var(--dim)';
-          tbodyHtml += '<td style="text-align:right">' + _tcNum(inq)
-            + '<br><span style="font-size:11px;color:' + convColor + '">' + _tcNum(convVal) + ' / ' + rate + '</span></td>';
+          if (_tcData.periodMode) {
+            // 기간 선택 시: 문의 분포만(등록=누적이라 채널·기간 매칭 불가 → 위 유형별 표의 누적 등록 참조)
+            tbodyHtml += '<td style="text-align:right">' + _tcNum(inq) + '</td>';
+          } else {
+            tbodyHtml += '<td style="text-align:right">' + _tcNum(inq)
+              + '<br><span style="font-size:11px;color:' + convColor + '">' + _tcNum(convVal) + ' / ' + rate + '</span></td>';
+          }
         }
       });
       tbodyHtml += '</tr>';
@@ -1686,6 +1693,7 @@ async function loadTypeChannel() {
 
   try {
     var url = FUNNEL_APPS_SCRIPT_URL + '?action=type_channel_breakdown';
+    if (_rangeFromTo.from && _rangeFromTo.to) { url += '&from=' + _rangeFromTo.from + '&to=' + _rangeFromTo.to; }
     var res = await fetch(url, { redirect: 'follow' });
     if (!res.ok) { _tcStub('HTTP ' + res.status + ' — 재배포 후 점등됩니다'); return; }
     var data = await res.json();
@@ -1712,8 +1720,8 @@ document.addEventListener('DOMContentLoaded', function() {
   // ── 즉시 로드 ──────────────────────────────────────────────
   loadFunnelConversion();        // 핵심 지표(전환흐름)·채널표 내부 렌더 포함
   loadPeriodBreakdown('month');  // 기본 기간: 월 — 끝에서 loadClickStats() 호출됨
-  loadTypeChannel();             // 유형별 전환 & 유형×채널 교차 (논블로킹·즉시)
-  // loadClickStats()는 loadPeriodBreakdown → _applyPeriodData 내에서 호출됨
+  // 유형별 전환·유형×채널·클릭은 loadPeriodBreakdown → _applyPeriodData 내에서
+  // 선택 기간(_rangeFromTo)에 맞춰 호출됨(loadTypeChannel·loadClickStats)
 
   // ── 지연 로드 — 각 <details> 펼칠 때 1회만 fetch (초기 로드 가벼움) ───────────
   document.getElementById('details-weekly-trend').addEventListener('toggle', function() {
