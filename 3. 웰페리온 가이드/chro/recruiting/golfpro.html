@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🔵 채용 · 웰페리온 — 오전 골프 프로</title>
+<link rel="icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzMiAzMiI+PHJlY3Qgd2lkdGg9IjMyIiBoZWlnaHQ9IjMyIiByeD0iNyIgZmlsbD0iIzJmNmQ5ZSIvPjx0ZXh0IHg9IjE2IiB5PSIyMyIgZm9udC1zaXplPSIxOSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZmlsbD0iI2ZmZmZmZiIgZm9udC1mYW1pbHk9IidBcHBsZSBTRCBHb3RoaWMgTmVvJywnTWFsZ3VuIEdvdGhpYycsc2Fucy1zZXJpZiIgZm9udC13ZWlnaHQ9IjcwMCI+7LGEPC90ZXh0Pjwvc3ZnPg==">
+<style>
+  :root{
+    --navy:#2f2820; --navy-2:#4a3b29; --accent:#a98a52; --accent-soft:#f3ecdd;
+    --gold:#b07d24; --ink:#1f1e1b; --muted:#6c6961; --line:#e7e4dc; --bg:#faf9f6; --card:#ffffff;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic","맑은 고딕",sans-serif;background:var(--bg);color:var(--ink);line-height:1.65;-webkit-font-smoothing:antialiased;}
+  .wrap{max-width:860px;margin:0 auto;padding:0 18px 64px;}
+  .hero{background:linear-gradient(135deg,var(--navy) 0%,var(--navy-2) 100%);color:#fff;border-radius:0 0 28px 28px;padding:46px 36px 40px;position:relative;overflow:hidden;}
+  .hero::after{content:"";position:absolute;right:-60px;top:-60px;width:240px;height:240px;border-radius:50%;background:rgba(176,125,36,.18);}
+  .hero::before{content:"";position:absolute;right:60px;bottom:-90px;width:180px;height:180px;border-radius:50%;background:rgba(200,155,60,.16);}
+  .brand{font-size:14px;letter-spacing:6px;color:#dcc79b;font-weight:600;}
+  .hero h1{font-size:34px;font-weight:800;margin:12px 0 6px;letter-spacing:-1px;}
+  .hero .sub{font-size:16px;color:#e6dcc6;font-weight:400;}
+  .hero .badge{display:inline-block;margin-top:18px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);padding:7px 16px;border-radius:999px;font-size:13px;font-weight:600;}
+  .sec-head{display:flex;align-items:center;gap:12px;margin:48px 0 22px;}
+  .sec-num{flex:0 0 auto;width:38px;height:38px;border-radius:11px;background:var(--navy);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:18px;}
+  .sec-head h2{font-size:23px;font-weight:800;letter-spacing:-.5px;}
+  .sec-head p{font-size:13px;color:var(--muted);margin-top:2px;}
+  .perks{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;}
+  .perk{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:22px 20px;position:relative;box-shadow:0 6px 18px rgba(60,48,32,.05);}
+  .perk .ico{width:50px;height:50px;border-radius:14px;background:var(--accent-soft);display:flex;align-items:center;justify-content:center;margin-bottom:14px;font-size:24px;}
+  .perk h3{font-size:16.5px;font-weight:800;margin-bottom:6px;}
+  .perk p{font-size:13.5px;color:var(--muted);}
+  .perk .tag{position:absolute;top:18px;right:18px;font-size:11px;font-weight:700;color:var(--accent);background:var(--accent-soft);padding:3px 9px;border-radius:999px;}
+  .perk.wide{grid-column:1 / -1;background:linear-gradient(120deg,#2f2820,#4a3b29);color:#fff;border:none;}
+  .perk.wide .ico{background:rgba(255,255,255,.14);}
+  .perk.wide p{color:#e6dcc6;}
+  .block{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:22px 24px;margin-bottom:14px;box-shadow:0 4px 12px rgba(60,48,32,.04);}
+  .block h3{font-size:16px;font-weight:800;margin-bottom:14px;display:flex;align-items:center;gap:9px;}
+  .block h3::before{content:"";width:7px;height:18px;border-radius:3px;background:var(--accent);}
+  .li{display:flex;gap:9px;font-size:14.5px;color:var(--ink);padding:3px 0;}
+  .li .dot{color:var(--accent);font-weight:800;flex:0 0 auto;}
+  .li .muted{color:var(--muted);}
+  .chips{display:flex;flex-wrap:wrap;gap:8px;}
+  .chip{background:var(--accent-soft);color:var(--navy);font-weight:700;font-size:13px;padding:7px 14px;border-radius:999px;border:1px solid #ecdfc6;}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:6px 22px;}
+  .ladder{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px;}
+  .step{flex:1 1 150px;background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:12px 14px;}
+  .step b{display:block;font-size:13.5px;color:var(--navy);}
+  .step span{font-size:12px;color:var(--muted);}
+  @media(max-width:620px){.perks{grid-template-columns:1fr;}.grid2{grid-template-columns:1fr;}.hero{padding:36px 24px 32px;}.hero h1{font-size:27px;}}
+  .foot{margin-top:36px;text-align:center;font-size:12.5px;color:var(--muted);border-top:1px solid var(--line);padding-top:22px;}
+  .foot b{color:var(--navy);}
+  .talent{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:30px 24px 26px;margin-top:30px;text-align:center;box-shadow:0 8px 22px rgba(60,48,32,.06);}
+  .talent .t-kicker{font-size:13px;letter-spacing:3px;color:var(--accent);font-weight:800;}
+  .talent h2{font-size:23px;font-weight:800;margin:6px 0 4px;letter-spacing:-.5px;}
+  .talent .t-sub{font-size:13.5px;color:var(--muted);margin-bottom:10px;}
+  .slogan{margin-top:22px;border-radius:16px;padding:24px 22px;background:linear-gradient(120deg,#2f2820,#4a3b29);color:#fff;position:relative;overflow:hidden;}
+  .slogan .s-line{font-size:18px;font-weight:800;line-height:1.5;letter-spacing:-.4px;}
+  .slogan .s-line b{color:var(--gold);}
+  .foot .contact{margin-top:14px;display:inline-flex;align-items:center;gap:8px;background:var(--accent-soft);border:1px solid #ecdfc6;border-radius:999px;padding:9px 18px;font-size:14px;font-weight:700;color:var(--navy);}
+  .apply{text-align:center;margin-top:24px;}
+  .apply .btn{display:inline-flex;align-items:center;gap:10px;background:linear-gradient(120deg,var(--accent),#8a6f3f);color:#fff;text-decoration:none;font-size:16px;font-weight:800;padding:16px 38px;border-radius:14px;box-shadow:0 10px 24px rgba(138,111,63,.3);}
+  .apply .hint{margin-top:10px;font-size:12.5px;color:var(--muted);}
+  .salary{background:linear-gradient(120deg,#2f2820,#4a3b29);color:#fff;border-radius:16px;padding:22px 24px;margin-bottom:14px;display:flex;align-items:center;gap:18px;box-shadow:0 8px 22px rgba(60,48,32,.12);}
+  .salary .s-ico{flex:0 0 auto;width:54px;height:54px;border-radius:14px;background:rgba(255,255,255,.14);display:flex;align-items:center;justify-content:center;font-size:28px;}
+  .salary .s-label{font-size:13px;color:#dcc79b;font-weight:700;letter-spacing:.5px;}
+  .salary .s-amount{font-size:23px;font-weight:800;letter-spacing:-.5px;margin-top:2px;}
+  .salary .s-amount small{font-size:13px;font-weight:600;color:#e6dcc6;}
+  .salary .s-note{margin-left:auto;font-size:12px;color:#e6dcc6;text-align:right;max-width:190px;}
+  @media(max-width:620px){.salary{flex-wrap:wrap;}.salary .s-note{margin-left:0;text-align:left;}}
+  .company{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:30px 26px;margin-top:30px;box-shadow:0 8px 22px rgba(60,48,32,.06);}
+  .company .c-kicker{font-size:13px;letter-spacing:3px;color:var(--accent);font-weight:800;text-align:center;}
+  .company h2{font-size:23px;font-weight:800;margin:6px 0 12px;letter-spacing:-.5px;text-align:center;}
+  .company p{font-size:14.5px;color:var(--muted);line-height:1.85;word-break:keep-all;text-align:center;max-width:680px;margin:0 auto 22px;}
+  .c-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;}
+  .c-stat{background:var(--bg);border:1px solid var(--line);border-radius:14px;padding:16px 12px;text-align:center;}
+  .c-stat b{display:block;font-size:18px;font-weight:800;color:var(--navy);}
+  .c-stat span{display:block;font-size:11.5px;color:var(--muted);margin-top:4px;word-break:keep-all;line-height:1.45;}
+  @media(max-width:620px){ .c-stats{grid-template-columns:repeat(2,1fr);} }
+</style>
+</head>
+<body>
+<div class="hero">
+  <div class="brand">WELPERION</div>
+  <h1>오전 골프 프로 채용</h1>
+  <div class="sub">강습부 — 회원의 아침을 여는 골프 레슨, 함께 성장할 프로님을 모십니다.</div>
+  <div class="badge">⛳ 골프 프로 (어소시에이트 프로 · 1단계) · 파트너(위탁) · 오전조</div>
+</div>
+
+<div class="wrap">
+
+  <div class="company">
+    <div class="c-kicker">ABOUT WELPERION</div>
+    <h2>웰페리온은 어떤 곳인가요</h2>
+    <p>웰페리온은 단순한 운동 시설이 아닙니다. 서울 한남동에 자리한, 하루 루틴에 자연스럽게 녹아들어 건강의 기준을 세우고 그날의 완성도를 채워주는 프리미엄 멤버십 스포츠 클럽입니다. 스포츠 · 스파 · 커뮤니티 · 공간이 하나로 통합된 라이프스타일 인프라를 9년간 가꿔왔습니다.</p>
+    <div class="c-stats">
+      <div class="c-stat"><b>한남동</b><span>Seoul · 프리미엄 입지</span></div>
+      <div class="c-stat"><b>9년+</b><span>검증된 운영</span></div>
+      <div class="c-stat"><b>3,000평</b><span>통합 라이프스타일 공간</span></div>
+      <div class="c-stat"><b>파트너 등급제</b><span>단계별 성장·보상</span></div>
+    </div>
+  </div>
+
+  <div class="talent">
+    <div class="t-kicker">WHO WE LOOK FOR</div>
+    <h2>웰페리온이 찾는 프로</h2>
+    <div class="t-sub">전문성과 회원 중심 서비스가 만나는 지점</div>
+    <div class="slogan">
+      <div class="s-line">단순히 스윙을 가르치는 사람이 아닌,<br><b>회원의 하루를 여는 골프 파트너</b></div>
+    </div>
+  </div>
+
+  <div class="sec-head">
+    <div class="sec-num">1</div>
+    <div><h2>프리미엄 센터, 프로의 성장</h2><p>정착부터 단계별 성장까지 — 우리가 준비한 것들</p></div>
+  </div>
+
+  <div class="perks">
+    <div class="perk"><div class="ico">💰</div><span class="tag">정착지원</span><h3>정착지원금 (입사 3개월)</h3><p>입사 후 3개월간 일반 月 100만원 / 시니어 月 130만원 지원으로 안정적인 정착을 돕습니다.</p></div>
+    <div class="perk"><div class="ico">📈</div><span class="tag">성장</span><h3>파트너 등급제</h3><p>어소시에이트 → 기본 → 마스터 → 시니어 → 팀리더. 성과·전문성에 따라 수업료율이 단계적으로 오릅니다.</p></div>
+    <div class="perk"><div class="ico">⛳</div><span class="tag">환경</span><h3>프리미엄 골프 인프라</h3><p>한남동 프리미엄 멤버십 회원과 정돈된 골프 레슨 환경에서 일합니다.</p></div>
+    <div class="perk"><div class="ico">👕</div><span class="tag">지원</span><h3>유니폼 제공</h3><p>강습 유니폼을 제공하며, 전문성 있는 응대 환경을 갖춥니다.</p></div>
+    <div class="perk wide"><div class="ico">🤖</div><span class="tag">AI</span><h3>AI 업무 서포트 (전 직원 제공)</h3><p>스케줄·페이롤 등 반복 업무는 AI가 돕습니다. 레슨에 더 집중할 수 있는 환경을 제공합니다.</p></div>
+  </div>
+
+  <div class="sec-head">
+    <div class="sec-num">2</div>
+    <div><h2>모집 상세 안내</h2><p>강습부 오전 골프 프로(어소시에이트 프로 · 1단계)를 모집합니다.</p></div>
+  </div>
+
+  <div class="salary">
+    <div class="s-ico">⛳</div>
+    <div>
+      <div class="s-label">보상 (PARTNER)</div>
+      <div class="s-amount">수업료율 40% → 55% <small>+ 정착지원금 月 100~130만원</small></div>
+      <div class="s-probation" style="margin-top:8px;font-size:12.5px;font-weight:600;color:#2f2820;background:rgba(255,255,255,.9);border-radius:8px;padding:6px 12px;display:inline-block;">파트너(위탁) · 어소시에이트 프로(1단계)</div>
+    </div>
+    <div class="s-note">정착지원금 기간(3개월) 40% 정액 → 종료 후 55%(기본 프로)</div>
+  </div>
+
+  <div class="block">
+    <h3>보상 · 성장 (파트너 등급제)</h3>
+    <div class="li"><span class="dot">·</span><span>정착지원금 : <span class="muted">입사 후 3개월간 일반 月 100만원 / 시니어 月 130만원</span></span></div>
+    <div class="li"><span class="dot">·</span><span>수업료율 : <span class="muted">정착지원금 기간 40%(정액) → 종료 후 55%</span></span></div>
+    <div class="li" style="margin-bottom:8px"><span class="dot">·</span><span>등급별 성장 경로</span></div>
+    <div class="ladder">
+      <div class="step"><b>① 어소시에이트 프로</b><span>40% (정착) / 55%</span></div>
+      <div class="step"><b>② 기본 프로</b><span>55%</span></div>
+      <div class="step"><b>③ 마스터 프로</b><span>58% (석·박사·투어프로)</span></div>
+      <div class="step"><b>④ 시니어 프로</b><span>58% + 인센티브</span></div>
+      <div class="step"><b>⑤ 팀리더</b><span>60% + 인센티브</span></div>
+    </div>
+  </div>
+
+  <div class="block">
+    <h3>담당 업무</h3>
+    <div class="li"><span class="dot">·</span><span>회원 골프 레슨(개인·그룹) 진행 및 강습 콘텐츠 준비</span></div>
+    <div class="li"><span class="dot">·</span><span>스윙·자세 지도, 회원 컨디션 체크 및 안전관리(warm up / cool down)</span></div>
+    <div class="li"><span class="dot">·</span><span>오전 업장 관리 — 시설·장비 점검, 강습 공간 정리정돈</span></div>
+    <div class="li"><span class="dot">·</span><span>강습 기록 관리 및 팀 관리자·운영부 공유</span></div>
+    <div class="li"><span class="dot">·</span><span>회원 응대 및 재등록 관리</span></div>
+  </div>
+
+  <div class="block">
+    <h3>근무 조건 <span style="font-size:12px;font-weight:600;color:var(--muted);">(오전조)</span></h3>
+    <div class="grid2">
+      <div class="li"><span class="dot">·</span><span>계약 형태 : <span class="muted">파트너(위탁계약) · 1단계 어소시에이트 프로</span></span></div>
+      <div class="li"><span class="dot">·</span><span>근무조 : <span class="muted">오전조</span></span></div>
+      <div class="li"><span class="dot">·</span><span>평일 : <span class="muted">06:00 ~ 14:00 (8시간)</span></span></div>
+      <div class="li"><span class="dot">·</span><span>주말 : <span class="muted">08:00 ~ 14:00 (6시간)</span></span></div>
+      <div class="li"><span class="dot">·</span><span>휴게 : <span class="muted">1시간</span></span></div>
+      <div class="li"><span class="dot">·</span><span>휴무 : <span class="muted">월 6회 (정착지원금 종료 후 월 8회)</span></span></div>
+      <div class="li"><span class="dot">·</span><span>근무지 : <span class="muted">현대하이페리온 101동 B1~B2 (한남)</span></span></div>
+      <div class="li"><span class="dot">·</span><span>모집 인원 : <span class="muted">0명 (확정 후 반영)</span></span></div>
+    </div>
+  </div>
+
+  <div class="block">
+    <h3>자격 요건</h3>
+    <div class="grid2">
+      <div class="li"><span class="dot">·</span><span>골프 레슨 지도 가능자</span></div>
+      <div class="li"><span class="dot">·</span><span>경력 : <span class="muted">무관 (1단계 어소시에이트부터 성장)</span></span></div>
+      <div class="li"><span class="dot">·</span><span>회원 안전·서비스 마인드</span></div>
+      <div class="li"><span class="dot">·</span><span>단정한 용모 · 유니폼 착용</span></div>
+    </div>
+  </div>
+
+  <div class="block">
+    <h3>핵심 역량</h3>
+    <div class="chips">
+      <span class="chip">레슨 전문성</span>
+      <span class="chip">서비스마인드</span>
+      <span class="chip">안전관리</span>
+      <span class="chip">성실성</span>
+      <span class="chip">성장지향성</span>
+    </div>
+  </div>
+
+  <div class="block">
+    <h3>우대 사항</h3>
+    <div class="grid2">
+      <div class="li"><span class="dot">·</span><span>프로 / 티칭프로 자격 보유자 <span class="muted">(KPGA · KLPGA 등)</span></span></div>
+      <div class="li"><span class="dot">·</span><span>골프 레슨 · 지도 경력자</span></div>
+      <div class="li"><span class="dot">·</span><span>인근 거주자 · 즉시 출근 가능자</span></div>
+      <div class="li"><span class="dot">·</span><span>CPR · AED 등 안전교육 이수자</span></div>
+    </div>
+  </div>
+
+  <div class="block">
+    <h3>지원 서류</h3>
+    <div class="li"><span class="dot">·</span><span>이력서 <span class="muted">(사진 포함)</span></span></div>
+    <div class="li"><span class="dot">·</span><span>자기소개서 <span class="muted">(선택)</span></span></div>
+    <div class="li"><span class="dot">·</span><span>보유 자격증 사본 <span class="muted">(해당 시)</span></span></div>
+  </div>
+
+  <div class="block" style="background:#faf7f0">
+    <h3>운영 안내</h3>
+    <div class="li"><span class="dot">·</span><span>파트너(위탁) 계약이며, 강습부 업장 관리 가이드라인(안전교육·개인정보 보안·복장 등)을 준수합니다.</span></div>
+    <div class="li"><span class="dot">·</span><span><span class="muted">※ 2026.6 기준 기존 위탁 강사는 신규 채용 기준 적용 대상이 아닙니다.</span></span></div>
+  </div>
+
+  <div class="apply">
+    <a class="btn" href="mailto:cao@wellperion.com?subject=%5B%EC%98%A4%EC%A0%84%20%EA%B3%A8%ED%94%84%20%ED%94%84%EB%A1%9C%20%EC%A7%80%EC%9B%90%5D%20%EC%9D%B4%EB%A6%84%20%EA%B8%B0%EC%9E%AC&body=%EC%95%88%EB%85%95%ED%95%98%EC%84%B8%EC%9A%94%2C%20%EA%B0%95%EC%8A%B5%EB%B6%80%20%EC%98%A4%EC%A0%84%20%EA%B3%A8%ED%94%84%20%ED%94%84%EB%A1%9C%28%EC%96%B4%EC%86%8C%EC%8B%9C%EC%97%90%EC%9D%B4%ED%8A%B8%20%ED%94%84%EB%A1%9C%29%20%EC%B1%84%EC%9A%A9%EC%97%90%20%EC%A7%80%EC%9B%90%ED%95%A9%EB%8B%88%EB%8B%A4.%0A%0A-%20%EC%84%B1%ED%95%A8%3A%0A-%20%EC%97%B0%EB%9D%BD%EC%B2%98%3A%0A-%20%EB%B3%B4%EC%9C%A0%20%EC%9E%90%EA%B2%A9%28%ED%94%84%EB%A1%9C/%ED%8B%B0%EC%B9%AD%20%EB%93%B1%29%3A%0A-%20%EA%B3%A8%ED%94%84%20%EC%A7%80%EB%8F%84%20%EA%B2%BD%EB%A0%A5%3A%0A-%20%EA%B1%B0%EC%A3%BC%EC%A7%80%28%EA%B5%AC%C2%B7%EB%8F%99%29%3A%0A%0A%2A%20%EC%9D%B4%EB%A0%A5%EC%84%9C%28%EC%82%AC%EC%A7%84%20%ED%8F%AC%ED%95%A8%29%C2%B7%EC%9E%90%EA%B8%B0%EC%86%8C%EA%B0%9C%EC%84%9C%C2%B7%EC%9E%90%EA%B2%A9%EC%A6%9D%20%EC%82%AC%EB%B3%B8%EC%9D%84%20%EC%B2%A8%EB%B6%80%ED%95%B4%20%EC%A3%BC%EC%84%B8%EC%9A%94.">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:21px;height:21px"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>
+      이메일로 지원하기
+    </a>
+    <div class="hint">버튼을 누르면 cao@wellperion.com 으로 지원 메일이 작성됩니다.</div>
+  </div>
+
+  <div class="foot">
+    <b>WELPERION</b> · 강습부 오전 골프 프로(어소시에이트 프로) 채용 공고<br>
+    함께 성장할 프로님의 많은 지원 바랍니다.
+    <div class="contact">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#2f2820" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:17px;height:17px"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+      문의 : 02-6261-1202 &nbsp;|&nbsp; 나우열 매니저
+    </div>
+  </div>
+
+</div>
+</body>
+</html>
