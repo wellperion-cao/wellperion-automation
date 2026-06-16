@@ -596,7 +596,23 @@ function renderConversionFlow() {
     + arrow(r2, '문의→등록')
     + card('✅', '③ 회원 등록', conv, '전화번호 매칭(월)', 'var(--f5)')
     + '</div>'
-    + '<div style="font-size:11px;color:var(--dim);margin-top:8px">이번 달 기준 · 등록은 전화번호 매칭으로 월 단위 집계</div>';
+    + (function() {
+        var btm = (_pbData.inquiries && _pbData.inquiries.byTypeMonth) || {};
+        var MAIN = ['멤버십', '성인강습', '유소년강습'];
+        var COLORS = { '멤버십': 'var(--f1)', '성인강습': 'var(--f2)', '유소년강습': 'var(--f5)' };
+        var etc = 0;
+        Object.keys(btm).forEach(function(t) { if (MAIN.indexOf(t) < 0) etc += (btm[t] || 0); });
+        function chip(label, n, color) {
+          return '<span style="display:inline-flex;align-items:baseline;gap:6px;background:var(--paper);border:1px solid var(--border);border-left:3px solid ' + color + ';border-radius:8px;padding:8px 13px;margin:6px 7px 0 0;font-size:13px">'
+            + '<b style="color:' + color + '">' + label + '</b>'
+            + '<span style="font-size:17px;font-weight:800;color:' + color + '">' + (n || 0).toLocaleString('ko-KR') + '</span><span style="font-size:11px;color:var(--dim)">건</span></span>';
+        }
+        var html = MAIN.map(function(t) { return chip(t, btm[t] || 0, COLORS[t]); }).join('') + chip('별개', etc, 'var(--dim)');
+        return '<div style="margin-top:14px;padding-top:12px;border-top:1px dashed var(--border)">'
+          + '<div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:2px">이번 달 문의 — 유형별 한눈에</div>'
+          + html + '</div>';
+      })()
+    + '<div style="font-size:11px;color:var(--dim);margin-top:8px">이번 달 기준 · 등록은 전화번호 매칭으로 월 단위 집계 · 별개 = 공간렌트·비즈니스파트너·기타</div>';
 }
 
 // ─── 전환 단계 퍼널 ─────────────────────────────────────────────

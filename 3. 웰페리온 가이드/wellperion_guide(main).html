@@ -2210,6 +2210,36 @@
         </table>
         <!-- ══ /절대 원칙 ══ -->
 
+        <!-- ══ 🌟 전사 자동화 로드맵 (북극성 목표 · 7대 모듈 · T2→S2 이관·고도화 2026-06-16) ══ -->
+        <h3 style="margin-top:28px;border-top:1px solid var(--border);padding-top:24px;"><span class="ico">🌟</span>전사 자동화 로드맵 <span style="font-size:13px;font-weight:400;color:var(--dim);">— 7대 모듈, 지금 어디까지 → 목표 (북극성)</span></h3>
+        <p style="font-size:12.5px;color:var(--dim);margin:0 0 10px;">웰페리온 ERP가 완성될 모습입니다. 모든 AI가 부팅 때 읽고 이 방향으로 일합니다. 👑 웰리가 전 모듈을 통합·검수하고 GM은 G1(오늘의 항로)만 봅니다.</p>
+        <table id="s2-roadmap-table">
+          <tr><th style="width:128px">모듈</th><th style="width:42%;">지금 (현재)</th><th>목표 (완성 시)</th></tr>
+          <tr><td>👥 회원 (CPO)</td><td>회원 DB·재등록 현황 시트 운영</td><td>가입·갱신 자동 · 이탈징후 감지→케어 · NPS 자동수집 · 갱신율 추적</td></tr>
+          <tr><td>📡 마케팅 (CMO)</td><td>콘텐츠 제작→M5 검수→발행 + 퍼널·대시보드 추적 가동</td><td>초안→슬라이드→3채널 완전 자동발행 · 전환 자동 매칭</td></tr>
+          <tr><td>🧑‍💻 운영 (COO)</td><td>지원부 점검앱·이슈 접수 시트 가동</td><td>점검 체크리스트 자동배포 · 이슈 접수→배정→SLA 추적 · 인수인계</td></tr>
+          <tr><td>🖥️ 시설·IT (CTO)</td><td>점검 현황 보고·시스템 현황판 가동</td><td>출입·락커·키오스크 무인화 · 점검 자동알림 · 장애 감지</td></tr>
+          <tr><td>💰 재무 (CFO)</td><td>매출·지출 집계 연동(일부 보완 중)</td><td>자동집계 · 이상지출 알림 · 예산 소진율 예측 · 세무일정</td></tr>
+          <tr><td>👨‍💼 인사 (CHRO)</td><td>취업규칙·인사 기준 문서화</td><td>채용 파이프라인 · 근태 집계 · 온보딩 30-60-90 · 계약만료 알림</td></tr>
+          <tr><td>🧾 업무·결재 (전사)</td><td>업무·결재 SSOT·결재선 자동산출·결과보고서 자동생성 가동</td><td>등록→결재선→승인→완료→결과보고서까지 무인 흐름 완성</td></tr>
+        </table>
+        <p style="font-size:12px;color:var(--dim);margin-top:8px;">👑 그 위에 <strong>웰리(오케스트레이터)</strong> — 전 모듈 통합·08시 브리핑·완료 자동검증 → GM은 G1만. <span style="color:var(--accent);">가동 현황 상세 = T2 ▸ 지금 돌고 있는 자동화.</span></p>
+        <div id="s2-roadmap-hint" style="font-size:11px;color:var(--accent);margin-top:4px;"></div>
+        <script>
+        (function(){
+          var KEY='S2_ROADMAP_V1', tbl=document.getElementById('s2-roadmap-table');
+          if(!tbl) return;
+          var cells=tbl.querySelectorAll('tr td');
+          if(!cells.length) return;
+          try{ var st=JSON.parse(localStorage.getItem(KEY)||'null'); if(st&&st.length===cells.length){ cells.forEach(function(c,i){ c.innerHTML=st[i]; }); } }catch(e){}
+          cells.forEach(function(c){ c.setAttribute('contenteditable','true'); c.style.cursor='text'; });
+          function save(){ var a=[]; cells.forEach(function(c){ a.push(c.innerHTML); }); try{ localStorage.setItem(KEY, JSON.stringify(a)); }catch(e){} }
+          tbl.addEventListener('input', save);
+          var h=document.getElementById('s2-roadmap-hint'); if(h) h.textContent='✏️ 현재·목표 칸을 클릭해 바로 편집 · 자동 저장';
+        })();
+        </script>
+        <!-- ══ /전사 자동화 로드맵 ══ -->
+
         <!-- ══ 🔌 AI 부팅·조직도 (토글 그룹) ══ -->
         <details class="toggle" style="margin-top:28px;border-top:1px solid var(--border);padding-top:24px;">
           <summary style="cursor:pointer;font-weight:700;font-size:16px;"><span class="ico">🔌</span>AI 부팅·조직도 <span style="font-size:12px;color:var(--dim);font-weight:400;">— 켜면 하는 6단계 + AI 조직도 (클릭해서 펼치기)</span></summary>
