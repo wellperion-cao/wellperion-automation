@@ -3784,7 +3784,7 @@
 
         <div style="padding:13px 16px; background:#16181c; border-radius:8px; border-left:3px solid var(--accent);">
           <div style="font-size:12px; font-weight:700; color:var(--accent); margin-bottom:6px;">전체 인프라 상태 보고</div>
-          <pre style="margin:0; color:#e8e8e8; font-size:12.5px; white-space:pre-wrap; line-height:1.6;">웰페리온 ERP g16 기술 인프라 기준으로 텔레그램봇·스크립트·경로·Watcher·체크리스트 API 상태를 전수 점검하고 이상을 보고해줘.</pre>
+          <pre style="margin:0; color:#e8e8e8; font-size:12.5px; white-space:pre-wrap; line-height:1.6;">웰페리온 ERP T1 기술 인프라 기준으로 텔레그램봇·스크립트·경로·Watcher·체크리스트 API 상태를 전수 점검하고 이상을 보고해줘.</pre>
         </div>
 
         <h4 style="margin-top:22px; padding-top:16px; border-top:1px solid var(--border);">운영 실행 도구</h4>
@@ -3815,11 +3815,11 @@
             <h4><span class="ico">🔄</span>STEP 3 · 자동화 진단 (Fill)</h4>
             <table>
               <tr><th style="width:220px">트리거</th><th>채우는 컨텍스트</th></tr>
-              <tr><td>매일 06·07·09·12·15·18·21·22시 (9슬롯)</td><td>텔레그램 정각 보고 (daily_scheduler.py) — 슬롯 정본 = T2 ▸ 📨 텔레그램 정각 통합보고 10슬롯</td></tr>
+              <tr><td>매일 06·07·09·12·15·18·21·22·23시 (10슬롯)</td><td>텔레그램 정각 보고 (daily_scheduler.py) — 슬롯 정본 = T2 ▸ 📨 텔레그램 정각 통합보고 10슬롯</td></tr>
               <tr><td>매일 08:00</td><td>AI CEO 통합 보고 (ceo_morning_pipeline.py)</td></tr>
-              <tr><td>매주 일 09:00</td><td>AI 교육자료 자동 정리 (education_archive_weekly.py)</td></tr>
-              <tr><td>승인 시 (on-demand)</td><td>인스타 검수 승인 → 발행 엔진 1회 호출 (ig_review_publish_watcher.py · 구 120초 폴링 2026-06-03 폐기, 봇 콜백 전환 예정)</td></tr>
-              <tr><td>PC 부팅·종료</td><td>pc_boot_greeting.py · pc_shutdown_greeting.py</td></tr>
+              <tr><td>매주 월 09:00</td><td>AI 교육자료 자동 정리 (education_archive_weekly.py)</td></tr>
+              <tr><td>승인 시 (on-demand)</td><td>인스타 검수 승인 → 발행 엔진 1회 호출 (ig_review_publish_watcher.py · 구 120초 폴링 2026-06-03 폐기, 봇 콜백 전환 완료)</td></tr>
+              <tr><td>PC 종료</td><td>예약작업 자동 종료 (Auto-Shutdown · 00:30) — 별도 greeting 스크립트 없음</td></tr>
             </table>
             <h4><span class="ico">✨</span>STEP 4 · 고도화 진단 (Improve)</h4>
             <ul>
