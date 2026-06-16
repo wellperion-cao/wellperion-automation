@@ -2750,7 +2750,7 @@
 2. 대시보드 숫자 = 실제 목록과 정확히 일치 (추정·중복 카운트 금지).
 3. 같은 종류 표는 컬럼(순서·항목값) 100% 동일.
 4. 요약은 칸으로, 상세는 행별 토글(접힘)로.
-5. 정리·폐기된 항목은 본문에서 제거 → 맨 아래 '정리·폐기 이력' 토글 하나에 보존.
+5. 정리·폐기된 항목은 본문에서 완전 삭제 (git 이력이 보존 — 별도 '이력' 토글·이관 로그 안 남김). 위치 안내는 '어디에 뭐가 있나' 지도가 담당.
 6. 참고성(다이어그램·SOP·절차)은 접이식 토글로.
 7. 중복 = SSOT 단일화. 여러 곳이면 주관 1곳만, 나머지는 이동 후 포인터 없이 완전 삭제(식별자·주소 반영).
 8. 읽을거리 최소화 — 장식·반복·과장 제거.
@@ -5677,7 +5677,7 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
           <tr><th style="width:280px">자원</th><th>설명</th></tr>
           <tr><td><code>telegram_bot/bot.py</code></td><td>텔레그램 봇 메인 (PID 가동)</td></tr>
           <tr><td><code>telegram_bot/daily_scheduler.py</code></td><td>정각 보고 스케줄러 (PID 가동)</td></tr>
-          <tr><td>Task Scheduler 정상 가동 <code>Wellperion-*</code></td><td>봇 · 스케줄러 · CEO-Morning-Brief · PC-Shutdown · Education-Archive · AI-Education · Morning-Update · <strong>IG-Series-Produce-0730</strong>(다음편 제작·M5 등록·검수카드 발송) <span style="color:var(--dim);">(비활성 예약작업 목록 = 🗑️ 정리·폐기 이력)</span></td></tr>
+          <tr><td>Task Scheduler 정상 가동 <code>Wellperion-*</code></td><td>봇 · 스케줄러 · CEO-Morning-Brief · PC-Shutdown · Education-Archive · AI-Education · Morning-Update · <strong>IG-Series-Produce-0730</strong>(다음편 제작·M5 등록·검수카드 발송)</td></tr>
           <tr><td><code>profiles/{instagram,naver-cafe,naver-blog}/</code></td><td>Playwright 세션 271 MB</td></tr>
           <tr><td><code>telegram_bot/.env</code></td><td>토큰·환경변수 SSOT (3 HardLink)</td></tr>
         </table>
@@ -5704,34 +5704,7 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
       </div>
     </details>
 
-    <!-- ⑤ 정리·폐기 이력 (접이식) -->
-    <details class="toggle">
-      <summary>🗑️ 정리·폐기 이력 (펼쳐보기)</summary>
-      <div class="toggle-body">
-        <h4>예약작업 정리 이력</h4>
-        <table>
-          <tr><th style="width:300px">예약작업</th><th style="width:100px">처리</th><th>사유</th></tr>
-          <tr><td><code>Wellperion-IG-Publish-Watcher</code></td><td>비활성(Disabled)</td><td>120초 폴링 자동발행 감시기. 자동발행 성공 0건·매 사이클 git pull churn 유발로 잉여 판정. 폴링 폐기, 발행 엔진 스크립트는 승인 시 on-demand 1회 호출용 보존. 봇 콜백 전환 예정 (06-03)</td></tr>
-          <tr><td><code>Wellperion-IG-Series-Produce-2100</code></td><td>비활성(Disabled)</td><td>21:00 단일 제작 모델 → 07:30 제작+검수카드로 통합 (06-04)</td></tr>
-          <tr><td><code>Wellperion-IG-Publish-0730</code></td><td>비활성(Disabled)</td><td>07:30 일괄 자동발행 폐지 → 텔레그램 [✅승인] 탭 무폴링 트리거로 전환 (06-04)</td></tr>
-          <tr><td><code>Wellperion-CEO-Verify-Watcher</code></td><td>비활성 처리</td><td>ceo_verify_watcher.py git 미추적·부재 고아 → 매 로그인 실패. 부활 시 스크립트 재작성 선행 (06-03)</td></tr>
-          <tr><td>AutoTask-Watcher-Start/Stop</td><td>UAC 삭제</td><td>유물 예약작업 (06-01, 13→9)</td></tr>
-          <tr><td>구 CEO-Morning-Brief-0800</td><td>UAC 삭제</td><td>Live 버전으로 교체됨 (06-01)</td></tr>
-          <tr><td>구 PC-Shutdown-Greeting</td><td>UAC 삭제</td><td>Live 버전으로 교체됨 (06-01)</td></tr>
-          <tr><td>Weekly-Context-Arm</td><td>폐기</td><td>월 09:00 텔레그램 반자동 모델로 전환 (06-02)</td></tr>
-          <tr><td>CEO_DAILY_CLEVEL_CHECK</td><td>무력</td><td>소스 소실로 비가동</td></tr>
-          <tr><td><code>Wellperion-Morning-Update</code></td><td>수정 완료</td><td>배터리 거부(0x800710E0) → 배터리조건 해제 (06-03, fix_task_windows.bat)</td></tr>
-        </table>
-        <div class="callout tip"><strong>✅ 2026-06-03 fix_task_windows.bat 적용 완료.</strong> 봇·스케줄러·IG발행 숨김 런처 전환 + CEO-Verify 비활성 + Morning-Update 배터리 해제 — 검은 창 제거·봇 텔레그램 연결 실측 검증.</div>
-        <h4>텔레그램 감시기 폐기 7</h4>
-        <p style="font-size:13px;"><code>auto_task</code> · <code>status_change</code> · <code>archive_result</code> · <code>planning_to_archive</code> · <code>permission</code> · <code>archive_merge</code> · <code>inbox</code> — 노션 의존, 노션 미사용으로 폐기·.pyc 제거. <code>pre_task_notifier</code> 실행시간 알림 → <code>status/schedule.json</code> SSOT 전환, 노션 의존 0.</p>
-        <h4>점검 완료 항목</h4>
-        <p style="font-size:13px;">CMO-001-Calendar-Dispatcher (실행 이력 없음 확인) · CTO-008-MetaTokenRefresh (페북 영구 삭제로 불필요 확인)</p>
-        <h4>기타 정리</h4>
-        <p style="font-size:13px;">헛알림(미구현 자동 알림) 4건 2026-06-03 제거 — 실제 구현은 해당 C-Level 별도 기획.</p>
-        <p style="font-size:13px;">IG 레거시 <code>.bat</code> 6종 2026-06-13 <code>_archive/ig_legacy/</code> 이관 (폴링 watcher·07:30 dispatcher·21:00 producer — 승인즉시발행/07:30통합으로 대체, 활성 예약작업 참조 0 실측).</p>
-      </div>
-    </details>
+
 </article>
 <script>
 function crTab(btn, panelId) {
