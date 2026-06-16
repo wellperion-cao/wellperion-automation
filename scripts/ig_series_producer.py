@@ -240,6 +240,87 @@ def season_label_block(ep: dict, cfg: dict[str, str]) -> str:
     return "\n".join(parts)
 
 
+# ─────────────────────────────────────────────────────────────────────────────
+# 편별 기획 카드 단일 출처 읽기 (★ 엉성함·매일 재기획 차단 — 2026-06-16)
+# 로드맵 §5.1 의 ```producer-episode-card-{num} 펜스 블록(KEY: 값)을 읽어 편별 dict 반환.
+# producer 가 '제목+1줄'만 받아 6장을 매일 즉석 생성하던 문제 → 편별 6장 비트·연결·현실가드를
+# 로드맵에서 확정해 읽어 '제작만' 하게 한다(INC-001 동일 철학: 로드맵 단일출처, 코드는 읽기만).
+# 카드 부재 시 빈 dict → 기존 1줄 동작 폴백(안전). 표(|...|)가 아니므로 표 파서에 영향 없음.
+# ─────────────────────────────────────────────────────────────────────────────
+def parse_episode_cards(text: str) -> dict[int, dict[str, str]]:
+    """로드맵의 ```producer-episode-card-{num} 펜스 블록들을 {num: {KEY: 값}} 으로 파싱."""
+    cards: dict[int, dict[str, str]] = {}
+    cur_num: int | None = None
+    cur: dict[str, str] = {}
+    for raw in text.splitlines():
+        line = raw.rstrip("\n")
+        stripped = line.strip()
+        if cur_num is None:
+            m = re.match(r"^```producer-episode-card-(\d+)\s*$", stripped)
+            if m:
+                cur_num = int(m.group(1))
+                cur = {}
+            continue
+        # 블록 안
+        if stripped.startswith("```"):
+            cards[cur_num] = cur
+            cur_num = None
+            cur = {}
+            continue
+        if ":" not in line:
+            continue
+        key, _, val = line.partition(":")
+        key = key.strip()
+        val = val.strip()
+        if key:
+            cur[key] = val
+    return cards
+
+
+def load_episode_card(num: int) -> dict[str, str]:
+    """로드맵에서 해당 편 기획 카드 읽기(best-effort). 실패·부재 시 빈 dict(1줄 폴백)."""
+    try:
+        return parse_episode_cards(ROADMAP.read_text(encoding="utf-8")).get(num, {})
+    except Exception as exc:
+        print(f"[WARN] 편별 카드 읽기 실패 — 1줄 핵심메시지로 폴백: {exc}")
+        return {}
+
+
+def episode_card_block(card: dict[str, str]) -> str:
+    """편별 카드 dict → 제작 프롬프트 주입 지시문. 카드 비면 빈 문자열(기존 동작)."""
+    if not card:
+        return ""
+    lines: list[str] = []
+    hook = card.get("HOOK", "").strip()
+    if hook:
+        lines.append(f"- 후크(첫인상 한 줄): {hook}")
+    cp = card.get("CONNECT_PREV", "").strip()
+    if cp:
+        lines.append(f"- 어제와의 연결(직전 편 잇기 — 반복 말고 전진): {cp}")
+    cn = card.get("CONNECT_NEXT", "").strip()
+    if cn:
+        lines.append(f"- 내일로의 다리(다음 편 예고 여운): {cn}")
+    slide_keys = [k for k in card if k.startswith("SLIDE_")]
+
+    def _slide_no(k: str) -> int:
+        mm = re.search(r"SLIDE_(\d+)", k)
+        return int(mm.group(1)) if mm else 99
+
+    slide_keys.sort(key=_slide_no)
+    if slide_keys:
+        lines.append("- 슬라이드 장별 비트(이 순서·내용대로 '제작만' — 주제·소재 임의 변경 금지):")
+        for k in slide_keys:
+            label = k.replace("SLIDE_", "").replace("_", " ").strip()
+            lines.append(f"  · {label}장: {card[k]}")
+    q = card.get("QUESTION", "").strip()
+    if q:
+        lines.append(f"- 편별 질문(마지막 장·캡션 저장/댓글 CTA의 (이번 편 질문) 자리에 그대로): {q}")
+    rg = card.get("REALITY_GUARD", "").strip()
+    if rg:
+        lines.append(f"- ★현실 가드(반드시 준수): {rg}")
+    return "\n".join(lines)
+
+
 # 이미 제작/검수/발행/폐기된 편으로 판정할 상태 키워드(부분일치) — 재선정 차단
 # (어제·오늘 #7 재탕 사고 방지: '기획예정' 완전일치 + 아래 키워드 미포함 + 폴더 미존재 3중 가드)
 _DONE_STATUS_KW = ("제작완료", "검수대기", "검수 대기", "발행완료", "폐기", "보류")
@@ -371,7 +452,9 @@ def build_producer_prompt(ep: dict, prev: dict | None, folder_slug: str) -> str:
     ref_build = NAMUK_DIR / "260604_AI5_깨진환상들" / "build_slides.py"
     prev_block = (
         f"- 직전 편(#{prev['num']}): 제목「{prev['title']}」 / 핵심메시지「{prev['message']}」\n"
-        f"  → 이 직전 편과 메시지·표현이 겹치지 않게 차별화하라(중복 점검 의무)."
+        f"  → 이 편은 직전 편을 '이어가는' 편이다. 같은 말을 반복하지 말고 한 걸음 전진시키되,\n"
+        f"    어제(#{prev['num']})→오늘(#{ep['num']})이 하나의 흐름으로 자연스럽게 연결되게 하라\n"
+        f"    (아래 '확정 기획 카드'에 어제와의 연결 지시가 있으면 그걸 최우선으로 따른다)."
         if prev
         else "- 직전 편 없음(이 편이 첫 편)."
     )
@@ -380,6 +463,15 @@ def build_producer_prompt(ep: dict, prev: dict | None, folder_slug: str) -> str:
     season_block = (
         f"\n## 시즌2 규칙 (로드맵 §2.6 단일출처 — 자동 주입)\n{season_rules}\n"
         if season_rules
+        else ""
+    )
+    # 편별 확정 기획 카드(로드맵 §5.1 단일출처). 카드 부재 시 빈 문자열 → 기존 1줄 동작(폴백).
+    card_rules = episode_card_block(load_episode_card(ep["num"]))
+    card_block = (
+        f"\n## 이번 편 확정 기획 카드 (로드맵 §5.1 단일출처 — 이 비트대로 '제작만' 한다)\n"
+        f"아래는 이미 확정된 편별 설계다. 6장 비트·어제/내일 연결·현실 가드를 그대로 따라 제작하라.\n"
+        f"(이 카드가 위 '핵심메시지 1줄'보다 구체적이다 — 카드와 1줄이 충돌하면 카드를 따른다.)\n{card_rules}\n"
+        if card_rules
         else ""
     )
     return f"""너는 웰페리온 AI CMO(시모)다. GM 개인계정 namuk.wellperion 의 'AI A~Z' 연재 다음 편을 제작한다.
@@ -393,7 +485,7 @@ GM 1인칭 진솔 보이스(생각 리더십)로, 초등학생도 이해할 일�
   제목·주제·핵심메시지를 네 판단으로 바꾸거나 다른 소재로 갈아끼우지 마라. 위 주제 그대로 만든다.
   (초안 아님 — 로드맵 §4.1에서 확정된 편이다. 더 좋은 아이디어가 떠올라도 이 편은 위 주제로만 만든다.)
 {prev_block}
-
+{card_block}
 ## 산출물 (단 하나의 파일만 작성)
 파일 경로: {folder_path / "build_slides.py"}
 참고 표준(똑같은 구조·함수·register_publish 호출을 그대로 따른다): {ref_build}
