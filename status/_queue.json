@@ -1,5 +1,15 @@
 [
   {
+    "task_id": "COO-2026-06-16-MEMBER-SELF-VOC-QR",
+    "clevel": "coo",
+    "title": "[시우/웰리 지원] 회원 셀프 VOC(QR+사진) 자동화 — 모바일폼+백엔드+운영부 현황판+텔레그램",
+    "status": "IN_PROGRESS",
+    "priority": "NORMAL",
+    "enqueued_at": "2026-06-16",
+    "summary": "[코드·UI 완성, 라이브는 GM 게이트] GM 아이디어=VOC처럼 회원이 QR+사진 셀프접수+현황 파악. 설계(architect): 기존 구글폼=직원대행·구글로그인강제 → 자체 모바일폼으로. 부품(사진업로드 _uploadFile·현황보드·텔레그램) 재사용. 구축: ①백엔드 coo/voc/apps_script_voc.js(voc_submit POST 사진base64→Drive VOC_Photos→URL→「회원셀프VOC」탭 append+텔레그램알림, voc_list, voc_update) 점검·업무 GAS와 독립 ②모바일폼 coo/voc/voc_mobile_form.html(QR ?loc 프리필·4유형·FileReader base64·로그인X) ③운영부 체계 VOC탭 현황 칸반(접수/처리중/완료·담당배정·상태전환) ④GM가이드 .md. Playwright 렌더검증. 커밋 d3acd0c·27038ec push. ⚠️무인증 변조위험=hidden token/rate-limit 후속.",
+    "next": "★GM 라이브 4단계(가이드 coo/voc/VOC_배포_QR_텔레그램_GM가이드.md): ①신규 GAS에 apps_script_voc.js 붙여 배포→/exec ②URL을 폼·운영부 2곳 __VOC_GAS_EXEC_URL__ 교체 ③텔레그램 토큰 ScriptProperties ④위치별 QR 생성·비치. 그 후 실접수→알림 실측 = 가동완료. 보안 hidden token 후속."
+  },
+  {
     "task_id": "COO-2026-06-16-OPS-RECEPTION-BOARD-MANUAL",
     "clevel": "coo",
     "title": "[시우] 운영부 체계 리셉션 업무 보드+매뉴얼 7항목 신설 + 풀폭 좌측정렬 통일",
