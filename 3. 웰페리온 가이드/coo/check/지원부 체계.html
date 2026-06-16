@@ -1786,7 +1786,19 @@ function roundHasItems(date,g,rk){
 }
 /* 라운드별 타이머 키(확장: 날짜+성별+라운드). drawUI/타이머가 라운드 인지. */
 function timerKeys(d,g,rk){return {sk:'timerStart_'+d+'_'+g+'_'+rk, ek:'timerEnd_'+d+'_'+g+'_'+rk}}
-/* 조 선택바 렌더 (성별별) — 그 날짜의 조만(평일 3조 / 주말 2조), 주말 시각 반영. */
+/* 회차별 진행률(가시항목 기준 done/total) — 조 버튼 현황 표시용. GM 2026-06-16 시우. */
+function _roundProgress(d,g,rk){
+  const sched=getSched(d); let total=0,done=0;
+  if(sched)sched.forEach(slot=>slot.groups.forEach(gr=>gr.items.forEach(it=>{
+    if(!shouldShowItemForGender(it,g))return;
+    const ctx={...it,slot:slot.slot,shift:slot.shift};
+    if(itemRounds(ctx).indexOf(rk)<0)return;
+    total++; if(isChecked(it.id,rk,g))done++;
+  })));
+  if(rk==='close1'){const dow=getDayOfWeek(d);if(DAY_FOCUS[dow])DAY_FOCUS[dow].forEach(it=>{if(shouldShowItemForGender(it,g)){total++;if(isChecked(it.id,rk,g))done++;}});}
+  return {total:total,done:done};
+}
+/* 조 선택바 렌더 (성별별) — 그 날짜의 조만. 버튼 안에 진행률(done/total)+제출상태 합쳐 표시(GM 2026-06-16). */
 function renderRoundBar(g){
   const bar=document.getElementById(g==='f'?'roundBarF':'roundBarM');
   if(!bar)return;
@@ -1797,10 +1809,12 @@ function renderRoundBar(g){
     const act=r.key===cur?' active':'';
     const _sub=isRoundSubmitted(d,g,r.key);
     const done=_sub?' done':'';
-    const _nm=String(r.name).replace(/\s*\[\d+\]/,'');   // '오전조[1]' → '오전조' (조 이름만, [1] 제거). GM 2026-06-15
+    const _nm=String(r.name).replace(/\s*\[\d+\]/,'');   // '오전조[1]' → '오전조'
+    const p=_roundProgress(d,g,r.key);
+    const _badge=_sub?'✅ 제출완료':(p.done>0?'진행중':'미시작');
     html+=`<button class="round-seg${act}${done}" onclick="setRoundG('${g}','${r.key}')">`
         +`<span class="rs-name">${_nm}</span><span class="rs-time">${r.time}</span>`
-        +`<span class="rs-sub">${_sub?'(1/1)':'(0/1)'}</span></button>`;   // 조별 제출 여부 — 제출=(1/1)초록 / 미제출=(0/1). GM 2026-06-15
+        +`<span class="rs-sub">${p.done}/${p.total} · ${_badge}</span></button>`;   // 진행률+제출상태 합침. GM 2026-06-16
   });
   bar.innerHTML=html;
 }
@@ -2144,6 +2158,17 @@ function _buildPushPayload(d,g,includeSubmitMeta){
     p.submitted_am=!!STATE._submitted_am; p.submittedAt_am=STATE._submittedAt_am||''; p.submitter_am=STATE._submitter_am||'';
     p.submitted_pm=!!STATE._submitted_pm; p.submittedAt_pm=STATE._submittedAt_pm||''; p.submitter_pm=STATE._submitter_pm||'';
     p.submitted_night=!!STATE._submitted_night; p.submittedAt_night=STATE._submittedAt_night||''; p.submitter_night=STATE._submitter_night||'';
+    /* F2(GM 2026-06-16): 제출한 회차는 전 항목을 시트에 기록 → 미체크 항목을 '미완료'로 함께 전송(서버가 행 생성). 제출 안 한 회차는 미포함. */
+    const _subR=ROUND_KEYS.filter(rk=>isRoundSubmitted(d,g,rk));
+    const _ru=[];
+    if(sched&&_subR.length){
+      sched.forEach(slot=>slot.groups.forEach(gr=>gr.items.forEach(it=>{
+        if(typeof shouldShowItemForGender==='function'&&!shouldShowItemForGender(it,g))return;
+        const ctx={...it,slot:slot.slot,shift:slot.shift};
+        itemRounds(ctx).forEach(rk=>{ if(_subR.indexOf(rk)>=0 && !isChecked(it.id,rk,g)) _ru.push(rk+'_'+it.id); });
+      })));
+    }
+    p.roundUnchecked=_ru;
   }
   return p;
 }
@@ -3703,7 +3728,9 @@ function collectDashboardData(d){
    서버 미응답·이상치(total<done) 시 로컬값 보존(폴백). GM 2026-06-16 시우. */
 async function applyTodayLiveOverlay(d,data){
   try{
-    const r=await fetch(DASH_API+'?action=today_live&dept='+DASH_DEPT+'&date='+encodeURIComponent(d)+'&_pv='+Date.now(),{redirect:'follow'});
+    /* 로컬 collectDashboardData 분모를 서버에 전달 — GAS가 동일 소스로 분모 결정(SSOT 단일화). */
+    const qLt='&lAmT='+(data.amTotal||0)+'&lPmT='+(data.pmTotal||0)+'&lClT='+(data.closingTotal||0)+'&lNiT='+(data.nightTotal||0);
+    const r=await fetch(DASH_API+'?action=today_live&dept='+DASH_DEPT+'&date='+encodeURIComponent(d)+qLt+'&_pv='+Date.now(),{redirect:'follow'});
     const j=await r.json();
     if(!j||j.ok===false)return;                          // 실패 → 로컬 폴백
     if(typeof j.total!=='number'||typeof j.done!=='number')return;
@@ -5010,6 +5037,27 @@ function applyBaseOverrides(sched,ds){
   })).filter(slot=>slot.groups.length>0);
 }
 
+/* F1(GM 2026-06-16): 요일 지정 항목을 원래 카테고리에서 빼 '📅 요일 점검' 그룹으로 모음.
+   평일=오후조(pm1)/주말=마감조(close1)에 배치(rounds 강제). 요일 미지정(매일) 항목은 제자리 유지. */
+function _relocateDayItems(sched, ds){
+  if(!sched||!sched.length) return sched;
+  const isWeekend=(typeof getDayInfo==='function'&&getDayInfo(ds).type==='weekend');
+  const targetRound=isWeekend?'close1':'pm1';
+  const dayKor=['일','월','화','수','목','금','토'][getDayOfWeek(ds)]||'';
+  const collected=[];
+  sched.forEach(slot=>slot.groups.forEach(g=>{
+    g.items=g.items.filter(it=>{
+      const p=parseSched(it.sched||'');
+      if(p.days&&p.days.length){ collected.push({...it, rounds:[targetRound], _dayfocus:true}); return false; }
+      return true;
+    });
+  }));
+  if(!collected.length) return sched;
+  sched.forEach(slot=>{ slot.groups=slot.groups.filter(g=>g.items.length>0); });
+  let out=sched.filter(slot=>slot.groups.length>0);
+  out.push({slot:'📅 '+dayKor+'요일 점검', shift:'pm', _dayfocus:true, groups:[{title:'📅 '+dayKor+'요일 점검', items:collected}]});
+  return out;
+}
 getSched = function(ds){
   const base = _origGetSched(ds);
   if(!base) return null;
@@ -5017,7 +5065,7 @@ getSched = function(ds){
   const schedType = info.type; // 'weekday' or 'weekend'
   const customItems = mgmtGetCustomItemsForSchedule(schedType).filter(i => i.shift !== 'night');
   const customSlots = mgmtBuildCustomSlots(customItems);
-  return applyBaseOverrides(mgmtMergeSchedule(base, customSlots), ds);
+  return _relocateDayItems(applyBaseOverrides(mgmtMergeSchedule(base, customSlots), ds), ds);
 };
 
 getNightSched = function(ds){

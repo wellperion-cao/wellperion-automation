@@ -833,6 +833,12 @@ function _writePerRoundRows(dept, date, body) {
       pushWant(_roundLabelToKey(_roundLabel(c.slot, c.shift)), id, false);
     }
   });
+  // (3) F2(GM 2026-06-16 시우): 제출한 회차의 미체크 항목 → '미완료' 행 기록(시트=그 회차 전 항목 완료/미완료). 제출 안 한 회차는 프론트가 미포함.
+  (body.roundUnchecked || []).forEach(function (k) {
+    k = String(k); if (roundChecks.indexOf(k) >= 0) return;   // 체크된 회차항목은 (1)에서 완료로 기록됨
+    var us = k.indexOf('_'); if (us < 0) return;
+    pushWant(k.slice(0, us), k.slice(us + 1), false);
+  });
 
   // ★취소 정합(GM 2026-06-16 시우): 활성 성별탭에 남길 행이 0건이어도 primaryTarget을 처리 대상에 포함 →
   //   날짜 행 전량삭제 경로 진입(아래 primaryTarget 분기). 이게 없으면 마지막 체크를 풀어도 옛 행이 시트에 남아
@@ -1969,25 +1975,45 @@ function handleTodayLive(params) {
     });
   });
 
-  // ─── 분모(total): 매뉴얼 스케줄 전체(그날 요일 고정) — led.seen 폐기 ───
-  // KST 날짜에서 요일(0=일,1=월…6=토) 추출.
+  // ─── 분모(total): 클라 분모 우선, 없으면 요일 기반 상수 폴백 ───
+  // 1차: 클라(applyTodayLiveOverlay)가 collectDashboardData 로컬 분모를 전달 — 단일출처 보장.
+  //   파라미터: lAmT(오전), lPmT(오후), lClT(마감), lNiT(야간) — 남+여 합산 전체값.
+  //   클라 분모는 WEEKDAY/WEEKEND JS배열+custom items+DAY_FOCUS를 그대로 반영하므로 SSOT.
+  // 2차(폴백): home 등 클라 분모 미전달 시 → 요일 기반 상수(_TL_SCHED_BASE).
   var dateObj = new Date(date + 'T00:00:00+09:00');
-  var dow = dateObj.getDay();   // 0=일, 6=토
+  var dow = dateObj.getDay();
   var isWeekend = (dow === 0 || dow === 6);
   var baseKey = isWeekend ? 'weekend' : 'weekday';
   var focusCnt = _TL_DAY_FOCUS_CNT[dow] || 0;
 
-  // 성별별 분모 = BASE + DAY_FOCUS(pm에 추가). gender=all 원장은 분모 0(별도 원장이므로 base에 미포함).
   var totalByG = { m: newBuckets(), f: newBuckets(), all: newBuckets() };
-  ['m', 'f'].forEach(function (g) {
-    var base = _TL_SCHED_BASE[baseKey][g];
-    totalByG[g].am    = base.am;
-    totalByG[g].pm    = base.pm + focusCnt;   // DAY_FOCUS → pm 버킷
-    totalByG[g].close = base.close;
-    totalByG[g].night = base.night;
-  });
-  // gender=all 원장(공용구역): 분모는 별도 원장에 실제 체크된 항목 수만큼(분자=분모로 취급 — 100%).
-  // 즉 all 분모를 분자와 같게 설정해 합산 왜곡 없앰.
+
+  var lAmT = parseInt(params.lAmT || '', 10);
+  var lPmT = parseInt(params.lPmT || '', 10);
+  var lClT = parseInt(params.lClT || '', 10);
+  var lNiT = parseInt(params.lNiT || '', 10);
+  var hasClientTotal = !isNaN(lAmT) && !isNaN(lPmT);   // lAmT+lPmT 있으면 클라 분모 유효
+
+  if (hasClientTotal) {
+    // 클라 분모: 남/여 절반씩 배분(collectDashboardData는 gender 구분 없는 합산값을 보냄).
+    // 홀수는 m에 올림 — 안전장치(분모>분자 항상 보장).
+    function halfUp(n) { return Math.ceil((isNaN(n) ? 0 : n) / 2); }
+    function halfDn(n) { return Math.floor((isNaN(n) ? 0 : n) / 2); }
+    totalByG.m.am    = halfUp(lAmT); totalByG.f.am    = halfDn(lAmT);
+    totalByG.m.pm    = halfUp(lPmT); totalByG.f.pm    = halfDn(lPmT);
+    totalByG.m.close = halfUp(isNaN(lClT)?0:lClT); totalByG.f.close = halfDn(isNaN(lClT)?0:lClT);
+    totalByG.m.night = halfUp(isNaN(lNiT)?0:lNiT); totalByG.f.night = halfDn(isNaN(lNiT)?0:lNiT);
+  } else {
+    // 폴백: 요일 기반 상수
+    ['m', 'f'].forEach(function (g) {
+      var base = _TL_SCHED_BASE[baseKey][g];
+      totalByG[g].am    = base.am;
+      totalByG[g].pm    = base.pm + focusCnt;
+      totalByG[g].close = base.close;
+      totalByG[g].night = base.night;
+    });
+  }
+  // gender=all 원장(공용구역): 분자=분모로 취급(항상 100% — 합산 왜곡 방지).
   buckets.forEach(function (b) { totalByG.all[b] = doneByG.all[b]; });
 
   // 최종 안전장치: 분모가 분자보다 작으면 분자로 올림(100% 초과 방지).
