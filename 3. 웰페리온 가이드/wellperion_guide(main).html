@@ -5761,18 +5761,7 @@ function crTab(btn, panelId) {
     <!-- ══ /시스템 현황 ══ -->
 
     <p style="font-size:12px;color:var(--dim);margin:6px 0 14px;">📋 7대 자동화 모듈 <strong>전사 로드맵(목표)</strong> → <strong>S2 공통탭 ▸ 🌟 전사 자동화 로드맵</strong>으로 이관·고도화(2026-06-16). T2는 '지금 도는 현황'만.</p>
-    <!-- ── PC·업데이트·창 동작 원리 (접이식) ── -->
-    <details class="toggle" style="margin:6px 0 18px;">
-      <summary>🖥️ PC·업데이트·창 동작 원리 <span style="color:var(--dim);font-size:12px;font-weight:400;">— 검은 창·자동 업데이트가 왜 그런지 (펼쳐보기)</span></summary>
-      <div class="toggle-body">
-        <table>
-          <tr><th style="width:150px">주제</th><th>핵심 (일상어)</th></tr>
-          <tr><td><strong>① 검은 창</strong></td><td>예약작업이 <b>"보이는 화면 + 창 있는 방식"</b>으로 등록돼 검은 cmd 창이 떴습니다. → <b>숨김 런처</b>(<code>launchers/*.vbs</code>)로 창 없이 전환. 적용: <code>fix_task_windows.bat</code> 관리자 1회.</td></tr>
-          <tr><td><strong>② 자동 업데이트</strong></td><td>업데이트는 <b>PC 켤 때 CEO 배치가 1회</b>만. <b>실행 중인 Claude는 못 바꿉니다</b>(Windows가 켜진 파일 잠금) → 업데이트하려면 <b>모든 Claude 창 닫고 PC 재시작</b>. 세션 내 자동 업데이터는 항상 실패하던 잉여라 OFF.</td></tr>
-          <tr><td><strong>③ 부팅 안전장치</strong></td><td>CEO 배치는 <b>Claude 창 0개일 때만</b> 업데이트(절전 복귀 세션 보호) + <code>logs\claude_update.log</code> 기록·검증.</td></tr>
-        </table>
-      </div>
-    </details>
+
 
 
     <!-- ② 지금 돌고 있는 자동화 -->
@@ -5793,6 +5782,7 @@ function crTab(btn, panelId) {
     <table>
       <tr><th style="width:90px">시각</th><th style="width:230px">자동화</th><th style="width:72px">담당</th><th>무엇을 하나</th></tr>
       <tr><td>🟢 <strong>05:50</strong></td><td>PC 자동 ON</td><td>CTO</td><td>BIOS RTC로 자동 부팅 → 부팅 후 봇·스케줄러 자동기동(ONLOGON)</td></tr>
+      <tr><td>🟢 <strong>부팅 시</strong></td><td>OMC 자동 업데이트</td><td>CTO</td><td>PC 부팅·CEO(웰리) 배치 시작 시 OMC(플러그인) 1회 자동 업데이트. 실행 중 Claude는 못 바꿔 <strong>창 0개일 때만</strong>(logs\claude_update.log). 검은 창은 숨김 런처(vbs)로 제거. <span style="color:var(--dim);">모델은 세션 선택이라 업데이트 대상 아님.</span></td></tr>
       <tr onclick="wpAutoToggle(this)" style="cursor:pointer;"><td>🟢 <strong>06~23시</strong></td><td>텔레그램 정각 통합보고 <span style="color:var(--accent);font-size:12px;">(10슬롯)</span></td><td>인프라</td><td><code>daily_scheduler.py</code>가 정각마다 @namuki_report_bot로 자동 발송 <span style="color:var(--accent);font-size:12px;">— 펼쳐서 10슬롯 보기 ▾</span></td></tr>
       <tr class="auto-detail" style="display:none;"><td colspan="4" style="background:var(--paper);padding:12px 14px;">
         <p style="font-size:12px;color:var(--dim);margin:0 0 6px;">📨 GM이 매일 받는 통합보고 10슬롯 — <code>daily_scheduler.py</code> 정본. ※ 08:00 오늘의 항로는 <code>ceo_morning_pipeline.py</code>(별도) 담당이라 미포함.</p>
