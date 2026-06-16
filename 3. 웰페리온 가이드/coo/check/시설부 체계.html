@@ -770,8 +770,8 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
             <span class="manual-label">[기준값 / 주기]</span>
             <ul>
               <li>온도·수질 기록: <strong>1일 5회</strong> (07·09·12·15·18시)</li>
-              <li>사우나 온도(작업일지 기준): 온탕 약 42°C · 열탕 약 47°C · 건식 약 78°C / 습식 약 48°C · 찜질방 약 68°C <span style="color:var(--dim);font-size:11px;">(작업일지 표기값 — 정식 설정 기준값 <span class="highlight">확정 예정</span>)</span></li>
-              <li>건식사우나 90~100°C / 습식 60~70°C (기존 매뉴얼 청소 기준) — 운영 설정값과 교차확인 <span class="highlight">확정 예정</span></li>
+              <li>사우나 온도(작업일지 기준값): 온탕 <strong>39°C</strong> · 열탕 <strong>42°C</strong> · 건식 <strong>78°C</strong> · 습식 <strong>48°C</strong> · 찜질방 <strong>68°C</strong> <span style="color:var(--dim);font-size:11px;">(작업일지 양식 인쇄 기준값)</span></li>
+              <li><span style="color:var(--dim);">※ 참고: 옛 청소 매뉴얼엔 건식 90~100°C / 습식 60~70°C로 표기 — 작업일지 운영값(건식 78°C·습식 48°C)과 상이. 운영 기준은 <strong>작업일지값</strong>을 따름</span></li>
               <li>수영장 pH·잔류염소 적정 범위: <span class="highlight">기준값 확정 예정</span> (법정 수질기준 확인 후 기입)</li>
               <li>기계실 가동 시각: 심야전기 05:00 · 1번 열교환기 05:00 · 가스점검 05:00 · 고온수기 등 14:00 <span style="color:var(--dim);font-size:11px;">(작업일지 표기 — 표준 시각 확정 예정)</span></li>
             </ul>
@@ -3190,50 +3190,55 @@ function vendorSubmitAddForm(){
 /* 시설 일일점검(작업일지) — 날짜별 측정폼. saveBoard(키=FACILITY_CHECK_날짜) 재사용·GAS 변경 불필요. GM 2026-06-16 시우, PDF 기반. (주석에 스크립트 태그 글자 금지) */
 (function(){
   const TIMES=['07:00','09:00','11:00','13:00','15:00','17:00','19:00','21:00'];
-  const SAUNA=[['ontang','온탕(39℃)'],['yeoltang','열탕(42℃)'],['dry','건식(78℃)'],['wet','습식(48℃)'],['jjim','찜질방(68℃)']];
-  const POOL=[['ph','pH'],['temp','수온℃'],['cl','CL농도']];
+  // 사우나: 한 표 · 탕별 남/여 (찜질방만 A/B) — 작업일지 기준값(온탕39·열탕42·건식78·습식48·찜질방68)
+  const SAUNA=[['ontang','온탕 39℃',['남','여']],['yeoltang','열탕 42℃',['남','여']],['dry','건식 78℃',['남','여']],['wet','습식 48℃',['남','여']],['jjim','찜질방 68℃',['A','B']]];
+  const POOL=[['ph','pH농도'],['temp','수온℃'],['cl','CL농도']];
   const TANK=[['k2','2번'],['k3','3번'],['k4','4번']];
   const AHU=['AHU1','AHU2','AHU3','AHU4'];
-  const EQUIP=[['심야전기','A'],['1번탱크온도','℃'],['가스검침','㎥'],['고온수기','℃'],['연동펌프',''],['축열조','']];
-  const CHK=['소방기 작동점검(3주1회)','전기실 안전점검','휴게실 소독·온도','CCTV 점검','순회점검'];
+  // 기계실 가동: [id, 라벨, 표준시각, 단위] — 작업일지 우하단 박스
+  const EQUIP=[['eq_night','심야전기','05:00','A'],['eq_tank1','1번 탱크온도','05:00','℃'],['eq_gas','가스검침','05:00','㎥'],['eq_hotw','고온수기','05:00','ok/x'],['eq_pump','연동펌프','05:00','ok/x'],['eq_heat','축열조','14:00','']];
   function inp(id,ph){return '<input type="text" id="'+id+'" placeholder="'+(ph||'')+'" style="width:100%;box-sizing:border-box;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:5px 6px;border-radius:5px;font-size:13px;font-family:inherit;">';}
-  function th(x){return '<th style="border:1px solid var(--border);padding:6px;background:var(--bg);white-space:nowrap;">'+x+'</th>';}
-  function tempTbl(g,gl){
-    var h='<div style="font-weight:700;font-size:14px;margin:12px 0 4px;">사우나 탕 온도 — '+gl+'</div><div style="overflow-x:auto;"><table style="border-collapse:collapse;width:100%;min-width:640px;"><tr>'+th('시간');
-    SAUNA.forEach(function(c){h+=th(c[1]);}); h+='</tr>';
+  function th(x,span){return '<th'+(span||'')+' style="border:1px solid var(--border);padding:6px;background:var(--bg);white-space:nowrap;text-align:center;">'+x+'</th>';}
+  function td(inner){return '<td style="border:1px solid var(--border);padding:2px;">'+inner+'</td>';}
+  function sec(t){return '<div style="font-weight:700;font-size:14px;margin:14px 0 4px;">'+t+'</div>';}
+  function ta(id,rows,ph){return '<textarea id="'+id+'" rows="'+rows+'" style="width:100%;box-sizing:border-box;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:8px;border-radius:7px;font-size:13px;font-family:inherit;" placeholder="'+ph+'"></textarea>';}
+  // 상단: 금일 작업사항 · 지시사항
+  function topBox(){
+    return sec('금일 작업사항')+ta('fc_work',3,'예) 헬스장 온도 점검 · 소방 작동점검 · 시설 정리')
+         + sec('지시사항')+ta('fc_order',3,'예) 통합관리실 CCTV 추가 · 비번 변경 등');
+  }
+  // 사우나: 한 표(탕별 남/여, 찜질방 A/B)
+  function saunaTbl(){
+    var h=sec('사우나 탕 온도 (시간대별 · 작업일지 기준값)')+'<div style="overflow-x:auto;"><table style="border-collapse:collapse;width:100%;min-width:700px;text-align:center;">';
+    h+='<tr>'+th('시간',' rowspan="2"'); SAUNA.forEach(function(c){h+=th(c[1],' colspan="2"');}); h+='</tr>';
+    h+='<tr>'; SAUNA.forEach(function(c){h+=th(c[2][0])+th(c[2][1]);}); h+='</tr>';
     TIMES.forEach(function(t){h+='<tr><td style="border:1px solid var(--border);padding:4px;font-weight:700;white-space:nowrap;">'+t+'</td>';
-      SAUNA.forEach(function(c){h+='<td style="border:1px solid var(--border);padding:2px;">'+inp('fc_sauna_'+g+'_'+t+'_'+c[0])+'</td>';}); h+='</tr>';});
+      SAUNA.forEach(function(c){h+=td(inp('fc_sauna_'+c[0]+'_'+t+'_a'))+td(inp('fc_sauna_'+c[0]+'_'+t+'_b'));}); h+='</tr>';});
     return h+'</table></div>';
   }
-  function colTbl(title,cols,pfx){
-    var h='<div style="font-weight:700;font-size:14px;margin:14px 0 4px;">'+title+'</div><div style="overflow-x:auto;"><table style="border-collapse:collapse;width:100%;min-width:420px;"><tr>'+th('시간');
-    cols.forEach(function(c){h+=th(c[1]);}); h+='</tr>';
-    TIMES.forEach(function(t){h+='<tr><td style="border:1px solid var(--border);padding:4px;font-weight:700;">'+t+'</td>';
-      cols.forEach(function(c){h+='<td style="border:1px solid var(--border);padding:2px;">'+inp('fc_'+pfx+'_'+t+'_'+c[0])+'</td>';}); h+='</tr>';});
+  // 수영장 수질 · 온수탱크 · 공조기 — 한 표
+  function poolTbl(){
+    var h=sec('수영장 수질 · 온수탱크 온도 · 공조기 가동상태 (시간대별)')+'<div style="overflow-x:auto;"><table style="border-collapse:collapse;width:100%;min-width:760px;text-align:center;">';
+    h+='<tr>'+th('시간',' rowspan="2"')+th('수영장 수질',' colspan="3"')+th('온수탱크 온도',' colspan="3"')+th('공조기 가동·상태 (ok/x)',' colspan="4"')+'</tr><tr>';
+    POOL.forEach(function(c){h+=th(c[1]);}); TANK.forEach(function(c){h+=th(c[1]);}); AHU.forEach(function(a){h+=th(a);}); h+='</tr>';
+    TIMES.forEach(function(t){h+='<tr><td style="border:1px solid var(--border);padding:4px;font-weight:700;white-space:nowrap;">'+t+'</td>';
+      POOL.forEach(function(c){h+=td(inp('fc_pool_'+t+'_'+c[0]));});
+      TANK.forEach(function(c){h+=td(inp('fc_tank_'+t+'_'+c[0]));});
+      AHU.forEach(function(a){h+=td('<select id="fc_ahu_'+t+'_'+a+'" style="width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);font-size:13px;border-radius:5px;"><option value=""></option><option value="ok">ok</option><option value="x">x</option></select>');});
+      h+='</tr>';});
     return h+'</table></div>';
   }
-  function ahuTbl(){
-    var h='<div style="font-weight:700;font-size:14px;margin:14px 0 4px;">공조기(AHU) 가동·상태</div><div style="overflow-x:auto;"><table style="border-collapse:collapse;width:100%;min-width:420px;"><tr>'+th('시간');
-    AHU.forEach(function(a){h+=th(a);}); h+='</tr>';
-    TIMES.forEach(function(t){h+='<tr><td style="border:1px solid var(--border);padding:4px;font-weight:700;">'+t+'</td>';
-      AHU.forEach(function(a){h+='<td style="border:1px solid var(--border);padding:2px;"><select id="fc_ahu_'+t+'_'+a+'" style="width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);font-size:13px;border-radius:5px;"><option value=""></option><option value="ok">ok</option><option value="x">x</option></select></td>';}); h+='</tr>';});
-    return h+'</table></div>';
-  }
+  // 기계실 가동값 (표준시각 + 측정값)
   function equipBox(){
-    var h='<div style="font-weight:700;font-size:14px;margin:14px 0 4px;">설비 가동값 (1일 1회)</div><div style="display:flex;flex-wrap:wrap;gap:10px;">';
-    EQUIP.forEach(function(e){h+='<label style="font-size:13px;display:flex;flex-direction:column;gap:2px;min-width:140px;">'+e[0]+(e[1]?'('+e[1]+')':'')+inp('fc_eq_'+e[0])+'</label>';});
-    h+='<label style="font-size:13px;display:flex;flex-direction:column;gap:2px;min-width:200px;">최종퇴실(시간/성명)'+inp('fc_eq_final','시간 · 성명')+'</label></div>';
+    var h=sec('기계실 가동값 (1일 1회 · 표준시각)')+'<div style="display:flex;flex-wrap:wrap;gap:10px;">';
+    EQUIP.forEach(function(e){h+='<label style="font-size:13px;display:flex;flex-direction:column;gap:2px;min-width:150px;">'+e[1]+' ('+e[2]+')'+(e[3]?' · '+e[3]:'')+inp('fc_'+e[0])+'</label>';});
+    h+='<label style="font-size:13px;display:flex;flex-direction:column;gap:2px;min-width:200px;">최종퇴실 (시각/성명)'+inp('fc_eq_final','시각 · 성명')+'</label></div>';
     return h;
   }
-  function chkBox(){
-    var h='<div style="font-weight:700;font-size:14px;margin:14px 0 4px;">점검 항목</div><div style="display:flex;flex-direction:column;gap:5px;">';
-    CHK.forEach(function(c,i){h+='<label style="font-size:13px;"><input type="checkbox" id="fc_chk_'+i+'"> '+c+'</label>';});
-    h+='</div><div style="font-weight:700;font-size:14px;margin:14px 0 4px;">비고 · 지시사항 · 컴플레인</div><textarea id="fc_note" rows="4" style="width:100%;box-sizing:border-box;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:8px;border-radius:7px;font-size:13px;font-family:inherit;" placeholder="곰팡이 청소·신발장 보수·회원 지시사항 등"></textarea>';
-    return h;
-  }
+  function noteBox(){ return sec('비고사항')+ta('fc_note',3,'곰팡이 청소·보수·회원 지시·컴플레인 등'); }
   window.fcRender=function(){
     var el=document.getElementById('fc-body'); if(!el)return;
-    el.innerHTML=tempTbl('m','남')+tempTbl('f','여')+colTbl('수영장 수질',POOL,'pool')+colTbl('온수탱크 온도',TANK,'tank')+ahuTbl()+equipBox()+chkBox();
+    el.innerHTML=topBox()+saunaTbl()+poolTbl()+equipBox()+noteBox();
   };
   function collect(){
     var d={}; document.querySelectorAll('#fc-body [id^=fc_]').forEach(function(n){ d[n.id]= n.type==='checkbox'?(n.checked?1:0):n.value; });
