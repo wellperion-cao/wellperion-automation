@@ -1434,12 +1434,6 @@ const WEEKDAY=[
       {id:"e1",name:"E-1 주차장",detail:"바닥 쓰레기 치우기 | 주차장 화장실 | 차단기 확인\n휴관일: 집중 청소",gender:"all"}
     ]}
   ]},
-  {slot:"인수인계 13:00~14:00",shift:"pm",groups:[
-    {title:"교대 인수인계",items:[
-      {id:"hw1",name:"세탁물 출고 운반",detail:"세탁물 출고 운반 + 카카오톡 인수인계 보고",gender:"all"},
-      {id:"hw2",name:"인수인계 카톡 보고",detail:"오전조 → 오후조 인수사항 카카오톡 공유",gender:"all"}
-    ]}
-  ]},
   {slot:"마감 22:00~22:30",shift:"pm",groups:[
     {title:"마감 점검",items:[
       {id:"cls1",name:"세탁물 마감 출고",detail:"마감 세탁물 최종 출고 운반 | 마감 출고 빠짐없이 확인",gender:"all"},
@@ -1470,11 +1464,6 @@ const WEEKEND=[
     ]},
     {title:"오픈 점검",items:[
       {id:"c1a",name:"세탁물 입고 + 상태 체크",detail:"운동복/양말 사이즈별 배치 | 타올류 배치",gender:"all"}
-    ]}
-  ]},
-  {slot:"인수인계 13:00~14:00",shift:"pm",groups:[
-    {title:"교대 인수인계",items:[
-      {id:"hw1",name:"세탁물 출고 + 인수인계",detail:"카카오톡 보고 의무",gender:"all"}
     ]}
   ]},
   {slot:"내부·외부 점검",shift:"all",groups:[
@@ -1849,7 +1838,6 @@ const ROUND_MAP={
   e1:['am1','pm1','close1'],
   /* 정규화 완료(2026-06-15): 웰니스 d4·VIP d5·분수대 e2·신발장 b7·오픈 op1/op2 = 마스터 rounds 필드가 회차 결정.
      ROUND_MAP에 넣으면 isShadowItem이 '기본항목 편집분'으로 오인해 숨김 → 절대 추가 금지. */
-  hw1:['pm1'], hw2:['pm1'],
   /* 추가 — 마감조 전용 마감 점검(cls*) */
   cls1:['close1'], cls2:['close1'], cls3:['close1']
 };
@@ -2749,7 +2737,7 @@ window.moveManualItem=function(id,dir){
   if(typeof renderG==='function')renderG(activeGenderTab);   // 점검에도 반영
 };
 /* 그룹(구역) 순서 — 기본값(GM 2026-06-12: C세탁물 상단·마감점검은 E외부 아래) + localStorage 사용자 조정. */
-const GROUP_ORDER_DEFAULT=['오픈 점검','A 사우나점검','B 락커룸','D 내부','E 외부','마감 점검','교대 인수인계'];
+const GROUP_ORDER_DEFAULT=['오픈 점검','A 사우나점검','B 락커룸','D 내부','E 외부','마감 점검'];
 function getGroupOrder(){ try{return JSON.parse(localStorage.getItem('wcheck_group_order')||'{}')||{}}catch(e){return {}} }
 function saveGroupOrder(m){ localStorage.setItem('wcheck_group_order',JSON.stringify(m)); }
 function groupRank(title){
