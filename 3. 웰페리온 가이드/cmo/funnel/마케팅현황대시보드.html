@@ -1490,7 +1490,7 @@ function renderTypeFunnel() {
     // 클릭 (기간 반영)
     var clickStr;
     if (!_clickByLink) {
-      clickStr = '<span style="color:var(--dim)">집계 중</span>';
+      clickStr = '<span style="color:var(--dim);font-size:13px">집계 중</span>';
     } else {
       var sum = 0;
       t.clicks.forEach(function(k) { sum += (_clickByLink[k] || 0); });
@@ -1502,7 +1502,7 @@ function renderTypeFunnel() {
     if (t.inqKey !== null) {
       inqStr = (byTypeMonth[t.inqKey] !== undefined ? byTypeMonth[t.inqKey] : 0).toLocaleString('ko-KR');
     } else {
-      inqStr = '<span style="color:var(--dim)">미집계</span>';
+      inqStr = '<span style="color:var(--dim);font-size:13px">미집계</span>';
     }
 
     // 등록 (누적·추정) + 누적 전환율(기간 선택 시 숨김) + 정직 배지
@@ -1512,7 +1512,7 @@ function renderTypeFunnel() {
       regStr = '<span style="color:var(--dim)">—</span>';
       sub = '<span class="kpi-honesty soft">문의 미집계 — 클릭만(별도 폼)</span>';
     } else if (!_tcTypes) {
-      regStr = '<span style="color:var(--dim)">집계 중</span>';
+      regStr = '<span style="color:var(--dim);font-size:13px">집계 중</span>';
       sub = '';
     } else {
       var td = _tcTypes[t.tcKey];
@@ -1532,10 +1532,22 @@ function renderTypeFunnel() {
       }
     }
 
-    cards += '<div class="tc-card" style="cursor:default">'
+    var _box = function(lb, val, col) {
+      return '<div style="flex:1;min-width:0;text-align:center">'
+        + '<div style="font-size:10px;font-weight:600;color:var(--dim);margin-bottom:5px;letter-spacing:.02em">' + lb + '</div>'
+        + '<div style="font-size:22px;font-weight:800;color:' + col + ';line-height:1;letter-spacing:-.02em">' + val + '</div>'
+        + '</div>';
+    };
+    var _arr = '<div style="display:flex;align-items:center;justify-content:center;color:var(--border);font-size:16px;width:14px;padding-top:14px">›</div>';
+    cards += '<div class="tc-card" style="cursor:default;min-width:190px">'
       + '<div class="tc-card-head"><span class="channel-dot" style="background:' + color + '"></span>' + t.label + '</div>'
-      + '<div class="tc-card-flow">클릭 <strong>' + clickStr + '</strong> → 문의 <strong>' + inqStr + '</strong> → 등록 <strong style="color:' + color + '">' + regStr + '</strong>' + rateStr + '</div>'
-      + (sub ? '<div class="tc-card-sub">' + sub + '</div>' : '')
+      + '<div style="display:flex;align-items:stretch;gap:2px;margin-top:13px">'
+      +   _box('클릭', clickStr, 'var(--text)') + _arr
+      +   _box('문의', inqStr, 'var(--text)') + _arr
+      +   _box('등록', regStr, color)
+      + '</div>'
+      + (rateStr ? '<div style="text-align:center;margin-top:9px">' + rateStr + '</div>' : '')
+      + (sub ? '<div class="tc-card-sub" style="margin-top:10px;text-align:center">' + sub + '</div>' : '')
       + '</div>';
   });
 
