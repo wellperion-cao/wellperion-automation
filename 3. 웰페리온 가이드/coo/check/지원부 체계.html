@@ -3032,6 +3032,17 @@ function onCk(id,shift,gender,round){
   /* 제출 고정 방어(GM 2026-06-15): 제출완료 회차는 체크 변경 차단(disabled 우회 대비). */
   if(round&&typeof isRoundSubmitted==='function'&&isRoundSubmitted(d,gender,round)){ if(cb)cb.checked=isChecked(id,round,gender); alert('제출된 조는 수정할 수 없습니다.\n(수정하려면 관리자에게 잠금 해제를 요청하세요)'); return; }
   const val=cb?cb.checked:false;
+  /* #2 점검 전 가드(GM 2026-06-16 시우): 담당자·점검자·점검시작·조(회차) 미설정 시 체크 차단+경고.
+     (체크 해제는 항상 허용 — 실수 정정용. 야간모드는 회차 없음이라 '조'는 제외.) */
+  if(val){
+    const _miss=[];
+    const _night=(typeof isNightShiftWorkerG==='function'&&isNightShiftWorkerG(gender));
+    if(!round&&!_night)_miss.push('조(회차) 선택');
+    if(typeof getDutyForGender==='function'&&!getDutyForGender(gender))_miss.push('담당자 선택');
+    if(typeof getSubmitterForGender==='function'&&!(getSubmitterForGender(gender)||'').trim())_miss.push('점검자 입력');
+    if(typeof activeTimerKeys==='function'){const _tk=activeTimerKeys(gender);if(!STATE[_tk.sk])_miss.push('점검 시작 버튼 누르기');}
+    if(_miss.length){ if(cb)cb.checked=false; alert('체크하기 전에 먼저 해주세요:\n· '+_miss.join('\n· ')); return; }
+  }
   /* 회차별 체크 독립: round 있으면 라운드 키에만 기록(다른 회차 미영향).
      round 없으면(야간모드 등) 기존 레거시 키 유지(비회귀). */
   if(round){
@@ -4949,7 +4960,17 @@ function getHiddenIds(){ try{return new Set(JSON.parse(localStorage.getItem('wch
 function saveHiddenIds(set){ localStorage.setItem('wcheck_hidden_items',JSON.stringify([...set])); }
 /* 스케줄(기본 항목)에 매뉴얼 편집분(성별·이름·상세·회차) override 적용 + 숨김 항목 제거.
    custom_ 항목은 자체 필드 보유라 패스. 빈 그룹은 제거. */
-function applyBaseOverrides(sched){
+/* #3 요일 일정(sched "mon,wed,fri|2") 지정 항목은 그 요일에만 노출. 미지정=매일. GM 2026-06-16 시우. */
+function _itemOnDay(it,ds){
+  try{
+    if(!it||!ds)return true;
+    const p=parseSched(it.sched||'');
+    if(!p.days||!p.days.length)return true;   // 요일 미지정 = 매일
+    const dow=['sun','mon','tue','wed','thu','fri','sat'][getDayOfWeek(ds)];
+    return p.days.indexOf(dow)>=0;
+  }catch(e){return true;}
+}
+function applyBaseOverrides(sched,ds){
   if(!sched) return sched;
   const ov = (typeof getItemOverrides==='function')?getItemOverrides():{};
   const hidden = getHiddenIds();
@@ -4958,15 +4979,16 @@ function applyBaseOverrides(sched){
     groups: slot.groups.map(g=>({
       title:g.title, _custom:g._custom,
       items: g.items.filter(it=>!hidden.has(it.id)).map(it=>{
-        if(it._custom) return it;
+        if(it._custom){ const oc=ov[it.id]; if(oc&&oc.sched!==undefined&&it.sched===undefined)return {...it,sched:oc.sched}; return it; }
         const o=ov[it.id]; if(!o) return it;
         const m={...it};
         if(o.name) m.name=o.name;
         if(o.detail!==undefined) m.detail=o.detail;
         if(o.gender) m.gender=o.gender;          // 성별 편집 → 점검 표시 반영
         if(Array.isArray(o.rounds)&&o.rounds.length) m.rounds=o.rounds;  // 회차 편집 → 등장 조 반영
+        if(o.sched!==undefined) m.sched=o.sched;  // #3 요일 일정 반영
         return m;
-      })
+      }).filter(it=>_itemOnDay(it,ds))   // #3 요일 지정 항목은 그 요일에만 노출(미지정=매일)
     })).filter(g=>g.items.length>0)
   })).filter(slot=>slot.groups.length>0);
 }
@@ -4978,7 +5000,7 @@ getSched = function(ds){
   const schedType = info.type; // 'weekday' or 'weekend'
   const customItems = mgmtGetCustomItemsForSchedule(schedType).filter(i => i.shift !== 'night');
   const customSlots = mgmtBuildCustomSlots(customItems);
-  return applyBaseOverrides(mgmtMergeSchedule(base, customSlots));
+  return applyBaseOverrides(mgmtMergeSchedule(base, customSlots), ds);
 };
 
 getNightSched = function(ds){
@@ -4988,7 +5010,7 @@ getNightSched = function(ds){
   const schedType = info.type;
   const customItems = mgmtGetCustomItemsForSchedule(schedType).filter(i => i.shift === 'night');
   const customSlots = mgmtBuildCustomSlots(customItems);
-  return applyBaseOverrides(mgmtMergeSchedule(base, customSlots));
+  return applyBaseOverrides(mgmtMergeSchedule(base, customSlots), ds);
 };
 
 /* 커스텀 항목 표시 시 뱃지 추가를 위해 renderItem 래핑.
