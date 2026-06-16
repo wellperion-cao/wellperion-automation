@@ -3391,9 +3391,10 @@ async function submitRound(round,gender){
   localStorage.setItem('wcheck_rsubAt_'+d+'_'+gender+'_'+round,nowIso);
   saveLocal(d,STATE,gender);
   if(ONLINE)await pushToServer(d,gender,true);   // ★명시적 제출 — 제출메타 전송(폐루프 절단)
-  /* 2) 라운드 스냅샷 + 회차 텔레그램 보고(최초 제출만 · 명시 제출 전용) */
+  /* 2) 점검일지 스냅샷 = 제출마다 1행 기록(GM 2026-06-16: '제출했는데 점검일지에 안 들어감' 정합 — 감사로그라 재제출도 남긴다).
+        회차 텔레그램은 최초 제출만(재제출 스팸 방지). */
+  if(ONLINE)await appendRoundSnapshot(d,round,sub,gender);
   if(!_isAdd && ONLINE){
-    await appendRoundSnapshot(d,round,sub,gender);
     await sendTelegramRound(d,round,sub,gender);
   }
   /* 3) 비회귀: 같은 shift의 모든 라운드가 제출되면 기존 shift 제출 경로 1회 발화 */
@@ -3446,14 +3447,13 @@ async function sendTelegramRound(date,round,submitter,gender){
 /* 라운드 스냅샷 1행 적립 — shift 칸에 라운드 라벨 기록(GAS 무변경: '교대' 컬럼에 들어감). */
 async function appendRoundSnapshot(date,round,submitter,gender){
   if(!ONLINE)return;
-  const sched=getSched(date);
-  if(!sched)return;
-  const rdef=roundDef(round); if(!rdef)return;
-  /* 그 조의 가시 항목·이슈 수집 */
+  const rdef=roundDef(round); if(!rdef)return;   // 회차 정의(라벨)는 필수
+  /* 그 조의 가시 항목·이슈 수집 — 스케줄을 못 읽어도 제출 자체는 기록(GM 2026-06-16: 조용한 스킵 차단) */
+  let sched=null; try{ sched=getSched(date); }catch(e){ sched=null; }
   const dow=getDayOfWeek(date);
   let total=0,done=0,issues=[];
   /* 멤버십(itemRounds) 기준 + 회차별 체크(isChecked) — 라운드 진행도·스냅샷 정합 */
-  sched.forEach(slot=>slot.groups.forEach(g=>g.items.forEach(it=>{
+  if(sched)sched.forEach(slot=>slot.groups.forEach(g=>g.items.forEach(it=>{
     if(!shouldShowItemForGender(it,gender))return;
     const ctx={...it,slot:slot.slot,shift:slot.shift};
     if(itemRounds(ctx).indexOf(round)<0)return;
@@ -3469,7 +3469,7 @@ async function appendRoundSnapshot(date,round,submitter,gender){
   const finishedAt=tEnd?new Date(tEnd).toLocaleString('sv-SE').replace('T',' '):'';
   const dur=_timerDuration(tStart,tEnd);
   try{
-    await fetch(API_URL,{method:'POST',redirect:'follow',
+    const r=await fetch(API_URL,{method:'POST',redirect:'follow',
       headers:{'Content-Type':'text/plain'},
       body:JSON.stringify({action:'snapshot_append',dept:DEPT,date,zone,
         shift:rdef.name+' '+rdef.time,   // 라운드 라벨(예: '오전조[1] 10시') → 시트 '교대' 칸
@@ -3479,7 +3479,9 @@ async function appendRoundSnapshot(date,round,submitter,gender){
         issuesCount:issues.length,issues:issues.join(' / '),
         startedAt,finishedAt,durationMin:(dur!=null?dur:'')})
     });
-  }catch(e){}
+    let ok=false; try{const j=await r.json(); ok=!!(j&&(j.ok||j.success)&&!j.error);}catch(_){ ok=false; }
+    if(!ok)alert('점검일지 기록에 실패했습니다(서버 응답 오류). 다시 제출해 주세요.');   // GM 2026-06-16: 조용한 실패 차단
+  }catch(e){ alert('점검일지 기록 실패: '+((e&&e.message)||e)); }
 }
 
 /* 제출 스냅샷을 점검일지 시트에 1행 적립 (집계와 독립) */

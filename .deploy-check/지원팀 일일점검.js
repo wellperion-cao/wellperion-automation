@@ -493,10 +493,18 @@ function deleteItemRow(dept, date, zone, itemId) {
   var sh = ss.getSheetByName(name);
   if (!sh) return jsonRes({ error: 'sheet not found: ' + name });
   var data = sh.getDataRange().getValues();
-  var removed = 0;
+  var match = [];
   for (var i = data.length - 1; i >= 1; i--) {
     var dateOk = String(data[i][0]) === date || formatDate(data[i][0]) === date;
-    if (dateOk && String(data[i][1]) === itemId) { sh.deleteRow(i + 1); removed++; }
+    if (dateOk && String(data[i][1]) === itemId) match.push(i + 1);
+  }
+  var removed = 0;
+  // 마지막 비고정행까지 삭제하면 구글시트 예외('고정되지 않은 행을 모두 삭제 불가') → 전체 삭제가 되는 경우 내용비우기로 폴백. GM 2026-06-16 시우.
+  if (match.length > 0 && match.length >= (data.length - 1)) {
+    var cols = Math.max(1, sh.getLastColumn());
+    match.forEach(function (rn) { sh.getRange(rn, 1, 1, cols).clearContent(); removed++; });
+  } else {
+    match.forEach(function (rn) { sh.deleteRow(rn); removed++; });   // 내림차순이라 안전
   }
   return jsonRes({ ok: true, sheet: name, date: date, itemId: itemId, removed: removed });
 }
@@ -756,6 +764,11 @@ function _writePerRoundRows(dept, date, body) {
       pushWant(_roundLabelToKey(_roundLabel(c.slot, c.shift)), id, false);
     }
   });
+
+  // ★취소 정합(GM 2026-06-16 시우): 활성 성별탭에 남길 행이 0건이어도 primaryTarget을 처리 대상에 포함 →
+  //   날짜 행 전량삭제 경로 진입(아래 primaryTarget 분기). 이게 없으면 마지막 체크를 풀어도 옛 행이 시트에 남아
+  //   새로고침 시 (여성처럼 cr 없을 때) 시트행이 부활시키던 'uncheck 미반영' 버그. rows.length===0이면 삭제만 하고 미기록.
+  if (!wantByTarget[primaryTarget]) wantByTarget[primaryTarget] = [];
 
   // 기록: 대상별로 이 날짜 행을 회차별 진실로 교체
   var total = 0;
