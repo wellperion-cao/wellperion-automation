@@ -36,22 +36,23 @@ const FORM_SHEETS = [
   , { ssId: '12AWcAlgmmYKr2nUbWmVpa71_z3zi0BaU4ZdnOwrI_7U', gid: 1356708303, type: '비즈니스파트너', channelKeys: ['경로', '채널', '알게'] }  // 2026-06-15 멤버십 시트로 통합(설문지 응답 시트13)
 ];
 
-// 강습 종목별 처리시트 (importrange 분배본 — 팀장이 등록/실패/컨택중 처리). 수강등록 전환 정본.
-var LESSON_SS_ID = '1b0XU1oTHlXzBhEzUOar5GEm44vjopdO25qfsh-awDXw';
+// 강습 '팀 정리' 스프레드시트 (통합본 → 팀별 별도 시트로 재취합, 팀장이 등록/실패/컨택중 처리). 수강등록 전환 정본.
+// 통합본(1b0XU1) 종목탭은 중간 분배본이라 등록상태 없음 → 팀별 스프레드시트가 정본(2026-06-16 GM 링크).
+var _LESSON_DEBUG = [];  // 진단: 팀시트별 상태칼럼·표본값·등록수 (응답 lessonDebug)
 var LESSON_TEAM_SHEETS = [
-  { gid: 285891320,  유형: '성인강습' },   // 수영성인
-  { gid: 1561577369, 유형: '성인강습' },   // 아쿠아로빅
-  { gid: 483045756,  유형: '성인강습' },   // P.T
-  { gid: 2037819031, 유형: '성인강습' },   // 필라테스
-  { gid: 361605048,  유형: '성인강습' },   // 골프
-  { gid: 2033995006, 유형: '성인강습' },   // 스쿼시
-  { gid: 1065075686, 유형: '유소년강습' }, // 수영유소년
-  { gid: 1335219311, 유형: '유소년강습' }, // 모자수영
-  { gid: 286344747,  유형: '유소년강습' }, // 유소년 P.T
-  { gid: 2025341661, 유형: '유소년강습' }, // 필라테스 유소년
-  { gid: 647960297,  유형: '유소년강습' }, // 골프유소년
-  { gid: 630262748,  유형: '유소년강습' }, // 스쿼시 유소년
-  { gid: 420816201,  유형: '유소년강습' }  // 체조&트램폴린 유소년
+  { ssId: '1mRTWBoR7UJeJSJIW9ZDxfK0ZFc14AaBNR_CpfLEsd-E', gid: 1063990264, 유형: '성인강습',   명: 'P.T 성인' },
+  { ssId: '1mRTWBoR7UJeJSJIW9ZDxfK0ZFc14AaBNR_CpfLEsd-E', gid: 1328034138, 유형: '유소년강습', 명: 'P.T 유소년' },
+  { ssId: '1NbML3Jp84HAa2yxnuc8MyHundDOzhroYZ7OIG6Ot7gM', gid: 230929728,  유형: '성인강습',   명: '필라테스 성인' },
+  { ssId: '1NbML3Jp84HAa2yxnuc8MyHundDOzhroYZ7OIG6Ot7gM', gid: 754969527,  유형: '유소년강습', 명: '필라테스 유소년' },
+  { ssId: '1vH9To5zglQAVq0W653sv6G7DkUXftxEfaHh3KI6CMYk', gid: 1063990264, 유형: '성인강습',   명: '스쿼시 성인' },
+  { ssId: '1vH9To5zglQAVq0W653sv6G7DkUXftxEfaHh3KI6CMYk', gid: 1328034138, 유형: '유소년강습', 명: '스쿼시 유소년' },
+  { ssId: '1-Ubck9WiScv26qlvxy1W2RCTctEg_TTxQLnko_OJV4o', gid: 1063990264, 유형: '성인강습',   명: '골프 성인' },
+  { ssId: '1-Ubck9WiScv26qlvxy1W2RCTctEg_TTxQLnko_OJV4o', gid: 1328034138, 유형: '유소년강습', 명: '골프 유소년' },
+  { ssId: '10rjNd5w8NunuA3EZXv1-4vlDfCqxnOnoVrq8U9Md69E', gid: 1063990264, 유형: '성인강습',   명: '수영 성인' },
+  { ssId: '10rjNd5w8NunuA3EZXv1-4vlDfCqxnOnoVrq8U9Md69E', gid: 1328034138, 유형: '유소년강습', 명: '수영 유소년' },
+  { ssId: '10rjNd5w8NunuA3EZXv1-4vlDfCqxnOnoVrq8U9Md69E', gid: 1219410707, 유형: '유소년강습', 명: '모자수영' },
+  { ssId: '10rjNd5w8NunuA3EZXv1-4vlDfCqxnOnoVrq8U9Md69E', gid: 1214469613, 유형: '성인강습',   명: '아쿠아로빅' },
+  { ssId: '1ZqsKzM6DyJpN3brxqwsP8sW9pACbFmWxZ0JCUHthkcs', gid: 1063990264, 유형: '유소년강습', 명: '유소년체조' }
 ];
 
 function _sheetByGid_(ssId, gid) {
@@ -163,31 +164,66 @@ function _collectFormInquiries_() {
 // 강습 종목별 팀시트(importrange 분배본) → 수강등록 전환 분자 집계. 접근 실패/빈 시트는 건너뜀(대시보드 무중단).
 // ⚠️ 종목시트 행은 '문의 total'에 더하지 않는다(통합본과 중복). 여기선 '등록' 카운트(rank===5)만 산출.
 // 반환: { '성인강습': {registered, channels:{채널:{registered}}}, '유소년강습': {...} } (config 유형으로 합산)
+// 강습 '구조화 상태값' 판정 — 짧은 코드형 상태만(자유메모 배제). 스쿼시=SUC/LOSS/가망/컨택중 포함.
+function _isLessonStatusVal_(v) {
+  var s = String(v == null ? '' : v).trim();
+  if (!s || s.length > 12) return false;  // 자유메모(긴 문장) 배제
+  return /^(등록|등록완료|미등록|실패|컨택중|컨택|대기|보류|취소|환불|가망|상담중|상담|suc|loss|성공)$/i.test(s);
+}
+function _isLessonReg_(v) {
+  var s = String(v == null ? '' : v).trim();
+  if (s.length > 12) return false;  // 자유메모 배제(노이즈)
+  if (/미등록|등록취소|취소|환불|대기|보류|불가|loss|가망|컨택/i.test(s)) return false;
+  return /^(등록|등록완료|suc|성공)$/i.test(s);  // 구조화 성공값만
+}
+
+// 강습 수강등록 집계 — 팀별 정리시트에서 상태열을 '값'으로 탐지(등록/실패/컨택중 최다 열) 후 '등록' 카운트.
 function _collectLessonRegistrations_() {
   var out = {};
+  _LESSON_DEBUG = [];
   LESSON_TEAM_SHEETS.forEach(function(cfg) {
+    var dbg = { 명: cfg.명, gid: cfg.gid, statusHeader: '(미발견)', statusHits: 0, rows: 0, registered: 0, 표본: [] };
     try {
-      var sh = _sheetByGid_(LESSON_SS_ID, cfg.gid);
-      if (!sh) return;
+      var sh = _sheetByGid_(cfg.ssId, cfg.gid);
+      if (!sh) { dbg.statusHeader = '(시트 미발견)'; _LESSON_DEBUG.push(dbg); return; }
       var last = sh.getLastRow();
       var lastCol = sh.getLastColumn();
-      if (last < 2 || lastCol < 1) return;
-      var headers = sh.getRange(1, 1, 1, lastCol).getValues()[0];
-      var idxStatus = _findCol_(headers, ['상태', '진행', '등록', '결과', '처리']);
-      var idxChan   = _findCol_(headers, ['경로', '채널', '알게', '중분류']);
-      if (idxStatus < 0) return; // 상태칼럼 없으면 등록 판정 불가 → 스킵
-      var rows = sh.getRange(2, 1, last - 1, lastCol).getValues();
+      dbg.rows = Math.max(0, last - 1);
+      if (last < 2 || lastCol < 1) { _LESSON_DEBUG.push(dbg); return; }
+      var data = sh.getRange(1, 1, last, lastCol).getValues();
+      var headers = data[0];
+      dbg.headers = headers.map(function(h) { return String(h || ''); }).slice(0, 20);
+      var idxChan = _findCol_(headers, ['경로', '채널', '알게', '중분류']);
+      // 구조화 상태열만 탐지 — 고유값 2~30(자유메모=고유값 수백 → 배제) + 코드형 상태값 최다 열
+      var best = -1, bestCnt = 0;
+      for (var c = 0; c < lastCol; c++) {
+        var cnt = 0, distinct = {}, dn = 0;
+        for (var r = 1; r < data.length; r++) {
+          var cv = String(data[r][c] || '').trim();
+          if (!cv) continue;
+          if (!distinct[cv]) { distinct[cv] = 1; dn++; }
+          if (_isLessonStatusVal_(cv)) cnt++;
+        }
+        if (dn >= 2 && dn <= 30 && cnt > bestCnt) { bestCnt = cnt; best = c; }
+      }
+      dbg.statusHits = bestCnt;
+      dbg.statusHeader = best >= 0 ? String(headers[best] || '') : '(상태값 없음)';
+      if (best < 0) { _LESSON_DEBUG.push(dbg); return; }
       var tp = cfg.유형;
       if (!out[tp]) out[tp] = { registered: 0, channels: {} };
       var O = out[tp];
-      rows.forEach(function(r) {
-        if (_stageOf_(r[idxStatus]) !== 5) return; // 등록(rank 5)만 카운트
-        var ch = _canonicalChannel_(idxChan >= 0 ? r[idxChan] : '');
-        O.registered++;
+      var seen = {};
+      for (var r2 = 1; r2 < data.length; r2++) {
+        var sv = String(data[r2][best] || '').trim();
+        if (sv && !seen[sv] && dbg.표본.length < 10) { seen[sv] = 1; dbg.표본.push(sv); }
+        if (!_isLessonReg_(data[r2][best])) continue;
+        var ch = _canonicalChannel_(idxChan >= 0 ? data[r2][idxChan] : '');
+        O.registered++; dbg.registered++;
         if (!O.channels[ch]) O.channels[ch] = { registered: 0 };
         O.channels[ch].registered++;
-      });
-    } catch (e) { /* 종목 시트 접근 실패는 무시(대시보드 무중단) */ }
+      }
+    } catch (e) { dbg.error = String(e); }
+    _LESSON_DEBUG.push(dbg);
   });
   return out;
 }
@@ -448,7 +484,7 @@ function _processAction(body) {
   // 출처미상률 = '기타·미상' 비율(문의 시점 채널 미캡처 가시화 — INC-003 정직성, 날조 금지).
   if (action === 'type_channel_breakdown') {
     var tcCache = CacheService.getScriptCache();
-    var tcHit = tcCache.get('tc_v1');
+    var tcHit = tcCache.get('tc_v4');
     if (tcHit) return _json(JSON.parse(tcHit));
 
     // 회원부 전화 Set (유효회원 = 멤버십 등록 정본). 시트 미발견 시 빈 Set로 계속(throw 금지 — funnel_conversion 동일 패턴).
@@ -554,6 +590,7 @@ function _processAction(body) {
       ok: true,
       generatedAt: _now(),
       convBasis: '멤버십=유효회원 매칭 / 강습=종목별 팀시트 수강등록(등록/실패/컨택중) 집계',
+      lessonDebug: _LESSON_DEBUG,
       types: tcOut,
       overall: {
         total: ovTotal,
@@ -563,7 +600,7 @@ function _processAction(body) {
         unknownRate: ovTotal > 0 ? Math.round((ovUnknown / ovTotal) * 1000) / 10 : 0
       }
     };
-    try { tcCache.put('tc_v1', JSON.stringify(tcResult), 300); } catch (e) { /* 캐시 실패 무시 */ }
+    try { tcCache.put('tc_v4', JSON.stringify(tcResult), 300); } catch (e) { /* 캐시 실패 무시 */ }
     return _json(tcResult);
   }
 
