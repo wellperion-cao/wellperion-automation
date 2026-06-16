@@ -226,7 +226,7 @@ html,body{background:var(--bg);color:var(--text);font-family:"Pretendard","Apple
   .print-card .pc-signs{display:flex;gap:10px;margin-top:10px;flex-wrap:wrap}
   .print-card .pc-sign-box{border:1px solid #333;border-radius:4px;min-width:130px}
   .print-card .pc-sign-label{font-size:11px;font-weight:700;text-align:center;border-bottom:1px solid #333;padding:3px 4px;background:#f0f0f0;-webkit-print-color-adjust:exact;print-color-adjust:exact}
-  .print-card .pc-sign-space{height:46px}
+  .print-card .pc-sign-space{height:46px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#0b8043}
   .print-card .pc-done{font-size:12px;font-weight:700;color:#0b8043;margin-top:8px}
   /* 칸반 보드 → 인쇄 시 컬럼을 세로 나열(클리핑 방지) */
   .kanban-board{display:block!important;overflow:visible!important;padding:0!important}
@@ -688,13 +688,18 @@ function buildApprovalPrint(list) {
     if (parsed.body && parsed.body.trim()) h += '<div class="pc-body">' + esc(parsed.body.trim()).slice(0, 600) + '</div>';
     h += '<div class="pc-signs">';
     if (!pending.length) {
-      h += '<div class="pc-done">✅ 결재 완료 (서명 대기 없음)</div>';
+      h += '<div class="pc-done">✅ 시스템 결재 완료 (부서장·GM 서명 대기 없음)</div>';
     } else {
       pending.forEach(function(r){
         var label = (r === '부서장') ? (deptHeadNameOf(t) || '부서장') : (nameMap[r] || r);
         h += '<div class="pc-sign-box"><div class="pc-sign-label">' + esc(label) + ' (인)</div><div class="pc-sign-space"></div></div>';
       });
     }
+    // 페이퍼 보고용 대표 서명란 — 시스템에서 대표 단계는 빠졌으나(GM 종착) 종이 보고는 대표 결재로 마무리.
+    // 항상 빈칸으로 고정 추가(서명됐으면 채워 표시). 결재완료 건 인쇄에도 반드시 노출. (2026-06-16 GM)
+    var _repSign = String(t.repSign || '').trim();
+    h += '<div class="pc-sign-box"><div class="pc-sign-label">전응준 대표 (인)</div>'
+       + '<div class="pc-sign-space">' + (_repSign ? esc(_repSign) : '') + '</div></div>';
     h += '</div></div>';
   });
   return h;
@@ -718,6 +723,56 @@ function printApprovalCard(id) {
   window.addEventListener('afterprint', _reset);
   window.print();
   setTimeout(_reset, 2000);
+}
+
+// ── [대표 서명본 스캔 업로드] 단순 증빙 첨부 (2026-06-16 GM) ──
+// 백엔드 todo_upload(파일URL 컬럼 newline append) 재사용. 결재상태·배지·대표싸인 칸은 건드리지 않는다.
+// 파일명은 '대표서명_<id>_<원본명>' 으로 올리지만, GAS _uploadFile 이 Drive getUrl()(파일명 미포함 URL)만
+// 시트에 적재하므로 새로고침 후 URL만으로는 prefix 판별 불가(백엔드 미수정 제약). 결재완료 카드의
+// 모든 첨부 = 대표 서명본 증빙으로 노출한다(이 화면 업로드 경로가 done 카드 첨부의 단일 출처).
+function repSignFiles(t) {
+  var raw = String((t && (t['파일URL'] || t.fileUrl)) || '');
+  return raw.split('\n').map(function(s){ return s.trim(); }).filter(Boolean);
+}
+async function uploadRepSign(id, input) {
+  var file = input && input.files && input.files[0];
+  if (!file) return;
+  var statusEl = document.getElementById('repSignStatus_' + id);
+  function _status(msg){ if (statusEl) statusEl.textContent = msg; }
+  if (file.size > 5 * 1024 * 1024) { _status(''); alert(file.name + ' — 5MB를 초과합니다.'); input.value = ''; return; }
+  _status('업로드 중...');
+  try {
+    var base64 = await new Promise(function(resolve, reject){
+      var reader = new FileReader();
+      reader.onload = function(){ resolve(String(reader.result).split(',')[1]); };
+      reader.onerror = function(){ reject(new Error('파일 읽기 실패')); };
+      reader.readAsDataURL(file);
+    });
+    var params = {
+      action: 'todo_upload',
+      id: id,
+      file: base64,
+      fileName: '대표서명_' + id + '_' + file.name,
+      mimeType: file.type || 'application/octet-stream'
+    };
+    // base64 대용량 → 반드시 POST 본문(text/plain=CORS preflight 회피). 한글 파일명은 JSON+UTF-8로 안전.
+    var r = await fetch(TODO_API_URL, {
+      method: 'POST',
+      redirect: 'follow',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify(params)
+    });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    var res = await r.json();
+    if (!res.ok) throw new Error(res.error || '업로드 실패');
+    _status('✅ 첨부 완료');
+    input.value = '';
+    loadTasks();  // 카드 재렌더 → '📎 대표 서명본' 링크 노출
+  } catch (e) {
+    _status('');
+    alert('대표 서명본 업로드 실패: ' + e.message);
+    input.value = '';
+  }
 }
 
 // 공유: 제목 + 내용 요약 + 링크 (모바일=Web Share 카톡/문자, 데스크톱=클립보드 폴백) (2026-06-01 GM)
@@ -1040,6 +1095,20 @@ function renderApprovalCard(t, idx) {
   }
   if (t.reportUrl) {
     h += '<a href="' + escAttr(t.reportUrl) + '" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:4px;margin-top:6px;font-size:11px;font-weight:600;padding:4px 10px;border-radius:6px;background:var(--purple-bg);color:var(--purple);border:1px solid rgba(167,139,218,0.3);text-decoration:none;">&#128196; 결과보고서</a>';
+  }
+
+  // [대표 서명본 첨부] 결재완료(GM 종착) 건에만 — 페이퍼 대표 서명 스캔본을 단순 증빙으로 붙인다.
+  // 결재상태·배지·대표싸인 칸 변경 없음. todo_upload(파일URL 컬럼 append) 재사용. (2026-06-16 GM)
+  if (isDone) {
+    var _repFiles = repSignFiles(t);
+    h += '<div class="rep-sign-row" style="margin-top:8px;display:flex;flex-wrap:wrap;align-items:center;gap:8px;">';
+    _repFiles.forEach(function(u, i){
+      h += '<a href="' + escAttr(u) + '" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;padding:4px 10px;border-radius:6px;background:var(--green-bg);color:var(--green);border:1px solid rgba(11,128,67,0.3);text-decoration:none;">📎 대표 서명본' + (_repFiles.length > 1 ? ' ' + (i + 1) : '') + '</a>';
+    });
+    h += '<button onclick="event.stopPropagation();document.getElementById(\'repSignFile_' + escAttr(t.id) + '\').click();" style="display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;padding:4px 10px;border-radius:6px;background:transparent;color:var(--dim);border:1px solid var(--border);cursor:pointer;font-family:inherit;">📄 대표 서명본 업로드</button>';
+    h += '<input type="file" id="repSignFile_' + escAttr(t.id) + '" accept="image/*,application/pdf" style="display:none;" onclick="event.stopPropagation();" onchange="uploadRepSign(\'' + escAttr(t.id) + '\', this)">';
+    h += '<span id="repSignStatus_' + escAttr(t.id) + '" style="font-size:10px;color:var(--accent);"></span>';
+    h += '</div>';
   }
 
   // 토글 (본문 + 기획 + 진척 로그 + 결과보고)
