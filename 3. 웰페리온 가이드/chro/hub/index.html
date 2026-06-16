@@ -957,7 +957,11 @@ function jobItem(h){
   var applicants=(DB.appl||[]).filter(function(a){return jobMatchesAppl(h,a);});
   // 등급 우선순위 정렬 (A>B>C>D>E>F>미평가)
   var GRADE_ORDER={A:1,B:2,C:3,D:4,E:5,F:6};
+  var STAGE_ORDER={"최종 합격":0,"합격":0,"최종합격":0,"2차 면접":1,"1차 면접":2,"면접 진행":2,"서류 검토":3,"서류":3,"보류":4,"불합격":5,"탈락":6};
   applicants.sort(function(x,y){
+    var sx=STAGE_ORDER[String(x["전형 단계"]||"").trim()]; if(sx==null) sx=3;
+    var sy=STAGE_ORDER[String(y["전형 단계"]||"").trim()]; if(sy==null) sy=3;
+    if(sx!==sy) return sx-sy;
     var gx=GRADE_ORDER[x["면접 평점"]]||99;
     var gy=GRADE_ORDER[y["면접 평점"]]||99;
     return gx-gy;
@@ -978,7 +982,7 @@ function jobItem(h){
       esc(h["주요 업무"])+'</div>':"")+
     (applicants.length
       ? '<details class="appl-details" open style="margin-top:12px;border-top:1px solid var(--line-soft);padding-top:10px">'+
-        '<summary style="cursor:pointer;font-weight:650;font-size:13px;color:var(--gold-deep)">지원자 '+applicants.length+'명 (등급순) — 접기/펴기</summary>'+
+        '<summary style="cursor:pointer;font-weight:650;font-size:13px;color:var(--gold-deep)">지원자 '+applicants.length+'명 (면접 우선·등급순) — 접기/펴기</summary>'+
         '<div style="margin-top:10px;display:flex;flex-direction:column;gap:8px">'+
           applicants.map(applicantRow).join("")+
         '</div></details>'
