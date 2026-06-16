@@ -1,5 +1,17 @@
 [
   {
+    "task_id": "COO-2026-06-16-SUPPORT-CHECK-HOME-UNDERCOUNT-FIX",
+    "clevel": "coo",
+    "title": "[시우/웰리 지원] 지원부 점검 home 과소집계 수정 — 오후조·마감조 회차버킷 충돌(182이 53으로)",
+    "status": "DONE",
+    "priority": "HIGH",
+    "enqueued_at": "2026-06-16",
+    "processed_at": "2026-06-16",
+    "terminal": true,
+    "artifact": "GM 라이브 관찰: 평일 3회차×남여 합치면 182개여야 할 일일점검 현황이 home에 53만 잡힘. 진단(debugger): GAS _shiftBucket이 '오후조'·'마감조'를 'pm' 단일 버킷으로 충돌→handleWeekly의 cellKey(zone|bucket) dedup에서 한 회차가 통째 누락(+오늘은 남성 회차 미제출). 53=여 오전29+오후24 슬라이스. 수정: _shiftBucket에 마감(close) 분기 추가→오전/오후/마감/야간 4버킷 분리. 회귀점검: 사용처 단일(dedup 키 전용·리터럴 비교 없음), 같은 회차 재제출 dedup 유지, dept=facility 무영향(스냅샷 0). 점검 GAS(1FLQAzjq…) clasp 재배포 @60(deploymentId 유지·URL 보존). 라이브 실측 06-12 102→140(마감조 38개 회복) 검증. 커밋 147b3b5e push. 웰리=오케스트레이션·검증, 지원부 점검=시우 소유.",
+    "next": "오늘 마감조 제출 시 home 숫자 정상 증가 GM 확인. 평시 지원부 점검 유지보수는 시우 소유."
+  },
+  {
     "task_id": "COO-2026-06-16-APPROVAL-OWNERSHIP-HANDOVER",
     "clevel": "coo",
     "title": "[시우] 결재현황 SSOT 운영·유지보수 인계 — GM·대표 2단계 실테스트 후속 보정 + 향후 결재 운영 소유",
