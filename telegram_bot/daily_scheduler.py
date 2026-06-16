@@ -1735,6 +1735,26 @@ def run_manual_test(slot: str) -> None:
     logger.info("=== 수동 테스트 완료 ===")
 
 
+def verify_publish_sweep() -> None:
+    """IG 발행검증 자동 대조 스윕 (30분 주기) — INC-003 자동화.
+    발행검증대기 IG 항목을 라이브 게시물 캡션과 대조해 일치하면 발행완료 도장(+커밋·푸시).
+    별도 프로세스(playwright)로 실행해 스케줄러 블로킹 없음. 실패는 로그만(다음 스윕 재시도)."""
+    script = REPO_ROOT / "scripts" / "ig_publish_verify.py"
+    if not script.exists():
+        return
+    try:
+        env = dict(os.environ, PYTHONIOENCODING="utf-8", PYTHONUTF8="1")
+        proc = subprocess.run(
+            [sys.executable, str(script), "--commit"],
+            cwd=str(REPO_ROOT), capture_output=True, text=True,
+            encoding="utf-8", errors="replace", env=env, timeout=600,
+        )
+        tail = (proc.stdout or "").strip().splitlines()[-1:] or ["(출력없음)"]
+        logger.info(f"verify_publish_sweep 완료: {tail[0]}")
+    except Exception as exc:
+        logger.warning(f"verify_publish_sweep 실패(무해, 다음 스윕 재시도): {exc}")
+
+
 # ── 스케줄러 메인 ─────────────────────────────────────────────────────────────
 def main():
     parser = argparse.ArgumentParser(description="웰페리온 일일 자동 보고 스케줄러 v1.1")
@@ -1816,6 +1836,17 @@ def main():
         coalesce=True,
     )
     logger.info("env_reload_watcher 등록 완료 (5분 주기) — v1.2")
+
+    # ── IG 발행검증 자동 대조 스윕 (30분 주기) — INC-003 자동화 ───────────────────
+    scheduler.add_job(
+        verify_publish_sweep,
+        trigger=IntervalTrigger(minutes=30),
+        id="ig_publish_verify_sweep",
+        misfire_grace_time=600,
+        coalesce=True,
+        next_run_time=datetime.now(),
+    )
+    logger.info("ig_publish_verify_sweep 등록 완료 (30분 주기) — 발행검증대기→발행완료 자동")
 
     if args.test:
         logger.info("=== 테스트 모드 시작: 1시간 주기 ===")

@@ -237,15 +237,30 @@ async def run(target_id: str | None, dry_run: bool) -> int:
         QUEUE.write_text(json.dumps(queue, ensure_ascii=False, indent=2), encoding="utf-8")
     print(f"\n→ 대조 {len(targets)}건 / 발행완료 도장 {stamped}건"
           + (" (dry-run, 미반영)" if dry_run else ""))
-    return 0
+    return stamped
 
 
 def main() -> int:
     ap = argparse.ArgumentParser(description="IG 발행검증 자동 대조 → 발행완료 도장")
     ap.add_argument("--id", help="특정 항목 id만 대조")
     ap.add_argument("--dry-run", action="store_true", help="도장 없이 대조 결과만")
+    ap.add_argument("--commit", action="store_true",
+                    help="도장 후 review_queue 를 GitLock으로 커밋·푸시(스케줄러용)")
     args = ap.parse_args()
-    return asyncio.run(run(args.id, args.dry_run))
+    stamped = asyncio.run(run(args.id, args.dry_run))
+    if args.commit and not args.dry_run and stamped > 0:
+        try:
+            sys.path.insert(0, str(Path(__file__).parent))
+            from git_lock import git_commit_push
+            git_commit_push(
+                [str(QUEUE)],
+                "auto(cmo): IG 발행검증 자동 대조 → 발행완료 도장",
+                holder="ig_publish_verify",
+            )
+            print("[INFO] 변경 커밋·푸시 완료(GitLock)")
+        except Exception as exc:
+            print(f"[WARN] 커밋 실패(무해 — 다음 스윕 재시도): {type(exc).__name__}: {exc}")
+    return 0
 
 
 if __name__ == "__main__":
