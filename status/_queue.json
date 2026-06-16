@@ -1,5 +1,17 @@
 [
   {
+    "task_id": "CEO-2026-06-16-G1-STALE-RENDER-AND-HOME-LAYOUT",
+    "clevel": "ceo",
+    "title": "[웰리] G1 오늘의 항로 갱신 안 됨 수정 + home 운영현황 최상단 복귀(네비표 S2 이관)",
+    "status": "DONE",
+    "priority": "HIGH",
+    "enqueued_at": "2026-06-16",
+    "processed_at": "2026-06-16",
+    "terminal": true,
+    "artifact": "GM이 G1에서 '완료가 대기로, 체크가 하나도 안 됨' 지적. 진단(debugger): 데이터·DONE→완료 분류·push 전부 정상, 원인=클라 stale-render(① gm1FetchSsot 페이지 로드시 1회뿐·자동갱신 없음 ② _queue.json을 raw.githubusercontent에서 읽어 Fastly 5분캐시 ③ 완료가 완료일 실제날짜라 '지난 입항(접힘)'으로 빠져 비어보임). 수정 3개: ①visibilitychange/focus 재fetch+90s interval(30s 중복방어) ②_queue 소스를 GitHub Pages 동일오리진 상대경로로 전환(no-store 즉시) ③'지난 입항 완료' details에 open 속성(9건 펼침). 분류로직 무수정. 커밋 a7d86347. 더해 GM 요청으로 home '어디에 뭐가 있나' 네비표를 home에서 제거→S2 공통탭 상단 이관(운영현황 KPI 최상단 복귀, 링크 onclick 동일 SPA서 작동). 커밋 17df02b1. 둘 다 push.",
+    "next": "표류(완결). 후속(시토): KPI·업무결재 피드 등 다른 fetch-once-on-load 화면도 같은 stale-render 패턴 — 공통 자동갱신 적용 검토 / raw-CDN 읽는 타 페이지 동일 캐시지연."
+  },
+  {
     "task_id": "CEO-2026-06-16-APPROVAL-LINE-GM-SYNC",
     "clevel": "ceo",
     "title": "[웰리] 결재선 '대표→GM 전환' 실제 반영 — 결재 프로그램·홈·S2 정합",
