@@ -639,6 +639,32 @@
         </div>
       </div>
 
+      <!-- 회원 셀프 VOC 카드 (QR 직접 접수 — 전용 GAS voc_list) -->
+      <div style="background:var(--paper);border:1px solid var(--border);border-radius:14px;padding:16px 18px;">
+        <div style="display:flex;align-items:center;gap:9px;margin-bottom:12px;">
+          <span style="width:28px;height:28px;border-radius:8px;background:var(--accent-bg);color:var(--accent);display:flex;align-items:center;justify-content:center;font-size:15px;">🙋</span>
+          <div><div style="font-weight:800;font-size:14px;color:var(--text);">셀프 VOC</div><div style="font-size:10.5px;color:var(--dim);">QR 직접 접수 · AI COO(시우)</div></div>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:10px;">
+          <div style="background:var(--orange-bg,rgba(230,148,78,0.12));border-radius:10px;padding:8px 10px;text-align:center;">
+            <div style="font-size:9px;color:var(--dim);margin-bottom:3px;font-weight:600;">접수</div>
+            <div id="kpiVocNew" style="font-size:22px;font-weight:800;color:var(--orange,#e6944e);line-height:1;">—</div>
+          </div>
+          <div style="background:var(--blue-bg,rgba(91,159,213,0.12));border-radius:10px;padding:8px 10px;text-align:center;">
+            <div style="font-size:9px;color:var(--dim);margin-bottom:3px;font-weight:600;">처리중</div>
+            <div id="kpiVocWip" style="font-size:22px;font-weight:800;color:var(--blue,#5b9fd5);line-height:1;">—</div>
+          </div>
+          <div style="background:var(--grow-bg,rgba(106,191,123,0.12));border-radius:10px;padding:8px 10px;text-align:center;">
+            <div style="font-size:9px;color:var(--dim);margin-bottom:3px;font-weight:600;">완료</div>
+            <div id="kpiVocDone" style="font-size:22px;font-weight:800;color:var(--grow,#6abf7b);line-height:1;">—</div>
+          </div>
+        </div>
+        <div style="margin-top:11px;padding-top:10px;border-top:1px dashed var(--border);display:flex;gap:7px;flex-wrap:wrap;">
+          <a href="#" onclick="event.preventDefault();document.querySelector('[data-id=O3]').click();" style="font-size:11px;font-weight:700;padding:3px 10px;background:var(--accent-bg);color:var(--accent);border-radius:20px;text-decoration:none;border:1px solid var(--border);">현황 보드 →</a>
+          <a href="https://wellperion-cao.github.io/wellperion-automation/coo/voc/voc_mobile_form.html" target="_blank" style="font-size:11px;font-weight:700;padding:3px 10px;background:var(--accent-bg);color:var(--accent);border-radius:20px;text-decoration:none;border:1px solid var(--border);">📲 회원 접수 폼</a>
+        </div>
+      </div>
+
     </div>
 
     <!-- 점검 현황 (리디자인) -->
@@ -1178,6 +1204,130 @@
         })
         .catch(function(){ /* "—" 유지 */ });
     })();
+  })();
+
+  // ── 회원 셀프 VOC KPI 카드 (home ops-detail-grid) ─────────────────────────
+  // voc_list GET → 접수/처리중/완료 카운트. 실패 시 "—" 유지.
+  (function loadVocKpi(){
+    var VOC_GAS = 'https://script.google.com/macros/s/AKfycbwk2XS1FND9V2xtXlWgsXzgA5p0FG7jVm6YKD74JK_ME_ZvHsNUUfGE5A_8p0X8VcF3gQ/exec';
+    function setV(id, v){ var el = document.getElementById(id); if(el) el.textContent = v; }
+    fetch(VOC_GAS + '?action=voc_list&_=' + Date.now(), { redirect: 'follow' })
+      .then(function(r){ return r.json(); })
+      .then(function(d){
+        if(!d || !d.ok) return;
+        var rows = Array.isArray(d.data) ? d.data : [];
+        var nNew = rows.filter(function(r){ return r['상태'] === '접수'; }).length;
+        var nWip = rows.filter(function(r){ return r['상태'] === '처리중'; }).length;
+        var nDone = rows.filter(function(r){ return r['상태'] === '완료'; }).length;
+        setV('kpiVocNew',  String(nNew));
+        setV('kpiVocWip',  String(nWip));
+        setV('kpiVocDone', String(nDone));
+      })
+      .catch(function(){ /* "—" 유지 */ });
+  })();
+
+  // ── O3 재등록 대시보드 아래 VOC 칸반 보드 ────────────────────────────────
+  var _O3_VOC_API = 'https://script.google.com/macros/s/AKfycbwk2XS1FND9V2xtXlWgsXzgA5p0FG7jVm6YKD74JK_ME_ZvHsNUUfGE5A_8p0X8VcF3gQ/exec';
+  var _O3_VOC_COLS = [
+    {status:'접수',  color:'#e6944e', bg:'rgba(230,148,78,0.12)'},
+    {status:'처리중', color:'#5b9fd5', bg:'rgba(91,159,213,0.12)'},
+    {status:'완료',  color:'#6abf7b', bg:'rgba(106,191,123,0.12)'}
+  ];
+  function _o3Esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+
+  function o3VocLoad(){
+    var board = document.getElementById('o3VocBoard');
+    if(!board) return;
+    board.innerHTML = '<div style="color:var(--dim);font-size:13px;padding:18px 4px;">불러오는 중…</div>';
+    fetch(_O3_VOC_API + '?action=voc_list&_=' + Date.now(), { redirect: 'follow' })
+      .then(function(r){ return r.json(); })
+      .then(function(d){
+        if(!d || !d.ok){ board.innerHTML = '<div style="color:var(--warm,#e65b3f);font-size:13px;padding:18px 4px;">현황을 불러오지 못했습니다 — ' + _o3Esc(d && d.error || '') + '</div>'; return; }
+        _o3VocRender(d.data || []);
+      })
+      .catch(function(){ board.innerHTML = '<div style="color:var(--warm,#e65b3f);font-size:13px;padding:18px 4px;">네트워크 오류 — 새로고침 해주세요.</div>'; });
+  }
+
+  function _o3VocRender(items){
+    var board = document.getElementById('o3VocBoard');
+    board.innerHTML = '';
+    _O3_VOC_COLS.forEach(function(col){
+      var list = items.filter(function(it){ return String(it['상태'] || '접수') === col.status; });
+      var colEl = document.createElement('div');
+      colEl.style.cssText = 'flex:1;min-width:240px;background:var(--paper);border:1px solid var(--border);border-radius:12px;padding:12px;';
+      var html = '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">'
+        + '<span style="font-size:14px;font-weight:700;color:' + col.color + ';">' + col.status + '</span>'
+        + '<span style="font-size:12px;font-weight:700;padding:2px 10px;border-radius:10px;background:' + col.bg + ';color:' + col.color + ';">' + list.length + '</span></div>';
+      if(!list.length){ html += '<div style="color:var(--dim);font-size:12px;padding:14px 4px;text-align:center;">건이 없습니다</div>'; }
+      list.forEach(function(it){ html += _o3VocCard(it, col); });
+      colEl.innerHTML = html;
+      board.appendChild(colEl);
+    });
+  }
+
+  function _o3VocCard(it, col){
+    var id = _o3Esc(it['접수ID']);
+    var type = _o3Esc(it['유형'] || '-');
+    var loc = _o3Esc(it['위치'] || '');
+    var content = _o3Esc(it['내용'] || '');
+    var contact = _o3Esc(it['연락처'] || '');
+    var assignee = _o3Esc(it['담당'] || '');
+    var photo = String(it['사진URL'] || '').trim();
+    var dt = _o3Esc(String(it['접수일시'] || '').slice(0, 16));
+    var actions = '';
+    if(col.status === '접수'){
+      actions = '<button onclick="_o3VocStatus(\'' + id + '\',\'처리중\')" style="font-size:11.5px;padding:4px 10px;border:1px solid var(--border);border-radius:7px;background:var(--paper);color:var(--text);cursor:pointer;font-family:inherit;">처리 시작 →</button>';
+    } else if(col.status === '처리중'){
+      actions = '<button onclick="_o3VocStatus(\'' + id + '\',\'완료\')" style="font-size:11.5px;padding:4px 10px;border:1px solid var(--border);border-radius:7px;background:var(--paper);color:var(--text);cursor:pointer;font-family:inherit;">완료 ✓</button>'
+        + ' <button onclick="_o3VocStatus(\'' + id + '\',\'접수\')" style="font-size:11.5px;padding:4px 10px;border:1px solid var(--border);border-radius:7px;background:var(--paper);color:var(--dim);cursor:pointer;font-family:inherit;">← 되돌리기</button>';
+    } else {
+      actions = '<button onclick="_o3VocStatus(\'' + id + '\',\'처리중\')" style="font-size:11.5px;padding:4px 10px;border:1px solid var(--border);border-radius:7px;background:var(--paper);color:var(--dim);cursor:pointer;font-family:inherit;">↩ 재개</button>';
+    }
+    return '<div style="background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin-bottom:8px;">'
+      + '<div style="display:flex;gap:6px;align-items:center;margin-bottom:5px;flex-wrap:wrap;">'
+      + '<span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:8px;background:' + col.bg + ';color:' + col.color + ';">' + type + '</span>'
+      + (loc ? '<span style="font-size:11.5px;color:var(--dim);">📍' + loc + '</span>' : '')
+      + (dt ? '<span style="font-size:10.5px;color:var(--dim);margin-left:auto;">' + dt + '</span>' : '')
+      + '</div>'
+      + (content ? '<div style="font-size:13px;line-height:1.5;margin-bottom:6px;word-break:break-word;">' + content + '</div>' : '')
+      + (photo ? '<a href="' + _o3Esc(photo) + '" target="_blank" style="font-size:11.5px;color:var(--blue,#5b9fd5);text-decoration:none;display:inline-block;margin-bottom:6px;">📷 사진 보기</a>' : '')
+      + (contact ? '<div style="font-size:11.5px;color:var(--dim);margin-bottom:5px;">☎ ' + contact + '</div>' : '')
+      + '<div style="display:flex;gap:6px;align-items:center;margin-bottom:7px;">'
+      + '<input type="text" placeholder="담당자" value="' + assignee + '" id="o3va-' + id + '" style="flex:1;min-width:0;background:var(--paper);border:1px solid var(--border);color:var(--text);padding:4px 8px;border-radius:6px;font-size:12px;font-family:inherit;">'
+      + '<button onclick="_o3VocAssign(\'' + id + '\')" style="font-size:11.5px;padding:4px 10px;border:1px solid var(--border);border-radius:7px;background:var(--paper);color:var(--text);cursor:pointer;font-family:inherit;">배정</button></div>'
+      + '<div style="display:flex;gap:6px;flex-wrap:wrap;">' + actions + '</div></div>';
+  }
+
+  function _o3VocStatus(id, status){
+    _o3VocPost({ action: 'voc_update', id: id, status: status }, '상태 변경됨');
+  }
+  function _o3VocAssign(id){
+    var el = document.getElementById('o3va-' + id);
+    _o3VocPost({ action: 'voc_update', id: id, assignee: el ? el.value.trim() : '' }, '담당 배정됨');
+  }
+  function _o3VocPost(payload, okMsg){
+    fetch(_O3_VOC_API, { method: 'POST', redirect: 'follow', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(payload) })
+      .then(function(r){ return r.json(); })
+      .then(function(d){
+        if(d && d.ok){ o3VocLoad(); } // 성공 후 보드 새로고침
+      })
+      .catch(function(){});
+  }
+
+  // O3 article 활성화 시 자동 로드
+  (function(){
+    var orig = window.activateDoc;
+    if(typeof orig === 'function'){
+      window.activateDoc = function(id, tabName){
+        orig(id, tabName);
+        if(id === 'O3') o3VocLoad();
+      };
+    }
+    // O3 메뉴 클릭 직접 감지 (data-id="O3" 링크)
+    document.addEventListener('click', function(ev){
+      var a = ev.target.closest('[data-id="O3"]');
+      if(a) setTimeout(o3VocLoad, 200);
+    });
   })();
   </script>
 
@@ -5811,6 +5961,22 @@ function crTab(btn, panelId) {
     <p class="lead">월별 재등록률·확정매출·재등록 현황(완료/컨택완/가망/무응답/로스)과 90일 미만 저활동 관리를 한눈에 봅니다. 이름·연락처 등 개인정보는 표시되지 않습니다.</p>
     <div style="margin-top:18px;border:1px solid var(--border);border-radius:14px;overflow:hidden;background:#FAF8F5;box-shadow:0 4px 20px rgba(0,0,0,0.12);">
       <iframe src="wellperion_dashboard_web.html" title="재등록 대시보드" loading="lazy" style="width:100%;height:1400px;border:0;display:block;"></iframe>
+    </div>
+
+    <!-- ── 회원 셀프 VOC 현황 (QR + 사진) — 재등록 대시보드 바로 아래 ── -->
+    <div style="margin-top:28px;">
+      <div style="display:flex;align-items:center;gap:11px;margin-bottom:14px;">
+        <span style="width:28px;height:28px;border-radius:8px;background:var(--accent-bg);color:var(--accent);display:flex;align-items:center;justify-content:center;font-size:15px;">🙋</span>
+        <span style="font-size:16px;font-weight:800;letter-spacing:-0.01em;color:var(--text);">회원 셀프 VOC 현황</span>
+        <span style="font-size:11.5px;color:var(--dim);">QR 직접 접수 · 접수/처리중/완료</span>
+        <span style="flex:1;height:1px;background:var(--border);"></span>
+        <a href="https://wellperion-cao.github.io/wellperion-automation/coo/voc/voc_mobile_form.html" target="_blank" style="display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:700;padding:5px 12px;background:var(--accent-bg);color:var(--accent);border:1px solid var(--border);border-radius:20px;text-decoration:none;white-space:nowrap;">📲 회원 접수 폼 열기</a>
+        <button onclick="o3VocLoad()" style="font-size:12px;font-weight:700;padding:5px 12px;background:var(--paper);color:var(--dim);border:1px solid var(--border);border-radius:20px;cursor:pointer;font-family:inherit;">↻ 새로고침</button>
+      </div>
+      <p style="font-size:12.5px;color:var(--dim);margin:0 0 14px;line-height:1.6;">회원이 매장 QR로 직접 올린 건의입니다. 카드의 버튼으로 담당 배정·상태 전환하면 모든 기기에 반영됩니다. 위치별 QR: <code style="font-size:11px;background:var(--border);padding:1px 5px;border-radius:4px;">?loc=리셉션</code> 등 파라미터 부착.</p>
+      <div id="o3VocBoard" style="display:flex;gap:12px;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:8px;">
+        <div style="color:var(--dim);font-size:13px;padding:18px 4px;">불러오는 중…</div>
+      </div>
     </div>
   </article>
 </main>
