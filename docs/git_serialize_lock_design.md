@@ -70,7 +70,7 @@ pre-commit 훅(truncation guard + changelog `git add`)은 **이미 락을 쥔 co
 ## 5. 단계별 롤아웃 (GM 게이트 분리)
 - **P1 (무영향):** `git_lock.py` 작성 + 자기검증 테스트(동시 2~3 프로세스가 같은 파일 커밋 → 직렬화·무손상 실증). **GM 게이트 없음.**
 - **P2 (저위험):** 단발 주체(clevel_post_action·IG·pipeline) 전환. 재기동 불필요. 라이브 1회 실측.
-- **P3 (GM 게이트):** `bot.py` 전환 → **봇 재기동 필요**. GM 확인 타이밍에 PID 락 안전 재기동(daily_scheduler 조율). 재기동 전후 텔레그램 송수신·승인 콜백 회귀 실측.
+- **P3 (GM 게이트): [코드 완료 2026-06-16]** `bot.py` 승인 콜백의 4분리 git 호출(add/commit/pull/push)을 단일 `GitLock` 임계구역 동기 시퀀스 `_git_seq_locked`로 교체, `asyncio.to_thread`로 호출(블로킹이 봇 이벤트 루프 비차단). 위험쌍#1(콜백↔IG `--once`) 차단. 검증: py_compile PASS·`_git_async` 잔재 0·GitLock 획득/해제 라이브 PASS. **라이브 적용 보류 = 현 봇 인스턴스(PID 2968)가 RunLevel=Highest로 떠 사용자권한 세션에서 kill 불가(elevation 벽).** 새 코드는 **다음 아침 부팅·로그온 시 `WellperionTelegramBot` 작업(elevated)이 자동 재기동하며 자연 로드**(야간 PC종료로 선행봇 없어 충돌 없음), 또는 GM 재부팅 시 즉시. 재기동 후 라이브 검증 = 다음 콘텐츠 승인 1건 + 동시 IG `--once`에서 `git_lock.log` 직렬화 확인.
 
 ## 6. 리스크·롤백
 - 데드락: 락은 단일 자원·재진입 금지·항상 `__exit__` 해제·stale 회수 2중 → 영구 데드락 불가. 최악도 STALE(300s) 후 자동 회수.

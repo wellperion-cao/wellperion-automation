@@ -49,6 +49,11 @@ except Exception:
     def log_outbound(*a, **k):
         pass
 
+try:  # 동시커밋 직렬화 lock (P3, 2026-06-16) — scripts/ 경로는 위 블록에서 이미 삽입
+    from git_lock import GitLock
+except Exception:
+    GitLock = None
+
 
 def _install_outbound_logging() -> None:
     """PTB 발신 메서드(send_message/send_photo/reply_text)에 best-effort 로깅 래핑.
@@ -1037,16 +1042,36 @@ _VENV_PY = WORKDIR / ".venv" / "Scripts" / "python.exe"
 _PUBLISH_ENGINE = WORKDIR / "scripts" / "ig_review_publish_watcher.py"
 
 
-async def _git_async(*args: str) -> None:
-    """비차단 git 호출 (봇 이벤트 루프 안 막음)."""
+def _git_seq_locked(commit_msg: str) -> None:
+    """승인 콜백 git 시퀀스 — GitLock 임계구역에서 add→commit→pull→push 원자 실행.
+    동기·블로킹이므로 반드시 asyncio.to_thread로 호출(봇 이벤트 루프 비차단).
+    P3(2026-06-16): 4개 분리 git 호출 사이로 IG 발행엔진(--once)이 끼어들던
+    위험쌍#1을 단일 락으로 차단. 설계: docs/git_serialize_lock_design.md §3."""
+    def _g(*args):
+        try:
+            subprocess.run(
+                ["git", "-C", str(WORKDIR), *args],
+                capture_output=True, text=True,
+                encoding="utf-8", errors="replace",
+            )
+        except Exception as exc:
+            log.error(f"[pub] git {args[:1]} 실패: {exc}")
+
+    def _seq():
+        _g("add", str(REVIEW_QUEUE))
+        _g("commit", "-m", commit_msg)
+        _g("pull", "--rebase", "--autostash", "origin", "master")
+        _g("push", "origin", "master")
+
     try:
-        p = await asyncio.create_subprocess_exec(
-            "git", "-C", str(WORKDIR), *args,
-            stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE,
-        )
-        await p.communicate()
-    except Exception as exc:
-        log.error(f"[pub] git {args[:1]} 실패: {exc}")
+        if GitLock is not None:
+            with GitLock(holder="bot:publish_callback", repo_root=str(WORKDIR)):
+                _seq()
+        else:  # 모듈 임포트 실패 시 폴백 — 무락 순차(최소한 봇은 죽지 않음)
+            log.warning("[pub] GitLock 미가용 — 무락 순차 커밋 폴백")
+            _seq()
+    except Exception as exc:  # 락 타임아웃 등 — 무방비 진행 금지, 다음 기회 재커밋
+        log.error(f"[pub] git lock/seq 실패(커밋 건너뜀): {exc}")
 
 
 async def cmd_publish_callback(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
@@ -1137,11 +1162,8 @@ async def cmd_publish_callback(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
 
     log.info(f"[pub] decision={decision} ids={item_ids} ch={channel_label}")
 
-    await _git_async("add", str(REVIEW_QUEUE))
-    await _git_async("commit", "-m",
-        f"auto(cmo): 검수 {new_status} — {title_label} [{channel_label}]")
-    await _git_async("pull", "--rebase", "--autostash", "origin", "master")
-    await _git_async("push", "origin", "master")
+    commit_msg = f"auto(cmo): 검수 {new_status} — {title_label} [{channel_label}]"
+    await asyncio.to_thread(_git_seq_locked, commit_msg)
 
     label = "✅ 승인" if decision == "approve" else "❌ 반려"
     try:
