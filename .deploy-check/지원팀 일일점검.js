@@ -29,7 +29,7 @@ const CHAT_ID   = PropertiesService.getScriptProperties().getProperty('TELEGRAM_
 const HEADERS = [
   '날짜','항목ID','항목명','카테고리','회차',
   '점검결과','이슈메모','노하우','제출상태','제출시각',
-  '담당자','점검자','측정값','반영완료'
+  '근무자','점검자','측정값','반영완료'
 ]; // (닫힘 — 아래 _roundLabel)
 // 슬롯/교대 → 조(회차) 라벨. 프론트 roundOfSlot과 동일 매핑(오전조/오후조/마감조). GM 2026-06-15.
 function _roundLabel(slot, shift) {
@@ -276,6 +276,7 @@ function doGet(e) {
   if (action === 'items')     return getItems(e.parameter);
   if (action === 'board')     return getBoard(e.parameter);
   if (action === 'weekly')    return handleWeekly(e.parameter);
+  if (action === 'today_live') return handleTodayLive(e.parameter);   // 오늘 실시간 현황(cr 원장 기반·읽기전용) — home·대시보드 단일값. 2026-06-16 시우.
   if (action === 'issuelog')  return handleIssueLogGet(e.parameter);
   if (action === 'setup_issue_tabs') { setupIssueLogSheets(); return jsonRes({ok:true,msg:'이슈대장 탭 생성 완료'}); }
   if (action === 'setup_facility_tabs') { return setupFacilitySheets(); }
@@ -1114,7 +1115,9 @@ function ensureAllHeaders(dept) {
   var done = [];
   [t.male, t.female, t.common].forEach(function (name) {
     var sh = ss.getSheetByName(name); if (!sh) return;
-    _ensureHeaders(sh); done.push(name);
+    _ensureHeaders(sh);
+    if (sh.getLastColumn() >= HEADERS.length) sh.getRange(1, 1, 1, HEADERS.length).setValues([HEADERS]);   // 1행 헤더 라벨 강제정합(담당자→근무자 등 변경 반영, 데이터행 무영향). 2026-06-16 시우.
+    done.push(name);
   });
   return jsonRes({ ok: true, dept: dept, sheets: done, headers: HEADERS });
 }
@@ -1889,6 +1892,114 @@ function handleWeekly(params) {
   });
 
   return jsonRes({ ok: true, dept: dept, data: result });
+}
+
+// ════════════════════════════════════════════
+// action=today_live — 오늘 실시간 점검 현황(읽기 전용·제출도장 안 찍음)
+// GET ?action=today_live&dept=support[&date=YYYY-MM-DD]
+// 분자(done): cr 회차원장(키 '<round>_<id>')을 회차버킷(am/pm/close/night)별로 카운트 — 남/여/공용 합산.
+//   round→bucket: 라운드키 끝 숫자 제거('am1'→'am','pm1'→'pm','close1'→'close') 후 _shiftBucket 동일규칙.
+// 분모(total): 그날 점검일지 스냅샷의 (구역 zone × 버킷) total을 버킷별 합산 재사용(handleWeekly와 동일 출처).
+//   스냅샷 없으면 항목별 시트 행수로 폴백(레거시 일자). 분자·분모 모두 같은 회차버킷 기준.
+// ⚠ 쓰기 경로 무변경 — sub(제출도장) 절대 안 찍음(거짓 대량제출 사고 회피). support 한정.
+// 응답: { ok, dept, date, am, pm, close, night, total, done, pct, byGender:{m,f,all:{done,total,...}} }
+// ════════════════════════════════════════════
+
+// 회차키(am1/pm1/close1/night…) → 완료율 버킷(am/pm/close/night). _shiftBucket과 동일 규칙 재사용.
+// 끝 숫자([1] 등) 제거해 'am'/'pm'/'close'/'night'로 만든 뒤 기존 _shiftBucket에 위임(규칙 단일화).
+function _roundBucket(roundKey) {
+  var base = String(roundKey == null ? '' : roundKey).replace(/[0-9\[\]]+$/, '');
+  return _shiftBucket(base);
+}
+
+function handleTodayLive(params) {
+  var dept = String(params.dept || 'support').trim() || 'support';
+  // support 한정 — facility/parking은 이 엔드포인트 미사용(가드).
+  if (dept !== 'support') {
+    return jsonRes({ ok: false, dept: dept, error: 'today_live는 support 전용(facility/parking은 weekly 사용)' });
+  }
+  var tz = 'Asia/Seoul';
+  var date = String(params.date || '').trim() || Utilities.formatDate(new Date(), tz, 'yyyy-MM-dd');
+
+  // ─── 분자(done): cr 원장 — 남/여/공용 각 성별 원장에서 회차버킷별 체크수 합산 ───
+  var genders = ['m', 'f', 'all'];
+  var buckets = ['am', 'pm', 'close', 'night'];
+  function newBuckets() { return { am: 0, pm: 0, close: 0, night: 0 }; }
+  var doneByG = { m: newBuckets(), f: newBuckets(), all: newBuckets() };
+  genders.forEach(function (g) {
+    var led = _getCheckLedger(dept, date, g);   // {c, cr, sub, subAt} 정규화 — 읽기 전용
+    var cr = (led && led.cr && typeof led.cr === 'object') ? led.cr : {};
+    Object.keys(cr).forEach(function (k) {
+      if (!cr[k]) return;                         // 0/falsy = 해제된 키
+      var us = String(k).indexOf('_');
+      if (us < 0) return;
+      var rk = k.slice(0, us);                    // 회차키(am1/pm1/close1…)
+      var bk = _roundBucket(rk);
+      if (doneByG[g][bk] === undefined) bk = 'pm'; // 미인식 버킷은 pm으로(폴백)
+      doneByG[g][bk]++;
+    });
+  });
+
+  // ─── 분모(total): 그날 점검일지 스냅샷의 (zone×bucket) total — handleWeekly와 동일 셀 채택(최신행) ───
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  // zone(m/f/all) → 우리 성별맵과 동일. 셀별 최신 제출행의 total 채택(라운드 재제출=재진술이라 합산 중복 방지).
+  var totalByG = { m: newBuckets(), f: newBuckets(), all: newBuckets() };
+  var snapCells = {};   // { gender: { bucket: {total, at} } }
+  genders.forEach(function (g) { snapCells[g] = {}; });
+  var snapSheet = ss.getSheetByName(_snapshotTabName(dept));
+  if (snapSheet) {
+    var sdata = snapSheet.getDataRange().getValues();
+    // 열: 0=제출시각,1=날짜,3=구역(zone),4=교대,6=총항목,7=완료
+    for (var r = 1; r < sdata.length; r++) {
+      if (formatDate(sdata[r][1]) !== date) continue;
+      var zone = String(sdata[r][3] || '');
+      if (zone !== 'm' && zone !== 'f' && zone !== 'all') continue;
+      var bucket = _shiftBucket(sdata[r][4]);     // 스냅샷 교대 라벨 → 버킷(weekly와 동일)
+      var tot = Number(sdata[r][6]); if (isNaN(tot)) tot = 0;
+      var at = String(sdata[r][0] || '');
+      var cell = snapCells[zone][bucket];
+      if (!cell || at >= cell.at) snapCells[zone][bucket] = { total: tot, at: at };   // 최신 셀 채택
+    }
+    genders.forEach(function (g) {
+      buckets.forEach(function (b) { if (snapCells[g][b]) totalByG[g][b] = snapCells[g][b].total; });
+    });
+  }
+
+  // 스냅샷 분모가 비어있는 버킷(신선한 날·미제출)은 done을 분모로 폴백(최소판: 음수/100%초과 방지).
+  // P2(led.seen 분모 정밀화)는 이번 범위 제외 — 분모는 최소판.
+  genders.forEach(function (g) {
+    buckets.forEach(function (b) {
+      if (totalByG[g][b] < doneByG[g][b]) totalByG[g][b] = doneByG[g][b];
+    });
+  });
+
+  // ─── 합산(남+여+공용) ───
+  var sumDone = newBuckets(), sumTotal = newBuckets();
+  genders.forEach(function (g) {
+    buckets.forEach(function (b) { sumDone[b] += doneByG[g][b]; sumTotal[b] += totalByG[g][b]; });
+  });
+  var done = sumDone.am + sumDone.pm + sumDone.close + sumDone.night;
+  var total = sumTotal.am + sumTotal.pm + sumTotal.close + sumTotal.night;
+  var pct = total > 0 ? Math.round(done / total * 100) : 0;
+
+  function genderSummary(g) {
+    var gd = doneByG[g], gt = totalByG[g];
+    var gdone = gd.am + gd.pm + gd.close + gd.night;
+    var gtot = gt.am + gt.pm + gt.close + gt.night;
+    return { am: gd.am, pm: gd.pm, close: gd.close, night: gd.night,
+             amTotal: gt.am, pmTotal: gt.pm, closeTotal: gt.close, nightTotal: gt.night,
+             done: gdone, total: gtot, pct: gtot > 0 ? Math.round(gdone / gtot * 100) : 0 };
+  }
+
+  return jsonRes({
+    ok: true, dept: dept, date: date,
+    // 버킷별 완료(분자) — am/pm/close/night
+    am: sumDone.am, pm: sumDone.pm, close: sumDone.close, night: sumDone.night,
+    // 버킷별 분모
+    amTotal: sumTotal.am, pmTotal: sumTotal.pm, closeTotal: sumTotal.close, nightTotal: sumTotal.night,
+    total: total, done: done, pct: pct,
+    byGender: { m: genderSummary('m'), f: genderSummary('f'), all: genderSummary('all') }
+  });
 }
 
 // ════════════════════════════════════════════

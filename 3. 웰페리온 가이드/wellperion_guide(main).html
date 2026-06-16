@@ -9559,11 +9559,13 @@ function crTab(btn, panelId) {
           var row=res.data.find(function(d){return d.date===today;});
           return row || {total:0,done:0,pct:0};
         }
+        // action=today_live → {ok:true, total, done, pct, ...} (단일 오늘 객체, 서버 실시간 cr 원장 기반). 2026-06-16 시우.
         // fallback: 직접 객체 응답
         return res.data || res;
       }
+      // facility=weekly(스냅샷·무회귀 유지) / support=today_live(서버 실시간 단일값 — 대시보드와 동일). 2026-06-16 시우.
       var fP=fetch(CHECK_API+'?action=weekly&dept=facility&_pv='+pv,{redirect:'follow'}).then(function(r){return r.json();}).then(pickToday).catch(function(){return null;});
-      var sP=fetch(CHECK_API+'?action=weekly&dept=support&_pv='+pv, {redirect:'follow'}).then(function(r){return r.json();}).then(pickToday).catch(function(){return null;});
+      var sP=fetch(CHECK_API+'?action=today_live&dept=support&_pv='+pv, {redirect:'follow'}).then(function(r){return r.json();}).then(pickToday).catch(function(){return null;});
       Promise.all([fP,sP]).then(function(res){onSuccess(res[0],res[1]);});
     }
 

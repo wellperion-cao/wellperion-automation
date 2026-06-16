@@ -623,7 +623,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   <table style="width:100%;border-collapse:collapse;margin-bottom:10px;font-size:13px;">
     <tr style="background:var(--paper);">
       <th style="padding:10px;border:1px solid var(--border);width:64px;">근무조</th>
-      <th style="padding:10px;border:1px solid var(--border);">담당</th>
+      <th style="padding:10px;border:1px solid var(--border);">근무자</th>
       <th style="padding:10px;border:1px solid var(--border);width:120px;">근무시간</th>
       <th style="padding:10px;border:1px solid var(--border);">고정 휴게(10분)</th>
     </tr>
@@ -654,7 +654,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   <table style="width:100%;border-collapse:collapse;margin-bottom:10px;font-size:13px;">
     <tr style="background:var(--paper);">
       <th style="padding:10px;border:1px solid var(--border);width:64px;">근무조</th>
-      <th style="padding:10px;border:1px solid var(--border);">담당</th>
+      <th style="padding:10px;border:1px solid var(--border);">근무자</th>
       <th style="padding:10px;border:1px solid var(--border);width:120px;">근무시간</th>
       <th style="padding:10px;border:1px solid var(--border);">고정 휴게(10분)</th>
     </tr>
@@ -849,7 +849,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
     <button class="btn" onclick="moveDateG('m',-1)">&lt;</button>
     <button class="btn" onclick="setTodayG('m')">오늘</button>
     <button class="btn" onclick="moveDateG('m',1)">&gt;</button>
-    <span class="duty-wrap"><span class="duty-label">담당자</span><select id="dutyM" class="duty-select" onchange="onDutyChangeG('m')" aria-label="담당자"></select></span>
+    <span class="duty-wrap"><span class="duty-label">근무자</span><select id="dutyM" class="duty-select" onchange="onDutyChangeG('m')" aria-label="근무자"></select></span>
   </div>
   <div class="submitter-bar submitter-bar-split">
     <div class="sb-half">
@@ -890,7 +890,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
     <button class="btn" onclick="moveDateG('f',-1)">&lt;</button>
     <button class="btn" onclick="setTodayG('f')">오늘</button>
     <button class="btn" onclick="moveDateG('f',1)">&gt;</button>
-    <span class="duty-wrap"><span class="duty-label">담당자</span><select id="dutyF" class="duty-select" onchange="onDutyChangeG('f')" aria-label="담당자"></select></span>
+    <span class="duty-wrap"><span class="duty-label">근무자</span><select id="dutyF" class="duty-select" onchange="onDutyChangeG('f')" aria-label="근무자"></select></span>
   </div>
   <div class="submitter-bar submitter-bar-split">
     <div class="sb-half">
@@ -1339,7 +1339,7 @@ function populateOneDuty(selId,gender,roster0){
   const rk=(typeof getRoundG==='function')?getRoundG(gender):'';
   const saved=(rk&&localStorage.getItem('wcheck_duty_'+gender+'_'+rk))||localStorage.getItem('wcheck_duty_last_'+gender)||localStorage.getItem('wcheck_duty_'+gender)||'';   // 회차키 정합(GM 2026-06-16): onDutyChangeG 저장키와 일치 → 새로고침 시 담당자 유지
   const roster=(roster0||DUTY_ROSTER)[gender]||[];
-  let html='<option value="">담당자 선택</option>';
+  let html='<option value="">근무자 선택</option>';
   roster.forEach(r=>{
     const label=r.name;  // 직함+이름만 표시(오전/오후 등 shift 라벨 제거) — GM 2026-06-13
     html+='<option value="'+escapeAttr(r.name)+'"'+(r.name===saved?' selected':'')+'>'+escapeHTML(label)+'</option>';
@@ -1347,7 +1347,7 @@ function populateOneDuty(selId,gender,roster0){
   el.innerHTML=html;
   if(saved)el.value=saved;
 }
-/* 현재 탭 담당자 선택값(시트 기록용) */
+/* 현재 탭 근무자 선택값(시트 기록용) */
 function getDutyForGender(g){const el=document.getElementById(g==='f'?'dutyF':'dutyM');return el?el.value||'':'';}
 function onDutyChangeG(g){
   const el=document.getElementById(g==='f'?'dutyF':'dutyM');
@@ -2899,7 +2899,7 @@ function renderItem(it,shift,gender,round){
   let _attrLine='';
   if(_ckd&&round){
     const _by=STATE['chkby_'+g+'_'+round+'_'+it.id]||'', _at=STATE['chkat_'+g+'_'+round+'_'+it.id]||'', _du=STATE['chkduty_'+g+'_'+round+'_'+it.id]||'';
-    const _pp=[]; if(_by)_pp.push('점검자 '+esc(_by)); if(_at)_pp.push('🕐 '+esc(_at)); if(_du)_pp.push('담당 '+esc(_du));   // 점검시간 라벨 명시(GM 2026-06-16)
+    const _pp=[]; if(_by)_pp.push('점검자 '+esc(_by)); if(_at)_pp.push('🕐 '+esc(_at)); if(_du)_pp.push('근무자 '+esc(_du));   // 점검시간 라벨 명시(GM 2026-06-16)
     if(_pp.length)_attrLine=`<div class="check-attr" style="font-size:11px;color:#8c8b83;margin:3px 0 0 26px;">✓ ${_pp.join(' · ')}</div>`;
   }
   return `<div class="${cls}">
@@ -3026,7 +3026,7 @@ function onCk(id,shift,gender,round){
     const _miss=[];
     const _night=(typeof isNightShiftWorkerG==='function'&&isNightShiftWorkerG(gender));
     if(!round&&!_night)_miss.push('조(회차) 선택');
-    if(typeof getDutyForGender==='function'&&!getDutyForGender(gender))_miss.push('담당자 선택');
+    if(typeof getDutyForGender==='function'&&!getDutyForGender(gender))_miss.push('근무자 선택');
     if(typeof getSubmitterForGender==='function'&&!(getSubmitterForGender(gender)||'').trim())_miss.push('점검자 입력');
     if(typeof activeTimerKeys==='function'){const _tk=activeTimerKeys(gender);if(!STATE[_tk.sk])_miss.push('점검 시작 버튼 누르기');}
     if(_miss.length){ if(cb)cb.checked=false; alert('체크하기 전에 먼저 해주세요:\n· '+_miss.join('\n· ')); return; }
@@ -3698,6 +3698,30 @@ function collectDashboardData(d){
   };
 }
 
+/* today_live(서버 실시간 cr 원장) 응답을 collectDashboardData 결과에 덮어 확정값 표시.
+   서버 버킷: am/pm/close/night(+*Total). 대시보드 필드: amDone·closingDone 등에 매핑.
+   서버 미응답·이상치(total<done) 시 로컬값 보존(폴백). GM 2026-06-16 시우. */
+async function applyTodayLiveOverlay(d,data){
+  try{
+    const r=await fetch(DASH_API+'?action=today_live&dept='+DASH_DEPT+'&date='+encodeURIComponent(d)+'&_pv='+Date.now(),{redirect:'follow'});
+    const j=await r.json();
+    if(!j||j.ok===false)return;                          // 실패 → 로컬 폴백
+    if(typeof j.total!=='number'||typeof j.done!=='number')return;
+    /* 버킷별 확정값 매핑(서버 close=마감 별도 버킷 → closingDone/Total). */
+    data.amDone=j.am||0;      data.amTotal=j.amTotal||0;
+    data.pmDone=j.pm||0;      data.pmTotal=j.pmTotal||0;
+    data.closingDone=j.close||0; data.closingTotal=j.closeTotal||0;
+    data.nightDone=j.night||0; data.nightTotal=j.nightTotal||0;
+    /* 전체 합계·완료율은 서버 확정값 단일사용(home과 동일 숫자 보장). */
+    data.total=j.total; data.done=j.done; data.pct=(typeof j.pct==='number')?j.pct:(j.total?Math.round(j.done/j.total*100):0);
+    data.amPct=data.amTotal?Math.round(data.amDone/data.amTotal*100):0;
+    data.pmPct=data.pmTotal?Math.round(data.pmDone/data.pmTotal*100):0;
+    data.nightPct=data.nightTotal?Math.round(data.nightDone/data.nightTotal*100):0;
+    data.closingPct=data.closingTotal?Math.round(data.closingDone/data.closingTotal*100):0;
+    data._liveSrc='server';
+  }catch(e){ /* 오프라인 → 로컬 collectDashboardData 값 유지(폴백) */ }
+}
+
 async function renderAdmin(){
   const d=document.getElementById('adminDate').value;
   const el=document.getElementById('adminView');
@@ -3711,6 +3735,11 @@ async function renderAdmin(){
 
   const data=collectDashboardData(d);
   if(data.closed){el.innerHTML=`<div class="admin-card"><h3>${d} (${dn[dow]}) - 휴관일</h3></div>`;return}
+
+  /* 서버 실시간(today_live) 확정값 오버레이 — home과 동일값 보장(서버=cr 원장 단일출처). GM 2026-06-16 시우.
+     로컬 collectDashboardData = 낙관적 즉시표시(이슈·노하우·점검자 통계 출처) / 서버 = 완료수·완료율 확정.
+     오프라인·실패 시 로컬값 그대로(폴백). 읽기 전용 — 제출도장 안 찍음. */
+  await applyTodayLiveOverlay(d,data);
 
   let html='';
 
