@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>웰페리온 회원 건의(VOC)</title>
+<!--
+  웰페리온 회원 셀프 VOC 모바일 폼 (QR + 사진) — 로그인 불필요.
+  위치별 QR 의 ?loc= 파라미터로 위치 자동 프리필.
+  제출 → VOC 전용 GAS voc_submit (POST · 사진 base64 본문).
+  ⚠️ GM 액션: VOC 전용 GAS 배포 후 아래 VOC_API placeholder 를 /exec URL 로 교체.
+-->
+<style>
+:root{--bg:#221F20;--paper:#2a2725;--text:#f5f2ef;--dim:#8c8b83;--accent:#B79F8A;--accent-bg:rgba(183,159,138,0.12);--border:#3d3835;--green:#6abf7b;--green-bg:rgba(106,191,123,0.12);--red:#ED5B3F;--blue:#5b9fd5;--orange:#e6944e}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.6;font-size:16px;min-height:100vh;-webkit-text-size-adjust:100%}
+.wrap{max-width:520px;margin:0 auto;padding:28px 18px 60px}
+.brand{text-align:center;margin-bottom:22px}
+.brand .logo{font-size:13px;font-weight:700;letter-spacing:2px;color:var(--accent)}
+.brand h1{font-size:23px;font-weight:700;margin:8px 0 6px;letter-spacing:-0.5px}
+.brand p{font-size:13.5px;color:var(--dim);line-height:1.6}
+.card{background:var(--paper);border:1px solid var(--border);border-radius:16px;padding:20px 18px;margin-bottom:16px}
+.field{margin-bottom:18px}
+.field:last-child{margin-bottom:0}
+label.fl{display:block;font-size:14px;font-weight:700;color:var(--accent);margin-bottom:9px}
+label.fl .opt{font-size:12px;font-weight:500;color:var(--dim);margin-left:4px}
+.types{display:grid;grid-template-columns:repeat(2,1fr);gap:9px}
+.type-btn{padding:14px 10px;border:1.5px solid var(--border);border-radius:12px;background:var(--bg);color:var(--text);font-size:15px;font-weight:600;font-family:inherit;cursor:pointer;transition:all .15s;text-align:center}
+.type-btn.active{border-color:var(--accent);background:var(--accent-bg);color:var(--accent)}
+input[type=text],textarea,select{width:100%;background:var(--bg);border:1.5px solid var(--border);color:var(--text);padding:13px 14px;border-radius:12px;font-size:15px;font-family:inherit;line-height:1.5}
+input[type=text]:focus,textarea:focus,select:focus{outline:none;border-color:var(--accent)}
+textarea{min-height:120px;resize:vertical}
+select{appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'><path fill='%238c8b83' d='M1 1l5 5 5-5'/></svg>");background-repeat:no-repeat;background-position:right 14px center}
+.photo-zone{border:1.5px dashed var(--border);border-radius:12px;padding:18px;text-align:center;cursor:pointer;transition:border-color .15s}
+.photo-zone:hover{border-color:var(--accent)}
+.photo-zone .ph-icon{font-size:30px;margin-bottom:6px}
+.photo-zone .ph-text{font-size:14px;color:var(--dim)}
+.photo-zone input[type=file]{display:none}
+.preview{margin-top:12px;display:none}
+.preview img{width:100%;max-height:280px;object-fit:cover;border-radius:12px;border:1px solid var(--border)}
+.preview .rm{display:inline-block;margin-top:8px;font-size:13px;color:var(--red);cursor:pointer;font-weight:600}
+.submit{width:100%;padding:16px;background:var(--accent);color:#fff;border:none;border-radius:14px;font-size:16px;font-weight:700;font-family:inherit;cursor:pointer;margin-top:4px}
+.submit:disabled{opacity:.5;cursor:not-allowed}
+.note{font-size:12.5px;color:var(--dim);text-align:center;margin-top:14px;line-height:1.6}
+.toast{position:fixed;top:24px;left:50%;transform:translateX(-50%) translateY(-120px);background:var(--green);color:#fff;padding:12px 22px;border-radius:12px;font-size:14px;font-weight:700;z-index:50;transition:transform .3s;box-shadow:0 6px 20px rgba(0,0,0,.3);max-width:90%;text-align:center}
+.toast.show{transform:translateX(-50%) translateY(0)}
+.toast.err{background:var(--red)}
+.done{display:none;text-align:center;padding:40px 20px}
+.done .dot{font-size:52px;margin-bottom:14px}
+.done h2{font-size:22px;font-weight:700;margin-bottom:10px}
+.done p{font-size:14.5px;color:var(--dim);line-height:1.7;margin-bottom:22px}
+.done .again{padding:13px 26px;background:var(--accent-bg);color:var(--accent);border:1px solid var(--accent);border-radius:12px;font-size:14px;font-weight:700;font-family:inherit;cursor:pointer}
+.loc-chip{display:inline-block;margin-top:6px;padding:4px 12px;background:var(--accent-bg);color:var(--accent);border-radius:20px;font-size:13px;font-weight:600}
+</style>
+</head>
+<body>
+<div class="toast" id="toast"></div>
+
+<div class="wrap" id="formWrap">
+  <div class="brand">
+    <div class="logo">WELLPERION</div>
+    <h1>건의·불편 접수</h1>
+    <p>회원님의 소중한 의견을 들려주세요.<br>담당 부서가 신속히 확인·처리합니다.</p>
+    <div class="loc-chip" id="locChip" style="display:none"></div>
+  </div>
+
+  <div class="card">
+    <div class="field">
+      <label class="fl">어떤 내용인가요?</label>
+      <div class="types" id="typeGroup">
+        <button type="button" class="type-btn" data-type="분실물">🔍 분실물</button>
+        <button type="button" class="type-btn" data-type="시설불편">🛠️ 시설 불편</button>
+        <button type="button" class="type-btn" data-type="청결">🧹 청결</button>
+        <button type="button" class="type-btn" data-type="기타">💬 기타</button>
+      </div>
+    </div>
+
+    <div class="field">
+      <label class="fl">위치 <span class="opt">(어디였나요?)</span></label>
+      <input type="text" id="loc" placeholder="예: 2층 락커룸, 수영장, 주차장 …" autocomplete="off">
+    </div>
+
+    <div class="field">
+      <label class="fl">상세 내용</label>
+      <textarea id="content" placeholder="불편하셨던 점이나 건의 사항을 자유롭게 적어주세요."></textarea>
+    </div>
+
+    <div class="field">
+      <label class="fl">사진 첨부 <span class="opt">(선택)</span></label>
+      <label class="photo-zone" for="photo">
+        <div class="ph-icon">📷</div>
+        <div class="ph-text">사진을 촬영하거나 선택하세요</div>
+        <input type="file" id="photo" accept="image/*" capture="environment">
+      </label>
+      <div class="preview" id="preview">
+        <img id="previewImg" alt="첨부 사진 미리보기">
+        <div><span class="rm" id="removePhoto">✕ 사진 삭제</span></div>
+      </div>
+    </div>
+
+    <div class="field">
+      <label class="fl">연락처 <span class="opt">(선택 · 답변 받으실 경우)</span></label>
+      <input type="text" id="contact" placeholder="휴대폰 번호 또는 회원명" autocomplete="off" inputmode="tel">
+    </div>
+  </div>
+
+  <button class="submit" id="submitBtn">접수하기</button>
+  <p class="note">접수해 주셔서 감사합니다. 처리 결과는 (연락처 입력 시) 안내드립니다.<br>웰페리온 — 하이엔드 프라이빗 스포츠클럽</p>
+</div>
+
+<div class="wrap done" id="doneWrap">
+  <div class="dot">✅</div>
+  <h2>접수가 완료되었습니다</h2>
+  <p>소중한 의견 감사합니다.<br>담당 부서가 빠르게 확인하겠습니다.</p>
+  <button class="again" id="againBtn">새 건의 접수하기</button>
+</div>
+
+<script>
+(function(){
+  // ⚠️ GM 액션: VOC 전용 GAS 배포 후 아래 URL 을 /exec 주소로 교체.
+  //    배포 전(placeholder)에는 제출 시 안내 메시지만 표시(라이브 깨짐 방지).
+  var VOC_API = '__VOC_GAS_EXEC_URL__';
+
+  var selectedType = '';
+  var photoData = '';      // data:image/...;base64,... (FileReader 결과)
+  var photoMime = 'image/jpeg';
+  var photoName = '';
+
+  function $(id){ return document.getElementById(id); }
+  function toast(msg, isErr){
+    var t = $('toast');
+    t.textContent = msg;
+    t.className = 'toast show' + (isErr ? ' err' : '');
+    setTimeout(function(){ t.className = 'toast' + (isErr ? ' err' : ''); }, 2600);
+  }
+
+  // QR ?loc= 프리필
+  try {
+    var qLoc = new URLSearchParams(location.search).get('loc');
+    if (qLoc) {
+      $('loc').value = qLoc;
+      var chip = $('locChip');
+      chip.textContent = '📍 ' + qLoc;
+      chip.style.display = 'inline-block';
+    }
+  } catch (e) {}
+
+  // 유형 선택
+  $('typeGroup').addEventListener('click', function(ev){
+    var btn = ev.target.closest('.type-btn');
+    if (!btn) return;
+    Array.prototype.forEach.call(this.querySelectorAll('.type-btn'), function(b){ b.classList.remove('active'); });
+    btn.classList.add('active');
+    selectedType = btn.getAttribute('data-type');
+  });
+
+  // 사진 선택 → base64 (FileReader)
+  $('photo').addEventListener('change', function(ev){
+    var f = ev.target.files && ev.target.files[0];
+    if (!f) return;
+    if (f.size > 12 * 1024 * 1024) { toast('사진이 너무 큽니다 (12MB 이하)', true); this.value = ''; return; }
+    photoMime = f.type || 'image/jpeg';
+    photoName = f.name || 'voc_photo.jpg';
+    var reader = new FileReader();
+    reader.onload = function(e){
+      photoData = e.target.result;            // data:...;base64,...
+      $('previewImg').src = photoData;
+      $('preview').style.display = 'block';
+    };
+    reader.readAsDataURL(f);
+  });
+  $('removePhoto').addEventListener('click', function(){
+    photoData = ''; photoName = ''; $('photo').value = '';
+    $('preview').style.display = 'none';
+  });
+
+  // 제출
+  $('submitBtn').addEventListener('click', function(){
+    var content = $('content').value.trim();
+    if (!selectedType && !content) { toast('유형을 선택하거나 내용을 입력해 주세요', true); return; }
+
+    if (VOC_API.indexOf('__VOC') === 0) {
+      toast('아직 접수 서버가 연결되지 않았습니다 (관리자 설정 대기)', true);
+      return;
+    }
+
+    var btn = this;
+    btn.disabled = true;
+    btn.textContent = '접수 중…';
+
+    var payload = {
+      action: 'voc_submit',
+      type: selectedType,
+      loc: $('loc').value.trim(),
+      content: content,
+      contact: $('contact').value.trim(),
+      photo: photoData,            // 사진 = POST 본문 base64 (GET 쿼리 유실 방어)
+      fileName: photoName,
+      mimeType: photoMime
+    };
+
+    fetch(VOC_API, {
+      method: 'POST',
+      redirect: 'follow',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // GAS CORS 단순요청 회피
+      body: JSON.stringify(payload)
+    })
+    .then(function(r){ return r.json(); })
+    .then(function(res){
+      if (res && res.ok) {
+        $('formWrap').style.display = 'none';
+        $('doneWrap').style.display = 'block';
+        window.scrollTo(0, 0);
+      } else {
+        toast((res && res.error) || '접수에 실패했습니다. 다시 시도해 주세요.', true);
+        btn.disabled = false; btn.textContent = '접수하기';
+      }
+    })
+    .catch(function(){
+      toast('네트워크 오류 — 다시 시도해 주세요.', true);
+      btn.disabled = false; btn.textContent = '접수하기';
+    });
+  });
+
+  // 새 건의
+  $('againBtn').addEventListener('click', function(){
+    selectedType = ''; photoData = ''; photoName = '';
+    Array.prototype.forEach.call(document.querySelectorAll('.type-btn'), function(b){ b.classList.remove('active'); });
+    $('content').value = ''; $('contact').value = '';
+    $('photo').value = ''; $('preview').style.display = 'none';
+    var btn = $('submitBtn'); btn.disabled = false; btn.textContent = '접수하기';
+    $('doneWrap').style.display = 'none';
+    $('formWrap').style.display = 'block';
+    window.scrollTo(0, 0);
+  });
+})();
+</script>
+</body>
+</html>
