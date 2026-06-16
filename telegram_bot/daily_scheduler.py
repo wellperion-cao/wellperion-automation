@@ -1848,6 +1848,28 @@ def main():
     )
     logger.info("ig_publish_verify_sweep 등록 완료 (30분 주기) — 발행검증대기→발행완료 자동")
 
+    # ── ERP 시스템 현황 발행 (30분 주기) — 서버 상태를 ERP가 읽게 push — CTO 2026-06-16 ──
+    def _publish_erp_status():
+        try:
+            subprocess.run(
+                [sys.executable, "scripts/erp_status_publisher.py", "--push"],
+                cwd=str(BASE.parent), timeout=150,
+                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+            )
+            logger.info("erp_status_publisher 실행 완료 (시스템 현황 ERP 발행)")
+        except Exception as e:
+            logger.error(f"erp_status_publisher 실행 실패: {e}")
+
+    scheduler.add_job(
+        _publish_erp_status,
+        trigger=IntervalTrigger(minutes=30),
+        id="erp_status_publisher",
+        misfire_grace_time=600,
+        coalesce=True,
+        next_run_time=datetime.now(),
+    )
+    logger.info("erp_status_publisher 등록 완료 (30분 주기) — 시스템 현황 ERP 발행")
+
     if args.test:
         logger.info("=== 테스트 모드 시작: 1시간 주기 ===")
         scheduler.add_job(
