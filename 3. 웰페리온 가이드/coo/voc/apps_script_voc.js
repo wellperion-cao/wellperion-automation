@@ -53,9 +53,20 @@ function _vJson(obj) {
     .setMimeType(ContentService.MimeType.JSON);
 }
 
+// ─── 스프레드시트 확보 ───
+// 독립형(standalone) 웹앱으로 배포 시 getActiveSpreadsheet()는 null을 반환하므로
+// ScriptProperties 'SPREADSHEET_ID' 로 openById() 한다.
+// GM 액션: 프로젝트 설정 → 스크립트 속성 → SPREADSHEET_ID = VOC 데이터를 넣을 시트의 ID
+//   (시트 URL: https://docs.google.com/spreadsheets/d/<여기>/edit  ← 이 부분이 ID)
+function _vGetSpreadsheet() {
+  var ssId = _vprop('SPREADSHEET_ID');
+  if (!ssId) throw new Error('ScriptProperties에 SPREADSHEET_ID 미설정 — 프로젝트 설정 → 스크립트 속성에 추가');
+  return SpreadsheetApp.openById(ssId);
+}
+
 // ─── 시트 확보 (없으면 자동 생성 + 헤더) ───
 function _vGetSheet() {
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var ss = _vGetSpreadsheet();
   var sh = ss.getSheetByName(VOC_SHEET);
   if (sh) {
     // 헤더 누락 시 보강 (빈 시트 안전)
