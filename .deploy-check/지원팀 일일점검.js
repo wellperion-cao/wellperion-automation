@@ -2110,5 +2110,8 @@ function handleSnapshotAppend(body) {
     (body.durationMin != null ? body.durationMin : '')
   ];
   sheet.appendRow(row);
+  // 항상 제출시각(1열) 내림차순 = 최신 최상위 유지 — GM 2026-06-16 시우.
+  var _ls = sheet.getLastRow();
+  if (_ls > 2) sheet.getRange(2, 1, _ls - 1, sheet.getLastColumn()).sort({ column: 1, ascending: false });
   return jsonRes({ ok: true, dept: dept, row: sheet.getLastRow() });
 }

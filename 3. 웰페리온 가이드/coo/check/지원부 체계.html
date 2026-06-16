@@ -2908,7 +2908,7 @@ function renderItem(it,shift,gender,round){
   let _attrLine='';
   if(_ckd&&round){
     const _by=STATE['chkby_'+g+'_'+round+'_'+it.id]||'', _at=STATE['chkat_'+g+'_'+round+'_'+it.id]||'', _du=STATE['chkduty_'+g+'_'+round+'_'+it.id]||'';
-    const _pp=[]; if(_by)_pp.push('점검자 '+esc(_by)); if(_at)_pp.push(_at); if(_du)_pp.push('담당 '+esc(_du));
+    const _pp=[]; if(_by)_pp.push('점검자 '+esc(_by)); if(_at)_pp.push('🕐 '+esc(_at)); if(_du)_pp.push('담당 '+esc(_du));   // 점검시간 라벨 명시(GM 2026-06-16)
     if(_pp.length)_attrLine=`<div class="check-attr" style="font-size:11px;color:#8c8b83;margin:3px 0 0 26px;">✓ ${_pp.join(' · ')}</div>`;
   }
   return `<div class="${cls}">
