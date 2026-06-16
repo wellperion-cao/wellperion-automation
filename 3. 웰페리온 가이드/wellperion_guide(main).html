@@ -5789,43 +5789,7 @@ function crTab(btn, panelId) {
     </script>
     <!-- ══ /시스템 현황 ══ -->
 
-    <!-- ══ 📋 7대 자동화 모듈 (전사 로드맵) — G1에서 이관 (2026-06-06) ══ -->
-    <div style="background:var(--paper);border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:12px;padding:16px 20px;margin:6px 0 20px;">
-      <h3 style="margin-top:0;"><span class="ico">📋</span>7대 자동화 모듈 — 전사 로드맵 (목표)</h3>
-      <p style="font-size:12.5px;color:var(--dim);margin:0 0 10px;">웰페리온 ERP 완성 시 각 모듈이 자동화될 목표입니다. 👑 웰리가 전 모듈을 통합·검수하고 GM은 G1(오늘의 항로)만 봅니다.</p>
-      <table id="g1-modules-table">
-        <tr><th style="width:132px">모듈</th><th>완성 시 자동화</th></tr>
-        <tr><td>👥 회원 (CPO)</td><td>가입·갱신 자동 · 이탈징후 감지→케어 · NPS 자동수집 · 갱신율 추적</td></tr>
-        <tr><td>📡 마케팅 (CMO)</td><td>콘텐츠 초안→슬라이드→3채널 자동발행 · 문의 퍼널 추적 · 전환 매칭</td></tr>
-        <tr><td>🧑‍💻 운영 (COO)</td><td>점검 체크리스트 자동배포 · 이슈 접수→배정→SLA 추적 · 인수인계</td></tr>
-        <tr><td>🖥️ 시설·IT (CTO)</td><td>출입·락커·키오스크 무인화 · 점검 자동알림 · 장애 감지</td></tr>
-        <tr><td>💰 재무 (CFO)</td><td>매출·지출 자동집계 · 이상지출 알림 · 예산 소진율 예측 · 세무일정</td></tr>
-        <tr><td>👨‍💼 인사 (CHRO)</td><td>채용 파이프라인 · 근태 집계 · 온보딩 30-60-90 · 계약만료 알림</td></tr>
-        <tr><td>🧾 업무·결재 (전사)</td><td>업무 등록→결재선 자동산출→승인→완료→결과보고서 자동생성</td></tr>
-      </table>
-      <p style="font-size:12px;color:var(--dim);margin-top:8px;">👑 그 위에 <strong>웰리(오케스트레이터)</strong> — 전 모듈 보고 통합 · 08시 브리핑 · 완료 자동검증 → GM은 G1만.</p>
-    </div>
-    <script>
-    /* 7대 자동화 모듈 — 클릭 편집 + 자동저장(localStorage) (G1→T2 이관 2026-06-06) */
-    (function(){
-      var KEY='G1_MODULES_V1';
-      var tbl=document.getElementById('g1-modules-table');
-      if(!tbl) return;
-      var cells=tbl.querySelectorAll('tr td');
-      if(!cells.length) return;
-      try{ var s=JSON.parse(localStorage.getItem(KEY)||'null');
-        if(s && s.length===cells.length){ cells.forEach(function(c,i){ c.innerHTML=s[i]; }); }
-      }catch(e){}
-      cells.forEach(function(c){ c.setAttribute('contenteditable','true'); c.style.cursor='text'; });
-      function save(){ var a=[]; cells.forEach(function(c){ a.push(c.innerHTML); }); try{ localStorage.setItem(KEY, JSON.stringify(a)); }catch(e){} }
-      tbl.addEventListener('input', save);
-      var hint=document.createElement('div');
-      hint.style.cssText='font-size:11px;color:var(--accent);margin-top:6px;';
-      hint.textContent='✏️ 칸을 클릭해 바로 편집 · 자동 저장됩니다';
-      if(tbl.parentNode) tbl.parentNode.appendChild(hint);
-    })();
-    </script>
-    <!-- ══ /7대 자동화 모듈 ══ -->
+    <p style="font-size:12px;color:var(--dim);margin:6px 0 14px;">📋 7대 자동화 모듈 <strong>전사 로드맵(목표)</strong> → <strong>S2 공통탭 ▸ 🌟 전사 자동화 로드맵</strong>으로 이관·고도화(2026-06-16). T2는 '지금 도는 현황'만.</p>
     <!-- ── PC·업데이트·창 동작 원리 (접이식) ── -->
     <details class="toggle" style="margin:6px 0 18px;">
       <summary>🖥️ PC·업데이트·창 동작 원리 <span style="color:var(--dim);font-size:12px;font-weight:400;">— 검은 창·자동 업데이트가 왜 그런지 (펼쳐보기)</span></summary>
