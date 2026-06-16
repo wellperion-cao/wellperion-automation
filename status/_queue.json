@@ -1,5 +1,17 @@
 [
   {
+    "task_id": "CMO-2026-06-16-FUNNEL-DASH-OVERHAUL",
+    "clevel": "cmo",
+    "title": "[시모/웰리 직접] 마케팅 현황 대시보드 대개편 — 정보구조 정리·유형별 카드·기간연동·등록 누적추정 정직표기·UI",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-06-16",
+    "processed_at": "2026-06-16",
+    "artifact": "GM CLI 직접 지시 연속 개편(웰리 총괄·디자이너/executor 위임+직접). ①정보구조 일원화: 중복·가짜 섹션 제거(핵심KPI카드·게이지박스·전환단계퍼널[중간단계 데이터부재 가짜]·문의유형별분포 중복·최근변동사항 vanity). 핵심지표=전환흐름(클릭→문의→등록+월목표/페이스 접목). ②날짜 반응 버그 수정: _flow 정규화 도입, 월네비·기간·일/주 모든 경로가 전환흐름 갱신. ③주간/월별추세 디테일 접기(지연로드)로 초기 로드 가속. ④유형별 전환·유형×채널·실시간 클릭현황 최상위 승격. ⑤클릭·문의 기간연동(일/주/월/기간/올해): GAS click_stats·type_channel_breakdown에 from/to 기간필터(클릭로그·문의 시각), .deploy-funnel 라이브 재배포 @22~24(deploymentId 유지=URL보존)·가이드 사본 동기. ⑥등록(전환)=누적·추정 정직표기(전화매칭은 인과증명 아님·기존회원도 잡힘·강습은 등록일 없어 누적), 전환율 기간선택 시 숨김(분모기간·분자누적 불일치 가짜율 방지). ⑦유형별 전환=GM 선호 카드 복원(7유형: 멤버십·성인·유소년+여름특강·공간렌트·비즈파트너·영어, 클릭→문의→등록 라벨+큰숫자 3블록·정직배지). ⑧UI/UX 폴리시. 커밋 다수(1706aef1·73b3d443·fae77448·0ebd2560·95f9c7d9·2970f320·22e06e84·a3a6fa79) push. node 구문·스마트따옴표0·id보존·라이브 기간필터값(문의6138→110) 검증.",
+    "next": "GM Ctrl+Shift+R 후 카드 UI 최종 육안확인·미세조정. 한계: 유형×채널 '등록' 기간별 산출은 등록일 데이터 부재(특히 강습 팀시트)로 불가 → 자체 문의DB(CTO-2026-06-16-SELF-HOSTED-INQUIRY-DB) 구축 전엔 누적·추정 유지."
+  },
+  {
     "task_id": "CTO-2026-06-16-ERP-CONSOLIDATION",
     "clevel": "cto",
     "title": "[시토] ERP 구조 대정리 — 시스템 현황판 신설 + T1~T3 통합·중복 제거·이관로그 삭제·지도",
@@ -19,7 +31,7 @@
     "priority": "NORMAL",
     "enqueued_at": "2026-06-16",
     "summary": "[코드·UI 완성, 라이브는 GM 게이트] GM 아이디어=VOC처럼 회원이 QR+사진 셀프접수+현황 파악. 설계(architect): 기존 구글폼=직원대행·구글로그인강제 → 자체 모바일폼으로. 부품(사진업로드 _uploadFile·현황보드·텔레그램) 재사용. 구축: ①백엔드 coo/voc/apps_script_voc.js(voc_submit POST 사진base64→Drive VOC_Photos→URL→「회원셀프VOC」탭 append+텔레그램알림, voc_list, voc_update) 점검·업무 GAS와 독립 ②모바일폼 coo/voc/voc_mobile_form.html(QR ?loc 프리필·4유형·FileReader base64·로그인X) ③운영부 체계 VOC탭 현황 칸반(접수/처리중/완료·담당배정·상태전환) ④GM가이드 .md. Playwright 렌더검증. 커밋 d3acd0c·27038ec push. ⚠️무인증 변조위험=hidden token/rate-limit 후속.",
-    "next": "★GM 라이브 4단계(가이드 coo/voc/VOC_배포_QR_텔레그램_GM가이드.md): ①신규 GAS에 apps_script_voc.js 붙여 배포→/exec ②URL을 폼·운영부 2곳 __VOC_GAS_EXEC_URL__ 교체 ③텔레그램 토큰 ScriptProperties ④위치별 QR 생성·비치. 그 후 실접수→알림 실측 = 가동완료. 보안 hidden token 후속."
+    "next": "[2026-06-16 배포 시도·웰리 별건 처리 예정] GM이 GAS 배포·/exec 발급(AKfycbwk2X…). 단 **빈 standalone 프로젝트로 배포**돼 getActiveSpreadsheet()=null → voc_list가 'Cannot read getSheetByName' 에러(시트 미바인딩). 엔드포인트 자체는 살아있음(JSON 응답). 수정안: ⓐ코드를 openById(VOC_SHEET_ID) 방식으로 바꿔 현 프로젝트 그대로 살리기(VOC용 시트 1개 생성→ID 코드/스크립트속성에→재배포) 또는 ⓑ구글시트의 확장프로그램→Apps Script로 재생성(자동 바인딩)→재배포·새 /exec. 그 후: URL을 폼·운영부 2곳 __VOC_GAS_EXEC_URL__ 교체 → 텔레그램 토큰 ScriptProperties → 위치별 QR 비치 → 실접수·알림 실측. 보안 hidden token 후속. (apps_script_voc.js 구문 정상 검증됨 — 1행 'Invalid token'은 붙여넣기 사고였음)"
   },
   {
     "task_id": "COO-2026-06-16-OPS-RECEPTION-BOARD-MANUAL",
