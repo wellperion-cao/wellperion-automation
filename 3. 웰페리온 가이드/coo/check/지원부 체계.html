@@ -1284,12 +1284,15 @@ function populateSubmitterDropdowns(){
   populateOneDropdown('submitterF','f');
 }
 
-/* 점검자 = 매번 빈칸 자유입력(GM 2026-06-12): 저장값 복원·옵션 채우기 모두 없음.
-   '담당자(아래)'가 기억 역할을 대신한다. */
+/* 점검자 = 회차별 저장값 복원(GM 2026-06-16: 새로고침 시 사라지던 버그 정합).
+   onSubmitterChangeG가 wcheck_sub_<g>_<rk>·wcheck_sub_last_<g>에 저장 → 같은 키로 복원(_applyRoundActor와 정합).
+   입력 중(IME 조합)엔 건드리지 않아 한글 클로버링 차단. */
 function populateOneDropdown(selId,gender){
   const el=document.getElementById(selId);
   if(!el)return;
-  el.value='';   // 자동복원 끔 — 매 진입 시 빈칸
+  if(document.activeElement===el)return;   // 입력 중엔 미개입(IME 보호)
+  const rk=(typeof getRoundG==='function')?getRoundG(gender):'';
+  el.value=(rk&&localStorage.getItem('wcheck_sub_'+gender+'_'+rk))||localStorage.getItem('wcheck_sub_last_'+gender)||'';
 }
 
 /* 담당자 명단 = 지원부 규정 '실제 운영 근무조'(tab-policy 표)와 일치 유지. GM 2026-06-12.
@@ -1333,7 +1336,8 @@ function populateDutyDropdowns(){
 function populateOneDuty(selId,gender,roster0){
   const el=document.getElementById(selId);
   if(!el)return;
-  const saved=localStorage.getItem('wcheck_duty_'+gender)||'';
+  const rk=(typeof getRoundG==='function')?getRoundG(gender):'';
+  const saved=(rk&&localStorage.getItem('wcheck_duty_'+gender+'_'+rk))||localStorage.getItem('wcheck_duty_last_'+gender)||localStorage.getItem('wcheck_duty_'+gender)||'';   // 회차키 정합(GM 2026-06-16): onDutyChangeG 저장키와 일치 → 새로고침 시 담당자 유지
   const roster=(roster0||DUTY_ROSTER)[gender]||[];
   let html='<option value="">담당자 선택</option>';
   roster.forEach(r=>{
