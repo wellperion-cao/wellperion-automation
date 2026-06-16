@@ -2850,8 +2850,13 @@ function persistVendorData(){
   fetch(API_URL,{method:'POST',redirect:'follow',
     headers:{'Content-Type':'text/plain'},
     body:JSON.stringify({action:'vendor_save',vendors:vendorFlatten()})
-  }).then(()=>{if(ind){ind.textContent='업체 저장 완료';setTimeout(()=>{ind.style.display='none'},1500);}})
-    .catch(()=>{if(ind){ind.textContent='업체 저장 (로컬 보관됨)';setTimeout(()=>{ind.style.display='none'},1500);}});
+  }).then(function(r){return r.json();}).then(function(d){
+    if(ind){
+      if(d && d.ok){ ind.textContent='업체 저장 완료'; }
+      else{ ind.textContent='업체 저장 실패 (로컬 보관됨)'; }
+      setTimeout(function(){ind.style.display='none';},1500);
+    }
+  }).catch(()=>{if(ind){ind.textContent='업체 저장 (로컬 보관됨)';setTimeout(()=>{ind.style.display='none'},1500);}});
 }
 
 /* 거래상태 배지 색상 */
