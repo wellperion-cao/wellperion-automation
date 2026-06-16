@@ -468,15 +468,22 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
     </div>
     <div id="lifecycleBanner" style="margin-bottom:12px;padding:10px 14px;border-radius:8px;font-size:12px;font-weight:600;display:none;"></div>
     <div class="field">
-      <label>업무 본문 <span style="font-size:11px;color:var(--dim);font-weight:400;">(한 줄 요약 — 자세한 내용은 기획 섹션)</span></label>
-      <textarea id="fContent" placeholder="이 업무의 한 줄 요약" style="min-height:80px;"></textarea>
+      <label>업무 본문 <span style="font-size:11px;color:var(--dim);font-weight:400;">(한 줄 요약 — 자세한 건 아래 내용 섹션)</span></label>
+      <textarea id="fContent" placeholder="이 업무의 한 줄 요약" style="min-height:240px;"></textarea>
     </div>
     <div class="field" id="fPlanField" style="background:var(--blue-bg);padding:14px 16px;border-radius:10px;border:1px solid rgba(91,159,213,0.35);">
       <label style="display:flex;align-items:center;justify-content:space-between;color:var(--blue);font-weight:700;margin-bottom:8px;">
-        <span>📋 기획 <span style="font-size:11px;color:var(--dim);font-weight:400;">(목적·범위·해결 전략·실행 계획)</span></span>
+        <span>📋 내용 <span style="font-size:11px;color:var(--dim);font-weight:400;">(목적·범위·해결 전략·실행 계획)</span></span>
         <span id="fPlanLockBadge" style="font-size:11px;color:var(--dim);font-weight:500;"></span>
       </label>
-      <textarea id="fPlan" placeholder="4섹션 기획 (간단한 업무는 비워둬도 OK)&#10;목적 — &#10;범위 — &#10;해결 전략 — &#10;실행 계획 —" style="min-height:350px;line-height:1.6;background:var(--paper);border:1px solid var(--border);"></textarea>
+      <textarea id="fPlan" placeholder="4섹션 내용 (간단한 업무는 비워둬도 OK)&#10;목적 — &#10;범위 — &#10;해결 전략 — &#10;실행 계획 —" style="min-height:350px;line-height:1.6;background:var(--paper);border:1px solid var(--border);"></textarea>
+    </div>
+    <div class="field" id="fMeetingField" style="display:none;background:var(--blue-bg);padding:14px 16px;border-radius:10px;border:1px solid rgba(91,159,213,0.35);">
+      <label style="display:flex;align-items:center;justify-content:space-between;color:var(--blue);font-weight:700;margin-bottom:8px;">
+        <span>📋 회의 내용 <span style="font-size:11px;color:var(--dim);font-weight:400;">(참석자별 정리 — 담당자·협조 담당자 선택 시 칸 자동 생성)</span></span>
+        <span id="fMeetingLockBadge" style="font-size:11px;color:var(--dim);font-weight:500;"></span>
+      </label>
+      <div id="fMeetingNotes"></div>
     </div>
     <div class="field" style="background:var(--green-bg);padding:12px 14px;border-radius:8px;border:1px solid rgba(106,191,123,0.3);">
       <label style="display:flex;align-items:center;justify-content:space-between;color:var(--green);font-weight:700;">
@@ -1532,7 +1539,7 @@ function renderTaskCard(t, idx) {
 
   if (parsed.plan) {
     html += '<div style="margin-top:10px;padding:10px 12px;background:var(--blue-bg);border:1px solid rgba(91,159,213,0.3);border-radius:8px;">';
-    html += '<div style="font-size:12px;font-weight:700;color:var(--blue);margin-bottom:4px;">📋 기획</div>';
+    html += '<div style="font-size:12px;font-weight:700;color:var(--blue);margin-bottom:4px;">📋 내용</div>';
     html += '<div style="font-size:13px;white-space:pre-wrap;line-height:1.5;">' + esc(parsed.plan) + '</div></div>';
   }
 
@@ -1640,11 +1647,11 @@ function renderDoneCard(t) {
   // 내용 토글 — 본문·기획·진척·결과 열람
   const hasDetail = p.body || p.plan || (p.logs && p.logs.length) || p.result;
   if (hasDetail) {
-    const lbl = [p.body ? '본문' : null, p.plan ? '기획' : null, (p.logs && p.logs.length) ? '진척 ' + p.logs.length : null, p.result ? '결과' : null].filter(Boolean).join(' · ');
+    const lbl = [p.body ? '본문' : null, p.plan ? '내용' : null, (p.logs && p.logs.length) ? '진척 ' + p.logs.length : null, p.result ? '결과' : null].filter(Boolean).join(' · ');
     html += '<div class="detail-toggle" onclick="toggleDetail(this)" style="font-size:11px;color:var(--dim);margin-top:8px;padding-top:8px;border-top:1px dashed var(--border);"><span class="arrow">&#9654;</span> ' + lbl + '</div>';
     html += '<div class="detail-body" style="margin-top:8px;">';
     if (p.body) html += '<div style="font-size:13px;white-space:pre-wrap;line-height:1.55;color:var(--text);">' + esc(p.body) + '</div>';
-    if (p.plan) html += '<div style="margin-top:8px;padding:8px 10px;background:var(--blue-bg);border:1px solid rgba(91,159,213,0.3);border-radius:8px;"><div style="color:var(--blue);font-size:12px;font-weight:700;margin-bottom:3px;">📋 기획</div><div style="font-size:13px;white-space:pre-wrap;line-height:1.55;">' + esc(p.plan) + '</div></div>';
+    if (p.plan) html += '<div style="margin-top:8px;padding:8px 10px;background:var(--blue-bg);border:1px solid rgba(91,159,213,0.3);border-radius:8px;"><div style="color:var(--blue);font-size:12px;font-weight:700;margin-bottom:3px;">📋 내용</div><div style="font-size:13px;white-space:pre-wrap;line-height:1.55;">' + esc(p.plan) + '</div></div>';
     if (p.logs && p.logs.length) {
       html += '<div style="margin-top:8px;font-size:12px;font-weight:700;color:var(--accent);">📅 진척 로그</div>';
       p.logs.forEach(l => { html += '<div style="display:flex;gap:8px;align-items:flex-start;padding:6px 10px;border-left:3px solid var(--accent);background:var(--accent-bg);border-radius:6px;margin:6px 0;"><span style="font-size:12px;font-weight:700;color:var(--accent);min-width:88px;flex-shrink:0;">' + esc(l.date) + '</span><span style="flex:1;font-size:13px;line-height:1.45;white-space:pre-wrap;word-break:break-word;">' + esc(l.text) + '</span></div>'; });
@@ -1937,10 +1944,10 @@ function applyLifecycleLocks(task) {
   const labels = {
     free:      { text: '① 자유 — 모든 섹션 편집 가능',                bg: 'var(--accent-bg)', fg: 'var(--accent)' },
     approval:  { text: '② 결재 진행 중 — 진척 로그 작성 가능, 결과보고만 잠금', bg: 'var(--yellow-bg)', fg: 'var(--yellow)' },
-    execution: { text: '③ 결재 완료 — 진척 로그 활성, 기획·예산 잠금', bg: 'var(--green-bg)',  fg: 'var(--green)' },
+    execution: { text: '③ 결재 완료 — 진척 로그 활성, 내용·예산 잠금', bg: 'var(--green-bg)',  fg: 'var(--green)' },
     result:    { text: '④ 결과보고 작성 단계 — 결과보고만 편집',       bg: 'var(--purple-bg)', fg: 'var(--purple)' },
     closed:    { text: '⑤ 업무 종료 — 모든 섹션 read-only',           bg: 'var(--paper)',     fg: 'var(--dim)' },
-    rejected:  { text: '❌ 반려 — 기획·예산 보완 후 재상신 가능',      bg: 'var(--red-bg)',    fg: 'var(--red)' }
+    rejected:  { text: '❌ 반려 — 내용·예산 보완 후 재상신 가능',      bg: 'var(--red-bg)',    fg: 'var(--red)' }
   };
   const banner = document.getElementById('lifecycleBanner');
   if (banner) {
@@ -1969,6 +1976,8 @@ function applyLifecycleLocks(task) {
   };
   setLock('fContent', locks.body);
   setLock('fPlan',    locks.plan,   'fPlanLockBadge');
+  _planLocked = locks.plan;
+  if (typeof isMeetingCat === 'function' && isMeetingCat()) renderMeetingNotes();
   setLock('progressLogInput', locks.progress);
   setLock('progressLogDate',  locks.progress);
   setLock('fResult',  locks.result, 'fResultLockBadge');
@@ -2051,6 +2060,8 @@ function openAddModal() {
   document.getElementById('fResult').value = '';
   updateBudgetRoute();
   applyLifecycleLocks(null);  // 신규 = free stage
+  _meetingNotes = {};
+  syncMeetingMode();
   document.getElementById('modalSaveBtn').textContent = '저장';
   document.getElementById('taskModal').classList.add('show');
 }
@@ -2073,15 +2084,107 @@ const ALL_TEMPLATE_VALUES = Object.values(CATEGORY_TEMPLATES).map(s => s.trim())
 function onCategoryChange() {
   const cat = document.getElementById('fCategory').value;
   const tpl = CATEGORY_TEMPLATES[cat];
-  if (!tpl) return;
-  const content = document.getElementById('fContent');
-  const cur = content.value.trim();
-  // 비어있거나, 다른 양식만 들어있는 경우 → 새 양식으로 교체. 작성자 입력은 보존.
-  if (!cur || ALL_TEMPLATE_VALUES.includes(cur)) {
-    content.value = tpl;
-    content.focus();
+  if (tpl) {
+    const content = document.getElementById('fContent');
+    const cur = content.value.trim();
+    // 비어있거나, 다른 양식만 들어있는 경우 → 새 양식으로 교체. 작성자 입력은 보존.
+    if (!cur || ALL_TEMPLATE_VALUES.includes(cur)) {
+      content.value = tpl;
+      content.focus();
+    }
   }
+  syncMeetingMode();
 }
+
+/* ───── 회의 카테고리: 참석자별 회의 내용 칸 (2026-06-16 GM) ─────
+   카테고리=[9] 회의 → 일반 '내용' 칸 숨기고, 담당자+협조 담당자별 칸 자동 생성.
+   저장 시 "◆ 이름" 헤더로 묶어 기존 plan 필드에 보관(파싱 호환). */
+const MEETING_CAT = '[9] 회의';
+var _meetingNotes = {};        // { 참석자명: 내용 }
+var _meetingRenderNames = [];  // 현재 렌더된 칸 순서
+var _planLocked = false;       // applyLifecycleLocks가 갱신
+function isMeetingCat() {
+  return document.getElementById('fCategory').value === MEETING_CAT;
+}
+function meetingParticipants() {
+  const out = [];
+  const push = csv => (csv ? csv.split(',') : []).forEach(n => { n = n.trim(); if (n && out.indexOf(n) < 0) out.push(n); });
+  push(getCheckboxValues('fOwnerGroup'));
+  push(getCheckboxValues('fCollabGroup'));
+  return out;
+}
+function _syncMeetingDom() {
+  document.querySelectorAll('#fMeetingNotes textarea[data-idx]').forEach(ta => {
+    const nm = _meetingRenderNames[Number(ta.dataset.idx)];
+    if (nm != null) _meetingNotes[nm] = ta.value;
+  });
+}
+function renderMeetingNotes() {
+  _syncMeetingDom();
+  const parts = meetingParticipants();
+  // 참석자 + (내용은 있는데 참석 해제된 사람)도 표시해 유실 방지
+  const extra = Object.keys(_meetingNotes).filter(n => (_meetingNotes[n] || '').trim() && parts.indexOf(n) < 0);
+  _meetingRenderNames = parts.concat(extra);
+  const box = document.getElementById('fMeetingNotes');
+  if (!box) return;
+  if (!_meetingRenderNames.length) {
+    box.innerHTML = '<div style="font-size:12px;color:var(--dim);padding:8px 2px;">담당자·협조 담당자를 먼저 선택하면 참석자별 회의 내용 칸이 생깁니다.</div>';
+    return;
+  }
+  const ro = _planLocked ? ' readonly' : '';
+  const roStyle = _planLocked ? 'opacity:0.55;cursor:not-allowed;' : '';
+  box.innerHTML = _meetingRenderNames.map((nm, i) => {
+    const off = parts.indexOf(nm) < 0 ? ' <span style="font-size:10px;color:var(--red);font-weight:500;">(참석 해제됨)</span>' : '';
+    return '<div style="margin-bottom:10px;">' +
+      '<label style="display:block;font-size:12px;font-weight:700;color:var(--blue);margin-bottom:4px;">🙋 ' + esc(nm) + off + '</label>' +
+      '<textarea data-idx="' + i + '"' + ro + ' placeholder="' + esc(nm) + ' 회의 내용·발언·담당 액션" style="width:100%;min-height:90px;line-height:1.6;background:var(--paper);border:1px solid var(--border);color:var(--text);padding:10px 12px;border-radius:8px;font-size:14px;font-family:inherit;box-sizing:border-box;resize:vertical;' + roStyle + '"></textarea>' +
+      '</div>';
+  }).join('');
+  _meetingRenderNames.forEach((nm, i) => {
+    const ta = box.querySelector('textarea[data-idx="' + i + '"]');
+    if (ta) ta.value = _meetingNotes[nm] || '';
+  });
+}
+function syncMeetingMode() {
+  const meeting = isMeetingCat();
+  const pf = document.getElementById('fPlanField');
+  const mf = document.getElementById('fMeetingField');
+  if (pf) pf.style.display = meeting ? 'none' : '';
+  if (mf) mf.style.display = meeting ? '' : 'none';
+  const badge = document.getElementById('fMeetingLockBadge');
+  if (badge) badge.textContent = _planLocked ? '🔒 잠금' : '✏️ 편집 가능';
+  if (meeting) renderMeetingNotes();
+}
+function _parseMeetingNotes(planText) {
+  // "◆ 이름" 헤더로 구분된 회의록 → {이름: 내용}
+  const map = {};
+  if (!planText) return map;
+  let cur = null, buf = [];
+  const flush = () => { if (cur != null) map[cur] = buf.join('\n').replace(/^\n+|\n+$/g, ''); };
+  String(planText).split('\n').forEach(line => {
+    const m = line.match(/^◆\s+(.+?)\s*$/);
+    if (m) { flush(); cur = m[1].trim(); buf = []; }
+    else if (cur != null) buf.push(line);
+  });
+  flush();
+  return map;
+}
+function _composeMeetingPlan() {
+  _syncMeetingDom();
+  const parts = meetingParticipants();
+  const names = parts.concat(Object.keys(_meetingNotes).filter(n => (_meetingNotes[n] || '').trim() && parts.indexOf(n) < 0));
+  const blocks = [];
+  names.forEach(nm => {
+    const txt = (_meetingNotes[nm] || '').trim();
+    if (txt) blocks.push('◆ ' + nm + '\n' + txt);
+  });
+  return blocks.join('\n\n');
+}
+// 담당자·협조 담당자 체크 변경 시 회의 칸 즉시 갱신
+['fOwnerGroup', 'fCollabGroup'].forEach(gid => {
+  const g = document.getElementById(gid);
+  if (g) g.addEventListener('change', () => { if (isMeetingCat()) renderMeetingNotes(); });
+});
 
 function openEditModal(id) {
   const t = ALL_TASKS.find(x => x.id === id);
@@ -2118,6 +2221,8 @@ function openEditModal(id) {
   setCheckboxGroup('fApprovalGroup', (t.approval || '').split(',').map(s => s.trim()));
   updateBudgetRoute();
   applyLifecycleLocks(t);  // 단계 기반 잠금 적용
+  _meetingNotes = _parseMeetingNotes(parsed.plan);
+  syncMeetingMode();
   document.getElementById('modalSaveBtn').textContent = '수정';
   document.getElementById('taskModal').classList.add('show');
 }
@@ -2304,7 +2409,7 @@ async function saveTask() {
   const budgetAmt = Number(document.getElementById('fBudgetAmount').value) || 0;
   const budget = (budgetCat && budgetAmt > 0) ? { category: budgetCat, amount: budgetAmt } : null;
   // 기획·결과보고 (선택 항목)
-  const planText = document.getElementById('fPlan').value;
+  const planText = isMeetingCat() ? _composeMeetingPlan() : document.getElementById('fPlan').value;
   const resultText = document.getElementById('fResult').value;
   const collabRaw = getCheckboxValues('fCollabGroup');
   const collabArr = collabRaw ? collabRaw.split(',').map(s => s.trim()).filter(Boolean) : [];
