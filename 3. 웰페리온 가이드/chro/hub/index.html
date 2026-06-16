@@ -759,7 +759,9 @@ function renderDash(){
   var html=diagCard();
 
   html+='<div class="sec-title">핵심 지표</div><div class="kpi-grid">';
-  html+=kpi("재직 인원",active.length+'<small> 명</small>',"수습 "+probation.length+"명 포함");
+  var __uniqActive=(function(){var s={};active.forEach(function(e){var n=(e["성명"]||e["이름"]||"").toString().trim();if(n)s[n]=1;});return Object.keys(s).length;})();
+  var __dupN=active.length-__uniqActive;
+  html+=kpi("재직 인원",__uniqActive+'<small> 명</small>',"수습 "+probation.length+"명 포함"+(__dupN>0?" · 겸직중복 "+__dupN+"명 제외":""));
   html+=kpi("진행 중 채용",activeHire.length+'<small> 건</small>',"공고~처우협의 단계");
   html+=kpi("지원자 풀",appl.length+'<small> 명</small>',"최종 합격 대기 "+finalPass+"명");
   html+=kpi("온보딩 완료율",obRate+'<small> %</small>',obDone+" / "+onbo.length+" 항목");
@@ -1530,7 +1532,7 @@ function finishLoad(){
   document.getElementById("syncMeta").textContent=
     "마지막 동기화 "+now.getFullYear()+"-"+p2(now.getMonth()+1)+"-"+p2(now.getDate())+" "+
     p2(now.getHours())+":"+p2(now.getMinutes())+" · 6개 DB 중 "+ok+"개 정상"+
-    (DB.emp.length?" · 재직 "+DB.emp.filter(function(e){return e["재직 상태"]!=="퇴사";}).length+"명":"");
+    (DB.emp.length?" · 재직 "+(function(){var s={};DB.emp.filter(function(e){return e["재직 상태"]!=="퇴사";}).forEach(function(e){var n=(e["성명"]||e["이름"]||"").toString().trim();if(n)s[n]=1;});return Object.keys(s).length;})()+"명":"");
   var saved="dash";
   try{var s=localStorage.getItem("wp_hr_tab");if(s&&TABS.some(function(t){return t.id===s;}))saved=s;}catch(e){}
   showTab(saved);
