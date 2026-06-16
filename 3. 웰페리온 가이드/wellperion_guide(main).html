@@ -3913,7 +3913,7 @@
               <tr><td>매일 08:00</td><td>AI CEO 통합 보고 (ceo_morning_pipeline.py)</td></tr>
               <tr><td>매주 월 09:00</td><td>AI 교육자료 자동 정리 (education_archive_weekly.py)</td></tr>
               <tr><td>승인 시 (on-demand)</td><td>인스타 검수 승인 → 발행 엔진 1회 호출 (ig_review_publish_watcher.py · 구 120초 폴링 2026-06-03 폐기, 봇 콜백 전환 완료)</td></tr>
-              <tr><td>PC 종료</td><td>예약작업 자동 종료 (Auto-Shutdown · 00:30) — 별도 greeting 스크립트 없음</td></tr>
+              <tr><td>PC 켜고끔</td><td>05:50 자동 ON · 00:30 자동 종료 — 상세 정본 = T2 ▸ 지금 돌고 있는 자동화</td></tr>
             </table>
             <h4><span class="ico">✨</span>STEP 4 · 고도화 진단 (Improve)</h4>
             <ul>
@@ -5837,13 +5837,13 @@ function crTab(btn, panelId) {
       <tr><td><strong>18:00</strong></td><td>회사</td><td>⑥ 오후 점검+퇴근</td><td>COO 체크앱 박스표 + 퇴근 인사</td></tr>
       <tr><td><strong>21:00</strong></td><td>개인&amp;회사</td><td>⑦ 최종 정리+내일 항로점</td><td>오늘 완료 요약 + 내일 이어받을 PENDING 브릿지 확인</td></tr>
       <tr><td><strong>22:00</strong></td><td>개인</td><td>⑧ 취침·전자기기 OFF + 하루 마무리 인사</td><td>북극성 + <code>quotes.json</code> 22시대 핵심 동기부여 명언 · 취침 루틴 + <strong>하루 마무리(종료) 인사 통합</strong>(구 22:25 별도 종료인사 폐지·여기로 합침)</td></tr>
-      <tr><td><strong>23:00</strong></td><td>회사</td><td>⑨ 마감 점검</td><td>COO 체크앱 지원부·시설부·주차 마감 박스표 대시보드 (PC 23:30 종료 전 발송)</td></tr>
+      <tr><td><strong>23:00</strong></td><td>회사</td><td>⑨ 마감 점검</td><td>COO 체크앱 지원부·시설부·주차 마감 박스표 대시보드 (PC 00:30 종료 전 발송)</td></tr>
     </table>
       </td></tr>
       <tr><td>🟢 <strong>07:30</strong></td><td>IG AI시리즈 제작·검수카드</td><td>CMO</td><td>다음 편 자동 제작 → M5 검수큐 등록 → 텔레그램 [✅승인]/[❌반려] 카드 발송. <strong>발행은 [✅승인] 탭에서만</strong>(무폴링). 안전판: <code>큐레이션_추천.md</code> 자동생성 · 소진 시 생성 중지</td></tr>
       <tr><td>🟢 <strong>08:00</strong></td><td>CEO 통합보고</td><td>AI CEO</td><td><code>ceo_morning_pipeline.py</code> — 전날 정리·오늘 업무·이슈 3섹션 텔레그램 발송</td></tr>
       <tr><td>🟢 <strong>22:00</strong></td><td>C-Level 진행 체크</td><td>AI CEO</td><td>일일 C-Level 진행현황 자동 점검</td></tr>
-      <tr><td>🟢 <strong>23:30</strong></td><td>PC 자동 종료</td><td>CTO</td><td>Auto-Shutdown-2330 (<code>shutdown.exe /s /f /t 0</code>) — PC 종료. 22:30→23:30 변경(2026-06-08 GM)으로 23:00 마감점검 슬롯 발송 환경 확보. <strong>종료 인사는 22:00 취침 슬롯에 통합</strong>(별도 22:25 Shutdown-Greeting 예약작업 제거).</td></tr>
+      <tr><td>🟢 <strong>00:30</strong></td><td>PC 자동 종료</td><td>CTO</td><td>Auto-Shutdown-2330 (<code>shutdown.exe /s /f /t 0</code>) — PC 종료. 22:30 조기종료 사고 후 <strong>00:30로 단일화</strong>(2026-06-16). 자정 전 23:00 마감점검까지 발송 후 종료. <strong>종료 인사는 22:00 취침 슬롯에 통합.</strong></td></tr>
     </table>
 
     
