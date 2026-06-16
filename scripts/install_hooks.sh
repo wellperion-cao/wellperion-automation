@@ -16,3 +16,10 @@ chmod +x "$HOOKS_DIR/pre-commit"
 
 echo "[install_hooks] pre-commit hook 설치 완료."
 echo "[install_hooks] 확인: $HOOKS_DIR/pre-commit"
+
+# post-commit hook 복사 + 실행권한 (커밋 직후 origin 자동 push · INC-006)
+cp "$SCRIPTS_DIR/post-commit.hook" "$HOOKS_DIR/post-commit"
+chmod +x "$HOOKS_DIR/post-commit"
+
+echo "[install_hooks] post-commit hook 설치 완료."
+echo "[install_hooks] 확인: $HOOKS_DIR/post-commit"

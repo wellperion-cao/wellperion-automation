@@ -1,0 +1,47 @@
+#!/bin/sh
+# post-commit.hook — 커밋 직후 origin 자동 push (약속 L13 코드 박제 · 2026-06-17 AI CTO)
+# 설치 위치: .git/hooks/post-commit  (install_hooks.sh 로 설치)
+#
+# 【배경 / INC-006】
+#   자동 커밋 8건이 origin 에 push 되지 않아(커밋만 하고 안 올림) 라이브 M5
+#   검수페이지가 ~2.5h stale → AI17 검수요청이 라이브에 미반영. 약속 L13
+#   "고치면 바로 올린다"가 사람 약속에만 있고 기계에 없었다. 본 훅이 그 약속을
+#   모든 커밋 경로의 단일 초크포인트로 코드화한다.
+#
+# 【동작】
+#   커밋이 만들어진 직후 호출됨. scripts/post_commit_push.py 를 실행해
+#   git_lock 임계구역 안에서 origin/master..HEAD 가 1개+면 push 한다.
+#   push 는 새 커밋을 만들지 않으므로 post-commit 재귀 없음.
+#
+# 【안전 원칙 (fail-open)】
+#   - origin/master..HEAD == 0 → push skip (불필요 push 방지)
+#   - push 타임아웃(30s) → 행(hang) 방지
+#   - 네트워크/업스트림 실패 → 커밋은 이미 성공. 훅은 항상 exit 0
+#     (커밋을 절대 되돌리지 않음). 실패는 logs/git_lock.log 로깅 +
+#     텔레그램 1줄 경고(토큰 직독, 실패해도 무해).
+#   - 파이썬/스크립트 없음 → skip(통과)
+
+REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null)"
+if [ -z "$REPO_ROOT" ]; then
+  exit 0
+fi
+
+PUSHER="$REPO_ROOT/scripts/post_commit_push.py"
+if [ ! -f "$PUSHER" ]; then
+  exit 0
+fi
+
+if command -v python >/dev/null 2>&1; then
+  PYBIN=python
+elif command -v python3 >/dev/null 2>&1; then
+  PYBIN=python3
+else
+  PYBIN=""
+fi
+
+if [ -n "$PYBIN" ]; then
+  PYTHONUTF8=1 "$PYBIN" "$PUSHER" || true
+fi
+
+# 절대 커밋을 막지 않는다.
+exit 0
