@@ -494,7 +494,7 @@
         <tr><td>시스템이 잘 도는지 (현황)</td><td><a href="#" onclick="event.preventDefault();document.querySelector('[data-id=T2]').click();">🖥️ T2 ▸ 시스템 현황</a></td></tr>
         <tr><td>기술 설정·파일 경로 <span style="color:var(--dim);font-size:11px;">· 기술자용</span></td><td><a href="#" onclick="event.preventDefault();document.querySelector('[data-id=T1]').click();">🖥️ T1 기술 인프라</a></td></tr>
         <tr><td>AI 교육(토큰·사용법) <span style="color:var(--dim);font-size:11px;">· 기술자용</span></td><td><a href="#" onclick="event.preventDefault();document.querySelector('[data-id=T3]').click();">📚 T3 교육자료</a></td></tr>
-        <tr><td>프롬프트 (복사·붙여넣기) <span style="color:var(--dim);font-size:11px;">· 기술자용</span></td><td>운영=<a href="#" onclick="event.preventDefault();document.querySelector('[data-id=S2]').click();">S2</a> · 기술=<a href="#" onclick="event.preventDefault();document.querySelector('[data-id=T1]').click();">T1</a> · 교육=<a href="#" onclick="event.preventDefault();document.querySelector('[data-id=T3]').click();">T3</a></td></tr>
+        <tr><td>프롬프트 (복사·붙여넣기) <span style="color:var(--dim);font-size:11px;">· 기술자용</span></td><td>운영=<a href="#" onclick="event.preventDefault();document.querySelector('[data-id=S2]').click();">S2</a> · 기술=<a href="#" onclick="event.preventDefault();document.querySelector('[data-id=T1]').click();">T1</a></td></tr>
         <tr><td>콘텐츠 검수·발행</td><td><a href="#" onclick="event.preventDefault();document.querySelector('[data-id=M5]').click();">🎬 M5 콘텐츠 검수</a></td></tr>
         <tr><td>마케팅 현황</td><td><a href="#" onclick="event.preventDefault();document.querySelector('[data-id=M4]').click();">📡 M4 마케팅 대시보드</a></td></tr>
         <tr><td>부서 운영 체계</td><td><a href="#" onclick="event.preventDefault();document.querySelector('[data-id=O1]').click();">🧑‍💻 O1 운영 통합 체계</a></td></tr>
@@ -3594,7 +3594,7 @@
         <button class="tab-btn" data-tab="token-mid">토큰 절약 중급 23가지</button>
         <button class="tab-btn" data-tab="token-adv">토큰 절약 고급 9가지</button>
         <button class="tab-btn" data-tab="selflearn">자기학습 프로세스</button>
-        <button class="tab-btn" data-tab="g15prompt">교육 프롬프트</button>
+        <button class="tab-btn" data-tab="g15prompt">프롬프트 →T1</button>
       </div>
 
       <!-- ── 탭 1: Claude Code 기본기 (섹션 1 전수) ── -->
@@ -3739,46 +3739,7 @@
       <!-- ── 탭 7: 핵심 프롬프트 ── -->
       <div class="tab-panel" data-panel="g15prompt">
         <h3><span class="ico">🤖</span>핵심 프롬프트 (교육·방법론)</h3>
-        <div class="callout tip" style="margin:8px 0 16px;"><strong>📌 실행 프롬프트는 T1로 이동.</strong> 컨텍스트 정비 실행·자기학습 사이클은 <strong>T1 기술 인프라 상세 ▸ 핵심 프롬프트 ▸ 운영 실행 도구</strong>에서 관리합니다(SSOT). 아래는 교육·범용 방법론 프롬프트만 둡니다.</div>
-
-        <h4>토큰·컨텍스트 효율 점검</h4>
-        <pre style="background:#16181c; color:#e8e8e8; padding:14px 16px; border-radius:8px; font-size:13px; white-space:pre-wrap; line-height:1.7; border-left:3px solid var(--accent);">웰페리온 ERP AI 교육자료 핵심요약 기준으로 현재 작업의 토큰·컨텍스트 효율을 점검해줘.</pre>
-        <h4>비용 절감 설정 적용</h4>
-        <pre style="background:#16181c; color:#e8e8e8; padding:14px 16px; border-radius:8px; font-size:13px; white-space:pre-wrap; line-height:1.7; border-left:3px solid var(--accent);">settings.json의 모델·토큰·컴팩트 설정을 웰페리온 ERP 비용 절감 4줄 기준으로 점검하고 차이를 알려줘.</pre>
-        <h4>플러그인·보안 점검</h4>
-        <pre style="background:#16181c; color:#e8e8e8; padding:14px 16px; border-radius:8px; font-size:13px; white-space:pre-wrap; line-height:1.7; border-left:3px solid var(--accent);">현재 설치된 플러그인 목록과 보안 상태를 점검해줘. ecc-agentshield 기준 5종(시크릿·권한·훅·MCP·에이전트) 체크.</pre>
-
-        <h3 style="margin-top:28px;border-top:1px solid var(--border);padding-top:24px;"><span class="ico">🚀</span>범용 방법론 프롬프트 (Claude Code 작업 원칙)</h3>
-        <p style="font-size:13px;color:var(--dim);">출처: Code with Claude — London 2026. 어떤 프로젝트에서도 쓰는 작업 방식 프롬프트. (조직 운영형 프롬프트 split-brain·메모리·영구화는 S2 운영 프롬프트 ②.)</p>
-        <h4>1. 검증 루프 — 지켜보지 않아도 알아서 일하게</h4>
-        <pre style="background:#16181c; color:#e8e8e8; padding:14px 16px; border-radius:8px; font-size:13px; white-space:pre-wrap; line-height:1.7; border-left:3px solid var(--accent); overflow-x:auto;">앞으로 모든 작업을 "검증 루프" 방식으로 진행해줘.
-1. 작업 시작 전에 "무엇이 나오면 성공인지" 성공 기준을 먼저 정의해 알려줘.
-2. 작업을 실행한 뒤, 네가 직접 결과를 확인해.
-3. 실패하면 에러 원인을 분석해 고치고 다시 시도해.
-4. 성공할 때까지 반복하되, 3회 시도 후에도 안 되면 진행 상황을 정리해 보고해.
-5. 중간 과정은 생략하고 최종 결과만 보고해.
-이 방식을 이번 세션 내내 기본 작업 규칙으로 적용해줘.</pre>
-        <h4>2. 검증 루프 영구화 (Skill로 패키지화)</h4>
-        <pre style="background:#16181c; color:#e8e8e8; padding:14px 16px; border-radius:8px; font-size:13px; white-space:pre-wrap; line-height:1.7; border-left:3px solid var(--accent); overflow-x:auto;">방금 적용한 검증 루프를 재사용 가능한 Skill로 만들어줘.
-- 스킬 이름: verification-loop
-- 앞으로 모든 작업에서 이 스킬이 자동 적용되도록 설정해줘.
-- 작업 중 반복되는 실패 패턴이 발견되면 이 스킬을 스스로 보완·업데이트해줘.</pre>
-        <h4>3. 에러 자가복구 루프</h4>
-        <pre style="background:#16181c; color:#e8e8e8; padding:14px 16px; border-radius:8px; font-size:13px; white-space:pre-wrap; line-height:1.7; border-left:3px solid var(--accent); overflow-x:auto;">앞으로 에러가 발생하면 다음 순서로 스스로 처리해줘.
-1. 에러 메시지를 끝까지 읽고 — 무슨 에러인지 / 어느 파일·어디서 났는지 / 어떻게 고치는지 파악해.
-2. 파악한 해결책을 바로 실행해 수정해.
-3. 최대 3회까지 자가 수정을 시도해.
-4. 3회 후에도 해결되지 않으면 그때 정확한 상황(에러 내용·시도한 것·막힌 지점)을 보고해.
-그리고 우리 코드에서 에러를 출력하는 부분은, 앞으로 "에러 종류 / 위치(파일·줄) / 해결 방법"이 함께 담기도록 점진적으로 개선해줘.</pre>
-        <h4>4. 폴더별 CLAUDE.md 분산 정비</h4>
-        <pre style="background:#16181c; color:#e8e8e8; padding:14px 16px; border-radius:8px; font-size:13px; white-space:pre-wrap; line-height:1.7; border-left:3px solid var(--accent); overflow-x:auto;">우리 프로젝트를 "폴더별 작업 매뉴얼" 구조로 정비해줘.
-거대한 단일 CLAUDE.md 하나에 모든 규칙을 담는 대신, 작업 폴더마다 그 폴더 작업에만 해당하는 규칙을 담은 CLAUDE.md를 두는 방식이야.
-1. 먼저 어떤 폴더에 전용 CLAUDE.md가 필요한지, 각 폴더에 어떤 규칙이 들어가면 좋을지 목록으로 제안해줘.
-2. 내가 승인하면 그때 각 폴더에 CLAUDE.md를 생성해줘.
-루트 CLAUDE.md에는 전사 공통 규칙만 남기는 방향으로.</pre>
-        <div class="card" style="margin-top:20px; border-left:3px solid var(--warm);">
-          <strong>⚠️ GM 목표 반영</strong> — GM은 "깊게 생각·병렬·자동화"를 우선한다. settings.json <code>MAX_THINKING_TOKENS 낮추기</code>는 사고량을 줄이므로 <strong>적용하지 않는다.</strong> 작업량은 "매우 높음" 유지.
-        </div>
+        <div class="callout tip" style="margin:8px 0 16px;"><strong>📌 프롬프트는 T1로 통합했습니다.</strong> 토큰·효율 점검, 검증 루프 등 작업방식 프롬프트는 전부 기술 작업이라 <a href="#" onclick="event.preventDefault();document.querySelector('[data-id=T1]').click();" style="color:var(--accent);font-weight:700;">T1 기술 인프라 ▸ 기술 프롬프트</a>에서 단일 관리합니다(2026-06-16 GM). 이 페이지(T3)는 학습 자료(기본기·토큰절약·자기학습)만 둡니다.</div>
       </div>
 
     </div>
@@ -3961,6 +3922,45 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
         <div style="padding:13px 16px; background:#16181c; border-radius:8px; border-left:3px solid var(--accent);">
           <div style="font-size:12px; font-weight:700; color:var(--accent); margin-bottom:6px;">자기학습 사이클 실행</div>
           <pre style="margin:0; color:#e8e8e8; font-size:12.5px; white-space:pre-wrap; line-height:1.6;">ai_education_auto_learner.py를 실행해서 최신 AI 정보를 수집·요약한 뒤, 각 C-Level R/R 기준으로 고도화 제안을 정리해줘. 제안은 텔레그램으로 GM님께 발송.</pre>
+        </div>
+        <h4 style="margin-top:22px; padding-top:16px; border-top:1px solid var(--border);">📚 교육·효율·방법론 프롬프트 <span style="font-size:12px;color:var(--dim);font-weight:400;">— T3에서 통합 (효율·검증도 기술 작업 · 2026-06-16 GM)</span></h4>
+        <h4>토큰·컨텍스트 효율 점검</h4>
+        <pre style="background:#16181c; color:#e8e8e8; padding:14px 16px; border-radius:8px; font-size:13px; white-space:pre-wrap; line-height:1.7; border-left:3px solid var(--accent);">웰페리온 ERP AI 교육자료 핵심요약 기준으로 현재 작업의 토큰·컨텍스트 효율을 점검해줘.</pre>
+        <h4>비용 절감 설정 적용</h4>
+        <pre style="background:#16181c; color:#e8e8e8; padding:14px 16px; border-radius:8px; font-size:13px; white-space:pre-wrap; line-height:1.7; border-left:3px solid var(--accent);">settings.json의 모델·토큰·컴팩트 설정을 웰페리온 ERP 비용 절감 4줄 기준으로 점검하고 차이를 알려줘.</pre>
+        <h4>플러그인·보안 점검</h4>
+        <pre style="background:#16181c; color:#e8e8e8; padding:14px 16px; border-radius:8px; font-size:13px; white-space:pre-wrap; line-height:1.7; border-left:3px solid var(--accent);">현재 설치된 플러그인 목록과 보안 상태를 점검해줘. ecc-agentshield 기준 5종(시크릿·권한·훅·MCP·에이전트) 체크.</pre>
+
+        <h3 style="margin-top:28px;border-top:1px solid var(--border);padding-top:24px;"><span class="ico">🚀</span>범용 방법론 프롬프트 (Claude Code 작업 원칙)</h3>
+        <p style="font-size:13px;color:var(--dim);">출처: Code with Claude — London 2026. 어떤 프로젝트에서도 쓰는 작업 방식 프롬프트. (조직 운영형 프롬프트 split-brain·메모리·영구화는 S2 운영 프롬프트 ②.)</p>
+        <h4>1. 검증 루프 — 지켜보지 않아도 알아서 일하게</h4>
+        <pre style="background:#16181c; color:#e8e8e8; padding:14px 16px; border-radius:8px; font-size:13px; white-space:pre-wrap; line-height:1.7; border-left:3px solid var(--accent); overflow-x:auto;">앞으로 모든 작업을 "검증 루프" 방식으로 진행해줘.
+1. 작업 시작 전에 "무엇이 나오면 성공인지" 성공 기준을 먼저 정의해 알려줘.
+2. 작업을 실행한 뒤, 네가 직접 결과를 확인해.
+3. 실패하면 에러 원인을 분석해 고치고 다시 시도해.
+4. 성공할 때까지 반복하되, 3회 시도 후에도 안 되면 진행 상황을 정리해 보고해.
+5. 중간 과정은 생략하고 최종 결과만 보고해.
+이 방식을 이번 세션 내내 기본 작업 규칙으로 적용해줘.</pre>
+        <h4>2. 검증 루프 영구화 (Skill로 패키지화)</h4>
+        <pre style="background:#16181c; color:#e8e8e8; padding:14px 16px; border-radius:8px; font-size:13px; white-space:pre-wrap; line-height:1.7; border-left:3px solid var(--accent); overflow-x:auto;">방금 적용한 검증 루프를 재사용 가능한 Skill로 만들어줘.
+- 스킬 이름: verification-loop
+- 앞으로 모든 작업에서 이 스킬이 자동 적용되도록 설정해줘.
+- 작업 중 반복되는 실패 패턴이 발견되면 이 스킬을 스스로 보완·업데이트해줘.</pre>
+        <h4>3. 에러 자가복구 루프</h4>
+        <pre style="background:#16181c; color:#e8e8e8; padding:14px 16px; border-radius:8px; font-size:13px; white-space:pre-wrap; line-height:1.7; border-left:3px solid var(--accent); overflow-x:auto;">앞으로 에러가 발생하면 다음 순서로 스스로 처리해줘.
+1. 에러 메시지를 끝까지 읽고 — 무슨 에러인지 / 어느 파일·어디서 났는지 / 어떻게 고치는지 파악해.
+2. 파악한 해결책을 바로 실행해 수정해.
+3. 최대 3회까지 자가 수정을 시도해.
+4. 3회 후에도 해결되지 않으면 그때 정확한 상황(에러 내용·시도한 것·막힌 지점)을 보고해.
+그리고 우리 코드에서 에러를 출력하는 부분은, 앞으로 "에러 종류 / 위치(파일·줄) / 해결 방법"이 함께 담기도록 점진적으로 개선해줘.</pre>
+        <h4>4. 폴더별 CLAUDE.md 분산 정비</h4>
+        <pre style="background:#16181c; color:#e8e8e8; padding:14px 16px; border-radius:8px; font-size:13px; white-space:pre-wrap; line-height:1.7; border-left:3px solid var(--accent); overflow-x:auto;">우리 프로젝트를 "폴더별 작업 매뉴얼" 구조로 정비해줘.
+거대한 단일 CLAUDE.md 하나에 모든 규칙을 담는 대신, 작업 폴더마다 그 폴더 작업에만 해당하는 규칙을 담은 CLAUDE.md를 두는 방식이야.
+1. 먼저 어떤 폴더에 전용 CLAUDE.md가 필요한지, 각 폴더에 어떤 규칙이 들어가면 좋을지 목록으로 제안해줘.
+2. 내가 승인하면 그때 각 폴더에 CLAUDE.md를 생성해줘.
+루트 CLAUDE.md에는 전사 공통 규칙만 남기는 방향으로.</pre>
+        <div class="card" style="margin-top:20px; border-left:3px solid var(--warm);">
+          <strong>⚠️ GM 목표 반영</strong> — GM은 "깊게 생각·병렬·자동화"를 우선한다. settings.json <code>MAX_THINKING_TOKENS 낮추기</code>는 사고량을 줄이므로 <strong>적용하지 않는다.</strong> 작업량은 "매우 높음" 유지.
         </div>
       </div>
     </div>
