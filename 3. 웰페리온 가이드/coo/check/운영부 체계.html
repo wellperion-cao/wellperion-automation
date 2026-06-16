@@ -403,6 +403,31 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
    #policy-flow는 .board-scroll 그대로라 좁은 폭에선 가로 스크롤·스냅, 컬럼 침범 없음. */
 /* 고정 컬럼(근무휴게)도 JS 컬럼과 동일 폭(인라인 flex로 개별 너비 지정 가능). 모바일(≤560px)은 아래 .board-col 86vw 규칙이 처리하므로 561px↑에서만 고정. */
 @media(min-width:561px){ #policy-flow > .board-col{flex:0 0 410px;min-width:410px;max-width:410px;} }
+
+/* ── 리셉션 업무 섹션 (매뉴얼 탭 · 7항목 보드 + 매뉴얼, 2026-06-16) ── */
+.recep-board{display:flex;flex-wrap:wrap;gap:12px;margin:4px 0 18px}
+.recep-card{flex:1 1 220px;min-width:220px;background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:14px 15px;border-left:4px solid var(--accent);display:flex;flex-direction:column;gap:7px}
+.recep-card.done{border-left-color:var(--green)}
+.recep-card.form{border-left-color:var(--yellow)}
+.recep-card.draft{border-left-color:var(--purple)}
+.recep-card .rc-no{font-size:11px;font-weight:800;color:var(--dim)}
+.recep-card .rc-title{font-size:14.5px;font-weight:800;line-height:1.35}
+.recep-card .rc-meta{display:flex;flex-wrap:wrap;gap:5px;margin-top:auto}
+.recep-badge{font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:10px;white-space:nowrap}
+.recep-badge.owner{background:var(--blue-bg);color:var(--blue)}
+.recep-badge.st-done{background:var(--green-bg);color:var(--green)}
+.recep-badge.st-form{background:var(--yellow-bg);color:var(--yellow)}
+.recep-badge.st-draft{background:var(--purple-bg);color:var(--purple)}
+.recep-badge.wip{background:var(--orange-bg);color:var(--orange)}
+.manual-body table.recep-tbl{width:100%;border-collapse:collapse;margin:8px 0;font-size:12px}
+.manual-body table.recep-tbl td,.manual-body table.recep-tbl th{padding:6px 9px;border:1px solid var(--border);text-align:left;vertical-align:top}
+.manual-body table.recep-tbl th{background:var(--accent-bg);color:var(--accent);font-weight:700}
+.manual-body .src-tag{display:inline-block;font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:8px;margin-left:6px;vertical-align:middle}
+.manual-body .src-tag.sheet{background:var(--green-bg);color:var(--green)}
+.manual-body .src-tag.empty{background:var(--yellow-bg);color:var(--yellow)}
+.manual-body .src-tag.ai{background:var(--purple-bg);color:var(--purple)}
+.manual-body .placeholder-note{background:var(--yellow-bg);border:1px solid rgba(230,200,78,0.35);border-radius:8px;padding:10px 12px;margin:8px 0;font-size:12.5px;color:var(--text);line-height:1.6}
+.manual-body .ai-note{background:var(--purple-bg);border:1px solid rgba(167,139,218,0.35);border-radius:8px;padding:10px 12px;margin:8px 0;font-size:12.5px;color:var(--text);line-height:1.6}
 </style>
 </head>
 <body>
@@ -793,6 +818,266 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
        어느 요일에도 종속되지 않는 '공통 유의사항'만 보드 위 공통 노트로 보존(상단).
        요일별 집중 업무는 각 요일 컬럼의 📋상시·정기(outer) 카드에 흡수, 복장·에티켓은 규정 탭
        복장·용모/응대 태도 표가 정본 — 별도 칸의 모든 절차 텍스트는 다른 단일출처에 보존됨. -->
+
+
+  <!-- ══════════════════════════════════════════════════════════
+       리셉션 업무 (7항목 보드 + 매뉴얼) — 운영부 리셉션 운영 시트 근거.
+       시트 근거 있는 항목만 내용 작성 / 근거 없는 항목은 빈 양식·AI 초안으로 명시(지어내기 금지).
+       근거: 운영부 리셉션 운영 로그 시트(입장기록·휴회·시제금·락커키·락커배치 표).
+       2026-06-16 신설. ══════════════════════════════════════════════════════════ -->
+  <div style="font-size:16px;font-weight:700;color:var(--text);padding:20px 0 4px;margin-top:14px;border-top:1px solid var(--border);">리셉션 업무 <span style="font-size:11px;font-weight:500;color:var(--dim);margin-left:6px;">7항목 보드 + 매뉴얼</span></div>
+  <div class="board-intro">리셉션 7개 업무를 <strong>보드(카드)</strong>로 한눈에 보고, 각 카드 아래 <strong>매뉴얼</strong>을 펼쳐 절차·양식을 확인합니다. 색 테두리 = 상태: <span style="color:var(--green);font-weight:700;">초록=시트 근거로 완성</span> · <span style="color:var(--yellow);font-weight:700;">노랑=빈 양식(입력 대기)</span> · <span style="color:var(--purple);font-weight:700;">보라=AI 초안(GM 검토 전)</span>. <strong>지어낸 내용 없음</strong> — 시트에 없는 항목은 양식 틀·초안임을 명시했습니다.</div>
+
+  <!-- (A) 보드 — 7 업무 카드 -->
+  <div class="recep-board">
+    <div class="recep-card done">
+      <div class="rc-no">업무 1</div>
+      <div class="rc-title">휴회신청 응답 및 반영</div>
+      <div class="rc-meta"><span class="recep-badge owner">담당: 리셉션 전원</span><span class="recep-badge st-done">완성</span></div>
+    </div>
+    <div class="recep-card done">
+      <div class="rc-no">업무 2</div>
+      <div class="rc-title">카드미소지 체크 기록</div>
+      <div class="rc-meta"><span class="recep-badge owner">담당: 리셉션 전원</span><span class="recep-badge st-done">완성</span></div>
+    </div>
+    <div class="recep-card done">
+      <div class="rc-no">업무 3</div>
+      <div class="rc-title">시제금 입출내역 작성</div>
+      <div class="rc-meta"><span class="recep-badge owner">담당: 일마감 근무자</span><span class="recep-badge st-done">완성</span></div>
+    </div>
+    <div class="recep-card done">
+      <div class="rc-no">업무 4</div>
+      <div class="rc-title">락커 키 관리</div>
+      <div class="rc-meta"><span class="recep-badge owner">담당: 리셉션 전원</span><span class="recep-badge st-done">완성</span></div>
+    </div>
+    <div class="recep-card form">
+      <div class="rc-no">업무 5</div>
+      <div class="rc-title">락커 관리 (개인·골프·스쿼시)</div>
+      <div class="rc-meta"><span class="recep-badge owner">담당: 윤병현M</span><span class="recep-badge wip">윤병현M 작업중</span><span class="recep-badge st-form">개인락커만</span></div>
+    </div>
+    <div class="recep-card form">
+      <div class="rc-no">업무 6</div>
+      <div class="rc-title">분실물 관리</div>
+      <div class="rc-meta"><span class="recep-badge owner">담당: 리셉션 전원</span><span class="recep-badge st-form">빈 양식</span></div>
+    </div>
+    <div class="recep-card draft">
+      <div class="rc-no">업무 7</div>
+      <div class="rc-title">리셉션 매뉴얼 (오픈·업무·마감)</div>
+      <div class="rc-meta"><span class="recep-badge owner">담당: 리셉션 전원</span><span class="recep-badge st-draft">AI 초안</span></div>
+    </div>
+  </div>
+
+  <!-- (B) 매뉴얼 — 7항목 아코디언 -->
+
+  <!-- 업무 1: 휴회신청 응답 및 반영 (시트 근거 · 완성) -->
+  <div class="manual-section">
+    <div class="manual-header" onclick="togManual(this)" style="background:var(--green-bg);">
+      <h3 style="color:var(--green);">1. 휴회신청 응답 및 반영 <span class="src-tag sheet">시트 근거 · 완성</span></h3><span class="arrow">&#9654;</span>
+    </div>
+    <div class="manual-body">
+      <span class="manual-label">기록 양식 — 휴회 신청 대장 (12열)</span>
+      <table class="recep-tbl">
+        <tr><th>열</th><th>내용</th></tr>
+        <tr><td>신청일시</td><td>회원이 신청한 날짜·시각 (예: 2026. 1. 2 오후 4:38)</td></tr>
+        <tr><td>성명 / 연락처</td><td>회원명 · 휴대폰</td></tr>
+        <tr><td>휴회 차수</td><td>1회차 / 2회차 / 3회차 / "○회차연장"</td></tr>
+        <tr><td>휴회 시작일 / 만료일</td><td>적용 기간</td></tr>
+        <tr><td>휴회 사유</td><td>여행 · 출장 · 개인사유(개인사정) · 병가 · 수술 등</td></tr>
+        <tr><td>특이사항</td><td>잔여 초과·양도·스포피아 처리·미반영 보정 등 메모</td></tr>
+        <tr><td>담당자</td><td>처리한 리셉션 직원명</td></tr>
+        <tr><td>휴회 일수</td><td>적용 일수 (시작~만료)</td></tr>
+        <tr><td>진행 상황</td><td>적용완료</td></tr>
+        <tr><td>비고</td><td>"적용완" · "유효x" · "유효,문자x" · "문자 발송 ○/○" 등</td></tr>
+      </table>
+      <span class="manual-label">처리 절차 (적용 + 문자발송 2단계)</span>
+      <ul>
+        <li>① 신청 접수 → 회원·차수·기간·사유 확인 후 시스템에 <strong>휴회 적용</strong> → 진행상황 "적용완료"</li>
+        <li>② <strong>안내 문자 발송</strong> → 비고에 "적용완" / 문자 발송일 기록 ("유효,문자x"는 문자 미발송 표시)</li>
+      </ul>
+      <span class="manual-label">규칙 (시트 특이사항 칸에서 확인된 운영 기준)</span>
+      <ul>
+        <li><strong>잔여 초과 신청</strong>: 잔여 회차/일수를 넘기면 "가능한 일수만큼" 적용 후 안내</li>
+        <li><strong>최소 휴회</strong>: 7일 단위 안내 (예: "휴회 최소 7일 안내")</li>
+        <li><strong>사전 신청</strong>: 휴회 원하는 날 또는 전날에 미리 신청하도록 안내</li>
+        <li><strong>양도 회원권</strong>: 이전 회원의 휴회 사용 여부 확인 후 적용</li>
+        <li><strong>스포피아 회원권</strong>은 별도 휴회 처리 / 누락분은 보정 적용</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- 업무 2: 카드미소지 체크 기록 (시트 근거 · 완성) -->
+  <div class="manual-section">
+    <div class="manual-header" onclick="togManual(this)" style="background:var(--green-bg);">
+      <h3 style="color:var(--green);">2. 카드미소지 체크 기록 <span class="src-tag sheet">시트 근거 · 완성</span></h3><span class="arrow">&#9654;</span>
+    </div>
+    <div class="manual-body">
+      <span class="manual-label">기록 위치 — 입장(방문) 기록표의 분류값</span>
+      <ul>
+        <li>전용 표가 따로 있지 않고, <strong>입장 기록표</strong>의 <strong>입장사유 = "3. 카드미소지(수동발권)"</strong> 분류로 기록합니다.</li>
+      </ul>
+      <span class="manual-label">입장 기록표 컬럼</span>
+      <table class="recep-tbl">
+        <tr><th>열</th><th>내용</th></tr>
+        <tr><td>날짜 / 회원명 / 연락처</td><td>방문 회원</td></tr>
+        <tr><td>입장사유</td><td>1.무료체험예약 · 2.일일입장 · <strong>3.카드미소지(수동발권)</strong> · 4.회원권 관련 · 5.강습 관련 · 6.기타 · 7.초대권</td></tr>
+        <tr><td>성별 / 락커번호</td><td>발권한 락커 번호</td></tr>
+        <tr><td>입장시간 / 담당자</td><td>발권 시각 · 직원명</td></tr>
+        <tr><td>비고</td><td><strong>"수동발권"</strong> 명기 (필요 시 "운동시작일 변경" 등 부가 메모)</td></tr>
+        <tr><td>초대권 NO</td><td>초대권 입장 시에만</td></tr>
+      </table>
+      <span class="manual-label">규칙</span>
+      <ul>
+        <li>회원이 출입카드를 소지하지 않은 경우 <strong>수동 발권</strong> → 입장사유 3번으로 기록, 비고에 "수동발권" 표기.</li>
+        <li>카드미소지 건만 따로 모으려면 입장기록에서 <strong>사유=3 필터</strong>로 추출.</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- 업무 3: 시제금 입출내역 작성 (시트 근거 · 완성) -->
+  <div class="manual-section">
+    <div class="manual-header" onclick="togManual(this)" style="background:var(--green-bg);">
+      <h3 style="color:var(--green);">3. 시제금 입출내역 작성 <span class="src-tag sheet">시트 근거 · 완성</span></h3><span class="arrow">&#9654;</span>
+    </div>
+    <div class="manual-body">
+      <span class="manual-label">표 ① 입출금 원장</span>
+      <table class="recep-tbl">
+        <tr><th>열</th><th>내용</th></tr>
+        <tr><td>날짜 / 담당자(확인)</td><td>처리일 · 직원명</td></tr>
+        <tr><td>입금 [회원명·종목·금액]</td><td>종목 예: wsc수영/골프/체조/스쿼시 · 일일입장 · PT · PL · 줌바 · 회원권 · 양도비 · 락카비 · 단기회원권</td></tr>
+        <tr><td>출금 [내역·금액]</td><td>주로 "관리부입금"(일 단위 매출 상납) · 환불 등</td></tr>
+        <tr><td>잔액 [금액]</td><td>입출 반영 누적 잔액</td></tr>
+        <tr><td>비고</td><td>수표·거스름돈·환불 메모 등</td></tr>
+      </table>
+      <span class="manual-label">표 ② 돈통(시재) 권종 카운트 — 일마감</span>
+      <ul>
+        <li>권종별 매수 기록: <strong>오만원권·만원권·오천원권·천원권·오백원·&lt;묶음 오백원×40개=2만원&gt;·백원·오십원·십원</strong> → <strong>도합</strong> 자동 합산</li>
+        <li><strong>기준 시재 = ₩303,000</strong> 유지. 불일치 시 <strong>차액</strong> 칸에 +/- 기록 (예: "-₩205,200 강습 환불건", "+₩205,200 관리부에서 전달받음")</li>
+      </ul>
+      <span class="manual-label">규칙</span>
+      <ul>
+        <li><strong>일 단위 마감 카운트</strong> — 담당자 교대 시 권종 실물 카운트 후 도합·차액 기록.</li>
+        <li><strong>환불</strong>은 시제금에서 우선 전달 → 이후 <strong>관리부가 보충</strong>("시제금 채움")해 기준 시재 ₩303,000 복원.</li>
+        <li>매출 입금분은 출금 "관리부입금"으로 상납.</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- 업무 4: 락커 키 관리 (시트 근거 · 완성) -->
+  <div class="manual-section">
+    <div class="manual-header" onclick="togManual(this)" style="background:var(--green-bg);">
+      <h3 style="color:var(--green);">4. 락커 키 관리 <span class="src-tag sheet">시트 근거 · 완성</span></h3><span class="arrow">&#9654;</span>
+    </div>
+    <div class="manual-body">
+      <span class="manual-label">기록 양식 — 키 분실·고장 대장 (남/여/고장 분리)</span>
+      <table class="recep-tbl">
+        <tr><th>구분</th><th>컬럼</th></tr>
+        <tr><td>남 / 여</td><td>키번호 · 날짜 · 분실자 · 결제유무 · 비고</td></tr>
+        <tr><td>고장</td><td>키번호 · 키유무 (남·여 각 옆에 별도 칸)</td></tr>
+      </table>
+      <span class="manual-label">값·상태 (시트 실제 사용값)</span>
+      <ul>
+        <li><strong>결제유무</strong>: O(분실료 결제) / 공란 / "수동발권" / "기록없음" / "키분실료결제"</li>
+        <li><strong>고정키</strong>(고정 배정): 특정 회원 전용 — 예: 회장님 사모님 18 · 윤선하 181 · 유후문 38 → "고정키사용"</li>
+        <li><strong>리셉션보관</strong>: 골프만 치는 회원 등 키 미사용 → 리셉션 보관 / "락커 원래 사용 안 함" 회원은 발권 후 키 미사용 시 리셉션에 알려달라 요청</li>
+        <li><strong>고장 키</strong>: 교체 처리 (예: "26.6.15 교체완료") · 전일분실 등 비고 기록</li>
+      </ul>
+      <span class="manual-label">회수 절차</span>
+      <ul>
+        <li>분실 키 발생 → 대장 기록(분실자·결제유무) → <strong>키 회수 여부·회수일자</strong> 비고에 기록.</li>
+        <li>"키분실료 납부 / 회수 완료" 회수 체크표로 회수 완결 관리.</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- 업무 5: 락커 관리 (개인락커만 시트 근거 / 골프·스쿼시 플레이스홀더) -->
+  <div class="manual-section">
+    <div class="manual-header" onclick="togManual(this)" style="background:var(--yellow-bg);">
+      <h3 style="color:var(--yellow);">5. 락커 관리 (개인·골프·스쿼시) <span class="src-tag sheet">개인락커: 시트 근거</span> <span class="recep-badge wip" style="margin-left:4px;">윤병현M 작업중</span></h3><span class="arrow">&#9654;</span>
+    </div>
+    <div class="manual-body">
+      <span class="manual-label">개인락커 — 시트 근거 (배치도 기반)</span>
+      <ul>
+        <li><strong>배치도</strong>: 락커 번호별 그리드에 회원명 배치(1~408대). 우측에 <strong>번호 · 회원명 · 만기일 · 연락처 · 비고</strong> 만기 관리 컬럼.</li>
+        <li><strong>만기 라벨</strong>: "이용가능" · "만기" · "만기 D-10" · "만기+20 - 라카 빼기" · "특별" · "잠금" · "대기" · "강제오픈" · "만지지 말 것"</li>
+        <li><strong>강제오픈 표</strong>: 락커번호 · 등록일 · 이름 · 키유무(o/x) · 비고("강제오픈"·"결제 완료"·"결제 거부"·"반환완료")</li>
+        <li><strong>희망 라카 신청표</strong>: 신청일 · 성함 · 현재번호 · 희망번호 · 비고</li>
+        <li><strong>라카 회수표</strong>: 성함 · 현재번호 (만기·해지 회수)</li>
+        <li><strong>위치변경 신청표</strong>: 신청일 · 성함 · 희망사유&요구 · 현재 라카 위치 · 희망번호 · 비고(예: "3배수/무릎 안좋음", "어깨 안좋아 중간 선호" → "배정완료/164번완료" 처리기록)</li>
+        <li><strong>개인물품 회수</strong>: "개인물품 있음 회수 안내 연락" · "물품 프론트(○번) 뒤 보관중" 메모</li>
+      </ul>
+      <div class="placeholder-note">
+        <strong>골프 락커 · 스쿼시 락커</strong> — 운영부 리셉션 시트에 <strong>전용 표가 없습니다</strong>(본문 "스쿼시"는 모두 강습 종목 데이터일 뿐). 아래는 입력 대기 양식 틀입니다. <strong>윤병현M 작업중 · 실무 입력 대기</strong> — 임의 작성 금지.
+        <table class="recep-tbl" style="margin-top:8px;">
+          <tr><th>제안 컬럼(골프/스쿼시 락커)</th><th>비고</th></tr>
+          <tr><td>락커 번호</td><td>입력 대기</td></tr>
+          <tr><td>회원명 / 연락처</td><td>입력 대기</td></tr>
+          <tr><td>배정일 / 만기일</td><td>입력 대기</td></tr>
+          <tr><td>상태(이용가능·만기·회수)</td><td>입력 대기</td></tr>
+          <tr><td>비고</td><td>입력 대기</td></tr>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- 업무 6: 분실물 관리 (시트 근거 없음 · 빈 양식) -->
+  <div class="manual-section">
+    <div class="manual-header" onclick="togManual(this)" style="background:var(--yellow-bg);">
+      <h3 style="color:var(--yellow);">6. 분실물 관리 <span class="src-tag empty">빈 양식 · 입력 대기</span></h3><span class="arrow">&#9654;</span>
+    </div>
+    <div class="manual-body">
+      <div class="placeholder-note">
+        운영부 리셉션 시트에 <strong>분실물 관리 표·절차가 존재하지 않습니다</strong>. 아래는 <strong>빈 양식 틀(제안)</strong>일 뿐이며 내용은 채우지 않았습니다 — <strong>실무·GM 입력 대기</strong>. 임의 작성 금지.
+      </div>
+      <span class="manual-label">제안 양식 — 분실물 대장(빈 틀)</span>
+      <table class="recep-tbl">
+        <tr><th>컬럼</th><th>내용(입력 대기)</th></tr>
+        <tr><td>접수일자</td><td>　</td></tr>
+        <tr><td>품목 / 특징</td><td>　</td></tr>
+        <tr><td>습득 장소</td><td>　</td></tr>
+        <tr><td>보관 위치</td><td>　 (제안: 보관함 위치·번호 규칙 입력 필요)</td></tr>
+        <tr><td>보관 기한</td><td>　 (제안: 보관 기간·폐기 기준 입력 필요)</td></tr>
+        <tr><td>인계/반환 절차</td><td>　 (제안: 회원 확인 방법·반환 기록 입력 필요)</td></tr>
+        <tr><td>담당자 / 처리상태</td><td>　</td></tr>
+      </table>
+      <span class="manual-label">입력이 필요한 항목 (GM·실무)</span>
+      <ul>
+        <li>보관 위치(보관함·프론트 위치), 보관 기한·폐기 기준, 회원 인계·반환 절차, 대장 운용 방식 — 전부 미정.</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- 업무 7: 리셉션 매뉴얼(오픈·업무·마감) (시트 근거 없음 · AI 초안) -->
+  <div class="manual-section">
+    <div class="manual-header" onclick="togManual(this)" style="background:var(--purple-bg);">
+      <h3 style="color:var(--purple);">7. 리셉션 매뉴얼 (오픈·업무·마감) <span class="src-tag ai">AI 초안 · GM 검토 전</span></h3><span class="arrow">&#9654;</span>
+    </div>
+    <div class="manual-body">
+      <div class="ai-note">
+        운영부 리셉션 시트에 <strong>오픈/업무/마감 매뉴얼·체크리스트 문서가 없습니다</strong>. 아래는 위 1~5번 업무 로그에서 <strong>역산한 AI 초안(발의)</strong>입니다 — <strong>확정된 절차가 아니며, GM 검토 후 확정</strong>합니다. 사실로 단정 금지.
+      </div>
+      <span class="manual-label">🌅 오픈 (AI 초안)</span>
+      <ul>
+        <li>후문 출입카드 불출 세팅 (돈통 보관 카드 확인)</li>
+        <li>돈통 시재 <strong>₩303,000</strong> 권종 카운트로 확인</li>
+        <li>당일 예약·방문 일정 확인 / 카운터·비품 점검</li>
+      </ul>
+      <span class="manual-label">🌇 업무 중 (AI 초안)</span>
+      <ul>
+        <li>입장 발권 · <strong>카드미소지 시 수동발권</strong>(입장사유 3번 기록)</li>
+        <li>휴회 신청 접수·반영 + 안내 문자 발송</li>
+        <li>락커 발권·회수, 키 분실·고장 대장 기록</li>
+        <li>입금 발생 시 시제금 입출 원장 기록</li>
+      </ul>
+      <span class="manual-label">🌙 마감 (AI 초안)</span>
+      <ul>
+        <li>시제금 권종 카운트 → 도합·<strong>차액</strong> 기록</li>
+        <li>매출분 <strong>관리부 입금</strong> 처리</li>
+        <li>락커 키 회수 점검 / 분실·미회수 키 확인</li>
+        <li>카운터 정리 · 잠금 확인 후 마감 보고</li>
+      </ul>
+      <p style="font-size:12px;color:var(--purple);font-weight:700;margin-top:6px;">※ 위 절차는 GM 검토 후 확정됩니다. 시간·담당·세부 체크포인트는 실무 입력 필요.</p>
+    </div>
+  </div>
 
 
 <script>
