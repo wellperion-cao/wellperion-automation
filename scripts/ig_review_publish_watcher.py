@@ -470,6 +470,26 @@ def dispatch_publish(it: dict, events: list) -> None:
             events.append(f"📦 {title}: 카카오 수동 업로드 대기(GM) — {reason}")
 
     else:
+        # [계정 가드 2026-06-16] IG 교차발행 차단 — 공식 콘텐츠가 account 누락으로 개인계정에
+        # (또는 그 반대로) 잘못 발행되는 것을 구조적으로 막는다. 발행기 기본 폴백=namuk.wellperion(개인)이라
+        # 공식 채널은 account='wellperion'을 명시해야만 발행. (GM 지시 박제)
+        channel = it.get("channel", "")
+        account_l = (it.get("account", "") or "").strip()
+        effective = account_l or "namuk.wellperion"  # 발행기 미지정 시 폴백 계정
+        mismatch = None
+        if "공식" in channel and effective != "wellperion":
+            mismatch = f"공식 채널인데 발행계정='{effective}' (개인계정 폴백 위험)"
+        elif "namuk" in channel and effective == "wellperion":
+            mismatch = "개인 채널인데 발행계정='wellperion' (공식 오발행 위험)"
+        if mismatch:
+            it["status"] = "발행보류(계정확인)"
+            it["note"] = f"[계정 가드] {mismatch} — review_queue 의 account 를 채널에 맞게 지정 후 재승인."
+            telegram(
+                f"⛔ [계정 가드] {title}\n{mismatch}\n"
+                f"교차발행 방지로 발행을 막았습니다. review_queue 의 account 를 바로잡고 다시 [승인]하세요."
+            )
+            events.append(f"⛔ {title}: 계정 가드 발동 — {mismatch}")
+            return
         # 기존 IG 경로 — publish_item 결과(URL, exit code) 기준으로 성공 판정
         url, rc = publish_item(it)
         if url:
