@@ -1917,39 +1917,124 @@ function handleWeekly(params) {
 // action=today_live — 오늘 실시간 점검 현황(읽기 전용·제출도장 안 찍음)
 // GET ?action=today_live&dept=support[&date=YYYY-MM-DD]
 // 분자(done): cr 회차원장(키 '<round>_<id>')을 회차버킷(am/pm/close/night)별로 카운트 — 남/여/공용 합산.
-//   round→bucket: 라운드키 끝 숫자 제거('am1'→'am','pm1'→'pm','close1'→'close') 후 _shiftBucket 동일규칙.
-// 분모(total) P2 rev: 매뉴얼 스케줄 전체(그날 요일 기준 고정) — 시작 안 한 회차도 포함. 2026-06-16 GM 확정.
-//   소스: 지원부 체계.html WEEKDAY/WEEKEND×NIGHT_WEEKDAY/NIGHT_WEEKEND + DAY_FOCUS(요일별 동적) + custom items.
-//   led.seen은 폐기(분모로 쓰지 않음). seen 적립 코드는 _updateCheckLedger에 남아있어도 무해.
-// ⚠ 쓰기 경로 무변경 — sub(제출도장) 절대 안 찍음(거짓 대량제출 사고 회피). support 한정.
+// 분모(total): 지원_매뉴얼 시트 + ROUND_MAP(GAS 내장) 기반 — 클라 _roundProgress와 동일 단일출처.
+//   시트항목 id → ROUND_MAP(하드코딩) 우선, 없으면 시트 rounds 컬럼. gender 필터 동일 적용.
+//   DAY_FOCUS(요일별 pm가산)도 반영. 하드코딩 상수 없음 — 시트 변경 즉시 반영.
+// ⚠ sub(제출도장) 절대 안 찍음. support 한정.
 // 응답: { ok, dept, date, am, pm, close, night, amTotal, pmTotal, closeTotal, nightTotal, total, done, pct, byGender:{m,f,all:{...}} }
 // ════════════════════════════════════════════
 
-// 회차키(am1/pm1/close1/night…) → 완료율 버킷(am/pm/close/night). _shiftBucket과 동일 규칙 재사용.
-// 끝 숫자([1] 등) 제거해 'am'/'pm'/'close'/'night'로 만든 뒤 기존 _shiftBucket에 위임(규칙 단일화).
+// 회차키(am1/pm1/close1/night1…) → 버킷(am/pm/close/night).
 function _roundBucket(roundKey) {
   var base = String(roundKey == null ? '' : roundKey).replace(/[0-9\[\]]+$/, '');
   return _shiftBucket(base);
 }
 
-// ─── 매뉴얼 스케줄 고정 분모 상수 ───────────────────────────────────────────
-// 출처: 지원부 체계.html WEEKDAY/WEEKEND×NIGHT_WEEKDAY/NIGHT_WEEKEND + custom items(op1,op2,cls1-8)
-// custom items: op1,op2(gender=all,am1)→+2 am 남/녀 각각; cls1-8(gender=all,close1)→+8 close 남/녀 각각.
-// 산출 기준: collectDashboardData 동일 로직(am=shift:am, pm=shift:pm|all+DAY_FOCUS, close=slot에'마감'포함, night=nightSched).
-// 'all' shift 항목은 am·pm 양쪽 카운트. DAY_FOCUS는 요일별 가변이므로 BASE는 DAY_FOCUS 제외 고정값.
-// WEEKDAY BASE (DAY_FOCUS 제외): m{am:26,pm:15,close:11,night:14} / f{am:25,pm:14,close:11,night:14}
-// WEEKEND BASE (DAY_FOCUS 제외): m{am:21,pm:12,close:11,night:14} / f{am:21,pm:12,close:11,night:14}
-// DAY_FOCUS 항목수(모두 gender=all → m/f 동일 추가): {0:3,1:4,2:5,3:2,4:4,5:4,6:4}
-var _TL_SCHED_BASE = {
-  weekday: { m: { am: 26, pm: 15, close: 11, night: 14 }, f: { am: 25, pm: 14, close: 11, night: 14 } },
-  weekend: { m: { am: 21, pm: 12, close: 11, night: 14 }, f: { am: 21, pm: 12, close: 11, night: 14 } }
+// ─── ROUND_MAP: 항목ID → 등장 라운드키 배열(클라 지원부 체계.html ROUND_MAP과 동일). ───
+// 단일출처: 클라 ROUND_MAP 변경 시 여기도 동기화 필요(주석으로 명시).
+// ⚠ 이 맵에 없는 항목은 시트 rounds 컬럼 폴백 → 시트에서 관리되는 신규 항목 자동 포함.
+var _TL_ROUND_MAP = {
+  a1:['am1','pm1','close1'], a2:['am1','pm1','close1'], a3:['am1','pm1','close1'],
+  b1:['am1','pm1','close1'], b2:['am1','pm1','close1'], b3:['am1','pm1','close1'],
+  b4_f:['am1','pm1','close1'], b4_m:['am1','pm1','close1'],
+  b5:['am1','pm1','close1'], b6:['am1','pm1','close1'],
+  c1a:['am1'], c1b:['am1'], c1c:['am1'],
+  c1:['am1','pm1','close1'], c2:['am1','pm1','close1'], c3:['am1','pm1','close1'],
+  c4:['am1','pm1','close1'], c5:['am1','pm1','close1'], c6:['am1','pm1','close1'],
+  c7:['am1','pm1','close1'], c8:['am1','pm1','close1'], c9:['am1','pm1','close1'],
+  c10:['am1','pm1','close1'],
+  d1:['am1','pm1','close1'], d2:['am1','pm1','close1'], d3:['am1','pm1','close1'],
+  e1:['am1','pm1','close1'],
+  cls1:['close1'], cls2:['close1'], cls3:['close1']
+  // op1,op2,cls4-8,b7,d4,d5,e2 등 마스터 rounds 필드 우선(시트 컬럼) — ROUND_MAP에 없으면 시트 폴백
 };
-// DAY_FOCUS 항목수 — 요일(0=일~6=토). 모두 gender=all이므로 m/f 동일하게 pm에 추가.
-var _TL_DAY_FOCUS_CNT = { 0: 3, 1: 4, 2: 5, 3: 2, 4: 4, 5: 4, 6: 4 };
+// DAY_FOCUS 항목수 — 요일(0=일~6=토), close1 버킷에 가산(클라 _roundProgress close1 분기와 동일).
+// gender 필터 적용(클라 shouldShowItemForGender 동일): all항목은 m/f 모두, 특정 gender는 해당만.
+// 화요일(2): all×4 + m×1 → m=5,f=4 / 수요일(3): all×1 + m×1 → m=2,f=1 / 금요일(5): all×3 + f×1 → m=3,f=4
+var _TL_DAY_FOCUS_CNT = {
+  0: { m: 3, f: 3 },
+  1: { m: 4, f: 4 },
+  2: { m: 5, f: 4 },
+  3: { m: 2, f: 1 },
+  4: { m: 4, f: 4 },
+  5: { m: 3, f: 4 },
+  6: { m: 4, f: 4 }
+};
+// 야간 항목수 — NIGHT_WEEKDAY/NIGHT_WEEKEND 배열(클라 JS 전용, 시트 없음)의 gender별 고정값.
+// NIGHT_WEEKDAY=14(m/f 동일), NIGHT_WEEKEND=14(m/f 동일). 야간 배열 변경 시 여기도 동기화.
+var _TL_NIGHT_CNT = { weekday: { m: 14, f: 14 }, weekend: { m: 14, f: 14 } };
+
+// ─── 분모 계산: 시트에서 항목 읽어 round×gender 카운트 ───────────────────────
+// 클라 _roundProgress(d,g,rk)와 동일 로직:
+//   itemRounds(it) = ROUND_MAP[id] 우선, 없으면 시트 rounds 컬럼, 없으면 [] (shadow 항목은 ROUND_MAP이 결정).
+//   gender 필터: item.gender==='all' 또는 gender와 일치.
+//   DAY_FOCUS: close1 버킷에 DAY_FOCUS_CNT[dow]만큼 가산(gender=all → m/f 각각).
+function _countTodaySchedule(dept, dow) {
+  var cnt = { m: { am: 0, pm: 0, close: 0, night: 0 }, f: { am: 0, pm: 0, close: 0, night: 0 } };
+  var isWeekend = (dow === 0 || dow === 6);
+
+  // 시트 전 항목 읽기 (shadow + added 포함)
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName(SHEET_ITEMS);
+  if (!sheet) return cnt;
+  var last = sheet.getLastRow();
+  if (last < 2) return cnt;
+  var vals = sheet.getRange(2, 1, last - 1, Math.max(12, sheet.getLastColumn())).getValues();
+
+  vals.forEach(function (row) {
+    var id      = String(row[0] || '').trim();
+    var gender  = String(row[4] || 'all').trim() || 'all';
+    var dayType = String(row[ITEM_SCHED_COL] == null ? '' : row[ITEM_SCHED_COL]).trim();   // '일정' 컬럼
+    var deptVal = _itemDept(row[ITEM_DEPT_COL]);
+    var roundsRaw = String(row[ITEM_ROUNDS_COL] == null ? '' : row[ITEM_ROUNDS_COL]).trim(); // '회차' 컬럼
+
+    if (!id) return;
+    if (deptVal !== 'support') return;   // 지원부 항목만
+
+    // dayType 필터: 빈값/'both'=항상 표시, 'weekday'=평일만, 'weekend'=주말만
+    if (dayType && dayType !== 'both') {
+      if (dayType === 'weekday' && isWeekend) return;
+      if (dayType === 'weekend' && !isWeekend) return;
+    }
+
+    // gender 목록
+    var glist = (gender === 'all') ? ['m', 'f'] : [gender];
+
+    // 이 항목이 속한 라운드 키 배열: ROUND_MAP 우선, 없으면 시트 rounds 컬럼
+    var rounds;
+    if (_TL_ROUND_MAP[id]) {
+      rounds = _TL_ROUND_MAP[id];
+    } else if (roundsRaw) {
+      rounds = roundsRaw.split(',').map(function (s) { return s.trim(); }).filter(Boolean);
+    } else {
+      rounds = [];   // ROUND_MAP에도 없고 rounds도 없으면 제외(미분류)
+    }
+
+    rounds.forEach(function (rk) {
+      var bk = _roundBucket(rk);
+      if (cnt.m[bk] === undefined) return;   // 미인식 버킷 무시
+      glist.forEach(function (g) {
+        if (cnt[g]) cnt[g][bk]++;
+      });
+    });
+  });
+
+  // DAY_FOCUS: close1 버킷에 가산(클라 _roundProgress의 close1 분기와 동일).
+  // gender별 카운트 분리 적용(일부 항목이 특정 gender 전용).
+  var focusCntG = _TL_DAY_FOCUS_CNT[dow] || { m: 0, f: 0 };
+  if (focusCntG.m > 0) cnt.m.close += focusCntG.m;
+  if (focusCntG.f > 0) cnt.f.close += focusCntG.f;
+
+  // 야간 항목: NIGHT_WEEKDAY/NIGHT_WEEKEND(클라 JS 배열, 시트 없음) → 상수로 보정.
+  var nightKey = (dow === 0 || dow === 6) ? 'weekend' : 'weekday';
+  cnt.m.night += _TL_NIGHT_CNT[nightKey].m;
+  cnt.f.night += _TL_NIGHT_CNT[nightKey].f;
+
+  return cnt;
+}
 
 function handleTodayLive(params) {
   var dept = String(params.dept || 'support').trim() || 'support';
-  // support 한정 — facility/parking은 이 엔드포인트 미사용(가드).
   if (dept !== 'support') {
     return jsonRes({ ok: false, dept: dept, error: 'today_live는 support 전용(facility/parking은 weekly 사용)' });
   }
@@ -1962,58 +2047,32 @@ function handleTodayLive(params) {
   function newBuckets() { return { am: 0, pm: 0, close: 0, night: 0 }; }
   var doneByG = { m: newBuckets(), f: newBuckets(), all: newBuckets() };
   genders.forEach(function (g) {
-    var led = _getCheckLedger(dept, date, g);   // {c, cr, sub, subAt, seen} 정규화 — 읽기 전용
+    var led = _getCheckLedger(dept, date, g);
     var cr = (led && led.cr && typeof led.cr === 'object') ? led.cr : {};
     Object.keys(cr).forEach(function (k) {
-      if (!cr[k]) return;                         // 0/falsy = 해제된 키
+      if (!cr[k]) return;
       var us = String(k).indexOf('_');
       if (us < 0) return;
-      var rk = k.slice(0, us);                    // 회차키(am1/pm1/close1…)
+      var rk = k.slice(0, us);
       var bk = _roundBucket(rk);
-      if (doneByG[g][bk] === undefined) bk = 'pm'; // 미인식 버킷은 pm으로(폴백)
+      if (doneByG[g][bk] === undefined) bk = 'pm';
       doneByG[g][bk]++;
     });
   });
 
-  // ─── 분모(total): 클라 분모 우선, 없으면 요일 기반 상수 폴백 ───
-  // 1차: 클라(applyTodayLiveOverlay)가 collectDashboardData 로컬 분모를 전달 — 단일출처 보장.
-  //   파라미터: lAmT(오전), lPmT(오후), lClT(마감), lNiT(야간) — 남+여 합산 전체값.
-  //   클라 분모는 WEEKDAY/WEEKEND JS배열+custom items+DAY_FOCUS를 그대로 반영하므로 SSOT.
-  // 2차(폴백): home 등 클라 분모 미전달 시 → 요일 기반 상수(_TL_SCHED_BASE).
+  // ─── 분모(total): 시트+ROUND_MAP 기반 동적 계산 — 하드코딩 상수 없음 ───
   var dateObj = new Date(date + 'T00:00:00+09:00');
   var dow = dateObj.getDay();
-  var isWeekend = (dow === 0 || dow === 6);
-  var baseKey = isWeekend ? 'weekend' : 'weekday';
-  var focusCnt = _TL_DAY_FOCUS_CNT[dow] || 0;
+  var schedCnt = _countTodaySchedule(dept, dow);   // {m:{am,pm,close,night}, f:{...}}
 
   var totalByG = { m: newBuckets(), f: newBuckets(), all: newBuckets() };
-
-  var lAmT = parseInt(params.lAmT || '', 10);
-  var lPmT = parseInt(params.lPmT || '', 10);
-  var lClT = parseInt(params.lClT || '', 10);
-  var lNiT = parseInt(params.lNiT || '', 10);
-  var hasClientTotal = !isNaN(lAmT) && !isNaN(lPmT);   // lAmT+lPmT 있으면 클라 분모 유효
-
-  if (hasClientTotal) {
-    // 클라 분모: 남/여 절반씩 배분(collectDashboardData는 gender 구분 없는 합산값을 보냄).
-    // 홀수는 m에 올림 — 안전장치(분모>분자 항상 보장).
-    function halfUp(n) { return Math.ceil((isNaN(n) ? 0 : n) / 2); }
-    function halfDn(n) { return Math.floor((isNaN(n) ? 0 : n) / 2); }
-    totalByG.m.am    = halfUp(lAmT); totalByG.f.am    = halfDn(lAmT);
-    totalByG.m.pm    = halfUp(lPmT); totalByG.f.pm    = halfDn(lPmT);
-    totalByG.m.close = halfUp(isNaN(lClT)?0:lClT); totalByG.f.close = halfDn(isNaN(lClT)?0:lClT);
-    totalByG.m.night = halfUp(isNaN(lNiT)?0:lNiT); totalByG.f.night = halfDn(isNaN(lNiT)?0:lNiT);
-  } else {
-    // 폴백: 요일 기반 상수
-    ['m', 'f'].forEach(function (g) {
-      var base = _TL_SCHED_BASE[baseKey][g];
-      totalByG[g].am    = base.am;
-      totalByG[g].pm    = base.pm + focusCnt;
-      totalByG[g].close = base.close;
-      totalByG[g].night = base.night;
-    });
-  }
-  // gender=all 원장(공용구역): 분자=분모로 취급(항상 100% — 합산 왜곡 방지).
+  ['m', 'f'].forEach(function (g) {
+    totalByG[g].am    = schedCnt[g].am;
+    totalByG[g].pm    = schedCnt[g].pm;
+    totalByG[g].close = schedCnt[g].close;
+    totalByG[g].night = schedCnt[g].night;
+  });
+  // gender=all 원장: 분자=분모(항상 100% — 합산 왜곡 방지).
   buckets.forEach(function (b) { totalByG.all[b] = doneByG.all[b]; });
 
   // 최종 안전장치: 분모가 분자보다 작으면 분자로 올림(100% 초과 방지).
@@ -2043,7 +2102,7 @@ function handleTodayLive(params) {
 
   return jsonRes({
     ok: true, dept: dept, date: date,
-    dow: dow, schedType: baseKey,         // 진단용
+    dow: dow, schedType: (dow === 0 || dow === 6 ? 'weekend' : 'weekday'),  // 진단용
     am: sumDone.am, pm: sumDone.pm, close: sumDone.close, night: sumDone.night,
     amTotal: sumTotal.am, pmTotal: sumTotal.pm, closeTotal: sumTotal.close, nightTotal: sumTotal.night,
     total: total, done: done, pct: pct,

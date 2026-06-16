@@ -3728,9 +3728,7 @@ function collectDashboardData(d){
    서버 미응답·이상치(total<done) 시 로컬값 보존(폴백). GM 2026-06-16 시우. */
 async function applyTodayLiveOverlay(d,data){
   try{
-    /* 로컬 collectDashboardData 분모를 서버에 전달 — GAS가 동일 소스로 분모 결정(SSOT 단일화). */
-    const qLt='&lAmT='+(data.amTotal||0)+'&lPmT='+(data.pmTotal||0)+'&lClT='+(data.closingTotal||0)+'&lNiT='+(data.nightTotal||0);
-    const r=await fetch(DASH_API+'?action=today_live&dept='+DASH_DEPT+'&date='+encodeURIComponent(d)+qLt+'&_pv='+Date.now(),{redirect:'follow'});
+    const r=await fetch(DASH_API+'?action=today_live&dept='+DASH_DEPT+'&date='+encodeURIComponent(d)+'&_pv='+Date.now(),{redirect:'follow'});
     const j=await r.json();
     if(!j||j.ok===false)return;                          // 실패 → 로컬 폴백
     if(typeof j.total!=='number'||typeof j.done!=='number')return;
