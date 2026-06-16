@@ -494,6 +494,7 @@
         <tr><td>시스템이 잘 도는지 (현황)</td><td><a href="#" onclick="event.preventDefault();document.querySelector('[data-id=T2]').click();">🖥️ T2 ▸ 시스템 현황</a></td></tr>
         <tr><td>기술 설정·파일 경로 <span style="color:var(--dim);font-size:11px;">· 기술자용</span></td><td><a href="#" onclick="event.preventDefault();document.querySelector('[data-id=T1]').click();">🖥️ T1 기술 인프라</a></td></tr>
         <tr><td>AI 교육(토큰·사용법) <span style="color:var(--dim);font-size:11px;">· 기술자용</span></td><td><a href="#" onclick="event.preventDefault();document.querySelector('[data-id=T3]').click();">📚 T3 교육자료</a></td></tr>
+        <tr><td>프롬프트 (복사·붙여넣기) <span style="color:var(--dim);font-size:11px;">· 기술자용</span></td><td>운영=<a href="#" onclick="event.preventDefault();document.querySelector('[data-id=S2]').click();">S2</a> · 기술=<a href="#" onclick="event.preventDefault();document.querySelector('[data-id=T1]').click();">T1</a> · 교육=<a href="#" onclick="event.preventDefault();document.querySelector('[data-id=T3]').click();">T3</a></td></tr>
         <tr><td>콘텐츠 검수·발행</td><td><a href="#" onclick="event.preventDefault();document.querySelector('[data-id=M5]').click();">🎬 M5 콘텐츠 검수</a></td></tr>
         <tr><td>마케팅 현황</td><td><a href="#" onclick="event.preventDefault();document.querySelector('[data-id=M4]').click();">📡 M4 마케팅 대시보드</a></td></tr>
         <tr><td>부서 운영 체계</td><td><a href="#" onclick="event.preventDefault();document.querySelector('[data-id=O1]').click();">🧑‍💻 O1 운영 통합 체계</a></td></tr>
@@ -3593,7 +3594,7 @@
         <button class="tab-btn" data-tab="token-mid">토큰 절약 중급 23가지</button>
         <button class="tab-btn" data-tab="token-adv">토큰 절약 고급 9가지</button>
         <button class="tab-btn" data-tab="selflearn">자기학습 프로세스</button>
-        <button class="tab-btn" data-tab="g15prompt">핵심 프롬프트</button>
+        <button class="tab-btn" data-tab="g15prompt">교육 프롬프트</button>
       </div>
 
       <!-- ── 탭 1: Claude Code 기본기 (섹션 1 전수) ── -->
@@ -3795,7 +3796,7 @@
       <div class="tab-nav">
         <button class="tab-btn active" data-tab="settings">설정 위치</button>
         <button class="tab-btn" data-tab="paths">경로 표준화</button>
-        <button class="tab-btn" data-tab="prompts">핵심 프롬프트</button>
+        <button class="tab-btn" data-tab="prompts">기술 프롬프트</button>
       </div>
 
       <!-- ── 탭: 설정 위치 (T1 g1에서 흡수 — STAGE 3) ── -->
@@ -7589,8 +7590,8 @@ function crTab(btn, panelId) {
       return d.getFullYear() + '-' + ('0'+(d.getMonth()+1)).slice(-2) + '-' + ('0'+d.getDate()).slice(-2);
     }
 
-    // _queue.json AI 진행배 fetch URL (raw GitHub · no-cors 불필요)
-    var GM1_QUEUE_URL = 'https://raw.githubusercontent.com/wellperion-cao/wellperion-automation/master/status/_queue.json';
+    // _queue.json AI 진행배 fetch URL — GitHub Pages 동일 오리진(상대경로)으로 Fastly CDN 5분 캐시 회피 (2026-06-16 웰리)
+    var GM1_QUEUE_URL = '/welperion-automation/status/_queue.json';
 
     // 결재 '다음 서명자' 판정 — 결재현황 SSOT(nextApprover)와 1:1 동일 로직 이식 (2026-06-07 웰리).
     //   G1 결재 카운트가 SSOT와 어긋나던 버그 수정: '결재요청=GM'만 봐선 안 됨.
@@ -7621,7 +7622,7 @@ function crTab(btn, panelId) {
       var sheetP = fetch(SSOT_API_URL + '?action=todo_list&_=' + Date.now(), { redirect:'follow', cache:'no-store' })
         .then(function(r){ return r.ok ? r.json() : null; })
         .catch(function(){ return null; });
-      var queueP = fetch(GM1_QUEUE_URL + '?_=' + Date.now(), { cache:'no-store' })
+      var queueP = fetch(GM1_QUEUE_URL, { cache:'no-store' })
         .then(function(r){ return r.ok ? r.json() : []; })
         .catch(function(){ return []; });
 
@@ -8286,9 +8287,9 @@ function crTab(btn, panelId) {
       html += _gm1HoldSectionHtml(holdToday);
       html += '</div></details>';
 
-      // 🗄️ 지난 입항 완료 (오늘 이전 완료) — 지난 완료건 + ⏸️ 보류(지난) 구분 섹션 (접힘) (GM 2026-06-07 · 06-12 보류합류)
+      // 🗄️ 지난 입항 완료 (오늘 이전 완료) — 지난 완료건 + ⏸️ 보류(지난) 구분 섹션 (기본 펼침 · 2026-06-16 웰리: GM 완료가 안 보이던 체감 해소)
       if (donePast.length || holdPast.length) {
-        html += '<details class="toggle" style="margin-top:10px;">';
+        html += '<details class="toggle" style="margin-top:10px;" open>';
         html += '<summary><span style="color:var(--dim);"><span style="margin-right:4px;">🗄️</span>지난 입항 완료 ' + donePast.length + '건 / 지난 보류 ' + holdPast.length + '건</span></summary>';
         html += '<div class="toggle-body" style="font-size:13px;">';
         donePast.forEach(function(t){ html += _gm1DoneLineHtml(t, true); });
@@ -9337,6 +9338,22 @@ function crTab(btn, panelId) {
     gm1FetchSsot();
     // 미동기화 항목 재시도 (페이지 로드마다)
     setTimeout(gm1RetrySSOTSync, 2000);
+    // ── 자동 새로고침 — stale-render 해소 (2026-06-16 웰리) ──
+    //   ① 탭 복귀(visibilitychange·focus) 시 재fetch — push 후 GM이 탭 돌아오면 즉시 반영
+    //   ② 90초 interval — G1 열어둔 채 오래 있어도 최신 상태 유지
+    //   ③ 마지막 fetch 후 30초 이내면 중복 skip (연속 이벤트 방어)
+    var _gm1LastFetch = 0;
+    function _gm1AutoRefresh() {
+      var now = Date.now();
+      if (now - _gm1LastFetch < 30000) return;  // 30초 내 중복 skip
+      _gm1LastFetch = now;
+      gm1FetchSsot();
+    }
+    document.addEventListener('visibilitychange', function() {
+      if (document.visibilityState === 'visible') _gm1AutoRefresh();
+    });
+    window.addEventListener('focus', _gm1AutoRefresh);
+    setInterval(_gm1AutoRefresh, 90000);
 
   })();
   // ── /GM1 통합 태스크 시스템 ─────────────────────────────────────
