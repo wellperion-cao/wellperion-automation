@@ -103,6 +103,23 @@
       "차단조치": "ssot/canon.py 헬퍼 신설(canon_values.json 직독 get(key)). 4파일 전환: compose_ballet.py·compose_spa_cinqmondes.py CTA 문자열, _verify_eng_btn.py·_verify_en_inquiry.py goto URL → 모두 canon_get('inquiry_path') 직독. 리터럴 완전 제거.",
       "상태": "GUARDED",
       "검증증거": "① py_compile 4파일+ssot/canon.py ALL_COMPILE_OK ② import 실측: compose_ballet._INQUIRY_URL='문의 :  wellperion.com/ko/inquiry', compose_spa._INQUIRY_CTA='문의: wellperion.com/ko/inquiry', verify 2개 _INQUIRY_URL='http://wellperion.com/ko/inquiry/' ③ divergence_scan 재실행 → inquiry_path ✅ 0건 ④ 커밋 2026-06-15."
+    },
+    {
+      "id": "INC-006",
+      "date": "2026-06-17",
+      "watch_globs": [
+        "scripts/post-commit.hook",
+        "scripts/install_hooks.sh",
+        "ssot/welly_boot_guard.py"
+      ],
+      "gate": "warn",
+      "요약": "고친 걸 커밋만 하고 인터넷(origin)에 안 올려, 사람들이 보는 라이브 검수페이지가 2시간 반 옛 화면이던 문제. 이제 커밋하면 자동으로 올라갑니다.",
+      "증상": "자동 커밋 8건이 origin 에 push 되지 않음(커밋만 하고 안 올림) → 라이브 M5 검수페이지가 ~2.5h stale, 그 사이 AI #17편 검수요청이 라이브에 미반영(텔레그램으론 정상 승인·발행). 약속 L13 '고치면 바로 올린다'가 기계에서 미준수.",
+      "본질": "커밋은 했으나 push 안 함 → 공용문서 변경이 로컬에만 쌓이고 라이브(origin)는 옛 상태. 결정·수정이 '일어나는 곳(로컬)'과 '사람·기계가 보는 곳(origin/라이브)'이 갈라졌다. INC-003(검증멈춤)과 같은 결 — '완료'를 로컬 기록으로 판단·방치.",
+      "뿌리분류": "검증멈춤",
+      "차단조치": "A) scripts/post-commit.hook + scripts/post_commit_push.py 신설 — 커밋 직후 git_lock 임계구역 안에서 origin/master..HEAD≥1이면 자동 push(타임아웃 30s·fail-open·실패 시 logs/git_lock.log + 텔레그램 1줄 경고, push는 새 커밋 안 만들어 재귀 없음, 부모 lock 보유 중이면 재진입 대신 직접 push). install_hooks.sh 에 post-commit 설치 추가·.git/hooks/post-commit 활성화. B) ssot/welly_boot_guard.py 신설 — 부팅 시 미푸시 커밋 수·검수대기/발행검증대기 한 화면 가시화 + S2 CEO 부팅절차에 1줄 SOP 박제.",
+      "상태": "GUARDED",
+      "검증증거": "재현 실측(명시 push 없이 origin 자동 전진): 커밋 A 직전 origin/master=dbbaffe5 → `git commit`(push 명령 없음) → git fetch 후 origin/master=c418180(=새 HEAD), unpushed=0. git_lock.log: ACQUIRED holder=post-commit-push → POST_COMMIT_PUSH ok → RELEASED. 2차 재현(커밋 B): origin c418180 → 95816c8 자동 전진, unpushed=0. 부팅가드 실행: 미푸시 0건·검수대기 3건 정확 나열(exit 1). py_compile post_commit_push.py·welly_boot_guard.py OK."
     }
   ]
 }
