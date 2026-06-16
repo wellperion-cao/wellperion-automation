@@ -289,6 +289,7 @@ details.collapse > .collapse-body{border-top:1px solid var(--border);padding:16p
     <div id="conversion-flow-wrap" style="margin-bottom:6px">
       <div style="color:var(--dim);font-size:13px">집계 불러오는 중…</div>
     </div>
+    <div id="type-funnel-wrap" style="margin-top:16px"><div style="color:var(--dim);font-size:13px">유형별 집계 중…</div></div>
   </div>
 
   <!-- ════════════════════════════════════════════
@@ -615,23 +616,6 @@ function renderConversionFlow() {
     + card('✅', '③ 회원 등록', convAvail ? conv : '—', convAvail ? '전화번호 매칭(월)' : '월 단위만 집계', 'var(--f5)')
     + '</div>'
     + paceHtml
-    + (function() {
-        var btm = f.byType || {};
-        if (!Object.keys(btm).length) return '';
-        var MAIN = ['멤버십', '성인강습', '유소년강습'];
-        var COLORS = { '멤버십': 'var(--f1)', '성인강습': 'var(--f2)', '유소년강습': 'var(--f5)' };
-        var etc = 0;
-        Object.keys(btm).forEach(function(t) { if (MAIN.indexOf(t) < 0) etc += (btm[t] || 0); });
-        function chip(label, n, color) {
-          return '<span style="display:inline-flex;align-items:baseline;gap:6px;background:var(--paper);border:1px solid var(--border);border-left:3px solid ' + color + ';border-radius:8px;padding:8px 13px;margin:6px 7px 0 0;font-size:13px">'
-            + '<b style="color:' + color + '">' + label + '</b>'
-            + '<span style="font-size:17px;font-weight:800;color:' + color + '">' + (n || 0).toLocaleString('ko-KR') + '</span><span style="font-size:11px;color:var(--dim)">건</span></span>';
-        }
-        var html = MAIN.map(function(t) { return chip(t, btm[t] || 0, COLORS[t]); }).join('') + chip('별개', etc, 'var(--dim)');
-        return '<div style="margin-top:14px;padding-top:12px;border-top:1px dashed var(--border)">'
-          + '<div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:2px">' + (f.label || '이번 달') + ' 문의 — 유형별 한눈에</div>'
-          + html + '</div>';
-      })()
     + '<div style="font-size:11px;color:var(--dim);margin-top:8px">' + (f.label || '이번 달') + ' 기준 · 등록은 전화번호 매칭으로 월 단위 집계 · 별개 = 공간렌트·비즈니스파트너·기타</div>';
 }
 
@@ -1328,6 +1312,102 @@ function renderMonthlyTrend(rows, curM) {
 var _tcData = null;
 var _tcOpenType = null;  // 현재 펼친 유형명(드릴다운 토글)
 
+var _clickByLink = null;   // click_stats.byLink (유형별 클릭)
+var _tcTypes     = null;   // type_channel_breakdown.types (유형별 등록 누적)
+
+async function loadTypeFunnelData() {
+  fetch(FUNNEL_APPS_SCRIPT_URL + '?action=click_stats', {redirect:'follow'})
+    .then(function(r){return r.json();})
+    .then(function(d){ if(d && d.byLink){ _clickByLink = d.byLink; renderTypeFunnel(); } }).catch(function(){});
+  fetch(FUNNEL_APPS_SCRIPT_URL + '?action=type_channel_breakdown', {redirect:'follow'})
+    .then(function(r){return r.json();})
+    .then(function(d){ if(d && d.types){ _tcTypes = d.types; renderTypeFunnel(); } }).catch(function(){});
+}
+
+function renderTypeFunnel() {
+  var wrap = document.getElementById('type-funnel-wrap');
+  if (!wrap) return;
+
+  var TYPES = [
+    { label: '멤버십',            clicks: ['멤버십문의'],            inqKey: '멤버십',    tcKey: '멤버십',    bold: true },
+    { label: '성인강습',          clicks: ['성인강습문의'],          inqKey: '성인강습',  tcKey: '성인강습',  bold: true },
+    { label: '유소년강습',        clicks: ['유소년강습문의'],        inqKey: '유소년강습',tcKey: '유소년강습',bold: true },
+    { label: '여름특강',          clicks: ['여름방학특강문의'],      inqKey: null,         tcKey: null,        bold: false },
+    { label: '공간렌트 문의',     clicks: ['공간렌트문의'],          inqKey: null,         tcKey: null,        bold: false },
+    { label: '비즈니스파트너 문의',clicks: ['비즈니스파트너문의'],   inqKey: null,         tcKey: null,        bold: false },
+    { label: '영어 문의(EN)',     clicks: ['membership-inquiry-en','adult-lesson-inquiry-en','youth-lesson-inquiry-en','summer-special-inquiry-en'], inqKey: null, tcKey: null, bold: false }
+  ];
+
+  var byTypeMonth = (_pbData && _pbData.inquiries && _pbData.inquiries.byTypeMonth) ? _pbData.inquiries.byTypeMonth : {};
+
+  var rows = '';
+  TYPES.forEach(function(t) {
+    // 클릭
+    var clickCell;
+    if (!_clickByLink) {
+      clickCell = '<span style="color:var(--dim)">집계 중</span>';
+    } else {
+      var sum = 0;
+      t.clicks.forEach(function(k) { sum += (_clickByLink[k] || 0); });
+      clickCell = sum.toLocaleString('ko-KR');
+    }
+
+    // 문의
+    var inqCell;
+    if (t.inqKey !== null) {
+      inqCell = (byTypeMonth[t.inqKey] !== undefined ? byTypeMonth[t.inqKey] : 0).toLocaleString('ko-KR');
+    } else {
+      inqCell = '<span style="color:var(--dim)">미집계</span>';
+    }
+
+    // 등록
+    var regCell;
+    if (t.tcKey !== null) {
+      if (!_tcTypes) {
+        regCell = '<span style="color:var(--dim)">집계 중</span>';
+      } else {
+        var td = _tcTypes[t.tcKey];
+        if (td) {
+          var conv = (td.converted !== null && td.converted !== undefined) ? td.converted : 0;
+          var src  = td.convSource ? '<br><span style="font-size:10px;color:var(--dim)">(' + td.convSource + ')</span>' : '';
+          regCell = conv.toLocaleString('ko-KR') + src;
+        } else {
+          regCell = '<span style="color:var(--dim)">—</span>';
+        }
+      }
+    } else {
+      regCell = '<span style="color:var(--dim)">—</span>';
+    }
+
+    var fw = t.bold ? 'font-weight:700' : '';
+    rows += '<tr>'
+      + '<td style="padding:9px 12px;border-bottom:1px solid var(--border);' + fw + '">' + t.label + '</td>'
+      + '<td style="padding:9px 12px;border-bottom:1px solid var(--border);text-align:right;' + fw + '">' + clickCell + '</td>'
+      + '<td style="padding:9px 12px;border-bottom:1px solid var(--border);text-align:right;' + fw + '">' + inqCell + '</td>'
+      + '<td style="padding:9px 12px;border-bottom:1px solid var(--border);text-align:right;' + fw + '">' + regCell + '</td>'
+      + '</tr>';
+  });
+
+  var footnote = '<div style="font-size:11px;color:var(--dim);margin-top:8px;line-height:1.7">'
+    + '① 클릭은 2026-06-13부터 집계 시작 — 이전 미태깅분 없어 문의보다 적을 수 있음<br>'
+    + '② 문의 유형분류는 멤버십·성인강습·유소년강습만 — 여름특강·공간렌트·비즈니스파트너·영어는 별도 폼이라 현재 「유형 문의」 미집계(클릭만 표시). 폼 출처/유형 통합 시 합류<br>'
+    + '③ 등록은 누적 정본(멤버십=유효회원 전화매칭 / 강습=종목 팀시트 수강등록). 문의(이번달)와 시간기준 달라 직접 나누지 말 것'
+    + '</div>';
+
+  wrap.innerHTML = '<div style="background:var(--paper);border:1px solid var(--border);border-radius:12px;overflow:hidden">'
+    + '<table class="channel-table" style="width:100%">'
+    + '<thead><tr>'
+    + '<th>유형</th>'
+    + '<th style="text-align:right">클릭(이번달)</th>'
+    + '<th style="text-align:right">문의(이번달)</th>'
+    + '<th style="text-align:right">등록(누적)</th>'
+    + '</tr></thead>'
+    + '<tbody>' + rows + '</tbody>'
+    + '</table>'
+    + '</div>'
+    + footnote;
+}
+
 // 유형 메타 lookup: 우선순위·색 정의. 응답에 있는 모든 유형을 렌더하되
 // lookup에 있는 유형은 이 순서로 앞에, 없는 유형은 기본 메타(회색)로 뒤에 표시.
 var _TC_TYPES = {
@@ -1601,6 +1681,7 @@ document.addEventListener('DOMContentLoaded', function() {
   // ── 즉시 로드 (요약+분석 구역) ──────────────────────────────
   loadFunnelConversion();        // 핵심 지표(전환흐름)·채널표 내부 렌더 포함
   loadPeriodBreakdown('month');  // 기본 기간: 월 (채널표·전환흐름 내부 렌더 포함)
+  loadTypeFunnelData();          // 유형별 현황표 (비동기·논블로킹)
 
   // ── 지연 로드 — 각 <details> 펼칠 때 1회만 fetch (초기 로드 가벼움) ───────────
   document.getElementById('details-weekly-trend').addEventListener('toggle', function() {
