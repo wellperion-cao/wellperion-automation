@@ -790,7 +790,11 @@ function _writePerRoundRows(dept, date, body) {
         if (data.length > 1) sheet.getRange(2, 1, data.length - 1, cols).clearContent();
         startRow = 2;
       } else {
-        del.forEach(function (rn) { sheet.deleteRow(rn); });
+        // 마지막 비고정행 삭제 시 구글시트 예외 → clearContent 폴백(빈 행 끼어 data.length 부풀 때 'uncheck 저장 실패' 차단). GM 2026-06-16 시우.
+        del.forEach(function (rn) {
+          try { sheet.deleteRow(rn); }
+          catch (e) { var _cc = Math.max(HEADERS.length, sheet.getLastColumn()); sheet.getRange(rn, 1, 1, _cc).clearContent(); }
+        });
         startRow = sheet.getLastRow() + 1;
       }
       if (rows.length) {
@@ -828,8 +832,9 @@ function _writePerRoundRows(dept, date, body) {
 function handleSave(body) {
   _saveGroupSubmits(body.date, body.groupSubmits);   // 그룹별 제출 영속(zone/v2 두 경로 공통) — 2026-06-05 GM
   _updateCheckLedger(body.dept, body.date, body);   // 완료 체크 원장 적립(2026-06-11 시우) — 과거일 복원·완료율 회귀 방지
-  // 회차별 행 저장(GM 2026-06-15): roundChecks 있으면 (날짜+회차+항목) 키로 시트=원장 미러. 빈 체크는 오삭제 방지 위해 구경로.
-  if (body.roundChecks && body.roundChecks.length > 0) return _writePerRoundRows(body.dept || 'support', body.date, body);
+  // 회차별 행 저장(GM 2026-06-15): roundChecks 키가 있으면(빈 배열 포함) 회차기반 페이로드 → (날짜+회차+항목) 키로 시트=원장 미러.
+  // ★GM 2026-06-16 시우: 전부 취소하면 roundChecks=[]가 와서 V2Compat(마지막행 deleteRow 예외)로 새던 'uncheck 미반영' 차단 — 빈 배열도 _writePerRoundRows로.
+  if (Array.isArray(body.roundChecks)) return _writePerRoundRows(body.dept || 'support', body.date, body);
   if (!body.zone) return _handleSaveV2Compat(body);
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var date = body.date;
@@ -1011,7 +1016,10 @@ function _handleSaveV2Compat(body) {
     });
     if (rowsToDelete.length) {
       rowsToDelete.sort(function(a, b){ return b - a; });   // 내림차순 삭제(인덱스 안정)
-      rowsToDelete.forEach(function(rn){ sheet.deleteRow(rn); });
+      rowsToDelete.forEach(function(rn){
+        try { sheet.deleteRow(rn); }
+        catch (e) { var _cc = Math.max(HEADERS.length, sheet.getLastColumn()); sheet.getRange(rn, 1, 1, _cc).clearContent(); }   // 마지막행 삭제 예외 폴백. GM 2026-06-16 시우.
+      });
     }
     if (newRows.length > 0) {
       var startRow = sheet.getLastRow() + 1;

@@ -1,5 +1,17 @@
 [
   {
+    "task_id": "CEO-2026-06-16-APPROVAL-PAPER-PRINT-SIGN-UPLOAD",
+    "clevel": "ceo",
+    "title": "[웰리] 결재현황 페이퍼 보고 보강 — 인쇄 대표 서명란 부활 + 대표 서명본 스캔 업로드(증빙첨부)",
+    "status": "DONE",
+    "priority": "NORMAL",
+    "enqueued_at": "2026-06-16",
+    "processed_at": "2026-06-16",
+    "terminal": true,
+    "artifact": "대표→GM 전환 후속(대표 보고=페이퍼). 프론트 결재 현황 SSOT.html만 수정(백엔드·재배포 불필요, 기존 todo_upload 재사용). ①buildApprovalPrint 인쇄 양식에 '전응준 대표 (인)' 서명칸 항상 고정 출력(결재완료 건도 노출)—종이 서명용 ②결재완료 카드(st-done)에 '📄 대표 서명본 업로드' 버튼+file input(image/pdf 5MB) → uploadRepSign이 base64로 todo_upload POST(fileName=대표서명_<id>_원본), '📎 대표 서명본' 링크 표시. 단순 증빙첨부(GM 선택)—결재상태·배지·대표싸인칸 불변. 커밋 fe01016 push. node --check PASS.",
+    "next": "표류(완결). ⚠️한계: 백엔드 미수정이라 결재완료 카드 첨부가 전부 '대표 서명본'으로 표시됨(업로드경로 단일이라 실무 무해). 결재완료 건에 타 첨부 섞이면 백엔드 1줄+재배포로 prefix 정밀구분 가능—GM 판단 대기."
+  },
+  {
     "task_id": "CEO-2026-06-16-APPROVAL-REP-REMOVE-GM-FINAL",
     "clevel": "ceo",
     "title": "[웰리] 결재현황 최종 결재권자 대표→GM 전환 — 대표 단계 제거·오프라인 페이퍼화",
