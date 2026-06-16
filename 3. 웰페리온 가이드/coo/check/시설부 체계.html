@@ -62,6 +62,14 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 .slot-time{background:var(--accent-bg);padding:2px 10px;border-radius:10px;font-size:12px}
 .slot-time.night{background:var(--orange-bg);color:var(--orange)}
 .category{background:var(--paper);border:1px solid var(--border);border-radius:10px;margin-bottom:8px;overflow:hidden}
+.vendor-group{border:1px solid var(--border);border-radius:10px;margin-bottom:8px;overflow:hidden;background:var(--paper)}
+.vendor-group-sum{display:flex;align-items:center;gap:10px;padding:10px 14px;cursor:pointer;font-weight:700;list-style:none;user-select:none}
+.vendor-group-sum::-webkit-details-marker{display:none}
+.vendor-group-sum::before{content:'▸';color:var(--accent);font-size:12px;transition:transform .15s}
+.vendor-group[open] .vendor-group-sum::before{transform:rotate(90deg)}
+.vendor-group-title{color:var(--text)}
+.vendor-group-count{font-size:12px;color:var(--dim);font-weight:600}
+.vendor-group>div{padding:0 12px 12px}
 .cat-header{padding:12px 16px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none}
 .cat-header:hover{background:var(--accent-bg)}
 .cat-title{font-size:14px;font-weight:700}
@@ -3073,42 +3081,44 @@ function renderVendorList(){
   const colLabelMap = {};
   VENDOR_COLS.forEach(c=>{ colLabelMap[c.key]=c.label; });
 
-  let rows = [];
+  // 분류(제목)별 그룹 — 각 분류를 접기/펼치기 토글로 (GM 2026-06-16)
+  const groups = [];
   VENDOR_COLS.forEach(col=>{
     if(colFilter && col.key !== colFilter) return;
-    (VENDOR_DATA[col.key]||[]).forEach(v=>{
-      if(statusFilter && (v.status||'거래중') !== statusFilter) return;
-      rows.push({colKey:col.key, colLabel:col.label, v});
-    });
+    const list = (VENDOR_DATA[col.key]||[]).filter(v=> !statusFilter || (v.status||'거래중')===statusFilter);
+    if(list.length) groups.push({label:col.label, list});
   });
 
-  if(!rows.length){
+  if(!groups.length){
     wrap.innerHTML = '<div class="mgmt-empty">조건에 맞는 업체가 없습니다.</div>';
     return;
   }
 
-  let html = '<div style="overflow-x:auto;">'
-    + '<table class="dash-table" style="min-width:640px;">'
-    + '<tr><th>분류</th><th>업체명</th><th>거래상태</th><th>담당자</th><th>연락처</th><th>계약형태/단가</th><th>갱신일</th><th>등록일</th><th>수정일</th><th>비고</th></tr>';
-
-  rows.forEach(({colLabel, v})=>{
-    const st = v.status||'거래중';
-    const stColor = vendorStatusColor(st);
-    html += '<tr>'
-      + '<td>'+escapeHTML(colLabel)+'</td>'
-      + '<td style="font-weight:700;">'+escapeHTML(v.name||'-')+'</td>'
-      + '<td style="color:'+stColor+';font-weight:700;">'+escapeHTML(st)+'</td>'
-      + '<td>'+escapeHTML(v.manager||'-')+'</td>'
-      + '<td>'+escapeHTML(v.contact||'-')+'</td>'
-      + '<td>'+escapeHTML((v.contract&&v.price)?(v.contract+' / '+v.price):v.contract||v.price||'-')+'</td>'
-      + '<td>'+escapeHTML(v.renewal||'-')+'</td>'
-      + '<td style="font-size:11px;color:var(--dim);">'+escapeHTML(v.createdAt||'-')+'</td>'
-      + '<td style="font-size:11px;color:var(--dim);">'+escapeHTML(v.updatedAt||'-')+'</td>'
-      + '<td style="font-size:12px;max-width:180px;word-break:break-word;">'+escapeHTML(v.note||'-')+'</td>'
-      + '</tr>';
+  let html = '';
+  groups.forEach(({label, list})=>{
+    html += '<details class="vendor-group" open>'
+      + '<summary class="vendor-group-sum"><span class="vendor-group-title">'+escapeHTML(label)+'</span>'
+      + '<span class="vendor-group-count">'+list.length+'곳</span></summary>'
+      + '<div style="overflow-x:auto;">'
+      + '<table class="dash-table" style="min-width:600px;">'
+      + '<tr><th>업체명</th><th>거래상태</th><th>담당자</th><th>연락처</th><th>계약형태/단가</th><th>갱신일</th><th>등록일</th><th>수정일</th><th>비고</th></tr>';
+    list.forEach(v=>{
+      const st = v.status||'거래중';
+      const stColor = vendorStatusColor(st);
+      html += '<tr>'
+        + '<td style="font-weight:700;">'+escapeHTML(v.name||'-')+'</td>'
+        + '<td style="color:'+stColor+';font-weight:700;">'+escapeHTML(st)+'</td>'
+        + '<td>'+escapeHTML(v.manager||'-')+'</td>'
+        + '<td>'+escapeHTML(v.contact||'-')+'</td>'
+        + '<td>'+escapeHTML((v.contract&&v.price)?(v.contract+' / '+v.price):v.contract||v.price||'-')+'</td>'
+        + '<td>'+escapeHTML(v.renewal||'-')+'</td>'
+        + '<td style="font-size:11px;color:var(--dim);">'+escapeHTML(v.createdAt||'-')+'</td>'
+        + '<td style="font-size:11px;color:var(--dim);">'+escapeHTML(v.updatedAt||'-')+'</td>'
+        + '<td style="font-size:12px;max-width:180px;word-break:break-word;">'+escapeHTML(v.note||'-')+'</td>'
+        + '</tr>';
+    });
+    html += '</table></div></details>';
   });
-
-  html += '</table></div>';
   wrap.innerHTML = html;
 }
 
