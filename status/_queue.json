@@ -1,5 +1,17 @@
 [
   {
+    "task_id": "COO-2026-06-16-CHECK-HOME-REALTIME-UNIFY",
+    "clevel": "coo",
+    "title": "[시우/웰리 지원] 지원부 점검 현황 home·대시보드 단일화 — 서버 실시간값 + 분모 매뉴얼 전체(182)",
+    "status": "DONE",
+    "priority": "HIGH",
+    "enqueued_at": "2026-06-16",
+    "processed_at": "2026-06-16",
+    "terminal": true,
+    "artifact": "GM 방향(대시보드·home 한 곳 단일화) → 설계(architect)·구현. 실시간 저장은 이미 작동(체크→1.2초 디바운스→서버 cr 원장). 빠진 건 그 서버값을 읽는 집계 엔드포인트 → today_live 신설. home(weekly→today_live)·지원부 대시보드(localStorage→today_live overlay) 둘 다 같은 서버값. 분모 정의 GM 확정=오늘 요일 매뉴얼 전체(고정). 분모를 하드코딩 상수→매뉴얼 단일출처 동적계산으로 교체(SSOT 갈라짐 제거). 야간(탕청소 외주)=분모 제외 GM 확정 → home total=182(am59+pm49+close74), night28 참고용. 야간 14항목 매뉴얼 'G 구역(외주 탕청소)' 정리. 분자=cr 실체크. 4부서 무회귀. GAS @61~@69 다단계 배포(deploymentId 유지). 커밋 다수(b9e3b97·76dd68d·f50dc13·5211c92 등) push. 라이브 실측 검증.",
+    "next": "표류(완결). 후속: 시설부 거래업체 페이지 동일 유형(localStorage 전용·서버 비동기화) 발견 → 별도 처리 대기(GM 결정). led.seen 적립코드는 잔존(무해)."
+  },
+  {
     "task_id": "COO-2026-06-16-SUPPORT-CHECK-HOME-UNDERCOUNT-FIX",
     "clevel": "coo",
     "title": "[시우/웰리 지원] 지원부 점검 home 과소집계 수정 — 오후조·마감조 회차버킷 충돌(182이 53으로)",
