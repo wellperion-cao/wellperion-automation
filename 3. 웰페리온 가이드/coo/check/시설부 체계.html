@@ -2538,7 +2538,8 @@ function mgmtMergeSchedule(baseSched, customSlots){
 
 /* 초기 렌더링 */
 renderManualItems();
-</script>
+/* ★구조복구(GM 2026-06-16 시우): 여기 있던 조기 </script>가 스크립트를 끊어 아래 거래업체 JS 전체가
+   텍스트로 새고 vendor 함수 미정의 → 보드 안 뜸·페이지 깨짐. 여는 <script> 유실(동시커밋 손상)이라 조기 종료 제거해 한 블록으로 잇는다. */
 
 
 
