@@ -1368,75 +1368,69 @@ function renderTypeFunnel() {
   // _flow.byType가 있으면 기간 반영값 우선, 없으면 byTypeMonth 폴백
   var byTypeMonth = (_flow && _flow.byType && Object.keys(_flow.byType).length) ? _flow.byType : ((_pbData && _pbData.inquiries && _pbData.inquiries.byTypeMonth) || {});
 
-  var rows = '';
+  var cards = '';
   TYPES.forEach(function(t) {
-    // 클릭
-    var clickCell;
+    // 클릭 (기간 반영)
+    var clickStr;
     if (!_clickByLink) {
-      clickCell = '<span style="color:var(--dim)">집계 중</span>';
+      clickStr = '<span style="color:var(--dim)">집계 중</span>';
     } else {
       var sum = 0;
       t.clicks.forEach(function(k) { sum += (_clickByLink[k] || 0); });
-      clickCell = sum.toLocaleString('ko-KR');
+      clickStr = sum.toLocaleString('ko-KR');
     }
 
-    // 문의
-    var inqCell;
+    // 문의 (기간 반영)
+    var inqStr;
     if (t.inqKey !== null) {
-      inqCell = (byTypeMonth[t.inqKey] !== undefined ? byTypeMonth[t.inqKey] : 0).toLocaleString('ko-KR');
+      inqStr = (byTypeMonth[t.inqKey] !== undefined ? byTypeMonth[t.inqKey] : 0).toLocaleString('ko-KR');
     } else {
-      inqCell = '<span style="color:var(--dim)">미집계</span>';
+      inqStr = '<span style="color:var(--dim)">미집계</span>';
     }
 
-    // 등록
-    var regCell;
-    if (t.tcKey !== null) {
-      if (!_tcTypes) {
-        regCell = '<span style="color:var(--dim)">집계 중</span>';
-      } else {
-        var td = _tcTypes[t.tcKey];
-        if (td) {
-          var conv = (td.converted !== null && td.converted !== undefined) ? td.converted : 0;
-          var src  = td.convSource ? '<br><span style="font-size:10px;color:var(--dim)">(' + td.convSource + ')</span>' : '';
-          regCell = conv.toLocaleString('ko-KR') + src;
-        } else {
-          regCell = '<span style="color:var(--dim)">—</span>';
+    // 등록 (누적·추정) + 누적 전환율(기간 선택 시 숨김) + 정직 배지
+    var regStr, rateStr = '', sub;
+    var color = t.bold ? 'var(--accent)' : 'var(--dim)';
+    if (t.tcKey === null) {
+      regStr = '<span style="color:var(--dim)">—</span>';
+      sub = '<span class="kpi-honesty soft">문의 미집계 — 클릭만(별도 폼)</span>';
+    } else if (!_tcTypes) {
+      regStr = '<span style="color:var(--dim)">집계 중</span>';
+      sub = '';
+    } else {
+      var td = _tcTypes[t.tcKey];
+      if (td) {
+        var conv = (td.converted !== null && td.converted !== undefined) ? td.converted : 0;
+        regStr = conv.toLocaleString('ko-KR');
+        if (td.convRate !== null && td.convRate !== undefined) {
+          rateStr = ' <span class="tc-card-rate" style="color:var(--dim)">(누적 전환율 ' + td.convRate + '%)</span>';
         }
+        var src = td.convSource || '';
+        if (src === '유효회원 매칭') sub = '<span class="kpi-honesty soft">등록 = 전화매칭 · 누적 · 추정</span>';
+        else if (src === '종목시트 수강등록') sub = '<span class="kpi-honesty soft">수강등록 = 종목 팀시트 · 누적</span>';
+        else sub = '<span class="kpi-honesty soft">전환 출처 미확인</span>';
+      } else {
+        regStr = '<span style="color:var(--dim)">—</span>';
+        sub = '';
       }
-    } else {
-      regCell = '<span style="color:var(--dim)">—</span>';
     }
 
-    var fw = t.bold ? 'font-weight:700' : '';
-    rows += '<tr>'
-      + '<td style="padding:9px 12px;border-bottom:1px solid var(--border);' + fw + '">' + t.label + '</td>'
-      + '<td style="padding:9px 12px;border-bottom:1px solid var(--border);text-align:right;' + fw + '">' + clickCell + '</td>'
-      + '<td style="padding:9px 12px;border-bottom:1px solid var(--border);text-align:right;' + fw + '">' + inqCell + '</td>'
-      + '<td style="padding:9px 12px;border-bottom:1px solid var(--border);text-align:right;' + fw + '">' + regCell + '</td>'
-      + '</tr>';
+    cards += '<div class="tc-card" style="cursor:default">'
+      + '<div class="tc-card-head"><span class="channel-dot" style="background:' + color + '"></span>' + t.label + '</div>'
+      + '<div class="tc-card-flow">클릭 <strong>' + clickStr + '</strong> → 문의 <strong>' + inqStr + '</strong> → 등록 <strong style="color:' + color + '">' + regStr + '</strong>' + rateStr + '</div>'
+      + (sub ? '<div class="tc-card-sub">' + sub + '</div>' : '')
+      + '</div>';
   });
 
   var footnote = '<div style="margin-top:12px;background:var(--accent-bg);border:1px solid rgba(183,159,138,0.28);border-radius:10px;padding:13px 15px">'
-    + '<div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:7px">ⓘ 이 표 읽는 법</div>'
+    + '<div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:7px">ⓘ 이 카드 읽는 법</div>'
     + '<div style="font-size:12px;color:var(--text);line-height:1.8">'
-    +   '<b>클릭</b> — 문의 페이지 버튼을 누른 횟수. <span style="color:var(--dim)">2026-06-13부터 집계라, 그 전 유입은 빠져 문의보다 적게 보일 수 있습니다.</span><br>'
-    +   '<b>문의</b> — 이번 달 접수 건수. <span style="color:var(--dim)">유형 분류는 멤버십·성인강습·유소년강습만 됩니다 — 여름특강·공간렌트·비즈니스파트너·영어는 별도 폼이라 클릭만 보이고 문의는 아직 미집계입니다.</span><br>'
-    +   '<b>등록 (추정치)</b> — 누적. <span style="color:var(--dim)">문의자의 전화번호가 유효회원 명부(멤버십)·종목 팀시트(강습)에 있으면 \'등록\'으로 셉니다. </span><b style="color:var(--text)">문의가 등록을 일으켰다는 증명이 아니라</b><span style="color:var(--dim)">, 문의한 사람 중 지금 회원·수강생인 사람의 수입니다. 기존 회원이 문의해도 잡히고, 전화번호가 다르거나 비어 있으면 빠집니다. 그래서 이번 달 문의로 직접 나누면 안 됩니다.</span>'
+    +   '<b>클릭 · 문의</b> — 선택한 기간 기준(일/주/월/기간/올해). <span style="color:var(--dim)">클릭은 2026-06-13부터 집계라 그 전 유입은 빠집니다. 문의 유형분류는 멤버십·성인강습·유소년강습만 — 여름특강·공간렌트·비즈니스파트너·영어는 별도 폼이라 클릭만 보이고 문의는 미집계입니다.</span><br>'
+    +   '<b>등록 (누적 · 추정치)</b> — <span style="color:var(--dim)">기간과 무관한 누적입니다. 문의자 전화번호가 유효회원 명부(멤버십)·종목 팀시트(강습)에 있으면 \'등록\'으로 셉니다. </span><b style="color:var(--text)">문의가 등록을 일으켰다는 증명이 아니라</b><span style="color:var(--dim)">, 문의한 사람 중 지금 회원·수강생인 수입니다. 기존 회원이 문의해도 잡히고 번호가 다르면 빠집니다 — 그래서 기간 문의로 직접 나누면 안 되고, 전환율은 기간 선택 시 숨깁니다.</span>'
     + '</div>'
     + '</div>';
 
-  wrap.innerHTML = '<div style="background:var(--paper);border:1px solid var(--border);border-radius:12px;overflow:hidden">'
-    + '<table class="channel-table" style="width:100%">'
-    + '<thead><tr>'
-    + '<th>유형</th>'
-    + '<th style="text-align:right">클릭(이번달)</th>'
-    + '<th style="text-align:right">문의(이번달)</th>'
-    + '<th style="text-align:right">등록(누적·추정)</th>'
-    + '</tr></thead>'
-    + '<tbody>' + rows + '</tbody>'
-    + '</table>'
-    + '</div>'
-    + footnote;
+  wrap.innerHTML = '<div class="kpi-row">' + cards + '</div>' + footnote;
 }
 
 // 유형 메타 lookup: 우선순위·색 정의. 응답에 있는 모든 유형을 렌더하되
