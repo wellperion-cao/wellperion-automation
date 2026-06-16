@@ -458,8 +458,7 @@
 
     <a data-toggle="cto-nav" data-has-sub="true"><span class="num">🔧</span><span class="label">AI CTO 기술<span class="tag">김남욱 GM</span></span></a>
     <div class="sub-nav" data-parent="cto-nav">
-      <a data-id="T1">🖥️ 기술 인프라 상세</a>      <a data-id="T2">🤖 업무자동화SSOT</a>
-      <a data-id="T3">📚 AI 교육자료 핵심요약</a>
+      <a data-id="T1">🖥️ 기술 & AI 학습 상세</a>      <a data-id="T2">🤖 업무자동화SSOT</a>
     </div>
   </nav>
 
@@ -2060,8 +2059,8 @@
             <tr><td>각 AI 임원 역할·KPI</td><td><a href="#" onclick="event.preventDefault();document.querySelector('[data-id=S2]').click();">⚖️ S2 (각 C-Level 탭)</a></td></tr>
             <tr><td>자동화·예약작업·정각보고·PC 켜고끔</td><td><a href="#" onclick="event.preventDefault();document.querySelector('[data-id=T2]').click();">🤖 T2 업무자동화</a></td></tr>
             <tr><td>시스템이 잘 도는지 (현황)</td><td><a href="#" onclick="event.preventDefault();document.querySelector('[data-id=T2]').click();">🖥️ T2 ▸ 시스템 현황</a></td></tr>
-            <tr><td>기술 설정·파일 경로 <span style="color:var(--dim);font-size:11px;">· 기술자용</span></td><td><a href="#" onclick="event.preventDefault();document.querySelector('[data-id=T1]').click();">🖥️ T1 기술 인프라</a></td></tr>
-            <tr><td>AI 교육(토큰·사용법) <span style="color:var(--dim);font-size:11px;">· 기술자용</span></td><td><a href="#" onclick="event.preventDefault();document.querySelector('[data-id=T3]').click();">📚 T3 교육자료</a></td></tr>
+            <tr><td>기술 설정·파일 경로 <span style="color:var(--dim);font-size:11px;">· 기술자용</span></td><td><a href="#" onclick="event.preventDefault();document.querySelector('[data-id=T1]').click();">🖥️ T1 기술 & AI 학습</a></td></tr>
+            <tr><td>AI 교육(토큰·사용법) <span style="color:var(--dim);font-size:11px;">· 기술자용</span></td><td><a href="#" onclick="event.preventDefault();document.querySelector('[data-id=T1]').click();">📚 T1 (학습)</a></td></tr>
             <tr><td>프롬프트 (복사·붙여넣기) <span style="color:var(--dim);font-size:11px;">· 기술자용</span></td><td>운영=<a href="#" onclick="event.preventDefault();document.querySelector('[data-id=S2]').click();">S2</a> · 기술=<a href="#" onclick="event.preventDefault();document.querySelector('[data-id=T1]').click();">T1</a></td></tr>
             <tr><td>콘텐츠 검수·발행</td><td><a href="#" onclick="event.preventDefault();document.querySelector('[data-id=M5]').click();">🎬 M5 콘텐츠 검수</a></td></tr>
             <tr><td>마케팅 현황</td><td><a href="#" onclick="event.preventDefault();document.querySelector('[data-id=M4]').click();">📡 M4 마케팅 대시보드</a></td></tr>
@@ -3565,10 +3564,11 @@
   </article>
 
   <!-- g15 AI 교육자료 핵심요약 — 웰페리온_AI교육자료_핵심정리.md 전수 반영 -->
-  <article class="doc" id="T3">
-    <div class="doc-header"><h2><span class="g-id">T3</span>AI 교육자료 핵심요약</h2><div class="meta">AI 교육 SSOT · 원본 609줄 전수 반영 · 2026-05-26 크로스체크 완료</div></div>
-    <div class="callout"><strong>🧭 GM 한 줄.</strong> 아래 <strong>🍯 쉽게 읽는 학습 노트</strong>만 보시면 됩니다. 그 아래(토큰 절약·Claude 사용법 등)는 <strong>기술 담당(AI·개발자)용 상세</strong>예요.</div>
-    <p class="lead">웰페리온_AI교육자료_핵심정리.md 전체를 반영한 실전 참조 문서. Claude Code 기본기 → 토큰 절약 32가지 → 자기학습 프로세스.</p>
+
+  <article class="doc" id="T1">
+    <div class="doc-header"><h2><span class="g-id">T1</span>기술 & AI 학습 상세</h2><div class="meta">기술 인프라(설정·경로·프롬프트) + AI 학습(기본기·토큰절약·자기학습) 통합 · 기술 담당용</div></div>
+    <p class="lead">scripts 폴더 구조, 경로 표준화, CTO 개발 아카이브 운영의 상세 기술 문서입니다.</p>
+    <div class="callout"><strong>🧭 GM 한 줄.</strong> 이 페이지는 <strong>기술 담당(AI·개발자)용 참고서</strong>예요 — 설정이 어디 있고 파일 경로가 뭔지. <strong>GM은 평소 볼 필요 없습니다.</strong> "시스템이 잘 도는지"는 <strong>T2 ▸ 🖥️ 시스템 현황</strong>에서 한눈에 보세요.</div>
 
     <!-- ══ 🍯 쉽게 읽는 학습 노트 (GM·C레벨 공용 · 2026-06-15 GM 지시 B) ══ -->
     <div class="callout accent" style="margin:14px 0 20px;background:#1a2120;border-left:3px solid #10b981;">
@@ -3587,170 +3587,16 @@
     </div>
     <!-- ══ /쉽게 읽는 학습 노트 ══ -->
 
-    <div class="tabs" data-tabs="T3">
-      <div class="tab-nav">
-        <button class="tab-btn active" data-tab="basics">Claude Code 기본기</button>
-        <button class="tab-btn" data-tab="token-mid">토큰 절약 중급 23가지</button>
-        <button class="tab-btn" data-tab="token-adv">토큰 절약 고급 9가지</button>
-        <button class="tab-btn" data-tab="selflearn">자기학습 프로세스</button>
-      </div>
-
-      <!-- ── 탭 1: Claude Code 기본기 (섹션 1 전수) ── -->
-      <div class="tab-panel active" data-panel="basics">
-        <details class="toggle" style="margin:0 0 16px;">
-          <summary style="font-weight:700;"><span class="ico">🛠️</span>에이전트 개발 키트 — 5단계 레이어 구조 (클릭해서 펼치기)</summary>
-          <div class="toggle-body" style="margin-top:12px;">
-            <table>
-              <tr><th style="width:200px">단계</th><th>역할</th></tr>
-              <tr><td>1. CLAUDE.md</td><td>메모리 레이어 (헌법). 시작 시 무조건 먼저 읽음.</td></tr>
-              <tr><td>2. skills 폴더</td><td>스킬 레이어 (만능 주머니). 필요할 때 꺼내 쓰는 비법.</td></tr>
-              <tr><td>3. hooks</td><td>후크 레이어 (안전요원). AI 실수 방지 안전망.</td></tr>
-              <tr><td>4. teams · tasks · sessions</td><td>서브에이전트 레이어. 작업 분담·대화 기록.</td></tr>
-              <tr><td>5. plugins</td><td>플러그인 레이어. 외부 도구 마켓.</td></tr>
-            </table>
-            <div class="card accent" style="margin-top:12px;"><h4>한 줄 요약</h4><p>기본 규칙(1)을 지키며 도구(2)를 꺼내 쓰고, 안전요원(3)의 보호 아래 동료(4)와 일을 나눠 한 뒤, 방법을 공유(5)한다.</p></div>
-          </div>
-        </details>
-        <h3><span class="ico">🧠</span>Claude Code 핵심 — 자주 쓰는 단축키</h3>
-        <p style="font-size:13px;color:var(--dim);margin:2px 0 10px;">일반 사용법(Plan Mode·권한 모드·Context Rot·서브에이전트 등)은 Claude 기본기라 생략. 토큰·세션 관리에 바로 쓰는 단축키만 남김. <span style="color:var(--dim);">(상세 교육 원본 = <code>웰페리온_AI교육자료_핵심정리.md</code>)</span></p>
-        <table>
-          <tr><th>단축키</th><th>기능</th></tr>
-          <tr><td>Shift+Tab</td><td>Plan Mode 진입(2번) / 읽기 전용</td></tr>
-          <tr><td>Esc</td><td>현재 생성 중단</td></tr>
-          <tr><td>/clear</td><td>컨텍스트 완전 초기화</td></tr>
-          <tr><td>/compact</td><td>컨텍스트 요약 압축</td></tr>
-          <tr><td>/cost</td><td>현재 세션 비용 확인</td></tr>
-          <tr><td>/context</td><td>컨텍스트 사용량 확인</td></tr>
-          <tr><td>/model</td><td>모델 변경</td></tr>
-          <tr><td>/mcp</td><td>MCP 서버 목록</td></tr>
-        </table>
-      </div>
-
-      <!-- ── 탭 2: 토큰 절약 중급편 23가지 (섹션 2 전수) ── -->
-      <div class="tab-panel" data-panel="token-mid">
-        <h3><span class="ico">💰</span>2. 토큰 절약 중급편 (23가지)</h3>
-
-        <h4>환경 설정 (파일·설정)</h4>
-        <table>
-          <tr><th style="width:50px">Tip</th><th>규칙</th><th>효과</th></tr>
-          <tr><td>01</td><td><strong>.claudeignore 파일 만들기</strong> — node_modules, .next, dist, build, .git 등 불필요 폴더 제외 (.gitignore 동일 문법)</td><td>불필요 파일 로딩 차단</td></tr>
-          <tr><td>02</td><td><strong>CLAUDE.md 200줄 이하 유지</strong> — 서술형 제거, 구조화된 형식</td><td>5,000→700 토큰</td></tr>
-          <tr><td>03</td><td><strong>상세 지식은 스킬로 분리</strong> — CLAUDE.md엔 인덱스만, 세부는 docs/</td><td>세션당 ~15,000 토큰</td></tr>
-          <tr><td>04</td><td><strong>CLAUDE.md에 5가지 절약 규칙 명시</strong> — 정본은 <code>CLAUDE.md §4 토큰·실행 효율 5대 원칙</code> (중복 기재 금지)</td><td>규칙 준수 강제</td></tr>
-          <tr><td>05</td><td><strong>이미 결정된 내용 적기</strong> — 아키텍처·코딩 규칙·빌드 명령·자주 하는 실수</td><td>탐색 비용 제거</td></tr>
-        </table>
-
-        <h4>컨텍스트 관리</h4>
-        <table>
-          <tr><th style="width:50px">Tip</th><th>규칙</th><th>효과</th></tr>
-          <tr><td>06</td><td><strong>@ 파일 전체 참조 지양</strong> — 500줄 이하 전체 / 500~2,000 구간 지정 / 2,000줄 이상 분리</td><td>불필요 로딩 방지</td></tr>
-          <tr><td>07</td><td><strong>60% 시점에 수동 압축</strong> — /context 확인 → /compact 실행 + 보존 내용 지시</td><td>품질 유지</td></tr>
-          <tr><td>08</td><td><strong>자리 비우기 전 압축/클리어</strong> — 캐시 5분 만료, 돌아오면 전체 재로딩</td><td>캐시 미스 방지</td></tr>
-          <tr><td>09</td><td><strong>셸 명령어 긴 출력 주의</strong> — head/tail로 출력 상한선 설정</td><td>로그 오염 방지</td></tr>
-          <tr><td>10</td><td><strong>Extended Thinking 관리</strong> — 기본 3만 토큰 소비. /config으로 thinking 예산 조절</td><td>숨은 비용 절감</td></tr>
-        </table>
-
-        <h4>MCP 최적화</h4>
-        <table>
-          <tr><th style="width:50px">Tip</th><th>규칙</th><th>효과</th></tr>
-          <tr><td>11</td><td><strong>MCP 서버 최소화</strong> — Playwright 17,600 + Supabase 20,900 = 38,500 토큰/메시지</td><td>10개 이하, 도구 80개 이하</td></tr>
-          <tr><td>12</td><td><strong>MCP tool search 옵션</strong> — 3개 이상 MCP 시 ENABLE_TOOL_SEARCH="auto:0" 설정</td><td>온디맨드 로딩</td></tr>
-          <tr><td>13</td><td><strong>4단계 MCP 줄이기</strong> — 목록 확인 → 도구 수 파악 → 토큰 비용 추정 → 상위부터 제거</td><td>체계적 정리</td></tr>
-          <tr><td>14</td><td><strong>글로벌 vs 프로젝트 MCP 분리</strong> — .claude/settings.json에서 disabledMcpServers 설정</td><td>프로젝트별 최적화</td></tr>
-        </table>
-
-        <h4>작업 습관 &amp; 비용 인식</h4>
-        <table>
-          <tr><th style="width:50px">Tip</th><th>규칙</th></tr>
-          <tr><td>15</td><td><strong>분산 메모리 구조</strong> — CLAUDE.md = 인덱스, 실제 데이터는 docs/ 하위 분산</td></tr>
-          <tr><td>16</td><td><strong>대규모 작업 후 /clear 전 저장</strong> — progress.md에 현재 상태 기록</td></tr>
-          <tr><td>17</td><td><strong>Projects에 반복 파일 업로드</strong> — 프롬프트 캐시 참조로 재로딩 비용 절감</td></tr>
-          <tr><td>18</td><td><strong>플랜 모드 먼저</strong> — Shift+Tab 2번. 불필요한 시행착오 방지</td></tr>
-          <tr><td>19</td><td><strong>상태 표시줄 /status line</strong> — 현재 토큰 사용량 실시간 모니터링</td></tr>
-          <tr><td>20</td><td><strong>ccusage로 사용량 추적</strong> — npm install -g @ryoppippi/ccusage</td></tr>
-          <tr><td>21</td><td><strong>토큰 확인 3가지</strong> — /context 명령 / ~/.claude/projects/ JSONL / 웹 계산기</td></tr>
-          <tr><td>22</td><td><strong>툴은 필요한 것만</strong> — 2주간 미사용 도구 제거</td></tr>
-          <tr><td>23</td><td><strong>서브에이전트 비용 인식</strong> — 본체 토큰 약 10배, Haiku 위임, 단발성만</td></tr>
-        </table>
-      </div>
-
-      <!-- ── 탭 3: 토큰 절약 고급편 9가지 (섹션 3 전수) ── -->
-      <div class="tab-panel" data-panel="token-adv">
-        <h3><span class="ico">🔬</span>3. 토큰 절약 고급편 (9가지)</h3>
-        <table>
-          <tr><th style="width:50px">Tip</th><th>기법</th><th>효과</th></tr>
-          <tr><td>01</td><td><strong>코드베이스 사전 인덱싱 (qmd)</strong> — 코드베이스 구조를 사전 인덱싱하여 매번 탐색 제거</td><td>92% 절감</td></tr>
-          <tr><td>02</td><td><strong>파일 재읽기 방지 훅 (read-once)</strong> — PreToolUse 훅으로 이미 읽은 파일 재로딩 차단</td><td>60~90% 절감</td></tr>
-          <tr><td>03</td><td><strong>훅으로 로그 전처리</strong> — PostToolUse 훅으로 FAILED·ERROR 라인만 추출</td><td>로그 컨텍스트 최소화</td></tr>
-          <tr><td>04</td><td><strong>환경 변수로 비용 제어</strong> — DISABLE_NON_ESSENTIAL_MODEL_CALLS · DISABLE_COST_WARNINGS · DISABLE_PROMPT_CACHING</td><td>비필수 호출 차단</td></tr>
-          <tr><td>05</td><td><strong>MCP 도구 설명 다이어트</strong> — 도구당 설명 300→20 토큰 축소</td><td>50개 도구 기준 3,000~4,000 토큰</td></tr>
-          <tr><td>06</td><td><strong>MCP 도구 필터링</strong> — GitHub MCP 30→8개 도구 (73% 감소)</td><td>실사용 도구만 활성</td></tr>
-          <tr><td>07</td><td><strong>에이전트별 최소 도구 세트</strong> — 각 에이전트 역할에 맞는 최소한 도구만 할당</td><td>역할별 최적화</td></tr>
-          <tr><td>08</td><td><strong>멀티 터미널 전략</strong> — 기능개발 / 리팩토링 / 디버깅을 별도 터미널에서 병렬 실행</td><td>컨텍스트 오염 방지</td></tr>
-          <tr><td>09</td><td><strong>적용 순서</strong> — 초급 습관 → 중급 환경 → 고급 도구. MAX 플랜 전에 52가지 모두 적용</td><td>단계적 효율 극대화</td></tr>
-        </table>
-      </div>
-
-      <!-- ── 탭 4: MCP→CLI 전환 (섹션 4 전수) ── -->
-
-      <!-- ── 탭 6: 자기학습 프로세스 (GM님 최종 목표) ── -->
-      <div class="tab-panel" data-panel="selflearn">
-        <h3><span class="ico">🔁</span>AI C-Level 자기학습 프로세스</h3>
-        <p>GM님 최종 목표: AI CEO 및 C-Level 에이전트들이 <strong>스스로 학습 → 제안·추천 → GM 승인 시 반복 고도화</strong>되는 순환 프로세스.</p>
-
-        <h4>자기학습 순환 4단계</h4>
-        <table>
-          <tr><th>단계</th><th>주체</th><th>내용</th><th>자동화 수준</th></tr>
-          <tr><td>1. 수집</td><td>시스템</td><td>Anthropic 공식 블로그·릴리스·문서 변경사항 + 로컬 교육자료 스캔</td><td>완전 자동 (스크립트)</td></tr>
-          <tr><td>2. 학습·요약</td><td>AI CEO</td><td>수집 결과를 C-Level 역할별 맞춤 요약 생성 + 현행 SOP 대비 개선점 분석</td><td>자동 (세션 시작 시)</td></tr>
-          <tr><td>3. 제안·추천</td><td>각 C-Level</td><td>본인 R/R 범위 내 고도화 안 작성 → CEO 취합 → GM님 텔레그램 보고</td><td>반자동 (C-Level 자율 제안)</td></tr>
-          <tr><td>4. 승인·반영</td><td>GM님</td><td>제안 검토 → 승인 시 즉시 반영 → 다음 사이클에 누적</td><td>GM님 승인 = 유일한 사람 게이트</td></tr>
-        </table>
-
-        <h4>자동화 도구</h4>
-        <div class="callout"><strong>가동 현황·주기는 T2 업무자동화SSOT 단일 출처</strong>(중복 표 제거 2026-06-06). 자기학습을 돌리는 자동화 = <code>ai_education_auto_learner.py</code>(웹 수집→요약→텔레그램) · <code>education_archive_weekly.py</code>(매주 일 09:00 교육자료 정리) · 컨텍스트 주간 정비(매주 일 09:00) · CEO 통합보고(매일 08:00). 무엇이 언제 도는지는 <a href="#" onclick="event.preventDefault();var t=document.querySelector('[data-id=T2]');if(t)t.click();" style="color:var(--accent);font-weight:700;text-decoration:none;">T2 업무자동화SSOT</a> 참조.</div>
-
-        <h4>고도화 진화 로드맵</h4>
-        <ul>
-          <li><strong>v1.0 (현재):</strong> 수동 수집 + 수동 학습 + 수동 제안</li>
-          <li><strong>v2.0:</strong> 자동 수집(ai_education_auto_learner) + AI 요약 + 텔레그램 제안 → GM 승인</li>
-          <li><strong>v3.0:</strong> Continuous Learning(instinct) + 자동 SOP 업데이트 제안 + 승인 시 자동 반영 + 학습 루프 고도화</li>
-        </ul>
-        <div class="callout"><strong>핵심 원칙.</strong> 모든 자동 고도화는 GM님 승인을 거쳐야 반영됨. AI는 제안까지만, 실행은 승인 후.</div>
-
-        <h3 style="margin-top:24px;border-top:1px solid var(--border);padding-top:20px;"><span class="ico">🛠️</span>커스텀 명령 도구함 <span style="font-size:12px;color:var(--dim);font-weight:400;">— 실제 작동하는 슬래시 명령 (자기학습으로 성장)</span></h3>
-        <div class="callout tip"><strong>진짜 명령입니다.</strong> SNS에 도는 '가짜 프롬프트 모음'과 달리, 아래는 <code>.claude/commands/</code>에 등록된 <strong>실제 작동 슬래시 명령</strong>. 세션에서 <code>/이름 [내용]</code>으로 바로 사용. <span style="color:var(--dim);">(새 명령은 자기학습 4단계로 발굴→GM 승인→추가되며 늘어남)</span></div>
-        <table>
-          <tr><th style="width:120px">명령</th><th>하는 일</th><th>예시</th></tr>
-          <tr><td><code>/eli5</code></td><td>어려운 걸 5살도 알 만큼 쉬운 일상어로</td><td><code>/eli5 ETF가 뭔지</code></td></tr>
-          <tr><td><code>/trim</code></td><td>군더더기 빼고 핵심만 (글자수 지정 가능)</td><td><code>/trim 이 보고서 500자로</code></td></tr>
-          <tr><td><code>/audit</code></td><td>작업물 문제점·어색한 곳 전부 점검</td><td><code>/audit 이 기획서 문제점</code></td></tr>
-          <tr><td><code>/ghost</code></td><td>AI 티 없애 사람이 쓴 듯 자연스럽게</td><td><code>/ghost 이 이메일</code></td></tr>
-          <tr><td><code>/premortem</code></td><td>계획이 실패했다 가정하고 원인 미리 분석</td><td><code>/premortem 이 사업안</code></td></tr>
-        </table>
-        <p style="font-size:12px;color:var(--dim);margin-top:6px;">※ 콘텐츠용(캡션·훅·바이럴)은 마케팅(시모/CMO) 영역으로 별도 추가 예정. 새 명령 추가는 <code>.claude/commands/</code>에 .md 한 장이면 끝.</p>
-
-        <h3><span class="ico">🔧</span>컨텍스트 정비 범위 정의 (매주 일 09:00)</h3>
-        <div class="callout"><strong>→ 범위표 단일출처 = T2 업무자동화SSOT, 실행 프롬프트 = T1 본 섹션.</strong> 주간 컨텍스트 정비 범위표(6 C-Level 식별자·정비 범위·체크포인트)는 <a href="#" onclick="event.preventDefault();var t=document.querySelector('[data-id=T2]');if(t)t.click();" style="color:var(--accent);font-weight:700;text-decoration:none;">T2 업무자동화SSOT ▸ 매주 ▸ 7 C-Level 컨텍스트 정비</a>에서 단일 관리합니다(2026-06-05 이관). 실행 프롬프트(STEP 1~5)는 <strong>T1 기술 인프라 상세 ▸ 핵심 프롬프트 ▸ 운영 실행 도구</strong>. 범위표 중복 기재 금지.</div>
-      </div>
-
-      <!-- ── 탭 7: 핵심 프롬프트 ── -->
-
-    </div>
-
-    <div class="source">SSOT: 본 섹션 = AI 교육자료 + 범용 방법론 프롬프트 단일 원본 (웰페리온_AI교육자료_핵심정리.md 609줄 전수 반영 · 2026-05-26). 운영형 프롬프트·정비 범위표는 S2, 기술 인프라 프롬프트는 T2 참조.</div>
-  </article>
-
-  <article class="doc" id="T1">
-    <div class="doc-header"><h2><span class="g-id">T1</span>기술 인프라 상세</h2><div class="meta">기술 SSOT · guide-hub.html 통합 · 2026-05-25</div></div>
-    <p class="lead">scripts 폴더 구조, 경로 표준화, CTO 개발 아카이브 운영의 상세 기술 문서입니다.</p>
-    <div class="callout"><strong>🧭 GM 한 줄.</strong> 이 페이지는 <strong>기술 담당(AI·개발자)용 참고서</strong>예요 — 설정이 어디 있고 파일 경로가 뭔지. <strong>GM은 평소 볼 필요 없습니다.</strong> "시스템이 잘 도는지"는 <strong>T2 ▸ 🖥️ 시스템 현황</strong>에서 한눈에 보세요.</div>
-
     <div class="tabs" data-tabs="T1">
       <div class="tab-nav">
         <button class="tab-btn active" data-tab="settings">설정 위치</button>
         <button class="tab-btn" data-tab="paths">경로 표준화</button>
         <button class="tab-btn" data-tab="prompts">기술 프롬프트</button>
+      
+        <button class="tab-btn" data-tab="basics">Claude Code 기본기</button>
+        <button class="tab-btn" data-tab="token-mid">토큰 절약 중급 23가지</button>
+        <button class="tab-btn" data-tab="token-adv">토큰 절약 고급 9가지</button>
+        <button class="tab-btn" data-tab="selflearn">자기학습 프로세스</button>
       </div>
 
       <!-- ── 탭: 설정 위치 (T1 g1에서 흡수 — STAGE 3) ── -->
@@ -3956,6 +3802,149 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
           <strong>⚠️ GM 목표 반영</strong> — GM은 "깊게 생각·병렬·자동화"를 우선한다. settings.json <code>MAX_THINKING_TOKENS 낮추기</code>는 사고량을 줄이므로 <strong>적용하지 않는다.</strong> 작업량은 "매우 높음" 유지.
         </div>
       </div>
+    
+
+      <!-- ── 탭 1: Claude Code 기본기 (섹션 1 전수) ── -->
+      <div class="tab-panel" data-panel="basics">
+        <details class="toggle" style="margin:0 0 16px;">
+          <summary style="font-weight:700;"><span class="ico">🛠️</span>에이전트 개발 키트 — 5단계 레이어 구조 (클릭해서 펼치기)</summary>
+          <div class="toggle-body" style="margin-top:12px;">
+            <table>
+              <tr><th style="width:200px">단계</th><th>역할</th></tr>
+              <tr><td>1. CLAUDE.md</td><td>메모리 레이어 (헌법). 시작 시 무조건 먼저 읽음.</td></tr>
+              <tr><td>2. skills 폴더</td><td>스킬 레이어 (만능 주머니). 필요할 때 꺼내 쓰는 비법.</td></tr>
+              <tr><td>3. hooks</td><td>후크 레이어 (안전요원). AI 실수 방지 안전망.</td></tr>
+              <tr><td>4. teams · tasks · sessions</td><td>서브에이전트 레이어. 작업 분담·대화 기록.</td></tr>
+              <tr><td>5. plugins</td><td>플러그인 레이어. 외부 도구 마켓.</td></tr>
+            </table>
+            <div class="card accent" style="margin-top:12px;"><h4>한 줄 요약</h4><p>기본 규칙(1)을 지키며 도구(2)를 꺼내 쓰고, 안전요원(3)의 보호 아래 동료(4)와 일을 나눠 한 뒤, 방법을 공유(5)한다.</p></div>
+          </div>
+        </details>
+        <h3><span class="ico">🧠</span>Claude Code 핵심 — 자주 쓰는 단축키</h3>
+        <p style="font-size:13px;color:var(--dim);margin:2px 0 10px;">일반 사용법(Plan Mode·권한 모드·Context Rot·서브에이전트 등)은 Claude 기본기라 생략. 토큰·세션 관리에 바로 쓰는 단축키만 남김. <span style="color:var(--dim);">(상세 교육 원본 = <code>웰페리온_AI교육자료_핵심정리.md</code>)</span></p>
+        <table>
+          <tr><th>단축키</th><th>기능</th></tr>
+          <tr><td>Shift+Tab</td><td>Plan Mode 진입(2번) / 읽기 전용</td></tr>
+          <tr><td>Esc</td><td>현재 생성 중단</td></tr>
+          <tr><td>/clear</td><td>컨텍스트 완전 초기화</td></tr>
+          <tr><td>/compact</td><td>컨텍스트 요약 압축</td></tr>
+          <tr><td>/cost</td><td>현재 세션 비용 확인</td></tr>
+          <tr><td>/context</td><td>컨텍스트 사용량 확인</td></tr>
+          <tr><td>/model</td><td>모델 변경</td></tr>
+          <tr><td>/mcp</td><td>MCP 서버 목록</td></tr>
+        </table>
+      </div>
+
+      <!-- ── 탭 2: 토큰 절약 중급편 23가지 (섹션 2 전수) ── -->
+      <div class="tab-panel" data-panel="token-mid">
+        <h3><span class="ico">💰</span>2. 토큰 절약 중급편 (23가지)</h3>
+
+        <h4>환경 설정 (파일·설정)</h4>
+        <table>
+          <tr><th style="width:50px">Tip</th><th>규칙</th><th>효과</th></tr>
+          <tr><td>01</td><td><strong>.claudeignore 파일 만들기</strong> — node_modules, .next, dist, build, .git 등 불필요 폴더 제외 (.gitignore 동일 문법)</td><td>불필요 파일 로딩 차단</td></tr>
+          <tr><td>02</td><td><strong>CLAUDE.md 200줄 이하 유지</strong> — 서술형 제거, 구조화된 형식</td><td>5,000→700 토큰</td></tr>
+          <tr><td>03</td><td><strong>상세 지식은 스킬로 분리</strong> — CLAUDE.md엔 인덱스만, 세부는 docs/</td><td>세션당 ~15,000 토큰</td></tr>
+          <tr><td>04</td><td><strong>CLAUDE.md에 5가지 절약 규칙 명시</strong> — 정본은 <code>CLAUDE.md §4 토큰·실행 효율 5대 원칙</code> (중복 기재 금지)</td><td>규칙 준수 강제</td></tr>
+          <tr><td>05</td><td><strong>이미 결정된 내용 적기</strong> — 아키텍처·코딩 규칙·빌드 명령·자주 하는 실수</td><td>탐색 비용 제거</td></tr>
+        </table>
+
+        <h4>컨텍스트 관리</h4>
+        <table>
+          <tr><th style="width:50px">Tip</th><th>규칙</th><th>효과</th></tr>
+          <tr><td>06</td><td><strong>@ 파일 전체 참조 지양</strong> — 500줄 이하 전체 / 500~2,000 구간 지정 / 2,000줄 이상 분리</td><td>불필요 로딩 방지</td></tr>
+          <tr><td>07</td><td><strong>60% 시점에 수동 압축</strong> — /context 확인 → /compact 실행 + 보존 내용 지시</td><td>품질 유지</td></tr>
+          <tr><td>08</td><td><strong>자리 비우기 전 압축/클리어</strong> — 캐시 5분 만료, 돌아오면 전체 재로딩</td><td>캐시 미스 방지</td></tr>
+          <tr><td>09</td><td><strong>셸 명령어 긴 출력 주의</strong> — head/tail로 출력 상한선 설정</td><td>로그 오염 방지</td></tr>
+          <tr><td>10</td><td><strong>Extended Thinking 관리</strong> — 기본 3만 토큰 소비. /config으로 thinking 예산 조절</td><td>숨은 비용 절감</td></tr>
+        </table>
+
+        <h4>MCP 최적화</h4>
+        <table>
+          <tr><th style="width:50px">Tip</th><th>규칙</th><th>효과</th></tr>
+          <tr><td>11</td><td><strong>MCP 서버 최소화</strong> — Playwright 17,600 + Supabase 20,900 = 38,500 토큰/메시지</td><td>10개 이하, 도구 80개 이하</td></tr>
+          <tr><td>12</td><td><strong>MCP tool search 옵션</strong> — 3개 이상 MCP 시 ENABLE_TOOL_SEARCH="auto:0" 설정</td><td>온디맨드 로딩</td></tr>
+          <tr><td>13</td><td><strong>4단계 MCP 줄이기</strong> — 목록 확인 → 도구 수 파악 → 토큰 비용 추정 → 상위부터 제거</td><td>체계적 정리</td></tr>
+          <tr><td>14</td><td><strong>글로벌 vs 프로젝트 MCP 분리</strong> — .claude/settings.json에서 disabledMcpServers 설정</td><td>프로젝트별 최적화</td></tr>
+        </table>
+
+        <h4>작업 습관 &amp; 비용 인식</h4>
+        <table>
+          <tr><th style="width:50px">Tip</th><th>규칙</th></tr>
+          <tr><td>15</td><td><strong>분산 메모리 구조</strong> — CLAUDE.md = 인덱스, 실제 데이터는 docs/ 하위 분산</td></tr>
+          <tr><td>16</td><td><strong>대규모 작업 후 /clear 전 저장</strong> — progress.md에 현재 상태 기록</td></tr>
+          <tr><td>17</td><td><strong>Projects에 반복 파일 업로드</strong> — 프롬프트 캐시 참조로 재로딩 비용 절감</td></tr>
+          <tr><td>18</td><td><strong>플랜 모드 먼저</strong> — Shift+Tab 2번. 불필요한 시행착오 방지</td></tr>
+          <tr><td>19</td><td><strong>상태 표시줄 /status line</strong> — 현재 토큰 사용량 실시간 모니터링</td></tr>
+          <tr><td>20</td><td><strong>ccusage로 사용량 추적</strong> — npm install -g @ryoppippi/ccusage</td></tr>
+          <tr><td>21</td><td><strong>토큰 확인 3가지</strong> — /context 명령 / ~/.claude/projects/ JSONL / 웹 계산기</td></tr>
+          <tr><td>22</td><td><strong>툴은 필요한 것만</strong> — 2주간 미사용 도구 제거</td></tr>
+          <tr><td>23</td><td><strong>서브에이전트 비용 인식</strong> — 본체 토큰 약 10배, Haiku 위임, 단발성만</td></tr>
+        </table>
+      </div>
+
+      <!-- ── 탭 3: 토큰 절약 고급편 9가지 (섹션 3 전수) ── -->
+      <div class="tab-panel" data-panel="token-adv">
+        <h3><span class="ico">🔬</span>3. 토큰 절약 고급편 (9가지)</h3>
+        <table>
+          <tr><th style="width:50px">Tip</th><th>기법</th><th>효과</th></tr>
+          <tr><td>01</td><td><strong>코드베이스 사전 인덱싱 (qmd)</strong> — 코드베이스 구조를 사전 인덱싱하여 매번 탐색 제거</td><td>92% 절감</td></tr>
+          <tr><td>02</td><td><strong>파일 재읽기 방지 훅 (read-once)</strong> — PreToolUse 훅으로 이미 읽은 파일 재로딩 차단</td><td>60~90% 절감</td></tr>
+          <tr><td>03</td><td><strong>훅으로 로그 전처리</strong> — PostToolUse 훅으로 FAILED·ERROR 라인만 추출</td><td>로그 컨텍스트 최소화</td></tr>
+          <tr><td>04</td><td><strong>환경 변수로 비용 제어</strong> — DISABLE_NON_ESSENTIAL_MODEL_CALLS · DISABLE_COST_WARNINGS · DISABLE_PROMPT_CACHING</td><td>비필수 호출 차단</td></tr>
+          <tr><td>05</td><td><strong>MCP 도구 설명 다이어트</strong> — 도구당 설명 300→20 토큰 축소</td><td>50개 도구 기준 3,000~4,000 토큰</td></tr>
+          <tr><td>06</td><td><strong>MCP 도구 필터링</strong> — GitHub MCP 30→8개 도구 (73% 감소)</td><td>실사용 도구만 활성</td></tr>
+          <tr><td>07</td><td><strong>에이전트별 최소 도구 세트</strong> — 각 에이전트 역할에 맞는 최소한 도구만 할당</td><td>역할별 최적화</td></tr>
+          <tr><td>08</td><td><strong>멀티 터미널 전략</strong> — 기능개발 / 리팩토링 / 디버깅을 별도 터미널에서 병렬 실행</td><td>컨텍스트 오염 방지</td></tr>
+          <tr><td>09</td><td><strong>적용 순서</strong> — 초급 습관 → 중급 환경 → 고급 도구. MAX 플랜 전에 52가지 모두 적용</td><td>단계적 효율 극대화</td></tr>
+        </table>
+      </div>
+
+      <!-- ── 탭 4: MCP→CLI 전환 (섹션 4 전수) ── -->
+
+      <!-- ── 탭 6: 자기학습 프로세스 (GM님 최종 목표) ── -->
+      <div class="tab-panel" data-panel="selflearn">
+        <h3><span class="ico">🔁</span>AI C-Level 자기학습 프로세스</h3>
+        <p>GM님 최종 목표: AI CEO 및 C-Level 에이전트들이 <strong>스스로 학습 → 제안·추천 → GM 승인 시 반복 고도화</strong>되는 순환 프로세스.</p>
+
+        <h4>자기학습 순환 4단계</h4>
+        <table>
+          <tr><th>단계</th><th>주체</th><th>내용</th><th>자동화 수준</th></tr>
+          <tr><td>1. 수집</td><td>시스템</td><td>Anthropic 공식 블로그·릴리스·문서 변경사항 + 로컬 교육자료 스캔</td><td>완전 자동 (스크립트)</td></tr>
+          <tr><td>2. 학습·요약</td><td>AI CEO</td><td>수집 결과를 C-Level 역할별 맞춤 요약 생성 + 현행 SOP 대비 개선점 분석</td><td>자동 (세션 시작 시)</td></tr>
+          <tr><td>3. 제안·추천</td><td>각 C-Level</td><td>본인 R/R 범위 내 고도화 안 작성 → CEO 취합 → GM님 텔레그램 보고</td><td>반자동 (C-Level 자율 제안)</td></tr>
+          <tr><td>4. 승인·반영</td><td>GM님</td><td>제안 검토 → 승인 시 즉시 반영 → 다음 사이클에 누적</td><td>GM님 승인 = 유일한 사람 게이트</td></tr>
+        </table>
+
+        <h4>자동화 도구</h4>
+        <div class="callout"><strong>가동 현황·주기는 T2 업무자동화SSOT 단일 출처</strong>(중복 표 제거 2026-06-06). 자기학습을 돌리는 자동화 = <code>ai_education_auto_learner.py</code>(웹 수집→요약→텔레그램) · <code>education_archive_weekly.py</code>(매주 일 09:00 교육자료 정리) · 컨텍스트 주간 정비(매주 일 09:00) · CEO 통합보고(매일 08:00). 무엇이 언제 도는지는 <a href="#" onclick="event.preventDefault();var t=document.querySelector('[data-id=T2]');if(t)t.click();" style="color:var(--accent);font-weight:700;text-decoration:none;">T2 업무자동화SSOT</a> 참조.</div>
+
+        <h4>고도화 진화 로드맵</h4>
+        <ul>
+          <li><strong>v1.0 (현재):</strong> 수동 수집 + 수동 학습 + 수동 제안</li>
+          <li><strong>v2.0:</strong> 자동 수집(ai_education_auto_learner) + AI 요약 + 텔레그램 제안 → GM 승인</li>
+          <li><strong>v3.0:</strong> Continuous Learning(instinct) + 자동 SOP 업데이트 제안 + 승인 시 자동 반영 + 학습 루프 고도화</li>
+        </ul>
+        <div class="callout"><strong>핵심 원칙.</strong> 모든 자동 고도화는 GM님 승인을 거쳐야 반영됨. AI는 제안까지만, 실행은 승인 후.</div>
+
+        <h3 style="margin-top:24px;border-top:1px solid var(--border);padding-top:20px;"><span class="ico">🛠️</span>커스텀 명령 도구함 <span style="font-size:12px;color:var(--dim);font-weight:400;">— 실제 작동하는 슬래시 명령 (자기학습으로 성장)</span></h3>
+        <div class="callout tip"><strong>진짜 명령입니다.</strong> SNS에 도는 '가짜 프롬프트 모음'과 달리, 아래는 <code>.claude/commands/</code>에 등록된 <strong>실제 작동 슬래시 명령</strong>. 세션에서 <code>/이름 [내용]</code>으로 바로 사용. <span style="color:var(--dim);">(새 명령은 자기학습 4단계로 발굴→GM 승인→추가되며 늘어남)</span></div>
+        <table>
+          <tr><th style="width:120px">명령</th><th>하는 일</th><th>예시</th></tr>
+          <tr><td><code>/eli5</code></td><td>어려운 걸 5살도 알 만큼 쉬운 일상어로</td><td><code>/eli5 ETF가 뭔지</code></td></tr>
+          <tr><td><code>/trim</code></td><td>군더더기 빼고 핵심만 (글자수 지정 가능)</td><td><code>/trim 이 보고서 500자로</code></td></tr>
+          <tr><td><code>/audit</code></td><td>작업물 문제점·어색한 곳 전부 점검</td><td><code>/audit 이 기획서 문제점</code></td></tr>
+          <tr><td><code>/ghost</code></td><td>AI 티 없애 사람이 쓴 듯 자연스럽게</td><td><code>/ghost 이 이메일</code></td></tr>
+          <tr><td><code>/premortem</code></td><td>계획이 실패했다 가정하고 원인 미리 분석</td><td><code>/premortem 이 사업안</code></td></tr>
+        </table>
+        <p style="font-size:12px;color:var(--dim);margin-top:6px;">※ 콘텐츠용(캡션·훅·바이럴)은 마케팅(시모/CMO) 영역으로 별도 추가 예정. 새 명령 추가는 <code>.claude/commands/</code>에 .md 한 장이면 끝.</p>
+
+        <h3><span class="ico">🔧</span>컨텍스트 정비 범위 정의 (매주 일 09:00)</h3>
+        <div class="callout"><strong>→ 범위표 단일출처 = T2 업무자동화SSOT, 실행 프롬프트 = T1 본 섹션.</strong> 주간 컨텍스트 정비 범위표(6 C-Level 식별자·정비 범위·체크포인트)는 <a href="#" onclick="event.preventDefault();var t=document.querySelector('[data-id=T2]');if(t)t.click();" style="color:var(--accent);font-weight:700;text-decoration:none;">T2 업무자동화SSOT ▸ 매주 ▸ 7 C-Level 컨텍스트 정비</a>에서 단일 관리합니다(2026-06-05 이관). 실행 프롬프트(STEP 1~5)는 <strong>T1 기술 인프라 상세 ▸ 핵심 프롬프트 ▸ 운영 실행 도구</strong>. 범위표 중복 기재 금지.</div>
+      </div>
+
+      <!-- ── 탭 7: 핵심 프롬프트 ── -->
+
     </div>
 
     <div class="source">SSOT: CTO_개발아카이브_프롬프트.md + telegram_bot/_README.md + scripts/_README.md + docs/PATH_STANDARDIZATION.md 통합</div>
