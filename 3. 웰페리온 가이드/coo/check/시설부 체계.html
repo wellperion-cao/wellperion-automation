@@ -3096,7 +3096,7 @@ function renderVendorList(){
 
   let html = '';
   groups.forEach(({label, list})=>{
-    html += '<details class="vendor-group" open>'
+    html += '<details class="vendor-group">'
       + '<summary class="vendor-group-sum"><span class="vendor-group-title">'+escapeHTML(label)+'</span>'
       + '<span class="vendor-group-count">'+list.length+'곳</span></summary>'
       + '<div style="overflow-x:auto;">'
