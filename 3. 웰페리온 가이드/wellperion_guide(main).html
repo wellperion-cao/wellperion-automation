@@ -985,13 +985,13 @@
           var route = [];
           if (midName && !ownerIsGM && !skipMid) route.push(midName);
           if (!ownerIsGM) route.push('김남욱GM');
-          route.push('전응준 대표');
+          // 대표 단계 폐지(2026-06-16) — GM 종착. 결재현황 SSOT와 동일(대표는 오프라인 페이퍼).
           var map = { };
           map[route[0]] = midName ? row['부서장싸인'] : undefined;
-          // 명시적 매핑: 부서장→부서장싸인 / GM→GM싸인 / 대표→대표싸인
+          // 명시적 매핑: 부서장→부서장싸인 / GM→GM싸인 (대표 단계 제거)
           for (var i=0;i<route.length;i++){
             var who = route[i];
-            var sign = (who==='김남욱GM') ? row['GM싸인'] : (who==='전응준 대표') ? row['대표싸인'] : row['부서장싸인'];
+            var sign = (who==='김남욱GM') ? row['GM싸인'] : row['부서장싸인'];
             if (!sign) return who;
           }
           return null;
