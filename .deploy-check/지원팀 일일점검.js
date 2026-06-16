@@ -695,6 +695,19 @@ function _updateCheckLedger(dept, date, body) {
         : 1;
     });
   }
+  // led.seen — 분모 적립(P2 2026-06-16 시우·architect): 이번 save payload의 가시 항목 전량(체크 여부 무관).
+  // 키: '<bucket>_<id>' (bucket = _shiftBucket(shift), 회차버킷 단일화). 매 저장 시 전량 교체(roundChecks 동일 패턴).
+  // ⚠ 읽기 전용 분모 — led.sub(제출도장)과 완전 무관, 완료율/weekly 집계에 영향 0. support 한정.
+  if (body && checks.length > 0) {
+    var _seen = {};
+    checks.forEach(function (c) {
+      var id = String(c.itemId || '');
+      if (!id) return;
+      var bk = _shiftBucket(String(c.shift || 'pm'));
+      _seen[bk + '_' + id] = 1;
+    });
+    led.seen = _seen;
+  }
   props.setProperty(key, JSON.stringify(led));
 }
 
@@ -1899,8 +1912,9 @@ function handleWeekly(params) {
 // GET ?action=today_live&dept=support[&date=YYYY-MM-DD]
 // 분자(done): cr 회차원장(키 '<round>_<id>')을 회차버킷(am/pm/close/night)별로 카운트 — 남/여/공용 합산.
 //   round→bucket: 라운드키 끝 숫자 제거('am1'→'am','pm1'→'pm','close1'→'close') 후 _shiftBucket 동일규칙.
-// 분모(total): 그날 점검일지 스냅샷의 (구역 zone × 버킷) total을 버킷별 합산 재사용(handleWeekly와 동일 출처).
-//   스냅샷 없으면 항목별 시트 행수로 폴백(레거시 일자). 분자·분모 모두 같은 회차버킷 기준.
+// 분모(total) P2: led.seen(자동저장 payload 가시 항목 전량 — 체크 여부 무관) 기준.
+//   키: '<bucket>_<id>', 버킷 = _shiftBucket(shift). 없으면 점검일지 스냅샷 total 폴백(handleWeekly 동일 출처).
+//   → 제출 전(체크만 한) 신선한 상태에서도 전체 점검수 정확 집계. 2026-06-16 architect 확정.
 // ⚠ 쓰기 경로 무변경 — sub(제출도장) 절대 안 찍음(거짓 대량제출 사고 회피). support 한정.
 // 응답: { ok, dept, date, am, pm, close, night, total, done, pct, byGender:{m,f,all:{done,total,...}} }
 // ════════════════════════════════════════════
@@ -1940,33 +1954,52 @@ function handleTodayLive(params) {
     });
   });
 
-  // ─── 분모(total): 그날 점검일지 스냅샷의 (zone×bucket) total — handleWeekly와 동일 셀 채택(최신행) ───
+  // ─── 분모(total) P2: led.seen 1차, 스냅샷 폴백 ───
   var ss = SpreadsheetApp.getActiveSpreadsheet();
-  // zone(m/f/all) → 우리 성별맵과 동일. 셀별 최신 제출행의 total 채택(라운드 재제출=재진술이라 합산 중복 방지).
   var totalByG = { m: newBuckets(), f: newBuckets(), all: newBuckets() };
-  var snapCells = {};   // { gender: { bucket: {total, at} } }
+
+  // 1차: led.seen — 자동저장 payload 가시 항목 전량(체크 여부 무관), 키 '<bucket>_<id>'.
+  // 제출 전 신선한 상태에서도 전체 점검수 정확 집계. 2026-06-16 architect 확정.
+  var seenAvailable = false;
+  genders.forEach(function (g) {
+    var led = _getCheckLedger(dept, date, g);
+    var seen = (led && led.seen && typeof led.seen === 'object') ? led.seen : {};
+    if (Object.keys(seen).length > 0) {
+      seenAvailable = true;
+      Object.keys(seen).forEach(function (k) {
+        if (!seen[k]) return;
+        var us = String(k).indexOf('_');
+        if (us < 0) return;
+        var bk = k.slice(0, us);   // '<bucket>_<id>' → bucket은 앞부분
+        if (totalByG[g][bk] === undefined) bk = 'pm';   // 미인식 버킷 폴백
+        totalByG[g][bk]++;
+      });
+    }
+  });
+
+  // 폴백: seen 없는 성별/버킷은 점검일지 스냅샷 total 사용(handleWeekly 동일 출처 — 제출 후 일자·레거시 대응).
+  var snapCells = {};
   genders.forEach(function (g) { snapCells[g] = {}; });
   var snapSheet = ss.getSheetByName(_snapshotTabName(dept));
-  if (snapSheet) {
+  if (snapSheet && !seenAvailable) {
+    // seen 전혀 없으면 스냅샷에서 전 성별 채움
     var sdata = snapSheet.getDataRange().getValues();
-    // 열: 0=제출시각,1=날짜,3=구역(zone),4=교대,6=총항목,7=완료
     for (var r = 1; r < sdata.length; r++) {
       if (formatDate(sdata[r][1]) !== date) continue;
       var zone = String(sdata[r][3] || '');
       if (zone !== 'm' && zone !== 'f' && zone !== 'all') continue;
-      var bucket = _shiftBucket(sdata[r][4]);     // 스냅샷 교대 라벨 → 버킷(weekly와 동일)
+      var bucket = _shiftBucket(sdata[r][4]);
       var tot = Number(sdata[r][6]); if (isNaN(tot)) tot = 0;
       var at = String(sdata[r][0] || '');
       var cell = snapCells[zone][bucket];
-      if (!cell || at >= cell.at) snapCells[zone][bucket] = { total: tot, at: at };   // 최신 셀 채택
+      if (!cell || at >= cell.at) snapCells[zone][bucket] = { total: tot, at: at };
     }
     genders.forEach(function (g) {
       buckets.forEach(function (b) { if (snapCells[g][b]) totalByG[g][b] = snapCells[g][b].total; });
     });
   }
 
-  // 스냅샷 분모가 비어있는 버킷(신선한 날·미제출)은 done을 분모로 폴백(최소판: 음수/100%초과 방지).
-  // P2(led.seen 분모 정밀화)는 이번 범위 제외 — 분모는 최소판.
+  // 최종 안전장치: 분모가 분자보다 작으면 분자로 올림(100% 초과 방지).
   genders.forEach(function (g) {
     buckets.forEach(function (b) {
       if (totalByG[g][b] < doneByG[g][b]) totalByG[g][b] = doneByG[g][b];
