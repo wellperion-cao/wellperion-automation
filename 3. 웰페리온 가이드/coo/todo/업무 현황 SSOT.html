@@ -2060,7 +2060,10 @@ function openAddModal() {
   document.getElementById('fResult').value = '';
   updateBudgetRoute();
   applyLifecycleLocks(null);  // 신규 = free stage
+  // 이전에 열었던 회의 업무의 잔여 칸/순서/캐시 제거 → 업무 간 내용 교차오염(동기화) 방지
   _meetingNotes = {};
+  _meetingRenderNames = [];
+  var _mnBoxAdd = document.getElementById('fMeetingNotes'); if (_mnBoxAdd) _mnBoxAdd.innerHTML = '';
   syncMeetingMode();
   document.getElementById('modalSaveBtn').textContent = '저장';
   document.getElementById('taskModal').classList.add('show');
@@ -2220,6 +2223,9 @@ function openEditModal(id) {
   renderExistingFiles(t.id);
   setCheckboxGroup('fApprovalGroup', (t.approval || '').split(',').map(s => s.trim()));
   updateBudgetRoute();
+  // 이전에 열었던 회의 업무의 잔여 칸/순서를 제거 → 업무 간 내용 교차오염(동기화) 방지
+  _meetingRenderNames = [];
+  var _mnBox = document.getElementById('fMeetingNotes'); if (_mnBox) _mnBox.innerHTML = '';
   // 회의 칸 캐시는 렌더 전에 채워야 함 (applyLifecycleLocks가 회의 칸을 먼저 렌더 → 빈칸 역동기화 방지)
   _meetingNotes = _parseMeetingNotes(parsed.plan);
   // 레거시 회의(◆ 머리표 없는 기존 내용)는 담당자 칸에 통째로 보존 → 유실 방지, 칸별 재배치 가능
