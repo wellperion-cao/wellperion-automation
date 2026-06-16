@@ -327,6 +327,7 @@ async def _select_google_account(scopes) -> bool:
     for _scope in scopes:
         if _scope is None:
             continue
+        # ① 셀렉터 기반 (기존)
         for _acc_sel in _account_select_selectors():
             try:
                 _loc = _scope.locator(_acc_sel).first
@@ -337,6 +338,38 @@ async def _select_google_account(scopes) -> bool:
                     return True
             except Exception:
                 continue
+        # ② JS 폴백 — 텍스트 셀렉터가 못 잡는 경우 대비. 보이는 클릭요소(우측 상단 파란
+        #    '경영지원 계정으로 계속' 등)를 DOM 스캔해 직접 클릭(텍스트 미세차이·래퍼에 강건).
+        try:
+            clicked = await _scope.evaluate(
+                r"""() => {
+                  const wants = (t) => !!t && (
+                    t.includes('경영지원') ||
+                    /계정으로\s*계속/.test(t) ||
+                    /^\s*계속\s*$/.test(t) ||
+                    t.includes('Continue') ||
+                    t.includes('당근 계정으로 시작') ||
+                    /당근\s*계정으로\s*시작/.test(t)
+                  );
+                  const els = Array.from(document.querySelectorAll(
+                    'button, a, [role=button], div[role=link], input[type=submit]'));
+                  for (const el of els) {
+                    const r = el.getBoundingClientRect();
+                    const cs = getComputedStyle(el);
+                    const visible = r.width > 0 && r.height > 0 &&
+                      cs.visibility !== 'hidden' && cs.display !== 'none';
+                    const txt = (el.innerText || el.textContent || el.value || '').trim();
+                    if (visible && wants(txt)) { el.click(); return txt.slice(0, 40); }
+                  }
+                  return null;
+                }"""
+            )
+            if clicked:
+                print(f"[INFO] 계정 자동 선택(JS 폴백) 클릭: {clicked!r}")
+                await asyncio.sleep(3)
+                return True
+        except Exception:
+            pass
     return False
 
 
@@ -521,8 +554,29 @@ async def run_setup(args: "argparse.Namespace | None" = None) -> int:
             # + '경영지원 계정으로 계속'(Chrome 저장 계정) 케이스. (2026-06-10 셀렉터 보강)
             # 못 찾으면 GM 수동 클릭 대기(기존 동작 유지·무회귀).
             # 미클릭 시 Google 버튼이 다시 보이면 재클릭(리다이렉트로 로그인 화면 재진입 케이스).
-            if not await _select_google_account((page, popup_ref.get("pg"))):
-                if is_login_required(page.url):
+            # Google OAuth는 팝업으로 뜸 — 팝업이 열렸으면 팝업만 스캔(파란 '…계정으로 계속하기').
+            # 그래야 메인의 '당근 계정으로 시작하기'를 반복 재클릭하지 않고 팝업 동의 버튼을 누른다.
+            _pg = popup_ref.get("pg")
+            # 팝업 첫 등장 시 1회 진단 — 스크린샷 + 보이는 클릭요소 텍스트 덤프(셀렉터 정밀화용)
+            if _pg is not None and not popup_ref.get("diag"):
+                popup_ref["diag"] = True
+                try:
+                    await _screenshot(_pg, "danggn_oauth_popup.png")
+                    _texts = await _pg.evaluate(
+                        r"""() => Array.from(document.querySelectorAll(
+                              'button, a, [role=button], div[role=link], input[type=submit]'))
+                          .filter(el => { const r = el.getBoundingClientRect();
+                              return r.width>0 && r.height>0; })
+                          .map(el => (el.innerText||el.textContent||el.value||'').trim())
+                          .filter(t => t).slice(0, 30)"""
+                    )
+                    print(f"[DIAG] 팝업 URL: {_pg.url[:90]}")
+                    print(f"[DIAG] 팝업 클릭요소 텍스트: {_texts}")
+                except Exception as _e:
+                    print(f"[DIAG] 팝업 진단 실패(cross-origin 가능): {type(_e).__name__}")
+            _scopes = (_pg,) if _pg is not None else tuple(context.pages)
+            if not await _select_google_account(_scopes):
+                if _pg is None and is_login_required(page.url):
                     await _click_google_login(page)
 
             await asyncio.sleep(3)
@@ -1080,11 +1134,12 @@ async def _try_auto_relogin(page, context) -> bool:
     await _click_google_login(page)
 
     # Google 계정 선택(cao@wellperion.com)·'계속' 확인 자동 클릭 (팝업·메인 양쪽, 셀렉터 보강 2026-06-10)
-    deadline, waited = 60, 0
+    deadline, waited = 180, 0
     while waited < deadline:
-        await _select_google_account((page, popup_ref.get("pg")))
-        # 로그인 화면으로 되돌아온 경우 Google 버튼 재클릭
-        if is_login_required(page.url):
+        _pg = popup_ref.get("pg")
+        await _select_google_account((_pg,) if _pg is not None else tuple(context.pages))
+        # 로그인 화면으로 되돌아온 경우 Google 버튼 재클릭(팝업 없을 때만)
+        if _pg is None and is_login_required(page.url):
             await _click_google_login(page)
 
         cur = page.url
