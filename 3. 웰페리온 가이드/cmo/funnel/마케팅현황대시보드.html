@@ -280,52 +280,21 @@ details.collapse > .collapse-body{border-top:1px solid var(--border);padding:16p
   </div>
 
   <!-- ════════════════════════════════════════════
-       🔝 요약 구역 — 항상 펼침, 즉시 로드
-       ① 핵심 KPI  ② goal-gauge  ⑦ 핵심 전환 흐름
+       🔝 핵심 지표 — 전환 흐름(=KPI) · 항상 펼침, 즉시 로드
+       클릭→문의→등록 + 문의 목표 접목 + 유형별 한눈에
+       (구 핵심 KPI 카드줄·월 목표 게이지 박스는 이 한 블록에 통합)
        ════════════════════════════════════════════ -->
-
-  <!-- ① 핵심 KPI -->
   <div class="section">
-    <div class="section-title">핵심 KPI</div>
-    <div class="kpi-row">
-      <!-- B: 월간 총 노출 카드 숨김 (수기 지표) -->
-      <!-- <div class="kpi-card"> ... 월간 총 노출 ... </div> -->
-
-      <div class="kpi-card">
-        <div class="num" style="color:var(--f4)"><span id="kpi-inquiries">—</span></div>
-        <div class="label" id="kpi-inquiries-label">이번 달 문의</div>
-        <div class="sub">예약·상담 문의 완료</div>
-      </div>
-      <div class="kpi-card">
-        <div class="num" style="color:var(--f5)"><span id="kpi-converted">—</span></div>
-        <div class="label" id="kpi-converted-label">신규 가입(전환)</div>
-        <div class="sub">멤버십 전환</div>
-      </div>
-      <div class="kpi-card">
-        <div class="num" style="color:var(--f3)"><span id="kpi-total-clicks">—</span></div>
-        <div class="label" id="kpi-clicks-label">문의 페이지 클릭</div>
-        <div class="sub">홈 → /inquiry 버튼 클릭(4종 합)</div>
-      </div>
-
-      <!-- B: 전체 문의 전환율(노출 대비, 수기) 카드 숨김 -->
-      <!-- <div class="kpi-card"> ... 전체 문의 전환율 ... </div> -->
-    </div>
-  </div>
-
-  <!-- ② 월 목표 게이지 -->
-  <div id="goal-gauge" style="margin-bottom:20px"></div>
-
-  <!-- ⑦ 핵심 전환 흐름 -->
-  <div class="section">
-    <div class="section-title">핵심 전환 흐름</div>
+    <div class="section-title">핵심 지표 — 전환 흐름</div>
     <div id="conversion-flow-wrap" style="margin-bottom:6px">
       <div style="color:var(--dim);font-size:13px">집계 불러오는 중…</div>
     </div>
   </div>
 
   <!-- ════════════════════════════════════════════
-       📊 분석 구역 — 항상 펼침, 2단 그리드
-       ③ 주간추세  ⑨ 문의 유형별 분포  ⑧ 전환 단계 퍼널
+       📊 분석 구역 — 항상 펼침
+       ③ 주간추세 (유형별 분포는 핵심 지표 칩으로 통합·삭제 /
+        전환 단계 퍼널은 중간단계 데이터 부재로 삭제)
        ════════════════════════════════════════════ -->
   <div class="zone-label">📊 분석</div>
   <div class="analysis-grid">
@@ -341,23 +310,6 @@ details.collapse > .collapse-body{border-top:1px solid var(--border);padding:16p
         <div id="weekly-trend-chart" class="sparkline-wrap">
           <div style="color:var(--dim);font-size:13px">추세 데이터 집계 대기</div>
         </div>
-      </div>
-    </div>
-
-    <!-- ⑨ 문의 유형별 분포 (이번 달) -->
-    <div class="section">
-      <div class="section-title">문의 유형별 분포 <span style="font-size:11px;font-weight:400;color:var(--accent);text-transform:none;letter-spacing:0">(이번 달)</span></div>
-      <div id="type-breakdown-wrap" style="background:var(--paper);border:1px solid var(--border);border-radius:12px;padding:16px">
-        <div style="color:var(--dim);font-size:13px">집계 준비 중</div>
-      </div>
-    </div>
-
-    <!-- ⑧ 전환 단계 퍼널 -->
-    <div class="section">
-      <div class="section-title">전환 단계 퍼널</div>
-      <p style="color:var(--dim);font-size:13px;margin:4px 0 10px">문의가 가입까지 어디서 떨어지는지</p>
-      <div id="stage-funnel-wrap">
-        <div style="color:var(--dim);font-size:13px">불러오는 중…</div>
       </div>
     </div>
 
@@ -453,18 +405,6 @@ details.collapse > .collapse-body{border-top:1px solid var(--border);padding:16p
           </tbody>
         </table>
         <div style="padding:8px 16px 10px;font-size:11px;color:var(--dim);border-top:1px solid var(--border)">표준 채널 10종 기준(GAS 단일 정규화) · 채널명은 문의 시 선택한 유입경로 기준 · 과거 '온라인' 뭉침분은 단일귀속 불가라 '기타·미상' · 누적 전환은 전체 기간<br>※ 채널별 전환은 GAS 미제공 — 전체 전환율은 위 퍼널 참조</div>
-      </div>
-    </div>
-  </details>
-
-  <!-- ⑥ 최근 변동사항 (펼칠 때 1회 로드) -->
-  <details class="collapse" id="details-engagement">
-    <summary>📣 최근 변동사항 <span id="engagement-updated" style="font-size:11px;font-weight:400;color:var(--dim)"></span><span class="collapse-sub">— 채널별 반응 증감</span></summary>
-    <div class="collapse-body">
-      <p style="color:var(--dim);font-size:13px;margin:0 0 6px">채널에 올린 콘텐츠의 조회·관심·댓글 증감(직전 수집 대비). 채널별 수집 시 갱신.</p>
-      <p style="color:var(--dim);font-size:11px;margin:0 0 14px">현재 자동수집 = 당근·블로그·카페 (반응지표) · 카카오·인스타그램 (발행 추적만 — 반응 공개비노출)</p>
-      <div id="engagement-feed-body" style="display:flex;flex-direction:column;gap:6px;max-width:560px">
-        <div style="color:var(--dim);font-size:13px">펼치면 불러옵니다…</div>
       </div>
     </div>
   </details>
@@ -623,6 +563,24 @@ function renderConversionFlow() {
   var r1 = clicks > 0 ? Math.round(inq / clicks * 1000) / 10 : 0;   // 클릭→문의
   var r2 = inq    > 0 ? Math.round(conv / inq  * 1000) / 10 : 0;    // 문의→등록
 
+  // 문의 목표 접목 — 별도 게이지 박스 폐지, ② 문의 카드 하단에 흡수
+  var inqSub = '실제 문의 작성';
+  var paceHtml = '';
+  if (typeof MONTHLY_INQUIRY_TARGET !== 'undefined' && MONTHLY_INQUIRY_TARGET !== null) {
+    var gpct = Math.round(inq / MONTHLY_INQUIRY_TARGET * 100);
+    inqSub = '목표 ' + MONTHLY_INQUIRY_TARGET + ' · ' + gpct + '%';
+    var _now = new Date();
+    var _dom = _now.getDate();
+    var _dim = new Date(_now.getFullYear(), _now.getMonth() + 1, 0).getDate();
+    var _proj = _dom > 0 ? Math.round(inq / _dom * _dim) : inq;
+    var _diff = _proj - MONTHLY_INQUIRY_TARGET;
+    var _pacePct = Math.round(_proj / MONTHLY_INQUIRY_TARGET * 100);
+    var _paceColor = _proj >= MONTHLY_INQUIRY_TARGET ? 'var(--green)' : (_pacePct >= 80 ? 'var(--accent)' : 'var(--dim)');
+    var _sign = _diff >= 0 ? '+' : '';
+    var _paceLabel = _proj >= MONTHLY_INQUIRY_TARGET ? '목표 달성 페이스' : '목표 미달 페이스';
+    paceHtml = '<div style="font-size:11px;color:var(--dim);margin-top:8px">문의 페이스 → 월말 예상 <b style="color:' + _paceColor + '">' + _proj.toLocaleString('ko-KR') + '건</b> · 목표 대비 ' + _sign + _diff + '건 (' + _pacePct + '%) · <span style="color:' + _paceColor + ';font-weight:600">' + _paceLabel + '</span> <span>(' + _dom + '/' + _dim + '일 경과)</span></div>';
+  }
+
   function card(icon, label, num, sub, color) {
     return '<div style="flex:1;min-width:118px;background:var(--paper);border:1px solid var(--border);border-top:3px solid ' + color + ';border-radius:12px;padding:16px 14px;text-align:center">'
       + '<div style="font-size:22px;margin-bottom:4px">' + icon + '</div>'
@@ -642,10 +600,11 @@ function renderConversionFlow() {
   el.innerHTML = '<div style="display:flex;align-items:stretch;gap:8px;flex-wrap:wrap">'
     + card('🖱', '① 문의 페이지 클릭', clicks, '문의 버튼 누른 횟수', 'var(--f1)')
     + arrow(r1, '클릭→문의')
-    + card('📝', '② 문의 접수', inq, '실제 문의 작성', 'var(--f2)')
+    + card('📝', '② 문의 접수', inq, inqSub, 'var(--f2)')
     + arrow(r2, '문의→등록')
     + card('✅', '③ 회원 등록', conv, '전화번호 매칭(월)', 'var(--f5)')
     + '</div>'
+    + paceHtml
     + (function() {
         var btm = (_pbData.inquiries && _pbData.inquiries.byTypeMonth) || {};
         var MAIN = ['멤버십', '성인강습', '유소년강습'];
@@ -663,217 +622,6 @@ function renderConversionFlow() {
           + html + '</div>';
       })()
     + '<div style="font-size:11px;color:var(--dim);margin-top:8px">이번 달 기준 · 등록은 전화번호 매칭으로 월 단위 집계 · 별개 = 공간렌트·비즈니스파트너·기타</div>';
-}
-
-// ─── 전환 단계 퍼널 ─────────────────────────────────────────────
-var _stageFunnelLoaded = false;
-
-function loadStageFunnel() {
-  var el = document.getElementById('stage-funnel-wrap');
-  if (!el) return;
-
-  var STAGE_NAMES = ['문의', '응대', '예약', '방문', '가입'];
-  var STAGE_CLASSES = ['s1', 's2', 's3', 's4', 's5'];
-  var STAGE_COLORS = ['var(--f1)', 'var(--f2)', 'var(--f3)', 'var(--f4)', 'var(--f5)'];
-
-  function renderFallback() {
-    var inq  = (_pbData && _pbData.inquiries  && _pbData.inquiries.month)  || 0;
-    var conv = (_pbData && _pbData.conversion && _pbData.conversion.month && _pbData.conversion.month.converted) || 0;
-    var base = inq || 1;
-
-    function stageRow(idx, name, count, isPlaceholder) {
-      var pct   = isPlaceholder ? null : Math.round(count / base * 100);
-      var width = isPlaceholder ? 20 : Math.max(8, pct);
-      var barStyle = 'height:44px;border-radius:8px;display:flex;align-items:center;padding:0 14px;'
-        + 'background:var(--' + (isPlaceholder ? 'border' : 'f' + (idx + 1) + '-bg') + ');'
-        + 'width:' + width + '%;min-width:80px;transition:width 0.5s ease;position:relative;overflow:hidden;';
-      var labelColor = isPlaceholder ? 'var(--dim)' : STAGE_COLORS[idx];
-      var countHtml = isPlaceholder
-        ? '<span class="placeholder" style="font-size:11px;color:var(--dim);margin-left:8px">상태 입력 후 표시</span>'
-        : '<span style="font-size:12px;font-weight:600;margin-left:8px;opacity:0.75;color:' + labelColor + '">' + count.toLocaleString('ko-KR') + '건</span>';
-
-      return '<div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">'
-        + '<div style="width:26px;text-align:right;font-size:11px;font-weight:700;color:var(--dim);flex-shrink:0">' + ['①','②','③','④','⑤'][idx] + '</div>'
-        + '<div style="width:42px;font-size:12px;font-weight:700;color:' + labelColor + ';flex-shrink:0">' + name + '</div>'
-        + '<div style="flex:1">'
-        +   '<div style="' + barStyle + '">'
-        +     '<span style="font-size:13px;font-weight:700;color:' + labelColor + ';z-index:1;position:relative">' + (pct !== null ? pct + '%' : '') + '</span>'
-        +     countHtml
-        +   '</div>'
-        + '</div>'
-        + '</div>';
-    }
-
-    var html = '';
-    html += stageRow(0, '문의', inq, false);
-    html += stageRow(1, '응대', 0, true);
-    html += stageRow(2, '예약', 0, true);
-    html += stageRow(3, '방문', 0, true);
-    html += stageRow(4, '가입', conv, false);
-    html += '<div style="margin-top:10px;padding:10px 14px;background:var(--accent-bg);border:1px solid rgba(183,159,138,0.2);border-radius:8px;font-size:11px;color:var(--dim)">'
-      + '②~④는 멤버십 문의시트(26년 신규문의) 진행상태 입력 시작 후 채워집니다 (현재 대부분 ①=정상)'
-      + '</div>';
-    el.innerHTML = html;
-  }
-
-  function renderFull(month, retain) {
-    var stages = [
-      { name: '문의', count: month['문의'] || 0 },
-      { name: '응대', count: month['응대'] || 0 },
-      { name: '예약', count: month['예약'] || 0 },
-      { name: '방문', count: month['방문'] || 0 },
-      { name: '가입', count: month['가입'] || 0 }
-    ];
-    var base = stages[0].count || 1;
-    var retainKeys = ['응대', '예약', '방문', '가입'];
-
-    var html = '';
-    for (var i = 0; i < stages.length; i++) {
-      var s = stages[i];
-      var pct   = Math.round(s.count / base * 100);
-      var width = Math.max(8, pct);
-      var retPct = (i > 0 && retain && retain[stages[i].name] != null)
-        ? retain[stages[i].name] : null;
-      var prevCount = i > 0 ? stages[i - 1].count : 0;
-      var dropCount = i > 0 ? (stages[i - 1].count - s.count) : 0;
-      var circled = ['①', '②', '③', '④', '⑤'][i];
-      var color = STAGE_COLORS[i];
-
-      html += '<div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">'
-        + '<div style="width:26px;text-align:right;font-size:11px;font-weight:700;color:var(--dim);flex-shrink:0">' + circled + '</div>'
-        + '<div style="width:42px;font-size:12px;font-weight:700;color:' + color + ';flex-shrink:0">' + s.name + '</div>'
-        + '<div style="flex:1">'
-        +   '<div style="height:44px;border-radius:8px;display:flex;align-items:center;padding:0 14px;'
-        +        'background:var(--f' + (i + 1) + '-bg);width:' + width + '%;min-width:80px;'
-        +        'transition:width 0.5s ease;position:relative;overflow:hidden;">'
-        +     '<span style="font-size:13px;font-weight:700;color:' + color + ';z-index:1;position:relative">' + pct + '%</span>'
-        +     '<span style="font-size:12px;font-weight:600;margin-left:8px;opacity:0.75;color:' + color + ';z-index:1;position:relative">' + s.count.toLocaleString('ko-KR') + '건</span>'
-        +   '</div>'
-        + '</div>'
-        + '<div style="width:110px;flex-shrink:0;font-size:11px">'
-        + (retPct !== null ? '<span style="color:var(--green);font-weight:700">잔존 ' + retPct + '%</span>' : '')
-        + (i > 0 && dropCount > 0 ? '<span style="color:var(--red);margin-left:6px">−' + dropCount.toLocaleString('ko-KR') + '건 이탈</span>' : '')
-        + '</div>'
-        + '</div>';
-    }
-    // 중간단계(②③④)가 ⑤가입과 동일 = 리셉션 진행상태 미입력 (가입자 회원매칭만 반영) → 정직 안내
-    var collapsed = (stages[1].count === stages[4].count && stages[2].count === stages[4].count && stages[3].count === stages[4].count);
-    if (collapsed && stages[0].count > stages[4].count) {
-      html += '<div style="margin-top:10px;padding:10px 14px;background:var(--accent-bg);border:1px solid rgba(183,159,138,0.2);border-radius:8px;font-size:11px;color:var(--dim)">'
-        + '※ 멤버십 문의시트(26년 신규문의) 진행상태 입력 전 — ②응대·③예약·④방문은 현재 <b>가입자만</b> 반영됩니다. 진행상태 입력이 시작되면 단계별로 분리 표시됩니다.'
-        + '</div>';
-    }
-    html += '<div style="margin-top:4px;font-size:11px;color:var(--dim)">이번 달 기준 · 잔존%=직전 단계 대비</div>';
-    el.innerHTML = html;
-  }
-
-  // stage_funnel GAS 호출 시도 → 실패 시 _pbData 폴백
-  fetch(FUNNEL_APPS_SCRIPT_URL + '?action=stage_funnel', { redirect: 'follow' })
-    .then(function(res) { return res.ok ? res.json() : Promise.reject('HTTP ' + res.status); })
-    .then(function(data) {
-      if (data && data.ok && data.month) {
-        renderFull(data.month, data.retain || {});
-      } else {
-        renderFallback();
-      }
-    })
-    .catch(function() {
-      renderFallback();
-    });
-}
-
-// ─── 월 목표 게이지 ──────────────────────────────────────────────
-function renderGoalGauge() {
-  var el = document.getElementById('goal-gauge');
-  if (!el) return;
-
-  // 두 목표 모두 미설정
-  if (MONTHLY_INQUIRY_TARGET === null && MONTHLY_CONVERT_TARGET === null) {
-    el.innerHTML = '<div style="font-size:12px;color:var(--dim);padding:6px 2px">목표 미설정 — GM 설정 시 진척 표시</div>';
-    return;
-  }
-
-  if (!_pbData) { el.innerHTML = '<div style="font-size:12px;color:var(--dim);padding:6px 2px">목표 데이터 로드 중…</div>'; return; }
-
-  function gaugeBar(label, current, target) {
-    var pct = Math.round((current / target) * 100);
-    var displayPct = pct;
-    var barPct = Math.min(pct, 100);
-    var barColor = pct >= 100 ? 'var(--green)' : (pct >= 50 ? 'var(--accent)' : 'var(--dim)');
-    var labelText = label + ' ' + current + '/' + target + '건 · ' + displayPct + '%';
-    return '<div style="margin-bottom:10px">'
-      + '<div style="font-size:12px;color:var(--dim);margin-bottom:4px">' + labelText + '</div>'
-      + '<div style="background:var(--border);border-radius:6px;height:10px;overflow:hidden">'
-      + '<div style="width:' + barPct + '%;height:100%;background:' + barColor + ';border-radius:6px;transition:width 0.4s ease"></div>'
-      + '</div>'
-      + '</div>';
-  }
-
-  var html = '<div style="background:var(--paper);border:1px solid var(--border);border-radius:10px;padding:14px 16px">'
-    + '<div style="font-size:12px;font-weight:700;color:var(--dim);margin-bottom:10px;text-transform:uppercase;letter-spacing:0.05em">이번 달 문의 목표</div>';
-
-  if (MONTHLY_INQUIRY_TARGET !== null) {
-    var inqCurrent = (_pbData.inquiries && _pbData.inquiries.month !== undefined) ? _pbData.inquiries.month : 0;
-    html += gaugeBar('문의', inqCurrent, MONTHLY_INQUIRY_TARGET);
-    // 이번 달 페이스 — 경과일 기준 월말 예상치(목표 200 대비)
-    var _now = new Date();
-    var _dom = _now.getDate();
-    var _dim = new Date(_now.getFullYear(), _now.getMonth() + 1, 0).getDate();
-    var _proj = _dom > 0 ? Math.round(inqCurrent / _dom * _dim) : inqCurrent;
-    var _diff = _proj - MONTHLY_INQUIRY_TARGET;
-    var _pacePct = Math.round(_proj / MONTHLY_INQUIRY_TARGET * 100);
-    var _paceColor = _proj >= MONTHLY_INQUIRY_TARGET ? 'var(--green)' : (_pacePct >= 80 ? 'var(--accent)' : 'var(--dim)');
-    var _sign = _diff >= 0 ? '+' : '';
-    var _paceLabel = _proj >= MONTHLY_INQUIRY_TARGET ? '목표 달성 페이스' : '목표 미달 페이스';
-    html += '<div style="font-size:11px;color:var(--dim);margin:-2px 0 6px">'
-      + '현재 페이스 → 월말 예상 <b style="color:' + _paceColor + '">' + _proj.toLocaleString('ko-KR') + '건</b>'
-      + ' · 목표 대비 ' + _sign + _diff + '건 (' + _pacePct + '%) · '
-      + '<span style="color:' + _paceColor + ';font-weight:600">' + _paceLabel + '</span>'
-      + ' <span style="color:var(--dim)">(' + _dom + '/' + _dim + '일 경과 기준)</span></div>';
-  }
-  if (MONTHLY_CONVERT_TARGET !== null) {
-    var convCurrent = (_pbData.conversion && _pbData.conversion.month && _pbData.conversion.month.converted !== undefined)
-                      ? _pbData.conversion.month.converted : 0;
-    html += gaugeBar('등록(전환)', convCurrent, MONTHLY_CONVERT_TARGET);
-  }
-
-  html += '</div>';
-  el.innerHTML = html;
-}
-
-// ─── 문의 유형별 분포 (이번 달) ─────────────────────────────────
-function renderTypeBreakdown() {
-  var el = document.getElementById('type-breakdown-wrap');
-  if (!el) return;
-  if (!_pbData) { el.innerHTML = '<div style="color:var(--dim);font-size:13px">집계 준비 중</div>'; return; }
-
-  var byType = (_pbData.inquiries && _pbData.inquiries.byTypeMonth) ? _pbData.inquiries.byTypeMonth : {};
-  var keys = Object.keys(byType);
-  if (!keys.length) { el.innerHTML = '<div style="color:var(--dim);font-size:13px">집계 준비 중</div>'; return; }
-
-  var total = keys.reduce(function(s, k) { return s + (byType[k] || 0); }, 0);
-  var colors = ['var(--f2)', 'var(--f3)', 'var(--f1)'];
-  var colorBgs = ['var(--f2-bg)', 'var(--f3-bg)', 'var(--f1-bg)'];
-
-  var html = '<div style="display:flex;flex-direction:column;gap:10px">';
-  keys.forEach(function(k, i) {
-    var cnt = byType[k] || 0;
-    var pct = total > 0 ? Math.round(cnt / total * 1000) / 10 : 0;
-    var color = colors[i % colors.length];
-    var colorBg = colorBgs[i % colorBgs.length];
-    html += '<div>'
-      + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">'
-      + '<span style="font-size:13px;font-weight:600;color:var(--text)">' + k + '</span>'
-      + '<span style="font-size:13px;font-weight:700;color:' + color + '">' + cnt + '건 <span style="font-size:11px;font-weight:400;color:var(--dim)">(' + pct + '%)</span></span>'
-      + '</div>'
-      + '<div style="background:var(--border);border-radius:6px;height:10px;overflow:hidden">'
-      + '<div style="width:' + pct + '%;height:100%;background:' + color + ';border-radius:6px;transition:width 0.4s ease"></div>'
-      + '</div>'
-      + '</div>';
-  });
-  html += '</div>';
-  html += '<div style="font-size:11px;color:var(--dim);margin-top:10px">이번 달 기준 · 총 ' + total + '건 · 문의 시 선택한 상품 유형 기준</div>';
-  el.innerHTML = html;
 }
 
 function renderChannelTableLive() {
@@ -986,7 +734,6 @@ async function loadFunnelConversion() {
     _fcData = data;
     renderChannelTableLive();
     renderConversionFlow();
-    renderGoalGauge();
 
   } catch (e) {
     console.warn('[funnel_conversion] 로드 실패:', e.message);
@@ -1086,36 +833,6 @@ async function loadClickStats() {
   }
 }
 
-// ─── 최근 변동사항 (engagement_feed.json) ───
-async function loadEngagementFeed() {
-  var box = document.getElementById('engagement-feed-body');
-  if (!box) return;
-  try {
-    var res = await fetch('engagement/engagement_feed.json?t=' + Date.now());
-    if (!res.ok) { box.innerHTML = '<div style="color:var(--dim);font-size:13px">아직 수집 데이터 없음 (채널 로그인 후 수집 시 표시)</div>'; return; }
-    var data = await res.json();
-    var events = (data && data.events) || [];
-    var icon = { '당근':'🥕', '블로그':'📘', '카페':'💬', '카카오':'💛', '인스타그램':'📷' };
-    if (!events.length) { box.innerHTML = '<div style="color:var(--dim);font-size:13px">변동 없음</div>'; return; }
-    var html = '';
-    events.slice(0, 30).forEach(function(e) {
-      var parts = [];
-      if (e.dViews) parts.push('+' + e.dViews + ' 조회');
-      if (e.dInterest) parts.push('+' + e.dInterest + ' 관심');
-      if (e.dComments) parts.push('+' + e.dComments + ' 댓글');
-      var delta = e.isNew ? '🆕 신규 게시' : (parts.join(' · ') || '변동 없음');
-      html += '<div style="display:flex;justify-content:space-between;gap:10px;padding:8px 10px;border-bottom:1px solid rgba(255,255,255,.07);font-size:13px">'
-            + '<span>' + (icon[e.channel]||'•') + ' <b>' + (e.channel||'') + '</b> <span style="color:var(--dim)">〈' + (e.title||'').substring(0,30) + '〉</span></span>'
-            + '<span style="color:var(--accent);white-space:nowrap;font-weight:600">' + delta + '</span></div>';
-    });
-    box.innerHTML = html;
-    var upd = document.getElementById('engagement-updated');
-    if (upd && data.updated_at) upd.textContent = '· ' + data.updated_at;
-  } catch (e) {
-    box.innerHTML = '<div style="color:var(--dim);font-size:13px">피드 로드 실패</div>';
-  }
-}
-
 // ─── 기간별 집계 (period_breakdown) ──────────────────────────────
 var _periodCache = {};
 var PERIOD_LABELS = { day: '일간', week: '주간', month: '월간' };
@@ -1180,9 +897,6 @@ function _applyPeriodData(data, period) {
     _pbData = data;
     renderChannelTableLive();
     renderConversionFlow();
-    renderGoalGauge();
-    renderTypeBreakdown();
-    loadStageFunnel();
   }
 
   var clickEl = document.getElementById('kpi-total-clicks');
@@ -1849,10 +1563,9 @@ document.addEventListener('DOMContentLoaded', function() {
   _updateMonthNav();
 
   // ── 즉시 로드 (요약+분석 구역) ──────────────────────────────
-  loadFunnelConversion();        // 전환흐름·채널표·게이지·유형분포 내부 렌더 포함
-  loadPeriodBreakdown('month');  // 기본 기간: 월 (채널표·유형분포 내부 렌더 포함)
+  loadFunnelConversion();        // 핵심 지표(전환흐름)·채널표 내부 렌더 포함
+  loadPeriodBreakdown('month');  // 기본 기간: 월 (채널표·전환흐름 내부 렌더 포함)
   loadWeeklyTrend();             // 주간 추세 스파크라인
-  loadStageFunnel();             // 전환 단계 퍼널 (stage_funnel · 폴백: _pbData)
 
   // ── 지연 로드 — 각 <details> 펼칠 때 1회만 fetch ───────────
   document.getElementById('details-monthly-trend').addEventListener('toggle', function() {
@@ -1863,9 +1576,6 @@ document.addEventListener('DOMContentLoaded', function() {
   });
   document.getElementById('details-type-channel').addEventListener('toggle', function() {
     if (this.open && !this._loaded) { this._loaded = true; loadTypeChannel(); }
-  });
-  document.getElementById('details-engagement').addEventListener('toggle', function() {
-    if (this.open && !this._loaded) { this._loaded = true; loadEngagementFeed(); }
   });
   // details-channel-compare, details-entry-points, details-exp-log 은
   // 추가 fetch 없음 — funnel 데이터는 이미 로드됨, 나머지는 정적 HTML
