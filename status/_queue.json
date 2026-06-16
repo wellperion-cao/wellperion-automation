@@ -1,5 +1,17 @@
 [
   {
+    "task_id": "CEO-2026-06-16-APPROVAL-GM-REP-TWO-STAGE",
+    "clevel": "ceo",
+    "title": "[웰리] 결재완료 GM·대표 2단계 분리 + GM 선택형 대표 올림 + 서명본 업로드 훅",
+    "status": "DONE",
+    "priority": "NORMAL",
+    "enqueued_at": "2026-06-16",
+    "processed_at": "2026-06-16",
+    "terminal": true,
+    "artifact": "GM 지시(옵션1=결재완료 후 버튼). 프론트+백엔드+재배포 완결. 결재상태='결재완료'(GM 종착)는 그대로 두고, 대표 단계를 '대표싸인' 컬럼 3상태로 파생 분리: 빈값=미올림 / 'PENDING'=GM이 올림·서명본 대기 / URL=대표 결재완료. 백엔드 신규 액션 3개(approval_rep_escalate=결재완료건만 PENDING set·가드, approval_rep_sign_upload=_uploadFile→대표싸인에 URL 직저장=완료 훅, approval_rep_cancel=비움) + doGet POST리다이렉트에 approval_* 포함. 프론트: repStageOf·renderRepApprovalRow, (GM 결재완료)·(대표 결재완료/대기) 상태칩 분리, GM서명대기 카드에 🖨 업무보고서 인쇄, 결재완료 카드에 [대표 결재 올리기]→[대표 결재대기:인쇄·서명본 업로드·올림취소]→[대표 결재완료:📎링크]. 인쇄 buildApprovalPrint 대표 서명란=URL이면 서명완료/아니면 빈칸. 커밋 b9e3b97 push. clasp push+deploy @76→@77(deploymentId 유지). 라이브검증: 액션3 도달·escalate/cancel 라운드트립 PASS.",
+    "next": "표류(완결). 실파일 업로드→대표 결재완료 1회는 GM 실테스트 대기(코드경로 검증완). 어제 '첨부 prefix 판별불가' 한계는 대표싸인 직저장으로 해소됨."
+  },
+  {
     "task_id": "CEO-2026-06-16-APPROVAL-PAPER-PRINT-SIGN-UPLOAD",
     "clevel": "ceo",
     "title": "[웰리] 결재현황 페이퍼 보고 보강 — 인쇄 대표 서명란 부활 + 대표 서명본 스캔 업로드(증빙첨부)",
