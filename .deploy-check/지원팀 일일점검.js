@@ -290,6 +290,14 @@ function doGet(e) {
   if (action === 'delete_item_row') { return deleteItemRow(e.parameter.dept || 'support', e.parameter.date || '', e.parameter.zone || '', e.parameter.itemId || ''); }
   if (action === 'purge_orphan_checks') { return purgeOrphanChecks(e.parameter.dept || 'support'); }   // 매뉴얼에 없는 고아/테스트 항목ID를 원장·시트에서 일괄 제거. 2026-06-16 시우.
   if (action === 'list_tabs') { return jsonRes({ tabs: SpreadsheetApp.getActiveSpreadsheet().getSheets().map(function(s){ return { name: s.getName(), gid: s.getSheetId() }; }) }); }   // gid→탭 확인용. 2026-06-15 시우.
+  if (action === 'dump_snapshot') {   // 점검일지 스냅샷 전체행 덤프 — 진단용. 2026-06-16 시우.
+    var _ssh = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(_snapshotTabName(e.parameter.dept || 'support'));
+    if (!_ssh) return jsonRes({ error: 'no snapshot sheet' });
+    var _sdd = _ssh.getDataRange().getValues(), _sout = [];
+    for (var _sx = 1; _sx < _sdd.length; _sx++) { if(!String(_sdd[_sx][1]||'')&&!String(_sdd[_sx][0]||''))continue; _sout.push({ at: String(_sdd[_sx][0]), date: String(_sdd[_sx][1]), zone: String(_sdd[_sx][3]), shift: String(_sdd[_sx][4]), by: String(_sdd[_sx][5]), done: String(_sdd[_sx][7]), total: String(_sdd[_sx][6]) }); }
+    return jsonRes({ total: _sout.length, rows: _sout });
+  }
+  if (action === 'dedup_snapshot') { return dedupSnapshot(e.parameter.dept || 'support'); }   // 점검일지 중복(버킷줄·재제출줄) 청소. 2026-06-16 시우.
   if (action === 'dump_zone') {   // 구역 시트 전체행(전 날짜) 덤프 — 진단용. 2026-06-15 시우.
     var _dz = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(_deptTabs(e.parameter.dept || 'support')[e.parameter.zone || 'male']);
     if (!_dz) return jsonRes({ error: 'no sheet' });
@@ -2387,9 +2395,38 @@ function handleSnapshotAppend(body) {
     body.finishedAt || '',
     (body.durationMin != null ? body.durationMin : '')
   ];
-  sheet.appendRow(row);
-  // 항상 제출시각(1열) 내림차순 = 최신 최상위 유지 — GM 2026-06-16 시우.
+  // (날짜·구역·회차) 동일 행이 있으면 덮어쓰기(재제출=갱신·중복 방지), 없으면 추가. GM 2026-06-16 시우.
+  var _data = sheet.getDataRange().getValues();
+  var _hit = 0;
+  for (var _r = _data.length - 1; _r >= 1; _r--) {
+    var _rd = (formatDate(_data[_r][1]) === String(body.date || '') || String(_data[_r][1]) === String(body.date || ''));
+    if (_rd && String(_data[_r][3]) === String(body.zone || '') && String(_data[_r][4]) === String(body.shift || '')) {
+      sheet.getRange(_r + 1, 1, 1, row.length).setValues([row]); _hit = 1; break;
+    }
+  }
+  if (!_hit) sheet.appendRow(row);
+  // 항상 제출시각(1열) 내림차순 = 최신 최상위 유지.
   var _ls = sheet.getLastRow();
   if (_ls > 2) sheet.getRange(2, 1, _ls - 1, sheet.getLastColumn()).sort({ column: 1, ascending: false });
-  return jsonRes({ ok: true, dept: dept, row: sheet.getLastRow() });
+  return jsonRes({ ok: true, dept: dept, mode: _hit ? 'update' : 'append', row: sheet.getLastRow() });
+}
+// 점검일지 중복 청소(1회): ①조 버킷줄(am/pm/night) 제거 — 회차줄로 대체됨 ②(날짜·구역·회차) 중복은 최신 제출시각만 보존. GM 2026-06-16 시우.
+function dedupSnapshot(dept) {
+  dept = dept || 'support';
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(_snapshotTabName(dept));
+  if (!sheet) return jsonRes({ error: 'no snapshot' });
+  var data = sheet.getDataRange().getValues();
+  var rows = [];
+  for (var i = 1; i < data.length; i++) {
+    if (!String(data[i][1] || '') && !String(data[i][0] || '')) continue;
+    rows.push({ idx: i + 1, at: String(data[i][0] || ''), date: (formatDate(data[i][1]) || String(data[i][1] || '')), zone: String(data[i][3] || ''), shift: String(data[i][4] || '') });
+  }
+  var del = [], removedBucket = 0, removedDup = 0;
+  rows.forEach(function (r) { if (/^(am|pm|night)$/.test(r.shift)) { r._del = 1; del.push(r.idx); removedBucket++; } });
+  var best = {};
+  rows.forEach(function (r) { if (r._del) return; var k = r.date + '|' + r.zone + '|' + r.shift; if (!best[k] || r.at > best[k].at) best[k] = r; });
+  rows.forEach(function (r) { if (r._del) return; var k = r.date + '|' + r.zone + '|' + r.shift; if (best[k] !== r) { del.push(r.idx); removedDup++; } });
+  del.sort(function (a, b) { return b - a; });
+  del.forEach(function (rn) { try { sheet.deleteRow(rn); } catch (e) { var c = Math.max(1, sheet.getLastColumn()); sheet.getRange(rn, 1, 1, c).clearContent(); } });
+  return jsonRes({ ok: true, dept: dept, removedBucket: removedBucket, removedDup: removedDup });
 }
