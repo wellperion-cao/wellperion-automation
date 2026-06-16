@@ -297,12 +297,14 @@
     "task_id": "CTO-2026-06-13-QUEUE-WATCHER-HARDENING-NEXT",
     "clevel": "cto",
     "title": "[시토] 커밋/큐 안정화 후속 — 동시커밋 직렬화 lock + 큐→시트 완전이관(R1~R5)",
-    "status": "IN_PROGRESS",
-    "summary": "[6/16 P3 코드 완료] 직렬화 lock P1·P2·P3 코드 전부 완료. P3(2026-06-16 GM 'P3 가자'): bot.py 승인 콜백 4분리 git호출→단일 GitLock 임계구역 _git_seq_locked(asyncio.to_thread 비차단)로 교체, 위험쌍#1(콜백↔IG --once) 차단. 검증 PASS(py_compile·_git_async잔재0·락 획득해제 라이브). 커밋 df969d50 push. ⚠️라이브 적용 보류=현 봇 PID 2968이 RunLevel=Highest(elevated)라 사용자권한 세션서 kill 불가→다음 아침 부팅·로그온 시 WellperionTelegramBot 작업이 자동 elevated 재기동하며 새코드 자연 로드(야간 PC종료로 충돌없음), 또는 GM 재부팅 즉시. 봇 현재 정상가동(409 프로브 확인). 남은=큐→시트 이관 R1~R5(별도 후속).",
+    "status": "DONE",
+    "summary": "[종결 2026-06-16] ①동시커밋 직렬화 lock(P1·P2·P3) 라이브 적용 완료 — 오늘 봇 재기동으로 새 코드(GitLock) 로드, 승인콜백↔IG발행 위험쌍 차단. ②큐→시트 완전이관(R1~R5)은 2026-06-16 영구폐기(_queue.json 단일 SSOT 확정·이관 스캐폴딩 삭제·재개 금지). → 본 후속 완결.",
     "priority": "NORMAL",
     "enqueued_at": "2026-06-13",
     "note": "[2026-06-13 GM '둘 다'+'완전이관' 지시] ① truncation 게이트 완료(CTO-COMMIT-SAFETY-GATE). ② 동시커밋 직렬화 lock — [2026-06-15 시토] 설계완료(docs/git_serialize_lock_design.md): 단일 글로벌 git lock(atomic mkdir+PID/stale 회수), 공유모듈 scripts/git_lock.py, add→commit→push 전체 임계구역, pre-commit 훅 재진입금지. 롤아웃 P1(모듈+자기테스트·무게이트)→P2(단발주체)→P3(bot.py·봇재기동=GM게이트). [2026-06-15] P1 구현·실증 완료(scripts/git_lock.py+test_git_lock.py, 격리 temp repo 3프로세스×50커밋 무손실·락누수0·steal0·timeout0 PASS). [2026-06-15] P2 완료(f604c1e6): 실대상은 IG 발행 watcher 하나뿐(clevel_post_action·ceo_task_logger·pipeline·instagram_upload는 git 미사용 실측확인). ig_review_publish_watcher의 pull_latest+커밋시퀀스를 GitLock 임계구역화, py_compile·import·라이브 락획득해제·.locks 미추적 검증. 실발행 1회 실측은 다음 GM 승인때 자연 발생. 남은=P3(bot.py 콜백 git시퀀스 GitLock화 → 봇 재기동=GM게이트, 위험쌍 완전차단의 핵심). ③ 큐→시트 완전이관 R1~R3 시도 중 snag: seed(queue_seed_to_sheet.py)는 insert전용·dedup(clear/replace 없음)이라 'R1 시트 비우기'를 먼저 안 하면 화석잔존+순서불일치로 DIFF≠0. _queue(51척)는 읽기전용·무결 안전. 시트는 절반채움(SSOT아님·무해).",
-    "next": "재개(깨끗): R1=시트 전용탭 백업→비우기(ai_sheet_create 동작 확인 필요) → R2=51척 순서대로 seed → R3=queue_sync_from_sheet.py --diff=0(정렬 일치 확인). 그 후 R4(자동sync 스케줄러)·R5(clevel_post_action·bot.py·ceo_watcher 쓰기를 _queue→GAS 전환·이중화·GAS재배포)=라이브 인프라라 GM 확인+전용 작업. 한방 금지(과거 중복사고). _queue는 항상 읽기전용 truth."
+    "next": "표류(완결). 동시커밋 안전망=truncation 게이트+GitLock 직렬화 라이브 / 이관은 영구종료.",
+    "terminal": true,
+    "processed_at": "2026-06-16"
   },
   {
     "task_id": "COO-2026-06-13-SUPPORT-ID-NORMALIZE",
