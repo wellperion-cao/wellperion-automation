@@ -293,10 +293,59 @@ details.collapse > .collapse-body{border-top:1px solid var(--border);padding:16p
   </div>
 
   <!-- ════════════════════════════════════════════
+       ② 유형별 전환 & 유형×채널 교차 — 항상 표시, 즉시 로드
+       ════════════════════════════════════════════ -->
+  <div class="section" id="details-type-channel">
+    <div class="section-title">유형별 전환 &amp; 유형×채널 교차 <span style="font-size:11px;font-weight:400;color:var(--accent);text-transform:none;letter-spacing:0">(라이브 · 드릴다운 포함)</span></div>
+    <div style="font-size:11px;color:var(--dim);margin-bottom:10px">전환·등록은 누적·추정 — 기간 선택과 무관(등록 시점 데이터 없음). 클릭·문의만 기간 반영.</div>
+    <!-- ① 출처미상률 경고 카드 -->
+    <div id="tc-unknown-wrap" style="margin-bottom:10px"></div>
+    <!-- ② 유형별 전환 KPI 카드 (클릭 시 드릴다운) -->
+    <div id="tc-type-cards" style="margin-bottom:10px">
+      <div style="color:var(--dim);font-size:13px">집계 중…</div>
+    </div>
+    <!-- ③ 유형별 채널 드릴다운 -->
+    <div id="tc-drilldown"></div>
+    <!-- ④ 유형×채널 교차표 -->
+    <div id="tc-matrix-wrap" style="background:var(--paper);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-top:10px"></div>
+    <div id="tc-basis" style="padding:8px 2px 0;font-size:11px;color:var(--dim)"></div>
+  </div>
+
+  <!-- ════════════════════════════════════════════
+       ③ 실시간 클릭 현황 — 항상 표시, 즉시 로드
+       ════════════════════════════════════════════ -->
+  <div class="section" id="details-click-stats">
+    <div class="section-title">실시간 클릭 현황 <span id="click-updated" style="font-size:11px;font-weight:400;color:var(--dim);text-transform:none;letter-spacing:0"></span></div>
+    <p style="color:var(--dim);font-size:13px;margin:0 0 14px">문의 페이지(/inquiry) 버튼별 클릭 수 — Apps Script 클릭로그 자동 집계(실시간).</p>
+    <div class="click-two-col">
+      <!-- 왼쪽: 한·영 버튼별(폼) 클릭 -->
+      <div class="click-col">
+        <div class="click-col-title">버튼별 (폼)</div>
+        <div style="background:var(--paper);border:1px solid var(--border);border-radius:12px;overflow:hidden">
+          <table style="width:100%;border-collapse:collapse;font-size:13px">
+            <thead><tr>
+              <th style="text-align:left;padding:9px 12px;border-bottom:1px solid var(--border);font-size:11px;color:var(--dim);background:#1e1c1d">언어</th>
+              <th style="text-align:left;padding:9px 12px;border-bottom:1px solid var(--border);font-size:11px;color:var(--dim);background:#1e1c1d">버튼 / 폼</th>
+              <th style="text-align:right;padding:9px 12px;border-bottom:1px solid var(--border);font-size:11px;color:var(--dim);background:#1e1c1d">클릭수</th>
+            </tr></thead>
+            <tbody id="click-breakdown-body"><tr><td colspan="3" style="padding:12px;color:var(--dim)">불러오는 중…</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+      <!-- 오른쪽: 유입 출처(UTM 채널) -->
+      <div class="click-col">
+        <div class="click-col-title">유입 출처 (채널)</div>
+        <div id="utm-sources-body" style="background:var(--paper);border:1px solid var(--border);border-radius:12px;padding:16px 18px">
+          <div style="color:var(--dim);font-size:13px">불러오는 중…</div>
+        </div>
+        <div style="margin-top:8px;font-size:11px;color:var(--dim);line-height:1.6">현재 '직접·홈'만 보이는 것은 정상 — 채널 링크 출처 태깅(2026-06-13 적용)이 다음 발행분부터 쌓입니다. 글이 발행될수록 인스타·블로그·당근·카페·카카오로 갈라집니다.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════
        📁 디테일 구역 — 기본 접힘, 펼칠 때만 로드 (초기 로드 가벼움)
-       ③ 주간추세  ④ 월별추세  ⑤ 실시간클릭  ⑩ 유형별전환&교차
-       ⑪ 채널별비교  ⑫ 문의진입점  ⑬ 실험로그
-       (유형별 분포·전환 단계 퍼널·최근 변동사항은 중복/데이터부재로 삭제)
+       ③ 주간추세  ④ 월별추세  ⑪ 채널별비교  ⑫ 문의진입점  ⑬ 실험로그
        ════════════════════════════════════════════ -->
   <div class="zone-label">📁 디테일</div>
 
@@ -329,56 +378,6 @@ details.collapse > .collapse-body{border-top:1px solid var(--border);padding:16p
           </div>
         </div>
       </div>
-    </div>
-  </details>
-
-  <!-- ⑤ 실시간 클릭 현황 (무거움 — 펼칠 때 1회 로드) -->
-  <details class="collapse" id="details-click-stats">
-    <summary>실시간 클릭 현황 <span id="click-updated" style="font-size:11px;font-weight:400;color:var(--dim)"></span><span class="collapse-sub">— 버튼별·유입 출처</span></summary>
-    <div class="collapse-body">
-      <p style="color:var(--dim);font-size:13px;margin:0 0 14px">문의 페이지(/inquiry) 버튼별 클릭 수 — Apps Script 클릭로그 자동 집계(실시간).</p>
-      <div class="click-two-col">
-        <!-- 왼쪽: 한·영 버튼별(폼) 클릭 -->
-        <div class="click-col">
-          <div class="click-col-title">버튼별 (폼)</div>
-          <div style="background:var(--paper);border:1px solid var(--border);border-radius:12px;overflow:hidden">
-            <table style="width:100%;border-collapse:collapse;font-size:13px">
-              <thead><tr>
-                <th style="text-align:left;padding:9px 12px;border-bottom:1px solid var(--border);font-size:11px;color:var(--dim);background:#1e1c1d">언어</th>
-                <th style="text-align:left;padding:9px 12px;border-bottom:1px solid var(--border);font-size:11px;color:var(--dim);background:#1e1c1d">버튼 / 폼</th>
-                <th style="text-align:right;padding:9px 12px;border-bottom:1px solid var(--border);font-size:11px;color:var(--dim);background:#1e1c1d">클릭수</th>
-              </tr></thead>
-              <tbody id="click-breakdown-body"><tr><td colspan="3" style="padding:12px;color:var(--dim)">펼치면 불러옵니다…</td></tr></tbody>
-            </table>
-          </div>
-        </div>
-        <!-- 오른쪽: 유입 출처(UTM 채널) -->
-        <div class="click-col">
-          <div class="click-col-title">유입 출처 (채널)</div>
-          <div id="utm-sources-body" style="background:var(--paper);border:1px solid var(--border);border-radius:12px;padding:16px 18px">
-            <div style="color:var(--dim);font-size:13px">펼치면 불러옵니다…</div>
-          </div>
-          <div style="margin-top:8px;font-size:11px;color:var(--dim);line-height:1.6">현재 '직접·홈'만 보이는 것은 정상 — 채널 링크 출처 태깅(2026-06-13 적용)이 다음 발행분부터 쌓입니다. 글이 발행될수록 인스타·블로그·당근·카페·카카오로 갈라집니다.</div>
-        </div>
-      </div>
-    </div>
-  </details>
-
-  <!-- ⑩ 유형별 전환 + 유형×채널 교차 (무거움 13시트 — 펼칠 때 1회 로드) -->
-  <details class="collapse" id="details-type-channel">
-    <summary>유형별 전환 &amp; 유형×채널 교차 <span style="font-size:11px;font-weight:400;color:var(--accent)">(라이브)</span><span class="collapse-sub">— 드릴다운 포함</span></summary>
-    <div class="collapse-body">
-      <!-- ① 출처미상률 경고 카드 -->
-      <div id="tc-unknown-wrap" style="margin-bottom:10px"></div>
-      <!-- ② 유형별 전환 KPI 카드 (클릭 시 드릴다운) -->
-      <div id="tc-type-cards" style="margin-bottom:10px">
-        <div style="color:var(--dim);font-size:13px">펼치면 집계합니다…</div>
-      </div>
-      <!-- ③ 유형별 채널 드릴다운 -->
-      <div id="tc-drilldown"></div>
-      <!-- ④ 유형×채널 교차표 -->
-      <div id="tc-matrix-wrap" style="background:var(--paper);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-top:10px"></div>
-      <div id="tc-basis" style="padding:8px 2px 0;font-size:11px;color:var(--dim)"></div>
     </div>
   </details>
 
@@ -540,6 +539,7 @@ var MONTHLY_CONVERT_TARGET = null;   // GM 설정 — 월 신규 등록(전환) 
 var _fcData = null;   // funnel_conversion 응답 (byChannel 배열)
 var _pbData = null;   // period_breakdown 응답 (inquiries.byChannelMonth 객체)
 var _flow = null;     // 핵심 지표 전환 흐름의 현재 날짜뷰 정규화 데이터 {clicks,inq,conv,byType,mode,label}
+var _rangeFromTo = { from: '', to: '' };  // 현재 선택된 기간 (클릭 fetch에 붙임)
 
 var _DOT_COLORS = ['--f1','--f2','--f3','--f4','--f5'];
 
@@ -617,6 +617,7 @@ function renderConversionFlow() {
     + '</div>'
     + paceHtml
     + '<div style="font-size:11px;color:var(--dim);margin-top:8px">' + (f.label || '이번 달') + ' 기준 · 등록은 전화번호 매칭으로 월 단위 집계 · 별개 = 공간렌트·비즈니스파트너·기타</div>';
+  if (typeof renderTypeFunnel === 'function') renderTypeFunnel();
 }
 
 function renderChannelTableLive() {
@@ -797,11 +798,18 @@ function clickDividerRow() {
 // ─── 실시간 클릭 집계 (click_stats) ───────────────────────────
 async function loadClickStats() {
   try {
-    var res = await fetch(FUNNEL_APPS_SCRIPT_URL + '?action=click_stats', { redirect: 'follow' });
+    var _csUrl = FUNNEL_APPS_SCRIPT_URL + '?action=click_stats';
+    if (_rangeFromTo.from && _rangeFromTo.to) {
+      _csUrl += '&from=' + _rangeFromTo.from + '&to=' + _rangeFromTo.to;
+    }
+    var res = await fetch(_csUrl, { redirect: 'follow' });
     if (!res.ok) return;
     var data = await res.json();
     if (!data || !data.ok) return;
     var byLink = data.byLink || {};
+
+    // 모듈변수 저장 — renderTypeFunnel이 클릭 컬럼에 사용
+    _clickByLink = byLink;
 
     // UTM 출처 — 2단 오른쪽 칸으로 렌더
     if (data.byUtmSource) renderUtmSources(data.byUtmSource);
@@ -815,7 +823,13 @@ async function loadClickStats() {
     }
 
     var upd = document.getElementById('click-updated');
-    if (upd) upd.textContent = '· 누적 총 ' + (data.total || 0).toLocaleString('ko-KR') + '클릭';
+    if (upd) {
+      var _rangeLabel = (_rangeFromTo.from && _rangeFromTo.to) ? ' · ' + _rangeFromTo.from + '~' + _rangeFromTo.to : '';
+      upd.textContent = '· 누적 총 ' + (data.total || 0).toLocaleString('ko-KR') + '클릭' + _rangeLabel;
+    }
+
+    // 유형별 현황표 클릭 컬럼 갱신
+    renderTypeFunnel();
   } catch (e) {
     // 우아한 fallback — 표는 "측정 대기" 으로 렌더
     var box = document.getElementById('click-breakdown-body');
@@ -941,6 +955,24 @@ function _applyPeriodData(data, period) {
     var fRate = document.getElementById('funnel-conv-rate');
     if (fRate && rate !== undefined) fRate.textContent = rate + '%';
   }
+
+  // 기간 연동 — 선택 기간을 _rangeFromTo에 저장 후 클릭 재조회 (loadClickStats는 _applyPeriodData를 호출하지 않으므로 순환 없음)
+  var _pd = new Date();
+  var _py = _pd.getFullYear();
+  var _pm = ('0' + (_pd.getMonth() + 1)).slice(-2);
+  var _pday = ('0' + _pd.getDate()).slice(-2);
+  if (period === 'month') {
+    _rangeFromTo = { from: _py + '-' + _pm + '-01', to: _py + '-' + _pm + '-' + _pday };
+  } else if (period === 'day') {
+    _rangeFromTo = { from: _py + '-' + _pm + '-' + _pday, to: _py + '-' + _pm + '-' + _pday };
+  } else if (period === 'week') {
+    var _w0 = new Date(_pd); _w0.setDate(_pd.getDate() - 6);
+    var _wy = _w0.getFullYear(); var _wm = ('0' + (_w0.getMonth() + 1)).slice(-2); var _wd = ('0' + _w0.getDate()).slice(-2);
+    _rangeFromTo = { from: _wy + '-' + _wm + '-' + _wd, to: _py + '-' + _pm + '-' + _pday };
+  } else {
+    _rangeFromTo = { from: '', to: '' };
+  }
+  loadClickStats();
 }
 
 // ─── 기간 직접 설정 (custom range) ──────────────────────────────
@@ -1044,6 +1076,10 @@ function _applyCustom(data, from, to, monthCtx) {
     label:  (monthCtx && monthCtx.label) ? monthCtx.label : ('기간(' + from + '~' + to + ')')
   };
   renderConversionFlow();
+
+  // 기간 연동 — custom 기간을 저장 후 클릭 재조회 (순환 없음)
+  _rangeFromTo = { from: from, to: to };
+  loadClickStats();
 }
 
 // 기간 토글 버튼 전환
@@ -1315,14 +1351,8 @@ var _tcOpenType = null;  // 현재 펼친 유형명(드릴다운 토글)
 var _clickByLink = null;   // click_stats.byLink (유형별 클릭)
 var _tcTypes     = null;   // type_channel_breakdown.types (유형별 등록 누적)
 
-async function loadTypeFunnelData() {
-  fetch(FUNNEL_APPS_SCRIPT_URL + '?action=click_stats', {redirect:'follow'})
-    .then(function(r){return r.json();})
-    .then(function(d){ if(d && d.byLink){ _clickByLink = d.byLink; renderTypeFunnel(); } }).catch(function(){});
-  fetch(FUNNEL_APPS_SCRIPT_URL + '?action=type_channel_breakdown', {redirect:'follow'})
-    .then(function(r){return r.json();})
-    .then(function(d){ if(d && d.types){ _tcTypes = d.types; renderTypeFunnel(); } }).catch(function(){});
-}
+// loadTypeFunnelData — loadClickStats/loadTypeChannel로 통합, 미사용
+function loadTypeFunnelData() {}
 
 function renderTypeFunnel() {
   var wrap = document.getElementById('type-funnel-wrap');
@@ -1338,7 +1368,8 @@ function renderTypeFunnel() {
     { label: '영어 문의(EN)',     clicks: ['membership-inquiry-en','adult-lesson-inquiry-en','youth-lesson-inquiry-en','summer-special-inquiry-en'], inqKey: null, tcKey: null, bold: false }
   ];
 
-  var byTypeMonth = (_pbData && _pbData.inquiries && _pbData.inquiries.byTypeMonth) ? _pbData.inquiries.byTypeMonth : {};
+  // _flow.byType가 있으면 기간 반영값 우선, 없으면 byTypeMonth 폴백
+  var byTypeMonth = (_flow && _flow.byType && Object.keys(_flow.byType).length) ? _flow.byType : ((_pbData && _pbData.inquiries && _pbData.inquiries.byTypeMonth) || {});
 
   var rows = '';
   TYPES.forEach(function(t) {
@@ -1666,11 +1697,15 @@ async function loadTypeChannel() {
     if (!data || !data.ok || !data.types) { _tcStub('응답 형식 오류 — 재배포 후 점등됩니다'); return; }
 
     _tcData = data;
+    // 모듈변수 저장 — renderTypeFunnel이 등록 컬럼에 사용
+    _tcTypes = data.types;
     renderUnknownCard();
     renderTypeCards();
     renderTypeDrilldown();
     renderTypeMatrix();
     renderBasis();
+    // 유형별 현황표 등록 컬럼 갱신
+    renderTypeFunnel();
   } catch (e) {
     console.warn('[type_channel_breakdown] 로드 실패:', e && e.message);
     _tcStub((e && e.message) ? e.message + ' — 재배포 후 점등됩니다' : '재배포 후 점등됩니다');
@@ -1681,10 +1716,11 @@ document.addEventListener('DOMContentLoaded', function() {
   // 월 네비게이터 초기화 — 오늘 달로 설정, 다음달 버튼 비활성
   _updateMonthNav();
 
-  // ── 즉시 로드 (요약+분석 구역) ──────────────────────────────
+  // ── 즉시 로드 ──────────────────────────────────────────────
   loadFunnelConversion();        // 핵심 지표(전환흐름)·채널표 내부 렌더 포함
-  loadPeriodBreakdown('month');  // 기본 기간: 월 (채널표·전환흐름 내부 렌더 포함)
-  loadTypeFunnelData();          // 유형별 현황표 (비동기·논블로킹)
+  loadPeriodBreakdown('month');  // 기본 기간: 월 — 끝에서 loadClickStats() 호출됨
+  loadTypeChannel();             // 유형별 전환 & 유형×채널 교차 (논블로킹·즉시)
+  // loadClickStats()는 loadPeriodBreakdown → _applyPeriodData 내에서 호출됨
 
   // ── 지연 로드 — 각 <details> 펼칠 때 1회만 fetch (초기 로드 가벼움) ───────────
   document.getElementById('details-weekly-trend').addEventListener('toggle', function() {
@@ -1693,12 +1729,7 @@ document.addEventListener('DOMContentLoaded', function() {
   document.getElementById('details-monthly-trend').addEventListener('toggle', function() {
     if (this.open && !this._loaded) { this._loaded = true; loadMonthlyTrend(); }
   });
-  document.getElementById('details-click-stats').addEventListener('toggle', function() {
-    if (this.open && !this._loaded) { this._loaded = true; loadClickStats(); }
-  });
-  document.getElementById('details-type-channel').addEventListener('toggle', function() {
-    if (this.open && !this._loaded) { this._loaded = true; loadTypeChannel(); }
-  });
+  // details-click-stats, details-type-channel 은 이제 div.section — toggle 리스너 불필요
   // details-channel-compare, details-entry-points, details-exp-log 은
   // 추가 fetch 없음 — funnel 데이터는 이미 로드됨, 나머지는 정적 HTML
 });

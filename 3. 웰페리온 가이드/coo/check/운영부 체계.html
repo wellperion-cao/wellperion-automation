@@ -781,45 +781,6 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 
 <div id="tab-manual" class="content hidden">
 
-  <!-- ── 요일별 업무 보드 (주 콘텐츠 · 요일 다중선택 + 트렐로 칸반) ── -->
-  <div style="font-size:16px;font-weight:700;color:var(--text);padding:2px 0 4px;">요일별 업무 보드 (트렐로 칸반)</div>
-  <div class="board-intro">위 <strong>요일 버튼</strong>을 켜고 끄면(여러 개 동시 선택 가능) 켠 요일이 <strong>트렐로 컬럼</strong>으로 나란히 표시됩니다. 컬럼이 많으면 가로로 스크롤하세요. 각 컬럼 안에 🌅오전 응대 / 🌇오후 응대 / 📋상시·정기 카드가 세로로 있고, 카드의 <strong>편집</strong> 버튼을 누르면 <strong>표(시간 칸 | 내용 칸)를 바로 편집</strong>할 수 있고, <strong>＋ 행 추가</strong>/<strong>✕ 삭제</strong>로 항목을 늘리거나 지운 뒤 <strong>저장</strong>하면 모든 기기에 반영됩니다. 선택한 요일은 다음에 다시 와도 기억됩니다. 저장 시 시간 순으로 자동 정렬됩니다. 각 요일 컬럼의 시간대별 카드가 곧 <strong>그 요일의 리셉션 상세 절차</strong>입니다(오픈 점검·오전/오후 응대·VOC·마감 등 시간대별 절차가 요일별로 녹아 있음).</div>
-
-  <!-- ── 공통 유의사항 (전 요일 공통 · 시간대별 절차 박제 흡수 시 보존, 2026-06-12 GM) ──
-       기존 '시간대별 상세 절차(리셉션 매뉴얼)' 별도 칸의 공통 안전수칙. 시간대별 절차 본문은
-       위 요일별 트렐로 보드(BOARD_SEED)에 요일별로 단일출처화되어 흡수됨 — 절차 중복 제거.
-       이 공통 유의사항만 어느 요일에도 종속되지 않아 보드 위 공통 노트로 보존. -->
-  <div class="manual-section" style="margin:6px 0 14px;">
-    <div class="manual-header" onclick="togManual(this)"><h3>공통 유의사항 (전 요일 공통)</h3><span class="arrow open">&#9654;</span></div>
-    <div class="manual-body open">
-      <ul>
-        <li><span class="highlight">리셉션·프론트는 항상 최소 1명이 자리를 지킨다</span> (절대 비우지 않음 · 휴게는 엇갈려)</li>
-        <li>회원이 보이면 하던 일을 멈추고 먼저 인사 — 눈 맞춤+미소 / 이름 알면 호칭 사용</li>
-        <li>모든 VOC·건의는 즉시 구글 폼 기록 후 당일 해당 부서 전달 / 처리 결과 회원 고지</li>
-        <li>회원 개인정보·예약 정보는 외부 유출·임의 열람 금지</li>
-        <li>긴급·안전·민원은 즉시 팀장·소장 보고 후 조치 (자의 판단 금지)</li>
-      </ul>
-    </div>
-  </div>
-
-  <!-- 요일 툴바 (7요일 다중선택 toggle + 전체 토글) -->
-  <div id="day-toolbar" class="day-toolbar"></div>
-
-  <!-- 트렐로 칸반 보드 (켠 요일 = 컬럼 · 풀폭 엣지투엣지 · 가로 스크롤) -->
-  <div class="board-fullwidth">
-    <div id="manual-board" class="board-scroll"></div>
-  </div>
-
-  <!-- 셋업 편집기 제거(GM 2026-06-12): 항목 추가=이슈승격 모달·점검 화면 빠른추가로 대체. setupAttr 등 공유 데이터계층은 보존. -->
-
-  <!-- ── '시간대별 상세 절차(리셉션 매뉴얼)' 별도 칸 제거 (2026-06-12 GM) ──
-       시간대별 절차(오픈 점검·오전/오후 응대·인수인계·마감)는 위 요일별 트렐로 보드(BOARD_SEED)에
-       요일별로 시간대 카드로 단일출처화되어 흡수 → 별도 칸과의 절차 중복 제거(요일별이 정본).
-       어느 요일에도 종속되지 않는 '공통 유의사항'만 보드 위 공통 노트로 보존(상단).
-       요일별 집중 업무는 각 요일 컬럼의 📋상시·정기(outer) 카드에 흡수, 복장·에티켓은 규정 탭
-       복장·용모/응대 태도 표가 정본 — 별도 칸의 모든 절차 텍스트는 다른 단일출처에 보존됨. -->
-
-
   <!-- ══════════════════════════════════════════════════════════
        리셉션 업무 (7항목 보드 + 매뉴얼) — 운영부 리셉션 운영 시트 근거.
        시트 근거 있는 항목만 내용 작성 / 근거 없는 항목은 빈 양식·AI 초안으로 명시(지어내기 금지).
@@ -1078,6 +1039,44 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
       <p style="font-size:12px;color:var(--purple);font-weight:700;margin-top:6px;">※ 위 절차는 GM 검토 후 확정됩니다. 시간·담당·세부 체크포인트는 실무 입력 필요.</p>
     </div>
   </div>
+
+  <!-- ── 요일별 업무 보드 (주 콘텐츠 · 요일 다중선택 + 트렐로 칸반) ── -->
+  <div style="font-size:16px;font-weight:700;color:var(--text);padding:2px 0 4px;">요일별 업무 보드 (트렐로 칸반)</div>
+  <div class="board-intro">위 <strong>요일 버튼</strong>을 켜고 끄면(여러 개 동시 선택 가능) 켠 요일이 <strong>트렐로 컬럼</strong>으로 나란히 표시됩니다. 컬럼이 많으면 가로로 스크롤하세요. 각 컬럼 안에 🌅오전 응대 / 🌇오후 응대 / 📋상시·정기 카드가 세로로 있고, 카드의 <strong>편집</strong> 버튼을 누르면 <strong>표(시간 칸 | 내용 칸)를 바로 편집</strong>할 수 있고, <strong>＋ 행 추가</strong>/<strong>✕ 삭제</strong>로 항목을 늘리거나 지운 뒤 <strong>저장</strong>하면 모든 기기에 반영됩니다. 선택한 요일은 다음에 다시 와도 기억됩니다. 저장 시 시간 순으로 자동 정렬됩니다. 각 요일 컬럼의 시간대별 카드가 곧 <strong>그 요일의 리셉션 상세 절차</strong>입니다(오픈 점검·오전/오후 응대·VOC·마감 등 시간대별 절차가 요일별로 녹아 있음).</div>
+
+  <!-- ── 공통 유의사항 (전 요일 공통 · 시간대별 절차 박제 흡수 시 보존, 2026-06-12 GM) ──
+       기존 '시간대별 상세 절차(리셉션 매뉴얼)' 별도 칸의 공통 안전수칙. 시간대별 절차 본문은
+       위 요일별 트렐로 보드(BOARD_SEED)에 요일별로 단일출처화되어 흡수됨 — 절차 중복 제거.
+       이 공통 유의사항만 어느 요일에도 종속되지 않아 보드 위 공통 노트로 보존. -->
+  <div class="manual-section" style="margin:6px 0 14px;">
+    <div class="manual-header" onclick="togManual(this)"><h3>공통 유의사항 (전 요일 공통)</h3><span class="arrow open">&#9654;</span></div>
+    <div class="manual-body open">
+      <ul>
+        <li><span class="highlight">리셉션·프론트는 항상 최소 1명이 자리를 지킨다</span> (절대 비우지 않음 · 휴게는 엇갈려)</li>
+        <li>회원이 보이면 하던 일을 멈추고 먼저 인사 — 눈 맞춤+미소 / 이름 알면 호칭 사용</li>
+        <li>모든 VOC·건의는 즉시 구글 폼 기록 후 당일 해당 부서 전달 / 처리 결과 회원 고지</li>
+        <li>회원 개인정보·예약 정보는 외부 유출·임의 열람 금지</li>
+        <li>긴급·안전·민원은 즉시 팀장·소장 보고 후 조치 (자의 판단 금지)</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- 요일 툴바 (7요일 다중선택 toggle + 전체 토글) -->
+  <div id="day-toolbar" class="day-toolbar"></div>
+
+  <!-- 트렐로 칸반 보드 (켠 요일 = 컬럼 · 풀폭 엣지투엣지 · 가로 스크롤) -->
+  <div class="board-fullwidth">
+    <div id="manual-board" class="board-scroll"></div>
+  </div>
+
+  <!-- 셋업 편집기 제거(GM 2026-06-12): 항목 추가=이슈승격 모달·점검 화면 빠른추가로 대체. setupAttr 등 공유 데이터계층은 보존. -->
+
+  <!-- ── '시간대별 상세 절차(리셉션 매뉴얼)' 별도 칸 제거 (2026-06-12 GM) ──
+       시간대별 절차(오픈 점검·오전/오후 응대·인수인계·마감)는 위 요일별 트렐로 보드(BOARD_SEED)에
+       요일별로 시간대 카드로 단일출처화되어 흡수 → 별도 칸과의 절차 중복 제거(요일별이 정본).
+       어느 요일에도 종속되지 않는 '공통 유의사항'만 보드 위 공통 노트로 보존(상단).
+       요일별 집중 업무는 각 요일 컬럼의 📋상시·정기(outer) 카드에 흡수, 복장·에티켓은 규정 탭
+       복장·용모/응대 태도 표가 정본 — 별도 칸의 모든 절차 텍스트는 다른 단일출처에 보존됨. -->
 
 
 <script>
