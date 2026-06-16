@@ -216,18 +216,41 @@ html,body{background:var(--bg);color:var(--text);font-family:"Pretendard","Apple
   body[data-print-mode="cards"] .header,
   body[data-print-mode="cards"] .dash-overlay{display:none!important}
   body[data-print-mode="cards"] #approvalPrintArea{display:block!important}
-  #approvalPrintArea .ap-doc-title{font-size:16px;font-weight:800;margin:0 0 14px;color:#111}
-  #approvalPrintArea .ap-doc-title span{font-size:12px;font-weight:500;color:#555;margin-left:8px}
-  .print-card{border:1px solid #333;border-radius:6px;padding:12px 14px;margin-bottom:12px;page-break-inside:avoid}
-  .print-card .pc-title{font-size:14px;font-weight:700;margin-bottom:5px;color:#111}
-  .print-card .pc-cat{font-size:10px;font-weight:600;color:#444;border:1px solid #aaa;border-radius:4px;padding:1px 5px;margin-left:6px;white-space:nowrap}
-  .print-card .pc-meta,.print-card .pc-budget,.print-card .pc-body{font-size:11.5px;color:#222;margin-bottom:4px;line-height:1.55}
-  .print-card .pc-body{white-space:pre-wrap}
-  .print-card .pc-signs{display:flex;gap:10px;margin-top:10px;flex-wrap:wrap}
-  .print-card .pc-sign-box{border:1px solid #333;border-radius:4px;min-width:130px}
-  .print-card .pc-sign-label{font-size:11px;font-weight:700;text-align:center;border-bottom:1px solid #333;padding:3px 4px;background:#f0f0f0;-webkit-print-color-adjust:exact;print-color-adjust:exact}
-  .print-card .pc-sign-space{height:46px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#0b8043}
-  .print-card .pc-done{font-size:12px;font-weight:700;color:#0b8043;margin-top:8px}
+  @page{margin:10mm;size:A4}
+  /* ── 결재 보고서 인쇄 — 업무 현황 보고서(rr-page)와 동일 품질로 통일 (2026-06-16 GM) ── */
+  #approvalPrintArea .rr-page{font-family:"Malgun Gothic",sans-serif;color:#111;font-size:11px;line-height:1.6;padding:0;page-break-after:always}
+  #approvalPrintArea .rr-page:last-child{page-break-after:auto}
+  #approvalPrintArea .rr-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:14px;padding-bottom:10px;border-bottom:2px solid #111}
+  #approvalPrintArea .rr-wordmark{font-size:15px;font-weight:900;letter-spacing:0.18em;text-transform:uppercase;color:#111}
+  #approvalPrintArea .rr-wordmark small{display:block;font-size:8px;font-weight:600;letter-spacing:0.12em;color:#666;margin-top:2px}
+  #approvalPrintArea .rr-approval-table{border-collapse:collapse;font-size:9px}
+  #approvalPrintArea .rr-approval-table td{border:1px solid #555;padding:4px 8px;text-align:center;min-width:50px;vertical-align:top}
+  #approvalPrintArea .rr-approval-label{writing-mode:vertical-rl;text-orientation:mixed;font-weight:700;padding:6px 4px;font-size:9px;background:#f0f0f0;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  #approvalPrintArea .rr-approval-role{font-weight:700;font-size:9px;border-bottom:1px solid #bbb;padding-bottom:3px;margin-bottom:5px}
+  #approvalPrintArea .rr-approval-sign{font-size:9px;min-height:30px;display:flex;align-items:center;justify-content:center;color:#0b8043;font-weight:700}
+  #approvalPrintArea .rr-doc-title{text-align:center;font-size:18px;font-weight:900;letter-spacing:0.08em;margin:10px 0 14px}
+  #approvalPrintArea .rr-info-table{width:100%;border-collapse:collapse;margin-bottom:14px;font-size:10px}
+  #approvalPrintArea .rr-info-table th{background:#f0f0f0;border:1px solid #bbb;padding:4px 8px;font-weight:700;text-align:left;width:18%;white-space:nowrap;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  #approvalPrintArea .rr-info-table td{border:1px solid #bbb;padding:4px 8px}
+  #approvalPrintArea .rr-section-title{font-size:11px;font-weight:700;border-left:3px solid #111;padding-left:6px;margin:14px 0 6px}
+  #approvalPrintArea .rr-section-body{font-size:10px;white-space:pre-wrap;word-break:break-word;padding:8px;border:1px solid #ddd;background:#fafafa;line-height:1.7}
+  #approvalPrintArea .rr-result-box{font-size:10px;white-space:pre-wrap;word-break:break-word;padding:8px 10px;border:2px solid #111;background:#f5f5f5;line-height:1.7}
+  #approvalPrintArea .rr-log-table{width:100%;border-collapse:collapse;font-size:10px}
+  #approvalPrintArea .rr-log-table th{background:#f0f0f0;border:1px solid #bbb;padding:4px 8px;font-weight:700;text-align:left;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  #approvalPrintArea .rr-log-table td{border:1px solid #ddd;padding:4px 8px;vertical-align:top}
+  #approvalPrintArea .rr-log-date{white-space:nowrap;width:90px}
+  /* ── 결재 고유: 결재선 + 서명란 ── */
+  #approvalPrintArea .rr-route{font-size:10px;color:#222;margin:4px 0 10px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+  #approvalPrintArea .rr-route b{font-weight:700}
+  #approvalPrintArea .rr-route .rr-route-step{border:1px solid #999;border-radius:4px;padding:2px 8px;background:#f7f7f7;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  #approvalPrintArea .rr-route .rr-route-arrow{color:#888;font-weight:700}
+  #approvalPrintArea .rr-signs{display:flex;gap:12px;margin-top:14px;flex-wrap:wrap}
+  #approvalPrintArea .rr-sign-box{border:1px solid #333;border-radius:4px;min-width:140px;flex:0 0 auto}
+  #approvalPrintArea .rr-sign-label{font-size:10px;font-weight:700;text-align:center;border-bottom:1px solid #333;padding:4px 6px;background:#f0f0f0;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  #approvalPrintArea .rr-sign-space{height:50px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#0b8043}
+  #approvalPrintArea .rr-done{font-size:11px;font-weight:700;color:#0b8043;margin-top:10px;padding:6px 10px;border:1px solid #0b8043;border-radius:4px;display:inline-block}
+  #approvalPrintArea .rr-footer{margin-top:20px;padding-top:8px;border-top:1px solid #bbb;display:flex;justify-content:space-between;font-size:9px;color:#666}
+  #approvalPrintArea .rr-empty{font-size:13px;color:#555}
   /* 칸반 보드 → 인쇄 시 컬럼을 세로 나열(클리핑 방지) */
   .kanban-board{display:block!important;overflow:visible!important;padding:0!important}
   .kanban-board > .kanban-col{width:auto!important;margin-bottom:8px!important;break-inside:avoid}
@@ -668,41 +691,137 @@ function buildShareUrl() {
 }
 // ── [결재 카드 인쇄] 카드 기준 + 남은 결재자별 서명칸 (2026-06-03 GM) ──
 // 현재 필터·정렬 반영된 카드를 한꺼번에 인쇄. 각 카드에 '아직 서명 안 한 결재자'만 서명칸으로 표시.
+// 결재 보고서 인쇄 — 업무 현황 보고서(rr-page)와 동일 문서 품질로 통일 (2026-06-16 GM).
+//   업무 보고서의 헤더·정보표·섹션·푸터 레이아웃을 그대로 쓰되, 결재 고유 요소(결재선·서명란·대표 서명완료)를 보존·강화.
 function buildApprovalPrint(list) {
   var nameMap = { 'GM': '김남욱 GM' };
-  var h = '<div class="ap-doc-title">웰페리온 결재 문서 <span>총 ' + list.length + '건 · ' + todayDateStr() + '</span></div>';
-  if (!list.length) return h + '<div style="font-size:13px;color:#555;">인쇄할 결재 건이 없습니다.</div>';
-  list.forEach(function(t, i) {
+  if (!list.length) return '<div class="rr-page"><div class="rr-empty">인쇄할 결재 건이 없습니다.</div></div>';
+
+  var today = todayDateStr();
+
+  return list.map(function(t) {
     var parsed = parseContent(t.content || '');
     var route = buildEffectiveRoute(t, parsed.budget);
     var signMap = { '부서장': t.deptSign, 'GM': t.gmSign };
     var pending = route.filter(function(r){ return !String(signMap[r] || '').trim(); });
-    h += '<div class="print-card">';
-    h += '<div class="pc-title">' + (i + 1) + '. ' + esc(t.title || '(제목 없음)')
-       + (t.category ? '<span class="pc-cat">' + esc(t.category) + '</span>' : '') + '</div>';
-    h += '<div class="pc-meta">담당: ' + esc(t.owner || '-');
-    var sd = String(t.startDate || '').slice(0, 10), ed = String(t.endDate || '').slice(0, 10);
-    if (sd || ed) h += ' &nbsp;|&nbsp; 기간: ' + sd + (ed ? ' ~ ' + ed : '');
-    h += '</div>';
-    if (parsed.budget) h += '<div class="pc-budget">💰 ' + esc(parsed.budget.category) + ' · ' + formatKRW(parsed.budget.amount) + '</div>';
-    if (parsed.body && parsed.body.trim()) h += '<div class="pc-body">' + esc(parsed.body.trim()).slice(0, 600) + '</div>';
-    h += '<div class="pc-signs">';
-    if (!pending.length) {
-      h += '<div class="pc-done">✅ 시스템 결재 완료 (부서장·GM 서명 대기 없음)</div>';
-    } else {
-      pending.forEach(function(r){
-        var label = (r === '부서장') ? (deptHeadNameOf(t) || '부서장') : (nameMap[r] || r);
-        h += '<div class="pc-sign-box"><div class="pc-sign-label">' + esc(label) + ' (인)</div><div class="pc-sign-space"></div></div>';
-      });
-    }
-    // 페이퍼 보고용 대표 서명란 — 대표 단계는 대표싸인 컬럼 3상태 파생(2026-06-16 GM).
-    //   URL=서명본 업로드(대표 결재완료) → '서명완료' 표기 / 그 외(빈값·PENDING)=빈 서명칸.
     var _repDone = /^https?:\/\//.test(String(t.repSign || '').trim());
-    h += '<div class="pc-sign-box"><div class="pc-sign-label">전응준 대표 (인)</div>'
-       + '<div class="pc-sign-space">' + (_repDone ? '서명완료' : '') + '</div></div>';
-    h += '</div></div>';
-  });
-  return h;
+
+    /* ── 결재란 (헤더 우측 도장표) — 결재선 단계별 서명상태 표기 ── */
+    var apRoles = route.slice();           // 부서장→GM 순서 (buildEffectiveRoute 산출)
+    var apCells = apRoles.map(function(r){
+      var label = (r === '부서장') ? (deptHeadNameOf(t) || '부서장') : (nameMap[r] || r);
+      var signed = String(signMap[r] || '').trim();
+      return '<td><div class="rr-approval-role">' + esc(label) + '</div>'
+        + '<div class="rr-approval-sign">' + (signed ? '✅' : '') + '</div></td>';
+    });
+    // 대표 단계 도장 칸 — URL(서명본)=결재완료 ✅
+    apCells.push('<td><div class="rr-approval-role">전응준 대표</div>'
+      + '<div class="rr-approval-sign">' + (_repDone ? '✅' : '') + '</div></td>');
+    var approvalHtml = '<table class="rr-approval-table"><tr>'
+      + '<td class="rr-approval-label">결재</td>' + apCells.join('') + '</tr></table>';
+
+    /* ── 정보표 ── */
+    var sd = String(t.startDate || '').slice(0, 10), ed = String(t.endDate || '').slice(0, 10);
+    var period = (sd || ed) ? esc(sd + (ed ? ' ~ ' + ed : '')) : '-';
+    var statusStr = esc(t.status || t['결재상태'] || t.approvalStatus || '-') || '-';
+    var infoRows = [
+      ['결재 제목', esc(t.title || '(제목 없음)')],
+      ['카테고리', esc(t.category || '-')],
+      ['담당', esc(t.owner || '-')],
+      ['기간', period],
+      ['결재상태', statusStr]
+    ];
+    var infoHtml = '<table class="rr-info-table">'
+      + infoRows.map(function(r){ return '<tr><th>' + r[0] + '</th><td>' + r[1] + '</td></tr>'; }).join('')
+      + '</table>';
+
+    /* ── 결재선 (부서장→GM 종착, 대표 페이퍼 단계 포함) ── */
+    var routeSteps = apRoles.map(function(r){
+      return (r === '부서장') ? (deptHeadNameOf(t) || '부서장') : (nameMap[r] || r);
+    });
+    routeSteps.push('전응준 대표');
+    var routeHtml = '<div class="rr-route"><b>결재선</b> '
+      + routeSteps.map(function(s){ return '<span class="rr-route-step">' + esc(s) + '</span>'; })
+                  .join('<span class="rr-route-arrow">→</span>')
+      + '</div>';
+
+    /* ── 본문 ── */
+    var bodyHtml = (parsed.body && parsed.body.trim())
+      ? '<div class="rr-section-title">결재 내용</div>'
+        + '<div class="rr-section-body">' + esc(parsed.body.trim()) + '</div>'
+      : '';
+
+    /* ── 결과보고 ── */
+    var resultHtml = parsed.result
+      ? '<div class="rr-section-title">결과보고</div>'
+        + '<div class="rr-result-box">' + esc(parsed.result) + '</div>'
+      : '';
+
+    /* ── 진척 로그 (날짜 오름차순) ── */
+    var logsHtml = '';
+    if (parsed.logs && parsed.logs.length > 0) {
+      var sorted = parsed.logs.slice().sort(function(a, b){ return a.date.localeCompare(b.date); });
+      var rows = sorted.map(function(l){
+        return '<tr><td class="rr-log-date">' + esc(l.date) + '</td><td>' + esc(l.text) + '</td></tr>';
+      }).join('');
+      logsHtml = '<div class="rr-section-title">진척 로그</div>'
+        + '<table class="rr-log-table">'
+        + '<thead><tr><th style="width:90px">날짜</th><th>내용</th></tr></thead>'
+        + '<tbody>' + rows + '</tbody></table>';
+    }
+
+    /* ── 계획 ── */
+    var planHtml = parsed.plan
+      ? '<div class="rr-section-title">계획</div>'
+        + '<div class="rr-section-body">' + esc(parsed.plan) + '</div>'
+      : '';
+
+    /* ── 예산 ── */
+    var budgetHtml = '';
+    if (parsed.budget && parsed.budget.category) {
+      budgetHtml = '<div class="rr-section-title">예산</div>'
+        + '<table class="rr-info-table">'
+        + '<tr><th>항목</th><td>' + esc(parsed.budget.category) + '</td></tr>'
+        + '<tr><th>금액</th><td>' + Number(parsed.budget.amount).toLocaleString() + ' 원</td></tr>'
+        + '</table>';
+    }
+
+    /* ── 서명란 (부서장·GM 대기자 + 대표 페이퍼 서명칸) — 결재 고유 ── */
+    var signsHtml = '<div class="rr-section-title">서명</div>';
+    if (!pending.length) {
+      signsHtml += '<div class="rr-done">✅ 시스템 결재 완료 (부서장·GM 서명 대기 없음)</div>';
+    }
+    signsHtml += '<div class="rr-signs">';
+    pending.forEach(function(r){
+      var label = (r === '부서장') ? (deptHeadNameOf(t) || '부서장') : (nameMap[r] || r);
+      signsHtml += '<div class="rr-sign-box"><div class="rr-sign-label">' + esc(label) + ' (인)</div><div class="rr-sign-space"></div></div>';
+    });
+    // 페이퍼 보고용 대표 서명란 — 대표싸인 3상태 파생(2026-06-16 GM): URL=서명완료, 그 외=빈 서명칸.
+    signsHtml += '<div class="rr-sign-box"><div class="rr-sign-label">전응준 대표 (인)</div>'
+      + '<div class="rr-sign-space">' + (_repDone ? '서명완료' : '') + '</div></div>';
+    signsHtml += '</div>';
+
+    /* ── 페이지 조립 ── */
+    return '<div class="rr-page">'
+      + '<div class="rr-header">'
+      +   '<div class="rr-wordmark">WELLPERION<small>결재 문서</small></div>'
+      +   '<div>' + approvalHtml + '</div>'
+      + '</div>'
+      + '<div class="rr-doc-title">결 재 보 고 서</div>'
+      + infoHtml
+      + routeHtml
+      + bodyHtml
+      + resultHtml
+      + logsHtml
+      + planHtml
+      + budgetHtml
+      + signsHtml
+      + '<div class="rr-footer">'
+      +   '<span>A Day, Well Completed.</span>'
+      +   '<span>발행일: ' + today + '</span>'
+      + '</div>'
+      + '</div>';
+  }).join('');
 }
 function printApprovalCards() {
   var list = window._lastApprovalList || [];
