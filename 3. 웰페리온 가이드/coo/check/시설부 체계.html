@@ -27,7 +27,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 .tab{padding:8px 18px;font-size:14px;font-weight:600;color:var(--dim);background:none;border:none;border-radius:8px;cursor:pointer;font-family:inherit;white-space:nowrap;flex-shrink:0}
 .tab.active{background:var(--accent-bg);color:var(--accent)}
 .content{padding:16px 20px 140px;max-width:720px;margin:0 auto}
-#tab-guide,#tab-manual{max-width:none;margin-left:0;margin-right:0}
+#tab-guide,#tab-manual,#tab-fcheck{max-width:none;margin-left:0;margin-right:0}/* 점검=풀폭 편집(GM 2026-06-16: 측정표 좌우폭 확대) */
 #tab-vendor.content{text-align:left}
 .date-bar{display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap}
 .date-bar input{background:var(--paper);border:1px solid var(--border);color:var(--text);padding:8px 14px;border-radius:8px;font-size:15px;font-family:inherit}
@@ -446,7 +446,8 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   <button class="tab active" onclick="switchTab('policy')">시설부 규정</button>
   <button class="tab" onclick="switchTab('guide')">가이드</button>
   <button class="tab" onclick="switchTab('manual')">매뉴얼</button>
-  <!-- 점검(남)/(여) 탭 제거 — 시설부는 일일점검 미운영 (GM 2026-06-12). 콘텐츠 div는 비활성 잔존(switchTab 참조 보존) -->
+  <!-- 옛 점검(남)/(여) 탭 제거(2026-06-12). 신규 '시설점검'=날짜별 측정 작업일지(2026-06-16 GM·PDF 기반). -->
+  <button class="tab" onclick="switchTab('fcheck')">시설점검</button>
   <button class="tab" onclick="switchTab('vendor')">거래업체</button>
   <div style="display:flex;gap:4px;margin-left:auto;">
     <button class="util-btn print-btn" onclick="printCurrentTab()">인쇄</button>
@@ -454,6 +455,18 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 </div>
 </div><!-- /sticky-top -->
 <div class="saving" id="saveIndicator">저장 중...</div>
+
+<div id="tab-fcheck" class="content hidden">
+  <h2 style="font-size:20px;margin-bottom:6px;">시설 일일점검 <span style="font-size:13px;color:var(--dim);font-weight:400;">(작업일지 · PDF 기준)</span></h2>
+  <p style="font-size:13px;color:var(--dim);margin-bottom:12px;line-height:1.6;">날짜를 고르고 측정·점검값을 입력한 뒤 <b>저장</b>하면 모든 기기에 반영됩니다. 온도·수질은 시간대별, 설비값은 1일 1회.</p>
+  <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:14px;">
+    <label style="font-size:13px;font-weight:700;">날짜 <input type="date" id="fcDate" onchange="fcLoad()" style="background:var(--bg);border:1px solid var(--border);color:var(--text);padding:7px 10px;border-radius:7px;font-family:inherit;"></label>
+    <input type="text" id="fcInspector" placeholder="점검자(근무자) 이름" style="background:var(--bg);border:1px solid var(--border);color:var(--text);padding:7px 12px;border-radius:7px;font-size:13px;font-family:inherit;min-width:160px;">
+    <button type="button" class="mgmt-btn save" style="padding:8px 20px;" onclick="fcSave()">저장</button>
+    <span id="fcStatus" style="font-size:12px;color:var(--dim);"></span>
+  </div>
+  <div id="fc-body"></div>
+</div>
 
 <div id="tab-vendor" class="content hidden">
   <h2 style="font-size:20px;margin-bottom:6px;">거래업체 명부</h2>
@@ -3151,6 +3164,82 @@ function vendorSubmitAddForm(){
   renderVendorList();
   showToast('업체가 등록되었습니다.');
 }
+</script>
+
+<script>
+/* 시설 일일점검(작업일지) — 날짜별 측정폼. saveBoard(키=FACILITY_CHECK_날짜) 재사용·GAS 변경 불필요. GM 2026-06-16 시우, PDF 기반. (주석에 스크립트 태그 글자 금지) */
+(function(){
+  const TIMES=['07:00','09:00','11:00','13:00','15:00','17:00','19:00','21:00'];
+  const SAUNA=[['ontang','온탕(39℃)'],['yeoltang','열탕(42℃)'],['dry','건식(78℃)'],['wet','습식(48℃)'],['jjim','찜질방(68℃)']];
+  const POOL=[['ph','pH'],['temp','수온℃'],['cl','CL농도']];
+  const TANK=[['k2','2번'],['k3','3번'],['k4','4번']];
+  const AHU=['AHU1','AHU2','AHU3','AHU4'];
+  const EQUIP=[['심야전기','A'],['1번탱크온도','℃'],['가스검침','㎥'],['고온수기','℃'],['연동펌프',''],['축열조','']];
+  const CHK=['소방기 작동점검(3주1회)','전기실 안전점검','휴게실 소독·온도','CCTV 점검','순회점검'];
+  function inp(id,ph){return '<input type="text" id="'+id+'" placeholder="'+(ph||'')+'" style="width:100%;box-sizing:border-box;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:5px 6px;border-radius:5px;font-size:13px;font-family:inherit;">';}
+  function th(x){return '<th style="border:1px solid var(--border);padding:6px;background:var(--bg);white-space:nowrap;">'+x+'</th>';}
+  function tempTbl(g,gl){
+    var h='<div style="font-weight:700;font-size:14px;margin:12px 0 4px;">사우나 탕 온도 — '+gl+'</div><div style="overflow-x:auto;"><table style="border-collapse:collapse;width:100%;min-width:640px;"><tr>'+th('시간');
+    SAUNA.forEach(function(c){h+=th(c[1]);}); h+='</tr>';
+    TIMES.forEach(function(t){h+='<tr><td style="border:1px solid var(--border);padding:4px;font-weight:700;white-space:nowrap;">'+t+'</td>';
+      SAUNA.forEach(function(c){h+='<td style="border:1px solid var(--border);padding:2px;">'+inp('fc_sauna_'+g+'_'+t+'_'+c[0])+'</td>';}); h+='</tr>';});
+    return h+'</table></div>';
+  }
+  function colTbl(title,cols,pfx){
+    var h='<div style="font-weight:700;font-size:14px;margin:14px 0 4px;">'+title+'</div><div style="overflow-x:auto;"><table style="border-collapse:collapse;width:100%;min-width:420px;"><tr>'+th('시간');
+    cols.forEach(function(c){h+=th(c[1]);}); h+='</tr>';
+    TIMES.forEach(function(t){h+='<tr><td style="border:1px solid var(--border);padding:4px;font-weight:700;">'+t+'</td>';
+      cols.forEach(function(c){h+='<td style="border:1px solid var(--border);padding:2px;">'+inp('fc_'+pfx+'_'+t+'_'+c[0])+'</td>';}); h+='</tr>';});
+    return h+'</table></div>';
+  }
+  function ahuTbl(){
+    var h='<div style="font-weight:700;font-size:14px;margin:14px 0 4px;">공조기(AHU) 가동·상태</div><div style="overflow-x:auto;"><table style="border-collapse:collapse;width:100%;min-width:420px;"><tr>'+th('시간');
+    AHU.forEach(function(a){h+=th(a);}); h+='</tr>';
+    TIMES.forEach(function(t){h+='<tr><td style="border:1px solid var(--border);padding:4px;font-weight:700;">'+t+'</td>';
+      AHU.forEach(function(a){h+='<td style="border:1px solid var(--border);padding:2px;"><select id="fc_ahu_'+t+'_'+a+'" style="width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);font-size:13px;border-radius:5px;"><option value=""></option><option value="ok">ok</option><option value="x">x</option></select></td>';}); h+='</tr>';});
+    return h+'</table></div>';
+  }
+  function equipBox(){
+    var h='<div style="font-weight:700;font-size:14px;margin:14px 0 4px;">설비 가동값 (1일 1회)</div><div style="display:flex;flex-wrap:wrap;gap:10px;">';
+    EQUIP.forEach(function(e){h+='<label style="font-size:13px;display:flex;flex-direction:column;gap:2px;min-width:140px;">'+e[0]+(e[1]?'('+e[1]+')':'')+inp('fc_eq_'+e[0])+'</label>';});
+    h+='<label style="font-size:13px;display:flex;flex-direction:column;gap:2px;min-width:200px;">최종퇴실(시간/성명)'+inp('fc_eq_final','시간 · 성명')+'</label></div>';
+    return h;
+  }
+  function chkBox(){
+    var h='<div style="font-weight:700;font-size:14px;margin:14px 0 4px;">점검 항목</div><div style="display:flex;flex-direction:column;gap:5px;">';
+    CHK.forEach(function(c,i){h+='<label style="font-size:13px;"><input type="checkbox" id="fc_chk_'+i+'"> '+c+'</label>';});
+    h+='</div><div style="font-weight:700;font-size:14px;margin:14px 0 4px;">비고 · 지시사항 · 컴플레인</div><textarea id="fc_note" rows="4" style="width:100%;box-sizing:border-box;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:8px;border-radius:7px;font-size:13px;font-family:inherit;" placeholder="곰팡이 청소·신발장 보수·회원 지시사항 등"></textarea>';
+    return h;
+  }
+  window.fcRender=function(){
+    var el=document.getElementById('fc-body'); if(!el)return;
+    el.innerHTML=tempTbl('m','남')+tempTbl('f','여')+colTbl('수영장 수질',POOL,'pool')+colTbl('온수탱크 온도',TANK,'tank')+ahuTbl()+equipBox()+chkBox();
+  };
+  function collect(){
+    var d={}; document.querySelectorAll('#fc-body [id^=fc_]').forEach(function(n){ d[n.id]= n.type==='checkbox'?(n.checked?1:0):n.value; });
+    return {date:document.getElementById('fcDate').value, inspector:document.getElementById('fcInspector').value, vals:d};
+  }
+  window.fcSave=function(){
+    var date=document.getElementById('fcDate').value; if(!date){alert('날짜를 먼저 고르세요');return;}
+    var st=document.getElementById('fcStatus'); if(st)st.textContent='저장 중...';
+    fetch(API_URL,{method:'POST',redirect:'follow',headers:{'Content-Type':'text/plain'},body:JSON.stringify({action:'saveBoard',key:'FACILITY_CHECK_'+date,board:collect()})})
+      .then(function(r){return r.json();}).then(function(j){ if(st)st.textContent=(j&&(j.ok||j.success))?('저장 완료 ('+date+')'):'저장 실패'; })
+      .catch(function(){ if(st)st.textContent='저장 실패(네트워크)'; });
+  };
+  window.fcLoad=function(){
+    var date=document.getElementById('fcDate').value; if(!date)return;
+    if(!document.querySelector('#fc-body [id^=fc_]')) fcRender();
+    var st=document.getElementById('fcStatus'); if(st)st.textContent='불러오는 중...';
+    fetch(API_URL+'?action=board&key='+encodeURIComponent('FACILITY_CHECK_'+date),{redirect:'follow'})
+      .then(function(r){return r.json();}).then(function(j){
+        var b=(j&&j.board)||{}; var v=b.vals||{};
+        var insp=document.getElementById('fcInspector'); if(insp)insp.value=b.inspector||'';
+        document.querySelectorAll('#fc-body [id^=fc_]').forEach(function(n){ if(v[n.id]===undefined)return; if(n.type==='checkbox')n.checked=!!v[n.id]; else n.value=v[n.id]; });
+        if(st)st.textContent=Object.keys(v).length?('불러옴 ('+date+')'):'기록 없음 ('+date+')';
+      }).catch(function(){ if(st)st.textContent='불러오기 실패'; });
+  };
+  try{ var fd=document.getElementById('fcDate'); if(fd){ fd.value=new Date().toLocaleDateString('sv-SE'); fcRender(); fcLoad(); } }catch(e){}
+})();
 </script>
 
 </body>
