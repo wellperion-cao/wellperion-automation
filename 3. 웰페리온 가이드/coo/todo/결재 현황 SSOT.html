@@ -695,11 +695,11 @@ function buildApprovalPrint(list) {
         h += '<div class="pc-sign-box"><div class="pc-sign-label">' + esc(label) + ' (인)</div><div class="pc-sign-space"></div></div>';
       });
     }
-    // 페이퍼 보고용 대표 서명란 — 시스템에서 대표 단계는 빠졌으나(GM 종착) 종이 보고는 대표 결재로 마무리.
-    // 항상 빈칸으로 고정 추가(서명됐으면 채워 표시). 결재완료 건 인쇄에도 반드시 노출. (2026-06-16 GM)
-    var _repSign = String(t.repSign || '').trim();
+    // 페이퍼 보고용 대표 서명란 — 대표 단계는 대표싸인 컬럼 3상태 파생(2026-06-16 GM).
+    //   URL=서명본 업로드(대표 결재완료) → '서명완료' 표기 / 그 외(빈값·PENDING)=빈 서명칸.
+    var _repDone = /^https?:\/\//.test(String(t.repSign || '').trim());
     h += '<div class="pc-sign-box"><div class="pc-sign-label">전응준 대표 (인)</div>'
-       + '<div class="pc-sign-space">' + (_repSign ? esc(_repSign) : '') + '</div></div>';
+       + '<div class="pc-sign-space">' + (_repDone ? '서명완료' : '') + '</div></div>';
     h += '</div></div>';
   });
   return h;
@@ -725,15 +725,69 @@ function printApprovalCard(id) {
   setTimeout(_reset, 2000);
 }
 
-// ── [대표 서명본 스캔 업로드] 단순 증빙 첨부 (2026-06-16 GM) ──
-// 백엔드 todo_upload(파일URL 컬럼 newline append) 재사용. 결재상태·배지·대표싸인 칸은 건드리지 않는다.
-// 파일명은 '대표서명_<id>_<원본명>' 으로 올리지만, GAS _uploadFile 이 Drive getUrl()(파일명 미포함 URL)만
-// 시트에 적재하므로 새로고침 후 URL만으로는 prefix 판별 불가(백엔드 미수정 제약). 결재완료 카드의
-// 모든 첨부 = 대표 서명본 증빙으로 노출한다(이 화면 업로드 경로가 done 카드 첨부의 단일 출처).
-function repSignFiles(t) {
-  var raw = String((t && (t['파일URL'] || t.fileUrl)) || '');
-  return raw.split('\n').map(function(s){ return s.trim(); }).filter(Boolean);
+// ═══ 대표 결재 2단계 — GM 결재완료 위에 대표싸인 컬럼 3상태 파생 (2026-06-16 GM) ═══
+//   t.repSign(대표싸인 컬럼): 빈값=대표 미올림 / 'PENDING'=GM이 대표 올림(서명본 대기) / URL=서명본=대표 결재완료.
+//   결재상태('결재완료')와 독립. 대표 결재완료는 오직 서명본 업로드(approval_rep_sign_upload)로만 달성(훅 강제).
+function repStageOf(t) {
+  var s = String((t && (t.repSign || t['대표싸인'])) || '').trim();
+  if (/^https?:\/\//.test(s)) return 'done';
+  if (s.toUpperCase() === 'PENDING') return 'pending';
+  return 'none';
 }
+
+// GM 결재완료(isDone) 카드의 대표 단계 UI — 3상태별 버튼/배지.
+function renderRepApprovalRow(t) {
+  var stage = repStageOf(t);
+  var id = t.id;
+  var h = '<div class="rep-sign-row" style="margin-top:8px;display:flex;flex-wrap:wrap;align-items:center;gap:8px;">';
+  if (stage === 'none') {
+    // 대표 미올림 → [대표 결재 올리기]
+    h += '<button onclick="event.stopPropagation();repEscalate(\'' + escAttr(id) + '\')" style="display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;padding:5px 12px;border-radius:7px;background:var(--purple-bg);color:var(--purple);border:1px solid rgba(167,139,218,0.4);cursor:pointer;font-family:inherit;">🏛 대표 결재 올리기</button>';
+  } else if (stage === 'pending') {
+    // 대표 올림(서명본 대기) → 상태 + 🖨 인쇄(대표 서명란 포함) + 📄 업로드 + 올림 취소
+    h += '<span class="chip" style="font-size:11px;font-weight:700;color:var(--yellow);background:var(--yellow-bg);border:1px solid rgba(214,166,79,0.3);padding:4px 10px;border-radius:7px;">🏛 대표 결재대기</span>';
+    h += '<button onclick="event.stopPropagation();printApprovalCard(\'' + escAttr(id) + '\')" style="display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;padding:4px 10px;border-radius:6px;background:var(--accent-bg);color:var(--accent);border:1px solid rgba(183,159,138,0.3);cursor:pointer;font-family:inherit;">🖨 인쇄</button>';
+    h += '<button onclick="event.stopPropagation();document.getElementById(\'repSignFile_' + escAttr(id) + '\').click();" style="display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;padding:4px 10px;border-radius:6px;background:var(--green-bg);color:var(--green);border:1px solid rgba(11,128,67,0.3);cursor:pointer;font-family:inherit;">📄 서명본 업로드</button>';
+    h += '<button onclick="event.stopPropagation();repCancel(\'' + escAttr(id) + '\')" style="display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;padding:4px 10px;border-radius:6px;background:transparent;color:var(--dim);border:1px solid var(--border);cursor:pointer;font-family:inherit;">↩ 올림 취소</button>';
+    h += '<input type="file" id="repSignFile_' + escAttr(id) + '" accept="image/*,application/pdf" style="display:none;" onclick="event.stopPropagation();" onchange="uploadRepSign(\'' + escAttr(id) + '\', this)">';
+    h += '<span id="repSignStatus_' + escAttr(id) + '" style="font-size:10px;color:var(--accent);"></span>';
+  } else {
+    // 대표 결재완료 → 배지 + 📎 서명본 링크
+    h += '<span class="chip" style="font-size:11px;font-weight:700;color:var(--green);background:var(--green-bg);border:1px solid rgba(11,128,67,0.3);padding:4px 10px;border-radius:7px;">🏛 대표 결재완료 ✅</span>';
+    var u = String((t.repSign || t['대표싸인']) || '').trim();
+    h += '<a href="' + escAttr(u) + '" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;padding:4px 10px;border-radius:6px;background:var(--green-bg);color:var(--green);border:1px solid rgba(11,128,67,0.3);text-decoration:none;">📎 대표 서명본</a>';
+    h += '<button onclick="event.stopPropagation();repCancel(\'' + escAttr(id) + '\')" style="display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;padding:4px 10px;border-radius:6px;background:transparent;color:var(--dim);border:1px solid var(--border);cursor:pointer;font-family:inherit;" title="대표 결재 취소(주의) — 대표싸인 비움">↩ 취소</button>';
+    h += '<span id="repSignStatus_' + escAttr(id) + '" style="font-size:10px;color:var(--accent);"></span>';
+  }
+  h += '</div>';
+  return h;
+}
+
+// 대표 결재 올리기 — 결재상태='결재완료'일 때만 대표싸인='PENDING' (서버 검증).
+async function repEscalate(id) {
+  if (!confirm('이 건을 대표 결재 라인에 올립니다.\n인쇄 → 대표 서명 → 서명본 업로드 시 대표 결재완료가 됩니다.\n\n계속하시겠습니까?')) return;
+  try {
+    var params = new URLSearchParams({ action: 'approval_rep_escalate', id: id });
+    var r = await fetch(TODO_API_URL + '?' + params.toString(), { redirect: 'follow' });
+    var res = await r.json();
+    if (res.ok) { loadTasks(); }
+    else { alert('대표 올리기 실패: ' + (res.error || '알 수 없는 오류')); }
+  } catch (e) { alert('연결 실패: ' + e.message); }
+}
+
+// 대표 올림 취소 — 대표싸인 비움. URL(서명완료)이어도 허용하되 한 번 더 확인.
+async function repCancel(id) {
+  if (!confirm('대표 올림을 취소합니다 (대표싸인 비움).\n이미 서명본이 있으면 그 연결도 끊깁니다.\n\n계속하시겠습니까?')) return;
+  try {
+    var params = new URLSearchParams({ action: 'approval_rep_cancel', id: id });
+    var r = await fetch(TODO_API_URL + '?' + params.toString(), { redirect: 'follow' });
+    var res = await r.json();
+    if (res.ok) { loadTasks(); }
+    else { alert('취소 실패: ' + (res.error || '알 수 없는 오류')); }
+  } catch (e) { alert('연결 실패: ' + e.message); }
+}
+
+// 대표 서명본 업로드 = 대표 결재완료 트리거 — 대표싸인 컬럼에 직접 URL 저장(approval_rep_sign_upload).
 async function uploadRepSign(id, input) {
   var file = input && input.files && input.files[0];
   if (!file) return;
@@ -749,7 +803,7 @@ async function uploadRepSign(id, input) {
       reader.readAsDataURL(file);
     });
     var params = {
-      action: 'todo_upload',
+      action: 'approval_rep_sign_upload',
       id: id,
       file: base64,
       fileName: '대표서명_' + id + '_' + file.name,
@@ -765,9 +819,9 @@ async function uploadRepSign(id, input) {
     if (!r.ok) throw new Error('HTTP ' + r.status);
     var res = await r.json();
     if (!res.ok) throw new Error(res.error || '업로드 실패');
-    _status('✅ 첨부 완료');
+    _status('✅ 대표 결재완료');
     input.value = '';
-    loadTasks();  // 카드 재렌더 → '📎 대표 서명본' 링크 노출
+    loadTasks();  // 카드 재렌더 → '🏛 대표 결재완료 ✅' + 📎 서명본 링크
   } catch (e) {
     _status('');
     alert('대표 서명본 업로드 실패: ' + e.message);
@@ -996,9 +1050,14 @@ function renderApprovalCard(t, idx) {
   const _midName = deptHeadNameOf(t) || '부서장';
   const signMap = { '부서장': t.deptSign, 'GM': t.gmSign };  // 대표 단계 폐지(2026-06-16)
   const signedRoles = route.filter(r => String(signMap[r] || '').trim());
+  // 대표 단계(대표싸인 컬럼 3상태) — 결재상태와 독립. 빈값/PENDING/URL → 미올림/대기/완료.
+  const _repStage = repStageOf(t);  // 'none' | 'pending' | 'done'
   let stCls, chipCls = 'status-chip', chipText;
   if (isDone) {
-    stCls = 'st-done'; chipCls += ' done'; chipText = '✅ 결재완료';
+    stCls = 'st-done'; chipCls += ' done';
+    // (GM 결재완료)·(대표 결재완료) 두 칸 시각 분리
+    chipText = '✅ GM 결재완료'
+      + (_repStage === 'done' ? ' · 🏛 대표 결재완료' : _repStage === 'pending' ? ' · 🏛 대표 결재대기' : '');
   } else if (isRejected) {
     stCls = 'st-rejected'; chipCls += ' rejected'; chipText = '❌ ' + (t.approvalStatus || '반려');
   } else if (signedRoles.length) {
@@ -1027,6 +1086,8 @@ function renderApprovalCard(t, idx) {
   }
   // 셋째 줄: 결재 대기 배지
   h += '<div class="approval-badge-line"><span class="' + chipCls + '">' + esc(chipText) + '</span>' +
+    // GM 서명 대기 단계 — 🖨 업무보고서 인쇄(GM 검토·결재용, 단건 인쇄 재사용). 2026-06-16 GM
+    ((!isDone && !isRejected) ? '<button onclick="event.stopPropagation();printApprovalCard(\'' + escAttr(t.id) + '\')" title="업무보고서 인쇄 (GM 검토·결재용)" style="margin-left:6px;background:var(--accent-bg);color:var(--accent);border:1px solid rgba(183,159,138,0.3);padding:2px 8px;border-radius:7px;font-size:10px;cursor:pointer;font-family:inherit;">🖨 업무보고서 인쇄</button>' : '') +
     '<button onclick="event.stopPropagation();resetTask(\'' + escAttr(t.id) + '\')" title="결재요청 전으로 리셋 (GM 전용) — 업무현황에서 수정 가능" style="margin-left:6px;background:transparent;color:var(--dim);border:1px solid var(--border);padding:2px 8px;border-radius:7px;font-size:10px;cursor:pointer;font-family:inherit;">↩ 리셋</button>' +
     '</div>';
   h += '</div>';
@@ -1097,18 +1158,11 @@ function renderApprovalCard(t, idx) {
     h += '<a href="' + escAttr(t.reportUrl) + '" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:4px;margin-top:6px;font-size:11px;font-weight:600;padding:4px 10px;border-radius:6px;background:var(--purple-bg);color:var(--purple);border:1px solid rgba(167,139,218,0.3);text-decoration:none;">&#128196; 결과보고서</a>';
   }
 
-  // [대표 서명본 첨부] 결재완료(GM 종착) 건에만 — 페이퍼 대표 서명 스캔본을 단순 증빙으로 붙인다.
-  // 결재상태·배지·대표싸인 칸 변경 없음. todo_upload(파일URL 컬럼 append) 재사용. (2026-06-16 GM)
+  // [대표 결재 2단계] GM 결재완료(결재상태='결재완료') 건 위에 대표싸인 컬럼 3상태 파생 (2026-06-16 GM).
+  //   빈값=대표 미올림 → [대표 결재 올리기] / 'PENDING'=올림(서명본 대기) → 🖨 인쇄 + 📄 업로드 + 올림 취소
+  //   / URL=서명본 업로드=대표 결재완료 → 배지 + 📎 링크. 업로드만이 완료 트리거(훅 강제).
   if (isDone) {
-    var _repFiles = repSignFiles(t);
-    h += '<div class="rep-sign-row" style="margin-top:8px;display:flex;flex-wrap:wrap;align-items:center;gap:8px;">';
-    _repFiles.forEach(function(u, i){
-      h += '<a href="' + escAttr(u) + '" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;padding:4px 10px;border-radius:6px;background:var(--green-bg);color:var(--green);border:1px solid rgba(11,128,67,0.3);text-decoration:none;">📎 대표 서명본' + (_repFiles.length > 1 ? ' ' + (i + 1) : '') + '</a>';
-    });
-    h += '<button onclick="event.stopPropagation();document.getElementById(\'repSignFile_' + escAttr(t.id) + '\').click();" style="display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;padding:4px 10px;border-radius:6px;background:transparent;color:var(--dim);border:1px solid var(--border);cursor:pointer;font-family:inherit;">📄 대표 서명본 업로드</button>';
-    h += '<input type="file" id="repSignFile_' + escAttr(t.id) + '" accept="image/*,application/pdf" style="display:none;" onclick="event.stopPropagation();" onchange="uploadRepSign(\'' + escAttr(t.id) + '\', this)">';
-    h += '<span id="repSignStatus_' + escAttr(t.id) + '" style="font-size:10px;color:var(--accent);"></span>';
-    h += '</div>';
+    h += renderRepApprovalRow(t);
   }
 
   // 토글 (본문 + 기획 + 진척 로그 + 결과보고)

@@ -1321,8 +1321,9 @@ function doGet(e) {
       return _json(r);
     }
 
-    // POST redirect 우회: URL에 todo_ write action이 오면 doPost 로직 실행
-    if (action.startsWith('todo_')) {
+    // POST redirect 우회: URL에 todo_ 또는 approval_ write action이 오면 doPost 로직 실행
+    //   (approval_rep_* = 대표 결재 2단계 — 대표싸인 컬럼 set; 2026-06-16 GM)
+    if (action.startsWith('todo_') || action.startsWith('approval_')) {
       const body = {};
       Object.keys(e.parameter).forEach(k => body[k] = e.parameter[k]);
       if (e.postData && e.postData.contents) {
@@ -1748,6 +1749,63 @@ function _processTodoAction(body) {
       }
 
       return _json({ ok: true, url: fileUrl, message: '파일이 업로드되었습니다.' });
+    }
+
+    // ═══ 대표 결재 2단계 — GM 결재완료(결재상태) 위에 대표싸인 컬럼 3상태 파생 (2026-06-16 GM) ═══
+    //   빈값=대표 미올림 / 'PENDING'=GM이 대표 올림(서명본 대기) / URL=서명본 업로드됨=대표 결재완료.
+    //   결재상태 컬럼('결재완료')과 독립 — GM 종착 결재완료 로직은 손대지 않는다.
+
+    // 대표 결재 올리기 — 결재상태='결재완료'일 때만 '대표싸인'='PENDING' set.
+    if (action === 'approval_rep_escalate') {
+      const sh = initTodoSheet();
+      const id = body.id;
+      if (!id) return _json({ ok: false, error: 'id 필수' });
+      const rowNum = _findRow(sh, id);
+      if (rowNum < 0) return _json({ ok: false, error: '해당 ID를 찾을 수 없습니다: ' + id });
+      const apprCol = TODO_HEADERS.indexOf('결재상태') + 1;
+      const repCol = TODO_HEADERS.indexOf('대표싸인') + 1;
+      const apprStatus = String(sh.getRange(rowNum, apprCol).getValue() || '').trim();
+      if (apprStatus !== '결재완료') return _json({ ok: false, error: 'GM 결재완료 건만 대표 올림 가능 (현재: ' + (apprStatus || '미결') + ')' });
+      const repNow = String(sh.getRange(rowNum, repCol).getValue() || '').trim();
+      if (/^https?:\/\//.test(repNow)) return _json({ ok: false, error: '이미 대표 결재완료(서명본 있음)' });
+      sh.getRange(rowNum, repCol).setValue('PENDING');
+      sh.getRange(rowNum, TODO_HEADERS.indexOf('수정일') + 1).setValue(_now());
+      return _json({ ok: true, id: id, repSign: 'PENDING', message: '대표 결재 라인에 올렸습니다 (서명본 대기).' });
+    }
+
+    // 대표 서명본 업로드 = 대표 결재완료 트리거 — Drive 업로드 URL을 '대표싸인' 컬럼에 직접 저장.
+    if (action === 'approval_rep_sign_upload') {
+      const id = body.id;
+      const base64 = body.file || body.base64;
+      const fileName = body.fileName || '';
+      const mimeType = body.mimeType || 'application/octet-stream';
+      if (!id) return _json({ ok: false, error: 'id 필수' });
+      if (!base64) return _json({ ok: false, error: 'file(Base64) 필수' });
+      const sh = initTodoSheet();
+      const rowNum = _findRow(sh, id);
+      if (rowNum < 0) return _json({ ok: false, error: '해당 ID를 찾을 수 없습니다: ' + id });
+      const apprCol = TODO_HEADERS.indexOf('결재상태') + 1;
+      const apprStatus = String(sh.getRange(rowNum, apprCol).getValue() || '').trim();
+      if (apprStatus !== '결재완료') return _json({ ok: false, error: 'GM 결재완료 건만 대표 서명본 업로드 가능' });
+      const fileUrl = _uploadFile(base64, fileName, mimeType);
+      const repCol = TODO_HEADERS.indexOf('대표싸인') + 1;
+      sh.getRange(rowNum, repCol).setValue(fileUrl);  // 대표 서명본 = 대표싸인 칸에 직접
+      sh.getRange(rowNum, TODO_HEADERS.indexOf('수정일') + 1).setValue(_now());
+      return _json({ ok: true, id: id, url: fileUrl, repSign: fileUrl, message: '대표 서명본 업로드 완료 — 대표 결재완료.' });
+    }
+
+    // 대표 올림 취소 — '대표싸인'을 빈값으로. 이미 URL(서명완료)이어도 허용하되 주의(GM 확인성).
+    if (action === 'approval_rep_cancel') {
+      const id = body.id;
+      if (!id) return _json({ ok: false, error: 'id 필수' });
+      const sh = initTodoSheet();
+      const rowNum = _findRow(sh, id);
+      if (rowNum < 0) return _json({ ok: false, error: '해당 ID를 찾을 수 없습니다: ' + id });
+      const repCol = TODO_HEADERS.indexOf('대표싸인') + 1;
+      const prev = String(sh.getRange(rowNum, repCol).getValue() || '').trim();
+      sh.getRange(rowNum, repCol).setValue('');
+      sh.getRange(rowNum, TODO_HEADERS.indexOf('수정일') + 1).setValue(_now());
+      return _json({ ok: true, id: id, prev: prev, message: '대표 올림 취소됨.' });
     }
 
     // ─── 첨부 파일 삭제 — 파일URL 컬럼에서 해당 URL 제거 + Drive 원본 휴지통 이동 (2026-06-03 GM) ───
