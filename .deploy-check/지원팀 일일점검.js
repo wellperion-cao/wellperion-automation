@@ -271,6 +271,8 @@ function migrateFromOldSheet() {
 function doGet(e) {
   var action = e.parameter.action || '';
   if (action === 'todo_list') return handleTodoGet(e.parameter);
+   if (action === 'sort_snapshot') { return sortSnapshotDesc(e.parameter.dept || 'support'); }
+   if (action === 'sort_manual_order') { return sortManualByPageOrder(); }
   if (action === 'items')     return getItems(e.parameter);
   if (action === 'board')     return getBoard(e.parameter);
   if (action === 'weekly')    return handleWeekly(e.parameter);
@@ -423,7 +425,7 @@ function doGet(e) {
     // 성별 미지정(레거시·admin 집계): 성별맵 전체 반환 — 호출부가 필요 성별을 선택.
     checkedLedger = { m: _getCheckLedger(dept, date, 'm'), f: _getCheckLedger(dept, date, 'f'), all: _getCheckLedger(dept, date, 'all') };
   }
-  return jsonRes({ date: date, zone: zone || 'all', rows: rows, groupSubmits: _getGroupSubmits(date), checkedLedger: checkedLedger });
+  return jsonRes({ date: date, zone: zone || 'all', rows: rows, groupSubmits: _getGroupSubmits(date), checkedLedger: checkedLedger, inspMemos: _getInspMemos(dept, gParam) });
 }
 
 // ─── 그룹별 제출 영속 (2026-06-05 GM) — PropertiesService 날짜별 JSON, 병합·빈값 덮어쓰기 방지 ───
@@ -679,6 +681,7 @@ function doPost(e) {
     if (body.action === 'issuelog_update') return handleIssueLogUpdate(body);
     if (body.action === 'snapshot_append') return handleSnapshotAppend(body);   // F3: 제출 스냅샷 적립
     if (body.action === 'vendor_save')    return vendorSave(body);               // 거래업체 전체 교체 저장(시설_거래업체 시트)
+    if (body.action === 'save_insp_memo') return saveInspMemo(body);            // 회차 점검자 배정 메모(공유). 2026-06-16 시우.
     return jsonRes({ error: 'unknown action' });
   } catch (err) {
     return jsonRes({ error: err.message });
@@ -1978,6 +1981,83 @@ function _initSnapshotSheet(dept) {
   return sheet;
 }
 
+// ════════════════════════════════════════════
+// 점검일지 스냅샷 제출시각 내림차순 정렬(최근 최상위) — 1회성 유지보수. GET ?action=sort_snapshot&dept=support. 2026-06-16 시우.
+// ════════════════════════════════════════════
+function sortSnapshotDesc(dept){
+  dept = dept || 'support';
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var name = _snapshotTabName(dept);
+  var sheet = ss.getSheetByName(name);
+  if (!sheet) return jsonRes({ ok: false, error: '스냅샷 시트 없음: ' + name });
+  var last = sheet.getLastRow(), lastCol = sheet.getLastColumn();
+  if (last < 3) return jsonRes({ ok: true, msg: '정렬 대상 없음', rows: Math.max(0, last - 1) });
+  var rng = sheet.getRange(2, 1, last - 1, lastCol);
+  var vals = rng.getValues();
+  function ts(v){
+    if (v instanceof Date) return v.getTime();
+    var s = String(v == null ? '' : v).trim(); if (!s) return 0;
+    var t = new Date(s.replace(' ', 'T')).getTime();
+    return isNaN(t) ? 0 : t;
+  }
+  vals.sort(function(a, b){ return ts(b[0]) - ts(a[0]); });
+  rng.setValues(vals);
+  return jsonRes({ ok: true, dept: dept, sheet: name, sorted: vals.length });
+}
+
+// 지원_매뉴얼(항목 마스터) 행을 페이지 기본순서(카테고리 GROUP_ORDER + 정렬칸)로 재배열 + 정렬칸 1..N 재부여.
+// 1회성 유지보수. GET ?action=sort_manual_order. 2026-06-16 시우.
+var _MANUAL_CAT_ORDER = ['오픈 점검','A 사우나점검','B 락커룸','C 내부','D 업장','E 외부','교대 인수인계','마감 점검'];
+function _manualCatRank(cat){ var i = _MANUAL_CAT_ORDER.indexOf(String(cat == null ? '' : cat).trim()); return i >= 0 ? i : 90; }
+function sortManualByPageOrder(){
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName(SHEET_ITEMS);
+  if (!sheet) return jsonRes({ ok: false, error: '매뉴얼 시트 없음: ' + SHEET_ITEMS });
+  var last = sheet.getLastRow(), lastCol = sheet.getLastColumn();
+  if (last < 3) return jsonRes({ ok: true, msg: '정렬 대상 없음', rows: Math.max(0, last - 1) });
+  var rng = sheet.getRange(2, 1, last - 1, lastCol);
+  var vals = rng.getValues();
+  var dec = vals.map(function(r, i){
+    var sortv = parseFloat(r[6]); if (isNaN(sortv)) sortv = 9999;
+    return { r: r, i: i, d: _itemDept(r[ITEM_DEPT_COL]), rank: _manualCatRank(r[1]), sortv: sortv };
+  });
+  dec.sort(function(a, b){
+    if (a.d !== b.d) return a.d < b.d ? -1 : 1;
+    if (a.rank !== b.rank) return a.rank - b.rank;
+    if (a.sortv !== b.sortv) return a.sortv - b.sortv;
+    return a.i - b.i;
+  });
+  var out = dec.map(function(o, k){ var r = o.r.slice(); r[6] = k + 1; return r; });
+  rng.setValues(out);
+  return jsonRes({ ok: true, sheet: SHEET_ITEMS, sorted: out.length, order: out.map(function(r){ return String(r[0]); }) });
+}
+
+// ── 회차 점검자 배정 메모(공유·아무나 편집) — ScriptProperties 단일저장. 키=imemo_{dept}_{gender}_{round}. 2026-06-16 시우. ──
+function _inspMemoKey(dept, gender, round){
+  return 'imemo_' + (String(dept == null ? 'support' : dept).trim() || 'support') + '_' + (String(gender == null ? 'm' : gender).trim() || 'm') + '_' + String(round == null ? '' : round).trim();
+}
+function saveInspMemo(body){
+  var dept = body.dept || 'support', gender = body.gender || 'm', round = String(body.round == null ? '' : body.round).trim();
+  if (!round) return jsonRes({ ok: false, error: 'round 필수' });
+  var memo = String(body.memo == null ? '' : body.memo);
+  var props = PropertiesService.getScriptProperties();
+  if (memo === '') props.deleteProperty(_inspMemoKey(dept, gender, round));
+  else props.setProperty(_inspMemoKey(dept, gender, round), memo);
+  return jsonRes({ ok: true, dept: dept, gender: gender, round: round });
+}
+function _getInspMemos(dept, gender){
+  var out = {};
+  try{
+    var props = PropertiesService.getScriptProperties();
+    var g = String(gender == null ? '' : gender).trim();
+    if (!g) return out;
+    ['am1','pm1','close1'].forEach(function(rk){
+      var v = props.getProperty(_inspMemoKey(dept, g, rk));
+      if (v != null && v !== '') out[rk] = v;
+    });
+  }catch(e){}
+  return out;
+}
 function handleSnapshotAppend(body) {
   var dept = body.dept || 'support';
   var sheet = _initSnapshotSheet(dept);

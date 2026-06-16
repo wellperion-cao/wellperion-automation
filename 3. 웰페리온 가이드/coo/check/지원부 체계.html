@@ -156,6 +156,13 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 .group-submit-bar{display:flex;justify-content:flex-end;align-items:center;padding:8px 14px 4px;border-top:1px dashed var(--border);margin-top:6px}
 .group-submit-btn{padding:7px 16px;font-size:12.5px;font-weight:700;border:1px solid var(--accent);background:var(--accent-bg);color:var(--accent);border-radius:8px;cursor:pointer;font-family:inherit}
 .group-submit-btn:hover{background:var(--accent);color:#fff}
+/* 회차 점검자 배정 메모(공유·아무나 편집) — GM 2026-06-16 시우 */
+.insp-assign{background:var(--paper);border:1px solid var(--border);border-radius:10px;padding:10px 12px 11px;margin:0 0 12px}
+.insp-assign-label{font-size:12.5px;font-weight:700;color:var(--accent);margin-bottom:7px;display:flex;align-items:center;gap:5px}
+.insp-assign-hint{font-size:11px;font-weight:600;color:var(--dim)}
+.insp-assign-input{width:100%;box-sizing:border-box;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:inherit;font-size:13px;line-height:1.55;padding:8px 11px;resize:vertical;min-height:40px}
+.insp-assign-input::placeholder{color:var(--dim)}
+.insp-assign-input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-bg)}
 .group-submitted{font-size:12px;font-weight:700;color:var(--green)}
 .saving{position:fixed;top:70px;left:50%;transform:translateX(-50%);background:#15803d;color:#fff;padding:8px 20px;border-radius:8px;font-size:13px;font-weight:700;display:none;z-index:20;box-shadow:0 4px 14px rgba(0,0,0,0.25)}
 .admin-card{background:var(--paper);border:1px solid var(--border);border-radius:12px;padding:16px 18px;margin-bottom:12px}
@@ -1990,6 +1997,7 @@ async function loadState(d,g){
     // 2026-06-12 시토: 남/여 동기화 근본수정 — 현재 성별(gg) 원장만 요청(&gender=). 서버가 성별별 분리 반환.
     const r=await fetch(API_URL+'?date='+d+DEPT_Q+'&gender='+encodeURIComponent(gg),{redirect:'follow'});
     const j=await r.json();
+    if(j&&j.inspMemos&&typeof j.inspMemos==='object'){window._inspMemo[gg]=j.inspMemos;}   // 회차 점검자 배정 메모 복원(공유)
     STATE={};
     (j.rows||[]).forEach(row=>{
       // 2026-06-12 시우: 서버 응답이 성별 구분돼 오면(row.gender) 현재 성별(gg)만 STATE 반영 —
@@ -2409,6 +2417,9 @@ function drawUI(d,gender){
       html+=`<div class="shift-submitted">제출 완료${who} ${when}</div>`;
     }
     html+=`</div>`;
+
+    /* 회차 점검자 배정 메모(공유·아무나 편집, GM 2026-06-16 시우) — 회차 헤더 바로 아래 고정 */
+    html+=inspMemoBoxHtml(gender,curRound);
 
     if(zoneOrder.length===0&&focusInRound.length===0){
       html+=`<div class="closed-msg" style="padding:40px 20px;">이 시간대 점검 항목이 아직 없습니다.<br><span style="font-size:13px;color:var(--dim);">셋업 편집에서 추가할 수 있습니다.</span></div>`;
@@ -2908,6 +2919,39 @@ function renderItem(it,shift,gender,round){
 }
 
 function escapeAttr(s){return s.replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+
+/* ── 회차 점검자 배정 메모(공유·아무나 편집) — GM 2026-06-16 시우 ──
+   회차(am1/pm1/close1)×성별탭별 1줄 메모. 서버(ScriptProperties) 단일저장 → 전 기기 공유.
+   재렌더 시 값 보존(입력 즉시 캐시), 저장은 디바운스. 점검자 누구나 인계·대체 수정 가능. */
+window._inspMemo={m:{},f:{}};
+let _inspMemoTimer=null;
+function inspMemoBoxHtml(gender,round){
+  const g=gender==='f'?'f':'m';
+  const v=(window._inspMemo[g]&&window._inspMemo[g][round])||'';
+  const ph='이 회차 점검자 배정·대체 메모 (예: 남사우나 시설부 / 대체 반장)';
+  return `<div class="insp-assign">
+    <div class="insp-assign-label">🧑‍🔧 이 회차 점검자 배정 <span class="insp-assign-hint">· 공유 · 누구나 편집</span></div>
+    <textarea class="insp-assign-input" rows="2" placeholder="${ph}" oninput="onInspMemoInput('${g}','${round}',this)">${escapeAttr(v)}</textarea>
+  </div>`;
+}
+function onInspMemoInput(gender,round,el){
+  const g=gender==='f'?'f':'m';
+  if(!window._inspMemo[g])window._inspMemo[g]={};
+  window._inspMemo[g][round]=el.value;   // 즉시 캐시 → 재렌더에도 값 유지(IME 안전: 입력 중 재렌더 트리거 없음)
+  clearTimeout(_inspMemoTimer);
+  _inspMemoTimer=setTimeout(()=>{ _saveInspMemo(g,round,el.value); },700);
+}
+async function _saveInspMemo(gender,round,memo){
+  const ind=document.getElementById('saveIndicator');
+  if(ind){ind.style.display='block';ind.textContent='배정 저장 중...';}
+  try{
+    const r=await fetch(API_URL,{method:'POST',redirect:'follow',headers:{'Content-Type':'text/plain'},
+      body:JSON.stringify({action:'save_insp_memo',dept:DEPT,gender:gender,round:round,memo:memo})});
+    let ok=false;try{const j=await r.json();ok=!!(j&&(j.ok||j.success)&&!j.error);}catch(_){ok=false;}
+    if(ind)ind.textContent=ok?'배정 저장됨':'배정 저장 실패(재시도)';
+  }catch(e){ if(ind)ind.textContent='배정 저장 실패(로컬 유지)'; }
+  if(ind)setTimeout(()=>{ind.style.display='none'},1200);
+}
 
 function renderDayFocusSection(dow,items,shift,gender,round){
   const dayNames=['일','월','화','수','목','금','토'];
