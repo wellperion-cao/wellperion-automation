@@ -2383,7 +2383,7 @@ function policyDeleteCard(colKey,id){
 const today=new Date().toISOString().slice(0,10);
 loadBoardData(); renderBoard(); loadBoardFromBackend(); // 요일별 보드: 로컬 즉시 렌더 후 백엔드 동기화(모든 기기 반영)
 loadPolicyData(); renderPolicyBoard(); loadPolicyFromBackend(); // 규정 트렐로 보드: 로컬 즉시 렌더 후 백엔드 동기화
-loadVendorCategories(); loadVendorData(); vendorRenderCategorySelects(); renderVendorBoard(); vendorSetView('kanban');
+loadVendorData(); vendorRenderCategorySelects(); renderVendorBoard(); vendorSetView('kanban');   // loadVendorCategories()(미정의 옛함수) 제거 — VENDOR_COLS는 자동 시드, 백엔드 분류는 아래 loadVendorCategoriesFromBackend가 동기화. 이 ReferenceError가 보드 렌더 전체를 죽이던 진범(GM 2026-06-16 시우)
 // ⚠ 데이터 유실 방지: 분류(VENDOR_COLS)를 거래업체 board보다 먼저 완료시킨 뒤 board를 로드한다.
 // 동시 발사 시 board가 먼저 resolve되면 시드 분류뿐인 상태에서 커스텀 분류 업체가 잘려 영구 유실됨.
 loadVendorCategoriesFromBackend().then(function(){ vendorRenderCategorySelects(); renderVendorBoard(); return loadVendorFromBackend(); }); // 거래업체 보드: 분류 먼저 → 업체 백엔드 동기화(race 직렬화)
