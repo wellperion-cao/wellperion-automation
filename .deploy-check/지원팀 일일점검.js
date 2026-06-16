@@ -898,14 +898,24 @@ function handleSave(body) {
   return jsonRes({ success: true, updated: updated, added: added });
 }
 
-// ─── 시트를 날짜 내림차순 정렬(최신 날짜가 상위로 누적) — 2026-06-04 GM 지시 ───
-// 헤더(1행) 유지, 2행부터 [날짜 내림차순, 항목ID 오름차순]으로 정렬. 셀 서식도 함께 이동.
+// ─── 시트를 [날짜 내림차순, 카테고리(페이지 순서), 항목ID]로 정렬 — 2026-06-04 GM / 카테고리 추가 2026-06-16 시우 ───
+// ★GM 2026-06-16: ID 문자열 정렬이면 오픈점검(c1a·c1b·c1c)이 C라인(c1,c10,c2) 사이에 끼어 보임 →
+//   카테고리 랭크(_MANUAL_CAT_ORDER: 오픈점검 먼저)를 2순위로 넣어 같은 분류끼리 묶이게. ID는 그대로 유지(이력 보존).
+//   range.sort는 카테고리 텍스트(한글·영문 혼재)를 원하는 순서로 못 정렬해 JS 정렬 후 setValues + 행 서식 재적용.
 function _sortByDateDesc(sheet) {
   if (!sheet) return;
   var last = sheet.getLastRow();
   if (last < 3) return;  // 헤더 + 1행 이하면 정렬 불필요
-  sheet.getRange(2, 1, last - 1, HEADERS.length)
-       .sort([{ column: 1, ascending: false }, { column: 2, ascending: true }]);
+  var rng = sheet.getRange(2, 1, last - 1, HEADERS.length);
+  var vals = rng.getValues();
+  function dts(v) { if (v instanceof Date) return v.getTime(); var t = new Date(String(v == null ? '' : v).replace(' ', 'T')).getTime(); return isNaN(t) ? 0 : t; }
+  vals.sort(function (a, b) {
+    var da = dts(a[0]), db = dts(b[0]); if (da !== db) return db - da;                 // 1순위: 날짜 내림차순
+    var ra = _manualCatRank(a[3]), rb = _manualCatRank(b[3]); if (ra !== rb) return ra - rb; // 2순위: 카테고리(오픈점검→A→B→C→D→E→마감)
+    var ia = String(a[1]), ib = String(b[1]); return ia < ib ? -1 : (ia > ib ? 1 : 0);  // 3순위: 항목ID
+  });
+  rng.setValues(vals);
+  for (var k = 0; k < vals.length; k++) _applyRowStyle(sheet, k + 2, vals[k]);          // 정렬 후 상태색 재적용(setValues는 서식 미이동)
 }
 
 // ─── v2 프론트엔드 하위 호환 (zone 없이 genderTab으로 호출) ───
