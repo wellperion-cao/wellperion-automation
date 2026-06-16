@@ -227,7 +227,7 @@ html,body{background:var(--bg);color:var(--text);font-family:"Pretendard","Apple
   #approvalPrintArea .rr-approval-table td{border:1px solid #555;padding:4px 8px;text-align:center;min-width:50px;vertical-align:top}
   #approvalPrintArea .rr-approval-label{writing-mode:vertical-rl;text-orientation:mixed;font-weight:700;padding:6px 4px;font-size:9px;background:#f0f0f0;-webkit-print-color-adjust:exact;print-color-adjust:exact}
   #approvalPrintArea .rr-approval-role{font-weight:700;font-size:9px;border-bottom:1px solid #bbb;padding-bottom:3px;margin-bottom:5px}
-  #approvalPrintArea .rr-approval-sign{font-size:9px;min-height:30px;display:flex;align-items:center;justify-content:center;color:#0b8043;font-weight:700}
+  #approvalPrintArea .rr-approval-sign{font-size:11px;min-height:52px;display:flex;align-items:center;justify-content:center;color:#0b8043;font-weight:700}
   #approvalPrintArea .rr-doc-title{text-align:center;font-size:18px;font-weight:900;letter-spacing:0.08em;margin:10px 0 14px}
   #approvalPrintArea .rr-info-table{width:100%;border-collapse:collapse;margin-bottom:14px;font-size:10px}
   #approvalPrintArea .rr-info-table th{background:#f0f0f0;border:1px solid #bbb;padding:4px 8px;font-weight:700;text-align:left;width:18%;white-space:nowrap;-webkit-print-color-adjust:exact;print-color-adjust:exact}
@@ -239,16 +239,11 @@ html,body{background:var(--bg);color:var(--text);font-family:"Pretendard","Apple
   #approvalPrintArea .rr-log-table th{background:#f0f0f0;border:1px solid #bbb;padding:4px 8px;font-weight:700;text-align:left;-webkit-print-color-adjust:exact;print-color-adjust:exact}
   #approvalPrintArea .rr-log-table td{border:1px solid #ddd;padding:4px 8px;vertical-align:top}
   #approvalPrintArea .rr-log-date{white-space:nowrap;width:90px}
-  /* ── 결재 고유: 결재선 + 서명란 ── */
+  /* ── 결재 고유: 결재선 ── */
   #approvalPrintArea .rr-route{font-size:10px;color:#222;margin:4px 0 10px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
   #approvalPrintArea .rr-route b{font-weight:700}
   #approvalPrintArea .rr-route .rr-route-step{border:1px solid #999;border-radius:4px;padding:2px 8px;background:#f7f7f7;-webkit-print-color-adjust:exact;print-color-adjust:exact}
   #approvalPrintArea .rr-route .rr-route-arrow{color:#888;font-weight:700}
-  #approvalPrintArea .rr-signs{display:flex;gap:12px;margin-top:14px;flex-wrap:wrap}
-  #approvalPrintArea .rr-sign-box{border:1px solid #333;border-radius:4px;min-width:140px;flex:0 0 auto}
-  #approvalPrintArea .rr-sign-label{font-size:10px;font-weight:700;text-align:center;border-bottom:1px solid #333;padding:4px 6px;background:#f0f0f0;-webkit-print-color-adjust:exact;print-color-adjust:exact}
-  #approvalPrintArea .rr-sign-space{height:50px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#0b8043}
-  #approvalPrintArea .rr-done{font-size:11px;font-weight:700;color:#0b8043;margin-top:10px;padding:6px 10px;border:1px solid #0b8043;border-radius:4px;display:inline-block}
   #approvalPrintArea .rr-footer{margin-top:20px;padding-top:8px;border-top:1px solid #bbb;display:flex;justify-content:space-between;font-size:9px;color:#666}
   #approvalPrintArea .rr-empty{font-size:13px;color:#555}
   /* 칸반 보드 → 인쇄 시 컬럼을 세로 나열(클리핑 방지) */
@@ -708,15 +703,16 @@ function buildApprovalPrint(list) {
 
     /* ── 결재란 (헤더 우측 도장표) — 결재선 단계별 서명상태 표기 ── */
     var apRoles = route.slice();           // 부서장→GM 순서 (buildEffectiveRoute 산출)
+    // 상단 결재란이 유일한 서명 공간 — 서명된 단계는 ✅, 미서명은 실제 도장·서명 받는 빈 칸(height로 공간 확보).
     var apCells = apRoles.map(function(r){
       var label = (r === '부서장') ? (deptHeadNameOf(t) || '부서장') : (nameMap[r] || r);
       var signed = String(signMap[r] || '').trim();
-      return '<td><div class="rr-approval-role">' + esc(label) + '</div>'
+      return '<td><div class="rr-approval-role">' + esc(label) + ' (인)</div>'
         + '<div class="rr-approval-sign">' + (signed ? '✅' : '') + '</div></td>';
     });
-    // 대표 단계 도장 칸 — URL(서명본)=결재완료 ✅
-    apCells.push('<td><div class="rr-approval-role">전응준 대표</div>'
-      + '<div class="rr-approval-sign">' + (_repDone ? '✅' : '') + '</div></td>');
+    // 대표 단계 — URL=서명본(서명완료) ✅, 그 외=빈 서명 공간 (페이퍼 도장칸).
+    apCells.push('<td><div class="rr-approval-role">전응준 대표 (인)</div>'
+      + '<div class="rr-approval-sign">' + (_repDone ? '✅ 서명완료' : '') + '</div></td>');
     var approvalHtml = '<table class="rr-approval-table"><tr>'
       + '<td class="rr-approval-label">결재</td>' + apCells.join('') + '</tr></table>';
 
@@ -786,22 +782,7 @@ function buildApprovalPrint(list) {
         + '</table>';
     }
 
-    /* ── 서명란 (부서장·GM 대기자 + 대표 페이퍼 서명칸) — 결재 고유 ── */
-    var signsHtml = '<div class="rr-section-title">서명</div>';
-    if (!pending.length) {
-      signsHtml += '<div class="rr-done">✅ 시스템 결재 완료 (부서장·GM 서명 대기 없음)</div>';
-    }
-    signsHtml += '<div class="rr-signs">';
-    pending.forEach(function(r){
-      var label = (r === '부서장') ? (deptHeadNameOf(t) || '부서장') : (nameMap[r] || r);
-      signsHtml += '<div class="rr-sign-box"><div class="rr-sign-label">' + esc(label) + ' (인)</div><div class="rr-sign-space"></div></div>';
-    });
-    // 페이퍼 보고용 대표 서명란 — 대표싸인 3상태 파생(2026-06-16 GM): URL=서명완료, 그 외=빈 서명칸.
-    signsHtml += '<div class="rr-sign-box"><div class="rr-sign-label">전응준 대표 (인)</div>'
-      + '<div class="rr-sign-space">' + (_repDone ? '서명완료' : '') + '</div></div>';
-    signsHtml += '</div>';
-
-    /* ── 페이지 조립 ── */
+    /* ── 페이지 조립 — 서명란은 상단 결재란(approvalHtml) 하나로 통일, 하단 중복 제거 ── */
     return '<div class="rr-page">'
       + '<div class="rr-header">'
       +   '<div class="rr-wordmark">WELLPERION<small>결재 문서</small></div>'
@@ -815,7 +796,6 @@ function buildApprovalPrint(list) {
       + logsHtml
       + planHtml
       + budgetHtml
-      + signsHtml
       + '<div class="rr-footer">'
       +   '<span>A Day, Well Completed.</span>'
       +   '<span>발행일: ' + today + '</span>'
