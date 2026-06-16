@@ -9593,6 +9593,13 @@ function crTab(btn, panelId) {
 
     // home KPI는 항상 로드 (홈이 기본 active)
     setTimeout(loadHomeKpi, 600);
+
+    // 탭 복귀 시 점검 KPI 자동 갱신 — 다른 탭(점검 페이지)에서 완료 후 home으로 돌아오면 즉시 반영. GM 2026-06-16 시우.
+    document.addEventListener('visibilitychange', function(){
+      if(document.visibilityState!=='visible')return;
+      loadHomeKpi();
+      var _o=document.getElementById('o1-dept-summary'); if(_o&&_o.offsetParent!==null)loadO1Summary();
+    });
   })();
   // ── /O1 부서별 핵심 현황 요약 + home KPI ────────────────────────
 </script>
