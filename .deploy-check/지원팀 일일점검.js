@@ -2087,14 +2087,16 @@ function handleTodayLive(params) {
   genders.forEach(function (g) {
     buckets.forEach(function (b) { sumDone[b] += doneByG[g][b]; sumTotal[b] += totalByG[g][b]; });
   });
-  var done = sumDone.am + sumDone.pm + sumDone.close + sumDone.night;
-  var total = sumTotal.am + sumTotal.pm + sumTotal.close + sumTotal.night;
+  // total/done/pct = am+pm+close 만 (야간은 외주 탕청소 별도 회차 — GM 확정 2026-06-16).
+  // night 필드는 참고용으로 응답에 유지하되 합계에서 제외.
+  var done  = sumDone.am  + sumDone.pm  + sumDone.close;
+  var total = sumTotal.am + sumTotal.pm + sumTotal.close;
   var pct = total > 0 ? Math.round(done / total * 100) : 0;
 
   function genderSummary(g) {
     var gd = doneByG[g], gt = totalByG[g];
-    var gdone = gd.am + gd.pm + gd.close + gd.night;
-    var gtot  = gt.am + gt.pm + gt.close + gt.night;
+    var gdone = gd.am + gd.pm + gd.close;   // night 제외
+    var gtot  = gt.am + gt.pm + gt.close;   // night 제외
     return { am: gd.am, pm: gd.pm, close: gd.close, night: gd.night,
              amTotal: gt.am, pmTotal: gt.pm, closeTotal: gt.close, nightTotal: gt.night,
              done: gdone, total: gtot, pct: gtot > 0 ? Math.round(gdone / gtot * 100) : 0 };
