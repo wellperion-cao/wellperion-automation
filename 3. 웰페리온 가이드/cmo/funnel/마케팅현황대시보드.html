@@ -541,15 +541,18 @@ details.footnote-toggle > .fn-body{
             <tr>
               <th>채널</th>
               <th>이번 달 문의</th>
-              <th>누적 전환(명)</th>
-              <th>누적 전환율</th>
+              <th>누적 전환(명) <span style="font-size:9px;font-weight:400;opacity:.7">추정</span></th>
+              <th>누적 전환율 <span style="font-size:9px;font-weight:400;opacity:.7">추정</span></th>
             </tr>
           </thead>
           <tbody id="channel-table-body">
             <tr><td colspan="4" style="padding:14px 16px;color:var(--dim);font-size:13px">불러오는 중…</td></tr>
           </tbody>
         </table>
-        <div style="padding:8px 16px 10px;font-size:11px;color:var(--dim);border-top:1px solid var(--border)">표준 채널 10종 기준(GAS 단일 정규화) · 채널명은 문의 시 선택한 유입경로 기준 · 과거 '온라인' 뭉침분은 단일귀속 불가라 '기타·미상' · 누적 전환은 전체 기간<br>※ 채널별 전환은 GAS 미제공 — 전체 전환율은 위 퍼널 참조</div>
+        <div style="padding:8px 16px 10px;font-size:11px;color:var(--dim);border-top:1px solid var(--border)">
+          표준 채널 10종 기준(GAS 단일 정규화) · 채널명은 문의 시 선택한 유입경로 기준 · 과거 '온라인' 뭉침분은 단일귀속 불가라 '기타·미상'<br>
+          <b style="color:var(--accent)">추정 주의</b> — 채널별 전환은 <b>전화번호 매칭 추정</b>이라 정확 총계(유형별 기준 · 멤버십 전화매칭+강습 팀시트)와 다를 수 있음. 강습 팀시트엔 채널 정보 없어 채널 귀속 불가. 정확 전환 합계는 <b>📁 유형별 전환</b> 보기 참조.
+        </div>
       </div>
     </div>
   </details>
@@ -755,8 +758,9 @@ function renderConversionFlow() {
   var inq    = f.inq || 0;
   var convAvail = (f.conv !== null && f.conv !== undefined);
   var conv   = convAvail ? f.conv : 0;
-  var r1 = clicks > 0 ? Math.round(inq / clicks * 1000) / 10 : 0;             // 클릭→문의
-  var r2 = (inq > 0 && convAvail) ? Math.round(conv / inq * 1000) / 10 : null; // 문의→등록
+  // r1(클릭→문의 비율): 클릭=폼버튼 클릭, 문의=전화·워크인 포함 전체 — 모집단 불일치로 무의미. 미사용.
+  // r2(문의→등록 비율): 등록은 현재 유효회원 전화매칭(신규 전환 아님) — 퍼널 전환율로 오독 위험. 미사용.
+  // TODO(CTO-SELF-HOSTED-INQUIRY-DB): 자체 문의DB 구축 시 등록일 기반 정확 전환율 산출 가능.
 
   // 문의 목표 접목 — 별도 게이지 박스 폐지, ② 문의 카드 하단에 흡수 (월 단위 뷰에서만)
   var isMonthView = (f.mode === 'month' || f.mode === 'monthPast');
@@ -787,23 +791,27 @@ function renderConversionFlow() {
       + '<div style="font-size:10px;color:var(--dim);margin-top:7px;line-height:1.5">' + sub + '</div>'
       + '</div>';
   }
-  function arrow(pct, note) {
-    return '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:52px;padding:0 2px;flex-shrink:0">'
-      + '<div style="font-size:16px;color:var(--border);line-height:1">&#8594;</div>'
-      + '<div style="font-size:14px;font-weight:700;color:var(--accent);margin-top:4px;letter-spacing:-.01em">' + (pct == null ? '—' : pct + '%') + '</div>'
-      + '<div style="font-size:9px;color:var(--dim);margin-top:2px;white-space:nowrap">' + note + '</div>'
-      + '</div>';
+  // 카드 사이 단순 시각 구분자 — 비율/CTR 수치 없음(모집단 불일치로 무의미)
+  function sep() {
+    return '<div style="display:flex;align-items:center;justify-content:center;min-width:24px;padding:0 2px;flex-shrink:0;color:var(--border);font-size:18px">›</div>';
   }
+
+  // 등록 카드 sub 라벨: 추정 사실 명시
+  var convSub = convAvail
+    ? '추정 · 전화번호 매칭 기준<br>이번달 신규 전환 아님'
+    : '월 단위만 집계';
 
   el.innerHTML = '<div style="display:flex;align-items:stretch;gap:8px;flex-wrap:wrap">'
     + card('🖱', '① 문의 페이지 클릭', clicks, '문의 버튼 누른 횟수', 'var(--f1)')
-    + arrow(r1, '클릭→문의')
+    + sep()
     + card('📝', '② 문의 접수', inq, inqSub, 'var(--f2)')
-    + arrow(r2, '문의→등록')
-    + card('✅', '③ 회원 등록', convAvail ? conv : '—', convAvail ? '전화번호 매칭(월)' : '월 단위만 집계', 'var(--f5)')
+    + sep()
+    + card('✅', '③ 현 회원 매칭', convAvail ? conv : '—', convSub, 'var(--f5)')
     + '</div>'
     + paceHtml
-    + '<div style="font-size:10px;color:var(--dim);margin-top:10px;line-height:1.6">' + (f.label || '이번 달') + ' 기준 · 등록은 전화번호 매칭으로 월 단위 집계 · 별개 = 공간렌트·비즈니스파트너·기타</div>';
+    + '<div style="font-size:10px;color:var(--dim);margin-top:10px;line-height:1.6">'
+    + (f.label || '이번 달') + ' 기준 · ① 클릭은 문의 페이지 폼버튼 클릭(전화·워크인 미포함). ③ 현 회원 매칭은 이번달 문의자 전화번호가 유효회원 명부에 있는 수 — 기존 회원 포함, 이번달 신규 전환과 다릅니다.'
+    + '</div>';
   if (typeof renderTypeFunnel === 'function') renderTypeFunnel();
   // 히어로 블록 갱신 — 전환흐름과 같은 _flow·pace 데이터 재사용
   renderHero(f);
