@@ -1357,47 +1357,35 @@
     };
 
     // 3. 🌟 핵심! 배정 시에는 화면 새로고침 없이 초록색 피드백만 주도록 독립시킴
-    window._regAssign = function(id, category, btn){
+window._regAssign = function(id, category) {
       var el = document.getElementById('regva-' + id);
       var assignee = el ? el.value.trim() : '';
 
-      // 클릭 시 기존 버튼 스타일 저장 후 초록색으로 변경
-      var originalBg = btn.style.background;
-      var originalColor = btn.style.color;
-      var originalBorder = btn.style.border;
-
-      btn.textContent = '저장 중...';
+      // 클릭한 배정 버튼을 즉시 초록색 완료 상태로 변경
+      var btn = event.target;
+      btn.textContent = '완료 ✓';
       btn.style.background = 'rgba(106,191,123,0.12)';
       btn.style.color = '#6abf7b';
       btn.style.borderColor = 'rgba(106,191,123,0.4)';
-      btn.disabled = true;
 
-      var _p = {action:'reg_update', id:id, category:category, assignee: assignee};
-      var _k = _wpKey(); if(_k) _p.key = _k;
+      // 화면 새로고침 없이 몰래 데이터만 백엔드로 전송
+      var payload = { action: 'reg_update', id: id, category: category, assignee: assignee };
+      if (typeof _wpKey === 'function') payload.key = _wpKey();
 
-      // 직접 통신 (regBoardLoad()를 호출하지 않아 화면이 깜빡이지 않음)
-      fetch(_REG_API, {method:'POST', redirect:'follow', headers:{'Content-Type':'text/plain;charset=utf-8'}, body:JSON.stringify(_p)})
-        .then(function(r){ return r.json(); })
-        .then(function(d){ 
-          if(d && d.ok){ 
-            btn.textContent = '완료 ✓';
-            // 2초 뒤 원래 버튼으로 복구
-            setTimeout(function(){
-              btn.textContent = '배정';
-              btn.style.background = originalBg;
-              btn.style.color = originalColor;
-              btn.style.border = originalBorder;
-              btn.disabled = false;
-            }, 2000);
-          } else {
-             btn.textContent = '배정'; btn.style.background = originalBg; btn.style.color = originalColor; btn.style.border = originalBorder; btn.disabled = false;
-          }
-        })
-        .catch(function(){
-           btn.textContent = '배정'; btn.style.background = originalBg; btn.style.color = originalColor; btn.style.border = originalBorder; btn.disabled = false;
-        });
+      fetch(_REG_API, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify(payload)
+      });
+
+      // 2초 뒤 원래 배정 버튼 모양으로 되돌리기
+      setTimeout(function() {
+        btn.textContent = '배정';
+        btn.style.background = 'var(--paper)';
+        btn.style.color = 'var(--text)';
+        btn.style.borderColor = 'var(--border)';
+      }, 2000);
     };
-
     function _regPost(payload, okMsg){
       var _p = Object.assign({}, payload);
       var _k = _wpKey(); if(_k) _p.key = _k;
