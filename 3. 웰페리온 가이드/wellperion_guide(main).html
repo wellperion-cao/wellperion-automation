@@ -440,7 +440,7 @@
       <a data-id="O1">🏢 운영 통합 체계</a>
       <a data-id="O2">📋 공지/안내문 생성</a>
       <a data-id="O3">📊 재등록 대시보드</a>
-      <a data-id="O5">🙋 웰페리온 통합 접수처</a>
+      <a data-id="O4">🙋 웰페리온 통합 접수처</a>
     </div>
 
     <a data-toggle="cpo-nav2" data-has-sub="true"><span class="num">🤝</span><span class="label">AI CPO 회원관리<span class="tag">임정은M</span></span></a>
@@ -621,7 +621,7 @@
           </div>
         </div>
         <div style="margin-top:11px;padding-top:10px;border-top:1px dashed var(--border);display:flex;gap:7px;flex-wrap:wrap;">
-          <a href="#" onclick="event.preventDefault();document.querySelector('[data-id=O5]').click();" style="font-size:11px;font-weight:700;padding:3px 10px;background:var(--accent-bg);color:var(--accent);border-radius:20px;text-decoration:none;border:1px solid var(--border);">현황 보드 →</a>
+          <a href="#" onclick="event.preventDefault();document.querySelector('[data-id=O4]').click();" style="font-size:11px;font-weight:700;padding:3px 10px;background:var(--accent-bg);color:var(--accent);border-radius:20px;text-decoration:none;border:1px solid var(--border);">현황 보드 →</a>
           <a href="https://wellperion-cao.github.io/wellperion-automation/coo/voc/voc_mobile_form.html" target="_blank" style="font-size:11px;font-weight:700;padding:3px 10px;background:var(--accent-bg);color:var(--accent);border-radius:20px;text-decoration:none;border:1px solid var(--border);">📲 회원 접수 폼</a>
         </div>
       </div>
@@ -1170,7 +1170,7 @@
   })();
   </script>
 
-  <!-- ── O5 웰페리온 통합 접수처 보드 JS ── -->
+  <!-- ── O4 웰페리온 통합 접수처 보드 JS ── -->
   <script>
   (function(){
     var _REG_API = 'https://script.google.com/macros/s/AKfycbwk2XS1FND9V2xtXlWgsXzgA5p0FG7jVm6YKD74JK_ME_ZvHsNUUfGE5A_8p0X8VcF3gQ/exec';
@@ -1198,6 +1198,27 @@
 
     function _regEsc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
 
+    // reg_board API는 영문 키로 반환 → UI가 읽는 한글 키로 1회 정규화 (공통 + 카테고리별 extras)
+    var _REG_KEYMAP = {
+      regId:'접수ID', category:'카테고리', createdAt:'접수일시', name:'이름',
+      contact:'연락처', loc:'위치', content:'내용', photoUrl:'사진URL',
+      status:'상태', assignee:'담당', memo:'처리메모', dept:'부서',
+      // 분실물 접수 extras
+      itemName:'물품명', lostWhen:'분실시각', keepWhere:'보관처',
+      // 휴회 접수 extras
+      memberNo:'회원번호', startDate:'시작일', period:'기간', reason:'사유'
+    };
+    function _regNormalize(rows){
+      return (rows||[]).map(function(row){
+        var out = {};
+        Object.keys(row||{}).forEach(function(k){
+          var kk = _REG_KEYMAP[k] || k;  // 미정의 영문키는 라벨 그대로 노출(누락 방지)
+          out[kk] = row[k];
+        });
+        return out;
+      });
+    }
+
     window.regBoardLoad = function(dept, category){
       // 항상 전체를 받아 클라이언트 필터 — 건수요약 정확·필터 즉시반영
       if(category !== undefined) _regCurrentCat = category;
@@ -1210,7 +1231,7 @@
         .then(function(d){
           if(_wpGate(d)) return;
           if(!d || !d.ok){ board.innerHTML = '<div style="color:var(--warm,#e65b3f);font-size:13px;padding:18px 4px;">현황을 불러오지 못했습니다 — ' + _regEsc(d && d.error || '') + '</div>'; return; }
-          _regAllItems = d.data || [];
+          _regAllItems = _regNormalize(d.data || []);
           _regRenderSummary(_regAllItems);
           _regBoardRender(_regAllItems);
         })
@@ -1363,22 +1384,22 @@
       }
     };
 
-    // O5 activateDoc 훅
+    // O4 activateDoc 훅
     (function(){
       var orig = window.activateDoc;
       if(typeof orig === 'function'){
         window.activateDoc = function(id, tabName){
           orig(id, tabName);
-          if(id === 'O5') regBoardLoad();
+          if(id === 'O4') regBoardLoad();
         };
       }
-      // O5 메뉴 클릭 직접 감지
+      // O4 메뉴 클릭 직접 감지
       document.addEventListener('click', function(ev){
-        var a = ev.target.closest('[data-id="O5"]');
+        var a = ev.target.closest('[data-id="O4"]');
         if(a) setTimeout(regBoardLoad, 200);
       });
-      // #O5 해시 딥링크 초기 진입 시 로드
-      if((window.location.hash || '').replace(/^#/,'').split('/')[0] === 'O5'){
+      // #O4 해시 딥링크 초기 진입 시 로드
+      if((window.location.hash || '').replace(/^#/,'').split('/')[0] === 'O4'){
         setTimeout(regBoardLoad, 300);
       }
     })();
@@ -6086,8 +6107,8 @@ function crTab(btn, panelId) {
     </div>
   </article>
 
-  <!-- ── O5 웰페리온 통합 접수처 ── -->
-  <article class="doc" id="O5">
+  <!-- ── O4 웰페리온 통합 접수처 ── -->
+  <article class="doc" id="O4">
     <div class="doc-header"><h2>웰페리온 통합 접수처</h2><div class="meta">COO 관할 · 6종 접수 통합 칸반 · GAS 실시간</div></div>
     <p class="lead">분실물·시설물 고장·청결 이슈·휴회·직원 칭찬·직원 쓴소리 6종 접수를 한 보드에서 확인합니다. 카테고리 필터 → 카드 담당 배정 → 상태 전환하면 GAS 시트에 실시간 반영됩니다.</p>
 
@@ -6133,7 +6154,7 @@ function crTab(btn, panelId) {
     'update':'S1','g10':'S2','gcoo-todo':'S3','gcfo-expense':'F1','gchro-rules':'H1',
     'gcoo-check':'O1','gcoo-notice':'O2','gcoo-reenroll':'O3','ghome':'M1','g14':'M2',
     'gcmo-print':'M3','gcmo-funnel':'M4','cmo-publish':'M5','g16':'T1','g19':'T2',
-    'g15':'T1','T3':'T1','gm1':'G1'
+    'g15':'T1','T3':'T1','gm1':'G1','O5':'O4'
   };
 
   function activateDoc(id, tabName) {
