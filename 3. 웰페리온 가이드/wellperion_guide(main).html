@@ -7842,8 +7842,10 @@ function crTab(btn, panelId) {
                 createdAt: String(row['생성일'] || ''),
                 _sheetsId: String(row['id'] || '')
               });
-            } else if (_aprInflightOther && _isG1Owner) {
-              // GM/AI 본인 발의 결재가 진행 중(타 결재자 대기) — category='결재'라 활성 항로 자동 제외, 배너서 'N건 진행중' 집계만
+            } else if (_aprInflightOther) {
+              // 결재 진행 중(타 결재자 대기) — owner 무관 전부 합류. category='결재'라 활성 항로 자동 제외 + 배너서 'N건 진행중' 총수만 집계.
+              //   ⚠️ _isG1Owner 제약 제거(2026-06-17 시토): 非G1-owner(실무진 발의·부서장/대표 대기) inflight가 세 분기 어디에도 안 걸려 완전 누락 → 배너 총수에서 증발하던 버그.
+              //   정책: 타인 결재건 '상세 카드'는 G1 미표시 유지(category='결재'라 active 필터서 제거) — 배너는 총수+결재현황 SSOT 링크만.
               items.push({
                 id: base, title: (/\[결재\]/.test(title) ? title : '[결재] ' + title), status: '진행중',
                 category: '결재', _apprKind: 'inflight', _nextApprover: _next, description: parsed.description,
