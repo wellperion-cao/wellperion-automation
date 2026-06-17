@@ -7763,8 +7763,10 @@ function crTab(btn, panelId) {
       return d.getFullYear() + '-' + ('0'+(d.getMonth()+1)).slice(-2) + '-' + ('0'+d.getDate()).slice(-2);
     }
 
-    // _queue.json AI 진행배 fetch URL — GitHub Pages 동일 오리진(상대경로)으로 Fastly CDN 5분 캐시 회피 (2026-06-16 웰리)
-    var GM1_QUEUE_URL = '/welperion-automation/status/_queue.json';
+    // _queue.json AI 진행배 fetch URL — 발행루트 미러(3. 웰페리온 가이드/status/_queue.json)로 라이브 200 도달.
+    //   레포루트 status/ 는 발행트리 밖이라 404 → pre-commit ①-3 sync_queue_mirror 가 미러 자동동기화.
+    //   ※ 'welperion'(l 1개) 오타로 404 나던 경로 교정 → 'wellperion'(l 2개). (2026-06-17 수정)
+    var GM1_QUEUE_URL = '/wellperion-automation/status/_queue.json';
 
     // 결재 '다음 서명자' 판정 — 결재현황 SSOT(nextApprover)와 1:1 동일 로직 이식 (2026-06-07 웰리).
     //   G1 결재 카운트가 SSOT와 어긋나던 버그 수정: '결재요청=GM'만 봐선 안 됨.
@@ -7795,7 +7797,7 @@ function crTab(btn, panelId) {
       var sheetP = fetch(SSOT_API_URL + '?action=todo_list&_=' + Date.now(), { redirect:'follow', cache:'no-store' })
         .then(function(r){ return r.ok ? r.json() : null; })
         .catch(function(){ return null; });
-      var queueP = fetch(GM1_QUEUE_URL, { cache:'no-store' })
+      var queueP = fetch(GM1_QUEUE_URL + '?_=' + Date.now(), { cache:'no-store' })
         .then(function(r){ return r.ok ? r.json() : []; })
         .catch(function(){ return []; });
 
