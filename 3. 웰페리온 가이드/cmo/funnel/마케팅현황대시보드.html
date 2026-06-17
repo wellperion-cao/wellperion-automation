@@ -531,27 +531,27 @@ details.footnote-toggle > .fn-body{
     </div>
   </details>
 
-  <!-- ④-2 채널별 비교 (funnel 데이터 이미 로드됨 — 추가 fetch 불필요) -->
+  <!-- ④-2 채널별 문의 (이번 달) — 시간축 단일화, 누적 전환 컬럼 제거 -->
   <details class="collapse" id="details-channel-compare">
-    <summary>채널별 비교 <span style="font-size:11px;font-weight:400;color:var(--accent)">(라이브)</span><span class="collapse-sub">— 문의·전환·전환율</span></summary>
+    <summary>채널별 문의 <span style="font-size:11px;font-weight:400;color:var(--accent)">(이번 달 · 라이브)</span><span class="collapse-sub">— 어디서 문의가 오나</span></summary>
     <div class="collapse-body">
       <div style="background:var(--paper);border:1px solid var(--border);border-radius:12px;overflow:hidden">
+        <!-- 기타·미상 비율 배너 — renderChannelTableLive()가 채움 -->
+        <div id="channel-etc-banner" style="display:none;padding:8px 16px;font-size:11px;color:var(--dim);border-bottom:1px solid var(--border);background:var(--paper2)"></div>
         <table class="channel-table">
           <thead>
             <tr>
               <th>채널</th>
-              <th>이번 달 문의</th>
-              <th>누적 전환(명) <span style="font-size:9px;font-weight:400;opacity:.7">추정</span></th>
-              <th>누적 전환율 <span style="font-size:9px;font-weight:400;opacity:.7">추정</span></th>
+              <th style="text-align:right">이번 달 문의(건)</th>
+              <th style="text-align:right">비중(%)</th>
             </tr>
           </thead>
           <tbody id="channel-table-body">
-            <tr><td colspan="4" style="padding:14px 16px;color:var(--dim);font-size:13px">불러오는 중…</td></tr>
+            <tr><td colspan="3" style="padding:14px 16px;color:var(--dim);font-size:13px">불러오는 중…</td></tr>
           </tbody>
         </table>
         <div style="padding:8px 16px 10px;font-size:11px;color:var(--dim);border-top:1px solid var(--border)">
-          표준 채널 10종 기준(GAS 단일 정규화) · 채널명은 문의 시 선택한 유입경로 기준 · 과거 '온라인' 뭉침분은 단일귀속 불가라 '기타·미상'<br>
-          <b style="color:var(--accent)">추정 주의</b> — 채널별 전환은 <b>전화번호 매칭 추정</b>이라 정확 총계(유형별 기준 · 멤버십 전화매칭+강습 팀시트)와 다를 수 있음. 강습 팀시트엔 채널 정보 없어 채널 귀속 불가. 정확 전환 합계는 <b>📁 유형별 전환</b> 보기 참조.
+          이 표는 <b>이번 달 문의의 유입경로 분포</b>입니다. 채널명은 문의 접수 시 선택한 경로 기준 · 과거 '온라인' 뭉침분은 단일귀속 불가라 '기타·미상'. 정확한 전환(등록)은 <b>📁 유형별 전환</b> 보기 참조(채널별 전환은 전화매칭 추정·미상 다수라 이 표에서 제거).
         </div>
       </div>
     </div>
@@ -898,65 +898,64 @@ function renderChannelTableLive() {
   var tbody = document.getElementById('channel-table-body');
   if (!tbody) return;
 
-  // byChannelMonth: {채널명: 건수}
+  // byChannelMonth: {채널명: 건수} — 이번 달 문의 분포 (단일 시간축)
   var byMonth = (_pbData && _pbData.inquiries && _pbData.inquiries.byChannelMonth) ? _pbData.inquiries.byChannelMonth : {};
-  // byChannel: [{channel, inquiries, converted, rate}, ...]
-  var byChannel = (_fcData && Array.isArray(_fcData.byChannel)) ? _fcData.byChannel : [];
+  // byChannel(누적 전환): 화면 표에서 제거 — 전화매칭 추정·채널귀속 불가로 혼란 유발.
+  // _fcData는 renderConversionFlow에서 여전히 사용됨 — 여기선 참조만 하지 않음.
 
-  // GAS가 이미 표준 10버킷으로 정규화 → 화면은 라벨 그대로 집계(재버킷 없음)
   var ETC = ETC_CHANNEL;
-  var agg = {};   // {채널: {monthInq, cumInquiries, cumConverted}}
-  function slot(name) {
-    if (!agg[name]) agg[name] = { monthInq: 0, cumInquiries: 0, cumConverted: 0, hasCum: false };
-    return agg[name];
-  }
-  Object.keys(byMonth).forEach(function(ch) { slot(ch).monthInq += (byMonth[ch] || 0); });
-  byChannel.forEach(function(d) {
-    if (!d.channel) return;
-    var s = slot(d.channel);
-    s.cumInquiries += (d.inquiries || 0);
-    s.cumConverted += (d.converted || 0);
-    s.hasCum = true;
+
+  // 이번 달 문의만으로 행 구성
+  var rows = [];
+  Object.keys(byMonth).forEach(function(ch) {
+    var cnt = byMonth[ch] || 0;
+    if (cnt > 0) rows.push({ ch: ch, monthInq: cnt });
   });
 
-  // 표시 대상: 집계된 모든 표준 버킷(활동 없는 행은 아래에서 제거). '기타·미상'은 sort가 맨 아래로.
-  var order = Object.keys(agg);
-  var rows = order.filter(function(name) { return agg[name]; }).map(function(name) {
-    var s = agg[name];
-    var active = s.monthInq > 0 || s.cumInquiries > 0;
-    return active ? {
-      ch: name,
-      monthInq: s.monthInq,
-      cumInquiries: s.hasCum ? s.cumInquiries : null,
-      cumConverted: s.hasCum ? s.cumConverted : null,
-      cumRate: (s.hasCum && s.cumInquiries > 0) ? Math.round((s.cumConverted / s.cumInquiries) * 1000) / 10 : (s.hasCum ? 0 : null)
-    } : null;
-  }).filter(Boolean);
-
   if (!rows.length) {
-    tbody.innerHTML = '<tr><td colspan="4" style="padding:14px 16px;color:var(--dim);font-size:13px;font-style:italic">집계 준비 중</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="3" style="padding:14px 16px;color:var(--dim);font-size:13px;font-style:italic">집계 준비 중</td></tr>';
     return;
   }
 
-  // 정렬: 이번 달 문의 desc → 누적 문의 desc (기타는 항상 맨 아래)
+  // 정렬: 이번 달 문의 desc, 기타·미상 항상 맨 아래
   rows.sort(function(a, b) {
     if ((a.ch === ETC) !== (b.ch === ETC)) return a.ch === ETC ? 1 : -1;
-    if (b.monthInq !== a.monthInq) return b.monthInq - a.monthInq;
-    return (b.cumInquiries || 0) - (a.cumInquiries || 0);
+    return b.monthInq - a.monthInq;
   });
+
+  // 합계 + 기타·미상 비중
+  var total = rows.reduce(function(s, r) { return s + r.monthInq; }, 0);
+  var etcRow = rows.find(function(r) { return r.ch === ETC; });
+  var etcBanner = document.getElementById('channel-etc-banner');
+  if (etcBanner) {
+    if (etcRow && total > 0) {
+      var etcPct = Math.round(etcRow.monthInq / total * 100);
+      etcBanner.style.display = '';
+      etcBanner.innerHTML = '유입경로 미기재(기타·미상) <b style="color:var(--accent)">' + etcPct + '%</b> — 접수 시 경로 미수집(구글폼 드롭다운 누적 후 정확화 예정)';
+    } else {
+      etcBanner.style.display = 'none';
+    }
+  }
+
+  var maxInq = rows.reduce(function(m, r) { return Math.max(m, r.monthInq); }, 1);
 
   var html = '';
   rows.forEach(function(r, i) {
     var colorVar = 'var(' + _DOT_COLORS[i % _DOT_COLORS.length] + ')';
-    var monthVal = r.monthInq > 0 ? r.monthInq + '건' : '<span class="placeholder">—</span>';
-    var convVal  = r.cumConverted !== null ? r.cumConverted + '명' : '<span class="placeholder">—</span>';
-    var rateVal  = r.cumRate      !== null ? r.cumRate + '%'       : '<span class="placeholder">—</span>';
+    var pct = total > 0 ? Math.round(r.monthInq / total * 100) : 0;
+    var barW = Math.round(r.monthInq / maxInq * 100);
     html += '<tr>'
-          + '<td><span class="channel-dot" style="background:' + colorVar + '"></span>' + r.ch + '</td>'
-          + '<td>' + monthVal + '</td>'
-          + '<td>' + convVal  + '</td>'
-          + '<td>' + rateVal  + '</td>'
-          + '</tr>';
+      + '<td style="min-width:110px"><span class="channel-dot" style="background:' + colorVar + '"></span>' + r.ch + '</td>'
+      + '<td style="text-align:right;font-weight:700;padding-right:8px">' + r.monthInq + '건</td>'
+      + '<td style="min-width:120px;padding:8px 14px">'
+      +   '<div style="display:flex;align-items:center;gap:8px">'
+      +     '<div style="flex:1;background:var(--border);border-radius:4px;height:6px;overflow:hidden">'
+      +       '<div style="width:' + barW + '%;height:100%;background:' + colorVar + ';border-radius:4px;transition:width .4s ease"></div>'
+      +     '</div>'
+      +     '<span style="font-size:12px;color:var(--dim);white-space:nowrap;min-width:32px;text-align:right">' + pct + '%</span>'
+      +   '</div>'
+      + '</td>'
+      + '</tr>';
   });
   tbody.innerHTML = html;
 }
