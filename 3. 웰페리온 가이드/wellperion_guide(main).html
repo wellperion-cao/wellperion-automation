@@ -1368,7 +1368,7 @@
       var board = document.getElementById('regBoard');
       if(!board) return;
       board.innerHTML = '<div style="color:var(--dim);font-size:13px;padding:18px 4px;">불러오는 중…</div>';
-      var url = _REG_API + '?action=reg_list' + (cat ? '&category=' + encodeURIComponent(cat) : '') + '&_=' + Date.now();
+      var url = _REG_API + '?action=reg_board' + (cat ? '&category=' + encodeURIComponent(cat) : '') + '&_=' + Date.now();
       fetch(_wpUrl(url), {redirect:'follow'})
         .then(function(r){ return r.json(); })
         .then(function(d){

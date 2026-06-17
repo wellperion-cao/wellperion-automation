@@ -719,6 +719,19 @@ function _updateCheckLedger(dept, date, body) {
         : 1;
     });
   }
+  // 점검 타이머 영속(2026-06-17 시우·GM): body.timers = { '<rk>':{s,e}, night:{s,e} } (ms 문자열).
+  // led.timers에 머지 저장 — 빈값이 기존값 덮지 않게 값 있을 때만 갱신(머지). loadState가 led.timers로 복원.
+  // ⚠ cr 회차머지 패턴과 정합(상시전송이지만 빈 타이머가 기존값 못 지움). support 한정·완료율 무관.
+  if (body && body.timers && typeof body.timers === 'object') {
+    if (!led.timers) led.timers = {};
+    Object.keys(body.timers).forEach(function (rk) {
+      var t = body.timers[rk] || {};
+      var cur = led.timers[rk] || {};
+      var s = (t.s != null && String(t.s) !== '') ? String(t.s) : (cur.s || '');
+      var e = (t.e != null && String(t.e) !== '') ? String(t.e) : (cur.e || '');
+      if (s || e) led.timers[rk] = { s: s, e: e };
+    });
+  }
   // led.seen — 분모 적립(P2 2026-06-16 시우·architect): 이번 save payload의 가시 항목 전량(체크 여부 무관).
   // 키: '<bucket>_<id>' (bucket = _shiftBucket(shift), 회차버킷 단일화). 매 저장 시 전량 교체(roundChecks 동일 패턴).
   // ⚠ 읽기 전용 분모 — led.sub(제출도장)과 완전 무관, 완료율/weekly 집계에 영향 0. support 한정.

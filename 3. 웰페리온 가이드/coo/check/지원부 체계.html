@@ -29,6 +29,9 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 .content{padding:16px 20px 140px;max-width:720px;margin:0 auto}
 /* 가이드 탭 본문 풀폭 (S2 · 운영부 정합 · GM 2026-06-11) */
 #tab-guide,#tab-chem,#tab-manual,#tab-check-m,#tab-check-f{max-width:none;margin-left:0;margin-right:0}
+/* 접수 보드 좌측 정렬 (GM 2026-06-17) */
+#tab-reg{text-align:left}
+#tab-reg #deptRegBoard{text-align:left}
 /* 약품 가이드 탭 — 스코프된 스타일(cg-) · 출처 standalone html 톤을 다크 페이지에 정리 (시우·GM 2026-06-13) */
 #tab-chem .cg-wrap{max-width:1000px;margin:0 auto}
 #tab-chem h2{font-size:20px;margin-bottom:6px}
@@ -553,9 +556,9 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   <button class="tab" onclick="switchTab('guide')">직원 가이드</button>
   <button class="tab" onclick="switchTab('chem')">약품 가이드</button>
   <button class="tab" onclick="switchTab('manual')">매뉴얼</button>
+  <button class="tab" onclick="switchTab('reg')">청결 이슈 접수</button>
   <button class="tab" onclick="switchTab('check-m','lock')">점검(남) 🔒</button>
   <button class="tab" onclick="switchTab('check-f','lock')">점검(여) 🔒</button>
-  <button class="tab" onclick="switchTab('reg')">접수 현황</button>
   <div style="display:flex;gap:4px;margin-left:auto;">
     <button class="util-btn print-btn" onclick="printCurrentTab()">인쇄</button>
     <button class="util-btn report-btn" onclick="copyReport()">보고용</button>
@@ -2057,6 +2060,21 @@ async function loadState(d,g){
           }
         });
       }
+      /* 점검 타이머 복원(2026-06-17 시우·GM): 서버 led.timers → STATE 타이머 키(day=회차별, night=날짜+성별).
+         STATE 세팅만(입력칸 재렌더·IME 무관) → drawUI 끝 setCheckTime가 시작/완료/소요 표시. 빈값은 키 미생성(idle 유지). */
+      if(cl&&cl.timers&&typeof cl.timers==='object'){
+        Object.keys(cl.timers).forEach(rk=>{
+          const t=cl.timers[rk]||{};
+          if(rk==='night'){
+            if(t.s)STATE['timerStart_'+d+'_'+gg]=Number(t.s)||t.s;
+            if(t.e)STATE['timerEnd_'+d+'_'+gg]=Number(t.e)||t.e;
+          }else if(ROUND_KEYS.indexOf(rk)>=0){
+            const tk=timerKeys(d,gg,rk);
+            if(t.s)STATE[tk.sk]=Number(t.s)||t.s;
+            if(t.e)STATE[tk.ek]=Number(t.e)||t.e;
+          }
+        });
+      }
       const sub=cl.sub||{}, subAt=cl.subAt||{};
       if(sub.am&&!STATE._submitter_am){STATE._submitter_am=sub.am;STATE._submitted_am=true;}
       if(sub.pm&&!STATE._submitter_pm){STATE._submitter_pm=sub.pm;STATE._submitted_pm=true;}
@@ -2164,7 +2182,20 @@ function _buildPushPayload(d,g,includeSubmitMeta){
       iss:(rk?STATE[issKey(rk,id,g)]:'')||'',tip:(rk?STATE[tipKey(rk,id,g)]:'')||'',
       measure:(rk?collectTempJSON(id,rk,g):'')||'',reflected:(rk&&STATE[refKey(rk,id,g)])?'1':''};
   });
+  /* 점검 타이머 영속(2026-06-17 시우·GM): 이 date+gender의 전 회차(day)+야간 타이머 시작/완료(ms)를 수집해 전송.
+     서버 led.timers에 머지 저장 → 새로고침·타기기·시크릿서 loadState가 복원(STATE 비어 '--:--'던 회귀 차단).
+     타이머는 사용자 실제 입력이라 상시전송 OK(제출도장·거짓대량제출과 무관). 빈값 가드는 백엔드 머지서 처리. */
+  const timers={};
+  ROUND_KEYS.forEach(function(rk){
+    const tk=timerKeys(d,g,rk);
+    const s=STATE[tk.sk], e=STATE[tk.ek];
+    if(s||e)timers[rk]={s:s||'',e:e||''};
+  });
+  /* 야간모드 키(timerStart_<d>_<g> / timerEnd_<d>_<g>) → 'night' 슬롯으로 별도 보관. */
+  const ns=STATE['timerStart_'+d+'_'+g], ne=STATE['timerEnd_'+d+'_'+g];
+  if(ns||ne)timers.night={s:ns||'',e:ne||''};
   const p={action:'save',date:d,checks,dept:DEPT,genderTab:g,roundChecks:roundChecks,roundCheckMeta:roundCheckMeta,
+    timers:timers,
     duty:(typeof getDutyForGender==='function'?getDutyForGender(g):''),
     groupSubmits:collectGroupSubmits()};
   /* ★폐루프 절단(시우 2026-06-13): 제출메타(submitted_ / submitter_ 키)는 '명시적 제출' 때만 전송.
@@ -2456,8 +2487,7 @@ function drawUI(d,gender){
     }
     html+=`</div>`;
 
-    /* 회차 점검자 배정 메모(공유·아무나 편집, GM 2026-06-16 시우) — 회차 헤더 바로 아래 고정 */
-    html+=inspMemoBoxHtml(gender,curRound);
+    /* 회차 점검자 배정 메모칸 삭제(GM 2026-06-17): 잘 안 써서 렌더 제거. 함수 정의·백엔드 save_insp_memo는 무해해 잔존(다른 참조 없음). */
 
     if(zoneOrder.length===0&&focusInRound.length===0){
       html+=`<div class="closed-msg" style="padding:40px 20px;">이 시간대 점검 항목이 아직 없습니다.<br><span style="font-size:13px;color:var(--dim);">셋업 편집에서 추가할 수 있습니다.</span></div>`;
@@ -5454,7 +5484,7 @@ function deptRegLoad(dept){
   var el=document.getElementById('deptRegBoard');
   if(!el) return;
   el.innerHTML='<div class="loading">불러오는 중...</div>';
-  var url=_wpUrl(REG_API+'?action=reg_list&dept='+encodeURIComponent(dept)+'&_='+Date.now());
+  var url=_wpUrl(REG_API+'?action=reg_board&dept='+encodeURIComponent(dept)+'&_='+Date.now());
   fetch(url,{redirect:'follow'})
     .then(function(r){ return r.json(); })
     .then(function(d){
