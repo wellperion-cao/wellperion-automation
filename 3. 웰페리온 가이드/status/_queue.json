@@ -1154,5 +1154,27 @@
     "processed_at": "2026-06-17",
     "artifact": "GM 라이브 관찰: 남 점검 제출했는데 시트 연동 안 되고 점검시각 누락, 세 화면 숫자 제각각(today_live 30/스냅샷 28/시트 14). 디버거(opus) 근본추적: 데이터 유실 아님·라우팅수정(aa63116a) 무죄(실항목 old/new 차이 0). 진범=저장이 마지막 POST 한 건만 반영 — _updateCheckLedger led.cr={} 전량교체(GAS:692) + _writePerRoundRows primaryTarget 날짜행 전량삭제재기록(GAS:865) → 오전조 제출+resetShiftChecks 후 pushToServer가 시트/원장 덮어써 제출항목이 밀림. 세 숫자는 각기 다른 집계(amTotal 무필터30·스냅샷 성별필터28·시트 현STATE14). 수정(executor opus, 계획서 기반): Edit B(led.cr 회차머지·타회차 보존)+Edit A(primaryTarget 회차업서트·타회차 보존) 쌍 — am1 제출 후 pm1 저장해도 am1 행 보존. Edit C+D(HEADERS 15열 점검시각 추가·저장 payload mm.at·V2Compat). 핵심 실측(테스트날짜 2099): am1 2행→pm1 저장→am1 보존 확인 후 정리. 배포 @75(동일 deploymentId). 무회귀 게이트 PASS: 오늘 support m14/f25/total39·남성14행 BEFORE==AFTER 불변, facility 불변, 널바이트 보존, 라우팅 무영향. 커밋 047c9376 푸시.",
     "next": "표류(거의 완결). 잔여 경미: ①보드 분모 정합 — today_live amTotal=30(op1/op2 포함·성별무필터) vs 성별필터28 미세차이는 표시 튜닝 후속 ②점검시각은 차후 저장분부터 채워짐(기존 14행은 빈값). 오늘 이후 제출분부터 전 회차 항목이 시트에 durable 누적됨 — GM이 오후조/마감조 제출 후 시트에 회차 누적되는지 자연 확인."
+  },
+  {
+    "task_id": "COO-2026-06-17-SUPPORT-CHECK-SUBMIT-STATE-FIX",
+    "clevel": "coo",
+    "title": "[시우] 점검 제출상태 미인식 수정 — 시크릿/타기기서도 제출완료 표시+전체 고정",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "HIGH",
+    "enqueued_at": "2026-06-17",
+    "processed_at": "2026-06-17",
+    "artifact": "GM 시크릿모드 관찰: 오전조 28/28 제출됐는데 진행중·미제출로 보이고 입력칸 열림(=stale 아닌 진짜 버그). 디버거 근본원인: loadState(지원부 체계.html:2060~2066)가 서버 led.sub를 shift-level(STATE._submitted_am)만 복원하고 isRoundSubmitted()가 실제 보는 round-level 키(submitted_<d>_<g>_am1)는 미세팅 → 시크릿/타기기서 localStorage 비어 항상 미제출. 서버 sub는 정상 durable(GAS:683). 수정 Edit E(프론트 15줄): 서버 sub.am→am1, sub.pm→pm1+close1, sub.night→night1을 roundSubKey+roundSubLSKey로 세팅. 배지(1805)·입력잠금(1388)이 isRoundSubmitted에 종속이라 이 한 수정으로 제출완료 표시+근무자/점검자/시각/체크 전체 고정 동시 해결. 남/여 공통(gg female 자동). GAS·데이터 무변경. 함수 존재·구조 검증. 커밋 e58e1333 푸시(GitHub Pages).",
+    "next": "표류(완결). GM Ctrl+Shift+R로 제출회차 제출완료·고정 확인. 후속=ID 정규화(아래)."
+  },
+  {
+    "task_id": "COO-2026-06-17-SUPPORT-CHECK-ID-NORMALIZE-OP-CL",
+    "clevel": "coo",
+    "title": "[시우] 점검 항목ID 정규화 — 오픈점검 op1~op5(c1a/b/c→op3/4/5)·마감점검 cl1~ (매뉴얼·시트·ROUND_MAP 정합)",
+    "status": "PENDING",
+    "priority": "NORMAL",
+    "enqueued_at": "2026-06-17",
+    "note": "[2026-06-17 GM] 점검(남) 시트 맨 위 c1a/c1b/c1c는 실제 오픈점검 항목인데 C카테고리식 id라 혼동. GM 확정: 오픈점검=op1~op5(기존 op1·op2 + c1a→op3·c1b→op4·c1c→op5), 마감점검=cl1·cl2·cl3…(GM 선택). 매뉴얼 페이지에도 오픈/마감 항목에 op·cl 식별자 일관 적용. 남/여 양쪽.",
+    "next": "정규화: ①프론트 WEEKDAY/WEEKEND 배열 id(c1a/b/c→op3~5, 마감항목→cl*) ②지원_매뉴얼 시트 항목ID ③ROUND_MAP(am1/close1 매핑) ④기존 지원_남성/여성구역 시트행 id 마이그레이션(고아체크 방지) 동시정합. ⚠️ id정규화 위험(과거 \"체크 풀림\"·\"갯수 줄어듦\")—WEEKDAY/WEEKEND 동시수정 필수·충돌 2단계토큰·시트 마이그레이션 포함. 라우팅(_routeItem) 영향 점검(op/cl은 _m/_f 미포함→COMMON→성별탭, 무해 예상). 배포 후 4부서 무회귀+체크 보존 게이트."
   }
 ]
