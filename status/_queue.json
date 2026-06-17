@@ -1191,5 +1191,17 @@
     "processed_at": "2026-06-17",
     "artifact": "GM 시크릿모드 QA 4건. ①매뉴얼 탭 항목 식별자 배지 표시(op1·cl1 등 monospace, 전 카테고리 일관) ②청결이슈접수 탭 접수현황 좌측정렬+풀폭 CSS ③점검 타이머 미표시=시점 문제(오늘 오전조 제출이 타이머 영속화 배포@76 전이라 서버 타이머 없음, 코드정상·새 점검부터 복원) ④★이슈→VOC 통합 접수처 연동(GM 결정: VOC 운영부 구글폼·접수필요만): 점검 이슈 입력된 항목에 \"📨 접수처로 보내기\" 버튼, 클릭 시 VOC 구글폼(1FAIpQLSd7mDz…) 프리필 새탭(entry 매핑 파싱: 749003756=접수자명·1854535620=이슈내용[장소 본문명기]·586901934=접수자). 불편장소/전달부서는 체크박스라 직원이 폼서 선택(기존 분류·전달 파이프라인 유지). localStorage 중복방지+접수됨 배지. 점검 체크/제출/라우팅/타이머 무변경. 커밋 7db2086e(①②)·41db7816(④) 푸시. node --check OK·URL 200.",
     "next": "표류(완결). 후속 여지: 회원 청결이슈(REG)와 직원 점검이슈가 다른 접수처라 향후 통합 검토(GM 결정). 점검 타이머는 새 점검 1회로 GM 자연 검증."
+  },
+  {
+    "task_id": "COO-2026-06-17-APPROVAL-FLOW-FIX",
+    "clevel": "coo",
+    "title": "[시우] 결재 흐름 4건 수정 — 대기 정합·반려후 재상신차단·반려사유 입력/기록 (+회의인쇄·B1 PIN 후속)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "HIGH",
+    "enqueued_at": "2026-06-17",
+    "processed_at": "2026-06-17",
+    "artifact": "GM 결재 문제 신고 진단(debugger)→구현(executor opus). A:home 대기수(2) vs 결재현황(0) 불일치=home homeNextApprover가 담당자에 김남욱GM 있으면 GM단계 누락(next=null→대기없음 표시), 결재현황은 GM 무조건 push라 정상=산식 비대칭. home도 GM 무조건+결재요청AND·완료/반려제외로 통일→양쪽 2 일치 실측. B4:반려후 본문수정 저장시 todo_update가 newApproval로 자동 대기 재상신→결재대기 부활. approvalChanged 조건으로 좁힘(본문만 수정은 부활안함, 결재완료건 무영향). B2:결재현황 rejectTask에 반려 사유 prompt(빈값 중단)+signTask reason 인자. B3:GAS reject가 reason을 업무 내용에 ===반려이력=== append(append-only)+텔레그램 반려알림에 사유. GAS @78 동일 deploymentId 재배포·node check·무회귀(PIN게이트 무손상). 커밋 e464e831(GAS+결재현황)·fe54ddb9(home). 별건 회의항목 인쇄 수정(cf563106): 회의는 회의내용·일반은 계획 분기.",
+    "next": "B1(승인/반려 부서장 PIN 강제)=중간관리자 3명(이경연·이정헌·나우열) 비번값 GM 제공 후 등록+_deptPinOptional 강제. 마감점검 cl1~cl8 순서 GM 확정 대기."
   }
 ]
