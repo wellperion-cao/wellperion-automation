@@ -2403,15 +2403,21 @@ function _deptRegCard(r, dept){
 function _deptRegUpdate(id, cat, payload, dept){
   if(!id) return;
 
-  var board = document.getElementById('deptRegBoard');
-  var card = board ? board.querySelector('[data-reg-card="' + id + '"]') : null;
-  var btn = card ? card.querySelector('[data-reg-save]') : null;
-  var originalBg, originalColor, originalBorder;
+  // 1. 클릭한 '저장' 버튼을 가장 확실하게 찾아냅니다.
+  var btn = null;
+  if (window.event && window.event.target && window.event.target.hasAttribute('data-reg-save')) {
+    btn = window.event.target;
+  } else {
+    var board = document.getElementById('deptRegBoard');
+    var card = board ? board.querySelector('[data-reg-card="' + id + '"]') : null;
+    btn = card ? card.querySelector('[data-reg-save]') : null;
+  }
 
-  // '상태(처리중/완료)' 변경인지, 아니면 '저장' 버튼 클릭인지 구분
-  var isStatusChange = (payload.status != null);
+  // 상태(접수/처리중/완료) 변경인지 검사
+  var isStatusChange = ('status' in payload);
+  var originalBg = '', originalColor = '', originalBorder = '';
 
-  // 저장 버튼을 누른 경우에만 초록색 피드백 적용 (화면 새로고침 방지)
+  // 2. 담당자 및 메모 저장일 경우에만 화면 깜빡임 없이 초록색 피드백 적용
   if (btn && !isStatusChange) {
     originalBg = btn.style.background;
     originalColor = btn.style.color;
@@ -2421,7 +2427,7 @@ function _deptRegUpdate(id, cat, payload, dept){
     btn.style.background = 'var(--green-bg)';
     btn.style.color = 'var(--green)';
     btn.style.borderColor = 'rgba(106,191,123,0.4)';
-    btn.disabled = true;
+    btn.style.pointerEvents = 'none'; // 중복 클릭 원천 차단
   }
 
   var body = {
@@ -2430,9 +2436,9 @@ function _deptRegUpdate(id, cat, payload, dept){
     category: cat
   };
   
-  if(payload.status   != null) body.status   = payload.status;
-  if(payload.assignee != null) body.assignee = payload.assignee;
-  if(payload.memo     != null) body.memo     = payload.memo;
+  if('status' in payload) body.status = payload.status;
+  if('assignee' in payload) body.assignee = payload.assignee;
+  if('memo' in payload) body.memo = payload.memo;
   
   var url = _wpKey() ? REG_API + '?key=' + encodeURIComponent(_wpKey()) : REG_API;
   
@@ -2446,39 +2452,40 @@ function _deptRegUpdate(id, cat, payload, dept){
     
     if(d && d.ok) {
       if (isStatusChange) {
-        // 1. 상태가 바뀌었을 때는 카드가 이동해야 하므로 화면 전체 새로고침
+        // 상태가 변경되었을 때만 카드가 이동해야 하므로 화면 갱신
         deptRegLoad(dept); 
       } else {
-        // 2. 담당자/메모만 저장한 경우 새로고침 없이 초록색 완료 표시만 유지
+        // ★ 담당자/메모 저장 시에는 화면을 절대 갱신하지 않고 성공 표시만 유지
         if (btn) {
           btn.textContent = '저장 완료 ✓';
-          // 2초 뒤에 원래 버튼 모양으로 자연스럽게 복구
           setTimeout(function() {
             btn.textContent = '저장';
             btn.style.background = originalBg;
             btn.style.color = originalColor;
             btn.style.borderColor = originalBorder;
-            btn.disabled = false;
+            btn.style.pointerEvents = 'auto';
           }, 2000);
         }
       }
     } else {
+      // 서버 저장 실패 시 버튼 원상복구
       if (btn && !isStatusChange) {
         btn.textContent = '저장';
         btn.style.background = originalBg;
         btn.style.color = originalColor;
         btn.style.borderColor = originalBorder;
-        btn.disabled = false;
+        btn.style.pointerEvents = 'auto';
       }
       alert('저장 실패: '+(d&&d.error ? d.error : '알 수 없는 오류')); 
     }
   }).catch(function(){
+    // 통신 오류 시 버튼 원상복구
     if (btn && !isStatusChange) {
       btn.textContent = '저장';
       btn.style.background = originalBg;
       btn.style.color = originalColor;
       btn.style.borderColor = originalBorder;
-      btn.disabled = false;
+      btn.style.pointerEvents = 'auto';
     }
     alert('네트워크 오류 — 저장되지 않았습니다.'); 
   });
