@@ -1251,5 +1251,17 @@
     "processed_at": "2026-06-17",
     "artifact": "GM 지적: O3에 회원셀프VOC 현황 잔존(O5 통합접수처로 합쳐졌는데 중복)+6종 접수 카드 내용 다 펼쳐져 난잡. GM 승인 디자인(컴팩트카드+펼침). 디자이너: O5에 카테고리별 건수요약줄(클릭필터)+컴팩트 2줄 카드(요약 28자)+[▼내용] 인라인 펼침(사진 포함)+칸반/가로스크롤 유지. regBoardLoad·담당·상태·GAS 무변경(렌더/CSS/펼침/요약만, 클라 캐시필터). O3 회원셀프VOC 블록+JS(o3Voc*) 전량 제거 dangling0, 재등록대시보드·home KPI카드 무손상. 스크립트11 무오류·렌더검증. 커밋 724c433c.",
     "next": "표류(완결)."
+  },
+  {
+    "task_id": "COO-2026-06-17-VOC-KEYFIX-O4",
+    "clevel": "coo",
+    "title": "[시우] 통합접수처 카드 키 정규화(깨짐 수정)+식별자 O5→O4 정정",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-06-17",
+    "processed_at": "2026-06-17",
+    "artifact": "GM 관찰: 통합접수처 접수칸 2개 버그 같음. 진단: 데이터는 실제 2건(분실물·휴회 status 접수)으로 정상이나, regBoardLoad가 d.data 무변환 전달+카드/요약/필터는 한글키(접수ID·카테고리·내용) 읽는데 실API는 영문키(regId·category·content)→전부 undefined→카드 깨짐·id충돌·집계0(디자이너 스텁테스트가 실API 영문키 불일치 놓침). 수정: _regNormalize() 영문→한글 1회매핑(공통12+extras 분실물/휴회), 액션 id=접수ID(=regId값)로 정합·펼침 regId유일. + 식별자 O5→O4(O4 공번 메움, 13곳+LEGACY O5→O4 안전망, 잔존 O5=무관 SURVEY토큰). node check·실데이터 2건 검증. 커밋 501f9976.",
+    "next": "표류(완결)."
   }
 ]
