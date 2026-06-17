@@ -1067,5 +1067,17 @@
     "title": "[시모] 멤버십 문의시트 진행상태 칸 GAS 셋업 (내일·GM 결정 대기)",
     "note": "전환 퍼널을 살리려면 멤버십 문의관리(26) \"26년 신규문의\" 탭에 진행상태 드롭다운(신규/응대/예약/방문/가입/이탈) 칸 추가 필요. 시모가 GAS(데이터검증)로 직접 셋업할지, 시포/GM이 수동으로 할지 GM 결정 대기. 결정나면 시모가 칸 추가는 가능(GAS). 입력 운영은 시포(CPO-...-STAGE-INPUT).",
     "next": "GM 결정 → 시모 직접이면 GAS 셋업 1회"
+  },
+  {
+    "task_id": "CMO-2026-06-17-FUNNEL-DASH-AUDIT-REORG",
+    "clevel": "cmo",
+    "title": "[시모] 마케팅 대시보드 문제점 감사 + 버그·속도 수정 + 전면 재배치(히어로/디테일 접기)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-06-17",
+    "processed_at": "2026-06-17",
+    "artifact": "GM CLI 지시(문제점 확인+UI/UX·속도 점검·진행). 2단계. 1단계 확정수정 6건(커밋 8bd3d24d push): ①채널표 누적전환열 부활(loadFunnelConversion이 없는 fc-rate id에 막혀 _fcData 통째 버려지던 버그 제거) ②영어카드 클릭0=EN_BUTTONS 키정합(membership-en 등)+팬텀키 제거 ③공간렌트·비즈파트너 클릭=실발행키 일치 확인(가짜0 아님) ④초기 4fetch 2왕복 직렬→Promise.all 병렬(_skipPeriodChildFetch 이중fetch방지) ⑤모바일 tc-matrix-wrap overflow-x ⑥등록/전환 색 초록(--f5) 통일. 2단계 전면재배치(커밋 27175b2e push, GM 승인 권장안): 히어로 신설(이번달문의/목표200/CSS진행막대/월말예상, renderHero·_flow·MONTHLY_INQUIRY_TARGET 재사용·새fetch0)→전환흐름 1세트 상단→유입출처+클릭→나머지(유형별·교차표·채널비교·주간/월별추세·진입점·실험로그) details 디테일 접힘+긴각주 ⓘ접기+스켈레톤 로딩. 감사=code-reviewer/designer, 구현=executor, 라이브 시각검증=playwright headless(데스크톱/모바일 스크린샷, 히어로144/200·72%·전환흐름·디테일접힘·데이터실채움·콘솔에러0 확인). node --check·스마트따옴표0·unpushed0 실측.",
+    "next": "표류(완결). 잔여 관찰(저위험·후속): ①모바일 390px 전환흐름 3번째카드 2행 줄바꿈(반응형 허용범위, GM 1줄선호 시 flex 조정) ②주/일 클릭 구간정의 불일치(period_breakdown 월요일 vs 클릭 롤링7일) ③죽은 KPI/드릴다운 코드(kpi-*·tc-* 없는id 대상 무동작) 정리 후보."
   }
 ]

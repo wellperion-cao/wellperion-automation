@@ -783,7 +783,7 @@
       <p><strong>2026-06-17</strong> ✅ [웰리] G1 오늘의 항로 고도화 — 상단 '주의 신호' 줄 신설(검수 승인대기·발행 대조대기 라이브)</p>
       <p><strong>2026-06-17</strong> ✅ [웰리] M5 검수 라이브 미반영 원인=푸시랙 박제 — 자동push 훅+부팅가드+T2 파이프라인 정본+재발방지(INC-006)</p>
       <p><strong>2026-06-17</strong> ✅ [시우] 지원부 점검 라우팅 버그 근본수정 — 한 곳 고치면 타부서 회귀</p>
-      <p><strong>2026-06-16</strong> ✅ [시모/웰리 직접] 마케팅 현황 대시보드 대개편 — 정보구조 정리·유형별 카드·기간연동·등록 누적추정 정직표기·UI</p>
+      <p><strong>2026-06-17</strong> ✅ [시모] 마케팅 대시보드 문제점 감사 + 버그·속도 수정 + 전면 재배치(히어로/디테일 접기)</p>
     </div>
 <!-- AUTO:LATEST-END -->
         <table>
@@ -808,6 +808,11 @@
     </details>
   </article>
   <script>
+  // 접근 토큰 헬퍼 — localStorage('wp_access_token') 에서 읽어 &key= 로 첨부.
+  // TOKEN_ENFORCE OFF 동안엔 key 없어도 동작하므로 없으면 빈 문자열로 무해하게 통과.
+  function _wpKey() { try { return localStorage.getItem('wp_access_token') || ''; } catch(e) { return ''; } }
+  function _wpUrl(base) { var k = _wpKey(); return k ? base + (base.indexOf('?') >= 0 ? '&' : '?') + 'key=' + encodeURIComponent(k) : base; }
+
   /* 🏢 ERP 홈 경영 현황 라이브 스트립 — 업무·결재 SSOT(todo_list) 1회 호출 집계.
      집계 기준은 S3 KPI 스트립(#s4KpiCards)과 1:1 동일(workActive·apprPend). 실제 가져온 숫자만 표기, 실패 시 "—"(가짜 금지). */
   (function loadErpHomeStrip(){
@@ -850,7 +855,7 @@
     function set(id, v){ var el = document.getElementById(id); if (el) el.textContent = v; }
     function curYM(){ var d = new Date(); return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2); }
     function fallbackList(){
-      fetch(SURVEY_URL + '?action=inquiry_list', { redirect:'follow' })
+      fetch(_wpUrl(SURVEY_URL + '?action=inquiry_list'), { redirect:'follow' })
         .then(function(r){ return r.json(); })
         .then(function(res){
           if (!res || !res.ok || !Array.isArray(res.data)) return; // 실패 시 "—" 유지
@@ -860,7 +865,7 @@
         })
         .catch(function(){ /* "—" 유지 */ });
     }
-    fetch(SURVEY_URL + '?action=period_breakdown', { redirect:'follow' })
+    fetch(_wpUrl(SURVEY_URL + '?action=period_breakdown'), { redirect:'follow' })
       .then(function(r){ return r.json(); })
       .then(function(res){
         if (res && res.ok && res.inquiries && typeof res.inquiries.month === 'number') {
@@ -1212,7 +1217,7 @@
   (function loadVocKpi(){
     var VOC_GAS = 'https://script.google.com/macros/s/AKfycbwk2XS1FND9V2xtXlWgsXzgA5p0FG7jVm6YKD74JK_ME_ZvHsNUUfGE5A_8p0X8VcF3gQ/exec';
     function setV(id, v){ var el = document.getElementById(id); if(el) el.textContent = v; }
-    fetch(VOC_GAS + '?action=voc_list&_=' + Date.now(), { redirect: 'follow' })
+    fetch(_wpUrl(VOC_GAS + '?action=voc_list&_=' + Date.now()), { redirect: 'follow' })
       .then(function(r){ return r.json(); })
       .then(function(d){
         if(!d || !d.ok) return;
@@ -1240,7 +1245,7 @@
     var board = document.getElementById('o3VocBoard');
     if(!board) return;
     board.innerHTML = '<div style="color:var(--dim);font-size:13px;padding:18px 4px;">불러오는 중…</div>';
-    fetch(_O3_VOC_API + '?action=voc_list&_=' + Date.now(), { redirect: 'follow' })
+    fetch(_wpUrl(_O3_VOC_API + '?action=voc_list&_=' + Date.now()), { redirect: 'follow' })
       .then(function(r){ return r.json(); })
       .then(function(d){
         if(!d || !d.ok){ board.innerHTML = '<div style="color:var(--warm,#e65b3f);font-size:13px;padding:18px 4px;">현황을 불러오지 못했습니다 — ' + _o3Esc(d && d.error || '') + '</div>'; return; }
@@ -1307,7 +1312,8 @@
     _o3VocPost({ action: 'voc_update', id: id, assignee: el ? el.value.trim() : '' }, '담당 배정됨');
   }
   function _o3VocPost(payload, okMsg){
-    fetch(_O3_VOC_API, { method: 'POST', redirect: 'follow', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(payload) })
+    var _p = Object.assign({}, payload); var _k = _wpKey(); if (_k) _p.key = _k;
+    fetch(_O3_VOC_API, { method: 'POST', redirect: 'follow', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(_p) })
       .then(function(r){ return r.json(); })
       .then(function(d){
         if(d && d.ok){ o3VocLoad(); } // 성공 후 보드 새로고침
