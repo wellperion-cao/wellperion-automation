@@ -1091,7 +1091,11 @@ async function approveTask(taskId, role) {
 async function rejectTask(taskId, role) {
   const pin = gateApproval(role, '반려');
   if (pin === null) return;
-  await signTask(taskId, role, 'reject', pin);
+  // 반려 사유 입력(2026-06-17 COO B2) — 담당자에게 업무현황 '내용'으로 표시됨. 빈값이면 반려 중단(사유 강제).
+  const reason = prompt('반려 사유를 입력하세요 (담당자에게 업무현황으로 표시됩니다):');
+  if (reason === null) return;                 // 취소 → 중단
+  if (!reason.trim()) { alert('반려 사유를 입력해야 합니다.'); return; }
+  await signTask(taskId, role, 'reject', pin, reason.trim());
 }
 
 /* 결재 리셋 (GM 전용) — 어느 단계서든 결재요청 전으로 되돌려 업무현황에서 수정 가능. GM PIN 서버검증 (2026-06-05 GM) */
@@ -1108,10 +1112,11 @@ async function resetTask(taskId) {
   } catch (e) { alert('연결 실패: ' + e.message); }
 }
 
-async function signTask(taskId, role, decision, pin) {
+async function signTask(taskId, role, decision, pin, reason) {
   const params = new URLSearchParams({
     action: 'todo_sign', id: taskId, role: role, decision: decision, signer: '페이지', pin: pin || ''
   });
+  if (reason) params.set('reason', reason);   // 반려 사유(2026-06-17 COO B2) — reject 시에만 전달
   try {
     const r = await fetch(TODO_API_URL + '?' + params.toString(), { redirect:'follow' });
     const res = await r.json();

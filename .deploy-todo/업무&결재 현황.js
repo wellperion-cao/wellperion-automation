@@ -1549,8 +1549,10 @@ function _processTodoAction(body) {
       if (approvalChanged && (currentApprovalStatus === '' || currentApprovalStatus === '대기')) {
         existing[approvalStatusIdx] = '대기';
       }
-      // 반려된 업무를 담당자가 수정·저장하면 자동 재상신 → 대기(부서장부터 재승인). 반려 시 싸인은 이미 초기화됨 (2026-06-05 GM)
-      if (newApproval && /반려/.test(currentApprovalStatus)) {
+      // 반려된 업무를 담당자가 결재요청을 실제로 변경/추가해 재상신할 때만 → 대기(부서장부터 재승인).
+      // approvalChanged 가드(2026-06-17 COO B4): 본문만 수정 저장 시 결재대기 부활 안 함 — '반려' 흔적 보존.
+      // 반려 시 싸인은 이미 초기화됨 (2026-06-05 GM). 의도적 재상신은 결재요청 값 변경으로 표명.
+      if (approvalChanged && /반려/.test(currentApprovalStatus)) {
         existing[approvalStatusIdx] = '대기';
       }
       sh.getRange(rowNum, 1, 1, TODO_HEADERS.length).setValues([existing]);
@@ -1618,9 +1620,17 @@ function _processTodoAction(body) {
         existing[TODO_HEADERS.indexOf('결재완료시각')] = '';
         existing[TODO_HEADERS.indexOf('결재요청')] = '';        // 결재선 잠금해제 → 업무현황 복귀
         existing[TODO_HEADERS.indexOf('결재상태')] = role + ' 반려';  // 반려 사실/주체 보존(재상신·수정 시 초기화됨)
+        // 반려 사유 기록(2026-06-17 COO B3): 신규 컬럼 회피 — 기존 '내용'에 append-only 로그.
+        //   업무현황 SSOT의 parseContent가 그대로 파싱·표시 → 담당자에게 반려 사유 노출. 기존 결재완료건 무영향.
+        var _reason = String(body.reason || '').trim();
+        if (_reason) {
+          var _cIdx = TODO_HEADERS.indexOf('내용');
+          var _prevContent = String(existing[_cIdx] || '');
+          existing[_cIdx] = _prevContent + (_prevContent ? '\n' : '') + '===반려이력===\n[' + _today() + ' ' + role + '] ' + _reason;
+        }
         existing[TODO_HEADERS.indexOf('수정일')] = now;
         sh.getRange(rowNum, 1, 1, TODO_HEADERS.length).setValues([existing]);
-        _notifyTelegram('❌ <b>[결재 반려]</b> ' + role + ' → 업무현황 복귀(수정·재상신 가능)\n📌 ' + (record['업무명']||'-') + '\n🆔 ' + id);
+        _notifyTelegram('❌ <b>[결재 반려]</b> ' + role + ' → 업무현황 복귀(수정·재상신 가능)\n📌 ' + (record['업무명']||'-') + (_reason ? '\n📝 사유: ' + _reason : '') + '\n🆔 ' + id);
         return _json({ ok: true, id: id, message: role + ' 반려 처리됨 — 업무현황 복귀', decision: 'reject' });
       }
 
