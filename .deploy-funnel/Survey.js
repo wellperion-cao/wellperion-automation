@@ -289,10 +289,41 @@ function _notifyTelegram(text) {
 }
 
 // ═══════════════════════════════════════════
+//  접근 게이트 (PII 보호 — TOKEN_ENFORCE 스위치)
+// ═══════════════════════════════════════════
+// ★ 불변식: TOKEN_ENFORCE 가 '1' 이 아니면(기본값) 모든 액션 통과 → 코드 배포만으로는 라이브 영향 0.
+//   GM 활성화 절차:
+//   ① ScriptProperties ACCESS_TOKEN = <강한 무작위 문자열> 설정
+//   ② 웹앱 새 버전 재배포
+//   ③ 직원 화면에서 열쇠 1회 입력 확인 (localStorage wp_access_token)
+//   ④ ScriptProperties TOKEN_ENFORCE = 1 설정 후 웹앱 새 버전 재배포 → 게이트 발효
+var _SURVEY_PUBLIC_ACTIONS = {
+  submit_inquiry: true,  // 방문자 문의 제출 — 토큰 면제
+  track_click:    true   // 클릭 추적 — 토큰 면제
+  // 그 외 inquiry_list / click_stats / funnel_conversion / period_breakdown /
+  // type_channel_breakdown / stage_funnel / weekly_trend 는 게이트 적용.
+};
+function _accessProp_(k) {
+  try { return PropertiesService.getScriptProperties().getProperty(k) || ''; } catch (e) { return ''; }
+}
+function _checkSurveyAccess_(action, key) {
+  if (_SURVEY_PUBLIC_ACTIONS[action]) return true;           // 공개 액션은 항상 통과
+  if (_accessProp_('TOKEN_ENFORCE') !== '1') return true;    // 스위치 OFF(기본) = 현행 무중단
+  var tok = _accessProp_('ACCESS_TOKEN');
+  if (!tok) return true;                                     // 토큰 미설정 = 안전을 위해 통과
+  return String(key || '') === tok;
+}
+
+// ═══════════════════════════════════════════
 //  액션 처리
 // ═══════════════════════════════════════════
 function _processAction(body) {
   const action = body.action || '';
+
+  // ─── 접근 게이트 확인 ───
+  if (!_checkSurveyAccess_(action, body.key)) {
+    return _json({ ok: false, error: 'unauthorized' });
+  }
 
   // ─── 클릭 추적 ───
   if (action === 'track_click') {

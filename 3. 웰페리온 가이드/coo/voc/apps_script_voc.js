@@ -281,8 +281,39 @@ function _vUpdate(body) {
   });
 }
 
+// ═══════════════════════════════════════════
+//  접근 게이트 (PII 보호 — TOKEN_ENFORCE 스위치)
+// ═══════════════════════════════════════════
+// ★ 불변식: TOKEN_ENFORCE 가 '1' 이 아니면(기본값) 모든 액션 통과 → 코드 배포만으로는 라이브 영향 0.
+//   GM 활성화 절차:
+//   ① ScriptProperties ACCESS_TOKEN = <강한 무작위 문자열> 설정
+//   ② 웹앱 새 버전 재배포
+//   ③ 직원 화면에서 열쇠 1회 입력 확인 (localStorage wp_access_token)
+//   ④ ScriptProperties TOKEN_ENFORCE = 1 설정 후 웹앱 새 버전 재배포 → 게이트 발효
+var _VOC_PUBLIC_ACTIONS = {
+  voc_submit: true,  // 회원 모바일 폼 제출 — 토큰 면제
+  voc_types:  true   // 유형·상태 목록 조회 — 토큰 면제
+  // 그 외 voc_list / voc_update 는 게이트 적용.
+};
+function _vAccessProp_(k) {
+  try { return PropertiesService.getScriptProperties().getProperty(k) || ''; } catch (e) { return ''; }
+}
+function _vCheckAccess_(action, key) {
+  if (_VOC_PUBLIC_ACTIONS[action]) return true;            // 공개 액션은 항상 통과
+  if (_vAccessProp_('TOKEN_ENFORCE') !== '1') return true; // 스위치 OFF(기본) = 현행 무중단
+  var tok = _vAccessProp_('ACCESS_TOKEN');
+  if (!tok) return true;                                   // 토큰 미설정 = 안전을 위해 통과
+  return String(key || '') === tok;
+}
+
 // 공용 라우터 (doGet/doPost)
 function _vProcess(action, body, params) {
+  // ─── 접근 게이트 확인 ───
+  var _gateKey = (body && body.key) || (params && params.key) || '';
+  if (!_vCheckAccess_(action, _gateKey)) {
+    return _vJson({ ok: false, error: 'unauthorized' });
+  }
+
   if (action === 'voc_submit') return _vSubmit(body);
   if (action === 'voc_list')   return _vList(params || body);
   if (action === 'voc_update') return _vUpdate(body);

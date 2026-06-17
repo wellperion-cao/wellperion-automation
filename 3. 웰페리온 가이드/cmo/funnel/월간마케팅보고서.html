@@ -324,6 +324,10 @@ a{color:var(--accent);text-decoration:none}
 <script>
 /* ── 상수 ── */
 const GAS_URL = "https://script.google.com/macros/s/AKfycbzdwSCCSSJ6JXLDoWuo7HG0JmBM2iy10TujFQ_O5JbTjnWaN7gOk-ddA4IAvsNfelg0xA/exec";
+// 접근 토큰 헬퍼 — localStorage('wp_access_token') 에서 읽어 &key= 로 첨부.
+// TOKEN_ENFORCE OFF 동안엔 key 없어도 동작하므로 없으면 빈 문자열로 무해하게 통과.
+function _wpKey() { try { return localStorage.getItem('wp_access_token') || ''; } catch(e) { return ''; } }
+function _wpUrl(base) { var k = _wpKey(); return k ? base + (base.indexOf('?') >= 0 ? '&' : '?') + 'key=' + encodeURIComponent(k) : base; }
 
 /* ── 유틸 ── */
 function fmtNum(n) {
@@ -360,7 +364,7 @@ function showError(msg) {
 async function loadPeriodBreakdown() {
   let data = null;
   try {
-    const resp = await fetch(GAS_URL + "?action=period_breakdown");
+    const resp = await fetch(_wpUrl(GAS_URL + "?action=period_breakdown"));
     if (!resp.ok) throw new Error("HTTP " + resp.status);
     data = await resp.json();
     if (!data.ok) throw new Error("GAS 응답 ok=false");
@@ -379,7 +383,7 @@ async function loadPeriodBreakdown() {
 async function loadFunnelConversion() {
   let data = null;
   try {
-    const resp = await fetch(GAS_URL + "?action=funnel_conversion");
+    const resp = await fetch(_wpUrl(GAS_URL + "?action=funnel_conversion"));
     if (!resp.ok) throw new Error("HTTP " + resp.status);
     data = await resp.json();
   } catch (e) {

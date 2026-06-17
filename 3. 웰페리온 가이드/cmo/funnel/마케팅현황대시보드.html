@@ -711,6 +711,10 @@ function toggleCard(header) {
 
 // ─── 문의→가입 전환율 자동 집계 ───────────────────────────────
 var FUNNEL_APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzdwSCCSSJ6JXLDoWuo7HG0JmBM2iy10TujFQ_O5JbTjnWaN7gOk-ddA4IAvsNfelg0xA/exec';
+// 접근 토큰 헬퍼 — localStorage('wp_access_token') 에서 읽어 &key= 로 첨부.
+// TOKEN_ENFORCE OFF 동안엔 key 없어도 동작하므로 없으면 빈 문자열로 무해하게 통과.
+function _wpKey() { try { return localStorage.getItem('wp_access_token') || ''; } catch(e) { return ''; } }
+function _wpUrl(base) { var k = _wpKey(); return k ? base + (base.indexOf('?') >= 0 ? '&' : '?') + 'key=' + encodeURIComponent(k) : base; }
 
 // ─── GM 설정 — 월 목표 (null = 미설정) ──────────────────────────
 var MONTHLY_INQUIRY_TARGET = 200;    // GM 설정(2026-06-13) — 월 신규 문의 목표 200건 고정
@@ -948,7 +952,7 @@ async function loadFunnelConversion() {
   if (FUNNEL_APPS_SCRIPT_URL.includes('DEPLOY_ID_HERE')) return;
 
   try {
-    var url = FUNNEL_APPS_SCRIPT_URL + '?action=funnel_conversion';
+    var url = _wpUrl(FUNNEL_APPS_SCRIPT_URL + '?action=funnel_conversion');
     var res  = await fetch(url, { redirect: 'follow' });
     if (!res.ok) return;
     var data = await res.json();
@@ -1051,7 +1055,7 @@ function clickDividerRow() {
 // ─── 실시간 클릭 집계 (click_stats) ───────────────────────────
 async function loadClickStats() {
   try {
-    var _csUrl = FUNNEL_APPS_SCRIPT_URL + '?action=click_stats';
+    var _csUrl = _wpUrl(FUNNEL_APPS_SCRIPT_URL + '?action=click_stats');
     if (_rangeFromTo.from && _rangeFromTo.to) {
       _csUrl += '&from=' + _rangeFromTo.from + '&to=' + _rangeFromTo.to;
     }
@@ -1135,7 +1139,7 @@ async function loadPeriodBreakdown(period) {
   }
 
   try {
-    var url = FUNNEL_APPS_SCRIPT_URL + '?action=period_breakdown';
+    var url = _wpUrl(FUNNEL_APPS_SCRIPT_URL + '?action=period_breakdown');
     var res = await fetch(url, { redirect: 'follow' });
     if (!res.ok) throw new Error('HTTP ' + res.status);
     var data = await res.json();
@@ -1281,7 +1285,7 @@ async function runCustomQuery() {
   if (convLbl)  convLbl.textContent  = rangeLabel + ' 신규 가입';
 
   try {
-    var url = FUNNEL_APPS_SCRIPT_URL + '?action=period_breakdown&from=' + from + '&to=' + to;
+    var url = _wpUrl(FUNNEL_APPS_SCRIPT_URL + '?action=period_breakdown&from=' + from + '&to=' + to);
     var res = await fetch(url, { redirect: 'follow' });
     if (!res.ok) throw new Error('HTTP ' + res.status);
     var data = await res.json();
@@ -1423,7 +1427,7 @@ function _loadMonthRange(year, month) {
 
   (async function() {
     try {
-      var url = FUNNEL_APPS_SCRIPT_URL + '?action=period_breakdown&from=' + from + '&to=' + to;
+      var url = _wpUrl(FUNNEL_APPS_SCRIPT_URL + '?action=period_breakdown&from=' + from + '&to=' + to);
       var res = await fetch(url, { redirect: 'follow' });
       if (!res.ok) throw new Error('HTTP ' + res.status);
       var data = await res.json();
@@ -1529,7 +1533,7 @@ function renderWeeklyTrend(weeks) {
 // ─── 주간 추세 fetch ─────────────────────────────────────────────────
 async function loadWeeklyTrend() {
   try {
-    var url = FUNNEL_APPS_SCRIPT_URL + '?action=weekly_trend';
+    var url = _wpUrl(FUNNEL_APPS_SCRIPT_URL + '?action=weekly_trend');
     var res = await fetch(url, { redirect: 'follow' });
     if (!res.ok) throw new Error('HTTP ' + res.status);
     var data = await res.json();
@@ -1570,7 +1574,7 @@ async function loadMonthlyTrend() {
     tasks.push((function(mm0) {
       var mm = ('0' + mm0).slice(-2);
       var last = ('0' + new Date(y, mm0, 0).getDate()).slice(-2);
-      var url = FUNNEL_APPS_SCRIPT_URL + '?action=period_breakdown&from=' + y + '-' + mm + '-01&to=' + y + '-' + mm + '-' + last;
+      var url = _wpUrl(FUNNEL_APPS_SCRIPT_URL + '?action=period_breakdown&from=' + y + '-' + mm + '-01&to=' + y + '-' + mm + '-' + last);
       return fetch(url, { redirect: 'follow' })
         .then(function(r) { return r.json(); })
         .then(function(d) { var c = d && d.custom; return { m: mm0, inq: (c && c.inquiries) || 0, conv: (c && c.conversion && c.conversion.converted) || 0 }; })
@@ -1968,7 +1972,7 @@ async function loadTypeChannel() {
   if (FUNNEL_APPS_SCRIPT_URL.includes('DEPLOY_ID_HERE')) { _tcStub(); return; }
 
   try {
-    var url = FUNNEL_APPS_SCRIPT_URL + '?action=type_channel_breakdown';
+    var url = _wpUrl(FUNNEL_APPS_SCRIPT_URL + '?action=type_channel_breakdown');
     if (_rangeFromTo.from && _rangeFromTo.to) { url += '&from=' + _rangeFromTo.from + '&to=' + _rangeFromTo.to; }
     var res = await fetch(url, { redirect: 'follow' });
     if (!res.ok) { _tcStub('HTTP ' + res.status + ' — 재배포 후 점등됩니다'); return; }
