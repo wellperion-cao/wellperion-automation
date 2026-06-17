@@ -32,6 +32,88 @@ var VOC_STATUS_COLORS = {
 };
 var VOC_PHOTO_FOLDER_NAME = 'VOC_Photos';
 
+// ─── 통합 접수처 상수 ───
+// REG_CATEGORIES: 카테고리 라우팅 SSOT. dept 변경 시 여기 한 줄만 수정.
+var REG_CATEGORIES = [
+  { key: 'lost',     label: '분실물 접수',         sheet: '접수_분실물',   dept: '운영부' },
+  { key: 'facility', label: '시설물 고장 접수',     sheet: '접수_시설고장', dept: '시설부' },
+  { key: 'clean',    label: '청결 이슈 접수',       sheet: '접수_청결',     dept: '지원부' },
+  { key: 'leave',    label: '휴회 접수',            sheet: '접수_휴회',     dept: '운영부' },
+  { key: 'praise',   label: '직원·강사 칭찬합니다', sheet: '접수_칭찬',     dept: '운영부' },
+  { key: 'voice',    label: '직원·강사 쓴소리합니다', sheet: '접수_쓴소리', dept: '운영부' }
+  // praise/voice → dept: '인사부' 로 바꿀 때 위 두 줄만 수정
+];
+
+// 공통 12컬럼 (영문키: 한글헤더)
+var REG_COMMON_HEADERS = [
+  { key: 'regId',     label: '접수ID'   },
+  { key: 'category',  label: '카테고리' },
+  { key: 'createdAt', label: '접수일시' },
+  { key: 'name',      label: '이름'     },
+  { key: 'contact',   label: '연락처'   },
+  { key: 'loc',       label: '위치'     },
+  { key: 'content',   label: '내용'     },
+  { key: 'photoUrl',  label: '사진URL'  },
+  { key: 'status',    label: '상태'     },
+  { key: 'assignee',  label: '담당'     },
+  { key: 'memo',      label: '처리메모' },
+  { key: 'dept',      label: '부서'     }
+];
+
+// 카테고리별 추가 컬럼 (영문키: 한글헤더)
+var REG_EXTRA_HEADERS = {
+  lost:     [
+    { key: 'itemName',   label: '분실물품'   },
+    { key: 'lostWhen',   label: '분실시점'   },
+    { key: 'keepWhere',  label: '보관요청'   }
+  ],
+  facility: [
+    { key: 'equipName',  label: '고장설비'     },
+    { key: 'severity',   label: '위험도'       },
+    { key: 'usable',     label: '사용가능여부' }
+  ],
+  clean:    [
+    { key: 'issueKind',  label: '유형'   },
+    { key: 'urgency',    label: '시급도' }
+  ],
+  leave:    [
+    { key: 'memberNo',   label: '회원번호'   },
+    { key: 'startDate',  label: '휴회시작일' },
+    { key: 'period',     label: '희망기간'   },
+    { key: 'reason',     label: '사유'       }
+  ],
+  praise:   [
+    { key: 'targetStaff', label: '대상직원·강사' },
+    { key: 'episode',     label: '사례'          }
+  ],
+  voice:    [
+    { key: 'targetStaff',    label: '대상직원·강사' },
+    { key: 'episode',        label: '사례'          },
+    { key: 'anonymousPref',  label: '익명희망'      }
+  ]
+};
+
+// ─── 통합 접수처 헬퍼 ───
+// 키로 카테고리 객체 반환 (없으면 null)
+function _regCatByKey(key) {
+  for (var i = 0; i < REG_CATEGORIES.length; i++) {
+    if (REG_CATEGORIES[i].key === key) return REG_CATEGORIES[i];
+  }
+  return null;
+}
+// 라벨로 카테고리 객체 반환 (없으면 null)
+function _regCatByLabel(label) {
+  for (var i = 0; i < REG_CATEGORIES.length; i++) {
+    if (REG_CATEGORIES[i].label === label) return REG_CATEGORIES[i];
+  }
+  return null;
+}
+// 카테고리 키에 대한 전체 헤더 배열 반환 ({key,label}[])
+function _regHeadersFor(catKey) {
+  var extra = REG_EXTRA_HEADERS[catKey] || [];
+  return REG_COMMON_HEADERS.concat(extra);
+}
+
 // ─── ScriptProperties 헬퍼 ───
 function _vprop(key) {
   return PropertiesService.getScriptProperties().getProperty(key) || '';
@@ -85,6 +167,59 @@ function _vGetSheet() {
   widths.forEach(function (w, i) { sh.setColumnWidth(i + 1, w); });
   sh.setFrozenRows(1);
   return sh;
+}
+
+// ─── 통합 접수처 시트 확보 (카테고리 키로 접근) ───
+// 기존 _vGetSheet의 자동생성·서식 로직 재사용, 헤더만 카테고리별로 다름.
+function _regGetSheet(catKey) {
+  var cat = _regCatByKey(catKey);
+  if (!cat) throw new Error('알 수 없는 카테고리 키: ' + catKey);
+  var headers = _regHeadersFor(catKey).map(function (h) { return h.label; });
+  var ss = _vGetSpreadsheet();
+  var sh = ss.getSheetByName(cat.sheet);
+  if (sh) {
+    if (sh.getLastRow() < 1) {
+      sh.getRange(1, 1, 1, headers.length).setValues([headers]);
+    }
+    return sh;
+  }
+  sh = ss.insertSheet(cat.sheet);
+  sh.getRange(1, 1, 1, headers.length).setValues([headers]);
+  sh.getRange(1, 1, 1, headers.length)
+    .setFontWeight('bold')
+    .setBackground('#B79F8A')
+    .setFontColor('#ffffff');
+  sh.setFrozenRows(1);
+  return sh;
+}
+
+// ─── 통합 접수처 시트 → 객체 배열 (헤더 배열({key,label}[]) 인자) ───
+function _regReadAll(sh, headers) {
+  var last = sh.getLastRow();
+  if (last < 2) return [];
+  var data = sh.getRange(2, 1, last - 1, headers.length).getValues();
+  return data.map(function (row) {
+    var obj = {};
+    headers.forEach(function (h, i) {
+      var v = row[i];
+      if (v instanceof Date) {
+        v = Utilities.formatDate(v, 'Asia/Seoul', 'yyyy-MM-dd HH:mm:ss');
+      }
+      obj[h.key] = v;
+    });
+    return obj;
+  });
+}
+
+// ─── 통합 접수처 상태 셀 색상 (헤더 배열 기준) ───
+function _regApplyStatusColor(sh, row, status, headers) {
+  var idx = -1;
+  for (var i = 0; i < headers.length; i++) {
+    if (headers[i].key === 'status') { idx = i + 1; break; }
+  }
+  if (idx < 0) return;
+  var color = VOC_STATUS_COLORS[status] || '#ffffff';
+  sh.getRange(row, idx).setBackground(color).setFontColor('#ffffff');
 }
 
 // ─── 시트 → 객체 배열 ───
@@ -282,6 +417,183 @@ function _vUpdate(body) {
 }
 
 // ═══════════════════════════════════════════
+//  통합 접수처 액션
+// ═══════════════════════════════════════════
+
+// ─── reg_submit — 통합 접수처 제출 (public) ───
+function _regSubmit(body) {
+  // 카테고리 해석: 키 우선, 없으면 라벨로 fallback
+  var catRaw = String(body.category || '').trim();
+  var cat = _regCatByKey(catRaw) || _regCatByLabel(catRaw);
+  if (!cat) {
+    return _vJson({ ok: false, error: '알 수 없는 카테고리입니다: ' + catRaw });
+  }
+
+  // 이름·연락처 필수
+  var name    = String(body.name    || '').trim();
+  var contact = String(body.contact || '').trim();
+  if (!name || !contact) {
+    return _vJson({ ok: false, error: '이름과 연락처는 필수입니다.' });
+  }
+
+  var loc     = String(body.loc     || body.location || '').trim();
+  var content = String(body.content || '').trim();
+  var photo   = body.photo || body.file || body.base64 || '';
+  var fileName = body.fileName || '';
+  var mimeType = body.mimeType || 'image/jpeg';
+
+  // 사진 업로드 (실패해도 접수 진행)
+  var photoUrl = '';
+  if (photo) {
+    try { photoUrl = _vUploadPhoto(photo, fileName, mimeType); } catch (e) { photoUrl = ''; }
+  }
+
+  var headers = _regHeadersFor(cat.key); // [{key,label}]
+  var id  = _vGenId();
+  var now = _vNow();
+
+  // 행 구성 — 공통 컬럼 채우기
+  var row = new Array(headers.length).fill('');
+  var _set = function (key, val) {
+    for (var i = 0; i < headers.length; i++) {
+      if (headers[i].key === key) { row[i] = val; return; }
+    }
+  };
+  _set('regId',    id);
+  _set('category', cat.label);
+  _set('createdAt', now);
+  _set('name',     name);
+  _set('contact',  contact);
+  _set('loc',      loc);
+  _set('content',  content);
+  _set('photoUrl', photoUrl);
+  _set('status',   '접수');
+  _set('dept',     cat.dept);
+
+  // extras — 영문키로 body에서 꺼내 한글헤더 위치에 삽입
+  var extras = REG_EXTRA_HEADERS[cat.key] || [];
+  extras.forEach(function (h) {
+    if (body[h.key] !== undefined) _set(h.key, String(body[h.key]));
+  });
+
+  var sh = _regGetSheet(cat.key);
+  var newRow = sh.getLastRow() + 1;
+  sh.getRange(newRow, 1, 1, row.length).setValues([row]);
+  _regApplyStatusColor(sh, newRow, '접수', headers);
+
+  // 텔레그램 알림
+  _vNotifyTelegram(
+    '📋 <b>[통합 접수처]</b> ' + cat.label + '\n' +
+    '부서: ' + cat.dept + '\n' +
+    '이름: ' + name + '\n' +
+    '위치: ' + (loc || '-') + '\n' +
+    '내용: ' + (content ? content.slice(0, 100) : '-') +
+    (photoUrl ? '\n📷 사진 첨부' : '') +
+    '\n🆔 ' + id
+  );
+
+  return _vJson({ ok: true, id: id, dept: cat.dept });
+}
+
+// ─── reg_list — 통합 접수처 목록 조회 (GATED) ───
+function _regList(params) {
+  var filterCat    = String((params && params.category) || '').trim();
+  var filterDept   = String((params && params.dept)     || '').trim();
+  var filterStatus = String((params && params.status)   || '').trim();
+
+  var all = [];
+
+  // category 지정 시 해당 시트만, 없으면 전 시트
+  var targets = filterCat ? [_regCatByKey(filterCat) || _regCatByLabel(filterCat)] : REG_CATEGORIES;
+  targets.forEach(function (cat) {
+    if (!cat) return;
+    var sh;
+    try { sh = _regGetSheet(cat.key); } catch (e) { return; }
+    var headers = _regHeadersFor(cat.key);
+    var rows = _regReadAll(sh, headers);
+    rows.forEach(function (r) { all.push(r); });
+  });
+
+  // 필터
+  if (filterDept)   all = all.filter(function (r) { return String(r.dept   || '') === filterDept;   });
+  if (filterStatus) all = all.filter(function (r) { return String(r.status || '') === filterStatus; });
+  if (filterCat) {
+    var catObj = _regCatByKey(filterCat) || _regCatByLabel(filterCat);
+    if (catObj) all = all.filter(function (r) { return String(r.category || '') === catObj.label; });
+  }
+
+  // 접수일시 desc
+  all.sort(function (a, b) {
+    return String(b.createdAt || '') > String(a.createdAt || '') ? 1 : -1;
+  });
+
+  return _vJson({ ok: true, count: all.length, data: all });
+}
+
+// ─── reg_update — 통합 접수처 갱신 (GATED) ───
+function _regUpdate(body) {
+  var id = String(body.id || body['접수ID'] || '').trim();
+  if (!id) return _vJson({ ok: false, error: 'id 필수' });
+
+  var newStatus = String(body.status || '').trim();
+  if (newStatus && VOC_STATUSES.indexOf(newStatus) < 0) {
+    return _vJson({ ok: false, error: '상태는 접수|처리중|완료 만 허용' });
+  }
+
+  // category 지정 시 해당 시트만, 없으면 전 시트 순회
+  var catRaw = String(body.category || '').trim();
+  var targets = catRaw
+    ? [_regCatByKey(catRaw) || _regCatByLabel(catRaw)]
+    : REG_CATEGORIES;
+
+  for (var i = 0; i < targets.length; i++) {
+    var cat = targets[i];
+    if (!cat) continue;
+    var headers = _regHeadersFor(cat.key);
+    var sh;
+    try { sh = _regGetSheet(cat.key); } catch (e) { continue; }
+    var rowNum = _vFindRow(sh, id);
+    if (rowNum < 0) continue;
+
+    // 현재 행 읽기
+    var existing = sh.getRange(rowNum, 1, 1, headers.length).getValues()[0];
+    var _idx = function (key) {
+      for (var j = 0; j < headers.length; j++) {
+        if (headers[j].key === key) return j;
+      }
+      return -1;
+    };
+
+    if (newStatus) existing[_idx('status')] = newStatus;
+
+    var assignee = body.assignee !== undefined ? body.assignee : undefined;
+    if (assignee !== undefined) {
+      var ai = _idx('assignee');
+      if (ai >= 0) existing[ai] = String(assignee);
+    }
+    var memo = body.memo !== undefined ? body.memo : undefined;
+    if (memo !== undefined) {
+      var mi = _idx('memo');
+      if (mi >= 0) existing[mi] = String(memo);
+    }
+
+    sh.getRange(rowNum, 1, 1, headers.length).setValues([existing]);
+    if (newStatus) _regApplyStatusColor(sh, rowNum, newStatus, headers);
+
+    var statusIdx = _idx('status');
+    var assigneeIdx = _idx('assignee');
+    return _vJson({
+      ok: true, id: id,
+      status:   statusIdx  >= 0 ? existing[statusIdx]  : '',
+      assignee: assigneeIdx >= 0 ? existing[assigneeIdx] : '',
+      message: '접수건이 갱신되었습니다.'
+    });
+  }
+
+  return _vJson({ ok: false, error: '해당 접수ID를 찾을 수 없습니다: ' + id });
+}
+
+// ═══════════════════════════════════════════
 //  접근 게이트 (PII 보호 — TOKEN_ENFORCE 스위치)
 // ═══════════════════════════════════════════
 // ★ 불변식: TOKEN_ENFORCE 가 '1' 이 아니면(기본값) 모든 액션 통과 → 코드 배포만으로는 라이브 영향 0.
@@ -291,9 +603,11 @@ function _vUpdate(body) {
 //   ③ 직원 화면에서 열쇠 1회 입력 확인 (localStorage wp_access_token)
 //   ④ ScriptProperties TOKEN_ENFORCE = 1 설정 후 웹앱 새 버전 재배포 → 게이트 발효
 var _VOC_PUBLIC_ACTIONS = {
-  voc_submit: true,  // 회원 모바일 폼 제출 — 토큰 면제
-  voc_types:  true   // 유형·상태 목록 조회 — 토큰 면제
-  // 그 외 voc_list / voc_update 는 게이트 적용.
+  voc_submit:  true,  // 회원 모바일 폼 제출 — 토큰 면제
+  voc_types:   true,  // 유형·상태 목록 조회 — 토큰 면제
+  reg_submit:  true   // 통합 접수처 제출 — 토큰 면제
+  // reg_list / reg_update 는 PII 포함 — 절대 public 금지.
+  // voc_list / voc_update 도 게이트 적용.
 };
 function _vAccessProp_(k) {
   try { return PropertiesService.getScriptProperties().getProperty(k) || ''; } catch (e) { return ''; }
@@ -314,10 +628,38 @@ function _vProcess(action, body, params) {
     return _vJson({ ok: false, error: 'unauthorized' });
   }
 
+  // ── 통합 접수처 액션 ──
+  if (action === 'reg_submit') return _regSubmit(body);
+  if (action === 'reg_list')   return _regList(params || body);
+  if (action === 'reg_update') return _regUpdate(body);
+
+  // ── 레거시 VOC 액션 (하위호환) ──
   if (action === 'voc_submit') return _vSubmit(body);
-  if (action === 'voc_list')   return _vList(params || body);
-  if (action === 'voc_update') return _vUpdate(body);
-  if (action === 'voc_types')  return _vJson({ ok: true, types: VOC_TYPES, statuses: VOC_STATUSES });
+  if (action === 'voc_update') {
+    // 레거시 시트 먼저 시도, 없으면 전 reg 시트 순회
+    var legacySh = _vGetSheet();
+    var legacyRow = _vFindRow(legacySh, body.id || body['접수ID'] || '');
+    if (legacyRow >= 0) return _vUpdate(body);
+    return _regUpdate(body);
+  }
+  if (action === 'voc_list') {
+    // 레거시 시트 결과 + 전 reg 시트 결과 병합
+    var legacyResult = JSON.parse(_vList(params || body).getContent());
+    var regResult    = JSON.parse(_regList(params || body).getContent());
+    var merged = (legacyResult.data || []).concat(regResult.data || []);
+    merged.sort(function (a, b) {
+      var ta = String(a['접수일시'] || a.createdAt || '');
+      var tb = String(b['접수일시'] || b.createdAt || '');
+      return tb > ta ? 1 : -1;
+    });
+    return _vJson({ ok: true, count: merged.length, data: merged });
+  }
+  if (action === 'voc_types')  return _vJson({
+    ok: true,
+    types:      VOC_TYPES,
+    statuses:   VOC_STATUSES,
+    categories: REG_CATEGORIES
+  });
   return _vJson({ ok: false, error: '알 수 없는 action: ' + action });
 }
 
@@ -328,7 +670,8 @@ function doGet(e) {
   try {
     var action = (e && e.parameter && e.parameter.action) || '';
     // POST redirect 우회: voc_ write action 이 GET 으로 와도 본문 병합 후 처리
-    if (action === 'voc_submit' || action === 'voc_update') {
+    if (action === 'voc_submit' || action === 'voc_update' ||
+        action === 'reg_submit' || action === 'reg_update') {
       var body = {};
       Object.keys(e.parameter).forEach(function (k) { body[k] = e.parameter[k]; });
       if (e.postData && e.postData.contents) {

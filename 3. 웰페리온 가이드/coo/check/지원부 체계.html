@@ -555,6 +555,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   <button class="tab" onclick="switchTab('manual')">매뉴얼</button>
   <button class="tab" onclick="switchTab('check-m','lock')">점검(남) 🔒</button>
   <button class="tab" onclick="switchTab('check-f','lock')">점검(여) 🔒</button>
+  <button class="tab" onclick="switchTab('reg')">접수 현황</button>
   <div style="display:flex;gap:4px;margin-left:auto;">
     <button class="util-btn print-btn" onclick="printCurrentTab()">인쇄</button>
     <button class="util-btn report-btn" onclick="copyReport()">보고용</button>
@@ -969,6 +970,12 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 <!-- ── 항목 관리 탭 (매뉴얼 탭으로 통합 이전 · 2026-05-29) ──
      폼/목록/유틸 UI는 매뉴얼 탭(tab-manual)으로 이동. 빈 패널 유지(switchTab 참조 보존). -->
 <div id="tab-manage" class="content hidden"></div>
+
+<div id="tab-reg" class="content hidden">
+  <h2 style="font-size:20px;margin-bottom:6px;">접수 현황</h2>
+  <p style="font-size:13px;color:var(--dim);margin-bottom:14px;line-height:1.6;">회원 접수 (청결 이슈) — 상태별 접수건을 확인하고 담당·처리메모를 업데이트합니다.</p>
+  <div id="deptRegBoard"><div class="loading">불러오는 중...</div></div>
+</div>
 
 <script>
 const API_URL = 'https://script.google.com/macros/s/AKfycbyXw4ZaA6hLK567GC7NY33Y8SvNPW6kNtrXFz2OsSdFVBmCnZP-2oD-RQiX0IpekBu1/exec';
@@ -4150,6 +4157,8 @@ function switchTab(tab, opts){
   document.getElementById('tab-check-f').classList.toggle('hidden',tab!=='check-f');
   document.getElementById('tab-admin').classList.toggle('hidden',tab!=='admin');
   document.getElementById('tab-manage').classList.toggle('hidden',tab!=='manage');
+  document.getElementById('tab-reg').classList.toggle('hidden',tab!=='reg');
+  if(tab==='reg'){deptRegLoad('지원부');}
   // Show correct submit bar
   document.getElementById('submitBarM').style.display=(tab==='check-m')?'flex':'none';
   document.getElementById('submitBarF').style.display=(tab==='check-f')?'flex':'none';
@@ -5290,6 +5299,157 @@ async function renderIssuelog(){
   }catch(e){
     el.innerHTML='<div style="padding:12px;color:var(--red);font-size:13px;">이슈대장 로드 실패</div>';
   }
+}
+</script>
+
+<script>
+/* ═══════════════════════════════════════════════
+   접수 현황 탭 — REG_API 전용 (다른 API와 혼용 금지)
+   ═══════════════════════════════════════════════ */
+var REG_API='https://script.google.com/macros/s/AKfycbwk2XS1FND9V2xtXlWgsXzgA5p0FG7jVm6YKD74JK_ME_ZvHsNUUfGE5A_8p0X8VcF3gQ/exec';
+
+/* ── 접근 게이트 헬퍼 ── */
+function _wpKey(){ try{ return localStorage.getItem('wp_access_token')||''; }catch(e){ return ''; } }
+function _wpUrl(base){ var k=_wpKey(); return k?base+(base.indexOf('?')>=0?'&':'?')+'key='+encodeURIComponent(k):base; }
+var _wpPrompting=false;
+function _wpPromptKey(retry){ if(_wpPrompting) return false; _wpPrompting=true; try{ var k=window.prompt((retry?'입력한 접근 열쇠가 올바르지 않습니다.\n\n':'회원 정보 조회에는 접근 열쇠가 필요합니다.\n\n')+'발급받은 접근 열쇠를 입력하세요:',''); if(k===null){ _wpPrompting=false; return false; } k=String(k).trim(); if(!k){ _wpPrompting=false; return false; } localStorage.setItem('wp_access_token',k); _wpPrompting=false; location.reload(); return true; }catch(e){ _wpPrompting=false; return false; } }
+function _wpGate(json){ if(json&&json.ok===false&&json.error==='unauthorized'){ _wpPromptKey(!!_wpKey()); return true; } return false; }
+
+/* ── HTML 이스케이프 ── */
+function _regEsc(s){ if(s==null) return ''; return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+/* ── 상태 배지 색상 ── */
+function _regStatusColor(s){
+  if(s==='완료') return 'background:var(--green-bg);color:var(--green);border:1px solid rgba(106,191,123,0.3)';
+  if(s==='처리중') return 'background:var(--yellow-bg);color:var(--yellow);border:1px solid rgba(230,200,78,0.3)';
+  return 'background:var(--accent-bg);color:var(--accent);border:1px solid rgba(183,159,138,0.3)';
+}
+
+/* ── reg_update POST ── */
+function regUpdate(id, category, fields){
+  var body={id:id,category:category};
+  if(fields.status!=null) body.status=fields.status;
+  if(fields.assignee!=null) body.assignee=fields.assignee;
+  if(fields.memo!=null) body.memo=fields.memo;
+  fetch(_wpUrl(REG_API),{
+    method:'POST',
+    headers:{'Content-Type':'text/plain;charset=UTF-8'},
+    body:JSON.stringify(body),
+    redirect:'follow'
+  }).then(function(r){ return r.json(); }).then(function(d){
+    if(_wpGate(d)) return;
+    deptRegLoad('지원부');
+  }).catch(function(){
+    deptRegLoad('지원부');
+  });
+}
+
+/* ── 카드 렌더 ── */
+function _regRenderCard(row){
+  var id=_regEsc(row['접수ID']||'');
+  var cat=_regEsc(row['카테고리']||'');
+  var dt=_regEsc(row['접수일시']||'');
+  var name=_regEsc(row['이름']||'');
+  var phone=_regEsc(row['연락처']||'');
+  var loc=_regEsc(row['위치']||'');
+  var content=_regEsc(row['내용']||'');
+  var photo=row['사진URL']||'';
+  var status=row['상태']||'접수';
+  var assignee=_regEsc(row['담당']||'');
+  var memo=_regEsc(row['처리메모']||'');
+  var type=_regEsc(row['유형']||'');
+  var urgency=_regEsc(row['시급도']||'');
+  var rawId=row['접수ID']||'';
+  var rawCat=row['카테고리']||'';
+
+  var extra='';
+  if(type) extra+='<span style="font-size:11px;background:var(--blue-bg);color:var(--blue);border-radius:6px;padding:2px 7px;margin-right:4px;">'+type+'</span>';
+  if(urgency) extra+='<span style="font-size:11px;background:var(--red-bg);color:var(--red);border-radius:6px;padding:2px 7px;">'+urgency+'</span>';
+
+  var photoHtml='';
+  if(photo){
+    photoHtml='<div style="margin-top:8px;"><a href="'+_regEsc(photo)+'" target="_blank" rel="noopener" style="font-size:12px;color:var(--blue);">📷 사진 보기</a></div>';
+  }
+
+  var statusOpts=['접수','처리중','완료'].map(function(s){
+    return '<option value="'+_regEsc(s)+'"'+(s===status?' selected':'')+'>'+_regEsc(s)+'</option>';
+  }).join('');
+
+  var cardId='reg-card-'+rawId.replace(/[^a-zA-Z0-9_-]/g,'_');
+
+  return '<div id="'+cardId+'" style="background:var(--paper);border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin-bottom:10px;">'
+    +'<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap;">'
+    +'<span style="font-size:12px;font-weight:700;padding:3px 10px;border-radius:8px;'+_regStatusColor(status)+'">'+_regEsc(status)+'</span>'
+    +'<span style="font-size:13px;font-weight:700;color:var(--accent);">'+cat+'</span>'
+    +(extra?'<span>'+extra+'</span>':'')
+    +'<span style="font-size:11px;color:var(--dim);margin-left:auto;">'+dt+'</span>'
+    +'</div>'
+    +'<div style="font-size:14px;font-weight:600;margin-bottom:4px;">'+name+(phone?' <span style="font-size:12px;color:var(--dim);font-weight:400;">'+phone+'</span>':'')+'</div>'
+    +(loc?'<div style="font-size:12px;color:var(--dim);margin-bottom:4px;">📍 '+loc+'</div>':'')
+    +'<div style="font-size:13px;line-height:1.6;margin-bottom:8px;">'+content+'</div>'
+    +photoHtml
+    +'<div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;">'
+    +'<select onchange="regUpdate(\''+_regEsc(rawId)+'\',\''+_regEsc(rawCat)+'\',{status:this.value})" style="background:var(--bg);border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:8px;font-size:13px;font-family:inherit;">'
+    +statusOpts
+    +'</select>'
+    +'<input type="text" placeholder="담당자" value="'+assignee+'" style="background:var(--bg);border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:8px;font-size:13px;font-family:inherit;width:100px;" '
+    +'onchange="regUpdate(\''+_regEsc(rawId)+'\',\''+_regEsc(rawCat)+'\',{assignee:this.value})">'
+    +'<input type="text" placeholder="처리메모" value="'+memo+'" style="background:var(--bg);border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:8px;font-size:13px;font-family:inherit;flex:1;min-width:120px;" '
+    +'onchange="regUpdate(\''+_regEsc(rawId)+'\',\''+_regEsc(rawCat)+'\',{memo:this.value})">'
+    +'</div>'
+    +'</div>';
+}
+
+/* ── 보드 렌더 ── */
+function _regRenderBoard(data){
+  var groups={접수:[],처리중:[],완료:[]};
+  (data||[]).forEach(function(row){
+    var s=row['상태']||'접수';
+    if(!groups[s]) groups[s]=[];
+    groups[s].push(row);
+  });
+  var order=['접수','처리중','완료'];
+  var html='';
+  order.forEach(function(s){
+    var rows=groups[s]||[];
+    var color=s==='완료'?'var(--green)':s==='처리중'?'var(--yellow)':'var(--accent)';
+    html+='<div style="margin-bottom:20px;">'
+      +'<div style="font-size:13px;font-weight:700;color:'+color+';margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid var(--border);">'
+      +_regEsc(s)+' <span style="font-size:12px;font-weight:400;color:var(--dim);">('+rows.length+'건)</span></div>';
+    if(rows.length===0){
+      html+='<div style="font-size:13px;color:var(--dim);padding:10px 0;">해당 건 없음</div>';
+    } else {
+      rows.forEach(function(row){ html+=_regRenderCard(row); });
+    }
+    html+='</div>';
+  });
+  return html;
+}
+
+/* ── 메인 로드 함수 ── */
+function deptRegLoad(dept){
+  var el=document.getElementById('deptRegBoard');
+  if(!el) return;
+  el.innerHTML='<div class="loading">불러오는 중...</div>';
+  var url=_wpUrl(REG_API+'?action=reg_list&dept='+encodeURIComponent(dept)+'&_='+Date.now());
+  fetch(url,{redirect:'follow'})
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      if(_wpGate(d)) return;
+      if(!d||!d.ok){
+        el.innerHTML='<div style="padding:20px;color:var(--red);font-size:13px;">데이터 로드 실패: '+_regEsc((d&&d.error)||'알 수 없는 오류')+'</div>';
+        return;
+      }
+      var data=d.data||[];
+      if(data.length===0){
+        el.innerHTML='<div style="padding:20px;color:var(--dim);font-size:14px;text-align:center;">접수된 건이 없습니다.</div>';
+        return;
+      }
+      el.innerHTML=_regRenderBoard(data);
+    })
+    .catch(function(err){
+      el.innerHTML='<div style="padding:20px;color:var(--red);font-size:13px;">네트워크 오류: '+_regEsc(String(err))+'</div>';
+    });
 }
 </script>
 
