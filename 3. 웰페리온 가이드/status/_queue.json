@@ -1179,5 +1179,17 @@
     "terminal": true,
     "processed_at": "2026-06-17",
     "artifact": "GM 지시 ID 정규화 완료. 계획(debugger)→구현(executor opus). 맵: 오픈 c1a/b/c→op3/op4/op5(op1·op2 유지), 마감 cls1/2/3→cl1/cl2/cl3. 남/여·평일/주말. op1/op2(custom·시트rounds) vs op3~5(base·ROUND_MAP) 충돌없음 코드단정. 6곳 동시정합: 프론트 WEEKDAY/WEEKEND/ROUND_MAP + 백엔드 _TL_ROUND_MAP(분모2번째사본) + 매뉴얼/구역시트(rename_items) + cr원장 체크키(신규 migrate_cr_keys 액션, cr15·c15·seen24). cr 백업 선확보(dump_cr→COO-2026-06-17-CR-DUMP-BACKUP.json). 배포@78(동일 deploymentId). 게이트 PASS: 분모59·분자done53 불변·고아0·구역시트 c1a/cls 잔존0·4부서 무회귀. 라이브 실측: 남성구역 op1~op5·옛id 0·오늘 체크 보존. 커밋 be4474d3."
+  },
+  {
+    "task_id": "COO-2026-06-17-CHECK-LIVE-QA-VOC-LINK",
+    "clevel": "coo",
+    "title": "[시우] 점검 라이브 QA 묶음 + 이슈→VOC 통합 접수처 연동",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-06-17",
+    "processed_at": "2026-06-17",
+    "artifact": "GM 시크릿모드 QA 4건. ①매뉴얼 탭 항목 식별자 배지 표시(op1·cl1 등 monospace, 전 카테고리 일관) ②청결이슈접수 탭 접수현황 좌측정렬+풀폭 CSS ③점검 타이머 미표시=시점 문제(오늘 오전조 제출이 타이머 영속화 배포@76 전이라 서버 타이머 없음, 코드정상·새 점검부터 복원) ④★이슈→VOC 통합 접수처 연동(GM 결정: VOC 운영부 구글폼·접수필요만): 점검 이슈 입력된 항목에 \"📨 접수처로 보내기\" 버튼, 클릭 시 VOC 구글폼(1FAIpQLSd7mDz…) 프리필 새탭(entry 매핑 파싱: 749003756=접수자명·1854535620=이슈내용[장소 본문명기]·586901934=접수자). 불편장소/전달부서는 체크박스라 직원이 폼서 선택(기존 분류·전달 파이프라인 유지). localStorage 중복방지+접수됨 배지. 점검 체크/제출/라우팅/타이머 무변경. 커밋 7db2086e(①②)·41db7816(④) 푸시. node --check OK·URL 200.",
+    "next": "표류(완결). 후속 여지: 회원 청결이슈(REG)와 직원 점검이슈가 다른 접수처라 향후 통합 검토(GM 결정). 점검 타이머는 새 점검 1회로 GM 자연 검증."
   }
 ]
