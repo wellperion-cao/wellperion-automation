@@ -2749,8 +2749,8 @@ window.moveManualItem=function(id,dir){
   if(typeof renderManualItems==='function')renderManualItems();
   if(typeof renderG==='function')renderG(activeGenderTab);   // 점검에도 반영
 };
-/* 그룹(구역) 순서 — 기본값(GM 2026-06-12: C세탁물 상단·마감점검은 E외부 아래) + localStorage 사용자 조정. */
-const GROUP_ORDER_DEFAULT=['오픈 점검','A 사우나점검','B 락커룸','D 내부','E 외부','마감 점검'];
+/* 그룹(구역) 순서 — 기본값 A~E 정렬(2026-06-17 시우: 옛 'D 내부' 잔재로 C내부·D업장이 미정의→90으로 밀려 ABECD로 보이던 버그 수정. 실제 제목 C 내부·D 업장·E 외부와 일치). + localStorage 사용자 조정. */
+const GROUP_ORDER_DEFAULT=['오픈 점검','A 사우나점검','B 락커룸','C 내부','D 업장','E 외부','마감 점검'];
 function getGroupOrder(){ try{return JSON.parse(localStorage.getItem('wcheck_group_order')||'{}')||{}}catch(e){return {}} }
 function saveGroupOrder(m){ localStorage.setItem('wcheck_group_order',JSON.stringify(m)); }
 function groupRank(title){
