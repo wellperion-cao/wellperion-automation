@@ -2402,11 +2402,20 @@ function _deptRegCard(r, dept){
 
 function _deptRegUpdate(id, cat, payload, dept){
   if(!id) return;
-  var body = {id: id, category: cat};
+  
+  // ▼ 이 부분에 action: 'reg_update' 가 추가되었습니다.
+  var body = {
+    action: 'reg_update', 
+    id: id, 
+    category: cat
+  };
+  
   if(payload.status   != null) body.status   = payload.status;
   if(payload.assignee != null) body.assignee = payload.assignee;
   if(payload.memo     != null) body.memo     = payload.memo;
+  
   var url = _wpKey() ? REG_API + '?key=' + encodeURIComponent(_wpKey()) : REG_API;
+  
   fetch(url, {
     method: 'POST',
     headers: {'Content-Type': 'text/plain;charset=UTF-8'},
