@@ -1047,12 +1047,14 @@
   {
     "task_id": "COO-2026-06-15-SUPPORT-CHECK-ROUTING-FIX",
     "clevel": "coo",
-    "status": "IN_PROGRESS",
+    "status": "DONE",
     "priority": "HIGH",
     "enqueued_at": "2026-06-15",
     "title": "[시우] 지원부 점검 라우팅 버그 근본수정 — 한 곳 고치면 타부서 회귀",
-    "summary": "[코드완료·푸시·로컬검증 8/8 PASS, 배포만 GM게이트] _routeItem 부분문자열(indexOf _f/_m)→접미사 경계 정규식(/_f(_|$)/·/_m(_|$)/) 근본수정. custom_..._fpxs5 우연부분문자열 오라우팅 차단(custom_ 접두사 특례 제거=불필요해짐). commonToGender 지원부한정 주석 명시(타부서 회귀차단). _selfTestRouting() 8케이스 회귀 자기검사 추가(4부서). 널바이트 키구분자 4개 보존. 커밋 aa63116a 푸시완료. 라이브 scriptId 1FLQAzjq.",
-    "next": "GM clasp 재인증 후 배포 1회: cd .deploy-check && clasp login → clasp deployments(웹앱 deploymentId 확인) → clasp push -f && clasp deploy -i <그 id>(같은 /exec 보존). 배포 후 GAS편집기 _selfTestRouting 실행 PASS 확인 + 라이브 점검페이지 custom항목 저장 성별탭 라우팅 1회 실측 → terminal."
+    "next": "표류(완결). 후속: 일상 사용 중 추가항목(custom) 저장이 활성 성별탭으로 들어가는지 GM 1회 자연 확인. 타부서가 향후 성별항목 추가 시 동일 경계매칭 적용(현재 회귀 자기검사로 가드).",
+    "terminal": true,
+    "processed_at": "2026-06-17",
+    "artifact": "지원부 점검 라우팅 근본수정 라이브 완결. 원인=_routeItem이 itemId의 _f/_m를 부분문자열(indexOf>=0)로 판정 → custom_..._fpxs5 우연포함이 여성시트로 오라우팅(2026-06-15 패치는 custom_ 접두사만 예외=반쪽). 수정: 접미사 경계 정규식 /_f(_|$)/·/_m(_|$)/ 로 교체(실제 성별항목 b4_m·b4_f는 _m/_f로 끝남, 우연포함은 비매칭) → custom_ 특례 제거. commonToGender=지원부 한정 주석 명시(타부서 공용탭 유지=회귀차단). _selfTestRouting() 8케이스 4부서 회귀 자기검사 추가. 널바이트 키구분자 4개 보존. 로컬 node 8/8 PASS(오라우팅 케이스 2건 포함). 커밋 aa63116a 푸시. clasp push+deploy @71→@72(deploymentId AKfycbyXw4ZaA6hLK567…IpekBu1 유지=같은 /exec). 라이브 today_live HTTP200 ok:true 실측."
   },
   {
     "task_id": "CMO-2026-06-16-STAGE-COL-SETUP",
