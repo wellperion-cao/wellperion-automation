@@ -693,11 +693,10 @@ function _processAction(body) {
       var seoulNowStr = Utilities.formatDate(now, 'Asia/Seoul', 'yyyy-MM-dd HH:mm:ss');
       var todayStr    = seoulNowStr.substring(0, 10); // 'yyyy-MM-dd'
 
-      // 이번 주 월요일 계산 (Asia/Seoul 기준 요일)
-      var dow = parseInt(Utilities.formatDate(now, 'Asia/Seoul', 'u'), 10); // 1=월 … 7=일
-      var daysSinceMonday = dow - 1;
-      var monDate = new Date(now.getTime() - daysSinceMonday * 86400000);
-      var weekStr = Utilities.formatDate(monDate, 'Asia/Seoul', 'yyyy-MM-dd');
+      // 이번 주 = 최근 7일(오늘 포함 직전 7일, 롤링) — GM 정의 2026-06-17
+      // (구 '월요일 기준'은 주초엔 1~2일치만 잡혀 실제 일주일 등록/문의와 어긋남)
+      var weekAgoDate = new Date(now.getTime() - 6 * 86400000);
+      var weekStr = Utilities.formatDate(weekAgoDate, 'Asia/Seoul', 'yyyy-MM-dd');
 
       // 이번 달 1일
       var monthStr = todayStr.substring(0, 7) + '-01';

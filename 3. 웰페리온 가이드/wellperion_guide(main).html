@@ -974,17 +974,46 @@
 
         // 결재 행 (전체 rows, 실무진 무관)
         var apprRows = rows.filter(function(r){ return getApprReq(r)||getApprStatus(r); });
-        // 총 결재대기: 올해 생성 + 결재완료/반려 아님
+
+        // 👤 다음 결재자(결재선 다음 서명자) 산출 — 결재현황 SSOT buildEffectiveRoute+nextApprover와 동일 로직.
+        //   대기수 산식·다음서명자 스트립 양쪽에서 사용하므로 apprRows 직후에 정의(선참조 방지, 2026-06-17 COO A).
+        var _HEADS = ['이경연 실장','이정헌 소장','나우열M'];
+        var _CAT_HEAD = { '[2] 인사':'나우열M','[3] 파트너팀':'나우열M','[4] 운영 정책':'이경연 실장','[5] 시설 및 환경':'이정헌 소장' };
+        function homeNextApprover(row){
+          var approval = String(row['결재요청']||row.approval||'').split(',').map(function(s){return s.trim();}).filter(Boolean);
+          if (!approval.length) return null;
+          var owners = String(row['담당자']||row.owner||'').split(',').map(function(s){return s.trim();});
+          var ownerIsGM = owners.indexOf('김남욱GM')>=0;
+          var midName = approval.find(function(m){return _HEADS.indexOf(m)>=0;})
+                     || owners.find(function(o){return _HEADS.indexOf(o)>=0;})
+                     || (_CAT_HEAD[String(row['카테고리']||row.category||'')]||'');
+          var midExplicit = midName && approval.indexOf(midName)>=0;
+          var skipMid = midName && owners.indexOf(midName)>=0 && !midExplicit;
+          var route = [];
+          if (midName && !ownerIsGM && !skipMid) route.push(midName);
+          route.push('김남욱GM');   // GM은 항상 최종 결재선(2026-06-17 COO A): ownerIsGM이어도 결재요청='GM'이면 GM 서명 대기. 결재현황 buildEffectiveRoute(route.push('GM') 무조건)와 정합.
+          // 대표 단계 폐지(2026-06-16) — GM 종착. 결재현황 SSOT와 동일(대표는 오프라인 페이퍼).
+          for (var i=0;i<route.length;i++){
+            var who = route[i];
+            var sign = (who==='김남욱GM') ? row['GM싸인'] : row['부서장싸인'];
+            if (!sign) return who;
+          }
+          return null;
+        }
+
+        // 총 결재대기: 올해 생성 + 결재완료/반려 아님 + 결재요청 있음 + 다음 서명자 존재(2026-06-17 COO A)
+        //   결재현황 SSOT 보드(approvalBucketOf: nextApprover===null→done 숨김)와 동일 정의로 통일.
+        //   결재요청 공란이거나 결재선이 비는(서명 전원 완료) 행은 home에서도 대기 제외 → 두 화면 대기수 일치.
         var totalApprPend = apprRows.filter(function(r){
-          return getCreated(r)>=yStart && getApprStatus(r)!=='결재완료' && !/반려/.test(getApprStatus(r));
+          return getCreated(r)>=yStart && getApprReq(r) && getApprStatus(r)!=='결재완료' && !/반려/.test(getApprStatus(r)) && homeNextApprover(r)!==null;
         }).length;
         // 총 결재완료: 올해 생성 + 결재완료
         var totalApprDone = apprRows.filter(function(r){
           return getCreated(r)>=yStart && getApprStatus(r)==='결재완료';
         }).length;
-        // 일일 결재대기: 오늘 생성 + 대기
+        // 일일 결재대기: 오늘 생성 + 대기 (결재현황 보드 정의 통일 — 결재요청 있고 다음 서명자 존재, 2026-06-17 COO A)
         var dayApprPend = apprRows.filter(function(r){
-          return getCreated(r)===today && getApprStatus(r)!=='결재완료' && !/반려/.test(getApprStatus(r));
+          return getCreated(r)===today && getApprReq(r) && getApprStatus(r)!=='결재완료' && !/반려/.test(getApprStatus(r)) && homeNextApprover(r)!==null;
         }).length;
         // 일일 결재완료: 오늘 생성 + 완료
         var dayApprDone = apprRows.filter(function(r){
@@ -1002,7 +1031,7 @@
         var aPend    = totalApprPend;   // 위 큰숫자와 동일 정의(대기)
         var aDone    = totalApprDone;   // 위 큰숫자와 동일 정의(완료)
         var aReject  = apprYr.filter(function(r){ return /반려/.test(getApprStatus(r)); }).length;
-        var aInflight= apprYr.filter(function(r){ return getApprReq(r) && getApprStatus(r)!=='결재완료' && !/반려/.test(getApprStatus(r)); }).length;
+        var aInflight= apprYr.filter(function(r){ return getApprReq(r) && getApprStatus(r)!=='결재완료' && !/반려/.test(getApprStatus(r)) && homeNextApprover(r)!==null; }).length;
         var aRate    = aTotal>0 ? Math.round(aDone/aTotal*100) : 0;
         set('kpiApprStripTotal',    aTotal);
         set('kpiApprStripPend',     aPend);
@@ -1010,33 +1039,7 @@
         set('kpiApprStripReject',   aReject);
         set('kpiApprStripInflight', aInflight);
 
-        // 👤 누구 결재인지 — 다음 결재자(결재선 다음 서명자)별 대기건. 결재현황 SSOT nextApprover와 동일 로직 (2026-06-12 GM)
-        var _HEADS = ['이경연 실장','이정헌 소장','나우열M'];
-        var _CAT_HEAD = { '[2] 인사':'나우열M','[3] 파트너팀':'나우열M','[4] 운영 정책':'이경연 실장','[5] 시설 및 환경':'이정헌 소장' };
-        function homeNextApprover(row){
-          var approval = String(row['결재요청']||row.approval||'').split(',').map(function(s){return s.trim();}).filter(Boolean);
-          if (!approval.length) return null;
-          var owners = String(row['담당자']||row.owner||'').split(',').map(function(s){return s.trim();});
-          var ownerIsGM = owners.indexOf('김남욱GM')>=0;
-          var midName = approval.find(function(m){return _HEADS.indexOf(m)>=0;})
-                     || owners.find(function(o){return _HEADS.indexOf(o)>=0;})
-                     || (_CAT_HEAD[String(row['카테고리']||row.category||'')]||'');
-          var midExplicit = midName && approval.indexOf(midName)>=0;
-          var skipMid = midName && owners.indexOf(midName)>=0 && !midExplicit;
-          var route = [];
-          if (midName && !ownerIsGM && !skipMid) route.push(midName);
-          if (!ownerIsGM) route.push('김남욱GM');
-          // 대표 단계 폐지(2026-06-16) — GM 종착. 결재현황 SSOT와 동일(대표는 오프라인 페이퍼).
-          var map = { };
-          map[route[0]] = midName ? row['부서장싸인'] : undefined;
-          // 명시적 매핑: 부서장→부서장싸인 / GM→GM싸인 (대표 단계 제거)
-          for (var i=0;i<route.length;i++){
-            var who = route[i];
-            var sign = (who==='김남욱GM') ? row['GM싸인'] : row['부서장싸인'];
-            if (!sign) return who;
-          }
-          return null;
-        }
+        // 👤 누구 결재인지 — 다음 결재자별 대기건. homeNextApprover 정의는 위(apprRows 직후)로 이동(2026-06-17 COO A): totalApprPend가 선참조하므로.
         var _signerCnt = {};
         apprRows.filter(function(r){ return getApprReq(r) && getApprStatus(r)!=='결재완료' && !/반려/.test(getApprStatus(r)); })
           .forEach(function(r){ var n=homeNextApprover(r); if(n){ _signerCnt[n]=(_signerCnt[n]||0)+1; } });
