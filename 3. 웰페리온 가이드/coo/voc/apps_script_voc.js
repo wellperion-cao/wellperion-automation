@@ -226,6 +226,10 @@ function _regMask(row) {
     }
   }
 
+  // 사진 비공개 — 공개(마스킹) 보드에 원본 Drive 링크 미노출 (PII).
+  //   실무 처리용 reg_list(GATED·내부)는 photoUrl 원본 유지.
+  if (out.photoUrl) out.photoUrl = '비공개';
+
   return out;
 }
 
