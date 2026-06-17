@@ -1,5 +1,17 @@
 [
   {
+    "task_id": "CEO-2026-06-17-INTEGRATION-HEALTH-GUARD",
+    "clevel": "ceo",
+    "title": "[웰리] 연동 다리 자가점검 가드 — 부팅+30분 라이브 점검·깨짐 시 텔레그램 선경보(연동 이슈 재발방지)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "HIGH",
+    "enqueued_at": "2026-06-17",
+    "processed_at": "2026-06-17",
+    "artifact": "GM 지적(데이터 소스 연동 이슈가 반복·깨진 걸 GM이 먼저 발견) → '가드부터' 선택. scripts/integration_health.py check_bridges() 단일정의 5다리 점검: ①G1 큐 라이브(Pages 200+로컬 active 건수 일치=오늘 404 회귀클래스 적발) ②큐 미러 동기(원본==발행루트 미러) ③시트 GAS todo_list 200 ④M5 검수큐 라이브 200 ⑤미푸시 0. 박제 2곳(import만·정의 복사 금지): 부팅가드 welly_boot_guard.py에 '🔗 연동 다리' 섹션+깨짐 시 exit1 / erp_status 발행기(30분 주기)에 bridges 필드 기록 + _bridge_last 비교로 '새로 깨진' 다리만 텔레그램 1줄 경고(.env 직독·fail-soft·스팸방지). 음성테스트로 실제 적발 검증(잘못URL·active 불일치·미러깨짐 전부 잡힘, 원복). 커밋 5774018. 웰리 독립실행 라이브 5다리 전부 ✅ 실측.",
+    "next": "안정 확인되면 2단계 '큐 일원화'(시트 GM 담당 4건→큐, 항로=큐 단일/결재=시트). GM 신호 시 착수. 연동 깨지면 이제 부팅·30분 가드가 GM보다 먼저 적발."
+  },
+  {
     "task_id": "CTO-2026-06-17-GAS-PII-ACCESS-GATE",
     "clevel": "cto",
     "title": "[시토] 회원 개인정보 무인증 노출 차단 — 문의·VOC GAS 접근 토큰 게이트(무중단·GM 활성화 대기)",
