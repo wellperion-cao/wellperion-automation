@@ -2064,6 +2064,22 @@ async function loadState(d,g){
       if(subAt.am&&!STATE._submittedAt_am)STATE._submittedAt_am=subAt.am;
       if(subAt.pm&&!STATE._submittedAt_pm)STATE._submittedAt_pm=subAt.pm;
       if(subAt.night&&!STATE._submittedAt_night)STATE._submittedAt_night=subAt.night;
+      // [Edit E] round-level 제출 잠금 복원 — sub.am/pm/night → roundSubKey + localStorage
+      // fresh load(시크릿·타기기)에서 isRoundSubmitted()가 true 되도록 STATE·LS 키 세팅
+      if(sub.am){
+        STATE[roundSubKey(d,gg,'am1')]=true;
+        try{localStorage.setItem(roundSubLSKey(d,gg,'am1'),'1');}catch(e){}
+      }
+      if(sub.pm){
+        STATE[roundSubKey(d,gg,'pm1')]=true;
+        STATE[roundSubKey(d,gg,'close1')]=true;
+        try{localStorage.setItem(roundSubLSKey(d,gg,'pm1'),'1');}catch(e){}
+        try{localStorage.setItem(roundSubLSKey(d,gg,'close1'),'1');}catch(e){}
+      }
+      if(sub.night){
+        STATE[roundSubKey(d,gg,'night1')]=true;
+        try{localStorage.setItem(roundSubLSKey(d,gg,'night1'),'1');}catch(e){}
+      }
     }
     /* ── 시트=페이지 동일시(회차별 분리, GM 2026-06-15): 시트 '완료' 행을 '그 행의 회차 1개'에만 복원 ──
        cr(회차원장)이 회차 정밀 출처 → cr에 있는 항목은 제외(우선). cr 누락분(레거시 제출 등)만 시트의 회차로 보충.
