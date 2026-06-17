@@ -356,6 +356,51 @@ details.collapse > .collapse-body{border-top:1px solid var(--border);padding:18p
   .click-two-col{flex-direction:column}
   .tc-card{min-width:calc(50% - 4px)}
 }
+
+/* ── 히어로 블록 ── */
+.hero-block{
+  background:var(--paper);border:1px solid var(--border);
+  border-radius:var(--radius-lg);padding:24px 28px 20px;
+  margin-bottom:24px;box-shadow:var(--shadow);
+  border-top:3px solid var(--f2);
+}
+.hero-label{font-size:10px;font-weight:700;color:var(--dim);text-transform:uppercase;letter-spacing:.10em;margin-bottom:14px}
+.hero-row{display:flex;align-items:flex-end;gap:20px;flex-wrap:wrap;margin-bottom:16px}
+.hero-main{display:flex;flex-direction:column;gap:4px}
+.hero-num{font-size:48px;font-weight:800;color:var(--f2);line-height:1;letter-spacing:-.03em}
+.hero-num-label{font-size:12px;color:var(--dim);margin-top:2px}
+.hero-target{display:flex;flex-direction:column;gap:4px;justify-content:flex-end}
+.hero-target-val{font-size:28px;font-weight:700;color:var(--dim);line-height:1;letter-spacing:-.02em}
+.hero-target-label{font-size:11px;color:var(--dim)}
+.hero-bar-wrap{margin-bottom:10px}
+.hero-bar-track{background:var(--border);border-radius:99px;height:10px;overflow:hidden}
+.hero-bar-fill{height:100%;border-radius:99px;background:var(--f2);transition:width .55s ease}
+.hero-bar-pct{font-size:12px;font-weight:700;color:var(--f2);margin-top:5px}
+.hero-pace{font-size:12px;color:var(--dim);margin-top:10px;line-height:1.65}
+/* 스켈레톤 펄스 */
+@keyframes skPulse{0%,100%{opacity:.35}50%{opacity:.7}}
+.sk-pulse{background:var(--border);border-radius:6px;animation:skPulse 1.4s ease-in-out infinite}
+.hero-skeleton .hero-num{display:block;width:120px;height:52px;border-radius:8px}
+.hero-skeleton .hero-bar-track{background:var(--border)}
+.hero-skeleton .hero-pace-sk{width:260px;height:14px;border-radius:4px;margin-top:10px}
+.flow-skeleton{height:120px;border-radius:var(--radius-md);margin-bottom:8px}
+
+/* ── ⓘ 접기 (긴 각주) ── */
+details.footnote-toggle{margin-top:8px}
+details.footnote-toggle > summary{
+  list-style:none;display:inline-flex;align-items:center;gap:5px;
+  font-size:11px;color:var(--dim);cursor:pointer;user-select:none;
+  padding:3px 0;
+}
+details.footnote-toggle > summary::-webkit-details-marker{display:none}
+details.footnote-toggle > summary::before{content:'ⓘ';font-size:12px;color:var(--accent)}
+details.footnote-toggle[open] > summary::before{content:'ⓘ';color:var(--accent)}
+details.footnote-toggle > .fn-body{
+  margin-top:8px;padding:12px 14px;
+  background:var(--paper2);border:1px solid rgba(196,168,130,.18);
+  border-left:3px solid var(--accent);border-radius:var(--radius-sm);
+  font-size:12px;color:var(--dim);line-height:1.75;
+}
 </style>
 </head>
 <body>
@@ -397,34 +442,44 @@ details.collapse > .collapse-body{border-top:1px solid var(--border);padding:18p
   </div>
 
   <!-- ════════════════════════════════════════════
-       ① 유형별 전환 & 유형×채널 교차 — 항상 표시, 즉시 로드
+       ★ 히어로 — 이번 달 문의 목표 게이지 (신설)
+       데이터소스: _flow / MONTHLY_INQUIRY_TARGET / pace 로직(renderConversionFlow 재사용)
        ════════════════════════════════════════════ -->
-  <div class="section" id="details-type-channel">
-    <div class="section-title">유형별 전환 &amp; 유형×채널 교차 <span style="font-size:11px;font-weight:400;color:var(--accent);text-transform:none;letter-spacing:0">(라이브 · 드릴다운 포함)</span></div>
-    <!-- 유형별 클릭→문의→등록 현황표 -->
-    <div id="type-funnel-wrap" style="margin-bottom:12px"><div style="color:var(--dim);font-size:13px">유형별 집계 중…</div></div>
-    <div style="font-size:11px;color:var(--dim);margin-bottom:10px">전환·등록은 누적·추정 — 기간 선택과 무관(등록 시점 데이터 없음). 클릭·문의만 기간 반영.</div>
-    <!-- 출처미상률 경고 카드 -->
-    <div id="tc-unknown-wrap" style="margin-bottom:10px"></div>
-    <!-- 유형×채널 교차표 -->
-    <div id="tc-matrix-wrap" style="background:var(--paper);border:1px solid var(--border);border-radius:12px;overflow:hidden;overflow-x:auto;-webkit-overflow-scrolling:touch;margin-top:10px"></div>
-    <div id="tc-basis" style="padding:8px 2px 0;font-size:11px;color:var(--dim)"></div>
-  </div>
-
-  <!-- ════════════════════════════════════════════
-       🔝 핵심 지표 — 전환 흐름(=KPI) · 항상 펼침, 즉시 로드
-       클릭→문의→등록 + 문의 목표 접목 + 유형별 한눈에
-       (구 핵심 KPI 카드줄·월 목표 게이지 박스는 이 한 블록에 통합)
-       ════════════════════════════════════════════ -->
-  <div class="section">
-    <div class="section-title">핵심 지표 — 전환 흐름</div>
-    <div id="conversion-flow-wrap" style="margin-bottom:6px">
-      <div style="color:var(--dim);font-size:13px">집계 불러오는 중…</div>
+  <div class="hero-block" id="hero-block">
+    <div class="hero-label">이번 달 문의 현황</div>
+    <!-- 데이터 대기 중 스켈레톤 — renderHero() 호출 시 교체됨 -->
+    <div id="hero-inner" class="hero-skeleton">
+      <div class="hero-row">
+        <div class="hero-main">
+          <div class="hero-num sk-pulse" style="width:120px;height:52px;border-radius:8px"></div>
+          <div class="hero-num-label">이번 달 문의</div>
+        </div>
+        <div class="hero-target">
+          <div class="hero-target-val sk-pulse" style="width:70px;height:32px;border-radius:6px"></div>
+          <div class="hero-target-label">목표</div>
+        </div>
+      </div>
+      <div class="hero-bar-wrap">
+        <div class="hero-bar-track"><div class="hero-bar-fill" style="width:0%"></div></div>
+      </div>
+      <div class="sk-pulse hero-pace-sk" style="width:260px;height:14px;border-radius:4px;margin-top:10px"></div>
     </div>
   </div>
 
   <!-- ════════════════════════════════════════════
-       ③ 실시간 클릭 현황 — 항상 표시, 즉시 로드
+       ② 핵심 지표 — 전환 흐름(=KPI) · 항상 펼침, 즉시 로드
+       클릭→문의→등록 + 문의 목표 접목 + 유형별 한눈에
+       ════════════════════════════════════════════ -->
+  <div class="section">
+    <div class="section-title">핵심 지표 — 전환 흐름</div>
+    <!-- 스켈레톤 — renderConversionFlow() 호출 시 교체됨 -->
+    <div id="conversion-flow-wrap" style="margin-bottom:6px">
+      <div class="flow-skeleton sk-pulse" style="height:120px;border-radius:var(--radius-md)"></div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════
+       ③ 유입 출처 + 버튼별 클릭 — 항상 표시, 즉시 로드
        ════════════════════════════════════════════ -->
   <div class="section" id="details-click-stats">
     <div class="section-title">실시간 클릭 현황 <span id="click-updated" style="font-size:11px;font-weight:400;color:var(--dim);text-transform:none;letter-spacing:0"></span></div>
@@ -456,44 +511,27 @@ details.collapse > .collapse-body{border-top:1px solid var(--border);padding:18p
   </div>
 
   <!-- ════════════════════════════════════════════
-       📁 디테일 구역 — 기본 접힘, 펼칠 때만 로드 (초기 로드 가벼움)
-       ③ 주간추세  ④ 월별추세  ⑪ 채널별비교  ⑫ 문의진입점  ⑬ 실험로그
+       📁 디테일 구역 — 기본 접힘
+       ④ 유형별전환·채널비교·주간추세·월별추세·문의진입점·실험로그
        ════════════════════════════════════════════ -->
   <div class="zone-label">📁 디테일</div>
 
-  <!-- ③ 주간 추세 (펼칠 때 1회 로드 — 초기 로드 속도 위해 지연) -->
-  <details class="collapse" id="details-weekly-trend">
-    <summary>주간 추세 <span style="font-size:11px;font-weight:400;color:var(--accent);text-transform:none;letter-spacing:0">(최근 8주)</span><span class="collapse-sub">— 문의·클릭</span></summary>
+  <!-- ④-1 유형별 전환 & 유형×채널 교차 (강등 — 기본 접힘) -->
+  <details class="collapse" id="details-type-channel">
+    <summary>유형별 전환 &amp; 유형×채널 교차 <span style="font-size:11px;font-weight:400;color:var(--accent);text-transform:none;letter-spacing:0">(라이브 · 드릴다운)</span><span class="collapse-sub">— 클릭·문의·등록</span></summary>
     <div class="collapse-body">
-      <div id="weekly-trend-section">
-        <div style="background:var(--paper);border:1px solid var(--border);border-radius:12px;padding:16px 18px">
-          <div style="display:flex;gap:16px;margin-bottom:10px;font-size:11px">
-            <span style="display:flex;align-items:center;gap:5px"><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:var(--accent)"></span>문의</span>
-            <span style="display:flex;align-items:center;gap:5px"><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:var(--accent);opacity:.38"></span>클릭</span>
-          </div>
-          <div id="weekly-trend-chart" class="sparkline-wrap">
-            <div style="color:var(--dim);font-size:13px">펼치면 집계합니다…</div>
-          </div>
-        </div>
-      </div>
+      <div style="font-size:11px;color:var(--dim);margin-bottom:10px">전환·등록은 누적·추정 — 기간 선택과 무관(등록 시점 데이터 없음). 클릭·문의만 기간 반영.</div>
+      <!-- 유형별 클릭→문의→등록 현황표 -->
+      <div id="type-funnel-wrap" style="margin-bottom:12px"><div style="color:var(--dim);font-size:13px">유형별 집계 중…</div></div>
+      <!-- 출처미상률 경고 카드 -->
+      <div id="tc-unknown-wrap" style="margin-bottom:10px"></div>
+      <!-- 유형×채널 교차표 -->
+      <div id="tc-matrix-wrap" style="background:var(--paper);border:1px solid var(--border);border-radius:12px;overflow:hidden;overflow-x:auto;-webkit-overflow-scrolling:touch;margin-top:10px"></div>
+      <div id="tc-basis" style="padding:8px 2px 0;font-size:11px;color:var(--dim)"></div>
     </div>
   </details>
 
-  <!-- ④ 월별 추세 (무거움 — 펼칠 때 1회 로드) -->
-  <details class="collapse" id="details-monthly-trend">
-    <summary>월별 추세 <span style="font-size:11px;font-weight:400;color:var(--accent);text-transform:none;letter-spacing:0">(올해 · 월별 문의)</span><span class="collapse-sub">— 펼쳐서 보기</span></summary>
-    <div class="collapse-body">
-      <div id="monthly-trend-section">
-        <div style="background:var(--paper);border:1px solid var(--border);border-radius:12px;padding:16px 18px">
-          <div id="monthly-trend-chart">
-            <div style="color:var(--dim);font-size:13px">펼치면 집계합니다…</div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </details>
-
-  <!-- ⑪ 채널별 비교 (funnel 데이터 이미 로드됨 — 추가 fetch 불필요) -->
+  <!-- ④-2 채널별 비교 (funnel 데이터 이미 로드됨 — 추가 fetch 불필요) -->
   <details class="collapse" id="details-channel-compare">
     <summary>채널별 비교 <span style="font-size:11px;font-weight:400;color:var(--accent)">(라이브)</span><span class="collapse-sub">— 문의·전환·전환율</span></summary>
     <div class="collapse-body">
@@ -516,7 +554,39 @@ details.collapse > .collapse-body{border-top:1px solid var(--border);padding:18p
     </div>
   </details>
 
-  <!-- ⑫ 문의 진입점·폼 참고표 (정적 — 추가 fetch 없음) -->
+  <!-- ④-3 주간 추세 (펼칠 때 1회 로드 — 초기 로드 속도 위해 지연) -->
+  <details class="collapse" id="details-weekly-trend">
+    <summary>주간 추세 <span style="font-size:11px;font-weight:400;color:var(--accent);text-transform:none;letter-spacing:0">(최근 8주)</span><span class="collapse-sub">— 문의·클릭</span></summary>
+    <div class="collapse-body">
+      <div id="weekly-trend-section">
+        <div style="background:var(--paper);border:1px solid var(--border);border-radius:12px;padding:16px 18px">
+          <div style="display:flex;gap:16px;margin-bottom:10px;font-size:11px">
+            <span style="display:flex;align-items:center;gap:5px"><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:var(--accent)"></span>문의</span>
+            <span style="display:flex;align-items:center;gap:5px"><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:var(--accent);opacity:.38"></span>클릭</span>
+          </div>
+          <div id="weekly-trend-chart" class="sparkline-wrap">
+            <div style="color:var(--dim);font-size:13px">펼치면 집계합니다…</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </details>
+
+  <!-- ④-4 월별 추세 (무거움 — 펼칠 때 1회 로드) -->
+  <details class="collapse" id="details-monthly-trend">
+    <summary>월별 추세 <span style="font-size:11px;font-weight:400;color:var(--accent);text-transform:none;letter-spacing:0">(올해 · 월별 문의)</span><span class="collapse-sub">— 펼쳐서 보기</span></summary>
+    <div class="collapse-body">
+      <div id="monthly-trend-section">
+        <div style="background:var(--paper);border:1px solid var(--border);border-radius:12px;padding:16px 18px">
+          <div id="monthly-trend-chart">
+            <div style="color:var(--dim);font-size:13px">펼치면 집계합니다…</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </details>
+
+  <!-- ④-5 문의 진입점·폼 참고표 (정적 — 추가 fetch 없음) -->
   <details class="collapse" id="details-entry-points">
     <summary>문의 진입점 &amp; 폼 바로가기<span class="collapse-sub">— 한·영 4종 폼 링크</span></summary>
     <div class="collapse-body">
@@ -731,6 +801,74 @@ function renderConversionFlow() {
     + paceHtml
     + '<div style="font-size:10px;color:var(--dim);margin-top:10px;line-height:1.6">' + (f.label || '이번 달') + ' 기준 · 등록은 전화번호 매칭으로 월 단위 집계 · 별개 = 공간렌트·비즈니스파트너·기타</div>';
   if (typeof renderTypeFunnel === 'function') renderTypeFunnel();
+  // 히어로 블록 갱신 — 전환흐름과 같은 _flow·pace 데이터 재사용
+  renderHero(f);
+}
+
+// ─── 히어로 블록 렌더 ───────────────────────────────────────────────
+// _flow + MONTHLY_INQUIRY_TARGET 재사용. 새 fetch 없음.
+function renderHero(f) {
+  var el = document.getElementById('hero-inner');
+  if (!el) return;
+
+  // 데이터 없음 — 스켈레톤 유지
+  if (!f) return;
+
+  var inq = f.inq || 0;
+  var isMonthView = (f.mode === 'month' || f.mode === 'monthPast');
+  var hasTarget = (typeof MONTHLY_INQUIRY_TARGET !== 'undefined' && MONTHLY_INQUIRY_TARGET !== null);
+
+  // 목표 게이지
+  var pct = 0, targetVal = '—', paceHtml = '';
+  var paceColor = 'var(--dim)';
+  if (hasTarget) {
+    targetVal = MONTHLY_INQUIRY_TARGET.toLocaleString('ko-KR');
+    pct = Math.min(Math.round(inq / MONTHLY_INQUIRY_TARGET * 100), 100);
+  }
+
+  // 월말 예상 페이스 (이번달 뷰에서만)
+  if (isMonthView && f.mode === 'month' && hasTarget) {
+    var _now = new Date();
+    var _dom = _now.getDate();
+    var _dim = new Date(_now.getFullYear(), _now.getMonth() + 1, 0).getDate();
+    var _proj = _dom > 0 ? Math.round(inq / _dom * _dim) : inq;
+    var _pacePct = Math.round(_proj / MONTHLY_INQUIRY_TARGET * 100);
+    paceColor = _proj >= MONTHLY_INQUIRY_TARGET ? 'var(--green)' : (_pacePct >= 80 ? 'var(--accent)' : 'var(--dim)');
+    var _sign = (_proj - MONTHLY_INQUIRY_TARGET) >= 0 ? '+' : '';
+    var _paceLabel = _proj >= MONTHLY_INQUIRY_TARGET ? '목표 달성 페이스' : '목표 미달 페이스';
+    paceHtml = '월말 예상 <b style="color:' + paceColor + ';font-size:14px">' + _proj.toLocaleString('ko-KR') + '건</b>'
+      + ' · 목표 대비 ' + _sign + (_proj - MONTHLY_INQUIRY_TARGET) + '건'
+      + ' · <span style="color:' + paceColor + ';font-weight:700">' + _paceLabel + '</span>'
+      + ' <span style="color:var(--dim)">(' + _dom + '/' + _dim + '일 경과)</span>';
+  } else if (isMonthView && f.mode === 'monthPast') {
+    paceHtml = '최종 달성 · <b>' + inq + '건</b> / 목표 ' + (hasTarget ? MONTHLY_INQUIRY_TARGET : '—') + '건';
+  }
+
+  var barColor = pct >= 100 ? 'var(--green)' : (pct >= 80 ? 'var(--accent)' : 'var(--f2)');
+
+  el.className = '';  // 스켈레톤 클래스 해제
+  el.innerHTML =
+    '<div class="hero-row">'
+    + '<div class="hero-main">'
+    +   '<div class="hero-num" style="color:' + (isMonthView && hasTarget ? barColor : 'var(--f2)') + '">' + inq.toLocaleString('ko-KR') + '</div>'
+    +   '<div class="hero-num-label">이번 달 문의</div>'
+    + '</div>'
+    + (hasTarget
+      ? '<div class="hero-target">'
+        + '<div class="hero-target-val">/ ' + targetVal + '</div>'
+        + '<div class="hero-target-label">목표</div>'
+        + '</div>'
+      : '')
+    + '</div>'
+    + (hasTarget
+      ? '<div class="hero-bar-wrap">'
+        + '<div class="hero-bar-track"><div class="hero-bar-fill" style="width:' + pct + '%;background:' + barColor + '"></div></div>'
+        + '<div class="hero-bar-pct" style="color:' + barColor + '">' + pct + '%</div>'
+        + '</div>'
+      : '')
+    + (paceHtml
+      ? '<div class="hero-pace">' + paceHtml + '</div>'
+      : '');
 }
 
 function renderChannelTableLive() {
@@ -1565,13 +1703,13 @@ function renderTypeFunnel() {
       + '</div>';
   });
 
-  var footnote = '<div style="margin-top:14px;background:var(--paper2);border:1px solid rgba(196,168,130,0.18);border-left:3px solid var(--accent);border-radius:var(--radius-sm);padding:14px 16px">'
-    + '<div style="font-size:10px;font-weight:700;color:var(--accent);margin-bottom:8px;text-transform:uppercase;letter-spacing:.07em">ⓘ 이 카드 읽는 법</div>'
-    + '<div style="font-size:12px;color:var(--dim);line-height:1.75">'
+  var footnote = '<details class="footnote-toggle" style="margin-top:14px">'
+    + '<summary>이 카드 읽는 법</summary>'
+    + '<div class="fn-body">'
     +   '<b style="color:var(--text)">클릭 · 문의</b> — 선택한 기간 기준(일/주/월/기간/올해). 클릭은 2026-06-13부터 집계라 그 전 유입은 빠집니다. 문의 유형분류는 멤버십·성인강습·유소년강습만 — 여름특강·공간렌트·비즈니스파트너·영어는 별도 폼이라 클릭만 보이고 문의는 미집계입니다.<br>'
     +   '<b style="color:var(--text)">등록 (누적 · 추정치)</b> — 기간과 무관한 누적입니다. 문의자 전화번호가 유효회원 명부(멤버십)·종목 팀시트(강습)에 있으면 \'등록\'으로 셉니다. 문의가 등록을 일으켰다는 증명이 아니라, 문의한 사람 중 지금 회원·수강생인 수입니다. 기존 회원이 문의해도 잡히고 번호가 다르면 빠집니다 — 기간 문의로 직접 나누면 안 되고, 전환율은 기간 선택 시 숨깁니다.'
     + '</div>'
-    + '</div>';
+    + '</details>';
 
   wrap.innerHTML = '<div class="kpi-row">' + cards + '</div>' + footnote;
 }
