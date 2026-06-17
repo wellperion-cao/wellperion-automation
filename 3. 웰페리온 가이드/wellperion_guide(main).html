@@ -1226,7 +1226,7 @@
   (function loadVocKpi(){
     var VOC_GAS = 'https://script.google.com/macros/s/AKfycbwk2XS1FND9V2xtXlWgsXzgA5p0FG7jVm6YKD74JK_ME_ZvHsNUUfGE5A_8p0X8VcF3gQ/exec';
     function setV(id, v){ var el = document.getElementById(id); if(el) el.textContent = v; }
-    fetch(_wpUrl(VOC_GAS + '?action=voc_list&_=' + Date.now()), { redirect: 'follow' })
+    fetch(VOC_GAS + '?action=reg_board&_=' + Date.now(), { redirect: 'follow' })
       .then(function(r){ return r.json(); })
       .then(function(d){
         if(_wpGate(d)) return;
@@ -1255,7 +1255,7 @@
     var board = document.getElementById('o3VocBoard');
     if(!board) return;
     board.innerHTML = '<div style="color:var(--dim);font-size:13px;padding:18px 4px;">불러오는 중…</div>';
-    fetch(_wpUrl(_O3_VOC_API + '?action=voc_list&_=' + Date.now()), { redirect: 'follow' })
+    fetch(_O3_VOC_API + '?action=reg_board&_=' + Date.now(), { redirect: 'follow' })
       .then(function(r){ return r.json(); })
       .then(function(d){
         if(_wpGate(d)) return;
