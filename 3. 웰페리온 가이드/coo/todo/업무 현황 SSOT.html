@@ -3025,11 +3025,33 @@ function printResultReport(taskId) {
       + '</table>';
   }
 
-  /* ── 계획 ── */
-  var planHtml = parsed.plan
-    ? '<div class="rr-section-title">계획</div>'
-      + '<div class="rr-section-body">' + esc(parsed.plan) + '</div>'
-    : '';
+  /* ── 계획 / 회의 내용 ── */
+  var planHtml = '';
+  if (parsed.plan) {
+    if (t.category === MEETING_CAT) {
+      /* 회의 카테고리: ◆ 이름 헤더로 파싱해 참석자별 섹션 렌더 */
+      var meetMap = _parseMeetingNotes(parsed.plan);
+      var meetNames = Object.keys(meetMap);
+      if (meetNames.length) {
+        var meetBlocks = meetNames.map(function(nm) {
+          return '<div style="margin-bottom:10px;">'
+            + '<div style="font-size:11px;font-weight:700;color:#555;margin-bottom:3px;">🙋 ' + esc(nm) + '</div>'
+            + '<div style="white-space:pre-wrap;font-size:13px;line-height:1.6;padding:6px 8px;background:#f8f8f8;border-left:3px solid #aac4e0;border-radius:4px;">' + esc(meetMap[nm]) + '</div>'
+            + '</div>';
+        }).join('');
+        planHtml = '<div class="rr-section-title">회의 내용</div>'
+          + '<div class="rr-section-body" style="padding:0;">' + meetBlocks + '</div>';
+      } else {
+        /* ◆ 헤더 없는 레거시 회의 내용: 그대로 출력 */
+        planHtml = '<div class="rr-section-title">회의 내용</div>'
+          + '<div class="rr-section-body">' + esc(parsed.plan) + '</div>';
+      }
+    } else {
+      /* 일반 항목: 기존대로 '계획' 출력 */
+      planHtml = '<div class="rr-section-title">계획</div>'
+        + '<div class="rr-section-body">' + esc(parsed.plan) + '</div>';
+    }
+  }
 
   /* ── 예산 ── */
   var budgetHtml = '';
