@@ -1203,5 +1203,17 @@
     "processed_at": "2026-06-17",
     "artifact": "GM 결재 문제 신고 진단(debugger)→구현(executor opus). A:home 대기수(2) vs 결재현황(0) 불일치=home homeNextApprover가 담당자에 김남욱GM 있으면 GM단계 누락(next=null→대기없음 표시), 결재현황은 GM 무조건 push라 정상=산식 비대칭. home도 GM 무조건+결재요청AND·완료/반려제외로 통일→양쪽 2 일치 실측. B4:반려후 본문수정 저장시 todo_update가 newApproval로 자동 대기 재상신→결재대기 부활. approvalChanged 조건으로 좁힘(본문만 수정은 부활안함, 결재완료건 무영향). B2:결재현황 rejectTask에 반려 사유 prompt(빈값 중단)+signTask reason 인자. B3:GAS reject가 reason을 업무 내용에 ===반려이력=== append(append-only)+텔레그램 반려알림에 사유. GAS @78 동일 deploymentId 재배포·node check·무회귀(PIN게이트 무손상). 커밋 e464e831(GAS+결재현황)·fe54ddb9(home). 별건 회의항목 인쇄 수정(cf563106): 회의는 회의내용·일반은 계획 분기.",
     "next": "B1(승인/반려 부서장 PIN 강제)=중간관리자 3명(이경연·이정헌·나우열) 비번값 GM 제공 후 등록+_deptPinOptional 강제. 마감점검 cl1~cl8 순서 GM 확정 대기."
+  },
+  {
+    "task_id": "COO-2026-06-17-APPROVAL-ROUTE-MANUAL-ONLY",
+    "clevel": "coo",
+    "title": "[시우] 결재선 카테고리 자동부서장 제거(체크한 결재자만)+반려사유 업무현황 표시",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-06-17",
+    "processed_at": "2026-06-17",
+    "artifact": "GM 지적: 시설 카테고리라고 이정헌 소장이 결재선에 자동삽입됨(체크 안 했는데). 데이터는 깨끗(시설 항목 결재요청 빈값)이고 deptHeadFor(category) 자동 부서장 1단계 설계가 원인. A: 6개 결재선 빌더(업무현황 _midName·결재현황 buildEffectiveRoute·home homeNextApprover+gm1NextApprover·GAS _buildApprovalRoute+_gmHangroNextApprover)에서 카테고리/owner 자동부서장 폴백 제거 → 중간 결재자=담당자 명시체크만, GM 최종 canon 유지. 실측(node 6빌더 재현): 시설+GM만 체크→[GM](이정헌 미삽입), 이정헌 명시체크시만 [부서장,GM]. deptHeadFor/CAT_DEPT_HEAD 미참조 보존. B3-표시: 반려사유는 GAS가 내용에 ===반려이력=== 정상 append했으나 parseContent가 표시안함(COLLAB 뒤 묻힘). REJECT_MARK 파싱 추가→카드 ⛔반려사유 칩·상세 빨강박스·인쇄 테이블 노출. GAS @79 동일 deploymentId 재배포. 커밋 ee6839dd·1d2c6e43(home watcher). 무회귀: 대기산식·결재완료 무영향.",
+    "next": "표류(완결). 남은 결재 후속: B1(부서장 PIN 강제·3명 비번값 GM 대기). 마감 cl1~cl8 순서 GM 확정 대기."
   }
 ]
