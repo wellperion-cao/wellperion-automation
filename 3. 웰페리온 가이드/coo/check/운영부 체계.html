@@ -2402,8 +2402,26 @@ function _deptRegCard(r, dept){
 
 function _deptRegUpdate(id, cat, payload, dept){
   if(!id) return;
-  
-  // ▼ 이 부분에 action: 'reg_update' 가 추가되었습니다.
+
+  // 1. 누른 버튼을 찾아 초록색 시각 효과 적용 (피드백 UI)
+  var card = document.querySelector('[data-reg-card="' + id + '"]');
+  var btn = card ? card.querySelector('[data-reg-save]') : null;
+  var originalBg, originalColor, originalBorder;
+
+  if (btn) {
+    originalBg = btn.style.background;
+    originalColor = btn.style.color;
+    originalBorder = btn.style.borderColor;
+
+    // 버튼을 초록색 띠 스타일로 변경하고 중복 터치 방지
+    btn.textContent = '저장 중...';
+    btn.style.background = 'var(--green-bg)';
+    btn.style.color = 'var(--green)';
+    btn.style.borderColor = 'rgba(106,191,123,0.4)';
+    btn.disabled = true;
+  }
+
+  // 2. 서버 통신 데이터 세팅 (action 추가)
   var body = {
     action: 'reg_update', 
     id: id, 
@@ -2416,6 +2434,7 @@ function _deptRegUpdate(id, cat, payload, dept){
   
   var url = _wpKey() ? REG_API + '?key=' + encodeURIComponent(_wpKey()) : REG_API;
   
+  // 3. 서버로 데이터 전송
   fetch(url, {
     method: 'POST',
     headers: {'Content-Type': 'text/plain;charset=UTF-8'},
@@ -2423,9 +2442,33 @@ function _deptRegUpdate(id, cat, payload, dept){
     redirect: 'follow'
   }).then(function(r){ return r.json(); }).then(function(d){
     if(_wpGate(d)) return;
-    if(d&&d.ok){ deptRegLoad(dept); }
-    else{ alert('저장 실패: '+(d&&d.error?d.error:'알 수 없는 오류')); }
-  }).catch(function(){ alert('네트워크 오류 — 저장되지 않았습니다.'); });
+    if(d && d.ok) { 
+      // 성공 시 체크 표시 후 시트 데이터 다시 불러오기
+      if (btn) btn.textContent = '저장됨 ✓'; 
+      deptRegLoad(dept); 
+    }
+    else { 
+      // 실패 시 원래 스타일로 복구
+      if (btn) {
+        btn.textContent = '저장';
+        btn.style.background = originalBg;
+        btn.style.color = originalColor;
+        btn.style.borderColor = originalBorder;
+        btn.disabled = false;
+      }
+      alert('저장 실패: '+(d&&d.error ? d.error : '알 수 없는 오류')); 
+    }
+  }).catch(function(){ 
+    // 네트워크 오류 시 복구
+    if (btn) {
+      btn.textContent = '저장';
+      btn.style.background = originalBg;
+      btn.style.color = originalColor;
+      btn.style.borderColor = originalBorder;
+      btn.disabled = false;
+    }
+    alert('네트워크 오류 — 저장되지 않았습니다.'); 
+  });
 }
 </script>
 
