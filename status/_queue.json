@@ -1171,10 +1171,13 @@
     "task_id": "COO-2026-06-17-SUPPORT-CHECK-ID-NORMALIZE-OP-CL",
     "clevel": "coo",
     "title": "[시우] 점검 항목ID 정규화 — 오픈점검 op1~op5(c1a/b/c→op3/4/5)·마감점검 cl1~ (매뉴얼·시트·ROUND_MAP 정합)",
-    "status": "PENDING",
+    "status": "DONE",
     "priority": "NORMAL",
     "enqueued_at": "2026-06-17",
     "note": "[2026-06-17 GM] 점검(남) 시트 맨 위 c1a/c1b/c1c는 실제 오픈점검 항목인데 C카테고리식 id라 혼동. GM 확정: 오픈점검=op1~op5(기존 op1·op2 + c1a→op3·c1b→op4·c1c→op5), 마감점검=cl1·cl2·cl3…(GM 선택). 매뉴얼 페이지에도 오픈/마감 항목에 op·cl 식별자 일관 적용. 남/여 양쪽.",
-    "next": "정규화: ①프론트 WEEKDAY/WEEKEND 배열 id(c1a/b/c→op3~5, 마감항목→cl*) ②지원_매뉴얼 시트 항목ID ③ROUND_MAP(am1/close1 매핑) ④기존 지원_남성/여성구역 시트행 id 마이그레이션(고아체크 방지) 동시정합. ⚠️ id정규화 위험(과거 \"체크 풀림\"·\"갯수 줄어듦\")—WEEKDAY/WEEKEND 동시수정 필수·충돌 2단계토큰·시트 마이그레이션 포함. 라우팅(_routeItem) 영향 점검(op/cl은 _m/_f 미포함→COMMON→성별탭, 무해 예상). 배포 후 4부서 무회귀+체크 보존 게이트."
+    "next": "표류(완결). 마감(cl1~3)은 마감조 제출 시 자연 검증. C내부(c1~c10)는 오픈 c1a/b/c와 별개라 미변경(정상).",
+    "terminal": true,
+    "processed_at": "2026-06-17",
+    "artifact": "GM 지시 ID 정규화 완료. 계획(debugger)→구현(executor opus). 맵: 오픈 c1a/b/c→op3/op4/op5(op1·op2 유지), 마감 cls1/2/3→cl1/cl2/cl3. 남/여·평일/주말. op1/op2(custom·시트rounds) vs op3~5(base·ROUND_MAP) 충돌없음 코드단정. 6곳 동시정합: 프론트 WEEKDAY/WEEKEND/ROUND_MAP + 백엔드 _TL_ROUND_MAP(분모2번째사본) + 매뉴얼/구역시트(rename_items) + cr원장 체크키(신규 migrate_cr_keys 액션, cr15·c15·seen24). cr 백업 선확보(dump_cr→COO-2026-06-17-CR-DUMP-BACKUP.json). 배포@78(동일 deploymentId). 게이트 PASS: 분모59·분자done53 불변·고아0·구역시트 c1a/cls 잔존0·4부서 무회귀. 라이브 실측: 남성구역 op1~op5·옛id 0·오늘 체크 보존. 커밋 be4474d3."
   }
 ]
