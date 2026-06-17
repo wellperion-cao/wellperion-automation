@@ -808,18 +808,11 @@
     </details>
   </article>
   <script>
-  // 접근 토큰 헬퍼 — localStorage('wp_access_token') 에서 읽어 &key= 로 첨부.
-  // TOKEN_ENFORCE OFF 동안엔 key 없어도 동작하므로 없으면 빈 문자열로 무해하게 통과.
-  function _wpKey() { try { return localStorage.getItem('wp_access_token') || ''; } catch(e) { return ''; } }
-  function _wpUrl(base) { var k = _wpKey(); return k ? base + (base.indexOf('?') >= 0 ? '&' : '?') + 'key=' + encodeURIComponent(k) : base; }
-  // 접근 열쇠 1회 입력 팝업 — 개인정보 fetch가 막히면(unauthorized) 호출, 저장 후 새로고침.
-  var _wpPrompting = false;
-  function _wpPromptKey(retry){ if(_wpPrompting) return false; _wpPrompting = true; try{
-    var k = window.prompt((retry?'입력한 접근 열쇠가 올바르지 않습니다.\n\n':'회원 정보 조회에는 접근 열쇠가 필요합니다.\n\n')+'발급받은 접근 열쇠를 입력하세요:', '');
-    if(k===null) return false; k=String(k).trim(); if(!k) return false;
-    localStorage.setItem('wp_access_token', k); location.reload(); return true;
-  }catch(e){ return false; } }
-  function _wpGate(json){ if(json && json.ok===false && json.error==='unauthorized'){ _wpPromptKey(!!_wpKey()); return true; } return false; }
+  // PII 게이트는 서버(TOKEN_ENFORCE)에서 유지 — 화면은 집계만 공개, 원본은 보호된 시트에서 본다(GM 옵션A).
+  // 클라이언트 열쇠 입력 UX 폐기: _wpKey=빈값, _wpUrl=passthrough, _wpGate=무동작(입력창 안 뜸).
+  function _wpKey() { return ''; }
+  function _wpUrl(base) { return base; }
+  function _wpGate(json){ return false; }
 
   /* 🏢 ERP 홈 경영 현황 라이브 스트립 — 업무·결재 SSOT(todo_list) 1회 호출 집계.
      집계 기준은 S3 KPI 스트립(#s4KpiCards)과 1:1 동일(workActive·apprPend). 실제 가져온 숫자만 표기, 실패 시 "—"(가짜 금지). */
@@ -978,19 +971,15 @@
         // 👤 다음 결재자(결재선 다음 서명자) 산출 — 결재현황 SSOT buildEffectiveRoute+nextApprover와 동일 로직.
         //   대기수 산식·다음서명자 스트립 양쪽에서 사용하므로 apprRows 직후에 정의(선참조 방지, 2026-06-17 COO A).
         var _HEADS = ['이경연 실장','이정헌 소장','나우열M'];
-        var _CAT_HEAD = { '[2] 인사':'나우열M','[3] 파트너팀':'나우열M','[4] 운영 정책':'이경연 실장','[5] 시설 및 환경':'이정헌 소장' };
         function homeNextApprover(row){
           var approval = String(row['결재요청']||row.approval||'').split(',').map(function(s){return s.trim();}).filter(Boolean);
           if (!approval.length) return null;
           var owners = String(row['담당자']||row.owner||'').split(',').map(function(s){return s.trim();});
           var ownerIsGM = owners.indexOf('김남욱GM')>=0;
-          var midName = approval.find(function(m){return _HEADS.indexOf(m)>=0;})
-                     || owners.find(function(o){return _HEADS.indexOf(o)>=0;})
-                     || (_CAT_HEAD[String(row['카테고리']||row.category||'')]||'');
-          var midExplicit = midName && approval.indexOf(midName)>=0;
-          var skipMid = midName && owners.indexOf(midName)>=0 && !midExplicit;
+          // 중간 결재자 = 결재요청에 명시 체크한 부서장만. 카테고리 자동 부서장 삽입 폐지(2026-06-17 COO A). 결재현황 buildEffectiveRoute와 정합.
+          var midName = approval.find(function(m){return _HEADS.indexOf(m)>=0;}) || '';
           var route = [];
-          if (midName && !ownerIsGM && !skipMid) route.push(midName);
+          if (midName && !ownerIsGM) route.push(midName);
           route.push('김남욱GM');   // GM은 항상 최종 결재선(2026-06-17 COO A): ownerIsGM이어도 결재요청='GM'이면 GM 서명 대기. 결재현황 buildEffectiveRoute(route.push('GM') 무조건)와 정합.
           // 대표 단계 폐지(2026-06-16) — GM 종착. 결재현황 SSOT와 동일(대표는 오프라인 페이퍼).
           for (var i=0;i<route.length;i++){
@@ -7966,19 +7955,15 @@ function crTab(btn, panelId) {
     //   G1 결재 카운트가 SSOT와 어긋나던 버그 수정: '결재요청=GM'만 봐선 안 됨.
     //   ① owner가 GM이면 GM단계 스킵(→대표 차례)  ② 부서장싸인 없으면 부서장 차례  ③ GM싸인 있으면 이미 GM 끝(→대표).
     var GM1_DEPT_HEADS = ['이경연 실장','이정헌 소장','나우열M'];
-    var GM1_CAT_DEPT_HEAD = { '[2] 인사':'나우열M','[3] 파트너팀':'나우열M','[4] 운영 정책':'이경연 실장','[5] 시설 및 환경':'이정헌 소장' };
     function gm1NextApprover(row) {
       var approval = String(row['결재요청'] || '').split(',').map(function(s){ return s.trim(); }).filter(Boolean);
       if (!approval.length) return null;  // 결재선 없음
       var owners = String(row['담당자'] || '').split(',').map(function(s){ return s.trim(); });
       var ownerIsGM = owners.indexOf('김남욱GM') >= 0;
-      var midName = approval.find(function(m){ return GM1_DEPT_HEADS.indexOf(m) >= 0; })
-                 || owners.find(function(o){ return GM1_DEPT_HEADS.indexOf(o) >= 0; })
-                 || (GM1_CAT_DEPT_HEAD[String(row['카테고리'] || '')] || '');
-      var midExplicit = midName && approval.indexOf(midName) >= 0;
-      var skipMid = midName && owners.indexOf(midName) >= 0 && !midExplicit;
+      // 중간 결재자 = 결재요청에 명시 체크한 부서장만. 카테고리 자동 부서장 삽입 폐지(2026-06-17 COO A). homeNextApprover·결재현황과 정합.
+      var midName = approval.find(function(m){ return GM1_DEPT_HEADS.indexOf(m) >= 0; }) || '';
       var route = [];
-      if (midName && !ownerIsGM && !skipMid) route.push('부서장');
+      if (midName && !ownerIsGM) route.push('부서장');
       if (!ownerIsGM) route.push('GM');
       route.push('대표님');
       var map = { '부서장': row['부서장싸인'], 'GM': row['GM싸인'], '대표님': row['대표싸인'] };

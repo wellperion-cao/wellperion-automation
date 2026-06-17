@@ -5418,12 +5418,11 @@ async function renderIssuelog(){
    ═══════════════════════════════════════════════ */
 var REG_API='https://script.google.com/macros/s/AKfycbwk2XS1FND9V2xtXlWgsXzgA5p0FG7jVm6YKD74JK_ME_ZvHsNUUfGE5A_8p0X8VcF3gQ/exec';
 
-/* ── 접근 게이트 헬퍼 ── */
-function _wpKey(){ try{ return localStorage.getItem('wp_access_token')||''; }catch(e){ return ''; } }
-function _wpUrl(base){ var k=_wpKey(); return k?base+(base.indexOf('?')>=0?'&':'?')+'key='+encodeURIComponent(k):base; }
-var _wpPrompting=false;
-function _wpPromptKey(retry){ if(_wpPrompting) return false; _wpPrompting=true; try{ var k=window.prompt((retry?'입력한 접근 열쇠가 올바르지 않습니다.\n\n':'회원 정보 조회에는 접근 열쇠가 필요합니다.\n\n')+'발급받은 접근 열쇠를 입력하세요:',''); if(k===null){ _wpPrompting=false; return false; } k=String(k).trim(); if(!k){ _wpPrompting=false; return false; } localStorage.setItem('wp_access_token',k); _wpPrompting=false; location.reload(); return true; }catch(e){ _wpPrompting=false; return false; } }
-function _wpGate(json){ if(json&&json.ok===false&&json.error==='unauthorized'){ _wpPromptKey(!!_wpKey()); return true; } return false; }
+/* ── 접근 게이트: PII는 서버(TOKEN_ENFORCE)에서 유지, 클라이언트 열쇠 입력 UX 폐기(GM 옵션A) ──
+   _wpKey=빈값 / _wpUrl=passthrough / _wpGate=무동작(입력창 안 뜸) */
+function _wpKey(){ return ''; }
+function _wpUrl(base){ return base; }
+function _wpGate(json){ return false; }
 
 /* ── HTML 이스케이프 ── */
 function _regEsc(s){ if(s==null) return ''; return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
