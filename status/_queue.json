@@ -1,5 +1,17 @@
 [
   {
+    "task_id": "CEO-2026-06-17-M5-PUSHLAG-GUARD",
+    "clevel": "ceo",
+    "title": "[웰리] M5 검수 라이브 미반영 원인=푸시랙 박제 — 자동push 훅+부팅가드+T2 파이프라인 정본+재발방지(INC-006)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "HIGH",
+    "enqueued_at": "2026-06-17",
+    "processed_at": "2026-06-17",
+    "artifact": "GM 지적(오늘 AI17이 M5 검수요청 라이브에 안 뜸) 진단 → 원인=자동 커밋 8건 미푸시(커밋만 하고 push 안 함)로 라이브 M5가 ~2.5h stale(AI17은 텔레그램 정상승인 07:49·IG발행 07:51 DZqgbZ9EmTS 정상). 약속 L13 기계 미준수. 박제 원리(행동=코드, 지식=정본문서)대로 정본 갈라 4건 처리. A(행동→코드): scripts/post-commit.hook+post_commit_push.py — 커밋 직후 git_lock 임계구역서 origin 자동 push(타임아웃30s·fail-open·재진입안전·실패시 텔레그램경고), install_hooks.sh 설치·활성. 자동push 3회 재현 성공(명시push 없이 origin 전진). B(부팅가드): ssot/welly_boot_guard.py(미푸시 커밋수+검수대기·발행검증대기 나열)+S2 CEO헌법 부팅절차 1줄 SOP. C(T2): M5 인스타 발행 파이프라인 단일 정본 섹션(제작→M5검수→텔레그램승인→발행→웰리대조→발행완료 6단계+가드표)+포인터2곳, 코드·로드맵 미삭제. D(재발방지): INC-006 GUARDED(뿌리=검증멈춤). 커밋 dbbaffe·c418180·95816c8·3288eb7·902e012 전부 origin동기화·py_compile·HTML파싱 검증.",
+    "next": "부팅가드 첫 실행이 검수대기 3건 적출 → 시모(CMO): 수영장 3칸 그리드 V2(left/center/right) 1:1 정사각(1080x1080) 재슬라이스 후 재발행. (이 박제로 향후 미푸시·검수대기 누락은 부팅 시 자동 적출됨)"
+  },
+  {
     "task_id": "CMO-2026-06-16-FUNNEL-DASH-OVERHAUL",
     "clevel": "cmo",
     "title": "[시모/웰리 직접] 마케팅 현황 대시보드 대개편 — 정보구조 정리·유형별 카드·기간연동·등록 누적추정 정직표기·UI",
