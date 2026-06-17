@@ -237,6 +237,10 @@ def season_label_block(ep: dict, cfg: dict[str, str]) -> str:
     hashtag = cfg.get("SEASON2_HASHTAG", "").strip()
     if hashtag:
         parts.append(f"- 캡션 해시태그에 {hashtag} 1개를 권장 풀에 추가(시즌1과 검색·묶음 구분).")
+    # 시즌2 실전편 표준 3비트(문제→AI해결→자동화) — 로드맵 §2.6 단일출처. 카드 없는 편의 기본 골격.
+    structure_rule = cfg.get("SEASON2_STRUCTURE_RULE", "").strip()
+    if structure_rule:
+        parts.append(f"- {structure_rule}")
     return "\n".join(parts)
 
 
