@@ -537,9 +537,8 @@
 
       <!-- 업무&결재 현황 (통합 카드) — 업무 블록 + 결재 블록 한 제목 아래. 이번달(생성일 기준) 집계 (2026-06-17 GM) -->
       <div style="grid-column:1/-1;background:var(--paper);border:1px solid var(--border);border-radius:14px;padding:16px 18px;">
-        <div style="display:flex;align-items:center;gap:9px;margin-bottom:4px;"><span style="width:28px;height:28px;border-radius:8px;background:var(--accent-bg);color:var(--accent);display:flex;align-items:center;justify-content:center;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5h6M7 7H5v14h14V7h-2M9 5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2"/></svg></span><div><div style="font-weight:800;font-size:14px;color:var(--text);">업무&amp;결재 현황</div><div style="font-size:10.5px;color:var(--dim);">Work &amp; Approval · AI COO(시우)</div></div></div>
+        <div style="display:flex;align-items:center;gap:9px;margin-bottom:16px;"><span style="width:28px;height:28px;border-radius:8px;background:var(--accent-bg);color:var(--accent);display:flex;align-items:center;justify-content:center;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5h6M7 7H5v14h14V7h-2M9 5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2"/></svg></span><div><div style="display:flex;align-items:center;gap:7px;"><div style="font-weight:800;font-size:14px;color:var(--text);">이번달 업무&amp;결재 현황</div><div style="font-size:10.5px;color:var(--dim);font-weight:600;" id="kpiWaPeriodLabel">이번달 기준</div></div><div style="font-size:10.5px;color:var(--dim);">Work &amp; Approval · AI COO(시우)</div></div></div>
         <!-- 기간 라벨: 이번달(생성일 기준) — 현재 월 자동(로컬 KST). 일/주/월 셀렉터는 home에 두지 않음(드릴다운은 SSOT 페이지 소관) -->
-        <div style="font-size:10.5px;color:var(--dim);font-weight:600;margin-bottom:12px;padding-left:2px;" id="kpiWaPeriodLabel">이번달 기준</div>
 
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;" class="wa-block-grid">
           <!-- ◀ 업무 블록: 4지표(총·진행·완료(완료율%)·보류) + 각 오늘 N -->
@@ -622,7 +621,7 @@
           </div>
         </div>
         <div style="margin-top:11px;padding-top:10px;border-top:1px dashed var(--border);display:flex;gap:7px;flex-wrap:wrap;">
-          <a href="#" onclick="event.preventDefault();document.querySelector('[data-id=O3]').click();" style="font-size:11px;font-weight:700;padding:3px 10px;background:var(--accent-bg);color:var(--accent);border-radius:20px;text-decoration:none;border:1px solid var(--border);">현황 보드 →</a>
+          <a href="#" onclick="event.preventDefault();document.querySelector('[data-id=O5]').click();" style="font-size:11px;font-weight:700;padding:3px 10px;background:var(--accent-bg);color:var(--accent);border-radius:20px;text-decoration:none;border:1px solid var(--border);">현황 보드 →</a>
           <a href="https://wellperion-cao.github.io/wellperion-automation/coo/voc/voc_mobile_form.html" target="_blank" style="font-size:11px;font-weight:700;padding:3px 10px;background:var(--accent-bg);color:var(--accent);border-radius:20px;text-decoration:none;border:1px solid var(--border);">📲 회원 접수 폼</a>
         </div>
       </div>
@@ -959,7 +958,14 @@
           });
           var names = Object.keys(map);
           if (!names.length){ body.innerHTML = '<tr><td colspan="3" style="color:var(--dim);padding:6px 6px;">—</td></tr>'; return; }
-          names.sort(function(a,b){ return (map[b].work+map[b].appr)-(map[a].work+map[a].appr); });
+          var ORDER = ['이경연 실장','나우열M','최준용M','임정은M','윤병현AM','이지영 사원'];
+          names.sort(function(a,b){
+            var ia = ORDER.indexOf(a), ib = ORDER.indexOf(b);
+            if (ia === -1 && ib === -1) return 0;
+            if (ia === -1) return 1;
+            if (ib === -1) return -1;
+            return ia - ib;
+          });
           var html = '';
           names.forEach(function(n,i){
             var odd = i % 2 === 1;
