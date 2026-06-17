@@ -1344,17 +1344,60 @@
         + detail
         + '<div style="display:flex;gap:6px;align-items:center;margin:8px 0 7px;">'
         + '<input type="text" placeholder="담당자" value="' + assignee + '" id="regva-' + id + '" style="flex:1;min-width:0;background:var(--paper);border:1px solid var(--border);color:var(--text);padding:4px 8px;border-radius:6px;font-size:12px;font-family:inherit;">'
-        + '<button onclick="_regAssign(\'' + id + '\',\'' + _regEsc(it['카테고리']||'') + '\')" style="font-size:11.5px;padding:4px 10px;border:1px solid var(--border);border-radius:7px;background:var(--paper);color:var(--text);cursor:pointer;font-family:inherit;">배정</button></div>'
+        
+        // 1. 배정 버튼에 this(버튼 자신)를 넘겨주도록 수정
+        + '<button onclick="_regAssign(\'' + id + '\',\'' + _regEsc(it['카테고리']||'') + '\', this)" style="font-size:11.5px;padding:4px 10px;border:1px solid var(--border);border-radius:7px;background:var(--paper);color:var(--text);cursor:pointer;font-family:inherit;">배정</button></div>'
+        
         + '<div style="display:flex;gap:6px;flex-wrap:wrap;">' + actions + '</div></div>';
     }
 
+    // 2. 상태 변경 시에는 기존처럼 전체 새로고침 유지 (칸이 이동해야 하므로)
     window._regStatus = function(id, category, status){
       _regPost({action:'reg_update', id:id, category:category, status:status}, '상태 변경됨');
     };
-    window._regAssign = function(id, category){
+
+    // 3. 🌟 핵심! 배정 시에는 화면 새로고침 없이 초록색 피드백만 주도록 독립시킴
+    window._regAssign = function(id, category, btn){
       var el = document.getElementById('regva-' + id);
-      _regPost({action:'reg_update', id:id, category:category, assignee: el ? el.value.trim() : ''}, '담당 배정됨');
+      var assignee = el ? el.value.trim() : '';
+
+      // 클릭 시 기존 버튼 스타일 저장 후 초록색으로 변경
+      var originalBg = btn.style.background;
+      var originalColor = btn.style.color;
+      var originalBorder = btn.style.border;
+
+      btn.textContent = '저장 중...';
+      btn.style.background = 'rgba(106,191,123,0.12)';
+      btn.style.color = '#6abf7b';
+      btn.style.borderColor = 'rgba(106,191,123,0.4)';
+      btn.disabled = true;
+
+      var _p = {action:'reg_update', id:id, category:category, assignee: assignee};
+      var _k = _wpKey(); if(_k) _p.key = _k;
+
+      // 직접 통신 (regBoardLoad()를 호출하지 않아 화면이 깜빡이지 않음)
+      fetch(_REG_API, {method:'POST', redirect:'follow', headers:{'Content-Type':'text/plain;charset=utf-8'}, body:JSON.stringify(_p)})
+        .then(function(r){ return r.json(); })
+        .then(function(d){ 
+          if(d && d.ok){ 
+            btn.textContent = '완료 ✓';
+            // 2초 뒤 원래 버튼으로 복구
+            setTimeout(function(){
+              btn.textContent = '배정';
+              btn.style.background = originalBg;
+              btn.style.color = originalColor;
+              btn.style.border = originalBorder;
+              btn.disabled = false;
+            }, 2000);
+          } else {
+             btn.textContent = '배정'; btn.style.background = originalBg; btn.style.color = originalColor; btn.style.border = originalBorder; btn.disabled = false;
+          }
+        })
+        .catch(function(){
+           btn.textContent = '배정'; btn.style.background = originalBg; btn.style.color = originalColor; btn.style.border = originalBorder; btn.disabled = false;
+        });
     };
+
     function _regPost(payload, okMsg){
       var _p = Object.assign({}, payload);
       var _k = _wpKey(); if(_k) _p.key = _k;
@@ -1363,7 +1406,6 @@
         .then(function(d){ if(d && d.ok){ regBoardLoad(); } })
         .catch(function(){});
     }
-
     // 카테고리 필터칩 클릭 핸들러 (상단 칩·건수요약 칩 공용). 캐시서 즉시 필터.
     window.regChipClick = function(el){
       var cat = el.getAttribute('data-cat');
