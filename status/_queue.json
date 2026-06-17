@@ -1,5 +1,17 @@
 [
   {
+    "task_id": "CEO-2026-06-17-G1-DATA-INTEGRITY-FIX",
+    "clevel": "ceo",
+    "title": "[웰리] G1 항로 데이터 정합 4문제 수정 — 큐 404 회귀(항로20·완료54 복구)+결재 진행중 총수+INC-007",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "HIGH",
+    "enqueued_at": "2026-06-17",
+    "processed_at": "2026-06-17",
+    "artifact": "GM 라이브 지적 4건(항로 4개만·완료 누적안됨·결재 1건만·시트삭제로 사라졌나) 진단(debugger 읽기전용)·수정. 진범 1개=2026-06-16 G1 stale-render 수정이 _queue 읽기 주소를 GitHub Pages 발행루트('3. 웰페리온 가이드/') 밖 경로(/wellperion-automation/status/_queue.json)로 바꿨고 라이브 검증을 안 해 404→빈배열→살아있는 항로 20건이 4건으로 collapse·완료 54건 미합류(데이터·GAS 78행·시트 전부 무손상=표시/배포경로 손실). Q4=어제 시트삭제·AI배와 무관(GAS 200 정상). 수정: 발행루트 큐 미러('3. 웰페리온 가이드/status/_queue.json')+scripts/sync_queue_mirror.py 단방향·멱등 pre-commit 자동동기화 훅+fetch cache-bust/no-store → 라이브 큐 HTTP200·active 20(PEND14+INP6)·DONE54 복구 실측. Q1 결재=비G1-owner inflight 4건(윤병현AM·이경연·나우열M)이 3-way 분기 어디에도 안 걸려 누락 → ⏳진행중 배너 조건에서 _isG1Owner 제약 제거해 합류(진행중 총 6건, 🔴 GM서명차례 1건 별개·타인 상세는 정책대로 미표시·결재현황 링크만). INC-007 GUARDED(뿌리=검증멈춤·라이브검증 누락=L03). 커밋 c3de5178·c9eec7d3·e695bac6·e0b74c0b 전부 origin·HTML파싱 검증.",
+    "next": "후속: 부팅가드(welly_boot_guard.py)에 '라이브 G1 큐 HTTP200·건수' 체크 추가 → 같은 404 회귀 자동적발(웰리 큐). Q2 시트완료건 _doneDate 결측 분류 안정화는 큐 복구로 충분(잔여 미세개선만)."
+  },
+  {
     "task_id": "CEO-2026-06-17-G1-ALERT-SIGNAL",
     "clevel": "ceo",
     "title": "[웰리] G1 오늘의 항로 고도화 — 상단 '주의 신호' 줄 신설(검수 승인대기·발행 대조대기 라이브)",
