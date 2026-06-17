@@ -1130,5 +1130,15 @@
     "enqueued_at": "2026-06-17",
     "note": "[2026-06-17 GM 지시] 시설부 자체 일일점검 신설+작업일지 기반 항목초안. 설계(architect) 완료=status/briefs/COO-2026-06-17-FACILITY-CHECK-DESIGN.md. 핵심: \"신설\"이 아니라 백엔드 dept=facility 배선이 이미 잠들어 있어 재활성화(저난이도). 작업일지 원천 PDF 2건+시설부 체계.html 측정폼(탭 fcheck) 이미 구현. 항목≈측정형22+AI초안4. 성별=사우나탕만 남/여 컬럼·점검탭 단일(박호균 과장 1인 순회). 무회귀=dept별 시트탭·원장·필터 물리분리(지원부 0영향). 최소경로=항목시드+setup_facility_tabs 1회→home KPI 점등.",
     "next": "GM 6결정: ①측정형 유지 vs 체크형 단순화 ②완료율 정의(입력률 vs 기준이탈) ③남/여 단일탭 OK ④회차 8고정 vs 평일/주말 분리 ⑤기존 fcheck 폼 승격 vs 교체 ⑥점검주체 단독 vs 명단. 결정 후 구현·배포·지원부 무회귀 게이트."
+  },
+  {
+    "task_id": "CTO-2026-06-17-PAGES-CMO-FOLDER-404",
+    "clevel": "cto",
+    "title": "[시토] 라이브 배포 사고 — GitHub Pages가 /cmo/ 폴더 전체를 404 (마케팅 대시보드·흐름지도·검수 미발행)",
+    "status": "PENDING",
+    "priority": "HIGH",
+    "enqueued_at": "2026-06-17",
+    "note": "[2026-06-17 시모 발견·인계] 시모가 마케팅 대시보드 작업(버그·재배치·정직성, 커밋 8bd3d24d·27175b2e·06d8130a 푸시완)의 라이브 검증 중 발견. 증상: 라이브 https://wellperion-cao.github.io/wellperion-automation/cmo/funnel/마케팅현황대시보드.html = HTTP 404, /cmo/ 하위 전체(funnel·review) 404. 반면 루트(/wellperion_guide(main).html)·/ssot/dashboard.html·/status/_queue.json = 200. 아침엔 /cmo/ 정상(스크린샷 검증됨)이었으나 오늘 깨짐. 진단: ①cmo/ 73파일 git 추적·ignore 아님·구문정상(소스 무결) ②pages.yml 배포 워크플로 매번 success(42s)·cp -r '3. 웰페리온 가이드/.' 정상 ③workflow_dispatch 깨끗한 재배포(run 27660996906)도 무효=일시 아님 ④build_type=workflow, .nojekyll/_config.yml 없음, 심볼릭링크 없음 ⑤시간상 오늘 CTO PII 게이트 커밋(7edd3f20·54fa42a9, cmo/funnel 3파일 수정) 직후 발생=상관관계. 즉 파일은 멀쩡한데 발행 파이프라인이 cmo/만 누락. 시모 영역(마케팅 콘텐츠) 아닌 배포 인프라(CTO) 사고라 인계.",
+    "next": "CTO 점검: 최신 Pages artifact 실내용에 cmo/ 포함됐는지 다운로드 확인 / .nojekyll 부재로 Jekyll이 cmo 제외하는지(artifact 방식이라 무관할 것이나 확인) / PII 커밋이 cmo 파일에 Pages 발행 깨는 변경(인코딩·BOM·비정상 바이트) 넣었는지 / Pages source 재설정. 복구 후 라이브 200 + 정직수정 마커('현 회원 매칭') 실측. ★GM 마케팅 대시보드 라이브 확인이 이 복구에 막혀있음(HIGH)."
   }
 ]
