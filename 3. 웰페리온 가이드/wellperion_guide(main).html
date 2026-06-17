@@ -4147,6 +4147,8 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
     <!-- 오늘 할 일 (최상단 — GM 진입 즉시 노출, 2026-06-05) -->
     <details id="gm1-todo-section" open style="margin:8px 0 24px;">
       <summary style="cursor:pointer;list-style:none;"><h3 id="gm1-todo-date" style="display:inline;"><span class="ico">🧭</span>항로</h3><span style="font-size:0.78em;color:#888;font-weight:400;margin-left:8px;">오늘의 항로 · 북극성으로 가는 오늘의 뱃길</span></summary>
+      <!-- ⚠️ 주의 신호 — 지금 GM이 행동할 신호(승인·대조)만 라이브 표시. 내부 운영신호(미푸시 등)는 금지(약속 L10). 2026-06-17 -->
+      <div id="gm1-alert-signal" style="margin:6px 0 14px;"><div style="color:var(--dim);font-size:13px;">신호 확인 중…</div></div>
       <div id="today-task-list">
         <!-- 동적 렌더링 — gm1_unified_tasks localStorage 기반 -->
       </div>
@@ -9509,6 +9511,45 @@ function crTab(btn, panelId) {
     gm1FetchSsot();
     // 미동기화 항목 재시도 (페이지 로드마다)
     setTimeout(gm1RetrySSOTSync, 2000);
+    // ── ⚠️ 주의 신호 — 검수 승인대기(GM)·발행 대조대기(웰리) 라이브 집계 (2026-06-17) ──
+    //   라이브 review_queue.json(동일오리진·상대경로·no-store·캐시버스트) 직독.
+    //   status 정의 그대로 신뢰: '검수대기'=GM 승인 차례 / '발행검증대기'=웰리 IG↔M5 대조 차례.
+    //   GM이 지금 행동할 신호만 — 내부 운영신호(미푸시 등)는 금지(약속 L10).
+    function gm1RenderAlertSignal() {
+      var box = document.getElementById('gm1-alert-signal');
+      if (!box) return;
+      var url = 'cmo/review/review_queue.json?_=' + Date.now();
+      fetch(url, { cache: 'no-store' }).then(function(r){ return r.ok ? r.json() : []; }).then(function(items){
+        if (!Array.isArray(items)) items = [];
+        var reviewWait = items.filter(function(it){ return (it && it.status) === '검수대기'; });
+        var pubWait = items.filter(function(it){ return (it && it.status) === '발행검증대기'; });
+        var rN = reviewWait.length, pN = pubWait.length;
+        function esc(s){ return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+        function go(){
+          var a = document.querySelector('[data-id=M5]'); if (a) a.click();
+          setTimeout(function(){ var el = document.getElementById('cmopub-review-count'); if (el && el.scrollIntoView) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 120);
+          return false;
+        }
+        window.gm1GoReview = go;
+        if (rN === 0 && pN === 0) {
+          box.innerHTML = '<div style="border:1px solid rgba(74,157,107,0.35);border-left:4px solid var(--green,#4a9d6b);border-radius:10px;padding:10px 14px;background:rgba(74,157,107,0.06);font-size:13.5px;color:var(--green,#4a9d6b);font-weight:700;">✅ 막힌 것 없음 — 지금 기다리는 신호 없음</div>';
+          return;
+        }
+        var titles = reviewWait.slice(0,2).map(function(it){ return esc(it.title || it.id || ''); }).filter(Boolean);
+        var preview = titles.length ? '<div style="font-size:11.5px;color:var(--dim);margin-top:3px;">' + titles.join(' · ') + (rN > titles.length ? ' 외 ' + (rN - titles.length) + '건' : '') + '</div>' : '';
+        var h = '<div onclick="return gm1GoReview()" style="cursor:pointer;border:1px solid rgba(217,140,95,0.4);border-left:4px solid var(--warm,#d98c5f);border-radius:10px;padding:11px 14px;background:rgba(217,140,95,0.07);">';
+        h += '<div style="display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:700;color:var(--warm,#d98c5f);margin-bottom:8px;">⚠️ 주의 신호 — 지금 기다리는 것 <span style="font-size:11px;font-weight:500;color:var(--dim);margin-left:auto;">눌러서 검수 화면으로 →</span></div>';
+        h += '<div style="display:flex;gap:18px;flex-wrap:wrap;align-items:flex-start;">';
+        h += '<div><div style="font-size:26px;font-weight:800;line-height:1;color:' + (rN ? 'var(--warm,#d98c5f)' : 'var(--dim)') + ';">' + rN + '</div><div style="font-size:12px;color:var(--text-soft,#888);margin-top:2px;">🔍 승인 대기 (GM)</div>' + preview + '</div>';
+        h += '<div><div style="font-size:26px;font-weight:800;line-height:1;color:' + (pN ? '#7c3aed' : 'var(--dim)') + ';">' + pN + '</div><div style="font-size:12px;color:var(--text-soft,#888);margin-top:2px;">✓ 발행 대조 대기 (웰리)</div></div>';
+        h += '</div></div>';
+        box.innerHTML = h;
+      }).catch(function(){
+        box.innerHTML = '<div style="color:var(--dim);font-size:13px;">⚠️ 신호를 불러오지 못했습니다.</div>';
+      });
+    }
+    gm1RenderAlertSignal();
+
     // ── 자동 새로고침 — stale-render 해소 (2026-06-16 웰리) ──
     //   ① 탭 복귀(visibilitychange·focus) 시 재fetch — push 후 GM이 탭 돌아오면 즉시 반영
     //   ② 90초 interval — G1 열어둔 채 오래 있어도 최신 상태 유지
@@ -9519,6 +9560,7 @@ function crTab(btn, panelId) {
       if (now - _gm1LastFetch < 30000) return;  // 30초 내 중복 skip
       _gm1LastFetch = now;
       gm1FetchSsot();
+      gm1RenderAlertSignal();
     }
     document.addEventListener('visibilitychange', function() {
       if (document.visibilityState === 'visible') _gm1AutoRefresh();
