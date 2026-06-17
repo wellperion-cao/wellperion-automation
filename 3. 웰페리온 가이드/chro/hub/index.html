@@ -514,6 +514,7 @@ function num(v){var n=parseFloat(v);return isNaN(n)?0:n;}
 function isYes(v){return v==="__YES__"||v===true||v==="true";}
 function dt(r,f){return r["date:"+f+":start"]||"";}
 function fmtD(v){if(!v)return"—";return String(v).slice(0,10);}
+function fmtDT(v){if(!v)return"—";var s=String(v);var d=new Date(s);if(!isNaN(d.getTime())&&(s.indexOf("T")>=0||s.indexOf(":")>=0)){var p=function(n){return String(n).padStart(2,"0");};return d.getFullYear()+"-"+p(d.getMonth()+1)+"-"+p(d.getDate())+" "+p(d.getHours())+":"+p(d.getMinutes());}return s.slice(0,10);}
 function parseArr(v){
   if(Array.isArray(v))return v;
   if(typeof v==="string"&&v.trim()){try{var p=JSON.parse(v);return Array.isArray(p)?p:[v];}catch(e){return [v];}}
@@ -1030,7 +1031,7 @@ function applicantRow(a){
       kv("연락처",txt(a["연락처"])||"—")+
       kv("이메일",txt(a["이메일"])||"—")+
       kv("지원일",fmtD(dval(a,"지원일")))+
-      kv("면접 일정",fmtD(dval(a,"면접 일정")))+
+      kv("면접 일정",fmtDT(dval(a,"면접 일정")))+
       kv("담당 면접관",txt(a["담당 면접관"])||"—")+
     '</div>'+
   '</div>';
@@ -1152,7 +1153,7 @@ function openPrintView(pageId){
         '<tr><th>성명</th><td>'+esc(a["지원자명"]||"")+'</td><th>지원 포지션</th><td>'+esc(a["지원 포지션"]||"")+'</td></tr>'+'<tr><th>생년월일</th><td>'+esc(birth||"—")+'</td><th>주소</th><td>'+esc(addr||"—")+'</td></tr>'+
         '<tr><th>연락처</th><td>'+esc(a["연락처"]||"")+'</td><th>이메일</th><td>'+esc(a["이메일"]||"")+'</td></tr>'+
         '<tr><th>지원일</th><td>'+fmtD(dval(a,"지원일"))+'</td><th>전형 단계</th><td>'+esc(a["전형 단계"]||"")+'</td></tr>'+
-        (dval(a,"면접 일정")?'<tr><th>면접 일정</th><td>'+fmtD(dval(a,"면접 일정"))+'</td><th>담당 면접관</th><td>'+esc(a["담당 면접관"]||"")+'</td></tr>':"")+
+        (dval(a,"면접 일정")?'<tr><th>면접 일정</th><td>'+fmtDT(dval(a,"면접 일정"))+'</td><th>담당 면접관</th><td>'+esc(a["담당 면접관"]||"")+'</td></tr>':"")+
       '</table>'+
       '<h2>2. 이력서 요약 (잡코리아·자기소개서 기반)</h2>'+
       '<div class="memo">'+fmtMemo(memo)+'</div>'+
@@ -1220,14 +1221,14 @@ function renderHire(){
     for(var d=1;d<=days;d++){
       var has=byDay[d];
       var st='min-height:38px;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;border-radius:6px;font-size:11px;padding:2px 1px;'+(has?'background:var(--gold);color:#fff;font-weight:700':(isToday(d)?'background:var(--surface-2);outline:1px solid var(--gold)':''));
-      var tip=has?esc(has.map(function(e){return e.name+'('+e.stage+')';}).join(', ')):'';
+      var tip=has?esc(has.map(function(e){return e.name+(e.hm?' '+e.hm:'')+'('+e.stage+')';}).join(', ')):'';
       var nm=has?has.map(function(e){return esc(e.name);}).join('<br>'):'';
       h+='<div title="'+tip+'" style="'+st+'">'+d+(has?'<span style="font-size:8px;line-height:1.1;font-weight:600;margin-top:1px;word-break:keep-all">'+nm+'</span>':'')+'</div>';
     }
     h+='</div>';
     var monthEv=ev.filter(function(e){return e.y===y&&e.m===m;}).sort(function(a,b){return a.t-b.t;});
     h+='<div style="margin-top:10px;border-top:1px solid var(--line-soft);padding-top:8px;font-size:11.5px">';
-    if(monthEv.length){ h+=monthEv.map(function(e){return '<div style="display:flex;gap:7px;padding:3px 0;align-items:center"><span style="color:var(--gold-deep);font-weight:700;white-space:nowrap">'+(e.m+1)+'/'+e.d+'</span><span class="t-name">'+esc(e.name)+'</span><span class="t-sub">'+esc(e.stage)+'</span></div>';}).join(''); }
+    if(monthEv.length){ h+=monthEv.map(function(e){return '<div style="display:flex;gap:7px;padding:3px 0;align-items:center"><span style="color:var(--gold-deep);font-weight:700;white-space:nowrap">'+(e.m+1)+'/'+e.d+(e.hm?' '+e.hm:'')+'</span><span class="t-name">'+esc(e.name)+'</span><span class="t-sub">'+esc(e.stage)+'</span></div>';}).join(''); }
     else { h+='<div class="t-sub">이 달 확정된 면접 일정이 없습니다.</div>'; }
     h+='</div>';
     return h;
@@ -1253,7 +1254,7 @@ function renderHire(){
       return (dy?new Date(dy).getTime():0)-(dx?new Date(dx).getTime():0); // 최신 지원순
     });
     (window.__registerAppls && window.__registerAppls(all));
-    window.__ivEvents=(DB.appl||[]).map(function(a){var d=dval(a,"면접 일정");if(!d)return null;if(/불합격|탈락/.test(a["전형 단계"]||""))return null;var dd=new Date(d);if(isNaN(dd.getTime()))return null;return {t:dd.getTime(),y:dd.getFullYear(),m:dd.getMonth(),d:dd.getDate(),name:a["지원자명"]||"",stage:a["전형 단계"]||""};}).filter(Boolean);
+    window.__ivEvents=(DB.appl||[]).map(function(a){var d=dval(a,"면접 일정");if(!d)return null;if(/불합격|탈락/.test(a["전형 단계"]||""))return null;var dd=new Date(d);if(isNaN(dd.getTime()))return null;var sd=String(d);var hasT=(sd.indexOf("T")>=0||sd.indexOf(":")>=0);var pz=function(n){return String(n).padStart(2,"0");};return {t:dd.getTime(),y:dd.getFullYear(),m:dd.getMonth(),d:dd.getDate(),hm:(hasT?pz(dd.getHours())+":"+pz(dd.getMinutes()):""),name:a["지원자명"]||"",stage:a["전형 단계"]||""};}).filter(Boolean);
     var __PG=5, __pages=Math.ceil(all.length/__PG);
     html+='<div style="display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap">';
     html+='<div style="flex:1.6 1 380px;min-width:300px">';
@@ -2089,6 +2090,7 @@ details.jobs-fold > summary > .jf-arrow{display:inline-block;transition:transfor
 (function(){
   function escH(s){return String(s==null?"":s).replace(/[&<>"']/g,function(c){return ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[c];});}
   function fmtDate(v){if(!v)return"-";var s=String(v);var d=new Date(s);if(isNaN(d.getTime()))return s.slice(0,10);return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");}
+  function fmtDTv(v){if(!v)return"-";var s=String(v);var d=new Date(s);if(isNaN(d.getTime()))return s.slice(0,10);if(s.indexOf("T")<0&&s.indexOf(":")<0)return fmtDate(v);var p=function(n){return String(n).padStart(2,"0");};return fmtDate(v)+" "+p(d.getHours())+":"+p(d.getMinutes());}
   function badgeStyle(s){
     if(/합격/.test(s)&&!/불/.test(s))return "background:#e9f1ea;color:#3c7a4a";
     if(/불합격|탈락/.test(s))return "background:#edece8;color:#7c7a73";
@@ -2186,7 +2188,7 @@ details.jobs-fold > summary > .jf-arrow{display:inline-block;transition:transfor
             '<div style="color:var(--ink-soft,#6c6961)">'+escH(rr.pos||"-")+'</div>' +
             '<div>'+escH(rr.grade||"-")+'</div>' +
             '<div>'+escH(fmtDate(rr.applyDate))+'</div>' +
-            '<div>'+escH(fmtDate(rr.iveDate))+'</div>' +
+            '<div>'+escH(fmtDTv(rr.iveDate))+'</div>' +
             '<div style="text-align:right"><span style="display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;'+badgeStyle(rr.stage)+'">'+escH(rr.stage||"-")+'</span></div>' +
           '</div>';
         });
