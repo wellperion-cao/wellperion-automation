@@ -4859,8 +4859,9 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
   <article class="doc" id="M5">
     <div class="doc-header"><h2>콘텐츠 검수·자동업로드</h2><div class="meta">CMO 관할 · 공식 5채널 · 제목 → 슬라이드·캡션 생성 → 검수 → 승인 발행 · v1.0 (1단계 골격)</div></div>
 <!-- ══ 📸 IG 발행 파이프라인 SSOT (2026-06-13) ══ -->
+    <!-- 사람용 정본(단계·가드 상세) = T2 업무자동화SSOT ▸ M5 인스타그램 발행 파이프라인 -->
     <div style="background:var(--paper);border:1px solid var(--border);border-left:3px solid #7c3aed;border-radius:12px;padding:16px 20px;margin:6px 0 20px;">
-      <h3 style="margin-top:0;"><span class="ico">📸</span>인스타그램 발행 파이프라인 <span style="font-size:13px;font-weight:400;color:var(--dim);">정본 · 2026-06-13</span></h3>
+      <h3 style="margin-top:0;"><span class="ico">📸</span>인스타그램 발행 파이프라인 <span style="font-size:13px;font-weight:400;color:var(--dim);">요약 · 사람용 정본 = <a href="#" onclick="event.preventDefault();document.querySelector('[data-id=T2]').click();" style="color:var(--accent);font-weight:700;text-decoration:none;">T2 ▸ M5 파이프라인</a></span></h3>
       <div class="callout" style="margin-bottom:14px;"><strong>승인 ≠ 발행완료.</strong> 발행완료는 웰리가 실제 IG↔M5 대조 후에만.</div>
       <table>
         <tr><th style="width:48px">단계</th><th style="width:260px">동작</th><th style="width:100px">status</th><th>주체</th></tr>
@@ -4873,7 +4874,7 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
         <li><strong>무폴링</strong>: 발행 트리거 = GM [✅승인] 탭만. 자동 재발행·스케줄 일괄발행 금지.</li>
         <li><strong>안전</strong>: <code>발행검증대기</code>는 재처리 대상 아님(이중발행 차단). <code>발행완료</code>는 웰리 실측 후에만 (헌법 STEP 3.5).</li>
         <li><strong>계정 파라미터화</strong>: 발행은 <code>--account &lt;계정&gt;</code> + <code>profiles/instagram/&lt;계정&gt;/</code> 세션으로 동작 → 계정 무관 확장 기반.</li>
-        <li><strong>구현 위치</strong>: <code>telegram_bot/bot.py</code>(pub 콜백) → <code>scripts/ig_review_publish_watcher.py</code>(발행검증대기 도장 분기) → M5 보드 <code>badgeOf</code>. 흐름 정본 = <code>instagram/_AI시리즈_로드맵.md</code> §3.4.</li>
+        <li><strong>구현 위치</strong>: <code>telegram_bot/bot.py</code>(pub 콜백) → <code>scripts/ig_review_publish_watcher.py</code>(발행검증대기 도장 분기) → M5 보드 <code>badgeOf</code>. 코드 정본 = <code>instagram/_AI시리즈_로드맵.md</code> §3.4 / <strong>사람용 파이프라인 정본 = <a href="#" onclick="event.preventDefault();document.querySelector('[data-id=T2]').click();" style="color:var(--accent);font-weight:700;text-decoration:none;">T2 ▸ M5 인스타그램 발행 파이프라인</a></strong>.</li>
       </ul>
     </div>
     <!-- ══ /IG 발행 파이프라인 SSOT ══ -->
@@ -5942,6 +5943,70 @@ function crTab(btn, panelId) {
 
     
     <div class="callout" style="margin-top:8px;font-size:13px;"><strong>📊 데이터 소스</strong> — GM 할일=업무현황 시트 <code>todo_list</code>(자동, GM 관리 불필요) · 명언=<code>status/quotes.json</code> · 진행=<code>status/*.json</code>·git. <strong style="color:var(--accent);">노션 의존 0.</strong><br><strong>🔄 재기동</strong> — 봇·스케줄러 재시작 또는 PC 부팅(ONLOGON 예약작업). 수동 재기동: <code>Stop-Process -Id (PID) -Force</code> → <code>Start-Process python -ArgumentList telegram_bot\daily_scheduler.py -WorkingDirectory C:\Users\jjky0\welperion-automation -WindowStyle Hidden</code>. <span style="color:var(--dim);">점검 원칙(왜·언제) = S2 CTO탭.</span></div>
+
+    <!-- ══ 📸 M5 인스타그램 발행 파이프라인 — T2 사람용 정본 (2026-06-17) ══ -->
+    <h3 style="margin-top:28px;border-top:1px solid var(--border);padding-top:24px;"><span class="ico">📸</span>M5 인스타그램 발행 파이프라인 <span style="font-size:13px;font-weight:400;color:var(--dim);">— 사람용 정본 · 현행 단계·가드만</span></h3>
+    <p style="font-size:12.5px;color:var(--dim);margin:0 0 12px;">코드·구현 상세 = <code>instagram/_AI시리즈_로드맵.md</code> §3.4 / M5 대화형 보드 = <a href="#" onclick="event.preventDefault();document.querySelector('[data-id=M5]').click();" style="color:var(--accent);font-weight:700;text-decoration:none;">M5 콘텐츠 검수·자동업로드</a>. 본 섹션은 흐름·가드만.</p>
+
+    <table>
+      <tr><th style="width:40px">단계</th><th style="width:200px">동작</th><th style="width:110px">status값</th><th style="width:130px">담당 스크립트·소유</th><th>가드</th></tr>
+      <tr>
+        <td style="text-align:center;font-weight:700;">1</td>
+        <td><strong>제작</strong> — 07:30 <code>ig_series_producer.py</code> 자동 실행 (로드맵 §5 기획 최소번호 기준)</td>
+        <td><span style="color:var(--accent);font-weight:600;">검수 대기</span></td>
+        <td>CMO (시모) · <code>ig_series_producer.py</code></td>
+        <td><code>큐레이션_추천.md</code> 자동생성 필수 · 소진 시 제작 중지 · 콘텐츠 폴더 즉시 git 커밋</td>
+      </tr>
+      <tr>
+        <td style="text-align:center;font-weight:700;">2</td>
+        <td><strong>M5 검수큐 등록</strong> — <code>cmo/review/review_queue.json</code>에 항목 추가 + <strong>텔레그램 검수카드 1회 발송</strong> ([✅승인]/[❌반려])</td>
+        <td><span style="color:var(--accent);font-weight:600;">검수 대기</span></td>
+        <td>CMO (시모) · <code>review_queue.json</code></td>
+        <td>검수카드 콘텐츠당 1회만 — 재발송 금지 · review_queue.json git push 필수(M5 배포본 stale 차단)</td>
+      </tr>
+      <tr>
+        <td style="text-align:center;font-weight:700;">3</td>
+        <td><strong>GM 승인</strong> — 텔레그램 [✅승인] 탭 (무폴링 · 텔레그램이 유일 승인경로)</td>
+        <td><span style="color:var(--accent);font-weight:600;">승인</span></td>
+        <td>GM</td>
+        <td>승인 전 발행 절대 금지(비가역 게이트) · [❌반려] 시 CMO 재제작 후 검수 대기 복귀</td>
+      </tr>
+      <tr>
+        <td style="text-align:center;font-weight:700;">4</td>
+        <td><strong>발행</strong> — 4채널 M5 단일경유 · IG는 Playwright headful (<code>instagram_upload_playwright.py</code>)</td>
+        <td><span style="color:#7c3aed;font-weight:600;">발행검증대기</span></td>
+        <td>CMO (시모) · <code>instagram_upload_playwright.py</code> · <code>bot.py</code> pub 콜백</td>
+        <td><code>발행검증대기</code>는 재처리 대상 아님(이중발행 차단) · 자동 재발행·일괄발행 금지 · .publish.lock 직렬화</td>
+      </tr>
+      <tr>
+        <td style="text-align:center;font-weight:700;">5</td>
+        <td><strong>웰리 대조</strong> — 실제 IG 게시물 ↔ M5 (캡션·슬라이드) 실대조</td>
+        <td><span style="color:var(--accent);font-weight:600;">대조 중</span></td>
+        <td>웰리 (AI CEO) · <code>ig_review_publish_watcher.py</code></td>
+        <td>① 프로필 그리드 실등장(신규 shortcode) ② M5 배포본 노출 ③ 텔레그램 실수신 — 3종 동시 확인</td>
+      </tr>
+      <tr>
+        <td style="text-align:center;font-weight:700;">6</td>
+        <td><strong>발행완료 도장</strong> — 실게시 확인 후에만 (약속 L04)</td>
+        <td><span style="color:var(--green);font-weight:600;">발행완료</span></td>
+        <td>웰리 (AI CEO)</td>
+        <td>승인 ≠ 발행완료 · 불일치 시 재처리(발행완료 자동 전환 금지) · 부팅 가드: 미푸시 커밋·발행검증대기 부팅 시 우선 처리</td>
+      </tr>
+    </table>
+
+    <div class="callout fix" style="margin-top:10px;font-size:13px;">
+      <strong>핵심 가드 요약 (한눈에)</strong>
+      <table style="margin-top:8px;">
+        <tr><th style="width:200px">가드</th><th>내용</th></tr>
+        <tr><td>승인 ≠ 발행완료</td><td>발행완료는 웰리가 IG↔M5 실대조 후에만 찍는다 (약속 L04)</td></tr>
+        <tr><td>검수카드 1회</td><td>콘텐츠당 텔레그램 검수카드 1회만 발송 — 재발송 금지</td></tr>
+        <tr><td>무폴링</td><td>발행 트리거 = GM [✅승인] 탭만. 스케줄 자동발행·재발행 금지</td></tr>
+        <tr><td>발행검증대기 보호</td><td><code>발행검증대기</code> 상태는 재처리·이중발행 차단 — 웰리 대조 후에만 다음 단계</td></tr>
+        <tr><td>부팅 미푸시 가드</td><td>부팅 시 <code>welly_boot_guard.py</code> — origin 미푸시 커밋 즉시 push / 검수대기·발행검증대기 확인</td></tr>
+        <tr><td>post-commit 자동 push</td><td>커밋 시 post-commit 훅 자동 push — review_queue.json stale 차단</td></tr>
+      </table>
+    </div>
+    <!-- ══ /M5 인스타그램 발행 파이프라인 ══ -->
 
     <h4>매주</h4>
     <table>
