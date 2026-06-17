@@ -812,6 +812,14 @@
   // TOKEN_ENFORCE OFF 동안엔 key 없어도 동작하므로 없으면 빈 문자열로 무해하게 통과.
   function _wpKey() { try { return localStorage.getItem('wp_access_token') || ''; } catch(e) { return ''; } }
   function _wpUrl(base) { var k = _wpKey(); return k ? base + (base.indexOf('?') >= 0 ? '&' : '?') + 'key=' + encodeURIComponent(k) : base; }
+  // 접근 열쇠 1회 입력 팝업 — 개인정보 fetch가 막히면(unauthorized) 호출, 저장 후 새로고침.
+  var _wpPrompting = false;
+  function _wpPromptKey(retry){ if(_wpPrompting) return false; _wpPrompting = true; try{
+    var k = window.prompt((retry?'입력한 접근 열쇠가 올바르지 않습니다.\n\n':'회원 정보 조회에는 접근 열쇠가 필요합니다.\n\n')+'발급받은 접근 열쇠를 입력하세요:', '');
+    if(k===null) return false; k=String(k).trim(); if(!k) return false;
+    localStorage.setItem('wp_access_token', k); location.reload(); return true;
+  }catch(e){ return false; } }
+  function _wpGate(json){ if(json && json.ok===false && json.error==='unauthorized'){ _wpPromptKey(!!_wpKey()); return true; } return false; }
 
   /* 🏢 ERP 홈 경영 현황 라이브 스트립 — 업무·결재 SSOT(todo_list) 1회 호출 집계.
      집계 기준은 S3 KPI 스트립(#s4KpiCards)과 1:1 동일(workActive·apprPend). 실제 가져온 숫자만 표기, 실패 시 "—"(가짜 금지). */
@@ -868,6 +876,7 @@
     fetch(_wpUrl(SURVEY_URL + '?action=period_breakdown'), { redirect:'follow' })
       .then(function(r){ return r.json(); })
       .then(function(res){
+        if (_wpGate(res)) return;
         if (res && res.ok && res.inquiries && typeof res.inquiries.month === 'number') {
           set('erpInqN', res.inquiries.month);
         } else {
@@ -1220,6 +1229,7 @@
     fetch(_wpUrl(VOC_GAS + '?action=voc_list&_=' + Date.now()), { redirect: 'follow' })
       .then(function(r){ return r.json(); })
       .then(function(d){
+        if(_wpGate(d)) return;
         if(!d || !d.ok) return;
         var rows = Array.isArray(d.data) ? d.data : [];
         var nNew = rows.filter(function(r){ return r['상태'] === '접수'; }).length;
@@ -1248,6 +1258,7 @@
     fetch(_wpUrl(_O3_VOC_API + '?action=voc_list&_=' + Date.now()), { redirect: 'follow' })
       .then(function(r){ return r.json(); })
       .then(function(d){
+        if(_wpGate(d)) return;
         if(!d || !d.ok){ board.innerHTML = '<div style="color:var(--warm,#e65b3f);font-size:13px;padding:18px 4px;">현황을 불러오지 못했습니다 — ' + _o3Esc(d && d.error || '') + '</div>'; return; }
         _o3VocRender(d.data || []);
       })
