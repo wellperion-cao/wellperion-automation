@@ -301,9 +301,15 @@ function _notifyTelegram(text) {
 //   ④ ScriptProperties TOKEN_ENFORCE = 1 설정 후 웹앱 새 버전 재배포 → 게이트 발효
 var _SURVEY_PUBLIC_ACTIONS = {
   submit_inquiry: true,  // 방문자 문의 제출 — 토큰 면제
-  track_click:    true   // 클릭 추적 — 토큰 면제
-  // 그 외 inquiry_list / click_stats / funnel_conversion / period_breakdown /
-  // type_channel_breakdown / stage_funnel / weekly_trend 는 게이트 적용.
+  track_click:    true,  // 클릭 추적 — 토큰 면제
+  // 마케팅 집계(PII 미노출) 면제 — 2026-06-17 CMO, 시토 게이트 공유
+  // 아래 5개 액션은 집계 숫자만 반환 · 이름·전화 등 원시 개인정보 미노출 → 면제 안전.
+  // inquiry_list 등 원시 행/PII 반환 액션은 절대 면제 금지(게이트 유지).
+  period_breakdown:       true,
+  funnel_conversion:      true,
+  type_channel_breakdown: true,
+  click_stats:            true,
+  today_live:             true
 };
 function _accessProp_(k) {
   try { return PropertiesService.getScriptProperties().getProperty(k) || ''; } catch (e) { return ''; }
@@ -861,31 +867,66 @@ function _processAction(body) {
       };
     }
 
-    // ── 유형별 등록 현황 (이번 달) ──
-    // 멤버십: 유효회원 시트 '등록 일자' 기준 이번달 신규등록 카운트
-    // 강습(성인·유소년): 종목별 팀시트 수강등록(SUC/단기SUC/등록) 기준 — _collectLessonRegistrations_ 반환값
+    // ── 유형별 등록 현황 (GM 정본 스펙 2026-06-17) ──
+    // 등록 = 문의/팀 시트의 진행현황(상태) 값이 SUC 또는 단기SUC인 행.
+    // 날짜 = B열(타임스탬프/일정) 기준. 문의와 동일 cohort(같은 행·날짜 필터).
+    // 전화매칭·회원부 등록일자 방식 폐기.
     var regByTypeMonth = {};
 
-    // 멤버십 등록 — 회원부 시트 '등록 일자' 컬럼 기준 이번달 카운트
-    try {
-      var regMbrHeaders = mbrSh2.getRange(1, 1, 1, mbrSh2.getLastColumn()).getValues()[0];
-      var regDateIdx    = regMbrHeaders.indexOf(MEMBER_DATE_COL);
-      if (regDateIdx >= 0 && mbrLast2 >= 2) {
-        var regDateVals = mbrSh2.getRange(2, regDateIdx + 1, mbrLast2 - 1, 1).getValues();
-        var mbrRegCount = 0;
-        regDateVals.forEach(function(r) {
-          var d = _toDate_(r[0]);
-          if (!isNaN(d.getTime()) && d >= ps.monthStart) mbrRegCount++;
+    // 진행현황 컬럼에서 SUC/단기SUC 카운트 — 날짜(idxDate)가 monthStart 이상인 행만
+    function _countRegFromSheet_(sh, last, lastCol, monthStart_) {
+      if (!sh || last < 2 || lastCol < 1) return null;
+      try {
+        var hdrs = sh.getRange(1, 1, 1, lastCol).getValues()[0];
+        var idxStatus = _findCol_(hdrs, ['진행현황', '진행상황', '진행상태', '상태']);
+        var idxDate   = _findCol_(hdrs, ['타임스탬프', 'timestamp', '시각', '일시', '접수일', '접수', '날짜']);
+        if (idxDate < 0) idxDate = 0;
+        if (idxStatus < 0) return null; // 진행현황 컬럼 없으면 집계 불가
+        var rows = sh.getRange(2, 1, last - 1, lastCol).getValues();
+        var cnt = 0, total = 0;
+        rows.forEach(function(r) {
+          var dateRaw = r[idxDate];
+          if (!dateRaw) return;
+          var d = _toDate_(_parseAnyDate_(dateRaw));
+          if (isNaN(d.getTime())) return;
+          if (d < monthStart_) return;
+          total++;
+          if (_isLessonReg_(r[idxStatus])) cnt++;
         });
-        regByTypeMonth['멤버십'] = mbrRegCount;
-      }
-    } catch (e) { /* 회원 등록일 집계 실패 무시 */ }
+        return { count: cnt, total: total, statusHeader: String(hdrs[idxStatus]) };
+      } catch (e) { return null; }
+    }
 
-    // 강습 등록 — 팀시트 수강등록 정본 (누적값; 등록일 미제공 → 이번달 구분 불가, 전체 등록수 표시)
+    // 멤버십 — FORM_SHEETS[0] (26년 신규문의 스태프 로그)
     try {
-      var lessonRegs = _collectLessonRegistrations_();
+      var memCfg = FORM_SHEETS[0]; // 멤버십 단일출처
+      var memSh  = _sheetByGid_(memCfg.ssId, memCfg.gid);
+      var memLast = memSh ? memSh.getLastRow() : 0;
+      var memLastCol = memSh ? memSh.getLastColumn() : 0;
+      var memRes = _countRegFromSheet_(memSh, memLast, memLastCol, ps.monthStart);
+      regByTypeMonth['멤버십'] = memRes !== null ? memRes.count : null;
+      regByTypeMonth['멤버십_집계'] = memRes !== null ? '진행현황 기준' : '진행현황 없음';
+    } catch (e) { regByTypeMonth['멤버십'] = null; }
+
+    // 강습 — LESSON_TEAM_SHEETS 유형별 합산 (날짜=B열 기준 이번달 SUC/단기SUC)
+    try {
+      var lessonRegCounts = { '성인강습': 0, '유소년강습': 0 };
+      var lessonRegFound  = { '성인강습': false, '유소년강습': false };
+      LESSON_TEAM_SHEETS.forEach(function(cfg) {
+        try {
+          var lsh  = _sheetByGid_(cfg.ssId, cfg.gid);
+          var llast = lsh ? lsh.getLastRow() : 0;
+          var llcol = lsh ? lsh.getLastColumn() : 0;
+          var lres = _countRegFromSheet_(lsh, llast, llcol, ps.monthStart);
+          if (lres !== null) {
+            lessonRegCounts[cfg.유형] = (lessonRegCounts[cfg.유형] || 0) + lres.count;
+            lessonRegFound[cfg.유형]  = true;
+          }
+        } catch (e) { /* 팀시트 접근 실패 무시 */ }
+      });
       ['성인강습', '유소년강습'].forEach(function(tp) {
-        if (lessonRegs[tp]) regByTypeMonth[tp] = lessonRegs[tp].registered || 0;
+        regByTypeMonth[tp] = lessonRegFound[tp] ? lessonRegCounts[tp] : null;
+        regByTypeMonth[tp + '_집계'] = lessonRegFound[tp] ? '진행현황 이번달' : '진행현황 없음';
       });
     } catch (e) { /* 강습 등록 집계 실패 무시 */ }
 
