@@ -2396,7 +2396,10 @@ function drawUI(d,gender){
       const meta=roundSubMeta(d,gender,curRound);
       const who=meta.by?` (${meta.by})`:'';
       const when=meta.at?new Date(meta.at).toLocaleString('ko-KR'):'';
-      html+=`<div class="shift-submitted">제출 완료${who} ${when}</div>`;
+      html+=`<div class="shift-submitted" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">`;
+      html+=`<span>제출 완료${who} ${when}</span>`;
+      html+=`<button class="unlock-round-btn" onclick="unlockRound('${curRound}','${gender}')" style="padding:3px 10px;font-size:11px;font-weight:700;border:1px solid var(--accent);background:var(--accent-bg);color:var(--accent);border-radius:6px;cursor:pointer;font-family:inherit;">🔓 잠금해제</button>`;
+      html+=`</div>`;
     }
     html+=`</div>`;
 
@@ -3405,6 +3408,49 @@ async function submitRound(round,gender){
   }
   alert(`${d} ${rdef.name} ${rdef.time} 점검(${genderLabel})이 ${sub}님 이름으로 ${_isAdd?'추가 ':''}제출되었습니다.`);
   drawUI(d,gender);
+}
+
+/* 관리자 PIN 제출잠금 해제 — 2026-06-17 시우.
+   1) PIN prompt → 백엔드 unlock_round POST
+   2) 성공 시 STATE + localStorage 잠금 플래그 제거 → drawUI 재렌더
+   3) 체크 데이터는 보존(서버측도 led.c / led.cr 유지). */
+async function unlockRound(round,gender){
+  const d=getDateG(gender);
+  const rdef=roundDef(round);
+  if(!rdef){alert('알 수 없는 조');return;}
+  const pin=prompt(`${rdef.name} 잠금 해제\nPIN 번호를 입력하세요:`);
+  if(pin===null)return; // 취소
+  if(!ONLINE){alert('오프라인 상태에서는 잠금 해제를 할 수 없습니다.');return;}
+  try{
+    const res=await fetch(API_URL,{method:'POST',redirect:'follow',headers:{'Content-Type':'text/plain'},
+      body:JSON.stringify({action:'unlock_round',dept:'support',date:d,gender,round,pin})});
+    const j=await res.json();
+    if(!j.ok){
+      if(j.reason==='PIN') alert('PIN 불일치. 다시 확인하세요.');
+      else alert('잠금 해제 실패: '+(j.reason||j.error||'알 수 없는 오류'));
+      return;
+    }
+    // STATE + localStorage 잠금 플래그 해제
+    delete STATE[roundSubKey(d,gender,round)];
+    delete STATE['submittedAt_'+d+'_'+gender+'_'+round];
+    delete STATE['submitter_'+d+'_'+gender+'_'+round];
+    localStorage.removeItem(roundSubLSKey(d,gender,round));
+    localStorage.removeItem('wcheck_rsubBy_'+d+'_'+gender+'_'+round);
+    localStorage.removeItem('wcheck_rsubAt_'+d+'_'+gender+'_'+round);
+    // baseShift 잠금도 해제(동일 shift의 다른 라운드가 없으면)
+    const bs=rdef.baseShift;
+    const sibStillLocked=roundsOfShift(bs).some(rk=>rk!==round&&isRoundSubmitted(d,gender,rk));
+    if(!sibStillLocked){
+      delete STATE['_submitted_'+bs];
+      delete STATE['_submittedAt_'+bs];
+      delete STATE['_submitter_'+bs];
+    }
+    saveLocal(d,STATE,gender);
+    drawUI(d,gender);
+    alert(`${rdef.name} 잠금이 해제되었습니다. 체크 데이터는 유지됩니다.`);
+  }catch(e){
+    alert('잠금 해제 중 오류: '+e.message);
+  }
 }
 
 /* 회차(조) 제출 시에만 텔레그램 회차 보고 — 그 회차 이슈·완료율 + 점검페이지 링크.

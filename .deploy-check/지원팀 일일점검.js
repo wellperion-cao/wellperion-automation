@@ -767,6 +767,7 @@ function doPost(e) {
     if (body.action === 'snapshot_append') return handleSnapshotAppend(body);   // F3: 제출 스냅샷 적립
     if (body.action === 'vendor_save')    return vendorSave(body);               // 거래업체 전체 교체 저장(시설_거래업체 시트)
     if (body.action === 'save_insp_memo') return saveInspMemo(body);            // 회차 점검자 배정 메모(공유). 2026-06-16 시우.
+    if (body.action === 'unlock_round')  return handleUnlockRound(body);       // 관리자 PIN 제출잠금 해제. 2026-06-17 시우.
     return jsonRes({ error: 'unknown action' });
   } catch (err) {
     return jsonRes({ error: err.message });
@@ -2458,4 +2459,46 @@ function dedupSnapshot(dept) {
   del.sort(function (a, b) { return b - a; });
   del.forEach(function (rn) { try { sheet.deleteRow(rn); } catch (e) { var c = Math.max(1, sheet.getLastColumn()); sheet.getRange(rn, 1, 1, c).clearContent(); } });
   return jsonRes({ ok: true, dept: dept, removedBucket: removedBucket, removedDup: removedDup });
+}
+
+// ─── 관리자 PIN 제출잠금 해제. 2026-06-17 시우 ───
+// body: { action:'unlock_round', dept, date, gender, round, pin }
+// round: am1 | pm1 | close1  →  baseShift: am | pm
+// 원장(ScriptProperties) led.sub/subAt 해당 shiftKey 삭제 → 체크 데이터(led.c, led.cr) 보존.
+// PIN SSOT: ScriptProperties 키 CHECK_UNLOCK_PIN (없으면 기본값 '1234').
+var CHECK_UNLOCK_PIN_DEFAULT = '1234';
+function _roundToShiftKey(round) {
+  var r = String(round || '');
+  if (r.indexOf('close') >= 0) return 'night';
+  if (r.indexOf('pm') >= 0)    return 'pm';
+  return 'am';
+}
+function handleUnlockRound(body) {
+  var dept   = String(body.dept   || 'support').trim();
+  var date   = String(body.date   || '').trim();
+  var gender = String(body.gender || 'm').trim();
+  var round  = String(body.round  || '').trim();
+  var pin    = String(body.pin    || '').trim();
+
+  if (!date || !round) return jsonRes({ ok: false, reason: 'PARAM' });
+
+  // PIN 검증
+  var props = PropertiesService.getScriptProperties();
+  var correctPin = props.getProperty('CHECK_UNLOCK_PIN') || CHECK_UNLOCK_PIN_DEFAULT;
+  if (pin !== correctPin) return jsonRes({ ok: false, reason: 'PIN' });
+
+  // 원장 로드
+  var key = _chkKey(dept, date, gender);
+  var led = {};
+  try { led = JSON.parse(props.getProperty(key) || '{}'); } catch (e) {}
+  if (!led.sub)   led.sub   = {};
+  if (!led.subAt) led.subAt = {};
+
+  // shiftKey(am/pm/night) 기반으로 제출 메타만 삭제(체크 데이터 보존)
+  var shiftKey = _roundToShiftKey(round);
+  delete led.sub[shiftKey];
+  delete led.subAt[shiftKey];
+
+  props.setProperty(key, JSON.stringify(led));
+  return jsonRes({ ok: true, dept: dept, date: date, gender: gender, round: round, shiftKey: shiftKey });
 }
