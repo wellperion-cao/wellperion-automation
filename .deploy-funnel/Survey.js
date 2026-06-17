@@ -99,12 +99,14 @@ function _canonicalChannel_(raw) {
 function _stageOf_(raw) {
   var s = String(raw == null ? '' : raw).trim();
   if (!s) return 1; // 빈칸 → 최소단계(①문의)
-  if (/이탈|보류|포기|거절|취소/.test(s)) return 0;
-  if (/가입|등록|전환|회원/.test(s))       return 5;
-  if (/방문|내방|방문완료/.test(s))         return 4;
-  if (/예약|투어|상담/.test(s))             return 3;
-  if (/응대|연락|통화|문자|회신/.test(s))   return 2;
-  if (/신규|접수/.test(s))                  return 1;
+  if (/이탈|보류|포기|거절|취소|loss/i.test(s)) return 0;
+  // SUC / 단기SUC = 수강등록 성공(강습 팀시트 정본값) → 가입(5)
+  if (/^(suc|단기\s*suc)$/i.test(s))            return 5;
+  if (/가입|등록|전환|회원/.test(s))             return 5;
+  if (/방문|내방|방문완료/.test(s))              return 4;
+  if (/예약|투어|상담/.test(s))                  return 3;
+  if (/응대|연락|통화|문자|회신/.test(s))        return 2;
+  if (/신규|접수/.test(s))                       return 1;
   return 1; // 미인식 → ① 문의(안전 처리)
 }
 
@@ -167,14 +169,14 @@ function _collectFormInquiries_() {
 // 강습 '구조화 상태값' 판정 — 짧은 코드형 상태만(자유메모 배제). 스쿼시=SUC/LOSS/가망/컨택중 포함.
 function _isLessonStatusVal_(v) {
   var s = String(v == null ? '' : v).trim();
-  if (!s || s.length > 12) return false;  // 자유메모(긴 문장) 배제
-  return /^(등록|등록완료|미등록|실패|컨택중|컨택|대기|보류|취소|환불|가망|상담중|상담|suc|loss|성공)$/i.test(s);
+  if (!s || s.length > 15) return false;  // 자유메모(긴 문장) 배제
+  return /^(등록|등록완료|미등록|실패|컨택중|컨택|대기|보류|취소|환불|가망|상담중|상담|suc|단기\s*suc|loss|성공)$/i.test(s);
 }
 function _isLessonReg_(v) {
   var s = String(v == null ? '' : v).trim();
-  if (s.length > 12) return false;  // 자유메모 배제(노이즈)
+  if (s.length > 15) return false;  // 자유메모 배제(노이즈)
   if (/미등록|등록취소|취소|환불|대기|보류|불가|loss|가망|컨택/i.test(s)) return false;
-  return /^(등록|등록완료|suc|성공)$/i.test(s);  // 구조화 성공값만
+  return /^(등록|등록완료|suc|단기\s*suc|성공)$/i.test(s);  // 구조화 성공값만 (단기SUC 포함)
 }
 
 // 강습 수강등록 집계 — 팀별 정리시트에서 상태열을 '값'으로 탐지(등록/실패/컨택중 최다 열) 후 '등록' 카운트.
@@ -859,6 +861,34 @@ function _processAction(body) {
       };
     }
 
+    // ── 유형별 등록 현황 (이번 달) ──
+    // 멤버십: 유효회원 시트 '등록 일자' 기준 이번달 신규등록 카운트
+    // 강습(성인·유소년): 종목별 팀시트 수강등록(SUC/단기SUC/등록) 기준 — _collectLessonRegistrations_ 반환값
+    var regByTypeMonth = {};
+
+    // 멤버십 등록 — 회원부 시트 '등록 일자' 컬럼 기준 이번달 카운트
+    try {
+      var regMbrHeaders = mbrSh2.getRange(1, 1, 1, mbrSh2.getLastColumn()).getValues()[0];
+      var regDateIdx    = regMbrHeaders.indexOf(MEMBER_DATE_COL);
+      if (regDateIdx >= 0 && mbrLast2 >= 2) {
+        var regDateVals = mbrSh2.getRange(2, regDateIdx + 1, mbrLast2 - 1, 1).getValues();
+        var mbrRegCount = 0;
+        regDateVals.forEach(function(r) {
+          var d = _toDate_(r[0]);
+          if (!isNaN(d.getTime()) && d >= ps.monthStart) mbrRegCount++;
+        });
+        regByTypeMonth['멤버십'] = mbrRegCount;
+      }
+    } catch (e) { /* 회원 등록일 집계 실패 무시 */ }
+
+    // 강습 등록 — 팀시트 수강등록 정본 (누적값; 등록일 미제공 → 이번달 구분 불가, 전체 등록수 표시)
+    try {
+      var lessonRegs = _collectLessonRegistrations_();
+      ['성인강습', '유소년강습'].forEach(function(tp) {
+        if (lessonRegs[tp]) regByTypeMonth[tp] = lessonRegs[tp].registered || 0;
+      });
+    } catch (e) { /* 강습 등록 집계 실패 무시 */ }
+
     var pbResult = {
       ok:          true,
       generatedAt: _now(),
@@ -877,7 +907,8 @@ function _processAction(body) {
       },
       conversion: {
         month: { inquiries: convInq, converted: convConv, rate: convRate }
-      }
+      },
+      regByTypeMonth: regByTypeMonth  // 유형별 등록 현황 (멤버십=이번달신규 / 강습=누적)
     };
     if (customObj !== null) pbResult.custom = customObj;
 

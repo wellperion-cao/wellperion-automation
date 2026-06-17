@@ -442,47 +442,61 @@ details.footnote-toggle > .fn-body{
   </div>
 
   <!-- ════════════════════════════════════════════
-       ★ 히어로 — 이번 달 문의 목표 게이지 (신설)
-       데이터소스: _flow / MONTHLY_INQUIRY_TARGET / pace 로직(renderConversionFlow 재사용)
+       ★ 히어로 — 문의 현황/목표 | 등록 현황 (2컬럼)
+       데이터소스: _flow / MONTHLY_INQUIRY_TARGET / _pbData.regByTypeMonth
        ════════════════════════════════════════════ -->
   <div class="hero-block" id="hero-block">
-    <div class="hero-label">이번 달 문의 현황</div>
-    <!-- 데이터 대기 중 스켈레톤 — renderHero() 호출 시 교체됨 -->
     <div id="hero-inner" class="hero-skeleton">
-      <div class="hero-row">
-        <div class="hero-main">
-          <div class="hero-num sk-pulse" style="width:120px;height:52px;border-radius:8px"></div>
-          <div class="hero-num-label">이번 달 문의</div>
+      <!-- renderHero() 호출 시 아래 스켈레톤 → 실데이터로 교체됨 -->
+      <div style="display:flex;gap:16px;flex-wrap:wrap">
+        <!-- 왼쪽: 문의 현황/목표 -->
+        <div style="flex:1;min-width:160px">
+          <div class="hero-label">문의 현황</div>
+          <div class="hero-row">
+            <div class="hero-main">
+              <div class="hero-num sk-pulse" style="width:120px;height:52px;border-radius:8px"></div>
+              <div class="hero-num-label">이번 달 문의</div>
+            </div>
+            <div class="hero-target">
+              <div class="hero-target-val sk-pulse" style="width:70px;height:32px;border-radius:6px"></div>
+              <div class="hero-target-label">목표</div>
+            </div>
+          </div>
+          <div class="hero-bar-wrap">
+            <div class="hero-bar-track"><div class="hero-bar-fill" style="width:0%"></div></div>
+          </div>
+          <div class="sk-pulse" style="width:240px;height:13px;border-radius:4px;margin-top:10px"></div>
         </div>
-        <div class="hero-target">
-          <div class="hero-target-val sk-pulse" style="width:70px;height:32px;border-radius:6px"></div>
-          <div class="hero-target-label">목표</div>
+        <!-- 구분선 -->
+        <div style="width:1px;background:var(--border);flex-shrink:0;align-self:stretch"></div>
+        <!-- 오른쪽: 등록 현황 -->
+        <div style="flex:1;min-width:140px">
+          <div class="hero-label">등록 현황</div>
+          <div id="hero-reg-body" style="margin-top:8px">
+            <div class="sk-pulse" style="width:100%;height:68px;border-radius:8px"></div>
+          </div>
         </div>
       </div>
-      <div class="hero-bar-wrap">
-        <div class="hero-bar-track"><div class="hero-bar-fill" style="width:0%"></div></div>
-      </div>
-      <div class="sk-pulse hero-pace-sk" style="width:260px;height:14px;border-radius:4px;margin-top:10px"></div>
     </div>
   </div>
 
   <!-- ════════════════════════════════════════════
-       ② 핵심 지표 — 전환 흐름(=KPI) · 항상 펼침, 즉시 로드
-       클릭→문의→등록 + 문의 목표 접목 + 유형별 한눈에
+       ② 유형별 문의·등록 현황 — 항상 펼침, 즉시 로드
+       conversion-flow-wrap 은 내부 renderConversionFlow() id 유지(JS 의존)
        ════════════════════════════════════════════ -->
   <div class="section">
-    <div class="section-title">핵심 지표 — 전환 흐름</div>
-    <!-- 스켈레톤 — renderConversionFlow() 호출 시 교체됨 -->
+    <!-- renderConversionFlow()가 이 div를 채움 (id 변경 금지) -->
     <div id="conversion-flow-wrap" style="margin-bottom:6px">
       <div class="flow-skeleton sk-pulse" style="height:120px;border-radius:var(--radius-md)"></div>
     </div>
   </div>
 
   <!-- ════════════════════════════════════════════
-       ③ 유입 출처 + 버튼별 클릭 — 항상 표시, 즉시 로드
+       📁 디테일 구역 앞 — 클릭 현황 (참고·재미 요소, 기본 접힘)
        ════════════════════════════════════════════ -->
-  <div class="section" id="details-click-stats">
-    <div class="section-title">실시간 클릭 현황 <span id="click-updated" style="font-size:11px;font-weight:400;color:var(--dim);text-transform:none;letter-spacing:0"></span></div>
+  <details class="collapse" id="details-click-stats">
+    <summary>클릭 현황 <span style="font-size:11px;font-weight:400;color:var(--dim);text-transform:none;letter-spacing:0">— 참고·재미 요소 <span id="click-updated"></span></span></summary>
+    <div class="collapse-body">
     <p style="color:var(--dim);font-size:13px;margin:0 0 14px">문의 페이지(/inquiry) 버튼별 클릭 수 — Apps Script 클릭로그 자동 집계(실시간).</p>
     <div class="click-two-col">
       <!-- 왼쪽: 한·영 버튼별(폼) 클릭 -->
@@ -508,7 +522,8 @@ details.footnote-toggle > .fn-body{
         <div style="margin-top:8px;font-size:11px;color:var(--dim);line-height:1.6">현재 '직접·홈'만 보이는 것은 정상 — 채널 링크 출처 태깅(2026-06-13 적용)이 다음 발행분부터 쌓입니다. 글이 발행될수록 인스타·블로그·당근·카페·카카오로 갈라집니다.</div>
       </div>
     </div>
-  </div>
+    </div>
+  </details>
 
   <!-- ════════════════════════════════════════════
        📁 디테일 구역 — 기본 접힘
@@ -749,149 +764,190 @@ var _DOT_COLORS = ['--f1','--f2','--f3','--f4','--f5'];
 // 10종: 네이버·동부이촌동 커뮤니티·인스타그램·카카오톡·당근마켓·소개·지인·기존·과거 회원·오프라인·유선전화·기타·미상.
 var ETC_CHANNEL = '기타·미상';
 
-// ─── 핵심 전환 흐름 (클릭→문의→등록 · 문의흐름지도 합병) ──────────
+// ─── 유형별 문의·등록 현황 (conversion-flow-wrap) ──────────────────
+// 기존 클릭→문의→현회원매칭 3카드 흐름 제거 — 데이터 정직성(L05).
+// 대체: 유형별 문의 건수 | 등록 건수 (regByTypeMonth) 나란히.
 function renderConversionFlow() {
   var el = document.getElementById('conversion-flow-wrap');
   if (!el) return;
 
-  // _flow = 현재 선택된 날짜뷰(월·지난달·기간)의 정규화 데이터 — 모든 경로가 갱신
   var f = _flow;
   if (!f && _pbData) {
-    f = { clicks: (_pbData.clicks && _pbData.clicks.month) || 0,
-          inq:    (_pbData.inquiries && _pbData.inquiries.month) || 0,
-          conv:   (_pbData.conversion && _pbData.conversion.month) ? _pbData.conversion.month.converted : null,
+    f = { inq:    (_pbData.inquiries && _pbData.inquiries.month) || 0,
           byType: (_pbData.inquiries && _pbData.inquiries.byTypeMonth) || {},
           mode: 'month', label: '이번 달' };
   }
   if (!f) { el.innerHTML = '<div style="color:var(--dim);font-size:13px">집계 대기 중</div>'; return; }
 
-  var clicks = f.clicks || 0;
-  var inq    = f.inq || 0;
-  var convAvail = (f.conv !== null && f.conv !== undefined);
-  var conv   = convAvail ? f.conv : 0;
-  // r1(클릭→문의 비율): 클릭=폼버튼 클릭, 문의=전화·워크인 포함 전체 — 모집단 불일치로 무의미. 미사용.
-  // r2(문의→등록 비율): 등록은 현재 유효회원 전화매칭(신규 전환 아님) — 퍼널 전환율로 오독 위험. 미사용.
-  // TODO(CTO-SELF-HOSTED-INQUIRY-DB): 자체 문의DB 구축 시 등록일 기반 정확 전환율 산출 가능.
+  var byType = f.byType || {};
+  var reg    = (_pbData && _pbData.regByTypeMonth) ? _pbData.regByTypeMonth : null;
+  var periodLabel = f.label || '이번 달';
 
-  // 문의 목표 접목 — 별도 게이지 박스 폐지, ② 문의 카드 하단에 흡수 (월 단위 뷰에서만)
-  var isMonthView = (f.mode === 'month' || f.mode === 'monthPast');
-  var inqSub = f.label || '문의 접수';
-  var paceHtml = '';
-  if (isMonthView && typeof MONTHLY_INQUIRY_TARGET !== 'undefined' && MONTHLY_INQUIRY_TARGET !== null) {
-    var gpct = Math.round(inq / MONTHLY_INQUIRY_TARGET * 100);
-    inqSub = '목표 ' + MONTHLY_INQUIRY_TARGET + ' · ' + gpct + '%' + (f.mode === 'monthPast' ? ' (최종)' : '');
-    if (f.mode === 'month') {
-      var _now = new Date();
-      var _dom = _now.getDate();
-      var _dim = new Date(_now.getFullYear(), _now.getMonth() + 1, 0).getDate();
-      var _proj = _dom > 0 ? Math.round(inq / _dom * _dim) : inq;
-      var _diff = _proj - MONTHLY_INQUIRY_TARGET;
-      var _pacePct = Math.round(_proj / MONTHLY_INQUIRY_TARGET * 100);
-      var _paceColor = _proj >= MONTHLY_INQUIRY_TARGET ? 'var(--green)' : (_pacePct >= 80 ? 'var(--accent)' : 'var(--dim)');
-      var _sign = _diff >= 0 ? '+' : '';
-      var _paceLabel = _proj >= MONTHLY_INQUIRY_TARGET ? '목표 달성 페이스' : '목표 미달 페이스';
-      paceHtml = '<div style="font-size:11px;color:var(--dim);margin-top:10px;padding:10px 14px;background:var(--paper2);border-radius:var(--radius-sm);border:1px solid var(--border);line-height:1.7">문의 페이스 → 월말 예상 <b style="color:' + _paceColor + ';font-size:13px">' + _proj.toLocaleString('ko-KR') + '건</b> · 목표 대비 ' + _sign + _diff + '건 (' + _pacePct + '%) · <span style="color:' + _paceColor + ';font-weight:700">' + _paceLabel + '</span> <span style="color:var(--dim)">(' + _dom + '/' + _dim + '일 경과)</span></div>';
-    }
+  // 표시 유형: 문의·등록 모두 의미있는 3종
+  var typeRows = [
+    { label: '멤버십',     inqKey: '멤버십',     regKey: '멤버십',   regNote: '이번 달 신규' },
+    { label: '성인 강습',  inqKey: '성인강습',   regKey: '성인강습', regNote: '팀시트 누적' },
+    { label: '유소년 강습',inqKey: '유소년강습',  regKey: '유소년강습',regNote: '팀시트 누적' }
+  ];
+
+  var totalInq = Object.values ? Object.values(byType).reduce(function(a,b){return a+b;},0) : f.inq || 0;
+
+  var thead = '<thead><tr>'
+    + '<th style="text-align:left;padding:8px 10px;font-size:10px;color:var(--dim);background:var(--paper2);border-bottom:1px solid var(--border);text-transform:uppercase;letter-spacing:.05em">유형</th>'
+    + '<th style="text-align:right;padding:8px 10px;font-size:10px;color:var(--dim);background:var(--paper2);border-bottom:1px solid var(--border)">문의 (' + periodLabel + ')</th>'
+    + '<th style="text-align:right;padding:8px 10px;font-size:10px;color:var(--dim);background:var(--paper2);border-bottom:1px solid var(--border)">등록</th>'
+    + '<th style="padding:8px 10px;font-size:10px;color:var(--dim);background:var(--paper2);border-bottom:1px solid var(--border)">비고</th>'
+    + '</tr></thead>';
+
+  var tbody = '<tbody>';
+  typeRows.forEach(function(r) {
+    var inqVal = byType[r.inqKey] || 0;
+    var regVal = (reg && reg[r.regKey] !== undefined) ? reg[r.regKey] : null;
+    var regStr = (regVal !== null) ? regVal.toLocaleString('ko-KR') : '—';
+    var regColor = (regVal !== null && regVal > 0) ? 'var(--f5)' : 'var(--dim)';
+    tbody += '<tr>'
+      + '<td style="padding:9px 10px;font-size:13px;font-weight:600">' + r.label + '</td>'
+      + '<td style="padding:9px 10px;text-align:right;font-size:16px;font-weight:700;color:var(--f2)">' + inqVal.toLocaleString('ko-KR') + '</td>'
+      + '<td style="padding:9px 10px;text-align:right;font-size:16px;font-weight:700;color:' + regColor + '">' + regStr + '</td>'
+      + '<td style="padding:9px 10px;font-size:10px;color:var(--dim)">' + r.regNote + '</td>'
+      + '</tr>';
+  });
+  // 기타 유형 (공간렌트·비즈니스파트너 등) 합산
+  var etcInq = 0;
+  Object.keys(byType).forEach(function(k) {
+    if (!['멤버십','성인강습','유소년강습'].includes(k)) etcInq += byType[k] || 0;
+  });
+  if (etcInq > 0) {
+    tbody += '<tr style="border-top:1px solid var(--border)">'
+      + '<td style="padding:8px 10px;font-size:12px;color:var(--dim)">기타</td>'
+      + '<td style="padding:8px 10px;text-align:right;font-size:14px;color:var(--dim)">' + etcInq.toLocaleString('ko-KR') + '</td>'
+      + '<td style="padding:8px 10px;text-align:right;font-size:14px;color:var(--dim)">—</td>'
+      + '<td style="padding:8px 10px;font-size:10px;color:var(--dim)"></td>'
+      + '</tr>';
   }
+  tbody += '</tbody>';
 
-  function card(icon, label, num, sub, color) {
-    return '<div style="flex:1;min-width:130px;background:var(--paper);border:1px solid var(--border);border-top:2px solid ' + color + ';border-radius:var(--radius-md);padding:18px 16px;text-align:center;box-shadow:var(--shadow)">'
-      + '<div style="font-size:20px;margin-bottom:6px;opacity:.85">' + icon + '</div>'
-      + '<div style="font-size:10px;font-weight:700;color:' + color + ';margin-bottom:8px;text-transform:uppercase;letter-spacing:.06em">' + label + '</div>'
-      + '<div style="font-size:30px;font-weight:700;color:' + color + ';line-height:1;letter-spacing:-.02em">' + (num || 0).toLocaleString('ko-KR') + '</div>'
-      + '<div style="font-size:10px;color:var(--dim);margin-top:7px;line-height:1.5">' + sub + '</div>'
-      + '</div>';
-  }
-  // 카드 사이 단순 시각 구분자 — 비율/CTR 수치 없음(모집단 불일치로 무의미)
-  function sep() {
-    return '<div style="display:flex;align-items:center;justify-content:center;min-width:24px;padding:0 2px;flex-shrink:0;color:var(--border);font-size:18px">›</div>';
-  }
-
-  // 등록 카드 sub 라벨: 추정 사실 명시
-  var convSub = convAvail
-    ? '추정 · 전화번호 매칭 기준<br>이번달 신규 전환 아님'
-    : '월 단위만 집계';
-
-  el.innerHTML = '<div style="display:flex;align-items:stretch;gap:8px;flex-wrap:wrap">'
-    + card('🖱', '① 문의 페이지 클릭', clicks, '문의 버튼 누른 횟수', 'var(--f1)')
-    + sep()
-    + card('📝', '② 문의 접수', inq, inqSub, 'var(--f2)')
-    + sep()
-    + card('✅', '③ 현 회원 매칭', convAvail ? conv : '—', convSub, 'var(--f5)')
+  el.innerHTML = '<div style="background:var(--paper);border:1px solid var(--border);border-radius:var(--radius-md);overflow:hidden">'
+    + '<table style="width:100%;border-collapse:collapse;font-size:13px">' + thead + tbody + '</table>'
     + '</div>'
-    + paceHtml
-    + '<div style="font-size:10px;color:var(--dim);margin-top:10px;line-height:1.6">'
-    + (f.label || '이번 달') + ' 기준 · ① 클릭은 문의 페이지 폼버튼 클릭(전화·워크인 미포함). ③ 현 회원 매칭은 이번달 문의자 전화번호가 유효회원 명부에 있는 수 — 기존 회원 포함, 이번달 신규 전환과 다릅니다.'
-    + '</div>';
+    + (reg === null ? '<div style="margin-top:8px;font-size:11px;color:var(--dim)">등록 데이터 집계 중 — 팀시트 접근 후 표시됩니다.</div>' : '');
+
   if (typeof renderTypeFunnel === 'function') renderTypeFunnel();
-  // 히어로 블록 갱신 — 전환흐름과 같은 _flow·pace 데이터 재사용
   renderHero(f);
 }
 
 // ─── 히어로 블록 렌더 ───────────────────────────────────────────────
-// _flow + MONTHLY_INQUIRY_TARGET 재사용. 새 fetch 없음.
+// _flow + MONTHLY_INQUIRY_TARGET + _pbData.regByTypeMonth 재사용. 새 fetch 없음.
 function renderHero(f) {
   var el = document.getElementById('hero-inner');
   if (!el) return;
-
-  // 데이터 없음 — 스켈레톤 유지
   if (!f) return;
 
   var inq = f.inq || 0;
   var isMonthView = (f.mode === 'month' || f.mode === 'monthPast');
   var hasTarget = (typeof MONTHLY_INQUIRY_TARGET !== 'undefined' && MONTHLY_INQUIRY_TARGET !== null);
+  var periodLabel = f.label || '이번 달';
 
-  // 목표 게이지
+  // ── 왼쪽: 문의 현황/목표 ──
   var pct = 0, targetVal = '—', paceHtml = '';
   var paceColor = 'var(--dim)';
   if (hasTarget) {
     targetVal = MONTHLY_INQUIRY_TARGET.toLocaleString('ko-KR');
     pct = Math.min(Math.round(inq / MONTHLY_INQUIRY_TARGET * 100), 100);
   }
-
-  // 월말 예상 페이스 (이번달 뷰에서만)
   if (isMonthView && f.mode === 'month' && hasTarget) {
-    var _now = new Date();
-    var _dom = _now.getDate();
-    var _dim = new Date(_now.getFullYear(), _now.getMonth() + 1, 0).getDate();
-    var _proj = _dom > 0 ? Math.round(inq / _dom * _dim) : inq;
-    var _pacePct = Math.round(_proj / MONTHLY_INQUIRY_TARGET * 100);
-    paceColor = _proj >= MONTHLY_INQUIRY_TARGET ? 'var(--green)' : (_pacePct >= 80 ? 'var(--accent)' : 'var(--dim)');
-    var _sign = (_proj - MONTHLY_INQUIRY_TARGET) >= 0 ? '+' : '';
-    var _paceLabel = _proj >= MONTHLY_INQUIRY_TARGET ? '목표 달성 페이스' : '목표 미달 페이스';
-    paceHtml = '월말 예상 <b style="color:' + paceColor + ';font-size:14px">' + _proj.toLocaleString('ko-KR') + '건</b>'
-      + ' · 목표 대비 ' + _sign + (_proj - MONTHLY_INQUIRY_TARGET) + '건'
-      + ' · <span style="color:' + paceColor + ';font-weight:700">' + _paceLabel + '</span>'
-      + ' <span style="color:var(--dim)">(' + _dom + '/' + _dim + '일 경과)</span>';
+    var _hn = new Date();
+    var _hdom = _hn.getDate();
+    var _hdim = new Date(_hn.getFullYear(), _hn.getMonth() + 1, 0).getDate();
+    var _hproj = _hdom > 0 ? Math.round(inq / _hdom * _hdim) : inq;
+    var _hpct = Math.round(_hproj / MONTHLY_INQUIRY_TARGET * 100);
+    paceColor = _hproj >= MONTHLY_INQUIRY_TARGET ? 'var(--green)' : (_hpct >= 80 ? 'var(--accent)' : 'var(--dim)');
+    var _hsign = (_hproj - MONTHLY_INQUIRY_TARGET) >= 0 ? '+' : '';
+    var _hpLabel = _hproj >= MONTHLY_INQUIRY_TARGET ? '목표 달성 페이스' : '목표 미달 페이스';
+    paceHtml = '월말 예상 <b style="color:' + paceColor + ';font-size:14px">' + _hproj.toLocaleString('ko-KR') + '건</b>'
+      + ' · 목표 대비 ' + _hsign + (_hproj - MONTHLY_INQUIRY_TARGET) + '건'
+      + ' · <span style="color:' + paceColor + ';font-weight:700">' + _hpLabel + '</span>'
+      + ' <span style="color:var(--dim)">(' + _hdom + '/' + _hdim + '일 경과)</span>';
   } else if (isMonthView && f.mode === 'monthPast') {
     paceHtml = '최종 달성 · <b>' + inq + '건</b> / 목표 ' + (hasTarget ? MONTHLY_INQUIRY_TARGET : '—') + '건';
   }
-
   var barColor = pct >= 100 ? 'var(--green)' : (pct >= 80 ? 'var(--accent)' : 'var(--f2)');
+
+  var leftHtml =
+    '<div class="hero-label">문의 현황</div>'
+    + '<div class="hero-row">'
+    + '<div class="hero-main">'
+    +   '<div class="hero-num" style="color:' + (isMonthView && hasTarget ? barColor : 'var(--f2)') + '">' + inq.toLocaleString('ko-KR') + '</div>'
+    +   '<div class="hero-num-label">' + periodLabel + ' 문의</div>'
+    + '</div>'
+    + (hasTarget
+      ? '<div class="hero-target"><div class="hero-target-val">/ ' + targetVal + '</div><div class="hero-target-label">목표</div></div>'
+      : '')
+    + '</div>'
+    + (hasTarget
+      ? '<div class="hero-bar-wrap"><div class="hero-bar-track"><div class="hero-bar-fill" style="width:' + pct + '%;background:' + barColor + '"></div></div><div class="hero-bar-pct" style="color:' + barColor + '">' + pct + '%</div></div>'
+      : '')
+    + (paceHtml ? '<div class="hero-pace">' + paceHtml + '</div>' : '');
+
+  // ── 오른쪽: 등록 현황 (_pbData.regByTypeMonth) ──
+  var regEl = document.getElementById('hero-reg-body');
+  if (regEl) {
+    var reg = (_pbData && _pbData.regByTypeMonth) ? _pbData.regByTypeMonth : null;
+    var regRows = [
+      { label: '멤버십',   key: '멤버십',   note: '이번 달 신규 등록' },
+      { label: '성인 강습', key: '성인강습', note: '종목별 팀시트 누적' },
+      { label: '유소년 강습', key: '유소년강습', note: '종목별 팀시트 누적' }
+    ];
+    var regHtml = '<table style="width:100%;border-collapse:collapse;font-size:13px">';
+    regRows.forEach(function(r) {
+      var val = (reg && reg[r.key] !== undefined) ? reg[r.key].toLocaleString('ko-KR') : '—';
+      var isReady = reg && reg[r.key] !== undefined;
+      regHtml += '<tr>'
+        + '<td style="padding:7px 0;color:var(--dim);font-size:12px">' + r.label + '</td>'
+        + '<td style="padding:7px 0;text-align:right;font-weight:700;color:' + (isReady ? 'var(--f5)' : 'var(--dim)') + ';font-size:18px">' + val + '</td>'
+        + '<td style="padding:7px 0 7px 8px;font-size:10px;color:var(--dim);white-space:nowrap">' + r.note + '</td>'
+        + '</tr>';
+    });
+    regHtml += '</table>';
+    if (!reg) regHtml = '<div style="color:var(--dim);font-size:12px;margin-top:8px">집계 대기 중</div>';
+    regEl.innerHTML = regHtml;
+  }
 
   el.className = '';  // 스켈레톤 클래스 해제
   el.innerHTML =
-    '<div class="hero-row">'
-    + '<div class="hero-main">'
-    +   '<div class="hero-num" style="color:' + (isMonthView && hasTarget ? barColor : 'var(--f2)') + '">' + inq.toLocaleString('ko-KR') + '</div>'
-    +   '<div class="hero-num-label">이번 달 문의</div>'
+    '<div style="display:flex;gap:16px;flex-wrap:wrap">'
+    + '<div style="flex:1;min-width:160px">' + leftHtml + '</div>'
+    + '<div style="width:1px;background:var(--border);flex-shrink:0;align-self:stretch"></div>'
+    + '<div style="flex:1;min-width:140px">'
+    +   '<div class="hero-label">등록 현황</div>'
+    +   '<div id="hero-reg-body" style="margin-top:8px">'
+    +     ((_pbData && _pbData.regByTypeMonth) ? '' : '<div style="color:var(--dim);font-size:12px">집계 대기 중</div>')
+    +   '</div>'
     + '</div>'
-    + (hasTarget
-      ? '<div class="hero-target">'
-        + '<div class="hero-target-val">/ ' + targetVal + '</div>'
-        + '<div class="hero-target-label">목표</div>'
-        + '</div>'
-      : '')
-    + '</div>'
-    + (hasTarget
-      ? '<div class="hero-bar-wrap">'
-        + '<div class="hero-bar-track"><div class="hero-bar-fill" style="width:' + pct + '%;background:' + barColor + '"></div></div>'
-        + '<div class="hero-bar-pct" style="color:' + barColor + '">' + pct + '%</div>'
-        + '</div>'
-      : '')
-    + (paceHtml
-      ? '<div class="hero-pace">' + paceHtml + '</div>'
-      : '');
+    + '</div>';
+
+  // reg 테이블은 innerHTML 교체 후 재삽입
+  var regElNew = document.getElementById('hero-reg-body');
+  if (regElNew && _pbData && _pbData.regByTypeMonth) {
+    var reg2 = _pbData.regByTypeMonth;
+    var rows2 = [
+      { label: '멤버십',     key: '멤버십',   note: '이번 달 신규' },
+      { label: '성인 강습',  key: '성인강습', note: '팀시트 누적' },
+      { label: '유소년 강습',key: '유소년강습',note: '팀시트 누적' }
+    ];
+    var t = '<table style="width:100%;border-collapse:collapse;font-size:13px">';
+    rows2.forEach(function(r) {
+      var v = (reg2[r.key] !== undefined) ? reg2[r.key].toLocaleString('ko-KR') : '—';
+      var colored = reg2[r.key] !== undefined;
+      t += '<tr>'
+        + '<td style="padding:6px 0;color:var(--dim);font-size:12px">' + r.label + '</td>'
+        + '<td style="padding:6px 0;text-align:right;font-weight:700;color:' + (colored ? 'var(--f5)' : 'var(--dim)') + ';font-size:18px">' + v + '</td>'
+        + '<td style="padding:6px 0 6px 6px;font-size:10px;color:var(--dim)">' + r.note + '</td>'
+        + '</tr>';
+    });
+    t += '</table>';
+    regElNew.innerHTML = t;
+  }
 }
 
 function renderChannelTableLive() {
@@ -2038,7 +2094,7 @@ document.addEventListener('DOMContentLoaded', function() {
   document.getElementById('details-monthly-trend').addEventListener('toggle', function() {
     if (this.open && !this._loaded) { this._loaded = true; loadMonthlyTrend(); }
   });
-  // details-click-stats, details-type-channel 은 이제 div.section — toggle 리스너 불필요
+  // details-click-stats 는 이제 details.collapse (참고·재미 요소) — toggle 리스너 불필요
   // details-channel-compare, details-entry-points, details-exp-log 은
   // 추가 fetch 없음 — funnel 데이터는 이미 로드됨, 나머지는 정적 HTML
 });
