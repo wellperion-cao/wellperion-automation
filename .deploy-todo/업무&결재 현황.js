@@ -436,10 +436,10 @@ var CAT_DEPT_HEAD = {
 };
 function _deptHeadFor(category) { return CAT_DEPT_HEAD[String(category || '')] || ''; }
 
-// ─── 결재 라인 자동 산출 — 부서장 → GM 2단계 (2026-06-16 GM: 대표 단계 폐지, 대표 보고는 오프라인 페이퍼) ───
-// 부서장: 카테고리→부서 매핑 시 자동 1단계(매핑 없으면 생략).
+// ─── 결재 라인 자동 산출 — (명시 체크한 부서장) → GM (2026-06-16 GM: 대표 단계 폐지 / 2026-06-17 COO A: 카테고리 자동 부서장 삽입 폐지) ───
+// 중간 결재자: 결재요청에 명시 체크한 부서장만(카테고리 자동삽입 안 함).
 // 결재 필요 여부 = 수동 결재요청 또는 예산(BUDGET 마커) 존재.
-// 담당자=김남욱GM이면 GM 단계 생략 (본인 결재 중복 방지).
+// 담당자=김남욱GM이면 부서장 단계 생략. GM은 항상 최종.
 function _buildApprovalRoute(record) {
   const content = String(record['내용'] || '');
   const hasBudget = /===BUDGET===\s*\n[^|]+\|\s*\d+/.test(content);
@@ -448,13 +448,12 @@ function _buildApprovalRoute(record) {
   // 결재 불필요 → 빈 라인
   if (manual.length === 0 && !hasBudget) return [];
 
-  // 부서장 = 담당자의 부서장(본인이 부서장이면 본인) — 카테고리 짐작보다 담당자 우선(오배정 차단, 2026-06-03 GM).
+  // 중간 결재자 = 결재요청에 명시 체크한 부서장만. 카테고리 자동 부서장 삽입 폐지(2026-06-17 COO A) — 시설 카테고리라고 소장 자동삽입 안 함.
   var MID = ['이경연 실장','이정헌 소장','나우열M'];
   var owners = String(record['담당자'] || '').split(',').map(function(s){ return s.trim(); });
-  var ownerDH = owners.filter(function(o){ return MID.indexOf(o) >= 0; })[0];
-  var midName = ownerDH || _deptHeadFor(record['카테고리']) || manual.filter(function(m){ return MID.indexOf(m) >= 0; })[0] || '';
+  var midName = manual.filter(function(m){ return MID.indexOf(m) >= 0; })[0] || '';
 
-  // 표준 결재선: 부서장 → GM(최종). 본인이 부서장이라도 부서장 승인부터(스킵 X). GM이 라인 마지막 = GM 서명 시 결재완료.
+  // 표준 결재선: (명시 체크한 부서장) → GM(최종). GM이 라인 마지막 = GM 서명 시 결재완료.
   const ownerIsGM = owners.indexOf('김남욱GM') >= 0;
   const route = [];
   if (midName && !ownerIsGM) route.push('부서장');
@@ -1065,13 +1064,10 @@ function _gmHangroNextApprover(row) {
   if (!approval.length) return null;
   var owners = String(row['담당자'] || '').split(',').map(function (s) { return s.trim(); });
   var ownerIsGM = owners.indexOf('김남욱GM') >= 0;
-  var midName = approval.filter(function (m) { return GM_HANGRO_DEPT_HEADS.indexOf(m) >= 0; })[0]
-    || owners.filter(function (o) { return GM_HANGRO_DEPT_HEADS.indexOf(o) >= 0; })[0]
-    || (GM_HANGRO_CAT_DEPT_HEAD[String(row['카테고리'] || '')] || '');
-  var midExplicit = midName && approval.indexOf(midName) >= 0;
-  var skipMid = midName && owners.indexOf(midName) >= 0 && !midExplicit;
+  // 중간 결재자 = 결재요청에 명시 체크한 부서장만. 카테고리 자동 부서장 삽입 폐지(2026-06-17 COO A). 프론트 gm1NextApprover와 정합.
+  var midName = approval.filter(function (m) { return GM_HANGRO_DEPT_HEADS.indexOf(m) >= 0; })[0] || '';
   var route = [];
-  if (midName && !ownerIsGM && !skipMid) route.push('부서장');
+  if (midName && !ownerIsGM) route.push('부서장');
   route.push('GM');
   var map = { '부서장': row['부서장싸인'], 'GM': row['GM싸인'] };
   for (var i = 0; i < route.length; i++) { if (!map[route[i]]) return route[i]; }

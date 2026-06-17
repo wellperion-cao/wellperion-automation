@@ -467,6 +467,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
       </div>
     </div>
     <div id="lifecycleBanner" style="margin-bottom:12px;padding:10px 14px;border-radius:8px;font-size:12px;font-weight:600;display:none;"></div>
+    <div id="rejectNotice" style="margin-bottom:12px;padding:10px 14px;border-radius:8px;font-size:12px;font-weight:600;display:none;background:var(--red-bg);color:var(--red);white-space:pre-wrap;line-height:1.6;"></div>
     <div class="field">
       <label>업무 본문 <span style="font-size:11px;color:var(--dim);font-weight:400;">(한 줄 요약 — 자세한 건 아래 내용 섹션)</span></label>
       <textarea id="fContent" placeholder="이 업무의 한 줄 요약" style="min-height:240px;"></textarea>
@@ -1434,23 +1435,21 @@ function renderTaskCard(t, idx) {
   if (t.approval) {
     // ── 결재 진행 표시 (2026-05-29 GM 지시) ─────────────────────────────
     const _parsed = parseContent(t.content);
-    // 결재선 = 부서장(카테고리→부서 자동) → GM. 운영현황 최종 결재권자 = 김남욱GM (2026-06-03 GM 확정)
-    // ※ 대표님 단계는 결재 현황 SSOT 전용(거기선 GM 다음 전응준 대표 종착). 운영현황은 GM에서 종결.
-    // 부서장: 카테고리가 부서에 매핑되면 자동 1단계. 매핑 없으면 생략(GM 폴백).
+    // 결재선 = (담당자가 명시 체크한 중간 결재자) → GM. 운영현황 최종 결재권자 = 김남욱GM (2026-06-03 GM 확정)
+    // 중간 결재자: 카테고리 자동 부서장 삽입 폐지 — 결재요청에 명시 체크한 부서장만 포함 (2026-06-17 COO A).
     const _manual = String(t.approval || '').split(',').map(s => s.trim()).filter(Boolean);
     const _MID = ['이경연 실장','이정헌 소장','나우열M'];
     // 부서장 실명: 카테고리 매핑 우선, 없으면 수동 결재요청에 포함된 부서장
     const _ownerStr = String(t.owner || '');
-    const _midFromManual = _manual.find(m => _MID.indexOf(m) >= 0) || '';
-    let _midName = _midFromManual || deptHeadFor(t.category) || '';
-    // 담당자가 GM이면 부서장 단계 생략. 담당자=부서장이라 자동지정된 경우만 자기결재로 스킵(명시 결재요청은 존중) (2026-06-05 GM)
+    // 중간 결재자 = 담당자가 명시 체크한 결재요청자만. 카테고리 자동 부서장 삽입 폐지 (2026-06-17 COO A).
+    let _midName = _manual.find(m => _MID.indexOf(m) >= 0) || '';
+    // 담당자가 GM이면 부서장 단계 생략.
     if (_midName && _ownerStr.indexOf('GM') >= 0) _midName = '';
-    else if (_midName && !_midFromManual && _ownerStr.indexOf(_midName) >= 0) _midName = '';
     const _auto   = _parsed.budget ? routeApproval(_parsed.budget.category, _parsed.budget.amount) : [];
     const _needs  = _manual.length > 0 || _auto.length > 0;
     const _route  = [];
     if (_needs) {
-      // 운영현황 결재선: (부서장 — 카테고리 매핑 시) → GM 종착 (2026-06-03 GM: 운영현황 최종=GM)
+      // 운영현황 결재선: (명시 체크한 부서장) → GM 종착 (2026-06-03 GM: 운영현황 최종=GM)
       if (_midName) _route.push('부서장');
       _route.push('GM');
     }
@@ -1461,8 +1460,14 @@ function renderTaskCard(t, idx) {
         // ① 결재완료
         html += '<span class="chip" style="background:var(--green-bg);color:var(--green);font-weight:700;">✅ 결재완료</span>';
       } else if (/반려/.test(_appStatus)) {
-        // ② 반려
+        // ② 반려 — 사유 노출(2026-06-17 COO B3)
         html += '<span class="chip" style="background:var(--red-bg);color:var(--red);font-weight:700;">❌ ' + esc(_appStatus) + '</span>';
+        const _rej = _parsed.rejections || [];
+        if (_rej.length) {
+          const _last = _rej[_rej.length - 1];
+          const _rt = _last.reason + (_last.meta ? ' (' + _last.meta + ')' : '');
+          html += '<span class="chip" style="background:var(--red-bg);color:var(--red);font-weight:700;max-width:100%;white-space:normal;" title="' + escAttr(_rt) + '">⛔ 반려 사유: ' + esc(_last.reason) + '</span>';
+        }
       } else {
         // ③ 진행 중 — 싸인 맵: 한글 키 직접 접근
         const _signMap = { '부서장': t['부서장싸인'] || '', 'GM': t['GM싸인'] || '', '대표님': t['대표싸인'] || '' };
@@ -1731,6 +1736,7 @@ const BUDGET_MARK = '===BUDGET===';
 const PLAN_MARK = '===PLAN===';
 const RESULT_MARK = '===RESULT===';
 const COLLAB_MARK = '===COLLAB===';
+const REJECT_MARK = '===반려이력===';   // 반려 사유 누적 (GAS가 append, [날짜 role] 사유) — 2026-06-17 COO B3
 
 /* 기획 4섹션 하드코딩 템플릿 — 편집 시 비어 있으면 자동 채움 (KPI·일정 제거, 2026-05-30 GM 지시) */
 const PLAN_TEMPLATE = '목적 — \n범위 — \n해결 전략 — \n실행 계획 — ';
@@ -1808,7 +1814,8 @@ function parseContent(content) {
     { key: 'progress', mark: PROGRESS_MARK },
     { key: 'result',   mark: RESULT_MARK },
     { key: 'budget',   mark: BUDGET_MARK },
-    { key: 'collab',   mark: COLLAB_MARK }
+    { key: 'collab',   mark: COLLAB_MARK },
+    { key: 'rejections', mark: REJECT_MARK }
   ];
   const positions = marks
     .map(m => ({ key: m.key, mark: m.mark, idx: raw.indexOf(m.mark) }))
@@ -1852,7 +1859,22 @@ function parseContent(content) {
     collab = sections.collab.split(/\r?\n/)[0].split(',').map(s => s.trim()).filter(Boolean);
   }
 
-  return { body, plan, logs, result, budget, collab };
+  // 반려이력 — GAS가 반려 때마다 '===반려이력===\n[날짜 role] 사유'를 append(여러 번 가능).
+  // 마커 전체를 제거하고 '[...] 사유' 라인만 수집(2026-06-17 COO B3).
+  let rejections = [];
+  raw.split(REJECT_MARK).slice(1).forEach(chunk => {
+    let stop = false;
+    chunk.split(/\r?\n/).forEach(line => {
+      if (stop) return;
+      const t = line.trim();
+      if (/^===.+===$/.test(t)) { stop = true; return; }  // 다른 섹션 마커 만나면 중단
+      const m = t.match(/^\[([^\]]*)\]\s*(.*)$/);
+      if (m) rejections.push({ meta: m[1].trim(), reason: m[2].trim() });
+      else if (t && rejections.length) rejections[rejections.length - 1].reason += '\n' + t;
+    });
+  });
+
+  return { body, plan, logs, result, budget, collab, rejections };
 }
 
 function composeContent(body, logs, budget, plan, result, collab) {
@@ -2205,6 +2227,18 @@ function openEditModal(id) {
   document.getElementById('fEndDate').value = fmtDate(t.endDate);
   const parsed = parseContent(t.content);
   document.getElementById('fContent').value = parsed.body;
+  // 반려 사유 노출 — 담당자가 보완·재상신하도록 (2026-06-17 COO B3)
+  const _rejBox = document.getElementById('rejectNotice');
+  if (_rejBox) {
+    const _rejs = parsed.rejections || [];
+    if (_rejs.length) {
+      _rejBox.textContent = '⛔ 반려 사유\n' + _rejs.map(r => '· ' + r.reason + (r.meta ? '  (' + r.meta + ')' : '')).join('\n');
+      _rejBox.style.display = 'block';
+    } else {
+      _rejBox.style.display = 'none';
+      _rejBox.textContent = '';
+    }
+  }
   document.getElementById('fPlan').value = parsed.plan || PLAN_TEMPLATE;
   document.getElementById('fResult').value = parsed.result || '';
   modalLogsCache = parsed.logs.slice();
@@ -3076,6 +3110,16 @@ function printResultReport(taskId) {
     ? '<div class="rr-section-title">첨부 · 링크</div><table class="rr-info-table">' + attachRows + '</table>'
     : '';
 
+  /* ── 반려 이력 (있으면) — 2026-06-17 COO B3 ── */
+  var rejectHtml = '';
+  if (parsed.rejections && parsed.rejections.length) {
+    var rejRows = parsed.rejections.map(function(r){
+      return '<tr><td style="width:120px;color:#c0392b;">' + esc(r.meta) + '</td><td style="color:#c0392b;white-space:pre-wrap;">' + esc(r.reason) + '</td></tr>';
+    }).join('');
+    rejectHtml = '<div class="rr-section-title">⛔ 반려 사유</div>'
+      + '<table class="rr-log-table"><tbody>' + rejRows + '</tbody></table>';
+  }
+
   /* ── 발행일 ── */
   var today = (function(){
     var d = new Date();
@@ -3100,6 +3144,7 @@ function printResultReport(taskId) {
     + planHtml
     + budgetHtml
     + attachHtml
+    + rejectHtml
     + '<div class="rr-footer">'
     +   '<span>A Day, Well Completed.</span>'
     +   '<span>발행일: ' + today + '</span>'
