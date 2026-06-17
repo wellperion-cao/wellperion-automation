@@ -193,6 +193,42 @@ function _regGetSheet(catKey) {
   return sh;
 }
 
+// ─── 마스킹 헬퍼 — PII 제거 후 공개 보드용 복제본 반환 ───
+// 이름: 첫 글자 + ** (1글자이면 그대로+*). 빈값이면 그대로.
+// 연락처: 숫자만 추출해 끝 4자리 유지, 앞 마스킹 → 010-****-NNNN 형태. 4자리 미만이면 ****.
+function _regMask(row) {
+  var out = {};
+  Object.keys(row).forEach(function (k) { out[k] = row[k]; });
+
+  // 이름 마스킹
+  var name = String(out.name || '');
+  if (name) {
+    out.name = name.length === 1 ? name + '*' : name.slice(0, 1) + '**';
+  }
+
+  // 연락처 마스킹
+  var contact = String(out.contact || '');
+  if (contact) {
+    var digits = contact.replace(/\D/g, '');
+    if (digits.length < 4) {
+      out.contact = '****';
+    } else {
+      // 예: 01012345678 → front=0101234(7자) → 010-****-5678
+      var tail = digits.slice(-4);
+      var front = digits.slice(0, -4);
+      if (front.length <= 3) {
+        out.contact = front + '-****-' + tail;
+      } else if (front.length <= 6) {
+        out.contact = front.slice(0, 3) + '-' + '*'.repeat(front.length - 3) + '-' + tail;
+      } else {
+        out.contact = front.slice(0, 3) + '-****-' + tail;
+      }
+    }
+  }
+
+  return out;
+}
+
 // ─── 통합 접수처 시트 → 객체 배열 (헤더 배열({key,label}[]) 인자) ───
 function _regReadAll(sh, headers) {
   var last = sh.getLastRow();
@@ -605,8 +641,10 @@ function _regUpdate(body) {
 var _VOC_PUBLIC_ACTIONS = {
   voc_submit:  true,  // 회원 모바일 폼 제출 — 토큰 면제
   voc_types:   true,  // 유형·상태 목록 조회 — 토큰 면제
-  reg_submit:  true   // 통합 접수처 제출 — 토큰 면제
-  // reg_list / reg_update 는 PII 포함 — 절대 public 금지.
+  reg_submit:  true,  // 통합 접수처 제출 — 토큰 면제
+  reg_board:   true,  // 마스킹 공개 보드 — 이름·연락처 가려서 반환, 토큰 면제
+  reg_update:  true   // 상태·담당·메모 갱신 — PII 미포함, 토큰 면제
+  // ⚠️ reg_list 는 전체 PII(이름·연락처 원문) 포함 — 절대 public 금지, GATED 유지.
   // voc_list / voc_update 도 게이트 적용.
 };
 function _vAccessProp_(k) {
@@ -631,6 +669,12 @@ function _vProcess(action, body, params) {
   // ── 통합 접수처 액션 ──
   if (action === 'reg_submit') return _regSubmit(body);
   if (action === 'reg_list')   return _regList(params || body);
+  if (action === 'reg_board') {
+    // 마스킹 공개 보드 — _regList 결과에 _regMask 적용
+    var boardResult = JSON.parse(_regList(params || body).getContent());
+    var masked = (boardResult.data || []).map(_regMask);
+    return _vJson({ ok: true, count: masked.length, data: masked });
+  }
   if (action === 'reg_update') return _regUpdate(body);
 
   // ── 레거시 VOC 액션 (하위호환) ──

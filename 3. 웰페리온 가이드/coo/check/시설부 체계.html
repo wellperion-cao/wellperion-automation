@@ -29,6 +29,9 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 .content{padding:16px 20px 140px;max-width:720px;margin:0 auto}
 #tab-guide,#tab-manual,#tab-fcheck{max-width:none;margin-left:0;margin-right:0}/* 점검=풀폭 편집(GM 2026-06-16: 측정표 좌우폭 확대) */
 #tab-vendor.content{text-align:left}
+#tab-reg.content{text-align:left}
+#tab-reg .admin-card{text-align:left}
+#tab-reg .dash-stat-card{text-align:left}
 .date-bar{display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap}
 .date-bar input{background:var(--paper);border:1px solid var(--border);color:var(--text);padding:8px 14px;border-radius:8px;font-size:15px;font-family:inherit}
 .btn{padding:8px 14px;background:var(--accent-bg);color:var(--accent);border:1px solid var(--accent);border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit}
@@ -458,10 +461,10 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   <button class="tab active" onclick="switchTab('policy')">시설부 규정</button>
   <button class="tab" onclick="switchTab('guide')">가이드</button>
   <button class="tab" onclick="switchTab('manual')">매뉴얼</button>
+  <button class="tab" onclick="switchTab('reg')">시설물 고장 접수</button>
   <!-- 옛 점검(남)/(여) 탭 제거(2026-06-12). 신규 '시설점검'=날짜별 측정 작업일지(2026-06-16 GM·PDF 기반). -->
   <button class="tab" onclick="switchTab('fcheck')">시설점검</button>
   <button class="tab" onclick="switchTab('vendor')">거래업체</button>
-  <button class="tab" onclick="switchTab('reg')">접수 현황</button>
   <div style="display:flex;gap:4px;margin-left:auto;">
     <button class="util-btn print-btn" onclick="printCurrentTab()">인쇄</button>
   </div>
@@ -3377,7 +3380,7 @@ function deptRegLoad(dept){
   var board = document.getElementById('deptRegBoard');
   if(!board) return;
   board.innerHTML = '<p class="loading">불러오는 중...</p>';
-  var url = _wpUrl(REG_API + '?action=reg_list&dept=' + encodeURIComponent(dept) + '&_=' + Date.now());
+  var url = REG_API + '?action=reg_board&dept=' + encodeURIComponent(dept) + '&_=' + Date.now();
   fetch(url, {redirect:'follow'})
     .then(function(r){ return r.json(); })
     .then(function(d){

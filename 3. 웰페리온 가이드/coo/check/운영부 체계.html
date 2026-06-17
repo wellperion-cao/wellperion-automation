@@ -688,7 +688,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 
   <!-- ── 우리 부서로 온 접수 ── -->
   <h3 style="font-size:17px;font-weight:700;color:var(--accent);margin:22px 0 10px;padding-top:10px;border-top:1px solid var(--border);">우리 부서로 온 접수</h3>
-  <div id="deptRegBoard"><div class="loading" style="padding:24px;text-align:center;color:var(--dim);font-size:13px;">불러오는 중…</div></div>
+  <div id="deptRegBoard" style="text-align:left;"><div class="loading" style="padding:24px;text-align:center;color:var(--dim);font-size:13px;">불러오는 중…</div></div>
 </div>
 
 <div id="tab-guide" class="content hidden">
@@ -2228,7 +2228,7 @@ function deptRegLoad(dept){
   if(_deptRegLoading) return;
   _deptRegLoading = true;
   board.innerHTML = '<div style="padding:24px;text-align:center;color:var(--dim);font-size:13px;">불러오는 중…</div>';
-  var url = _wpUrl(REG_API + '?action=reg_list&dept=' + encodeURIComponent(dept) + '&_=' + Date.now());
+  var url = _wpUrl(REG_API + '?action=reg_board&dept=' + encodeURIComponent(dept) + '&_=' + Date.now());
   fetch(url, {redirect:'follow'})
     .then(function(r){ return r.json(); })
     .then(function(d){
