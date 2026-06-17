@@ -1467,6 +1467,28 @@ function _processTodoAction(body) {
   body = _mapFields(body);
   const action = body.action || '';
 
+    // ─── 부서장 결재 PIN 등록 (관리자 1회 셋업) — 2026-06-17 시우(COO) B1 ───
+    // 평문 PIN은 ScriptProperties 에만 저장(코드·커밋·로그 비노출). EDIT_KEY 게이트.
+    // 파라미터로 받은 값만 set — 코드에 하드코딩 금지. 빈 값은 무시(기존 설정 보존).
+    // PIN 게이트(todo_sign @1597)는 속성이 set 되는 순간 자동 강제됨(_deptPinOptional 은 미설정시에만 통과).
+    if (action === 'approval_set_pins') {
+      var _ek = _prop('EDIT_KEY');
+      if (_ek && String(body.key || '') !== _ek) return _json({ ok: false, error: '편집 키 불일치' });
+      var _pinMap = {
+        ops:     'APPROVAL_PIN_OPS',      // 이경연 실장(운영)
+        fac:     'APPROVAL_PIN_FAC',      // 이정헌 소장(시설)
+        partner: 'APPROVAL_PIN_PARTNER'   // 나우열M(파트너)
+      };
+      var _props = PropertiesService.getScriptProperties();
+      var _set = [];
+      Object.keys(_pinMap).forEach(function(_p) {
+        var _v = String(body[_p] || '').trim();
+        if (_v) { _props.setProperty(_pinMap[_p], _v); _set.push(_pinMap[_p]); }  // 키명만 기록, 값 비노출
+      });
+      if (!_set.length) return _json({ ok: false, error: 'set 할 PIN 값이 없습니다(ops/fac/partner 파라미터).' });
+      return _json({ ok: true, set: _set, message: _set.length + '개 부서장 PIN 등록됨(값 비노출).' });
+    }
+
     // ─── 새 업무 추가 ───
     if (action === 'todo_add') {
       // sheet 파라미터 있으면 해당 탭에 insert (AI배(C레벨) 전용 탭 이관용)
