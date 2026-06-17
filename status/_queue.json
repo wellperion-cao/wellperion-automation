@@ -1134,11 +1134,13 @@
   {
     "task_id": "CTO-2026-06-17-PAGES-CMO-FOLDER-404",
     "clevel": "cto",
-    "title": "[시토] 라이브 배포 사고 — GitHub Pages가 /cmo/ 폴더 전체를 404 (마케팅 대시보드·흐름지도·검수 미발행)",
-    "status": "PENDING",
+    "title": "[시토] 라이브 배포 '사고' 오진 정정 — /cmo/ 404는 NFC/NFD 정규화 착시(라이브 실제 정상 200)",
+    "status": "DONE",
+    "terminal": true,
     "priority": "HIGH",
     "enqueued_at": "2026-06-17",
-    "note": "[2026-06-17 시모 발견·인계] 시모가 마케팅 대시보드 작업(버그·재배치·정직성, 커밋 8bd3d24d·27175b2e·06d8130a 푸시완)의 라이브 검증 중 발견. 증상: 라이브 https://wellperion-cao.github.io/wellperion-automation/cmo/funnel/마케팅현황대시보드.html = HTTP 404, /cmo/ 하위 전체(funnel·review) 404. 반면 루트(/wellperion_guide(main).html)·/ssot/dashboard.html·/status/_queue.json = 200. 아침엔 /cmo/ 정상(스크린샷 검증됨)이었으나 오늘 깨짐. 진단: ①cmo/ 73파일 git 추적·ignore 아님·구문정상(소스 무결) ②pages.yml 배포 워크플로 매번 success(42s)·cp -r '3. 웰페리온 가이드/.' 정상 ③workflow_dispatch 깨끗한 재배포(run 27660996906)도 무효=일시 아님 ④build_type=workflow, .nojekyll/_config.yml 없음, 심볼릭링크 없음 ⑤시간상 오늘 CTO PII 게이트 커밋(7edd3f20·54fa42a9, cmo/funnel 3파일 수정) 직후 발생=상관관계. 즉 파일은 멀쩡한데 발행 파이프라인이 cmo/만 누락. 시모 영역(마케팅 콘텐츠) 아닌 배포 인프라(CTO) 사고라 인계.",
-    "next": "CTO 점검: 최신 Pages artifact 실내용에 cmo/ 포함됐는지 다운로드 확인 / .nojekyll 부재로 Jekyll이 cmo 제외하는지(artifact 방식이라 무관할 것이나 확인) / PII 커밋이 cmo 파일에 Pages 발행 깨는 변경(인코딩·BOM·비정상 바이트) 넣었는지 / Pages source 재설정. 복구 후 라이브 200 + 정직수정 마커('현 회원 매칭') 실측. ★GM 마케팅 대시보드 라이브 확인이 이 복구에 막혀있음(HIGH)."
+    "processed_at": "2026-06-17",
+    "artifact": "[오진→정정] 시모가 마케팅 대시보드 라이브 검증 중 /cmo/ 전체 404로 판단, 배포 사고로 CTO 인계. 시토 결정적 진단(artifact 직접 다운로드 run 27661206375): github-pages artifact에 cmo/ 73파일 전부 포함=git ls-files 73개와 완전 일치 → 발행 누락 0. 진짜 원인=시모의 검증 방식 오류: bash curl이 한글 경로를 NFD(자모분해)로 전송 → GitHub Pages는 경로를 바이트정확 매칭(정규화 안 함)이라 404. NFC(완성형) 요청 시 정상 200. 시모 재실측(python unicodedata NFC): /cmo/funnel/마케팅현황대시보드.html=HTTP 200·96658B·마커 '현 회원 매칭'2·hero-block3·'추정 주의'1 전부 라이브 존재. NFD요청만 404(Pages 정상동작). PII 커밋(7edd3f20·54fa42a9)은 무관(cmo HTML +11줄 게이트만·BOM/손상 없음). 디렉터리 경로(/cmo/ /cmo/funnel/)404도 index.html 없는 폴더라 정상. 복구 변경 0건(깨진 것 없음=churn·회귀위험 회피가 정답). 무회귀.",
+    "next": "표류(완결). 교훈: 한글경로 라이브 검증은 반드시 NFC 완성형 인코딩으로. bash에서 raw 한글 curl은 NFD로 변질될 수 있음(브라우저·정상 링크는 200). (선택·별건) /cmo/index.html 색인 추가하면 폴더 직접접근 UX 개선 가능—사고와 무관."
   }
 ]
