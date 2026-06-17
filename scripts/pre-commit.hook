@@ -80,6 +80,17 @@ if [ -f "$QUEUE_GUARD" ] && [ -n "$PYBIN" ]; then
   fi
 fi
 
+# ── ①-3 _queue 발행루트 미러 동기화 (G1 404 방지 · 2026-06-17) ────────────
+# 원본 status/_queue.json 이 바뀌면 발행루트 미러
+# (3. 웰페리온 가이드/status/_queue.json)로 단방향 복사 후 git add.
+# GitHub Pages 발행루트=가이드 폴더라 레포루트 status/ 는 라이브 404 →
+# 미러가 라이브 200 도달 실파일. 멱등(동일하면 no-op)·fail-open.
+QUEUE_MIRROR="$REPO_ROOT/scripts/sync_queue_mirror.py"
+if [ -f "$QUEUE_MIRROR" ] && [ -n "$PYBIN" ]; then
+  PYTHONUTF8=1 "$PYBIN" "$QUEUE_MIRROR"
+  # 항상 exit 0 (fail-open) — 반환값 무시, 커밋 절대 막지 않음.
+fi
+
 # ── ② incident 교훈 가드 (사고 재발 방지 경고 · fail-open) ──────────────────
 # 스테이징 파일이 watch_globs 와 매칭되면 해당 사건 요약을 경고 출력.
 # gate=warn → 출력만(exit 0). gate=block → exit 1. 가드 오류 → fail-open(통과).

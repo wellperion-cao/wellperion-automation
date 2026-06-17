@@ -23,3 +23,10 @@ chmod +x "$HOOKS_DIR/post-commit"
 
 echo "[install_hooks] post-commit hook 설치 완료."
 echo "[install_hooks] 확인: $HOOKS_DIR/post-commit"
+
+# pre-commit 가 호출하는 보조 스크립트 존재 확인 (별도 설치 불필요 — 경로참조)
+if [ -f "$SCRIPTS_DIR/sync_queue_mirror.py" ]; then
+  echo "[install_hooks] _queue 미러 동기화 스크립트 확인: sync_queue_mirror.py (pre-commit 단계 ①-3)"
+else
+  echo "[install_hooks][WARN] sync_queue_mirror.py 없음 — G1 _queue 미러 동기화가 동작하지 않습니다."
+fi
