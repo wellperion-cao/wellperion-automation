@@ -3236,9 +3236,81 @@ function vendorSubmitAddForm(){
     return h;
   }
   function noteBox(){ return sec('비고사항')+ta('fc_note',3,'곰팡이 청소·보수·회원 지시·컴플레인 등'); }
+  // 🟡 AI초안(GM검토) — 작업일지 미기재·시설 매뉴얼 권장. 완료율 분모 포함, 배지로 구분.
+  var AI_DRAFT=[['fc_ai_fire','소방시설 일일 작동점검'],['fc_ai_elev','엘리베이터·에스컬레이터 가동확인'],['fc_ai_water','정수기·비품 점검'],['fc_ai_alarm','측정 기준범위 이탈 경보 확인']];
+  function aiBox(){
+    var h='<div style="font-weight:700;font-size:14px;margin:14px 0 4px;">안전 점검 <span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px;background:var(--yellow-bg);color:var(--yellow);">🟡 AI초안(GM검토)</span></div>';
+    h+='<div style="display:flex;flex-wrap:wrap;gap:10px;">';
+    AI_DRAFT.forEach(function(a){h+='<label style="font-size:13px;display:flex;flex-direction:column;gap:2px;min-width:200px;">'+a[1]+'<select id="'+a[0]+'" style="background:var(--bg);border:1px solid var(--border);color:var(--text);padding:5px 6px;border-radius:5px;font-size:13px;font-family:inherit;"><option value=""></option><option value="ok">ok</option><option value="x">x</option></select></label>';});
+    return h+'</div>';
+  }
+  // 측정 항목(완료율 분모) → 구성 필드 id 접두/목록 매핑. 입력값 1개라도 있으면 그 항목=완료.
+  var ITEM_FIELD_MAP={
+    fc_sauna_ontang:{pfx:'fc_sauna_ontang_'}, fc_sauna_yeoltang:{pfx:'fc_sauna_yeoltang_'},
+    fc_sauna_dry:{pfx:'fc_sauna_dry_'}, fc_sauna_wet:{pfx:'fc_sauna_wet_'}, fc_sauna_jjim:{pfx:'fc_sauna_jjim_'},
+    fc_pool_ph:{sfx:'_ph'}, fc_pool_temp:{sfx:'_temp'}, fc_pool_cl:{sfx:'_cl'},
+    fc_tank_k2:{sfx:'_k2'}, fc_tank_k3:{sfx:'_k3'}, fc_tank_k4:{sfx:'_k4'},
+    fc_ahu_AHU1:{sfx:'_AHU1'}, fc_ahu_AHU2:{sfx:'_AHU2'}, fc_ahu_AHU3:{sfx:'_AHU3'}, fc_ahu_AHU4:{sfx:'_AHU4'},
+    fc_eq_night:{ids:['fc_eq_night']}, fc_eq_tank1:{ids:['fc_eq_tank1']}, fc_eq_gas:{ids:['fc_eq_gas']},
+    fc_eq_hotw:{ids:['fc_eq_hotw']}, fc_eq_pump:{ids:['fc_eq_pump']}, fc_eq_heat:{ids:['fc_eq_heat']}, fc_eq_final:{ids:['fc_eq_final']},
+    fc_ai_fire:{ids:['fc_ai_fire']}, fc_ai_elev:{ids:['fc_ai_elev']}, fc_ai_water:{ids:['fc_ai_water']}, fc_ai_alarm:{ids:['fc_ai_alarm']}
+  };
+  // 측정 항목 마스터(서버 facility_items와 동기화 — 분모 단일출처). id 순서·집합 일치 필수.
+  var FC_ITEMS=[
+    {id:'fc_sauna_ontang',name:'사우나 온탕 온도(남/여, 기준39℃)',cat:'A 사우나 측정'},
+    {id:'fc_sauna_yeoltang',name:'사우나 열탕 온도(남/여, 기준42℃)',cat:'A 사우나 측정'},
+    {id:'fc_sauna_dry',name:'사우나 건식 온도(남/여, 기준78℃)',cat:'A 사우나 측정'},
+    {id:'fc_sauna_wet',name:'사우나 습식 온도(남/여, 기준48℃)',cat:'A 사우나 측정'},
+    {id:'fc_sauna_jjim',name:'찜질방 온도(A/B, 기준68℃)',cat:'A 사우나 측정'},
+    {id:'fc_pool_ph',name:'수영장 pH농도',cat:'B 수영장 수질'},
+    {id:'fc_pool_temp',name:'수영장 수온',cat:'B 수영장 수질'},
+    {id:'fc_pool_cl',name:'수영장 CL농도(잔류염소)',cat:'B 수영장 수질'},
+    {id:'fc_tank_k2',name:'온수탱크 2번 온도',cat:'C 온수탱크'},
+    {id:'fc_tank_k3',name:'온수탱크 3번 온도',cat:'C 온수탱크'},
+    {id:'fc_tank_k4',name:'온수탱크 4번 온도',cat:'C 온수탱크'},
+    {id:'fc_ahu_AHU1',name:'공조기 AHU1 가동상태',cat:'D 공조기'},
+    {id:'fc_ahu_AHU2',name:'공조기 AHU2 가동상태',cat:'D 공조기'},
+    {id:'fc_ahu_AHU3',name:'공조기 AHU3 가동상태',cat:'D 공조기'},
+    {id:'fc_ahu_AHU4',name:'공조기 AHU4 가동상태',cat:'D 공조기'},
+    {id:'fc_eq_night',name:'심야전기(05:00)',cat:'E 기계실 가동값'},
+    {id:'fc_eq_tank1',name:'1번 탱크온도(05:00)',cat:'E 기계실 가동값'},
+    {id:'fc_eq_gas',name:'가스검침(06:00)',cat:'E 기계실 가동값'},
+    {id:'fc_eq_hotw',name:'고온수기(05:00)',cat:'E 기계실 가동값'},
+    {id:'fc_eq_pump',name:'연동펌프(05:00)',cat:'E 기계실 가동값'},
+    {id:'fc_eq_heat',name:'축열조(14:00)',cat:'E 기계실 가동값'},
+    {id:'fc_eq_final',name:'최종퇴실(시각/성명)',cat:'E 기계실 가동값'},
+    {id:'fc_ai_fire',name:'소방시설 일일 작동점검',cat:'F 안전(AI초안)'},
+    {id:'fc_ai_elev',name:'엘리베이터·에스컬레이터 가동확인',cat:'F 안전(AI초안)'},
+    {id:'fc_ai_water',name:'정수기·비품 점검',cat:'F 안전(AI초안)'},
+    {id:'fc_ai_alarm',name:'측정 기준범위 이탈 경보 확인',cat:'F 안전(AI초안)'}
+  ];
+  // 항목별 입력 측정값 수집(필드 매핑) → {done, measure}. measure는 입력된 칸만 JSON 직렬화.
+  function itemMeasure(id){
+    var map=ITEM_FIELD_MAP[id]||{}; var vals={};
+    document.querySelectorAll('#fc-body [id^=fc_]').forEach(function(n){
+      var hit=false;
+      if(map.pfx&&n.id.indexOf(map.pfx)===0)hit=true;
+      else if(map.sfx&&n.id.slice(-map.sfx.length)===map.sfx&&n.id.indexOf('fc_'+(id.split('_')[1]))===0)hit=true;
+      else if(map.ids&&map.ids.indexOf(n.id)>=0)hit=true;
+      if(hit){var v=(n.value||'').trim(); if(v!=='')vals[n.id.replace('fc_','')]=v;}
+    });
+    var keys=Object.keys(vals);
+    return {done:keys.length>0, measure:keys.length?JSON.stringify(vals):''};
+  }
+  // 완료율 = 측정값 입력된 항목 / 전체 항목(입력률). 지원부 완료율과 같은 결.
+  window.fcProgress=function(){
+    var done=0; FC_ITEMS.forEach(function(it){ if(itemMeasure(it.id).done)done++; });
+    var total=FC_ITEMS.length; var pct=total?Math.round(done/total*100):0;
+    var color=pct>=90?'var(--green)':pct>=60?'var(--yellow)':'var(--red)';
+    var bar=document.getElementById('fc-progress'); if(!bar)return;
+    bar.innerHTML='<div class="progress-text"><span style="font-weight:700;color:'+color+';">측정 입력 완료율 '+pct+'%</span><span>'+done+' / '+total+' 항목</span></div>'
+      +'<div class="progress-bar"><div class="progress-fill" style="width:'+pct+'%;background:'+color+';"></div></div>';
+  };
   window.fcRender=function(){
     var el=document.getElementById('fc-body'); if(!el)return;
-    el.innerHTML=topBox()+saunaTbl()+poolTbl()+equipBox()+noteBox();
+    el.innerHTML='<div class="progress" id="fc-progress"></div>'+topBox()+saunaTbl()+poolTbl()+equipBox()+aiBox()+noteBox();
+    el.querySelectorAll('[id^=fc_]').forEach(function(n){ n.addEventListener('input',fcProgress); n.addEventListener('change',fcProgress); });
+    fcProgress();
   };
   function collect(){
     var d={}; document.querySelectorAll('#fc-body [id^=fc_]').forEach(function(n){ d[n.id]= n.type==='checkbox'?(n.checked?1:0):n.value; });
@@ -3246,9 +3318,14 @@ function vendorSubmitAddForm(){
   }
   window.fcSave=function(){
     var date=document.getElementById('fcDate').value; if(!date){alert('날짜를 먼저 고르세요');return;}
+    var insp=(document.getElementById('fcInspector').value||'').trim()||'박호균';
     var st=document.getElementById('fcStatus'); if(st)st.textContent='저장 중...';
-    fetch(API_URL,{method:'POST',redirect:'follow',headers:{'Content-Type':'text/plain'},body:JSON.stringify({action:'saveBoard',key:'FACILITY_CHECK_'+date,board:collect()})})
-      .then(function(r){return r.json();}).then(function(j){ if(st)st.textContent=(j&&(j.ok||j.success))?('저장 완료 ('+date+')'):'저장 실패'; })
+    // 1) 원본 측정값 전량 보존(saveBoard) — 재로드용 raw blob
+    var p1=fetch(API_URL,{method:'POST',redirect:'follow',headers:{'Content-Type':'text/plain'},body:JSON.stringify({action:'saveBoard',key:'FACILITY_CHECK_'+date,board:collect()})}).then(function(r){return r.json();});
+    // 2) 항목 단위 입력률 → 시설_공용구역 행 기록(weekly&dept=facility 완료율·home KPI 점등)
+    var items=FC_ITEMS.map(function(it){ var m=itemMeasure(it.id); return {id:it.id,name:it.name,cat:it.cat,measure:m.measure,done:m.done}; });
+    var p2=fetch(API_URL,{method:'POST',redirect:'follow',headers:{'Content-Type':'text/plain'},body:JSON.stringify({action:'save_facility_measure',date:date,inspector:insp,items:items})}).then(function(r){return r.json();});
+    Promise.all([p1,p2]).then(function(res){ var j2=res[1]||{}; if(st)st.textContent=(j2&&j2.ok)?('저장 완료 ('+date+' · 입력률 '+(j2.pct||0)+'%)'):'저장 실패'; fcProgress(); })
       .catch(function(){ if(st)st.textContent='저장 실패(네트워크)'; });
   };
   window.fcLoad=function(){
@@ -3260,6 +3337,7 @@ function vendorSubmitAddForm(){
         var b=(j&&j.board)||{}; var v=b.vals||{};
         var insp=document.getElementById('fcInspector'); if(insp)insp.value=b.inspector||'';
         document.querySelectorAll('#fc-body [id^=fc_]').forEach(function(n){ if(v[n.id]===undefined)return; if(n.type==='checkbox')n.checked=!!v[n.id]; else n.value=v[n.id]; });
+        if(typeof fcProgress==='function')fcProgress();
         if(st)st.textContent=Object.keys(v).length?('불러옴 ('+date+')'):'기록 없음 ('+date+')';
       }).catch(function(){ if(st)st.textContent='불러오기 실패'; });
   };

@@ -280,6 +280,7 @@ function doGet(e) {
   if (action === 'issuelog')  return handleIssueLogGet(e.parameter);
   if (action === 'setup_issue_tabs') { setupIssueLogSheets(); return jsonRes({ok:true,msg:'이슈대장 탭 생성 완료'}); }
   if (action === 'setup_facility_tabs') { return setupFacilitySheets(); }
+  if (action === 'facility_items') { return jsonRes({ ok: true, items: FACILITY_ITEMS }); }   // 시설 측정 항목 마스터(완료율 분모) — 프론트 fcheck 렌더용. 2026-06-17 시우.
   if (action === 'setup_dept_tabs') { return setupDeptSheets(e.parameter.dept || 'support'); }
   if (action === 'migrate_item_dept') { return jsonRes(migrateItemDept()); }
   if (action === 'purge_custom') { return purgeCustomItems(e.parameter.dept || 'support'); }
@@ -768,6 +769,7 @@ function doPost(e) {
     if (body.action === 'vendor_save')    return vendorSave(body);               // 거래업체 전체 교체 저장(시설_거래업체 시트)
     if (body.action === 'save_insp_memo') return saveInspMemo(body);            // 회차 점검자 배정 메모(공유). 2026-06-16 시우.
     if (body.action === 'unlock_round')  return handleUnlockRound(body);       // 관리자 PIN 제출잠금 해제. 2026-06-17 시우.
+    if (body.action === 'save_facility_measure') return saveFacilityMeasure(body);   // 시설 측정값 저장 → 시설_공용구역 행 기록(입력=완료). weekly&dept=facility 자동집계. 2026-06-17 시우.
     return jsonRes({ error: 'unknown action' });
   } catch (err) {
     return jsonRes({ error: err.message });
@@ -1838,6 +1840,90 @@ function setupDeptSheets(dept) {
   if (t.female) _seedDate(ss.getSheetByName(t.female), today, ZONE_ITEMS,   t.female);
   if (t.common) _seedDate(ss.getSheetByName(t.common), today, COMMON_ITEMS, t.common);
   return jsonRes({ ok: true, dept: dept, created: created, seededDate: today });
+}
+
+// ════════════════════════════════════════════
+// 시설부 측정 항목 마스터 (작업일지 PDF 근거 · 2026-06-17 시우)
+// 완료율 분모 = 이 항목 수. 분자 = 측정값이 입력된 항목 수(입력률).
+// 측정형(지어내기 금지·L05): 항목명·기준값은 작업일지260604/260601 PDF 실측.
+// ai:true 4건 = 작업일지 미기재 'AI초안(GM검토)' — 프론트 배지로 구분 노출, 분모 동일 포함.
+// id는 시설_공용구역 시트행 itemId로 그대로 저장(weekly measure 수집 키).
+// ════════════════════════════════════════════
+var FACILITY_ITEMS = [
+  // 2-A 시간대별 측정 (사우나 — 탕별 남/여, 찜질방 A/B는 측정 컬럼으로 분리)
+  { id:'fc_sauna_ontang',  name:'사우나 온탕 온도(남/여, 기준39℃)',  cat:'A 사우나 측정',   unit:'℃',    ai:false },
+  { id:'fc_sauna_yeoltang',name:'사우나 열탕 온도(남/여, 기준42℃)',  cat:'A 사우나 측정',   unit:'℃',    ai:false },
+  { id:'fc_sauna_dry',     name:'사우나 건식 온도(남/여, 기준78℃)',  cat:'A 사우나 측정',   unit:'℃',    ai:false },
+  { id:'fc_sauna_wet',     name:'사우나 습식 온도(남/여, 기준48℃)',  cat:'A 사우나 측정',   unit:'℃',    ai:false },
+  { id:'fc_sauna_jjim',    name:'찜질방 온도(A/B, 기준68℃)',         cat:'A 사우나 측정',   unit:'℃',    ai:false },
+  { id:'fc_pool_ph',       name:'수영장 pH농도',                     cat:'B 수영장 수질',   unit:'pH',   ai:false },
+  { id:'fc_pool_temp',     name:'수영장 수온',                       cat:'B 수영장 수질',   unit:'℃',    ai:false },
+  { id:'fc_pool_cl',       name:'수영장 CL농도(잔류염소)',           cat:'B 수영장 수질',   unit:'ppm',  ai:false },
+  { id:'fc_tank_k2',       name:'온수탱크 2번 온도',                 cat:'C 온수탱크',      unit:'℃',    ai:false },
+  { id:'fc_tank_k3',       name:'온수탱크 3번 온도',                 cat:'C 온수탱크',      unit:'℃',    ai:false },
+  { id:'fc_tank_k4',       name:'온수탱크 4번 온도',                 cat:'C 온수탱크',      unit:'℃',    ai:false },
+  { id:'fc_ahu_AHU1',      name:'공조기 AHU1 가동상태',              cat:'D 공조기',        unit:'ok/x', ai:false },
+  { id:'fc_ahu_AHU2',      name:'공조기 AHU2 가동상태',              cat:'D 공조기',        unit:'ok/x', ai:false },
+  { id:'fc_ahu_AHU3',      name:'공조기 AHU3 가동상태',              cat:'D 공조기',        unit:'ok/x', ai:false },
+  { id:'fc_ahu_AHU4',      name:'공조기 AHU4 가동상태',              cat:'D 공조기',        unit:'ok/x', ai:false },
+  // 2-B 1일 1회 설비 점검 (기계실)
+  { id:'fc_eq_night',      name:'심야전기(05:00)',                   cat:'E 기계실 가동값', unit:'A',    ai:false },
+  { id:'fc_eq_tank1',      name:'1번 탱크온도(05:00)',               cat:'E 기계실 가동값', unit:'℃',    ai:false },
+  { id:'fc_eq_gas',        name:'가스검침(06:00)',                   cat:'E 기계실 가동값', unit:'㎥',   ai:false },
+  { id:'fc_eq_hotw',       name:'고온수기(05:00)',                   cat:'E 기계실 가동값', unit:'ok/x', ai:false },
+  { id:'fc_eq_pump',       name:'연동펌프(05:00)',                   cat:'E 기계실 가동값', unit:'ok/x', ai:false },
+  { id:'fc_eq_heat',       name:'축열조(14:00)',                     cat:'E 기계실 가동값', unit:'',     ai:false },
+  { id:'fc_eq_final',      name:'최종퇴실(시각/성명)',               cat:'E 기계실 가동값', unit:'',     ai:false },
+  // 2-D AI초안(GM 검토) — 작업일지 미기재, 시설 매뉴얼상 권장 (배지 구분)
+  { id:'fc_ai_fire',       name:'소방시설 일일 작동점검',            cat:'F 안전(AI초안)',  unit:'ok/x', ai:true },
+  { id:'fc_ai_elev',       name:'엘리베이터·에스컬레이터 가동확인',  cat:'F 안전(AI초안)',  unit:'ok/x', ai:true },
+  { id:'fc_ai_water',      name:'정수기·비품 점검',                  cat:'F 안전(AI초안)',  unit:'ok/x', ai:true },
+  { id:'fc_ai_alarm',      name:'측정 기준범위 이탈 경보 확인',      cat:'F 안전(AI초안)',  unit:'ok/x', ai:true }
+];
+
+// ─── 시설 측정값 저장 (POST {action:'save_facility_measure', date, inspector, items:[{id,name,cat,measure,done}]}) ───
+// 시설_공용구역 시트에 해당 날짜 행을 측정 항목 단위로 교체 기록. col5(점검결과)='완료'면 입력완료, col12=측정값.
+// weekly&dept=facility가 col5/col12를 읽어 입력률 완료율 + measure 배열을 자동 집계(서버 추가 집계 불필요).
+// ⚠ facility 전용 탭(시설_공용구역)만 기록 — 지원부 코드 경로·시트 일절 미접촉(무회귀 0).
+function saveFacilityMeasure(body) {
+  var date = String(body.date || '').trim();
+  if (!date) return jsonRes({ ok: false, error: 'date 필수' });
+  var inspector = String(body.inspector || '박호균').trim() || '박호균';
+  var items = body.items || [];
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var name = SHEET_FACILITY_COMMON;   // 시설_공용구역(단일 점검탭 — 남/여는 측정컬럼으로 구분, §2-E)
+  var sheet = ss.getSheetByName(name);
+  if (!sheet) { _createCheckSheet(ss, name); sheet = ss.getSheetByName(name); }
+  _ensureHeaders(sheet);
+
+  // 1) 이 날짜 기존 행 제거(측정 재제출 = 재진술, 중복 누적 방지)
+  var data = sheet.getDataRange().getValues();
+  for (var i = data.length - 1; i >= 1; i--) {
+    if (String(data[i][0]) === date || formatDate(data[i][0]) === date) {
+      try { sheet.deleteRow(i + 1); }
+      catch (e) { var _cc = Math.max(HEADERS.length, sheet.getLastColumn()); sheet.getRange(i + 1, 1, 1, _cc).clearContent(); }
+    }
+  }
+
+  // 2) 측정 항목 단위로 14열 행 구성 — 측정값 있으면 '완료'(입력완료), 없으면 '미완료'
+  var now = Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy-MM-dd HH:mm');
+  var rows = items.map(function (it) {
+    var measure = _measureStr(it.measure);
+    var done = (it.done === true || it.done === 1 || (measure !== ''));
+    return [
+      date, String(it.id || ''), String(it.name || ''), String(it.cat || ''), '측정',
+      done ? '완료' : '미완료', '', '',
+      done ? '제출완료' : '미제출', done ? now : '',
+      inspector, inspector,
+      measure, ''
+    ];
+  });
+  if (rows.length) {
+    var startRow = sheet.getLastRow() + 1;
+    sheet.getRange(startRow, 1, rows.length, HEADERS.length).setValues(rows);
+  }
+  var doneCnt = 0; rows.forEach(function (r) { if (r[5] === '완료') doneCnt++; });
+  return jsonRes({ ok: true, dept: 'facility', date: date, total: rows.length, done: doneCnt, pct: rows.length ? Math.round(doneCnt / rows.length * 100) : 0 });
 }
 
 var SHEET_ISSUE_FACILITY = '시설_이슈대장';
