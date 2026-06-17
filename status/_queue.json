@@ -1142,5 +1142,17 @@
     "processed_at": "2026-06-17",
     "artifact": "[오진→정정] 시모가 마케팅 대시보드 라이브 검증 중 /cmo/ 전체 404로 판단, 배포 사고로 CTO 인계. 시토 결정적 진단(artifact 직접 다운로드 run 27661206375): github-pages artifact에 cmo/ 73파일 전부 포함=git ls-files 73개와 완전 일치 → 발행 누락 0. 진짜 원인=시모의 검증 방식 오류: bash curl이 한글 경로를 NFD(자모분해)로 전송 → GitHub Pages는 경로를 바이트정확 매칭(정규화 안 함)이라 404. NFC(완성형) 요청 시 정상 200. 시모 재실측(python unicodedata NFC): /cmo/funnel/마케팅현황대시보드.html=HTTP 200·96658B·마커 '현 회원 매칭'2·hero-block3·'추정 주의'1 전부 라이브 존재. NFD요청만 404(Pages 정상동작). PII 커밋(7edd3f20·54fa42a9)은 무관(cmo HTML +11줄 게이트만·BOM/손상 없음). 디렉터리 경로(/cmo/ /cmo/funnel/)404도 index.html 없는 폴더라 정상. 복구 변경 0건(깨진 것 없음=churn·회귀위험 회피가 정답). 무회귀.",
     "next": "표류(완결). 교훈: 한글경로 라이브 검증은 반드시 NFC 완성형 인코딩으로. bash에서 raw 한글 curl은 NFD로 변질될 수 있음(브라우저·정상 링크는 200). (선택·별건) /cmo/index.html 색인 추가하면 폴더 직접접근 UX 개선 가능—사고와 무관."
+  },
+  {
+    "task_id": "COO-2026-06-17-SUPPORT-CHECK-SHEET-COHERENCE",
+    "clevel": "coo",
+    "title": "[시우] 지원부 점검 시트 전체정합 — 회차별 보존(제출항목 안 밀림)+점검시각 컬럼",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "HIGH",
+    "enqueued_at": "2026-06-17",
+    "processed_at": "2026-06-17",
+    "artifact": "GM 라이브 관찰: 남 점검 제출했는데 시트 연동 안 되고 점검시각 누락, 세 화면 숫자 제각각(today_live 30/스냅샷 28/시트 14). 디버거(opus) 근본추적: 데이터 유실 아님·라우팅수정(aa63116a) 무죄(실항목 old/new 차이 0). 진범=저장이 마지막 POST 한 건만 반영 — _updateCheckLedger led.cr={} 전량교체(GAS:692) + _writePerRoundRows primaryTarget 날짜행 전량삭제재기록(GAS:865) → 오전조 제출+resetShiftChecks 후 pushToServer가 시트/원장 덮어써 제출항목이 밀림. 세 숫자는 각기 다른 집계(amTotal 무필터30·스냅샷 성별필터28·시트 현STATE14). 수정(executor opus, 계획서 기반): Edit B(led.cr 회차머지·타회차 보존)+Edit A(primaryTarget 회차업서트·타회차 보존) 쌍 — am1 제출 후 pm1 저장해도 am1 행 보존. Edit C+D(HEADERS 15열 점검시각 추가·저장 payload mm.at·V2Compat). 핵심 실측(테스트날짜 2099): am1 2행→pm1 저장→am1 보존 확인 후 정리. 배포 @75(동일 deploymentId). 무회귀 게이트 PASS: 오늘 support m14/f25/total39·남성14행 BEFORE==AFTER 불변, facility 불변, 널바이트 보존, 라우팅 무영향. 커밋 047c9376 푸시.",
+    "next": "표류(거의 완결). 잔여 경미: ①보드 분모 정합 — today_live amTotal=30(op1/op2 포함·성별무필터) vs 성별필터28 미세차이는 표시 튜닝 후속 ②점검시각은 차후 저장분부터 채워짐(기존 14행은 빈값). 오늘 이후 제출분부터 전 회차 항목이 시트에 durable 누적됨 — GM이 오후조/마감조 제출 후 시트에 회차 누적되는지 자연 확인."
   }
 ]
