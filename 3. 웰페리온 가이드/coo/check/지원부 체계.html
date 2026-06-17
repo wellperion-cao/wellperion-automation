@@ -1515,8 +1515,8 @@ const WEEKDAY=[
   {slot:"마감 22:00~22:30",shift:"pm",groups:[
     {title:"마감 점검",items:[
       {id:"cl1",name:"세탁물 마감 출고",detail:"마감 세탁물 최종 출고 운반 | 마감 출고 빠짐없이 확인",gender:"all"},
-      {id:"cl2",name:"사우나/파우더 최종 체크",detail:"남/여 사우나 & 파우더 공간 청결 상태 체크\n시설/운영부 마감자 카톡 보고\n미비 시 경고 / 경고 3회 경징계",gender:"all"},
-      {id:"cl3",name:"전 구역 마감 확인",detail:"전 구역 이상 유무 | 미수금 정산 | 다음날 일정 준비 완료 확인",gender:"all"}
+      {id:"cl3",name:"사우나/파우더 최종 체크",detail:"남/여 사우나 & 파우더 공간 청결 상태 체크\n시설/운영부 마감자 카톡 보고\n미비 시 경고 / 경고 3회 경징계",gender:"all"},
+      {id:"cl8",name:"전 구역 마감 확인",detail:"전 구역 이상 유무 | 미수금 정산 | 다음날 일정 준비 완료 확인",gender:"all"}
     ]}
   ]}
   // '상시 F 회원 응대'는 점검 항목에서 제거 → '가이드' 탭으로 이관·합병 (GM 2026-06-11)
@@ -1565,8 +1565,8 @@ const WEEKEND=[
   {slot:"마감 18:00",shift:"pm",groups:[
     {title:"마감 점검",items:[
       {id:"cl1",name:"세탁물 최종 출고",detail:"마감 세탁물 운반",gender:"all"},
-      {id:"cl2",name:"사우나/파우더 최종 체크",detail:"남/여 사우나 & 파우더 청결 최종 체크 (카톡 보고)",gender:"all"},
-      {id:"cl3",name:"마감 탕청소",detail:"별도 2인 1조 | 탕청소 업체 20:30 출근",gender:"all"}
+      {id:"cl3",name:"사우나/파우더 최종 체크",detail:"남/여 사우나 & 파우더 청결 최종 체크 (카톡 보고)",gender:"all"},
+      {id:"cl8",name:"마감 탕청소",detail:"별도 2인 1조 | 탕청소 업체 20:30 출근",gender:"all"}
     ]}
   ]}
   // '상시 F 회원 응대'는 점검 항목에서 제거 → '가이드' 탭으로 이관·합병 (GM 2026-06-11)
@@ -1894,8 +1894,8 @@ const ROUND_MAP={
   e1:['am1','pm1','close1'],
   /* 정규화 완료(2026-06-15): 웰니스 d4·VIP d5·분수대 e2·신발장 b7·오픈 op1/op2 = 마스터 rounds 필드가 회차 결정.
      ROUND_MAP에 넣으면 isShadowItem이 '기본항목 편집분'으로 오인해 숨김 → 절대 추가 금지. */
-  /* 추가 — 마감조 전용 마감 점검(cls*) */
-  cl1:['close1'], cl2:['close1'], cl3:['close1']
+  /* 추가 — 마감조 전용 마감 점검(base). cl2/cl4~cl7은 added(시트 rounds 필드 우선) → ROUND_MAP 제외(isShadowItem 오인 차단). 2026-06-17 재정렬. */
+  cl1:['close1'], cl3:['close1'], cl8:['close1']
 };
 /* 항목 → 멤버 라운드 배열. 우선순위:
    1) 2b-1 CUSTOM 항목의 명시 rounds(이슈 승격 시 선택한 회차 다중) — 유효 키만.
@@ -1979,29 +1979,52 @@ function saveLocal(d,o,g){localStorage.setItem(LK(d,g),JSON.stringify(o))}
 /* 마이그레이션(1회·복원 직후): 옛 항목단위 이슈/노하우/온도/반영 키(iss_<id> 등)를
    그 항목이 체크된 회차 R의 회차키(iss_<g>_<R>_<id> 등)로 복사 후 옛 키 삭제.
    미체크면 roundOfSlot 단일 회차로. 야간(isNightShiftWorkerG)은 회차 개념 밖 → 제외(레거시 유지). GM 2026-06-15. */
-/* 옛 custom_ 항목ID → 정규화 새 ID 매핑(2026-06-13 rename). 브라우저 localStorage에 남은 옛ID 체크가
-   서버 새ID와 어긋나 '체크 안 뜸·갯수 줄어듦' 유발 → 클라이언트 1회 마이그레이션. GM 2026-06-15. */
-const _LEGACY_ID_MAP={
-  'custom_1781258818293_zmiwd':'d4','custom_1781261094618_l2ipe':'d5',
-  'custom_1781258912840_8z19q':'e2','custom_1781255718419_bxvec':'b7',
-  'custom_1781259775532_ibjd3':'op1','custom_1781259812050_aijw9':'op2',
-  /* 2026-06-17 항목ID 정규화: 오픈 c1a/b/c→op3/4/5 · 마감 cls1/2/3→cl1/2/3.
-     localStorage 잔여 옛키(*_c1a·*_cls1)를 신ID로 1회 변환(서버=신ID 정합). 부분문자열 매칭이나 c1a/cls1은 짧은키(c1·cl) 미존재라 안전. */
-  'c1a':'op3','c1b':'op4','c1c':'op5','cls1':'cl1','cls2':'cl2','cls3':'cl3'
-};
+/* 옛 항목ID → 신ID 매핑. 버전별 1회성 정확매칭으로 실행 — per-load 연쇄 이중변환 차단.
+   v1: custom_→정규화(2026-06-13) + c1a/cls1→op3/cl1(2026-06-17 정규화)
+   v2: cl2→cl3, cl3→cl8, cls4-8→cl2/4-7 (2026-06-17 마감 재정렬) */
+const _LEGACY_ID_MIGRATIONS=[
+  /* v1 — custom_ 및 첫 정규화 (2026-06-17 이전) */
+  { ver:'v1', map:{
+    'custom_1781258818293_zmiwd':'d4','custom_1781261094618_l2ipe':'d5',
+    'custom_1781258912840_8z19q':'e2','custom_1781255718419_bxvec':'b7',
+    'custom_1781259775532_ibjd3':'op1','custom_1781259812050_aijw9':'op2',
+    'c1a':'op3','c1b':'op4','c1c':'op5','cls1':'cl1','cls2':'cl2','cls3':'cl3'
+  }},
+  /* v2 — 마감점검 cl1~cl8 재정렬 (2026-06-17). 정확매칭: STATE 키 끝이 _<id> 패턴 */
+  { ver:'v2', map:{
+    'cls4':'cl4','cls5':'cl7','cls6':'cl6','cls7':'cl5','cls8':'cl2',
+    'cl2':'cl3','cl3':'cl8'
+  }}
+];
+/* 하위호환: 구 코드가 _LEGACY_ID_MAP 직접 참조하는 경우를 위한 alias (읽기전용) */
+const _LEGACY_ID_MAP=Object.assign({},..._LEGACY_ID_MIGRATIONS.map(m=>m.map));
 function _migrateLegacyItemIds(gg){
   try{
-    Object.keys(STATE).forEach(k=>{
-      if(k.indexOf('__test')>=0){ delete STATE[k]; return; }   // 테스트 잔재 제거
-      for(const oldId in _LEGACY_ID_MAP){
-        if(k.indexOf(oldId)>=0){
-          const nk=k.split(oldId).join(_LEGACY_ID_MAP[oldId]);
-          if(STATE[nk]===undefined||STATE[nk]===''||STATE[nk]===false)STATE[nk]=STATE[k];
-          delete STATE[k];
-          break;
+    const _LSK='wcheck_id_mig_done';
+    const _done=new Set((localStorage.getItem(_LSK)||'').split(',').filter(Boolean));
+    let _anyNew=false;
+    _LEGACY_ID_MIGRATIONS.forEach(({ver,map})=>{
+      if(_done.has(ver))return;   // 이 버전 이미 적용 — 건너뜀(1회성)
+      Object.keys(STATE).forEach(k=>{
+        if(k.indexOf('__test')>=0){ delete STATE[k]; return; }
+        /* 정확매칭: 키가 oldId 그 자체이거나 '_'+oldId로 끝나는 경우만 치환(부분문자열 연쇄 이중변환 차단) */
+        for(const oldId in map){
+          const suf='_'+oldId;
+          if(k===oldId||k.endsWith(suf)){
+            /* prefix: k===oldId이면 '' / 아니면 '_'를 포함한 앞부분(k에서 oldId만 제거) */
+            const prefix=k===oldId?'':k.slice(0,k.length-oldId.length);
+            const newK=prefix+map[oldId];
+            if(newK!==k){
+              if(STATE[newK]===undefined||STATE[newK]===''||STATE[newK]===false)STATE[newK]=STATE[k];
+              delete STATE[k];
+            }
+            break;
+          }
         }
-      }
+      });
+      _done.add(ver); _anyNew=true;
     });
+    if(_anyNew)try{localStorage.setItem(_LSK,[..._done].join(','));}catch(_){}
   }catch(e){}
 }
 function _migrateLegacyExtraKeys(d,gg){

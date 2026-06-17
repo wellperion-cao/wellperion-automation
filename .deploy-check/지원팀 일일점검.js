@@ -406,6 +406,31 @@ function doGet(e) {
     });
     return jsonRes({ ok: true, dept: _mdept, props: _mProps, cr: _mCr, c: _mC, seen: _mSeen, log: _mLog });
   }
+  if (action === 'restore_cr') {   // cr 원장 복구: dump_cr JSON을 역주입(마이그레이션 롤백용). props={key:jsonStr} 형식. 2026-06-17 시우.
+    var _rb; try { _rb = JSON.parse(e.parameter.props || '{}'); } catch (_re) { return jsonRes({ error: 'props JSON 오류' }); }
+    if (!_rb || !Object.keys(_rb).length) return jsonRes({ error: 'props 비어있음' });
+    var _rpr = PropertiesService.getScriptProperties();
+    var _rn = 0;
+    Object.keys(_rb).forEach(function (k) { if (typeof _rb[k] === 'string') { _rpr.setProperty(k, _rb[k]); _rn++; } });
+    return jsonRes({ ok: true, restored: _rn });
+  }
+  if (action === 'update_items_cl_reorder') {   // 마감점검 cl1~cl8 id·name·order 일괄 갱신. nameMap={id:name}, orderMap={id:order}. 2026-06-17 시우.
+    var _um; try { _um = JSON.parse(e.parameter.map || '{}'); } catch (_ue) { return jsonRes({ error: 'map JSON 오류' }); }
+    var _uss = SpreadsheetApp.getActiveSpreadsheet();
+    var _ushi = _uss.getSheetByName(SHEET_ITEMS);
+    if (!_ushi) return jsonRes({ error: 'SHEET_ITEMS 없음' });
+    var _ud = _ushi.getDataRange().getValues();
+    var _uUpdId = 0, _uUpdName = 0, _uUpdOrder = 0;
+    for (var ui = 1; ui < _ud.length; ui++) {
+      var uid = String(_ud[ui][0] || '');
+      if (!uid || !_um[uid]) continue;
+      var upd = _um[uid];
+      if (upd.newId && upd.newId !== uid) { _ushi.getRange(ui + 1, 1).setValue(upd.newId); _uUpdId++; }
+      if (upd.name != null) { _ushi.getRange(ui + 1, 3).setValue(upd.name); _uUpdName++; }
+      if (upd.order != null) { _ushi.getRange(ui + 1, 7).setValue(upd.order); _uUpdOrder++; }
+    }
+    return jsonRes({ ok: true, updId: _uUpdId, updName: _uUpdName, updOrder: _uUpdOrder });
+  }
   if (action === 'migrate_support_sheets') { return migrateSupportSheets(); }
   if (action === 'purge_dept_items') { return purgeDeptItems(e.parameter.dept || ''); }
   if (action === 'delete_facility_sheets') { return deleteFacilitySheets(); }
@@ -2147,8 +2172,8 @@ var _TL_ROUND_MAP = {
   c10:['am1','pm1','close1'],
   d1:['am1','pm1','close1'], d2:['am1','pm1','close1'], d3:['am1','pm1','close1'],
   e1:['am1','pm1','close1'],
-  cl1:['close1'], cl2:['close1'], cl3:['close1']
-  // op1,op2,cls4-8,b7,d4,d5,e2 등 마스터 rounds 필드 우선(시트 컬럼) — ROUND_MAP에 없으면 시트 폴백
+  cl1:['close1'], cl3:['close1'], cl8:['close1']   // base only. cl2/cl4~cl7=added(시트 rounds 폴백). 프론트 ROUND_MAP과 동기화(2026-06-17 재정렬)
+  // op1,op2,cls4-8→cl2/4-7,b7,d4,d5,e2 등 마스터 rounds 필드 우선(시트 컬럼) — ROUND_MAP에 없으면 시트 폴백
 };
 // DAY_FOCUS 항목수 — 요일(0=일~6=토), close1 버킷에 가산(클라 _roundProgress close1 분기와 동일).
 // gender 필터 적용(클라 shouldShowItemForGender 동일): all항목은 m/f 모두, 특정 gender는 해당만.
