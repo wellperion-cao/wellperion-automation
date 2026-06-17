@@ -79,8 +79,8 @@ def _telegram_warn(root: str, text: str) -> None:
         pass
 
 
-def _do_push(root: str) -> None:
-    """실제 push 1회 + 결과 로깅/경고. lock 안/밖 어디서 불려도 동일."""
+def _push_once(root: str) -> tuple[int, str]:
+    """git push 1회. (returncode, stderr) 반환. 타임아웃은 rc=124."""
     try:
         r = subprocess.run(
             ["git", "push", REMOTE, f"HEAD:{BRANCH}"],
@@ -89,7 +89,68 @@ def _do_push(root: str) -> None:
             text=True,
             timeout=PUSH_TIMEOUT,
         )
+        return r.returncode, (r.stderr or r.stdout).strip()
     except subprocess.TimeoutExpired:
+        return 124, "timeout"
+
+
+def _is_nonff(err: str) -> bool:
+    """원격이 앞서서 거부된(경합) 케이스인지."""
+    low = (err or "").lower()
+    return any(
+        k in low
+        for k in ("fast-forward", "fetch first", "non-fast", "rejected", "stale info")
+    )
+
+
+def _reconcile(root: str) -> bool:
+    """원격이 앞섰을 때 fetch + rebase(--autostash)로 로컬 커밋을 origin 위로 재정렬.
+    성공 True / 충돌·실패 False. 충돌 시 rebase --abort 로 원상복구 — 절대 half-state 안 남김.
+    (호출자가 git_lock 임계구역을 보유한 상태에서만 호출 — 동시 로컬 git 없음 보장.)"""
+    try:
+        f = subprocess.run(
+            ["git", "fetch", REMOTE, BRANCH],
+            cwd=root, capture_output=True, text=True, timeout=PUSH_TIMEOUT,
+        )
+        if f.returncode != 0:
+            return False
+        rb = subprocess.run(
+            ["git", "rebase", "--autostash", f"{REMOTE}/{BRANCH}"],
+            cwd=root, capture_output=True, text=True, timeout=PUSH_TIMEOUT,
+        )
+        if rb.returncode == 0:
+            return True
+        # 충돌 → 즉시 원상복구(커밋·작업트리 보존)
+        subprocess.run(
+            ["git", "rebase", "--abort"],
+            cwd=root, capture_output=True, text=True, timeout=20,
+        )
+        _log("POST_COMMIT_PUSH rebase conflict; aborted (fall back to warn)", root)
+        return False
+    except subprocess.TimeoutExpired:
+        try:
+            subprocess.run(["git", "rebase", "--abort"], cwd=root,
+                           capture_output=True, text=True, timeout=15)
+        except Exception:
+            pass
+        _log("POST_COMMIT_PUSH reconcile timeout; aborted", root)
+        return False
+    except Exception as e:
+        try:
+            _log(f"POST_COMMIT_PUSH reconcile err {e}", root)
+        except Exception:
+            pass
+        return False
+
+
+def _do_push(root: str, allow_reconcile: bool = True) -> None:
+    """push 1회 + 결과 로깅/경고. 경합(non-ff) 거부 시 (lock 보유 경로에 한해)
+    fetch+rebase 후 1회 재시도 → 성공하면 경고 없음(false 알람 제거)."""
+    rc, err = _push_once(root)
+    if rc == 0:
+        _log("POST_COMMIT_PUSH ok", root)
+        return
+    if rc == 124:
         _log("POST_COMMIT_PUSH timeout", root)
         _telegram_warn(
             root,
@@ -97,16 +158,23 @@ def _do_push(root: str) -> None:
         )
         return
 
-    if r.returncode == 0:
-        _log("POST_COMMIT_PUSH ok", root)
-    else:
-        err = (r.stderr or r.stdout).strip()[:200]
-        _log(f"POST_COMMIT_PUSH fail rc={r.returncode} {err}", root)
-        _telegram_warn(
-            root,
-            "⚠️ 자동 push 실패 — origin 미동기화(커밋은 로컬 보존). "
-            f"수동 `git push` 필요.\n{err}",
-        )
+    # 원격이 앞섬(경합) → 조용히 fetch+rebase 후 1회 재시도. 성공하면 경고 없음.
+    if allow_reconcile and _is_nonff(err):
+        _log("POST_COMMIT_PUSH non-ff; fetch+rebase 후 재시도", root)
+        if _reconcile(root):
+            rc2, err2 = _push_once(root)
+            if rc2 == 0:
+                _log("POST_COMMIT_PUSH ok(after rebase)", root)
+                return
+            err = err2 or err
+
+    err = (err or "").strip()[:200]
+    _log(f"POST_COMMIT_PUSH fail {err}", root)
+    _telegram_warn(
+        root,
+        "⚠️ 자동 push 실패 — origin 미동기화(커밋은 로컬 보존). "
+        f"수동 `git push` 필요.\n{err}",
+    )
 
 
 def main() -> int:
@@ -135,8 +203,9 @@ def main() -> int:
                 return 0
         except _gl.GitLockTimeout:
             # 부모 커밋 임계구역 안 — 이미 직렬화됨. lock 없이 직접 push.
-            _log("POST_COMMIT_PUSH within-parent-lock; push without lock", root)
-            _do_push(root)
+            # 단 rebase 는 부모 시퀀스(진행 중 HEAD)를 흔들 수 있어 금지(allow_reconcile=False).
+            _log("POST_COMMIT_PUSH within-parent-lock; push without lock(no rebase)", root)
+            _do_push(root, allow_reconcile=False)
             return 0
     except Exception as e:
         # 그 외 예외 — 커밋은 이미 성공. 조용히 fail-open + 로깅.
