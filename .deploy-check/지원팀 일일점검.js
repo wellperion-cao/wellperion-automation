@@ -1007,16 +1007,44 @@ function _routeItem(itemId, cat, genderTab) {
   // 추가항목(custom_/cx_)은 랜덤 id 접미사에 우연히 든 _f/_m 부분문자열로 오라우팅됨
   // (실측 2026-06-15: custom_1780808043234_fpxs5 → '_f' 매칭 → 남자 점검이 여성 시트로 유실).
   // id 기반 성별판정에서 제외하고 현재 탭(genderTab) 기준으로 라우팅. 2026-06-15 시우.
-  if (!/^(custom_|cx_)/.test(String(itemId))) {
-    if (itemId.indexOf('_f') >= 0) return SHEET_FEMALE;
-    if (itemId.indexOf('_m') >= 0) return SHEET_MALE;
-  }
+  // 2026-06-17 시우(근본수정): 부분문자열 indexOf→접미사 경계 정확매칭.
+  // 실제 성별항목 id는 '_m'/'_f'로 끝남(b4_m 수면실·b4_f 찜질방). custom_..._fpxs5 같은
+  // 우연 부분문자열은 '_f'/'_m' 뒤에 영숫자가 와 비매칭(과거 오라우팅 차단). custom_ 접두사 특례 불필요.
+  var _rid = String(itemId);
+  if (/_f(_|$)/.test(_rid)) return SHEET_FEMALE;
+  if (/_m(_|$)/.test(_rid)) return SHEET_MALE;
   if (cat && (cat.charAt(0) === 'A' || cat.charAt(0) === 'B'
       || cat.indexOf('사우나') >= 0 || cat.indexOf('락커') >= 0
       || cat.indexOf('데일리') >= 0)) {
     return genderTab === 'f' ? SHEET_FEMALE : SHEET_MALE;
   }
   return SHEET_COMMON;
+}
+
+// ─── 라우팅 회귀 자기검사 (4부서 동시) — GAS 편집기서 실행하면 PASS/FAIL 로그. 2026-06-17 시우. ───
+function _selfTestRouting() {
+  var F = SHEET_FEMALE, M = SHEET_MALE, C = SHEET_COMMON;
+  var cases = [
+    // [itemId, cat, genderTab, expect]
+    ['b4_f', 'B 락커룸', 'f', F],          // 여 성별항목 접미사
+    ['b4_m', 'B 락커룸', 'm', M],          // 남 성별항목 접미사
+    ['custom_1780808043234_fpxs5', '추가', 'm', C],  // ★과거 오라우팅 버그: '_f' 우연포함→이제 공용
+    ['custom_1780808043234_mxyz9', '추가', 'f', C],  // '_m' 우연포함→이제 공용
+    ['a1', 'A 사우나 점검', 'm', M],        // 카테고리 A→활성 성별탭(남)
+    ['a1', 'A 사우나 점검', 'f', F],        // 카테고리 A→활성 성별탭(여)
+    ['cx_ops_daily', '운영점검', 'm', C],   // 비A/B 일반→공용
+    ['floor_safety', '안전', 'm', C]        // _f/_m 없음→공용
+  ];
+  var pass = 0, fail = 0, log = [];
+  cases.forEach(function (t) {
+    var got = _routeItem(t[0], t[1], t[2]);
+    var ok = got === t[3];
+    ok ? pass++ : fail++;
+    log.push((ok ? 'PASS' : 'FAIL') + ' id=' + t[0] + ' g=' + t[2] + ' got=' + got + ' exp=' + t[3]);
+  });
+  var summary = '_selfTestRouting: ' + pass + ' PASS / ' + fail + ' FAIL\n' + log.join('\n');
+  Logger.log(summary);
+  return summary;
 }
 
 function _handleSaveV2Compat(body) {
@@ -1045,6 +1073,7 @@ function _handleSaveV2Compat(body) {
   var tCommon = _dt.common;
 
   // 2026-06-12 GM: 지원부 공용구역 폐기 → 공용 항목도 활성 성별탭(점검(남)→남성/점검(여)→여성)으로 라우팅.
+  // 공용항목→성별탭 강제는 지원부 한정(타부서는 공용탭 유지). dept 스코프 명시로 타부서 회귀 차단. 2026-06-17 시우.
   var commonToGender = (dept === 'support');
   var buckets = {};
   buckets[tMale] = [];
