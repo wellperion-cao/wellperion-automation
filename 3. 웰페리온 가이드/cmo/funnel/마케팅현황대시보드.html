@@ -780,7 +780,7 @@ function renderConversionFlow() {
   if (!f) { el.innerHTML = '<div style="color:var(--dim);font-size:13px">집계 대기 중</div>'; return; }
 
   var byType = f.byType || {};
-  var reg    = (_pbData && _pbData.regByTypeMonth) ? _pbData.regByTypeMonth : null;
+  var reg    = (f && f.reg) ? f.reg : null;
   var periodLabel = f.label || '이번 달';
 
   // 표시 유형: 문의·등록 모두 의미있는 3종
@@ -889,29 +889,31 @@ function renderHero(f) {
       : '')
     + (paceHtml ? '<div class="hero-pace">' + paceHtml + '</div>' : '');
 
-  // ── 오른쪽: 등록 현황 (_pbData.regByTypeMonth) ──
-  var regEl = document.getElementById('hero-reg-body');
-  if (regEl) {
-    var reg = (_pbData && _pbData.regByTypeMonth) ? _pbData.regByTypeMonth : null;
-    var regRows = [
-      { label: '멤버십',   key: '멤버십',   note: '이번 달 신규 등록' },
-      { label: '성인 강습', key: '성인강습', note: '종목별 팀시트 누적' },
-      { label: '유소년 강습', key: '유소년강습', note: '종목별 팀시트 누적' }
-    ];
-    var regHtml = '<table style="width:100%;border-collapse:collapse;font-size:13px">';
-    regRows.forEach(function(r) {
-      var val = (reg && reg[r.key] !== undefined && reg[r.key] !== null) ? reg[r.key].toLocaleString('ko-KR') : '—';
-      var isReady = reg && reg[r.key] !== undefined && reg[r.key] !== null;
-      regHtml += '<tr>'
-        + '<td style="padding:7px 0;color:var(--dim);font-size:12px">' + r.label + '</td>'
-        + '<td style="padding:7px 0;text-align:right;font-weight:700;color:' + (isReady ? 'var(--f5)' : 'var(--dim)') + ';font-size:18px">' + val + '</td>'
-        + '<td style="padding:7px 0 7px 8px;font-size:10px;color:var(--dim);white-space:nowrap">' + r.note + '</td>'
-        + '</tr>';
-    });
-    regHtml += '</table>';
-    if (!reg) regHtml = '<div style="color:var(--dim);font-size:12px;margin-top:8px">집계 대기 중</div>';
-    regEl.innerHTML = regHtml;
-  }
+  // ── 오른쪽: 등록 현황 — f.reg(기간 연동) ──
+  // f.reg = { 멤버십: N|null, 성인강습: N|null, 유소년강습: N|null }
+  // null = 진행현황 컬럼 없는 시트 → '—' + 주석
+  var reg = (f && f.reg) ? f.reg : null;
+  var regLabel = periodLabel + ' 등록';  // 기간 라벨 동적화
+
+  // 강습은 날짜 기준 기간별 집계가 가능할 때만 기간 라벨, 아닐 때 '누적'
+  var rows2 = [
+    { label: '멤버십',      key: '멤버십',    note: null },          // 진행현황 기준 → 기간 라벨
+    { label: '성인 강습',   key: '성인강습',  note: null },
+    { label: '유소년 강습', key: '유소년강습', note: null }
+  ];
+  var t = '<table style="width:100%;border-collapse:collapse;font-size:13px">';
+  rows2.forEach(function(r) {
+    var rawVal = (reg && reg[r.key] !== undefined) ? reg[r.key] : null;
+    var v = (rawVal !== null) ? rawVal.toLocaleString('ko-KR') : '—';
+    var colored = rawVal !== null && rawVal >= 0;
+    var noteStr = (rawVal !== null) ? regLabel : '집계 준비 중';
+    t += '<tr>'
+      + '<td style="padding:6px 0;color:var(--dim);font-size:12px">' + r.label + '</td>'
+      + '<td style="padding:6px 0;text-align:right;font-weight:700;color:' + (colored ? 'var(--f5)' : 'var(--dim)') + ';font-size:18px">' + v + '</td>'
+      + '<td style="padding:6px 0 6px 6px;font-size:10px;color:var(--dim)">' + noteStr + '</td>'
+      + '</tr>';
+  });
+  t += '</table>';
 
   el.className = '';  // 스켈레톤 클래스 해제
   el.innerHTML =
@@ -920,34 +922,9 @@ function renderHero(f) {
     + '<div style="width:1px;background:var(--border);flex-shrink:0;align-self:stretch"></div>'
     + '<div style="flex:1;min-width:140px">'
     +   '<div class="hero-label">등록 현황</div>'
-    +   '<div id="hero-reg-body" style="margin-top:8px">'
-    +     ((_pbData && _pbData.regByTypeMonth) ? '' : '<div style="color:var(--dim);font-size:12px">집계 대기 중</div>')
-    +   '</div>'
+    +   '<div id="hero-reg-body" style="margin-top:8px">' + (reg ? t : '<div style="color:var(--dim);font-size:12px">집계 대기 중</div>') + '</div>'
     + '</div>'
     + '</div>';
-
-  // reg 테이블은 innerHTML 교체 후 재삽입
-  var regElNew = document.getElementById('hero-reg-body');
-  if (regElNew && _pbData && _pbData.regByTypeMonth) {
-    var reg2 = _pbData.regByTypeMonth;
-    var rows2 = [
-      { label: '멤버십',     key: '멤버십',   note: '이번 달 신규' },
-      { label: '성인 강습',  key: '성인강습', note: '팀시트 누적' },
-      { label: '유소년 강습',key: '유소년강습',note: '팀시트 누적' }
-    ];
-    var t = '<table style="width:100%;border-collapse:collapse;font-size:13px">';
-    rows2.forEach(function(r) {
-      var v = (reg2[r.key] !== undefined && reg2[r.key] !== null) ? reg2[r.key].toLocaleString('ko-KR') : '—';
-      var colored = reg2[r.key] !== undefined && reg2[r.key] !== null;
-      t += '<tr>'
-        + '<td style="padding:6px 0;color:var(--dim);font-size:12px">' + r.label + '</td>'
-        + '<td style="padding:6px 0;text-align:right;font-weight:700;color:' + (colored ? 'var(--f5)' : 'var(--dim)') + ';font-size:18px">' + v + '</td>'
-        + '<td style="padding:6px 0 6px 6px;font-size:10px;color:var(--dim)">' + r.note + '</td>'
-        + '</tr>';
-    });
-    t += '</table>';
-    regElNew.innerHTML = t;
-  }
 }
 
 function renderChannelTableLive() {
@@ -1235,24 +1212,58 @@ async function loadPeriodBreakdown(period) {
 }
 
 function _applyPeriodData(data, period) {
-  // 채널별 비교 표 — period_breakdown 데이터 저장 후 라이브 렌더 (월 기준)
-  if (period === 'month') {
-    _pbData = data;
-    renderChannelTableLive();
+  // 기간별 등록값 추출 헬퍼 — regByType[유형][period키] 참조
+  function _regForPeriod_(typeName, periodKey) {
+    var rb = data.regByType;
+    if (!rb || !rb[typeName]) return null;
+    var v = rb[typeName][periodKey];
+    return (v !== undefined && v !== null) ? v : null;
   }
 
   // 핵심 지표 전환 흐름 — 선택 기간에 맞춰 _flow 갱신 후 렌더
   if (period === 'month') {
+    _pbData = data;  // month 기준 전체 snapshot (채널표·히어로 공용)
+    renderChannelTableLive();
     _flow = { clicks: (data.clicks && data.clicks.month) || 0,
               inq:    (data.inquiries && data.inquiries.month) || 0,
               conv:   (data.conversion && data.conversion.month) ? data.conversion.month.converted : null,
               byType: (data.inquiries && data.inquiries.byTypeMonth) || {},
+              reg:    { 멤버십: _regForPeriod_('멤버십','month'),
+                        성인강습: _regForPeriod_('성인강습','month'),
+                        유소년강습: _regForPeriod_('유소년강습','month') },
               mode: 'month', label: '이번 달' };
+  } else if (period === 'week') {
+    _flow = { clicks: (data.clicks && data.clicks.week) || 0,
+              inq:    (data.inquiries && data.inquiries.week) || 0,
+              conv:   null, byType: {},
+              reg:    { 멤버십: _regForPeriod_('멤버십','week'),
+                        성인강습: _regForPeriod_('성인강습','week'),
+                        유소년강습: _regForPeriod_('유소년강습','week') },
+              mode: 'week', label: '이번 주' };
+  } else if (period === 'day') {
+    _flow = { clicks: (data.clicks && data.clicks.day) || 0,
+              inq:    (data.inquiries && data.inquiries.day) || 0,
+              conv:   null, byType: {},
+              reg:    { 멤버십: _regForPeriod_('멤버십','day'),
+                        성인강습: _regForPeriod_('성인강습','day'),
+                        유소년강습: _regForPeriod_('유소년강습','day') },
+              mode: 'day', label: '오늘' };
+  } else if (period === 'year') {
+    _flow = { clicks: 0,
+              inq:    (data.inquiries && data.inquiries.month) || 0,
+              conv:   null, byType: {},
+              reg:    { 멤버십: _regForPeriod_('멤버십','year'),
+                        성인강습: _regForPeriod_('성인강습','year'),
+                        유소년강습: _regForPeriod_('유소년강습','year') },
+              mode: 'year', label: '올해' };
   } else {
     _flow = { clicks: (data.clicks && data.clicks[period] !== undefined) ? data.clicks[period] : 0,
               inq:    (data.inquiries && data.inquiries[period] !== undefined) ? data.inquiries[period] : 0,
-              conv:   null, byType: {}, mode: 'range',
-              label: (PERIOD_LABELS[period] || period) + ' 기준' };
+              conv:   null, byType: {},
+              reg:    { 멤버십: _regForPeriod_('멤버십','custom'),
+                        성인강습: _regForPeriod_('성인강습','custom'),
+                        유소년강습: _regForPeriod_('유소년강습','custom') },
+              mode: 'range', label: (PERIOD_LABELS[period] || period) + ' 기준' };
   }
   renderConversionFlow();
 
@@ -1406,11 +1417,18 @@ function _applyCustom(data, from, to, monthCtx) {
   }
 
   // 핵심 지표 전환 흐름 — 기간/지난달 뷰 갱신 (monthCtx.fullMonth면 월 단위로 목표 표시)
+  var _cReg = data.regByType;
+  var _periodKey = (monthCtx && monthCtx.fullMonth) ? 'month' : 'custom';
   _flow = {
     clicks: (c.clicks !== undefined) ? c.clicks : 0,
     inq:    (c.inquiries !== undefined) ? c.inquiries : ((c.conversion && c.conversion.inquiries) || 0),
     conv:   (c.conversion && c.conversion.converted !== undefined) ? c.conversion.converted : null,
     byType: c.byType || {},
+    reg: {
+      멤버십:    (_cReg && _cReg['멤버십']    && _cReg['멤버십'][_periodKey]    !== null) ? _cReg['멤버십'][_periodKey]    : null,
+      성인강습:  (_cReg && _cReg['성인강습']  && _cReg['성인강습'][_periodKey]  !== null) ? _cReg['성인강습'][_periodKey]  : null,
+      유소년강습: (_cReg && _cReg['유소년강습'] && _cReg['유소년강습'][_periodKey] !== null) ? _cReg['유소년강습'][_periodKey] : null
+    },
     mode:   (monthCtx && monthCtx.fullMonth) ? 'monthPast' : 'range',
     label:  (monthCtx && monthCtx.label) ? monthCtx.label : ('기간(' + from + '~' + to + ')')
   };

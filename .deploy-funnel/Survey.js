@@ -867,14 +867,17 @@ function _processAction(body) {
       };
     }
 
-    // ── 유형별 등록 현황 (GM 정본 스펙 2026-06-17) ──
-    // 등록 = 문의/팀 시트의 진행현황(상태) 값이 SUC 또는 단기SUC인 행.
-    // 날짜 = B열(타임스탬프/일정) 기준. 문의와 동일 cohort(같은 행·날짜 필터).
-    // 전화매칭·회원부 등록일자 방식 폐기.
-    var regByTypeMonth = {};
+    // ── 유형별 등록 현황 — 기간별 집계 (2026-06-17 기간연동 확장) ──
+    // 등록 = 진행현황(상태) 값이 SUC 또는 단기SUC인 행. 날짜 = B열 기준.
+    // 기간: day·week·month·year + custom(from/to 있을 때). 문의와 동일 cohort.
+    // 강습: 진행현황 없으면 null(프론트 → '—' + '누적' 주석).
 
-    // 진행현황 컬럼에서 SUC/단기SUC 카운트 — 날짜(idxDate)가 monthStart 이상인 행만
-    function _countRegFromSheet_(sh, last, lastCol, monthStart_) {
+    // yearStart 산출 (이번 연도 1월 1일 00:00 +09:00)
+    var yearStr   = Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy') + '-01-01';
+    var yearStart = new Date(yearStr + 'T00:00:00+09:00');
+
+    // 시트 하나에서 기간별 SUC 카운트를 한 번에 추출 — rows 재사용
+    function _countRegAllPeriods_(sh, last, lastCol) {
       if (!sh || last < 2 || lastCol < 1) return null;
       try {
         var hdrs = sh.getRange(1, 1, 1, lastCol).getValues()[0];
@@ -883,50 +886,56 @@ function _processAction(body) {
         if (idxDate < 0) idxDate = 0;
         if (idxStatus < 0) return null; // 진행현황 컬럼 없으면 집계 불가
         var rows = sh.getRange(2, 1, last - 1, lastCol).getValues();
-        var cnt = 0, total = 0;
+        var day = 0, week = 0, month = 0, year = 0, custom = 0;
+        var cFrom = (from && to) ? new Date(from + 'T00:00:00+09:00') : null;
+        var cTo   = (from && to) ? new Date(to   + 'T23:59:59+09:00') : null;
         rows.forEach(function(r) {
           var dateRaw = r[idxDate];
           if (!dateRaw) return;
           var d = _toDate_(_parseAnyDate_(dateRaw));
           if (isNaN(d.getTime())) return;
-          if (d < monthStart_) return;
-          total++;
-          if (_isLessonReg_(r[idxStatus])) cnt++;
+          if (!_isLessonReg_(r[idxStatus])) return;
+          if (d >= ps.dayStart)   day++;
+          if (d >= ps.weekStart)  week++;
+          if (d >= ps.monthStart) month++;
+          if (d >= yearStart)     year++;
+          if (cFrom && cTo && d >= cFrom && d <= cTo) custom++;
         });
-        return { count: cnt, total: total, statusHeader: String(hdrs[idxStatus]) };
+        return { day: day, week: week, month: month, year: year, custom: (cFrom ? custom : null) };
       } catch (e) { return null; }
     }
 
-    // 멤버십 — FORM_SHEETS[0] (26년 신규문의 스태프 로그)
-    try {
-      var memCfg = FORM_SHEETS[0]; // 멤버십 단일출처
-      var memSh  = _sheetByGid_(memCfg.ssId, memCfg.gid);
-      var memLast = memSh ? memSh.getLastRow() : 0;
-      var memLastCol = memSh ? memSh.getLastColumn() : 0;
-      var memRes = _countRegFromSheet_(memSh, memLast, memLastCol, ps.monthStart);
-      regByTypeMonth['멤버십'] = memRes !== null ? memRes.count : null;
-      regByTypeMonth['멤버십_집계'] = memRes !== null ? '진행현황 기준' : '진행현황 없음';
-    } catch (e) { regByTypeMonth['멤버십'] = null; }
+    // 유형별 집계 누산기 초기화
+    var regByType = {};
 
-    // 강습 — LESSON_TEAM_SHEETS 유형별 합산 (날짜=B열 기준 이번달 SUC/단기SUC)
+    // 멤버십 — FORM_SHEETS[0] (26년 신규문의 스태프 로그, 진행현황 컬럼 있음)
     try {
-      var lessonRegCounts = { '성인강습': 0, '유소년강습': 0 };
-      var lessonRegFound  = { '성인강습': false, '유소년강습': false };
+      var memCfg = FORM_SHEETS[0];
+      var memSh  = _sheetByGid_(memCfg.ssId, memCfg.gid);
+      var memRes = _countRegAllPeriods_(memSh, memSh ? memSh.getLastRow() : 0, memSh ? memSh.getLastColumn() : 0);
+      regByType['멤버십'] = memRes; // null이면 프론트 '—'
+    } catch (e) { regByType['멤버십'] = null; }
+
+    // 강습 — LESSON_TEAM_SHEETS 유형별 합산 (날짜 기준 기간별)
+    try {
+      var lCounts = { '성인강습': { day:0,week:0,month:0,year:0,custom:0 },
+                      '유소년강습': { day:0,week:0,month:0,year:0,custom:0 } };
+      var lFound  = { '성인강습': false, '유소년강습': false };
       LESSON_TEAM_SHEETS.forEach(function(cfg) {
         try {
-          var lsh  = _sheetByGid_(cfg.ssId, cfg.gid);
-          var llast = lsh ? lsh.getLastRow() : 0;
-          var llcol = lsh ? lsh.getLastColumn() : 0;
-          var lres = _countRegFromSheet_(lsh, llast, llcol, ps.monthStart);
-          if (lres !== null) {
-            lessonRegCounts[cfg.유형] = (lessonRegCounts[cfg.유형] || 0) + lres.count;
-            lessonRegFound[cfg.유형]  = true;
+          var lsh = _sheetByGid_(cfg.ssId, cfg.gid);
+          var lr  = _countRegAllPeriods_(lsh, lsh ? lsh.getLastRow() : 0, lsh ? lsh.getLastColumn() : 0);
+          if (lr !== null) {
+            var b = lCounts[cfg.유형];
+            b.day   += lr.day;   b.week  += lr.week;
+            b.month += lr.month; b.year  += lr.year;
+            if (lr.custom !== null) b.custom += lr.custom;
+            lFound[cfg.유형] = true;
           }
         } catch (e) { /* 팀시트 접근 실패 무시 */ }
       });
       ['성인강습', '유소년강습'].forEach(function(tp) {
-        regByTypeMonth[tp] = lessonRegFound[tp] ? lessonRegCounts[tp] : null;
-        regByTypeMonth[tp + '_집계'] = lessonRegFound[tp] ? '진행현황 이번달' : '진행현황 없음';
+        regByType[tp] = lFound[tp] ? lCounts[tp] : null;
       });
     } catch (e) { /* 강습 등록 집계 실패 무시 */ }
 
@@ -936,7 +945,8 @@ function _processAction(body) {
       periods: {
         dayStart:   ps.dayStr,
         weekStart:  ps.weekStr,
-        monthStart: ps.monthStr
+        monthStart: ps.monthStr,
+        yearStart:  yearStr
       },
       clicks:    { day: clickCounts.day, week: clickCounts.week, month: clickCounts.month },
       inquiries: {
@@ -949,7 +959,7 @@ function _processAction(body) {
       conversion: {
         month: { inquiries: convInq, converted: convConv, rate: convRate }
       },
-      regByTypeMonth: regByTypeMonth  // 유형별 등록 현황 (멤버십=이번달신규 / 강습=누적)
+      regByType: regByType  // 기간별 등록: {멤버십:{day,week,month,year,custom}, 성인강습:…, 유소년강습:…}
     };
     if (customObj !== null) pbResult.custom = customObj;
 
