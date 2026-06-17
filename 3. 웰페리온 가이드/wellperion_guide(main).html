@@ -535,61 +535,48 @@
 
     <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:14px;container-type:inline-size;" class="ops-detail-grid">
 
-      <!-- 업무 카드 -->
-      <div style="background:var(--paper);border:1px solid var(--border);border-radius:14px;padding:16px 18px;">
-        <div style="display:flex;align-items:center;gap:9px;margin-bottom:12px;"><span style="width:28px;height:28px;border-radius:8px;background:var(--accent-bg);color:var(--accent);display:flex;align-items:center;justify-content:center;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5h6M7 7H5v14h14V7h-2M9 5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2"/></svg></span><div><div style="font-weight:800;font-size:14px;color:var(--text);">업무 현황</div><div style="font-size:10.5px;color:var(--dim);">Work · AI COO(시우)</div></div></div>
-        <!-- 🔼 위 칸: 큰 숫자(진행·완료) — GM이 한눈에 보는 핵심 (2026-06-12 GM "큰 숫자는 위 칸") -->
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">
-          <div style="background:var(--accent-bg);border-radius:10px;padding:10px 12px;">
-            <div style="font-size:10px;color:var(--dim);margin-bottom:4px;font-weight:600;">진행</div>
-            <div style="font-size:26px;font-weight:800;color:var(--accent);line-height:1;" id="kpiWorkTotalActive">—</div>
-            <div style="display:flex;align-items:center;gap:4px;margin-top:4px;"><span style="font-size:10px;color:var(--dim);">오늘</span><span style="font-size:13px;font-weight:700;color:var(--text);" id="kpiWorkDayActive">—</span></div>
-          </div>
-          <div style="background:var(--accent-bg);border-radius:10px;padding:10px 12px;">
-            <div style="font-size:10px;color:var(--dim);margin-bottom:4px;font-weight:600;">완료</div>
-            <div style="font-size:26px;font-weight:800;color:var(--grow);line-height:1;" id="kpiWorkTotalDone">—</div>
-            <div style="display:flex;align-items:center;gap:4px;margin-top:4px;"><span style="font-size:10px;color:var(--dim);">오늘</span><span style="font-size:13px;font-weight:700;color:var(--grow);" id="kpiWorkDayDone">—</span></div>
-          </div>
-        </div>
-        <!-- 🔽 아래 칸: 세부 SSOT 지표 스트립 (5칸: 총건수|진행중|완료(완료율%)|보류|마감준수율%) — 작게 (2026-06-12 GM) -->
-        <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:1px;background:var(--border);border:1px solid var(--border);border-radius:10px;overflow:hidden;">
-          <div style="background:var(--paper);padding:7px 4px;text-align:center;"><div style="font-size:15px;font-weight:800;color:var(--text);line-height:1.1;" id="kpiWorkStripTotal">—</div><div style="font-size:9px;color:var(--dim);margin-top:2px;font-weight:600;">총건수</div></div>
-          <div style="background:var(--paper);padding:7px 4px;text-align:center;"><div style="font-size:15px;font-weight:800;color:var(--accent);line-height:1.1;" id="kpiWorkStripActive">—</div><div style="font-size:9px;color:var(--dim);margin-top:2px;font-weight:600;">진행중</div></div>
-          <div style="background:var(--paper);padding:7px 4px;text-align:center;"><div style="font-size:15px;font-weight:800;color:var(--grow);line-height:1.1;" id="kpiWorkStripDone">—</div><div style="font-size:9px;color:var(--dim);margin-top:2px;font-weight:600;">완료(완료율)</div></div>
-          <div style="background:var(--paper);padding:7px 4px;text-align:center;"><div style="font-size:15px;font-weight:800;color:var(--dim);line-height:1.1;" id="kpiWorkStripHold">—</div><div style="font-size:9px;color:var(--dim);margin-top:2px;font-weight:600;">보류</div></div>
-          <div style="background:var(--paper);padding:7px 4px;text-align:center;"><div style="font-size:15px;font-weight:800;color:var(--text);line-height:1.1;" id="kpiWorkStripDlRate">—</div><div style="font-size:9px;color:var(--dim);margin-top:2px;font-weight:600;">마감준수율</div></div>
-        </div>
-        <div style="margin-top:11px;padding-top:10px;border-top:1px dashed var(--border);">
-          <a href="https://wellperion-cao.github.io/wellperion-automation/coo/todo/%EC%97%85%EB%AC%B4%20%ED%98%84%ED%99%A9%20SSOT.html" target="_blank" style="font-size:11px;font-weight:700;padding:3px 10px;background:var(--accent-bg);color:var(--accent);border-radius:20px;text-decoration:none;border:1px solid var(--border);">업무 현황 SSOT ↗</a>
-        </div>
-      </div>
+      <!-- 업무&결재 현황 (통합 카드) — 업무 블록 + 결재 블록 한 제목 아래. 이번달(생성일 기준) 집계 (2026-06-17 GM) -->
+      <div style="grid-column:1/-1;background:var(--paper);border:1px solid var(--border);border-radius:14px;padding:16px 18px;">
+        <div style="display:flex;align-items:center;gap:9px;margin-bottom:4px;"><span style="width:28px;height:28px;border-radius:8px;background:var(--accent-bg);color:var(--accent);display:flex;align-items:center;justify-content:center;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5h6M7 7H5v14h14V7h-2M9 5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2"/></svg></span><div><div style="font-weight:800;font-size:14px;color:var(--text);">업무&amp;결재 현황</div><div style="font-size:10.5px;color:var(--dim);">Work &amp; Approval · AI COO(시우)</div></div></div>
+        <!-- 기간 라벨: 이번달(생성일 기준) — 현재 월 자동(로컬 KST). 일/주/월 셀렉터는 home에 두지 않음(드릴다운은 SSOT 페이지 소관) -->
+        <div style="font-size:10.5px;color:var(--dim);font-weight:600;margin-bottom:12px;padding-left:2px;" id="kpiWaPeriodLabel">이번달 기준</div>
 
-      <!-- 결재 카드 -->
-      <div style="background:var(--paper);border:1px solid var(--border);border-radius:14px;padding:16px 18px;">
-        <div style="display:flex;align-items:center;gap:9px;margin-bottom:12px;"><span style="width:28px;height:28px;border-radius:8px;background:var(--warm-bg);color:var(--warm);display:flex;align-items:center;justify-content:center;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 4v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V7z"/><path d="M9 12l2 2 4-4"/></svg></span><div><div style="font-weight:800;font-size:14px;color:var(--text);">결재 현황</div><div style="font-size:10.5px;color:var(--dim);">Approval · AI CEO(웰리)</div></div></div>
-        <!-- 🔼 위 칸: 큰 숫자(대기·완료) — 업무현황 카드와 동일 2단 구조 (2026-06-12 GM) -->
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">
-          <div style="background:var(--warm-bg);border-radius:10px;padding:10px 12px;">
-            <div style="font-size:10px;color:var(--dim);margin-bottom:4px;font-weight:600;">대기</div>
-            <div style="font-size:26px;font-weight:800;color:var(--warm);line-height:1;" id="kpiApprTotalPend">—</div>
-            <div style="display:flex;align-items:center;gap:4px;margin-top:4px;"><span style="font-size:10px;color:var(--dim);">오늘</span><span style="font-size:13px;font-weight:700;color:var(--warm);" id="kpiApprDayPend">—</span></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;" class="wa-block-grid">
+          <!-- ◀ 업무 블록: 4지표(총·진행·완료(완료율%)·보류) + 각 오늘 N -->
+          <div>
+            <div style="font-size:11px;font-weight:800;color:var(--accent);margin-bottom:8px;">📋 업무</div>
+            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--border);border:1px solid var(--border);border-radius:10px;overflow:hidden;">
+              <div style="background:var(--paper);padding:8px 4px;text-align:center;"><div style="font-size:16px;font-weight:800;color:var(--text);line-height:1.1;" id="kpiWorkStripTotal">—</div><div style="font-size:9px;color:var(--dim);margin-top:2px;font-weight:600;">총</div><div style="font-size:9px;color:var(--dim);margin-top:1px;">오늘 <span id="kpiWorkTodayTotal">—</span></div></div>
+              <div style="background:var(--paper);padding:8px 4px;text-align:center;"><div style="font-size:16px;font-weight:800;color:var(--accent);line-height:1.1;" id="kpiWorkStripActive">—</div><div style="font-size:9px;color:var(--dim);margin-top:2px;font-weight:600;">진행</div><div style="font-size:9px;color:var(--dim);margin-top:1px;">오늘 <span id="kpiWorkTodayActive">—</span></div></div>
+              <div style="background:var(--paper);padding:8px 4px;text-align:center;"><div style="font-size:16px;font-weight:800;color:var(--grow);line-height:1.1;" id="kpiWorkStripDone">—</div><div style="font-size:9px;color:var(--dim);margin-top:2px;font-weight:600;">완료(율)</div><div style="font-size:9px;color:var(--dim);margin-top:1px;">오늘 <span id="kpiWorkTodayDone">—</span></div></div>
+              <div style="background:var(--paper);padding:8px 4px;text-align:center;"><div style="font-size:16px;font-weight:800;color:var(--dim);line-height:1.1;" id="kpiWorkStripHold">—</div><div style="font-size:9px;color:var(--dim);margin-top:2px;font-weight:600;">보류</div><div style="font-size:9px;color:var(--dim);margin-top:1px;">오늘 <span id="kpiWorkTodayHold">—</span></div></div>
+            </div>
           </div>
-          <div style="background:var(--warm-bg);border-radius:10px;padding:10px 12px;">
-            <div style="font-size:10px;color:var(--dim);margin-bottom:4px;font-weight:600;">완료</div>
-            <div style="font-size:26px;font-weight:800;color:var(--grow);line-height:1;" id="kpiApprTotalDone">—</div>
-            <div style="display:flex;align-items:center;gap:4px;margin-top:4px;"><span style="font-size:10px;color:var(--dim);">오늘</span><span style="font-size:13px;font-weight:700;color:var(--grow);" id="kpiApprDayDone">—</span></div>
+          <!-- ▶ 결재 블록: 4지표(총·대기·완료(완료율%)·반려) + 각 오늘 N -->
+          <div>
+            <div style="font-size:11px;font-weight:800;color:var(--warm);margin-bottom:8px;">✍️ 결재</div>
+            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--border);border:1px solid var(--border);border-radius:10px;overflow:hidden;">
+              <div style="background:var(--paper);padding:8px 4px;text-align:center;"><div style="font-size:16px;font-weight:800;color:var(--text);line-height:1.1;" id="kpiApprStripTotal">—</div><div style="font-size:9px;color:var(--dim);margin-top:2px;font-weight:600;">총</div><div style="font-size:9px;color:var(--dim);margin-top:1px;">오늘 <span id="kpiApprTodayTotal">—</span></div></div>
+              <div style="background:var(--paper);padding:8px 4px;text-align:center;"><div style="font-size:16px;font-weight:800;color:var(--warm);line-height:1.1;" id="kpiApprStripPend">—</div><div style="font-size:9px;color:var(--dim);margin-top:2px;font-weight:600;">대기</div><div style="font-size:9px;color:var(--dim);margin-top:1px;">오늘 <span id="kpiApprTodayPend">—</span></div></div>
+              <div style="background:var(--paper);padding:8px 4px;text-align:center;"><div style="font-size:16px;font-weight:800;color:var(--grow);line-height:1.1;" id="kpiApprStripDone">—</div><div style="font-size:9px;color:var(--dim);margin-top:2px;font-weight:600;">완료(율)</div><div style="font-size:9px;color:var(--dim);margin-top:1px;">오늘 <span id="kpiApprTodayDone">—</span></div></div>
+              <div style="background:var(--paper);padding:8px 4px;text-align:center;"><div style="font-size:16px;font-weight:800;color:var(--dim);line-height:1.1;" id="kpiApprStripReject">—</div><div style="font-size:9px;color:var(--dim);margin-top:2px;font-weight:600;">반려</div><div style="font-size:9px;color:var(--dim);margin-top:1px;">오늘 <span id="kpiApprTodayReject">—</span></div></div>
+            </div>
           </div>
         </div>
-        <!-- 🔽 아래 칸: 세부 결재 지표 스트립 (5칸: 총건수|대기|완료(완료율%)|반려|진행중) — 업무현황 톤 통일 (2026-06-12 GM) -->
-        <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:1px;background:var(--border);border:1px solid var(--border);border-radius:10px;overflow:hidden;">
-          <div style="background:var(--paper);padding:7px 4px;text-align:center;"><div style="font-size:15px;font-weight:800;color:var(--text);line-height:1.1;" id="kpiApprStripTotal">—</div><div style="font-size:9px;color:var(--dim);margin-top:2px;font-weight:600;">총건수</div></div>
-          <div style="background:var(--paper);padding:7px 4px;text-align:center;"><div style="font-size:15px;font-weight:800;color:var(--warm);line-height:1.1;" id="kpiApprStripPend">—</div><div style="font-size:9px;color:var(--dim);margin-top:2px;font-weight:600;">대기</div></div>
-          <div style="background:var(--paper);padding:7px 4px;text-align:center;"><div style="font-size:15px;font-weight:800;color:var(--grow);line-height:1.1;" id="kpiApprStripDone">—</div><div style="font-size:9px;color:var(--dim);margin-top:2px;font-weight:600;">완료(완료율)</div></div>
-          <div style="background:var(--paper);padding:7px 4px;text-align:center;"><div style="font-size:15px;font-weight:800;color:var(--dim);line-height:1.1;" id="kpiApprStripReject">—</div><div style="font-size:9px;color:var(--dim);margin-top:2px;font-weight:600;">반려</div></div>
-          <div style="background:var(--paper);padding:7px 4px;text-align:center;"><div style="font-size:15px;font-weight:800;color:var(--text);line-height:1.1;" id="kpiApprStripInflight">—</div><div style="font-size:9px;color:var(--dim);margin-top:2px;font-weight:600;">진행중</div></div>
-        </div>
-        <div style="margin-top:11px;padding-top:10px;border-top:1px dashed var(--border);">
-          <a href="https://wellperion-cao.github.io/wellperion-automation/coo/todo/%EA%B2%B0%EC%9E%AC%20%ED%98%84%ED%99%A9%20SSOT.html" target="_blank" style="font-size:11px;font-weight:700;padding:3px 10px;background:var(--warm-bg);color:var(--warm);border-radius:20px;text-decoration:none;border:1px solid var(--border);">결재 현황 SSOT ↗</a>
+
+        <!-- 담당자별 업무&결재 보기 펼침 토글 (이번달 기준 · 실데이터만, 없으면 —) -->
+        <div style="margin-top:12px;padding-top:10px;border-top:1px dashed var(--border);">
+          <button id="kpiWaByOwnerBtn" onclick="(function(){var p=document.getElementById('kpiWaByOwnerPanel');var b=document.getElementById('kpiWaByOwnerBtn');if(!p)return;var open=p.style.display!=='none';p.style.display=open?'none':'block';b.textContent=open?'담당자별 업무&결재 보기 ▾':'담당자별 업무&결재 접기 ▴';})()" style="font-size:11px;font-weight:700;color:var(--accent);background:var(--accent-bg);border:1px solid var(--border);border-radius:20px;padding:4px 12px;cursor:pointer;">담당자별 업무&결재 보기 ▾</button>
+          <div id="kpiWaByOwnerPanel" style="display:none;margin-top:10px;">
+            <table style="width:100%;border-collapse:collapse;font-size:11px;">
+              <thead><tr style="color:var(--dim);font-weight:700;border-bottom:1px solid var(--border);">
+                <th style="text-align:left;padding:4px 6px;">담당자</th>
+                <th style="text-align:right;padding:4px 6px;">업무</th>
+                <th style="text-align:right;padding:4px 6px;">결재</th>
+              </tr></thead>
+              <tbody id="kpiWaByOwnerBody"><tr><td colspan="3" style="color:var(--dim);padding:6px 6px;">—</td></tr></tbody>
+            </table>
+          </div>
         </div>
       </div>
 
@@ -614,32 +601,11 @@
         </div>
       </div>
 
-      <!-- 이슈 카드 -->
-      <div style="background:var(--paper);border:1px solid var(--border);border-radius:14px;padding:16px 18px;">
-        <div style="display:flex;align-items:center;gap:9px;margin-bottom:12px;"><span style="width:28px;height:28px;border-radius:8px;background:rgba(90,138,159,0.12);color:#5a8a9f;display:flex;align-items:center;justify-content:center;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></span><div><div style="font-weight:800;font-size:14px;color:var(--text);">이슈 현황</div><div style="font-size:10.5px;color:var(--dim);">VOC · AI COO(시우)</div></div></div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-          <div style="background:rgba(90,138,159,0.08);border-radius:10px;padding:10px 12px;">
-            <div style="font-size:10px;color:var(--dim);margin-bottom:4px;font-weight:600;">접수(오늘)</div>
-            <div id="kpiIssueDayNew" style="font-size:22px;font-weight:800;color:#5a8a9f;line-height:1;">—</div>
-            <div style="display:flex;align-items:center;gap:4px;margin-top:4px;"><span style="font-size:10px;color:var(--dim);">누적 미처리</span><span id="kpiIssuePending" style="font-size:13px;font-weight:700;color:#5a8a9f;">—</span></div>
-          </div>
-          <div style="background:rgba(90,138,159,0.08);border-radius:10px;padding:10px 12px;">
-            <div style="font-size:10px;color:var(--dim);margin-bottom:4px;font-weight:600;">누적 처리</div>
-            <div id="kpiIssueDone" style="font-size:22px;font-weight:800;color:var(--grow);line-height:1;">—</div>
-            <div style="display:flex;align-items:center;gap:4px;margin-top:4px;"><span style="font-size:10px;color:var(--dim);">처리율</span><span id="kpiIssueRate" style="font-size:13px;font-weight:700;color:var(--grow);">—</span></div>
-          </div>
-        </div>
-        <div style="margin-top:11px;padding-top:10px;border-top:1px dashed var(--border);display:flex;gap:7px;flex-wrap:wrap;">
-          <a href="https://docs.google.com/forms/d/e/1FAIpQLSd7mDzTyZT5FSXVcxmpMCaqv7M-RR3EmEu2lFqGRksUE77osA/viewform" target="_blank" style="font-size:11px;font-weight:700;padding:3px 10px;background:rgba(90,138,159,0.12);color:#5a8a9f;border-radius:20px;text-decoration:none;border:1px solid rgba(90,138,159,0.3);">이슈 접수(VOC) ↗</a>
-          <a href="https://docs.google.com/spreadsheets/d/1akZLs7ITs3FZWFIzMQvSYrdRucGQglmerOvTC2TLEcQ/edit?gid=1576318230" target="_blank" style="font-size:11px;font-weight:700;padding:3px 10px;background:rgba(90,138,159,0.12);color:#5a8a9f;border-radius:20px;text-decoration:none;border:1px solid rgba(90,138,159,0.3);">이슈 응답 시트 ↗</a>
-        </div>
-      </div>
-
-      <!-- 회원 셀프 VOC 카드 (QR 직접 접수 — 전용 GAS voc_list) -->
+      <!-- 통합 접수처 카드 — 6유형 회원 셀프 VOC. 공개 reg_board(마스킹·집계, 무키) 사용. 이슈 현황 카드 흡수 (2026-06-17 GM) -->
       <div style="background:var(--paper);border:1px solid var(--border);border-radius:14px;padding:16px 18px;">
         <div style="display:flex;align-items:center;gap:9px;margin-bottom:12px;">
           <span style="width:28px;height:28px;border-radius:8px;background:var(--accent-bg);color:var(--accent);display:flex;align-items:center;justify-content:center;font-size:15px;">🙋</span>
-          <div><div style="font-weight:800;font-size:14px;color:var(--text);">통합 접수처</div><div style="font-size:10.5px;color:var(--dim);">QR 직접 접수 · AI COO(시우)</div></div>
+          <div><div style="font-weight:800;font-size:14px;color:var(--text);">통합 접수처</div><div style="font-size:10.5px;color:var(--dim);">6유형 회원 셀프 VOC · AI COO(시우)</div></div>
         </div>
         <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:10px;">
           <div style="background:var(--orange-bg,rgba(230,148,78,0.12));border-radius:10px;padding:8px 10px;text-align:center;">
@@ -887,6 +853,10 @@
     function set(id, v){ var el = document.getElementById(id); if (el) el.textContent = (v === null || v === undefined) ? '—' : v; }
     function todayStr(){ var d=new Date(); return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2); }
     function yearStart(){ return new Date().getFullYear()+'-01-01'; }
+    // 이번달(생성일 기준) 범위 — 현재 월 1일~말일, 로컬(KST). home은 월+오늘만(일/주/월 셀렉터는 SSOT 페이지 소관).
+    function monthStart(){ var d=new Date(); return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-01'; }
+    function monthEnd(){ var d=new Date(); var last=new Date(d.getFullYear(), d.getMonth()+1, 0).getDate(); return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+last).slice(-2); }
+    function monthLabel(){ var d=new Date(); var last=new Date(d.getFullYear(), d.getMonth()+1, 0).getDate(); var y=d.getFullYear(), m=d.getMonth()+1; return y+'. '+m+'. 1 ~ '+m+'. '+last+' 기준'; }
 
     function isStaff(o){ return String(o||'').split(',').map(function(s){return s.trim();}).filter(Boolean).some(function(x){return STAFF.indexOf(x)>=0;}); }
     function getStatus(r){ return String(r.status||r['상태']||'진행중').trim(); }
@@ -902,81 +872,50 @@
       .then(function(r){ return r.json(); })
       .then(function(res){
         if (!res || !(res.ok||res.success) || !Array.isArray(res.data||res.todos)) return;
+        // [정의 변경 2026-06-17 GM] 집계 기준 = 전체 진행분 → 이번달(생성일이 이번달인 행)으로 전환.
+        //   분류 로직(진행/완료/보류·결재 대기/완료/반려)은 업무현황 SSOT 정의와 동일 — '이번달 생성' 필터만 추가.
         var rows = (res.data||res.todos).filter(function(r){
           var cat = String(r['카테고리']||r.category||'').trim();
           var owner = String(r['담당자']||r.owner||'').trim();
           return cat !== '[7]AI배(C레벨)' && !_aiOwnerRe.test(owner);
         });
         var today = todayStr();
-        var yStart = yearStart(); // 결재 카드(아래)에서 사용 — 업무 카드는 SSOT 정합으로 연도필터 미사용
+        var mStart = monthStart(), mEnd = monthEnd();
+        function inMonth(r){ var c=getCreated(r); return c && c>=mStart && c<=mEnd; }   // 생성일이 이번달
+        set('kpiWaPeriodLabel', monthLabel());
 
-        // 실무진 기준 업무 행 — 업무현황 SSOT 대시보드(renderDashboard)와 동일 정의(정본):
-        // 실무진 토큰이 owner에 하나라도 있으면 포함(excludeNonStaff). 연도·AI정규식·[7]AI배 추가필터 없음.
-        // (rows는 위에서 [7]AI배·_aiOwnerRe 제거됨 → 동일 결과를 위해 원본 데이터에서 STAFF 토큰만으로 재선별)
-        var work = (res.data||res.todos).filter(function(r){ return isStaff(r.owner||r['담당자']||''); });
-
-        // 핵심 현황 정합(2026-06-11): home 큰숫자 = SSOT 대시보드 핵심값과 동일 로직·동일 결과.
-        // 진행 = 완료·보류 아닌 것 / 완료 = 상태 완료 (연도·결재미완 재분류 없음 — SSOT 정본 그대로).
-        var totalActive = work.filter(function(r){ var s=getStatus(r); return s!=='완료' && s!=='보류'; }).length;
-        var totalDone   = work.filter(function(r){ return getStatus(r)==='완료'; }).length;
-        // 오늘 보조값: SSOT 대시보드엔 일일분이 없어 home 고유 — 진행/완료 정의는 위 큰숫자와 일치(오늘 생성/완료 기준).
-        var dayActive = work.filter(function(r){
-          var s=getStatus(r); return getCreated(r)===today && s!=='완료' && s!=='보류';
-        }).length;
-        var dayDone = work.filter(function(r){
-          var dd = getDoneDate(r)||getCreated(r);
-          return dd===today && getStatus(r)==='완료';
-        }).length;
-
-        set('kpiWorkTotalActive', totalActive);
-        set('kpiWorkTotalDone',   totalDone);
-        set('kpiWorkDayActive',   dayActive);
-        set('kpiWorkDayDone',     dayDone);
-
-        // 📊 SSOT 지표 스트립(6지표) — 업무현황 SSOT 대시보드 renderDashboard와 동일 계산(정본):
-        //  총건수=work.length / 진행중=완료·보류 아님 / 완료=상태 완료 / 보류=상태 보류
-        //  완료율=완료/총 / 마감준수율=종료일 있는 완료건 중 (완료일<=종료일) 비율.
-        var sTotal = work.length;
-        var sActive = totalActive;            // 위 큰숫자와 동일 정의(완료·보류 아님)
-        var sDone   = totalDone;              // 위 큰숫자와 동일 정의(상태 완료)
+        // ── 업무 블록 (이번달 생성분) — 실무진 토큰 owner 기준(업무현황 SSOT renderDashboard 정의) ──
+        var work = (res.data||res.todos).filter(function(r){ return isStaff(r.owner||r['담당자']||'') && inMonth(r); });
+        var sTotal  = work.length;
+        var sActive = work.filter(function(r){ var st=getStatus(r); return st!=='완료' && st!=='보류'; }).length;
+        var sDone   = work.filter(function(r){ return getStatus(r)==='완료'; }).length;
         var sHold   = work.filter(function(r){ return getStatus(r)==='보류'; }).length;
-        var sRate   = sTotal > 0 ? Math.round(sDone / sTotal * 100) : 0;
-        var dlTotal = 0, dlOk = 0;
-        work.filter(function(r){ return getStatus(r)==='완료'; }).forEach(function(r){
-          var ed = getEndDate(r);
-          if (ed) {
-            dlTotal++;
-            var end = new Date(ed + 'T23:59:59');
-            var dd = getDoneDate(r);
-            var completed = dd ? new Date(dd) : new Date();
-            if (completed <= end) dlOk++;
-          }
-        });
-        var sDlRate = dlTotal > 0 ? Math.round(dlOk / dlTotal * 100) : 0;
+        var sRate   = sTotal > 0 ? Math.round(sDone / sTotal * 100) : 0;   // 완료율 = 완료/총(이번달)
+        // 오늘 = 생성일이 오늘인 분(이번달 부분집합)
+        var wToday      = work.filter(function(r){ return getCreated(r)===today; });
+        var wTodayAct   = wToday.filter(function(r){ var st=getStatus(r); return st!=='완료' && st!=='보류'; }).length;
+        var wTodayDone  = wToday.filter(function(r){ return getStatus(r)==='완료'; }).length;
+        var wTodayHold  = wToday.filter(function(r){ return getStatus(r)==='보류'; }).length;
+        set('kpiWorkStripTotal',  sTotal);
+        set('kpiWorkStripActive', sActive);
+        set('kpiWorkStripDone',   sDone + ' (' + sRate + '%)');
+        set('kpiWorkStripHold',   sHold);
+        set('kpiWorkTodayTotal',  wToday.length);
+        set('kpiWorkTodayActive', wTodayAct);
+        set('kpiWorkTodayDone',   wTodayDone);
+        set('kpiWorkTodayHold',   wTodayHold);
 
-        set('kpiWorkStripTotal',    sTotal);
-        set('kpiWorkStripActive',   sActive);
-        set('kpiWorkStripDone',     sDone + ' (' + sRate + '%)');  // 완료 + 완료율 괄호 병기(별도 칸 제거·흡수)
-        set('kpiWorkStripHold',     sHold);
-        set('kpiWorkStripDlRate',   sDlRate + '%');
-
-        // 결재 행 (전체 rows, 실무진 무관)
-        var apprRows = rows.filter(function(r){ return getApprReq(r)||getApprStatus(r); });
-
-        // 👤 다음 결재자(결재선 다음 서명자) 산출 — 결재현황 SSOT buildEffectiveRoute+nextApprover와 동일 로직.
-        //   대기수 산식·다음서명자 스트립 양쪽에서 사용하므로 apprRows 직후에 정의(선참조 방지, 2026-06-17 COO A).
+        // 👤 다음 결재자(결재선 다음 서명자) — 결재현황 SSOT buildEffectiveRoute+nextApprover와 동일 로직. 대기 정의 재사용.
         var _HEADS = ['이경연 실장','이정헌 소장','나우열M'];
         function homeNextApprover(row){
           var approval = String(row['결재요청']||row.approval||'').split(',').map(function(s){return s.trim();}).filter(Boolean);
           if (!approval.length) return null;
           var owners = String(row['담당자']||row.owner||'').split(',').map(function(s){return s.trim();});
           var ownerIsGM = owners.indexOf('김남욱GM')>=0;
-          // 중간 결재자 = 결재요청에 명시 체크한 부서장만. 카테고리 자동 부서장 삽입 폐지(2026-06-17 COO A). 결재현황 buildEffectiveRoute와 정합.
           var midName = approval.find(function(m){return _HEADS.indexOf(m)>=0;}) || '';
           var route = [];
           if (midName && !ownerIsGM) route.push(midName);
-          route.push('김남욱GM');   // GM은 항상 최종 결재선(2026-06-17 COO A): ownerIsGM이어도 결재요청='GM'이면 GM 서명 대기. 결재현황 buildEffectiveRoute(route.push('GM') 무조건)와 정합.
-          // 대표 단계 폐지(2026-06-16) — GM 종착. 결재현황 SSOT와 동일(대표는 오프라인 페이퍼).
+          route.push('김남욱GM');   // GM 항상 최종 결재선(결재현황 buildEffectiveRoute와 정합)
           for (var i=0;i<route.length;i++){
             var who = route[i];
             var sign = (who==='김남욱GM') ? row['GM싸인'] : row['부서장싸인'];
@@ -984,44 +923,54 @@
           }
           return null;
         }
+        function apprIsPending(r){ return getApprReq(r) && getApprStatus(r)!=='결재완료' && !/반려/.test(getApprStatus(r)) && homeNextApprover(r)!==null; }
 
-        // 총 결재대기: 올해 생성 + 결재완료/반려 아님 + 결재요청 있음 + 다음 서명자 존재(2026-06-17 COO A)
-        //   결재현황 SSOT 보드(approvalBucketOf: nextApprover===null→done 숨김)와 동일 정의로 통일.
-        //   결재요청 공란이거나 결재선이 비는(서명 전원 완료) 행은 home에서도 대기 제외 → 두 화면 대기수 일치.
-        var totalApprPend = apprRows.filter(function(r){
-          return getCreated(r)>=yStart && getApprReq(r) && getApprStatus(r)!=='결재완료' && !/반려/.test(getApprStatus(r)) && homeNextApprover(r)!==null;
-        }).length;
-        // 총 결재완료: 올해 생성 + 결재완료
-        var totalApprDone = apprRows.filter(function(r){
-          return getCreated(r)>=yStart && getApprStatus(r)==='결재완료';
-        }).length;
-        // 일일 결재대기: 오늘 생성 + 대기 (결재현황 보드 정의 통일 — 결재요청 있고 다음 서명자 존재, 2026-06-17 COO A)
-        var dayApprPend = apprRows.filter(function(r){
-          return getCreated(r)===today && getApprReq(r) && getApprStatus(r)!=='결재완료' && !/반려/.test(getApprStatus(r)) && homeNextApprover(r)!==null;
-        }).length;
-        // 일일 결재완료: 오늘 생성 + 완료
-        var dayApprDone = apprRows.filter(function(r){
-          return getCreated(r)===today && getApprStatus(r)==='결재완료';
-        }).length;
+        // ── 결재 블록 (이번달 생성분) — 결재요청/결재상태 있는 행, 대기 정의는 결재현황 보드와 동일 ──
+        var apprMonth = rows.filter(function(r){ return (getApprReq(r)||getApprStatus(r)) && inMonth(r); });
+        var aTotal  = apprMonth.length;
+        var aPend   = apprMonth.filter(apprIsPending).length;
+        var aDone   = apprMonth.filter(function(r){ return getApprStatus(r)==='결재완료'; }).length;
+        var aReject = apprMonth.filter(function(r){ return /반려/.test(getApprStatus(r)); }).length;
+        var aRate   = aTotal>0 ? Math.round(aDone/aTotal*100) : 0;   // 완료율 = 완료/총(이번달)
+        var aToday      = apprMonth.filter(function(r){ return getCreated(r)===today; });
+        var aTodayPend  = aToday.filter(apprIsPending).length;
+        var aTodayDone  = aToday.filter(function(r){ return getApprStatus(r)==='결재완료'; }).length;
+        var aTodayReject= aToday.filter(function(r){ return /반려/.test(getApprStatus(r)); }).length;
+        set('kpiApprStripTotal',  aTotal);
+        set('kpiApprStripPend',   aPend);
+        set('kpiApprStripDone',   aDone + ' (' + aRate + '%)');
+        set('kpiApprStripReject', aReject);
+        set('kpiApprTodayTotal',  aToday.length);
+        set('kpiApprTodayPend',   aTodayPend);
+        set('kpiApprTodayDone',   aTodayDone);
+        set('kpiApprTodayReject', aTodayReject);
 
-        set('kpiApprTotalPend', totalApprPend);
-        set('kpiApprTotalDone', totalApprDone);
-        set('kpiApprDayPend',   dayApprPend);
-        set('kpiApprDayDone',   dayApprDone);
-
-        // 🔽 결재 세부 스트립(5칸: 총건수|대기|완료(완료율)|반려|진행중) — 올해 생성 결재건 기준 (2026-06-12 GM)
-        var apprYr = apprRows.filter(function(r){ return getCreated(r)>=yStart; });
-        var aTotal   = apprYr.length;
-        var aPend    = totalApprPend;   // 위 큰숫자와 동일 정의(대기)
-        var aDone    = totalApprDone;   // 위 큰숫자와 동일 정의(완료)
-        var aReject  = apprYr.filter(function(r){ return /반려/.test(getApprStatus(r)); }).length;
-        var aInflight= apprYr.filter(function(r){ return getApprReq(r) && getApprStatus(r)!=='결재완료' && !/반려/.test(getApprStatus(r)) && homeNextApprover(r)!==null; }).length;
-        var aRate    = aTotal>0 ? Math.round(aDone/aTotal*100) : 0;
-        set('kpiApprStripTotal',    aTotal);
-        set('kpiApprStripPend',     aPend);
-        set('kpiApprStripDone',     aDone + ' (' + aRate + '%)');
-        set('kpiApprStripReject',   aReject);
-        set('kpiApprStripInflight', aInflight);
+        // 🧑‍💼 담당자별 업무&결재 (이번달 기준) — 실데이터만. owner 토큰별 업무 건수 + 결재 건수.
+        (function renderByOwner(){
+          var body = document.getElementById('kpiWaByOwnerBody');
+          if (!body) return;
+          var map = {};   // owner → { work, appr }
+          function bump(name, key){ if(!name) return; if(!map[name]) map[name]={work:0,appr:0}; map[name][key]++; }
+          work.forEach(function(r){
+            String(r['담당자']||r.owner||'').split(',').map(function(x){return x.trim();}).filter(Boolean).forEach(function(o){ bump(o,'work'); });
+          });
+          apprMonth.forEach(function(r){
+            String(r['담당자']||r.owner||'').split(',').map(function(x){return x.trim();}).filter(Boolean).forEach(function(o){ bump(o,'appr'); });
+          });
+          var names = Object.keys(map);
+          if (!names.length){ body.innerHTML = '<tr><td colspan="3" style="color:var(--dim);padding:6px 6px;">—</td></tr>'; return; }
+          names.sort(function(a,b){ return (map[b].work+map[b].appr)-(map[a].work+map[a].appr); });
+          var html = '';
+          names.forEach(function(n,i){
+            var odd = i % 2 === 1;
+            html += '<tr style="' + (odd ? 'background:var(--accent-bg,rgba(183,159,138,0.06));' : '') + '">'
+              + '<td style="padding:4px 6px;font-weight:600;color:var(--text);">' + n + '</td>'
+              + '<td style="text-align:right;padding:4px 6px;color:var(--accent);font-weight:700;">' + (map[n].work || '—') + '</td>'
+              + '<td style="text-align:right;padding:4px 6px;color:var(--warm);font-weight:700;">' + (map[n].appr || '—') + '</td>'
+              + '</tr>';
+          });
+          body.innerHTML = html;
+        })();
 
       })
       .catch(function(){ /* "—" 유지 */ });
@@ -1187,18 +1136,14 @@
             tbody.innerHTML = rows;
           })();
 
-          /* 이슈(VOC) */
-          set('kpiIssueDayNew',  v.todayNew  != null ? String(v.todayNew)  : '—');
-          set('kpiIssuePending', v.pending   != null ? String(v.pending)   : '—');
-          set('kpiIssueDone',    v.done      != null ? String(v.done)      : '—');
-          set('kpiIssueRate',    pct(v.rate));
+          /* 이슈(VOC) — 이슈 현황 카드는 통합접수처(reg_board) 카드로 흡수 (2026-06-17 GM). home_kpi의 voc는 미사용. */
         })
         .catch(function(){ /* "—" 유지 */ });
     })();
   })();
 
-  // ── 회원 셀프 VOC KPI 카드 (home ops-detail-grid) ─────────────────────────
-  // voc_list GET → 접수/처리중/완료 카운트. 실패 시 "—" 유지.
+  // ── 통합 접수처 KPI 카드 (home ops-detail-grid) ─────────────────────────
+  // 공개 reg_board GET(무키·마스킹·집계) → 접수/처리중/완료 카운트. voc_list(키 게이트)에 의존하지 않음. 실패 시 "—" 유지.
   (function loadVocKpi(){
     var VOC_GAS = 'https://script.google.com/macros/s/AKfycbwk2XS1FND9V2xtXlWgsXzgA5p0FG7jVm6YKD74JK_ME_ZvHsNUUfGE5A_8p0X8VcF3gQ/exec';
     function setV(id, v){ var el = document.getElementById(id); if(el) el.textContent = v; }
@@ -1217,112 +1162,6 @@
       })
       .catch(function(){ /* "—" 유지 */ });
   })();
-
-  // ── O3 재등록 대시보드 아래 VOC 칸반 보드 ────────────────────────────────
-  var _O3_VOC_API = 'https://script.google.com/macros/s/AKfycbwk2XS1FND9V2xtXlWgsXzgA5p0FG7jVm6YKD74JK_ME_ZvHsNUUfGE5A_8p0X8VcF3gQ/exec';
-  var _O3_VOC_COLS = [
-    {status:'접수',  color:'#e6944e', bg:'rgba(230,148,78,0.12)'},
-    {status:'처리중', color:'#5b9fd5', bg:'rgba(91,159,213,0.12)'},
-    {status:'완료',  color:'#6abf7b', bg:'rgba(106,191,123,0.12)'}
-  ];
-  function _o3Esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
-
-  function o3VocLoad(){
-    var board = document.getElementById('o3VocBoard');
-    if(!board) return;
-    board.innerHTML = '<div style="color:var(--dim);font-size:13px;padding:18px 4px;">불러오는 중…</div>';
-    fetch(_O3_VOC_API + '?action=reg_board&_=' + Date.now(), { redirect: 'follow' })
-      .then(function(r){ return r.json(); })
-      .then(function(d){
-        if(_wpGate(d)) return;
-        if(!d || !d.ok){ board.innerHTML = '<div style="color:var(--warm,#e65b3f);font-size:13px;padding:18px 4px;">현황을 불러오지 못했습니다 — ' + _o3Esc(d && d.error || '') + '</div>'; return; }
-        _o3VocRender(d.data || []);
-      })
-      .catch(function(){ board.innerHTML = '<div style="color:var(--warm,#e65b3f);font-size:13px;padding:18px 4px;">네트워크 오류 — 새로고침 해주세요.</div>'; });
-  }
-
-  function _o3VocRender(items){
-    var board = document.getElementById('o3VocBoard');
-    board.innerHTML = '';
-    _O3_VOC_COLS.forEach(function(col){
-      var list = items.filter(function(it){ return String(it['상태'] || '접수') === col.status; });
-      var colEl = document.createElement('div');
-      colEl.style.cssText = 'flex:1;min-width:240px;background:var(--paper);border:1px solid var(--border);border-radius:12px;padding:12px;';
-      var html = '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">'
-        + '<span style="font-size:14px;font-weight:700;color:' + col.color + ';">' + col.status + '</span>'
-        + '<span style="font-size:12px;font-weight:700;padding:2px 10px;border-radius:10px;background:' + col.bg + ';color:' + col.color + ';">' + list.length + '</span></div>';
-      if(!list.length){ html += '<div style="color:var(--dim);font-size:12px;padding:14px 4px;text-align:center;">건이 없습니다</div>'; }
-      list.forEach(function(it){ html += _o3VocCard(it, col); });
-      colEl.innerHTML = html;
-      board.appendChild(colEl);
-    });
-  }
-
-  function _o3VocCard(it, col){
-    var id = _o3Esc(it['접수ID']);
-    var type = _o3Esc(it['유형'] || '-');
-    var loc = _o3Esc(it['위치'] || '');
-    var content = _o3Esc(it['내용'] || '');
-    var contact = _o3Esc(it['연락처'] || '');
-    var assignee = _o3Esc(it['담당'] || '');
-    var photo = String(it['사진URL'] || '').trim();
-    var dt = _o3Esc(String(it['접수일시'] || '').slice(0, 16));
-    var actions = '';
-    if(col.status === '접수'){
-      actions = '<button onclick="_o3VocStatus(\'' + id + '\',\'처리중\')" style="font-size:11.5px;padding:4px 10px;border:1px solid var(--border);border-radius:7px;background:var(--paper);color:var(--text);cursor:pointer;font-family:inherit;">처리 시작 →</button>';
-    } else if(col.status === '처리중'){
-      actions = '<button onclick="_o3VocStatus(\'' + id + '\',\'완료\')" style="font-size:11.5px;padding:4px 10px;border:1px solid var(--border);border-radius:7px;background:var(--paper);color:var(--text);cursor:pointer;font-family:inherit;">완료 ✓</button>'
-        + ' <button onclick="_o3VocStatus(\'' + id + '\',\'접수\')" style="font-size:11.5px;padding:4px 10px;border:1px solid var(--border);border-radius:7px;background:var(--paper);color:var(--dim);cursor:pointer;font-family:inherit;">← 되돌리기</button>';
-    } else {
-      actions = '<button onclick="_o3VocStatus(\'' + id + '\',\'처리중\')" style="font-size:11.5px;padding:4px 10px;border:1px solid var(--border);border-radius:7px;background:var(--paper);color:var(--dim);cursor:pointer;font-family:inherit;">↩ 재개</button>';
-    }
-    return '<div style="background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin-bottom:8px;">'
-      + '<div style="display:flex;gap:6px;align-items:center;margin-bottom:5px;flex-wrap:wrap;">'
-      + '<span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:8px;background:' + col.bg + ';color:' + col.color + ';">' + type + '</span>'
-      + (loc ? '<span style="font-size:11.5px;color:var(--dim);">📍' + loc + '</span>' : '')
-      + (dt ? '<span style="font-size:10.5px;color:var(--dim);margin-left:auto;">' + dt + '</span>' : '')
-      + '</div>'
-      + (content ? '<div style="font-size:13px;line-height:1.5;margin-bottom:6px;word-break:break-word;">' + content + '</div>' : '')
-      + (photo ? '<a href="' + _o3Esc(photo) + '" target="_blank" style="font-size:11.5px;color:var(--blue,#5b9fd5);text-decoration:none;display:inline-block;margin-bottom:6px;">📷 사진 보기</a>' : '')
-      + (contact ? '<div style="font-size:11.5px;color:var(--dim);margin-bottom:5px;">☎ ' + contact + '</div>' : '')
-      + '<div style="display:flex;gap:6px;align-items:center;margin-bottom:7px;">'
-      + '<input type="text" placeholder="담당자" value="' + assignee + '" id="o3va-' + id + '" style="flex:1;min-width:0;background:var(--paper);border:1px solid var(--border);color:var(--text);padding:4px 8px;border-radius:6px;font-size:12px;font-family:inherit;">'
-      + '<button onclick="_o3VocAssign(\'' + id + '\')" style="font-size:11.5px;padding:4px 10px;border:1px solid var(--border);border-radius:7px;background:var(--paper);color:var(--text);cursor:pointer;font-family:inherit;">배정</button></div>'
-      + '<div style="display:flex;gap:6px;flex-wrap:wrap;">' + actions + '</div></div>';
-  }
-
-  function _o3VocStatus(id, status){
-    _o3VocPost({ action: 'voc_update', id: id, status: status }, '상태 변경됨');
-  }
-  function _o3VocAssign(id){
-    var el = document.getElementById('o3va-' + id);
-    _o3VocPost({ action: 'voc_update', id: id, assignee: el ? el.value.trim() : '' }, '담당 배정됨');
-  }
-  function _o3VocPost(payload, okMsg){
-    var _p = Object.assign({}, payload); var _k = _wpKey(); if (_k) _p.key = _k;
-    fetch(_O3_VOC_API, { method: 'POST', redirect: 'follow', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(_p) })
-      .then(function(r){ return r.json(); })
-      .then(function(d){
-        if(d && d.ok){ o3VocLoad(); } // 성공 후 보드 새로고침
-      })
-      .catch(function(){});
-  }
-
-  // O3 article 활성화 시 자동 로드
-  (function(){
-    var orig = window.activateDoc;
-    if(typeof orig === 'function'){
-      window.activateDoc = function(id, tabName){
-        orig(id, tabName);
-        if(id === 'O3') o3VocLoad();
-      };
-    }
-    // O3 메뉴 클릭 직접 감지 (data-id="O3" 링크)
-    document.addEventListener('click', function(ev){
-      var a = ev.target.closest('[data-id="O3"]');
-      if(a) setTimeout(o3VocLoad, 200);
-    });
-  })();
   </script>
 
   <!-- ── O5 웰페리온 통합 접수처 보드 JS ── -->
@@ -1335,31 +1174,76 @@
       {status:'완료',  color:'#6abf7b', bg:'rgba(106,191,123,0.12)'}
     ];
     var _regCurrentCat = '';
+    var _regAllItems = [];  // 항상 전체(무필터) 캐시 — 건수요약·즉시필터용
+
+    // 카테고리 → 아이콘·짧은이름 (건수요약·컴팩트 칩용)
+    var _REG_CAT_META = [
+      {cat:'분실물 접수',         icon:'📦', short:'분실'},
+      {cat:'시설물 고장 접수',     icon:'🔧', short:'고장'},
+      {cat:'청결 이슈 접수',       icon:'🧹', short:'청결'},
+      {cat:'휴회 접수',           icon:'⏸',  short:'휴회'},
+      {cat:'직원·강사 칭찬합니다', icon:'⭐', short:'칭찬'},
+      {cat:'직원·강사 쓴소리합니다', icon:'💬', short:'쓴소리'}
+    ];
+    function _regCatIcon(cat){
+      for(var i=0;i<_REG_CAT_META.length;i++){ if(_REG_CAT_META[i].cat === cat) return _REG_CAT_META[i].icon; }
+      return '📋';
+    }
 
     function _regEsc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
 
     window.regBoardLoad = function(dept, category){
-      var cat = (category !== undefined) ? category : _regCurrentCat;
-      _regCurrentCat = cat;
+      // 항상 전체를 받아 클라이언트 필터 — 건수요약 정확·필터 즉시반영
+      if(category !== undefined) _regCurrentCat = category;
       var board = document.getElementById('regBoard');
       if(!board) return;
       board.innerHTML = '<div style="color:var(--dim);font-size:13px;padding:18px 4px;">불러오는 중…</div>';
-      var url = _REG_API + '?action=reg_board' + (cat ? '&category=' + encodeURIComponent(cat) : '') + '&_=' + Date.now();
+      var url = _REG_API + '?action=reg_board&_=' + Date.now();
       fetch(_wpUrl(url), {redirect:'follow'})
         .then(function(r){ return r.json(); })
         .then(function(d){
           if(_wpGate(d)) return;
           if(!d || !d.ok){ board.innerHTML = '<div style="color:var(--warm,#e65b3f);font-size:13px;padding:18px 4px;">현황을 불러오지 못했습니다 — ' + _regEsc(d && d.error || '') + '</div>'; return; }
-          _regBoardRender(d.data || []);
+          _regAllItems = d.data || [];
+          _regRenderSummary(_regAllItems);
+          _regBoardRender(_regAllItems);
         })
         .catch(function(){ board.innerHTML = '<div style="color:var(--warm,#e65b3f);font-size:13px;padding:18px 4px;">네트워크 오류 — 새로고침 해주세요.</div>'; });
+    };
+
+    // 카테고리별 건수 요약 줄 (클릭=필터, 활성 카테고리 강조)
+    function _regRenderSummary(items){
+      var sum = document.getElementById('regCatSummary');
+      if(!sum) return;
+      var total = items.length;
+      var html = '<button onclick="regChipClick(_regChipForCat(\'\'))" data-sum-cat="" style="display:inline-flex;align-items:center;gap:4px;padding:4px 11px;border-radius:18px;border:1px solid '
+        + (_regCurrentCat === '' ? 'var(--accent,#7c5f3d)' : 'var(--border)') + ';background:'
+        + (_regCurrentCat === '' ? 'var(--accent-bg,#f5ede3)' : 'var(--paper)') + ';color:'
+        + (_regCurrentCat === '' ? 'var(--accent,#7c5f3d)' : 'var(--dim)') + ';font-weight:700;font-size:12.5px;cursor:pointer;font-family:inherit;">전체 <b>' + total + '</b></button>';
+      _REG_CAT_META.forEach(function(m){
+        var n = items.filter(function(it){ return String(it['카테고리']||'') === m.cat; }).length;
+        var active = (_regCurrentCat === m.cat);
+        html += '<button onclick="regChipClick(_regChipForCat(\'' + _regEsc(m.cat) + '\'))" data-sum-cat="' + _regEsc(m.cat) + '" style="display:inline-flex;align-items:center;gap:4px;padding:4px 11px;border-radius:18px;border:1px solid '
+          + (active ? 'var(--accent,#7c5f3d)' : 'var(--border)') + ';background:'
+          + (active ? 'var(--accent-bg,#f5ede3)' : 'var(--paper)') + ';color:'
+          + (active ? 'var(--accent,#7c5f3d)' : (n ? 'var(--text)' : 'var(--dim)')) + ';font-weight:700;font-size:12.5px;cursor:pointer;font-family:inherit;'
+          + (n ? '' : 'opacity:.55;') + '">' + m.icon + m.short + ' <b>' + n + '</b></button>';
+      });
+      sum.innerHTML = html;
+    }
+    // 요약 칩 클릭 → 동일 카테고리의 상단 필터칩 엘리먼트 반환(없으면 합성)
+    window._regChipForCat = function(cat){
+      var chips = document.querySelectorAll('#regCatChips .reg-chip');
+      for(var i=0;i<chips.length;i++){ if(chips[i].getAttribute('data-cat') === cat) return chips[i]; }
+      return { getAttribute:function(){ return cat; }, classList:{add:function(){},remove:function(){}}, style:{} };
     };
 
     function _regBoardRender(items){
       var board = document.getElementById('regBoard');
       board.innerHTML = '';
+      var filtered = _regCurrentCat ? items.filter(function(it){ return String(it['카테고리']||'') === _regCurrentCat; }) : items;
       _REG_COLS.forEach(function(col){
-        var list = items.filter(function(it){ return String(it['상태'] || '접수') === col.status; });
+        var list = filtered.filter(function(it){ return String(it['상태'] || '접수') === col.status; });
         var colEl = document.createElement('div');
         colEl.style.cssText = 'flex:1;min-width:240px;background:var(--paper);border:1px solid var(--border);border-radius:12px;padding:12px;';
         var html = '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">'
@@ -1372,9 +1256,19 @@
       });
     }
 
+    // 카드 내용 펼침 토글 (인라인)
+    window._regToggle = function(id, btn){
+      var body = document.getElementById('regbody-' + id);
+      if(!body) return;
+      var open = body.style.display === 'none' || body.style.display === '';
+      body.style.display = open ? 'block' : 'none';
+      if(btn) btn.innerHTML = open ? '▲ 접기' : '▼ 내용';
+    };
+
     function _regCard(it, col){
       var id = _regEsc(it['접수ID']);
       var cat = _regEsc(it['카테고리'] || '-');
+      var icon = _regCatIcon(String(it['카테고리']||''));
       var loc = _regEsc(it['위치'] || '');
       var content = _regEsc(it['내용'] || '');
       var name = _regEsc(it['이름'] || '');
@@ -1399,17 +1293,29 @@
       } else {
         actions = '<button onclick="_regStatus(\'' + id + '\',\'' + _regEsc(it['카테고리']||'') + '\',\'처리중\')" style="font-size:11.5px;padding:4px 10px;border:1px solid var(--border);border-radius:7px;background:var(--paper);color:var(--dim);cursor:pointer;font-family:inherit;">↩ 재개</button>';
       }
-      return '<div style="background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin-bottom:8px;">'
-        + '<div style="display:flex;gap:6px;align-items:center;margin-bottom:5px;flex-wrap:wrap;">'
-        + '<span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:8px;background:' + col.bg + ';color:' + col.color + ';">' + cat + '</span>'
+      // 펼침 영역에 들어갈 상세 (이름·연락처·전체내용·사진·추가필드)
+      var hasDetail = !!(name || contact || content || photo || extras);
+      var detail = '';
+      if(hasDetail){
+        detail = '<div id="regbody-' + id + '" style="display:none;border-top:1px solid var(--border);margin-top:7px;padding-top:8px;">'
+          + (name ? '<div style="font-size:12px;color:var(--dim);margin-bottom:4px;">👤 ' + name + (contact ? '&nbsp;&nbsp;☎ ' + contact : '') + '</div>' : (contact ? '<div style="font-size:11.5px;color:var(--dim);margin-bottom:4px;">☎ ' + contact + '</div>' : ''))
+          + (content ? '<div style="font-size:13px;line-height:1.5;margin-bottom:6px;word-break:break-word;">' + content + '</div>' : '')
+          + (photo ? '<a href="' + _regEsc(photo) + '" target="_blank" style="font-size:11.5px;color:var(--blue,#5b9fd5);text-decoration:none;display:inline-block;margin-bottom:6px;">📷 사진 보기</a>' : '')
+          + (extras ? '<div style="border-top:1px solid var(--border);margin:6px 0 6px;padding-top:6px;">' + extras + '</div>' : '')
+          + '</div>';
+      }
+      // 컴팩트 헤더: 아이콘·카테고리칩·위치·접수일 (1줄) + 내용 1줄 미리보기(있으면)
+      var preview = content ? content.replace(/\s+/g,' ').slice(0,28) + (content.length > 28 ? '…' : '') : (name ? '👤 ' + name : '');
+      return '<div style="background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:9px 11px;margin-bottom:8px;">'
+        + '<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">'
+        + '<span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:8px;background:' + col.bg + ';color:' + col.color + ';">' + icon + ' ' + cat + '</span>'
         + (loc ? '<span style="font-size:11.5px;color:var(--dim);">📍' + loc + '</span>' : '')
         + (dt ? '<span style="font-size:10.5px;color:var(--dim);margin-left:auto;">' + dt + '</span>' : '')
         + '</div>'
-        + (name ? '<div style="font-size:12px;color:var(--dim);margin-bottom:4px;">👤 ' + name + (contact ? '&nbsp;&nbsp;☎ ' + contact : '') + '</div>' : (contact ? '<div style="font-size:11.5px;color:var(--dim);margin-bottom:4px;">☎ ' + contact + '</div>' : ''))
-        + (content ? '<div style="font-size:13px;line-height:1.5;margin-bottom:6px;word-break:break-word;">' + content + '</div>' : '')
-        + (photo ? '<a href="' + _regEsc(photo) + '" target="_blank" style="font-size:11.5px;color:var(--blue,#5b9fd5);text-decoration:none;display:inline-block;margin-bottom:6px;">📷 사진 보기</a>' : '')
-        + (extras ? '<div style="border-top:1px solid var(--border);margin:6px 0 6px;padding-top:6px;">' + extras + '</div>' : '')
-        + '<div style="display:flex;gap:6px;align-items:center;margin-bottom:7px;">'
+        + (preview ? '<div style="font-size:12.5px;color:var(--text);margin-top:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + preview + '</div>' : '')
+        + (hasDetail ? '<button onclick="_regToggle(\'' + id + '\',this)" style="margin-top:6px;font-size:11px;font-weight:700;padding:2px 9px;border:1px solid var(--border);border-radius:12px;background:var(--paper);color:var(--dim);cursor:pointer;font-family:inherit;">▼ 내용</button>' : '')
+        + detail
+        + '<div style="display:flex;gap:6px;align-items:center;margin:8px 0 7px;">'
         + '<input type="text" placeholder="담당자" value="' + assignee + '" id="regva-' + id + '" style="flex:1;min-width:0;background:var(--paper);border:1px solid var(--border);color:var(--text);padding:4px 8px;border-radius:6px;font-size:12px;font-family:inherit;">'
         + '<button onclick="_regAssign(\'' + id + '\',\'' + _regEsc(it['카테고리']||'') + '\')" style="font-size:11.5px;padding:4px 10px;border:1px solid var(--border);border-radius:7px;background:var(--paper);color:var(--text);cursor:pointer;font-family:inherit;">배정</button></div>'
         + '<div style="display:flex;gap:6px;flex-wrap:wrap;">' + actions + '</div></div>';
@@ -1431,19 +1337,24 @@
         .catch(function(){});
     }
 
-    // 카테고리 필터칩 클릭 핸들러
+    // 카테고리 필터칩 클릭 핸들러 (상단 칩·건수요약 칩 공용). 캐시서 즉시 필터.
     window.regChipClick = function(el){
-      document.querySelectorAll('.reg-chip').forEach(function(c){
-        c.classList.remove('reg-chip-active');
-        c.style.borderColor = 'var(--border)';
-        c.style.background = 'var(--paper)';
-        c.style.color = 'var(--text)';
+      var cat = el.getAttribute('data-cat');
+      _regCurrentCat = cat || '';
+      // 상단 필터칩 활성 표시 동기화 (data-cat 일치하는 실제 칩)
+      document.querySelectorAll('#regCatChips .reg-chip').forEach(function(c){
+        var on = (c.getAttribute('data-cat') === _regCurrentCat);
+        c.classList.toggle('reg-chip-active', on);
+        c.style.borderColor = on ? 'var(--accent,#7c5f3d)' : 'var(--border)';
+        c.style.background  = on ? 'var(--accent-bg,#f5ede3)' : 'var(--paper)';
+        c.style.color       = on ? 'var(--accent,#7c5f3d)' : 'var(--text)';
       });
-      el.classList.add('reg-chip-active');
-      el.style.borderColor = 'var(--accent,#7c5f3d)';
-      el.style.background = 'var(--accent-bg,#f5ede3)';
-      el.style.color = 'var(--accent,#7c5f3d)';
-      regBoardLoad(undefined, el.getAttribute('data-cat'));
+      if(_regAllItems.length){
+        _regRenderSummary(_regAllItems);
+        _regBoardRender(_regAllItems);
+      } else {
+        regBoardLoad();  // 아직 데이터 없으면 로드
+      }
     };
 
     // O5 activateDoc 훅
@@ -6167,22 +6078,6 @@ function crTab(btn, panelId) {
     <div style="margin-top:18px;border:1px solid var(--border);border-radius:14px;overflow:hidden;background:#FAF8F5;box-shadow:0 4px 20px rgba(0,0,0,0.12);">
       <iframe src="wellperion_dashboard_web.html" title="재등록 대시보드" loading="lazy" style="width:100%;height:1400px;border:0;display:block;"></iframe>
     </div>
-
-    <!-- ── 회원 셀프 VOC 현황 (QR + 사진) — 재등록 대시보드 바로 아래 ── -->
-    <div style="margin-top:28px;">
-      <div style="display:flex;align-items:center;gap:11px;margin-bottom:14px;">
-        <span style="width:28px;height:28px;border-radius:8px;background:var(--accent-bg);color:var(--accent);display:flex;align-items:center;justify-content:center;font-size:15px;">🙋</span>
-        <span style="font-size:16px;font-weight:800;letter-spacing:-0.01em;color:var(--text);">회원 셀프 VOC 현황</span>
-        <span style="font-size:11.5px;color:var(--dim);">QR 직접 접수 · 접수/처리중/완료</span>
-        <span style="flex:1;height:1px;background:var(--border);"></span>
-        <a href="https://wellperion-cao.github.io/wellperion-automation/coo/voc/voc_mobile_form.html" target="_blank" style="display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:700;padding:5px 12px;background:var(--accent-bg);color:var(--accent);border:1px solid var(--border);border-radius:20px;text-decoration:none;white-space:nowrap;">📲 회원 접수 폼 열기</a>
-        <button onclick="o3VocLoad()" style="font-size:12px;font-weight:700;padding:5px 12px;background:var(--paper);color:var(--dim);border:1px solid var(--border);border-radius:20px;cursor:pointer;font-family:inherit;">↻ 새로고침</button>
-      </div>
-      <p style="font-size:12.5px;color:var(--dim);margin:0 0 14px;line-height:1.6;">회원이 매장 QR로 직접 올린 건의입니다. 카드의 버튼으로 담당 배정·상태 전환하면 모든 기기에 반영됩니다. 위치별 QR: <code style="font-size:11px;background:var(--border);padding:1px 5px;border-radius:4px;">?loc=리셉션</code> 등 파라미터 부착.</p>
-      <div id="o3VocBoard" style="display:flex;gap:12px;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:8px;">
-        <div style="color:var(--dim);font-size:13px;padding:18px 4px;">불러오는 중…</div>
-      </div>
-    </div>
   </article>
 
   <!-- ── O5 웰페리온 통합 접수처 ── -->
@@ -6200,6 +6095,9 @@ function crTab(btn, panelId) {
       <button class="reg-chip" data-cat="직원·강사 칭찬합니다" onclick="regChipClick(this)" style="font-size:12.5px;font-weight:700;padding:5px 14px;border-radius:20px;border:1.5px solid var(--border);background:var(--paper);color:var(--text);cursor:pointer;font-family:inherit;">⭐ 칭찬합니다</button>
       <button class="reg-chip" data-cat="직원·강사 쓴소리합니다" onclick="regChipClick(this)" style="font-size:12.5px;font-weight:700;padding:5px 14px;border-radius:20px;border:1.5px solid var(--border);background:var(--paper);color:var(--text);cursor:pointer;font-family:inherit;">💬 쓴소리합니다</button>
     </div>
+
+    <!-- 카테고리별 건수 요약 줄 (클릭=필터) -->
+    <div id="regCatSummary" style="display:flex;flex-wrap:wrap;gap:7px;margin:0 0 16px;font-size:12.5px;"></div>
 
     <!-- 칸반 보드 헤더 -->
     <div style="display:flex;align-items:center;gap:11px;margin-bottom:14px;">
