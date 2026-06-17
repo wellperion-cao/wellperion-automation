@@ -880,8 +880,9 @@ function _processAction(body) {
       if (!sh || last < 2 || lastCol < 1) return null;
       try {
         var hdrs = sh.getRange(1, 1, 1, lastCol).getValues()[0];
-        var idxStatus = _findCol_(hdrs, ['진행현황', '진행상황', '진행상태', '상태']);
-        var idxDate   = _findCol_(hdrs, ['타임스탬프', 'timestamp', '시각', '일시', '접수일', '접수', '날짜']);
+        // 팀시트 상태 헤더 = '진행 상황'(띄어쓰기) → '상황'·'진행 상황' 키 포함 필수(붙여쓰기만으론 미매칭)
+        var idxStatus = _findCol_(hdrs, ['진행현황', '진행 상황', '진행상황', '진행상태', '상황', '상태']);
+        var idxDate   = _findCol_(hdrs, ['타임스탬프', 'timestamp', '시각', '일시', '접수일', '접수', '문의일', '날짜']);
         if (idxDate < 0) idxDate = 0;
         if (idxStatus < 0) return null; // 진행현황 컬럼 없으면 집계 불가
         var rows = sh.getRange(2, 1, last - 1, lastCol).getValues();

@@ -588,11 +588,6 @@
           <div style="background:var(--paper);padding:7px 4px;text-align:center;"><div style="font-size:15px;font-weight:800;color:var(--dim);line-height:1.1;" id="kpiApprStripReject">—</div><div style="font-size:9px;color:var(--dim);margin-top:2px;font-weight:600;">반려</div></div>
           <div style="background:var(--paper);padding:7px 4px;text-align:center;"><div style="font-size:15px;font-weight:800;color:var(--text);line-height:1.1;" id="kpiApprStripInflight">—</div><div style="font-size:9px;color:var(--dim);margin-top:2px;font-weight:600;">진행중</div></div>
         </div>
-        <!-- 👤 누구 결재인지 — 다음 결재자(결재선 다음 서명자)별 대기건 분포 (2026-06-12 GM) -->
-        <div style="margin-top:8px;padding:8px 10px;background:var(--warm-bg);border-radius:10px;">
-          <div style="font-size:9px;color:var(--dim);font-weight:700;margin-bottom:4px;">👤 결재 대기 — 다음 결재자</div>
-          <div style="font-size:11px;color:var(--text);font-weight:600;line-height:1.5;" id="kpiApprNextSigners">—</div>
-        </div>
         <div style="margin-top:11px;padding-top:10px;border-top:1px dashed var(--border);">
           <a href="https://wellperion-cao.github.io/wellperion-automation/coo/todo/%EA%B2%B0%EC%9E%AC%20%ED%98%84%ED%99%A9%20SSOT.html" target="_blank" style="font-size:11px;font-weight:700;padding:3px 10px;background:var(--warm-bg);color:var(--warm);border-radius:20px;text-decoration:none;border:1px solid var(--border);">결재 현황 SSOT ↗</a>
         </div>
@@ -1028,17 +1023,6 @@
         set('kpiApprStripReject',   aReject);
         set('kpiApprStripInflight', aInflight);
 
-        // 👤 누구 결재인지 — 다음 결재자별 대기건. homeNextApprover 정의는 위(apprRows 직후)로 이동(2026-06-17 COO A): totalApprPend가 선참조하므로.
-        var _signerCnt = {};
-        apprRows.filter(function(r){ return getApprReq(r) && getApprStatus(r)!=='결재완료' && !/반려/.test(getApprStatus(r)); })
-          .forEach(function(r){ var n=homeNextApprover(r); if(n){ _signerCnt[n]=(_signerCnt[n]||0)+1; } });
-        var _signerEl = document.getElementById('kpiApprNextSigners');
-        if (_signerEl){
-          var _pairs = Object.keys(_signerCnt).sort(function(a,b){return _signerCnt[b]-_signerCnt[a];});
-          _signerEl.textContent = _pairs.length
-            ? _pairs.map(function(k){ return k+' '+_signerCnt[k]+'건'; }).join(' · ')
-            : '대기 결재 없음';
-        }
       })
       .catch(function(){ /* "—" 유지 */ });
 
