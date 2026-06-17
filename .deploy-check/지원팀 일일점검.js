@@ -29,8 +29,8 @@ const CHAT_ID   = PropertiesService.getScriptProperties().getProperty('TELEGRAM_
 const HEADERS = [
   '날짜','항목ID','항목명','카테고리','회차',
   '점검결과','이슈메모','노하우','제출상태','제출시각',
-  '근무자','점검자','측정값','반영완료'
-]; // (닫힘 — 아래 _roundLabel)
+  '근무자','점검자','측정값','반영완료','점검시각'
+]; // (닫힘 — 아래 _roundLabel). 15열 점검시각=항목별 체크시각(mm.at, 제출시각과 독립). _ensureHeaders 자동보강.
 // 슬롯/교대 → 조(회차) 라벨. 프론트 roundOfSlot과 동일 매핑(오전조/오후조/마감조). GM 2026-06-15.
 function _roundLabel(slot, shift) {
   var s = String(slot || '');
@@ -690,7 +690,22 @@ function _updateCheckLedger(dept, date, body) {
   // 회차별 영속(2026-06-12 시우·GM): roundChecks = 현재 성별의 전체 회차 체크 키('<round>_<id>') 목록.
   // 프론트가 매 저장 시 현 상태 전체를 보내므로 led.cr 전체 교체 → 복원도 회차별(오전·오후·마감 격리).
   if (body && body.roundChecks) {
-    led.cr = {};
+    // 회차별 머지(2026-06-17 시우·GM): 전량교체→이번 payload 회차만 교체, 타 회차 보존.
+    // 오전조 제출+resetShiftChecks 후 pushToServer가 led.cr를 덮어써 제출분이 사라지던 회귀 차단.
+    var thisRounds = {};
+    (body.roundChecks || []).forEach(function (k) {
+      var us = String(k).indexOf('_'); if (us < 0) return;
+      thisRounds[String(k).slice(0, us)] = 1;
+    });
+    (body.roundUnchecked || []).forEach(function (k) {   // 체크해제 회차도 교체 대상(취소 정합)
+      var us = String(k).indexOf('_'); if (us < 0) return;
+      thisRounds[String(k).slice(0, us)] = 1;
+    });
+    if (!led.cr) led.cr = {};
+    Object.keys(led.cr).forEach(function (k) {   // 이번 회차 키만 제거, 타 회차 보존
+      var us = String(k).indexOf('_'); if (us < 0) return;
+      if (thisRounds[String(k).slice(0, us)]) delete led.cr[k];
+    });
     var _rcm = body.roundCheckMeta || {};
     (body.roundChecks || []).forEach(function (k) {
       if (!k) return;
@@ -820,7 +835,8 @@ function _writePerRoundRows(dept, date, body) {
       checkedRound ? '완료' : '미완료',
       iss, tip,
       submitStatus, at, duty, inspector,
-      measure, reflected
+      measure, reflected,
+      mm.at || ''    // 15열 점검시각(항목별 체크시각 HH:MM — 제출시각(10열)과 독립)
     ];
     var sk = target + ' ' + rl + ' ' + id;
     if (seen[sk]) return; seen[sk] = 1;
@@ -863,27 +879,25 @@ function _writePerRoundRows(dept, date, body) {
     _ensureHeaders(sheet);
     var rows = wantByTarget[name].map(function (w) { return w.values; });
     if (name === primaryTarget) {
-      // 활성 성별탭 = 이 제출의 전 항목 보유 → 날짜 행 전량 교체(안전: 타성별 시트는 별도)
+      // 회차별 업서트(2026-06-17 시우·GM): 전량삭제→이번 payload가 다루는 회차만 삭제·재기록, 타 회차 행 보존.
+      //   오전조 제출+리셋·재전송 사이클에서 pm1/close1(및 보존된 am1) 행이 사라지던 회귀 차단.
+      //   이번 회차 집합 = wantByTarget[name]의 회차라벨(취소로 rows=[]여도 roundUnchecked가 라벨을 넣어줌 → 그 회차만 비움).
+      var handledLabels = {};
+      wantByTarget[name].forEach(function (w) { handledLabels[w.rl] = 1; });
       var data = sheet.getDataRange().getValues();
-      var del = [];
+      var delRows = [];
       for (var i = data.length - 1; i >= 1; i--) {
-        if (String(data[i][0]) === date || formatDate(data[i][0]) === date) del.push(i + 1);
+        var dateOk = String(data[i][0]) === date || formatDate(data[i][0]) === date;
+        if (!dateOk) continue;
+        var rl0 = String(data[i][4]);   // 5열 회차라벨
+        if (handledLabels[rl0]) delRows.push(i + 1);   // 이번 회차만 삭제 대상(타 회차 보존)
       }
-      var startRow;
-      if (del.length && del.length >= (data.length - 1)) {
-        // 전 데이터행 삭제 = 시트 빔(마지막행 삭제 금지) → 내용만 비우고 2행부터 기록
-        var cols = Math.max(HEADERS.length, sheet.getLastColumn());
-        if (data.length > 1) sheet.getRange(2, 1, data.length - 1, cols).clearContent();
-        startRow = 2;
-      } else {
-        // 마지막 비고정행 삭제 시 구글시트 예외 → clearContent 폴백(빈 행 끼어 data.length 부풀 때 'uncheck 저장 실패' 차단). GM 2026-06-16 시우.
-        del.forEach(function (rn) {
-          try { sheet.deleteRow(rn); }
-          catch (e) { var _cc = Math.max(HEADERS.length, sheet.getLastColumn()); sheet.getRange(rn, 1, 1, _cc).clearContent(); }
-        });
-        startRow = sheet.getLastRow() + 1;
-      }
+      delRows.forEach(function (rn) {   // 내림차순(이미 내림차순으로 쌓임)
+        try { sheet.deleteRow(rn); }
+        catch (e) { var _cc = Math.max(HEADERS.length, sheet.getLastColumn()); sheet.getRange(rn, 1, 1, _cc).clearContent(); }
+      });
       if (rows.length) {
+        var startRow = sheet.getLastRow() + 1;
         sheet.getRange(startRow, 1, rows.length, HEADERS.length).setValues(rows);
         for (var k = 0; k < rows.length; k++) _applyRowStyle(sheet, startRow + k, rows[k]);
         total += rows.length;
@@ -1123,7 +1137,8 @@ function _handleSaveV2Compat(body) {
         body.duty || '',                                               // 11열 담당자
         c.submitter || submitter || defaultInspector(name, c.slot || ''),  // 12열 점검자
         _measureStr(c.measure),                                        // 13열 측정값
-        c.reflected ? 'Y' : ''                                         // 14열 반영완료
+        c.reflected ? 'Y' : '',                                        // 14열 반영완료
+        ''                                                             // 15열 점검시각(V2Compat은 항목별 시각 없음 → 빈값)
       ];
       if (rowNum) {
         if (!_shouldRow(dept, c)) {
