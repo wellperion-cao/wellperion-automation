@@ -88,13 +88,34 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 .round-seg{flex:1 1 0;min-width:112px;padding:9px 8px;border-radius:10px;border:1.5px solid var(--border);background:var(--bg);color:var(--text);font-family:inherit;cursor:pointer;display:flex;flex-direction:row;align-items:center;justify-content:center;gap:5px;line-height:1.15;transition:all .12s;white-space:nowrap}
 .round-seg .rs-name{font-size:13px;font-weight:700}
 .round-seg .rs-time{font-size:11px;font-weight:600;color:var(--dim)}
-.round-seg:hover{border-color:var(--accent)}
-.round-seg.active{background:var(--accent);color:#fff;border-color:var(--accent)}
-.round-seg.active .rs-time{color:rgba(255,255,255,0.85)}
+/* 회차별 비선택 배경 (연한 팔레트) */
+.round-seg.rs-am{background:#dbeafe;border-color:#93c5fd;color:#1e40af}
+.round-seg.rs-am .rs-time{color:#2563eb}
+.round-seg.rs-am .rs-sub{color:#3b82f6}
+.round-seg.rs-pm{background:#fef3c7;border-color:#fcd34d;color:#92400e}
+.round-seg.rs-pm .rs-time{color:#d97706}
+.round-seg.rs-pm .rs-sub{color:#f59e0b}
+.round-seg.rs-close{background:#e0e7ff;border-color:#a5b4fc;color:#3730a3}
+.round-seg.rs-close .rs-time{color:#4f46e5}
+.round-seg.rs-close .rs-sub{color:#6366f1}
+/* hover */
+.round-seg.rs-am:hover{border-color:#3b82f6}
+.round-seg.rs-pm:hover{border-color:#f59e0b}
+.round-seg.rs-close:hover{border-color:#6366f1}
+/* 선택(active) — 진한 채움 + 흰 글씨 */
+.round-seg.rs-am.active{background:#3b82f6;color:#fff;border-color:#3b82f6}
+.round-seg.rs-am.active .rs-time{color:rgba(255,255,255,0.85)}
+.round-seg.rs-am.active .rs-sub{color:rgba(255,255,255,0.92)}
+.round-seg.rs-pm.active{background:#f59e0b;color:#fff;border-color:#f59e0b}
+.round-seg.rs-pm.active .rs-time{color:rgba(255,255,255,0.85)}
+.round-seg.rs-pm.active .rs-sub{color:rgba(255,255,255,0.92)}
+.round-seg.rs-close.active{background:#6366f1;color:#fff;border-color:#6366f1}
+.round-seg.rs-close.active .rs-time{color:rgba(255,255,255,0.85)}
+.round-seg.rs-close.active .rs-sub{color:rgba(255,255,255,0.92)}
+/* done(제출완료) 테두리는 green 유지 */
 .round-seg.done{border-color:var(--green)}
-.round-seg .rs-sub{font-size:11px;font-weight:700;color:var(--dim)}
 .round-seg.done .rs-sub{color:var(--green)}
-.round-seg.active .rs-sub{color:rgba(255,255,255,0.92)}
+.round-seg.active.done .rs-sub{color:rgba(255,255,255,0.92)}
 @media(max-width:560px){.round-seg{min-width:100px;padding:8px 5px;gap:4px}.round-seg .rs-name{font-size:12px}.round-seg .rs-time{font-size:10px}.round-seg .rs-sub{font-size:10px}}
 .guide-cards{display:flex;gap:10px;margin-bottom:12px}
 .guide-card{flex:1;border-radius:10px;padding:12px 14px;border:1px solid}
@@ -1767,6 +1788,7 @@ function renderRoundBar(g){
   const d=getDateG(g);
   const cur=getRoundG(g);
   let html='';
+  const _roundColorClass={am1:'rs-am',pm1:'rs-pm',close1:'rs-close'};
   getRoundsFor(d).forEach(r=>{
     const act=r.key===cur?' active':'';
     const _sub=isRoundSubmitted(d,g,r.key);
@@ -1774,7 +1796,8 @@ function renderRoundBar(g){
     const _nm=String(r.name).replace(/\s*\[\d+\]/,'');   // '오전조[1]' → '오전조'
     const p=_roundProgress(d,g,r.key);
     const _badge=_sub?'✅ 제출완료':(p.done>0?'진행중':'미시작');
-    html+=`<button class="round-seg${act}${done}" onclick="setRoundG('${g}','${r.key}')">`
+    const _cc=_roundColorClass[r.key]||'';
+    html+=`<button class="round-seg${_cc?' '+_cc:''}${act}${done}" onclick="setRoundG('${g}','${r.key}')">`
         +`<span class="rs-name">${_nm}</span><span class="rs-time">${r.time}</span>`
         +`<span class="rs-sub">${p.done}/${p.total} · ${_badge}</span></button>`;   // 진행률+제출상태 합침. GM 2026-06-16
   });
