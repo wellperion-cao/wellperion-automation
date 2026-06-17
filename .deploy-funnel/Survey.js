@@ -882,7 +882,8 @@ function _processAction(body) {
         var hdrs = sh.getRange(1, 1, 1, lastCol).getValues()[0];
         // 팀시트 상태 헤더 = '진행 상황'(띄어쓰기) → '상황'·'진행 상황' 키 포함 필수(붙여쓰기만으론 미매칭)
         var idxStatus = _findCol_(hdrs, ['진행현황', '진행 상황', '진행상황', '진행상태', '상황', '상태']);
-        var idxDate   = _findCol_(hdrs, ['타임스탬프', 'timestamp', '시각', '일시', '접수일', '접수', '문의일', '날짜']);
+        // 날짜 = '타임스탬프'(13개 팀시트·멤버십 전부 공통). '문의일'은 PT·필라에만 있고 실제 등록(SUC)시점과 어긋나 미사용(2026-06-17 프로브 실측: PT 6월 등록 2건은 타임스탬프 기준만 포착).
+        var idxDate   = _findCol_(hdrs, ['타임스탬프', 'timestamp', '시각', '일시', '접수일', '접수', '날짜']);
         if (idxDate < 0) idxDate = 0;
         if (idxStatus < 0) return null; // 진행현황 컬럼 없으면 집계 불가
         var rows = sh.getRange(2, 1, last - 1, lastCol).getValues();
