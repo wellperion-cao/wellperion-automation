@@ -407,7 +407,7 @@ details.collapse > .collapse-body{border-top:1px solid var(--border);padding:18p
     <!-- 출처미상률 경고 카드 -->
     <div id="tc-unknown-wrap" style="margin-bottom:10px"></div>
     <!-- 유형×채널 교차표 -->
-    <div id="tc-matrix-wrap" style="background:var(--paper);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-top:10px"></div>
+    <div id="tc-matrix-wrap" style="background:var(--paper);border:1px solid var(--border);border-radius:12px;overflow:hidden;overflow-x:auto;-webkit-overflow-scrolling:touch;margin-top:10px"></div>
     <div id="tc-basis" style="padding:8px 2px 0;font-size:11px;color:var(--dim)"></div>
   </div>
 
@@ -652,6 +652,7 @@ var _fcData = null;   // funnel_conversion 응답 (byChannel 배열)
 var _pbData = null;   // period_breakdown 응답 (inquiries.byChannelMonth 객체)
 var _flow = null;     // 핵심 지표 전환 흐름의 현재 날짜뷰 정규화 데이터 {clicks,inq,conv,byType,mode,label}
 var _rangeFromTo = { from: '', to: '' };  // 현재 선택된 기간 (클릭 fetch에 붙임)
+var _skipPeriodChildFetch = false;        // 초기 부팅 병렬화: _applyPeriodData 첫 month 호출 시 자식 fetch 중복 방지
 
 var _DOT_COLORS = ['--f1','--f2','--f3','--f4','--f5'];
 
@@ -803,7 +804,8 @@ async function loadFunnelConversion() {
   var elRate      = document.getElementById('fc-rate');
   var elConverted = document.getElementById('fc-converted');
   var elTourRate  = document.getElementById('fc-tour-rate');
-  if (!elRate) return;
+  // 주의: fc-rate/fc-converted/fc-tour-rate id는 현 HTML에 없음 → 모두 null 가드.
+  // 절대 early-return 하지 말 것(과거 버그: 채널표 누적 전환 열이 영구 '—' 였음).
 
   if (FUNNEL_APPS_SCRIPT_URL.includes('DEPLOY_ID_HERE')) return;
 
@@ -856,11 +858,12 @@ var KO_BUTTONS = [
   { key: '유소년강습문의',   label: '유소년 강습 문의',   url: 'https://forms.gle/RaFbZLxypNMMV9f17' },
   { key: '여름방학특강문의', label: '여름방학 특강 문의', url: 'https://forms.gle/UEMcgWwsZVeTwVBg9' },
 ];
+// EN 버튼 key = WP '/en/inquiry/' 블록(wp_inquiry_block_en.html)의 wpTrackClick() 실측값.
+// 실제 발행 버튼은 3종(멤버십·성인·유소년)뿐 — 여름특강 EN 버튼은 라이브에 없음.
 var EN_BUTTONS = [
-  { key: 'membership-en',             label: 'Membership',     url: 'https://docs.google.com/forms/d/e/1FAIpQLSfOFxaqO5zSmoYa9TkfBlkDPbGjaTXm3duh7w5NwuBMhlJb6A/viewform' },
-  { key: 'adult-lesson-en',           label: 'Adult Lesson',   url: 'https://docs.google.com/forms/d/e/1FAIpQLSdirIB05ecVGkqJCIfJaw5yn7nIwVQe8ZeKbzQzKqKg83AUNw/viewform' },
-  { key: 'youth-lesson-en',           label: 'Youth Lesson',   url: 'https://docs.google.com/forms/d/e/1FAIpQLScqZum8zrhqKC0m2S0IKElYez-aJuPMQHM-JKF867UADF9X3A/viewform' },
-  { key: 'summer-special-inquiry-en', label: 'Summer Special', url: 'https://docs.google.com/forms/d/e/1FAIpQLSchg7_9bmLTjCA-gfSj_anjklaNr_OpYBcmHzQJCTndIzgJPA/viewform' },
+  { key: 'membership-inquiry-en',   label: 'Membership',   url: 'https://docs.google.com/forms/d/e/1FAIpQLSfOFxaqO5zSmoYa9TkfBlkDPbGjaTXm3duh7w5NwuBMhlJb6A/viewform' },
+  { key: 'adult-lesson-inquiry-en', label: 'Adult Lesson', url: 'https://docs.google.com/forms/d/e/1FAIpQLSdirIB05ecVGkqJCIfJaw5yn7nIwVQe8ZeKbzQzKqKg83AUNw/viewform' },
+  { key: 'youth-lesson-inquiry-en', label: 'Youth Lesson', url: 'https://docs.google.com/forms/d/e/1FAIpQLScqZum8zrhqKC0m2S0IKElYez-aJuPMQHM-JKF867UADF9X3A/viewform' },
 ];
 
 // 한·영 버튼별 행 생성 (문의채널현황.html의 buildRows 패턴 이식)
@@ -1006,6 +1009,9 @@ async function loadPeriodBreakdown(period) {
     _applyPeriodData(data, period);
     if (statusEl) statusEl.textContent = label + ' 기준 · ' + (data.generatedAt || '');
   } catch (e) {
+    // 부팅 병렬화: period_breakdown 실패로 _applyPeriodData 미도달 시 플래그가
+    // 남으면 다음 정상 로드에서 자식 fetch가 1회 잘못 스킵됨 → 여기서 해제.
+    _skipPeriodChildFetch = false;
     _setPeriodPlaceholder('집계 준비 중');
     if (statusEl) statusEl.textContent = label + ' 기준 · 집계 준비 중';
     console.warn('[period_breakdown] 로드 실패:', e.message);
@@ -1084,6 +1090,10 @@ function _applyPeriodData(data, period) {
   } else {
     _rangeFromTo = { from: '', to: '' };
   }
+  // 초기 부팅 1회는 DOMContentLoaded에서 _rangeFromTo(이번 달)를 미리 세팅해
+  // loadClickStats/loadTypeChannel을 병렬 발사하므로 여기서의 중복 호출만 건너뛴다.
+  // 이후 모든 사용자 인터랙션(기간/월 전환)에서는 정상적으로 재조회한다.
+  if (_skipPeriodChildFetch) { _skipPeriodChildFetch = false; return; }
   loadClickStats();
   loadTypeChannel();
 }
@@ -1479,7 +1489,7 @@ function renderTypeFunnel() {
     { label: '여름특강',          clicks: ['여름방학특강문의'],      inqKey: null,         tcKey: null,        bold: false },
     { label: '공간렌트 문의',     clicks: ['공간렌트문의'],          inqKey: null,         tcKey: null,        bold: false },
     { label: '비즈니스파트너 문의',clicks: ['비즈니스파트너문의'],   inqKey: null,         tcKey: null,        bold: false },
-    { label: '영어 문의(EN)',     clicks: ['membership-inquiry-en','adult-lesson-inquiry-en','youth-lesson-inquiry-en','summer-special-inquiry-en'], inqKey: null, tcKey: null, bold: false }
+    { label: '영어 문의(EN)',     clicks: ['membership-inquiry-en','adult-lesson-inquiry-en','youth-lesson-inquiry-en'], inqKey: null, tcKey: null, bold: false }
   ];
 
   // _flow.byType가 있으면 기간 반영값 우선, 없으면 byTypeMonth 폴백
@@ -1508,6 +1518,9 @@ function renderTypeFunnel() {
     // 등록 (누적·추정) + 누적 전환율(기간 선택 시 숨김) + 정직 배지
     var regStr, rateStr = '', sub;
     var color = t.bold ? 'var(--accent)' : 'var(--dim)';
+    // 등록/전환 수치는 화면 전체에서 항상 같은 전환색(--f5 초록)으로 통일.
+    // 실수치일 때만 초록, 플레이스홀더(—·집계 중)는 dim 유지.
+    var regColor = 'var(--dim)';
     if (t.tcKey === null) {
       regStr = '<span style="color:var(--dim)">—</span>';
       sub = '<span class="kpi-honesty soft">문의 미집계 — 클릭만(별도 폼)</span>';
@@ -1519,6 +1532,7 @@ function renderTypeFunnel() {
       if (td) {
         var conv = (td.converted !== null && td.converted !== undefined) ? td.converted : 0;
         regStr = conv.toLocaleString('ko-KR');
+        regColor = 'var(--f5)';
         if (td.convRate !== null && td.convRate !== undefined) {
           rateStr = ' <span class="tc-card-rate" style="color:var(--dim)">(누적 전환율 ' + td.convRate + '%)</span>';
         }
@@ -1544,7 +1558,7 @@ function renderTypeFunnel() {
       + '<div style="display:flex;align-items:stretch;gap:2px;margin-top:13px">'
       +   _box('클릭', clickStr, 'var(--text)') + _arr
       +   _box('문의', inqStr, 'var(--text)') + _arr
-      +   _box('등록', regStr, color)
+      +   _box('등록', regStr, regColor)
       + '</div>'
       + (rateStr ? '<div style="text-align:center;margin-top:9px">' + rateStr + '</div>' : '')
       + (sub ? '<div class="tc-card-sub" style="margin-top:10px;text-align:center">' + sub + '</div>' : '')
@@ -1841,11 +1855,21 @@ document.addEventListener('DOMContentLoaded', function() {
   // 월 네비게이터 초기화 — 오늘 달로 설정, 다음달 버튼 비활성
   _updateMonthNav();
 
-  // ── 즉시 로드 ──────────────────────────────────────────────
+  // ── 즉시 로드 (초기 1회 병렬 발사 — 직렬 2왕복 제거) ──────────────
+  // 이번 달 기본범위는 응답 없이 즉시 산출 가능 → _rangeFromTo를 미리 세팅하고
+  // 4개 엔드포인트를 동시 발사. _applyPeriodData의 첫 month 호출은 자식 fetch를
+  // 건너뛰도록(_skipPeriodChildFetch) 표시해 이중 fetch를 방지한다.
+  var _bd = new Date();
+  var _by = _bd.getFullYear();
+  var _bm = ('0' + (_bd.getMonth() + 1)).slice(-2);
+  var _bday = ('0' + _bd.getDate()).slice(-2);
+  _rangeFromTo = { from: _by + '-' + _bm + '-01', to: _by + '-' + _bm + '-' + _bday };
+  _skipPeriodChildFetch = true;
   loadFunnelConversion();        // 핵심 지표(전환흐름)·채널표 내부 렌더 포함
-  loadPeriodBreakdown('month');  // 기본 기간: 월 — 끝에서 loadClickStats() 호출됨
-  // 유형별 전환·유형×채널·클릭은 loadPeriodBreakdown → _applyPeriodData 내에서
-  // 선택 기간(_rangeFromTo)에 맞춰 호출됨(loadTypeChannel·loadClickStats)
+  loadPeriodBreakdown('month');  // 기본 기간: 월 (자식 fetch는 위 플래그로 1회 스킵)
+  loadClickStats();              // ↑ period 응답 대기 없이 병렬
+  loadTypeChannel();             // ↑ period 응답 대기 없이 병렬
+  // 이후 기간/월 전환 등 사용자 인터랙션에서는 _applyPeriodData가 평소대로 자식 fetch 수행
 
   // ── 지연 로드 — 각 <details> 펼칠 때 1회만 fetch (초기 로드 가벼움) ───────────
   document.getElementById('details-weekly-trend').addEventListener('toggle', function() {
