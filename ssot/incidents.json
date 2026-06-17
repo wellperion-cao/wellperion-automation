@@ -120,6 +120,22 @@
       "차단조치": "A) scripts/post-commit.hook + scripts/post_commit_push.py 신설 — 커밋 직후 git_lock 임계구역 안에서 origin/master..HEAD≥1이면 자동 push(타임아웃 30s·fail-open·실패 시 logs/git_lock.log + 텔레그램 1줄 경고, push는 새 커밋 안 만들어 재귀 없음, 부모 lock 보유 중이면 재진입 대신 직접 push). install_hooks.sh 에 post-commit 설치 추가·.git/hooks/post-commit 활성화. B) ssot/welly_boot_guard.py 신설 — 부팅 시 미푸시 커밋 수·검수대기/발행검증대기 한 화면 가시화 + S2 CEO 부팅절차에 1줄 SOP 박제.",
       "상태": "GUARDED",
       "검증증거": "재현 실측(명시 push 없이 origin 자동 전진): 커밋 A 직전 origin/master=dbbaffe5 → `git commit`(push 명령 없음) → git fetch 후 origin/master=c418180(=새 HEAD), unpushed=0. git_lock.log: ACQUIRED holder=post-commit-push → POST_COMMIT_PUSH ok → RELEASED. 2차 재현(커밋 B): origin c418180 → 95816c8 자동 전진, unpushed=0. 부팅가드 실행: 미푸시 0건·검수대기 3건 정확 나열(exit 1). py_compile post_commit_push.py·welly_boot_guard.py OK."
+    },
+    {
+      "id": "INC-007",
+      "date": "2026-06-17",
+      "watch_globs": [
+        "scripts/sync_queue_mirror.py",
+        "3. 웰페리온 가이드/wellperion_guide(main).html"
+      ],
+      "gate": "warn",
+      "요약": "G1 '오늘의 항로'에 살아있는 일 20건 중 4건만 보이고 완료가 안 쌓이던 문제. 데이터는 멀쩡했고 화면이 빈 주소를 읽던 것 — 발행되는 곳에 사본을 두고 자동으로 맞춰 다시는 안 그럽니다.",
+      "증상": "G1 '오늘의 항로'가 살아있는 20건 중 4건만 표시·완료 누적 안 됨.",
+      "본질": "2026-06-16 G1 stale-render 수정이 _queue 읽기 주소를 GitHub Pages 발행루트('3. 웰페리온 가이드/')에 없는 경로(/wellperion-automation/status/_queue.json)로 바꿨고 라이브 검증을 안 해 404→빈배열→20건 collapse. 데이터·GAS·시트 전부 무손상(표시/배포경로 손실).",
+      "뿌리분류": "검증멈춤",
+      "차단조치": "발행루트 큐 미러('3. 웰페리온 가이드/status/_queue.json') + scripts/sync_queue_mirror.py 단방향·멱등 자동 동기화 pre-commit 훅(①-3) + fetch cache-bust/no-store. (후속: 부팅가드에 라이브 큐 200 체크 추가 — 기재만)",
+      "상태": "GUARDED",
+      "검증증거": "라이브 https://wellperion-cao.github.io/wellperion-automation/status/_queue.json HTTP200·active 20(PENDING 14+IN_PROGRESS 6)·DONE 54. 미러(3. 웰페리온 가이드/status/_queue.json) active 20=원본과 바이트 동일. sync 훅 직접 재실행 → no-op(멱등 재현). 커밋 c3de5178(미러+URL 교정)·c9eec7d3(동기화 훅)."
     }
   ]
 }
