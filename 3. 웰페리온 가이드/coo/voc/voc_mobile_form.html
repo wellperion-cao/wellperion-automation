@@ -111,12 +111,12 @@ select{appearance:none;-webkit-appearance:none;background-image:url("data:image/
     </div>
 
     <div class="field">
-      <label class="fl">이름</label>
+      <label class="fl" id="nameLbl">이름</label>
       <input type="text" id="name" placeholder="실명을 입력해 주세요" autocomplete="off">
     </div>
 
     <div class="field">
-      <label class="fl">연락처</label>
+      <label class="fl" id="contactLbl">연락처</label>
       <input type="text" id="contact" placeholder="휴대폰 번호" autocomplete="off" inputmode="tel">
     </div>
   </div>
@@ -282,6 +282,17 @@ select{appearance:none;-webkit-appearance:none;background-image:url("data:image/
     return out;
   }
 
+  // 이름·연락처 라벨 및 placeholder 갱신 (IME 보호: 라벨만 교체, input DOM 유지)
+  function updateNameContactHint() {
+    var isVoice = (selectedCategory === 'voice');
+    var chk = $('dyn_anonymousPref');
+    var isAnon = isVoice && chk && chk.checked;
+    var nameOpt = isAnon ? ' <span class="opt">(익명 시 생략 가능)</span>' : '';
+    var contactOpt = isAnon ? ' <span class="opt">(익명 시 생략 가능)</span>' : '';
+    $('nameLbl').innerHTML = '이름' + nameOpt;
+    $('contactLbl').innerHTML = '연락처' + contactOpt;
+  }
+
   // 유형 선택 (카테고리 버튼)
   $('typeGroup').addEventListener('click', function(ev){
     var btn = ev.target.closest('.type-btn');
@@ -292,6 +303,14 @@ select{appearance:none;-webkit-appearance:none;background-image:url("data:image/
     btn.classList.add('active');
     selectedCategory = cat;
     renderDynFields(cat);
+    updateNameContactHint();
+  });
+
+  // 익명 체크박스 변경 시 라벨 갱신 (이벤트 위임 — dynFields 하위)
+  $('dynFields').addEventListener('change', function(ev){
+    if (ev.target && ev.target.id === 'dyn_anonymousPref') {
+      updateNameContactHint();
+    }
   });
 
   // 사진 선택 → base64 (FileReader)
@@ -320,8 +339,14 @@ select{appearance:none;-webkit-appearance:none;background-image:url("data:image/
     var contact = $('contact').value.trim();
 
     if (!selectedCategory) { toast('접수 유형을 선택해 주세요', true); return; }
-    if (!name) { toast('이름을 입력해 주세요', true); return; }
-    if (!contact) { toast('연락처를 입력해 주세요', true); return; }
+
+    // voice + 익명 희망 시 이름·연락처 필수 면제
+    var anonChk = $('dyn_anonymousPref');
+    var isAnon = (selectedCategory === 'voice') && anonChk && anonChk.checked;
+    if (!isAnon) {
+      if (!name) { toast('이름을 입력해 주세요', true); return; }
+      if (!contact) { toast('연락처를 입력해 주세요', true); return; }
+    }
 
     if (VOC_API.indexOf('__VOC') === 0) {
       toast('아직 접수 서버가 연결되지 않았습니다 (관리자 설정 대기)', true);

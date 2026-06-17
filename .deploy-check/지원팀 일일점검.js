@@ -356,6 +356,56 @@ function doGet(e) {
     ['male', 'female', 'common'].forEach(function (z) { var nm = _deptTabs('support')[z]; if (!nm) return; var sh = _rss.getSheetByName(nm); if (!sh) return; var sd = sh.getDataRange().getValues(); for (var j = 1; j < sd.length; j++) { var id2 = String(sd[j][1]); if (_rmap[id2]) { sh.getRange(j + 1, 2).setValue(_rmap[id2]); _ro.sheets++; } } });
     return jsonRes({ ok: true, master: _ro.master, sheets: _ro.sheets });
   }
+  if (action === 'dump_cr') {   // cr 원장 백업: chk_<dept>_* ScriptProperties 전수 JSON 덤프(마이그레이션 전 롤백 안전망). 2026-06-17 시우.
+    var _dd = String(e.parameter.dept || 'support').trim() || 'support';
+    var _dp = PropertiesService.getScriptProperties().getProperties();
+    var _dout = {}, _dn = 0;
+    Object.keys(_dp).forEach(function (k) { if (k.indexOf(CHK_PROP_PREFIX + _dd + '_') === 0) { _dout[k] = _dp[k]; _dn++; } });
+    return jsonRes({ ok: true, dept: _dd, count: _dn, props: _dout });
+  }
+  if (action === 'migrate_cr_keys') {   // 원장 체크키 id 부분 치환(고아 차단): rename_items 짝. led.cr(<round>_<id>)+led.c(<id> 평면)+led.seen(<bucket>_<id>) 동시. 2026-06-17 시우.
+    // map은 id 단위(예 {"c1a":"op3"}). cr/seen 키는 첫 '_'로 split→(prefix,id), id 정확매칭 시 prefix+'_'+newId 재조립(done카운트 split과 동일 line 2206).
+    // c는 평면 {id:1}이라 id 직접매칭. b4_m 류 추가 '_' id는 첫 '_' 1회 split이라 id='b4_m' 보존(map 대상 아니라 무해). 체크값·메타 보존(키만 변경).
+    var _mmap; try { _mmap = JSON.parse(e.parameter.map || '{}'); } catch (_e2) { return jsonRes({ error: 'map JSON 오류' }); }
+    if (!_mmap || !Object.keys(_mmap).length) return jsonRes({ error: 'map 비어있음' });
+    var _mdept = String(e.parameter.dept || 'support').trim() || 'support';
+    var _mprops = PropertiesService.getScriptProperties();
+    var _mall = _mprops.getProperties();
+    var _mProps = 0, _mCr = 0, _mC = 0, _mSeen = 0, _mLog = [];
+    // 회차/버킷 접두키(<prefix>_<id>) 치환 헬퍼: 객체의 키만 바꾸고 값 보존, 신키 없을 때만 이관.
+    function _migPrefixedKeys(obj) {
+      var n = 0;
+      Object.keys(obj).forEach(function (ck) {
+        var us = String(ck).indexOf('_'); if (us < 0) return;
+        var pre = ck.slice(0, us), id = ck.slice(us + 1);
+        if (!_mmap[id]) return;                       // id 정확매칭만(부분문자열 아님)
+        var nk = pre + '_' + _mmap[id];
+        if (nk === ck) return;
+        if (obj[nk] === undefined) obj[nk] = obj[ck];
+        delete obj[ck]; n++;
+      });
+      return n;
+    }
+    Object.keys(_mall).forEach(function (key) {
+      if (key.indexOf(CHK_PROP_PREFIX + _mdept + '_') !== 0) return;
+      var led; try { led = JSON.parse(_mall[key] || '{}'); } catch (e3) { return; }
+      if (!led || typeof led !== 'object') return;
+      var changed = false, short = key.replace(CHK_PROP_PREFIX + _mdept + '_', '');
+      if (led.cr && typeof led.cr === 'object') { var nc = _migPrefixedKeys(led.cr); if (nc) { _mCr += nc; changed = true; _mLog.push(short + ' cr:' + nc); } }
+      if (led.seen && typeof led.seen === 'object') { var ns = _migPrefixedKeys(led.seen); if (ns) { _mSeen += ns; changed = true; _mLog.push(short + ' seen:' + ns); } }
+      if (led.c && typeof led.c === 'object') {     // 평면 {id:1} — id 직접매칭
+        var nf = 0;
+        Object.keys(led.c).forEach(function (id) {
+          if (!_mmap[id]) return;
+          if (led.c[_mmap[id]] === undefined) led.c[_mmap[id]] = led.c[id];
+          delete led.c[id]; nf++;
+        });
+        if (nf) { _mC += nf; changed = true; _mLog.push(short + ' c:' + nf); }
+      }
+      if (changed) { _mprops.setProperty(key, JSON.stringify(led)); _mProps++; }
+    });
+    return jsonRes({ ok: true, dept: _mdept, props: _mProps, cr: _mCr, c: _mC, seen: _mSeen, log: _mLog });
+  }
   if (action === 'migrate_support_sheets') { return migrateSupportSheets(); }
   if (action === 'purge_dept_items') { return purgeDeptItems(e.parameter.dept || ''); }
   if (action === 'delete_facility_sheets') { return deleteFacilitySheets(); }
@@ -2090,14 +2140,14 @@ var _TL_ROUND_MAP = {
   b1:['am1','pm1','close1'], b2:['am1','pm1','close1'], b3:['am1','pm1','close1'],
   b4_f:['am1','pm1','close1'], b4_m:['am1','pm1','close1'],
   b5:['am1','pm1','close1'], b6:['am1','pm1','close1'],
-  c1a:['am1'], c1b:['am1'], c1c:['am1'],
+  op3:['am1'], op4:['am1'], op5:['am1'],
   c1:['am1','pm1','close1'], c2:['am1','pm1','close1'], c3:['am1','pm1','close1'],
   c4:['am1','pm1','close1'], c5:['am1','pm1','close1'], c6:['am1','pm1','close1'],
   c7:['am1','pm1','close1'], c8:['am1','pm1','close1'], c9:['am1','pm1','close1'],
   c10:['am1','pm1','close1'],
   d1:['am1','pm1','close1'], d2:['am1','pm1','close1'], d3:['am1','pm1','close1'],
   e1:['am1','pm1','close1'],
-  cls1:['close1'], cls2:['close1'], cls3:['close1']
+  cl1:['close1'], cl2:['close1'], cl3:['close1']
   // op1,op2,cls4-8,b7,d4,d5,e2 등 마스터 rounds 필드 우선(시트 컬럼) — ROUND_MAP에 없으면 시트 폴백
 };
 // DAY_FOCUS 항목수 — 요일(0=일~6=토), close1 버킷에 가산(클라 _roundProgress close1 분기와 동일).

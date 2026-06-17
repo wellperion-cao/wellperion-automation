@@ -1,4 +1,4 @@
-# 회원 셀프 VOC (QR + 사진) — GM 배포·QR·텔레그램 안내
+# 회원 통합 접수처 (QR + 사진) — GM 배포·QR·텔레그램 안내
 
 > 코드는 모두 준비 완료. 아래는 **GM 환경/게이트가 필요한 라이브 단계**입니다.
 > 라이브 '이슈 응답' 시트·점검 GAS 는 건드리지 않습니다(VOC 는 완전 별도).
@@ -12,71 +12,78 @@
 
 ---
 
-## P1·P3 라이브화 — GM이 할 일
+## 데이터 저장 위치
 
-### 1) VOC 전용 GAS 프로젝트 생성·배포 (필수)
-1. https://script.google.com → **새 프로젝트**. (점검·업무 GAS 와 **별도 프로젝트** — 절대 같은 스크립트에 얹지 말 것)
-2. `coo/voc/apps_script_voc.js` 전체 내용을 `Code.gs` 에 붙여넣기.
-3. **컨테이너 시트 연결**: 이 스크립트는 `SpreadsheetApp.getActiveSpreadsheet()` 를 씀.
-   → VOC 데이터를 적재할 **구글 시트를 하나 열고**, 그 시트의 *확장 프로그램 → Apps Script* 로 들어가 코드를 붙이면 자동 연결됨.
-   (라이브 '이슈 응답' 시트가 아닌 **별도/신규 시트** 권장. 탭 「회원셀프VOC」는 첫 제출 시 자동 생성됨.)
-4. **배포** → *새 배포* → 유형 **웹 앱** → 실행 계정 **나(cao@wellperion.com)**, 액세스 **모든 사용자**(회원 로그인 불필요) → 배포.
-5. 발급된 `/exec` URL 복사.
+**운영부 시트 (`1akZLs7ITs3FZWFIzMQvSYrdRucGQglmerOvTC2TLEcQ`) 한 곳에 통합.**
+카테고리별 탭이 자동 생성됨:
 
-### 2) /exec URL 3곳에 입력 (placeholder 교체)
-배포 후 받은 `/exec` 주소로 아래 `__VOC_GAS_EXEC_URL__` 를 교체:
-- `coo/voc/voc_mobile_form.html` — `var VOC_API = '__VOC_GAS_EXEC_URL__';`
-- `coo/check/운영부 체계.html` — `const VOC_API = '__VOC_GAS_EXEC_URL__';`
+| 탭 이름 | 유형 |
+|---|---|
+| `접수_분실물` | 분실물 접수 |
+| `접수_시설고장` | 시설물 고장 접수 |
+| `접수_청결` | 청결 이슈 접수 |
+| `접수_휴회` | 휴회 접수 |
+| `접수_칭찬` | 직원·강사 칭찬 |
+| `접수_쓴소리` | 직원·강사 쓴소리 |
 
-> 교체는 메모장 편집 후 커밋, 또는 SSOT 편집 페이지로 진행. (재배포 ≠ push — clasp 미연동이므로 GAS 코드는 GM이 콘솔에 직접 반영)
-
-### 3) (권장) 모바일 폼 라이브 호스팅
-- `voc_mobile_form.html` 은 GitHub Pages 로 자동 노출됨:
-  `https://wellperion-cao.github.io/wellperion-automation/coo/voc/voc_mobile_form.html`
-- 위치별 QR 은 여기에 `?loc=` 만 붙이면 됨(아래 P4).
+> 기존 구글폼 4개(분실물·시설물고장·청결·휴회)는 **은퇴** — 신규 접수는 통합접수처로 단일화. 옛 폼의 기존 응답 데이터는 원래 탭에 아카이브 보존.
 
 ---
 
-## P4 — 텔레그램 알림 (코드 완료, GM 설정만)
+## GM 설정 액션 (라이브화 필수)
 
-신규 VOC 접수 시 **핵심멤버방** 자동 알림이 코드에 내장됨(`_vNotifyTelegram`).
-GAS 프로젝트 설정 → **스크립트 속성**에 아래 2개 등록 (값은 repo 에 두지 않음 · 서버측 보관):
+### 1) VOC 전용 GAS 프로젝트 생성·배포
+1. https://script.google.com → **새 프로젝트**. (점검·업무 GAS 와 **별도 프로젝트** — 절대 같은 스크립트에 얹지 말 것)
+2. `coo/voc/apps_script_voc.js` 전체 내용을 `Code.gs` 에 붙여넣기.
+3. **프로젝트 설정 → 스크립트 속성**에서 아래 키 등록:
 
 | 속성 키 | 값 |
 |---|---|
-| `TELEGRAM_BOT_TOKEN` | 봇 토큰 (점검 GAS 와 동일 봇 재사용 가능) |
+| `SPREADSHEET_ID` | `1akZLs7ITs3FZWFIzMQvSYrdRucGQglmerOvTC2TLEcQ` |
+| `TELEGRAM_BOT_TOKEN` | 봇 토큰 (기존 점검 GAS 봇 재사용 가능) |
 | `TELEGRAM_CHAT_ID` | 핵심멤버방 chat_id |
 
-> 미설정이어도 접수 자체는 정상 동작(알림만 생략).
-> chat_id 확인: 봇을 방에 초대 후 `https://api.telegram.org/bot<토큰>/getUpdates` 의 `chat.id`.
+4. **배포** → *새 배포* → 유형 **웹 앱** → 실행 계정 **나(cao@wellperion.com)**, 액세스 **모든 사용자** → 배포.
+5. 발급된 `/exec` URL 복사.
+
+> ⚠️ `/exec` 반영은 **새 버전 재배포** 필요. 코드만 저장해선 라이브에 반영되지 않음.
+
+### 2) /exec URL 폼에 입력 (placeholder 교체)
+배포 후 받은 `/exec` 주소로 `voc_mobile_form.html` 안의 `VOC_API` 변수를 교체:
+- `coo/voc/voc_mobile_form.html` — `var VOC_API = '여기';`
+
+> 교체 후 커밋+푸시하면 GitHub Pages 에 자동 반영.
+
+### 3) 모바일 폼 라이브 호스팅
+`voc_mobile_form.html` 은 GitHub Pages 로 자동 노출됨:
+`https://wellperion-cao.github.io/wellperion-automation/3.%20%EC%9B%B0%ED%8E%98%EB%A6%AC%EC%98%A8%20%EA%B0%80%EC%9D%B4%EB%93%9C/coo/voc/voc_mobile_form.html`
+
+위치별 QR 은 여기에 `?loc=` 만 붙이면 됨.
 
 ---
 
-## P4 — 위치별 QR 생성·비치 (GM)
+## 익명 접수 정책
 
-### QR 가 가리킬 URL (위치별 `?loc=`)
+**쓴소리(voice) 카테고리에서 '익명 희망'을 체크하면 이름·연락처 입력 생략 가능.**
+시트에는 '익명'으로 저장됨. 나머지 카테고리는 기존대로 이름·연락처 필수.
+
+---
+
+## 위치별 QR 생성·비치
+
 | 위치 | QR URL |
 |---|---|
-| 리셉션 | `…/coo/voc/voc_mobile_form.html?loc=리셉션` |
-| 락커룸 | `…/coo/voc/voc_mobile_form.html?loc=락커룸` |
-| 운동장(헬스장) | `…/coo/voc/voc_mobile_form.html?loc=헬스장` |
-| 주차장 | `…/coo/voc/voc_mobile_form.html?loc=주차장` |
+| 리셉션 | `…/voc_mobile_form.html?loc=리셉션` |
+| 락커룸 | `…/voc_mobile_form.html?loc=락커룸` |
+| 운동장(헬스장) | `…/voc_mobile_form.html?loc=헬스장` |
+| 주차장 | `…/voc_mobile_form.html?loc=주차장` |
 
-(앞부분 `…` = `https://wellperion-cao.github.io/wellperion-automation`)
-한글 `?loc=` 는 브라우저가 자동 인코딩하므로 그대로 적어도 동작. QR 생성기에 넣을 땐 인코딩된 형태로 넣어도 무방.
-
-### QR 생성 방법 (택1)
-- **무료 생성기**: qr-code-generator.com 등에 위 URL 입력 → PNG 다운로드.
-- **구글 차트 API**(즉석): `https://api.qrserver.com/v1/create-qr-code/?size=600x600&data=<URL인코딩>`
-- 위치마다 별도 QR(서로 다른 `?loc=`) — 접수 시 위치가 자동 채워져 분류가 쉬움.
-
-### 비치처
-리셉션 데스크 · 남/녀 락커룸 입구 · 운동장(헬스장) 게시판 · 주차장 정산기 옆.
-A6 코팅 카드 + "불편/건의는 QR 스캔 한 번으로" 안내 문구 권장.
+(앞부분 `…` = GitHub Pages 전체 경로)
+QR 생성: qr-code-generator.com 등에 URL 입력 → PNG 다운로드.
+비치처: 리셉션 데스크·남/녀 락커룸 입구·헬스장 게시판·주차장 정산기 옆. A6 코팅 카드 권장.
 
 ---
 
-## 후속 과제 (이번 차단 아님 · 명시만)
-- **무인증 공개 엔드포인트 = 변조·스팸 위험.** 최소 hidden token(`VOC_SUBMIT_TOKEN`) + rate-limit 을 후속 적용.
-  (현재 코드는 토큰 게이트 미적용 — 폼 제출 누구나 가능. 운영 시작 후 스팸 관측되면 즉시 토큰화.)
-- 사진 Drive 용량 누적 → 주기적 정리 정책(업무 GAS `todo_orphan_cleanup` 패턴 이식 가능).
+## 후속 과제 (이번 차단 아님)
+
+- **무인증 공개 엔드포인트·사진 공개 링크 = 변조·스팸·개인정보 위험.** 최소 hidden token(`VOC_SUBMIT_TOKEN`) + rate-limit + 사진 접근 제한을 후속 적용.

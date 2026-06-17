@@ -1,0 +1,20 @@
+{
+  "snapshot": "BEFORE — 2026-06-17 점검 항목ID 정규화 (c1a/b/c→op3/4/5, cls1/2/3→cl1/2/3)",
+  "today_live_support": {
+    "am": 53, "pm": 0, "close": 0, "night": 0,
+    "amTotal": 59, "pmTotal": 49, "closeTotal": 68, "nightTotal": 28,
+    "total": 176, "done": 53, "pct": 30,
+    "byGender": {
+      "m": {"am": 28, "amTotal": 30, "pmTotal": 25, "closeTotal": 35, "nightTotal": 14, "done": 28, "total": 90},
+      "f": {"am": 25, "amTotal": 29, "pmTotal": 24, "closeTotal": 33, "nightTotal": 14, "done": 25, "total": 86}
+    }
+  },
+  "facility_ops_parking": "today_live=support 전용(error 응답) — 무관, 불변",
+  "cr_ledger_m_28keys": ["am1_a1","am1_a2","am1_a3","am1_b1","am1_b2","am1_b3","am1_b4_m","am1_b5","am1_b6","am1_b7","am1_c1","am1_c10","am1_c1a","am1_c1b","am1_c1c","am1_c2","am1_c3","am1_c5","am1_c6","am1_c9","am1_d1","am1_d2","am1_d3","am1_d5","am1_e1","am1_e2","am1_op1","am1_op2"],
+  "cr_ledger_f_25keys": ["am1_a1","am1_a2","am1_a3","am1_b1","am1_b2","am1_b3","am1_b4_f","am1_b5","am1_b6","am1_b7","am1_c1","am1_c10","am1_c1a","am1_c1b","am1_c1c","am1_c2","am1_c5","am1_c6","am1_c7","am1_c8","am1_d1","am1_d2","am1_d5","am1_op1","am1_op2"],
+  "migration_targets_cr": {
+    "am1_c1a": "am1_op3", "am1_c1b": "am1_op4", "am1_c1c": "am1_op5",
+    "close1_cls1": "close1_cl1", "close1_cls2": "close1_cl2", "close1_cls3": "close1_cl3"
+  },
+  "note": "오늘은 close 미체크(pm/close=0) → close1_cls* cr키 오늘 없음. am1_c1a/b/c (m·f 각 3개)만 오늘 마이그레이션 대상. 정식 cr 백업은 dump_cr 액션으로 배포 후 별도 확보."
+}

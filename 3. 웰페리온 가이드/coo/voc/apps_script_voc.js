@@ -465,11 +465,18 @@ function _regSubmit(body) {
     return _vJson({ ok: false, error: '알 수 없는 카테고리입니다: ' + catRaw });
   }
 
-  // 이름·연락처 필수
+  // 이름·연락처 — voice + 익명 희망(anonymousPref==='예')이면 필수 면제
   var name    = String(body.name    || '').trim();
   var contact = String(body.contact || '').trim();
-  if (!name || !contact) {
+  var anonPref = String(body.anonymousPref || '').trim();
+  var isAnon = (cat.key === 'voice' && anonPref === '예');
+  if (!isAnon && (!name || !contact)) {
     return _vJson({ ok: false, error: '이름과 연락처는 필수입니다.' });
+  }
+  // 익명 제출 시 빈값을 '익명'으로 저장
+  if (isAnon) {
+    if (!name)    name    = '익명';
+    if (!contact) contact = '익명';
   }
 
   var loc     = String(body.loc     || body.location || '').trim();
@@ -517,11 +524,11 @@ function _regSubmit(body) {
   sh.getRange(newRow, 1, 1, row.length).setValues([row]);
   _regApplyStatusColor(sh, newRow, '접수', headers);
 
-  // 텔레그램 알림
+  // 텔레그램 알림 (익명 접수 시 이름 표기)
   _vNotifyTelegram(
     '📋 <b>[통합 접수처]</b> ' + cat.label + '\n' +
     '부서: ' + cat.dept + '\n' +
-    '이름: ' + name + '\n' +
+    '이름: ' + (isAnon ? '익명' : name) + '\n' +
     '위치: ' + (loc || '-') + '\n' +
     '내용: ' + (content ? content.slice(0, 100) : '-') +
     (photoUrl ? '\n📷 사진 첨부' : '') +
