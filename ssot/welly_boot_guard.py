@@ -26,6 +26,11 @@ from pathlib import Path
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
 
 ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(ROOT / "scripts"))
+try:
+    from integration_health import check_bridges  # 연동 다리 자가점검 단일 정의
+except Exception:  # 모듈 부재·import 실패 시에도 부팅 가드는 계속
+    check_bridges = None
 QUEUE_PATH = ROOT / "3. 웰페리온 가이드" / "cmo" / "review" / "review_queue.json"
 WAIT_STATUSES = ("검수대기", "발행검증대기")
 REMOTE = "origin"
@@ -104,11 +109,26 @@ def main() -> int:
             tail = f" / {channel}" if channel else ""
             print(f"        [{iid}] {title}{tail}")
 
+    # ── ③ 🔗 연동 다리 자가점검 ──────────────────────────────────────
+    print("\n[3] 🔗 연동 다리 자가점검 (데이터 소스 간 다리 생존)")
+    if check_bridges is None:
+        print("    ℹ️  점검 모듈 로드 불가 — scripts/integration_health.py 확인.")
+    else:
+        rows = check_bridges()
+        ok_n = sum(1 for _, ok, _ in rows if ok)
+        for nm, ok, detail in rows:
+            print(f"    {'✅' if ok else '⚠️'} {nm}: {detail}")
+        if ok_n < len(rows):
+            flagged = True
+            print(f"    ⚠️  다리 {len(rows) - ok_n}개 끊김 — 위 사유부터 복구할 것.")
+        else:
+            print(f"    ✅ 다리 {ok_n}개 전부 정상.")
+
     print("\n" + "=" * 52)
     if flagged:
         print("  ⚠️  위 항목을 먼저 처리하고 부팅 마무리할 것.")
     else:
-        print("  ✅ 미푸시·검수대기 모두 없음 — 깨끗.")
+        print("  ✅ 미푸시·검수대기·연동 다리 모두 정상 — 깨끗.")
     print("=" * 52)
     return 1 if flagged else 0
 

@@ -19,6 +19,8 @@ GM은 파일을 못 여니, 이 한 파일이 ERP "🖥️ 시스템 현황" 섹
 import json
 import subprocess
 import sys
+import urllib.request
+import urllib.parse
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
 
@@ -26,6 +28,14 @@ KST = timezone(timedelta(hours=9))
 ROOT = Path(__file__).resolve().parent.parent
 STATUS_DIR = ROOT / "status"
 OUT = STATUS_DIR / "erp_status.json"
+BRIDGE_LAST = STATUS_DIR / "_bridge_last.json"  # 직전 다리 상태(스팸 방지)
+ENV_PATH = ROOT / "telegram_bot" / ".env"
+
+sys.path.insert(0, str(ROOT / "scripts"))
+try:
+    from integration_health import check_bridges  # 연동 다리 자가점검 단일 정의
+except Exception:
+    check_bridges = None
 
 # 감시할 예약작업 (작업명 → 사람이 읽을 이름)
 WATCH_TASKS = {
@@ -97,11 +107,86 @@ def collect_tasks():
     return items
 
 
+def collect_bridges():
+    """연동 다리 점검 → erp_status.json 'bridges' 필드용 리스트. 실패해도 빈 결과."""
+    if check_bridges is None:
+        return []
+    try:
+        rows = check_bridges()
+    except Exception:
+        return []
+    return [
+        {"name": nm, "state": "정상" if ok else "이상", "detail": detail}
+        for nm, ok, detail in rows
+    ]
+
+
+def _read_env_token():
+    """telegram_bot/.env 직독 → (token, chat_id). 실패 시 (None, None)."""
+    token = chat = None
+    try:
+        for line in ENV_PATH.read_text(encoding="utf-8").splitlines():
+            line = line.strip()
+            if line.startswith("TELEGRAM_BOT_TOKEN="):
+                token = line.split("=", 1)[1].strip()
+            elif line.startswith("TELEGRAM_CHAT_ID="):
+                chat = line.split("=", 1)[1].strip()
+    except Exception:
+        pass
+    return token, chat
+
+
+def _send_telegram(text):
+    """텔레그램 1줄 발송. 실패해도 발행에 영향 없게 전부 삼킴."""
+    try:
+        token, chat = _read_env_token()
+        if not token or not chat:
+            return False
+        data = urllib.parse.urlencode({"chat_id": chat, "text": text}).encode()
+        req = urllib.request.Request(
+            f"https://api.telegram.org/bot{token}/sendMessage", data=data
+        )
+        with urllib.request.urlopen(req, timeout=10) as r:
+            return r.status == 200
+    except Exception:
+        return False
+
+
+def alert_newly_broken(bridges):
+    """직전 상태와 비교해 '새로 깨진' 다리만 텔레그램 경고. 같은 깨짐 반복은 무음."""
+    try:
+        broken_now = {b["name"] for b in bridges if b["state"] == "이상"}
+        prev = set()
+        if BRIDGE_LAST.exists():
+            try:
+                prev = set(json.loads(BRIDGE_LAST.read_text(encoding="utf-8")) or [])
+            except Exception:
+                prev = set()
+        newly = broken_now - prev
+        if newly:
+            details = {b["name"]: b["detail"] for b in bridges}
+            lines = [f"🔗 연동 다리 끊김 감지 ({len(newly)}건)"]
+            for nm in sorted(newly):
+                lines.append(f"⚠️ {nm}: {details.get(nm, '')}")
+            _send_telegram("\n".join(lines))
+        # 현재 깨진 목록을 상태파일에 저장(복구되면 다음에 재알림 가능)
+        try:
+            BRIDGE_LAST.write_text(
+                json.dumps(sorted(broken_now), ensure_ascii=False), encoding="utf-8"
+            )
+        except Exception:
+            pass
+    except Exception:
+        pass
+
+
 def build():
     # 시스템 현황 = '기계 상태'만(봇·스케줄러·예약작업). 각 AI 업무는 G1 오늘의 항로가 단일 출처
     # → 여기서 중복 집계/표시하지 않는다(약속 L01 한 곳만, 2026-06-16 GM 지적).
     systems = collect_processes() + collect_tasks()
-    abnormal = [s["name"] for s in systems if s["state"] == "이상"]
+    bridges = collect_bridges()
+    broken_bridges = [b["name"] for b in bridges if b["state"] == "이상"]
+    abnormal = [s["name"] for s in systems if s["state"] == "이상"] + broken_bridges
     if abnormal:
         summary = "⚠️ 점검 필요: " + ", ".join(abnormal)
     elif any(s["state"] == "불명" for s in systems):
@@ -115,6 +200,7 @@ def build():
         "generated_at_kst": now.strftime("%Y-%m-%d %H:%M"),
         "summary": summary,
         "systems": systems,
+        "bridges": bridges,
     }
 
 
@@ -124,6 +210,9 @@ def main():
     OUT.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
     print(f"[erp_status] wrote {OUT}")
     print(f"[erp_status] summary: {payload['summary']}")
+
+    # 연동 다리 — 새로 깨진 것만 텔레그램 1줄 경고(실패해도 발행 무영향)
+    alert_newly_broken(payload.get("bridges", []))
 
     if "--push" in sys.argv:
         try:
