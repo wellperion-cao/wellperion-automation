@@ -28,10 +28,10 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 .tab.active{background:var(--accent-bg);color:var(--accent)}
 .content{padding:16px 20px 140px;max-width:720px;margin:0 auto}
 /* 가이드 탭 본문 풀폭 (S2 · 운영부 정합 · GM 2026-06-11) */
-#tab-guide,#tab-chem,#tab-manual,#tab-check-m,#tab-check-f{max-width:none;margin-left:0;margin-right:0}
-/* 접수 보드 좌측 정렬 (GM 2026-06-17) */
-#tab-reg{text-align:left}
-#tab-reg #deptRegBoard{text-align:left}
+#tab-guide,#tab-chem,#tab-manual,#tab-check-m,#tab-check-f,#tab-reg{max-width:none;margin-left:0;margin-right:0}
+/* 접수 보드 좌측 정렬·풀폭 (GM 2026-06-17) */
+#tab-reg{text-align:left;width:100%}
+#tab-reg #deptRegBoard{text-align:left;width:100%;max-width:none}
 /* 약품 가이드 탭 — 스코프된 스타일(cg-) · 출처 standalone html 톤을 다크 페이지에 정리 (시우·GM 2026-06-13) */
 #tab-chem .cg-wrap{max-width:1000px;margin:0 auto}
 #tab-chem h2{font-size:20px;margin-bottom:6px}
@@ -3277,6 +3277,7 @@ function renderManualItems(){
       const detHtml=it.detail?it.detail.replace(/\n/g,'<br>'):'';
       const hasDet=!!detHtml;
       const genderLabel=it.gender==='m'?' <span style="font-size:10px;color:var(--blue);background:var(--blue-bg);padding:1px 6px;border-radius:6px;">남</span>':it.gender==='f'?' <span style="font-size:10px;color:var(--orange);background:var(--orange-bg);padding:1px 6px;border-radius:6px;">여</span>':'';
+      const idLabel=' <span style="font-size:10px;color:var(--dim);background:rgba(140,139,131,0.12);padding:1px 6px;border-radius:6px;font-family:monospace;">'+it.id+'</span>';
       const customLabel=(it._custom&&isCustomFresh(it.id))?' <span style="font-size:10px;color:var(--accent);background:var(--accent-bg);padding:1px 6px;border-radius:6px;">추가</span>':'';
       const editedLabel=(it._edited&&isEditFresh(it.id))?' <span style="font-size:10px;color:#e6c84e;background:rgba(230,200,78,0.12);padding:1px 6px;border-radius:6px;">수정됨</span>':'';
       /* 매뉴얼 = 셋업/참조 전용(GM 2026-06-12): 체크박스·완료표시 없음. 체크는 점검 탭에서만. */
@@ -3292,7 +3293,7 @@ function renderManualItems(){
       const _up=idx>0?`<button onclick="event.stopPropagation();moveManualItem('${it.id}',-1)" style="${_mvBtn}" title="위로">▲</button>`:`<button disabled style="${_mvBtn}opacity:.25;cursor:default;">▲</button>`;
       const _dn=idx<items.length-1?`<button onclick="event.stopPropagation();moveManualItem('${it.id}',1)" style="${_mvBtn}" title="아래로">▼</button>`:`<button disabled style="${_mvBtn}opacity:.25;cursor:default;">▼</button>`;
       html+=`<div style="padding:10px 16px;border-bottom:1px solid rgba(61,56,53,0.35);">`;
-      html+=`<div style="${nameCursor}min-width:0;" ${hasDet?'onclick="togManualItem(this)"':''}><div style="${nameStyle}display:flex;align-items:center;gap:6px;justify-content:space-between;"><span>${it.name}${genderLabel}${customLabel}${editedLabel}${(typeof scheduleBadges==='function')?scheduleBadges(it,it.name,it.detail):''}</span>${arrow}</div>`;
+      html+=`<div style="${nameCursor}min-width:0;" ${hasDet?'onclick="togManualItem(this)"':''}><div style="${nameStyle}display:flex;align-items:center;gap:6px;justify-content:space-between;"><span>${it.name}${idLabel}${genderLabel}${customLabel}${editedLabel}${(typeof scheduleBadges==='function')?scheduleBadges(it,it.name,it.detail):''}</span>${arrow}</div>`;
       if(hasDet)html+=`<div class="manual-item-detail" style="font-size:12px;color:var(--dim);margin-top:5px;line-height:1.5;">${detHtml}</div>`;
       html+=`</div>`;
       /* 편집 모드: 항목명 아래 별도 줄에 액션바(▲▼ · 편집 · 삭제) — overflow 잘림 방지, 항상 보임 */
