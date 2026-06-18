@@ -1845,6 +1845,80 @@ def _build_23_body() -> str:
     )
 
 
+# ── 지원부 점검 미완 자동 독려 (오후17시·마감22시·미완시만·하루1회) — 시우 2026-06-18 ──
+# 핵심멤버방(운영 독려 대상). S2 COO 역할원칙: 운영 이슈는 COO가 핵심멤버방 직접 발송 가능.
+CORE_MEMBER_CHAT_ID = -5065206276
+
+
+def _build_nudge_body(shift: str) -> str | None:
+    """지원부 점검 회차(shift) 미완 시 독려 1줄 생성. shift ∈ {'pm','close'}.
+
+    today_live(support) 조회 → 해당 회차만 done/total·성별 분리.
+    조회 실패/None → None(발송 스킵). 완료(done>=total 또는 total==0) → None(침묵).
+    미완이면 독려 문자열 반환(지어내기 금지 — 라이브 GAS 실값만).
+    """
+    if shift not in ("pm", "close"):
+        return None
+    today = datetime.now().strftime("%Y-%m-%d")
+    live = _fetch_support_today_live(today)
+    if live is None:
+        return None  # 조회 실패 → 침묵
+
+    total = live.get(shift + "Total", 0)
+    done = live.get(shift, 0)
+    if total == 0 or done >= total:
+        return None  # 완료/분모없음 → 침묵
+
+    g = live.get("byGender", {})
+    m = g.get("m", {})
+    f = g.get("f", {})
+    mT, m_done = m.get(shift + "Total", 0), m.get(shift, 0)
+    fT, f_done = f.get(shift + "Total", 0), f.get(shift, 0)
+
+    if shift == "pm":
+        label, action = "오후조", "마감 전 점검 부탁드립니다"
+    else:
+        label, action = "마감조", "마감 점검 부탁드립니다"
+
+    return (
+        f"⚠️ [{label}] 지원부 점검 미완 — "
+        f"남 {m_done}/{mT} · 여 {f_done}/{fT} (합 {done}/{total}). {action}.\n"
+        f"🔗 대시보드: {_SUPPORT_DASHBOARD_URL}"
+    )
+
+
+def run_nudge(shift: str) -> None:
+    """독려 디스패치 — 핵심멤버방으로만 발송. 빌더 None이면 침묵(완료/조회실패).
+    하루·shift당 1회(state.json nudge_sent[date] 마커로 dedup). 기존 슬롯 동작 불변."""
+    today = datetime.now().strftime("%Y-%m-%d")
+    label = f"[지원부 독려:{shift}]"
+
+    # dedup — 같은 날·같은 shift 1회만
+    state = read_state()
+    sent_map = state.get("nudge_sent", {})
+    sent_today = sent_map.get(today, [])
+    if shift in sent_today:
+        logger.info(f"{label} 오늘 이미 발송됨 — skip")
+        return
+
+    body = _build_nudge_body(shift)
+    if body is None:
+        logger.info(f"{label} 미완 아님/조회실패 — 침묵(발송 스킵)")
+        return
+
+    success = send_telegram(CORE_MEMBER_CHAT_ID, body)
+    if success:
+        sent_today.append(shift)
+        sent_map[today] = sent_today
+        # 오래된 날짜 정리(최근 7일만 유지) — state 비대화 방지
+        recent = sorted(sent_map.keys())[-7:]
+        state["nudge_sent"] = {k: sent_map[k] for k in recent}
+        write_state(state)
+        logger.info(f"{label} 핵심멤버방 발송 완료 chat_id={CORE_MEMBER_CHAT_ID}")
+    else:
+        logger.error(f"{label} 핵심멤버방 발송 실패 — dedup 미기록(다음 트리거 재시도)")
+
+
 SLOT_BUILDERS = {
     "06": _build_06_body,
     "07s": _build_share_card_body,
@@ -2109,6 +2183,24 @@ def main():
                 coalesce=True,
             )
             logger.info(f"  등록: {slot}시 정각 (misfire_grace_time=600s)")
+
+        # ── 지원부 점검 미완 자동 독려 (시우 2026-06-18) ─────────────────────
+        #   nudge_pm=17:00(오후조)·nudge_close=22:00(마감조 — 23시 요약 전 1시간 여유).
+        #   미완일 때만 핵심멤버방 발송·하루 회차당 1회. 빌더 None이면 침묵.
+        nudge_map = {
+            "nudge_pm": (17, 0, "pm"),
+            "nudge_close": (22, 0, "close"),
+        }
+        for slot, (hour, minute, shift) in nudge_map.items():
+            scheduler.add_job(
+                run_nudge,
+                trigger=CronTrigger(hour=hour, minute=minute, timezone="Asia/Seoul"),
+                args=[shift],
+                id=f"report_{slot}",
+                misfire_grace_time=600,
+                coalesce=True,
+            )
+            logger.info(f"  등록: {slot} {hour:02d}:{minute:02d} 지원부 점검 미완 독려")
 
     logger.info(f"스케줄러 기동 완료. PID={os.getpid()}")
     try:
