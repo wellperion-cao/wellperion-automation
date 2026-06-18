@@ -742,15 +742,15 @@
       <h4>✅ 오늘의 항로 — 완료된 배 (2026-06-19 기준)</h4>
       <p><strong>2026-06-19</strong> ✅ [웰리] PC 종료 영구조치 행동확인 — 오늘밤 22:30 미종료·23:00 보고 생존 실측</p>
       <p><strong>2026-06-19</strong> ✅ [웰리] 같은 실수가 두 번 안 나게 막는 구조 만들기 — 정한 게 실제로 지켜지는지 스스로 잡아주는 장치</p>
+      <p><strong>2026-06-19</strong> ✅ [웰리] 구조0 발산 1건 정리 — 역할별 KPI 단일출처화(S2 HTML 손기록→ssot json 원천+렌더+기계직독)</p>
       <p><strong>2026-06-19</strong> ✅ [웰리] PC 종료 영구조치 행동확인 완료 — INC-002 완전 봉인</p>
       <p><strong>2026-06-19</strong> ✅ [웰리] 외부 금지어 자동점검 게이트 박제 — 재발방지 구조 완결</p>
-      <p><strong>2026-06-18</strong> ✅ [시모] AI 시리즈 후속편 후보 — 전 직원 AI 도입·협업 현장 스토리(→#16 발행완료로 종결)</p>
     </div>
 <!-- AUTO:LATEST-END -->
         <table>
           <tr><th style="width:160px">날짜</th><th>변경 내용</th></tr>
           <!-- AUTO:TABLE-START -->
-      <tr><td><strong>2026-06-19 (항로완료)</strong></td><td>✅ [웰리] PC 종료 영구조치 행동확인 — 오늘밤 22:30 미종료·23:00 보고 생존 실측 · ✅ [웰리] 같은 실수가 두 번 안 나게 막는 구조 만들기 — 정한 게 실제로 지켜지는지 스스로 잡아주는 장치 · ✅ [웰리] PC 종료 영구조치 행동확인 완료 — INC-002 완전 봉인 · ✅ [웰리] 외부 금지어 자동점검 게이트 박제 — 재발방지 …</td></tr>
+      <tr><td><strong>2026-06-19 (항로완료)</strong></td><td>✅ [웰리] PC 종료 영구조치 행동확인 — 오늘밤 22:30 미종료·23:00 보고 생존 실측 · ✅ [웰리] 같은 실수가 두 번 안 나게 막는 구조 만들기 — 정한 게 실제로 지켜지는지 스스로 잡아주는 장치 · ✅ [웰리] 구조0 발산 1건 정리 — 역할별 KPI 단일출처화(S2 HTML 손기록→ssot json 원천+렌더+기계직독) · ✅ [웰리…</td></tr>
       <tr><td><strong>2026-06-18 (항로완료)</strong></td><td>✅ [시모] AI 시리즈 후속편 후보 — 전 직원 AI 도입·협업 현장 스토리(→#16 발행완료로 종결) · ✅ [시모] 마케팅현황 대시보드 개편 — 유형표 5칸(클릭수)·강습 종목별 토글·유입채널 통합·클릭<문의 버그수정·클릭토글 제거 · ✅ [웰리] AI 직독 추가(7 C-Level)+구조0 정합성표 채움+의식적예외 보정 · ✅ [시우] 외부 링크…</td></tr>
       <!-- AUTO:TABLE-END -->
           <tr><td><strong>2026-05-28 (14차)</strong></td><td>공지/안내문 생성(COO 하위) · 오프라인 홍보물 디자인 제작(CMO 하위) 도구 신설 · 공지 서식 v2.0 독립 페이지화 · 회사소개서·전략로드맵 원본 「3. 웰페리온 가이드/회사문서/」로 이관(SSOT 단일화) · C-Level 부팅 R/R Notion API→웰페리온 ERP g10 참조로 전환 · GitHub Pages 워크플로 폴더명 경로 수정 · 사이드바 "공통+7개 C-Level" 라벨 제거</td></tr>
@@ -3506,7 +3506,7 @@ window._regAssign = function(id, category) {
         </div>
         <table>
           <tr><th style="width:120px">핵심역할</th><td>평가/포상 · 채용 · 조직구성</td></tr>
-          <tr><th>담당 KPI</th><td>조직 만족도 · 의사결정 효율성</td></tr>
+          <tr><th>담당 KPI</th><td id="kpi-chro">조직 만족도 · 의사결정 효율성</td></tr>
           <tr><th>실무진</th><td>나우열M</td></tr>
         </table>
         <h4 style="margin-top:16px;">핵심업무</h4>
@@ -3549,7 +3549,7 @@ window._regAssign = function(id, category) {
         </div>
         <table>
           <tr><th style="width:120px">핵심역할</th><td>CS 서비스 고도화 · 서비스 품질 관리</td></tr>
-          <tr><th>담당 KPI</th><td>NPS · 리텐션 · 운영 효율</td></tr>
+          <tr><th>담당 KPI</th><td id="kpi-cpo">NPS · 리텐션 · 운영 효율</td></tr>
           <tr><th>실무진</th><td>임정은M</td></tr>
         </table>
         <h4 style="margin-top:16px;">핵심업무</h4>
@@ -3569,6 +3569,24 @@ window._regAssign = function(id, category) {
       </div>
 
     </div>
+
+<!-- ══ 🎯 역할 KPI 단일출처 렌더 (ssot/kpi.json native 렌더) ══ -->
+<script>
+(function(){
+  var URL='https://raw.githubusercontent.com/wellperion-cao/wellperion-automation/master/ssot/kpi.json';
+  fetch(URL+'?t='+Date.now(),{cache:'no-store'})
+    .then(function(r){return r.json();})
+    .then(function(data){
+      var roles=(data&&data.roles)||{};
+      Object.keys(roles).forEach(function(role){
+        var el=document.getElementById('kpi-'+role);
+        if(el && roles[role] && roles[role].kpi_html){ el.innerHTML=roles[role].kpi_html; }
+      });
+    })
+    .catch(function(){ /* fetch 실패 시 HTML 하드코딩 fallback 유지 */ });
+})();
+</script>
+<!-- ══ /역할 KPI 단일출처 렌더 ══ -->
     <div class="source">SSOT: AI C-Level 협업 매뉴얼 v1.0 + C-Level 실무 가이드라인 v1.1 (2026-04-24) 통합 + AI 운영 원칙·검증 5단계 + 3대 원칙 프레임워크·에이전트 키트 (2026-05-28 g4 흡수) · 관련 메모리 11건 cross-link</div>
     <div style="margin-top:22px; padding:13px 16px; background:#16181c; border-radius:8px; border-left:3px solid var(--accent);">
       <div style="font-size:12px; font-weight:700; color:var(--accent); margin-bottom:6px;">&#9656; Claude CLI 셋업 프롬프트</div>

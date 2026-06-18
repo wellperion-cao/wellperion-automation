@@ -1358,10 +1358,14 @@
     "task_id": "CEO-2026-06-18-KPI-SSOT-DIVERGENCE",
     "clevel": "ceo",
     "title": "[웰리] 구조0 발산 1건 정리 — 역할별 KPI 단일출처화(S2 HTML 손기록→ssot json 원천+렌더+기계직독)",
-    "status": "PENDING",
+    "status": "DONE",
+    "terminal": true,
     "priority": "MEDIUM",
     "enqueued_at": "2026-06-18",
-    "summary": "헌법 구조0 정합성 감사(2026-06-18) 결과 7항 중 KPI만 ❌. 담당 KPI 정의가 S2 본인탭 HTML에만 손기록돼 사람·AI·기계 단일원천 미달. 처방: KPI 정의를 ssot/*.json으로 원천화→S2는 렌더, 기계 직독 전환. 나머지 6항(헌법·약속·incidents·canon·항로L16·할일)은 ✅."
+    "processed_at": "2026-06-19",
+    "summary": "헌법 구조0 정합성 감사(2026-06-18) 결과 7항 중 KPI만 ❌. 담당 KPI 정의가 S2 본인탭 HTML에만 손기록돼 사람·AI·기계 단일원천 미달. 처방: KPI 정의를 ssot/*.json으로 원천화→S2는 렌더, 기계 직독 전환. 나머지 6항(헌법·약속·incidents·canon·항로L16·할일)은 ✅.",
+    "artifact": "[2026-06-19 완결] ssot/kpi.json 신설 — 7역할(웰리·시우·시뽀·시모·시토·시로·시포) 담당 KPI 단일출처화. S2 7개 역할탭의 '담당 KPI' 셀(<td id=kpi-{role}>)을 약속·incidents·canon과 동일한 raw.githubusercontent fetch 패턴으로 kpi.json에서 네이티브 렌더(실패 시 HTML 하드코딩 fallback 유지=무중단). 텍스트 변경 0(전략값 verbatim 보존 — 미세차 없음 대조 확인). 이제 사람(S2 렌더)·AI(kpi.json 직독)·기계(json) 단일원천 → 헌법 구조0 7항 전부 ✅. 검증: json 7역할·HTML 파싱·id 7개·렌더스크립트 1개(중복0)·값보존 실측 PASS.",
+    "next": "표류(완결) — 구조0 정합성 7/7 달성. 옵션 후속: 부팅 직독 목록(약속·incidents·canon 3종)에 kpi.json 1줄 추가해 '4종 직독'으로 명문화 / cto KPI 목표치는 GM 결재 대기(kpi.json 텍스트에 명시 보존)."
   },
   {
     "task_id": "COO-2026-06-18-ADHOC-a066bea7",
