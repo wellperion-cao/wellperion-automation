@@ -8,7 +8,7 @@
     "enqueued_at": "2026-06-18",
     "processed_at": null,
     "note": "북극성('전환 엔진') 직공략 1수. 진단: 전환 측정 파이프는 깔렸으나(UTM·click_stats·대시보드) 전환을 '올리는' 핵심 미착수 — 특히 IG bio에 문의 다리 없음 + 문의 귀속이 폼 '어떻게 알고 오셨나요?' 필드 정본이라 IG 유입이 기타·미상 43%로 샘. 조치: 모바일 링크-인-바이오 허브(cmo/funnel/link.html, Pages 호스팅)에 멤버십·성인·유소년·통합문의 버튼(각 utm_source=instagram&utm_medium=bio + track_click) → GM이 IG bio에 URL 1줄. 브랜드 톤 듀오톤·금지어 0.",
-    "next": "①GM이 @namuk.wellperion bio에 허브 URL 붙임(GM 액션) ②귀속 완성=문의폼 출처 드롭다운 'instagram' 정합/프리필(연계: CMO-2026-06-15-RECEPTION-CHANNEL-DROPDOWN) ③2주 후 IG 클릭·문의 실측으로 전환 상승·기타미상 감소 검증."
+    "next": "[2026-06-19 웰리] ②귀속 택소노미 정합 완료(RECEPTION-CHANNEL-DROPDOWN DONE — 인스타그램 버킷 1:1, IG 문의 즉시 귀속 가능). 남은 잔여=①GM이 @namuk.wellperion bio에 허브 URL 1줄 붙임(GM 액션, 유일 블로커) → ③2주 후 IG 클릭·문의 실측으로 전환 상승·기타미상 감소 검증."
   },
   {
     "task_id": "CEO-2026-06-17-INTEGRATION-HEALTH-GUARD",
@@ -156,12 +156,12 @@
   {
     "task_id": "CPO-2026-06-16-MEMBER-TRIAL-CALENDAR",
     "clevel": "cpo",
-    "status": "PENDING",
+    "status": "IN_PROGRESS",
     "priority": "NORMAL",
     "enqueued_at": "2026-06-16",
     "title": "[시포] 잠재고객 체험·상담·투어 예약 달력 — 신규 문의회원 메뉴(cpo/member/문의회원.html)",
-    "note": "[2026-06-16 GM] 등록前 잠재고객(문의~체험~상담) 관리 페이지 문의회원.html 신설 + 체험/견학/상담 예약 달력. 회원관리.html(등록後)과 분리. 소스=26년 신규문의(견학/상담·체험1/2·진행상황). 퍼널=마케팅→문의→체험/상담투어→등록→회원관리. 설계=cmo/funnel/회원_체험예약_달력_설계.md.",
-    "next": "문의회원.html 신설 + GAS member_calendar + 월캘린더 UI → 라이브 검증."
+    "note": "[2026-06-16 GM] 등록前 잠재고객(문의~체험~상담) 관리 페이지 문의회원.html 신설 + 체험/견학/상담 예약 달력. 회원관리.html(등록後)과 분리. 소스=26년 신규문의(견학/상담·체험1/2·진행상황). 퍼널=마케팅→문의→체험/상담투어→등록→회원관리. 설계=cmo/funnel/회원_체험예약_달력_설계.md. | [2026-06-19 웰리 디스패치·시포] 페이지·UI 빌드 완료: cpo/member/문의회원.html 신설(726줄, 회원관리.html 패턴 차용·월캘린더 이전/다음·오늘강조·빈상태 정직표기·PII마스킹). 부서체계 링크 짝 전수(home 회원모듈 버튼 + 사이드nav CPO 서브 + 내부 복귀네비). HTML 파싱·무손상·스마트따옴표0 검증. GAS member_calendar 코드는 운영가이드 탭에 전문 포함(자리표시자 __MEMBER_CAL_GAS_URL__).",
+    "next": "라이브=GM 액션 잔여: ① Survey.js doGet에 case 'member_calendar'+getMemberCalendar() 추가·스프레드시트ID 교체 후 재배포 ② 배포 URL로 __MEMBER_CAL_GAS_URL__ 치환. 페이지 자체는 push로 라이브(웰리 커밋). GM GAS 배포 시 캘린더 데이터 연결 완료."
   },
   {
     "task_id": "CTO-2026-06-16-SELF-HOSTED-INQUIRY-DB",
@@ -1076,8 +1076,12 @@
     "enqueued_at": "2026-06-15",
     "processed_at": null,
     "title": "[시모/시우 인계] 멤버십 문의시트 유입채널 드롭다운 옵션 10버킷 정합·필수화 점검",
+    "status": "DONE",
+    "terminal": true,
+    "processed_at": "2026-06-19",
     "note": "[정정 06-15] 당초 \"리셉션 시트에 채널 드롭다운 신설\"로 봤으나, 문의 단일 로그=멤버십 문의관리(26) \"26년 신규문의\" 탭이고 이 시트엔 이미 문의채널 드롭다운이 존재. 따라서 신설 불요. 잔여=① 드롭다운 옵션이 표준 10버킷(apps_script_survey.js _canonicalChannel_)과 정합하는지 ② 빈칸 방지(필수) 확인뿐. 과거 기타·미상 43% 중 온라인묶음 26%는 복구불가(범위 외). | [2026-06-17 시우→시모 인계] GM 지적: 유입채널 10버킷 표준은 CMO 채널표준화 소유. 리셉션 입력칸이나 채널 택소노미 정본이 CMO라 인계.",
-    "next": "옵션 정합 확인되면 종결"
+    "artifact": "[2026-06-19 웰리 디스패치·시모] 정합 점검 완료, 코드 수정 0(이미 정합). 표준 10버킷(apps_script_survey.js CANONICAL_CHANNELS: 네이버·동부이촌동 커뮤니티·인스타그램·카카오톡·당근마켓·소개지인·기존과거회원·오프라인·유선전화·기타미상) ↔ 폼 출처 선택지 10개 1:1 정합 실측. '인스타그램' 버킷 존재 → IG bio 경유 문의 즉시 정확 귀속 가능(기타·미상 43% 축소 토대 완비). 필수입력=GAS setRequired(true) 설계 확인(구글폼 실제 토글 ON은 GM 육안 1회 권장). cmo/survey ↔ .deploy-funnel 채널 로직 동기 확인.",
+    "next": "표류(완결) — IG 귀속 택소노미 정합 완료. IG-BIO-INQUIRY-BRIDGE 남은 잔여=GM이 IG bio에 허브 URL 1줄 붙이는 액션뿐."
   },
   {
     "task_id": "CPO-2026-06-15-INQUIRY-STAGE-INPUT",

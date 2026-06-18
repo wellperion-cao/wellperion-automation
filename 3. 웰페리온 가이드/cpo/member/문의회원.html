@@ -1,0 +1,726 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>웰페리온 문의회원 — AI CPO</title>
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" rel="stylesheet">
+<style>
+:root{
+  --bg:#221F20;--paper:#2a2725;--text:#f5f2ef;--dim:#8c8b83;
+  --accent:#B79F8A;--accent-bg:rgba(183,159,138,0.12);--border:#3d3835;
+  --green:#6abf7b;--green-bg:rgba(106,191,123,0.12);
+  --red:#ED5B3F;--red-bg:rgba(237,91,63,0.12);
+  --yellow:#e6c84e;--yellow-bg:rgba(230,200,78,0.12);
+  --blue:#5b9fd5;--blue-bg:rgba(91,159,213,0.12);
+  --purple:#a78bda;--purple-bg:rgba(167,139,218,0.12);
+  --orange:#e6944e;--orange-bg:rgba(230,148,78,0.12);
+  --teal:#4ec4c4;--teal-bg:rgba(78,196,196,0.12);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
+  background:var(--bg);color:var(--text);line-height:1.6;font-size:15px;min-height:100vh;
+}
+
+/* ── 헤더 ── */
+.sticky-top{position:sticky;top:0;z-index:10;background:var(--bg);border-bottom:1px solid var(--border)}
+.header{background:var(--paper);padding:12px 20px}
+.header-top{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.header h1{font-size:17px;font-weight:700;margin:0}
+.header .sub{font-size:12px;color:var(--dim);margin-top:2px}
+.badge{display:inline-block;font-size:10px;font-weight:700;padding:3px 10px;border-radius:12px;
+  background:var(--teal-bg);color:var(--teal)}
+.header-actions{display:flex;gap:6px;margin-left:auto}
+.action-btn{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;
+  padding:4px 10px;border-radius:8px;background:var(--accent-bg);color:var(--accent);
+  border:1px solid rgba(183,159,138,0.3);text-decoration:none;cursor:pointer;
+  font-family:inherit;transition:background 0.15s}
+.action-btn:hover{background:rgba(183,159,138,0.22)}
+
+/* ── 탭 ── */
+.tabs{display:flex;gap:4px;background:var(--bg);padding:8px 20px;overflow-x:auto;
+  -webkit-overflow-scrolling:touch;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{padding:8px 18px;font-size:14px;font-weight:600;color:var(--dim);background:none;
+  border:none;border-radius:8px;cursor:pointer;font-family:inherit;white-space:nowrap;flex-shrink:0}
+.tab.active{background:var(--teal-bg);color:var(--teal)}
+
+/* ── 컨텐츠 영역 ── */
+.content{padding:20px 20px 80px;max-width:760px;margin:0 auto}
+.pane{display:none}
+.pane.active{display:block}
+
+/* ── 공통 카드 ── */
+.card{background:var(--paper);border:1px solid var(--border);border-radius:12px;
+  padding:16px 18px;margin-bottom:14px}
+.card-title{font-size:15px;font-weight:700;margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.card-title .icon{font-size:18px}
+
+/* ── KPI 그리드 ── */
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:14px}
+.kpi-box{background:var(--paper);border:1px solid var(--border);border-radius:12px;
+  padding:14px 16px;text-align:center}
+.kpi-label{font-size:11px;color:var(--dim);font-weight:600;margin-bottom:6px;letter-spacing:0.03em}
+.kpi-value{font-size:26px;font-weight:800;line-height:1.1}
+.kpi-value.teal{color:var(--teal)}
+.kpi-value.green{color:var(--green)}
+.kpi-value.accent{color:var(--accent)}
+.kpi-value.purple{color:var(--purple)}
+.kpi-note{font-size:11px;color:var(--dim);margin-top:4px}
+
+/* ── 섹션 레이블 ── */
+.section-label{font-size:12px;font-weight:700;color:var(--dim);letter-spacing:0.08em;
+  text-transform:uppercase;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--border)}
+
+/* ── 인포 박스 ── */
+.info-box{border-radius:10px;padding:12px 16px;font-size:13px;line-height:1.7;margin-bottom:12px}
+.info-box.teal{background:var(--teal-bg);border:1px solid rgba(78,196,196,0.3);color:var(--text)}
+.info-box.accent{background:var(--accent-bg);border:1px solid rgba(183,159,138,0.3);color:var(--text)}
+.info-box.yellow{background:var(--yellow-bg);border:1px solid rgba(230,200,78,0.3);color:var(--text)}
+.info-box strong{font-weight:700}
+
+/* ── 퍼널 스테퍼 ── */
+.funnel-steps{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px;align-items:center}
+.funnel-step{font-size:12px;font-weight:700;padding:5px 13px;border-radius:20px;
+  background:var(--bg);border:1px solid var(--border);color:var(--dim);white-space:nowrap}
+.funnel-step.current{background:var(--teal-bg);border-color:rgba(78,196,196,0.4);color:var(--teal)}
+.funnel-step.done{background:var(--green-bg);border-color:rgba(106,191,123,0.3);color:var(--green)}
+.funnel-arrow{color:var(--dim);font-size:12px}
+
+/* ── 문의 목록 테이블 ── */
+.prospects-table{width:100%;border-collapse:collapse;font-size:13px}
+.prospects-table th{background:var(--accent-bg);color:var(--accent);padding:9px 12px;
+  text-align:left;font-weight:700;border-bottom:1px solid var(--border);white-space:nowrap}
+.prospects-table td{padding:9px 12px;border-bottom:1px solid rgba(61,56,53,0.35);vertical-align:middle}
+.prospects-table tr:last-child td{border-bottom:none}
+.prospects-table tr:hover td{background:rgba(255,255,255,0.02)}
+.status-chip{display:inline-block;font-size:11px;font-weight:700;padding:2px 9px;border-radius:10px;white-space:nowrap}
+.status-chip.new{background:var(--blue-bg);color:var(--blue)}
+.status-chip.contact{background:var(--yellow-bg);color:var(--yellow)}
+.status-chip.reserved{background:var(--teal-bg);color:var(--teal)}
+.status-chip.visited{background:var(--purple-bg);color:var(--purple)}
+.status-chip.joined{background:var(--green-bg);color:var(--green)}
+.status-chip.lost{background:var(--red-bg);color:var(--red)}
+
+/* ── 캘린더 ── */
+.cal-nav{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.cal-nav-title{font-size:16px;font-weight:800;flex:1;text-align:center}
+.cal-nav-btn{width:32px;height:32px;border-radius:8px;background:var(--accent-bg);
+  color:var(--accent);border:1px solid rgba(183,159,138,0.3);cursor:pointer;
+  font-size:16px;display:flex;align-items:center;justify-content:center;
+  font-family:inherit;transition:background 0.15s}
+.cal-nav-btn:hover{background:rgba(183,159,138,0.22)}
+
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin-bottom:10px}
+.cal-day-label{text-align:center;font-size:11px;font-weight:700;color:var(--dim);
+  padding:6px 2px;letter-spacing:0.04em}
+.cal-day-label:first-child{color:var(--red)}
+.cal-day-label:last-child{color:var(--blue)}
+
+.cal-cell{min-height:64px;background:var(--paper);border:1px solid var(--border);
+  border-radius:8px;padding:5px 6px;cursor:default;transition:border-color 0.15s}
+.cal-cell:hover{border-color:var(--accent)}
+.cal-cell.empty{background:transparent;border-color:transparent;pointer-events:none}
+.cal-cell.today{border-color:var(--teal);box-shadow:0 0 0 1px var(--teal) inset}
+.cal-cell.has-event{cursor:pointer}
+.cal-date{font-size:12px;font-weight:700;margin-bottom:3px;line-height:1}
+.cal-cell.today .cal-date{color:var(--teal);font-weight:800}
+.cal-cell:first-child .cal-date,.cal-sun .cal-date{color:var(--red)}
+.cal-chips{display:flex;flex-direction:column;gap:2px}
+.cal-chip{font-size:10px;font-weight:700;padding:1px 5px;border-radius:4px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.4}
+.cal-chip.tour{background:var(--purple-bg);color:var(--purple)}
+.cal-chip.experience{background:var(--teal-bg);color:var(--teal)}
+
+/* ── 클릭된 날 패널 ── */
+.day-panel{background:var(--paper);border:1px solid var(--border);border-radius:12px;
+  padding:14px 16px;margin-top:10px;display:none}
+.day-panel.open{display:block}
+.day-panel-title{font-size:14px;font-weight:700;margin-bottom:10px;color:var(--teal)}
+.day-item{display:flex;align-items:flex-start;gap:10px;padding:8px 0;
+  border-bottom:1px solid rgba(61,56,53,0.35)}
+.day-item:last-child{border-bottom:none}
+.day-item-kind{font-size:11px;font-weight:700;padding:2px 8px;border-radius:8px;
+  white-space:nowrap;flex-shrink:0}
+.day-item-kind.tour{background:var(--purple-bg);color:var(--purple)}
+.day-item-kind.experience{background:var(--teal-bg);color:var(--teal)}
+.day-item-info{font-size:13px;line-height:1.6}
+.day-item-name{font-weight:700}
+.day-item-meta{font-size:12px;color:var(--dim)}
+
+/* ── 로딩/빈 상태 ── */
+.empty-state{text-align:center;padding:40px 20px;color:var(--dim)}
+.empty-state-icon{font-size:36px;margin-bottom:12px}
+.empty-state-title{font-size:15px;font-weight:700;margin-bottom:6px;color:var(--text)}
+.empty-state-desc{font-size:13px;line-height:1.7}
+.loading-spinner{display:inline-block;width:20px;height:20px;border:2px solid var(--border);
+  border-top-color:var(--teal);border-radius:50%;animation:spin 0.7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── 인쇄 ── */
+@media print{
+  .sticky-top,.tabs,.action-btn,.cal-nav-btn,.day-panel{display:none!important}
+  body{background:#fff;color:#000}
+  .card,.kpi-box,.cal-cell{border-color:#ccc;background:#f9f9f9}
+  .pane{display:block!important}
+}
+@media(max-width:520px){
+  .kpi-grid{grid-template-columns:repeat(2,1fr)}
+  .cal-cell{min-height:48px}
+  .cal-chip{font-size:9px}
+  .prospects-table{font-size:12px}
+}
+</style>
+</head>
+<body>
+
+<div class="sticky-top">
+  <div class="header">
+    <div class="header-top">
+      <div>
+        <h1>문의회원 <span class="badge">AI CPO v1.0</span></h1>
+        <div class="sub">잠재고객 관리 · 체험/견학/상담 예약 달력 — 담당 실무: 임정은M</div>
+      </div>
+      <div class="header-actions">
+        <a class="action-btn" href="회원관리.html">등록後 회원관리 →</a>
+        <a class="action-btn" href="../../../wellperion_guide(main).html">ERP 홈</a>
+        <button class="action-btn" onclick="window.print()">인쇄</button>
+      </div>
+    </div>
+  </div>
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('calendar',this)">예약 달력</button>
+    <button class="tab" onclick="switchTab('prospects',this)">문의 목록</button>
+    <button class="tab" onclick="switchTab('guide',this)">운영 가이드</button>
+  </div>
+</div>
+
+<div class="content">
+
+  <!-- ══════════════════════════════ 퍼널 위치 공통 표시 ══════════════════════════════ -->
+  <div class="funnel-steps" style="margin-bottom:18px">
+    <span class="funnel-step done">마케팅</span>
+    <span class="funnel-arrow">→</span>
+    <span class="funnel-step current">문의 · 체험/상담투어</span>
+    <span class="funnel-arrow">→</span>
+    <span class="funnel-step">등록</span>
+    <span class="funnel-arrow">→</span>
+    <span class="funnel-step">회원관리</span>
+  </div>
+
+  <!-- ══════════════════════════════ 1. 예약 달력 ══════════════════════════════ -->
+  <div id="pane-calendar" class="pane active">
+
+    <div class="info-box teal" style="margin-bottom:16px">
+      <strong>데이터 소스</strong> — 26년 신규문의 시트(견학/상담 일정·체험1/2 확정시간). GAS 연동 후 자동 표시.<br>
+      이름은 성+** 마스킹. PII(전화·풀네임) 미표시. v1 = 읽기 전용.
+    </div>
+
+    <!-- KPI 요약 -->
+    <div class="kpi-grid" id="calKpiGrid">
+      <div class="kpi-box">
+        <div class="kpi-label">이번 달 체험 예약</div>
+        <div class="kpi-value teal" id="kpiExperience">—</div>
+        <div class="kpi-note" id="kpiExperienceNote">데이터 연동 후 집계</div>
+      </div>
+      <div class="kpi-box">
+        <div class="kpi-label">이번 달 견학/상담</div>
+        <div class="kpi-value purple" id="kpiTour">—</div>
+        <div class="kpi-note" id="kpiTourNote">데이터 연동 후 집계</div>
+      </div>
+      <div class="kpi-box">
+        <div class="kpi-label">이번 달 방문 완료</div>
+        <div class="kpi-value green" id="kpiVisited">—</div>
+        <div class="kpi-note">진행상황 = 방문</div>
+      </div>
+      <div class="kpi-box">
+        <div class="kpi-label">전환율 (방문→가입)</div>
+        <div class="kpi-value accent" id="kpiConvert">—</div>
+        <div class="kpi-note">추후 측정 예정</div>
+      </div>
+    </div>
+
+    <!-- 캘린더 -->
+    <div class="card">
+      <div class="cal-nav">
+        <button class="cal-nav-btn" id="prevMonthBtn" onclick="changeMonth(-1)">&#8249;</button>
+        <div class="cal-nav-title" id="calTitle">—</div>
+        <button class="cal-nav-btn" id="nextMonthBtn" onclick="changeMonth(1)">&#8250;</button>
+      </div>
+
+      <div class="cal-grid" id="calGrid">
+        <div class="cal-day-label">일</div>
+        <div class="cal-day-label">월</div>
+        <div class="cal-day-label">화</div>
+        <div class="cal-day-label">수</div>
+        <div class="cal-day-label">목</div>
+        <div class="cal-day-label">금</div>
+        <div class="cal-day-label">토</div>
+      </div>
+
+      <!-- 로딩 / 빈 상태 -->
+      <div id="calStatus" class="empty-state">
+        <div class="loading-spinner" id="calSpinner"></div>
+        <div class="empty-state-title" id="calStatusTitle" style="margin-top:12px">데이터 불러오는 중…</div>
+        <div class="empty-state-desc" id="calStatusDesc">GAS 연동 URL이 설정되면 자동 표시됩니다.</div>
+      </div>
+
+      <!-- 날짜 클릭 패널 -->
+      <div class="day-panel" id="dayPanel">
+        <div class="day-panel-title" id="dayPanelTitle"></div>
+        <div id="dayPanelList"></div>
+      </div>
+    </div>
+
+    <div class="info-box yellow">
+      <strong>범례</strong> —
+      <span style="display:inline-block;font-size:11px;font-weight:700;padding:1px 7px;border-radius:4px;background:var(--teal-bg);color:var(--teal);margin-right:6px">체험</span>
+      체험1/2 확정시간 칸
+      &nbsp;|&nbsp;
+      <span style="display:inline-block;font-size:11px;font-weight:700;padding:1px 7px;border-radius:4px;background:var(--purple-bg);color:var(--purple);margin-right:6px">견학/상담</span>
+      시설견학 및 상담 일정 칸
+      &nbsp;|&nbsp;
+      <span style="border:1px solid var(--teal);border-radius:4px;padding:1px 6px;font-size:11px;font-weight:700;color:var(--teal)">오늘</span>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════ 2. 문의 목록 ══════════════════════════════ -->
+  <div id="pane-prospects" class="pane">
+
+    <div class="info-box teal" style="margin-bottom:16px">
+      <strong>소스</strong> — 26년 신규문의 시트. 이름 마스킹(성+**). 전화 미표시.<br>
+      GAS 연동 후 자동 갱신. 현재 연동 전: 빈 상태 표시.
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span class="icon">📋</span>잠재고객 현황 <span id="prospectsCount" style="font-size:13px;font-weight:400;color:var(--dim);margin-left:6px">— 명</span></div>
+      <div style="overflow-x:auto">
+        <table class="prospects-table">
+          <thead>
+            <tr>
+              <th>이름</th>
+              <th>관심 프로그램</th>
+              <th>견학/상담 일정</th>
+              <th>체험 일정</th>
+              <th>진행상황</th>
+              <th>문의일</th>
+            </tr>
+          </thead>
+          <tbody id="prospectsBody">
+            <tr>
+              <td colspan="6">
+                <div class="empty-state" style="padding:24px 0">
+                  <div class="empty-state-icon">📭</div>
+                  <div class="empty-state-title">GAS 연동 전</div>
+                  <div class="empty-state-desc">GM이 GAS를 배포하고 URL을 교체하면 자동 표시됩니다.<br>자리표시자: <code style="font-size:11px;background:var(--bg);padding:2px 6px;border-radius:4px">__MEMBER_CAL_GAS_URL__</code></div>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span class="icon">📊</span>진행상황 분포</div>
+      <div id="statusDist" style="font-size:13px;color:var(--dim);line-height:2.2">
+        GAS 연동 후 집계 예정.<br>
+        신규 / 응대 / 예약 / 방문 / 가입 / 이탈 — 6단계 추적.
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════ 3. 운영 가이드 ══════════════════════════════ -->
+  <div id="pane-guide" class="pane">
+
+    <div class="info-box accent" style="margin-bottom:16px">
+      문의 → 체험/견학/상담 → 등록 전 구간 CPO SOP. 등록 後 단계는
+      <a href="회원관리.html" style="color:var(--accent);font-weight:700">회원관리.html</a>에서.
+    </div>
+
+    <div class="section-label">퍼널 단계별 SOP</div>
+
+    <div class="card">
+      <div class="card-title"><span class="icon">📥</span>1단계 — 문의 접수</div>
+      <div style="font-size:13px;line-height:1.9">
+        1. 공식 진입점: <a href="http://wellperion.com/ko/inquiry/" target="_blank" rel="noopener" style="color:var(--teal)">http://wellperion.com/ko/inquiry/</a> 단일<br>
+        2. 접수 후 <strong>24시간 내 회신</strong> 의무 (담당: 임정은M)<br>
+        3. 26년 신규문의 시트에 진행상황 → <strong>신규</strong> 로 기록<br>
+        4. 개인 번호(010-…) 외부 노출 금지. CTA 단일 유지.
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span class="icon">📅</span>2단계 — 체험/견학/상담 예약</div>
+      <div style="font-size:13px;line-height:1.9">
+        1. 시설 견학·상담: 시트 <strong>시설견학 및 상담 일정</strong> 칸에 날짜 기록<br>
+        2. 체험1: <strong>체험1 확정시간</strong> 칸 / 체험2: <strong>시설 체험 일정2</strong> 칸<br>
+        3. 무조건 <strong>사전 예약제</strong> — 워크인 불가<br>
+        4. 진행상황 → <strong>예약</strong> 으로 업데이트<br>
+        5. 운영 가능 시간: 평일 06:00–22:30 / 주말·공휴일 08:00–20:00
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span class="icon">🏃</span>3단계 — 방문 완료 → 등록 전환</div>
+      <div style="font-size:13px;line-height:1.9">
+        1. 방문 완료 후 진행상황 → <strong>방문</strong><br>
+        2. 상담 → 가입 권유 → 가입 시 진행상황 → <strong>가입</strong><br>
+        3. 가입 확정 시 <a href="회원관리.html" style="color:var(--accent);font-weight:700">회원관리.html</a>(등록後)로 이관<br>
+        4. 이탈 시 진행상황 → <strong>이탈</strong> + 사유 기록
+      </div>
+    </div>
+
+    <div class="section-label" style="margin-top:20px">GAS 연동 안내 (GM 잔여 작업)</div>
+    <div class="card">
+      <div class="card-title"><span class="icon">🔧</span>GAS 배포 및 URL 교체</div>
+      <div style="font-size:13px;line-height:1.9;color:var(--text)">
+        1. 아래 GAS 코드(member_calendar 액션)를 Survey.js에 추가 후 새 버전으로 배포<br>
+        2. 배포된 웹앱 URL을 복사<br>
+        3. 이 파일(<code style="font-size:11px;background:var(--bg);padding:2px 5px;border-radius:4px">문의회원.html</code>)에서<br>
+        &nbsp;&nbsp;<code style="font-size:11px;background:var(--bg);padding:2px 5px;border-radius:4px">__MEMBER_CAL_GAS_URL__</code> 를 배포 URL로 교체<br>
+        4. 저장·커밋·푸시 후 ERP 라이브 확인
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span class="icon">📄</span>GAS member_calendar 코드 (Survey.js 추가분)</div>
+      <pre style="font-size:11px;line-height:1.7;color:var(--dim);overflow-x:auto;white-space:pre-wrap;word-break:break-word"><code>/**
+ * member_calendar — 26년 신규문의 시트에서 예약 행 추출
+ * 액션: ?action=member_calendar&amp;month=YYYY-MM (month 생략 시 당월)
+ * PII: 이름 마스킹(성+**), 전화 미포함
+ * 캐시: 300초
+ *
+ * 추가 위치: 기존 Survey.js doGet() switch(action) 블록 내
+ * case 'member_calendar':
+ *   return ContentService
+ *     .createTextOutput(JSON.stringify(getMemberCalendar(params.month)))
+ *     .setMimeType(ContentService.MimeType.JSON);
+ */
+function getMemberCalendar(monthParam) {
+  var cache = CacheService.getScriptCache();
+  var cacheKey = 'member_cal_' + (monthParam || 'current');
+  var cached = cache.get(cacheKey);
+  if (cached) return JSON.parse(cached);
+
+  var ss = SpreadsheetApp.openById('12AWcAlg______GnTk'); // 26년 신규문의 스프레드시트 ID
+  var sheet = ss.getSheetByName('26년 신규문의') || ss.getSheets()[0];
+  var data = sheet.getDataRange().getValues();
+  var headers = data[0];
+
+  // 컬럼 인덱스 찾기
+  function colIdx(name) {
+    for (var i = 0; i &lt; headers.length; i++) {
+      if (String(headers[i]).trim() === name) return i;
+    }
+    return -1;
+  }
+  var iName     = colIdx('이름');
+  var iProgram  = colIdx('관심 있는 프로그램 종류');
+  var iStatus   = colIdx('진행상황');
+  var iTs       = colIdx('타임스탬프');
+  var iTourDate = colIdx('시설견학 및 상담 일정 (날짜 기록)');
+  var iExp1Date = colIdx('체험1 확정시간');
+  var iExp2Date = colIdx('시설 체험 일정2(날짜 기록)');
+
+  // 대상 월 결정
+  var now = new Date();
+  var targetYear = now.getFullYear();
+  var targetMonth = now.getMonth() + 1;
+  if (monthParam) {
+    var parts = String(monthParam).split('-');
+    if (parts.length === 2) {
+      targetYear = parseInt(parts[0], 10);
+      targetMonth = parseInt(parts[1], 10);
+    }
+  }
+
+  function _parseAnyDate_(val) {
+    if (!val) return null;
+    var s = String(val).trim();
+    // 한글 날짜: 2026년 6월 5일
+    var m = s.match(/(\d{4})년\s*(\d{1,2})월\s*(\d{1,2})일/);
+    if (m) return new Date(parseInt(m[1]),parseInt(m[2])-1,parseInt(m[3]));
+    // ISO: 2026-06-05
+    m = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (m) return new Date(parseInt(m[1]),parseInt(m[2])-1,parseInt(m[3]));
+    // 스프레드시트 Date 객체
+    if (val instanceof Date &amp;&amp; !isNaN(val.getTime())) return val;
+    return null;
+  }
+
+  function maskName(name) {
+    var s = String(name || '').trim();
+    if (!s) return '';
+    return s.charAt(0) + '**';
+  }
+
+  function toISO(d) {
+    if (!d) return null;
+    var yy = d.getFullYear();
+    var mm = String(d.getMonth()+1).padStart(2,'0');
+    var dd = String(d.getDate()).padStart(2,'0');
+    return yy + '-' + mm + '-' + dd;
+  }
+
+  function inTargetMonth(d) {
+    if (!d) return false;
+    return d.getFullYear() === targetYear &amp;&amp; (d.getMonth()+1) === targetMonth;
+  }
+
+  var events = [];
+  var rows = [];
+
+  for (var r = 1; r &lt; data.length; r++) {
+    var row = data[r];
+    var name = maskName(iName &gt;= 0 ? row[iName] : '');
+    var program = iProgram &gt;= 0 ? String(row[iProgram] || '') : '';
+    var status = iStatus &gt;= 0 ? String(row[iStatus] || '') : '';
+    var ts = iTs &gt;= 0 ? _parseAnyDate_(row[iTs]) : null;
+
+    // 견학/상담
+    var tourDate = iTourDate &gt;= 0 ? _parseAnyDate_(row[iTourDate]) : null;
+    if (tourDate &amp;&amp; inTargetMonth(tourDate)) {
+      events.push({date:toISO(tourDate),kind:'견학·상담',name:name,program:program,status:status});
+    }
+    // 체험1
+    var exp1Date = iExp1Date &gt;= 0 ? _parseAnyDate_(row[iExp1Date]) : null;
+    if (exp1Date &amp;&amp; inTargetMonth(exp1Date)) {
+      events.push({date:toISO(exp1Date),kind:'체험',name:name,program:program,status:status});
+    }
+    // 체험2
+    var exp2Date = iExp2Date &gt;= 0 ? _parseAnyDate_(row[iExp2Date]) : null;
+    if (exp2Date &amp;&amp; inTargetMonth(exp2Date)) {
+      events.push({date:toISO(exp2Date),kind:'체험',name:name,program:program,status:status});
+    }
+
+    // 목록용 행 (전 월 포함)
+    rows.push({
+      name:name, program:program, status:status,
+      tourDate:toISO(tourDate), exp1Date:toISO(exp1Date), exp2Date:toISO(exp2Date),
+      timestamp:toISO(ts)
+    });
+  }
+
+  var result = {ok:true, month:targetYear+'-'+String(targetMonth).padStart(2,'0'),
+    events:events, rows:rows};
+  cache.put(cacheKey, JSON.stringify(result), 300);
+  return result;
+}</code></pre>
+    </div>
+
+  </div>
+
+</div><!-- /content -->
+
+<script>
+/* ── GAS URL 자리표시자 — GM이 배포 후 아래 값을 교체 ── */
+var GAS_URL = '__MEMBER_CAL_GAS_URL__';
+
+/* ── 탭 전환 ── */
+function switchTab(id, btn) {
+  document.querySelectorAll('.pane').forEach(function(p){p.classList.remove('active');});
+  document.querySelectorAll('.tab').forEach(function(t){t.classList.remove('active');});
+  document.getElementById('pane-' + id).classList.add('active');
+  btn.classList.add('active');
+}
+
+/* ── 캘린더 상태 ── */
+var calYear, calMonth;
+var calEvents = {}; /* date -> [{kind,name,program,status}] */
+
+(function init() {
+  var now = new Date();
+  calYear = now.getFullYear();
+  calMonth = now.getMonth() + 1;
+  renderCalendarShell();
+  loadCalendarData();
+})();
+
+function changeMonth(delta) {
+  calMonth += delta;
+  if (calMonth > 12) { calMonth = 1; calYear++; }
+  if (calMonth < 1)  { calMonth = 12; calYear--; }
+  calEvents = {};
+  closeDayPanel();
+  renderCalendarShell();
+  loadCalendarData();
+}
+
+function renderCalendarShell() {
+  var title = calYear + '년 ' + calMonth + '월';
+  document.getElementById('calTitle').textContent = title;
+
+  var grid = document.getElementById('calGrid');
+  /* 기존 날짜 셀만 제거 (헤더 7개 유지) */
+  var cells = grid.querySelectorAll('.cal-cell');
+  cells.forEach(function(c){c.remove();});
+
+  var today = new Date();
+  var todayStr = today.getFullYear() + '-' +
+    String(today.getMonth()+1).padStart(2,'0') + '-' +
+    String(today.getDate()).padStart(2,'0');
+
+  var firstDay = new Date(calYear, calMonth - 1, 1).getDay(); /* 0=일 */
+  var daysInMonth = new Date(calYear, calMonth, 0).getDate();
+
+  /* 빈 셀 */
+  for (var i = 0; i < firstDay; i++) {
+    var empty = document.createElement('div');
+    empty.className = 'cal-cell empty';
+    grid.appendChild(empty);
+  }
+
+  for (var d = 1; d <= daysInMonth; d++) {
+    var dateStr = calYear + '-' + String(calMonth).padStart(2,'0') + '-' + String(d).padStart(2,'0');
+    var cell = document.createElement('div');
+    cell.className = 'cal-cell';
+    if (dateStr === todayStr) cell.classList.add('today');
+    cell.dataset.date = dateStr;
+
+    var dateDiv = document.createElement('div');
+    dateDiv.className = 'cal-date';
+    dateDiv.textContent = d;
+    cell.appendChild(dateDiv);
+
+    var chipsDiv = document.createElement('div');
+    chipsDiv.className = 'cal-chips';
+    chipsDiv.id = 'chips-' + dateStr;
+    cell.appendChild(chipsDiv);
+
+    cell.addEventListener('click', function(e){
+      var dt = this.dataset.date;
+      if (calEvents[dt] && calEvents[dt].length) openDayPanel(dt);
+    }.bind(cell));
+
+    grid.appendChild(cell);
+  }
+}
+
+function loadCalendarData() {
+  var statusEl = document.getElementById('calStatus');
+  var spinnerEl = document.getElementById('calSpinner');
+  var titleEl = document.getElementById('calStatusTitle');
+  var descEl = document.getElementById('calStatusDesc');
+
+  statusEl.style.display = 'block';
+  spinnerEl.style.display = 'inline-block';
+  titleEl.textContent = '데이터 불러오는 중…';
+  descEl.textContent = '';
+
+  if (GAS_URL === '__MEMBER_CAL_GAS_URL__') {
+    spinnerEl.style.display = 'none';
+    titleEl.textContent = 'GAS 미연동 상태';
+    descEl.textContent = 'GM이 GAS를 배포하고 URL을 교체하면 예약이 자동 표시됩니다.';
+    return;
+  }
+
+  var monthStr = calYear + '-' + String(calMonth).padStart(2, '0');
+  fetch(GAS_URL + '?action=member_calendar&month=' + monthStr)
+    .then(function(r){ return r.json(); })
+    .then(function(data){
+      if (!data.ok) throw new Error('GAS 응답 오류');
+      processCalendarData(data);
+      statusEl.style.display = 'none';
+    })
+    .catch(function(err){
+      spinnerEl.style.display = 'none';
+      titleEl.textContent = '데이터 로드 실패';
+      descEl.textContent = err.message || 'GAS URL 또는 배포 상태를 확인하세요.';
+    });
+}
+
+function processCalendarData(data) {
+  calEvents = {};
+  (data.events || []).forEach(function(ev){
+    if (!calEvents[ev.date]) calEvents[ev.date] = [];
+    calEvents[ev.date].push(ev);
+  });
+
+  /* 캘린더 칩 렌더 */
+  Object.keys(calEvents).forEach(function(date){
+    var chipsDiv = document.getElementById('chips-' + date);
+    if (!chipsDiv) return;
+    var cell = chipsDiv.parentElement;
+    cell.classList.add('has-event');
+    calEvents[date].forEach(function(ev){
+      var chip = document.createElement('div');
+      chip.className = 'cal-chip ' + (ev.kind === '체험' ? 'experience' : 'tour');
+      chip.textContent = ev.kind + ' ' + ev.name;
+      chipsDiv.appendChild(chip);
+    });
+  });
+
+  /* KPI */
+  var expCount = 0, tourCount = 0, visitCount = 0;
+  (data.events || []).forEach(function(ev){
+    if (ev.kind === '체험') expCount++;
+    else tourCount++;
+    if (ev.status === '방문' || ev.status === '가입') visitCount++;
+  });
+  document.getElementById('kpiExperience').textContent = expCount || '0';
+  document.getElementById('kpiTour').textContent = tourCount || '0';
+  document.getElementById('kpiVisited').textContent = visitCount || '0';
+  document.getElementById('kpiExperienceNote').textContent = expCount ? '건' : '예약 없음';
+  document.getElementById('kpiTourNote').textContent = tourCount ? '건' : '예약 없음';
+
+  /* 문의 목록 */
+  var rows = data.rows || [];
+  document.getElementById('prospectsCount').textContent = rows.length + ' 명';
+  var tbody = document.getElementById('prospectsBody');
+  if (rows.length === 0) return;
+  tbody.innerHTML = '';
+  rows.forEach(function(row){
+    var statusClass = {
+      '신규':'new','응대':'contact','예약':'reserved',
+      '방문':'visited','가입':'joined','이탈':'lost'
+    }[row.status] || 'new';
+    var tr = document.createElement('tr');
+    tr.innerHTML =
+      '<td style="font-weight:700">' + esc(row.name) + '</td>' +
+      '<td>' + esc(row.program) + '</td>' +
+      '<td>' + (row.tourDate || '—') + '</td>' +
+      '<td>' + [row.exp1Date, row.exp2Date].filter(Boolean).join(', ') + (![row.exp1Date,row.exp2Date].some(Boolean)?'—':'') + '</td>' +
+      '<td><span class="status-chip ' + statusClass + '">' + esc(row.status || '신규') + '</span></td>' +
+      '<td style="color:var(--dim);font-size:12px">' + (row.timestamp || '—') + '</td>';
+    tbody.appendChild(tr);
+  });
+}
+
+function openDayPanel(date) {
+  var panel = document.getElementById('dayPanel');
+  var titleEl = document.getElementById('dayPanelTitle');
+  var listEl = document.getElementById('dayPanelList');
+  var parts = date.split('-');
+  titleEl.textContent = parts[1] + '월 ' + parseInt(parts[2],10) + '일 예약';
+  listEl.innerHTML = '';
+  (calEvents[date] || []).forEach(function(ev){
+    var item = document.createElement('div');
+    item.className = 'day-item';
+    item.innerHTML =
+      '<span class="day-item-kind ' + (ev.kind==='체험'?'experience':'tour') + '">' + esc(ev.kind) + '</span>' +
+      '<div class="day-item-info">' +
+        '<div class="day-item-name">' + esc(ev.name) + '</div>' +
+        '<div class="day-item-meta">' + esc(ev.program || '—') + ' · 진행상황: ' + esc(ev.status || '—') + '</div>' +
+      '</div>';
+    listEl.appendChild(item);
+  });
+  panel.classList.add('open');
+}
+
+function closeDayPanel() {
+  document.getElementById('dayPanel').classList.remove('open');
+}
+
+function esc(s) {
+  return String(s||'')
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;');
+}
+</script>
+</body>
+</html>
