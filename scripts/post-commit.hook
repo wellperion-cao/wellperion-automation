@@ -40,6 +40,15 @@ else
 fi
 
 if [ -n "$PYBIN" ]; then
+  # ① auto-log: CLI ad-hoc 실작업 커밋이면 G1(_queue.json)에 입항완료 배를
+  #    자동 등록(chore(queue) 커밋 1개 생성 가능). push 전에 실행해 둘 다 올라가게.
+  #    재귀 base case: 이 스크립트가 만드는 chore(queue) 커밋은 SKIP 규칙(2.b)에
+  #    걸려 다시 기록하지 않으므로 무한루프 없음. fail-open(항상 exit 0).
+  AUTOLOG="$REPO_ROOT/scripts/auto_log_adhoc_to_queue.py"
+  if [ -f "$AUTOLOG" ]; then
+    PYTHONUTF8=1 "$PYBIN" "$AUTOLOG" || true
+  fi
+  # ② push: 위 chore(queue) 커밋까지 포함해 origin 에 올린다(INC-006).
   PYTHONUTF8=1 "$PYBIN" "$PUSHER" || true
 fi
 
