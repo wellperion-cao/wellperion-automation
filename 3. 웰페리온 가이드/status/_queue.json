@@ -259,11 +259,13 @@
     "task_id": "CEO-2026-06-16-PC-SHUTDOWN-VERIFY-OVERNIGHT",
     "clevel": "ceo",
     "title": "[웰리] PC 종료 영구조치 행동확인 — 오늘밤 22:30 미종료·23:00 보고 생존 실측",
-    "status": "PENDING",
+    "status": "DONE",
+    "terminal": true,
     "priority": "NORMAL",
     "enqueued_at": "2026-06-16",
-    "note": "[INC-002 봉인 게이트] 진범 22:30 작업 삭제·00:30 단일화 완료(2026-06-16). 내일 아침 켜자마자 이벤트로그 1074/6006 + TaskScheduler oplog로 ① 22:30에 안 꺼졌는지 ② 00:30에 단일 종료됐는지 ③ 23:00 텔레그램 보고가 나갔는지 실측. 셋 다 OK면 INC-002 완전 봉인(현 GUARDED 확정).",
-    "next": "실측 OK → INC-002 종결 보고 / 이상 시 재진단."
+    "processed_at": "2026-06-19",
+    "artifact": "[INC-002 완전 봉인] 최근 3일 System 이벤트로그(1074/6006/6005) + TaskScheduler 실측으로 3게이트 전부 통과 확인. ① 22:30 shutdown 이벤트 0건 = 진범 SYSTEM 작업 'cto-daily-pc-power-cycle-shutdown' 삭제 효과 확정 ② 06-17·06-19 모두 00:30:01 shutdown.exe(WELLPERIONGM) 단일 정상종료, Auto-Shutdown-2330 LastRun=2026-06-19 00:30:01·NextRun=2026-06-20 00:30(단일 잔존) ③ PC 00:30까지 생존→23:00 보고시점 ON·05:55 자동부팅 정상 = 보고 생존. incidents.json INC-002 검증증거에 행동확인 봉인 기록.",
+    "next": "표류(완결) — INC-002 GUARDED 확정. 이 건이 막혀있던 CEO-2026-06-15-SSOT-TRUTH-UNIFICATION(재발방지 구조) 진행중 배의 다음 칸(공식값 통합·금지어 자동점검) 해제됨."
   },
   {
     "task_id": "CMO-2026-06-16-AISERIES-STAFF-AI-ADOPTION",
@@ -1012,7 +1014,7 @@
     "priority": "HIGH",
     "enqueued_at": "2026-06-15",
     "artifact": "회사 곳곳에 따로따로 베껴 적혀 있던 값(대표 전화·문의 주소·보고용 번호 등)을 한 곳에서만 관리하도록 바꿨습니다. 그리고 문제가 생기면 한 곳에 적고, 글로만 적는 게 아니라 '다시는 못 생기게 막음'까지 끝낸 뒤에야 닫는 장치를 새로 만들었습니다. 오늘 문제 다섯 개 중 네 개는 막음 완료, 하나(PC 꺼짐)는 진행 중. 현황은 전용 화면에서 한눈에 봅니다.",
-    "next": "PC 꺼짐 문제 마무리(내일 아침) → 회사 공식값을 모두 한 곳으로 모으기 → 외부에 쓰면 안 되는 단어(예: '피트니스') 자동 점검 추가"
+    "next": "[2026-06-19] PC 꺼짐 문제 마무리 완료(INC-002 완전 봉인). 남은 칸: 회사 공식값을 모두 한 곳으로 모으기(canon_values 통합) → 외부 금지어(예: '피트니스') 자동 점검 추가."
   },
   {
     "task_id": "CEO-2026-06-15-PC-SHUTDOWN-MINUS1H",
