@@ -16,8 +16,15 @@
 ## 구조 0 — 지향점 정합성 체크 (만들기 전 먼저, 이후 상시 게이트)
 모든 진실은 사람·AI·기계가 '같은 한 원천'을 봐야 한다. 안 맞으면 그 SSOT는 미완이다.
 
-| 항목(헌법·파이프라인·KPI·할일·incidents…) | 사람이 보는 곳 | AI가 읽는 곳 | 기계가 읽는 곳 | 같은 원천? |
+| 항목 | 사람이 보는 곳 | AI가 읽는 곳 | 기계가 읽는 곳 | 같은 원천? |
 |---|---|---|---|---|
+| 헌법 | S2 ceo탭(렌더) + `ssot/CONSTITUTION.md` | `ssot/CONSTITUTION.md` 부팅 직독(7 C-Level) | `welly_boot_guard.py` 등 코드가드 | ✅ |
+| 약속 | S2 공통탭(렌더) | `ssot/약속.json` 부팅 직독 | `hangro_board.py` 등 직독 | ✅ |
+| incidents | S2 + `ssot/dashboard.html` | `ssot/incidents.json` 직독 | `precommit_incident_guard.py` | ✅ |
+| canon_values | S2(렌더) | `ssot/canon_values.json` 직독 | `canon.py`·`divergence_scan.py` | ✅ |
+| 항로 양식(L16) | G1 보드 · CLAUDE.md §3-1 | `ssot/약속.json` L16 직독 | `hangro_board.py`(L16 동일값) | ✅ |
+| 할일(_queue) | G1 항로 보드 | `status/_queue.json` 직독 | `hangro_board.py`·`sync_queue_mirror.py` | ✅ |
+| KPI | S2 본인탭 HTML(손기록) | 없음(json 원천 없음) | 없음(정의 직독 불가) | ❌ |
 
 - 세 칸이 한 원천 → ✅ / 한 칸이라도 다르면 ❌ = 통합 대상(복사본 제거 또는 생성·직독 전환).
 - 규칙: 세 칸이 안 맞으면 '완료'로 닫지 않는다. 본 헌법·`incidents.json` 자체도 이 표를 통과해야 한다.
@@ -30,7 +37,7 @@
 
 ## 구조 2 — SSOT 재발방지 로그 (`/ssot/incidents.json`)
 목적: 모든 문제·실수를 한 곳에 적고, 반드시 '구조 차단'으로 전환해 두 번 일어나지 않게 한다.
-- 항목(고정): `id · date · 증상 · 본질(root 한 줄) · 뿌리분류(복사/문서박제/검증멈춤/정합어긋남) · 차단조치(코드·훅·테스트·스캔) · 상태(OPEN/GUARDED) · 검증증거`.
+- 항목(고정): `id · date · 증상 · 본질(root 한 줄) · 뿌리분류(복사/문서박제/검증멈춤/정합어긋남/의식적예외) · 차단조치(코드·훅·테스트·스캔) · 상태(OPEN/GUARDED) · 검증증거`.
 - 파이프라인(순서 강제):
   1. 사건 발생 → 즉시 OPEN 기록
   2. 본질·뿌리 분류
