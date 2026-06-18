@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import argparse
 import datetime as dt
+from datetime import timezone
 import io
 import json
 import re
@@ -80,6 +81,78 @@ def _is_g1_owner(owner: str) -> bool:
     if any(x in o for x in ["AI CEO", "AI CMO", "AI CTO", "AI COO", "AI CFO", "AI CPO", "AI CHRO"]):
         return True
     return False
+
+
+# ── 텍스트 정제 헬퍼 ──────────────────────────────────────────────────────────
+_RE_META_BRACKET = re.compile(r"^\s*\[[^\]]*\]\s*")   # 맨 앞 대괄호 메타 (연속 반복 제거)
+_RE_NOISE_EMOJI  = re.compile(r"[🔄🌟]\s*")            # 잡음 이모지
+
+
+def _clean_summary(text: str) -> str:
+    """summary/note 날것 → 메타 제거·정제된 텍스트.
+
+    1) 맨 앞 대괄호 메타 반복 제거: [이관 …], [2026-06-16 GM], [INC-002 …] 등
+    2) 잡음 이모지 제거: 🔄 🌟
+    3) 연속 공백·개행 → 한 칸, strip
+    """
+    s = str(text or "").strip()
+    # 대괄호 메타 반복 제거
+    while True:
+        s2 = _RE_META_BRACKET.sub("", s)
+        if s2 == s:
+            break
+        s = s2.strip()
+    # 잡음 이모지 제거
+    s = _RE_NOISE_EMOJI.sub("", s)
+    # 연속 공백·개행 정리
+    s = re.sub(r"[\r\n]+", " ", s)
+    s = re.sub(r" {2,}", " ", s)
+    return s.strip()
+
+
+def _first_sentence(text: str) -> str:
+    """정제된 텍스트의 첫 문장(. ! 。 — 또는 개행 기준)."""
+    m = re.search(r"[.!。—\n]", text)
+    return text[: m.start()].strip() if m else text.strip()
+
+
+def _truncate_word(text: str, max_len: int, suffix: str = "…") -> str:
+    """어절(공백) 경계에서 max_len 이하로 자르기. 중간 글자 잘림 금지."""
+    if len(text) <= max_len:
+        return text
+    cut = text[:max_len]
+    # 마지막 공백 위치에서 자르기
+    sp = cut.rfind(" ")
+    if sp > max_len // 2:
+        cut = cut[:sp]
+    return cut.rstrip() + suffix
+
+
+def _derive_desc(item: dict) -> str:
+    """간단설명 파생: 명시 필드 우선, 없으면 정제 summary 첫 문장 45자 컷."""
+    # 선택 필드 간단설명·핵심조언 override (향후 배 등록 시 직접 채움)
+    explicit = str(item.get("간단설명") or "").strip()
+    if explicit:
+        return explicit
+    raw = str(item.get("_raw_summary") or "").strip()
+    if not raw:
+        return ""
+    cleaned = _clean_summary(raw)
+    first = _first_sentence(cleaned)
+    return _truncate_word(first, 45)
+
+
+def _derive_advice(item: dict) -> str:
+    """핵심조언 파생: 명시 필드 우선, 없으면 정제 summary 전체 70자 컷. 날것 덤프·중간 잘림 절대 금지."""
+    # 선택 필드 간단설명·핵심조언 override (향후 배 등록 시 직접 채움)
+    explicit = str(item.get("핵심조언") or "").strip()
+    if explicit:
+        return explicit
+    raw = str(item.get("_raw_summary") or "").strip()
+    if not raw:
+        return ""
+    cleaned = _clean_summary(raw)
+    return _truncate_word(cleaned, 70)
 
 
 # ── 날짜 유틸 ──────────────────────────────────────────────────────────────
@@ -220,8 +293,11 @@ def fetch_queue_items() -> list[dict]:
             "needs_gm_appr": False,
             "terminal": bool(q.get("terminal", False)),
             "next":     str(q.get("next") or "").strip(),
-            # 핵심조언 = note 또는 summary 중 채워진 것 (표류 렌더에서 사용)
-            "핵심조언": str(q.get("note") or q.get("summary") or "").strip()[:80],
+            # 선택 필드 간단설명·핵심조언 override (향후 배 등록 시 직접 채움)
+            "간단설명": str(q.get("간단설명") or "").strip(),
+            "핵심조언": str(q.get("핵심조언") or "").strip(),
+            # 정제 원본 보존 — _derive_desc/_derive_advice가 파생 시 사용
+            "_raw_summary": str(q.get("note") or q.get("summary") or "").strip(),
             "source":   "queue",
         })
     return items
@@ -236,7 +312,7 @@ def _is_recent(date_str: str, days: int = 3) -> bool:
     try:
         from datetime import datetime, timedelta
         d = datetime.strptime(date_str[:10], "%Y-%m-%d").date()
-        kst_today = (datetime.utcnow() + timedelta(hours=9)).date()
+        kst_today = (datetime.now(timezone.utc) + timedelta(hours=9)).date()
         delta = (kst_today - d).days
         return 0 <= delta <= days
     except Exception:
@@ -367,8 +443,8 @@ def _item_to_row(it: dict, ship_col_extra: str = "") -> tuple[str, str, str, str
     due   = it.get("end_date", "")
     due_s = f" ~{due[5:10]}" if due and len(due) >= 10 else ""
     title_col  = f"{title}{badges}{due_s}".strip()
-    desc       = str(it.get("간단설명") or "").strip()
-    advice     = str(it.get("핵심조언") or "").strip()
+    desc       = _derive_desc(it)
+    advice     = _derive_advice(it)
     ship_col   = f"{icon} {ship_col_extra}".strip() if ship_col_extra else icon
     return (ship_col, nick, title_col, desc, advice)
 
@@ -478,7 +554,7 @@ def build_board(gas_items: list[dict], queue_items: list[dict]) -> tuple[str, di
             done_rows.append(_item_to_row(it, ship_col_extra=tag))
         for it in secs["drift"]:
             # 표류: 🌀 꼬리표, 핵심조언에 👉 촉구 반드시 포함 (약속 L16)
-            advice = str(it.get("핵심조언") or "").strip()
+            advice = _derive_advice(it)
             advice_col = f"{advice} — 👉 다음 뭐 할지 정하세요" if advice else "👉 다음 뭐 할지 정하세요"
             ship  = it["_ship"]
             icon  = ship["icon"]
