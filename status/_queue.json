@@ -1070,15 +1070,12 @@
   {
     "task_id": "COO-2026-06-15-RECEPTION-CHANNEL-DROPDOWN",
     "clevel": "cmo",
-    "status": "PENDING",
-    "terminal": false,
-    "priority": "⛵돛단배",
-    "enqueued_at": "2026-06-15",
-    "processed_at": null,
-    "title": "[시모/시우 인계] 멤버십 문의시트 유입채널 드롭다운 옵션 10버킷 정합·필수화 점검",
     "status": "DONE",
     "terminal": true,
+    "priority": "⛵돛단배",
+    "enqueued_at": "2026-06-15",
     "processed_at": "2026-06-19",
+    "title": "[시모/시우 인계] 멤버십 문의시트 유입채널 드롭다운 옵션 10버킷 정합·필수화 점검",
     "note": "[정정 06-15] 당초 \"리셉션 시트에 채널 드롭다운 신설\"로 봤으나, 문의 단일 로그=멤버십 문의관리(26) \"26년 신규문의\" 탭이고 이 시트엔 이미 문의채널 드롭다운이 존재. 따라서 신설 불요. 잔여=① 드롭다운 옵션이 표준 10버킷(apps_script_survey.js _canonicalChannel_)과 정합하는지 ② 빈칸 방지(필수) 확인뿐. 과거 기타·미상 43% 중 온라인묶음 26%는 복구불가(범위 외). | [2026-06-17 시우→시모 인계] GM 지적: 유입채널 10버킷 표준은 CMO 채널표준화 소유. 리셉션 입력칸이나 채널 택소노미 정본이 CMO라 인계.",
     "artifact": "[2026-06-19 웰리 디스패치·시모] 정합 점검 완료, 코드 수정 0(이미 정합). 표준 10버킷(apps_script_survey.js CANONICAL_CHANNELS: 네이버·동부이촌동 커뮤니티·인스타그램·카카오톡·당근마켓·소개지인·기존과거회원·오프라인·유선전화·기타미상) ↔ 폼 출처 선택지 10개 1:1 정합 실측. '인스타그램' 버킷 존재 → IG bio 경유 문의 즉시 정확 귀속 가능(기타·미상 43% 축소 토대 완비). 필수입력=GAS setRequired(true) 설계 확인(구글폼 실제 토글 ON은 GM 육안 1회 권장). cmo/survey ↔ .deploy-funnel 채널 로직 동기 확인.",
     "next": "표류(완결) — IG 귀속 택소노미 정합 완료. IG-BIO-INQUIRY-BRIDGE 남은 잔여=GM이 IG bio에 허브 URL 1줄 붙이는 액션뿐."
@@ -1500,5 +1497,18 @@
     "artifact": "7역할 담당 KPI를 S2 HTML 손기록→ssot/kpi.json 원천화. 약속·incidents·canon과\n동일 fetch 패턴으로 S2 역할탭이 네이티브 렌더(실패 시 하드코딩 fallback).\n텍스트 변경 0(전략값 verbatim). 사람·AI·기계 단일원천 → 구조0 정합 7/7 ✅.\nCEO-2026-06-18-KPI-SSOT-DIVERGENCE DONE. (CLI ad-hoc · 커밋 4993f9af)",
     "next": "🌀 표류 — 다음 미정 (필요 시 GM·웰리/담당 C-Level 지정)",
     "adhoc_commit": "4993f9af42c8ed0098b4f932dba8547b69f97094"
+  },
+  {
+    "task_id": "CEO-2026-06-19-ADHOC-e02291c2",
+    "clevel": "ceo",
+    "title": "[웰리] 전환 퍼널 2배 디스패치 — IG 귀속 정합 확인 + 체험예약 달력 페이지 신설",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-06-19",
+    "processed_at": "2026-06-19",
+    "artifact": "[웰리 충돌·우선순위 체크 후 자율 디스패치]\n시모: 문의 유입채널 10버킷 ↔ 폼 출처 1:1 정합 실측(인스타그램 버킷 존재 →\nIG bio 문의 즉시 귀속). 코드 0, RECEPTION-CHANNEL-DROPDOWN DONE.\n시포: cpo/member/문의회원.html 신설(등록前 잠재고객·월 예약달력), 부서체계\n링크 짝 전수. 페이지=push 라이브, GAS member_calendar 배포는 GM 잔여. (CLI ad-hoc · 커밋 e02291c2)",
+    "next": "🌀 표류 — 다음 미정 (필요 시 GM·웰리/담당 C-Level 지정)",
+    "adhoc_commit": "e02291c2eec2b8c8f0840c7a94f349ffb37163f1"
   }
 ]
