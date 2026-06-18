@@ -3398,7 +3398,7 @@ window._regAssign = function(id, category) {
           <tr><td>GM 텔레그램 [승인] 후 자동 발행 → 웰리 대조로 발행완료</td><td>승인 없이 초안 직접 채널 업로드</td></tr>
           <tr><td>톤: 절제된 고급감 · 경험 중심 · "스포츠클럽" 호칭</td><td>"피트니스" 표현 사용</td></tr>
           <tr><td>CTA = 한·영 2줄 표준 (문의 : / (한) wellperion.com/ko/inquiry / (영) wellperion.com/en/inquiry)</td><td>개인 전화번호(010-…) 본문·캡션 노출</td></tr>
-          <tr><td>콘텐츠 CMO-001·CMO-005 SSOT 본문 patch 후 +0.1 버전업</td><td>유사 건 별도 신규 기획 등록</td></tr>
+          <tr><td>업무는 <code>_queue.json</code> 본인 '배'로 기록·커밋(L15) · 콘텐츠는 기존 기획 수정 우선</td><td>유사 건 별도 신규 기획·중복 배 남발</td></tr>
         </table>
         <!-- ── /실무가이드라인 v1.1 흡수 ── -->
 
@@ -3407,7 +3407,7 @@ window._regAssign = function(id, category) {
         <div class="callout" style="background:#1a2a1a;border-left:3px solid #059669;margin-bottom:12px;"><strong>CMO 고유 운영 원칙</strong> — 흩어진 메모리를 본 탭으로 흡수(2026-06-03). 공통 원칙은 <strong>공통 탭</strong>이 단일 원본, 여기는 <strong>CMO 역할 한정분</strong>.</div>
         <table>
           <tr><th style="width:200px">원칙</th><th>내용</th></tr>
-          <tr><td>작업 SSOT 2레코드</td><td>CMO 모든 작업 = <strong>CMO-001</strong>(자동 업로드 인프라) + <strong>CMO-005</strong>(콘텐츠 기획·초안) 두 SSOT 본문 patch + 버전 +0.1로 진화. 본질적 신규 영역만 신규기획 허용. 등록 전 아카이브 선행 조회 의무.</td></tr>
+          <tr><td>업무 SSOT (약속 L15)</td><td>시모 모든 업무 = <strong><code>status/_queue.json</code> 본인 '배'</strong> 단일 기록 — 사소한 것도 적고 진행하며 즉시 커밋·푸시(G1 단일 진실, <strong>큐에 없으면 항로에도 없다</strong>). 콘텐츠는 신규 남발 금지 — 기존 기획·본문 수정 우선(등록 전 아카이브 선행 조회).</td></tr>
           <tr><td>콘텐츠 발행 게이트</td><td>발행 게이트 = <strong>GM 텔레그램 [승인]</strong>(M5 무폴링·텔레그램이 유일 승인 경로). CMO 자체 발행 판단 금지. '반려→재가공' 루프 = GM→CMO. 게시·임시저장 본문은 <strong>최종본 블록만</strong> 추출(기획안·초안 업로드 금지). 발행 후 <strong>웰리 IG↔M5 대조 → 발행완료</strong>.</td></tr>
           <tr><td>4채널 종착지</td><td>네이버 블로그·카페·당근 = GM 승인 후 <strong>자동 임시저장 → 자동 발행</strong>(회수·정정만 GM 직접). IG namuk.wellperion = Playwright Persistent Context + GM 승인 게이트(Meta Graph API 폐기). 전 채널 M5 검수큐 단일 경유.</td></tr>
           <tr><td>IG 발행 검증 3종</td><td>스크립트 성공출력·회수 URL 믿지 말 것. ① 프로필 그리드 실등장(오늘 신규 shortcode) ② M5 배포본 노출(review_queue.json git push 필수) ③ 텔레그램 실수신 — 3종 동시 확인.</td></tr>
