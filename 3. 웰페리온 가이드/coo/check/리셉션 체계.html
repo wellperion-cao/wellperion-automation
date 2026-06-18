@@ -202,4 +202,5 @@ document.getElementById('tabs').innerHTML=TABS.map((t,i)=>
   `<div class="tab ${i===0?'active':''}" onclick="go('${t[0]}',this)"><span class="dot"></span>${t[1]}<span class="c">${DATA[t[0]].rows.length}</span></div>`).join("");
 function go(id,el){[...document.getElementById('tabs').children].forEach(c=>c.classList.remove('active'));if(el)el.classList.add('active');
   document.getElementById('panel').innerHTML=statStrip(id)+tableHtml(id);render(id);}
-go('men',document.querySe
+go('men',document.querySelector('.tab'));
+</script></body></html>
