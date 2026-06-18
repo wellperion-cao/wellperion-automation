@@ -25,6 +25,17 @@
     "next": "보안 재설계 = 시토 북극성 '보안 철저' 항로로 승계. 회원 개인정보 보호는 자체 문의DB(CTO-2026-06-16-SELF-HOSTED-INQUIRY-DB)와 묶어 큰 틀에서 재설계."
   },
   {
+    "task_id": "CTO-2026-06-18-PII-PROTECTION-REDESIGN",
+    "clevel": "cto",
+    "title": "[시토] 회원 개인정보 보호 큰 틀 재설계 — 무인증 노출 근본 차단(인증·접근통제 아키텍처)",
+    "status": "PENDING",
+    "priority": "HIGH",
+    "enqueued_at": "2026-06-18",
+    "note": "[2026-06-18 GM] 토큰 게이트(부분 발효)는 페이지 잠김으로 폐기·롤백(서버 TOKEN_ENFORCE 양 GAS 껐음 → 현재 회원 개인정보 이름·연락처가 다시 무인증 공개 상태 = 의도된 임시). GM 지시='부분 게이트 말고 더 큰 틀로 재설계'. 범위=문의·VOC·회원 데이터 전체의 인증·접근통제 아키텍처(누가·어떻게 보나)를 한 틀로. 자체 문의 DB(CTO-2026-06-16-SELF-HOSTED-INQUIRY-DB)와 묶어 설계. 시토 운영 헌장 축6 준수=라이브 발효는 GM go+즉시 역롤백. 교훈 메모리 feedback_security_live_activation_needs_gm_go.",
+    "next": "GM 착수 신호 시: architect로 큰 틀 설계(인증방식·저장소·열람 권한·발효 게이트) → GM 방향 결재 → 단계 구현. 현재는 목표·범위 박제(대기).",
+    "depends_on": "GM 착수 신호 + 설계 방향 결정"
+  },
+  {
     "task_id": "CEO-2026-06-17-G1-DATA-INTEGRITY-FIX",
     "clevel": "ceo",
     "title": "[웰리] G1 항로 데이터 정합 4문제 수정 — 큐 404 회귀(항로20·완료54 복구)+결재 진행중 총수+INC-007",
