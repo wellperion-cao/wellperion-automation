@@ -1373,5 +1373,18 @@
     "artifact": "post-commit 훅 단일 초크포인트에 auto_log_adhoc_to_queue.py 배선.\n실작업 커밋이면 _queue.json 끝에 입항완료 배(DONE/terminal) append 후\nchore(queue) 커밋 생성 → push 체인이 origin 반영. 자동발행·큐·merge 커밋은\nSKIP(재귀 base case). clevel 귀속=커밋내용 우선(닉네임>역할토큰>active_clevel).\nGitLock 임계구역·멱등(adhoc_commit)·fail-open(항상 exit 0).\n@ (CLI ad-hoc · 커밋 6c3189da)",
     "next": "🌀 표류 — 다음 미정 (필요 시 GM·웰리/담당 C-Level 지정)",
     "adhoc_commit": "6c3189da24f34b4682af4ac6ca40607b0f383444"
+  },
+  {
+    "task_id": "CEO-2026-06-18-ADHOC-a444e775",
+    "clevel": "ceo",
+    "title": "[웰리] [시우] 자동로깅 귀속 폴백 강화 — 세션마커 폐지·기본 ceo + 오귀속 1건 정정",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-06-18",
+    "processed_at": "2026-06-18",
+    "artifact": "멀티세션 공유 저장소에서 .omc/state/active_clevel 폴백이 토큰 없는 타\nC-Level 커밋을 오귀속(feat(헌법) 전사작업→coo). 폴백 제거, 귀속은 커밋\n토큰(닉네임·역할)만, 없으면 ceo(웰리). b88fe42a 헌법 배 coo→ceo 정정. (CLI ad-hoc · 커밋 a444e775)",
+    "next": "🌀 표류 — 다음 미정 (필요 시 GM·웰리/담당 C-Level 지정)",
+    "adhoc_commit": "a444e7759b77178b2d91228d3eae2f803d6054b6"
   }
 ]
