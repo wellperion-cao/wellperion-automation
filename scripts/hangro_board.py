@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+﻿#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
 scripts/hangro_board.py — 🧭 오늘의 항로 보드 자동 생성기 (2026-06-07)
@@ -323,37 +323,57 @@ def _classify(items: list[dict]) -> dict[str, list[dict]]:
     return sections
 
 
-# ── 렌더 한 줄 ────────────────────────────────────────────────────────────
-def _render_line(item: dict, show_status: bool = True) -> str:
-    ship = item["_ship"]
-    icon = ship["icon"]
-    title = item["title"]
-    owner = item["owner"]
-    st    = item["status"]
-    due   = item["end_date"][:10] if item["end_date"] else ""
-
-    # 상태 아이콘 (아이콘 표준 A안) — 진행중은 난이도별 배(ship 아이콘)로 표시
-    if st in STATUS_INPROGRESS or st.upper() in STATUS_INPROGRESS:
-        st_icon = icon
-    else:
-        st_icon = STATUS_ICON.get(st, STATUS_ICON.get(st.upper(), "?"))
-
-    # 담당 suffix — 식별자 있으면 생략
-    if has_clevel_id(title):
-        owner_part = ""
-    else:
-        short = owner.replace("김남욱", "").replace("GM", "GM").strip() or owner[:6]
-        owner_part = f" [{short}]" if short else ""
-
-    badges = (" 🌟" if ship.get("northstar") else "") + (" 🔴" if ship.get("urgent") else "")
-    due_part = f" ~{due[5:]}" if due else ""  # MM-DD만
-
-    if show_status:
-        return f"  {icon} {title}{owner_part}{badges}{due_part}  {st_icon}"
-    return f"  {icon} {title}{owner_part}{badges}{due_part}"
+# ── 닉네임 매핑 (clevel 필드 → 닉네임, 약속 L16) ──────────────────
+CLEVEL_NICK: dict[str, str] = {
+    "CEO": "웰리",   "AI CEO": "웰리",
+    "CMO": "시모",   "AI CMO": "시모",
+    "COO": "시우",   "AI COO": "시우",
+    "CTO": "시토",   "AI CTO": "시토",
+    "CPO": "시포",   "AI CPO": "시포",
+    "CFO": "시뽀",   "AI CFO": "시뽀",
+    "CHRO": "시로",  "AI CHRO": "시로",
+}
 
 
-# ── 박스표 ─────────────────────────────────────────────────────────────────
+def _nick(owner: str) -> str:
+    """clevel 필드 → 닉네임. 이미 닉네임이거나 GM이면 그대로."""
+    u = owner.strip().upper()
+    for k, v in CLEVEL_NICK.items():
+        if k in u:
+            return v
+    if "김남욱" in owner or "GM" in owner.upper():
+        return "GM"
+    return owner[:4] if owner else "?"
+
+
+def _md_table(rows: list[tuple[str, str, str, str, str]]) -> str:
+    """마크다운 5칸 표: 배 | 담당 | 진행명 | 간단설명 | 본질에 대한 핵심조언"""
+    if not rows:
+        return "| — | — | (없음) | | |\n"
+    header = "| 배 | 담당 | 진행명 | 간단설명 | 본질에 대한 핵심조언 |"
+    sep    = "|---|---|---|---|---|"
+    body   = "\n".join(f"| {r[0]} | {r[1]} | {r[2]} | {r[3]} | {r[4]} |" for r in rows)
+    return f"{header}\n{sep}\n{body}\n"
+
+
+def _item_to_row(it: dict, ship_col_extra: str = "") -> tuple[str, str, str, str, str]:
+    """아이템 dict → 5-tuple for _md_table.
+    ship_col_extra: 꼬리표 (예: '보류', '🔗', '🌀') — 배 칸 아이콘 뒤에 붙음."""
+    ship  = it["_ship"]
+    icon  = ship["icon"]
+    nick  = _nick(str(it.get("owner", "")))
+    title = str(it.get("title", ""))
+    badges = ("🔴" if ship.get("urgent") else "") + ("🌟" if ship.get("northstar") else "")
+    due   = it.get("end_date", "")
+    due_s = f" ~{due[5:10]}" if due and len(due) >= 10 else ""
+    title_col  = f"{title}{badges}{due_s}".strip()
+    desc       = str(it.get("간단설명") or "").strip()
+    advice     = str(it.get("핵심조언") or "").strip()
+    ship_col   = f"{icon} {ship_col_extra}".strip() if ship_col_extra else icon
+    return (ship_col, nick, title_col, desc, advice)
+
+
+# ── 박스표 (요약 카운터용) ────────────────────────────────────────────────
 def _box_table(rows: list[tuple[str, str]]) -> str:
     if not rows:
         return ""
@@ -371,45 +391,48 @@ def _box_table(rows: list[tuple[str, str]]) -> str:
     return "\n".join(lines)
 
 
-# ── 메인 렌더 ─────────────────────────────────────────────────────────────
+# ── 메인 렌더 (3섹터 마크다운 표, 약속 L16) ─────────────────────
 def build_board(gas_items: list[dict], queue_items: list[dict]) -> tuple[str, dict]:
-    """보드 텍스트 + 섹션 dict 반환."""
+    """보드 텍스트 + 섹션 dict 반환.
+    3섹터: 🚢 진행중 / ⚓ 대기중 / 🏁 입항 완료 (오늘)
+    표 칼럼(5개): 배 | 담당 | 진행명 | 간단설명 | 본질에 대한 핵심조언
+    배 칸=난이도 배 아이콘만 · 상태는 섹터 제목에만 · 담당=닉네임."""
     all_items = gas_items + queue_items
     secs = _classify(all_items)
 
-    today = dt.date.today().strftime("%Y-%m-%d")
+    today  = dt.date.today().strftime("%Y-%m-%d")
     wd_kor = ["월", "화", "수", "목", "금", "토", "일"][dt.date.today().weekday()]
 
-    n_urgent = len(secs["urgent"])
-    n_today  = len(secs["today"])
-    n_appr   = len(secs["appr"])
+    n_urgent   = len(secs["urgent"])
+    n_appr     = len(secs["appr"])
     n_inflight = len(secs["appr_inflight"])
-    n_done   = len(secs["done"])
-    n_drift  = len(secs["drift"])
-    n_total  = n_urgent + n_today + n_appr
+    n_done     = len(secs["done"])
+    n_drift    = len(secs["drift"])
 
-    _rows = [
-        ("🔴 급한 입항 (마감임박)",  str(n_urgent)),
-        ("🧭 오늘의 항로 (진행·대기)", str(n_today)),
-        ("🔴 GM 결재 대기",          str(n_appr)),
+    inprog  = [it for it in secs["today"] if it["status"] in STATUS_INPROGRESS or it["status"].upper() in STATUS_INPROGRESS]
+    waiting = [it for it in secs["today"] if it not in inprog]
+    n_total = n_urgent + len(inprog) + len(waiting) + n_appr
+
+    _cnt_rows = [
+        ("🚢 진행중",              str(len(inprog))),
+        ("⚓ 대기중",               str(len(waiting))),
+        ("🏁 입항 완료 (오늘)", str(n_done + n_drift)),
+        ("🔴 급한 입항 (마감임박)", str(n_urgent)),
+        ("🔴 GM 결재 대기",        str(n_appr)),
     ]
     if n_inflight:
-        _rows.append(("⏳ 결재 진행 중 (타 결재자)", str(n_inflight)))
-    _rows += [
-        ("🏁 완료",                 str(n_done)),
-    ]
+        _cnt_rows.append(("⏳ 결재 진행 중 (타 결재자)", str(n_inflight)))
     if n_drift:
-        _rows.append(("🌀 표류 (다음 미정)", str(n_drift)))
-    _rows.append(("진행 합계",               str(n_total)))
-    table = _box_table(_rows)
+        _cnt_rows.append(("🌀 표류 (다음 미정)",          str(n_drift)))
+    _cnt_rows.append(("진행 합계",                    str(n_total)))
+    summary_table = _box_table(_cnt_rows)
 
     lines: list[str] = []
     lines.append(f"🧭 오늘의 항로  {today} ({wd_kor})")
     lines.append("━" * 36)
-    lines.append(table)
+    lines.append(summary_table)
 
-    # 항로 정합경고 — 큐↔시트 불일치(유령·중복·상태불일치)가 있으면 '그 순간' 1줄로 띄움.
-    # 보드가 이미 가진 gas_items 재사용(추가 네트워크 없음). 무슨 일이 있어도 보드는 안 깨짐(fail-open).
+    # 항로 정합경고
     try:
         from queue_integrity_check import board_banner
         _bn = board_banner(gas_items=gas_items)
@@ -418,49 +441,73 @@ def build_board(gas_items: list[dict], queue_items: list[dict]) -> tuple[str, di
     except Exception:
         pass
 
-    def _section(header: str, items: list[dict], show_status: bool = True) -> None:
-        lines.append("")
-        lines.append(header)
-        if not items:
-            lines.append("  (없음)")
-        else:
-            for it in items:
-                lines.append(_render_line(it, show_status=show_status))
-
+    # ── 🔴 급한 입항 (별도 알림) ──
     if secs["urgent"]:
-        _section("🔴 급한 입항 (마감임박 ≤3일)", secs["urgent"])
+        lines.append("")
+        lines.append("🔴 급한 입항 (마감임박 ≤3일)")
+        lines.append(_md_table([_item_to_row(it) for it in secs["urgent"]]))
 
-    _section("🧭 오늘의 항로", secs["today"])
+    # ── 🚢 진행중 섹터 ──
+    lines.append("")
+    lines.append("### 🚢 진행중")
+    if inprog:
+        lines.append(_md_table([_item_to_row(it) for it in inprog]))
+    else:
+        lines.append("_(없음)_\n")
 
+    # ── ⚓ 대기중 섹터 ──
+    lines.append("### ⚓ 대기중")
+    if waiting:
+        wait_rows = []
+        for it in waiting:
+            st  = str(it.get("status", ""))
+            tag = "보류" if st in {"보류", "ON_HOLD"} else ""
+            wait_rows.append(_item_to_row(it, ship_col_extra=tag))
+        lines.append(_md_table(wait_rows))
+    else:
+        lines.append("_(없음)_\n")
+
+    # ── 🏁 입항 완료 (오늘) 섹터 ──
+    lines.append("### 🏁 입항 완료 (오늘)")
+    done_all = secs["done"] + secs["drift"]
+    if done_all:
+        done_rows = []
+        for it in secs["done"]:
+            has_next = bool(str(it.get("next") or "").strip())
+            tag = "🔗" if has_next else ""
+            done_rows.append(_item_to_row(it, ship_col_extra=tag))
+        for it in secs["drift"]:
+            # 표류: 🌀 꼬리표, 핵심조언에 👉 촉구 반드시 포함 (약속 L16)
+            advice = str(it.get("핵심조언") or "").strip()
+            advice_col = f"{advice} — 👉 다음 뭐 할지 정하세요" if advice else "👉 다음 뭐 할지 정하세요"
+            ship  = it["_ship"]
+            icon  = ship["icon"]
+            nick  = _nick(str(it.get("owner", "")))
+            title = str(it.get("title", ""))
+            badges = ("🔴" if ship.get("urgent") else "") + ("🌟" if ship.get("northstar") else "")
+            title_col = f"{title}{badges}".strip()
+            desc  = str(it.get("간단설명") or "").strip()
+            done_rows.append((f"{icon} 🌀", nick, title_col, desc, advice_col))
+        lines.append(_md_table(done_rows))
+    else:
+        lines.append("_(없음)_\n")
+
+    # ── 결재 포인터 ──
     if secs["appr"]:
-        # 결재는 항로에 개별 표시 안 함 — 카운트+포인터만(실제 결재는 결재현황 SSOT에서). GM 2026-06-07
         lines.append("")
         lines.append(f"🔴 GM 결재 {n_appr}건 — 결재 현황 SSOT에서 확인·결재")
         lines.append("    https://wellperion-cao.github.io/wellperion-automation/coo/todo/%EA%B2%B0%EC%9E%AC%20%ED%98%84%ED%99%A9%20SSOT.html")
 
     if secs["appr_inflight"]:
-        # GM 차례 아닌 진행 중 결재 — 카운트만(부서장·대표 대기). GM 2026-06-07
         lines.append("")
         lines.append(f"⏳ 결재 진행 중 {n_inflight}건 (타 결재자 대기) — 결재 현황 SSOT")
-
-    _section("🏁 완료 (입항·도착)", secs["done"], show_status=False)
-
-    # 🌀 표류 — 완료인데 '다음'을 안 남긴 건. 핵심조언 + 👉 촉구 둘 다 표시(A안 · 약속 L16).
-    if secs["drift"]:
-        lines.append("")
-        lines.append("🌀 표류 (완료인데 '다음' 없음 — 항로 끊김 주의)")
-        for it in secs["drift"]:
-            lines.append(_render_line(it, show_status=False))
-            advice = str(it.get("핵심조언") or "").strip()
-            if advice:
-                lines.append(f"      💡 핵심조언: {advice}")
-            lines.append("      👉 다음 뭐 할지 정하세요 (브릿지 미등록)")
 
     lines.append("")
     lines.append("━" * 36)
     lines.append("_본 보드는 자동 생성입니다._")
 
     return "\n".join(lines), secs
+
 
 
 # ── CLI ───────────────────────────────────────────────────────────────────

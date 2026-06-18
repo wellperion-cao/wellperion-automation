@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+﻿#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
 ceo_morning_pipeline.py - AI CEO 아침 자동 파이프라인 (디스패처 오케스트레이터)
@@ -1072,7 +1072,7 @@ def build_telegram_report(s1: dict, assigned: list[dict], orch: dict) -> str:
         lines.append("")
 
     # ── 🔗 지나온 항로 (어제 완료 → 다음 항로점 = 다리 놓음) ──
-    lines.append("🔗 지나온 항로  (어제 완료 → 다음 항로점)")
+    lines.append("🔗 지나온 항로  (어제 입항 완료 → 다음 항로점)")
     if yday_items:
         for d in yday_items[:5]:
             title = plainify(summarize_title(d.get("title", "")))
@@ -1117,7 +1117,7 @@ def build_telegram_report(s1: dict, assigned: list[dict], orch: dict) -> str:
 
     # ── 🌀 표류 주의 (완료했는데 다음 항로점 없음) ──
     lines.append("")
-    lines.append("🌀 표류 주의  (완료했는데 다음 항로점이 없음)")
+    lines.append("🌀 표류 주의  (입항 완료인데 다음 항로점 없음)")
     if drift:
         for d in drift[:5]:
             lines.append(f" · {plainify(summarize_title(d.get('title', '')))}")
