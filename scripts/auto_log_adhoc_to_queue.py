@@ -119,7 +119,12 @@ def _commit_meta(root: str, ref: str):
 
 
 def _strip_conventional_prefix(subject: str) -> str:
-    """conventional commit prefix(type(scope): / type: ) 제거한 본문 반환."""
+    """conventional commit prefix(type(scope): / type: ) + 선두 [태그] 제거한 본문.
+
+    제목이 'feat(x): [시우] …' 처럼 [닉네임] 태그를 포함하면, 자동로거가 다시
+    '[시우]' 를 앞에 붙여 '[시우] [시우] …' 로 중복된다. prefix 제거 후 선두
+    [..] 태그 1개도 벗겨 중복 방지(귀속은 이미 _attribute_clevel 가 끝냄).
+    """
     s = subject
     if ":" in s:
         head, rest = s.split(":", 1)
@@ -129,7 +134,11 @@ def _strip_conventional_prefix(subject: str) -> str:
         if "(" in core and core.endswith(")"):
             core = core.split("(", 1)[0]
         if core and all(c.isalpha() for c in core) and len(core) <= 12:
-            return rest.strip()
+            s = rest.strip()
+    # 선두 [태그] 1개 제거(예: '[시우] 본문' → '본문').
+    s = s.strip()
+    if s.startswith("[") and "]" in s:
+        s = s.split("]", 1)[1].strip()
     return s.strip()
 
 
