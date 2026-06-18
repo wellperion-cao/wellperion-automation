@@ -1023,7 +1023,7 @@ const ITEM_CACHE_KEY = 'wcheck_items_cache'; // 오프라인 폴백 캐시
 const PROMOTE_CTX = {};
 let promoteSourceId = null;   // 현재 승격 진행 중인 원본 이슈 항목 id(반영완료 마킹용)
 
-/* ── 점검 이슈 → VOC 통합 접수처(운영부) 연동 (2026-06-17 시우) ──
+/* ── 점검 이슈 → VOC 종합 접수처(운영부) 연동 (2026-06-17 시우) ──
    GM 확정: '접수 필요' 이슈만 운영부 VOC 구글폼에 프리필로 열어 직원이 확인·제출.
    기존 분류·전달 파이프라인(장소→부서) 그대로 재사용 — 점검 로직 무변경, '보내기'만 얹음.
    ── 폼 entry 매핑 (urllib로 viewform FB_PUBLIC_LOAD_DATA_ 파싱, 2026-06-17) ──
@@ -3044,7 +3044,7 @@ function renderItem(it,shift,gender,round){
   const _vocSent=iss?vocAlreadySent(it.id,round||'',g):false;
   const vocBtn=iss?(_vocSent
     ? `<span class="tiny-btn" style="background:rgba(44,138,79,0.14);color:#2c8a4f;border-color:rgba(44,138,79,0.4);font-size:12px;cursor:pointer;" title="접수처로 보냄 — 다시 보내려면 클릭" onclick="sendIssueToVOC('${it.id}','${g}')">📨 접수됨</span>`
-    : `<button class="tiny-btn" style="background:rgba(214,138,44,0.12);color:#c8841f;border-color:rgba(214,138,44,0.35);font-size:12px;" title="이 이슈를 운영부 VOC 통합 접수처로 보내기(직원 확인·제출)" onclick="sendIssueToVOC('${it.id}','${g}')">📨 접수처로 보내기</button>`):'';
+    : `<button class="tiny-btn" style="background:rgba(214,138,44,0.12);color:#c8841f;border-color:rgba(214,138,44,0.35);font-size:12px;" title="이 이슈를 운영부 VOC 종합 접수처로 보내기(직원 확인·제출)" onclick="sendIssueToVOC('${it.id}','${g}')">📨 접수처로 보내기</button>`):'';
   /* 요일·주기 일정 배지 (편집 시 '월수금'·'둘째주'·'격주' 입력하면 헬스장처럼 배지로 표시). GM 2026-06-12 */
   const _dayChips=(typeof scheduleBadges==='function')?scheduleBadges(it,itemName,itemDetail):'';
   /* 항목별 점검 기록줄(점검자·시각·담당) — 체크된 항목 아래 회색. GM 2026-06-15 */

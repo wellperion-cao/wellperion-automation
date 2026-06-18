@@ -1,4 +1,4 @@
-// 웰페리온 회원 셀프 VOC 전용 Apps Script (QR + 사진)
+// 웰페리온 회원 종합 접수처 전용 Apps Script (QR + 사진)
 // ⚠️ 점검 GAS(coo/check/apps_script_v3.js)·업무 GAS(coo/todo/apps_script_todo.js)와
 //    완전 독립 — 절대 그 위에 얹지 말 것. 신규 전용 GAS 프로젝트로 배포한다.
 // ⚠️ 라이브 '이슈 응답' 시트는 건드리지 않는다. VOC는 별도 시트 탭 「회원셀프VOC」.
@@ -32,7 +32,7 @@ var VOC_STATUS_COLORS = {
 };
 var VOC_PHOTO_FOLDER_NAME = 'VOC_Photos';
 
-// ─── 통합 접수처 상수 ───
+// ─── 종합 접수처 상수 ───
 // REG_CATEGORIES: 카테고리 라우팅 SSOT. dept 변경 시 여기 한 줄만 수정.
 var REG_CATEGORIES = [
   { key: 'lost',     label: '분실물 접수',         sheet: '접수_분실물',   dept: '운영부' },
@@ -93,7 +93,7 @@ var REG_EXTRA_HEADERS = {
   ]
 };
 
-// ─── 통합 접수처 헬퍼 ───
+// ─── 종합 접수처 헬퍼 ───
 // 키로 카테고리 객체 반환 (없으면 null)
 function _regCatByKey(key) {
   for (var i = 0; i < REG_CATEGORIES.length; i++) {
@@ -169,7 +169,7 @@ function _vGetSheet() {
   return sh;
 }
 
-// ─── 통합 접수처 시트 확보 (카테고리 키로 접근) ───
+// ─── 종합 접수처 시트 확보 (카테고리 키로 접근) ───
 // 기존 _vGetSheet의 자동생성·서식 로직 재사용, 헤더만 카테고리별로 다름.
 function _regGetSheet(catKey) {
   var cat = _regCatByKey(catKey);
@@ -233,7 +233,7 @@ function _regMask(row) {
   return out;
 }
 
-// ─── 통합 접수처 시트 → 객체 배열 (헤더 배열({key,label}[]) 인자) ───
+// ─── 종합 접수처 시트 → 객체 배열 (헤더 배열({key,label}[]) 인자) ───
 function _regReadAll(sh, headers) {
   var last = sh.getLastRow();
   if (last < 2) return [];
@@ -251,7 +251,7 @@ function _regReadAll(sh, headers) {
   });
 }
 
-// ─── 통합 접수처 상태 셀 색상 (헤더 배열 기준) ───
+// ─── 종합 접수처 상태 셀 색상 (헤더 배열 기준) ───
 function _regApplyStatusColor(sh, row, status, headers) {
   var idx = -1;
   for (var i = 0; i < headers.length; i++) {
@@ -457,10 +457,10 @@ function _vUpdate(body) {
 }
 
 // ═══════════════════════════════════════════
-//  통합 접수처 액션
+//  종합 접수처 액션
 // ═══════════════════════════════════════════
 
-// ─── reg_submit — 통합 접수처 제출 (public) ───
+// ─── reg_submit — 종합 접수처 제출 (public) ───
 function _regSubmit(body) {
   // 카테고리 해석: 키 우선, 없으면 라벨로 fallback
   var catRaw = String(body.category || '').trim();
@@ -530,7 +530,7 @@ function _regSubmit(body) {
 
   // 텔레그램 알림 (익명 접수 시 이름 표기)
   _vNotifyTelegram(
-    '📋 <b>[통합 접수처]</b> ' + cat.label + '\n' +
+    '📋 <b>[종합 접수처]</b> ' + cat.label + '\n' +
     '부서: ' + cat.dept + '\n' +
     '이름: ' + (isAnon ? '익명' : name) + '\n' +
     '위치: ' + (loc || '-') + '\n' +
@@ -542,7 +542,7 @@ function _regSubmit(body) {
   return _vJson({ ok: true, id: id, dept: cat.dept });
 }
 
-// ─── reg_list — 통합 접수처 목록 조회 (GATED) ───
+// ─── reg_list — 종합 접수처 목록 조회 (GATED) ───
 function _regList(params) {
   var filterCat    = String((params && params.category) || '').trim();
   var filterDept   = String((params && params.dept)     || '').trim();
@@ -577,7 +577,7 @@ function _regList(params) {
   return _vJson({ ok: true, count: all.length, data: all });
 }
 
-// ─── reg_update — 통합 접수처 갱신 (GATED) ───
+// ─── reg_update — 종합 접수처 갱신 (GATED) ───
 function _regUpdate(body) {
   var id = String(body.id || body['접수ID'] || '').trim();
   if (!id) return _vJson({ ok: false, error: 'id 필수' });
@@ -652,7 +652,7 @@ function _regUpdate(body) {
 var _VOC_PUBLIC_ACTIONS = {
   voc_submit:  true,  // 회원 모바일 폼 제출 — 토큰 면제
   voc_types:   true,  // 유형·상태 목록 조회 — 토큰 면제
-  reg_submit:  true,  // 통합 접수처 제출 — 토큰 면제
+  reg_submit:  true,  // 종합 접수처 제출 — 토큰 면제
   reg_board:   true,  // 마스킹 공개 보드 — 이름·연락처 가려서 반환, 토큰 면제
   reg_update:  true   // 상태·담당·메모 갱신 — PII 미포함, 토큰 면제
   // ⚠️ reg_list 는 전체 PII(이름·연락처 원문) 포함 — 절대 public 금지, GATED 유지.
@@ -677,7 +677,7 @@ function _vProcess(action, body, params) {
     return _vJson({ ok: false, error: 'unauthorized' });
   }
 
-  // ── 통합 접수처 액션 ──
+  // ── 종합 접수처 액션 ──
   if (action === 'reg_submit') return _regSubmit(body);
   if (action === 'reg_list')   return _regList(params || body);
   if (action === 'reg_board') {

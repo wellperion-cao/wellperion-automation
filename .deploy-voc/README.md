@@ -1,4 +1,4 @@
-# .deploy-voc — VOC 통합접수처 GAS 배포 (clasp)
+# .deploy-voc — VOC 종합접수처 GAS 배포 (clasp)
 
 웰리가 VOC GAS를 직접 배포하기 위한 clasp 연동 폴더. (이전엔 미연동이라 GM 수동배포였음 — 2026-06-17 연동)
 

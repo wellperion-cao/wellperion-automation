@@ -440,7 +440,7 @@
       <a data-id="O1">🏢 운영 통합 체계</a>
       <a data-id="O2">📋 공지/안내문 생성</a>
       <a data-id="O3">📊 재등록 대시보드</a>
-      <a data-id="O4">🙋 웰페리온 통합 접수처</a>
+      <a data-id="O4">🙋 웰페리온 종합 접수처</a>
     </div>
 
     <a data-toggle="cpo-nav2" data-has-sub="true"><span class="num">🤝</span><span class="label">AI CPO 회원관리<span class="tag">임정은M</span></span></a>
@@ -600,11 +600,11 @@
         </div>
       </div>
 
-      <!-- 통합 접수처 카드 — 6유형 회원 셀프 VOC. 공개 reg_board(마스킹·집계, 무키) 사용. 이슈 현황 카드 흡수 (2026-06-17 GM) -->
+      <!-- 종합 접수처 카드 — 6유형 종합 접수처. 공개 reg_board(마스킹·집계, 무키) 사용. 이슈 현황 카드 흡수 (2026-06-17 GM) -->
       <div style="background:var(--paper);border:1px solid var(--border);border-radius:14px;padding:16px 18px;">
         <div style="display:flex;align-items:center;gap:9px;margin-bottom:12px;">
           <span style="width:28px;height:28px;border-radius:8px;background:var(--accent-bg);color:var(--accent);display:flex;align-items:center;justify-content:center;font-size:15px;">🙋</span>
-          <div><div style="font-weight:800;font-size:14px;color:var(--text);">통합 접수처</div><div style="font-size:10.5px;color:var(--dim);">6유형 회원 셀프 VOC · AI COO(시우)</div></div>
+          <div><div style="font-weight:800;font-size:14px;color:var(--text);">종합 접수처</div><div style="font-size:10.5px;color:var(--dim);">6유형 종합 접수처 · AI COO(시우)</div></div>
         </div>
         <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:10px;">
           <div style="background:var(--orange-bg,rgba(230,148,78,0.12));border-radius:10px;padding:8px 10px;text-align:center;">
@@ -1142,13 +1142,13 @@
             tbody.innerHTML = rows;
           })();
 
-          /* 이슈(VOC) — 이슈 현황 카드는 통합접수처(reg_board) 카드로 흡수 (2026-06-17 GM). home_kpi의 voc는 미사용. */
+          /* 이슈(VOC) — 이슈 현황 카드는 종합접수처(reg_board) 카드로 흡수 (2026-06-17 GM). home_kpi의 voc는 미사용. */
         })
         .catch(function(){ /* "—" 유지 */ });
     })();
   })();
 
-  // ── 통합 접수처 KPI 카드 (home ops-detail-grid) ─────────────────────────
+  // ── 종합 접수처 KPI 카드 (home ops-detail-grid) ─────────────────────────
   // 공개 reg_board GET(무키·마스킹·집계) → 접수/처리중/완료 카운트. voc_list(키 게이트)에 의존하지 않음. 실패 시 "—" 유지.
   (function loadVocKpi(){
     var VOC_GAS = 'https://script.google.com/macros/s/AKfycbwk2XS1FND9V2xtXlWgsXzgA5p0FG7jVm6YKD74JK_ME_ZvHsNUUfGE5A_8p0X8VcF3gQ/exec';
@@ -1170,7 +1170,7 @@
   })();
   </script>
 
-  <!-- ── O4 웰페리온 통합 접수처 보드 JS ── -->
+  <!-- ── O4 웰페리온 종합 접수처 보드 JS ── -->
   <script>
   (function(){
     var _REG_API = 'https://script.google.com/macros/s/AKfycbwk2XS1FND9V2xtXlWgsXzgA5p0FG7jVm6YKD74JK_ME_ZvHsNUUfGE5A_8p0X8VcF3gQ/exec';
@@ -6137,9 +6137,9 @@ function crTab(btn, panelId) {
     </div>
   </article>
 
-  <!-- ── O4 웰페리온 통합 접수처 ── -->
+  <!-- ── O4 웰페리온 종합 접수처 ── -->
   <article class="doc" id="O4">
-    <div class="doc-header"><h2>웰페리온 통합 접수처</h2><div class="meta">COO 관할 · 6종 접수 통합 칸반 · GAS 실시간</div></div>
+    <div class="doc-header"><h2>웰페리온 종합 접수처</h2><div class="meta">COO 관할 · 6종 접수 통합 칸반 · GAS 실시간</div></div>
     <p class="lead">분실물·시설물 고장·청결 이슈·휴회·직원 칭찬·직원 쓴소리 6종 접수를 한 보드에서 확인합니다. 카테고리 필터 → 카드 담당 배정 → 상태 전환하면 GAS 시트에 실시간 반영됩니다.</p>
 
     <!-- 카테고리 필터칩 -->
