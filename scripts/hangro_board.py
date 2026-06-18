@@ -52,17 +52,21 @@ GAS_URL = (
 )
 QUEUE_PATH = _REPO / "status" / "_queue.json"
 
-# 상태 아이콘 — 상수로 분리해 한 줄로 교체 가능
+# 상태 아이콘 — 아이콘 표준 A안 (ssot/약속.json L16 · CLAUDE.md §3-1 정본과 동일값).
+#   대기/정박=⚓ · 진행중=난이도별 배(_render_line이 ship 아이콘으로 덮음) · 완료=🏁
+#   ★⚓ 뜻이 '완료'→'대기/정박'으로 바뀜. 완료는 🏁.
 STATUS_ICON = {
-    "완료":   "⚓",   # 입항
-    "DONE":   "⚓",
-    "진행중": "🌊",   # 진행
-    "IN_PROGRESS": "🌊",
-    "대기":   "대기중",
-    "PENDING": "대기중",
-    "보류":   "⏸",
-    "ON_HOLD": "⏸",
+    "완료":   "🏁",   # 완료 = 입항·도착
+    "DONE":   "🏁",
+    "진행중": "🚢",   # 진행중 — 실제 표시는 난이도별 배로 _render_line이 ship 아이콘 사용(fallback만 이 값)
+    "IN_PROGRESS": "🚢",
+    "대기":   "⚓",   # 대기/정박 = 출항 전(닻)
+    "PENDING": "⚓",
+    "보류":   "⚓",   # 보류 = 멈춰 다시 정박 → 대기/정박(닻)
+    "ON_HOLD": "⚓",
 }
+# 진행중 = 난이도별 배(ship 아이콘으로 표시) — st_icon을 ship 아이콘으로 덮는 대상
+STATUS_INPROGRESS = {"진행중", "IN_PROGRESS"}
 STATUS_DONE  = {"완료", "DONE", "폐기"}
 STATUS_OPEN  = {"진행중", "대기", "IN_PROGRESS", "PENDING", "보류", "ON_HOLD"}
 
@@ -214,6 +218,8 @@ def fetch_queue_items() -> list[dict]:
             "mod_date": str(q.get("processed_at") or ""),
             "priority": str(q.get("priority", "NORMAL")),
             "needs_gm_appr": False,
+            "terminal": bool(q.get("terminal", False)),
+            "next":     str(q.get("next") or "").strip(),
             "source":   "queue",
         })
     return items
@@ -241,8 +247,18 @@ def _classify(items: list[dict]) -> dict[str, list[dict]]:
         "today":   [],   # 🧭 오늘의 항로 (진행·대기)
         "appr":    [],   # 🔴 GM 결재 대기 (GM 차례)
         "appr_inflight": [],  # ⏳ 결재 진행 중 (타 결재자 대기)
-        "done":    [],   # ⚓ 입항 (완료)
-        "drift":   [],   # 🌀 표류 (완료인데 담당 다음 없는 건 — 미구현, placeholder)
+        "done":    [],   # 🏁 완료 (입항·도착)
+        "drift":   [],   # 🌀 표류 (완료인데 '다음' 없는 건 — "👉 다음 정하기" 촉구 동반)
+    }
+    # ── 후속 브릿지 인덱스 (표류 판정 보조) ──
+    #   브릿지 메커니즘(project_bridge_mechanized): 완료 시 post_action --next/--terminal로
+    #   후속 PENDING이 _queue에 자동 등록된다. 그 후속이 원건 task_id를 참조하면 '다리 놓임'.
+    #   _queue 항목이 id 교차참조를 항상 갖진 않으므로(보수적 기준) → '다음 없음' 판정은
+    #   ① terminal!=true 이고 ② 그 건을 잇는 후속 PENDING(_queue)이 없을 때.
+    #   후속 존재 = 같은 owner의 PENDING/IN_PROGRESS가 있거나 item['next'] 브릿지 문구가 있을 때.
+    _pending_owners: set[str] = {
+        str(it.get("owner", "")) for it in items
+        if str(it.get("status", "")).upper() in {"PENDING", "IN_PROGRESS", "진행중", "대기"}
     }
     seen_ids: set[str] = set()
     seen_titles: set[str] = set()
@@ -281,9 +297,19 @@ def _classify(items: list[dict]) -> dict[str, list[dict]]:
         elif urgent_flag:
             sections["urgent"].append(item)
         elif done:
-            # 입항(완료)은 최근(오늘·어제) 완료만 — 옛 완료건은 이력이라 보드서 제외
+            # 완료는 최근(오늘·어제) 완료만 — 옛 완료건은 이력이라 보드서 제외
             if _is_recent(item.get("mod_date", "")):
-                sections["done"].append(item)
+                # 🌀 표류 판정 (보수적): 완료인데 '다음'을 안 남긴 것.
+                #   = terminal!=true 이고 next(브릿지 문구) 비었고, 그 owner의 후속 PENDING도 없음.
+                #   판정 모호 시(terminal·next 정보 없는 GAS 시트 항목 등)는 표류로 몰지 않고 완료로 둔다(안전).
+                is_terminal = bool(item.get("terminal", False))
+                has_next = bool(str(item.get("next") or "").strip())
+                has_follow_pending = str(item.get("owner", "")) in _pending_owners
+                if (item.get("source") == "queue" and not is_terminal
+                        and not has_next and not has_follow_pending):
+                    sections["drift"].append(item)
+                else:
+                    sections["done"].append(item)
         else:
             sections["today"].append(item)
 
@@ -304,8 +330,11 @@ def _render_line(item: dict, show_status: bool = True) -> str:
     st    = item["status"]
     due   = item["end_date"][:10] if item["end_date"] else ""
 
-    # 상태 아이콘
-    st_icon = STATUS_ICON.get(st, STATUS_ICON.get(st.upper(), "?"))
+    # 상태 아이콘 (아이콘 표준 A안) — 진행중은 난이도별 배(ship 아이콘)로 표시
+    if st in STATUS_INPROGRESS or st.upper() in STATUS_INPROGRESS:
+        st_icon = icon
+    else:
+        st_icon = STATUS_ICON.get(st, STATUS_ICON.get(st.upper(), "?"))
 
     # 담당 suffix — 식별자 있으면 생략
     if has_clevel_id(title):
@@ -354,6 +383,7 @@ def build_board(gas_items: list[dict], queue_items: list[dict]) -> tuple[str, di
     n_appr   = len(secs["appr"])
     n_inflight = len(secs["appr_inflight"])
     n_done   = len(secs["done"])
+    n_drift  = len(secs["drift"])
     n_total  = n_urgent + n_today + n_appr
 
     _rows = [
@@ -364,9 +394,11 @@ def build_board(gas_items: list[dict], queue_items: list[dict]) -> tuple[str, di
     if n_inflight:
         _rows.append(("⏳ 결재 진행 중 (타 결재자)", str(n_inflight)))
     _rows += [
-        ("⚓ 입항 완료",             str(n_done)),
-        ("진행 합계",               str(n_total)),
+        ("🏁 완료",                 str(n_done)),
     ]
+    if n_drift:
+        _rows.append(("🌀 표류 (다음 미정)", str(n_drift)))
+    _rows.append(("진행 합계",               str(n_total)))
     table = _box_table(_rows)
 
     lines: list[str] = []
@@ -409,7 +441,15 @@ def build_board(gas_items: list[dict], queue_items: list[dict]) -> tuple[str, di
         lines.append("")
         lines.append(f"⏳ 결재 진행 중 {n_inflight}건 (타 결재자 대기) — 결재 현황 SSOT")
 
-    _section("⚓ 입항 (완료)", secs["done"], show_status=False)
+    _section("🏁 완료 (입항·도착)", secs["done"], show_status=False)
+
+    # 🌀 표류 — 완료인데 '다음'을 안 남긴 건. 그냥 두지 않고 "👉 다음 정하기" 촉구를 붙인다(A안).
+    if secs["drift"]:
+        lines.append("")
+        lines.append("🌀 표류 (완료인데 '다음' 없음 — 항로 끊김 주의)")
+        for it in secs["drift"]:
+            lines.append(_render_line(it, show_status=False))
+            lines.append("      👉 다음 뭐 할지 정하세요 (브릿지 미등록)")
 
     lines.append("")
     lines.append("━" * 36)

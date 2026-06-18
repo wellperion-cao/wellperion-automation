@@ -1190,8 +1190,8 @@ function _gmHangroClassify(items, todayStr) {
   active = active.filter(function (t) { return t.category !== '결재'; });
   return {
     active: active,                                  // 활성 항로(결재배 제외)
-    done: done,                                      // ⚓ 오늘 입항 완료
-    donePast: donePast,                              // 🗄️ 지난 입항 완료
+    done: done,                                      // 🏁 오늘 완료 (아이콘 표준 A안)
+    donePast: donePast,                              // 🗄️ 지난 완료
     hold: hold,                                      // 보류
     disposed: disposed,                              // 폐기(검색 전용)
     apprGm: apprActiveGm.concat(apprWait),           // GM이 지금 결재할 차례

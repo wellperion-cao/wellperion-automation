@@ -1195,7 +1195,7 @@ def _build_07_body() -> str:
     # 커밋 목록
     commit_lines = []
     for c in commits[:8]:
-        commit_lines.append(f"  ⚓ {c}")
+        commit_lines.append(f"  · {c}")
     if n_commits > 8:
         commit_lines.append(f"  ... 외 {n_commits - 8}건")
 
@@ -1213,7 +1213,7 @@ def _build_07_body() -> str:
 
     return (
         f"{_unified_header('07', '개인&회사', '어제의 항로 결산')}\n"
-        f"⚓ {yesterday} ({yesterday_wd}) 결산\n\n"
+        f"🏁 {yesterday} ({yesterday_wd}) 결산\n\n"
         f"   완료 요약\n"
         f"{table_str}\n\n"
         f"🚢 코드·자동화\n"
@@ -1563,7 +1563,7 @@ def _build_21_body() -> str:
     table_str = "\n".join(_count_table(table_rows))
 
     # 오늘 커밋 목록
-    commit_lines = [f"  ⚓ {c}" for c in today_commits[:7]]
+    commit_lines = [f"  · {c}" for c in today_commits[:7]]
     if n_commits > 7:
         commit_lines.append(f"  ... 외 {n_commits - 7}건")
     commit_block = "\n".join(commit_lines) if commit_lines else "  (오늘 커밋 없음)"
@@ -1596,7 +1596,7 @@ def _build_21_body() -> str:
         f"✅ 업무 완료\n"
         f"{done_block}\n\n"
         f"{_DIVIDER}\n"
-        f"⚓ 내일 항로점 ({tmr_str} {tmr_wd})\n"
+        f"🔗 내일 항로점 ({tmr_str} {tmr_wd})\n"
         f"  (오늘 미완 → 내일 이월)\n"
         f"{bridge_block}\n\n"
         f"{_AUTO_FOOTER}"

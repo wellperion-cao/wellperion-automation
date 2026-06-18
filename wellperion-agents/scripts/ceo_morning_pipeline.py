@@ -957,7 +957,7 @@ def extract_followups(queue_items: list[dict]) -> list[dict]:
 
 def _next_waypoint(item: dict) -> str:
     """
-    어제 입항(완료)한 배가 남긴 '다음 항로점'(⚓)을 도출.
+    어제 완료한 배가 남긴 '다음 항로점'(🔗)을 도출.
       - note 의 후속 신호 문장(_FOLLOWUP_RE) 우선 — 어제가 남긴 '다음'.
       - 없으면 '입항(종결)' (= 표류 아님, 정상 종결).
     depends_on 역참조는 G1 SSOT 완료 항목엔 note 기반이 더 신뢰도 높아 note 우선 사용.
@@ -976,7 +976,7 @@ def _next_waypoint(item: dict) -> str:
 def build_telegram_report(s1: dict, assigned: list[dict], orch: dict) -> str:
     """
     GM 아침 보고 — '오늘의 항로' 레이아웃 (2026-06-05 GM 재설계).
-    항해 세계관: 🌟북극성=목적지 · 🚢배=할일 · ⚓항로점=어제가 남긴 다음 · 🌀표류=다음없음.
+    항해 세계관(아이콘 표준 A안): 🌟북극성=목적지 · 🚢배=할일 · ⚓닻=대기/정박 · 🏁완료 · 🔗항로점=완료하며 남긴 다음 · 🌀표류=완료인데 다음없음.
     무게(priority)=배종류(🛳️크루즈/⛴️여객선/⛵돛단배) · 🔴마감임박 · 🌟북극성직결.
     ※ 데이터 수집·집계 변수(today_tasks/assigned/done_*/gm_decision/urgent)는 그대로 재사용.
 
@@ -1071,8 +1071,8 @@ def build_telegram_report(s1: dict, assigned: list[dict], orch: dict) -> str:
             lines.append(f" · {plainify(summarize_title(u['title']))} ({mmdd} 마감){who}")
         lines.append("")
 
-    # ── ⚓ 지나온 항로 (어제 입항 → 다음 항로점) ──
-    lines.append("⚓ 지나온 항로  (어제 입항 → 다음 항로점)")
+    # ── 🔗 지나온 항로 (어제 완료 → 다음 항로점 = 다리 놓음) ──
+    lines.append("🔗 지나온 항로  (어제 완료 → 다음 항로점)")
     if yday_items:
         for d in yday_items[:5]:
             title = plainify(summarize_title(d.get("title", "")))
@@ -1117,10 +1117,11 @@ def build_telegram_report(s1: dict, assigned: list[dict], orch: dict) -> str:
 
     # ── 🌀 표류 주의 (완료했는데 다음 항로점 없음) ──
     lines.append("")
-    lines.append("🌀 표류 주의  (입항했는데 다음 항로점이 없음)")
+    lines.append("🌀 표류 주의  (완료했는데 다음 항로점이 없음)")
     if drift:
         for d in drift[:5]:
             lines.append(f" · {plainify(summarize_title(d.get('title', '')))}")
+            lines.append("   👉 다음 뭐 할지 정하세요")
     else:
         lines.append(" 없음 ✓")
 
