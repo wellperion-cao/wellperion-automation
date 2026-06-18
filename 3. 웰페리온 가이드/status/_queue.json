@@ -1360,5 +1360,18 @@
     "artifact": "deep-interview 확정: 북극성=무인 운영 시스템 완성, KPI=점검완료율+운영마찰\n인시던트. COO 고유 4항목은 본인탭 정의, 전사 공통 4항목(파이프라인·박제·\n권한게이트·부팅)은 공통 탭 원본 포인터만 — 중복 0(약속 L01). 페르소나\n담당 KPI 행을 새 KPI로 정합. (CLI ad-hoc · 커밋 a066bea7)",
     "next": "🌀 표류 — 다음 미정 (필요 시 GM·웰리/담당 C-Level 지정)",
     "adhoc_commit": "a066bea7a6df532b99a0c539c934c11f87e84a59"
+  },
+  {
+    "task_id": "COO-2026-06-18-ADHOC-6c3189da",
+    "clevel": "coo",
+    "title": "[시우] @ feat(coo): CLI ad-hoc 커밋→G1 입항완료 자동기록 기계 박제",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-06-18",
+    "processed_at": "2026-06-18",
+    "artifact": "post-commit 훅 단일 초크포인트에 auto_log_adhoc_to_queue.py 배선.\n실작업 커밋이면 _queue.json 끝에 입항완료 배(DONE/terminal) append 후\nchore(queue) 커밋 생성 → push 체인이 origin 반영. 자동발행·큐·merge 커밋은\nSKIP(재귀 base case). clevel 귀속=커밋내용 우선(닉네임>역할토큰>active_clevel).\nGitLock 임계구역·멱등(adhoc_commit)·fail-open(항상 exit 0).\n@ (CLI ad-hoc · 커밋 6c3189da)",
+    "next": "🌀 표류 — 다음 미정 (필요 시 GM·웰리/담당 C-Level 지정)",
+    "adhoc_commit": "6c3189da24f34b4682af4ac6ca40607b0f383444"
   }
 ]
