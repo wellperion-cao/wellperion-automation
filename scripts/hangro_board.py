@@ -220,6 +220,8 @@ def fetch_queue_items() -> list[dict]:
             "needs_gm_appr": False,
             "terminal": bool(q.get("terminal", False)),
             "next":     str(q.get("next") or "").strip(),
+            # 핵심조언 = note 또는 summary 중 채워진 것 (표류 렌더에서 사용)
+            "핵심조언": str(q.get("note") or q.get("summary") or "").strip()[:80],
             "source":   "queue",
         })
     return items
@@ -443,12 +445,15 @@ def build_board(gas_items: list[dict], queue_items: list[dict]) -> tuple[str, di
 
     _section("🏁 완료 (입항·도착)", secs["done"], show_status=False)
 
-    # 🌀 표류 — 완료인데 '다음'을 안 남긴 건. 그냥 두지 않고 "👉 다음 정하기" 촉구를 붙인다(A안).
+    # 🌀 표류 — 완료인데 '다음'을 안 남긴 건. 핵심조언 + 👉 촉구 둘 다 표시(A안 · 약속 L16).
     if secs["drift"]:
         lines.append("")
         lines.append("🌀 표류 (완료인데 '다음' 없음 — 항로 끊김 주의)")
         for it in secs["drift"]:
             lines.append(_render_line(it, show_status=False))
+            advice = str(it.get("핵심조언") or "").strip()
+            if advice:
+                lines.append(f"      💡 핵심조언: {advice}")
             lines.append("      👉 다음 뭐 할지 정하세요 (브릿지 미등록)")
 
     lines.append("")

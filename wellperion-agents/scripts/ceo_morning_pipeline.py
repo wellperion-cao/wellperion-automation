@@ -1121,6 +1121,10 @@ def build_telegram_report(s1: dict, assigned: list[dict], orch: dict) -> str:
     if drift:
         for d in drift[:5]:
             lines.append(f" · {plainify(summarize_title(d.get('title', '')))}")
+            # 핵심조언: note 또는 summary 중 채워진 것 (A안 — 표류는 핵심조언+다음정하기 둘 다)
+            _advice = str(d.get("note") or d.get("summary") or "").strip()
+            if _advice:
+                lines.append(f"   💡 핵심조언: {plainify(_advice[:80])}")
             lines.append("   👉 다음 뭐 할지 정하세요")
     else:
         lines.append(" 없음 ✓")
