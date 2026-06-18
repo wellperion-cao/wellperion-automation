@@ -1,0 +1,24 @@
+{
+  "_doc": "외부 발행 콘텐츠 금지어 단일출처. forbidden_scan.py가 읽어 instagram/ 등 외부 콘텐츠에서 금지어 사용을 탐지한다(warn). 약속 L08 + CLAUDE.md §0 브랜드 용어 규칙의 기계 점검본. 새 금지어 = terms에 1줄 추가. 사람용 규칙=약속.json L08(정본), 이 파일=기계 점검 미러.",
+  "정본": "ssot/forbidden_terms.json (약속 L08 브랜드 규칙의 코드 박제 — L02 '정한 건 코드로 박는다')",
+  "scan_globs": ["instagram/**"],
+  "exclude_globs": [
+    "instagram/_assets/**",
+    "instagram/**/_*.md",
+    "instagram/_*.md",
+    "**/*_이력.md",
+    "instagram/**/기획_초안.md",
+    "instagram/**/큐레이션_추천.md"
+  ],
+  "exclude_dir_names": [".git", "_archive", "node_modules", "__pycache__", "memory"],
+  "terms": [
+    { "term": "피트니스", "replace": "스포츠클럽", "note": "외부 금지(약속 L08) — 포지셔닝=스포츠클럽" },
+    { "term": "하이엔드 프라이빗", "replace": "(외부 사용 금지)", "note": "외부 금지(약속 L08) — 프리미엄 라이프스타일 클럽 톤" },
+    { "term": "하이엔드프라이빗", "replace": "(외부 사용 금지)", "note": "외부 금지(약속 L08) — 띄어쓰기 변형" },
+    { "term": "사교클럽", "replace": "(외부 사용 금지)", "note": "외부 금지(약속 L08) — '사교' 포지셔닝 금지. 'bare 사교'는 사교성 등 오탐 위험이라 합성어만 탐지" },
+    { "term": "사교 클럽", "replace": "(외부 사용 금지)", "note": "외부 금지 — 띄어쓰기 변형" },
+    { "term": "사교모임", "replace": "(외부 사용 금지)", "note": "외부 금지" },
+    { "term": "현대하이페리온", "replace": "웰페리온", "note": "구 명칭 금지 → 웰페리온" },
+    { "term": "가이드허브", "replace": "웰페리온 ERP", "note": "구 명칭 금지 → 웰페리온 ERP" }
+  ]
+}

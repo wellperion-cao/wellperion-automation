@@ -83,6 +83,54 @@ def matches_any_glob(filepath, globs):
     return False
 
 
+def run_forbidden_scan(repo_root):
+    """
+    ssot/forbidden_scan.py 호출 — 외부 콘텐츠 금지어 경고(차단 안 함).
+    실패·없음 → 조용히 통과(fail-open).
+    """
+    try:
+        scan_path = repo_root / "ssot" / "forbidden_scan.py"
+        if not scan_path.exists():
+            return
+        pybin = sys.executable
+        proc = subprocess.run(
+            [pybin, str(scan_path), "--json"],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            cwd=str(repo_root),
+        )
+        try:
+            data = json.loads(proc.stdout.decode("utf-8", "replace"))
+            total = data.get("total_violation_files", 0)
+            if total > 0:
+                print("\n[forbidden-guard] ⚠️ 외부 콘텐츠 금지어 경고 (커밋은 통과):")
+                results = data.get("results", [])
+                line_count = 0
+                for r in results:
+                    if not r.get("hits"):
+                        continue
+                    term = r["term"]
+                    replace = r["replace"]
+                    for h in r["hits"]:
+                        if line_count >= 10:
+                            break
+                        print(f"  [{term}] → '{replace}' : {h['file']}")
+                        line_count += 1
+                    if line_count >= 10:
+                        break
+        except (json.JSONDecodeError, KeyError):
+            # --json 파싱 실패 시 사람용 출력에서 위반 줄만 추출
+            output = proc.stdout.decode("utf-8", "replace")
+            if "✅ 외부 콘텐츠 금지어 없음" not in output:
+                lines = [l for l in output.splitlines() if "⚠️" in l or "파일:" in l]
+                if lines:
+                    print("\n[forbidden-guard] ⚠️ 외부 콘텐츠 금지어 경고 (커밋은 통과):")
+                    for l in lines[:10]:
+                        print("  " + l.strip())
+    except Exception:
+        pass  # fail-open
+
+
 def run_divergence_scan(repo_root):
     """
     ssot/divergence_scan.py 호출 — 캐논 복사본 경고(차단 안 함).
@@ -177,6 +225,12 @@ def main():
         # 발산 스캔 (warn 전용, 차단 없음)
         try:
             run_divergence_scan(repo_root)
+        except Exception:
+            pass  # fail-open
+
+        # 금지어 스캔 (warn 전용, 차단 없음)
+        try:
+            run_forbidden_scan(repo_root)
         except Exception:
             pass  # fail-open
 
