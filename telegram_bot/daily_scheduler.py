@@ -160,6 +160,14 @@ TELEGRAM_API = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}"
 # 12시 시설·지원·주차 현황용 (Google Sheets Apps Script 단일 소스)
 CHECKLIST_API_URL = ENV.get("CHECKLIST_API_URL", "")
 
+# 23시 마감 점검 차트 상세형용 — today_live(지원부 회차×성별) 지원 라이브 GAS.
+# 기존 CHECKLIST_API_URL은 옛 배포라 today_live 불가 → 본 슬롯은 검증된 라이브 URL 사용.
+# (env SUPPORT_CHECK_API_URL로 오버라이드 가능, 기본=검증된 라이브 exec URL.)
+SUPPORT_CHECK_API_URL = ENV.get(
+    "SUPPORT_CHECK_API_URL",
+    "https://script.google.com/macros/s/AKfycbyXw4ZaA6hLK567GC7NY33Y8SvNPW6kNtrXFz2OsSdFVBmCnZP-2oD-RQiX0IpekBu1/exec",
+)
+
 # 9시 매출·지출 현황용 (CFO 시트 — GM이 시트 링크 제공 후 .env CFO_SHEET_URL에 등록)
 CFO_SHEET_URL = ENV.get("CFO_SHEET_URL", "")
 
@@ -1628,17 +1636,211 @@ def _build_22_body() -> str:
     )
 
 
-def _build_23_body() -> str:
-    """23시 — 마감 점검 현황 (체크리스트 박스표) [회사]
+# ── 23시 마감 점검 차트 상세형 헬퍼 (today_live 지원부 회차×성별) ──────────────
+_SUPPORT_DASHBOARD_URL = (
+    "https://wellperion-cao.github.io/wellperion-automation/coo/check/"
+    "%EC%A7%80%EC%9B%90%EB%B6%80%20%EC%B2%B4%EA%B3%84.html"
+)
 
-    [2026-06-08 GM 지시] PC 종료 22:30→23:30 변경으로 23:00 발송 환경 확보 →
-    23시 마감 점검 슬롯 복원(10슬롯 정본). _build_checklist_block 공유 사용.
+
+def _cjk_w(s: str) -> int:
+    """CJK/한글 1자=2폭, ASCII 1폭으로 표시폭 계산 (_count_table 방식 재사용)."""
+    import unicodedata
+    return sum(2 if unicodedata.east_asian_width(c) in ("W", "F") else 1 for c in s)
+
+
+def _pad(s: str, width: int, align: str = "left") -> str:
+    """표시폭 기준 패딩 (한글 폭 보정). align: left|right|center."""
+    s = str(s)
+    gap = max(0, width - _cjk_w(s))
+    if align == "right":
+        return " " * gap + s
+    if align == "center":
+        l = gap // 2
+        return " " * l + s + " " * (gap - l)
+    return s + " " * gap
+
+
+def _fetch_support_today_live(today: str) -> dict | None:
+    """지원부 라이브 점검 GAS에서 오늘자 회차×성별 데이터 조회 (today_live).
+
+    today: "YYYY-MM-DD". ok=true면 응답 dict 반환, 아니면 None.
     """
-    checklist_block = _build_checklist_block("23:00")
+    try:
+        resp = requests.get(
+            f"{SUPPORT_CHECK_API_URL}"
+            f"?action=today_live&dept=support&date={today}&_pv={int(time.time())}",
+            timeout=20,
+            allow_redirects=True,
+        )
+        if resp.status_code == 200:
+            data = resp.json()
+            if data.get("ok"):
+                return data
+        logger.warning(
+            f"23시 지원부 today_live 응답 비정상: status={resp.status_code}"
+        )
+    except Exception as e:
+        logger.warning(f"23시 지원부 today_live 조회 실패: {e}")
+    return None
+
+
+def _fetch_dept_weekly(dept: str) -> dict | None:
+    """시설/주차 weekly 조회 (오늘자 total/done). 실패 시 None."""
+    try:
+        resp = requests.get(
+            f"{SUPPORT_CHECK_API_URL}?action=weekly&dept={dept}&_pv={int(time.time())}",
+            timeout=20,
+            allow_redirects=True,
+        )
+        if resp.status_code == 200:
+            data = resp.json()
+            if data.get("ok"):
+                return data
+    except Exception as e:
+        logger.warning(f"23시 {dept} weekly 조회 실패: {e}")
+    return None
+
+
+def _build_support_check_chart(d: dict) -> str:
+    """today_live dict → 지원부 회차×성별 고정폭 차트 (텔레그램 코드블록)."""
+    now = datetime.now()
+    md = now.strftime("%m-%d")
+    weekday_kor = _WEEKDAY_KOR[now.weekday()]
+
+    g = d.get("byGender", {})
+    m = g.get("m", {})
+    f = g.get("f", {})
+
+    def pct(done: int, total: int) -> str:
+        return f"{round(done / total * 100)}%" if total else "-"
+
+    def cell(part: dict, key: str) -> str:
+        # 회차별 done/total — key in {"am","pm","close"}
+        return f"{part.get(key, 0)}/{part.get(key + 'Total', 0)}"
+
+    rows = [
+        ("오전", "am"),
+        ("오후", "pm"),
+        ("마감", "close"),
+    ]
+
+    # 열 폭 계산
+    h_round, h_m, h_f, h_sum = "회차", "남", "여", "합계"
+    m_cells = [cell(m, k) for _, k in rows]
+    f_cells = [cell(f, k) for _, k in rows]
+    sum_cells = [
+        f"{d.get(k, 0)}/{d.get(k + 'Total', 0)} {pct(d.get(k, 0), d.get(k + 'Total', 0))}"
+        for _, k in rows
+    ]
+
+    w_round = max(_cjk_w(h_round), *(_cjk_w(r[0]) for r in rows), _cjk_w("종일"))
+    w_m = max(_cjk_w(h_m), *(_cjk_w(c) for c in m_cells))
+    w_f = max(_cjk_w(h_f), *(_cjk_w(c) for c in f_cells))
+    w_sum = max(_cjk_w(h_sum), *(_cjk_w(c) for c in sum_cells))
+
+    lines = [
+        f"{_pad(h_round, w_round)}  {_pad(h_m, w_m)}  {_pad(h_f, w_f)}  {_pad(h_sum, w_sum)}",
+    ]
+    for (label, _key), mc, fc, sc in zip(rows, m_cells, f_cells, sum_cells):
+        lines.append(
+            f"{_pad(label, w_round)}  {_pad(mc, w_m)}  {_pad(fc, w_f)}  {_pad(sc, w_sum)}"
+        )
+
+    total = d.get("total", 0)
+    done = d.get("done", 0)
+    sep_w = w_round + w_m + w_f + w_sum + 6
+    lines.append("─" * max(8, sep_w))
+    all_sum = f"{done}/{total} {pct(done, total)}"
+    lines.append(
+        f"{_pad('종일', w_round)}  {_pad('', w_m)}  {_pad('', w_f)}  {_pad(all_sum, w_sum)}"
+    )
+
+    chart = "\n".join(lines)
+    return f"🛠 지원부 점검 — {md}({weekday_kor})\n```\n{chart}\n```"
+
+
+def _build_support_weakspot(d: dict) -> str:
+    """byGender 회차×성별 칸 중 분모>0이고 완료율 최저인 칸 = 자동 약점 한 줄."""
+    g = d.get("byGender", {})
+    gender_label = {"m": "남", "f": "여"}
+    round_label = {"am": "오전", "pm": "오후", "close": "마감"}
+
+    worst = None  # (pct, gender, rnd, done, total)
+    for gk in ("m", "f"):
+        part = g.get(gk, {})
+        for rk in ("am", "pm", "close"):
+            total = part.get(rk + "Total", 0)
+            if total <= 0:
+                continue
+            done = part.get(rk, 0)
+            p = round(done / total * 100)
+            cand = (p, gender_label[gk], round_label[rk], done, total)
+            if worst is None or p < worst[0]:
+                worst = cand
+
+    if worst is None:
+        return "⚠️ 짚을 점: 진행 데이터 없음"
+    p, gl, rl, done, total = worst
+    if p >= 100:
+        return "✅ 짚을 점 없음 — 전 회차 완료"
+    return f"⚠️ 짚을 점: {gl} {rl} {done}/{total}({p}%) — 독려 필요"
+
+
+def _dept_status_lines() -> str:
+    """4부서 상태 줄 (지원=별도 차트, 나머지 3개)."""
+    facility = _fetch_dept_weekly("facility")
+    parking = _fetch_dept_weekly("parking")
+
+    def dept_line(icon: str, name: str, data: dict | None) -> str:
+        if data is None:
+            return f"{icon} {name}: -"
+        total = data.get("total", 0)
+        if total == 0:
+            return f"{icon} {name}: 미가동(자체점검 준비 중)"
+        done = data.get("done", 0)
+        pct = round(done / total * 100) if total else 0
+        return f"{icon} {name}: {done}/{total}({pct}%)"
 
     return (
-        f"{_unified_header('23', '회사', '마감 시설·지원·주차 현황')}\n"
-        f"{checklist_block}\n\n"
+        f"{dept_line('🏗', '시설부', facility)}\n"
+        f"{dept_line('🅿', '주차', parking)}\n"
+        f"🏢 운영부: 점검 체계 없음(규정·매뉴얼 운영)"
+    )
+
+
+def _build_23_body() -> str:
+    """23시 — 마감 점검 현황 차트 상세형 [회사]
+
+    today_live(지원부 회차×성별) 성공 시 차트+약점+4부서 상태.
+    실패 시 기존 _build_checklist_block('23:00')로 폴백(빈 메시지/크래시 금지).
+
+    [2026-06-08 GM 지시] PC 종료 22:30→23:30 변경으로 23:00 발송 환경 확보 →
+    23시 마감 점검 슬롯 복원(10슬롯 정본).
+    [2026-06-18 시우] today_live 차트 상세형 업그레이드(라이브 GAS).
+    """
+    today = datetime.now().strftime("%Y-%m-%d")
+    live = _fetch_support_today_live(today)
+
+    if live is None:
+        # 폴백 — 기존 12/18 공용 블록 재사용
+        checklist_block = _build_checklist_block("23:00")
+        return (
+            f"{_unified_header('23', '회사', '마감 시설·지원·주차 현황')}\n"
+            f"{checklist_block}\n\n"
+            f"{_AUTO_FOOTER}"
+        )
+
+    chart = _build_support_check_chart(live)
+    weakspot = _build_support_weakspot(live)
+    dept_lines = _dept_status_lines()
+
+    return (
+        f"{_unified_header('23', '회사', '마감 점검 현황')}\n"
+        f"{chart}\n"
+        f"{weakspot}\n\n"
+        f"{dept_lines}\n\n"
+        f"🔗 대시보드: {_SUPPORT_DASHBOARD_URL}\n\n"
         f"{_AUTO_FOOTER}"
     )
 
