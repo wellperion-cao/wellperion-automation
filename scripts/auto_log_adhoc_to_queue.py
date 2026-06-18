@@ -137,7 +137,13 @@ def _attribute_clevel(root: str, subject: str, body: str) -> str:
     """clevel 귀속 — 커밋 내용 우선(공유 저장소라 세션마커 신뢰 못 함).
 
     ① 닉네임 토큰(subject+body) ② 역할 토큰(scope/제목, 대소문자무시)
-    ③ .omc/state/active_clevel ④ 기본 'ceo'.
+    ③ 기본 'ceo'(웰리=전사 디스패처).
+
+    ※ 세션 마커(.omc/state/active_clevel) 폴백은 폐지(2026-06-18). 저장소가
+      멀티세션 공유라 한 마커가 타 C-Level 커밋을 오귀속함(예: feat(헌법)
+      전사 작업이 coo로 찍힘). 귀속은 반드시 커밋 자체(닉네임·역할 토큰)에서만
+      뽑고, 토큰 없으면 전사 소유자 ceo(웰리)로 둔다. → C-Level은 본인 커밋에
+      [닉네임] 또는 (scope) 태그를 달아야 정확히 귀속된다.
     """
     text = f"{subject}\n{body}"
     # ① 닉네임 토큰.
@@ -158,16 +164,7 @@ def _attribute_clevel(root: str, subject: str, body: str) -> str:
             if not before.isalnum() and not after.isalnum():
                 return role
             idx = pos + 1
-    # ③ active_clevel 파일.
-    try:
-        p = Path(root) / ".omc" / "state" / "active_clevel"
-        if p.exists():
-            val = p.read_text(encoding="utf-8", errors="ignore").strip().lower()
-            if val in ROLES:
-                return val
-    except Exception:
-        pass
-    # ④ 기본.
+    # ③ 기본 — 전사 소유자 ceo(웰리). 세션마커 폴백 폐지(멀티세션 오귀속 방지).
     return "ceo"
 
 
