@@ -560,7 +560,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
       </div>
     </div>
     <div class="modal-actions">
-      <button class="modal-btn cancel" id="modalPrintBtn" onclick="(function(){var id=document.getElementById('editId').value;if(id)printResultReport(id);})()" style="margin-right:auto;">🖨 인쇄 / PDF 저장</button>
+      <button class="modal-btn cancel" id="modalPrintBtn" onclick="(function(){var id=document.getElementById('editId').value;if(id)printResultReport(id,{approval:getCheckboxValues('fApprovalGroup'),owner:getCheckboxValues('fOwnerGroup')});})()" style="margin-right:auto;">🖨 인쇄 / PDF 저장</button>
       <button class="modal-btn cancel" onclick="closeModal()">취소</button>
       <button class="modal-btn save" id="modalSaveBtn" onclick="saveTask()">저장</button>
     </div>
@@ -2981,9 +2981,11 @@ function printTasks() {
   delete document.body.dataset.printMode;
 }
 
-function printResultReport(taskId) {
+function printResultReport(taskId, override) {
   var t = ALL_TASKS.find(function(x){ return x.id === taskId; });
   if (!t) { alert('업무를 찾을 수 없습니다.'); return; }
+  // 모달에서 인쇄 시: 아직 저장 안 한 현재 화면 값(결재요청·담당)을 반영해 결재칸 누락 방지 (2026-06-18 GM)
+  if (override) { t = Object.assign({}, t, override); }
 
   var parsed = parseContent(t.content);
   // 담당자 복수선택 → ' · ' 구분 정리 (2026-05-30 GM 결정: 전원 표시 + 구분자)
