@@ -15,12 +15,14 @@
     "task_id": "CTO-2026-06-17-GAS-PII-ACCESS-GATE",
     "clevel": "cto",
     "title": "[시토] 회원 개인정보 무인증 노출 차단 — 문의·VOC GAS 접근 토큰 게이트(무중단·GM 활성화 대기)",
-    "status": "IN_PROGRESS",
+    "status": "폐기",
+    "terminal": true,
+    "disposed_at": "2026-06-18",
+    "note_disposed": "[2026-06-18 GM 지시·일단 폐기] GM이 개인정보 게이트를 '더 큰 틀'로 재설계하기로 결정 → 현 게이트(부분 발효)는 일단 거둔다. 서버 GAS TOKEN_ENFORCE 속성은 GM이 끔(clasp 미연동 수동). 게이트 코드는 휴면(TOKEN_ENFORCE off=전 액션 통과·무중단·무해)으로 잔존, 재설계 시 정리. 프론트 열쇠팝업은 이미 옵션A로 무동작(_wpKey=''·_wpGate=false). 기록보존.",
     "priority": "HIGH",
     "enqueued_at": "2026-06-17",
     "summary": "[코드 완료·검증·푸시 / GM 활성화 게이트] 보안감사(security-reviewer): GAS 8개 중 6개 무인증, 2개가 회원 개인정보(문의 inquiry_list=이름·전화 / VOC voc_list=연락처·사진) 무인증 GET 노출. GM 선택=개인정보부터. 구현(executor·시토 검증): 문의 GAS(.deploy-funnel/Survey.js + 동일사본 cmo/survey/apps_script_survey.js)·VOC GAS(coo/voc/apps_script_voc.js) 라우터 진입부에 접근 게이트 1블록. 불변식=TOKEN_ENFORCE!=='1'이면 전 액션 통과→코드배포만으론 라이브 영향0(무중단). 공개면제=submit_inquiry·track_click·voc_submit·voc_types. 프론트3(마케팅현황대시보드·월간마케팅보고서·가이드main) localStorage('wp_access_token')→&key= 첨부(GET·POST). 검증: node --check PASS·두사본 diff0·doGet param→body.key 복사 확인·프론트 호출지점 전수 래핑.",
-    "next": "GM 활성화: 각 GAS ScriptProperties ACCESS_TOKEN 설정→재배포→직원 열쇠1회 입력→TOKEN_ENFORCE=1 재배포로 발효. 발효 전 prompt UI(열쇠 미입력 직원 안내) 보강 권장. 이후 B(발행 종결 자동화) 착수.",
-    "depends_on": "GM 재배포(GAS 수동)"
+    "next": "보안 재설계 = 시토 북극성 '보안 철저' 항로로 승계. 회원 개인정보 보호는 자체 문의DB(CTO-2026-06-16-SELF-HOSTED-INQUIRY-DB)와 묶어 큰 틀에서 재설계."
   },
   {
     "task_id": "CEO-2026-06-17-G1-DATA-INTEGRITY-FIX",
