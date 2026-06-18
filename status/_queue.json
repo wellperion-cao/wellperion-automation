@@ -1299,5 +1299,18 @@
     "processed_at": "2026-06-18",
     "artifact": "GM CLI 직접 지시 7건(웰리 위임·시모 소유). 프론트(라이브 반영, 커밋 4466cd75·HTTP200 검증): #1 유형별 전환표 5칸(유형|클릭수|문의|등록|비고) #2 성인(수영·골프·스쿼시·P.T·필라테스·바레·발레)/유소년(수영·골프·스쿼시·체조&트램폴린) 종목별 토글 — 등록은 lesson_breakdown 종목별 실수치, 바레·발레=데이터 미연결(0 날조 안 함), 문의·클릭은 폼에 종목칸 없어 유형합계만(정직안내 1줄) #3+#5 유입채널 현황 독립섹션 상단승격+기간연동(구 '이번달 고정' 중복 흡수·제거)+출처미상률 배지 통합 #6 비고칸에 유형별 구글폼 바로가기(구 진입점 섹션 흡수) #7 클릭현황 토글 제거(클릭수 유형표 흡수). 죽은코드 303줄 정리. GAS(.deploy-funnel/Survey.js): #4 월단위 클릭<문의 버그=클릭시각 문자열을 서버TZ로 오해석한 날짜파싱을 _normTs_ 단일정규화로 통일(클릭·문의 동일파싱) + lesson_breakdown 종목별 등록집계 액션 신설.",
     "next": "⚠️ GAS 발효 대기 — clasp refresh_token 만료로 재배포 막힘. GM이 .deploy-funnel에서 clasp login→clasp push→웹앱 새버전 재배포 1회 필요. 발효 전엔 종목등록 '집계 대기'·유입채널 폴백 표시(프론트 graceful, 코드변경 불필요). 발효 후 자동 점등. 별건: cmo/survey/apps_script_survey.js는 라이브정본(.deploy-funnel/Survey.js)과 273줄 발산한 stale 사본 → 폐기/정리 GM 판단 대기."
+  },
+  {
+    "task_id": "COO-2026-06-18-ADHOC-b88fe42a",
+    "clevel": "coo",
+    "title": "[시우] AI 직독 추가(7 C-Level)+구조0 정합성표 채움+의식적예외 보정",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-06-18",
+    "processed_at": "2026-06-18",
+    "artifact": "Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com> (CLI ad-hoc · 커밋 b88fe42a)",
+    "next": "🌀 표류 — 다음 미정 (필요 시 GM·웰리/담당 C-Level 지정)",
+    "adhoc_commit": "b88fe42a36b1b056097685c2026ad9730a59b58b"
   }
 ]
