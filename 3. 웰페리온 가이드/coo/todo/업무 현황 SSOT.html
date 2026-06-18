@@ -3050,7 +3050,7 @@ function printResultReport(taskId) {
   if (parsed.logs && parsed.logs.length > 0) {
     var sorted = parsed.logs.slice().sort(function(a, b){ return a.date.localeCompare(b.date); });
     var rows = sorted.map(function(l){
-      return '<tr><td class="rr-log-date">' + esc(l.date) + '</td><td>' + esc(l.text) + '</td></tr>';
+      return '<tr><td class="rr-log-date">' + esc(l.date) + '</td><td style="white-space:pre-wrap;word-break:break-word;">' + esc(l.text) + '</td></tr>';
     }).join('');
     logsHtml = '<div class="rr-section-title">진척 로그</div>'
       + '<table class="rr-log-table">'
