@@ -145,7 +145,9 @@ def _attribute_clevel(root: str, subject: str, body: str) -> str:
       뽑고, 토큰 없으면 전사 소유자 ceo(웰리)로 둔다. → C-Level은 본인 커밋에
       [닉네임] 또는 (scope) 태그를 달아야 정확히 귀속된다.
     """
-    text = f"{subject}\n{body}"
+    # 제목만 본다 — 본문 부수 언급(예: 설명에 'ceo(웰리)')이 오귀속을 일으킴.
+    # C-Level은 제목에 [닉네임] 또는 (scope) 로 본인을 태그한다.
+    text = subject
     # ① 닉네임 토큰.
     for nick, role in NICK_TO_ROLE.items():
         if nick in text:
