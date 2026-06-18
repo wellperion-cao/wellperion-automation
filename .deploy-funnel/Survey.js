@@ -124,6 +124,18 @@ function _parseAnyDate_(v) {
   return v;  // ISO 등 그 외 형식은 원형 유지(하류 _toDate_/_countByPeriod_가 처리)
 }
 
+// 타임스탬프(Date | 'yyyy-MM-dd HH:mm:ss' 문자열 | 'YYYY. M. D' 한글) → Date(KST 고정).
+// ★ 단일 정규화 SSOT — 클릭(_now() 문자열)·문의(_parseAnyDate_) 모두 이 함수로 통일해
+//   날짜 파싱 불일치(클릭<문의 누락 버그, 2026-06-18 INC) 방지. period_breakdown._toDate_ 와 동일 로직.
+//   클릭 시각은 'yyyy-MM-dd HH:mm:ss'(공백 구분·오프셋 없음)으로 저장됨 → 반드시 'T'+'+09:00'로 ISO화.
+function _normTs_(ts) {
+  var v = _parseAnyDate_(ts);          // 한글 'YYYY. M. D' 먼저 흡수
+  if (v instanceof Date) return v;
+  var s = String(v || '').trim();
+  if (!s) return new Date(NaN);
+  return new Date(s.replace(' ', 'T') + '+09:00');  // 'yyyy-MM-dd HH:mm:ss' → ISO(KST)
+}
+
 // 구글폼/스태프 로그 응답 → 정규화 문의 배열 {시각, 연락처, 유입채널, 문의유형}. 접근 실패 시트는 건너뜀.
 function _collectFormInquiries_() {
   var out = [];
@@ -230,6 +242,67 @@ function _collectLessonRegistrations_() {
   return out;
 }
 
+// 강습 수강등록 — 팀시트(LESSON_TEAM_SHEETS)별 '명' 단위 등록수 집계(종목별 펼침용).
+// _collectLessonRegistrations_ 와 동일한 상태열 탐지 + _isLessonReg_ 로직 재사용 — 단지 cfg.유형이 아닌 cfg.명 키로 분해.
+// 반환: { 'P.T 성인': {유형, registered, statusHeader, statusHits, rows, sheetFound}, ... } (시트 미발견/상태열 미발견은 registered=null로 정직 표기 — 0으로 날조 금지)
+function _collectLessonRegByName_() {
+  var out = {};
+  LESSON_TEAM_SHEETS.forEach(function(cfg) {
+    var rec = { 유형: cfg.유형, 명: cfg.명, registered: null, statusHeader: '(미발견)', statusHits: 0, rows: 0, sheetFound: false };
+    try {
+      var sh = _sheetByGid_(cfg.ssId, cfg.gid);
+      if (!sh) { rec.statusHeader = '(시트 미발견)'; out[cfg.명] = rec; return; }
+      rec.sheetFound = true;
+      var last = sh.getLastRow();
+      var lastCol = sh.getLastColumn();
+      rec.rows = Math.max(0, last - 1);
+      if (last < 2 || lastCol < 1) { rec.registered = 0; rec.statusHeader = '(빈 시트)'; out[cfg.명] = rec; return; }
+      var data = sh.getRange(1, 1, last, lastCol).getValues();
+      var headers = data[0];
+      // 상태열 탐지 — _collectLessonRegistrations_ 와 동일(고유값 2~30 + 코드형 상태값 최다 열)
+      var best = -1, bestCnt = 0;
+      for (var c = 0; c < lastCol; c++) {
+        var cnt = 0, distinct = {}, dn = 0;
+        for (var r = 1; r < data.length; r++) {
+          var cv = String(data[r][c] || '').trim();
+          if (!cv) continue;
+          if (!distinct[cv]) { distinct[cv] = 1; dn++; }
+          if (_isLessonStatusVal_(cv)) cnt++;
+        }
+        if (dn >= 2 && dn <= 30 && cnt > bestCnt) { bestCnt = cnt; best = c; }
+      }
+      rec.statusHits = bestCnt;
+      if (best < 0) { rec.statusHeader = '(상태값 없음)'; out[cfg.명] = rec; return; } // 상태열 못 찾음 → null 유지(0 날조 금지)
+      rec.statusHeader = String(headers[best] || '');
+      var reg = 0;
+      for (var r2 = 1; r2 < data.length; r2++) { if (_isLessonReg_(data[r2][best])) reg++; }
+      rec.registered = reg;  // 시트·상태열 존재 → 0도 실측치(정직)
+    } catch (e) { rec.error = String(e); }  // 접근 실패 → registered=null 유지
+    out[cfg.명] = rec;
+  });
+  return out;
+}
+
+// ─── 종목별 등록 표시 SSOT (GM 지정 2026-06-18) ───
+// GM 종목 ↔ LESSON_TEAM_SHEETS '명' 매핑. 시트 없는 종목(바레·발레)은 sheet:null → registered=null('데이터 미연결').
+var LESSON_DISPLAY = {
+  '성인강습': [
+    { 명: '수영',   sheet: '수영 성인' },
+    { 명: '골프',   sheet: '골프 성인' },
+    { 명: '스쿼시', sheet: '스쿼시 성인' },
+    { 명: 'P.T',    sheet: 'P.T 성인' },
+    { 명: '필라테스', sheet: '필라테스 성인' },
+    { 명: '바레',   sheet: null },   // 등록 데이터 출처 없음(2026-06-18 grep 확인) → null
+    { 명: '발레',   sheet: null }    // 등록 데이터 출처 없음 → null
+  ],
+  '유소년강습': [
+    { 명: '수영',          sheet: '수영 유소년' },
+    { 명: '골프',          sheet: '골프 유소년' },
+    { 명: '스쿼시',        sheet: '스쿼시 유소년' },
+    { 명: '체조&트램폴린', sheet: '유소년체조' }
+  ]
+};
+
 // ─── 시트 초기화 ───
 function _getSheet(name, headers) {
   const ss = SpreadsheetApp.openById(LANDING_SPREADSHEET_ID);
@@ -309,7 +382,8 @@ var _SURVEY_PUBLIC_ACTIONS = {
   funnel_conversion:      true,
   type_channel_breakdown: true,
   click_stats:            true,
-  today_live:             true
+  today_live:             true,
+  lesson_breakdown:       true   // 종목별 등록수만 반환(PII 미노출) — 면제 안전
 };
 function _accessProp_(k) {
   try { return PropertiesService.getScriptProperties().getProperty(k) || ''; } catch (e) { return ''; }
@@ -401,7 +475,7 @@ function _processAction(body) {
       var csF = new Date(csFrom + 'T00:00:00+09:00').getTime();
       var csT = new Date(csTo + 'T23:59:59+09:00').getTime();
       data = data.filter(function(row) {
-        var t = row[1] ? new Date(row[1]).getTime() : NaN;
+        var t = row[1] ? _normTs_(row[1]).getTime() : NaN;  // 문의 집계와 동일 정규화(공백→T·KST) — 클릭 누락 버그 수정
         return !isNaN(t) && t >= csF && t <= csT;
       });
     }
@@ -592,7 +666,7 @@ function _processAction(body) {
     var tcT = tcPeriod ? new Date(tcTo + 'T23:59:59+09:00').getTime() : 0;
     function _tcInPeriod(row) {
       if (!tcPeriod) return true;
-      var t = (row.시각 instanceof Date) ? row.시각.getTime() : (row.시각 ? new Date(row.시각).getTime() : NaN);
+      var t = row.시각 ? _normTs_(row.시각).getTime() : NaN;  // 단일 정규화 SSOT — 클릭/문의 파싱 통일(공백→T·KST)
       return !isNaN(t) && t >= tcF && t <= tcT;
     }
 
@@ -714,14 +788,7 @@ function _processAction(body) {
     function _countByPeriod_(timestamps, ps) {
       var day = 0, week = 0, month = 0;
       timestamps.forEach(function(ts) {
-        var d;
-        if (ts instanceof Date) {
-          d = ts;
-        } else {
-          var s = String(ts).trim();
-          // 'yyyy-MM-dd HH:mm:ss' → ISO
-          d = new Date(s.replace(' ', 'T') + '+09:00');
-        }
+        var d = _normTs_(ts);  // 단일 정규화 SSOT(click_stats 와 동일 파싱)
         if (isNaN(d.getTime())) return;
         if (d >= ps.monthStart) month++;
         if (d >= ps.weekStart)  week++;
@@ -730,13 +797,8 @@ function _processAction(body) {
       return { day: day, week: week, month: month };
     }
 
-    // 타임스탬프(Date|string) → Date 변환 헬퍼
-    function _toDate_(ts) {
-      if (ts instanceof Date) return ts;
-      var s = String(ts || '').trim();
-      if (!s) return new Date(NaN);
-      return new Date(s.replace(' ', 'T') + '+09:00');
-    }
+    // 타임스탬프(Date|string) → Date 변환 헬퍼 (단일 정규화 SSOT _normTs_ 위임)
+    function _toDate_(ts) { return _normTs_(ts); }
 
     var ps = _periodStarts_();
 
@@ -1189,6 +1251,60 @@ function _processAction(body) {
     var wtResult = { ok: true, weeks: wtWeeks, generatedAt: _now() };
     try { wtCache.put('wt_v1', JSON.stringify(wtResult), 300); } catch (e) { /* 캐시 저장 실패 무시 */ }
     return _json(wtResult);
+  }
+
+  // ─── 종목별 등록 집계 (대시보드 강습 펼침 — GM 2026-06-18) ───
+  // 성인/유소년강습을 GM 지정 종목 단위로 펼쳐 '등록' 수만 반환. 문의는 종목 데이터 없음 → 프론트가 대분류로 표기.
+  // 등록 = LESSON_TEAM_SHEETS 팀시트 상태열 SUC/등록 등(_isLessonReg_). 정본 = _collectLessonRegByName_.
+  // 정직성: 시트 없는 종목(바레·발레)=registered:null('데이터 미연결'), 0으로 채우지 않음. 시트 있고 등록 0=실측 0.
+  if (action === 'lesson_breakdown') {
+    var lbCache = CacheService.getScriptCache();
+    var lbHit = lbCache.get('lb_v1');
+    if (lbHit) return _json(JSON.parse(lbHit));
+
+    var byName = _collectLessonRegByName_();   // { 'P.T 성인': {registered|null, ...}, ... }
+    var usedSheets = {};                         // GM 목록이 소비한 시트 명 추적 → 나머지는 others
+    var data = {};
+
+    Object.keys(LESSON_DISPLAY).forEach(function(grp) {
+      data[grp] = LESSON_DISPLAY[grp].map(function(item) {
+        var reg = null, src = null;
+        if (item.sheet) {
+          usedSheets[item.sheet] = true;
+          var rec = byName[item.sheet];
+          if (rec) { reg = rec.registered; src = rec.statusHeader; }  // registered=null이면 그대로 null(데이터 미연결)
+        }
+        return { 명: item.명, registered: reg, sheet: item.sheet || null, statusSource: src };
+      });
+    });
+
+    // GM 목록 밖이지만 시트엔 존재하는 종목 → others(누락·날조 금지)
+    var others = [];
+    LESSON_TEAM_SHEETS.forEach(function(cfg) {
+      if (usedSheets[cfg.명]) return;
+      var rec = byName[cfg.명];
+      others.push({ 유형: cfg.유형, 명: cfg.명, registered: rec ? rec.registered : null });
+    });
+
+    // 매칭 안 된(시트 없는) GM 종목 → 프론트 '데이터 미연결' 표기용
+    var unmatched = [];
+    Object.keys(LESSON_DISPLAY).forEach(function(grp) {
+      LESSON_DISPLAY[grp].forEach(function(item) {
+        if (!item.sheet) unmatched.push({ 유형: grp, 명: item.명, reason: '등록 데이터 출처 없음' });
+      });
+    });
+
+    var lbResult = {
+      ok: true,
+      generatedAt: _now(),
+      basis: '종목별 등록 = 팀시트(LESSON_TEAM_SHEETS) 상태열 수강등록(SUC/등록) 집계 · 등록만(문의는 대분류) · 시트없는종목=null(데이터 미연결)',
+      data: data,
+      others: others,
+      unmatched: unmatched,
+      debugByName: byName
+    };
+    try { lbCache.put('lb_v1', JSON.stringify(lbResult), 300); } catch (e) { /* 캐시 실패 무시 */ }
+    return _json(lbResult);
   }
 
   return _json({ ok: false, error: '알 수 없는 action: ' + action });
