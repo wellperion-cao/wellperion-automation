@@ -807,7 +807,7 @@ def run(dry_run: bool, plan_only: bool) -> int:
     if nxt is None:
         planned_nums = [e["num_raw"] for e in episodes if e["status"] == PLANNED_STATUS]
         print(f"[INFO] 기획예정 편 소진 — 생성 금지(쓰레기/중복 방지). (남은 기획예정: {planned_nums})")
-        telegram("📭 AI 시리즈 #6~#8 소진 — 신규 기획 필요 (다음 편 자동 제작 중단)")
+        telegram("📭 AI 시리즈 기획예정 편 소진(0건) — 로드맵 §5에 '기획예정' 행 추가 필요, 다음 편 자동 제작 중단")
         return 0
 
     prev = prev_published_episode(episodes, nxt["num"])
