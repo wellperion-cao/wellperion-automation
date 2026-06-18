@@ -1,7 +1,7 @@
 // 웰페리온 회원 종합 접수처 전용 Apps Script (QR + 사진)
 // ⚠️ 점검 GAS(coo/check/apps_script_v3.js)·업무 GAS(coo/todo/apps_script_todo.js)와
 //    완전 독립 — 절대 그 위에 얹지 말 것. 신규 전용 GAS 프로젝트로 배포한다.
-// ⚠️ 라이브 '이슈 응답' 시트는 건드리지 않는다. VOC는 별도 시트 탭 「회원셀프VOC」.
+// ⚠️ 라이브 '이슈 응답' 시트는 건드리지 않는다. VOC는 별도 시트 탭 「접수 VOC」.
 //
 // 액션:
 //   voc_submit (POST) — 회원 모바일 폼 제출: 유형·위치·사진base64·내용·(선택)연락처
@@ -18,7 +18,7 @@
 //   토큰·챗ID 등 비밀값은 절대 repo 하드코딩 금지 — 전부 ScriptProperties 서버측 보관.
 
 // ─── 상수 ───
-var VOC_SHEET = '회원셀프VOC';
+var VOC_SHEET = '접수 VOC';
 var VOC_HEADERS = [
   '접수ID', '접수일시', '유형', '위치', '사진URL',
   '내용', '연락처', '상태', '담당', '처리메모'
