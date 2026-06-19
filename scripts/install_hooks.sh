@@ -24,6 +24,12 @@ chmod +x "$HOOKS_DIR/post-commit"
 echo "[install_hooks] post-commit hook 설치 완료."
 echo "[install_hooks] 확인: $HOOKS_DIR/post-commit"
 
+# _queue.json 전용 머지 드라이버 등록 (.gitattributes 의 merge=queuejson 와 짝)
+#   여러 세션이 각자 '배'를 추가해도 task_id 합집합으로 자동 병합 → rebase 충돌·자동push 실패 근본차단(2026-06-19 시토)
+git config merge.queuejson.name "_queue.json task_id union merge (CTO)"
+git config merge.queuejson.driver "python scripts/git_merge_queue.py %O %A %B"
+echo "[install_hooks] _queue.json 머지 드라이버 등록 완료 (merge.queuejson)."
+
 # pre-commit 가 호출하는 보조 스크립트 존재 확인 (별도 설치 불필요 — 경로참조)
 if [ -f "$SCRIPTS_DIR/sync_queue_mirror.py" ]; then
   echo "[install_hooks] _queue 미러 동기화 스크립트 확인: sync_queue_mirror.py (pre-commit 단계 ①-3)"

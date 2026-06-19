@@ -1,0 +1,6 @@
+# 동시 자동커밋 충돌 방지 (2026-06-19 시토) — 자동 push 실패 근본해결
+# _queue.json: 여러 세션이 각자 '배'를 추가해도 task_id 합집합으로 자동 병합(전용 드라이버).
+#   파일명 패턴이라 status/_queue.json + '3. 웰페리온 가이드/status/_queue.json'(미러) 모두 적용.
+_queue.json merge=queuejson
+# append-only 로그(.jsonl): 양쪽 추가분을 union 으로 자동 결합(git 내장 드라이버).
+*.jsonl merge=union
