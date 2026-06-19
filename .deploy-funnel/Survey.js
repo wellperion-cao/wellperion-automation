@@ -436,6 +436,8 @@ function _checkSurveyAccess_(action, key) {
 // ═══════════════════════════════════════════
 function _processAction(body) {
   const action = body.action || '';
+  // nocache=1 → 캐시 읽기 우회(강제 재계산·재캐싱). 워머 트리거가 캐시를 미리 데우는 용도(2026-06-19 시토).
+  var _nc = (body.nocache === '1');
 
   // ─── 접근 게이트 확인 ───
   if (!_checkSurveyAccess_(action, body.key)) {
@@ -498,7 +500,7 @@ function _processAction(body) {
     var csCache = CacheService.getScriptCache();
     var csCacheKey = 'cs_v3_' + csFrom + '_' + csTo;
     var csHit = csCache.get(csCacheKey);
-    if (csHit) return _json(JSON.parse(csHit));
+    if (csHit && !_nc) return _json(JSON.parse(csHit));
 
     const sh = _getSheet(CLICK_SHEET, CLICK_HEADERS);
     const last = sh.getLastRow();
@@ -529,7 +531,7 @@ function _processAction(body) {
     });
 
     var csResult = { ok: true, total: data.length, byLink: byLink, byLinkUrl: byLinkUrl, byUtmSource: byUtmSource, from: csFrom, to: csTo };
-    try { csCache.put(csCacheKey, JSON.stringify(csResult), 300); } catch (e) { /* 캐시 저장 실패 무시 */ }
+    try { csCache.put(csCacheKey, JSON.stringify(csResult), 1800); } catch (e) { /* 캐시 저장 실패 무시 */ }
     return _json(csResult);
   }
 
@@ -558,7 +560,7 @@ function _processAction(body) {
     // 캐시 조회
     var fcCache = CacheService.getScriptCache();
     var fcHit = fcCache.get('fc_v1');
-    if (fcHit) return _json(JSON.parse(fcHit));
+    if (fcHit && !_nc) return _json(JSON.parse(fcHit));
 
     // ① 회원부 전화번호 Set 생성
     var memberSs  = SpreadsheetApp.openById(MEMBER_SPREADSHEET_ID);
@@ -634,7 +636,7 @@ function _processAction(body) {
       generatedAt: _now()
     };
     // 캐시 저장 (100KB 초과 시 생략)
-    try { fcCache.put('fc_v1', JSON.stringify(fcResult), 300); } catch (e) { /* 캐시 저장 실패 무시 */ }
+    try { fcCache.put('fc_v1', JSON.stringify(fcResult), 1800); } catch (e) { /* 캐시 저장 실패 무시 */ }
     return _json(fcResult);
   }
 
@@ -648,7 +650,7 @@ function _processAction(body) {
     var tcCache = CacheService.getScriptCache();
     var tcCacheKey = 'tc_v5_' + tcFrom + '_' + tcTo;
     var tcHit = tcCache.get(tcCacheKey);
-    if (tcHit) return _json(JSON.parse(tcHit));
+    if (tcHit && !_nc) return _json(JSON.parse(tcHit));
 
     // 회원부 전화 Set (유효회원 = 멤버십 등록 정본). 시트 미발견 시 빈 Set로 계속(throw 금지 — funnel_conversion 동일 패턴).
     var tcMemberSh = SpreadsheetApp.openById(MEMBER_SPREADSHEET_ID).getSheetByName(MEMBER_SHEET);
@@ -780,7 +782,7 @@ function _processAction(body) {
         unknownRate: ovTotal > 0 ? Math.round((ovUnknown / ovTotal) * 1000) / 10 : 0
       }
     };
-    try { tcCache.put(tcCacheKey, JSON.stringify(tcResult), 300); } catch (e) { /* 캐시 실패 무시 */ }
+    try { tcCache.put(tcCacheKey, JSON.stringify(tcResult), 1800); } catch (e) { /* 캐시 실패 무시 */ }
     return _json(tcResult);
   }
 
@@ -793,7 +795,7 @@ function _processAction(body) {
     var pbCache = CacheService.getScriptCache();
     var pbKey   = 'pb_' + from + '_' + to;
     var pbHit   = pbCache.get(pbKey);
-    if (pbHit) return _json(JSON.parse(pbHit));
+    if (pbHit && !_nc) return _json(JSON.parse(pbHit));
 
     // ── 기간 시작 시각 계산 (Asia/Seoul 달력 기준) ──
     function _periodStarts_() {
@@ -1062,7 +1064,7 @@ function _processAction(body) {
     if (customObj !== null) pbResult.custom = customObj;
 
     // 캐시 저장 (100KB 초과 시 생략)
-    try { pbCache.put(pbKey, JSON.stringify(pbResult), 300); } catch (e) { /* 캐시 저장 실패 무시 */ }
+    try { pbCache.put(pbKey, JSON.stringify(pbResult), 1800); } catch (e) { /* 캐시 저장 실패 무시 */ }
     return _json(pbResult);
   }
 
@@ -1071,7 +1073,7 @@ function _processAction(body) {
     // 캐시 조회
     var sfCache = CacheService.getScriptCache();
     var sfHit   = sfCache.get('sf_v1');
-    if (sfHit) return _json(JSON.parse(sfHit));
+    if (sfHit && !_nc) return _json(JSON.parse(sfHit));
 
     // ① 회원부 전화번호 Set 생성 (funnel_conversion 방식 그대로)
     var sfMemberSs   = SpreadsheetApp.openById(MEMBER_SPREADSHEET_ID);
@@ -1194,7 +1196,7 @@ function _processAction(body) {
       retain: sfRetain
     };
     // 캐시 저장 (100KB 초과 시 생략)
-    try { sfCache.put('sf_v1', JSON.stringify(sfResult), 300); } catch (e) { /* 캐시 저장 실패 무시 */ }
+    try { sfCache.put('sf_v1', JSON.stringify(sfResult), 1800); } catch (e) { /* 캐시 저장 실패 무시 */ }
     return _json(sfResult);
   }
 
@@ -1203,7 +1205,7 @@ function _processAction(body) {
     // 캐시 조회
     var wtCache = CacheService.getScriptCache();
     var wtHit = wtCache.get('wt_v1');
-    if (wtHit) return _json(JSON.parse(wtHit));
+    if (wtHit && !_nc) return _json(JSON.parse(wtHit));
 
     // ── 이번 주 월요일 기준 8주 구간 산출 (Asia/Seoul) ──
     var wtNow = new Date();
@@ -1284,7 +1286,7 @@ function _processAction(body) {
     });
 
     var wtResult = { ok: true, weeks: wtWeeks, generatedAt: _now() };
-    try { wtCache.put('wt_v1', JSON.stringify(wtResult), 300); } catch (e) { /* 캐시 저장 실패 무시 */ }
+    try { wtCache.put('wt_v1', JSON.stringify(wtResult), 1800); } catch (e) { /* 캐시 저장 실패 무시 */ }
     return _json(wtResult);
   }
 
@@ -1298,7 +1300,7 @@ function _processAction(body) {
     var lbCache = CacheService.getScriptCache();
     var lbKey = 'lb_v2_' + lbFrom + '_' + lbTo;   // 기간별 캐시키
     var lbHit = lbCache.get(lbKey);
-    if (lbHit) return _json(JSON.parse(lbHit));
+    if (lbHit && !_nc) return _json(JSON.parse(lbHit));
 
     var byName    = _collectLessonRegByName_();              // 등록(누적): { 'P.T 성인': {registered|null,...}, ... }
     var byNameInq = _collectLessonInqByName_(lbFrom, lbTo);  // 문의(기간별): { 'P.T 성인': {inquiries|null,...}, ... }
@@ -1357,7 +1359,7 @@ function _processAction(body) {
       others: others,
       unmatched: unmatched
     };
-    try { lbCache.put(lbKey, JSON.stringify(lbResult), 300); } catch (e) { /* 캐시 실패 무시 */ }
+    try { lbCache.put(lbKey, JSON.stringify(lbResult), 1800); } catch (e) { /* 캐시 실패 무시 */ }
     return _json(lbResult);
   }
 
@@ -1388,4 +1390,48 @@ function doPost(e) {
   } catch (err) {
     return _json({ ok: false, error: err.message });
   }
+}
+
+// ─── 대시보드 캐시 워머 (2026-06-19 시토) ────────────────────────────────
+// 시간 트리거가 5분마다 호출 → 무거운 집계(type_channel·funnel_conversion 등)를
+// nocache=1로 강제 재계산해 캐시를 미리 데움 → 사용자는 항상 캐시 히트(~1.5초).
+// Claude/LLM 토큰 무관(구글 서버 실행). 자기 /exec 호출이라 새 OAuth 스코프 없음.
+var _WARM_EXEC_URL = 'https://script.google.com/macros/s/AKfycbzdwSCCSSJ6JXLDoWuo7HG0JmBM2iy10TujFQ_O5JbTjnWaN7gOk-ddA4IAvsNfelg0xA/exec';
+
+function warmDashboardCache() {
+  // 대시보드 초기 로드와 동일 범위(이번 달 1일~오늘, KST)로 키 정합.
+  var tz = 'Asia/Seoul';
+  var now = new Date();
+  var from = Utilities.formatDate(now, tz, 'yyyy-MM') + '-01';
+  var to   = Utilities.formatDate(now, tz, 'yyyy-MM-dd');
+  var range = '&from=' + from + '&to=' + to;
+  var qs = [
+    'action=funnel_conversion',                 // fc_v1 (범위 무관)
+    'action=type_channel_breakdown' + range,    // tc — 가장 무거움
+    'action=click_stats' + range,
+    'action=period_breakdown' + range
+  ];
+  qs.forEach(function(q) {
+    try {
+      UrlFetchApp.fetch(_WARM_EXEC_URL + '?' + q + '&nocache=1', { muteHttpExceptions: true, followRedirects: true });
+    } catch (e) { /* 개별 실패 무시 — 다음 주기 재시도 */ }
+  });
+}
+
+// 워머 트리거 설치/제거 — GM이 GAS 에디터에서 1회 실행(ScriptApp 스코프 인가).
+function installWarmTrigger() {
+  ScriptApp.getProjectTriggers().forEach(function(t) {
+    if (t.getHandlerFunction() === 'warmDashboardCache') ScriptApp.deleteTrigger(t);
+  });
+  ScriptApp.newTrigger('warmDashboardCache').timeBased().everyMinutes(5).create();
+  warmDashboardCache(); // 즉시 1회 데움
+  return '워머 트리거 설치 완료(5분 주기) + 즉시 1회 실행';
+}
+
+function removeWarmTrigger() {
+  var n = 0;
+  ScriptApp.getProjectTriggers().forEach(function(t) {
+    if (t.getHandlerFunction() === 'warmDashboardCache') { ScriptApp.deleteTrigger(t); n++; }
+  });
+  return '워머 트리거 ' + n + '개 제거';
 }
