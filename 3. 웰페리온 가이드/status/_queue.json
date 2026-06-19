@@ -1883,5 +1883,18 @@
     "next": "🌀 표류 — 다음 미정 (필요 시 GM·웰리/담당 C-Level 지정)",
     "adhoc_commit": "0b51cb560a22c993c48e2e70bfb56983b5b8acdb",
     "ship_no": 47
+  },
+  {
+    "task_id": "CEO-2026-06-19-ADHOC-196aa3dd",
+    "clevel": "ceo",
+    "title": "[웰리] 배별 고정 식별번호(담당+번호) — ship_no 저장+항로 렌더",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-06-19",
+    "processed_at": "2026-06-19",
+    "artifact": "- scripts/assign_ship_numbers.py: 멱등·append-only backfill (담당별 enqueued_at 오름차순, 기존 번호 불변)\n- status/_queue.json: 전체 143건 ship_no 최초 부여 (ceo 25, cmo 42, coo 47, cto 23, chro 4, cpo 2)\n- wellperion_guide(main).html: CLEVEL_NICK 매핑 추가, owner 필드를 '닉네임 번호' 형식으로 렌더 (CLI ad-hoc · 커밋 196aa3dd)",
+    "next": "🌀 표류 — 다음 미정 (필요 시 GM·웰리/담당 C-Level 지정)",
+    "adhoc_commit": "196aa3dd1b9b1809a2bbff1a78a2613fc4a1d850"
   }
 ]
