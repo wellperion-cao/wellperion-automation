@@ -3,13 +3,13 @@
     "task_id": "CTO-2026-06-19-PARKING-REVENUE-CRAWLER",
     "clevel": "cto",
     "title": "[시토] 주차 매출 자동 크롤러 — 주차관리시스템 자동로그인 → 이번달 매출금액 매일 수집 → 매출 보고 합류",
-    "status": "IN_PROGRESS",
+    "status": "DONE",
+    "terminal": true,
     "priority": "⛴️여객선",
     "enqueued_at": "2026-06-19",
-    "processed_at": null,
-    "summary": "[코드·일일자동 완료 / 보고합류 표면=GM 결정 대기] 주차시스템(ppark-wall.iptime.org:8280, parkId=1057) 자동로그인→이번달 실결제 매출 수집 라이브 완성. ①scripts/parking_revenue_crawler.py: 폼로그인(JSESSIONID_ADMIN)→POST /report/getParkCloseList(searchType=start·YYYYMMDD)→payAmt 합산→status/parking_revenue.json 발행(fail-safe·.env PARKING_* 단일출처·코드 평문0). ②daily_scheduler 매일 07:00 작업 등록(08:00 보고 전 갱신, 봇 재기동 시 발효). ③py_compile OK·라이브 실측 2026-06 실결제 2,149,500원/393건(할인감면 1억300만=회원무료). 커밋 푸시.",
-    "next": "GM 결정 2건: (a) '매출' 정의=실결제(payAmt·기본) vs 할인포함 총정산 (b) 보고 합류 표면=08:00 통합보고 한줄 / home 매출 KPI / CFO 재무보고. 매출 보고 포맷은 CFO(시뽀) 영역이라 표면 정해지면 시뽀와 협업 합류. 데이터 파일은 이미 라이브 발행 중.",
-    "depends_on": "GM: 매출 정의 + 보고 합류 표면 결정"
+    "processed_at": "2026-06-19",
+    "artifact": "[전구간 라이브 완성·검증] GM 지시=주차 매출 자동 수집→home 매출 KPI GXE 아래 합류. GM 확정: 매출=카드 총정산액=payAmt. ①scripts/parking_revenue_crawler.py: 주차시스템(ppark-wall.iptime.org:8280·parkId=1057) 폼로그인(JSESSIONID_ADMIN)→POST /report/getParkCloseList→payAmt 합산→status/parking_revenue.json 발행(fail-safe·.env PARKING_* 단일출처·코드평문0). ②daily_scheduler 매일 07:00 작업 등록(08:00 보고 전 갱신·봇 재기동 시 발효). ③home_kpi GAS(_kpiParkingRevenueRow): 크롤러 라이브JSON(raw GitHub) 직독→breakdown 'GXE' 바로 아래 '주차' 행 삽입(시트 총합/hero 불변·additive·fail-safe). clasp push+재배포 @81(deploymentId AKfycbxDwFkrx 보존=URL불변). 라이브 실측: home_kpi 엔드포인트 breakdown 8=GXE 41.4만 / 9=주차 215만(=GXE 바로 아래 확인). 크롤러 라이브 2026-06 payAmt 2,149,500원/393건. 커밋·푸시 완료.",
+    "next": "표류(완결). GM Ctrl+Shift+R로 home 매출 KPI '주차' 행 육안확인 권장. ⚠️주차는 breakdown 표시행이며 매출 헤드라인 총액(409,383,982)엔 미합산(별도 라인)=정직표기. 총액 합산 원하시면 GM 신호 시 1줄 추가. 일일 07:00 자동수집은 다음 봇 재기동부터 발효(현재 JSON은 최신)."
   },
   {
     "task_id": "CMO-2026-06-18-IG-BIO-INQUIRY-BRIDGE",
@@ -1167,12 +1167,13 @@
   {
     "task_id": "COO-2026-06-17-FACILITY-DAILY-CHECK",
     "clevel": "coo",
-    "title": "[시우] 시설부 자체 일일점검 신설 — 작업일지 기반(설계완료, GM 6결정 대기)",
-    "status": "PENDING",
+    "title": "[시우] 시설부 자체 일일점검 신설 — 작업일지 기반(GM 7결정 확정·구현 착수)",
+    "status": "IN_PROGRESS",
     "priority": "NORMAL",
     "enqueued_at": "2026-06-17",
-    "note": "[2026-06-17 GM 지시] 시설부 자체 일일점검 신설+작업일지 기반 항목초안. 설계(architect) 완료=status/briefs/COO-2026-06-17-FACILITY-CHECK-DESIGN.md. 핵심: \"신설\"이 아니라 백엔드 dept=facility 배선이 이미 잠들어 있어 재활성화(저난이도). 작업일지 원천 PDF 2건+시설부 체계.html 측정폼(탭 fcheck) 이미 구현. 항목≈측정형22+AI초안4. 성별=사우나탕만 남/여 컬럼·점검탭 단일(박호균 과장 1인 순회). 무회귀=dept별 시트탭·원장·필터 물리분리(지원부 0영향). 최소경로=항목시드+setup_facility_tabs 1회→home KPI 점등.",
-    "next": "GM 6결정: ①측정형 유지 vs 체크형 단순화 ②완료율 정의(입력률 vs 기준이탈) ③남/여 단일탭 OK ④회차 8고정 vs 평일/주말 분리 ⑤기존 fcheck 폼 승격 vs 교체 ⑥점검주체 단독 vs 명단. 결정 후 구현·배포·지원부 무회귀 게이트."
+    "note": "[2026-06-17 GM 지시] 시설부 자체 일일점검 신설+작업일지 기반 항목초안. 설계(architect) 완료=status/briefs/COO-2026-06-17-FACILITY-CHECK-DESIGN.md. 핵심: \"신설\"이 아니라 백엔드 dept=facility 배선이 이미 잠들어 있어 재활성화(저난이도). 작업일지 원천 PDF 2건+시설부 체계.html 측정폼(탭 fcheck) 이미 구현. 무회귀=dept별 시트탭·원장·필터 물리분리(지원부 0영향).",
+    "decisions": "[2026-06-19 GM deep-interview 확정] ①측정형(수치기록) ②완료율=입력률(필수측정칸 채움→홈KPI점등) ③단일화면(데이터엔 남/여탕칸 유지) ④평일8회/주말6회 분리 ⑤기존 fcheck폼 승격(정본화)+saveV2 입력률 결합 ⑥근무자 누구나 입력 ⑦점검자명단=시설부3인(이정헌소장·김종현차장·박호균과장)+직접입력. 명세=.omc/specs/deep-interview-facility-daily-check.md",
+    "next": "team 병렬 구현: 1)측정항목 dept=facility 시드 2)setup_facility_tabs 1회 3)평일8/주말6 회차분리 4)fcheck폼→입력률 saveV2결합+점검자드롭다운 5)clasp재배포 6)★지원부 무회귀 게이트(verifier) 7)홈 facility카드 라이브검증."
   },
   {
     "task_id": "CTO-2026-06-17-PAGES-CMO-FOLDER-404",
