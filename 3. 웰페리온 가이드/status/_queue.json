@@ -9,7 +9,8 @@
     "enqueued_at": "2026-06-19",
     "processed_at": "2026-06-19",
     "artifact": "[전구간 라이브 완성·검증] GM 지시=주차 매출 자동 수집→home 매출 KPI GXE 아래 합류. GM 확정: 매출=카드 총정산액=payAmt. ①scripts/parking_revenue_crawler.py: 주차시스템(ppark-wall.iptime.org:8280·parkId=1057) 폼로그인(JSESSIONID_ADMIN)→POST /report/getParkCloseList→payAmt 합산→status/parking_revenue.json 발행(fail-safe·.env PARKING_* 단일출처·코드평문0). ②daily_scheduler 매일 07:00 작업 등록(08:00 보고 전 갱신·봇 재기동 시 발효). ③home_kpi GAS(_kpiParkingRevenueRow): 크롤러 라이브JSON(raw GitHub) 직독→breakdown 'GXE' 바로 아래 '주차' 행 삽입(시트 총합/hero 불변·additive·fail-safe). clasp push+재배포 @81(deploymentId AKfycbxDwFkrx 보존=URL불변). 라이브 실측: home_kpi 엔드포인트 breakdown 8=GXE 41.4만 / 9=주차 215만(=GXE 바로 아래 확인). 크롤러 라이브 2026-06 payAmt 2,149,500원/393건. 커밋·푸시 완료.",
-    "next": "표류(완결). GM Ctrl+Shift+R로 home 매출 KPI '주차' 행 육안확인 권장. ⚠️주차는 breakdown 표시행이며 매출 헤드라인 총액(409,383,982)엔 미합산(별도 라인)=정직표기. 총액 합산 원하시면 GM 신호 시 1줄 추가. 일일 07:00 자동수집은 다음 봇 재기동부터 발효(현재 JSON은 최신)."
+    "next": "표류(완결). GM Ctrl+Shift+R로 home 매출 KPI '주차' 행 육안확인 권장. ⚠️주차는 breakdown 표시행이며 매출 헤드라인 총액(409,383,982)엔 미합산(별도 라인)=정직표기. 총액 합산 원하시면 GM 신호 시 1줄 추가. 일일 07:00 자동수집은 다음 봇 재기동부터 발효(현재 JSON은 최신).",
+    "ship_no": 22
   },
   {
     "task_id": "CMO-2026-06-18-IG-BIO-INQUIRY-BRIDGE",
@@ -20,7 +21,8 @@
     "enqueued_at": "2026-06-18",
     "processed_at": null,
     "note": "북극성('전환 엔진') 직공략 1수. 진단: 전환 측정 파이프는 깔렸으나(UTM·click_stats·대시보드) 전환을 '올리는' 핵심 미착수 — 특히 IG bio에 문의 다리 없음 + 문의 귀속이 폼 '어떻게 알고 오셨나요?' 필드 정본이라 IG 유입이 기타·미상 43%로 샘. 조치: 모바일 링크-인-바이오 허브(cmo/funnel/link.html, Pages 호스팅)에 멤버십·성인·유소년·통합문의 버튼(각 utm_source=instagram&utm_medium=bio + track_click) → GM이 IG bio에 URL 1줄. 브랜드 톤 듀오톤·금지어 0.",
-    "next": "[2026-06-19 웰리] ②귀속 택소노미 정합 완료(RECEPTION-CHANNEL-DROPDOWN DONE — 인스타그램 버킷 1:1, IG 문의 즉시 귀속 가능). 남은 잔여=①GM이 @namuk.wellperion bio에 허브 URL 1줄 붙임(GM 액션, 유일 블로커) → ③2주 후 IG 클릭·문의 실측으로 전환 상승·기타미상 감소 검증."
+    "next": "[2026-06-19 웰리] ②귀속 택소노미 정합 완료(RECEPTION-CHANNEL-DROPDOWN DONE — 인스타그램 버킷 1:1, IG 문의 즉시 귀속 가능). 남은 잔여=①GM이 @namuk.wellperion bio에 허브 URL 1줄 붙임(GM 액션, 유일 블로커) → ③2주 후 IG 클릭·문의 실측으로 전환 상승·기타미상 감소 검증.",
+    "ship_no": 28
   },
   {
     "task_id": "CEO-2026-06-17-INTEGRATION-HEALTH-GUARD",
@@ -32,7 +34,8 @@
     "enqueued_at": "2026-06-17",
     "processed_at": "2026-06-17",
     "artifact": "GM 지적(데이터 소스 연동 이슈가 반복·깨진 걸 GM이 먼저 발견) → '가드부터' 선택. scripts/integration_health.py check_bridges() 단일정의 5다리 점검: ①G1 큐 라이브(Pages 200+로컬 active 건수 일치=오늘 404 회귀클래스 적발) ②큐 미러 동기(원본==발행루트 미러) ③시트 GAS todo_list 200 ④M5 검수큐 라이브 200 ⑤미푸시 0. 박제 2곳(import만·정의 복사 금지): 부팅가드 welly_boot_guard.py에 '🔗 연동 다리' 섹션+깨짐 시 exit1 / erp_status 발행기(30분 주기)에 bridges 필드 기록 + _bridge_last 비교로 '새로 깨진' 다리만 텔레그램 1줄 경고(.env 직독·fail-soft·스팸방지). 음성테스트로 실제 적발 검증(잘못URL·active 불일치·미러깨짐 전부 잡힘, 원복). 커밋 5774018. 웰리 독립실행 라이브 5다리 전부 ✅ 실측.",
-    "next": "안정 확인되면 2단계 '큐 일원화'(시트 GM 담당 4건→큐, 항로=큐 단일/결재=시트). GM 신호 시 착수. 연동 깨지면 이제 부팅·30분 가드가 GM보다 먼저 적발."
+    "next": "안정 확인되면 2단계 '큐 일원화'(시트 GM 담당 4건→큐, 항로=큐 단일/결재=시트). GM 신호 시 착수. 연동 깨지면 이제 부팅·30분 가드가 GM보다 먼저 적발.",
+    "ship_no": 13
   },
   {
     "task_id": "CTO-2026-06-17-GAS-PII-ACCESS-GATE",
@@ -45,7 +48,8 @@
     "priority": "HIGH",
     "enqueued_at": "2026-06-17",
     "summary": "[코드 완료·검증·푸시 / GM 활성화 게이트] 보안감사(security-reviewer): GAS 8개 중 6개 무인증, 2개가 회원 개인정보(문의 inquiry_list=이름·전화 / VOC voc_list=연락처·사진) 무인증 GET 노출. GM 선택=개인정보부터. 구현(executor·시토 검증): 문의 GAS(.deploy-funnel/Survey.js + 동일사본 cmo/survey/apps_script_survey.js)·VOC GAS(coo/voc/apps_script_voc.js) 라우터 진입부에 접근 게이트 1블록. 불변식=TOKEN_ENFORCE!=='1'이면 전 액션 통과→코드배포만으론 라이브 영향0(무중단). 공개면제=submit_inquiry·track_click·voc_submit·voc_types. 프론트3(마케팅현황대시보드·월간마케팅보고서·가이드main) localStorage('wp_access_token')→&key= 첨부(GET·POST). 검증: node --check PASS·두사본 diff0·doGet param→body.key 복사 확인·프론트 호출지점 전수 래핑.",
-    "next": "보안 재설계 = 시토 북극성 '보안 철저' 항로로 승계. 회원 개인정보 보호는 자체 문의DB(CTO-2026-06-16-SELF-HOSTED-INQUIRY-DB)와 묶어 큰 틀에서 재설계."
+    "next": "보안 재설계 = 시토 북극성 '보안 철저' 항로로 승계. 회원 개인정보 보호는 자체 문의DB(CTO-2026-06-16-SELF-HOSTED-INQUIRY-DB)와 묶어 큰 틀에서 재설계.",
+    "ship_no": 19
   },
   {
     "task_id": "CTO-2026-06-18-PII-PROTECTION-REDESIGN",
@@ -56,7 +60,8 @@
     "enqueued_at": "2026-06-18",
     "note": "[2026-06-18 GM] 토큰 게이트(부분 발효)는 페이지 잠김으로 폐기·롤백(서버 TOKEN_ENFORCE 양 GAS 껐음 → 현재 회원 개인정보 이름·연락처가 다시 무인증 공개 상태 = 의도된 임시). GM 지시='부분 게이트 말고 더 큰 틀로 재설계'. 범위=문의·VOC·회원 데이터 전체의 인증·접근통제 아키텍처(누가·어떻게 보나)를 한 틀로. 자체 문의 DB(CTO-2026-06-16-SELF-HOSTED-INQUIRY-DB)와 묶어 설계. 시토 운영 헌장 축6 준수=라이브 발효는 GM go+즉시 역롤백. 교훈 메모리 feedback_security_live_activation_needs_gm_go.",
     "next": "GM 착수 신호 시: architect로 큰 틀 설계(인증방식·저장소·열람 권한·발효 게이트) → GM 방향 결재 → 단계 구현. 현재는 목표·범위 박제(대기).",
-    "depends_on": "GM 착수 신호 + 설계 방향 결정"
+    "depends_on": "GM 착수 신호 + 설계 방향 결정",
+    "ship_no": 21
   },
   {
     "task_id": "CEO-2026-06-17-G1-DATA-INTEGRITY-FIX",
@@ -68,7 +73,8 @@
     "enqueued_at": "2026-06-17",
     "processed_at": "2026-06-17",
     "artifact": "GM 라이브 지적 4건(항로 4개만·완료 누적안됨·결재 1건만·시트삭제로 사라졌나) 진단(debugger 읽기전용)·수정. 진범 1개=2026-06-16 G1 stale-render 수정이 _queue 읽기 주소를 GitHub Pages 발행루트('3. 웰페리온 가이드/') 밖 경로(/wellperion-automation/status/_queue.json)로 바꿨고 라이브 검증을 안 해 404→빈배열→살아있는 항로 20건이 4건으로 collapse·완료 54건 미합류(데이터·GAS 78행·시트 전부 무손상=표시/배포경로 손실). Q4=어제 시트삭제·AI배와 무관(GAS 200 정상). 수정: 발행루트 큐 미러('3. 웰페리온 가이드/status/_queue.json')+scripts/sync_queue_mirror.py 단방향·멱등 pre-commit 자동동기화 훅+fetch cache-bust/no-store → 라이브 큐 HTTP200·active 20(PEND14+INP6)·DONE54 복구 실측. Q1 결재=비G1-owner inflight 4건(윤병현AM·이경연·나우열M)이 3-way 분기 어디에도 안 걸려 누락 → ⏳진행중 배너 조건에서 _isG1Owner 제약 제거해 합류(진행중 총 6건, 🔴 GM서명차례 1건 별개·타인 상세는 정책대로 미표시·결재현황 링크만). INC-007 GUARDED(뿌리=검증멈춤·라이브검증 누락=L03). 커밋 c3de5178·c9eec7d3·e695bac6·e0b74c0b 전부 origin·HTML파싱 검증.",
-    "next": "후속: 부팅가드(welly_boot_guard.py)에 '라이브 G1 큐 HTTP200·건수' 체크 추가 → 같은 404 회귀 자동적발(웰리 큐). Q2 시트완료건 _doneDate 결측 분류 안정화는 큐 복구로 충분(잔여 미세개선만)."
+    "next": "후속: 부팅가드(welly_boot_guard.py)에 '라이브 G1 큐 HTTP200·건수' 체크 추가 → 같은 404 회귀 자동적발(웰리 큐). Q2 시트완료건 _doneDate 결측 분류 안정화는 큐 복구로 충분(잔여 미세개선만).",
+    "ship_no": 14
   },
   {
     "task_id": "CEO-2026-06-17-G1-ALERT-SIGNAL",
@@ -80,7 +86,8 @@
     "enqueued_at": "2026-06-17",
     "processed_at": "2026-06-17",
     "artifact": "GM 발상(부팅 가드를 G1에 접목해 고도화). G1을 '할일 나열'→'지금 기다리는 것까지 띄우는 살아있는 보드'로. G1 항로 최상단에 ⚠️ 주의 신호 패널 신설(wellperion_guide(main).html gm1-alert-signal). 동일오리진 라이브 cmo/review/review_queue.json no-store 읽어 ①🔍 승인 대기(GM)=검수대기 건수+제목미리 ②✓ 발행 대조 대기(웰리)=발행검증대기 건수 집계, 0/0이면 초록 '막힌 것 없음'(항상 표시). 클릭→M5 검수큐(#cmopub-review-count) SPA 이동. G1 기존 자동갱신(visibilitychange·focus·90s)에 묶어 stale 방지. 약속 L10 준수=미푸시 등 내부 운영신호는 G1 제외(웰리 콘솔 가드 전용). 커밋 c9d35ef 자동push·origin 동기화. 라이브 Pages 실측 HTTP200·패널마커 확인. 현재 검수대기 3·발행검증대기 0 정확 표시.",
-    "next": "GM 선택 옵션1(검수·발행 먼저) 완료. 후속 옵션2 여지: 결재 대기·점검 미완을 같은 주의신호 줄에 합류(각 GAS 연동 필요) → '회사 전체 빨간불 한 판'. GM 신호 시 착수."
+    "next": "GM 선택 옵션1(검수·발행 먼저) 완료. 후속 옵션2 여지: 결재 대기·점검 미완을 같은 주의신호 줄에 합류(각 GAS 연동 필요) → '회사 전체 빨간불 한 판'. GM 신호 시 착수.",
+    "ship_no": 15
   },
   {
     "task_id": "CEO-2026-06-17-M5-PUSHLAG-GUARD",
@@ -92,7 +99,8 @@
     "enqueued_at": "2026-06-17",
     "processed_at": "2026-06-17",
     "artifact": "GM 지적(오늘 AI17이 M5 검수요청 라이브에 안 뜸) 진단 → 원인=자동 커밋 8건 미푸시(커밋만 하고 push 안 함)로 라이브 M5가 ~2.5h stale(AI17은 텔레그램 정상승인 07:49·IG발행 07:51 DZqgbZ9EmTS 정상). 약속 L13 기계 미준수. 박제 원리(행동=코드, 지식=정본문서)대로 정본 갈라 4건 처리. A(행동→코드): scripts/post-commit.hook+post_commit_push.py — 커밋 직후 git_lock 임계구역서 origin 자동 push(타임아웃30s·fail-open·재진입안전·실패시 텔레그램경고), install_hooks.sh 설치·활성. 자동push 3회 재현 성공(명시push 없이 origin 전진). B(부팅가드): ssot/welly_boot_guard.py(미푸시 커밋수+검수대기·발행검증대기 나열)+S2 CEO헌법 부팅절차 1줄 SOP. C(T2): M5 인스타 발행 파이프라인 단일 정본 섹션(제작→M5검수→텔레그램승인→발행→웰리대조→발행완료 6단계+가드표)+포인터2곳, 코드·로드맵 미삭제. D(재발방지): INC-006 GUARDED(뿌리=검증멈춤). 커밋 dbbaffe·c418180·95816c8·3288eb7·902e012 전부 origin동기화·py_compile·HTML파싱 검증.",
-    "next": "부팅가드 첫 실행이 검수대기 3건 적출 → 시모(CMO): 수영장 3칸 그리드 V2(left/center/right) 1:1 정사각(1080x1080) 재슬라이스 후 재발행. (이 박제로 향후 미푸시·검수대기 누락은 부팅 시 자동 적출됨)"
+    "next": "부팅가드 첫 실행이 검수대기 3건 적출 → 시모(CMO): 수영장 3칸 그리드 V2(left/center/right) 1:1 정사각(1080x1080) 재슬라이스 후 재발행. (이 박제로 향후 미푸시·검수대기 누락은 부팅 시 자동 적출됨)",
+    "ship_no": 16
   },
   {
     "task_id": "CMO-2026-06-16-FUNNEL-DASH-OVERHAUL",
@@ -104,7 +112,8 @@
     "enqueued_at": "2026-06-16",
     "processed_at": "2026-06-16",
     "artifact": "GM CLI 직접 지시 연속 개편(웰리 총괄·디자이너/executor 위임+직접). ①정보구조 일원화: 중복·가짜 섹션 제거(핵심KPI카드·게이지박스·전환단계퍼널[중간단계 데이터부재 가짜]·문의유형별분포 중복·최근변동사항 vanity). 핵심지표=전환흐름(클릭→문의→등록+월목표/페이스 접목). ②날짜 반응 버그 수정: _flow 정규화 도입, 월네비·기간·일/주 모든 경로가 전환흐름 갱신. ③주간/월별추세 디테일 접기(지연로드)로 초기 로드 가속. ④유형별 전환·유형×채널·실시간 클릭현황 최상위 승격. ⑤클릭·문의 기간연동(일/주/월/기간/올해): GAS click_stats·type_channel_breakdown에 from/to 기간필터(클릭로그·문의 시각), .deploy-funnel 라이브 재배포 @22~24(deploymentId 유지=URL보존)·가이드 사본 동기. ⑥등록(전환)=누적·추정 정직표기(전화매칭은 인과증명 아님·기존회원도 잡힘·강습은 등록일 없어 누적), 전환율 기간선택 시 숨김(분모기간·분자누적 불일치 가짜율 방지). ⑦유형별 전환=GM 선호 카드 복원(7유형: 멤버십·성인·유소년+여름특강·공간렌트·비즈파트너·영어, 클릭→문의→등록 라벨+큰숫자 3블록·정직배지). ⑧UI/UX 폴리시. 커밋 다수(1706aef1·73b3d443·fae77448·0ebd2560·95f9c7d9·2970f320·22e06e84·a3a6fa79) push. node 구문·스마트따옴표0·id보존·라이브 기간필터값(문의6138→110) 검증.",
-    "next": "GM Ctrl+Shift+R 후 카드 UI 최종 육안확인·미세조정. 한계: 유형×채널 '등록' 기간별 산출은 등록일 데이터 부재(특히 강습 팀시트)로 불가 → 자체 문의DB(CTO-2026-06-16-SELF-HOSTED-INQUIRY-DB) 구축 전엔 누적·추정 유지."
+    "next": "GM Ctrl+Shift+R 후 카드 UI 최종 육안확인·미세조정. 한계: 유형×채널 '등록' 기간별 산출은 등록일 데이터 부재(특히 강습 팀시트)로 불가 → 자체 문의DB(CTO-2026-06-16-SELF-HOSTED-INQUIRY-DB) 구축 전엔 누적·추정 유지.",
+    "ship_no": 24
   },
   {
     "task_id": "CTO-2026-06-16-ERP-CONSOLIDATION",
@@ -116,7 +125,8 @@
     "enqueued_at": "2026-06-16",
     "processed_at": "2026-06-16",
     "artifact": "① 시스템 현황판: scripts/erp_status_publisher.py(봇·스케줄러·예약작업 상태 발행)+T2 상단 현황 섹션, daily_scheduler 30분 자동갱신 합류. ② 어디에 뭐가 있나 지도(토글·강조링크) 신설. ③ 컨텍스트정비범위표 T2→S2 이관(AI 부팅 흡수). ④ 7대 자동화모듈 T2→S2 현재→목표 로드맵 고도화. ⑤ 프롬프트 3곳→2곳(S2운영/T1기술, T3 흡수). ⑥ T1+T3 한 페이지 통합 \"기술 & AI 학습 상세\"(7탭)+죽은링크·LEGACY 정리. ⑦ 중복 제거(돌고있음 카운트카드·보류카드·10슬롯 토글머금기·PC동작원리→자동화행). ⑧ 이관로그/정리·폐기이력 토글 삭제(원칙5 갱신). ⑨ T1 옛정보 5건·PC종료 00:30 정정. 전부 라이브 검증·푸시.",
-    "next": "표류(완결). 후속: 결재선 대표→GM 실반영=웰리 큐(CEO-2026-06-16-APPROVAL-LINE-GM-SYNC) / 현황판 자동갱신=다음 재부팅부터 가동."
+    "next": "표류(완결). 후속: 결재선 대표→GM 실반영=웰리 큐(CEO-2026-06-16-APPROVAL-LINE-GM-SYNC) / 현황판 자동갱신=다음 재부팅부터 가동.",
+    "ship_no": 17
   },
   {
     "task_id": "COO-2026-06-16-MEMBER-SELF-VOC-QR",
@@ -126,7 +136,8 @@
     "priority": "NORMAL",
     "enqueued_at": "2026-06-16",
     "summary": "[코드·UI 완성, 라이브는 GM 게이트] GM 아이디어=VOC처럼 회원이 QR+사진 셀프접수+현황 파악. 설계(architect): 기존 구글폼=직원대행·구글로그인강제 → 자체 모바일폼으로. 부품(사진업로드 _uploadFile·현황보드·텔레그램) 재사용. 구축: ①백엔드 coo/voc/apps_script_voc.js(voc_submit POST 사진base64→Drive VOC_Photos→URL→「회원셀프VOC」탭 append+텔레그램알림, voc_list, voc_update) 점검·업무 GAS와 독립 ②모바일폼 coo/voc/voc_mobile_form.html(QR ?loc 프리필·4유형·FileReader base64·로그인X) ③운영부 체계 VOC탭 현황 칸반(접수/처리중/완료·담당배정·상태전환) ④GM가이드 .md. Playwright 렌더검증. 커밋 d3acd0c·27038ec push. ⚠️무인증 변조위험=hidden token/rate-limit 후속.",
-    "next": "[2026-06-16 배포 시도·웰리 별건 처리 예정] GM이 GAS 배포·/exec 발급(AKfycbwk2X…). 단 **빈 standalone 프로젝트로 배포**돼 getActiveSpreadsheet()=null → voc_list가 'Cannot read getSheetByName' 에러(시트 미바인딩). 엔드포인트 자체는 살아있음(JSON 응답). 수정안: ⓐ코드를 openById(VOC_SHEET_ID) 방식으로 바꿔 현 프로젝트 그대로 살리기(VOC용 시트 1개 생성→ID 코드/스크립트속성에→재배포) 또는 ⓑ구글시트의 확장프로그램→Apps Script로 재생성(자동 바인딩)→재배포·새 /exec. 그 후: URL을 폼·운영부 2곳 __VOC_GAS_EXEC_URL__ 교체 → 텔레그램 토큰 ScriptProperties → 위치별 QR 비치 → 실접수·알림 실측. 보안 hidden token 후속. (apps_script_voc.js 구문 정상 검증됨 — 1행 'Invalid token'은 붙여넣기 사고였음)"
+    "next": "[2026-06-16 배포 시도·웰리 별건 처리 예정] GM이 GAS 배포·/exec 발급(AKfycbwk2X…). 단 **빈 standalone 프로젝트로 배포**돼 getActiveSpreadsheet()=null → voc_list가 'Cannot read getSheetByName' 에러(시트 미바인딩). 엔드포인트 자체는 살아있음(JSON 응답). 수정안: ⓐ코드를 openById(VOC_SHEET_ID) 방식으로 바꿔 현 프로젝트 그대로 살리기(VOC용 시트 1개 생성→ID 코드/스크립트속성에→재배포) 또는 ⓑ구글시트의 확장프로그램→Apps Script로 재생성(자동 바인딩)→재배포·새 /exec. 그 후: URL을 폼·운영부 2곳 __VOC_GAS_EXEC_URL__ 교체 → 텔레그램 토큰 ScriptProperties → 위치별 QR 비치 → 실접수·알림 실측. 보안 hidden token 후속. (apps_script_voc.js 구문 정상 검증됨 — 1행 'Invalid token'은 붙여넣기 사고였음)",
+    "ship_no": 21
   },
   {
     "task_id": "COO-2026-06-16-OPS-RECEPTION-BOARD-MANUAL",
@@ -138,7 +149,8 @@
     "processed_at": "2026-06-16",
     "terminal": true,
     "artifact": "GM 지시(운영부 시트 1akZLs7). ①레이아웃: 운영부 체계 풀폭 좌측정렬(근무·휴게 컬럼 820px 고정폭)로 4부서 통일, 커밋 eeb87169. ②리셉션 업무 보드 7개(담당·상태 배지, #5 락커관리=윤병현M 작업중)+매뉴얼 아코디언 7. 시트근거 4완성(1휴회=12열·적용+문자2단계·잔여/최소7일/전날/양도규칙 / 2카드미소지=입장사유3 수동발권 / 3시제금=입출원장+권종카운트·기준시재303,000·차액·환불보충 / 4락커키=남여고장분리·고정키·리셉션보관·회수대장). 5개인락커 완성+골프/스쿼시 입력대기. 6분실물=빈양식+입력대기. 7오픈/업무/마감=AI초안(발의배지·GM검토). 지어낸내용 0(시트없는건 양식/초안 명시). 커밋 a24b6912 push.",
-    "next": "6분실물·5골프스쿼시락커=실무/GM 입력 대기. 7리셉션매뉴얼 AI초안=GM 검토·확정. 윤병현M 락커작업 합류 시 5 보강."
+    "next": "6분실물·5골프스쿼시락커=실무/GM 입력 대기. 7리셉션매뉴얼 AI초안=GM 검토·확정. 윤병현M 락커작업 합류 시 5 보강.",
+    "ship_no": 22
   },
   {
     "task_id": "CEO-2026-06-16-G1-STALE-RENDER-AND-HOME-LAYOUT",
@@ -150,7 +162,8 @@
     "processed_at": "2026-06-16",
     "terminal": true,
     "artifact": "GM이 G1에서 '완료가 대기로, 체크가 하나도 안 됨' 지적. 진단(debugger): 데이터·DONE→완료 분류·push 전부 정상, 원인=클라 stale-render(① gm1FetchSsot 페이지 로드시 1회뿐·자동갱신 없음 ② _queue.json을 raw.githubusercontent에서 읽어 Fastly 5분캐시 ③ 완료가 완료일 실제날짜라 '지난 입항(접힘)'으로 빠져 비어보임). 수정 3개: ①visibilitychange/focus 재fetch+90s interval(30s 중복방어) ②_queue 소스를 GitHub Pages 동일오리진 상대경로로 전환(no-store 즉시) ③'지난 입항 완료' details에 open 속성(9건 펼침). 분류로직 무수정. 커밋 a7d86347. 더해 GM 요청으로 home '어디에 뭐가 있나' 네비표를 home에서 제거→S2 공통탭 상단 이관(운영현황 KPI 최상단 복귀, 링크 onclick 동일 SPA서 작동). 커밋 17df02b1. 둘 다 push.",
-    "next": "표류(완결). 후속(시토): KPI·업무결재 피드 등 다른 fetch-once-on-load 화면도 같은 stale-render 패턴 — 공통 자동갱신 적용 검토 / raw-CDN 읽는 타 페이지 동일 캐시지연."
+    "next": "표류(완결). 후속(시토): KPI·업무결재 피드 등 다른 fetch-once-on-load 화면도 같은 stale-render 패턴 — 공통 자동갱신 적용 검토 / raw-CDN 읽는 타 페이지 동일 캐시지연.",
+    "ship_no": 7
   },
   {
     "task_id": "CEO-2026-06-16-APPROVAL-LINE-GM-SYNC",
@@ -163,7 +176,8 @@
     "next": "표류(완결). GM Ctrl+Shift+R 라벨 육안확인 권장.",
     "terminal": true,
     "processed_at": "2026-06-17",
-    "artifact": "감사 결과 결재선 핵심은 이미 3표면(GAS·home·S2) 부서장→GM 종착으로 일관 — 시토 우려 \"옛 대표 종착 미반영\"은 stale(REP-REMOVE 배포로 해소). 대표는 필수단계 아닌 선택형 오프라인 종이 증빙으로 격리. 잔여=프론트 라벨 혼동뿐 → GM 확정대로 결재 현황 SSOT.html 대표 라벨 9곳을 \"대표 보고(선택·오프라인 종이)\"로 교체+안내문구(로직 무수정, 커밋 4ba60e2b). 모델 A/B 상충 실재 안 함(이미 GM종착+대표 선택종이로 일관)."
+    "artifact": "감사 결과 결재선 핵심은 이미 3표면(GAS·home·S2) 부서장→GM 종착으로 일관 — 시토 우려 \"옛 대표 종착 미반영\"은 stale(REP-REMOVE 배포로 해소). 대표는 필수단계 아닌 선택형 오프라인 종이 증빙으로 격리. 잔여=프론트 라벨 혼동뿐 → GM 확정대로 결재 현황 SSOT.html 대표 라벨 9곳을 \"대표 보고(선택·오프라인 종이)\"로 교체+안내문구(로직 무수정, 커밋 4ba60e2b). 모델 A/B 상충 실재 안 함(이미 GM종착+대표 선택종이로 일관).",
+    "ship_no": 8
   },
   {
     "task_id": "CPO-2026-06-16-MEMBER-TRIAL-CALENDAR",
@@ -173,7 +187,8 @@
     "enqueued_at": "2026-06-16",
     "title": "[시포] 잠재고객 체험·상담·투어 예약 달력 — 신규 문의회원 메뉴(cpo/member/문의회원.html)",
     "note": "[2026-06-16 GM] 등록前 잠재고객(문의~체험~상담) 관리 페이지 문의회원.html 신설 + 체험/견학/상담 예약 달력. 회원관리.html(등록後)과 분리. 소스=26년 신규문의(견학/상담·체험1/2·진행상황). 퍼널=마케팅→문의→체험/상담투어→등록→회원관리. 설계=cmo/funnel/회원_체험예약_달력_설계.md. | [2026-06-19 웰리 디스패치·시포] 페이지·UI 빌드 완료: cpo/member/문의회원.html 신설(726줄, 회원관리.html 패턴 차용·월캘린더 이전/다음·오늘강조·빈상태 정직표기·PII마스킹). 부서체계 링크 짝 전수(home 회원모듈 버튼 + 사이드nav CPO 서브 + 내부 복귀네비). HTML 파싱·무손상·스마트따옴표0 검증. GAS member_calendar 코드는 운영가이드 탭에 전문 포함(자리표시자 __MEMBER_CAL_GAS_URL__).",
-    "next": "라이브=GM 액션 잔여: ① Survey.js doGet에 case 'member_calendar'+getMemberCalendar() 추가·스프레드시트ID 교체 후 재배포 ② 배포 URL로 __MEMBER_CAL_GAS_URL__ 치환. 페이지 자체는 push로 라이브(웰리 커밋). GM GAS 배포 시 캘린더 데이터 연결 완료."
+    "next": "라이브=GM 액션 잔여: ① Survey.js doGet에 case 'member_calendar'+getMemberCalendar() 추가·스프레드시트ID 교체 후 재배포 ② 배포 URL로 __MEMBER_CAL_GAS_URL__ 치환. 페이지 자체는 push로 라이브(웰리 커밋). GM GAS 배포 시 캘린더 데이터 연결 완료.",
+    "ship_no": 2
   },
   {
     "task_id": "CTO-2026-06-16-SELF-HOSTED-INQUIRY-DB",
@@ -183,7 +198,8 @@
     "enqueued_at": "2026-06-16",
     "title": "[시토] 자체 문의 DB 구축 (향후 목표) — 구글시트/폼 분산 탈피, 단일 자체 저장소",
     "note": "[2026-06-16 GM 향후목표] 문의·예약을 구글시트 의존에서 자체 DB로. CPO 회원관리 메뉴서 직접입력→자동기록. 메모리 project_self_hosted_inquiry_db_goal.",
-    "next": "서버/저장소 결정 후 설계. 현재는 목표 박제만."
+    "next": "서버/저장소 결정 후 설계. 현재는 목표 박제만.",
+    "ship_no": 18
   },
   {
     "task_id": "COO-2026-06-16-CHECK-HOME-REALTIME-UNIFY",
@@ -195,7 +211,8 @@
     "processed_at": "2026-06-16",
     "terminal": true,
     "artifact": "GM 방향(대시보드·home 한 곳 단일화) → 설계(architect)·구현. 실시간 저장은 이미 작동(체크→1.2초 디바운스→서버 cr 원장). 빠진 건 그 서버값을 읽는 집계 엔드포인트 → today_live 신설. home(weekly→today_live)·지원부 대시보드(localStorage→today_live overlay) 둘 다 같은 서버값. 분모 정의 GM 확정=오늘 요일 매뉴얼 전체(고정). 분모를 하드코딩 상수→매뉴얼 단일출처 동적계산으로 교체(SSOT 갈라짐 제거). 야간(탕청소 외주)=분모 제외 GM 확정 → home total=182(am59+pm49+close74), night28 참고용. 야간 14항목 매뉴얼 'G 구역(외주 탕청소)' 정리. 분자=cr 실체크. 4부서 무회귀. GAS @61~@69 다단계 배포(deploymentId 유지). 커밋 다수(b9e3b97·76dd68d·f50dc13·5211c92 등) push. 라이브 실측 검증.",
-    "next": "표류(완결). 후속: 시설부 거래업체 페이지 동일 유형(localStorage 전용·서버 비동기화) 발견 → 별도 처리 대기(GM 결정). led.seen 적립코드는 잔존(무해)."
+    "next": "표류(완결). 후속: 시설부 거래업체 페이지 동일 유형(localStorage 전용·서버 비동기화) 발견 → 별도 처리 대기(GM 결정). led.seen 적립코드는 잔존(무해).",
+    "ship_no": 23
   },
   {
     "task_id": "COO-2026-06-16-SUPPORT-CHECK-HOME-UNDERCOUNT-FIX",
@@ -207,7 +224,8 @@
     "processed_at": "2026-06-16",
     "terminal": true,
     "artifact": "GM 라이브 관찰: 평일 3회차×남여 합치면 182개여야 할 일일점검 현황이 home에 53만 잡힘. 진단(debugger): GAS _shiftBucket이 '오후조'·'마감조'를 'pm' 단일 버킷으로 충돌→handleWeekly의 cellKey(zone|bucket) dedup에서 한 회차가 통째 누락(+오늘은 남성 회차 미제출). 53=여 오전29+오후24 슬라이스. 수정: _shiftBucket에 마감(close) 분기 추가→오전/오후/마감/야간 4버킷 분리. 회귀점검: 사용처 단일(dedup 키 전용·리터럴 비교 없음), 같은 회차 재제출 dedup 유지, dept=facility 무영향(스냅샷 0). 점검 GAS(1FLQAzjq…) clasp 재배포 @60(deploymentId 유지·URL 보존). 라이브 실측 06-12 102→140(마감조 38개 회복) 검증. 커밋 147b3b5e push. 웰리=오케스트레이션·검증, 지원부 점검=시우 소유.",
-    "next": "오늘 마감조 제출 시 home 숫자 정상 증가 GM 확인. 평시 지원부 점검 유지보수는 시우 소유."
+    "next": "오늘 마감조 제출 시 home 숫자 정상 증가 GM 확인. 평시 지원부 점검 유지보수는 시우 소유.",
+    "ship_no": 24
   },
   {
     "task_id": "COO-2026-06-16-APPROVAL-OWNERSHIP-HANDOVER",
@@ -217,7 +235,8 @@
     "priority": "NORMAL",
     "enqueued_at": "2026-06-16",
     "note": "[2026-06-16 GM 인계] 결재현황을 웰리(오늘 대표→GM 전환·페이퍼·2단계 분리 정책변경 총괄)→시우(COO 본래 소유)로 인계. 오늘 작업은 GM 직접 정책지시라 웰리가 예외 총괄했고, 이제 결재현황 운영·후속·유지보수는 시우 소유로 복귀. 웰리는 검증·완료도장만. ① GM 서명본 업로드 실테스트(대표싸인 URL=대표 결재완료 훅) 결과 이상 시 보정 ② 인쇄 양식·상태칩·칸반 정합 등 향후 결재 흐름 유지보수 ③ 결재 관련 신규 요구는 시우 착수. | [2026-06-17 시우] 결재선 3표면 동기 감사·대표 라벨 명확화 완료(SYNC 종결). 평시 결재현황 운영=시우 소유 유지. 남은 GM 액션=서명본 업로드→대표 서명본 수령 1회 실테스트.",
-    "next": "GM 실테스트(서명본 업로드→대표 결재완료) 결과 받아 이상 시 보정. 평시 결재현황 후속은 시우 소유."
+    "next": "GM 실테스트(서명본 업로드→대표 결재완료) 결과 받아 이상 시 보정. 평시 결재현황 후속은 시우 소유.",
+    "ship_no": 25
   },
   {
     "task_id": "CEO-2026-06-16-APPROVAL-GM-REP-TWO-STAGE",
@@ -229,7 +248,8 @@
     "processed_at": "2026-06-16",
     "terminal": true,
     "artifact": "GM 지시(옵션1=결재완료 후 버튼). 프론트+백엔드+재배포 완결. 결재상태='결재완료'(GM 종착)는 그대로 두고, 대표 단계를 '대표싸인' 컬럼 3상태로 파생 분리: 빈값=미올림 / 'PENDING'=GM이 올림·서명본 대기 / URL=대표 결재완료. 백엔드 신규 액션 3개(approval_rep_escalate=결재완료건만 PENDING set·가드, approval_rep_sign_upload=_uploadFile→대표싸인에 URL 직저장=완료 훅, approval_rep_cancel=비움) + doGet POST리다이렉트에 approval_* 포함. 프론트: repStageOf·renderRepApprovalRow, (GM 결재완료)·(대표 결재완료/대기) 상태칩 분리, GM서명대기 카드에 🖨 업무보고서 인쇄, 결재완료 카드에 [대표 결재 올리기]→[대표 결재대기:인쇄·서명본 업로드·올림취소]→[대표 결재완료:📎링크]. 인쇄 buildApprovalPrint 대표 서명란=URL이면 서명완료/아니면 빈칸. 커밋 b9e3b97 push. clasp push+deploy @76→@77(deploymentId 유지). 라이브검증: 액션3 도달·escalate/cancel 라운드트립 PASS.",
-    "next": "표류(완결). 실파일 업로드→대표 결재완료 1회는 GM 실테스트 대기(코드경로 검증완). 어제 '첨부 prefix 판별불가' 한계는 대표싸인 직저장으로 해소됨."
+    "next": "표류(완결). 실파일 업로드→대표 결재완료 1회는 GM 실테스트 대기(코드경로 검증완). 어제 '첨부 prefix 판별불가' 한계는 대표싸인 직저장으로 해소됨.",
+    "ship_no": 9
   },
   {
     "task_id": "CEO-2026-06-16-APPROVAL-PAPER-PRINT-SIGN-UPLOAD",
@@ -241,7 +261,8 @@
     "processed_at": "2026-06-16",
     "terminal": true,
     "artifact": "대표→GM 전환 후속(대표 보고=페이퍼). 프론트 결재 현황 SSOT.html만 수정(백엔드·재배포 불필요, 기존 todo_upload 재사용). ①buildApprovalPrint 인쇄 양식에 '전응준 대표 (인)' 서명칸 항상 고정 출력(결재완료 건도 노출)—종이 서명용 ②결재완료 카드(st-done)에 '📄 대표 서명본 업로드' 버튼+file input(image/pdf 5MB) → uploadRepSign이 base64로 todo_upload POST(fileName=대표서명_<id>_원본), '📎 대표 서명본' 링크 표시. 단순 증빙첨부(GM 선택)—결재상태·배지·대표싸인칸 불변. 커밋 fe01016 push. node --check PASS.",
-    "next": "표류(완결). ⚠️한계: 백엔드 미수정이라 결재완료 카드 첨부가 전부 '대표 서명본'으로 표시됨(업로드경로 단일이라 실무 무해). 결재완료 건에 타 첨부 섞이면 백엔드 1줄+재배포로 prefix 정밀구분 가능—GM 판단 대기."
+    "next": "표류(완결). ⚠️한계: 백엔드 미수정이라 결재완료 카드 첨부가 전부 '대표 서명본'으로 표시됨(업로드경로 단일이라 실무 무해). 결재완료 건에 타 첨부 섞이면 백엔드 1줄+재배포로 prefix 정밀구분 가능—GM 판단 대기.",
+    "ship_no": 10
   },
   {
     "task_id": "CEO-2026-06-16-APPROVAL-REP-REMOVE-GM-FINAL",
@@ -253,7 +274,8 @@
     "processed_at": "2026-06-16",
     "terminal": true,
     "artifact": "GM 지시로 결재현황 최종 결재권자를 전응준 대표→GM(김남욱)으로 변경. 결재선 [부서장→GM(최종)] 2단계로 대표 단계 전면 제거(대표 보고·승인은 시스템 밖 오프라인 페이퍼). 백엔드(.deploy-todo/업무&결재 현황.js _buildApprovalRoute·_nextApprover·PIN map·G1미러)+프론트(결재 현황 SSOT.html buildEffectiveRoute·서명칸·PIN_ROLES·필터·인쇄·헤더/리셋 안내문구) 정합 수정. 커밋 393f300c·911fbd6a push. clasp push + webapp 재배포 @75→@76(deploymentId 유지=같은 /exec URL). 약속 L09 + 메모리 2건(approval_final_approver·executive_decision_authority) 갱신. 기존 대표대기건=GM서명시 자동 결재완료(마이그레이션 불필요). '대표싸인' 시트컬럼은 데이터호환 위해 보존(로직 미참조).",
-    "next": "표류(완결) — GitHub Pages 빌드 후 GM Ctrl+Shift+R 최종 육안확인 권장. 회장·이사·대표 모두 ERP 결재라인 비대상 확정."
+    "next": "표류(완결) — GitHub Pages 빌드 후 GM Ctrl+Shift+R 최종 육안확인 권장. 회장·이사·대표 모두 ERP 결재라인 비대상 확정.",
+    "ship_no": 11
   },
   {
     "task_id": "CMO-2026-06-16-CINQ-EP3-PUBLISH",
@@ -265,7 +287,8 @@
     "note": "[완료 2026-06-16] 5채널 전부 발행완료(IG·블로그·카페·카카오·당근). IG는 자동 대조로 발행완료 도장(post_url DZoXmxEkjjj). 검수대기 0·발행검증대기 0.",
     "next": "발행검증대기→발행완료 자동화 구축(ig_publish_verify 30분 스윕) — 향후 전 발행건 무인 종결.",
     "terminal": true,
-    "processed_at": "2026-06-16"
+    "processed_at": "2026-06-16",
+    "ship_no": 25
   },
   {
     "task_id": "CEO-2026-06-16-PC-SHUTDOWN-VERIFY-OVERNIGHT",
@@ -277,7 +300,8 @@
     "enqueued_at": "2026-06-16",
     "processed_at": "2026-06-19",
     "artifact": "[INC-002 완전 봉인] 최근 3일 System 이벤트로그(1074/6006/6005) + TaskScheduler 실측으로 3게이트 전부 통과 확인. ① 22:30 shutdown 이벤트 0건 = 진범 SYSTEM 작업 'cto-daily-pc-power-cycle-shutdown' 삭제 효과 확정 ② 06-17·06-19 모두 00:30:01 shutdown.exe(WELLPERIONGM) 단일 정상종료, Auto-Shutdown-2330 LastRun=2026-06-19 00:30:01·NextRun=2026-06-20 00:30(단일 잔존) ③ PC 00:30까지 생존→23:00 보고시점 ON·05:55 자동부팅 정상 = 보고 생존. incidents.json INC-002 검증증거에 행동확인 봉인 기록.",
-    "next": "표류(완결) — INC-002 GUARDED 확정. 이 건이 막혀있던 CEO-2026-06-15-SSOT-TRUTH-UNIFICATION(재발방지 구조) 진행중 배의 다음 칸(공식값 통합·금지어 자동점검) 해제됨."
+    "next": "표류(완결) — INC-002 GUARDED 확정. 이 건이 막혀있던 CEO-2026-06-15-SSOT-TRUTH-UNIFICATION(재발방지 구조) 진행중 배의 다음 칸(공식값 통합·금지어 자동점검) 해제됨.",
+    "ship_no": 12
   },
   {
     "task_id": "CMO-2026-06-16-AISERIES-STAFF-AI-ADOPTION",
@@ -289,7 +313,8 @@
     "enqueued_at": "2026-06-16",
     "processed_at": "2026-06-18",
     "note": "[2026-06-16 GM 지시·B안] 기존 'AI16 재기획' 항로는 삭제(현 #16 공지문편을 그대로 검수·발행 진행하기로 확정). 대신 '회사 직원들에게도 AI(Claude)를 설치해 전 직원이 함께 사용 중'인 실제 현장을 #11+ 현장 실전 how-to 톤의 별도 후속편(#17 이후 후보)으로 보존. GM이 편성 시점 정하면 시모 콘셉트 착수.",
-    "next": "[2026-06-18 종결] #16 '혼자 쓰던 AI를 직원에게 넘기다' 발행완료 — 같은 소재. 별도 편 불필요."
+    "next": "[2026-06-18 종결] #16 '혼자 쓰던 AI를 직원에게 넘기다' 발행완료 — 같은 소재. 별도 편 불필요.",
+    "ship_no": 26
   },
   {
     "task_id": "COO-2026-06-15-ISSUE-ALERT-VERIFY",
@@ -299,7 +324,8 @@
     "priority": "LOW",
     "enqueued_at": "2026-06-15",
     "summary": "시트 이슈 등록 시 텔레그램 통보 — 코드는 있으나 구글 트리거 실가동 미검증. T2 '실제 업무 산출 자동화' 표(비SSOT·중복) 제거 시 '확인 필요' 보존 이관(2026-06-15 GM).",
-    "next": "구글 Apps Script 트리거 실가동 확인 → 동작/미동작 판정 → 미동작이면 수정 또는 폐기."
+    "next": "구글 Apps Script 트리거 실가동 확인 → 동작/미동작 판정 → 미동작이면 수정 또는 폐기.",
+    "ship_no": 14
   },
   {
     "task_id": "CEO-2026-06-15-REVENUE-REPORT-VERIFY",
@@ -311,7 +337,8 @@
     "summary": "매출 시트→이미지 변환→텔레그램 발송 — 코드는 있으나 실가동 미검증. T2 표 제거 시 '확인 필요' 보존 이관(2026-06-15 GM).",
     "next": "실가동 확인 → 동작/미동작 판정 → 정기 발송 여부 GM 결정.",
     "disposed_at": "2026-06-15",
-    "note_disposed": "[폐기 2026-06-15 GM] T2 표 정리 중 보존됐던 미검증 항목. GM 지시한 적 없고, 매출 자동발송 별도 발송코드 미발견 + 08시 통합보고가 이미 매출 포함(중복) → 폐기. 검색이력·완료기록 보존."
+    "note_disposed": "[폐기 2026-06-15 GM] T2 표 정리 중 보존됐던 미검증 항목. GM 지시한 적 없고, 매출 자동발송 별도 발송코드 미발견 + 08시 통합보고가 이미 매출 포함(중복) → 폐기. 검색이력·완료기록 보존.",
+    "ship_no": 4
   },
   {
     "task_id": "CTO-2026-06-15-CONTEXT-MAINT-SSOT-DESIGN",
@@ -323,7 +350,8 @@
     "priority": "NORMAL",
     "enqueued_at": "2026-06-15",
     "summary": "GM 지적 3건 전부 적용·라이브. ✅ A: T2 범위표에 AI CEO(웰리) 행 추가 + 식별자 CTX-{역할} 7개 정합(레거시 노션번호 폐기, 6→7). ✅ B: T3에 '쉽게 읽는 학습 노트'(GM·C레벨 공용 plain-language — 토큰 쉬운설명+습관5+매주 학습루프, 각 C레벨 본인탭 학습 동선). ✅ C: 측정기 scripts/context_budget_report.py(상시컨텍스트 토큰 측정·추세, 실측 ~92.7K) + T2 주간정비(CTX-CTO)에 일요일 실행 명문화. 설계 제안문서 폐기(SSOT=T2/T3 단일).",
-    "next": "표류(완결). 후속 자동화 여지: 메모리 정합 체커·_queue 적체 자동 아카이브 후보 제시(삭제는 사람)."
+    "next": "표류(완결). 후속 자동화 여지: 메모리 정합 체커·_queue 적체 자동 아카이브 후보 제시(삭제는 사람).",
+    "ship_no": 16
   },
   {
     "task_id": "COO-2026-06-15-SUPPORT-CHECK-OVERHAUL",
@@ -335,7 +363,8 @@
     "processed_at": "2026-06-15",
     "terminal": true,
     "artifact": "오전 대정비 전부 라이브: ①남자점검→여성시트 누수 수정 ②정상완료도 시트기록(원장만→시트+원장) ③점검자·시각·담당 항목별 기록·표시(페이지+시트) ④항목순서 매뉴얼 일치 ⑤시트=페이지 동일시(회차별 분리)+체크 사라지던 오버레이 버그 수정.",
-    "next": "회차별 완전 정합 재설계로 이어짐 → COO-2026-06-15-SUPPORT-CHECK-ROUND-COHERENCE"
+    "next": "회차별 완전 정합 재설계로 이어짐 → COO-2026-06-15-SUPPORT-CHECK-ROUND-COHERENCE",
+    "ship_no": 15
   },
   {
     "task_id": "COO-2026-06-15-SUPPORT-CHECK-ROUND-COHERENCE",
@@ -347,7 +376,8 @@
     "processed_at": "2026-06-15",
     "terminal": true,
     "artifact": "deep-interview(모호성4%)→team 병렬(프론트/백엔드 2라인)→ralph 검증. ①★치명버그: renderItem 커스텀뱃지 래퍼가 round 인자 유실→모든 회차체크가 미체크로 렌더('체크 다 풀림')→rest-args 수정 ②조 유지(_bestRoundFor=체크많은 조 우선+체크한 조 기억) ③이슈·노하우·온도·반영완료 회차별 완전독립(iss_<g>_<round>_<id> 등)+백엔드 cr메타 {by,at,du,iss,tip,measure,reflected}·시트행(7·8·13·14열) 정합 ④점검자·담당자 회차별(직전값 유지로 안 사라짐) ⑤제출 시 회차 고정(체크·이슈·점검자·담당자 읽기전용+🔒제출됨 배지+onCk 방어가드) ⑥옛 custom_ID 고아체크 클라+서버 마이그레이션('갯수 줄어듦' 해결) ⑦텔레그램 회차보고(토큰 ScriptProperties 주입+notify_round plain text+링크 encodeURI 짤림해결). 전부 라이브 실증(playwright 헤드리스+python urllib). GAS @50, 커밋 다수. 명세=.omc/specs/deep-interview-support-check-round-coherence.md.",
-    "next": "내일 후속 → COO-2026-06-16-SUPPORT-CHECK-FOLLOWUP"
+    "next": "내일 후속 → COO-2026-06-16-SUPPORT-CHECK-FOLLOWUP",
+    "ship_no": 16
   },
   {
     "task_id": "COO-2026-06-16-SUPPORT-CHECK-LIVE-FIXES",
@@ -359,7 +389,8 @@
     "processed_at": "2026-06-16",
     "terminal": true,
     "artifact": "GM 실사용 6증상+추가3건 전부 처리(라이브 실증). ①담당자·점검자 새로고침 소실=복원키 정합(populateOneDuty/Dropdown 회차키, GM확인). ②점검시간 항목표시(🕐 라벨). ③제출→점검일지 누락=appendRoundSnapshot 제출마다 기록+실패 alert(getSched null/fetch 실패 조용한 스킵 제거). ④취소(여성) 미반영=전부취소 시 roundChecks=[]가 V2Compat 마지막행 deleteRow 예외로 새던 것→handleSave가 빈배열도 _writePerRoundRows 라우팅+deleteRow→clearContent 폴백(라이브 실증: 체크1행/전부취소0행·예외0). ⑤매뉴얼=페이지 동기: 시트 11→43(페이지 기본32 안전덧붙임, detail 빈값→하드코딩 보존·shadow override 무중복). ⑥오픈점검 c1a/b/c 정렬: _sortByDateDesc에 카테고리랭크 추가(ID유지, 라이브 실증 오픈→A→C). +점검일지_support append마다 제출시각↓ 항상최신(기존14행 정렬). +데이터청소(여성 테스트행·15일 잔여5행 제거). GAS @52~@56 재배포(URL유지). 커밋 b281984·3a2babf·70a637e·b94105a 푸시. 남성구역 GM '완벽' 확인.",
-    "next": "남은 후속 → COO-2026-06-16-SUPPORT-CHECK-FOLLOWUP(③제출잠금 해제 UI·④텔레그램 회차보고 실제 제출 1회 GM 확인)"
+    "next": "남은 후속 → COO-2026-06-16-SUPPORT-CHECK-FOLLOWUP(③제출잠금 해제 UI·④텔레그램 회차보고 실제 제출 1회 GM 확인)",
+    "ship_no": 26
   },
   {
     "task_id": "COO-2026-06-16-SUPPORT-CHECK-FOLLOWUP",
@@ -372,7 +403,8 @@
     "next": "표류(완결). 남은 것은 GM 액션 1건 — 텔레그램 회차보고가 실제 제출 시 1회 나가는지 GM 자연 확인.",
     "terminal": true,
     "processed_at": "2026-06-17",
-    "artifact": "제출잠금 관리자 PIN 해제 버튼 구현·배포 완료(unlock_round @73, 기본PIN 1234·ScriptProperties CHECK_UNLOCK_PIN 변경가능, PIN 불일치 라운드트립 실측, 지원부 한정 무회귀). 체크데이터 보존하며 해당 회차만 해제."
+    "artifact": "제출잠금 관리자 PIN 해제 버튼 구현·배포 완료(unlock_round @73, 기본PIN 1234·ScriptProperties CHECK_UNLOCK_PIN 변경가능, PIN 불일치 라운드트립 실측, 지원부 한정 무회귀). 체크데이터 보존하며 해당 회차만 해제.",
+    "ship_no": 17
   },
   {
     "task_id": "COO-2026-06-15-APPROVAL-PIN-PARITY",
@@ -384,7 +416,8 @@
     "processed_at": "2026-06-15",
     "terminal": true,
     "artifact": "부서장(이정헌 소장 등) 결재 시 화면 표시 부서장과 서버 비번대조 부서장 순서가 달라(결재요청 vs 담당자) 맞는 비번도 거부되던 버그. 서버를 화면과 동일(결재요청 우선)하게 정합 + 비번 공백방어. 업무·결재 GAS 재배포·라이브 검증 PASS.",
-    "next": "표류 — 결재 비번 정상화 완결."
+    "next": "표류 — 결재 비번 정상화 완결.",
+    "ship_no": 18
   },
   {
     "task_id": "COO-2026-06-15-CHECK-GAS-CLEANUP",
@@ -396,7 +429,8 @@
     "processed_at": "2026-06-15",
     "terminal": true,
     "artifact": "Apps Script '지원팀 일일점검' 4개 중 라이브(1FLQAzjq)만 남기고 미사용 중복본 3개를 배포 전수대조로 식별→GM 삭제. 루트 고아 백업 _시설부/_주차관리부 체계.html 2개도 삭제(정본은 coo/check/).",
-    "next": "표류 — 점검 GAS·체계 파일 단일화 완결."
+    "next": "표류 — 점검 GAS·체계 파일 단일화 완결.",
+    "ship_no": 19
   },
   {
     "task_id": "CTO-2026-06-13-COMMIT-SAFETY-GATE",
@@ -408,7 +442,8 @@
     "processed_at": "2026-06-13",
     "terminal": true,
     "artifact": "tracer 진단: 'watcher'가 아니라 ①에이전트 stale Write ②git add -A 무검증 커밋 ③동시커밋. pre-commit 훅에 truncation 게이트(scripts/precommit_truncation_guard.py — HTML/JS가 HEAD대비 30%↑·200줄↑ 급감 시 커밋 차단+경고, fail-open). 데모 실증: 75%잘림 거부·운영부3394→1908 거부·정상커밋 통과·신규/전체삭제 통과. .gitignore /_*.html 추가. 커밋 b3d98ca1. 훅 백업 scripts/pre-commit.hook + install_hooks.sh.",
-    "next": "동시커밋 직렬화 lock(B)·clevel.bat add 화이트리스트는 후속(게이트로 catastrophic은 차단됨)"
+    "next": "동시커밋 직렬화 lock(B)·clevel.bat add 화이트리스트는 후속(게이트로 catastrophic은 차단됨)",
+    "ship_no": 11
   },
   {
     "task_id": "CTO-2026-06-13-QUEUE-WATCHER-HARDENING-NEXT",
@@ -421,7 +456,8 @@
     "note": "[2026-06-13 GM '둘 다'+'완전이관' 지시] ① truncation 게이트 완료(CTO-COMMIT-SAFETY-GATE). ② 동시커밋 직렬화 lock — [2026-06-15 시토] 설계완료(docs/git_serialize_lock_design.md): 단일 글로벌 git lock(atomic mkdir+PID/stale 회수), 공유모듈 scripts/git_lock.py, add→commit→push 전체 임계구역, pre-commit 훅 재진입금지. 롤아웃 P1(모듈+자기테스트·무게이트)→P2(단발주체)→P3(bot.py·봇재기동=GM게이트). [2026-06-15] P1 구현·실증 완료(scripts/git_lock.py+test_git_lock.py, 격리 temp repo 3프로세스×50커밋 무손실·락누수0·steal0·timeout0 PASS). [2026-06-15] P2 완료(f604c1e6): 실대상은 IG 발행 watcher 하나뿐(clevel_post_action·ceo_task_logger·pipeline·instagram_upload는 git 미사용 실측확인). ig_review_publish_watcher의 pull_latest+커밋시퀀스를 GitLock 임계구역화, py_compile·import·라이브 락획득해제·.locks 미추적 검증. 실발행 1회 실측은 다음 GM 승인때 자연 발생. 남은=P3(bot.py 콜백 git시퀀스 GitLock화 → 봇 재기동=GM게이트, 위험쌍 완전차단의 핵심). ③ 큐→시트 완전이관 R1~R3 시도 중 snag: seed(queue_seed_to_sheet.py)는 insert전용·dedup(clear/replace 없음)이라 'R1 시트 비우기'를 먼저 안 하면 화석잔존+순서불일치로 DIFF≠0. _queue(51척)는 읽기전용·무결 안전. 시트는 절반채움(SSOT아님·무해).",
     "next": "표류(완결). 동시커밋 안전망=truncation 게이트+GitLock 직렬화 라이브 / 이관은 영구종료.",
     "terminal": true,
-    "processed_at": "2026-06-16"
+    "processed_at": "2026-06-16",
+    "ship_no": 12
   },
   {
     "task_id": "COO-2026-06-13-SUPPORT-ID-NORMALIZE",
@@ -433,7 +469,8 @@
     "processed_at": "2026-06-13",
     "terminal": true,
     "artifact": "WEEKDAY/WEEKEND base id 신스킴 + 매뉴얼 시트 11항목 단일출처화(shadow 폐기). 커밋 0b0198a1. 라이브 3중정합(시트·커밋HTML·배포) 검증 PASS.",
-    "next": "회차매핑(ROUND_MAP) 동반수정 필요 → COO-2026-06-13-SUPPORT-CHECK-STABILIZE로 이어짐"
+    "next": "회차매핑(ROUND_MAP) 동반수정 필요 → COO-2026-06-13-SUPPORT-CHECK-STABILIZE로 이어짐",
+    "ship_no": 6
   },
   {
     "task_id": "COO-2026-06-13-SUPPORT-CHECK-STABILIZE",
@@ -445,7 +482,8 @@
     "processed_at": "2026-06-13",
     "terminal": true,
     "artifact": "회귀수정(ROUND_MAP 신ID정합·제출시각KST·오늘날짜 kstToday·저장 silent실패 방어, 커밋 15362139). 인시던트: 11:20 전항목 이경연 거짓대량제출(체크0) → 거짓데이터 청소(clear_zone_checks+clear_check_ledger, 77행+원장3 제거) + 자동제출 confirm 폐기(c844ea5e). 라이브 검증 PASS.",
-    "next": "근본 재발방지 → COO-2026-06-13-SUPPORT-CHECK-HARDENING(설계완료·대기)"
+    "next": "근본 재발방지 → COO-2026-06-13-SUPPORT-CHECK-HARDENING(설계완료·대기)",
+    "ship_no": 7
   },
   {
     "task_id": "COO-2026-06-13-PARKING-STANDALONE",
@@ -457,7 +495,8 @@
     "processed_at": "2026-06-13",
     "terminal": true,
     "artifact": "지원부 점검 풀클론(3596줄)이던 주차관리부 체계.html에서 점검 전면제거(-2867줄), 시설부 주차 콘텐츠 이전(보존)+시우 AI초안 4곳(GM검토 대기), 시설부엔 이관링크(고아0). 커밋 1821f3ae·87753e91. 메모리 project_parking_dept_standalone.",
-    "next": "규정 카드 AI초안 4곳 GM 검토 대기"
+    "next": "규정 카드 AI초안 4곳 GM 검토 대기",
+    "ship_no": 8
   },
   {
     "task_id": "COO-2026-06-13-SUPPORT-CHEM-GUIDE",
@@ -469,7 +508,8 @@
     "processed_at": "2026-06-13",
     "terminal": true,
     "artifact": "사우나관리 약품가이드(고아 회사문서)를 지원부 체계 탭으로 인라인 임베드, 점검 시스템 안전마커 3종(자동제출차단·ROUND_MAP·gender가드) 보존 확인. 커밋 6b5ff7f4. 라이브 검증 PASS.",
-    "next": "표류(다음 없음) — 약품 가이드 제자리 정착"
+    "next": "표류(다음 없음) — 약품 가이드 제자리 정착",
+    "ship_no": 9
   },
   {
     "task_id": "CEO-2026-06-13-GHOST-FEATURE-AUDIT",
@@ -481,7 +521,8 @@
     "processed_at": "2026-06-13",
     "terminal": true,
     "artifact": "GM 직감 검증 — 실재 다수 발견: ①부서체계 점검 클론(시설/운영) ②죽은 예약작업 4건 매일실패 ③.env 폐기 실토큰 노출 ④daily_scheduler 공용구역 집계 0버그 ⑤죽은링크3·고아문서8·구버전소개서4 ⑥카카오채널발행은 살아있음(봇만 폐기)로 정정. 정리 실행=CTO-GHOST-CLEANUP·COO 체계클론 제거로 분기.",
-    "next": "정리 실행건들로 분기(아래)"
+    "next": "정리 실행건들로 분기(아래)",
+    "ship_no": 3
   },
   {
     "task_id": "CTO-2026-06-13-GHOST-CLEANUP",
@@ -493,7 +534,8 @@
     "processed_at": "2026-06-13",
     "terminal": true,
     "artifact": "daily_scheduler 공용구역 zone키 근본수정(실시트명 매칭, 커밋 67d1159b, ⚠️스케줄러 재시작 필요) + .env 3벌 폐기토큰(NOTION/INBOX 3키) 제거(로컬) + 메인가이드 죽은링크 3건 href교정·고아회사문서8/통합스텁 _archive 이관(커밋 fb476c90).",
-    "next": "GM 관리자권한: 죽은 예약작업 4건 삭제(CEO_DAILY_CLEVEL_CHECK·CEO-Verify-Watcher·CTO-008-MetaTokenRefresh·CMO-Calendar-Dispatcher) → CTO-2026-06-13-BAT-FULL-REORG와 함께. 스케줄러 재시작 필요."
+    "next": "GM 관리자권한: 죽은 예약작업 4건 삭제(CEO_DAILY_CLEVEL_CHECK·CEO-Verify-Watcher·CTO-008-MetaTokenRefresh·CMO-Calendar-Dispatcher) → CTO-2026-06-13-BAT-FULL-REORG와 함께. 스케줄러 재시작 필요.",
+    "ship_no": 13
   },
   {
     "task_id": "COO-2026-06-13-FACILITY-CHECK-CLONE-REMOVE",
@@ -505,7 +547,8 @@
     "processed_at": "2026-06-13",
     "terminal": true,
     "artifact": "시설부 체계.html 점검 전용 1596줄 외과제거(점검탭·JS함수군·대시보드·fetch). 살아있는 거래업체보드(renderVendorBoard 13)·규정보드(6)·매뉴얼(4)·주차이관카드 전부 보존, 점검 잔재 0. 커밋 86a40a44. 라이브 검증 PASS.",
-    "next": "운영부 동형 적용 → COO-2026-06-13-OPS-CHECK-CLONE-REMOVE(진행중)"
+    "next": "운영부 동형 적용 → COO-2026-06-13-OPS-CHECK-CLONE-REMOVE(진행중)",
+    "ship_no": 10
   },
   {
     "task_id": "COO-2026-06-13-OPS-CHECK-CLONE-REMOVE",
@@ -517,7 +560,8 @@
     "processed_at": "2026-06-13",
     "terminal": true,
     "artifact": "운영부 체계.html 3394→1909줄, 점검 전용 DOM+JS 전면제거(submitShift·onCk·loadState·pushToServer 0). 규정보드(renderPolicyBoard 6)·매뉴얼(4) 보존, JS 문법 정상·라이브 200 검증. ⚠️작업 중 watcher truncation 1회→복구(d8951756) 후 정합. 웰리 완료도장.",
-    "next": "표류 — 부서 체계 점검 클론 정리 완결(지원부만 점검 운영, 나머지 유령 전부 제거)"
+    "next": "표류 — 부서 체계 점검 클론 정리 완결(지원부만 점검 운영, 나머지 유령 전부 제거)",
+    "ship_no": 11
   },
   {
     "task_id": "COO-2026-06-13-SUPPORT-CHECK-HARDENING",
@@ -529,7 +573,8 @@
     "processed_at": "2026-06-13",
     "terminal": true,
     "artifact": "수정2(폐루프 절단·★핵심): _buildPushPayload(d,g,includeSubmitMeta) — 자동저장은 제출메타 미전송(2-arg), 명시적 제출(submitShift/submitRound 3곳)만 ,true로 전송 → 이경연 자기증식 차단. 수정1: 제출 가드(체크0시 confirm 경고). 커밋 32dc76d, 라이브 검증 PASS(폐루프 절단·보존마커 ROUND_MAP·gender가드·자동제출차단·KST 전부 잔존). architect 설계기반.",
-    "next": "GAS 수정3(완료율 단일출처 — support 시트 col5 폴백 제거·스냅샷 단일화) + 수정2 col8보존 보강 = 장 종료 후 묶음배포(admin출처 실측선행). 저빈도·저위험이라 후속."
+    "next": "GAS 수정3(완료율 단일출처 — support 시트 col5 폴백 제거·스냅샷 단일화) + 수정2 col8보존 보강 = 장 종료 후 묶음배포(admin출처 실측선행). 저빈도·저위험이라 후속.",
+    "ship_no": 12
   },
   {
     "task_id": "CMO-2026-06-13-FUNNEL-DASH-NEXT",
@@ -542,7 +587,8 @@
     "note": "✅ 오늘(06-15) 완료 — ①당근 노출 자동연결(월간보고서 ⑥칸) ②멤버십 채널 중분류 매핑(\"온라인 묶음→기타\"를 네이버 등으로 분리·라이브) ③공간렌트·비즈니스파트너 문의폼 신설(생성→멤버십시트 통합→집계검증→문의페이지 카드 활성) ④이번달 페이스 예측(대시보드 월말 예상치). ｜ ✋ 남은 것 — IG 도달 자동수집=Meta 연동 폐기(06-13 GM)로 수기 유지 / 네이버 블로그·카페 PV=cao 로그인 세션 시 가능(보류). ｜ ⏭ 자율 진행분 전부 완료 → 웰리 완료도장 대기.",
     "next": "①당근지표 ②중분류매핑 ③신규문의폼 ④페이스예측 전부 라이브 완료. 외부지표 잔여(카페·카카오 PV)는 CHANNEL-ENGAGEMENT(진행중)로 이관 / IG 도달은 Meta 연동 폐기(06-13 GM)로 수기 유지.",
     "terminal": true,
-    "processed_at": "2026-06-15"
+    "processed_at": "2026-06-15",
+    "ship_no": 14
   },
   {
     "task_id": "CMO-2026-06-13-CHANNEL-STANDARDIZE",
@@ -554,7 +600,8 @@
     "processed_at": "2026-06-13",
     "terminal": true,
     "artifact": "GAS _canonicalChannel_ 라이브(funnel 8329건→10버킷 실측) + scripts/cta_utm.py(blog/danggn/kakao 발행시 ?utm_source 자동부착, 문의페이지 캡처 연동). 커밋 0de527e3·db7276bf",
-    "next": "외부지표 자동화·멤버십 채널 세부화는 CMO-2026-06-13-FUNNEL-DASH-NEXT로 이관"
+    "next": "외부지표 자동화·멤버십 채널 세부화는 CMO-2026-06-13-FUNNEL-DASH-NEXT로 이관",
+    "ship_no": 15
   },
   {
     "task_id": "CMO-2026-06-13-DASH-UPGRADE",
@@ -565,7 +612,8 @@
     "enqueued_at": "2026-06-13",
     "processed_at": "2026-06-13",
     "terminal": true,
-    "artifact": "라이브검증 …/cmo/funnel/마케팅현황대시보드.html (renderConversionFlow·goal-gauge·utm-sources-body·monthly-trend-chart 점등, 옛 단계별·병목 제거, 흐름지도/문의채널현황 meta-refresh 스텁). 커밋 d09c5069·2a4eb28b·8f4ebf45·245f4c72·3c178ed2·e2fd54ca"
+    "artifact": "라이브검증 …/cmo/funnel/마케팅현황대시보드.html (renderConversionFlow·goal-gauge·utm-sources-body·monthly-trend-chart 점등, 옛 단계별·병목 제거, 흐름지도/문의채널현황 meta-refresh 스텁). 커밋 d09c5069·2a4eb28b·8f4ebf45·245f4c72·3c178ed2·e2fd54ca",
+    "ship_no": 16
   },
   {
     "task_id": "CMO-2026-06-13-F1-MEMBERSHIP-MERGE",
@@ -577,7 +625,8 @@
     "processed_at": "2026-06-13",
     "terminal": true,
     "artifact": "GAS period_breakdown 실측 이번달 102건(멤버십24=GM실측 일치·성인강습33·유소년45)·전환 11명/10.8%. 타임스탬프 B칸 헤더 동적탐색(idxDate)+한글날짜 파서. 커밋 83a8ec56·dd4f2b48",
-    "next": "멤버십 채널 세부화('문의 경로 중분류')는 CMO-2026-06-13-FUNNEL-DASH-NEXT로"
+    "next": "멤버십 채널 세부화('문의 경로 중분류')는 CMO-2026-06-13-FUNNEL-DASH-NEXT로",
+    "ship_no": 17
   },
   {
     "task_id": "COO-2026-06-13-CHECK-PAGES-LAYOUT-VERIFY",
@@ -588,7 +637,8 @@
     "priority": "NORMAL",
     "enqueued_at": "2026-06-13",
     "note": "[2026-06-13 시우·GM 지시 완료분의 다음] 4개 부서 체계(지원부·시설부·운영부·주차) 풀폭 좌측정렬 + 구역 카드 다열 그리드 적용·푸시 완료(커밋 01a1dcd 지원부 / da3d4d1 시설부 / d895175 운영부복구 / aa311ca 주차). 다음 단계=GM 라이브 검증 후 미세조정. 검증 포인트: ① 페이지 구조 분기 적정성 — 셋업 점검항목 그리드는 지원부에만 존재, 시설부·운영부 매뉴얼탭엔 없음(요일보드+절차카드 구조)이라 시설부=점검 체크리스트 그리드/운영부=매뉴얼탭 좌측정렬만 적용. 이 해석이 GM 의도와 맞는지 ② 그리드 열 최소폭(현 340px)·열 수 적정성 ③ 상단 선택바(회차·점검자·날짜바)가 풀폭으로 늘어나 보이는지 — 필요시 max-width 캡으로 정리 ④ 모바일 단일 열 확인. GM 피드백 시 즉시 반영(미세조정은 그리드 minmax·상단바 폭만 손대면 됨).",
-    "next": "GM 라이브 검증 결과 대기 → 조정 요청 시 반영, 이상 없으면 종결(완료 도장은 웰리)."
+    "next": "GM 라이브 검증 결과 대기 → 조정 요청 시 반영, 이상 없으면 종결(완료 도장은 웰리).",
+    "ship_no": 13
   },
   {
     "task_id": "CTO-2026-06-08-TELEGRAM-ALERT-AUDIT",
@@ -604,7 +654,8 @@
     "note_progress": "[2026-06-11 시토 감사완료·웰리 검증] 4개 정본 커밋(b1eee9d·20070b2·2e8d1c0·a26002c) git show + 현재 코드 AST 실측 대조. 10슬롯(06/07s/07/09/12/15/18/21/22/23)·시간대·08시제거·12/18/23시 박스표(_build_checklist_block)·15/21시 배이모지 = 전부 정합. 차이 1건: 07시 _build_07_body에 ship_classify 미적용(정본 커밋 2e8d1c0은 _render_card[15시]·_build_21_body만 배이모지 명세 — 07시 빌더는 카드렌더 경로 미경유). ★중요 사실정정: '배 이미지'=실사진 sendPhoto 아님, 배 이모지(🚢/🛳️/⛴️/⛵) 텍스트 prefix임(sendPhoto 코드 미존재). → 07시 적용 여부 = GM 판단 사항.",
     "note": "[GM 2026-06-08 지시] 어제 정한 텔레그램 알림 설계(10슬롯·07/09/12/18/21/22/23시 재설계·12/18시 체크리스트 박스표·7/15/21시 배 이미지, 커밋 a26002c·b1eee9d·20070b2·2e8d1c0)와 실제 발신되는 알림이 다른 부분을 전수 점검. 차이점 발견 시 목록화하여 웰리에 보고 → GM 판단.",
     "disposed_at": "2026-06-13",
-    "note_disposed": "[2026-06-13 GM 지시·시토] 완료 후 G1 입항완료 적체 정리 — 폐기 전환으로 G1 기본뷰에서 내림(검색이력·완료기록 보존, 원상태=DONE)."
+    "note_disposed": "[2026-06-13 GM 지시·시토] 완료 후 G1 입항완료 적체 정리 — 폐기 전환으로 G1 기본뷰에서 내림(검색이력·완료기록 보존, 원상태=DONE).",
+    "ship_no": 3
   },
   {
     "task_id": "CTO-2026-06-08-QUEUE-SHEET-MIGRATION-RESUME",
@@ -619,7 +670,8 @@
     "brief": "docs/queue_to_sheets_migration_plan.md",
     "note": "[GM 2026-06-08 결정] 시트=원본/_queue=미러 이관 마저. 어제(06-07) 시토 2단계 1회 대량처리→배 중복사고→revert 복구(9458937). 교훈: 로드베어링은 잘게 쪼개 단계마다 검증·커밋, reader 한 소스+제목dedup. 1단계(미러생성기 queue_sync_from_sheet.py+계획서) 살아있음. 재개=① P1 생성기 현행 시트 대조 read-only 검증 ② 시트에 어제 사고 잔재(AI행 중복) 없는지 점검 ③ 미세 단계별 실행계획 산출(각 단계 검증·롤백·GM수동여부) → 위험·GM수동 단계 전 웰리/GM 확인. 대량 일괄처리·GAS 임의 재배포 금지. [2026-06-09 GM 점검플래그] 오늘 _queue에 직접 등록한 2건(MEMORY-INDEX-FILE-RECONCILE·CONTEXT-COMPRESSION-REVIEW)이 시트 SSOT에도 반영돼야 하는지 / _queue가 미러로 덮어써질 때 유실되는지 = 이관 재개(토큰 리셋 후) 시 함께 점검. 현재 cutover 상태 미확인.",
     "on_hold_at": "2026-06-13",
-    "note_hold": "[2026-06-13 GM 결정·시토] 보류(A안). 실측 진단: 06-08 이관 기능완료(전용탭 seed 21건+GAS v@53), 이후 5일 S4/S5 미적용으로 _queue(33 최신)↔전용탭(21 화석) 갈라짐. 시트→_queue --write 시 최신 12건 유실 위험 확인. 보류 사유: 'G1 AI배 인라인편집' 목적이 'AI배 읽기전용(웰리관리)' 방침과 상충+5일 미동기화로도 무문제(실익 낮음). 재개 절차=docs/queue_to_sheets_migration_plan.md §8 R0~R5. 사고방지=queue_sync_from_sheet.py --write 유실방지 가드 추가됨(시트<_queue 유실 시 ABORT, --force만 우회)."
+    "note_hold": "[2026-06-13 GM 결정·시토] 보류(A안). 실측 진단: 06-08 이관 기능완료(전용탭 seed 21건+GAS v@53), 이후 5일 S4/S5 미적용으로 _queue(33 최신)↔전용탭(21 화석) 갈라짐. 시트→_queue --write 시 최신 12건 유실 위험 확인. 보류 사유: 'G1 AI배 인라인편집' 목적이 'AI배 읽기전용(웰리관리)' 방침과 상충+5일 미동기화로도 무문제(실익 낮음). 재개 절차=docs/queue_to_sheets_migration_plan.md §8 R0~R5. 사고방지=queue_sync_from_sheet.py --write 유실방지 가드 추가됨(시트<_queue 유실 시 ABORT, --force만 우회).",
+    "ship_no": 4
   },
   {
     "task_id": "CMO-2026-06-08-AI8-RELEASE",
@@ -633,7 +685,8 @@
     "depends_on": null,
     "priority": "HIGH",
     "enqueued_at": "2026-06-08",
-    "note": "[GM 2026-06-08 지시] AI #8 나와야 함. 대상=260608_AI_북극성항해설계(제작완료·검수대기·미발행, 06-07 조기발행→GM 삭제분). 산출물 실재 검수(output 슬라이드·큐레이션_추천.md·cmo/review preview) 후 M5 review_queue 검수대기 등록 + 텔레그램 [승인] 카드 콘텐츠당 1회 발송. 발행은 GM 텔레그램 [승인] 탭 경유(무폴링·자동재발행 금지). ※로드맵 번호: GM의일요일이 현재 #8로 기재돼 있어 번호 재정렬 필요 시 로드맵 동기화."
+    "note": "[GM 2026-06-08 지시] AI #8 나와야 함. 대상=260608_AI_북극성항해설계(제작완료·검수대기·미발행, 06-07 조기발행→GM 삭제분). 산출물 실재 검수(output 슬라이드·큐레이션_추천.md·cmo/review preview) 후 M5 review_queue 검수대기 등록 + 텔레그램 [승인] 카드 콘텐츠당 1회 발송. 발행은 GM 텔레그램 [승인] 탭 경유(무폴링·자동재발행 금지). ※로드맵 번호: GM의일요일이 현재 #8로 기재돼 있어 번호 재정렬 필요 시 로드맵 동기화.",
+    "ship_no": 10
   },
   {
     "task_id": "CTO-2026-06-08-CFO-SHEET-LINK",
@@ -645,7 +698,8 @@
     "enqueued_at": "2026-06-07",
     "disposed_at": "2026-06-12",
     "note": "[GM 2026-06-07] 매출·지출 시트 내일 제공. 그 전까지 9시 보고는 매출·지출 \"연결 대기\" 표시(코드는 CFO_SHEET_URL 폴백 완비). 링크 받으면 .env 등록+시트 구조 보고 파싱 구현.",
-    "note_disposed": "[폐기 2026-06-12 GM] 오늘 9시보고 정합(7f7bb111)이 매출·지출을 home_kpi 소스로 연결 → CFO 전용 시트 링크 불필요해짐. CFO_SHEET_URL 등록 시 자동 override 하위호환은 코드에 유지."
+    "note_disposed": "[폐기 2026-06-12 GM] 오늘 9시보고 정합(7f7bb111)이 매출·지출을 home_kpi 소스로 연결 → CFO 전용 시트 링크 불필요해짐. CFO_SHEET_URL 등록 시 자동 override 하위호환은 코드에 유지.",
+    "ship_no": 2
   },
   {
     "task_id": "COO-2026-06-07-OPS-GUIDELINE",
@@ -654,7 +708,8 @@
     "status": "IN_PROGRESS",
     "priority": "NORMAL",
     "enqueued_at": "2026-06-07",
-    "note": "[이관 2026-06-07 시우] todo_list TODO-20260526173316959에서 이관. 담당: 김남욱GM + AI COO(시우). S2 C레벨 원칙과 별개인 실제 운영 가이드 산출물 작업."
+    "note": "[이관 2026-06-07 시우] todo_list TODO-20260526173316959에서 이관. 담당: 김남욱GM + AI COO(시우). S2 C레벨 원칙과 별개인 실제 운영 가이드 산출물 작업.",
+    "ship_no": 3
   },
   {
     "task_id": "CMO-2026-06-07-UNPUBLISHED-CONTENT",
@@ -667,7 +722,8 @@
     "terminal": true,
     "next": "[GM 2026-06-12] 발레·스쿼시 옛 발행완료분 확인 종결",
     "note": "[이관 2026-06-07 시우] todo_list TODO-20260602194917329에서 이관. 발레(8장·미발행)·스쿼시(5주경과) 발행/보류 GM 결정 대기. 담당: AI CMO(시모) + 김남욱GM.",
-    "note_done": "[완료 2026-06-12 GM 지시] 발행 이력 실측 확인. 발레(BALLET) 4채널: 블로그·카페·카카오·당근 모두 2026-06-05 발행완료(review_queue.json CMO-2026-05-20-BALLET-BLOG/CAFE/KAKAO/DANGGN, 각 GM 게시 완료 노트). 스쿼시 WJO 4채널: 블로그(2026-06-03 post_url 확인)·카페(2026-06-03 cafe.naver.com/ichon1dong/362833)·카카오(2026-06-03)·당근(2026-06-04 daangn.com/kr/business-posts/6a2141fd… 확인). 바레(BARRE) 4채널: 2026-06-08 GM 수동 발행완료(commit 7469e58e). 전 항목 발행완료 확정."
+    "note_done": "[완료 2026-06-12 GM 지시] 발행 이력 실측 확인. 발레(BALLET) 4채널: 블로그·카페·카카오·당근 모두 2026-06-05 발행완료(review_queue.json CMO-2026-05-20-BALLET-BLOG/CAFE/KAKAO/DANGGN, 각 GM 게시 완료 노트). 스쿼시 WJO 4채널: 블로그(2026-06-03 post_url 확인)·카페(2026-06-03 cafe.naver.com/ichon1dong/362833)·카카오(2026-06-03)·당근(2026-06-04 daangn.com/kr/business-posts/6a2141fd… 확인). 바레(BARRE) 4채널: 2026-06-08 GM 수동 발행완료(commit 7469e58e). 전 항목 발행완료 확정.",
+    "ship_no": 6
   },
   {
     "task_id": "CMO-2026-06-07-KAKAO-PUBLISH-RND",
@@ -680,7 +736,8 @@
     "terminal": true,
     "commit_sha": "e034852",
     "artifact": "scripts/kakao_channel_upload_playwright.py",
-    "note": "[완료 확정 2026-06-07 시모 실측] 커밋 e034852(2026-06-03) — 카카오 파트너센터 인라인 에디터 DOM 실측, _fill_editor(제목·본문·이미지8장)·임시저장 반자동 완성. POC 스크린샷 2장 실재(kakao_draft_filled.png·kakao_draft_saved.png). WJO·발레 카카오 발행완료 2건 이력 확인. 방식 확정 = 반자동(임시저장→GM 검수→발행). 이관 2026-06-07 시우."
+    "note": "[완료 확정 2026-06-07 시모 실측] 커밋 e034852(2026-06-03) — 카카오 파트너센터 인라인 에디터 DOM 실측, _fill_editor(제목·본문·이미지8장)·임시저장 반자동 완성. POC 스크린샷 2장 실재(kakao_draft_filled.png·kakao_draft_saved.png). WJO·발레 카카오 발행완료 2건 이력 확인. 방식 확정 = 반자동(임시저장→GM 검수→발행). 이관 2026-06-07 시우.",
+    "ship_no": 7
   },
   {
     "task_id": "CMO-2026-06-07-GUIDE-PRICING-UPDATE",
@@ -691,7 +748,8 @@
     "enqueued_at": "2026-06-07",
     "note": "[이관 2026-06-07 시우] todo_list TODO-20260602194922795에서 이관. 단체할인율 충돌(10%/30% vs 10%/15%) GM 확정 필요. 주차 대수·세부요금 확보. 담당: AI CMO(시모) + 김남욱GM.",
     "disposed_at": "2026-06-13",
-    "note_disposed": "[폐기 2026-06-13 GM] 웰페리온은 요금할인을 하지 않음(확정) → 단체할인율 확정이라는 전제 자체가 무효. ⚠️후속: 안내가이드·콘텐츠에 할인 표현이 있으면 제거(시모 점검). 주차 확정값은 필요시 별도 항로."
+    "note_disposed": "[폐기 2026-06-13 GM] 웰페리온은 요금할인을 하지 않음(확정) → 단체할인율 확정이라는 전제 자체가 무효. ⚠️후속: 안내가이드·콘텐츠에 할인 표현이 있으면 제거(시모 점검). 주차 확정값은 필요시 별도 항로.",
+    "ship_no": 8
   },
   {
     "task_id": "CMO-2026-06-07-FUNNEL-DATA-CONNECT",
@@ -702,7 +760,8 @@
     "enqueued_at": "2026-06-07",
     "note": "[이관 2026-06-07 시우] todo_list TODO-20260602194920193에서 이관. 노출·클릭 자동화. Meta·네이버 통계 API 토큰 필요(GM 결재). 담당: AI CMO(시모) + 김남욱GM.",
     "disposed_at": "2026-06-13",
-    "note_disposed": "[폐기 2026-06-13 GM] Meta 미진행은 옛 결정 → Meta 퍼널 연동 폐기. 네이버 통계 자동수집은 CHANNEL-ENGAGEMENT(engagement_collector)로 통합 추진."
+    "note_disposed": "[폐기 2026-06-13 GM] Meta 미진행은 옛 결정 → Meta 퍼널 연동 폐기. 네이버 통계 자동수집은 CHANNEL-ENGAGEMENT(engagement_collector)로 통합 추진.",
+    "ship_no": 9
   },
   {
     "task_id": "CHRO-2026-06-07-OPS-STAFF-TRAINING",
@@ -711,7 +770,8 @@
     "status": "IN_PROGRESS",
     "priority": "NORMAL",
     "enqueued_at": "2026-06-07",
-    "note": "[이관 2026-06-07 시우] todo_list TODO-20260601135851080에서 이관. 대상: 이경연 실장·임정은M·최준용M. 담당: 김남욱GM + AI CHRO(시로). 종료일 2026-06-28."
+    "note": "[이관 2026-06-07 시우] todo_list TODO-20260601135851080에서 이관. 대상: 이경연 실장·임정은M·최준용M. 담당: 김남욱GM + AI CHRO(시로). 종료일 2026-06-28.",
+    "ship_no": 2
   },
   {
     "task_id": "CHRO-2026-06-07-GAS-SHEETS-REDEPLOY",
@@ -721,7 +781,8 @@
     "priority": "NORMAL",
     "enqueued_at": "2026-06-07",
     "disposed_at": "2026-06-07",
-    "note": "[이관 2026-06-07 시우] todo_list TODO-20260531111105225에서 이관. chro/hub GAS가 퇴사·입사·채용을 Notion에 씀. GAS 수정+재배포 결재 필요. 담당: AI CHRO(시로). [폐기 2026-06-07 GM 결정] 사유: 참조된 chro/hub GAS가 코드베이스에 실재하지 않는 유령 건. AI CHRO(시로)가 2026-05-31 자의적으로 생성 — GM 미인지. 식별자 번호 미부여."
+    "note": "[이관 2026-06-07 시우] todo_list TODO-20260531111105225에서 이관. chro/hub GAS가 퇴사·입사·채용을 Notion에 씀. GAS 수정+재배포 결재 필요. 담당: AI CHRO(시로). [폐기 2026-06-07 GM 결정] 사유: 참조된 chro/hub GAS가 코드베이스에 실재하지 않는 유령 건. AI CHRO(시로)가 2026-05-31 자의적으로 생성 — GM 미인지. 식별자 번호 미부여.",
+    "ship_no": 3
   },
   {
     "task_id": "CMO-2026-06-06-EXPERIMENT-01-IG-CTA",
@@ -732,7 +793,8 @@
     "depends_on": null,
     "brief": "status/briefs/CMO-2026-06-06-EXPERIMENT-01-IG-CTA.md",
     "enqueued_at": "2026-06-06",
-    "note": "🔄 측정 진행중(~06-29). ｜ 확정 문구(A군 첫줄): \"문의·투어 예약 → wellperion.com/ko/inquiry\". ｜ 착수 — 회사 IG(wellperion 공식) 한정 06-15 시작(namuk 개인은 06-10 바이럴 CTA 정책이라 제외). 1차 적용=생크몽드 Ep2 캡션 첫줄 CTA 발행, Ep3 보류. ｜ 기준치(06-06): 이번달 클릭 57·문의 2(약 3.5%). ｜ 측정시작 스냅샷(06-15·이번달 누적): 클릭 143·문의 120. ｜ 성공기준: A군 클릭률 대조군 대비 +20%↑. ｜ ⏭ 2주 뒤 [기간]조회로 클릭·문의 비교 → 웰리 보고 → GM 판단. ｜ [2026-06-19 GM] 대시보드 실험로그 섹션 삭제 → 실험 기록 G1 단일화."
+    "note": "🔄 측정 진행중(~06-29). ｜ 확정 문구(A군 첫줄): \"문의·투어 예약 → wellperion.com/ko/inquiry\". ｜ 착수 — 회사 IG(wellperion 공식) 한정 06-15 시작(namuk 개인은 06-10 바이럴 CTA 정책이라 제외). 1차 적용=생크몽드 Ep2 캡션 첫줄 CTA 발행, Ep3 보류. ｜ 기준치(06-06): 이번달 클릭 57·문의 2(약 3.5%). ｜ 측정시작 스냅샷(06-15·이번달 누적): 클릭 143·문의 120. ｜ 성공기준: A군 클릭률 대조군 대비 +20%↑. ｜ ⏭ 2주 뒤 [기간]조회로 클릭·문의 비교 → 웰리 보고 → GM 판단. ｜ [2026-06-19 GM] 대시보드 실험로그 섹션 삭제 → 실험 기록 G1 단일화.",
+    "ship_no": 3
   },
   {
     "task_id": "CMO-2026-06-06-CHANNEL-EXPANSION",
@@ -745,7 +807,8 @@
     "enqueued_at": "2026-06-06",
     "processed_at": "2026-06-06",
     "terminal": true,
-    "note": "[2026-06-06 네이버 파트 완료] 소개문 deep-interview 확정(프리미엄 라이프스타일 클럽)·등록팩·시설사진 압축. 네이버 플레이스 GM 정보 보강 완료(심사 대기)+멤버십 문의폼 유입경로에 '네이버 플레이스' 옵션 추가(대시보드 자동 추적). 🔵 후속(보류, GM 지시): 구글 비즈니스 프로필 신규 생성(등록팩 그대로 사용) + 성인/유소년 폼에도 유입경로 옵션 추가. 재개 시 본 brief 사용."
+    "note": "[2026-06-06 네이버 파트 완료] 소개문 deep-interview 확정(프리미엄 라이프스타일 클럽)·등록팩·시설사진 압축. 네이버 플레이스 GM 정보 보강 완료(심사 대기)+멤버십 문의폼 유입경로에 '네이버 플레이스' 옵션 추가(대시보드 자동 추적). 🔵 후속(보류, GM 지시): 구글 비즈니스 프로필 신규 생성(등록팩 그대로 사용) + 성인/유소년 폼에도 유입경로 옵션 추가. 재개 시 본 brief 사용.",
+    "ship_no": 4
   },
   {
     "task_id": "CMO-2026-06-06-CHANNEL-ENGAGEMENT",
@@ -758,7 +821,8 @@
     "note": "✅ 전 채널 반응수집 완결 — 당근·블로그(로그인 불필요) + 카페·카카오(발행세션 스크랩, 06-15 추가) 수집 가동, 당근 지표는 월간보고서 연결. 당근·블로그는 무인 정기수집 예약작업(Wellperion-Engagement-Collect-0930·DAILY 09:30) 구축·실측 검증(수집→커밋→push). ｜ ✋ IG만 Meta 연동 폐기로 제외. ｜ ⏭ GM 관리자 1회: ops/register_engagement_collect.bat 실행 → 정기 자동수집 가동(카페·카카오는 headful 반자동 유지).",
     "terminal": true,
     "processed_at": "2026-06-15",
-    "next": "GM 관리자로 ops/register_engagement_collect.bat 1회 실행 시 당근·블로그 정기 무인수집 라이브. 카페·카카오는 세션 있을 때 수동/반자동."
+    "next": "GM 관리자로 ops/register_engagement_collect.bat 1회 실행 시 당근·블로그 정기 무인수집 라이브. 카페·카카오는 세션 있을 때 수동/반자동.",
+    "ship_no": 5
   },
   {
     "task_id": "CMO-2026-06-06-INQUIRY-DASHBOARD-PIPELINE",
@@ -773,7 +837,8 @@
     "terminal": true,
     "commit_sha": "584b186",
     "note": "[2026-06-06 시모 /team 완료·라이브검증] 홈 경영현황 '신규 문의' 실데이터 바인딩 완료(period_breakdown, 미배포 시 inquiry_list 이번달 카운트 폴백 — 라이브 작동). 추가 산출: 마케팅현황대시보드 일/주/월 토글(v0.2)·문의채널현황 일/주/월·월간마케팅보고서.html(인쇄)·monthly_marketing_report.py(자동발송)·GAS period_breakdown 액션. [2026-06-06 후속완료] GM 재배포 2회 완료→period/캐시/기간조회 라이브 점등, 월간보고 예약작업 등록+테스트발송 OK, 대시보드 v0.3(속도캐시·KPI간결·외부지표숨김·기간조회), 채널비교표 라이브화(byChannelMonth+funnel byChannel). ⚠️데이터품질: 구글폼 누적 8281건(이번달은 2건 정상) — 폼 gid 점검은 COO/데이터 후속.",
-    "artifact": "https://wellperion-cao.github.io/wellperion-automation/cmo/funnel/문의흐름지도.html"
+    "artifact": "https://wellperion-cao.github.io/wellperion-automation/cmo/funnel/문의흐름지도.html",
+    "ship_no": 2
   },
   {
     "task_id": "CTO-2026-06-04-DANGGN-SEMIAUTO",
@@ -788,7 +853,8 @@
     "terminal": true,
     "note": "[2026-06-05 GM] 어제 마무리분. GM이 시모와 직접 테스트 예정 → 필요한 부분 나오면 시토 재협업 지시. 그 전까지 할 일에서 제외.",
     "disposed_at": "2026-06-13",
-    "note_disposed": "[2026-06-13 GM 지시·시토] 완료 후 G1 입항완료 적체 정리 — 폐기 전환으로 G1 기본뷰에서 내림(검색이력·완료기록 보존, 원상태=DONE)."
+    "note_disposed": "[2026-06-13 GM 지시·시토] 완료 후 G1 입항완료 적체 정리 — 폐기 전환으로 G1 기본뷰에서 내림(검색이력·완료기록 보존, 원상태=DONE).",
+    "ship_no": 1
   },
   {
     "task_id": "COO-2026-06-04-TODO-UPDATE-EMPTY-OVERWRITE",
@@ -802,7 +868,8 @@
     "note": "[담당=시우(COO) / 검증=웰리(CEO)] 시우 1차 '완료' 거짓보고(실제 미수정)를 웰리가 실측 발견. 이후 완료=증거 4요건을 구조로 강제(증거 없으면 거부)하여 동일 거짓완료 재발 차단. [2026-06-05 CEO 직접 처리] 시우 거짓완료(미수정)를 실측으로 발견→웰리 직접 수정. GAS todo_update 빈값 스킵(작업본+배포본 동기), clasp @47→@48 재배포, 라이브 회귀 실측 PASS(빈값 전송에도 전 필드 보존). G1·업무현황 SSOT 공통 차단.",
     "commit_sha": "56aac0b",
     "processed_at": "2026-06-05",
-    "next": "지원부 점검 앱 이슈 저장 유실 수정(COO-2026-06-04-SUPPORT-ISSUE-SAVE) — 같은 GAS 재배포 성격"
+    "next": "지원부 점검 앱 이슈 저장 유실 수정(COO-2026-06-04-SUPPORT-ISSUE-SAVE) — 같은 GAS 재배포 성격",
+    "ship_no": 1
   },
   {
     "task_id": "COO-2026-06-04-SUPPORT-ISSUE-SAVE",
@@ -816,7 +883,8 @@
     "note": "[담당=시우(COO) / 검증=웰리(CEO)] 시우 1차 '완료' 거짓보고(실제 미수정)를 웰리가 실측 발견. 이후 완료=증거 4요건을 구조로 강제(증거 없으면 거부)하여 동일 거짓완료 재발 차단. [2026-06-05 CEO 직접 처리] 근본=프론트 zone 미전송→V2Compat 폴백→날짜행 전체삭제. 수정: V2Compat 비파괴 전환(삭제 폐지, itemId update/add). 작업본+배포본 동기, clasp @4→@5 재배포. 라이브 실측 PASS(남/여탭 따로 저장한 공용 이슈 2건 모두 보존). 테스트행 2099-12-31 잔존(미래날짜·실사용 미표시·무해).",
     "commit_sha": "930a017",
     "processed_at": "2026-06-05",
-    "terminal": true
+    "terminal": true,
+    "ship_no": 2
   },
   {
     "task_id": "CHRO-2026-06-04-HR-NOTION-TO-SHEETS",
@@ -829,7 +897,8 @@
     "enqueued_at": "2026-06-04",
     "note": "GM 총력 이관 결정. 시토 기술 이관(시트+GAS 재작성)·시로 인사 데이터. GM export 선행. 명세=docs/chro_notion_to_sheets_migration_spec.md. [2026-06-05 GM] 실무 나우열M가 직접 이관 진행. [폐기 2026-06-07 GM 결정] 사유: 이관 중단/불필요(노션 구독 종료 등). GM 지시로 항로에서 정리.",
     "owner": "나우열M",
-    "disposed_at": "2026-06-07"
+    "disposed_at": "2026-06-07",
+    "ship_no": 1
   },
   {
     "task_id": "CEO-2026-05-30-REPORT-CONTENT-POLISH",
@@ -843,7 +912,8 @@
     "terminal": true,
     "note": "형식은 GM 승인 완료(표+결정중심·3분류·제목요약·운영기본값 SSOT). 내용 디테일은 GM 회사 출근 후 구체 피드백 예정 → 그때 반영.",
     "artifact": "아침/저녁 자동 텔레그램 보고 형식 가다듬기 완료 — 표·결정중심·3분류·제목요약·운영기본값 SSOT 적용. 이후 가독성 규칙(L10 쉬운말·내부코드 숨김 / L12 짧고 한눈에 / L14 또렷이·끝까지·쉽게)까지 약속에 박제돼 지속 반영. [2026-06-16 GM 완료 확정 — 웰리가 입항완료 안 내리고 놓쳤던 것 정리].",
-    "next": "표류(완결). 추가 디테일 피드백 시 신규 항로로."
+    "next": "표류(완결). 추가 디테일 피드백 시 신규 항로로.",
+    "ship_no": 1
   },
   {
     "task_id": "CHRO-2026-06-08-DIFFICULTY-EVAL-INTEGRATION",
@@ -852,7 +922,8 @@
     "status": "PENDING",
     "priority": "HIGH",
     "enqueued_at": "2026-06-08",
-    "note": "[이관 2026-06-08 시우(COO)] 난이도 기준 GM 확정(2026-06-08) 후 시로 인계. S2 COO탭 '시로(CHRO) 인사평가 연결 지점' 4항목 검토 필요. ① GAS 반기 스냅샷 설계(현재 실시간 합산만·반기 컷오프 없음, 높음) ② 다면평가 연동 비율 확정(직무이해도·실행력 35점 vs 가산점 10점 어디에 반영, 높음) ③ 상 등급 별도 플래그(GM 승인 획득 건수 독립 지표 활용 여부, 중간) ④ 부서장 확정 타임라인(반기 컷오프 기준일 설정, 중간). 검토 결과 CEO에 보고."
+    "note": "[이관 2026-06-08 시우(COO)] 난이도 기준 GM 확정(2026-06-08) 후 시로 인계. S2 COO탭 '시로(CHRO) 인사평가 연결 지점' 4항목 검토 필요. ① GAS 반기 스냅샷 설계(현재 실시간 합산만·반기 컷오프 없음, 높음) ② 다면평가 연동 비율 확정(직무이해도·실행력 35점 vs 가산점 10점 어디에 반영, 높음) ③ 상 등급 별도 플래그(GM 승인 획득 건수 독립 지표 활용 여부, 중간) ④ 부서장 확정 타임라인(반기 컷오프 기준일 설정, 중간). 검토 결과 CEO에 보고.",
+    "ship_no": 4
   },
   {
     "task_id": "CTO-2026-06-09-MEMORY-INDEX-FILE-RECONCILE",
@@ -867,7 +938,8 @@
     "note_progress": "[2026-06-11 시토 완료·웰리 UTF-8 실측검증] 현재 메모리 폴더 .md 111개 / MEMORY.md 인덱스 포인터 111줄 / 고아 0 / 끊긴링크 0 = 완전 정합. GM 6/9 관측 불일치(108 vs 110)는 그새 정리돼 현재 깨끗 — 고칠 것 없음. ※웰리 1차 CP949 대조가 한글 파일명을 깨뜨려 거짓 고아 2개로 오탐 → UTF-8 재검증으로 정정(0 고아 확정). 박제: 한글 파일 대조는 UTF-8 강제.",
     "note": "[GM 2026-06-09 지시] 메모리 압축 정리 중 발견. ~/.claude/projects/.../memory 폴더 .md 110개인데 MEMORY.md 인덱스는 108행 → 인덱스에 없는 고아 파일 2개 식별·정리(인덱스 추가 또는 삭제). 한가할 때. 비용 낮은 작업이므로 Sonnet/Haiku.",
     "disposed_at": "2026-06-13",
-    "note_disposed": "[2026-06-13 GM 지시·시토] 완료 후 G1 입항완료 적체 정리 — 폐기 전환으로 G1 기본뷰에서 내림(검색이력·완료기록 보존, 원상태=DONE)."
+    "note_disposed": "[2026-06-13 GM 지시·시토] 완료 후 G1 입항완료 적체 정리 — 폐기 전환으로 G1 기본뷰에서 내림(검색이력·완료기록 보존, 원상태=DONE).",
+    "ship_no": 5
   },
   {
     "task_id": "CTO-2026-06-09-CONTEXT-COMPRESSION-REVIEW",
@@ -882,7 +954,8 @@
     "terminal": true,
     "next": "✅ 오늘 실행: review_queue 압축(691→446행)+아카이브 + 주간정비 범위에 캐시·상시컨텍스트 압축 박제(일회성→정규 루틴 정착). 상시 슬림화는 주간정비로 지속.",
     "disposed_at": "2026-06-13",
-    "note_disposed": "[2026-06-13 GM 지시·시토] 완료 후 G1 입항완료 적체 정리 — 폐기 전환으로 G1 기본뷰에서 내림(검색이력·완료기록 보존, 원상태=DONE)."
+    "note_disposed": "[2026-06-13 GM 지시·시토] 완료 후 G1 입항완료 적체 정리 — 폐기 전환으로 G1 기본뷰에서 내림(검색이력·완료기록 보존, 원상태=DONE).",
+    "ship_no": 6
   },
   {
     "task_id": "CMO-2026-06-12-AI12-PUBLISH",
@@ -892,7 +965,8 @@
     "processed_at": "2026-06-12",
     "terminal": true,
     "next": "AI 시리즈 #12편 namuk.wellperion 발행 완료.",
-    "enqueued_at": "2026-06-12"
+    "enqueued_at": "2026-06-12",
+    "ship_no": 11
   },
   {
     "task_id": "COO-2026-06-12-CHECK-SETUP-REMOVE",
@@ -902,7 +976,8 @@
     "processed_at": "2026-06-12",
     "terminal": true,
     "next": "점검 셋업편집기 5부서 제거 완료 — 항목편집은 이슈승격으로 대체.",
-    "enqueued_at": "2026-06-12"
+    "enqueued_at": "2026-06-12",
+    "ship_no": 4
   },
   {
     "task_id": "CMO-2026-06-12-M5-QUEUE-CLEAN",
@@ -912,7 +987,8 @@
     "processed_at": "2026-06-12",
     "terminal": true,
     "next": "M5 검수큐 정리 완료 — 검수대기 0건.",
-    "enqueued_at": "2026-06-12"
+    "enqueued_at": "2026-06-12",
+    "ship_no": 12
   },
   {
     "task_id": "CEO-2026-06-12-MD-SSOT-SPLIT",
@@ -922,7 +998,8 @@
     "processed_at": "2026-06-12",
     "terminal": true,
     "next": ".md 현행/이력 물리분리 완료 — 로드맵·CLAUDE 재구조화 + 이력파일 2종 분리.",
-    "enqueued_at": "2026-06-12"
+    "enqueued_at": "2026-06-12",
+    "ship_no": 2
   },
   {
     "task_id": "CTO-2026-06-12-BOARD-SORT",
@@ -934,7 +1011,8 @@
     "next": "업무·결재 보드 생성일(createdAt) 최신순 상단 정렬 적용.",
     "enqueued_at": "2026-06-12",
     "disposed_at": "2026-06-13",
-    "note_disposed": "[2026-06-13 GM 지시·시토] 완료 후 G1 입항완료 적체 정리 — 폐기 전환으로 G1 기본뷰에서 내림(검색이력·완료기록 보존, 원상태=DONE)."
+    "note_disposed": "[2026-06-13 GM 지시·시토] 완료 후 G1 입항완료 적체 정리 — 폐기 전환으로 G1 기본뷰에서 내림(검색이력·완료기록 보존, 원상태=DONE).",
+    "ship_no": 7
   },
   {
     "task_id": "CTO-2026-06-12-REPORT-09-FIX",
@@ -946,7 +1024,8 @@
     "next": "9시 보고 정합 완료 — C레벨 죽은항목 제외 + 매출·지출 home 소스 연결.",
     "enqueued_at": "2026-06-12",
     "disposed_at": "2026-06-13",
-    "note_disposed": "[2026-06-13 GM 지시·시토] 완료 후 G1 입항완료 적체 정리 — 폐기 전환으로 G1 기본뷰에서 내림(검색이력·완료기록 보존, 원상태=DONE)."
+    "note_disposed": "[2026-06-13 GM 지시·시토] 완료 후 G1 입항완료 적체 정리 — 폐기 전환으로 G1 기본뷰에서 내림(검색이력·완료기록 보존, 원상태=DONE).",
+    "ship_no": 8
   },
   {
     "task_id": "CTO-2026-06-12-WORKTREE-CLEAN",
@@ -958,7 +1037,8 @@
     "next": "작업트리 오염 정리 완료 — AI폴더 rename·#10중복·임시 4커밋.",
     "enqueued_at": "2026-06-12",
     "disposed_at": "2026-06-13",
-    "note_disposed": "[2026-06-13 GM 지시·시토] 완료 후 G1 입항완료 적체 정리 — 폐기 전환으로 G1 기본뷰에서 내림(검색이력·완료기록 보존, 원상태=DONE)."
+    "note_disposed": "[2026-06-13 GM 지시·시토] 완료 후 G1 입항완료 적체 정리 — 폐기 전환으로 G1 기본뷰에서 내림(검색이력·완료기록 보존, 원상태=DONE).",
+    "ship_no": 9
   },
   {
     "task_id": "COO-2026-06-12-CHECK-C1-BOARDKEY",
@@ -968,7 +1048,8 @@
     "processed_at": "2026-06-12",
     "terminal": true,
     "next": "점검 시설부 보드키 SUPPORT→FACILITY 충돌 봉합 완료.",
-    "enqueued_at": "2026-06-12"
+    "enqueued_at": "2026-06-12",
+    "ship_no": 5
   },
   {
     "task_id": "CMO-2026-06-12-IG-NAMUK-MOVE",
@@ -978,7 +1059,8 @@
     "processed_at": "2026-06-12",
     "terminal": true,
     "next": "AI 시리즈 13편 namuk.wellperion/ 이동 + 경로참조 정합 완료.",
-    "enqueued_at": "2026-06-12"
+    "enqueued_at": "2026-06-12",
+    "ship_no": 13
   },
   {
     "task_id": "CTO-2026-06-12-SAVE-TOAST",
@@ -990,7 +1072,8 @@
     "next": "저장 알림 토스트 중앙상단·진녹 배치로 가시성 개선.",
     "enqueued_at": "2026-06-12",
     "disposed_at": "2026-06-13",
-    "note_disposed": "[2026-06-13 GM 지시·시토] 완료 후 G1 입항완료 적체 정리 — 폐기 전환으로 G1 기본뷰에서 내림(검색이력·완료기록 보존, 원상태=DONE)."
+    "note_disposed": "[2026-06-13 GM 지시·시토] 완료 후 G1 입항완료 적체 정리 — 폐기 전환으로 G1 기본뷰에서 내림(검색이력·완료기록 보존, 원상태=DONE).",
+    "ship_no": 10
   },
   {
     "task_id": "CTO-2026-06-13-BAT-FULL-REORG",
@@ -1005,7 +1088,8 @@
     "artifact": "[2026-06-15 시토·GM admin 실측검증] .bat ops/ig 재편 완료. ops/(morning_update·fix_task_windows)·ig/(start_ig_series_producer·register_0730), 고아 2개 _archive/bat_dead_20260615/(CEO_DAILY_CHECK·start_ceo_verify_watcher). 루트 정리: shutdown 1회용 2개→_archive/shutdown_fix_20260615/, temp 잡파일 2개 삭제. 외부참조 갱신(morning_update_hidden.vbs·register_0730 LAUNCHER). 예약작업: 죽은작업 4/4 삭제 검증(3건 비관리자 PS+CEO-Verify-Watcher admin), IG-0730 exec=ig/ 재경로 검증(Set-ScheduledTask, schtasks /Change 암호프롬프트 회피). Morning-Update는 VBS경유라 admin불필요·즉시동작. 커밋 ef770a7f·a4143d47.",
     "next": "✅ 루트에 흩어진 .bat을 폴더로 정리했습니다.\n▸ ops/ = morning_update · fix_task_windows\n▸ ig/ = IG 제작기 · 등록기\n▸ 안 쓰는 죽은 예약작업 4건 삭제 (관리자 권한으로 실측 검증)\n▸ IG 제작기를 새 ig/ 경로로 재지정\n▸ 루트의 1회용 shutdown 파일 · temp 잡파일도 치움\n(Start-AI · wellperion · clevel은 진입점이라 루트 유지)",
     "note_progress": "[2026-06-15 시토] 파일측 완료·커밋·푸시. 실측 reconcile: 살아있는 root-bat 작업 2개뿐(IG-0730·Morning-Update) — 옛 '활성6개' 중 CEO_DAILY_CLEVEL_CHECK·CEO-Verify-Watcher는 유령감사 삭제대상이라 ops/ 이동이 아닌 고아 아카이브 처리. 결과: ops/(morning_update·fix_task_windows)·ig/(start_ig_series_producer·register_0730), 고아 2개 _archive/bat_dead_20260615/. VBS·register LAUNCHER 경로 갱신완료(Morning-Update는 VBS경유라 admin 불필요·즉시동작). 실측 진행: 비관리자 PowerShell로 죽은작업 3건 삭제완료(CEO_DAILY_CLEVEL_CHECK·CTO-008-MetaTokenRefresh·CMO-001-Calendar-Dispatcher). ⚠️남은 admin 2건(액세스거부 실측)=ops\\reorg_tasks_admin.bat rev2(권한자가검사 내장) 관리자 1회 실행: ①Wellperion-CEO-Verify-Watcher 삭제(비활성·무해) ②IG-0730 /Change로 ig/ 경로 재경로. 실행 전까지 IG-0730(다음발화 06-16 07:30)은 옛 경로라 깨진 상태 — 오늘 실행 권장. rev1이 빈 결과였던 원인=관리자 미실행(rev2가 자가검사로 차단). 실행 후 reorg_tasks_result.txt 검증→완료.",
-    "note": "[2026-06-13 시토] 오늘 전체정리 B 시도 → schtasks 경로변경이 비관리자 세션서 무한대기(2회) → 안전 롤백(루트 15개 유지, 매일작동 정상). 비활성 6개는 _archive/ig_legacy/ 이관 완료(무위험). 재개 절차: ① register형 '관리자 실행' .bat 1개 작성 = ops/ig 폴더생성+활성6개 이동+schtasks /Change 3개(CEO_DAILY_CLEVEL_CHECK→ops, Wellperion-CEO-Verify-Watcher→ops, Wellperion-IG-Series-Produce-0730→ig)+VBS(morning_update_hidden.vbs)·register(LAUNCHER) 경로 동시 갱신을 원샷 ② GM 우클릭 '관리자 실행' 1회 ③ 검증=예약작업 Task To Run↔파일 정합 실측. 대상: ops/=morning_update·CEO_DAILY_CHECK·start_ceo_verify_watcher·fix_task_windows / ig/=start_ig_series_producer·register_ig_series_produce_0730. Start-AI*7·wellperion·clevel은 루트 유지(진입점)."
+    "note": "[2026-06-13 시토] 오늘 전체정리 B 시도 → schtasks 경로변경이 비관리자 세션서 무한대기(2회) → 안전 롤백(루트 15개 유지, 매일작동 정상). 비활성 6개는 _archive/ig_legacy/ 이관 완료(무위험). 재개 절차: ① register형 '관리자 실행' .bat 1개 작성 = ops/ig 폴더생성+활성6개 이동+schtasks /Change 3개(CEO_DAILY_CLEVEL_CHECK→ops, Wellperion-CEO-Verify-Watcher→ops, Wellperion-IG-Series-Produce-0730→ig)+VBS(morning_update_hidden.vbs)·register(LAUNCHER) 경로 동시 갱신을 원샷 ② GM 우클릭 '관리자 실행' 1회 ③ 검증=예약작업 Task To Run↔파일 정합 실측. 대상: ops/=morning_update·CEO_DAILY_CHECK·start_ceo_verify_watcher·fix_task_windows / ig/=start_ig_series_producer·register_ig_series_produce_0730. Start-AI*7·wellperion·clevel은 루트 유지(진입점).",
+    "ship_no": 14
   },
   {
     "task_id": "CTO-2026-06-13-KPI-AUTOMATION-METRIC",
@@ -1016,7 +1100,8 @@
     "priority": "LOW",
     "depends_on": "GM 결재(KPI 정의)",
     "enqueued_at": "2026-06-13",
-    "note": "[2026-06-13 시토·architect 분석] S2 cto탭 담당 KPI='시설 관리·예산 조율·시설 점검'으로 시설 편중. CTO 본질인 자동화·IT 인프라 지표가 누락(예산 조율은 CFO와도 겹침). 제안: '자동화 가동률·장애 0건' 류 기술 지표 1개 추가. KPI 정의는 GM 결재 영역 → GM 승인 후 S2 cto탭(가이드 HTML) 수정. 미승인 시 현행 유지."
+    "note": "[2026-06-13 시토·architect 분석] S2 cto탭 담당 KPI='시설 관리·예산 조율·시설 점검'으로 시설 편중. CTO 본질인 자동화·IT 인프라 지표가 누락(예산 조율은 CFO와도 겹침). 제안: '자동화 가동률·장애 0건' 류 기술 지표 1개 추가. KPI 정의는 GM 결재 영역 → GM 승인 후 S2 cto탭(가이드 HTML) 수정. 미승인 시 현행 유지.",
+    "ship_no": 15
   },
   {
     "task_id": "CEO-2026-06-15-SSOT-TRUTH-UNIFICATION",
@@ -1028,7 +1113,8 @@
     "enqueued_at": "2026-06-15",
     "processed_at": "2026-06-19",
     "artifact": "회사 곳곳에 따로따로 베껴 적혀 있던 값(대표 전화·문의 주소·보고용 번호 등)을 한 곳에서만 관리하도록 바꿨고, 문제가 생기면 한 곳에 적고 '다시는 못 생기게 막음'까지 끝낸 뒤에야 닫는 장치를 만들었습니다. [2026-06-19 완결] 마지막 두 칸까지 채움: ① PC 꺼짐 문제 완전 해결(INC-002 봉인) ② 외부에 쓰면 안 되는 단어(피트니스·하이엔드 프라이빗·사교·현대하이페리온·가이드허브) 자동 점검 장치를 코드로 새로 박음 — 글로만 적던 브랜드 규칙(약속 L08)을 기계가 잡게 함(ssot/forbidden_terms.json + forbidden_scan.py, 커밋 전 자동 경고·warn). 외부 발행 카피만 보고 기획 메모는 제외해 헛경보 0. 첫 적용에서 스쿼시 대회 4채널 카피의 금지 포지셔닝 1건을 실제로 잡아 브랜드 외부톤(프리미엄 라이프스타일)으로 교정. 캐논값 헛경보도 정합 처리해 스캔 무경보화.",
-    "next": "표류(완결) — 재발방지 자가점검 구조 가동(incidents 봉인·캐논 단일출처·발산 스캔·금지어 게이트 4종 라이브). 옵션 후속: 공식값 더 모으기(미션·운영시간 등 canon 등록) / 금지어 게이트 범위 확대 — GM 신호 시."
+    "next": "표류(완결) — 재발방지 자가점검 구조 가동(incidents 봉인·캐논 단일출처·발산 스캔·금지어 게이트 4종 라이브). 옵션 후속: 공식값 더 모으기(미션·운영시간 등 canon 등록) / 금지어 게이트 범위 확대 — GM 신호 시.",
+    "ship_no": 5
   },
   {
     "task_id": "CEO-2026-06-15-PC-SHUTDOWN-MINUS1H",
@@ -1041,7 +1127,8 @@
     "next": "내일 아침 oplog 재확인 — 22:30 미종료·00:30 단일종료·23:00 보고 생존 확인 시 INC-002 GUARDED 최종 봉인.",
     "terminal": true,
     "processed_at": "2026-06-16",
-    "summary": "[완료 2026-06-16: 진범 cto-daily-pc-power-cycle-shutdown(SYSTEM,22:30) 삭제·00:30 단일화. INC-002 GUARDED.]"
+    "summary": "[완료 2026-06-16: 진범 cto-daily-pc-power-cycle-shutdown(SYSTEM,22:30) 삭제·00:30 단일화. INC-002 GUARDED.]",
+    "ship_no": 6
   },
   {
     "task_id": "CMO-2026-06-15-CINQ-EP2-PUBLISH",
@@ -1053,7 +1140,8 @@
     "processed_at": "2026-06-15",
     "title": "[시모] 생크몽드 Ep2 전채널 발행 (IG·블로그·카페·카카오·당근)",
     "note": "✅ 생크몽드 Ep.2(동양의 회복 리추얼) 5채널 발행 — IG(wellperion 공식)·카카오·당근 라이브, 네이버 블로그·카페 GM 최종게시. 캡션 CTA=문의·투어 예약 02-6080-0091. IG는 실험#1 A군 첫줄 CTA 적용. 라이브·집계 검증 완료. ｜ Ep3은 검수대기 보류.",
-    "next": "생크몽드 Ep3 발행은 GM 지시 시."
+    "next": "생크몽드 Ep3 발행은 GM 지시 시.",
+    "ship_no": 18
   },
   {
     "task_id": "CMO-2026-06-15-SUMMER-EN-CLEANUP",
@@ -1065,7 +1153,8 @@
     "processed_at": "2026-06-15",
     "title": "[시모] 여름방학특강 영어버전 정리 (폼 삭제 + EN 페이지 카드 제거)",
     "note": "✅ GM 지시 — 영어 여름특강 폼(Summer Special Programs) 휴지통 이동 + EN 문의 페이지(post 8408) Summer 카드 제거·재주입·라이브 검증. 한글 방특서베이 6종(수영·골프·스쿼시·체조·유소년PT·통합)·KO 문의 페이지는 미변경. 응답시트 해제는 GM 수동 완료.",
-    "next": "표류 — 영어 여름특강 정리 완결."
+    "next": "표류 — 영어 여름특강 정리 완결.",
+    "ship_no": 19
   },
   {
     "task_id": "CMO-2026-06-15-DASH-UPGRADE",
@@ -1077,7 +1166,8 @@
     "processed_at": "2026-06-15",
     "title": "[시모] 마케팅 대시보드 고도화 + 카카오 수집기 정상화",
     "note": "✅ 유형별 문의분포 카드 신설(멤버십30·성인41·유소년58 라이브) · 채널표 전환컬럼 한계 각주 · stale정리(자동수집 캡션·영어 여름특강 죽은링크·배지) · 카카오 수집기 제목5단계+좋아요/댓글/조회 3폴백+desktop모드. 커밋 2926517 push 라이브반영. [후속] 카카오 라이브검증→공개채널 글별반응 비노출 확정(채널홈 수렴) → 발행추적 전용으로 강등·가짜0 제거·피드정리 완료.",
-    "next": "✅ GM 결정(06-15): 반응 스크래퍼 3종 보류 — 퍼널+당근으로 운영, 특정 결정 필요 시에만 단건 발의"
+    "next": "✅ GM 결정(06-15): 반응 스크래퍼 3종 보류 — 퍼널+당근으로 운영, 특정 결정 필요 시에만 단건 발의",
+    "ship_no": 20
   },
   {
     "task_id": "COO-2026-06-15-RECEPTION-CHANNEL-DROPDOWN",
@@ -1090,7 +1180,8 @@
     "title": "[시모/시우 인계] 멤버십 문의시트 유입채널 드롭다운 옵션 10버킷 정합·필수화 점검",
     "note": "[정정 06-15] 당초 \"리셉션 시트에 채널 드롭다운 신설\"로 봤으나, 문의 단일 로그=멤버십 문의관리(26) \"26년 신규문의\" 탭이고 이 시트엔 이미 문의채널 드롭다운이 존재. 따라서 신설 불요. 잔여=① 드롭다운 옵션이 표준 10버킷(apps_script_survey.js _canonicalChannel_)과 정합하는지 ② 빈칸 방지(필수) 확인뿐. 과거 기타·미상 43% 중 온라인묶음 26%는 복구불가(범위 외). | [2026-06-17 시우→시모 인계] GM 지적: 유입채널 10버킷 표준은 CMO 채널표준화 소유. 리셉션 입력칸이나 채널 택소노미 정본이 CMO라 인계.",
     "artifact": "[2026-06-19 웰리 디스패치·시모] 정합 점검 완료, 코드 수정 0(이미 정합). 표준 10버킷(apps_script_survey.js CANONICAL_CHANNELS: 네이버·동부이촌동 커뮤니티·인스타그램·카카오톡·당근마켓·소개지인·기존과거회원·오프라인·유선전화·기타미상) ↔ 폼 출처 선택지 10개 1:1 정합 실측. '인스타그램' 버킷 존재 → IG bio 경유 문의 즉시 정확 귀속 가능(기타·미상 43% 축소 토대 완비). 필수입력=GAS setRequired(true) 설계 확인(구글폼 실제 토글 ON은 GM 육안 1회 권장). cmo/survey ↔ .deploy-funnel 채널 로직 동기 확인.",
-    "next": "표류(완결) — IG 귀속 택소노미 정합 완료. IG-BIO-INQUIRY-BRIDGE 남은 잔여=GM이 IG bio에 허브 URL 1줄 붙이는 액션뿐."
+    "next": "표류(완결) — IG 귀속 택소노미 정합 완료. IG-BIO-INQUIRY-BRIDGE 남은 잔여=GM이 IG bio에 허브 URL 1줄 붙이는 액션뿐.",
+    "ship_no": 21
   },
   {
     "task_id": "CPO-2026-06-15-INQUIRY-STAGE-INPUT",
@@ -1102,7 +1193,8 @@
     "processed_at": null,
     "title": "[시포] 멤버십 문의시트(26년 신규문의)에 진행상태 칸 신설+운영 (전환 퍼널 채우기)",
     "note": "시모 ③진단 발의: 문의→가입 중간단계가 깜깜이라 콜드리드 이탈지점 측정 불가. [정정 06-15] 대상 시트=리셉션 아닌 멤버십 문의관리(26) 스프레드시트 12AWcAlg \"26년 신규문의\" 탭(gid 1902010032)=문의 단일 로그. 여기에 \"진행상태\" 드롭다운(신규/응대/예약/방문/가입/이탈) 칸을 추가하고 진행에 따라 갱신. GAS FORM_SHEETS가 이미 이 탭을 읽으므로 칸만 추가하면 stage_funnel 자동집계(시모 GAS 배포 @16 완료). 단계정의 SSOT=cmo/funnel/전환단계_퍼널_설계.md. 칸 추가/데이터검증 설정은 운영지원 협업.",
-    "next": "입력 2주 누적 후 단계별 이탈률 1차 리뷰"
+    "next": "입력 2주 누적 후 단계별 이탈률 1차 리뷰",
+    "ship_no": 1
   },
   {
     "task_id": "CMO-2026-06-15-STAGE-FUNNEL-SCAFFOLD",
@@ -1114,7 +1206,8 @@
     "processed_at": "2026-06-15",
     "title": "[시모] 전환 단계 퍼널 구축 — 단계정의+집계GAS+대시보드 틀",
     "note": "✅ ③전환진단 후속: 단계정의 SSOT(5단계 누적깔때기) + GAS stage_funnel 액션(_stageOf_ 매핑·이탈·월/전체·retain%) + 대시보드 전환단계 퍼널 섹션(폴백: 미배포시 ①문의·⑤가입만, ②③④는 상태입력 대기). 동그라미 인덱싱 버그 수정. 상태입력 운영=시포(CPO-...-STAGE-INPUT)·시우 협업. [배포] GAS 시모 직접 clasp 연동·재배포 @16(URL유지, period_breakdown 회귀無). 라이브 검증: stage_funnel 정상응답. 대시보드 honesty 안내(상태 미입력시 ②③④=가입자만) 추가.",
-    "next": "리셉션 진행상태 입력 시작되면 ②③④ 자동 분리 점등 (시포/시우 PENDING). 추가 배포 불필요."
+    "next": "리셉션 진행상태 입력 시작되면 ②③④ 자동 분리 점등 (시포/시우 PENDING). 추가 배포 불필요.",
+    "ship_no": 22
   },
   {
     "task_id": "COO-2026-06-15-SUPPORT-CHECK-ROUTING-FIX",
@@ -1126,7 +1219,8 @@
     "next": "표류(완결). 후속: 일상 사용 중 추가항목(custom) 저장이 활성 성별탭으로 들어가는지 GM 1회 자연 확인. 타부서가 향후 성별항목 추가 시 동일 경계매칭 적용(현재 회귀 자기검사로 가드).",
     "terminal": true,
     "processed_at": "2026-06-17",
-    "artifact": "지원부 점검 라우팅 근본수정 라이브 완결. 원인=_routeItem이 itemId의 _f/_m를 부분문자열(indexOf>=0)로 판정 → custom_..._fpxs5 우연포함이 여성시트로 오라우팅(2026-06-15 패치는 custom_ 접두사만 예외=반쪽). 수정: 접미사 경계 정규식 /_f(_|$)/·/_m(_|$)/ 로 교체(실제 성별항목 b4_m·b4_f는 _m/_f로 끝남, 우연포함은 비매칭) → custom_ 특례 제거. commonToGender=지원부 한정 주석 명시(타부서 공용탭 유지=회귀차단). _selfTestRouting() 8케이스 4부서 회귀 자기검사 추가. 널바이트 키구분자 4개 보존. 로컬 node 8/8 PASS(오라우팅 케이스 2건 포함). 커밋 aa63116a 푸시. clasp push+deploy @71→@72(deploymentId AKfycbyXw4ZaA6hLK567…IpekBu1 유지=같은 /exec). 라이브 today_live HTTP200 ok:true 실측."
+    "artifact": "지원부 점검 라우팅 근본수정 라이브 완결. 원인=_routeItem이 itemId의 _f/_m를 부분문자열(indexOf>=0)로 판정 → custom_..._fpxs5 우연포함이 여성시트로 오라우팅(2026-06-15 패치는 custom_ 접두사만 예외=반쪽). 수정: 접미사 경계 정규식 /_f(_|$)/·/_m(_|$)/ 로 교체(실제 성별항목 b4_m·b4_f는 _m/_f로 끝남, 우연포함은 비매칭) → custom_ 특례 제거. commonToGender=지원부 한정 주석 명시(타부서 공용탭 유지=회귀차단). _selfTestRouting() 8케이스 4부서 회귀 자기검사 추가. 널바이트 키구분자 4개 보존. 로컬 node 8/8 PASS(오라우팅 케이스 2건 포함). 커밋 aa63116a 푸시. clasp push+deploy @71→@72(deploymentId AKfycbyXw4ZaA6hLK567…IpekBu1 유지=같은 /exec). 라이브 today_live HTTP200 ok:true 실측.",
+    "ship_no": 20
   },
   {
     "task_id": "CMO-2026-06-16-STAGE-COL-SETUP",
@@ -1138,7 +1232,8 @@
     "processed_at": null,
     "title": "[시모] 멤버십 문의시트 진행상태 칸 GAS 셋업 (내일·GM 결정 대기)",
     "note": "전환 퍼널을 살리려면 멤버십 문의관리(26) \"26년 신규문의\" 탭에 진행상태 드롭다운(신규/응대/예약/방문/가입/이탈) 칸 추가 필요. 시모가 GAS(데이터검증)로 직접 셋업할지, 시포/GM이 수동으로 할지 GM 결정 대기. 결정나면 시모가 칸 추가는 가능(GAS). 입력 운영은 시포(CPO-...-STAGE-INPUT).",
-    "next": "GM 결정 → 시모 직접이면 GAS 셋업 1회"
+    "next": "GM 결정 → 시모 직접이면 GAS 셋업 1회",
+    "ship_no": 23
   },
   {
     "task_id": "CMO-2026-06-17-FUNNEL-DASH-AUDIT-REORG",
@@ -1150,7 +1245,8 @@
     "enqueued_at": "2026-06-17",
     "processed_at": "2026-06-17",
     "artifact": "GM CLI 지시(문제점 확인+UI/UX·속도 점검·진행). 2단계. 1단계 확정수정 6건(커밋 8bd3d24d push): ①채널표 누적전환열 부활(loadFunnelConversion이 없는 fc-rate id에 막혀 _fcData 통째 버려지던 버그 제거) ②영어카드 클릭0=EN_BUTTONS 키정합(membership-en 등)+팬텀키 제거 ③공간렌트·비즈파트너 클릭=실발행키 일치 확인(가짜0 아님) ④초기 4fetch 2왕복 직렬→Promise.all 병렬(_skipPeriodChildFetch 이중fetch방지) ⑤모바일 tc-matrix-wrap overflow-x ⑥등록/전환 색 초록(--f5) 통일. 2단계 전면재배치(커밋 27175b2e push, GM 승인 권장안): 히어로 신설(이번달문의/목표200/CSS진행막대/월말예상, renderHero·_flow·MONTHLY_INQUIRY_TARGET 재사용·새fetch0)→전환흐름 1세트 상단→유입출처+클릭→나머지(유형별·교차표·채널비교·주간/월별추세·진입점·실험로그) details 디테일 접힘+긴각주 ⓘ접기+스켈레톤 로딩. 감사=code-reviewer/designer, 구현=executor, 라이브 시각검증=playwright headless(데스크톱/모바일 스크린샷, 히어로144/200·72%·전환흐름·디테일접힘·데이터실채움·콘솔에러0 확인). node --check·스마트따옴표0·unpushed0 실측.",
-    "next": "표류(완결). 3단계 데이터정직성 정리(커밋 06d8130a push, GM '정직 정리' 채택): GM '데이터가 사실이 아닌 느낌' 지적→정직성 감사. 라이브 실측 확인된 거짓/오해 3건 처리 ①누적전환 1308(채널표 전화매칭)vs1840(유형별 강습팀시트+멤버십매칭) 모순→채널전환열에 '추정(전화매칭)' 배지+각주(강습 채널귀속 구조불가·정확총계는 유형별보기) ②'문의→등록 11.1%' 가짜 흐름화살표 제거(sep 교체)+등록='현 회원 매칭(추정·전화매칭·이번달 신규전환 아님)' ③클릭→문의 82% 무의미비율 제거(모집단불일치). 백엔드 무변경(프론트만). node--check OK·문의→등록 잔존4건 전부 정상(주석·헤더·실험문구)·origin 06d8130a 확인. 메모리 project_dashboard_conversion_data_honest_limits 박제. ※라이브 GitHub Pages 빌드 큐 지연으로 렌더반영 대기(소스·push 확인완) — GM Ctrl+Shift+R로 수분내 확인. 잔여 관찰(저위험): 모바일 전환흐름 3번째카드 줄바꿈·주/일 클릭 구간정의·죽은 KPI코드. 정확 전환율은 자체 문의DB(CTO-SELF-HOSTED-INQUIRY-DB) 후 가능. 4단계 채널표 명료화(커밋 e1487864 push·라이브 NFC검증): GM '이번달 문의 수↔누적 전환(명) 한 줄 혼합이라 파악 약함' 지적→'채널별 비교'를 단일 시간축 '채널별 문의(이번 달)'로 재설계. 4컬럼→3컬럼(채널·이번달문의·비중%+CSS막대), 누적전환/전환율 2컬럼 제거(전화매칭 추정·미상다수), 미상배너(유입경로 미기재 N%), 각주=전환은 유형별보기 참조. byChannelMonth 단일소스. 라이브 NFC: 신제목·미상배너 반영·누적전환열 0 확인. ※발견: GAS 데이터 5종 전부 PII 게이트 unauthorized(시토 게이트 발효, CTO노트엔 OFF였음)—프론트 wp_access_token 팝업처리. 마케팅 집계대시보드는 원시PII 미노출인데 게이트 대상=면제여부 시토 확인 필요(별건). 5단계 등록 현황 진짜화·기간연동(GM 검증완료): GM 지시로 등록을 전화매칭(가짜) 폐기→진행현황 SUC/단기SUC 정본 집계. ①히어로=문의현황|등록현황 2칸·기간버튼 반응 ②기간버그 수정(라벨 동적·목표 월전용) ③등록 기간연동(regByType[유형][day/week/month/year/custom]) ④주(week)=최근7일 롤링으로 정정(구 월요일기준, GM '6/10~6/17=5'와 일치) ⑤게이트 면제(집계5종 _SURVEY_PUBLIC_ACTIONS, 시토 게이트 발효분 우회·PII미노출) ⑥강습 등록=팀시트13개 '진행 상황'(띄어쓰기 헤더 매칭버그 수정) SUC집계 ⑦날짜=타임스탬프 통일(문의일은 PT·필라만 존재·SUC시점 어긋나 과소집계→PT 6월 1→2 정정). 일회용 lesson_date_probe로 PT 6월 타임스탬프SUC=2 실측확인 후 프로브 제거. 결과 GM검증: 멤버십 주5·월10·올해164 / 성인강습 월3(PT2+수영1)·올해88 / 유소년 월5·올해145. clasp @32~@37 재배포(deploymentId유지). 커밋 8cc8604·fe54ddb·5e83b78·92da680 push. 메모리 reference_pages_korean_url_nfc_verify·project_dashboard_conversion_data_honest_limits."
+    "next": "표류(완결). 3단계 데이터정직성 정리(커밋 06d8130a push, GM '정직 정리' 채택): GM '데이터가 사실이 아닌 느낌' 지적→정직성 감사. 라이브 실측 확인된 거짓/오해 3건 처리 ①누적전환 1308(채널표 전화매칭)vs1840(유형별 강습팀시트+멤버십매칭) 모순→채널전환열에 '추정(전화매칭)' 배지+각주(강습 채널귀속 구조불가·정확총계는 유형별보기) ②'문의→등록 11.1%' 가짜 흐름화살표 제거(sep 교체)+등록='현 회원 매칭(추정·전화매칭·이번달 신규전환 아님)' ③클릭→문의 82% 무의미비율 제거(모집단불일치). 백엔드 무변경(프론트만). node--check OK·문의→등록 잔존4건 전부 정상(주석·헤더·실험문구)·origin 06d8130a 확인. 메모리 project_dashboard_conversion_data_honest_limits 박제. ※라이브 GitHub Pages 빌드 큐 지연으로 렌더반영 대기(소스·push 확인완) — GM Ctrl+Shift+R로 수분내 확인. 잔여 관찰(저위험): 모바일 전환흐름 3번째카드 줄바꿈·주/일 클릭 구간정의·죽은 KPI코드. 정확 전환율은 자체 문의DB(CTO-SELF-HOSTED-INQUIRY-DB) 후 가능. 4단계 채널표 명료화(커밋 e1487864 push·라이브 NFC검증): GM '이번달 문의 수↔누적 전환(명) 한 줄 혼합이라 파악 약함' 지적→'채널별 비교'를 단일 시간축 '채널별 문의(이번 달)'로 재설계. 4컬럼→3컬럼(채널·이번달문의·비중%+CSS막대), 누적전환/전환율 2컬럼 제거(전화매칭 추정·미상다수), 미상배너(유입경로 미기재 N%), 각주=전환은 유형별보기 참조. byChannelMonth 단일소스. 라이브 NFC: 신제목·미상배너 반영·누적전환열 0 확인. ※발견: GAS 데이터 5종 전부 PII 게이트 unauthorized(시토 게이트 발효, CTO노트엔 OFF였음)—프론트 wp_access_token 팝업처리. 마케팅 집계대시보드는 원시PII 미노출인데 게이트 대상=면제여부 시토 확인 필요(별건). 5단계 등록 현황 진짜화·기간연동(GM 검증완료): GM 지시로 등록을 전화매칭(가짜) 폐기→진행현황 SUC/단기SUC 정본 집계. ①히어로=문의현황|등록현황 2칸·기간버튼 반응 ②기간버그 수정(라벨 동적·목표 월전용) ③등록 기간연동(regByType[유형][day/week/month/year/custom]) ④주(week)=최근7일 롤링으로 정정(구 월요일기준, GM '6/10~6/17=5'와 일치) ⑤게이트 면제(집계5종 _SURVEY_PUBLIC_ACTIONS, 시토 게이트 발효분 우회·PII미노출) ⑥강습 등록=팀시트13개 '진행 상황'(띄어쓰기 헤더 매칭버그 수정) SUC집계 ⑦날짜=타임스탬프 통일(문의일은 PT·필라만 존재·SUC시점 어긋나 과소집계→PT 6월 1→2 정정). 일회용 lesson_date_probe로 PT 6월 타임스탬프SUC=2 실측확인 후 프로브 제거. 결과 GM검증: 멤버십 주5·월10·올해164 / 성인강습 월3(PT2+수영1)·올해88 / 유소년 월5·올해145. clasp @32~@37 재배포(deploymentId유지). 커밋 8cc8604·fe54ddb·5e83b78·92da680 push. 메모리 reference_pages_korean_url_nfc_verify·project_dashboard_conversion_data_honest_limits.",
+    "ship_no": 27
   },
   {
     "task_id": "COO-2026-06-17-TODO-STATUS-COHERENCE-FIX",
@@ -1162,7 +1258,8 @@
     "enqueued_at": "2026-06-17",
     "processed_at": "2026-06-17",
     "artifact": "GM 지적(루프팀 GXE줌바·라인댄스가 완료인데 진행중). 전수조사(78건): 결재 종착인데 업무상태≠완료=2건(루프팀 GXE줌바 06-11서명·데일리락커 분실키 06-15서명). 뿌리=옛 3단계모델서 GM서명→\"GM 완료\"(대표 대기) 중간상태로 멈춤, 대표 제거(06-16) 후 미마이그레이션. \"결재완료→업무 자동완료\" 규칙은 이미 todo_sign 최종승인 핸들러 내장(06-11)이라 전환후 서명 3건은 정상→코드/배포 불필요. todo_update(한글컬럼키 직접세팅)로 2건을 결재상태=결재완료·상태=완료·완료일=실서명일로 정상화. 라이브 재조회: 남은 불일치 0건·옛 GM완료 잔재 0건.",
-    "next": "표류(완결). 재발없음(자동완료 규칙 내장)."
+    "next": "표류(완결). 재발없음(자동완료 규칙 내장).",
+    "ship_no": 27
   },
   {
     "task_id": "COO-2026-06-17-FACILITY-DAILY-CHECK",
@@ -1173,7 +1270,8 @@
     "enqueued_at": "2026-06-17",
     "note": "[2026-06-17 GM 지시] 시설부 자체 일일점검 신설+작업일지 기반 항목초안. 설계(architect) 완료=status/briefs/COO-2026-06-17-FACILITY-CHECK-DESIGN.md. 핵심: \"신설\"이 아니라 백엔드 dept=facility 배선이 이미 잠들어 있어 재활성화(저난이도). 작업일지 원천 PDF 2건+시설부 체계.html 측정폼(탭 fcheck) 이미 구현. 무회귀=dept별 시트탭·원장·필터 물리분리(지원부 0영향).",
     "decisions": "[2026-06-19 GM deep-interview 확정] ①측정형(수치기록) ②완료율=입력률(필수측정칸 채움→홈KPI점등) ③단일화면(데이터엔 남/여탕칸 유지) ④평일8회/주말6회 분리 ⑤기존 fcheck폼 승격(정본화)+saveV2 입력률 결합 ⑥근무자 누구나 입력 ⑦점검자명단=시설부3인(이정헌소장·김종현차장·박호균과장)+직접입력. 명세=.omc/specs/deep-interview-facility-daily-check.md",
-    "next": "team 병렬 구현: 1)측정항목 dept=facility 시드 2)setup_facility_tabs 1회 3)평일8/주말6 회차분리 4)fcheck폼→입력률 saveV2결합+점검자드롭다운 5)clasp재배포 6)★지원부 무회귀 게이트(verifier) 7)홈 facility카드 라이브검증."
+    "next": "team 병렬 구현: 1)측정항목 dept=facility 시드 2)setup_facility_tabs 1회 3)평일8/주말6 회차분리 4)fcheck폼→입력률 saveV2결합+점검자드롭다운 5)clasp재배포 6)★지원부 무회귀 게이트(verifier) 7)홈 facility카드 라이브검증.",
+    "ship_no": 28
   },
   {
     "task_id": "CTO-2026-06-17-PAGES-CMO-FOLDER-404",
@@ -1185,7 +1283,8 @@
     "enqueued_at": "2026-06-17",
     "processed_at": "2026-06-17",
     "artifact": "[오진→정정] 시모가 마케팅 대시보드 라이브 검증 중 /cmo/ 전체 404로 판단, 배포 사고로 CTO 인계. 시토 결정적 진단(artifact 직접 다운로드 run 27661206375): github-pages artifact에 cmo/ 73파일 전부 포함=git ls-files 73개와 완전 일치 → 발행 누락 0. 진짜 원인=시모의 검증 방식 오류: bash curl이 한글 경로를 NFD(자모분해)로 전송 → GitHub Pages는 경로를 바이트정확 매칭(정규화 안 함)이라 404. NFC(완성형) 요청 시 정상 200. 시모 재실측(python unicodedata NFC): /cmo/funnel/마케팅현황대시보드.html=HTTP 200·96658B·마커 '현 회원 매칭'2·hero-block3·'추정 주의'1 전부 라이브 존재. NFD요청만 404(Pages 정상동작). PII 커밋(7edd3f20·54fa42a9)은 무관(cmo HTML +11줄 게이트만·BOM/손상 없음). 디렉터리 경로(/cmo/ /cmo/funnel/)404도 index.html 없는 폴더라 정상. 복구 변경 0건(깨진 것 없음=churn·회귀위험 회피가 정답). 무회귀.",
-    "next": "표류(완결). 교훈: 한글경로 라이브 검증은 반드시 NFC 완성형 인코딩으로. bash에서 raw 한글 curl은 NFD로 변질될 수 있음(브라우저·정상 링크는 200). (선택·별건) /cmo/index.html 색인 추가하면 폴더 직접접근 UX 개선 가능—사고와 무관."
+    "next": "표류(완결). 교훈: 한글경로 라이브 검증은 반드시 NFC 완성형 인코딩으로. bash에서 raw 한글 curl은 NFD로 변질될 수 있음(브라우저·정상 링크는 200). (선택·별건) /cmo/index.html 색인 추가하면 폴더 직접접근 UX 개선 가능—사고와 무관.",
+    "ship_no": 20
   },
   {
     "task_id": "COO-2026-06-17-SUPPORT-CHECK-SHEET-COHERENCE",
@@ -1197,7 +1296,8 @@
     "enqueued_at": "2026-06-17",
     "processed_at": "2026-06-17",
     "artifact": "GM 라이브 관찰: 남 점검 제출했는데 시트 연동 안 되고 점검시각 누락, 세 화면 숫자 제각각(today_live 30/스냅샷 28/시트 14). 디버거(opus) 근본추적: 데이터 유실 아님·라우팅수정(aa63116a) 무죄(실항목 old/new 차이 0). 진범=저장이 마지막 POST 한 건만 반영 — _updateCheckLedger led.cr={} 전량교체(GAS:692) + _writePerRoundRows primaryTarget 날짜행 전량삭제재기록(GAS:865) → 오전조 제출+resetShiftChecks 후 pushToServer가 시트/원장 덮어써 제출항목이 밀림. 세 숫자는 각기 다른 집계(amTotal 무필터30·스냅샷 성별필터28·시트 현STATE14). 수정(executor opus, 계획서 기반): Edit B(led.cr 회차머지·타회차 보존)+Edit A(primaryTarget 회차업서트·타회차 보존) 쌍 — am1 제출 후 pm1 저장해도 am1 행 보존. Edit C+D(HEADERS 15열 점검시각 추가·저장 payload mm.at·V2Compat). 핵심 실측(테스트날짜 2099): am1 2행→pm1 저장→am1 보존 확인 후 정리. 배포 @75(동일 deploymentId). 무회귀 게이트 PASS: 오늘 support m14/f25/total39·남성14행 BEFORE==AFTER 불변, facility 불변, 널바이트 보존, 라우팅 무영향. 커밋 047c9376 푸시.",
-    "next": "표류(거의 완결). 잔여 경미: ①보드 분모 정합 — today_live amTotal=30(op1/op2 포함·성별무필터) vs 성별필터28 미세차이는 표시 튜닝 후속 ②점검시각은 차후 저장분부터 채워짐(기존 14행은 빈값). 오늘 이후 제출분부터 전 회차 항목이 시트에 durable 누적됨 — GM이 오후조/마감조 제출 후 시트에 회차 누적되는지 자연 확인."
+    "next": "표류(거의 완결). 잔여 경미: ①보드 분모 정합 — today_live amTotal=30(op1/op2 포함·성별무필터) vs 성별필터28 미세차이는 표시 튜닝 후속 ②점검시각은 차후 저장분부터 채워짐(기존 14행은 빈값). 오늘 이후 제출분부터 전 회차 항목이 시트에 durable 누적됨 — GM이 오후조/마감조 제출 후 시트에 회차 누적되는지 자연 확인.",
+    "ship_no": 29
   },
   {
     "task_id": "COO-2026-06-17-SUPPORT-CHECK-SUBMIT-STATE-FIX",
@@ -1209,7 +1309,8 @@
     "enqueued_at": "2026-06-17",
     "processed_at": "2026-06-17",
     "artifact": "GM 시크릿모드 관찰: 오전조 28/28 제출됐는데 진행중·미제출로 보이고 입력칸 열림(=stale 아닌 진짜 버그). 디버거 근본원인: loadState(지원부 체계.html:2060~2066)가 서버 led.sub를 shift-level(STATE._submitted_am)만 복원하고 isRoundSubmitted()가 실제 보는 round-level 키(submitted_<d>_<g>_am1)는 미세팅 → 시크릿/타기기서 localStorage 비어 항상 미제출. 서버 sub는 정상 durable(GAS:683). 수정 Edit E(프론트 15줄): 서버 sub.am→am1, sub.pm→pm1+close1, sub.night→night1을 roundSubKey+roundSubLSKey로 세팅. 배지(1805)·입력잠금(1388)이 isRoundSubmitted에 종속이라 이 한 수정으로 제출완료 표시+근무자/점검자/시각/체크 전체 고정 동시 해결. 남/여 공통(gg female 자동). GAS·데이터 무변경. 함수 존재·구조 검증. 커밋 e58e1333 푸시(GitHub Pages).",
-    "next": "표류(완결). GM Ctrl+Shift+R로 제출회차 제출완료·고정 확인. 후속=ID 정규화(아래)."
+    "next": "표류(완결). GM Ctrl+Shift+R로 제출회차 제출완료·고정 확인. 후속=ID 정규화(아래).",
+    "ship_no": 30
   },
   {
     "task_id": "COO-2026-06-17-SUPPORT-CHECK-ID-NORMALIZE-OP-CL",
@@ -1222,7 +1323,8 @@
     "next": "표류(완결). 마감(cl1~3)은 마감조 제출 시 자연 검증. C내부(c1~c10)는 오픈 c1a/b/c와 별개라 미변경(정상).",
     "terminal": true,
     "processed_at": "2026-06-17",
-    "artifact": "GM 지시 ID 정규화 완료. 계획(debugger)→구현(executor opus). 맵: 오픈 c1a/b/c→op3/op4/op5(op1·op2 유지), 마감 cls1/2/3→cl1/cl2/cl3. 남/여·평일/주말. op1/op2(custom·시트rounds) vs op3~5(base·ROUND_MAP) 충돌없음 코드단정. 6곳 동시정합: 프론트 WEEKDAY/WEEKEND/ROUND_MAP + 백엔드 _TL_ROUND_MAP(분모2번째사본) + 매뉴얼/구역시트(rename_items) + cr원장 체크키(신규 migrate_cr_keys 액션, cr15·c15·seen24). cr 백업 선확보(dump_cr→COO-2026-06-17-CR-DUMP-BACKUP.json). 배포@78(동일 deploymentId). 게이트 PASS: 분모59·분자done53 불변·고아0·구역시트 c1a/cls 잔존0·4부서 무회귀. 라이브 실측: 남성구역 op1~op5·옛id 0·오늘 체크 보존. 커밋 be4474d3."
+    "artifact": "GM 지시 ID 정규화 완료. 계획(debugger)→구현(executor opus). 맵: 오픈 c1a/b/c→op3/op4/op5(op1·op2 유지), 마감 cls1/2/3→cl1/cl2/cl3. 남/여·평일/주말. op1/op2(custom·시트rounds) vs op3~5(base·ROUND_MAP) 충돌없음 코드단정. 6곳 동시정합: 프론트 WEEKDAY/WEEKEND/ROUND_MAP + 백엔드 _TL_ROUND_MAP(분모2번째사본) + 매뉴얼/구역시트(rename_items) + cr원장 체크키(신규 migrate_cr_keys 액션, cr15·c15·seen24). cr 백업 선확보(dump_cr→COO-2026-06-17-CR-DUMP-BACKUP.json). 배포@78(동일 deploymentId). 게이트 PASS: 분모59·분자done53 불변·고아0·구역시트 c1a/cls 잔존0·4부서 무회귀. 라이브 실측: 남성구역 op1~op5·옛id 0·오늘 체크 보존. 커밋 be4474d3.",
+    "ship_no": 31
   },
   {
     "task_id": "COO-2026-06-17-CHECK-LIVE-QA-VOC-LINK",
@@ -1234,7 +1336,8 @@
     "enqueued_at": "2026-06-17",
     "processed_at": "2026-06-17",
     "artifact": "GM 시크릿모드 QA 4건. ①매뉴얼 탭 항목 식별자 배지 표시(op1·cl1 등 monospace, 전 카테고리 일관) ②청결이슈접수 탭 접수현황 좌측정렬+풀폭 CSS ③점검 타이머 미표시=시점 문제(오늘 오전조 제출이 타이머 영속화 배포@76 전이라 서버 타이머 없음, 코드정상·새 점검부터 복원) ④★이슈→VOC 통합 접수처 연동(GM 결정: VOC 운영부 구글폼·접수필요만): 점검 이슈 입력된 항목에 \"📨 접수처로 보내기\" 버튼, 클릭 시 VOC 구글폼(1FAIpQLSd7mDz…) 프리필 새탭(entry 매핑 파싱: 749003756=접수자명·1854535620=이슈내용[장소 본문명기]·586901934=접수자). 불편장소/전달부서는 체크박스라 직원이 폼서 선택(기존 분류·전달 파이프라인 유지). localStorage 중복방지+접수됨 배지. 점검 체크/제출/라우팅/타이머 무변경. 커밋 7db2086e(①②)·41db7816(④) 푸시. node --check OK·URL 200.",
-    "next": "표류(완결). 후속 여지: 회원 청결이슈(REG)와 직원 점검이슈가 다른 접수처라 향후 통합 검토(GM 결정). 점검 타이머는 새 점검 1회로 GM 자연 검증."
+    "next": "표류(완결). 후속 여지: 회원 청결이슈(REG)와 직원 점검이슈가 다른 접수처라 향후 통합 검토(GM 결정). 점검 타이머는 새 점검 1회로 GM 자연 검증.",
+    "ship_no": 32
   },
   {
     "task_id": "COO-2026-06-17-APPROVAL-FLOW-FIX",
@@ -1246,7 +1349,8 @@
     "enqueued_at": "2026-06-17",
     "processed_at": "2026-06-17",
     "artifact": "GM 결재 문제 신고 진단(debugger)→구현(executor opus). A:home 대기수(2) vs 결재현황(0) 불일치=home homeNextApprover가 담당자에 김남욱GM 있으면 GM단계 누락(next=null→대기없음 표시), 결재현황은 GM 무조건 push라 정상=산식 비대칭. home도 GM 무조건+결재요청AND·완료/반려제외로 통일→양쪽 2 일치 실측. B4:반려후 본문수정 저장시 todo_update가 newApproval로 자동 대기 재상신→결재대기 부활. approvalChanged 조건으로 좁힘(본문만 수정은 부활안함, 결재완료건 무영향). B2:결재현황 rejectTask에 반려 사유 prompt(빈값 중단)+signTask reason 인자. B3:GAS reject가 reason을 업무 내용에 ===반려이력=== append(append-only)+텔레그램 반려알림에 사유. GAS @78 동일 deploymentId 재배포·node check·무회귀(PIN게이트 무손상). 커밋 e464e831(GAS+결재현황)·fe54ddb9(home). 별건 회의항목 인쇄 수정(cf563106): 회의는 회의내용·일반은 계획 분기.",
-    "next": "B1(승인/반려 부서장 PIN 강제)=중간관리자 3명(이경연·이정헌·나우열) 비번값 GM 제공 후 등록+_deptPinOptional 강제. 마감점검 cl1~cl8 순서 GM 확정 대기."
+    "next": "B1(승인/반려 부서장 PIN 강제)=중간관리자 3명(이경연·이정헌·나우열) 비번값 GM 제공 후 등록+_deptPinOptional 강제. 마감점검 cl1~cl8 순서 GM 확정 대기.",
+    "ship_no": 33
   },
   {
     "task_id": "COO-2026-06-17-APPROVAL-ROUTE-MANUAL-ONLY",
@@ -1258,7 +1362,8 @@
     "enqueued_at": "2026-06-17",
     "processed_at": "2026-06-17",
     "artifact": "GM 지적: 시설 카테고리라고 이정헌 소장이 결재선에 자동삽입됨(체크 안 했는데). 데이터는 깨끗(시설 항목 결재요청 빈값)이고 deptHeadFor(category) 자동 부서장 1단계 설계가 원인. A: 6개 결재선 빌더(업무현황 _midName·결재현황 buildEffectiveRoute·home homeNextApprover+gm1NextApprover·GAS _buildApprovalRoute+_gmHangroNextApprover)에서 카테고리/owner 자동부서장 폴백 제거 → 중간 결재자=담당자 명시체크만, GM 최종 canon 유지. 실측(node 6빌더 재현): 시설+GM만 체크→[GM](이정헌 미삽입), 이정헌 명시체크시만 [부서장,GM]. deptHeadFor/CAT_DEPT_HEAD 미참조 보존. B3-표시: 반려사유는 GAS가 내용에 ===반려이력=== 정상 append했으나 parseContent가 표시안함(COLLAB 뒤 묻힘). REJECT_MARK 파싱 추가→카드 ⛔반려사유 칩·상세 빨강박스·인쇄 테이블 노출. GAS @79 동일 deploymentId 재배포. 커밋 ee6839dd·1d2c6e43(home watcher). 무회귀: 대기산식·결재완료 무영향.",
-    "next": "표류(완결). 남은 결재 후속: B1(부서장 PIN 강제·3명 비번값 GM 대기). 마감 cl1~cl8 순서 GM 확정 대기."
+    "next": "표류(완결). 남은 결재 후속: B1(부서장 PIN 강제·3명 비번값 GM 대기). 마감 cl1~cl8 순서 GM 확정 대기.",
+    "ship_no": 34
   },
   {
     "task_id": "COO-2026-06-17-APPROVAL-PIN-ENFORCE",
@@ -1270,7 +1375,8 @@
     "enqueued_at": "2026-06-17",
     "processed_at": "2026-06-17",
     "artifact": "GM 비번값 제공→등록. APPROVAL_PIN_OPS(이경연)·FAC(이정헌)·PARTNER(나우열) ScriptProperties 등록(값 비커밋·코드 하드코딩 없음). approval_set_pins 액션 신설(EDIT_KEY 게이트). _deptPinOptional이 미설정시만 통과라 등록 즉시 강제. 실측: 틀린PIN 거부·맞는PIN 통과. GAS @80 동일 deploymentId. 커밋 c75f617a(코드만).",
-    "next": "표류(완결). GM 자체 PIN·미설정 부서장 무손상."
+    "next": "표류(완결). GM 자체 PIN·미설정 부서장 무손상.",
+    "ship_no": 35
   },
   {
     "task_id": "COO-2026-06-17-CLOSE-CHECK-CL-REORDER",
@@ -1282,7 +1388,8 @@
     "enqueued_at": "2026-06-17",
     "processed_at": "2026-06-17",
     "artifact": "GM 확정 논리순서. 사전검증서 4충돌 발견(이름에 CL-N 박힘·표시순서 서버고정 불가·legacy맵 연쇄변환·롤백수단 부재)→GM A(풀정합) 결정. restore_cr+update_items_cl_reorder 액션 신설, _LEGACY_ID_MIGRATIONS 버전가드 재설계(v1+v2 1회성), 2단계 임시번호(clx) 충돌회피 rename. 최종 cl1~cl8 id·이름(CL-N)·order(41~48) 일치. base=cl1/cl3/cl8(ROUND_MAP)·added=cl2/cl4~7(시트). cr 2단계 이관(체크 보존). 게이트: closeTotal 68 불변·done 0 보존·cls/clx 잔존0·고아0·4부서 무회귀·기존 체크(06-16) 이관확인. cr 백업+after덤프 확보. @79 배포·커밋 5892022e.",
-    "next": "표류(완결). 되돌리기=restore_cr+백업JSON 가능."
+    "next": "표류(완결). 되돌리기=restore_cr+백업JSON 가능.",
+    "ship_no": 36
   },
   {
     "task_id": "COO-2026-06-17-VOC-O5-COMPACT-O3-DEDUP",
@@ -1294,7 +1401,8 @@
     "enqueued_at": "2026-06-17",
     "processed_at": "2026-06-17",
     "artifact": "GM 지적: O3에 회원셀프VOC 현황 잔존(O5 통합접수처로 합쳐졌는데 중복)+6종 접수 카드 내용 다 펼쳐져 난잡. GM 승인 디자인(컴팩트카드+펼침). 디자이너: O5에 카테고리별 건수요약줄(클릭필터)+컴팩트 2줄 카드(요약 28자)+[▼내용] 인라인 펼침(사진 포함)+칸반/가로스크롤 유지. regBoardLoad·담당·상태·GAS 무변경(렌더/CSS/펼침/요약만, 클라 캐시필터). O3 회원셀프VOC 블록+JS(o3Voc*) 전량 제거 dangling0, 재등록대시보드·home KPI카드 무손상. 스크립트11 무오류·렌더검증. 커밋 724c433c.",
-    "next": "표류(완결)."
+    "next": "표류(완결).",
+    "ship_no": 37
   },
   {
     "task_id": "COO-2026-06-17-VOC-KEYFIX-O4",
@@ -1306,7 +1414,8 @@
     "enqueued_at": "2026-06-17",
     "processed_at": "2026-06-17",
     "artifact": "GM 관찰: 통합접수처 접수칸 2개 버그 같음. 진단: 데이터는 실제 2건(분실물·휴회 status 접수)으로 정상이나, regBoardLoad가 d.data 무변환 전달+카드/요약/필터는 한글키(접수ID·카테고리·내용) 읽는데 실API는 영문키(regId·category·content)→전부 undefined→카드 깨짐·id충돌·집계0(디자이너 스텁테스트가 실API 영문키 불일치 놓침). 수정: _regNormalize() 영문→한글 1회매핑(공통12+extras 분실물/휴회), 액션 id=접수ID(=regId값)로 정합·펼침 regId유일. + 식별자 O5→O4(O4 공번 메움, 13곳+LEGACY O5→O4 안전망, 잔존 O5=무관 SURVEY토큰). node check·실데이터 2건 검증. 커밋 501f9976.",
-    "next": "표류(완결)."
+    "next": "표류(완결).",
+    "ship_no": 38
   },
   {
     "task_id": "CMO-2026-06-19-AI-SERIES-REACTION-OWNERSHIP",
@@ -1316,7 +1425,8 @@
     "priority": "NORMAL",
     "enqueued_at": "2026-06-19",
     "note": "[2026-06-19 GM 지시] AI 시리즈(@namuk.wellperion) 반응 모니터링을 시모가 소유한다. 개인시리즈 목표=도달·브랜드(바이럴 CTA 저장·댓글·팔로우)라 반응이 곧 이 채널의 의미있는 신호(전환 퍼널 SSOT와 별개, 여기선 vanity 아님). 한계: 개인 IG 반응 자동 스크래핑은 신뢰도 낮아 보류 이력 있음(메모리 project_channel_engagement_tracking_ceiling) → 자동 수치판 만들지 말 것. 시모가 발행된 각 편의 반응(댓글 내용·저장·팔로우 변화·도달)을 주기적으로 읽어 '무엇이 통했나'를 정성으로 정리. 첫 대상=CS 3편(#19~#21, GM 승인·발행 후). #13 '반응 기반 방향' 실천.",
-    "next": "CS 3편 발행되면 시모가 편별 반응 읽기 → '통한 포인트/안 통한 포인트' 1줄 정리 → 다음 챕터(마케팅·점검) 후킹·방향에 반영 + GM 간단 보고."
+    "next": "CS 3편 발행되면 시모가 편별 반응 읽기 → '통한 포인트/안 통한 포인트' 1줄 정리 → 다음 챕터(마케팅·점검) 후킹·방향에 반영 + GM 간단 보고.",
+    "ship_no": 31
   },
   {
     "task_id": "CMO-2026-06-18-AI-SERIES-CENTER-AUTOMATION-ARC",
@@ -1327,7 +1437,8 @@
     "enqueued_at": "2026-06-18",
     "artifact": "[2026-06-19] GM과 스토리 협업으로 2차 아크를 도메인 시즌(회원CS 3·마케팅 7·점검 3)으로 재구성. CS 챕터 3편 확정·제작·검수대기 적재 완료 — #19 종합접수처 탄생(문제=사람이 받아 전달→인건비+의도 흐려짐) / #20 접수부터 해결까지 / #21 빠짐없이·빠르게(만족은 목표·수치 미측정 정직). GM 비트 그대로 반영, 초등학생 눈높이, 내부 AI 닉네임 0, 외부 금지어 0 검증. 각 6장+미리보기, 텔레그램 승인 카드 3장 발송, M5 검수큐 등록(CMO-2026-06-19-AI19/20/21). 커밋 f48fec8(시드)·ee9189b(제작). ★GM 피드백: '이번 회원 CS 너무 마음에 든다'(스토리+쉬운말+실작업 근거 접근 적중).",
     "next": "★발행 일정(GM 결정 2026-06-19, 잊지 않게 박제): ① #19 = GM 텔레그램 [승인]→발행됨(발행검증대기 08:33, 개인계정 URL 자동회수 실패=발행 무관) → GM 폰 namuk.wellperion 피드 #19 확인되면 웰리 발행완료 도장. ② #20 = 2026-06-20(내일) GM 승인 예정 — M5 검수대기 유지(카드 텔레그램에 있음). ③ #21 = 2026-06-21(모레) GM 승인 예정 — M5 검수대기 유지. 발행 후 시모 반응 읽기(CMO-2026-06-19-AI-SERIES-REACTION-OWNERSHIP). 이후 마케팅 7·점검 3 챕터 시드 GM 결정.",
-    "summary": "GM 개인계정 AI 시리즈 2차 아크(#19~) 신규 5편 라인업. 저장소 실증(게이트 3개) 통과분만 채택. 묶음1·회원CS: ①#19 회원 불편 한마디→담당부서 자동분류·알림(VOC GAS 라이브, 한계: 수리·청소·회신은 사람). 묶음2·마케팅홍보: ②#20 유입경로 자유텍스트 300종→10개 채널 자동 정규화(앱스스크립트 라이브, 한계: 옛 뭉뚱그린 26%는 기타·미상 솔직 보존) ③#21 회사 채널 콘텐츠 AI 초안 자동 생성(07:30 예약작업 라이브, 한계: 초안까지만·다듬기·선택은 사람) ④#22 브랜드 카드 이미지 코드 자동합성 편당 5~6장 초단위(compose 엔진 라이브, 한계: 기획·소재 선정은 사람) ⑤#23 승인 한 번에 다채널 배포(watcher 라이브, 한계: 인스타=발행완료·블로그·카페=임시저장·당근=세션한정, 승인=발행시작). 예비편: 연동 다리 5개 30분 자가점검(integration_health 라이브, 대외 매력 약해 GM 선택 시 채택). GM 텔레그램 검토 대기(메시지 2129). 승인 시 #19부터 순차 제작."
+    "summary": "GM 개인계정 AI 시리즈 2차 아크(#19~) 신규 5편 라인업. 저장소 실증(게이트 3개) 통과분만 채택. 묶음1·회원CS: ①#19 회원 불편 한마디→담당부서 자동분류·알림(VOC GAS 라이브, 한계: 수리·청소·회신은 사람). 묶음2·마케팅홍보: ②#20 유입경로 자유텍스트 300종→10개 채널 자동 정규화(앱스스크립트 라이브, 한계: 옛 뭉뚱그린 26%는 기타·미상 솔직 보존) ③#21 회사 채널 콘텐츠 AI 초안 자동 생성(07:30 예약작업 라이브, 한계: 초안까지만·다듬기·선택은 사람) ④#22 브랜드 카드 이미지 코드 자동합성 편당 5~6장 초단위(compose 엔진 라이브, 한계: 기획·소재 선정은 사람) ⑤#23 승인 한 번에 다채널 배포(watcher 라이브, 한계: 인스타=발행완료·블로그·카페=임시저장·당근=세션한정, 승인=발행시작). 예비편: 연동 다리 5개 30분 자가점검(integration_health 라이브, 대외 매력 약해 GM 선택 시 채택). GM 텔레그램 검토 대기(메시지 2129). 승인 시 #19부터 순차 제작.",
+    "ship_no": 29
   },
   {
     "task_id": "CMO-2026-06-18-FUNNEL-DASH-TYPE-CHANNEL-OVERHAUL",
@@ -1339,7 +1450,8 @@
     "enqueued_at": "2026-06-18",
     "processed_at": "2026-06-18",
     "artifact": "GM CLI 직접 지시 7건(웰리 위임·시모 소유). 프론트(라이브 반영, 커밋 4466cd75·HTTP200 검증): #1 유형별 전환표 5칸(유형|클릭수|문의|등록|비고) #2 성인(수영·골프·스쿼시·P.T·필라테스·바레·발레)/유소년(수영·골프·스쿼시·체조&트램폴린) 종목별 토글 — 등록은 lesson_breakdown 종목별 실수치, 바레·발레=데이터 미연결(0 날조 안 함), 문의·클릭은 폼에 종목칸 없어 유형합계만(정직안내 1줄) #3+#5 유입채널 현황 독립섹션 상단승격+기간연동(구 '이번달 고정' 중복 흡수·제거)+출처미상률 배지 통합 #6 비고칸에 유형별 구글폼 바로가기(구 진입점 섹션 흡수) #7 클릭현황 토글 제거(클릭수 유형표 흡수). 죽은코드 303줄 정리. GAS(.deploy-funnel/Survey.js): #4 월단위 클릭<문의 버그=클릭시각 문자열을 서버TZ로 오해석한 날짜파싱을 _normTs_ 단일정규화로 통일(클릭·문의 동일파싱) + lesson_breakdown 종목별 등록집계 액션 신설.",
-    "next": "⚠️ GAS 발효 대기 — clasp refresh_token 만료로 재배포 막힘. GM이 .deploy-funnel에서 clasp login→clasp push→웹앱 새버전 재배포 1회 필요. 발효 전엔 종목등록 '집계 대기'·유입채널 폴백 표시(프론트 graceful, 코드변경 불필요). 발효 후 자동 점등. 별건: cmo/survey/apps_script_survey.js는 라이브정본(.deploy-funnel/Survey.js)과 273줄 발산한 stale 사본 → 폐기/정리 GM 판단 대기."
+    "next": "⚠️ GAS 발효 대기 — clasp refresh_token 만료로 재배포 막힘. GM이 .deploy-funnel에서 clasp login→clasp push→웹앱 새버전 재배포 1회 필요. 발효 전엔 종목등록 '집계 대기'·유입채널 폴백 표시(프론트 graceful, 코드변경 불필요). 발효 후 자동 점등. 별건: cmo/survey/apps_script_survey.js는 라이브정본(.deploy-funnel/Survey.js)과 273줄 발산한 stale 사본 → 폐기/정리 GM 판단 대기.",
+    "ship_no": 30
   },
   {
     "task_id": "CEO-2026-06-18-ADHOC-b88fe42a",
@@ -1352,7 +1464,8 @@
     "processed_at": "2026-06-18",
     "artifact": "Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com> (CLI ad-hoc · 커밋 b88fe42a)",
     "next": "🌀 표류 — 다음 미정 (필요 시 GM·웰리/담당 C-Level 지정)",
-    "adhoc_commit": "b88fe42a36b1b056097685c2026ad9730a59b58b"
+    "adhoc_commit": "b88fe42a36b1b056097685c2026ad9730a59b58b",
+    "ship_no": 17
   },
   {
     "task_id": "COO-2026-06-18-ADHOC-84326746",
@@ -1365,7 +1478,8 @@
     "processed_at": "2026-06-18",
     "artifact": "Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com> (CLI ad-hoc · 커밋 84326746)",
     "next": "🌀 표류 — 다음 미정 (필요 시 GM·웰리/담당 C-Level 지정)",
-    "adhoc_commit": "843267460af85242c9e5f0da6e4133128e8b007a"
+    "adhoc_commit": "843267460af85242c9e5f0da6e4133128e8b007a",
+    "ship_no": 39
   },
   {
     "task_id": "COO-2026-06-18-ADHOC-544a0149",
@@ -1378,7 +1492,8 @@
     "processed_at": "2026-06-18",
     "artifact": "모달 🖨 인쇄는 저장된 ALL_TASKS만 읽어, 결재요청을 체크하고 저장하기 전\n인쇄하면 approvalReq가 비어 결재칸 자체가 안 나오던 문제. printResultReport에\noverride 인자 추가, 모달 인쇄 버튼이 현재 체크 상태를 그대로 전달하도록 수정. (CLI ad-hoc · 커밋 544a0149)",
     "next": "🌀 표류 — 다음 미정 (필요 시 GM·웰리/담당 C-Level 지정)",
-    "adhoc_commit": "544a0149e98f8f00ff80b75c59420c6f0db146f3"
+    "adhoc_commit": "544a0149e98f8f00ff80b75c59420c6f0db146f3",
+    "ship_no": 40
   },
   {
     "task_id": "CEO-2026-06-18-KPI-SSOT-DIVERGENCE",
@@ -1391,7 +1506,8 @@
     "processed_at": "2026-06-19",
     "summary": "헌법 구조0 정합성 감사(2026-06-18) 결과 7항 중 KPI만 ❌. 담당 KPI 정의가 S2 본인탭 HTML에만 손기록돼 사람·AI·기계 단일원천 미달. 처방: KPI 정의를 ssot/*.json으로 원천화→S2는 렌더, 기계 직독 전환. 나머지 6항(헌법·약속·incidents·canon·항로L16·할일)은 ✅.",
     "artifact": "[2026-06-19 완결] ssot/kpi.json 신설 — 7역할(웰리·시우·시뽀·시모·시토·시로·시포) 담당 KPI 단일출처화. S2 7개 역할탭의 '담당 KPI' 셀(<td id=kpi-{role}>)을 약속·incidents·canon과 동일한 raw.githubusercontent fetch 패턴으로 kpi.json에서 네이티브 렌더(실패 시 HTML 하드코딩 fallback 유지=무중단). 텍스트 변경 0(전략값 verbatim 보존 — 미세차 없음 대조 확인). 이제 사람(S2 렌더)·AI(kpi.json 직독)·기계(json) 단일원천 → 헌법 구조0 7항 전부 ✅. 검증: json 7역할·HTML 파싱·id 7개·렌더스크립트 1개(중복0)·값보존 실측 PASS.",
-    "next": "표류(완결) — 구조0 정합성 7/7 달성. 옵션 후속: 부팅 직독 목록(약속·incidents·canon 3종)에 kpi.json 1줄 추가해 '4종 직독'으로 명문화 / cto KPI 목표치는 GM 결재 대기(kpi.json 텍스트에 명시 보존)."
+    "next": "표류(완결) — 구조0 정합성 7/7 달성. 옵션 후속: 부팅 직독 목록(약속·incidents·canon 3종)에 kpi.json 1줄 추가해 '4종 직독'으로 명문화 / cto KPI 목표치는 GM 결재 대기(kpi.json 텍스트에 명시 보존).",
+    "ship_no": 18
   },
   {
     "task_id": "COO-2026-06-18-ADHOC-a066bea7",
@@ -1404,7 +1520,8 @@
     "processed_at": "2026-06-18",
     "artifact": "deep-interview 확정: 북극성=무인 운영 시스템 완성, KPI=점검완료율+운영마찰\n인시던트. COO 고유 4항목은 본인탭 정의, 전사 공통 4항목(파이프라인·박제·\n권한게이트·부팅)은 공통 탭 원본 포인터만 — 중복 0(약속 L01). 페르소나\n담당 KPI 행을 새 KPI로 정합. (CLI ad-hoc · 커밋 a066bea7)",
     "next": "🌀 표류 — 다음 미정 (필요 시 GM·웰리/담당 C-Level 지정)",
-    "adhoc_commit": "a066bea7a6df532b99a0c539c934c11f87e84a59"
+    "adhoc_commit": "a066bea7a6df532b99a0c539c934c11f87e84a59",
+    "ship_no": 41
   },
   {
     "task_id": "COO-2026-06-18-ADHOC-6c3189da",
@@ -1417,7 +1534,8 @@
     "processed_at": "2026-06-18",
     "artifact": "post-commit 훅 단일 초크포인트에 auto_log_adhoc_to_queue.py 배선.\n실작업 커밋이면 _queue.json 끝에 입항완료 배(DONE/terminal) append 후\nchore(queue) 커밋 생성 → push 체인이 origin 반영. 자동발행·큐·merge 커밋은\nSKIP(재귀 base case). clevel 귀속=커밋내용 우선(닉네임>역할토큰>active_clevel).\nGitLock 임계구역·멱등(adhoc_commit)·fail-open(항상 exit 0).\n@ (CLI ad-hoc · 커밋 6c3189da)",
     "next": "🌀 표류 — 다음 미정 (필요 시 GM·웰리/담당 C-Level 지정)",
-    "adhoc_commit": "6c3189da24f34b4682af4ac6ca40607b0f383444"
+    "adhoc_commit": "6c3189da24f34b4682af4ac6ca40607b0f383444",
+    "ship_no": 42
   },
   {
     "task_id": "COO-2026-06-18-ADHOC-a444e775",
@@ -1430,7 +1548,8 @@
     "processed_at": "2026-06-18",
     "artifact": "멀티세션 공유 저장소에서 .omc/state/active_clevel 폴백이 토큰 없는 타\nC-Level 커밋을 오귀속(feat(헌법) 전사작업→coo). 폴백 제거, 귀속은 커밋\n토큰(닉네임·역할)만, 없으면 ceo(웰리). b88fe42a 헌법 배 coo→ceo 정정. (CLI ad-hoc · 커밋 a444e775)",
     "next": "🌀 표류 — 다음 미정 (필요 시 GM·웰리/담당 C-Level 지정)",
-    "adhoc_commit": "a444e7759b77178b2d91228d3eae2f803d6054b6"
+    "adhoc_commit": "a444e7759b77178b2d91228d3eae2f803d6054b6",
+    "ship_no": 43
   },
   {
     "task_id": "CEO-2026-06-18-ADHOC-f6733198",
@@ -1443,7 +1562,8 @@
     "processed_at": "2026-06-18",
     "artifact": "fix(항로): 간단설명·핵심조언 칸 정제 채움(메타·날것 제거)+필드 override 지원 (CLI ad-hoc · 커밋 f6733198)",
     "next": "🌀 표류 — 다음 미정 (필요 시 GM·웰리/담당 C-Level 지정)",
-    "adhoc_commit": "f67331983a206b10b6abd23ae7d33f149c9a2436"
+    "adhoc_commit": "f67331983a206b10b6abd23ae7d33f149c9a2436",
+    "ship_no": 19
   },
   {
     "task_id": "COO-2026-06-18-ADHOC-32e64705",
@@ -1456,7 +1576,8 @@
     "processed_at": "2026-06-18",
     "artifact": "- SUPPORT_CHECK_API_URL 상수 추가(라이브 GAS, env 오버라이드). 기존 CHECKLIST_API_URL 불변.\n- _fetch_support_today_live: today_live(dept=support) GET, ok=true시 dict.\n- _build_support_check_chart: 회차×성별 고정폭 차트(CJK 폭 보정, 텔레그램 코드블록).\n- _build_support_weakspot: 분모>0 최저 완료율 칸 자동 약점 한 줄.\n- _dept_status_lines: 시설/주차 weekl (CLI ad-hoc · 커밋 32e64705)",
     "next": "🌀 표류 — 다음 미정 (필요 시 GM·웰리/담당 C-Level 지정)",
-    "adhoc_commit": "32e647052a717a3a21ccdddf1651e2a83a70ff95"
+    "adhoc_commit": "32e647052a717a3a21ccdddf1651e2a83a70ff95",
+    "ship_no": 44
   },
   {
     "task_id": "COO-2026-06-18-ADHOC-fd807141",
@@ -1469,7 +1590,8 @@
     "processed_at": "2026-06-18",
     "artifact": "커밋 제목의 [닉네임] 태그와 자동로거 접두가 겹쳐 '[시우] [시우]'로\n중복되던 것 수정 — prefix 제거 후 선두 [태그]도 벗김. (CLI ad-hoc · 커밋 fd807141)",
     "next": "🌀 표류 — 다음 미정 (필요 시 GM·웰리/담당 C-Level 지정)",
-    "adhoc_commit": "fd80714188a769d6486725b2ff511f6a3ad351db"
+    "adhoc_commit": "fd80714188a769d6486725b2ff511f6a3ad351db",
+    "ship_no": 45
   },
   {
     "task_id": "COO-2026-06-18-ADHOC-7ab3d588",
@@ -1482,7 +1604,8 @@
     "processed_at": "2026-06-18",
     "artifact": "- _build_nudge_body(shift): today_live(support) 회차별 done/total·성별분리. 완료/total0/조회실패=None(침묵)\n- run_nudge(shift): 핵심멤버방(-5065206276) 발송. None이면 침묵. state.nudge_sent[date]로 하루·shift당 1회 dedup\n- schedule_map 옆 nudge_map 추가: nudge_pm(17:00)·nudge_close(22:00) CronTrigger 등록\n- 기존 06~23 슬롯·send_telegram·P (CLI ad-hoc · 커밋 7ab3d588)",
     "next": "🌀 표류 — 다음 미정 (필요 시 GM·웰리/담당 C-Level 지정)",
-    "adhoc_commit": "7ab3d588ab7b94c83e3ccd897e6f0cad523db0dd"
+    "adhoc_commit": "7ab3d588ab7b94c83e3ccd897e6f0cad523db0dd",
+    "ship_no": 46
   },
   {
     "task_id": "CEO-2026-06-19-ADHOC-0a30f31d",
@@ -1495,7 +1618,8 @@
     "processed_at": "2026-06-19",
     "artifact": "3일 System 이벤트 실측으로 3게이트 통과: 22:30 미종료(진범 삭제 효과)·\n00:30 단일종료·23:00 보고 생존. CEO-2026-06-16-PC-SHUTDOWN-VERIFY DONE. (CLI ad-hoc · 커밋 0a30f31d)",
     "next": "🌀 표류 — 다음 미정 (필요 시 GM·웰리/담당 C-Level 지정)",
-    "adhoc_commit": "0a30f31d5f9eee4437db324dacae79b6e4686351"
+    "adhoc_commit": "0a30f31d5f9eee4437db324dacae79b6e4686351",
+    "ship_no": 20
   },
   {
     "task_id": "CEO-2026-06-19-ADHOC-3a89af5e",
@@ -1508,7 +1632,8 @@
     "processed_at": "2026-06-19",
     "artifact": "약속 L08 브랜드 규칙(글)을 기계로 박음(L02). ssot/forbidden_terms.json SSOT +\nforbidden_scan.py + pre-commit 가드(warn). 외부 발행 카피만 점검·기획 메모 제외.\n첫 적용: 스쿼시 4채널 카피 '하이엔드 프라이빗'→'프리미엄 라이프스타일' 교정.\n캐논 allow_globs 정합(.deploy-funnel/.deploy-voc/tmp FP)으로 발산 스캔 무경보.\nCEO-2026-06-15-SSOT-TRUTH-UNIFICATION DONE. (CLI ad-hoc · 커밋 3a89af5e)",
     "next": "🌀 표류 — 다음 미정 (필요 시 GM·웰리/담당 C-Level 지정)",
-    "adhoc_commit": "3a89af5e60c8b70c590d025d8358969d7c2f4584"
+    "adhoc_commit": "3a89af5e60c8b70c590d025d8358969d7c2f4584",
+    "ship_no": 21
   },
   {
     "task_id": "CEO-2026-06-19-ADHOC-4993f9af",
@@ -1521,7 +1646,8 @@
     "processed_at": "2026-06-19",
     "artifact": "7역할 담당 KPI를 S2 HTML 손기록→ssot/kpi.json 원천화. 약속·incidents·canon과\n동일 fetch 패턴으로 S2 역할탭이 네이티브 렌더(실패 시 하드코딩 fallback).\n텍스트 변경 0(전략값 verbatim). 사람·AI·기계 단일원천 → 구조0 정합 7/7 ✅.\nCEO-2026-06-18-KPI-SSOT-DIVERGENCE DONE. (CLI ad-hoc · 커밋 4993f9af)",
     "next": "🌀 표류 — 다음 미정 (필요 시 GM·웰리/담당 C-Level 지정)",
-    "adhoc_commit": "4993f9af42c8ed0098b4f932dba8547b69f97094"
+    "adhoc_commit": "4993f9af42c8ed0098b4f932dba8547b69f97094",
+    "ship_no": 22
   },
   {
     "task_id": "CEO-2026-06-19-ADHOC-e02291c2",
@@ -1534,7 +1660,8 @@
     "processed_at": "2026-06-19",
     "artifact": "[웰리 충돌·우선순위 체크 후 자율 디스패치]\n시모: 문의 유입채널 10버킷 ↔ 폼 출처 1:1 정합 실측(인스타그램 버킷 존재 →\nIG bio 문의 즉시 귀속). 코드 0, RECEPTION-CHANNEL-DROPDOWN DONE.\n시포: cpo/member/문의회원.html 신설(등록前 잠재고객·월 예약달력), 부서체계\n링크 짝 전수. 페이지=push 라이브, GAS member_calendar 배포는 GM 잔여. (CLI ad-hoc · 커밋 e02291c2)",
     "next": "🌀 표류 — 다음 미정 (필요 시 GM·웰리/담당 C-Level 지정)",
-    "adhoc_commit": "e02291c2eec2b8c8f0840c7a94f349ffb37163f1"
+    "adhoc_commit": "e02291c2eec2b8c8f0840c7a94f349ffb37163f1",
+    "ship_no": 23
   },
   {
     "task_id": "CMO-2026-06-19-ADHOC-94bcf8b0",
@@ -1547,7 +1674,8 @@
     "processed_at": "2026-06-19",
     "artifact": "producer.py L810 알림 문구에 옛 '#6~#8'이 박제돼 실제(기획예정 0건)와 어긋남\n(INC-001 부류 복사 발산). 동적 사실로 교체: '기획예정 편 소진(0건) — 로드맵\n§5 기획예정 행 추가 필요'. py_compile PASS. (CLI ad-hoc · 커밋 94bcf8b0)",
     "next": "🌀 표류 — 다음 미정 (필요 시 GM·웰리/담당 C-Level 지정)",
-    "adhoc_commit": "94bcf8b05843125fd918b46a3912824f27852b55"
+    "adhoc_commit": "94bcf8b05843125fd918b46a3912824f27852b55",
+    "ship_no": 32
   },
   {
     "task_id": "CMO-2026-06-19-ADHOC-f48fec8d",
@@ -1560,7 +1688,8 @@
     "processed_at": "2026-06-19",
     "artifact": "GM 확정 CS 3편(#19 종합접수처 탄생·#20 해결 흐름·#21 현황→만족) §5 기획예정\n+ §5.1 producer 카드 시드. GM 교정 반영: #19 문제=인건비+의도 흐려짐(창구\n흩어짐 제거), 내부 AI 닉네임 금지, 초등학생 눈높이, 만족도 수치 지어내기 금지.\n--plan-only #19 선정 확인. producer 제작 대기. (CLI ad-hoc · 커밋 f48fec8d)",
     "next": "🌀 표류 — 다음 미정 (필요 시 GM·웰리/담당 C-Level 지정)",
-    "adhoc_commit": "f48fec8d708eaa42d6528cd794b865880229bb14"
+    "adhoc_commit": "f48fec8d708eaa42d6528cd794b865880229bb14",
+    "ship_no": 33
   },
   {
     "task_id": "CMO-2026-06-19-ADHOC-b906591a",
@@ -1573,7 +1702,8 @@
     "processed_at": "2026-06-19",
     "artifact": "auto(cmo): 검수 승인 — AI #19편 — 회원 불편 한 곳 접수(개인계정) [인스타그램 (namuk.wellperion)] (CLI ad-hoc · 커밋 b906591a)",
     "next": "🌀 표류 — 다음 미정 (필요 시 GM·웰리/담당 C-Level 지정)",
-    "adhoc_commit": "b906591af079fd4dc7c20918d8a97367394ae4ad"
+    "adhoc_commit": "b906591af079fd4dc7c20918d8a97367394ae4ad",
+    "ship_no": 34
   },
   {
     "task_id": "CMO-2026-06-19-ADHOC-ee9189b6",
@@ -1586,7 +1716,8 @@
     "processed_at": "2026-06-19",
     "artifact": "종합접수처 CS 챕터 3편 제작(각 6장)·검수대기 등록·텔레그램 승인 카드 3장 발송.\nGM이 1편씩 [승인]→봇 pub: 발행→웰리 대조 후 발행완료. 닉네임·금지어 0 검증.\n#19 회원불편 한곳에서 / #20 접수부터 해결까지 / #21 빠짐없이 빠르게. (CLI ad-hoc · 커밋 ee9189b6)",
     "next": "🌀 표류 — 다음 미정 (필요 시 GM·웰리/담당 C-Level 지정)",
-    "adhoc_commit": "ee9189b65f2010367ba696e5a00efc7d100bbef2"
+    "adhoc_commit": "ee9189b65f2010367ba696e5a00efc7d100bbef2",
+    "ship_no": 35
   },
   {
     "task_id": "CMO-2026-06-19-ADHOC-e27e7693",
@@ -1599,7 +1730,8 @@
     "processed_at": "2026-06-19",
     "artifact": "auto(cmo): 검수 승인 건 발행 1건 / 수동대기 0건 (CLI ad-hoc · 커밋 e27e7693)",
     "next": "🌀 표류 — 다음 미정 (필요 시 GM·웰리/담당 C-Level 지정)",
-    "adhoc_commit": "e27e769335eac05b779b08a03c0c77bbb11e2be8"
+    "adhoc_commit": "e27e769335eac05b779b08a03c0c77bbb11e2be8",
+    "ship_no": 36
   },
   {
     "task_id": "CMO-2026-06-19-ADHOC-29019555",
@@ -1612,7 +1744,8 @@
     "processed_at": "2026-06-19",
     "artifact": "auto(cmo): IG 발행검증 자동 대조 → 발행완료 도장 (CLI ad-hoc · 커밋 29019555)",
     "next": "🌀 표류 — 다음 미정 (필요 시 GM·웰리/담당 C-Level 지정)",
-    "adhoc_commit": "29019555f5d3373d68846cac7de34abd592f0e11"
+    "adhoc_commit": "29019555f5d3373d68846cac7de34abd592f0e11",
+    "ship_no": 37
   },
   {
     "task_id": "CMO-2026-06-19-ADHOC-e90b4eed",
@@ -1625,7 +1758,8 @@
     "processed_at": "2026-06-19",
     "artifact": "GM 요청 - 매일 07:30 producer 알림으로 미승인 검수대기 편을 콕 집어 알림.\n검수대기 1건 이상이면 텔레그램 1줄, 0건이면 무전송. 승인하면 자동 소멸.\ndry_run/plan_only 무전송. 빌더 무전송 검증 PASS. (CLI ad-hoc · 커밋 e90b4eed)",
     "next": "🌀 표류 — 다음 미정 (필요 시 GM·웰리/담당 C-Level 지정)",
-    "adhoc_commit": "e90b4eed20d76c5355acd3b550153a4c1896d0ea"
+    "adhoc_commit": "e90b4eed20d76c5355acd3b550153a4c1896d0ea",
+    "ship_no": 38
   },
   {
     "task_id": "CEO-2026-06-19-ADHOC-54600dda",
@@ -1638,7 +1772,8 @@
     "processed_at": "2026-06-19",
     "artifact": "CHRO 중복(조직 만족도) 제거. 전사 북극성 진척/C-Level 실행 완결률/G1 항로\n정합/의사결정 효율로 CEO답게. 운영 리듬: 매일 S2/G1 오전1 오후1 단순화/고도화\n후 정리 추가. ssot/kpi.json 단일출처 - S2 자동 렌더. (CLI ad-hoc · 커밋 54600dda)",
     "next": "🌀 표류 — 다음 미정 (필요 시 GM·웰리/담당 C-Level 지정)",
-    "adhoc_commit": "54600dda85e6083f725515a5cf30fb32a12ea286"
+    "adhoc_commit": "54600dda85e6083f725515a5cf30fb32a12ea286",
+    "ship_no": 24
   },
   {
     "task_id": "CMO-2026-05-28-EXPERIMENT-02-BLOG-CTA-POSITION",
@@ -1648,7 +1783,8 @@
     "priority": "LOW",
     "enqueued_at": "2026-05-28",
     "note": "가설: 블로그 본문 상단·중간·하단 3위치 중 상단 CTA 전환율 최고. 측정기간 4주 / 지표=블로그→문의 페이지 클릭 경로. [2026-06-19 GM] 마케팅현황대시보드 실험로그 섹션 삭제 → G1으로 이관(실험 기록 G1 단일화).",
-    "next": "실험#1 종료(~06-29) 후 착수 검토 — 블로그 3위치 설계 → GM 승인 → 4주 측정."
+    "next": "실험#1 종료(~06-29) 후 착수 검토 — 블로그 3위치 설계 → GM 승인 → 4주 측정.",
+    "ship_no": 1
   },
   {
     "task_id": "CMO-2026-06-19-ADHOC-2a86d85a",
@@ -1661,7 +1797,8 @@
     "processed_at": "2026-06-19",
     "artifact": "1) 유입채널 현황을 채널×유형 교차표로 병합(별도 교차 섹션 삭제, 합계·비중 행 포함)\n2) 주간·월별 추세 삭제(HTML 2블록+JS 4함수+스파크라인 CSS+토글리스너)\n3) 개선 실험로그 섹션 삭제 → 실험#1 보강·실험#2 신규 PENDING으로 G1(_queue) 이관 (CLI ad-hoc · 커밋 2a86d85a)",
     "next": "🌀 표류 — 다음 미정 (필요 시 GM·웰리/담당 C-Level 지정)",
-    "adhoc_commit": "2a86d85aeebc4867fd8bc869c78c4dcea35efa61"
+    "adhoc_commit": "2a86d85aeebc4867fd8bc869c78c4dcea35efa61",
+    "ship_no": 39
   },
   {
     "task_id": "CEO-2026-06-19-ADHOC-d350a115",
@@ -1674,7 +1811,8 @@
     "processed_at": "2026-06-19",
     "artifact": "GM 지시 - 과정 노이즈 빼고 쉬운 한국어 결과 중심, 박제 위치 항상 알림.\n웰리뿐 아니라 전 C-Level 공유 정본에 반영. (CLI ad-hoc · 커밋 d350a115)",
     "next": "🌀 표류 — 다음 미정 (필요 시 GM·웰리/담당 C-Level 지정)",
-    "adhoc_commit": "d350a1159756b74c1a5b95ead91e49f40aca0ad4"
+    "adhoc_commit": "d350a1159756b74c1a5b95ead91e49f40aca0ad4",
+    "ship_no": 25
   },
   {
     "task_id": "CTO-2026-06-19-ADHOC-1da28325",
@@ -1687,7 +1825,8 @@
     "processed_at": "2026-06-19",
     "artifact": "- scripts/parking_revenue_crawler.py: 주차시스템 자동로그인→이번달 실결제 매출(payAmt) 수집→status/parking_revenue.json 발행 (.env PARKING_* 자격증명, fail-safe)\n- daily_scheduler: 매일 07:00 주차 매출 수집 작업 등록 (08:00 보고 전 갱신, 봇 재기동 시 발효)\n- 라이브 검증: 2026-06 실결제 2,149,500원/393건 (CLI ad-hoc · 커밋 1da28325)",
     "next": "🌀 표류 — 다음 미정 (필요 시 GM·웰리/담당 C-Level 지정)",
-    "adhoc_commit": "1da283257ebdeeee473a42379ce292420588c8c6"
+    "adhoc_commit": "1da283257ebdeeee473a42379ce292420588c8c6",
+    "ship_no": 23
   },
   {
     "task_id": "CMO-2026-06-19-DASH-LESSON-SUBJECT-INQUIRY",
@@ -1700,7 +1839,8 @@
     "next": "표류 방지 다음: ①펀넬 GAS 사본(cmo/survey 253줄 구버전) 라이브정본과 동기화(별도 정리) ②대시보드 첫로딩 느림 뿌리=구글시트 동시호출 → 자체 문의DB(CTO-2026-06-16-SELF-HOSTED-INQUIRY-DB)로 근본해결.",
     "terminal": true,
     "processed_at": "2026-06-19",
-    "artifact": "강습 펼침의 각 종목 행에 ①문의(팀시트 행 타임스탬프 기준 기간집계) ②등록(누적) ③시트 바로가기 링크 표시. GAS(.deploy-funnel/Survey.js): _collectLessonInqByName_ 추가 + lesson_breakdown 확장(body.from/to·inquiries·sheetUrl·기간캐시키 lb_v2). 프론트(마케팅현황대시보드.html): _renderLessonRows 문의칸·시트링크, 기간 인지 로더(_lessonRange), 기간전환 시 펼침이면 재조회. clasp push+deploy @39(같은 /exec URL 유지). 라이브 실측: 수영성인 문의36·등록436·시트URL있음, 기간필터 작동(6/19하루=0), 바레·발레=null 정직표기. 커밋 b11aca9."
+    "artifact": "강습 펼침의 각 종목 행에 ①문의(팀시트 행 타임스탬프 기준 기간집계) ②등록(누적) ③시트 바로가기 링크 표시. GAS(.deploy-funnel/Survey.js): _collectLessonInqByName_ 추가 + lesson_breakdown 확장(body.from/to·inquiries·sheetUrl·기간캐시키 lb_v2). 프론트(마케팅현황대시보드.html): _renderLessonRows 문의칸·시트링크, 기간 인지 로더(_lessonRange), 기간전환 시 펼침이면 재조회. clasp push+deploy @39(같은 /exec URL 유지). 라이브 실측: 수영성인 문의36·등록436·시트URL있음, 기간필터 작동(6/19하루=0), 바레·발레=null 정직표기. 커밋 b11aca9.",
+    "ship_no": 40
   },
   {
     "task_id": "CMO-2026-06-19-ADHOC-b11aca94",
@@ -1713,7 +1853,8 @@
     "processed_at": "2026-06-19",
     "artifact": "GAS(Survey.js): _collectLessonInqByName_ 추가(팀시트 행을 타임스탬프 기준 기간집계)\n + lesson_breakdown 확장(body.from/to·inquiries·sheetUrl·기간별 캐시키 lb_v2)\n프론트: 종목 행에 문의(기간 반영)·시트 바로가기 링크 표시, 기간 인지 로더(_lessonRange)\n + 기간 전환 시 펼침 상태면 종목 문의 재조회\nGM 배포 게이트: 펀넬 GAS 수동 재배포 필요(clasp 미연동) (CLI ad-hoc · 커밋 b11aca94)",
     "next": "🌀 표류 — 다음 미정 (필요 시 GM·웰리/담당 C-Level 지정)",
-    "adhoc_commit": "b11aca9469934b652877e49c20677294b6ba32bf"
+    "adhoc_commit": "b11aca9469934b652877e49c20677294b6ba32bf",
+    "ship_no": 41
   },
   {
     "task_id": "CMO-2026-06-19-ADHOC-c76365b9",
@@ -1726,7 +1867,8 @@
     "processed_at": "2026-06-19",
     "artifact": "clasp push+deploy 완료(같은 /exec URL). 라이브 실측 PASS:\n종목별 문의(기간필터 작동)·등록·시트URL 정상, 바레·발레 정직표기(null) (CLI ad-hoc · 커밋 c76365b9)",
     "next": "🌀 표류 — 다음 미정 (필요 시 GM·웰리/담당 C-Level 지정)",
-    "adhoc_commit": "c76365b906e150d45610f3ef4a62edfa32b1098b"
+    "adhoc_commit": "c76365b906e150d45610f3ef4a62edfa32b1098b",
+    "ship_no": 42
   },
   {
     "task_id": "COO-2026-06-19-ADHOC-0b51cb56",
@@ -1739,6 +1881,7 @@
     "processed_at": "2026-06-19",
     "artifact": "deep-interview로 모호성 제거: 측정형·입력률·단일화면·평일8주말6·폼승격·근무자입력·점검자3인+직접 (CLI ad-hoc · 커밋 0b51cb56)",
     "next": "🌀 표류 — 다음 미정 (필요 시 GM·웰리/담당 C-Level 지정)",
-    "adhoc_commit": "0b51cb560a22c993c48e2e70bfb56983b5b8acdb"
+    "adhoc_commit": "0b51cb560a22c993c48e2e70bfb56983b5b8acdb",
+    "ship_no": 47
   }
 ]
