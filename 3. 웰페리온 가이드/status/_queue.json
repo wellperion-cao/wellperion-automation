@@ -1674,5 +1674,18 @@
     "artifact": "GM 지시 - 과정 노이즈 빼고 쉬운 한국어 결과 중심, 박제 위치 항상 알림.\n웰리뿐 아니라 전 C-Level 공유 정본에 반영. (CLI ad-hoc · 커밋 d350a115)",
     "next": "🌀 표류 — 다음 미정 (필요 시 GM·웰리/담당 C-Level 지정)",
     "adhoc_commit": "d350a1159756b74c1a5b95ead91e49f40aca0ad4"
+  },
+  {
+    "task_id": "CTO-2026-06-19-ADHOC-1da28325",
+    "clevel": "cto",
+    "title": "[시토] 주차 매출 자동 크롤러 + 일일 수집 스케줄",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-06-19",
+    "processed_at": "2026-06-19",
+    "artifact": "- scripts/parking_revenue_crawler.py: 주차시스템 자동로그인→이번달 실결제 매출(payAmt) 수집→status/parking_revenue.json 발행 (.env PARKING_* 자격증명, fail-safe)\n- daily_scheduler: 매일 07:00 주차 매출 수집 작업 등록 (08:00 보고 전 갱신, 봇 재기동 시 발효)\n- 라이브 검증: 2026-06 실결제 2,149,500원/393건 (CLI ad-hoc · 커밋 1da28325)",
+    "next": "🌀 표류 — 다음 미정 (필요 시 GM·웰리/담당 C-Level 지정)",
+    "adhoc_commit": "1da283257ebdeeee473a42379ce292420588c8c6"
   }
 ]
