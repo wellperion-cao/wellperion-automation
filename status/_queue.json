@@ -1958,13 +1958,16 @@
   {
     "task_id": "CMO-2026-06-19-MONTHLY-REPORT-FUNNEL-REDESIGN",
     "clevel": "cmo",
-    "status": "PENDING",
+    "status": "DONE",
     "priority": "⛴️여객선",
     "enqueued_at": "2026-06-19",
     "title": "[시모] 월간보고서 2단계 — 퍼널 중심 재설계(노출 vanity→콘텐츠별 클릭·문의 기여)",
     "note": "GM 방향(2026-06-19): 정직화 다음은 퍼널 중심 재설계. 신뢰 안 되는 노출·조회수 지표 대신 콘텐츠 개선의 진짜 근거=퍼널(클릭→문의→전환)로 보고서 재구성. 콘텐츠/채널별 클릭·문의 기여를 한눈에 → 그걸로 코멘트·개선 액션 도출. 당근 노출 7/1 누락(post_url 미기록)은 노출 비중 줄면 자연 완화(필요시 발행 URL 회수 자동화는 별도).",
-    "next": "착수 시: ④채널별 문의·전환을 보고서 핵심으로 승격, ⑥외부노출 섹션 축소/대체, 콘텐츠별 기여 뷰 설계(대시보드 type_channel·click_stats 재사용) → GM 검토.",
-    "ship_no": 45
+    "next": "표류 방지: ①클릭의 채널 귀속을 완전하게(발행 링크에 utm_source 일괄 태깅)하면 클릭→문의 채널 퍼널도 가능 ②추후 콘텐츠(글)별 기여는 글별 UTM 태깅 체계 선행 필요.",
+    "ship_no": 45,
+    "terminal": true,
+    "processed_at": "2026-06-19",
+    "artifact": "deep-interview(모호도 18%·명세 .omc/specs/deep-interview-monthly-report-funnel-redesign.md)→시모 직접구현. ④를 채널별 퍼널 핵심표로 재구성(채널|이달 문의|지난달|증감|전환율 누적추정)=byChannelMonth+지난달 custom.byChannel+funnel_conversion byChannel. ⑥외부지표 섹션 제거(당근=④하단 참고 각주·노출아님 명시). ⑦코멘트 채널퍼널 자동도출(최다유입·지난달대비·전환율 최저최고 약점진단·추천문구 초안). 신규 GAS 0(기존 엔드포인트 재사용). 라이브 실데이터 검증: 이달 네이버39·소개36, 지난달 비교·전환율(기존회원41%·소개11.2%) 정상. node 검증·끊긴참조0."
   },
   {
     "task_id": "CMO-2026-06-19-ADHOC-652471e8",
