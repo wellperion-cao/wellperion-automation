@@ -556,6 +556,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   <button class="tab" onclick="switchTab('guide')">직원 가이드</button>
   <button class="tab" onclick="switchTab('chem')">약품 가이드</button>
   <button class="tab" onclick="switchTab('manual')">매뉴얼</button>
+  <button class="tab" onclick="switchTab('supply')">비품관리</button>
   <button class="tab" onclick="switchTab('reg')">청결 이슈 접수</button>
   <button class="tab" onclick="switchTab('check-m','lock')">점검(남) 🔒</button>
   <button class="tab" onclick="switchTab('check-f','lock')">점검(여) 🔒</button>
@@ -866,6 +867,18 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 
   <!-- ── 점검 셋업 편집기는 '점검' 탭으로 이동(GM 2026-06-11). tab-check-m 상단 참조. ── -->
 
+</div>
+
+<!-- ── 비품관리 탭 (목록형 1표 CRUD · 서버 공유 saveBoard key=SUPPORT_SUPPLY · 편집 잠금 없음) ── -->
+<div id="tab-supply" class="content hidden">
+  <h2 style="font-size:20px;margin-bottom:6px;">비품관리</h2>
+  <p class="board-intro">지원부 비품을 한 표로 관리합니다. <strong>＋ 비품 추가</strong>로 행을 늘리고 각 칸을 바로 입력하면 모든 기기에 저장됩니다(편집 잠금 없음 — 누구나 추가·수정·삭제). 수량은 <strong>−／＋</strong> 버튼으로 빠르게 조절(0 미만 불가).</p>
+  <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap;">
+    <button class="btn" onclick="supplyAdd()">＋ 비품 추가</button>
+    <input type="text" id="supplySearch" placeholder="품목명 검색…" oninput="renderSupplyTable()" autocomplete="off"
+      style="background:var(--bg);border:1px solid var(--border);color:var(--text);padding:8px 12px;border-radius:8px;font-size:13px;font-family:inherit;flex:1;min-width:160px;max-width:320px;">
+  </div>
+  <div id="supply-table"></div>
 </div>
 
 <div id="tab-check-m" class="content hidden">
@@ -4291,7 +4304,9 @@ function switchTab(tab, opts){
   document.getElementById('tab-admin').classList.toggle('hidden',tab!=='admin');
   document.getElementById('tab-manage').classList.toggle('hidden',tab!=='manage');
   document.getElementById('tab-reg').classList.toggle('hidden',tab!=='reg');
+  document.getElementById('tab-supply').classList.toggle('hidden',tab!=='supply');
   if(tab==='reg'){deptRegLoad('지원부');}
+  if(tab==='supply'){ if(typeof loadSupplyFromBackend==='function') loadSupplyFromBackend(); }
   // Show correct submit bar
   document.getElementById('submitBarM').style.display=(tab==='check-m')?'flex':'none';
   document.getElementById('submitBarF').style.display=(tab==='check-f')?'flex':'none';
@@ -4418,6 +4433,170 @@ function persistBoardData(){
     body:JSON.stringify({action:'saveBoard',key:BOARD_STORAGE_KEY,board:BOARD_DATA})
   }).then(()=>{if(ind){ind.textContent='보드 저장 완료';setTimeout(()=>{ind.style.display='none'},1500);}})
     .catch(()=>{if(ind){ind.textContent='보드 저장 (로컬 보관됨)';setTimeout(()=>{ind.style.display='none'},1500);}});
+}
+
+/* ═══════════════════════════════════════════════
+   비품관리 (목록형 1표 CRUD) — 매뉴얼 보드 패턴 복제
+   저장: localStorage(SUPPORT_SUPPLY) 즉시 + 범용 saveBoard POST(key=SUPPORT_SUPPLY) 비동기.
+   서버 공유·편집 잠금 없음. IME 안전: 입력 중 표 통째 재렌더 금지(값만 갱신).
+   ═══════════════════════════════════════════════ */
+const SUPPLY_STORAGE_KEY = 'SUPPORT_SUPPLY';
+var SUPPLY_DATA = []; // [{id, name, qty, loc, owner, note, updatedAt}]
+var supplyIdSeq = 0;  // 같은 세션 내 id 충돌 방지용 시퀀스
+
+/* 고유 id 생성 (Date.now + 증가 시퀀스 — 같은 ms 다중 추가 충돌 방지) */
+function supplyNewId(){ return 'sup_'+Date.now().toString(36)+'_'+(supplyIdSeq++).toString(36); }
+
+/* stored(객체/배열) → SUPPLY_DATA 정규화. board={rows:[...]} 형태 또는 배열 직접 모두 수용 */
+function applySupplyStored(stored){
+  var rows = [];
+  if(stored && Array.isArray(stored.rows)) rows = stored.rows;
+  else if(Array.isArray(stored)) rows = stored;
+  SUPPLY_DATA = rows.map(function(r){
+    r = r || {};
+    var q = parseInt(r.qty,10); if(isNaN(q)||q<0) q=0;
+    return {
+      id: r.id || supplyNewId(),
+      name: (r.name!=null?String(r.name):''),
+      qty: q,
+      loc: (r.loc!=null?String(r.loc):''),
+      owner: (r.owner!=null?String(r.owner):''),
+      note: (r.note!=null?String(r.note):''),
+      updatedAt: r.updatedAt || ''
+    };
+  });
+}
+
+/* 로컬 폴백 로드 (오프라인·동기 초기용) */
+function loadSupplyData(){
+  var stored=null;
+  try{ stored=JSON.parse(localStorage.getItem(SUPPLY_STORAGE_KEY)); }catch(e){ stored=null; }
+  applySupplyStored(stored);
+}
+
+/* 백엔드 우선 로드 → 있으면 사용·로컬 캐시, 실패/없음 시 로컬 폴백. 편집 중이면 재렌더 보류(IME 보호). */
+async function loadSupplyFromBackend(){
+  loadSupplyData();      // 즉시 로컬로 1차 렌더
+  renderSupplyTable();
+  if(!ONLINE) return;
+  try{
+    var res=await fetch(API_URL+'?action=board&key='+encodeURIComponent(SUPPLY_STORAGE_KEY),{method:'GET',redirect:'follow'});
+    var data=await res.json();
+    if(data && data.ok && data.board && typeof data.board==='object'){
+      applySupplyStored(data.board);
+      localStorage.setItem(SUPPLY_STORAGE_KEY, JSON.stringify({rows:SUPPLY_DATA})); // 오프라인 캐시 갱신
+    }
+    // data.board===null → 백엔드 미존재 → 로컬 유지(첫 저장 시 기록)
+  }catch(e){ /* 네트워크 실패 → 로컬 유지 */ }
+  // 입력 포커스 중이면 재렌더 보류(조합·커서 보호). 없을 때만 갱신.
+  var wrap=document.getElementById('supply-table');
+  if(wrap && !wrap.contains(document.activeElement)) renderSupplyTable();
+}
+
+/* localStorage 즉시 영속 + 범용 saveBoard 서버 저장(디바운스 800ms — 타자마다 POST 방지) */
+var _supplySaveTimer=null;
+function persistSupplyData(){
+  localStorage.setItem(SUPPLY_STORAGE_KEY, JSON.stringify({rows:SUPPLY_DATA}));  // 즉시 로컬
+  if(!ONLINE) return;
+  clearTimeout(_supplySaveTimer);
+  _supplySaveTimer=setTimeout(_supplyPush, 800);   // 마지막 변경 후 0.8초 모아 1회 서버 저장
+}
+function _supplyPush(){
+  var ind=document.getElementById('saveIndicator');
+  if(ind){ind.style.display='block';ind.textContent='비품 저장 중...';}
+  fetch(API_URL,{method:'POST',redirect:'follow',
+    headers:{'Content-Type':'text/plain'},
+    body:JSON.stringify({action:'saveBoard',key:SUPPLY_STORAGE_KEY,board:{rows:SUPPLY_DATA}})
+  }).then(()=>{if(ind){ind.textContent='비품 저장 완료';setTimeout(()=>{ind.style.display='none'},1500);}})
+    .catch(()=>{if(ind){ind.textContent='비품 저장 (로컬 보관됨)';setTimeout(()=>{ind.style.display='none'},1500);}});
+}
+
+function supplyFind(id){ for(var i=0;i<SUPPLY_DATA.length;i++){ if(SUPPLY_DATA[i].id===id) return SUPPLY_DATA[i]; } return null; }
+function supplyEsc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+/* 표 렌더 (검색 필터 포함, 빈상태 정직표기). 입력 중이 아닐 때만 호출. */
+function renderSupplyTable(){
+  var wrap=document.getElementById('supply-table');
+  if(!wrap) return;
+  var qEl=document.getElementById('supplySearch');
+  var q=(qEl&&qEl.value?qEl.value.trim().toLowerCase():'');
+  var rows=SUPPLY_DATA.filter(function(r){ return !q || (r.name||'').toLowerCase().indexOf(q)>=0; });
+
+  if(SUPPLY_DATA.length===0){
+    wrap.innerHTML='<div style="text-align:center;color:var(--dim);padding:32px 12px;font-size:14px;">등록된 비품 없음 — <a href="javascript:void(0)" onclick="supplyAdd()" style="color:var(--accent);font-weight:700;text-decoration:none;">＋ 비품 추가</a></div>';
+    return;
+  }
+  if(rows.length===0){
+    wrap.innerHTML='<div style="text-align:center;color:var(--dim);padding:24px 12px;font-size:13px;">"'+supplyEsc(q)+'" 검색 결과 없음</div>';
+    return;
+  }
+  var cell='background:var(--bg);border:1px solid var(--border);color:var(--text);padding:7px 10px;border-radius:6px;font-size:13px;font-family:inherit;width:100%;box-sizing:border-box;';
+  var html='<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;min-width:680px;">';
+  html+='<thead><tr style="text-align:left;color:var(--dim);font-size:12px;">'
+    +'<th style="padding:6px 8px;min-width:160px;">품목명</th>'
+    +'<th style="padding:6px 8px;width:150px;">수량</th>'
+    +'<th style="padding:6px 8px;min-width:120px;">보관위치</th>'
+    +'<th style="padding:6px 8px;min-width:90px;">담당</th>'
+    +'<th style="padding:6px 8px;min-width:140px;">비고</th>'
+    +'<th style="padding:6px 8px;width:48px;"></th></tr></thead><tbody>';
+  rows.forEach(function(r){
+    var id=supplyEsc(r.id);
+    html+='<tr style="border-top:1px solid var(--border);">'
+      +'<td style="padding:6px 8px;"><input type="text" value="'+supplyEsc(r.name)+'" oninput="supplyEdit(\''+id+'\',\'name\',this.value)" placeholder="품목명" autocomplete="off" style="'+cell+'"></td>'
+      +'<td style="padding:6px 8px;"><span style="display:inline-flex;align-items:center;gap:4px;">'
+        +'<button class="btn" style="padding:4px 9px;" onclick="supplyQty(\''+id+'\',-1)">−</button>'
+        +'<input type="number" min="0" value="'+r.qty+'" oninput="supplyEdit(\''+id+'\',\'qty\',this.value)" style="'+cell+'width:58px;text-align:center;">'
+        +'<button class="btn" style="padding:4px 9px;" onclick="supplyQty(\''+id+'\',1)">＋</button>'
+      +'</span></td>'
+      +'<td style="padding:6px 8px;"><input type="text" value="'+supplyEsc(r.loc)+'" oninput="supplyEdit(\''+id+'\',\'loc\',this.value)" placeholder="보관위치" autocomplete="off" style="'+cell+'"></td>'
+      +'<td style="padding:6px 8px;"><input type="text" value="'+supplyEsc(r.owner)+'" oninput="supplyEdit(\''+id+'\',\'owner\',this.value)" placeholder="담당" autocomplete="off" style="'+cell+'"></td>'
+      +'<td style="padding:6px 8px;"><input type="text" value="'+supplyEsc(r.note)+'" oninput="supplyEdit(\''+id+'\',\'note\',this.value)" placeholder="비고" autocomplete="off" style="'+cell+'"></td>'
+      +'<td style="padding:6px 8px;text-align:center;"><button class="btn" style="padding:4px 8px;color:var(--red);border-color:var(--red);background:transparent;" onclick="supplyDelete(\''+id+'\')" title="삭제">✕</button></td>'
+      +'</tr>';
+  });
+  html+='</tbody></table></div>';
+  wrap.innerHTML=html;
+}
+
+/* 추가: 빈 행 추가 → 재렌더 → 새 행 품목명에 포커스 */
+function supplyAdd(){
+  var item={id:supplyNewId(),name:'',qty:0,loc:'',owner:'',note:'',updatedAt:new Date().toISOString()};
+  SUPPLY_DATA.push(item);
+  var qEl=document.getElementById('supplySearch'); if(qEl) qEl.value=''; // 새 행이 필터에 가려지지 않게
+  persistSupplyData();
+  renderSupplyTable();
+  var wrap=document.getElementById('supply-table');
+  if(wrap){ var inputs=wrap.querySelectorAll('tbody tr:last-child input[type=text]'); if(inputs.length) inputs[0].focus(); }
+}
+
+/* 인라인 편집: 값만 갱신·즉시 persist (표 재렌더 안 함 → IME·커서 보호) */
+function supplyEdit(id, field, val){
+  var r=supplyFind(id); if(!r) return;
+  if(field==='qty'){ var q=parseInt(val,10); if(isNaN(q)||q<0) q=0; r.qty=q; }
+  else r[field]=val;
+  r.updatedAt=new Date().toISOString();
+  persistSupplyData();
+}
+
+/* 수량 −／＋ (0 미만 방지). 해당 number input 값만 갱신 → 표 재렌더 안 함(IME 안전) */
+function supplyQty(id, delta){
+  var r=supplyFind(id); if(!r) return;
+  var q=(parseInt(r.qty,10)||0)+delta; if(q<0) q=0;
+  r.qty=q; r.updatedAt=new Date().toISOString();
+  persistSupplyData();
+  var wrap=document.getElementById('supply-table');
+  if(wrap){
+    var inp=wrap.querySelector('input[type=number][oninput*="\''+id+'\'"]');
+    if(inp) inp.value=q;
+  }
+}
+
+/* 삭제: 배열 splice + persist + 재렌더(포커스 없는 변경이라 안전) */
+function supplyDelete(id){
+  if(!confirm('이 비품을 삭제할까요?')) return;
+  for(var i=0;i<SUPPLY_DATA.length;i++){ if(SUPPLY_DATA[i].id===id){ SUPPLY_DATA.splice(i,1); break; } }
+  persistSupplyData();
+  renderSupplyTable();
 }
 
 /* 선택된 요일 집합(다중선택). JS getDay(): 0=일~6=토 → BOARD_DAYS 순서로 매핑 */
@@ -4955,6 +5134,7 @@ loadStaffFromSheet();
 loadItemMasterFromSheet(); // 점검 항목 마스터를 시트에서 로드 (비동기 — 완료 시 화면 갱신)
 loadBoardData(); renderBoard(); loadBoardFromBackend(); // 요일별 보드: 로컬 즉시 렌더 후 백엔드 동기화(모든 기기 반영)
 loadPolicyData(); renderPolicyBoard(); loadPolicyFromBackend(); // 규정 트렐로 보드: 로컬 즉시 렌더 후 백엔드 동기화
+loadSupplyData(); renderSupplyTable(); // 비품: 로컬 즉시 렌더(서버 동기화는 탭 열 때 loadSupplyFromBackend)
 renderG('m');
 
 /* ═══════════════════════════════════════════════
