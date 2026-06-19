@@ -281,13 +281,6 @@ a:hover{color:var(--text)}
 .utm-bar-track{background:var(--border);border-radius:4px;height:6px;overflow:hidden}
 .utm-bar-fill{height:100%;background:var(--accent);border-radius:4px;transition:width .45s ease}
 
-/* ── 주간 스파크라인 ── */
-.sparkline-wrap{display:flex;align-items:flex-end;gap:5px;height:54px;padding:0 2px}
-.spark-col{display:flex;flex-direction:column;align-items:center;gap:2px;flex:1;cursor:default}
-.spark-bar-inq{border-radius:3px 3px 0 0;min-height:2px;transition:height .35s ease}
-.spark-bar-clk{border-radius:3px 3px 0 0;min-height:2px;opacity:.32;transition:height .35s ease}
-.spark-week-label{font-size:9px;color:var(--dim);white-space:nowrap;margin-top:2px}
-
 /* ── Footer ── */
 .page-footer{
   text-align:center;padding:24px;
@@ -493,8 +486,9 @@ details.footnote-toggle > .fn-body{
 
   <!-- ════════════════════════════════════════════
        ③ 유입채널 현황 — 항상 펼침, 기간 연동 (#3+#5 GM 지시)
-       채널별 문의 건수+비중(기간 반영) · 출처미상률 배지 포함
-       데이터소스: type_channel_breakdown(기간연동) 채널 합계
+       채널 × 유형 교차표(셀=문의 건수) + 합계·비중 + 출처미상률 배지
+       구 '유형×채널 교차' 섹션을 이 표에 병합(2026-06-19 GM)
+       데이터소스: type_channel_breakdown(기간연동)
        ════════════════════════════════════════════ -->
   <div class="section">
     <div class="section-title">유입채널 현황</div>
@@ -502,92 +496,6 @@ details.footnote-toggle > .fn-body{
       <div class="flow-skeleton sk-pulse" style="height:120px;border-radius:var(--radius-md)"></div>
     </div>
   </div>
-
-  <!-- ════════════════════════════════════════════
-       📁 디테일 구역 — 기본 접힘
-       ④ 유형별전환·채널비교·주간추세·월별추세·문의진입점·실험로그
-       ════════════════════════════════════════════ -->
-  <div class="zone-label">📁 디테일</div>
-
-  <!-- ④-1 유형×채널 교차 (상세 분석 — 기본 접힘) -->
-  <details class="collapse" id="details-type-channel">
-    <summary>유형×채널 교차 <span style="font-size:11px;font-weight:400;color:var(--accent);text-transform:none;letter-spacing:0">(라이브 · 상세 분석)</span><span class="collapse-sub">— 어느 유형이 어느 채널에서</span></summary>
-    <div class="collapse-body">
-      <div style="font-size:11px;color:var(--dim);margin-bottom:10px">전환·등록은 누적·추정 — 기간 선택과 무관(등록 시점 데이터 없음). 문의만 기간 반영.</div>
-      <!-- 유형×채널 교차표 -->
-      <div id="tc-matrix-wrap" style="background:var(--paper);border:1px solid var(--border);border-radius:12px;overflow:hidden;overflow-x:auto;-webkit-overflow-scrolling:touch;margin-top:10px"></div>
-      <div id="tc-basis" style="padding:8px 2px 0;font-size:11px;color:var(--dim)"></div>
-    </div>
-  </details>
-
-  <!-- ④-3 주간 추세 (펼칠 때 1회 로드 — 초기 로드 속도 위해 지연) -->
-  <details class="collapse" id="details-weekly-trend">
-    <summary>주간 추세 <span style="font-size:11px;font-weight:400;color:var(--accent);text-transform:none;letter-spacing:0">(최근 8주)</span><span class="collapse-sub">— 문의·클릭</span></summary>
-    <div class="collapse-body">
-      <div id="weekly-trend-section">
-        <div style="background:var(--paper);border:1px solid var(--border);border-radius:12px;padding:16px 18px">
-          <div style="display:flex;gap:16px;margin-bottom:10px;font-size:11px">
-            <span style="display:flex;align-items:center;gap:5px"><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:var(--accent)"></span>문의</span>
-            <span style="display:flex;align-items:center;gap:5px"><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:var(--accent);opacity:.38"></span>클릭</span>
-          </div>
-          <div id="weekly-trend-chart" class="sparkline-wrap">
-            <div style="color:var(--dim);font-size:13px">펼치면 집계합니다…</div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </details>
-
-  <!-- ④-4 월별 추세 (무거움 — 펼칠 때 1회 로드) -->
-  <details class="collapse" id="details-monthly-trend">
-    <summary>월별 추세 <span style="font-size:11px;font-weight:400;color:var(--accent);text-transform:none;letter-spacing:0">(올해 · 월별 문의)</span><span class="collapse-sub">— 펼쳐서 보기</span></summary>
-    <div class="collapse-body">
-      <div id="monthly-trend-section">
-        <div style="background:var(--paper);border:1px solid var(--border);border-radius:12px;padding:16px 18px">
-          <div id="monthly-trend-chart">
-            <div style="color:var(--dim);font-size:13px">펼치면 집계합니다…</div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </details>
-
-  <!-- ⑬ 개선 실험 로그 (정적) -->
-  <details class="collapse" id="details-exp-log">
-    <summary>개선 실험 로그<span class="collapse-sub">— AI CMO(시모) 운영</span></summary>
-    <div class="collapse-body">
-      <p style="font-size:12px;color:var(--dim);margin-bottom:12px">결과는 웰리(CEO) 보고 후 GM 판단·결정</p>
-      <div class="exp-item">
-        <div class="exp-header">
-          <span class="exp-date">2026-06-06</span>
-          <span class="exp-badge" style="background:var(--green-bg);color:var(--green)">진행 중</span>
-          <strong style="font-size:13px">실험 #1 — IG 캡션 첫 줄 CTA 삽입 효과 측정</strong>
-        </div>
-        <div class="exp-body">
-          가설: 캡션 <b>첫 줄</b>에 문의 CTA 삽입 시 문의 페이지 클릭률 향상.<br>
-          방법: <b>회사 IG(wellperion 공식) 한정</b> · A=첫 줄 문의 CTA 적용 / 대조=기준치(현행 무 CTA). 2주 측정. namuk 개인은 06-10 바이럴 CTA 정책 유지(제외).<br>
-          확정 문구(A군 첫 줄): <b>문의·투어 예약 → wellperion.com/ko/inquiry</b><br>
-          측정: 문의 페이지 클릭 + 문의 수([기간] 조회 전후 비교).<br>
-          <b>실험 전 기준치(2026-06-06):</b> 이번 달 문의 페이지 클릭 57 · 문의 2건 (클릭→문의 약 3.5%).<br>
-          성공 기준: A군 클릭률 대조군 대비 +20% 이상.<br>
-          상태: <b>GM 승인(2026-06-06) · 문구 ①번 확정 · 착수 2026-06-15(회사 IG 한정).</b> 1차 적용=생크몽드 Ep2 발행완료(첫 줄 CTA 게시), Ep3 보류. 측정 ~2026-06-29 → 결과 웰리 보고 → GM 판단.<br>
-          결과: <b>측정 시작 스냅샷(06-15·이번달 누적):</b> 클릭 143 · 문의 120. A군 게시 = Ep2(06-15). 2주 후 [기간] 조회로 A 효과 산출 예정.
-        </div>
-      </div>
-      <div class="exp-item">
-        <div class="exp-header">
-          <span class="exp-date">2026-05-28</span>
-          <span class="exp-badge pending">대기중</span>
-          <strong style="font-size:13px">실험 #2 — 블로그 포스팅 CTA 위치 최적화</strong>
-        </div>
-        <div class="exp-body">
-          가설: 블로그 본문 상단·중간·하단 3위치 중 상단 CTA 전환율 최고.<br>
-          측정 기간: 4주 / 측정 지표: 블로그→문의 페이지 클릭 경로<br>
-          결과: —
-        </div>
-      </div>
-    </div>
-  </details>
 
 </div>
 
@@ -928,10 +836,10 @@ function renderHero(f) {
     + '</div>';
 }
 
-// ─── #3+#5 유입채널 현황 (inflow-channel-wrap) ─────────────────────
-// 기간 연동: type_channel_breakdown(_tcData, from/to 적용)의 채널 합계 사용.
-// 구 byChannelMonth(이번달 고정) 의존 폐지 — 월/기간 선택에 반응.
-// 출처미상률 배지(_tcData.overall) 상단 포함.
+// ─── #3+#5 유입채널 현황 (inflow-channel-wrap) — 채널×유형 교차 병합 ─────
+// 기간 연동: type_channel_breakdown(_tcData, from/to 적용).
+// 행=채널 / 열=유형(멤버십·성인강습·유소년강습·…) + 합계 + 비중. 셀=문의 건수.
+// 구 별도 '유형×채널 교차' 섹션을 이 표에 통합(2026-06-19 GM). 출처미상률 배지 상단.
 function renderInflowChannel() {
   var el = document.getElementById('inflow-channel-wrap');
   if (!el) return;
@@ -945,19 +853,23 @@ function renderInflowChannel() {
     return;
   }
 
-  // 유형 전체에서 채널별 문의 합산(기간 반영 — _tcData는 from/to로 조회됨)
-  var chTotals = {};
-  Object.keys(_tcData.types).forEach(function(tk) {
-    (_tcData.types[tk].channels || []).forEach(function(c) {
+  // 렌더 유형(고정 순서) — 응답에 존재하는 유형만
+  var types = _tcOrderedTypes(_tcData.types).filter(function(t) { return _tcData.types[t.key]; });
+
+  // 채널별: 유형별 문의 + 합계 (기간 반영 — _tcData는 from/to로 조회됨)
+  var chMap = {};
+  types.forEach(function(t) {
+    (_tcData.types[t.key].channels || []).forEach(function(c) {
       if (!c || !c.channel) return;
-      chTotals[c.channel] = (chTotals[c.channel] || 0) + (c.inquiries || 0);
+      if (!chMap[c.channel]) chMap[c.channel] = { byType: {}, total: 0 };
+      chMap[c.channel].byType[t.key] = (chMap[c.channel].byType[t.key] || 0) + (c.inquiries || 0);
+      chMap[c.channel].total += (c.inquiries || 0);
     });
   });
 
-  var rows = [];
-  Object.keys(chTotals).forEach(function(ch) {
-    if (chTotals[ch] > 0) rows.push({ ch: ch, inq: chTotals[ch] });
-  });
+  var rows = Object.keys(chMap)
+    .filter(function(ch) { return chMap[ch].total > 0; })
+    .map(function(ch) { return { ch: ch, total: chMap[ch].total, byType: chMap[ch].byType }; });
 
   // 출처미상률 배지(전체 문의 기준)
   var o = _tcData.overall || {};
@@ -978,41 +890,48 @@ function renderInflowChannel() {
     return;
   }
 
-  // 정렬: 문의 desc, 기타·미상 맨 아래
+  // 정렬: 합계 desc, 기타·미상 맨 아래
   rows.sort(function(a, b) {
     if ((a.ch === ETC) !== (b.ch === ETC)) return a.ch === ETC ? 1 : -1;
-    return b.inq - a.inq;
+    return b.total - a.total;
   });
 
-  var total  = rows.reduce(function(s, r) { return s + r.inq; }, 0);
-  var maxInq = rows.reduce(function(m, r) { return Math.max(m, r.inq); }, 1);
+  var grand = rows.reduce(function(s, r) { return s + r.total; }, 0);
+
+  // 헤더: 채널 | [유형들] | 합계 | 비중
+  var thead = '<thead><tr><th>채널</th>';
+  types.forEach(function(t) { thead += '<th style="text-align:right">' + t.label + '</th>'; });
+  thead += '<th style="text-align:right">합계</th><th style="text-align:right">비중</th></tr></thead>';
 
   var bodyHtml = '';
   rows.forEach(function(r, i) {
     var colorVar = 'var(' + _DOT_COLORS[i % _DOT_COLORS.length] + ')';
-    var pct  = total > 0 ? Math.round(r.inq / total * 100) : 0;
-    var barW = Math.round(r.inq / maxInq * 100);
+    var pct = grand > 0 ? Math.round(r.total / grand * 100) : 0;
     bodyHtml += '<tr>'
-      + '<td style="min-width:110px"><span class="channel-dot" style="background:' + colorVar + '"></span>' + r.ch + '</td>'
-      + '<td style="text-align:right;font-weight:700;padding-right:8px">' + r.inq.toLocaleString('ko-KR') + '건</td>'
-      + '<td style="min-width:120px;padding:8px 14px">'
-      +   '<div style="display:flex;align-items:center;gap:8px">'
-      +     '<div style="flex:1;background:var(--border);border-radius:4px;height:6px;overflow:hidden">'
-      +       '<div style="width:' + barW + '%;height:100%;background:' + colorVar + ';border-radius:4px;transition:width .4s ease"></div>'
-      +     '</div>'
-      +     '<span style="font-size:12px;color:var(--dim);white-space:nowrap;min-width:32px;text-align:right">' + pct + '%</span>'
-      +   '</div>'
-      + '</td>'
+      + '<td style="min-width:100px;white-space:nowrap"><span class="channel-dot" style="background:' + colorVar + '"></span>' + r.ch + '</td>';
+    types.forEach(function(t) {
+      var v = r.byType[t.key] || 0;
+      bodyHtml += '<td style="text-align:right;' + (v === 0 ? 'color:var(--dim)' : 'font-weight:600') + '">' + (v === 0 ? '0' : v.toLocaleString('ko-KR')) + '</td>';
+    });
+    bodyHtml += '<td style="text-align:right;font-weight:700">' + r.total.toLocaleString('ko-KR') + '</td>'
+      + '<td style="text-align:right;color:var(--dim)">' + pct + '%</td>'
       + '</tr>';
   });
 
+  // 합계 행
+  var typeTotals = {};
+  types.forEach(function(t) { typeTotals[t.key] = 0; });
+  rows.forEach(function(r) { types.forEach(function(t) { typeTotals[t.key] += (r.byType[t.key] || 0); }); });
+  var footRow = '<tr style="border-top:2px solid var(--border)"><td style="font-weight:700;color:var(--dim)">합계</td>';
+  types.forEach(function(t) { footRow += '<td style="text-align:right;font-weight:700">' + typeTotals[t.key].toLocaleString('ko-KR') + '</td>'; });
+  footRow += '<td style="text-align:right;font-weight:800;color:var(--accent)">' + grand.toLocaleString('ko-KR') + '</td>'
+    + '<td style="text-align:right;color:var(--dim)">100%</td></tr>';
+
   el.innerHTML = badgeHtml
-    + '<div style="background:var(--paper);border:1px solid var(--border);border-radius:var(--radius-md);overflow:hidden">'
-    + '<table class="channel-table">'
-    + '<thead><tr><th>채널</th><th style="text-align:right">' + periodLabel + ' 문의(건)</th><th style="text-align:right">비중(%)</th></tr></thead>'
-    + '<tbody>' + bodyHtml + '</tbody></table>'
+    + '<div style="background:var(--paper);border:1px solid var(--border);border-radius:var(--radius-md);overflow:hidden;overflow-x:auto;-webkit-overflow-scrolling:touch">'
+    + '<table class="channel-table">' + thead + '<tbody>' + bodyHtml + footRow + '</tbody></table>'
     + '<div style="padding:8px 16px 10px;font-size:11px;color:var(--dim);border-top:1px solid var(--border)">'
-    + '선택 기간(' + periodLabel + ') 문의의 유입경로 분포 · 채널명은 접수 시 선택한 경로 기준 · 과거 \'온라인\' 뭉침분·미기재는 \'기타·미상\'. 유형별 세부는 아래 <b>유형×채널 교차</b> 참조.'
+    + '선택 기간(' + periodLabel + ') 문의를 <b>채널 × 유형</b>으로 교차 집계 · 셀 = 문의 건수 · 채널명은 접수 시 선택한 경로 기준 · 과거 \'온라인\' 뭉침분·미기재는 \'기타·미상\'.'
     + '</div></div>';
 }
 
@@ -1473,64 +1392,6 @@ function _loadMonthRange(year, month) {
   })();
 }
 
-// ─── 주간 추세 스파크라인 렌더 ──────────────────────────────────────
-function renderWeeklyTrend(weeks) {
-  var wrap = document.getElementById('weekly-trend-chart');
-  if (!wrap) return;
-
-  if (!weeks || !weeks.length) {
-    wrap.innerHTML = '<div style="color:var(--dim);font-size:13px">추세 데이터 집계 대기</div>';
-    return;
-  }
-
-  // 문의·클릭 최댓값 (막대 높이 기준, 최소 1)
-  var maxInq = 1, maxClk = 1;
-  weeks.forEach(function(w) {
-    if ((w.inquiries || 0) > maxInq) maxInq = w.inquiries;
-    if ((w.clicks    || 0) > maxClk) maxClk = w.clicks;
-  });
-
-  // 스파크라인 전체 높이 (px) — CSS .sparkline-wrap height:52px 에서 레이블 15px 제외
-  var BAR_H = 36;
-
-  var html = '';
-  var lastIdx = weeks.length - 1;
-  weeks.forEach(function(w, i) {
-    var inqH = Math.max(2, Math.round((w.inquiries / maxInq) * BAR_H));
-    var clkH = Math.max(2, Math.round((w.clicks    / maxClk) * BAR_H));
-    var isLast = (i === lastIdx);
-    // 이번 주(마지막) 강조: 문의 막대 색 밝게
-    var inqColor = isLast ? 'var(--green)' : 'var(--accent)';
-    var weekLabel = w.weekStart ? w.weekStart.substring(5) : '';  // MM-DD
-    var titleAttr = 'title="주 시작 ' + (w.weekStart || '') + ': 문의 ' + (w.inquiries || 0) + '·클릭 ' + (w.clicks || 0) + '"';
-
-    html += '<div class="spark-col" ' + titleAttr + '>'
-      // 클릭 막대 (옅게, 뒤에 쌓임)
-      + '<div class="spark-bar-clk" style="height:' + clkH + 'px;background:var(--accent)"></div>'
-      // 문의 막대 (주력, 굵게)
-      + '<div class="spark-bar-inq" style="height:' + inqH + 'px;background:' + inqColor + ';font-weight:700"></div>'
-      + '<div class="spark-week-label"' + (isLast ? ' style="color:var(--accent);font-weight:700"' : '') + '>' + weekLabel + '</div>'
-      + '</div>';
-  });
-  wrap.innerHTML = html;
-}
-
-// ─── 주간 추세 fetch ─────────────────────────────────────────────────
-async function loadWeeklyTrend() {
-  try {
-    var url = _wpUrl(FUNNEL_APPS_SCRIPT_URL + '?action=weekly_trend');
-    var res = await fetch(url, { redirect: 'follow' });
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    var data = await res.json();
-    if (!data || !data.ok) throw new Error('ok=false');
-    renderWeeklyTrend(data.weeks);
-  } catch (e) {
-    var wrap = document.getElementById('weekly-trend-chart');
-    if (wrap) wrap.innerHTML = '<div style="color:var(--dim);font-size:13px">추세 데이터 집계 대기</div>';
-    console.warn('[weekly_trend] 로드 실패:', e.message);
-  }
-}
-
 // ─── '올해' 원클릭 — 연초~오늘 기간조회(기존 runCustomQuery 재사용) ──────
 function loadYearToDate() {
   var now = new Date();
@@ -1547,59 +1408,10 @@ function loadYearToDate() {
   runCustomQuery();
 }
 
-// ─── 월별 추세 — 올해 1~현재월 각 달 기간조회 합산(GAS 변경 없이 custom range 재사용) ──
-async function loadMonthlyTrend() {
-  var el = document.getElementById('monthly-trend-chart');
-  if (!el) return;
-  var now = new Date();
-  var y = now.getFullYear();
-  var curM = now.getMonth() + 1;
-  var tasks = [];
-  for (var m = 1; m <= curM; m++) {
-    tasks.push((function(mm0) {
-      var mm = ('0' + mm0).slice(-2);
-      var last = ('0' + new Date(y, mm0, 0).getDate()).slice(-2);
-      var url = _wpUrl(FUNNEL_APPS_SCRIPT_URL + '?action=period_breakdown&from=' + y + '-' + mm + '-01&to=' + y + '-' + mm + '-' + last);
-      return fetch(url, { redirect: 'follow' })
-        .then(function(r) { return r.json(); })
-        .then(function(d) { var c = d && d.custom; return { m: mm0, inq: (c && c.inquiries) || 0, conv: (c && c.conversion && c.conversion.converted) || 0 }; })
-        .catch(function() { return { m: mm0, inq: 0, conv: 0 }; });
-    })(m));
-  }
-  try {
-    var rows = await Promise.all(tasks);
-    renderMonthlyTrend(rows, curM);
-  } catch (e) {
-    el.innerHTML = '<div style="color:var(--dim);font-size:13px">월별 집계 대기</div>';
-  }
-}
-function renderMonthlyTrend(rows, curM) {
-  var el = document.getElementById('monthly-trend-chart');
-  if (!el) return;
-  if (!rows || !rows.length) { el.innerHTML = '<div style="color:var(--dim);font-size:13px">집계 대기</div>'; return; }
-  var maxInq = 1;
-  rows.forEach(function(r) { if (r.inq > maxInq) maxInq = r.inq; });
-  var BAR_H = 84;
-  var html = '<div style="display:flex;align-items:flex-end;gap:6px;min-height:' + (BAR_H + 36) + 'px">';
-  rows.forEach(function(r) {
-    var h = Math.max(3, Math.round(r.inq / maxInq * BAR_H));
-    var isLast = (r.m === curM);
-    var color = isLast ? 'var(--green)' : 'var(--accent)';
-    html += '<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:3px" title="' + r.m + '월: 문의 ' + r.inq + ' · 등록 ' + r.conv + '">'
-      + '<div style="font-size:11px;font-weight:700;color:' + color + '">' + r.inq + '</div>'
-      + '<div style="width:100%;max-width:36px;height:' + h + 'px;background:' + color + ';border-radius:4px 4px 0 0"></div>'
-      + '<div style="font-size:11px;color:var(--dim)' + (isLast ? ';font-weight:700' : '') + '">' + r.m + '월</div>'
-      + '</div>';
-  });
-  html += '</div><div style="font-size:10px;color:var(--dim);margin-top:10px;letter-spacing:.03em">올해 월별 문의 건수 · 막대 hover 시 등록 수</div>';
-  el.innerHTML = html;
-}
-
 // ─── 유형×채널 교차 (type_channel_breakdown) ──────────
 var _tcData = null;
 
 var _clickByLink = null;   // click_stats.byLink (유형별 클릭 — #1 전환표 클릭칸)
-var _tcTypes     = null;   // type_channel_breakdown.types (유형별 등록 누적)
 
 // 유형 메타 lookup: 우선순위·색 정의. 응답에 있는 모든 유형을 렌더하되
 // lookup에 있는 유형은 이 순서로 앞에, 없는 유형은 기본 메타(회색)로 뒤에 표시.
@@ -1627,130 +1439,19 @@ function _tcOrderedTypes(typesObj) {
   });
 }
 
-// 유형의 전환 정본 여부: convSource='종목시트 수강등록' 또는 '유효회원 매칭' 이면 정본
-function _tcIsCanonical(d) {
-  if (!d) return false;
-  var src = d.convSource || '';
-  return src === '유효회원 매칭' || src === '종목시트 수강등록';
-}
-
-// 전환수: converted 우선, 폴백 memberMatched
-function _tcConvNum(d) {
-  if (!d) return 0;
-  return (d.converted !== null && d.converted !== undefined) ? d.converted : (d.memberMatched || 0);
-}
-
-// 전환율: convRate 우선, 폴백 rate
-function _tcConvRate(d) {
-  if (!d) return null;
-  var r = (d.convRate !== null && d.convRate !== undefined) ? d.convRate : d.rate;
-  return (r === null || r === undefined) ? null : r;
-}
-
-// 채널 항목의 전환수: converted 우선, 폴백 memberMatched
-function _tcCellConv(c) {
-  if (!c) return 0;
-  return (c.converted !== null && c.converted !== undefined) ? c.converted : (c.memberMatched || 0);
-}
-
-// 채널 항목의 전환율: rate (응답이 이제 converted 기준이므로 그대로)
-function _tcCellRate(c) {
-  if (!c) return null;
-  var r = (c.rate !== null && c.rate !== undefined) ? c.rate : null;
-  return r;
-}
-
 function _tcNum(n) {
   return (n === null || n === undefined) ? '0' : Number(n).toLocaleString('ko-KR');
 }
 
 function _tcStub(msg) {
-  var mtx = document.getElementById('tc-matrix-wrap');
-  if (mtx) mtx.style.display = 'none';
   // 유입채널 현황 — 데이터 없음/실패 시 graceful 안내
   var inflow = document.getElementById('inflow-channel-wrap');
   if (inflow) inflow.innerHTML = '<div style="background:var(--paper);border:1px solid var(--border);border-radius:var(--radius-md);padding:16px;color:var(--dim);font-size:13px">'
     + (msg || '재배포 후 점등됩니다') + '</div>';
 }
 
-function renderTypeMatrix() {
-  var wrap = document.getElementById('tc-matrix-wrap');
-  if (!wrap || !_tcData || !_tcData.types) return;
-  wrap.style.display = '';
-  // 응답에 있는 모든 유형을 순서에 맞게 렌더
-  var activeTypes = _tcOrderedTypes(_tcData.types).filter(function(t) { return _tcData.types[t.key]; });
-  // 채널 버킷 합집합 — 유형 전체 문의수로 정렬
-  var chTotals = {};
-  activeTypes.forEach(function(t) {
-    (_tcData.types[t.key].channels || []).forEach(function(c) {
-      chTotals[c.channel] = (chTotals[c.channel] || 0) + (c.inquiries || 0);
-    });
-  });
-  var channels = Object.keys(chTotals).sort(function(a, b) { return chTotals[b] - chTotals[a]; });
-
-  // 셀 조회 헬퍼
-  function cellFor(typeKey, channel) {
-    var arr = (_tcData.types[typeKey].channels || []);
-    for (var i = 0; i < arr.length; i++) { if (arr[i].channel === channel) return arr[i]; }
-    return null;
-  }
-
-  var thead = '<tr><th>채널</th>';
-  activeTypes.forEach(function(t) { thead += '<th style="text-align:right">' + t.label + '</th>'; });
-  thead += '</tr>';
-
-  var tbodyHtml = '';
-  if (channels.length === 0) {
-    tbodyHtml = '<tr><td colspan="' + (activeTypes.length + 1) + '" style="padding:12px 14px;color:var(--dim);font-size:13px">채널 데이터 없음</td></tr>';
-  } else {
-    channels.forEach(function(ch) {
-      tbodyHtml += '<tr><td>' + ch + '</td>';
-      activeTypes.forEach(function(t) {
-        var c = cellFor(t.key, ch);
-        var inq = c ? (c.inquiries || 0) : 0;
-        if (inq === 0) {
-          tbodyHtml += '<td style="text-align:right;color:var(--dim)">0</td>';
-        } else {
-          var d = _tcData.types[t.key];
-          var isCanon = _tcIsCanonical(d);
-          var convVal = _tcCellConv(c);
-          var rateVal = _tcCellRate(c);
-          var rate = rateVal === null ? '—' : rateVal + '%';
-          var convColor = isCanon ? t.color : 'var(--dim)';
-          if (_tcData.periodMode) {
-            // 기간 선택 시: 문의 분포만(등록=누적이라 채널·기간 매칭 불가 → 위 유형별 표의 누적 등록 참조)
-            tbodyHtml += '<td style="text-align:right">' + _tcNum(inq) + '</td>';
-          } else {
-            tbodyHtml += '<td style="text-align:right">' + _tcNum(inq)
-              + '<br><span style="font-size:11px;color:' + convColor + '">' + _tcNum(convVal) + ' / ' + rate + '</span></td>';
-          }
-        }
-      });
-      tbodyHtml += '</tr>';
-    });
-  }
-
-  // 각주: convSource별로 요약
-  var basisParts = [];
-  activeTypes.forEach(function(t) {
-    var d = _tcData.types[t.key];
-    var src = (d && d.convSource) ? d.convSource : null;
-    if (src) basisParts.push(t.label + '=' + src);
-  });
-  var basisNote = basisParts.length ? '전환 기준: ' + basisParts.join(' / ') : '셀 = 문의수 · 작은 글씨 = 전환(명) / 전환율';
-
-  wrap.innerHTML = '<table class="channel-table"><thead>' + thead + '</thead><tbody>' + tbodyHtml + '</tbody></table>'
-    + '<div style="padding:8px 14px 10px;font-size:11px;color:var(--dim);border-top:1px solid var(--border)">셀 = 문의수 · 작은 글씨 = 전환(명) / 전환율 · 문의 많은 채널 상단 정렬 · ' + basisNote + '</div>';
-}
-
-function renderBasis() {
-  var el = document.getElementById('tc-basis');
-  if (!el || !_tcData) return;
-  if (_tcData.convBasis) el.textContent = '전환 기준: ' + _tcData.convBasis;
-}
-
 async function loadTypeChannel() {
-  var cards = document.getElementById('tc-matrix-wrap');
+  var cards = document.getElementById('inflow-channel-wrap');
   if (!cards) return;
   if (FUNNEL_APPS_SCRIPT_URL.includes('DEPLOY_ID_HERE')) { _tcStub(); return; }
 
@@ -1763,10 +1464,7 @@ async function loadTypeChannel() {
     if (!data || !data.ok || !data.types) { _tcStub('응답 형식 오류 — 재배포 후 점등됩니다'); return; }
 
     _tcData = data;
-    _tcTypes = data.types;
-    renderInflowChannel();   // #3+#5 유입채널 현황(기간 연동) + 출처미상률 배지
-    renderTypeMatrix();      // 유형×채널 교차(상세 분석)
-    renderBasis();
+    renderInflowChannel();   // #3+#5 유입채널 현황(채널×유형 병합, 기간 연동) + 출처미상률 배지
   } catch (e) {
     console.warn('[type_channel_breakdown] 로드 실패:', e && e.message);
     _tcStub((e && e.message) ? e.message + ' — 재배포 후 점등됩니다' : '재배포 후 점등됩니다');
@@ -1793,15 +1491,6 @@ document.addEventListener('DOMContentLoaded', function() {
   loadTypeChannel();             // ↑ #3 유입채널 현황(기간 연동) — period 응답 대기 없이 병렬
   // 이후 기간/월 전환 등 사용자 인터랙션에서는 _applyPeriodData가 평소대로 자식 fetch 수행
 
-  // ── 지연 로드 — 각 <details> 펼칠 때 1회만 fetch (초기 로드 가벼움) ───────────
-  document.getElementById('details-weekly-trend').addEventListener('toggle', function() {
-    if (this.open && !this._loaded) { this._loaded = true; loadWeeklyTrend(); }
-  });
-  document.getElementById('details-monthly-trend').addEventListener('toggle', function() {
-    if (this.open && !this._loaded) { this._loaded = true; loadMonthlyTrend(); }
-  });
-  // details-type-channel(유형×채널 교차), details-exp-log 은 추가 fetch 없음
-  // — funnel/type 데이터는 이미 로드됨, 나머지는 정적 HTML
 });
 </script>
 </body>
