@@ -2146,6 +2146,28 @@ def main():
     )
     logger.info("erp_status_publisher 등록 완료 (30분 주기) — 시스템 현황 ERP 발행")
 
+    # ── 주차 매출 일일 수집 (매일 07:00 + 기동 시 1회) — 08:00 보고 전 갱신 — CTO 2026-06-19 ──
+    def _crawl_parking_revenue():
+        try:
+            subprocess.run(
+                [sys.executable, "scripts/parking_revenue_crawler.py", "--push"],
+                cwd=str(BASE.parent), timeout=150,
+                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+            )
+            logger.info("parking_revenue_crawler 실행 완료 (주차 매출 발행)")
+        except Exception as e:
+            logger.error(f"parking_revenue_crawler 실행 실패: {e}")
+
+    scheduler.add_job(
+        _crawl_parking_revenue,
+        trigger=CronTrigger(hour=7, minute=0, timezone="Asia/Seoul"),
+        id="parking_revenue_crawler",
+        misfire_grace_time=3600,
+        coalesce=True,
+        next_run_time=datetime.now(),
+    )
+    logger.info("parking_revenue_crawler 등록 완료 (매일 07:00) — 주차 매출 ERP 발행")
+
     if args.test:
         logger.info("=== 테스트 모드 시작: 1시간 주기 ===")
         scheduler.add_job(
