@@ -4315,6 +4315,8 @@ function switchTab(tab, opts){
   if(tab==='admin'){renderAdmin();renderAdminExtra();}
   if(tab==='manual'){renderBoard();renderManualItems();}
 }
+// 해시 딥링크(예 …#supply) → 로드 시 해당 탭 자동 열기. 잠금 탭(점검 남/여)은 제외(PIN 우회 방지).
+window.addEventListener('DOMContentLoaded',function(){ try{ var h=(location.hash||'').replace('#',''); if(h && h!=='check-m' && h!=='check-f' && document.getElementById('tab-'+h)) switchTab(h); }catch(e){} });
 
 /* ═══════════════════════════════════════════════
    요일별 트렐로 보드 (매뉴얼 탭) — 7컬럼 × 남/여 = 14셀

@@ -1,5 +1,19 @@
 [
   {
+    "task_id": "COO-2026-06-19-SUPPORT-SUPPLY-TAB",
+    "clevel": "coo",
+    "title": "[시우] 지원부 체계 비품관리 탭 신설 + 시설점검 시트 생성·연동",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-06-19",
+    "processed_at": "2026-06-19",
+    "decisions": "[GM deep-interview 확정] 비품관리: ①필드 품목명·수량·보관위치·담당·비고 ②한 표(목록형) ③서버공유·편집잠금 없음 ④수량 숫자+−/+ ⑤시작 빈 표. 명세=.omc/specs/deep-interview-support-supply-tab.md",
+    "artifact": "[2026-06-19 라이브 완료] ①비품관리 탭: 지원부 체계.html에 탭+CRUD(거래업체 saveBoard 패턴 재사용, GAS 무변경). 5칸 한 표, 추가·인라인편집·삭제, 수량 −/+, 검색필터, 빈상태 정직표기, 서버공유(key SUPPORT_SUPPLY)+로컬폴백, IME안전, 서버저장 디바운스800ms. 서버 라운드트립 실증(저장→로드5→청소). 커밋 a85542c7. ②GM 추가지시 시설점검 시트 연동: setup_facility_tabs가 시드 14열 vs HEADERS 15열 에러로 막혀있던 것 _seedDate 15열 정합 fix, setupDeptSheets 시드를 support만(facility 등은 측정폼이 원천이라 헤더만)으로 고쳐 시설 항목 오염 차단. 시설 3탭 깨끗이 생성·오염49제거, 폼→시트→weekly 연동 실증, 지원부 무회귀(180·59/49/72). GAS @83. 커밋 444cb9e5.",
+    "next": "표류(완결). 비품관리=실무진이 [+비품추가]로 채움. 후속 여지: 분류·최소재고·발주 알림은 필요시 발의. 시설점검=박호균 과장 첫 입력 시 홈 KPI 점등.",
+    "ship_no": 54
+  },
+  {
     "task_id": "CTO-2026-06-19-PARKING-REVENUE-CRAWLER",
     "clevel": "cto",
     "title": "[시토] 주차 매출 자동 크롤러 — 주차관리시스템 자동로그인 → 이번달 매출금액 매일 수집 → 매출 보고 합류",
