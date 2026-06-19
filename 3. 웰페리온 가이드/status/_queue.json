@@ -2463,5 +2463,19 @@
     "next": "🌀 표류 — 다음 미정 (필요 시 GM·웰리/담당 C-Level 지정)",
     "adhoc_commit": "9783483b308e3861e8b8fc2946ab96ec1c483e11",
     "ship_no": 30
+  },
+  {
+    "task_id": "CTO-2026-06-19-ADHOC-8761d4bc",
+    "clevel": "cto",
+    "title": "[시토] git 자동화 UTF-8 디코딩 버그 — reconcile rebase 출력 cp949 크래시 차단",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-06-19",
+    "processed_at": "2026-06-19",
+    "artifact": "- subprocess.run(text=True)가 git의 한글 출력(커밋메시지·한글경로)을 cp949로 디코딩하다 UnicodeDecodeError → reconcile 불안정. encoding=utf-8·errors=replace 일괄 적용(post_commit_push 6곳·git_lock 4곳)\n- INC-008 후속: 자동 push rebase 실패의 숨은 원인 1 (CLI ad-hoc · 커밋 8761d4bc)",
+    "next": "🌀 표류 — 다음 미정 (필요 시 GM·웰리/담당 C-Level 지정)",
+    "adhoc_commit": "8761d4bcd2cde1f62e0ab94607cc1b9bea9e7006",
+    "ship_no": 31
   }
 ]
