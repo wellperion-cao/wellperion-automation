@@ -80,6 +80,15 @@ if [ -f "$QUEUE_GUARD" ] && [ -n "$PYBIN" ]; then
   fi
 fi
 
+# ── ①-2.5 ship_no 자동 부여 (새 배 고정 식별번호 · 2026-06-19) ───────────────
+# status/_queue.json 에 ship_no 없는 항목에 clevel별 번호 자동 부여 후 git add.
+# assign 실패해도 커밋 차단 안 함(fail-open). 멱등·기존 번호 불변.
+SHIP_ASSIGN="$REPO_ROOT/scripts/assign_ship_numbers.py"
+if [ -f "$SHIP_ASSIGN" ] && [ -n "$PYBIN" ]; then
+  PYTHONUTF8=1 "$PYBIN" "$SHIP_ASSIGN" || true
+  git add -- "status/_queue.json" 2>/dev/null || true
+fi
+
 # ── ①-3 _queue 발행루트 미러 동기화 (G1 404 방지 · 2026-06-17) ────────────
 # 원본 status/_queue.json 이 바뀌면 발행루트 미러
 # (3. 웰페리온 가이드/status/_queue.json)로 단방향 복사 후 git add.
