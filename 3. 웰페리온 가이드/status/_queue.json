@@ -2261,5 +2261,19 @@
     "next": "🌀 표류 — 다음 미정 (필요 시 GM·웰리/담당 C-Level 지정)",
     "adhoc_commit": "fae28bc11dc356de61e4d90fa00234f0bf22fcb6",
     "ship_no": 55
+  },
+  {
+    "task_id": "CTO-2026-06-19-ADHOC-cc017b72",
+    "clevel": "cto",
+    "title": "[시토] _queue.json 동시추가 충돌 근본차단 — 전용 머지 드라이버",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-06-19",
+    "processed_at": "2026-06-19",
+    "artifact": "- 진범(로그 실측): 자동 push 실패 = _queue.json rebase conflict(최근 30커밋 중 15회 수정, 다세션 동시 '배' 추가)\n- scripts/git_merge_queue.py: task_id 합집합 병합(완료/terminal 우선·무손실·파싱실패는 정상충돌 폴백)\n- .gitattributes: _queue.json merge=queuejson(파일명패턴=본체+미러) + *.jsonl merge=union\n- install_hooks.sh: 드라이버 git config 등록(타머신 영구화)\n- 검증: (CLI ad-hoc · 커밋 cc017b72)",
+    "next": "🌀 표류 — 다음 미정 (필요 시 GM·웰리/담당 C-Level 지정)",
+    "adhoc_commit": "cc017b727d27b8d4fccb1ab77f6ab8959f4687c5",
+    "ship_no": 28
   }
 ]
