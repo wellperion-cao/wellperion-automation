@@ -41,7 +41,7 @@ def _unpushed_count(root: str) -> int:
             ["git", "rev-list", f"{REMOTE}/{BRANCH}..HEAD", "--count"],
             cwd=root,
             capture_output=True,
-            text=True,
+            text=True, encoding="utf-8", errors="replace",
         )
         if r.returncode != 0:
             return -1
@@ -86,7 +86,7 @@ def _push_once(root: str) -> tuple[int, str]:
             ["git", "push", REMOTE, f"HEAD:{BRANCH}"],
             cwd=root,
             capture_output=True,
-            text=True,
+            text=True, encoding="utf-8", errors="replace",
             timeout=PUSH_TIMEOUT,
         )
         return r.returncode, (r.stderr or r.stdout).strip()

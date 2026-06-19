@@ -34,7 +34,7 @@ def _repo_root(repo_root=None):
     try:
         result = subprocess.run(
             ["git", "rev-parse", "--show-toplevel"],
-            capture_output=True, text=True, check=True
+            capture_output=True, text=True, encoding="utf-8", errors="replace", check=True
         )
         return result.stdout.strip()
     except Exception:
@@ -201,7 +201,7 @@ def git_commit_push(
             ["git", "commit", "-m", message],
             cwd=work_dir,
             capture_output=True,
-            text=True,
+            text=True, encoding="utf-8", errors="replace",
         )
         if result.returncode != 0:
             out = (result.stdout + result.stderr).lower()
@@ -218,7 +218,7 @@ def git_commit_push(
                 ["git", "pull", "--rebase", "--autostash"],
                 cwd=work_dir,
                 capture_output=True,
-                text=True,
+                text=True, encoding="utf-8", errors="replace",
             )
             if pr.returncode != 0:
                 _log(
