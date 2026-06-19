@@ -8060,7 +8060,10 @@ function crTab(btn, panelId) {
           var qid = 'queue-' + tid;
           // 동일 queue- 항목 중복 방지
           if (items.some(function(it){ return it.id === qid; })) return;
-          var clvLabel = CLEVEL_LABEL[String(q.clevel || '').toLowerCase()] || String(q.clevel || 'AI');
+          var _clvKey  = String(q.clevel || '').toLowerCase();
+          var clvLabel = CLEVEL_LABEL[_clvKey] || String(q.clevel || 'AI');
+          var _nick    = CLEVEL_NICK[_clvKey]  || clvLabel;
+          var _shipDisp = _nick + (q.ship_no != null ? ' ' + q.ship_no : '');
           var statusMap = { PENDING:'대기', IN_PROGRESS:'진행중', DONE:'완료', '완료':'완료', '폐기':'폐기' };
           var _qDone = (q.status === 'DONE' || q.status === '완료');
           items.push({
@@ -8072,7 +8075,7 @@ function crTab(btn, panelId) {
             isToday: true,
             ssotAuto: true,
             queueSource: true,   // _queue 기원 마킹 (편집 차단용)
-            owner: clvLabel,
+            owner: _shipDisp,
             _doneDate: _qDone ? String(q.processed_at || '').slice(0,10) : '',  // AI배 완료일(processed_at)
             _holdDate: '',  // AI배는 보류 상태 없음(statusMap에 보류 미포함) — 폴백만 유지 (GM 2026-06-12)
             createdAt: String(q.enqueued_at || q.assigned_at || ''),  // AI배 생성일 — 최신순 정렬 키 (GM 2026-06-12)
