@@ -143,27 +143,28 @@ def _reconcile(root: str) -> bool:
         return False
 
 
-def _do_push(root: str, allow_reconcile: bool = True, warn_on_nonff: bool = True) -> None:
-    """push 1회 + 결과 로깅/경고. 경합(non-ff) 거부 시 (lock 보유 경로에 한해)
-    fetch+rebase 후 1회 재시도 → 성공하면 경고 없음(false 알람 제거).
+def _do_push(root: str, allow_reconcile: bool = True, alert: bool = False) -> None:
+    """push 1회 + 결과 로깅. 경합(non-ff) 거부 시 (lock 보유 경로에 한해) fetch+rebase 후 1회 재시도.
 
-    warn_on_nonff=False: rebase 불가 경로(부모 lock 안)에서 non-ff 거부는 '곧 스위퍼가
-    드레인할 정상 경합'이라 텔레그램 경고를 보내지 않고 로그만 남긴다(false 알람 제거).
-    push 스위퍼(--sweep, 5분 주기)가 안전하게 rebase·push 하고 진짜 실패만 경고한다."""
+    alert=False(기본·매 커밋 훅 경로): 실패해도 텔레그램 경고를 보내지 않고 로그만 남긴다.
+      커밋마다의 push 실패는 다세션 동시쓰기에서 정상적으로 발생하고 곧 self-heal/스위퍼가
+      드레인하므로, GM 에게 알리면 false 알람 스팸이 된다(INC-008).
+    alert=True(스위퍼 전용): 5분 주기 스위퍼가 안전하게 rebase·재시도하고도 끝내 실패한
+      '진짜 막힘'만 경고한다."""
     rc, err = _push_once(root)
     if rc == 0:
         _log("POST_COMMIT_PUSH ok", root)
         return
     if rc == 124:
         _log("POST_COMMIT_PUSH timeout", root)
-        if warn_on_nonff:
+        if alert:
             _telegram_warn(
                 root,
-                "⚠️ 자동 push 타임아웃(30s) — origin 미동기화. 곧 자동 재시도(스위퍼).",
+                "⚠️ 자동 push 타임아웃 — 스위퍼 재시도도 실패. 수동 `git push` 필요.",
             )
         return
 
-    # 원격이 앞섬(경합) → 조용히 fetch+rebase 후 1회 재시도. 성공하면 경고 없음.
+    # 원격이 앞섬(경합) → 조용히 fetch+rebase 후 1회 재시도. 성공하면 끝.
     if allow_reconcile and _is_nonff(err):
         _log("POST_COMMIT_PUSH non-ff; fetch+rebase 후 재시도", root)
         if _reconcile(root):
@@ -174,25 +175,20 @@ def _do_push(root: str, allow_reconcile: bool = True, warn_on_nonff: bool = True
             err = err2 or err
 
     err = (err or "").strip()[:200]
-
-    # 부모 lock 안(rebase 금지)에서의 non-ff 경합은 경고하지 않는다 — 스위퍼가 드레인한다.
-    if not warn_on_nonff and _is_nonff(err):
-        _log(f"POST_COMMIT_PUSH non-ff(within-lock); 스위퍼에 위임 {err}", root)
-        return
-
     _log(f"POST_COMMIT_PUSH fail {err}", root)
-    _telegram_warn(
-        root,
-        "⚠️ 자동 push 실패 — origin 미동기화(커밋은 로컬 보존). "
-        f"곧 자동 재시도(스위퍼). 계속되면 수동 `git push`.\n{err}",
-    )
+    if alert:
+        _telegram_warn(
+            root,
+            "⚠️ 자동 push 가 스위퍼 재시도에도 실패 — origin 미동기화(커밋 로컬 보존). "
+            f"수동 `git push` 필요.\n{err}",
+        )
 
 
 def _sweep(root: str) -> int:
     """푸시 스위퍼 — 밀린 커밋을 안전하게 드레인(5분 주기 스케줄러용).
     부모 lock 밖에서 독립 실행되므로 GitLock 을 정상 타임아웃으로 획득해 fetch+rebase+push
     한다. 부모 lock 안에서 rebase 없이 실패한 커밋들을 여기서 확실히 올린다.
-    진짜 실패(충돌·인증 등)만 경고한다(allow_reconcile=True · warn_on_nonff=True)."""
+    진짜 실패(충돌·인증 등)만 경고한다(allow_reconcile=True · alert=True)."""
     if _unpushed_count(root) == 0:
         return 0  # 밀린 것 없음
     import git_lock as _gl
@@ -205,7 +201,7 @@ def _sweep(root: str) -> int:
                 if _unpushed_count(root) == 0:
                     return 0  # lock 대기 중 다른 경로가 올림
                 _log("PUSH_SWEEPER drain 시작", root)
-                _do_push(root, allow_reconcile=True, warn_on_nonff=True)
+                _do_push(root, allow_reconcile=True, alert=True)
                 return 0
         except _gl.GitLockTimeout:
             _log("PUSH_SWEEPER lock busy; 다음 주기 재시도", root)
@@ -252,7 +248,7 @@ def main() -> int:
             # 부모 커밋 임계구역 안 — 이미 직렬화됨. lock 없이 직접 push.
             # 단 rebase 는 부모 시퀀스(진행 중 HEAD)를 흔들 수 있어 금지(allow_reconcile=False).
             _log("POST_COMMIT_PUSH within-parent-lock; push without lock(no rebase)", root)
-            _do_push(root, allow_reconcile=False, warn_on_nonff=False)
+            _do_push(root, allow_reconcile=False)
             return 0
     except Exception as e:
         # 그 외 예외 — 커밋은 이미 성공. 조용히 fail-open + 로깅.
