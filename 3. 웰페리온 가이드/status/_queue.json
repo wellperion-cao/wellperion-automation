@@ -7,9 +7,9 @@
     "priority": "⛴️여객선",
     "enqueued_at": "2026-06-19",
     "processed_at": null,
-    "note": "[2026-06-19 GM 지시] 주차관리시스템(http://ppark-wall.iptime.org:8280, parkNm=웰페리온, parkId=1057) 자동로그인 후 매출현황 이번달 매출금액 크롤링. 정찰: /login.htm 평문 폼POST(loginId/loginPw·암호화/캡차 없음)→JSESSIONID_ADMIN 세션. requests로 자동화 가능. GM 선택=매일 자동+보고 합류(08:00 통합보고/home 매출 KPI). 자격증명=PARKING_LOGIN_ID/PW(.env). 블로커=로그인 ID/PW GM 제공 대기.",
-    "next": "GM 자격증명 제공 → ①로그인+report/parkCloseReport 파싱 스크립트(scripts) ②이번달 매출금액 셀렉터 실측 ③.env 자격증명 ④예약작업(매일)+매출 보고 합류. 보안=자격증명 .env 단일출처·평문코드 금지.",
-    "depends_on": "GM 주차시스템 로그인 ID/PW 제공"
+    "summary": "[코드·일일자동 완료 / 보고합류 표면=GM 결정 대기] 주차시스템(ppark-wall.iptime.org:8280, parkId=1057) 자동로그인→이번달 실결제 매출 수집 라이브 완성. ①scripts/parking_revenue_crawler.py: 폼로그인(JSESSIONID_ADMIN)→POST /report/getParkCloseList(searchType=start·YYYYMMDD)→payAmt 합산→status/parking_revenue.json 발행(fail-safe·.env PARKING_* 단일출처·코드 평문0). ②daily_scheduler 매일 07:00 작업 등록(08:00 보고 전 갱신, 봇 재기동 시 발효). ③py_compile OK·라이브 실측 2026-06 실결제 2,149,500원/393건(할인감면 1억300만=회원무료). 커밋 푸시.",
+    "next": "GM 결정 2건: (a) '매출' 정의=실결제(payAmt·기본) vs 할인포함 총정산 (b) 보고 합류 표면=08:00 통합보고 한줄 / home 매출 KPI / CFO 재무보고. 매출 보고 포맷은 CFO(시뽀) 영역이라 표면 정해지면 시뽀와 협업 합류. 데이터 파일은 이미 라이브 발행 중.",
+    "depends_on": "GM: 매출 정의 + 보고 합류 표면 결정"
   },
   {
     "task_id": "CMO-2026-06-18-IG-BIO-INQUIRY-BRIDGE",
