@@ -783,6 +783,76 @@ def refresh_series_board() -> bool:
 
 
 # ─────────────────────────────────────────────────────────────────────────────
+# 승인 대기 리마인더 (07:30 제작 끝에 검수대기 항목 있으면 텔레그램 1줄 알림)
+# ─────────────────────────────────────────────────────────────────────────────
+REVIEW_QUEUE_PATH = (
+    ROOT / "3. 웰페리온 가이드" / "cmo" / "review" / "review_queue.json"
+)
+PENDING_STATUS = "검수대기"
+_MAX_LIST = 5  # 메시지에 나열할 최대 편 수
+
+
+def _build_pending_reviews_msg(repo_root: Path) -> str | None:  # noqa: ARG001
+    """검수대기 항목을 읽어 리마인더 메시지 문자열 반환. 0건이면 None(전송 안 함).
+
+    메시지 생성과 전송을 분리해 전송 없이 빌더만 단독 테스트 가능하게 한다.
+    파일 없거나 파싱 실패 → None(fail-soft, 제작 본 작업에 영향 없음).
+    """
+    try:
+        if not REVIEW_QUEUE_PATH.exists():
+            return None
+        import json as _json
+
+        raw = REVIEW_QUEUE_PATH.read_text(encoding="utf-8")
+        data = _json.loads(raw)
+        # 리스트 or {"items": [...]} 두 구조 모두 안전 처리
+        if isinstance(data, list):
+            items = data
+        elif isinstance(data, dict):
+            items = data.get("items", [])
+        else:
+            return None
+
+        pending = [it for it in items if isinstance(it, dict) and it.get("status") == PENDING_STATUS]
+        if not pending:
+            return None
+
+        # 편 식별: id에서 'AI{번호}' 추출 시도, 없으면 title 앞부분
+        def _label(it: dict) -> str:
+            m = re.search(r"AI(\d+)", str(it.get("id", "")))
+            if m:
+                return f"#{m.group(1)}편"
+            title = str(it.get("title", "")).strip()
+            return title[:18] + ("…" if len(title) > 18 else "")
+
+        labels = [_label(it) for it in pending[:_MAX_LIST]]
+        extra = len(pending) - _MAX_LIST
+        summary = " · ".join(labels)
+        if extra > 0:
+            summary += f" 외 {extra}건"
+
+        return (
+            f"📋 AI 시리즈 승인 대기 {len(pending)}편 — {summary}\n"
+            f"M5 또는 텔레그램 카드에서 [✅승인]하면 발행됩니다."
+        )
+    except Exception:
+        return None
+
+
+def report_pending_reviews(repo_root: Path) -> None:
+    """검수대기 1건 이상이면 텔레그램 리마인더 전송. 0건이면 조용히 종료.
+
+    모든 예외 fail-soft — 리마인더 실패가 제작 본 작업을 망치지 않게.
+    """
+    try:
+        msg = _build_pending_reviews_msg(repo_root)
+        if msg:
+            telegram(msg)
+    except Exception:
+        pass
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 # 메인
 # ─────────────────────────────────────────────────────────────────────────────
 def run(dry_run: bool, plan_only: bool) -> int:
@@ -911,7 +981,11 @@ def main() -> int:
         "--plan-only", action="store_true", help="다음 편 선정 결과만 출력하고 즉시 종료"
     )
     args = ap.parse_args()
-    return run(dry_run=args.dry_run, plan_only=args.plan_only)
+    exit_code = run(dry_run=args.dry_run, plan_only=args.plan_only)
+    # 승인 대기 리마인더 — dry_run/plan_only 모드에선 전송 안 함(테스트 무전송 원칙)
+    if not args.dry_run and not args.plan_only:
+        report_pending_reviews(ROOT)
+    return exit_code
 
 
 if __name__ == "__main__":
