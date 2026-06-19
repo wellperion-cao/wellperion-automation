@@ -1768,10 +1768,14 @@ function switchTab(tab, opts){
   document.getElementById('tab-manual').classList.toggle('hidden',tab!=='manual');
   document.getElementById('tab-vendor').classList.toggle('hidden',tab!=='vendor');
   document.getElementById('tab-reg').classList.toggle('hidden',tab!=='reg');
+  document.getElementById('tab-fcheck').classList.toggle('hidden',tab!=='fcheck');
+  if(tab==='fcheck'){ if(typeof fcLoad==='function') fcLoad(); }
   if(tab==='manual'){renderBoard();renderManualItems();}
   if(tab==='vendor'){ if(typeof loadVendorCategoriesFromBackend==='function'){ loadVendorCategoriesFromBackend().then(function(){ if(typeof loadVendorFromBackend==='function') loadVendorFromBackend(); }); } }   // 탭 열 때마다 백엔드 재로드(분류→업체) — GM 2026-06-12
   if(tab==='reg'){ if(typeof deptRegLoad==='function') deptRegLoad('시설부'); }
 }
+// 해시 딥링크(예 …#fcheck) → 로드 시 해당 탭 자동 열기
+window.addEventListener('DOMContentLoaded',function(){ try{ var h=(location.hash||'').replace('#',''); if(h && document.getElementById('tab-'+h)) switchTab(h); }catch(e){} });
 
 /* ═══════════════════════════════════════════════
    요일별 트렐로 보드 (매뉴얼 탭) — 7컬럼 × 남/여 = 14셀
