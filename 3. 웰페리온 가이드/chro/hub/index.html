@@ -668,10 +668,7 @@ async function loadOne(k){
   }
 }
 async function loadAll(){
-  for(var i=0;i<KEYS.length;i++){
-    await loadOne(KEYS[i]);
-    if(i<KEYS.length-1)await new Promise(function(r){setTimeout(r,200);});
-  }
+  await Promise.all(KEYS.map(function(k){return loadOne(k);}));
 }
 
 /* ============ shared ============ */
