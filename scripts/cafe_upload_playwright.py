@@ -31,6 +31,14 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
+# UTM 딱지 헬퍼 — 본문 문의 CTA URL에 카페 출처 부착 (scripts/ 동일 디렉터리)
+try:
+    from cta_utm import apply_cta_utm
+except ImportError:
+    import sys as _sys, os as _os
+    _sys.path.insert(0, _os.path.dirname(_os.path.abspath(__file__)))
+    from cta_utm import apply_cta_utm
+
 # Windows 콘솔(cp949)에서 한글·em-dash 출력 깨짐 방지 — UTF-8 강제
 try:
     sys.stdout.reconfigure(encoding="utf-8")
@@ -241,6 +249,8 @@ def build_post(args: argparse.Namespace) -> CafePost:
     title = (args.title or "").strip()
     body = load_body(Path(args.body_file) if args.body_file else None, args.body)
     body = _strip_leading_title(title, body)
+    # 문의 CTA URL에 네이버 카페 utm_source 부착 (발행 직전 원본 미변경·중복 안전)
+    body = apply_cta_utm(body, "naver_cafe")
     image_dir = Path(args.image_dir) if args.image_dir else None
     if image_dir and not image_dir.is_absolute():
         image_dir = ROOT / image_dir
