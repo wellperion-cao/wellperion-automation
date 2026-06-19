@@ -2122,5 +2122,19 @@
     "next": "🌀 표류 — 다음 미정 (필요 시 GM·웰리/담당 C-Level 지정)",
     "adhoc_commit": "3dc4c635f40633a429f0a4af7a07cde487079d40",
     "ship_no": 48
+  },
+  {
+    "task_id": "CTO-2026-06-19-ADHOC-e3ade4f0",
+    "clevel": "cto",
+    "title": "[시토] 자동 push 실패 근본해결 — non-ff 경합 침묵 + 푸시 스위퍼(5분)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-06-19",
+    "processed_at": "2026-06-19",
+    "artifact": "- 원인: 부모 GitLock 안 커밋(봇·watcher)이 push 거부(non-ff) 시 rebase 불가→즉시 실패경고 스팸. PC↔모바일 동시 push 경합 때 빈발\n- 부모lock 경로: non-ff는 경고 안 하고 로그만(곧 스위퍼가 드레인)\n- 신규 --sweep: lock 정상획득→fetch+rebase+push로 밀린 커밋 확실 드레인, 진짜 실패만 경고\n- daily_scheduler 5분 주기 push_sweeper 등록(봇 재기동 시 발효) (CLI ad-hoc · 커밋 e3ade4f0)",
+    "next": "🌀 표류 — 다음 미정 (필요 시 GM·웰리/담당 C-Level 지정)",
+    "adhoc_commit": "e3ade4f0c733aee2a49b9e176386a3e020c87bf1",
+    "ship_no": 27
   }
 ]
