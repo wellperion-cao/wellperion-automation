@@ -2168,6 +2168,42 @@ def main():
     )
     logger.info("parking_revenue_crawler 등록 완료 (매일 07:00) — 주차 매출 ERP 발행")
 
+    # ── 마케팅 대시보드 캐시 워밍 (15분 주기) — 무거운 집계를 미리 데워 사용자 항상 ~1.5초 — CTO 2026-06-19 ──
+    # 콜드 컴퓨트(type_channel 23s·funnel_conversion 13s)를 백그라운드에서 nocache=1로 강제 재계산·재캐싱.
+    # Claude/LLM 토큰 무관(구글 GAS 실행). TTL 30분 > 주기 15분이라 항상 따뜻하게 유지.
+    _FUNNEL_EXEC = 'https://script.google.com/macros/s/AKfycbzdwSCCSSJ6JXLDoWuo7HG0JmBM2iy10TujFQ_O5JbTjnWaN7gOk-ddA4IAvsNfelg0xA/exec'
+
+    def _warm_dashboard_cache():
+        try:
+            now = datetime.now()
+            frm = now.strftime("%Y-%m") + "-01"
+            to  = now.strftime("%Y-%m-%d")
+            rng = f"&from={frm}&to={to}"
+            qs = [
+                "action=funnel_conversion",
+                "action=type_channel_breakdown" + rng,
+                "action=click_stats" + rng,
+                "action=period_breakdown" + rng,
+            ]
+            for q in qs:
+                try:
+                    requests.get(f"{_FUNNEL_EXEC}?{q}&nocache=1", timeout=60)
+                except Exception:
+                    pass  # 개별 실패 무시 — 다음 주기 재시도
+            logger.info("dashboard_cache_warm 실행 완료 (마케팅 대시보드 캐시 데움)")
+        except Exception as e:
+            logger.error(f"dashboard_cache_warm 실행 실패: {e}")
+
+    scheduler.add_job(
+        _warm_dashboard_cache,
+        trigger=IntervalTrigger(minutes=15),
+        id="dashboard_cache_warm",
+        misfire_grace_time=600,
+        coalesce=True,
+        next_run_time=datetime.now(),
+    )
+    logger.info("dashboard_cache_warm 등록 완료 (15분 주기) — 마케팅 대시보드 캐시 워밍")
+
     if args.test:
         logger.info("=== 테스트 모드 시작: 1시간 주기 ===")
         scheduler.add_job(
