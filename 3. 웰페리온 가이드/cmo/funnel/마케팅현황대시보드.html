@@ -687,7 +687,7 @@ function _renderLessonRows(typeKey) {
 
   var html = '';
   // 안내문 (상단) — 문의=기간별(팀시트 타임스탬프) · 등록=누적 · 시트 바로가기
-  html += '<tr style="background:var(--paper2)"><td colspan="5" style="padding:6px 10px 6px 26px;font-size:10px;color:var(--dim)">※ 종목별 문의 = 팀시트 행을 타임스탬프 기준 ' + periodLabel + ' 집계 · 등록 = 누적 · 비고의 \'시트 ↗\'로 바로가기 (종목 합계는 분배 시차로 유형 합계와 다를 수 있음)</td></tr>';
+  html += '<tr style="background:var(--paper2)"><td colspan="5" style="padding:6px 10px 6px 26px;font-size:10px;color:var(--dim)">※ 종목별 문의 = 팀시트 행을 타임스탬프 기준 ' + periodLabel + ' 집계 · 등록 = 누적 · 비고의 문의 시트 링크로 바로가기 (종목 합계는 분배 시차로 유형 합계와 다를 수 있음)</td></tr>';
 
   subjects.forEach(function(sj) {
     var rec = byName[sj];
@@ -713,9 +713,10 @@ function _renderLessonRows(typeKey) {
       regColor = (rec.registered > 0) ? 'var(--f5)' : 'var(--dim)';
     }
 
-    // 비고 칸 — 종목 시트 바로가기(GM 지시 2026-06-19)
+    // 비고 칸 — 종목 시트 바로가기(GM 지시 2026-06-19). 라벨: 성인='{종목}(성인) 문의 시트' / 유소년='{종목}(WSC) 문의'
+    var _lsLabel = (typeKey === '유소년강습') ? (sj + '(WSC) 문의') : (sj + '(성인) 문의 시트');
     var linkCell = (rec && rec.sheetUrl)
-      ? '<a href="' + rec.sheetUrl + '" target="_blank" rel="noopener" style="color:var(--accent);font-size:11px;white-space:nowrap">시트 ↗</a>'
+      ? '<a href="' + rec.sheetUrl + '" target="_blank" rel="noopener" style="color:var(--accent);font-size:11px;white-space:nowrap">' + _lsLabel + ' ↗</a>'
       : '';
 
     var inqColor = (inqCell.indexOf('span') >= 0) ? 'var(--dim)' : 'var(--f2)';
