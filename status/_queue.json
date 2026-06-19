@@ -1,5 +1,17 @@
 [
   {
+    "task_id": "CTO-2026-06-19-PARKING-REVENUE-CRAWLER",
+    "clevel": "cto",
+    "title": "[시토] 주차 매출 자동 크롤러 — 주차관리시스템 자동로그인 → 이번달 매출금액 매일 수집 → 매출 보고 합류",
+    "status": "IN_PROGRESS",
+    "priority": "⛴️여객선",
+    "enqueued_at": "2026-06-19",
+    "processed_at": null,
+    "note": "[2026-06-19 GM 지시] 주차관리시스템(http://ppark-wall.iptime.org:8280, parkNm=웰페리온, parkId=1057) 자동로그인 후 매출현황 이번달 매출금액 크롤링. 정찰: /login.htm 평문 폼POST(loginId/loginPw·암호화/캡차 없음)→JSESSIONID_ADMIN 세션. requests로 자동화 가능. GM 선택=매일 자동+보고 합류(08:00 통합보고/home 매출 KPI). 자격증명=PARKING_LOGIN_ID/PW(.env). 블로커=로그인 ID/PW GM 제공 대기.",
+    "next": "GM 자격증명 제공 → ①로그인+report/parkCloseReport 파싱 스크립트(scripts) ②이번달 매출금액 셀렉터 실측 ③.env 자격증명 ④예약작업(매일)+매출 보고 합류. 보안=자격증명 .env 단일출처·평문코드 금지.",
+    "depends_on": "GM 주차시스템 로그인 ID/PW 제공"
+  },
+  {
     "task_id": "CMO-2026-06-18-IG-BIO-INQUIRY-BRIDGE",
     "clevel": "cmo",
     "title": "[시모] IG 프로필 문의 다리 — 링크-인-바이오 허브 신설(UTM+클릭추적) → 기타·미상 43% 축소·전환율 직접 상승",
