@@ -121,14 +121,22 @@ async def run_verify(url: str, expect: str | None, out: Path, show: bool, timeou
             await browser.close()
             return 1
 
-        # --expect 텍스트 검사
+        # --expect 텍스트 검사 (전체 DOM HTML 기준 — 숨은 탭 포함)
         expect_ok = None
+        expect_visible = None
         if expect:
             try:
-                content = await page.inner_text("body")
+                dom_html = await page.content()
             except Exception:
-                content = ""
-            expect_ok = expect in content
+                dom_html = ""
+            expect_ok = expect in dom_html
+            # 보너스: 화면에 실제 보이는지 추가 확인
+            if expect_ok:
+                try:
+                    visible_text = await page.inner_text("body")
+                except Exception:
+                    visible_text = ""
+                expect_visible = expect in visible_text
 
         await browser.close()
 
@@ -149,7 +157,11 @@ async def run_verify(url: str, expect: str | None, out: Path, show: bool, timeou
     print(f"   HTTP {status_str} | 제목: {title}")
     if expect is not None:
         expect_icon = "✅" if expect_ok else "❌"
-        print(f"   {expect_icon} 텍스트 확인: \"{expect}\"")
+        if expect_ok and expect_visible is not None:
+            location = "표시됨" if expect_visible else "탭 안에 있음"
+            print(f"   {expect_icon} 텍스트 확인: \"{expect}\" ({location})")
+        else:
+            print(f"   {expect_icon} 텍스트 확인: \"{expect}\"")
     if screenshot_ok:
         print(f"   📸 스크린샷: {out}")
     else:
