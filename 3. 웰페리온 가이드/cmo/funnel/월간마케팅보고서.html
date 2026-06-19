@@ -221,7 +221,7 @@ a{color:var(--accent);text-decoration:none}
         <div style="color:var(--dim);font-style:italic;font-size:13px">로딩 중…</div>
       </div>
       <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border)">
-        <div style="font-size:12px;color:var(--dim);margin-bottom:10px">전환율 (문의 → 회원 등록) · <b>전체 누적</b> 기준 (월 구분 없음)</div>
+        <div style="font-size:12px;color:var(--dim);margin-bottom:10px">전환율 (문의 → 회원 등록) · <b>전체 누적</b> 기준 (월 구분 없음) · ⚠ 전환=유효회원 <b>전화번호 매칭 추정</b>(인과 증명 아님·기존회원 포함될 수 있음)</div>
         <div id="conversionSummary" style="font-size:13px;color:var(--dim);font-style:italic">로딩 중…</div>
       </div>
     </div>
@@ -242,50 +242,14 @@ a{color:var(--accent);text-decoration:none}
   <div class="section">
     <div class="section-title"><span class="section-num">⑥</span> 외부 지표 <span class="manual-badge">수기 입력</span></div>
     <div class="manual-section">
-      <div style="font-size:12px;color:var(--yellow);margin-bottom:14px;font-weight:600">당근 노출은 공개 데이터라 자동 수집됩니다. IG 도달·블로그·카페 방문은 로그인 연동 대기 중 — GM 또는 담당자가 직접 입력하세요.</div>
+      <div style="font-size:12px;color:var(--dim);margin-bottom:14px;line-height:1.75">외부 <b>노출</b> 지표는 정확한 자동 측정수단이 아직 제한적입니다. 아래 당근은 <b>부분</b> 자동수집(발행 글 중 URL이 확보된 글의 <b style="color:var(--text)">조회수</b> — 노출 아님)이며, IG 도달·블로그·카페는 신뢰 가능한 자동수집 전이라 <b>미수록</b>합니다(빈 칸 채우는 척 안 함). <b style="color:var(--accent)">콘텐츠 효과 판단은 ④ 채널별 문의·전환(퍼널)을 기준</b>으로 하세요 — 노출·조회수는 참고용입니다.</div>
       <div class="manual-row">
         <div>
-          <div class="manual-lbl">IG 도달 (Reach)</div>
-          <div class="manual-hint">인스타그램 인사이트 기준</div>
-        </div>
-        <div>
-          <input class="manual-input" type="text" placeholder="예) 1,240 명" />
-        </div>
-      </div>
-      <div class="manual-row">
-        <div>
-          <div class="manual-lbl">네이버 블로그 방문</div>
-          <div class="manual-hint">블로그 통계 페이지 기준</div>
-        </div>
-        <div>
-          <input class="manual-input" type="text" placeholder="예) 380 PV" />
-        </div>
-      </div>
-      <div class="manual-row">
-        <div>
-          <div class="manual-lbl">카페 방문</div>
-          <div class="manual-hint">네이버 카페 방문자 통계</div>
-        </div>
-        <div>
-          <input class="manual-input" type="text" placeholder="예) 92 명" />
-        </div>
-      </div>
-      <div class="manual-row">
-        <div>
-          <div class="manual-lbl">당근 노출 <span class="manual-badge" style="background:#0f3d2e;color:#34d399">자동수집</span></div>
-          <div class="manual-hint" id="danggnHint">당근 비즈프로필 공개 조회수 · 자동 집계</div>
+          <div class="manual-lbl">당근 조회수 <span class="manual-badge" style="background:#0f3d2e;color:#34d399">부분 자동수집</span></div>
+          <div class="manual-hint" id="danggnHint">발행 글 중 URL 확보분의 공개 조회수 합 · 노출(impressions) 아님</div>
         </div>
         <div>
           <input class="manual-input" id="danggnViews" type="text" readonly placeholder="수집 중…" style="font-weight:700" />
-        </div>
-      </div>
-      <div class="manual-row">
-        <div>
-          <div class="manual-lbl">기타 외부 지표</div>
-          <div class="manual-hint">기타 채널 직접 기재</div>
-        </div>
-        <div>
-          <input class="manual-input" type="text" placeholder="채널명: 수치" />
         </div>
       </div>
     </div>
@@ -294,6 +258,7 @@ a{color:var(--accent);text-decoration:none}
   <!-- ⑦ 코멘트 / 개선 액션 -->
   <div class="section">
     <div class="section-title"><span class="section-num">⑦</span> 코멘트 &amp; 개선 액션</div>
+    <div style="font-size:11px;color:var(--dim);margin-bottom:10px;font-style:italic">※ 아래 성과·병목·액션은 집계로 자동 생성된 <b>초안</b>입니다 — 전환 수치가 추정이라 방향 참고용. 실제 개선은 퍼널(클릭→문의→전환) 근거로 GM 메모에 보완하세요.</div>
     <div class="comment-box">
       <div class="comment-row">
         <div class="comment-lbl">이달 성과</div>
@@ -589,9 +554,18 @@ async function loadDanggnViews() {
     const snap = await res.json();
     const posts = Array.isArray(snap.posts) ? snap.posts : [];
     const views = posts.reduce((s, p) => s + (Number(p.viewCount) || 0), 0);
-    el.value = views.toLocaleString() + ' 회 (게시물 ' + posts.length + '개)';
-    if (hint && snap.collected_at) {
-      hint.textContent = '당근 비즈프로필 공개 조회수 · 자동 집계 · 갱신 ' + String(snap.collected_at).slice(5, 16);
+    el.value = views.toLocaleString() + ' 회 · 추적 ' + posts.length + '글(부분)';
+    if (hint) {
+      let h = '발행 글 중 URL 확보분의 공개 조회수 합 · 노출 아님';
+      if (snap.collected_at) {
+        h += ' · 수집 ' + String(snap.collected_at).slice(0, 16);
+        const cd = new Date(String(snap.collected_at).replace(' ', 'T') + '+09:00');
+        if (!isNaN(cd.getTime())) {
+          const ageDays = (Date.now() - cd.getTime()) / 86400000;
+          if (ageDays > 2) h += ' ⚠ ' + Math.floor(ageDays) + '일 전 — 갱신 정지 가능';
+        }
+      }
+      hint.textContent = h;
     }
   } catch (e) {
     el.value = '수집 실패 — 수기 확인';
