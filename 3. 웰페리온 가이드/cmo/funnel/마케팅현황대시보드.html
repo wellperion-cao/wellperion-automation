@@ -683,30 +683,48 @@ function _renderLessonRows(typeKey) {
   // 종목명→레코드 lookup
   var byName = {};
   if (lb) lb.forEach(function(x) { if (x && x['명']) byName[x['명']] = x; });
+  var periodLabel = (_flow && _flow.label) ? _flow.label : '이번 달';
 
   var html = '';
-  // 안내문 (상단)
-  html += '<tr style="background:var(--paper2)"><td colspan="5" style="padding:6px 10px 6px 26px;font-size:10px;color:var(--dim)">※ 문의·클릭은 폼에 종목 구분이 없어 유형 합계만 집계됩니다 (종목별 등록만 표시)</td></tr>';
+  // 안내문 (상단) — 문의=기간별(팀시트 타임스탬프) · 등록=누적 · 시트 바로가기
+  html += '<tr style="background:var(--paper2)"><td colspan="5" style="padding:6px 10px 6px 26px;font-size:10px;color:var(--dim)">※ 종목별 문의 = 팀시트 행을 타임스탬프 기준 ' + periodLabel + ' 집계 · 등록 = 누적 · 비고의 \'시트 ↗\'로 바로가기 (종목 합계는 분배 시차로 유형 합계와 다를 수 있음)</td></tr>';
 
   subjects.forEach(function(sj) {
     var rec = byName[sj];
+
+    // 문의 칸 (기간 반영)
+    var inqCell;
+    if (!_lessonData) {
+      inqCell = '<span style="color:var(--dim);font-size:12px">집계 대기</span>';
+    } else if (!rec || rec.inquiries === null || rec.inquiries === undefined) {
+      inqCell = '<span style="color:var(--dim);font-size:12px">데이터 미연결</span>';
+    } else {
+      inqCell = Number(rec.inquiries).toLocaleString('ko-KR');
+    }
+
+    // 등록 칸 (누적)
     var regCell, regColor = 'var(--dim)';
     if (!_lessonData) {
-      // lesson_breakdown 미배포/실패 → graceful 폴백
       regCell = '<span style="color:var(--dim);font-size:12px">집계 대기</span>';
     } else if (!rec || rec.registered === null || rec.registered === undefined) {
-      // 데이터 미연결 종목 — 0으로 채우지 않음(정직)
-      regCell = '<span style="color:var(--dim);font-size:12px">데이터 미연결</span>';
+      regCell = '<span style="color:var(--dim);font-size:12px">미연결</span>';
     } else {
       regCell = Number(rec.registered).toLocaleString('ko-KR');
       regColor = (rec.registered > 0) ? 'var(--f5)' : 'var(--dim)';
     }
+
+    // 비고 칸 — 종목 시트 바로가기(GM 지시 2026-06-19)
+    var linkCell = (rec && rec.sheetUrl)
+      ? '<a href="' + rec.sheetUrl + '" target="_blank" rel="noopener" style="color:var(--accent);font-size:11px;white-space:nowrap">시트 ↗</a>'
+      : '';
+
+    var inqColor = (inqCell.indexOf('span') >= 0) ? 'var(--dim)' : 'var(--f2)';
     html += '<tr style="background:rgba(0,0,0,.12)">'
       + '<td style="padding:7px 10px 7px 26px;font-size:12px;color:var(--text)">' + sj + '</td>'
       + '<td style="padding:7px 10px;text-align:right;font-size:13px;color:var(--dim)">—</td>'
-      + '<td style="padding:7px 10px;text-align:right;font-size:13px;color:var(--dim)">—</td>'
+      + '<td style="padding:7px 10px;text-align:right;font-size:14px;font-weight:700;color:' + inqColor + '">' + inqCell + '</td>'
       + '<td style="padding:7px 10px;text-align:right;font-size:14px;font-weight:700;color:' + regColor + '">' + regCell + '</td>'
-      + '<td style="padding:7px 10px;font-size:10px;color:var(--dim)"></td>'
+      + '<td style="padding:7px 10px;font-size:10px">' + linkCell + '</td>'
       + '</tr>';
   });
   return html;
@@ -715,32 +733,38 @@ function _renderLessonRows(typeKey) {
 // 강습 유형 종목 토글
 function toggleLessonType(typeKey) {
   _cfOpenType = (_cfOpenType === typeKey) ? null : typeKey;
-  // 펼침 시 종목 등록 데이터 1회 로드(미로드 시)
-  if (_cfOpenType && _lessonData === null && !_lessonLoading) {
+  // 펼침 시 종목 데이터 로드 — 미로드 또는 기간이 바뀐 경우 재조회
+  if (_cfOpenType && (_lessonData === null || _lessonRange !== _curRangeKey()) && !_lessonLoading) {
     loadLessonBreakdown();
   }
   renderConversionFlow();
 }
 
-// ─── #2 종목별 등록 (lesson_breakdown) ───────────────────────────
-// 응답: {ok,data:{'성인강습':[{명,registered,sheet}],'유소년강습':[...]},others,unmatched}
+// ─── #2 종목별 문의(기간)·등록(누적)·시트링크 (lesson_breakdown) ──────────
+// 응답: {ok,data:{'성인강습':[{명,inquiries,registered,sheet,sheetUrl}],'유소년강습':[...]},others,unmatched,range}
+// 문의 = 팀시트 행을 타임스탬프 기준 기간 집계(from/to 전달) · 등록 = 누적.
 // ⚠️ 라이브 GAS 미배포일 수 있음 → graceful 폴백(콘솔에러 없이 '집계 대기').
 var _lessonData = null;      // 성공 응답 캐시
+var _lessonRange = '';       // _lessonData가 담고 있는 기간 키(from|to)
 var _lessonLoading = false;
+function _curRangeKey() { return (_rangeFromTo.from || '') + '|' + (_rangeFromTo.to || ''); }
 async function loadLessonBreakdown() {
   if (_lessonLoading) return;
   _lessonLoading = true;
+  var wantKey = _curRangeKey();
   try {
     var url = _wpUrl(FUNNEL_APPS_SCRIPT_URL + '?action=lesson_breakdown');
+    if (_rangeFromTo.from && _rangeFromTo.to) { url += '&from=' + _rangeFromTo.from + '&to=' + _rangeFromTo.to; }
     var res = await fetch(url, { redirect: 'follow' });
     if (!res.ok) { _lessonLoading = false; return; }
     var data = await res.json();
     if (!data || !data.ok || !data.data) { _lessonLoading = false; return; }
     _lessonData = data;
+    _lessonRange = wantKey;
     renderConversionFlow();
   } catch (e) {
     // 액션 미배포/네트워크 — 조용히 폴백(종목 행 '집계 대기' 유지)
-    console.info('[lesson_breakdown] 미배포 또는 실패 — 종목 등록 집계 대기');
+    console.info('[lesson_breakdown] 미배포 또는 실패 — 종목 문의·등록 집계 대기');
   }
   _lessonLoading = false;
 }
@@ -1180,6 +1204,7 @@ function _applyPeriodData(data, period) {
   if (_skipPeriodChildFetch) { _skipPeriodChildFetch = false; return; }
   loadClickStats();
   loadTypeChannel();
+  if (_cfOpenType) loadLessonBreakdown();   // 강습 펼침 중이면 종목 문의 기간 갱신
 }
 
 // ─── 기간 직접 설정 (custom range) ──────────────────────────────
@@ -1295,6 +1320,7 @@ function _applyCustom(data, from, to, monthCtx) {
   _rangeFromTo = { from: from, to: to };
   loadClickStats();
   loadTypeChannel();
+  if (_cfOpenType) loadLessonBreakdown();   // 강습 펼침 중이면 종목 문의 기간 갱신
 }
 
 // 기간 토글 버튼 전환

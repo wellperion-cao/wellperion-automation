@@ -283,6 +283,41 @@ function _collectLessonRegByName_() {
   return out;
 }
 
+// 강습 종목별 문의수 — 팀시트(LESSON_TEAM_SHEETS) 전체 행을 타임스탬프(B열 등) 기준 기간 집계.
+// 각 팀시트 = 통합 문의의 종목별 분배본 → 행 1개 = 문의 1건(상태 무관). from/to(YYYY-MM-DD KST) 범위만 카운트, 미지정=전체.
+// 반환: { '수영 성인': {명, 유형, inquiries|null, sheetFound}, ... } (시트 미발견=null, 정직표기).
+function _collectLessonInqByName_(from, to) {
+  var out = {};
+  var cFrom = (from) ? new Date(from + 'T00:00:00+09:00') : null;
+  var cTo   = (to)   ? new Date(to   + 'T23:59:59+09:00') : null;
+  LESSON_TEAM_SHEETS.forEach(function(cfg) {
+    var rec = { 명: cfg.명, 유형: cfg.유형, inquiries: null, sheetFound: false };
+    try {
+      var sh = _sheetByGid_(cfg.ssId, cfg.gid);
+      if (!sh) { out[cfg.명] = rec; return; }
+      rec.sheetFound = true;
+      var last = sh.getLastRow(), lastCol = sh.getLastColumn();
+      if (last < 2 || lastCol < 1) { rec.inquiries = 0; out[cfg.명] = rec; return; }
+      var hdrs = sh.getRange(1, 1, 1, lastCol).getValues()[0];
+      var idxDate = _findCol_(hdrs, ['타임스탬프', 'timestamp', '시각', '일시', '접수일', '접수', '날짜']);
+      if (idxDate < 0) idxDate = 0;  // 못 찾으면 1열(구글폼 기본)
+      var rows = sh.getRange(2, 1, last - 1, lastCol).getValues();
+      var n = 0;
+      rows.forEach(function(r) {
+        var dateRaw = r[idxDate];
+        if (!dateRaw) return;
+        if (!cFrom || !cTo) { n++; return; }  // 기간 미지정 = 행 전체
+        var d = _parseAnyDate_(dateRaw);
+        if (!(d instanceof Date) || isNaN(d.getTime())) return;
+        if (d >= cFrom && d <= cTo) n++;
+      });
+      rec.inquiries = n;
+    } catch (e) { rec.error = String(e); }  // 접근 실패 → inquiries=null 유지
+    out[cfg.명] = rec;
+  });
+  return out;
+}
+
 // ─── 종목별 등록 표시 SSOT (GM 지정 2026-06-18) ───
 // GM 종목 ↔ LESSON_TEAM_SHEETS '명' 매핑. 시트 없는 종목(바레·발레)은 sheet:null → registered=null('데이터 미연결').
 var LESSON_DISPLAY = {
@@ -1258,23 +1293,38 @@ function _processAction(body) {
   // 등록 = LESSON_TEAM_SHEETS 팀시트 상태열 SUC/등록 등(_isLessonReg_). 정본 = _collectLessonRegByName_.
   // 정직성: 시트 없는 종목(바레·발레)=registered:null('데이터 미연결'), 0으로 채우지 않음. 시트 있고 등록 0=실측 0.
   if (action === 'lesson_breakdown') {
+    var lbFrom = body.from || '';   // YYYY-MM-DD (기간별 문의 집계용)
+    var lbTo   = body.to   || '';
     var lbCache = CacheService.getScriptCache();
-    var lbHit = lbCache.get('lb_v1');
+    var lbKey = 'lb_v2_' + lbFrom + '_' + lbTo;   // 기간별 캐시키
+    var lbHit = lbCache.get(lbKey);
     if (lbHit) return _json(JSON.parse(lbHit));
 
-    var byName = _collectLessonRegByName_();   // { 'P.T 성인': {registered|null, ...}, ... }
-    var usedSheets = {};                         // GM 목록이 소비한 시트 명 추적 → 나머지는 others
+    var byName    = _collectLessonRegByName_();              // 등록(누적): { 'P.T 성인': {registered|null,...}, ... }
+    var byNameInq = _collectLessonInqByName_(lbFrom, lbTo);  // 문의(기간별): { 'P.T 성인': {inquiries|null,...}, ... }
+    var usedSheets = {};
     var data = {};
+
+    // 종목 '명' → 팀시트 cfg 역참조(시트 바로가기 URL 생성)
+    var cfgByName = {};
+    LESSON_TEAM_SHEETS.forEach(function(cfg) { cfgByName[cfg.명] = cfg; });
+    function _lessonSheetUrl(sheetName) {
+      var cfg = cfgByName[sheetName];
+      return cfg ? ('https://docs.google.com/spreadsheets/d/' + cfg.ssId + '/edit#gid=' + cfg.gid) : null;
+    }
 
     Object.keys(LESSON_DISPLAY).forEach(function(grp) {
       data[grp] = LESSON_DISPLAY[grp].map(function(item) {
-        var reg = null, src = null;
+        var reg = null, inq = null, src = null, sheetUrl = null;
         if (item.sheet) {
           usedSheets[item.sheet] = true;
-          var rec = byName[item.sheet];
-          if (rec) { reg = rec.registered; src = rec.statusHeader; }  // registered=null이면 그대로 null(데이터 미연결)
+          var rec  = byName[item.sheet];
+          var recI = byNameInq[item.sheet];
+          if (rec)  { reg = rec.registered; src = rec.statusHeader; }  // null이면 그대로(데이터 미연결)
+          if (recI) { inq = recI.inquiries; }
+          sheetUrl = _lessonSheetUrl(item.sheet);
         }
-        return { 명: item.명, registered: reg, sheet: item.sheet || null, statusSource: src };
+        return { 명: item.명, registered: reg, inquiries: inq, sheet: item.sheet || null, sheetUrl: sheetUrl, statusSource: src };
       });
     });
 
@@ -1282,28 +1332,32 @@ function _processAction(body) {
     var others = [];
     LESSON_TEAM_SHEETS.forEach(function(cfg) {
       if (usedSheets[cfg.명]) return;
-      var rec = byName[cfg.명];
-      others.push({ 유형: cfg.유형, 명: cfg.명, registered: rec ? rec.registered : null });
+      var rec  = byName[cfg.명];
+      var recI = byNameInq[cfg.명];
+      others.push({ 유형: cfg.유형, 명: cfg.명,
+        registered: rec ? rec.registered : null,
+        inquiries: recI ? recI.inquiries : null,
+        sheetUrl: _lessonSheetUrl(cfg.명) });
     });
 
     // 매칭 안 된(시트 없는) GM 종목 → 프론트 '데이터 미연결' 표기용
     var unmatched = [];
     Object.keys(LESSON_DISPLAY).forEach(function(grp) {
       LESSON_DISPLAY[grp].forEach(function(item) {
-        if (!item.sheet) unmatched.push({ 유형: grp, 명: item.명, reason: '등록 데이터 출처 없음' });
+        if (!item.sheet) unmatched.push({ 유형: grp, 명: item.명, reason: '등록·문의 데이터 출처 없음' });
       });
     });
 
     var lbResult = {
       ok: true,
       generatedAt: _now(),
-      basis: '종목별 등록 = 팀시트(LESSON_TEAM_SHEETS) 상태열 수강등록(SUC/등록) 집계 · 등록만(문의는 대분류) · 시트없는종목=null(데이터 미연결)',
+      range: { from: lbFrom, to: lbTo },
+      basis: '종목별 문의 = 팀시트 행을 타임스탬프 기준 기간 집계 · 등록 = 팀시트 상태열 수강등록(SUC/등록) 누적 · 시트없는종목(바레·발레)=null(데이터 미연결)',
       data: data,
       others: others,
-      unmatched: unmatched,
-      debugByName: byName
+      unmatched: unmatched
     };
-    try { lbCache.put('lb_v1', JSON.stringify(lbResult), 300); } catch (e) { /* 캐시 실패 무시 */ }
+    try { lbCache.put(lbKey, JSON.stringify(lbResult), 300); } catch (e) { /* 캐시 실패 무시 */ }
     return _json(lbResult);
   }
 

@@ -1687,5 +1687,15 @@
     "artifact": "- scripts/parking_revenue_crawler.py: 주차시스템 자동로그인→이번달 실결제 매출(payAmt) 수집→status/parking_revenue.json 발행 (.env PARKING_* 자격증명, fail-safe)\n- daily_scheduler: 매일 07:00 주차 매출 수집 작업 등록 (08:00 보고 전 갱신, 봇 재기동 시 발효)\n- 라이브 검증: 2026-06 실결제 2,149,500원/393건 (CLI ad-hoc · 커밋 1da28325)",
     "next": "🌀 표류 — 다음 미정 (필요 시 GM·웰리/담당 C-Level 지정)",
     "adhoc_commit": "1da283257ebdeeee473a42379ce292420588c8c6"
+  },
+  {
+    "task_id": "CMO-2026-06-19-DASH-LESSON-SUBJECT-INQUIRY",
+    "clevel": "cmo",
+    "status": "IN_PROGRESS",
+    "priority": "⛴️여객선",
+    "enqueued_at": "2026-06-19",
+    "title": "[시모] 마케팅 대시보드 4번 — 강습 종목별 시트 연결(문의 기간집계+등록+시트링크)",
+    "note": "GM 지시(2026-06-19). 강습 펼침의 각 종목 행에 ①문의(팀시트 행을 타임스탬프 기준 기간집계, 일/주/월/기간 토글 반영) ②등록(누적) ③비고에 종목 시트 바로가기 링크. GM 결정=숫자+시트링크 둘 다(개인정보 노출 인지). GAS(.deploy-funnel/Survey.js): _collectLessonInqByName_ 추가 + lesson_breakdown 확장(from/to·inquiries·sheetUrl·기간별 캐시키). 프론트: _renderLessonRows 문의칸·시트링크, 기간 인지 로더(_lessonRange), 기간전환 재조회. 문법 검증 PASS.",
+    "next": "★GM 액션(유일 잔여): 펀넬 GAS 에디터에 .deploy-funnel/Survey.js 전체 붙여넣기 → 재배포(/exec URL 유지). 배포 후 강습 펼쳐 종목별 문의·시트링크 라이브 확인. ⚠️주의1: 종목 합계는 분배 시차로 유형 합계와 다를 수 있음(정직표기). ⚠️주의2: cmo/survey 사본은 253줄 구버전(별도 정리 대기)."
   }
 ]
