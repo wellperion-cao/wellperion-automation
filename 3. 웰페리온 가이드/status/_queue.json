@@ -2005,5 +2005,19 @@
     "next": "🌀 표류 — 다음 미정 (필요 시 GM·웰리/담당 C-Level 지정)",
     "adhoc_commit": "25964d952d8b45e401b67f1b788c463bd376048a",
     "ship_no": 48
+  },
+  {
+    "task_id": "CTO-2026-06-19-ADHOC-a5455ce0",
+    "clevel": "cto",
+    "title": "[시토] 마케팅 대시보드 로딩 속도 — 캐시 TTL 5→30분 + nocache 워밍 훅",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-06-19",
+    "processed_at": "2026-06-19",
+    "artifact": "- 원인(실측): 캐시 5분 만료 후 콜드 컴퓨트 type_channel 24s·funnel_conversion 13s를 다음 방문자가 직격\n- nocache=1 캐시 우회 게이트(7 action) + warmDashboardCache()/installWarmTrigger() 추가\n- TTL 300→1800s. clasp 재배포 @40. 검증: nocache 23s 후 일반호출 1.67s(캐시히트)\n- 잔여 GM 액션: GAS 에디터서 installWarmTrigger() 1회 실행(5분 워밍 트리거 설치) (CLI ad-hoc · 커밋 a5455ce0)",
+    "next": "🌀 표류 — 다음 미정 (필요 시 GM·웰리/담당 C-Level 지정)",
+    "adhoc_commit": "a5455ce0111fdf075c54b32f3bc7e930f25f6536",
+    "ship_no": 24
   }
 ]
