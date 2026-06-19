@@ -304,8 +304,28 @@ function doGet(e) {
     var _dz = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(_deptTabs(e.parameter.dept || 'support')[e.parameter.zone || 'male']);
     if (!_dz) return jsonRes({ error: 'no sheet' });
     var _dd = _dz.getDataRange().getValues(), _out = [];
-    for (var _i = 1; _i < _dd.length; _i++) { _out.push({ date: String(_dd[_i][0]), id: String(_dd[_i][1]), round: String(_dd[_i][4] || ''), status: String(_dd[_i][5]), duty: String(_dd[_i][10] || ''), inspector: String(_dd[_i][11] || ''), issue: String(_dd[_i][6] || '') }); }
+    for (var _i = 1; _i < _dd.length; _i++) { _out.push({ date: String(_dd[_i][0]), id: String(_dd[_i][1]), round: String(_dd[_i][4] || ''), status: String(_dd[_i][5]), submit: String(_dd[_i][8] || ''), subAt: String(_dd[_i][9] || ''), duty: String(_dd[_i][10] || ''), inspector: String(_dd[_i][11] || ''), measure: String(_dd[_i][12] || ''), reflect: String(_dd[_i][13] || ''), chkAt: String(_dd[_i][14] || ''), issue: String(_dd[_i][6] || '') }); }
     return jsonRes({ sheet: _dz.getName(), total: _out.length, rows: _out });
+  }
+  if (action === 'dedup_zone') {   // (날짜,항목ID,회차) 완전동일 중복행 제거 — 첫 행만 남김. 내용 다른 행은 보존(병합 안 함). 진단·청소. 2026-06-19 시우.
+    var _qz = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(_deptTabs(e.parameter.dept || 'support')[e.parameter.zone || 'male']);
+    if (!_qz) return jsonRes({ error: 'no sheet' });
+    var _onlyDate = e.parameter.date || '';   // 지정 시 그 날짜만(미지정=전 날짜)
+    var _qd = _qz.getDataRange().getValues();
+    var _seen = {}, _delRows = [], _kept = 0;
+    for (var _qi = 1; _qi < _qd.length; _qi++) {
+      var _row = _qd[_qi];
+      var _dt = formatDate(_row[0]);
+      if (_onlyDate && _dt !== _onlyDate) continue;
+      var _key = _dt + '|' + String(_row[1]) + '|' + String(_row[4]);   // 날짜|항목ID|회차
+      // 실질내용 시그니처(시각 제외): 결과5·이슈6·노하우7·제출8·근무10·점검자11·측정12·반영13
+      var _sig = [5,6,7,8,10,11,12,13].map(function(c){ return String(_row[c] == null ? '' : _row[c]); }).join('');
+      if (_seen[_key] === undefined) { _seen[_key] = _sig; _kept++; }
+      else if (_seen[_key] === _sig) { _delRows.push(_qi + 1); }   // 완전동일만 삭제대상. 내용다르면 보존
+    }
+    _delRows.sort(function(a, b){ return b - a; });   // 내림차순 삭제(인덱스 안전)
+    _delRows.forEach(function(rn){ _qz.deleteRow(rn); });
+    return jsonRes({ ok: true, sheet: _qz.getName(), date: _onlyDate || 'all', kept: _kept, removed: _delRows.length });
   }
   if (action === 'clear_non_keep') {   // 지정 날짜(keep) 외 행 전부 삭제 — '오늘것만 남김'. 2026-06-15 시우.
     var _kz = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(_deptTabs(e.parameter.dept || 'support')[e.parameter.zone || 'male']);
