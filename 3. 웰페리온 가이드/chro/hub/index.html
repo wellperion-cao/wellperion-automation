@@ -976,7 +976,7 @@ function jobItem(h){
     '<div class="kv">'+
     kv("모집 인원",txt(h["모집 인원"]))+kv("면접자 수",txt(h["면접자 수"]))+
     kv("급여 범위",txt(h["급여 범위"]))+kv("공고 기간",fmtD(dval(h,"공고 시작일"))+" ~ "+fmtD(dval(h,"공고 마감일")))+
-    kv("채용 채널",txt(ch))+'<div><div class="k">최종 합격자</div><div class="v">'+(function(){var _fp=applicants.filter(function(a){var s=String(a["전형 단계"]||"").trim();return s==="최종 합격"||s==="최종합격"||s==="합격";});if(!_fp.length)return '<span style="color:var(--ink-soft)">—</span>';return _fp.map(function(a){var _pid=(((a["원본 Notion URL"]||"")+"").match(/[0-9a-f]{32}/i)||[""])[0].toLowerCase();return '<button type="button" class="btn-sm" data-applname="'+esc(a["지원자명"]||"")+'" data-apppid="'+_pid+'" style="background:var(--gold);color:#fff;border-color:var(--gold);margin:2px 6px 2px 0;cursor:pointer">🎖 '+esc(a["지원자명"]||"")+' · 인사카드</button>';}).join("");})()+'</div></div>'+
+    kv("채용 채널",txt(ch))+'<div><div class="k">최종 합격자</div><div class="v">'+(function(){var _fp=applicants.filter(function(a){var s=String(a["전형 단계"]||"").trim();return s==="최종 합격"||s==="최종합격"||s==="합격";});if(!_fp.length)return '<span style="color:var(--ink-soft)">—</span>';return _fp.map(function(a){var _pid=(((a["원본 Notion URL"]||"")+"").match(/[0-9a-f]{32}/i)||[""])[0].toLowerCase();return '<button type="button" class="btn-sm" data-applname="'+esc(a["지원자명"]||"")+'" data-applicant="'+esc(normId(a.url))+'" data-apppid="'+_pid+'" style="background:var(--gold);color:#fff;border-color:var(--gold);margin:2px 6px 2px 0;cursor:pointer">🎖 '+esc(a["지원자명"]||"")+' · 인사카드</button>';}).join("");})()+'</div></div>'+
     '</div>'+
     (h["주요 업무"]?'<div style="margin-top:9px;font-size:12px;color:var(--ink-soft);white-space:pre-wrap">'+
       esc(h["주요 업무"])+'</div>':"")+
@@ -998,7 +998,7 @@ function applicantRow(a){
   var isAdmin=SESSION_ROLE==="admin";
   var actions='';
   // 인쇄용 평가지 (모두)
-  actions+='<button class="btn-sm" data-print="'+esc(pageId)+'" style="color:var(--gold-deep);border-color:var(--gold)">📄 평가지 출력</button>';
+  actions+='<button class="btn-sm" data-print="'+esc(pageId)+'" style="color:var(--gold-deep);border-color:var(--gold)">📄 평가지 출력</button>';if(isAdmin){actions+='<button class="btn-sm" data-stagechg="'+esc(a["지원자명"]||"")+'" data-stagepid="'+apppid+'" style="color:var(--ink-soft)">⇅ 단계·일정</button>';}
   if(isAdmin){
     // 단계별 액션 버튼
     if(stage==="서류 검토"||stage===""){
@@ -1104,7 +1104,7 @@ if(/수행|기사/.test(pos)){
 return s.join('');
 }
 
-function openPrintView(pageId){
+function openPrintView(pageId, noQ){
   var a=(DB.appl||[]).find(function(x){return normId(x.url)===pageId;});
   if(!a){alert("지원자 정보를 찾을 수 없습니다.");return;}
   var grade=a["면접 평점"]||"미평가";
@@ -1156,7 +1156,7 @@ function openPrintView(pageId){
       '<div class="memo">'+fmtMemo(memo)+'</div>'+
       '<h2>3. AI 서류 평가 — 종합 등급</h2>'+
       '<p style="font-size:11pt;margin:8px 0">종합 등급: <span class="grade">'+esc(grade)+'</span> &nbsp;&nbsp; <span style="color:#6c6961;font-size:9.5pt">(인재상별 평가 근거·강점·확인사항은 위 \'이력 요약\'에 포함)</span></p>'+
-      '<h2>4. 면접 질문지 (표준 10문항 · 부서 맞춤 조정 가능)</h2>'+wpQuestions((a["지원 포지션"]||a["연결 공고"]||""))+'<h2>5. 면접관 메모란</h2>'+
+      (noQ?"":('<h2>4. 면접 질문지 (표준 10문항 · 부서 맞춤 조정 가능)</h2>'+wpQuestions((a["지원 포지션"]||a["연결 공고"]||""))))+'<h2>5. 면접관 메모란</h2>'+
       '<div class="line"></div><div class="line"></div><div class="line"></div><div class="line"></div>'+
       '<div class="line"></div><div class="line"></div><div class="line"></div><div class="line"></div>'+
       '<div class="line"></div><div class="line"></div>'+
@@ -1315,7 +1315,7 @@ function renderHire(){
         var cc=document.getElementById("ivCalCard"); if(cc&&window.__renderIvCal) cc.innerHTML=window.__renderIvCal(mm.y,mm.m);
         return;}
       if(t.closest("a"))return;
-      var __ap=t.closest("[data-applname]");if(__ap){if(typeof window.openApplicantInfo==="function"){window.openApplicantInfo(__ap.getAttribute("data-applname"), __ap.getAttribute("data-apppid"));}return;}
+      var __ap=t.closest("[data-applname]");if(__ap){if(typeof window.openApplicantInfo==="function"){(function(){var _scc=t.closest("[data-stagechg]");if(_scc){window.openApplicantInfo(_scc.getAttribute("data-stagechg"),_scc.getAttribute("data-stagepid"));return;}var _pg=__ap.getAttribute("data-applicant")||"";if(!_pg){var _nm=__ap.getAttribute("data-applname")||"";var _f=(DB.appl||[]).find(function(x){return String(x["지원자명"]||"")===_nm;});if(_f)_pg=normId(_f.url);}if(_pg&&typeof openPrintView==="function"){openPrintView(_pg,true);}else{window.openApplicantInfo(__ap.getAttribute("data-applname"), __ap.getAttribute("data-apppid"));}})();}return;}
     });
   }
 }
@@ -2289,7 +2289,7 @@ details.jobs-fold > summary > .jf-arrow{display:inline-block;transition:transfor
     list.addEventListener("click", function(e){
       var row = e.target.closest("[data-applname]");
       if(row && typeof window.openApplicantInfo === "function"){
-        window.openApplicantInfo(row.getAttribute("data-applname"), row.getAttribute("data-apppid"));
+        (function(){var _scc=e.target.closest("[data-stagechg]");if(_scc){window.openApplicantInfo(_scc.getAttribute("data-stagechg"),_scc.getAttribute("data-stagepid"));return;}var _pg=row.getAttribute("data-applicant")||"";if(!_pg){var _nm=row.getAttribute("data-applname")||"";var _f=(DB.appl||[]).find(function(x){return String(x["지원자명"]||"")===_nm;});if(_f)_pg=normId(_f.url);}if(_pg&&typeof openPrintView==="function"){openPrintView(_pg,true);}else{window.openApplicantInfo(row.getAttribute("data-applname"), row.getAttribute("data-apppid"));}})();
       }
     });
 
