@@ -219,8 +219,9 @@ function _seedDate(sheet, date, items, sheetName) {
       '미완료', '', '', '미제출', '',
       defaultInspector(sheetName, item.slot),
       slotToShift(item.slot),
-      '',  // S2: 13열 측정값 — 시드 시 빈칸
-      ''   // F1: 14열 반영완료 — 시드 시 빈칸
+      '',  // 13열 측정값 — 시드 시 빈칸
+      '',  // 14열 반영완료 — 시드 시 빈칸
+      ''   // 15열 점검시각 — 시드 시 빈칸(HEADERS 15열 정합)
     ];
   });
   if (rows.length > 0) {
@@ -1937,12 +1938,18 @@ function setupDeptSheets(dept) {
     _createCheckSheet(ss, name);   // 13열 HEADERS(측정값 포함) 헤더 기록
     created.push((existed ? '재생성:' : '신규:') + name);
   });
-  // 오늘 날짜 빈 데이터 시드(남/여=ZONE_ITEMS, 공용=COMMON_ITEMS) — common=null(지원부)이면 스킵
+  // 오늘 날짜 빈 데이터 시드 — support만(ZONE/COMMON=지원부 청소 항목 모델).
+  // facility 등은 측정폼(saveFacilityMeasure, 항목×회차)이 데이터 단일 원천이라 시드 금지
+  // (시드하면 지원부 항목이 시설 분모를 오염시키고 회차 라벨도 불일치). 헤더만 생성.
   var today = Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy-MM-dd');
-  if (t.male)   _seedDate(ss.getSheetByName(t.male),   today, ZONE_ITEMS,   t.male);
-  if (t.female) _seedDate(ss.getSheetByName(t.female), today, ZONE_ITEMS,   t.female);
-  if (t.common) _seedDate(ss.getSheetByName(t.common), today, COMMON_ITEMS, t.common);
-  return jsonRes({ ok: true, dept: dept, created: created, seededDate: today });
+  var seededDate = null;
+  if (dept === 'support') {
+    if (t.male)   _seedDate(ss.getSheetByName(t.male),   today, ZONE_ITEMS,   t.male);
+    if (t.female) _seedDate(ss.getSheetByName(t.female), today, ZONE_ITEMS,   t.female);
+    if (t.common) _seedDate(ss.getSheetByName(t.common), today, COMMON_ITEMS, t.common);
+    seededDate = today;
+  }
+  return jsonRes({ ok: true, dept: dept, created: created, seededDate: seededDate, note: (dept === 'support' ? '시드 완료' : '헤더만 생성(측정폼이 데이터 원천 — 시드 없음)') });
 }
 
 // ════════════════════════════════════════════
