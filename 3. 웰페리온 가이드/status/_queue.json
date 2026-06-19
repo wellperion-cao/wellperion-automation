@@ -2163,5 +2163,19 @@
     "artifact": "GM 지시(파이프라인 게이트)로 진단 선행. 진단: 클릭 211건 전부 \"직접/홈\" 귀속(채널 utm 0건). 추적은 정상(문의페이지 ?utm_source 보존·캡처코드 라이브·발행스크립트 utm 부착) → 빈 원인=구조적 한계: ①IG 캡션 링크 불가(→bio 다리 별건) ②홈·떠다니는 문의버튼=정당한 직접유입 다수 ③링크가능 채널만 부분. 2단계에서 클릭-채널을 퍼널서 뺀 게 옳았음 확증. 발견한 진짜 결함=카페만 apply_cta_utm 누락(블로그·당근·카카오는 적용). 조치: cafe_upload_playwright.py에 import+build_post body 확정 직후 apply_cta_utm(body,\"naver_cafe\") 추가(타 채널 동일 패턴). py_compile OK·실측 utm_source=naver_cafe 부착·중복방지 확인. ralph/ulw/team은 구조적 한계라 과함→안 켬(게이트 정직 적용).",
     "next": "표류 방지: ①IG 클릭 귀속은 bio 링크 허브(CMO-2026-06-18-IG-BIO-INQUIRY-BRIDGE)로 — GM이 bio에 URL 1줄 붙이면 IG도 utm 잡힘 ②카페 효과는 다음 카페 발행 후 click_stats byUtmSource에 naver_cafe 출현으로 확인.",
     "ship_no": 49
+  },
+  {
+    "task_id": "CMO-2026-06-19-ADHOC-c63d5b22",
+    "clevel": "cmo",
+    "title": "[시모] 클릭 채널 귀속 — 카페 utm_source 누락 보정 + 진단",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-06-19",
+    "processed_at": "2026-06-19",
+    "artifact": "진단: 클릭 전부 '직접/홈'=구조적 한계(IG 링크불가·직접유입 다수). 추적 자체는 정상.\n발견 결함=카페만 apply_cta_utm 누락 → cafe_upload에 추가(naver_cafe). py_compile·실측 PASS. (CLI ad-hoc · 커밋 c63d5b22)",
+    "next": "🌀 표류 — 다음 미정 (필요 시 GM·웰리/담당 C-Level 지정)",
+    "adhoc_commit": "c63d5b2260b160fb0d3957acf4c4c5504ef44a56",
+    "ship_no": 50
   }
 ]
