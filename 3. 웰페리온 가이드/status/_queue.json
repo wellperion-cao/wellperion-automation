@@ -1264,13 +1264,15 @@
   {
     "task_id": "COO-2026-06-17-FACILITY-DAILY-CHECK",
     "clevel": "coo",
-    "title": "[시우] 시설부 자체 일일점검 신설 — 작업일지 기반(GM 7결정 확정·구현 착수)",
-    "status": "IN_PROGRESS",
+    "title": "[시우] 시설부 자체 일일점검 신설 — 작업일지 기반(GM 7결정 확정·구현·라이브검증 완료)",
+    "status": "DONE",
+    "terminal": true,
+    "processed_at": "2026-06-19",
     "priority": "NORMAL",
     "enqueued_at": "2026-06-17",
-    "note": "[2026-06-17 GM 지시] 시설부 자체 일일점검 신설+작업일지 기반 항목초안. 설계(architect) 완료=status/briefs/COO-2026-06-17-FACILITY-CHECK-DESIGN.md. 핵심: \"신설\"이 아니라 백엔드 dept=facility 배선이 이미 잠들어 있어 재활성화(저난이도). 작업일지 원천 PDF 2건+시설부 체계.html 측정폼(탭 fcheck) 이미 구현. 무회귀=dept별 시트탭·원장·필터 물리분리(지원부 0영향).",
-    "decisions": "[2026-06-19 GM deep-interview 확정] ①측정형(수치기록) ②완료율=입력률(필수측정칸 채움→홈KPI점등) ③단일화면(데이터엔 남/여탕칸 유지) ④평일8회/주말6회 분리 ⑤기존 fcheck폼 승격(정본화)+saveV2 입력률 결합 ⑥근무자 누구나 입력 ⑦점검자명단=시설부3인(이정헌소장·김종현차장·박호균과장)+직접입력. 명세=.omc/specs/deep-interview-facility-daily-check.md",
-    "next": "team 병렬 구현: 1)측정항목 dept=facility 시드 2)setup_facility_tabs 1회 3)평일8/주말6 회차분리 4)fcheck폼→입력률 saveV2결합+점검자드롭다운 5)clasp재배포 6)★지원부 무회귀 게이트(verifier) 7)홈 facility카드 라이브검증.",
+    "decisions": "[2026-06-19 GM deep-interview 확정] ①측정형 ②완료율=입력률 ③단일화면 ④평일8/주말6 회차 ⑤fcheck폼 승격 ⑥근무자 누구나 ⑦점검자=시설부3인+직접입력. 명세=.omc/specs/deep-interview-facility-daily-check.md",
+    "artifact": "[2026-06-19 라이브 완료] deep-interview→executor(opus) 구현→시우 검토·배포·라이브검증. 발견: ①②③⑤⑥은 06-16/17 작업으로 이미 라이브 동작(코드 충족)→실작업은 ④회차+⑦점검자만. ④ saveFacilityMeasure에 round 차원 신설((날짜,회차) 단위 교체로 타 회차 보존)+HTML fcheck 회차선택(평일8 07~21시/주말6 08~21시)·회차별 입력·종합 진행바(total=15×회차+11). 라이브 테스트서 잠재버그 적발: facility 행 14열인데 HEADERS 15열(점검시각 누락, 기존부터)→15열 fix. ⑦ 자유입력→드롭다운(이정헌·김종현·박호균)+직접입력, IME안전 setVal. weekly 무수정(행단위 카운트 자동집계). GAS clasp @79→@81 재배포(deploymentId/URL 보존). 라이브 실증: 07시 저장→weekly total1/done1/measure반영→청소 0복귀. ★지원부 무회귀 PASS(today_live total180·am59/pm49/close72 불변). 커밋 25964d95 push.",
+    "next": "표류(완결). 가동조건: 실무진이 fcheck에서 첫 회차 입력하면 홈 시설부 KPI 자동 점등(현재 0건이라 0%, 엔드포인트 정상). 후속 여지: 주말 6회 시각·항목 시간대/1일 분류=AI 기본값 → 운영하며 박호균 과장 피드백 미세조정. QR 비치·텔레그램 회차알림 필요시 발의.",
     "ship_no": 28
   },
   {
