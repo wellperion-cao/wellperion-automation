@@ -2370,5 +2370,19 @@
     "next": "🌀 표류 — 다음 미정 (필요 시 GM·웰리/담당 C-Level 지정)",
     "adhoc_commit": "eb1c66d747fef96aa340702ab385bbb7224e46f2",
     "ship_no": 54
+  },
+  {
+    "task_id": "COO-2026-06-19-ADHOC-de083e2e",
+    "clevel": "coo",
+    "title": "[시우] 지원부 점검 시트 중복행 근본차단 — 저장 시 (날짜·회차·항목) 쌍둥이 자가치유 [시우]",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-06-19",
+    "processed_at": "2026-06-19",
+    "artifact": "- 진단: 제출 시 멀티콜 엣지로 작업행(미제출)+제출행(제출완료) 2행 잔존(오늘 발생, 대시보드는 원장기반이라 무영향)\n- _collapseDupRowsForDate: _writePerRoundRows 저장 끝에 제출완료 우선·내용동일 쌍둥이만 접음(정상=무동작, 회귀0)\n- collapse_submitted 액션으로 오늘분 정리 완료(남 26·여 29 제거, 제출완료 보존)\n- 실증: 2콜(작업→제출)→1행 / 무회귀 support 180·54 불변. GAS @87 (CLI ad-hoc · 커밋 de083e2e)",
+    "next": "🌀 표류 — 다음 미정 (필요 시 GM·웰리/담당 C-Level 지정)",
+    "adhoc_commit": "de083e2e5d8960049fc14b733fc74c1a913c64b9",
+    "ship_no": 58
   }
 ]
