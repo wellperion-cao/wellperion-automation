@@ -2435,5 +2435,19 @@
     "task_id": "TESTB",
     "status": "PENDING",
     "ship_no": 1
+  },
+  {
+    "task_id": "CTO-2026-06-19-ADHOC-175a6602",
+    "clevel": "cto",
+    "title": "[시토] 자동push 경고 스팸 차단 + rebase 깨뜨리던 런타임상태 언트랙",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-06-19",
+    "processed_at": "2026-06-19",
+    "artifact": "- 경고는 스위퍼만(alert 플래그). 매 커밋 훅은 실패해도 로그만 → GM false알람 스팸 종결\n- _bridge_last.json·.review_notified.json 언트랙(.gitignore): 봇이 계속 dirty로 만들어 rebase --autostash 충돌→자동push abort 원인이었음(로컬파일·재생성 유지, origin 소비자 0)\n- INC-008 후속 보강 (CLI ad-hoc · 커밋 175a6602)",
+    "next": "🌀 표류 — 다음 미정 (필요 시 GM·웰리/담당 C-Level 지정)",
+    "adhoc_commit": "175a66025931b7137ba426e5e92f466ca3583b1a",
+    "ship_no": 30
   }
 ]
