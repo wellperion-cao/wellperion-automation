@@ -1697,5 +1697,18 @@
     "title": "[시모] 마케팅 대시보드 4번 — 강습 종목별 시트 연결(문의 기간집계+등록+시트링크)",
     "note": "GM 지시(2026-06-19). 강습 펼침의 각 종목 행에 ①문의(팀시트 행을 타임스탬프 기준 기간집계, 일/주/월/기간 토글 반영) ②등록(누적) ③비고에 종목 시트 바로가기 링크. GM 결정=숫자+시트링크 둘 다(개인정보 노출 인지). GAS(.deploy-funnel/Survey.js): _collectLessonInqByName_ 추가 + lesson_breakdown 확장(from/to·inquiries·sheetUrl·기간별 캐시키). 프론트: _renderLessonRows 문의칸·시트링크, 기간 인지 로더(_lessonRange), 기간전환 재조회. 문법 검증 PASS.",
     "next": "★GM 액션(유일 잔여): 펀넬 GAS 에디터에 .deploy-funnel/Survey.js 전체 붙여넣기 → 재배포(/exec URL 유지). 배포 후 강습 펼쳐 종목별 문의·시트링크 라이브 확인. ⚠️주의1: 종목 합계는 분배 시차로 유형 합계와 다를 수 있음(정직표기). ⚠️주의2: cmo/survey 사본은 253줄 구버전(별도 정리 대기)."
+  },
+  {
+    "task_id": "CMO-2026-06-19-ADHOC-b11aca94",
+    "clevel": "cmo",
+    "title": "[시모] 마케팅 대시보드 4번 — 강습 종목별 문의(기간)·등록·시트링크 연결",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-06-19",
+    "processed_at": "2026-06-19",
+    "artifact": "GAS(Survey.js): _collectLessonInqByName_ 추가(팀시트 행을 타임스탬프 기준 기간집계)\n + lesson_breakdown 확장(body.from/to·inquiries·sheetUrl·기간별 캐시키 lb_v2)\n프론트: 종목 행에 문의(기간 반영)·시트 바로가기 링크 표시, 기간 인지 로더(_lessonRange)\n + 기간 전환 시 펼침 상태면 종목 문의 재조회\nGM 배포 게이트: 펀넬 GAS 수동 재배포 필요(clasp 미연동) (CLI ad-hoc · 커밋 b11aca94)",
+    "next": "🌀 표류 — 다음 미정 (필요 시 GM·웰리/담당 C-Level 지정)",
+    "adhoc_commit": "b11aca9469934b652877e49c20677294b6ba32bf"
   }
 ]
