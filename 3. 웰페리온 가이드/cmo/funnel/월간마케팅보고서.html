@@ -212,18 +212,15 @@ a{color:var(--accent);text-decoration:none}
     </table>
   </div>
 
-  <!-- ④ 채널별 문의·전환 -->
+  <!-- ④ 채널별 퍼널 (핵심) — 문의(이번달·지난달 대비)→전환율 -->
   <div class="section">
-    <div class="section-title"><span class="section-num">④</span> 채널별 문의 · 전환</div>
+    <div class="section-title"><span class="section-num">④</span> 채널별 퍼널 <span style="font-size:10px;color:var(--accent);font-weight:700">핵심</span></div>
     <div style="background:var(--paper);border:1px solid var(--border);border-radius:12px;padding:18px 20px">
-      <div style="font-size:12px;color:var(--dim);margin-bottom:14px">이번 달 유입 채널별 문의 건수 (period_breakdown byChannelMonth 기준)</div>
-      <div class="channel-bars" id="channelBars">
+      <div style="font-size:12px;color:var(--dim);margin-bottom:14px">채널별 <b style="color:var(--text)">문의(이번달·지난달 대비)</b> → <b style="color:var(--text)">전환율</b> · 콘텐츠 개선의 핵심 근거 · ⚠ 전환=유효회원 <b>전화매칭 누적 추정</b>(인과 아님)</div>
+      <div id="channelFunnel">
         <div style="color:var(--dim);font-style:italic;font-size:13px">로딩 중…</div>
       </div>
-      <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border)">
-        <div style="font-size:12px;color:var(--dim);margin-bottom:10px">전환율 (문의 → 회원 등록) · <b>전체 누적</b> 기준 (월 구분 없음) · ⚠ 전환=유효회원 <b>전화번호 매칭 추정</b>(인과 증명 아님·기존회원 포함될 수 있음)</div>
-        <div id="conversionSummary" style="font-size:13px;color:var(--dim);font-style:italic">로딩 중…</div>
-      </div>
+      <div id="danggnNote" style="margin-top:12px;padding-top:10px;border-top:1px solid var(--border);font-size:11px;color:var(--dim)"></div>
     </div>
   </div>
 
@@ -238,26 +235,9 @@ a{color:var(--accent);text-decoration:none}
     </div>
   </div>
 
-  <!-- ⑥ 수기 입력란 (외부 지표) -->
+  <!-- ⑥ 코멘트 / 개선 액션 -->
   <div class="section">
-    <div class="section-title"><span class="section-num">⑥</span> 외부 지표 <span class="manual-badge">수기 입력</span></div>
-    <div class="manual-section">
-      <div style="font-size:12px;color:var(--dim);margin-bottom:14px;line-height:1.75">외부 <b>노출</b> 지표는 정확한 자동 측정수단이 아직 제한적입니다. 아래 당근은 <b>부분</b> 자동수집(발행 글 중 URL이 확보된 글의 <b style="color:var(--text)">조회수</b> — 노출 아님)이며, IG 도달·블로그·카페는 신뢰 가능한 자동수집 전이라 <b>미수록</b>합니다(빈 칸 채우는 척 안 함). <b style="color:var(--accent)">콘텐츠 효과 판단은 ④ 채널별 문의·전환(퍼널)을 기준</b>으로 하세요 — 노출·조회수는 참고용입니다.</div>
-      <div class="manual-row">
-        <div>
-          <div class="manual-lbl">당근 조회수 <span class="manual-badge" style="background:#0f3d2e;color:#34d399">부분 자동수집</span></div>
-          <div class="manual-hint" id="danggnHint">발행 글 중 URL 확보분의 공개 조회수 합 · 노출(impressions) 아님</div>
-        </div>
-        <div>
-          <input class="manual-input" id="danggnViews" type="text" readonly placeholder="수집 중…" style="font-weight:700" />
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ⑦ 코멘트 / 개선 액션 -->
-  <div class="section">
-    <div class="section-title"><span class="section-num">⑦</span> 코멘트 &amp; 개선 액션</div>
+    <div class="section-title"><span class="section-num">⑥</span> 코멘트 &amp; 개선 액션 <span style="font-size:10px;color:var(--accent);font-weight:700">자동 도출</span></div>
     <div style="font-size:11px;color:var(--dim);margin-bottom:10px;font-style:italic">※ 아래 성과·병목·액션은 집계로 자동 생성된 <b>초안</b>입니다 — 전환 수치가 추정이라 방향 참고용. 실제 개선은 퍼널(클릭→문의→전환) 근거로 GM 메모에 보완하세요.</div>
     <div class="comment-box">
       <div class="comment-row">
@@ -294,6 +274,32 @@ const GAS_URL = "https://script.google.com/macros/s/AKfycbzdwSCCSSJ6JXLDoWuo7HG0
 function _wpKey() { return ''; }
 function _wpUrl(base) { return base; }
 function _wpGate(json){ return false; }
+
+/* ── 모듈 상태 (채널 퍼널·코멘트 공용) ── */
+let _pb = null;        // period_breakdown 이번달
+let _fc = null;        // funnel_conversion (채널별 누적 전환율)
+let _prevByCh = null;  // 지난달 채널별 문의 {채널:건수}
+
+/* ── 지난달 1일~말일 채널별 문의 (period_breakdown custom range) ── */
+async function loadPrevMonthChannels() {
+  try {
+    const now = new Date();
+    const py = now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear();
+    const pm = now.getMonth() === 0 ? 12 : now.getMonth();   // 1~12 (지난달)
+    const mm = String(pm).padStart(2, '0');
+    const last = new Date(py, pm, 0).getDate();
+    const from = py + '-' + mm + '-01';
+    const to   = py + '-' + mm + '-' + String(last).padStart(2, '0');
+    const resp = await fetch(_wpUrl(GAS_URL + '?action=period_breakdown&from=' + from + '&to=' + to));
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+    const data = await resp.json();
+    _prevByCh = (data && data.custom && data.custom.byChannel) ? data.custom.byChannel : {};
+  } catch (e) {
+    _prevByCh = null;   // null = 지난달 비교 불가('—' 표시)
+  }
+  maybeRenderChannelFunnel();
+  renderComments();
+}
 
 /* ── 유틸 ── */
 function fmtNum(n) {
@@ -338,11 +344,12 @@ async function loadPeriodBreakdown() {
     showError("period_breakdown 로드 실패 — 집계 칸은 '—'으로 표시됩니다. (" + e.message + ")");
     data = null;
   }
+  _pb = data;
   renderKpiTable(data);
   renderTypeBars(data);
-  renderChannelBars(data);
-  renderSummary(data, null);
-  renderComments(data, null);
+  renderSummary(data);
+  maybeRenderChannelFunnel();
+  renderComments();
 }
 
 /* ── funnel_conversion 로드 ── */
@@ -356,7 +363,9 @@ async function loadFunnelConversion() {
     showError("funnel_conversion 로드 실패 — 채널 데이터가 표시되지 않을 수 있습니다. (" + e.message + ")");
     data = null;
   }
-  renderConversionSummary(data);
+  _fc = data;
+  maybeRenderChannelFunnel();
+  renderComments();
 }
 
 /* ── KPI 집계 표 렌더 ── */
@@ -394,54 +403,47 @@ function renderKpiTable(pb) {
   }).join("");
 }
 
-/* ── 채널 바 렌더 (이번 달 — period_breakdown byChannelMonth, 월 단위 일치) ── */
-function renderChannelBars(pb) {
-  const el = document.getElementById("channelBars");
-  const byCh = pb?.inquiries?.byChannelMonth ?? null;
-  if (!byCh || typeof byCh !== "object" || Object.keys(byCh).length === 0) {
-    el.innerHTML = '<div style="color:var(--dim);font-style:italic;font-size:13px">이번 달 채널 데이터 없음</div>';
+/* ── 채널별 퍼널 표 (핵심) — 문의(이번달·지난달 대비)→전환율 ── */
+/* 데이터: _pb.inquiries.byChannelMonth(이번달) + _prevByCh(지난달) + _fc.byChannel(누적 전환율) */
+function maybeRenderChannelFunnel() {
+  const el = document.getElementById("channelFunnel");
+  if (!el) return;
+  const cur = (_pb && _pb.inquiries && _pb.inquiries.byChannelMonth) ? _pb.inquiries.byChannelMonth : null;
+  if (!cur || Object.keys(cur).length === 0) {
+    el.innerHTML = '<div style="color:var(--dim);font-style:italic;font-size:13px">이번 달 채널 문의 데이터 없음</div>';
     return;
   }
-  const entries = Object.entries(byCh).sort((a, b) => b[1] - a[1]);
-  const max     = Math.max(...entries.map(e => e[1]), 1);
-  el.innerHTML = entries.map(([ch, cnt]) => {
-    const pct = Math.round((cnt / max) * 100);
-    return `<div class="ch-row">
-      <span class="ch-name">${ch || "기타"}</span>
-      <div class="ch-bar-wrap"><div class="ch-bar" style="width:${pct}%"></div></div>
-      <span class="ch-val">${fmtNum(cnt)}</span>
-    </div>`;
-  }).join("");
-}
+  // 채널별 누적 전환율
+  const rateByCh = {};
+  if (_fc && Array.isArray(_fc.byChannel)) {
+    _fc.byChannel.forEach(d => { rateByCh[d.channel] = d.rate; });
+  }
+  const prev = _prevByCh || {};
+  const rows = Object.keys(cur)
+    .map(ch => ({ ch, cur: cur[ch] || 0, prev: prev[ch] || 0, rate: (rateByCh[ch] !== undefined ? rateByCh[ch] : null) }))
+    .filter(r => r.cur > 0 || r.prev > 0)
+    .sort((a, b) => b.cur - a.cur);
 
-/* ── 전환 요약 렌더 ── */
-function renderConversionSummary(fc) {
-  const el = document.getElementById("conversionSummary");
-  // funnel_conversion 응답 구조: { total: { inquiries, converted, rate }, byChannel:[...] }
-  const t    = fc?.total ?? null;
-  const inq  = t?.inquiries ?? null;
-  const conv = t?.converted ?? null;
-  const rate = t?.rate      ?? null;
-  if (inq == null && conv == null) {
-    el.textContent = "전환 데이터 없음";
-    return;
-  }
-  const cls = rate != null ? getRateClass(rate) : "";
-  let html = `문의 <strong>${fmtNum(inq)}</strong>건 →
-    회원 전환 <strong>${fmtNum(conv)}</strong>명
-    <span class="rate-chip ${cls}" style="margin-left:6px">${rate != null ? fmtPct(rate) : "—"}</span>`;
-  // 최강/약세 채널 한 줄 인사이트 (대시보드 상단 요약 이관 — 기타·미상 제외, 문의 20건+ 채널만)
-  const ch = Array.isArray(fc?.byChannel)
-    ? fc.byChannel.filter(d => (d.inquiries || 0) >= 20 && d.channel !== "기타·미상") : [];
-  if (ch.length) {
-    const best  = ch.reduce((a, b) => (b.rate || 0) > (a.rate || 0) ? b : a);
-    const worst = ch.reduce((a, b) => (b.rate || 0) < (a.rate || 0) ? b : a);
-    html += `<div style="margin-top:10px;font-size:13px;color:var(--dim)">🔥 최강 전환 <strong style="color:var(--text)">${best.channel} ${best.rate}%</strong>`;
-    if (worst.channel !== best.channel) {
-      html += ` · 약세 <strong style="color:var(--text)">${worst.channel} ${worst.rate}%</strong> (재점검)`;
-    }
-    html += ` <span style="font-size:11px">· 누적 전환율 기준</span></div>`;
-  }
+  let html = '<table class="data-table"><thead><tr>'
+    + '<th class="left">채널</th><th>이달 문의</th><th>지난달</th><th>증감</th><th>전환율(누적)</th>'
+    + '</tr></thead><tbody>';
+  rows.forEach(r => {
+    const diff = r.cur - r.prev;
+    const diffStr = (_prevByCh === null) ? '<span class="placeholder-cell">—</span>'
+      : (diff > 0 ? '<span style="color:var(--green);font-weight:700">▲ ' + diff + '</span>'
+        : diff < 0 ? '<span style="color:var(--red);font-weight:700">▼ ' + Math.abs(diff) + '</span>'
+        : '<span style="color:var(--dim)">–</span>');
+    let rateCell;
+    if (r.rate == null) { rateCell = '<span class="placeholder-cell">—</span>'; }
+    else { rateCell = '<span class="rate-chip ' + getRateClass(r.rate) + '">' + fmtPct(r.rate) + '</span>'; }
+    html += '<tr><td class="left" style="font-weight:600">' + (r.ch || "기타") + '</td>'
+      + '<td><span class="data-num">' + fmtNum(r.cur) + '</span></td>'
+      + '<td>' + (_prevByCh === null ? '<span class="placeholder-cell">—</span>' : fmtNum(r.prev)) + '</td>'
+      + '<td>' + diffStr + '</td>'
+      + '<td>' + rateCell + '</td></tr>';
+  });
+  html += '</tbody></table>'
+    + '<div style="margin-top:8px;font-size:11px;color:var(--dim)">문의=접수 시 선택한 유입경로 · 지난달=같은 기준 1일~말일 · 전환율=문의→회원(전화매칭 누적 추정) · 클릭은 UTM 태그분만 부분집계라 채널 퍼널엔 미포함</div>';
   el.innerHTML = html;
 }
 
@@ -495,58 +497,69 @@ function renderSummary(pb) {
   }
 }
 
-/* ── 코멘트 자동 생성 ── */
-function renderComments(pb) {
-  const inq    = pb?.inquiries?.month ?? null;
-  const conv   = pb?.conversion?.month?.converted ?? null;
-  const rate   = pb?.conversion?.month?.rate ?? null;
-  const clicks = pb?.clicks?.month ?? null;
-
-  // ② 성과
+/* ── 코멘트 자동 도출 — 채널 퍼널(문의·지난달대비·전환율) 기반 ── */
+function renderComments() {
   const ach = document.getElementById("commentAchieve");
-  if (inq != null) {
-    ach.innerHTML = `이달 총 <strong>${fmtNum(inq)}건</strong>의 문의가 접수되었으며,
-      클릭 ${fmtNum(clicks)}회 대비 문의 전환으로 연결되었습니다.`;
-    ach.style.fontStyle = "normal";
-    ach.style.color     = "var(--text)";
-  } else {
-    ach.textContent = "집계 데이터 로드 후 자동 생성됩니다.";
-  }
-
-  // ③ 병목
   const bot = document.getElementById("commentBottleneck");
-  if (rate != null) {
-    const msg = rate < 5
-      ? `전환율 ${fmtPct(rate)}로 저조 — 문의→상담 연결 프로세스 점검 필요`
-      : rate < 15
-      ? `전환율 ${fmtPct(rate)}로 개선 여지 있음 — 응대 속도·CTA 강화 검토`
-      : `전환율 ${fmtPct(rate)}로 양호 — 유지 및 노출 확대 집중`;
-    bot.innerHTML = msg;
-    bot.style.fontStyle = "normal";
-    bot.style.color     = rate < 5 ? "var(--red)" : rate < 15 ? "var(--yellow)" : "var(--green)";
+  const act = document.getElementById("commentAction");
+  if (!ach || !bot || !act) return;
+
+  const cur = (_pb && _pb.inquiries && _pb.inquiries.byChannelMonth) ? _pb.inquiries.byChannelMonth : null;
+  const inqTotal = (_pb && _pb.inquiries) ? _pb.inquiries.month : null;
+  const wait = "집계 로드 후 자동 도출됩니다.";
+  if (!cur || Object.keys(cur).length === 0) {
+    ach.textContent = wait; bot.textContent = wait; act.textContent = wait;
+    return;
+  }
+  const chans = Object.keys(cur).filter(c => c !== "기타·미상");
+  const top = chans.slice().sort((a, b) => cur[b] - cur[a])[0];
+
+  // 채널별 누적 전환율(문의 10건+ 채널만 — 표본 부족 잡음 차단)
+  const rateByCh = {};
+  if (_fc && Array.isArray(_fc.byChannel)) {
+    _fc.byChannel.forEach(d => { if ((d.inquiries || 0) >= 10 && d.channel !== "기타·미상") rateByCh[d.channel] = d.rate; });
+  }
+  const rateChans = Object.keys(rateByCh);
+
+  // ① 성과
+  let achHtml = `이달 문의 <strong>${fmtNum(inqTotal)}건</strong>`;
+  if (top) achHtml += ` · 최다 유입 <strong>${top}(${fmtNum(cur[top])}건)</strong>`;
+  if (_prevByCh) {
+    const prevTotal = Object.values(_prevByCh).reduce((s, v) => s + v, 0);
+    const d = (inqTotal || 0) - prevTotal;
+    achHtml += ` · 지난달 대비 ${d >= 0 ? `<span style="color:var(--green)">+${d}건</span>` : `<span style="color:var(--red)">${d}건</span>`}`;
+  }
+  ach.innerHTML = achHtml; ach.style.fontStyle = "normal"; ach.style.color = "var(--text)";
+
+  // ② 병목 — 전환율 최저 채널(문의는 오는데 전환이 약함)
+  if (rateChans.length) {
+    const worst = rateChans.reduce((a, b) => rateByCh[b] < rateByCh[a] ? b : a);
+    const best  = rateChans.reduce((a, b) => rateByCh[b] > rateByCh[a] ? b : a);
+    bot.innerHTML = `전환율 최저 <strong style="color:var(--red)">${worst} ${fmtPct(rateByCh[worst])}</strong> — 문의는 오는데 전환이 약함(응대·타겟·메시지 점검) · 최고 <strong style="color:var(--green)">${best} ${fmtPct(rateByCh[best])}</strong>`;
+    bot.style.fontStyle = "normal"; bot.style.color = "var(--text)";
   } else {
-    bot.textContent = "집계 데이터 로드 후 자동 생성됩니다.";
+    bot.textContent = "채널별 전환율 산출용 표본 부족(문의 10건+ 채널 없음).";
   }
 
-  // ④ 액션
-  const act = document.getElementById("commentAction");
-  if (rate != null) {
-    const actions = [];
-    if (rate < 10) actions.push("• 문의 후 24시간 내 응답률 모니터링 강화");
-    actions.push("• 노출→문의 전환 CTA 개선 (wellperion.com/ko/inquiry/ 진입 유도)");
-    if (inq != null && inq < 10) actions.push("• 월 문의 건수 부족 — 콘텐츠 발행 빈도 점검");
-    act.innerHTML = actions.join("<br>");
-    act.style.fontStyle = "normal";
-    act.style.color     = "var(--text)";
-  } else {
-    act.textContent = "집계 데이터 로드 후 자동 생성됩니다.";
+  // ③ 개선 액션 추천(초안)
+  const acts = [];
+  if (top) acts.push(`• <strong>${top}</strong> 최다 유입 — 잘 되는 콘텐츠 톤·주제 유지·증편`);
+  if (rateChans.length) {
+    const worst = rateChans.reduce((a, b) => rateByCh[b] < rateByCh[a] ? b : a);
+    acts.push(`• <strong>${worst}</strong> 전환율 ${fmtPct(rateByCh[worst])} — CTA·응대속도·타겟 메시지 점검`);
   }
+  if (_prevByCh) {
+    let dropCh = null, dropAmt = 0;
+    chans.forEach(c => { const d = (cur[c] || 0) - (_prevByCh[c] || 0); if (d < dropAmt) { dropAmt = d; dropCh = c; } });
+    if (dropCh && dropAmt <= -3) acts.push(`• <strong>${dropCh}</strong> 지난달 대비 ${dropAmt}건 — 발행 빈도·노출 회복 점검`);
+  }
+  acts.push("• 노출·조회수 아닌 <strong>문의·전환율</strong> 기준으로 콘텐츠 우선순위 결정");
+  act.innerHTML = acts.join("<br>"); act.style.fontStyle = "normal"; act.style.color = "var(--text)";
 }
 
 /* ── 진입점 ── */
 async function loadDanggnViews() {
-  const el = document.getElementById('danggnViews');
-  const hint = document.getElementById('danggnHint');
+  const el = document.getElementById('danggnNote');
   if (!el) return;
   try {
     const res = await fetch('engagement/danggn_snapshot.json?t=' + Date.now());
@@ -554,22 +567,15 @@ async function loadDanggnViews() {
     const snap = await res.json();
     const posts = Array.isArray(snap.posts) ? snap.posts : [];
     const views = posts.reduce((s, p) => s + (Number(p.viewCount) || 0), 0);
-    el.value = views.toLocaleString() + ' 회 · 추적 ' + posts.length + '글(부분)';
-    if (hint) {
-      let h = '발행 글 중 URL 확보분의 공개 조회수 합 · 노출 아님';
-      if (snap.collected_at) {
-        h += ' · 수집 ' + String(snap.collected_at).slice(0, 16);
-        const cd = new Date(String(snap.collected_at).replace(' ', 'T') + '+09:00');
-        if (!isNaN(cd.getTime())) {
-          const ageDays = (Date.now() - cd.getTime()) / 86400000;
-          if (ageDays > 2) h += ' ⚠ ' + Math.floor(ageDays) + '일 전 — 갱신 정지 가능';
-        }
-      }
-      hint.textContent = h;
+    let h = '참고(노출 아님): 당근 조회수 ' + views.toLocaleString() + '회 · 추적 ' + posts.length + '글(URL 확보분만·부분)';
+    if (snap.collected_at) {
+      h += ' · 수집 ' + String(snap.collected_at).slice(0, 16);
+      const cd = new Date(String(snap.collected_at).replace(' ', 'T') + '+09:00');
+      if (!isNaN(cd.getTime()) && (Date.now() - cd.getTime()) / 86400000 > 2) h += ' ⚠ 갱신 정지 가능';
     }
+    el.textContent = h;
   } catch (e) {
-    el.value = '수집 실패 — 수기 확인';
-    if (hint) hint.textContent = '당근 데이터 로드 실패: ' + e.message;
+    el.textContent = '참고: 당근 조회수 수집 실패(별도 확인)';
   }
 }
 
@@ -577,6 +583,7 @@ async function loadDanggnViews() {
   await Promise.all([
     loadPeriodBreakdown(),
     loadFunnelConversion(),
+    loadPrevMonthChannels(),
     loadDanggnViews(),
   ]);
 })();
