@@ -2204,6 +2204,29 @@ def main():
     )
     logger.info("dashboard_cache_warm 등록 완료 (15분 주기) — 마케팅 대시보드 캐시 워밍")
 
+    # ── 푸시 스위퍼 (5분 주기) — 밀린 커밋 안전 드레인(fetch+rebase+push) — CTO 2026-06-19 ──
+    # 부모 GitLock 안에서 rebase 못 하고 쌓인 커밋을 lock 밖에서 안전하게 올린다.
+    # 자동 push 실패(non-ff 경합)의 근본 해결: 경합은 조용히 두고 스위퍼가 확실히 동기화.
+    def _push_sweeper():
+        try:
+            subprocess.run(
+                [sys.executable, "scripts/post_commit_push.py", "--sweep"],
+                cwd=str(BASE.parent), timeout=120,
+                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+            )
+        except Exception as e:
+            logger.error(f"push_sweeper 실행 실패: {e}")
+
+    scheduler.add_job(
+        _push_sweeper,
+        trigger=IntervalTrigger(minutes=5),
+        id="push_sweeper",
+        misfire_grace_time=300,
+        coalesce=True,
+        next_run_time=datetime.now(),
+    )
+    logger.info("push_sweeper 등록 완료 (5분 주기) — 미푸시 커밋 안전 드레인")
+
     if args.test:
         logger.info("=== 테스트 모드 시작: 1시간 주기 ===")
         scheduler.add_job(
