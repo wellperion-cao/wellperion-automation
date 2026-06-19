@@ -1984,13 +1984,15 @@ var FACILITY_ITEMS = [
   { id:'fc_ai_alarm',      name:'측정 기준범위 이탈 경보 확인',      cat:'F 안전(AI초안)',  unit:'ok/x', ai:true }
 ];
 
-// ─── 시설 측정값 저장 (POST {action:'save_facility_measure', date, inspector, items:[{id,name,cat,measure,done}]}) ───
-// 시설_공용구역 시트에 해당 날짜 행을 측정 항목 단위로 교체 기록. col5(점검결과)='완료'면 입력완료, col12=측정값.
-// weekly&dept=facility가 col5/col12를 읽어 입력률 완료율 + measure 배열을 자동 집계(서버 추가 집계 불필요).
+// ─── 시설 측정값 저장 (POST {action:'save_facility_measure', date, round, inspector, items:[{id,name,cat,measure,done}]}) ───
+// 시설_공용구역 시트에 해당 (날짜,회차) 행을 측정 항목 단위로 교체 기록. col5(점검결과)='완료'면 입력완료, col12=측정값.
+// col4=회차 라벨(예 '07시'·'1일'). round 미지정 시 '측정'(하위호환 — 기존 단일스냅샷 동작).
+// weekly&dept=facility가 col5/col12를 읽어 입력률 완료율 + measure 배열을 자동 집계(행 단위 카운트 → 회차별 행이 늘면 자동 합산, 서버 추가 집계 불필요).
 // ⚠ facility 전용 탭(시설_공용구역)만 기록 — 지원부 코드 경로·시트 일절 미접촉(무회귀 0).
 function saveFacilityMeasure(body) {
   var date = String(body.date || '').trim();
   if (!date) return jsonRes({ ok: false, error: 'date 필수' });
+  var round = String(body.round || '').trim() || '측정';   // 회차 라벨(없으면 '측정' = 기존 단일스냅샷 하위호환)
   var inspector = String(body.inspector || '박호균').trim() || '박호균';
   var items = body.items || [];
   var ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -1999,34 +2001,36 @@ function saveFacilityMeasure(body) {
   if (!sheet) { _createCheckSheet(ss, name); sheet = ss.getSheetByName(name); }
   _ensureHeaders(sheet);
 
-  // 1) 이 날짜 기존 행 제거(측정 재제출 = 재진술, 중복 누적 방지)
+  // 1) 이 (날짜,회차) 기존 행만 제거(같은 회차 재제출 = 재진술, 중복 누적 방지). 다른 회차 행은 보존.
   var data = sheet.getDataRange().getValues();
   for (var i = data.length - 1; i >= 1; i--) {
-    if (String(data[i][0]) === date || formatDate(data[i][0]) === date) {
+    var sameDate = (String(data[i][0]) === date || formatDate(data[i][0]) === date);
+    var sameRound = (String(data[i][4]) === round);
+    if (sameDate && sameRound) {
       try { sheet.deleteRow(i + 1); }
       catch (e) { var _cc = Math.max(HEADERS.length, sheet.getLastColumn()); sheet.getRange(i + 1, 1, 1, _cc).clearContent(); }
     }
   }
 
-  // 2) 측정 항목 단위로 14열 행 구성 — 측정값 있으면 '완료'(입력완료), 없으면 '미완료'
+  // 2) 측정 항목 단위로 14열 행 구성 — 측정값 있으면 '완료'(입력완료), 없으면 '미완료'. col4=회차 라벨.
   var now = Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy-MM-dd HH:mm');
   var rows = items.map(function (it) {
     var measure = _measureStr(it.measure);
     var done = (it.done === true || it.done === 1 || (measure !== ''));
     return [
-      date, String(it.id || ''), String(it.name || ''), String(it.cat || ''), '측정',
+      date, String(it.id || ''), String(it.name || ''), String(it.cat || ''), round,
       done ? '완료' : '미완료', '', '',
       done ? '제출완료' : '미제출', done ? now : '',
       inspector, inspector,
-      measure, ''
-    ];
+      measure, '', done ? now : ''
+    ];   // 15열(HEADERS와 일치): …측정값·반영완료·점검시각. 점검시각=입력시각(done일 때).
   });
   if (rows.length) {
     var startRow = sheet.getLastRow() + 1;
     sheet.getRange(startRow, 1, rows.length, HEADERS.length).setValues(rows);
   }
   var doneCnt = 0; rows.forEach(function (r) { if (r[5] === '완료') doneCnt++; });
-  return jsonRes({ ok: true, dept: 'facility', date: date, total: rows.length, done: doneCnt, pct: rows.length ? Math.round(doneCnt / rows.length * 100) : 0 });
+  return jsonRes({ ok: true, dept: 'facility', date: date, round: round, total: rows.length, done: doneCnt, pct: rows.length ? Math.round(doneCnt / rows.length * 100) : 0 });
 }
 
 var SHEET_ISSUE_FACILITY = '시설_이슈대장';
