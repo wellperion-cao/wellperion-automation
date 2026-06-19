@@ -1,5 +1,18 @@
 [
   {
+    "task_id": "COO-2026-06-19-SUPPORT-CHECK-DUP-FIX",
+    "clevel": "coo",
+    "title": "[시우] 지원부 점검 오늘 시트 중복(2개씩) 검수·정리·근본차단",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "HIGH",
+    "enqueued_at": "2026-06-19",
+    "processed_at": "2026-06-19",
+    "artifact": "GM 지적(오늘 시트 항목 2개씩). 진단(dump_zone): 오늘 거의 전 항목이 '미제출 작업행+제출완료 제출행' 2행. 원인=제출 시 _writePerRoundRows 멀티콜 엣지(편집저장→제출저장)에서 회차업서트가 기존행을 못 접고 추가. 제 작업 무관 확인(중복행 타임스탬프 09:30~31, 내 배포 12:34 이후). 대시보드 무영향(today_live는 원장기반 180·54). 목요일 깨끗=오늘 한정. 조치 2단: ①정리=collapse_submitted 액션 추가(제출완료 우선·내용동일 작업행만 제거·내용다르면 보존), 오늘 남26·여29 제거→남28·여27·중복0. ②근본=_writePerRoundRows 저장 끝에 _collapseDupRowsForDate 자가치유(쌍둥이 즉시 접음, 정상=무동작 회귀0). 실증: 2콜(작업→제출)→1행, support 180·54 불변. 진단 부산물 dump_zone 칸확장. GAS @86~@87. 커밋 d57bcfbc·3831d53d.",
+    "next": "표류(완결). 재발 시 자가치유가 저장마다 접음. 정확한 멀티콜 트리거(회차라벨 어긋남)는 데이터 정리로 재현불가 — 자가치유로 무해화. 필요시 collapse_submitted 수동 청소 도구 상존.",
+    "ship_no": 59
+  },
+  {
     "task_id": "COO-2026-06-19-SUPPORT-SUPPLY-TAB",
     "clevel": "coo",
     "title": "[시우] 지원부 체계 비품관리 탭 신설 + 시설점검 시트 생성·연동",
