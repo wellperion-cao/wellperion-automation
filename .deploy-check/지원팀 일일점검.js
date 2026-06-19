@@ -327,6 +327,40 @@ function doGet(e) {
     _delRows.forEach(function(rn){ _qz.deleteRow(rn); });
     return jsonRes({ ok: true, sheet: _qz.getName(), date: _onlyDate || 'all', kept: _kept, removed: _delRows.length });
   }
+  if (action === 'collapse_submitted') {   // (날짜,항목ID,회차) 제출완료 행 보존, 내용 동일한 작업행(미제출) 중복만 제거. 시각/제출상태 제외 비교. 2026-06-19 시우.
+    var _cz = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(_deptTabs(e.parameter.dept || 'support')[e.parameter.zone || 'male']);
+    if (!_cz) return jsonRes({ error: 'no sheet' });
+    var _cOnly = e.parameter.date || '';
+    var _cd = _cz.getDataRange().getValues();
+    var _SUB = '제출완료';   // '제출완료'
+    var _gmap = {};
+    for (var _ci = 1; _ci < _cd.length; _ci++) {
+      var _cr = _cd[_ci];
+      var _cdt = formatDate(_cr[0]);
+      if (_cOnly && _cdt !== _cOnly) continue;
+      var _ck = _cdt + '|' + String(_cr[1]) + '|' + String(_cr[4]);
+      var _ccsig = [5,6,7,10,11,12,13].map(function(c){ return String(_cr[c] == null ? '' : _cr[c]); }).join('');
+      var _csub = (String(_cr[8] || '').indexOf(_SUB) >= 0);
+      if (!_gmap[_ck]) _gmap[_ck] = [];
+      _gmap[_ck].push({ rn: _ci + 1, csig: _ccsig, sub: _csub });
+    }
+    var _cDel = [], _cKept = 0, _cKeys = 0;
+    Object.keys(_gmap).forEach(function(k){
+      var arr = _gmap[k]; _cKeys++;
+      if (arr.length < 2) { _cKept += arr.length; return; }
+      var keeper = null;
+      for (var i = 0; i < arr.length; i++) { if (arr[i].sub) { keeper = arr[i]; break; } }
+      if (!keeper) keeper = arr[0];
+      arr.forEach(function(r){
+        if (r === keeper) { _cKept++; }
+        else if (r.csig === keeper.csig) { _cDel.push(r.rn); }   // 내용 동일 → 중복, 삭제
+        else { _cKept++; }                                       // 내용 다름 → 보존
+      });
+    });
+    _cDel.sort(function(a, b){ return b - a; });
+    _cDel.forEach(function(rn){ _cz.deleteRow(rn); });
+    return jsonRes({ ok: true, sheet: _cz.getName(), date: _cOnly || 'all', keys: _cKeys, kept: _cKept, removed: _cDel.length });
+  }
   if (action === 'clear_non_keep') {   // 지정 날짜(keep) 외 행 전부 삭제 — '오늘것만 남김'. 2026-06-15 시우.
     var _kz = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(_deptTabs(e.parameter.dept || 'support')[e.parameter.zone || 'male']);
     var _keep = e.parameter.date || '';
@@ -903,6 +937,39 @@ function doPost(e) {
 // ─── 회차별 행 저장(2026-06-15 GM·시우): 시트 행 키 = (날짜+회차+항목ID). 원장(cr) 회차별 진실을
 //     시트가 그대로 미러링 → 오전조 op·마감조 cls 각각 독립 행. "시트=페이지 회차별 동일시" 정본.
 //     roundChecks(회차별 체크 진실)에서 행 생성 → 미완료·무이슈 노이즈 0. 활성 성별탭만 갱신(타성별 무영향).
+// 자가치유(2026-06-19 시우): 저장 후 같은 (날짜,회차라벨,항목ID) 쌍둥이 행이 생기면 즉시 접음.
+// 제출완료 행 우선 보존 / 내용(결과·이슈·노하우·근무·점검자·측정·반영, 제출상태·시각 제외) 동일한 행만 제거 → 내용 다른 행은 보존.
+// 정상(쌍둥이 없음)이면 무동작 = 회귀 0. 멀티콜 엣지로 인한 시트 2행 표시를 구조적으로 차단.
+function _collapseDupRowsForDate(sheet, date) {
+  if (!sheet || !date) return 0;
+  var vals = sheet.getDataRange().getValues();
+  var grp = {};
+  for (var i = 1; i < vals.length; i++) {
+    var r = vals[i];
+    var dt = (String(r[0]) === date || formatDate(r[0]) === date);
+    if (!dt) continue;
+    var key = String(r[4]) + '|' + String(r[1]);   // 회차라벨|항목ID (이미 date로 필터됨)
+    var csig = [5,6,7,10,11,12,13].map(function(c){ return String(r[c] == null ? '' : r[c]); }).join('');
+    var sub = (String(r[8] || '').indexOf('제출완료') >= 0);
+    if (!grp[key]) grp[key] = [];
+    grp[key].push({ rn: i + 1, csig: csig, sub: sub });
+  }
+  var del = [];
+  Object.keys(grp).forEach(function(k){
+    var arr = grp[k];
+    if (arr.length < 2) return;
+    var keeper = null;
+    for (var x = 0; x < arr.length; x++) { if (arr[x].sub) { keeper = arr[x]; break; } }
+    if (!keeper) keeper = arr[0];
+    arr.forEach(function(r){ if (r !== keeper && r.csig === keeper.csig) del.push(r.rn); });
+  });
+  del.sort(function(a, b){ return b - a; });
+  del.forEach(function(rn){
+    try { sheet.deleteRow(rn); }
+    catch (e) { var cc = Math.max(HEADERS.length, sheet.getLastColumn()); sheet.getRange(rn, 1, 1, cc).clearContent(); }
+  });
+  return del.length;
+}
 function _writePerRoundRows(dept, date, body) {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var gender = body.genderTab || 'm';
@@ -1033,6 +1100,7 @@ function _writePerRoundRows(dept, date, body) {
         total += add.length;
       }
     }
+    _collapseDupRowsForDate(sheet, date);   // 자가치유: 멀티콜로 생긴 (날짜·회차·항목) 쌍둥이 즉시 접음(제출완료 우선)
     _sortByDateDesc(sheet);
   });
   return jsonRes({ success: true, perRound: true, saved: total });
