@@ -276,33 +276,6 @@ def compose_guide_card(output_path: Path) -> None:
 
 
 # ---------------------------------------------------------------------------
-# 문의 CTA 카드 슬라이드 — 표준 closing 두 번째 카드 (가이드 카드 다음)
-# 자산 = instagram/_assets/cta_card.jpg (생성기 scripts/compose_cta_card.py).
-# 회사 공식 콘텐츠 한정(namuk 개인 AI시리즈는 DM문의 톤이라 제외).
-# ⚠️ 이미지라 클릭 불가 = 시각 강조용 / 추적은 본문·프로필 텍스트 링크가 담당.
-# ---------------------------------------------------------------------------
-def place_cta_card(output_path: Path) -> None:
-    """문의 CTA 카드. 자산 그대로 1080x1080 복사 (compose_guide_card 와 동일 패턴)."""
-    cta_src = PROJECT_ROOT / "instagram" / "_assets" / "cta_card.jpg"
-    if not cta_src.exists():
-        raise FileNotFoundError(f"CTA 카드 없음: {cta_src} (먼저 scripts/compose_cta_card.py 실행)")
-    img = Image.open(cta_src).convert("RGB")
-    if img.size != (W, H):
-        img = center_crop_fill(cta_src, W, H)
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-    img.save(output_path, "JPEG", quality=95, optimize=True)
-    print(f"  [CTA] {output_path.name} ({output_path.stat().st_size // 1024}KB)")
-
-
-def compose_closing_cards(out_dir: Path, start_idx: int) -> int:
-    """표준 closing 2장(가이드 → 문의 CTA)을 ig_{start}.jpg, ig_{start+1}.jpg 로 배치.
-    다음 슬롯 인덱스를 반환(영상 등 이어붙일 때 사용). 회사 공식 콘텐츠 표준."""
-    compose_guide_card(out_dir / f"ig_{start_idx:02d}.jpg")
-    place_cta_card(out_dir / f"ig_{start_idx + 1:02d}.jpg")
-    return start_idx + 2
-
-
-# ---------------------------------------------------------------------------
 # 바레 런칭 슬라이드 세트 실행 — 최종 구성
 #
 # ig_01  표지          검정 정보영역, 카운터 없음

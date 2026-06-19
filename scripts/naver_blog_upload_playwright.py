@@ -35,11 +35,11 @@ from pathlib import Path
 
 # UTM 딱지 헬퍼 — 본문 문의 CTA URL에 채널 출처 부착 (scripts/ 동일 디렉터리)
 try:
-    from cta_utm import apply_cta_utm
+    from cta_utm import apply_cta_utm, append_cta_card
 except ImportError:
     import sys as _sys, os as _os
     _sys.path.insert(0, _os.path.dirname(_os.path.abspath(__file__)))
-    from cta_utm import apply_cta_utm
+    from cta_utm import apply_cta_utm, append_cta_card
 
 # Windows 콘솔(cp949)에서 한글·em-dash 출력 깨짐 방지 — UTF-8 강제
 try:
@@ -260,6 +260,7 @@ def build_post(args: argparse.Namespace) -> BlogPost:
     if image_dir and not image_dir.is_absolute():
         image_dir = ROOT / image_dir
     images = collect_images(image_dir, args.image_glob)
+    images = append_cta_card(images)  # 4채널 마지막 이미지로 문의 CTA 카드(IG 제외)
     sticker_count = getattr(args, "sticker_count", STICKER_COUNT_DEFAULT)
     return BlogPost(title, body, images, sticker_count)
 

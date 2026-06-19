@@ -2501,8 +2501,8 @@
     "enqueued_at": "2026-06-19",
     "processed_at": "2026-06-19",
     "title": "[시모] 문의 CTA 카드 이미지 제작 (콘텐츠 끝 첨부용)",
-    "artifact": "GM 요청. 기존 엔진 재사용(brand_constants SSOT + compose_barre draw_chip/load_font)으로 scripts/compose_cta_card.py 신설→instagram/_assets/cta_card.jpg(1080x1080) 생성. 디자인=가이드카드 톤(차콜#221F20·베이지 로고·칩). 카피=한남동 프리미엄 라이프스타일 스포츠클럽 / 방문을 예약하세요 / 모든 방문·상담 사전예약제 / 버튼 문의·예약→wellperion.com/ko/inquiry / 풋터 02-6261-1200·주소. 금지어(피트니스·하이엔드프라이빗·사교) 0. 육안 검수 통과. ⚠️이미지라 클릭 불가=시각 강조용(추적은 본문/프로필 텍스트링크). [자동첨부 완료] compose_barre.py에 place_cta_card()+compose_closing_cards(가이드→CTA 2장·다음슬롯 반환) 헬퍼 추가, 표준 closing 박제(메모리 ig-guideline-card 갱신). 미래 회사공식 콘텐츠는 compose_closing_cards로 closing→CTA 자동. 과거 발행분 미변경. py_compile·실측 PASS.",
-    "next": "표류(완결). 후속: 다음 회사공식 콘텐츠 제작 시 compose_closing_cards로 closing 구성 → 실제 발행물 CTA 첨부 확인. namuk 개인 제외(DM문의).",
+    "artifact": "GM 요청. 기존 엔진 재사용(brand_constants SSOT + compose_barre draw_chip/load_font)으로 scripts/compose_cta_card.py 신설→instagram/_assets/cta_card.jpg(1080x1080) 생성. 디자인=가이드카드 톤(차콜#221F20·베이지 로고·칩). 카피=한남동 프리미엄 라이프스타일 스포츠클럽 / 방문을 예약하세요 / 모든 방문·상담 사전예약제 / 버튼 문의·예약→wellperion.com/ko/inquiry / 풋터 02-6261-1200·주소. 금지어(피트니스·하이엔드프라이빗·사교) 0. 육안 검수 통과. ⚠️이미지라 클릭 불가=시각 강조용(추적은 본문/프로필 텍스트링크). [자동첨부 완료] compose_barre.py에 place_cta_card()+compose_closing_cards(가이드→CTA 2장·다음슬롯 반환) 헬퍼 추가, 표준 closing 박제(메모리 ig-guideline-card 갱신). 미래 회사공식 콘텐츠는 compose_closing_cards로 closing→CTA 자동. 과거 발행분 미변경. py_compile·실측 PASS. [정정·재배선 2026-06-19] GM: IG 슬라이드엔 빼고 4채널(블로그·카페·당근·카카오) 마지막 이미지로. → IG 슬라이드 배선 원복(compose_barre 헬퍼 제거). 공유모듈 cta_utm.py에 append_cta_card(images)+CTA_CARD_PATH 추가, 4개 업로더가 collect_images 직후 호출(멱등·IG 업로더 미호출). py_compile 5종·첨부/멱등/빈리스트/IG미포함 실측 PASS. 메모리 ig-guideline-card 정정.",
+    "next": "표류(완결). 후속: 다음 4채널 발행 시 마지막 슬라이드에 CTA 카드 실제 첨부 확인(드라이런 또는 실발행). namuk 개인은 4채널 비대상이라 자연 제외.",
     "ship_no": 56
   },
   {
