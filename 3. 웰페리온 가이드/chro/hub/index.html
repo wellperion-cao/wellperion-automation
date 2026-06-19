@@ -976,7 +976,7 @@ function jobItem(h){
     '<div class="kv">'+
     kv("모집 인원",txt(h["모집 인원"]))+kv("면접자 수",txt(h["면접자 수"]))+
     kv("급여 범위",txt(h["급여 범위"]))+kv("공고 기간",fmtD(dval(h,"공고 시작일"))+" ~ "+fmtD(dval(h,"공고 마감일")))+
-    kv("채용 채널",txt(ch))+kv("담당 C-Level",txt(cl))+
+    kv("채용 채널",txt(ch))+'<div><div class="k">최종 합격자</div><div class="v">'+(function(){var _fp=applicants.filter(function(a){var s=String(a["전형 단계"]||"").trim();return s==="최종 합격"||s==="최종합격"||s==="합격";});if(!_fp.length)return '<span style="color:var(--ink-soft)">—</span>';return _fp.map(function(a){var _pid=(((a["원본 Notion URL"]||"")+"").match(/[0-9a-f]{32}/i)||[""])[0].toLowerCase();return '<button type="button" class="btn-sm" data-applname="'+esc(a["지원자명"]||"")+'" data-apppid="'+_pid+'" style="background:var(--gold);color:#fff;border-color:var(--gold);margin:2px 6px 2px 0;cursor:pointer">🎖 '+esc(a["지원자명"]||"")+' · 인사카드</button>';}).join("");})()+'</div></div>'+
     '</div>'+
     (h["주요 업무"]?'<div style="margin-top:9px;font-size:12px;color:var(--ink-soft);white-space:pre-wrap">'+
       esc(h["주요 업무"])+'</div>':"")+
