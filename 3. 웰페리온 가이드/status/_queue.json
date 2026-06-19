@@ -1691,12 +1691,15 @@
   {
     "task_id": "CMO-2026-06-19-DASH-LESSON-SUBJECT-INQUIRY",
     "clevel": "cmo",
-    "status": "IN_PROGRESS",
+    "status": "DONE",
     "priority": "⛴️여객선",
     "enqueued_at": "2026-06-19",
     "title": "[시모] 마케팅 대시보드 4번 — 강습 종목별 시트 연결(문의 기간집계+등록+시트링크)",
     "note": "GM 지시(2026-06-19). 강습 펼침의 각 종목 행에 ①문의(팀시트 행을 타임스탬프 기준 기간집계, 일/주/월/기간 토글 반영) ②등록(누적) ③비고에 종목 시트 바로가기 링크. GM 결정=숫자+시트링크 둘 다(개인정보 노출 인지). GAS(.deploy-funnel/Survey.js): _collectLessonInqByName_ 추가 + lesson_breakdown 확장(from/to·inquiries·sheetUrl·기간별 캐시키). 프론트: _renderLessonRows 문의칸·시트링크, 기간 인지 로더(_lessonRange), 기간전환 재조회. 문법 검증 PASS.",
-    "next": "★GM 액션(유일 잔여): 펀넬 GAS 에디터에 .deploy-funnel/Survey.js 전체 붙여넣기 → 재배포(/exec URL 유지). 배포 후 강습 펼쳐 종목별 문의·시트링크 라이브 확인. ⚠️주의1: 종목 합계는 분배 시차로 유형 합계와 다를 수 있음(정직표기). ⚠️주의2: cmo/survey 사본은 253줄 구버전(별도 정리 대기)."
+    "next": "표류 방지 다음: ①펀넬 GAS 사본(cmo/survey 253줄 구버전) 라이브정본과 동기화(별도 정리) ②대시보드 첫로딩 느림 뿌리=구글시트 동시호출 → 자체 문의DB(CTO-2026-06-16-SELF-HOSTED-INQUIRY-DB)로 근본해결.",
+    "terminal": true,
+    "processed_at": "2026-06-19",
+    "artifact": "강습 펼침의 각 종목 행에 ①문의(팀시트 행 타임스탬프 기준 기간집계) ②등록(누적) ③시트 바로가기 링크 표시. GAS(.deploy-funnel/Survey.js): _collectLessonInqByName_ 추가 + lesson_breakdown 확장(body.from/to·inquiries·sheetUrl·기간캐시키 lb_v2). 프론트(마케팅현황대시보드.html): _renderLessonRows 문의칸·시트링크, 기간 인지 로더(_lessonRange), 기간전환 시 펼침이면 재조회. clasp push+deploy @39(같은 /exec URL 유지). 라이브 실측: 수영성인 문의36·등록436·시트URL있음, 기간필터 작동(6/19하루=0), 바레·발레=null 정직표기. 커밋 b11aca9."
   },
   {
     "task_id": "CMO-2026-06-19-ADHOC-b11aca94",

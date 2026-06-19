@@ -715,6 +715,22 @@ function _kpiParseSalesTab(sheet) {
 // "총 매출 합계" 행의 우측 4칸 = 금일|누적|목표|달성률. → _kpiParseSalesTab 재사용.
 // year(연간 누적): 시트의 모든 월 블록 "총 매출 합계" month 값을 합산(_kpiParseSalesTab.year).
 //   이번달(month)은 최신=가장 오른쪽 블록만. (2026-06-10 시토: year=month 버그 수정)
+// 주차 매출 breakdown 행 — 크롤러가 매일 발행하는 라이브 JSON 직독(2026-06-19 시토).
+// status/parking_revenue.json(payAmt 합=카드 총 정산액)을 raw GitHub에서 읽어 {name:'주차', month}.
+// 실패(404·파싱오류·status!=정상)는 null → 홈 KPI에 무영향(fail-safe). 시트 비의존.
+function _kpiParkingRevenueRow() {
+  try {
+    var url = 'https://raw.githubusercontent.com/wellperion-cao/wellperion-automation/master/status/parking_revenue.json';
+    var resp = UrlFetchApp.fetch(url, { muteHttpExceptions: true, followRedirects: true });
+    if (resp.getResponseCode() !== 200) return null;
+    var j = JSON.parse(resp.getContentText());
+    if (!j || j.status !== '정상') return null;
+    var amt = Number(j['매출금액']);
+    if (isNaN(amt)) return null;
+    return { name: '주차', today: null, month: amt, target: null, rate: null };
+  } catch (e) { return null; }
+}
+
 function _kpiSales() {
   try {
     var ss = SpreadsheetApp.openById(KPI_SALES_SHEET_ID);
@@ -731,8 +747,16 @@ function _kpiSales() {
     if (!cur) return { today: null, month: null, year: null, target: null, rate: null, breakdown: [] };
     // 연간 누적 = 모든 월 블록 month 합산(_kpiParseSalesTab.year). 이번달(month)은 최신 블록 그대로.
     var year = (cur.year !== null && cur.year !== undefined) ? cur.year : cur.month;
+    // 주차 매출을 breakdown 'GXE' 행 바로 아래에 삽입(없으면 맨 끝). 시트 총합/hero 값은 불변.
+    var bd = cur.breakdown || [];
+    var park = _kpiParkingRevenueRow();
+    if (park) {
+      var gi = -1;
+      for (var bi = 0; bi < bd.length; bi++) { if (bd[bi].name === 'GXE') { gi = bi; break; } }
+      if (gi >= 0) bd.splice(gi + 1, 0, park); else bd.push(park);
+    }
     return { today: cur.today, month: cur.month, year: year, target: cur.target, rate: cur.rate,
-             breakdown: cur.breakdown || [] };
+             breakdown: bd };
   } catch (err) {
     return { today: null, month: null, year: null, target: null, rate: null, error: String(err) };
   }
