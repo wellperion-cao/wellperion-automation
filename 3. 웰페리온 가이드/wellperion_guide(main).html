@@ -8627,9 +8627,9 @@ function crTab(btn, panelId) {
       html += _gm1HoldSectionHtml(holdToday);
       html += '</div></details>';
 
-      // 🗄️ 지난 입항 완료 (오늘 이전 완료) — 지난 완료건 + ⏸️ 보류(지난) 구분 섹션 (기본 펼침 · 2026-06-16 웰리: GM 완료가 안 보이던 체감 해소)
+      // 🗄️ 지난 입항 완료 (오늘 이전 완료) — 지난 완료건 + ⏸️ 보류(지난) 구분 섹션 (기본 접힘 · 2026-06-19 GM 지시: G1 토글 기본 닫힘)
       if (donePast.length || holdPast.length) {
-        html += '<details class="toggle" style="margin-top:10px;" open>';
+        html += '<details class="toggle" style="margin-top:10px;">';
         html += '<summary><span style="color:var(--dim);"><span style="margin-right:4px;">🗄️</span>지난 완료 ' + donePast.length + '건 / 지난 보류 ' + holdPast.length + '건</span></summary>';
         html += '<div class="toggle-body" style="font-size:13px;">';
         donePast.forEach(function(t){ html += _gm1DoneLineHtml(t, true); });
@@ -8639,7 +8639,7 @@ function crTab(btn, panelId) {
 
       // 🗑️ 폐기 (검색 시에만 노출 — 전체 검색 대상) (GM 2026-06-07)
       if (disposed.length) {
-        html += '<details class="toggle" style="margin-top:10px;" open>';
+        html += '<details class="toggle" style="margin-top:10px;">';
         html += '<summary><span style="color:var(--dim);"><span style="margin-right:4px;">🗑️</span>폐기 ' + disposed.length + '건 (검색)</span></summary>';
         html += '<div class="toggle-body" style="font-size:13px;">';
         disposed.forEach(function(t){
