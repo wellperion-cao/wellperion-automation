@@ -3053,5 +3053,19 @@
     "next": "🌀 표류 — 다음 미정 (필요 시 GM·웰리/담당 C-Level 지정)",
     "adhoc_commit": "046f521e77e0d24cbd2b55cee692736efd142aa6",
     "ship_no": 39
+  },
+  {
+    "task_id": "COO-2026-06-20-ADHOC-1256ae0d",
+    "clevel": "coo",
+    "title": "[시우] 점검 G열(이슈/종합접수처) 폐기·숨김 — 데이터 비우고 컬럼 숨김(인덱스 보존)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-06-20",
+    "processed_at": "2026-06-20",
+    "artifact": "이슈는 종합접수처로 전부 이관 완료. G열(인덱스6) 데이터행 clearContent +\nhideColumns(7). deleteColumn 금지(정렬J·소요시간O·제출상태I 등 15열 인덱스 보존).\n_createCheckSheet에 hideColumns 재발 가드 추가(시트 재생성돼도 숨김 유지).\nhideIssueColumn() + ?action=hide_issue_col 엔드포인트. 라이브 1회 실행:\n남성 79행·여성 57행 G열 비움+숨김. 무회귀 확인(weekly·board·4부서). (CLI ad-hoc · 커밋 1256ae0d)",
+    "next": "🌀 표류 — 다음 미정 (필요 시 GM·웰리/담당 C-Level 지정)",
+    "adhoc_commit": "1256ae0d90533d46e5c94a280987754612e8c667",
+    "ship_no": 72
   }
 ]
