@@ -2948,13 +2948,15 @@
     "task_id": "COO-2026-06-20-SUPPORT-WEEKDAY-UNIFY",
     "clevel": "coo",
     "title": "[시우] 지원부 체계 요일 단일기준 연동 — 맨 위 공통 요일바로 점검(남)·점검(여)·요일별 업무보드 동기화",
-    "status": "IN_PROGRESS",
+    "status": "DONE",
     "priority": "NORMAL",
     "enqueued_at": "2026-06-20",
     "note": "GM 확정설계(deep-interview): 현재 점검(남)·점검(여)는 각자 date input, 요일별 업무보드는 상단 요일토글(SELECTED_DAYS 다중선택)로 셋이 따로 놂. 확정: (1)페이지 맨 위 공통 요일바 신설=단일 진입점 (2)점검(남)·점검(여) 같은 날짜로 묶기(공통바 종속) (3)요일별 업무보드 다중선택 폐기·단일 요일로 통일·공통바 요일 반영 (4)전역 작업날짜 변수로 3구역 렌더 동기화. 파일=3.웰페리온가이드/coo/check/지원부 체계.html (renderG/drawUI·renderBoard/toggleBoardDay·checkDateM/F·SELECTED_DAYS). 점검 시트 15열 인덱스·정렬·소요시간·이슈일원화 무회귀 유지.",
-    "next": "선행=매뉴얼 편집 회귀수정(동일파일) 완료 후 직렬 착수(동시편집 충돌방지). 공통 요일바 UI+전역 작업날짜 변수+3구역 동기화 구현→라이브검증(요일 바꾸면 점검남/여·업무보드 동시반영)→커밋push.",
-    "depends_on": "매뉴얼 편집 회귀수정 완료(동일파일 직렬화)",
-    "ship_no": 69
+    "next": "표류(완결). Pages 반영 후 GM Ctrl+Shift+R로 공통바 동작 육안확인. 후속여지: 미사용 SELECTED_DAYS/toggleBoardDay 죽은코드 별건 정리.",
+    "ship_no": 69,
+    "terminal": true,
+    "processed_at": "2026-06-20",
+    "artifact": "맨 위 공통 요일/날짜바 신설=전역 WORK_DATE 단일소스(◀/오늘/▶ 네비+요일 크게표시+평일/주말/휴관 뱃지). 점검(남)·점검(여) 같은 날짜로 묶음(개별 date input은 읽기전용 미러). 요일별 업무보드 다중선택(SELECTED_DAYS) 폐기→단일 요일 1컬럼. syncAllFromWorkDate() 단일경로로 3구역 동시렌더. 실측(크롬): 화→수→토 전환 시 점검남/여·업무보드 동시이동·남여 동일날짜·보드 단일컬럼 확인. 점검 시트 15열·정렬·소요시간·이슈일원화·매뉴얼편집 무회귀(GAS 무변경). 프론트 커밋 a554c5e4 push."
   },
   {
     "task_id": "COO-2026-06-20-ADHOC-49023741",
