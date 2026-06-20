@@ -88,11 +88,11 @@
     "task_id": "CTO-2026-06-18-PII-PROTECTION-REDESIGN",
     "clevel": "cto",
     "title": "[시토] 회원 개인정보 보호 큰 틀 재설계 — 무인증 노출 근본 차단(인증·접근통제 아키텍처)",
-    "status": "PENDING",
+    "status": "IN_PROGRESS",
     "priority": "HIGH",
     "enqueued_at": "2026-06-18",
-    "note": "[2026-06-18 GM] 토큰 게이트(부분 발효)는 페이지 잠김으로 폐기·롤백(서버 TOKEN_ENFORCE 양 GAS 껐음 → 현재 회원 개인정보 이름·연락처가 다시 무인증 공개 상태 = 의도된 임시). GM 지시='부분 게이트 말고 더 큰 틀로 재설계'. 범위=문의·VOC·회원 데이터 전체의 인증·접근통제 아키텍처(누가·어떻게 보나)를 한 틀로. 자체 문의 DB(CTO-2026-06-16-SELF-HOSTED-INQUIRY-DB)와 묶어 설계. 시토 운영 헌장 축6 준수=라이브 발효는 GM go+즉시 역롤백. 교훈 메모리 feedback_security_live_activation_needs_gm_go.",
-    "next": "GM 착수 신호 시: architect로 큰 틀 설계(인증방식·저장소·열람 권한·발효 게이트) → GM 방향 결재 → 단계 구현. 현재는 목표·범위 박제(대기).",
+    "note": "[2026-06-18 GM] 토큰 게이트(부분 발효)는 페이지 잠김으로 폐기·롤백(서버 TOKEN_ENFORCE 양 GAS 껐음 → 현재 회원 개인정보 이름·연락처가 다시 무인증 공개 상태 = 의도된 임시). GM 지시='부분 게이트 말고 더 큰 틀로 재설계'. 범위=문의·VOC·회원 데이터 전체의 인증·접근통제 아키텍처(누가·어떻게 보나)를 한 틀로. 자체 문의 DB(CTO-2026-06-16-SELF-HOSTED-INQUIRY-DB)와 묶어 설계. 시토 운영 헌장 축6 준수=라이브 발효는 GM go+즉시 역롤백. 교훈 메모리 feedback_security_live_activation_needs_gm_go. [2026-06-20 시토 착수] 설계안 작성 완료 — .omc/specs/pii-protection-architecture.md. 현황(무인증 PII 통로 4곳: 문의회원.html CRUD·Survey.js inquiry_list·VOC_배포.js reg_list/voc_list·apps_script_survey.js)·4축(인증·저장소·열람권한·발효게이트)·옵션 2~3·로드맵 4단계 정리. 핵심 발견=TOKEN_ENFORCE 무중단 게이트가 이미 3곳에 OFF로 깔려있고, 문의회원.html(#1)만 게이트 미존재가 직접 원인. 라이브 차단 미발효(코드 0변경). GM 방향 결재 대기.",
+    "next": "GM 방향 결재 대기 — 옵션 1(즉시ON)/옵션 2(단계·권장)/옵션 3(자체DB먼저) + 인증방식(토큰/SSO/혼합) + 저장소(시트/자체DB). 결재 후 1단계=문의회원.html 게이트 심기(시포 작업 합류 후, OFF로 머지). 발효는 별도 GM go(헌장 축6).",
     "depends_on": "GM 착수 신호 + 설계 방향 결정",
     "ship_no": 21
   },
@@ -219,8 +219,8 @@
     "priority": "NORMAL",
     "enqueued_at": "2026-06-16",
     "title": "[시포] 잠재고객 체험·상담·투어 예약 달력 — 신규 문의회원 메뉴(cpo/member/문의회원.html)",
-    "note": "[2026-06-16 GM] 등록前 잠재고객(문의~체험~상담) 관리 페이지 문의회원.html 신설 + 체험/견학/상담 예약 달력. 회원관리.html(등록後)과 분리. 소스=26년 신규문의(견학/상담·체험1/2·진행상황). 퍼널=마케팅→문의→체험/상담투어→등록→회원관리. 설계=cmo/funnel/회원_체험예약_달력_설계.md. | [2026-06-19 웰리 디스패치·시포] 페이지·UI 빌드 완료: cpo/member/문의회원.html 신설(726줄, 회원관리.html 패턴 차용·월캘린더 이전/다음·오늘강조·빈상태 정직표기·PII마스킹). 부서체계 링크 짝 전수(home 회원모듈 버튼 + 사이드nav CPO 서브 + 내부 복귀네비). HTML 파싱·무손상·스마트따옴표0 검증. GAS member_calendar 코드는 운영가이드 탭에 전문 포함(자리표시자 __MEMBER_CAL_GAS_URL__). | [2026-06-20 시포] 전체 CRUD 웹DB 업그레이드 완료: 문의 DB 탭 신설(inquiry_list/add/update/delete 4액션). 인라인 편집(진행상황 드롭다운·담당·메모), 검색·필터, 낙관적 업데이트+서버 디바운스800ms, IME 안전(compositionend), PII 마스킹(이름 성+**·전화 010-****-1234) 기본표시. GAS 코드 전문 운영가이드 탭 포함. 스마트따옴표0·태그균형116/116·HTML파싱OK 검증(51KB).",
-    "next": "GM 액션 잔여 2가지: ① Survey.js _processAction 블록에 운영가이드 탭 GAS 코드 붙여넣기 후 새 버전 재배포 ② 배포 URL로 __MEMBER_CAL_GAS_URL__ 7곳 일괄 치환. ⚠️ 추가 전제: 시토 PII 접근통제 구축 완료 + GM go 후에만 문의DB 탭 라이브 발효(코드에 주석 명시됨). 달력 탭은 GAS 배포만으로 즉시 연결.",
+    "note": "[2026-06-16 GM] 등록前 잠재고객(문의~체험~상담) 관리 페이지 문의회원.html 신설 + 체험/견학/상담 예약 달력. 회원관리.html(등록後)과 분리. 소스=26년 신규문의(견학/상담·체험1/2·진행상황). 퍼널=마케팅→문의→체험/상담투어→등록→회원관리. 설계=cmo/funnel/회원_체험예약_달력_설계.md. | [2026-06-19 웰리 디스패치·시포] 페이지·UI 빌드 완료: cpo/member/문의회원.html 신설(726줄, 회원관리.html 패턴 차용·월캘린더 이전/다음·오늘강조·빈상태 정직표기·PII마스킹). 부서체계 링크 짝 전수(home 회원모듈 버튼 + 사이드nav CPO 서브 + 내부 복귀네비). HTML 파싱·무손상·스마트따옴표0 검증. GAS member_calendar 코드는 운영가이드 탭에 전문 포함(자리표시자 __MEMBER_CAL_GAS_URL__). | [2026-06-20 시포] 전체 CRUD 웹DB 업그레이드 완료: 문의 DB 탭 신설(inquiry_list/add/update/delete 4액션). 인라인 편집(진행상황 드롭다운·담당·메모), 검색·필터, 낙관적 업데이트+서버 디바운스800ms, IME 안전(compositionend), PII 마스킹(이름 성+**·전화 010-****-1234) 기본표시. GAS 코드 전문 운영가이드 탭 포함. 스마트따옴표0·태그균형116/116·HTML파싱OK 검증(51KB). | [2026-06-20 시포] 체험달력 안전배포 게이트·문의CRUD PII 잠금: GAS 코드에 PII_GATE 게이트 블록 추가(inquiry_list/add/update/delete 진입 시 ScriptProperties PII_GATE!=on 이면 {ok:false,error:PII_GATE_CLOSED} 반환, member_calendar 면제). 운영가이드 탭 배포 안내 카드를 체험달력 전용 3단계로 교체(1.코드 붙여넣기 2.새 버전 배포/deploymentId 유지 3.__MEMBER_CAL_GAS_URL__ 교체). 프론트 문의DB 탭 PII_GATE_CLOSED 응답 시 정직 안내 표시(빈 테이블 대신 보안틀 안내). 스마트따옴표0·검증 OK.",
+    "next": "GM 액션 잔여: ① Survey.js _processAction 블록에 운영가이드 탭 GAS 코드 붙여넣기 후 새 버전 재배포(기존 deploymentId 유지) ② 배포 URL로 __MEMBER_CAL_GAS_URL__ 7곳 일괄 치환. 체험달력 배포로 즉시 켜짐. 문의DB는 PII_GATE 잠금 유지 — 시토 PII 보호 틀(CTO ship_no 21) 구축 + GM go 후 ScriptProperties PII_GATE=on 설정 시 발효.",
     "ship_no": 2
   },
   {
@@ -2603,5 +2603,16 @@
     "next": "🌀 표류 — 다음 미정 (필요 시 GM·웰리/담당 C-Level 지정)",
     "adhoc_commit": "a2d7305a2f394cd21a2aae12c799032dafc0e1db",
     "ship_no": 3
+  },
+  {
+    "task_id": "CMO-2026-06-20-GOLF-JUNIOR-KPGA-SERIES",
+    "clevel": "cmo",
+    "title": "[시모] 골프 유소년 KPGA 주니어 대회 — IG 슬라이드 시리즈 3편 기획·제작",
+    "status": "IN_PROGRESS",
+    "priority": "⛴️여객선",
+    "enqueued_at": "2026-06-20",
+    "note": "GM 지시. 스토리=1편 KPGA 주니어 대회 현장(긴장)→2편 시상대·트로피(환희)→3편 비결=김태엽 투어프로 1:1 맞춤 강습→유소년 모집 CTA. 컨셋 코스가 증명한 아이들, 편 끝마다 떡밥으로 연결. 원본 17장(시상대 _03·_15, 풀스윙 _01, 김태엽 프로필 png 확보). 레퍼런스=스쿼시대회 톤+발레/바레 사진형(compose_barre). 기획초안=instagram/260620_골프_유소년_KPGA주니어대회/기획_초안.md.",
+    "next": "GM 확인 3건(①실제 성적 표기수위 ②김태엽 강습 운영정보=대상·요일·문의 ③대회명 노출범위) → 확정 후 슬라이드 3편 제작(compose 엔진)→M5 검수→텔레그램 승인→발행.",
+    "ship_no": 62
   }
 ]
