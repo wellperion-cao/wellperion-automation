@@ -2856,5 +2856,19 @@
     "next": "🌀 표류 — 다음 미정 (필요 시 GM·웰리/담당 C-Level 지정)",
     "adhoc_commit": "d5d21fadddd904e6a556b753036e21096e340990",
     "ship_no": 8
+  },
+  {
+    "task_id": "CFO-2026-06-20-ADHOC-2fe1fcd5",
+    "clevel": "cfo",
+    "title": "[시뽀] 매출/지출 카드 대칭·콤팩트 + 1~5월 31시트 연동",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-06-20",
+    "processed_at": "2026-06-20",
+    "artifact": "- '31' 시트 확인: 파일='2026년 1월 매출 보고'(1월 전용), 1~6월이 각각 별도 시트로 존재.\n  멤버십/PT 월누적 실재하나 각 시트가 월말마감 아닌 부분월 누적(5월≈미입력)+\n  '총 매출 합계' 행 내부 충돌 → 자동 연간집계 부적합(지어내기 가드). 연간 보류 유지.\n- 지출 버그 점검(2-c): _kpiExpense는 거래행 날짜 직접합산 구조라 매출의 같은달\n  스냅샷 중복합산 버그 없음=year 이미 정확. 코드 수정 불필요.\n- 카드 대칭·콤팩트(2-b): 매출·지출 둘 다 '월(좌)|연간(우)' 좌 (CLI ad-hoc · 커밋 2fe1fcd5)",
+    "next": "🌀 표류 — 다음 미정 (필요 시 GM·웰리/담당 C-Level 지정)",
+    "adhoc_commit": "2fe1fcd529da8a9db40d0274b6f84ec4b7932e64",
+    "ship_no": 3
   }
 ]
