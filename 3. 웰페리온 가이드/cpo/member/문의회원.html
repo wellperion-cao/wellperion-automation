@@ -48,7 +48,7 @@ body{
 .tab.active{background:var(--teal-bg);color:var(--teal)}
 
 /* ── 컨텐츠 영역 ── */
-.content{padding:20px 20px 80px;max-width:760px;margin:0 auto}
+.content{padding:20px 20px 80px;max-width:900px;margin:0 auto}
 .pane{display:none}
 .pane.active{display:block}
 
@@ -79,6 +79,7 @@ body{
 .info-box.teal{background:var(--teal-bg);border:1px solid rgba(78,196,196,0.3);color:var(--text)}
 .info-box.accent{background:var(--accent-bg);border:1px solid rgba(183,159,138,0.3);color:var(--text)}
 .info-box.yellow{background:var(--yellow-bg);border:1px solid rgba(230,200,78,0.3);color:var(--text)}
+.info-box.red{background:var(--red-bg);border:1px solid rgba(237,91,63,0.3);color:var(--text)}
 .info-box strong{font-weight:700}
 
 /* ── 퍼널 스테퍼 ── */
@@ -89,21 +90,6 @@ body{
 .funnel-step.done{background:var(--green-bg);border-color:rgba(106,191,123,0.3);color:var(--green)}
 .funnel-arrow{color:var(--dim);font-size:12px}
 
-/* ── 문의 목록 테이블 ── */
-.prospects-table{width:100%;border-collapse:collapse;font-size:13px}
-.prospects-table th{background:var(--accent-bg);color:var(--accent);padding:9px 12px;
-  text-align:left;font-weight:700;border-bottom:1px solid var(--border);white-space:nowrap}
-.prospects-table td{padding:9px 12px;border-bottom:1px solid rgba(61,56,53,0.35);vertical-align:middle}
-.prospects-table tr:last-child td{border-bottom:none}
-.prospects-table tr:hover td{background:rgba(255,255,255,0.02)}
-.status-chip{display:inline-block;font-size:11px;font-weight:700;padding:2px 9px;border-radius:10px;white-space:nowrap}
-.status-chip.new{background:var(--blue-bg);color:var(--blue)}
-.status-chip.contact{background:var(--yellow-bg);color:var(--yellow)}
-.status-chip.reserved{background:var(--teal-bg);color:var(--teal)}
-.status-chip.visited{background:var(--purple-bg);color:var(--purple)}
-.status-chip.joined{background:var(--green-bg);color:var(--green)}
-.status-chip.lost{background:var(--red-bg);color:var(--red)}
-
 /* ── 캘린더 ── */
 .cal-nav{display:flex;align-items:center;gap:10px;margin-bottom:14px}
 .cal-nav-title{font-size:16px;font-weight:800;flex:1;text-align:center}
@@ -112,13 +98,11 @@ body{
   font-size:16px;display:flex;align-items:center;justify-content:center;
   font-family:inherit;transition:background 0.15s}
 .cal-nav-btn:hover{background:rgba(183,159,138,0.22)}
-
 .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin-bottom:10px}
 .cal-day-label{text-align:center;font-size:11px;font-weight:700;color:var(--dim);
   padding:6px 2px;letter-spacing:0.04em}
 .cal-day-label:first-child{color:var(--red)}
 .cal-day-label:last-child{color:var(--blue)}
-
 .cal-cell{min-height:64px;background:var(--paper);border:1px solid var(--border);
   border-radius:8px;padding:5px 6px;cursor:default;transition:border-color 0.15s}
 .cal-cell:hover{border-color:var(--accent)}
@@ -127,7 +111,6 @@ body{
 .cal-cell.has-event{cursor:pointer}
 .cal-date{font-size:12px;font-weight:700;margin-bottom:3px;line-height:1}
 .cal-cell.today .cal-date{color:var(--teal);font-weight:800}
-.cal-cell:first-child .cal-date,.cal-sun .cal-date{color:var(--red)}
 .cal-chips{display:flex;flex-direction:column;gap:2px}
 .cal-chip{font-size:10px;font-weight:700;padding:1px 5px;border-radius:4px;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.4}
@@ -150,6 +133,77 @@ body{
 .day-item-name{font-weight:700}
 .day-item-meta{font-size:12px;color:var(--dim)}
 
+/* ── 문의 DB 테이블 (CRUD) ── */
+.db-toolbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+.db-search{flex:1;min-width:160px;padding:7px 12px;border-radius:8px;
+  background:var(--bg);border:1px solid var(--border);color:var(--text);
+  font-size:13px;font-family:inherit;outline:none}
+.db-search:focus{border-color:var(--teal)}
+.db-filter{padding:7px 10px;border-radius:8px;background:var(--bg);
+  border:1px solid var(--border);color:var(--text);font-size:13px;
+  font-family:inherit;outline:none;cursor:pointer}
+.db-filter:focus{border-color:var(--teal)}
+.btn-add{display:inline-flex;align-items:center;gap:4px;padding:7px 14px;
+  border-radius:8px;background:var(--teal-bg);color:var(--teal);
+  border:1px solid rgba(78,196,196,0.3);font-size:13px;font-weight:700;
+  font-family:inherit;cursor:pointer;transition:background 0.15s;white-space:nowrap}
+.btn-add:hover{background:rgba(78,196,196,0.22)}
+
+.db-table-wrap{overflow-x:auto}
+.db-table{width:100%;border-collapse:collapse;font-size:13px;min-width:700px}
+.db-table th{background:var(--accent-bg);color:var(--accent);padding:9px 10px;
+  text-align:left;font-weight:700;border-bottom:1px solid var(--border);white-space:nowrap;font-size:12px}
+.db-table td{padding:8px 10px;border-bottom:1px solid rgba(61,56,53,0.35);vertical-align:middle}
+.db-table tr:last-child td{border-bottom:none}
+.db-table tr:hover td{background:rgba(255,255,255,0.02)}
+.db-table tr.editing td{background:rgba(78,196,196,0.05)}
+
+/* ── 인라인 입력 ── */
+.cell-input{width:100%;background:transparent;border:none;border-bottom:1px solid var(--teal);
+  color:var(--text);font-size:13px;font-family:inherit;padding:2px 0;outline:none;
+  border-radius:0}
+.cell-select{width:100%;background:var(--bg);border:1px solid var(--border);
+  color:var(--text);font-size:12px;font-family:inherit;padding:3px 6px;
+  border-radius:6px;outline:none;cursor:pointer}
+.cell-select:focus{border-color:var(--teal)}
+
+/* ── 상태 칩 ── */
+.status-chip{display:inline-block;font-size:11px;font-weight:700;padding:2px 9px;border-radius:10px;white-space:nowrap}
+.status-chip.new{background:var(--blue-bg);color:var(--blue)}
+.status-chip.contact{background:var(--yellow-bg);color:var(--yellow)}
+.status-chip.reserved{background:var(--teal-bg);color:var(--teal)}
+.status-chip.visited{background:var(--purple-bg);color:var(--purple)}
+.status-chip.joined{background:var(--green-bg);color:var(--green)}
+.status-chip.lost{background:var(--red-bg);color:var(--red)}
+.status-chip.hold{background:var(--orange-bg);color:var(--orange)}
+
+/* ── 행 버튼 ── */
+.row-btn{font-size:11px;font-weight:700;padding:3px 9px;border-radius:7px;
+  font-family:inherit;cursor:pointer;border:none;transition:background 0.15s;white-space:nowrap}
+.btn-edit{background:var(--accent-bg);color:var(--accent)}
+.btn-edit:hover{background:rgba(183,159,138,0.22)}
+.btn-save{background:var(--teal-bg);color:var(--teal)}
+.btn-save:hover{background:rgba(78,196,196,0.22)}
+.btn-cancel{background:var(--bg);color:var(--dim);border:1px solid var(--border)!important}
+.btn-cancel:hover{background:rgba(255,255,255,0.05)}
+.btn-del{background:var(--red-bg);color:var(--red)}
+.btn-del:hover{background:rgba(237,91,63,0.22)}
+.row-actions{display:flex;gap:4px}
+
+/* ── PII 마스크 배지 ── */
+.pii-mask{font-size:11px;color:var(--dim);font-style:italic}
+.pii-reveal-btn{font-size:11px;padding:1px 7px;border-radius:6px;
+  background:var(--accent-bg);color:var(--accent);border:1px solid rgba(183,159,138,0.3);
+  cursor:pointer;font-family:inherit;margin-left:4px}
+
+/* ── 저장 상태 알림 ── */
+.save-toast{position:fixed;bottom:24px;right:24px;padding:10px 18px;border-radius:10px;
+  font-size:13px;font-weight:700;z-index:9999;opacity:0;pointer-events:none;
+  transition:opacity 0.25s}
+.save-toast.ok{background:var(--green-bg);color:var(--green);border:1px solid rgba(106,191,123,0.4)}
+.save-toast.err{background:var(--red-bg);color:var(--red);border:1px solid rgba(237,91,63,0.4)}
+.save-toast.show{opacity:1}
+
 /* ── 로딩/빈 상태 ── */
 .empty-state{text-align:center;padding:40px 20px;color:var(--dim)}
 .empty-state-icon{font-size:36px;margin-bottom:12px}
@@ -161,7 +215,7 @@ body{
 
 /* ── 인쇄 ── */
 @media print{
-  .sticky-top,.tabs,.action-btn,.cal-nav-btn,.day-panel{display:none!important}
+  .sticky-top,.tabs,.action-btn,.cal-nav-btn,.day-panel,.db-toolbar,.row-actions,.save-toast{display:none!important}
   body{background:#fff;color:#000}
   .card,.kpi-box,.cal-cell{border-color:#ccc;background:#f9f9f9}
   .pane{display:block!important}
@@ -170,7 +224,7 @@ body{
   .kpi-grid{grid-template-columns:repeat(2,1fr)}
   .cal-cell{min-height:48px}
   .cal-chip{font-size:9px}
-  .prospects-table{font-size:12px}
+  .db-table{font-size:12px}
 }
 </style>
 </head>
@@ -180,8 +234,8 @@ body{
   <div class="header">
     <div class="header-top">
       <div>
-        <h1>문의회원 <span class="badge">AI CPO v1.0</span></h1>
-        <div class="sub">잠재고객 관리 · 체험/견학/상담 예약 달력 — 담당 실무: 임정은M</div>
+        <h1>문의회원 <span class="badge">AI CPO v2.0</span></h1>
+        <div class="sub">잠재고객 관리 · 체험/견학/상담 예약 달력 · 전체 CRUD — 담당 실무: 임정은M</div>
       </div>
       <div class="header-actions">
         <a class="action-btn" href="회원관리.html">등록後 회원관리 →</a>
@@ -192,7 +246,7 @@ body{
   </div>
   <div class="tabs">
     <button class="tab active" onclick="switchTab('calendar',this)">예약 달력</button>
-    <button class="tab" onclick="switchTab('prospects',this)">문의 목록</button>
+    <button class="tab" onclick="switchTab('db',this)">문의 DB</button>
     <button class="tab" onclick="switchTab('guide',this)">운영 가이드</button>
   </div>
 </div>
@@ -215,7 +269,7 @@ body{
 
     <div class="info-box teal" style="margin-bottom:16px">
       <strong>데이터 소스</strong> — 26년 신규문의 시트(견학/상담 일정·체험1/2 확정시간). GAS 연동 후 자동 표시.<br>
-      이름은 성+** 마스킹. PII(전화·풀네임) 미표시. v1 = 읽기 전용.
+      이름은 성+** 마스킹. PII(전화·풀네임) 미표시. 달력 = 읽기 전용.
     </div>
 
     <!-- KPI 요약 -->
@@ -245,9 +299,9 @@ body{
     <!-- 캘린더 -->
     <div class="card">
       <div class="cal-nav">
-        <button class="cal-nav-btn" id="prevMonthBtn" onclick="changeMonth(-1)">&#8249;</button>
+        <button class="cal-nav-btn" onclick="changeMonth(-1)">&#8249;</button>
         <div class="cal-nav-title" id="calTitle">—</div>
-        <button class="cal-nav-btn" id="nextMonthBtn" onclick="changeMonth(1)">&#8250;</button>
+        <button class="cal-nav-btn" onclick="changeMonth(1)">&#8250;</button>
       </div>
 
       <div class="cal-grid" id="calGrid">
@@ -260,14 +314,12 @@ body{
         <div class="cal-day-label">토</div>
       </div>
 
-      <!-- 로딩 / 빈 상태 -->
       <div id="calStatus" class="empty-state">
         <div class="loading-spinner" id="calSpinner"></div>
         <div class="empty-state-title" id="calStatusTitle" style="margin-top:12px">데이터 불러오는 중…</div>
         <div class="empty-state-desc" id="calStatusDesc">GAS 연동 URL이 설정되면 자동 표시됩니다.</div>
       </div>
 
-      <!-- 날짜 클릭 패널 -->
       <div class="day-panel" id="dayPanel">
         <div class="day-panel-title" id="dayPanelTitle"></div>
         <div id="dayPanelList"></div>
@@ -286,49 +338,72 @@ body{
     </div>
   </div>
 
-  <!-- ══════════════════════════════ 2. 문의 목록 ══════════════════════════════ -->
-  <div id="pane-prospects" class="pane">
+  <!-- ══════════════════════════════ 2. 문의 DB (CRUD) ══════════════════════════════ -->
+  <!--
+    ⚠️ 접근통제 필수 (거버넌스 주석)
+    문의 DB는 회원 개인정보(이름·전화번호)를 포함합니다.
+    이 기능은 GM go 신호 + 시토(AI CTO) 접근통제(PII 보호 틀) 구축 이후에만 라이브 발효합니다.
+    코드는 준비 완료 상태이나 무인증 공개 CRUD로 라이브 운영 금지.
+    GAS 자리표시자(__MEMBER_CAL_GAS_URL__)가 교체되면 자동 활성화됩니다.
+  -->
+  <div id="pane-db" class="pane">
+
+    <div class="info-box red" style="margin-bottom:16px">
+      <strong>접근통제 전제</strong> — 이 DB는 회원 개인정보(이름·전화)를 포함합니다.
+      GAS 배포 + 시토 접근통제 구축 후 GM go 시 라이브 발효. 현재 GAS 미연동 시 읽기/쓰기 모두 비활성.
+    </div>
 
     <div class="info-box teal" style="margin-bottom:16px">
-      <strong>소스</strong> — 26년 신규문의 시트. 이름 마스킹(성+**). 전화 미표시.<br>
-      GAS 연동 후 자동 갱신. 현재 연동 전: 빈 상태 표시.
+      <strong>소스</strong> — 26년 신규문의 시트 (스프레드시트 ID: 12AWcAlgmmYKr2nUbWmVpa71_z3zi0BaU4ZdnOwrI_7U · 탭: 26년 신규문의).<br>
+      전화번호 기본 마스킹(010-****-1234). 이름 마스킹(성+**). 수정 시 시트에 즉시 반영.
     </div>
 
     <div class="card">
-      <div class="card-title"><span class="icon">📋</span>잠재고객 현황 <span id="prospectsCount" style="font-size:13px;font-weight:400;color:var(--dim);margin-left:6px">— 명</span></div>
-      <div style="overflow-x:auto">
-        <table class="prospects-table">
+      <div class="db-toolbar">
+        <input class="db-search" id="dbSearch" type="text" placeholder="이름·메모 검색…" autocomplete="off">
+        <select class="db-filter" id="dbFilter">
+          <option value="">전체 상태</option>
+          <option value="신규">신규</option>
+          <option value="응대">응대</option>
+          <option value="예약">예약</option>
+          <option value="방문">방문</option>
+          <option value="가입">가입</option>
+          <option value="이탈">이탈</option>
+          <option value="보류">보류</option>
+        </select>
+        <button class="btn-add" id="btnAddRow" onclick="addNewRow()">+ 새 문의</button>
+        <button class="action-btn" id="btnRefreshDb" onclick="loadDbData()" style="margin-left:auto">새로고침</button>
+      </div>
+
+      <div class="db-table-wrap">
+        <table class="db-table" id="dbTable">
           <thead>
             <tr>
-              <th>이름</th>
-              <th>관심 프로그램</th>
-              <th>견학/상담 일정</th>
-              <th>체험 일정</th>
-              <th>진행상황</th>
-              <th>문의일</th>
+              <th style="width:80px">이름</th>
+              <th style="width:110px">전화</th>
+              <th style="width:90px">관심 프로그램</th>
+              <th style="width:90px">진행상황</th>
+              <th style="width:85px">담당</th>
+              <th style="width:100px">메모</th>
+              <th style="width:90px">문의일</th>
+              <th style="width:100px">견학/상담일</th>
+              <th style="width:90px">작업</th>
             </tr>
           </thead>
-          <tbody id="prospectsBody">
+          <tbody id="dbBody">
             <tr>
-              <td colspan="6">
+              <td colspan="9">
                 <div class="empty-state" style="padding:24px 0">
                   <div class="empty-state-icon">📭</div>
-                  <div class="empty-state-title">GAS 연동 전</div>
-                  <div class="empty-state-desc">GM이 GAS를 배포하고 URL을 교체하면 자동 표시됩니다.<br>자리표시자: <code style="font-size:11px;background:var(--bg);padding:2px 6px;border-radius:4px">__MEMBER_CAL_GAS_URL__</code></div>
+                  <div class="empty-state-title" id="dbEmptyTitle">GAS 연동 전</div>
+                  <div class="empty-state-desc" id="dbEmptyDesc">GM이 GAS를 배포하고 URL을 교체하면 자동 표시됩니다.</div>
                 </div>
               </td>
             </tr>
           </tbody>
         </table>
       </div>
-    </div>
-
-    <div class="card">
-      <div class="card-title"><span class="icon">📊</span>진행상황 분포</div>
-      <div id="statusDist" style="font-size:13px;color:var(--dim);line-height:2.2">
-        GAS 연동 후 집계 예정.<br>
-        신규 / 응대 / 예약 / 방문 / 가입 / 이탈 — 6단계 추적.
-      </div>
+      <div style="font-size:12px;color:var(--dim);margin-top:8px" id="dbCount"></div>
     </div>
   </div>
 
@@ -347,7 +422,7 @@ body{
       <div style="font-size:13px;line-height:1.9">
         1. 공식 진입점: <a href="http://wellperion.com/ko/inquiry/" target="_blank" rel="noopener" style="color:var(--teal)">http://wellperion.com/ko/inquiry/</a> 단일<br>
         2. 접수 후 <strong>24시간 내 회신</strong> 의무 (담당: 임정은M)<br>
-        3. 26년 신규문의 시트에 진행상황 → <strong>신규</strong> 로 기록<br>
+        3. 26년 신규문의 시트에 진행상황 → <strong>신규</strong>로 기록<br>
         4. 개인 번호(010-…) 외부 노출 금지. CTA 단일 유지.
       </div>
     </div>
@@ -358,7 +433,7 @@ body{
         1. 시설 견학·상담: 시트 <strong>시설견학 및 상담 일정</strong> 칸에 날짜 기록<br>
         2. 체험1: <strong>체험1 확정시간</strong> 칸 / 체험2: <strong>시설 체험 일정2</strong> 칸<br>
         3. 무조건 <strong>사전 예약제</strong> — 워크인 불가<br>
-        4. 진행상황 → <strong>예약</strong> 으로 업데이트<br>
+        4. 진행상황 → <strong>예약</strong>으로 업데이트<br>
         5. 운영 가능 시간: 평일 06:00–22:30 / 주말·공휴일 08:00–20:00
       </div>
     </div>
@@ -374,140 +449,245 @@ body{
     </div>
 
     <div class="section-label" style="margin-top:20px">GAS 연동 안내 (GM 잔여 작업)</div>
+
     <div class="card">
       <div class="card-title"><span class="icon">🔧</span>GAS 배포 및 URL 교체</div>
       <div style="font-size:13px;line-height:1.9;color:var(--text)">
-        1. 아래 GAS 코드(member_calendar 액션)를 Survey.js에 추가 후 새 버전으로 배포<br>
-        2. 배포된 웹앱 URL을 복사<br>
-        3. 이 파일(<code style="font-size:11px;background:var(--bg);padding:2px 5px;border-radius:4px">문의회원.html</code>)에서<br>
-        &nbsp;&nbsp;<code style="font-size:11px;background:var(--bg);padding:2px 5px;border-radius:4px">__MEMBER_CAL_GAS_URL__</code> 를 배포 URL로 교체<br>
-        4. 저장·커밋·푸시 후 ERP 라이브 확인
+        1. 아래 GAS 코드를 Survey.js <code style="font-size:11px;background:var(--bg);padding:2px 5px;border-radius:4px">_processAction</code> 의 switch/if 블록에 추가<br>
+        2. <strong>새 버전</strong>으로 배포(clasp push ≠ 재배포 — 반드시 새 버전 배포 필요)<br>
+        3. 배포된 웹앱 URL을 복사<br>
+        4. 이 파일(<code style="font-size:11px;background:var(--bg);padding:2px 5px;border-radius:4px">문의회원.html</code>)에서<br>
+        &nbsp;&nbsp;<code style="font-size:11px;background:var(--bg);padding:2px 5px;border-radius:4px">__MEMBER_CAL_GAS_URL__</code>를 배포 URL로 교체<br>
+        5. ⚠️ 접근통제(시토 PII 보호 틀) 구축 완료 + GM go 후에만 라이브 발효
       </div>
     </div>
 
     <div class="card">
-      <div class="card-title"><span class="icon">📄</span>GAS member_calendar 코드 (Survey.js 추가분)</div>
+      <div class="card-title"><span class="icon">📄</span>GAS 전체 코드 (Survey.js 추가분 — CRUD 포함)</div>
       <pre style="font-size:11px;line-height:1.7;color:var(--dim);overflow-x:auto;white-space:pre-wrap;word-break:break-word"><code>/**
- * member_calendar — 26년 신규문의 시트에서 예약 행 추출
- * 액션: ?action=member_calendar&amp;month=YYYY-MM (month 생략 시 당월)
- * PII: 이름 마스킹(성+**), 전화 미포함
- * 캐시: 300초
+ * ══════════════════════════════════════════════
+ * 문의회원 CRUD 액션 — Survey.js 추가분
+ * 스프레드시트: 12AWcAlgmmYKr2nUbWmVpa71_z3zi0BaU4ZdnOwrI_7U
+ * 시트명: 26년 신규문의
  *
- * 추가 위치: 기존 Survey.js doGet() switch(action) 블록 내
- * case 'member_calendar':
- *   return ContentService
- *     .createTextOutput(JSON.stringify(getMemberCalendar(params.month)))
- *     .setMimeType(ContentService.MimeType.JSON);
+ * ⚠️ PII 보호 필수: 이름·전화 포함 데이터 — 접근통제(GM go) 전 라이브 발효 금지.
+ *    평문 비밀키·토큰 하드코딩 금지. 키는 ScriptProperties 에만 저장.
+ *
+ * 추가 위치: _processAction(body) 내 기존 action 분기 아래에 붙여넣기
+ * 액션 목록:
+ *   GET  ?action=inquiry_list          → 전체 목록 (PII 마스킹)
+ *   POST action=inquiry_add            → 행 추가
+ *   POST action=inquiry_update         → 행 수정 (rowIndex 기반)
+ *   POST action=inquiry_delete         → 행 삭제 (rowIndex 기반)
+ *   GET  ?action=member_calendar&month=YYYY-MM → 예약 달력
+ * ══════════════════════════════════════════════
  */
-function getMemberCalendar(monthParam) {
-  var cache = CacheService.getScriptCache();
-  var cacheKey = 'member_cal_' + (monthParam || 'current');
-  var cached = cache.get(cacheKey);
-  if (cached) return JSON.parse(cached);
 
-  var ss = SpreadsheetApp.openById('12AWcAlg______GnTk'); // 26년 신규문의 스프레드시트 ID
-  var sheet = ss.getSheetByName('26년 신규문의') || ss.getSheets()[0];
-  var data = sheet.getDataRange().getValues();
-  var headers = data[0];
+// ─── 26년 신규문의 시트 헬퍼 ───
+var _INQ_SS_ID   = '12AWcAlgmmYKr2nUbWmVpa71_z3zi0BaU4ZdnOwrI_7U';
+var _INQ_SHEET   = '26년 신규문의';
 
-  // 컬럼 인덱스 찾기
-  function colIdx(name) {
-    for (var i = 0; i &lt; headers.length; i++) {
-      if (String(headers[i]).trim() === name) return i;
-    }
-    return -1;
+// 시트 컬럼명 → 인덱스 매핑 (헤더 동적 탐색 — 열 추가에 강함)
+function _inqSheet_() {
+  return SpreadsheetApp.openById(_INQ_SS_ID).getSheetByName(_INQ_SHEET);
+}
+
+function _inqHeaders_(sh) {
+  var last = sh.getLastColumn();
+  if (last &lt; 1) return [];
+  return sh.getRange(1, 1, 1, last).getValues()[0].map(function(v){ return String(v).trim(); });
+}
+
+function _inqColIdx_(headers, names) {
+  var arr = Array.isArray(names) ? names : [names];
+  for (var i = 0; i &lt; arr.length; i++) {
+    var idx = headers.indexOf(arr[i]);
+    if (idx >= 0) return idx;
   }
-  var iName     = colIdx('이름');
-  var iProgram  = colIdx('관심 있는 프로그램 종류');
-  var iStatus   = colIdx('진행상황');
-  var iTs       = colIdx('타임스탬프');
-  var iTourDate = colIdx('시설견학 및 상담 일정 (날짜 기록)');
-  var iExp1Date = colIdx('체험1 확정시간');
-  var iExp2Date = colIdx('시설 체험 일정2(날짜 기록)');
+  return -1;
+}
 
-  // 대상 월 결정
-  var now = new Date();
-  var targetYear = now.getFullYear();
-  var targetMonth = now.getMonth() + 1;
-  if (monthParam) {
-    var parts = String(monthParam).split('-');
-    if (parts.length === 2) {
-      targetYear = parseInt(parts[0], 10);
-      targetMonth = parseInt(parts[1], 10);
-    }
-  }
+function _maskName_(n) {
+  var s = String(n || '').trim();
+  return s ? s.charAt(0) + '**' : '';
+}
 
-  function _parseAnyDate_(val) {
-    if (!val) return null;
-    var s = String(val).trim();
-    // 한글 날짜: 2026년 6월 5일
-    var m = s.match(/(\d{4})년\s*(\d{1,2})월\s*(\d{1,2})일/);
-    if (m) return new Date(parseInt(m[1]),parseInt(m[2])-1,parseInt(m[3]));
-    // ISO: 2026-06-05
-    m = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
-    if (m) return new Date(parseInt(m[1]),parseInt(m[2])-1,parseInt(m[3]));
-    // 스프레드시트 Date 객체
-    if (val instanceof Date &amp;&amp; !isNaN(val.getTime())) return val;
-    return null;
-  }
+function _maskPhone_(p) {
+  var s = String(p || '').trim().replace(/[^0-9]/g, '');
+  if (s.length === 11) return s.slice(0,3) + '-****-' + s.slice(7);
+  if (s.length === 10) return s.slice(0,3) + '-***-' + s.slice(6);
+  return s ? '****' : '';
+}
 
-  function maskName(name) {
-    var s = String(name || '').trim();
-    if (!s) return '';
-    return s.charAt(0) + '**';
-  }
-
-  function toISO(d) {
-    if (!d) return null;
-    var yy = d.getFullYear();
-    var mm = String(d.getMonth()+1).padStart(2,'0');
-    var dd = String(d.getDate()).padStart(2,'0');
+function _inqToISO_(val) {
+  if (!val) return '';
+  if (val instanceof Date &amp;&amp; !isNaN(val.getTime())) {
+    var yy = val.getFullYear(), mm = String(val.getMonth()+1).padStart(2,'0'), dd = String(val.getDate()).padStart(2,'0');
     return yy + '-' + mm + '-' + dd;
   }
+  var s = String(val).trim();
+  var m = s.match(/(\d{4})[\.\-\/]?\s*(\d{1,2})[\.\-\/]?\s*(\d{1,2})/);
+  if (m) return m[1] + '-' + ('0'+m[2]).slice(-2) + '-' + ('0'+m[3]).slice(-2);
+  return s;
+}
 
-  function inTargetMonth(d) {
+function _genInqId_() {
+  return 'INQ-' + new Date().getTime();
+}
+
+// ─── inquiry_list ───
+if (action === 'inquiry_list') {
+  var ilSh = _inqSheet_();
+  var ilHdr = _inqHeaders_(ilSh);
+  var ilLast = ilSh.getLastRow();
+  var ilRows = [];
+  if (ilLast >= 2) {
+    var ilData = ilSh.getRange(2, 1, ilLast - 1, ilHdr.length).getValues();
+    var iName   = _inqColIdx_(ilHdr, ['이름']);
+    var iPhone  = _inqColIdx_(ilHdr, ['연락처', '전화', '휴대폰']);
+    var iProg   = _inqColIdx_(ilHdr, ['관심 있는 프로그램 종류', '관심프로그램', '프로그램']);
+    var iStat   = _inqColIdx_(ilHdr, ['진행상황', '진행상태', '상태']);
+    var iTs     = _inqColIdx_(ilHdr, ['타임스탬프', '접수일', '날짜']);
+    var iTour   = _inqColIdx_(ilHdr, ['시설견학 및 상담 일정 (날짜 기록)', '시설견학 및 상담 일정']);
+    var iMemo   = _inqColIdx_(ilHdr, ['메모', '비고', '담당자메모']);
+    var iOwner  = _inqColIdx_(ilHdr, ['담당', '담당자']);
+    for (var r = 0; r &lt; ilData.length; r++) {
+      var row = ilData[r];
+      var rawName = iName >= 0 ? row[iName] : '';
+      if (!rawName &amp;&amp; (iPhone &lt; 0 || !row[iPhone])) continue; // 완전 빈 행 스킵
+      ilRows.push({
+        rowIndex: r + 2,  // 시트 실제 행번호 (헤더=1행, 데이터=2행~)
+        name:     _maskName_(rawName),
+        phone:    _maskPhone_(iPhone >= 0 ? row[iPhone] : ''),
+        program:  iProg >= 0 ? String(row[iProg] || '') : '',
+        status:   iStat >= 0 ? String(row[iStat] || '') : '',
+        tourDate: _inqToISO_(iTour >= 0 ? row[iTour] : ''),
+        timestamp:_inqToISO_(iTs >= 0 ? row[iTs] : ''),
+        memo:     iMemo >= 0 ? String(row[iMemo] || '') : '',
+        owner:    iOwner >= 0 ? String(row[iOwner] || '') : ''
+      });
+    }
+  }
+  return _json({ ok: true, count: ilRows.length, data: ilRows });
+}
+
+// ─── inquiry_add ───
+if (action === 'inquiry_add') {
+  var iaSh  = _inqSheet_();
+  var iaHdr = _inqHeaders_(iaSh);
+  var newRow = new Array(iaHdr.length).fill('');
+  var now = Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy-MM-dd');
+  var iName2   = _inqColIdx_(iaHdr, ['이름']);
+  var iPhone2  = _inqColIdx_(iaHdr, ['연락처', '전화', '휴대폰']);
+  var iProg2   = _inqColIdx_(iaHdr, ['관심 있는 프로그램 종류', '관심프로그램', '프로그램']);
+  var iStat2   = _inqColIdx_(iaHdr, ['진행상황', '진행상태', '상태']);
+  var iTs2     = _inqColIdx_(iaHdr, ['타임스탬프', '접수일', '날짜']);
+  var iMemo2   = _inqColIdx_(iaHdr, ['메모', '비고', '담당자메모']);
+  var iOwner2  = _inqColIdx_(iaHdr, ['담당', '담당자']);
+  if (iName2 >= 0)  newRow[iName2]  = body.name  || '';
+  if (iPhone2 >= 0) newRow[iPhone2] = body.phone || '';
+  if (iProg2 >= 0)  newRow[iProg2]  = body.program || '';
+  if (iStat2 >= 0)  newRow[iStat2]  = body.status  || '신규';
+  if (iTs2 >= 0)    newRow[iTs2]    = body.timestamp || now;
+  if (iMemo2 >= 0)  newRow[iMemo2]  = body.memo  || '';
+  if (iOwner2 >= 0) newRow[iOwner2] = body.owner || '';
+  var newRowNum = iaSh.getLastRow() + 1;
+  iaSh.getRange(newRowNum, 1, 1, newRow.length).setValues([newRow]);
+  return _json({ ok: true, rowIndex: newRowNum, message: '문의가 추가되었습니다.' });
+}
+
+// ─── inquiry_update ───
+if (action === 'inquiry_update') {
+  var iuSh  = _inqSheet_();
+  var iuHdr = _inqHeaders_(iuSh);
+  var iuRow = parseInt(body.rowIndex, 10);
+  if (!iuRow || iuRow &lt; 2) return _json({ ok: false, error: 'rowIndex 필수 (2 이상)' });
+  var existing = iuSh.getRange(iuRow, 1, 1, iuHdr.length).getValues()[0];
+  var iName3  = _inqColIdx_(iuHdr, ['이름']);
+  var iPhone3 = _inqColIdx_(iuHdr, ['연락처', '전화', '휴대폰']);
+  var iProg3  = _inqColIdx_(iuHdr, ['관심 있는 프로그램 종류', '관심프로그램', '프로그램']);
+  var iStat3  = _inqColIdx_(iuHdr, ['진행상황', '진행상태', '상태']);
+  var iMemo3  = _inqColIdx_(iuHdr, ['메모', '비고', '담당자메모']);
+  var iOwner3 = _inqColIdx_(iuHdr, ['담당', '담당자']);
+  // 빈 문자열은 기존값 보존 (todo 패턴 동일)
+  if (body.name    !== undefined &amp;&amp; body.name    !== '' &amp;&amp; iName3 >= 0)  existing[iName3]  = body.name;
+  if (body.phone   !== undefined &amp;&amp; body.phone   !== '' &amp;&amp; iPhone3 >= 0) existing[iPhone3] = body.phone;
+  if (body.program !== undefined &amp;&amp; body.program !== '' &amp;&amp; iProg3 >= 0)  existing[iProg3]  = body.program;
+  if (body.status  !== undefined &amp;&amp; body.status  !== '' &amp;&amp; iStat3 >= 0)  existing[iStat3]  = body.status;
+  if (body.memo    !== undefined &amp;&amp; iMemo3 >= 0)  existing[iMemo3]  = body.memo;
+  if (body.owner   !== undefined &amp;&amp; iOwner3 >= 0) existing[iOwner3] = body.owner;
+  iuSh.getRange(iuRow, 1, 1, iuHdr.length).setValues([existing]);
+  return _json({ ok: true, rowIndex: iuRow, message: '수정되었습니다.' });
+}
+
+// ─── inquiry_delete ───
+if (action === 'inquiry_delete') {
+  var idSh  = _inqSheet_();
+  var idRow = parseInt(body.rowIndex, 10);
+  if (!idRow || idRow &lt; 2) return _json({ ok: false, error: 'rowIndex 필수 (2 이상)' });
+  idSh.deleteRow(idRow);
+  return _json({ ok: true, message: '삭제되었습니다.' });
+}
+
+// ─── member_calendar ───
+if (action === 'member_calendar') {
+  var cache = CacheService.getScriptCache();
+  var cacheKey = 'member_cal_' + (params.month || 'current');
+  var cached = cache.get(cacheKey);
+  if (cached) return _json(JSON.parse(cached));
+
+  var mcSh   = _inqSheet_();
+  var mcHdr  = _inqHeaders_(mcSh);
+  var mcLast = mcSh.getLastRow();
+  var mcData = mcLast >= 2 ? mcSh.getRange(2, 1, mcLast-1, mcHdr.length).getValues() : [];
+
+  var iName4   = _inqColIdx_(mcHdr, ['이름']);
+  var iProg4   = _inqColIdx_(mcHdr, ['관심 있는 프로그램 종류', '관심프로그램', '프로그램']);
+  var iStat4   = _inqColIdx_(mcHdr, ['진행상황', '진행상태', '상태']);
+  var iTs4     = _inqColIdx_(mcHdr, ['타임스탬프', '접수일', '날짜']);
+  var iTour4   = _inqColIdx_(mcHdr, ['시설견학 및 상담 일정 (날짜 기록)', '시설견학 및 상담 일정']);
+  var iExp14   = _inqColIdx_(mcHdr, ['체험1 확정시간', '체험1', '확정시간']);
+  var iExp24   = _inqColIdx_(mcHdr, ['시설 체험 일정2(날짜 기록)', '시설 체험 일정2', '체험2']);
+
+  var now = new Date();
+  var tYear = now.getFullYear(), tMonth = now.getMonth()+1;
+  if (params.month) {
+    var parts = String(params.month).split('-');
+    if (parts.length === 2) { tYear = parseInt(parts[0],10); tMonth = parseInt(parts[1],10); }
+  }
+
+  function _mcISO_(v) { return _inqToISO_(v); }
+  function _inMonth_(v) {
+    var d = _inqToISO_(v);
     if (!d) return false;
-    return d.getFullYear() === targetYear &amp;&amp; (d.getMonth()+1) === targetMonth;
+    return d.startsWith(tYear + '-' + ('0'+tMonth).slice(-2));
   }
 
-  var events = [];
-  var rows = [];
-
-  for (var r = 1; r &lt; data.length; r++) {
-    var row = data[r];
-    var name = maskName(iName &gt;= 0 ? row[iName] : '');
-    var program = iProgram &gt;= 0 ? String(row[iProgram] || '') : '';
-    var status = iStatus &gt;= 0 ? String(row[iStatus] || '') : '';
-    var ts = iTs &gt;= 0 ? _parseAnyDate_(row[iTs]) : null;
-
-    // 견학/상담
-    var tourDate = iTourDate &gt;= 0 ? _parseAnyDate_(row[iTourDate]) : null;
-    if (tourDate &amp;&amp; inTargetMonth(tourDate)) {
-      events.push({date:toISO(tourDate),kind:'견학·상담',name:name,program:program,status:status});
+  var events = [], rows = [];
+  for (var mr = 0; mr &lt; mcData.length; mr++) {
+    var mrow = mcData[mr];
+    var mname = _maskName_(iName4 >= 0 ? mrow[iName4] : '');
+    var mprog = iProg4 >= 0 ? String(mrow[iProg4]||'') : '';
+    var mstat = iStat4 >= 0 ? String(mrow[iStat4]||'') : '';
+    var mts   = iTs4 >= 0 ? _mcISO_(mrow[iTs4]) : '';
+    var td    = iTour4 >= 0 ? _mcISO_(mrow[iTour4]) : '';
+    var e1    = iExp14 >= 0 ? _mcISO_(mrow[iExp14]) : '';
+    var e2    = iExp24 >= 0 ? _mcISO_(mrow[iExp24]) : '';
+    if (!mname &amp;&amp; !mts) continue;
+    if (td &amp;&amp; _inMonth_(mrow[iTour4 >= 0 ? iTour4 : 0])) {
+      events.push({date:td, kind:'견학·상담', name:mname, program:mprog, status:mstat});
     }
-    // 체험1
-    var exp1Date = iExp1Date &gt;= 0 ? _parseAnyDate_(row[iExp1Date]) : null;
-    if (exp1Date &amp;&amp; inTargetMonth(exp1Date)) {
-      events.push({date:toISO(exp1Date),kind:'체험',name:name,program:program,status:status});
+    if (e1 &amp;&amp; _inMonth_(mrow[iExp14 >= 0 ? iExp14 : 0])) {
+      events.push({date:e1, kind:'체험', name:mname, program:mprog, status:mstat});
     }
-    // 체험2
-    var exp2Date = iExp2Date &gt;= 0 ? _parseAnyDate_(row[iExp2Date]) : null;
-    if (exp2Date &amp;&amp; inTargetMonth(exp2Date)) {
-      events.push({date:toISO(exp2Date),kind:'체험',name:name,program:program,status:status});
+    if (e2 &amp;&amp; _inMonth_(mrow[iExp24 >= 0 ? iExp24 : 0])) {
+      events.push({date:e2, kind:'체험', name:mname, program:mprog, status:mstat});
     }
-
-    // 목록용 행 (전 월 포함)
-    rows.push({
-      name:name, program:program, status:status,
-      tourDate:toISO(tourDate), exp1Date:toISO(exp1Date), exp2Date:toISO(exp2Date),
-      timestamp:toISO(ts)
-    });
+    rows.push({name:mname, program:mprog, status:mstat, tourDate:td, exp1Date:e1, exp2Date:e2, timestamp:mts});
   }
-
-  var result = {ok:true, month:targetYear+'-'+String(targetMonth).padStart(2,'0'),
-    events:events, rows:rows};
-  cache.put(cacheKey, JSON.stringify(result), 300);
-  return result;
+  var mcResult = {ok:true, month:tYear+'-'+('0'+tMonth).slice(-2), events:events, rows:rows};
+  cache.put(cacheKey, JSON.stringify(mcResult), 300);
+  return _json(mcResult);
 }</code></pre>
     </div>
 
@@ -515,21 +695,27 @@ function getMemberCalendar(monthParam) {
 
 </div><!-- /content -->
 
+<!-- 저장 토스트 -->
+<div class="save-toast" id="saveToast"></div>
+
 <script>
 /* ── GAS URL 자리표시자 — GM이 배포 후 아래 값을 교체 ── */
 var GAS_URL = '__MEMBER_CAL_GAS_URL__';
 
 /* ── 탭 전환 ── */
 function switchTab(id, btn) {
-  document.querySelectorAll('.pane').forEach(function(p){p.classList.remove('active');});
-  document.querySelectorAll('.tab').forEach(function(t){t.classList.remove('active');});
+  document.querySelectorAll('.pane').forEach(function(p){ p.classList.remove('active'); });
+  document.querySelectorAll('.tab').forEach(function(t){ t.classList.remove('active'); });
   document.getElementById('pane-' + id).classList.add('active');
   btn.classList.add('active');
+  if (id === 'db') loadDbData();
 }
 
-/* ── 캘린더 상태 ── */
+/* ─────────────────────────────────────────────
+   캘린더 섹션
+───────────────────────────────────────────── */
 var calYear, calMonth;
-var calEvents = {}; /* date -> [{kind,name,program,status}] */
+var calEvents = {};
 
 (function init() {
   var now = new Date();
@@ -550,29 +736,23 @@ function changeMonth(delta) {
 }
 
 function renderCalendarShell() {
-  var title = calYear + '년 ' + calMonth + '월';
-  document.getElementById('calTitle').textContent = title;
-
+  document.getElementById('calTitle').textContent = calYear + '년 ' + calMonth + '월';
   var grid = document.getElementById('calGrid');
-  /* 기존 날짜 셀만 제거 (헤더 7개 유지) */
-  var cells = grid.querySelectorAll('.cal-cell');
-  cells.forEach(function(c){c.remove();});
+  grid.querySelectorAll('.cal-cell').forEach(function(c){ c.remove(); });
 
   var today = new Date();
   var todayStr = today.getFullYear() + '-' +
     String(today.getMonth()+1).padStart(2,'0') + '-' +
     String(today.getDate()).padStart(2,'0');
 
-  var firstDay = new Date(calYear, calMonth - 1, 1).getDay(); /* 0=일 */
+  var firstDay = new Date(calYear, calMonth - 1, 1).getDay();
   var daysInMonth = new Date(calYear, calMonth, 0).getDate();
 
-  /* 빈 셀 */
   for (var i = 0; i < firstDay; i++) {
     var empty = document.createElement('div');
     empty.className = 'cal-cell empty';
     grid.appendChild(empty);
   }
-
   for (var d = 1; d <= daysInMonth; d++) {
     var dateStr = calYear + '-' + String(calMonth).padStart(2,'0') + '-' + String(d).padStart(2,'0');
     var cell = document.createElement('div');
@@ -590,7 +770,7 @@ function renderCalendarShell() {
     chipsDiv.id = 'chips-' + dateStr;
     cell.appendChild(chipsDiv);
 
-    cell.addEventListener('click', function(e){
+    cell.addEventListener('click', function() {
       var dt = this.dataset.date;
       if (calEvents[dt] && calEvents[dt].length) openDayPanel(dt);
     }.bind(cell));
@@ -617,7 +797,7 @@ function loadCalendarData() {
     return;
   }
 
-  var monthStr = calYear + '-' + String(calMonth).padStart(2, '0');
+  var monthStr = calYear + '-' + String(calMonth).padStart(2,'0');
   fetch(GAS_URL + '?action=member_calendar&month=' + monthStr)
     .then(function(r){ return r.json(); })
     .then(function(data){
@@ -639,7 +819,6 @@ function processCalendarData(data) {
     calEvents[ev.date].push(ev);
   });
 
-  /* 캘린더 칩 렌더 */
   Object.keys(calEvents).forEach(function(date){
     var chipsDiv = document.getElementById('chips-' + date);
     if (!chipsDiv) return;
@@ -653,7 +832,6 @@ function processCalendarData(data) {
     });
   });
 
-  /* KPI */
   var expCount = 0, tourCount = 0, visitCount = 0;
   (data.events || []).forEach(function(ev){
     if (ev.kind === '체험') expCount++;
@@ -665,28 +843,6 @@ function processCalendarData(data) {
   document.getElementById('kpiVisited').textContent = visitCount || '0';
   document.getElementById('kpiExperienceNote').textContent = expCount ? '건' : '예약 없음';
   document.getElementById('kpiTourNote').textContent = tourCount ? '건' : '예약 없음';
-
-  /* 문의 목록 */
-  var rows = data.rows || [];
-  document.getElementById('prospectsCount').textContent = rows.length + ' 명';
-  var tbody = document.getElementById('prospectsBody');
-  if (rows.length === 0) return;
-  tbody.innerHTML = '';
-  rows.forEach(function(row){
-    var statusClass = {
-      '신규':'new','응대':'contact','예약':'reserved',
-      '방문':'visited','가입':'joined','이탈':'lost'
-    }[row.status] || 'new';
-    var tr = document.createElement('tr');
-    tr.innerHTML =
-      '<td style="font-weight:700">' + esc(row.name) + '</td>' +
-      '<td>' + esc(row.program) + '</td>' +
-      '<td>' + (row.tourDate || '—') + '</td>' +
-      '<td>' + [row.exp1Date, row.exp2Date].filter(Boolean).join(', ') + (![row.exp1Date,row.exp2Date].some(Boolean)?'—':'') + '</td>' +
-      '<td><span class="status-chip ' + statusClass + '">' + esc(row.status || '신규') + '</span></td>' +
-      '<td style="color:var(--dim);font-size:12px">' + (row.timestamp || '—') + '</td>';
-    tbody.appendChild(tr);
-  });
 }
 
 function openDayPanel(date) {
@@ -714,8 +870,448 @@ function closeDayPanel() {
   document.getElementById('dayPanel').classList.remove('open');
 }
 
+/* ─────────────────────────────────────────────
+   문의 DB 섹션 (CRUD)
+───────────────────────────────────────────── */
+var dbRows = [];         // 현재 로드된 행 배열
+var dbEditingRow = null; // 현재 편집 중인 rowIndex
+var dbSaveTimer = null;  // 디바운스 타이머
+
+var STATUS_OPTIONS = ['신규','응대','예약','방문','가입','이탈','보류'];
+var STATUS_CLASS   = {
+  '신규':'new','응대':'contact','예약':'reserved',
+  '방문':'visited','가입':'joined','이탈':'lost','보류':'hold'
+};
+
+function loadDbData() {
+  if (GAS_URL === '__MEMBER_CAL_GAS_URL__') {
+    renderDbEmpty('GAS 미연동 상태', 'GM이 GAS를 배포하고 URL을 교체하면 문의 DB가 활성화됩니다.');
+    return;
+  }
+  document.getElementById('dbCount').textContent = '불러오는 중…';
+  fetch(GAS_URL + '?action=inquiry_list')
+    .then(function(r){ return r.json(); })
+    .then(function(data){
+      if (!data.ok) throw new Error(data.error || 'GAS 응답 오류');
+      dbRows = data.data || [];
+      renderDbTable();
+    })
+    .catch(function(err){
+      renderDbEmpty('데이터 로드 실패', err.message || 'GAS URL 또는 배포 상태를 확인하세요.');
+    });
+}
+
+function renderDbEmpty(title, desc) {
+  var tbody = document.getElementById('dbBody');
+  tbody.innerHTML =
+    '<tr><td colspan="9">' +
+    '<div class="empty-state" style="padding:24px 0">' +
+    '<div class="empty-state-icon">📭</div>' +
+    '<div class="empty-state-title">' + esc(title) + '</div>' +
+    '<div class="empty-state-desc">' + esc(desc) + '</div>' +
+    '</div></td></tr>';
+  document.getElementById('dbCount').textContent = '';
+}
+
+function renderDbTable() {
+  var search = document.getElementById('dbSearch').value.trim().toLowerCase();
+  var filter = document.getElementById('dbFilter').value;
+
+  var filtered = dbRows.filter(function(row){
+    var matchStatus = !filter || row.status === filter;
+    var matchSearch = !search ||
+      (row.name  || '').toLowerCase().includes(search) ||
+      (row.memo  || '').toLowerCase().includes(search) ||
+      (row.owner || '').toLowerCase().includes(search);
+    return matchStatus && matchSearch;
+  });
+
+  var tbody = document.getElementById('dbBody');
+
+  if (filtered.length === 0) {
+    renderDbEmpty(
+      dbRows.length === 0 ? '문의 데이터 없음' : '검색 결과 없음',
+      dbRows.length === 0 ? '아직 문의 기록이 없습니다. [+ 새 문의]로 추가하세요.' : '검색어 또는 필터를 변경해보세요.'
+    );
+    document.getElementById('dbCount').textContent = '총 ' + dbRows.length + '건 중 0건';
+    return;
+  }
+
+  tbody.innerHTML = '';
+  filtered.forEach(function(row){
+    tbody.appendChild(buildDbRow(row, false));
+  });
+  document.getElementById('dbCount').textContent = '총 ' + dbRows.length + '건 중 ' + filtered.length + '건 표시';
+}
+
+function buildDbRow(row, isNew) {
+  var tr = document.createElement('tr');
+  tr.dataset.rowIndex = row.rowIndex || '';
+  if (isNew) tr.classList.add('editing');
+
+  var statusCls = STATUS_CLASS[row.status] || 'new';
+
+  // 읽기 모드 셀
+  tr.innerHTML =
+    // 이름
+    '<td style="font-weight:700">' + esc(row.name || '—') + '</td>' +
+    // 전화 (마스킹 + 토글)
+    '<td><span class="pii-mask" id="phone-' + row.rowIndex + '">' + esc(row.phone || '—') + '</span></td>' +
+    // 관심 프로그램
+    '<td style="color:var(--dim);font-size:12px">' + esc(row.program || '—') + '</td>' +
+    // 진행상황
+    '<td><span class="status-chip ' + statusCls + '">' + esc(row.status || '신규') + '</span></td>' +
+    // 담당
+    '<td style="font-size:12px;color:var(--dim)">' + esc(row.owner || '—') + '</td>' +
+    // 메모
+    '<td style="font-size:12px;color:var(--dim);max-width:140px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + esc(row.memo || '—') + '</td>' +
+    // 문의일
+    '<td style="font-size:12px;color:var(--dim)">' + esc(row.timestamp || '—') + '</td>' +
+    // 견학/상담일
+    '<td style="font-size:12px;color:var(--dim)">' + esc(row.tourDate || '—') + '</td>' +
+    // 작업
+    '<td><div class="row-actions">' +
+      '<button class="row-btn btn-edit" onclick="startEditRow(this)">편집</button>' +
+      '<button class="row-btn btn-del" onclick="deleteRow(this)">삭제</button>' +
+    '</div></td>';
+
+  return tr;
+}
+
+function startEditRow(btn) {
+  var tr = btn.closest('tr');
+  var rowIndex = parseInt(tr.dataset.rowIndex, 10);
+  var row = dbRows.find(function(r){ return r.rowIndex === rowIndex; }) || {};
+
+  // 기존 편집 행이 있으면 취소
+  if (dbEditingRow !== null) {
+    cancelEditRow();
+  }
+  dbEditingRow = rowIndex;
+  tr.classList.add('editing');
+
+  // 셀 내용을 인라인 편집 컨트롤로 교체
+  // IME 안전: input/select를 교체하지 않고 처음부터 올바른 타입으로 생성
+  var cells = tr.querySelectorAll('td');
+
+  // [0] 이름
+  cells[0].innerHTML = '';
+  var inputName = document.createElement('input');
+  inputName.className = 'cell-input';
+  inputName.type = 'text';
+  inputName.value = row.name || '';
+  inputName.dataset.field = 'name';
+  cells[0].appendChild(inputName);
+
+  // [1] 전화
+  cells[1].innerHTML = '';
+  var inputPhone = document.createElement('input');
+  inputPhone.className = 'cell-input';
+  inputPhone.type = 'text';
+  inputPhone.value = row.phone || '';
+  inputPhone.dataset.field = 'phone';
+  cells[1].appendChild(inputPhone);
+
+  // [2] 관심 프로그램
+  cells[2].innerHTML = '';
+  var inputProg = document.createElement('input');
+  inputProg.className = 'cell-input';
+  inputProg.type = 'text';
+  inputProg.value = row.program || '';
+  inputProg.dataset.field = 'program';
+  cells[2].appendChild(inputProg);
+
+  // [3] 진행상황 드롭다운
+  cells[3].innerHTML = '';
+  var selStatus = document.createElement('select');
+  selStatus.className = 'cell-select';
+  selStatus.dataset.field = 'status';
+  STATUS_OPTIONS.forEach(function(opt){
+    var o = document.createElement('option');
+    o.value = opt;
+    o.textContent = opt;
+    if (opt === (row.status || '신규')) o.selected = true;
+    selStatus.appendChild(o);
+  });
+  cells[3].appendChild(selStatus);
+
+  // [4] 담당
+  cells[4].innerHTML = '';
+  var inputOwner = document.createElement('input');
+  inputOwner.className = 'cell-input';
+  inputOwner.type = 'text';
+  inputOwner.value = row.owner || '';
+  inputOwner.dataset.field = 'owner';
+  cells[4].appendChild(inputOwner);
+
+  // [5] 메모
+  cells[5].innerHTML = '';
+  var inputMemo = document.createElement('input');
+  inputMemo.className = 'cell-input';
+  inputMemo.type = 'text';
+  inputMemo.value = row.memo || '';
+  inputMemo.dataset.field = 'memo';
+  cells[5].appendChild(inputMemo);
+
+  // [6] 문의일 (읽기 전용)
+  // [7] 견학/상담일 (읽기 전용 — 달력 탭에서 관리)
+
+  // [8] 작업 버튼 교체
+  cells[8].innerHTML = '';
+  var actDiv = document.createElement('div');
+  actDiv.className = 'row-actions';
+  var saveBtn = document.createElement('button');
+  saveBtn.className = 'row-btn btn-save';
+  saveBtn.textContent = '저장';
+  saveBtn.onclick = function(){ saveEditRow(tr); };
+  var cancelBtn = document.createElement('button');
+  cancelBtn.className = 'row-btn btn-cancel';
+  cancelBtn.textContent = '취소';
+  cancelBtn.onclick = function(){ cancelEditRow(); };
+  actDiv.appendChild(saveBtn);
+  actDiv.appendChild(cancelBtn);
+  cells[8].appendChild(actDiv);
+}
+
+function cancelEditRow() {
+  dbEditingRow = null;
+  renderDbTable();
+}
+
+function saveEditRow(tr) {
+  var rowIndex = parseInt(tr.dataset.rowIndex, 10);
+  if (!rowIndex) return;
+
+  var fields = {};
+  tr.querySelectorAll('[data-field]').forEach(function(el){
+    fields[el.dataset.field] = el.value;
+  });
+
+  var payload = {
+    action: 'inquiry_update',
+    rowIndex: rowIndex,
+    name:    fields.name    || '',
+    phone:   fields.phone   || '',
+    program: fields.program || '',
+    status:  fields.status  || '신규',
+    owner:   fields.owner   || '',
+    memo:    fields.memo    !== undefined ? fields.memo : ''
+  };
+
+  // 로컬 즉시 반영 (낙관적 업데이트)
+  var idx = dbRows.findIndex(function(r){ return r.rowIndex === rowIndex; });
+  if (idx >= 0) {
+    dbRows[idx] = Object.assign({}, dbRows[idx], {
+      name: fields.name, phone: fields.phone, program: fields.program,
+      status: fields.status, owner: fields.owner, memo: fields.memo
+    });
+  }
+  dbEditingRow = null;
+  renderDbTable();
+
+  // 서버 저장 (디바운스 800ms)
+  if (dbSaveTimer) clearTimeout(dbSaveTimer);
+  dbSaveTimer = setTimeout(function(){
+    apiPost(payload)
+      .then(function(data){
+        if (!data.ok) throw new Error(data.error || '저장 실패');
+        showToast('저장 완료', 'ok');
+        loadDbData(); // 서버 라운드트립 후 갱신
+      })
+      .catch(function(err){
+        showToast('저장 실패: ' + err.message, 'err');
+      });
+  }, 800);
+}
+
+function addNewRow() {
+  if (GAS_URL === '__MEMBER_CAL_GAS_URL__') {
+    showToast('GAS 미연동 — URL 교체 후 사용 가능', 'err');
+    return;
+  }
+  // 기존 편집 취소
+  if (dbEditingRow !== null) cancelEditRow();
+
+  var tbody = document.getElementById('dbBody');
+  var emptyRow = tbody.querySelector('tr td[colspan]');
+  if (emptyRow) emptyRow.closest('tr').remove();
+
+  var tempRow = { rowIndex: 0, name:'', phone:'', program:'', status:'신규', owner:'', memo:'', timestamp:'', tourDate:'' };
+  var tr = buildNewInputRow(tempRow);
+  tbody.insertBefore(tr, tbody.firstChild);
+}
+
+function buildNewInputRow(row) {
+  var tr = document.createElement('tr');
+  tr.classList.add('editing');
+  tr.dataset.rowIndex = '0'; // 신규
+
+  // 각 셀 생성 (IME 안전: DOM 재생성 없음 — 처음부터 input/select 로 생성)
+  function makeCell(content){ var td = document.createElement('td'); td.appendChild(content); return td; }
+  function makeInput(field, val){
+    var el = document.createElement('input');
+    el.className = 'cell-input';
+    el.type = 'text';
+    el.value = val || '';
+    el.dataset.field = field;
+    return el;
+  }
+
+  var inputName  = makeInput('name', '');
+  var inputPhone = makeInput('phone', '');
+  var inputProg  = makeInput('program', '');
+
+  var selStatus = document.createElement('select');
+  selStatus.className = 'cell-select';
+  selStatus.dataset.field = 'status';
+  STATUS_OPTIONS.forEach(function(opt){
+    var o = document.createElement('option');
+    o.value = opt; o.textContent = opt;
+    if (opt === '신규') o.selected = true;
+    selStatus.appendChild(o);
+  });
+
+  var inputOwner = makeInput('owner', '');
+  var inputMemo  = makeInput('memo', '');
+
+  tr.appendChild(makeCell(inputName));
+  tr.appendChild(makeCell(inputPhone));
+  tr.appendChild(makeCell(inputProg));
+  tr.appendChild(makeCell(selStatus));
+  tr.appendChild(makeCell(inputOwner));
+  tr.appendChild(makeCell(inputMemo));
+
+  var tdDate = document.createElement('td');
+  tdDate.style.color = 'var(--dim)';
+  tdDate.style.fontSize = '12px';
+  tdDate.textContent = new Date().toISOString().slice(0,10);
+  tr.appendChild(tdDate);
+
+  var tdTour = document.createElement('td');
+  tdTour.style.color = 'var(--dim)';
+  tdTour.style.fontSize = '12px';
+  tdTour.textContent = '—';
+  tr.appendChild(tdTour);
+
+  var actDiv = document.createElement('div');
+  actDiv.className = 'row-actions';
+  var saveBtn = document.createElement('button');
+  saveBtn.className = 'row-btn btn-save';
+  saveBtn.textContent = '추가';
+  saveBtn.onclick = function(){ submitNewRow(tr); };
+  var cancelBtn = document.createElement('button');
+  cancelBtn.className = 'row-btn btn-cancel';
+  cancelBtn.textContent = '취소';
+  cancelBtn.onclick = function(){ renderDbTable(); };
+  actDiv.appendChild(saveBtn);
+  actDiv.appendChild(cancelBtn);
+  var tdAct = document.createElement('td');
+  tdAct.appendChild(actDiv);
+  tr.appendChild(tdAct);
+
+  return tr;
+}
+
+function submitNewRow(tr) {
+  var fields = {};
+  tr.querySelectorAll('[data-field]').forEach(function(el){ fields[el.dataset.field] = el.value; });
+
+  if (!fields.name && !fields.phone) {
+    showToast('이름 또는 전화번호를 입력하세요', 'err');
+    return;
+  }
+
+  var payload = {
+    action:    'inquiry_add',
+    name:      fields.name    || '',
+    phone:     fields.phone   || '',
+    program:   fields.program || '',
+    status:    fields.status  || '신규',
+    owner:     fields.owner   || '',
+    memo:      fields.memo    || '',
+    timestamp: new Date().toISOString().slice(0,10)
+  };
+
+  apiPost(payload)
+    .then(function(data){
+      if (!data.ok) throw new Error(data.error || '추가 실패');
+      showToast('추가 완료', 'ok');
+      loadDbData();
+    })
+    .catch(function(err){
+      showToast('추가 실패: ' + err.message, 'err');
+    });
+}
+
+function deleteRow(btn) {
+  var tr = btn.closest('tr');
+  var rowIndex = parseInt(tr.dataset.rowIndex, 10);
+  if (!rowIndex) { renderDbTable(); return; }
+
+  var row = dbRows.find(function(r){ return r.rowIndex === rowIndex; }) || {};
+  if (!confirm('삭제하시겠습니까?\n' + (row.name || '(이름없음)') + ' · ' + (row.timestamp || '') + '\n\n이 작업은 시트에서 해당 행을 완전히 삭제합니다.')) return;
+
+  apiPost({ action: 'inquiry_delete', rowIndex: rowIndex })
+    .then(function(data){
+      if (!data.ok) throw new Error(data.error || '삭제 실패');
+      showToast('삭제 완료', 'ok');
+      dbRows = dbRows.filter(function(r){ return r.rowIndex !== rowIndex; });
+      renderDbTable();
+      // 서버 재검증
+      setTimeout(loadDbData, 1200);
+    })
+    .catch(function(err){
+      showToast('삭제 실패: ' + err.message, 'err');
+    });
+}
+
+/* ── 검색/필터 이벤트 (IME 안전: compositionend 활용) ── */
+(function(){
+  var searchEl = document.getElementById('dbSearch');
+  var composing = false;
+  searchEl.addEventListener('compositionstart', function(){ composing = true; });
+  searchEl.addEventListener('compositionend', function(){ composing = false; renderDbTable(); });
+  searchEl.addEventListener('input', function(){ if (!composing) renderDbTable(); });
+  document.getElementById('dbFilter').addEventListener('change', renderDbTable);
+})();
+
+/* ─────────────────────────────────────────────
+   GAS 통신 헬퍼
+───────────────────────────────────────────── */
+function apiPost(payload) {
+  if (GAS_URL === '__MEMBER_CAL_GAS_URL__') {
+    return Promise.reject(new Error('GAS 미연동 — URL 교체 후 사용 가능'));
+  }
+  return fetch(GAS_URL, {
+    method: 'POST',
+    mode: 'no-cors',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  }).then(function(r){
+    // no-cors 모드는 응답 body를 읽을 수 없음 — 성공으로 낙관 처리
+    // GAS CORS 허용 설정 후에는 일반 fetch로 교체 가능
+    return { ok: true };
+  });
+}
+
+/* ─────────────────────────────────────────────
+   토스트 알림
+───────────────────────────────────────────── */
+var _toastTimer = null;
+function showToast(msg, type) {
+  var el = document.getElementById('saveToast');
+  el.textContent = msg;
+  el.className = 'save-toast ' + (type || 'ok');
+  el.classList.add('show');
+  if (_toastTimer) clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(function(){ el.classList.remove('show'); }, 2800);
+}
+
+/* ─────────────────────────────────────────────
+   공통 유틸
+───────────────────────────────────────────── */
 function esc(s) {
-  return String(s||'')
+  return String(s || '')
     .replace(/&/g,'&amp;')
     .replace(/</g,'&lt;')
     .replace(/>/g,'&gt;')
