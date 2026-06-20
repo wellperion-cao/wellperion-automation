@@ -204,6 +204,9 @@ function _createCheckSheet(ss, name) {
   sheet.setFrozenRows(1);
   var widths = [100,70,220,140,150,80,200,200,110,130,100,70,180,90];  // 13열 측정값 + 14열 반영완료
   for (var i = 0; i < widths.length; i++) sheet.setColumnWidth(i+1, widths[i]);
+  // G열(이슈·인덱스6) 폐기 — 이슈는 종합접수처로 이관 완료. 물리삭제 금지(15열 인덱스 보존), 시각적으로만 숨김.
+  // 시트 재생성(setupNewStructure/setupDeptSheets)돼도 G열 재노출 방지(재발 가드). 2026-06-20 시우.
+  try { sheet.hideColumns(7); } catch (e) {}
 }
 
 function _createStaffSheet(ss) {
@@ -498,6 +501,7 @@ function doGet(e) {
   if (action === 'purge_dept_items') { return purgeDeptItems(e.parameter.dept || ''); }
   if (action === 'delete_facility_sheets') { return deleteFacilitySheets(); }
   if (action === 'delete_facility_empty_genders') { return deleteFacilityEmptyGenderSheets(); }   // 빈 껍데기 시설_남성/여성구역 2개만 정밀 삭제(공용구역 절대 보존, 데이터행0 확인). 1회성. 2026-06-20 시우.
+  if (action === 'hide_issue_col') { return hideIssueColumn(e.parameter.dept || 'support'); }   // G열(이슈·인덱스6) 데이터행 비우기 + 컬럼 숨김(물리삭제 X·인덱스 보존). 1회성. 2026-06-20 시우.
 
   var date = e.parameter.date;
   if (!date) return jsonRes({ error: 'date required' });
@@ -770,6 +774,27 @@ function deleteFacilityEmptyGenderSheets() {
     log.push('삭제(빈탭):' + name);
   });
   return jsonRes({ ok: true, log: log });
+}
+
+// G열(이슈·인덱스6, 헤더 '이슈(종합접수처)') 폐기 처리(GM 2026-06-20 시우) — 이슈는 종합접수처로 전부 이관·검증 완료.
+// ① 데이터행(2행~) G열 내용 비우기(clearContent) ② G열 컬럼 숨김(hideColumns). 물리 삭제 절대 안 함
+// (deleteColumn 시 정렬=J열9·소요시간=O열14·제출상태=I열8 등 15열 인덱스 붕괴). 자리·인덱스 보존, 시각적으로만 제거.
+// 새 행 append돼도 컬럼 숨김은 시트 속성이라 유지됨(+_createCheckSheet에 재발 가드 추가). GET ?action=hide_issue_col&dept=support
+function hideIssueColumn(dept) {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var t = _deptTabs(dept);
+  var ISSUE_COL = 7;   // G열(1-based) = 이슈(종합접수처), 0-based 인덱스6
+  var log = [];
+  [t.male, t.female].forEach(function (name) {   // 지원_남성구역 · 지원_여성구역
+    var sh = ss.getSheetByName(name);
+    if (!sh) { log.push('없음(스킵):' + name); return; }
+    var last = sh.getLastRow();
+    var cleared = 0;
+    if (last > 1) { sh.getRange(2, ISSUE_COL, last - 1, 1).clearContent(); cleared = last - 1; }   // 데이터행 G열만 비움(헤더·타 열 무손상)
+    sh.hideColumns(ISSUE_COL);   // 컬럼 숨김(인덱스 보존)
+    log.push(name + ' G열 비움' + cleared + '행·숨김');
+  });
+  return jsonRes({ ok: true, dept: dept, col: 'G(이슈/index6)', log: log });
 }
 
 // 항목 마스터(지원_매뉴얼)에서 특정 dept 행 제거(GM 2026-06-12) — 깨진 인코딩 facility 데드행 정리·경량화.
