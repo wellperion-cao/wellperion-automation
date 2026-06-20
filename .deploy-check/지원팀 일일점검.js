@@ -978,6 +978,101 @@ function _collapseDupRowsForDate(sheet, date) {
   });
   return del.length;
 }
+// ═══════════════════════════════════════════
+//  종합접수처 자동전송 (점검 이슈 → reg_submit)
+//  GM 2026-06-20 시우: 점검 중 이슈메모 발견 → 점검자 추가입력 없이 자동으로 종합접수처 DB 1건 등록.
+//  - 멱등: 같은 (날짜+항목ID+이슈텍스트)는 ScriptProperties 플래그로 단 1회만 전송(복제버그·재제출·자동저장 안전).
+//  - fail-soft: 전송 실패/타임아웃나도 점검 저장·텔레그램은 정상(호출부 try/catch).
+//  - 배포는 GM(clasp login 후 일괄). exec URL은 ScriptProperties VOC_EXEC_URL(미설정 시 라이브 폴백).
+// ═══════════════════════════════════════════
+
+// 종합접수처 라이브 exec URL — 비밀 아님(공개 엔드포인트)이라 폴백 상수 허용. 변경 시 ScriptProperties VOC_EXEC_URL로 덮어씀.
+var VOC_EXEC_URL_FALLBACK = 'https://script.google.com/macros/s/AKfycbwk2XS1FND9V2xtXlWgsXzgA5p0FG7jVm6YKD74JK_ME_ZvHsNUUfGE5A_8p0X8VcF3gQ/exec';
+// 전송 멱등 플래그 ScriptProperties 키 접두사. 키=VOCSENT_<date>_<itemId>_<해시>.
+var VOC_SENT_PREFIX = 'VOCSENT_';
+// 설비 고장성 키워드 — 있으면 category=facility(시설고장), 없으면 기본 clean(청결). 단순·설명가능 하드코딩 배열.
+var VOC_FACILITY_KEYWORDS = [
+  '고장', '파손', '안됨', '안 됨', '작동 안', '작동안', '작동불가', '안 켜', '안켜',
+  '누수', '물샘', '새는', '깨짐', '깨진', '균열', '금이', '전원', '정전',
+  '배수', '막힘', '막혀', '역류', '누전', '누설', '터짐', '부러', '떨어짐', '고장남'
+];
+
+// 이슈텍스트 → category 키 자동매핑. 설비 고장성 키워드 매칭 시 facility, 아니면 clean(기본).
+function _checkMapCategory(issueText) {
+  var t = String(issueText || '');
+  for (var i = 0; i < VOC_FACILITY_KEYWORDS.length; i++) {
+    if (t.indexOf(VOC_FACILITY_KEYWORDS[i]) >= 0) return 'facility';
+  }
+  return 'clean';
+}
+
+// gender('m'/'f') → 출처 구역 표기.
+function _checkZoneLabel(gender) {
+  return (String(gender || '') === 'f') ? '여성구역' : '남성구역';
+}
+
+// 멱등 키 — 같은 (날짜+항목ID+이슈텍스트) 단일화. ScriptProperties 키 길이 한계 회피용 경량 해시.
+function _checkVocSentKey(date, itemId, issueText) {
+  var s = String(date) + '|' + String(itemId) + '|' + String(issueText || '').trim();
+  var h = 0;
+  for (var i = 0; i < s.length; i++) { h = ((h << 5) - h + s.charCodeAt(i)) | 0; }
+  return VOC_SENT_PREFIX + String(date) + '_' + String(itemId) + '_' + (h >>> 0).toString(36);
+}
+
+// 이슈 배열 → 종합접수처 reg_submit POST(멱등·fail-soft). 호출부에서 try/catch로 한 번 더 감쌈.
+function _checkSendIssuesToVoc(issues, gender) {
+  if (!issues || !issues.length) return;
+  var props = PropertiesService.getScriptProperties();
+  var execUrl = (props.getProperty('VOC_EXEC_URL') || VOC_EXEC_URL_FALLBACK).trim();
+  if (!execUrl) return;
+  var zone = _checkZoneLabel(gender);
+
+  issues.forEach(function (it) {
+    try {
+      var sentKey = _checkVocSentKey(it.date, it.itemId, it.issue);
+      if (props.getProperty(sentKey)) return;   // 이미 전송 — 재전송 차단(멱등)
+
+      var category = _checkMapCategory(it.issue);
+      var loc = String(it.itemName || it.itemId || '').trim();
+      var content = String(it.issue || '').trim()
+        + ' [' + zone + ' · ' + String(it.roundLabel || '') + ' · ' + String(it.date || '') + ']';
+
+      var payload = {
+        action:   'reg_submit',
+        source:   'check',                       // voc GAS가 이 분기로 name/contact 필수 면제
+        category: category,
+        name:     '지원부 점검(' + zone + ')',   // 출처표기(구역=시트탭 기준)
+        contact:  '자동접수(점검)',               // 실연락처 없음 — 고정 표기
+        loc:      loc,
+        content:  content
+      };
+      if (category === 'clean') {
+        payload.issueKind = '점검';
+        payload.urgency   = '보통';
+      } else {
+        payload.equipName = loc;
+        payload.severity  = '보통';
+        payload.usable    = '확인필요';
+      }
+
+      var resp = UrlFetchApp.fetch(execUrl, {
+        method: 'post',
+        contentType: 'application/json',
+        payload: JSON.stringify(payload),
+        muteHttpExceptions: true,
+        followRedirects: true
+      });
+      var code = resp.getResponseCode();
+      var ok = false;
+      if (code >= 200 && code < 300) {
+        try { ok = !!(JSON.parse(resp.getContentText()) || {}).ok; } catch (pe) { ok = false; }
+      }
+      // 성공으로 확인된 건만 멱등 플래그 적립 — 실패건은 다음 제출 때 재시도(at-least-once).
+      if (ok) props.setProperty(sentKey, String(Date.now()));
+    } catch (e) { /* fail-soft: 개별 이슈 전송 실패는 점검 저장에 영향 없음 */ }
+  });
+}
+
 function _writePerRoundRows(dept, date, body) {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var gender = body.genderTab || 'm';
@@ -1020,6 +1115,10 @@ function _writePerRoundRows(dept, date, body) {
   var meta = {};
   checks.forEach(function (c) { meta[String(c.itemId)] = c; });
 
+  // 종합접수처 자동전송 후보 — 이슈메모 있는 (항목) 수집(중복 dedup은 _checkSendIssuesToVoc가 멱등 처리). 2026-06-20 시우·GM.
+  var issuesToForward = [];   // [{date,itemId,itemName,cat,roundLabel,issue}]
+  var _issueSeen = {};        // (date+itemId+issue) 메모리 1차 dedup(복제버그 3회차 동일값 차단)
+
   // 원할 행 — 대상 시트명별 그룹
   var wantByTarget = {};   // target → [{rl,id,values}]
   var seen = {};
@@ -1038,6 +1137,15 @@ function _writePerRoundRows(dept, date, body) {
     var duty = mm.du || body.duty || '';
     // (회차×항목) 단위 메타 우선(mm) — 이슈/노하우/온도측정/반영완료를 회차별로 격리. 없으면 항목단위(c.*) 폴백. GM 2026-06-15 시우.
     var iss = (mm.iss != null && mm.iss !== '') ? String(mm.iss) : (c.issue || '');
+    // 종합접수처 자동전송 후보 적립 — 같은 (날짜+항목ID+이슈텍스트)는 1건만(복제버그 3회차 동일값 차단). 2026-06-20 시우.
+    var _issTrim = String(iss || '').trim();
+    if (_issTrim) {
+      var _dk = date + '|' + id + '|' + _issTrim;
+      if (!_issueSeen[_dk]) {
+        _issueSeen[_dk] = 1;
+        issuesToForward.push({ date: date, itemId: id, itemName: c.name, cat: c.cat, roundLabel: rl, issue: _issTrim });
+      }
+    }
     var tip = (mm.tip != null && mm.tip !== '') ? String(mm.tip) : (c.tip || '');
     var measure = (mm.measure != null && mm.measure !== '') ? _measureStr(mm.measure) : _measureStr(c.measure);
     var reflected = (mm.reflected != null && mm.reflected !== '') ? (mm.reflected ? 'Y' : '') : (c.reflected ? 'Y' : '');
@@ -1138,6 +1246,10 @@ function _writePerRoundRows(dept, date, body) {
     _collapseDupRowsForDate(sheet, date);   // 자가치유: 멀티콜로 생긴 (날짜·회차·항목) 쌍둥이 즉시 접음(제출완료 우선)
     _sortByDateDesc(sheet);
   });
+
+  // 종합접수처 자동전송(fail-soft): 이슈메모 있는 항목 → reg_submit POST. 실패해도 점검 저장은 정상 진행. 2026-06-20 시우·GM.
+  try { _checkSendIssuesToVoc(issuesToForward, gender); } catch (e) {}
+
   return jsonRes({ success: true, perRound: true, saved: total });
 }
 

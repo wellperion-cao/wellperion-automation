@@ -470,17 +470,24 @@ function _regSubmit(body) {
   }
 
   // 이름·연락처 — voice + 익명 희망(anonymousPref==='예')이면 필수 면제
+  // 점검 자동접수(source==='check')도 필수 면제: 실연락처 없는 시스템 접수라 고정 출처표기로 채움. 2026-06-20 시우·GM.
   var name    = String(body.name    || '').trim();
   var contact = String(body.contact || '').trim();
   var anonPref = String(body.anonymousPref || '').trim();
   var isAnon = (cat.key === 'voice' && anonPref === '예');
-  if (!isAnon && (!name || !contact)) {
+  var isCheck = (String(body.source || '').trim() === 'check');
+  if (!isAnon && !isCheck && (!name || !contact)) {
     return _vJson({ ok: false, error: '이름과 연락처는 필수입니다.' });
   }
   // 익명 제출 시 빈값을 '익명'으로 저장
   if (isAnon) {
     if (!name)    name    = '익명';
     if (!contact) contact = '익명';
+  }
+  // 점검 자동접수 시 빈값을 출처 고정표기로 저장
+  if (isCheck) {
+    if (!name)    name    = '지원부 점검';
+    if (!contact) contact = '자동접수(점검)';
   }
 
   var loc     = String(body.loc     || body.location || '').trim();
