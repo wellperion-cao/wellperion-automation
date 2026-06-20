@@ -2884,5 +2884,19 @@
     "next": "🌀 표류 — 다음 미정 (필요 시 GM·웰리/담당 C-Level 지정)",
     "adhoc_commit": "5a633b644a34e2102d7bd3a95ced2f0f814d0ff0",
     "ship_no": 9
+  },
+  {
+    "task_id": "COO-2026-06-20-ADHOC-bac24e65",
+    "clevel": "coo",
+    "title": "[시우] 점검 이슈메모 4차: G열 적재중단·종합접수처 일원화",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-06-20",
+    "processed_at": "2026-06-20",
+    "artifact": "- 서버(점검 GAS): _writePerRoundRows G열(이슈메모) 빈값 적재(컬럼자리 인덱스6 유지). 종합접수처 자동전송(_checkSendIssuesToVoc)은 정상 — iss는 전송용으로만.\n- HEADERS G라벨 '이슈메모'→'이슈(종합접수처)'. 인덱스 불변(15열 A~O).\n- 프론트: 이슈 입력 UI 유지(라벨 '이슈 접수'·placeholder '→종합접수처로 전송'). loadState 이슈 복원 2경로 제거(row.issue 항목단위키·cr메타 _m.iss). 현황 이슈목록 표시 제거→종합접수처 안내. (CLI ad-hoc · 커밋 bac24e65)",
+    "next": "🌀 표류 — 다음 미정 (필요 시 GM·웰리/담당 C-Level 지정)",
+    "adhoc_commit": "bac24e653a23137dc3b1b3987d40cb1f8b003588",
+    "ship_no": 68
   }
 ]
