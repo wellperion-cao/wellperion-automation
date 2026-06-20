@@ -650,7 +650,10 @@ function _kpiParseSalesTab(sheet) {
   var values = sheet.getRange(1, 1, lastRow, lastCol).getValues();
 
   // "총 매출 합계" 가 들어간 셀을 모두 찾는다. 가장 오른쪽=최신(이번달) 블록 채택.
-  // year(연간 누적)은 모든 블록의 month(해당 월 누적)를 합산해 산출.
+  // ⚠ 시트 구조 실측(2026-06-20 시뽀): "보고" 탭 블록은 '월별'이 아니라 '같은 달의
+  //   일자별 누적 스냅샷'(예: 6/18 누적·6/19 누적). 따라서 모든 블록 month 를 무지성
+  //   합산하면 같은 6월을 중복 더해 가짜 연간(8.33억) 이 나온다. → 블록을 '월(month-of-year)'
+  //   기준으로 묶어 월별 최신 1개만 취하고, 그 월별 마감값을 합쳐야 진짜 연간이 된다.
   var best = null; // {r, c} 최신 블록
   var anchors = []; // 모든 "총 매출 합계" 셀 위치
   for (var r = 0; r < values.length; r++) {
@@ -668,13 +671,46 @@ function _kpiParseSalesTab(sheet) {
   var summary = _kpiReadBlock(values[best.r], best.c);
   if (!summary || summary.month === null) return null;
 
-  // 연간 누적 = 모든 월 블록의 month 합산.
-  var yearSum = 0;
-  var yearHasData = false;
+  // 블록의 '월'을 추정: 같은 컬럼에서 위로 스캔해 날짜형 셀("26. 6. 19" / "2026-06-19")의
+  //   월(month) 숫자를 읽는다. 못 찾으면 null.
+  function _blockMonthOf(anchorR, anchorC) {
+    for (var rr = anchorR; rr >= 0 && rr > anchorR - 12; rr--) {
+      for (var cc = anchorC; cc < anchorC + 6 && cc < values[rr].length; cc++) {
+        var sv = String(values[rr][cc] || '').trim();
+        if (!sv) continue;
+        // "2026. 6. 19" / "2026-6-19" 형
+        var m4 = sv.match(/\d{4}\s*[.\-\/]\s*(\d{1,2})\s*[.\-\/]\s*\d{1,2}/);
+        if (m4) return +m4[1];
+        // "26. 6. 19(금)" / "26.6.19" 형 (2자리 연도)
+        var m2 = sv.match(/\b\d{2}\s*[.\-\/]\s*(\d{1,2})\s*[.\-\/]\s*\d{1,2}/);
+        if (m2) return +m2[1];
+      }
+    }
+    return null;
+  }
+
+  // 연간 누적 = '서로 다른 월'의 마감값만 합산. 같은 달의 일자별 스냅샷은
+  //   가장 오른쪽(=최신) 1개만 채택해 중복 합산을 막는다.
+  // 데이터가 1개 월뿐이면(=1~5월 마감값 부재) 연간은 '집계 보완 중'(null) 으로 정직 표기.
+  var monthBlocks = {}; // monthOfYear → {c, month}
+  var unknownMonth = false;
   for (var ai = 0; ai < anchors.length; ai++) {
     var ablk = _kpiReadBlock(values[anchors[ai].r], anchors[ai].c);
-    if (ablk && ablk.month !== null) { yearSum += ablk.month; yearHasData = true; }
+    if (!ablk || ablk.month === null) continue;
+    var moy = _blockMonthOf(anchors[ai].r, anchors[ai].c);
+    if (moy === null) { unknownMonth = true; continue; }
+    // 같은 달은 더 오른쪽(최신) 블록으로 덮어쓴다.
+    if (!monthBlocks[moy] || anchors[ai].c > monthBlocks[moy].c) {
+      monthBlocks[moy] = { c: anchors[ai].c, month: ablk.month };
+    }
   }
+  var distinctMonths = [];
+  for (var mk in monthBlocks) { if (monthBlocks.hasOwnProperty(mk)) distinctMonths.push(mk); }
+  var yearSum = 0;
+  for (var dm = 0; dm < distinctMonths.length; dm++) yearSum += monthBlocks[distinctMonths[dm]].month;
+  // 진짜 연간으로 인정하는 조건: 서로 다른 월이 2개 이상 (월 마감 누적이 실제로 쌓였을 때).
+  //   월이 1개뿐이거나(=6월만), 월 식별 불가 블록이 섞였으면 → 연간 null(보완 중).
+  var yearValid = (distinctMonths.length >= 2) && !unknownMonth;
 
   // 최신 블록 기준 컬럼(best.c). 같은 컬럼에서 아래 행들을 스캔해 breakdown 추출.
   // 최대 15행 아래까지만 탐색 (블록 범위 이탈 방지).
@@ -705,16 +741,21 @@ function _kpiParseSalesTab(sheet) {
   return {
     today: summary.today, month: summary.month,
     target: summary.target, rate: summary.rate,
-    year: yearHasData ? yearSum : summary.month,
+    // 월 매출/달성률: month=월누적·rate=월 달성률(시트 "총 매출 합계" 행). 항상 유효.
+    // 연간 매출: 서로 다른 월 2개+ 마감값이 쌓였을 때만 합산값, 아니면 null(=홈에서 '집계 보완 중').
+    year: yearValid ? yearSum : null,
     breakdown: breakdown
   };
 }
 
-// 실측 구조(2026-06-08): 매출 시트는 월별 탭이 아니라 단일 "보고" 탭 안에서
+// 실측 구조(2026-06-08·재확인 2026-06-20): 매출 시트는 월별 탭이 아니라 단일 "보고" 탭 안에서
 // 날짜별 컬럼 블록이 가로로 반복(각 블록 7컬럼). 최신=가장 오른쪽 블록.
-// "총 매출 합계" 행의 우측 4칸 = 금일|누적|목표|달성률. → _kpiParseSalesTab 재사용.
-// year(연간 누적): 시트의 모든 월 블록 "총 매출 합계" month 값을 합산(_kpiParseSalesTab.year).
-//   이번달(month)은 최신=가장 오른쪽 블록만. (2026-06-10 시토: year=month 버그 수정)
+// "총 매출 합계" 행의 우측 4칸 = 금일|월누적|월목표|월달성률. → _kpiParseSalesTab 재사용.
+// ▶ 월 매출/달성률: month=월누적(예 423,857,058)·rate=월 달성률(예 71.72%). 데이터 있음 → 항상 산출.
+// ▶ 연간 매출/달성률: 블록이 '같은 달의 일자별 스냅샷'이라 무지성 합산 시 6월 중복 → 가짜 연간(8.33억).
+//   _kpiParseSalesTab 이 블록을 '월'로 묶어 월별 최신 1개만 취하고 서로 다른 월 2개+ 일 때만 합산.
+//   현재 시트엔 6월만 존재(1~5월 마감값·연 목표 부재) → year=null → 홈에서 '집계 보완 중' 정직 표기.
+//   (2026-06-10 시토 year=month 버그 / 2026-06-20 시뽀 같은달 중복합산 8.33억 버그 제거)
 // 주차 매출 breakdown 행 — 크롤러가 매일 발행하는 라이브 JSON 직독(2026-06-19 시토).
 // status/parking_revenue.json(payAmt 합=카드 총 정산액)을 raw GitHub에서 읽어 {name:'주차', month}.
 // 실패(404·파싱오류·status!=정상)는 null → 홈 KPI에 무영향(fail-safe). 시트 비의존.
@@ -745,8 +786,13 @@ function _kpiSales() {
     }
     var cur = tab ? _kpiParseSalesTab(tab) : null;
     if (!cur) return { today: null, month: null, year: null, target: null, rate: null, breakdown: [] };
-    // 연간 누적 = 모든 월 블록 month 합산(_kpiParseSalesTab.year). 이번달(month)은 최신 블록 그대로.
-    var year = (cur.year !== null && cur.year !== undefined) ? cur.year : cur.month;
+    // 연간 매출 = 서로 다른 월 마감값 합(_kpiParseSalesTab.year). 1개 월뿐이면 null(보완 중).
+    //   ⚠ null 을 month 로 덮어쓰지 않는다 — 같은 달 중복합산 가짜 연간 방지(2026-06-20 시뽀).
+    var year = (cur.year !== null && cur.year !== undefined) ? cur.year : null;
+    // 연 목표·연 달성률: 시트에 연 목표 행이 없음(실측 2026-06-20) → null(=홈 '목표 미설정').
+    //   GM이 연 목표를 시트에 넣으면 yearTarget 탐지 로직을 여기에 추가해 yearRate 산출.
+    var yearTarget = null;
+    var yearRate = (year !== null && yearTarget) ? Math.round((year / yearTarget) * 10000) / 100 : null;
     // 주차 매출을 breakdown 'GXE' 행 바로 아래에 삽입(없으면 맨 끝). 시트 총합/hero 값은 불변.
     var bd = cur.breakdown || [];
     var park = _kpiParkingRevenueRow();
@@ -755,10 +801,13 @@ function _kpiSales() {
       for (var bi = 0; bi < bd.length; bi++) { if (bd[bi].name === 'GXE') { gi = bi; break; } }
       if (gi >= 0) bd.splice(gi + 1, 0, park); else bd.push(park);
     }
-    return { today: cur.today, month: cur.month, year: year, target: cur.target, rate: cur.rate,
+    return { today: cur.today, month: cur.month, year: year,
+             target: cur.target, rate: cur.rate,
+             yearTarget: yearTarget, yearRate: yearRate,
              breakdown: bd };
   } catch (err) {
-    return { today: null, month: null, year: null, target: null, rate: null, error: String(err) };
+    return { today: null, month: null, year: null, target: null, rate: null,
+             yearTarget: null, yearRate: null, error: String(err) };
   }
 }
 

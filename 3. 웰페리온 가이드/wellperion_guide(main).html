@@ -488,14 +488,19 @@
 
     <!-- 매출·지출 스트립 (home_kpi 연동 — ID 보존) -->
     <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:14px;">
-      <!-- 이번달 매출 -->
+      <!-- 매출: 월 매출/달성률 + 연간 매출/달성률 2구분 (2026-06-20 시뽀) -->
       <div style="position:relative;background:var(--paper);border:1px solid var(--border);border-left:4px solid var(--grow);border-radius:14px;padding:15px 16px;">
-        <div style="display:flex;align-items:center;gap:7px;color:var(--grow);font-size:12px;font-weight:700;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01z"/></svg> 이번달 매출</div>
+        <div style="display:flex;align-items:center;gap:7px;color:var(--grow);font-size:12px;font-weight:700;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01z"/></svg> 월 매출 및 달성률</div>
         <div style="font-size:22px;font-weight:800;line-height:1.1;margin:7px 0 4px;letter-spacing:-0.02em;color:var(--text);"><span id="heroSalesMonth">—</span></div>
         <div style="font-size:11px;color:var(--dim);display:flex;gap:8px;flex-wrap:wrap;">
           <span>오늘 <span id="heroSalesDay" style="color:var(--grow);">—</span></span>
           <span>달성률 <span id="heroSalesRate" style="color:var(--grow);">—</span></span>
-          <span>연간 <span id="heroSalesYear" style="color:var(--grow);">—</span></span>
+        </div>
+        <!-- 연간 매출 및 달성률 (연 마감 누적·연 목표. 데이터 부재 시 '집계 보완 중') -->
+        <div style="margin-top:10px;padding-top:9px;border-top:1px dashed var(--border);">
+          <div style="font-size:11.5px;font-weight:700;color:var(--dim);">연간 매출 및 달성률</div>
+          <div style="font-size:15px;font-weight:800;line-height:1.15;margin:3px 0 2px;color:var(--text);"><span id="heroSalesYear">—</span></div>
+          <div style="font-size:11px;color:var(--dim);"><span>달성률 <span id="heroSalesYearRate" style="color:var(--grow);">—</span></span></div>
         </div>
         <!-- 팀별 매출 토글 -->
         <button id="salesBreakdownBtn" onclick="(function(){var p=document.getElementById('salesBreakdownPanel');var b=document.getElementById('salesBreakdownBtn');if(!p)return;var open=p.style.display!=='none';p.style.display=open?'none':'block';b.textContent=open?'팀별 보기 ▾':'팀별 접기 ▴';})()" style="display:none;margin-top:10px;font-size:11px;font-weight:700;color:var(--grow);background:var(--grow-bg,rgba(106,191,123,0.1));border:1px solid rgba(106,191,123,0.3);border-radius:20px;padding:3px 11px;cursor:pointer;">팀별 보기 ▾</button>
@@ -1076,13 +1081,22 @@
           if(!d || !d.ok) return;
           var s = d.sales || {}, e = d.expense || {}, v = d.voc || {};
 
-          /* 매출 */
+          /* 매출 — 월 매출/달성률 + 연간 매출/달성률 2구분 (2026-06-20 시뽀) */
           var smVal = krAmt(s.month);
           set('heroSalesMonth', smVal);
           setTitle('heroSalesMonth', krExact(s.month));
           set('heroSalesDay',   krAmt(s.today));
-          set('heroSalesRate',  pct(s.rate));
-          set('heroSalesYear',  krAmt(s.year));
+          set('heroSalesRate',  (s.rate == null) ? '목표 미설정' : pct(s.rate));
+          /* 연간: 시트에 1~5월 마감값·연 목표가 쌓이면 값+달성률, 아직 없으면 '집계 보완 중' 정직 표기 */
+          if (s.year == null) {
+            set('heroSalesYear', '집계 보완 중');
+            setTitle('heroSalesYear', '1~5월 마감값·연 목표 미입력 — 입력되면 자동 산출');
+            set('heroSalesYearRate', '목표 미설정');
+          } else {
+            set('heroSalesYear', krAmt(s.year));
+            setTitle('heroSalesYear', krExact(s.year));
+            set('heroSalesYearRate', (s.yearRate == null) ? '목표 미설정' : pct(s.yearRate));
+          }
 
           /* 매출 팀별 breakdown */
           (function(){

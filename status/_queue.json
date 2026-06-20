@@ -5,6 +5,16 @@
     "ship_no": 1
   },
   {
+    "task_id": "CFO-2026-06-20-SALES-MONTH-YEAR-KPI",
+    "clevel": "cfo",
+    "title": "[시뽀] home 매출 KPI 월/연간+달성률 2구분 재설계 — 연간 중복합산 8.33억 버그 제거",
+    "status": "IN_PROGRESS",
+    "priority": "⛴️여객선",
+    "enqueued_at": "2026-06-20",
+    "note": "GM 지시=home 매출 KPI를 '월 매출 및 달성률'+'연간 매출 및 달성률' 2구분 재설계, 매출 시트 월별 집계 보고칸 참고. | 시트 실측(보고 탭, 1oG6…): 블록이 '월별'이 아니라 '같은 6월의 일자별 누적 스냅샷'(6/18 누적 409,383,982·6/19 누적 423,857,058). 1~5월 마감값·연 목표 행 모두 부재(0건). 월 목표=총매출합계행 591,000,000 존재. | 버그=_kpiParseSalesTab이 같은 6월 스냅샷 2개를 다른 월로 오인·중복합산→가짜 연간 833,241,040. | 조치: ①블록을 '월(month-of-year)'로 묶어 월별 최신 1개만 취하고 서로 다른 월 2개+일 때만 합산, 1개월뿐이면 year=null. ②_kpiSales null→month 덮어쓰기 제거, yearTarget/yearRate 추가(현재 null). ③home 카드 '월 매출 및 달성률'(423,857,058·71.72%)+'연간 매출 및 달성률'(집계 보완 중·목표 미설정) 2구분 + 렌더 분기. GAS 소스=.deploy-todo/업무&결재 현황.js, 카드=wellperion_guide(main).html. node --check OK·스마트따옴표0·로직 단위테스트(year=null, month·rate 정확) 통과. | 결과: 월=산출 가능(데이터 있음), 연간=1~5월 마감값·연 목표 부재로 '집계 보완 중' 정직 표기. | 후속(GM): 매출 시트에 1~5월 월 마감 누적 + 연 목표를 넣으면 연간이 자동 점등(코드 준비 완료). clasp 재배포는 GM(deploymentId 보존).",
+    "ship_no": 1
+  },
+  {
     "task_id": "COO-2026-06-19-SUPPORT-CHECK-DUP-FIX",
     "clevel": "coo",
     "title": "[시우] 지원부 점검 오늘 시트 중복(2개씩) 검수·정리·근본차단",
