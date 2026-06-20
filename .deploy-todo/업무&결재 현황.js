@@ -560,6 +560,9 @@ function _uploadFile(base64, fileName, mimeType) {
 
 // 외부 시트 ID
 var KPI_SALES_SHEET_ID   = '1oG63rj17-RMk2cdiVbwp4TOp-yN73uc04jDV7RfN9BI';
+// 26년 매출 분석 시트 — 1~5월 월별 마감 총합(AV3:AV7) 출처 (2026-06-20 GM 제공, 시뽀 연동).
+// 탭명: '26년 매출 분석' (gid=195790960). AV열 3~7행 = 1월~5월 순서(GM 확인).
+var KPI_SALES_ANALYSIS_SHEET_ID = '1gCQNny8TDls5SjrtMkINu4HCltvFkoXmkTeXO_c3q58';
 // GM 확정 정본 지출 시트(2026-06-10). 빈 ERP 시트(17R_Sjz…) 아님 — 실제 구매·지출 거래행이 있는 시트.
 // '지출 현황' 탭(gid 821406206) = 거래행(승인건 포함) 표면. 첫 탭 자동선택 금지(칸밀림 오판 원인).
 var KPI_EXPENSE_SHEET_ID = '1umSF9rf3K0TuAvR5l0F_gvXHxcOLVKKvkSUfTtbRhdc';
@@ -789,10 +792,35 @@ function _kpiSales() {
     // 연간 매출 = 서로 다른 월 마감값 합(_kpiParseSalesTab.year). 1개 월뿐이면 null(보완 중).
     //   ⚠ null 을 month 로 덮어쓰지 않는다 — 같은 달 중복합산 가짜 연간 방지(2026-06-20 시뽀).
     var year = (cur.year !== null && cur.year !== undefined) ? cur.year : null;
-    // 연 목표·연 달성률: 시트에 연 목표 행이 없음(실측 2026-06-20) → null(=홈 '목표 미설정').
-    //   GM이 연 목표를 시트에 넣으면 yearTarget 탐지 로직을 여기에 추가해 yearRate 산출.
+    // 연간 매출 보완 — 26년 매출 분석 시트 AV3:AV7 (1~5월 월별 마감 총합, GM 2026-06-20 제공).
+    // 기존 시트(KPI_SALES_SHEET_ID)는 6월 단일이라 year=null. 분석 시트에서 1~5월 합을 읽어 보완.
+    // AV열 3~7행 = 1~5월 순서(행3=1월·행7=5월, GM 확인). 빈 셀·0은 합산 제외.
+    // 6월 month(cur.month)가 있으면 연간 = 1~5월합 + 6월month. 어느 하나라도 없으면 null 유지.
     var yearTarget = null;
-    var yearRate = (year !== null && yearTarget) ? Math.round((year / yearTarget) * 10000) / 100 : null;
+    var yearRate = null;
+    try {
+      if (year === null && cur.month !== null && KPI_SALES_ANALYSIS_SHEET_ID) {
+        var anaSs = SpreadsheetApp.openById(KPI_SALES_ANALYSIS_SHEET_ID);
+        var anaTab = anaSs.getSheetByName('26년 매출 분석');
+        if (anaTab) {
+          // AV = 48번째 컬럼. getRange(row, col, numRows, numCols)
+          var avVals = anaTab.getRange(3, 48, 5, 1).getValues(); // AV3:AV7
+          var sum15 = 0;
+          var validMonths = 0;
+          for (var ai = 0; ai < avVals.length; ai++) {
+            var v = _kpiNum(avVals[ai][0]);
+            if (v !== null && v > 0) { sum15 += v; validMonths++; }
+          }
+          // 1~5월 중 1개라도 유효한 값이 있으면 보완 진행
+          if (validMonths > 0) {
+            year = sum15 + cur.month; // 1~5월 마감합 + 6월 현재 누적
+          }
+        }
+      }
+    } catch (anaErr) {
+      // 분석 시트 오류는 무시 — year null 유지(집계 보완 중 표시)
+    }
+    yearRate = (year !== null && yearTarget) ? Math.round((year / yearTarget) * 10000) / 100 : null;
     // 주차 매출을 breakdown 'GXE' 행 바로 아래에 삽입(없으면 맨 끝). 시트 총합/hero 값은 불변.
     var bd = cur.breakdown || [];
     var park = _kpiParkingRevenueRow();
