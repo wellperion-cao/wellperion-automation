@@ -2678,5 +2678,19 @@
     "next": "🌀 표류 — 다음 미정 (필요 시 GM·웰리/담당 C-Level 지정)",
     "adhoc_commit": "4b677ce05983f5fbf20a01d3d0b81faef996799c",
     "ship_no": 65
+  },
+  {
+    "task_id": "COO-2026-06-20-ADHOC-d2101a30",
+    "clevel": "coo",
+    "title": "[시우] 지원부 점검 시트 3건 — 정렬·제출상태·소요시간 [시우]",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-06-20",
+    "processed_at": "2026-06-20",
+    "artifact": "1) 정렬: 날짜 내림차순 → J열(제출시각) 오름차순(먼저 제출=위, 빈값 맨 아래)\n   → 카테고리·항목ID는 동시각 타이브레이커. _sortByDateDesc.\n2) '미제출' 오표시 버그: _writePerRoundRows의 submitStatus를 payload 플래그\n   대신 영속 원장(led.sub) 회차별 단일출처로 산출. 자동저장이 제출완료 회차를\n   '미제출'로 덮어쓰던 회귀 차단(텔레그램 발화조건=시트 기록조건 일치).\n3) O열 점검시각→소요시간(분): (제출시각 − 시작시각) 서버 계산. 프론트는\n    (CLI ad-hoc · 커밋 d2101a30)",
+    "next": "🌀 표류 — 다음 미정 (필요 시 GM·웰리/담당 C-Level 지정)",
+    "adhoc_commit": "d2101a309ae21cd714b294d5d2adfef7e4838083",
+    "ship_no": 66
   }
 ]
