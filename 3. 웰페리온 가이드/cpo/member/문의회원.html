@@ -364,12 +364,13 @@ body{
         <select class="db-filter" id="dbFilter">
           <option value="">전체 상태</option>
           <option value="신규">신규</option>
-          <option value="응대">응대</option>
+          <option value="컨택중">컨택중</option>
           <option value="예약">예약</option>
           <option value="방문">방문</option>
-          <option value="가입">가입</option>
-          <option value="이탈">이탈</option>
-          <option value="보류">보류</option>
+          <option value="SUC">SUC(등록)</option>
+          <option value="단기SUC">단기SUC</option>
+          <option value="결제완납">결제완납</option>
+          <option value="LOSS">LOSS(이탈)</option>
         </select>
         <button class="btn-add" id="btnAddRow" onclick="addNewRow()">+ 새 문의</button>
         <button class="action-btn" id="btnRefreshDb" onclick="loadDbData()" style="margin-left:auto">새로고침</button>
@@ -386,7 +387,7 @@ body{
               <th style="width:85px">담당</th>
               <th style="width:100px">메모</th>
               <th style="width:90px">문의일</th>
-              <th style="width:100px">견학/상담일</th>
+              <th style="width:200px">일정 (상담·체험)</th>
               <th style="width:90px">작업</th>
             </tr>
           </thead>
@@ -616,7 +617,9 @@ if (action === 'inquiry_list') {
     var iProg   = _inqColIdx_(ilHdr, ['관심 있는 프로그램 종류', '관심프로그램', '프로그램']);
     var iStat   = _inqColIdx_(ilHdr, ['진행현황', '진행상황', '진행상태', '상태']);
     var iTs     = _inqColIdx_(ilHdr, ['타임스탬프', '접수일', '날짜']);
-    var iTour   = _inqColIdx_(ilHdr, ['시설견학 및 상담 일정 (날짜 기록)', '시설견학 및 상담 일정']);
+    var iTour   = _inqColIdx_(ilHdr, ['시설투어 및 상담 예약', '시설견학 및 상담 일정', '상담 예약', '상담']);
+    var iExp1   = _inqColIdx_(ilHdr, ['체험1 확정시간', '체험1']);
+    var iExp2   = _inqColIdx_(ilHdr, ['체험2 확정시간', '체험2']);
     var iMemo   = _inqColIdx_(ilHdr, ['메모', '비고', '담당자메모']);
     var iOwner  = _inqColIdx_(ilHdr, ['담당', '담당자']);
     for (var r = 0; r &lt; ilData.length; r++) {
@@ -630,6 +633,8 @@ if (action === 'inquiry_list') {
         program:  iProg >= 0 ? String(row[iProg] || '') : '',
         status:   iStat >= 0 ? String(row[iStat] || '') : '',
         tourDate: _inqToISO_(iTour >= 0 ? row[iTour] : ''),
+        exp1:     _inqToISO_(iExp1 >= 0 ? row[iExp1] : ''),
+        exp2:     _inqToISO_(iExp2 >= 0 ? row[iExp2] : ''),
         timestamp:_inqToISO_(iTs >= 0 ? row[iTs] : ''),
         memo:     iMemo >= 0 ? String(row[iMemo] || '') : '',
         owner:    iOwner >= 0 ? String(row[iOwner] || '') : ''
@@ -652,6 +657,9 @@ if (action === 'inquiry_add') {
   var iTs2     = _inqColIdx_(iaHdr, ['타임스탬프', '접수일', '날짜']);
   var iMemo2   = _inqColIdx_(iaHdr, ['메모', '비고', '담당자메모']);
   var iOwner2  = _inqColIdx_(iaHdr, ['담당', '담당자']);
+  var iTour2   = _inqColIdx_(iaHdr, ['시설투어 및 상담 예약', '시설견학 및 상담 일정', '상담 예약', '상담']);
+  var iExp12   = _inqColIdx_(iaHdr, ['체험1 확정시간', '체험1']);
+  var iExp22   = _inqColIdx_(iaHdr, ['체험2 확정시간', '체험2']);
   if (iName2 >= 0)  newRow[iName2]  = body.name  || '';
   if (iPhone2 >= 0) newRow[iPhone2] = body.phone || '';
   if (iProg2 >= 0)  newRow[iProg2]  = body.program || '';
@@ -659,6 +667,9 @@ if (action === 'inquiry_add') {
   if (iTs2 >= 0)    newRow[iTs2]    = body.timestamp || now;
   if (iMemo2 >= 0)  newRow[iMemo2]  = body.memo  || '';
   if (iOwner2 >= 0) newRow[iOwner2] = body.owner || '';
+  if (iTour2 >= 0)  newRow[iTour2]  = body.tour || '';
+  if (iExp12 >= 0)  newRow[iExp12]  = body.exp1 || '';
+  if (iExp22 >= 0)  newRow[iExp22]  = body.exp2 || '';
   var newRowNum = iaSh.getLastRow() + 1;
   iaSh.getRange(newRowNum, 1, 1, newRow.length).setValues([newRow]);
   return _json({ ok: true, rowIndex: newRowNum, message: '문의가 추가되었습니다.' });
@@ -677,6 +688,9 @@ if (action === 'inquiry_update') {
   var iStat3  = _inqColIdx_(iuHdr, ['진행현황', '진행상황', '진행상태', '상태']);
   var iMemo3  = _inqColIdx_(iuHdr, ['메모', '비고', '담당자메모']);
   var iOwner3 = _inqColIdx_(iuHdr, ['담당', '담당자']);
+  var iTour3  = _inqColIdx_(iuHdr, ['시설투어 및 상담 예약', '시설견학 및 상담 일정', '상담 예약', '상담']);
+  var iExp13  = _inqColIdx_(iuHdr, ['체험1 확정시간', '체험1']);
+  var iExp23  = _inqColIdx_(iuHdr, ['체험2 확정시간', '체험2']);
   // 빈 문자열은 기존값 보존 (todo 패턴 동일)
   if (body.name    !== undefined &amp;&amp; body.name    !== '' &amp;&amp; iName3 >= 0)  existing[iName3]  = body.name;
   if (body.phone   !== undefined &amp;&amp; body.phone   !== '' &amp;&amp; iPhone3 >= 0) existing[iPhone3] = body.phone;
@@ -684,6 +698,9 @@ if (action === 'inquiry_update') {
   if (body.status  !== undefined &amp;&amp; body.status  !== '' &amp;&amp; iStat3 >= 0)  existing[iStat3]  = body.status;
   if (body.memo    !== undefined &amp;&amp; iMemo3 >= 0)  existing[iMemo3]  = body.memo;
   if (body.owner   !== undefined &amp;&amp; iOwner3 >= 0) existing[iOwner3] = body.owner;
+  if (body.tour    !== undefined &amp;&amp; body.tour    !== '' &amp;&amp; iTour3 >= 0) existing[iTour3] = body.tour;
+  if (body.exp1    !== undefined &amp;&amp; body.exp1    !== '' &amp;&amp; iExp13 >= 0) existing[iExp13] = body.exp1;
+  if (body.exp2    !== undefined &amp;&amp; body.exp2    !== '' &amp;&amp; iExp23 >= 0) existing[iExp23] = body.exp2;
   iuSh.getRange(iuRow, 1, 1, iuHdr.length).setValues([existing]);
   return _json({ ok: true, rowIndex: iuRow, message: '수정되었습니다.' });
 }
@@ -713,7 +730,7 @@ if (action === 'member_calendar') {
   var iProg4   = _inqColIdx_(mcHdr, ['관심 있는 프로그램 종류', '관심프로그램', '프로그램']);
   var iStat4   = _inqColIdx_(mcHdr, ['진행현황', '진행상황', '진행상태', '상태']);
   var iTs4     = _inqColIdx_(mcHdr, ['타임스탬프', '접수일', '날짜']);
-  var iTour4   = _inqColIdx_(mcHdr, ['시설견학 및 상담 일정 (날짜 기록)', '시설견학 및 상담 일정']);
+  var iTour4   = _inqColIdx_(mcHdr, ['시설투어 및 상담 예약', '시설견학 및 상담 일정', '상담 예약', '상담']);
   var iExp14   = _inqColIdx_(mcHdr, ['체험1 확정시간', '체험1', '확정시간']);
   var iExp24   = _inqColIdx_(mcHdr, ['시설 체험 일정2(날짜 기록)', '시설 체험 일정2', '체험2']);
 
@@ -946,10 +963,13 @@ var dbRows = [];         // 현재 로드된 행 배열
 var dbEditingRow = null; // 현재 편집 중인 rowIndex
 var dbSaveTimer = null;  // 디바운스 타이머
 
-var STATUS_OPTIONS = ['신규','응대','예약','방문','가입','이탈','보류'];
+// 실무진 실제 사용 코드 (2026-06-20 GM 확정). 등록=SUC, 이탈=LOSS 등 시트 어휘 그대로.
+var STATUS_OPTIONS = ['신규','컨택중','예약','방문','SUC','단기SUC','결제완납','LOSS'];
 var STATUS_CLASS   = {
-  '신규':'new','응대':'contact','예약':'reserved',
-  '방문':'visited','가입':'joined','이탈':'lost','보류':'hold'
+  '신규':'new','컨택중':'contact','예약':'reserved','방문':'visited',
+  'SUC':'joined','단기SUC':'joined','결제완납':'joined','LOSS':'lost',
+  // 과거값 호환(표시용)
+  '응대':'contact','가입':'joined','이탈':'lost','보류':'hold','키오스크 완':'joined'
 };
 
 function loadDbData() {
@@ -1043,8 +1063,12 @@ function buildDbRow(row, isNew) {
     '<td style="font-size:12px;color:var(--dim);max-width:140px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + esc(row.memo || '—') + '</td>' +
     // 문의일
     '<td style="font-size:12px;color:var(--dim)">' + esc(row.timestamp || '—') + '</td>' +
-    // 견학/상담일
-    '<td style="font-size:12px;color:var(--dim)">' + esc(row.tourDate || '—') + '</td>' +
+    // 일정 (상담·체험)
+    '<td style="font-size:11px;color:var(--dim);line-height:1.6">' +
+      '🗓 상담: ' + esc(row.tourDate || '—') + '<br>' +
+      '🏃 체험1: ' + esc(row.exp1 || '—') + '<br>' +
+      '🏃 체험2: ' + esc(row.exp2 || '—') +
+    '</td>' +
     // 작업
     '<td><div class="row-actions">' +
       '<button class="row-btn btn-edit" onclick="startEditRow(this)">편집</button>' +
@@ -1052,6 +1076,29 @@ function buildDbRow(row, isNew) {
     '</div></td>';
 
   return tr;
+}
+
+// 일정(상담·체험1·체험2) 편집 블록 — 3개 텍스트 입력(data-field로 저장 자동수집). IME 안전(text·재생성 없음).
+function buildScheduleEditBlock(row) {
+  var wrap = document.createElement('div');
+  wrap.style.display = 'flex'; wrap.style.flexDirection = 'column'; wrap.style.gap = '3px';
+  function mk(label, field, val) {
+    var d = document.createElement('div');
+    d.style.display = 'flex'; d.style.alignItems = 'center'; d.style.gap = '4px';
+    var s = document.createElement('span');
+    s.textContent = label; s.style.fontSize = '10px'; s.style.color = 'var(--dim)';
+    s.style.width = '36px'; s.style.flexShrink = '0';
+    var i = document.createElement('input');
+    i.className = 'cell-input'; i.type = 'text'; i.value = val || '';
+    i.dataset.field = field; i.placeholder = 'YYYY-MM-DD';
+    i.style.fontSize = '11px'; i.style.padding = '3px 5px';
+    d.appendChild(s); d.appendChild(i);
+    return d;
+  }
+  wrap.appendChild(mk('상담', 'tour', row.tourDate));
+  wrap.appendChild(mk('체험1', 'exp1', row.exp1));
+  wrap.appendChild(mk('체험2', 'exp2', row.exp2));
+  return wrap;
 }
 
 function startEditRow(btn) {
@@ -1130,7 +1177,10 @@ function startEditRow(btn) {
   cells[5].appendChild(inputMemo);
 
   // [6] 문의일 (읽기 전용)
-  // [7] 견학/상담일 (읽기 전용 — 달력 탭에서 관리)
+
+  // [7] 일정 (상담·체험1·체험2) — 표에서 직접 편집 (2026-06-20 GM)
+  cells[7].innerHTML = '';
+  cells[7].appendChild(buildScheduleEditBlock(row));
 
   // [8] 작업 버튼 교체
   cells[8].innerHTML = '';
@@ -1171,7 +1221,10 @@ function saveEditRow(tr) {
     program: fields.program || '',
     status:  fields.status  || '신규',
     owner:   fields.owner   || '',
-    memo:    fields.memo    !== undefined ? fields.memo : ''
+    memo:    fields.memo    !== undefined ? fields.memo : '',
+    tour:    fields.tour    !== undefined ? fields.tour : '',
+    exp1:    fields.exp1    !== undefined ? fields.exp1 : '',
+    exp2:    fields.exp2    !== undefined ? fields.exp2 : ''
   };
 
   // 로컬 즉시 반영 (낙관적 업데이트)
@@ -1179,7 +1232,8 @@ function saveEditRow(tr) {
   if (idx >= 0) {
     dbRows[idx] = Object.assign({}, dbRows[idx], {
       name: fields.name, phone: fields.phone, program: fields.program,
-      status: fields.status, owner: fields.owner, memo: fields.memo
+      status: fields.status, owner: fields.owner, memo: fields.memo,
+      tourDate: fields.tour, exp1: fields.exp1, exp2: fields.exp2
     });
   }
   dbEditingRow = null;
@@ -1263,11 +1317,9 @@ function buildNewInputRow(row) {
   tdDate.textContent = new Date().toISOString().slice(0,10);
   tr.appendChild(tdDate);
 
-  var tdTour = document.createElement('td');
-  tdTour.style.color = 'var(--dim)';
-  tdTour.style.fontSize = '12px';
-  tdTour.textContent = '—';
-  tr.appendChild(tdTour);
+  var tdSched = document.createElement('td');
+  tdSched.appendChild(buildScheduleEditBlock(row || {}));
+  tr.appendChild(tdSched);
 
   var actDiv = document.createElement('div');
   actDiv.className = 'row-actions';
@@ -1305,6 +1357,9 @@ function submitNewRow(tr) {
     status:    fields.status  || '신규',
     owner:     fields.owner   || '',
     memo:      fields.memo    || '',
+    tour:      fields.tour    || '',
+    exp1:      fields.exp1    || '',
+    exp2:      fields.exp2    || '',
     timestamp: new Date().toISOString().slice(0,10)
   };
 
