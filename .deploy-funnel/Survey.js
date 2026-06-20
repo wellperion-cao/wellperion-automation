@@ -112,6 +112,34 @@ function _stageOf_(raw) {
   return 1; // 미인식 → ① 문의(안전 처리)
 }
 
+// ─── CTA(웹폼) 문의 → '26년 신규문의'(실무진 처리 로그) 미러 기록 (2026-06-20 GM A안) ───
+// 마케팅 CTA 문의가 실무진 처리 화면(문의DB=26년 신규문의)에도 떠서 진행상태를 찍을 수 있게 한다.
+// '[웹접수]' 표식을 비고에 남겨, 집계(_collectFormInquiries_·stage_funnel ④-b)에서 제외 →
+//   문의접수 시트로 이미 1회 집계되므로 이중집계 방지(전환은 유효회원 전화매칭으로 자동 반영).
+// fail-soft: 미러 실패가 CTA 접수 자체를 막지 않는다(문의접수 기록은 이미 성공).
+var WEB_INTAKE_TAG = '[웹접수]';
+function _mirrorInquiryToStaffLog_(body, inqId) {
+  try {
+    var sh = _sheetByGid_(FORM_SHEETS[0].ssId, FORM_SHEETS[0].gid); // 12AWcAlg '26년 신규문의'
+    if (!sh) return;
+    var lastCol = sh.getLastColumn();
+    var headers = sh.getRange(1, 1, 1, lastCol).getValues()[0];
+    var newRow = new Array(lastCol).fill('');
+    function put(keys, val) { var i = _findCol_(headers, keys); if (i >= 0) newRow[i] = val; }
+    put(['타임스탬프', 'timestamp', '시각', '일시', '접수일', '접수', '날짜'], Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy. M. d'));
+    put(['성함', '이름'], body.name || '');
+    put(['연락처', '휴대폰', '핸드폰', '전화'], body.phone || '');
+    put(['진행현황', '진행상태', '상태'], '신규');
+    put(['채널', '경로', '알게'], _canonicalChannel_(body.utmSource || body.inflow || ''));
+    put(['접수 담당자', '담당'], '웹 자동접수');
+    var memo = WEB_INTAKE_TAG + ' 유형:' + (body.type || '-')
+             + (body.message ? ' / ' + String(body.message).substring(0, 200) : '')
+             + ' (utm:' + (body.utmSource || '-') + '/' + (body.utmMedium || '-') + ', ' + inqId + ')';
+    put(['비고', '메모'], memo);
+    sh.getRange(sh.getLastRow() + 1, 1, 1, lastCol).setValues([newRow]);
+  } catch (e) { /* 미러 실패 무시 — CTA 접수 무중단 */ }
+}
+
 // 날짜 정규화 — 구글폼(Date 또는 'YYYY-MM-DD HH:mm:ss') + 수기 로그('YYYY. M. D [오전/오후 H:MM:SS]') 모두 Date로.
 // '26년 신규문의' 탭 타임스탬프가 한글 형식(예: 2026. 6. 5)이라 기존 ISO 파서로는 NaN → 여기서 Date로 변환.
 function _parseAnyDate_(v) {
@@ -154,9 +182,12 @@ function _collectFormInquiries_() {
       var idxChanFine = _findCol_(headers, ['중분류']);             // 문의 경로(중분류) — 정밀(있을 때만, 멤버십 탭)
       var idxDate  = _findCol_(headers, ['타임스탬프', 'timestamp', '시각', '일시', '접수일', '접수', '날짜']);
       if (idxDate < 0) idxDate = 0;  // 못 찾으면 1열(구글폼 기본). 26년신규문의=B칸(타임스탬프) 자동 포착
+      var idxMemoCfi = _findCol_(headers, ['비고', '메모']);  // [웹접수] 표식 탐지용
       var rows = sh.getRange(2, 1, last - 1, lastCol).getValues();
       rows.forEach(function(r) {
         if (!r[idxDate] && (idxPhone < 0 || !r[idxPhone])) return; // 빈 행 스킵
+        // CTA 웹폼 미러 행([웹접수])은 문의접수 시트로 이미 1회 집계됨 → 여기선 제외(이중집계 방지)
+        if (idxMemoCfi >= 0 && String(r[idxMemoCfi] || '').indexOf(WEB_INTAKE_TAG) >= 0) return;
         // 채널 = 대분류 기본, 단 중분류가 '확실한 버킷'으로 표준화될 때만 중분류 우선(회귀 방지).
         // 예) 대분류 '온라인 (네이버/…/당근)'→기타·미상 이지만 중분류 'N-플레이스(검색)'→네이버 로 정밀화.
         //     중분류가 매핑 불가('옥외홍보' 등)면 대분류 유지 → 절대 후퇴 없음.
@@ -481,6 +512,9 @@ function _processAction(body) {
       ''
     ];
     sh.getRange(sh.getLastRow() + 1, 1, 1, row.length).setValues([row]);
+
+    // GM A안(2026-06-20): 실무진 처리 화면(문의DB=26년 신규문의)에도 미러 기록 → 즉시 처리 가능. fail-soft.
+    _mirrorInquiryToStaffLog_(body, id);
 
     _notifyTelegram(
       '🔔 <b>[신규 문의]</b>\n'
@@ -1162,9 +1196,12 @@ function _processAction(body) {
         var sfIdxPhone  = _findCol_(sfHeaders, ['연락처', '휴대폰', '핸드폰', '전화']);
         var sfIdxDate   = _findCol_(sfHeaders, ['타임스탬프', 'timestamp', '시각', '일시', '접수일', '접수', '날짜']);
         if (sfIdxDate < 0) sfIdxDate = 0;
+        var sfIdxMemo = _findCol_(sfHeaders, ['비고', '메모']);  // [웹접수] 표식 탐지용
         var sfRows = sfSh.getRange(2, 1, sfLast - 1, sfLastCol).getValues();
         sfRows.forEach(function(r) {
           if (!r[sfIdxDate] && (sfIdxPhone < 0 || !r[sfIdxPhone])) return; // 빈 행 스킵
+          // CTA 웹폼 미러 행([웹접수])은 문의접수(④-a)로 이미 집계 → 제외(이중집계 방지)
+          if (sfIdxMemo >= 0 && String(r[sfIdxMemo] || '').indexOf(WEB_INTAKE_TAG) >= 0) return;
           var statusRaw = sfIdxStatus >= 0 ? r[sfIdxStatus] : '';
           var phone     = sfIdxPhone  >= 0 ? normalizePhone_(r[sfIdxPhone]) : '';
           var rank      = _stageOf_(statusRaw); // 상태 칸 없으면 statusRaw='' → rank=1
