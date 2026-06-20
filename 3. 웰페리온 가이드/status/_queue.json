@@ -3092,5 +3092,19 @@
     "next": "🌀 표류 — 다음 미정 (필요 시 GM·웰리/담당 C-Level 지정)",
     "adhoc_commit": "947365d63accadc011030ac0e1cd4ddb7e3f60cf",
     "ship_no": 6
+  },
+  {
+    "task_id": "COO-2026-06-20-ADHOC-d79a7ed2",
+    "clevel": "coo",
+    "title": "[시우] 점검 O열(소요시간) 옛 시각값 비우기 — 1899 시리얼 Date 정리",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-06-20",
+    "processed_at": "2026-06-20",
+    "artifact": "1차 배포 전 행에 '점검시각' 시리얼(1899-12-30+HH:MM)이 O열에 남아\n'소요시간' 헤더와 불일치. 시작시각 없는 옛 데이터는 계산 불가 → 빈칸 정합.\nclearOldDuration() + ?action=clear_old_duration 엔드포인트 추가.\n라이브 1회 실행: 남성 79행·여성 48행 O열 옛값 비움. chkAt 1899 잔존 0건.\n타 열(id·round·status·duty 등) 무손상. weekly 무회귀. URL 보존 @92. (CLI ad-hoc · 커밋 d79a7ed2)",
+    "next": "🌀 표류 — 다음 미정 (필요 시 GM·웰리/담당 C-Level 지정)",
+    "adhoc_commit": "d79a7ed217561018eaa048571c030bbeba3a1276",
+    "ship_no": 73
   }
 ]
