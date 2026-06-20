@@ -29,8 +29,8 @@ const CHAT_ID   = PropertiesService.getScriptProperties().getProperty('TELEGRAM_
 const HEADERS = [
   '날짜','항목ID','항목명','카테고리','회차',
   '점검결과','이슈메모','노하우','제출상태','제출시각',
-  '근무자','점검자','측정값','반영완료','점검시각'
-]; // (닫힘 — 아래 _roundLabel). 15열 점검시각=항목별 체크시각(mm.at, 제출시각과 독립). _ensureHeaders 자동보강.
+  '근무자','점검자','측정값','반영완료','소요시간'
+]; // (닫힘 — 아래 _roundLabel). 15열 소요시간(분)=(제출시각 − 회차 시작시각). 못 구하면 빈칸. _ensureHeaders가 헤더라벨 자동정합.
 // 슬롯/교대 → 조(회차) 라벨. 프론트 roundOfSlot과 동일 매핑(오전조/오후조/마감조). GM 2026-06-15.
 function _roundLabel(slot, shift) {
   var s = String(slot || '');
@@ -45,6 +45,14 @@ function _roundKeyLabel(rk) {
   if (r.indexOf('close') >= 0 || r.indexOf('night') >= 0) return '마감조';
   if (r.indexOf('pm') >= 0) return '오후조';
   return '오전조';   // am1·오픈 등
+}
+// ─── 회차라벨(오전조/오후조/마감조) → 제출도장 shiftKey(am/pm/night). led.sub/subAt 조회용. 2026-06-20 시우 ───
+function _labelToShiftKey(label) {
+  var l = String(label || '');
+  if (l.indexOf('마감') >= 0 || l.indexOf('야간') >= 0 || l.indexOf('저녁') >= 0) return 'night';
+  if (l.indexOf('오후') >= 0) return 'pm';
+  if (l.indexOf('오전') >= 0) return 'am';
+  return '';
 }
 // ─── 조 라벨 → 회차 키. 이슈-단독(미체크) 항목의 1차 회차 추정용 ───
 function _roundLabelToKey(label) {
@@ -977,13 +985,37 @@ function _writePerRoundRows(dept, date, body) {
   var roundChecks = body.roundChecks || [];
   var rcm = body.roundCheckMeta || {};
 
-  // 제출 상태·시각·점검자(V2Compat과 동일 산출)
-  var parts = [];
-  if (body.submitted_am) parts.push('오전조 제출완료');
-  if (body.submitted_pm) parts.push('오후조 제출완료');
-  if (body.submitted_night) parts.push('마감조 제출완료');
-  var submitStatus = parts.length ? parts.join(' / ') : '미제출';
-  var submitAt = body.submittedAt_am || body.submittedAt_pm || body.submittedAt_night || '';
+  // 제출 상태·시각 — 영속 원장(led.sub/subAt) 단일출처. 2026-06-20 시우·GM.
+  // ★버그수정: 과거엔 body.submitted_*(이번 payload 플래그)로 submitStatus 1개를 만들어 모든 행에 붙였다.
+  //   자동저장(includeSubmitMeta 미포함)이 그 회차 행을 재기록할 때 플래그가 없어 '미제출'로 덮어써,
+  //   제출돼 텔레그램까지 나간 회차가 시트 I열만 '미제출'로 회귀하던 버그(handleSave가 _updateCheckLedger를
+  //   먼저 호출하므로, 이 시점 led.sub는 영속 제출상태 = 텔레그램 발화조건과 동일). 회차별로 led.sub에서 산출.
+  var _led = _getCheckLedger(dept, date, gender);
+  var _ledSub   = (_led && _led.sub)   || {};
+  var _ledSubAt = (_led && _led.subAt) || {};
+  var _ledTimers = (_led && _led.timers) || {};
+  // 회차라벨(오전조/오후조/마감조) → 제출완료 표기. shiftKey(am/pm/night)의 제출도장(led.sub)이 곧 진실.
+  function _roundSubmitStatus(roundLabel) {
+    var sk = _labelToShiftKey(roundLabel);
+    return (sk && _ledSub[sk]) ? (roundLabel + ' 제출완료') : '미제출';
+  }
+  // 소요시간(분): 회차 타이머 시작(led.timers[rk].s) ~ 제출시각(led.subAt[shiftKey]). 못 구하면 빈칸(억지계산 금지).
+  function _roundDurationMin(roundKey, roundLabel) {
+    var t = _ledTimers[roundKey] || {};
+    var startMs = Number(t.s);
+    if (!startMs || isNaN(startMs)) return '';
+    // 종료시각: 타이머 완료(e) 우선, 없으면 그 조 제출시각(subAt). 둘 다 없으면 빈칸.
+    var endMs = Number(t.e);
+    if (!endMs || isNaN(endMs)) {
+      var sk = _labelToShiftKey(roundLabel);
+      var subAtStr = sk ? _ledSubAt[sk] : '';
+      endMs = subAtStr ? new Date(String(subAtStr).replace(' ', 'T')).getTime() : NaN;
+    }
+    if (!endMs || isNaN(endMs)) return '';
+    var min = Math.round((endMs - startMs) / 60000);
+    if (min < 0 || min >= 24 * 60) return '';   // 음수·자정넘김 등 비정상은 빈칸
+    return min + '분';
+  }
 
   var meta = {};
   checks.forEach(function (c) { meta[String(c.itemId)] = c; });
@@ -999,7 +1031,10 @@ function _writePerRoundRows(dept, date, body) {
     var rl = _roundKeyLabel(round);
     var mm = rcm[round + '_' + id] || {};
     var inspector = mm.by || c.submitter || defaultInspector(target, c.slot || '');
-    var at = mm.at ? (date + ' ' + mm.at) : (c.checkedAt || submitAt || '');
+    // 제출시각(10열): 회차별 led.subAt 우선 → 항목 체크시각 → 항목 폴백.
+    var _rSk = _labelToShiftKey(rl);
+    var _rSubAt = _rSk ? (_ledSubAt[_rSk] || '') : '';
+    var at = mm.at ? (date + ' ' + mm.at) : (c.checkedAt || _rSubAt || '');
     var duty = mm.du || body.duty || '';
     // (회차×항목) 단위 메타 우선(mm) — 이슈/노하우/온도측정/반영완료를 회차별로 격리. 없으면 항목단위(c.*) 폴백. GM 2026-06-15 시우.
     var iss = (mm.iss != null && mm.iss !== '') ? String(mm.iss) : (c.issue || '');
@@ -1010,9 +1045,9 @@ function _writePerRoundRows(dept, date, body) {
       date, id, c.name, c.cat, rl,
       checkedRound ? '완료' : '미완료',
       iss, tip,
-      submitStatus, at, duty, inspector,
+      _roundSubmitStatus(rl), at, duty, inspector,   // 9열 제출상태=회차별 led.sub 단일출처(미제출 회귀 버그 수정)
       measure, reflected,
-      mm.at || ''    // 15열 점검시각(항목별 체크시각 HH:MM — 제출시각(10열)과 독립)
+      _roundDurationMin(round, rl)    // 15열 소요시간(분) — (제출시각 − 시작시각). 못 구하면 빈칸
     ];
     var sk = target + ' ' + rl + ' ' + id;
     if (seen[sk]) return; seen[sk] = 1;
@@ -1175,10 +1210,10 @@ function handleSave(body) {
   return jsonRes({ success: true, updated: updated, added: added });
 }
 
-// ─── 시트를 [날짜 내림차순, 카테고리(페이지 순서), 항목ID]로 정렬 — 2026-06-04 GM / 카테고리 추가 2026-06-16 시우 ───
-// ★GM 2026-06-16: ID 문자열 정렬이면 오픈점검(c1a·c1b·c1c)이 C라인(c1,c10,c2) 사이에 끼어 보임 →
-//   카테고리 랭크(_MANUAL_CAT_ORDER: 오픈점검 먼저)를 2순위로 넣어 같은 분류끼리 묶이게. ID는 그대로 유지(이력 보존).
-//   range.sort는 카테고리 텍스트(한글·영문 혼재)를 원하는 순서로 못 정렬해 JS 정렬 후 setValues + 행 서식 재적용.
+// ─── 시트를 [날짜 내림차순, 제출시각(J열) 오름차순, 카테고리, 항목ID]로 정렬 — 2026-06-04 GM / 2026-06-20 GM·시우 ───
+// ★GM 2026-06-20: 정렬이 뒤죽박죽 → 같은 날짜 안에서 J열(제출시각·인덱스9) 오름차순(먼저 제출=위)으로 점검 진행순서가 자연히 보이게.
+//   빈 제출시각은 맨 아래. 카테고리(_MANUAL_CAT_ORDER)·항목ID는 제출시각이 같을 때의 3·4순위 타이브레이커로만 남김.
+//   range.sort는 한글·시각 혼재를 원하는 순서로 못 정렬해 JS 정렬 후 setValues + 행 서식 재적용.
 function _sortByDateDesc(sheet) {
   if (!sheet) return;
   var last = sheet.getLastRow();
@@ -1186,10 +1221,15 @@ function _sortByDateDesc(sheet) {
   var rng = sheet.getRange(2, 1, last - 1, HEADERS.length);
   var vals = rng.getValues();
   function dts(v) { if (v instanceof Date) return v.getTime(); var t = new Date(String(v == null ? '' : v).replace(' ', 'T')).getTime(); return isNaN(t) ? 0 : t; }
+  function subTs(v) {   // J열 제출시각 → ms. 빈값·파싱불가는 무한대(맨 아래로).
+    var s = (v instanceof Date) ? v.getTime() : new Date(String(v == null ? '' : v).replace(' ', 'T')).getTime();
+    return (v == null || String(v) === '' || isNaN(s)) ? Infinity : s;
+  }
   vals.sort(function (a, b) {
-    var da = dts(a[0]), db = dts(b[0]); if (da !== db) return db - da;                 // 1순위: 날짜 내림차순
-    var ra = _manualCatRank(a[3]), rb = _manualCatRank(b[3]); if (ra !== rb) return ra - rb; // 2순위: 카테고리(오픈점검→A→B→C→D→E→마감)
-    var ia = String(a[1]), ib = String(b[1]); return ia < ib ? -1 : (ia > ib ? 1 : 0);  // 3순위: 항목ID
+    var da = dts(a[0]), db = dts(b[0]); if (da !== db) return db - da;                 // 1순위: 날짜 내림차순(최신 위)
+    var sa = subTs(a[9]), sb = subTs(b[9]); if (sa !== sb) return sa - sb;             // 2순위: 제출시각(J열·인덱스9) 오름차순, 빈값 맨 아래
+    var ra = _manualCatRank(a[3]), rb = _manualCatRank(b[3]); if (ra !== rb) return ra - rb; // 3순위: 카테고리(오픈점검→A→B→C→D→E→마감)
+    var ia = String(a[1]), ib = String(b[1]); return ia < ib ? -1 : (ia > ib ? 1 : 0);  // 4순위: 항목ID
   });
   rng.setValues(vals);
   for (var k = 0; k < vals.length; k++) _applyRowStyle(sheet, k + 2, vals[k]);          // 정렬 후 상태색 재적용(setValues는 서식 미이동)

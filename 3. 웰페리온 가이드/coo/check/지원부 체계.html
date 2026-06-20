@@ -3193,8 +3193,10 @@ function onCk(id,shift,gender,round){
     if(!round&&!_night)_miss.push('조(회차) 선택');
     if(typeof getDutyForGender==='function'&&!getDutyForGender(gender))_miss.push('근무자 선택');
     if(typeof getSubmitterForGender==='function'&&!(getSubmitterForGender(gender)||'').trim())_miss.push('점검자 입력');
-    if(typeof activeTimerKeys==='function'){const _tk=activeTimerKeys(gender);if(!STATE[_tk.sk])_miss.push('점검 시작 버튼 누르기');}
     if(_miss.length){ if(cb)cb.checked=false; alert('체크하기 전에 먼저 해주세요:\n· '+_miss.join('\n· ')); return; }
+    /* 소요시간(2026-06-20 시우·GM): 그 회차 '첫 항목 체크' 시각을 시작시각으로 자동 캡처(수동 '점검 시작' 버튼 의존 제거).
+       이미 시작시각이 있으면 보존. 제출 시 서버가 (제출시각 − 시작시각)으로 소요시간(분) 산출 → 시트 O열. */
+    if(typeof activeTimerKeys==='function'){const _tk=activeTimerKeys(gender);if(!STATE[_tk.sk]){STATE[_tk.sk]=Date.now();delete STATE[_tk.ek];if(typeof setCheckTime==='function')try{setCheckTime(gender);}catch(_e){}}}
   }
   /* 회차별 체크 독립: round 있으면 라운드 키에만 기록(다른 회차 미영향).
      round 없으면(야간모드 등) 기존 레거시 키 유지(비회귀). */
