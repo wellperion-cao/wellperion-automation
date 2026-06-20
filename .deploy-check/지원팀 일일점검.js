@@ -28,7 +28,7 @@ const CHAT_ID   = PropertiesService.getScriptProperties().getProperty('TELEGRAM_
 // 2026-06-15 GM 스키마 v2: 시간대→회차(조 단위) · 담당자를 점검자 앞으로 · 교대 열 삭제(14열).
 const HEADERS = [
   '날짜','항목ID','항목명','카테고리','회차',
-  '점검결과','이슈메모','노하우','제출상태','제출시각',
+  '점검결과','이슈(종합접수처)','노하우','제출상태','제출시각',
   '근무자','점검자','측정값','반영완료','소요시간'
 ]; // (닫힘 — 아래 _roundLabel). 15열 소요시간(분)=(제출시각 − 회차 시작시각). 못 구하면 빈칸. _ensureHeaders가 헤더라벨 자동정합.
 // 슬롯/교대 → 조(회차) 라벨. 프론트 roundOfSlot과 동일 매핑(오전조/오후조/마감조). GM 2026-06-15.
@@ -1013,9 +1013,11 @@ var VOC_EXEC_URL_FALLBACK = 'https://script.google.com/macros/s/AKfycbwk2XS1FND9
 // 전송 멱등 플래그 ScriptProperties 키 접두사. 키=VOCSENT_<date>_<itemId>_<해시>.
 var VOC_SENT_PREFIX = 'VOCSENT_';
 // 설비 고장성 키워드 — 있으면 category=facility(시설고장), 없으면 기본 clean(청결). 단순·설명가능 하드코딩 배열.
+// 4차(2026-06-20 시우·GM): '안됨'·'안 됨' 단독 제거 — '정리정돈 안됨'(청결) 같은 텍스트가 시설고장으로 오분류되던 함정.
+// 설비맥락으로 좁힌 '작동 안'·'전원 안'·'작동불가'만 facility로 본다. 자동전송·이관 공용 함수라 여기 한 곳이 양쪽에 적용.
 var VOC_FACILITY_KEYWORDS = [
-  '고장', '파손', '안됨', '안 됨', '작동 안', '작동안', '작동불가', '안 켜', '안켜',
-  '누수', '물샘', '새는', '깨짐', '깨진', '균열', '금이', '전원', '정전',
+  '고장', '파손', '작동 안', '작동안', '작동불가', '전원 안', '안 켜', '안켜',
+  '누수', '물샘', '새는', '깨짐', '깨진', '균열', '금이', '정전',
   '배수', '막힘', '막혀', '역류', '누전', '누설', '터짐', '부러', '떨어짐', '고장남'
 ];
 
@@ -1174,7 +1176,7 @@ function _writePerRoundRows(dept, date, body) {
     var values = [
       date, id, c.name, c.cat, rl,
       checkedRound ? '완료' : '미완료',
-      iss, tip,
+      '', tip,   // 4차(2026-06-20 시우·GM): G열(이슈메모)=빈값 적재. 이슈는 종합접수처 DB로만(issuesToForward→_checkSendIssuesToVoc). 컬럼 자리(인덱스6)는 유지·내용만 비움.
       _roundSubmitStatus(rl), at, duty, inspector,   // 9열 제출상태=회차별 led.sub 단일출처(미제출 회귀 버그 수정)
       measure, reflected,
       _roundDurationMin(round, rl)    // 15열 소요시간(분) — (제출시각 − 시작시각). 못 구하면 빈칸

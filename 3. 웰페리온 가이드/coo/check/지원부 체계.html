@@ -2092,7 +2092,7 @@ async function loadState(d,g){
       if(row.gender&&row.gender!==gg)return;
       // 체크 복원은 '회차원장(cr)'만 사용(아래). 시트 행의 완료/미완료는 회차정보가 없어
       // roundOfSlot로 잘못된 회차에 복원→리셋처럼 보이던 문제 → 행으로 체크 복원 안 함. GM 2026-06-12.
-      if(row.issue)STATE['iss_'+row.itemId]=row.issue;
+      /* 4차(2026-06-20 시우·GM): 이슈는 종합접수처 DB 전용 — 점검표 복원 금지. 과거 G열→STATE 복원(복제버그 근원 항목단위키) 제거. */
       if(row.tip)STATE['tip_'+row.itemId]=row.tip;
       if(row.measure)restoreTempFromMeasure(row.itemId,row.measure);   // 온도 측정값 복원
       if(row.reflected)STATE['reflected_'+row.itemId]=true;            // 반영완료 복원
@@ -2138,7 +2138,7 @@ async function loadState(d,g){
               /* 점검자·담당자 서버 복원(GM 2026-06-16): 기기/세션 바뀌어도(텔레그램 링크 등) 비지 않게 — 로컬 비었을 때만 서버 값으로 채움(로컬 편집 보존). */
               try{ if(_m.by){ if(!localStorage.getItem('wcheck_sub_'+gg+'_'+rk))localStorage.setItem('wcheck_sub_'+gg+'_'+rk,_m.by); if(!localStorage.getItem('wcheck_sub_last_'+gg))localStorage.setItem('wcheck_sub_last_'+gg,_m.by); }
                     if(_m.du){ if(!localStorage.getItem('wcheck_duty_'+gg+'_'+rk))localStorage.setItem('wcheck_duty_'+gg+'_'+rk,_m.du); if(!localStorage.getItem('wcheck_duty_last_'+gg))localStorage.setItem('wcheck_duty_last_'+gg,_m.du); } }catch(e){}
-              if(_m.iss)STATE[issKey(rk,id,gg)]=_m.iss;
+              /* 4차(2026-06-20 시우·GM): 이슈는 종합접수처 DB 전용 — 원장 cr 메타에서도 점검표로 복원 안 함(화면 미표시). 전송은 저장 시 _checkSendIssuesToVoc가 처리. */
               if(_m.tip)STATE[tipKey(rk,id,gg)]=_m.tip;
               if(_m.measure)restoreTempFromMeasure(id,_m.measure,rk,gg);
               if(_m.reflected)STATE[refKey(rk,id,gg)]=true;
@@ -3069,10 +3069,10 @@ function renderItem(it,shift,gender,round){
   }
   return `<div class="${cls}">
     <div class="item-row"><input type="checkbox" id="cb_${pfx}${it.id}" ${ck} ${_locked?'disabled':''} onchange="onCk('${it.id}','${shift}','${g}'${_rArg})"><label for="cb_${pfx}${it.id}">${itemName}${_dayChips}${editedTag}${_locked?' <span style="font-size:10px;color:#2c8a4f;font-weight:700;">🔒제출됨</span>':''}</label>
-      <div class="item-btns"><button class="tiny-btn issue" onclick="togX('${pfx}iss_${it.id}')">이슈</button><button class="tiny-btn tip" onclick="togX('${pfx}tip_${it.id}')">노하우</button>${refBtn}</div>
+      <div class="item-btns"><button class="tiny-btn issue" title="발견한 이슈를 적으면 종합접수처 DB로 전송됩니다(점검표에는 남지 않음)" onclick="togX('${pfx}iss_${it.id}')">이슈 접수</button><button class="tiny-btn tip" onclick="togX('${pfx}tip_${it.id}')">노하우</button>${refBtn}</div>
     </div>${_attrLine}
     <div class="item-detail">${det}</div>${tempHtml}
-    <input class="extra-input issue-field${iss?' show':''}" id="${pfx}iss_${it.id}" placeholder="이슈 내용..." value="${esc(iss)}" ${_locked?'readonly':''} onchange="onExtra('iss','${it.id}',${round?`'${round}'`:'\'\''},'${g}','${pfx}iss_${it.id}')">
+    <input class="extra-input issue-field${iss?' show':''}" id="${pfx}iss_${it.id}" placeholder="이슈 접수 (→ 종합접수처로 전송)..." value="${esc(iss)}" ${_locked?'readonly':''} onchange="onExtra('iss','${it.id}',${round?`'${round}'`:'\'\''},'${g}','${pfx}iss_${it.id}')">
     ${(promoteBtn||vocBtn)?`<div class="promote-bar" style="margin:4px 0 2px;display:flex;flex-wrap:wrap;gap:6px;align-items:center;">${promoteBtn}${vocBtn}</div>`:''}
     <input class="extra-input tip-field${tip?' show':''}" id="${pfx}tip_${it.id}" placeholder="노하우/개선 의견..." value="${esc(tip)}" ${_locked?'readonly':''} onchange="onExtra('tip','${it.id}',${round?`'${round}'`:'\'\''},'${g}','${pfx}tip_${it.id}')">
   </div>`;
@@ -4004,26 +4004,10 @@ async function renderAdmin(){
     html+=buildAdminShiftCard('night','야간조 (탕청소)',data.nightDone,data.nightTotal,data.nightPct,STATE._submitted_night,STATE._submitter_night,STATE._submittedAt_night?new Date(STATE._submittedAt_night).toLocaleString('ko-KR'):'-',null,data.nightSched,dow,dn);
   }
 
-  /* ━━━ 이슈 목록 ━━━ */
-  if(data.allIssues.length){
-    html+=`<div class="dash-section-title" style="color:var(--red)">이슈 목록 (${data.allIssues.length}건)</div>`;
-    const shiftGroups=[
-      {key:'am',label:'오전조',items:data.issuesAm},
-      {key:'pm',label:'오후조',items:data.issuesPm},
-      {key:'night',label:'야간조',items:data.issuesNight},
-      {key:'focus',label:'요일별 집중',items:data.issuesFocus}
-    ];
-    shiftGroups.forEach(sg=>{
-      if(sg.items.length===0)return;
-      html+=`<div class="dash-issue-card"><div style="font-size:13px;font-weight:700;color:var(--accent);margin-bottom:8px">${sg.label} (${sg.items.length}건)</div>`;
-      sg.items.forEach(i=>{
-        html+=`<div class="dash-issue-item"><div class="dash-issue-name">${i.name} <span class="dash-issue-meta">${i.slot} | ${i.cat}</span></div><div class="dash-issue-memo">${i.memo}</div></div>`;
-      });
-      html+=`</div>`;
-    });
-  }else{
-    html+=`<div class="admin-card" style="border-color:rgba(106,191,123,0.3)"><h3 style="color:var(--green)">이슈 없음</h3><div style="font-size:13px;color:var(--dim)">오늘 보고된 이슈가 없습니다.</div></div>`;
-  }
+  /* ━━━ 이슈 ━━━ 4차(2026-06-20 시우·GM): 점검표는 더 이상 이슈를 적재·표시하지 않음.
+     점검 중 입력된 이슈는 종합접수처 DB로만 전송 → 현황/점검일지에서 이슈 목록 표시 제거. 종합접수처로 안내만. */
+  html+=`<div class="dash-section-title">이슈</div>`;
+  html+=`<div class="admin-card" style="border-color:rgba(214,138,44,0.3)"><div style="font-size:13px;color:var(--dim);line-height:1.6">점검 중 발견한 이슈는 <strong>종합접수처</strong>로 일원화되었습니다. 점검표에는 더 이상 이슈가 쌓이지 않으며, 접수·처리 현황은 종합접수처에서 확인하세요.</div></div>`;
 
   /* ━━━ 노하우 ━━━ */
   if(data.allTips.length){
