@@ -2814,5 +2814,19 @@
     "next": "🌀 표류 — 다음 미정 (필요 시 GM·웰리/담당 C-Level 지정)",
     "adhoc_commit": "029bf934a0e25afb3c2d36840b8f9415f0dcd907",
     "ship_no": 6
+  },
+  {
+    "task_id": "COO-2026-06-20-ADHOC-d7252e29",
+    "clevel": "coo",
+    "title": "[시우] 점검: 시설부 빈 남/여탭 근본차단 + 종합접수처 행정밀삭제 엔드포인트",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-06-20",
+    "processed_at": "2026-06-20",
+    "artifact": "- DEPT_TAB_MAP.facility 를 공용 단일(common only)로 수정 — male/female=null.\n  setupDeptSheets/setup_facility_tabs 재호출해도 시설 남/여 빈탭 재생성 안 됨(라이브 검증 완료).\n  근거: 시설부는 시설_공용구역 단일 탭에만 측정 기록(남/여는 측정칸 구분).\n- delete_facility_empty_genders: 시설_남/여구역 2개만 데이터행0 확인 후 정밀삭제(공용구역·거래업체 원천 보호).\n- VOC reg_delete: 접수ID로 행 정밀 삭제 (CLI ad-hoc · 커밋 d7252e29)",
+    "next": "🌀 표류 — 다음 미정 (필요 시 GM·웰리/담당 C-Level 지정)",
+    "adhoc_commit": "d7252e29a239af8071370f8d7f37804af43782d0",
+    "ship_no": 67
   }
 ]
