@@ -1156,13 +1156,12 @@ function openPrintView(pageId, noQ){
       '<div class="memo">'+fmtMemo(memo)+'</div>'+
       '<h2>3. AI 서류 평가 — 종합 등급</h2>'+
       '<p style="font-size:11pt;margin:8px 0">종합 등급: <span class="grade">'+esc(grade)+'</span> &nbsp;&nbsp; <span style="color:#6c6961;font-size:9.5pt">(인재상별 평가 근거·강점·확인사항은 위 \'이력 요약\'에 포함)</span></p>'+
-      (noQ?"":('<h2>4. 면접 질문지 (표준 10문항 · 부서 맞춤 조정 가능)</h2>'+wpQuestions((a["지원 포지션"]||a["연결 공고"]||""))))+'<h2>5. 면접관 메모란</h2>'+
+      (noQ?"":('<h2>4. 면접 질문지 (표준 10문항 · 부서 맞춤 조정 가능)</h2>'+wpQuestions((a["지원 포지션"]||a["연결 공고"]||""))))+(noQ?"":('<h2>5. 면접관 메모란</h2>'+
       '<div class="line"></div><div class="line"></div><div class="line"></div><div class="line"></div>'+
       '<div class="line"></div><div class="line"></div><div class="line"></div><div class="line"></div>'+
-      '<div class="line"></div><div class="line"></div>'+
-      '<div class="foot">'+
+      '<div class="line"></div><div class="line"></div>'))+'<div class="foot">'+
         '<span>평가일자: '+new Date().toISOString().slice(0,10)+' · AI CHRO 자동 생성</span>'+
-        '<span>면접관 서명: ______________________</span>'+
+        (noQ?"":'<span>면접관 서명: ______________________</span>')+
       '</div>'+
     '</div></body></html>';
   w.document.write(html);
