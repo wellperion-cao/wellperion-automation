@@ -511,9 +511,16 @@ function _inqHeaders_(sh) {
 
 function _inqColIdx_(headers, names) {
   var arr = Array.isArray(names) ? names : [names];
+  // 1차: 정확히 일치
   for (var i = 0; i &lt; arr.length; i++) {
     var idx = headers.indexOf(arr[i]);
     if (idx >= 0) return idx;
+  }
+  // 2차: 부분 일치(헤더가 키를 포함) — 실제 시트 헤더가 더 길어도 대응(예: '핸드폰 연락처'⊃'연락처', '접수 담당자'⊃'담당')
+  for (var k = 0; k &lt; arr.length; k++) {
+    for (var j = 0; j &lt; headers.length; j++) {
+      if (headers[j].indexOf(arr[k]) >= 0) return j;
+    }
   }
   return -1;
 }
@@ -582,10 +589,10 @@ if (action === 'inquiry_list') {
   var ilRows = [];
   if (ilLast >= 2) {
     var ilData = ilSh.getRange(2, 1, ilLast - 1, ilHdr.length).getValues();
-    var iName   = _inqColIdx_(ilHdr, ['이름']);
+    var iName   = _inqColIdx_(ilHdr, ['이름', '성함']);
     var iPhone  = _inqColIdx_(ilHdr, ['연락처', '전화', '휴대폰']);
     var iProg   = _inqColIdx_(ilHdr, ['관심 있는 프로그램 종류', '관심프로그램', '프로그램']);
-    var iStat   = _inqColIdx_(ilHdr, ['진행상황', '진행상태', '상태']);
+    var iStat   = _inqColIdx_(ilHdr, ['진행현황', '진행상황', '진행상태', '상태']);
     var iTs     = _inqColIdx_(ilHdr, ['타임스탬프', '접수일', '날짜']);
     var iTour   = _inqColIdx_(ilHdr, ['시설견학 및 상담 일정 (날짜 기록)', '시설견학 및 상담 일정']);
     var iMemo   = _inqColIdx_(ilHdr, ['메모', '비고', '담당자메모']);
@@ -616,10 +623,10 @@ if (action === 'inquiry_add') {
   var iaHdr = _inqHeaders_(iaSh);
   var newRow = new Array(iaHdr.length).fill('');
   var now = Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy-MM-dd');
-  var iName2   = _inqColIdx_(iaHdr, ['이름']);
+  var iName2   = _inqColIdx_(iaHdr, ['이름', '성함']);
   var iPhone2  = _inqColIdx_(iaHdr, ['연락처', '전화', '휴대폰']);
   var iProg2   = _inqColIdx_(iaHdr, ['관심 있는 프로그램 종류', '관심프로그램', '프로그램']);
-  var iStat2   = _inqColIdx_(iaHdr, ['진행상황', '진행상태', '상태']);
+  var iStat2   = _inqColIdx_(iaHdr, ['진행현황', '진행상황', '진행상태', '상태']);
   var iTs2     = _inqColIdx_(iaHdr, ['타임스탬프', '접수일', '날짜']);
   var iMemo2   = _inqColIdx_(iaHdr, ['메모', '비고', '담당자메모']);
   var iOwner2  = _inqColIdx_(iaHdr, ['담당', '담당자']);
@@ -642,10 +649,10 @@ if (action === 'inquiry_update') {
   var iuRow = parseInt(body.rowIndex, 10);
   if (!iuRow || iuRow &lt; 2) return _json({ ok: false, error: 'rowIndex 필수 (2 이상)' });
   var existing = iuSh.getRange(iuRow, 1, 1, iuHdr.length).getValues()[0];
-  var iName3  = _inqColIdx_(iuHdr, ['이름']);
+  var iName3  = _inqColIdx_(iuHdr, ['이름', '성함']);
   var iPhone3 = _inqColIdx_(iuHdr, ['연락처', '전화', '휴대폰']);
   var iProg3  = _inqColIdx_(iuHdr, ['관심 있는 프로그램 종류', '관심프로그램', '프로그램']);
-  var iStat3  = _inqColIdx_(iuHdr, ['진행상황', '진행상태', '상태']);
+  var iStat3  = _inqColIdx_(iuHdr, ['진행현황', '진행상황', '진행상태', '상태']);
   var iMemo3  = _inqColIdx_(iuHdr, ['메모', '비고', '담당자메모']);
   var iOwner3 = _inqColIdx_(iuHdr, ['담당', '담당자']);
   // 빈 문자열은 기존값 보존 (todo 패턴 동일)
@@ -680,9 +687,9 @@ if (action === 'member_calendar') {
   var mcLast = mcSh.getLastRow();
   var mcData = mcLast >= 2 ? mcSh.getRange(2, 1, mcLast-1, mcHdr.length).getValues() : [];
 
-  var iName4   = _inqColIdx_(mcHdr, ['이름']);
+  var iName4   = _inqColIdx_(mcHdr, ['이름', '성함']);
   var iProg4   = _inqColIdx_(mcHdr, ['관심 있는 프로그램 종류', '관심프로그램', '프로그램']);
-  var iStat4   = _inqColIdx_(mcHdr, ['진행상황', '진행상태', '상태']);
+  var iStat4   = _inqColIdx_(mcHdr, ['진행현황', '진행상황', '진행상태', '상태']);
   var iTs4     = _inqColIdx_(mcHdr, ['타임스탬프', '접수일', '날짜']);
   var iTour4   = _inqColIdx_(mcHdr, ['시설견학 및 상담 일정 (날짜 기록)', '시설견학 및 상담 일정']);
   var iExp14   = _inqColIdx_(mcHdr, ['체험1 확정시간', '체험1', '확정시간']);
