@@ -715,7 +715,7 @@
 
       <!-- 6. 업무·결재 -->
       <div class="erp-mod" style="--mc:#d4a017;background:var(--paper);border:1px solid var(--border);border-top:3px solid var(--mc);border-radius:14px;padding:18px 18px 16px;transition:transform .14s,box-shadow .14s,border-color .14s;" onmouseover="this.style.transform='translateY(-3px)';this.style.boxShadow='0 8px 22px rgba(0,0,0,0.18)';this.style.borderColor='var(--mc)';" onmouseout="this.style.transform='';this.style.boxShadow='';this.style.borderColor='var(--border)';this.style.borderTopColor='var(--mc)';">
-        <div style="display:flex;align-items:center;gap:10px;"><span style="font-size:26px;">📋</span><div><div style="font-weight:800;font-size:15.5px;">업무·결재 <span style="font-size:11px;color:var(--dim);font-weight:600;">Workflow</span></div><div style="font-size:11px;color:var(--dim);">업무 배분 · 결재 추적 SSOT</div><div style="font-size:11px;color:var(--accent);font-weight:600;margin-top:2px;">🤖 AI CHRO (시로)</div></div></div>
+        <div style="display:flex;align-items:center;gap:10px;"><span style="font-size:26px;">📋</span><div><div style="font-weight:800;font-size:15.5px;">업무·결재 <span style="font-size:11px;color:var(--dim);font-weight:600;">Workflow</span></div><div style="font-size:11px;color:var(--dim);">업무 배분 · 결재 추적 SSOT</div><div style="font-size:11px;color:var(--accent);font-weight:600;margin-top:2px;">🤖 AI CHRO (시로) / COO 운영</div></div></div>
         <div style="display:flex;gap:7px;flex-wrap:wrap;margin-top:14px;">
           <a href="https://wellperion-cao.github.io/wellperion-automation/coo/todo/%EC%97%85%EB%AC%B4%20%ED%98%84%ED%99%A9%20SSOT.html" target="_blank" style="font-size:12px;font-weight:600;padding:6px 12px;background:var(--accent-bg);color:var(--accent);border-radius:99px;text-decoration:none;border:1px solid var(--border);">업무 현황 SSOT ↗</a>
           <a href="https://wellperion-cao.github.io/wellperion-automation/coo/todo/%EA%B2%B0%EC%9E%AC%20%ED%98%84%ED%99%A9%20SSOT.html" target="_blank" style="font-size:12px;font-weight:600;padding:6px 12px;background:var(--accent-bg);color:var(--accent);border-radius:99px;text-decoration:none;border:1px solid var(--border);">결재 현황 SSOT ↗</a>
@@ -3281,7 +3281,7 @@ window._regAssign = function(id, category) {
         <!-- ── /업무 중요도 기준 정식화 ── -->
 
         <h3 style="margin-top:24px;border-top:1px solid var(--border);padding-top:20px;"><span class="ico">✍️</span>결재 요청·승인 체계 <span style="font-size:13px;color:var(--dim);font-weight:400;">(S3 업무·결재 현황 정책 단일 출처)</span></h3>
-        <div class="callout" style="background:#1a2a1a;border-left:3px solid #059669;margin-bottom:12px;">S3(업무&amp;결재 현황) 페이지는 이 정책대로 결재선을 <strong>자동 산출</strong>한다. 페이지엔 중복 기재하지 않고 <strong>여기(S2)가 원본</strong> (2026-06-06 GM — 페이지 안내 중복 제거·정책 S2 이관).</div>
+        <div class="callout" style="background:#1a2a1a;border-left:3px solid #059669;margin-bottom:12px;">S3(업무&amp;결재 현황) 페이지는 이 정책대로 결재선을 <strong>자동 산출</strong>한다. 페이지엔 중복 기재하지 않고 <strong>여기(S2)가 원본</strong> (2026-06-06 GM — 페이지 안내 중복 제거·정책 S2 이관). ▸ <strong>분리(2026-06-20 GM)</strong>: 업무·결재 현황 페이지 소속·인사평가 연동=CHRO(시로) / 결재 정책·운영(결재선·승인·GAS)=COO(시우) 유지.</div>
         <table>
           <tr><th style="width:160px">항목</th><th>내용</th></tr>
           <tr><td>결재선 1단계 부서장<br><span style="font-size:11px;color:var(--dim);">(카테고리→부서 자동)</span></td><td>운영부 <strong>이경연 실장</strong>([1] 매출·영업 · [4] 운영 정책) · 시설부 <strong>이정헌 소장</strong>([5] 시설·환경) · 파트너팀 <strong>나우열M</strong>([2] 인사 · [3] 파트너팀). 그 외([6] 회원·CS · [7] IT·시스템·자동화 · [8] 교육·조직문화 · [9] 회의)는 부서장 생략 → GM</td></tr>
@@ -5481,7 +5481,7 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
 
   <!-- ── COO 투두리스트 소개 ── -->
   <article class="doc" id="S3">
-    <div class="doc-header"><h2>업무&결재 현황 SSOT</h2><div class="meta">CHRO 관할 · 핵심멤버 업무 배분·추적 · Apps Script 연동</div></div>
+    <div class="doc-header"><h2>업무&결재 현황 SSOT</h2><div class="meta">소속·인사평가=CHRO / 결재 운영=COO(시우) · 핵심멤버 업무 배분·추적 · Apps Script 연동</div></div>
     <p class="lead">핵심멤버(매니저·AM)의 업무를 등록·배분·추적하는 업무 현황 SSOT입니다. <span style="color:var(--dim);">— 아래 실시간 현황을 보고, 카드를 열어 등록·결재합니다. (결재 요청·승인 정책 = S2 AI COO 탭)</span></p>
 
     <!-- ⭐ 핵심 KPI 스트립 — 업무·결재 SSOT 대시보드 핵심 지표 실시간 집계(최상단). SSOT 변경 시 자동 반영 (2026-06-03 GM) -->
