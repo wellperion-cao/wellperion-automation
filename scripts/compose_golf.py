@@ -6,12 +6,12 @@
 구조:
   ig_01 표지   = 사진 상단 65%(듀오톤) + 검정 하단 35% 정보영역
   ig_02~04 본문 = 전체 사진 fill + 하단 그라디언트 + 좌하단 텍스트 + 우상단 칩
-  ig_05 가이드  = guideline_card.jpg 원본 복사
+  ig_05 가이드  = guideline_card_golf.jpg (골프 전용 가이드카드)
 
 편 구성:
   ep1 — "코스에 서다"     (ig_01~05)
   ep2 — "시상대에 서다"   (ig_01~05)
-  ep3 — "비결은 코치였다" (ig_01~05)
+  ep3 — "비결은 프로였다" (ig_01~05)
 """
 from __future__ import annotations
 
@@ -42,8 +42,22 @@ from compose_barre import (
     paste_logo,
     draw_chip,
     draw_counter,
-    compose_guide_card,
+    compose_guide_card,  # 표준 카드 (ep1·ep2는 미사용, 골프 전용으로 대체)
 )
+
+# 골프 전용 가이드카드 경로 (compose_guideline_card_golf.py 생성)
+_GOLF_GUIDE_CARD = PROJECT_ROOT / "instagram" / "_assets" / "guideline_card_golf.jpg"
+
+
+def compose_golf_guide_card(output_path: Path) -> None:
+    """골프 전용 가이드카드 복사 (표준 compose_guide_card 대체 — barre 수정 금지)."""
+    import shutil as _shutil
+    if not _GOLF_GUIDE_CARD.exists():
+        raise FileNotFoundError(f"골프 가이드카드 없음: {_GOLF_GUIDE_CARD}. "
+                                f"python scripts/compose_guideline_card_golf.py 먼저 실행.")
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    _shutil.copy2(_GOLF_GUIDE_CARD, output_path)
+    print(f"  [골프가이드] {output_path.name} ({output_path.stat().st_size // 1024}KB)")
 # ─────────────────────────────────────────────────────────────────────────────
 
 # 소스 사진 루트
@@ -251,7 +265,7 @@ def build_ep1(out_ep: Path) -> None:
         )
 
     # ig_05 가이드카드
-    compose_guide_card(output_path=out_ep / "ig_05.jpg")
+    compose_golf_guide_card(output_path=out_ep / "ig_05.jpg")
 
 
 def build_ep2(out_ep: Path) -> None:
@@ -291,18 +305,18 @@ def build_ep2(out_ep: Path) -> None:
             full_dark=full_dark,
         )
 
-    compose_guide_card(output_path=out_ep / "ig_05.jpg")
+    compose_golf_guide_card(output_path=out_ep / "ig_05.jpg")
 
 
 def build_ep3(out_ep: Path) -> None:
-    """3편 — 비결은 코치였다"""
-    print("\n=== EP3: 비결은 코치였다 ===")
+    """3편 — 비결은 프로였다"""
+    print("\n=== EP3: 비결은 프로였다 ===")
 
     # ig_01 표지: _01 재사용
     compose_cover(
         photo_path=_p("_01"),
-        title_eng="THE COACH",
-        title_kor="비결은 코치였다",
+        title_eng="THE PRO",
+        title_kor="비결은 프로였다",
         date_location="웰페리온 골프",
         output_path=out_ep / "ig_01.jpg",
         cover_x_bias=0.50,
@@ -345,7 +359,7 @@ def build_ep3(out_ep: Path) -> None:
             full_dark=full_dark,
         )
 
-    compose_guide_card(output_path=out_ep / "ig_05.jpg")
+    compose_golf_guide_card(output_path=out_ep / "ig_05.jpg")
 
 
 # ---------------------------------------------------------------------------
@@ -386,10 +400,10 @@ KPGA 주니어리그 2회, 웰페리온 주니어가 시상대에 올랐습니�
 
 {tags}""",
         "ep3": """\
-비결은 코치였다.
+비결은 프로였다.
 
 김태엽 투어프로.
-KPGA 정회원이자 주니어 전문 코치입니다.
+KPGA 정회원이자 주니어 전문 프로입니다.
 
 아이의 몸에 맞춘 스윙, 성장 단계에 맞는 거리 설계.
 웰페리온 골프는 아이 한 명 한 명을 위한 1:1 레슨으로 주니어를 키웁니다.
