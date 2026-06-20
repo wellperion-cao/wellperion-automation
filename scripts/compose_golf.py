@@ -67,15 +67,20 @@ _SRC = (
     / "Image"
     / "골프_유소년_주니어대회(원본 이미지)"
 )
+_MASKED = _SRC / "_faces_masked"  # 모자이크 처리본 폴더
 _PFX = "KakaoTalk_20260618_135719893"
 
 def _p(suffix: str) -> Path:
-    """파일명 헬퍼 — suffix="" → .jpg / suffix="_01" → _01.jpg."""
-    if suffix == "":
-        return _SRC / f"{_PFX}.jpg"
+    """파일명 헬퍼 — suffix="" → .jpg / suffix="_01" → _01.jpg.
+    PNG(김태엽 프로)는 원본 사용. 나머지는 모자이크본(_faces_masked/) 우선."""
     if suffix.endswith(".png"):
-        return _SRC / f"KakaoTalk_20260618_135750819.png"
-    return _SRC / f"{_PFX}{suffix}.jpg"
+        # 김태엽 프로 PNG — 모자이크 예외, 원본 사용
+        return _SRC / "KakaoTalk_20260618_135750819.png"
+    name = f"{_PFX}.jpg" if suffix == "" else f"{_PFX}{suffix}.jpg"
+    masked = _MASKED / name
+    if masked.exists():
+        return masked
+    return _SRC / name  # 폴백: 원본
 
 
 # ---------------------------------------------------------------------------
