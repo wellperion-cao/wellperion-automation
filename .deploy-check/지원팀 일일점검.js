@@ -497,6 +497,7 @@ function doGet(e) {
   if (action === 'migrate_support_sheets') { return migrateSupportSheets(); }
   if (action === 'purge_dept_items') { return purgeDeptItems(e.parameter.dept || ''); }
   if (action === 'delete_facility_sheets') { return deleteFacilitySheets(); }
+  if (action === 'delete_facility_empty_genders') { return deleteFacilityEmptyGenderSheets(); }   // 빈 껍데기 시설_남성/여성구역 2개만 정밀 삭제(공용구역 절대 보존, 데이터행0 확인). 1회성. 2026-06-20 시우.
 
   var date = e.parameter.date;
   if (!date) return jsonRes({ error: 'date required' });
@@ -746,6 +747,27 @@ function deleteFacilitySheets() {
     var sh = ss.getSheetByName(name);
     if (sh) { ss.deleteSheet(sh); log.push('삭제:' + name); }
     else { log.push('없음(스킵):' + name); }
+  });
+  return jsonRes({ ok: true, log: log });
+}
+
+// 빈 껍데기 시설_남성구역·시설_여성구역 2개만 정밀 삭제(GM 2026-06-20 시우).
+// 근거: 시설부는 공용 단일 탭(시설_공용구역)에만 측정 기록 — 남/여는 측정칸으로 구분. 남/여 탭은
+// setupDeptSheets가 지원부 3탭 구조를 복제하며 잘못 생성한 빈 껍데기(데이터행 0·쓰기경로 없음).
+// 안전장치: ① 시설_공용구역은 대상에서 원천 배제(절대 삭제 안 함) ② 삭제 전 데이터행 0 확인,
+// 행이 1건이라도 있으면 그 탭은 건너뛰고 skipped로 보고(전수확인 후 수동 판단). GET ?action=delete_facility_empty_genders
+function deleteFacilityEmptyGenderSheets() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var targets = [SHEET_FACILITY_MALE, SHEET_FACILITY_FEMALE];   // 공용구역(SHEET_FACILITY_COMMON)은 절대 미포함
+  var log = [];
+  targets.forEach(function (name) {
+    if (name === SHEET_FACILITY_COMMON || name === SHEET_VENDOR) { log.push('보호(스킵):' + name); return; }   // 이중 안전
+    var sh = ss.getSheetByName(name);
+    if (!sh) { log.push('없음(스킵):' + name); return; }
+    var rows = Math.max(0, sh.getLastRow() - 1);   // 헤더 제외 데이터행 수
+    if (rows > 0) { log.push('데이터' + rows + '행 존재→삭제보류(수동확인):' + name); return; }
+    ss.deleteSheet(sh);
+    log.push('삭제(빈탭):' + name);
   });
   return jsonRes({ ok: true, log: log });
 }
@@ -2148,7 +2170,8 @@ var SHEET_FACILITY_COMMON = '시설_공용구역';
 // support/facility 탭명은 종전과 100% 동일 → 두 부서 동작 불변(회귀 0). 읽기·쓰기 라우팅 공용.
 var DEPT_TAB_MAP = {
   support:  { male: SHEET_MALE,            female: SHEET_FEMALE,            common: null },
-  facility: { male: SHEET_FACILITY_MALE,   female: SHEET_FACILITY_FEMALE,   common: SHEET_FACILITY_COMMON },
+  // 시설부는 공용 단일 탭(남/여는 측정칸으로 구분 — saveFacilityMeasure가 시설_공용구역만 기록). male/female=null로 빈탭 재생성 차단(2026-06-20 시우).
+  facility: { male: null,                  female: null,                    common: SHEET_FACILITY_COMMON },
   ops:      { male: '운영_남성구역',        female: '운영_여성구역',          common: '운영_공용구역' },
   parking:  { male: '주차_남성구역',        female: '주차_여성구역',          common: '주차_공용구역' }
 };

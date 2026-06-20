@@ -647,6 +647,27 @@ function _regUpdate(body) {
   return _vJson({ ok: false, error: '해당 접수ID를 찾을 수 없습니다: ' + id });
 }
 
+// ─── reg_delete — 접수ID로 행 정밀 삭제 (GATED·내부) ───
+// category 지정 시 해당 시트만, 없으면 전 reg 시트 순회하며 첫 일치 행 삭제. 배포검증 더미 청소용.
+// 안전: id 정확매칭(_vFindRow, col A) 1행만 삭제. id 없으면 거부. GATED(공개 액션 목록 미포함).
+function _regDelete(body) {
+  var id = String((body && (body.id || body['접수ID'])) || '').trim();
+  if (!id) return _vJson({ ok: false, error: 'id 필수' });
+  var catRaw = String((body && body.category) || '').trim();
+  var targets = catRaw ? [_regCatByKey(catRaw) || _regCatByLabel(catRaw)] : REG_CATEGORIES;
+  for (var i = 0; i < targets.length; i++) {
+    var cat = targets[i];
+    if (!cat) continue;
+    var sh;
+    try { sh = _regGetSheet(cat.key); } catch (e) { continue; }
+    var rowNum = _vFindRow(sh, id);
+    if (rowNum < 0) continue;
+    sh.deleteRow(rowNum);
+    return _vJson({ ok: true, id: id, category: cat.label, deleted: 1, message: '접수건이 삭제되었습니다.' });
+  }
+  return _vJson({ ok: false, error: '해당 접수ID를 찾을 수 없습니다: ' + id });
+}
+
 // ═══════════════════════════════════════════
 //  접근 게이트 (PII 보호 — TOKEN_ENFORCE 스위치)
 // ═══════════════════════════════════════════
@@ -694,6 +715,7 @@ function _vProcess(action, body, params) {
     return _vJson({ ok: true, count: masked.length, data: masked });
   }
   if (action === 'reg_update') return _regUpdate(body);
+  if (action === 'reg_delete') return _regDelete(body);   // 접수ID로 행 정밀 삭제(배포검증 더미 청소용·GATED). 2026-06-20 시우.
 
   // ── 레거시 VOC 액션 (하위호환) ──
   if (action === 'voc_submit') return _vSubmit(body);
