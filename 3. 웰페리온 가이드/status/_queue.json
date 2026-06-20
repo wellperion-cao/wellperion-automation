@@ -2955,5 +2955,19 @@
     "next": "선행=매뉴얼 편집 회귀수정(동일파일) 완료 후 직렬 착수(동시편집 충돌방지). 공통 요일바 UI+전역 작업날짜 변수+3구역 동기화 구현→라이브검증(요일 바꾸면 점검남/여·업무보드 동시반영)→커밋push.",
     "depends_on": "매뉴얼 편집 회귀수정 완료(동일파일 직렬화)",
     "ship_no": 69
+  },
+  {
+    "task_id": "COO-2026-06-20-ADHOC-49023741",
+    "clevel": "coo",
+    "title": "[시우] 매뉴얼 편집 제목·내용 미로딩 수정 — editItem 3번째 출처(_ci) 추가",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-06-20",
+    "processed_at": "2026-06-20",
+    "artifact": "원인: editItem이 제목·내용을 ①getItemOverrides(ROUND_MAP shadow만) ②findBaseItem(스케줄 스캔)\n두 경로로만 조회했음. op1/cl4~cl7/df_* 등 비ROUND_MAP 시트항목은 두 경로 모두 타이밍·\n스케줄 필터 조건에서 누락 가능 → 제목·내용이 빈칸으로 모달 오픈. (CLI ad-hoc · 커밋 49023741)",
+    "next": "🌀 표류 — 다음 미정 (필요 시 GM·웰리/담당 C-Level 지정)",
+    "adhoc_commit": "490237415e6cf9b241ffbe6b3705ebf89825a12a",
+    "ship_no": 70
   }
 ]
