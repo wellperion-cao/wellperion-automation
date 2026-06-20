@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>웰페리온 문의회원 — AI CPO</title>
+<title>웰페리온 문의 회원 관리 — AI CPO</title>
 <link rel="preconnect" href="https://cdn.jsdelivr.net">
 <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" rel="stylesheet">
 <style>
@@ -234,20 +234,20 @@ body{
   <div class="header">
     <div class="header-top">
       <div>
-        <h1>문의회원 <span class="badge">AI CPO v2.0</span></h1>
+        <h1>문의 회원 관리 <span class="badge">AI CPO v2.0</span></h1>
         <div class="sub">잠재고객 관리 · 체험/견학/상담 예약 달력 · 전체 CRUD — 담당 실무: 임정은M</div>
       </div>
       <div class="header-actions">
-        <a class="action-btn" href="회원관리.html">등록後 회원관리 →</a>
+        <a class="action-btn" href="회원관리.html">등록後 멤버십 회원 관리 →</a>
         <a class="action-btn" href="../../../wellperion_guide(main).html">ERP 홈</a>
         <button class="action-btn" onclick="window.print()">인쇄</button>
       </div>
     </div>
   </div>
   <div class="tabs">
-    <button class="tab active" onclick="switchTab('calendar',this)">예약 달력</button>
-    <button class="tab" onclick="switchTab('db',this)">문의 DB</button>
-    <button class="tab" onclick="switchTab('guide',this)">운영 가이드</button>
+    <button class="tab active" onclick="switchTab('db',this)">문의 회원 관리</button>
+    <button class="tab" onclick="switchTab('calendar',this)">예약 달력</button>
+    <button class="tab" onclick="switchTab('guide',this)">문의 가이드</button>
   </div>
 </div>
 
@@ -261,11 +261,11 @@ body{
     <span class="funnel-arrow">→</span>
     <span class="funnel-step">등록</span>
     <span class="funnel-arrow">→</span>
-    <span class="funnel-step">회원관리</span>
+    <span class="funnel-step">멤버십 회원 관리</span>
   </div>
 
   <!-- ══════════════════════════════ 1. 예약 달력 ══════════════════════════════ -->
-  <div id="pane-calendar" class="pane active">
+  <div id="pane-calendar" class="pane">
 
     <div class="info-box teal" style="margin-bottom:16px">
       <strong>데이터 소스</strong> — 26년 신규문의 시트(견학/상담 일정·체험1/2 확정시간). GAS 연동 후 자동 표시.<br>
@@ -346,7 +346,7 @@ body{
     코드는 준비 완료 상태이나 무인증 공개 CRUD로 라이브 운영 금지.
     GAS 자리표시자(__MEMBER_CAL_GAS_URL__)가 교체되면 자동 활성화됩니다.
   -->
-  <div id="pane-db" class="pane">
+  <div id="pane-db" class="pane active">
 
     <div class="info-box red" style="margin-bottom:16px">
       <strong>접근통제 전제</strong> — 이 DB는 회원 개인정보(이름·전화)를 포함합니다.
@@ -769,6 +769,7 @@ var calEvents = {};
   calMonth = now.getMonth() + 1;
   renderCalendarShell();
   loadCalendarData();
+  loadDbData();  // 기본 활성 탭=문의 회원 관리(DB) → 초기 로딩(2026-06-20 GM 순서변경)
 })();
 
 function changeMonth(delta) {
