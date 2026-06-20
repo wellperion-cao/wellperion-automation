@@ -563,6 +563,8 @@ var KPI_SALES_SHEET_ID   = '1oG63rj17-RMk2cdiVbwp4TOp-yN73uc04jDV7RfN9BI';
 // 26년 매출 분석 시트 — 1~5월 월별 마감 총합(AV3:AV7) 출처 (2026-06-20 GM 제공, 시뽀 연동).
 // 탭명: '26년 매출 분석' (gid=195790960). AV열 3~7행 = 1월~5월 순서(GM 확인).
 var KPI_SALES_ANALYSIS_SHEET_ID = '1gCQNny8TDls5SjrtMkINu4HCltvFkoXmkTeXO_c3q58';
+// 연 매출 목표 — GM 결재 2026-06-20, 연 매출 목표 72억(공식값 단일출처). 분석시트에 셀 없어 상수 고정.
+var KPI_YEAR_TARGET = 7200000000;
 // GM 확정 정본 지출 시트(2026-06-10). 빈 ERP 시트(17R_Sjz…) 아님 — 실제 구매·지출 거래행이 있는 시트.
 // '지출 현황' 탭(gid 821406206) = 거래행(승인건 포함) 표면. 첫 탭 자동선택 금지(칸밀림 오판 원인).
 var KPI_EXPENSE_SHEET_ID = '1umSF9rf3K0TuAvR5l0F_gvXHxcOLVKKvkSUfTtbRhdc';
@@ -796,7 +798,8 @@ function _kpiSales() {
     // 기존 시트(KPI_SALES_SHEET_ID)는 6월 단일이라 year=null. 분석 시트에서 1~5월 합을 읽어 보완.
     // AV열 3~7행 = 1~5월 순서(행3=1월·행7=5월, GM 확인). 빈 셀·0은 합산 제외.
     // 6월 month(cur.month)가 있으면 연간 = 1~5월합 + 6월month. 어느 하나라도 없으면 null 유지.
-    var yearTarget = null;
+    // 연 목표 = GM 결재 2026-06-20 확정 72억(KPI_YEAR_TARGET 상수). 분석시트에 셀 없어 상수 단일출처.
+    var yearTarget = KPI_YEAR_TARGET || null;
     var yearRate = null;
     try {
       if (year === null && cur.month !== null && KPI_SALES_ANALYSIS_SHEET_ID) {
@@ -820,7 +823,8 @@ function _kpiSales() {
     } catch (anaErr) {
       // 분석 시트 오류는 무시 — year null 유지(집계 보완 중 표시)
     }
-    yearRate = (year !== null && yearTarget) ? Math.round((year / yearTarget) * 10000) / 100 : null;
+    // 연 달성률: year 있고 yearTarget 있을 때만 산출. Math.round 소수점1자리.
+    yearRate = (year !== null && yearTarget) ? Math.round((year / yearTarget) * 1000) / 10 : null;
     // 주차 매출을 breakdown 'GXE' 행 바로 아래에 삽입(없으면 맨 끝). 시트 총합/hero 값은 불변.
     var bd = cur.breakdown || [];
     var park = _kpiParkingRevenueRow();

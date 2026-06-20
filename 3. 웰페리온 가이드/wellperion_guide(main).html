@@ -1098,14 +1098,13 @@
           setTitle('heroSalesMonth', krExact(s.month));
           set('heroSalesDay',   krAmt(s.today));
           set('heroSalesRate',  (s.rate == null) ? '목표 미설정' : pct(s.rate));
-          /* 연간: 서로 다른 월 마감값 2개+ 쌓이면 값+달성률, 아직 없으면 '집계 보완 중' 정직 표기.
-             실측(2026-06-20 시뽀): 월별 매출 시트(1~6월)는 각각 별도 파일로 존재하나 '월말 마감'이
-             아니라 입력된 마지막 날까지의 부분월 누적(5월=거의 미입력)이고 '총 매출 합계' 행이 같은
-             시트 안에서도 충돌 → 자동 합산하면 거짓 연간. 지어내기 금지 가드상 연간은 보완 중 유지. */
+          /* 연간: 26년 매출 분석 시트 AV3:AV7(1~5월 마감합) + 6월 현재 누적 = year(GAS 산출).
+             연 목표 72억 = GM 결재 2026-06-20 확정(KPI_YEAR_TARGET 상수). yearRate = year/72억 소수1자리.
+             분석시트 접근 실패 시 year=null → '집계 보완 중' 안전 fallback. */
           if (s.year == null) {
             set('heroSalesYear', '집계 보완 중');
-            setTitle('heroSalesYear', '월별 시트가 월말 마감이 아닌 부분월 누적이라 연간 자동집계 보류 — 월 마감값·연 목표가 정리되면 자동 산출');
-            set('heroSalesYearRate', '목표 미설정');
+            setTitle('heroSalesYear', '26년 매출 분석 시트(1~5월 마감합) 읽기 실패 또는 유효값 없음 — GAS 로그 확인');
+            set('heroSalesYearRate', '—');
           } else {
             set('heroSalesYear', krAmt(s.year));
             setTitle('heroSalesYear', krExact(s.year));
