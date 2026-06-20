@@ -502,6 +502,7 @@ function doGet(e) {
   if (action === 'delete_facility_sheets') { return deleteFacilitySheets(); }
   if (action === 'delete_facility_empty_genders') { return deleteFacilityEmptyGenderSheets(); }   // 빈 껍데기 시설_남성/여성구역 2개만 정밀 삭제(공용구역 절대 보존, 데이터행0 확인). 1회성. 2026-06-20 시우.
   if (action === 'hide_issue_col') { return hideIssueColumn(e.parameter.dept || 'support'); }   // G열(이슈·인덱스6) 데이터행 비우기 + 컬럼 숨김(물리삭제 X·인덱스 보존). 1회성. 2026-06-20 시우.
+  if (action === 'clear_old_duration') { return clearOldDuration(e.parameter.dept || 'support'); }   // O열(소요시간·인덱스14) 옛 시각값(1899-12-30 시리얼) 비우기. 컬럼 숨김 X — 소요시간은 화면 표시 유지. 1회성. 2026-06-20 시우.
 
   var date = e.parameter.date;
   if (!date) return jsonRes({ error: 'date required' });
@@ -795,6 +796,40 @@ function hideIssueColumn(dept) {
     log.push(name + ' G열 비움' + cleared + '행·숨김');
   });
   return jsonRes({ ok: true, dept: dept, col: 'G(이슈/index6)', log: log });
+}
+
+// O열(소요시간·15열·0-based 인덱스14) 옛 시각값 비우기(GM 2026-06-20 시우).
+// 1차 배포 전 행에 '점검시각' 시리얼(1899-12-30 + HH:MM)이 남아 '소요시간' 헤더와 불일치.
+// 시작시각 없는 옛 데이터 → 소요시간 계산 불가 → 빈칸이 정합. 컬럼 숨김 X (소요시간은 화면 표시).
+// 신규 제출이 기록하는 '분(정수)' 값은 항상 숫자라 시리얼 날짜(Date 객체·문자열 "Sat Dec 30 1899…")와 구분 가능.
+// GET ?action=clear_old_duration&dept=support
+function clearOldDuration(dept) {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var t = _deptTabs(dept);
+  var DUR_COL = 15;   // O열(1-based) = 소요시간, 0-based 인덱스14
+  var log = [];
+  [t.male, t.female].forEach(function (name) {
+    var sh = ss.getSheetByName(name);
+    if (!sh) { log.push('없음(스킵):' + name); return; }
+    var last = sh.getLastRow();
+    if (last < 2) { log.push(name + ' 데이터행 없음'); return; }
+    var vals = sh.getRange(2, DUR_COL, last - 1, 1).getValues();
+    var cleared = 0;
+    for (var i = 0; i < vals.length; i++) {
+      var v = vals[i][0];
+      if (v === '' || v === null || v === undefined) continue;
+      // 옛 시각값 판별: Date 객체(시리얼)이거나 "Sat Dec 30 1899" 문자열
+      var isOld = false;
+      if (v instanceof Date) {
+        isOld = true;   // 시트에서 Date로 읽히는 값은 전부 옛 시각(소요시간=분 정수는 숫자로 읽힘)
+      } else if (typeof v === 'string' && v.indexOf('1899') >= 0) {
+        isOld = true;
+      }
+      if (isOld) { sh.getRange(i + 2, DUR_COL).clearContent(); cleared++; }
+    }
+    log.push(name + ' O열 옛값 비움' + cleared + '행');
+  });
+  return jsonRes({ ok: true, dept: dept, col: 'O(소요시간/index14)', log: log });
 }
 
 // 항목 마스터(지원_매뉴얼)에서 특정 dept 행 제거(GM 2026-06-12) — 깨진 인코딩 facility 데드행 정리·경량화.
