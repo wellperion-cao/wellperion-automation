@@ -65,6 +65,21 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 @media (max-width:760px){#tab-chem .cg-twocol{grid-template-columns:1fr}}
 .date-bar{display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap}
 .date-bar input{background:var(--paper);border:1px solid var(--border);color:var(--text);padding:8px 14px;border-radius:8px;font-size:15px;font-family:inherit}
+/* ── 공통 요일/날짜바 (단일 진입점 · WORK_DATE 단일 소스 · GM 2026-06-20) ── */
+.workdate-bar{display:flex;align-items:center;gap:10px;padding:8px 14px;margin:0 auto;max-width:1100px;flex-wrap:wrap;border-top:1px solid var(--border)}
+.workdate-bar .wd-nav{background:var(--paper);border:1px solid var(--border);color:var(--text);padding:7px 13px;border-radius:8px;font-size:15px;font-family:inherit;cursor:pointer;font-weight:600;line-height:1}
+.workdate-bar .wd-nav:hover{border-color:var(--accent)}
+.workdate-bar .wd-today{background:var(--accent);border-color:var(--accent);color:#fff}
+.workdate-bar .wd-display{display:flex;align-items:baseline;gap:10px;margin-left:4px}
+.workdate-bar .wd-dow{font-size:26px;font-weight:800;line-height:1;letter-spacing:0.02em}
+.workdate-bar .wd-dow.is-weekend{color:var(--orange)}
+.workdate-bar .wd-dow.is-weekday{color:var(--text)}
+.workdate-bar .wd-date{font-size:14px;color:var(--dim);font-weight:600}
+.workdate-bar .wd-type{font-size:11px;font-weight:700;padding:2px 9px;border-radius:999px}
+.workdate-bar .wd-type.weekday{background:var(--green-bg);color:var(--green)}
+.workdate-bar .wd-type.weekend{background:var(--orange-bg);color:var(--orange)}
+.workdate-bar .wd-type.closed{background:var(--border);color:var(--dim)}
+@media (max-width:520px){.workdate-bar .wd-dow{font-size:22px}}
 /* 날짜 우측 담당자(명단 선택·기억) — GM 2026-06-12 */
 .duty-wrap{margin-left:auto;display:flex;align-items:center;gap:6px}
 .duty-label{font-size:13px;font-weight:700;color:var(--accent);white-space:nowrap}
@@ -566,6 +581,17 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
     <button class="util-btn share-btn" onclick="copyShare()">공유용</button>
   </div>
 </div>
+<!-- ── 공통 요일/날짜바 (단일 진입점 · 점검 남/여 + 업무보드 전구역 동기 · WORK_DATE 단일 소스) ── -->
+<div class="workdate-bar" id="workdateBar">
+  <button class="wd-nav" type="button" onclick="moveWorkDate(-1)" aria-label="이전 날짜">◀</button>
+  <button class="wd-nav wd-today" type="button" onclick="setWorkDateToday()">오늘</button>
+  <button class="wd-nav" type="button" onclick="moveWorkDate(1)" aria-label="다음 날짜">▶</button>
+  <div class="wd-display">
+    <span class="wd-dow" id="wdDow">·</span>
+    <span class="wd-date" id="wdDate"></span>
+    <span class="wd-type" id="wdType"></span>
+  </div>
+</div>
 </div><!-- /sticky-top -->
 <div class="saving" id="saveIndicator">저장 중...</div>
 
@@ -855,7 +881,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 
   <!-- ── 요일별 업무 보드 (주 콘텐츠 · 요일 다중선택 + 트렐로 칸반) ── -->
   <div style="font-size:16px;font-weight:700;color:var(--text);padding:2px 0 4px;">요일별 업무 보드 (트렐로 칸반)</div>
-  <div class="board-intro">위 <strong>요일 버튼</strong>을 켜고 끄면(여러 개 동시 선택 가능) 켠 요일이 <strong>트렐로 컬럼</strong>으로 나란히 표시됩니다. 컬럼이 많으면 가로로 스크롤하세요. 각 컬럼 안에 👨남 / 👩여 / 🏢외곽 카드가 세로로 있고, 카드의 <strong>편집</strong> 버튼을 누르면 <strong>표(시간 칸 | 내용 칸)를 바로 편집</strong>할 수 있고, <strong>＋ 행 추가</strong>/<strong>✕ 삭제</strong>로 항목을 늘리거나 지운 뒤 <strong>저장</strong>하면 모든 기기에 반영됩니다. 선택한 요일은 다음에 다시 와도 기억됩니다. 저장 시 시간 순으로 자동 정렬됩니다.</div>
+  <div class="board-intro"><strong>맨 위 공통 요일바</strong>에서 고른 요일 1개가 <strong>트렐로 컬럼</strong>으로 표시됩니다(점검 남/여와 같은 날짜로 함께 움직입니다). 컬럼 안에 👨남 / 👩여 / 🏢외곽 카드가 세로로 있고, 카드의 <strong>편집</strong> 버튼을 누르면 <strong>표(시간 칸 | 내용 칸)를 바로 편집</strong>할 수 있고, <strong>＋ 행 추가</strong>/<strong>✕ 삭제</strong>로 항목을 늘리거나 지운 뒤 <strong>저장</strong>하면 모든 기기에 반영됩니다. 저장 시 시간 순으로 자동 정렬됩니다.</div>
 
   <!-- 요일 툴바 (7요일 다중선택 toggle + 전체 토글) -->
   <div id="day-toolbar" class="day-toolbar"></div>
@@ -883,7 +909,8 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 
 <div id="tab-check-m" class="content hidden">
   <div class="date-bar">
-    <input type="date" id="checkDateM">
+    <!-- 날짜는 상단 공통 요일바(WORK_DATE)가 단일 소스 — 여기 input은 읽기전용 미러(혼동 방지) -->
+    <input type="date" id="checkDateM" readonly title="날짜는 상단 공통 요일바에서 변경하세요" style="opacity:.6;pointer-events:none">
     <button class="btn" onclick="moveDateG('m',-1)">&lt;</button>
     <button class="btn" onclick="setTodayG('m')">오늘</button>
     <button class="btn" onclick="moveDateG('m',1)">&gt;</button>
@@ -924,7 +951,8 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 
 <div id="tab-check-f" class="content hidden">
   <div class="date-bar">
-    <input type="date" id="checkDateF">
+    <!-- 날짜는 상단 공통 요일바(WORK_DATE)가 단일 소스 — 여기 input은 읽기전용 미러(혼동 방지) -->
+    <input type="date" id="checkDateF" readonly title="날짜는 상단 공통 요일바에서 변경하세요" style="opacity:.6;pointer-events:none">
     <button class="btn" onclick="moveDateG('f',-1)">&lt;</button>
     <button class="btn" onclick="setTodayG('f')">오늘</button>
     <button class="btn" onclick="moveDateG('f',1)">&gt;</button>
@@ -2399,23 +2427,50 @@ function getShiftStatsAll(sched,sh,ds){
   return{total,done,pct:total?Math.round(done/total*100):0};
 }
 
-function getDateG(g){
-  const id=g==='f'?'checkDateF':'checkDateM';
-  return document.getElementById(id).value;
-}
 // v2.51 — 로컬(KST) 날짜 직렬화. toISOString()(UTC)은 9시간 차로 날짜가 어긋나 ±1일 이동이 깨짐.
 function fmtLocalDate(d){const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),day=String(d.getDate()).padStart(2,'0');return `${y}-${m}-${day}`}
-function setTodayG(g){
-  const id=g==='f'?'checkDateF':'checkDateM';
-  document.getElementById(id).value=fmtLocalDate(new Date());
-  renderG(g);
+
+/* ═══════════════════════════════════════════════
+   WORK_DATE — 단일 진실(날짜+요일). 상단 공통 요일바가 유일 진입점.
+   점검(남)·점검(여)·요일별 업무보드 3구역이 모두 이 값을 따른다(GM 2026-06-20).
+   ═══════════════════════════════════════════════ */
+let WORK_DATE = (typeof kstToday==='function') ? kstToday() : fmtLocalDate(new Date());
+function getWorkDate(){ return WORK_DATE; }
+/* WORK_DATE의 요일키(mon..sun) — 업무보드 단일 컬럼 선택용 */
+function workDateDayKey(){ return DOW_TO_DAYKEY[new Date(WORK_DATE+'T00:00:00').getDay()]; }
+/* 공통 요일바 표시 갱신 (요일 크게 + 날짜 + 평일/주말/휴관 뱃지) */
+function renderWorkdateBar(){
+  const dn=['일','월','화','수','목','금','토'];
+  const dt=new Date(WORK_DATE+'T00:00:00'), dow=dt.getDay();
+  const info=getDayInfo(WORK_DATE);
+  const dowEl=document.getElementById('wdDow');
+  if(dowEl){ dowEl.textContent=dn[dow]+'요일'; dowEl.className='wd-dow '+((dow===0||dow===6)?'is-weekend':'is-weekday'); }
+  const dEl=document.getElementById('wdDate'); if(dEl) dEl.textContent=WORK_DATE;
+  const tEl=document.getElementById('wdType'); if(tEl){ tEl.textContent=info.label; tEl.className='wd-type '+info.cls; }
 }
-function moveDateG(g,n){
-  const id=g==='f'?'checkDateF':'checkDateM';
-  const e=document.getElementById(id),d=new Date(e.value+'T00:00:00');
-  d.setDate(d.getDate()+n);e.value=fmtLocalDate(d);
-  renderG(g);
+/* 모든 구역을 WORK_DATE로 동기화 — 단일 이벤트 경로.
+   점검 미러 input 갱신 → 점검(남)·점검(여) 렌더 → 공통바·업무보드 렌더. */
+function syncAllFromWorkDate(){
+  const mEl=document.getElementById('checkDateM'); if(mEl) mEl.value=WORK_DATE;
+  const fEl=document.getElementById('checkDateF'); if(fEl) fEl.value=WORK_DATE;
+  renderWorkdateBar();
+  // 점검 두 구역(남/여): 같은 날짜로 항상 함께 갱신
+  if(typeof renderG==='function'){ renderG('m'); renderG('f'); }
+  // 업무보드: 편집 중이 아니면 단일 요일 재렌더
+  if(typeof renderBoard==='function' && !(typeof boardHasEditing==='function' && boardHasEditing())) renderBoard();
 }
+/* 공통 요일바: 날짜 설정 → 전구역 동기 */
+function setWorkDate(ds){ if(!ds) return; WORK_DATE=ds; syncAllFromWorkDate(); }
+function setWorkDateToday(){ setWorkDate(fmtLocalDate(new Date())); }
+function moveWorkDate(n){
+  const d=new Date(WORK_DATE+'T00:00:00'); d.setDate(d.getDate()+n);
+  setWorkDate(fmtLocalDate(d));
+}
+
+/* 점검 구역 날짜 접근자 — 단일 소스 WORK_DATE 위임(남/여 항상 같은 날짜). 기존 호출부 비회귀. */
+function getDateG(g){ return WORK_DATE; }
+function setTodayG(g){ setWorkDateToday(); }
+function moveDateG(g,n){ moveWorkDate(n); }
 function setAdminToday(){document.getElementById('adminDate').value=fmtLocalDate(new Date());renderAdmin()}
 function moveAdminDate(n){const e=document.getElementById('adminDate'),d=new Date(e.value+'T00:00:00');d.setDate(d.getDate()+n);e.value=fmtLocalDate(d);renderAdmin()}
 
@@ -4668,24 +4723,13 @@ function boardCellBodyHTML(text){
   return html;
 }
 
-/* 요일 툴바 렌더 (7요일 다중선택 toggle + 전체 선택/해제 토글) */
+/* 요일 툴바 — 단일 요일화(GM 2026-06-20): 요일 선택은 상단 공통 요일바(WORK_DATE)로 일원화.
+   다중선택 토글 폐기. 이 바는 비워 숨김(공통바가 단일 진입점). */
 function renderDayToolbar(){
   const bar=document.getElementById('day-toolbar');
   if(!bar)return;
-  const todayKey=DOW_TO_DAYKEY[new Date().getDay()];
-  const allOn=ALL_DAY_KEYS.every(k=>SELECTED_DAYS.has(k));
-  let html='';
-  BOARD_DAYS.forEach(d=>{
-    const active=SELECTED_DAYS.has(d.key)?' active':'';
-    const we=d.weekend?' is-weekend':'';
-    const sub=(d.key===todayKey)?'오늘':(d.weekend?'주말':'평일');
-    html+='<button type="button" class="day-tab'+active+we+'" onclick="toggleBoardDay(\''+d.key+'\')">'
-        +'<span class="dt-day">'+d.label+'</span><span class="dt-sub">'+sub+'</span></button>';
-  });
-  // 전체 선택/해제 토글 (전부 켜져 있으면 '전체 해제', 아니면 '전체 선택')
-  html+='<button type="button" class="day-tab day-all'+(allOn?' active':'')+'" onclick="toggleAllBoardDays()">'
-      +'<span class="dt-day">'+(allOn?'전체 해제':'전체 선택')+'</span></button>';
-  bar.innerHTML=html;
+  bar.innerHTML='';
+  bar.style.display='none';
 }
 
 /* 트렐로 칸반 렌더 — 켠 요일마다 컬럼 1개. 각 컬럼 안 남/여/외곽 카드그룹 세로.
@@ -4695,12 +4739,9 @@ function renderBoard(){
   const wrap=document.getElementById('manual-board');
   if(!wrap)return;
   const todayKey=DOW_TO_DAYKEY[new Date().getDay()];
-  const days=BOARD_DAYS.filter(d=>SELECTED_DAYS.has(d.key)); // BOARD_DAYS 순서 유지
-  if(!days.length){
-    wrap.classList.add('is-empty');
-    wrap.innerHTML='<div class="board-empty">위 <b>요일 버튼</b>을 눌러 보고 싶은 요일을 켜세요. (여러 개 동시 선택 가능 · <b>전체 선택</b>으로 7요일 한 번에)</div>';
-    return;
-  }
+  // 단일 요일화(GM 2026-06-20): 상단 공통 요일바(WORK_DATE)의 요일 1개 컬럼만 표시.
+  const selKey=workDateDayKey();
+  const days=BOARD_DAYS.filter(d=>d.key===selKey);
   wrap.classList.remove('is-empty');
   let html='';
   days.forEach(d=>{
@@ -5108,12 +5149,12 @@ function policyDeleteCard(colKey,id){
 
 /* ── Init ── */
 const today=kstToday();   // KST 오늘(UTC toISOString는 자정~09시 어제로 어긋남 — 오전조 차단)
+WORK_DATE=today;          // 단일 진실: 점검 남/여·업무보드 공통 날짜(상단 공통 요일바)
 document.getElementById('checkDateM').value=today;
 document.getElementById('checkDateF').value=today;
 document.getElementById('adminDate').value=today;
-document.getElementById('checkDateM').addEventListener('change',()=>renderG('m'));
-document.getElementById('checkDateF').addEventListener('change',()=>renderG('f'));
 document.getElementById('adminDate').addEventListener('change',renderAdmin);
+renderWorkdateBar();      // 공통 요일바 초기 표시
 
 // 점검자 입력칸 = 빈칸 시작(자동복원 없음). 담당자 드롭다운(명단·기억) 채우기.
 populateSubmitterDropdowns();
