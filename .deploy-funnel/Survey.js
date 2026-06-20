@@ -102,10 +102,12 @@ function _stageOf_(raw) {
   if (/이탈|보류|포기|거절|취소|loss/i.test(s)) return 0;
   // SUC / 단기SUC = 수강등록 성공(강습 팀시트 정본값) → 가입(5)
   if (/^(suc|단기\s*suc)$/i.test(s))            return 5;
-  if (/가입|등록|전환|회원/.test(s))             return 5;
+  // 멤버십 '26년 신규문의' 탭 실사용 코드(2026-06-20 시포 실측): 결제완납·결제완료·완납·키오스크 완 = 가입(5)
+  if (/가입|등록|전환|회원|완납|결제완|키오스크\s*완/.test(s)) return 5;
   if (/방문|내방|방문완료/.test(s))              return 4;
   if (/예약|투어|상담/.test(s))                  return 3;
-  if (/응대|연락|통화|문자|회신/.test(s))        return 2;
+  // 멤버십 실사용 코드: 컨택중 = 응대(2)
+  if (/응대|연락|통화|문자|회신|컨택/.test(s))   return 2;
   if (/신규|접수/.test(s))                       return 1;
   return 1; // 미인식 → ① 문의(안전 처리)
 }
