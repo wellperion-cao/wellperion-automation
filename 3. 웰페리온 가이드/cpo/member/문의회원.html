@@ -546,16 +546,30 @@ function _genInqId_() {
   return 'INQ-' + new Date().getTime();
 }
 
-// ─── PII 게이트 ───────────────────────────────────────────────────────────────
-// ⚠️ 시토 PII 보호 틀(CTO ship_no 21) 연동 지점.
-//    틀 구축 + GM go 후 ScriptProperties에서 PII_GATE='on' 설정.
-//    그 전까지 inquiry_list / inquiry_add / inquiry_update / inquiry_delete 잠금.
-//    member_calendar 는 읽기·마스킹 전용이므로 게이트 면제.
+// ─── PII 게이트 (5통로 통일 규격 · 시토 CTO ship_no 21) ─────────────────────────
+// ★ 옵션2 단일 규격: 5개 PII 통로(이 파일 + Survey.js · VOC_배포.js · apps_script_survey.js)가
+//   같은 운영 스위치 철학을 공유한다. 정본 = .omc/specs/pii-protection-architecture.md §6.
+//   - 면제목록(_PUBLIC_ACTIONS): 집계·마스킹·제출 등 PII 미노출 액션은 항상 통과.
+//   - 마스터 스위치: 이 통로는 '쓰기 가능(add/update/delete)'이 먼저 생긴 최고위험 통로라
+//     ScriptProperties PII_GATE 가 'on' 이 아니면 기본 잠금(default-CLOSED) — 신규 쓰기 통로 보호.
+//     (나머지 3곳은 읽기 위주라 TOKEN_ENFORCE 기본 통과(default-OPEN) — 규격 §6 표 참조.)
+//   - 공유 열쇠: PII_GATE='on' 이고 ACCESS_TOKEN 이 설정돼 있으면 5통로 공통 토큰(body.key)도 검증.
+//     ACCESS_TOKEN 미설정이면 토큰 검증 생략(직원 화면 즉시 사용) — 5곳 동일 동작.
+//   - 즉시 역롤백: 문제 시 ScriptProperties PII_GATE 삭제(또는 != 'on') → 재배포 없이 다음 호출부터
+//     기존(잠금) 동작 복귀. 과거 '페이지 잠김으로 못 푸는' 사고 회피(헌장 축6).
+//   - member_calendar 는 읽기·마스킹 전용이므로 게이트 면제.
+// ⚠️ 실제 발효(PII_GATE='on')는 GM go 후에만. 코드 머지만으로는 라이브 영향 0(기본 잠금 유지).
+var _INQ_PUBLIC_ACTIONS = { member_calendar: true };  // PII 미노출 — 항상 통과
 var _piiActions_ = ['inquiry_list','inquiry_add','inquiry_update','inquiry_delete'];
-if (_piiActions_.indexOf(action) !== -1) {
+if (!_INQ_PUBLIC_ACTIONS[action] &amp;&amp; _piiActions_.indexOf(action) !== -1) {
   var _gate_ = PropertiesService.getScriptProperties().getProperty('PII_GATE');
   if (_gate_ !== 'on') {
     return _json({ ok: false, error: 'PII_GATE_CLOSED' });
+  }
+  // PII_GATE 발효 중이면, 5통로 공통 ACCESS_TOKEN 으로 추가 검증(설정 시에만).
+  var _inqTok_ = PropertiesService.getScriptProperties().getProperty('ACCESS_TOKEN') || '';
+  if (_inqTok_ &amp;&amp; String(body.key || '') !== _inqTok_) {
+    return _json({ ok: false, error: 'unauthorized' });
   }
 }
 // ──────────────────────────────────────────────────────────────────────────────

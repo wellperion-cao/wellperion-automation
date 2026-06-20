@@ -106,4 +106,70 @@ GM 발효 4단계(이 순서 자체가 안전장치):
 
 ---
 
-*근거 파일(실측): `.deploy-funnel/Survey.js` L402-432·L539-555, `.deploy-voc/VOC_배포.js` L644-670, `3. 웰페리온 가이드/cmo/survey/apps_script_survey.js` L292-312, `3. 웰페리온 가이드/cpo/member/문의회원.html` L473-629. 관련 메모리: feedback_security_live_activation_needs_gm_go · project_self_hosted_inquiry_db_goal · project_pii_gate_aggregates_public_no_key_ux · feedback_field_pc_cao_single_sso.*
+---
+
+## 6. 5통로 게이트 단일 규격 (옵션2 결재·진행 — 2026-06-20 시토)
+
+> GM 옵션2 결재 후 구현. **5개 PII 통로의 게이트를 한 규격으로 정합**해, 단계 발효가 일관되게 동작하도록 정렬. **라이브 발효는 안 켬(스위치 OFF/잠금 유지) — 코드·문서 정합만.**
+
+### 6.1 정합 점검 결과 — 점검 전 불일치
+
+5통로 게이트를 실측 비교한 결과, **두 가지 다른 철학**이 섞여 있었다:
+
+| 통로 | 플래그 | 기본 동작 | 거부 응답 | 면제 메커니즘 |
+|---|---|---|---|---|
+| #2 `Survey.js` | `TOKEN_ENFORCE='1'` | **default-OPEN** (꺼지면 통과) | `unauthorized` | `_SURVEY_PUBLIC_ACTIONS` 맵 (7) |
+| #3 `VOC_배포.js` | `TOKEN_ENFORCE='1'` | **default-OPEN** | `unauthorized` | `_VOC_PUBLIC_ACTIONS` 맵 (5) |
+| #4 `apps_script_survey.js` | `TOKEN_ENFORCE='1'` | **default-OPEN** | `unauthorized` | `_SURVEY_PUBLIC_ACTIONS` 맵 (2) |
+| #1 `문의회원.html`(시포) | `PII_GATE='on'` | **default-CLOSED** (켜야 통과) | `PII_GATE_CLOSED` | (없음 — 인라인 배열, 토큰검증 없음) |
+
+**불일치 3종:** ① 플래그명(`TOKEN_ENFORCE` vs `PII_GATE`) ② 기본 방향(OPEN vs CLOSED) ③ 면제목록·토큰검증 메커니즘 유무.
+
+### 6.2 통일 규격 (정본)
+
+**왜 기본 방향을 일부러 다르게 두는가(의도된 비대칭):**
+- #2·#3·#4 = **읽기 위주**(list 조회). 과거 '페이지 잠김' 사고가 난 통로 → **default-OPEN + 즉시 역롤백**이 안전(불변식: `TOKEN_ENFORCE !== '1'` → 전부 통과 = 코드 배포만으로 라이브 영향 0).
+- #1 = **쓰기 가능(add/update/delete)이 먼저 생긴 최고위험 신규 통로**. 다른 보호장치가 없으므로 **default-CLOSED**(`PII_GATE !== 'on'` → 잠금)가 옳다. 단, 역롤백은 동일하게 **속성 1개 삭제로 1초 복귀**.
+
+**5통로 공통 규격(정합 완료):**
+1. **공유 열쇠 단일화:** 5통로 모두 ScriptProperties `ACCESS_TOKEN`(강한 무작위 1개)을 공통 키로 사용. 직원 화면 `body.key`/localStorage `wp_access_token` 1회 입력으로 전 통로 통과. `ACCESS_TOKEN` 미설정 시 토큰검증 생략(무중단).
+2. **거부 응답:** 토큰 불일치 = `unauthorized`(5곳 공통). 통로 자체 잠금(#1) = `PII_GATE_CLOSED`(프론트가 '보호 적용 전' 안내로 처리). 의미가 다르므로 둘 다 유지하되, 토큰 거부는 5곳 동일 문자열.
+3. **면제목록(공개 액션):** PII 미노출(집계·마스킹 보드·제출·달력) 액션만 면제 맵에 등재 → 항상 통과(마케팅 대시보드 무중단). #1에 `_INQ_PUBLIC_ACTIONS = { member_calendar:true }` 추가로 메커니즘 정합. **원시 PII 반환 액션(inquiry_list/reg_list/voc_list 등)은 절대 면제 금지.**
+4. **즉시 역롤백:** 발효 마스터 속성(`TOKEN_ENFORCE` 또는 `PII_GATE`)을 **삭제하면 재배포 없이 다음 호출부터 즉시 복귀**. #2·#3·#4=전체 통과로, #1=기존 잠금으로. "잠긴 채 못 푸는" 상황 원천 차단.
+
+**코드 정합 변경(2026-06-20, 발효 OFF 유지):** #1 `문의회원.html` 임베드 GAS 게이트 블록에 (a) `_INQ_PUBLIC_ACTIONS` 면제 맵, (b) `ACCESS_TOKEN` 공통 토큰 검증을 **가산(시포 기존 로직·default-CLOSED·`PII_GATE_CLOSED`·`_piiActions_` 보존)**. 두 추가분은 GM이 `PII_GATE='on'` + `ACCESS_TOKEN` 설정을 둘 다 해야만 작동 → **현재 라이브 영향 0**. #2·#3·#4는 이미 규격 일치 → 무변경.
+
+---
+
+## 7. 발효 절차서 (GM go용 · 무중단·역롤백 · 단계별)
+
+> ⚠️ **아래는 GM이 "발효 go" 하셨을 때만 실행.** 지금은 전 통로 스위치 OFF/잠금 유지 상태. 각 단계는 **다음 단계 가기 전 눈으로 검증**하고, 깨지면 **즉시 역롤백(속성 1개 삭제)** 한다. 과거 '페이지 잠김으로 폐기' 재발 방지가 이 절차서의 핵심.
+
+### 사전 준비 (라이브 영향 0)
+- **P1.** ScriptProperties `ACCESS_TOKEN` = 강한 무작위 문자열 1개 발급(GM). 5통로(같은 GAS 프로젝트면 1회, 분리면 각 프로젝트) 동일 값. — *아직 아무것도 안 잠김.*
+- **P2.** 각 웹앱 **새 버전 재배포**(deploymentId/exec URL 유지). 여전히 통과(스위치 OFF). 
+
+### 1단계 — 문의 CRUD 게이트(#1, 최우선·이미 default-CLOSED)
+- **현재 상태:** `PII_GATE` 미설정 → 문의 DB 탭은 이미 `PII_GATE_CLOSED`(데이터 0). 체험달력 탭은 면제라 정상.
+- **켜기(발효 = 직원이 쓰게 열기):** ScriptProperties `PII_GATE = 'on'` 설정 → 직원 화면에서 `ACCESS_TOKEN` 1회 입력 → inquiry_list/add/update/delete 동작 확인.
+  - 위치: 문의회원.html 임베드 GAS의 `_piiActions_` 게이트(§6.2). 토큰 입력칸 = 직원 화면(localStorage `wp_access_token`).
+  - **역롤백(1초):** 문제 시 `PII_GATE` 속성 **삭제** → 다음 호출부터 즉시 잠금(데이터 0) 복귀. 재배포 불필요.
+
+### 2단계 — 퍼널/VOC 토큰 게이트(#2·#3·#4, default-OPEN)
+- **현재 상태:** `TOKEN_ENFORCE` 미설정/≠'1' → 전 액션 통과(무인증 공개 = 의도된 임시).
+- **켜기(한 곳씩, 역롤백 대기):** 통로 1개씩 ScriptProperties `TOKEN_ENFORCE = '1'` 설정 → 직원 화면 토큰 정상 통과 확인 → 비인증 호출이 `unauthorized` 받는지 확인 → 다음 통로.
+  - **순서 권장:** #2 Survey.js(inquiry_list) → #3 VOC(reg_list/voc_list) → #4 apps_script_survey.js. 면제 맵(집계·reg_board 마스킹)은 계속 통과하므로 마케팅 대시보드·공개 보드 무중단.
+  - **역롤백(1초):** `TOKEN_ENFORCE` 속성 **삭제(또는 '0')** → 재배포 없이 다음 호출부터 전체 통과 복귀.
+
+### 3단계 — 자체 문의 DB 이전 (ship_no 18)
+- 시트 의존 탈피, 인증·역할 권한을 DB 레벨로 승격. 토큰 게이트는 그때 역할 세션으로 승계·은퇴.
+
+### 발효 체크 한 장 (GM)
+- [ ] P1 `ACCESS_TOKEN` 발급 · P2 재배포 (라이브 영향 0 확인)
+- [ ] 1단계 `PII_GATE='on'` → 직원 CRUD 정상 → (깨지면 속성 삭제로 복귀)
+- [ ] 2단계 `TOKEN_ENFORCE='1'` 통로별 → 직원 통과·비인증 차단 확인 → (깨지면 속성 삭제로 복귀)
+- [ ] 각 단계 역롤백 1초 동작을 **켜기 전에 한 번 리허설**(속성 넣었다 빼보기)
+
+---
+
+*근거 파일(실측): `.deploy-funnel/Survey.js` L401-432, `.deploy-voc/VOC_배포.js` L643-670, `3. 웰페리온 가이드/cmo/survey/apps_script_survey.js` L291-315, `3. 웰페리온 가이드/cpo/member/문의회원.html` 게이트 블록(L549~)·프론트 L911-933. 관련 메모리: feedback_security_live_activation_needs_gm_go · project_self_hosted_inquiry_db_goal · project_pii_gate_aggregates_public_no_key_ux · feedback_field_pc_cao_single_sso.*
