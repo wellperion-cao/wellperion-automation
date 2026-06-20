@@ -2943,5 +2943,17 @@
     "next": "🌀 표류 — 다음 미정 (필요 시 GM·웰리/담당 C-Level 지정)",
     "adhoc_commit": "2e3c5d374bce10d984023750350fb5e465e6e27c",
     "ship_no": 67
+  },
+  {
+    "task_id": "COO-2026-06-20-SUPPORT-WEEKDAY-UNIFY",
+    "clevel": "coo",
+    "title": "[시우] 지원부 체계 요일 단일기준 연동 — 맨 위 공통 요일바로 점검(남)·점검(여)·요일별 업무보드 동기화",
+    "status": "PENDING",
+    "priority": "NORMAL",
+    "enqueued_at": "2026-06-20",
+    "note": "GM 확정설계(deep-interview): 현재 점검(남)·점검(여)는 각자 date input, 요일별 업무보드는 상단 요일토글(SELECTED_DAYS 다중선택)로 셋이 따로 놂. 확정: (1)페이지 맨 위 공통 요일바 신설=단일 진입점 (2)점검(남)·점검(여) 같은 날짜로 묶기(공통바 종속) (3)요일별 업무보드 다중선택 폐기·단일 요일로 통일·공통바 요일 반영 (4)전역 작업날짜 변수로 3구역 렌더 동기화. 파일=3.웰페리온가이드/coo/check/지원부 체계.html (renderG/drawUI·renderBoard/toggleBoardDay·checkDateM/F·SELECTED_DAYS). 점검 시트 15열 인덱스·정렬·소요시간·이슈일원화 무회귀 유지.",
+    "next": "선행=매뉴얼 편집 회귀수정(동일파일) 완료 후 직렬 착수(동시편집 충돌방지). 공통 요일바 UI+전역 작업날짜 변수+3구역 동기화 구현→라이브검증(요일 바꾸면 점검남/여·업무보드 동시반영)→커밋push.",
+    "depends_on": "매뉴얼 편집 회귀수정 완료(동일파일 직렬화)",
+    "ship_no": 69
   }
 ]

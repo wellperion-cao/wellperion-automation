@@ -2734,13 +2734,14 @@ let _editingItemId=null;
 window.editItem=function(id){
   const ov=getItemOverrides()[id]||{};
   const base=findBaseItem(id);
-  _editingItemId=id;
-  document.getElementById('editName').value=ov.name||base.name;
-  document.getElementById('editDetail').value=ov.detail||base.detail;
-  document.getElementById('editSlot').value=ov.slot||base.slot||'';
-  document.getElementById('editShift').value=ov.shift||base.shift||'am';
-  document.getElementById('editCat').value=ov.cat||base.cat||'';
+  // CUSTOM_ITEMS 직접 조회(3번째 출처): getItemOverrides는 ROUND_MAP shadow만, findBaseItem은 스케줄 스캔 — 둘 다 못 잡는 항목(비ROUND_MAP 시트항목)은 _ci에서 직독. 4차+GM(2026-06-20).
   const _ci=(CUSTOM_ITEMS||[]).find(x=>x.id===id);
+  _editingItemId=id;
+  document.getElementById('editName').value=ov.name||base.name||(_ci&&_ci.name)||'';
+  document.getElementById('editDetail').value=(ov.detail!==undefined&&ov.detail!=='')?ov.detail:(base.detail||(_ci&&_ci.detail)||'');
+  document.getElementById('editSlot').value=ov.slot||base.slot||(_ci&&_ci.slot)||'';
+  document.getElementById('editShift').value=ov.shift||base.shift||(_ci&&_ci.shift)||'am';
+  document.getElementById('editCat').value=ov.cat||base.cat||(_ci&&_ci.category)||'';
   const _gsel=document.getElementById('editGender');
   if(_gsel)_gsel.value=(_ci&&_ci.gender)||ov.gender||base.gender||'all';
   // 회차(조) 다중선택 — 현재 등장 회차 pre-check
