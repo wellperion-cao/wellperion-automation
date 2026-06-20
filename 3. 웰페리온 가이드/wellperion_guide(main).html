@@ -445,8 +445,8 @@
 
     <a data-toggle="cpo-nav2" data-has-sub="true"><span class="num">🤝</span><span class="label">AI CPO 회원관리<span class="tag">임정은M</span></span></a>
     <div class="sub-nav" data-parent="cpo-nav2">
-      <a href="cpo/member/문의회원.html" target="_blank">📋 문의회원 (등록前)</a>
-      <a href="cpo/member/회원관리.html" target="_blank">🤝 회원관리 (등록後)</a>
+      <a href="cpo/member/문의회원.html" target="_blank">📋 문의 회원 관리 (등록前)</a>
+      <a href="cpo/member/회원관리.html" target="_blank">🤝 멤버십 회원 관리 (등록後)</a>
     </div>
 
     <a data-toggle="cmo-nav2" data-has-sub="true"><span class="num">📢</span><span class="label">AI CMO 마케팅<span class="tag">김남욱 GM</span></span></a>
@@ -488,19 +488,22 @@
 
     <!-- 매출·지출 스트립 (home_kpi 연동 — ID 보존) -->
     <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:14px;">
-      <!-- 매출: 월 매출/달성률 + 연간 매출/달성률 2구분 (2026-06-20 시뽀) -->
+      <!-- 매출: 월(좌)/연간(우) 좌우 2열 = 지출 카드와 대칭·콤팩트 (2026-06-20 시뽀) -->
       <div style="position:relative;background:var(--paper);border:1px solid var(--border);border-left:4px solid var(--grow);border-radius:14px;padding:15px 16px;">
-        <div style="display:flex;align-items:center;gap:7px;color:var(--grow);font-size:12px;font-weight:700;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01z"/></svg> 월 매출 및 달성률</div>
-        <div style="font-size:22px;font-weight:800;line-height:1.1;margin:7px 0 4px;letter-spacing:-0.02em;color:var(--text);"><span id="heroSalesMonth">—</span></div>
-        <div style="font-size:11px;color:var(--dim);display:flex;gap:8px;flex-wrap:wrap;">
-          <span>오늘 <span id="heroSalesDay" style="color:var(--grow);">—</span></span>
-          <span>달성률 <span id="heroSalesRate" style="color:var(--grow);">—</span></span>
-        </div>
-        <!-- 연간 매출 및 달성률 (연 마감 누적·연 목표. 데이터 부재 시 '집계 보완 중') -->
-        <div style="margin-top:10px;padding-top:9px;border-top:1px dashed var(--border);">
-          <div style="font-size:11.5px;font-weight:700;color:var(--dim);">연간 매출 및 달성률</div>
-          <div style="font-size:15px;font-weight:800;line-height:1.15;margin:3px 0 2px;color:var(--text);"><span id="heroSalesYear">—</span></div>
-          <div style="font-size:11px;color:var(--dim);"><span>달성률 <span id="heroSalesYearRate" style="color:var(--grow);">—</span></span></div>
+        <div style="display:flex;align-items:center;gap:7px;color:var(--grow);font-size:12px;font-weight:700;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01z"/></svg> 매출</div>
+        <!-- 월 | 연간 좌우 배치 (세로로 안 늘어나게) -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px;">
+          <div>
+            <div style="font-size:10.5px;font-weight:700;color:var(--dim);">월 매출</div>
+            <div style="font-size:21px;font-weight:800;line-height:1.1;margin:2px 0 3px;letter-spacing:-0.02em;color:var(--text);"><span id="heroSalesMonth">—</span></div>
+            <div style="font-size:10.5px;color:var(--dim);">달성률 <span id="heroSalesRate" style="color:var(--grow);font-weight:700;">—</span></div>
+            <div style="font-size:10.5px;color:var(--dim);">오늘 <span id="heroSalesDay" style="color:var(--grow);">—</span></div>
+          </div>
+          <div style="padding-left:10px;border-left:1px dashed var(--border);">
+            <div style="font-size:10.5px;font-weight:700;color:var(--dim);">연간 매출</div>
+            <div style="font-size:21px;font-weight:800;line-height:1.1;margin:2px 0 3px;letter-spacing:-0.02em;color:var(--text);"><span id="heroSalesYear">—</span></div>
+            <div style="font-size:10.5px;color:var(--dim);">달성률 <span id="heroSalesYearRate" style="color:var(--grow);font-weight:700;">—</span></div>
+          </div>
         </div>
         <!-- 팀별 매출 토글 -->
         <button id="salesBreakdownBtn" onclick="(function(){var p=document.getElementById('salesBreakdownPanel');var b=document.getElementById('salesBreakdownBtn');if(!p)return;var open=p.style.display!=='none';p.style.display=open?'none':'block';b.textContent=open?'팀별 보기 ▾':'팀별 접기 ▴';})()" style="display:none;margin-top:10px;font-size:11px;font-weight:700;color:var(--grow);background:var(--grow-bg,rgba(106,191,123,0.1));border:1px solid rgba(106,191,123,0.3);border-radius:20px;padding:3px 11px;cursor:pointer;">팀별 보기 ▾</button>
@@ -515,14 +518,22 @@
           </table>
         </div>
       </div>
-      <!-- 이번달 지출 (UI/UX = 매출 카드 벤치마킹 2026-06-10) -->
+      <!-- 지출: 월(좌)/연간(우) 좌우 2열 = 매출 카드와 대칭·콤팩트 (2026-06-20 시뽀) -->
       <div style="position:relative;background:var(--paper);border:1px solid var(--border);border-left:4px solid var(--warm);border-radius:14px;padding:15px 16px;">
-        <div style="display:flex;align-items:center;gap:7px;color:var(--warm);font-size:12px;font-weight:700;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20V10M18 20V4M6 20v-4"/></svg> 이번달 지출</div>
-        <div style="font-size:22px;font-weight:800;line-height:1.1;margin:7px 0 4px;letter-spacing:-0.02em;color:var(--text);"><span id="heroExpMonth">—</span></div>
-        <div style="font-size:11px;color:var(--dim);display:flex;gap:8px;flex-wrap:wrap;">
-          <span>오늘 <span id="heroExpDay" style="color:var(--warm);">—</span></span>
-          <span>달성률 <span id="heroExpRate" style="color:var(--warm);">—</span></span>
-          <span>연간 <span id="heroExpYear" style="color:var(--warm);">—</span></span>
+        <div style="display:flex;align-items:center;gap:7px;color:var(--warm);font-size:12px;font-weight:700;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20V10M18 20V4M6 20v-4"/></svg> 지출</div>
+        <!-- 월 | 연간 좌우 배치 (매출과 동일 구조) -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px;">
+          <div>
+            <div style="font-size:10.5px;font-weight:700;color:var(--dim);">월 지출</div>
+            <div style="font-size:21px;font-weight:800;line-height:1.1;margin:2px 0 3px;letter-spacing:-0.02em;color:var(--text);"><span id="heroExpMonth">—</span></div>
+            <div style="font-size:10.5px;color:var(--dim);">예산대비 <span id="heroExpRate" style="color:var(--warm);font-weight:700;">—</span></div>
+            <div style="font-size:10.5px;color:var(--dim);">오늘 <span id="heroExpDay" style="color:var(--warm);">—</span></div>
+          </div>
+          <div style="padding-left:10px;border-left:1px dashed var(--border);">
+            <div style="font-size:10.5px;font-weight:700;color:var(--dim);">연간 지출</div>
+            <div style="font-size:21px;font-weight:800;line-height:1.1;margin:2px 0 3px;letter-spacing:-0.02em;color:var(--text);"><span id="heroExpYear">—</span></div>
+            <div style="font-size:10.5px;color:var(--dim);">올해 누적</div>
+          </div>
         </div>
         <!-- 카테고리별 지출 토글 -->
         <button id="expBreakdownBtn" onclick="(function(){var p=document.getElementById('expBreakdownPanel');var b=document.getElementById('expBreakdownBtn');if(!p)return;var open=p.style.display!=='none';p.style.display=open?'none':'block';b.textContent=open?'카테고리별 보기 ▾':'카테고리별 접기 ▴';})()" style="display:none;margin-top:10px;font-size:11px;font-weight:700;color:var(--warm);background:var(--warm-bg,rgba(237,91,63,0.1));border:1px solid rgba(237,91,63,0.3);border-radius:20px;padding:3px 11px;cursor:pointer;">카테고리별 보기 ▾</button>
@@ -1087,10 +1098,13 @@
           setTitle('heroSalesMonth', krExact(s.month));
           set('heroSalesDay',   krAmt(s.today));
           set('heroSalesRate',  (s.rate == null) ? '목표 미설정' : pct(s.rate));
-          /* 연간: 시트에 1~5월 마감값·연 목표가 쌓이면 값+달성률, 아직 없으면 '집계 보완 중' 정직 표기 */
+          /* 연간: 서로 다른 월 마감값 2개+ 쌓이면 값+달성률, 아직 없으면 '집계 보완 중' 정직 표기.
+             실측(2026-06-20 시뽀): 월별 매출 시트(1~6월)는 각각 별도 파일로 존재하나 '월말 마감'이
+             아니라 입력된 마지막 날까지의 부분월 누적(5월=거의 미입력)이고 '총 매출 합계' 행이 같은
+             시트 안에서도 충돌 → 자동 합산하면 거짓 연간. 지어내기 금지 가드상 연간은 보완 중 유지. */
           if (s.year == null) {
             set('heroSalesYear', '집계 보완 중');
-            setTitle('heroSalesYear', '1~5월 마감값·연 목표 미입력 — 입력되면 자동 산출');
+            setTitle('heroSalesYear', '월별 시트가 월말 마감이 아닌 부분월 누적이라 연간 자동집계 보류 — 월 마감값·연 목표가 정리되면 자동 산출');
             set('heroSalesYearRate', '목표 미설정');
           } else {
             set('heroSalesYear', krAmt(s.year));
