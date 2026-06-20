@@ -2772,5 +2772,19 @@
     "next": "🌀 표류 — 다음 미정 (필요 시 GM·웰리/담당 C-Level 지정)",
     "adhoc_commit": "b4a5e974dbe7b9b3a2b81863d50667f6588f5fae",
     "ship_no": 64
+  },
+  {
+    "task_id": "CFO-2026-06-20-ADHOC-b637804e",
+    "clevel": "cfo",
+    "title": "[시뽀] 매출 KPI 월/연간+달성률 구분 — 연간 중복합산 버그 제거",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-06-20",
+    "processed_at": "2026-06-20",
+    "artifact": "매출 시트(보고 탭) 실측: 블록=같은 6월 일자별 누적 스냅샷.\n_kpiParseSalesTab이 같은달 스냅샷 2개를 중복합산해 가짜 연간 833,241,040 산출하던 버그 제거.\n블록을 월 기준으로 묶어 월별 최신 1개만·서로 다른 월 2개+일 때만 합산, 1개월뿐이면 year=null.\nhome 매출 카드를 '월 매출 및 달성률'(423,857,058·71.72%) + '연간 매출 및 달성률'(집계 보완 중) 2구분.\n1~5월 마감값·연 목표가 시트에 들어오면 연간 자동 점등(코드 준비). (CLI ad-hoc · 커밋 b637804e)",
+    "next": "🌀 표류 — 다음 미정 (필요 시 GM·웰리/담당 C-Level 지정)",
+    "adhoc_commit": "b637804e2e2cacf63ed8476d2c7203e591c8b8a1",
+    "ship_no": 2
   }
 ]
