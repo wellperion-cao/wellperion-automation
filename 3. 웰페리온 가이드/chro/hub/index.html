@@ -767,6 +767,7 @@ function renderDash(){
   html+=kpi("평가 포상",rewarded+'<small> 건</small>',"인사평가 "+evl.length+"건 중");
   html+='</div>';
 
+  html+='<div class="sec-title">채용·온보딩 캘린더</div>'+renderDashCalCard();
   html+=upcomingCard();html+='<div class="sec-title">이번 주 할 일</div>';
   if(todos.length){
     html+='<div class="card"><div class="stack" style="gap:4px">'+todos.map(function(t){
@@ -1477,6 +1478,9 @@ function obCalNav(delta){var ym=window.__obYM||{};var m=ym.m+delta,y=ym.y;if(m<0
 function renderObCalCard(){var ev=obCheckEvents();var ym=window.__obYM;if(!ym){var d0=new Date();ym={y:d0.getFullYear(),m:d0.getMonth()};window.__obYM=ym;}var y=ym.y,m=ym.m;var byDay={};ev.forEach(function(e){if(e.y===y&&e.m===m){(byDay[e.d]=byDay[e.d]||[]).push(e);}});var startDow=new Date(y,m,1).getDay();var days=new Date(y,m+1,0).getDate();var td=new Date();var isT=function(d){return td.getFullYear()===y&&td.getMonth()===m&&td.getDate()===d;};var h='<div class="card" style="margin-bottom:10px"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px"><button class="ob-btn sec" onclick="obCalNav(-1)">‹</button><div style="font-weight:700">'+y+'년 '+(m+1)+'월 <span style="color:#888;font-weight:500;font-size:11px">온보딩 체크인</span></div><button class="ob-btn sec" onclick="obCalNav(1)">›</button></div><div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;text-align:center;font-size:10.5px;color:#888;margin-bottom:3px">'+["일","월","화","수","목","금","토"].map(function(w){return "<div>"+w+"</div>";}).join("")+'</div><div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px">';for(var i=0;i<startDow;i++)h+="<div></div>";for(var d=1;d<=days;d++){var has=byDay[d];var allDone=has&&has.every(function(e){return e.done;});var over=has&&has.some(function(e){return !e.done&&new Date(y,m,d)<new Date(td.getFullYear(),td.getMonth(),td.getDate());});var bg=has?(over?"background:#fde2e2;color:#c0392b":(allDone?"background:#e3f4ea;color:#1a7f5a":"background:#eef3fb;color:#2f6d9e")):(isT(d)?"outline:1px solid #b08d57":"");var nm=has?has.map(function(e){return esc(e.name);}).join("<br>"):"";var tip=has?esc(has.map(function(e){return e.name+" "+e.label+(e.done?"✓":"");}).join(", ")):"";h+='<div title="'+tip+'" style="min-height:30px;border-radius:4px;padding:2px;font-size:10px;'+bg+'">'+d+(has?'<div style="font-size:8px;font-weight:600;line-height:1.1;word-break:keep-all">'+nm+'</div>':'')+'</div>';}h+='</div>';var me=ev.filter(function(e){return e.y===y&&e.m===m;}).sort(function(a,b){return a.t-b.t;});h+='<div style="margin-top:8px;border-top:1px solid #eee;padding-top:6px;font-size:11.5px">';if(me.length){h+=me.map(function(e){return '<div onclick="obCheck('+e.row+')" style="display:flex;gap:7px;padding:3px 0;cursor:pointer"><span style="color:#b08d57;font-weight:700;white-space:nowrap">'+(e.m+1)+'/'+e.d+'</span><span>'+esc(e.name)+' · '+esc(e.label)+(e.done?' ✓':'')+'</span></div>';}).join("");}else{h+='<div style="color:#999">이번 달 예정 체크인 없음</div>';}h+='</div></div>';return h;}
 function upcomingCard(){var now=new Date();now.setHours(0,0,0,0);var hz=now.getTime()+30*86400000;var evs=[];(DB.appl||[]).forEach(function(a){var v=(typeof dval==="function")?dval(a,"면접 일정"):a["면접 일정"];var s=String(v||"");if(!s)return;var dt=new Date(s.replace(" ","T"));if(isNaN(dt.getTime()))return;var tt=dt.getTime();if(tt>=now.getTime()&&tt<=hz)evs.push({t:tt,date:s,kind:"면접",who:a["지원자명"],detail:(a["전형 단계"]||"면접")});});obCheckEvents().forEach(function(e){if(e.done)return;var tt=new Date(e.date).getTime();if(tt>=now.getTime()&&tt<=hz)evs.push({t:tt,date:e.date,kind:"온보딩",who:e.name,detail:e.label,row:e.row});});evs.sort(function(a,b){return a.t-b.t;});var h='<div class="card" style="margin-top:10px"><div class="sec-title">다가오는 일정 — 채용·온보딩 (30일)</div>';if(!evs.length){return h+emptyState("예정된 면접·온보딩 체크인이 없습니다.","🗓")+'</div>';}h+='<div style="font-size:12.5px">'+evs.map(function(e){var dd=new Date(e.date);var md=(dd.getMonth()+1)+'/'+dd.getDate();var col=e.kind==="면접"?"#2f6d9e":"#b08d57";var clk=e.row?(' onclick="obCheck('+e.row+')" style="cursor:pointer;display:flex;gap:8px;padding:4px 0;border-bottom:1px solid #f2f2f2"'):' style="display:flex;gap:8px;padding:4px 0;border-bottom:1px solid #f2f2f2"';return '<div'+clk+'><span style="white-space:nowrap;font-weight:700;color:#666;width:42px">'+md+'</span><span style="white-space:nowrap;color:'+col+';font-weight:600;width:48px">'+e.kind+'</span><span>'+esc(e.who)+' · '+esc(e.detail)+'</span></div>';}).join("")+'</div></div>';return h;}
 function obOpenCard(nm){var a=(DB.appl||[]).find(function(x){return String(x["지원자명"]||"").trim()===String(nm||"").trim();});if(!a){alert(nm+" 지원자 정보를 찾을 수 없습니다.");return;}openPrintView(normId(a.url),true);}
+function dashCalEvents(){var out=[];(DB.appl||[]).forEach(function(a){var v=(typeof dval==="function")?dval(a,"면접 일정"):a["면접 일정"];var s=String(v||"");if(!s)return;var dt=new Date(s.replace(" ","T"));if(isNaN(dt.getTime()))return;out.push({kind:"면접",y:dt.getFullYear(),m:dt.getMonth(),d:dt.getDate(),t:dt.getTime(),date:s,name:a["지원자명"]||"",label:(a["전형 단계"]||"면접"),done:false});});obCheckEvents().forEach(function(e){out.push({kind:"온보딩",y:e.y,m:e.m,d:e.d,t:e.t,date:e.date,name:e.name,label:e.label,done:e.done,row:e.row});});return out;}
+function dashCalNav(delta){var ym=window.__dashYM||{};var m=ym.m+delta,y=ym.y;if(m<0){m=11;y--;}if(m>11){m=0;y++;}window.__dashYM={y:y,m:m};renderDash();}
+function renderDashCalCard(){var ev=dashCalEvents();var ym=window.__dashYM;if(!ym){var d0=new Date();ym={y:d0.getFullYear(),m:d0.getMonth()};window.__dashYM=ym;}var y=ym.y,m=ym.m;var byDay={};ev.forEach(function(e){if(e.y===y&&e.m===m){(byDay[e.d]=byDay[e.d]||[]).push(e);}});var startDow=new Date(y,m,1).getDay();var days=new Date(y,m+1,0).getDate();var td=new Date();var isT=function(d){return td.getFullYear()===y&&td.getMonth()===m&&td.getDate()===d;};var h='<div class="card" style="margin-bottom:10px"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px"><button class="ob-btn sec" onclick="dashCalNav(-1)">‹</button><div style="font-weight:700">'+y+'년 '+(m+1)+'월 <span style="color:#888;font-weight:500;font-size:11px">채용·온보딩 일정</span></div><button class="ob-btn sec" onclick="dashCalNav(1)">›</button></div><div style="display:flex;gap:13px;font-size:11px;color:#666;margin-bottom:7px"><span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#2f6d9e;margin-right:3px;vertical-align:middle"></span>면접</span><span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#b08d57;margin-right:3px;vertical-align:middle"></span>온보딩 체크인</span></div><div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;text-align:center;font-size:10.5px;color:#888;margin-bottom:3px">'+["일","월","화","수","목","금","토"].map(function(w){return "<div>"+w+"</div>";}).join("")+'</div><div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px">';for(var i=0;i<startDow;i++)h+="<div></div>";for(var d=1;d<=days;d++){var has=byDay[d];var bg=has?"background:#f7f4ee":(isT(d)?"outline:1px solid #b08d57":"");var names=has?has.map(function(e){var col=e.kind==="면접"?"#2f6d9e":"#b08d57";return '<div style="font-size:8px;font-weight:600;line-height:1.15;word-break:keep-all;color:'+col+'">'+esc(e.name)+(e.done?'✓':'')+'</div>';}).join(""):"";var tip=has?esc(has.map(function(e){return e.kind+" "+e.name+" "+e.label;}).join(", ")):"";h+='<div title="'+tip+'" style="min-height:32px;border-radius:4px;padding:2px;font-size:10px;'+bg+'">'+d+names+'</div>';}h+='</div>';var me=ev.filter(function(e){return e.y===y&&e.m===m;}).sort(function(a,b){return a.t-b.t;});h+='<div style="margin-top:8px;border-top:1px solid #eee;padding-top:6px;font-size:11.5px">';if(me.length){h+=me.map(function(e){var col=e.kind==="면접"?"#2f6d9e":"#b08d57";var clk=(e.kind==="온보딩"&&e.row)?(' onclick="obCheck('+e.row+')" style="cursor:pointer;display:flex;gap:7px;padding:3px 0"'):' style="display:flex;gap:7px;padding:3px 0"';return '<div'+clk+'><span style="color:#b08d57;font-weight:700;white-space:nowrap">'+(e.m+1)+'/'+e.d+'</span><span style="color:'+col+';font-weight:600;white-space:nowrap;width:42px">'+e.kind+'</span><span>'+esc(e.name)+' · '+esc(e.label)+(e.done?' ✓':'')+'</span></div>';}).join("");}else{h+='<div style="color:#999">이번 달 예정 일정 없음</div>';}h+='</div></div>';return h;}
 function renderOnbo(){
   var html='<div class="sec-title">온보딩 · 적응관리 (입사 90일)</div>';
   if(ERR.onbo){ setPanel("onbo", html+errCard("온보딩","onbo")); return; }
@@ -2374,86 +2378,4 @@ details.jobs-fold > summary > .jf-arrow{display:inline-block;transition:transfor
 
     list.addEventListener("click", function(e){
       var row = e.target.closest("[data-applname]");
-      if(row && typeof window.openApplicantInfo === "function"){
-        (function(){var _scc=e.target.closest("[data-stagechg]");if(_scc){window.openApplicantInfo(_scc.getAttribute("data-stagechg"),_scc.getAttribute("data-stagepid"));return;}var _pg=row.getAttribute("data-applicant")||"";if(!_pg){var _nm=row.getAttribute("data-applname")||"";var _f=(DB.appl||[]).find(function(x){return String(x["지원자명"]||"")===_nm;});if(_f)_pg=normId(_f.url);}if(_pg&&typeof openPrintView==="function"){openPrintView(_pg,true);}else{window.openApplicantInfo(row.getAttribute("data-applname"), row.getAttribute("data-apppid"));}})();
-      }
-    });
-
-    renderRows();
-    return true;
-  }
-  function arrangeJobs(){
-    var titles = Array.from(document.querySelectorAll(".sec-title"));
-    if(titles.length<2) return false;
-    var jobsT = null, applT = null;
-    titles.forEach(function(t){
-      var s = (t.textContent||"").trim();
-      if(s === "채용 공고") jobsT = t;
-      else if(s.indexOf("지원자 트래킹") === 0) applT = t;
-    });
-    if(!jobsT || !applT) return false;
-    if(jobsT.dataset.arranged === "1") return false;
-    var parent = jobsT.parentElement;
-    if(parent !== applT.parentElement) return false;
-    var children = Array.from(parent.children);
-    var jIdx = children.indexOf(jobsT), aIdx = children.indexOf(applT);
-    if(jIdx<0 || aIdx<0 || jIdx>=aIdx) return false;
-    var jGroup = children.slice(jIdx+1, aIdx);
-    var cnt = 0;
-    jGroup.forEach(function(el){
-      if(!el.querySelectorAll) return;
-      var inner = el.querySelectorAll(".item");
-      cnt += inner.length || (el.classList && el.classList.contains("item") ? 1 : 0);
-    });
-    if(cnt===0) cnt = jGroup.length;
-    var det = document.createElement("details");
-    det.className = "jobs-fold";
-    det.style.cssText = "margin-top:18px;background:var(--surface-2,#faf9f6);border:1px solid var(--line,#e7e4dc);border-radius:12px;padding:0";
-    var sum = document.createElement("summary");
-    sum.style.cssText = "cursor:pointer;padding:12px 16px;color:var(--ink-soft,#6c6961);font-size:13px;font-weight:700;user-select:none;letter-spacing:.03em";
-    sum.innerHTML = '<span class="jf-arrow" style="margin-right:8px">▸</span>채용 공고 <span style="background:var(--surface,#fff);color:var(--ink,#1f1e1b);padding:2px 10px;border-radius:20px;margin-left:6px;font-size:11px;font-weight:600">'+cnt+'건</span>';
-    det.appendChild(sum);
-    var wrap = document.createElement("div");
-    wrap.style.cssText = "padding:6px 14px 14px";
-    jGroup.forEach(function(el){wrap.appendChild(el);});
-    det.appendChild(wrap);
-    jobsT.remove();
-    var newKids = Array.from(parent.children);
-    var nA = newKids.indexOf(applT), ref = null;
-    for(var j=nA+1; j<newKids.length; j++){
-      if(newKids[j].classList && newKids[j].classList.contains("sec-title")){ref = newKids[j]; break;}
-    }
-    if(ref) parent.insertBefore(det, ref);
-    else parent.appendChild(det);
-    applT.dataset.arranged = "1";
-    return true;
-  }
-  var pend = false;
-  function trig(){
-    if(pend) return;
-    pend = true;
-    setTimeout(function(){
-      pend = false;
-      try{arrangeJobs();}catch(e){}
-      try{buildApplList();}catch(e){}
-    }, 80);
-  }
-  var mo = new MutationObserver(function(recs){
-    for(var k=0; k<recs.length; k++){
-      var ns = recs[k].addedNodes;
-      for(var m=0; m<ns.length; m++){
-        var n = ns[m];
-        if(n.nodeType !== 1) continue;
-        if((n.className||"").indexOf("sec-title")>=0 || (n.className||"").indexOf("pipe-col")>=0 || (n.querySelector && (n.querySelector(".sec-title") || n.querySelector(".pipe-col")))){
-          trig(); return;
-        }
-      }
-    }
-  });
-  mo.observe(document.body, {childList:true, subtree:true});
-  if(document.readyState === "loading") document.addEventListener("DOMContentLoaded", trig);
-  else trig();
-})();
-</script>
-</body>
-</html>
+      if(row &
