@@ -4061,7 +4061,15 @@ async function renderAdmin(){
   /* ━━━ 이슈 ━━━ 5차(2026-06-22 시우·GM 분리결정): 점검 이슈는 각 회차 점검표에 기록·보관(점검 맥락 유지).
      외부 접수·타부서 처리가 필요한 건만 수동 '접수처로 보내기'. (현황 이슈 목록 통합 표시는 후속) */
   html+=`<div class="dash-section-title">이슈</div>`;
-  html+=`<div class="admin-card" style="border-color:rgba(214,138,44,0.3)"><div style="font-size:13px;color:var(--dim);line-height:1.6">점검 중 발견한 이슈는 <strong>각 회차 점검표에 기록·보관</strong>됩니다(점검 맥락 유지). 외부 접수·타부서 처리가 필요한 건만 항목의 <strong>'접수처로 보내기'</strong>로 종합접수처에 올리세요.</div></div>`;
+  if(data.allIssues && data.allIssues.length){
+    html+='<div class="admin-card" style="border-color:rgba(214,138,44,0.3)">';
+    html+='<div style="font-size:13px;font-weight:700;color:#c8841f;margin-bottom:6px;">기록된 이슈 ('+data.allIssues.length+'건) — 이 날짜</div>';
+    data.allIssues.forEach(it=>{const sl={am:'오전',pm:'오후',night:'야간',all:'상시',focus:'집중'}[it.shift]||it.shift;html+=`<div style="padding:6px 0;border-bottom:1px solid rgba(214,138,44,0.2)"><div style="font-size:13px;font-weight:600">${escapeHTML(it.name)} <span style="color:var(--dim);font-size:11px">${it.cat?escapeHTML(it.cat)+' · ':''}${sl}</span></div><div style="color:#c8841f;font-size:12px;white-space:pre-wrap">${escapeHTML(it.memo)}</div></div>`;});
+    html+='<div style="font-size:12px;color:var(--dim);margin-top:8px;line-height:1.6">외부 접수·타부서 처리가 필요한 건만 점검 항목의 <strong>\'접수처로 보내기\'</strong>로 종합접수처에 올리세요.</div>';
+    html+='</div>';
+  }else{
+    html+=`<div class="admin-card" style="border-color:rgba(214,138,44,0.3)"><div style="font-size:13px;color:var(--dim);line-height:1.6">이 날짜에 기록된 점검 이슈가 없습니다. 점검 중 이슈는 각 회차 점검표에 기록되며, 외부 접수가 필요한 건만 <strong>'접수처로 보내기'</strong>로 종합접수처에 올립니다.</div></div>`;
+  }
 
   /* ━━━ 노하우 ━━━ */
   if(data.allTips.length){
