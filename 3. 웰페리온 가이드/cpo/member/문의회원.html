@@ -784,8 +784,10 @@ if (action === 'member_calendar') {
 <div class="save-toast" id="saveToast"></div>
 
 <script>
-/* ── GAS URL 자리표시자 — GM이 배포 후 아래 값을 교체 ── */
-var GAS_URL = '__MEMBER_CAL_GAS_URL__';
+/* ── GAS URL (퍼널 Survey 웹앱 /exec — 2026-06-22 연결) ── */
+var GAS_URL = 'https://script.google.com/macros/s/AKfycbzdwSCCSSJ6JXLDoWuo7HG0JmBM2iy10TujFQ_O5JbTjnWaN7gOk-ddA4IAvsNfelg0xA/exec';
+/* ── 읽기전용·익명 모드(A안) — 실명·전화·편집 차단. B안(접근통제) 후 false ── */
+var READ_ONLY = true;
 
 /* ── 탭 전환 ── */
 function switchTab(id, btn) {
@@ -809,6 +811,7 @@ var calEvents = {};
   renderCalendarShell();
   loadCalendarData();
   loadDbData();  // 기본 활성 탭=문의 회원 관리(DB) → 초기 로딩(2026-06-20 GM 순서변경)
+  if (READ_ONLY) { var _ab = document.getElementById('btnAddRow'); if (_ab) _ab.style.display = 'none'; }
 })();
 
 function changeMonth(delta) {
@@ -978,7 +981,7 @@ function loadDbData() {
     return;
   }
   document.getElementById('dbCount').textContent = '불러오는 중…';
-  fetch(GAS_URL + '?action=inquiry_list')
+  fetch(GAS_URL + '?action=member_inquiry_list')
     .then(function(r){ return r.json(); })
     .then(function(data){
       if (!data.ok) {
@@ -1070,10 +1073,12 @@ function buildDbRow(row, isNew) {
       '🏃 체험2: ' + esc(row.exp2 || '—') +
     '</td>' +
     // 작업
-    '<td><div class="row-actions">' +
-      '<button class="row-btn btn-edit" onclick="startEditRow(this)">편집</button>' +
-      '<button class="row-btn btn-del" onclick="deleteRow(this)">삭제</button>' +
-    '</div></td>';
+    (READ_ONLY
+      ? '<td><span style="font-size:11px;color:var(--dim)">🔒 읽기전용</span></td>'
+      : '<td><div class="row-actions">' +
+          '<button class="row-btn btn-edit" onclick="startEditRow(this)">편집</button>' +
+          '<button class="row-btn btn-del" onclick="deleteRow(this)">삭제</button>' +
+        '</div></td>');
 
   return tr;
 }

@@ -451,7 +451,10 @@ var _SURVEY_PUBLIC_ACTIONS = {
   type_channel_breakdown: true,
   click_stats:            true,
   today_live:             true,
-  lesson_breakdown:       true   // 종목별 등록수만 반환(PII 미노출) — 면제 안전
+  lesson_breakdown:       true,  // 종목별 등록수만 반환(PII 미노출) — 면제 안전
+  // 문의회원 페이지(CPO) 익명 읽기 — 이름·전화·메모 0 노출 → 공개 안전(2026-06-22 A안)
+  member_inquiry_list:    true,
+  member_calendar:        true
 };
 function _accessProp_(k) {
   try { return PropertiesService.getScriptProperties().getProperty(k) || ''; } catch (e) { return ''; }
@@ -462,6 +465,75 @@ function _checkSurveyAccess_(action, key) {
   var tok = _accessProp_('ACCESS_TOKEN');
   if (!tok) return true;                                     // 토큰 미설정 = 안전을 위해 통과
   return String(key || '') === tok;
+}
+
+// ═══════════════════════════════════════════
+//  문의회원 페이지 전용 — '26년 신규문의' 익명 읽기 (CPO cpo/member/문의회원.html)
+//  ★ A안(2026-06-22 GM go): 이름·전화·메모 완전 제거(빈값) → 공개 페이지 안전, PII_GATE 불필요.
+//     실명 표시·편집(CRUD)은 별도 접근통제(B안) 후속. 기존 inquiry_list(대시보드 집계)와 무관.
+// ═══════════════════════════════════════════
+var _MI_SS_ID = '12AWcAlgmmYKr2nUbWmVpa71_z3zi0BaU4ZdnOwrI_7U';
+var _MI_SHEET = '26년 신규문의';
+function _miSheet_() { return SpreadsheetApp.openById(_MI_SS_ID).getSheetByName(_MI_SHEET); }
+function _miHeaders_(sh) {
+  var last = sh.getLastColumn();
+  if (last < 1) return [];
+  return sh.getRange(1, 1, 1, last).getValues()[0].map(function(v){ return String(v).trim(); });
+}
+function _miColIdx_(headers, names) {
+  var arr = Array.isArray(names) ? names : [names];
+  for (var i = 0; i < arr.length; i++) { var idx = headers.indexOf(arr[i]); if (idx >= 0) return idx; }
+  for (var k = 0; k < arr.length; k++) { for (var j = 0; j < headers.length; j++) { if (headers[j].indexOf(arr[k]) >= 0) return j; } }
+  return -1;
+}
+function _miToISO_(val) {
+  if (!val) return '';
+  if (val instanceof Date && !isNaN(val.getTime())) {
+    return val.getFullYear() + '-' + String(val.getMonth()+1).padStart(2,'0') + '-' + String(val.getDate()).padStart(2,'0');
+  }
+  var s = String(val).trim();
+  var m = s.match(/(\d{4})[\.\-\/]?\s*(\d{1,2})[\.\-\/]?\s*(\d{1,2})/);
+  if (m) return m[1] + '-' + ('0'+m[2]).slice(-2) + '-' + ('0'+m[3]).slice(-2);
+  return s;
+}
+// 익명 행 배열 반환(이름·전화·메모 비움). 빈 행 스킵.
+function _miReadRows_() {
+  var sh = _miSheet_();
+  if (!sh) return [];
+  var hdr = _miHeaders_(sh);
+  var last = sh.getLastRow();
+  var out = [];
+  if (last < 2) return out;
+  var data = sh.getRange(2, 1, last - 1, hdr.length).getValues();
+  var iName  = _miColIdx_(hdr, ['이름','성함']);
+  var iPhone = _miColIdx_(hdr, ['연락처','전화','휴대폰']);
+  var iProg  = _miColIdx_(hdr, ['관심 있는 프로그램 종류','관심프로그램','프로그램']);
+  var iStat  = _miColIdx_(hdr, ['진행현황','진행상황','진행상태','상태']);
+  var iTs    = _miColIdx_(hdr, ['타임스탬프','접수일','날짜']);
+  var iTour  = _miColIdx_(hdr, ['시설투어 및 상담 예약','시설견학 및 상담 일정','상담 예약','상담']);
+  var iExp1  = _miColIdx_(hdr, ['체험1 확정시간','체험1']);
+  var iExp2  = _miColIdx_(hdr, ['체험2 확정시간','체험2']);
+  var iOwner = _miColIdx_(hdr, ['담당','담당자']);
+  for (var r = 0; r < data.length; r++) {
+    var row = data[r];
+    var hasName  = iName  >= 0 && row[iName];
+    var hasPhone = iPhone >= 0 && row[iPhone];
+    if (!hasName && !hasPhone) continue; // 완전 빈 행 스킵
+    out.push({
+      rowIndex: r + 2,
+      name: '',    // 익명(A안) — 실명 미노출
+      phone: '',   // 익명(A안)
+      program:  iProg  >= 0 ? String(row[iProg] || '') : '',
+      status:   iStat  >= 0 ? String(row[iStat] || '') : '',
+      tourDate: _miToISO_(iTour >= 0 ? row[iTour] : ''),
+      exp1:     _miToISO_(iExp1 >= 0 ? row[iExp1] : ''),
+      exp2:     _miToISO_(iExp2 >= 0 ? row[iExp2] : ''),
+      timestamp:_miToISO_(iTs   >= 0 ? row[iTs]   : ''),
+      memo: '',    // 익명(A안) — 자유기재 메모 미노출
+      owner:    iOwner >= 0 ? String(row[iOwner] || '') : ''
+    });
+  }
+  return out;
 }
 
 // ═══════════════════════════════════════════
@@ -589,6 +661,30 @@ function _processAction(body) {
       items.push({ id: '', 시각: f.시각, 이름: '', 연락처: '', 문의유형: f.문의유형, 내용: '', 유입채널: f.유입채널, 상태: '신규', 메모: '구글폼' });
     });
     return _json({ ok: true, count: items.length, data: items });
+  }
+
+  // ─── 문의회원 페이지(CPO): 익명 문의 목록 (A안 공개·이름/전화/메모 0) ───
+  if (action === 'member_inquiry_list') {
+    var miRows = _miReadRows_();
+    return _json({ ok: true, count: miRows.length, data: miRows, anon: true });
+  }
+
+  // ─── 문의회원 페이지(CPO): 예약 달력 (익명·상담/체험 일정) ───
+  if (action === 'member_calendar') {
+    var mcMonth = String(body.month || '');  // 'YYYY-MM'
+    var mcRows = _miReadRows_();
+    var mcEvents = [];
+    mcRows.forEach(function(row){
+      function add(dateStr, kind) {
+        if (!dateStr) return;
+        if (mcMonth && dateStr.slice(0,7) !== mcMonth) return;
+        mcEvents.push({ date: dateStr, kind: kind, name: '', program: row.program, status: row.status });
+      }
+      add(row.tourDate, '상담');
+      add(row.exp1, '체험');
+      add(row.exp2, '체험');
+    });
+    return _json({ ok: true, month: mcMonth, count: mcEvents.length, events: mcEvents });
   }
 
   // ─── 문의→가입 전환 집계 ───
