@@ -1510,6 +1510,9 @@ const WEEKDAY=[
       {id:"op3",name:"세탁물 입고 운반",detail:"입고된 세탁물을 세탁실로 운반",gender:"all"},
       {id:"op4",name:"운동복/양말 상태 + 배치",detail:"상태 체크 후 사이즈별 배치",gender:"all"},
       {id:"op5",name:"타올류 상태 + 배치",detail:"거품타올/타올/바스타올 상태 체크 후 배치",gender:"all"}
+    ]},
+    {title:"전일 마감·야간청소 확인",items:[
+      {id:"cl3",name:"사우나/파우더 청결 확인 (전일 마감·야간청소)",detail:"오픈 시 점검: 남/여 사우나 & 파우더 공간 청결 + 전일 야간 탕청소 결과 이상 유무 확인\n미비 시 시설/운영부 보고 (마감엔 마감업무, 상태 확인은 오픈에 — GM 2026-06-22)",gender:"all"}
     ]}
   ]},
   {slot:"내부·외부 점검",shift:"all",groups:[
@@ -1537,9 +1540,9 @@ const WEEKDAY=[
   {slot:"마감 22:00~22:30",shift:"pm",groups:[
     {title:"마감 점검",items:[
       {id:"cl1",name:"세탁물 마감 출고",detail:"마감 세탁물 최종 출고 운반 | 마감 출고 빠짐없이 확인",gender:"all"},
-      {id:"cl3",name:"사우나/파우더 최종 체크",detail:"남/여 사우나 & 파우더 공간 청결 상태 체크\n시설/운영부 마감자 카톡 보고\n미비 시 경고 / 경고 3회 경징계",gender:"all"},
-      {id:"cl8",name:"전 구역 마감 확인",detail:"전 구역 이상 유무 | 미수금 정산 | 다음날 일정 준비 완료 확인",gender:"all"}
+      {id:"cl8",name:"전 구역 마감 확인",detail:"전 구역 이상 유무 | 잠금·소등 | 미수금 정산 | 다음날 일정 준비 완료 확인",gender:"all"}
     ]}
+    // 사우나/파우더 청결 '확인'(cl3)은 오픈조로 이관 — 마감엔 못 보니 다음날 오픈에 실측(GM 2026-06-22)
   ]}
   // '상시 F 회원 응대'는 점검 항목에서 제거 → '가이드' 탭으로 이관·합병 (GM 2026-06-11)
 ];
@@ -1564,6 +1567,9 @@ const WEEKEND=[
     ]},
     {title:"오픈 점검",items:[
       {id:"op3",name:"세탁물 입고 + 상태 체크",detail:"운동복/양말 사이즈별 배치 | 타올류 배치",gender:"all"}
+    ]},
+    {title:"전일 마감·야간청소 확인",items:[
+      {id:"cl3",name:"사우나/파우더 청결 확인 (전일 마감·야간청소)",detail:"오픈 시 점검: 남/여 사우나 & 파우더 청결 + 전일 야간 탕청소 결과 이상 유무 확인 / 미비 시 시설·운영부 보고",gender:"all"}
     ]}
   ]},
   {slot:"내부·외부 점검",shift:"all",groups:[
@@ -1587,9 +1593,9 @@ const WEEKEND=[
   {slot:"마감 18:00",shift:"pm",groups:[
     {title:"마감 점검",items:[
       {id:"cl1",name:"세탁물 최종 출고",detail:"마감 세탁물 운반",gender:"all"},
-      {id:"cl3",name:"사우나/파우더 최종 체크",detail:"남/여 사우나 & 파우더 청결 최종 체크 (카톡 보고)",gender:"all"},
       {id:"cl8",name:"마감 탕청소",detail:"별도 2인 1조 | 탕청소 업체 20:30 출근",gender:"all"}
     ]}
+    // 사우나/파우더 청결 '확인'(cl3)은 오픈조로 이관(GM 2026-06-22)
   ]}
   // '상시 F 회원 응대'는 점검 항목에서 제거 → '가이드' 탭으로 이관·합병 (GM 2026-06-11)
 ];
@@ -1916,8 +1922,9 @@ const ROUND_MAP={
   e1:['am1','pm1','close1'],
   /* 정규화 완료(2026-06-15): 웰니스 d4·VIP d5·분수대 e2·신발장 b7·오픈 op1/op2 = 마스터 rounds 필드가 회차 결정.
      ROUND_MAP에 넣으면 isShadowItem이 '기본항목 편집분'으로 오인해 숨김 → 절대 추가 금지. */
-  /* 추가 — 마감조 전용 마감 점검(base). cl2/cl4~cl7은 added(시트 rounds 필드 우선) → ROUND_MAP 제외(isShadowItem 오인 차단). 2026-06-17 재정렬. */
-  cl1:['close1'], cl3:['close1'], cl8:['close1']
+  /* 마감조 전용(base): cl1 세탁물출고·cl8 전구역마감. cl3(사우나/파우더 청결 확인)은 오픈조 이관 → am1(GM 2026-06-22, 마감엔 못 보니 오픈에 실측).
+     cl2/cl4~cl7은 added(시트 rounds 필드 우선) → ROUND_MAP 제외(isShadowItem 오인 차단). */
+  cl1:['close1'], cl3:['am1'], cl8:['close1']
 };
 /* 항목 → 멤버 라운드 배열. 우선순위:
    1) 2b-1 CUSTOM 항목의 명시 rounds(이슈 승격 시 선택한 회차 다중) — 유효 키만.
