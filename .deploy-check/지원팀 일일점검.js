@@ -1105,6 +1105,10 @@ function _checkVocSentKey(date, itemId, issueText) {
 
 // 이슈 배열 → 종합접수처 reg_submit POST(멱등·fail-soft). 호출부에서 try/catch로 한 번 더 감쌈.
 function _checkSendIssuesToVoc(issues, gender) {
+  // ★분리결정(GM 2026-06-22): 점검 이슈는 점검 안에만 기록·보관 — 종합접수처 자동전송 폐지.
+  //  실제 깊은청소=야간 업체이고, 점검 청결 이슈가 회원 접수처(접수_청결)를 가득 채워(자동접수) 회원 VOC와 섞이던 문제.
+  //  외부 접수·타부서 처리가 필요한 건만 점검 화면의 수동 '접수처로 보내기'로 올린다. 코드는 보존 — 되돌릴 땐 이 return만 제거.
+  return;
   if (!issues || !issues.length) return;
   var props = PropertiesService.getScriptProperties();
   var execUrl = (props.getProperty('VOC_EXEC_URL') || VOC_EXEC_URL_FALLBACK).trim();
