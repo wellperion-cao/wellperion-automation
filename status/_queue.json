@@ -3508,5 +3508,19 @@
     "next": "🌀 표류 — 다음 미정 (필요 시 GM·웰리/담당 C-Level 지정)",
     "adhoc_commit": "5801ccf8fe3a11921d8568931e797a5b517ea8ab",
     "ship_no": 77
+  },
+  {
+    "task_id": "COO-2026-06-22-ADHOC-9539e8d9",
+    "clevel": "coo",
+    "title": "[시우] 점검 GAS: 종합접수처 자동전송 폐지 (분리결정) — 점검 이슈는 점검 안에만",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-06-22",
+    "processed_at": "2026-06-22",
+    "artifact": "_checkSendIssuesToVoc 조기 return으로 점검 이슈 → 종합접수처(접수_청결/시설고장) 자동전송 차단. 진단: 접수_청결 41+시설고장 3=44건 전부 점검 자동유입(contact=자동접수(점검)), 회원 실접수 0 — 회원 접수처가 점검 청결 노이즈로 폭증·중복. 외부 접수 필요 건만 점검 화면 수동 '접수처로 보내기'(구글폼) 유지. 코드 보존(return만 제거하면 복원). ※라이브 발효=GM 점검 GAS(1FLQAzjq) 재배포 필요. 누적 44건은 reg_delete로 정리(멱등 플래그가 재유입 차단). (CLI ad-hoc · 커밋 9539e8d9)",
+    "next": "🌀 표류 — 다음 미정 (필요 시 GM·웰리/담당 C-Level 지정)",
+    "adhoc_commit": "9539e8d94eefaca072c47855d03fa2c6eb44e545",
+    "ship_no": 83
   }
 ]
