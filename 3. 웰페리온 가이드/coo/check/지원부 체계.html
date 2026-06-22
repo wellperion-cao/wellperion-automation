@@ -65,21 +65,11 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 @media (max-width:760px){#tab-chem .cg-twocol{grid-template-columns:1fr}}
 .date-bar{display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap}
 .date-bar input{background:var(--paper);border:1px solid var(--border);color:var(--text);padding:8px 14px;border-radius:8px;font-size:15px;font-family:inherit}
-/* ── 공통 요일/날짜바 (단일 진입점 · WORK_DATE 단일 소스 · GM 2026-06-20) ── */
-.workdate-bar{display:flex;align-items:center;gap:10px;padding:8px 14px;margin:0 auto;max-width:1100px;flex-wrap:wrap;border-top:1px solid var(--border)}
-.workdate-bar .wd-nav{background:var(--paper);border:1px solid var(--border);color:var(--text);padding:7px 13px;border-radius:8px;font-size:15px;font-family:inherit;cursor:pointer;font-weight:600;line-height:1}
-.workdate-bar .wd-nav:hover{border-color:var(--accent)}
-.workdate-bar .wd-today{background:var(--accent);border-color:var(--accent);color:#fff}
-.workdate-bar .wd-display{display:flex;align-items:baseline;gap:10px;margin-left:4px}
-.workdate-bar .wd-dow{font-size:26px;font-weight:800;line-height:1;letter-spacing:0.02em}
-.workdate-bar .wd-dow.is-weekend{color:var(--orange)}
-.workdate-bar .wd-dow.is-weekday{color:var(--text)}
-.workdate-bar .wd-date{font-size:14px;color:var(--dim);font-weight:600}
-.workdate-bar .wd-type{font-size:11px;font-weight:700;padding:2px 9px;border-radius:999px}
-.workdate-bar .wd-type.weekday{background:var(--green-bg);color:var(--green)}
-.workdate-bar .wd-type.weekend{background:var(--orange-bg);color:var(--orange)}
-.workdate-bar .wd-type.closed{background:var(--border);color:var(--dim)}
-@media (max-width:520px){.workdate-bar .wd-dow{font-size:22px}}
+/* ── 점검 날짜칸 요일 칩 (점검 남/여 날짜바에 합류 · 상단 공통바 폐지 · GM 2026-06-22) ── */
+.dow-chip{display:inline-block;font-size:14px;font-weight:800;padding:5px 12px;border-radius:999px;line-height:1;letter-spacing:0.02em}
+.dow-chip.weekday{background:var(--green-bg);color:var(--green)}
+.dow-chip.weekend{background:var(--orange-bg);color:var(--orange)}
+.dow-chip.closed{background:var(--border);color:var(--dim)}
 /* 날짜 우측 담당자(명단 선택·기억) — GM 2026-06-12 */
 .duty-wrap{margin-left:auto;display:flex;align-items:center;gap:6px}
 .duty-label{font-size:13px;font-weight:700;color:var(--accent);white-space:nowrap}
@@ -581,17 +571,6 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
     <button class="util-btn share-btn" onclick="copyShare()">공유용</button>
   </div>
 </div>
-<!-- ── 공통 요일/날짜바 (단일 진입점 · 점검 남/여 + 업무보드 전구역 동기 · WORK_DATE 단일 소스) ── -->
-<div class="workdate-bar" id="workdateBar">
-  <button class="wd-nav" type="button" onclick="moveWorkDate(-1)" aria-label="이전 날짜">◀</button>
-  <button class="wd-nav wd-today" type="button" onclick="setWorkDateToday()">오늘</button>
-  <button class="wd-nav" type="button" onclick="moveWorkDate(1)" aria-label="다음 날짜">▶</button>
-  <div class="wd-display">
-    <span class="wd-dow" id="wdDow">·</span>
-    <span class="wd-date" id="wdDate"></span>
-    <span class="wd-type" id="wdType"></span>
-  </div>
-</div>
 </div><!-- /sticky-top -->
 <div class="saving" id="saveIndicator">저장 중...</div>
 
@@ -909,11 +888,12 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 
 <div id="tab-check-m" class="content hidden">
   <div class="date-bar">
-    <!-- 날짜는 상단 공통 요일바(WORK_DATE)가 단일 소스 — 여기 input은 읽기전용 미러(혼동 방지) -->
-    <input type="date" id="checkDateM" readonly title="날짜는 상단 공통 요일바에서 변경하세요" style="opacity:.6;pointer-events:none">
+    <!-- 날짜·요일 직접 변경 — 점검(남)/점검(여) 같은 날짜로 함께 움직임(WORK_DATE 단일 소스) -->
+    <input type="date" id="checkDateM" onchange="setWorkDate(this.value)" title="날짜 변경(남·여 함께 적용)">
     <button class="btn" onclick="moveDateG('m',-1)">&lt;</button>
     <button class="btn" onclick="setTodayG('m')">오늘</button>
     <button class="btn" onclick="moveDateG('m',1)">&gt;</button>
+    <span class="dow-chip" id="wdDowM">·</span>
     <span class="duty-wrap"><span class="duty-label">근무자</span><select id="dutyM" class="duty-select" onchange="onDutyChangeG('m')" aria-label="근무자"></select></span>
   </div>
   <div class="submitter-bar submitter-bar-split">
@@ -951,11 +931,12 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 
 <div id="tab-check-f" class="content hidden">
   <div class="date-bar">
-    <!-- 날짜는 상단 공통 요일바(WORK_DATE)가 단일 소스 — 여기 input은 읽기전용 미러(혼동 방지) -->
-    <input type="date" id="checkDateF" readonly title="날짜는 상단 공통 요일바에서 변경하세요" style="opacity:.6;pointer-events:none">
+    <!-- 날짜·요일 직접 변경 — 점검(남)/점검(여) 같은 날짜로 함께 움직임(WORK_DATE 단일 소스) -->
+    <input type="date" id="checkDateF" onchange="setWorkDate(this.value)" title="날짜 변경(남·여 함께 적용)">
     <button class="btn" onclick="moveDateG('f',-1)">&lt;</button>
     <button class="btn" onclick="setTodayG('f')">오늘</button>
     <button class="btn" onclick="moveDateG('f',1)">&gt;</button>
+    <span class="dow-chip" id="wdDowF">·</span>
     <span class="duty-wrap"><span class="duty-label">근무자</span><select id="dutyF" class="duty-select" onchange="onDutyChangeG('f')" aria-label="근무자"></select></span>
   </div>
   <div class="submitter-bar submitter-bar-split">
@@ -2438,15 +2419,17 @@ let WORK_DATE = (typeof kstToday==='function') ? kstToday() : fmtLocalDate(new D
 function getWorkDate(){ return WORK_DATE; }
 /* WORK_DATE의 요일키(mon..sun) — 업무보드 단일 컬럼 선택용 */
 function workDateDayKey(){ return DOW_TO_DAYKEY[new Date(WORK_DATE+'T00:00:00').getDay()]; }
-/* 공통 요일바 표시 갱신 (요일 크게 + 날짜 + 평일/주말/휴관 뱃지) */
+/* 요일 칩 갱신 — 점검(남)/점검(여) 날짜바에 합류(상단 공통바 폐지 · GM 2026-06-22).
+   "월요일 · 평일" 형태 칩을 두 점검 탭에 동시 반영. */
 function renderWorkdateBar(){
   const dn=['일','월','화','수','목','금','토'];
-  const dt=new Date(WORK_DATE+'T00:00:00'), dow=dt.getDay();
+  const dow=new Date(WORK_DATE+'T00:00:00').getDay();
   const info=getDayInfo(WORK_DATE);
-  const dowEl=document.getElementById('wdDow');
-  if(dowEl){ dowEl.textContent=dn[dow]+'요일'; dowEl.className='wd-dow '+((dow===0||dow===6)?'is-weekend':'is-weekday'); }
-  const dEl=document.getElementById('wdDate'); if(dEl) dEl.textContent=WORK_DATE;
-  const tEl=document.getElementById('wdType'); if(tEl){ tEl.textContent=info.label; tEl.className='wd-type '+info.cls; }
+  const txt=dn[dow]+'요일 · '+info.label;
+  ['wdDowM','wdDowF'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el){ el.textContent=txt; el.className='dow-chip '+info.cls; }
+  });
 }
 /* 모든 구역을 WORK_DATE로 동기화 — 단일 이벤트 경로.
    점검 미러 input 갱신 → 점검(남)·점검(여) 렌더 → 공통바·업무보드 렌더. */
