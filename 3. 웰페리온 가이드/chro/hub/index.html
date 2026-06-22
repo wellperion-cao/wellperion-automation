@@ -1291,23 +1291,23 @@ function renderHire(){
       '<button class="btn-sm" data-calnav="prev">‹</button>'+
       '<div style="font-weight:700;font-size:13.5px">'+y+'년 '+(m+1)+'월 <span style="color:var(--ink-faint);font-weight:500;font-size:11px">면접 일정</span></div>'+
       '<button class="btn-sm" data-calnav="next">›</button></div>';
-    h+='<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;text-align:center;font-size:10.5px;color:var(--ink-faint);margin-bottom:3px">'+
+    h+='<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;text-align:center;font-size:12px;color:var(--ink-faint);margin-bottom:3px">'+
       ['일','월','화','수','목','금','토'].map(function(w){return '<div>'+w+'</div>';}).join('')+'</div>';
     h+='<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px">';
     for(var i=0;i<startDow;i++){ h+='<div></div>'; }
     for(var d=1;d<=days;d++){
       var has=byDay[d]||[];
-      var st='min-height:84px;display:flex;flex-direction:column;align-items:stretch;border:1px solid var(--line-soft);border-radius:7px;font-size:11px;padding:3px 3px;overflow:hidden;'+(isToday(d)?'outline:1.5px solid var(--gold);background:var(--surface-2)':'background:#fff');
-      var dn='<div style="font-size:10px;font-weight:700;line-height:1.1;text-align:left;color:'+(isToday(d)?'var(--gold-deep)':'var(--ink-soft)')+'">'+d+'</div>';
+      var st='min-height:96px;display:flex;flex-direction:column;align-items:stretch;border:1px solid var(--line-soft);border-radius:7px;font-size:11px;padding:3px 3px;overflow:hidden;'+(isToday(d)?'outline:1.5px solid var(--gold);background:var(--surface-2)':'background:#fff');
+      var dn='<div style="font-size:12.5px;font-weight:700;line-height:1.1;text-align:left;color:'+(isToday(d)?'var(--gold-deep)':'var(--ink-soft)')+'">'+d+'</div>';
       var chips='';
       if(has.length){
         chips=has.slice(0,2).map(function(e){
           var sstg=({"1차 면접":"1차","2차 면접":"2차","서류 검토":"서류","최종 합격":"합격"})[e.stage]||e.stage;
           return '<div style="margin-top:2px;background:var(--surface-2,#f3ecdd);border-left:2px solid var(--gold);border-radius:3px;padding:1px 3px;line-height:1.2;overflow:hidden">'+
-            '<div style="font-size:8.5px;font-weight:700;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+esc(e.name)+'</div>'+
-            '<div style="font-size:7.5px;color:var(--gold-deep);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+(e.hm?esc(e.hm)+' ':'')+esc(sstg)+'</div></div>';
+            '<div style="font-size:11px;font-weight:700;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+esc(e.name)+'</div>'+
+            '<div style="font-size:9.5px;color:var(--gold-deep);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+(e.hm?esc(e.hm)+' ':'')+esc(sstg)+'</div></div>';
         }).join('');
-        if(has.length>2){ chips+='<div style="margin-top:1px;font-size:8px;font-weight:700;color:var(--gold-deep)">+'+(has.length-2)+' 더</div>'; }
+        if(has.length>2){ chips+='<div style="margin-top:1px;font-size:10px;font-weight:700;color:var(--gold-deep)">+'+(has.length-2)+' 더</div>'; }
       }
       var tip=has.length?esc(has.map(function(e){return e.name+(e.hm?' '+e.hm:'')+'('+e.stage+')';}).join(', ')):'';
       h+='<div title="'+tip+'" style="'+st+'">'+dn+chips+'</div>';
@@ -1507,21 +1507,21 @@ function renderObCalCard(){
   var startDow=new Date(y,m,1).getDay();var days=new Date(y,m+1,0).getDate();var td=new Date();var isT=function(d){return td.getFullYear()===y&&td.getMonth()===m&&td.getDate()===d;};
   var h='<div class="card" style="margin-bottom:10px"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px"><button class="ob-btn sec" onclick="obCalNav(-1)">‹</button><div style="font-weight:700">'+y+'년 '+(m+1)+'월 <span style="color:#888;font-weight:500;font-size:11px">온보딩 체크인</span></div><button class="ob-btn sec" onclick="obCalNav(1)">›</button></div>';
   h+='<div style="display:flex;gap:13px;font-size:11px;color:#666;margin-bottom:7px"><span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#1a7f5a;margin-right:3px;vertical-align:middle"></span>완료</span><span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#2f6d9e;margin-right:3px;vertical-align:middle"></span>예정</span><span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#c0392b;margin-right:3px;vertical-align:middle"></span>지연</span></div>';
-  h+='<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;text-align:center;font-size:10.5px;color:#888;margin-bottom:3px">'+["일","월","화","수","목","금","토"].map(function(w){return "<div>"+w+"</div>";}).join("")+'</div>';
+  h+='<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;text-align:center;font-size:12px;color:#888;margin-bottom:3px">'+["일","월","화","수","목","금","토"].map(function(w){return "<div>"+w+"</div>";}).join("")+'</div>';
   h+='<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px">';
   for(var i=0;i<startDow;i++)h+="<div></div>";
   for(var d=1;d<=days;d++){
     var has=byDay[d]||[];
-    var st='min-height:84px;display:flex;flex-direction:column;align-items:stretch;border:1px solid #efece4;border-radius:7px;font-size:11px;padding:3px;overflow:hidden;'+(isT(d)?'outline:1.5px solid #b08d57;background:#faf9f6':'background:#fff');
-    var dn='<div style="font-size:10px;font-weight:700;line-height:1.1;text-align:left;color:'+(isT(d)?'#8a6f3f':'#6c6961')+'">'+d+'</div>';
+    var st='min-height:96px;display:flex;flex-direction:column;align-items:stretch;border:1px solid #efece4;border-radius:7px;font-size:11px;padding:3px;overflow:hidden;'+(isT(d)?'outline:1.5px solid #b08d57;background:#faf9f6':'background:#fff');
+    var dn='<div style="font-size:12.5px;font-weight:700;line-height:1.1;text-align:left;color:'+(isT(d)?'#8a6f3f':'#6c6961')+'">'+d+'</div>';
     var chips='';
     if(has.length){
       chips=has.slice(0,2).map(function(e){
         var isOver=!e.done&&new Date(y,m,d)<new Date(td.getFullYear(),td.getMonth(),td.getDate());
         var col=e.done?"#1a7f5a":(isOver?"#c0392b":"#2f6d9e");var bgc=e.done?"#e3f4ea":(isOver?"#fde2e2":"#eef3fb");
-        return '<div onclick="obCheck('+e.row+')" style="cursor:pointer;margin-top:2px;background:'+bgc+';border-left:2px solid '+col+';border-radius:3px;padding:1px 4px;line-height:1.2;overflow:hidden"><div style="font-size:8.5px;font-weight:700;color:#1f1e1b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+esc(e.name)+(e.done?" ✓":"")+'</div><div style="font-size:7.5px;color:'+col+';white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+esc(e.label)+'</div></div>';
+        return '<div onclick="obCheck('+e.row+')" style="cursor:pointer;margin-top:2px;background:'+bgc+';border-left:2px solid '+col+';border-radius:3px;padding:1px 4px;line-height:1.2;overflow:hidden"><div style="font-size:11px;font-weight:700;color:#1f1e1b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+esc(e.name)+(e.done?" ✓":"")+'</div><div style="font-size:9.5px;color:'+col+';white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+esc(e.label)+'</div></div>';
       }).join('');
-      if(has.length>2)chips+='<div style="margin-top:1px;font-size:8px;font-weight:700;color:#8a6f3f">+'+(has.length-2)+' 더</div>';
+      if(has.length>2)chips+='<div style="margin-top:1px;font-size:10px;font-weight:700;color:#8a6f3f">+'+(has.length-2)+' 더</div>';
     }
     var tip=has.length?esc(has.map(function(e){return e.name+" "+e.label+(e.done?"✓":"");}).join(", ")):"";
     h+='<div title="'+tip+'" style="'+st+'">'+dn+chips+'</div>';
@@ -1540,21 +1540,21 @@ function renderDashCalCard(){
   var startDow=new Date(y,m,1).getDay();var days=new Date(y,m+1,0).getDate();var td=new Date();var isT=function(d){return td.getFullYear()===y&&td.getMonth()===m&&td.getDate()===d;};
   var h='<div class="card" style="margin-bottom:10px"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px"><button class="ob-btn sec" onclick="dashCalNav(-1)">‹</button><div style="font-weight:700">'+y+'년 '+(m+1)+'월 <span style="color:#888;font-weight:500;font-size:11px">채용·온보딩 일정</span></div><button class="ob-btn sec" onclick="dashCalNav(1)">›</button></div>';
   h+='<div style="display:flex;gap:13px;font-size:11px;color:#666;margin-bottom:7px"><span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#2f6d9e;margin-right:3px;vertical-align:middle"></span>면접</span><span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#b08d57;margin-right:3px;vertical-align:middle"></span>온보딩 체크인</span></div>';
-  h+='<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;text-align:center;font-size:10.5px;color:#888;margin-bottom:3px">'+["일","월","화","수","목","금","토"].map(function(w){return "<div>"+w+"</div>";}).join("")+'</div>';
+  h+='<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;text-align:center;font-size:12px;color:#888;margin-bottom:3px">'+["일","월","화","수","목","금","토"].map(function(w){return "<div>"+w+"</div>";}).join("")+'</div>';
   h+='<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px">';
   for(var i=0;i<startDow;i++)h+="<div></div>";
   for(var d=1;d<=days;d++){
     var has=byDay[d]||[];
-    var st='min-height:84px;display:flex;flex-direction:column;align-items:stretch;border:1px solid #efece4;border-radius:7px;font-size:11px;padding:3px;overflow:hidden;'+(isT(d)?'outline:1.5px solid #b08d57;background:#faf9f6':'background:#fff');
-    var dn='<div style="font-size:10px;font-weight:700;line-height:1.1;text-align:left;color:'+(isT(d)?'#8a6f3f':'#6c6961')+'">'+d+'</div>';
+    var st='min-height:96px;display:flex;flex-direction:column;align-items:stretch;border:1px solid #efece4;border-radius:7px;font-size:11px;padding:3px;overflow:hidden;'+(isT(d)?'outline:1.5px solid #b08d57;background:#faf9f6':'background:#fff');
+    var dn='<div style="font-size:12.5px;font-weight:700;line-height:1.1;text-align:left;color:'+(isT(d)?'#8a6f3f':'#6c6961')+'">'+d+'</div>';
     var chips='';
     if(has.length){
       chips=has.slice(0,2).map(function(e){
         var col=e.kind==="면접"?"#2f6d9e":"#b08d57";
         var clk=(e.kind==="온보딩"&&e.row)?('onclick="obCheck('+e.row+')" '):'';
-        return '<div '+clk+'style="'+(clk?'cursor:pointer;':'')+'margin-top:2px;background:#f7f4ee;border-left:2px solid '+col+';border-radius:3px;padding:1px 4px;line-height:1.2;overflow:hidden"><div style="font-size:8.5px;font-weight:700;color:#1f1e1b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+esc(e.name)+(e.done?" ✓":"")+'</div><div style="font-size:7.5px;color:'+col+';white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+esc(e.kind)+" · "+esc(e.label)+'</div></div>';
+        return '<div '+clk+'style="'+(clk?'cursor:pointer;':'')+'margin-top:2px;background:#f7f4ee;border-left:2px solid '+col+';border-radius:3px;padding:1px 4px;line-height:1.2;overflow:hidden"><div style="font-size:11px;font-weight:700;color:#1f1e1b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+esc(e.name)+(e.done?" ✓":"")+'</div><div style="font-size:9.5px;color:'+col+';white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+esc(e.kind)+" · "+esc(e.label)+'</div></div>';
       }).join('');
-      if(has.length>2)chips+='<div style="margin-top:1px;font-size:8px;font-weight:700;color:#8a6f3f">+'+(has.length-2)+' 더</div>';
+      if(has.length>2)chips+='<div style="margin-top:1px;font-size:10px;font-weight:700;color:#8a6f3f">+'+(has.length-2)+' 더</div>';
     }
     var tip=has.length?esc(has.map(function(e){return e.kind+" "+e.name+" "+e.label;}).join(", ")):"";
     h+='<div title="'+tip+'" style="'+st+'">'+dn+chips+'</div>';
