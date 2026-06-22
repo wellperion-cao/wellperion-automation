@@ -382,11 +382,11 @@ body{
           <thead>
             <tr>
               <th style="width:80px">이름</th>
-              <th style="width:110px">전화</th>
+              <th style="width:120px">연락처</th>
               <th style="width:90px">관심 프로그램</th>
               <th style="width:90px">진행상황</th>
               <th style="width:85px">담당</th>
-              <th style="width:100px">메모</th>
+              <th style="width:240px">메모</th>
               <th style="width:90px">문의일</th>
               <th style="width:200px">일정 (상담·체험)</th>
               <th style="width:90px">작업</th>
@@ -789,7 +789,7 @@ if (action === 'member_calendar') {
 var GAS_URL = 'https://script.google.com/macros/s/AKfycbzdwSCCSSJ6JXLDoWuo7HG0JmBM2iy10TujFQ_O5JbTjnWaN7gOk-ddA4IAvsNfelg0xA/exec';
 /* ── 수정 모드(2026-06-22 GM '그냥 열기') — 진행상태·메모·일정·담당만 수정. 이름·전화는 익명 유지·수정불가 ── */
 var READ_ONLY = false;
-var ALLOW_DELETE = false; // 공개페이지 파괴행위 최소화 — 삭제 비활성
+var ALLOW_DELETE = true;  // 2026-06-22 GM: 작업열 편집+삭제
 var ALLOW_ADD = false;    // 신규추가 비활성(문의는 웹폼·시트로 유입)
 
 /* ── 탭 전환 ── */
@@ -970,7 +970,31 @@ var dbEditingRow = null; // 현재 편집 중인 rowIndex
 var dbSaveTimer = null;  // 디바운스 타이머
 
 // 실무진 실제 사용 코드 (2026-06-20 GM 확정). 등록=SUC, 이탈=LOSS 등 시트 어휘 그대로.
-var STATUS_OPTIONS = ['신규','컨택중','예약','방문','SUC','단기SUC','결제완납','LOSS'];
+var STATUS_OPTIONS = ['신규','컨택중','가망','예약','방문','SUC','단기SUC','결제완납','LOSS'];
+var PROGRAM_OPTIONS = [
+  '플래티넘 (Gym + G.X + Sauna 이용)',
+  '노블레스 (Gym + G.X + Swimming + Sauna 이용)',
+  '플래티넘+골프 (Gym + Golf + G.X + Sauna 이용)',
+  '노블레스+골프 (Gym + Golf + G.X + Swimming + Sauna 이용)'
+];
+var OWNER_OPTIONS = ['임정은','최준용','이경연','이지영','김남욱','고수자','강경희','윤병현'];
+// 드롭다운 생성 — 목록에 없는 현재값도 보존(데이터 손실 방지). IME 안전(재생성 없음).
+function buildSelect(field, options, current) {
+  var sel = document.createElement('select');
+  sel.className = 'cell-select';
+  sel.dataset.field = field;
+  var opts = options.slice();
+  var cur = current || '';
+  if (cur && opts.indexOf(cur) < 0) opts.unshift(cur);
+  opts.unshift('');
+  opts.forEach(function(o){
+    var op = document.createElement('option');
+    op.value = o; op.textContent = o || '(선택)';
+    if (o === cur) op.selected = true;
+    sel.appendChild(op);
+  });
+  return sel;
+}
 var STATUS_CLASS   = {
   '신규':'new','컨택중':'contact','예약':'reserved','방문':'visited',
   'SUC':'joined','단기SUC':'joined','결제완납':'joined','LOSS':'lost',
@@ -1068,7 +1092,7 @@ function buildDbRow(row, isNew) {
     // 담당
     '<td style="font-size:12px;color:var(--dim)">' + esc(row.owner || '—') + '</td>' +
     // 메모
-    '<td style="font-size:12px;color:var(--dim);max-width:140px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + esc(row.memo || '—') + '</td>' +
+    '<td style="font-size:12px;color:var(--dim);max-width:240px;white-space:pre-wrap;word-break:break-word">' + esc(row.memo || '—') + '</td>' +
     // 문의일
     '<td style="font-size:12px;color:var(--dim)">' + esc(row.timestamp || '—') + '</td>' +
     // 일정 (상담·체험)
@@ -1127,20 +1151,23 @@ function startEditRow(btn) {
   // IME 안전: input/select를 교체하지 않고 처음부터 올바른 타입으로 생성
   var cells = tr.querySelectorAll('td');
 
-  // [0] 이름 — 익명 보호: 수정 불가(실명은 시트에서만). data-field 없음 → 저장 시 미전송
-  cells[0].innerHTML = '<span style="font-size:11px;color:var(--dim)">가림 (시트)</span>';
+  // [0] 이름
+  cells[0].innerHTML = '';
+  var inputName = document.createElement('input');
+  inputName.className = 'cell-input'; inputName.type = 'text';
+  inputName.value = row.name || ''; inputName.dataset.field = 'name';
+  cells[0].appendChild(inputName);
 
-  // [1] 전화 — 익명 보호: 수정 불가
-  cells[1].innerHTML = '<span style="font-size:11px;color:var(--dim)">—</span>';
+  // [1] 연락처
+  cells[1].innerHTML = '';
+  var inputPhone = document.createElement('input');
+  inputPhone.className = 'cell-input'; inputPhone.type = 'text';
+  inputPhone.value = row.phone || ''; inputPhone.dataset.field = 'phone';
+  cells[1].appendChild(inputPhone);
 
-  // [2] 관심 프로그램
+  // [2] 관심 프로그램 (드롭다운)
   cells[2].innerHTML = '';
-  var inputProg = document.createElement('input');
-  inputProg.className = 'cell-input';
-  inputProg.type = 'text';
-  inputProg.value = row.program || '';
-  inputProg.dataset.field = 'program';
-  cells[2].appendChild(inputProg);
+  cells[2].appendChild(buildSelect('program', PROGRAM_OPTIONS, row.program));
 
   // [3] 진행상황 드롭다운
   cells[3].innerHTML = '';
@@ -1156,20 +1183,17 @@ function startEditRow(btn) {
   });
   cells[3].appendChild(selStatus);
 
-  // [4] 담당
+  // [4] 담당 (드롭다운)
   cells[4].innerHTML = '';
-  var inputOwner = document.createElement('input');
-  inputOwner.className = 'cell-input';
-  inputOwner.type = 'text';
-  inputOwner.value = row.owner || '';
-  inputOwner.dataset.field = 'owner';
-  cells[4].appendChild(inputOwner);
+  cells[4].appendChild(buildSelect('owner', OWNER_OPTIONS, row.owner));
 
-  // [5] 메모
+  // [5] 메모 (넓은 입력칸 — textarea)
   cells[5].innerHTML = '';
-  var inputMemo = document.createElement('input');
+  var inputMemo = document.createElement('textarea');
   inputMemo.className = 'cell-input';
-  inputMemo.type = 'text';
+  inputMemo.rows = 3;
+  inputMemo.style.width = '230px';
+  inputMemo.style.resize = 'vertical';
   inputMemo.value = row.memo || '';
   inputMemo.dataset.field = 'memo';
   cells[5].appendChild(inputMemo);
@@ -1380,7 +1404,7 @@ function deleteRow(btn) {
   var row = dbRows.find(function(r){ return r.rowIndex === rowIndex; }) || {};
   if (!confirm('삭제하시겠습니까?\n' + (row.name || '(이름없음)') + ' · ' + (row.timestamp || '') + '\n\n이 작업은 시트에서 해당 행을 완전히 삭제합니다.')) return;
 
-  apiPost({ action: 'inquiry_delete', rowIndex: rowIndex })
+  apiPost({ action: 'member_inquiry_delete', rowIndex: rowIndex })
     .then(function(data){
       if (!data.ok) throw new Error(data.error || '삭제 실패');
       showToast('삭제 완료', 'ok');

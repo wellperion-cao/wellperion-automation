@@ -455,7 +455,8 @@ var _SURVEY_PUBLIC_ACTIONS = {
   // 문의회원 페이지(CPO) 익명 읽기 — 이름·전화·메모 0 노출 → 공개 안전(2026-06-22 A안)
   member_inquiry_list:    true,
   member_calendar:        true,
-  member_inquiry_update:  true   // 진행상태·메모·일정·담당만 패치(이름·전화 컬럼 미변경) — 2026-06-22 GM '그냥 열기'
+  member_inquiry_update:  true,  // 2026-06-22 GM '전체 공개' — 실명·전화 포함 수정
+  member_inquiry_delete:  true   // 행 삭제
 };
 function _accessProp_(k) {
   try { return PropertiesService.getScriptProperties().getProperty(k) || ''; } catch (e) { return ''; }
@@ -515,6 +516,7 @@ function _miReadRows_() {
   var iExp1  = _miColIdx_(hdr, ['체험1 확정시간','체험1']);
   var iExp2  = _miColIdx_(hdr, ['체험2 확정시간','체험2']);
   var iOwner = _miColIdx_(hdr, ['담당','담당자']);
+  var iMemo  = _miColIdx_(hdr, ['메모','비고','담당자메모']);
   for (var r = 0; r < data.length; r++) {
     var row = data[r];
     var hasName  = iName  >= 0 && row[iName];
@@ -522,15 +524,15 @@ function _miReadRows_() {
     if (!hasName && !hasPhone) continue; // 완전 빈 행 스킵
     out.push({
       rowIndex: r + 2,
-      name: '',    // 익명(A안) — 실명 미노출
-      phone: '',   // 익명(A안)
-      program:  iProg  >= 0 ? String(row[iProg] || '') : '',
-      status:   iStat  >= 0 ? String(row[iStat] || '') : '',
+      name:     iName  >= 0 ? String(row[iName]  || '') : '',  // 2026-06-22 GM '전체 공개' — 실명 노출
+      phone:    iPhone >= 0 ? String(row[iPhone] || '') : '',  // 연락처 노출
+      program:  iProg  >= 0 ? String(row[iProg]  || '') : '',
+      status:   iStat  >= 0 ? String(row[iStat]  || '') : '',
       tourDate: _miToISO_(iTour >= 0 ? row[iTour] : ''),
       exp1:     _miToISO_(iExp1 >= 0 ? row[iExp1] : ''),
       exp2:     _miToISO_(iExp2 >= 0 ? row[iExp2] : ''),
       timestamp:_miToISO_(iTs   >= 0 ? row[iTs]   : ''),
-      memo: '',    // 익명(A안) — 자유기재 메모 미노출
+      memo:     iMemo  >= 0 ? String(row[iMemo]  || '') : '',
       owner:    iOwner >= 0 ? String(row[iOwner] || '') : ''
     });
   }
@@ -688,8 +690,8 @@ function _processAction(body) {
     return _json({ ok: true, month: mcMonth, count: mcEvents.length, events: mcEvents });
   }
 
-  // ─── 문의회원 페이지(CPO): 진행상태/메모/일정/담당 수정 ───
-  //   ★ 이름·전화 컬럼은 의도적으로 패치 목록에서 제외 → 익명 페이지가 빈값 보내도 실명 보존(이중 안전).
+  // ─── 문의회원 페이지(CPO): 행 수정 (이름·전화·진행상태·관심프로그램·메모·담당·일정) ───
+  //   2026-06-22 GM '전체 공개' — 실명·전화도 수정 대상. 빈문자는 의도적 클리어로 간주(undefined만 스킵).
   if (action === 'member_inquiry_update') {
     var muRow = parseInt(body.rowIndex, 10);
     if (!muRow || muRow < 2) return _json({ ok: false, error: 'rowIndex 필수(2 이상)' });
@@ -701,6 +703,8 @@ function _processAction(body) {
       var ci = _miColIdx_(muHdr, colNames);
       if (ci >= 0) muSh.getRange(muRow, ci + 1).setValue(val);
     }
+    _muSet(['이름','성함'], body.name);
+    _muSet(['연락처','전화','휴대폰'], body.phone);
     _muSet(['관심 있는 프로그램 종류','관심프로그램','프로그램'], body.program);
     _muSet(['진행현황','진행상황','진행상태','상태'], body.status);
     _muSet(['메모','비고','담당자메모'], body.memo);
@@ -710,6 +714,18 @@ function _processAction(body) {
     _muSet(['체험2 확정시간','체험2'], body.exp2);
     try { _notifyTelegram('📝 문의회원 수정(공개페이지) — 행 ' + muRow + ' · 상태:' + (body.status || '-') + ' · 담당:' + (body.owner || '-')); } catch (e) {}
     return _json({ ok: true, rowIndex: muRow, message: '수정되었습니다.' });
+  }
+
+  // ─── 문의회원 페이지(CPO): 행 삭제 ───
+  if (action === 'member_inquiry_delete') {
+    var mdRow = parseInt(body.rowIndex, 10);
+    if (!mdRow || mdRow < 2) return _json({ ok: false, error: 'rowIndex 필수(2 이상)' });
+    var mdSh = _miSheet_();
+    if (!mdSh) return _json({ ok: false, error: '시트 없음' });
+    if (mdRow > mdSh.getLastRow()) return _json({ ok: false, error: '행 범위 초과' });
+    mdSh.deleteRow(mdRow);
+    try { _notifyTelegram('🗑 문의회원 삭제(공개페이지) — 행 ' + mdRow); } catch (e) {}
+    return _json({ ok: true, rowIndex: mdRow, message: '삭제되었습니다.' });
   }
 
   // ─── 문의→가입 전환 집계 ───
