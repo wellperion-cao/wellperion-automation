@@ -834,6 +834,8 @@ function renderDash(){
   html+='<div class="card"><h3>고용 형태 분포</h3><div class="chart-box"><canvas id="cType"></canvas></div></div>';
   html+='</div>';
 
+  html+='<div class="sec-title">조직도 <span class="muted" style="font-weight:400;font-size:11px">· 재직 '+(function(){var s={};active.forEach(function(e){var n=(e["성명"]||e["이름"]||"").trim();if(n)s[n]=1;});return Object.keys(s).length;})()+'명 · 이름·직급</span></div>'+orgChartHtml(active);
+
   html+='<div class="sec-title">성과 · 이직 동향</div><div class="grid-2">';
   html+='<div class="card"><h3>인사평가 등급 분포</h3><div class="chart-box"><canvas id="cGrade"></canvas></div></div>';
   html+='<div class="card"><h3>퇴사 유형 (최근 90일)</h3><div class="chart-box"><canvas id="cExit"></canvas></div></div>';
@@ -862,6 +864,45 @@ function kpi(label,val,note){
 }
 function groupCount(arr,key){
   var m={};arr.forEach(function(r){var v=r[key]||"미지정";m[v]=(m[v]||0)+1;});return m;
+}
+/* 조직도 — 라이브 emp 데이터로 렌더(코드만, 실명은 파일에 저장 안 됨). 겸직은 주 소속에 1회 표시. */
+function orgChartHtml(active){
+  var norm=function(s){return String(s==null?"":s).replace(/\n/g," ").trim();};
+  var by={};active.forEach(function(e){var d=norm(e["부서"]);(by[d]=by[d]||[]).push({nm:norm(e["성명"]||e["이름"]),jg:norm(e["직급"])});});
+  var leadRank={"회장":0,"대표이사":1,"대표":1,"이사":2,"GM":3};
+  var lead=[],leadNames={};
+  active.forEach(function(e){var jg=norm(e["직급"]);if(leadRank[jg]!=null){var nm=norm(e["성명"]||e["이름"]);if(nm&&!leadNames[nm]){leadNames[nm]=1;lead.push({nm:nm,jg:jg,r:leadRank[jg]});}}});
+  lead.sort(function(a,b){return a.r-b.r;});
+  var disp={"시설":"시설부","주차 관리":"주차관리","지원":"지원부 · 사우나"};
+  var sections=[
+    {t:"경영지원 · 관리 · 운영",d:["경영지원부","관리부","운영부"]},
+    {t:"강습부",d:["헬스","수영","골프","필라테스","스쿼시","체조&트램폴린","G.X 강사","GXE"]},
+    {t:"시설 · 지원",d:["시설","주차 관리","지원"]}
+  ];
+  var placed={};
+  var h='<div class="card" style="padding:16px 18px">';
+  if(lead.length){
+    h+='<div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-bottom:4px">';
+    h+=lead.map(function(p){return '<div style="background:var(--surface);border:1px solid var(--gold);border-radius:11px;padding:9px 18px;text-align:center;min-width:108px"><div style="font-size:14px;font-weight:800;color:var(--ink)">'+esc(p.nm)+'</div><div style="font-size:11px;color:var(--gold-deep);font-weight:700;margin-top:2px">'+esc(p.jg)+'</div></div>';}).join("");
+    h+='</div>';
+  }
+  sections.forEach(function(s){
+    var cards=s.d.map(function(dept){
+      var mem=(by[dept]||[]).filter(function(p){if(leadNames[p.nm]||placed[p.nm])return false;placed[p.nm]=1;return true;});
+      if(!mem.length)return"";
+      var dn=disp[dept]||dept;
+      var c='<div style="background:var(--surface-2);border:1px solid var(--line);border-radius:10px;padding:11px 12px">';
+      c+='<div style="font-size:12.5px;font-weight:800;color:var(--ink);display:flex;justify-content:space-between;align-items:baseline;gap:6px;border-bottom:1px solid var(--line);padding-bottom:6px;margin-bottom:7px">'+esc(dn)+'<span style="font-size:10px;color:var(--ink-faint);font-weight:600">'+mem.length+'명</span></div>';
+      c+=mem.map(function(p){return '<div style="display:flex;justify-content:space-between;gap:8px;font-size:11.5px;padding:2px 0"><span style="color:var(--ink);font-weight:600">'+esc(p.nm)+'</span><span style="color:var(--ink-soft);text-align:right">'+esc(p.jg||"—")+'</span></div>';}).join("");
+      c+='</div>';
+      return c;
+    }).filter(Boolean).join("");
+    if(!cards)return;
+    h+='<div style="font-size:11px;font-weight:700;color:var(--gold-deep);letter-spacing:.02em;margin:14px 0 9px">'+esc(s.t)+'</div>';
+    h+='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(195px,1fr));gap:9px">'+cards+'</div>';
+  });
+  h+='</div>';
+  return h;
 }
 
 /* ============ EMPLOYEES ============ */
