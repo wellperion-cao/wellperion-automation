@@ -127,9 +127,24 @@ def _clear_orphan_rebase(root: str) -> None:
         pass
 
 
+def _is_dirty(root: str) -> bool:
+    """워킹트리/스테이징에 미커밋 변경이 있나(=GM이 파일 열어 편집 중일 수 있음).
+    판단 불가 시 안전하게 True(=merge 경로 선택, 열린 파일 보호)."""
+    try:
+        r = subprocess.run(
+            ["git", "status", "--porcelain"],
+            cwd=root, capture_output=True, text=True, timeout=20,
+        )
+        if r.returncode != 0:
+            return True
+        return bool((r.stdout or "").strip())
+    except Exception:
+        return True
+
+
 def _reconcile(root: str) -> bool:
     """원격이 앞섰을 때 fetch 후 로컬 커밋을 origin 위로 통합.
-    1차 rebase(--autostash) → 실패 시 2차 merge 폴백(워킹트리 reset 안 함).
+    워킹트리 dirty(GM 편집 중) → 곧장 merge / 깨끗 → rebase(실패 시 merge 폴백).
     성공 True / 실패 False. 어떤 경우에도 half-state 안 남김(abort + 고아 강제정리).
     (호출자가 git_lock 임계구역 보유 상태에서만 호출 — 동시 로컬 git 없음 보장.)
 
@@ -144,20 +159,26 @@ def _reconcile(root: str) -> bool:
         )
         if f.returncode != 0:
             return False
-        rb = subprocess.run(
-            ["git", "rebase", "--autostash", f"{REMOTE}/{BRANCH}"],
-            cwd=root, capture_output=True, text=True, timeout=PUSH_TIMEOUT,
-        )
-        if rb.returncode == 0:
-            return True
-        # rebase 실패 → 원상복구(커밋·작업트리 보존) + 고아 상태 강제정리
-        subprocess.run(
-            ["git", "rebase", "--abort"],
-            cwd=root, capture_output=True, text=True, timeout=20,
-        )
-        _clear_orphan_rebase(root)
-        _log("POST_COMMIT_PUSH rebase 실패; merge 폴백 시도", root)
-        # merge 폴백 — 워킹트리 reset 없이 통합(잠긴 바이너리와 무관)
+        # 워킹트리가 더러우면(=GM이 파일을 열어 편집 중) rebase 는 시작 시 워킹트리를
+        # reset 하다 잠긴 파일에서 죽는다 → 처음부터 merge 로 간다(열린 파일 안 건드림).
+        # 깨끗하면 rebase 로 선형 히스토리 유지, 실패해도 아래 merge 폴백.
+        if not _is_dirty(root):
+            rb = subprocess.run(
+                ["git", "rebase", "--autostash", f"{REMOTE}/{BRANCH}"],
+                cwd=root, capture_output=True, text=True, timeout=PUSH_TIMEOUT,
+            )
+            if rb.returncode == 0:
+                return True
+            # rebase 실패 → 원상복구(커밋·작업트리 보존) + 고아 상태 강제정리
+            subprocess.run(
+                ["git", "rebase", "--abort"],
+                cwd=root, capture_output=True, text=True, timeout=20,
+            )
+            _clear_orphan_rebase(root)
+            _log("POST_COMMIT_PUSH rebase 실패; merge 폴백 시도", root)
+        else:
+            _log("POST_COMMIT_PUSH 워킹트리 dirty; merge 로 통합(열린 파일 보호)", root)
+        # merge — 워킹트리 reset 없이 통합(잠긴 바이너리와 무관)
         mg = subprocess.run(
             ["git", "merge", "--no-edit", f"{REMOTE}/{BRANCH}"],
             cwd=root, capture_output=True, text=True, timeout=PUSH_TIMEOUT,

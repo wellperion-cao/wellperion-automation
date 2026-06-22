@@ -80,6 +80,14 @@ if [ -f "$QUEUE_GUARD" ] && [ -n "$PYBIN" ]; then
   fi
 fi
 
+# ── ①-2.3 열린(잠긴) 작업문서 건너뛰기 (자동push 잠김사고 근본차단 · 2026-06-22 웰리) ──
+# GM이 PowerPoint·PDF 등으로 열어둬 잠긴 작업문서를 이번 커밋 스테이징에서 제외.
+# 닫으면 다음 주기에 정상 백업. 충돌·자동push 반복실패 원천차단. 항상 exit 0(fail-open).
+SKIP_OPEN_GUARD="$REPO_ROOT/scripts/precommit_skip_open_office.py"
+if [ -f "$SKIP_OPEN_GUARD" ] && [ -n "$PYBIN" ]; then
+  PYTHONUTF8=1 "$PYBIN" "$SKIP_OPEN_GUARD" || true
+fi
+
 # ── ①-2.5 ship_no 자동 부여 (새 배 고정 식별번호 · 2026-06-19) ───────────────
 # status/_queue.json 에 ship_no 없는 항목에 clevel별 번호 자동 부여 후 git add.
 # assign 실패해도 커밋 차단 안 함(fail-open). 멱등·기존 번호 불변.
