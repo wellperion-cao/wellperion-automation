@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>WELLPERION × CINQ MONDES · 브랜드 확장 회사소개서 (A3 인쇄)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;1,400;1,500&family=Jost:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+<style>
+  :root{
+    --black:#221F20; --white:#FBF9F6; --beige:#B79F8A; --beige-soft:#E8DFD4;
+    --beige-pale:#F7F2EC; --coral:#ED5B3F; --gray:#8A8587; --line:#D9CFC3;
+    --cm-burgundy:#8B1A2F; --cm-gold:#C9A96E; --cm-cream:#FAF7F2;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html,body{
+    background:#3A3536; /* 화면 미리보기용 배경 */
+    font-family:"Pretendard Variable","Pretendard","Malgun Gothic",system-ui,sans-serif;
+    font-weight:400; color:var(--black); line-height:1.65;
+    -webkit-font-smoothing:antialiased;
+  }
+  .serif{font-family:"Playfair Display",Georgia,"Noto Serif KR",serif;}
+  .mono{font-family:"Jost",system-ui,sans-serif;letter-spacing:0.22em;text-transform:uppercase;font-weight:600;}
+
+  /* 각 페이지는 정확히 A3 세로 사이즈 */
+  .page{
+    width:297mm; height:420mm; background:var(--white);
+    margin:14px auto; position:relative; overflow:hidden;
+    padding:24mm 22mm;
+    display:flex; flex-direction:column;
+  }
+  .page.dark{background:var(--black);color:var(--beige);}
+  .page.cream{background:var(--cm-cream);}
+
+  /* 페이지 머리(헤더) */
+  .ph-brand{position:absolute;top:14mm;left:22mm;font-family:"Jost",sans-serif;letter-spacing:0.35em;font-weight:700;font-size:12pt;color:var(--black);}
+  .ph-brand .dot{color:var(--coral);}
+  .ph-meta{position:absolute;top:14mm;right:22mm;font-family:"Jost",sans-serif;letter-spacing:0.18em;font-size:9pt;color:var(--gray);text-transform:uppercase;}
+  .page.dark .ph-brand{color:var(--white);} .page.dark .ph-meta{color:var(--beige);}
+
+  /* 페이지 번호 */
+  .ph-num{position:absolute;bottom:14mm;right:22mm;font-family:"Jost",sans-serif;font-size:10pt;color:var(--gray);letter-spacing:0.1em;}
+  .ph-foot{position:absolute;bottom:14mm;left:22mm;font-family:"Jost",sans-serif;font-size:9pt;color:var(--gray);letter-spacing:0.05em;}
+  .page.dark .ph-num{color:var(--beige);} .page.dark .ph-foot{color:var(--beige);}
+
+  /* 표지 */
+  .cover-label{font-family:"Jost",sans-serif;font-size:11pt;letter-spacing:0.3em;color:var(--cm-gold);text-transform:uppercase;font-weight:600;}
+  .cover-title{font-family:"Playfair Display",Georgia,serif;font-size:78pt;line-height:1.04;color:var(--white);font-weight:400;margin-top:16mm;letter-spacing:-0.01em;}
+  .cover-title em{font-style:italic;color:var(--beige);}
+  .cover-ko{margin-top:14mm;font-family:"Playfair Display",Georgia,serif;font-size:24pt;color:var(--beige-soft);font-weight:300;letter-spacing:0.1em;}
+  .cover-position{margin-top:24mm;padding-top:18mm;border-top:1px solid rgba(183,159,138,0.4);font-size:13.5pt;color:rgba(232,223,212,0.92);line-height:1.95;max-width:200mm;}
+  .cover-position b{color:var(--cm-gold);font-weight:500;}
+  .cover-meta{display:flex;gap:20mm;margin-top:30mm;flex-wrap:wrap;}
+  .cover-meta>div{font-family:"Jost",sans-serif;font-size:9pt;letter-spacing:0.2em;color:rgba(183,159,138,0.9);text-transform:uppercase;}
+  .cover-meta>div span{display:block;font-family:"Playfair Display",Georgia,serif;font-size:18pt;color:var(--white);margin-top:6px;letter-spacing:0;text-transform:none;}
+
+  /* 챕터 공통 */
+  .era{font-family:"Jost",sans-serif;font-size:11pt;letter-spacing:0.32em;color:var(--coral);text-transform:uppercase;font-weight:600;}
+  .ch-title{font-family:"Playfair Display",Georgia,serif;font-size:38pt;line-height:1.18;color:var(--black);margin-top:10mm;font-weight:400;}
+  .ch-lead{margin-top:10mm;font-size:13.5pt;line-height:1.85;color:var(--gray);max-width:215mm;border-top:1px solid var(--line);padding-top:8mm;}
+  .ch-lead b{color:var(--black);font-weight:500;}
+  .page.dark .ch-title{color:var(--white);}
+  .page.dark .ch-lead{color:var(--beige-soft);border-top-color:rgba(183,159,138,0.3);}
+  .page.dark .ch-lead b{color:var(--white);}
+
+  h3.block-title{font-family:"Playfair Display",Georgia,serif;font-size:20pt;color:var(--black);margin-top:16mm;font-weight:400;}
+  .page.dark h3.block-title{color:var(--white);}
+  .body-p{margin-top:6mm;font-size:13pt;line-height:1.85;color:var(--gray);max-width:230mm;}
+  .body-p b{color:var(--black);font-weight:500;}
+  .page.dark .body-p{color:var(--beige-soft);}
+  .page.dark .body-p b{color:var(--white);}
+
+  .quote{margin-top:14mm;padding:14mm 18mm;background:var(--beige-pale);border-left:4px solid var(--coral);font-family:"Playfair Display",Georgia,serif;font-size:18pt;line-height:1.55;color:var(--black);font-style:italic;}
+  .page.dark .quote{background:rgba(183,159,138,0.08);color:var(--beige);}
+
+  /* AUDIENCE RAIL */
+  .rail-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8mm;margin-top:16mm;}
+  .rail-cell{background:var(--beige-pale);padding:14mm 12mm;border-top:3px solid var(--coral);}
+  .rail-cell .tag{font-family:"Jost",sans-serif;font-size:10pt;letter-spacing:0.3em;color:var(--coral);font-weight:700;text-transform:uppercase;}
+  .rail-cell .tag-ko{font-family:"Playfair Display",Georgia,serif;font-size:16pt;color:var(--black);margin-top:5mm;}
+  .rail-cell .line{margin-top:10mm;font-size:11.5pt;color:var(--gray);line-height:1.7;}
+
+  /* FACTS */
+  .facts{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:6mm;margin-top:12mm;}
+  .fact{background:var(--beige-pale);padding:10mm 6mm;border-top:2px solid var(--coral);}
+  .fact-label{font-family:"Jost",sans-serif;font-size:9pt;letter-spacing:0.2em;color:var(--gray);text-transform:uppercase;}
+  .fact-value{font-family:"Playfair Display",Georgia,serif;font-size:22pt;color:var(--black);margin-top:4mm;line-height:1;}
+  .fact-value .sub{font-size:14pt;color:var(--gray);}
+  .fact-unit{margin-top:3mm;font-size:9.5pt;color:var(--gray);}
+
+  /* PROGRAM CHIPS */
+  .program-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:5mm;margin-top:10mm;}
+  .program-chip{padding:8mm 4mm;border:1px solid var(--line);background:var(--white);text-align:center;font-size:10pt;color:var(--gray);}
+  .program-chip strong{display:block;font-family:"Playfair Display",Georgia,serif;font-size:13pt;color:var(--black);font-weight:500;margin-bottom:3mm;}
+
+  /* CINQ MONDES blocks */
+  .cm-cobrand{background:var(--cm-cream);padding:14mm;text-align:center;margin-top:14mm;border:1px solid var(--cm-gold);}
+  .cm-cobrand .wp{display:inline-block;font-family:"Jost",sans-serif;font-weight:700;letter-spacing:0.35em;font-size:18pt;color:var(--black);}
+  .cm-cobrand .x{display:inline-block;margin:0 14mm;font-family:"Playfair Display",Georgia,serif;font-size:30pt;color:var(--cm-gold);font-style:italic;vertical-align:middle;}
+  .cm-cobrand .cm{display:inline-block;font-family:"Playfair Display",Georgia,serif;font-size:18pt;color:var(--cm-burgundy);letter-spacing:0.15em;font-weight:500;}
+  .cm-cobrand .partner-note{margin-top:8mm;font-family:"Jost",sans-serif;font-size:8.5pt;letter-spacing:0.25em;color:var(--gray);text-transform:uppercase;}
+
+  .cm-badge{display:inline-block;background:var(--cm-burgundy);color:var(--white);padding:2mm 6mm;font-family:"Jost",sans-serif;font-size:9pt;letter-spacing:0.25em;font-weight:600;text-transform:uppercase;}
+  .cm-tagline{font-family:"Playfair Display",Georgia,serif;font-size:18pt;color:var(--cm-burgundy);margin-top:6mm;font-style:italic;}
+
+  .cm-rituals{display:grid;grid-template-columns:1fr 1fr;gap:6mm;margin-top:12mm;}
+  .cm-ritual{padding:8mm 9mm;background:var(--cm-cream);border-left:3px solid var(--cm-gold);}
+  .cm-ritual .r-num{font-family:"Jost",sans-serif;font-size:9.5pt;color:var(--cm-gold);letter-spacing:0.25em;font-weight:700;text-transform:uppercase;}
+  .cm-ritual .r-name{font-family:"Playfair Display",Georgia,serif;font-size:15pt;color:var(--cm-burgundy);margin-top:3mm;}
+  .cm-ritual .r-note{margin-top:4mm;font-size:10.5pt;color:var(--gray);line-height:1.65;}
+
+  /* INTEGRATED CARDS */
+  .integ-row{display:grid;grid-template-columns:1fr 1fr;gap:8mm;margin-top:14mm;}
+  .integ-card{padding:14mm 12mm;background:var(--beige-pale);border-top:3px solid var(--coral);}
+  .integ-card .ic-label{font-family:"Jost",sans-serif;font-size:10pt;letter-spacing:0.28em;color:var(--coral);font-weight:700;text-transform:uppercase;}
+  .integ-card .ic-name{font-family:"Playfair Display",Georgia,serif;font-size:18pt;color:var(--black);margin-top:5mm;}
+  .integ-card p{margin-top:8mm;font-size:11.5pt;line-height:1.7;color:var(--gray);}
+
+  /* EXPANSION TRACK */
+  .expand-track{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6mm;margin-top:12mm;}
+  .expand-step{padding:12mm 10mm;background:rgba(255,255,255,0.05);border:1px solid rgba(183,159,138,0.25);border-top:3px solid var(--cm-gold);}
+  .expand-step .es-phase{font-family:"Jost",sans-serif;font-size:9.5pt;letter-spacing:0.25em;color:var(--cm-gold);font-weight:700;text-transform:uppercase;}
+  .expand-step .es-name{font-family:"Playfair Display",Georgia,serif;font-size:16pt;color:var(--white);margin-top:4mm;}
+  .expand-step p{margin-top:6mm;font-size:10.5pt;line-height:1.65;color:var(--beige-soft);}
+
+  /* CTA */
+  .cta-page{display:flex;flex-direction:column;justify-content:center;}
+  .cta-kicker{font-family:"Jost",sans-serif;font-size:11pt;letter-spacing:0.32em;color:var(--coral);font-weight:600;text-transform:uppercase;}
+  .cta-title{font-family:"Playfair Display",Georgia,serif;font-size:50pt;line-height:1.15;color:var(--black);margin-top:14mm;font-weight:400;}
+  .cta-body{margin-top:16mm;font-size:14pt;color:var(--gray);line-height:1.85;max-width:200mm;}
+  .cta-link{display:inline-block;margin-top:18mm;padding:5mm 14mm;background:var(--black);color:var(--white);font-family:"Jost",sans-serif;font-size:12pt;letter-spacing:0.18em;font-weight:600;text-decoration:none;text-transform:uppercase;}
+
+  /* 화면 안내 배너 */
+  .screen-hint{position:fixed;top:14px;right:14px;background:var(--black);color:var(--beige);font-family:"Jost",sans-serif;font-size:10pt;letter-spacing:0.2em;padding:7px 12px;z-index:99;}
+
+  /* ───────────── 인쇄 룰 ───────────── */
+  @page{size:A3 portrait;margin:0;}
+  @media print{
+    *{-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important;color-adjust:exact !important;}
+    html,body{background:var(--white) !important;}
+    .page{margin:0;page-break-after:always;page-break-inside:avoid;break-after:page;break-inside:avoid;}
+    .page:last-child{page-break-after:auto;}
+    .screen-hint{display:none !important;}
+  }
+</style>
+</head>
+<body>
+
+<div class="screen-hint">A3 세로 · 9 페이지 · 인쇄 100% / 여백 없음 / 배경 ON</div>
+
+<!-- ─── PAGE 1 · COVER ─── -->
+<div class="page dark">
+  <div class="ph-brand">WELLPERION<span class="dot">·</span></div>
+  <div class="ph-meta">Brand Expansion · V1 · 2026.06</div>
+  <div style="margin-top:auto;margin-bottom:auto">
+    <div class="cover-label">Premium Lifestyle Club · Since 2017</div>
+    <h1 class="cover-title">Train. <em>Restore.</em><br>In One Place.</h1>
+    <div class="cover-ko">운동과 회복을, 한 곳에서</div>
+    <div class="cover-position">
+      웰페리온은 단순한 운동 공간을 넘어,<br>
+      <b>운동(Train)과 회복(Restore)</b>을 하루의 한 동선 안에서 완성하는 프리미엄 라이프스타일 클럽입니다.
+      그 회복의 깊이를 더하기 위해, 우리는 파리의 럭셔리 스파 브랜드 <b>Cinq Mondes</b>를 외부 파트너 시설로 맞이했습니다.
+    </div>
+    <div class="cover-meta">
+      <div>Established<span>2017</span></div>
+      <div>Location<span>한남동 · Seoul</span></div>
+      <div>Scale<span>3,000 평</span></div>
+      <div>Partner<span>Cinq Mondes · Paris</span></div>
+    </div>
+  </div>
+  <div class="ph-foot">For Members · Team · Partners</div>
+  <div class="ph-num">01 / 09</div>
+</div>
+
+<!-- ─── PAGE 2 · AUDIENCE ─── -->
+<div class="page">
+  <div class="ph-brand">WELLPERION<span class="dot">·</span></div>
+  <div class="ph-meta">Audience</div>
+  <div style="margin-top:32mm">
+    <div class="era">For Whom</div>
+    <h2 class="ch-title">세 관점에서 본 웰페리온.</h2>
+    <div class="ch-lead">이 문서는 다음 세 독자를 위해 작성되었습니다 — <b>회원 · 직원 · 파트너사</b>. 각자의 자리에서 웰페리온이 어떻게 보이는지를 정리합니다.</div>
+  </div>
+  <div class="rail-grid">
+    <div class="rail-cell">
+      <div class="tag">For Members</div>
+      <div class="tag-ko">회원 관점</div>
+      <div class="line">운동 후의 회복까지,<br>하루의 완성도를 설계하는 클럽.</div>
+    </div>
+    <div class="rail-cell">
+      <div class="tag">For Team</div>
+      <div class="tag-ko">직원 관점</div>
+      <div class="line">하나의 멤버십 안에서<br>운동과 힐링을 잇는 운영.</div>
+    </div>
+    <div class="rail-cell">
+      <div class="tag">For Partners</div>
+      <div class="tag-ko">파트너사 관점</div>
+      <div class="line">검증된 운영 자산 위에<br>브랜드를 함께 확장하는 파트너십.</div>
+    </div>
+  </div>
+  <div class="ph-foot">웰페리온 × Cinq Mondes Paris</div>
+  <div class="ph-num">02 / 09</div>
+</div>
+
+<!-- ─── PAGE 3 · CHAPTER 1 ─── -->
+<div class="page">
+  <div class="ph-brand">WELLPERION<span class="dot">·</span></div>
+  <div class="ph-meta">Chapter 01 · Who We Are</div>
+  <div style="margin-top:30mm">
+    <div class="era">01 · Who We Are</div>
+    <h2 class="ch-title">운동과 회복을 한 곳에서.<br>하루의 기준이 되는 클럽.</h2>
+    <div class="ch-lead">웰페리온은 2017년 한남동에서 시작한 3,000평 규모의 프리미엄 라이프스타일 클럽입니다. 우리는 건강을 일회성 이벤트가 아니라, 매일의 루틴으로 자리 잡게 만드는 일을 합니다.</div>
+  </div>
+  <h3 class="block-title">우리의 미션</h3>
+  <p class="body-p">웰페리온의 미션은 <b>지속되지 않는 건강 문제를 해결하는 것</b>입니다. 운동은 시작보다 지속이 어렵고, 회복은 늘 뒤로 미뤄집니다. 우리는 운동과 회복을 한 공간, 한 멤버십, 한 동선 안에 담아 — 건강이 자연스럽게 이어지도록 설계합니다.</p>
+  <div class="quote">"운동만으로는 채워지지 않습니다.<br>잘 회복한 몸이, 다음 하루를 다시 시작하게 합니다."</div>
+  <div class="facts">
+    <div class="fact"><div class="fact-label">Since</div><div class="fact-value">2017</div><div class="fact-unit">한남동 오픈</div></div>
+    <div class="fact"><div class="fact-label">Scale</div><div class="fact-value">3,000<span class="sub"> 평</span></div><div class="fact-unit">종합 스포츠클럽</div></div>
+    <div class="fact"><div class="fact-label">Core</div><div class="fact-value" style="font-size:16pt">Train + Restore</div><div class="fact-unit">운동 + 회복 통합</div></div>
+    <div class="fact"><div class="fact-label">Partner</div><div class="fact-value" style="font-size:16pt">Cinq Mondes</div><div class="fact-unit">Paris · 럭셔리 스파</div></div>
+  </div>
+  <div class="ph-foot">웰페리온 × Cinq Mondes Paris</div>
+  <div class="ph-num">03 / 09</div>
+</div>
+
+<!-- ─── PAGE 4 · CHAPTER 2 · 운동 코어 ─── -->
+<div class="page">
+  <div class="ph-brand">WELLPERION<span class="dot">·</span></div>
+  <div class="ph-meta">Chapter 02 · The Movement Core</div>
+  <div style="margin-top:30mm">
+    <div class="era">02 · The Movement Core</div>
+    <h2 class="ch-title">운동의 코어.<br>하루를 깨우는 자리.</h2>
+    <div class="ch-lead">웰페리온의 중심에는 종합 스포츠클럽이 있습니다. 헬스부터 수영, 골프, 스쿼시, 그룹 클래스까지 — 한 멤버십 안에서 매일의 운동이 완결됩니다.</div>
+  </div>
+  <h3 class="block-title">운동 프로그램</h3>
+  <p class="body-p">전문 트레이너와 클래스 라인업으로, 회원은 자신의 리듬에 맞는 운동을 매일 이어갈 수 있습니다.</p>
+  <div class="program-grid">
+    <div class="program-chip"><strong>Gym</strong>헬스</div>
+    <div class="program-chip"><strong>Swimming</strong>수영 · 25m</div>
+    <div class="program-chip"><strong>Golf</strong>골프</div>
+    <div class="program-chip"><strong>Squash</strong>스쿼시</div>
+    <div class="program-chip"><strong>G.X.</strong>그룹 클래스</div>
+    <div class="program-chip"><strong>Yoga</strong>요가</div>
+    <div class="program-chip"><strong>Pilates</strong>필라테스</div>
+    <div class="program-chip"><strong>Barre</strong>바레</div>
+    <div class="program-chip"><strong>Ballet</strong>발레</div>
+    <div class="program-chip"><strong>Meditation</strong>명상</div>
+  </div>
+  <h3 class="block-title">9년의 운영 자산</h3>
+  <p class="body-p">2017년 이래 웰페리온은 멤버십 운영, 회원 경험, 시설 관리의 노하우를 축적해 왔습니다. 이 <b>검증된 운영 자산</b>이 — 회복과 파트너십을 더해 브랜드를 확장하는 단단한 토대가 됩니다.</p>
+  <div class="ph-foot">웰페리온 × Cinq Mondes Paris</div>
+  <div class="ph-num">04 / 09</div>
+</div>
+
+<!-- ─── PAGE 5 · CINQ MONDES · 브랜드 스토리 ─── -->
+<div class="page cream">
+  <div class="ph-brand">WELLPERION<span class="dot">·</span></div>
+  <div class="ph-meta">Chapter 03 · Restore Partnership</div>
+  <div style="margin-top:30mm">
+    <div class="era" style="color:var(--cm-burgundy)">03 · The Restore Partnership</div>
+    <h2 class="ch-title">회복의 깊이를 더하다 —<br><span style="color:var(--cm-burgundy)">Cinq Mondes.</span></h2>
+    <div class="ch-lead">운동이 하루를 깨운다면, 회복은 하루를 정리합니다. 웰페리온은 회복의 격을 높이기 위해, 파리의 럭셔리 스파 브랜드 <b style="color:var(--cm-burgundy)">Cinq Mondes(생크몽드)</b>를 외부 파트너 시설로 맞이했습니다.</div>
+  </div>
+  <div class="cm-cobrand">
+    <span class="wp">WELLPERION</span>
+    <span class="x">×</span>
+    <span class="cm">CINQ MONDES PARIS</span>
+    <div class="partner-note">External Partner Facility · 웰페리온 내 입점</div>
+  </div>
+  <div style="margin-top:12mm">
+    <div class="cm-badge">Brand Story</div>
+    <div class="cm-tagline">"세계의 아름다움을, 하나의 의식으로."</div>
+  </div>
+  <p class="body-p">Cinq Mondes는 2001년 파리에서 창립된 럭셔리 스파 브랜드입니다. 브랜드 이름 'Cinq Mondes(다섯 세계)'는 <b>인도 · 중국 · 일본 · 발리 · 모로코</b> 다섯 대륙의 전통 뷰티 리추얼에서 영감을 받았습니다.</p>
+  <p class="body-p">'정직하고 고농축된 식물성'이라는 철학 아래, 각 지역의 전통 의식을 현대적인 트리트먼트로 풀어냅니다. 웰페리온 회원은 이 세계적인 스파 경험을, 운동을 마친 같은 공간 안에서 만날 수 있습니다.</p>
+  <div class="ph-foot">웰페리온 × Cinq Mondes Paris</div>
+  <div class="ph-num">05 / 09</div>
+</div>
+
+<!-- ─── PAGE 6 · CINQ MONDES · 시그니처 ─── -->
+<div class="page cream">
+  <div class="ph-brand">WELLPERION<span class="dot">·</span></div>
+  <div class="ph-meta">Chapter 03 · Signature Rituals</div>
+  <div style="margin-top:30mm">
+    <div class="cm-badge">Signature</div>
+    <h2 class="ch-title" style="margin-top:8mm">시그니처 트리트먼트.</h2>
+    <div class="cm-tagline">"다섯 세계의 손길, 한 자리에서."</div>
+  </div>
+  <p class="body-p">Cinq Mondes의 핵심은 페이셜 · 바디 · 시그니처 마사지입니다. 인도의 아유르베다, 일본의 코비도(Kobido), 그리고 브랜드 고유의 DERMAPUNCTURE 등 — 세계 각지의 전통이 깃든 회복 의식을 경험할 수 있습니다.</p>
+  <div class="cm-rituals">
+    <div class="cm-ritual">
+      <div class="r-num">Ⅰ · Face</div>
+      <div class="r-name">Facial Ritual</div>
+      <div class="r-note">고농축 식물성 케어 기반 페이셜 트리트먼트.</div>
+    </div>
+    <div class="cm-ritual">
+      <div class="r-num">Ⅱ · Body</div>
+      <div class="r-name">Body Ritual</div>
+      <div class="r-note">전신의 긴장을 풀어내는 바디 트리트먼트.</div>
+    </div>
+    <div class="cm-ritual">
+      <div class="r-num">Ⅲ · Signature</div>
+      <div class="r-name">Kobido · Ayurveda</div>
+      <div class="r-note">일본 코비도 · 인도 아유르베다 등 전통 마사지.</div>
+    </div>
+    <div class="cm-ritual">
+      <div class="r-num">Ⅳ · Method</div>
+      <div class="r-name">Dermapuncture</div>
+      <div class="r-note">Cinq Mondes 고유의 시그니처 케어 메소드.</div>
+    </div>
+  </div>
+  <div style="margin-top:10mm;padding:6mm 8mm;background:rgba(139,26,47,0.05);border-left:2px solid var(--cm-burgundy);font-size:9.5pt;color:var(--gray);line-height:1.65;">
+    * 모든 트리트먼트에 앞서 진행되는 <b style="color:var(--cm-burgundy)">'웰컴 발씻기 의식(Welcome Foot-Bath Ritual)'</b>은 본격적인 회복 의식의 시작을 알리는 환영 절차입니다.
+  </div>
+  <div class="ph-foot">웰페리온 × Cinq Mondes Paris</div>
+  <div class="ph-num">06 / 09</div>
+</div>
+
+<!-- ─── PAGE 7 · CHAPTER 4 · ONE PLACE ─── -->
+<div class="page">
+  <div class="ph-brand">WELLPERION<span class="dot">·</span></div>
+  <div class="ph-meta">Chapter 04 · One Place</div>
+  <div style="margin-top:30mm">
+    <div class="era">04 · One Place</div>
+    <h2 class="ch-title">운동과 회복이<br>한 동선 안에서 이어진다.</h2>
+    <div class="ch-lead">웰페리온의 핵심 경험은 <b>'분리되지 않음'</b>에 있습니다. 운동하러 들른 회원이, 같은 공간에서 자연스럽게 회복으로 이어집니다 — 그것이 하루의 완성입니다.</div>
+  </div>
+  <h3 class="block-title">하나의 멤버십, 두 개의 리듬</h3>
+  <p class="body-p">회원은 운동과 회복을 따로 예약하고 따로 이동할 필요가 없습니다. 한 멤버십 안에서, 운동의 강도와 회복의 깊이를 자신의 컨디션에 맞게 조율합니다.</p>
+  <div class="integ-row">
+    <div class="integ-card">
+      <div class="ic-label">Train · 운동</div>
+      <div class="ic-name">하루를 깨우는 시간</div>
+      <p>헬스 · 수영 · 골프 · 스쿼시 · 그룹 클래스. 전문 프로그램으로 매일의 운동 루틴을 완성합니다.</p>
+    </div>
+    <div class="integ-card">
+      <div class="ic-label">Restore · 회복</div>
+      <div class="ic-name">하루를 정리하는 시간</div>
+      <p>Cinq Mondes 트리트먼트로 운동 후의 몸을 회복하고, 다음 하루를 위한 컨디션을 되찾습니다.</p>
+    </div>
+  </div>
+  <div class="quote">"운동으로 하루를 깨우고, 회복으로 하루를 정리한다.<br>그 둘 사이의 거리가 '0'이 되는 곳 — 웰페리온."</div>
+  <div class="ph-foot">웰페리온 × Cinq Mondes Paris</div>
+  <div class="ph-num">07 / 09</div>
+</div>
+
+<!-- ─── PAGE 8 · CHAPTER 5 · 확장 비전 (DARK) ─── -->
+<div class="page dark">
+  <div class="ph-brand">WELLPERION<span class="dot">·</span></div>
+  <div class="ph-meta">Chapter 05 · The Expansion</div>
+  <div style="margin-top:30mm">
+    <div class="era">05 · The Expansion</div>
+    <h2 class="ch-title">검증된 자산 위에,<br>브랜드를 넓혀간다.</h2>
+    <div class="ch-lead">Cinq Mondes 파트너십은 끝이 아니라 시작입니다. 웰페리온은 9년간 쌓은 운영 자산을 토대로, 회복·라이프스타일 영역의 파트너를 더해 <b>브랜드 경험을 단계적으로 확장</b>합니다.</div>
+  </div>
+  <h3 class="block-title">확장의 그림</h3>
+  <p class="body-p">웰페리온의 확장은 '시설을 늘리는 것'이 아니라 <b>'경험을 깊게 하는 것'</b>에서 출발합니다. 운동 코어를 중심에 두고, 검증된 글로벌 파트너를 한 겹씩 더해 회원의 하루를 더 촘촘히 완성합니다.</p>
+  <div class="expand-track">
+    <div class="expand-step">
+      <div class="es-phase">Phase 01 · Now</div>
+      <div class="es-name">Restore Partnership</div>
+      <p>Cinq Mondes 입점 — 회복·힐링 경험을 운동 코어와 통합.</p>
+    </div>
+    <div class="expand-step">
+      <div class="es-phase">Phase 02 · Next</div>
+      <div class="es-name">Lifestyle Partners</div>
+      <p>뷰티 · 웰니스 · F&amp;B 등 라이프스타일 파트너로 경험 확장.</p>
+    </div>
+    <div class="expand-step">
+      <div class="es-phase">Phase 03 · Beyond</div>
+      <div class="es-name">Brand Scale</div>
+      <p>검증된 운영 모델을 토대로 브랜드와 멤버십을 단계적으로 성장.</p>
+    </div>
+  </div>
+  <div class="quote">"한 곳에서 운동과 회복을 완성하는 경험 —<br>그 기준을 더 많은 사람에게. 웰페리온은 그 길을 향해 갑니다."</div>
+  <div class="ph-foot">웰페리온 × Cinq Mondes Paris</div>
+  <div class="ph-num">08 / 09</div>
+</div>
+
+<!-- ─── PAGE 9 · CTA + FOOTER ─── -->
+<div class="page cta-page">
+  <div class="ph-brand">WELLPERION<span class="dot">·</span></div>
+  <div class="ph-meta">Get in Touch</div>
+  <div style="margin-top:auto;margin-bottom:auto">
+    <div class="cta-kicker">Visit · Membership · Partnership</div>
+    <h2 class="cta-title">운동과 회복을, 한 곳에서.<br>웰페리온에서 시작하세요.</h2>
+    <div class="cta-body">멤버십 · 투어 · 파트너십 문의는 모두 사전 예약제로 운영됩니다. 아래 문의 채널을 통해 편하게 연락 주세요.</div>
+    <a class="cta-link" href="http://wellperion.com/ko/inquiry/">wellperion.com/ko/inquiry</a>
+  </div>
+  <div class="ph-foot">웰페리온 × Cinq Mondes Paris · Brand Expansion · V1 · 2026.06</div>
+  <div class="ph-num">09 / 09</div>
+</div>
+
+</body>
+</html>
