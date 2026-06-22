@@ -3410,5 +3410,19 @@
     "next": "🌀 표류 — 다음 미정 (필요 시 GM·웰리/담당 C-Level 지정)",
     "adhoc_commit": "b6bda0dd1fb0b3531a45200a13cc5084ec944947",
     "ship_no": 75
+  },
+  {
+    "task_id": "COO-2026-06-22-ADHOC-1a1e3ef7",
+    "clevel": "coo",
+    "title": "[시우] 지원부 점검 버그수정: 요일별 집중(F 집중) 항목 편집 시 회차 자동부여 → 구역 오추가 차단",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-06-22",
+    "processed_at": "2026-06-22",
+    "artifact": "증상: 매뉴얼에서 'F 집중'(요일별 집중 청소) 항목 편집하고 요일 선택·저장하면 점검 화면에 그 구역이 새로 추가됨. 본질: F 집중 항목은 회차(조)가 빈값(요일로만 도는 항목)인데, 편집 모달의 회차 pre-check가 itemRounds의 roundOfSlot 폴백으로 am1을 자동 체크 → 저장 시 rounds=['am1'] 강제 부여 → 오전조에 'F 집중' 구역이 등장. 수정: ①pre-check를 명시 회차 또는 ROUND_MAP만 사용(roundOfSlot 폴백 제거) ②요일별 집중 항목(sched 전용·ROUND (CLI ad-hoc · 커밋 1a1e3ef7)",
+    "next": "🌀 표류 — 다음 미정 (필요 시 GM·웰리/담당 C-Level 지정)",
+    "adhoc_commit": "1a1e3ef783c4362d2a1fd26acee369dba33566d4",
+    "ship_no": 80
   }
 ]
