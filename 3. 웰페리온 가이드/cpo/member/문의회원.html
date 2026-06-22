@@ -994,6 +994,8 @@ function loadDbData() {
         return;
       }
       dbRows = data.data || [];
+      // 문의일(timestamp) 기준 최근이 상단 — 빈 날짜는 하단(2026-06-22 GM)
+      dbRows.sort(function(a, b){ return String(b.timestamp || '').localeCompare(String(a.timestamp || '')); });
       renderDbTable();
     })
     .catch(function(err){
