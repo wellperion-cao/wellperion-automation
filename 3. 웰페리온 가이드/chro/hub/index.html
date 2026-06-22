@@ -950,7 +950,17 @@ function uniq(a){var s={},o=[];a.forEach(function(v){if(v&&!s[v]){s[v]=1;o.push(
   return o.sort(function(x,y){return x.localeCompare(y,"ko");});}
 
 /* ============ HIRING ============ */
+async function closeJob(row,name){
+  if(!row) return;
+  if(!confirm((name||"이 공고")+" 공고를 ‘마감’ 처리할까요?\n마감하면 ‘채용 마감건’ 토글 안으로 이동합니다.")) return;
+  try{
+    var r=await fetch(NOTION_FN,{method:"POST",body:JSON.stringify({action:"update-hire",adminPassword:SESSION_PW,sheetRow:row,status:"마감"})}).then(function(x){return x.json();});
+    if(!r.ok) throw new Error(r.error||"실패");
+    reloadData();
+  }catch(e){ alert("마감 실패: "+(e.message||e)); }
+}
 function jobItem(h){
+  var isAdmin=SESSION_ROLE==="admin";
   var cl=parseArr(h["담당 C-Level"]).join(", ");
   var ch=parseArr(h["채용 채널"]).join(", ");
   var hireId=normId(h.url);
@@ -973,7 +983,9 @@ function jobItem(h){
     '<div class="item-meta">'+badge(h["채용 상태"])+(h["부서"]?badge(h["부서"]):"")+
       badge(h["채용 유형"])+(h["우선순위"]?badge(h["우선순위"]):"")+'</div></div>'+
     '<div style="text-align:right"><div class="t-name" style="font-size:18px">'+
-      applicants.length+'</div><div class="t-sub">지원자</div></div></div>'+
+      applicants.length+'</div><div class="t-sub">지원자</div>'+
+      (isAdmin&&h["채용 상태"]!=="마감"?'<div><button type="button" class="btn-sm" data-closejob="'+esc(String(h["_sheet_row"]||""))+'" data-jobname="'+esc(txt(h["포지션명"]))+'" style="margin-top:8px;color:#c0392b;border-color:#e3b7b3;cursor:pointer">🔒 채용 마감</button></div>':"")+
+      '</div></div>'+
     '<div class="kv">'+
     kv("모집 인원",txt(h["모집 인원"]))+kv("면접자 수",txt(h["면접자 수"]))+
     kv("급여 범위",txt(h["급여 범위"]))+kv("공고 기간",fmtD(dval(h,"공고 시작일"))+" ~ "+fmtD(dval(h,"공고 마감일")))+
@@ -1354,7 +1366,12 @@ function renderHire(){
     var order={"공고중":0,"서류심사":1,"면접 진행":2,"처우 협의":3,"공고 준비":4,"보류":5,"채용 완료":6,"마감":7};
     var sorted=DB.hire.slice().sort(function(a,b){
       return (order[a["채용 상태"]]==null?9:order[a["채용 상태"]])-(order[b["채용 상태"]]==null?9:order[b["채용 상태"]]);});
-    html+='<div class="stack">'+sorted.map(jobItem).join("")+'</div>';
+    var activeJobs=sorted.filter(function(h){return h["채용 상태"]!=="마감";});
+    var closedJobs=sorted.filter(function(h){return h["채용 상태"]==="마감";});
+    html+='<div class="stack">'+activeJobs.map(jobItem).join("")+'</div>';
+    if(closedJobs.length){
+      html+='<details class="closed-jobs" style="margin-top:14px"><summary style="cursor:pointer;font-weight:700;font-size:13px;color:var(--ink-soft);padding:11px 14px;background:var(--line-soft);border:1px solid var(--line);border-radius:10px">🔒 채용 마감건 '+closedJobs.length+'건 — 펼치기 / 접기</summary><div class="stack" style="margin-top:10px;opacity:.72">'+closedJobs.map(jobItem).join("")+'</div></details>';
+    }
   }else{html+='<div class="card">'+emptyState("등록된 채용 공고가 없습니다.","◔")+'</div>';}
 
   setPanel("hire",html);
@@ -1375,6 +1392,8 @@ function renderHire(){
       if(iv){openInterviewEvalModal(iv.getAttribute("data-iveval"),iv.getAttribute("data-name"));return;}
       var h=t.closest("[data-hire]");
       if(h){openHireCompleteModal(h.getAttribute("data-hire"),h.getAttribute("data-name"));return;}
+      var cj=t.closest("[data-closejob]");
+      if(cj){closeJob(cj.getAttribute("data-closejob"),cj.getAttribute("data-jobname"));return;}
       var pgb=t.closest("[data-applpage]");
       if(pgb){ if(window.__applShow) window.__applShow(parseInt(pgb.getAttribute("data-applpage"),10)||0); return;}
       var cn=t.closest("[data-calnav]");
