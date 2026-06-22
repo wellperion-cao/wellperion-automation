@@ -231,6 +231,26 @@ def compose_story(
 FOOTER = "WELLPERION  ·  JUNIOR GOLF"
 TOTAL = 5  # 표지 + 본문3 + 가이드
 
+# M5 검수큐 엔트리 메타 (공식계정 wellperion · 기존 id 업데이트)
+EP_META = {
+    "ep1": ("CMO-2026-06-20-GOLF-EP1-COURSE", "골프 #1편 — 코스에 서다 (회사공식)"),
+    "ep2": ("CMO-2026-06-20-GOLF-EP2-PODIUM", "골프 #2편 — 시상대에 서다 (회사공식)"),
+    "ep3": ("CMO-2026-06-20-GOLF-EP3-COACH", "골프 #3편 — 비결은 프로였다 (회사공식)"),
+}
+
+
+def make_montage(ep_dir: Path) -> Path:
+    """ig_01~05 가로 5연결 몽타주(검수 미리보기) 생성."""
+    cell = 420
+    imgs = [Image.open(ep_dir / f"ig_{i:02d}.jpg").convert("RGB").resize((cell, cell))
+            for i in range(1, 6)]
+    m = Image.new("RGB", (cell * 5, cell), (20, 20, 20))
+    for i, im in enumerate(imgs):
+        m.paste(im, (cell * i, 0))
+    out = ep_dir / f"{ep_dir.name}_montage.jpg"
+    m.save(out, "JPEG", quality=90)
+    return out
+
 
 def build_ep1(out_ep: Path) -> None:
     """1편 — 코스에 서다"""
@@ -477,6 +497,38 @@ def main() -> None:
     # 캡션
     print("\n=== 캡션 작성 ===")
     write_captions(base_ig)
+
+    # 몽타주(검수 미리보기) 생성
+    print("\n=== 몽타주 생성 ===")
+    montages = {}
+    for ep in ["ep1", "ep2", "ep3"]:
+        montages[ep] = make_montage(base_ig / ep)
+        # 마스터 폴더에도 동기화
+        shutil.copy2(montages[ep], base_master / ep / montages[ep].name)
+        print(f"  [몽타주] {ep}/{montages[ep].name}")
+
+    # M5 검수큐 재등록 (--register) — 공식계정 wellperion, 기존 id 업데이트 + 승인카드 발송
+    if "--register" in sys.argv:
+        print("\n=== M5 재등록 (공식계정 wellperion) ===")
+        from publish_register import register_publish
+        for ep in ["ep1", "ep2", "ep3"]:
+            qid, title = EP_META[ep]
+            ep_ig = base_ig / ep
+            caption = (ep_ig / "캡션.txt").read_text(encoding="utf-8")
+            slides = [f"ig_{i:02d}.jpg" for i in range(1, 6)]
+            register_publish(
+                content_folder=ep_ig,
+                slug=f"260620_골프_{ep.upper()}",
+                montage_path=montages[ep],
+                caption=caption,
+                location="웰페리온 스포츠클럽",
+                account="wellperion",
+                slides=slides,
+                queue_id=qid,
+                title=title,
+                channel="인스타그램 (wellperion)",
+                send_card=True,
+            )
 
     print("\n=== 합성 완료 ===")
     for ep in ["ep1", "ep2", "ep3"]:
