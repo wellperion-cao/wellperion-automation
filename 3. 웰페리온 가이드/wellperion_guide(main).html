@@ -415,6 +415,7 @@
   <div class="nav-label">시작하기</div>
   <nav class="nav">
     <a data-id="home" class="active"><span class="num">홈</span><span class="label">홈 · 사용법</span></a>
+    <a data-id="S0"><span class="num">🏢</span><span class="label">회사소개 · 전략 로드맵</span></a>
     <a data-id="S1"><span class="num">📝</span><span class="label">공통 가이드라인</span></a>
     <a data-id="S2"><span class="num">📋</span><span class="label">AI C-Level 운영 가이드</span></a>
   </nav>
@@ -1987,8 +1988,8 @@ window._regAssign = function(id, category) {
     <div class="callout"><strong>관리 기준:</strong> 모든 채널 콘텐츠는 브랜드 가이드 준수. "피트니스" 금지 → "스포츠클럽". 문의 CTA는 문의Survey 페이지 단일. CMO 라인 관할 (김남욱 GM).</div>
   </article>
 
-  <article class="doc" id="g9">
-    <div class="doc-header"><h2><span class="g-id">D1</span>회사소개서 &amp; 전략 로드맵</h2><div class="meta">v3.0 · 2026-06 · 원본 문서 링크 + 핵심 요약 (단일 페이지)</div></div>
+  <article class="doc" id="S0">
+    <div class="doc-header"><h2><span class="g-id">S0</span>회사소개서 &amp; 전략 로드맵</h2><div class="meta">v3.0 · 2026-06 · 원본 문서 링크 + 핵심 요약 (단일 페이지)</div></div>
     <p class="lead">웰페리온은 단순한 운동 시설이 아닙니다. 하루 루틴의 일부로 자연스럽게 자리 잡아, 건강의 기준을 세우고 그날의 완성도를 채워주는 공간. 한남동이라는 동네의 결을 따라 지어진, 리더들을 위한 건강 &amp; 힐링 커뮤니티입니다.</p>
 
     <!-- 원본 문서 3종 링크 카드 -->
@@ -2010,17 +2011,9 @@ window._regAssign = function(id, category) {
     </div>
     <p>웰페리온은 '운동하러 가는 곳'이 아니라 '하루의 품질을 설계하는 곳'입니다. 스포츠·스파·커뮤니티·공간이 하나로 통합된 라이프스타일 인프라.</p>
 
-    <!-- 사업 현황 -->
+    <!-- 사업 현황 — 하드코딩 표 제거(드리프트 방지). 수치는 라이브 소스로 단일화. -->
     <h3><span class="ico">📊</span>사업 현황 — 핵심 지표</h3>
-    <table>
-      <tr><th>지표</th><th>값</th></tr>
-      <tr><td>Annual Revenue (연 매출)</td><td><strong>61.6억</strong> (25년 기준)</td></tr>
-      <tr><td>YoY Growth (전년 대비 성장률)</td><td><strong>18.4%</strong></td></tr>
-      <tr><td>ARPU (회원 1인당 평균 매출)</td><td><strong>418만원</strong></td></tr>
-      <tr><td>LTV (회원 평균 재적 기간)</td><td><strong>3년 4개월</strong></td></tr>
-      <tr><td>Retention (재등록률)</td><td><strong>61%</strong></td></tr>
-      <tr><td>Waitlist (대기자)</td><td><strong>40명 · 약 2개월 대기</strong></td></tr>
-    </table>
+    <div class="callout tip">연 매출·재등록률·ARPU·LTV·대기자 등 <strong>핵심 지표는 라이브 KPI(홈 대시보드)와 회사소개서 원본</strong>에서 최신값으로 확인하세요. 이 페이지엔 숫자를 따로 박지 않습니다(중복·드리프트 방지).</div>
 
     <!-- 프로그램 -->
     <h3><span class="ico">🏊</span>프로그램 포트폴리오</h3>
@@ -6197,7 +6190,7 @@ function crTab(btn, panelId) {
 
   // 옛 주소(#g10 등) → 식별자(#S2) 하위호환 안전망. 표면(메뉴·URL·문서 id)은 전부 식별자로 단일화 (2026-06-13 GM B안)
   const LEGACY_TO_ID = {
-    'update':'S1','g10':'S2','gcoo-todo':'S3','gcfo-expense':'F1','gchro-rules':'H1',
+    'g9':'S0','update':'S1','g10':'S2','gcoo-todo':'S3','gcfo-expense':'F1','gchro-rules':'H1',
     'gcoo-check':'O1','gcoo-notice':'O2','gcoo-reenroll':'O3','ghome':'M1','g14':'M2',
     'gcmo-print':'M3','gcmo-funnel':'M4','cmo-publish':'M5','g16':'T1','g19':'T2',
     'g15':'T1','T3':'T1','gm1':'G1','O5':'O4'

@@ -30,7 +30,8 @@ from compose_barre import load_font, center_crop_fill
 
 W, H = 1080, 1080
 MASTER   = PROJECT_ROOT / "instagram" / "_assets" / "guideline_card.jpg"
-OUT_CARD = PROJECT_ROOT / "instagram" / "_assets" / "guideline_card_golf.jpg"
+# 완성 업장 가이드 단일 보관소 = _assets/각 업장 가이드/ (필라테스·웰니스와 동일 위치·명명)
+OUT_CARD = PROJECT_ROOT / "instagram" / "_assets" / "각 업장 가이드" / "골프 가이드.jpg"
 
 # 본문 정본 (표준 §3 — 마스터 실측값)
 ITEM_COLOR  = (200, 198, 199)   # 연회색(순백 아님)

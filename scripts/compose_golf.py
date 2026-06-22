@@ -45,8 +45,8 @@ from compose_barre import (
     compose_guide_card,  # 표준 카드 (ep1·ep2는 미사용, 골프 전용으로 대체)
 )
 
-# 골프 전용 가이드카드 경로 (compose_guideline_card_golf.py 생성)
-_GOLF_GUIDE_CARD = PROJECT_ROOT / "instagram" / "_assets" / "guideline_card_golf.jpg"
+# 골프 전용 가이드카드 경로 (compose_guideline_card_golf.py 생성) — 완성 가이드 단일 보관소
+_GOLF_GUIDE_CARD = PROJECT_ROOT / "instagram" / "_assets" / "각 업장 가이드" / "골프 가이드.jpg"
 
 
 def compose_golf_guide_card(output_path: Path) -> None:
