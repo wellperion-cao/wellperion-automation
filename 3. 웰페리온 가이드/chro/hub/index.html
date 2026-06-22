@@ -764,7 +764,8 @@ function renderDash(){
   html+=kpi("지원자 풀",appl.length+'<small> 명</small>',"최종 합격 대기 "+finalPass+"명");
   html+=kpi("온보딩 완료율",obRate+'<small> %</small>',obDone+" / "+onbo.length+" 항목");
   html+=kpi("최근 90일 퇴사",exit90.length+'<small> 명</small>',"이직률 "+turnover+"%");
-  html+=kpi("평가 포상",rewarded+'<small> 건</small>',"인사평가 "+evl.length+"건 중");
+  var __tenure=(function(){var seen={},sum=0,cnt=0;active.forEach(function(e){var n=(e["성명"]||e["이름"]||"").toString().trim();if(!n||seen[n])return;var d=dval(e,"입사일")||e["입사일"];if(!d)return;var dd=new Date(d);if(isNaN(dd.getTime()))return;seen[n]=1;sum+=(today-dd)/(365.25*86400000);cnt++;});return cnt?{avg:(sum/cnt).toFixed(1),cnt:cnt}:{avg:"—",cnt:0};})();
+  html+=kpi("임직원 평균 근속",__tenure.avg+'<small> 년</small>',"재직 "+__tenure.cnt+"명 기준");
   html+='</div>';
 
   html+='<div class="sec-title">채용·온보딩 캘린더</div>'+renderDashCalCard();
@@ -1599,7 +1600,7 @@ function renderOnbo(){
     cards+='<div class="card" style="margin-bottom:10px"><div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;flex-wrap:wrap"><div><b data-nm="'+esc(nm)+'" onclick="obOpenCard(this.dataset.nm)" style="font-size:15px;cursor:pointer;border-bottom:1px dotted #b08d57" title="클릭: 인사카드">'+esc(nm)+'</b> '+(risk?'<span style="background:#fde2e2;color:#c0392b;padding:1px 7px;border-radius:10px;font-size:11px">⚠ 이탈위험</span>':"")+'<div style="color:#888;font-size:12px;margin-top:2px">'+esc(dept)+' · 멘토 '+esc(mentor)+' · 입사 '+joinStr+'</div></div><div style="text-align:right;font-size:12px">진행 <b>'+done+'/'+total+'</b> ('+pct+'%)<br><span style="color:'+(overdue?"#c0392b":"#888")+'">다음: '+nextStr+(overdue?" ⚠지연":"")+'</span></div></div><div style="background:#eee;border-radius:6px;height:6px;margin:8px 0;overflow:hidden"><div style="height:6px;width:'+pct+'%;background:#1a7f5a"></div></div><div style="display:flex;flex-wrap:wrap;gap:5px;align-items:center">'+chips+' <span style="margin-left:auto;color:#bbb;font-size:11px;cursor:pointer" onclick="obDelete(\''+esc(nm).replace(/\'/g,"")+'\')">삭제</span></div></div>';
   });
   var obStat=function(lbl,val,unit,col){return '<div style="flex:1;min-width:120px;background:#fff;border:1px solid #e7e2d6;border-left:4px solid '+col+';border-radius:8px;padding:12px 14px"><div style="font-size:12px;color:#888">'+lbl+'</div><div style="font-size:22px;font-weight:800;color:'+col+';margin-top:2px">'+val+'<span style="font-size:12px;color:#999;font-weight:600"> '+unit+'</span></div></div>';};var kpis='<div style="display:flex;gap:10px;margin:10px 0;flex-wrap:wrap">'+obStat("온보딩 중",names.length,"명","#2f6d9e")+obStat("7일 내 체크인",dueSoon,"건","#b08d57")+obStat("이탈위험",riskCount,"명",riskCount>0?"#c0392b":"#7a8a7f")+'</div>';
-  setPanel("onbo", html+startBtn+kpis+cards+'<div style="height:14px"></div>'+renderObCalCard());
+  setPanel("onbo", html+startBtn+kpis+renderObCalCard()+'<div style="height:14px"></div>'+cards);
 }
 function criteriaSection(){
   var multi=[
