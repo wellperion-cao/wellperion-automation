@@ -103,10 +103,40 @@ def _is_nonff(err: str) -> bool:
     )
 
 
+def _clear_orphan_rebase(root: str) -> None:
+    """rebase --abort 가 못 치운 고아 rebase 상태(.git/rebase-merge|rebase-apply)를
+    강제 제거. 잠긴 바이너리(PowerPoint 등 열린 파일)로 autostash reset --hard 가
+    'Invalid argument' 로 죽으면 제어파일 없는 고아 디렉터리만 남아 이후 모든 git 이
+    'currently rebasing' 으로 막힌다 → 직접 삭제로 끊는다. HEAD 는 안 옮겨진 상태라 안전.
+    참고 기억: reference_autopush_fails_on_locked_binary."""
+    import shutil
+    try:
+        gd = subprocess.run(
+            ["git", "rev-parse", "--git-dir"],
+            cwd=root, capture_output=True, text=True, timeout=10,
+        )
+        gitdir = (gd.stdout or "").strip() or ".git"
+        if not os.path.isabs(gitdir):
+            gitdir = os.path.join(root, gitdir)
+        for name in ("rebase-merge", "rebase-apply"):
+            d = os.path.join(gitdir, name)
+            if os.path.isdir(d):
+                shutil.rmtree(d, ignore_errors=True)
+                _log(f"POST_COMMIT_PUSH cleared orphan {name}", root)
+    except Exception:
+        pass
+
+
 def _reconcile(root: str) -> bool:
-    """원격이 앞섰을 때 fetch + rebase(--autostash)로 로컬 커밋을 origin 위로 재정렬.
-    성공 True / 충돌·실패 False. 충돌 시 rebase --abort 로 원상복구 — 절대 half-state 안 남김.
-    (호출자가 git_lock 임계구역을 보유한 상태에서만 호출 — 동시 로컬 git 없음 보장.)"""
+    """원격이 앞섰을 때 fetch 후 로컬 커밋을 origin 위로 통합.
+    1차 rebase(--autostash) → 실패 시 2차 merge 폴백(워킹트리 reset 안 함).
+    성공 True / 실패 False. 어떤 경우에도 half-state 안 남김(abort + 고아 강제정리).
+    (호출자가 git_lock 임계구역 보유 상태에서만 호출 — 동시 로컬 git 없음 보장.)
+
+    merge 폴백 사유: 열린 앱이 추적 바이너리(예: 작업 중 .pptx)를 잠그면 rebase 가
+    시작 시 워킹트리를 reset --hard 하다 잠긴 파일 unlink 실패로 죽는다. 원격이 그
+    파일을 안 건드리는 한 merge 는 워킹트리를 안 건드려 통과한다(INC: locked-binary).
+    """
     try:
         f = subprocess.run(
             ["git", "fetch", REMOTE, BRANCH],
@@ -120,23 +150,44 @@ def _reconcile(root: str) -> bool:
         )
         if rb.returncode == 0:
             return True
-        # 충돌 → 즉시 원상복구(커밋·작업트리 보존)
+        # rebase 실패 → 원상복구(커밋·작업트리 보존) + 고아 상태 강제정리
         subprocess.run(
             ["git", "rebase", "--abort"],
             cwd=root, capture_output=True, text=True, timeout=20,
         )
-        _log("POST_COMMIT_PUSH rebase conflict; aborted (fall back to warn)", root)
+        _clear_orphan_rebase(root)
+        _log("POST_COMMIT_PUSH rebase 실패; merge 폴백 시도", root)
+        # merge 폴백 — 워킹트리 reset 없이 통합(잠긴 바이너리와 무관)
+        mg = subprocess.run(
+            ["git", "merge", "--no-edit", f"{REMOTE}/{BRANCH}"],
+            cwd=root, capture_output=True, text=True, timeout=PUSH_TIMEOUT,
+            env={**os.environ, "GIT_EDITOR": "true"},
+        )
+        if mg.returncode == 0:
+            _log("POST_COMMIT_PUSH ok(after merge fallback)", root)
+            return True
+        # merge 도 실패(진짜 내용 충돌·원격이 잠긴 파일 건드림 등) → 원상복구
+        subprocess.run(
+            ["git", "merge", "--abort"],
+            cwd=root, capture_output=True, text=True, timeout=20,
+        )
+        _clear_orphan_rebase(root)
+        _log("POST_COMMIT_PUSH merge 폴백도 실패; aborted (fall back to warn)", root)
         return False
     except subprocess.TimeoutExpired:
         try:
             subprocess.run(["git", "rebase", "--abort"], cwd=root,
                            capture_output=True, text=True, timeout=15)
+            subprocess.run(["git", "merge", "--abort"], cwd=root,
+                           capture_output=True, text=True, timeout=15)
         except Exception:
             pass
+        _clear_orphan_rebase(root)
         _log("POST_COMMIT_PUSH reconcile timeout; aborted", root)
         return False
     except Exception as e:
         try:
+            _clear_orphan_rebase(root)
             _log(f"POST_COMMIT_PUSH reconcile err {e}", root)
         except Exception:
             pass
