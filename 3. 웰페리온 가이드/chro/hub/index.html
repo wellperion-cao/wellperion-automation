@@ -1296,18 +1296,25 @@ function renderHire(){
     h+='<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px">';
     for(var i=0;i<startDow;i++){ h+='<div></div>'; }
     for(var d=1;d<=days;d++){
-      var has=byDay[d];
-      var st='min-height:38px;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;border-radius:6px;font-size:11px;padding:2px 1px;'+(has?'background:var(--gold);color:#fff;font-weight:700':(isToday(d)?'background:var(--surface-2);outline:1px solid var(--gold)':''));
-      var tip=has?esc(has.map(function(e){return e.name+(e.hm?' '+e.hm:'')+'('+e.stage+')';}).join(', ')):'';
-      var nm=has?has.map(function(e){return esc(e.name);}).join('<br>'):'';
-      h+='<div title="'+tip+'" style="'+st+'">'+d+(has?'<span style="font-size:8px;line-height:1.1;font-weight:600;margin-top:1px;word-break:keep-all">'+nm+'</span>':'')+'</div>';
+      var has=byDay[d]||[];
+      var st='min-height:84px;display:flex;flex-direction:column;align-items:stretch;border:1px solid var(--line-soft);border-radius:7px;font-size:11px;padding:3px 3px;overflow:hidden;'+(isToday(d)?'outline:1.5px solid var(--gold);background:var(--surface-2)':'background:#fff');
+      var dn='<div style="font-size:10px;font-weight:700;line-height:1.1;text-align:left;color:'+(isToday(d)?'var(--gold-deep)':'var(--ink-soft)')+'">'+d+'</div>';
+      var chips='';
+      if(has.length){
+        chips=has.slice(0,2).map(function(e){
+          var sstg=({"1차 면접":"1차","2차 면접":"2차","서류 검토":"서류","최종 합격":"합격"})[e.stage]||e.stage;
+          return '<div style="margin-top:2px;background:var(--surface-2,#f3ecdd);border-left:2px solid var(--gold);border-radius:3px;padding:1px 3px;line-height:1.2;overflow:hidden">'+
+            '<div style="font-size:8.5px;font-weight:700;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+esc(e.name)+'</div>'+
+            '<div style="font-size:7.5px;color:var(--gold-deep);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+(e.hm?esc(e.hm)+' ':'')+esc(sstg)+'</div></div>';
+        }).join('');
+        if(has.length>2){ chips+='<div style="margin-top:1px;font-size:8px;font-weight:700;color:var(--gold-deep)">+'+(has.length-2)+' 더</div>'; }
+      }
+      var tip=has.length?esc(has.map(function(e){return e.name+(e.hm?' '+e.hm:'')+'('+e.stage+')';}).join(', ')):'';
+      h+='<div title="'+tip+'" style="'+st+'">'+dn+chips+'</div>';
     }
     h+='</div>';
-    var monthEv=ev.filter(function(e){return e.y===y&&e.m===m;}).sort(function(a,b){return a.t-b.t;});
-    h+='<div style="margin-top:10px;border-top:1px solid var(--line-soft);padding-top:8px;font-size:11.5px">';
-    if(monthEv.length){ h+=monthEv.map(function(e){return '<div style="display:flex;gap:7px;padding:3px 0;align-items:center"><span style="color:var(--gold-deep);font-weight:700;white-space:nowrap">'+(e.m+1)+'/'+e.d+(e.hm?' '+e.hm:'')+'</span><span class="t-name">'+esc(e.name)+'</span><span class="t-sub">'+esc(e.stage)+'</span></div>';}).join(''); }
-    else { h+='<div class="t-sub">이 달 확정된 면접 일정이 없습니다.</div>'; }
-    h+='</div>';
+    var monthEv=ev.filter(function(e){return e.y===y&&e.m===m;});
+    if(!monthEv.length){ h+='<div class="t-sub" style="margin-top:8px;text-align:center">이 달 확정된 면접 일정이 없습니다.</div>'; }
     return h;
   };
 
