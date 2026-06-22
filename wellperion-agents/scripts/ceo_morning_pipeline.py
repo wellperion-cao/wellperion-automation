@@ -1141,7 +1141,6 @@ def build_telegram_report(s1: dict, assigned: list[dict], orch: dict) -> str:
             cat = raw_reason.split("·")[0].strip() if "·" in raw_reason else ""
             suffix = f" — {cat}" if cat else ""
             lines.append(f"{_circled(i)} {title_clean}{suffix}")
-        lines.append("   ↳ 결정 카드는 따로 보내드려요")
     else:
         lines.append("🔴 선장(GM) 결정: 없음")
 
@@ -1263,7 +1262,10 @@ def run_pipeline(dry_run: bool, as_json: bool, once_per_day: bool = False) -> in
 
     # ④ 보고 빌드 + 발송
     report = build_telegram_report(s1, assigned, orch)
-    question_card = build_question_card(s1["gm_decision"])
+    # [2026-06-23 GM] 아침 선장 결정카드 중복 폐지 — '오늘의 항로' 보고 안에
+    # 🔴 선장(GM) 결정 목록이 이미 인라인 포함됨. 별도 카드는 같은 내용 2번째
+    # 텔레그램이라 중복 → 발송 안 함. (build_question_card 함수는 보존)
+    question_card = ""
     plan_path = save_plan(s1, assigned, orch, dry_run)
     sent = send_reports(report, question_card, dry_run)
     print(f"[STAGE 4] 보고 {'(dry-run 출력)' if dry_run else '발송'} — {'OK' if sent else 'FAIL'}")
