@@ -881,7 +881,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 
   <!-- ── 요일별 업무 보드 (주 콘텐츠 · 요일 다중선택 + 트렐로 칸반) ── -->
   <div style="font-size:16px;font-weight:700;color:var(--text);padding:2px 0 4px;">요일별 업무 보드 (트렐로 칸반)</div>
-  <div class="board-intro"><strong>맨 위 공통 요일바</strong>에서 고른 요일 1개가 <strong>트렐로 컬럼</strong>으로 표시됩니다(점검 남/여와 같은 날짜로 함께 움직입니다). 컬럼 안에 👨남 / 👩여 / 🏢외곽 카드가 세로로 있고, 카드의 <strong>편집</strong> 버튼을 누르면 <strong>표(시간 칸 | 내용 칸)를 바로 편집</strong>할 수 있고, <strong>＋ 행 추가</strong>/<strong>✕ 삭제</strong>로 항목을 늘리거나 지운 뒤 <strong>저장</strong>하면 모든 기기에 반영됩니다. 저장 시 시간 순으로 자동 정렬됩니다.</div>
+  <div class="board-intro">아래 <strong>요일 버튼</strong>을 켜고 끄면(여러 개 동시 선택 가능) 켠 요일이 <strong>트렐로 컬럼</strong>으로 나란히 표시됩니다. 컬럼이 많으면 가로로 스크롤하세요. 각 컬럼 안에 👨남 / 👩여 / 🏢외곽 카드가 세로로 있고, 카드의 <strong>편집</strong> 버튼을 누르면 <strong>표(시간 칸 | 내용 칸)를 바로 편집</strong>할 수 있고, <strong>＋ 행 추가</strong>/<strong>✕ 삭제</strong>로 항목을 늘리거나 지운 뒤 <strong>저장</strong>하면 모든 기기에 반영됩니다. 선택한 요일은 다음에 다시 와도 기억됩니다. 저장 시 시간 순으로 자동 정렬됩니다.</div>
 
   <!-- 요일 툴바 (7요일 다중선택 toggle + 전체 토글) -->
   <div id="day-toolbar" class="day-toolbar"></div>
@@ -2456,8 +2456,7 @@ function syncAllFromWorkDate(){
   renderWorkdateBar();
   // 점검 두 구역(남/여): 같은 날짜로 항상 함께 갱신
   if(typeof renderG==='function'){ renderG('m'); renderG('f'); }
-  // 업무보드: 편집 중이 아니면 단일 요일 재렌더
-  if(typeof renderBoard==='function' && !(typeof boardHasEditing==='function' && boardHasEditing())) renderBoard();
+  // 업무보드: 다중선택(SELECTED_DAYS) 독립 — 날짜 네비와 분리(절충 복구 GM 2026-06-22). 여기서 재렌더 안 함.
 }
 /* 공통 요일바: 날짜 설정 → 전구역 동기 */
 function setWorkDate(ds){ if(!ds) return; WORK_DATE=ds; syncAllFromWorkDate(); }
@@ -4723,13 +4722,26 @@ function boardCellBodyHTML(text){
   return html;
 }
 
-/* 요일 툴바 — 단일 요일화(GM 2026-06-20): 요일 선택은 상단 공통 요일바(WORK_DATE)로 일원화.
-   다중선택 토글 폐기. 이 바는 비워 숨김(공통바가 단일 진입점). */
+/* 요일 툴바 렌더 (7요일 다중선택 toggle + 전체 선택/해제 토글).
+   절충 복구(GM 2026-06-22): 다중선택 부활(여러 요일 한눈에). 상단 공통 요일바는 점검 남/여 날짜 동기용으로 유지. */
 function renderDayToolbar(){
   const bar=document.getElementById('day-toolbar');
   if(!bar)return;
-  bar.innerHTML='';
-  bar.style.display='none';
+  bar.style.display='';
+  const todayKey=DOW_TO_DAYKEY[new Date().getDay()];
+  const allOn=ALL_DAY_KEYS.every(k=>SELECTED_DAYS.has(k));
+  let html='';
+  BOARD_DAYS.forEach(d=>{
+    const active=SELECTED_DAYS.has(d.key)?' active':'';
+    const we=d.weekend?' is-weekend':'';
+    const sub=(d.key===todayKey)?'오늘':(d.weekend?'주말':'평일');
+    html+='<button type="button" class="day-tab'+active+we+'" onclick="toggleBoardDay(\''+d.key+'\')">'
+        +'<span class="dt-day">'+d.label+'</span><span class="dt-sub">'+sub+'</span></button>';
+  });
+  // 전체 선택/해제 토글
+  html+='<button type="button" class="day-tab day-all'+(allOn?' active':'')+'" onclick="toggleAllBoardDays()">'
+      +'<span class="dt-day">'+(allOn?'전체 해제':'전체 선택')+'</span></button>';
+  bar.innerHTML=html;
 }
 
 /* 트렐로 칸반 렌더 — 켠 요일마다 컬럼 1개. 각 컬럼 안 남/여/외곽 카드그룹 세로.
@@ -4739,9 +4751,13 @@ function renderBoard(){
   const wrap=document.getElementById('manual-board');
   if(!wrap)return;
   const todayKey=DOW_TO_DAYKEY[new Date().getDay()];
-  // 단일 요일화(GM 2026-06-20): 상단 공통 요일바(WORK_DATE)의 요일 1개 컬럼만 표시.
-  const selKey=workDateDayKey();
-  const days=BOARD_DAYS.filter(d=>d.key===selKey);
+  // 절충 복구(GM 2026-06-22): 다중선택(SELECTED_DAYS) 켠 요일마다 컬럼 1개.
+  const days=BOARD_DAYS.filter(d=>SELECTED_DAYS.has(d.key)); // BOARD_DAYS 순서 유지
+  if(!days.length){
+    wrap.classList.add('is-empty');
+    wrap.innerHTML='<div class="board-empty">위 <b>요일 버튼</b>을 눌러 보고 싶은 요일을 켜세요. (여러 개 동시 선택 가능 · <b>전체 선택</b>으로 7요일 한 번에)</div>';
+    return;
+  }
   wrap.classList.remove('is-empty');
   let html='';
   days.forEach(d=>{
