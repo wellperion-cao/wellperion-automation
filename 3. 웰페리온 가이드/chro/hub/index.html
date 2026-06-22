@@ -1819,7 +1819,7 @@ function buildNav(){
     document.querySelector('.tab[data-tab="'+t.id+'"]').addEventListener("click",function(){showTab(t.id);});
   });
 }
-function finishLoad(){
+function finishLoad(forceTab){
   document.getElementById("loading").style.display="none";
   document.getElementById("app").style.display="block";
   var rp=document.getElementById("rolePill");
@@ -1833,9 +1833,13 @@ function finishLoad(){
     "마지막 동기화 "+now.getFullYear()+"-"+p2(now.getMonth()+1)+"-"+p2(now.getDate())+" "+
     p2(now.getHours())+":"+p2(now.getMinutes())+" · 6개 DB 중 "+ok+"개 정상"+
     (DB.emp.length?" · 재직 "+(function(){var s={};DB.emp.filter(function(e){return e["재직 상태"]!=="퇴사";}).forEach(function(e){var n=(e["성명"]||e["이름"]||"").toString().trim();if(n)s[n]=1;});return Object.keys(s).length;})()+"명":"");
-  var saved="dash";
-  try{var s=localStorage.getItem("wp_hr_tab");if(s&&TABS.some(function(t){return t.id===s;}))saved=s;}catch(e){}
-  showTab(saved);
+  var target="dash";
+  if(forceTab&&TABS.some(function(t){return t.id===forceTab;})){
+    target=forceTab;   // 입장(게이트 통과) 시 항상 대시보드부터
+  }else{
+    try{var s=localStorage.getItem("wp_hr_tab");if(s&&TABS.some(function(t){return t.id===s;}))target=s;}catch(e){}
+  }
+  showTab(target);
 }
 var navBuilt=false;
 async function startApp(){
@@ -1845,7 +1849,7 @@ async function startApp(){
     navBuilt=true;
   }
   await loadAll();
-  finishLoad();
+  finishLoad("dash");
 }
 async function reloadData(){
   var btn=document.getElementById("reloadBtn");
