@@ -454,7 +454,8 @@ var _SURVEY_PUBLIC_ACTIONS = {
   lesson_breakdown:       true,  // 종목별 등록수만 반환(PII 미노출) — 면제 안전
   // 문의회원 페이지(CPO) 익명 읽기 — 이름·전화·메모 0 노출 → 공개 안전(2026-06-22 A안)
   member_inquiry_list:    true,
-  member_calendar:        true
+  member_calendar:        true,
+  member_inquiry_update:  true   // 진행상태·메모·일정·담당만 패치(이름·전화 컬럼 미변경) — 2026-06-22 GM '그냥 열기'
 };
 function _accessProp_(k) {
   try { return PropertiesService.getScriptProperties().getProperty(k) || ''; } catch (e) { return ''; }
@@ -685,6 +686,30 @@ function _processAction(body) {
       add(row.exp2, '체험');
     });
     return _json({ ok: true, month: mcMonth, count: mcEvents.length, events: mcEvents });
+  }
+
+  // ─── 문의회원 페이지(CPO): 진행상태/메모/일정/담당 수정 ───
+  //   ★ 이름·전화 컬럼은 의도적으로 패치 목록에서 제외 → 익명 페이지가 빈값 보내도 실명 보존(이중 안전).
+  if (action === 'member_inquiry_update') {
+    var muRow = parseInt(body.rowIndex, 10);
+    if (!muRow || muRow < 2) return _json({ ok: false, error: 'rowIndex 필수(2 이상)' });
+    var muSh = _miSheet_();
+    if (!muSh) return _json({ ok: false, error: '시트 없음' });
+    var muHdr = _miHeaders_(muSh);
+    function _muSet(colNames, val) {
+      if (val === undefined || val === null) return;
+      var ci = _miColIdx_(muHdr, colNames);
+      if (ci >= 0) muSh.getRange(muRow, ci + 1).setValue(val);
+    }
+    _muSet(['관심 있는 프로그램 종류','관심프로그램','프로그램'], body.program);
+    _muSet(['진행현황','진행상황','진행상태','상태'], body.status);
+    _muSet(['메모','비고','담당자메모'], body.memo);
+    _muSet(['담당','담당자'], body.owner);
+    _muSet(['시설투어 및 상담 예약','시설견학 및 상담 일정','상담 예약','상담'], body.tour);
+    _muSet(['체험1 확정시간','체험1'], body.exp1);
+    _muSet(['체험2 확정시간','체험2'], body.exp2);
+    try { _notifyTelegram('📝 문의회원 수정(공개페이지) — 행 ' + muRow + ' · 상태:' + (body.status || '-') + ' · 담당:' + (body.owner || '-')); } catch (e) {}
+    return _json({ ok: true, rowIndex: muRow, message: '수정되었습니다.' });
   }
 
   // ─── 문의→가입 전환 집계 ───

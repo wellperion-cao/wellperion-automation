@@ -787,8 +787,10 @@ if (action === 'member_calendar') {
 <script>
 /* ── GAS URL (퍼널 Survey 웹앱 /exec — 2026-06-22 연결) ── */
 var GAS_URL = 'https://script.google.com/macros/s/AKfycbzdwSCCSSJ6JXLDoWuo7HG0JmBM2iy10TujFQ_O5JbTjnWaN7gOk-ddA4IAvsNfelg0xA/exec';
-/* ── 읽기전용·익명 모드(A안) — 실명·전화·편집 차단. B안(접근통제) 후 false ── */
-var READ_ONLY = true;
+/* ── 수정 모드(2026-06-22 GM '그냥 열기') — 진행상태·메모·일정·담당만 수정. 이름·전화는 익명 유지·수정불가 ── */
+var READ_ONLY = false;
+var ALLOW_DELETE = false; // 공개페이지 파괴행위 최소화 — 삭제 비활성
+var ALLOW_ADD = false;    // 신규추가 비활성(문의는 웹폼·시트로 유입)
 
 /* ── 탭 전환 ── */
 function switchTab(id, btn) {
@@ -812,7 +814,7 @@ var calEvents = {};
   renderCalendarShell();
   loadCalendarData();
   loadDbData();  // 기본 활성 탭=문의 회원 관리(DB) → 초기 로딩(2026-06-20 GM 순서변경)
-  if (READ_ONLY) { var _ab = document.getElementById('btnAddRow'); if (_ab) _ab.style.display = 'none'; }
+  if (!ALLOW_ADD) { var _ab = document.getElementById('btnAddRow'); if (_ab) _ab.style.display = 'none'; }
 })();
 
 function changeMonth(delta) {
@@ -1080,7 +1082,7 @@ function buildDbRow(row, isNew) {
       ? '<td><span style="font-size:11px;color:var(--dim)">🔒 읽기전용</span></td>'
       : '<td><div class="row-actions">' +
           '<button class="row-btn btn-edit" onclick="startEditRow(this)">편집</button>' +
-          '<button class="row-btn btn-del" onclick="deleteRow(this)">삭제</button>' +
+          (ALLOW_DELETE ? '<button class="row-btn btn-del" onclick="deleteRow(this)">삭제</button>' : '') +
         '</div></td>');
 
   return tr;
@@ -1125,23 +1127,11 @@ function startEditRow(btn) {
   // IME 안전: input/select를 교체하지 않고 처음부터 올바른 타입으로 생성
   var cells = tr.querySelectorAll('td');
 
-  // [0] 이름
-  cells[0].innerHTML = '';
-  var inputName = document.createElement('input');
-  inputName.className = 'cell-input';
-  inputName.type = 'text';
-  inputName.value = row.name || '';
-  inputName.dataset.field = 'name';
-  cells[0].appendChild(inputName);
+  // [0] 이름 — 익명 보호: 수정 불가(실명은 시트에서만). data-field 없음 → 저장 시 미전송
+  cells[0].innerHTML = '<span style="font-size:11px;color:var(--dim)">가림 (시트)</span>';
 
-  // [1] 전화
-  cells[1].innerHTML = '';
-  var inputPhone = document.createElement('input');
-  inputPhone.className = 'cell-input';
-  inputPhone.type = 'text';
-  inputPhone.value = row.phone || '';
-  inputPhone.dataset.field = 'phone';
-  cells[1].appendChild(inputPhone);
+  // [1] 전화 — 익명 보호: 수정 불가
+  cells[1].innerHTML = '<span style="font-size:11px;color:var(--dim)">—</span>';
 
   // [2] 관심 프로그램
   cells[2].innerHTML = '';
@@ -1222,7 +1212,7 @@ function saveEditRow(tr) {
   });
 
   var payload = {
-    action: 'inquiry_update',
+    action: 'member_inquiry_update',
     rowIndex: rowIndex,
     name:    fields.name    || '',
     phone:   fields.phone   || '',
