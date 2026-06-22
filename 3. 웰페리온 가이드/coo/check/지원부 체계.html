@@ -2775,6 +2775,7 @@ function findBaseItem(id){
   return found||{name:'',detail:'',slot:'',shift:'am',cat:''};
 }
 let _editingItemId=null;
+let _editingIsFocus=false;   // 편집 중 항목이 '요일별 집중 청소'(회차 없이 요일로만)인지 — 회차 자동부여 차단용(GM 2026-06-22)
 window.editItem=function(id){
   const ov=getItemOverrides()[id]||{};
   const base=findBaseItem(id);
@@ -2788,9 +2789,15 @@ window.editItem=function(id){
   document.getElementById('editCat').value=ov.cat||base.cat||(_ci&&_ci.category)||'';
   const _gsel=document.getElementById('editGender');
   if(_gsel)_gsel.value=(_ci&&_ci.gender)||ov.gender||base.gender||'all';
-  // 회차(조) 다중선택 — 현재 등장 회차 pre-check
-  let _curR=[];
-  try{ _curR=itemRounds({id:id, rounds:(_ci&&_ci.rounds)||ov.rounds, slot:ov.slot||base.slot, shift:ov.shift||base.shift})||[]; }catch(e){ _curR=[]; }
+  // 회차(조) pre-check — 명시 회차 우선, 없으면 ROUND_MAP만. roundOfSlot 폴백 금지(요일별 집중 항목에 am1을 잘못 자동부여하던 버그 — GM 2026-06-22).
+  const _explicitR=(Array.isArray(_ci&&_ci.rounds)&&_ci.rounds.length)?_ci.rounds:((Array.isArray(ov.rounds)&&ov.rounds.length)?ov.rounds:null);
+  const _mapR=(typeof ROUND_MAP!=='undefined'&&ROUND_MAP[id])?ROUND_MAP[id]:null;
+  let _curR=_explicitR||_mapR||[];
+  // 요일별 집중 청소(F 집중 등): 명시 회차도 ROUND_MAP도 없는 sched 전용 = 조가 아니라 요일로 관리 → 회차 칸 숨김·회차 미부여
+  const _slotNow=(_ci&&_ci.slot)||ov.slot||base.slot||'';
+  _editingIsFocus=(!_explicitR&&!_mapR)&&(_slotNow==='F 집중'||!!((_ci&&_ci.sched)||ov.sched));
+  const _rwrap=document.getElementById('editRoundsWrap');
+  if(_rwrap)_rwrap.style.display=_editingIsFocus?'none':'';
   const _rc=document.getElementById('editRounds');
   if(_rc)_rc.innerHTML=(typeof ROUND_KEYS!=='undefined'?ROUND_KEYS:[]).map(function(rk){return '<label style="display:flex;align-items:center;gap:4px;font-size:13px;cursor:pointer;background:var(--bg);border:1px solid var(--border);border-radius:7px;padding:6px 10px;"><input type="checkbox" class="editRoundCb" value="'+rk+'"'+(_curR.indexOf(rk)>=0?' checked':'')+'> '+roundLabel(rk)+'</label>';}).join('');
   // 일정(요일·몇째주) 체크박스 렌더 — item.sched("mon,wed,fri|2") 우선, 없으면 빈값
@@ -2834,7 +2841,8 @@ window.saveItemEdit=function(){
     if(newShift)item.shift=newShift;
     if(newCat)item.category=newCat;
     item.gender=newGender;
-    if(newRounds.length)item.rounds=newRounds;
+    if(_editingIsFocus){ item.rounds=[]; }   /* 요일별 집중(F 집중 등)=회차 없이 요일로만 — 회차 자동/실수 부여 차단(GM 2026-06-22) */
+    else if(newRounds.length){ item.rounds=newRounds; }
     item.sched=newSched;   /* 일정(요일·몇째주) — 빈문자면 매일/상시로 복귀 */
   }else{
     /* 기본 항목(시트에 없음) → 같은 id로 shadow 항목 생성(baseline 복사 후 편집값 반영) */
@@ -5502,7 +5510,7 @@ renderManualItems();
       <label style="display:block;font-size:13px;font-weight:600;color:var(--dim);margin-bottom:4px;">내용 (세부 설명)</label>
       <textarea id="editDetail" style="width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:10px 14px;border-radius:8px;font-size:13px;font-family:inherit;min-height:80px;line-height:1.6;resize:vertical;"></textarea>
     </div>
-    <div style="margin-bottom:12px;">
+    <div id="editRoundsWrap" style="margin-bottom:12px;">
       <label style="display:block;font-size:13px;font-weight:600;color:var(--dim);margin-bottom:6px;">회차(조) — 점검에 등장할 조 (다중 선택)</label>
       <div id="editRounds" style="display:flex;flex-wrap:wrap;gap:8px;"></div>
     </div>
