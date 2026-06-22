@@ -41,25 +41,26 @@ RX_H, RX_I  = 550, 562  # 우칼럼 헤더/항목 x
 HDR_Y_TOP   = 357
 HDR_Y_BOT   = 558
 
+# 실제 웰페리온 골프연습장(타석) 안내 사인 내용 반영 (2026-06-22 GM — 코스 에티켓 교체)
 MEMBERS = [
     "사전 예약 필수 (Reservation Required)",
-    "골프화·칼라 복장 규정 준수 (Dress Code)",
-    "빠른 진행·앞 팀과 간격 유지 (Keep Pace)",
-    "휴대폰 무음·플레이 중 정숙 (Quiet & Silent)",
+    "타석 외 스윙 금지·출입 시 안전 확인 (Swing in Bay Only)",
+    "만석 시 60분 에티켓 준수 (60-Min Courtesy When Full)",
+    "소음·고성 자제 (Quiet Please)",
     "궁금하신 점은 언제든 문의해 주세요",
 ]
 PROS = [
     "시작 10분 전 도착·세팅 (Be Ready 10 Min)",
-    "회원 동의 없는 촬영 금지 (No Photo)",
+    "소속 프로 외 레슨 금지 (Authorized Coaching Only)",
     "안전 1순위 · 즉시 리셉션 공유 (Safety First)",
-    "장비·시설 점검·정돈 (Check & Reset)",
+    "장비·타석 점검·정돈 (Check & Reset)",
     "정중 · 절제 · 전문 (Respect · Restraint · Expertise)",
 ]
 FACILITY = [
-    "스윙 시 주변 안전 거리 확보 (Keep Safe Distance)",
-    "디봇 메우기 · 벙커 정리 (Repair & Rake)",
-    "그린 볼마크 수리 (Fix Ball Marks)",
-    "카트 · 코스 동선 준수 (Follow Cart Path)",
+    "타석 이동·취소는 키오스크에서 (Use Kiosk)",
+    "10분 이상 이석 시 자동 종료 (10-Min Away = End)",
+    "피팅존 회원 전용 (Fitting Zone · Members Only)",
+    "동반·방문객은 라운지 이용 (Guests Wait in Lounge)",
     "시설 이슈 발생 시 리셉션 공유 (Notify Reception)",
 ]
 
@@ -96,7 +97,7 @@ def compose_guideline_card_golf(output_path: Path = OUT_CARD) -> None:
     items(LX_I, ITEM_YS_TOP, MEMBERS)
     header(LX_H, HDR_Y_BOT, "FOR PROS", "프로님들")
     items(LX_I, ITEM_YS_BOT, PROS)
-    header(RX_H, HDR_Y_TOP, "GOLF FACILITY", "골프장 시설 이용")
+    header(RX_H, HDR_Y_TOP, "GOLF RANGE", "골프 연습장 이용")
     items(RX_I, ITEM_YS_TOP, FACILITY)
 
     output_path.parent.mkdir(parents=True, exist_ok=True)

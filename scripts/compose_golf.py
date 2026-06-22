@@ -294,7 +294,8 @@ def build_ep2(out_ep: Path) -> None:
          "시상대에 오른 순간", False),
         (_p("_06"), "KPGA 주니어리그 2회", "혼자가 아니었다",
          "함께 준비한 팀의 결과", False),
-        (_p("_03"), "KPGA 주니어리그 2회", "비결이 있었습니다",
+        # _07: 시상대 3인 다른 컷 (표지 _03 중복 제거 — 같은 사진 반복 금지)
+        (_p("_07"), "KPGA 주니어리그 2회", "비결이 있었습니다",
          "다음 편에서", True),
     ]
     for idx, (photo, meta, title_kor, sub, full_dark) in enumerate(story_data, start=2):
@@ -317,9 +318,9 @@ def build_ep3(out_ep: Path) -> None:
     """3편 — 비결은 프로였다"""
     print("\n=== EP3: 비결은 프로였다 ===")
 
-    # ig_01 표지: _01 재사용
+    # ig_01 표지: _02 (파란 하늘 티샷 — ep1 표지 _01 중복 제거)
     compose_cover(
-        photo_path=_p("_01"),
+        photo_path=_p("_02"),
         title_eng="THE PRO",
         title_kor="비결은 프로였다",
         date_location="웰페리온 골프",
@@ -348,7 +349,8 @@ def build_ep3(out_ep: Path) -> None:
     story_data = [
         (_p("_11"),  "WELLPERION GOLF", "아이 몸에 맞춘 1:1",
          "성장 · 스윙 · 거리 맞춤", False),
-        (_p("_01"),  "WELLPERION GOLF", "우리 아이도 함께",
+        # _13: 연습장 타석 샷 (ep1·ep3 표지 _01 중복 제거 — 같은 사진 반복 금지)
+        (_p("_13"),  "WELLPERION GOLF", "우리 아이도 함께",
          "체계적 주니어 육성", True),
     ]
     for idx, (photo, meta, title_kor, sub, full_dark) in enumerate(story_data, start=3):
