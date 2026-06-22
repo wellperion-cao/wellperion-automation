@@ -3217,5 +3217,19 @@
     "next": "🌀 표류 — 다음 미정 (필요 시 GM·웰리/담당 C-Level 지정)",
     "adhoc_commit": "03f1dbd54e836640e25741a733c25d8b726eec63",
     "ship_no": 70
+  },
+  {
+    "task_id": "CEO-2026-06-22-ADHOC-2c3317dd",
+    "clevel": "ceo",
+    "title": "[웰리] fix(push)[웰리]: 자동push 스위퍼 merge 폴백+고아 rebase 정리 (잠긴 바이너리 INC)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-06-22",
+    "processed_at": "2026-06-22",
+    "artifact": "열린 앱(PowerPoint 등)이 추적 .pptx를 잠그면 rebase --autostash가\n워킹트리 reset 중 unlink 실패로 죽어 고아 rebase-merge만 남고\n스위퍼가 매 주기 non-fast-forward 경고 반복. 동일사고 3회(06-22).\n- _reconcile: rebase 실패 시 merge --no-edit 폴백(워킹트리 미reset)\n- _clear_orphan_rebase: abort 못치운 .git/rebase-merge|apply 강제삭제 (CLI ad-hoc · 커밋 2c3317dd)",
+    "next": "🌀 표류 — 다음 미정 (필요 시 GM·웰리/담당 C-Level 지정)",
+    "adhoc_commit": "2c3317dd2cecd86d08cf6b7a2005814bb7b250eb",
+    "ship_no": 43
   }
 ]
