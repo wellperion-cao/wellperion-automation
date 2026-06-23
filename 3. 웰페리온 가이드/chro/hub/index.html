@@ -1162,7 +1162,17 @@ return s.join('');
 function normMemo(mm){
   var lines=String(mm||"").split(/\n/).map(function(s){return s.replace(/\r/g,"").trim();});
   var isBlock=lines.some(function(l){return /^■\s*(개인정보|경력사항|자격|자기소개서)/.test(l);});
-  if(isBlock) return String(mm||"");
+  if(isBlock){
+    var raw=String(mm||"");var rl=raw.split(/\n/);var out2=[];var skip=false;
+    for(var ri=0;ri<rl.length;ri++){
+      var t=rl[ri].replace(/\r/g,"");
+      if(/^\s*■\s*개인정보/.test(t)){skip=true;continue;}
+      if(skip){ if(/^\s*■/.test(t)){skip=false;} else {continue;} }
+      out2.push(rl[ri]);
+    }
+    var res=out2.join("\n").replace(/^\s+|\s+$/g,"");
+    return res?res:raw;
+  }
   var kv=lines.filter(function(l){return /^■/.test(l)&&/[:：]/.test(l);}).length;
   if(kv<2) return String(mm||"");
   var map={},career=[];
