@@ -536,5 +536,32 @@
     "next": "🌀 표류 — 다음 미정 (필요 시 GM·웰리/담당 C-Level 지정)",
     "adhoc_commit": "187d77e98e94b6a0a9ff862ac62e7f8875ade3d2",
     "ship_no": 128
+  },
+  {
+    "task_id": "CTO-2026-06-24-LEARNING-EFFECT-LOOP",
+    "clevel": "cto",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "⛴️여객선",
+    "enqueued_at": "2026-06-24",
+    "processed_at": "2026-06-24",
+    "ship_no": 138,
+    "title": "[시토] 자기학습 효과 측정 고리 — ④효과 단계 자동화(효과공책 closer)",
+    "note": "GM 승인 2026-06-24. 자기학습 루프 ④효과 측정이 비어 자기개선 미증명이던 고리를 닫음. scripts/learning_effect_meter.py 신설: status=반영·효과=미확인 카드 전수, 증거 프로브(자동화코드=심볼/가동 검증·프롬프트=명문화 grep)로 측정→효과/근거/일자 기록. 증거 있을 때만 효과있음 격상, 없으면 미확인 유지(L05 허위금지). ai_learning_proposer.cmd_mark_applied에 반영직후 measure_all 자동 트리거 박제. 반영 2건(웰리 brain/hands·시토 모델폴백) 효과있음 실증 기록. 멱등.",
+    "next": "🔗 다음=자기학습 일요일 자동사이클이 효과 측정까지 한 바퀴 도는지 관찰(다리 놓음). 자율화 축 server-free 트랙 지속."
+  },
+  {
+    "task_id": "CPO-2026-06-24-ADHOC-612f39ac",
+    "clevel": "cpo",
+    "title": "[시포] /cpo 문의 회원 관리 — 이름매핑 버그수정·컬럼순서·탭 이관",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-06-24",
+    "processed_at": "2026-06-24",
+    "artifact": "- GAS 이름 버그: ['이름','성함']→['성함','이름']. '이름'이 '접수 담당자\n  혹은 본인 이름'(13번칸) 먼저 잡던 것 차단 → 회원 성함(1번칸) 정상 표시\n  (_miReadRows/_maSet/_muSet 3곳). 라이브 반영=GM 퍼널 GAS 재배포 1회 필요\n- 컬럼 순서: 문의일→성함→연락처→… (thead+buildDbRow+buildNewInputRow 정합)\n- 등록회원·멤버십 회원관리 = 상단 탭에서 제거→하단 퍼널 바로 이관(UI 동일)\n- switchTab null-btn 가드(퍼널 진입 시 (CLI ad-hoc · 커밋 612f39ac)",
+    "next": "🌀 표류 — 다음 미정 (필요 시 GM·웰리/담당 C-Level 지정)",
+    "adhoc_commit": "612f39acfdbb908059c67bc96b1ca6c4e19639ef",
+    "ship_no": 23
   }
 ]

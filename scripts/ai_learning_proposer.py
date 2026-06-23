@@ -521,6 +521,18 @@ def cmd_mark_applied(card_id: str, dry_run: bool):
     save_proposals_file(cards)
     print(f"  저장 완료: {PROPOSALS_FILE}")
 
+    # ④ 효과 측정 고리 자동 트리거(박제) — 반영 직후 측정해 루프를 닫는다.
+    #    증거 있을 때만 효과있음 격상, 없으면 미확인 유지(허위 금지). best-effort.
+    try:
+        try:
+            from learning_effect_meter import measure_all
+        except ImportError:
+            sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+            from learning_effect_meter import measure_all
+        measure_all(only_id=card_id)
+    except Exception as e:
+        print(f"  [효과측정] 자동 트리거 실패({type(e).__name__}) — 수동 측정 가능")
+
 
 # ═══════════════════════════════════════════
 #  메인 파이프라인 (제안 생성)
