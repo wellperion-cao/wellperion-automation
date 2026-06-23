@@ -4668,5 +4668,19 @@
     "next": "🌀 표류 — 다음 미정 (필요 시 GM·웰리/담당 C-Level 지정)",
     "adhoc_commit": "1e83d066df37de8ebe91087477b290b4780f7b53",
     "ship_no": 118
+  },
+  {
+    "task_id": "CMO-2026-06-23-ADHOC-e800d11c",
+    "clevel": "cmo",
+    "title": "[시모] 마케팅 대시보드 기간 필터 — 유형·종목 문의·등록·전환을 일/주/월/올해/기간에 맞춰 재집계 [시모]",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-06-23",
+    "processed_at": "2026-06-23",
+    "artifact": "- funnel_conversion: from/to 있으면 시각 기준 문의·전환 필터(없으면 누적 하위호환), 범위별 캐시키 fc_v2\n- 대시보드: 유형별 문의=기간필터된 type_channel_breakdown(_tcData) 단일출처로 전환 → '월 고정'(byTypeMonth) 제거\n- loadTypeChannel/loadFunnelConversion 기간 전환 시 재호출, year=올해1/1~오늘 범위 보정\n- 등록=period_breakdown.regByType 기간별(날짜 있는 곳만), 강습 종목 등록은 누적 유지(정직 (CLI ad-hoc · 커밋 e800d11c)",
+    "next": "🌀 표류 — 다음 미정 (필요 시 GM·웰리/담당 C-Level 지정)",
+    "adhoc_commit": "e800d11c50f70d8b6830f30fdf1101674b443569",
+    "ship_no": 117
   }
 ]
