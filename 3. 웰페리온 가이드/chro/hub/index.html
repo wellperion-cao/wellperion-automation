@@ -722,10 +722,7 @@ function diagCard(){
   var stales=DBMETA.filter(function(m){return STALE[m[0]];});
   if(errs.length===0&&stales.length===0){
     return '<div class="diag ok"><div class="diag-row">'+
-      '<span class="diag-dot dot-ok"></span><b>데이터 정상 연동</b>'+
-      '<span class="muted"> · 임직원 '+(ROWCOUNT.emp||0)+' · 채용 '+(ROWCOUNT.hire||0)+
-      ' · 지원자 '+(ROWCOUNT.appl||0)+' · 온보딩 '+(ROWCOUNT.onbo||0)+
-      ' · 평가 '+(ROWCOUNT.eval||0)+' · 퇴사 '+(ROWCOUNT.exit||0)+'</span></div></div>';
+      '<span class="diag-dot dot-ok"></span><b>데이터 정상 연동</b></div></div>';
   }
   var rows=DBMETA.map(function(m){
     var k=m[0],cls,ms;
@@ -768,16 +765,10 @@ function renderDash(){
   var finalPass=funnel["최종 합격"]||0;
   /* 평가 */
   var gradeDist={};evl.forEach(function(e){var g=e["평가 등급"];if(g){gradeDist[g]=(gradeDist[g]||0)+1;}});
-  var rewarded=evl.filter(function(e){return isYes(e["포상 여부"]);}).length;
   /* 이직 */
   var exit90=exits.filter(function(e){var d=dval(e,"최종 근무일");return d&&new Date(d)>=d90;});
   var exitTypes={};exit90.forEach(function(e){var t=e["퇴사 유형"]||"기타";exitTypes[t]=(exitTypes[t]||0)+1;});
   var turnover=(active.length+exit90.length)?Math.round(exit90.length/(active.length+exit90.length)*1000)/10:0;
-  /* 이번 주 할 일 */
-  var todos=[];
-  appl.forEach(function(a){var d=dval(a,"면접 일정");if(d){var dd=new Date(d);if(dd>=today&&dd<=in7)todos.push({d:dd,ic:"🗓",txt:'<b>면접</b> '+esc(a["지원자명"]||"")+' · '+esc(a["전형 단계"]||"")+' — '+fmtD(d)});}});
-  hire.forEach(function(h){var d=dval(h,"공고 마감일");if(d&&h["채용 상태"]==="공고중"){var dd=new Date(d);if(dd>=today&&dd<=in7)todos.push({d:dd,ic:"⏰",txt:'<b>공고 마감</b> '+esc(h["포지션명"]||"")+' — '+fmtD(d)});}});
-  todos.sort(function(a,b){return a.d-b.d;});
   /* 채용 채널 */
   var STD_CH=["잡코리아","알바몬","호호요가","스포드림카페","자사 채용홈"];
   var srcDist={};appl.forEach(function(a){var s=a["지원 경로"];if(s){srcDist[s]=(srcDist[s]||0)+1;}});
@@ -797,14 +788,7 @@ function renderDash(){
   html+='</div>';
 
   html+='<div class="sec-title">채용·온보딩 캘린더</div>'+renderDashCalCard();
-  html+=upcomingCard();html+='<div class="sec-title">이번 주 할 일</div>';
-  if(todos.length){
-    html+='<div class="card"><div class="stack" style="gap:4px">'+todos.map(function(t){
-      return '<div style="display:flex;gap:9px;align-items:center;font-size:13px;padding:6px 2px;border-bottom:1px solid #efece4"><span>'+t.ic+'</span><span>'+t.txt+'</span></div>';
-    }).join("")+'</div></div>';
-  }else{
-    html+='<div class="card">'+emptyState("이번 주 예정된 면접·마감 일정이 없습니다.","◔")+'</div>';
-  }
+  html+=upcomingCard();
 
   var overdue=hire.filter(function(h){
     var dl=dval(h,"공고 마감일");return h["채용 상태"]==="공고중"&&dl&&new Date(dl)<today;});
@@ -862,7 +846,7 @@ function renderDash(){
   html+='<div class="card"><h3>고용 형태 분포</h3><div class="chart-box"><canvas id="cType"></canvas></div></div>';
   html+='</div>';
 
-  html+='<div class="sec-title">조직도 <span class="muted" style="font-weight:400;font-size:11px">· 재직 '+(function(){var s={};active.forEach(function(e){var n=(e["성명"]||e["이름"]||"").trim();if(n)s[n]=1;});return Object.keys(s).length;})()+'명 · 이름·직급</span></div>'+orgChartHtml(active);
+  html+='<div class="sec-title">조직도 <span class="muted" style="font-weight:400;font-size:11px">· 재직 '+__uniqActive+'명 · 이름·직급</span></div>'+orgChartHtml(active);
 
   html+='<div class="sec-title">성과 · 이직 동향</div><div class="grid-2">';
   html+='<div class="card"><h3>인사평가 등급 분포</h3><div class="chart-box"><canvas id="cGrade"></canvas></div></div>';
@@ -1611,7 +1595,7 @@ function renderObCalCard(){
   if(!ev.filter(function(e){return e.y===y&&e.m===m;}).length)h+='<div style="margin-top:8px;text-align:center;color:#999;font-size:11.5px">이번 달 예정 체크인 없음</div>';
   h+='</div>';
   return h;}
-function upcomingCard(){var now=new Date();now.setHours(0,0,0,0);var hz=now.getTime()+30*86400000;var evs=[];(DB.appl||[]).forEach(function(a){var v=(typeof dval==="function")?dval(a,"면접 일정"):a["면접 일정"];var s=String(v||"");if(!s)return;var dt=new Date(s.replace(" ","T"));if(isNaN(dt.getTime()))return;var tt=dt.getTime();if(tt>=now.getTime()&&tt<=hz)evs.push({t:tt,date:s,kind:"면접",who:a["지원자명"],detail:(a["전형 단계"]||"면접")});});obCheckEvents().forEach(function(e){if(e.done)return;var tt=new Date(e.date).getTime();if(tt>=now.getTime()&&tt<=hz)evs.push({t:tt,date:e.date,kind:"온보딩",who:e.name,detail:e.label,row:e.row});});evs.sort(function(a,b){return a.t-b.t;});var h='<div class="card" style="margin-top:10px"><div class="sec-title">다가오는 일정 — 채용·온보딩 (30일)</div>';if(!evs.length){return h+emptyState("예정된 면접·온보딩 체크인이 없습니다.","🗓")+'</div>';}h+='<div style="font-size:12.5px">'+evs.map(function(e){var dd=new Date(e.date);var md=(dd.getMonth()+1)+'/'+dd.getDate();var col=e.kind==="면접"?"#2f6d9e":"#b08d57";var clk=e.row?(' onclick="obCheck('+e.row+')" style="cursor:pointer;display:flex;gap:8px;padding:4px 0;border-bottom:1px solid #f2f2f2"'):' style="display:flex;gap:8px;padding:4px 0;border-bottom:1px solid #f2f2f2"';return '<div'+clk+'><span style="white-space:nowrap;font-weight:700;color:#666;width:42px">'+md+'</span><span style="white-space:nowrap;color:'+col+';font-weight:600;width:48px">'+e.kind+'</span><span>'+esc(e.who)+' · '+esc(e.detail)+'</span></div>';}).join("")+'</div></div>';return h;}
+function upcomingCard(){var now=new Date();now.setHours(0,0,0,0);var hz=now.getTime()+30*86400000;var evs=[];(DB.appl||[]).forEach(function(a){var v=(typeof dval==="function")?dval(a,"면접 일정"):a["면접 일정"];var s=String(v||"");if(!s)return;var dt=new Date(s.replace(" ","T"));if(isNaN(dt.getTime()))return;var tt=dt.getTime();if(tt>=now.getTime()&&tt<=hz)evs.push({t:tt,date:s,kind:"면접",who:a["지원자명"],detail:(a["전형 단계"]||"면접")});});obCheckEvents().forEach(function(e){if(e.done)return;var tt=new Date(e.date).getTime();if(tt>=now.getTime()&&tt<=hz)evs.push({t:tt,date:e.date,kind:"온보딩",who:e.name,detail:e.label,row:e.row});});(DB.hire||[]).forEach(function(hj){if(hj["채용 상태"]!=="공고중")return;var v=(typeof dval==="function")?dval(hj,"공고 마감일"):hj["공고 마감일"];var s=String(v||"");if(!s)return;var dt=new Date(s.replace(" ","T"));if(isNaN(dt.getTime()))return;var tt=dt.getTime();if(tt>=now.getTime()&&tt<=hz)evs.push({t:tt,date:s,kind:"공고마감",who:(hj["포지션명"]||""),detail:"공고 마감"});});evs.sort(function(a,b){return a.t-b.t;});var h='<div class="card" style="margin-top:10px"><div class="sec-title">다가오는 일정 — 면접·온보딩·공고마감 (30일)</div>';if(!evs.length){return h+emptyState("예정된 면접·온보딩·공고마감 일정이 없습니다.","🗓")+'</div>';}h+='<div style="font-size:12.5px">'+evs.map(function(e){var dd=new Date(e.date);var md=(dd.getMonth()+1)+'/'+dd.getDate();var col=e.kind==="면접"?"#2f6d9e":(e.kind==="공고마감"?"#b5532f":"#b08d57");var clk=e.row?(' onclick="obCheck('+e.row+')" style="cursor:pointer;display:flex;gap:8px;padding:4px 0;border-bottom:1px solid #f2f2f2"'):' style="display:flex;gap:8px;padding:4px 0;border-bottom:1px solid #f2f2f2"';return '<div'+clk+'><span style="white-space:nowrap;font-weight:700;color:#666;width:42px">'+md+'</span><span style="white-space:nowrap;color:'+col+';font-weight:600;width:48px">'+e.kind+'</span><span>'+esc(e.who)+' · '+esc(e.detail)+'</span></div>';}).join("")+'</div></div>';return h;}
 function obOpenCard(nm){var a=(DB.appl||[]).find(function(x){return String(x["지원자명"]||"").trim()===String(nm||"").trim();});if(!a){alert(nm+" 지원자 정보를 찾을 수 없습니다.");return;}openPrintView(normId(a.url),true);}
 function dashCalEvents(){var out=[];(DB.appl||[]).forEach(function(a){var v=(typeof dval==="function")?dval(a,"면접 일정"):a["면접 일정"];var s=String(v||"");if(!s)return;var dt=new Date(s.replace(" ","T"));if(isNaN(dt.getTime()))return;out.push({kind:"면접",y:dt.getFullYear(),m:dt.getMonth(),d:dt.getDate(),t:dt.getTime(),date:s,name:a["지원자명"]||"",label:(a["전형 단계"]||"면접"),done:false});});obCheckEvents().forEach(function(e){out.push({kind:"온보딩",y:e.y,m:e.m,d:e.d,t:e.t,date:e.date,name:e.name,label:e.label,done:e.done,row:e.row});});return out;}
 function dashCalNav(delta){var ym=window.__dashYM||{};var m=ym.m+delta,y=ym.y;if(m<0){m=11;y--;}if(m>11){m=0;y++;}window.__dashYM={y:y,m:m};renderDash();}
@@ -1631,7 +1615,7 @@ function renderDashCalCard(){
     var chips='';
     if(has.length){
       chips=has.slice(0,2).map(function(e){
-        var col=e.kind==="면접"?"#2f6d9e":"#b08d57";
+        var col=e.kind==="면접"?"#2f6d9e":(e.kind==="공고마감"?"#b5532f":"#b08d57");
         var clk=(e.kind==="온보딩"&&e.row)?('onclick="obCheck('+e.row+')" '):'';
         return '<div '+clk+'style="'+(clk?'cursor:pointer;':'')+'margin-top:2px;background:#f7f4ee;border-left:2px solid '+col+';border-radius:3px;padding:1px 4px;line-height:1.2;overflow:hidden"><div style="font-size:11px;font-weight:700;color:#1f1e1b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+esc(e.name)+(e.done?" ✓":"")+'</div><div style="font-size:9.5px;color:'+col+';white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+esc(e.kind)+" · "+esc(e.label)+'</div></div>';
       }).join('');
