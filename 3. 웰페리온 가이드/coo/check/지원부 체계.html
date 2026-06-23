@@ -461,7 +461,53 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 .util-btn.share-btn:hover{background:rgba(91,159,213,0.22)}
 /* ── Toast ── */
 .toast-msg{position:fixed;top:70px;left:50%;transform:translateX(-50%);background:#15803d;color:#fff;padding:8px 20px;border-radius:8px;font-size:13px;font-weight:700;display:none;z-index:300;box-shadow:0 4px 14px rgba(0,0,0,0.25)}
-/* ── Print ── */
+/* ── A3 가이드라인 인쇄 전용 컨테이너 (화면에선 숨김) ── */
+#a3-guideline-print{display:none}
+/* ── A3 인쇄 모드 (body.a3-print-mode → @media print 분기) ── */
+@media print{
+  body.a3-print-mode{font-size:10px;line-height:1.4;color:#111;background:#fff}
+  body.a3-print-mode .header,
+  body.a3-print-mode .tabs,
+  body.a3-print-mode .submit-bar,
+  body.a3-print-mode .saving,
+  body.a3-print-mode .toast-msg,
+  body.a3-print-mode .header-util-btns,
+  body.a3-print-mode .util-btn,
+  body.a3-print-mode .sheet-links,
+  body.a3-print-mode #tab-policy,
+  body.a3-print-mode #tab-guide,
+  body.a3-print-mode #tab-chem,
+  body.a3-print-mode #tab-manual,
+  body.a3-print-mode #tab-supply,
+  body.a3-print-mode #tab-reg{display:none!important}
+  body.a3-print-mode #a3-guideline-print{display:block!important}
+  .a3-print-header{text-align:center;font-size:16px;font-weight:800;letter-spacing:0.04em;padding:6px 0 10px;border-bottom:2px solid #333;margin-bottom:10px;color:#111}
+  .a3-print-cols{display:grid;grid-template-columns:1fr 1fr;gap:6mm;width:100%;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .a3-col-head{font-size:12px;font-weight:800;padding:4px 8px;margin-bottom:6px;border-radius:4px;border-left:4px solid #B79F8A;background:#f3ede7;color:#4a3a2e}
+  .a3-card{border:1px solid #ccc;border-radius:6px;padding:7px 9px;margin-bottom:4px;break-inside:avoid;background:#fff}
+  .a3-card-title{font-size:11px;font-weight:800;color:#2a2a2a;margin-bottom:4px;padding-bottom:3px;border-bottom:1px solid #e8e3de}
+  .a3-card-line{font-size:9.5px;color:#333;padding:1px 0 1px 10px;position:relative;line-height:1.3}
+  .a3-card-line::before{content:"·";position:absolute;left:2px;color:#888}
+  /* 가이드열: 정적 HTML 그대로 표시 */
+  .a3-guide-clone{font-size:9.5px;color:#222;line-height:1.3}
+  .a3-guide-clone h2{display:none}
+  .a3-guide-clone h3{font-size:11px;font-weight:800;margin:7px 0 3px;color:#2a2a2a;border-bottom:1px solid #e0dbd5;padding-bottom:2px}
+  .a3-guide-clone table{width:100%;border-collapse:collapse;margin-bottom:6px;font-size:9px}
+  .a3-guide-clone table th{background:#f0ece8!important;color:#222!important;padding:3px 5px;border:1px solid #ccc;font-size:9px}
+  .a3-guide-clone table td{padding:3px 5px;border:1px solid #ccc;font-size:9px;color:#222!important}
+  .a3-guide-clone ul{margin:3px 0 5px 12px;padding:0}
+  .a3-guide-clone li{font-size:9px;color:#333;line-height:1.3;margin-bottom:1px}
+  .a3-guide-clone .manual-section{margin-bottom:5px;break-inside:avoid}
+  .a3-guide-clone .manual-header{background:#f3ede7!important;padding:4px 8px;border-radius:4px;cursor:default}
+  .a3-guide-clone .manual-header h3{font-size:10px;font-weight:700;margin:0;color:#4a3a2e!important}
+  .a3-guide-clone .manual-body{display:block!important;padding:4px 0 0 6px}
+  .a3-guide-clone .manual-label{font-size:9.5px;font-weight:700;display:block;margin:4px 0 2px;color:#4a3a2e}
+  .a3-guide-clone .arrow{display:none}
+  .a3-guide-clone div[style*="background:rgba(183,159,138"]{background:#f5f0eb!important;border-left:3px solid #B79F8A;padding:5px 7px;margin:4px 0;break-inside:avoid}
+  .a3-guide-clone div[style*="background:var(--paper)"]{background:#faf8f5!important;border-left:3px solid #B79F8A;padding:5px 7px;margin-bottom:4px;break-inside:avoid}
+  .a3-guide-clone .manual-section .manual-body{padding-left:8px}
+}
+/* ── Print (기존 A4) ── */
 @media print{
   @page{margin:10mm;size:A4}
   /* 다크 테마 변수 → 인쇄용 밝은 값 (어두운 배경·흰 글씨로 안 보이던 문제 해결) */
@@ -567,12 +613,28 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   <button class="tab" onclick="switchTab('check-f','lock')">점검(여) 🔒</button>
   <div style="display:flex;gap:4px;margin-left:auto;">
     <button class="util-btn print-btn" onclick="printCurrentTab()">인쇄</button>
+    <button class="util-btn print-btn" onclick="printA3Guideline()" title="규정+가이드를 A3 세로 좌우2단으로 인쇄">🖨️ A3 가이드라인</button>
     <button class="util-btn report-btn" onclick="copyReport()">보고용</button>
     <button class="util-btn share-btn" onclick="copyShare()">공유용</button>
   </div>
 </div>
 </div><!-- /sticky-top -->
 <div class="saving" id="saveIndicator">저장 중...</div>
+
+<!-- ══ A3 가이드라인 인쇄 전용 컨테이너 (화면 숨김 / 인쇄 시 전용 표시) ══ -->
+<div id="a3-guideline-print">
+  <div class="a3-print-header">지원부 운영 가이드라인</div>
+  <div class="a3-print-cols">
+    <div id="a3-col-policy">
+      <div class="a3-col-head">규정 (정책)</div>
+      <!-- JS가 POLICY_DATA 읽어 카드 렌더 -->
+    </div>
+    <div id="a3-col-guide">
+      <div class="a3-col-head">가이드</div>
+      <!-- JS가 tab-guide 내용 복제 -->
+    </div>
+  </div>
+</div>
 
 <div id="tab-policy" class="content">
   <h2 style="font-size:20px;margin-bottom:6px;">지원부 규정</h2>
@@ -4165,6 +4227,61 @@ function getActiveTab(){
     if(el&&!el.classList.contains('hidden'))return t;
   }
   return 'check-m';
+}
+
+/* ═══════════════════════════════════════════
+   A3 가이드라인 인쇄 (규정 좌열 + 가이드 우열)
+   - body에 .a3-print-mode 클래스로 @media print 분기
+   - 기존 printCurrentTab() 경로와 완전 분리
+   ═══════════════════════════════════════════ */
+function printA3Guideline(){
+  // ── 좌열: 규정 카드 렌더 (POLICY_DATA → POLICY_COLS 순서) ──
+  const colPolicy = document.getElementById('a3-col-policy');
+  if(colPolicy){
+    let html = '<div class="a3-col-head">규정 (정책)</div>';
+    POLICY_COLS.forEach(col=>{
+      const cards = POLICY_DATA[col.key] || [];
+      cards.forEach(card=>{
+        if(!card.title && !card.body) return;
+        const lines = (card.body||'').split('\n').map(l=>l.trim()).filter(l=>l);
+        html += '<div class="a3-card">';
+        html += '<div class="a3-card-title">'+ escapeHTML(card.title||'(제목 없음)') +'</div>';
+        lines.forEach(l=>{ html += '<div class="a3-card-line">'+ escapeHTML(l) +'</div>'; });
+        html += '</div>';
+      });
+    });
+    colPolicy.innerHTML = html;
+  }
+
+  // ── 우열: 가이드 탭 HTML 복제 ──
+  const colGuide = document.getElementById('a3-col-guide');
+  const srcGuide = document.getElementById('tab-guide');
+  if(colGuide && srcGuide){
+    const clone = srcGuide.cloneNode(true);
+    clone.removeAttribute('id');
+    clone.className = 'a3-guide-clone';
+    clone.style.display = '';
+    // manual-body 모두 펼치기 (인쇄용)
+    clone.querySelectorAll('.manual-body').forEach(b=>{ b.style.display='block'; });
+    colGuide.innerHTML = '<div class="a3-col-head">가이드</div>';
+    colGuide.appendChild(clone);
+  }
+
+  // ── A3 모드 활성화 → 인쇄 → 복원 ──
+  document.body.classList.add('a3-print-mode');
+  let styleTag = document.getElementById('a3-page-style');
+  if(!styleTag){
+    styleTag = document.createElement('style');
+    styleTag.id = 'a3-page-style';
+    document.head.appendChild(styleTag);
+  }
+  styleTag.textContent = '@media print{ @page{ size:A3 portrait; margin:10mm; } }';
+
+  window.print();
+
+  // 복원
+  document.body.classList.remove('a3-print-mode');
+  styleTag.textContent = '';
 }
 
 /* ═══════════════════════════════════════════
