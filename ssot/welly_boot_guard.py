@@ -85,12 +85,30 @@ def main() -> int:
     elif n == 0:
         print("    ✅ 없음 — 로컬 = origin/master 동기화 상태.")
     else:
-        flagged = True
-        print(f"    ⚠️  {n}건 안 올라감 — 라이브가 stale 일 수 있음. 즉시 `git push` 필요:")
-        for ln in lines[:15]:
-            print(f"        · {ln}")
-        if n > 15:
-            print(f"        … 외 {n - 15}건")
+        # 자가복구 창: 동시 커밋 경합으로 push 가 잠깐 밀린 순간 상태는 정상(스위퍼/다음 push 가 드레인).
+        # 창(10분) 안이면 알림하지 않고, 그 이상 묵으면만 stale 로 본다 — 부팅 노이즈 제거.
+        import time as _t
+        _oldest = None
+        try:
+            _ar = subprocess.run(
+                ["git", "log", f"{REMOTE}/{BRANCH}..HEAD", "--reverse", "--format=%ct"],
+                cwd=str(ROOT), capture_output=True, text=True, timeout=30,
+            )
+            if _ar.returncode == 0 and _ar.stdout.strip():
+                _oldest = int(_ar.stdout.strip().splitlines()[0])
+        except Exception:
+            _oldest = None
+        _age = int(_t.time() - _oldest) if _oldest else None
+        if _age is not None and _age < 600:
+            print(f"    ✅ {n}건 동기화 진행 중({_age}s, 자가복구 창 내) — 정상(스위퍼가 드레인).")
+        else:
+            flagged = True
+            _agetxt = f" {_age // 60}분+ 정체" if _age else ""
+            print(f"    ⚠️  {n}건 안 올라감{_agetxt} — 라이브 stale 위험. 즉시 `git push` 필요:")
+            for ln in lines[:15]:
+                print(f"        · {ln}")
+            if n > 15:
+                print(f"        … 외 {n - 15}건")
 
     # ── ② 검수대기 / 발행검증대기 ──────────────────────────────────
     waiting = _waiting()

@@ -172,6 +172,24 @@ def check_unpushed() -> tuple[str, bool, str]:
         n = int((r.stdout or "0").strip() or "0")
         if n == 0:
             return name, True, "없음 — 로컬=origin/master 동기화"
+        # 자가복구 창: 동시 커밋(여러 C-Level·auto-log·ERP 발행)이 거의 같은 순간에 일어나면
+        # post-commit push 가 락/non-ff 경합으로 잠깐 밀린다. 다음 커밋 push 또는 5분 스위퍼가
+        # 곧 드레인하므로, 창 안의 순간 미푸시는 정상 상태 — 알림하지 않는다(노이즈 제거).
+        # 창을 넘겨 묵으면(스위퍼가 못 비움) 그때만 진짜 stale 로 보고.
+        import time
+        ar = subprocess.run(
+            ["git", "log", f"{REMOTE}/{BRANCH}..HEAD", "--reverse", "--format=%ct"],
+            cwd=str(ROOT), capture_output=True, text=True, timeout=30,
+        )
+        oldest = None
+        if ar.returncode == 0 and ar.stdout.strip():
+            oldest = int(ar.stdout.strip().splitlines()[0])
+        SETTLE = 600  # 초. 5분 스위퍼 + 여유. 이 안이면 자가복구 진행 중으로 간주.
+        if oldest is not None:
+            age = int(time.time() - oldest)
+            if age < SETTLE:
+                return name, True, f"{n}건 동기화 진행 중({age}s, 자가복구 창 내) — 정상"
+            return name, False, f"{n}건 미푸시 {age // 60}분+ 정체 — 스위퍼 미작동 의심, 즉시 push 필요"
         return name, False, f"{n}건 미푸시 — 라이브 stale 위험, 즉시 push 필요"
     except Exception as e:
         return name, False, f"점검 실패({type(e).__name__}): {str(e)[:80]}"

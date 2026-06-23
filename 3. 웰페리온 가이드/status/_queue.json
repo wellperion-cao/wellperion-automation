@@ -605,5 +605,18 @@
     "next": "🌀 표류 — 다음 미정 (필요 시 GM·웰리/담당 C-Level 지정)",
     "adhoc_commit": "63e9fc9582c523a3ef8a373b710c2a27e72e0711",
     "ship_no": 107
+  },
+  {
+    "task_id": "CTO-2026-06-24-UNPUSHED-ALARM-SETTLE",
+    "clevel": "cto",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "⛵돛단배",
+    "enqueued_at": "2026-06-24",
+    "processed_at": "2026-06-24",
+    "ship_no": 139,
+    "title": "[시토] 미푸시·연동다리 알림 노이즈 근본해결 — 자가복구 창 관용",
+    "note": "GM 지적 2026-06-24: 미푸시/끊김 알림이 반복 노출. 원인=여러 출처(C-Level·auto-log 훅·ERP 발행)의 동시 커밋으로 post-commit push가 락/non-ff 경합에 잠깐 밀리는 순간을 가드가 알림으로 포착(상태는 5분 스위퍼·다음 push가 곧 드레인=자가복구). 해결=integration_health.check_unpushed + welly_boot_guard에 자가복구 창(600s) 관용: 창 안 순간 미푸시=정상(무알림), 창 초과 정체만 알림. monkeypatch 검증(30s→정상/20분→알림) 통과. 커밋 자체는 정상 동작 — 알림 계층만 히스테리시스 적용.",
+    "next": "🔗 다음=관찰(알림 재발 시 스위퍼 가동 점검). 자율화 축 server-free 트랙 지속."
   }
 ]
