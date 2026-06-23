@@ -618,5 +618,19 @@
     "title": "[시토] 미푸시·연동다리 알림 노이즈 근본해결 — 자가복구 창 관용",
     "note": "GM 지적 2026-06-24: 미푸시/끊김 알림이 반복 노출. 원인=여러 출처(C-Level·auto-log 훅·ERP 발행)의 동시 커밋으로 post-commit push가 락/non-ff 경합에 잠깐 밀리는 순간을 가드가 알림으로 포착(상태는 5분 스위퍼·다음 push가 곧 드레인=자가복구). 해결=integration_health.check_unpushed + welly_boot_guard에 자가복구 창(600s) 관용: 창 안 순간 미푸시=정상(무알림), 창 초과 정체만 알림. monkeypatch 검증(30s→정상/20분→알림) 통과. 커밋 자체는 정상 동작 — 알림 계층만 히스테리시스 적용.",
     "next": "🔗 다음=관찰(알림 재발 시 스위퍼 가동 점검). 자율화 축 server-free 트랙 지속."
+  },
+  {
+    "task_id": "CTO-2026-06-24-ADHOC-3effa91b",
+    "clevel": "cto",
+    "title": "[시토] 미푸시·연동다리 알림 노이즈 근본해결 — 자가복구 창 관용",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-06-24",
+    "processed_at": "2026-06-24",
+    "artifact": "[시토]/동시커밋 레이스로 잠깐 밀린 순간 미푸시를 알림하던 것을 settle window(600s) 관용으로 억제. 창 초과 정체만 경보. 커밋 동작 무변경, 알림 계층만 히스테리시스. (CLI ad-hoc · 커밋 3effa91b)",
+    "next": "🌀 표류 — 다음 미정 (필요 시 GM·웰리/담당 C-Level 지정)",
+    "adhoc_commit": "3effa91b104ea6b6fa812fabf0b1930a13655d51",
+    "ship_no": 140
   }
 ]

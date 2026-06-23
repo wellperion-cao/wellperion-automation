@@ -585,12 +585,12 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 
 <div id="tab-fcheck" class="content hidden">
   <h2 style="font-size:20px;margin-bottom:6px;">시설 일일점검 <span style="font-size:13px;color:var(--dim);font-weight:400;">(작업일지 · PDF 기준)</span></h2>
-  <p style="font-size:13px;color:var(--dim);margin-bottom:12px;line-height:1.6;">날짜와 <b>권장 시간대</b>(오픈·오전·점심·오후·마감 등)를 고르고 측정·점검값을 입력한 뒤 <b>저장</b>하면 모든 기기에 반영됩니다. <b>고정 점검 시각은 없습니다 — 저장하는 순간의 실제 시각이 자동으로 기록</b>됩니다. 온도·수질은 시간대별, 설비값은 1일 1회.</p>
+  <p style="font-size:13px;color:var(--dim);margin-bottom:12px;line-height:1.6;">날짜를 고른 뒤 <b>회차 칩</b>(오픈·오전·점심·오후·마감 등)에서 시간대를 고르고, <b>⏱ 점검 시작</b>을 누르고 측정·점검값을 입력한 다음 <b>⏱ 점검 종료</b>로 소요시간·점검시각을 기록합니다. 입력 후 <b>저장</b>하면 모든 기기에 반영됩니다. 온도·수질은 시간대별, 설비값은 1일 1회.</p>
   <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:14px;">
     <label style="font-size:13px;font-weight:700;">날짜 <input type="date" id="fcDate" onchange="fcLoad()" style="background:var(--bg);border:1px solid var(--border);color:var(--text);padding:7px 10px;border-radius:7px;font-family:inherit;"></label>
-    <label style="font-size:13px;font-weight:700;">권장 시간대 <select id="fcRound" onchange="fcRoundChange()" style="background:var(--bg);border:1px solid var(--border);color:var(--text);padding:7px 10px;border-radius:7px;font-size:13px;font-family:inherit;"></select></label>
-    <span id="fcRoundTime" style="font-size:12px;color:var(--dim);white-space:nowrap;">저장 시 실제 시각 자동 기록</span>
     <div id="fcRoundChips" style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;"></div>
+    <button type="button" id="fcTimerBtn" onclick="fcTimerToggle()" style="background:var(--accent-bg);border:1.5px solid var(--accent);color:var(--accent);padding:7px 14px;border-radius:7px;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer;white-space:nowrap;">⏱ 점검 시작</button>
+    <span id="fcTimerInfo" style="font-size:12px;color:var(--dim);white-space:nowrap;">미시작</span>
     <label style="font-size:13px;font-weight:700;">점검자
       <select id="fcInspectorSel" onchange="fcInspectorToggle()" style="background:var(--bg);border:1px solid var(--border);color:var(--text);padding:7px 10px;border-radius:7px;font-size:13px;font-family:inherit;">
         <option value="이정헌">이정헌 (소장)</option>
@@ -3746,9 +3746,9 @@ function vendorSubmitAddForm(){
   FC_DAILY_ITEMS.forEach(function(it){ it.fields.forEach(function(f){ DAILY_FIELD_IDS.push(f); }); });
 
   // ─── 회차별 입력값 보존 store. rounds[label]={fieldId:val}, daily={fieldId:val}, inspector ───
-  // roundTimes[label]='HH:MM' — 저장 순간 자동기록한 실제 점검 시각(B안). 화면 "기록 시각" 표시·복원용.
-  // roundStart[label]=epoch ms — 그 회차 첫 측정값 입력 순간 자동 캡처(소요시간 시작점). roundDur[label]=소요분(int).
-  // 소요시간=자동(GM 2026-06-24 옵션2): 시작=첫 입력 시각, 종료=저장 순간. 사람 버튼 없음.
+  // roundTimes[label]='HH:MM' — ⏱ 점검 종료 클릭 시 박제하는 실제 점검(종료) 시각. 화면 "기록 시각" 표시·복원용.
+  // roundStart[label]=epoch ms — ⏱ 점검 시작 클릭 순간(소요시간 시작점). roundDur[label]=소요분(int).
+  // 소요시간=수동 버튼(GM 2026-06-24): 시작=⏱점검 시작 클릭, 종료=⏱점검 종료 클릭. 버튼이 주체.
   var fcStore={ rounds:{}, daily:{}, inspector:'', roundTimes:{}, roundStart:{}, roundDur:{} };
   var curRound=null;
 
@@ -3759,9 +3759,7 @@ function vendorSubmitAddForm(){
     if(!curRound)return; var r={};
     ROUND_FIELD_IDS.forEach(function(f){ var v=val(f); if(v!=='')r[f]=v; });
     fcStore.rounds[curRound]=r;
-    // 소요시간 시작점 자동 캡처: 채워진 값 1개 이상 + 시작 미기록이면 지금(epoch ms) 박제(덮어쓰기 금지).
-    if(!fcStore.roundStart)fcStore.roundStart={};
-    if(Object.keys(r).length>0 && !fcStore.roundStart[curRound]) fcStore.roundStart[curRound]=Date.now();
+    // 소요시간 시작점은 ⏱점검 시작 버튼(fcTimerToggle)이 수동 박제 — 입력만으로 자동 stamp 하지 않음.
   }
   // 현재 화면의 1일 공통 입력 → fcStore.daily
   function captureDaily(){
@@ -3775,24 +3773,70 @@ function vendorSubmitAddForm(){
   function paintDaily(){
     var d=fcStore.daily||{}; DAILY_FIELD_IDS.forEach(function(f){ setVal(f, d[f]!==undefined?d[f]:''); });
   }
-  // 회차 드롭다운 채우기(요일 기반). 선택 유지·복원.
+  // 회차 목록 확정(요일 기반) + curRound 기본값 보장(드롭다운 폐지 → 칩이 유일 수단). curRound 미설정/목록 이탈 시 첫 회차.
   window.fcFillRounds=function(){
-    var sel=document.getElementById('fcRound'); if(!sel)return;
-    var date=val('fcDate'); var list=roundsForDisplay(date); var prev=sel.value;
-    sel.innerHTML=list.map(function(r){return '<option value="'+r+'">'+r+'</option>';}).join('');
-    if(list.indexOf(prev)>=0)sel.value=prev; else sel.value=list[0];
-    curRound=sel.value;
+    var date=val('fcDate'); var list=roundsForDisplay(date);
+    if(!curRound || list.indexOf(curRound)<0) curRound=list[0]||null;
     fcRenderChips();
     fcRenderRoundTime();
   };
-  // 현재 회차의 실제 기록 시각 표시("기록 시각 HH:MM" / 미기록=안내). 점검자는 시각 입력 안 함(B안).
-  function fcRenderRoundTime(){
-    var box=document.getElementById('fcRoundTime'); if(!box)return;
-    var t=(fcStore.roundTimes&&curRound)?fcStore.roundTimes[curRound]:'';
-    var d=(fcStore.roundDur&&curRound)?fcStore.roundDur[curRound]:null;
-    if(t){ box.textContent='기록 시각 '+t+((d!==null&&d!==undefined)?(' · 소요 '+d+'분'):''); box.style.color='var(--green)'; }
-    else { box.textContent='저장 시 실제 시각 자동 기록'; box.style.color='var(--dim)'; }
+  // ─── ⏱ 점검 시작/종료 버튼 ─── 현재 회차(curRound)의 타이머 상태(idle/running/done)에 따라 버튼·info 렌더.
+  function fcTimerState(){
+    if(!curRound) return 'idle';
+    var hasStart=!!(fcStore.roundStart&&fcStore.roundStart[curRound]);
+    var hasEnd=(fcStore.roundTimes&&fcStore.roundTimes[curRound]);
+    if(hasStart && !hasEnd) return 'running';
+    if(hasEnd) return 'done';
+    return 'idle';
   }
+  // 시작(epoch ms)을 'HH:MM'(KST)로 — running 표시용.
+  function startHHMM(ms){
+    if(!ms)return '';
+    try{ return new Date(ms).toLocaleTimeString('en-GB',{timeZone:'Asia/Seoul',hour:'2-digit',minute:'2-digit'}); }
+    catch(e){ var d=new Date(ms); return ('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).slice(-2); }
+  }
+  // 현재 회차 타이머 상태 → 버튼 라벨/색 + info 텍스트 갱신. (#fcRoundTime 폐지 → #fcTimerInfo 통합)
+  function fcRenderRoundTime(){
+    var btn=document.getElementById('fcTimerBtn'); var info=document.getElementById('fcTimerInfo');
+    if(!btn&&!info)return;
+    var s=fcTimerState();
+    var st=(fcStore.roundStart&&curRound)?fcStore.roundStart[curRound]:null;
+    var et=(fcStore.roundTimes&&curRound)?fcStore.roundTimes[curRound]:'';
+    var d=(fcStore.roundDur&&curRound)?fcStore.roundDur[curRound]:null;
+    if(s==='running'){
+      if(btn){ btn.textContent='⏱ 점검 종료'; btn.style.borderColor='var(--yellow)'; btn.style.color='var(--yellow)'; btn.style.background='var(--yellow-bg)'; }
+      if(info){ info.textContent='🟡 점검 중 (시작 '+startHHMM(st)+')'; info.style.color='var(--yellow)'; }
+    } else if(s==='done'){
+      if(btn){ btn.textContent='↺ 다시 시작'; btn.style.borderColor='var(--border)'; btn.style.color='var(--text)'; btn.style.background='var(--bg)'; }
+      if(info){ info.textContent='🏁 시작 '+startHHMM(st)+' → 종료 '+et+((d!==null&&d!==undefined&&d!=='')?(' · 소요 '+d+'분'):''); info.style.color='var(--green)'; }
+    } else {
+      if(btn){ btn.textContent='⏱ 점검 시작'; btn.style.borderColor='var(--accent)'; btn.style.color='var(--accent)'; btn.style.background='var(--accent-bg)'; }
+      if(info){ info.textContent='미시작'; info.style.color='var(--dim)'; }
+    }
+  }
+  // 버튼 클릭 — 상태머신: idle→시작 기록 / running→종료 기록(소요 계산) / done→confirm 후 리셋.
+  window.fcTimerToggle=function(){
+    if(!curRound){ alert('회차 칩에서 시간대를 먼저 고르세요'); return; }
+    if(!fcStore.roundStart)fcStore.roundStart={};
+    if(!fcStore.roundTimes)fcStore.roundTimes={};
+    if(!fcStore.roundDur)fcStore.roundDur={};
+    var s=fcTimerState();
+    if(s==='idle'){
+      fcStore.roundStart[curRound]=Date.now();
+      delete fcStore.roundTimes[curRound]; delete fcStore.roundDur[curRound];
+    } else if(s==='running'){
+      var startMs=fcStore.roundStart[curRound]||Date.now();
+      var endMs=Date.now();
+      var dur=Math.round((endMs-startMs)/60000);
+      if(dur>=0 && dur<=1440) fcStore.roundDur[curRound]=dur;
+      fcStore.roundTimes[curRound]=nowHHMM();   // 종료 시각 = 점검시각
+    } else { // done → 리셋
+      if(!confirm(curRound+' 회차 타이머를 다시 시작할까요? (기존 시작·종료·소요 기록 삭제)')) return;
+      delete fcStore.roundStart[curRound]; delete fcStore.roundTimes[curRound]; delete fcStore.roundDur[curRound];
+    }
+    fcRenderRoundTime(); fcUpdateChips();
+    try{ fcSave(); }catch(e){}   // 버튼 누름 즉시 영속(saveBoard) — 새로고침 복원 보장
+  };
   // ─── 회차 칩 줄 — 회차별 입력여부 ●(완료)/○(미입력), 현재 회차 강조. 1일1회 항목은 칩 대상 아님. ───
   function fcRenderChips(){
     var box=document.getElementById('fcRoundChips'); if(!box)return;
@@ -3820,12 +3864,11 @@ function vendorSubmitAddForm(){
       btn.style.color=isCur?'var(--accent)':(filled?'var(--green)':'var(--text)');
     });
   }
-  // 칩 클릭 → 그 회차로 전환(captureRound→curRound→paintRound→상태 갱신). fcRound select와 동기.
+  // 칩 클릭 → 그 회차로 전환(captureRound→curRound→paintRound→상태 갱신). 칩이 curRound 유일 수단.
   window.fcChipGo=function(r){
     if(!r)return;
     captureRound();
     curRound=r;
-    var sel=document.getElementById('fcRound'); if(sel&&Array.prototype.some.call(sel.options,function(o){return o.value===r;})) sel.value=r;
     paintRound(); fcProgress(); fcRenderRoundTime();
   };
   // 항목 done/measure 산정 — fields 중 값이 하나라도 있으면 done. measure=입력칸 JSON.
@@ -3880,10 +3923,10 @@ function vendorSubmitAddForm(){
     else if(name){ sel.value='__custom__'; if(txt){txt.value=name; txt.style.display='';} }
     else { sel.value='박호균'; if(txt){txt.value='';txt.style.display='none';} }
   }
-  // 회차 변경: 현재 회차 캡처 → 새 회차 칸 복원(재렌더 없음, IME 안전)
+  // (구) fcRound select onchange 핸들러 — select 폐지로 호출부 없음. 칩(fcChipGo)이 회차 전환 단일 수단.
+  // 잔존 호출 대비 null-safe 유지: 현재 회차 캡처 후 화면 갱신만(select 참조 제거).
   window.fcRoundChange=function(){
     captureRound();
-    var sel=document.getElementById('fcRound'); curRound=sel?sel.value:curRound;
     paintRound(); fcProgress(); fcRenderRoundTime();
   };
   window.fcSave=function(){
@@ -3891,24 +3934,11 @@ function vendorSubmitAddForm(){
     captureRound(); captureDaily();
     var insp=inspectorName(); fcStore.inspector=insp;
     var st=document.getElementById('fcStatus'); if(st)st.textContent='저장 중...';
-    // B안: 입력값 있는 회차마다 '저장 순간 실제 시각(KST)'을 자동 기록. 점검자는 시각 입력 안 함.
+    // 시작·종료·소요 시각은 ⏱점검 시작/종료 버튼(fcTimerToggle)이 단일 기록 — 저장 시 자동 stamp 안 함. 그대로 영속만.
     if(!fcStore.roundTimes)fcStore.roundTimes={};
     if(!fcStore.roundStart)fcStore.roundStart={};
     if(!fcStore.roundDur)fcStore.roundDur={};
-    var stampNow=nowHHMM();
-    var saveMs=Date.now();
     var roundList=roundsForDisplay(date);
-    roundList.forEach(function(rl){
-      var map=fcStore.rounds[rl]||{};
-      var filled=Object.keys(map).some(function(k){return String(map[k]||'').trim()!=='';});
-      if(filled && !fcStore.roundTimes[rl]) fcStore.roundTimes[rl]=stampNow;   // 첫 입력 회차만 최초 시각 박제(재저장 시 유지)
-      else if(!filled){ delete fcStore.roundTimes[rl]; delete fcStore.roundStart[rl]; delete fcStore.roundDur[rl]; }   // 입력 비면 시각·소요·시작 정리
-      // 소요시간(자동): 시작 기록 있으면 (저장 − 시작)/60000 반올림. 음수·1440분 초과는 이상치 → 기록 안 함(null).
-      if(filled && fcStore.roundStart[rl]){
-        var dur=Math.round((saveMs-fcStore.roundStart[rl])/60000);
-        if(dur>=0 && dur<=1440) fcStore.roundDur[rl]=dur;
-      }
-    });
     var posts=[];
     // 1) 원본 측정값 전량 보존(saveBoard) — 회차별 store 통째로 raw blob 저장(재로드용)
     posts.push(fetch(API_URL,{method:'POST',redirect:'follow',headers:{'Content-Type':'text/plain'},body:JSON.stringify({action:'saveBoard',key:'FACILITY_CHECK_'+date,board:{date:date,inspector:insp,store:fcStore}})}).then(function(r){return r.json();}));

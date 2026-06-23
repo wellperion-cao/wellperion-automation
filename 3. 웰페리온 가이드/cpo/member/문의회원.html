@@ -678,13 +678,13 @@ a.funnel-step:hover{background:rgba(183,159,138,0.08);color:var(--accent)}
 
   <!-- ══════════════════════════════ 퍼널 위치 공통 표시 ══════════════════════════════ -->
   <div class="funnel-steps" style="margin-bottom:18px">
-    <span class="funnel-step done">마케팅</span>
+    <span class="funnel-step done" data-stage="marketing">마케팅</span>
     <span class="funnel-arrow">→</span>
-    <span class="funnel-step current">문의 · 체험/상담투어</span>
+    <a class="funnel-step current" data-stage="inquiry" href="javascript:void(0)" onclick="switchTab('db')" style="text-decoration:none;cursor:pointer" title="문의·체험 단계로">문의 · 체험/상담투어</a>
     <span class="funnel-arrow">→</span>
-    <a class="funnel-step" href="javascript:void(0)" onclick="switchTab('registered')" style="text-decoration:none;cursor:pointer" title="등록회원으로">등록</a>
+    <a class="funnel-step" data-stage="registered" href="javascript:void(0)" onclick="switchTab('registered')" style="text-decoration:none;cursor:pointer" title="등록회원으로">등록</a>
     <span class="funnel-arrow">→</span>
-    <a class="funnel-step" href="javascript:void(0)" onclick="switchTab('active')" style="text-decoration:none;cursor:pointer" title="멤버십 회원관리로">멤버십 회원 관리</a>
+    <a class="funnel-step" data-stage="active" href="javascript:void(0)" onclick="switchTab('active')" style="text-decoration:none;cursor:pointer" title="멤버십 회원관리로">멤버십 회원 관리</a>
   </div>
 
   <!-- ══════════════════════════════ 1. 예약 달력 ══════════════════════════════ -->
@@ -1302,10 +1302,30 @@ function switchTab(id, btn) {
   document.querySelectorAll('.pane').forEach(function(p){ p.classList.remove('active'); });
   document.querySelectorAll('.tab').forEach(function(t){ t.classList.remove('active'); });
   document.getElementById('pane-' + id).classList.add('active');
-  if (btn) btn.classList.add('active');
+  // 상단 탭: 호출 출처(탭/퍼널)와 무관하게 id로 매칭해 활성화 (위·아래 동기화)
+  document.querySelectorAll('.tab').forEach(function(t){
+    var oc = t.getAttribute('onclick') || '';
+    if (oc.indexOf("switchTab('" + id + "'") !== -1) t.classList.add('active');
+  });
+  // 하단 퍼널: 현재 단계를 동기화 (이전 단계=완료, 현재=current)
+  syncFunnel(id);
   if (id === 'db') loadDbData();
   if (id === 'registered') loadRegistered();
   if (id === 'active') loadActiveMembers();
+}
+
+// 퍼널 단계 동기화 — db/calendar/guide=문의·체험 단계, registered=등록, active=멤버십
+function syncFunnel(id) {
+  var stage = (id === 'registered') ? 'registered' : (id === 'active') ? 'active' : 'inquiry';
+  var order = ['marketing','inquiry','registered','active'];
+  var cur = order.indexOf(stage);
+  document.querySelectorAll('.funnel-step').forEach(function(s){
+    var i = order.indexOf(s.getAttribute('data-stage'));
+    if (i < 0) return;
+    s.classList.remove('current','done');
+    if (i < cur) s.classList.add('done');
+    else if (i === cur) s.classList.add('current');
+  });
 }
 
 /* ─────────────────────────────────────────────
