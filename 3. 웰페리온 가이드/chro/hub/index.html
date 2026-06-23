@@ -572,7 +572,9 @@ function rrnAge(b,g){
 function empBirthCell(e){
   var r=empRRN(e); if(!r) return "—";
   var a=rrnAge(r.b,r.g);
-  return esc(r.b)+(a!=null?' <span class="t-sub">· 만 '+a+'세</span>':'');
+  if(a==null) return esc(r.b);
+  var tag=(a>=62)?' <span style="color:var(--gold-deep);font-weight:700">(촉탁)</span>':'';
+  return esc(r.b)+' <span class="t-sub">· 만 '+a+'세</span>'+tag;
 }
 // 채용 채널 값을 개별 채널 토큰 배열로 (콤마/슬래시/、 구분)
 function chTokens(v){
