@@ -254,8 +254,8 @@ def build_post(args: argparse.Namespace) -> BlogPost:
     title = (args.title or "").strip()
     body = load_body(Path(args.body_file) if args.body_file else None, args.body)
     body = _strip_leading_title(title, body)
-    # 문의 CTA URL에 네이버 블로그 utm_source 부착 (발행 직전 원본 미변경·중복 안전)
-    body = apply_cta_utm(body, "naver_blog")
+    # 문의 CTA URL에 네이버 블로그 utm_source+medium+campaign 부착 (발행 직전 원본 미변경·중복 안전)
+    body = apply_cta_utm(body, "naver_blog", campaign=args.campaign)
     image_dir = Path(args.image_dir) if args.image_dir else None
     if image_dir and not image_dir.is_absolute():
         image_dir = ROOT / image_dir
@@ -953,6 +953,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--title", default=None, help="글 제목")
     parser.add_argument("--body-file", dest="body_file", default=None, help="본문 텍스트 파일(가공완료 최종본)")
     parser.add_argument("--body", default=None, help="본문 인라인 텍스트(테스트용)")
+    parser.add_argument("--campaign", default=None, help="UTM campaign 슬러그 (미지정 시 생략·하위호환)")
     parser.add_argument("--image-dir", dest="image_dir", default=None, help="이미지 폴더")
     parser.add_argument("--image-glob", dest="image_glob", default="blog_*.jpg", help="이미지 파일명 패턴")
     parser.add_argument("--blog-id", dest="blog_id", default=None, help="본인 블로그 ID (글쓰기 URL용)")

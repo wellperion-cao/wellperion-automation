@@ -213,8 +213,8 @@ def build_post(args: argparse.Namespace) -> ChannelPost:
         if not title:
             title = parsed_title
         body = parsed_body
-    # 문의 CTA URL에 카카오 채널 utm_source 부착 (발행 직전 원본 미변경·중복 안전)
-    body = apply_cta_utm(body, "kakao")
+    # 문의 CTA URL에 카카오 채널 utm_source+medium+campaign 부착 (발행 직전 원본 미변경·중복 안전)
+    body = apply_cta_utm(body, "kakao", campaign=args.campaign)
     images = collect_images(image_dir, args.image_glob)
     images = append_cta_card(images)  # 4채널 마지막 이미지로 문의 CTA 카드(IG 제외)
     return ChannelPost(title, body, images)
@@ -581,6 +581,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--image-dir", dest="image_dir", default=None,
                         help="이미지 폴더 (미지정 시 content-dir/output(카카오 채널))")
     parser.add_argument("--image-glob", dest="image_glob", default=DEFAULT_IMAGE_GLOB, help="이미지 파일명 패턴")
+    parser.add_argument("--campaign", default=None, help="UTM campaign 슬러그 (미지정 시 생략·하위호환)")
     parser.add_argument(
         "--i-am-sure", dest="i_am_sure", action="store_true",
         help="publish 모드 GM go 가드 해제 플래그 (실 발행)",

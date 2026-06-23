@@ -28,6 +28,14 @@ import sys
 import unicodedata
 from pathlib import Path
 
+# UTM campaign 슬러그 헬퍼 (cta_utm.slugify_campaign 직접 import)
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+try:
+    from cta_utm import slugify_campaign as _slugify_campaign
+except Exception:
+    def _slugify_campaign(s: str) -> str:  # type: ignore[misc]
+        return ""
+
 # Windows 콘솔 UTF-8 강제
 try:
     sys.stdout.reconfigure(encoding="utf-8")
@@ -148,7 +156,7 @@ def _send_telegram(text: str) -> None:
 # 채널별 argv 구성
 # ─────────────────────────────────────────────
 
-def _build_blog_argv(content_dir: Path, i_am_sure: bool) -> tuple[list[str], str | None]:
+def _build_blog_argv(content_dir: Path, i_am_sure: bool, campaign: str = "") -> tuple[list[str], str | None]:
     """블로그 채널 argv 구성. (argv, skip_reason | None)"""
     out = _nfc(content_dir / "output(블로그)")
     body = _nfc(out / "_blog_body.txt")
@@ -168,12 +176,14 @@ def _build_blog_argv(content_dir: Path, i_am_sure: bool) -> tuple[list[str], str
         "--image-dir", str(out),
         "--image-glob", "*.jpg",
     ]
+    if campaign:
+        argv += ["--campaign", campaign]
     if i_am_sure:
         argv.append("--i-am-sure")
     return argv, None
 
 
-def _build_cafe_argv(content_dir: Path, i_am_sure: bool) -> tuple[list[str], str | None]:
+def _build_cafe_argv(content_dir: Path, i_am_sure: bool, campaign: str = "") -> tuple[list[str], str | None]:
     """카페 채널 argv 구성."""
     out = _nfc(content_dir / "output(카페)")
     body = _nfc(out / "_cafe_body.txt")
@@ -193,12 +203,14 @@ def _build_cafe_argv(content_dir: Path, i_am_sure: bool) -> tuple[list[str], str
         "--image-dir", str(out),
         "--image-glob", "*.jpg",
     ]
+    if campaign:
+        argv += ["--campaign", campaign]
     if i_am_sure:
         argv.append("--i-am-sure")
     return argv, None
 
 
-def _build_kakao_argv(content_dir: Path, i_am_sure: bool) -> tuple[list[str], str | None]:
+def _build_kakao_argv(content_dir: Path, i_am_sure: bool, campaign: str = "") -> tuple[list[str], str | None]:
     """카카오 채널 argv 구성. content-dir 방식으로 넘김."""
     out = _nfc(content_dir / "output(카카오 채널)")
     body = _nfc(out / "kakao_copy.md")
@@ -216,12 +228,14 @@ def _build_kakao_argv(content_dir: Path, i_am_sure: bool) -> tuple[list[str], st
         "--image-dir", str(out),
         "--image-glob", "*.jpg",
     ]
+    if campaign:
+        argv += ["--campaign", campaign]
     if i_am_sure:
         argv.append("--i-am-sure")
     return argv, None
 
 
-def _build_danggn_argv(content_dir: Path, i_am_sure: bool) -> tuple[list[str], str | None]:
+def _build_danggn_argv(content_dir: Path, i_am_sure: bool, campaign: str = "") -> tuple[list[str], str | None]:
     """당근 채널 argv 구성. output(당근)/ 우선, 없으면 루트 폴백."""
     out = _nfc(content_dir / "output(당근)")
     body_out = _nfc(out / "danggn_copy.md")
@@ -248,6 +262,8 @@ def _build_danggn_argv(content_dir: Path, i_am_sure: bool) -> tuple[list[str], s
         "--image-dir", str(img_dir),
         "--image-glob", "*.jpg",
     ]
+    if campaign:
+        argv += ["--campaign", campaign]
     if i_am_sure:
         argv.append("--i-am-sure")
     return argv, None
@@ -273,6 +289,9 @@ def _dispatch(
     i_am_sure: bool,
 ) -> list[dict]:
     """채널별 실행·dry-run 수행. 결과 리스트 반환."""
+    # campaign 슬러그 1회 산출 (콘텐츠 폴더 경로 기반)
+    campaign = _slugify_campaign(str(content_dir))
+
     results = []
     for ch in channels:
         builder, script_path = CHANNEL_MAP[ch]
@@ -282,7 +301,7 @@ def _dispatch(
             results.append({"ch": ch, "status": "SKIP", "note": f"스크립트 없음: {script_path}"})
             continue
 
-        argv, skip_reason = builder(content_dir, i_am_sure)
+        argv, skip_reason = builder(content_dir, i_am_sure, campaign)
         if skip_reason:
             results.append({"ch": ch, "status": "SKIP", "note": skip_reason})
             continue
