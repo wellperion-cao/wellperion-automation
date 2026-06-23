@@ -585,10 +585,11 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 
 <div id="tab-fcheck" class="content hidden">
   <h2 style="font-size:20px;margin-bottom:6px;">시설 일일점검 <span style="font-size:13px;color:var(--dim);font-weight:400;">(작업일지 · PDF 기준)</span></h2>
-  <p style="font-size:13px;color:var(--dim);margin-bottom:12px;line-height:1.6;">날짜를 고르고 측정·점검값을 입력한 뒤 <b>저장</b>하면 모든 기기에 반영됩니다. 온도·수질은 시간대별, 설비값은 1일 1회.</p>
+  <p style="font-size:13px;color:var(--dim);margin-bottom:12px;line-height:1.6;">날짜와 <b>권장 시간대</b>(오픈·오전·점심·오후·마감 등)를 고르고 측정·점검값을 입력한 뒤 <b>저장</b>하면 모든 기기에 반영됩니다. <b>고정 점검 시각은 없습니다 — 저장하는 순간의 실제 시각이 자동으로 기록</b>됩니다. 온도·수질은 시간대별, 설비값은 1일 1회.</p>
   <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:14px;">
     <label style="font-size:13px;font-weight:700;">날짜 <input type="date" id="fcDate" onchange="fcLoad()" style="background:var(--bg);border:1px solid var(--border);color:var(--text);padding:7px 10px;border-radius:7px;font-family:inherit;"></label>
-    <label style="font-size:13px;font-weight:700;">회차 <select id="fcRound" onchange="fcRoundChange()" style="background:var(--bg);border:1px solid var(--border);color:var(--text);padding:7px 10px;border-radius:7px;font-size:13px;font-family:inherit;"></select></label>
+    <label style="font-size:13px;font-weight:700;">권장 시간대 <select id="fcRound" onchange="fcRoundChange()" style="background:var(--bg);border:1px solid var(--border);color:var(--text);padding:7px 10px;border-radius:7px;font-size:13px;font-family:inherit;"></select></label>
+    <span id="fcRoundTime" style="font-size:12px;color:var(--dim);white-space:nowrap;">저장 시 실제 시각 자동 기록</span>
     <div id="fcRoundChips" style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;"></div>
     <label style="font-size:13px;font-weight:700;">점검자
       <select id="fcInspectorSel" onchange="fcInspectorToggle()" style="background:var(--bg);border:1px solid var(--border);color:var(--text);padding:7px 10px;border-radius:7px;font-size:13px;font-family:inherit;">
@@ -3592,14 +3593,28 @@ function vendorSubmitAddForm(){
    회차별 입력값은 fcStore(메모리)에 보존 후 saveBoard(키=FACILITY_CHECK_날짜) raw blob에 저장·복원.
    진행바=전 회차 종합 입력률. 점검자=드롭다운(시설부 3인)+직접입력. GM 2026-06-19 시우, PDF 기반. (주석에 스크립트 태그 글자 금지) */
 (function(){
-  // ─── 회차 정의 (date 요일 기반) — 평일 8회 / 주말 6회. round 라벨='○○시' (1일1회는 '1일') ───
-  var ROUNDS_WEEKDAY=['07시','09시','11시','13시','15시','17시','19시','21시'];
-  var ROUNDS_WEEKEND=['08시','11시','14시','17시','19시','21시'];
+  // ─── 회차 정의 (date 요일 기반) — B안(GM 2026-06-23): 고정시각 제거, 회차=권장 시간대 라벨만 안내.
+  // 실제 점검 '몇 시'는 저장 순간 자동 기록(fcStore.roundTimes[label]='HH:MM') → 입력 부담 0, 하루 추이 유지.
+  // 권장 회차 수는 종전과 동일(평일 8 / 주말 6). 라벨=시간대 이름(오픈/오전/점심/오후/저녁/마감 등). (1일1회는 '1일')
+  var ROUNDS_WEEKDAY=['오픈','오전','오전2','점심','오후','오후2','저녁','마감'];
+  var ROUNDS_WEEKEND=['오픈','오전','점심','오후','저녁','마감'];
   var ROUND_DAILY='1일';
   function roundsFor(dateStr){
     if(!dateStr) return ROUNDS_WEEKDAY.slice();
     var dow=new Date(dateStr+'T00:00:00').getDay();   // 0=일,6=토
     return (dow===0||dow===6) ? ROUNDS_WEEKEND.slice() : ROUNDS_WEEKDAY.slice();
+  }
+  // 표시용 회차 목록 — 표준 권장 회차 + 저장된 옛 라벨('07시' 등)을 합쳐 옛 데이터도 안 깨지고 보임(B안 하위호환).
+  function roundsForDisplay(dateStr){
+    var base=roundsFor(dateStr);
+    var stored=(fcStore&&fcStore.rounds)?Object.keys(fcStore.rounds):[];
+    stored.forEach(function(r){ if(r&&r!==ROUND_DAILY&&base.indexOf(r)<0) base.push(r); });
+    return base;
+  }
+  // 현재 시각(KST) 'HH:MM' — 저장 순간 실제 점검 시각 자동 기록용.
+  function nowHHMM(){
+    try{ return new Date().toLocaleTimeString('en-GB',{timeZone:'Asia/Seoul',hour:'2-digit',minute:'2-digit'}); }
+    catch(e){ var d=new Date(); return ('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).slice(-2); }
   }
   // 사우나: 한 표 · 탕별 남/여 (찜질방만 A/B) — 작업일지 기준값(온탕39·열탕42·건식78·습식48·찜질방68)
   const SAUNA=[['ontang','온탕 39℃',['남','여']],['yeoltang','열탕 42℃',['남','여']],['dry','건식 78℃',['남','여']],['wet','습식 48℃',['남','여']],['jjim','찜질방 68℃',['A','B']]];
@@ -3731,7 +3746,8 @@ function vendorSubmitAddForm(){
   FC_DAILY_ITEMS.forEach(function(it){ it.fields.forEach(function(f){ DAILY_FIELD_IDS.push(f); }); });
 
   // ─── 회차별 입력값 보존 store. rounds[label]={fieldId:val}, daily={fieldId:val}, inspector ───
-  var fcStore={ rounds:{}, daily:{}, inspector:'' };
+  // roundTimes[label]='HH:MM' — 저장 순간 자동기록한 실제 점검 시각(B안). 화면 "기록 시각" 표시·복원용.
+  var fcStore={ rounds:{}, daily:{}, inspector:'', roundTimes:{} };
   var curRound=null;
 
   function val(id){ var n=document.getElementById(id); return n?String(n.value||'').trim():''; }
@@ -3757,18 +3773,26 @@ function vendorSubmitAddForm(){
   // 회차 드롭다운 채우기(요일 기반). 선택 유지·복원.
   window.fcFillRounds=function(){
     var sel=document.getElementById('fcRound'); if(!sel)return;
-    var date=val('fcDate'); var list=roundsFor(date); var prev=sel.value;
+    var date=val('fcDate'); var list=roundsForDisplay(date); var prev=sel.value;
     sel.innerHTML=list.map(function(r){return '<option value="'+r+'">'+r+'</option>';}).join('');
     if(list.indexOf(prev)>=0)sel.value=prev; else sel.value=list[0];
     curRound=sel.value;
     fcRenderChips();
+    fcRenderRoundTime();
   };
+  // 현재 회차의 실제 기록 시각 표시("기록 시각 HH:MM" / 미기록=안내). 점검자는 시각 입력 안 함(B안).
+  function fcRenderRoundTime(){
+    var box=document.getElementById('fcRoundTime'); if(!box)return;
+    var t=(fcStore.roundTimes&&curRound)?fcStore.roundTimes[curRound]:'';
+    if(t){ box.textContent='기록 시각 '+t; box.style.color='var(--green)'; }
+    else { box.textContent='저장 시 실제 시각 자동 기록'; box.style.color='var(--dim)'; }
+  }
   // ─── 회차 칩 줄 — 회차별 입력여부 ●(완료)/○(미입력), 현재 회차 강조. 1일1회 항목은 칩 대상 아님. ───
   function fcRenderChips(){
     var box=document.getElementById('fcRoundChips'); if(!box)return;
-    var list=roundsFor(val('fcDate'));
+    var list=roundsForDisplay(val('fcDate'));
     box.innerHTML=list.map(function(r){
-      return '<button type="button" data-round="'+r+'" onclick="fcChipGo(this.getAttribute(\'data-round\'))" style="cursor:pointer;font-family:inherit;font-size:12px;padding:5px 10px;border-radius:14px;background:var(--bg);border:1px solid var(--border);color:var(--text);white-space:nowrap;"><span class="fc-chip-icon">○</span> '+r+'</button>';
+      return '<button type="button" data-round="'+r+'" onclick="fcChipGo(this.getAttribute(\'data-round\'))" style="cursor:pointer;font-family:inherit;font-size:12px;padding:5px 10px;border-radius:14px;background:var(--bg);border:1px solid var(--border);color:var(--text);white-space:nowrap;"><span class="fc-chip-icon">○</span> '+r+'<span class="fc-chip-time" style="font-size:11px;color:var(--dim);margin-left:3px;"></span></button>';
     }).join('');
     fcUpdateChips();
   }
@@ -3780,6 +3804,8 @@ function vendorSubmitAddForm(){
       var m=fcStore.rounds[r]||{};
       var filled=Object.keys(m).some(function(k){return String(m[k]||'').trim()!=='';});
       var ico=btn.querySelector('.fc-chip-icon'); if(ico)ico.textContent=filled?'●':'○';
+      var tm=btn.querySelector('.fc-chip-time'); var rt=(fcStore.roundTimes&&fcStore.roundTimes[r])||'';
+      if(tm)tm.textContent=rt?(' '+rt):'';   // 기록 시각(HH:MM) 칩에 표시 — B안 자동기록
       var isCur=(r===curRound);
       btn.style.fontWeight=isCur?'700':'400';
       btn.style.border=isCur?'1.5px solid var(--accent)':'1px solid var(--border)';
@@ -3793,7 +3819,7 @@ function vendorSubmitAddForm(){
     captureRound();
     curRound=r;
     var sel=document.getElementById('fcRound'); if(sel&&Array.prototype.some.call(sel.options,function(o){return o.value===r;})) sel.value=r;
-    paintRound(); fcProgress();
+    paintRound(); fcProgress(); fcRenderRoundTime();
   };
   // 항목 done/measure 산정 — fields 중 값이 하나라도 있으면 done. measure=입력칸 JSON.
   function measureFromMap(map,item){
@@ -3851,14 +3877,23 @@ function vendorSubmitAddForm(){
   window.fcRoundChange=function(){
     captureRound();
     var sel=document.getElementById('fcRound'); curRound=sel?sel.value:curRound;
-    paintRound(); fcProgress();
+    paintRound(); fcProgress(); fcRenderRoundTime();
   };
   window.fcSave=function(){
     var date=val('fcDate'); if(!date){alert('날짜를 먼저 고르세요');return;}
     captureRound(); captureDaily();
     var insp=inspectorName(); fcStore.inspector=insp;
     var st=document.getElementById('fcStatus'); if(st)st.textContent='저장 중...';
-    var roundList=roundsFor(date);
+    // B안: 입력값 있는 회차마다 '저장 순간 실제 시각(KST)'을 자동 기록. 점검자는 시각 입력 안 함.
+    if(!fcStore.roundTimes)fcStore.roundTimes={};
+    var stampNow=nowHHMM();
+    var roundList=roundsForDisplay(date);
+    roundList.forEach(function(rl){
+      var map=fcStore.rounds[rl]||{};
+      var filled=Object.keys(map).some(function(k){return String(map[k]||'').trim()!=='';});
+      if(filled && !fcStore.roundTimes[rl]) fcStore.roundTimes[rl]=stampNow;   // 첫 입력 회차만 최초 시각 박제(재저장 시 유지)
+      else if(!filled) delete fcStore.roundTimes[rl];                          // 입력 비면 시각도 정리
+    });
     var posts=[];
     // 1) 원본 측정값 전량 보존(saveBoard) — 회차별 store 통째로 raw blob 저장(재로드용)
     posts.push(fetch(API_URL,{method:'POST',redirect:'follow',headers:{'Content-Type':'text/plain'},body:JSON.stringify({action:'saveBoard',key:'FACILITY_CHECK_'+date,board:{date:date,inspector:insp,store:fcStore}})}).then(function(r){return r.json();}));
@@ -3874,7 +3909,7 @@ function vendorSubmitAddForm(){
     var dmap=fcStore.daily||{};
     var ditems=FC_DAILY_ITEMS.map(function(it){ var m=measureFromMap(dmap,it); return {id:it.id,name:it.name,cat:it.cat,measure:m.measure,done:m.done}; });
     posts.push(fetch(API_URL,{method:'POST',redirect:'follow',headers:{'Content-Type':'text/plain'},body:JSON.stringify({action:'save_facility_measure',date:date,round:ROUND_DAILY,inspector:insp,items:ditems})}).then(function(r){return r.json();}));
-    Promise.all(posts).then(function(){ if(st)st.textContent='저장 완료 ('+date+')'; fcProgress(); })
+    Promise.all(posts).then(function(){ if(st)st.textContent='저장 완료 ('+date+')'; fcProgress(); fcRenderRoundTime(); })
       .catch(function(){ if(st)st.textContent='저장 실패(네트워크)'; });
   };
   window.fcLoad=function(){
@@ -3885,10 +3920,11 @@ function vendorSubmitAddForm(){
     fetch(API_URL+'?action=board&key='+encodeURIComponent('FACILITY_CHECK_'+date),{redirect:'follow'})
       .then(function(r){return r.json();}).then(function(j){
         var b=(j&&j.board)||{};
-        // store 구조(신) 우선 — 회차별 복원. 구 blob(vals 평면)도 graceful 무시(데이터 없음 취급).
-        fcStore=(b.store&&typeof b.store==='object')?{rounds:b.store.rounds||{},daily:b.store.daily||{},inspector:b.inspector||b.store.inspector||''}:{rounds:{},daily:{},inspector:b.inspector||''};
+        // store 구조(신) 우선 — 회차별 복원. roundTimes(B안 자동시각)도 복원. 구 blob(vals 평면)도 graceful 무시(데이터 없음 취급).
+        fcStore=(b.store&&typeof b.store==='object')?{rounds:b.store.rounds||{},daily:b.store.daily||{},inspector:b.inspector||b.store.inspector||'',roundTimes:b.store.roundTimes||{}}:{rounds:{},daily:{},inspector:b.inspector||'',roundTimes:{}};
         setInspector(fcStore.inspector);
-        paintDaily(); paintRound(); fcProgress();
+        fcFillRounds();   // 옛 라벨('07시' 등) 데이터까지 회차 목록·칩에 합류(하위호환)
+        paintDaily(); paintRound(); fcProgress(); fcRenderRoundTime();
         var n=Object.keys(fcStore.rounds).length+Object.keys(fcStore.daily).length;
         if(st)st.textContent=n?('불러옴 ('+date+')'):'기록 없음 ('+date+')';
       }).catch(function(){ if(st)st.textContent='불러오기 실패'; });

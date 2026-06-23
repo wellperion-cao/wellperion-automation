@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-kpi_collector.py  --  KPI 자동집계 (1차 vertical slice · 2026-06-23)
+kpi_collector.py  --  KPI 자동집계 (2차 확장 · 2026-06-23)
 
 측정 가능한 지표만 실수치로 기록. 측정 불가 = null.
 거짓 숫자 절대 금지 (대시보드 정직 원칙 · ssot/약속.json 참조).
@@ -12,6 +12,9 @@ from __future__ import annotations
 import json
 import subprocess
 import sys
+import urllib.request
+import urllib.error
+import time
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
 
@@ -72,6 +75,59 @@ def _mirror_ok() -> str | None:
         return None
 
 
+# 점검 GAS (지원팀 일일점검 · 4부서 공용 GAS이나 데이터는 지원부만 — 정직 표기)
+_CHECK_GAS = (
+    "https://script.google.com/macros/s/"
+    "AKfycbyXw4ZaA6hLK567GC7NY33Y8SvNPW6kNtrXFz2OsSdFVBmCnZP-2oD-RQiX0IpekBu1/exec"
+)
+_HTTP_TIMEOUT = 20
+
+
+def _http_get_json(url: str) -> object:
+    """GET → 파싱된 JSON 객체. 예외는 호출부에서 처리."""
+    sep = "&" if "?" in url else "?"
+    busted = f"{url}{sep}_cb={int(time.time())}"
+    req = urllib.request.Request(
+        busted, headers={"Cache-Control": "no-cache"}
+    )
+    with urllib.request.urlopen(req, timeout=_HTTP_TIMEOUT) as r:
+        return json.loads(r.read().decode("utf-8"))
+
+
+def _coo_check_rate() -> dict:
+    """
+    지원부 일일 점검완료율 (오늘 기준).
+    소스: 점검 GAS get_today_summary?date=YYYY-MM-DD
+    반환: {"지원부_점검완료율": 0~1 또는 null, "지원부_완료": int, "지원부_전체": int,
+           "4부서_점검완료율": null, "_note": str}
+    — 4부서 전체 완료율은 이 GAS로 측정 불가(지원부 데이터만 제공) → null 유지.
+    """
+    result: dict = {
+        "지원부_점검완료율": None,
+        "지원부_완료": None,
+        "지원부_전체": None,
+        "4부서_점검완료율": None,
+        "_note": "4부서전체=미측정(GAS가지원부한정)",
+    }
+    try:
+        today_str = datetime.now(KST).strftime("%Y-%m-%d")
+        url = f"{_CHECK_GAS}?action=get_today_summary&date={today_str}&zone=all"
+        data = _http_get_json(url)
+        rows = data.get("rows", []) if isinstance(data, dict) else []
+        if not rows:
+            result["_note"] = "rows 없음(점검 미시작 또는 GAS 오류)"
+            return result
+        total = len(rows)
+        done  = sum(1 for r in rows if isinstance(r, dict) and r.get("submitted"))
+        rate  = round(done / total, 4) if total > 0 else None
+        result["지원부_점검완료율"] = rate
+        result["지원부_완료"]       = done
+        result["지원부_전체"]       = total
+    except Exception as e:
+        result["_note"] = f"fetch 실패({type(e).__name__}): {str(e)[:80]}"
+    return result
+
+
 def _integration_health() -> str | None:
     """
     integration_health.py check_bridges() 결과 요약.
@@ -95,10 +151,14 @@ def collect() -> dict:
     mirror   = _mirror_ok()
     health   = _integration_health()
 
+    coo_check = _coo_check_rate()
+
     roles_data: dict[str, dict] = {}
     for role in ("ceo", "coo", "cfo", "cmo", "cto", "chro", "cpo"):
         stats = _role_stats(ships, role)
-        # 역할별 추가 지표 (1차: 공통 stats만, 역할 특화는 2차)
+        if role == "coo":
+            # 점검완료율 병합 (지원부 한정 · 4부서 전체는 null)
+            stats.update(coo_check)
         roles_data[role] = stats
 
     now_kst = datetime.now(KST)
@@ -126,7 +186,10 @@ def main() -> None:
     print(f"[kpi_collector] {data['generated_at_kst']}")
     print(f"  global: unpushed={g['unpushed']}  mirror={g['mirror_ok']}  health={g['health']}")
     for role, v in data["roles"].items():
-        print(f"  {role:5s}: 완결률={v['완결률']}  완료={v['완료']}  활성={v['활성']}")
+        extra = ""
+        if role == "coo" and v.get("지원부_점검완료율") is not None:
+            extra = f"  지원부점검완료율={v['지원부_점검완료율']}({v['지원부_완료']}/{v['지원부_전체']})"
+        print(f"  {role:5s}: 완결률={v['완결률']}  완료={v['완료']}  활성={v['활성']}{extra}")
     print(f"  -> {OUT_PATH}")
 
 
