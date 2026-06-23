@@ -34,13 +34,14 @@ var VOC_PHOTO_FOLDER_NAME = 'VOC_Photos';
 
 // ─── 종합 접수처 상수 ───
 // REG_CATEGORIES: 카테고리 라우팅 SSOT. dept 변경 시 여기 한 줄만 수정.
+// slaHours: 처리기한(SLA) SSOT — 보드에 하드코딩 복사 금지. null = SLA 없음(칭찬: 표시·계산 제외).
 var REG_CATEGORIES = [
-  { key: 'lost',     label: '분실물 접수',         sheet: '접수_분실물',   dept: '운영부' },
-  { key: 'facility', label: '시설물 고장 접수',     sheet: '접수_시설고장', dept: '시설부' },
-  { key: 'clean',    label: '청결 이슈 접수',       sheet: '접수_청결',     dept: '지원부' },
-  { key: 'leave',    label: '휴회 접수',            sheet: '접수_휴회',     dept: '운영부' },
-  { key: 'praise',   label: '직원·강사 칭찬합니다', sheet: '접수_칭찬',     dept: '운영부' },
-  { key: 'voice',    label: '직원·강사 쓴소리합니다', sheet: '접수_쓴소리', dept: '운영부' }
+  { key: 'lost',     label: '분실물 접수',         sheet: '접수_분실물',   dept: '운영부', slaHours: 168 },
+  { key: 'facility', label: '시설물 고장 접수',     sheet: '접수_시설고장', dept: '시설부', slaHours: 24 },
+  { key: 'clean',    label: '청결 이슈 접수',       sheet: '접수_청결',     dept: '지원부', slaHours: 12 },
+  { key: 'leave',    label: '휴회 접수',            sheet: '접수_휴회',     dept: '운영부', slaHours: 72 },
+  { key: 'praise',   label: '직원·강사 칭찬합니다', sheet: '접수_칭찬',     dept: '운영부', slaHours: null },
+  { key: 'voice',    label: '직원·강사 쓴소리합니다', sheet: '접수_쓴소리', dept: '운영부', slaHours: 72 }
   // praise/voice → dept: '인사부' 로 바꿀 때 위 두 줄만 수정
 ];
 
@@ -230,6 +231,65 @@ function _regMask(row) {
   //   실무 처리용 reg_list(GATED·내부)는 photoUrl 원본 유지.
   if (out.photoUrl) out.photoUrl = '비공개';
 
+  return out;
+}
+
+// ─── SLA(처리기한) 계산 — 카드 객체에 기한/남은시간/상태 부여 ───
+// SSOT = REG_CATEGORIES[].slaHours. 보드에 하드코딩 금지.
+// 규칙: 완료 상태 → 계산 제외(sla='완료'). slaHours=null(칭찬 등) → slaStatus='-'(SLA 없음).
+// 임박 기준: 남은시간 ≤ SLA의 25% 또는 ≤ 2h (둘 중 하나라도 해당 시 '임박').
+// 접수일시 'yyyy-MM-dd HH:mm:ss'(Asia/Seoul) 파싱. 반환 객체에 다음 키 추가:
+//   slaHours(원 기한), deadline('yyyy-MM-dd HH:mm'), remainH(남은시간·소수1자리·음수=초과), slaStatus('정상'|'임박'|'초과'|'완료'|'-')
+function _regComputeSla(row) {
+  var out = {};
+  Object.keys(row).forEach(function (k) { out[k] = row[k]; });
+
+  var status = String(out.status || out['상태'] || '');
+  var catLabel = String(out.category || out['카테고리'] || '');
+  var cat = _regCatByLabel(catLabel) || _regCatByKey(catLabel);
+  var slaHours = cat ? cat.slaHours : null;
+
+  out.slaHours = slaHours;
+  // SLA 없는 카테고리(칭찬 등)
+  if (slaHours === null || slaHours === undefined || slaHours === 0) {
+    out.slaStatus = '-';
+    out.remainH = null;
+    out.deadline = '';
+    return out;
+  }
+  // 완료건은 계산 제외
+  if (status === '완료') {
+    out.slaStatus = '완료';
+    out.remainH = null;
+    out.deadline = '';
+    return out;
+  }
+
+  var createdStr = String(out.createdAt || out['접수일시'] || '').trim();
+  // 'yyyy-MM-dd HH:mm:ss' → Date (Asia/Seoul로 저장됨)
+  var m = createdStr.match(/^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})(?::(\d{2}))?/);
+  if (!m) {
+    out.slaStatus = '-';
+    out.remainH = null;
+    out.deadline = '';
+    return out;
+  }
+  var created = new Date(+m[1], +m[2] - 1, +m[3], +m[4], +m[5], +(m[6] || 0));
+  var deadline = new Date(created.getTime() + slaHours * 3600 * 1000);
+  var now = new Date();
+  var remainMs = deadline.getTime() - now.getTime();
+  var remainH = remainMs / 3600000;
+
+  out.deadline = Utilities.formatDate(deadline, 'Asia/Seoul', 'yyyy-MM-dd HH:mm');
+  out.remainH = Math.round(remainH * 10) / 10;
+
+  if (remainH < 0) {
+    out.slaStatus = '초과';
+  } else if (remainH <= slaHours * 0.25 || remainH <= 2) {
+    out.slaStatus = '임박';
+  } else {
+    out.slaStatus = '정상';
+  }
   return out;
 }
 
@@ -709,9 +769,9 @@ function _vProcess(action, body, params) {
   if (action === 'reg_submit') return _regSubmit(body);
   if (action === 'reg_list')   return _regList(params || body);
   if (action === 'reg_board') {
-    // 마스킹 공개 보드 — _regList 결과에 _regMask 적용
+    // 마스킹 공개 보드 — _regList 결과에 _regMask 적용 후 카드별 SLA(처리기한) 계산
     var boardResult = JSON.parse(_regList(params || body).getContent());
-    var masked = (boardResult.data || []).map(_regMask);
+    var masked = (boardResult.data || []).map(_regMask).map(_regComputeSla);
     return _vJson({ ok: true, count: masked.length, data: masked });
   }
   if (action === 'reg_update') return _regUpdate(body);
