@@ -37,14 +37,14 @@ HDR_Y_BOT   = 558
 CARDS: dict[str, dict] = {
     "골프": {
         "file": "골프 가이드.jpg",
-        "members": ("FOR MEMBERS", "회원님들", [
+        "members": ("FOR MEMBERS", "회원님", [
             "사전 예약 필수 (Reservation Required)",
             "타석 외 스윙 금지·출입 시 안전 확인 (Swing in Bay Only)",
             "만석 시 60분 에티켓 준수 (60-Min Courtesy When Full)",
             "소음·고성 자제 (Quiet Please)",
             "궁금하신 점은 언제든 문의해 주세요",
         ]),
-        "left2": ("FOR PROS", "프로님들", [
+        "left2": ("FOR PROS", "프로님", [
             "시작 10분 전 도착·세팅 (Be Ready 10 Min)",
             "소속 프로 외 레슨 금지 (Authorized Coaching Only)",
             "안전 1순위 · 즉시 리셉션 공유 (Safety First)",
