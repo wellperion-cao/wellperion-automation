@@ -5405,6 +5405,9 @@ loadBoardData(); renderBoard(); loadBoardFromBackend(); // 요일별 보드: 로
 loadPolicyData(); renderPolicyBoard(); loadPolicyFromBackend(); // 규정 트렐로 보드: 로컬 즉시 렌더 후 백엔드 동기화
 loadSupplyData(); renderSupplyTable(); // 비품: 로컬 즉시 렌더(서버 동기화는 탭 열 때 loadSupplyFromBackend)
 renderG('m');
+/* 로드 시 시드 자동 동기(무트리거) — setTimeout(0)로 스크립트 평가 완료 후 실행(const TDZ 회피)·비차단.
+   시그니처 가드로 회차/명단 바뀐 경우에만 시트 write, 10초 디바운스로 멀티탭 연타 방지. GM 2026-06-23 [시우]. */
+try{ setTimeout(function(){ if(typeof autoSyncSeedsIfChanged==='function') autoSyncSeedsIfChanged(); }, 0); }catch(e){}
 
 /* ═══════════════════════════════════════════════
    항목 관리 (CRUD) — localStorage 기반
@@ -5640,8 +5643,8 @@ function mgmtSaveItems(items){
    기존 mgmtSaveItems/CUSTOM_ITEMS 경로와 완전 분리. WEEKDAY/WEEKEND/NIGHT_* 전 시드를 id 기준
    union(중복 id는 1회) → ROUND_MAP[id] 회차를 실어 POST. seed='Y' 격리행으로만 적재(서버 멱등).
    Part1 단계에선 분모·렌더 무변화(서버가 seed행 skip). 명시 트리거(매뉴얼탭 '시드 동기화')로 호출. */
-function pushSeedItemsToSheet(){
-  if(!ONLINE){ try{ if(typeof alert==='function') alert('오프라인 — 시드 동기화 불가'); }catch(e){} return Promise.resolve(); }
+/* 시드 payload 배열 빌더 — 수동 버튼·자동 동기 공용(단일 소스). WEEKDAY/WEEKEND/NIGHT_* union(중복 id 1회) + ROUND_MAP 회차. */
+function buildSeedPayloads(){
   const scheds=[];
   [typeof WEEKDAY!=='undefined'?WEEKDAY:null, typeof WEEKEND!=='undefined'?WEEKEND:null,
    typeof NIGHT_WEEKDAY!=='undefined'?NIGHT_WEEKDAY:null, typeof NIGHT_WEEKEND!=='undefined'?NIGHT_WEEKEND:null]
@@ -5667,13 +5670,55 @@ function pushSeedItemsToSheet(){
       };
     });
   });
-  const seeds=order.map(function(id){ return map[id]; });
+  return order.map(function(id){ return map[id]; });
+}
+
+/* 시드 집합 시그니처 — id+rounds 정렬·연결 후 32bit 해시 요약. 회차/명단 변경 감지용(변경 시에만 시트 write). */
+function seedSignature(seeds){
+  const parts=(seeds||[]).map(function(s){ return String(s.id||'')+':'+String(s.rounds||''); });
+  parts.sort();
+  const str=parts.join('|');
+  let h=5381;            // djb2
+  for(let i=0;i<str.length;i++){ h=((h<<5)+h+str.charCodeAt(i))|0; }
+  return (h>>>0).toString(36)+'.'+parts.length;
+}
+
+const SEED_SIG_KEY='wcheck_seed_sig';
+const SEED_SYNC_TS_KEY='wcheck_seed_sync_ts';
+const SEED_SYNC_DEBOUNCE_MS=10000;   // 멀티탭/연타 가드
+
+/* 로드 시 자동 시드 동기 — 시그니처가 바뀐 경우에만 push(쓰기 0 최적화). 비차단·실패 시 콘솔 경고만. */
+function autoSyncSeedsIfChanged(){
+  try{
+    if(!ONLINE) return;
+    let seeds;
+    try{ seeds=buildSeedPayloads(); }catch(e){ console.warn('[seed-autosync] build 실패', e); return; }
+    if(!seeds.length) return;
+    const sig=seedSignature(seeds);
+    let prevSig=null, lastTs=0;
+    try{ prevSig=localStorage.getItem(SEED_SIG_KEY); lastTs=parseInt(localStorage.getItem(SEED_SYNC_TS_KEY)||'0',10)||0; }catch(e){}
+    if(prevSig===sig) return;                                  // 시드 무변경 → write 0
+    if(Date.now()-lastTs < SEED_SYNC_DEBOUNCE_MS) return;      // 멀티탭/연타 가드
+    try{ localStorage.setItem(SEED_SYNC_TS_KEY, String(Date.now())); }catch(e){}
+    fetch(API_URL,{method:'POST',redirect:'follow',
+      headers:{'Content-Type':'text/plain'},
+      body:JSON.stringify(withDept({action:'syncSeedItems',seeds:seeds}))
+    }).then(function(){
+      try{ localStorage.setItem(SEED_SIG_KEY, sig); }catch(e){}
+    }).catch(function(e){ console.warn('[seed-autosync] push 실패(무시)', e); });
+  }catch(e){ console.warn('[seed-autosync] 예외(무시)', e); }
+}
+
+function pushSeedItemsToSheet(){
+  if(!ONLINE){ try{ if(typeof alert==='function') alert('오프라인 — 시드 동기화 불가'); }catch(e){} return Promise.resolve(); }
+  const seeds=buildSeedPayloads();
   const ind=document.getElementById('saveIndicator');
   if(ind){ ind.style.display='block'; ind.textContent='시드 동기화 중...('+seeds.length+'항목)'; }
   return fetch(API_URL,{method:'POST',redirect:'follow',
     headers:{'Content-Type':'text/plain'},
     body:JSON.stringify(withDept({action:'syncSeedItems',seeds:seeds}))
-  }).then(()=>{ if(ind){ind.textContent='시드 동기화 완료 ('+seeds.length+'항목)';setTimeout(()=>{ind.style.display='none'},2000);} })
+  }).then(()=>{ try{ localStorage.setItem(SEED_SIG_KEY, seedSignature(seeds)); localStorage.setItem(SEED_SYNC_TS_KEY, String(Date.now())); }catch(e){}
+    if(ind){ind.textContent='시드 동기화 완료 ('+seeds.length+'항목)';setTimeout(()=>{ind.style.display='none'},2000);} })
     .catch(()=>{ if(ind){ind.textContent='시드 동기화 실패';setTimeout(()=>{ind.style.display='none'},2000);} });
 }
 
