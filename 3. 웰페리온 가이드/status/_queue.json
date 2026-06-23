@@ -4985,5 +4985,19 @@
     "next": "🌀 표류 — 다음 미정 (필요 시 GM·웰리/담당 C-Level 지정)",
     "adhoc_commit": "4fcb751dc93b837ff46c7d689cd4b6aee37cb745",
     "ship_no": 124
+  },
+  {
+    "task_id": "COO-2026-06-23-ADHOC-fac46ec5",
+    "clevel": "coo",
+    "title": "[시우] 시설 일일점검 시각 개편 B안 — 회차=권장시간대, 저장 시 실제시각 자동기록 [시우]",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-06-23",
+    "processed_at": "2026-06-23",
+    "artifact": "(코드는 4fcb751d에 워처가 흡수 — 본 커밋은 B안 작업 귀속·기록용)\n- 고정 점검시각 제거 → 권장 시간대 라벨(오픈/오전/점심/오후/저녁/마감). 권장 회차 수 유지(평일8·주말6)\n- 저장 순간 실제 시각(KST) 자동기록(fcStore.roundTimes) → '기록 시각 HH:MM'·칩 표시. 점검자 시각입력 0\n- 옛 고정시각 데이터 하위호환(roundsForDisplay 합류). 설비 1일1회·진행바·경보 유지\n- GAS(시설 col15 점검시각) 무변경. 지원/주차·시드열·syncSeedItems 무접촉(회귀 (CLI ad-hoc · 커밋 fac46ec5)",
+    "next": "🌀 표류 — 다음 미정 (필요 시 GM·웰리/담당 C-Level 지정)",
+    "adhoc_commit": "fac46ec599122719c537721f1a1b8a943e754151",
+    "ship_no": 113
   }
 ]
