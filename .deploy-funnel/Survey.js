@@ -457,7 +457,9 @@ var _SURVEY_PUBLIC_ACTIONS = {
   member_calendar:        true,
   member_inquiry_update:  true,  // 2026-06-22 GM '전체 공개' — 실명·전화 포함 수정
   member_inquiry_add:     true,  // 2026-06-23 전화·직접 문의 수기 추가
-  member_inquiry_delete:  true   // 행 삭제
+  member_inquiry_delete:  true,  // 행 삭제
+  member_registered_list:     true,  // 2026-06-23 등록현황(SUC/단기SUC) 조회
+  member_registered_setmonth: true   // 등록회원 1~12월 체크 토글
 };
 function _accessProp_(k) {
   try { return PropertiesService.getScriptProperties().getProperty(k) || ''; } catch (e) { return ''; }
@@ -559,6 +561,42 @@ function _miReadRows_() {
 // ═══════════════════════════════════════════
 //  액션 처리
 // ═══════════════════════════════════════════
+// ═══ 등록현황 탭 (Phase 3 — SUC/단기SUC 등록회원 누적 + 1~12월 체크) ═══
+var _REG_SHEET = '26년 등록현황';
+var _REG_HEADER = ['이름','전화','프로그램','등록일','1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
+function _regSheet_() {
+  var ss = SpreadsheetApp.openById(_MI_SS_ID);
+  var sh = ss.getSheetByName(_REG_SHEET);
+  if (!sh) {
+    sh = ss.insertSheet(_REG_SHEET);
+    sh.getRange(1, 1, 1, _REG_HEADER.length).setValues([_REG_HEADER]);
+    sh.setFrozenRows(1);
+  }
+  return sh;
+}
+function _regNormPhone_(p) { return String(p == null ? '' : p).replace(/[^0-9]/g, ''); }
+// SUC/단기SUC 전환 시 등록현황에 upsert(전화 키). 신규=등록일 오늘+행추가. 기존=이름·프로그램만 갱신(등록일 보존).
+function _regUpsert_(name, phone, program) {
+  var key = _regNormPhone_(phone);
+  if (!key) return;
+  var sh = _regSheet_();
+  var last = sh.getLastRow();
+  if (last >= 2) {
+    var data = sh.getRange(2, 1, last - 1, 3).getValues();  // 이름·전화·프로그램
+    for (var i = 0; i < data.length; i++) {
+      if (_regNormPhone_(data[i][1]) === key) {
+        if (name)    sh.getRange(i + 2, 1).setValue(name);
+        if (program) sh.getRange(i + 2, 3).setValue(program);
+        return;
+      }
+    }
+  }
+  var today = Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy-MM-dd');
+  var row = new Array(_REG_HEADER.length).fill('');
+  row[0] = name || ''; row[1] = phone || ''; row[2] = program || ''; row[3] = today;
+  sh.appendRow(row);
+}
+
 function _processAction(body) {
   const action = body.action || '';
   // nocache=1 → 캐시 읽기 우회(강제 재계산·재캐싱). 워머 트리거가 캐시를 미리 데우는 용도(2026-06-19 시토).
@@ -714,6 +752,9 @@ function _processAction(body) {
     _maSet(['체험2 확정시간','체험2'], body.exp2);
     _maSet(['타임스탬프','접수일','날짜'], body.timestamp || maNow);
     maSh.appendRow(maRow);
+    if (body.status === 'SUC' || body.status === '단기SUC') {
+      try { _regUpsert_(body.name, body.phone, body.program); } catch (e) {}
+    }
     try { _notifyTelegram('➕ 전화·직접 문의 추가 — ' + (body.name || '(이름없음)') + ' · ' + (body.phone || '-') + ' · 채널:' + (body.channel || '유선전화')); } catch (e) {}
     return _json({ ok: true, message: '추가되었습니다.', rowIndex: maSh.getLastRow() });
   }
@@ -759,6 +800,10 @@ function _processAction(body) {
     _muSet(['시설투어 및 상담 예약','시설견학 및 상담 일정','상담 예약','상담'], body.tour);
     _muSet(['체험1 확정시간','체험1'], body.exp1);
     _muSet(['체험2 확정시간','체험2'], body.exp2);
+    // carry-over: SUC/단기SUC = 등록회원 → 등록현황 탭 자동 이관(문의명단에서 넘어감)
+    if (body.status === 'SUC' || body.status === '단기SUC') {
+      try { _regUpsert_(body.name, body.phone, body.program); } catch (e) {}
+    }
     try { _notifyTelegram('📝 문의회원 수정(공개페이지) — 행 ' + muRow + ' · 상태:' + (body.status || '-') + ' · 담당:' + (body.owner || '-')); } catch (e) {}
     return _json({ ok: true, rowIndex: muRow, message: '수정되었습니다.' });
   }
@@ -773,6 +818,58 @@ function _processAction(body) {
     mdSh.deleteRow(mdRow);
     try { _notifyTelegram('🗑 문의회원 삭제(공개페이지) — 행 ' + mdRow); } catch (e) {}
     return _json({ ok: true, rowIndex: mdRow, message: '삭제되었습니다.' });
+  }
+
+  // ─── 회원관리 페이지(CPO): 등록회원 명단 조회 (등록기간 from~to 필터, 1~12월 체크 포함) ───
+  if (action === 'member_registered_list') {
+    var rlSh = _regSheet_();
+    var rlLast = rlSh.getLastRow();
+    var rlRows = [];
+    if (rlLast >= 2) {
+      var rlData = rlSh.getRange(2, 1, rlLast - 1, _REG_HEADER.length).getValues();
+      var rlFrom = String(body.from || '');  // YYYY-MM-DD (doGet이 쿼리를 body로 병합)
+      var rlTo   = String(body.to   || '');
+      for (var ri = 0; ri < rlData.length; ri++) {
+        var rr = rlData[ri];
+        if (!rr[0] && !rr[1]) continue;  // 빈 행 스킵
+        var regDate = _miToISO_(rr[3]);
+        if (rlFrom && regDate && regDate < rlFrom) continue;
+        if (rlTo   && regDate && regDate > rlTo)   continue;
+        var months = [];
+        for (var m = 0; m < 12; m++) {
+          var cv = rr[4 + m];
+          months.push(cv === true || cv === 1 || (typeof cv === 'string' && cv.trim() !== ''));
+        }
+        rlRows.push({
+          rowIndex: ri + 2,
+          name:     String(rr[0] || ''),
+          phone:    String(rr[1] || ''),
+          program:  String(rr[2] || ''),
+          regDate:  regDate,
+          months:   months
+        });
+      }
+    }
+    return _json({ ok: true, count: rlRows.length, data: rlRows });
+  }
+
+  // ─── 회원관리 페이지(CPO): 등록회원 월별 체크 토글 ───
+  if (action === 'member_registered_setmonth') {
+    var smPhone = _regNormPhone_(body.phone);
+    var smMonth = parseInt(body.month, 10);  // 1~12
+    var smChecked = (body.checked === true || body.checked === 'true' || body.checked === 1 || body.checked === '1');
+    if (!smPhone || !(smMonth >= 1 && smMonth <= 12)) return _json({ ok: false, error: 'phone·month(1~12) 필수' });
+    var smSh = _regSheet_();
+    var smLast = smSh.getLastRow();
+    if (smLast < 2) return _json({ ok: false, error: '등록회원 없음' });
+    var smData = smSh.getRange(2, 2, smLast - 1, 1).getValues();  // 전화 열
+    for (var si = 0; si < smData.length; si++) {
+      if (_regNormPhone_(smData[si][0]) === smPhone) {
+        smSh.getRange(si + 2, 4 + smMonth).setValue(smChecked ? 'O' : '');  // col5=1월 … col16=12월
+        return _json({ ok: true, message: '저장됨', phone: smPhone, month: smMonth, checked: smChecked });
+      }
+    }
+    return _json({ ok: false, error: '해당 등록회원 없음' });
   }
 
   // ─── 문의→가입 전환 집계 ───

@@ -958,7 +958,7 @@ var dbEditingRow = null; // 현재 편집 중인 rowIndex
 var dbSaveTimer = null;  // 디바운스 타이머
 
 // 실무진 실제 사용 코드 (2026-06-20 GM 확정). 등록=SUC, 이탈=LOSS 등 시트 어휘 그대로.
-var STATUS_OPTIONS = ['신규','컨택중','가망','예약','방문','SUC','단기SUC','결제완납','LOSS'];
+var STATUS_OPTIONS = ['신규','컨택중','가망','예약','방문','SUC','단기SUC','LOSS'];
 var PROGRAM_OPTIONS = [
   '플래티넘 (Gym + G.X + Sauna 이용)',
   '노블레스 (Gym + G.X + Swimming + Sauna 이용)',
@@ -988,7 +988,7 @@ function buildSelect(field, options, current) {
 }
 var STATUS_CLASS   = {
   '신규':'new','컨택중':'contact','예약':'reserved','방문':'visited',
-  'SUC':'joined','단기SUC':'joined','결제완납':'joined','LOSS':'lost',
+  'SUC':'joined','단기SUC':'joined','LOSS':'lost',
   // 과거값 호환(표시용)
   '응대':'contact','가입':'joined','이탈':'lost','보류':'hold','키오스크 완':'joined'
 };
