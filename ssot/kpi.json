@@ -1,13 +1,13 @@
 {
-  "_doc": "역할별 담당 KPI 단일출처. S2 본인탭(data-panel={role})의 '담당 KPI' 행을 이 파일로 렌더한다. 부팅 시 AI가 직독(약속·incidents·canon과 동급 정본). 값=전략이라 변경은 GM 결재. 정본=이 파일, S2=사람용 렌더. kpi_html=렌더되는 셀 내용(단일 필드 — 복사본 만들지 말 것).",
-  "정본": "ssot/kpi.json (역할 KPI 단일출처 — 구조0 정합)",
+  "_doc": "역할별 담당 KPI 단일출처. S2 본인탭(data-panel={role})의 '담당 KPI' 행을 이 파일로 렌더한다(raw.githubusercontent 직접 fetch, 미러 없음). 부팅 시 AI가 직독(약속·incidents·canon과 동급 정본). 값=전략이라 변경은 GM 결재. tier 표기: ✅=지금 측정가능 · 🔧=측정 인프라 구축 필요 · ★=정성(숫자 불가·정직 인정). 정본=이 파일, S2=사람용 렌더. kpi_html=렌더되는 셀 내용(단일 필드 — 복사본 만들지 말 것).",
+  "정본": "ssot/kpi.json (역할 KPI 단일출처 — 구조0 정합 · KPI 정의 GM 결재 2026-06-23)",
   "roles": {
-    "ceo": { "nickname": "웰리", "kpi_html": "전사 북극성(전환 엔진) 진척 · C-Level 실행 완결률(디스패치→검증→완결) · G1 항로 정합·완결 · 의사결정 효율 <span style=\"font-size:11px;color:var(--dim);\">— 운영 리듬: 매일 S2·G1 페이지 오전 1건·오후 1건 단순화·고도화 후 내용 정리</span>" },
-    "coo": { "nickname": "시우", "kpi_html": "① 점검 완료율(4부서 일일점검) · ② 운영 마찰 인시던트 수(낮을수록 ↑) <span style=\"font-size:11px;color:var(--dim);\">— 상세=아래 정체성 카드</span>" },
-    "cfo": { "nickname": "시뽀", "kpi_html": "재무 안정성 확보 · 지출 관리 · 운영 효율" },
-    "cmo": { "nickname": "시모", "kpi_html": "신규 모집 · 운영 효율 · 매출 <span style=\"color:var(--dim);font-size:12px;\">(핵심 = 전환 퍼널: 단계별 전환율 · 월 신규등록수 + 자동화 무인화율)</span>" },
-    "cto": { "nickname": "시토", "kpi_html": "시설 관리·점검 + <strong>자동화 가동률·장애 0·무인증 GAS 0·미푸시 0·정합 0</strong> <span style=\"font-size:11px;color:var(--dim);\">(자동화·보안 지표 보강 2026-06-18 · 목표치 GM 결재 대기)</span>" },
-    "chro": { "nickname": "시로", "kpi_html": "조직 만족도 · 의사결정 효율성" },
-    "cpo": { "nickname": "시포", "kpi_html": "NPS · 리텐션 · 운영 효율" }
+    "ceo": { "nickname": "웰리", "kpi_html": "✅ C-Level 실행 완결률(디스패치→검증→완결) · ✅ G1 항로 정합·미푸시 0 · ★ 전사 북극성(전환 엔진) 진척 · ★ 위임 완결도(GM=G1만) <span style=\"font-size:11px;color:var(--dim);\">— ✅측정 ·🔧구축필요 ·★정성 / 운영 리듬: 매일 S2·G1 오전·오후 각 1건 정리</span>" },
+    "coo": { "nickname": "시우", "kpi_html": "✅ 점검 완료율(4부서 일일점검 · home 집계 · 목표 ≥95%) · ✅ 운영 마찰 인시던트 수↓(이슈시트·incidents) <span style=\"font-size:11px;color:var(--dim);\">— 둘 다 측정 가능(강한 축)</span>" },
+    "cfo": { "nickname": "시뽀", "kpi_html": "✅ 월 매출·연 달성률(목표 대비 · 매출 시트) · 🔧 지출 연동(home_kpi 칸밀림 보완 중) · ✅ 재무 이상감지→경보 소요 <span style=\"font-size:11px;color:var(--dim);\">— 매출=측정 / 지출=구축 중</span>" },
+    "cmo": { "nickname": "시모", "kpi_html": "🔧 노출→문의 전환율(채널귀속 측정 인프라 필요 · <strong>최우선</strong>) · ✅ 발행 건수·자동 무인화율(M5·디스패처 로그) · 🔧 월 신규 문의 수(퍼널) <span style=\"color:var(--dim);font-size:12px;\">— 북극성 직결 전환율이 미측정 = 1순위 투자</span>" },
+    "cto": { "nickname": "시토", "kpi_html": "✅ <strong>미푸시 0 · 장애 0 · 무인증 GAS 0 · 정합 어긋남 0</strong>(전부 측정·현재 0) · ✅ 자동화 가동률(스케줄러 · 목표 ≥99%) · 시설·지원·주차 점검 <span style=\"font-size:11px;color:var(--dim);\">— 가장 측정 가능한 축</span>" },
+    "chro": { "nickname": "시로", "kpi_html": "🔧 인사평가 체계 가동률(체계 구축 후 측정) · ✅ 교육 이수율 · ✅ 이슈 처리 리드타임 · 소속 정합도 <span style=\"font-size:11px;color:var(--dim);\">— 체계 초기 단계, 평가 KPI는 구축 후</span>" },
+    "cpo": { "nickname": "시포", "kpi_html": "🔧→곧✅ 문의→가입 전환율(진행상태 칸 라이브 · 데이터 축적 시 측정) · ✅ 진행상태 입력 완료율 · ✅ 예약 활성 건수 <span style=\"font-size:11px;color:var(--dim);\">— 신규문의 시트·예약달력 기반 정립됨</span>" }
   }
 }
