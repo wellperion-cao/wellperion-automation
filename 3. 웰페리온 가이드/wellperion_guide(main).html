@@ -3600,6 +3600,39 @@ window._regAssign = function(id, category) {
 })();
 </script>
 <!-- ══ /역할 KPI 단일출처 렌더 ══ -->
+<!-- ══ 📊 KPI 라이브 배지 (status/kpi_values.json · kpi_collector.py 자동집계) ══ -->
+<script>
+(function(){
+  var BASE='https://raw.githubusercontent.com/wellperion-cao/wellperion-automation/master/status/kpi_values.json';
+  fetch(BASE+'?t='+Date.now(),{cache:'no-store'})
+    .then(function(r){return r.json();})
+    .then(function(data){
+      var roles=(data&&data.roles)||{};
+      var gen=(data&&data.generated_at_kst)||'';
+      Object.keys(roles).forEach(function(role){
+        var el=document.getElementById('kpi-'+role);
+        if(!el) return;
+        var v=roles[role];
+        var rate=v['완결률'];
+        var done=v['완료'];
+        var active=v['활성'];
+        if(rate===null&&done===null) return;
+        var pct=rate!==null?Math.round(rate*100)+'%':'—';
+        var color=rate===null?'#888':rate>=0.95?'#4caf50':rate>=0.8?'#ff9800':'#f44336';
+        var badge='<span style="display:inline-flex;align-items:center;gap:5px;margin-left:8px;'
+          +'vertical-align:middle;background:rgba(0,0,0,0.08);border-radius:20px;'
+          +'padding:2px 8px;font-size:11px;font-weight:700;color:'+color+';" '
+          +'title="완결률 자동집계 '+gen+'">'
+          +'완결 '+pct
+          +(done!==null?' · '+done+'완/'+active+'진':'')
+          +'</span>';
+        el.insertAdjacentHTML('beforeend',badge);
+      });
+    })
+    .catch(function(){/* kpi_values 미생성·네트워크 실패 시 배지 없이 조용히 */ });
+})();
+</script>
+<!-- ══ /KPI 라이브 배지 ══ -->
     <div class="source">SSOT: AI C-Level 협업 매뉴얼 v1.0 + C-Level 실무 가이드라인 v1.1 (2026-04-24) 통합 + AI 운영 원칙·검증 5단계 + 3대 원칙 프레임워크·에이전트 키트 (2026-05-28 g4 흡수) · 관련 메모리 11건 cross-link</div>
     <div style="margin-top:22px; padding:13px 16px; background:#16181c; border-radius:8px; border-left:3px solid var(--accent);">
       <div style="font-size:12px; font-weight:700; color:var(--accent); margin-bottom:6px;">&#9656; Claude CLI 셋업 프롬프트</div>
