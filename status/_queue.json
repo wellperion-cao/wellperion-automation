@@ -4971,5 +4971,19 @@
     "title": "[시모+시포] 전환율 측정 인프라 (KPI 배선 3순위 · deep-interview 확정)",
     "note": "[2026-06-23 deep-interview 결정] 북극성 직결 전환율 KPI 측정. ① 시포 문의→가입 전환율 = 신규문의 진행상태 칸(막 라이브) 데이터 축적 후 측정, 분모/시점 정의 확정 필요 ② 시모 노출→문의 = 채널귀속 구조 불가 → UTM 태깅 채널만(IG bio·카페·당근 프로필 utm→문의 페이지 도달) 정직 측정. 거짓 측정 0(메모리 dashboard_conversion_honest_limits). 착수=GM go.",
     "next": "GM go 시 시포 분모/시점 정의 → UTM 도달 집계 배선"
+  },
+  {
+    "task_id": "CTO-2026-06-23-ADHOC-4fcb751d",
+    "clevel": "cto",
+    "title": "[시토] KPI 배선 2차 — COO 지원부 점검완료율 라이브 연결",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-06-23",
+    "processed_at": "2026-06-23",
+    "artifact": "- kpi_collector.py: _coo_check_rate() 신설\n  점검 GAS(AKfycbyX…) get_today_summary 호출 → submitted/total 계산\n  지원부 한정임을 명시(4부서_점검완료율=null 정직 유지)\n- kpi_values.json: coo.지원부_점검완료율=0.9877 (80/81건) 갱신 (CLI ad-hoc · 커밋 4fcb751d)",
+    "next": "🌀 표류 — 다음 미정 (필요 시 GM·웰리/담당 C-Level 지정)",
+    "adhoc_commit": "4fcb751dc93b837ff46c7d689cd4b6aee37cb745",
+    "ship_no": 124
   }
 ]
