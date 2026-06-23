@@ -1551,19 +1551,6 @@ function doGet(e) {
       return _json({ ok: true, results: results });
     }
 
-    // ─── 부트셋업 매트릭스 조회/저장 (additive · 기존 액션 무영향 · 2026-06-23 시토) ───
-    // GET  ?action=matrix_get  → { ok, content, sha }  (ssot/bootsetup_matrix.json raw)
-    // POST {action:'matrix_set', content:'...JSON...', key:'...'} → { ok, commit }
-    if (action.startsWith('matrix_')) {
-      const mbody = {};
-      Object.keys(e.parameter).forEach(function(k){ mbody[k] = e.parameter[k]; });
-      if (e.postData && e.postData.contents) {
-        try { const pb = JSON.parse(e.postData.contents); Object.keys(pb).forEach(function(k){ mbody[k] = pb[k]; }); } catch(ignored){}
-      }
-      mbody.action = action;
-      return _processMatrixAction(mbody);
-    }
-
     return _json({ ok: false, error: '알 수 없는 action: ' + action });
   } catch (err) {
     return _json({ ok: false, error: err.message });
@@ -2002,8 +1989,6 @@ function _processTodoAction(body) {
       return _json({ ok: true, dryRun: dryRun, count: report.length, files: report });
     }
 
-    if (act.indexOf('matrix_') === 0) return _processMatrixAction(body);
-
     return _json({ ok: false, error: '알 수 없는 action: ' + action });
 }
 
@@ -2065,76 +2050,4 @@ function doPost(e) {
   } catch (err) {
     return _json({ ok: false, error: err.message });
   }
-}
-
-// ═══ 부트셋업 매트릭스 액션 (additive · 기존 로직 무영향 · 2026-06-23 시토) ═══
-// matrix_get : coo/bootsetup_matrix.json 을 GitHub raw API로 읽어 반환
-// matrix_set : 동일 경로에 내용 저장 (EDIT_KEY 검증)
-// 저장 경로 : 3. 웰페리온 가이드/coo/bootsetup_matrix.json (단일 정본 — ssot/ 삭제됨 20ef9ef4)
-function _processMatrixAction(body) {
-  var action = body.action || '';
-  var SSOT_PATH  = '3. 웰페리온 가이드/coo/bootsetup_matrix.json';
-  var MIRROR_PATH = null; // ssot/ 폐기 — 미러 없음
-  var headers = _ghHeaders();
-  if (!headers) return _json({ ok: false, error: 'GITHUB_TOKEN 미설정' });
-
-  // ── matrix_get: 읽기 (키 불필요) ────────────────────────────────────────────
-  if (action === 'matrix_get') {
-    var branch = _prop('GITHUB_BRANCH') || 'master';
-    var getR = UrlFetchApp.fetch(
-      'https://api.github.com/repos/wellperion-cao/wellperion-automation/contents/' +
-      encodeURIComponent(SSOT_PATH) + '?ref=' + branch,
-      { method: 'get', headers: headers, muteHttpExceptions: true }
-    );
-    if (getR.getResponseCode() !== 200) {
-      return _json({ ok: false, error: 'GitHub ' + getR.getResponseCode() });
-    }
-    var meta = JSON.parse(getR.getContentText());
-    var content = Utilities.newBlob(Utilities.base64Decode(meta.content.replace(/\n/g,''))).getDataAsString();
-    return _json({ ok: true, content: content, sha: meta.sha });
-  }
-
-  // ── matrix_set: 저장 (EDIT_KEY 검증) ────────────────────────────────────────
-  if (action === 'matrix_set') {
-    var editKey = _prop('EDIT_KEY');
-    if (editKey && String(body.key || '') !== editKey) {
-      return _json({ ok: false, error: '편집 키 불일치' });
-    }
-    var contentText = body.content || '';
-    // JSON 유효성 사전 검증
-    try { JSON.parse(contentText); } catch (e) { return _json({ ok: false, error: 'JSON 파싱 실패: ' + e.message }); }
-
-    var branch2 = _prop('GITHUB_BRANCH') || 'master';
-    var msg = body.message || ('[GM] bootsetup_matrix 편집 ' + new Date().toISOString().slice(0,10));
-    var encoded = Utilities.base64Encode(contentText, Utilities.Charset.UTF_8);
-
-    function commitPath(path) {
-      var sha = null;
-      var chk = UrlFetchApp.fetch(
-        'https://api.github.com/repos/wellperion-cao/wellperion-automation/contents/' +
-        encodeURIComponent(path) + '?ref=' + branch2,
-        { method: 'get', headers: headers, muteHttpExceptions: true }
-      );
-      if (chk.getResponseCode() === 200) sha = JSON.parse(chk.getContentText()).sha;
-      var payload = { message: msg, content: encoded, branch: branch2 };
-      if (sha) payload.sha = sha;
-      var r = UrlFetchApp.fetch(
-        'https://api.github.com/repos/wellperion-cao/wellperion-automation/contents/' +
-        encodeURIComponent(path),
-        { method: 'put', contentType: 'application/json', headers: headers,
-          payload: JSON.stringify(payload), muteHttpExceptions: true }
-      );
-      return { code: r.getResponseCode(), body: r.getContentText().slice(0, 200) };
-    }
-
-    var r1 = commitPath(SSOT_PATH);
-    if (r1.code !== 200 && r1.code !== 201) {
-      return _json({ ok: false, error: '커밋 실패 GitHub ' + r1.code + ': ' + r1.body });
-    }
-    var ssotSha = '';
-    try { ssotSha = JSON.parse(r1.body).commit.sha; } catch(e){}
-    return _json({ ok: true, commit: ssotSha });
-  }
-
-  return _json({ ok: false, error: '알 수 없는 matrix action: ' + action });
 }
