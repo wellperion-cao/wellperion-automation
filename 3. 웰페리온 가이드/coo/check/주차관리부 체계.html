@@ -518,6 +518,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   <button class="tab active" onclick="switchTab('policy')">주차관리부 규정</button>
   <button class="tab" onclick="switchTab('guide')">가이드</button>
   <button class="tab" onclick="switchTab('manual')">매뉴얼</button>
+  <button class="tab" onclick="switchTab('valet')">발렛 시스템</button>
   <div style="display:flex;gap:4px;margin-left:auto;">
     <button class="util-btn print-btn" onclick="window.print()">인쇄</button>
     <button class="util-btn print-btn" onclick="printA3Guideline()" title="규정+가이드를 A3 세로 좌우2단으로 인쇄">🖨️ A3 가이드라인</button>
@@ -529,15 +530,15 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 
 <div id="tab-policy" class="content">
   <h2 style="font-size:20px;margin-bottom:6px;">주차관리부 규정</h2>
-  <p style="font-size:13px;color:var(--dim);margin-bottom:14px;line-height:1.6;">주제별 칸(컬럼)에 운영 기준·정기 회의 규정을 카드로 정리했습니다. 각 카드의 <b>편집</b> 버튼으로 내용을 바로 수정·저장하면 모든 기기에 반영됩니다. <span style="color:var(--accent);">발렛 = 직영·유료(5,000원)·보험 운영 체계(셋업 후 채용).</span> <span style="display:inline-block;margin-left:4px;padding:1px 8px;border-radius:8px;background:var(--yellow-bg);color:var(--yellow);font-weight:700;font-size:11px;">[편집 가능 — GM 검토]</span></p>
-  <div class="board-fullwidth" style="display:flex;gap:14px;align-items:flex-start;">
-    <!-- 규정 트렐로 보드: renderPolicyBoard()가 #policy-board(display:contents)에 .board-col을 주입.
-         운영 기준·정기 회의·발렛 시스템 컬럼이 카드로 렌더됨. 근무·휴게 카드는 우측 정적 sibling. -->
-    <div class="board-scroll" id="policy-flow" style="flex:0 0 auto;min-width:0;max-width:calc(100% - 694px);">
+  <p style="font-size:13px;color:var(--dim);margin-bottom:14px;line-height:1.6;">주제별 칸(컬럼)에 운영 기준·정기 회의 규정을 카드로 정리했습니다. 각 카드의 <b>편집</b> 버튼으로 내용을 바로 수정·저장하면 모든 기기에 반영됩니다. <span style="display:inline-block;margin-left:4px;padding:1px 8px;border-radius:8px;background:var(--yellow-bg);color:var(--yellow);font-weight:700;font-size:11px;">[편집 가능 — GM 검토]</span></p>
+  <div class="board-fullwidth">
+    <!-- 규정 보드: renderPolicyBoard()가 #policy-board(display:contents)에 .board-col 주입. 운영 기준·정기 회의 컬럼. (발렛은 별도 탭) -->
+    <div class="board-scroll" id="policy-flow">
       <div id="policy-board" style="display:contents"></div>
     </div>
-    <!-- ── 근무·휴게 시간 (정기회의 우측 — 같은 행) ── -->
-    <div class="manual-section" style="flex:0 0 680px;width:680px;margin-top:0;border-left:4px solid var(--red);align-self:flex-start;">
+  </div>
+  <!-- ── 근무·휴게 시간 (규정 카드 아래 · 전체폭) ── -->
+  <div class="manual-section" style="margin-top:20px;border-left:4px solid var(--red);">
     <div class="manual-header" onclick="togManual(this)">
       <h3 style="color:var(--red);">⏱ 근무·휴게 시간</h3><span class="arrow">&#9654;</span>
     </div>
@@ -626,10 +627,17 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 
     </div>
   </div>
-  <!-- ── /근무·휴게 시간 카드 ── -->
-  </div><!-- /board-fullwidth flex row -->
+  <!-- ── /근무·휴게 시간 (전체폭) ── -->
 
   <!-- 고도화 정의·개선 로드맵은 관리자 영역(웰페리온 ERP O1 운영 통합 체계 '구축 가이드')으로 이관 (2026-06-06 GM: 현장 규정 탭엔 뜬금없음) -->
+</div>
+
+<div id="tab-valet" class="content hidden">
+  <h2 style="font-size:20px;margin-bottom:6px;">발렛 시스템 (직영)</h2>
+  <p style="font-size:13px;color:var(--dim);margin-bottom:14px;line-height:1.6;">직영 발렛 운영 체계 — <b>유료 5,000원(회원 포함)</b> · 차량 배상 보험 가입 · 셋업 후 발렛 전담 채용. 각 카드의 <b>편집</b> 버튼으로 수정·저장하면 모든 기기에 반영됩니다. <span style="display:inline-block;margin-left:4px;padding:1px 8px;border-radius:8px;background:var(--yellow-bg);color:var(--yellow);font-weight:700;font-size:11px;">[편집 가능 — GM 검토]</span></p>
+  <div class="board-fullwidth">
+    <div class="board-scroll"><div id="valet-board" style="display:contents"></div></div>
+  </div>
 </div>
 
 <div id="tab-guide" class="content hidden">
@@ -686,7 +694,7 @@ function switchTab(tab){
     var oc=t.getAttribute('onclick')||'';
     t.classList.toggle('active', oc.indexOf("'"+tab+"'")>=0);
   });
-  ['policy','guide','manual'].forEach(function(id){
+  ['policy','guide','manual','valet'].forEach(function(id){
     var el=document.getElementById('tab-'+id);
     if(el) el.classList.toggle('hidden', id!==tab);
   });
@@ -729,8 +737,7 @@ function cardBodyHTML(body){
 const PARK_POLICY_KEY = 'PARK_POLICY_BOARD';
 const PARK_POLICY_COLS = [
   {key:'ops',   label:'운영 기준', cls:'male'},
-  {key:'meet',  label:'정기 회의', cls:'female'},
-  {key:'valet', label:'발렛 시스템', cls:'outer'}
+  {key:'meet',  label:'정기 회의', cls:'female'}
 ];
 const PARK_POLICY_SEED = {
   ops:[
@@ -745,7 +752,16 @@ const PARK_POLICY_SEED = {
   meet:[
     {id:'pm_week',  title:'주간 회의', body:'주기: 매주 (정기)\n참석: 근무조 + 팀장\n안건: 지난주 이슈 / 이번주 집중 구역 / 설비 현황 / 노하우·매뉴얼 개정 여부'},
     {id:'pm_urgent',title:'긴급 회의', body:'주기: 사고·고장 등 이슈 발생 즉시\n참석: 해당 담당자+팀장\n안건: 원인 분석 / 즉시 조치'}
-  ],
+  ]
+};
+let PARK_POLICY_DATA = {};
+
+/* 발렛 보드 (PARK_VALET_BOARD) — 독립 탭 (직영 발렛 운영체계) */
+const PARK_VALET_KEY = 'PARK_VALET_BOARD';
+const PARK_VALET_COLS = [
+  {key:'valet', label:'발렛 시스템 (직영)', cls:'outer'}
+];
+const PARK_VALET_SEED = {
   valet:[
     {id:'pv_intro', title:'발렛 시스템 개요(직영)', body:'웰페리온 직영 발렛 주차 서비스 — 도착 즉시 차량 위탁, 회원은 바로 입장(하이엔드 도착 의전).\n요금: 5,000원(회원 포함 전 이용자 유료). 운영: 운영시간 내. 보험: 차량 배상 보험 가입 완료.\n※ 운영 체계 셋업 후 발렛 인력 채용 → 정식 운영 개시.'},
     {id:'pv_ops',   title:'운영 방식 — 직영', body:'외주 아닌 자체 직영 운영(시우 주관 셋업).\n발렛 데스크: 정문(차량 인수·반납 지점).\n인력: 셋업 완료 후 발렛 전담 채용(초기 주차관리인 겸직 운영 가능).'},
@@ -755,7 +771,7 @@ const PARK_POLICY_SEED = {
     {id:'pv_liab',  title:'책임·배상', body:'차량 배상 보험 가입 완료.\n차량 인수 시 외관 사진 점검 → 사고 발생 시 보험 절차.\n분실·손상 대응 기록 의무.'}
   ]
 };
-let PARK_POLICY_DATA = {};
+let PARK_VALET_DATA = {};
 
 /* 가이드 보드 (PARK_GUIDE_BOARD) */
 const PARK_GUIDE_KEY = 'PARK_GUIDE_BOARD';
@@ -802,7 +818,8 @@ let PARK_MANUAL_DATA = {};
 const PARK_BOARDS = {
   pol: {prefix:'pol', wrapId:'policy-board', key:PARK_POLICY_KEY, cols:PARK_POLICY_COLS, seed:PARK_POLICY_SEED, idp:'pp', label:'규정', get data(){return PARK_POLICY_DATA;}, set data(v){PARK_POLICY_DATA=v;}},
   gd:  {prefix:'gd',  wrapId:'guide-board',  key:PARK_GUIDE_KEY,  cols:PARK_GUIDE_COLS,  seed:PARK_GUIDE_SEED,  idp:'pg', label:'가이드', get data(){return PARK_GUIDE_DATA;}, set data(v){PARK_GUIDE_DATA=v;}},
-  mn:  {prefix:'mn',  wrapId:'manual-board', key:PARK_MANUAL_KEY, cols:PARK_MANUAL_COLS, seed:PARK_MANUAL_SEED, idp:'pm', label:'매뉴얼', get data(){return PARK_MANUAL_DATA;}, set data(v){PARK_MANUAL_DATA=v;}}
+  mn:  {prefix:'mn',  wrapId:'manual-board', key:PARK_MANUAL_KEY, cols:PARK_MANUAL_COLS, seed:PARK_MANUAL_SEED, idp:'pm', label:'매뉴얼', get data(){return PARK_MANUAL_DATA;}, set data(v){PARK_MANUAL_DATA=v;}},
+  vl:  {prefix:'vl',  wrapId:'valet-board',  key:PARK_VALET_KEY,  cols:PARK_VALET_COLS,  seed:PARK_VALET_SEED,  idp:'pv', label:'발렛', get data(){return PARK_VALET_DATA;}, set data(v){PARK_VALET_DATA=v;}}
 };
 function boardGenId(cfg){ return cfg.idp+'_'+Date.now()+'_'+Math.random().toString(36).slice(2,7); }
 
@@ -969,7 +986,7 @@ function boardDeleteCard(prefix,colKey,id){
 
 /* ── Init: 3보드 로컬 즉시 렌더 후 백엔드 동기화 ── */
 function initParkBoards(){
-  ['pol','gd','mn'].forEach(function(p){
+  ['pol','gd','mn','vl'].forEach(function(p){
     const cfg=PARK_BOARDS[p];
     loadBoardLocal(cfg);
     renderBoardCfg(cfg);
