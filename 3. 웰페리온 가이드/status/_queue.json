@@ -126,10 +126,10 @@
     "task_id": "CMO-2026-06-19-AI-SERIES-REACTION-OWNERSHIP",
     "clevel": "cmo",
     "title": "[시모] AI 개인시리즈 반응 읽기 소유 — 발행 후 댓글·저장·팔로우 반응 읽고 다음 편 방향 반영",
-    "status": "PENDING",
+    "status": "IN_PROGRESS",
     "priority": "NORMAL",
     "enqueued_at": "2026-06-19",
-    "note": "[2026-06-19 GM 지시] AI 시리즈(@namuk.wellperion) 반응 모니터링을 시모가 소유한다. 개인시리즈 목표=도달·브랜드(바이럴 CTA 저장·댓글·팔로우)라 반응이 곧 이 채널의 의미있는 신호(전환 퍼널 SSOT와 별개, 여기선 vanity 아님). 한계: 개인 IG 반응 자동 스크래핑은 신뢰도 낮아 보류 이력 있음(메모리 project_channel_engagement_tracking_ceiling) → 자동 수치판 만들지 말 것. 시모가 발행된 각 편의 반응(댓글 내용·저장·팔로우 변화·도달)을 주기적으로 읽어 '무엇이 통했나'를 정성으로 정리. 첫 대상=CS 3편(#19~#21, GM 승인·발행 후). #13 '반응 기반 방향' 실천.",
+    "note": "[2026-06-19 GM 지시] AI 시리즈(@namuk.wellperion) 반응 모니터링을 시모가 소유한다. 개인시리즈 목표=도달·브랜드(바이럴 CTA 저장·댓글·팔로우)라 반응이 곧 이 채널의 의미있는 신호(전환 퍼널 SSOT와 별개, 여기선 vanity 아님). 한계: 개인 IG 반응 자동 스크래핑은 신뢰도 낮아 보류 이력 있음(메모리 project_channel_engagement_tracking_ceiling) → 자동 수치판 만들지 말 것. 시모가 발행된 각 편의 반응(댓글 내용·저장·팔로우 변화·도달)을 주기적으로 읽어 '무엇이 통했나'를 정성으로 정리. 첫 대상=CS 3편(#19~#21, GM 승인·발행 후). #13 '반응 기반 방향' 실천. | [2026-06-24] 봇 자동수집 PoC 성공(조건부): 팔로워·댓글 자동수집 가능(세션 재활용), 좋아요=IG 소수 숨김·저장=IG 비공개라 수집 불가. scripts/ig_engagement_poc.py. 운용방침=하이브리드(자동=팔로워·댓글 주간추적 / 수동보완=저장·좋아요 GM 인사이트).",
     "next": "CS 3편 발행되면 시모가 편별 반응 읽기 → '통한 포인트/안 통한 포인트' 1줄 정리 → 다음 챕터(마케팅·점검) 후킹·방향에 반영 + GM 간단 보고.",
     "ship_no": 31
   },
@@ -218,7 +218,7 @@
     "status": "PENDING",
     "priority": "NORMAL",
     "enqueued_at": "2026-06-23",
-    "note": "UTM 태깅 선행 필요.",
+    "note": "UTM 태깅 선행 필요. | [2026-06-24] 보류 유지: UTM 클릭 데이터 초기라 축적 후 착수. 좋은콘텐츠 지표 정의=저장+댓글+클릭 가중으로 사전설계 예정.",
     "ship_no": 106
   },
   {
@@ -272,25 +272,25 @@
     "task_id": "CMO-2026-06-23-MKT-DASH-CONNECT",
     "clevel": "cmo",
     "title": "[시모] 유입채널·등록 데이터를 마케팅 현황 대시보드에 연결 (GM 지시 · CPO 퍼널 인계)",
-    "status": "PENDING",
+    "status": "DONE",
     "terminal": false,
     "priority": "NORMAL",
     "enqueued_at": "2026-06-23",
     "processed_at": "",
-    "note": "CPO가 신설한 퍼널 데이터를 CMO 마케팅 대시보드(cmo/funnel·CMO파이프라인)에 연결. 소스: Survey.js member_inquiry_list(유입채널 10버킷·CANONICAL_CHANNELS)·member_registered_list(등록현황 SUC/단기SUC)·funnel_conversion(유효회원 전화매칭 전환). 채널별 문의→체험→등록 전환을 대시보드에 반영. GM 2026-06-23 지시.",
+    "note": "CPO가 신설한 퍼널 데이터를 CMO 마케팅 대시보드(cmo/funnel·CMO파이프라인)에 연결. 소스: Survey.js member_inquiry_list(유입채널 10버킷·CANONICAL_CHANNELS)·member_registered_list(등록현황 SUC/단기SUC)·funnel_conversion(유효회원 전화매칭 전환). 채널별 문의→체험→등록 전환을 대시보드에 반영. GM 2026-06-23 지시. | [2026-06-24] 실측: Survey.js 퍼널 액션(member_inquiry_list·member_registered_list·funnel_conversion·type_channel_breakdown·period_breakdown) 이미 대시보드에 전부 배선 완료 확인. 추가작업 없음. | [2026-06-24] 실측: Survey.js 퍼널 액션(member_inquiry_list·member_registered_list·funnel_conversion·type_channel_breakdown·period_breakdown) 이미 대시보드에 전부 배선 완료 확인. 추가작업 없음.",
     "next": "",
     "ship_no": 120
   },
   {
     "task_id": "CMO-2026-06-23-CONVERSION-METRICS-INFRA",
     "clevel": "cmo",
-    "status": "PENDING",
+    "status": "DONE",
     "terminal": false,
     "priority": "🛳️크루즈",
     "enqueued_at": "2026-06-23",
     "ship_no": 123,
     "title": "[시모+시포] 전환율 측정 인프라 (KPI 배선 3순위 · deep-interview 확정)",
-    "note": "[2026-06-23 deep-interview 결정] 북극성 직결 전환율 KPI 측정. ① 시포 문의→가입 전환율 = 신규문의 진행상태 칸(막 라이브) 데이터 축적 후 측정, 분모/시점 정의 확정 필요 ② 시모 노출→문의 = 채널귀속 구조 불가 → UTM 태깅 채널만(IG bio·카페·당근 프로필 utm→문의 페이지 도달) 정직 측정. 거짓 측정 0(메모리 dashboard_conversion_honest_limits). 착수=GM go.",
+    "note": "[2026-06-23 deep-interview 결정] 북극성 직결 전환율 KPI 측정. ① 시포 문의→가입 전환율 = 신규문의 진행상태 칸(막 라이브) 데이터 축적 후 측정, 분모/시점 정의 확정 필요 ② 시모 노출→문의 = 채널귀속 구조 불가 → UTM 태깅 채널만(IG bio·카페·당근 프로필 utm→문의 페이지 도달) 정직 측정. 거짓 측정 0(메모리 dashboard_conversion_honest_limits). 착수=GM go. | [2026-06-24] UTM 유입 출처 섹션 신설·렌더 함수 구현·발행(마케팅현황대시보드.html). 클릭 byUtmSource 화면 표시. | [2026-06-24] UTM 유입 출처 섹션 신설·렌더 함수 구현·발행(마케팅현황대시보드.html). 클릭 byUtmSource 화면 표시.",
     "next": "GM go 시 시포 분모/시점 정의 → UTM 도달 집계 배선"
   },
   {
@@ -362,5 +362,25 @@
     "next": "🌀 표류 — 다음 미정 (필요 시 GM·웰리/담당 C-Level 지정)",
     "adhoc_commit": "200fc0ebb21de3fac24ee1be61b95a3a82a0f4f6",
     "ship_no": 135
+  },
+  {
+    "id": "CMO-2026-06-23-FUNNEL-EVAL-FEEDBACK",
+    "clevel": "cmo",
+    "title": "[시모] 파이프라인#5 평가 환류 자동화 — 주간 통한콘텐츠 Top/Bottom 시그널→다음 기획 반영",
+    "status": "PENDING",
+    "priority": "NORMAL",
+    "enqueued_at": "2026-06-23",
+    "note": "UTM 태깅 선행 필요. | [2026-06-24] 보류 유지: UTM 클릭 데이터 초기라 축적 후 착수. 좋은콘텐츠 지표 정의=저장+댓글+클릭 가중으로 사전설계 예정. | [2026-06-24] 보류 유지: UTM 클릭 데이터 초기라 축적 후 착수. 좋은콘텐츠 지표 정의=저장+댓글+클릭 가중으로 사전설계 예정.",
+    "ship_no": 106
+  },
+  {
+    "id": "CMO-2026-06-23-FUNNEL-UTM-FORM-CAPTURE",
+    "clevel": "cmo",
+    "title": "[시모] UTM 문의제출 귀속 — 구글폼 prefill(utm 필드 추가)로 문의 건수까지 콘텐츠별 집계",
+    "status": "IN_PROGRESS",
+    "priority": "NORMAL",
+    "enqueued_at": "2026-06-23",
+    "note": "UTM 귀속 6폼 중 3폼 라이브 배선 완료(홈 /ko/inquiry 반영·entryId 검증): 멤버십=866460284 · 공간렌트=285015675 · 비즈니스파트너=1850207696. 나머지 3폼(성인강습·유소년강습·여름방학특강)은 cao 편집권한 없음(다른 계정 소유 폼)→ '유입경로(자동)' 필드 추가 불가 → 매핑 제외(원래 링크 유지·무중단). Survey.js add_utm_field에 viewUrl/DriveApp 폼ID 안전해석(게시URL검증·유니크매칭·listOnly 진단) 추가·배포 @69. wp_inquiry_block.html 프리필 일반화(버튼명→entryId 매핑+범용 wpPrefillForm). WP 8394 주입·라이브 검증 완료. ※잔여: 3폼은 폼 소유 계정서 편집공유 받거나 직접 필드추가 필요.",
+    "ship_no": 113
   }
 ]
