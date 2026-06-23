@@ -4849,5 +4849,19 @@
     "next": "🌀 표류 — 다음 미정 (필요 시 GM·웰리/담당 C-Level 지정)",
     "adhoc_commit": "a1e570d93bd959c36697914d542d32ce693d3657",
     "ship_no": 120
+  },
+  {
+    "task_id": "CMO-2026-06-23-ADHOC-2c3c0e5d",
+    "clevel": "cmo",
+    "title": "[시모] 마케팅 대시보드 문의→등록 평균 전환 소요일 지표 [시모]",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-06-23",
+    "processed_at": "2026-06-23",
+    "artifact": "- Survey.js: lead_time_stats 액션 신설(공개 화이트리스트 포함, 집계 숫자만·PII 미노출).\n  문의일↔등록일(자동) 차이로 소요일 계산, 음수·>2년 이상치 제외(제외건수 함께 반환),\n  avgDays/medianDays/n/excluded + 문의일 기준 from/to 기간필터.\n- 부산물 버그수정: 유효회원 '등록\\n일자' 헤더 줄바꿈으로 #3 등록일(자동)이 줄곧 빈칸이던\n  문제 발견 → member_match_autostamp_ 헤더 매칭을 공백무시로 수정(autostamp 182건 정상 채움) (CLI ad-hoc · 커밋 2c3c0e5d)",
+    "next": "🌀 표류 — 다음 미정 (필요 시 GM·웰리/담당 C-Level 지정)",
+    "adhoc_commit": "2c3c0e5d165b6402428253eef03867af32ff0d27",
+    "ship_no": 121
   }
 ]
