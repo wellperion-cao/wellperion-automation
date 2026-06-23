@@ -1175,13 +1175,7 @@ function normMemo(mm){
   var by=(ins.match(/(\d{4})\s*년?\s*생/)||[])[1]||"";var age=(ins.match(/(\d{1,2})\s*세/)||[])[1]||"";
   var addr=insP.length>1?insP[insP.length-1]:"";
   var o=[];
-  o.push("■ 개인정보 (이력서)");
-  if(by||age)o.push("• 생년월일: "+(by?by+"년생":"")+(age?" (만 "+age+"세)":""));
-  if(addr)o.push("• 주소: "+addr);
-  if(g("연락처"))o.push("• 연락처: "+g("연락처"));
-  if(g("학력"))o.push("• 학력: "+g("학력"));
-  if(g("경력"))o.push("• 총 경력: "+g("경력"));
-  o.push("");o.push("■ 경력사항 (회사별)");
+  o.push("■ 경력사항 (회사별)");
   if(career.length){career.forEach(function(c){o.push("• "+c);});}else{o.push("• (이력서 기재 기준)");}
   var s3=[];
   if(g("보유 자격","자격"))s3.push("• 자격: "+g("보유 자격","자격"));
@@ -1214,15 +1208,18 @@ function fmtMemoG(mm){
 }
 function buildHrCard(a){
   var memo=String(a["메모"]||"");var nm=normMemo(memo);
-  var birth=((nm.match(/생년월일\s*[:：]\s*([^\n]+)/)||[])[1]||"미기재").trim();
-  var addr=((nm.match(/주소\s*[:：]\s*([^\n]+)/)||[])[1]||"미기재").trim();
+  var __pi=String(memo||"");
+  var birth=""; var __bm=__pi.match(/(\d{4})\s*년\s*생/); if(__bm){ birth=__bm[1]+"년생"; } else { var __bm3=__pi.match(/생년월일[:：]\s*([0-9.\-\/]{6,10})/); if(__bm3) birth=__bm3[1]; } if(!birth) birth="미기재";
+  var addr=""; var __am=__pi.match(/주소[:：]\s*([^\n·|]+)/); if(__am){ addr=__am[1].trim(); } else { var __info=(__pi.match(/[■◆□▣]\s*인적사항[:：]?\s*([^\n]*)/)||[])[1]||""; var __am2=__info.match(/((?:서울|경기|인천|부산|대구|광주|대전|울산|세종|강원|충북|충남|전북|전남|경북|경남|제주)(?:특별시|광역시|도)?[^·|■()]{0,30})/); if(__am2) addr=__am2[1].trim(); } if(!addr) addr="미기재";
+  var edu=((__pi.match(/[■◆□▣]?\s*학력\s*[:：]\s*([^\n■]+)/)||[])[1]||"미기재").trim();
+  var careerTot=((__pi.match(/[■◆□▣]?\s*(?:총\s*)?경력\s*[:：]\s*([^\n■]+)/)||[])[1]||"미기재").trim();
   var photo=String(a["사진"]||"");
   var iv=(typeof fmtDT==="function"&&typeof dval==="function")?fmtDT(dval(a,"면접 일정")):(a["면접 일정"]||"—");
   var applyD=(typeof fmtD==="function"&&typeof dval==="function")?fmtD(dval(a,"지원일")):(a["지원일"]||"");
   var gc={A:"#3c7a4a",B:"#2f6d9e",C:"#b07d24",D:"#c1702c",E:"#b14238",F:"#7c7a73"};
   var gcol=gc[String(a["면접 평점"]||"").charAt(0)]||"#7c7a73";
   var CSS="@page{size:A4;margin:11mm}*{box-sizing:border-box}body{font-family:'Apple SD Gothic Neo','Malgun Gothic','Noto Sans KR',sans-serif;font-size:9pt;line-height:1.45;color:#1f1e1b;margin:0;padding:10mm 0;background:#f4f3ef}.page{width:190mm;max-width:100%;margin:0 auto;background:#fff;padding:11mm 12mm;box-shadow:0 0 10px rgba(0,0,0,.08);border-radius:4px;page-break-inside:avoid}@media print{body{background:#fff;padding:0}.page{box-shadow:none;border-radius:0;padding:0;width:auto}.no-print{display:none!important}}h1{font-size:15pt;border-bottom:2px solid #a98a52;padding-bottom:5px;margin:0 0 4px}.subtitle{color:#6c6961;font-size:9.5pt;margin-bottom:10px}h2{font-size:10.5pt;color:#8a6f3f;border-left:3px solid #a98a52;padding-left:8px;margin:13px 0 6px}h2:first-of-type{margin-top:4px}.idrow{display:flex;gap:14px;align-items:flex-start;margin:6px 0 4px}.photo{width:30mm;height:38mm;object-fit:cover;border:1px solid #d8d4c8;border-radius:6px;flex:0 0 auto;background:#eee}table{width:100%;border-collapse:collapse;margin:0;font-size:9pt}th,td{border:1px solid #d8d4c8;padding:4px 8px;text-align:left;vertical-align:top}th{background:#f8f5ee;font-weight:600;width:62px;white-space:nowrap;color:#6c6961}.grade{display:inline-block;padding:3px 14px;border-radius:4px;font-weight:700;color:#fff;font-size:12pt}.memo{font-size:9pt;line-height:1.5;padding:11px 13px;background:#faf9f6;border-radius:4px;border:1px solid #efece4}.rs-h{font-weight:700;color:#8a6f3f;font-size:9.5pt;margin:9px 0 3px;padding-bottom:2px;border-bottom:1px solid #e7ddc8}.rs-h:first-child{margin-top:0}.rs-p{margin:3px 0;font-size:8.8pt;color:#1f1e1b;line-height:1.45}.rs-li{margin:2px 0 2px 13px;text-indent:-9px;font-size:8.8pt;color:#3a3833;line-height:1.45}.rs-row{display:flex;gap:8px;margin:3px 0;font-size:8.8pt}.rs-k{flex:0 0 88px;font-weight:700;color:#6c6961}.rs-v{flex:1}.foot{margin-top:14px;padding-top:7px;border-top:1px solid #efece4;font-size:8pt;color:#9a978e;display:flex;justify-content:space-between}.print-btn{position:fixed;top:14px;right:14px;background:#a98a52;color:#fff;border:none;padding:8px 18px;border-radius:6px;font-weight:600;cursor:pointer;font-size:11pt}";
-  var rows="<tr><th>성명</th><td>"+esc(a["지원자명"]||"")+"</td><th>생년월일</th><td>"+esc(birth)+"</td></tr><tr><th>지원 포지션</th><td colspan='3'>"+esc(a["지원 포지션"]||"")+"</td></tr><tr><th>연락처</th><td>"+esc(a["연락처"]||"")+"</td><th>이메일</th><td>"+esc(a["이메일"]||"")+"</td></tr><tr><th>주소</th><td colspan='3'>"+esc(addr)+"</td></tr><tr><th>지원일</th><td>"+esc(applyD)+"</td><th>전형 단계</th><td>"+esc(a["전형 단계"]||"")+"</td></tr><tr><th>면접 일정</th><td>"+esc(iv)+"</td><th>담당 면접관</th><td>"+esc(a["담당 면접관"]||"—")+"</td></tr>";
+  var rows="<tr><th>성명</th><td>"+esc(a["지원자명"]||"")+"</td><th>생년월일</th><td>"+esc(birth)+"</td></tr><tr><th>지원 포지션</th><td colspan='3'>"+esc(a["지원 포지션"]||"")+"</td></tr><tr><th>연락처</th><td>"+esc(a["연락처"]||"")+"</td><th>이메일</th><td>"+esc(a["이메일"]||"")+"</td></tr><tr><th>주소</th><td colspan='3'>"+esc(addr)+"</td></tr><tr><th>학력</th><td>"+esc(edu)+"</td><th>총 경력</th><td>"+esc(careerTot)+"</td></tr><tr><th>지원일</th><td>"+esc(applyD)+"</td><th>전형 단계</th><td>"+esc(a["전형 단계"]||"")+"</td></tr><tr><th>면접 일정</th><td>"+esc(iv)+"</td><th>담당 면접관</th><td>"+esc(a["담당 면접관"]||"—")+"</td></tr>";
   var d=new Date().toISOString().slice(0,10);
   return "<!DOCTYPE html><html><head><meta charset='UTF-8'><title>"+esc(a["지원자명"]||"")+" — 인사카드</title><style>"+CSS+"</style></head><body><button class='print-btn no-print' onclick='window.print()'>🖨 인쇄 / PDF 저장</button><div class='page'><h1>웰페리온 채용 인사카드</h1><div class='subtitle'>"+esc(a["지원 포지션"]||"")+" · 작성일 "+d+"</div><h2>1. 지원자 정보</h2><div class='idrow'>"+(photo?"<img src='"+photo+"' alt='지원자 사진' class='photo'/>":"<div class='photo'></div>")+"<table>"+rows+"</table></div><h2>2. 이력서 요약 (잡코리아·자기소개서 기반)</h2><div class='memo'>"+fmtMemoG(memo)+"</div><h2>3. AI 서류 평가 — 종합 등급</h2><p style='font-size:11pt;margin:7px 0'>종합 등급: <span class='grade' style='background:"+gcol+"'>"+esc(a["면접 평점"]||"미평가")+"</span> &nbsp;&nbsp; <span style='color:#6c6961;font-size:9pt'>(인재상별 평가 근거·강점·확인사항은 위 '이력 요약'에 포함)</span></p><div class='foot'><span>평가일자: "+d+" · AI CHRO 자동 생성</span></div></div></body></html>";
 }
@@ -1240,6 +1237,8 @@ function openPrintView(pageId, noQ){
   var __pi=String(memo||"");
   var birth=""; var __bm=__pi.match(/(\d{4})\s*년\s*생/); if(__bm){ birth=__bm[1]+"년생"; } else { var __bm3=__pi.match(/생년월일[:：]\s*([0-9.\-\/]{6,10})/); if(__bm3) birth=__bm3[1]; } if(!birth) birth="미기재";
   var addr=""; var __am=__pi.match(/주소[:：]\s*([^\n·|]+)/); if(__am){ addr=__am[1].trim(); } else { var __info=(__pi.match(/[■◆□▣]\s*인적사항[:：]?\s*([^\n]*)/)||[])[1]||""; var __am2=__info.match(/((?:서울|경기|인천|부산|대구|광주|대전|울산|세종|강원|충북|충남|전북|전남|경북|경남|제주)(?:특별시|광역시|도)?[^·|■()]{0,30})/); if(__am2) addr=__am2[1].trim(); } if(!addr) addr="미기재";
+  var edu=((__pi.match(/[■◆□▣]?\s*학력\s*[:：]\s*([^\n■]+)/)||[])[1]||"미기재").trim();
+  var careerTot=((__pi.match(/[■◆□▣]?\s*(?:총\s*)?경력\s*[:：]\s*([^\n■]+)/)||[])[1]||"미기재").trim();
   var html='<!DOCTYPE html><html><head><meta charset="UTF-8">'+
     '<title>'+esc(a["지원자명"])+' — 면접 평가지</title>'+
     '<style>'+
@@ -1270,7 +1269,7 @@ function openPrintView(pageId, noQ){
       '<div class="subtitle">'+esc(a["지원 포지션"]||"")+' · 작성일 '+new Date().toISOString().slice(0,10)+'</div>'+
       '<h2>1. 지원자 정보</h2>'+(a['사진']?"<div style='text-align:center;margin:6px 0 12px'><img src='"+a['사진']+"' alt='지원자 사진' style='width:120px;height:150px;object-fit:cover;border:1px solid #d8d4c8;border-radius:6px'/></div>":'')+
       '<table>'+
-        '<tr><th>성명</th><td>'+esc(a["지원자명"]||"")+'</td><th>지원 포지션</th><td>'+esc(a["지원 포지션"]||"")+'</td></tr>'+'<tr><th>생년월일</th><td>'+esc(birth||"—")+'</td><th>주소</th><td>'+esc(addr||"—")+'</td></tr>'+
+        '<tr><th>성명</th><td>'+esc(a["지원자명"]||"")+'</td><th>지원 포지션</th><td>'+esc(a["지원 포지션"]||"")+'</td></tr>'+'<tr><th>생년월일</th><td>'+esc(birth||"—")+'</td><th>주소</th><td>'+esc(addr||"—")+'</td></tr>'+'<tr><th>학력</th><td>'+esc(edu||"—")+'</td><th>총 경력</th><td>'+esc(careerTot||"—")+'</td></tr>'+
         '<tr><th>연락처</th><td>'+esc(a["연락처"]||"")+'</td><th>이메일</th><td>'+esc(a["이메일"]||"")+'</td></tr>'+
         '<tr><th>지원일</th><td>'+fmtD(dval(a,"지원일"))+'</td><th>전형 단계</th><td>'+esc(a["전형 단계"]||"")+'</td></tr>'+
         (dval(a,"면접 일정")?'<tr><th>면접 일정</th><td>'+fmtDT(dval(a,"면접 일정"))+'</td><th>담당 면접관</th><td>'+esc(a["담당 면접관"]||"")+'</td></tr>':"")+
