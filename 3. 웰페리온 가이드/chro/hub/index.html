@@ -581,7 +581,12 @@ function dval(r,f){return (r&&(r["date:"+f+":start"]||r[f]))||"";}
 function jobMatchesAppl(h,a){
   var hk=String((h&&h["포지션명"])||"").replace(/\s/g,"");
   if(!hk)return false;
-  return parseArr(a&&a["연결 공고"]).some(function(r){
+  // 연결 공고(관계) + 지원 포지션 둘 다 후보로 매칭. (등록 후 '연결 공고'를 바꾸는 백엔드 API가 없어,
+  //  지원 포지션이 공고 포지션명과 일치하면 자동 연결되도록 폴백)
+  var cands=parseArr(a&&a["연결 공고"]).slice();
+  var pos=String((a&&a["지원 포지션"])||"").trim();
+  if(pos) cands.push(pos);
+  return cands.some(function(r){
     var rn=String(r||"").replace(/\s/g,"");
     return rn.length>=4 && (hk.indexOf(rn)>=0 || rn.indexOf(hk)>=0);
   });
