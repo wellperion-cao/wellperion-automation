@@ -180,8 +180,6 @@ body{
 /* ── 행 버튼 ── */
 .row-btn{font-size:11px;font-weight:700;padding:3px 9px;border-radius:7px;
   font-family:inherit;cursor:pointer;border:none;transition:background 0.15s;white-space:nowrap}
-.btn-edit{background:var(--accent-bg);color:var(--accent)}
-.btn-edit:hover{background:rgba(183,159,138,0.22)}
 .btn-save{background:var(--teal-bg);color:var(--teal)}
 .btn-save:hover{background:rgba(78,196,196,0.22)}
 .btn-cancel{background:var(--bg);color:var(--dim);border:1px solid var(--border)!important}
@@ -189,6 +187,12 @@ body{
 .btn-del{background:var(--red-bg);color:var(--red)}
 .btn-del:hover{background:rgba(237,91,63,0.22)}
 .row-actions{display:flex;gap:4px}
+
+/* ── 셀 클릭 편집 (스프레드시트 직접편집) ── */
+.editable-cell{cursor:pointer}
+.editable-cell:hover{background:rgba(255,255,255,0.03)}
+.editable-cell.cell-active{background:rgba(78,196,196,0.06);cursor:default}
+.cell-saving{opacity:0.6}
 
 /* ── PII 마스크 배지 ── */
 .pii-mask{font-size:11px;color:var(--dim);font-style:italic}
@@ -376,7 +380,7 @@ body{
         <table class="db-table" id="dbTable">
           <thead>
             <tr>
-              <th style="width:80px">이름</th>
+              <th style="width:40px">이름</th>
               <th style="width:120px">연락처</th>
               <th style="width:90px">관심 프로그램</th>
               <th style="width:90px">진행상황</th>
@@ -954,8 +958,7 @@ function closeDayPanel() {
    문의 DB 섹션 (CRUD)
 ───────────────────────────────────────────── */
 var dbRows = [];         // 현재 로드된 행 배열
-var dbEditingRow = null; // 현재 편집 중인 rowIndex
-var dbSaveTimer = null;  // 디바운스 타이머
+var dbSaveTimer = null;  // 디바운스 타이머 (셀 자동저장용)
 
 // 실무진 실제 사용 코드 (2026-06-20 GM 확정). 등록=SUC, 이탈=LOSS 등 시트 어휘 그대로.
 var STATUS_OPTIONS = ['신규','컨택중','가망','예약','방문','SUC','단기SUC','LOSS'];
@@ -1070,38 +1073,265 @@ function buildDbRow(row, isNew) {
 
   var statusCls = STATUS_CLASS[row.status] || 'new';
 
-  // 읽기 모드 셀
-  tr.innerHTML =
-    // 이름
-    '<td style="font-weight:700">' + esc(row.name || '—') + '</td>' +
-    // 전화 (마스킹 + 토글)
-    '<td><span class="pii-mask" id="phone-' + row.rowIndex + '">' + esc(row.phone || '—') + '</span></td>' +
-    // 관심 프로그램
-    '<td style="color:var(--dim);font-size:12px">' + esc(row.program || '—') + '</td>' +
-    // 진행상황
-    '<td><span class="status-chip ' + statusCls + '">' + esc(row.status || '신규') + '</span></td>' +
-    // 유입채널
-    '<td style="font-size:12px;color:var(--dim)">' + esc(row.channel || '—') + '</td>' +
-    // 담당
-    '<td style="font-size:12px;color:var(--dim)">' + esc(row.owner || '—') + '</td>' +
-    // 메모
-    '<td style="font-size:12px;color:var(--dim);max-width:240px;white-space:pre-wrap;word-break:break-word">' + esc(row.memo || '—') + '</td>' +
-    // 문의일
-    '<td style="font-size:12px;color:var(--dim)">' + esc(row.timestamp || '—') + '</td>' +
-    // 일정 (상담·체험)
-    '<td style="font-size:11px;color:var(--dim);line-height:1.6">' +
-      '🗓 상담: ' + esc((row.tourDate || '—') + (row.tourTime ? ' ' + row.tourTime : '')) + '<br>' +
-      '🏃 체험1: ' + esc((row.exp1 || '—') + (row.exp1Time ? ' ' + row.exp1Time : '')) + '<br>' +
-      '🏃 체험2: ' + esc((row.exp2 || '—') + (row.exp2Time ? ' ' + row.exp2Time : '')) +
-    '</td>' +
-    // 작업
-    (READ_ONLY
-      ? '<td><span style="font-size:11px;color:var(--dim)">🔒 읽기전용</span></td>'
-      : '<td><div class="row-actions">' +
-          '<button class="row-btn btn-edit" onclick="startEditRow(this)">편집</button>' +
-        '</div></td>');
+  // ── [0] 이름 ──
+  var tdName = document.createElement('td');
+  tdName.style.fontWeight = '700';
+  tdName.textContent = row.name || '—';
+  if (!READ_ONLY) { tdName.className = 'editable-cell'; tdName.addEventListener('click', function(){ _activateCellText(this, row, 'name'); }); }
+  tr.appendChild(tdName);
+
+  // ── [1] 연락처 ──
+  var tdPhone = document.createElement('td');
+  var phoneMask = document.createElement('span');
+  phoneMask.className = 'pii-mask';
+  phoneMask.id = 'phone-' + row.rowIndex;
+  phoneMask.textContent = row.phone || '—';
+  tdPhone.appendChild(phoneMask);
+  if (!READ_ONLY) { tdPhone.className = 'editable-cell'; tdPhone.addEventListener('click', function(){ _activateCellText(this, row, 'phone'); }); }
+  tr.appendChild(tdPhone);
+
+  // ── [2] 관심 프로그램 ──
+  var tdProg = document.createElement('td');
+  tdProg.style.color = 'var(--dim)'; tdProg.style.fontSize = '12px';
+  tdProg.textContent = row.program || '—';
+  if (!READ_ONLY) { tdProg.className = 'editable-cell'; tdProg.addEventListener('click', function(){ _activateCellSelect(this, row, 'program', PROGRAM_OPTIONS); }); }
+  tr.appendChild(tdProg);
+
+  // ── [3] 진행상황 ──
+  var tdStatus = document.createElement('td');
+  var chip = document.createElement('span');
+  chip.className = 'status-chip ' + statusCls;
+  chip.textContent = row.status || '신규';
+  tdStatus.appendChild(chip);
+  if (!READ_ONLY) { tdStatus.className = 'editable-cell'; tdStatus.addEventListener('click', function(){ _activateCellSelect(this, row, 'status', STATUS_OPTIONS); }); }
+  tr.appendChild(tdStatus);
+
+  // ── [4] 유입채널 ──
+  var tdCh = document.createElement('td');
+  tdCh.style.fontSize = '12px'; tdCh.style.color = 'var(--dim)';
+  tdCh.textContent = row.channel || '—';
+  if (!READ_ONLY) { tdCh.className = 'editable-cell'; tdCh.addEventListener('click', function(){ _activateCellSelect(this, row, 'channel', CHANNEL_OPTIONS); }); }
+  tr.appendChild(tdCh);
+
+  // ── [5] 담당 ──
+  var tdOwner = document.createElement('td');
+  tdOwner.style.fontSize = '12px'; tdOwner.style.color = 'var(--dim)';
+  tdOwner.textContent = row.owner || '—';
+  if (!READ_ONLY) { tdOwner.className = 'editable-cell'; tdOwner.addEventListener('click', function(){ _activateCellSelect(this, row, 'owner', OWNER_OPTIONS); }); }
+  tr.appendChild(tdOwner);
+
+  // ── [6] 메모 ──
+  var tdMemo = document.createElement('td');
+  tdMemo.style.fontSize = '12px'; tdMemo.style.color = 'var(--dim)';
+  tdMemo.style.maxWidth = '240px'; tdMemo.style.whiteSpace = 'pre-wrap'; tdMemo.style.wordBreak = 'break-word';
+  tdMemo.textContent = row.memo || '—';
+  if (!READ_ONLY) { tdMemo.className = 'editable-cell'; tdMemo.addEventListener('click', function(){ _activateCellMemo(this, row); }); }
+  tr.appendChild(tdMemo);
+
+  // ── [7] 문의일 (읽기 전용) ──
+  var tdTs = document.createElement('td');
+  tdTs.style.fontSize = '12px'; tdTs.style.color = 'var(--dim)';
+  tdTs.textContent = row.timestamp || '—';
+  tr.appendChild(tdTs);
+
+  // ── [8] 일정 (상담·체험) ──
+  var tdSched = document.createElement('td');
+  tdSched.style.fontSize = '11px'; tdSched.style.color = 'var(--dim)'; tdSched.style.lineHeight = '1.6';
+  _renderScheduleCell(tdSched, row);
+  if (!READ_ONLY) { tdSched.className = 'editable-cell'; tdSched.addEventListener('click', function(){ _activateCellSchedule(this, row); }); }
+  tr.appendChild(tdSched);
+
+  // ── [9] 작업 (빈 칸 — 직접편집 모드에선 버튼 없음) ──
+  var tdAct = document.createElement('td');
+  if (READ_ONLY) {
+    tdAct.innerHTML = '<span style="font-size:11px;color:var(--dim)">🔒 읽기전용</span>';
+  }
+  tr.appendChild(tdAct);
 
   return tr;
+}
+
+/* ─── 일정 셀 표시 렌더 헬퍼 ─── */
+function _renderScheduleCell(td, row) {
+  td.innerHTML =
+    '🗓 상담: ' + esc((row.tourDate || '—') + (row.tourTime ? ' ' + row.tourTime : '')) + '<br>' +
+    '🏃 체험1: ' + esc((row.exp1 || '—') + (row.exp1Time ? ' ' + row.exp1Time : '')) + '<br>' +
+    '🏃 체험2: ' + esc((row.exp2 || '—') + (row.exp2Time ? ' ' + row.exp2Time : ''));
+}
+
+/* ─── 로컬 row 업데이트 + 서버 저장 (전 필드 포함) ─── */
+function _saveCell(rowIndex, patch) {
+  var idx = dbRows.findIndex(function(r){ return r.rowIndex === rowIndex; });
+  if (idx < 0) return;
+  Object.assign(dbRows[idx], patch);
+  var r = dbRows[idx];
+  var payload = {
+    action:   'member_inquiry_update',
+    rowIndex: rowIndex,
+    name:     r.name    || '',
+    phone:    r.phone   || '',
+    program:  r.program || '',
+    status:   r.status  || '신규',
+    channel:  r.channel || '',
+    owner:    r.owner   || '',
+    memo:     r.memo !== undefined ? r.memo : '',
+    tour:     _comboDateTime(r.tourDate, r.tourTime),
+    exp1:     _comboDateTime(r.exp1, r.exp1Time),
+    exp2:     _comboDateTime(r.exp2, r.exp2Time)
+  };
+  if (dbSaveTimer) clearTimeout(dbSaveTimer);
+  dbSaveTimer = setTimeout(function(){
+    apiPost(payload)
+      .then(function(data){
+        if (!data.ok) throw new Error(data.error || '저장 실패');
+        showToast('저장', 'ok');
+      })
+      .catch(function(err){
+        showToast('저장 실패: ' + err.message, 'err');
+      });
+  }, 600);
+}
+
+/* ─── 텍스트 셀 (이름·연락처) 활성화 ─── */
+function _activateCellText(td, row, field) {
+  if (td.classList.contains('cell-active')) return; // 이미 편집 중
+  var rowIndex = parseInt(td.closest('tr').dataset.rowIndex, 10);
+  var live = dbRows.find(function(r){ return r.rowIndex === rowIndex; }) || row;
+  var prevVal = live[field] || '';
+
+  td.classList.add('cell-active');
+  td.innerHTML = '';
+  var inp = document.createElement('input');
+  inp.className = 'cell-input';
+  inp.type = 'text';
+  inp.value = prevVal;
+  inp.dataset.field = field;
+  td.appendChild(inp);
+  inp.focus();
+
+  var committed = false;
+  function commit() {
+    if (committed) return;
+    committed = true;
+    var newVal = inp.value;
+    td.classList.remove('cell-active');
+    td.innerHTML = '';
+    td.textContent = newVal || '—';
+    if (newVal !== prevVal) { var p1 = {}; p1[field] = newVal; _saveCell(rowIndex, p1); }
+  }
+  inp.addEventListener('blur', commit);
+}
+
+/* ─── 셀렉트 셀 (프로그램·상태·채널·담당) 활성화 ─── */
+function _activateCellSelect(td, row, field, options) {
+  if (td.classList.contains('cell-active')) return;
+  var rowIndex = parseInt(td.closest('tr').dataset.rowIndex, 10);
+  var live = dbRows.find(function(r){ return r.rowIndex === rowIndex; }) || row;
+  var prevVal = live[field] || '';
+
+  td.classList.add('cell-active');
+  td.innerHTML = '';
+  var sel = buildSelect(field, options, prevVal);
+  td.appendChild(sel);
+  sel.focus();
+
+  var committed = false;
+  function commit() {
+    if (committed) return;
+    committed = true;
+    var newVal = sel.value;
+    td.classList.remove('cell-active');
+    td.innerHTML = '';
+    if (field === 'status') {
+      var cls = STATUS_CLASS[newVal] || 'new';
+      var chip = document.createElement('span');
+      chip.className = 'status-chip ' + cls;
+      chip.textContent = newVal || '신규';
+      td.appendChild(chip);
+    } else {
+      td.textContent = newVal || '—';
+    }
+    if (newVal !== prevVal) { var p2 = {}; p2[field] = newVal; _saveCell(rowIndex, p2); }
+  }
+  sel.addEventListener('change', commit);
+  sel.addEventListener('blur', commit);
+}
+
+/* ─── 메모 셀 (textarea) 활성화 ─── */
+function _activateCellMemo(td, row) {
+  if (td.classList.contains('cell-active')) return;
+  var rowIndex = parseInt(td.closest('tr').dataset.rowIndex, 10);
+  var live = dbRows.find(function(r){ return r.rowIndex === rowIndex; }) || row;
+  var prevVal = live.memo || '';
+
+  td.classList.add('cell-active');
+  td.innerHTML = '';
+  var ta = document.createElement('textarea');
+  ta.className = 'cell-input';
+  ta.rows = 3;
+  ta.style.width = '220px';
+  ta.style.resize = 'vertical';
+  ta.value = prevVal;
+  ta.dataset.field = 'memo';
+  td.appendChild(ta);
+  ta.focus();
+
+  var committed = false;
+  function commit() {
+    if (committed) return;
+    committed = true;
+    var newVal = ta.value;
+    td.classList.remove('cell-active');
+    td.innerHTML = '';
+    td.textContent = newVal || '—';
+    if (newVal !== prevVal) _saveCell(rowIndex, { memo: newVal });
+  }
+  ta.addEventListener('blur', commit);
+}
+
+/* ─── 일정 셀 (상담·체험1·체험2 composite) 활성화 ─── */
+function _activateCellSchedule(td, row) {
+  if (td.classList.contains('cell-active')) return;
+  var rowIndex = parseInt(td.closest('tr').dataset.rowIndex, 10);
+  var live = dbRows.find(function(r){ return r.rowIndex === rowIndex; }) || row;
+
+  td.classList.add('cell-active');
+  td.innerHTML = '';
+  var block = buildScheduleEditBlock(live);
+  td.appendChild(block);
+  // 포커스를 첫 번째 date input으로
+  var firstInput = block.querySelector('input');
+  if (firstInput) firstInput.focus();
+
+  // 전체 블록에서 포커스가 완전히 벗어나면 커밋
+  var committed = false;
+  function onFocusOut(e) {
+    // 다음 포커스가 같은 블록 내부면 무시 (requestAnimationFrame으로 확인)
+    requestAnimationFrame(function(){
+      if (td.contains(document.activeElement)) return;
+      if (committed) return;
+      committed = true;
+      td.removeEventListener('focusout', onFocusOut);
+      // 값 수집
+      var patch = {};
+      block.querySelectorAll('[data-field]').forEach(function(el){
+        patch[el.dataset.field] = el.value;
+      });
+      // 로컬 row 필드명 정렬 (buildScheduleEditBlock: tour→tourDate, exp1→exp1, exp2→exp2)
+      var dataPatch = {
+        tourDate: patch.tour    || '',
+        tourTime: patch.tourTime || '',
+        exp1:     patch.exp1    || '',
+        exp1Time: patch.exp1Time || '',
+        exp2:     patch.exp2    || '',
+        exp2Time: patch.exp2Time || ''
+      };
+      _renderScheduleCell(td, Object.assign({}, live, dataPatch));
+      td.classList.remove('cell-active');
+      _saveCell(rowIndex, dataPatch);
+    });
+  }
+  td.addEventListener('focusout', onFocusOut);
 }
 
 // 날짜+시간 결합: '2026-06-25' + '14:00' → '2026-06-25 14:00' (날짜 없으면 빈값, 시간만이면 무시)
@@ -1143,162 +1373,12 @@ function buildScheduleEditBlock(row) {
   return wrap;
 }
 
-function startEditRow(btn) {
-  var tr = btn.closest('tr');
-  var rowIndex = parseInt(tr.dataset.rowIndex, 10);
-  var row = dbRows.find(function(r){ return r.rowIndex === rowIndex; }) || {};
-
-  // 기존 편집 행이 있으면 취소
-  if (dbEditingRow !== null) {
-    cancelEditRow();
-  }
-  dbEditingRow = rowIndex;
-  tr.classList.add('editing');
-
-  // 셀 내용을 인라인 편집 컨트롤로 교체
-  // IME 안전: input/select를 교체하지 않고 처음부터 올바른 타입으로 생성
-  var cells = tr.querySelectorAll('td');
-
-  // [0] 이름
-  cells[0].innerHTML = '';
-  var inputName = document.createElement('input');
-  inputName.className = 'cell-input'; inputName.type = 'text';
-  inputName.value = row.name || ''; inputName.dataset.field = 'name';
-  cells[0].appendChild(inputName);
-
-  // [1] 연락처
-  cells[1].innerHTML = '';
-  var inputPhone = document.createElement('input');
-  inputPhone.className = 'cell-input'; inputPhone.type = 'text';
-  inputPhone.value = row.phone || ''; inputPhone.dataset.field = 'phone';
-  cells[1].appendChild(inputPhone);
-
-  // [2] 관심 프로그램 (드롭다운)
-  cells[2].innerHTML = '';
-  cells[2].appendChild(buildSelect('program', PROGRAM_OPTIONS, row.program));
-
-  // [3] 진행상황 드롭다운
-  cells[3].innerHTML = '';
-  var selStatus = document.createElement('select');
-  selStatus.className = 'cell-select';
-  selStatus.dataset.field = 'status';
-  STATUS_OPTIONS.forEach(function(opt){
-    var o = document.createElement('option');
-    o.value = opt;
-    o.textContent = opt;
-    if (opt === (row.status || '신규')) o.selected = true;
-    selStatus.appendChild(o);
-  });
-  cells[3].appendChild(selStatus);
-
-  // [4] 유입채널 (드롭다운)
-  cells[4].innerHTML = '';
-  cells[4].appendChild(buildSelect('channel', CHANNEL_OPTIONS, row.channel));
-
-  // [5] 담당 (드롭다운)
-  cells[5].innerHTML = '';
-  cells[5].appendChild(buildSelect('owner', OWNER_OPTIONS, row.owner));
-
-  // [6] 메모 (넓은 입력칸 — textarea)
-  cells[6].innerHTML = '';
-  var inputMemo = document.createElement('textarea');
-  inputMemo.className = 'cell-input';
-  inputMemo.rows = 3;
-  inputMemo.style.width = '230px';
-  inputMemo.style.resize = 'vertical';
-  inputMemo.value = row.memo || '';
-  inputMemo.dataset.field = 'memo';
-  cells[6].appendChild(inputMemo);
-
-  // [7] 문의일 (읽기 전용)
-
-  // [8] 일정 (상담·체험1·체험2) — 표에서 직접 편집 (2026-06-20 GM)
-  cells[8].innerHTML = '';
-  cells[8].appendChild(buildScheduleEditBlock(row));
-
-  // [9] 작업 버튼 교체
-  cells[9].innerHTML = '';
-  var actDiv = document.createElement('div');
-  actDiv.className = 'row-actions';
-  var saveBtn = document.createElement('button');
-  saveBtn.className = 'row-btn btn-save';
-  saveBtn.textContent = '저장';
-  saveBtn.onclick = function(){ saveEditRow(tr); };
-  var cancelBtn = document.createElement('button');
-  cancelBtn.className = 'row-btn btn-cancel';
-  cancelBtn.textContent = '취소';
-  cancelBtn.onclick = function(){ cancelEditRow(); };
-  actDiv.appendChild(saveBtn);
-  actDiv.appendChild(cancelBtn);
-  cells[9].appendChild(actDiv);
-}
-
-function cancelEditRow() {
-  dbEditingRow = null;
-  renderDbTable();
-}
-
-function saveEditRow(tr) {
-  var rowIndex = parseInt(tr.dataset.rowIndex, 10);
-  if (!rowIndex) return;
-
-  var fields = {};
-  tr.querySelectorAll('[data-field]').forEach(function(el){
-    fields[el.dataset.field] = el.value;
-  });
-
-  var payload = {
-    action: 'member_inquiry_update',
-    rowIndex: rowIndex,
-    name:    fields.name    || '',
-    phone:   fields.phone   || '',
-    program: fields.program || '',
-    status:  fields.status  || '신규',
-    channel: fields.channel || '',
-    owner:   fields.owner   || '',
-    memo:    fields.memo    !== undefined ? fields.memo : '',
-    tour:    _comboDateTime(fields.tour, fields.tourTime),
-    exp1:    _comboDateTime(fields.exp1, fields.exp1Time),
-    exp2:    _comboDateTime(fields.exp2, fields.exp2Time)
-  };
-
-  // 로컬 즉시 반영 (낙관적 업데이트)
-  var idx = dbRows.findIndex(function(r){ return r.rowIndex === rowIndex; });
-  if (idx >= 0) {
-    dbRows[idx] = Object.assign({}, dbRows[idx], {
-      name: fields.name, phone: fields.phone, program: fields.program,
-      status: fields.status, channel: fields.channel, owner: fields.owner, memo: fields.memo,
-      tourDate: fields.tour, tourTime: fields.tourTime,
-      exp1: fields.exp1, exp1Time: fields.exp1Time,
-      exp2: fields.exp2, exp2Time: fields.exp2Time
-    });
-  }
-  dbEditingRow = null;
-  renderDbTable();
-
-  // 서버 저장 (디바운스 800ms)
-  if (dbSaveTimer) clearTimeout(dbSaveTimer);
-  dbSaveTimer = setTimeout(function(){
-    apiPost(payload)
-      .then(function(data){
-        if (!data.ok) throw new Error(data.error || '저장 실패');
-        showToast('저장 완료', 'ok');
-        loadDbData(); // 서버 라운드트립 후 갱신
-      })
-      .catch(function(err){
-        showToast('저장 실패: ' + err.message, 'err');
-      });
-  }, 800);
-}
 
 function addNewRow() {
   if (GAS_URL === GAS_PLACEHOLDER) {
     showToast('GAS 미연동 — URL 교체 후 사용 가능', 'err');
     return;
   }
-  // 기존 편집 취소
-  if (dbEditingRow !== null) cancelEditRow();
-
   var tbody = document.getElementById('dbBody');
   var emptyRow = tbody.querySelector('tr td[colspan]');
   if (emptyRow) emptyRow.closest('tr').remove();
