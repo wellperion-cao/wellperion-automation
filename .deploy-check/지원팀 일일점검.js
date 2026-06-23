@@ -16,10 +16,15 @@ const SHEET_ITEMS  = '지원_매뉴얼';   // GM 편집 점검 항목 마스터(
 // 빈값 → 'support'(레거시 기존 항목=원본 지원부) 안전 폴백.
 // 2b-1(2026-06-11 시우): '회차'(rounds) 11열 추가 — 이슈→항목 승격 시 선택한 5조(am1,pm1…)를
 // 보존. dept(인덱스9) 뒤에 붙여 기존 인덱스 불변. 빈값 → 프론트 itemRounds가 roundOfSlot 폴백(하위호환).
-const ITEM_HEADERS = ['항목ID','카테고리','항목명','상세','성별','시간대','정렬','타입','필드정의','부서','회차','일정'];
+// Part1(2026-06-23 시우): '시드'(seed) 13번째 열 — 맨 뒤 추가(기존 인덱스 전부 불변).
+// 빈값=레거시(CUSTOM: shadow/added), 'Y'=페이지 단방향 동기분(syncSeedItems 격리행).
+// getItems/saveItems/_countTodaySchedule은 seed='Y' 행을 skip(Part1 무동작 가드) → 완료율·렌더 변화 0.
+const ITEM_HEADERS = ['항목ID','카테고리','항목명','상세','성별','시간대','정렬','타입','필드정의','부서','회차','일정','시드'];
 const ITEM_DEPT_COL = 9;    // '부서' 0-based 인덱스(10번째 열)
 const ITEM_ROUNDS_COL = 10; // '회차' 0-based 인덱스(11번째 열) — 구 10열 시트는 undefined → 빈값 폴백
 const ITEM_SCHED_COL = 11;  // '일정' 0-based 인덱스(12번째 열) — 요일·몇째주 구조저장 "mon,wed,fri|2" 형식. 구시트 undefined → 빈값
+const ITEM_SEED_COL = 12;   // '시드' 0-based 인덱스(13번째 열) — 'Y'=시드 단방향 동기행. 구시트 undefined → 빈값(=레거시 CUSTOM)
+function _isSeedRow(row){ return String(row[ITEM_SEED_COL] == null ? '' : row[ITEM_SEED_COL]).trim() === 'Y'; }
 function _itemDept(v){ var d = String(v == null ? '' : v).trim(); return d || 'support'; }
 
 const BOT_TOKEN = PropertiesService.getScriptProperties().getProperty('TELEGRAM_BOT_TOKEN');
@@ -1010,6 +1015,7 @@ function doPost(e) {
     if (body.action === 'notify_round')   return handleNotifyRound(body);
     if (body.action === 'seed')           return handleSeed(body);
     if (body.action === 'saveItems')      return saveItems(body);
+    if (body.action === 'syncSeedItems')  return syncSeedItems(body);   // Part1 시우: 페이지 시드 명단 → seed='Y' 격리행 멱등 upsert(타·shadow·added 불변)
     if (body.action === 'saveBoard')      return saveBoard(body);
     if (body.action === 'issuelog_add')   return handleIssueLogAdd(body);
     if (body.action === 'issuelog_update') return handleIssueLogUpdate(body);
@@ -1851,7 +1857,7 @@ function initItemSheet() {
     .setBackground('#2a2725').setFontColor('#B79F8A')
     .setFontWeight('bold').setHorizontalAlignment('center');
   sheet.setFrozenRows(1);
-  var widths = [180, 180, 240, 360, 80, 180, 70, 90, 200, 90, 120, 140];  // 타입·필드정의·부서·회차·일정 추가
+  var widths = [180, 180, 240, 360, 80, 180, 70, 90, 200, 90, 120, 140, 60];  // 타입·필드정의·부서·회차·일정·시드 추가
   for (var i = 0; i < widths.length; i++) sheet.setColumnWidth(i + 1, widths[i]);
   return sheet;
 }
@@ -1875,6 +1881,7 @@ function getItems(params) {
   var items = [];
   for (var i = 1; i < data.length; i++) {
     if (!data[i][0] && !data[i][2]) continue; // id·항목명 모두 없으면 건너뜀
+    if (_isSeedRow(data[i])) continue; // P1-5: seed='Y' 행은 CUSTOM_ITEMS로 비유입(isShadow 오인·중복 차단). 시드는 JS 배열이 렌더 정본.
     if (_itemDept(data[i][ITEM_DEPT_COL]) !== reqDept) continue; // dept 불일치 제외
     // S1(2026-06-10 시토): type 빈값 → 'check' 폴백. fields = measure 입력 영문키 목록(없으면 빈문자).
     var itemType = String(data[i][7] || '').trim() || 'check';
@@ -1915,7 +1922,8 @@ function saveItems(body) {
     for (var e = 0; e < existing.length; e++) {
       var r = existing[e];
       if (!r[0] && !r[2]) continue; // 빈 행 스킵
-      if (_itemDept(r[ITEM_DEPT_COL]) !== reqDept) preserved.push(r); // 타 dept만 보존
+      // P1-4: 타 dept OR seed='Y' 행 보존 → CUSTOM(shadow/added) 저장이 시드 격리행을 침범하지 않음.
+      if (_itemDept(r[ITEM_DEPT_COL]) !== reqDept || _isSeedRow(r)) preserved.push(r);
     }
   }
 
@@ -1934,7 +1942,8 @@ function saveItems(body) {
       String(it.fields || ''),
       reqDept,   // S4 갭②: 부서
       String(it.rounds || ''),   // 2b-1: 회차(예 "am1,pm1") — 빈값이면 프론트 roundOfSlot 폴백
-      String(it.sched || '')     // 일정(요일·몇째주) "mon,wed,fri|2" — 매뉴얼 편집 체크박스에서 설정
+      String(it.sched || ''),    // 일정(요일·몇째주) "mon,wed,fri|2" — 매뉴얼 편집 체크박스에서 설정
+      ''                          // Part1: 시드열 — CUSTOM 저장분은 항상 빈값(시드 아님). 시드행은 syncSeedItems 전용.
     ];
   });
 
@@ -1947,6 +1956,65 @@ function saveItems(body) {
     sheet.getRange(2, 1, rows.length, ITEM_HEADERS.length).setValues(rows);
   }
   return jsonRes({ ok: true, count: mine.length, total: rows.length, dept: reqDept });
+}
+
+// ─── 시드 단방향 동기화 (POST {action:'syncSeedItems', dept, seeds:[...]}) — Part1 시우 2026-06-23 ───
+// 페이지가 전체 시드 명단(WEEKDAY/WEEKEND/NIGHT_* + ROUND_MAP 회차)을 단방향 push.
+// seed='Y' 격리행만 멱등 upsert(항목ID 키): 있으면 update·없으면 append·payload에 없는 옛 seed행 삭제.
+// → N회 호출해도 seed행 = payload와 1:1(중복 0). shadow/added/타 dept 행은 절대 안 건드림.
+// Part1 단계: getItems·_countTodaySchedule이 seed행 skip → 적재만 하고 분모·렌더 무변화.
+function syncSeedItems(body) {
+  var reqDept = body.dept ? String(body.dept).trim() : 'support';
+  var seeds = body.seeds || [];
+  var sheet = initItemSheet();   // _ensureItemCols로 13열 보장
+
+  // 1) payload → seed 행(부서·시드='Y' 박제). 항목ID 기준 dedup(중복 id는 마지막 승).
+  var seedMap = {};   // id → row
+  var seedOrder = [];
+  for (var s = 0; s < seeds.length; s++) {
+    var it = seeds[s] || {};
+    var sid = String(it.id || '').trim();
+    if (!sid) continue;
+    if (!seedMap[sid]) seedOrder.push(sid);
+    seedMap[sid] = [
+      sid,
+      String(it.cat || ''),
+      String(it.name || ''),
+      String(it.detail || ''),
+      String(it.gender || 'all'),
+      String(it.slot || ''),
+      (it.order !== undefined && it.order !== '') ? it.order : (seedOrder.length),
+      String(it.type || '').trim() || 'check',
+      String(it.fields || ''),
+      reqDept,
+      String(it.rounds || ''),
+      String(it.sched || ''),
+      'Y'   // 시드 격리 플래그
+    ];
+  }
+
+  // 2) 기존 시트 전 행 분류: non-seed(타·shadow·added=불변 보존) + 기존 seed 행 위치 맵.
+  var lastRow = sheet.getLastRow();
+  var preserved = [];        // seed 아닌 모든 행 그대로 보존
+  if (lastRow > 1) {
+    var existing = sheet.getRange(2, 1, lastRow - 1, ITEM_HEADERS.length).getValues();
+    for (var e = 0; e < existing.length; e++) {
+      var r = existing[e];
+      if (!r[0] && !r[2]) continue;   // 빈 행 스킵
+      if (!_isSeedRow(r)) preserved.push(r);   // 시드 아닌 행만 보존(시드행은 payload로 전량 교체)
+    }
+  }
+
+  // 3) 멱등 교체: [보존 non-seed] + [payload seed행 1:1]. payload에 없는 옛 seed행은 자동 소멸(누락=삭제).
+  var seedRows = seedOrder.map(function (id) { return seedMap[id]; });
+  if (lastRow > 1) {
+    sheet.getRange(2, 1, lastRow - 1, ITEM_HEADERS.length).clearContent();
+  }
+  var rows = preserved.concat(seedRows);
+  if (rows.length > 0) {
+    sheet.getRange(2, 1, rows.length, ITEM_HEADERS.length).setValues(rows);
+  }
+  return jsonRes({ ok: true, seedCount: seedRows.length, preserved: preserved.length, total: rows.length, dept: reqDept });
 }
 
 // ════════════════════════════════════════════
@@ -2501,18 +2569,18 @@ function _roundBucket(roundKey) {
 // 단일출처: 클라 ROUND_MAP 변경 시 여기도 동기화 필요(주석으로 명시).
 // ⚠ 이 맵에 없는 항목은 시트 rounds 컬럼 폴백 → 시트에서 관리되는 신규 항목 자동 포함.
 var _TL_ROUND_MAP = {
-  a1:['am1','pm1','close1'], a2:['am1','pm1','close1'], a3:['am1','pm1','close1'],
-  b1:['am1','pm1','close1'], b2:['am1','pm1','close1'], b3:['am1','pm1','close1'],
-  b4_f:['am1','pm1','close1'], b4_m:['am1','pm1','close1'],
-  b5:['am1','pm1','close1'], b6:['am1','pm1','close1'],
+  a1:['am1','pm1'], a2:['am1','pm1'], a3:['am1','pm1'],
+  b1:['am1','pm1'], b2:['am1','pm1'], b3:['am1','pm1'],
+  b4_f:['am1','pm1'], b4_m:['am1','pm1'],
+  b5:['am1','pm1'], b6:['am1','pm1'],
   op3:['am1'], op4:['am1'], op5:['am1'],
-  c1:['am1','pm1','close1'], c2:['am1','pm1','close1'], c3:['am1','pm1','close1'],
-  c4:['am1','pm1','close1'], c5:['am1','pm1','close1'], c6:['am1','pm1','close1'],
-  c7:['am1','pm1','close1'], c8:['am1','pm1','close1'], c9:['am1','pm1','close1'],
-  c10:['am1','pm1','close1'],
-  d1:['am1','pm1','close1'], d2:['am1','pm1','close1'], d3:['am1','pm1','close1'],
-  e1:['am1','pm1','close1'],
-  cl1:['close1'], cl3:['close1'], cl8:['close1']   // base only. cl2/cl4~cl7=added(시트 rounds 폴백). 프론트 ROUND_MAP과 동기화(2026-06-17 재정렬)
+  c1:['am1','pm1'], c2:['am1','pm1'], c3:['am1','pm1'],
+  c4:['am1','pm1'], c5:['am1','pm1'], c6:['am1','pm1'],
+  c7:['am1','pm1'], c8:['am1','pm1'], c9:['am1','pm1'],
+  c10:['am1','pm1'],
+  d1:['am1','pm1'], d2:['am1','pm1'], d3:['am1','pm1'],
+  e1:['am1','pm1'],
+  cl1:['close1'], cl3:['am1'], cl8:['am1'], cl9:['close1']   // 2026-06-23 페이지 동기: 청결 '확인'→오픈(close 제거)·cl9 마감탕청소(주말) 신설. cl2/cl4~cl7=added(시트 rounds 폴백)
   // op1,op2,cls4-8→cl2/4-7,b7,d4,d5,e2 등 마스터 rounds 필드 우선(시트 컬럼) — ROUND_MAP에 없으면 시트 폴백
 };
 // DAY_FOCUS 항목수 — 요일(0=일~6=토), close1 버킷에 가산(클라 _roundProgress close1 분기와 동일).
@@ -2546,7 +2614,7 @@ function _countTodaySchedule(dept, dow) {
   if (!sheet) return cnt;
   var last = sheet.getLastRow();
   if (last < 2) return cnt;
-  var vals = sheet.getRange(2, 1, last - 1, Math.max(12, sheet.getLastColumn())).getValues();
+  var vals = sheet.getRange(2, 1, last - 1, Math.max(ITEM_HEADERS.length, sheet.getLastColumn())).getValues();
 
   vals.forEach(function (row) {
     var id      = String(row[0] || '').trim();
@@ -2557,6 +2625,9 @@ function _countTodaySchedule(dept, dow) {
 
     if (!id) return;
     if (deptVal !== 'support') return;   // 지원부 항목만
+    // P1-5b(Part1 무동작 가드): seed='Y' 행은 분모 계산에서 skip → 시드 적재해도 분모·완료율 변화 0.
+    // Part2에서 이 가드 제거 + else-if 순서 반전(시트 rounds 우선)으로 시드가 분모 정본 승격.
+    if (_isSeedRow(row)) return;
 
     // dayType 필터: 빈값/'both'=항상 표시, 'weekday'=평일만, 'weekend'=주말만
     if (dayType && dayType !== 'both') {

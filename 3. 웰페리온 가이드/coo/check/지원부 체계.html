@@ -3486,8 +3486,10 @@ function renderManualItems(){
   /* 셋업 안내 + 편집모드 토글 + 추가항목 일괄정리(GM 2026-06-12): 매뉴얼=항목 단일출처(시트 동기화). 점검은 읽기전용. */
   const _emBtn=`<button onclick="toggleManualEdit()" style="${_btn}${EM?'color:#fff;background:var(--accent);border-color:var(--accent);':'color:var(--accent);background:var(--bg);border-color:var(--accent);'}">${EM?'✓ 편집 모드 (끄기)':'✎ 편집 모드'}</button>`;
   const _addGroupBtn=EM?`<button onclick="addManualGroup()" style="${_btn}color:var(--accent);background:var(--bg);border-color:var(--accent);">＋ 구역 추가</button>`:'';
+  /* Part1: 시드 명단 → 시트 단방향 push(syncSeedItems). 멱등이라 여러 번 눌러도 안전. 편집 모드에서만 노출(운영 실수 방지). */
+  const _seedBtn=EM?`<button onclick="if(confirm('시드 42항목 명단을 시트로 동기화합니다(멱등·안전). 진행할까요?'))pushSeedItemsToSheet()" style="${_btn}color:#5b9fd5;background:rgba(91,159,213,0.12);border-color:rgba(91,159,213,0.35);">⟳ 시드 동기화</button>`:'';
   html+=`<div style="background:var(--accent-bg);border:1px solid var(--accent);border-radius:10px;padding:10px 14px;margin-bottom:12px;font-size:12px;color:var(--text);line-height:1.6;">
-    <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;"><span><b style="color:var(--accent);">매뉴얼 = 항목 단일출처</b> · 편집 모드를 켜면 구역(A·B…) <b>추가·이름변경·삭제·순서(▲▼)</b>와 항목 추가·편집·삭제가 나타납니다.</span><span style="display:inline-flex;gap:6px;">${_addGroupBtn}${_emBtn}</span></div>
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;"><span><b style="color:var(--accent);">매뉴얼 = 항목 단일출처</b> · 편집 모드를 켜면 구역(A·B…) <b>추가·이름변경·삭제·순서(▲▼)</b>와 항목 추가·편집·삭제가 나타납니다.</span><span style="display:inline-flex;gap:6px;">${_seedBtn}${_addGroupBtn}${_emBtn}</span></div>
   </div>`;
   catOrder.forEach((cat,gi)=>{
     const items=catMap[cat];
@@ -5632,6 +5634,47 @@ function mgmtSaveItems(items){
     body:JSON.stringify(withDept({action:'saveItems',items:payload}))
   }).then(()=>{ if(ind){ind.textContent='항목 저장 완료';setTimeout(()=>{ind.style.display='none'},1500);} })
     .catch(()=>{ if(ind){ind.textContent='항목 저장 실패 (로컬 보관됨)';setTimeout(()=>{ind.style.display='none'},1500);} });
+}
+
+/* ── Part1(2026-06-23 시우): 시드 명단 → 시트 단방향 push (syncSeedItems) ──
+   기존 mgmtSaveItems/CUSTOM_ITEMS 경로와 완전 분리. WEEKDAY/WEEKEND/NIGHT_* 전 시드를 id 기준
+   union(중복 id는 1회) → ROUND_MAP[id] 회차를 실어 POST. seed='Y' 격리행으로만 적재(서버 멱등).
+   Part1 단계에선 분모·렌더 무변화(서버가 seed행 skip). 명시 트리거(매뉴얼탭 '시드 동기화')로 호출. */
+function pushSeedItemsToSheet(){
+  if(!ONLINE){ try{ if(typeof alert==='function') alert('오프라인 — 시드 동기화 불가'); }catch(e){} return Promise.resolve(); }
+  const scheds=[];
+  [typeof WEEKDAY!=='undefined'?WEEKDAY:null, typeof WEEKEND!=='undefined'?WEEKEND:null,
+   typeof NIGHT_WEEKDAY!=='undefined'?NIGHT_WEEKDAY:null, typeof NIGHT_WEEKEND!=='undefined'?NIGHT_WEEKEND:null]
+    .forEach(function(sc){ if(Array.isArray(sc)) scheds.push(sc); });
+  const map={};          // id → seed payload(중복 id union: 마지막 등장 메타 + rounds=ROUND_MAP)
+  const order=[];
+  scheds.forEach(function(sc){
+    getAllItems(sc).forEach(function(it){
+      const id=String(it&&it.id||'').trim();
+      if(!id) return;
+      if(!map[id]) order.push(id);
+      map[id]={
+        id:id,
+        cat:it.cat||'',
+        name:it.name||'',
+        detail:it.detail||'',
+        gender:it.gender||'all',
+        slot:it.slot||'',
+        rounds:(typeof ROUND_MAP!=='undefined'&&ROUND_MAP[id])?roundsToStr(ROUND_MAP[id]):'',
+        sched:it.sched||'',
+        type:'check',
+        fields:''
+      };
+    });
+  });
+  const seeds=order.map(function(id){ return map[id]; });
+  const ind=document.getElementById('saveIndicator');
+  if(ind){ ind.style.display='block'; ind.textContent='시드 동기화 중...('+seeds.length+'항목)'; }
+  return fetch(API_URL,{method:'POST',redirect:'follow',
+    headers:{'Content-Type':'text/plain'},
+    body:JSON.stringify(withDept({action:'syncSeedItems',seeds:seeds}))
+  }).then(()=>{ if(ind){ind.textContent='시드 동기화 완료 ('+seeds.length+'항목)';setTimeout(()=>{ind.style.display='none'},2000);} })
+    .catch(()=>{ if(ind){ind.textContent='시드 동기화 실패';setTimeout(()=>{ind.style.display='none'},2000);} });
 }
 
 function mgmtGenerateId(category){
