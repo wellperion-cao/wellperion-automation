@@ -773,6 +773,8 @@ if (action === 'member_calendar') {
 <script>
 /* ── GAS URL (퍼널 Survey 웹앱 /exec — 2026-06-22 연결) ── */
 var GAS_URL = 'https://script.google.com/macros/s/AKfycbzdwSCCSSJ6JXLDoWuo7HG0JmBM2iy10TujFQ_O5JbTjnWaN7gOk-ddA4IAvsNfelg0xA/exec';
+/* 미연동 판별 센티넬 — GAS_URL 이 아래 자리표시자와 같을 때만 '미연동'. 실제 URL 연동됨(2026-06-22) → 가드 비발동 */
+var GAS_PLACEHOLDER = '__PASTE_GAS_EXEC_URL__';
 /* ── 수정 모드(2026-06-22 GM '그냥 열기') — 진행상태·메모·일정·담당만 수정. 이름·전화는 익명 유지·수정불가 ── */
 var READ_ONLY = false;
 var ALLOW_DELETE = false;  // 2026-06-23 GM: 삭제 제거 — 삭제는 시트에서 수동으로만
@@ -868,7 +870,7 @@ function loadCalendarData() {
   titleEl.textContent = '데이터 불러오는 중…';
   descEl.textContent = '';
 
-  if (GAS_URL === 'https://script.google.com/macros/s/AKfycbzdwSCCSSJ6JXLDoWuo7HG0JmBM2iy10TujFQ_O5JbTjnWaN7gOk-ddA4IAvsNfelg0xA/exec') {
+  if (GAS_URL === GAS_PLACEHOLDER) {
     spinnerEl.style.display = 'none';
     titleEl.textContent = 'GAS 미연동 상태';
     descEl.textContent = 'GM이 GAS를 배포하고 URL을 교체하면 예약이 자동 표시됩니다.';
@@ -992,7 +994,7 @@ var STATUS_CLASS   = {
 };
 
 function loadDbData() {
-  if (GAS_URL === 'https://script.google.com/macros/s/AKfycbzdwSCCSSJ6JXLDoWuo7HG0JmBM2iy10TujFQ_O5JbTjnWaN7gOk-ddA4IAvsNfelg0xA/exec') {
+  if (GAS_URL === GAS_PLACEHOLDER) {
     renderDbEmpty('GAS 미연동 상태', 'GM이 GAS를 배포하고 URL을 교체하면 문의 DB가 활성화됩니다.');
     return;
   }
@@ -1272,7 +1274,7 @@ function saveEditRow(tr) {
 }
 
 function addNewRow() {
-  if (GAS_URL === 'https://script.google.com/macros/s/AKfycbzdwSCCSSJ6JXLDoWuo7HG0JmBM2iy10TujFQ_O5JbTjnWaN7gOk-ddA4IAvsNfelg0xA/exec') {
+  if (GAS_URL === GAS_PLACEHOLDER) {
     showToast('GAS 미연동 — URL 교체 후 사용 가능', 'err');
     return;
   }
@@ -1407,7 +1409,7 @@ function submitNewRow(tr) {
    GAS 통신 헬퍼
 ───────────────────────────────────────────── */
 function apiPost(payload) {
-  if (GAS_URL === 'https://script.google.com/macros/s/AKfycbzdwSCCSSJ6JXLDoWuo7HG0JmBM2iy10TujFQ_O5JbTjnWaN7gOk-ddA4IAvsNfelg0xA/exec') {
+  if (GAS_URL === GAS_PLACEHOLDER) {
     return Promise.reject(new Error('GAS 미연동 — URL 교체 후 사용 가능'));
   }
   return fetch(GAS_URL, {
