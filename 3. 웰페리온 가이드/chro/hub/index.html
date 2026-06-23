@@ -284,6 +284,27 @@
   .kpi-grid{gap:14px}
   /* 탭 전환 부드럽게 */
   .tab{transition:color .12s ease,border-color .12s ease}
+  /* 온보딩 신입 카드 내부 */
+  .ob-card-top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap}
+  .ob-card-id{min-width:0}
+  .ob-name{font-size:15px;font-weight:750;color:var(--ink);cursor:pointer;
+    border-bottom:1px dotted var(--gold);padding-bottom:1px;transition:color .12s}
+  .ob-name:hover{color:var(--gold-deep)}
+  .ob-risk{margin-left:8px;background:var(--red-bg);color:var(--red);padding:1.5px 9px;
+    border-radius:20px;font-size:11px;font-weight:700;white-space:nowrap}
+  .ob-meta{color:var(--ink-faint);font-size:12px;margin-top:6px}
+  .ob-card-prog{text-align:right;min-width:148px}
+  .ob-pct{font-size:23px;font-weight:750;color:var(--navy);line-height:1;letter-spacing:-.02em}
+  .ob-pct span{font-size:12px;color:var(--ink-faint);font-weight:600;margin-left:1px}
+  .ob-prog-sub{font-size:11px;color:var(--ink-faint);margin-top:3px}
+  .ob-next{font-size:11.5px;color:var(--ink-soft);margin-top:5px}
+  .ob-next.over{color:var(--red);font-weight:650}
+  .ob-bar{background:var(--line);border-radius:20px;height:7px;margin:12px 0;overflow:hidden}
+  .ob-bar>div{height:100%;background:linear-gradient(90deg,var(--green),#2f9e6a);border-radius:20px;transition:width .3s ease}
+  .ob-chips{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+  .ob-del{margin-left:auto;background:none;border:none;color:var(--ink-faint);font-size:11px;
+    font-weight:600;cursor:pointer;padding:3px 8px;border-radius:7px;font-family:inherit;transition:color .12s,background .12s}
+  .ob-del:hover{color:var(--red);background:var(--red-bg)}
 </style>
 </head>
 <body>
@@ -1520,7 +1541,7 @@ function obCloseModal(id){ var m=document.getElementById(id); if(m) m.style.disp
 function obInjectModals(){
   if(document.getElementById("obStartModal")) return;
   var css=document.createElement("style");
-  css.textContent=".ob-chip{display:inline-block;padding:5px 11px;border-radius:14px;font-size:12px;background:#f0eee9;color:#555;cursor:pointer;border:1px solid #ddd;font-weight:600}.ob-chip.done{background:#e3f4ea;color:#1a7f5a;border-color:#bfe6cf}.ob-chip.over{background:#fde2e2;color:#c0392b;border-color:#f3c0c0}.ob-fld{margin:8px 0}.ob-fld label{display:block;font-size:12px;color:#666;margin-bottom:3px}.ob-fld input,.ob-fld select,.ob-fld textarea{width:100%;box-sizing:border-box;padding:7px;border:1px solid #ccc;border-radius:6px;font-size:13px}.ob-btn{padding:8px 16px;border:none;border-radius:6px;font-size:13px;cursor:pointer}.ob-btn.primary{background:#b08d57;color:#fff}.ob-btn.sec{background:#eee;color:#555}";
+  css.textContent=".ob-chip{display:inline-block;padding:5px 11px;border-radius:14px;font-size:12px;background:var(--surface-2);color:var(--ink-soft);cursor:pointer;border:1px solid var(--line);font-weight:600;transition:border-color .12s,background .12s}.ob-chip:hover{border-color:var(--gold)}.ob-chip.done{background:var(--green-bg);color:var(--green);border-color:#bfe6cf}.ob-chip.over{background:var(--red-bg);color:var(--red);border-color:#f3c0c0}.ob-fld{margin:8px 0}.ob-fld label{display:block;font-size:12px;color:#666;margin-bottom:3px}.ob-fld input,.ob-fld select,.ob-fld textarea{width:100%;box-sizing:border-box;padding:7px;border:1px solid #ccc;border-radius:6px;font-size:13px}.ob-btn{padding:8px 16px;border:none;border-radius:6px;font-size:13px;cursor:pointer}.ob-btn.primary{background:linear-gradient(180deg,#b8975c,var(--gold-deep));color:#fff;font-weight:650;box-shadow:0 1px 3px rgba(138,111,63,.28)}.ob-btn.primary:hover{filter:brightness(1.06)}.ob-btn.sec{background:var(--surface-2);color:var(--ink-soft);border:1px solid var(--line)}";
   document.head.appendChild(css);
   var d=document.createElement("div");
   d.innerHTML='<div class="modal-bg" id="obStartModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:9999;align-items:center;justify-content:center"><div style="background:#fff;padding:20px;border-radius:10px;max-width:440px;width:92%"><h3 style="margin:0 0 10px">신규 입사자 온보딩 시작</h3><div class="ob-fld"><label>성명 *</label><input id="obsName"></div><div class="ob-fld"><label>부서</label><input id="obsDept" placeholder="예: 운영부"></div><div class="ob-fld"><label>멘토(버디)</label><input id="obsMentor" placeholder="예: 이경연"></div><div class="ob-fld"><label>입사일 *</label><input id="obsJoin" type="date"></div><div class="ob-fld"><label>담당</label><input id="obsOwner" value="관리자+HR"></div><div id="obsMsg" style="font-size:12px;margin:6px 0;color:#c0392b"></div><div style="text-align:right;margin-top:10px"><button class="ob-btn sec" onclick="obCloseModal(\'obStartModal\')">취소</button> <button class="ob-btn primary" id="obsSubmit" onclick="obSubmitStart()">90일 체크인 생성</button></div></div></div><div class="modal-bg" id="obCheckModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:9999;align-items:center;justify-content:center"><div style="background:#fff;padding:20px;border-radius:10px;max-width:480px;width:92%;max-height:88vh;overflow:auto"><h3 id="obcTitle" style="margin:0 0 2px">체크인</h3><div id="obcSub" style="font-size:12px;color:#888;margin-bottom:8px"></div><div id="obcGuide" style="font-size:11.5px;background:#fbf7ef;border:1px solid #ecdfc4;border-radius:6px;padding:8px 10px;margin-bottom:8px;color:#6b5a32;display:none"></div><div id="obcChecklist" style="margin-bottom:8px"></div><div style="font-size:10.5px;color:#888;margin-bottom:3px">적응도 1~5점 — 1 매우미흡 · 3 보통 · 5 매우우수 (업무/관계/문화)</div><div style="display:flex;gap:8px"><div class="ob-fld" style="flex:1"><label>업무</label><select id="obcWork">'+obScoreOpts()+'</select></div><div class="ob-fld" style="flex:1"><label>관계</label><select id="obcRel">'+obScoreOpts()+'</select></div><div class="ob-fld" style="flex:1"><label>문화</label><select id="obcCul">'+obScoreOpts()+'</select></div></div><div class="ob-fld"><label>어려운 점 / 이슈</label><textarea id="obcIssue" rows="2"></textarea></div><div class="ob-fld"><label>조치 / 후속</label><textarea id="obcAction" rows="2"></textarea></div><div class="ob-fld"><label><input type="checkbox" id="obcRisk" style="width:auto"> 이탈위험으로 표시</label></div><div class="ob-fld"><label>담당</label><input id="obcOwner" value="관리자+HR"></div><div id="obcPrev" style="font-size:11px;color:#888;background:#f7f7f7;padding:6px;border-radius:6px;display:none"></div><div id="obcVerdictWrap" class="ob-fld" style="display:none"><label>수습 판정 (90일)</label><select id="obcVerdict"><option value="">-</option><option>정규 전환</option><option>조건부 전환</option><option>수습 1개월 연장</option><option>부적합</option></select></div><div id="obcMsg" style="font-size:12px;margin:6px 0"></div><div style="display:flex;justify-content:space-between;margin-top:10px"><button class="ob-btn sec" onclick="obCloseModal(\'obCheckModal\')">취소</button><button class="ob-btn primary" id="obcSubmit" onclick="obSubmitCheck()">완료 기록</button></div></div></div>';
@@ -1694,7 +1715,18 @@ function renderOnbo(){
       var lbl=String(r["체크 항목"]||"").replace(" 체크인","").replace(" 수습평가","수습");
       return '<span class="'+cls+'" onclick="obCheck('+r["_sheet_row"]+')">'+esc(lbl)+(dn?" ✓":"")+'</span>';
     }).join(" ");
-    cards+='<div class="card" style="margin-bottom:10px"><div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;flex-wrap:wrap"><div><b data-nm="'+esc(nm)+'" onclick="obOpenCard(this.dataset.nm)" style="font-size:15px;cursor:pointer;border-bottom:1px dotted #b08d57" title="클릭: 인사카드">'+esc(nm)+'</b> '+(risk?'<span style="background:var(--red-bg);color:var(--red);padding:1px 7px;border-radius:10px;font-size:11px">⚠ 이탈위험</span>':"")+'<div style="color:#888;font-size:12px;margin-top:2px">'+esc(dept)+' · 멘토 '+esc(mentor)+' · 입사 '+joinStr+'</div></div><div style="text-align:right;font-size:12px">진행 <b>'+done+'/'+total+'</b> ('+pct+'%)<br><span style="color:'+(overdue?"#c0392b":"#888")+'">다음: '+nextStr+(overdue?" ⚠지연":"")+'</span></div></div><div style="background:var(--line);border-radius:6px;height:6px;margin:8px 0;overflow:hidden"><div style="height:6px;width:'+pct+'%;background:var(--green)"></div></div><div style="display:flex;flex-wrap:wrap;gap:5px;align-items:center">'+chips+' <span style="margin-left:auto;color:#bbb;font-size:11px;cursor:pointer" onclick="obDelete(\''+esc(nm).replace(/\'/g,"")+'\')">삭제</span></div></div>';
+    cards+='<div class="card ob-card" style="margin-bottom:11px">'+
+      '<div class="ob-card-top">'+
+        '<div class="ob-card-id"><b class="ob-name" data-nm="'+esc(nm)+'" onclick="obOpenCard(this.dataset.nm)" title="클릭: 인사카드">'+esc(nm)+'</b>'+
+        (risk?'<span class="ob-risk">⚠ 이탈위험</span>':"")+
+        '<div class="ob-meta">'+esc(dept)+' · 멘토 '+esc(mentor)+' · 입사 '+joinStr+'</div></div>'+
+        '<div class="ob-card-prog"><div class="ob-pct">'+pct+'<span>%</span></div>'+
+        '<div class="ob-prog-sub">진행 '+done+' / '+total+'</div>'+
+        '<div class="ob-next'+(overdue?' over':'')+'">다음 · '+nextStr+(overdue?' ⚠지연':'')+'</div></div>'+
+      '</div>'+
+      '<div class="ob-bar"><div style="width:'+pct+'%"></div></div>'+
+      '<div class="ob-chips">'+chips+'<button class="ob-del" onclick="obDelete(\''+esc(nm).replace(/\'/g,"")+'\')">✕ 삭제</button></div>'+
+      '</div>';
   });
   var kpis='<div class="kpi-grid" style="margin:10px 0">'+kpi("온보딩 중",names.length+'<small> 명</small>',"입사 90일 이내")+kpi("7일 내 체크인",dueSoon+'<small> 건</small>',"예정된 체크인")+kpi("이탈위험",riskCount+'<small> 명</small>',riskCount>0?"주의 필요":"안정적")+'</div>';
   setPanel("onbo", html+startBtn+kpis+renderObCalCard()+'<div style="height:14px"></div>'+cards);
