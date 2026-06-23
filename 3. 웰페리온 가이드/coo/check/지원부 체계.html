@@ -4230,42 +4230,117 @@ function getActiveTab(){
 }
 
 /* ═══════════════════════════════════════════
-   A3 가이드라인 인쇄 (규정 좌열 + 가이드 우열)
+   A3 가이드라인 — '핵심 1장 압축본' 데이터 (시우 작성, GM 편집 가능)
+   ─ A3 인쇄(printA3Guideline)는 화면의 규정·가이드 상세 카드 전체를 덤프하지 않고
+     아래 A3_GUIDELINE만 읽어 좌(규정 핵심)·우(가이드 핵심) 2단으로 압축 인쇄한다.
+   ─ 내용 = 화면 규정 카드(POLICY_SEED)·가이드 탭에 이미 있는 실제 내용에서 핵심만 발췌·간결화.
+     없는 규칙 신설 금지. 항목별 1~3줄. A3 1장에 들어갈 분량만 선별.
+   ─ 3부서 전파 표준: title / policy(좌·규정핵심) / guide(우·가이드핵심) 구조 고정.
+     각 항목 { h:'제목', lines:['줄1','줄2',...] }. 항목 추가·삭제·수정은 이 상수만 손대면 됨.
+   ═══════════════════════════════════════════ */
+const A3_GUIDELINE = {
+  title: '지원부 운영 가이드라인',
+  policy: [
+    { h:'운영시간', lines:[
+      '평일 06:00~22:30 / 주말·공휴일 08:00~20:00.',
+      '휴관: 신정·명절·매월 2·4번째 일요일.'
+    ]},
+    { h:'근무조 편성', lines:[
+      '오전조 05:30~14:15 / 중간조 10:00 또는 12:00~ / 오후조 14:00~22:30.',
+      '업장(담당 구역) 항상 최소 1명 상주 — 절대 비우지 않는다.'
+    ]},
+    { h:'담당 구역', lines:[
+      'A 사우나 · B 락커룸 · C 세탁물 · D 사우나 외부 · E 외곽·헬스장·골프장.'
+    ]},
+    { h:'위생·청결', lines:[
+      '대리석·코팅면 산성세제 금지.',
+      '전기설비 비닐 포장 후 청소.'
+    ]},
+    { h:'안전 보고', lines:[
+      '즉시 조치 불가 시 팀장·소장 즉시 보고 의무.',
+      '자의 판단 금지.'
+    ]},
+    { h:'마감 경고', lines:[
+      '사우나·파우더 마감 미비 시 경고 / 3회 → 경징계.'
+    ]},
+    { h:'정기 회의', lines:[
+      '주간 브리핑: 매주 월 오전 — 지난주 이슈·이번주 집중 구역·비품 현황.',
+      '월간 운영 회의: 매월 첫째주 화 — 이슈 취합·매뉴얼 개정.',
+      '긴급 회의: 이슈 발생 즉시 — 원인 분석·즉시 조치.'
+    ]}
+  ],
+  guide: [
+    { h:'기본 에티켓', lines:[
+      '"내가 지나간 자리는 항상 깨끗하게 정리정돈하자".',
+      '회원이 보이면 하던 일 멈추고 먼저 인사.',
+      '한 발 앞서 행동 · 모르면 즉시 담당자 연결 · 접수 건 끝까지 책임.',
+      '말투·행동·복장 모두 스포츠클럽 수준의 격조 유지.'
+    ]},
+    { h:'응대 태도', lines:[
+      '첫 인사: 눈 맞춤+미소 필수, 먼저 인사, 이름 알면 호칭.',
+      '불편사항: 끝까지 경청 → 즉시 해결 여부 판단 → 처리 결과 반드시 고지.',
+      '에티켓 위반: 정중하되 단호하게, 반복 시 팀장 보고.',
+      '긴급·안전: 즉시 팀장·소장 보고 → 지시 후 조치, 자의 판단 금지.'
+    ]},
+    { h:'복장·용모', lines:[
+      '웰페리온 지급 유니폼 청결 착용 · 명찰 좌측 가슴 상시 패용.',
+      '미끄럼 방지 안전화 · 청소 시 고무장갑·마스크·환기 필수.'
+    ]},
+    { h:'구역별 응대 (F)', lines:[
+      'F-1 개인 락커: 첫 인사·불편사항 접수·에티켓 위반 정중·단호 안내.',
+      'F-2 데일리 락커: 사용법 안내 / 분실물 민원 즉시 확인·기록.',
+      'F-3 사우나: 청결 즉시 조치(바닥 미끄럼·이물질).',
+      'F-4 파우더: 소모품 즉시 보충 / 드라이기 관리.',
+      'F-5 휴게공간: 소파·테이블 관리 / 혼잡·소음 민원 양해 요청.'
+    ]},
+    { h:'2인 교대 휴게', lines:[
+      '마감조 2명은 휴게를 반드시 엇갈려 운영.',
+      '근무자 A: 정시~50분 근무 / 50분~정시 휴게.',
+      '근무자 B: 정시~10분 휴게 / 10분~정시 근무.'
+    ]}
+  ]
+};
+
+/* A3_GUIDELINE → .a3-card 구조 HTML (좌/우 공용 렌더) */
+function renderA3Section(items){
+  let html='';
+  (items||[]).forEach(it=>{
+    if(!it || (!it.h && !(it.lines&&it.lines.length))) return;
+    html += '<div class="a3-card">';
+    html += '<div class="a3-card-title">'+ escapeHTML(it.h||'') +'</div>';
+    (it.lines||[]).forEach(l=>{
+      const t=(l||'').trim(); if(!t) return;
+      html += '<div class="a3-card-line">'+ escapeHTML(t) +'</div>';
+    });
+    html += '</div>';
+  });
+  return html;
+}
+
+/* ═══════════════════════════════════════════
+   A3 가이드라인 인쇄 — '핵심 1장 압축본'(A3_GUIDELINE 기반)
    - body에 .a3-print-mode 클래스로 @media print 분기
+   - 화면 규정·가이드 상세 카드는 그대로 보존(미변경), A3 인쇄물만 압축본
    - 기존 printCurrentTab() 경로와 완전 분리
    ═══════════════════════════════════════════ */
 function printA3Guideline(){
-  // ── 좌열: 규정 카드 렌더 (POLICY_DATA → POLICY_COLS 순서) ──
+  // ── 좌열: 규정 핵심(A3_GUIDELINE.policy) ──
   const colPolicy = document.getElementById('a3-col-policy');
   if(colPolicy){
-    let html = '<div class="a3-col-head">규정 (정책)</div>';
-    POLICY_COLS.forEach(col=>{
-      const cards = POLICY_DATA[col.key] || [];
-      cards.forEach(card=>{
-        if(!card.title && !card.body) return;
-        const lines = (card.body||'').split('\n').map(l=>l.trim()).filter(l=>l);
-        html += '<div class="a3-card">';
-        html += '<div class="a3-card-title">'+ escapeHTML(card.title||'(제목 없음)') +'</div>';
-        lines.forEach(l=>{ html += '<div class="a3-card-line">'+ escapeHTML(l) +'</div>'; });
-        html += '</div>';
-      });
-    });
-    colPolicy.innerHTML = html;
+    colPolicy.innerHTML = '<div class="a3-col-head">규정 핵심</div>'
+      + renderA3Section(A3_GUIDELINE.policy);
   }
 
-  // ── 우열: 가이드 탭 HTML 복제 ──
+  // ── 우열: 가이드 핵심(A3_GUIDELINE.guide) ──
   const colGuide = document.getElementById('a3-col-guide');
-  const srcGuide = document.getElementById('tab-guide');
-  if(colGuide && srcGuide){
-    const clone = srcGuide.cloneNode(true);
-    clone.removeAttribute('id');
-    clone.className = 'a3-guide-clone';
-    clone.style.display = '';
-    // manual-body 모두 펼치기 (인쇄용)
-    clone.querySelectorAll('.manual-body').forEach(b=>{ b.style.display='block'; });
-    colGuide.innerHTML = '<div class="a3-col-head">가이드</div>';
-    colGuide.appendChild(clone);
+  if(colGuide){
+    colGuide.innerHTML = '<div class="a3-col-head">가이드 핵심</div>'
+      + renderA3Section(A3_GUIDELINE.guide);
   }
+
+  // ── 상단 제목 (A3_GUIDELINE.title) ──
+  const a3Head = document.querySelector('#a3-guideline-print .a3-print-header');
+  if(a3Head) a3Head.textContent = A3_GUIDELINE.title;
 
   // ── A3 모드 활성화 → 인쇄 → 복원 ──
   document.body.classList.add('a3-print-mode');
