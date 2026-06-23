@@ -217,6 +217,45 @@ body{
   border-top-color:var(--teal);border-radius:50%;animation:spin 0.7s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
 
+/* ── 등록회원 테이블 ── */
+.reg-toolbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+.reg-toolbar input[type="date"]{
+  padding:7px 10px;border-radius:8px;background:var(--bg);border:1px solid var(--border);
+  color:var(--text);font-size:13px;font-family:inherit;outline:none;cursor:pointer;
+  color-scheme:dark}
+.reg-toolbar input[type="date"]:focus{border-color:var(--teal)}
+.btn-query{display:inline-flex;align-items:center;gap:4px;padding:7px 14px;
+  border-radius:8px;background:var(--teal-bg);color:var(--teal);
+  border:1px solid rgba(78,196,196,0.3);font-size:13px;font-weight:700;
+  font-family:inherit;cursor:pointer;transition:background 0.15s;white-space:nowrap}
+.btn-query:hover{background:rgba(78,196,196,0.22)}
+.btn-refresh{display:inline-flex;align-items:center;gap:4px;padding:7px 12px;
+  border-radius:8px;background:var(--accent-bg);color:var(--accent);
+  border:1px solid rgba(183,159,138,0.3);font-size:12px;font-weight:600;
+  font-family:inherit;cursor:pointer;transition:background 0.15s;margin-left:auto}
+.btn-refresh:hover{background:rgba(183,159,138,0.22)}
+.reg-sep{color:var(--dim);font-size:14px;font-weight:700;flex-shrink:0}
+.reg-count{font-size:12px;color:var(--dim);margin-bottom:10px;min-height:18px}
+.reg-table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.reg-table{width:100%;border-collapse:collapse;font-size:12px;min-width:900px}
+.reg-table th{background:var(--accent-bg);color:var(--accent);padding:8px 8px;
+  text-align:center;font-weight:700;border-bottom:1px solid var(--border);white-space:nowrap;font-size:11px}
+.reg-table th.left{text-align:left}
+.reg-table td{padding:7px 8px;border-bottom:1px solid rgba(61,56,53,0.35);vertical-align:middle;text-align:center}
+.reg-table td.left{text-align:left}
+.reg-table tr:last-child td{border-bottom:none}
+.reg-table tr:hover td{background:rgba(255,255,255,0.02)}
+.month-cb{width:15px;height:15px;cursor:pointer;accent-color:var(--teal)}
+
+/* ── 멤버십 회원관리 검색 입력 ── */
+.active-search-wrap{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+.active-search{flex:1;min-width:180px;padding:7px 12px;border-radius:8px;
+  background:var(--bg);border:1px solid var(--border);color:var(--text);
+  font-size:13px;font-family:inherit;outline:none}
+.active-search:focus{border-color:var(--accent)}
+.active-search::placeholder{color:var(--dim)}
+.active-count{font-size:12px;color:var(--dim);min-height:18px;margin-bottom:10px}
+
 /* ── 인쇄 ── */
 @media print{
   .sticky-top,.tabs,.action-btn,.cal-nav-btn,.day-panel,.db-toolbar,.row-actions,.save-toast{display:none!important}
@@ -243,7 +282,6 @@ body{
       </div>
       <div class="header-actions">
         <a class="action-btn" href="https://docs.google.com/spreadsheets/d/12AWcAlgmmYKr2nUbWmVpa71_z3zi0BaU4ZdnOwrI_7U/edit#gid=1902010032" target="_blank" rel="noopener">📊 문의 회원관리 시트 →</a>
-        <a class="action-btn" href="회원관리.html">등록後 멤버십 회원 관리 →</a>
         <a class="action-btn" href="../../../wellperion_guide(main).html">ERP 홈</a>
         <button class="action-btn" onclick="window.print()">인쇄</button>
       </div>
@@ -253,6 +291,8 @@ body{
     <button class="tab active" onclick="switchTab('db',this)">문의 회원 관리</button>
     <button class="tab" onclick="switchTab('calendar',this)">예약 달력</button>
     <button class="tab" onclick="switchTab('guide',this)">문의 가이드</button>
+    <button class="tab" onclick="switchTab('registered',this)">등록회원</button>
+    <button class="tab" onclick="switchTab('active',this)">멤버십 회원관리</button>
   </div>
 </div>
 
@@ -264,9 +304,9 @@ body{
     <span class="funnel-arrow">→</span>
     <span class="funnel-step current">문의 · 체험/상담투어</span>
     <span class="funnel-arrow">→</span>
-    <a class="funnel-step" href="회원관리.html#registered" style="text-decoration:none;cursor:pointer" title="등록회원 탭으로">등록</a>
+    <a class="funnel-step" href="javascript:void(0)" onclick="switchTab('registered', document.querySelector('.tab[onclick*=registered]'))" style="text-decoration:none;cursor:pointer" title="등록회원 탭으로">등록</a>
     <span class="funnel-arrow">→</span>
-    <a class="funnel-step" href="회원관리.html#active" style="text-decoration:none;cursor:pointer" title="멤버십 회원관리 탭으로">멤버십 회원 관리</a>
+    <a class="funnel-step" href="javascript:void(0)" onclick="switchTab('active', document.querySelector('.tab[onclick*=active]'))" style="text-decoration:none;cursor:pointer" title="멤버십 회원관리 탭으로">멤버십 회원 관리</a>
   </div>
 
   <!-- ══════════════════════════════ 1. 예약 달력 ══════════════════════════════ -->
@@ -772,6 +812,92 @@ if (action === 'member_calendar') {
 
   </div>
 
+  <!-- ══════════════════════════════ 4. 등록 회원 명단 ══════════════════════════════ -->
+  <div id="pane-registered" class="pane">
+
+    <div class="card">
+      <div class="card-title">
+        <span class="icon">📋</span>등록 회원 명단
+        <span style="font-size:11px;font-weight:400;color:var(--dim);margin-left:4px">진행상황 SUC·단기SUC = 자동 등록 (문의 명단에서 넘어옴)</span>
+      </div>
+
+      <div class="reg-toolbar">
+        <input type="date" id="regFrom" title="등록일 시작">
+        <span class="reg-sep">~</span>
+        <input type="date" id="regTo" title="등록일 종료">
+        <button class="btn-query" onclick="loadRegistered()">조회</button>
+        <button class="btn-refresh" onclick="loadRegistered()">새로고침</button>
+      </div>
+
+      <div class="reg-count" id="regCount"></div>
+
+      <div class="reg-table-wrap">
+        <table class="reg-table" id="regTable">
+          <thead>
+            <tr>
+              <th class="left" style="min-width:70px">이름</th>
+              <th style="min-width:110px">전화</th>
+              <th style="min-width:130px">프로그램</th>
+              <th style="min-width:90px">등록일</th>
+              <th>1</th><th>2</th><th>3</th><th>4</th><th>5</th><th>6</th>
+              <th>7</th><th>8</th><th>9</th><th>10</th><th>11</th><th>12</th>
+              <th style="min-width:54px">관리</th>
+            </tr>
+          </thead>
+          <tbody id="regBody">
+            <tr>
+              <td colspan="17">
+                <div class="empty-state">
+                  <div class="loading-spinner" id="regSpinner"></div>
+                  <div class="empty-state-title" style="margin-top:12px" id="regEmptyTitle">불러오는 중…</div>
+                  <div class="empty-state-desc" id="regEmptyDesc"></div>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ══════════════════════════════ 5. 멤버십 회원관리 (활성 회원 명단) ══════════════════════════════ -->
+  <div id="pane-active" class="pane">
+
+    <div class="card">
+      <div class="card-title">
+        <span class="icon">👥</span>멤버십 회원관리
+        <span style="font-size:11px;font-weight:400;color:var(--dim);margin-left:4px">실제 활성 회원 명단('유효회원' 시트) · 읽기전용 · 전화 마스킹</span>
+      </div>
+
+      <div class="active-search-wrap">
+        <input type="text" id="activeSearch" class="active-search"
+          placeholder="이름·전화·프로그램 검색…"
+          autocomplete="off">
+        <button class="btn-refresh" onclick="loadActiveMembers()">새로고침</button>
+      </div>
+
+      <div class="active-count" id="activeCount"></div>
+
+      <div class="reg-table-wrap">
+        <table class="reg-table" id="activeTable">
+          <thead id="activeHead"><tr><th>불러오는 중…</th></tr></thead>
+          <tbody id="activeBody">
+            <tr>
+              <td>
+                <div class="empty-state">
+                  <div class="loading-spinner"></div>
+                  <div class="empty-state-title" style="margin-top:12px">불러오는 중…</div>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+
 </div><!-- /content -->
 
 <!-- 저장 토스트 -->
@@ -794,6 +920,286 @@ function switchTab(id, btn) {
   document.getElementById('pane-' + id).classList.add('active');
   btn.classList.add('active');
   if (id === 'db') loadDbData();
+  if (id === 'registered') loadRegistered();
+  if (id === 'active') loadActiveMembers();
+}
+
+/* ─────────────────────────────────────────────
+   등록회원 명단
+───────────────────────────────────────────── */
+var _regRows = [];  // 현재 로드된 등록회원 배열
+
+function loadRegistered() {
+  if (GAS_URL === GAS_PLACEHOLDER) {
+    _regRenderEmpty('미연동', 'GAS URL이 교체되면 자동으로 등록 회원 명단이 표시됩니다.');
+    return;
+  }
+
+  var from = document.getElementById('regFrom').value || '';
+  var to   = document.getElementById('regTo').value   || '';
+
+  var url = GAS_URL + '?action=member_registered_list';
+  if (from) url += '&from=' + encodeURIComponent(from);
+  if (to)   url += '&to='   + encodeURIComponent(to);
+
+  _regSetLoading(true);
+
+  fetch(url)
+    .then(function(r){ return r.json(); })
+    .then(function(data){
+      _regSetLoading(false);
+      if (!data.ok) throw new Error(data.error || 'GAS 응답 오류');
+      _regRows = data.data || [];
+      _regRender();
+    })
+    .catch(function(err){
+      _regSetLoading(false);
+      _regRenderEmpty('데이터 로드 실패', err.message || 'GAS URL 또는 배포 상태를 확인하세요.');
+    });
+}
+
+function _regSetLoading(on) {
+  if (on) {
+    document.getElementById('regBody').innerHTML =
+      '<tr><td colspan="17"><div class="empty-state">' +
+      '<div class="loading-spinner" id="regSpinner"></div>' +
+      '<div class="empty-state-title" style="margin-top:12px">불러오는 중…</div>' +
+      '</div></td></tr>';
+    document.getElementById('regCount').textContent = '';
+  }
+}
+
+function _regRenderEmpty(title, desc) {
+  document.getElementById('regBody').innerHTML =
+    '<tr><td colspan="17"><div class="empty-state">' +
+    '<div class="empty-state-icon">📭</div>' +
+    '<div class="empty-state-title">' + esc(title) + '</div>' +
+    '<div class="empty-state-desc">' + esc(desc) + '</div>' +
+    '</div></td></tr>';
+  document.getElementById('regCount').textContent = '';
+}
+
+function _regRender() {
+  var tbody = document.getElementById('regBody');
+  tbody.innerHTML = '';
+
+  if (_regRows.length === 0) {
+    _regRenderEmpty('등록 회원 없음', '해당 기간에 등록된 회원이 없습니다.');
+    return;
+  }
+
+  document.getElementById('regCount').textContent = '총 ' + _regRows.length + '명';
+
+  _regRows.forEach(function(member){
+    var tr = document.createElement('tr');
+    tr.dataset.phone = member.phone || '';
+
+    var tdName = document.createElement('td');
+    tdName.className = 'left';
+    tdName.style.fontWeight = '700';
+    tdName.textContent = member.name || '—';
+    tr.appendChild(tdName);
+
+    var tdPhone = document.createElement('td');
+    tdPhone.style.fontSize = '12px';
+    tdPhone.style.color = 'var(--dim)';
+    tdPhone.textContent = member.phone || '—';
+    tr.appendChild(tdPhone);
+
+    var tdProg = document.createElement('td');
+    tdProg.style.fontSize = '11px';
+    tdProg.style.color = 'var(--dim)';
+    tdProg.textContent = member.program || '—';
+    tr.appendChild(tdProg);
+
+    var tdDate = document.createElement('td');
+    tdDate.style.fontSize = '12px';
+    tdDate.style.color = 'var(--dim)';
+    tdDate.textContent = member.regDate || '—';
+    tr.appendChild(tdDate);
+
+    var months = member.months || [];
+    for (var i = 0; i < 12; i++) {
+      var td = document.createElement('td');
+      var cb = document.createElement('input');
+      cb.type = 'checkbox';
+      cb.className = 'month-cb';
+      cb.checked = !!(months[i]);
+      cb.dataset.phone = member.phone || '';
+      cb.dataset.month = String(i + 1);
+      cb.dataset.rowIndex = String(member.rowIndex || '');
+      (function(checkbox, memberPhone, monthNum){
+        checkbox.addEventListener('change', function(){
+          var checked = checkbox.checked;
+          apiPost({
+            action:   'member_registered_setmonth',
+            phone:    memberPhone,
+            month:    monthNum,
+            checked:  checked
+          })
+          .then(function(data){
+            if (!data.ok) throw new Error(data.error || '저장 실패');
+            showToast('저장됨');
+          })
+          .catch(function(err){
+            showToast((err.message || '저장 실패'), 'err');
+            checkbox.checked = !checked;
+          });
+        });
+      })(cb, member.phone, i + 1);
+      td.appendChild(cb);
+      tr.appendChild(td);
+    }
+
+    var tdAct = document.createElement('td');
+    var delBtn = document.createElement('button');
+    delBtn.type = 'button';
+    delBtn.textContent = '해제';
+    delBtn.style.cssText = 'font-size:11px;padding:3px 8px;border-radius:6px;border:1px solid var(--red);background:var(--red-bg);color:var(--red);cursor:pointer;font-family:inherit;white-space:nowrap';
+    (function(mPhone, mName){
+      delBtn.addEventListener('click', function(){
+        if (!confirm('등록 해제하시겠습니까?\n' + (mName || '') + ' · ' + (mPhone || '') + '\n\n등록현황에서 이 회원을 삭제합니다.')) return;
+        var pin = prompt('해제 비밀번호를 입력하세요.');
+        if (pin === null) return;
+        if (pin !== '1531') { showToast('비밀번호가 일치하지 않습니다.', 'err'); return; }
+        apiPost({ action: 'member_registered_delete', phone: mPhone, name: mName })
+          .then(function(data){
+            if (!data.ok) throw new Error(data.error || '해제 실패');
+            showToast('등록 해제됨');
+            loadRegistered();
+          })
+          .catch(function(err){ showToast((err.message || '해제 실패'), 'err'); });
+      });
+    })(member.phone, member.name);
+    tdAct.appendChild(delBtn);
+    tr.appendChild(tdAct);
+
+    tbody.appendChild(tr);
+  });
+}
+
+/* ─────────────────────────────────────────────
+   멤버십 회원관리 (활성 회원 — 읽기전용)
+───────────────────────────────────────────── */
+var _activeRows    = [];
+var _activeHeaders = [];
+var _activeLoaded  = false;
+var _activeComposing = false;
+
+function loadActiveMembers() {
+  if (GAS_URL === GAS_PLACEHOLDER) {
+    _activeRenderState('unlinked');
+    return;
+  }
+  _activeRenderState('loading');
+  fetch(GAS_URL + '?action=member_active_list')
+    .then(function(r){ return r.json(); })
+    .then(function(data){
+      if (!data.ok) throw new Error(data.error || 'GAS 응답 오류');
+      _activeHeaders = data.headers || [];
+      _activeRows    = data.data    || [];
+      _activeLoaded  = true;
+      _activeRender(_activeRows);
+      _activeWireSearch();
+    })
+    .catch(function(err){
+      _activeRenderState('error', err.message || 'GAS URL 또는 배포 상태를 확인하세요.');
+    });
+}
+
+function _activeWireSearch() {
+  var input = document.getElementById('activeSearch');
+  if (!input || input.dataset.wired) return;
+  input.dataset.wired = '1';
+  input.addEventListener('compositionstart', function(){ _activeComposing = true; });
+  input.addEventListener('compositionend',   function(){
+    _activeComposing = false;
+    _activeFilter(input.value);
+  });
+  input.addEventListener('input', function(){
+    if (!_activeComposing) _activeFilter(input.value);
+  });
+}
+
+function _activeFilter(query) {
+  var q = query.trim().toLowerCase();
+  if (!q) {
+    _activeRender(_activeRows);
+    return;
+  }
+  var filtered = _activeRows.filter(function(row){
+    return _activeHeaders.some(function(h){
+      return String(row[h] || '').toLowerCase().indexOf(q) !== -1;
+    });
+  });
+  _activeRender(filtered, true);
+}
+
+function _activeRender(rows, isFiltered) {
+  var head  = document.getElementById('activeHead');
+  var tbody = document.getElementById('activeBody');
+  var count = document.getElementById('activeCount');
+
+  if (!isFiltered) {
+    var ths = _activeHeaders.map(function(h){
+      return '<th style="white-space:nowrap">' + esc(h) + '</th>';
+    }).join('');
+    head.innerHTML = '<tr>' + ths + '</tr>';
+  }
+
+  count.textContent = '총 ' + rows.length + '명' +
+    (_activeRows.length !== rows.length ? ' (전체 ' + _activeRows.length + '명 중)' : '');
+
+  if (rows.length === 0) {
+    var span = _activeHeaders.length || 1;
+    tbody.innerHTML =
+      '<tr><td colspan="' + span + '">' +
+      '<div class="empty-state">' +
+      '<div class="empty-state-icon">🔍</div>' +
+      '<div class="empty-state-title">해당 회원 없음</div>' +
+      '<div class="empty-state-desc">검색어를 바꿔보세요.</div>' +
+      '</div></td></tr>';
+    return;
+  }
+
+  var html = '';
+  rows.forEach(function(row){
+    html += '<tr>';
+    _activeHeaders.forEach(function(h){
+      html += '<td style="white-space:nowrap">' + esc(row[h] != null ? row[h] : '—') + '</td>';
+    });
+    html += '</tr>';
+  });
+  tbody.innerHTML = html;
+}
+
+function _activeRenderState(state, msg) {
+  var head  = document.getElementById('activeHead');
+  var tbody = document.getElementById('activeBody');
+  var count = document.getElementById('activeCount');
+  count.textContent = '';
+  head.innerHTML = '<tr><th> </th></tr>';
+  if (state === 'loading') {
+    tbody.innerHTML =
+      '<tr><td><div class="empty-state">' +
+      '<div class="loading-spinner"></div>' +
+      '<div class="empty-state-title" style="margin-top:12px">불러오는 중…</div>' +
+      '</div></td></tr>';
+  } else if (state === 'unlinked') {
+    tbody.innerHTML =
+      '<tr><td><div class="empty-state">' +
+      '<div class="empty-state-icon">🔌</div>' +
+      '<div class="empty-state-title">미연동</div>' +
+      '<div class="empty-state-desc">GAS URL이 교체되면 자동으로 활성 회원 명단이 표시됩니다.</div>' +
+      '</div></td></tr>';
+  } else if (state === 'error') {
+    tbody.innerHTML =
+      '<tr><td><div class="empty-state">' +
+      '<div class="empty-state-icon">⚠️</div>' +
+      '<div class="empty-state-title">데이터 로드 실패</div>' +
+      '<div class="empty-state-desc">' + esc(msg || '') + '</div>' +
+      '</div></td></tr>';
+  }
 }
 
 /* ─────────────────────────────────────────────
