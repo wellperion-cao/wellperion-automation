@@ -465,6 +465,8 @@ var _SURVEY_PUBLIC_ACTIONS = {
   member_registered_delete:   true,  // 등록 해제(행 삭제)
   member_active_list:         true   // 멤버십 활성 회원 명단(유효회원·읽기전용·전화 마스킹)
 };
+// add_utm_field 비밀 가드값 — 폼 변형 액션 무단호출 차단. _SURVEY_PUBLIC_ACTIONS에 넣지 말 것.
+var _ADD_UTM_GUARD = 'wp-utm-field-2026-i-am-sure';
 function _accessProp_(k) {
   try { return PropertiesService.getScriptProperties().getProperty(k) || ''; } catch (e) { return ''; }
 }
@@ -882,6 +884,62 @@ function _processAction(body) {
     mdSh.deleteRow(mdRow);
     try { _notifyTelegram('🗑 문의회원 삭제(공개페이지) — 행 ' + mdRow); } catch (e) {}
     return _json({ ok: true, rowIndex: mdRow, message: '삭제되었습니다.' });
+  }
+
+  // ─── UTM 귀속(파일럿): 구글폼에 '유입경로(자동)' 텍스트 항목 추가 + prefill entry ID 회수 (2026-06-23 ship113) ───
+  //   ★ 가드 필수 — 폼을 실제로 변형하므로 _SURVEY_PUBLIC_ACTIONS 화이트리스트에 절대 넣지 않는다.
+  //     비밀 파라미터 key === _ADD_UTM_GUARD 일치할 때만 실행(무단호출 차단).
+  //   멱등: 이미 '유입경로(자동)' 항목이 있으면 추가하지 않고 기존 entry ID만 회수.
+  //   동작: FormApp.openById → 편집권한 확인 → (없으면 추가) → createResponse().toPrefilledUrl()에서 entry.<숫자> 추출 반환.
+  if (action === 'add_utm_field') {
+    if (String(body.key || '') !== _ADD_UTM_GUARD) {
+      return _json({ ok: false, error: 'guard-mismatch' });
+    }
+    var aufFormId = String(body.formId || '').trim();
+    if (!aufFormId) return _json({ ok: false, error: 'formId 필수' });
+    var aufForm;
+    try {
+      aufForm = FormApp.openById(aufFormId);
+      // 편집 가능 여부 확인 — getEditUrl()은 편집권한 없으면 throw.
+      aufForm.getEditUrl();
+    } catch (e) {
+      return _json({ ok: false, error: 'no-access', detail: String(e) });
+    }
+    var AUF_TITLE = '유입경로(자동)';
+    // 멱등: 동일 제목 텍스트 항목 탐색
+    var aufItem = null;
+    var aufTextItems = aufForm.getItems(FormApp.ItemType.TEXT);
+    for (var ai = 0; ai < aufTextItems.length; ai++) {
+      if (String(aufTextItems[ai].getTitle()).trim() === AUF_TITLE) { aufItem = aufTextItems[ai]; break; }
+    }
+    var aufCreated = false;
+    if (!aufItem) {
+      aufItem = aufForm.addTextItem()
+        .setTitle(AUF_TITLE)
+        .setHelpText('자동 입력 항목 — 비워두셔도 됩니다')
+        .setRequired(false);
+      aufCreated = true;
+    }
+    // prefill entry ID 회수: createResponse에 이 item 값 세팅 → toPrefilledUrl → entry.<숫자> 추출
+    var aufEntryId = '';
+    try {
+      var aufTextItem = aufItem.asTextItem();
+      var aufResp = aufForm.createResponse();
+      aufResp.withItemResponse(aufTextItem.createResponse('__PROBE__'));
+      var aufPrefillUrl = aufResp.toPrefilledUrl();
+      var aufMatch = aufPrefillUrl.match(/entry\.(\d+)=__PROBE__/);
+      if (!aufMatch) aufMatch = aufPrefillUrl.match(/entry\.(\d+)/);  // 폴백
+      aufEntryId = aufMatch ? aufMatch[1] : '';
+    } catch (e) {
+      return _json({ ok: false, error: 'prefill-failed', detail: String(e), created: aufCreated });
+    }
+    return _json({
+      ok: true,
+      entryId: aufEntryId,
+      created: aufCreated,
+      viewUrl: aufForm.getPublishedUrl(),
+      title: AUF_TITLE
+    });
   }
 
   // ─── 회원관리 페이지(CPO): 등록회원 명단 조회 (등록기간 from~to 필터, 1~12월 체크 포함) ───

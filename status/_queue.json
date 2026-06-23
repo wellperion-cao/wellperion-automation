@@ -4441,10 +4441,10 @@
     "id": "CMO-2026-06-23-FUNNEL-UTM-FORM-CAPTURE",
     "clevel": "cmo",
     "title": "[시모] UTM 문의제출 귀속 — 구글폼 prefill(utm 필드 추가)로 문의 건수까지 콘텐츠별 집계",
-    "status": "PENDING",
+    "status": "IN_PROGRESS",
     "priority": "NORMAL",
     "enqueued_at": "2026-06-23",
-    "note": "GM 구글폼에 utm 필드 추가(entry ID) 선행 필요 → prefilled URL 배선. 클릭 단위 귀속은 104서 완료.",
+    "note": "멤버십 폼 파일럿: Survey.js add_utm_field 액션(가드·멱등·prefill entryId 회수) 구현+배포(@66)·가드 동작 검증 완료. 단 멤버십 폼(1kvQqON12…)은 cao 편집권한 없음(no-access)·Drive 미발견 → entryId 회수·프리필 배선 BLOCKED(폼 소유 계정 확인/cao 공유 필요). 권한 받으면 curl 1회로 entryId 회수→wp_inquiry_block.html 배선→나머지 5개 폼 확장.",
     "ship_no": 113
   },
   {
@@ -4933,5 +4933,17 @@
     "next": "🌀 표류 — 다음 미정 (필요 시 GM·웰리/담당 C-Level 지정)",
     "adhoc_commit": "81215dd77d08f4cfd609c3072dc4b2e9c930b67c",
     "ship_no": 29
+  },
+  {
+    "task_id": "CTO-2026-06-23-AUTOMATION-HEALTH-SCOREBOARD",
+    "clevel": "cto",
+    "title": "[시토] 자동화 건강 점수판 — 자동화 정상작동 수치화(정상N/전체M·%·신호등)로 GM이 성과 파악",
+    "status": "IN_PROGRESS",
+    "priority": "⛴️여객선",
+    "enqueued_at": "2026-06-23",
+    "note": "GM 지시 2026-06-23: 자동화 정상작동을 수치화해 GM이 시토 성과 한눈에 파악. 기존 T2 시스템현황판(erp_status.json·erp_status_publisher.py)에 자동화 건강 점수 얹음. 데이터=schtasks LastRunResult(0=성공). 정직원칙=측정가능(Task Scheduler 결과코드)만 수치화, 수동세션 제외.",
+    "next": "구현·실증 후 30분 자동발행에 합류.",
+    "depends_on": "",
+    "ship_no": 123
   }
 ]
