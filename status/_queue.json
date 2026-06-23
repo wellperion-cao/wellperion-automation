@@ -4651,7 +4651,7 @@
     "priority": "⛴️여객선",
     "enqueued_at": "2026-06-23",
     "note": "GM 승인 제안 반영(2026-06-23). 졸속 자기수정 방지 위해 배로 분리. ①제안2(id prop_20260623_185611_d79017·시토): 단일모델 의존 중단 대비 모델 라우팅 폴백 로직+텔레그램 경보 — 신규 자동화코드·봇/파이프라인 건드림, 시토 직접 신중 구현(우선). ②제안3(id prop_20260623_185611_8e28c0·시우): 자율진행에 auto mode 화이트리스트(위험동작 차단→GM게이트) 운영프로세스 명문화 — 권한게이트 정본(S2 공통탭) 영역이라 시우/웰리 조율 필요. 반영 완료 시 각 제안 --mark-applied.",
-    "next": "제안2(모델 폴백) 설계·구현부터 — 라우팅 매트릭스(S2⑨) 정합 + 폴백 발동 시 GM 경보. 제안3은 권한게이트 정본 위치·시우 조율 후 명문화.",
+    "next": "⚓ 정박(내일 재개) — 제안2(시토 모델 라우팅 폴백) 신규코드 구현부터. 제안3(시우 auto mode 화이트리스트)은 권한게이트 정본·시우 조율 후.",
     "depends_on": "",
     "ship_no": 117
   },
@@ -4938,13 +4938,15 @@
     "task_id": "CTO-2026-06-23-AUTOMATION-HEALTH-SCOREBOARD",
     "clevel": "cto",
     "title": "[시토] 자동화 건강 점수판 — 자동화 정상작동 수치화(정상N/전체M·%·신호등)로 GM이 성과 파악",
-    "status": "IN_PROGRESS",
+    "status": "DONE",
     "priority": "⛴️여객선",
     "enqueued_at": "2026-06-23",
     "note": "GM 지시 2026-06-23: 자동화 정상작동을 수치화해 GM이 시토 성과 한눈에 파악. 기존 T2 시스템현황판(erp_status.json·erp_status_publisher.py)에 자동화 건강 점수 얹음. 데이터=schtasks LastRunResult(0=성공). 정직원칙=측정가능(Task Scheduler 결과코드)만 수치화, 수동세션 제외.",
-    "next": "구현·실증 후 30분 자동발행에 합류.",
+    "next": "🔗 항로점 — 자동화 건강 점수판 가동(erp_status 30분 자동발행·T2 렌더). 첫 집계 10개 중 8개 정상(80%). 후속(시토): 🔴Wellperion-Morning-Update 실패·⚪CMO월간보고 미실행 2건 원인 점검.",
     "depends_on": "",
-    "ship_no": 123
+    "ship_no": 123,
+    "terminal": true,
+    "processed_at": "2026-06-23"
   },
   {
     "task_id": "CEO-2026-06-23-ADHOC-8798a707",
@@ -5153,5 +5155,17 @@
     "next": "🌀 표류 — 다음 미정 (필요 시 GM·웰리/담당 C-Level 지정)",
     "adhoc_commit": "bdde7d9ca45198a6548c9d7079f66a7b093d4576",
     "ship_no": 116
+  },
+  {
+    "task_id": "CTO-2026-06-23-CTO-CHARTER-8AXIS-AUTONOMY",
+    "clevel": "cto",
+    "title": "[시토] 시토 8축 헌장 재정리 — 북극성을 자동화→AI 자율화+보안으로 확장",
+    "status": "PENDING",
+    "priority": "⛴️여객선",
+    "enqueued_at": "2026-06-23",
+    "note": "GM 지시 2026-06-23(내일 진행). S2 cto탭 8축 헌장 재정리. 북극성(축1)=자동화→AI 자율화+보안(도달=C-Level은 방향·결재만, AI가 스스로 판단·협업·완결=감독자율, 돈·보안 등 중요결정은 GM도장). 보강: 축2 파이프라인+자율다리(계획→실행·안전게이트), 축4 KPI+자율진척(제안반영률·AI완결률)+자동화건강점수, 축6 자율 빨간선(돈·보안·외부발행·전략=GM도장)강조, 축7 소유에 자율인프라 추가. 축3·5·8 유지. 재정리안 GM 구두제시 완료→내일 최종확인 후 S2 반영·라이브검증. 연계 메모리 project_autonomy_next_after_automation.",
+    "next": "내일 GM 최종확인 후 S2 cto탭 8축 표 교체 + 라이브검증.",
+    "depends_on": "GM 내일 최종 확인",
+    "ship_no": 130
   }
 ]
