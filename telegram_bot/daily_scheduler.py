@@ -1846,8 +1846,9 @@ def _build_23_body() -> str:
 
 
 # ── 지원부 점검 미완 자동 독려 (오후17시·마감22시·미완시만·하루1회) — 시우 2026-06-18 ──
-# 핵심멤버방(운영 독려 대상). S2 COO 역할원칙: 운영 이슈는 COO가 핵심멤버방 직접 발송 가능.
-CORE_MEMBER_CHAT_ID = -5065206276
+# 점검 관리 방(점검 독려 대상). 핵심멤버방 3분류 분리(시우 102, 2026-06-24): 점검 알림 → '점검 관리' 방.
+# .env TELEGRAM_CHECK_CHAT_ID 사용. 미설정 시 구 핵심멤버방(현 '종합 접수처')으로 폴백.
+CHECK_NUDGE_CHAT_ID = int(ENV.get("TELEGRAM_CHECK_CHAT_ID") or -5065206276)
 
 
 def _build_nudge_body(shift: str) -> str | None:
@@ -1906,7 +1907,7 @@ def run_nudge(shift: str) -> None:
         logger.info(f"{label} 미완 아님/조회실패 — 침묵(발송 스킵)")
         return
 
-    success = send_telegram(CORE_MEMBER_CHAT_ID, body)
+    success = send_telegram(CHECK_NUDGE_CHAT_ID, body)
     if success:
         sent_today.append(shift)
         sent_map[today] = sent_today
@@ -1914,7 +1915,7 @@ def run_nudge(shift: str) -> None:
         recent = sorted(sent_map.keys())[-7:]
         state["nudge_sent"] = {k: sent_map[k] for k in recent}
         write_state(state)
-        logger.info(f"{label} 핵심멤버방 발송 완료 chat_id={CORE_MEMBER_CHAT_ID}")
+        logger.info(f"{label} 점검관리방 발송 완료 chat_id={CHECK_NUDGE_CHAT_ID}")
     else:
         logger.error(f"{label} 핵심멤버방 발송 실패 — dedup 미기록(다음 트리거 재시도)")
 
@@ -2255,6 +2256,28 @@ def main():
         next_run_time=datetime.now(),
     )
     logger.info("push_sweeper 등록 완료 (5분 주기) — 미푸시 커밋 안전 드레인")
+
+    # ── 큐 아카이브 스윕 (6시간 주기) — _queue.json 비대화 방지 — CTO 2026-06-24 ──
+    # 지난 입항(terminal)·폐기 배를 _queue_archive.json 으로 분리해 active 큐를 작게 유지.
+    # 멱등·fail-open·커밋 없음(git add 까지). G1 은 archive 도 함께 fetch 하므로 표시 무손상.
+    def _queue_archive_sweep():
+        try:
+            subprocess.run(
+                [sys.executable, "scripts/queue_archive_sweep.py"],
+                cwd=str(BASE.parent), timeout=120,
+                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+            )
+        except Exception as e:
+            logger.error(f"queue_archive_sweep 실행 실패: {e}")
+
+    scheduler.add_job(
+        _queue_archive_sweep,
+        trigger=IntervalTrigger(hours=6),
+        id="queue_archive_sweep",
+        misfire_grace_time=600,
+        coalesce=True,
+    )
+    logger.info("queue_archive_sweep 등록 완료 (6시간 주기) — _queue.json 비대화 방지")
 
     if args.test:
         logger.info("=== 테스트 모드 시작: 1시간 주기 ===")
