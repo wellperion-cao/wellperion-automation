@@ -171,49 +171,32 @@ def generate_proposals_claude_cli(summary_text: str, max_proposals: int) -> list
     GM 결정(2026-06-23): API 크레딧 미사용, Claude Code 구독 재사용.
     """
     prompt = _build_llm_prompt(summary_text, max_proposals)
-    import shutil
-    claude_bin = shutil.which("claude")  # Windows: claude.cmd 풀패스 해결(PATHEXT)
-    if not claude_bin:
-        print("[WARN] claude CLI 미설치(PATH 미해결) — 규칙기반 폴백")
+    # 모델 라우팅 폴백 경유(model_router) — 단일 모델 차단·장애 시 대체 모델 자동 강등 + 텔레그램 경보.
+    # 정본 = scripts/model_router.py (제안 prop_20260623_185611_d79017, GM 승인 2026-06-23).
+    try:
+        from model_router import run_claude  # same scripts/ 디렉터리
+    except ImportError:
+        import sys as _sys
+        _sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+        from model_router import run_claude
+
+    raw, used_model = run_claude(prompt, label="learning-proposer")
+    if raw is None:
+        print("[WARN] 전 모델 폴백 실패 — 규칙기반 폴백")
         return None
     try:
-        result = subprocess.run(
-            [claude_bin, "-p"],
-            input=prompt,  # 긴 한글 프롬프트는 stdin으로 — 명령줄 인자 길이/인코딩 한계 회피
-            capture_output=True,
-            text=True,
-            encoding="utf-8",
-            errors="replace",
-            timeout=180,
-        )
-        if result.returncode != 0:
-            stderr = result.stderr.strip() if result.stderr else ""
-            print(f"[WARN] claude CLI 실패 (exit {result.returncode}): {stderr[:200]}")
-            return None
-
-        raw = result.stdout.strip()
-        if not raw:
-            print("[WARN] claude CLI 빈 응답 — 규칙기반 폴백")
-            return None
-
         # 코드블록 제거 방어
         raw = re.sub(r"^```json\s*|^```\s*|\s*```$", "", raw, flags=re.MULTILINE).strip()
         proposals_raw = json.loads(raw)
         if not isinstance(proposals_raw, list):
             raise ValueError("응답이 배열이 아님")
+        print(f"[INFO] 제안 생성 모델 = {used_model}")
         return proposals_raw
-
-    except subprocess.TimeoutExpired:
-        print("[WARN] claude CLI 타임아웃(120s) — 규칙기반 폴백")
-        return None
-    except FileNotFoundError:
-        print("[WARN] claude CLI 미설치 — 규칙기반 폴백")
-        return None
     except json.JSONDecodeError as e:
-        print(f"[WARN] claude CLI 응답 JSON 파싱 실패: {e} — 규칙기반 폴백")
+        print(f"[WARN] LLM 응답 JSON 파싱 실패(model={used_model}): {e} — 규칙기반 폴백")
         return None
     except Exception as e:
-        print(f"[WARN] claude CLI 호출 중 예외: {type(e).__name__}: {e} — 규칙기반 폴백")
+        print(f"[WARN] 제안 파싱 중 예외: {type(e).__name__}: {e} — 규칙기반 폴백")
         return None
 
 
