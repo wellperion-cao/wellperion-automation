@@ -548,6 +548,32 @@ function empPhone(e){
   for(var k in e){ if(k==="_sheet_row"||k==="url"||k==="이메일") continue; var m=String(e[k]||"").match(re); if(m) return m[0]; }
   return "";
 }
+// 임직원 주민번호 칸에서 생년월일(6자리)+성별자리 추출 (시트 헤더 깨짐 대비 · 뒷자리 미노출)
+function empRRN(e){
+  if(!e) return null;
+  var rx=/(\d{6})\s*[-–]\s*([0-9])/;
+  for(var k in e){
+    if(k==="_sheet_row"||k==="url"||k==="연락처"||k==="이메일") continue;
+    var m=String(e[k]||"").match(rx);
+    if(m) return {b:m[1], g:m[2]};
+  }
+  return null;
+}
+// 만 나이 (주민번호 6자리+성별자리 기준 · 1,2,5,6→1900 / 3,4,7,8→2000 / 9,0→1800)
+function rrnAge(b,g){
+  var yy=+b.slice(0,2), mm=+b.slice(2,4), dd=+b.slice(4,6);
+  if(!mm||!dd||mm>12||dd>31) return null;
+  var c=(g==="1"||g==="2"||g==="5"||g==="6")?1900:(g==="9"||g==="0")?1800:2000;
+  var y=c+yy, t=new Date(), age=t.getFullYear()-y, m=t.getMonth()+1;
+  if(m<mm||(m===mm&&t.getDate()<dd)) age--;
+  return (age>=0&&age<=120)?age:null;
+}
+// 임직원 표시 셀: "590721 · 만 66세" (값 없으면 —)
+function empBirthCell(e){
+  var r=empRRN(e); if(!r) return "—";
+  var a=rrnAge(r.b,r.g);
+  return esc(r.b)+(a!=null?' <span class="t-sub">· 만 '+a+'세</span>':'');
+}
 // 채용 채널 값을 개별 채널 토큰 배열로 (콤마/슬래시/、 구분)
 function chTokens(v){
   var arr=parseArr(v), out=[];
@@ -926,7 +952,8 @@ function renderEmp(){
   setPanel("emp",html);
 
   var COLS=[["성명","성명",1],["부서","부서",1],["소속","소속",1],["직급","직급",1],
-    ["고용 형태","고용형태",1],["재직 상태","재직상태",1],["입사일","입사일",1],["연락처","연락처",0]];
+    ["고용 형태","고용형태",1],["재직 상태","재직상태",1],["입사일","입사일",1],["연락처","연락처",0],
+    ["__birth","생년월일·나이",0]];
   try{var sv=JSON.parse(localStorage.getItem("wp_hr_empsort")||"null");
     if(sv&&sv.key)empSortState=sv;}catch(e){}
   function headHtml(){
@@ -971,10 +998,11 @@ function renderEmp(){
         '<td>'+esc(txt(e["직급"]))+'</td><td>'+badge(e["고용 형태"])+'</td>'+
         '<td>'+badge(e["재직 상태"])+'</td><td>'+fmtD(dval(e,"입사일"))+'</td>'+
         '<td class="t-sub">'+(isAdmin?esc(empPhone(e)||"—"):'<span class="muted" title="관리자 로그인 시 표시">•••</span>')+'</td>'+
+        '<td class="t-sub">'+(isAdmin?empBirthCell(e):'<span class="muted" title="관리자 로그인 시 표시">•••</span>')+'</td>'+
         (isAdmin?'<td>'+(canResign
           ?'<button class="btn-sm" data-resign="'+esc(e.url||"")+'" data-name="'+esc(e["성명"]||"")+'">퇴사 처리</button>'
           :'<span class="muted">—</span>')+'</td>':'')+'</tr>';
-    }).join(""):'<tr><td colspan="'+(isAdmin?9:8)+'">'+emptyState("조건에 맞는 임직원이 없습니다.")+'</td></tr>';
+    }).join(""):'<tr><td colspan="'+(isAdmin?10:9)+'">'+emptyState("조건에 맞는 임직원이 없습니다.")+'</td></tr>';
     document.getElementById("empCount").textContent=rows.length+" / "+emp.length+" 명";
   }
   document.getElementById("empQ").addEventListener("input",draw);
