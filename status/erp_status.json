@@ -1,19 +1,19 @@
 {
   "_doc": "ERP 시스템 현황 단일 출처. erp_status_publisher.py 가 발행. ERP가 읽어 표시.",
-  "generated_at": "2026-06-23T11:26:31Z",
-  "generated_at_kst": "2026-06-23 20:26",
-  "summary": "⚠️ 점검 필요: 텔레그램 봇",
+  "generated_at": "2026-06-23T11:28:49Z",
+  "generated_at_kst": "2026-06-23 20:28",
+  "summary": "⚠️ 점검 필요: 텔레그램 봇, G1 큐 라이브, 큐 미러 동기",
   "systems": [
     {
       "name": "일일 스케줄러",
       "state": "정상",
-      "detail": "13분 전 활동",
+      "detail": "0분 전 활동",
       "note": "정각 보고를 쏘는 시계"
     },
     {
       "name": "텔레그램 봇",
       "state": "이상",
-      "detail": "449분째 조용함",
+      "detail": "452분째 조용함",
       "note": "보고·승인 중계"
     },
     {
@@ -30,13 +30,13 @@
   "bridges": [
     {
       "name": "G1 큐 라이브",
-      "state": "정상",
-      "detail": "HTTP 200 · active 27건 라이브=로컬 일치"
+      "state": "이상",
+      "detail": "건수 불일치 — 라이브 27건 ≠ 로컬 28건(미푸시·발행 지연 의심, 즉시 push 필요)"
     },
     {
       "name": "큐 미러 동기",
-      "state": "정상",
-      "detail": "일치 · active 27건/363679B"
+      "state": "이상",
+      "detail": "미러 드리프트 — 로컬 active 28건/364482B ≠ 미러 27건/363679B"
     },
     {
       "name": "시트 GAS(todo_list)",
@@ -53,5 +53,83 @@
       "state": "정상",
       "detail": "없음 — 로컬=origin/master 동기화"
     }
-  ]
+  ],
+  "automation_health": {
+    "summary": "자동화 8/10 정상 (80%)",
+    "total": 10,
+    "healthy": 8,
+    "rate": 80,
+    "items": [
+      {
+        "name": "Wellperion-AI-Education-Weekly",
+        "state": "정상",
+        "last_run": "2026-06-21 오전 9:30:00",
+        "last_result": 0,
+        "next_run": "2026-06-28 오전 9:30:00"
+      },
+      {
+        "name": "Wellperion-AI-Learning-Proposer-Weekly",
+        "state": "정상",
+        "last_run": "2026-06-23 오후 6:55:29",
+        "last_result": 0,
+        "next_run": "2026-06-29 오전 9:45:00"
+      },
+      {
+        "name": "Wellperion-CEO-Morning-Brief-0800-Live",
+        "state": "정상",
+        "last_run": "2026-06-23 오전 8:00:01",
+        "last_result": 0,
+        "next_run": "2026-06-24 오전 8:00:00"
+      },
+      {
+        "name": "Wellperion-CMO-Monthly-Report",
+        "state": "미실행",
+        "last_run": "1999-11-30 오전 12:00:00",
+        "last_result": 267011,
+        "next_run": "2026-07-01 오전 9:00:00"
+      },
+      {
+        "name": "Wellperion-Education-Archive-Weekly",
+        "state": "정상",
+        "last_run": "2026-06-21 오전 9:00:00",
+        "last_result": 0,
+        "next_run": "2026-06-28 오전 9:00:00"
+      },
+      {
+        "name": "Wellperion-Engagement-Collect-0930",
+        "state": "정상",
+        "last_run": "2026-06-23 오전 9:30:01",
+        "last_result": 0,
+        "next_run": "2026-06-24 오전 9:30:00"
+      },
+      {
+        "name": "Wellperion-IG-Series-Produce-0730",
+        "state": "정상",
+        "last_run": "2026-06-23 오전 7:30:01",
+        "last_result": 0,
+        "next_run": "2026-06-24 오전 7:30:00"
+      },
+      {
+        "name": "Wellperion-Morning-Update",
+        "state": "실패",
+        "last_run": "2026-06-23 오전 6:04:03",
+        "last_result": -2147020576,
+        "next_run": "2026-06-24 오전 5:40:00"
+      },
+      {
+        "name": "WellperionDailyScheduler",
+        "state": "정상",
+        "last_run": "2026-06-23 오전 5:56:21",
+        "last_result": 0,
+        "next_run": "N/A"
+      },
+      {
+        "name": "WellperionTelegramBot",
+        "state": "정상",
+        "last_run": "2026-06-23 오전 5:56:21",
+        "last_result": 0,
+        "next_run": "N/A"
+      }
+    ]
+  }
 }

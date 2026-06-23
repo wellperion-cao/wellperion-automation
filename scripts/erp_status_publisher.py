@@ -121,6 +121,102 @@ def collect_bridges():
     ]
 
 
+def collect_automation_health():
+    """Task Scheduler Wellperion 작업 → 자동화 건강 집계.
+    결과코드 0 = 정상, 0 아님 = 실패, 한 번도 안 돎(1999년 기본값) = 미실행.
+    측정 불가·schtasks 실패 시 fail-safe로 빈 결과 반환(전체 발행 안 깨짐).
+    """
+    NEVER_RUN_YEAR = "1999"  # schtasks 기본값 — 한 번도 안 돎
+    try:
+        r = subprocess.run(
+            ["schtasks", "/query", "/fo", "LIST", "/v"],
+            capture_output=True, text=True, timeout=30,
+        )
+        if r.returncode != 0 and not r.stdout:
+            return {"summary": "집계 중 (schtasks 조회 실패)", "total": 0,
+                    "healthy": 0, "rate": 0, "items": []}
+
+        # 블록 분리 (각 작업은 '호스트 이름:' 행으로 시작)
+        blocks = []
+        cur = []
+        for line in r.stdout.split("\n"):
+            s = line.strip()
+            if s.startswith("호스트 이름:") or s.startswith("Host Name:"):
+                if cur:
+                    blocks.append("\n".join(cur))
+                cur = [line]
+            else:
+                cur.append(line)
+        if cur:
+            blocks.append("\n".join(cur))
+
+        def _field(block, *keys):
+            """블록에서 첫 매칭 필드 값 추출."""
+            for line in block.split("\n"):
+                for key in keys:
+                    if key in line:
+                        parts = line.split(":", 1)
+                        if len(parts) == 2:
+                            return parts[1].strip()
+            return ""
+
+        items = []
+        for block in blocks:
+            name = _field(block, "작업 이름:", "Task Name:")
+            if not name:
+                continue
+            # 작업명에 wellperion(대소문자 무관) 포함된 것만
+            if "wellperion" not in name.lower():
+                continue
+
+            last_result_raw = _field(block, "마지막 결과:", "Last Result:")
+            last_run = _field(block, "마지막 실행 시간:", "Last Run Time:")
+            next_run = _field(block, "다음 실행 시간:", "Next Run Time:")
+
+            # 분류
+            if not last_result_raw:
+                state = "불명"
+                last_result_code = None
+            else:
+                try:
+                    code = int(last_result_raw)
+                    last_result_code = code
+                    # 1999년 기본값 = 한 번도 안 돎
+                    if NEVER_RUN_YEAR in last_run:
+                        state = "미실행"
+                    elif code == 0:
+                        state = "정상"
+                    else:
+                        state = "실패"
+                except ValueError:
+                    state = "불명"
+                    last_result_code = last_result_raw
+
+            items.append({
+                "name": name.lstrip("\\"),
+                "state": state,
+                "last_run": last_run,
+                "last_result": last_result_code,
+                "next_run": next_run,
+            })
+
+        total = len(items)
+        healthy = sum(1 for i in items if i["state"] == "정상")
+        rate = round(healthy / total * 100) if total > 0 else 0
+        summary = f"자동화 {healthy}/{total} 정상 ({rate}%)"
+
+        return {
+            "summary": summary,
+            "total": total,
+            "healthy": healthy,
+            "rate": rate,
+            "items": items,
+        }
+    except Exception as e:
+        return {"summary": f"집계 중 (오류: {e})", "total": 0,
+                "healthy": 0, "rate": 0, "items": []}
+
+
 def _read_env_token():
     """telegram_bot/.env 직독 → (token, chat_id). 실패 시 (None, None)."""
     token = chat = None
@@ -185,6 +281,7 @@ def build():
     # → 여기서 중복 집계/표시하지 않는다(약속 L01 한 곳만, 2026-06-16 GM 지적).
     systems = collect_processes() + collect_tasks()
     bridges = collect_bridges()
+    automation_health = collect_automation_health()
     broken_bridges = [b["name"] for b in bridges if b["state"] == "이상"]
     abnormal = [s["name"] for s in systems if s["state"] == "이상"] + broken_bridges
     if abnormal:
@@ -201,6 +298,7 @@ def build():
         "summary": summary,
         "systems": systems,
         "bridges": bridges,
+        "automation_health": automation_health,
     }
 
 

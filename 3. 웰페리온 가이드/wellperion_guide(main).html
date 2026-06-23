@@ -6391,6 +6391,71 @@ function crTab(btn, panelId) {
     </script>
     <!-- ══ /시스템 현황 ══ -->
 
+    <!-- ══ 🤖 자동화 건강 점수판 (automation_health · 2026-06-23) ══ -->
+    <div id="erp-autohealth" style="background:var(--paper);border:1px solid var(--border);border-left:3px solid #1a7a3c;border-radius:12px;padding:16px 20px;margin:6px 0 22px;">
+      <h3 style="margin-top:0;margin-bottom:4px;"><span class="ico">🤖</span>자동화 건강 점수판 <span style="font-size:13px;font-weight:400;color:var(--dim);">(Task Scheduler 실행결과 기반 — 30분 자동 갱신)</span></h3>
+      <div id="erp-ah-headline" style="font-size:18px;font-weight:800;margin:6px 0 12px;color:#1a7a3c;">집계 중…</div>
+      <div id="erp-ah-body" style="font-size:13px;margin-bottom:8px;"></div>
+      <div id="erp-ah-time" style="font-size:11px;color:var(--dim);margin-top:8px;"></div>
+    </div>
+    <script>
+    (function(){
+      var URL='https://raw.githubusercontent.com/wellperion-cao/wellperion-automation/master/status/erp_status.json';
+      function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+      function ahBadge(st){
+        if(st==='정상') return '<span style="background:#edf7f0;color:#1a7a3c;border:1px solid #b6dfc5;border-radius:10px;padding:2px 8px;font-weight:700;font-size:12px;">🟢 정상</span>';
+        if(st==='실패') return '<span style="background:#fef3f2;color:#b42318;border:1px solid #fecdc9;border-radius:10px;padding:2px 8px;font-weight:700;font-size:12px;">🔴 실패</span>';
+        if(st==='미실행') return '<span style="background:#f5f5f5;color:#666;border:1px solid #ddd;border-radius:10px;padding:2px 8px;font-weight:700;font-size:12px;">⚪ 미실행</span>';
+        return '<span style="background:#fff4e6;color:#b85c00;border:1px solid #f5c89a;border-radius:10px;padding:2px 8px;font-weight:700;font-size:12px;">❓ '+esc(st)+'</span>';
+      }
+      fetch(URL+'?t='+Date.now(),{cache:'no-store'})
+        .then(function(r){return r.json();})
+        .then(function(d){
+          var ah=d.automation_health||{};
+          var hl=document.getElementById('erp-ah-headline');
+          if(hl){
+            var rate=ah.rate||0;
+            var color=rate===100?'#1a7a3c':(rate>=80?'#b85c00':'#b42318');
+            hl.style.color=color;
+            hl.textContent=ah.summary||(ah.total?'자동화 '+ah.healthy+'/'+ah.total+' 정상 ('+rate+'%)':'집계 중');
+          }
+          var body=document.getElementById('erp-ah-body');
+          if(body){
+            var items=ah.items||[];
+            if(items.length===0){
+              body.innerHTML='<span style="color:var(--dim);">항목 없음 (집계 전)</span>';
+            } else {
+              var h='<div style="display:grid;gap:6px;">';
+              items.forEach(function(item){
+                var failed=item.state==='실패';
+                var border=failed?'border:1px solid #fecdc9;':'border:1px solid var(--border);';
+                var bg=failed?'background:#fef3f2;':'background:var(--bg,#fff);';
+                h+='<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;'+bg+border+'border-radius:8px;padding:7px 12px;">';
+                h+=ahBadge(item.state);
+                h+='<div style="font-weight:'+(failed?'700':'600')+';min-width:220px;color:'+(failed?'#b42318':'inherit')+';">'+esc(item.name)+'</div>';
+                if(item.last_run){
+                  h+='<div style="color:var(--dim);font-size:12px;">마지막: '+esc(item.last_run)+'</div>';
+                }
+                if(item.state==='실패'&&item.last_result!==null&&item.last_result!==undefined){
+                  h+='<div style="color:#b42318;font-size:12px;font-weight:600;">코드: '+esc(String(item.last_result))+'</div>';
+                }
+                h+='</div>';
+              });
+              h+='</div>';
+              body.innerHTML=h;
+            }
+          }
+          var t=document.getElementById('erp-ah-time');
+          if(t) t.textContent='기준: '+esc(d.generated_at_kst||'')+'  |  ※ Task Scheduler 등록 자동화만 집계 (수동 세션 제외)';
+        })
+        .catch(function(){
+          var hl=document.getElementById('erp-ah-headline');
+          if(hl) hl.innerHTML='<span style="color:var(--dim);font-weight:400;">집계 중 (데이터 로드 전)</span>';
+        });
+    })();
+    </script>
+    <!-- ══ /자동화 건강 점수판 ══ -->
+
     <p style="font-size:12px;color:var(--dim);margin:6px 0 14px;">📋 7대 자동화 모듈 <strong>전사 로드맵(목표)</strong> → <strong>S2 공통탭 ▸ 🌟 전사 자동화 로드맵</strong>으로 이관·고도화(2026-06-16). T2는 '지금 도는 현황'만.</p>
 
 
