@@ -784,7 +784,7 @@ if (action === 'member_calendar') {
 var GAS_URL = 'https://script.google.com/macros/s/AKfycbzdwSCCSSJ6JXLDoWuo7HG0JmBM2iy10TujFQ_O5JbTjnWaN7gOk-ddA4IAvsNfelg0xA/exec';
 /* ── 수정 모드(2026-06-22 GM '그냥 열기') — 진행상태·메모·일정·담당만 수정. 이름·전화는 익명 유지·수정불가 ── */
 var READ_ONLY = false;
-var ALLOW_DELETE = true;  // 2026-06-22 GM: 작업열 편집+삭제
+var ALLOW_DELETE = false;  // 2026-06-23 GM: 삭제 제거 — 삭제는 시트에서 수동으로만
 var ALLOW_ADD = false;    // 신규추가 비활성(문의는 웹폼·시트로 유입)
 
 /* ── 탭 전환 ── */
@@ -1101,7 +1101,6 @@ function buildDbRow(row, isNew) {
       ? '<td><span style="font-size:11px;color:var(--dim)">🔒 읽기전용</span></td>'
       : '<td><div class="row-actions">' +
           '<button class="row-btn btn-edit" onclick="startEditRow(this)">편집</button>' +
-          (ALLOW_DELETE ? '<button class="row-btn btn-del" onclick="deleteRow(this)">삭제</button>' : '') +
         '</div></td>');
 
   return tr;
@@ -1388,33 +1387,6 @@ function submitNewRow(tr) {
     })
     .catch(function(err){
       showToast('추가 실패: ' + err.message, 'err');
-    });
-}
-
-function deleteRow(btn) {
-  var tr = btn.closest('tr');
-  var rowIndex = parseInt(tr.dataset.rowIndex, 10);
-  if (!rowIndex) { renderDbTable(); return; }
-
-  var row = dbRows.find(function(r){ return r.rowIndex === rowIndex; }) || {};
-  if (!confirm('삭제하시겠습니까?\n' + (row.name || '(이름없음)') + ' · ' + (row.timestamp || '') + '\n\n이 작업은 시트에서 해당 행을 완전히 삭제합니다.')) return;
-
-  // 삭제 비밀번호 게이트 (PIN)
-  var _delPin = prompt('삭제 비밀번호를 입력하세요.');
-  if (_delPin === null) return;                 // 취소
-  if (_delPin !== '1531') { showToast('비밀번호가 일치하지 않습니다.', 'err'); return; }
-
-  apiPost({ action: 'member_inquiry_delete', rowIndex: rowIndex })
-    .then(function(data){
-      if (!data.ok) throw new Error(data.error || '삭제 실패');
-      showToast('삭제 완료', 'ok');
-      dbRows = dbRows.filter(function(r){ return r.rowIndex !== rowIndex; });
-      renderDbTable();
-      // 서버 재검증
-      setTimeout(loadDbData, 1200);
-    })
-    .catch(function(err){
-      showToast('삭제 실패: ' + err.message, 'err');
     });
 }
 
