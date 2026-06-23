@@ -65,16 +65,30 @@ table.roster{font-size:12.5px;margin-top:6px}
 table.roster th{background:var(--soft);white-space:nowrap}
 table.roster td{white-space:nowrap}
 .pii-note{font-size:11px;color:var(--coral);font-weight:600}
+.printBtn{font:inherit;font-size:11px;font-weight:700;margin-left:8px;padding:3px 12px;border:1px solid var(--charcoal);background:var(--charcoal);color:#fff;border-radius:999px;cursor:pointer}
+.printBtn:hover{opacity:.88}
+.print-only{display:none}
+@media print{
+  @page{margin:10mm}
+  .wrap{max-width:100%!important;margin:0!important;padding:8px 10px!important}
+  #retry,.printBtn,#tabs,.rosterBtn{display:none!important}
+  .print-only{display:inline-block!important;font-size:16px;color:var(--coral);font-weight:800;margin-left:6px}
+  header{margin-bottom:6px}
+  section,.panel,.kpi,.chartbox,table,.grid2>div{break-inside:avoid;page-break-inside:avoid}
+  .grid2{grid-template-columns:1fr 1fr!important}
+  .kpis{grid-template-columns:repeat(4,1fr)!important}
+  *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;color-adjust:exact!important}
+}
 </style>
 </head>
 <body>
 <div class="wrap">
   <header>
     <div class="eyebrow">WELLPERION · MEMBERSHIP OPERATIONS</div>
-    <h1>재등록 대시보드</h1>
+    <h1>재등록 대시보드 <span id="printScope" class="print-only"></span></h1>
     <div class="sub">2026년 · 만기 회원 재등록 현황 · 시트 실시간(집계 지표)</div>
     <div class="status"><span class="dot-live" id="dot"></span><span id="statusTxt">연결 중…</span><span class="t" id="updTxt"></span>
-      <button id="retry">다시 시도</button></div>
+      <button id="retry">다시 시도</button> <button class="printBtn" onclick="window.print()">🖨 인쇄</button></div>
   </header>
   <div id="loading" class="skel">데이터를 불러오는 중입니다…</div>
   <div id="app" class="hidden">
@@ -215,7 +229,7 @@ function renderMonth(m){
 }
 function buildTabs(){const el=document.getElementById('tabs');el.innerHTML='';
   ['전체',...DATA.map(m=>m.key)].forEach((k,i)=>{const b=document.createElement('button');b.className='tab'+(i===0?' active':'');b.textContent=k;b.onclick=()=>select(k);el.appendChild(b);});}
-function select(key){document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.textContent===key));
+function select(key){var ps=document.getElementById('printScope');if(ps)ps.textContent='· '+key;document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.textContent===key));
   const all=key==='전체';document.getElementById('view-all').classList.toggle('hidden',!all);document.getElementById('view-month').classList.toggle('hidden',all);
   if(all)renderAll();else renderMonth(DATA.find(m=>m.key===key));}
 function paint(){buildTabs();document.getElementById('loading').classList.add('hidden');document.getElementById('app').classList.remove('hidden');
