@@ -1422,9 +1422,10 @@
         // 1. 배정 버튼에 this(버튼 자신)를 넘겨주도록 수정
         + '<button onclick="_regAssign(\'' + id + '\',\'' + _regEsc(it['카테고리']||'') + '\', this)" style="font-size:11.5px;padding:4px 10px;border:1px solid var(--border);border-radius:7px;background:var(--paper);color:var(--text);cursor:pointer;font-family:inherit;">배정</button></div>'
         
-        + '<div style="margin:0 0 7px;">'
-        + '<textarea placeholder="조치내용 — 어떻게 처리했는지 기록 (완료 시 필수)" id="regmemo-' + id + '" rows="2" style="width:100%;box-sizing:border-box;background:var(--paper);border:1px solid var(--border);color:var(--text);padding:5px 8px;border-radius:6px;font-size:12px;font-family:inherit;resize:vertical;">' + memo + '</textarea>'
-        + '<button onclick="_regMemoSave(\'' + id + '\',\'' + _regEsc(it['카테고리']||'') + '\',this)" style="margin-top:4px;font-size:11px;padding:3px 9px;border:1px solid var(--border);border-radius:7px;background:var(--paper);color:var(--dim);cursor:pointer;font-family:inherit;">메모 저장</button></div>'
+        + (col.status === '접수' ? '' :
+            '<div style="margin:0 0 7px;">'
+          + '<textarea placeholder="조치내용 — 어떻게 처리했는지 기록 (완료 시 필수)" id="regmemo-' + id + '" rows="2" style="width:100%;box-sizing:border-box;background:var(--paper);border:1px solid var(--border);color:var(--text);padding:5px 8px;border-radius:6px;font-size:12px;font-family:inherit;resize:vertical;">' + memo + '</textarea>'
+          + '<button onclick="_regMemoSave(\'' + id + '\',\'' + _regEsc(it['카테고리']||'') + '\',this)" style="margin-top:4px;font-size:11px;padding:3px 9px;border:1px solid var(--border);border-radius:7px;background:var(--paper);color:var(--dim);cursor:pointer;font-family:inherit;">메모 저장</button></div>')
         + '<div style="display:flex;gap:6px;flex-wrap:wrap;">' + actions + '</div></div>';
     }
 
