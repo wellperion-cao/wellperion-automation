@@ -497,6 +497,17 @@ details.footnote-toggle > .fn-body{
     </div>
   </div>
 
+  <!-- ════════════════════════════════════════════
+       ④ 콘텐츠별 문의 유입 — UTM캠페인 슬러그별 클릭 순위
+       데이터소스: campaign_stats (클릭로그 UTM캠페인 칼럼 집계)
+       ════════════════════════════════════════════ -->
+  <div class="section">
+    <div class="section-title">콘텐츠별 문의 유입</div>
+    <div id="campaign-stats-wrap">
+      <div class="flow-skeleton sk-pulse" style="height:160px;border-radius:var(--radius-md)"></div>
+    </div>
+  </div>
+
 </div>
 
 <div class="page-footer">
@@ -1498,6 +1509,76 @@ async function loadTypeChannel() {
   }
 }
 
+// ─── 콘텐츠별 문의 유입 (campaign_stats) ────────────────────────────
+// 슬러그 → 한글 이름 매핑. 매핑 없으면 날짜+나머지 폴백.
+var CAMPAIGN_LABELS = {
+  '260620_KPGA_ep1': '골프 1편 · 코스에 서다',
+  '260620_KPGA_ep2': '골프 2편 · 시상대에 서다',
+  '260620_KPGA_ep3': '골프 3편 · 그 뒤엔 한 사람'
+};
+
+function _campLabel(slug) {
+  if (!slug || slug === '직접·기타') return '직접 · 기타';
+  if (CAMPAIGN_LABELS[slug]) return CAMPAIGN_LABELS[slug];
+  // 폴백: 날짜 접두사(6자리 YYMMDD) → 'YY.MM.DD' 형식 + 나머지
+  var m = slug.match(/^(\d{2})(\d{2})(\d{2})_?(.*)/);
+  if (m) return m[1] + '.' + m[2] + '.' + m[3] + (m[4] ? ' · ' + m[4].replace(/_/g,' ') : '');
+  return slug.replace(/_/g,' ');
+}
+
+function loadCampaignStats() {
+  var url = FUNNEL_APPS_SCRIPT_URL + '?action=campaign_stats';
+  fetch(url, { redirect: 'follow' })
+    .then(function(r){ return r.json(); })
+    .then(function(d){ renderCampaignStats(d); })
+    .catch(function(){ renderCampaignStats(null); });
+}
+
+function renderCampaignStats(d) {
+  var wrap = document.getElementById('campaign-stats-wrap');
+  if (!wrap) return;
+
+  // 오류 또는 데이터 없음
+  if (!d || !d.ok || !d.campaigns || d.campaigns.length === 0) {
+    wrap.innerHTML =
+      '<div style="background:var(--paper);border:1px solid var(--border);border-radius:var(--radius-lg);padding:32px 24px;text-align:center;">'
+      + '<div style="font-size:28px;margin-bottom:12px;opacity:.35">📊</div>'
+      + '<div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:8px">아직 콘텐츠별 유입 데이터가 없어요</div>'
+      + '<div style="font-size:12px;color:var(--dim);line-height:1.7">콘텐츠 링크를 클릭한 기록이 쌓이면<br>어느 콘텐츠에서 문의가 많이 왔는지<br>순위로 여기 표시됩니다.</div>'
+      + '</div>';
+    return;
+  }
+
+  var list = d.campaigns;
+  var maxClicks = list[0] ? list[0].clicks : 1;
+
+  var rows = list.map(function(item, i) {
+    var label = _campLabel(item.campaign);
+    var pct   = maxClicks > 0 ? Math.round((item.clicks / maxClicks) * 100) : 0;
+    var rankColor = i === 0 ? 'var(--accent)' : i === 1 ? 'var(--blue)' : i === 2 ? 'var(--purple)' : 'var(--dim)';
+    return '<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)">'
+      + '<div style="min-width:22px;font-size:13px;font-weight:700;color:' + rankColor + ';text-align:center">' + (i+1) + '</div>'
+      + '<div style="flex:1;min-width:0">'
+      +   '<div style="font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:5px">' + label + '</div>'
+      +   '<div style="background:var(--paper2);border-radius:4px;height:6px;overflow:hidden">'
+      +     '<div style="background:' + rankColor + ';height:6px;width:' + pct + '%;border-radius:4px;transition:width .4s ease"></div>'
+      +   '</div>'
+      + '</div>'
+      + '<div style="min-width:48px;text-align:right">'
+      +   '<span style="font-size:18px;font-weight:700;color:var(--text);letter-spacing:-.02em">' + item.clicks + '</span>'
+      +   '<span style="font-size:10px;color:var(--dim);margin-left:2px">클릭</span>'
+      + '</div>'
+      + '</div>';
+  }).join('');
+
+  wrap.innerHTML =
+    '<div style="background:var(--paper);border:1px solid var(--border);border-radius:var(--radius-lg);padding:18px 20px;box-shadow:var(--shadow)">'
+    + '<div style="font-size:11px;color:var(--dim);margin-bottom:4px">많이 클릭된 콘텐츠 순 · 누적 전체</div>'
+    + rows
+    + '<div style="font-size:10px;color:var(--dim);margin-top:10px;text-align:right">총 ' + d.total + '건 클릭 기록</div>'
+    + '</div>';
+}
+
 document.addEventListener('DOMContentLoaded', function() {
   // 월 네비게이터 초기화 — 오늘 달로 설정, 다음달 버튼 비활성
   _updateMonthNav();
@@ -1516,6 +1597,7 @@ document.addEventListener('DOMContentLoaded', function() {
   loadPeriodBreakdown('month');  // 기본 기간: 월 (자식 fetch는 위 플래그로 1회 스킵)
   loadClickStats();              // ↑ #1 유형별 클릭수에 필요 — period 응답 대기 없이 병렬
   loadTypeChannel();             // ↑ #3 유입채널 현황(기간 연동) — period 응답 대기 없이 병렬
+  loadCampaignStats();           // ↑ #4 콘텐츠별 문의 유입 — 누적 전체(기간 무관)
   // 이후 기간/월 전환 등 사용자 인터랙션에서는 _applyPeriodData가 평소대로 자식 fetch 수행
 
 });

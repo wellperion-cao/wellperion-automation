@@ -450,6 +450,7 @@ var _SURVEY_PUBLIC_ACTIONS = {
   funnel_conversion:      true,
   type_channel_breakdown: true,
   click_stats:            true,
+  campaign_stats:         true,  // 콘텐츠별 클릭 집계(PII 미노출) — 면제 안전
   today_live:             true,
   lesson_breakdown:       true,  // 종목별 등록수만 반환(PII 미노출) — 면제 안전
   // 문의회원 페이지(CPO) 익명 읽기 — 이름·전화·메모 0 노출 → 공개 안전(2026-06-22 A안)
@@ -707,6 +708,58 @@ function _processAction(body) {
     var csResult = { ok: true, total: data.length, byLink: byLink, byLinkUrl: byLinkUrl, byUtmSource: byUtmSource, from: csFrom, to: csTo };
     try { csCache.put(csCacheKey, JSON.stringify(csResult), 1800); } catch (e) { /* 캐시 저장 실패 무시 */ }
     return _json(csResult);
+  }
+
+  // ─── 콘텐츠별 클릭 집계 (campaign_stats) ───
+  // UTM캠페인(슬러그)별 클릭 수·최다 채널 집계. 빈 캠페인은 '직접/기타'로 분류.
+  if (action === 'campaign_stats') {
+    var campFrom = body.from || '';
+    var campTo   = body.to   || '';
+    var campCache = CacheService.getScriptCache();
+    var campKey = 'camp_v1_' + campFrom + '_' + campTo;
+    var campHit = campCache.get(campKey);
+    if (campHit && !_nc) return _json(JSON.parse(campHit));
+
+    var campSh = _getSheet(CLICK_SHEET, CLICK_HEADERS);
+    var campLast = campSh.getLastRow();
+    if (campLast < 2) return _json({ ok: true, total: 0, campaigns: [], from: campFrom, to: campTo });
+
+    var campData = campSh.getRange(2, 1, campLast - 1, CLICK_HEADERS.length).getValues();
+    // 기간 필터 (click_stats 와 동일 패턴)
+    if (campFrom && campTo) {
+      var campF = new Date(campFrom + 'T00:00:00+09:00').getTime();
+      var campT = new Date(campTo   + 'T23:59:59+09:00').getTime();
+      campData = campData.filter(function(row) {
+        var t = row[1] ? _normTs_(row[1]).getTime() : NaN;
+        return !isNaN(t) && t >= campF && t <= campT;
+      });
+    }
+
+    // UTM캠페인(인덱스 8) · UTM소스(인덱스 4) 집계
+    var campMap = {};  // { campaignKey: { clicks, channels: { src: n } } }
+    campData.forEach(function(row) {
+      var raw = String(row[8] || '').trim();
+      var key = raw || '직접·기타';
+      if (!campMap[key]) campMap[key] = { clicks: 0, channels: {} };
+      campMap[key].clicks++;
+      var src = String(row[4] || '').trim() || '직접/홈';
+      campMap[key].channels[src] = (campMap[key].channels[src] || 0) + 1;
+    });
+
+    // 최다 채널 산출 + 클릭 내림차순 정렬
+    var campArr = Object.keys(campMap).map(function(slug) {
+      var d = campMap[slug];
+      var topCh = '', topN = 0;
+      Object.keys(d.channels).forEach(function(ch) {
+        if (d.channels[ch] > topN) { topN = d.channels[ch]; topCh = ch; }
+      });
+      return { campaign: slug, clicks: d.clicks, topChannel: topCh };
+    });
+    campArr.sort(function(a, b) { return b.clicks - a.clicks; });
+
+    var campResult = { ok: true, total: campData.length, campaigns: campArr, from: campFrom, to: campTo };
+    try { campCache.put(campKey, JSON.stringify(campResult), 1800); } catch (e) { /* 캐시 저장 실패 무시 */ }
+    return _json(campResult);
   }
 
   // ─── 문의 목록 ───
