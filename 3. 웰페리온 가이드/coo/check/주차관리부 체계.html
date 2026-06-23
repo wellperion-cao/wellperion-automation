@@ -410,6 +410,42 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   #tab-policy .board-fullwidth{flex-direction:column!important;}
   #tab-policy .board-fullwidth .manual-section{flex:none!important;width:100%!important;}
 }
+/* ── A3 매뉴얼 인쇄 전용 컨테이너 (화면 숨김) ── */
+#a3-manual-print{display:none}
+/* ── A3 매뉴얼 인쇄 모드 (@page A3 landscape, 구역별 2열 그리드) — 가이드라인 A3와 완전 분리 ── */
+@media print{
+  body.a3-manual-mode{font-size:9px;line-height:1.25;color:#111;background:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  body.a3-manual-mode .header,
+  body.a3-manual-mode .tabs,
+  body.a3-manual-mode .submit-bar,
+  body.a3-manual-mode .saving,
+  body.a3-manual-mode .toast-msg,
+  body.a3-manual-mode .header-util-btns,
+  body.a3-manual-mode .util-btn,
+  body.a3-manual-mode .sheet-links,
+  body.a3-manual-mode #tab-policy,
+  body.a3-manual-mode #tab-guide,
+  body.a3-manual-mode #tab-manual,
+  body.a3-manual-mode #a3-guideline-print{display:none!important}
+  body.a3-manual-mode #a3-manual-print{display:block!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .a3m-header{text-align:center;font-size:15px;font-weight:800;letter-spacing:0.05em;padding:2px 0 4px;border-bottom:2.5px solid #4a3a2e;margin-bottom:2px;color:#2a2018}
+  .a3m-sub{text-align:center;font-size:8.5px;color:#8a7a6c;margin-bottom:6px;letter-spacing:0.02em}
+  .a3m-grid2{display:grid;grid-template-columns:1fr 1fr;gap:5mm;width:100%;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .a3m-zone{break-inside:avoid-column}
+  .a3m-zone-head{font-size:11px;font-weight:800;padding:3px 8px;margin-bottom:4px;border-radius:4px;background:#f3ede7;color:#4a3a2e;border-left:4px solid #B79F8A;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .a3m-zone-head.safety{background:#fdeeeb!important;border-left-color:#ED5B3F!important;color:#7a1a0a!important}
+  .a3m-zone-head.weekly{background:#eaf3fb!important;border-left-color:#5b9fd5!important;color:#1a3a5a!important}
+  .a3m-block{border:1px solid #d0c8c0;border-radius:5px;padding:5px 7px;margin-bottom:4px;break-inside:avoid;background:#fff}
+  .a3m-block-title{font-size:10px;font-weight:800;color:#2a2018;margin-bottom:3px;padding-bottom:2px;border-bottom:1px solid #e8e3de}
+  .a3m-line{font-size:8.5px;color:#222;padding:1px 0 1px 9px;position:relative;line-height:1.3;break-inside:avoid}
+  .a3m-line::before{content:"•";position:absolute;left:1px;top:0.5px;color:#B79F8A;font-size:8px}
+  .a3m-line.hl{color:#c0392b;font-weight:700}
+  .a3m-note{font-size:8px;color:#92400e;background:#fef3c7;border:1px solid #fcd34d;border-radius:3px;padding:2px 5px;margin:3px 0 3px;break-inside:avoid;display:block}
+  .a3m-weekly-table{width:100%;border-collapse:collapse;font-size:8px;margin-top:4px}
+  .a3m-weekly-table th,.a3m-weekly-table td{border:0.5px solid #ccc;padding:2px 4px;vertical-align:top}
+  .a3m-weekly-table th{background:#f0ece8!important;color:#4a3a2e!important;font-weight:800;text-align:center;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .a3m-weekly-table td:first-child{font-weight:800;color:#4a3a2e;text-align:center;background:#faf8f5!important;white-space:nowrap;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+}
 /* ── A3 가이드라인 인쇄 전용 컨테이너 (화면에선 숨김) ── */
 #a3-guideline-print{display:none}
 /* ── A3 인쇄 모드 (@page A3 portrait, 좌우 2단) ── */
@@ -485,6 +521,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   <div style="display:flex;gap:4px;margin-left:auto;">
     <button class="util-btn print-btn" onclick="window.print()">인쇄</button>
     <button class="util-btn print-btn" onclick="printA3Guideline()" title="규정+가이드를 A3 세로 좌우2단으로 인쇄">🖨️ A3 가이드라인</button>
+    <button class="util-btn print-btn" onclick="printA3Manual()" title="매뉴얼 구역별 절차를 A3 가로 1장으로 인쇄">🖨️ A3 매뉴얼</button>
   </div>
 </div>
 </div><!-- /sticky-top -->
@@ -937,6 +974,14 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
      주차관리부 체계 = 규정·가이드·매뉴얼 정적 프레젠테이션 전용. 점검은 지원부 점검 시스템과 충돌·동기화 문제로 제거.
      점검 데이터·GAS 연동(API_URL·fetch·submitShift·onCk·drawUI·renderAdmin·weekly/issuelog)·편집형 보드 일괄 삭제. -->
 
+<!-- ══ A3 매뉴얼 인쇄 전용 컨테이너 — A3 가로 1장, 구역별 절차 2열 ══ -->
+<div id="a3-manual-print">
+  <div class="a3m-header">주차관리부 매뉴얼</div>
+  <div class="a3m-sub" id="a3m-manual-sub"></div>
+  <!-- JS(printA3Manual)가 A3_MANUAL 상수 읽어 구역별 2열 그리드 주입 -->
+  <div id="a3m-manual-host"></div>
+</div>
+
 <!-- ══ A3 가이드라인 인쇄 전용 컨테이너 (화면 숨김 / 인쇄 시 전용 표시) ══ -->
 <div id="a3-guideline-print">
   <div class="a3-print-header">주차관리부 운영 가이드라인</div>
@@ -1103,6 +1148,186 @@ function printA3Guideline(){
   // 복원
   document.body.classList.remove('a3-print-mode');
   styleTag.textContent = '';
+}
+
+/* ═══════════════════════════════════════════
+   A3 매뉴얼 인쇄 — 구역별 절차 A3 가로 1장
+   소스: A3_MANUAL 정적 상수 (매뉴얼 탭 실제 내용 기반).
+   레이아웃: 좌열(공통+출입+정산+지상+지하) / 우열(우선구역+안전·소방+요일별 집중점검).
+   가이드라인 A3(printA3Guideline)와 함수·클래스·@page 전부 분리(상호 무간섭).
+   ═══════════════════════════════════════════ */
+const A3_MANUAL = {
+  left: [
+    { zone: '공통 유의사항', head: '', lines: [
+      { t: '차량 접촉·파손·차단기 고장·화재 위험 발견 시 즉시 조치 후 팀장·소장 보고 (자의 판단 금지)', hl: true },
+      { t: '차량번호·CCTV 영상은 회원 개인정보 — 외부 유출·임의 열람 금지' },
+      { t: '순찰 시 야광 조끼·안전화 착용 / 차량 이동 동선 주의' },
+      { t: '사고·민원 발생 시 현장 보존 + 사진 + CCTV 시각 기록 의무' }
+    ]},
+    { zone: '출입통제 · 차단기', head: '', subs: [
+      { title: '차단기', lines: [
+        { t: '입·출차 차단기 바(barrier) 작동·손상 여부 확인' },
+        { t: '센서·리모컨 반응 점검 / 오작동 시 즉시 수동 개방 후 보고' }
+      ]},
+      { title: 'LPR(번호인식) 카메라', lines: [
+        { t: '렌즈 청결 / 번호 인식 정상 / 표시판 점등 확인' }
+      ]},
+      { title: '회원/방문 운영', lines: [
+        { t: '회원 차량 자동개방 / 방문 차량 안내·등록 절차 준수' }
+      ]}
+    ]},
+    { zone: '정산 · 요금기', head: '', subs: [
+      { title: '무인 정산기', lines: [
+        { t: '화면·버튼·카드리더 정상 / 지폐·동전 투입구 막힘 여부' },
+        { t: '잔돈 보유량 / 영수증 용지 잔량 확인' }
+      ]},
+      { title: '현금 시재', lines: [
+        { t: '교대 시 현금 시재 인수인계·기록 의무' },
+        { t: '미정산·미수 건 발생 즉시 팀장 공유', hl: true }
+      ]}
+    ]},
+    { zone: '지상 주차장', head: '', subs: [
+      { title: '순찰', lines: [
+        { t: '불법·이중·무단 장기 주차 계도 및 기록' },
+        { t: '통행로 적치물 / 바닥 주차선·번호 식별' }
+      ]},
+      { title: '설비', lines: [
+        { t: '조명 점등 불량·깜빡임 구역 기록 (야간 대비)' },
+        { t: '배수구 막힘 / 천장·벽면 누수 / 결빙 위험(동절기)' }
+      ]}
+    ]},
+    { zone: '지하 주차장 (층별)', head: '', subs: [
+      { title: '층별 순찰', lines: [
+        { t: 'B1·B2 등 층별 순회 / 불법·이중 주차 / 적치물' },
+        { t: '층별 빈자리 현황 파악 및 안내' }
+      ]},
+      { title: '환기·누수', lines: [
+        { t: '조명 점등 / 환기·제연 팬 가동음·매연·악취' },
+        { t: '천장·벽면 누수 / 바닥 고임물 / 차수판(우수기) 상태' }
+      ]}
+    ]}
+  ],
+  right: [
+    { zone: '우선 · 지정 구역', head: '', subs: [
+      { title: '장애인 전용구역', lines: [
+        { t: '불법 점유 단속 / 표지·바닥도색 식별 / 비정상 주차 계도·기록' }
+      ]},
+      { title: '여성우선 구역', lines: [
+        { t: '위치·조명 양호 / 표지 식별 / 불법 점유 점검' }
+      ]},
+      { title: '전기차 충전구역', lines: [
+        { t: '충전기 작동 / 비충전 차량 점유 점검 / 케이블 정리' }
+      ]}
+    ]},
+    { zone: '안전 · 소방 · CCTV', head: 'safety', subs: [
+      { title: '소방', lines: [
+        { t: '소화기·소화전 비치 위치·수량 / 압력게이지 / 통로 가림 여부' },
+        { t: '비상구 유도등 점등 / 피난통로 적치물 제거 / 비상벨 위치' }
+      ]},
+      { title: 'CCTV', lines: [
+        { t: '주차구역 CCTV 화면 이상 / 사각지대 / 녹화 정상 여부' },
+        { t: '영상 열람은 사고·민원 처리 목적 + 책임자 승인 한정', hl: true }
+      ]},
+      { title: '주차장 화장실', lines: [
+        { t: '청결 / 비품(화장지·손세정제) / 악취·조명' }
+      ]}
+    ]},
+    { zone: '요일별 집중 점검', head: 'weekly', weekly: [
+      { day: '월', items: '바닥 주차선·표시 / 차단기 정밀 점검 / 장애인·여성우선 구역 집중' },
+      { day: '화', items: '배수구·차수판 / 조명 전수 점검 / 안내·규정 게시물' },
+      { day: '수', items: 'CCTV 사각지대 / 환기·제연 설비 점검' },
+      { day: '목', items: '바닥 청소·오염 제거 / 소화기·소화전 / 주차장 화장실 집중' },
+      { day: '금', items: '정산기 정밀 점검 / 전기차 충전구역 / 비상구·피난통로 집중' },
+      { day: '토', items: '천장·벽면 누수 전수 / 주차유도·만차 표시기 / 혼잡 대응' },
+      { day: '일', items: '전 구역 대청소 / 장기 미출차 차량 정리 / 미비 부분 보완' }
+    ]},
+    { zone: '근무조 (미정 — GM 확인)', head: '', note: '미정(GM 확인)', subs: [
+      { title: '오전조', lines: [
+        { t: '담당: 양상규 고문 / 근무시간: 미정(GM 확인)' },
+        { t: '오픈·순찰·인수인계 — 가이드 탭 참조' }
+      ]},
+      { title: '오후조', lines: [
+        { t: '담당: 충원 예정 / 근무시간: 미정(GM 확인)' }
+      ]},
+      { title: '야간조', lines: [
+        { t: '무인/위탁 운영 여부·시간: 미정(GM 확인)' }
+      ]}
+    ]}
+  ]
+};
+
+function a3mZoneHTML(zone){
+  var E=escapeHTML;
+  var headCls='a3m-zone-head'+(zone.head?' '+E(zone.head):'');
+  var html='<div class="a3m-zone">';
+  html+='<div class="'+headCls+'">'+E(zone.zone)+'</div>';
+  if(zone.note){
+    html+='<div class="a3m-note">'+E(zone.note)+'</div>';
+  }
+  if(zone.weekly){
+    // 요일별 집중점검: 표 형식
+    html+='<div class="a3m-block">';
+    html+='<table class="a3m-weekly-table"><tr><th>요일</th><th>집중 점검 항목</th></tr>';
+    zone.weekly.forEach(function(r){
+      html+='<tr><td>'+E(r.day)+'</td><td>'+E(r.items)+'</td></tr>';
+    });
+    html+='</table></div>';
+  } else if(zone.subs){
+    zone.subs.forEach(function(sub){
+      html+='<div class="a3m-block">';
+      html+='<div class="a3m-block-title">'+E(sub.title)+'</div>';
+      (sub.lines||[]).forEach(function(l){
+        html+='<div class="a3m-line'+(l.hl?' hl':'')+'">'+E(l.t)+'</div>';
+      });
+      html+='</div>';
+    });
+  } else if(zone.lines){
+    html+='<div class="a3m-block">';
+    (zone.lines||[]).forEach(function(l){
+      html+='<div class="a3m-line'+(l.hl?' hl':'')+'">'+E(l.t)+'</div>';
+    });
+    html+='</div>';
+  }
+  html+='</div>';
+  return html;
+}
+
+function printA3Manual(){
+  // 좌열
+  var leftHTML='';
+  A3_MANUAL.left.forEach(function(z){ leftHTML+=a3mZoneHTML(z); });
+  // 우열
+  var rightHTML='';
+  A3_MANUAL.right.forEach(function(z){ rightHTML+=a3mZoneHTML(z); });
+
+  var host=document.getElementById('a3m-manual-host');
+  if(host){
+    host.innerHTML='<div class="a3m-grid2"><div>'+leftHTML+'</div><div>'+rightHTML+'</div></div>';
+  }
+  var sub=document.getElementById('a3m-manual-sub');
+  if(sub){
+    var today=new Date();
+    var ymd=today.getFullYear()+'-'
+      +String(today.getMonth()+1).padStart(2,'0')+'-'
+      +String(today.getDate()).padStart(2,'0');
+    sub.textContent='구역별 상세 절차 · 요일별 집중 점검  ·  출력일 '+ymd;
+  }
+
+  // A3 가로 모드 활성화 → @page 동적 주입 → 인쇄 → 복원
+  document.body.classList.add('a3-manual-mode');
+  var styleTag=document.getElementById('a3-manual-page-style');
+  if(!styleTag){
+    styleTag=document.createElement('style');
+    styleTag.id='a3-manual-page-style';
+    document.head.appendChild(styleTag);
+  }
+  styleTag.textContent='@media print{ @page{ size:A3 landscape; margin:8mm; } }';
+
+  window.print();
+
+  // 복원
+  document.body.classList.remove('a3-manual-mode');
+  styleTag.textContent='';
 }
 
 function escapeHTML(str){
