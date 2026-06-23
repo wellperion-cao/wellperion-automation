@@ -1324,7 +1324,7 @@ function promoteSave(){
   const slotLabel=ctx.slot||(firstR?(firstR.name+' '+firstR.time):'추가 점검');
   // 신규 CUSTOM 항목 (기존 id 생성 규칙 mgmtGenerateId 사용 — STATE 충돌 회피)
   const newItem={
-    id: mgmtGenerateId(),
+    id: mgmtGenerateId(category),
     slot: slotLabel,
     shift: baseShift,
     dayType: 'both',
@@ -1375,7 +1375,7 @@ function roundsToStr(arr){
 /* 시트 행 → 프론트 항목 모델 */
 function itemFromSheet(row){
   return {
-    id: row.id || mgmtGenerateId(),
+    id: row.id || mgmtGenerateId(row.cat),
     slot: row.slot || '상시',
     shift: row.shift || slotToShiftFront(row.slot),
     dayType: row.dayType || 'both',
@@ -5622,15 +5622,26 @@ function mgmtSaveItems(items){
     .catch(()=>{ if(ind){ind.textContent='항목 저장 실패 (로컬 보관됨)';setTimeout(()=>{ind.style.display='none'},1500);} });
 }
 
-function mgmtGenerateId(){
-  const d=new Date();
-  const ymd=d.getFullYear().toString()
-    +(String(d.getMonth()+1).padStart(2,'0'))
-    +(String(d.getDate()).padStart(2,'0'));
-  // 당일 cx_ 항목 개수 기반 순번 (zero-pad 3자리)
-  const todayPrefix='cx_'+ymd;
-  const seq=((CUSTOM_ITEMS||[]).filter(it=>String(it.id||'').indexOf(todayPrefix)===0).length)+1;
-  return todayPrefix+'_'+String(seq).padStart(3,'0');
+function mgmtGenerateId(category){
+  // 기존 항목ID(a1·b3·c5·d2·e1·cl3·op1 …)와 일관: 카테고리 머리 영문자를 접두로,
+  // 그 접두의 '다음 번호'를 부여. 영문자 없는 커스텀 카테고리는 'x' 접두.
+  // 시드(WEEKDAY 등)+커스텀 전체에서 같은 접두 최대번호+1 → 번호 충돌·STATE 유실 방지(재사용 안 함).
+  const cat=String(category||'').trim();
+  const lead=cat.match(/[A-Za-z]/);
+  const prefix=lead?lead[0].toLowerCase():'x';
+  const all=[];
+  try{
+    [typeof WEEKDAY!=='undefined'?WEEKDAY:null, typeof WEEKEND!=='undefined'?WEEKEND:null,
+     typeof NIGHT_WEEKDAY!=='undefined'?NIGHT_WEEKDAY:null, typeof NIGHT_WEEKEND!=='undefined'?NIGHT_WEEKEND:null]
+      .forEach(function(sc){ if(Array.isArray(sc)) getAllItems(sc).forEach(function(it){ all.push(String(it&&it.id||'')); }); });
+  }catch(e){}
+  (CUSTOM_ITEMS||[]).forEach(function(it){ all.push(String(it&&it.id||'')); });
+  const re=new RegExp('^'+prefix+'(\\d+)$');
+  let max=0;
+  all.forEach(function(id){ const m=id.match(re); if(m){ const n=parseInt(m[1],10); if(n>max) max=n; } });
+  let seq=max+1, id=prefix+seq;
+  while(all.indexOf(id)>=0){ seq++; id=prefix+seq; }   // 안전: 혹시라도 중복이면 다음 번호
+  return id;
 }
 
 /* ── 점검 화면 카테고리별 빠른 항목 추가 (셋업 편집기 데이터계층 재사용) ──
@@ -5674,7 +5685,7 @@ function quickAddSave(form, meta){
   const name=(nameEl.value||'').trim();
   if(!name){ alert('항목명을 입력해주세요.'); nameEl.focus(); return; }
   const newItem={
-    id: mgmtGenerateId(),               // 신규 custom_… (기존 ID 재사용 금지 → STATE 유실 방지)
+    id: mgmtGenerateId(meta.category),  // 신규: 카테고리 머리글자 접두+다음번호 (예 C구역→c18 / 기타→x1)
     slot: meta.slot,
     shift: meta.shift,
     dayType: 'both',
