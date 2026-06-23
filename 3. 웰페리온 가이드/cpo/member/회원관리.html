@@ -768,6 +768,15 @@ var _regRows = [];  // 현재 로드된 등록회원 배열
 
 /* 페이지 로드 시 자동 실행 */
 (function init(){
+  var h = (location.hash || '').replace('#','');
+  if (h === 'registered' || h === 'active') {
+    var btn = null;
+    document.querySelectorAll('.tab').forEach(function(b){
+      var oc = b.getAttribute('onclick') || '';
+      if (oc.indexOf("'" + h + "'") >= 0) btn = b;
+    });
+    if (btn) { switchTab(h, btn); return; }
+  }
   loadRegistered();
 })();
 
