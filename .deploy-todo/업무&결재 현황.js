@@ -2068,13 +2068,13 @@ function doPost(e) {
 }
 
 // ═══ 부트셋업 매트릭스 액션 (additive · 기존 로직 무영향 · 2026-06-23 시토) ═══
-// matrix_get : ssot/bootsetup_matrix.json 을 GitHub raw API로 읽어 반환
-// matrix_set : 동일 경로에 내용 저장 (EDIT_KEY 검증 · _ghPathAllowed 우회: ssot/ 허용 추가)
-// 저장 경로 : ssot/bootsetup_matrix.json (정본) + 3. 웰페리온 가이드/coo/bootsetup_matrix.json (미러)
+// matrix_get : coo/bootsetup_matrix.json 을 GitHub raw API로 읽어 반환
+// matrix_set : 동일 경로에 내용 저장 (EDIT_KEY 검증)
+// 저장 경로 : 3. 웰페리온 가이드/coo/bootsetup_matrix.json (단일 정본 — ssot/ 삭제됨 20ef9ef4)
 function _processMatrixAction(body) {
   var action = body.action || '';
-  var SSOT_PATH  = 'ssot/bootsetup_matrix.json';
-  var MIRROR_PATH = '3. 웰페리온 가이드/coo/bootsetup_matrix.json';
+  var SSOT_PATH  = '3. 웰페리온 가이드/coo/bootsetup_matrix.json';
+  var MIRROR_PATH = null; // ssot/ 폐기 — 미러 없음
   var headers = _ghHeaders();
   if (!headers) return _json({ ok: false, error: 'GITHUB_TOKEN 미설정' });
 
@@ -2129,16 +2129,11 @@ function _processMatrixAction(body) {
 
     var r1 = commitPath(SSOT_PATH);
     if (r1.code !== 200 && r1.code !== 201) {
-      return _json({ ok: false, error: 'ssot 커밋 실패 GitHub ' + r1.code + ': ' + r1.body });
+      return _json({ ok: false, error: '커밋 실패 GitHub ' + r1.code + ': ' + r1.body });
     }
-    // 미러도 동일 내용으로 커밋 (실패해도 ssot 성공 우선)
-    var r2 = commitPath(MIRROR_PATH);
     var ssotSha = '';
     try { ssotSha = JSON.parse(r1.body).commit.sha; } catch(e){}
-    return _json({
-      ok: true, commit: ssotSha,
-      mirror: (r2.code === 200 || r2.code === 201) ? 'ok' : 'warn:' + r2.code
-    });
+    return _json({ ok: true, commit: ssotSha });
   }
 
   return _json({ ok: false, error: '알 수 없는 matrix action: ' + action });

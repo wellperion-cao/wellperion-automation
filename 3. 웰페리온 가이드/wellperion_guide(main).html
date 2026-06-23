@@ -2329,7 +2329,7 @@ window._regAssign = function(id, category) {
         <script>
         /* ── 부트셋업 매트릭스 렌더 + GM 인라인 편집 (2026-06-23 시토) ──────────────
            소스: coo/bootsetup_matrix.json (raw GitHub fetch) — 저장 경로와 동일(왕복 정합)
-           저장: GAS commit_file (3. 웰페리온 가이드/coo/bootsetup_matrix.json)
+           저장: GAS matrix_set (3. 웰페리온 가이드/coo/bootsetup_matrix.json)
                 → GAS가 GitHub API로 직접 커밋 (새 GAS 배포 불필요)
            PIN게이트: gateApproval 패턴 재사용 (서버 EDIT_KEY 검증)
            IME 안전: compositionstart/end 추적, 조합 중 저장 차단
@@ -2398,7 +2398,7 @@ window._regAssign = function(id, category) {
             return pin;
           }
 
-          /* 저장: GAS commit_file (no-cors POST → GET 재조회로 확인) */
+          /* 저장: GAS matrix_set (ssot 단일경로 커밋) */
           function saveMatrix(){
             var pin = gmGate();
             if(pin === null) return;
@@ -2406,8 +2406,7 @@ window._regAssign = function(id, category) {
             _matrixData.updated_at = new Date().toISOString().slice(0,10);
             var content = JSON.stringify(_matrixData, null, 2);
             var params = new URLSearchParams({
-              action: 'commit_file',
-              path: SAVE_PATH,
+              action: 'matrix_set',
               content: content,
               message: '[GM] bootsetup_matrix 편집 ' + _matrixData.updated_at,
               key: pin
