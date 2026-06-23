@@ -552,7 +552,6 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   <button class="tab active" onclick="switchTab('policy')">운영부 규정</button>
   <button class="tab" onclick="switchTab('guide')">가이드</button>
   <button class="tab" onclick="switchTab('manual')">매뉴얼</button>
-  <button class="tab" onclick="switchTab('voc')">VOC 이슈 접수</button>
   <div style="display:flex;gap:4px;margin-left:auto;">
     <button class="util-btn print-btn" onclick="printCurrentTab()">인쇄</button>
     <button class="util-btn print-btn" onclick="printA3Guideline()" title="규정+가이드를 A3 세로 좌우2단으로 인쇄">🖨️ A3 가이드라인</button>
@@ -653,133 +652,6 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 
     </div><!-- /board-scroll (단일 칸반 흐름) -->
   </div><!-- /board-fullwidth -->
-</div>
-
-<div id="tab-voc" class="content hidden">
-  <h2 style="font-size:20px;margin-bottom:6px;">VOC 이슈 접수 · 처리 체계</h2>
-  <p style="font-size:13px;color:var(--dim);margin-bottom:18px;line-height:1.6;">회원 건의(VOC)는 접수 직원이 구글 폼에 기록 → 장소·부서 분류 → 해당 부서 전달 → 처리·완료. 접수·응답 현황은 이슈 응답 시트에서 확인합니다.</p>
-
-  <div style="display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap;">
-    <a href="https://docs.google.com/forms/d/e/1FAIpQLSd7mDzTyZT5FSXVcxmpMCaqv7M-RR3EmEu2lFqGRksUE77osA/viewform" target="_blank"
-       style="flex:1;min-width:200px;display:flex;align-items:center;justify-content:center;gap:8px;padding:14px 18px;background:var(--green-bg);color:var(--green);border:1.5px solid rgba(106,191,123,0.4);border-radius:12px;font-size:14px;font-weight:700;text-decoration:none;">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm-1 1.5L18.5 9H13V3.5zM6 20V4h5v7h7v9H6z"/></svg>
-      이슈 접수하기 (VOC 폼)
-    </a>
-    <a href="https://docs.google.com/spreadsheets/d/1akZLs7ITs3FZWFIzMQvSYrdRucGQglmerOvTC2TLEcQ/edit?gid=1576318230" target="_blank"
-       style="flex:1;min-width:200px;display:flex;align-items:center;justify-content:center;gap:8px;padding:14px 18px;background:var(--blue-bg);color:var(--blue);border:1.5px solid rgba(91,159,213,0.4);border-radius:12px;font-size:14px;font-weight:700;text-decoration:none;">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M3 3h18v18H3V3zm2 2v14h14V5H5zm2 2h10v2H7V7zm0 4h10v2H7v-2zm0 4h7v2H7v-2z"/></svg>
-      이슈 응답 시트 보기
-    </a>
-  </div>
-
-  <!-- 종합 접수처 현황 보드는 웰페리온 ERP O3(재등록 대시보드 아래)로 이관됨 (2026-06-16) -->
-  <div style="background:var(--accent-bg);border:1.5px solid rgba(183,159,138,0.35);border-radius:12px;padding:14px 18px;margin-bottom:18px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
-    <span style="font-size:22px;">📊</span>
-    <div style="flex:1;min-width:180px;">
-      <div style="font-size:14px;font-weight:700;color:var(--accent);margin-bottom:3px;">종합 접수처 현황 보드</div>
-      <div style="font-size:12px;color:var(--dim);line-height:1.5;">접수/처리중/완료 칸반은 <strong style="color:var(--text);">웰페리온 ERP → O3 재등록 대시보드</strong> 하단에서 관리합니다.</div>
-    </div>
-    <a href="https://wellperion-cao.github.io/wellperion-automation/#O3" target="_blank" style="display:inline-flex;align-items:center;gap:5px;font-size:13px;font-weight:700;padding:8px 16px;background:var(--accent);color:#fff;border-radius:10px;text-decoration:none;white-space:nowrap;">ERP O3 열기 →</a>
-    <a href="https://wellperion-cao.github.io/wellperion-automation/coo/voc/voc_mobile_form.html" target="_blank" style="display:inline-flex;align-items:center;gap:5px;font-size:13px;font-weight:700;padding:8px 16px;background:var(--paper);color:var(--accent);border:1px solid var(--border);border-radius:10px;text-decoration:none;white-space:nowrap;">📲 회원 접수 폼</a>
-  </div>
-
-  <!-- 처리 흐름도 -->
-  <div style="background:var(--paper);border:1px solid var(--border);border-radius:12px;padding:16px 18px;margin-bottom:18px;">
-    <p style="font-size:15px;font-weight:700;color:var(--accent);margin:0 0 14px;">처리 흐름도</p>
-    <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;">
-      <div style="background:var(--green-bg);border:1.5px solid rgba(106,191,123,0.4);border-radius:10px;padding:10px 14px;text-align:center;min-width:90px;">
-        <div style="font-size:18px;margin-bottom:4px;">🙋</div>
-        <div style="font-size:12px;font-weight:700;color:var(--green);">회원 건의</div>
-      </div>
-      <div style="font-size:20px;color:var(--dim);">→</div>
-      <div style="background:var(--accent-bg);border:1.5px solid rgba(183,159,138,0.4);border-radius:10px;padding:10px 14px;text-align:center;min-width:90px;">
-        <div style="font-size:18px;margin-bottom:4px;">📝</div>
-        <div style="font-size:12px;font-weight:700;color:var(--accent);">직원 접수<br><span style="font-size:11px;font-weight:500;">(폼 기록)</span></div>
-      </div>
-      <div style="font-size:20px;color:var(--dim);">→</div>
-      <div style="background:var(--yellow-bg);border:1.5px solid rgba(230,200,78,0.4);border-radius:10px;padding:10px 14px;text-align:center;min-width:90px;">
-        <div style="font-size:18px;margin-bottom:4px;">🗂️</div>
-        <div style="font-size:12px;font-weight:700;color:var(--yellow);">장소·부서<br>분류</div>
-      </div>
-      <div style="font-size:20px;color:var(--dim);">→</div>
-      <div style="background:var(--blue-bg);border:1.5px solid rgba(91,159,213,0.4);border-radius:10px;padding:10px 14px;text-align:center;min-width:90px;">
-        <div style="font-size:18px;margin-bottom:4px;">📨</div>
-        <div style="font-size:12px;font-weight:700;color:var(--blue);">해당 부서<br>전달</div>
-      </div>
-      <div style="font-size:20px;color:var(--dim);">→</div>
-      <div style="background:var(--purple-bg);border:1.5px solid rgba(167,139,218,0.4);border-radius:10px;padding:10px 14px;text-align:center;min-width:90px;">
-        <div style="font-size:18px;margin-bottom:4px;">🔧</div>
-        <div style="font-size:12px;font-weight:700;color:var(--purple);">처리</div>
-      </div>
-      <div style="font-size:20px;color:var(--dim);">→</div>
-      <div style="background:var(--green-bg);border:1.5px solid rgba(106,191,123,0.4);border-radius:10px;padding:10px 14px;text-align:center;min-width:90px;">
-        <div style="font-size:18px;margin-bottom:4px;">✅</div>
-        <div style="font-size:12px;font-weight:700;color:var(--green);">완료/회신</div>
-      </div>
-    </div>
-  </div>
-
-  <!-- VOC 폼 입력 항목 -->
-  <div style="background:var(--paper);border:1px solid var(--border);border-radius:12px;padding:16px 18px;margin-bottom:14px;">
-    <p style="font-size:15px;font-weight:700;color:var(--accent);margin:0 0 12px;">VOC 폼 입력 항목</p>
-    <table style="width:100%;border-collapse:collapse;font-size:13px;">
-      <tr style="background:var(--bg);">
-        <th style="padding:9px 12px;border:1px solid var(--border);color:var(--accent);font-weight:700;width:160px;">항목</th>
-        <th style="padding:9px 12px;border:1px solid var(--border);color:var(--accent);font-weight:700;">내용</th>
-        <th style="padding:9px 12px;border:1px solid var(--border);color:var(--accent);font-weight:700;width:60px;">필수</th>
-      </tr>
-      <tr><td style="padding:8px 12px;border:1px solid var(--border);">직원 &amp; 회원명</td><td style="padding:8px 12px;border:1px solid var(--border);color:var(--dim);">접수한 직원 이름 + 건의한 회원 이름</td><td style="padding:8px 12px;border:1px solid var(--border);text-align:center;color:var(--red);font-weight:700;">*</td></tr>
-      <tr><td style="padding:8px 12px;border:1px solid var(--border);">연락처</td><td style="padding:8px 12px;border:1px solid var(--border);color:var(--dim);">회원 연락처 (선택)</td><td style="padding:8px 12px;border:1px solid var(--border);text-align:center;color:var(--dim);">-</td></tr>
-      <tr><td style="padding:8px 12px;border:1px solid var(--border);">이슈 내용</td><td style="padding:8px 12px;border:1px solid var(--border);color:var(--dim);">불편 사항·건의 내용 상세 기술</td><td style="padding:8px 12px;border:1px solid var(--border);text-align:center;color:var(--red);font-weight:700;">*</td></tr>
-      <tr><td style="padding:8px 12px;border:1px solid var(--border);">불편했던 장소</td><td style="padding:8px 12px;border:1px solid var(--border);color:var(--dim);">해당 장소 복수 선택 (14개 분류)</td><td style="padding:8px 12px;border:1px solid var(--border);text-align:center;color:var(--red);font-weight:700;">*</td></tr>
-      <tr><td style="padding:8px 12px;border:1px solid var(--border);">접수자</td><td style="padding:8px 12px;border:1px solid var(--border);color:var(--dim);">폼을 기록한 직원 이름</td><td style="padding:8px 12px;border:1px solid var(--border);text-align:center;color:var(--red);font-weight:700;">*</td></tr>
-      <tr><td style="padding:8px 12px;border:1px solid var(--border);">전달 부서</td><td style="padding:8px 12px;border:1px solid var(--border);color:var(--dim);">처리 담당 부서 선택 (11개 분류)</td><td style="padding:8px 12px;border:1px solid var(--border);text-align:center;color:var(--red);font-weight:700;">*</td></tr>
-    </table>
-    <p style="font-size:12px;color:var(--dim);margin:8px 0 0;">* 표시 항목은 필수 입력</p>
-  </div>
-
-  <!-- 불편 장소 분류 14 -->
-  <div style="background:var(--paper);border:1px solid var(--border);border-radius:12px;padding:16px 18px;margin-bottom:14px;">
-    <p style="font-size:15px;font-weight:700;color:var(--accent);margin:0 0 10px;">불편 장소 분류 <span style="font-size:13px;font-weight:500;color:var(--dim);">(복수 선택 · 14개)</span></p>
-    <div style="display:flex;flex-wrap:wrap;gap:7px;">
-      <span style="display:inline-block;padding:5px 12px;background:var(--accent-bg);color:var(--accent);border-radius:20px;font-size:13px;font-weight:600;">카페</span>
-      <span style="display:inline-block;padding:5px 12px;background:var(--accent-bg);color:var(--accent);border-radius:20px;font-size:13px;font-weight:600;">운영부</span>
-      <span style="display:inline-block;padding:5px 12px;background:var(--accent-bg);color:var(--accent);border-radius:20px;font-size:13px;font-weight:600;">프론트</span>
-      <span style="display:inline-block;padding:5px 12px;background:var(--accent-bg);color:var(--accent);border-radius:20px;font-size:13px;font-weight:600;">주차장</span>
-      <span style="display:inline-block;padding:5px 12px;background:var(--accent-bg);color:var(--accent);border-radius:20px;font-size:13px;font-weight:600;">사우나</span>
-      <span style="display:inline-block;padding:5px 12px;background:var(--accent-bg);color:var(--accent);border-radius:20px;font-size:13px;font-weight:600;">헬스장</span>
-      <span style="display:inline-block;padding:5px 12px;background:var(--accent-bg);color:var(--accent);border-radius:20px;font-size:13px;font-weight:600;">필라테스룸</span>
-      <span style="display:inline-block;padding:5px 12px;background:var(--accent-bg);color:var(--accent);border-radius:20px;font-size:13px;font-weight:600;">G.X룸</span>
-      <span style="display:inline-block;padding:5px 12px;background:var(--accent-bg);color:var(--accent);border-radius:20px;font-size:13px;font-weight:600;">골프장</span>
-      <span style="display:inline-block;padding:5px 12px;background:var(--accent-bg);color:var(--accent);border-radius:20px;font-size:13px;font-weight:600;">수영장</span>
-      <span style="display:inline-block;padding:5px 12px;background:var(--accent-bg);color:var(--accent);border-radius:20px;font-size:13px;font-weight:600;">스쿼시장</span>
-      <span style="display:inline-block;padding:5px 12px;background:var(--accent-bg);color:var(--accent);border-radius:20px;font-size:13px;font-weight:600;">뮤지컬룸</span>
-      <span style="display:inline-block;padding:5px 12px;background:var(--accent-bg);color:var(--accent);border-radius:20px;font-size:13px;font-weight:600;">키즈샤워실</span>
-      <span style="display:inline-block;padding:5px 12px;background:var(--accent-bg);color:var(--accent);border-radius:20px;font-size:13px;font-weight:600;">본에스티스</span>
-    </div>
-  </div>
-
-  <!-- 전달 부서 분류 11 -->
-  <div style="background:var(--paper);border:1px solid var(--border);border-radius:12px;padding:16px 18px;">
-    <p style="font-size:15px;font-weight:700;color:var(--accent);margin:0 0 10px;">전달 부서 분류 <span style="font-size:13px;font-weight:500;color:var(--dim);">(11개)</span></p>
-    <div style="display:flex;flex-wrap:wrap;gap:7px;">
-      <span style="display:inline-block;padding:5px 12px;background:var(--blue-bg);color:var(--blue);border-radius:20px;font-size:13px;font-weight:600;">운영</span>
-      <span style="display:inline-block;padding:5px 12px;background:var(--blue-bg);color:var(--blue);border-radius:20px;font-size:13px;font-weight:600;">관리</span>
-      <span style="display:inline-block;padding:5px 12px;background:var(--blue-bg);color:var(--blue);border-radius:20px;font-size:13px;font-weight:600;">시설</span>
-      <span style="display:inline-block;padding:5px 12px;background:var(--blue-bg);color:var(--blue);border-radius:20px;font-size:13px;font-weight:600;">지원</span>
-      <span style="display:inline-block;padding:5px 12px;background:var(--blue-bg);color:var(--blue);border-radius:20px;font-size:13px;font-weight:600;">P.T</span>
-      <span style="display:inline-block;padding:5px 12px;background:var(--blue-bg);color:var(--blue);border-radius:20px;font-size:13px;font-weight:600;">필라테스</span>
-      <span style="display:inline-block;padding:5px 12px;background:var(--blue-bg);color:var(--blue);border-radius:20px;font-size:13px;font-weight:600;">수영</span>
-      <span style="display:inline-block;padding:5px 12px;background:var(--blue-bg);color:var(--blue);border-radius:20px;font-size:13px;font-weight:600;">골프</span>
-      <span style="display:inline-block;padding:5px 12px;background:var(--blue-bg);color:var(--blue);border-radius:20px;font-size:13px;font-weight:600;">스쿼시</span>
-      <span style="display:inline-block;padding:5px 12px;background:var(--blue-bg);color:var(--blue);border-radius:20px;font-size:13px;font-weight:600;">체조&amp;트램폴린</span>
-      <span style="display:inline-block;padding:5px 12px;background:var(--blue-bg);color:var(--blue);border-radius:20px;font-size:13px;font-weight:600;">기타</span>
-    </div>
-  </div>
-
-  <!-- ── 우리 부서로 온 접수 ── -->
-  <h3 style="font-size:17px;font-weight:700;color:var(--accent);margin:22px 0 10px;padding-top:10px;border-top:1px solid var(--border);">우리 부서로 온 접수</h3>
-  <div id="deptRegBoard" style="text-align:left;"><div class="loading" style="padding:24px;text-align:center;color:var(--dim);font-size:13px;">불러오는 중…</div></div>
 </div>
 
 <div id="tab-guide" class="content hidden">
@@ -1391,7 +1263,7 @@ function _copyToClipboard(text){
    현재 활성 탭 판별
    ═══════════════════════════════════════════ */
 function getActiveTab(){
-  const tabs=['policy','manual','voc','guide'];
+  const tabs=['policy','manual','guide'];
   for(const t of tabs){
     const el=document.getElementById('tab-'+t);
     if(el&&!el.classList.contains('hidden'))return t;
@@ -1643,11 +1515,9 @@ function switchTab(tab, opts){
     if(oc.indexOf("'"+tab+"'") >= 0) t.classList.add('active');
   });
   document.getElementById('tab-policy').classList.toggle('hidden',tab!=='policy');
-  document.getElementById('tab-voc').classList.toggle('hidden',tab!=='voc');
   document.getElementById('tab-guide').classList.toggle('hidden',tab!=='guide');
   document.getElementById('tab-manual').classList.toggle('hidden',tab!=='manual');
   if(tab==='manual'){renderBoard();renderManualItems();}
-  if(tab==='voc'){deptRegLoad('운영부');}
 }
 
 /* ═══════════════════════════════════════════════
