@@ -251,6 +251,39 @@
     .kpi .val{font-size:24px}
     .hd-btn{position:static;display:inline-block;margin-bottom:10px}
   }
+
+  /* ============ 시각 디자인 개선 (2026-06-23) — 기존 규칙 보강 ============ */
+  /* 카드·KPI·테이블 입체감 */
+  .kpi,.card,.item,.tbl-wrap,.pipe-col{box-shadow:0 1px 2px rgba(31,30,27,.04),0 3px 10px rgba(31,30,27,.035)}
+  .kpi{transition:transform .15s ease,box-shadow .15s ease}
+  .kpi:hover{transform:translateY(-2px);box-shadow:0 7px 20px rgba(138,111,63,.13)}
+  .kpi::before{width:4px;background:linear-gradient(180deg,var(--gold),var(--gold-deep))}
+  .kpi .val{color:var(--navy)}
+  .item{transition:transform .12s ease,box-shadow .12s ease}
+  .item:hover{transform:translateY(-1px);box-shadow:0 6px 18px rgba(31,30,27,.07);border-color:#ddd6c6}
+  /* 섹션 타이틀 — 골드 마커 + 브랜드 컬러 */
+  .sec-title{position:relative;padding-left:13px;color:var(--gold-deep)}
+  .sec-title::before{content:"";position:absolute;left:0;top:50%;transform:translateY(-50%);
+    width:3px;height:13px;border-radius:2px;background:linear-gradient(180deg,var(--gold),var(--gold-deep))}
+  /* 헤더 입체 + 골드 하단 헤어라인 */
+  header{box-shadow:0 3px 16px rgba(0,0,0,.16);border-bottom:1px solid rgba(169,138,82,.4)}
+  /* 차트 카드 제목 — 하단 구분선 */
+  .card h3{padding-bottom:9px;border-bottom:1px solid var(--line-soft)}
+  /* 기본(골드) 버튼 — 그라데이션 + 그림자 */
+  .btn{background:linear-gradient(180deg,#b8975c,var(--gold-deep));border-color:var(--gold-deep);
+    box-shadow:0 1px 3px rgba(138,111,63,.28)}
+  .btn:hover{opacity:1;filter:brightness(1.06)}
+  .btn-ghost{background:none;box-shadow:none}
+  .btn-sm{transition:border-color .12s,color .12s,background .12s}
+  .btn-sm:hover{background:var(--surface-2)}
+  /* 얇은 프리미엄 스크롤바 */
+  .scroll-y::-webkit-scrollbar{width:9px;height:9px}
+  .scroll-y::-webkit-scrollbar-thumb{background:var(--line);border-radius:8px;border:2px solid var(--surface)}
+  .scroll-y::-webkit-scrollbar-thumb:hover{background:var(--ink-faint)}
+  /* KPI 그리드 간격 약간 확대 */
+  .kpi-grid{gap:14px}
+  /* 탭 전환 부드럽게 */
+  .tab{transition:color .12s ease,border-color .12s ease}
 </style>
 </head>
 <body>
