@@ -6323,6 +6323,21 @@ function crTab(btn, panelId) {
     <div class="doc-header"><h2>웰페리온 종합 접수처</h2><div class="meta">COO 관할 · 6종 접수 통합 칸반 · GAS 실시간</div></div>
     <p class="lead">분실물·시설물 고장·청결 이슈·휴회·직원 칭찬·직원 쓴소리 6종 접수를 한 보드에서 확인합니다. 카테고리 필터 → 카드 담당 배정 → 상태 전환하면 GAS 시트에 실시간 반영됩니다.</p>
 
+    <!-- VOC 처리 절차 (운영부 규정 'VOC 처리' 컬럼에서 이관·통합 · 2026-06-23 GM) -->
+    <div style="background:var(--paper);border:1px solid var(--border);border-left:4px solid var(--accent);border-radius:10px;padding:14px 18px;margin:16px 0;">
+      <div style="font-size:14px;font-weight:800;color:var(--accent);margin-bottom:8px;">VOC 처리 절차</div>
+      <div style="font-size:13px;color:var(--text);line-height:1.85;">
+        <b>① 접수</b> — 회원 건의 즉시 구글 폼(멤버의 소리 VOC) 기록. 직원명·회원명·내용·장소·전달 부서 필수 입력.<br>
+        <b>② 부서 전달</b> — 접수 당일 해당 부서에 전달. 전달 기록은 이슈 응답 시트에서 확인.<br>
+        <b>③ 완료 고지</b> — 처리 완료 시 회원에게 결과 고지(가능한 경우). 미처리 건은 다음 교대조에 인계.
+      </div>
+      <div style="margin-top:10px;font-size:12px;">
+        <a href="https://docs.google.com/forms/d/e/1FAIpQLSd7mDzTyZT5FSXVcxmpMCaqv7M-RR3EmEu2lFqGRksUE77osA/viewform" target="_blank" style="color:var(--accent);font-weight:700;text-decoration:none;">📝 VOC 폼</a>
+        &nbsp;·&nbsp;
+        <a href="https://docs.google.com/spreadsheets/d/1akZLs7ITs3FZWFIzMQvSYrdRucGQglmerOvTC2TLEcQ/edit#gid=1576318230" target="_blank" style="color:var(--accent);font-weight:700;text-decoration:none;">📋 이슈 응답 시트</a>
+      </div>
+    </div>
+
     <!-- 카테고리 필터칩 -->
     <div id="regCatChips" style="display:flex;flex-wrap:wrap;gap:8px;margin:18px 0 14px;">
       <button class="reg-chip reg-chip-active" data-cat="" onclick="regChipClick(this)" style="font-size:12.5px;font-weight:700;padding:5px 14px;border-radius:20px;border:1.5px solid var(--accent,#7c5f3d);background:var(--accent-bg,#f5ede3);color:var(--accent,#7c5f3d);cursor:pointer;font-family:inherit;">전체</button>

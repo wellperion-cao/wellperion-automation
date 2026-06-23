@@ -2079,7 +2079,6 @@ const POLICY_STORAGE_KEY = 'OPS_POLICY_BOARD';
 /* 주제별 칸(컬럼) 정의. cls = 좌측 색 바 클래스(dv-cell 재사용) */
 const POLICY_COLS = [
   {key:'ops',   label:'운영 기준', cls:'male'},
-  {key:'voc',   label:'VOC 처리', cls:'outer'},
   {key:'meet',  label:'정기 회의', cls:'female'}
 ];
 /* 시드 — 운영부 규정·회의 기본값. 공식값 확정 후 GM이 직접 편집·저장. */
@@ -2091,12 +2090,6 @@ const POLICY_SEED = {
     {id:'op_report',title:'이슈 보고', body:'회원 민원·안전 이슈 발생 시 즉시 조치 후 실장·GM 보고.\n자의 판단 금지.'},
     {id:'op_priv',  title:'개인정보', body:'회원 연락처·예약 정보는 외부 유출 금지.\n열람은 업무 목적+책임자 승인 한정.'},
     {id:'op_note',  title:'※ 규정 확정 안내', body:'본 규정은 기본값(placeholder)이며, 운영부 인원·세부 절차 확정 후 GM 검토를 거쳐 갱신됩니다.'}
-  ],
-  voc:[
-    {id:'voc_recv', title:'VOC 접수 원칙', body:'회원 건의 접수 즉시 구글 폼(멤버의 소리 VOC) 기록.\n직원명·회원명·이슈 내용·장소·전달 부서 필수 입력.'},
-    {id:'voc_fwd',  title:'부서 전달', body:'접수 당일 해당 부서에 전달.\n전달 기록은 이슈 응답 시트(리셉션 업무 시트 VOC 탭) 확인.'},
-    {id:'voc_close',title:'처리 완료 고지', body:'처리 완료 시 회원에게 결과 고지(가능한 경우).\n미처리 건은 다음 교대조에 인계.'},
-    {id:'voc_link', title:'폼/시트 링크', body:'VOC 폼: docs.google.com/forms/d/e/1FAIpQLSd7mDzTyZT5FSXVcxmpMCaqv7M-RR3EmEu2lFqGRksUE77osA/viewform\n응답 시트: spreadsheets/d/1akZLs7ITs3FZWFIzMQvSYrdRucGQglmerOvTC2TLEcQ (gid=1576318230)'}
   ],
   meet:[
     {id:'mt_week',  title:'주간 운영 미팅(정의 예정)', body:'주기: 미정 (예: 매주 월 오전)\n참석: 운영부 직원 + 실장\n안건: 지난주 VOC 현황 / 이번주 방문 일정 / 이슈 공유'},
