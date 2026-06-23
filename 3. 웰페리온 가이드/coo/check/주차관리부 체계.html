@@ -971,111 +971,122 @@ function togManual(h){
 function tog(h){ if(h&&h.nextElementSibling) h.nextElementSibling.classList.toggle('open'); }
 
 /* ═══════════════════════════════════════════
-   A3 가이드라인 인쇄 (규정 좌열 + 가이드 우열)
-   - 좌열: #tab-policy 내 정적 DOM 복제 (POLICY_DATA 없음 — 고정 HTML 구조)
-   - 우열: #tab-guide DOM cloneNode
+   A3 가이드라인 — '핵심 1장 압축본' 데이터 (시우 작성, GM 편집 가능)
+   ─ A3 인쇄(printA3Guideline)는 화면의 규정·가이드 상세 카드 전체를 덤프하지 않고
+     아래 A3_GUIDELINE만 읽어 좌(규정 핵심)·우(가이드 핵심) 2단으로 압축 인쇄한다.
+   ─ 내용 = 화면 규정 카드·가이드 탭에 이미 있는 실제 내용에서 핵심만 발췌·간결화.
+     없는 규칙 신설 금지. 항목별 1~3줄. A3 1장에 들어갈 분량만 선별.
+   ─ 3부서 전파 표준: title / policy(좌·규정핵심) / guide(우·가이드핵심) 구조 고정.
+     각 항목 { h:'제목', lines:['줄1','줄2',...] }. 항목 추가·삭제·수정은 이 상수만 손대면 됨.
+   ─ 미확정 항목은 lines에 '미정(GM 확인)'으로 명확히 표기.
+   ═══════════════════════════════════════════ */
+const A3_GUIDELINE = {
+  title: '주차관리부 운영 가이드라인',
+  policy: [
+    { h:'운영시간·근무조', lines:[
+      '운영시간: 미정(GM 확인) — 클럽 운영시간 연동 예정.',
+      '오전조 담당: 양상규 고문 / 오후·야간조: 미정(GM 확인 — 충원 예정).',
+      '2인 이상 동시 근무 시 교대 휴게 적용 — 주차장·정산 부스 비우지 않음.'
+    ]},
+    { h:'담당 구역', lines:[
+      '지상 주차장 / 지하 주차장(층별) / 출입·차단기·LPR / 무인 정산기.',
+      '우선·지정 구역(장애인·여성우선·전기차) 불법 점유 단속 포함.'
+    ]},
+    { h:'안전 보고', lines:[
+      '차량 접촉·파손, 차단기 고장, 누수, 화재 위험 발견 시 즉시 조치 후 팀장·소장 보고.',
+      '자의 판단 금지 / 사고·민원 발생 시 현장 보존 + 사진 + CCTV 시각 기록 의무.'
+    ]},
+    { h:'정산·시재 관리', lines:[
+      '교대 시 현금 시재 인수인계·기록 의무.',
+      '미정산·미수 건 발생 즉시 팀장 공유.'
+    ]},
+    { h:'개인정보·CCTV', lines:[
+      '차량번호·CCTV 영상은 회원 개인정보 — 외부 유출·임의 열람 금지.',
+      '열람은 사고·민원 처리 목적 + 책임자 승인 한정.'
+    ]},
+    { h:'정기 회의', lines:[
+      '주간 브리핑: 주기 미정(GM 확인) / 지난주 이슈·이번주 집중 구역·설비 현황.',
+      '월간 회의: 주기 미정(GM 확인) / 이슈·노하우 취합·매뉴얼 개정 여부.',
+      '긴급 회의: 사고·고장 등 이슈 발생 즉시 / 해당 담당자+팀장.'
+    ]}
+  ],
+  guide: [
+    { h:'기본 에티켓', lines:[
+      '"내가 지나간 자리는 항상 깨끗하게 정리정돈하자".',
+      '회원이 보이면 하던 일 멈추고 먼저 인사.',
+      '한 발 앞서 행동 · 모르면 바로 담당자 연결 · 접수 건 끝까지 책임.',
+      '말투·행동·복장 모두 스포츠클럽 격조 유지.'
+    ]},
+    { h:'응대 태도', lines:[
+      '눈 맞춤+미소 필수 / 먼저 인사 / 이름 알면 호칭 사용.',
+      '불편사항: 끝까지 경청 → 처리 결과 반드시 고지.',
+      '에티켓 위반: 정중하되 단호하게 / 반복 시 팀장 보고.',
+      '긴급·안전: 즉시 보고 후 지시대로 조치 / 자의 판단 금지.'
+    ]},
+    { h:'구역별 관리', lines:[
+      '출입·차단기: 차단기 바·센서·LPR 점검 / 오작동 시 수동 개방 후 즉시 보고.',
+      '정산·요금기: 화면·카드리더·시재 점검 / 미정산 즉시 공유.',
+      '지상: 불법·이중·장기 주차 계도 / 통행로 확보 / 조명·배수 점검.',
+      '지하: 층별 순찰 / 환기·제연 / 누수·결빙 / 빈자리 안내.',
+      '우선 구역: 장애인·여성우선·전기차 불법 점유 단속.'
+    ]},
+    { h:'오전조 (오픈~인수인계)', lines:[
+      '오픈: 차단기·LPR·정산기 화면·시재·영수증 용지 점검.',
+      '오전 순찰: 지상·지하 순찰 / 우선 구역 단속 / 안내 표지 점검.',
+      '인계: 정산기 시재 확인 + 오전 이상 사항 오후조에 기록 공유.'
+    ]},
+    { h:'오후조 (오후~마감)', lines:[
+      '오후 순찰: 지상·지하 혼잡 유도 / 소화기·비상구·화장실 점검.',
+      '야간 대비: 전 구역 조명 전면 점등 / CCTV 화면·녹화 확인.',
+      '마감: 정산기 시재 마감 / 차단기 야간 모드 전환 / 잔류 차량 최종 확인 후 보고.'
+    ]},
+    { h:'야간조', lines:[
+      '운영 방식(무인/위탁): 미정(GM 확인).',
+      '야간 기본안: 차단기 야간 모드 / 지상·지하 순찰 / CCTV 모니터링 / 순찰 일지 작성.'
+    ]}
+  ]
+};
+
+/* A3_GUIDELINE → .a3-card 구조 HTML (좌/우 공용 렌더) */
+function renderA3Section(items){
+  var html='';
+  (items||[]).forEach(function(it){
+    if(!it || (!it.h && !(it.lines&&it.lines.length))) return;
+    html += '<div class="a3-card">';
+    html += '<div class="a3-card-title">'+ escapeHTML(it.h||'') +'</div>';
+    (it.lines||[]).forEach(function(l){
+      var t=(l||'').trim(); if(!t) return;
+      html += '<div class="a3-card-line">'+ escapeHTML(t) +'</div>';
+    });
+    html += '</div>';
+  });
+  return html;
+}
+
+/* ═══════════════════════════════════════════
+   A3 가이드라인 인쇄 — '핵심 1장 압축본'(A3_GUIDELINE 기반)
    - body에 .a3-print-mode 클래스로 @media print 분기
+   - 화면 규정·가이드 상세 카드는 그대로 보존(미변경), A3 인쇄물만 압축본
+   - 기존 printCurrentTab() 경로와 완전 분리
    ═══════════════════════════════════════════ */
 function printA3Guideline(){
-  // ── 좌열: 규정 탭 정적 DOM → 카드 추출 복제 ──
+  // ── 좌열: 규정 핵심(A3_GUIDELINE.policy) ──
   var colPolicy = document.getElementById('a3-col-policy');
   if(colPolicy){
-    var html = '<div class="a3-col-head">규정 (정책)</div>';
-    // 미확정 항목 안내 배너
-    html += '<div class="a3-unconfirmed-note">⚠ 미정(GM 확인) 표시 항목은 공식 확정 전 AI 초안입니다.</div>';
-
-    // board-col 컬럼들을 순회해 카드 추출
-    var boardCols = document.querySelectorAll('#tab-policy .board-col');
-    boardCols.forEach(function(col){
-      var colTitle = col.querySelector('.bday');
-      if(colTitle){
-        html += '<div class="a3-col-head" style="margin-top:5px;border-left-color:#5b9fd5;background:#eaf3fb;color:#1e4a72;">'
-          + escA3(colTitle.textContent.trim()) + '</div>';
-      }
-      var cells = col.querySelectorAll('.dv-cell');
-      cells.forEach(function(cell){
-        var labelEl = cell.querySelector('.dv-cell-label');
-        var title = labelEl ? labelEl.textContent.trim() : '';
-        var lines = cell.querySelectorAll('.pol-line');
-        if(!title && !lines.length) return;
-        html += '<div class="a3-card">';
-        // 미확정 항목 판별: 제목에 '미정', '예정', '충원' 포함 시 표시
-        var isUnconfirmed = /미정|예정|충원/.test(title);
-        html += '<div class="a3-card-title">' + escA3(title);
-        if(isUnconfirmed) html += '<span class="a3-card-unconfirmed">미정(GM 확인)</span>';
-        html += '</div>';
-        lines.forEach(function(line){
-          var txt = line.textContent.trim();
-          if(!txt) return;
-          // 줄 내용에도 미확정 키워드 있으면 표시
-          var lineUnconf = /미정|예정|충원|확정 예정|정의 예정/.test(txt);
-          html += '<div class="a3-card-line">' + escA3(txt);
-          if(lineUnconf) html += ' <span class="a3-card-unconfirmed">미정(GM 확인)</span>';
-          html += '</div>';
-        });
-        html += '</div>';
-      });
-    });
-
-    // 근무·휴게 시간 manual-section 도 포함 (규정 탭 내 정의된 핵심 규칙)
-    var restSection = document.querySelector('#tab-policy .manual-section');
-    if(restSection){
-      html += '<div class="a3-col-head" style="margin-top:5px;border-left-color:#ED5B3F;background:#fdeeeb;color:#7f1d1d;">근무·휴게 시간</div>';
-      // 표에서 규칙 행 추출
-      var trs = restSection.querySelectorAll('table tr');
-      trs.forEach(function(tr, i){
-        if(i === 0) return; // 헤더 행 스킵
-        var tds = tr.querySelectorAll('td');
-        if(tds.length >= 3){
-          var who = tds[0].textContent.trim();
-          var work = tds[1].textContent.trim();
-          var rest = tds[2].textContent.trim();
-          html += '<div class="a3-card" style="break-inside:avoid;">';
-          html += '<div class="a3-card-title">' + escA3(who) + '</div>';
-          html += '<div class="a3-card-line">근무: ' + escA3(work) + '</div>';
-          html += '<div class="a3-card-line">휴게: ' + escA3(rest) + '</div>';
-          html += '</div>';
-        }
-      });
-      // 실제 운영 근무조 표
-      var allTables = restSection.querySelectorAll('table');
-      if(allTables.length >= 2){
-        html += '<div class="a3-col-head" style="margin-top:5px;border-left-color:#e6944e;background:#fbf0e6;color:#7c3a00;">실제 운영 근무조</div>';
-        var shiftTrs = allTables[1].querySelectorAll('tr');
-        shiftTrs.forEach(function(tr, i){
-          if(i === 0) return;
-          var tds = tr.querySelectorAll('td');
-          if(tds.length >= 2){
-            var shift = tds[0].textContent.trim();
-            var person = tds[1].textContent.trim();
-            var time = tds.length >= 3 ? tds[2].textContent.trim() : '미정';
-            html += '<div class="a3-card" style="break-inside:avoid;">';
-            html += '<div class="a3-card-title">' + escA3(shift) + '조'
-              + '<span class="a3-card-unconfirmed">미정(GM 확인)</span></div>';
-            html += '<div class="a3-card-line">담당: ' + escA3(person) + '</div>';
-            html += '<div class="a3-card-line">근무시간: ' + escA3(time) + '</div>';
-            html += '</div>';
-          }
-        });
-      }
-    }
-
-    colPolicy.innerHTML = html;
+    colPolicy.innerHTML = '<div class="a3-col-head">규정 핵심</div>'
+      + renderA3Section(A3_GUIDELINE.policy);
   }
 
-  // ── 우열: 가이드 탭 HTML 복제 ──
+  // ── 우열: 가이드 핵심(A3_GUIDELINE.guide) ──
   var colGuide = document.getElementById('a3-col-guide');
-  var srcGuide = document.getElementById('tab-guide');
-  if(colGuide && srcGuide){
-    var clone = srcGuide.cloneNode(true);
-    clone.removeAttribute('id');
-    clone.className = 'a3-guide-clone';
-    clone.style.display = '';
-    // manual-body 모두 펼치기 (인쇄용)
-    clone.querySelectorAll('.manual-body').forEach(function(b){ b.style.display='block'; });
-    colGuide.innerHTML = '<div class="a3-col-head">가이드</div>';
-    colGuide.appendChild(clone);
+  if(colGuide){
+    colGuide.innerHTML = '<div class="a3-col-head">가이드 핵심</div>'
+      + renderA3Section(A3_GUIDELINE.guide);
   }
+
+  // ── 상단 제목 (A3_GUIDELINE.title) ──
+  var a3Head = document.querySelector('#a3-guideline-print .a3-print-header');
+  if(a3Head) a3Head.textContent = A3_GUIDELINE.title;
 
   // ── A3 모드 활성화 → 인쇄 → 복원 ──
   document.body.classList.add('a3-print-mode');
@@ -1094,7 +1105,7 @@ function printA3Guideline(){
   styleTag.textContent = '';
 }
 
-function escA3(str){
+function escapeHTML(str){
   return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 </script>
