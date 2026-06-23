@@ -354,11 +354,6 @@ body{
       GAS 배포 + 시토 접근통제 구축 후 GM go 시 라이브 발효. 현재 GAS 미연동 시 읽기/쓰기 모두 비활성.
     </div>
 
-    <div class="info-box teal" style="margin-bottom:16px">
-      <strong>소스</strong> — 26년 신규문의 시트 (스프레드시트 ID: 12AWcAlgmmYKr2nUbWmVpa71_z3zi0BaU4ZdnOwrI_7U · 탭: 26년 신규문의).<br>
-      전화번호 기본 마스킹(010-****-1234). 이름 마스킹(성+**). 수정 시 시트에 즉시 반영.
-    </div>
-
     <div class="card">
       <div class="db-toolbar">
         <input class="db-search" id="dbSearch" type="text" placeholder="이름·메모 검색…" autocomplete="off">
@@ -1403,6 +1398,11 @@ function deleteRow(btn) {
 
   var row = dbRows.find(function(r){ return r.rowIndex === rowIndex; }) || {};
   if (!confirm('삭제하시겠습니까?\n' + (row.name || '(이름없음)') + ' · ' + (row.timestamp || '') + '\n\n이 작업은 시트에서 해당 행을 완전히 삭제합니다.')) return;
+
+  // 삭제 비밀번호 게이트 (PIN)
+  var _delPin = prompt('삭제 비밀번호를 입력하세요.');
+  if (_delPin === null) return;                 // 취소
+  if (_delPin !== '1531') { showToast('비밀번호가 일치하지 않습니다.', 'err'); return; }
 
   apiPost({ action: 'member_inquiry_delete', rowIndex: rowIndex })
     .then(function(data){
