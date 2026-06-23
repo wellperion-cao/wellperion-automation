@@ -348,5 +348,19 @@
     "next": "🌀 표류 — 다음 미정 (필요 시 GM·웰리/담당 C-Level 지정)",
     "adhoc_commit": "1e23c5f132aeec8d9cbe19223cd17cb545aac566",
     "ship_no": 134
+  },
+  {
+    "task_id": "CTO-2026-06-24-ADHOC-200fc0eb",
+    "clevel": "cto",
+    "title": "[시토] /check 시설점검 회차(조)별 ⏱점검 시작/종료 버튼 (수동 시간대 선택 폐지)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-06-24",
+    "processed_at": "2026-06-24",
+    "artifact": "- renderRoundBar: 각 조(오전조/오후조/마감조) 세그먼트에 ⏱시작·종료 버튼 1쌍 추가(남·여 양쪽)\n- toggleRoundTimer/_roundTimerState: 회차별 timerKeys(STATE) 토글·표시(미시작/점검 중/완료·소요)\n- 상단 단일 타이머 버튼은 야간모드 전용으로 한정(주간=조별 버튼이 대체)\n- 시작ms/종료ms는 기존 STATE 회차 키→saveState→서버 led.timers 머지 저장, 소요시간=서버 _roundDurationMin(O열) 재사용. GAS 무변경.\n- 새로고침 복원= (CLI ad-hoc · 커밋 200fc0eb)",
+    "next": "🌀 표류 — 다음 미정 (필요 시 GM·웰리/담당 C-Level 지정)",
+    "adhoc_commit": "200fc0ebb21de3fac24ee1be61b95a3a82a0f4f6",
+    "ship_no": 135
   }
 ]
