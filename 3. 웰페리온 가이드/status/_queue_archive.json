@@ -4881,5 +4881,50 @@
     "next": "🌀 표류 — 다음 미정 (필요 시 GM·웰리/담당 C-Level 지정)",
     "adhoc_commit": "4769f86aad60e8970be798d7b48f001a10789100",
     "ship_no": 131
+  },
+  {
+    "id": "CMO-2026-06-23-FUNNEL-3-REG-MATCH",
+    "clevel": "cmo",
+    "title": "[시모] 파이프라인#3 등록 자동매칭 — 유효회원↔신규문의 전화매칭→\"등록매칭(자동)\" 칼럼 스탬프+트리거",
+    "status": "DONE",
+    "priority": "NORMAL",
+    "enqueued_at": "2026-06-23",
+    "note": "라이브 배포(@50)·검증 완료 2026-06-23: 유효회원↔신규문의 전화 자동매칭 matched=182/total=711, 신규문의 시트 '등록매칭(자동)'·'등록일(자동)' 칼럼 생성, 매일 02시 트리거 가동. 등록수 추정→실측화. ※문의 DB 페이지 실시간 표시는 시토 인증 재설계(정박) 후 별도.",
+    "ship_no": 103,
+    "terminal": true
+  },
+  {
+    "id": "CMO-2026-06-23-FUNNEL-UTM-TAGGING",
+    "clevel": "cmo",
+    "title": "[시모] 파이프라인 보강 — UTM 콘텐츠 단위 출처태깅(전 채널 CTA)",
+    "status": "DONE",
+    "priority": "NORMAL",
+    "enqueued_at": "2026-06-23",
+    "note": "발신(utm_source+medium+campaign·콘텐츠 슬러그 자동)·수신 클릭캡처(클릭로그 UTM캠페인 칼럼+홈 문의블록 campaign 전송, GAS @52, WP 8394 라이브 주입) 모두 라이브 완료 2026-06-23. ※문의 '제출' 단위 귀속(구글폼 prefill)은 GM 폼 편집 선행 필요=후속.",
+    "ship_no": 104,
+    "terminal": true
+  },
+  {
+    "id": "CMO-2026-06-23-FUNNEL-REGDATE-LEADTIME",
+    "clevel": "cmo",
+    "title": "[시모] 파이프라인 보강 — 등록일·문의→등록 전환소요일 측정",
+    "status": "DONE",
+    "priority": "NORMAL",
+    "enqueued_at": "2026-06-23",
+    "note": "마케팅 대시보드 lead_time_stats 신설 + 카드(기간연동·표본<5 참고용 안내). 검증: 전체 avg 6.2일/중앙값 1/표본 143/이상치 39 제외, 6월 avg 0.5일/중앙값 0/표본 11/이상치 6. ※부산물: 유효회원 '등록\\n일자' 헤더 줄바꿈으로 #3 등록일(자동)이 줄곧 빈칸이던 버그 발견·수정(공백무시 매칭)→autostamp 182건 등록일 정상 채워짐. clasp @65.",
+    "ship_no": 105
+  },
+  {
+    "task_id": "CTO-2026-06-23-CTO-CHARTER-8AXIS-AUTONOMY",
+    "clevel": "cto",
+    "title": "[시토] 시토 8축 헌장 재정리 — 북극성을 자동화→AI 자율화+보안으로 확장",
+    "status": "DONE",
+    "priority": "⛴️여객선",
+    "enqueued_at": "2026-06-23",
+    "note": "GM 지시 2026-06-23(내일 진행). S2 cto탭 8축 헌장 재정리. 북극성(축1)=자동화→AI 자율화+보안(도달=C-Level은 방향·결재만, AI가 스스로 판단·협업·완결=감독자율, 돈·보안 등 중요결정은 GM도장). 보강: 축2 파이프라인+자율다리(계획→실행·안전게이트), 축4 KPI+자율진척(제안반영률·AI완결률)+자동화건강점수, 축6 자율 빨간선(돈·보안·외부발행·전략=GM도장)강조, 축7 소유에 자율인프라 추가. 축3·5·8 유지. 재정리안 GM 구두제시 완료→내일 최종확인 후 S2 반영·라이브검증. 연계 메모리 project_autonomy_next_after_automation. [2026-06-24 병합] 시토 KPI 자동화 지표 보강(구 ship15)=8축 헌장 축4(KPI) 재정리와 함께 처리(별도 배 종료). 기술 KPI 1개 추가(시설편중 해소)는 GM 결재 영역. [2026-06-24 완료] S2 cto탭 8축 헌장 축1(북극성)=자동화→AI 자율화+보안 확장 반영. 축4(KPI)에 ship15(시설편중 해소) 흡수=기술 KPI 확정·목표치만 GM결재.",
+    "next": "🔗 다음=시토117 모델 폴백 코드 신중 구현(다리 놓음)",
+    "depends_on": "GM 내일 최종 확인",
+    "ship_no": 130,
+    "terminal": true
   }
 ]
