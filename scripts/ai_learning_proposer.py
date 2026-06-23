@@ -158,14 +158,20 @@ def generate_proposals_claude_cli(summary_text: str, max_proposals: int) -> list
     GM 결정(2026-06-23): API 크레딧 미사용, Claude Code 구독 재사용.
     """
     prompt = _build_llm_prompt(summary_text, max_proposals)
+    import shutil
+    claude_bin = shutil.which("claude")  # Windows: claude.cmd 풀패스 해결(PATHEXT)
+    if not claude_bin:
+        print("[WARN] claude CLI 미설치(PATH 미해결) — 규칙기반 폴백")
+        return None
     try:
         result = subprocess.run(
-            ["claude", "-p", prompt],
+            [claude_bin, "-p"],
+            input=prompt,  # 긴 한글 프롬프트는 stdin으로 — 명령줄 인자 길이/인코딩 한계 회피
             capture_output=True,
             text=True,
             encoding="utf-8",
             errors="replace",
-            timeout=120,
+            timeout=180,
         )
         if result.returncode != 0:
             stderr = result.stderr.strip() if result.stderr else ""
