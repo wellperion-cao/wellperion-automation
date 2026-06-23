@@ -110,7 +110,8 @@ body.page-id-8394 #header-outer #logo { margin-top: 32px !important; }
 
 <!-- 클릭 추적 — 4종 버튼 onclick → Apps Script track_click(클릭로그 시트). 마케팅현황대시보드 click_stats 집계용.
      2026-06-13: 인바운드 UTM 캡처 — 채널 콘텐츠 링크가 ?utm_source=instagram|naver_blog|naver_cafe|kakao|danggn 부착 시
-     그 출처를 클릭로그 'UTM소스' 칸에 기록(없으면 직접/홈 유입=homepage). 채널별 클릭 귀속 가능. -->
+     그 출처를 클릭로그 'UTM소스' 칸에 기록(없으면 직접/홈 유입=homepage). 채널별 클릭 귀속 가능.
+     2026-06-23: utm_campaign(콘텐츠 단위 귀속) 캡처 추가 — 콘텐츠 링크에 ?utm_campaign=260620_KPGA_ep1 등 부착 시 클릭로그 'UTM캠페인' 칸에 기록. -->
 <script>
 (function(){
   var T='https://script.google.com/macros/s/AKfycbzdwSCCSSJ6JXLDoWuo7HG0JmBM2iy10TujFQ_O5JbTjnWaN7gOk-ddA4IAvsNfelg0xA/exec';
@@ -120,9 +121,11 @@ body.page-id-8394 #header-outer #logo { margin-top: 32px !important; }
       var d=/Mobi|Android|iPhone|iPad/i.test(navigator.userAgent)?'mobile':'desktop';
       var src=qp('utm_source')||'homepage';        // 인바운드 출처(채널 링크가 부착) — 없으면 직접/홈 유입
       var med=qp('utm_medium')||'inquiry_page';
+      var cmp=qp('utm_campaign')||'';              // 콘텐츠 단위 귀속(예: 260620_KPGA_ep1)
       var q='action=track_click&linkName='+encodeURIComponent(name)
            +'&linkUrl='+encodeURIComponent('wp-inquiry')
-           +'&utmSource='+encodeURIComponent(src)+'&utmMedium='+encodeURIComponent(med)+'&device='+d;
+           +'&utmSource='+encodeURIComponent(src)+'&utmMedium='+encodeURIComponent(med)
+           +'&utmCampaign='+encodeURIComponent(cmp)+'&device='+d;
       fetch(T+'?'+q,{mode:'no-cors'}).catch(function(){});
     }catch(e){}
   };

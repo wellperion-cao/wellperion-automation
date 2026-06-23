@@ -13,7 +13,7 @@ const MEMBER_SHEET = '유효회원';
 const MEMBER_PHONE_COL = '휴대폰 번호';   // 회원부 전화번호 헤더
 const MEMBER_DATE_COL  = '등록 일자';      // 회원부 등록일 헤더
 
-const CLICK_HEADERS = ['id', '시각', '링크명', '링크URL', 'UTM소스', 'UTM미디엄', '리퍼러', '디바이스'];
+const CLICK_HEADERS = ['id', '시각', '링크명', '링크URL', 'UTM소스', 'UTM미디엄', '리퍼러', '디바이스', 'UTM캠페인'];
 const INQUIRY_HEADERS = ['id', '시각', '이름', '연락처', '문의유형', '내용', '유입채널', 'UTM소스', 'UTM미디엄', '상태', '메모'];
 
 const INQUIRY_TYPES = ['투어 예약', '프로그램 문의', '멤버십 상담', '시설 안내', '기타'];
@@ -610,6 +610,13 @@ function _processAction(body) {
   // ─── 클릭 추적 ───
   if (action === 'track_click') {
     const sh = _getSheet(CLICK_SHEET, CLICK_HEADERS);
+    // 기존 시트에 UTM캠페인 헤더가 없을 경우 9번째 셀 1회 보정
+    if (!sh.getRange(1, 9).getValue()) {
+      sh.getRange(1, 9).setValue('UTM캠페인')
+        .setFontWeight('bold')
+        .setBackground('#2a2725')
+        .setFontColor('#B79F8A');
+    }
     const row = [
       _genId('CLK-'),
       _now(),
@@ -618,7 +625,8 @@ function _processAction(body) {
       body.utmSource || '',
       body.utmMedium || '',
       body.referrer || '',
-      body.device || ''
+      body.device || '',
+      body.utmCampaign || ''
     ];
     sh.getRange(sh.getLastRow() + 1, 1, 1, row.length).setValues([row]);
     return _json({ ok: true });
