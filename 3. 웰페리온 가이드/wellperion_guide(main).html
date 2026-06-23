@@ -2346,6 +2346,29 @@ window._regAssign = function(id, category) {
 
           function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
+          /* KPI 배지 HTML 생성 (null/없는 값 = 표시 안 함) */
+          function _kpiBadges(roleId){
+            var badges = '';
+            var pct = function(v){ return v != null ? Math.round(v*100)+'%' : null; };
+            if(roleId === 'gm') return ''; // GM 카드 수치 없음
+            var kpi = (_kpiData && _kpiData.roles && _kpiData.roles[roleId]) || null;
+            var g   = (_kpiData && _kpiData.global) || null;
+            // 역할별 완결률
+            if(kpi && kpi['완결률'] != null){
+              badges += '<span style="display:inline-block;font-size:10px;font-weight:700;padding:1px 7px;border-radius:10px;background:rgba(100,180,100,0.15);color:#2a7a2a;margin:3px 3px 0 0;">완결 '+pct(kpi['완결률'])+'</span>';
+            }
+            // coo 추가: 지원부 점검완료율
+            if(roleId === 'coo' && kpi && kpi['지원부_점검완료율'] != null){
+              badges += '<span style="display:inline-block;font-size:10px;font-weight:700;padding:1px 7px;border-radius:10px;background:rgba(60,130,220,0.13);color:#1a5fa8;margin:3px 3px 0 0;">점검 '+pct(kpi['지원부_점검완료율'])+'</span>';
+            }
+            // ceo·cto: global 미푸시·정합 배지
+            if((roleId === 'ceo' || roleId === 'cto') && g){
+              if(g['unpushed'] != null) badges += '<span style="display:inline-block;font-size:10px;font-weight:700;padding:1px 7px;border-radius:10px;background:rgba(120,80,200,0.12);color:#5a2db0;margin:3px 3px 0 0;">미푸시 '+g['unpushed']+'</span>';
+              if(g['health'] === 'ok') badges += '<span style="display:inline-block;font-size:10px;font-weight:700;padding:1px 7px;border-radius:10px;background:rgba(120,80,200,0.12);color:#5a2db0;margin:3px 3px 0 0;">정합 ok</span>';
+            }
+            return badges ? '<div style="margin:4px 0 6px;">'+badges+'</div>' : '';
+          }
+
           function renderGrid(data){
             _matrixData = data;
             var roles = (data && data.roles) || [];
@@ -2355,8 +2378,9 @@ window._regAssign = function(id, category) {
             roles.forEach(function(r){
               var accent = r.accent || '#7C3AED';
               html += '<div style="border:1px solid var(--border);border-radius:10px;padding:12px 14px;background:var(--surface);">';
-              html += '<div style="font-weight:700;font-size:14px;margin-bottom:8px;border-bottom:2px solid '+accent+';padding-bottom:6px;">';
+              html += '<div style="font-weight:700;font-size:14px;margin-bottom:4px;border-bottom:2px solid '+accent+';padding-bottom:6px;">';
               html += esc(r.icon)+' '+esc(r.name)+' <span style="font-size:11px;color:var(--dim);font-weight:400;">'+esc(r.title)+'</span></div>';
+              html += _kpiBadges(r.id);
               html += '<div style="font-size:12px;line-height:1.55;" data-role-id="'+esc(r.id)+'">';
               (r.dims||[]).forEach(function(cell, i){
                 html += '<div style="padding:3px 0;border-bottom:1px solid var(--border);">';
@@ -2457,17 +2481,20 @@ window._regAssign = function(id, category) {
               .then(function(d){ toggleEditMode(false); renderGrid(d); renderToggleBtn(); });
           };
 
-          /* 초기 로드 */
-          fetch(RAW_URL+'?t='+Date.now(),{cache:'no-store'})
-            .then(function(r){return r.json();})
-            .then(function(data){
-              renderGrid(data);
-              renderToggleBtn();
-            })
-            .catch(function(){
-              var grid = document.getElementById('bsm-grid');
-              if(grid) grid.innerHTML = '<span style="color:var(--dim);">매트릭스를 불러오지 못했습니다.</span>';
-            });
+          /* 초기 로드 — 매트릭스 + KPI 병렬 fetch */
+          var KPI_URL = 'https://raw.githubusercontent.com/wellperion-cao/wellperion-automation/master/status/kpi_values.json';
+          Promise.all([
+            fetch(RAW_URL+'?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json();}),
+            fetch(KPI_URL+'?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json();}).catch(function(){return null;})
+          ]).then(function(results){
+            var matData = results[0];
+            _kpiData = results[1]; // null 허용 — 배지 없으면 그냥 생략
+            renderGrid(matData);
+            renderToggleBtn();
+          }).catch(function(){
+            var grid = document.getElementById('bsm-grid');
+            if(grid) grid.innerHTML = '<span style="color:var(--dim);">매트릭스를 불러오지 못했습니다.</span>';
+          });
         })();
         </script>
         <!-- ══ /AI C-Level 부트셋업 한눈에 매트릭스 ══ -->
