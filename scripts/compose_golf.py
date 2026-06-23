@@ -235,7 +235,7 @@ TOTAL = 5  # 표지 + 본문3 + 가이드
 EP_META = {
     "ep1": ("CMO-2026-06-20-GOLF-EP1-COURSE", "골프 #1편 — 코스에 서다 (회사공식)"),
     "ep2": ("CMO-2026-06-20-GOLF-EP2-PODIUM", "골프 #2편 — 시상대에 서다 (회사공식)"),
-    "ep3": ("CMO-2026-06-20-GOLF-EP3-COACH", "골프 #3편 — 비결은 프로였다 (회사공식)"),
+    "ep3": ("CMO-2026-06-20-GOLF-EP3-COACH", "골프 #3편 — 그 뒤엔 한 사람 (회사공식)"),
 }
 
 
@@ -341,8 +341,8 @@ def build_ep3(out_ep: Path) -> None:
     # ig_01 표지: _02 (파란 하늘 티샷 — ep1 표지 _01 중복 제거)
     compose_cover(
         photo_path=_p("_02"),
-        title_eng="THE PRO",
-        title_kor="비결은 프로였다",
+        title_eng="THE COACH",
+        title_kor="그 뒤엔, 한 사람",
         date_location="웰페리온 골프",
         output_path=out_ep / "ig_01.jpg",
         cover_x_bias=0.50,
@@ -356,7 +356,7 @@ def build_ep3(out_ep: Path) -> None:
         photo_path=_p(".png"),
         meta_line="WELLPERION GOLF",
         title_kor="김태엽 투어프로",
-        sub_text="KPGA 정회원 · 투어프로 · 주니어 전문",
+        sub_text="KPGA 정회원 · 주니어 전문\n아이를 기다려 주는 코치",
         footer_text=FOOTER,
         current=2,
         total=TOTAL,
@@ -367,11 +367,11 @@ def build_ep3(out_ep: Path) -> None:
 
     # ig_03~04: 일반 사진형
     story_data = [
-        (_p("_11"),  "WELLPERION GOLF", "아이 몸에 맞춘 1:1",
-         "성장 · 스윙 · 거리 맞춤", False),
+        (_p("_11"),  "WELLPERION GOLF", "아이의 속도로",
+         "이기는 법보다, 끝까지 치는 법을 먼저", False),
         # _13: 연습장 타석 샷 (ep1·ep3 표지 _01 중복 제거 — 같은 사진 반복 금지)
-        (_p("_13"),  "WELLPERION GOLF", "우리 아이도 함께",
-         "체계적 주니어 육성", True),
+        (_p("_13"),  "WELLPERION GOLF", "스스로 해냈다는 마음",
+         "트로피보다 오래 남는 한 가지", True),
     ]
     for idx, (photo, meta, title_kor, sub, full_dark) in enumerate(story_data, start=3):
         compose_story(
@@ -427,15 +427,15 @@ KPGA 주니어리그 2회, 웰페리온 주니어가 시상대에 올랐습니�
 
 {tags}""",
         "ep3": """\
-비결은 프로였다.
+그 뒤엔, 한 사람이 있었습니다.
 
 김태엽 투어프로.
-KPGA 정회원이자 주니어 전문 프로입니다.
+KPGA 정회원이자 주니어 전문 코치입니다.
 
-아이의 몸에 맞춘 스윙, 성장 단계에 맞는 거리 설계.
-웰페리온 골프는 아이 한 명 한 명을 위한 1:1 레슨으로 주니어를 키웁니다.
+이기는 법보다 끝까지 치는 법을, 아이의 속도에 맞춰 가르칩니다.
+트로피보다 오래 남는 건, 스스로 해냈다는 마음이니까요.
 
-우리 아이도 함께, 체계적으로.
+아이의 골프가 궁금하시다면 언제든 편히 문의 주세요.
 
 {cta}
 
