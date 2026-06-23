@@ -396,6 +396,48 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   .a3-guide-clone p{font-size:8.5px;line-height:1.3;margin:2px 0}
   .a3-guide-clone td,  .a3-guide-clone th{font-size:8px!important;padding:2px 4px!important}
 }
+/* ── A3 매뉴얼(주간) 인쇄 전용 컨테이너 (화면 숨김) ── */
+#a3-manual-print{display:none}
+/* ── A3 매뉴얼 인쇄 모드 (@page A3 landscape, 월~일 7열 주간표) — 가이드라인 A3와 완전 분리 ── */
+@media print{
+  body.a3-manual-mode{font-size:9px;line-height:1.25;color:#111;background:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  body.a3-manual-mode .header,
+  body.a3-manual-mode .tabs,
+  body.a3-manual-mode .submit-bar,
+  body.a3-manual-mode .saving,
+  body.a3-manual-mode .toast-msg,
+  body.a3-manual-mode .header-util-btns,
+  body.a3-manual-mode .util-btn,
+  body.a3-manual-mode .sheet-links,
+  body.a3-manual-mode #tab-policy,
+  body.a3-manual-mode #tab-guide,
+  body.a3-manual-mode #tab-manual,
+  body.a3-manual-mode #tab-voc,
+  body.a3-manual-mode #a3-guideline-print{display:none!important}
+  body.a3-manual-mode #a3-manual-print{display:block!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .a3m-header{text-align:center;font-size:15px;font-weight:800;letter-spacing:0.05em;padding:2px 0 4px;border-bottom:2.5px solid #4a3a2e;margin-bottom:2px;color:#2a2018}
+  .a3m-sub{text-align:center;font-size:8.5px;color:#8a7a6c;margin-bottom:5px;letter-spacing:0.02em}
+  table.a3m-grid{width:100%;border-collapse:collapse;table-layout:fixed;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  table.a3m-grid col.a3m-rowhead{width:62px}
+  table.a3m-grid col.a3m-day{width:calc((100% - 62px)/7)}
+  table.a3m-grid th,table.a3m-grid td{border:0.6px solid #b8ada0;vertical-align:top;overflow:hidden}
+  /* 요일 헤더 행 */
+  table.a3m-grid thead th{background:#4a3a2e!important;color:#fff!important;font-size:11px;font-weight:800;text-align:center;padding:4px 2px;letter-spacing:0.02em}
+  table.a3m-grid thead th.a3m-corner{background:#2a2018!important}
+  table.a3m-grid thead th.is-weekend{background:#7a5e44!important}
+  /* 분류(행) 머리칸 */
+  table.a3m-grid td.a3m-rowhead{background:#f3ede7!important;color:#4a3a2e!important;font-size:9px;font-weight:800;text-align:center;padding:4px 2px;line-height:1.2;border-left:3px solid #B79F8A}
+  /* 데이터 셀 */
+  table.a3m-grid td.a3m-cell{padding:3px;background:#fff}
+  table.a3m-grid td.a3m-cell.is-weekend{background:#faf7f3!important}
+  .a3m-line{font-size:8.5px;color:#222;line-height:1.25;padding:1px 0 1px 9px;position:relative;break-inside:avoid}
+  .a3m-line::before{content:"•";position:absolute;left:1px;top:0.5px;color:#B79F8A;font-size:8px}
+  .a3m-line .a3m-t{font-weight:800;color:#7a5e44;margin-right:2px}
+  .a3m-empty{font-size:8px;color:#bbb;padding:2px 0 2px 2px;font-style:italic}
+  /* 한 슬롯 내 시간대 소그룹 구분(여러 시간대가 섞일 때) */
+  .a3m-grp{margin-bottom:2px}
+  .a3m-grp:last-child{margin-bottom:0}
+}
 /* ── Print (기존 A4) ── */
 @media print{
   @page{margin:10mm;size:A4}
@@ -514,6 +556,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   <div style="display:flex;gap:4px;margin-left:auto;">
     <button class="util-btn print-btn" onclick="printCurrentTab()">인쇄</button>
     <button class="util-btn print-btn" onclick="printA3Guideline()" title="규정+가이드를 A3 세로 좌우2단으로 인쇄">🖨️ A3 가이드라인</button>
+    <button class="util-btn print-btn" onclick="printA3Manual()" title="매뉴얼 보드를 A3 가로 1장 주간표(월~일 7열)로 인쇄">🖨️ A3 매뉴얼(주간)</button>
   </div>
 </div>
 </div><!-- /sticky-top -->
@@ -855,6 +898,14 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
       <!-- JS가 tab-guide 내용 복제 -->
     </div>
   </div>
+</div>
+
+<!-- ══ A3 매뉴얼(주간) 인쇄 전용 컨테이너 — 가로 1장, 열=월~일 7요일 / 행=시간대·분류 ══ -->
+<div id="a3-manual-print">
+  <div class="a3m-header">운영부 주간 매뉴얼</div>
+  <div class="a3m-sub"></div>
+  <!-- JS(printA3Manual)가 OPS_MANUAL_BOARD 읽어 표 주입 -->
+  <div id="a3m-table-host"></div>
 </div>
 
 <div id="tab-manual" class="content hidden">
@@ -1590,6 +1641,85 @@ function printA3Guideline(){
   // 복원
   document.body.classList.remove('a3-print-mode');
   styleTag.textContent = '';
+}
+
+/* ═══════════════════════════════════════════════
+   A3 매뉴얼(주간) 인쇄 — 가로 1장, 열=월~일 7요일 / 행=분류(오전·오후·상시)
+   소스: OPS_MANUAL_BOARD(localStorage). 없으면 시드(BOARD_SEED)로 1차 렌더.
+   가이드라인 A3(printA3Guideline)와 함수·클래스·@page 전부 분리(상호 무간섭).
+   ═══════════════════════════════════════════════ */
+/* 셀 텍스트("시간대::내용" 줄바꿈 목록) → 인쇄용 라인 HTML (시간 순 정렬, parseBoardLine·timeslotSortKey 재사용) */
+function a3mCellHTML(text){
+  const lines=(text||'').split('\n').map(l=>l.trim()).filter(l=>l.length);
+  if(!lines.length) return '<div class="a3m-empty">—</div>';
+  const rows=lines.map(l=>parseBoardLine(l));
+  rows.sort((a,b)=>{
+    const ka=timeslotSortKey(a.tb||'기타'), kb=timeslotSortKey(b.tb||'기타');
+    return ka<kb?-1:(ka>kb?1:0);
+  });
+  let html='';
+  rows.forEach(r=>{
+    // 시간대 라벨 안의 시각만 추려 간결 표기(없으면 라벨 생략)
+    const tlabel=r.tb?shortTimeslot(r.tb):'';
+    html+='<div class="a3m-line">'
+        + (tlabel?'<span class="a3m-t">'+escapeHTML(tlabel)+'</span>':'')
+        + escapeHTML(r.text)+'</div>';
+  });
+  return html;
+}
+/* 시간대 라벨 → 짧은 표기. BOARD_TIMESLOTS 프리셋 매칭 우선, 아니면 'HH:MM' 추출 */
+function shortTimeslot(label){
+  if(!label) return '';
+  for(const ts of BOARD_TIMESLOTS){ if(ts.key===label) return ts.short; }
+  const m=String(label).match(/(\d{1,2}:\d{2})/);
+  return m?m[1]:label.slice(0,6);
+}
+function printA3Manual(){
+  // 보드 데이터 보장: 비어 있으면 로드(시드 폴백 포함)
+  if(!BOARD_DATA || !Object.keys(BOARD_DATA).length) loadBoardData();
+
+  // ── 표 생성: thead=요일 7열 / tbody=분류 3행 ──
+  let html='<table class="a3m-grid">';
+  html+='<colgroup><col class="a3m-rowhead">';
+  BOARD_DAYS.forEach(()=>{ html+='<col class="a3m-day">'; });
+  html+='</colgroup>';
+  // 헤더 행
+  html+='<thead><tr><th class="a3m-corner">분류</th>';
+  BOARD_DAYS.forEach(d=>{
+    html+='<th class="'+(d.weekend?'is-weekend':'')+'">'+escapeHTML(d.label)+'</th>';
+  });
+  html+='</tr></thead><tbody>';
+  // 분류(행)
+  BOARD_GENDERS.forEach(g=>{
+    html+='<tr><td class="a3m-rowhead">'+escapeHTML(g.label)+'</td>';
+    BOARD_DAYS.forEach(d=>{
+      const cell=(BOARD_DATA[d.key]&&BOARD_DATA[d.key][g.gk])||'';
+      html+='<td class="a3m-cell '+(d.weekend?'is-weekend':'')+'">'+a3mCellHTML(cell)+'</td>';
+    });
+    html+='</tr>';
+  });
+  html+='</tbody></table>';
+
+  const host=document.getElementById('a3m-table-host');
+  if(host) host.innerHTML=html;
+  const sub=document.querySelector('#a3-manual-print .a3m-sub');
+  if(sub) sub.textContent='리셉션 응대·VOC·상시 절차 — 월~일 한눈에  ·  출력일 '+kstToday();
+
+  // ── A3 가로 모드 활성화 → @page 동적 주입 → 인쇄 → 복원 ──
+  document.body.classList.add('a3-manual-mode');
+  let styleTag=document.getElementById('a3-manual-page-style');
+  if(!styleTag){
+    styleTag=document.createElement('style');
+    styleTag.id='a3-manual-page-style';
+    document.head.appendChild(styleTag);
+  }
+  styleTag.textContent='@media print{ @page{ size:A3 landscape; margin:8mm; } }';
+
+  window.print();
+
+  // 복원
+  document.body.classList.remove('a3-manual-mode');
+  styleTag.textContent='';
 }
 
 /* ═══════════════════════════════════════════
