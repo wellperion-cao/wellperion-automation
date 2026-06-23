@@ -4132,11 +4132,12 @@
     "id": "CMO-2026-06-23-FUNNEL-UTM-TAGGING",
     "clevel": "cmo",
     "title": "[시모] 파이프라인 보강 — UTM 콘텐츠 단위 출처태깅(전 채널 CTA)",
-    "status": "IN_PROGRESS",
+    "status": "DONE",
     "priority": "NORMAL",
     "enqueued_at": "2026-06-23",
-    "note": "발신측 구현(utm_source+medium+campaign·콘텐츠 슬러그 자동)·dryrun 검증 완료. 수신측(클릭로그 campaign 칼럼+wp_inquiry_block+구글폼 prefill)은 후속.",
-    "ship_no": 104
+    "note": "발신(utm_source+medium+campaign·콘텐츠 슬러그 자동)·수신 클릭캡처(클릭로그 UTM캠페인 칼럼+홈 문의블록 campaign 전송, GAS @52, WP 8394 라이브 주입) 모두 라이브 완료 2026-06-23. ※문의 '제출' 단위 귀속(구글폼 prefill)은 GM 폼 편집 선행 필요=후속.",
+    "ship_no": 104,
+    "terminal": true
   },
   {
     "id": "CMO-2026-06-23-FUNNEL-REGDATE-LEADTIME",
@@ -4433,5 +4434,15 @@
     "next": "🌀 표류 — 다음 미정 (필요 시 GM·웰리/담당 C-Level 지정)",
     "adhoc_commit": "d5f836de7d607741f7132b691cad1eaf911740e3",
     "ship_no": 110
+  },
+  {
+    "id": "CMO-2026-06-23-FUNNEL-UTM-FORM-CAPTURE",
+    "clevel": "cmo",
+    "title": "[시모] UTM 문의제출 귀속 — 구글폼 prefill(utm 필드 추가)로 문의 건수까지 콘텐츠별 집계",
+    "status": "PENDING",
+    "priority": "NORMAL",
+    "enqueued_at": "2026-06-23",
+    "note": "GM 구글폼에 utm 필드 추가(entry ID) 선행 필요 → prefilled URL 배선. 클릭 단위 귀속은 104서 완료.",
+    "ship_no": 113
   }
 ]
