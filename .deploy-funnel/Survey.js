@@ -914,18 +914,25 @@ function _processAction(body) {
     }
     var aufCreated = false;
     if (!aufItem) {
-      aufItem = aufForm.addTextItem()
+      aufForm.addTextItem()
         .setTitle(AUF_TITLE)
         .setHelpText('자동 입력 항목 — 비워두셔도 됩니다')
         .setRequired(false);
       aufCreated = true;
     }
-    // prefill entry ID 회수: createResponse에 이 item 값 세팅 → toPrefilledUrl → entry.<숫자> 추출
+    // prefill entry ID 회수: 제목으로 Item을 다시 조회(addTextItem 반환값/멱등 조회값 타입 불일치 회피) →
+    //   .asTextItem().createResponse('__PROBE__') → form.createResponse().withItemResponse(...).toPrefilledUrl()
+    //   → URL에서 entry.<숫자>=__PROBE__ 정규식으로 entry 번호 추출.
     var aufEntryId = '';
     try {
-      var aufTextItem = aufItem.asTextItem();
-      var aufResp = aufForm.createResponse();
-      aufResp.withItemResponse(aufTextItem.createResponse('__PROBE__'));
+      var aufLookup = null;
+      var aufAllText = aufForm.getItems(FormApp.ItemType.TEXT);
+      for (var aj = 0; aj < aufAllText.length; aj++) {
+        if (String(aufAllText[aj].getTitle()).trim() === AUF_TITLE) { aufLookup = aufAllText[aj]; break; }
+      }
+      if (!aufLookup) return _json({ ok: false, error: 'item-not-found-after-add', created: aufCreated });
+      var aufTextItem = aufLookup.asTextItem();
+      var aufResp = aufForm.createResponse().withItemResponse(aufTextItem.createResponse('__PROBE__'));
       var aufPrefillUrl = aufResp.toPrefilledUrl();
       var aufMatch = aufPrefillUrl.match(/entry\.(\d+)=__PROBE__/);
       if (!aufMatch) aufMatch = aufPrefillUrl.match(/entry\.(\d+)/);  // 폴백

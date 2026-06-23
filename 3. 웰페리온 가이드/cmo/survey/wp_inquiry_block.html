@@ -43,7 +43,7 @@ body.page-id-8394 #header-outer #logo { margin-top: 32px !important; }
 
   <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px;">
 
-    <a href="https://docs.google.com/forms/d/1kvQqON12GTQssWsUZsb6l9sSfi5Up1jFW6T_GHiWer8/viewform" target="_blank" rel="noopener" onclick="wpTrackClick('멤버십문의')"
+    <a href="https://docs.google.com/forms/d/1kvQqON12GTQssWsUZsb6l9sSfi5Up1jFW6T_GHiWer8/viewform" target="_blank" rel="noopener" onclick="wpPrefillMembership(this);wpTrackClick('멤버십문의')"
        style="display:block;text-decoration:none;border:1px solid #e2e2e2;border-radius:14px;padding:22px 24px;background:#fff;transition:all .18s;box-shadow:0 1px 2px rgba(0,0,0,.03);">
       <div style="font-size:13px;font-weight:600;color:#b08d57;letter-spacing:.5px;margin-bottom:6px;">MEMBERSHIP</div>
       <div style="font-size:18px;font-weight:700;color:#1a1a1a;margin-bottom:4px;">멤버십 문의 →</div>
@@ -116,6 +116,20 @@ body.page-id-8394 #header-outer #logo { margin-top: 32px !important; }
 (function(){
   var T='https://script.google.com/macros/s/AKfycbzdwSCCSSJ6JXLDoWuo7HG0JmBM2iy10TujFQ_O5JbTjnWaN7gOk-ddA4IAvsNfelg0xA/exec';
   function qp(k){ try{ return (new URLSearchParams(location.search).get(k)||'').slice(0,40); }catch(e){ return ''; } }
+
+  // ── 멤버십 폼 UTM 귀속 프리필 (2026-06-23 ship113) ──
+  //   방문자 현재 URL의 utm_campaign(없으면 utm_source) 값을 멤버십 구글폼 '유입경로(자동)' 칸에 프리필.
+  //   대상 폼: 1kvQqON12GTQssWsUZsb6l9sSfi5Up1jFW6T_GHiWer8 (멤버십 문의) · 프리필 view ID: 1FAIpQLSdy3MylHSUaxfKtuS4qDn32nlh_8pbLnZ95m3xSHvGlZAz8Zw
+  var WP_MEMBERSHIP_PREFILL_BASE='https://docs.google.com/forms/d/e/1FAIpQLSdy3MylHSUaxfKtuS4qDn32nlh_8pbLnZ95m3xSHvGlZAz8Zw/viewform';
+  var WP_MEMBERSHIP_ENTRY_ID='866460284';  // '유입경로(자동)' entry ID (add_utm_field 회수)
+  window.wpPrefillMembership=function(a){
+    try{
+      var v=qp('utm_campaign')||qp('utm_source')||'';   // 콘텐츠 단위 우선, 없으면 채널 출처
+      if(!v) return;                                     // 값 없으면 원래 링크 유지
+      a.href=WP_MEMBERSHIP_PREFILL_BASE+'?usp=pp_url&entry.'+WP_MEMBERSHIP_ENTRY_ID+'='+encodeURIComponent(v);
+    }catch(e){}
+  };
+
   window.wpTrackClick=function(name){
     try{
       var d=/Mobi|Android|iPhone|iPad/i.test(navigator.userAgent)?'mobile':'desktop';
