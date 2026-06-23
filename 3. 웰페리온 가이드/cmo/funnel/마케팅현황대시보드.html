@@ -566,6 +566,12 @@ var FORM_LINKS = {
   '유소년강습': { label: '유소년 폼',   url: 'https://forms.gle/RaFbZLxypNMMV9f17' }
 };
 
+// 유형별 '문의관리' 페이지 링크 — 시트가 아니라 우리 관리 페이지로 연동(GM 2026-06-23).
+// 멤버십 = 문의회원 관리 페이지(문의 접수→체험/투어→등록 전환 관리).
+var MANAGE_LINKS = {
+  '멤버십': { label: '문의관리', url: '../../cpo/member/문의회원.html' }
+};
+
 // #2 종목 목록 (GM 지정 순서) — 클릭 시 펼침
 var LESSON_SUBJECTS = {
   '성인강습':   ['수영','골프','스쿼시','P.T','필라테스','바레','발레'],
@@ -593,6 +599,13 @@ function _cfFormLink(typeKey) {
   var f = FORM_LINKS[typeKey];
   if (!f) return '';
   return '<a href="' + f.url + '" target="_blank" rel="noopener" style="color:var(--accent);font-size:12px;white-space:nowrap">' + f.label + ' ↗</a>';
+}
+
+// 비고칸 '문의관리' 페이지 링크 HTML (우리 관리 페이지 — 시트 아님)
+function _cfManageLink(typeKey) {
+  var m = MANAGE_LINKS[typeKey];
+  if (!m) return '';
+  return '<a href="' + m.url + '" target="_blank" rel="noopener" style="color:var(--f5);font-size:12px;white-space:nowrap;font-weight:600">' + m.label + ' ↗</a>';
 }
 
 function renderConversionFlow() {
@@ -654,7 +667,7 @@ function renderConversionFlow() {
       + '<td style="padding:9px 10px;text-align:right;font-size:16px;font-weight:700;color:var(--text)">' + clickStr + '</td>'
       + '<td style="padding:9px 10px;text-align:right;font-size:16px;font-weight:700;color:var(--f2)">' + inqVal.toLocaleString('ko-KR') + '</td>'
       + '<td style="padding:9px 10px;text-align:right;font-size:16px;font-weight:700;color:' + regColor + '">' + regStr + '</td>'
-      + '<td style="padding:9px 10px;font-size:10px;color:var(--dim)">' + (_cfFormLink(r.key) || r.regNote) + '</td>'
+      + '<td style="padding:9px 10px;font-size:10px;color:var(--dim)">' + ([_cfFormLink(r.key), _cfManageLink(r.key)].filter(Boolean).join('<span style="color:var(--border)"> · </span>') || r.regNote) + '</td>'
       + '</tr>';
 
     // #2 종목 토글 — 펼친 강습 유형의 종목별 행
