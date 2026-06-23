@@ -1374,6 +1374,7 @@
       var name = _regEsc(it['이름'] || '');
       var contact = _regEsc(it['연락처'] || '');
       var assignee = _regEsc(it['담당'] || '');
+      var memo = _regEsc(it['처리메모'] || '');
       var photo = String(it['사진URL'] || '').trim();
       var dt = _regEsc(String(it['접수일시'] || '').slice(0, 16));
       // 공통 외 추가필드 (접수ID·카테고리·접수일시·이름·연락처·위치·내용·사진URL·상태·담당·처리메모·부서 제외)
@@ -1388,7 +1389,7 @@
       if(col.status === '접수'){
         actions = '<button onclick="_regStatus(\'' + id + '\',\'' + _regEsc(it['카테고리']||'') + '\',\'처리중\')" style="font-size:11.5px;padding:4px 10px;border:1px solid var(--border);border-radius:7px;background:var(--paper);color:var(--text);cursor:pointer;font-family:inherit;">처리 시작 →</button>';
       } else if(col.status === '처리중'){
-        actions = '<button onclick="_regStatus(\'' + id + '\',\'' + _regEsc(it['카테고리']||'') + '\',\'완료\')" style="font-size:11.5px;padding:4px 10px;border:1px solid var(--border);border-radius:7px;background:var(--paper);color:var(--text);cursor:pointer;font-family:inherit;">완료 ✓</button>'
+        actions = '<button onclick="_regComplete(\'' + id + '\',\'' + _regEsc(it['카테고리']||'') + '\')" style="font-size:11.5px;padding:4px 10px;border:1px solid var(--border);border-radius:7px;background:var(--paper);color:var(--text);cursor:pointer;font-family:inherit;">완료 ✓</button>'
           + ' <button onclick="_regStatus(\'' + id + '\',\'' + _regEsc(it['카테고리']||'') + '\',\'접수\')" style="font-size:11.5px;padding:4px 10px;border:1px solid var(--border);border-radius:7px;background:var(--paper);color:var(--dim);cursor:pointer;font-family:inherit;">← 되돌리기</button>';
       } else {
         actions = '<button onclick="_regStatus(\'' + id + '\',\'' + _regEsc(it['카테고리']||'') + '\',\'처리중\')" style="font-size:11.5px;padding:4px 10px;border:1px solid var(--border);border-radius:7px;background:var(--paper);color:var(--dim);cursor:pointer;font-family:inherit;">↩ 재개</button>';
@@ -1421,12 +1422,34 @@
         // 1. 배정 버튼에 this(버튼 자신)를 넘겨주도록 수정
         + '<button onclick="_regAssign(\'' + id + '\',\'' + _regEsc(it['카테고리']||'') + '\', this)" style="font-size:11.5px;padding:4px 10px;border:1px solid var(--border);border-radius:7px;background:var(--paper);color:var(--text);cursor:pointer;font-family:inherit;">배정</button></div>'
         
+        + (col.status === '접수' ? '' :
+            '<div style="margin:0 0 7px;">'
+          + '<textarea placeholder="조치내용 — 어떻게 처리했는지 기록 (완료 시 필수)" id="regmemo-' + id + '" rows="2" style="width:100%;box-sizing:border-box;background:var(--paper);border:1px solid var(--border);color:var(--text);padding:5px 8px;border-radius:6px;font-size:12px;font-family:inherit;resize:vertical;">' + memo + '</textarea>'
+          + '<button onclick="_regMemoSave(\'' + id + '\',\'' + _regEsc(it['카테고리']||'') + '\',this)" style="margin-top:4px;font-size:11px;padding:3px 9px;border:1px solid var(--border);border-radius:7px;background:var(--paper);color:var(--dim);cursor:pointer;font-family:inherit;">메모 저장</button></div>')
         + '<div style="display:flex;gap:6px;flex-wrap:wrap;">' + actions + '</div></div>';
     }
 
     // 2. 상태 변경 시에는 기존처럼 전체 새로고침 유지 (칸이 이동해야 하므로)
     window._regStatus = function(id, category, status){
       _regPost({action:'reg_update', id:id, category:category, status:status}, '상태 변경됨');
+    };
+    // 완료 시 조치내용(처리메모) 필수 — 시트의 처리메모 칼럼에 함께 저장
+    window._regComplete = function(id, category){
+      var el = document.getElementById('regmemo-' + id);
+      var memo = el ? el.value.trim() : '';
+      if(!memo){ alert('완료하려면 조치내용을 입력해 주세요.'); if(el){ el.focus(); el.style.borderColor = 'var(--warm,#e65b3f)'; } return; }
+      _regPost({action:'reg_update', id:id, category:category, status:'완료', memo:memo}, '완료 처리됨');
+    };
+    // 조치내용만 저장 (상태 변경 없이 — 화면 새로고침 없이 즉시 저장 피드백)
+    window._regMemoSave = function(id, category, btn){
+      var el = document.getElementById('regmemo-' + id);
+      var memo = el ? el.value.trim() : '';
+      var payload = {action:'reg_update', id:id, category:category, memo:memo};
+      var _k = (typeof _wpKey === 'function') ? _wpKey() : ''; if(_k) payload.key = _k;
+      if(btn){ btn.textContent = '저장됨 ✓'; btn.style.color = '#6abf7b'; btn.style.borderColor = 'rgba(106,191,123,0.4)'; }
+      fetch(_REG_API, {method:'POST', redirect:'follow', headers:{'Content-Type':'text/plain;charset=utf-8'}, body:JSON.stringify(payload)})
+        .catch(function(){});
+      setTimeout(function(){ if(btn){ btn.textContent = '메모 저장'; btn.style.color = 'var(--dim)'; btn.style.borderColor = 'var(--border)'; } }, 2000);
     };
 
     // 3. 🌟 핵심! 배정 시에는 화면 새로고침 없이 초록색 피드백만 주도록 독립시킴
