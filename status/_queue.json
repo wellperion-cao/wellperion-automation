@@ -4215,5 +4215,29 @@
     "next": "🌀 표류 — 다음 미정 (필요 시 GM·웰리/담당 C-Level 지정)",
     "adhoc_commit": "3fb35e1400bda29e85ef546e888ba91726d74165",
     "ship_no": 110
+  },
+  {
+    "task_id": "CPO-2026-06-23-LESSON-INQUIRY-PAGE",
+    "clevel": "cpo",
+    "status": "PENDING",
+    "terminal": false,
+    "priority": "⛴️여객선",
+    "enqueued_at": "2026-06-23",
+    "ship_no": 21,
+    "title": "[시포] 강습 문의 회원관리 ERP 페이지화 (향후) — 시트 연동 탈피, 시트=DB only",
+    "note": "[2026-06-23 GM 방향] 지금은 강습 문의 시트(1b0XU1o…)에 붙은 GAS가 메일+핵심멤버방 알림(오늘 수정·연동 완료). 향후엔 ERP에 \"강습 문의 회원관리\" 별도 페이지를 두고(문의 회원관리=문의회원.html과 짝), 구글시트는 DB 백엔드로만 활용. 자체 문의 DB 목표(시토18·project_self_hosted_inquiry_db_goal)와 한 틀. 등록前 잠재고객 페이지(문의회원.html)·퍼널 단계 페이지화(project_funnel_stage_pages)의 강습 버전.",
+    "next": "GM 착수 신호 시 설계 — 회원관리 페이지 패턴 차용, 시트는 read/write DB로"
+  },
+  {
+    "task_id": "COO-2026-06-23-CORE-ROOM-ALERT-SPLIT",
+    "clevel": "coo",
+    "status": "PENDING",
+    "terminal": false,
+    "priority": "⛵돛단배",
+    "enqueued_at": "2026-06-23",
+    "ship_no": 102,
+    "title": "[시우] 핵심멤버방 알림 용도별 방 분리 (향후) — 종합접수·문의·시설점검 혼재 정리",
+    "note": "[2026-06-23 GM 방향] 현재 핵심멤버방(-5065206276)에 종합 접수·문의 접수·시설 점검 등 알림이 다 몰려 있음. 운영이 조금 정리되면 용도별 별도 방을 만들어 분리. 지금은 한 방 유지(혼재 OK), 정리 후 분리.",
+    "next": "알림 종류·수신자 정리되면 방 분리 설계 → 각 GAS/봇 chat_id 라우팅 교체"
   }
 ]
