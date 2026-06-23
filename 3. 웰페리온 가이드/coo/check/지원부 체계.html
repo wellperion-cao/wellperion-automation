@@ -1638,7 +1638,9 @@ const WEEKEND=[
       {id:"b6",name:"B-6 사우나 화장실",detail:"소변기/대변기/바닥/세면공간",gender:"all"}
     ]},
     {title:"오픈 점검",items:[
-      {id:"op3",name:"세탁물 입고 + 상태 체크",detail:"운동복/양말 사이즈별 배치 | 타올류 배치",gender:"all"}
+      {id:"op3",name:"세탁물 입고 운반",detail:"입고된 세탁물을 세탁실로 운반",gender:"all"},
+      {id:"op4",name:"운동복/양말 상태 + 배치",detail:"상태 체크 후 사이즈별 배치",gender:"all"},
+      {id:"op5",name:"타올류 상태 + 배치",detail:"거품타올/타올/바스타올 상태 체크 후 배치",gender:"all"}
     ]},
     {title:"전일 마감·야간청소 확인",items:[
       {id:"cl3",name:"사우나/파우더 청결 확인 (전일 마감·야간청소)",detail:"오픈 시 점검: 남/여 사우나 & 파우더 청결 + 전일 야간 탕청소 결과 이상 유무 확인 / 미비 시 시설·운영부 보고",gender:"all"}
@@ -1652,11 +1654,15 @@ const WEEKEND=[
       {id:"c4",name:"C-4 센터 복도·거울/유리창",detail:"센터 복도 바닥: 1F/B1/B2\n거울/유리창 물때",gender:"all"},
       {id:"c5",name:"C-5 분리수거장",detail:"에스컬레이터 아래",gender:"all"},
       {id:"c6",name:"C-6 청소 비품 관리",detail:"지정 위치 배치",gender:"all"},
-      {id:"c7",name:"C-7 메인 복도 휴게공간",detail:"소파/바닥 (여 주임 전담)",gender:"f"}
+      {id:"c7",name:"C-7 메인 복도 휴게공간",detail:"소파/바닥 (여 주임 전담)",gender:"f"},
+      {id:"c8",name:"C-8 센터 화분",detail:"물 공급 (여 주임 전담 / 금요일 집중)",gender:"f"},
+      {id:"c9",name:"C-9 키즈 샤워실",detail:"파우더룸 정리 20:30\n2주 1회 샤워실 청소 수 13:00 (남 주임 전담)",gender:"m"},
+      {id:"c10",name:"C-10 수영장 계단",detail:"주 1회 청소",gender:"all"}
     ]},
     {title:"D 업장",items:[
       {id:"d1",name:"D-1 헬스장",detail:"거울 청소 (주말)",gender:"all"},
-      {id:"d2",name:"D-2 골프장",detail:"레슨룸 청소 (주말)",gender:"all"}
+      {id:"d2",name:"D-2 골프장",detail:"레슨룸 청소 (주말)",gender:"all"},
+      {id:"d3",name:"D-3 G.X룸",detail:"거울/바닥 청소 (남 주임 전담 / 화요일 집중)",gender:"m"}
     ]},
     {title:"E 외부",items:[
       {id:"e1",name:"E-1 주차장",detail:"바닥 쓰레기 | 화장실 | 차단기",gender:"all"}
@@ -1664,8 +1670,9 @@ const WEEKEND=[
   ]},
   {slot:"마감 18:00",shift:"pm",groups:[
     {title:"마감 점검",items:[
-      {id:"cl1",name:"세탁물 최종 출고",detail:"마감 세탁물 운반",gender:"all"},
-      {id:"cl8",name:"마감 탕청소",detail:"별도 2인 1조 | 탕청소 업체 20:30 출근",gender:"all"}
+      {id:"cl1",name:"세탁물 마감 출고",detail:"마감 세탁물 운반",gender:"all"},
+      {id:"cl8",name:"전 구역 마감 확인",detail:"전 구역 이상 유무 | 잠금·소등 | 미수금 정산 | 다음날 일정 준비 완료 확인",gender:"all"},
+      {id:"cl9",name:"마감 탕청소",detail:"별도 2인 1조 | 탕청소 업체 20:30 출근",gender:"all"}
     ]}
     // 사우나/파우더 청결 '확인'(cl3)은 오픈조로 이관(GM 2026-06-22)
   ]}
@@ -1757,8 +1764,9 @@ const NIGHT_WEEKEND=[
 ];
 
 /* ── E: Day-of-week focused cleaning ── */
-/* 요일별 집중 청소 = 매뉴얼 'F 집중' 분류로 이관(GM 2026-06-16 시우): 시트 항목 + 요일(sched)로 관리,
-   요일칸(F1)으로 표시(평일=오후조/주말=마감조). 하드코딩 비움 — 기존 DAY_FOCUS[dow] 특수처리는 빈 객체라 자동 무력화(no-op). */
+/* 요일별 집중 청소 = 'F 탕 청소 업체'(요일별 집중) 분류로 이관(GM 2026-06-16 시우): 시트 항목 + 요일(sched)로 관리,
+   요일칸(F1)으로 표시(평일=오후조/주말=마감조). 정적 시드로 박지 않음 — 시트+요일이 단일 출처.
+   하드코딩 비움 — 기존 DAY_FOCUS[dow] 특수처리는 빈 객체라 자동 무력화(no-op). */
 const DAY_FOCUS={};
 
 /* ── Helper functions ── */
@@ -1996,7 +2004,9 @@ const ROUND_MAP={
      ROUND_MAP에 넣으면 isShadowItem이 '기본항목 편집분'으로 오인해 숨김 → 절대 추가 금지. */
   /* 마감조 전용(base): cl1 세탁물출고·cl8 전구역마감. cl3(사우나/파우더 청결 확인)은 오픈조 이관 → am1(GM 2026-06-22, 마감엔 못 보니 오픈에 실측).
      cl2/cl4~cl7은 added(시트 rounds 필드 우선) → ROUND_MAP 제외(isShadowItem 오인 차단). */
-  cl1:['close1'], cl3:['am1'], cl8:['close1']
+  /* cl8='전 구역 마감 확인'(평일·주말 통일). cl9='마감 탕청소'=주말 마감 신설(GM 확정 2026-06-23).
+     평일에도 마감탕청소 필요 여부는 미확정 → 일단 주말만. 평일 필요 시 GM 확인 후 WEEKDAY+cl9 추가. */
+  cl1:['close1'], cl3:['am1'], cl8:['close1'], cl9:['close1']
 };
 /* 항목 → 멤버 라운드 배열. 우선순위:
    1) 2b-1 CUSTOM 항목의 명시 rounds(이슈 승격 시 선택한 회차 다중) — 유효 키만.
