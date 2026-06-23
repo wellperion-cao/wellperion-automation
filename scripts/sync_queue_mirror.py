@@ -30,8 +30,14 @@ import os
 import subprocess
 import sys
 
-ROOT_REL = "status/_queue.json"
-MIRROR_REL = "3. 웰페리온 가이드/status/_queue.json"
+SYNC_PAIRS = [
+    ("status/_queue.json",               "3. 웰페리온 가이드/status/_queue.json"),
+    ("status/learning_proposals.json",   "3. 웰페리온 가이드/status/learning_proposals.json"),
+]
+
+# 하위 호환: 기존 단일 변수 참조 코드를 위해 유지
+ROOT_REL   = SYNC_PAIRS[0][0]
+MIRROR_REL = SYNC_PAIRS[0][1]
 
 
 def repo_root():
@@ -55,40 +61,42 @@ def read_bytes(path):
         return None
 
 
-def main():
-    root = repo_root()
-    src = os.path.join(root, ROOT_REL)
-    dst = os.path.join(root, *MIRROR_REL.split("/"))
+def sync_one(root, src_rel, dst_rel):
+    """원본 → 미러 단방향 동기화 (멱등). 갱신 시 git add 수행. 실패=통과(fail-open)."""
+    src = os.path.join(root, src_rel)
+    dst = os.path.join(root, *dst_rel.split("/"))
 
     src_bytes = read_bytes(src)
     if src_bytes is None:
-        # 원본 없음 → 미러 동기화 불가, 통과.
-        return 0
+        return  # 원본 없음 → 건너뜀
 
     dst_bytes = read_bytes(dst)
     if dst_bytes == src_bytes:
-        # 이미 동일 → 멱등 no-op (무한 트리거 방지).
-        return 0
+        return  # 이미 동일 → 멱등 no-op
 
-    # 단방향 복사: 원본 → 미러.
     try:
         os.makedirs(os.path.dirname(dst), exist_ok=True)
         with open(dst, "wb") as f:
             f.write(src_bytes)
     except Exception as exc:
         sys.stderr.write(
-            "[queue-mirror][WARN] 미러 쓰기 실패 — 통과(fail-open): %r\n" % (exc,)
+            "[queue-mirror][WARN] 미러 쓰기 실패(%s) — 통과(fail-open): %r\n" % (dst_rel, exc)
         )
-        return 0
+        return
 
-    # 갱신된 미러를 이번 커밋에 포함.
     try:
-        subprocess.run(["git", "add", "--", MIRROR_REL],
+        subprocess.run(["git", "add", "--", dst_rel],
                        stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     except Exception:
         pass
 
-    sys.stderr.write("[queue-mirror] 미러 동기화 → %s (git add 완료)\n" % MIRROR_REL)
+    sys.stderr.write("[queue-mirror] 미러 동기화 → %s (git add 완료)\n" % dst_rel)
+
+
+def main():
+    root = repo_root()
+    for src_rel, dst_rel in SYNC_PAIRS:
+        sync_one(root, src_rel, dst_rel)
     return 0
 
 
