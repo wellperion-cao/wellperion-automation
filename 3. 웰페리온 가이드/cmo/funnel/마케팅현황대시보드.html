@@ -520,6 +520,19 @@ details.footnote-toggle > .fn-body{
     </div>
   </div>
 
+  <!-- ════════════════════════════════════════════
+       ⑤ UTM 유입 출처 — 정직 측정 (ship 123)
+       측정 가능: UTM 꼬리표가 달린 채널만 (IG bio·카페·당근 프로필 등)
+       측정 불가 채널(소개·지인·오프라인 등)은 표시 안 함 — 거짓 측정 0.
+       데이터소스: click_stats.byUtmSource (클릭로그 UTM소스 칼럼 기간 집계)
+       ════════════════════════════════════════════ -->
+  <div class="section">
+    <div class="section-title">UTM 유입 출처 <span style="font-size:9px;font-weight:400;color:var(--dim);text-transform:none;letter-spacing:0;margin-left:6px">UTM 태깅 채널만 · 미태깅 채널은 측정 안 함</span></div>
+    <div id="utm-source-wrap">
+      <div class="flow-skeleton sk-pulse" style="height:100px;border-radius:var(--radius-md)"></div>
+    </div>
+  </div>
+
 </div>
 
 <div class="page-footer">
@@ -1112,10 +1125,66 @@ async function loadClickStats() {
 
     // 유형별 전환표 클릭 컬럼 갱신
     renderConversionFlow();
+
+    // ⑤ UTM 유입 출처 렌더 (ship 123 — byUtmSource 정직 측정)
+    renderUtmSource(data.byUtmSource || {});
   } catch (e) {
     // 우아한 fallback — 클릭 데이터 없이도 표는 렌더(클릭칸 '집계 중')
     console.warn('[click_stats] 로드 실패:', e.message);
+    renderUtmSource(null);
   }
+}
+
+// ─── ⑤ UTM 유입 출처 렌더 (ship 123) ────────────────────────────────
+// UTM 꼬리표가 달린 채널 클릭만 집계·표시. '직접/홈'(UTM 없음)은 미태깅으로 분리 표기.
+// 거짓 측정 원칙: 측정 불가 채널(소개·지인·오프라인 등)은 이 표에 애초 안 잡힘 — 표시 안 함.
+function renderUtmSource(byUtmSource) {
+  var wrap = document.getElementById('utm-source-wrap');
+  if (!wrap) return;
+
+  if (!byUtmSource) {
+    wrap.innerHTML = '<div style="background:var(--paper);border:1px solid var(--border);border-radius:var(--radius-md);padding:16px;color:var(--dim);font-size:13px">집계 준비 중</div>';
+    return;
+  }
+
+  // '직접/홈' = UTM 미태깅 직접 유입 — 채널 측정값 아니므로 분리
+  var directCount = byUtmSource['직접/홈'] || 0;
+
+  // UTM 태깅된 채널만 (직접/홈 제외)
+  var tagged = Object.keys(byUtmSource)
+    .filter(function(k) { return k !== '직접/홈'; })
+    .map(function(k) { return { src: k, count: byUtmSource[k] }; })
+    .sort(function(a, b) { return b.count - a.count; });
+
+  var periodLabel = (_flow && _flow.label) ? _flow.label : '선택 기간';
+
+  if (tagged.length === 0) {
+    wrap.innerHTML =
+      '<div style="background:var(--paper);border:1px solid var(--border);border-radius:var(--radius-lg);padding:24px;text-align:center">'
+      + '<div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:6px">UTM 태깅 클릭 없음</div>'
+      + '<div style="font-size:12px;color:var(--dim);line-height:1.7">IG bio·카페·당근 프로필에 UTM 꼬리표(utm_source=…)가 달린<br>링크 클릭이 쌓이면 채널별 유입 건수가 여기 표시됩니다.</div>'
+      + (directCount > 0 ? '<div style="font-size:11px;color:var(--dim);margin-top:10px;padding-top:8px;border-top:1px dashed var(--border)">※ 직접 유입(UTM 미태깅) ' + directCount.toLocaleString('ko-KR') + '건은 채널 귀속 불가 — 측정 안 함</div>' : '')
+      + '</div>';
+    return;
+  }
+
+  var maxCount = tagged[0].count;
+  var rows = tagged.map(function(item) {
+    var pct = maxCount > 0 ? Math.round(item.count / maxCount * 100) : 0;
+    return '<div class="utm-bar-wrap">'
+      + '<div class="utm-bar-label-row"><span class="utm-name">' + item.src + '</span><span class="utm-count">' + item.count.toLocaleString('ko-KR') + '클릭</span></div>'
+      + '<div class="utm-bar-track"><div class="utm-bar-fill" style="width:' + pct + '%"></div></div>'
+      + '</div>';
+  }).join('');
+
+  wrap.innerHTML =
+    '<div style="background:var(--paper);border:1px solid var(--border);border-radius:var(--radius-lg);padding:18px 20px;box-shadow:var(--shadow)">'
+    + '<div style="font-size:11px;color:var(--dim);margin-bottom:14px">UTM 태깅 채널 클릭 · ' + periodLabel + ' · 미태깅 채널(소개·오프라인 등)은 측정 안 함</div>'
+    + rows
+    + (directCount > 0
+      ? '<div style="font-size:10px;color:var(--dim);margin-top:12px;padding-top:8px;border-top:1px dashed var(--border)">※ 직접 유입(UTM 미태깅) ' + directCount.toLocaleString('ko-KR') + '건 — 채널 귀속 불가, 측정 안 함</div>'
+      : '')
+    + '</div>';
 }
 
 // ─── 기간별 집계 (period_breakdown) ──────────────────────────────
