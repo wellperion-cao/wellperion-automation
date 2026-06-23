@@ -368,7 +368,7 @@ body{
           <option value="결제완납">결제완납</option>
           <option value="LOSS">LOSS(이탈)</option>
         </select>
-        <button class="btn-add" id="btnAddRow" onclick="addNewRow()">+ 새 문의</button>
+        <button class="btn-add" id="btnAddRow" onclick="addNewRow()">+ 전화·직접 문의</button>
         <button class="action-btn" id="btnRefreshDb" onclick="loadDbData()" style="margin-left:auto">새로고침</button>
       </div>
 
@@ -778,7 +778,7 @@ var GAS_PLACEHOLDER = '__PASTE_GAS_EXEC_URL__';
 /* ── 수정 모드(2026-06-22 GM '그냥 열기') — 진행상태·메모·일정·담당만 수정. 이름·전화는 익명 유지·수정불가 ── */
 var READ_ONLY = false;
 var ALLOW_DELETE = false;  // 2026-06-23 GM: 삭제 제거 — 삭제는 시트에서 수동으로만
-var ALLOW_ADD = false;    // 신규추가 비활성(문의는 웹폼·시트로 유입)
+var ALLOW_ADD = true;     // 2026-06-23 GM: 전화·직접 문의 수기 추가 허용
 
 /* ── 탭 전환 ── */
 function switchTab(id, btn) {
@@ -1320,7 +1320,7 @@ function buildNewInputRow(row) {
     selStatus.appendChild(o);
   });
 
-  var selChannel = buildSelect('channel', CHANNEL_OPTIONS, '');
+  var selChannel = buildSelect('channel', CHANNEL_OPTIONS, '유선전화');  // 전화·직접 문의 기본
   var inputOwner = makeInput('owner', '');
   var inputMemo  = makeInput('memo', '');
 
@@ -1371,11 +1371,12 @@ function submitNewRow(tr) {
   }
 
   var payload = {
-    action:    'inquiry_add',
+    action:    'member_inquiry_add',
     name:      fields.name    || '',
     phone:     fields.phone   || '',
     program:   fields.program || '',
     status:    fields.status  || '신규',
+    channel:   fields.channel || '유선전화',
     owner:     fields.owner   || '',
     memo:      fields.memo    || '',
     tour:      fields.tour    || '',

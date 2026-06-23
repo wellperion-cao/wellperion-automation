@@ -456,6 +456,7 @@ var _SURVEY_PUBLIC_ACTIONS = {
   member_inquiry_list:    true,
   member_calendar:        true,
   member_inquiry_update:  true,  // 2026-06-22 GM '전체 공개' — 실명·전화 포함 수정
+  member_inquiry_add:     true,  // 2026-06-23 전화·직접 문의 수기 추가
   member_inquiry_delete:  true   // 행 삭제
 };
 function _accessProp_(k) {
@@ -672,6 +673,35 @@ function _processAction(body) {
   if (action === 'member_inquiry_list') {
     var miRows = _miReadRows_();
     return _json({ ok: true, count: miRows.length, data: miRows, anon: true });
+  }
+
+  // ─── 문의회원 페이지(CPO): 행 추가 (전화·직접 문의 수기 입력) ───
+  if (action === 'member_inquiry_add') {
+    var maSh = _miSheet_();
+    if (!maSh) return _json({ ok: false, error: '시트 없음' });
+    var maHdr = _miHeaders_(maSh);
+    var maRow = new Array(maHdr.length).fill('');
+    function _maSet(colNames, val) {
+      if (val === undefined || val === null || val === '') return;
+      var ci = _miColIdx_(maHdr, colNames);
+      if (ci >= 0) maRow[ci] = val;
+    }
+    var maNow = Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy-MM-dd');
+    if (!body.name && !body.phone) return _json({ ok: false, error: '이름 또는 전화번호 필수' });
+    _maSet(['이름','성함'], body.name);
+    _maSet(['연락처','전화','휴대폰'], body.phone);
+    _maSet(['관심 있는 프로그램 종류','관심프로그램','프로그램'], body.program);
+    _maSet(['진행현황','진행상황','진행상태','상태'], body.status || '신규');
+    _maSet(['문의채널','유입채널','채널','경로'], body.channel || '유선전화');
+    _maSet(['담당','담당자'], body.owner);
+    _maSet(['메모','비고','담당자메모'], body.memo);
+    _maSet(['시설투어 및 상담 예약','시설견학 및 상담 일정','상담 예약','상담'], body.tour);
+    _maSet(['체험1 확정시간','체험1'], body.exp1);
+    _maSet(['체험2 확정시간','체험2'], body.exp2);
+    _maSet(['타임스탬프','접수일','날짜'], body.timestamp || maNow);
+    maSh.appendRow(maRow);
+    try { _notifyTelegram('➕ 전화·직접 문의 추가 — ' + (body.name || '(이름없음)') + ' · ' + (body.phone || '-') + ' · 채널:' + (body.channel || '유선전화')); } catch (e) {}
+    return _json({ ok: true, message: '추가되었습니다.', rowIndex: maSh.getLastRow() });
   }
 
   // ─── 문의회원 페이지(CPO): 예약 달력 (익명·상담/체험 일정) ───
