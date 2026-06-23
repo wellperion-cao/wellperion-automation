@@ -291,14 +291,14 @@ def assemble_cards(raw_proposals: list, summary: dict, brain: str) -> list:
 # ═══════════════════════════════════════════
 #  proposals.json 누적 저장
 # ═══════════════════════════════════════════
-def append_new_cards(new_cards: list) -> tuple[list, int]:
-    """기존 proposals 로드 후 중복 없이 누적. (id 기준) 반환: (전체목록, 신규추가수)"""
+def append_new_cards(new_cards: list) -> tuple[list, int, list]:
+    """기존 proposals 로드 후 중복 없이 누적. (id 기준) 반환: (전체목록, 신규추가수, 신규카드목록)"""
     existing = load_proposals()
     existing_ids = {c["id"] for c in existing if "id" in c}
     added = [c for c in new_cards if c["id"] not in existing_ids]
     all_cards = existing + added
     save_proposals_file(all_cards)
-    return all_cards, len(added)
+    return all_cards, len(added), added
 
 
 # ═══════════════════════════════════════════
@@ -550,16 +550,34 @@ def run(max_proposals: int = 3, dry_run: bool = False):
         return
 
     # 4. 저장 + 텔레그램
-    all_cards, added_count = append_new_cards(cards)
+    all_cards, added_count, added_cards = append_new_cards(cards)
     print(f"\n[4/4] 저장 완료: {PROPOSALS_FILE} (누적 {len(all_cards)}개, 신규 {added_count}개)")
 
     if added_count > 0:
+        # 신규 카드 번호목록: "N. 대상: 무엇을 앞부분(30자)"
+        def _short(text: str, limit: int = 30) -> str:
+            text = text.strip()
+            # '—' 또는 첫 문장 끝까지 자르기
+            for sep in ("—", "－", " — ", ". ", ".\n"):
+                idx = text.find(sep)
+                if 0 < idx <= limit + 10:
+                    text = text[:idx].strip()
+                    break
+            return text[:limit] if len(text) > limit else text
+
+        lines = []
+        for i, card in enumerate(added_cards, 1):
+            clevel = card.get("대상_clevel", "?")
+            what = _short(card.get("무엇을", ""))
+            lines.append(f"{i}. {clevel}: {what}")
+        card_list = "\n".join(lines)
+
         tg_msg = (
-            f"[시토] AI 자기학습 개선제안 {added_count}건 생성\n"
-            f"생성두뇌: {brain}\n"
-            f"학습기준: {summary.get('generated_at', '?')}\n"
-            f"저장위치: status/learning_proposals.json (누적 {len(all_cards)}개)\n"
-            f"→ 반영은 GM 승인 후 별도 수동 실행"
+            f"[시토] AI 자기학습 — 개선제안 {added_count}건 (검토 대기)\n"
+            f"{card_list}\n"
+            f"생성두뇌: {brain} · 학습기준: {summary.get('generated_at', '?')}\n"
+            f"👉 G1 'AI 자기학습 제안' 섹션에서 확인\n"
+            f"승인: python scripts/ai_learning_proposer.py --approve <id>"
         )
         send_telegram(tg_msg)
     else:
