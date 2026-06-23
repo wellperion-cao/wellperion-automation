@@ -2431,7 +2431,8 @@ window._regAssign = function(id, category) {
             _matrixData.updated_at = new Date().toISOString().slice(0,10);
             var content = JSON.stringify(_matrixData, null, 2);
             var params = new URLSearchParams({
-              action: 'matrix_set',
+              action: 'commit_file',
+              path: '3. 웰페리온 가이드/coo/bootsetup_matrix.json',
               content: content,
               message: '[GM] bootsetup_matrix 편집 ' + _matrixData.updated_at,
               key: pin

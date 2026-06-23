@@ -896,14 +896,65 @@ function _processAction(body) {
       return _json({ ok: false, error: 'guard-mismatch' });
     }
     var aufFormId = String(body.formId || '').trim();
-    if (!aufFormId) return _json({ ok: false, error: 'formId 필수' });
-    var aufForm;
-    try {
-      aufForm = FormApp.openById(aufFormId);
-      // 편집 가능 여부 확인 — getEditUrl()은 편집권한 없으면 throw.
-      aufForm.getEditUrl();
-    } catch (e) {
-      return _json({ ok: false, error: 'no-access', detail: String(e) });
+    var aufViewUrl = String(body.viewUrl || '').trim();   // forms.gle/d/e/ 게시 URL — 편집 file ID 미상일 때
+    var aufSearchHint = String(body.searchHint || '').trim(); // DriveApp 검색 폴백용 제목 키워드(예: '성인'·'유소년'·'여름')
+    var aufListOnly = (String(body.listOnly || '') === '1'); // 진단: 검색 후보만 반환(폼 미변형)
+    // ─── 진단 모드: 제목 키워드로 편집가능 폼 후보 전부 나열(변형 없음) — 정확한 file ID 식별용 ───
+    if (aufListOnly) {
+      if (!aufSearchHint) return _json({ ok: false, error: 'searchHint 필수(listOnly)' });
+      var aufCands = [];
+      try {
+        var lit = DriveApp.searchFiles(
+          'mimeType = "application/vnd.google-apps.form" and title contains "' + aufSearchHint.replace(/"/g, '') + '" and trashed = false');
+        while (lit.hasNext()) {
+          var lf = lit.next();
+          var canEdit = false, pub = '';
+          try { var lform = FormApp.openById(lf.getId()); lform.getEditUrl(); canEdit = true; pub = lform.getPublishedUrl(); } catch (le) {}
+          aufCands.push({ id: lf.getId(), name: lf.getName(), canEdit: canEdit, publishedUrl: pub });
+        }
+      } catch (e) { return _json({ ok: false, error: 'driveSearch-failed', detail: String(e) }); }
+      return _json({ ok: true, listOnly: true, hint: aufSearchHint, count: aufCands.length, candidates: aufCands });
+    }
+    if (!aufFormId && !aufViewUrl) return _json({ ok: false, error: 'formId 또는 viewUrl 필수' });
+    var aufForm = null;
+    var aufResolveLog = [];
+    // ① formId 직접 지정 시 우선
+    if (aufFormId) {
+      try { aufForm = FormApp.openById(aufFormId); aufForm.getEditUrl(); }
+      catch (e) { aufResolveLog.push('openById:' + String(e)); aufForm = null; }
+    }
+    // ② viewUrl → openByUrl 시도 (※ forms.gle 게시 URL은 편집ID와 달라 실패할 수 있음 → 검증)
+    if (!aufForm && aufViewUrl) {
+      try {
+        var f2 = FormApp.openByUrl(aufViewUrl); f2.getEditUrl();
+        // 게시 URL 일치 검증 — openByUrl이 엉뚱한 폼을 반환하지 않았는지 확인(오결합 방지)
+        if (String(f2.getPublishedUrl()).indexOf(aufViewUrl.replace('/viewform', '')) >= 0 ||
+            aufViewUrl.indexOf(String(f2.getId())) >= 0) {
+          aufForm = f2;
+        } else {
+          aufResolveLog.push('openByUrl-mismatch:got=' + f2.getId());
+        }
+      }
+      catch (e) { aufResolveLog.push('openByUrl:' + String(e)); }
+    }
+    // ③ DriveApp 검색 폴백 — 단 후보가 정확히 1개(편집가능)일 때만 사용(다중매칭=오결합 위험 → 거부)
+    if (!aufForm && aufSearchHint) {
+      try {
+        var fit = DriveApp.searchFiles(
+          'mimeType = "application/vnd.google-apps.form" and title contains "' + aufSearchHint.replace(/"/g, '') + '" and trashed = false');
+        var editable = [];
+        while (fit.hasNext()) {
+          var df = fit.next();
+          try { var f3 = FormApp.openById(df.getId()); f3.getEditUrl(); editable.push(f3); }
+          catch (e3) { /* 편집불가 후보 무시 */ }
+        }
+        if (editable.length === 1) { aufForm = editable[0]; }
+        else if (editable.length > 1) { aufResolveLog.push('driveSearch-ambiguous:' + editable.length + '개 매칭 → listOnly로 확인 필요'); }
+        else { aufResolveLog.push('driveSearch-none'); }
+      } catch (e) { aufResolveLog.push('driveSearch:' + String(e)); }
+    }
+    if (!aufForm) {
+      return _json({ ok: false, error: 'no-access', detail: aufResolveLog.join(' | ') });
     }
     var AUF_TITLE = '유입경로(자동)';
     // 멱등: 동일 제목 텍스트 항목 탐색
@@ -944,6 +995,7 @@ function _processAction(body) {
       ok: true,
       entryId: aufEntryId,
       created: aufCreated,
+      formId: aufForm.getId(),
       viewUrl: aufForm.getPublishedUrl(),
       title: AUF_TITLE
     });

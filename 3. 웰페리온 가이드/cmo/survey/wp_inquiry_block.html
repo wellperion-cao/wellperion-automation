@@ -43,7 +43,7 @@ body.page-id-8394 #header-outer #logo { margin-top: 32px !important; }
 
   <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px;">
 
-    <a href="https://docs.google.com/forms/d/1kvQqON12GTQssWsUZsb6l9sSfi5Up1jFW6T_GHiWer8/viewform" target="_blank" rel="noopener" onclick="wpPrefillMembership(this);wpTrackClick('멤버십문의')"
+    <a href="https://docs.google.com/forms/d/1kvQqON12GTQssWsUZsb6l9sSfi5Up1jFW6T_GHiWer8/viewform" target="_blank" rel="noopener" onclick="wpPrefillForm(this,'멤버십문의');wpTrackClick('멤버십문의')"
        style="display:block;text-decoration:none;border:1px solid #e2e2e2;border-radius:14px;padding:22px 24px;background:#fff;transition:all .18s;box-shadow:0 1px 2px rgba(0,0,0,.03);">
       <div style="font-size:13px;font-weight:600;color:#b08d57;letter-spacing:.5px;margin-bottom:6px;">MEMBERSHIP</div>
       <div style="font-size:18px;font-weight:700;color:#1a1a1a;margin-bottom:4px;">멤버십 문의 →</div>
@@ -85,7 +85,7 @@ body.page-id-8394 #header-outer #logo { margin-top: 32px !important; }
          ============================================================ -->
 
     <!-- 공간 렌트 문의 (SPACE RENTAL) -->
-    <a href="https://docs.google.com/forms/d/e/1FAIpQLScS1Gb-iEPzCxb84VNTiz__QROx2RMW6SS6Oplfzr492vAiZQ/viewform" target="_blank" rel="noopener" onclick="wpTrackClick('공간렌트문의')"
+    <a href="https://docs.google.com/forms/d/e/1FAIpQLScS1Gb-iEPzCxb84VNTiz__QROx2RMW6SS6Oplfzr492vAiZQ/viewform" target="_blank" rel="noopener" onclick="wpPrefillForm(this,'공간렌트문의');wpTrackClick('공간렌트문의')"
        style="display:block;text-decoration:none;border:1px solid #e2e2e2;border-radius:14px;padding:22px 24px;background:#fff;transition:all .18s;box-shadow:0 1px 2px rgba(0,0,0,.03);">
       <div style="font-size:13px;font-weight:600;color:#b08d57;letter-spacing:.5px;margin-bottom:6px;">SPACE RENTAL</div>
       <div style="font-size:18px;font-weight:700;color:#1a1a1a;margin-bottom:4px;">공간 렌트 문의 →</div>
@@ -93,7 +93,7 @@ body.page-id-8394 #header-outer #logo { margin-top: 32px !important; }
     </a>
 
     <!-- 비즈니스 파트너 문의 (BUSINESS PARTNERSHIP) -->
-    <a href="https://docs.google.com/forms/d/e/1FAIpQLSfITRMdRqlgS3iLsiM_S05d1E0C7m8aSuXBZ-5XD-p6SecEAw/viewform" target="_blank" rel="noopener" onclick="wpTrackClick('비즈니스파트너문의')"
+    <a href="https://docs.google.com/forms/d/e/1FAIpQLSfITRMdRqlgS3iLsiM_S05d1E0C7m8aSuXBZ-5XD-p6SecEAw/viewform" target="_blank" rel="noopener" onclick="wpPrefillForm(this,'비즈니스파트너문의');wpTrackClick('비즈니스파트너문의')"
        style="display:block;text-decoration:none;border:1px solid #e2e2e2;border-radius:14px;padding:22px 24px;background:#fff;transition:all .18s;box-shadow:0 1px 2px rgba(0,0,0,.03);">
       <div style="font-size:13px;font-weight:600;color:#b08d57;letter-spacing:.5px;margin-bottom:6px;">BUSINESS PARTNERSHIP</div>
       <div style="font-size:18px;font-weight:700;color:#1a1a1a;margin-bottom:4px;">비즈니스 파트너 문의 →</div>
@@ -117,16 +117,23 @@ body.page-id-8394 #header-outer #logo { margin-top: 32px !important; }
   var T='https://script.google.com/macros/s/AKfycbzdwSCCSSJ6JXLDoWuo7HG0JmBM2iy10TujFQ_O5JbTjnWaN7gOk-ddA4IAvsNfelg0xA/exec';
   function qp(k){ try{ return (new URLSearchParams(location.search).get(k)||'').slice(0,40); }catch(e){ return ''; } }
 
-  // ── 멤버십 폼 UTM 귀속 프리필 (2026-06-23 ship113) ──
-  //   방문자 현재 URL의 utm_campaign(없으면 utm_source) 값을 멤버십 구글폼 '유입경로(자동)' 칸에 프리필.
-  //   대상 폼: 1kvQqON12GTQssWsUZsb6l9sSfi5Up1jFW6T_GHiWer8 (멤버십 문의) · 프리필 view ID: 1FAIpQLSdy3MylHSUaxfKtuS4qDn32nlh_8pbLnZ95m3xSHvGlZAz8Zw
-  var WP_MEMBERSHIP_PREFILL_BASE='https://docs.google.com/forms/d/e/1FAIpQLSdy3MylHSUaxfKtuS4qDn32nlh_8pbLnZ95m3xSHvGlZAz8Zw/viewform';
-  var WP_MEMBERSHIP_ENTRY_ID='866460284';  // '유입경로(자동)' entry ID (add_utm_field 회수)
-  window.wpPrefillMembership=function(a){
+  // ── 폼 UTM 귀속 프리필 (2026-06-23 ship113 — 6폼 일반화) ──
+  //   방문자 현재 URL의 utm_campaign(없으면 utm_source) 값을 해당 구글폼 '유입경로(자동)' 칸에 프리필.
+  //   버튼명 → { base: 프리필 view URL, entry: '유입경로(자동)' entry ID } 매핑(add_utm_field 회수값).
+  //   entry ID 회수 못 한 폼(성인·유소년·여름특강 = cao 편집권한 없음)은 매핑서 제외 → 원래 링크 유지.
+  var WP_PREFILL_MAP={
+    '멤버십문의':       { base:'https://docs.google.com/forms/d/e/1FAIpQLSdy3MylHSUaxfKtuS4qDn32nlh_8pbLnZ95m3xSHvGlZAz8Zw/viewform', entry:'866460284'  },
+    '공간렌트문의':     { base:'https://docs.google.com/forms/d/e/1FAIpQLScS1Gb-iEPzCxb84VNTiz__QROx2RMW6SS6Oplfzr492vAiZQ/viewform', entry:'285015675'  },
+    '비즈니스파트너문의':{ base:'https://docs.google.com/forms/d/e/1FAIpQLSfITRMdRqlgS3iLsiM_S05d1E0C7m8aSuXBZ-5XD-p6SecEAw/viewform', entry:'1850207696' }
+  };
+  // 범용 프리필 — 버튼명으로 매핑 조회 후 utm 값을 해당 폼 entry에 프리필. 값/매핑 없으면 원래 href 유지.
+  window.wpPrefillForm=function(a,name){
     try{
-      var v=qp('utm_campaign')||qp('utm_source')||'';   // 콘텐츠 단위 우선, 없으면 채널 출처
-      if(!v) return;                                     // 값 없으면 원래 링크 유지
-      a.href=WP_MEMBERSHIP_PREFILL_BASE+'?usp=pp_url&entry.'+WP_MEMBERSHIP_ENTRY_ID+'='+encodeURIComponent(v);
+      var m=WP_PREFILL_MAP[name];
+      if(!m) return;                                     // 매핑 없는 폼 = 원래 링크
+      var v=qp('utm_campaign')||qp('utm_source')||'';    // 콘텐츠 단위 우선, 없으면 채널 출처
+      if(!v) return;                                      // 값 없으면 원래 링크 유지
+      a.href=m.base+'?usp=pp_url&entry.'+m.entry+'='+encodeURIComponent(v);
     }catch(e){}
   };
 
