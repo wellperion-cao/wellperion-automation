@@ -1138,6 +1138,171 @@ async function setDifficulty(id, val) {
   } catch (e) { alert('연결 실패: ' + e.message); }
 }
 
+/* ─── [GM 인라인 편집] GM 담당 결재건만 이 페이지에서 직접 수정 (2026-06-23 시우) ───
+   대상 = 담당(owner)에 '김남욱GM' 포함된 건. 타인 담당 건은 affordance 미노출.
+   편집 필드: 제목·기간(시작일/종료일)·카테고리·결재상태.
+   저장 = 기존 GM PIN 게이트(gateApproval) 1회 통과 후 todo_update(한글 컬럼키) POST.
+     ※ todo_update는 서버 PIN 미검증(무인증 API·기존 todo_update/setDifficulty와 동일)
+        → PIN은 승인/반려와 동일한 클라이언트 UX 게이트로 일관 유지. pin은 본문에 함께 전송(서버 무시).
+   IME 안전: 입력칸은 1회 생성 후 재렌더 금지. 저장 버튼 클릭 시점에 .value만 읽어 커밋(검색창 패턴 동일).
+   ※ 결재상태 직접 변경은 싸인/완료시각을 옮기지 않는 '수동 보정'임 — 정상 진행은 승인/반려 버튼 사용(드롭다운 title로 안내). */
+function isGmOwned(t) {
+  return String((t && (t.owner || t['담당자'])) || '').split(',').map(function(s){ return s.trim(); }).indexOf('김남욱GM') >= 0;
+}
+
+// 결재상태 선택지 — 백엔드(업무&결재 현황.js)가 실제로 쓰는 값만. 부서장 라벨은 카드의 부서장 실명으로 치환.
+function approvalStatusOptions(t) {
+  var dh = deptHeadNameOf(t) || '부서장';
+  return [
+    { v:'대기',        l:'대기 (미착수)' },
+    { v:'부서장 완료', l:dh + ' 완료' },
+    { v:'GM 완료',     l:'GM 완료' },
+    { v:'결재완료',    l:'결재완료' },
+    { v:'부서장 반려', l:dh + ' 반려' },
+    { v:'GM 반려',     l:'GM 반려' }
+  ];
+}
+
+// '수정' 클릭 → 카드 안에 인라인 편집 폼 표시 (1회 주입, 재렌더 없음).
+function openGmEdit(taskId) {
+  var card = null;
+  document.querySelectorAll('.approval-card').forEach(function(c){ if (c.getAttribute('data-id') === taskId) card = c; });
+  if (!card) return;
+  if (card.querySelector('.gm-edit-box')) return;            // 이미 열림
+  var t = ALL_TASKS.find(function(x){ return String(x.id) === String(taskId); });
+  if (!t) return;
+
+  var box = document.createElement('div');
+  box.className = 'gm-edit-box';
+  box.style.cssText = 'margin:10px 0 2px;padding:12px;border:1px solid var(--accent);border-radius:10px;background:var(--accent-bg);display:flex;flex-direction:column;gap:8px;';
+
+  function field(labelHtml, inner) {
+    var w = document.createElement('div');
+    w.style.cssText = 'display:flex;flex-direction:column;gap:3px;';
+    var lb = document.createElement('label');
+    lb.style.cssText = 'font-size:11px;font-weight:700;color:var(--accent);';
+    lb.innerHTML = labelHtml;
+    w.appendChild(lb); w.appendChild(inner);
+    return w;
+  }
+  var inpStyle = 'background:var(--paper);border:1px solid var(--border);color:var(--text);padding:7px 10px;border-radius:8px;font-size:13px;font-family:inherit;width:100%;';
+
+  // 제목 (IME 안전: input 1회 생성, 조합 중 손대지 않음)
+  var inTitle = document.createElement('input');
+  inTitle.type = 'text'; inTitle.id = 'gmEditTitle_' + taskId;
+  inTitle.setAttribute('autocomplete','off'); inTitle.setAttribute('autocorrect','off');
+  inTitle.setAttribute('autocapitalize','off'); inTitle.setAttribute('spellcheck','false');
+  inTitle.style.cssText = inpStyle; inTitle.value = String(t.title || '');
+
+  // 카테고리 (CAT_COLORS 9분류)
+  var selCat = document.createElement('select');
+  selCat.style.cssText = inpStyle;
+  selCat.appendChild(new Option('(미분류)',''));
+  Object.keys(CAT_COLORS).forEach(function(c){
+    var o = new Option(c, c); if (String(t.category) === c) o.selected = true; selCat.appendChild(o);
+  });
+
+  // 기간 (시작일·종료일)
+  var dateWrap = document.createElement('div');
+  dateWrap.style.cssText = 'display:flex;gap:8px;flex-wrap:wrap;';
+  var inStart = document.createElement('input');
+  inStart.type = 'date'; inStart.style.cssText = inpStyle + 'flex:1;min-width:130px;';
+  inStart.value = String(t.startDate || '').slice(0,10);
+  var inEnd = document.createElement('input');
+  inEnd.type = 'date'; inEnd.style.cssText = inpStyle + 'flex:1;min-width:130px;';
+  inEnd.value = String(t.endDate || '').slice(0,10);
+  dateWrap.appendChild(field('시작일', inStart));
+  dateWrap.appendChild(field('종료일 (선택)', inEnd));
+
+  // 결재상태 (실제 값 집합)
+  var selStat = document.createElement('select');
+  selStat.style.cssText = inpStyle;
+  selStat.title = '결재상태 직접 변경(수동 보정) — 싸인·완료시각은 옮기지 않습니다. 정상 진행은 승인/반려 버튼을 쓰세요.';
+  var _curStat = String(t.approvalStatus || '대기');
+  var _statMatched = false;
+  approvalStatusOptions(t).forEach(function(op){
+    var o = new Option(op.l, op.v); if (_curStat === op.v) { o.selected = true; _statMatched = true; } selStat.appendChild(o);
+  });
+  if (!_statMatched && _curStat) { var o = new Option(_curStat + ' (현재값)', _curStat); o.selected = true; selStat.appendChild(o); }
+
+  // 버튼줄
+  var btnRow = document.createElement('div');
+  btnRow.style.cssText = 'display:flex;gap:8px;justify-content:flex-end;margin-top:2px;';
+  var saveBtn = document.createElement('button');
+  saveBtn.textContent = '💾 저장 (GM 비밀번호)';
+  saveBtn.style.cssText = 'background:var(--green);color:#fff;border:none;padding:7px 14px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;';
+  var cancelBtn = document.createElement('button');
+  cancelBtn.textContent = '취소';
+  cancelBtn.style.cssText = 'background:transparent;color:var(--dim);border:1px solid var(--border);padding:7px 14px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;';
+  cancelBtn.onclick = function(e){ e.stopPropagation(); box.remove(); };
+  saveBtn.onclick = function(e){
+    e.stopPropagation();
+    // 조합 중이면 커밋 강제 종료를 위해 blur (입력칸 재생성은 하지 않음 — IME 안전)
+    inTitle.blur();
+    saveGmEdit(taskId, {
+      title:   inTitle.value,
+      category:selCat.value,
+      startDate: inStart.value,
+      endDate:   inEnd.value,
+      approvalStatus: selStat.value
+    }, saveBtn);
+  };
+  btnRow.appendChild(cancelBtn); btnRow.appendChild(saveBtn);
+
+  box.appendChild(field('제목', inTitle));
+  box.appendChild(field('카테고리', selCat));
+  box.appendChild(dateWrap);
+  box.appendChild(field('결재상태 <span style="font-weight:400;color:var(--dim);">(수동 보정 · 싸인 불이동)</span>', selStat));
+  box.appendChild(btnRow);
+
+  // 카드 제목영역(title-row) 바로 아래에 삽입
+  var anchor = card.querySelector('.title-row');
+  if (anchor && anchor.nextSibling) card.insertBefore(box, anchor.nextSibling);
+  else card.appendChild(box);
+  inTitle.focus();
+}
+
+async function saveGmEdit(taskId, vals, btn) {
+  var t = ALL_TASKS.find(function(x){ return String(x.id) === String(taskId); });
+  if (!t || !isGmOwned(t)) { alert('GM 담당 건만 이 페이지에서 수정할 수 있습니다.'); return; }
+  if (!String(vals.title || '').trim()) { alert('제목을 입력하세요.'); return; }
+  if (!String(vals.startDate || '').trim()) { alert('시작일을 입력하세요.'); return; }
+
+  // 기존 GM 비밀번호 게이트 재사용 (승인/반려와 동일 prompt). 취소·빈값 → 중단.
+  var pin = gateApproval('GM', '수정');
+  if (pin === null) return;
+
+  if (btn) { btn.disabled = true; btn.textContent = '저장 중...'; }
+  // todo_update는 한글 컬럼키를 그대로 시트에 기록(TODO_HEADERS 루프). 빈값('')은 서버가 기존값 보존.
+  //   종료일을 비우려면 의도적 비우기 센티넬이 없어 보존됨 — 변경(채우기/날짜수정)만 반영.
+  var params = {
+    action: 'todo_update',
+    id: taskId,
+    pin: pin,                          // 서버 todo_update는 미검증(무인증) — UX 일관용 전송
+    '업무명': String(vals.title).trim(),
+    '카테고리': vals.category || '',
+    '시작일': String(vals.startDate || '').slice(0,10),
+    '종료일': String(vals.endDate || '').slice(0,10),
+    '결재상태': vals.approvalStatus || ''
+  };
+  try {
+    var qs = Object.keys(params).map(function(k){ return encodeURIComponent(k) + '=' + encodeURIComponent(params[k]); }).join('&');
+    var r;
+    // 한글·길이 안전: 길면 POST(text/plain=CORS preflight 회피, 업무현황 apiCall 동일 규약)
+    if ((TODO_API_URL.length + qs.length + 1) > 1800) {
+      r = await fetch(TODO_API_URL, { method:'POST', redirect:'follow', headers:{ 'Content-Type':'text/plain;charset=utf-8' }, body: JSON.stringify(params) });
+    } else {
+      r = await fetch(TODO_API_URL + '?' + qs, { redirect:'follow' });
+    }
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    var res = await r.json();
+    if (res && res.ok) { loadTasks(); }   // ALL_TASKS 갱신·재렌더 (시트와 동기화 완료)
+    else { alert('수정 실패: ' + ((res && res.error) || '알 수 없는 오류')); if (btn) { btn.disabled = false; btn.textContent = '💾 저장 (GM 비밀번호)'; } }
+  } catch (e) {
+    alert('연결 실패: ' + e.message); if (btn) { btn.disabled = false; btn.textContent = '💾 저장 (GM 비밀번호)'; }
+  }
+}
+
 function renderApprovalCard(t, idx) {
   const isRejected = /반려/.test(t.approvalStatus);
   const isDone = t.approvalStatus === '결재완료';
@@ -1190,6 +1355,8 @@ function renderApprovalCard(t, idx) {
     // GM 서명 대기 단계 — 🖨 업무보고서 인쇄(GM 검토·결재용, 단건 인쇄 재사용). 2026-06-16 GM
     ((!isDone && !isRejected) ? '<button onclick="event.stopPropagation();printApprovalCard(\'' + escAttr(t.id) + '\')" title="업무보고서 인쇄 (GM 검토·결재용)" style="margin-left:6px;background:var(--accent-bg);color:var(--accent);border:1px solid rgba(183,159,138,0.3);padding:2px 8px;border-radius:7px;font-size:10px;cursor:pointer;font-family:inherit;">🖨 업무보고서 인쇄</button>' : '') +
     '<button onclick="event.stopPropagation();resetTask(\'' + escAttr(t.id) + '\')" title="결재요청 전으로 리셋 (GM 전용) — 업무현황에서 수정 가능" style="margin-left:6px;background:transparent;color:var(--dim);border:1px solid var(--border);padding:2px 8px;border-radius:7px;font-size:10px;cursor:pointer;font-family:inherit;">↩ 리셋</button>' +
+    // [GM 인라인 편집] GM 담당 건만 — 이 페이지에서 제목·기간·카테고리·결재상태 직접 수정 (2026-06-23 시우)
+    (isGmOwned(t) ? '<button onclick="event.stopPropagation();openGmEdit(\'' + escAttr(t.id) + '\')" title="GM 담당 결재건 직접 수정 (제목·기간·카테고리·결재상태)" style="margin-left:6px;background:var(--accent-bg);color:var(--accent);border:1px solid var(--accent);padding:2px 8px;border-radius:7px;font-size:10px;font-weight:700;cursor:pointer;font-family:inherit;">✏ 수정</button>' : '') +
     '</div>';
   h += '</div>';
   // 결재현황 SSOT는 결재만 집중 — 카드별 인쇄/링크 버튼 제거 (2026-06-03 GM). 전체 결재 문서 인쇄는 툴바 🖨 인쇄 유지.
