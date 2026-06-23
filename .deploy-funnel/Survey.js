@@ -954,9 +954,21 @@ function _processAction(body) {
 
   // ─── 문의→가입 전환 집계 ───
   if (action === 'funnel_conversion') {
-    // 캐시 조회
+    // from/to(YYYY-MM-DD KST) 있으면 그 범위로 문의·전환 필터, 없으면 전체 누적(하위호환). 2026-06-23 시모.
+    var fcFrom = body.from || '';
+    var fcTo   = body.to   || '';
+    var fcPeriod = !!(fcFrom && fcTo);
+    var fcF = fcPeriod ? new Date(fcFrom + 'T00:00:00+09:00').getTime() : 0;
+    var fcT = fcPeriod ? new Date(fcTo   + 'T23:59:59+09:00').getTime() : 0;
+    function _fcInPeriod(ts) {
+      if (!fcPeriod) return true;
+      var t = ts ? _normTs_(ts).getTime() : NaN;   // 단일 정규화 SSOT(클릭/문의 통일)
+      return !isNaN(t) && t >= fcF && t <= fcT;
+    }
+    // 캐시 조회 (범위별 키 — 기간 필터 버전)
     var fcCache = CacheService.getScriptCache();
-    var fcHit = fcCache.get('fc_v1');
+    var fcCacheKey = 'fc_v2_' + fcFrom + '_' + fcTo;
+    var fcHit = fcCache.get(fcCacheKey);
     if (fcHit && !_nc) return _json(JSON.parse(fcHit));
 
     // ① 회원부 전화번호 Set 생성
@@ -987,8 +999,10 @@ function _processAction(body) {
       // 헤더 인덱스
       var idxPhone   = INQUIRY_HEADERS.indexOf('연락처');   // 3
       var idxChannel = INQUIRY_HEADERS.indexOf('유입채널'); // 6
+      var idxDateFc  = INQUIRY_HEADERS.indexOf('시각');     // 1
 
       inqData.forEach(function(row) {
+        if (!_fcInPeriod(row[idxDateFc])) return;   // 기간 필터(미지정=전체 누적)
         var phone   = normalizePhone_(row[idxPhone]);
         var channel = _canonicalChannel_(row[idxChannel]);
 
@@ -1005,6 +1019,7 @@ function _processAction(body) {
 
     // ②-b 구글폼 응답 문의 합류 (실제 문의 — 자체폼 휴면 대체, 2026-06-05)
     _collectFormInquiries_().forEach(function(f) {
+      if (!_fcInPeriod(f.시각)) return;   // 기간 필터(미지정=전체 누적)
       var phone   = normalizePhone_(f.연락처);
       var channel = _canonicalChannel_(f.유입채널);
       totalInq++;
@@ -1030,10 +1045,15 @@ function _processAction(body) {
       ok: true,
       total: { inquiries: totalInq, converted: totalConv, rate: rate },
       byChannel: channelArr,
+      periodMode: fcPeriod,
+      period: { from: fcFrom, to: fcTo },
+      convBasis: fcPeriod
+        ? '문의=선택기간(시각 기준) / 전환=선택기간 문의 중 유효회원 전화매칭(등록일 미사용 → 기간 내 문의가 전환된 누적값)'
+        : '전체 누적 — 유효회원 전화매칭',
       generatedAt: _now()
     };
-    // 캐시 저장 (100KB 초과 시 생략)
-    try { fcCache.put('fc_v1', JSON.stringify(fcResult), 1800); } catch (e) { /* 캐시 저장 실패 무시 */ }
+    // 캐시 저장 (범위별 키 — 100KB 초과 시 생략)
+    try { fcCache.put(fcCacheKey, JSON.stringify(fcResult), 1800); } catch (e) { /* 캐시 저장 실패 무시 */ }
     return _json(fcResult);
   }
 

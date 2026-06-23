@@ -620,7 +620,19 @@ function renderConversionFlow() {
   }
   if (!f) { el.innerHTML = '<div style="color:var(--dim);font-size:13px">집계 대기 중</div>'; return; }
 
+  // 유형별 문의 = 기간 필터된 type_channel_breakdown(_tcData) 단일출처.
+  //   _tcData.types[유형].total = 선택 from/to 범위 문의수(일/주/월/올해/기간 모두 동일 경로 — '월 고정' 제거).
+  //   _tcData 미도착 시에만 _flow.byType(월값) 폴백.
   var byType = f.byType || {};
+  if (_tcData && _tcData.types) {
+    byType = {};
+    var _tcTot = 0;
+    Object.keys(_tcData.types).forEach(function(tp) {
+      var v = (_tcData.types[tp] && _tcData.types[tp].total) || 0;
+      byType[tp] = v; _tcTot += v;
+    });
+    f.inq = _tcTot;  // 히어로 문의 총합도 기간 필터된 _tcData와 동기화(day/week/year 월값 잔존 제거)
+  }
   var reg    = (f && f.reg) ? f.reg : null;
   var periodLabel = f.label || '이번 달';
 
@@ -637,7 +649,7 @@ function renderConversionFlow() {
     + '<th style="text-align:left;padding:8px 10px;font-size:10px;color:var(--dim);background:var(--paper2);border-bottom:1px solid var(--border);text-transform:uppercase;letter-spacing:.05em">유형</th>'
     + '<th style="text-align:right;padding:8px 10px;font-size:10px;color:var(--dim);background:var(--paper2);border-bottom:1px solid var(--border)">클릭수 (' + periodLabel + ')</th>'
     + '<th style="text-align:right;padding:8px 10px;font-size:10px;color:var(--dim);background:var(--paper2);border-bottom:1px solid var(--border)">문의 (' + periodLabel + ')</th>'
-    + '<th style="text-align:right;padding:8px 10px;font-size:10px;color:var(--dim);background:var(--paper2);border-bottom:1px solid var(--border)">등록</th>'
+    + '<th style="text-align:right;padding:8px 10px;font-size:10px;color:var(--dim);background:var(--paper2);border-bottom:1px solid var(--border)">등록 (' + periodLabel + ')</th>'
     + '<th style="padding:8px 10px;font-size:10px;color:var(--dim);background:var(--paper2);border-bottom:1px solid var(--border)">비고</th>'
     + '</tr></thead>';
 
@@ -995,6 +1007,7 @@ async function loadFunnelConversion() {
 
   try {
     var url = _wpUrl(FUNNEL_APPS_SCRIPT_URL + '?action=funnel_conversion');
+    if (_rangeFromTo.from && _rangeFromTo.to) { url += '&from=' + _rangeFromTo.from + '&to=' + _rangeFromTo.to; }  // 기간 연동(전환·채널 재집계)
     var res  = await fetch(url, { redirect: 'follow' });
     if (!res.ok) return;
     var data = await res.json();
@@ -1220,6 +1233,8 @@ function _applyPeriodData(data, period) {
     var _w0 = new Date(_pd); _w0.setDate(_pd.getDate() - 6);
     var _wy = _w0.getFullYear(); var _wm = ('0' + (_w0.getMonth() + 1)).slice(-2); var _wd = ('0' + _w0.getDate()).slice(-2);
     _rangeFromTo = { from: _wy + '-' + _wm + '-' + _wd, to: _py + '-' + _pm + '-' + _pday };
+  } else if (period === 'year') {
+    _rangeFromTo = { from: _py + '-01-01', to: _py + '-' + _pm + '-' + _pday };   // 올해 1/1~오늘 (전체 누적 아님)
   } else {
     _rangeFromTo = { from: '', to: '' };
   }
@@ -1229,6 +1244,7 @@ function _applyPeriodData(data, period) {
   if (_skipPeriodChildFetch) { _skipPeriodChildFetch = false; return; }
   loadClickStats();
   loadTypeChannel();
+  loadFunnelConversion();   // 전환·채널 전체수치 기간 재집계(from/to 반영)
   if (_cfOpenType) loadLessonBreakdown();   // 강습 펼침 중이면 종목 문의 기간 갱신
 }
 
@@ -1341,10 +1357,11 @@ function _applyCustom(data, from, to, monthCtx) {
   };
   renderConversionFlow();
 
-  // 기간 연동 — custom 기간을 저장 후 클릭·유형채널 재조회 (순환 없음)
+  // 기간 연동 — custom 기간을 저장 후 클릭·유형채널·전환 재조회 (순환 없음)
   _rangeFromTo = { from: from, to: to };
   loadClickStats();
   loadTypeChannel();
+  loadFunnelConversion();   // 전환·채널 전체수치 기간 재집계(from/to 반영)
   if (_cfOpenType) loadLessonBreakdown();   // 강습 펼침 중이면 종목 문의 기간 갱신
 }
 
@@ -1516,6 +1533,7 @@ async function loadTypeChannel() {
 
     _tcData = data;
     renderInflowChannel();   // #3+#5 유입채널 현황(채널×유형 병합, 기간 연동) + 출처미상률 배지
+    renderConversionFlow();  // #1 유형별 문의(_tcData.types[*].total) 갱신 — 기간 전환 시 '월 고정' 제거
   } catch (e) {
     console.warn('[type_channel_breakdown] 로드 실패:', e && e.message);
     _tcStub((e && e.message) ? e.message + ' — 재배포 후 점등됩니다' : '재배포 후 점등됩니다');
