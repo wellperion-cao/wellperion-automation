@@ -527,7 +527,7 @@ function _miReadRows_() {
   var out = [];
   if (last < 2) return out;
   var data = sh.getRange(2, 1, last - 1, hdr.length).getValues();
-  var iName  = _miColIdx_(hdr, ['이름','성함']);
+  var iName  = _miColIdx_(hdr, ['성함','이름']);  // '성함' 우선 — '이름'이 '접수 담당자 혹은 본인 이름' 칸을 먼저 잡던 버그 차단(2026-06-24)
   var iPhone = _miColIdx_(hdr, ['연락처','전화','휴대폰']);
   var iProg  = _miColIdx_(hdr, ['관심 있는 프로그램 종류','관심프로그램','프로그램']);
   var iStat  = _miColIdx_(hdr, ['진행현황','진행상황','진행상태','상태']);
@@ -806,7 +806,7 @@ function _processAction(body) {
     }
     var maNow = Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy-MM-dd');
     if (!body.name && !body.phone) return _json({ ok: false, error: '이름 또는 전화번호 필수' });
-    _maSet(['이름','성함'], body.name);
+    _maSet(['성함','이름'], body.name);
     _maSet(['연락처','전화','휴대폰'], body.phone);
     _maSet(['관심 있는 프로그램 종류','관심프로그램','프로그램'], body.program);
     _maSet(['진행현황','진행상황','진행상태','상태'], body.status || '신규');
@@ -856,7 +856,7 @@ function _processAction(body) {
       var ci = _miColIdx_(muHdr, colNames);
       if (ci >= 0) muSh.getRange(muRow, ci + 1).setValue(val);
     }
-    _muSet(['이름','성함'], body.name);
+    _muSet(['성함','이름'], body.name);
     _muSet(['연락처','전화','휴대폰'], body.phone);
     _muSet(['관심 있는 프로그램 종류','관심프로그램','프로그램'], body.program);
     _muSet(['진행현황','진행상황','진행상태','상태'], body.status);

@@ -671,8 +671,6 @@ a.funnel-step:hover{background:rgba(183,159,138,0.08);color:var(--accent)}
     <button class="tab active" onclick="switchTab('db',this)">문의 회원 관리</button>
     <button class="tab" onclick="switchTab('calendar',this)">예약 달력</button>
     <button class="tab" onclick="switchTab('guide',this)">문의 가이드</button>
-    <button class="tab" onclick="switchTab('registered',this)">등록회원</button>
-    <button class="tab" onclick="switchTab('active',this)">멤버십 회원관리</button>
   </div>
 </div>
 
@@ -684,9 +682,9 @@ a.funnel-step:hover{background:rgba(183,159,138,0.08);color:var(--accent)}
     <span class="funnel-arrow">→</span>
     <span class="funnel-step current">문의 · 체험/상담투어</span>
     <span class="funnel-arrow">→</span>
-    <a class="funnel-step" href="javascript:void(0)" onclick="switchTab('registered', document.querySelector('.tab[onclick*=registered]'))" style="text-decoration:none;cursor:pointer" title="등록회원 탭으로">등록</a>
+    <a class="funnel-step" href="javascript:void(0)" onclick="switchTab('registered')" style="text-decoration:none;cursor:pointer" title="등록회원으로">등록</a>
     <span class="funnel-arrow">→</span>
-    <a class="funnel-step" href="javascript:void(0)" onclick="switchTab('active', document.querySelector('.tab[onclick*=active]'))" style="text-decoration:none;cursor:pointer" title="멤버십 회원관리 탭으로">멤버십 회원 관리</a>
+    <a class="funnel-step" href="javascript:void(0)" onclick="switchTab('active')" style="text-decoration:none;cursor:pointer" title="멤버십 회원관리로">멤버십 회원 관리</a>
   </div>
 
   <!-- ══════════════════════════════ 1. 예약 달력 ══════════════════════════════ -->
@@ -808,14 +806,14 @@ a.funnel-step:hover{background:rgba(183,159,138,0.08);color:var(--accent)}
         <table class="db-table" id="dbTable">
           <thead>
             <tr>
-              <th style="width:40px">이름</th>
+              <th style="width:90px">문의일</th>
+              <th style="width:60px">성함</th>
               <th style="width:120px">연락처</th>
               <th style="width:90px">관심 프로그램</th>
               <th style="width:90px">진행상황</th>
               <th style="width:110px">유입채널</th>
               <th style="width:85px">담당</th>
               <th style="width:240px">메모</th>
-              <th style="width:90px">문의일</th>
               <th style="width:200px">일정 (상담·체험)</th>
             </tr>
           </thead>
@@ -1304,7 +1302,7 @@ function switchTab(id, btn) {
   document.querySelectorAll('.pane').forEach(function(p){ p.classList.remove('active'); });
   document.querySelectorAll('.tab').forEach(function(t){ t.classList.remove('active'); });
   document.getElementById('pane-' + id).classList.add('active');
-  btn.classList.add('active');
+  if (btn) btn.classList.add('active');
   if (id === 'db') loadDbData();
   if (id === 'registered') loadRegistered();
   if (id === 'active') loadActiveMembers();
@@ -1868,7 +1866,13 @@ function buildDbRow(row, isNew) {
 
   var statusCls = STATUS_CLASS[row.status] || 'new';
 
-  // ── [0] 이름 ──
+  // ── 문의일 (읽기 전용) — 맨 앞 (2026-06-24 GM) ──
+  var tdTs = document.createElement('td');
+  tdTs.style.fontSize = '12px'; tdTs.style.color = 'var(--dim)';
+  tdTs.textContent = row.timestamp || '—';
+  tr.appendChild(tdTs);
+
+  // ── 성함 ──
   var tdName = document.createElement('td');
   tdName.style.fontWeight = '700';
   tdName.textContent = row.name || '—';
@@ -1923,13 +1927,7 @@ function buildDbRow(row, isNew) {
   if (!READ_ONLY) { tdMemo.className = 'editable-cell'; tdMemo.addEventListener('click', function(){ _activateCellMemo(this, row); }); }
   tr.appendChild(tdMemo);
 
-  // ── [7] 문의일 (읽기 전용) ──
-  var tdTs = document.createElement('td');
-  tdTs.style.fontSize = '12px'; tdTs.style.color = 'var(--dim)';
-  tdTs.textContent = row.timestamp || '—';
-  tr.appendChild(tdTs);
-
-  // ── [8] 일정 (상담·체험) ──
+  // ── 일정 (상담·체험) ──
   var tdSched = document.createElement('td');
   tdSched.style.fontSize = '11px'; tdSched.style.color = 'var(--dim)'; tdSched.style.lineHeight = '1.6';
   _renderScheduleCell(tdSched, row);
@@ -2239,6 +2237,12 @@ function buildNewInputRow(row) {
   var inputOwner = makeInput('owner', '');
   var inputMemo  = makeInput('memo', '');
 
+  var tdDate = document.createElement('td');
+  tdDate.style.color = 'var(--dim)';
+  tdDate.style.fontSize = '12px';
+  tdDate.textContent = new Date().toISOString().slice(0,10);
+  tr.appendChild(tdDate);
+
   tr.appendChild(makeCell(inputName));
   tr.appendChild(makeCell(inputPhone));
   tr.appendChild(makeCell(inputProg));
@@ -2246,12 +2250,6 @@ function buildNewInputRow(row) {
   tr.appendChild(makeCell(selChannel));
   tr.appendChild(makeCell(inputOwner));
   tr.appendChild(makeCell(inputMemo));
-
-  var tdDate = document.createElement('td');
-  tdDate.style.color = 'var(--dim)';
-  tdDate.style.fontSize = '12px';
-  tdDate.textContent = new Date().toISOString().slice(0,10);
-  tr.appendChild(tdDate);
 
   var tdSched = document.createElement('td');
   tdSched.appendChild(buildScheduleEditBlock(row || {}));
