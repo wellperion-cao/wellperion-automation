@@ -63,6 +63,9 @@ IMPROVEMENT_AREAS = [
 # ── 허용 status 값 ──
 VALID_STATUSES = ["제안", "승인", "거부", "반영"]
 
+# ── 허용 효과 값 ──
+VALID_EFFECTS = ["효과있음", "효과없음", "미확인"]
+
 
 # ═══════════════════════════════════════════
 #  유틸
@@ -93,11 +96,21 @@ def make_proposal_id() -> str:
 
 
 def load_proposals() -> list:
+    """proposals.json 로드. 효과 필드 없는 기존 카드에 기본값 채움."""
     if not PROPOSALS_FILE.exists():
         return []
     try:
         data = json.loads(PROPOSALS_FILE.read_text(encoding="utf-8"))
-        return data if isinstance(data, list) else []
+        cards = data if isinstance(data, list) else []
+        # 기존 카드에 효과 필드 기본값 채움 (신규 스키마 호환)
+        for c in cards:
+            if "효과" not in c:
+                c["효과"] = "미확인"
+            if "효과근거" not in c:
+                c["효과근거"] = ""
+            if "효과일자" not in c:
+                c["효과일자"] = ""
+        return cards
     except Exception:
         return []
 
@@ -283,6 +296,9 @@ def assemble_cards(raw_proposals: list, summary: dict, brain: str) -> list:
             "예상효과": p.get("예상효과", ""),
             "위험": p.get("위험", "없음"),
             "status": "제안",
+            "효과": "미확인",
+            "효과근거": "",
+            "효과일자": "",
         }
         cards.append(card)
     return cards
@@ -380,10 +396,20 @@ def cmd_list(status_filter: str | None):
         elif st == "거부":
             print(f"  거부일시: {card.get('거부일시', '?')}  |  사유: {card.get('거부사유', '없음')}")
         elif st == "반영":
-            print(f"  반영일시: {card.get('반영일시', '?')}")
+            effect = card.get("효과", "미확인")
+            effect_icon = {"효과있음": "✅효과있음", "효과없음": "효과없음", "미확인": "⏳미확인"}.get(effect, effect)
+            effect_note = card.get("효과근거", "")
+            effect_date = card.get("효과일자", "")
+            print(f"  반영일시: {card.get('반영일시', '?')}  |  효과: {effect_icon}", end="")
+            if effect_date:
+                print(f"  (기록일: {effect_date})", end="")
+            print()
+            if effect_note:
+                print(f"  효과근거: {effect_note}")
 
     print(f"\n{'='*60}")
     print("  명령: --approve <id>  |  --reject <id> [--reason 사유]  |  --mark-applied <id>")
+    print("         --record-effect <id> --effect <효과있음|효과없음|미확인> [--note 근거]")
     print(f"{'='*60}\n")
 
 
@@ -445,6 +471,40 @@ def cmd_reject(card_id: str, reason: str, dry_run: bool):
     target["status"] = "거부"
     target["거부일시"] = now_str()
     target["거부사유"] = reason or ""
+    save_proposals_file(cards)
+    print(f"  저장 완료: {PROPOSALS_FILE}")
+
+
+def cmd_record_effect(card_id: str, effect: str, note: str, dry_run: bool):
+    """반영된 카드에 효과 기록. status='반영'인 카드에만 허용."""
+    if effect not in VALID_EFFECTS:
+        print(f"[ERROR] --effect 는 {VALID_EFFECTS} 중 하나")
+        sys.exit(1)
+
+    cards = load_proposals()
+    target = next((c for c in cards if c.get("id") == card_id), None)
+    if not target:
+        print(f"[ERROR] 카드 ID 없음: {card_id}")
+        sys.exit(1)
+
+    current = target.get("status")
+    if current != "반영":
+        print(f"[ERROR] 효과 기록은 status='반영' 카드에만 가능. 현재 status={current}")
+        print("  → 먼저 --mark-applied 로 반영 완료 표시 후 기록하세요.")
+        sys.exit(1)
+
+    print(f"\n[효과 기록] {card_id}")
+    print(f"  대상: {target.get('대상_clevel')}  |  무엇을: {target.get('무엇을', '')[:50]}")
+    print(f"  효과: {effect}  |  근거: {note or '(없음)'}  |  기록일: {today_str()}")
+    print("  ★ 자기수정 아님 — learning_proposals.json 효과 필드만 갱신")
+
+    if dry_run:
+        print("  [dry-run] 저장 생략")
+        return
+
+    target["효과"] = effect
+    target["효과근거"] = note or ""
+    target["효과일자"] = today_str()
     save_proposals_file(cards)
     print(f"  저장 완료: {PROPOSALS_FILE}")
 
@@ -618,6 +678,12 @@ def main():
     parser.add_argument("--reason", type=str, metavar="TEXT", help="--reject 사유")
     parser.add_argument("--mark-applied", type=str, metavar="ID", dest="mark_applied",
                         help="반영완료 표시")
+    parser.add_argument("--record-effect", type=str, metavar="ID", dest="record_effect",
+                        help="반영된 카드에 효과 기록 (status=반영 필수)")
+    parser.add_argument("--effect", type=str, metavar="EFFECT",
+                        help="--record-effect 효과값: 효과있음|효과없음|미확인")
+    parser.add_argument("--note", type=str, metavar="TEXT",
+                        help="--record-effect 효과 근거 (선택)")
 
     args = parser.parse_args()
 
@@ -636,6 +702,13 @@ def main():
 
     if args.mark_applied:
         cmd_mark_applied(args.mark_applied, dry_run=args.dry_run)
+        return
+
+    if args.record_effect:
+        if not args.effect:
+            print("[ERROR] --record-effect 사용 시 --effect <효과있음|효과없음|미확인> 필수")
+            sys.exit(1)
+        cmd_record_effect(args.record_effect, args.effect, args.note or "", dry_run=args.dry_run)
         return
 
     # 제안 생성 모드

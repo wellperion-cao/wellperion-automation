@@ -4278,6 +4278,58 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
 
         <h3><span class="ico">🔧</span>컨텍스트 정비 범위 정의 (매주 일 09:00)</h3>
         <div class="callout"><strong>→ 범위표 단일출처 = T2 업무자동화SSOT, 실행 프롬프트 = T1 본 섹션.</strong> 주간 컨텍스트 정비 범위표(6 C-Level 식별자·정비 범위·체크포인트)는 <a href="#" onclick="event.preventDefault();var t=document.querySelector('[data-id=T2]');if(t)t.click();" style="color:var(--accent);font-weight:700;text-decoration:none;">T2 업무자동화SSOT ▸ 매주 ▸ 7 C-Level 컨텍스트 정비</a>에서 단일 관리합니다(2026-06-05 이관). 실행 프롬프트(STEP 1~5)는 <strong>T1 기술 인프라 상세 ▸ 핵심 프롬프트 ▸ 운영 실행 도구</strong>. 범위표 중복 기재 금지.</div>
+
+        <!-- ══ 📓 반영·효과 로그 (2026-06-23 시토 신설) ══ -->
+        <h3 style="margin-top:28px;border-top:1px solid var(--border);padding-top:22px;"><span class="ico">📓</span>반영·효과 로그 <span style="font-size:12px;color:var(--dim);font-weight:400;">— 반영된 제안의 실제 효과 회고</span></h3>
+        <div class="callout" style="margin-bottom:14px;"><strong>역할 구분.</strong> <strong>G1 섹션</strong> = 들어온 제안 전체(검토·승인 대기) / <strong>여기(T1)</strong> = 반영된 것의 실제 효과 기록(회고). 효과는 사람이 <code>python scripts/ai_learning_proposer.py --record-effect &lt;id&gt; --effect &lt;효과있음|효과없음|미확인&gt; --note "근거"</code> 로 직접 기록합니다. <strong>자동 측정이 아닙니다.</strong></div>
+        <div id="t1-effect-log-body"><div style="color:var(--dim);font-size:13px;padding:8px 0;">불러오는 중…</div></div>
+        <script>
+        (function(){
+          var LP_URL = '/wellperion-automation/status/learning_proposals.json';
+          function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+          function effectBadge(ef){
+            if(ef==='효과있음') return '<span style="background:rgba(5,150,105,0.15);color:#059669;font-weight:700;border-radius:99px;padding:2px 10px;font-size:12px;">✅ 효과있음</span>';
+            if(ef==='효과없음') return '<span style="background:rgba(220,38,38,0.12);color:#dc2626;font-weight:700;border-radius:99px;padding:2px 10px;font-size:12px;">효과없음</span>';
+            return '<span style="background:rgba(107,114,128,0.15);color:#888;font-weight:700;border-radius:99px;padding:2px 10px;font-size:12px;">⏳ 미확인</span>';
+          }
+          fetch(LP_URL + '?_=' + Date.now(), {cache:'no-store'})
+            .then(function(r){ return r.ok ? r.json() : null; })
+            .then(function(data){
+              var body = document.getElementById('t1-effect-log-body');
+              if(!body) return;
+              if(!data || !Array.isArray(data)){
+                body.innerHTML = '<div style="color:var(--dim);font-size:13px;padding:8px 0;">데이터를 불러오지 못했습니다.</div>';
+                return;
+              }
+              var applied = data.filter(function(p){ return (p.status||'')==='반영'; });
+              if(applied.length === 0){
+                body.innerHTML = '<div style="color:var(--dim);font-size:13px;padding:8px 0;">아직 반영·효과 기록 없음.</div>';
+                return;
+              }
+              var h = '<table style="margin-top:6px;"><tr><th>대상</th><th>무엇을 (요약)</th><th>반영일</th><th>효과</th><th>효과근거</th></tr>';
+              applied.forEach(function(p){
+                var ef = p['효과'] || '미확인';
+                var appliedDate = (p['반영일시']||'').slice(0,10) || (p['생성일']||'-');
+                var what = esc(p['무엇을']||'');
+                if(what.length > 45) what = what.slice(0,45) + '…';
+                h += '<tr>';
+                h += '<td style="white-space:nowrap;">' + esc(p['대상_clevel']||'') + '</td>';
+                h += '<td style="font-size:12.5px;">' + what + '</td>';
+                h += '<td style="white-space:nowrap;font-size:12px;">' + esc(appliedDate) + '</td>';
+                h += '<td style="white-space:nowrap;">' + effectBadge(ef) + '</td>';
+                h += '<td style="font-size:12px;color:var(--dim);">' + esc(p['효과근거']||'—') + (p['효과일자'] ? ' <span style="color:#666;">('+esc(p['효과일자'])+')</span>' : '') + '</td>';
+                h += '</tr>';
+              });
+              h += '</table>';
+              body.innerHTML = h;
+            })
+            .catch(function(){
+              var body = document.getElementById('t1-effect-log-body');
+              if(body) body.innerHTML = '<div style="color:var(--dim);font-size:13px;padding:8px 0;">효과 로그를 불러오지 못했습니다.</div>';
+            });
+        })();
+        </script>
+        <!-- ══ /📓 반영·효과 로그 ══ -->
       </div>
 
       <!-- ── 탭 7: 핵심 프롬프트 ── -->
