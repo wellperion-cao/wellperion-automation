@@ -4253,5 +4253,19 @@
     "next": "🌀 표류 — 다음 미정 (필요 시 GM·웰리/담당 C-Level 지정)",
     "adhoc_commit": "a303ef73cbf7ece69a4bf47a2c3981c3b43ffe48",
     "ship_no": 103
+  },
+  {
+    "task_id": "CMO-2026-06-23-ADHOC-34ed1f8a",
+    "clevel": "cmo",
+    "title": "[시모] UTM 발신 콘텐츠 단위 확장(source+medium+campaign 자동) [시모]",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-06-23",
+    "processed_at": "2026-06-23",
+    "artifact": "- cta_utm.py: CHANNEL_MEDIUM 맵 신설, slugify_campaign() 헬퍼 추가,\n  apply_cta_utm(text, channel, campaign=None) 시그니처 확장(하위호환 유지)\n- 4채널 업로드 스크립트: --campaign 인자 추가, apply_cta_utm 호출 갱신\n- publish_4channel_dispatcher.py: slugify_campaign import,\n  _dispatch에서 1회 산출 후 각 채널 argv에 --campaign 전파\n- status/_queue. (CLI ad-hoc · 커밋 34ed1f8a)",
+    "next": "🌀 표류 — 다음 미정 (필요 시 GM·웰리/담당 C-Level 지정)",
+    "adhoc_commit": "34ed1f8a15c9ae6b8fc3eab1ffa5d1446e90f1e6",
+    "ship_no": 111
   }
 ]
