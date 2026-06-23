@@ -373,6 +373,10 @@ body{
           <option value="LOSS">LOSS(이탈)</option>
         </select>
         <button class="btn-add" id="btnAddRow" onclick="addNewRow()">+ 전화·직접 문의</button>
+        <span id="addActions" style="display:none;gap:6px;align-items:center">
+          <button class="row-btn btn-save" id="btnAddSave">추가</button>
+          <button class="row-btn btn-cancel" id="btnAddCancel">취소</button>
+        </span>
         <button class="action-btn" id="btnRefreshDb" onclick="loadDbData()" style="margin-left:auto">새로고침</button>
       </div>
 
@@ -389,12 +393,11 @@ body{
               <th style="width:240px">메모</th>
               <th style="width:90px">문의일</th>
               <th style="width:200px">일정 (상담·체험)</th>
-              <th style="width:90px">작업</th>
             </tr>
           </thead>
           <tbody id="dbBody">
             <tr>
-              <td colspan="10">
+              <td colspan="9">
                 <div class="empty-state" style="padding:24px 0">
                   <div class="empty-state-icon">📭</div>
                   <div class="empty-state-title" id="dbEmptyTitle">GAS 연동 전</div>
@@ -1026,7 +1029,7 @@ function loadDbData() {
 function renderDbEmpty(title, desc) {
   var tbody = document.getElementById('dbBody');
   tbody.innerHTML =
-    '<tr><td colspan="10">' +
+    '<tr><td colspan="9">' +
     '<div class="empty-state" style="padding:24px 0">' +
     '<div class="empty-state-icon">📭</div>' +
     '<div class="empty-state-title">' + esc(title) + '</div>' +
@@ -1140,13 +1143,6 @@ function buildDbRow(row, isNew) {
   _renderScheduleCell(tdSched, row);
   if (!READ_ONLY) { tdSched.className = 'editable-cell'; tdSched.addEventListener('click', function(){ _activateCellSchedule(this, row); }); }
   tr.appendChild(tdSched);
-
-  // ── [9] 작업 (빈 칸 — 직접편집 모드에선 버튼 없음) ──
-  var tdAct = document.createElement('td');
-  if (READ_ONLY) {
-    tdAct.innerHTML = '<span style="font-size:11px;color:var(--dim)">🔒 읽기전용</span>';
-  }
-  tr.appendChild(tdAct);
 
   return tr;
 }
@@ -1374,6 +1370,16 @@ function buildScheduleEditBlock(row) {
 }
 
 
+var dbNewRowTr = null;
+
+function _restoreAddToolbar() {
+  var btnAdd = document.getElementById('btnAddRow');
+  var addAct = document.getElementById('addActions');
+  if (btnAdd) btnAdd.style.display = '';
+  if (addAct) addAct.style.display = 'none';
+  dbNewRowTr = null;
+}
+
 function addNewRow() {
   if (GAS_URL === GAS_PLACEHOLDER) {
     showToast('GAS 미연동 — URL 교체 후 사용 가능', 'err');
@@ -1386,6 +1392,25 @@ function addNewRow() {
   var tempRow = { rowIndex: 0, name:'', phone:'', program:'', status:'신규', channel:'', owner:'', memo:'', timestamp:'', tourDate:'' };
   var tr = buildNewInputRow(tempRow);
   tbody.insertBefore(tr, tbody.firstChild);
+  dbNewRowTr = tr;
+
+  var btnAdd = document.getElementById('btnAddRow');
+  var addAct = document.getElementById('addActions');
+  if (btnAdd) btnAdd.style.display = 'none';
+  if (addAct) addAct.style.display = 'inline-flex';
+
+  var saveBtn = document.getElementById('btnAddSave');
+  var cancelBtn = document.getElementById('btnAddCancel');
+  // 이전 리스너 교체(복수 클릭 방어)
+  var newSave = saveBtn.cloneNode(true);
+  var newCancel = cancelBtn.cloneNode(true);
+  saveBtn.parentNode.replaceChild(newSave, saveBtn);
+  cancelBtn.parentNode.replaceChild(newCancel, cancelBtn);
+  newSave.onclick = function(){ submitNewRow(dbNewRowTr); };
+  newCancel.onclick = function(){
+    _restoreAddToolbar();
+    renderDbTable();
+  };
 }
 
 function buildNewInputRow(row) {
@@ -1440,22 +1465,6 @@ function buildNewInputRow(row) {
   tdSched.appendChild(buildScheduleEditBlock(row || {}));
   tr.appendChild(tdSched);
 
-  var actDiv = document.createElement('div');
-  actDiv.className = 'row-actions';
-  var saveBtn = document.createElement('button');
-  saveBtn.className = 'row-btn btn-save';
-  saveBtn.textContent = '추가';
-  saveBtn.onclick = function(){ submitNewRow(tr); };
-  var cancelBtn = document.createElement('button');
-  cancelBtn.className = 'row-btn btn-cancel';
-  cancelBtn.textContent = '취소';
-  cancelBtn.onclick = function(){ renderDbTable(); };
-  actDiv.appendChild(saveBtn);
-  actDiv.appendChild(cancelBtn);
-  var tdAct = document.createElement('td');
-  tdAct.appendChild(actDiv);
-  tr.appendChild(tdAct);
-
   return tr;
 }
 
@@ -1487,10 +1496,12 @@ function submitNewRow(tr) {
     .then(function(data){
       if (!data.ok) throw new Error(data.error || '추가 실패');
       showToast('추가 완료', 'ok');
+      _restoreAddToolbar();
       loadDbData();
     })
     .catch(function(err){
       showToast('추가 실패: ' + err.message, 'err');
+      _restoreAddToolbar();
     });
 }
 
