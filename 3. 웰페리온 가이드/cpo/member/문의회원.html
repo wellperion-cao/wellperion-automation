@@ -508,7 +508,6 @@ body{
  *   GET  ?action=inquiry_list          → 전체 목록 (PII 마스킹)
  *   POST action=inquiry_add            → 행 추가
  *   POST action=inquiry_update         → 행 수정 (rowIndex 기반)
- *   POST action=inquiry_delete         → 행 삭제 (rowIndex 기반)
  *   GET  ?action=member_calendar&month=YYYY-MM → 예약 달력
  * ══════════════════════════════════════════════
  */
@@ -586,7 +585,7 @@ function _genInqId_() {
 //   - member_calendar 는 읽기·마스킹 전용이므로 게이트 면제.
 // ⚠️ 실제 발효(PII_GATE='on')는 GM go 후에만. 코드 머지만으로는 라이브 영향 0(기본 잠금 유지).
 var _INQ_PUBLIC_ACTIONS = { member_calendar: true };  // PII 미노출 — 항상 통과
-var _piiActions_ = ['inquiry_list','inquiry_add','inquiry_update','inquiry_delete'];
+var _piiActions_ = ['inquiry_list','inquiry_add','inquiry_update'];
 if (!_INQ_PUBLIC_ACTIONS[action] &amp;&amp; _piiActions_.indexOf(action) !== -1) {
   var _gate_ = PropertiesService.getScriptProperties().getProperty('PII_GATE');
   if (_gate_ !== 'on') {
@@ -699,15 +698,6 @@ if (action === 'inquiry_update') {
   if (body.exp2    !== undefined &amp;&amp; body.exp2    !== '' &amp;&amp; iExp23 >= 0) existing[iExp23] = body.exp2;
   iuSh.getRange(iuRow, 1, 1, iuHdr.length).setValues([existing]);
   return _json({ ok: true, rowIndex: iuRow, message: '수정되었습니다.' });
-}
-
-// ─── inquiry_delete ───
-if (action === 'inquiry_delete') {
-  var idSh  = _inqSheet_();
-  var idRow = parseInt(body.rowIndex, 10);
-  if (!idRow || idRow &lt; 2) return _json({ ok: false, error: 'rowIndex 필수 (2 이상)' });
-  idSh.deleteRow(idRow);
-  return _json({ ok: true, message: '삭제되었습니다.' });
 }
 
 // ─── member_calendar ───
