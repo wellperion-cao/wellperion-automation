@@ -130,7 +130,7 @@ html,body{background:var(--bg);color:var(--text);font-family:"Pretendard","Apple
 .approval-card .title-row .card-title-area .approval-badge-line{display:flex;flex-wrap:wrap;gap:4px;}
 .approval-card .title-row .card-meta-chips{display:flex;flex-wrap:wrap;gap:4px;align-items:flex-start;flex-shrink:0;max-width:200px;}
 @media(max-width:400px){.approval-card .title-row{flex-wrap:wrap;}}
-/* [결재] 결재 진행바 — GM→대표 단계 시각화 (2026-06-01 GM) */
+/* [결재] 결재 진행바 — 부서장→GM 단계 시각화 (약속 L09: 결재 종착=GM) */
 .approval-steps{display:flex;align-items:flex-start;gap:0;margin:6px 0 8px;flex-wrap:wrap}
 .approval-steps .step{display:flex;flex-direction:column;align-items:center;gap:2px;min-width:46px}
 .approval-steps .step-dot{font-size:13px;line-height:1.2}
@@ -332,7 +332,7 @@ const CAT_COLORS = {
 
 /* 카테고리 → 부서장 매핑 (결재선 1단계 자동 복원, 2026-06-10 GM 확정 9분류).
    인사·파트너팀=나우열M([2][3]) / 운영부=이경연 실장([4]) / 시설부=이정헌 소장([5]).
-   매핑 없는 카테고리([1][6][7][8][9])는 부서장 생략 → GM→대표 폴백. */
+   매핑 없는 카테고리([1][6][7][8][9])는 부서장 생략 → GM 단독(약속 L09: 결재 종착=GM). */
 const CAT_DEPT_HEAD = {
   '[2] 인사':        '나우열M',
   '[3] 파트너팀':    '나우열M',
@@ -372,7 +372,7 @@ function deptHeadNameOf(t) {
 
 let ALL_TASKS = [];
 let activeFilter = '전체';      // '전체' | '결재완료' | '반려' | '미결'
-let activeRoleFilter = '전체';  // '전체' | 'GM' | '대표님'
+let activeRoleFilter = '전체';  // '전체' | 부서장 실명 | 'GM' (약속 L09: 대표 단계 폐지)
 let activeCatFilter = '전체';   // '전체' | 카테고리
 let searchQuery = '';            // 키워드
 let activeSortBy = '최신순';    // '최신순' | '결재상태' | '카테고리' | '시작일순'
@@ -549,7 +549,7 @@ function render() {
     list = list.filter(t => t.category === activeCatFilter);
   }
 
-  // [결재] 결재자별 차례 필터 (미결 한정) — 부서장 3명·GM·대표님 (2026-06-03 GM)
+  // [결재] 결재자별 차례 필터 (미결 한정) — 부서장 3명·GM (약속 L09: 대표 단계 폐지)
   if (activeRoleFilter !== '전체') {
     const _isDeptHead = DEPT_HEADS.indexOf(activeRoleFilter) >= 0;
     list = list.filter(t => {
@@ -577,11 +577,11 @@ function render() {
 
   // 정렬 — activeSortBy에 따라 분기
   if (activeSortBy === '결재상태') {
-    // 백엔드 실제 결재상태 문자열 기준 (apps_script_todo.js): '결재완료' / 'GM 완료'·'대표님 완료'·'부서장 완료' / 'GM 반려' 등 / '대기'
+    // 백엔드 실제 결재상태 문자열 기준 (apps_script_todo.js): '결재완료' / 'GM 완료'·'부서장 완료' / 'GM 반려' 등 / '대기'. (구 '대표님 *' 문자열은 /완료|반려/ 일반 매칭으로 하위호환)
     const stRank = t => {
       const s = String(t.approvalStatus || '');
       if (s === '결재완료') return 0;        // 전 라인 승인
-      if (/반려/.test(s)) return 1;          // 반려 (GM/대표님/부서장)
+      if (/반려/.test(s)) return 1;          // 반려 (GM/부서장)
       if (/완료/.test(s)) return 2;          // 중간 단계 완료 = 진행 중
       if (s === '대기') return 4;            // 미착수
       return 5;                              // 기타·미설정
@@ -1024,8 +1024,8 @@ function todayDateStr() {
   return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
 }
 
-/* 결재 필요 여부 산출용 (실제 라인은 buildEffectiveRoute가 GM→대표 2단계로 통일).
-   부서장·금액 임계 분기 폐지 — 전 건 GM→대표 2단계 (2026-06-02 GM 확정). */
+/* 결재 필요 여부 산출용 (실제 라인은 buildEffectiveRoute가 (부서장)→GM으로 통일).
+   금액 임계 분기 폐지 — 결재 필요 건은 GM 최종 (약속 L09: 결재 종착=GM, 대표 단계 폐지). */
 function routeApproval(category, amount) {
   switch (category) {
     case '일상 운영비':
@@ -1308,7 +1308,7 @@ function renderApprovalCard(t, idx) {
     h += '</div>';
   }
 
-  // [결재] 결재 진행바 — GM→대표 단계 한눈에 (2026-06-01 GM)
+  // [결재] 결재 진행바 — 부서장→GM 단계 한눈에 (약속 L09: 결재 종착=GM)
   if (route && route.length) {
     let stepsH = '<div class="approval-steps">';
     route.forEach((r, i) => {
@@ -1574,7 +1574,7 @@ function setView(v) {
 }
 
 /* 결재 컬럼 분류 — '다음 서명자'별(2026-06-03 GM). 결재자 필터 버튼과 1:1 정합.
-   반려 → reject / 결재완료 → done / 그 외 → 다음 서명할 사람 실명(부서장 실명·GM·대표님). */
+   반려 → reject / 결재완료 → done / 그 외 → 다음 서명할 사람 실명(부서장 실명·GM). 약속 L09: 대표 단계 폐지. */
 function approvalBucketOf(t) {
   const s = String(t.approvalStatus || '');
   if (/반려/.test(s)) return 'reject';
@@ -1614,7 +1614,7 @@ function renderKanban(list) {
   COLS.forEach(col => {
     const items = buckets[col.key];
     h += '<div class="kanban-col ' + col.cls + '">';
-    var _hc = OWNER_COLORS[ ({'GM':'김남욱GM','대표님':'전응준 대표'})[col.key] || col.key ];
+    var _hc = OWNER_COLORS[ ({'GM':'김남욱GM'})[col.key] || col.key ];
     var _hst = _hc ? ' style="background:'+_hc.bg+';color:'+_hc.color+';border-top-color:'+_hc.color+';"' : '';
     h += '<div class="kanban-col-head"' + _hst + '>' + col.icon + ' ' + esc(col.label) + '<span class="kcount">' + items.length + '건</span></div>';
     h += '<div class="kanban-col-body">';

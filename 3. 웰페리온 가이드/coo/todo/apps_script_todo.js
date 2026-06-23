@@ -307,7 +307,7 @@ function _notifyTelegram(text, opts) {
 
 // ─── 카테고리 → 부서장 매핑 (결재선 1단계 자동, 2026-06-02 GM 확정 복원) ───
 // 운영부=이경연 실장([1][3]) / 시설부=이정헌 소장([4]) / 파트너팀=나우열M([2]).
-// 매핑 없는 카테고리([5][6][7][8])는 부서장 생략 → GM→대표 폴백.
+// 매핑 없는 카테고리([5][6][7][8])는 부서장 생략 → GM 단독(약속 L09: 결재 종착=GM).
 var CAT_DEPT_HEAD = {
   '[1] 매출 및 영업': '이경연 실장',
   '[3] 운영 정책':   '이경연 실장',
@@ -316,10 +316,10 @@ var CAT_DEPT_HEAD = {
 };
 function _deptHeadFor(category) { return CAT_DEPT_HEAD[String(category || '')] || ''; }
 
-// ─── 결재 라인 자동 산출 — 부서장 → GM → 대표 3단계 (2026-06-02 GM 확정 복원) ───
-// 부서장: 카테고리→부서 매핑 시 자동 1단계(매핑 없으면 생략).
+// ─── 결재 라인 자동 산출 — (명시 체크한 부서장) → GM (약속 L09: 결재 종착=GM 단일, 대표 단계 시스템 제외 / 2026-06-17 COO A: 카테고리 자동 부서장 삽입 폐지) ───
+// 중간 결재자: 결재요청에 명시 체크한 부서장만(카테고리 자동삽입 안 함).
 // 결재 필요 여부 = 수동 결재요청 또는 예산(BUDGET 마커) 존재.
-// 담당자=김남욱GM이면 GM 단계 생략 (본인 결재 중복 방지).
+// 담당자=김남욱GM이면 부서장 단계 생략. GM은 항상 최종. (대표 보고는 시스템 밖 오프라인 페이퍼 — approval_rep_* 별도)
 function _buildApprovalRoute(record) {
   const content = String(record['내용'] || '');
   const hasBudget = /===BUDGET===\s*\n[^|]+\|\s*\d+/.test(content);
@@ -328,18 +328,16 @@ function _buildApprovalRoute(record) {
   // 결재 불필요 → 빈 라인
   if (manual.length === 0 && !hasBudget) return [];
 
-  // 부서장 = 담당자의 부서장(본인이 부서장이면 본인) — 카테고리 짐작보다 담당자 우선(오배정 차단, 2026-06-03 GM).
+  // 중간 결재자 = 결재요청에 명시 체크한 부서장만. 카테고리 자동 부서장 삽입 폐지(2026-06-17 COO A) — 시설 카테고리라고 소장 자동삽입 안 함.
   var MID = ['이경연 실장','이정헌 소장','나우열M'];
   var owners = String(record['담당자'] || '').split(',').map(function(s){ return s.trim(); });
-  var ownerDH = owners.filter(function(o){ return MID.indexOf(o) >= 0; })[0];
-  var midName = ownerDH || _deptHeadFor(record['카테고리']) || manual.filter(function(m){ return MID.indexOf(m) >= 0; })[0] || '';
+  var midName = manual.filter(function(m){ return MID.indexOf(m) >= 0; })[0] || '';
 
-  // 표준 결재선: 부서장 → GM → 대표님. 본인이 부서장이라도 부서장 승인부터(스킵 X). GM 직접 건만 부서장·GM 스킵→대표만.
+  // 표준 결재선: (명시 체크한 부서장) → GM(최종). GM이 라인 마지막 = GM 서명 시 결재완료.
   const ownerIsGM = owners.indexOf('김남욱GM') >= 0;
   const route = [];
   if (midName && !ownerIsGM) route.push('부서장');
-  if (!ownerIsGM) route.push('GM');
-  route.push('대표님');
+  route.push('GM');
   return route;
 }
 
@@ -376,15 +374,15 @@ function _sendApprovalCard(record, route, currentRole) {
 }
 
 // ─── 결재 라인 다음 단계 산출 ───
-// role(현재 서명자) 전달 시: 서명자가 결재선 마지막 단계(=종착, 보통 대표님)면
+// role(현재 서명자) 전달 시: 서명자가 결재선 마지막 단계(=종착, 이제 GM)면
 // 앞선 단계에 미서명(phantom: 결재선엔 있으나 실제로 건너뛴 부서장 등)이 있어도
-// 최종 완료(null)로 확정한다. → 대표 사인 후 '대표님 완료'에 멈추던 버그 수정(2026-06-11 시우).
+// 최종 완료(null)로 확정한다. → GM 사인 후 결재완료 정합(약속 L09: 대표 단계 폐지).
 function _nextApprover(record, route, role) {
   if (!route || !route.length) return null;
   // 현재 서명자가 결재선 마지막이면 최종 — phantom 미서명에 막히지 않음.
   if (role && route[route.length - 1] === role) return null;
   // 싸인 컬럼 확인 → 미서명 첫 사람
-  const map = { '부서장': '부서장싸인', 'GM': 'GM싸인', '대표님': '대표싸인' };
+  const map = { '부서장': '부서장싸인', 'GM': 'GM싸인' };
   for (let i = 0; i < route.length; i++) {
     const r = route[i];
     if (!record[map[r]]) return r;
@@ -473,8 +471,8 @@ function _gmHangroNextApprover(row) {
   var route = [];
   if (midName && !ownerIsGM && !skipMid) route.push('부서장');
   if (!ownerIsGM) route.push('GM');
-  route.push('대표님');
-  var map = { '부서장': row['부서장싸인'], 'GM': row['GM싸인'], '대표님': row['대표싸인'] };
+  // 약속 L09: 결재 종착=GM 단일. 대표 단계 폐지(대표 보고는 시스템 밖 오프라인 페이퍼).
+  var map = { '부서장': row['부서장싸인'], 'GM': row['GM싸인'] };
   for (var i = 0; i < route.length; i++) { if (!map[route[i]]) return route[i]; }
   return null;
 }
@@ -799,7 +797,7 @@ function _processTodoAction(body) {
     if (action === 'todo_sign') {
       const sh = initTodoSheet();
       const id = body.id;
-      const role = body.role || '';  // '부서장' / 'GM' / '대표님'
+      const role = body.role || '';  // '부서장' / 'GM' (약속 L09: 대표 단계 폐지)
       const decision = body.decision || '';  // 'approve' / 'reject'
       const signer = body.signer || role;
       if (!id || !role || !decision) return _json({ ok: false, error: 'id·role·decision 필수' });
@@ -810,14 +808,14 @@ function _processTodoAction(body) {
       const record = {};
       TODO_HEADERS.forEach((h, i) => record[h] = existing[i]);
       const route = _buildApprovalRoute(record);
-      const signMap = { '부서장': '부서장싸인', 'GM': 'GM싸인', '대표님': '대표싸인' };
+      const signMap = { '부서장': '부서장싸인', 'GM': 'GM싸인' };  // 약속 L09: 결재 종착=GM. '대표싸인' 컬럼은 데이터 호환 위해 보존하나 시스템 결재선 미사용
       const signCol = signMap[role];
       if (!signCol) return _json({ ok: false, error: '알 수 없는 결재자: ' + role });
 
-      // ── 결재 비밀번호 서버 검증 (GM·대표님) — 평문 PIN은 서버 ScriptProperties에만 저장 (2026-05-29 COO 보안) ──
-      // GM 콘솔: 프로젝트 설정 → 스크립트 속성에 APPROVAL_PIN_GM, APPROVAL_PIN_REP 등록 후 사용.
+      // ── 결재 비밀번호 서버 검증 (GM) — 평문 PIN은 서버 ScriptProperties에만 저장 (2026-05-29 COO 보안) ──
+      // GM 콘솔: 프로젝트 설정 → 스크립트 속성에 APPROVAL_PIN_GM 등록 후 사용. 대표 단계 폐지로 APPROVAL_PIN_REP 미사용(약속 L09).
       // 승인·반려 공통 게이트 (이 아래 reject/approve 분기보다 먼저 차단).
-      var _pinKey = { 'GM': 'APPROVAL_PIN_GM', '대표님': 'APPROVAL_PIN_REP' }[role];
+      var _pinKey = { 'GM': 'APPROVAL_PIN_GM' }[role];
       // 부서장 PIN(선택): 카테고리→부서장 매핑으로 키 결정. 속성 미설정 시 PIN 없이 통과(정책 미확정 — GM 확인 포인트, 2026-06-02).
       var _deptPinOptional = false;
       if (role === '부서장') {
@@ -833,7 +831,7 @@ function _processTodoAction(body) {
       if (_pinKey) {
         var _expected = String(_prop(_pinKey) || '').trim();   // 저장값 앞뒤 공백/개행 방어
         var _submitted = String(body.pin || '').trim();        // 입력값 앞뒤 공백/개행 방어
-        // 부서장: PIN 속성 미설정이면 PIN 없이 통과(정책 확정 전 차단 방지). GM/대표는 종전대로 필수.
+        // 부서장: PIN 속성 미설정이면 PIN 없이 통과(정책 확정 전 차단 방지). GM은 종전대로 필수.
         // 진단: 거부 시 어떤 비번 키로 대조했는지 반환(키 '이름'만 — 실제 PIN 값은 미노출, 보안 안전). 2026-06-15 시우.
         if (!_expected) {
           if (!_deptPinOptional) return _json({ ok: false, error: role + ' 결재 비밀번호가 서버에 설정되지 않았습니다(관리자 설정 필요).', pinKey: _pinKey });
