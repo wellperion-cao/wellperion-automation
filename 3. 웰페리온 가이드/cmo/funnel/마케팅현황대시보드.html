@@ -474,6 +474,18 @@ details.footnote-toggle > .fn-body{
   </div>
 
   <!-- ════════════════════════════════════════════
+       ★ 전환 속도 — 문의→등록 평균 소요일 (lead_time_stats · 기간연동)
+       데이터소스: 신규문의 시트 문의일 ↔ '등록일(자동)' 차이. 표본 적으면(<5) 참고용 안내.
+       ════════════════════════════════════════════ -->
+  <div class="kpi-row" style="margin-top:8px">
+    <div class="kpi-card" id="leadtime-card" style="flex:1">
+      <div class="num"><span id="leadtime-num" class="placeholder">—</span><span class="unit">일</span></div>
+      <div class="label">문의 → 등록 평균 전환 소요일</div>
+      <div class="sub" id="leadtime-sub">집계 불러오는 중…</div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════
        ② 유형별 문의·등록 현황 — 항상 펼침, 즉시 로드
        conversion-flow-wrap 은 내부 renderConversionFlow() id 유지(JS 의존)
        ════════════════════════════════════════════ -->
@@ -1046,6 +1058,42 @@ async function loadFunnelConversion() {
   }
 }
 
+// ─── 문의→등록 평균 전환 소요일 (lead_time_stats · 기간연동) ──────
+// 표본 적음(<5)·0이면 정직 안내. 이상치(음수·>2년) 제외 건수는 서버가 반환 → sub에 병기.
+async function loadLeadTime() {
+  var numEl = document.getElementById('leadtime-num');
+  var subEl = document.getElementById('leadtime-sub');
+  if (!numEl) return;
+  if (FUNNEL_APPS_SCRIPT_URL.includes('DEPLOY_ID_HERE')) return;
+  try {
+    var url = _wpUrl(FUNNEL_APPS_SCRIPT_URL + '?action=lead_time_stats');
+    if (_rangeFromTo.from && _rangeFromTo.to) { url += '&from=' + _rangeFromTo.from + '&to=' + _rangeFromTo.to; }
+    var res = await fetch(url, { redirect: 'follow' });
+    if (!res.ok) { if (subEl) subEl.textContent = '집계 준비 중'; return; }
+    var data = await res.json();
+    if (!data || !data.ok) { if (subEl) subEl.textContent = '집계 준비 중'; return; }
+
+    var n = data.n || 0;
+    if (n < 1 || data.avgDays === null || data.avgDays === undefined) {
+      numEl.textContent = '—';
+      numEl.classList.add('placeholder');
+      if (subEl) subEl.textContent = '표본 없음 — 문의·등록일 모두 있는 건 없음' + (data.excluded ? ' (이상치 ' + data.excluded + '건 제외)' : '');
+      return;
+    }
+    numEl.textContent = data.avgDays;
+    numEl.classList.remove('placeholder');
+    var parts = ['표본 ' + n + '건'];
+    if (data.medianDays !== null && data.medianDays !== undefined) parts.push('중앙값 ' + data.medianDays + '일');
+    if (data.excluded) parts.push('이상치 ' + data.excluded + '건 제외');
+    var subTxt = parts.join(' · ');
+    if (n < 5) subTxt = '⚠ 표본 적음(참고용) · ' + subTxt;
+    if (subEl) subEl.textContent = subTxt;
+  } catch (e) {
+    if (subEl) subEl.textContent = '집계 준비 중';
+    console.warn('[lead_time_stats] 로드 실패:', e.message);
+  }
+}
+
 // ─── 실시간 클릭 집계 (click_stats) ───────────────────────────
 async function loadClickStats() {
   try {
@@ -1245,6 +1293,7 @@ function _applyPeriodData(data, period) {
   loadClickStats();
   loadTypeChannel();
   loadFunnelConversion();   // 전환·채널 전체수치 기간 재집계(from/to 반영)
+  loadLeadTime();           // 문의→등록 평균 전환 소요일(from/to 반영)
   if (_cfOpenType) loadLessonBreakdown();   // 강습 펼침 중이면 종목 문의 기간 갱신
 }
 
@@ -1362,6 +1411,7 @@ function _applyCustom(data, from, to, monthCtx) {
   loadClickStats();
   loadTypeChannel();
   loadFunnelConversion();   // 전환·채널 전체수치 기간 재집계(from/to 반영)
+  loadLeadTime();           // 문의→등록 평균 전환 소요일(from/to 반영)
   if (_cfOpenType) loadLessonBreakdown();   // 강습 펼침 중이면 종목 문의 기간 갱신
 }
 
@@ -1649,6 +1699,7 @@ document.addEventListener('DOMContentLoaded', function() {
   loadClickStats();              // ↑ #1 유형별 클릭수에 필요 — period 응답 대기 없이 병렬
   loadTypeChannel();             // ↑ #3 유입채널 현황(기간 연동) — period 응답 대기 없이 병렬
   loadCampaignStats();           // ↑ #4 콘텐츠별 문의 유입 — 누적 전체(기간 무관)
+  loadLeadTime();                // ↑ ★ 문의→등록 평균 전환 소요일(이번 달 범위) — 병렬 발사
   // 이후 기간/월 전환 등 사용자 인터랙션에서는 _applyPeriodData가 평소대로 자식 fetch 수행
 
 });

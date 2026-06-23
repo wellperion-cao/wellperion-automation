@@ -451,6 +451,7 @@ var _SURVEY_PUBLIC_ACTIONS = {
   type_channel_breakdown: true,
   click_stats:            true,
   campaign_stats:         true,  // 콘텐츠별 클릭 집계(PII 미노출) — 면제 안전
+  lead_time_stats:        true,  // 문의→등록 평균 전환 소요일(집계 숫자만·PII 미노출) — 면제 안전 (2026-06-23 CMO)
   today_live:             true,
   lesson_breakdown:       true,  // 종목별 등록수만 반환(PII 미노출) — 면제 안전
   // 문의회원 페이지(CPO) 익명 읽기 — 이름·전화·메모 0 노출 → 공개 안전(2026-06-22 A안)
@@ -1818,6 +1819,87 @@ function _processAction(body) {
     return _json({ ok: true, matched: mmResult.matched, total: mmResult.total, error: mmResult.error || null });
   }
 
+  // ─── 문의→등록 평균 전환 소요일 (lead_time_stats) ───────────────
+  // 신규문의 시트(gid MATCH_SHEET_GID)에서 문의일(타임스탬프)과 '등록일(자동)'(=#3 자동매칭 스탬프)이
+  // 둘 다 있는 행만 추려 소요일 = (등록일 − 문의일)을 일 단위로 계산.
+  // ★ 정직성: 음수(등록일<문의일)·비현실치(>730일)는 이상치로 제외하고 제외 건수를 함께 반환(숨기지 않음).
+  // 반환: { ok, avgDays, medianDays, n, excluded, from, to }. from/to 있으면 '문의일' 기준 기간 필터.
+  // PII 미노출(집계 숫자만) → 공개 액션 화이트리스트 면제 안전.
+  if (action === 'lead_time_stats') {
+    var ltFrom = body.from || '';   // YYYY-MM-DD (optional) — 문의일 기준 기간
+    var ltTo   = body.to   || '';
+    var ltCache = CacheService.getScriptCache();
+    var ltKey = 'lt_v1_' + ltFrom + '_' + ltTo;
+    var ltHit = ltCache.get(ltKey);
+    if (ltHit && !_nc) return _json(JSON.parse(ltHit));
+
+    var ltSh = null;
+    try { ltSh = _sheetByGid_(MEMBER_SPREADSHEET_ID, MATCH_SHEET_GID); } catch (e) { /* 접근 실패 */ }
+    if (!ltSh) return _json({ ok: true, avgDays: null, medianDays: null, n: 0, excluded: 0, from: ltFrom, to: ltTo, note: '신규문의 시트 미발견' });
+
+    var ltLast = ltSh.getLastRow(), ltLastCol = ltSh.getLastColumn();
+    if (ltLast < 2 || ltLastCol < 1) return _json({ ok: true, avgDays: null, medianDays: null, n: 0, excluded: 0, from: ltFrom, to: ltTo });
+
+    var ltHeaders = ltSh.getRange(1, 1, 1, ltLastCol).getValues()[0];
+    var iInqDate = _findCol_(ltHeaders, ['타임스탬프', 'timestamp', '시각', '일시', '접수일', '접수', '날짜']);
+    if (iInqDate < 0) iInqDate = 0;  // 못 찾으면 1열(타임스탬프 기본)
+    var iRegDate = -1;
+    for (var lh = 0; lh < ltHeaders.length; lh++) {
+      if (String(ltHeaders[lh]).trim() === MATCH_DATE_COL) { iRegDate = lh; break; }
+    }
+    if (iRegDate < 0) return _json({ ok: true, avgDays: null, medianDays: null, n: 0, excluded: 0, from: ltFrom, to: ltTo, note: "'" + MATCH_DATE_COL + "' 칼럼 미발견 — 자동매칭 미실행?" });
+
+    // 문의일·등록일(자동) 셀 → Date(KST). Date·'YYYY. M. D'·'yyyy-MM-dd[ HH:mm:ss]'·'yyyy/M/d' 모두 흡수.
+    function _ltDate(v) {
+      if (v instanceof Date) return isNaN(v.getTime()) ? null : v;
+      var s = String(v == null ? '' : v).trim();
+      if (!s) return null;
+      var m = s.match(/(\d{4})[.\-\/]\s*(\d{1,2})[.\-\/]\s*(\d{1,2})/);  // 2026. 6. 5 / 2026-06-05 / 2026/6/5
+      if (m) {
+        var mm = ('0' + m[2]).slice(-2), dd = ('0' + m[3]).slice(-2);
+        var d = new Date(m[1] + '-' + mm + '-' + dd + 'T12:00:00+09:00');  // 정오 고정(일경계 TZ 오차 방지)
+        return isNaN(d.getTime()) ? null : d;
+      }
+      var d2 = new Date(s);
+      return isNaN(d2.getTime()) ? null : d2;
+    }
+    var ltRows = ltSh.getRange(2, 1, ltLast - 1, ltLastCol).getValues();
+    var ltF = (ltFrom && ltTo) ? new Date(ltFrom + 'T00:00:00+09:00').getTime() : null;
+    var ltT = (ltFrom && ltTo) ? new Date(ltTo   + 'T23:59:59+09:00').getTime() : null;
+    var MS_DAY = 86400000;
+    var MAX_REALISTIC = 730;  // 2년 초과 = 비현실 이상치(데이터 오류·재등록 등)
+    var ltDays = [], ltExcluded = 0;
+    ltRows.forEach(function(r) {
+      var rawInq = r[iInqDate], rawReg = r[iRegDate];
+      if (!rawInq || !rawReg) return;  // 둘 다 있는 행만
+      // 문의일=타임스탬프('YYYY. M. D'), 등록일(자동)=Date 또는 'yyyy-MM-dd' 문자열.
+      var dInq = _ltDate(rawInq);
+      var dReg = _ltDate(rawReg);
+      if (!dInq || !dReg) return;
+      // 문의일 기준 기간 필터(지정 시)
+      if (ltF !== null) { var ti = dInq.getTime(); if (ti < ltF || ti > ltT) return; }
+      // 자정 기준 일수 차(시각 노이즈 제거)
+      var d0Inq = new Date(dInq.getFullYear(), dInq.getMonth(), dInq.getDate()).getTime();
+      var d0Reg = new Date(dReg.getFullYear(), dReg.getMonth(), dReg.getDate()).getTime();
+      var diff = Math.round((d0Reg - d0Inq) / MS_DAY);
+      if (diff < 0 || diff > MAX_REALISTIC) { ltExcluded++; return; }  // 이상치 제외(건수 보고)
+      ltDays.push(diff);
+    });
+
+    var ltN = ltDays.length;
+    var ltAvg = null, ltMed = null;
+    if (ltN > 0) {
+      var sum = 0; ltDays.forEach(function(d) { sum += d; });
+      ltAvg = Math.round((sum / ltN) * 10) / 10;
+      var sorted = ltDays.slice().sort(function(a, b) { return a - b; });
+      var mid = Math.floor(ltN / 2);
+      ltMed = (ltN % 2 === 0) ? Math.round(((sorted[mid - 1] + sorted[mid]) / 2) * 10) / 10 : sorted[mid];
+    }
+    var ltResult = { ok: true, avgDays: ltAvg, medianDays: ltMed, n: ltN, excluded: ltExcluded, from: ltFrom, to: ltTo };
+    try { ltCache.put(ltKey, JSON.stringify(ltResult), 1800); } catch (e) { /* 캐시 저장 실패 무시 */ }
+    return _json(ltResult);
+  }
+
   return _json({ ok: false, error: '알 수 없는 action: ' + action });
 }
 
@@ -1850,8 +1932,16 @@ function member_match_autostamp_() {
     var mLast = mSh ? mSh.getLastRow() : 0;
     if (mSh && mLast >= 2) {
       var mHeaders   = mSh.getRange(1, 1, 1, mSh.getLastColumn()).getValues()[0];
-      var mPhoneIdx  = mHeaders.indexOf(MEMBER_PHONE_COL);
-      var mDateIdx   = mHeaders.indexOf(MEMBER_DATE_COL);
+      // 공백·줄바꿈 무시 매칭 — 유효회원 헤더가 '등록\n일자'(줄바꿈)라 exact indexOf 실패하던 버그 수정(2026-06-23).
+      function _mHdrIdx(name) {
+        var want = String(name).replace(/\s+/g, '');
+        for (var hi = 0; hi < mHeaders.length; hi++) {
+          if (String(mHeaders[hi]).replace(/\s+/g, '') === want) return hi;
+        }
+        return -1;
+      }
+      var mPhoneIdx  = _mHdrIdx(MEMBER_PHONE_COL);
+      var mDateIdx   = _mHdrIdx(MEMBER_DATE_COL);
       if (mPhoneIdx >= 0) {
         var mColCount = mSh.getLastColumn();
         var mData = mSh.getRange(2, 1, mLast - 1, mColCount).getValues();
