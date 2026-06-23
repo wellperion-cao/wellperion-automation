@@ -907,7 +907,7 @@ function processCalendarData(data) {
     calEvents[date].forEach(function(ev){
       var chip = document.createElement('div');
       chip.className = 'cal-chip ' + (ev.kind === '체험' ? 'experience' : 'tour');
-      chip.textContent = ev.kind + ' ' + ev.name;
+      chip.textContent = ev.kind + (ev.time ? ' ' + ev.time : '');
       chipsDiv.appendChild(chip);
     });
   });
@@ -938,7 +938,7 @@ function openDayPanel(date) {
     item.innerHTML =
       '<span class="day-item-kind ' + (ev.kind==='체험'?'experience':'tour') + '">' + esc(ev.kind) + '</span>' +
       '<div class="day-item-info">' +
-        '<div class="day-item-name">' + esc(ev.name) + '</div>' +
+        '<div class="day-item-name">' + esc(ev.time ? ev.time : '시간 미정') + '</div>' +
         '<div class="day-item-meta">' + esc(ev.program || '—') + ' · 진행상황: ' + esc(ev.status || '—') + '</div>' +
       '</div>';
     listEl.appendChild(item);
@@ -1090,9 +1090,9 @@ function buildDbRow(row, isNew) {
     '<td style="font-size:12px;color:var(--dim)">' + esc(row.timestamp || '—') + '</td>' +
     // 일정 (상담·체험)
     '<td style="font-size:11px;color:var(--dim);line-height:1.6">' +
-      '🗓 상담: ' + esc(row.tourDate || '—') + '<br>' +
-      '🏃 체험1: ' + esc(row.exp1 || '—') + '<br>' +
-      '🏃 체험2: ' + esc(row.exp2 || '—') +
+      '🗓 상담: ' + esc((row.tourDate || '—') + (row.tourTime ? ' ' + row.tourTime : '')) + '<br>' +
+      '🏃 체험1: ' + esc((row.exp1 || '—') + (row.exp1Time ? ' ' + row.exp1Time : '')) + '<br>' +
+      '🏃 체험2: ' + esc((row.exp2 || '—') + (row.exp2Time ? ' ' + row.exp2Time : '')) +
     '</td>' +
     // 작업
     (READ_ONLY
@@ -1104,26 +1104,42 @@ function buildDbRow(row, isNew) {
   return tr;
 }
 
-// 일정(상담·체험1·체험2) 편집 블록 — 3개 텍스트 입력(data-field로 저장 자동수집). IME 안전(text·재생성 없음).
+// 날짜+시간 결합: '2026-06-25' + '14:00' → '2026-06-25 14:00' (날짜 없으면 빈값, 시간만이면 무시)
+function _comboDateTime(d, t) {
+  d = (d || '').trim(); t = (t || '').trim();
+  return d ? (t ? d + ' ' + t : d) : '';
+}
+// 일정(상담·체험1·체험2) 편집 블록 — 날짜=달력칸(date picker) + 시간=1시간 단위 드롭다운(06~22시). IME 안전(재생성 없음).
 function buildScheduleEditBlock(row) {
   var wrap = document.createElement('div');
-  wrap.style.display = 'flex'; wrap.style.flexDirection = 'column'; wrap.style.gap = '3px';
-  function mk(label, field, val) {
+  wrap.style.display = 'flex'; wrap.style.flexDirection = 'column'; wrap.style.gap = '4px';
+  function mk(label, dateField, timeField, dateVal, timeVal) {
     var d = document.createElement('div');
     d.style.display = 'flex'; d.style.alignItems = 'center'; d.style.gap = '4px';
     var s = document.createElement('span');
     s.textContent = label; s.style.fontSize = '10px'; s.style.color = 'var(--dim)';
     s.style.width = '36px'; s.style.flexShrink = '0';
-    var i = document.createElement('input');
-    i.className = 'cell-input'; i.type = 'text'; i.value = val || '';
-    i.dataset.field = field; i.placeholder = 'YYYY-MM-DD';
-    i.style.fontSize = '11px'; i.style.padding = '3px 5px';
-    d.appendChild(s); d.appendChild(i);
+    var di = document.createElement('input');
+    di.className = 'cell-input'; di.type = 'date'; di.value = dateVal || '';
+    di.dataset.field = dateField;
+    di.style.fontSize = '11px'; di.style.padding = '3px 5px';
+    var ti = document.createElement('select');
+    ti.className = 'cell-select'; ti.dataset.field = timeField;
+    ti.style.fontSize = '11px'; ti.style.padding = '3px 4px';
+    var blank = document.createElement('option'); blank.value = ''; blank.textContent = '시간';
+    ti.appendChild(blank);
+    for (var h = 6; h <= 22; h++) {
+      var hh = ('0' + h).slice(-2) + ':00';
+      var o = document.createElement('option'); o.value = hh; o.textContent = hh;
+      if (hh === (timeVal || '')) o.selected = true;
+      ti.appendChild(o);
+    }
+    d.appendChild(s); d.appendChild(di); d.appendChild(ti);
     return d;
   }
-  wrap.appendChild(mk('상담', 'tour', row.tourDate));
-  wrap.appendChild(mk('체험1', 'exp1', row.exp1));
-  wrap.appendChild(mk('체험2', 'exp2', row.exp2));
+  wrap.appendChild(mk('상담', 'tour', 'tourTime', row.tourDate, row.tourTime));
+  wrap.appendChild(mk('체험1', 'exp1', 'exp1Time', row.exp1, row.exp1Time));
+  wrap.appendChild(mk('체험2', 'exp2', 'exp2Time', row.exp2, row.exp2Time));
   return wrap;
 }
 
@@ -1241,9 +1257,9 @@ function saveEditRow(tr) {
     channel: fields.channel || '',
     owner:   fields.owner   || '',
     memo:    fields.memo    !== undefined ? fields.memo : '',
-    tour:    fields.tour    !== undefined ? fields.tour : '',
-    exp1:    fields.exp1    !== undefined ? fields.exp1 : '',
-    exp2:    fields.exp2    !== undefined ? fields.exp2 : ''
+    tour:    _comboDateTime(fields.tour, fields.tourTime),
+    exp1:    _comboDateTime(fields.exp1, fields.exp1Time),
+    exp2:    _comboDateTime(fields.exp2, fields.exp2Time)
   };
 
   // 로컬 즉시 반영 (낙관적 업데이트)
@@ -1252,7 +1268,9 @@ function saveEditRow(tr) {
     dbRows[idx] = Object.assign({}, dbRows[idx], {
       name: fields.name, phone: fields.phone, program: fields.program,
       status: fields.status, channel: fields.channel, owner: fields.owner, memo: fields.memo,
-      tourDate: fields.tour, exp1: fields.exp1, exp2: fields.exp2
+      tourDate: fields.tour, tourTime: fields.tourTime,
+      exp1: fields.exp1, exp1Time: fields.exp1Time,
+      exp2: fields.exp2, exp2Time: fields.exp2Time
     });
   }
   dbEditingRow = null;
@@ -1379,9 +1397,9 @@ function submitNewRow(tr) {
     channel:   fields.channel || '유선전화',
     owner:     fields.owner   || '',
     memo:      fields.memo    || '',
-    tour:      fields.tour    || '',
-    exp1:      fields.exp1    || '',
-    exp2:      fields.exp2    || '',
+    tour:      _comboDateTime(fields.tour, fields.tourTime),
+    exp1:      _comboDateTime(fields.exp1, fields.exp1Time),
+    exp2:      _comboDateTime(fields.exp2, fields.exp2Time),
     timestamp: new Date().toISOString().slice(0,10)
   };
 

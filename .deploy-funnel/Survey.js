@@ -499,6 +499,17 @@ function _miToISO_(val) {
   if (m) return m[1] + '-' + ('0'+m[2]).slice(-2) + '-' + ('0'+m[3]).slice(-2);
   return s;
 }
+// 셀에서 시간(HH:MM) 추출 — Date면 getHours, 문자열이면 'HH:MM' 매칭. 자정(00:00)=시간미설정으로 간주.
+function _miTime_(val) {
+  if (!val) return '';
+  if (val instanceof Date && !isNaN(val.getTime())) {
+    var hh = val.getHours(), mm = val.getMinutes();
+    if (hh === 0 && mm === 0) return '';
+    return ('0'+hh).slice(-2) + ':' + ('0'+mm).slice(-2);
+  }
+  var t = String(val).match(/(\d{1,2}):(\d{2})/);
+  return t ? ('0'+t[1]).slice(-2) + ':' + t[2] : '';
+}
 // 익명 행 배열 반환(이름·전화·메모 비움). 빈 행 스킵.
 function _miReadRows_() {
   var sh = _miSheet_();
@@ -532,8 +543,11 @@ function _miReadRows_() {
       status:   iStat  >= 0 ? String(row[iStat]  || '') : '',
       channel:  (iChan >= 0 && row[iChan]) ? _canonicalChannel_(String(row[iChan])) : '',  // 유입채널 표준 10버킷(빈값은 빈값 유지)
       tourDate: _miToISO_(iTour >= 0 ? row[iTour] : ''),
+      tourTime: _miTime_(iTour >= 0 ? row[iTour] : ''),
       exp1:     _miToISO_(iExp1 >= 0 ? row[iExp1] : ''),
+      exp1Time: _miTime_(iExp1 >= 0 ? row[iExp1] : ''),
       exp2:     _miToISO_(iExp2 >= 0 ? row[iExp2] : ''),
+      exp2Time: _miTime_(iExp2 >= 0 ? row[iExp2] : ''),
       timestamp:_miToISO_(iTs   >= 0 ? row[iTs]   : ''),
       memo:     iMemo  >= 0 ? String(row[iMemo]  || '') : '',
       owner:    iOwner >= 0 ? String(row[iOwner] || '') : ''
@@ -710,14 +724,14 @@ function _processAction(body) {
     var mcRows = _miReadRows_();
     var mcEvents = [];
     mcRows.forEach(function(row){
-      function add(dateStr, kind) {
+      function add(dateStr, kind, timeStr) {
         if (!dateStr) return;
         if (mcMonth && dateStr.slice(0,7) !== mcMonth) return;
-        mcEvents.push({ date: dateStr, kind: kind, name: '', program: row.program, status: row.status });
+        mcEvents.push({ date: dateStr, kind: kind, time: timeStr || '', name: '', program: row.program, status: row.status });
       }
-      add(row.tourDate, '상담');
-      add(row.exp1, '체험');
-      add(row.exp2, '체험');
+      add(row.tourDate, '상담', row.tourTime);
+      add(row.exp1, '체험', row.exp1Time);
+      add(row.exp2, '체험', row.exp2Time);
     });
     return _json({ ok: true, month: mcMonth, count: mcEvents.length, events: mcEvents });
   }
