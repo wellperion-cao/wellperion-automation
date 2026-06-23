@@ -1718,12 +1718,12 @@ function memberMatchAutostamp() {
 }
 
 /**
- * installMemberMatchTrigger_()
+ * installMemberMatchTrigger()
  * 매일 새벽 2시(Asia/Seoul) member_match_autostamp_ 를 실행하는 시간 트리거를 설치한다.
  * 동일 트리거가 이미 있으면 중복 생성하지 않는다.
- * ★ 이 함수는 Apps Script 편집기에서 수동으로 1회 실행한다.
+ * ★ 이 함수는 Apps Script 편집기에서 수동으로 1회 실행한다(공개 — 실행 드롭다운에 보임).
  */
-function installMemberMatchTrigger_() {
+function installMemberMatchTrigger() {
   var triggers = ScriptApp.getProjectTriggers();
   for (var i = 0; i < triggers.length; i++) {
     if (triggers[i].getHandlerFunction() === 'memberMatchAutostamp') {
