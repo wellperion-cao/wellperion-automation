@@ -517,6 +517,7 @@ function _miReadRows_() {
   var iExp2  = _miColIdx_(hdr, ['체험2 확정시간','체험2']);
   var iOwner = _miColIdx_(hdr, ['담당','담당자']);
   var iMemo  = _miColIdx_(hdr, ['메모','비고','담당자메모']);
+  var iChan  = _miColIdx_(hdr, ['문의채널','유입채널','채널','경로','알게']);
   for (var r = 0; r < data.length; r++) {
     var row = data[r];
     var hasName  = iName  >= 0 && row[iName];
@@ -528,6 +529,7 @@ function _miReadRows_() {
       phone:    iPhone >= 0 ? String(row[iPhone] || '') : '',  // 연락처 노출
       program:  iProg  >= 0 ? String(row[iProg]  || '') : '',
       status:   iStat  >= 0 ? String(row[iStat]  || '') : '',
+      channel:  (iChan >= 0 && row[iChan]) ? _canonicalChannel_(String(row[iChan])) : '',  // 유입채널 표준 10버킷(빈값은 빈값 유지)
       tourDate: _miToISO_(iTour >= 0 ? row[iTour] : ''),
       exp1:     _miToISO_(iExp1 >= 0 ? row[iExp1] : ''),
       exp2:     _miToISO_(iExp2 >= 0 ? row[iExp2] : ''),
@@ -707,6 +709,7 @@ function _processAction(body) {
     _muSet(['연락처','전화','휴대폰'], body.phone);
     _muSet(['관심 있는 프로그램 종류','관심프로그램','프로그램'], body.program);
     _muSet(['진행현황','진행상황','진행상태','상태'], body.status);
+    _muSet(['문의채널','유입채널','채널','경로'], body.channel);
     _muSet(['메모','비고','담당자메모'], body.memo);
     _muSet(['담당','담당자'], body.owner);
     _muSet(['시설투어 및 상담 예약','시설견학 및 상담 일정','상담 예약','상담'], body.tour);

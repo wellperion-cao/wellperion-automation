@@ -380,6 +380,7 @@ body{
               <th style="width:120px">연락처</th>
               <th style="width:90px">관심 프로그램</th>
               <th style="width:90px">진행상황</th>
+              <th style="width:110px">유입채널</th>
               <th style="width:85px">담당</th>
               <th style="width:240px">메모</th>
               <th style="width:90px">문의일</th>
@@ -389,7 +390,7 @@ body{
           </thead>
           <tbody id="dbBody">
             <tr>
-              <td colspan="9">
+              <td colspan="10">
                 <div class="empty-state" style="padding:24px 0">
                   <div class="empty-state-icon">📭</div>
                   <div class="empty-state-title" id="dbEmptyTitle">GAS 연동 전</div>
@@ -963,6 +964,9 @@ var PROGRAM_OPTIONS = [
   '노블레스+골프 (Gym + Golf + G.X + Swimming + Sauna 이용)'
 ];
 var OWNER_OPTIONS = ['임정은','최준용','이경연','이지영','김남욱','고수자','강경희','윤병현'];
+// 유입채널 표준 10버킷 (Survey.js CANONICAL_CHANNELS 와 동일 — 마케팅 채널 귀속)
+var CHANNEL_OPTIONS = ['네이버','동부이촌동 커뮤니티','인스타그램','카카오톡','당근마켓',
+                       '소개·지인','기존·과거 회원','오프라인','유선전화','기타·미상'];
 // 드롭다운 생성 — 목록에 없는 현재값도 보존(데이터 손실 방지). IME 안전(재생성 없음).
 function buildSelect(field, options, current) {
   var sel = document.createElement('select');
@@ -1017,7 +1021,7 @@ function loadDbData() {
 function renderDbEmpty(title, desc) {
   var tbody = document.getElementById('dbBody');
   tbody.innerHTML =
-    '<tr><td colspan="9">' +
+    '<tr><td colspan="10">' +
     '<div class="empty-state" style="padding:24px 0">' +
     '<div class="empty-state-icon">📭</div>' +
     '<div class="empty-state-title">' + esc(title) + '</div>' +
@@ -1074,6 +1078,8 @@ function buildDbRow(row, isNew) {
     '<td style="color:var(--dim);font-size:12px">' + esc(row.program || '—') + '</td>' +
     // 진행상황
     '<td><span class="status-chip ' + statusCls + '">' + esc(row.status || '신규') + '</span></td>' +
+    // 유입채널
+    '<td style="font-size:12px;color:var(--dim)">' + esc(row.channel || '—') + '</td>' +
     // 담당
     '<td style="font-size:12px;color:var(--dim)">' + esc(row.owner || '—') + '</td>' +
     // 메모
@@ -1167,12 +1173,16 @@ function startEditRow(btn) {
   });
   cells[3].appendChild(selStatus);
 
-  // [4] 담당 (드롭다운)
+  // [4] 유입채널 (드롭다운)
   cells[4].innerHTML = '';
-  cells[4].appendChild(buildSelect('owner', OWNER_OPTIONS, row.owner));
+  cells[4].appendChild(buildSelect('channel', CHANNEL_OPTIONS, row.channel));
 
-  // [5] 메모 (넓은 입력칸 — textarea)
+  // [5] 담당 (드롭다운)
   cells[5].innerHTML = '';
+  cells[5].appendChild(buildSelect('owner', OWNER_OPTIONS, row.owner));
+
+  // [6] 메모 (넓은 입력칸 — textarea)
+  cells[6].innerHTML = '';
   var inputMemo = document.createElement('textarea');
   inputMemo.className = 'cell-input';
   inputMemo.rows = 3;
@@ -1180,16 +1190,16 @@ function startEditRow(btn) {
   inputMemo.style.resize = 'vertical';
   inputMemo.value = row.memo || '';
   inputMemo.dataset.field = 'memo';
-  cells[5].appendChild(inputMemo);
+  cells[6].appendChild(inputMemo);
 
-  // [6] 문의일 (읽기 전용)
+  // [7] 문의일 (읽기 전용)
 
-  // [7] 일정 (상담·체험1·체험2) — 표에서 직접 편집 (2026-06-20 GM)
-  cells[7].innerHTML = '';
-  cells[7].appendChild(buildScheduleEditBlock(row));
-
-  // [8] 작업 버튼 교체
+  // [8] 일정 (상담·체험1·체험2) — 표에서 직접 편집 (2026-06-20 GM)
   cells[8].innerHTML = '';
+  cells[8].appendChild(buildScheduleEditBlock(row));
+
+  // [9] 작업 버튼 교체
+  cells[9].innerHTML = '';
   var actDiv = document.createElement('div');
   actDiv.className = 'row-actions';
   var saveBtn = document.createElement('button');
@@ -1202,7 +1212,7 @@ function startEditRow(btn) {
   cancelBtn.onclick = function(){ cancelEditRow(); };
   actDiv.appendChild(saveBtn);
   actDiv.appendChild(cancelBtn);
-  cells[8].appendChild(actDiv);
+  cells[9].appendChild(actDiv);
 }
 
 function cancelEditRow() {
@@ -1226,6 +1236,7 @@ function saveEditRow(tr) {
     phone:   fields.phone   || '',
     program: fields.program || '',
     status:  fields.status  || '신규',
+    channel: fields.channel || '',
     owner:   fields.owner   || '',
     memo:    fields.memo    !== undefined ? fields.memo : '',
     tour:    fields.tour    !== undefined ? fields.tour : '',
@@ -1238,7 +1249,7 @@ function saveEditRow(tr) {
   if (idx >= 0) {
     dbRows[idx] = Object.assign({}, dbRows[idx], {
       name: fields.name, phone: fields.phone, program: fields.program,
-      status: fields.status, owner: fields.owner, memo: fields.memo,
+      status: fields.status, channel: fields.channel, owner: fields.owner, memo: fields.memo,
       tourDate: fields.tour, exp1: fields.exp1, exp2: fields.exp2
     });
   }
@@ -1272,7 +1283,7 @@ function addNewRow() {
   var emptyRow = tbody.querySelector('tr td[colspan]');
   if (emptyRow) emptyRow.closest('tr').remove();
 
-  var tempRow = { rowIndex: 0, name:'', phone:'', program:'', status:'신규', owner:'', memo:'', timestamp:'', tourDate:'' };
+  var tempRow = { rowIndex: 0, name:'', phone:'', program:'', status:'신규', channel:'', owner:'', memo:'', timestamp:'', tourDate:'' };
   var tr = buildNewInputRow(tempRow);
   tbody.insertBefore(tr, tbody.firstChild);
 }
@@ -1307,6 +1318,7 @@ function buildNewInputRow(row) {
     selStatus.appendChild(o);
   });
 
+  var selChannel = buildSelect('channel', CHANNEL_OPTIONS, '');
   var inputOwner = makeInput('owner', '');
   var inputMemo  = makeInput('memo', '');
 
@@ -1314,6 +1326,7 @@ function buildNewInputRow(row) {
   tr.appendChild(makeCell(inputPhone));
   tr.appendChild(makeCell(inputProg));
   tr.appendChild(makeCell(selStatus));
+  tr.appendChild(makeCell(selChannel));
   tr.appendChild(makeCell(inputOwner));
   tr.appendChild(makeCell(inputMemo));
 
