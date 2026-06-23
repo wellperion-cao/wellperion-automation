@@ -2565,9 +2565,9 @@ function _roundBucket(roundKey) {
   return _shiftBucket(base);
 }
 
-// ─── ROUND_MAP: 항목ID → 등장 라운드키 배열(클라 지원부 체계.html ROUND_MAP과 동일). ───
-// 단일출처: 클라 ROUND_MAP 변경 시 여기도 동기화 필요(주석으로 명시).
-// ⚠ 이 맵에 없는 항목은 시트 rounds 컬럼 폴백 → 시트에서 관리되는 신규 항목 자동 포함.
+// ─── ROUND_MAP: 항목ID → 등장 라운드키 배열. Part2 이후 '폴백 전용'(시트 rounds 우선). ───
+// 단일출처 = 시트 seed='Y' 행의 회차(페이지 push가 정본). _TL_ROUND_MAP은 시트에 회차가 없을 때만 받침.
+// ⚠ 단, 임계 폴백(지원부 시드행 < _SEED_MIN)이 켜진 비정상 환경에서만 이 맵이 '우선'으로 회귀(분모 붕괴 방지).
 var _TL_ROUND_MAP = {
   a1:['am1','pm1'], a2:['am1','pm1'], a3:['am1','pm1'],
   b1:['am1','pm1'], b2:['am1','pm1'], b3:['am1','pm1'],
@@ -2616,6 +2616,16 @@ function _countTodaySchedule(dept, dow) {
   if (last < 2) return cnt;
   var vals = sheet.getRange(2, 1, last - 1, Math.max(ITEM_HEADERS.length, sheet.getLastColumn())).getValues();
 
+  // Part2 임계 폴백: 지원부 seed='Y' 행이 비정상적으로 적으면(동기 실패 등) 시트 시드가 분모 정본 역할을 못함.
+  // 이때만 _TL_ROUND_MAP을 '우선'으로 되돌려(레거시 경로) 분모 붕괴·완료율 0/급락을 방지한다.
+  // 정상(시드 동기됨)일 땐 false → 시트 rounds 단일소스.
+  var _SEED_MIN = 30;   // 시드 명단 약 42항목 기준 안전 임계
+  var _supSeedCnt = 0;
+  vals.forEach(function (row) {
+    if (_itemDept(row[ITEM_DEPT_COL]) === 'support' && _isSeedRow(row)) _supSeedCnt++;
+  });
+  var _useLegacyRoundMap = (_supSeedCnt < _SEED_MIN);   // 임계 미만 → _TL_ROUND_MAP 우선 폴백
+
   vals.forEach(function (row) {
     var id      = String(row[0] || '').trim();
     var gender  = String(row[4] || 'all').trim() || 'all';
@@ -2625,9 +2635,10 @@ function _countTodaySchedule(dept, dow) {
 
     if (!id) return;
     if (deptVal !== 'support') return;   // 지원부 항목만
-    // P1-5b(Part1 무동작 가드): seed='Y' 행은 분모 계산에서 skip → 시드 적재해도 분모·완료율 변화 0.
-    // Part2에서 이 가드 제거 + else-if 순서 반전(시트 rounds 우선)으로 시드가 분모 정본 승격.
-    if (_isSeedRow(row)) return;
+    // Part2: seed='Y' 행이 분모의 정본(시트 시드 회차 단일소스). Part1의 seed-skip 무동작 가드는 해제됨.
+    // 단, 임계 폴백(_useLegacyRoundMap)이 켜진 비정상 환경에선 시드행이 시트에 거의 없으므로
+    // seed 행을 분모에서 제외해(레거시 _TL_ROUND_MAP 경로로 회귀) 분모 붕괴를 막는다.
+    if (_useLegacyRoundMap && _isSeedRow(row)) return;
 
     // dayType 필터: 빈값/'both'=항상 표시, 'weekday'=평일만, 'weekend'=주말만
     if (dayType && dayType !== 'both') {
@@ -2638,14 +2649,27 @@ function _countTodaySchedule(dept, dow) {
     // gender 목록
     var glist = (gender === 'all') ? ['m', 'f'] : [gender];
 
-    // 이 항목이 속한 라운드 키 배열: ROUND_MAP 우선, 없으면 시트 rounds 컬럼
+    // Part2: 이 항목의 라운드 키 배열 — 시트 rounds(회차 컬럼)가 단일 소스(우선).
+    // 시트에 회차가 없을 때만 _TL_ROUND_MAP 폴백(안전망). 임계 폴백 시엔 _TL_ROUND_MAP 우선(레거시).
     var rounds;
-    if (_TL_ROUND_MAP[id]) {
-      rounds = _TL_ROUND_MAP[id];
-    } else if (roundsRaw) {
-      rounds = roundsRaw.split(',').map(function (s) { return s.trim(); }).filter(Boolean);
+    if (_useLegacyRoundMap) {
+      // 비정상(시드 동기 실패) — 레거시 경로: _TL_ROUND_MAP 우선, 없으면 시트 rounds
+      if (_TL_ROUND_MAP[id]) {
+        rounds = _TL_ROUND_MAP[id];
+      } else if (roundsRaw) {
+        rounds = roundsRaw.split(',').map(function (s) { return s.trim(); }).filter(Boolean);
+      } else {
+        rounds = [];
+      }
     } else {
-      rounds = [];   // ROUND_MAP에도 없고 rounds도 없으면 제외(미분류)
+      // 정상 — 시트 rounds 단일소스 우선, 없으면 _TL_ROUND_MAP 폴백(안전망)
+      if (roundsRaw) {
+        rounds = roundsRaw.split(',').map(function (s) { return s.trim(); }).filter(Boolean);
+      } else if (_TL_ROUND_MAP[id]) {
+        rounds = _TL_ROUND_MAP[id];
+      } else {
+        rounds = [];   // 시트·맵 둘 다 없으면 제외(미분류)
+      }
     }
 
     rounds.forEach(function (rk) {
