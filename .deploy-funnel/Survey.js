@@ -461,7 +461,8 @@ var _SURVEY_PUBLIC_ACTIONS = {
   member_inquiry_delete:  true,  // 행 삭제
   member_registered_list:     true,  // 2026-06-23 등록현황(SUC/단기SUC) 조회
   member_registered_setmonth: true,  // 등록회원 1~12월 체크 토글
-  member_registered_delete:   true   // 등록 해제(행 삭제)
+  member_registered_delete:   true,  // 등록 해제(행 삭제)
+  member_active_list:         true   // 멤버십 활성 회원 명단(유효회원·읽기전용·전화 마스킹)
 };
 function _accessProp_(k) {
   try { return PropertiesService.getScriptProperties().getProperty(k) || ''; } catch (e) { return ''; }
@@ -950,6 +951,34 @@ function _processAction(body) {
       }
     }
     return _json({ ok: false, error: '해당 등록회원 없음' });
+  }
+
+  // ─── 회원관리 페이지(CPO): 멤버십 활성 회원 명단 ('유효회원' 시트, 읽기전용·전화 마스킹) ───
+  if (action === 'member_active_list') {
+    var aaSh = SpreadsheetApp.openById(MEMBER_SPREADSHEET_ID).getSheetByName(MEMBER_SHEET);
+    if (!aaSh) return _json({ ok: false, error: '유효회원 시트 없음' });
+    var aaLast = aaSh.getLastRow();
+    var aaCols = aaSh.getLastColumn();
+    if (aaLast < 1 || aaCols < 1) return _json({ ok: true, headers: [], count: 0, data: [] });
+    var aaHdrs = aaSh.getRange(1, 1, 1, aaCols).getValues()[0].map(function(v){ return String(v).trim(); });
+    var aaRows = [];
+    if (aaLast >= 2) {
+      var aaData = aaSh.getRange(2, 1, aaLast - 1, aaCols).getValues();
+      for (var ai = 0; ai < aaData.length; ai++) {
+        var obj = {}, any = false;
+        for (var ac = 0; ac < aaHdrs.length; ac++) {
+          var key = aaHdrs[ac] || ('col' + ac);
+          var v = aaData[ai][ac];
+          if (v instanceof Date && !isNaN(v.getTime())) v = Utilities.formatDate(v, 'Asia/Seoul', 'yyyy-MM-dd');
+          v = (v === null || v === undefined) ? '' : String(v);
+          if (key === MEMBER_PHONE_COL) { var pp = v.replace(/[^0-9]/g, ''); v = pp.length >= 10 ? pp.slice(0,3) + '-****-' + pp.slice(-4) : (pp ? '***' : ''); }
+          obj[key] = v;
+          if (v) any = true;
+        }
+        if (any) aaRows.push(obj);
+      }
+    }
+    return _json({ ok: true, headers: aaHdrs, count: aaRows.length, data: aaRows });
   }
 
   // ─── 문의→가입 전환 집계 ───
