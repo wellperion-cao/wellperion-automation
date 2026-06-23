@@ -3747,7 +3747,9 @@ function vendorSubmitAddForm(){
 
   // ─── 회차별 입력값 보존 store. rounds[label]={fieldId:val}, daily={fieldId:val}, inspector ───
   // roundTimes[label]='HH:MM' — 저장 순간 자동기록한 실제 점검 시각(B안). 화면 "기록 시각" 표시·복원용.
-  var fcStore={ rounds:{}, daily:{}, inspector:'', roundTimes:{} };
+  // roundStart[label]=epoch ms — 그 회차 첫 측정값 입력 순간 자동 캡처(소요시간 시작점). roundDur[label]=소요분(int).
+  // 소요시간=자동(GM 2026-06-24 옵션2): 시작=첫 입력 시각, 종료=저장 순간. 사람 버튼 없음.
+  var fcStore={ rounds:{}, daily:{}, inspector:'', roundTimes:{}, roundStart:{}, roundDur:{} };
   var curRound=null;
 
   function val(id){ var n=document.getElementById(id); return n?String(n.value||'').trim():''; }
@@ -3757,6 +3759,9 @@ function vendorSubmitAddForm(){
     if(!curRound)return; var r={};
     ROUND_FIELD_IDS.forEach(function(f){ var v=val(f); if(v!=='')r[f]=v; });
     fcStore.rounds[curRound]=r;
+    // 소요시간 시작점 자동 캡처: 채워진 값 1개 이상 + 시작 미기록이면 지금(epoch ms) 박제(덮어쓰기 금지).
+    if(!fcStore.roundStart)fcStore.roundStart={};
+    if(Object.keys(r).length>0 && !fcStore.roundStart[curRound]) fcStore.roundStart[curRound]=Date.now();
   }
   // 현재 화면의 1일 공통 입력 → fcStore.daily
   function captureDaily(){
@@ -3784,7 +3789,8 @@ function vendorSubmitAddForm(){
   function fcRenderRoundTime(){
     var box=document.getElementById('fcRoundTime'); if(!box)return;
     var t=(fcStore.roundTimes&&curRound)?fcStore.roundTimes[curRound]:'';
-    if(t){ box.textContent='기록 시각 '+t; box.style.color='var(--green)'; }
+    var d=(fcStore.roundDur&&curRound)?fcStore.roundDur[curRound]:null;
+    if(t){ box.textContent='기록 시각 '+t+((d!==null&&d!==undefined)?(' · 소요 '+d+'분'):''); box.style.color='var(--green)'; }
     else { box.textContent='저장 시 실제 시각 자동 기록'; box.style.color='var(--dim)'; }
   }
   // ─── 회차 칩 줄 — 회차별 입력여부 ●(완료)/○(미입력), 현재 회차 강조. 1일1회 항목은 칩 대상 아님. ───
@@ -3805,7 +3811,8 @@ function vendorSubmitAddForm(){
       var filled=Object.keys(m).some(function(k){return String(m[k]||'').trim()!=='';});
       var ico=btn.querySelector('.fc-chip-icon'); if(ico)ico.textContent=filled?'●':'○';
       var tm=btn.querySelector('.fc-chip-time'); var rt=(fcStore.roundTimes&&fcStore.roundTimes[r])||'';
-      if(tm)tm.textContent=rt?(' '+rt):'';   // 기록 시각(HH:MM) 칩에 표시 — B안 자동기록
+      var rd=(fcStore.roundDur&&fcStore.roundDur[r]);
+      if(tm)tm.textContent=rt?(' '+rt+((rd!==null&&rd!==undefined&&rd!=='')?('('+rd+'분)'):'')):'';   // 기록 시각(HH:MM)+소요분 칩에 표시 — 자동기록
       var isCur=(r===curRound);
       btn.style.fontWeight=isCur?'700':'400';
       btn.style.border=isCur?'1.5px solid var(--accent)':'1px solid var(--border)';
@@ -3886,13 +3893,21 @@ function vendorSubmitAddForm(){
     var st=document.getElementById('fcStatus'); if(st)st.textContent='저장 중...';
     // B안: 입력값 있는 회차마다 '저장 순간 실제 시각(KST)'을 자동 기록. 점검자는 시각 입력 안 함.
     if(!fcStore.roundTimes)fcStore.roundTimes={};
+    if(!fcStore.roundStart)fcStore.roundStart={};
+    if(!fcStore.roundDur)fcStore.roundDur={};
     var stampNow=nowHHMM();
+    var saveMs=Date.now();
     var roundList=roundsForDisplay(date);
     roundList.forEach(function(rl){
       var map=fcStore.rounds[rl]||{};
       var filled=Object.keys(map).some(function(k){return String(map[k]||'').trim()!=='';});
       if(filled && !fcStore.roundTimes[rl]) fcStore.roundTimes[rl]=stampNow;   // 첫 입력 회차만 최초 시각 박제(재저장 시 유지)
-      else if(!filled) delete fcStore.roundTimes[rl];                          // 입력 비면 시각도 정리
+      else if(!filled){ delete fcStore.roundTimes[rl]; delete fcStore.roundStart[rl]; delete fcStore.roundDur[rl]; }   // 입력 비면 시각·소요·시작 정리
+      // 소요시간(자동): 시작 기록 있으면 (저장 − 시작)/60000 반올림. 음수·1440분 초과는 이상치 → 기록 안 함(null).
+      if(filled && fcStore.roundStart[rl]){
+        var dur=Math.round((saveMs-fcStore.roundStart[rl])/60000);
+        if(dur>=0 && dur<=1440) fcStore.roundDur[rl]=dur;
+      }
     });
     var posts=[];
     // 1) 원본 측정값 전량 보존(saveBoard) — 회차별 store 통째로 raw blob 저장(재로드용)
@@ -3921,7 +3936,7 @@ function vendorSubmitAddForm(){
       .then(function(r){return r.json();}).then(function(j){
         var b=(j&&j.board)||{};
         // store 구조(신) 우선 — 회차별 복원. roundTimes(B안 자동시각)도 복원. 구 blob(vals 평면)도 graceful 무시(데이터 없음 취급).
-        fcStore=(b.store&&typeof b.store==='object')?{rounds:b.store.rounds||{},daily:b.store.daily||{},inspector:b.inspector||b.store.inspector||'',roundTimes:b.store.roundTimes||{}}:{rounds:{},daily:{},inspector:b.inspector||'',roundTimes:{}};
+        fcStore=(b.store&&typeof b.store==='object')?{rounds:b.store.rounds||{},daily:b.store.daily||{},inspector:b.inspector||b.store.inspector||'',roundTimes:b.store.roundTimes||{},roundStart:b.store.roundStart||{},roundDur:b.store.roundDur||{}}:{rounds:{},daily:{},inspector:b.inspector||'',roundTimes:{},roundStart:{},roundDur:{}};
         setInspector(fcStore.inspector);
         fcFillRounds();   // 옛 라벨('07시' 등) 데이터까지 회차 목록·칩에 합류(하위호환)
         paintDaily(); paintRound(); fcProgress(); fcRenderRoundTime();
