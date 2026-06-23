@@ -1580,10 +1580,30 @@ function renderCampaignStats(d) {
     return;
   }
 
-  var list = d.campaigns;
-  var maxClicks = list[0] ? list[0].clicks : 1;
+  // '직접·기타'(꼬리표 없는 직접·과거 유입)는 콘텐츠가 아니므로 순위에서 분리 — 각주로만 정직 표기.
+  var direct = null, content = [];
+  d.campaigns.forEach(function(x){
+    if (!x.campaign || x.campaign === '직접·기타') direct = x; else content.push(x);
+  });
+  var directNote = direct
+    ? '<div style="font-size:10px;color:var(--dim);margin-top:10px;padding-top:8px;border-top:1px dashed var(--border);line-height:1.6">※ 직접·기타(꼬리표 없는 직접·과거 유입) ' + Number(direct.clicks).toLocaleString('ko-KR') + '건은 어느 콘텐츠인지 알 수 없어 순위에서 제외</div>'
+    : '';
 
-  var rows = list.map(function(item, i) {
+  // 콘텐츠 태그가 붙은 유입이 아직 없으면 안내
+  if (content.length === 0) {
+    wrap.innerHTML =
+      '<div style="background:var(--paper);border:1px solid var(--border);border-radius:var(--radius-lg);padding:28px 24px;text-align:center;">'
+      + '<div style="font-size:26px;margin-bottom:10px;opacity:.35">📊</div>'
+      + '<div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:8px">아직 콘텐츠별 유입이 없어요</div>'
+      + '<div style="font-size:12px;color:var(--dim);line-height:1.7">콘텐츠 링크(출처 꼬리표 부착) 클릭이 쌓이면<br>어느 콘텐츠가 문의를 데려왔는지 순위로 표시됩니다.</div>'
+      + directNote
+      + '</div>';
+    return;
+  }
+
+  var maxClicks = content[0] ? content[0].clicks : 1;
+
+  var rows = content.map(function(item, i) {
     var label = _campLabel(item.campaign);
     var pct   = maxClicks > 0 ? Math.round((item.clicks / maxClicks) * 100) : 0;
     var rankColor = i === 0 ? 'var(--accent)' : i === 1 ? 'var(--blue)' : i === 2 ? 'var(--purple)' : 'var(--dim)';
@@ -1604,9 +1624,9 @@ function renderCampaignStats(d) {
 
   wrap.innerHTML =
     '<div style="background:var(--paper);border:1px solid var(--border);border-radius:var(--radius-lg);padding:18px 20px;box-shadow:var(--shadow)">'
-    + '<div style="font-size:11px;color:var(--dim);margin-bottom:4px">많이 클릭된 콘텐츠 순 · 누적 전체</div>'
+    + '<div style="font-size:11px;color:var(--dim);margin-bottom:4px">콘텐츠별 문의 클릭 순위 · 누적</div>'
     + rows
-    + '<div style="font-size:10px;color:var(--dim);margin-top:10px;text-align:right">총 ' + d.total + '건 클릭 기록</div>'
+    + directNote
     + '</div>';
 }
 
