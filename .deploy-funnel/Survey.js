@@ -460,7 +460,8 @@ var _SURVEY_PUBLIC_ACTIONS = {
   member_inquiry_add:     true,  // 2026-06-23 전화·직접 문의 수기 추가
   member_inquiry_delete:  true,  // 행 삭제
   member_registered_list:     true,  // 2026-06-23 등록현황(SUC/단기SUC) 조회
-  member_registered_setmonth: true   // 등록회원 1~12월 체크 토글
+  member_registered_setmonth: true,  // 등록회원 1~12월 체크 토글
+  member_registered_delete:   true   // 등록 해제(행 삭제)
 };
 function _accessProp_(k) {
   try { return PropertiesService.getScriptProperties().getProperty(k) || ''; } catch (e) { return ''; }
@@ -928,6 +929,24 @@ function _processAction(body) {
       if (_regNormPhone_(smData[si][0]) === smPhone) {
         smSh.getRange(si + 2, 4 + smMonth).setValue(smChecked ? 'O' : '');  // col5=1월 … col16=12월
         return _json({ ok: true, message: '저장됨', phone: smPhone, month: smMonth, checked: smChecked });
+      }
+    }
+    return _json({ ok: false, error: '해당 등록회원 없음' });
+  }
+
+  // ─── 회원관리 페이지(CPO): 등록 해제(등록현황 행 삭제, 전화 키) ───
+  if (action === 'member_registered_delete') {
+    var rdPhone = _regNormPhone_(body.phone);
+    if (!rdPhone) return _json({ ok: false, error: 'phone 필수' });
+    var rdSh = _regSheet_();
+    var rdLast = rdSh.getLastRow();
+    if (rdLast < 2) return _json({ ok: false, error: '등록회원 없음' });
+    var rdData = rdSh.getRange(2, 2, rdLast - 1, 1).getValues();  // 전화 열
+    for (var di = 0; di < rdData.length; di++) {
+      if (_regNormPhone_(rdData[di][0]) === rdPhone) {
+        rdSh.deleteRow(di + 2);
+        try { _notifyTelegram('➖ 등록 해제 — ' + (body.name || rdPhone)); } catch (e) {}
+        return _json({ ok: true, message: '등록 해제되었습니다.' });
       }
     }
     return _json({ ok: false, error: '해당 등록회원 없음' });

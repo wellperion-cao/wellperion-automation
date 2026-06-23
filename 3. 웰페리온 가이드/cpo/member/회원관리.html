@@ -252,11 +252,12 @@ body{
               <th style="min-width:90px">등록일</th>
               <th>1</th><th>2</th><th>3</th><th>4</th><th>5</th><th>6</th>
               <th>7</th><th>8</th><th>9</th><th>10</th><th>11</th><th>12</th>
+              <th style="min-width:54px">관리</th>
             </tr>
           </thead>
           <tbody id="regBody">
             <tr>
-              <td colspan="16">
+              <td colspan="17">
                 <div class="empty-state">
                   <div class="loading-spinner" id="regSpinner"></div>
                   <div class="empty-state-title" style="margin-top:12px" id="regEmptyTitle">불러오는 중…</div>
@@ -757,7 +758,7 @@ function _regSetLoading(on) {
   var desc    = document.getElementById('regEmptyDesc');
   if (on) {
     document.getElementById('regBody').innerHTML =
-      '<tr><td colspan="16"><div class="empty-state">' +
+      '<tr><td colspan="17"><div class="empty-state">' +
       '<div class="loading-spinner" id="regSpinner"></div>' +
       '<div class="empty-state-title" style="margin-top:12px">불러오는 중…</div>' +
       '</div></td></tr>';
@@ -767,7 +768,7 @@ function _regSetLoading(on) {
 
 function _regRenderEmpty(title, desc) {
   document.getElementById('regBody').innerHTML =
-    '<tr><td colspan="16"><div class="empty-state">' +
+    '<tr><td colspan="17"><div class="empty-state">' +
     '<div class="empty-state-icon">📭</div>' +
     '<div class="empty-state-title">' + esc(title) + '</div>' +
     '<div class="empty-state-desc">' + esc(desc) + '</div>' +
@@ -851,6 +852,30 @@ function _regRender() {
       td.appendChild(cb);
       tr.appendChild(td);
     }
+
+    // 관리: 등록 해제 버튼 (확인 + PIN 1531)
+    var tdAct = document.createElement('td');
+    var delBtn = document.createElement('button');
+    delBtn.type = 'button';
+    delBtn.textContent = '해제';
+    delBtn.style.cssText = 'font-size:11px;padding:3px 8px;border-radius:6px;border:1px solid var(--red);background:var(--red-bg);color:var(--red);cursor:pointer;font-family:inherit;white-space:nowrap';
+    (function(mPhone, mName){
+      delBtn.addEventListener('click', function(){
+        if (!confirm('등록 해제하시겠습니까?\n' + (mName || '') + ' · ' + (mPhone || '') + '\n\n등록현황에서 이 회원을 삭제합니다.')) return;
+        var pin = prompt('해제 비밀번호를 입력하세요.');
+        if (pin === null) return;
+        if (pin !== '1531') { showToast('비밀번호가 일치하지 않습니다.', 'err'); return; }
+        apiPost({ action: 'member_registered_delete', phone: mPhone, name: mName })
+          .then(function(data){
+            if (!data.ok) throw new Error(data.error || '해제 실패');
+            showToast('등록 해제됨');
+            loadRegistered();
+          })
+          .catch(function(err){ showToast((err.message || '해제 실패'), 'err'); });
+      });
+    })(member.phone, member.name);
+    tdAct.appendChild(delBtn);
+    tr.appendChild(tdAct);
 
     tbody.appendChild(tr);
   });
