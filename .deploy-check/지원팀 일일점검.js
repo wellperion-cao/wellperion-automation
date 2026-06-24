@@ -28,7 +28,7 @@ function _isSeedRow(row){ return String(row[ITEM_SEED_COL] == null ? '' : row[IT
 function _itemDept(v){ var d = String(v == null ? '' : v).trim(); return d || 'support'; }
 
 const BOT_TOKEN = PropertiesService.getScriptProperties().getProperty('TELEGRAM_BOT_TOKEN');
-const CHAT_ID   = PropertiesService.getScriptProperties().getProperty('TELEGRAM_CHAT_ID');
+const CHAT_ID   = '-5136037543';  // 점검 관리 방 (시우 102, 2026-06-24) — ScriptProperty UI 50개+ 잠김으로 코드 고정. BOT_TOKEN은 property 유지.
 
 // 2026-06-15 GM 스키마 v2: 시간대→회차(조 단위) · 담당자를 점검자 앞으로 · 교대 열 삭제(14열).
 const HEADERS = [
@@ -3075,12 +3075,8 @@ function handleUnlockRound(body) {
   return jsonRes({ ok: true, dept: dept, date: date, gender: gender, round: round, shiftKey: shiftKey });
 }
 
-// ─── 점검 알림 채팅방 설정 (일회성 실행 함수) ─────────────────────────────────
-// 2026-06-24 GM 지시: 점검 알림 대상을 '점검 관리'방(-5136037543)으로 설정
-function setCheckRoomChatId() {
-  PropertiesService.getScriptProperties().setProperty('TELEGRAM_CHAT_ID', '-5136037543');
-  return PropertiesService.getScriptProperties().getProperty('TELEGRAM_CHAT_ID');
-}
+// ─── 점검 알림 채팅방 진단 함수 ───────────────────────────────────────────────
+// CHAT_ID는 코드 상수(-5136037543)로 고정. 이 함수는 ScriptProperty 잔존값 확인용.
 function getCheckRoomChatId() {
-  return PropertiesService.getScriptProperties().getProperty('TELEGRAM_CHAT_ID');
+  return { code_const: '-5136037543', property_value: PropertiesService.getScriptProperties().getProperty('TELEGRAM_CHAT_ID') };
 }
