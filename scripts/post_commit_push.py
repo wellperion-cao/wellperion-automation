@@ -236,15 +236,27 @@ def _do_push(root: str, allow_reconcile: bool = True, alert: bool = False) -> No
             )
         return
 
-    # 원격이 앞섬(경합) → 조용히 fetch+rebase 후 1회 재시도. 성공하면 끝.
+    # 원격이 앞섬(경합) → fetch+rebase 후 재시도. ★근본해결(2026-06-24): 1회가 아니라
+    # 백오프+지터 루프. 'cannot lock ref(원격 동시push)'는 재fetch+rebase 하면 풀리는
+    # 일시 경합 — 동시 커밋이 몰리면 한 창에서 또 밀려 1회 재시도가 실패하던 문제를,
+    # 최대 PUSH_RETRIES회 재시도+지터 백오프로 desync 해 사실상 항상 수렴시킨다.
     if allow_reconcile and _is_nonff(err):
-        _log("POST_COMMIT_PUSH non-ff; fetch+rebase 후 재시도", root)
-        if _reconcile(root):
+        import time
+        import random
+        retries = int(os.environ.get("POST_COMMIT_PUSH_RETRIES", 5))
+        for attempt in range(1, retries + 1):
+            _log(f"POST_COMMIT_PUSH non-ff; reconcile+재시도 {attempt}/{retries}", root)
+            if not _reconcile(root):
+                break  # reconcile 자체 실패(진짜 충돌·타임아웃) → 경고 경로로
             rc2, err2 = _push_once(root)
             if rc2 == 0:
-                _log("POST_COMMIT_PUSH ok(after rebase)", root)
+                _log(f"POST_COMMIT_PUSH ok(after reconcile, try {attempt})", root)
                 return
             err = err2 or err
+            if rc2 == 124 or not _is_nonff(err):
+                break  # 타임아웃·비경합 실패(인증 등) → 재시도 무의미
+            # 지터 백오프: 동시 push 들이 같은 순간 재시도해 또 충돌하는 걸 흩는다.
+            time.sleep(min(3.0, 0.4 * attempt) + random.uniform(0, 0.4))
 
     err = (err or "").strip()[:200]
     _log(f"POST_COMMIT_PUSH fail {err}", root)

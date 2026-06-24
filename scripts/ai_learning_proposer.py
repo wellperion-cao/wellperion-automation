@@ -136,6 +136,32 @@ def load_summary() -> dict:
 # ═══════════════════════════════════════════
 #  ② LLM 제안 생성 — 1순위: claude CLI
 # ═══════════════════════════════════════════
+def _build_effect_feedback(limit: int = 12) -> str:
+    """자기학습 환류 — 지난 '반영' 제안의 효과 이력을 요약해 다음 제안 생성에 먹인다.
+    효과있던 방향은 강화, 효과없던 방향은 피하라는 신호. 이력 없으면 빈 문자열."""
+    try:
+        cards = load_proposals()
+    except Exception:
+        return ""
+    applied = [c for c in cards if c.get("status") == "반영"]
+    if not applied:
+        return ""
+    applied = applied[-limit:]
+    lines = []
+    for c in applied:
+        eff = c.get("효과", "미확인") or "미확인"
+        icon = {"효과있음": "✅", "효과없음": "❌", "미확인": "❔"}.get(eff, "❔")
+        what = str(c.get("무엇을", ""))[:70]
+        why = str(c.get("효과근거", ""))[:45]
+        lines.append(f"  {icon} [{c.get('대상_clevel','')}] {what} → {eff}{(' · '+why) if why else ''}")
+    return (
+        "\n[자기학습 환류 — 지난 개선의 실제 효과 이력]\n"
+        "아래는 과거 반영한 개선과 그 측정 효과다. ✅효과있음 방향은 강화하고, "
+        "❌효과없음 방향은 피하며, ❔미확인은 효과를 가늠할 수 있게 더 측정가능한 형태로 제안하라:\n"
+        + "\n".join(lines) + "\n"
+    )
+
+
 def _build_llm_prompt(summary_text: str, max_proposals: int) -> str:
     return f"""당신은 웰페리온(하이엔드 스포츠클럽 멤버십 커뮤니티) AI 운영팀의 기술 자문입니다.
 
@@ -143,8 +169,9 @@ def _build_llm_prompt(summary_text: str, max_proposals: int) -> str:
 ---
 {summary_text}
 ---
-
-위 내용을 바탕으로 웰페리온 C-Level AI 에이전트(AI CEO·CFO·CHRO·CMO·COO·CPO·CTO) 운영에서
+{_build_effect_feedback()}
+위 학습 요약과 (있다면) 지난 개선의 효과 이력을 함께 바탕으로, 웰페리온 C-Level AI
+에이전트(AI CEO·CFO·CHRO·CMO·COO·CPO·CTO) 운영에서
 개선할 수 있는 제안을 정확히 {max_proposals}개 생성하세요.
 
 각 제안은 반드시 아래 JSON 배열 형식으로만 응답하세요 (설명문·마크다운 없이 순수 JSON만):

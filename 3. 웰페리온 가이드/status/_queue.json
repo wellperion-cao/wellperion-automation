@@ -951,5 +951,31 @@
     "next": "🌀 표류 — 다음 미정 (필요 시 GM·웰리/담당 C-Level 지정)",
     "adhoc_commit": "265d7f516e60f018316d3c1fa09a71886e3fd9a7",
     "ship_no": 112
+  },
+  {
+    "task_id": "CTO-2026-06-24-AUTON0",
+    "clevel": "cto",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "⛴️여객선",
+    "enqueued_at": "2026-06-24",
+    "processed_at": "2026-06-24",
+    "ship_no": 148,
+    "title": "[시토] 자율화 ① 피드백 환류 — 효과 데이터를 다음 제안 생성에 주입",
+    "note": "GM 승인 2026-06-24(추천 1순위). 자기학습 루프가 닫혔어도 환류 없으면 매주 제자리이던 문제. ai_learning_proposer._build_effect_feedback 추가: 지난 반영 제안의 측정 효과(효과있음/없음/미확인)를 다음 제안 생성 프롬프트에 주입 → ✅방향 강화·❌방향 회피·❔는 측정가능형 유도. 검증: 현재 반영 2건(웰리 brain/hands·시토 모델폴백 효과있음)이 프롬프트에 실주입 확인. 이제 일요일 자동사이클이 자기 효과를 학습해 제안.",
+    "next": "🔗 다음=자율화 ② 제안 실체화(설명→실제 diff 초안). ③④는 시우·웰리 권한영역 조율 전제"
+  },
+  {
+    "task_id": "CTO-2026-06-24-AUTON1",
+    "clevel": "cto",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "⛵돛단배",
+    "enqueued_at": "2026-06-24",
+    "processed_at": "2026-06-24",
+    "ship_no": 149,
+    "title": "[시토] 자동 push 근본해결 — 경합 거부 시 백오프+지터 재시도 루프",
+    "note": "GM 지적 2026-06-24: 자동 push가 스위퍼 재시도에도 cannot lock ref(원격 동시push 경합)로 실패. 원인=post_commit_push가 non-ff 거부 시 fetch+rebase 후 1회만 재시도 → 동시 커밋 몰리면 그 창에서 또 밀려 실패·경보. 해결=최대 5회 reconcile+push 지터 백오프 루프(동시푸시 desync). monkeypatch 검증: 2회 충돌→3번째 수렴(경보0)/끝까지 실패→경보1(진짜 막힘만). 끝까지 실패만 경고.",
+    "next": "🔗 다음=관찰(경보 재발 빈도 모니터). 자율화 축 server-free 트랙 지속"
   }
 ]
