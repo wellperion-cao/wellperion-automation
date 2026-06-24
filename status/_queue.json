@@ -688,5 +688,19 @@
     "next": "🌀 표류 — 다음 미정 (필요 시 GM·웰리/담당 C-Level 지정)",
     "adhoc_commit": "3a44f56fdc01802da828095af1776aa6288fe61a",
     "ship_no": 6
+  },
+  {
+    "task_id": "CTO-2026-06-24-ADHOC-189d6793",
+    "clevel": "cto",
+    "title": "[시토] /check fcheck 제출 이력 누적+제출후 리셋+새로고침 타이머 복원",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-06-24",
+    "processed_at": "2026-06-24",
+    "artifact": "- fcStore.submissions[] 추가: 제출(fcSave)마다 스냅샷 1건 push(덮어쓰기X)\n- fcSave: 제출 성공 후 현재회차 입력/draft/타이머 리셋(값-only, IME 안전)+이력렌더\n- fcPersist() 분리: 타이머 버튼은 saveBoard만(제출/리셋 없음)\n- fcLoad: submissions 복원 + 진행중 타이머 회차로 curRound 전환(미시작 버그 수정)\n- 폼 아래 '오늘 제출 이력(N건)' 접이식 목록 추가 (CLI ad-hoc · 커밋 189d6793)",
+    "next": "🌀 표류 — 다음 미정 (필요 시 GM·웰리/담당 C-Level 지정)",
+    "adhoc_commit": "189d6793df1b38b332f41b934d1f8aa9d86727de",
+    "ship_no": 141
   }
 ]
