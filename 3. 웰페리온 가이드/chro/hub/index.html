@@ -922,7 +922,7 @@ function renderDash(){
     if(__dp) __dp.addEventListener("click",onChannelToggle);
   }
   drawBar("cDept",groupCount(active,"부서"));
-  (function(){var __ct=groupCount(active,"고용 형태");if(__ct["파트너"]!=null){__ct["파트너팀"]=__ct["파트너"];delete __ct["파트너"];}drawDonut("cType",__ct);})();
+  drawDonut("cType",groupCount(active,"고용 형태"));
   drawBar("cFunnel",funnel);
   drawDonut("cGrade",Object.keys(gradeDist).length?gradeDist:{"데이터 없음":1});
   drawDonut("cExit",Object.keys(exitTypes).length?exitTypes:{"퇴사 없음":1});
