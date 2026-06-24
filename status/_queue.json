@@ -909,5 +909,19 @@
     "done_at": "2026-06-24",
     "note": "[2026-06-24 GM 지시] 신규 문의 접수 시 G메일에만 오던 알림을 텔레그램 \"문의 알림\" 방(-5516675010)에도 받게 셋업. 문의 현황 GAS(.deploy-funnel/Survey.js)에 _notifyNewInquiries_(5분 트리거)로 폼 시트 신규행 감지→발송. 폼 편집권한 불필요(시트 읽기 방식). 커버=한글 5종(멤버십·성인강습·유소년강습·공간렌트·비즈니스파트너)+영문 3종(멤버십 gid1887747109·성인강습 gid311319200·유소년강습 gid931249179). 봇토큰=GAS ScriptProperty TELEGRAM_BOT_TOKEN, 방ID 코드폴백. 영문헤더(Full Name·Mobile Phone·How Did You Hear) 인식 보강. verifyInquiryNotify 응답200 작동확정. 제외=여름특강 한글(응답시트 타계정·위치불명)·영문(삭제예정). 후속=한글 여름특강 응답시트 cao 공유받으면 추가 가능.",
     "ship_no": 147
+  },
+  {
+    "task_id": "COO-2026-06-24-ADHOC-1d748bf5",
+    "clevel": "coo",
+    "title": "[시우] /check today_live 분모 항목마스터 단일출처 정합(259→76)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-06-24",
+    "processed_at": "2026-06-24",
+    "artifact": "지원부 점검 today_live 분모가 항목마스터(53항목)보다 ~3.5배 부풀려진 문제 수정.\n원인: _countTodaySchedule이 seed행+_TL_ROUND_MAP 레거시 폴백으로 항목을 회차전개(3중계상)+남/여 대칭(54/54)으로 펼침 → total 259. (CLI ad-hoc · 커밋 1d748bf5)",
+    "next": "🌀 표류 — 다음 미정 (필요 시 GM·웰리/담당 C-Level 지정)",
+    "adhoc_commit": "1d748bf5b4fc65a253e38812e15af305482b89c4",
+    "ship_no": 110
   }
 ]
