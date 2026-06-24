@@ -392,11 +392,18 @@ def build_ep3(out_ep: Path) -> None:
 # ---------------------------------------------------------------------------
 # 캡션 파일 생성
 # ---------------------------------------------------------------------------
-_HASHTAGS = "#웰페리온 #WELLPERION #한남동골프 #유소년골프 #주니어골프 #KPGA #골프레슨 #스포츠클럽"
-_CTA = "문의 : wellperion.com/ko/inquiry"
+# 해시태그 순서: ① 지역+종목 → ② 종목·주제·타겟 → ③ 브랜드(맨 끝 고정)
+_HASHTAGS = "#한남동골프 #유소년골프 #주니어골프 #KPGA #골프레슨 #스포츠클럽 #웰페리온 #WELLPERION"
+# 채널별 CTA:
+#   IG·당근 = 평문 URL 넣지 않음 (클릭 불가라 지저분). 프로필 링크로 유도.
+#   블로그·카페 = SmartEditor 링크 카드로 삽입 (PoC 완료 후 자동화).
+#   카카오 = 현행 유지.
+_CTA_URL = "wellperion.com/ko/inquiry"
+_CTA_BLOG = f"문의 : {_CTA_URL}"  # 블로그·카페·카카오용 평문 CTA (링크 카드 PoC 전 임시)
 
 
 def write_captions(base_out: Path) -> None:
+    # IG 캡션 본문: {cta} 자리에 빈 문자열 — URL 줄 제거 (채널별 CTA 표준 §11)
     captions = {
         "ep1": """\
 코스에 서다.
@@ -408,8 +415,6 @@ def write_captions(base_out: Path) -> None:
 
 그 결과가 궁금하신가요?
 다음 편에서 이어집니다.
-
-{cta}
 
 {tags}""",
         "ep2": """\
@@ -423,8 +428,6 @@ KPGA 주니어리그 2회, 웰페리온 주니어가 시상대에 올랐습니�
 비결이 무엇이냐고요?
 다음 편에서 공개합니다.
 
-{cta}
-
 {tags}""",
         "ep3": """\
 그 뒤엔, 한 사람이 있었습니다.
@@ -437,8 +440,6 @@ KPGA 정회원이자 주니어 전문 코치입니다.
 
 아이의 골프가 궁금하시다면 언제든 편히 문의 주세요.
 
-{cta}
-
 {tags}""",
     }
 
@@ -447,7 +448,7 @@ KPGA 정회원이자 주니어 전문 코치입니다.
         ep_dir.mkdir(parents=True, exist_ok=True)
         caption_path = ep_dir / "캡션.txt"
         caption_path.write_text(
-            text.format(cta=_CTA, tags=_HASHTAGS),
+            text.format(tags=_HASHTAGS),
             encoding="utf-8",
         )
         print(f"  [캡션] {caption_path.relative_to(PROJECT_ROOT)}")
