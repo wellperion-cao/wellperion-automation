@@ -1234,5 +1234,16 @@
     "next": "🌀 표류 — 다음 미정 (필요 시 GM·웰리/담당 C-Level 지정)",
     "adhoc_commit": "20194d8911caa60ddcb4e35e8aef2647a8e9a54f",
     "ship_no": 27
+  },
+  {
+    "task_id": "CTO-2026-06-24-ENFORCEMENT-WHITELIST-WARN",
+    "clevel": "cto",
+    "title": "[시토] 화이트리스트 코드강제(enforcement) 경고모드 구현 — 4종 위반 길목별 감지",
+    "status": "DONE",
+    "priority": "⛴️여객선",
+    "enqueued_at": "2026-06-24",
+    "note": "AI 자율화 ③. S2 advisory 화이트리스트를 기계가 가로채는 강제로 승격(경고모드 먼저). 신설: ssot/enforcement_mode.json(1-스위치 off|warn|block, 기본 warn) + ssot/enforcement.py(엔진: 모드·우회·로깅·4종 판정) + scripts/precommit_enforcement_guard.py(pre-commit 길목, fail-open). pre-commit 체인 ②-2 로 삽입(.git/hooks/pre-commit + scripts/pre-commit.hook 양쪽). 4종: ①공식값·약속(canon_values·약속.json) ②금지경로(결재 GAS·apps_script_v3 미끼) ③보안 라이브발효(TOKEN_ENFORCE on) ④결제=결재현황 게이트 재사용(신규 없음). 검증: 4종 감지 PASS·오탐0(Survey.js 안전라인 미매칭)·warn 비차단(실커밋 통과)·block 격리테스트 실차단(exit1)·[GM-approved] 우회·off 무동작 전부 PASS. 라이브=warn 유지.",
+    "next": "⚓ 차단(block) ON 발효 — GM 명시 go 대기. 며칠 warn 관찰해 오탐0 확인 후 enforcement_mode.json mode=block.",
+    "ship_no": 160
   }
 ]

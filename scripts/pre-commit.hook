@@ -123,6 +123,20 @@ if [ -f "$INCIDENT_GUARD" ]; then
   fi
 fi
 
+# ── ②-2 화이트리스트 코드강제 가드 (AI 자율화 ③ · 2026-06-24 시토) ──────────
+# ssot/enforcement.py 엔진으로 4종(공식값·약속/금지경로/보안 라이브발효) 감지.
+# 모드(ssot/enforcement_mode.json): off=무동작 / warn=감지·로그만(비차단) / block=차단.
+# 기본=warn. block 은 GM 명시 go 후에만. [GM-approved] 토큰/플래그=우회.
+# 가드 오류/엔진없음 = fail-open(통과). warn 은 절대 exit 1 안 함(자동push 보호).
+ENFORCE_GUARD="$REPO_ROOT/scripts/precommit_enforcement_guard.py"
+if [ -f "$ENFORCE_GUARD" ] && [ -n "$PYBIN" ]; then
+  PYTHONUTF8=1 "$PYBIN" "$ENFORCE_GUARD"
+  if [ "$?" -eq 1 ]; then
+    # block 모드에서만 1 반환 → 차단. warn/off 는 항상 0.
+    exit 1
+  fi
+fi
+
 SCRIPT="$REPO_ROOT/scripts/update_guide_hub_changelog.py"
 GUIDE_HTML="$REPO_ROOT/3. 웰페리온 가이드/wellperion_guide(main).html"
 
