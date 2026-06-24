@@ -1497,6 +1497,7 @@ var _activeHeaders = [];
 var _activeLoaded  = false;
 var _activeComposing = false;
 var _activeScope   = 'valid';   // 'valid'(잔여일>0 유효회원) | 'ended'(종료·이탈)
+var _activeReqSeq  = 0;         // 토글 빠르게 누를 때 느린 이전 응답이 최신을 덮지 않게(경쟁 가드)
 
 // 유효/종료 전환 토글 — 시각 갱신 후 해당 scope 재조회
 function setActiveScope(scope, btn) {
@@ -1515,9 +1516,11 @@ function loadActiveMembers() {
     return;
   }
   _activeRenderState('loading');
+  var _seq = ++_activeReqSeq;
   fetch(GAS_URL + '?action=member_active_list&scope=' + (_activeScope || 'valid'))
     .then(function(r){ return r.json(); })
     .then(function(data){
+      if (_seq !== _activeReqSeq) return;   // 더 최신 요청이 있으면 이 응답 무시(경쟁 가드)
       if (!data.ok) throw new Error(data.error || 'GAS 응답 오류');
       _activeHeaders = data.headers || [];
       _activeRows    = data.data    || [];
@@ -1526,6 +1529,7 @@ function loadActiveMembers() {
       _activeWireSearch();
     })
     .catch(function(err){
+      if (_seq !== _activeReqSeq) return;
       _activeRenderState('error', err.message || 'GAS URL 또는 배포 상태를 확인하세요.');
     });
 }
