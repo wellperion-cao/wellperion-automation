@@ -152,6 +152,7 @@ footer{margin-top:26px;font-size:11px;color:var(--ink-faint);text-align:center;l
     </div>
     <div class="sec-title">품의 현황 <span style="font-size:11px;color:var(--ink-faint)" id="reqCount"></span></div>
     <div class="team-chips" id="reqFilter" style="margin-bottom:8px"></div>
+    <div id="reqDoneSearch" style="display:none;margin-bottom:10px;font-size:12px;color:var(--ink-soft)">완료건 기간: <input type="date" id="doneFrom" style="padding:5px;border:1px solid var(--line);border-radius:6px"> ~ <input type="date" id="doneTo" style="padding:5px;border:1px solid var(--line);border-radius:6px"> <button class="btn" id="doneSearchBtn" style="padding:6px 12px;font-size:12px">검색</button> <span id="doneMsg" style="margin-left:6px"></span></div>
     <div class="tbl-wrap"><table id="reqTbl"></table></div>
     <div class="notice">품의 → 검토 → 집행 → 정산(영수증). 상태를 바꾸거나 영수증을 올리면 시트에 실시간 반영됩니다.</div>
   </section>
@@ -366,18 +367,22 @@ function renderPeople(){
   document.getElementById("staffTbl").innerHTML=h;
 }
 
-var REQ_DATA=[],reqFilter="전체";
+var REQ_ACTIVE=[],REQ_DONE=[],reqFilter="품의";
 async function procCall(action,extra){
   var body=Object.assign({action:action,password:GATE_PW},extra||{});
   var r=await fetch(PROC_API,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify(body)});
   return await r.json();
 }
 function rval(id){return document.getElementById(id).value;}
-async function loadReq(){try{var d=await procCall("list");REQ_DATA=(d&&d.data)||[];}catch(e){REQ_DATA=[];}renderReqTbl();}
+async function loadReq(){try{var d=await procCall("list",{mode:"active"});REQ_ACTIVE=(d&&d.data)||[];}catch(e){REQ_ACTIVE=[];}renderReqTbl();}
+async function loadDone(){var dm=document.getElementById("doneMsg");dm.textContent="검색 중…";
+  try{var d=await procCall("list",{mode:"done",from:rval("doneFrom"),to:rval("doneTo")});REQ_DONE=(d&&d.data)||[];dm.textContent="완료 "+REQ_DONE.length+"건";}catch(e){REQ_DONE=[];dm.textContent="검색 실패";}
+  reqFilter="완료";renderReqTbl();}
 function renderReq(){
   var depts=["시설","운영부","지원","주차","P.T","수영","골프","스쿼시","체조","필라테스","뮤지컬"];
   document.getElementById("reqDept").innerHTML=depts.map(function(d){return '<option>'+d+'</option>';}).join('');
   document.getElementById("reqSubmit").onclick=submitReq;
+  document.getElementById("doneSearchBtn").onclick=loadDone;
   loadReq();
 }
 async function submitReq(){
@@ -396,11 +401,13 @@ async function doSubmit(base,msg,fp){
 }
 var STAGES=["품의","검토","정산","완료"];
 function renderReqTbl(){
-  document.getElementById("reqCount").textContent="("+REQ_DATA.length+"건)";
-  var states=["전체"].concat(STAGES);var fc=document.getElementById("reqFilter");
-  fc.innerHTML=states.map(function(s){return '<button class="team-chip'+(s===reqFilter?' on':'')+'" data-f="'+s+'">'+s+'</button>';}).join('');
+  var STG=["품의","검토","정산","완료"];var fc=document.getElementById("reqFilter");
+  fc.innerHTML=STG.map(function(s){return '<button class="team-chip'+(s===reqFilter?' on':'')+'" data-f="'+s+'">'+s+'</button>';}).join('');
   fc.querySelectorAll(".team-chip").forEach(function(b){b.onclick=function(){reqFilter=b.dataset.f;renderReqTbl();};});
-  var rows=REQ_DATA.filter(function(r){return reqFilter==="전체"||r.상태===reqFilter;}).slice().reverse();
+  document.getElementById("reqDoneSearch").style.display=(reqFilter==="완료")?"block":"none";
+  var src=(reqFilter==="완료")?REQ_DONE:REQ_ACTIVE.filter(function(r){return r.상태===reqFilter;});
+  document.getElementById("reqCount").textContent=(reqFilter==="완료")?"(완료 "+REQ_DONE.length+"건)":"("+reqFilter+" "+src.length+"건 · 미완료 합 "+REQ_ACTIVE.length+")";
+  var rows=src.slice().reverse();
   var stc={"품의":"wait","검토":"rev","정산":"set","완료":"ok","승인":"wait","미승인":"no","캔슬":"no"};
   var h='<thead><tr><th>날짜</th><th style="text-align:left">소속</th><th style="text-align:left">요청자</th><th style="text-align:left">승인자</th><th style="text-align:left">물품</th><th>금액</th><th style="text-align:center">사진/증빙</th><th style="text-align:center">상태</th><th style="text-align:center">승인 / 처리</th></tr></thead><tbody>';
   rows.forEach(function(r){
@@ -415,7 +422,7 @@ function renderReqTbl(){
     var rcpt=(photo||pf)?(photo+pf):'<button class="reqPhoto" data-row="'+r.row+'" style="font-size:10.5px;padding:4px 9px;cursor:pointer;border:1px dashed var(--gold);border-radius:6px;background:#fbf7ee;color:var(--gold-deep)">+ 사진</button>';
     h+='<tr><td style="text-align:left">'+r.날짜+'</td><td style="text-align:left">'+(r.소속||"")+'</td><td style="text-align:left">'+(r.요청자||"")+'</td><td style="text-align:left">'+(r.승인자||"")+'</td><td style="text-align:left">'+(r.물품||"")+'</td><td>'+won(r.가격)+'</td><td style="text-align:center">'+rcpt+'</td><td style="text-align:center"><span class="chip '+(stc[st]||"wait")+'">'+st+'</span></td><td style="text-align:center;white-space:nowrap">'+act+'</td></tr>';
   });
-  if(!rows.length)h+='<tr><td colspan="9" style="color:var(--ink-faint)">해당 상태의 품의가 없습니다.</td></tr>';
+  if(!rows.length)h+='<tr><td colspan="9" style="color:var(--ink-faint)">'+(reqFilter==="완료"?"기간을 선택하고 [검색]을 누르세요.":"해당 단계의 품의가 없습니다.")+'</td></tr>';
   h+='</tbody>';document.getElementById("reqTbl").innerHTML=h;
   document.querySelectorAll(".reqAct").forEach(function(b){b.onclick=function(){doAct(b.dataset.row,b.dataset.next,b.dataset.pw,b);};});
   document.querySelectorAll(".reqPhoto").forEach(function(b){b.onclick=function(){addPhotoTo(b.dataset.row,b);};});
@@ -431,7 +438,7 @@ function btnCss(c){return "font-size:11px;padding:4px 11px;cursor:pointer;border
 async function doAct(row,next,needPw,btn){
   if(needPw){var pw=prompt("승인 비밀번호를 입력하세요 (승인자 확인)");if(pw===null)return;pw=String(pw).trim();if(pw!=="1202"&&pw!==GATE_PW){alert("비밀번호가 올바르지 않습니다");return;}}
   if(btn){btn.disabled=true;btn.textContent="처리중…";}
-  var item=REQ_DATA.filter(function(x){return String(x.row)===String(row);})[0];
+  var src=(reqFilter==="완료")?REQ_DONE:REQ_ACTIVE;var item=src.filter(function(x){return String(x.row)===String(row);})[0];
   if(item){item.상태=next;renderReqTbl();}  // 즉시 반영(낙관적)
   try{await procCall("status",{row:row,status:next});}catch(e){}
   loadReq();  // 서버 재확인
