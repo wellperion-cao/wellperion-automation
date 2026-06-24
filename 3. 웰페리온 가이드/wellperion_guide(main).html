@@ -2919,6 +2919,32 @@ window._regAssign = function(id, category) {
           <div class="card"><h4>🏷️ 공식값</h4><p>브랜드·공식값 변경</p></div>
         </div>
         <p style="font-size:13px;color:var(--dim);margin-top:8px;">그 외 모든 작업은 CEO·C-Level 자율 진행 후 결과 보고. 결재 카테고리 외 GM께 묻지 말 것.</p>
+
+        <!-- ══ 🟢 자율실행 화이트리스트 (정본 · 2026-06-24 AI 자율화 ③ · 시우) ══ -->
+        <h4 style="margin-top:24px;"><span class="ico">🟢</span>자율실행 화이트리스트 (게이트 없음) <span style="font-size:12px;color:var(--dim);font-weight:400;">— 전사 단일 출처</span></h4>
+        <div class="callout tip" style="margin:8px 0;font-size:12.5px;">📌 <strong>원칙(정본):</strong> 화이트리스트 안 = <strong>무게이트 자율</strong> / 그 밖 + 위 5종 = <strong>GM 게이트</strong>. <strong>애매하면 게이트(보수)</strong>. 이 표 = 현행 관행·약속에서 이미 '자율'로 인정된 동작만 등재 — 신규 권한 남발 금지.</div>
+        <table>
+          <tr><th style="width:200px">자율 동작</th><th>조건 (이 범위 안에서만 자율)</th><th style="width:120px">결과</th></tr>
+          <tr><td><strong>파일 읽기·조회·집계</strong></td><td>읽기 전용 · 외부 변조 없음</td><td>🟢 AUTONOMOUS</td></tr>
+          <tr><td><strong>상태파일 갱신</strong></td><td><code>status/*.json</code> · <code>_queue.json</code> 등 운영 상태 기록만</td><td>🟢 AUTONOMOUS</td></tr>
+          <tr><td><strong>자기영역 코드·문서 수정</strong></td><td>본인 R/R 소유 범위 · 공식값·전략·금지 5종 무변경</td><td>🟢 AUTONOMOUS</td></tr>
+          <tr><td><strong>공용문서 커밋·푸시</strong></td><td>5종 무변경 시 즉시 커밋+푸시 (GM 확인 불요)</td><td>🟢 AUTONOMOUS</td></tr>
+          <tr><td><strong>GAS 배포</strong></td><td>로직 무변경 (함수 시그니처·동작 동일 — 재배포·반영만)</td><td>🟢 AUTONOMOUS</td></tr>
+          <tr><td><strong>AI간 큐 핸드오프</strong></td><td>배 배정 · 완료 도장 (<code>_queue.json</code> 내 라우팅)</td><td>🟢 AUTONOMOUS</td></tr>
+          <tr><td><strong>라이브 검수 (시크릿)</strong></td><td>읽기 전용 라이브 확인 · 발효·차단 동작 없음</td><td>🟢 AUTONOMOUS</td></tr>
+        </table>
+        <h4 style="margin-top:20px;"><span class="ico">🔴</span>GM 게이트 (자동 차단 → 라우팅) <span style="font-size:12px;color:var(--dim);font-weight:400;">— 자동 진행 금지</span></h4>
+        <table>
+          <tr><th style="width:200px">위험 동작</th><th>처리</th></tr>
+          <tr><td><strong>💰 결제</strong></td><td>1원 이상 모든 결제 — 자동 차단 → GM 게이트</td></tr>
+          <tr><td><strong>🔒 보안</strong></td><td>비밀번호·결제·키값 등 — 자동 차단 → GM 게이트</td></tr>
+          <tr><td><strong>🚫 금지</strong></td><td>금지 항목 변경 — 자동 차단 → GM 게이트</td></tr>
+          <tr><td><strong>📐 전략</strong></td><td>전략·방향·포지셔닝 결정 — 자동 차단 → GM 게이트</td></tr>
+          <tr><td><strong>🏷️ 공식값</strong></td><td>브랜드·공식값 변경 — 자동 차단 → GM 게이트</td></tr>
+          <tr><td><strong>🛡️ 보안·차단 라이브 발효</strong></td><td>실제 차단·잠금 켜기 — <strong>GM 명시 go + 즉시 역롤백 보장</strong> 필수 (코드·설계·검증은 위 자율)</td></tr>
+        </table>
+        <p style="font-size:12.5px;color:var(--dim);margin-top:8px;">이 표 = <strong>advisory 경계 정의</strong>(점검 절차). 자동 차단/통과를 코드로 강제하는 enforcement는 별도 후속.</p>
+        <!-- ══ /자율실행 화이트리스트 ══ -->
         </div></details>
 
         <!-- ══ 🚫 데이터 경계·에스컬레이션 (토글 그룹) ══ -->
