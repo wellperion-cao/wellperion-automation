@@ -418,9 +418,9 @@ function normalizePhone_(s) {
   return digits;
 }
 
-function _notifyTelegram(text) {
+function _notifyTelegram(text, chatIdOverride) {
   const token = _prop('BOT_TOKEN') || _prop('TELEGRAM_BOT_TOKEN');
-  const chatId = _prop('CHAT_ID') || _prop('TELEGRAM_CHAT_ID');
+  const chatId = chatIdOverride || _prop('CHAT_ID') || _prop('TELEGRAM_CHAT_ID');
   if (!token || !chatId) return;
   try {
     UrlFetchApp.fetch('https://api.telegram.org/bot' + token + '/sendMessage', {
@@ -429,6 +429,96 @@ function _notifyTelegram(text) {
       muteHttpExceptions: true
     });
   } catch (e) { Logger.log('텔레그램 실패: ' + e.message); }
+}
+
+// ─── 신규 문의 감지 → 텔레그램 '문의 알림' 방 발송 (시모, 2026-06-24) ───
+// FORM_SHEETS 각 시트의 신규 행을 5분마다 감지해 TELEGRAM_INQUIRY_CHAT_ID 방으로 알림.
+// ScriptProperties INQ_LASTROW_<ssId>_<gid> 에 마지막 처리 행수 저장 → 중복 방지.
+// 최초 실행: 기준선만 저장, 과거 문의 일괄발송 없음.
+function _notifyNewInquiries_() {
+  var props = PropertiesService.getScriptProperties();
+  var inquiryChatId = props.getProperty('TELEGRAM_INQUIRY_CHAT_ID');
+  if (!inquiryChatId) { Logger.log('[문의알림] TELEGRAM_INQUIRY_CHAT_ID 미설정 — 스킵'); return; }
+
+  FORM_SHEETS.forEach(function(cfg) {
+    var propKey = 'INQ_LASTROW_' + cfg.ssId + '_' + cfg.gid;
+    try {
+      var sh = _sheetByGid_(cfg.ssId, cfg.gid);
+      if (!sh) return;
+      var lastRow = sh.getLastRow();
+      var storedStr = props.getProperty(propKey);
+
+      // 최초 실행: 기준선 저장 후 종료 (과거분 폭주 방지)
+      if (!storedStr) {
+        props.setProperty(propKey, String(lastRow));
+        Logger.log('[문의알림] 기준선 저장 — ' + cfg.type + ' lastRow=' + lastRow);
+        return;
+      }
+
+      var storedRow = parseInt(storedStr, 10) || 1;
+      if (lastRow <= storedRow) return; // 신규 없음
+
+      // 헤더 읽기
+      var lastCol = sh.getLastColumn();
+      if (lastCol < 1) { props.setProperty(propKey, String(lastRow)); return; }
+      var headers = sh.getRange(1, 1, 1, lastCol).getValues()[0];
+      var idxDate  = _findCol_(headers, ['타임스탬프', 'timestamp', '시각', '일시', '접수일', '접수', '날짜']);
+      var idxName  = _findCol_(headers, ['성함', '이름']);
+      var idxPhone = _findCol_(headers, ['연락처', '휴대폰', '핸드폰', '전화']);
+      var idxChan  = _findCol_(headers, cfg.channelKeys || ['채널', '경로', '알게']);
+      var idxMemo  = _findCol_(headers, ['비고', '메모']);
+
+      // 신규 행 처리
+      var newRows = sh.getRange(storedRow + 1, 1, lastRow - storedRow, lastCol).getValues();
+      newRows.forEach(function(r) {
+        // [웹접수] 미러 행 제외 (이미 submit_inquiry에서 발송)
+        if (idxMemo >= 0 && String(r[idxMemo] || '').indexOf(WEB_INTAKE_TAG) >= 0) return;
+        // 완전 빈 행 스킵
+        if (!r[idxDate >= 0 ? idxDate : 0] && (idxPhone < 0 || !r[idxPhone])) return;
+
+        var ts = idxDate >= 0 ? r[idxDate] : '';
+        var tsStr = '';
+        try {
+          var d = _normTs_(ts);
+          tsStr = isNaN(d.getTime()) ? String(ts).substring(0, 16) : Utilities.formatDate(d, 'Asia/Seoul', 'MM/dd HH:mm');
+        } catch (e) { tsStr = String(ts).substring(0, 16); }
+
+        var name  = idxName  >= 0 ? String(r[idxName]  || '').trim() : '-';
+        var phone = idxPhone >= 0 ? String(r[idxPhone] || '').trim() : '-';
+        var chan  = idxChan  >= 0 ? String(r[idxChan]  || '').trim() : '-';
+        if (!name)  name  = '-';
+        if (!phone) phone = '-';
+        if (!chan)  chan  = '-';
+
+        var msg = '🔔 [신규 문의]\n'
+          + '유형: ' + cfg.type + '\n'
+          + '이름: ' + name + '\n'
+          + '연락처: ' + phone + '\n'
+          + '유입채널: ' + chan + '\n'
+          + '시각: ' + tsStr;
+        _notifyTelegram(msg, inquiryChatId);
+      });
+
+      // 기준선 갱신
+      props.setProperty(propKey, String(lastRow));
+    } catch (e) {
+      Logger.log('[문의알림] ' + cfg.type + ' 오류: ' + e.message);
+    }
+  });
+}
+
+// '문의 알림' 방 5분 트리거 — 중복 설치 방지. GAS 에디터 또는 clasp push 후 1회 수동 실행.
+function installInquiryNotifyTrigger() {
+  var triggers = ScriptApp.getProjectTriggers();
+  for (var i = 0; i < triggers.length; i++) {
+    if (triggers[i].getHandlerFunction() === '_notifyNewInquiries_') {
+      Logger.log('트리거 이미 존재 — 스킵');
+      return;
+    }
+  }
+  ScriptApp.newTrigger('_notifyNewInquiries_')
+    .timeBased().everyMinutes(5).create();
+  Logger.log('트리거 설치 완료: _notifyNewInquiries_ 5분 주기');
 }
 
 // ═══════════════════════════════════════════
@@ -666,7 +756,8 @@ function _processAction(body) {
       + '연락처: ' + (body.phone || '-') + '\n'
       + '유형: ' + (body.type || '-') + '\n'
       + '유입채널: ' + (body.inflow || '-') + '\n'
-      + '내용: ' + (body.message || '-').substring(0, 100)
+      + '내용: ' + (body.message || '-').substring(0, 100),
+      _prop('TELEGRAM_INQUIRY_CHAT_ID') || undefined
     );
 
     return _json({ ok: true, id: id, message: '문의가 접수되었습니다.' });
