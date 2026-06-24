@@ -100,7 +100,7 @@ function _buildPartnerForm_() {
     .setChoiceValues(['브랜드 콜라보·프로모션', '입점·공간 제휴', 'B2B 기업복지·단체 멤버십', '콘텐츠·미디어 협업', '상품·서비스 공급', '투자·사업제휴', '기타'])
     .setRequired(true);
   form.addMultipleChoiceItem().setTitle('회사 규모')
-    .setChoiceValues(['1~10인', '11~50인', '51~200인', '200인 초과', '개인·프리랜서'])
+    .setChoiceValues(['1~10인', '11~50인', '51~200인', '200인 초과', '개인·파트너'])
     .setRequired(false);
   form.addTextItem().setTitle('웹사이트·SNS·소개자료 링크').setHelpText('URL').setRequired(false);
   form.addMultipleChoiceItem().setTitle('희망 진행 시점')
