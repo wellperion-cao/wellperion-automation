@@ -417,7 +417,7 @@ function renderReqTbl(){
   });
   if(!rows.length)h+='<tr><td colspan="9" style="color:var(--ink-faint)">해당 상태의 품의가 없습니다.</td></tr>';
   h+='</tbody>';document.getElementById("reqTbl").innerHTML=h;
-  document.querySelectorAll(".reqAct").forEach(function(b){b.onclick=function(){doAct(b.dataset.row,b.dataset.next,b.dataset.pw);};});
+  document.querySelectorAll(".reqAct").forEach(function(b){b.onclick=function(){doAct(b.dataset.row,b.dataset.next,b.dataset.pw,b);};});
   document.querySelectorAll(".reqPhoto").forEach(function(b){b.onclick=function(){addPhotoTo(b.dataset.row,b);};});
 }
 function addPhotoTo(row,btn){
@@ -428,9 +428,13 @@ function addPhotoTo(row,btn){
   inp.click();
 }
 function btnCss(c){return "font-size:11px;padding:4px 11px;cursor:pointer;border:none;border-radius:6px;color:#fff;font-weight:600;background:"+c;}
-async function doAct(row,next,needPw){
+async function doAct(row,next,needPw,btn){
   if(needPw){var pw=prompt("승인 비밀번호를 입력하세요 (승인자 확인)");if(pw===null)return;pw=String(pw).trim();if(pw!=="1202"&&pw!==GATE_PW){alert("비밀번호가 올바르지 않습니다");return;}}
-  await procCall("status",{row:row,status:next});loadReq();
+  if(btn){btn.disabled=true;btn.textContent="처리중…";}
+  var item=REQ_DATA.filter(function(x){return String(x.row)===String(row);})[0];
+  if(item){item.상태=next;renderReqTbl();}  // 즉시 반영(낙관적)
+  try{await procCall("status",{row:row,status:next});}catch(e){}
+  loadReq();  // 서버 재확인
 }
 
 (function(){var ok="";try{ok=sessionStorage.getItem("wp_fin_ok")||"";}catch(e){}
