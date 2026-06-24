@@ -1187,32 +1187,52 @@ function _processAction(body) {
     return _json({ ok: false, error: '해당 등록회원 없음' });
   }
 
-  // ─── 회원관리 페이지(CPO): 멤버십 활성 회원 명단 ('유효회원' 시트, 읽기전용·전화 마스킹) ───
+  // ─── 회원관리 페이지(CPO): 멤버십 회원 명단 ('유효회원' 시트, 읽기전용·전화 마스킹) ───
+  //   scope=valid(기본): 잔여일>0 유효회원(2026-06-24 GM) / scope=ended: 종료·이탈(잔여일≤0 또는 LOSS·환불·양도LOSS)
+  //   ★빈 헤더·쓰레기 날짜헤더(GMT/표준시) 컬럼 제외 + 회원명 없는 빈/이상 행 제외(전체 컬럼은 그대로 노출).
   if (action === 'member_active_list') {
+    var aaScope = (String(body.scope || 'valid') === 'ended') ? 'ended' : 'valid';
     var aaSh = SpreadsheetApp.openById(MEMBER_SPREADSHEET_ID).getSheetByName(MEMBER_SHEET);
     if (!aaSh) return _json({ ok: false, error: '유효회원 시트 없음' });
     var aaLast = aaSh.getLastRow();
     var aaCols = aaSh.getLastColumn();
-    if (aaLast < 1 || aaCols < 1) return _json({ ok: true, headers: [], count: 0, data: [] });
-    var aaHdrs = aaSh.getRange(1, 1, 1, aaCols).getValues()[0].map(function(v){ return String(v).trim(); });
+    if (aaLast < 1 || aaCols < 1) return _json({ ok: true, scope: aaScope, headers: [], count: 0, data: [] });
+    var aaHdrRaw = aaSh.getRange(1, 1, 1, aaCols).getValues()[0].map(function(v){ return String(v).trim(); });
+    // 유지 컬럼: 빈 헤더·GMT/표준시 쓰레기 날짜헤더 제외
+    var aaKeep = aaHdrRaw.map(function(h){ return h && !/GMT|표준시/.test(h); });
+    var aaHdrs = [];
+    for (var ah = 0; ah < aaHdrRaw.length; ah++) if (aaKeep[ah]) aaHdrs.push(aaHdrRaw[ah]);
+    // 핵심 컬럼 인덱스(공백·줄바꿈 무시) — 헤더가 '잔여일\n(일)'·'재등록\n분류'라 정규화 매칭
+    function _aaIdx(want){ var w = String(want).replace(/\s/g,''); for (var i=0;i<aaHdrRaw.length;i++){ if (aaHdrRaw[i].replace(/\s/g,'').indexOf(w) >= 0) return i; } return -1; }
+    var aiName = _aaIdx('회원명'), aiRem = _aaIdx('잔여일'), aiRe = _aaIdx('재등록분류');
+    var _AA_LOSS = { 'LOSS':1, '환불':1, '양도LOSS':1 };
     var aaRows = [];
     if (aaLast >= 2) {
       var aaData = aaSh.getRange(2, 1, aaLast - 1, aaCols).getValues();
       for (var ai = 0; ai < aaData.length; ai++) {
-        var obj = {}, any = false;
-        for (var ac = 0; ac < aaHdrs.length; ac++) {
-          var key = aaHdrs[ac] || ('col' + ac);
-          var v = aaData[ai][ac];
+        var arow = aaData[ai];
+        var nm = aiName >= 0 ? String(arow[aiName] == null ? '' : arow[aiName]).trim() : '';
+        if (!nm) continue;  // 회원명 없는 빈/이상 행 제외
+        var remRaw = aiRem >= 0 ? String(arow[aiRem] == null ? '' : arow[aiRem]).replace(/[^0-9\-]/g, '') : '';
+        var rem = (remRaw === '' || remRaw === '-') ? NaN : parseInt(remRaw, 10);
+        var reV = aiRe >= 0 ? String(arow[aiRe] == null ? '' : arow[aiRe]).trim() : '';
+        var isValid = !isNaN(rem) && rem > 0 && !_AA_LOSS[reV];  // 유효 = 잔여일>0 & 이탈표시 없음
+        if (aaScope === 'valid' && !isValid) continue;
+        if (aaScope === 'ended' && isValid) continue;   // 종료 = 유효가 아닌 모든 회원명 보유 행
+        var obj = {};
+        for (var ac = 0; ac < aaHdrRaw.length; ac++) {
+          if (!aaKeep[ac]) continue;
+          var key = aaHdrRaw[ac];
+          var v = arow[ac];
           if (v instanceof Date && !isNaN(v.getTime())) v = Utilities.formatDate(v, 'Asia/Seoul', 'yyyy-MM-dd');
           v = (v === null || v === undefined) ? '' : String(v);
           if (key === MEMBER_PHONE_COL) { var pp = v.replace(/[^0-9]/g, ''); v = pp.length >= 10 ? pp.slice(0,3) + '-****-' + pp.slice(-4) : (pp ? '***' : ''); }
           obj[key] = v;
-          if (v) any = true;
         }
-        if (any) aaRows.push(obj);
+        aaRows.push(obj);
       }
     }
-    return _json({ ok: true, headers: aaHdrs, count: aaRows.length, data: aaRows });
+    return _json({ ok: true, scope: aaScope, headers: aaHdrs, count: aaRows.length, data: aaRows });
   }
 
   // ─── 문의→가입 전환 집계 ───

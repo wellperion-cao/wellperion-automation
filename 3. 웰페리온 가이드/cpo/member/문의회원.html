@@ -1251,7 +1251,14 @@ if (action === 'member_calendar') {
     <div class="card">
       <div class="card-title">
         <span class="icon">👥</span>멤버십 회원관리
-        <span style="font-size:11px;font-weight:400;color:var(--dim);margin-left:4px">실제 활성 회원 명단('유효회원' 시트) · 읽기전용 · 전화 마스킹</span>
+        <span style="font-size:11px;font-weight:400;color:var(--dim);margin-left:4px">유효회원 시트 · 읽기전용 · 전화 마스킹</span>
+      </div>
+
+      <div class="active-toggle" style="display:flex;gap:6px;margin-bottom:12px">
+        <button type="button" id="activeScopeValid" class="seg-btn" onclick="setActiveScope('valid', this)"
+          style="padding:7px 16px;border-radius:8px;border:1px solid var(--teal-border);background:var(--teal-bg);color:var(--teal);font-size:13px;font-weight:700;font-family:inherit;cursor:pointer">유효회원</button>
+        <button type="button" id="activeScopeEnded" class="seg-btn" onclick="setActiveScope('ended', this)"
+          style="padding:7px 16px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--dim);font-size:13px;font-weight:700;font-family:inherit;cursor:pointer">종료 회원</button>
       </div>
 
       <div class="active-search-wrap">
@@ -1489,6 +1496,18 @@ var _activeRows    = [];
 var _activeHeaders = [];
 var _activeLoaded  = false;
 var _activeComposing = false;
+var _activeScope   = 'valid';   // 'valid'(잔여일>0 유효회원) | 'ended'(종료·이탈)
+
+// 유효/종료 전환 토글 — 시각 갱신 후 해당 scope 재조회
+function setActiveScope(scope, btn) {
+  _activeScope = (scope === 'ended') ? 'ended' : 'valid';
+  document.querySelectorAll('.active-toggle .seg-btn').forEach(function(b){
+    b.style.background = 'var(--bg)'; b.style.color = 'var(--dim)'; b.style.borderColor = 'var(--border)';
+  });
+  if (btn) { btn.style.background = 'var(--teal-bg)'; btn.style.color = 'var(--teal)'; btn.style.borderColor = 'var(--teal-border)'; }
+  var si = document.getElementById('activeSearch'); if (si) si.value = '';
+  loadActiveMembers();
+}
 
 function loadActiveMembers() {
   if (GAS_URL === GAS_PLACEHOLDER) {
@@ -1496,7 +1515,7 @@ function loadActiveMembers() {
     return;
   }
   _activeRenderState('loading');
-  fetch(GAS_URL + '?action=member_active_list')
+  fetch(GAS_URL + '?action=member_active_list&scope=' + (_activeScope || 'valid'))
     .then(function(r){ return r.json(); })
     .then(function(data){
       if (!data.ok) throw new Error(data.error || 'GAS 응답 오류');
