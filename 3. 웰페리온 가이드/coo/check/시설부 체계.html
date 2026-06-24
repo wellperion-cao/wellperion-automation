@@ -3975,6 +3975,9 @@ function vendorSubmitAddForm(){
   };
   window.fcSave=function(){
     var date=val('fcDate'); if(!date){alert('날짜를 먼저 고르세요');return;}
+    /* 점검 시작·종료 선행 게이트(GM 2026-06-24 시우): 현재 회차의 ⏱점검 시작·종료를 모두 눌러야(타이머 done) 제출 가능.
+       시작만/종료만(running·idle)은 차단. 회차별 타이머(roundStart·roundTimes)와 1:1. */
+    if(fcTimerState()!=='done'){ alert('제출 전에 먼저 해주세요:\n· ⏱ 점검 시작 → ⏱ 점검 종료'); return; }
     captureRound(); captureDaily();
     var insp=inspectorName(); fcStore.inspector=insp;
     var st=document.getElementById('fcStatus'); if(st)st.textContent='제출 중...';

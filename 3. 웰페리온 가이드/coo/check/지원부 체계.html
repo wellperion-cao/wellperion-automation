@@ -2740,6 +2740,9 @@ function drawUI(d,gender){
       rBtn=`<button class="submit-btn submitted" style="max-width:none;width:100%;" disabled>${_rlabel} 제출완료 (1/1)</button>`;
     }else if(!sub){
       rBtn=`<button class="submit-btn primary" style="max-width:none;width:100%;" disabled>↑ 점검자 이름을 먼저 입력</button>`;
+    }else if(!timerGatePassed(gender)){
+      /* 점검 시작·종료 선행 게이트(GM 2026-06-24): 시작·종료 둘 다 눌러야 제출 가능 */
+      rBtn=`<button class="submit-btn primary" style="max-width:none;width:100%;" disabled>▶ 점검 시작·종료 먼저</button>`;
     }else{
       /* 미제출=(0/1) — 항목수(27/30) 대신 조 이름·시각·제출여부로 표시. GM 2026-06-15 */
       rBtn=`<button class="submit-btn primary" style="max-width:none;width:100%;" onclick="submitRound('${curRound}','${gender}')"${rDone===0?' disabled':''}>${_rlabel} 점검 제출 (0/1)</button>`;
@@ -2772,6 +2775,12 @@ function activeTimerKeys(gender){
   const rk=getRoundG(gender);
   const t=timerKeys(d,gender,rk);
   return {sk:t.sk, ek:t.ek};
+}
+/* 제출 게이트(GM 2026-06-24 시우): 그 조/회차의 점검 시작·종료를 모두 눌러야(timerStart·timerEnd 둘 다 set)
+   제출 버튼 활성. 라운드 키와 1:1(activeTimerKeys=현재 회차). 시작만/종료만은 미통과. */
+function timerGatePassed(gender){
+  const k=activeTimerKeys(gender);
+  return !!(STATE[k.sk] && STATE[k.ek]);
 }
 /* 해당 날짜+성별(+라운드) STATE 값으로 타이머 UI 복원 (없으면 idle). drawUI 끝에서 호출. */
 function setCheckTime(gender){
@@ -3309,6 +3318,9 @@ function updateNightSubmitButtonG(sched,nightStats,d,gender){
     }
   }else if(!sub){
     btnNight.textContent='↑ 점검자를 먼저 선택';btnNight.disabled=true;btnNight.className='submit-btn night-btn';
+  }else if(typeof timerGatePassed==='function'&&!timerGatePassed(gender)){
+    /* 점검 시작·종료 선행 게이트(GM 2026-06-24) */
+    btnNight.textContent='▶ 점검 시작·종료 먼저';btnNight.disabled=true;btnNight.className='submit-btn night-btn';
   }else{
     btnNight.textContent=nightStats.done===nightStats.total&&nightStats.total>0?'야간조 제출':`야간조 제출 (${nightStats.done}/${nightStats.total})`;
     btnNight.disabled=nightStats.done===0;btnNight.className='submit-btn night-btn';
@@ -3373,6 +3385,8 @@ function _onCkAfter(d,gender){
     if(stats.pct===100&&!STATE['_submitted_night']){
       const sub=getSubmitterForGender(gender);
       if(!sub){alert('점검자 이름을 먼저 입력하세요.');return}
+      /* 시작·종료 게이트(GM 2026-06-24): 점검 시작·종료 미완이면 자동제출 제안 안 함(버튼 안내로 유도) */
+      if(typeof timerGatePassed==='function'&&!timerGatePassed(gender))return;
       if(confirm(`야간조 항목을 모두 완료했습니다.\n${sub}님 이름으로 제출할까요?`)){
         submitShift('night',gender);
       }
