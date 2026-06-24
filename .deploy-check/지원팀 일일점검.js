@@ -3074,3 +3074,13 @@ function handleUnlockRound(body) {
   props.setProperty(key, JSON.stringify(led));
   return jsonRes({ ok: true, dept: dept, date: date, gender: gender, round: round, shiftKey: shiftKey });
 }
+
+// ─── 점검 알림 채팅방 설정 (일회성 실행 함수) ─────────────────────────────────
+// 2026-06-24 GM 지시: 점검 알림 대상을 '점검 관리'방(-5136037543)으로 설정
+function setCheckRoomChatId() {
+  PropertiesService.getScriptProperties().setProperty('TELEGRAM_CHAT_ID', '-5136037543');
+  return PropertiesService.getScriptProperties().getProperty('TELEGRAM_CHAT_ID');
+}
+function getCheckRoomChatId() {
+  return PropertiesService.getScriptProperties().getProperty('TELEGRAM_CHAT_ID');
+}
