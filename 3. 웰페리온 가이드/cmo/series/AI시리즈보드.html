@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8"><link rel="icon" type="image/png" href="/wellperion-automation/wellperion_favicon.png">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI 시리즈 보드 — 웰페리온</title>
+<style>
+:root{
+  --bg:#221F20;--paper:#2a2725;--text:#f5f2ef;--dim:#8c8b83;
+  --accent:#B79F8A;--accent-bg:rgba(183,159,138,0.12);--border:#3d3835;
+  --green:#6abf7b;--green-bg:rgba(106,191,123,0.12);
+  --red:#ED5B3F;--red-bg:rgba(237,91,63,0.12);
+  --yellow:#e6c84e;--yellow-bg:rgba(230,200,78,0.12);
+  --blue:#5b9fd5;--blue-bg:rgba(91,159,213,0.12);
+  --orange:#e6944e;--orange-bg:rgba(230,148,78,0.12);
+  --purple:#a78bda;--purple-bg:rgba(167,139,218,0.12);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.6;font-size:15px;min-height:100vh}
+a{color:var(--accent);text-decoration:none}
+
+/* Header */
+.header{background:var(--paper);padding:14px 20px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100;flex-wrap:wrap;gap:8px}
+.header-left{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.header h1{font-size:17px;font-weight:700}
+.version-badge{font-size:11px;padding:2px 8px;border-radius:8px;background:var(--accent-bg);color:var(--accent);font-weight:700;border:1px solid rgba(183,159,138,0.25);white-space:nowrap}
+.header-meta{font-size:12px;color:var(--dim)}
+
+/* Content */
+.content{padding:20px 20px 80px;max-width:900px;margin:0 auto}
+
+/* Section */
+.section{margin-bottom:28px}
+.section-title{font-size:14px;font-weight:700;color:var(--dim);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.section-title::after{content:"";flex:1;height:1px;background:var(--border)}
+
+/* Info box */
+.info-box{background:var(--accent-bg);border:1px solid rgba(183,159,138,0.2);border-radius:10px;padding:14px 16px;margin-bottom:16px;font-size:13px}
+.info-box strong{color:var(--accent)}
+.info-box .ssot-note{font-size:11px;color:var(--dim);margin-top:6px}
+
+/* Route + Principles */
+.route-box{background:var(--paper);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin-bottom:10px;font-size:13px;color:var(--text);line-height:1.7}
+.principles-row{display:flex;gap:10px;flex-wrap:wrap}
+.principle-card{flex:1;min-width:200px;background:var(--paper);border:1px solid var(--border);border-radius:10px;padding:12px 14px}
+.principle-card .p-name{font-size:12px;font-weight:700;color:var(--accent);margin-bottom:4px}
+.principle-card .p-detail{font-size:12px;color:var(--dim);line-height:1.6}
+
+/* Episode table */
+.ep-table-wrap{overflow-x:auto;border-radius:12px;border:1px solid var(--border)}
+table.ep-table{width:100%;border-collapse:collapse;font-size:13px}
+table.ep-table th{background:var(--paper);padding:10px 14px;text-align:left;font-size:11px;font-weight:700;color:var(--dim);border-bottom:1px solid var(--border);white-space:nowrap}
+table.ep-table td{padding:10px 14px;border-bottom:1px solid var(--border);vertical-align:top}
+table.ep-table tr:last-child td{border-bottom:none}
+table.ep-table tbody tr:hover td{background:var(--accent-bg)}
+table.ep-table tbody tr.has-card{cursor:pointer}
+table.ep-table .num-cell{font-size:12px;font-weight:700;color:var(--accent);white-space:nowrap;width:36px}
+table.ep-table .title-cell{font-weight:600;color:var(--text);max-width:300px}
+table.ep-table .msg-cell{color:var(--dim);font-size:12px;max-width:340px}
+table.ep-table .status-cell{white-space:nowrap;width:140px}
+
+/* Status badges */
+.badge{display:inline-block;font-size:10px;font-weight:700;padding:2px 9px;border-radius:7px;white-space:nowrap}
+.badge-green{background:var(--green-bg);color:var(--green);border:1px solid rgba(106,191,123,.25)}
+.badge-yellow{background:var(--yellow-bg);color:var(--yellow);border:1px solid rgba(230,200,78,.25)}
+.badge-orange{background:var(--orange-bg);color:var(--orange);border:1px solid rgba(230,148,78,.25)}
+.badge-gray{background:rgba(140,139,131,0.12);color:var(--dim);border:1px solid rgba(140,139,131,.2)}
+.badge-dim{background:rgba(140,139,131,0.07);color:rgba(140,139,131,.5);border:1px solid rgba(140,139,131,.1);text-decoration:line-through}
+
+/* Accordion card */
+.ep-detail-row td{padding:0;border-bottom:1px solid var(--border)}
+.ep-detail-row{display:none}
+.ep-detail-row.open{display:table-row}
+.ep-detail-inner{padding:16px 18px 18px;background:rgba(42,39,37,0.6)}
+
+.card-section{margin-bottom:14px}
+.card-section:last-child{margin-bottom:0}
+.card-label{font-size:11px;font-weight:700;color:var(--dim);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px}
+.card-body{font-size:13px;color:var(--text);line-height:1.65}
+
+.card-connect{font-size:12px;color:var(--dim);line-height:1.65;background:var(--paper);border-left:3px solid var(--border);border-radius:0 6px 6px 0;padding:8px 12px}
+.card-connect.prev{border-left-color:var(--blue)}
+.card-connect.next{border-left-color:var(--green)}
+
+.slides-list{display:flex;flex-direction:column;gap:6px}
+.slide-item{display:flex;gap:10px;align-items:flex-start;background:var(--paper);border:1px solid var(--border);border-radius:8px;padding:9px 12px}
+.slide-num{font-size:11px;font-weight:700;color:var(--accent);flex-shrink:0;min-width:70px;padding-top:1px}
+.slide-text{font-size:12px;color:var(--text);line-height:1.6}
+
+.reality-guard{background:var(--red-bg);border:1px solid rgba(237,91,63,.2);border-radius:9px;padding:10px 14px;font-size:12px;color:var(--red);display:flex;gap:8px;align-items:flex-start}
+.reality-guard-icon{font-size:14px;flex-shrink:0;margin-top:1px}
+
+.ep-question{background:var(--blue-bg);border:1px solid rgba(91,159,213,.2);border-radius:9px;padding:10px 14px;font-size:13px;color:var(--blue);font-weight:600}
+.ep-question::before{content:"💬 ";font-size:12px}
+
+.no-card-note{font-size:12px;color:var(--dim);font-style:italic;padding:12px 0}
+
+/* Expand toggle icon */
+.toggle-icon{font-size:11px;color:var(--dim);margin-left:6px;display:inline-block;transition:transform .2s}
+.toggle-icon.open{transform:rotate(180deg)}
+
+/* Legend */
+.legend-row{display:flex;flex-wrap:wrap;gap:10px}
+.legend-item{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--dim)}
+.legend-dot{width:8px;height:8px;border-radius:3px}
+
+/* Loading / error */
+.loading-msg{color:var(--dim);font-size:13px;font-style:italic;padding:20px 0}
+.error-msg{color:var(--red);font-size:13px;padding:12px 14px;background:var(--red-bg);border-radius:8px;margin:8px 0}
+
+/* Footer */
+.page-footer{text-align:center;padding:20px;font-size:11px;color:var(--dim);border-top:1px solid var(--border);margin-top:20px}
+
+/* Mobile */
+@media(max-width:640px){
+  .header{padding:10px 14px}
+  .header h1{font-size:15px}
+  .content{padding:14px 12px 60px}
+  .ep-table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  table.ep-table td,table.ep-table th{padding:8px 10px}
+  table.ep-table .msg-cell{display:none}
+  .principles-row{flex-direction:column}
+  .slide-item{flex-direction:column;gap:4px}
+  .slide-num{min-width:auto}
+}
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+  <div class="header-left">
+    <h1>🧭 AI 시리즈 보드</h1>
+    <span class="version-badge" id="season-badge">로드 중…</span>
+  </div>
+  <div class="header-meta">namuk.wellperion · GM + 시모 전용</div>
+</div>
+
+<!-- Content -->
+<div class="content">
+
+  <!-- 상단 안내 -->
+  <div class="info-box">
+    <strong>GM·시모가 함께 보는 단일 출처</strong> — 아침 자동제작 전에 여기서 기획을 확인·수정하세요.<br>
+    <span class="ssot-note">읽기 전용. 정본 = <code>instagram/_AI시리즈_로드맵.md</code> · 이 화면은 비추기만 합니다.</span>
+  </div>
+
+  <!-- 노선·원칙 -->
+  <div class="section">
+    <div class="section-title">노선 &amp; 원칙</div>
+    <div class="route-box" id="route-box"><span class="loading-msg">불러오는 중…</span></div>
+    <div class="principles-row" id="principles-row"></div>
+  </div>
+
+  <!-- 편별 표 -->
+  <div class="section">
+    <div class="section-title">편별 현황</div>
+    <div id="ep-table-area">
+      <div class="loading-msg">불러오는 중…</div>
+    </div>
+  </div>
+
+  <!-- 범례 -->
+  <div class="section">
+    <div class="section-title">범례</div>
+    <div class="legend-row">
+      <div class="legend-item"><div class="legend-dot" style="background:var(--green)"></div>발행완료</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--yellow)"></div>M5 진행 중(검수·발행검증대기)</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--orange)"></div>제작완료·GM검수대기</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--dim)"></div>기획예정</div>
+      <div class="legend-item"><div class="legend-dot" style="background:rgba(140,139,131,.35)"></div>폐기·보류(취소선)</div>
+    </div>
+  </div>
+
+</div>
+
+<div class="page-footer">AI 시리즈 보드 · 데이터 소스: series_data.json + review_queue.json (라이브 fetch)</div>
+
+<script>
+(function(){
+  const BASE = './';
+  const SERIES_URL  = BASE + 'series_data.json';
+  const REVIEW_URL  = BASE + '../review/review_queue.json';
+
+  // ── 상태 배지 결정 ────────────────────────────────────────────────
+  function resolveBadge(roadmapStatus, m5Status){
+    // M5 상태 우선
+    const s = (m5Status || '').trim();
+    if(s){
+      if(/발행완료/.test(s))   return {cls:'badge-green', label:'발행완료'};
+      if(/발행검증대기/.test(s)) return {cls:'badge-yellow', label:'발행검증대기'};
+      if(/검수대기|검수요청/.test(s)) return {cls:'badge-yellow', label:'M5 검수대기'};
+      if(/제작완료|GM검수/.test(s)) return {cls:'badge-orange', label:'제작완료·GM검수'};
+    }
+    // roadmap_status fallback
+    const r = (roadmapStatus || '').trim();
+    if(/폐기|보류/.test(r))        return {cls:'badge-dim',    label: r.replace(/✅/g,'').trim()};
+    if(/발행완료/.test(r))         return {cls:'badge-green',  label:'발행완료'};
+    if(/발행검증대기/.test(r))     return {cls:'badge-yellow', label:'발행검증대기'};
+    if(/검수대기|검수요청/.test(r))return {cls:'badge-yellow', label:'M5 검수대기'};
+    if(/제작완료|GM검수/.test(r))  return {cls:'badge-orange', label:'제작완료·GM검수'};
+    if(/기획예정/.test(r))         return {cls:'badge-gray',   label:'기획예정'};
+    return {cls:'badge-gray', label: r || '—'};
+  }
+
+  // ── M5 큐 → 편번호 맵 ────────────────────────────────────────────
+  function buildM5Map(items){
+    const map = {};
+    (items||[]).forEach(item => {
+      const id = item.id || '';
+      const m = id.match(/AI(\d+)/i);
+      if(m){
+        const num = parseInt(m[1],10);
+        // 같은 편 여러 항목이면 M5 상태 우선순위: 발행완료 < 발행검증대기 < 검수대기 < 기타
+        if(!map[num]) map[num] = item.status || '';
+        else {
+          // 더 진행된(앞선) 상태로 덮어씌우지 않음 — 가장 최근 상태 유지
+          // 간단히: 발행완료가 있으면 우선
+          if(/발행완료/.test(item.status)) map[num] = item.status;
+        }
+      }
+    });
+    return map;
+  }
+
+  // ── 카드 HTML ─────────────────────────────────────────────────────
+  function renderCard(card){
+    if(!card) return '<div class="no-card-note">기획 카드 미작성</div>';
+
+    const slidesHtml = (card.slides||[]).map(s =>
+      `<div class="slide-item">
+        <div class="slide-num">${esc(s.label)}</div>
+        <div class="slide-text">${esc(s.text)}</div>
+      </div>`
+    ).join('');
+
+    return `
+      <div class="card-section">
+        <div class="card-label">후크</div>
+        <div class="card-body">${esc(card.hook||'')}</div>
+      </div>
+      <div class="card-section">
+        <div class="card-label">어제와의 연결 (←)</div>
+        <div class="card-connect prev">${esc(card.connect_prev||'')}</div>
+      </div>
+      <div class="card-section">
+        <div class="card-label">내일로의 다리 (→)</div>
+        <div class="card-connect next">${esc(card.connect_next||'')}</div>
+      </div>
+      <div class="card-section">
+        <div class="card-label">슬라이드 (${(card.slides||[]).length}장)</div>
+        <div class="slides-list">${slidesHtml}</div>
+      </div>
+      ${card.question ? `<div class="card-section">
+        <div class="ep-question">${esc(card.question)}</div>
+      </div>` : ''}
+      ${card.reality_guard ? `<div class="card-section">
+        <div class="reality-guard">
+          <div class="reality-guard-icon">⚠️</div>
+          <div>${esc(card.reality_guard)}</div>
+        </div>
+      </div>` : ''}
+    `;
+  }
+
+  // ── 표 렌더 ───────────────────────────────────────────────────────
+  function renderTable(episodes, cards, m5Map){
+    const rows = episodes.map(ep => {
+      const m5Status = m5Map[ep.num] || '';
+      const {cls, label} = resolveBadge(ep.roadmap_status, m5Status);
+      const hasCard = ep.has_card && cards && cards[String(ep.num)];
+      const numLabel = ep.num_raw || ep.num;
+      const toggleId = `ep-detail-${ep.num}`;
+      const toggleIcon = hasCard ? `<span class="toggle-icon" id="ti-${ep.num}">▼</span>` : '';
+
+      const trClass = hasCard ? 'has-card' : '';
+      const trAttr  = hasCard ? `onclick="toggleCard(${ep.num})"` : '';
+
+      return `
+        <tr class="${trClass}" ${trAttr}>
+          <td class="num-cell">#${numLabel}</td>
+          <td class="title-cell">${esc(ep.title)}${toggleIcon}</td>
+          <td class="msg-cell">${esc(ep.message)}</td>
+          <td class="status-cell"><span class="badge ${cls}">${esc(label)}</span>${m5Status && m5Status !== ep.roadmap_status ? `<br><span style="font-size:10px;color:var(--dim);margin-top:3px;display:block">M5 반영</span>` : ''}</td>
+        </tr>
+        <tr class="ep-detail-row" id="${toggleId}">
+          <td colspan="4">
+            <div class="ep-detail-inner">
+              ${hasCard ? renderCard(cards[String(ep.num)]) : '<div class="no-card-note">기획 카드 미작성</div>'}
+            </div>
+          </td>
+        </tr>
+      `;
+    }).join('');
+
+    return `
+      <div class="ep-table-wrap">
+        <table class="ep-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>제목</th>
+              <th class="msg-cell">핵심 메시지</th>
+              <th>상태</th>
+            </tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
+    `;
+  }
+
+  // ── 아코디언 토글 ─────────────────────────────────────────────────
+  window.toggleCard = function(num){
+    const row = document.getElementById('ep-detail-' + num);
+    const icon = document.getElementById('ti-' + num);
+    if(!row) return;
+    const isOpen = row.classList.contains('open');
+    row.classList.toggle('open', !isOpen);
+    if(icon) icon.classList.toggle('open', !isOpen);
+  };
+
+  // ── 이스케이프 ────────────────────────────────────────────────────
+  function esc(str){
+    return String(str||'')
+      .replace(/&/g,'&amp;')
+      .replace(/</g,'&lt;')
+      .replace(/>/g,'&gt;')
+      .replace(/"/g,'&quot;')
+      .replace(/\n/g,'<br>');
+  }
+
+  // ── fetch with cache bust ─────────────────────────────────────────
+  function fetchJson(url){
+    return fetch(url + '?t=' + Date.now())
+      .then(r => { if(!r.ok) throw new Error(r.status); return r.json(); });
+  }
+
+  // ── 메인 ─────────────────────────────────────────────────────────
+  Promise.allSettled([
+    fetchJson(SERIES_URL),
+    fetchJson(REVIEW_URL)
+  ]).then(([seriesResult, reviewResult]) => {
+
+    // ① series_data
+    if(seriesResult.status === 'rejected'){
+      document.getElementById('route-box').innerHTML =
+        '<div class="error-msg">series_data.json 불러오기 실패 — ' + seriesResult.reason + '</div>';
+      document.getElementById('ep-table-area').innerHTML =
+        '<div class="error-msg">편별 표를 불러올 수 없습니다.</div>';
+      return;
+    }
+    const data = seriesResult.value;
+
+    // 시즌 배지
+    const badge = document.getElementById('season-badge');
+    badge.textContent = data.season_label || 'AI 시리즈';
+
+    // 노선
+    const routeBox = document.getElementById('route-box');
+    routeBox.innerHTML = data.route
+      ? data.route.replace(/\*\*([^*]+)\*\*/g,'<strong>$1</strong>')
+      : '<span class="loading-msg">노선 정보 없음</span>';
+
+    // 원칙 카드
+    const pRow = document.getElementById('principles-row');
+    if(data.principles && data.principles.length){
+      pRow.innerHTML = data.principles.map(p =>
+        `<div class="principle-card">
+          <div class="p-name">✦ ${esc(p.name)}</div>
+          <div class="p-detail">${esc(p.detail)}</div>
+        </div>`
+      ).join('');
+    }
+
+    // ② review_queue (실패해도 표는 렌더)
+    let m5Map = {};
+    if(reviewResult.status === 'fulfilled'){
+      const raw = reviewResult.value;
+      const items = Array.isArray(raw) ? raw : (raw.items || []);
+      m5Map = buildM5Map(items);
+    }
+
+    // 편별 표
+    const area = document.getElementById('ep-table-area');
+    if(!data.episodes || !data.episodes.length){
+      area.innerHTML = '<div class="error-msg">편 데이터가 없습니다.</div>';
+      return;
+    }
+    const sorted = [...data.episodes].sort((a,b) => a.num - b.num);
+    area.innerHTML = renderTable(sorted, data.cards || {}, m5Map);
+
+    if(reviewResult.status === 'rejected'){
+      area.insertAdjacentHTML('afterbegin',
+        '<div class="error-msg" style="margin-bottom:10px">M5 검수 상태 불러오기 실패 — 로드맵 상태만 표시합니다.</div>');
+    }
+  });
+
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8"><link rel="icon" type="image/png" href="/wellperion-automation/wellperion_favicon.png">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700&family=Jost:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.4.9/dist/web/static/pretendard.min.css" />
+<title>WELLPERION · 지원부 회장님 보고 (A3 1p)</title>
+<style>
+  :root {
+    --beige:#B79F8A; --beige-soft:#E8DFD4; --beige-pale:#F7F2EC;
+    --black:#221F20; --black-soft:#3A3536; --coral:#ED5B3F;
+    --gray:#8A8587; --line:#D9CFC3; --white:#FBF9F6;
+    --green:#5C7A4E; --gold:#C2A14D;
+    /* 인쇄 시 rgba 반투명 텍스트가 다크 배경 위에서 흰색 halo를 만드는 문제 회피 — 단색 hex로 사전 합성 */
+    --on-dark-92:#D8CFC0;   /* was rgba(232,223,212,0.92) over #221F20 */
+    --on-dark-88:#D2C9BA;   /* was rgba(232,223,212,0.88) */
+    --on-dark-85:#CDC4B5;   /* was rgba(232,223,212,0.85) */
+    --on-dark-82:#C8BFB0;   /* was rgba(232,223,212,0.82) */
+    --on-dark-meta:#A99581; /* was rgba(183,159,138,0.85) — meta labels */
+  }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  html,body {
+    background:#E7E2DA;
+    font-family:"Pretendard Variable","Pretendard",-apple-system,"Malgun Gothic",system-ui,sans-serif;
+    font-weight:400; line-height:1.5; color:var(--black);
+    -webkit-font-smoothing:antialiased;
+  }
+  .serif { font-family:"Playfair Display",Georgia,serif; }
+  .mono  { font-family:"Jost",system-ui,sans-serif; letter-spacing:0.22em; text-transform:uppercase; }
+
+  /* ===== A3 portrait single page (297 x 420mm) ===== */
+  /* NOTE: page는 padding:0 — 모든 섹션이 자기 내부 padding을 갖습니다. */
+  /* 이전에 cover-band가 negative-margin으로 page 패딩을 뚫고 나가다가 */
+  /* 인쇄 시 일부 엔진에서 배경이 잘려 "이미지/텍스트 분리"로 보이는 문제를 제거. */
+  .page {
+    width:297mm; height:420mm;
+    background:var(--white);
+    margin:14px auto; padding:0;
+    position:relative; overflow:hidden;
+  }
+  .page-inner {
+    padding:0 15mm 14mm;
+    position:relative;
+  }
+
+  /* ===== Cover band — full-bleed without negative margins ===== */
+  /* 배경색은 단색만 사용, 라디얼 그라디언트(::after) 제거 → */
+  /* 인쇄 엔진이 텍스트 박스와 배경을 한 레이어로 출력합니다. */
+  .cover-band {
+    background-color:var(--black);
+    color:var(--beige);
+    padding:14mm 15mm 11mm;
+    position:relative;
+    /* 페이지 좌우 끝까지 깔리는 단일 배경 — 그라디언트·블리드 없음 */
+  }
+  .cb-inner { position:relative; z-index:1; }
+  .era { font-family:"Playfair Display",Georgia,serif; font-size:10.5px; color:var(--coral);
+         letter-spacing:0.3em; text-transform:uppercase; }
+  .cover-band h1 {
+    font-family:"Playfair Display",Georgia,serif; font-weight:400;
+    font-size:33px; line-height:1.16; color:var(--white); margin-top:7px; letter-spacing:-0.01em;
+  }
+  .cover-band h1 em { font-style:italic; color:var(--beige); }
+  .cover-band .sub {
+    margin-top:11px; font-size:12px; color:var(--on-dark-92); line-height:1.7; max-width:250mm;
+  }
+  .cover-band .sub strong { color:var(--coral); font-weight:500; }
+  .cover-band .arc {
+    margin-top:13px; display:grid; grid-template-columns:repeat(3,1fr); gap:10px;
+  }
+  .cover-band .arc-it {
+    border-left:2px solid var(--coral); padding:1px 12px;
+  }
+  .cover-band .arc-it .l {
+    font-size:9px; letter-spacing:0.18em; text-transform:uppercase; color:var(--coral); font-weight:700;
+  }
+  .cover-band .arc-it .t {
+    margin-top:4px; font-family:"Playfair Display",Georgia,serif; font-size:13.5px; color:var(--white); line-height:1.4;
+  }
+  .cover-meta { display:flex; gap:28px; margin-top:13px; flex-wrap:wrap; }
+  .cover-meta div { font-size:8.5px; letter-spacing:0.15em; text-transform:uppercase; color:var(--on-dark-meta); }
+  .cover-meta div span {
+    display:block; font-family:"Playfair Display",Georgia,serif;
+    font-size:12px; color:var(--white); margin-top:3px; letter-spacing:0; text-transform:none;
+  }
+
+  /* ===== Section title ===== */
+  .sec-h {
+    display:flex; justify-content:space-between; align-items:baseline;
+    border-bottom:1px solid var(--line); padding-bottom:5px; margin-top:12px; margin-bottom:8px;
+  }
+  .sec-h .l {
+    font-family:"Playfair Display",Georgia,serif; font-size:16px; color:var(--black);
+  }
+  .sec-h .l .num {
+    font-family:"Jost",system-ui,sans-serif; font-weight:700;
+    color:var(--coral); font-size:10px; letter-spacing:0.22em; margin-right:9px;
+  }
+  .sec-h .r { font-size:9.5px; color:var(--gray); letter-spacing:0.06em; }
+  .sec-h .r b { color:var(--coral); font-weight:600; }
+
+  /* ===== ORG snapshot — 7명 운영 ===== */
+  .org {
+    margin-top:6px;
+    display:grid; grid-template-columns:1.05fr 2fr; gap:11px;
+  }
+  .org-side {
+    background:var(--black); color:var(--white); padding:11px 14px;
+    display:flex; flex-direction:column; justify-content:center;
+  }
+  .org-side .tag { font-size:8.5px; letter-spacing:0.22em; text-transform:uppercase; color:var(--coral); font-weight:700; }
+  .org-side .big { font-family:"Playfair Display",Georgia,serif; font-size:22px; line-height:1.18; margin-top:5px; color:var(--white); }
+  .org-side .big em { font-style:italic; color:var(--beige); }
+  .org-side .meta { margin-top:7px; font-size:10px; color:var(--on-dark-88); line-height:1.5; }
+  .org-side .meta b { color:var(--coral); font-weight:600; }
+
+  .org-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:5px; align-content:stretch; }
+  .shift {
+    background:var(--beige-pale); border:1px solid var(--line); padding:8px 10px;
+    display:flex; flex-direction:column; gap:3px;
+  }
+  .shift .stag { font-size:8px; letter-spacing:0.16em; text-transform:uppercase; color:var(--coral); font-weight:700; }
+  .shift .stime { font-family:"Jost",system-ui,sans-serif; font-size:10px; color:var(--black); letter-spacing:0.04em; }
+  .shift .row { display:flex; gap:5px; align-items:flex-start; font-size:9.5px; line-height:1.4; }
+  .shift .row .gn { font-weight:700; color:var(--black); min-width:14px; }
+  .shift .row .ppl { color:var(--black-soft); }
+
+  /* ===== Strength cards ===== */
+  .grid4 { display:grid; grid-template-columns:repeat(4,1fr); gap:7px; margin-top:3px; }
+  .card {
+    background:var(--white); border:1px solid var(--line); padding:10px 12px 11px;
+    display:flex; flex-direction:column; gap:5px;
+  }
+  .card .ico {
+    width:24px; height:24px; border-radius:50%;
+    background:var(--coral); color:var(--white);
+    font-family:"Playfair Display",Georgia,serif; font-size:13px;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .card .ttl { font-size:11.5px; font-weight:600; color:var(--black); line-height:1.4; }
+  .card .desc { font-size:9.5px; color:var(--black-soft); line-height:1.5; }
+  .card .desc b { color:var(--coral); font-weight:600; }
+  .card.dk { background:var(--black); border-color:var(--black); }
+  .card.dk .ttl { color:var(--white); }
+  .card.dk .desc { color:var(--on-dark-85); }
+  .card.dk .ico { background:var(--beige); color:var(--black); }
+
+  /* ===== NOW · 점검관리 현황 (이슈 + 극복 가능) ===== */
+  .now {
+    margin-top:4px;
+    display:grid; grid-template-columns:1fr 1fr; gap:10px;
+  }
+  .now-col {
+    border:1px solid var(--line); padding:11px 13px 12px;
+  }
+  .now-col.is { background:var(--white); border-left:3px solid var(--coral); }
+  .now-col.ok { background:var(--beige-pale); border-left:3px solid var(--green); }
+  .now-col .nh {
+    display:flex; align-items:baseline; gap:8px; margin-bottom:6px;
+  }
+  .now-col .nh .nl { font-size:9px; letter-spacing:0.2em; text-transform:uppercase; font-weight:700; }
+  .now-col.is .nh .nl { color:var(--coral); }
+  .now-col.ok .nh .nl { color:var(--green); }
+  .now-col .nh .nt { font-family:"Playfair Display",Georgia,serif; font-size:13.5px; color:var(--black); }
+  .now-col ul { list-style:none; }
+  .now-col li { position:relative; padding:3px 0 3px 12px; font-size:10px; color:var(--black-soft); line-height:1.55; }
+  .now-col li::before { content:""; position:absolute; left:0; top:10px; width:5px; height:1px; }
+  .now-col.is li::before { background:var(--coral); }
+  .now-col.ok li::before { background:var(--green); }
+  .now-col li b { color:var(--black); font-weight:600; }
+
+  .now-verdict {
+    margin-top:8px; background:var(--black); color:var(--white);
+    padding:11px 16px; text-align:center;
+  }
+  .now-verdict .l { font-size:8.5px; letter-spacing:0.22em; text-transform:uppercase; color:var(--coral); font-weight:700; }
+  .now-verdict .t { font-family:"Playfair Display",Georgia,serif; font-size:14.5px; margin-top:4px; line-height:1.45; }
+  .now-verdict .t b { color:var(--coral); }
+
+  /* ===== NEXT · 회원 응대 서비스 강화 ===== */
+  .next { display:grid; grid-template-columns:repeat(3,1fr); gap:7px; margin-top:4px; }
+  .ncol {
+    background:var(--white); border:1px solid var(--line); padding:11px 12px;
+    display:flex; flex-direction:column; gap:6px;
+  }
+  .ncol .nh { display:flex; align-items:baseline; gap:9px; }
+  .ncol .nn {
+    font-family:"Playfair Display",Georgia,serif; font-size:21px; color:var(--coral); line-height:1;
+  }
+  .ncol .nt { font-size:12px; font-weight:600; color:var(--black); line-height:1.35; }
+  .ncol .nl { font-size:8.5px; color:var(--gray); letter-spacing:0.06em; }
+  .ncol ul { list-style:none; margin-top:2px; }
+  .ncol li { position:relative; padding:2px 0 2px 10px; font-size:9.5px; color:var(--black-soft); line-height:1.5; }
+  .ncol li::before { content:"—"; position:absolute; left:0; color:var(--coral); }
+  .ncol li b { color:var(--black); font-weight:600; }
+
+  /* ===== KPI / Recognition table ===== */
+  table.kpi {
+    width:100%; border-collapse:collapse; font-size:9.5px; border:1px solid var(--line); margin-top:3px;
+  }
+  table.kpi th, table.kpi td {
+    border:1px solid var(--line); padding:5px 8px; text-align:left; vertical-align:top; line-height:1.45;
+  }
+  table.kpi thead th {
+    background:var(--black); color:var(--beige); font-size:9px;
+    letter-spacing:0.08em; text-transform:uppercase; font-weight:600; padding:6px 8px;
+  }
+  table.kpi tbody th { background:var(--beige-pale); color:var(--black); font-weight:600; width:88px; font-size:9.5px; }
+  table.kpi td { background:var(--white); color:var(--black-soft); }
+  table.kpi td strong { color:var(--black); font-weight:600; }
+  table.kpi td .pill {
+    display:inline-block; font-size:8.5px; padding:1px 6px; background:var(--coral); color:var(--white);
+    letter-spacing:0.05em; margin-right:3px; vertical-align:middle;
+  }
+
+  /* ===== Speech card (회장님 발화) ===== */
+  /* 라디얼 그라디언트 ::after 제거 — 인쇄 시 별도 레이어 분리 방지. */
+  /* 코랄 좌측 보더로 강조를 대체. */
+  .speech {
+    margin-top:11px;
+    background-color:var(--black); color:var(--beige);
+    padding:16px 22px 17px 26px;
+    position:relative;
+    border-left:4px solid var(--coral);
+  }
+  .speech-i { position:relative; z-index:1; }
+  .speech .lbl {
+    font-size:8.5px; letter-spacing:0.22em; text-transform:uppercase; color:var(--coral); font-weight:700;
+  }
+  .speech .q-mark { font-family:"Playfair Display",Georgia,serif; font-size:38px; line-height:0.6; color:var(--coral); margin-top:7px; display:inline-block; }
+  .speech .t {
+    margin-top:3px; font-family:"Playfair Display",Georgia,serif;
+    font-size:15px; line-height:1.6; color:var(--white); font-style:italic; max-width:255mm;
+  }
+  .speech .t b { color:var(--coral); font-style:normal; font-weight:600; }
+  .speech .s {
+    margin-top:8px; font-size:10px; color:var(--on-dark-82); line-height:1.65;
+  }
+
+  /* ===== Footer ===== */
+  .pf {
+    position:absolute; left:15mm; right:15mm; bottom:6mm;
+    border-top:1px solid var(--line); padding-top:5px;
+    display:flex; justify-content:space-between;
+    font-size:8.5px; letter-spacing:0.06em; color:var(--gray);
+  }
+
+  @media print {
+    @page { size:A3 portrait; margin:0; }
+    /* 모든 색상·배경을 그대로 인쇄 (배경 그래픽 켜야 함). */
+    * {
+      -webkit-print-color-adjust:exact !important;
+      print-color-adjust:exact !important;
+    }
+    /* 다크 섹션의 배경이 자식 요소 뒤에 그대로 깔리도록 강제 */
+    .cover-band, .speech, .org-side, .now-verdict, .card.dk {
+      background-color:var(--black) !important;
+    }
+    html,body { background:var(--white); }
+    .page { margin:0; box-shadow:none; width:297mm; height:420mm; page-break-after:avoid; }
+    .card, .shift, .now-col, .ncol, table.kpi tr, .speech, .org, .now-verdict { break-inside:avoid; }
+  }
+  @media (max-width:900px) {
+    html,body { background:var(--white); }
+    .page { width:100%; height:auto; margin:0; padding:0; }
+    .page-inner { padding:0 14px 18px; }
+    .cover-band { padding:26px 14px 20px; }
+    .cover-band h1 { font-size:24px; }
+    .cover-band .arc { grid-template-columns:1fr; }
+    .org, .grid4, .now, .next { grid-template-columns:1fr; }
+    .pf { position:static; margin-top:18px; padding:5px 14px 0; }
+  }
+</style>
+</head>
+<body>
+
+<div class="page">
+
+  <!-- ===== COVER BAND ===== -->
+  <!-- cover-band는 page-inner 바깥에 두어 좌우 끝까지 단색이 깔리도록 합니다. -->
+  <div class="cover-band">
+    <div class="cb-inner">
+      <div class="era">Chairman's Briefing · Support Department</div>
+      <h1>지원부 — 웰페리온에서<br><em>가장 의미있는 일을 하고 계십니다.</em></h1>
+      <div class="sub">
+        밸류업의 전제 4개 부서 중 회원이 가장 먼저 체감하는 <strong>지원부</strong>.
+        지금까지의 운영을 보면 점검관리·청결관리는 <strong>이미 안정화 궤도</strong>에 올랐고,
+        다음 단계는 <strong>회원 응대 서비스 강화</strong>입니다. 그 과정과 결과를 <strong>데이터로 남기고, 회사가 인정</strong>합니다.
+      </div>
+
+      <div class="arc">
+        <div class="arc-it">
+          <div class="l">Recognition · 감사</div>
+          <div class="t">지금까지 잘해주셨고,<br>그 일이 곧 웰페리온의 품격입니다.</div>
+        </div>
+        <div class="arc-it">
+          <div class="l">Confidence · 신뢰</div>
+          <div class="t">약간의 이슈는 있지만,<br>지금의 지원부면 충분히 잡습니다.</div>
+        </div>
+        <div class="arc-it">
+          <div class="l">Vision · 다음 단계</div>
+          <div class="t">다음은 <b style="color:var(--coral);">회원 응대 서비스 강화</b>로<br>한 걸음 더 끌어올립니다.</div>
+        </div>
+      </div>
+
+      <div class="cover-meta">
+        <div>보고자<span>김남욱 GM</span></div>
+        <div>보고일<span>2026. 06. 22 (월)</span></div>
+        <div>보고 대상<span>회장님</span></div>
+        <div>대상 부서<span>지원부 (남·여 7명)</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== 내부 콘텐츠는 좌우 15mm 패딩 ===== -->
+  <div class="page-inner">
+
+  <!-- ===== 1. 한눈에 ===== -->
+  <div class="sec-h">
+    <div class="l"><span class="num">01 · SNAPSHOT</span>지원부, 한눈에.</div>
+    <div class="r">매일 <b>05:20 → 22:40</b> · 17시간 20분 무중단 운영</div>
+  </div>
+
+  <div class="org">
+    <div class="org-side">
+      <div class="tag">Always-On Floor</div>
+      <div class="big">7명이 <em>17시간</em><br>업장을 비우지 않습니다.</div>
+      <div class="meta">
+        담당 구역에는 <b>항상 최소 1명</b>이 자리를 지킵니다.
+        2인 이상 근무 시 <b>10분 단위 엇갈림 휴게</b>로 업장 커버가 끊기지 않도록 설계되어 있습니다.
+      </div>
+    </div>
+    <div class="org-grid">
+      <div class="shift">
+        <div class="stag">오전조</div>
+        <div class="stime">05:20 → 14:00</div>
+        <div class="row"><span class="gn">남</span><span class="ppl">천진석 주임 · (외곽 충원 예정)</span></div>
+        <div class="row"><span class="gn">여</span><span class="ppl">우춘화 주임</span></div>
+      </div>
+      <div class="shift">
+        <div class="stag">중간조</div>
+        <div class="stime">11:00 → 19:40</div>
+        <div class="row"><span class="gn">남</span><span class="ppl">김유정 주임</span></div>
+        <div class="row"><span class="gn">여</span><span class="ppl">이연희 반장</span></div>
+      </div>
+      <div class="shift">
+        <div class="stag">마감조</div>
+        <div class="stime">14:00 → 22:40</div>
+        <div class="row"><span class="gn">남</span><span class="ppl">박남일 주임</span></div>
+        <div class="row"><span class="gn">여</span><span class="ppl">김미영 · 이경미 주임 (엇갈림 휴게)</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== 2. 잘하고 있는 것 ===== -->
+  <div class="sec-h">
+    <div class="l"><span class="num">02 · STRENGTH</span>지원부가 지금 잘하고 있는 것 — 감사의 근거.</div>
+    <div class="r">회원 체감 품질의 최전선</div>
+  </div>
+
+  <div class="grid4">
+    <div class="card">
+      <div class="ico">Ⅰ</div>
+      <div class="ttl">매뉴얼화된 청결 표준</div>
+      <div class="desc">사우나 약품(락스·산성·곰팡이 제거)과 <b>"락스+산성 절대 혼합 금지"</b> 안전 원칙이 라벨·순서 단위로 명문화·실행되고 있습니다.</div>
+    </div>
+    <div class="card">
+      <div class="ico">Ⅱ</div>
+      <div class="ttl">트렐로 칸반 점검 체계</div>
+      <div class="desc">요일별·조별(오전·오후·야간) <b>칸반 보드</b>로 점검을 운영. 누가 무엇을 했는지 <b>모든 관리자가 동시 확인</b>합니다.</div>
+    </div>
+    <div class="card">
+      <div class="ico">Ⅲ</div>
+      <div class="ttl">이슈 · 노하우 동시 기록</div>
+      <div class="desc">점검 카드마다 <b>이슈(문제)</b>와 <b>노하우(개선 아이디어)</b>를 함께 기록 — 현장의 경험치가 부서 자산이 됩니다.</div>
+    </div>
+    <div class="card dk">
+      <div class="ico">Ⅳ</div>
+      <div class="ttl">하이엔드 응대 5원칙</div>
+      <div class="desc">"회원이 먼저 · 한 발 앞서 · 모르면 바로 연결 · 끝까지 책임 · 하이엔드 격조" — 굴종이 아닌 <b>당당한 프로페셔널</b> 기조가 자리 잡혀 있습니다.</div>
+    </div>
+  </div>
+
+  <!-- ===== 3. 점검관리 현황 — 이슈 + 극복 가능 ===== -->
+  <div class="sec-h">
+    <div class="l"><span class="num">03 · NOW</span>점검관리 · 청결관리 현황 — 약간의 이슈, 그러나 <b style="color:var(--coral);">극복 가능</b>.</div>
+    <div class="r">현재 지원부 역량으로 충분히 잡힙니다</div>
+  </div>
+
+  <div class="now">
+    <div class="now-col is">
+      <div class="nh"><span class="nl">발견된 약간의 이슈</span><span class="nt">현장에서 보이는 것들</span></div>
+      <ul>
+        <li><b>조 간 인계 격차</b> — 마감·오전 인계 시점에 상태 공유가 균일하지 않은 날이 있음</li>
+        <li><b>점검 사진 누락</b> — 청소 전·후 사진이 일부 항목에서 빠지는 경우가 보임</li>
+        <li><b>약품·소모품 라벨링</b> — 분무기·자가 분류가 추가 정비될 여지 있음</li>
+        <li><b>회원 체감 이슈</b>의 일부는 외부 접수가 먼저 들어오는 경우가 있음</li>
+      </ul>
+    </div>
+    <div class="now-col ok">
+      <div class="nh"><span class="nl">극복 가능한 이유</span><span class="nt">이미 갖춰진 체계</span></div>
+      <ul>
+        <li><b>매뉴얼·SOP</b>가 이미 명문화 — 기준선은 흔들리지 않는다</li>
+        <li><b>칸반·이슈대장</b>으로 발견 → 처리 사이클이 작동 중</li>
+        <li><b>노하우 등록</b> 구조로 직원 본인이 개선안을 직접 제안</li>
+        <li><b>응대 5원칙·격조 문화</b>가 정착 → 태도 기반이 단단함</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="now-verdict">
+    <div class="l">Verdict · 결론</div>
+    <div class="t">현재 지원부 역량이면 — <b>이슈는 잡고, 다음 단계로 갈 수 있습니다.</b></div>
+  </div>
+
+  <!-- ===== 4. 다음 단계 — 회원 응대 서비스 강화 ===== -->
+  <div class="sec-h">
+    <div class="l"><span class="num">04 · NEXT</span>다음 단계 — 회원 응대 서비스 강화.</div>
+    <div class="r">"청결을 지키는 팀" → "회원 체감을 책임지는 팀"</div>
+  </div>
+
+  <div class="next">
+    <div class="ncol">
+      <div class="nh"><div class="nn serif">Ⅰ</div><div><div class="nt">응대 5원칙의 체화</div><div class="nl">FROM PRINCIPLE · TO HABIT</div></div></div>
+      <ul>
+        <li><b>회원이 호명한 직원</b>을 별도 집계 — "칭찬 회수"</li>
+        <li>매주 <b>응대 사례 1건</b> 공유 (잘된 사례·아쉬운 사례)</li>
+        <li>분기 1회 <b>회원 평가 피드백</b> 정례 리뷰</li>
+      </ul>
+    </div>
+    <div class="ncol">
+      <div class="nh"><div class="nn serif">Ⅱ</div><div><div class="nt">선제 응대 · 한 발 앞서</div><div class="nl">PRE-EMPTIVE SERVICE</div></div></div>
+      <ul>
+        <li>회원이 말하기 전에 <b>먼저 알아보는 변화</b></li>
+        <li>회원 청결 접수 0건을 향한 <b>내부 점검 강화</b></li>
+        <li>발견 즉시 <b>그 자리에서</b> 해결하는 권한 행사</li>
+      </ul>
+    </div>
+    <div class="ncol">
+      <div class="nh"><div class="nn serif">Ⅲ</div><div><div class="nt">격조 — 굴종이 아닌 프로페셔널</div><div class="nl">DIGNIFIED HOSPITALITY</div></div></div>
+      <ul>
+        <li>무례·폭언에는 <b>정중하되 단호하게</b> 선을 지킨다</li>
+        <li>회원과 직원이 <b>서로 존중하는</b> 하이엔드 문화 정착</li>
+        <li>지원부 = 웰페리온 <b>브랜드의 얼굴</b>임을 공식화</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ===== 5. 치하 구조 (감사의 형식화) ===== -->
+  <div class="sec-h">
+    <div class="l"><span class="num">05 · RECOGNITION</span>그 노력은 — 데이터로 남기고, 회사가 인정합니다.</div>
+    <div class="r">매월 자동 집계 · 분기 시상 · 연간 누적 (7월부터 즉시 가동 가능)</div>
+  </div>
+
+  <table class="kpi">
+    <thead>
+      <tr><th style="width:108px;">평가 축</th><th>측정 지표 — 이미 쌓이고 있는 데이터</th><th>인정 · 치하 방식</th><th style="width:110px;">주기</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <th>성실함</th>
+        <td>조별 점검 <strong>완료율</strong> · 정시 제출률 · 무결근률</td>
+        <td><span class="pill">월</span>이달의 책임감 — 부서 단톡 공지 + <strong>회장님 친필 카드</strong></td>
+        <td>매월</td>
+      </tr>
+      <tr>
+        <th>품질</th>
+        <td>회원 청결 접수 건수 (감소) · 청소 전·후 <strong>사진 합격률</strong></td>
+        <td><span class="pill">월</span>이달의 청결 챔피언 — 소정의 인센티브 (정량 산정)</td>
+        <td>매월</td>
+      </tr>
+      <tr>
+        <th>현장 지식</th>
+        <td>노하우 등록 수 · <strong>채택된 개선 아이디어</strong> 수</td>
+        <td><span class="pill">건</span>채택 1건당 인센티브 + 매뉴얼에 <strong>제안자 이름 명시</strong></td>
+        <td>상시</td>
+      </tr>
+      <tr>
+        <th>회원 체감</th>
+        <td>회원 칭찬 회수 (이름 호명) · 응대 5원칙 외부 평가</td>
+        <td><span class="pill">분기</span>회원이 뽑은 우수 직원 — 분기 시상 · 사진 게시</td>
+        <td>분기</td>
+      </tr>
+      <tr>
+        <th>안전</th>
+        <td>약품 안전수칙 <strong>무사고 일수</strong> · 보호장비 착용률</td>
+        <td><span class="pill">연</span>무사고 연간 표창 — <strong>회장님 명의 표창</strong> + 추가 휴가</td>
+        <td>연간</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- ===== Closing — 회장님 발화 ===== -->
+  <div class="speech">
+    <div class="speech-i">
+      <div class="lbl">For the Chairman · 회의 시 말씀 안내</div>
+      <div class="q-mark">"</div>
+      <div class="t">
+        지원부 여러분, 정말 고생 많으십니다. 지금 여러분이 만드는 것이 곧 <b>웰페리온의 품격</b>입니다.<br>
+        점검관리·청결관리는 운영하면서 약간의 이슈도 보였지만, <b>지금의 지원부면 충분히 잡을 수 있다고 저는 믿고 있습니다.</b><br>
+        다음 단계는 <b>회원 응대 서비스를 한 단계 더 끌어올리는 것</b>입니다.
+        그 노력은 반드시 <b>데이터로 남기고, 회사가 인정하겠습니다.</b>
+      </div>
+      <div class="s">
+        — 본 보고는 회장님께서 회의에서 위 메시지를 자연스럽게 전달하실 수 있도록 흐름을 정리한 것입니다.
+        ① 감사 (잘해주신 것) → ② 신뢰 (이슈도 극복 가능) → ③ 비전 (응대 강화) → ④ 약속 (데이터·인정).
+        첫 시상은 본 보고 승인 후 <b>차월(7월)부터 즉시 가동</b>이 가능합니다.
+      </div>
+    </div>
+  </div>
+
+  </div><!-- /.page-inner -->
+
+  <div class="pf">
+    <span>WELLPERION · 지원부 회장님 보고 · 2026.06.22 · Confidential</span>
+    <span>A3 · 1 / 1 — Support Department Brief</span>
+  </div>
+
+</div>
+
+</body>
+</html>
