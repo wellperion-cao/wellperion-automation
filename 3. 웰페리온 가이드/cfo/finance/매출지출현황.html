@@ -391,8 +391,27 @@ async function submitReq(){
   msg.textContent="제출 중…";
   var base={요청자:rval("reqWho"),소속:rval("reqDept"),물품:rval("reqItem"),가격:rval("reqAmt"),링크:rval("reqLink"),목적:rval("reqPurpose"),승인자:rval("reqApprover")};
   var fp=document.getElementById("reqPhoto");var f=fp&&fp.files&&fp.files[0];
-  if(f){var rd=new FileReader();rd.onload=function(){base.fileData=rd.result.split(",")[1];base.fileName=f.name;base.mimeType=f.type;doSubmit(base,msg,fp);};rd.readAsDataURL(f);}
+  if(f){attachPhoto(base,f,function(){doSubmit(base,msg,fp);});}
   else doSubmit(base,msg,fp);
+}
+function attachPhoto(base,f,cb){ // 원본 base64 + 이미지면 캔버스 썸네일 base64
+  var rd=new FileReader();
+  rd.onload=function(){
+    base.fileData=rd.result.split(",")[1];base.fileName=f.name;base.mimeType=f.type;
+    if(f.type.indexOf("image/")===0){
+      var img=new Image();
+      img.onload=function(){
+        var mw=360,sc=Math.min(1,mw/img.width),w=Math.round(img.width*sc),h=Math.round(img.height*sc);
+        var c=document.createElement("canvas");c.width=w;c.height=h;c.getContext("2d").drawImage(img,0,0,w,h);
+        try{var q=0.6,b64=c.toDataURL("image/jpeg",q).split(",")[1];
+          while(b64.length>46000&&q>0.3){q-=0.1;b64=c.toDataURL("image/jpeg",q).split(",")[1];} // 셀 5만자 한계 내로
+          base.thumb=b64;base.thumbMime="image/jpeg";}catch(e){}
+        cb();
+      };
+      img.onerror=cb;img.src=rd.result;
+    } else cb();
+  };
+  rd.readAsDataURL(f);
 }
 async function doSubmit(base,msg,fp){
   var d=await procCall("add",base);
@@ -417,7 +436,9 @@ function renderReqTbl(){
     else if(st==="정산")act='<button class="reqAct" data-row="'+r.row+'" data-next="완료" style="'+btnCss("#a98a52")+'">최종확인</button>';
     else if(st==="완료")act='<span style="color:var(--green);font-size:12px;font-weight:700">✔ 완료</span>';
     else act='<span style="color:var(--ink-faint);font-size:11px">'+st+'</span>';
-    var photo=(r.이미지&&String(r.이미지).indexOf("http")===0)?'<img src="'+r.이미지+'" class="thumb" title="첨부사진" onclick="window.open(this.src,\'_blank\')" loading="lazy">':'';
+    if(st==="품의"||st==="검토"||st==="정산"||st==="승인")act+=' <button class="reqRej" data-row="'+r.row+'" style="'+btnCss("#b14238")+'">반려</button>';
+    act+=' <button class="reqDel" data-row="'+r.row+'" title="시트에서 삭제" style="font-size:12px;padding:3px 7px;cursor:pointer;border:1px solid var(--line);border-radius:6px;background:#fff">🗑</button>';
+    var photo=(r.이미지&&(String(r.이미지).indexOf("http")===0||String(r.이미지).indexOf("data:")===0))?'<img src="'+r.이미지+'" class="thumb" title="첨부사진" onclick="window.open(this.src,\'_blank\')" loading="lazy">':'';
     var pf=(r.지출증빙&&String(r.지출증빙).indexOf("http")===0)?'<img src="'+r.지출증빙+'" class="thumb" title="영수증/증빙" onclick="window.open(this.src,\'_blank\')" loading="lazy">':'';
     var rcpt=(photo||pf)?(photo+pf):'<button class="reqPhoto" data-row="'+r.row+'" style="font-size:10.5px;padding:4px 9px;cursor:pointer;border:1px dashed var(--gold);border-radius:6px;background:#fbf7ee;color:var(--gold-deep)">+ 사진</button>';
     h+='<tr><td style="text-align:left">'+r.날짜+'</td><td style="text-align:left">'+(r.소속||"")+'</td><td style="text-align:left">'+(r.요청자||"")+'</td><td style="text-align:left">'+(r.승인자||"")+'</td><td style="text-align:left">'+(r.물품||"")+'</td><td>'+won(r.가격)+'</td><td style="text-align:center">'+rcpt+'</td><td style="text-align:center"><span class="chip '+(stc[st]||"wait")+'">'+st+'</span></td><td style="text-align:center;white-space:nowrap">'+act+'</td></tr>';
@@ -426,17 +447,24 @@ function renderReqTbl(){
   h+='</tbody>';document.getElementById("reqTbl").innerHTML=h;
   document.querySelectorAll(".reqAct").forEach(function(b){b.onclick=function(){doAct(b.dataset.row,b.dataset.next,b.dataset.pw,b);};});
   document.querySelectorAll(".reqPhoto").forEach(function(b){b.onclick=function(){addPhotoTo(b.dataset.row,b);};});
+  document.querySelectorAll(".reqRej").forEach(function(b){b.onclick=function(){doAct(b.dataset.row,"반려","1",b);};});
+  document.querySelectorAll(".reqDel").forEach(function(b){b.onclick=function(){delReq(b.dataset.row,b);};});
+}
+async function delReq(row,btn){
+  if(!confirm("이 행을 시트에서 완전히 삭제합니다. 되돌릴 수 없습니다. 계속할까요?"))return;
+  if(btn){btn.disabled=true;btn.textContent="…";}
+  try{await procCall("delete",{row:row});}catch(e){}
+  loadReq();
 }
 function addPhotoTo(row,btn){
   var inp=document.createElement("input");inp.type="file";inp.accept="image/*,application/pdf";
-  inp.onchange=function(){var f=inp.files[0];if(!f)return;if(btn)btn.textContent="업로드…";var rd=new FileReader();
-    rd.onload=async function(){var d=await procCall("photo",{row:row,fileData:rd.result.split(",")[1],fileName:f.name,mimeType:f.type});if(!(d&&d.ok)&&btn)btn.textContent="실패";loadReq();};
-    rd.readAsDataURL(f);};
+  inp.onchange=function(){var f=inp.files[0];if(!f)return;if(btn)btn.textContent="업로드…";
+    var base={row:row};attachPhoto(base,f,async function(){var d=await procCall("photo",base);if(!(d&&d.ok)&&btn)btn.textContent="실패";loadReq();});};
   inp.click();
 }
 function btnCss(c){return "font-size:11px;padding:4px 11px;cursor:pointer;border:none;border-radius:6px;color:#fff;font-weight:600;background:"+c;}
 async function doAct(row,next,needPw,btn){
-  if(needPw){var pw=prompt("승인 비밀번호를 입력하세요 (승인자 확인)");if(pw===null)return;pw=String(pw).trim();if(pw!=="1202"&&pw!==GATE_PW){alert("비밀번호가 올바르지 않습니다");return;}}
+  if(needPw){var pw=prompt("비밀번호를 입력하세요 (1202)");if(pw===null)return;pw=String(pw).trim();if(pw!=="1202"&&pw!==GATE_PW){alert("비밀번호가 올바르지 않습니다");return;}}
   if(btn){btn.disabled=true;btn.textContent="처리중…";}
   var src=(reqFilter==="완료")?REQ_DONE:REQ_ACTIVE;var item=src.filter(function(x){return String(x.row)===String(row);})[0];
   if(item){item.상태=next;renderReqTbl();}  // 즉시 반영(낙관적)
