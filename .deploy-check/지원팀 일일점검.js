@@ -434,6 +434,33 @@ function doGet(e) {
     Object.keys(_dp).forEach(function (k) { if (k.indexOf(CHK_PROP_PREFIX + _dd + '_') === 0) { _dout[k] = _dp[k]; _dn++; } });
     return jsonRes({ ok: true, dept: _dd, count: _dn, props: _dout });
   }
+  // ─── [임시 유지보수] dump_all_props / purge_old_props — 2026-06-24 시우 102. 사용 후 제거 예정. ───
+  if (action === 'dump_all_props') {   // 전체 ScriptProperties 백업. secret=maint_2406 가드.
+    if (e.parameter.secret !== 'maint_2406') return jsonRes({ error: 'unauthorized' });
+    var _ap = PropertiesService.getScriptProperties().getProperties();
+    return jsonRes({ ok: true, count: Object.keys(_ap).length, props: _ap });
+  }
+  if (action === 'purge_old_props') {   // 컷오프 이전 날짜기록 속성 삭제. secret=maint_2406 가드. dry=1이면 삭제 안 함.
+    if (e.parameter.secret !== 'maint_2406') return jsonRes({ error: 'unauthorized' });
+    var _cutoff = e.parameter.cutoff || '2026-05-25';   // 이 날짜 미만만 삭제(exclusive)
+    var _dry = (e.parameter.dry === '1');
+    var _pall = PropertiesService.getScriptProperties();
+    var _pallMap = _pall.getProperties();
+    // 날짜 파싱 헬퍼: 키에서 YYYY-MM-DD 추출 — chk_/gsub_/VOCSENT_ 패턴 지원
+    function _extractDate(k) {
+      // chk_support_m_2026-05-01  →  세번째 '_' 이후 10자
+      var m = k.match(/(\d{4}-\d{2}-\d{2})/);
+      return m ? m[1] : null;
+    }
+    var _toDelete = [], _preserved = [];
+    Object.keys(_pallMap).forEach(function (k) {
+      var d = _extractDate(k);
+      if (!d) { _preserved.push(k); return; }   // 날짜 없음 → 절대보존
+      if (d < _cutoff) { _toDelete.push(k); } else { _preserved.push(k); }
+    });
+    if (!_dry) { _toDelete.forEach(function (k) { _pall.deleteProperty(k); }); }
+    return jsonRes({ ok: true, dry: _dry, cutoff: _cutoff, deleted: _toDelete.length, preserved: _preserved.length, deletedKeys: _toDelete });
+  }
   if (action === 'migrate_cr_keys') {   // 원장 체크키 id 부분 치환(고아 차단): rename_items 짝. led.cr(<round>_<id>)+led.c(<id> 평면)+led.seen(<bucket>_<id>) 동시. 2026-06-17 시우.
     // map은 id 단위(예 {"c1a":"op3"}). cr/seen 키는 첫 '_'로 split→(prefix,id), id 정확매칭 시 prefix+'_'+newId 재조립(done카운트 split과 동일 line 2206).
     // c는 평면 {id:1}이라 id 직접매칭. b4_m 류 추가 '_' id는 첫 '_' 1회 split이라 id='b4_m' 보존(map 대상 아니라 무해). 체크값·메타 보존(키만 변경).
