@@ -1458,5 +1458,19 @@
     "title": "[시토] 재발방지 회귀감시 주기화 — 일일 자동 회귀 스캔",
     "note": "GM 승인 2026-06-24. precommit 가드는 커밋시점만 점검→현재트리 슬쩍 재발은 못잡던 갭. ssot/incident_regression_monitor.py 신설: ①캐논발산(divergence_scan 재활용·baseline 초과 신규만 경보) ②가드자산 무결 ③박제(GUARDED) 무결. baseline(ssot/incident_baseline.json)=현재 수용FP 기준→무엇이든>0 아니라 신규 드리프트만 회귀(노이즈0). 회귀시만 텔레그램. status/incident_health.md 가시화. 3시나리오(적립·정상·신규감지) 검증. ★실제 발견: compose_cta_card.py(전화·문의·주소)·compose_golf.py·danggn_upload(문의)가 캐논 하드코딩=INC-005류 코드드리프트 5건(수정후보로 가시화). schedule.json 일일 등록(트리거=Task Scheduler 활성화 필요).",
     "next": "🔗 다음=(선택) 코드드리프트 5건 canon 직독 전환(INC-005 확장) / 일일 트리거 Task Scheduler 등록"
+  },
+  {
+    "task_id": "CTO-2026-06-24-ADHOC-5f77874d",
+    "clevel": "cto",
+    "title": "[시토] 재발방지 회귀감시 주기화 — 일일 자동 회귀 스캔",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-06-24",
+    "processed_at": "2026-06-24",
+    "artifact": "[시토]/incident_regression_monitor: 캐논발산(baseline 초과 신규만)·가드자산·박제 무결 일일점검. 노이즈0(수용FP baseline). 회귀시만 텔레그램+incident_health.md. 발견: compose_cta/golf/danggn 캐논 하드코딩 5건(수정후보). 3시나리오 검증. (CLI ad-hoc · 커밋 5f77874d)",
+    "next": "🌀 표류 — 다음 미정 (필요 시 GM·웰리/담당 C-Level 지정)",
+    "adhoc_commit": "5f77874d799d203b0df0daa0f4d8975fc8529612",
+    "ship_no": 163
   }
 ]
