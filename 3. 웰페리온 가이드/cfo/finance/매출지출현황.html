@@ -161,14 +161,16 @@ var GVIZ="https://docs.google.com/spreadsheets/d/"+SHEET_ID+"/gviz/tq?tqx=out:js
 var MONTHS=["1월","2월","3월","4월","5월","6월","7월","8월","9월","10월","11월","12월"];
 var DEPTS_ORDER=["골프","P.T","수영","스쿼시","체조&트램","필라테스","루프매소드","뮤지컬"];
 var PAL=["#22324a","#a98a52","#3c7a4a","#2f6d9e","#b07d24","#6a5891","#b14238","#5b9fd5","#8a6f3f","#4f9e6a","#c2705f","#7e9bbf"];
-var SALES_DEPT={"운영부":[291174533,318993972,312998498,282246580,210399498,217283030],"P.T":[79298450,119547350,114219650,63273500,55391100,90687210],"필라테스":[17216900,16998900,22667800,20978500,28890100,23257200],"수영":[106374150,81905700,108413500,107943500,100604500,89640250],"스쿼시":[29118700,21351100,27627250,24290500,24678600,26502780],"골프":[27883750,26713000,27699000,18726000,27163000,25669000],"체조&트램":[31737750,23977250,31264750,28998750,27038000,21777250],"뮤지컬":[2505000,8450000,1570000,2700000,660000,380000],"GXE":[1062000,1188000,1008000,1584000,144000,414000],"루프매소드":[0,0,0,1452000,1496000,1210000]};
-var SALES_MEMBER=SALES_DEPT["운영부"]; // 운영부 = 회원권 매출
+var SALES_SHEET="18VRvDEYQ7LfaPaHmXROBpIVmYtjqZGrYie75JZnRKDA";
+var SALES_GVIZ="https://docs.google.com/spreadsheets/d/"+SALES_SHEET+"/gviz/tq?tqx=out:json";
+var FB_SALES={"운영부":[291174533,318993972,312998498,282246580,210399498,217283030],"P.T":[79298450,119547350,114219650,63273500,55391100,90687210],"필라테스":[17216900,16998900,22667800,20978500,28890100,23257200],"수영":[106374150,81905700,108413500,107943500,100604500,89640250],"스쿼시":[29118700,21351100,27627250,24290500,24678600,26502780],"골프":[27883750,26713000,27699000,18726000,27163000,25669000],"체조&트램":[31737750,23977250,31264750,28998750,27038000,21777250],"뮤지컬":[2505000,8450000,1570000,2700000,660000,380000],"GXE":[1062000,1188000,1008000,1584000,144000,414000],"루프매소드":[0,0,0,1452000,1496000,1210000]};
+var SALES_DEPT={},SALES_MEMBER=[]; // 운영부 = 회원권 매출 (매출 마스터 시트 실시간)
 var PROC_DEPT={"골프":[262000,0,69300000,0,804960,873200],"운영부":[239600,1118070,242620,13085350,248900,-39060],"시설":[755860,150600,1171878,433280,1019470,11081390],"필라테스":[11880000,0,11230,0,9890,0],"지원":[180470,264110,442630,406300,597600,579460],"스쿼시":[0,0,270340,0,238800,240000],"P.T":[20800,0,0,0,630000,0],"체조&트램":[0,0,0,0,0,478500],"수영":[54350,0,0,0,200100,0],"뮤지컬":[22190,0,0,0,0,0]};
 var FB_LABOR={"골프":[15469018,12720271,16901114,16422307,13815335,12810239],"P.T":[46607840,41390419,47422370,45572009,43450392,38817814],"수영":[43578251,34885477,43639470,44832435,42688800,38009034],"스쿼시":[12307298,10065683,12842770,11397199,8684634,15188782],"체조&트램":[12471128,10484004,12526288,12401927,12037764,8719279],"필라테스":[7702254,8225256,10696879,10926820,12929559,4934696],"루프매소드":[0,0,0,280800,1038960,0],"뮤지컬":[0,0,0,0,0,0]};
 var FB_OPER=[34045838,35419025,36274362,32826139,30100000,30100000];
 var REQ_SAMPLE=[{날짜:"2026-06-20",부서:"골프",항목:"GDR 소모품",금액:430000,요청자:"최현준",상태:"승인"},{날짜:"2026-06-22",부서:"시설",항목:"사우나 약품",금액:1280000,요청자:"이지영",상태:"대기"}];
 
-var LABOR=[],OPER=[],INSTRUCTORS=[],laborMonth=[],procMonth=[],salesMonth=[],totalCost=[],LIVE=false;
+var LABOR=[],OPER=[],INSTRUCTORS=[],laborMonth=[],procMonth=[],salesMonth=[],totalCost=[],LIVE=false,SALES_LIVE=false;
 var SALES_G=0,COST_G=0,LABOR_G=0,OPER_G=0,PROC_G=0,MEMBER_G=0,DATA_LAST=6,selTeam=null,period=-1,_charts={};
 
 function attemptGate(pw){var err=document.getElementById("gateErr");
@@ -207,6 +209,17 @@ async function loadData(){
     INSTRUCTORS=[];DEPTS_ORDER.forEach(function(d){INSTRUCTORS.push({dept:d,name:d+" 합계",d:(FB_LABOR[d]||[]).concat(Array(6).fill(0))});});
   }
 }
+async function loadSales(){
+  try{
+    var r=await fetch(SALES_GVIZ,{cache:"no-store"});var t=await r.text();
+    var json=JSON.parse(t.substring(t.indexOf("{"),t.lastIndexOf("}")+1));var rows=json.table.rows||[];
+    var map={},found=false;
+    rows.forEach(function(row){var c=row.c||[];var dept=c[0]&&c[0].v;if(!dept)return;
+      var vals=[];for(var m=0;m<12;m++){var cl=c[1+m];vals.push(cl&&typeof cl.v==="number"?cl.v:0);}map[dept]=vals;found=true;});
+    if(!found)throw "e";SALES_DEPT=map;SALES_LIVE=true;
+  }catch(e){SALES_DEPT=FB_SALES;SALES_LIVE=false;}
+  SALES_MEMBER=SALES_DEPT["운영부"]||[];
+}
 
 function aggregate(){
   var cm=curMonth();DATA_LAST=LIVE?Math.min(cm,12):Math.min(cm,6);
@@ -228,9 +241,9 @@ function renderNav(){var nav=document.getElementById("nav");
 
 async function startApp(){
   document.getElementById("app").style.display="block";renderNav();
-  await loadData();aggregate();
+  await loadData();await loadSales();aggregate();
   document.getElementById("loading").style.display="none";document.getElementById("content").style.display="block";
-  document.getElementById("syncMeta").textContent=(LIVE?"🟢 인건비 실시간(팀·강사) ":"⚪ 인건비 폴백 ")+"· 매출/구매성 1~"+Math.min(DATA_LAST,6)+"월 확정";
+  document.getElementById("syncMeta").textContent="인건비 "+(LIVE?"🟢실시간":"⚪폴백")+" · 매출 "+(SALES_LIVE?"🟢실시간":"⚪폴백")+" · 구매성 1~6월 확정 · 7~12월 도래 시 자동";
   renderKpi();renderMain();renderSalesDept();renderMix();renderSalesTbl();renderExpTbl();renderPeople();renderReq();
 }
 
