@@ -977,5 +977,19 @@
     "title": "[시토] 자동 push 근본해결 — 경합 거부 시 백오프+지터 재시도 루프",
     "note": "GM 지적 2026-06-24: 자동 push가 스위퍼 재시도에도 cannot lock ref(원격 동시push 경합)로 실패. 원인=post_commit_push가 non-ff 거부 시 fetch+rebase 후 1회만 재시도 → 동시 커밋 몰리면 그 창에서 또 밀려 실패·경보. 해결=최대 5회 reconcile+push 지터 백오프 루프(동시푸시 desync). monkeypatch 검증: 2회 충돌→3번째 수렴(경보0)/끝까지 실패→경보1(진짜 막힘만). 끝까지 실패만 경고.",
     "next": "🔗 다음=관찰(경보 재발 빈도 모니터). 자율화 축 server-free 트랙 지속"
+  },
+  {
+    "task_id": "CTO-2026-06-24-ADHOC-27bf6a17",
+    "clevel": "cto",
+    "title": "[시토] 자율화 피드백 환류 + 자동push 근본해결 (백오프 재시도)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-06-24",
+    "processed_at": "2026-06-24",
+    "artifact": "[시토]/① 효과 데이터를 다음 제안 생성에 주입(효과있음 강화·없음 회피). ② post_commit_push non-ff 거부를 1회->최대5회 지터백오프 재시도로 수렴(cannot lock ref 경합 해소). 둘 다 monkeypatch 검증. (CLI ad-hoc · 커밋 27bf6a17)",
+    "next": "🌀 표류 — 다음 미정 (필요 시 GM·웰리/담당 C-Level 지정)",
+    "adhoc_commit": "27bf6a17bbee0b00fae6353669a7a4b6d7d61f8b",
+    "ship_no": 150
   }
 ]
