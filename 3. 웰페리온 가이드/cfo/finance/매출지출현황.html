@@ -311,7 +311,7 @@ function renderPeople(){
   var ts=teams();var sorted=ts.slice().sort(function(a,b){return teamCost(b)-teamCost(a);});
   if(!selTeam||ts.indexOf(selTeam)<0)selTeam=sorted[0]||null;
   // 팀별 지출 = 인건비 + 구매성 (스택 막대)
-  newChart("chartTeam",{data:{labels:sorted,datasets:[
+  newChart("chartTeam",{type:"bar",data:{labels:sorted,datasets:[
     {label:"인건비",data:sorted.map(teamLabor),backgroundColor:sorted.map(function(d){return d===selTeam?"#22324a":"#aab9cb";}),stack:"s",borderRadius:3},
     {label:"구매성",data:sorted.map(teamProc),backgroundColor:sorted.map(function(d){return d===selTeam?"#a98a52":"#dccfb0";}),stack:"s",borderRadius:3}]},
     options:{maintainAspectRatio:false,onClick:function(e,el){if(el.length){selTeam=sorted[el[0].index];renderPeople();}},
