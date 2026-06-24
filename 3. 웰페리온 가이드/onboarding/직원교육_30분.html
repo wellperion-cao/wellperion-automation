@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="ko"><head><meta charset="utf-8"><link rel="icon" type="image/png" href="/wellperion-automation/wellperion_favicon.png"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>운영부 직원 교육 (30분) | 웰페리온 ERP</title>
+<link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<style>
+:root{
+  --bg:#F4EEE6; --paper:#FFFFFF; --paper2:#FBF7F1; --ink:#221F20; --ink2:#4A443E;
+  --muted:#8C8073; --beige:#B79F8A; --beige-deep:#9A7F64; --line:#E7DCCE; --line2:#D8C9B6;
+  --orange:#ED5B3F; --green:#337342;
+}
+*{box-sizing:border-box} html,body{margin:0;padding:0}
+body{
+  background:radial-gradient(1100px 520px at 88% -8%, rgba(183,159,138,.18), transparent 60%),
+    radial-gradient(800px 420px at -8% 4%, rgba(237,91,63,.05), transparent 55%), var(--bg);
+  color:var(--ink);
+  font-family:"Pretendard","Pretendard Variable",-apple-system,"Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
+  -webkit-font-smoothing:antialiased; line-height:1.7;
+}
+.wrap{max-width:860px;margin:0 auto;padding:0 22px}
+.letterhead{display:flex;align-items:center;justify-content:space-between;padding:24px 0 18px;border-bottom:1.5px solid var(--ink);flex-wrap:wrap;gap:12px}
+.brand{display:flex;align-items:center;gap:14px}
+.brand .mark{width:40px;height:40px;border:1.5px solid var(--ink);border-radius:9px;display:grid;place-items:center;font-weight:800;color:var(--ink);font-size:20px;background:linear-gradient(160deg,rgba(183,159,138,.22),transparent)}
+.brand .wm{font-weight:800;letter-spacing:.34em;font-size:15px;color:var(--ink)}
+.brand .wm small{display:block;letter-spacing:.2em;font-size:10px;color:var(--beige-deep);font-weight:700;margin-top:4px}
+.letterhead .meta{text-align:right;font-size:11.5px;color:var(--muted);letter-spacing:.04em;line-height:1.7}
+.letterhead .meta a{color:var(--beige-deep);text-decoration:none;font-weight:600}
+.letterhead .meta a:hover{color:var(--orange)}
+
+.hero{padding:38px 0 6px}
+.pill{display:inline-block;font-size:11px;letter-spacing:.24em;color:var(--orange);border:1px solid rgba(237,91,63,.45);border-radius:999px;padding:6px 14px;font-weight:700;text-transform:uppercase}
+.hero h1{font-weight:800;color:var(--ink);font-size:30px;line-height:1.34;margin:18px 0 10px;letter-spacing:-.01em}
+.hero p{color:var(--ink2);font-size:15px;line-height:1.8;margin:0;max-width:680px}
+
+/* 시간표 */
+.agenda{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin:26px 0 6px}
+.agenda .a{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:16px 16px 14px}
+.agenda .a .t{font-size:11px;font-weight:700;letter-spacing:.06em;color:var(--orange)}
+.agenda .a .n{font-size:15px;font-weight:800;color:var(--ink);margin:6px 0 4px}
+.agenda .a .d{font-size:12px;color:var(--muted);line-height:1.55}
+
+.sect{font-size:12px;letter-spacing:.14em;color:var(--beige-deep);font-weight:700;text-transform:uppercase;margin:42px 0 16px;display:flex;align-items:center;gap:12px}
+.sect:after{content:"";flex:1;height:1px;background:var(--line)}
+
+.module{background:var(--paper);border:1px solid var(--line);border-radius:18px;padding:26px 26px 24px;margin-bottom:22px;box-shadow:0 4px 20px rgba(154,127,100,.06)}
+.module .mhead{display:flex;align-items:center;gap:14px;margin-bottom:6px}
+.module .mnum{width:42px;height:42px;flex:none;border-radius:12px;display:grid;place-items:center;font-size:18px;font-weight:800;color:#fff;background:linear-gradient(155deg,var(--orange),#c8492f)}
+.module .mttl{font-size:20px;font-weight:800;color:var(--ink);margin:0}
+.module .mtime{font-size:12px;color:var(--muted);font-weight:600;margin-top:2px}
+.module .mlead{color:var(--ink2);font-size:14.5px;margin:14px 0 4px;line-height:1.8}
+
+.steps{counter-reset:s;list-style:none;padding:0;margin:18px 0 4px}
+.steps li{counter-increment:s;position:relative;padding:12px 0 12px 44px;border-top:1px solid var(--line)}
+.steps li:first-child{border-top:none}
+.steps li:before{content:counter(s);position:absolute;left:0;top:11px;width:28px;height:28px;border-radius:8px;background:var(--paper2);border:1px solid var(--line2);color:var(--beige-deep);font-weight:800;font-size:13px;display:grid;place-items:center}
+.steps li b{color:var(--ink)}
+.steps li .hint{display:block;font-size:12.5px;color:var(--muted);margin-top:3px}
+
+.shot{margin:16px 0;border:1.5px dashed var(--line2);border-radius:12px;background:var(--paper2);padding:22px 18px;text-align:center;color:var(--muted);font-size:13px}
+.shot .ico{font-size:26px;display:block;margin-bottom:6px}
+.shot b{color:var(--beige-deep)}
+
+.task{margin:18px 0 2px;border-left:4px solid var(--orange);background:rgba(237,91,63,.05);border-radius:0 12px 12px 0;padding:14px 18px}
+.task .lab{font-size:11px;font-weight:800;letter-spacing:.1em;color:var(--orange);text-transform:uppercase}
+.task .body{font-size:14px;color:var(--ink2);margin-top:6px;line-height:1.75}
+.task .body b{color:var(--ink)}
+
+.note{margin:16px 0 2px;background:var(--paper2);border:1px solid var(--line);border-radius:12px;padding:13px 16px;font-size:13.5px;color:var(--ink2);line-height:1.7}
+.note b{color:var(--beige-deep)}
+.note .k{font-weight:800;color:var(--orange);margin-right:6px}
+
+.link-btn{display:inline-flex;align-items:center;gap:7px;margin:6px 8px 6px 0;padding:10px 16px;background:var(--ink);color:#fff;font-size:13px;font-weight:700;border-radius:9px;text-decoration:none;transition:.15s}
+.link-btn:hover{background:var(--orange)}
+.link-btn.ghost{background:transparent;color:var(--beige-deep);border:1px solid var(--line2)}
+.link-btn.ghost:hover{color:var(--orange);border-color:var(--orange)}
+
+.example{background:#2a2725;color:#f5f2ef;border-radius:12px;padding:16px 18px;margin:14px 0;font-size:14px;line-height:1.75}
+.example .who{font-size:11px;letter-spacing:.08em;color:var(--beige);font-weight:700;text-transform:uppercase;margin-bottom:7px}
+.example .q{color:#f5f2ef}
+.example .q:before{content:"\201C";color:var(--beige)}
+.example .q:after{content:"\201D";color:var(--beige)}
+
+/* 용어 풀이 */
+.gloss{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}
+.gloss .g{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
+.gloss .g .w{font-weight:800;color:var(--ink);font-size:14px}
+.gloss .g .m{font-size:13px;color:var(--muted);margin-top:4px;line-height:1.6}
+
+/* 체크리스트 */
+.check{background:var(--paper);border:1px solid var(--line);border-radius:18px;padding:24px 26px;box-shadow:0 4px 20px rgba(154,127,100,.06)}
+.check h3{margin:0 0 14px;font-size:18px;font-weight:800;color:var(--ink)}
+.check label{display:flex;align-items:flex-start;gap:12px;padding:11px 0;border-top:1px solid var(--line);cursor:pointer;font-size:14.5px;color:var(--ink2)}
+.check label:first-of-type{border-top:none}
+.check input{width:20px;height:20px;margin-top:2px;accent-color:var(--orange);flex:none;cursor:pointer}
+.check label.done{color:var(--muted);text-decoration:line-through}
+.check .prog{margin-top:16px;font-size:13px;color:var(--beige-deep);font-weight:700}
+
+.foot{border-top:1.5px solid var(--ink);margin-top:50px;padding:22px 0 56px;color:var(--muted);font-size:11.5px;letter-spacing:.03em;text-align:center;line-height:1.9}
+.foot b{color:var(--beige-deep);font-weight:700}
+</style></head><body>
+<div class="wrap">
+
+  <div class="letterhead">
+    <div class="brand"><div class="mark">W</div>
+      <div class="wm">WELPERION<small>운영부 직원 교육</small></div></div>
+    <div class="meta">AI CHRO(시로) &nbsp;›&nbsp; 직원 교육 (30분)<br>
+      <a href="https://wellperion-cao.github.io/wellperion-automation/wellperion_guide(main).html" target="_blank">← ERP 메인</a></div>
+  </div>
+
+  <div class="hero">
+    <span class="pill">STAFF ONBOARDING · 30 MIN</span>
+    <h1>운영부 직원 교육 (30분)<br>가이드허브 · 내 업무 보기 · AI 비서 쓰기</h1>
+    <p>처음 오신 분도 30분이면 혼자 따라 할 수 있게 만들었습니다. 컴퓨터를 잘 몰라도 괜찮습니다.
+      화면을 같이 켜 두고, 한 칸씩 읽으며 직접 눌러 보세요.
+      <b>가이드허브</b>(우리 회사 안내판 웹사이트)에 들어가서 → <b>내 오늘 할 일</b>을 찾고 →
+      <b>AI 비서</b>에게 일을 부탁하는 것, 딱 이 세 가지를 익히면 됩니다.</p>
+  </div>
+
+  <!-- 30분 시간표 -->
+  <div class="agenda">
+    <div class="a"><div class="t">0–7분</div><div class="n">① 가이드허브</div><div class="d">회사 안내판 웹사이트 들어가기 · 화면 구조 익히기</div></div>
+    <div class="a"><div class="t">7–17분</div><div class="n">② 내 업무 보기</div><div class="d">오늘의 항로(오늘 할 일) · 업무 현황 SSOT 찾기</div></div>
+    <div class="a"><div class="t">17–27분</div><div class="n">③ AI 비서 실습</div><div class="d">무엇을 · 어떻게 부탁하나 · 직접 한 번 시켜 보기</div></div>
+    <div class="a"><div class="t">27–30분</div><div class="n">④ 질문 · 점검</div><div class="d">궁금한 점 정리 · 마무리 체크리스트</div></div>
+  </div>
+
+  <div class="note"><span class="k">먼저 알아둘 점</span>
+    회사 컴퓨터는 모두 <b>같은 구글 계정(cao@wellperion.com)</b>으로 로그인되어 있습니다.
+    별도 로그인·비밀번호 입력 없이 아래 링크만 누르면 바로 열립니다.
+    혹시 로그인 화면이 뜨면 옆자리 동료나 GM께 한 번만 여쭤보세요.</div>
+
+
+  <!-- ───────── 모듈 1 ───────── -->
+  <div class="sect">모듈 1 · 가이드허브 들어가기</div>
+  <div class="module">
+    <div class="mhead">
+      <div class="mnum">1</div>
+      <div><h2 class="mttl">가이드허브가 뭔가요? 어떻게 들어가요?</h2>
+        <div class="mtime">약 7분 · 화면 켜고 같이 눌러보기</div></div>
+    </div>
+    <p class="mlead"><b>가이드허브 = 웰페리온 ERP</b>입니다.
+      "ERP"는 어려운 말 같지만, 쉽게 말하면 <b>회사 일을 한곳에 모아 둔 안내판 웹사이트</b>예요.
+      오늘 할 일, 부서별 업무, 점검표, 회원 안내까지 — 흩어진 정보를 한 주소에서 보게 모아 둔 것입니다.
+      북마크(즐겨찾기) 하나만 해두면 됩니다.</p>
+
+    <ol class="steps">
+      <li><b>크롬(Chrome) 브라우저를 엽니다.</b>
+        <span class="hint">바탕화면이나 작업표시줄의 동그란 색깔 아이콘이 크롬입니다.</span></li>
+      <li><b>아래 "가이드허브 열기" 버튼을 누릅니다.</b>
+        <span class="hint">또는 주소창에 직접 입력해도 됩니다 (소문자, 한 글자도 틀리지 않게).</span></li>
+      <li><b>화면 맨 위 = 오늘의 항로(오늘 할 일)</b>가 보입니다.
+        <span class="hint">"항로"는 "오늘 가는 길 = 오늘 할 일"이라는 회사 표현이에요. 모듈 2에서 자세히 봅니다.</span></li>
+      <li><b>아래로 내리면 부서·업무별 칸(카드)</b>이 줄지어 있습니다. 눌러서 들어갔다 뒤로(←) 나오는 연습을 해보세요.</li>
+      <li><b>이 주소를 즐겨찾기(별표 ☆)</b> 해둡니다. 다음부터는 별표 한 번이면 바로 들어옵니다.</li>
+    </ol>
+
+    <div style="margin:14px 0">
+      <a class="link-btn" href="https://wellperion-cao.github.io/wellperion-automation/wellperion_guide(main).html" target="_blank">🏠 가이드허브 열기 →</a>
+    </div>
+    <div class="note"><span class="k">주소</span> wellperion-cao.github.io/wellperion-automation/
+      <br>외우지 않아도 됩니다 — 즐겨찾기만 해두세요.</div>
+
+    <div class="shot"><span class="ico">📸</span>
+      <b>[스크린샷 자리]</b> 가이드허브 첫 화면 — 맨 위 "오늘의 항로"와 아래 부서 카드들이 보이는 전체 모습
+      <br><span style="font-size:12px">교육 진행자: 실제 화면을 캡처해 이 자리에 넣어 주세요.</span></div>
+
+    <div class="task"><div class="lab">✋ 실습 1</div>
+      <div class="body">가이드허브에 직접 들어가서 <b>① 즐겨찾기(별표)</b>를 하고,
+        <b>② 아무 카드나 하나 눌러 들어갔다가 ③ 뒤로가기(←)로 다시 첫 화면</b>으로 돌아와 보세요.
+        "들어가고 나오기"가 자유로워지면 이 모듈은 끝입니다.</div></div>
+  </div>
+
+
+  <!-- ───────── 모듈 2 ───────── -->
+  <div class="sect">모듈 2 · 내 업무 보기 (오늘의 항로 · 업무 현황)</div>
+  <div class="module">
+    <div class="mhead">
+      <div class="mnum">2</div>
+      <div><h2 class="mttl">내가 오늘 할 일은 어디서 보나요?</h2>
+        <div class="mtime">약 10분 · 가장 중요한 모듈</div></div>
+    </div>
+    <p class="mlead">우리 회사는 <b>할 일을 한 곳에서만</b> 관리합니다. 메모지·카톡·머릿속에 흩어 두지 않아요.
+      그 한 곳이 바로 <b>「오늘의 항로」</b>(가이드허브 맨 위)와, 그 뒤를 받치는
+      <b>「업무 현황 SSOT」</b>라는 표입니다.
+      <span style="color:var(--muted);font-size:13.5px">("SSOT"는 <b>S</b>ingle <b>S</b>ource <b>o</b>f <b>T</b>ruth = "단 하나의 진짜 기준"이라는 뜻이에요. 즉 업무는 여기 적힌 게 진짜다, 라는 약속.)</span></p>
+
+    <ol class="steps">
+      <li><b>가이드허브 맨 위 「오늘의 항로」</b>를 봅니다. 오늘 우리 팀이 가는 일들이 나옵니다.</li>
+      <li>표는 보통 세 칸으로 나뉩니다 — <b>🚢 진행중 / ⚓ 대기중 / 🏁 오늘 끝낸 일</b>.
+        <span class="hint">배(🚢) 그림은 일 하나하나를 뜻해요. 큰 배일수록 큰 일.</span></li>
+      <li>각 줄에서 <b>"담당"</b> 칸을 보면 그 일이 <b>누구 일인지</b> 나옵니다. 내 이름을 찾으세요.</li>
+      <li>더 자세한 표가 필요하면 <b>「업무 현황 SSOT 열기」</b> 버튼을 누릅니다.
+        <span class="hint">여기서 일의 상태(대기 / 진행중 / 완료)와 설명을 자세히 볼 수 있어요.</span></li>
+      <li>한 일이 끝나면 <b>완료 표시(입항 🏁)</b>를 합니다. 끝낸 일은 "오늘 끝낸 일" 칸으로 옮겨집니다.
+        <span class="hint">처음엔 GM·동료와 같이 표시하는 연습을 하세요. 혼자 바로 하지 않아도 됩니다.</span></li>
+    </ol>
+
+    <div style="margin:14px 0">
+      <a class="link-btn" href="https://wellperion-cao.github.io/wellperion-automation/coo/todo/%EC%97%85%EB%AC%B4%20%ED%98%84%ED%99%A9%20SSOT.html" target="_blank">📝 업무 현황 SSOT 열기 →</a>
+      <a class="link-btn ghost" href="https://wellperion-cao.github.io/wellperion-automation/coo/todo/%EA%B2%B0%EC%9E%AC%20%ED%98%84%ED%99%A9%20SSOT.html" target="_blank">✅ 결재 현황 SSOT →</a>
+    </div>
+
+    <div class="shot"><span class="ico">📸</span>
+      <b>[스크린샷 자리]</b> 가이드허브 「오늘의 항로」 표 — 진행중/대기중/완료 세 칸과 "담당" 열에 동그라미 표시
+      <br><span style="font-size:12px">교육 진행자: 실제 화면 + 직원 본인 담당 줄에 표시를 넣어 주세요.</span></div>
+
+    <div class="note"><span class="k">왜 한 곳에서만?</span>
+      일이 여기저기 흩어지면 "내가 뭘 해야 하지?"를 매번 다시 찾아야 합니다.
+      <b>「오늘의 항로」 한 곳만 보면 된다</b>는 것이 핵심이에요. 여기 없으면 오늘 할 일이 아닙니다.</div>
+
+    <div class="task"><div class="lab">✋ 실습 2</div>
+      <div class="body"><b>① 「오늘의 항로」에서 내 이름(또는 우리 팀 일)을 찾고</b>,
+        <b>② 「업무 현황 SSOT」를 한 번 열어</b> 일의 상태가 어떻게 표시되는지(대기/진행/완료) 눈으로 확인해 보세요.
+        내 일을 스스로 찾을 수 있으면 통과입니다.</div></div>
+  </div>
+
+
+  <!-- ───────── 모듈 3 ───────── -->
+  <div class="sect">모듈 3 · AI 비서(Claude)에게 일 부탁하기</div>
+  <div class="module">
+    <div class="mhead">
+      <div class="mnum">3</div>
+      <div><h2 class="mttl">AI 비서에게 무엇을, 어떻게 시키나요?</h2>
+        <div class="mtime">약 10분 · 겁먹지 말고 말 걸듯이</div></div>
+    </div>
+    <p class="mlead">우리 회사에는 <b>Claude(클로드)라는 AI 비서</b>가 있습니다.
+      어렵게 생각할 것 없어요. <b>똑똑한 신입 사원에게 한국말로 부탁하듯</b> 말하면 됩니다.
+      틀려도 괜찮고, 다시 물어봐도 됩니다. AI는 화내지 않아요.</p>
+
+    <div class="note"><span class="k">AI가 잘하는 일</span>
+      글 다듬기 · 안내문/문자 초안 쓰기 · 표·목록 정리 · 긴 글 요약 · 번역 ·
+      "이거 어떻게 해요?" 같은 질문 답하기. <b>반복되는 글 작업·정리 작업</b>에 특히 강합니다.</div>
+
+    <p class="mlead" style="margin-top:18px"><b>잘 부탁하는 3가지 요령</b> — 이것만 기억하세요.</p>
+    <ol class="steps">
+      <li><b>무엇을 원하는지 구체적으로.</b>
+        <span class="hint">❌ "문자 써줘" → ⭕ "주차 만기 회원에게 보낼 안내 문자를 3문장으로, 정중하게 써줘"</span></li>
+      <li><b>상황·조건을 같이 알려주기.</b>
+        <span class="hint">"우리는 스포츠클럽이고, 정중한 존댓말로, 너무 길지 않게" 처럼 배경을 한 줄 덧붙이면 결과가 훨씬 좋아져요.</span></li>
+      <li><b>마음에 안 들면 그냥 다시 말하기.</b>
+        <span class="hint">"좀 더 짧게" · "더 따뜻한 말투로" · "끝에 문의 링크 넣어줘" — 고쳐달라고 계속 말하면 됩니다.</span></li>
+    </ol>
+
+    <div class="example"><div class="who">이렇게 말해 보세요</div>
+      <div class="q">라커 만기가 다가온 회원님께 보낼 안내 문자를 써줘. 우리는 웰페리온 스포츠클럽이고, 정중한 존댓말로, 3문장 안쪽으로. 마지막에 문의는 wellperion.com 으로 안내해줘.</div></div>
+
+    <div class="shot"><span class="ico">📸</span>
+      <b>[스크린샷 자리]</b> AI 비서에게 위 문장을 입력하고 답변을 받은 화면 (질문 + 답변이 같이 보이게)
+      <br><span style="font-size:12px">교육 진행자: 실제로 한 번 시켜 본 화면을 캡처해 넣어 주세요.</span></div>
+
+    <div class="note"><span class="k">꼭 지킬 약속</span>
+      ① <b>회원 개인정보(전화번호·이름 전체)</b>는 꼭 필요할 때만, 신중히.
+      ② AI 답을 <b>그대로 바깥에 보내기 전, 사람이 한 번 읽고 확인</b>하세요. AI도 가끔 틀립니다.
+      ③ <b>결제·승인·공식 발표</b>가 필요한 일은 반드시 GM 확인을 받습니다.</div>
+
+    <div class="task"><div class="lab">✋ 실습 3</div>
+      <div class="body">AI 비서에게 <b>실제 업무 한 가지를 직접 부탁</b>해 보세요. 예시:
+        <b>"오늘 운영부 회의 내용을 3줄로 요약해줘"</b> 또는
+        <b>"투어 예약 안내 문자를 정중하게 써줘"</b>.
+        그다음 <b>"좀 더 짧게 해줘"</b>라고 한 번 더 고쳐 보세요.
+        "부탁 → 받기 → 고쳐달라기"를 한 바퀴 돌면 통과입니다.</div></div>
+  </div>
+
+
+  <!-- ───────── 모듈 4 ───────── -->
+  <div class="sect">모듈 4 · 질문 · 마무리 점검</div>
+  <div class="module">
+    <div class="mhead">
+      <div class="mnum">4</div>
+      <div><h2 class="mttl">자주 묻는 질문 · 어려울 때</h2>
+        <div class="mtime">약 3분</div></div>
+    </div>
+
+    <ol class="steps">
+      <li><b>"링크를 눌렀는데 로그인 화면이 떠요."</b>
+        <span class="hint">회사 PC는 cao@wellperion.com 으로 로그인돼 있어야 합니다. 다른 계정이면 옆 동료·GM께 한 번 여쭤보세요.</span></li>
+      <li><b>"화면이 옛날 그대로예요 / 안 바뀌어요."</b>
+        <span class="hint">새로고침(F5 키 또는 동그란 ↻ 버튼)을 한 번 누르면 최신 화면을 다시 받아옵니다.</span></li>
+      <li><b>"AI가 엉뚱한 답을 줬어요."</b>
+        <span class="hint">정상입니다. 다시 더 구체적으로 부탁하면 돼요. AI 답은 항상 사람이 한 번 확인 후 사용합니다.</span></li>
+      <li><b>"이건 내 마음대로 해도 되나요?"</b>
+        <span class="hint">결제·승인·공식 발표·회원 개인정보 관련은 GM 확인. 그 외 일상 업무는 자율적으로 진행해도 됩니다.</span></li>
+    </ol>
+
+    <div class="sect" style="margin-top:30px">쉬운 말 사전 (어려운 단어 풀이)</div>
+    <div class="gloss">
+      <div class="g"><div class="w">가이드허브 / ERP</div><div class="m">회사 일을 한곳에 모아 둔 안내판 웹사이트. 우리는 "가이드허브"라고 부릅니다.</div></div>
+      <div class="g"><div class="w">SSOT</div><div class="m">"단 하나의 진짜 기준". 업무는 여기 적힌 게 진짜다, 라는 약속(영어 약자).</div></div>
+      <div class="g"><div class="w">오늘의 항로</div><div class="m">오늘 할 일 목록. "항로 = 오늘 가는 길"이라는 회사 표현.</div></div>
+      <div class="g"><div class="w">배(🚢) / 입항(🏁)</div><div class="m">배 = 일 하나. 입항 = 그 일을 끝냄(도착).</div></div>
+      <div class="g"><div class="w">Claude(클로드)</div><div class="m">우리 회사 AI 비서. 한국말로 부탁하면 글·정리·요약을 도와줍니다.</div></div>
+      <div class="g"><div class="w">새로고침 (F5)</div><div class="m">화면을 최신으로 다시 받아오는 것. 안 바뀔 때 한 번 누르세요.</div></div>
+    </div>
+  </div>
+
+
+  <!-- ───────── 체크리스트 ───────── -->
+  <div class="sect">마무리 체크리스트</div>
+  <div class="check">
+    <h3>오늘 이 6가지를 할 수 있으면 교육 완료입니다 ✅</h3>
+    <label><input type="checkbox"><span>가이드허브에 혼자 들어가서 즐겨찾기를 해두었다</span></label>
+    <label><input type="checkbox"><span>카드를 눌러 들어갔다가 뒤로(←) 나올 수 있다</span></label>
+    <label><input type="checkbox"><span>「오늘의 항로」에서 내 일(또는 우리 팀 일)을 찾을 수 있다</span></label>
+    <label><input type="checkbox"><span>「업무 현황 SSOT」를 열어 일의 상태(대기/진행/완료)를 확인할 수 있다</span></label>
+    <label><input type="checkbox"><span>AI 비서에게 일을 부탁하고, 결과를 한 번 더 고쳐 보았다</span></label>
+    <label><input type="checkbox"><span>GM 확인이 필요한 일(결제·승인·개인정보)이 무엇인지 안다</span></label>
+    <div class="prog" id="prog">0 / 6 완료</div>
+  </div>
+
+  <div class="foot">
+    웰페리온 (WELPERION) · AI CHRO(시로) &nbsp;<b>운영부 직원 교육 (30분)</b><br>
+    대상: 운영부 실무진 · 내부 교육용 · 모르면 언제든 옆 동료·GM께 물어보세요
+  </div>
+</div>
+
+<script>
+// 체크리스트 진행도 표시 (브라우저에만 임시 저장, 개인정보 없음)
+(function(){
+  var boxes = document.querySelectorAll('.check input[type=checkbox]');
+  var prog = document.getElementById('prog');
+  function update(){
+    var done = 0;
+    boxes.forEach(function(b){
+      if(b.checked){ done++; b.closest('label').classList.add('done'); }
+      else { b.closest('label').classList.remove('done'); }
+    });
+    prog.textContent = done + ' / ' + boxes.length + ' 완료' + (done===boxes.length ? '  🎉 교육 완료!' : '');
+  }
+  boxes.forEach(function(b){ b.addEventListener('change', update); });
+  update();
+})();
+</script>
+</body></html>
