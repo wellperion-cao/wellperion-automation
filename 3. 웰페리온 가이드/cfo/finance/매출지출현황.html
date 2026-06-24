@@ -108,13 +108,6 @@ footer{margin-top:26px;font-size:11px;color:var(--ink-faint);text-align:center;l
   </section>
 
   <section class="panel" data-panel="expense">
-    <div class="sec-title">지출현황 — 부서별 (구매성 + 인건비)</div>
-    <div class="tbl-wrap"><table id="expTbl"></table></div>
-    <div class="notice">각 부서 셀 = 구매성 + 인건비 합. 인건비 실시간, 구매성 승인건 기준.</div>
-  </section>
-
-  <!-- 팀·강사 분석 -->
-  <section class="panel" data-panel="people">
     <div class="card">
       <h3>팀별 지출 <span style="font-size:11px;color:var(--ink-faint)">(인건비 + 구매성 · 막대/칩 클릭 시 강사별)</span></h3>
       <div class="desc">기간(전체/월별)을 고르고, 팀을 클릭하면 해당 팀 강사별 인건비가 아래에 표시됩니다.</div>
@@ -130,6 +123,9 @@ footer{margin-top:26px;font-size:11px;color:var(--ink-faint);text-align:center;l
     </div>
     <div class="sec-title" id="staffTblTitle">강사별 × 월별 (단위: 원)</div>
     <div class="tbl-wrap"><table id="staffTbl"></table></div>
+    <div class="sec-title">부서별 월별 총지출 (구매성 + 인건비)</div>
+    <div class="tbl-wrap"><table id="expTbl"></table></div>
+    <div class="notice">각 부서 셀 = 구매성 + 인건비 합. 인건비 실시간, 구매성 승인건 기준.</div>
   </section>
 
   <section class="panel" data-panel="request">
@@ -223,7 +219,7 @@ function aggregate(){
   MEMBER_G=sum(SALES_MEMBER.slice(0,DATA_LAST));SALES_G=sum(salesMonth.slice(0,DATA_LAST));COST_G=LABOR_G+OPER_G+PROC_G;
 }
 
-var TABS=[{id:"dash",label:"대시보드"},{id:"sales",label:"매출현황"},{id:"expense",label:"지출현황"},{id:"people",label:"팀·강사 분석"},{id:"request",label:"구매요청"}];
+var TABS=[{id:"dash",label:"대시보드"},{id:"sales",label:"매출현황"},{id:"expense",label:"지출현황"},{id:"request",label:"구매요청"}];
 function renderNav(){var nav=document.getElementById("nav");
   nav.innerHTML=TABS.map(function(t,i){return '<button class="tab'+(i?'':' active')+'" data-p="'+t.id+'">'+t.label+'</button>';}).join('');
   nav.querySelectorAll(".tab").forEach(function(b){b.onclick=function(){
