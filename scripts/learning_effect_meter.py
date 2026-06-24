@@ -87,16 +87,24 @@ def _probe_generic_artifact(card: dict):
     symbols = set(re.findall(r"\b([A-Za-z_][A-Za-z0-9_]{3,})\(\)", txt))
     quoted = set(re.findall(r"[`'\"]([^`'\"\n]{4,40})[`'\"]", txt))
     STOP = {"json", "html", "true", "false", "none", "main", "self", "print", "status", "value"}
+    # ★자기참조 제외(필수): 제안·큐 JSON 자신이 제안 텍스트를 담고 있어, grep 하면 제 텍스트를
+    # 다시 찾아 '구현됨'으로 거짓 판정한다(자기충족 오탐). 정본/미러의 echo 파일을 검색에서 뺀다.
+    EXCLUDE = [
+        ":!status/learning_proposals.json", ":!status/_queue.json", ":!status/_queue_archive.json",
+        ":!3. 웰페리온 가이드/status/learning_proposals.json",
+        ":!3. 웰페리온 가이드/status/_queue.json",
+        ":!3. 웰페리온 가이드/status/_queue_archive.json",
+    ]
     hits = []
     for f in list(files)[:6]:
         base = f.split("/")[-1]
-        if _git_has(["ls-files", "*" + base]):
+        if _git_has(["ls-files", "*" + base] + EXCLUDE):
             hits.append(base)
     for s in list(symbols | quoted)[:8]:
         s = s.strip()
         if len(s) < 4 or s.lower() in STOP:
             continue
-        if _git_has(["grep", "-l", "-F", "--", s]):
+        if _git_has(["grep", "-l", "-F", "-e", s, "--"] + EXCLUDE):
             hits.append(s)
     if hits:
         uniq = list(dict.fromkeys(hits))[:4]
