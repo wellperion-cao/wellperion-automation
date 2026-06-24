@@ -3207,10 +3207,10 @@ function renderItem(it,shift,gender,round){
   }
   return `<div class="${cls}">
     <div class="item-row"><input type="checkbox" id="cb_${pfx}${it.id}" ${ck} ${_locked?'disabled':''} onchange="onCk('${it.id}','${shift}','${g}'${_rArg})"><label for="cb_${pfx}${it.id}">${itemName}${_dayChips}${editedTag}${_locked?' <span style="font-size:10px;color:#2c8a4f;font-weight:700;">🔒제출됨</span>':''}</label>
-      <div class="item-btns"><button class="tiny-btn issue" title="발견한 이슈를 적으면 이 점검(회차)에 기록·보관됩니다. 외부 접수·타부서 처리가 필요한 건만 아래 '접수처로 보내기'로." onclick="togX('${pfx}iss_${it.id}')">이슈 기록</button><button class="tiny-btn tip" onclick="togX('${pfx}tip_${it.id}')">노하우</button>${refBtn}</div>
+      <div class="item-btns"><button class="tiny-btn issue" title="발견한 이슈를 적으면 이 점검(회차)에 기록·보관됩니다. 외부 접수·타부서 처리가 필요한 건만 아래 '접수처로 보내기'로." onclick="togX('${pfx}iss_${it.id}')">이슈</button><button class="tiny-btn tip" onclick="togX('${pfx}tip_${it.id}')">노하우</button>${refBtn}</div>
     </div>${_attrLine}
     <div class="item-detail">${det}</div>${tempHtml}
-    <input class="extra-input issue-field${iss?' show':''}" id="${pfx}iss_${it.id}" placeholder="이슈 기록 (이 점검에 남음)..." value="${esc(iss)}" ${_locked?'readonly':''} onchange="onExtra('iss','${it.id}',${round?`'${round}'`:'\'\''},'${g}','${pfx}iss_${it.id}')">
+    <input class="extra-input issue-field${iss?' show':''}" id="${pfx}iss_${it.id}" placeholder="이슈 (이 점검에 남음)..." value="${esc(iss)}" ${_locked?'readonly':''} onchange="onExtra('iss','${it.id}',${round?`'${round}'`:'\'\''},'${g}','${pfx}iss_${it.id}')">
     ${(promoteBtn||vocBtn)?`<div class="promote-bar" style="margin:4px 0 2px;display:flex;flex-wrap:wrap;gap:6px;align-items:center;">${promoteBtn}${vocBtn}</div>`:''}
     <input class="extra-input tip-field${tip?' show':''}" id="${pfx}tip_${it.id}" placeholder="노하우/개선 의견..." value="${esc(tip)}" ${_locked?'readonly':''} onchange="onExtra('tip','${it.id}',${round?`'${round}'`:'\'\''},'${g}','${pfx}tip_${it.id}')">
   </div>`;
