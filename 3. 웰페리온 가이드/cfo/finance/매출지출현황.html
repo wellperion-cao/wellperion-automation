@@ -321,7 +321,7 @@ function renderPeople(){
   document.getElementById("staffTitle").textContent=selTeam+" 강사별 인건비 · "+periodLabel()+" ("+staff.length+"명)";
   if(staff.length){
     newChart("chartStaff",{type:"bar",data:{labels:staff.map(function(s){return s.name;}),datasets:[{data:staff.map(function(s){return s.t;}),backgroundColor:staff.map(function(_,i){return PAL[i%PAL.length];}),borderRadius:4}]},
-      options:{indexAxis:"y",maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){return won(c.raw);}}}},scales:{x:{ticks:{callback:function(v){return (v/1e8).toFixed(1)+"억";}}}}}});
+      options:{indexAxis:"y",maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){return won(c.raw);}}}},scales:{x:{ticks:{callback:function(v){return man(v);}}}}}});
   }else if(_charts["chartStaff"]){_charts["chartStaff"].destroy();}
   document.getElementById("teamProcNote").innerHTML="🛒 <b>"+selTeam+"</b> ("+periodLabel()+") · 인건비 "+won(teamLabor(selTeam))+" + 구매성 "+won(teamProc(selTeam))+" = <b>총지출 "+won(teamCost(selTeam))+"</b> (구매는 팀 단위라 강사 배분 없음)";
   // 강사 × 월별 표 (항상 전체 월)
