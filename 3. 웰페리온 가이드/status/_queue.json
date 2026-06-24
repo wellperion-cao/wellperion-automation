@@ -1570,5 +1570,19 @@
     "next": "🌀 표류 — 다음 미정 (필요 시 GM·웰리/담당 C-Level 지정)",
     "adhoc_commit": "2c9a5563fe8eab8860664ed3f915eac848f8d73c",
     "ship_no": 163
+  },
+  {
+    "task_id": "CMO-2026-06-24-ADHOC-97b34475",
+    "clevel": "cmo",
+    "title": "[시모] 발행 알림 노이즈 감소 — 성공 조용히, 실패·검증만 전달",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-06-24",
+    "processed_at": "2026-06-24",
+    "artifact": "- publish_4channel_dispatcher: FAIL=0 시 GM 발송 생략(로그+outbound_log만). FAIL≥1만 GM 채널 발송.\n- ig_review_publish_watcher: telegram() 함수에 chat_id 파라미터 추가.\n  성공 요약 → 웰리 채널(TELEGRAM_WELLY_CHAT_ID, 폴백=종합 접수처 -5065206276).\n  실패·수동대기·계정가드 → GM 채널(기존 유지).\n  IG 발행검증대기(shortcode 미회수) → 웰리 채널 별도 알림(약속 L04·L03).\n- TE (CLI ad-hoc · 커밋 97b34475)",
+    "next": "🌀 표류 — 다음 미정 (필요 시 GM·웰리/담당 C-Level 지정)",
+    "adhoc_commit": "97b344757a754f04c8bc2f2d56572d7a14df21e3",
+    "ship_no": 164
   }
 ]
