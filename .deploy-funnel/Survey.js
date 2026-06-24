@@ -34,6 +34,10 @@ const FORM_SHEETS = [
   //   ⚠️ clasp push ≠ 웹앱 배포 — gid 교체 후 새 버전 웹앱 재배포 1회(GM/CTO) 필요. (명세: 문의_신규유형_폼설계_260612.md §5)
   , { ssId: '12AWcAlgmmYKr2nUbWmVpa71_z3zi0BaU4ZdnOwrI_7U', gid: 2014877540, type: '공간렌트',       channelKeys: ['경로', '채널', '알게'] }  // 2026-06-15 멤버십 시트로 통합(설문지 응답 시트12)
   , { ssId: '12AWcAlgmmYKr2nUbWmVpa71_z3zi0BaU4ZdnOwrI_7U', gid: 1356708303, type: '비즈니스파트너', channelKeys: ['경로', '채널', '알게'] }  // 2026-06-15 멤버십 시트로 통합(설문지 응답 시트13)
+  // ─── 영문 문의 3종 (시모 2026-06-24) ───
+  , { ssId: '12AWcAlgmmYKr2nUbWmVpa71_z3zi0BaU4ZdnOwrI_7U', gid: 1887747109, type: '멤버십(영문)',    channelKeys: ['How Did You Hear About Us?', '경로', '채널'] }
+  , { ssId: '1b0XU1oTHlXzBhEzUOar5GEm44vjopdO25qfsh-awDXw', gid: 311319200,  type: '성인강습(영문)',  channelKeys: ['How Did You Hear About Us?', '경로', '채널'] }
+  , { ssId: '1b0XU1oTHlXzBhEzUOar5GEm44vjopdO25qfsh-awDXw', gid: 931249179,  type: '유소년강습(영문)', channelKeys: ['How Did You Hear About Us?', '경로', '채널'] }
 ];
 
 // 강습 '팀 정리' 스프레드시트 (통합본 → 팀별 별도 시트로 재취합, 팀장이 등록/실패/컨택중 처리). 수강등록 전환 정본.
@@ -177,7 +181,7 @@ function _collectFormInquiries_() {
       var lastCol = sh.getLastColumn();
       if (last < 2 || lastCol < 1) return;
       var headers = sh.getRange(1, 1, 1, lastCol).getValues()[0];
-      var idxPhone = _findCol_(headers, ['연락처', '휴대폰', '핸드폰', '전화']);
+      var idxPhone = _findCol_(headers, ['연락처', '휴대폰', '핸드폰', '전화', 'Mobile Phone', 'Phone', "Guardian's Mobile Phone"]);
       var idxChan  = _findCol_(headers, cfg.channelKeys);          // 대분류(문의 채널) — 폴백 기준
       var idxChanFine = _findCol_(headers, ['중분류']);             // 문의 경로(중분류) — 정밀(있을 때만, 멤버십 탭)
       var idxDate  = _findCol_(headers, ['타임스탬프', 'timestamp', '시각', '일시', '접수일', '접수', '날짜']);
@@ -464,9 +468,9 @@ function _notifyNewInquiries_() {
       if (lastCol < 1) { props.setProperty(propKey, String(lastRow)); return; }
       var headers = sh.getRange(1, 1, 1, lastCol).getValues()[0];
       var idxDate  = _findCol_(headers, ['타임스탬프', 'timestamp', '시각', '일시', '접수일', '접수', '날짜']);
-      var idxName  = _findCol_(headers, ['성함', '이름']);
-      var idxPhone = _findCol_(headers, ['연락처', '휴대폰', '핸드폰', '전화']);
-      var idxChan  = _findCol_(headers, cfg.channelKeys || ['채널', '경로', '알게']);
+      var idxName  = _findCol_(headers, ['성함', '이름', 'Full Name', 'Name', "Child's Full Name"]);
+      var idxPhone = _findCol_(headers, ['연락처', '휴대폰', '핸드폰', '전화', 'Mobile Phone', 'Phone', "Guardian's Mobile Phone"]);
+      var idxChan  = _findCol_(headers, cfg.channelKeys || ['채널', '경로', '알게', 'How Did You Hear']);
       var idxMemo  = _findCol_(headers, ['비고', '메모']);
 
       // 신규 행 처리
