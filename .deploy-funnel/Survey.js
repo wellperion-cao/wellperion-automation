@@ -2393,3 +2393,54 @@ function removeWarmTrigger() {
   });
   return '워머 트리거 ' + n + '개 제거';
 }
+
+// ─── [일회용 진단] 영문 문의 응답탭 gid 조회 (시모, 2026-06-24) ──────────────
+// 목적: FORM_SHEETS 에 영문 폼 3종(멤버십·공간렌트·비즈니스파트너 영문) gid 를 추가하기 위해
+//       두 스프레드시트의 전체 탭 목록과 gid 를 Logger 에 출력한다.
+// 실행법: GAS 에디터 상단 함수 선택창에서 listInquirySheetTabs 선택 → 실행(▶) → 실행 로그 확인.
+// 결과 이용: 영문 헤더 또는 English/영문/EN 이 탭명·헤더에 포함된 탭의 gid 를 FORM_SHEETS 에 등록.
+function listInquirySheetTabs() {
+  var targets = [
+    { label: '멤버십/공간/파트너 시트', ssId: '12AWcAlgmmYKr2nUbWmVpa71_z3zi0BaU4ZdnOwrI_7U' },
+    { label: '강습 시트',               ssId: '1b0XU1oTHlXzBhEzUOar5GEm44vjopdO25qfsh-awDXw' }
+  ];
+
+  targets.forEach(function(t) {
+    Logger.log('==============================');
+    Logger.log('[' + t.label + '] ssId=' + t.ssId);
+    Logger.log('==============================');
+
+    var ss;
+    try { ss = SpreadsheetApp.openById(t.ssId); }
+    catch (e) { Logger.log('  ERROR: 시트 열기 실패 — ' + e.message); return; }
+
+    var sheets = ss.getSheets();
+    sheets.forEach(function(sh) {
+      var name   = sh.getName();
+      var gid    = sh.getSheetId();
+      var lastCol = sh.getLastColumn();
+      var headerPreview = '';
+
+      if (lastCol > 0 && sh.getLastRow() > 0) {
+        try {
+          var hdrs = sh.getRange(1, 1, 1, Math.min(lastCol, 6)).getValues()[0];
+          headerPreview = hdrs.map(function(v) { return String(v || '').trim(); })
+                              .filter(function(v) { return v; })
+                              .join(' | ');
+        } catch (e2) { headerPreview = '(헤더 읽기 오류)'; }
+      } else {
+        headerPreview = '(빈 탭)';
+      }
+
+      // 영문 탭 여부 표시 — 탭명 또는 첫 헤더에 English/영문/EN/english 포함
+      var isEn = /english|영문|\bEN\b/i.test(name) || /english|영문|\bEN\b/i.test(headerPreview);
+      var mark = isEn ? '  ★ [영문 후보]' : '';
+
+      Logger.log('  탭명="' + name + '" gid=' + gid + mark);
+      Logger.log('  헤더=' + (headerPreview || '(없음)'));
+    });
+  });
+
+  Logger.log('==============================');
+  Logger.log('완료. 위 gid 를 FORM_SHEETS 영문 항목에 입력하세요.');
+}
