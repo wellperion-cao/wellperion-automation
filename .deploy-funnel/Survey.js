@@ -1297,10 +1297,13 @@ function _processAction(body) {
         var ciH = _miHeaders_(ciSh);
         var ciTs = _miColIdx_(ciH, ['타임스탬프','접수일','날짜']);
         var ciNm = _miColIdx_(ciH, ['성함','이름']);
+        var ciPg = _miColIdx_(ciH, ['관심 있는 프로그램 종류','관심 있는 프로그램 종목','관심프로그램','프로그램']);
         if (ciTs >= 0) {
           var ciData = ciSh.getRange(2, 1, ciSh.getLastRow() - 1, ciH.length).getValues();
           for (var ci = 0; ci < ciData.length; ci++) {
             if (ciNm >= 0 && !String(ciData[ci][ciNm] || '').trim() && !ciData[ci][ciTs]) continue;
+            // 멤버십 문의만(플래티넘·노블레스 계열). 프로그램 칸 없으면 전부 포함(폴백).
+            if (ciPg >= 0) { var ciPv = String(ciData[ci][ciPg] || ''); if (ciPv.indexOf('플래티넘') < 0 && ciPv.indexOf('노블레스') < 0) continue; }
             var ciD = _miToISO_(ciData[ci][ciTs]);
             if (ciD === ctToday) ctTI++;
             if (ciD && ciD.slice(0, 7) === ctMonth) ctMI++;

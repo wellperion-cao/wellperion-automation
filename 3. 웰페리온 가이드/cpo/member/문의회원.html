@@ -662,15 +662,11 @@ a.funnel-step:hover{background:rgba(183,159,138,0.08);color:var(--accent)}
       </div>
       <div class="header-actions">
         <a class="action-btn" href="https://docs.google.com/spreadsheets/d/12AWcAlgmmYKr2nUbWmVpa71_z3zi0BaU4ZdnOwrI_7U/edit#gid=1902010032" target="_blank" rel="noopener">📊 문의 회원관리 시트 →</a>
+        <button class="action-btn" onclick="openGuidePopup()">📖 문의 가이드</button>
         <a class="action-btn" href="../../../wellperion_guide(main).html">ERP 홈</a>
         <button class="action-btn" onclick="window.print()">인쇄</button>
       </div>
     </div>
-  </div>
-  <div class="tabs">
-    <button class="tab active" onclick="switchTab('db',this)">문의 회원 관리</button>
-    <button class="tab" onclick="switchTab('calendar',this)">예약 달력</button>
-    <button class="tab" onclick="switchTab('guide',this)">문의 가이드</button>
   </div>
 </div>
 
@@ -679,30 +675,27 @@ a.funnel-step:hover{background:rgba(183,159,138,0.08);color:var(--accent)}
   <!-- ══════════════════════════════ CPO 오늘 현황 (오늘/이번달 문의·등록) ══════════════════════════════ -->
   <div class="kpi-grid" id="cpoTodayStrip" style="margin-bottom:14px">
     <div class="kpi-box">
-      <div class="kpi-label">오늘 신규 문의</div>
+      <div class="kpi-label">멤버십 신규 문의</div>
       <div class="kpi-value teal" id="ctsTodayInq">—</div>
       <div class="kpi-note" id="ctsMonthInq">이번달 —</div>
     </div>
     <div class="kpi-box">
-      <div class="kpi-label">오늘 등록</div>
+      <div class="kpi-label">신규 등록</div>
       <div class="kpi-value green" id="ctsTodayReg">—</div>
       <div class="kpi-note" id="ctsMonthReg">이번달 —</div>
     </div>
   </div>
 
-  <!-- ══════════════════════════════ 퍼널 위치 공통 표시 ══════════════════════════════ -->
+  <!-- ══════════════════════════════ 내비 탭 ══════════════════════════════ -->
   <div class="funnel-steps" style="margin-bottom:18px">
-    <span class="funnel-step done" data-stage="marketing">마케팅</span>
-    <span class="funnel-arrow">→</span>
-    <a class="funnel-step current" data-stage="inquiry" href="javascript:void(0)" onclick="switchTab('db')" style="text-decoration:none;cursor:pointer" title="문의·체험 단계로">문의 · 체험/상담투어</a>
-    <span class="funnel-arrow">→</span>
-    <a class="funnel-step" data-stage="registered" href="javascript:void(0)" onclick="switchTab('registered')" style="text-decoration:none;cursor:pointer" title="등록회원으로">등록</a>
-    <span class="funnel-arrow">→</span>
-    <a class="funnel-step" data-stage="active" href="javascript:void(0)" onclick="switchTab('active')" style="text-decoration:none;cursor:pointer" title="멤버십 회원관리로">멤버십 회원 관리</a>
+    <a class="funnel-step current" data-tab="calendar" href="javascript:void(0)" onclick="switchTab('calendar')" style="text-decoration:none;cursor:pointer">예약 달력</a>
+    <a class="funnel-step" data-tab="db" href="javascript:void(0)" onclick="switchTab('db')" style="text-decoration:none;cursor:pointer">문의·체험/상담투어</a>
+    <a class="funnel-step" data-tab="registered" href="javascript:void(0)" onclick="switchTab('registered')" style="text-decoration:none;cursor:pointer">등록</a>
+    <a class="funnel-step" data-tab="active" href="javascript:void(0)" onclick="switchTab('active')" style="text-decoration:none;cursor:pointer">멤버십 회원 관리</a>
   </div>
 
   <!-- ══════════════════════════════ 1. 예약 달력 ══════════════════════════════ -->
-  <div id="pane-calendar" class="pane">
+  <div id="pane-calendar" class="pane active">
 
     <div class="info-box teal" style="margin-bottom:16px">
       <strong>데이터 소스</strong> — 26년 신규문의 시트(견학/상담 일정·체험1/2 확정시간). GAS 연동 후 자동 표시.<br>
@@ -783,7 +776,7 @@ a.funnel-step:hover{background:rgba(183,159,138,0.08);color:var(--accent)}
     코드는 준비 완료 상태이나 무인증 공개 CRUD로 라이브 운영 금지.
     GAS 자리표시자(https://script.google.com/macros/s/AKfycbzdwSCCSSJ6JXLDoWuo7HG0JmBM2iy10TujFQ_O5JbTjnWaN7gOk-ddA4IAvsNfelg0xA/exec)가 교체되면 자동 활성화됩니다.
   -->
-  <div id="pane-db" class="pane active">
+  <div id="pane-db" class="pane">
 
     <div class="info-box red" style="margin-bottom:16px">
       <strong>접근통제 전제</strong> — 이 DB는 회원 개인정보(이름·전화)를 포함합니다.
@@ -1220,9 +1213,10 @@ if (action === 'member_calendar') {
       </div>
 
       <div class="reg-toolbar">
-        <button type="button" id="regBtnDay"   class="btn-query" style="padding:8px 12px;font-size:12px" onclick="setRegRange('day')">일</button>
-        <button type="button" id="regBtnWeek"  class="btn-query" style="padding:8px 12px;font-size:12px;background:var(--accent-bg);color:var(--accent);border-color:var(--accent-border)" onclick="setRegRange('week')">주</button>
-        <button type="button" id="regBtnMonth" class="btn-query" style="padding:8px 12px;font-size:12px;background:var(--accent-bg);color:var(--accent);border-color:var(--accent-border)" onclick="setRegRange('month')">월</button>
+        <button type="button" id="regBtnDay"    class="btn-query" style="padding:8px 12px;font-size:12px" onclick="setRegRange('day')">일</button>
+        <button type="button" id="regBtnWeek"   class="btn-query" style="padding:8px 12px;font-size:12px;background:var(--accent-bg);color:var(--accent);border-color:var(--accent-border)" onclick="setRegRange('week')">주</button>
+        <button type="button" id="regBtnMonth"  class="btn-query" style="padding:8px 12px;font-size:12px;background:var(--accent-bg);color:var(--accent);border-color:var(--accent-border)" onclick="setRegRange('month')">월</button>
+        <button type="button" id="regBtnCustom" class="btn-query" style="padding:8px 12px;font-size:12px;background:var(--accent-bg);color:var(--accent);border-color:var(--accent-border)" onclick="setRegRange('custom')">기간</button>
         <span class="reg-sep" style="margin:0 2px"></span>
         <input type="date" id="regFrom" title="등록일 시작">
         <span class="reg-sep">~</span>
@@ -1325,36 +1319,35 @@ var READ_ONLY = false;
 var ALLOW_DELETE = false;  // 2026-06-23 GM: 삭제 제거 — 삭제는 시트에서 수동으로만
 var ALLOW_ADD = true;     // 2026-06-23 GM: 전화·직접 문의 수기 추가 허용
 
+/* ── 문의 가이드 팝업 ── */
+function openGuidePopup() {
+  try {
+    var w = window.open('', 'guideWin', 'width=760,height=860,scrollbars=yes');
+    if (!w) { showToast('팝업이 차단됐습니다. 브라우저 팝업 허용 후 다시 시도하세요.'); return; }
+    var styleHtml = document.querySelector('style') ? document.querySelector('style').outerHTML : '';
+    var guideHtml = document.getElementById('pane-guide') ? document.getElementById('pane-guide').innerHTML : '';
+    w.document.write('<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>문의 가이드</title>' + styleHtml + '</head><body style="background:var(--bg);color:var(--text);padding:24px 20px 60px">' + guideHtml + '</body></html>');
+    w.document.close();
+  } catch(e) { showToast('가이드 팝업을 열 수 없습니다.'); }
+}
+
 /* ── 탭 전환 ── */
 function switchTab(id, btn) {
   document.querySelectorAll('.pane').forEach(function(p){ p.classList.remove('active'); });
-  document.querySelectorAll('.tab').forEach(function(t){ t.classList.remove('active'); });
   document.getElementById('pane-' + id).classList.add('active');
-  // 상단 탭: 호출 출처(탭/퍼널)와 무관하게 id로 매칭해 활성화 (위·아래 동기화)
-  document.querySelectorAll('.tab').forEach(function(t){
-    var oc = t.getAttribute('onclick') || '';
-    if (oc.indexOf("switchTab('" + id + "'") !== -1) t.classList.add('active');
+  // 내비 탭 강조: data-tab===id 인 항목만 current, 나머지 제거
+  document.querySelectorAll('.funnel-step[data-tab]').forEach(function(s){
+    s.classList.remove('current','done');
+    if (s.getAttribute('data-tab') === id) s.classList.add('current');
   });
-  // 하단 퍼널: 현재 단계를 동기화 (이전 단계=완료, 현재=current)
-  syncFunnel(id);
   if (id === 'db') loadDbData();
+  if (id === 'calendar') loadCalendarData();
   if (id === 'registered') setRegRange(_regRangeMode || 'month');
   if (id === 'active') loadActiveMembers();
 }
 
-// 퍼널 단계 동기화 — db/calendar/guide=문의·체험 단계, registered=등록, active=멤버십
-function syncFunnel(id) {
-  var stage = (id === 'registered') ? 'registered' : (id === 'active') ? 'active' : 'inquiry';
-  var order = ['marketing','inquiry','registered','active'];
-  var cur = order.indexOf(stage);
-  document.querySelectorAll('.funnel-step').forEach(function(s){
-    var i = order.indexOf(s.getAttribute('data-stage'));
-    if (i < 0) return;
-    s.classList.remove('current','done');
-    if (i < cur) s.classList.add('done');
-    else if (i === cur) s.classList.add('current');
-  });
-}
+// syncFunnel — 내비 탭 전환으로 대체됨. 하위 호환 보존용 빈 함수.
+function syncFunnel(id) {}
 
 /* ─────────────────────────────────────────────
    등록회원 명단
@@ -1377,19 +1370,24 @@ function setRegRange(mode) {
     var sun = new Date(mon); sun.setDate(mon.getDate() + 6);
     from = mon.getFullYear() + '-' + _pad2(mon.getMonth()+1) + '-' + _pad2(mon.getDate());
     to   = sun.getFullYear() + '-' + _pad2(sun.getMonth()+1) + '-' + _pad2(sun.getDate());
+  } else if (mode === 'custom') {
+    // 기간 모드: 날짜 자동세팅 없음 — 사용자가 직접 선택 후 조회
+    // 버튼 강조만 처리하고 날짜 입력값 유지
   } else {
     // month
     var lastDay = new Date(y, m+1, 0).getDate();
     from = y + '-' + _pad2(m+1) + '-01';
     to   = y + '-' + _pad2(m+1) + '-' + _pad2(lastDay);
   }
-  document.getElementById('regFrom').value = from;
-  document.getElementById('regTo').value   = to;
+  if (mode !== 'custom') {
+    document.getElementById('regFrom').value = from;
+    document.getElementById('regTo').value   = to;
+  }
 
   // 버튼 강조 토글
   var TEAL_BG  = 'var(--teal-bg)';   var TEAL_C  = 'var(--teal)';   var TEAL_BD  = 'var(--teal-border)';
   var ACC_BG   = 'var(--accent-bg)'; var ACC_C   = 'var(--accent)'; var ACC_BD   = 'var(--accent-border)';
-  [['day','regBtnDay'],['week','regBtnWeek'],['month','regBtnMonth']].forEach(function(pair){
+  [['day','regBtnDay'],['week','regBtnWeek'],['month','regBtnMonth'],['custom','regBtnCustom']].forEach(function(pair){
     var btn = document.getElementById(pair[1]);
     if (!btn) return;
     var active = (pair[0] === mode);
@@ -1809,9 +1807,8 @@ var calEvents = {};
   calYear = now.getFullYear();
   calMonth = now.getMonth() + 1;
   renderCalendarShell();
-  loadCalendarData();
-  loadDbData();  // 기본 활성 탭=문의 회원 관리(DB) → 초기 로딩(2026-06-20 GM 순서변경)
-  loadCpoTodayStats();  // 상단 CPO 오늘 현황(오늘/이번달 문의·등록) 2026-06-24
+  loadCalendarData();  // 기본 활성 탭=예약 달력 (2026-06-24 GM 변경)
+  loadCpoTodayStats();  // 상단 CPO 오늘 현황(오늘/이번달 문의·등록)
   if (!ALLOW_ADD) { var _ab = document.getElementById('btnAddRow'); if (_ab) _ab.style.display = 'none'; }
 })();
 
