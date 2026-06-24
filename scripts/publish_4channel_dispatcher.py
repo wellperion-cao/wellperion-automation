@@ -413,22 +413,33 @@ def main() -> int:
     print(f"합계: OK/DRY={ok_count}, SKIP={skip_count}, FAIL={fail_count}\n")
 
     # 텔레그램 보고 (실행 모드에서만)
-    # 원칙: FAIL=0 → GM 발송 생략(로그 출력만). FAIL≥1 → GM 채널로 발송.
+    # 원칙: 발행 시도가 있었으면 성공/실패 중 정확히 1건을 GM에게 발송.
+    # - FAIL=0 → 성공 1줄 간결 통보 (기계 로그 아닌 자연어)
+    # - FAIL≥1 → 실패 알림 (기존 상세 포맷)
     if args.do_run:
-        summary = (
-            f"[4채널 디스패처] {content_dir.name} | "
-            f"채널={','.join(channels)} | "
-            f"OK={ok_count} SKIP={skip_count} FAIL={fail_count}"
-        )
         if fail_count >= 1:
+            # 실패 — 상세 기계 로그로 GM 채널
+            fail_detail = ", ".join(
+                f"{r['ch']}({r['note']})" for r in results if r["status"] not in ("OK", "DRY", "SKIP")
+            )
+            summary = (
+                f"⚠️ {content_dir.name} 4채널 발행 — "
+                f"실패 {fail_count}건: {fail_detail}"
+            )
             try:
                 _send_telegram(summary)
             except Exception as e:
                 print(f"[텔레그램] 예외(무시): {e}")
         else:
-            # 성공 — GM 발송 생략, 로그만 출력
-            print(f"[텔레그램] FAIL=0 성공 — GM 발송 생략(로그): {summary}")
-            log_outbound(summary, chat_id=TELEGRAM_CHAT_ID, source="publish_4channel_dispatcher.main", ok=True, kind="suppressed_ok")
+            # 성공 — 자연어 1줄로 GM 채널
+            ok_channels = ", ".join(
+                r["ch"] for r in results if r["status"] in ("OK", "DRY")
+            )
+            summary = f"✅ {content_dir.name} 4채널 발행 완료 — {ok_channels} 임시저장"
+            try:
+                _send_telegram(summary)
+            except Exception as e:
+                print(f"[텔레그램] 예외(무시): {e}")
     else:
         print("[dry-run] 텔레그램 보고 생략 (--run 없음)")
 

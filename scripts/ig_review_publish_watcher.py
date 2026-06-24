@@ -633,28 +633,20 @@ def _run_once_inner(dry_run: bool) -> int:
             git("push", "origin", "master")
 
         # 알림 라우팅 원칙(GM 지시 2026-06-24):
-        # - 성공 요약(FAIL=0, 수동대기 없음) → 웰리 채널(종합 접수처). GM 미발송.
-        # - 실패·수동대기 포함 → GM 채널(TELEGRAM_CHAT_ID)로 발송.
-        # - IG 발행검증대기(shortcode 미회수 등 확인 필요) → 웰리 채널로 별도 발송.
+        # - 실패·수동대기 포함 → GM 채널 발송.
+        # - 성공 요약 → GM 채널 발송(항상 1건 전달).
+        # - IG 발행검증대기(shortcode 미회수 등) → 텔레그램 발송 없음. 로그·큐 상태로만 처리.
         failed_events = [e for e in events if e.startswith("⚠️") or e.startswith("⛔")]
         verify_events = [e for e in events if "발행검증대기" in e]
 
         summary_text = "📲 멀티채널 발행 결과\n" + "\n".join(events)
-        if failed_events or manual:
-            # 실패·결정 필요 → GM 채널
-            telegram(summary_text)
-        else:
-            # 성공 — GM 미발송, 웰리 채널(종합 접수처)로만
-            telegram(summary_text, chat_id=TELEGRAM_WELLY_CHAT_ID)
+        # 성공/실패 모두 GM 채널로 1건 발송
+        telegram(summary_text)
 
-        # IG 발행검증대기 → 웰리 검증 큐로 별도 알림 (약속 L04·L03)
+        # IG 발행검증대기 — 텔레그램 발송 없음(GM 노이즈 0). 로그만.
         if verify_events:
-            verify_text = (
-                "🔍 [IG 발행검증대기] 웰리 검증 필요\n"
-                + "\n".join(verify_events)
-                + "\n→ ERP M5에서 실제 게시 확인 후 완료 처리"
-            )
-            telegram(verify_text, chat_id=TELEGRAM_WELLY_CHAT_ID)
+            for v in verify_events:
+                _safe_print(f"[INFO] 발행검증대기(로그전용): {v}")
     return len(published)
 
 
