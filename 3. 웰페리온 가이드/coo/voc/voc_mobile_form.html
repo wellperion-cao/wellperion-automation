@@ -71,7 +71,6 @@ select{appearance:none;-webkit-appearance:none;background-image:url("data:image/
 </head>
 <body>
 <div class="toast" id="toast"></div>
-
 <div class="wrap" id="formWrap">
   <div class="brand">
     <div class="logo">WELLPERION</div>
@@ -79,7 +78,6 @@ select{appearance:none;-webkit-appearance:none;background-image:url("data:image/
     <p>무엇을 접수하시나요?<br>담당 부서가 신속히 확인·처리합니다.</p>
     <div class="loc-chip" id="locChip" style="display:none"></div>
   </div>
-
   <div class="card">
     <div class="field">
       <label class="fl">원하시는 항목을 선택해 주세요</label>
@@ -95,20 +93,16 @@ select{appearance:none;-webkit-appearance:none;background-image:url("data:image/
         <button type="button" class="type-btn" data-cat="voice">🗣️ 직원·강사 쓴소리합니다</button>
       </div>
     </div>
-
     <!-- 카테고리별 동적 필드 -->
     <div id="dynFields"></div>
-
     <div class="field">
       <label class="fl">위치 <span class="opt">(어디였나요?)</span></label>
       <input type="text" id="loc" placeholder="예: 2층 락커룸, 수영장, 주차장 …" autocomplete="off">
     </div>
-
     <div class="field">
       <label class="fl">상세 내용 <span class="opt">(선택)</span></label>
       <textarea id="content" placeholder="추가로 전하실 내용이 있으면 자유롭게 적어주세요."></textarea>
     </div>
-
     <div class="field">
       <label class="fl">사진 첨부 <span class="opt">(선택)</span></label>
       <label class="photo-zone" for="photo">
@@ -121,21 +115,17 @@ select{appearance:none;-webkit-appearance:none;background-image:url("data:image/
         <div><span class="rm" id="removePhoto">✕ 사진 삭제</span></div>
       </div>
     </div>
-
     <div class="field">
       <label class="fl" id="nameLbl">이름</label>
       <input type="text" id="name" placeholder="실명을 입력해 주세요" autocomplete="off">
     </div>
-
     <div class="field">
       <label class="fl" id="contactLbl">연락처</label>
       <input type="text" id="contact" placeholder="휴대폰 번호" autocomplete="off" inputmode="tel">
     </div>
   </div>
-
   <button class="submit" id="submitBtn">접수하기</button>
   <p class="note">접수해 주셔서 감사합니다. 처리 결과는 입력하신 연락처로 안내드립니다.<br>하루의 완성, 웰페리온</p>
-
   <div class="social-section">
     <p class="social-title">웰페리온 소식을 구경해보세요</p>
     <div class="social-links">
@@ -145,31 +135,26 @@ select{appearance:none;-webkit-appearance:none;background-image:url("data:image/
       <a class="social-chip" href="https://map.naver.com/p/search/웰페리온/place/1048457693" target="_blank" rel="noopener">📍 네이버지도</a>
     </div>
   </div>
-
   <div style="text-align:center;margin-top:16px;font-size:12.5px;color:var(--dim);line-height:2">
     <div>문의/상담 — <a href="mailto:info@wellperion.com" style="color:var(--accent);text-decoration:none">info@wellperion.com</a></div>
     <div>비즈니스/기타 — <a href="mailto:cao@wellperion.com" style="color:var(--accent);text-decoration:none">cao@wellperion.com</a></div>
   </div>
 </div>
-
 <div class="wrap done" id="doneWrap">
   <div class="dot">✅</div>
   <h2>접수가 완료되었습니다</h2>
   <p>소중한 의견 감사합니다.<br>담당 부서가 빠르게 확인하겠습니다.</p>
   <button class="again" id="againBtn">새 건의 접수하기</button>
 </div>
-
 <script>
 (function(){
   // ⚠️ GM 액션: GAS 배포 후 아래 URL 을 /exec 주소로 교체.
   //    배포 전(placeholder)에는 제출 시 안내 메시지만 표시(라이브 깨짐 방지).
   var VOC_API = 'https://script.google.com/macros/s/AKfycbwk2XS1FND9V2xtXlWgsXzgA5p0FG7jVm6YKD74JK_ME_ZvHsNUUfGE5A_8p0X8VcF3gQ/exec';
-
   var selectedCategory = '';
   var photoData = '';      // data:image/...;base64,... (FileReader 결과)
   var photoMime = 'image/jpeg';
   var photoName = '';
-
   function $(id){ return document.getElementById(id); }
   function toast(msg, isErr){
     var t = $('toast');
@@ -177,7 +162,6 @@ select{appearance:none;-webkit-appearance:none;background-image:url("data:image/
     t.className = 'toast show' + (isErr ? ' err' : '');
     setTimeout(function(){ t.className = 'toast' + (isErr ? ' err' : ''); }, 2600);
   }
-
   // QR ?loc= 프리필
   try {
     var qLoc = new URLSearchParams(location.search).get('loc');
@@ -188,13 +172,15 @@ select{appearance:none;-webkit-appearance:none;background-image:url("data:image/
       chip.style.display = 'inline-block';
     }
   } catch (e) {}
-
   // 카테고리별 동적 필드 정의
   var dynConfigs = {
     lost: [
-      { key:'itemName',  label:'분실 물품',  type:'text', ph:'예: 갤럭시 이어폰, 지갑 …' },
-      { key:'lostWhen',  label:'분실 시점',  type:'text', ph:'예: 오늘 오후 2시경, 어제 저녁 …' },
-      { key:'keepWhere', label:'보관 요청 장소', type:'text', ph:'예: 프런트, 2층 락커룸 …' }
+      { key:'name',     label:'이름',     type:'text', ph:'실명을 입력해 주세요' },
+      { key:'contact',  label:'연락처',   type:'tel',  ph:'010-1234-5678' },
+      { key:'itemName', label:'분실물품', type:'text', ph:'예: 갤럭시 이어폰, 지갑 …' },
+      { key:'content',  label:'물품상세', type:'textarea', ph:'브랜드·색상·특징 등 물품에 대한 설명을 적어주세요.' },
+      { key:'lostWhen', label:'분실시점', type:'date' },
+      { key:'loc',      label:'분실위치', type:'select', ph:'장소를 선택하세요', opts:['헬스장','수영장','남자사우나','여자사우나','골프장','스쿼시장','체조장','G.X룸','키즈락커','프론트/리셉션','주차장','카페','기타'] }
     ],
     facility: [
       { key:'equipName', label:'고장 설비',   type:'text', ph:'예: 러닝머신 3번, 샤워기 …' },
@@ -215,7 +201,6 @@ select{appearance:none;-webkit-appearance:none;background-image:url("data:image/
       { key:'anonymousPref', label:'익명 희망',      type:'checkbox' }
     ]
   };
-
   // 동적 필드 렌더 (카테고리 선택 시 1회만 — IME 보호를 위해 키입력 중 재렌더 없음)
   function renderDynFields(cat) {
     var container = $('dynFields');
@@ -223,14 +208,11 @@ select{appearance:none;-webkit-appearance:none;background-image:url("data:image/
     if (!cat) return;
     var defs = dynConfigs[cat];
     if (!defs || !defs.length) return;
-
     var wrapper = document.createElement('div');
     wrapper.className = 'field';
-
     defs.forEach(function(def) {
       var row = document.createElement('div');
       row.className = 'dyn-field';
-
       var lbl = document.createElement('label');
       lbl.className = 'dyn-label';
       lbl.textContent = def.label;
@@ -238,7 +220,6 @@ select{appearance:none;-webkit-appearance:none;background-image:url("data:image/
         lbl.setAttribute('for', 'dyn_' + def.key);
       }
       row.appendChild(lbl);
-
       if (def.type === 'text') {
         var inp = document.createElement('input');
         inp.type = 'text';
@@ -246,6 +227,18 @@ select{appearance:none;-webkit-appearance:none;background-image:url("data:image/
         inp.placeholder = def.ph || '';
         inp.autocomplete = 'off';
         row.appendChild(inp);
+      } else if (def.type === 'tel') {
+        var inpTel = document.createElement('input');
+        inpTel.type = 'tel';
+        inpTel.id = 'dyn_' + def.key;
+        inpTel.placeholder = def.ph || '';
+        inpTel.autocomplete = 'off';
+        inpTel.inputMode = 'tel';
+        inpTel.addEventListener('input', function(){
+          var d = this.value.replace(/\D/g,'').slice(0,11);
+          this.value = d.length<4 ? d : (d.length<8 ? d.slice(0,3)+'-'+d.slice(3) : d.slice(0,3)+'-'+d.slice(3,7)+'-'+d.slice(7));
+        });
+        row.appendChild(inpTel);
       } else if (def.type === 'date') {
         var inp = document.createElement('input');
         inp.type = 'date';
@@ -259,6 +252,7 @@ select{appearance:none;-webkit-appearance:none;background-image:url("data:image/
       } else if (def.type === 'select') {
         var sel = document.createElement('select');
         sel.id = 'dyn_' + def.key;
+        if (def.ph) { var o0 = document.createElement('option'); o0.value=''; o0.textContent=def.ph; sel.appendChild(o0); }
         def.opts.forEach(function(o) {
           var opt = document.createElement('option');
           opt.value = o;
@@ -278,13 +272,10 @@ select{appearance:none;-webkit-appearance:none;background-image:url("data:image/
         chkRow.appendChild(span);
         row.appendChild(chkRow);
       }
-
       wrapper.appendChild(row);
     });
-
     container.appendChild(wrapper);
   }
-
   // 동적 필드 값 수집
   function collectDynValues() {
     var out = {};
@@ -302,7 +293,6 @@ select{appearance:none;-webkit-appearance:none;background-image:url("data:image/
     });
     return out;
   }
-
   // 이름·연락처 라벨 및 placeholder 갱신 (IME 보호: 라벨만 교체, input DOM 유지)
   function updateNameContactHint() {
     var isVoice = (selectedCategory === 'voice');
@@ -313,7 +303,6 @@ select{appearance:none;-webkit-appearance:none;background-image:url("data:image/
     $('nameLbl').innerHTML = '이름' + nameOpt;
     $('contactLbl').innerHTML = '연락처' + contactOpt;
   }
-
   // 유형 선택 (카테고리 버튼)
   $('typeGroup').addEventListener('click', function(ev){
     var btn = ev.target.closest('.type-btn');
@@ -325,15 +314,18 @@ select{appearance:none;-webkit-appearance:none;background-image:url("data:image/
     selectedCategory = cat;
     renderDynFields(cat);
     updateNameContactHint();
+    var hideShared = (cat === 'lost');
+    ['loc','content','name','contact'].forEach(function(fid){
+      var el = document.getElementById(fid);
+      if (el && el.closest('.field')) el.closest('.field').style.display = hideShared ? 'none' : '';
+    });
   });
-
   // 익명 체크박스 변경 시 라벨 갱신 (이벤트 위임 — dynFields 하위)
   $('dynFields').addEventListener('change', function(ev){
     if (ev.target && ev.target.id === 'dyn_anonymousPref') {
       updateNameContactHint();
     }
   });
-
   // 사진 선택 → base64 (FileReader)
   $('photo').addEventListener('change', function(ev){
     var f = ev.target.files && ev.target.files[0];
@@ -353,14 +345,13 @@ select{appearance:none;-webkit-appearance:none;background-image:url("data:image/
     photoData = ''; photoName = ''; $('photo').value = '';
     $('preview').style.display = 'none';
   });
-
   // 제출
   $('submitBtn').addEventListener('click', function(){
-    var name = $('name').value.trim();
-    var contact = $('contact').value.trim();
-
     if (!selectedCategory) { toast('접수 유형을 선택해 주세요', true); return; }
-
+    var dynValues = collectDynValues();
+    var isLost = (selectedCategory === 'lost');
+    var name = isLost ? (dynValues.name || '') : $('name').value.trim();
+    var contact = isLost ? (dynValues.contact || '') : $('contact').value.trim();
     // voice + 익명 희망 시 이름·연락처 필수 면제
     var anonChk = $('dyn_anonymousPref');
     var isAnon = (selectedCategory === 'voice') && anonChk && anonChk.checked;
@@ -368,25 +359,20 @@ select{appearance:none;-webkit-appearance:none;background-image:url("data:image/
       if (!name) { toast('이름을 입력해 주세요', true); return; }
       if (!contact) { toast('연락처를 입력해 주세요', true); return; }
     }
-
     if (VOC_API.indexOf('__VOC') === 0) {
       toast('아직 접수 서버가 연결되지 않았습니다 (관리자 설정 대기)', true);
       return;
     }
-
     var btn = this;
     btn.disabled = true;
     btn.textContent = '접수 중…';
-
-    var dynValues = collectDynValues();
-
     var payload = {
       action: 'reg_submit',
       category: selectedCategory,
       name: name,
       contact: contact,
-      loc: $('loc').value.trim(),
-      content: $('content').value.trim(),
+      loc: isLost ? (dynValues.loc || '') : $('loc').value.trim(),
+      content: isLost ? (dynValues.content || '') : $('content').value.trim(),
       photo: photoData,            // 사진 = POST 본문 base64 (GET 쿼리 유실 방어)
       fileName: photoName,
       mimeType: photoMime,
@@ -403,7 +389,6 @@ select{appearance:none;-webkit-appearance:none;background-image:url("data:image/
       episode:       dynValues.episode       || '',
       anonymousPref: dynValues.anonymousPref || ''
     };
-
     fetch(VOC_API, {
       method: 'POST',
       redirect: 'follow',
@@ -426,7 +411,6 @@ select{appearance:none;-webkit-appearance:none;background-image:url("data:image/
       btn.disabled = false; btn.textContent = '접수하기';
     });
   });
-
   // 새 건의
   $('againBtn').addEventListener('click', function(){
     selectedCategory = ''; photoData = ''; photoName = '';
@@ -436,6 +420,7 @@ select{appearance:none;-webkit-appearance:none;background-image:url("data:image/
     $('contact').value = '';
     $('photo').value = ''; $('preview').style.display = 'none';
     $('dynFields').innerHTML = '';
+    ['loc','content','name','contact'].forEach(function(fid){ var el = document.getElementById(fid); if (el && el.closest('.field')) el.closest('.field').style.display = ''; });
     var btn = $('submitBtn'); btn.disabled = false; btn.textContent = '접수하기';
     $('doneWrap').style.display = 'none';
     $('formWrap').style.display = 'block';
