@@ -584,7 +584,8 @@ var _SURVEY_PUBLIC_ACTIONS = {
   member_registered_setmonth: true,  // 등록회원 1~12월 체크 토글
   member_registered_delete:   true,  // 등록 해제(행 삭제)
   member_active_list:         true,  // 멤버십 회원 명단(유효회원·전화 마스킹)
-  member_active_update:       true   // 2026-06-24 멤버십 셀 인라인 수정(유효회원 시트·전화 제외)
+  member_active_update:       true,  // 2026-06-24 멤버십 셀 인라인 수정(유효회원 시트·전화 제외)
+  cpo_today_stats:            true   // 2026-06-24 CPO 오늘/이번달 문의·등록 건수(PII 미노출)
 };
 // add_utm_field 비밀 가드값 — 폼 변형 액션 무단호출 차단. _SURVEY_PUBLIC_ACTIONS에 넣지 말 것.
 var _ADD_UTM_GUARD = 'wp-utm-field-2026-i-am-sure';
@@ -1282,6 +1283,51 @@ function _processAction(body) {
     if (auIdx < 0) return _json({ ok: false, error: '컬럼 미발견: ' + auCol });
     auSh.getRange(auRow, auIdx + 1).setValue(body.value == null ? '' : String(body.value));
     return _json({ ok: true, rowIndex: auRow, col: auCol });
+  }
+
+  // ─── CPO 오늘 현황(PII 미노출 집계): 오늘/이번달 문의·등록 건수 2026-06-24 GM ───
+  if (action === 'cpo_today_stats') {
+    var ctTz = 'Asia/Seoul';
+    var ctToday = Utilities.formatDate(new Date(), ctTz, 'yyyy-MM-dd');
+    var ctMonth = ctToday.slice(0, 7);
+    var ctTI = 0, ctMI = 0, ctTR = 0, ctMR = 0;
+    // 문의: 26년 신규문의 타임스탬프
+    try {
+      var ciSh = _miSheet_();
+      if (ciSh && ciSh.getLastRow() >= 2) {
+        var ciH = _miHeaders_(ciSh);
+        var ciTs = _miColIdx_(ciH, ['타임스탬프','접수일','날짜']);
+        var ciNm = _miColIdx_(ciH, ['성함','이름']);
+        if (ciTs >= 0) {
+          var ciData = ciSh.getRange(2, 1, ciSh.getLastRow() - 1, ciH.length).getValues();
+          for (var ci = 0; ci < ciData.length; ci++) {
+            if (ciNm >= 0 && !String(ciData[ci][ciNm] || '').trim() && !ciData[ci][ciTs]) continue;
+            var ciD = _miToISO_(ciData[ci][ciTs]);
+            if (ciD === ctToday) ctTI++;
+            if (ciD && ciD.slice(0, 7) === ctMonth) ctMI++;
+          }
+        }
+      }
+    } catch (eCi) {}
+    // 등록: 유효회원 등록일자
+    try {
+      var crSh = SpreadsheetApp.openById(MEMBER_SPREADSHEET_ID).getSheetByName(MEMBER_SHEET);
+      if (crSh && crSh.getLastRow() >= 2) {
+        var crH = crSh.getRange(1, 1, 1, crSh.getLastColumn()).getValues()[0].map(function(v){ return String(v).replace(/\s/g, ''); });
+        var crIdx = -1;
+        for (var cj = 0; cj < crH.length; cj++) { if (crH[cj].indexOf('등록일자') >= 0) { crIdx = cj; break; } }
+        if (crIdx >= 0) {
+          var crData = crSh.getRange(2, crIdx + 1, crSh.getLastRow() - 1, 1).getValues();
+          for (var cr = 0; cr < crData.length; cr++) {
+            var cv = crData[cr][0];
+            var crD = (cv instanceof Date && !isNaN(cv.getTime())) ? Utilities.formatDate(cv, ctTz, 'yyyy-MM-dd') : _miToISO_(cv);
+            if (crD === ctToday) ctTR++;
+            if (crD && crD.slice(0, 7) === ctMonth) ctMR++;
+          }
+        }
+      }
+    } catch (eCr) {}
+    return _json({ ok: true, date: ctToday, todayInquiry: ctTI, monthInquiry: ctMI, todayReg: ctTR, monthReg: ctMR });
   }
 
   // ─── 문의→가입 전환 집계 ───

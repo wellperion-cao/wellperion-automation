@@ -676,9 +676,23 @@ a.funnel-step:hover{background:rgba(183,159,138,0.08);color:var(--accent)}
 
 <div class="content">
 
+  <!-- ══════════════════════════════ CPO 오늘 현황 (오늘/이번달 문의·등록) ══════════════════════════════ -->
+  <div class="kpi-grid" id="cpoTodayStrip" style="margin-bottom:14px">
+    <div class="kpi-box">
+      <div class="kpi-label">오늘 신규 문의</div>
+      <div class="kpi-value teal" id="ctsTodayInq">—</div>
+      <div class="kpi-note" id="ctsMonthInq">이번달 —</div>
+    </div>
+    <div class="kpi-box">
+      <div class="kpi-label">오늘 등록</div>
+      <div class="kpi-value green" id="ctsTodayReg">—</div>
+      <div class="kpi-note" id="ctsMonthReg">이번달 —</div>
+    </div>
+  </div>
+
   <!-- ══════════════════════════════ 퍼널 위치 공통 표시 ══════════════════════════════ -->
   <div class="funnel-steps" style="margin-bottom:18px">
-    <a class="funnel-step done" data-stage="marketing" href="../../cmo/funnel/마케팅현황대시보드.html" title="마케팅 현황 대시보드(시모)" style="text-decoration:none">마케팅</a>
+    <span class="funnel-step done" data-stage="marketing">마케팅</span>
     <span class="funnel-arrow">→</span>
     <a class="funnel-step current" data-stage="inquiry" href="javascript:void(0)" onclick="switchTab('db')" style="text-decoration:none;cursor:pointer" title="문의·체험 단계로">문의 · 체험/상담투어</a>
     <span class="funnel-arrow">→</span>
@@ -1797,8 +1811,25 @@ var calEvents = {};
   renderCalendarShell();
   loadCalendarData();
   loadDbData();  // 기본 활성 탭=문의 회원 관리(DB) → 초기 로딩(2026-06-20 GM 순서변경)
+  loadCpoTodayStats();  // 상단 CPO 오늘 현황(오늘/이번달 문의·등록) 2026-06-24
   if (!ALLOW_ADD) { var _ab = document.getElementById('btnAddRow'); if (_ab) _ab.style.display = 'none'; }
 })();
+
+// CPO 오늘 현황 — 오늘/이번달 문의·등록 건수(PII 미노출 집계)
+function loadCpoTodayStats() {
+  if (GAS_URL === GAS_PLACEHOLDER) return;
+  fetch(GAS_URL + '?action=cpo_today_stats')
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      if (!d || !d.ok) return;
+      var set = function(id, v){ var el = document.getElementById(id); if (el) el.textContent = v; };
+      set('ctsTodayInq', d.todayInquiry);
+      set('ctsTodayReg', d.todayReg);
+      set('ctsMonthInq', '이번달 ' + d.monthInquiry);
+      set('ctsMonthReg', '이번달 ' + d.monthReg);
+    })
+    .catch(function(){});
+}
 
 function changeMonth(delta) {
   calMonth += delta;
