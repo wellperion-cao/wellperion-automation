@@ -182,7 +182,8 @@ def _build_llm_prompt(summary_text: str, max_proposals: int) -> str:
     "왜_근거": "위 학습 요약의 어떤 내용에서 착안했는지",
     "반영위치": "메모리 또는 프롬프트 또는 자동화코드 또는 보고체계 또는 운영프로세스",
     "예상효과": "기대되는 구체적 효과",
-    "위험": "도입 시 주의사항 또는 부작용 (없으면 '없음')"
+    "위험": "도입 시 주의사항 또는 부작용 (없으면 '없음')",
+    "구현_초안": "바로 착수 가능한 실행 초안. ▸대상 파일/위치(예: scripts/xxx.py · S2 cto탭) ▸구체적 변경(핵심 코드·텍스트 스니펫 또는 정확한 수정점) ▸검증법(예: py_compile·라이브 확인). 모르면 '미상'이 아니라 합리적 초안을 제시."
   }}
 ]
 
@@ -190,6 +191,7 @@ def _build_llm_prompt(summary_text: str, max_proposals: int) -> str:
 - 대상_clevel 은 반드시 시토/시우/시모/시포/시로/시뽀/웰리 중 하나
 - 반영위치 는 반드시 메모리/프롬프트/자동화코드/보고체계/운영프로세스 중 하나
 - 중복 대상_clevel 최소화 (여러 C-Level 분산)
+- 구현_초안 은 '설명'이 아니라 담당 AI가 그대로 착수할 수 있는 구체 초안(파일·변경·검증)으로. 추상적 방향만 적지 말 것
 - 순수 JSON 배열만 출력 (```json 코드블록도 없이)"""
 
 
@@ -280,6 +282,7 @@ def generate_proposals_fallback(summary: dict, max_proposals: int) -> list:
             "반영위치": area_info["area"] if area_info["area"] in ["메모리", "프롬프트"] else "자동화코드",
             "예상효과": "운영 효율 향상 및 최신 AI 기법 반영",
             "위험": "기존 동작 회귀 가능성 — 반영 전 GM 승인 필수",
+            "구현_초안": "(규칙폴백 — 자동 초안 없음, 담당 AI 수동 설계 필요)",
         }
         proposals.append(proposal)
 
@@ -305,6 +308,7 @@ def assemble_cards(raw_proposals: list, summary: dict, brain: str) -> list:
             "반영위치": p.get("반영위치", ""),
             "예상효과": p.get("예상효과", ""),
             "위험": p.get("위험", "없음"),
+            "구현_초안": p.get("구현_초안", ""),  # ② 실체화: 바로 착수 가능한 실행 초안
             "status": "제안",
             "효과": "미확인",
             "효과근거": "",
@@ -400,6 +404,9 @@ def cmd_list(status_filter: str | None):
         print(f"\n{status_icon} [{st}] {sid}")
         print(f"  대상: {target}  |  위치: {loc}  |  생성두뇌: {brain}  |  생성일: {created}")
         print(f"  무엇을: {what}")
+        draft = card.get("구현_초안", "")
+        if draft:
+            print(f"  🛠 구현 초안: {draft}")
 
         if st == "승인":
             print(f"  승인일시: {card.get('승인일시', '?')}")
