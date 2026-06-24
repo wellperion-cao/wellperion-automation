@@ -347,6 +347,7 @@
     <section class="panel" data-panel="onbo"></section>
     <section class="panel" data-panel="eval"></section>
     <section class="panel" data-panel="exit"></section>
+    <section class="panel" data-panel="docs"></section>
     <section class="panel" data-panel="std"></section>
   </div>
 </main>
@@ -551,7 +552,7 @@ var DBMETA=[["emp","임직원 명부"],["hire","채용 공고"],["appl","지원�
 var TABS = [
   {id:"dash",label:"대시보드"},{id:"emp",label:"임직원"},{id:"hire",label:"채용"},
   {id:"onbo",label:"온보딩"},{id:"eval",label:"평가·포상"},{id:"exit",label:"퇴사"},
-  {id:"std",label:"운영 기준"}
+  {id:"docs",label:"인사 서류함"},{id:"std",label:"운영 기준"}
 ];
 var DB={emp:[],hire:[],appl:[],onbo:[],eval:[],exit:[]};
 var ERR={},ERRMSG={},ROWCOUNT={},RAWSAMPLE={},STALE={};
@@ -1894,6 +1895,57 @@ function renderStd(){
     '</div>';
   setPanel("std",html);
 }
+function renderDocs(){
+  var DL="https://drive.google.com/uc?export=download&id=";
+  var VIEW="https://drive.google.com/file/d/";
+  var groups=[
+    {title:"정직원 · 강사 본계약서", desc:"임금·실명 등 민감정보 포함 → 다운로드 대신 Drive에서 열람", items:[
+      {name:"정규직 근로계약서", id:"1wW7z-zUI7baMPLkadtRaDTX1xBSAhscL", type:"XLSX", mode:"open", note:"검토중(보류) · 직급별 임금표 포함"},
+      {name:"강사 위탁계약서 (2026년 기준)", id:"1PqtDKWSeLLjdhxtEzBM3TLHaTTYNU8wG", type:"XLSX", mode:"open", note:"강습팀 계약조건 · 수수료율 포함"}
+    ]},
+    {title:"사직 · 퇴사", desc:"빈 양식 — 작성용 다운로드", items:[
+      {name:"사직원 (운영부)", id:"14fj4Bf-AX7KrFKkmsDuQPstL4w85KT8C", type:"HWP", mode:"dl"},
+      {name:"사직원 (시설 & 지원)", id:"1pvfGHDf-Iij4GvNCLkb0-AMssrCcJAnL", type:"HWP", mode:"dl"},
+      {name:"강사 퇴사면담 체크리스트", id:"1QBuWmKIwT6TZCw1Iw1LLdb6FmlcqUDVW", type:"DOCX", mode:"dl"}
+    ]},
+    {title:"계약해지 확인서", desc:"빈 양식 — 직군별", items:[
+      {name:"계약해지 확인서 (일반)", id:"17mAqKZ6J5tVJl8h9loxrV7THnFtKC_Xz", type:"HWP", mode:"dl"},
+      {name:"계약해지 확인서 (수영)", id:"1ZrVoK0_dyOzoww1oK5uLTrtGAPGfJO0_", type:"HWP", mode:"dl"},
+      {name:"계약해지 확인서 (P.L)", id:"1qBzTTdZfbU_deAzNucVdcxpTlAlURSdG", type:"HWP", mode:"dl"},
+      {name:"계약해지 확인서 (마케터)", id:"1KEBIyBn4BEeyzgkZOaLfxrhKdG8Ddlim", type:"HWP", mode:"dl"}
+    ]},
+    {title:"부속 계약 · 동의서", desc:"빈 양식 — 작성용 다운로드", items:[
+      {name:"감시단속적 근로자 동의서 (시설부)", id:"1vHhC_3AE07vhy7_Xrj_pVIuskNBye514", type:"HWP", mode:"dl"},
+      {name:"초단시간 근로계약서", id:"1R8hRmpCyu29uq1spMjRKXBwm6lijff3r", type:"HWP", mode:"dl"},
+      {name:"하도급 표준계약서", id:"13a2Dl8a3isYOd4xnMIBU9w33b4hCoJ23", type:"HWP", mode:"dl"},
+      {name:"마케터 파트너계약서 (2025)", id:"1essLuj0plwIAa6Cru2KDZb3yTl_IDiZt", type:"HWP", mode:"dl"},
+      {name:"체련복 표준계약서", id:"1pZxs0o2Jel-rrUkwysiecd2v9au9t5Sf", type:"HWP", mode:"dl"}
+    ]}
+  ];
+  var html='<div class="alert" style="margin-bottom:14px"><b>인사 서류함</b>'+
+    '<div style="margin-top:3px;color:var(--ink-soft);line-height:1.65">구글 드라이브 「웰페리온 인사」 폴더의 표준 서식을 한곳에 모았습니다. '+
+    '버튼을 누르면 파일을 바로 내려받거나 Drive에서 열 수 있습니다. '+
+    '<b>Drive 접근 권한이 있는 관리자만</b> 열람되며, 작성완료 계약서·급여·근태 등 개인정보 파일은 제외했습니다.</div></div>';
+  groups.forEach(function(g){
+    html+='<div class="sec-title">'+esc(g.title)+'<span style="font-weight:500;color:var(--ink-faint);letter-spacing:0;text-transform:none;margin-left:8px;font-size:11px">'+esc(g.desc)+'</span></div>';
+    html+='<div class="docs-grid">';
+    g.items.forEach(function(it){
+      var btn=it.mode==="open"
+        ? '<a class="doc-btn open" href="'+VIEW+it.id+'/view" target="_blank" rel="noopener">↗ 시트 열기</a>'
+        : '<a class="doc-btn" href="'+DL+it.id+'" target="_blank" rel="noopener">⬇ 다운로드</a>';
+      html+='<div class="doc-card">'+
+        '<div class="doc-top"><span class="doc-type t-'+it.type.toLowerCase()+'">'+it.type+'</span>'+
+        (it.mode==="open"?'<span class="doc-lock">🔒 관리자</span>':'')+'</div>'+
+        '<div class="doc-name">'+esc(it.name)+'</div>'+
+        (it.note?'<div class="doc-note">'+esc(it.note)+'</div>':'')+
+        '<div class="doc-act">'+btn+
+        '<a class="doc-link" href="'+VIEW+it.id+'/view" target="_blank" rel="noopener" title="Drive에서 열기">Drive</a></div>'+
+        '</div>';
+    });
+    html+='</div>';
+  });
+  setPanel("docs",html);
+}
 
 /* ============ infra ============ */
 function setPanel(id,html){document.querySelector('.panel[data-panel="'+id+'"]').innerHTML=html;}
@@ -1929,7 +1981,7 @@ function drawDonut(cid,obj){
 }
 var RENDERED={};
 var RENDERERS={dash:renderDash,emp:renderEmp,hire:renderHire,onbo:renderOnbo,
-  eval:renderEval,exit:renderExit,std:renderStd};
+  eval:renderEval,exit:renderExit,docs:renderDocs,std:renderStd};
 function showTab(id){
   TABS.forEach(function(t){
     document.querySelector('.tab[data-tab="'+t.id+'"]').classList.toggle("active",t.id===id);
@@ -2466,6 +2518,22 @@ details.jobs-fold > summary{list-style:none}
 details.jobs-fold[open] > summary > .jf-arrow{transform:rotate(90deg)}
 details.jobs-fold > summary > .jf-arrow{display:inline-block;transition:transform 0.15s}
 .appl-row:hover{background:var(--surface-2,#faf9f6)!important}
+/* 인사 서류함 */
+.docs-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(232px,1fr));gap:13px;margin-bottom:8px}
+.doc-card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:15px 16px;display:flex;flex-direction:column;gap:7px;transition:box-shadow .15s,transform .15s}
+.doc-card:hover{box-shadow:0 6px 18px rgba(31,30,27,.08);transform:translateY(-1px)}
+.doc-top{display:flex;align-items:center;justify-content:space-between;min-height:18px}
+.doc-type{font-size:10px;font-weight:700;letter-spacing:.05em;color:#fff;background:var(--ink-faint);border-radius:5px;padding:2px 7px}
+.doc-type.t-hwp{background:#2f6d9e}.doc-type.t-xlsx{background:#3c7a4a}.doc-type.t-docx{background:#2f5a9e}.doc-type.t-pdf{background:#b0413a}
+.doc-lock{font-size:10.5px;font-weight:600;color:var(--gold-deep)}
+.doc-name{font-size:13px;font-weight:650;color:var(--ink);line-height:1.4;flex:1}
+.doc-note{font-size:11px;color:var(--ink-faint);line-height:1.45}
+.doc-act{display:flex;align-items:center;gap:8px;margin-top:5px}
+.doc-btn{flex:1;text-align:center;font-size:12px;font-weight:650;color:#fff;background:linear-gradient(135deg,var(--gold),var(--gold-deep));border-radius:8px;padding:7px 10px;text-decoration:none}
+.doc-btn:hover{filter:brightness(1.06)}
+.doc-btn.open{background:linear-gradient(135deg,#3a72a8,#2f5a85)}
+.doc-link{font-size:11px;font-weight:600;color:var(--ink-soft);text-decoration:none;border:1px solid var(--line);border-radius:8px;padding:7px 9px}
+.doc-link:hover{border-color:var(--gold);color:var(--gold-deep)}
 </style>
 <script>
 (function(){
