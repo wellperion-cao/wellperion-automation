@@ -1342,6 +1342,7 @@ function _writePerRoundRows(dept, date, body) {
   });
 
   // 종합접수처 자동전송(fail-soft): 이슈메모 있는 항목 → reg_submit POST. 실패해도 점검 저장은 정상 진행. 2026-06-20 시우·GM.
+  // ★폐지(GM 2026-06-22): 함수 내부 첫 줄 return 가드로 무동작. 재활성 시 return만 제거.
   try { _checkSendIssuesToVoc(issuesToForward, gender); } catch (e) {}
 
   return jsonRes({ success: true, perRound: true, saved: total });
