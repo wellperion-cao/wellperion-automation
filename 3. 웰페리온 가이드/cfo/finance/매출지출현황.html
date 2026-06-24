@@ -55,7 +55,7 @@ td.fut{color:var(--ink-faint);font-style:italic}td.neg{color:var(--red)}
 .field label{display:block;font-size:11.5px;color:var(--ink-soft);font-weight:600;margin-bottom:4px}
 .field input,.field select{width:100%;padding:9px 10px;border:1px solid var(--line);border-radius:8px;font:13px inherit;background:var(--surface-2)}
 .chip{display:inline-block;font-size:10.5px;padding:2px 8px;border-radius:20px;font-weight:700}
-.chip.wait{background:#fcf2dd;color:#9a7322}.chip.ok{background:#e3f0e6;color:var(--green)}.chip.no{background:#f6e1de;color:var(--red)}
+.chip.wait{background:#fcf2dd;color:#9a7322}.chip.ok{background:#e3f0e6;color:var(--green)}.chip.no{background:#f6e1de;color:var(--red)}.chip.rev{background:#e3eaf3;color:#2f6d9e}.chip.set{background:#f3ece0;color:#a98a52}
 #gate{position:fixed;inset:0;z-index:100;display:flex;align-items:center;justify-content:center;background:linear-gradient(180deg,#262524,#1a1918);padding:20px}
 .gate-card{background:var(--surface);border-radius:14px;padding:32px 28px;max-width:344px;width:100%;text-align:center;box-shadow:0 18px 50px rgba(0,0,0,.4)}
 .gate-card .mark{font-size:11px;letter-spacing:.28em;color:var(--gold);font-weight:600;text-transform:uppercase}
@@ -144,6 +144,7 @@ footer{margin-top:26px;font-size:11px;color:var(--ink-faint);text-align:center;l
         <div class="field"><label>관련 링크</label><input type="text" id="reqLink" placeholder="구매처 URL"></div>
         <div class="field"><label>승인자</label><input type="text" id="reqApprover" placeholder="소속부서장"></div>
         <div class="field" style="grid-column:1/-1"><label>구매목적 / 사용내용</label><input type="text" id="reqPurpose" placeholder="목적"></div>
+        <div class="field" style="grid-column:1/-1"><label>사진 첨부 (영수증·견적서·이미지)</label><input type="file" id="reqPhoto" accept="image/*,application/pdf"></div>
       </div>
       <button class="btn" style="margin-top:14px" id="reqSubmit">품의 제출</button>
       <span id="reqMsg" style="margin-left:10px;font-size:12px;color:var(--ink-soft)"></span>
@@ -382,33 +383,43 @@ async function submitReq(){
   var msg=document.getElementById("reqMsg");
   if(!rval("reqWho")||!rval("reqItem")){msg.textContent="요청자·물품은 필수입니다";return;}
   msg.textContent="제출 중…";
-  var d=await procCall("add",{요청자:rval("reqWho"),소속:rval("reqDept"),물품:rval("reqItem"),가격:rval("reqAmt"),링크:rval("reqLink"),목적:rval("reqPurpose"),승인자:rval("reqApprover")});
-  if(d&&d.ok){msg.textContent="✅ 등록 완료";["reqWho","reqItem","reqAmt","reqLink","reqPurpose","reqApprover"].forEach(function(id){document.getElementById(id).value="";});loadReq();}
+  var base={요청자:rval("reqWho"),소속:rval("reqDept"),물품:rval("reqItem"),가격:rval("reqAmt"),링크:rval("reqLink"),목적:rval("reqPurpose"),승인자:rval("reqApprover")};
+  var fp=document.getElementById("reqPhoto");var f=fp&&fp.files&&fp.files[0];
+  if(f){var rd=new FileReader();rd.onload=function(){base.fileData=rd.result.split(",")[1];base.fileName=f.name;base.mimeType=f.type;doSubmit(base,msg,fp);};rd.readAsDataURL(f);}
+  else doSubmit(base,msg,fp);
+}
+async function doSubmit(base,msg,fp){
+  var d=await procCall("add",base);
+  if(d&&d.ok){msg.textContent="✅ 등록 완료";["reqWho","reqItem","reqAmt","reqLink","reqPurpose","reqApprover"].forEach(function(id){document.getElementById(id).value="";});if(fp)fp.value="";loadReq();}
   else msg.textContent="⚠️ 실패: "+((d&&d.error)||"서버 오류");
 }
-var STAGES=["품의","검토","집행","정산"];
+var STAGES=["품의","검토","정산","완료"];
 function renderReqTbl(){
   document.getElementById("reqCount").textContent="("+REQ_DATA.length+"건)";
   var states=["전체"].concat(STAGES);var fc=document.getElementById("reqFilter");
   fc.innerHTML=states.map(function(s){return '<button class="team-chip'+(s===reqFilter?' on':'')+'" data-f="'+s+'">'+s+'</button>';}).join('');
   fc.querySelectorAll(".team-chip").forEach(function(b){b.onclick=function(){reqFilter=b.dataset.f;renderReqTbl();};});
   var rows=REQ_DATA.filter(function(r){return reqFilter==="전체"||r.상태===reqFilter;}).slice().reverse();
-  var stc={"품의":"wait","검토":"wait","집행":"ok","정산":"ok","승인":"ok","미승인":"no","캔슬":"no"};
-  var h='<thead><tr><th>날짜</th><th style="text-align:left">소속</th><th style="text-align:left">요청자</th><th style="text-align:left">물품</th><th>금액</th><th style="text-align:center">상태</th><th style="text-align:center">진행 / 영수증</th></tr></thead><tbody>';
+  var stc={"품의":"wait","검토":"rev","정산":"set","완료":"ok","승인":"wait","미승인":"no","캔슬":"no"};
+  var h='<thead><tr><th>날짜</th><th style="text-align:left">소속</th><th style="text-align:left">요청자</th><th style="text-align:left">승인자</th><th style="text-align:left">물품</th><th>금액</th><th style="text-align:center">영수증</th><th style="text-align:center">상태</th><th style="text-align:center">승인 / 처리</th></tr></thead><tbody>';
   rows.forEach(function(r){
-    h+='<tr><td style="text-align:left">'+r.날짜+'</td><td style="text-align:left">'+(r.소속||"")+'</td><td style="text-align:left">'+(r.요청자||"")+'</td><td style="text-align:left">'+(r.물품||"")+'</td><td>'+won(r.가격)+'</td><td style="text-align:center"><span class="chip '+(stc[r.상태]||"wait")+'">'+(r.상태||"품의")+'</span></td><td style="text-align:center;white-space:nowrap"><select data-row="'+r.row+'" class="reqStatus" style="font-size:11px;padding:3px"><option value="">단계변경</option>'+STAGES.map(function(s){return '<option>'+s+'</option>';}).join('')+'</select> <button class="reqRcpt" data-row="'+r.row+'" style="font-size:11px;padding:3px 8px;cursor:pointer;border:1px solid var(--line);border-radius:6px;background:var(--surface-2)">영수증</button>'+(r.지출증빙?' <a href="'+r.지출증빙+'" target="_blank">📎</a>':'')+'</td></tr>';
+    var st=r.상태||"품의",act="";
+    if(st==="품의"||st==="승인")act='<button class="reqAct" data-row="'+r.row+'" data-next="검토" data-pw="1" style="'+btnCss("#3c7a4a")+'">승인</button>';
+    else if(st==="검토")act='<button class="reqAct" data-row="'+r.row+'" data-next="정산" style="'+btnCss("#2f6d9e")+'">검토완료</button>';
+    else if(st==="정산")act='<button class="reqAct" data-row="'+r.row+'" data-next="완료" style="'+btnCss("#a98a52")+'">최종확인</button>';
+    else if(st==="완료")act='<span style="color:var(--green);font-size:12px;font-weight:700">✔ 완료</span>';
+    else act='<span style="color:var(--ink-faint);font-size:11px">'+st+'</span>';
+    var rcpt=r.지출증빙?'<a href="'+r.지출증빙+'" target="_blank">📎 보기</a>':'<span style="color:var(--ink-faint);font-size:11px">–</span>';
+    h+='<tr><td style="text-align:left">'+r.날짜+'</td><td style="text-align:left">'+(r.소속||"")+'</td><td style="text-align:left">'+(r.요청자||"")+'</td><td style="text-align:left">'+(r.승인자||"")+'</td><td style="text-align:left">'+(r.물품||"")+'</td><td>'+won(r.가격)+'</td><td style="text-align:center">'+rcpt+'</td><td style="text-align:center"><span class="chip '+(stc[st]||"wait")+'">'+st+'</span></td><td style="text-align:center;white-space:nowrap">'+act+'</td></tr>';
   });
-  if(!rows.length)h+='<tr><td colspan="7" style="color:var(--ink-faint)">해당 상태의 품의가 없습니다.</td></tr>';
+  if(!rows.length)h+='<tr><td colspan="9" style="color:var(--ink-faint)">해당 상태의 품의가 없습니다.</td></tr>';
   h+='</tbody>';document.getElementById("reqTbl").innerHTML=h;
-  document.querySelectorAll(".reqStatus").forEach(function(sel){sel.onchange=async function(){if(!sel.value)return;sel.disabled=true;await procCall("status",{row:sel.dataset.row,status:sel.value});loadReq();};});
-  document.querySelectorAll(".reqRcpt").forEach(function(b){b.onclick=function(){uploadReceipt(b.dataset.row);};});
+  document.querySelectorAll(".reqAct").forEach(function(b){b.onclick=function(){doAct(b.dataset.row,b.dataset.next,b.dataset.pw);};});
 }
-function uploadReceipt(row){
-  var inp=document.createElement("input");inp.type="file";inp.accept="image/*,application/pdf";
-  inp.onchange=function(){var f=inp.files[0];if(!f)return;var rd=new FileReader();
-    rd.onload=async function(){var b64=rd.result.split(",")[1];await procCall("receipt",{row:row,fileData:b64,fileName:f.name,mimeType:f.type});loadReq();};
-    rd.readAsDataURL(f);};
-  inp.click();
+function btnCss(c){return "font-size:11px;padding:4px 11px;cursor:pointer;border:none;border-radius:6px;color:#fff;font-weight:600;background:"+c;}
+async function doAct(row,next,needPw){
+  if(needPw){var pw=prompt("승인 비밀번호를 입력하세요 (승인자 확인)");if(pw===null)return;pw=String(pw).trim();if(pw!=="1202"&&pw!==GATE_PW){alert("비밀번호가 올바르지 않습니다");return;}}
+  await procCall("status",{row:row,status:next});loadReq();
 }
 
 (function(){var ok="";try{ok=sessionStorage.getItem("wp_fin_ok")||"";}catch(e){}
