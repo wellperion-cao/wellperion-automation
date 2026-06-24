@@ -5737,19 +5737,40 @@ function pushSeedItemsToSheet(){
 }
 
 function mgmtGenerateId(category){
-  // 기존 항목ID(a1·b3·c5·d2·e1·cl3·op1 …)와 일관: 카테고리 머리 영문자를 접두로,
-  // 그 접두의 '다음 번호'를 부여. 영문자 없는 커스텀 카테고리는 'x' 접두.
+  // 기존 항목ID(a1·b3·c5·d2·e1·cl3·op4 …)와 동일 체계로 정식 id 부여.
+  // 접두 도출 우선순위(추측 금지·실데이터 기준):
+  //   1) 같은 카테고리(그룹)에 이미 있는 항목들의 id 접두(최다) — 예 '오픈 점검'=op, '마감 점검'/'전일 마감…'=cl, 'C 내부'=c
+  //   2) 한글 카테고리 키워드 맵(오픈→op·마감→cl) — 빈 그룹 신설 대비
+  //   3) 카테고리명 머리 영문자(A 사우나→a·G.→g)
+  //   4) 그래도 없으면 'x'
   // 시드(WEEKDAY 등)+커스텀 전체에서 같은 접두 최대번호+1 → 번호 충돌·STATE 유실 방지(재사용 안 함).
+  // ⚠ custom_/cx_ 임의 식별자 폐지: 정식 접두+번호라야 점검(남/여)에서 '커스텀' 라벨 없이 정상 항목으로 합류(isAddedItem=false).
   const cat=String(category||'').trim();
-  const lead=cat.match(/[A-Za-z]/);
-  const prefix=lead?lead[0].toLowerCase():'x';
-  const all=[];
+  // 시드+커스텀 전 항목을 (id, cat) 쌍으로 수집
+  const all=[];           // 전체 id (번호 충돌 방지용)
+  const sameCat=[];       // 같은 카테고리 항목 id (접두 도출용)
+  function _collect(id, c){ id=String(id||''); if(!id)return; all.push(id); if(c&&String(c)===cat)sameCat.push(id); }
   try{
     [typeof WEEKDAY!=='undefined'?WEEKDAY:null, typeof WEEKEND!=='undefined'?WEEKEND:null,
      typeof NIGHT_WEEKDAY!=='undefined'?NIGHT_WEEKDAY:null, typeof NIGHT_WEEKEND!=='undefined'?NIGHT_WEEKEND:null]
-      .forEach(function(sc){ if(Array.isArray(sc)) getAllItems(sc).forEach(function(it){ all.push(String(it&&it.id||'')); }); });
+      .forEach(function(sc){ if(Array.isArray(sc)) getAllItems(sc).forEach(function(it){ _collect(it&&it.id, it&&it.cat); }); });
   }catch(e){}
-  (CUSTOM_ITEMS||[]).forEach(function(it){ all.push(String(it&&it.id||'')); });
+  (CUSTOM_ITEMS||[]).forEach(function(it){ _collect(it&&it.id, it&&(it.category||it.cat)); });
+  // 1) 같은 카테고리 기존 항목의 접두(영소문자 연속) 최다값 채택 — b4_f 같은 변형은 영문자만 추출
+  let prefix='';
+  if(sameCat.length){
+    const cnt={};
+    sameCat.forEach(function(id){ const m=id.match(/^([a-z]+)/); if(m){ const p=m[1]; cnt[p]=(cnt[p]||0)+1; } });
+    let best=0; Object.keys(cnt).forEach(function(p){ if(cnt[p]>best){ best=cnt[p]; prefix=p; } });
+  }
+  // 2) 한글 키워드 맵(빈 그룹 신설 대비)
+  if(!prefix){
+    if(cat.indexOf('오픈')>=0)prefix='op';
+    else if(cat.indexOf('마감')>=0)prefix='cl';
+  }
+  // 3) 머리 영문자  4) 폴백 x
+  if(!prefix){ const lead=cat.match(/[A-Za-z]/); prefix=lead?lead[0].toLowerCase():'x'; }
+  // 같은 접두의 최대번호+1 (접두 뒤 숫자만 — b4_f 등 접미사 변형은 번호 산정에서 제외)
   const re=new RegExp('^'+prefix+'(\\d+)$');
   let max=0;
   all.forEach(function(id){ const m=id.match(re); if(m){ const n=parseInt(m[1],10); if(n>max) max=n; } });
