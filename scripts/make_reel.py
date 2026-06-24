@@ -60,6 +60,7 @@ from moviepy.audio.fx import AudioFadeOut
 
 PROJECT_ROOT = Path(r"C:\Users\jjky0\welperion-automation")
 MOVIE_DIR = PROJECT_ROOT / "instagram" / "Movie"
+MUSIC_POOL_DIR = PROJECT_ROOT / "instagram" / "_assets" / "music"
 
 # 폰트 위치 후보 (slide_compositor 와 동일 — 실제 존재 경로 자동 선택)
 _FONT_DIR_CANDIDATES = [
@@ -412,9 +413,20 @@ def main() -> None:
 
     print(f"[모드] {mode_label}")
 
-    music = _resolve(args.music) if args.music else None
-    if music and not music.is_file():
-        sys.exit(f"[오류] --music 파일 없음: {music}")
+    # 음원 결정: --music 명시 > 풀 자동선택 > 무음
+    if args.music:
+        music = _resolve(args.music)
+        if not music.is_file():
+            sys.exit(f"[오류] --music 파일 없음: {music}")
+        print(f"[음악] 지정 파일: {music.name}")
+    else:
+        pool_mp3s = sorted(MUSIC_POOL_DIR.glob("*.mp3")) if MUSIC_POOL_DIR.is_dir() else []
+        if pool_mp3s:
+            music = pool_mp3s[0]
+            print(f"[음악] 풀 자동선택: {music.name}")
+        else:
+            music = None
+            print("[음악] 풀 비어 무음")
 
     # 캡션: 영상/이미지 각각 load_captions 적용
     vid_captions = load_captions(args, src_folder, len(vids))
@@ -446,8 +458,6 @@ def main() -> None:
     print(f"[자막] 영상 {n_vid_caps}개 / 이미지 {n_img_caps}장 적용")
     if music:
         print(f"[음악] {music.name} (영상 길이 트림 + 끝 {MUSIC_FADEOUT_SEC}s 페이드아웃)")
-    else:
-        print("[음악] 없음 (무음) — 음원은 사람이 직접 받아 --music 으로 투입")
 
     out_path, duration = build_reel(
         imgs, vids,
