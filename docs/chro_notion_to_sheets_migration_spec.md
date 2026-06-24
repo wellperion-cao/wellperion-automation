@@ -65,7 +65,7 @@ extractResults(raw):
 | `부서` | select | R/W | 차트 groupCount, register/hire-complete W |
 | `소속` | select | R/W | 검색·필터 |
 | `직급` | text | R/W | |
-| `고용 형태` | select | R/W | 정규/계약/파트타임/프리랜서/파트너 |
+| `고용 형태` | select | R/W | 정규/계약/파트타임/파트너 |
 | `재직 상태` | select | R/W | 수습중/재직중/휴직중/퇴사. resign 시 "퇴사"로 |
 | `입사일` | `[date]` | R/W | `date:입사일:start` |
 | `연락처` | text(전화) | R/W | **민감** |
