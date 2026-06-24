@@ -417,6 +417,8 @@ function renderReqTbl(){
     else if(st==="정산")act='<button class="reqAct" data-row="'+r.row+'" data-next="완료" style="'+btnCss("#a98a52")+'">최종확인</button>';
     else if(st==="완료")act='<span style="color:var(--green);font-size:12px;font-weight:700">✔ 완료</span>';
     else act='<span style="color:var(--ink-faint);font-size:11px">'+st+'</span>';
+    if(st==="품의"||st==="검토"||st==="정산"||st==="승인")act+=' <button class="reqRej" data-row="'+r.row+'" style="'+btnCss("#b14238")+'">반려</button>';
+    act+=' <button class="reqDel" data-row="'+r.row+'" title="시트에서 삭제" style="font-size:12px;padding:3px 7px;cursor:pointer;border:1px solid var(--line);border-radius:6px;background:#fff">🗑</button>';
     var photo=(r.이미지&&String(r.이미지).indexOf("http")===0)?'<img src="'+r.이미지+'" class="thumb" title="첨부사진" onclick="window.open(this.src,\'_blank\')" loading="lazy">':'';
     var pf=(r.지출증빙&&String(r.지출증빙).indexOf("http")===0)?'<img src="'+r.지출증빙+'" class="thumb" title="영수증/증빙" onclick="window.open(this.src,\'_blank\')" loading="lazy">':'';
     var rcpt=(photo||pf)?(photo+pf):'<button class="reqPhoto" data-row="'+r.row+'" style="font-size:10.5px;padding:4px 9px;cursor:pointer;border:1px dashed var(--gold);border-radius:6px;background:#fbf7ee;color:var(--gold-deep)">+ 사진</button>';
@@ -426,6 +428,14 @@ function renderReqTbl(){
   h+='</tbody>';document.getElementById("reqTbl").innerHTML=h;
   document.querySelectorAll(".reqAct").forEach(function(b){b.onclick=function(){doAct(b.dataset.row,b.dataset.next,b.dataset.pw,b);};});
   document.querySelectorAll(".reqPhoto").forEach(function(b){b.onclick=function(){addPhotoTo(b.dataset.row,b);};});
+  document.querySelectorAll(".reqRej").forEach(function(b){b.onclick=function(){if(confirm("이 품의를 반려하시겠습니까? (기록은 남습니다)"))doAct(b.dataset.row,"반려",null,b);};});
+  document.querySelectorAll(".reqDel").forEach(function(b){b.onclick=function(){delReq(b.dataset.row,b);};});
+}
+async function delReq(row,btn){
+  if(!confirm("이 행을 시트에서 완전히 삭제합니다. 되돌릴 수 없습니다. 계속할까요?"))return;
+  if(btn){btn.disabled=true;btn.textContent="…";}
+  try{await procCall("delete",{row:row});}catch(e){}
+  loadReq();
 }
 function addPhotoTo(row,btn){
   var inp=document.createElement("input");inp.type="file";inp.accept="image/*,application/pdf";
