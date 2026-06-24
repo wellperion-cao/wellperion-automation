@@ -585,10 +585,9 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 
 <div id="tab-fcheck" class="content hidden">
   <h2 style="font-size:20px;margin-bottom:6px;">시설 일일점검 <span style="font-size:13px;color:var(--dim);font-weight:400;">(작업일지 · PDF 기준)</span></h2>
-  <p style="font-size:13px;color:var(--dim);margin-bottom:12px;line-height:1.6;">날짜를 고른 뒤 <b>회차 칩</b>(오픈·오전·점심·오후·마감 등)에서 시간대를 고르고, <b>⏱ 점검 시작</b>을 누르고 측정·점검값을 입력한 다음 <b>⏱ 점검 종료</b>로 소요시간·점검시각을 기록합니다. 입력 후 <b>저장</b>하면 모든 기기에 반영됩니다. 온도·수질은 시간대별, 설비값은 1일 1회.</p>
+  <p style="font-size:13px;color:var(--dim);margin-bottom:12px;line-height:1.6;">날짜를 고른 뒤 <b>⏱ 점검 시작</b>을 누르고 측정·점검값을 입력한 다음 <b>⏱ 점검 종료</b>로 소요시간·점검시각을 기록합니다. 입력 후 <b>제출</b>하면 모든 기기에 반영됩니다. 한 번 제출하면 입력칸이 비워져 바로 다음 점검을 이어서 할 수 있습니다.</p>
   <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:14px;">
     <label style="font-size:13px;font-weight:700;">날짜 <input type="date" id="fcDate" onchange="fcLoad()" style="background:var(--bg);border:1px solid var(--border);color:var(--text);padding:7px 10px;border-radius:7px;font-family:inherit;"></label>
-    <div id="fcRoundChips" style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;"></div>
     <button type="button" id="fcTimerBtn" onclick="fcTimerToggle()" style="background:var(--accent-bg);border:1.5px solid var(--accent);color:var(--accent);padding:7px 14px;border-radius:7px;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer;white-space:nowrap;">⏱ 점검 시작</button>
     <span id="fcTimerInfo" style="font-size:12px;color:var(--dim);white-space:nowrap;">미시작</span>
     <label style="font-size:13px;font-weight:700;">점검자
@@ -599,7 +598,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
         <option value="__custom__">직접입력</option>
       </select></label>
     <input type="text" id="fcInspector" placeholder="점검자 이름 직접입력" style="display:none;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:7px 12px;border-radius:7px;font-size:13px;font-family:inherit;min-width:160px;">
-    <button type="button" class="mgmt-btn save" style="padding:8px 20px;" onclick="fcSave()">저장</button>
+    <button type="button" class="mgmt-btn save" style="padding:8px 20px;" onclick="fcSave()">제출</button>
     <span id="fcStatus" style="font-size:12px;color:var(--dim);"></span>
   </div>
   <div id="fc-body"></div>
@@ -3777,11 +3776,10 @@ function vendorSubmitAddForm(){
   function paintDaily(){
     var d=fcStore.daily||{}; DAILY_FIELD_IDS.forEach(function(f){ setVal(f, d[f]!==undefined?d[f]:''); });
   }
-  // 회차 목록 확정(요일 기반) + curRound 기본값 보장(드롭다운 폐지 → 칩이 유일 수단). curRound 미설정/목록 이탈 시 첫 회차.
+  // 회차 목록 확정(요일 기반) + curRound 기본값 보장(시간대 선택 UI 폐지 → 항상 그날 첫 회차). curRound 미설정/목록 이탈 시 첫 회차.
   window.fcFillRounds=function(){
     var date=val('fcDate'); var list=roundsForDisplay(date);
     if(!curRound || list.indexOf(curRound)<0) curRound=list[0]||null;
-    fcRenderChips();
     fcRenderRoundTime();
   };
   // ─── ⏱ 점검 시작/종료 버튼 ─── 현재 회차(curRound)의 타이머 상태(idle/running/done)에 따라 버튼·info 렌더.
@@ -3820,7 +3818,7 @@ function vendorSubmitAddForm(){
   }
   // 버튼 클릭 — 상태머신: idle→시작 기록 / running→종료 기록(소요 계산) / done→confirm 후 리셋.
   window.fcTimerToggle=function(){
-    if(!curRound){ alert('회차 칩에서 시간대를 먼저 고르세요'); return; }
+    if(!curRound){ alert('날짜를 먼저 고르세요'); return; }
     if(!fcStore.roundStart)fcStore.roundStart={};
     if(!fcStore.roundTimes)fcStore.roundTimes={};
     if(!fcStore.roundDur)fcStore.roundDur={};
@@ -3852,34 +3850,10 @@ function vendorSubmitAddForm(){
     if(!fcStore.submissions)fcStore.submissions=[];
     fetch(API_URL,{method:'POST',redirect:'follow',headers:{'Content-Type':'text/plain'},body:JSON.stringify({action:'saveBoard',key:'FACILITY_CHECK_'+date,board:{date:date,inspector:insp,store:fcStore}})}).catch(function(){});
   }
-  // ─── 회차 칩 줄 — 회차별 입력여부 ●(완료)/○(미입력), 현재 회차 강조. 1일1회 항목은 칩 대상 아님. ───
-  function fcRenderChips(){
-    var box=document.getElementById('fcRoundChips'); if(!box)return;
-    var list=roundsForDisplay(val('fcDate'));
-    box.innerHTML=list.map(function(r){
-      return '<button type="button" data-round="'+r+'" onclick="fcChipGo(this.getAttribute(\'data-round\'))" style="cursor:pointer;font-family:inherit;font-size:12px;padding:5px 10px;border-radius:14px;background:var(--bg);border:1px solid var(--border);color:var(--text);white-space:nowrap;"><span class="fc-chip-icon">○</span> '+r+'<span class="fc-chip-time" style="font-size:11px;color:var(--dim);margin-left:3px;"></span></button>';
-    }).join('');
-    fcUpdateChips();
-  }
-  // 칩 상태 갱신 — fcStore.rounds[label]에 값 있으면 ●, 현재 회차 강조(테두리·굵게).
-  function fcUpdateChips(){
-    var box=document.getElementById('fcRoundChips'); if(!box)return;
-    Array.prototype.forEach.call(box.querySelectorAll('button[data-round]'),function(btn){
-      var r=btn.getAttribute('data-round');
-      var m=fcStore.rounds[r]||{};
-      var filled=Object.keys(m).some(function(k){return String(m[k]||'').trim()!=='';});
-      var ico=btn.querySelector('.fc-chip-icon'); if(ico)ico.textContent=filled?'●':'○';
-      var tm=btn.querySelector('.fc-chip-time'); var rt=(fcStore.roundTimes&&fcStore.roundTimes[r])||'';
-      var rd=(fcStore.roundDur&&fcStore.roundDur[r]);
-      if(tm)tm.textContent=rt?(' '+rt+((rd!==null&&rd!==undefined&&rd!=='')?('('+rd+'분)'):'')):'';   // 기록 시각(HH:MM)+소요분 칩에 표시 — 자동기록
-      var isCur=(r===curRound);
-      btn.style.fontWeight=isCur?'700':'400';
-      btn.style.border=isCur?'1.5px solid var(--accent)':'1px solid var(--border)';
-      btn.style.background=isCur?'var(--accent-bg)':(filled?'var(--green-bg)':'var(--bg)');
-      btn.style.color=isCur?'var(--accent)':(filled?'var(--green)':'var(--text)');
-    });
-  }
-  // 칩 클릭 → 그 회차로 전환(captureRound→curRound→paintRound→상태 갱신). 칩이 curRound 유일 수단.
+  // ─── (폐지) 회차 칩 UI — 시간대 선택 제거. 잔존 호출 대비 no-op 가드만 유지. ───
+  function fcRenderChips(){ /* 회차 칩 폐지 — no-op */ }
+  function fcUpdateChips(){ /* 회차 칩 폐지 — no-op */ }
+  // (구) 칩 클릭 핸들러 — 칩 폐지로 호출부 없음. 잔존 대비 null-safe 가드.
   window.fcChipGo=function(r){
     if(!r)return;
     captureRound();
@@ -3987,7 +3961,7 @@ function vendorSubmitAddForm(){
     DAILY_FIELD_IDS.forEach(function(f){ setVal(f,''); });
     fcRenderRoundTime(); fcUpdateChips(); fcProgress();
   }
-  // 오늘 제출 이력 목록 렌더 — submissions 기준. 각 건: at · round · 소요 N분 · inspector.
+  // 오늘 제출 이력 목록 렌더 — submissions 기준. 각 건: #seq · 제출시각 · 소요 N분 · inspector. (회차 토큰 제외)
   window.fcRenderHistory=function(){
     var cnt=document.getElementById('fc-history-count');
     var list=document.getElementById('fc-history-list'); if(!list)return;
@@ -3996,15 +3970,14 @@ function vendorSubmitAddForm(){
     if(!subs.length){ list.innerHTML='아직 제출 없음'; return; }
     list.innerHTML=subs.map(function(s){
       var dur=(s.durMin!==null&&s.durMin!==undefined&&s.durMin!=='')?(' · 소요 '+s.durMin+'분'):'';
-      var rd=s.round?(' · '+s.round):'';
-      return '<div style="padding:4px 0;border-top:1px solid var(--border);">#'+(s.seq||'')+' '+(s.at||'')+rd+dur+' · '+(s.inspector||'')+'</div>';
+      return '<div style="padding:4px 0;border-top:1px solid var(--border);">#'+(s.seq||'')+' '+(s.at||'')+dur+' · '+(s.inspector||'')+'</div>';
     }).join('');
   };
   window.fcSave=function(){
     var date=val('fcDate'); if(!date){alert('날짜를 먼저 고르세요');return;}
     captureRound(); captureDaily();
     var insp=inspectorName(); fcStore.inspector=insp;
-    var st=document.getElementById('fcStatus'); if(st)st.textContent='저장 중...';
+    var st=document.getElementById('fcStatus'); if(st)st.textContent='제출 중...';
     var curR=curRound;
     // 제출 1건 스냅샷 누적(덮어쓰기 아님) → fcStore에 포함되어 saveBoard로 영속.
     if(!fcStore.submissions)fcStore.submissions=[];
@@ -4036,7 +4009,7 @@ function vendorSubmitAddForm(){
       fcResetAfterSubmit(curR);
       fcRenderHistory();
       if(st)st.textContent='제출 완료 — 오늘 '+subCount+'건째 · 다시 점검하세요';
-    }).catch(function(){ if(st)st.textContent='저장 실패(네트워크)'; });
+    }).catch(function(){ if(st)st.textContent='제출 실패(네트워크)'; });
   };
   window.fcLoad=function(){
     var date=val('fcDate'); if(!date)return;
