@@ -360,7 +360,6 @@
       <option>정규직</option>
       <option>계약직</option>
       <option>파트타임</option>
-      <option>프리랜서</option>
       <option>파트너</option>
     </select>
     <label>재직 상태</label>
@@ -473,7 +472,6 @@
       <option>정규직</option>
       <option>계약직</option>
       <option>파트타임</option>
-      <option>프리랜서</option>
       <option>파트너</option>
     </select>
     <label>입사일</label>
@@ -586,7 +584,7 @@ function p2(n){return (n<10?"0":"")+n;}
 
 var COLOR={
   "재직중":"green","수습중":"amber","휴직중":"orange","퇴사":"red",
-  "정규직":"green","계약직":"blue","파트타임":"amber","프리랜서":"orange","파트너":"purple",
+  "정규직":"green","계약직":"blue","파트타임":"amber","파트너":"purple",
   "공고 준비":"gray","공고중":"blue","서류심사":"amber","면접 진행":"orange","처우 협의":"purple","채용 완료":"green","보류":"red",
   "서류 검토":"gray","1차 면접":"blue","2차 면접":"purple","최종 합격":"green","불합격":"red",
   "긴급":"red","높음":"orange","보통":"amber","낮음":"gray",
@@ -876,7 +874,7 @@ function renderEmp(){
     '<select id="empSosok"><option value="">소속 전체</option>'+
       sosok.map(function(s){return '<option>'+esc(s)+'</option>';}).join("")+'</select>'+
     '<select id="empType"><option value="">고용형태 전체</option>'+
-      ["정규직","계약직","파트타임","프리랜서","파트너"].map(function(s){return '<option>'+esc(s)+'</option>';}).join("")+'</select>'+
+      ["정규직","계약직","파트타임","파트너"].map(function(s){return '<option>'+esc(s)+'</option>';}).join("")+'</select>'+
     '<span class="count-pill" id="empCount"></span>'+
     (SESSION_ROLE==="admin"?'<button class="btn-sm" id="hireBtn" style="margin-left:auto;color:var(--gold-deep);border-color:var(--gold);font-weight:700">+ 신규 입사자 등록</button>':"")+
     '</div>';
@@ -1074,7 +1072,7 @@ if(/수행|기사/.test(pos)){
 }else if(/골프|프로/.test(pos)){
  s=[P('PART 1 — 지도 경력 · 자격 (15분)'),
  Q(1,'골프 레슨 지도 경력(대상·기간)과 보유 자격(KPGA·KLPGA 등)을 말씀해 주세요.'),
- Q(2,'이전 근무처를 떠나시거나 위탁(프리랜서)으로 전환하시려는 결정적 계기는 무엇인가요?'),
+ Q(2,'이전 근무처를 떠나시거나 위탁(파트너)으로 전환하시려는 결정적 계기는 무엇인가요?'),
  Q(3,'본인의 레슨 철학과 초·중급 회원 지도 시 강점은 무엇인가요?'),
  P('PART 2 — 회원 응대 · 안전 (15분)'),
  Q(4,'까다로운 회원 응대(불만·실력 정체 등) 경험과 해결 사례를 들려주세요.'),
@@ -1083,8 +1081,8 @@ if(/수행|기사/.test(pos)){
  P('PART 3 — 업장 운영 · 주도성 (10분)'),
  Q(7,'레슨 외 업장(연습장) 관리·예약·회원 관리를 주도적으로 해보신 경험이 있나요?'),
  Q(8,'신규 회원 유치나 재등록을 위해 본인이 기여할 수 있는 부분은 무엇인가요?'),
- P('PART 4 — 현실 확인 (위탁/프리랜서) (5분)'),
- Q(9,'오전 업장 관리 시간(평일 06:00~14:00 등) 운영이 가능하신가요? 위탁(프리랜서) 계약 형태에 대한 이해는 어떠신가요?'),
+ P('PART 4 — 현실 확인 (위탁/파트너) (5분)'),
+ Q(9,'오전 업장 관리 시간(평일 06:00~14:00 등) 운영이 가능하신가요? 위탁(파트너) 계약 형태에 대한 이해는 어떠신가요?'),
  Q(10,'수업료율·정착지원금 등 보상 구조에 대한 기대와 입장은 어떠신가요?')];
 }else{
  s=[P('PART 1 — 문제해결능력 · 이직 동기 (15분)'),
