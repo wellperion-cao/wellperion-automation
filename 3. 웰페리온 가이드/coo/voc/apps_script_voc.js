@@ -23,7 +23,6 @@ var VOC_HEADERS = [
   '접수ID', '접수일시', '유형', '위치', '사진URL',
   '내용', '연락처', '상태', '담당', '처리메모'
 ];
-var VOC_TYPES = ['분실물', '시설불편', '청결', '기타'];
 var VOC_STATUSES = ['접수', '처리중', '완료'];
 var VOC_STATUS_COLORS = {
   '접수':  '#e6944e', // 주황
@@ -39,7 +38,6 @@ var REG_CATEGORIES = [
   { key: 'lost',     label: '분실물 접수',         sheet: '접수_분실물',   dept: '운영부', slaHours: 168 },
   { key: 'facility', label: '시설물 고장 접수',     sheet: '접수_시설고장', dept: '시설부', slaHours: 24 },
   { key: 'clean',    label: '청결 이슈 접수',       sheet: '접수_청결',     dept: '지원부', slaHours: 12 },
-  { key: 'leave',    label: '휴회 접수',            sheet: '접수_휴회',     dept: '운영부', slaHours: 72 },
   { key: 'praise',   label: '직원·강사 칭찬합니다', sheet: '접수_칭찬',     dept: '운영부', slaHours: null },
   { key: 'voice',    label: '직원·강사 쓴소리합니다', sheet: '접수_쓴소리', dept: '운영부', slaHours: 72 }
   // praise/voice → dept: '인사부' 로 바꿀 때 위 두 줄만 수정
@@ -76,12 +74,6 @@ var REG_EXTRA_HEADERS = {
   clean:    [
     { key: 'issueKind',  label: '유형'   },
     { key: 'urgency',    label: '시급도' }
-  ],
-  leave:    [
-    { key: 'memberNo',   label: '회원번호'   },
-    { key: 'startDate',  label: '휴회시작일' },
-    { key: 'period',     label: '희망기간'   },
-    { key: 'reason',     label: '사유'       }
   ],
   praise:   [
     { key: 'targetStaff', label: '대상직원·강사' },
@@ -800,7 +792,6 @@ function _vProcess(action, body, params) {
   }
   if (action === 'voc_types')  return _vJson({
     ok: true,
-    types:      VOC_TYPES,
     statuses:   VOC_STATUSES,
     categories: REG_CATEGORIES
   });

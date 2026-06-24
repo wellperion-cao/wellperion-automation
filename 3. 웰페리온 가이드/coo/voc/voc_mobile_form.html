@@ -78,7 +78,6 @@ select{appearance:none;-webkit-appearance:none;background-image:url("data:image/
         <button type="button" class="type-btn" data-cat="lost">🔍 분실물 접수</button>
         <button type="button" class="type-btn" data-cat="facility">🛠️ 시설물 고장 접수</button>
         <button type="button" class="type-btn" data-cat="clean">🧹 청결 이슈 접수</button>
-        <button type="button" class="type-btn" data-cat="leave">📋 휴회 접수</button>
         <button type="button" class="type-btn" data-cat="praise">⭐ 직원·강사 칭찬합니다</button>
         <button type="button" class="type-btn" data-cat="voice">💬 직원·강사 쓴소리합니다</button>
       </div>
@@ -177,12 +176,6 @@ select{appearance:none;-webkit-appearance:none;background-image:url("data:image/
     clean: [
       { key:'issueKind', label:'유형',   type:'select', opts:['악취','쓰레기','곰팡이','기타'] },
       { key:'urgency',   label:'시급도', type:'select', opts:['높음','보통','낮음'] }
-    ],
-    leave: [
-      { key:'memberNo',  label:'회원 번호',  type:'text', ph:'회원 번호를 입력하세요' },
-      { key:'startDate', label:'휴회 시작일', type:'date' },
-      { key:'period',    label:'희망 기간',  type:'text', ph:'예: 1개월, 3주 …' },
-      { key:'reason',    label:'사유',       type:'text', ph:'예: 해외 출장, 부상 …' }
     ],
     praise: [
       { key:'targetStaff', label:'대상 직원·강사', type:'text', ph:'이름을 입력하세요' },
@@ -378,10 +371,6 @@ select{appearance:none;-webkit-appearance:none;background-image:url("data:image/
       usable:        dynValues.usable        || '',
       issueKind:     dynValues.issueKind     || '',
       urgency:       dynValues.urgency       || '',
-      memberNo:      dynValues.memberNo      || '',
-      startDate:     dynValues.startDate     || '',
-      period:        dynValues.period        || '',
-      reason:        dynValues.reason        || '',
       targetStaff:   dynValues.targetStaff   || '',
       episode:       dynValues.episode       || '',
       anonymousPref: dynValues.anonymousPref || ''
