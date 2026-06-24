@@ -102,15 +102,19 @@ footer{margin-top:26px;font-size:11px;color:var(--ink-faint);text-align:center;l
   </section>
 
   <section class="panel" data-panel="sales">
+    <div class="grid-2">
+      <div class="card"><h3>월별 매출 추이</h3><div class="desc">센터 전체 = 운영부(회원권) + 강습.</div><div style="height:240px"><canvas id="chartSalesTrend"></canvas></div></div>
+      <div class="card"><h3>부서별 매출 <span style="font-size:11px;color:var(--ink-faint)">(누적)</span></h3><div class="desc">운영부(회원권) 포함.</div><div style="height:240px"><canvas id="chartSalesAll"></canvas></div></div>
+    </div>
     <div class="sec-title">매출현황 — 센터전체 / 부서별 / 월별 (단위: 원)</div>
     <div class="tbl-wrap"><table id="salesTbl"></table></div>
-    <div class="notice">센터 전체 = 회원권(멤버십) + 강습(부서별). 6월은 부분월. (매출은 현재 확정값, 실시간 연동 예정)</div>
+    <div class="notice">센터 전체 = 운영부(회원권) + 강습(부서별). 6월은 부분월. 매출 마스터 시트 실시간 연동.</div>
   </section>
 
   <section class="panel" data-panel="expense">
     <div class="card">
-      <h3>팀별 매출·지출 <span style="font-size:11px;color:var(--ink-faint)">(매출 vs 인건비+구매성 · 막대/칩 클릭 시 강사별)</span></h3>
-      <div class="desc">왼쪽 초록=매출, 오른쪽=지출(인건비+구매성). 기간을 고르고 팀을 클릭하면 강사별 인건비가 표시됩니다.</div>
+      <h3>팀별 지출 <span style="font-size:11px;color:var(--ink-faint)">(인건비 + 구매성 · 막대/칩 클릭 시 강사별)</span></h3>
+      <div class="desc">기간(전체/월별)을 고르고, 팀을 클릭하면 해당 팀 강사별 인건비가 아래에 표시됩니다.</div>
       <div class="team-chips" id="periodChips" style="margin-bottom:8px"></div>
       <div style="height:300px"><canvas id="chartTeam"></canvas></div>
       <div class="team-chips" id="teamChips"></div>
@@ -244,7 +248,7 @@ async function startApp(){
   await loadData();await loadSales();aggregate();
   document.getElementById("loading").style.display="none";document.getElementById("content").style.display="block";
   document.getElementById("syncMeta").textContent="인건비 "+(LIVE?"🟢실시간":"⚪폴백")+" · 매출 "+(SALES_LIVE?"🟢실시간":"⚪폴백")+" · 구매성 1~6월 확정 · 7~12월 도래 시 자동";
-  renderKpi();renderMain();renderSalesDept();renderMix();renderSalesTbl();renderExpTbl();renderPeople();renderReq();
+  renderKpi();renderMain();renderSalesDept();renderMix();renderSales();renderSalesTbl();renderExpTbl();renderPeople();renderReq();
 }
 
 function renderKpi(){
@@ -275,8 +279,15 @@ function renderMix(){var gradesum=Object.keys(SALES_DEPT).reduce(function(s,d){r
 }
 function cell(v,fut){if(fut)return '<td class="fut">예정</td>';if(v===0)return '<td style="color:#cdd5e6">–</td>';if(v<0)return '<td class="neg">'+won(v)+'</td>';return '<td>'+won(v)+'</td>';}
 
+function renderSales(){
+  newChart("chartSalesTrend",{type:"bar",data:{labels:MONTHS,datasets:[{label:"매출",data:salesMonth.map(function(v,i){return i<Math.min(DATA_LAST,6)?v:null;}),backgroundColor:"#a98a52",borderRadius:4}]},
+    options:{maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){return won(c.raw);}}}},scales:{x:{grid:{display:false}},y:{ticks:{callback:function(v){return (v/1e8).toFixed(1)+"억";}}}}}});
+  var arr=Object.keys(SALES_DEPT).map(function(d){return {n:d,t:sum((SALES_DEPT[d]||[]).slice(0,Math.min(DATA_LAST,6)))};}).sort(function(a,b){return b.t-a.t;});
+  newChart("chartSalesAll",{type:"bar",data:{labels:arr.map(function(o){return o.n;}),datasets:[{data:arr.map(function(o){return o.t;}),backgroundColor:arr.map(function(o){return o.n==="운영부"?"#22324a":"#a98a52";}),borderRadius:4}]},
+    options:{indexAxis:"y",maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){return won(c.raw);}}}},scales:{x:{ticks:{callback:function(v){return (v/1e8).toFixed(1)+"억";}}}}}});
+}
 function renderSalesTbl(){
-  var L6=Math.min(DATA_LAST,6);var oper=SALES_DEPT["운영부"];
+  var L6=Math.min(DATA_LAST,6);var oper=SALES_DEPT["운영부"]||[];
   var h='<thead><tr><th>부서/항목</th>'+MONTHS.map(function(m){return '<th>'+m+'</th>';}).join('')+'<th>누적</th></tr></thead><tbody>';
   h+='<tr class="subhead"><td colspan="14">운영부 (회원권)</td></tr>';
   h+='<tr><td>운영부 · 회원권</td>'+MONTHS.map(function(m,i){return cell(oper[i]||0,i>=L6);}).join('')+'<td><b>'+won(sum(oper.slice(0,L6)))+'</b></td></tr>';
@@ -322,7 +333,6 @@ function renderPeople(){
   if(!selTeam||ts.indexOf(selTeam)<0)selTeam=sorted[0]||null;
   // 팀별 지출 = 인건비 + 구매성 (스택 막대)
   newChart("chartTeam",{type:"bar",data:{labels:sorted,datasets:[
-    {label:"매출",data:sorted.map(teamSales),backgroundColor:sorted.map(function(d){return d===selTeam?"#3c7a4a":"#a6c7af";}),stack:"rev",borderRadius:3},
     {label:"인건비",data:sorted.map(teamLabor),backgroundColor:sorted.map(function(d){return d===selTeam?"#22324a":"#aab9cb";}),stack:"exp",borderRadius:3},
     {label:"구매성",data:sorted.map(teamProc),backgroundColor:sorted.map(function(d){return d===selTeam?"#a98a52":"#dccfb0";}),stack:"exp",borderRadius:3}]},
     options:{maintainAspectRatio:false,onClick:function(e,el){if(el.length){selTeam=sorted[el[0].index];renderPeople();}},
@@ -338,8 +348,7 @@ function renderPeople(){
     newChart("chartStaff",{type:"bar",data:{labels:staff.map(function(s){return s.name;}),datasets:[{data:staff.map(function(s){return s.t;}),backgroundColor:staff.map(function(_,i){return PAL[i%PAL.length];}),borderRadius:4}]},
       options:{indexAxis:"y",maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){return won(c.raw);}}}},scales:{x:{ticks:{callback:function(v){return man(v);}}}}}});
   }else if(_charts["chartStaff"]){_charts["chartStaff"].destroy();}
-  var _ts=teamSales(selTeam),_tc=teamCost(selTeam);
-  document.getElementById("teamProcNote").innerHTML="📊 <b>"+selTeam+"</b> ("+periodLabel()+") · 매출 <b>"+won(_ts)+"</b> / 지출 "+won(_tc)+" (인건비 "+won(teamLabor(selTeam))+" + 구매 "+won(teamProc(selTeam))+") · 수지 <b style=\"color:"+(_ts-_tc>=0?"#3c7a4a":"#b14238")+"\">"+won(_ts-_tc)+"</b>";
+  document.getElementById("teamProcNote").innerHTML="🛒 <b>"+selTeam+"</b> ("+periodLabel()+") · 인건비 "+won(teamLabor(selTeam))+" + 구매성 "+won(teamProc(selTeam))+" = <b>총지출 "+won(teamCost(selTeam))+"</b> (구매는 팀 단위라 강사 배분 없음)";
   // 강사 × 월별 표 (항상 전체 월)
   document.getElementById("staffTblTitle").textContent=selTeam+" · 강사별 × 월별 인건비 (단위: 원)";
   var h='<thead><tr><th>강사</th>'+MONTHS.slice(0,L6).map(function(m){return '<th>'+m+'</th>';}).join('')+'<th>누적</th></tr></thead><tbody>';
