@@ -36,14 +36,14 @@
   {
     "task_id": "COO-2026-06-16-MEMBER-SELF-VOC-QR",
     "clevel": "coo",
-    "title": "[시우/웰리 지원] 회원 셀프 VOC(QR+사진) 자동화 — 모바일폼+백엔드+운영부 현황판+텔레그램",
+    "title": "[시우] 종합 접수처 자동화 — 회원 VOC(QR+사진)·문의·컴플레인을 단일 종합접수처(시트+텔레그램)로 자동 수렴·부서 라우팅",
     "status": "IN_PROGRESS",
     "priority": "NORMAL",
     "enqueued_at": "2026-06-16",
     "summary": "[코드·UI 완성, 라이브는 GM 게이트] GM 아이디어=VOC처럼 회원이 QR+사진 셀프접수+현황 파악. 설계(architect): 기존 구글폼=직원대행·구글로그인강제 → 자체 모바일폼으로. 부품(사진업로드 _uploadFile·현황보드·텔레그램) 재사용. 구축: ①백엔드 coo/voc/apps_script_voc.js(voc_submit POST 사진base64→Drive VOC_Photos→URL→「회원셀프VOC」탭 append+텔레그램알림, voc_list, voc_update) 점검·업무 GAS와 독립 ②모바일폼 coo/voc/voc_mobile_form.html(QR ?loc 프리필·4유형·FileReader base64·로그인X) ③운영부 체계 VOC탭 현황 칸반(접수/처리중/완료·담당배정·상태전환) ④GM가이드 .md. Playwright 렌더검증. 커밋 d3acd0c·27038ec push. ⚠️무인증 변조위험=hidden token/rate-limit 후속.",
     "next": "[2026-06-16 배포 시도·웰리 별건 처리 예정] GM이 GAS 배포·/exec 발급(AKfycbwk2X…). 단 **빈 standalone 프로젝트로 배포**돼 getActiveSpreadsheet()=null → voc_list가 'Cannot read getSheetByName' 에러(시트 미바인딩). 엔드포인트 자체는 살아있음(JSON 응답). 수정안: ⓐ코드를 openById(VOC_SHEET_ID) 방식으로 바꿔 현 프로젝트 그대로 살리기(VOC용 시트 1개 생성→ID 코드/스크립트속성에→재배포) 또는 ⓑ구글시트의 확장프로그램→Apps Script로 재생성(자동 바인딩)→재배포·새 /exec. 그 후: URL을 폼·운영부 2곳 __VOC_GAS_EXEC_URL__ 교체 → 텔레그램 토큰 ScriptProperties → 위치별 QR 비치 → 실접수·알림 실측. 보안 hidden token 후속. (apps_script_voc.js 구문 정상 검증됨 — 1행 'Invalid token'은 붙여넣기 사고였음)",
     "ship_no": 21,
-    "note": "[GM 제약 6/24] 회원 VOC는 사람 손 무조건 경유 — 완전 무인 자동배분 아님. 접수·통보 자동화 + 사람 확인/배분 단계 필수 유지."
+    "note": "[GM 제약 6/24] 회원 VOC는 사람 손 무조건 경유 — 완전 무인 자동배분 아님. 접수·통보 자동화 + 사람 확인/배분 단계 필수 유지.\n[2026-06-24 GM 재정의] 단건 VOC→종합접수처 자동화로 확대. 기존 접수처 텔레그램방·시트를 허브로."
   },
   {
     "task_id": "COO-2026-06-15-ISSUE-ALERT-VERIFY",
@@ -136,11 +136,11 @@
   {
     "task_id": "COO-2026-06-20-OPS-4DEPT-INTERIOR-OWNERSHIP",
     "clevel": "coo",
-    "title": "[시우] 운영 4개 부서 체계 내부 콘텐츠 상시 소유 — 운영부·시설부·지원부·주차관리부 내부 꾸미기·보강·고도화",
-    "status": "IN_PROGRESS",
+    "title": "[시우] 운영 4부서 체계 내부 — 지시형(구체 빈칸·GM/웰리 지시 시에만 착수)",
+    "status": "PENDING",
     "priority": "NORMAL",
     "enqueued_at": "2026-06-20",
-    "note": "[2026-06-20 GM 확정] 4개 부서 체계 페이지 틀(레이아웃·탭·링크)은 완성. 이제 내부 콘텐츠(부서별 보드·매뉴얼·항목·SOP) 채우기·꾸미기·정렬·고도화 = 시우(COO) 상시 소유. 웰리=디스패치·검증·완료도장만. 페이지↔시트 동기·정렬 등 기본 정합도 시우 기본 책임. 자율 발의·착수(승인게이트 유지). 메모리 feedback_coo_owns_ops_4dept_interior.",
+    "note": "[2026-06-20 GM 확정] 4개 부서 체계 페이지 틀(레이아웃·탭·링크)은 완성. 이제 내부 콘텐츠(부서별 보드·매뉴얼·항목·SOP) 채우기·꾸미기·정렬·고도화 = 시우(COO) 상시 소유. 웰리=디스패치·검증·완료도장만. 페이지↔시트 동기·정렬 등 기본 정합도 시우 기본 책임. 자율 발의·착수(승인게이트 유지). 메모리 feedback_coo_owns_ops_4dept_interior.\n[2026-06-24 GM] 상시 자율 '보강·꾸미기' 폐지 → 지시형 강등. 구체 빈칸·지시 있을 때만.",
     "next": "시우 자율: 각 부서 체계 내부 빈칸·미완 보드·매뉴얼 점검 → 우선순위 정해 단계적 채움·고도화. 상시 배(완결형 아님).",
     "ship_no": 64
   },
