@@ -401,7 +401,7 @@ function renderReqTbl(){
   fc.querySelectorAll(".team-chip").forEach(function(b){b.onclick=function(){reqFilter=b.dataset.f;renderReqTbl();};});
   var rows=REQ_DATA.filter(function(r){return reqFilter==="전체"||r.상태===reqFilter;}).slice().reverse();
   var stc={"품의":"wait","검토":"rev","정산":"set","완료":"ok","승인":"wait","미승인":"no","캔슬":"no"};
-  var h='<thead><tr><th>날짜</th><th style="text-align:left">소속</th><th style="text-align:left">요청자</th><th style="text-align:left">승인자</th><th style="text-align:left">물품</th><th>금액</th><th style="text-align:center">영수증</th><th style="text-align:center">상태</th><th style="text-align:center">승인 / 처리</th></tr></thead><tbody>';
+  var h='<thead><tr><th>날짜</th><th style="text-align:left">소속</th><th style="text-align:left">요청자</th><th style="text-align:left">승인자</th><th style="text-align:left">물품</th><th>금액</th><th style="text-align:center">사진/증빙</th><th style="text-align:center">상태</th><th style="text-align:center">승인 / 처리</th></tr></thead><tbody>';
   rows.forEach(function(r){
     var st=r.상태||"품의",act="";
     if(st==="품의"||st==="승인")act='<button class="reqAct" data-row="'+r.row+'" data-next="검토" data-pw="1" style="'+btnCss("#3c7a4a")+'">승인</button>';
@@ -409,7 +409,9 @@ function renderReqTbl(){
     else if(st==="정산")act='<button class="reqAct" data-row="'+r.row+'" data-next="완료" style="'+btnCss("#a98a52")+'">최종확인</button>';
     else if(st==="완료")act='<span style="color:var(--green);font-size:12px;font-weight:700">✔ 완료</span>';
     else act='<span style="color:var(--ink-faint);font-size:11px">'+st+'</span>';
-    var rcpt=r.지출증빙?'<a href="'+r.지출증빙+'" target="_blank">📎 보기</a>':'<span style="color:var(--ink-faint);font-size:11px">–</span>';
+    var photo=(r.이미지&&String(r.이미지).indexOf("http")===0)?'<a href="'+r.이미지+'" target="_blank" title="첨부사진">📷</a>':'';
+    var pf=(r.지출증빙&&String(r.지출증빙).indexOf("http")===0)?'<a href="'+r.지출증빙+'" target="_blank" title="영수증/증빙">📎</a>':'';
+    var rcpt=(photo||pf)?(photo+(photo&&pf?' ':'')+pf):'<span style="color:var(--ink-faint);font-size:11px">–</span>';
     h+='<tr><td style="text-align:left">'+r.날짜+'</td><td style="text-align:left">'+(r.소속||"")+'</td><td style="text-align:left">'+(r.요청자||"")+'</td><td style="text-align:left">'+(r.승인자||"")+'</td><td style="text-align:left">'+(r.물품||"")+'</td><td>'+won(r.가격)+'</td><td style="text-align:center">'+rcpt+'</td><td style="text-align:center"><span class="chip '+(stc[st]||"wait")+'">'+st+'</span></td><td style="text-align:center;white-space:nowrap">'+act+'</td></tr>';
   });
   if(!rows.length)h+='<tr><td colspan="9" style="color:var(--ink-faint)">해당 상태의 품의가 없습니다.</td></tr>';
