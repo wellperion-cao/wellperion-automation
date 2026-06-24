@@ -344,19 +344,10 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   font-family:inherit;border:1.5px solid rgba(224,108,90,0.45);background:var(--red-bg);color:var(--red)}
 .pol-del-btn:hover{background:rgba(224,108,90,0.18)}
 
-/* ── 직원 가이드 탭 카드 1.5배 확대 (가이드 카드 보드 #support-guide-board 한정 · 2026-06-24 시우, GM 요청) ──
-   다른 탭(규정·약품·매뉴얼·점검 등) 및 직원 구성·역할 표 컬럼은 미적용. 561px↑ 데스크톱에서만. */
+/* ── 직원 가이드 탭 카드 폭만 1.5배 (가이드 카드 보드 #support-guide-board 한정 · 2026-06-24 시우, GM 요청) ──
+   폰트·패딩은 기본값 유지. 다른 탭 무영향. 561px↑ 데스크톱에서만. */
 @media(min-width:561px){
   #support-guide-board .board-col{flex:0 0 615px;min-width:615px;max-width:615px}
-  #support-guide-board .board-col-head{padding:18px 24px}
-  #support-guide-board .board-col-head .bday{font-size:25px}
-  #support-guide-board .board-col-body{padding:18px 21px;gap:18px}
-  #support-guide-board .dv-cell{padding:20px 21px;border-radius:14px}
-  #support-guide-board .dv-cell-label{font-size:24px}
-  #support-guide-board .dv-cell-head{margin-bottom:13px}
-  #support-guide-board .pol-line{font-size:21px;line-height:1.6;padding:5px 0}
-  #support-guide-board .dv-edit-btn{font-size:15px;padding:7px 18px}
-  #support-guide-board .dv-g-addrow{font-size:17px;padding:11px 20px}
 }
 
 /* 모바일: 요일 탭 폭 축소 + 컬럼 폭 화면맞춤(가로 스크롤·스냅) */
@@ -367,10 +358,6 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   .board-col{flex:0 0 86vw;min-width:86vw;max-width:86vw;scroll-snap-align:center}
   .board-scroll{scroll-snap-type:x mandatory}
   .dv-list{font-size:13.5px}
-  /* 직원 가이드 카드: 모바일은 글자만 키워 1.5배 체감(폭은 화면맞춤 유지) */
-  #support-guide-board .dv-cell-label{font-size:21px}
-  #support-guide-board .pol-line{font-size:18px;line-height:1.6}
-  #support-guide-board .board-col-head .bday{font-size:22px}
 }
 /* Admin shift card */
 .admin-shift-card{background:var(--paper);border:1px solid var(--border);border-radius:12px;padding:16px 18px;margin-bottom:12px}
@@ -850,29 +837,30 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 </div>
 
 <div id="tab-guide" class="content hidden">
-  <h2 style="font-size:20px;margin-bottom:6px;">가이드</h2>
   <p style="font-size:13px;color:var(--dim);margin-bottom:14px;line-height:1.6;">지원부 가이드를 카드로 정리했습니다. 각 카드의 <b>편집</b> 버튼으로 내용을 바로 수정·저장하면 모든 기기에 반영됩니다. <b>＋ 카드 추가</b>로 새 가이드를 추가할 수 있습니다.</p>
-  <!-- ── 👥 지원부 직원 구성·역할 (직원 가이드 탭 신설 2026-06-24 시우, GM 요청 · 데이터=FALLBACK_STAFF) ── -->
-  <div class="board-fullwidth" style="margin-bottom:18px;">
-    <div class="board-scroll">
-      <div class="board-col" style="border-left:4px solid var(--green);flex:0 0 560px;min-width:560px;max-width:560px;">
-        <div class="board-col-head"><span class="bday" style="font-size:16px;color:var(--green);">👥 직원 구성 · 역할</span></div>
-        <div class="board-col-body">
-          <table style="width:100%;border-collapse:collapse;font-size:13px;">
-            <tr style="background:var(--paper);">
-              <th style="padding:8px;border:1px solid var(--border);width:46%;">직책</th>
-              <th style="padding:8px;border:1px solid var(--border);">성명</th>
-              <th style="padding:8px;border:1px solid var(--border);width:64px;">구분</th>
-            </tr>
-            <tr><td style="padding:8px;border:1px solid var(--border);"><strong>반장</strong></td><td style="padding:8px;border:1px solid var(--border);">지원팀 반장(여) · 이경연 실장</td><td style="padding:8px;border:1px solid var(--border);text-align:center;">여</td></tr>
-            <tr><td style="padding:8px;border:1px solid var(--border);"><strong>반장</strong></td><td style="padding:8px;border:1px solid var(--border);">이연희 반장</td><td style="padding:8px;border:1px solid var(--border);text-align:center;">여</td></tr>
-            <tr><td style="padding:8px;border:1px solid var(--border);"><strong>점검자</strong></td><td style="padding:8px;border:1px solid var(--border);">임정은M</td><td style="padding:8px;border:1px solid var(--border);text-align:center;">여</td></tr>
-            <tr><td style="padding:8px;border:1px solid var(--border);"><strong>반장</strong></td><td style="padding:8px;border:1px solid var(--border);">지원팀 반장(남) · 최준용M</td><td style="padding:8px;border:1px solid var(--border);text-align:center;">남</td></tr>
-            <tr><td style="padding:8px;border:1px solid var(--border);"><strong>점검자</strong></td><td style="padding:8px;border:1px solid var(--border);">김남욱GM</td><td style="padding:8px;border:1px solid var(--border);text-align:center;">남</td></tr>
-            <tr><td style="padding:8px;border:1px solid var(--border);"><strong>점검자</strong></td><td style="padding:8px;border:1px solid var(--border);">윤병현AM</td><td style="padding:8px;border:1px solid var(--border);text-align:center;">남</td></tr>
-          </table>
-        </div><!-- /board-col-body -->
-      </div><!-- ── /직원 구성·역할 컬럼 ── -->
+  <!-- ── 👥 지원부 직원 구성·역할 (2026-06-24 시우 실제 명단으로 교체 · FALLBACK_STAFF 배열은 점검자 로직용 유지) ── -->
+  <div style="margin-bottom:18px;">
+    <div style="background:var(--paper);border:1px solid var(--border);border-radius:14px;border-left:4px solid var(--green);overflow:hidden;max-width:640px;">
+      <div style="padding:12px 16px;background:var(--bg);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;">
+        <span style="font-size:17px;font-weight:800;color:var(--green);">👥 직원 구성 · 역할</span>
+      </div>
+      <div style="padding:12px 14px;">
+        <table style="width:100%;border-collapse:collapse;margin-bottom:10px;font-size:13px;">
+          <tr style="background:var(--paper);">
+            <th style="padding:8px;border:1px solid var(--border);width:80px;">직책</th>
+            <th style="padding:8px;border:1px solid var(--border);">성명</th>
+            <th style="padding:8px;border:1px solid var(--border);width:58px;">구분</th>
+            <th style="padding:8px;border:1px solid var(--border);">비고</th>
+          </tr>
+          <tr><td style="padding:8px;border:1px solid var(--border);"><strong>팀장</strong></td><td style="padding:8px;border:1px solid var(--border);">황용석</td><td style="padding:8px;border:1px solid var(--border);text-align:center;">남</td><td style="padding:8px;border:1px solid var(--border);font-size:12px;color:var(--orange);">6월말 퇴직 예정</td></tr>
+          <tr><td style="padding:8px;border:1px solid var(--border);"><strong>주임</strong></td><td style="padding:8px;border:1px solid var(--border);">천진석</td><td style="padding:8px;border:1px solid var(--border);text-align:center;">남</td><td style="padding:8px;border:1px solid var(--border);">—</td></tr>
+          <tr><td style="padding:8px;border:1px solid var(--border);"><strong>주임</strong></td><td style="padding:8px;border:1px solid var(--border);">박남일</td><td style="padding:8px;border:1px solid var(--border);text-align:center;">남</td><td style="padding:8px;border:1px solid var(--border);">—</td></tr>
+          <tr><td style="padding:8px;border:1px solid var(--border);"><strong>주임</strong></td><td style="padding:8px;border:1px solid var(--border);">김유정</td><td style="padding:8px;border:1px solid var(--border);text-align:center;">남</td><td style="padding:8px;border:1px solid var(--border);">—</td></tr>
+          <tr><td style="padding:8px;border:1px solid var(--border);"><strong>반장</strong></td><td style="padding:8px;border:1px solid var(--border);">이연희</td><td style="padding:8px;border:1px solid var(--border);text-align:center;">여</td><td style="padding:8px;border:1px solid var(--border);">—</td></tr>
+          <tr><td style="padding:8px;border:1px solid var(--border);"><strong>주임</strong></td><td style="padding:8px;border:1px solid var(--border);">우춘화</td><td style="padding:8px;border:1px solid var(--border);text-align:center;">여</td><td style="padding:8px;border:1px solid var(--border);">—</td></tr>
+        </table>
+        <p style="font-size:12px;color:var(--dim);margin:0;line-height:1.5;">정원 각 8명 TO · 남·여 일부 충원 진행 중. <span style="display:inline-block;font-size:11px;font-weight:700;padding:2px 9px;border-radius:10px;background:var(--orange-bg);color:var(--orange);border:1px solid rgba(230,148,78,0.4);">최종 등록 기준 2026-06-24</span></p>
+      </div>
     </div>
   </div>
   <div class="board-fullwidth">
