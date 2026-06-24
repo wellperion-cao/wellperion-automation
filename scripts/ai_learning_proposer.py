@@ -672,7 +672,62 @@ def run(max_proposals: int = 3, dry_run: bool = False):
     else:
         print("[INFO] 신규 제안 없음 (중복) — 텔레그램 생략")
 
+    # 관측 리포트 자동 갱신 — 일요일 자동사이클이 돌 때마다 루프 건강도 산출물 새로고침.
+    try:
+        cmd_health(write=True)
+    except Exception as e:
+        print(f"[WARN] 건강도 리포트 생성 실패: {type(e).__name__}: {e}")
+
     print(f"\n[완료] ({now_str()})")
+
+
+def cmd_health(write: bool = True) -> dict:
+    """자기학습 루프 관측 리포트 — 제안수·전환율·효과있음률 요약 + status/learning_health.md 산출.
+    측정 못한 효과(미확인)는 효과있음률 분모에서 제외(정직). 콘솔 출력 + 마크다운 저장."""
+    cards = load_proposals()
+    from collections import Counter
+    st = Counter(c.get("status", "?") for c in cards)
+    total = len(cards)
+    approved = st.get("승인", 0)
+    applied = [c for c in cards if c.get("status") == "반영"]
+    nap = len(applied)
+    conv = (nap / (approved + nap) * 100) if (approved + nap) else 0.0
+    eff = Counter(c.get("효과", "미확인") or "미확인" for c in applied)
+    measured = eff.get("효과있음", 0) + eff.get("효과없음", 0)
+    eff_rate = (eff.get("효과있음", 0) / measured * 100) if measured else 0.0
+    by_clevel = Counter(c.get("대상_clevel", "?") for c in cards)
+
+    print("\n🧠 AI 자기학습 — 루프 건강도")
+    print(f"  제안 총 {total}건  (제안 {st.get('제안',0)} · 승인 {approved} · 거부 {st.get('거부',0)} · 반영 {nap})")
+    print(f"  승인→반영 전환율: {conv:.0f}%   효과있음률(측정분): {eff_rate:.0f}%  (미확인 {eff.get('미확인',0)}건 측정대기)")
+    print(f"  대상별: " + " · ".join(f"{k} {v}" for k, v in by_clevel.most_common()))
+
+    if write:
+        lines = [
+            "# 🧠 AI 자기학습 — 루프 건강도",
+            f"_갱신: {today_str()} · 자동 산출(ai_learning_proposer --health)_",
+            "",
+            "## 한눈에",
+            f"- 제안 총 **{total}건** — 제안 {st.get('제안',0)} · 승인 {approved} · 거부 {st.get('거부',0)} · **반영 {nap}**",
+            f"- 승인→반영 전환율: **{conv:.0f}%**",
+            f"- 효과있음률(측정된 반영 기준): **{eff_rate:.0f}%** — 효과있음 {eff.get('효과있음',0)} / 측정 {measured}건 · 미확인 {eff.get('미확인',0)}건 측정대기",
+            "",
+            "## 반영·효과",
+            "| 대상 | 반영위치 | 효과 | 근거 |",
+            "|---|---|---|---|",
+        ]
+        for c in applied:
+            ic = {"효과있음": "✅", "효과없음": "❌", "미확인": "❔"}.get(c.get("효과", "미확인"), "❔")
+            lines.append(
+                f"| {c.get('대상_clevel','')} | {c.get('반영위치','')} | {ic}{c.get('효과','미확인')} | {str(c.get('효과근거',''))[:50]} |"
+            )
+        lines += ["", "## 대상별 제안", "| C-Level | 건수 |", "|---|---|"]
+        for k, v in by_clevel.most_common():
+            lines.append(f"| {k} | {v} |")
+        out = PROPOSALS_FILE.parent / "learning_health.md"
+        out.write_text("\n".join(lines) + "\n", encoding="utf-8")
+        print(f"  📄 리포트 저장: {out}")
+    return {"total": total, "applied": nap, "conv": conv, "eff_rate": eff_rate}
 
 
 # ═══════════════════════════════════════════
@@ -713,10 +768,16 @@ def main():
                         help="--record-effect 효과값: 효과있음|효과없음|미확인")
     parser.add_argument("--note", type=str, metavar="TEXT",
                         help="--record-effect 효과 근거 (선택)")
+    parser.add_argument("--health", action="store_true",
+                        help="자기학습 루프 건강도 리포트(제안수·전환율·효과있음률) + status/learning_health.md 산출")
 
     args = parser.parse_args()
 
     # 상태관리 분기
+    if args.health:
+        cmd_health()
+        return
+
     if args.list:
         cmd_list(args.status)
         return
