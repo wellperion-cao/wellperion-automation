@@ -229,7 +229,7 @@ select{appearance:none;-webkit-appearance:none;background-image:url("data:image/
         row.appendChild(inp);
       } else if (def.type === 'tel') {
         var inpTel = document.createElement('input');
-        inpTel.type = 'tel';
+        inpTel.type = 'text';
         inpTel.id = 'dyn_' + def.key;
         inpTel.placeholder = def.ph || '';
         inpTel.autocomplete = 'off';
