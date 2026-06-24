@@ -262,6 +262,21 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   font-family:inherit;border:1.5px solid rgba(224,108,90,0.45);background:var(--red-bg);color:var(--red)}
 .pol-del-btn:hover{background:rgba(224,108,90,0.18)}
 
+/* ── 직원 가이드 탭 카드 1.5배 확대 (가이드 카드 보드 #fac-guide-board 한정 · 2026-06-24 시우, GM 요청) ──
+   다른 탭(규정·매뉴얼·점검 등) 및 직원 구성·역할 표 컬럼은 미적용. 561px↑ 데스크톱에서만. */
+@media(min-width:561px){
+  #fac-guide-board .board-col{flex:0 0 615px;min-width:615px;max-width:615px}
+  #fac-guide-board .board-col-head{padding:18px 24px}
+  #fac-guide-board .board-col-head .bday{font-size:25px}
+  #fac-guide-board .board-col-body{padding:18px 21px;gap:18px}
+  #fac-guide-board .dv-cell{padding:20px 21px;border-radius:14px}
+  #fac-guide-board .dv-cell-label{font-size:24px}
+  #fac-guide-board .dv-cell-head{margin-bottom:13px}
+  #fac-guide-board .pol-line{font-size:21px;line-height:1.6;padding:5px 0}
+  #fac-guide-board .dv-edit-btn{font-size:15px;padding:7px 18px}
+  #fac-guide-board .dv-g-addrow{font-size:17px;padding:11px 20px}
+}
+
 /* 모바일: 요일 탭 폭 축소 + 컬럼 폭 화면맞춤(가로 스크롤·스냅) */
 @media(max-width:560px){
   .day-tab{min-width:40px;font-size:15px;padding:9px 3px}
@@ -270,6 +285,10 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   .board-col{flex:0 0 86vw;min-width:86vw;max-width:86vw;scroll-snap-align:center}
   .board-scroll{scroll-snap-type:x mandatory}
   .dv-list{font-size:13.5px}
+  /* 직원 가이드 카드: 모바일은 글자만 키워 1.5배 체감(폭은 화면맞춤 유지) */
+  #fac-guide-board .dv-cell-label{font-size:21px}
+  #fac-guide-board .pol-line{font-size:18px;line-height:1.6}
+  #fac-guide-board .board-col-head .bday{font-size:22px}
 }
 /* Admin shift card */
 .admin-shift-card{background:var(--paper);border:1px solid var(--border);border-radius:12px;padding:16px 18px;margin-bottom:12px}
@@ -546,7 +565,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 <div class="toast-msg" id="toastMsg"></div>
 <div class="tabs">
   <button class="tab active" onclick="switchTab('policy')">시설부 규정</button>
-  <button class="tab" onclick="switchTab('guide')">가이드</button>
+  <button class="tab" onclick="switchTab('guide')">직원 가이드</button>
   <button class="tab" onclick="switchTab('manual')">매뉴얼</button>
   <button class="tab" onclick="switchTab('reg')">시설물 고장 접수</button>
   <!-- 옛 점검(남)/(여) 탭 제거(2026-06-12). 신규 '시설점검'=날짜별 측정 작업일지(2026-06-16 GM·PDF 기반). -->
@@ -829,11 +848,25 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
       </div><!-- /board-col-body -->
     </div><!-- ── /근무·휴게 컬럼 ── -->
 
-    <!-- ── [칸반 컬럼] 👥 시설부 직원 구성·역할 (F4 매뉴얼→규정 이관 2026-06-11) ── -->
-    <div class="board-col" style="border-left:4px solid var(--green);flex:0 0 820px;min-width:820px;max-width:820px;">
-      <div class="board-col-head"><span class="bday" style="font-size:16px;color:var(--green);">👥 직원 구성 · 역할</span></div>
-      <div class="board-col-body">
+    <!-- ── 👥 직원 구성·역할 컬럼은 '직원 가이드' 탭(tab-guide)으로 이관 (2026-06-24 시우, GM 요청) — 규정 탭에서 제거됨 ── -->
 
+    <!-- 주차 관리 이관 안내 컬럼 삭제(2026-06-16 GM): 주차관리부 독립 분리 완료·반복 안내 불필요. -->
+
+    </div><!-- /board-scroll (단일 칸반 흐름) -->
+  </div><!-- /board-fullwidth -->
+
+  <!-- 고도화 정의·개선 로드맵은 관리자 영역(웰페리온 ERP O1 운영 통합 체계 '구축 가이드')으로 이관 (2026-06-06 GM: 현장 규정 탭엔 뜬금없음) -->
+</div>
+
+<div id="tab-guide" class="content hidden">
+  <h2 style="font-size:20px;margin-bottom:6px;">가이드</h2>
+  <p style="font-size:13px;color:var(--dim);margin-bottom:14px;line-height:1.6;">시설부 가이드를 카드로 정리했습니다. 각 카드의 <b>편집</b> 버튼으로 내용을 바로 수정·저장하면 모든 기기에 반영됩니다. <b>＋ 카드 추가</b>로 새 가이드를 추가할 수 있습니다.</p>
+  <div class="board-fullwidth" style="margin-bottom:18px;">
+    <div class="board-scroll">
+      <!-- ── 👥 시설부 직원 구성·역할 (규정 탭 → 직원 가이드 탭 이관 2026-06-24 시우, GM 요청) ── -->
+      <div class="board-col" style="border-left:4px solid var(--green);flex:0 0 820px;min-width:820px;max-width:820px;">
+        <div class="board-col-head"><span class="bday" style="font-size:16px;color:var(--green);">👥 직원 구성 · 역할</span></div>
+        <div class="board-col-body">
         <!-- 직원 구성표 -->
         <table style="width:100%;border-collapse:collapse;margin-bottom:10px;font-size:13px;">
           <tr style="background:var(--paper);">
@@ -955,20 +988,10 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
           </div>
         </div>
 
-      </div><!-- /board-col-body -->
-    </div><!-- ── /직원 구성·역할 컬럼 ── -->
-
-    <!-- 주차 관리 이관 안내 컬럼 삭제(2026-06-16 GM): 주차관리부 독립 분리 완료·반복 안내 불필요. -->
-
-    </div><!-- /board-scroll (단일 칸반 흐름) -->
-  </div><!-- /board-fullwidth -->
-
-  <!-- 고도화 정의·개선 로드맵은 관리자 영역(웰페리온 ERP O1 운영 통합 체계 '구축 가이드')으로 이관 (2026-06-06 GM: 현장 규정 탭엔 뜬금없음) -->
-</div>
-
-<div id="tab-guide" class="content hidden">
-  <h2 style="font-size:20px;margin-bottom:6px;">가이드</h2>
-  <p style="font-size:13px;color:var(--dim);margin-bottom:14px;line-height:1.6;">시설부 가이드를 카드로 정리했습니다. 각 카드의 <b>편집</b> 버튼으로 내용을 바로 수정·저장하면 모든 기기에 반영됩니다. <b>＋ 카드 추가</b>로 새 가이드를 추가할 수 있습니다.</p>
+        </div><!-- /board-col-body -->
+      </div><!-- ── /직원 구성·역할 컬럼 ── -->
+    </div>
+  </div>
   <div class="board-fullwidth">
     <!-- 가이드 카드 보드: 규정 보드와 동일 시스템(추가·편집·삭제·공유저장).
          #fac-guide-board는 display:contents → renderGuideBoard()가 만든 .board-col이 흐름에 합류. -->
