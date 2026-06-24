@@ -412,17 +412,23 @@ def main() -> int:
     print(f"{'─'*60}")
     print(f"합계: OK/DRY={ok_count}, SKIP={skip_count}, FAIL={fail_count}\n")
 
-    # 텔레그램 1줄 보고 (실행 모드에서만)
+    # 텔레그램 보고 (실행 모드에서만)
+    # 원칙: FAIL=0 → GM 발송 생략(로그 출력만). FAIL≥1 → GM 채널로 발송.
     if args.do_run:
         summary = (
             f"[4채널 디스패처] {content_dir.name} | "
             f"채널={','.join(channels)} | "
             f"OK={ok_count} SKIP={skip_count} FAIL={fail_count}"
         )
-        try:
-            _send_telegram(summary)
-        except Exception as e:
-            print(f"[텔레그램] 예외(무시): {e}")
+        if fail_count >= 1:
+            try:
+                _send_telegram(summary)
+            except Exception as e:
+                print(f"[텔레그램] 예외(무시): {e}")
+        else:
+            # 성공 — GM 발송 생략, 로그만 출력
+            print(f"[텔레그램] FAIL=0 성공 — GM 발송 생략(로그): {summary}")
+            log_outbound(summary, chat_id=TELEGRAM_CHAT_ID, source="publish_4channel_dispatcher.main", ok=True, kind="suppressed_ok")
     else:
         print("[dry-run] 텔레그램 보고 생략 (--run 없음)")
 

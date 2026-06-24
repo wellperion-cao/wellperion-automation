@@ -61,6 +61,10 @@ POST_URL_RE = re.compile(r"post\s+[A-C]:\s*(https?://\S+)", re.IGNORECASE)
 
 TELEGRAM_TOKEN_ENV_KEY = "TELEGRAM_BOT_TOKEN"
 TELEGRAM_CHAT_ID_ENV_KEY = "TELEGRAM_CHAT_ID"
+# 웰리 검증 큐 채널: 성공 요약·IG 발행검증 알림 수신처.
+# TELEGRAM_WELLY_CHAT_ID 미설정 시 종합 접수처(내부 운영방)로 폴백.
+TELEGRAM_WELLY_CHAT_ID_ENV_KEY = "TELEGRAM_WELLY_CHAT_ID"
+TELEGRAM_CORE_GROUP_CHAT_ID_ENV_KEY = "TELEGRAM_CORE_GROUP_CHAT_ID"
 
 
 def _load_env_val(key: str) -> str:
@@ -81,6 +85,12 @@ def _load_env_val(key: str) -> str:
 
 
 TELEGRAM_CHAT_ID: str = _load_env_val(TELEGRAM_CHAT_ID_ENV_KEY)  # telegram_bot/.env SSOT
+# 웰리 검증 큐 채널 — TELEGRAM_WELLY_CHAT_ID 미설정 시 종합 접수처(내부 운영방)로 폴백
+TELEGRAM_WELLY_CHAT_ID: str = (
+    _load_env_val(TELEGRAM_WELLY_CHAT_ID_ENV_KEY)
+    or _load_env_val(TELEGRAM_CORE_GROUP_CHAT_ID_ENV_KEY)
+    or "-5065206276"
+)
 
 
 def _safe_print(text: str) -> None:
@@ -92,8 +102,14 @@ def _safe_print(text: str) -> None:
 
 
 # ----------------------------------------------------------------------
-def telegram(message: str) -> None:
-    """텔레그램 1줄 보고 — 토큰 stdout 노출 금지 (메모리 feedback_no_token_in_stdout)."""
+def telegram(message: str, chat_id: str | None = None) -> None:
+    """텔레그램 1줄 보고 — 토큰 stdout 노출 금지 (메모리 feedback_no_token_in_stdout).
+
+    chat_id 미지정 시 TELEGRAM_CHAT_ID(GM) 사용.
+    성공 요약·IG 검증 알림은 TELEGRAM_WELLY_CHAT_ID(웰리/종합 접수처)를 명시해 호출.
+    실패·결정 필요 알림은 기본값(GM) 유지.
+    """
+    target_chat_id = chat_id or TELEGRAM_CHAT_ID
     token = os.environ.get(TELEGRAM_TOKEN_ENV_KEY, "").strip()
     if not token:
         _safe_print("[WARN] 텔레그램 토큰 미설정 — 보고 생략")
@@ -102,16 +118,16 @@ def telegram(message: str) -> None:
         import urllib.parse
         import urllib.request
         data = urllib.parse.urlencode({
-            "chat_id": TELEGRAM_CHAT_ID, "text": message,
+            "chat_id": target_chat_id, "text": message,
             "disable_web_page_preview": "true",
         }).encode("utf-8")
         req = urllib.request.Request(
             f"https://api.telegram.org/bot{token}/sendMessage", data=data, method="POST")
         with urllib.request.urlopen(req, timeout=10) as resp:
-            _safe_print(f"[INFO] 텔레그램 보고 {'성공' if resp.status == 200 else '실패'}")
-            log_outbound(message, chat_id=TELEGRAM_CHAT_ID, source="ig_review_publish_watcher.telegram", ok=(resp.status == 200), kind="sendMessage")
+            _safe_print(f"[INFO] 텔레그램 보고 {'성공' if resp.status == 200 else '실패'} chat_id={target_chat_id}")
+            log_outbound(message, chat_id=target_chat_id, source="ig_review_publish_watcher.telegram", ok=(resp.status == 200), kind="sendMessage")
     except Exception:
-        log_outbound(message, chat_id=TELEGRAM_CHAT_ID, source="ig_review_publish_watcher.telegram", ok=False, kind="sendMessage")
+        log_outbound(message, chat_id=target_chat_id, source="ig_review_publish_watcher.telegram", ok=False, kind="sendMessage")
         _safe_print("[WARN] 텔레그램 보고 실패 (토큰 trace 노출 방지로 상세 미출력)")
 
 
@@ -615,7 +631,30 @@ def _run_once_inner(dry_run: bool) -> int:
             git("commit", "-m", f"auto(cmo): 검수 승인 건 발행 {len(published)}건 / 수동대기 {len(manual)}건")
             git("pull", "--rebase", "--autostash", "origin", "master")
             git("push", "origin", "master")
-        telegram("📲 멀티채널 발행 결과\n" + "\n".join(events))
+
+        # 알림 라우팅 원칙(GM 지시 2026-06-24):
+        # - 성공 요약(FAIL=0, 수동대기 없음) → 웰리 채널(종합 접수처). GM 미발송.
+        # - 실패·수동대기 포함 → GM 채널(TELEGRAM_CHAT_ID)로 발송.
+        # - IG 발행검증대기(shortcode 미회수 등 확인 필요) → 웰리 채널로 별도 발송.
+        failed_events = [e for e in events if e.startswith("⚠️") or e.startswith("⛔")]
+        verify_events = [e for e in events if "발행검증대기" in e]
+
+        summary_text = "📲 멀티채널 발행 결과\n" + "\n".join(events)
+        if failed_events or manual:
+            # 실패·결정 필요 → GM 채널
+            telegram(summary_text)
+        else:
+            # 성공 — GM 미발송, 웰리 채널(종합 접수처)로만
+            telegram(summary_text, chat_id=TELEGRAM_WELLY_CHAT_ID)
+
+        # IG 발행검증대기 → 웰리 검증 큐로 별도 알림 (약속 L04·L03)
+        if verify_events:
+            verify_text = (
+                "🔍 [IG 발행검증대기] 웰리 검증 필요\n"
+                + "\n".join(verify_events)
+                + "\n→ ERP M5에서 실제 게시 확인 후 완료 처리"
+            )
+            telegram(verify_text, chat_id=TELEGRAM_WELLY_CHAT_ID)
     return len(published)
 
 
