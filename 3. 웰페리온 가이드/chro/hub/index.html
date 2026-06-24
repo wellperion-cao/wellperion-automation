@@ -922,7 +922,7 @@ function renderDash(){
     if(__dp) __dp.addEventListener("click",onChannelToggle);
   }
   drawBar("cDept",groupCount(active,"부서"));
-  drawDonut("cType",groupCount(active,"고용 형태"));
+  (function(){var __ct=groupCount(active,"고용 형태");if(__ct["프리랜서"]!=null){__ct["파트너"]=(__ct["파트너"]||0)+__ct["프리랜서"];delete __ct["프리랜서"];}drawDonut("cType",__ct);})();
   drawBar("cFunnel",funnel);
   drawDonut("cGrade",Object.keys(gradeDist).length?gradeDist:{"데이터 없음":1});
   drawDonut("cExit",Object.keys(exitTypes).length?exitTypes:{"퇴사 없음":1});
@@ -976,6 +976,8 @@ function orgChartHtml(active){
 }
 
 /* ============ EMPLOYEES ============ */
+// 고용형태 표기 고정: 백엔드 캐시/시트에 '프리랜서'가 남아 있어도 화면엔 '파트너'로(상시 규칙)
+function normEmpType(v){return v==="프리랜서"?"파트너":v;}
 function renderEmp(){
   if(ERR.emp){setPanel("emp",'<div class="sec-title">임직원 명부</div>'+errCard("임직원 명부","emp"));return;}
   // 퇴사자 제외 (재직 인원만)
@@ -1018,7 +1020,7 @@ function renderEmp(){
     var ft=document.getElementById("empType").value;
     var rows=emp.filter(function(e){
       if(fs&&e["소속"]!==fs)return false;
-      if(ft&&e["고용 형태"]!==ft)return false;
+      if(ft&&normEmpType(e["고용 형태"])!==ft)return false;
       if(q){var hay=((e["성명"]||"")+" "+(e["소속"]||"")+" "+(e["직급"]||"")+" "+(e["부서"]||"")).toLowerCase();
         if(hay.indexOf(q)<0)return false;}
       return true;
@@ -1039,7 +1041,7 @@ function renderEmp(){
       var canResign=e["재직 상태"]!=="퇴사";
       return '<tr><td class="t-name">'+esc(txt(e["성명"]))+'</td>'+
         '<td>'+esc(txt(e["부서"]))+'</td><td>'+esc(txt(e["소속"]))+'</td>'+
-        '<td>'+esc(txt(e["직급"]))+'</td><td>'+badge(e["고용 형태"])+'</td>'+
+        '<td>'+esc(txt(e["직급"]))+'</td><td>'+badge(normEmpType(e["고용 형태"]))+'</td>'+
         '<td>'+badge(e["재직 상태"])+'</td><td>'+fmtD(dval(e,"입사일"))+'</td>'+
         '<td class="t-sub">'+(isAdmin?esc(empPhone(e)||"—"):'<span class="muted" title="관리자 로그인 시 표시">•••</span>')+'</td>'+
         '<td class="t-sub">'+(isAdmin?empBirthCell(e):'<span class="muted" title="관리자 로그인 시 표시">•••</span>')+'</td>'+
