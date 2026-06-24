@@ -401,9 +401,11 @@ function attachPhoto(base,f,cb){ // 원본 base64 + 이미지면 캔버스 썸�
     if(f.type.indexOf("image/")===0){
       var img=new Image();
       img.onload=function(){
-        var mw=520,sc=Math.min(1,mw/img.width),w=Math.round(img.width*sc),h=Math.round(img.height*sc);
+        var mw=360,sc=Math.min(1,mw/img.width),w=Math.round(img.width*sc),h=Math.round(img.height*sc);
         var c=document.createElement("canvas");c.width=w;c.height=h;c.getContext("2d").drawImage(img,0,0,w,h);
-        try{base.thumb=c.toDataURL("image/jpeg",0.7).split(",")[1];base.thumbMime="image/jpeg";}catch(e){}
+        try{var q=0.6,b64=c.toDataURL("image/jpeg",q).split(",")[1];
+          while(b64.length>46000&&q>0.3){q-=0.1;b64=c.toDataURL("image/jpeg",q).split(",")[1];} // 셀 5만자 한계 내로
+          base.thumb=b64;base.thumbMime="image/jpeg";}catch(e){}
         cb();
       };
       img.onerror=cb;img.src=rd.result;
@@ -445,7 +447,7 @@ function renderReqTbl(){
   h+='</tbody>';document.getElementById("reqTbl").innerHTML=h;
   document.querySelectorAll(".reqAct").forEach(function(b){b.onclick=function(){doAct(b.dataset.row,b.dataset.next,b.dataset.pw,b);};});
   document.querySelectorAll(".reqPhoto").forEach(function(b){b.onclick=function(){addPhotoTo(b.dataset.row,b);};});
-  document.querySelectorAll(".reqRej").forEach(function(b){b.onclick=function(){if(confirm("이 품의를 반려하시겠습니까? (기록은 남습니다)"))doAct(b.dataset.row,"반려",null,b);};});
+  document.querySelectorAll(".reqRej").forEach(function(b){b.onclick=function(){doAct(b.dataset.row,"반려","1",b);};});
   document.querySelectorAll(".reqDel").forEach(function(b){b.onclick=function(){delReq(b.dataset.row,b);};});
 }
 async function delReq(row,btn){
@@ -462,7 +464,7 @@ function addPhotoTo(row,btn){
 }
 function btnCss(c){return "font-size:11px;padding:4px 11px;cursor:pointer;border:none;border-radius:6px;color:#fff;font-weight:600;background:"+c;}
 async function doAct(row,next,needPw,btn){
-  if(needPw){var pw=prompt("승인 비밀번호를 입력하세요 (승인자 확인)");if(pw===null)return;pw=String(pw).trim();if(pw!=="1202"&&pw!==GATE_PW){alert("비밀번호가 올바르지 않습니다");return;}}
+  if(needPw){var pw=prompt("비밀번호를 입력하세요 (1202)");if(pw===null)return;pw=String(pw).trim();if(pw!=="1202"&&pw!==GATE_PW){alert("비밀번호가 올바르지 않습니다");return;}}
   if(btn){btn.disabled=true;btn.textContent="처리중…";}
   var src=(reqFilter==="완료")?REQ_DONE:REQ_ACTIVE;var item=src.filter(function(x){return String(x.row)===String(row);})[0];
   if(item){item.상태=next;renderReqTbl();}  // 즉시 반영(낙관적)
