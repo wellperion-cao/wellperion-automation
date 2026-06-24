@@ -82,11 +82,23 @@
   .c-stat b{display:block;font-size:18px;font-weight:800;color:var(--navy);}
   .c-stat span{display:block;font-size:11.5px;color:var(--muted);margin-top:4px;word-break:keep-all;line-height:1.45;}
   @media(max-width:620px){ .c-stats{grid-template-columns:repeat(2,1fr);} }
+  /* shifts (operations 표준) */
+  .shifts{display:grid;grid-template-columns:1fr;gap:14px;}
+  .shift{border:1px solid var(--line);border-radius:14px;overflow:hidden;}
+  .shift .sh-top{padding:11px 16px;font-weight:800;color:#fff;font-size:14.5px;display:flex;align-items:center;justify-content:space-between;}
+  .shift.am .sh-top{background:var(--accent);}
+  .shift.pm .sh-top{background:var(--navy);}
+  .shift .sh-top small{font-weight:600;font-size:12px;opacity:.85;}
+  .shift .sh-body{padding:14px 16px;}
+  .shift .row{font-size:13.5px;padding:4px 0;display:flex;gap:8px;}
+  .shift .row b{color:var(--ink);flex:0 0 38px;}
+  .shift .row span{color:var(--muted);}
+  .shift .off{margin-top:8px;font-size:12.5px;color:var(--gold);font-weight:700;background:#fbf5e7;border-radius:8px;padding:7px 11px;}
 </style>
 </head>
 <body>
 <div class="hero">
-  <div class="brand">WELPERION</div>
+  <div class="brand">WELLPERION</div>
   <h1>주차관리자 · 발렛파킹 채용</h1>
   <div class="sub">시설부 — 프리미엄 멤버십 스포츠 클럽의 첫인상을 책임질 분을 모십니다.</div>
   <div class="badge">🚘 주차관리·발렛 기사 · 정규직(수습 3개월) · 모집 1명</div>
@@ -96,7 +108,7 @@
 
   <!-- 회사 소개 -->
   <div class="company">
-    <div class="c-kicker">ABOUT WELPERION</div>
+    <div class="c-kicker">ABOUT WELLPERION</div>
     <h2>웰페리온은 어떤 곳인가요</h2>
     <p>웰페리온은 단순한 운동 시설이 아닙니다. 서울 한남동에 자리한, 하루 루틴에 자연스럽게 녹아들어 건강의 기준을 세우고 그날의 완성도를 채워주는 프리미엄 멤버십 스포츠 클럽입니다. 스포츠 · 스파 · 커뮤니티 · 공간이 하나로 통합된 라이프스타일 인프라를 9년간 가꿔왔습니다.</p>
     <div class="c-stats">
@@ -215,9 +227,16 @@
       <div class="li"><span class="dot">·</span><span>고용 형태 : <span class="muted">정규직 (수습 3개월)</span></span></div>
       <div class="li"><span class="dot">·</span><span>직급/직책 : <span class="muted">사원급, 주임~대리급</span></span></div>
       <div class="li"><span class="dot">·</span><span>모집 인원 : <span class="muted">1명</span></span></div>
-      <div class="li"><span class="dot">·</span><span>근무 시간 : <span class="muted">09:30 ~ 18:30</span></span></div>
-      <div class="li"><span class="dot">·</span><span>휴무 : <span class="muted">월 6회 (공휴일에 따라 추가) · 격주휴무</span></span></div>
-      <div class="li"><span class="dot">·</span><span>근무지 : <span class="muted">현대하이페리온 101동 B1~B2 (한남역 도보 7분)</span></span></div>
+      <div class="li"><span class="dot">·</span><span>근무지 : <span class="muted">웰페리온 101동 B1~B2 (한남역 도보 7분)</span></span></div>
+    </div>
+    <div class="shifts" style="margin-top:14px;">
+      <div class="shift am">
+        <div class="sh-top">주간 근무 <small>1명</small></div>
+        <div class="sh-body">
+          <div class="row"><b>평일</b><span>09:30 ~ 18:30</span></div>
+          <div class="off">월 6회 휴무 (공휴일에 따라 추가) · 격주휴무</div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -277,7 +296,7 @@
   </div>
 
   <div class="foot">
-    <b>WELPERION</b> · 시설부 주차관리자·발렛파킹 채용 공고<br>
+    <b>WELLPERION</b> · 시설부 주차관리자·발렛파킹 채용 공고<br>
     함께 성장할 분들의 많은 지원 바랍니다.
     <div class="contact">
       <svg viewBox="0 0 24 24" fill="none" stroke="#2f2820" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/></svg>

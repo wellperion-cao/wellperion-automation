@@ -76,11 +76,20 @@
   .c-stat b{display:block;font-size:18px;font-weight:800;color:var(--navy);}
   .c-stat span{display:block;font-size:11.5px;color:var(--muted);margin-top:4px;word-break:keep-all;line-height:1.45;}
   @media(max-width:620px){ .c-stats{grid-template-columns:repeat(2,1fr);} }
+  /* operations 수준 보강 */
+  .perk{transition:transform .2s ease,box-shadow .2s ease;}
+  .perk:hover{transform:translateY(-3px);box-shadow:0 12px 26px rgba(60,48,32,.1);}
+  .perk .ico svg{width:28px;height:28px;}
+  .salary .s-ico svg{width:30px;height:30px;}
+  .apply .btn{transition:transform .18s ease,box-shadow .18s ease;}
+  .apply .btn:hover{transform:translateY(-2px);box-shadow:0 14px 30px rgba(138,111,63,.38);}
+  .venn{width:100%;max-width:330px;height:auto;display:block;margin:4px auto 0;}
+  .slogan::before{content:"\201C";position:absolute;left:14px;top:-6px;font-size:70px;color:rgba(255,255,255,.14);font-weight:800;}
 </style>
 </head>
 <body>
 <div class="hero">
-  <div class="brand">WELPERION</div>
+  <div class="brand">WELLPERION</div>
   <h1>오전 골프 프로 채용</h1>
   <div class="sub">강습부 — 회원의 아침을 여는 골프 레슨, 함께 성장할 프로님을 모십니다.</div>
   <div class="badge">⛳ 골프 프로 (어소시에이트 프로 · 1단계) · 파트너(위탁) · 오전 업장 관리</div>
@@ -89,7 +98,7 @@
 <div class="wrap">
 
   <div class="company">
-    <div class="c-kicker">ABOUT WELPERION</div>
+    <div class="c-kicker">ABOUT WELLPERION</div>
     <h2>웰페리온은 어떤 곳인가요</h2>
     <p>웰페리온은 단순한 운동 시설이 아닙니다. 서울 한남동에 자리한, 하루 루틴에 자연스럽게 녹아들어 건강의 기준을 세우고 그날의 완성도를 채워주는 프리미엄 멤버십 스포츠 클럽입니다. 스포츠 · 스파 · 커뮤니티 · 공간이 하나로 통합된 라이프스타일 인프라를 9년간 가꿔왔습니다.</p>
     <div class="c-stats">
@@ -103,7 +112,28 @@
   <div class="talent">
     <div class="t-kicker">WHO WE LOOK FOR</div>
     <h2>웰페리온이 찾는 프로</h2>
-    <div class="t-sub">전문성과 회원 중심 서비스가 만나는 지점</div>
+    <div class="t-sub">네 가지 핵심 역량 위에 전문성을 더한 골프 파트너를 찾습니다</div>
+    <svg class="venn" viewBox="0 0 360 260" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="웰페리온 인재상 도식">
+      <g stroke="#ddd3c4" stroke-width="2">
+        <line x1="180" y1="130" x2="92"  y2="60"/>
+        <line x1="180" y1="130" x2="268" y2="60"/>
+        <line x1="180" y1="130" x2="92"  y2="200"/>
+        <line x1="180" y1="130" x2="268" y2="200"/>
+      </g>
+      <g font-family="sans-serif" font-size="13" font-weight="800" text-anchor="middle">
+        <circle cx="92"  cy="60"  r="44" fill="#f5ecd8" stroke="#b8923f" stroke-width="2"/>
+        <text x="92"  y="65"  fill="#6e5827">문제해결</text>
+        <circle cx="268" cy="60"  r="44" fill="#f3e3d6" stroke="#c1702c" stroke-width="2"/>
+        <text x="268" y="65"  fill="#7a3f12">팀워크</text>
+        <circle cx="92"  cy="200" r="44" fill="#ecedda" stroke="#8a8a3f" stroke-width="2"/>
+        <text x="92"  y="205" fill="#565627">주도성</text>
+        <circle cx="268" cy="200" r="44" fill="#ece4da" stroke="#9a7d5f" stroke-width="2"/>
+        <text x="268" y="205" fill="#5f4633">프로세스</text>
+      </g>
+      <circle cx="180" cy="130" r="50" fill="#2f2820"/>
+      <text x="180" y="125" text-anchor="middle" font-family="sans-serif" font-size="13" font-weight="800" fill="#ffffff">웰페리온</text>
+      <text x="180" y="143" text-anchor="middle" font-family="sans-serif" font-size="13" font-weight="800" fill="#dcc79b">인재상</text>
+    </svg>
     <div class="slogan">
       <div class="s-line">단순히 스윙을 가르치는 사람이 아닌,<br><b>회원의 하루를 여는 골프 파트너</b></div>
     </div>
@@ -115,11 +145,11 @@
   </div>
 
   <div class="perks">
-    <div class="perk"><div class="ico">💰</div><span class="tag">정착지원</span><h3>정착지원금 (입사 3개월)</h3><p>계약 시작 후 3개월간 일반 月 100만원 / 시니어 月 130만원 지원으로 안정적인 정착을 돕습니다.</p></div>
-    <div class="perk"><div class="ico">📈</div><span class="tag">성장</span><h3>파트너 등급제</h3><p>어소시에이트 → 기본 → 마스터 → 시니어 → 팀리더. 성과·전문성에 따라 수업료율이 단계적으로 오릅니다.</p></div>
-    <div class="perk"><div class="ico">⛳</div><span class="tag">환경</span><h3>프리미엄 골프 인프라</h3><p>한남동 프리미엄 멤버십 회원과 정돈된 골프 레슨 환경에서 일합니다.</p></div>
-    <div class="perk"><div class="ico">👕</div><span class="tag">지원</span><h3>유니폼 제공</h3><p>강습 유니폼을 제공하며, 전문성 있는 응대 환경을 갖춥니다.</p></div>
-    <div class="perk wide"><div class="ico">🤖</div><span class="tag">AI</span><h3>AI 업무 서포트 (전 강사 제공)</h3><p>스케줄·페이롤 등 반복 업무는 AI가 돕습니다. 레슨에 더 집중할 수 있는 환경을 제공합니다.</p></div>
+    <div class="perk"><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="#a98a52" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v10M9.5 9.5h4a1.5 1.5 0 0 1 0 3h-3a1.5 1.5 0 0 0 0 3h4"/></svg></div><span class="tag">정착지원</span><h3>정착지원금 (입사 3개월)</h3><p>계약 시작 후 3개월간 일반 月 100만원 / 시니어 月 130만원 지원으로 안정적인 정착을 돕습니다.</p></div>
+    <div class="perk"><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="#a98a52" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l6-6 4 4 8-8"/><path d="M21 7v6h-6"/></svg></div><span class="tag">성장</span><h3>파트너 등급제</h3><p>어소시에이트 → 기본 → 마스터 → 시니어 → 팀리더. 성과·전문성에 따라 수업료율이 단계적으로 오릅니다.</p></div>
+    <div class="perk"><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="#a98a52" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3v18"/><path d="M6 4h12l-2.5 3.5L18 11H6"/></svg></div><span class="tag">환경</span><h3>프리미엄 골프 인프라</h3><p>한남동 프리미엄 멤버십 회원과 정돈된 골프 레슨 환경에서 일합니다.</p></div>
+    <div class="perk"><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="#a98a52" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4l-4 3-4-3-4 3 2 13h12l2-13-4-3z"/></svg></div><span class="tag">지원</span><h3>유니폼 제공</h3><p>강습 유니폼을 제공하며, 전문성 있는 응대 환경을 갖춥니다.</p></div>
+    <div class="perk wide"><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="7" width="16" height="12" rx="3"/><path d="M12 7V4M9 13h.01M15 13h.01M9 16h6"/><path d="M2 11v3M22 11v3"/></svg></div><span class="tag">AI</span><h3>AI 업무 서포트 (전 강사 제공)</h3><p>스케줄·페이롤 등 반복 업무는 AI가 돕습니다. 레슨에 더 집중할 수 있는 환경을 제공합니다.</p></div>
   </div>
 
   <div class="sec-head">
@@ -128,7 +158,7 @@
   </div>
 
   <div class="salary">
-    <div class="s-ico">⛳</div>
+    <div class="s-ico"><svg viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 21h8M12 17v4"/><path d="M7 4h10v5a5 5 0 0 1-10 0V4z"/><path d="M5 5H3v2a3 3 0 0 0 3 3M19 5h2v2a3 3 0 0 1-3 3"/></svg></div>
     <div>
       <div class="s-label">보상 (PARTNER)</div>
       <div class="s-amount">수업료율 40% → 55% <small>+ 정착지원금 月 100~130만원</small></div>
@@ -169,8 +199,8 @@
       <div class="li"><span class="dot">·</span><span>업장 관리(주말) : <span class="muted">08:00 ~ 14:00 (6h)</span></span></div>
       <div class="li"><span class="dot">·</span><span>휴게 : <span class="muted">1시간 포함</span></span></div>
       <div class="li"><span class="dot">·</span><span>운영 기준 : <span class="muted">주 5일 · 월 6일 미운영 (정착지원금 종료 후 월 8일)</span></span></div>
-      <div class="li"><span class="dot">·</span><span>업장 위치 : <span class="muted">현대하이페리온 101동 B1~B2 (한남)</span></span></div>
-      <div class="li"><span class="dot">·</span><span>모집 인원 : <span class="muted">0명 (확정 후 반영)</span></span></div>
+      <div class="li"><span class="dot">·</span><span>업장 위치 : <span class="muted">웰페리온 101동 B1~B2 (한남)</span></span></div>
+      <div class="li"><span class="dot">·</span><span>모집 인원 : <span class="muted">수시 채용 (충원 시 마감)</span></span></div>
     </div>
   </div>
 
@@ -227,7 +257,7 @@
   </div>
 
   <div class="foot">
-    <b>WELPERION</b> · 강습부 오전 골프 프로(어소시에이트 프로) 채용 공고<br>
+    <b>WELLPERION</b> · 강습부 오전 골프 프로(어소시에이트 프로) 채용 공고<br>
     함께 성장할 프로님의 많은 지원 바랍니다.
     <div class="contact">
       <svg viewBox="0 0 24 24" fill="none" stroke="#2f2820" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:17px;height:17px"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
