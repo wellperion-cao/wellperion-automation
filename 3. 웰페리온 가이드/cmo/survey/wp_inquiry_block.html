@@ -104,65 +104,69 @@ body.page-id-8394 #header-outer #logo { margin-top: 32px !important; }
   </div>
 
   <!-- ============================================================
-       ▼ 소셜/링크 아이콘 바 (2026-06-24 시모 추가)
+       ▼ 소셜/링크 아이콘 바 (2026-06-24 시모 추가 / 브랜드컬러+네이버블로그정확화 개선)
        4개 채널: 홈페이지·인스타그램·네이버블로그·네이버지도
        인라인 SVG, 인라인 스타일만(외부 의존 없음)
        ============================================================ -->
+  <style>
+  .wp-social-icon { display:flex;flex-direction:column;align-items:center;gap:8px;text-decoration:none;transition:transform .18s,opacity .18s; }
+  .wp-social-icon:hover { transform:scale(1.1); }
+  .wp-social-icon:hover .wp-social-btn { box-shadow:0 6px 18px rgba(0,0,0,.22) !important; }
+  .wp-social-btn { display:flex;align-items:center;justify-content:center;width:52px;height:52px;border-radius:50%;transition:box-shadow .18s; }
+  .wp-social-label { font-size:11px;font-weight:600;letter-spacing:.3px; }
+  </style>
   <div style="display:flex;justify-content:center;gap:24px;flex-wrap:wrap;margin:32px 0 8px;">
 
-    <!-- 홈페이지 -->
+    <!-- 홈페이지 — 웰페리온 브랜드 다크(#221F20) -->
     <a href="http://wellperion.com/ko/" target="_blank" rel="noopener" onclick="wpTrackClick('소셜_홈페이지')"
-       style="display:flex;flex-direction:column;align-items:center;gap:8px;text-decoration:none;color:#b08d57;transition:opacity .18s;"
-       onmouseover="this.style.opacity='.72'" onmouseout="this.style.opacity='1'">
-      <span style="display:flex;align-items:center;justify-content:center;width:52px;height:52px;border-radius:50%;background:#f8f3ec;border:1.5px solid #d4b87a;box-shadow:0 2px 8px rgba(176,141,87,.13);transition:background .18s;">
+       class="wp-social-icon" style="color:#221F20;">
+      <span class="wp-social-btn" style="background:#221F20;box-shadow:0 2px 8px rgba(34,31,32,.25);">
         <svg width="26" height="26" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="홈페이지">
-          <path d="M3 9.5L12 3l9 6.5V21a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V9.5z" stroke="#b08d57" stroke-width="1.7" stroke-linejoin="round"/>
-          <path d="M9 22V12h6v10" stroke="#b08d57" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M3 9.5L12 3l9 6.5V21a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V9.5z" fill="#fff" fill-opacity=".15" stroke="#fff" stroke-width="1.7" stroke-linejoin="round"/>
+          <path d="M9 22V12h6v10" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
       </span>
-      <span style="font-size:11px;font-weight:600;letter-spacing:.3px;color:#b08d57;">홈페이지</span>
+      <span class="wp-social-label" style="color:#221F20;">홈페이지</span>
     </a>
 
-    <!-- 인스타그램 -->
+    <!-- 인스타그램 — 공식 그라데이션 -->
     <a href="https://www.instagram.com/wellperion/" target="_blank" rel="noopener" onclick="wpTrackClick('소셜_인스타그램')"
-       style="display:flex;flex-direction:column;align-items:center;gap:8px;text-decoration:none;color:#b08d57;transition:opacity .18s;"
-       onmouseover="this.style.opacity='.72'" onmouseout="this.style.opacity='1'">
-      <span style="display:flex;align-items:center;justify-content:center;width:52px;height:52px;border-radius:50%;background:#f8f3ec;border:1.5px solid #d4b87a;box-shadow:0 2px 8px rgba(176,141,87,.13);transition:background .18s;">
+       class="wp-social-icon" style="color:#d62976;">
+      <span class="wp-social-btn" style="background:linear-gradient(135deg,#feda75 0%,#fa7e1e 25%,#d62976 55%,#962fbf 80%,#4f5bd5 100%);box-shadow:0 2px 8px rgba(214,41,118,.3);">
         <svg width="26" height="26" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="인스타그램">
-          <rect x="2" y="2" width="20" height="20" rx="5.5" stroke="#b08d57" stroke-width="1.7"/>
-          <circle cx="12" cy="12" r="4.5" stroke="#b08d57" stroke-width="1.7"/>
-          <circle cx="17.5" cy="6.5" r="1" fill="#b08d57"/>
+          <rect x="2" y="2" width="20" height="20" rx="5.5" stroke="#fff" stroke-width="1.8"/>
+          <circle cx="12" cy="12" r="4.5" stroke="#fff" stroke-width="1.8"/>
+          <circle cx="17.5" cy="6.5" r="1.1" fill="#fff"/>
         </svg>
       </span>
-      <span style="font-size:11px;font-weight:600;letter-spacing:.3px;color:#b08d57;">인스타그램</span>
+      <span class="wp-social-label" style="color:#d62976;">인스타그램</span>
     </a>
 
-    <!-- 네이버 블로그 -->
+    <!-- 네이버 블로그 — 네이버 그린(#03C75A) + 'blog' 텍스트 로고(공식 마크) -->
     <a href="https://blog.naver.com/wellperion" target="_blank" rel="noopener" onclick="wpTrackClick('소셜_네이버블로그')"
-       style="display:flex;flex-direction:column;align-items:center;gap:8px;text-decoration:none;color:#b08d57;transition:opacity .18s;"
-       onmouseover="this.style.opacity='.72'" onmouseout="this.style.opacity='1'">
-      <span style="display:flex;align-items:center;justify-content:center;width:52px;height:52px;border-radius:50%;background:#f8f3ec;border:1.5px solid #d4b87a;box-shadow:0 2px 8px rgba(176,141,87,.13);transition:background .18s;">
-        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="네이버 블로그">
-          <!-- 네이버 'N' 심볼 -->
-          <rect x="3" y="3" width="18" height="18" rx="3.5" fill="#b08d57"/>
-          <path d="M7 17V7l4 6.5V7" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-          <path d="M11 13.5L15 17V7" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+       class="wp-social-icon" style="color:#03C75A;">
+      <span class="wp-social-btn" style="background:#03C75A;box-shadow:0 2px 8px rgba(3,199,90,.3);">
+        <!-- 네이버 블로그 공식 마크: 둥근 사각형 배경(배경색과 동일 처리) + 흰색 소문자 'blog' -->
+        <svg width="36" height="26" viewBox="0 0 36 26" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="네이버 블로그">
+          <!-- b -->
+          <text x="0" y="20" font-family="Arial,Helvetica,sans-serif" font-size="19" font-weight="700" fill="#fff" letter-spacing="-0.5">blog</text>
         </svg>
       </span>
-      <span style="font-size:11px;font-weight:600;letter-spacing:.3px;color:#b08d57;">네이버블로그</span>
+      <span class="wp-social-label" style="color:#03C75A;">네이버블로그</span>
     </a>
 
-    <!-- 네이버 지도 -->
+    <!-- 네이버 지도 — 짙은 그린(#00963C) + 위치 핀(블로그와 시각 구별) -->
     <a href="https://map.naver.com/p/search/%EC%9B%B0%ED%8E%98%EB%A6%AC%EC%98%A8/place/1048457693" target="_blank" rel="noopener" onclick="wpTrackClick('소셜_네이버지도')"
-       style="display:flex;flex-direction:column;align-items:center;gap:8px;text-decoration:none;color:#b08d57;transition:opacity .18s;"
-       onmouseover="this.style.opacity='.72'" onmouseout="this.style.opacity='1'">
-      <span style="display:flex;align-items:center;justify-content:center;width:52px;height:52px;border-radius:50%;background:#f8f3ec;border:1.5px solid #d4b87a;box-shadow:0 2px 8px rgba(176,141,87,.13);transition:background .18s;">
+       class="wp-social-icon" style="color:#00963C;">
+      <span class="wp-social-btn" style="background:#00963C;box-shadow:0 2px 8px rgba(0,150,60,.3);">
         <svg width="26" height="26" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="네이버 지도">
-          <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" stroke="#b08d57" stroke-width="1.7" stroke-linejoin="round"/>
-          <circle cx="12" cy="9" r="2.5" stroke="#b08d57" stroke-width="1.7"/>
+          <!-- 위치 핀 몸체 -->
+          <path d="M12 2C8.686 2 6 4.686 6 8c0 4.5 6 12 6 12s6-7.5 6-12c0-3.314-2.686-6-6-6z" fill="#fff" fill-opacity=".25" stroke="#fff" stroke-width="1.8" stroke-linejoin="round"/>
+          <!-- 핀 내부 원 -->
+          <circle cx="12" cy="8" r="2.5" fill="#fff"/>
         </svg>
       </span>
-      <span style="font-size:11px;font-weight:600;letter-spacing:.3px;color:#b08d57;">네이버지도</span>
+      <span class="wp-social-label" style="color:#00963C;">네이버지도</span>
     </a>
 
   </div>
