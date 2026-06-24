@@ -109,6 +109,16 @@ STICKER_PANEL_CLOSE_SELECTORS = [
     'button[data-name="sticker"]',  # 토글 — 다시 누르면 패널 닫힘
 ]
 STICKER_COUNT_DEFAULT = 3  # 본문에 삽입할 기본 스티커 개수 (GM 검수 시 교체 전제)
+# 링크 카드(oglink) 삽입 — URL 붙여넣기 자동 카드화 (PoC 실측 2026-06-24)
+# 메커니즘: 본문 끝 빈 줄에 URL 타이핑 → Enter → SmartEditor 자동 og 링크 카드 생성
+# og:image 로딩은 비동기(최대 5초 대기). 감지 셀렉터:
+LINK_CARD_CTA_URL = "http://wellperion.com/ko/inquiry/"  # UTM 없는 깔끔한 URL — og:image 썸네일 우선
+LINK_CARD_RESULT_SELECTORS = [
+    ".se-component.se-oglink",
+    ".se-module-oglink",
+    ".se-oglink-thumbnail",
+]
+
 # 임시저장 버튼
 SAVE_DRAFT_SELECTORS = [
     "button.save_btn__bzc5B",
@@ -578,6 +588,10 @@ async def _enter_write_and_fill(page, post: BlogPost, blog_id: str | None) -> No
         await _place_caret_after_inquiry_line(page, target)
         await _insert_one_sticker_at_caret(page, target, "'문의' 줄 다음")
 
+    # 링크 카드 삽입 — 본문 끝에 문의 CTA를 og:image 썸네일 포함 링크 카드로 삽입 (PoC 실측 2026-06-24).
+    # URL 타이핑 → Enter → SmartEditor 자동 카드화. 실패해도 draft 진행(평문 URL 폴백은 본문에 이미 포함).
+    await _insert_link_card(page, target)
+
     # 이미지 첨부 (슬라이드 모달 단계 포함). 본문 맨 아래에 삽입. 실패해도 draft 진행.
     if post.image_paths:
         await _attach_images(page, target, post.image_paths)
@@ -741,6 +755,52 @@ async def _place_caret_after_inquiry_line(page, target) -> bool:
         pass
     print("[WARN] '문의' 줄 미발견 — 본문 끝으로 폴백")
     return False
+
+
+async def _insert_link_card(page, target, url: str = LINK_CARD_CTA_URL) -> bool:
+    """본문 끝에 URL을 타이핑해 SmartEditor 자동 og 링크 카드를 삽입한다.
+    메커니즘(PoC 실측 2026-06-24): 빈 줄에 URL 입력 → Enter → 에디터가 자동으로
+    .se-component.se-oglink 컴포넌트를 생성 + og:image 썸네일 비동기 로딩(최대 5초).
+    삽입 성공 시 True, 실패 시 False 반환."""
+    try:
+        # 본문 끝으로 caret 이동
+        await page.keyboard.press("Control+End")
+        await page.wait_for_timeout(300)
+        # 빈 줄 확보
+        await page.keyboard.press("Enter")
+        await page.wait_for_timeout(300)
+        # URL 타이핑 (keyboard.type — clipboard 의존 없음)
+        await page.keyboard.type(url, delay=10)
+        await page.wait_for_timeout(300)
+        # Enter — SmartEditor 링크 카드 변환 트리거
+        await page.keyboard.press("Enter")
+        print(f"[INFO] 링크 카드 URL 입력 완료: {url}")
+        # og:image 비동기 로딩 대기 (최대 5초 폴링)
+        detected = False
+        for _ in range(10):
+            await page.wait_for_timeout(500)
+            for sel in LINK_CARD_RESULT_SELECTORS:
+                try:
+                    cnt = await target.evaluate(f"() => document.querySelectorAll('{sel}').length")
+                    if cnt > 0:
+                        detected = True
+                        break
+                except Exception:
+                    pass
+            if detected:
+                break
+        if detected:
+            # og:image 썸네일 포함 여부
+            thumb_cnt = await target.evaluate(
+                "() => document.querySelectorAll('.se-oglink-thumbnail img, .se-module-oglink img').length"
+            )
+            print(f"[INFO] 링크 카드 삽입 성공 — og:image 썸네일: {'있음' if thumb_cnt > 0 else '로딩중/없음'} ({thumb_cnt}개)")
+        else:
+            print("[WARN] 링크 카드 컴포넌트 미감지 (5초 대기 후) — 평문 URL로 폴백")
+        return detected
+    except Exception as e:
+        print(f"[WARN] 링크 카드 삽입 실패(무시): {e}")
+        return False
 
 
 async def _attach_images(page, target, image_paths: list[Path]) -> int:

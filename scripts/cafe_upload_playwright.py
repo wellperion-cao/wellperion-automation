@@ -112,6 +112,14 @@ STICKER_TOOLBAR_BUTTON_SELECTORS = [
 # attribute substring selector로 양쪽 모두 커버.
 STICKER_ITEM_SELECTOR = 'button[class*="se-sidebar-element-sticker"]'
 STICKER_COUNT_DEFAULT = 3  # 본문에 삽입할 기본 스티커 개수 (GM 검수 시 교체 전제)
+# 링크 카드(oglink) 삽입 — URL 붙여넣기 자동 카드화 (PoC 실측 2026-06-24)
+LINK_CARD_CTA_URL = "http://wellperion.com/ko/inquiry/"  # UTM 없는 깔끔한 URL — og:image 썸네일 우선
+LINK_CARD_RESULT_SELECTORS = [
+    ".se-component.se-oglink",
+    ".se-module-oglink",
+    ".se-oglink-thumbnail",
+]
+
 # 카페 임시등록 버튼
 SAVE_DRAFT_SELECTORS = [
     "button.btn_temp_save",
@@ -602,6 +610,10 @@ async def _enter_write_and_fill(page, post: CafePost) -> None:
     except Exception:
         pass
 
+    # 링크 카드 삽입 — 본문 끝에 문의 CTA를 og:image 썸네일 포함 링크 카드로 삽입 (PoC 실측 2026-06-24).
+    # URL 타이핑 → Enter → SmartEditor 자동 카드화. 실패해도 draft 진행(평문 URL 폴백은 본문에 이미 포함).
+    await _insert_link_card(page, scope)
+
     if post.image_paths:
         await _attach_images(page, scope, post.image_paths)
 
@@ -729,6 +741,46 @@ async def _insert_stickers(page, scope, count: int, label: str = "") -> int:
     else:
         print(f"[INFO] 스티커 삽입 검증 OK — 본문 스티커 {before}→{after} ({inserted}개 추가)")
     return inserted
+
+
+async def _insert_link_card(page, scope, url: str = LINK_CARD_CTA_URL) -> bool:
+    """본문 끝에 URL을 타이핑해 SmartEditor 자동 og 링크 카드를 삽입한다.
+    메커니즘(PoC 실측 2026-06-24): 빈 줄에 URL 입력 → Enter → 에디터가 자동으로
+    .se-component.se-oglink 컴포넌트를 생성 + og:image 썸네일 비동기 로딩(최대 5초).
+    삽입 성공 시 True, 실패 시 False 반환."""
+    try:
+        await _focus_body_end(page, scope)
+        await page.keyboard.press("Enter")
+        await page.wait_for_timeout(300)
+        await page.keyboard.type(url, delay=10)
+        await page.wait_for_timeout(300)
+        await page.keyboard.press("Enter")
+        print(f"[INFO] 링크 카드 URL 입력 완료: {url}")
+        # og:image 비동기 로딩 대기 (최대 5초 폴링)
+        detected = False
+        for _ in range(10):
+            await page.wait_for_timeout(500)
+            for sel in LINK_CARD_RESULT_SELECTORS:
+                try:
+                    cnt = await scope.evaluate(f"() => document.querySelectorAll('{sel}').length")
+                    if cnt > 0:
+                        detected = True
+                        break
+                except Exception:
+                    pass
+            if detected:
+                break
+        if detected:
+            thumb_cnt = await scope.evaluate(
+                "() => document.querySelectorAll('.se-oglink-thumbnail img, .se-module-oglink img').length"
+            )
+            print(f"[INFO] 링크 카드 삽입 성공 — og:image 썸네일: {'있음' if thumb_cnt > 0 else '로딩중/없음'} ({thumb_cnt}개)")
+        else:
+            print("[WARN] 링크 카드 컴포넌트 미감지 (5초 대기 후) — 평문 URL로 폴백")
+        return detected
+    except Exception as e:
+        print(f"[WARN] 링크 카드 삽입 실패(무시): {e}")
+        return False
 
 
 async def _attach_images(page, scope, image_paths: list[Path]) -> None:
