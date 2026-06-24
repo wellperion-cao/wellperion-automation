@@ -228,7 +228,7 @@ TELEGRAM_CHAT_ID: str = _load_env_val(TELEGRAM_CHAT_ID_ENV_KEY)  # telegram_bot/
 #   스쿼시            ← 미지정 시 SUBJECT_COLLABORATOR_MAP 자동 적용 안 됨
 # -----------------------------------------------------------------
 class PostSpec:
-    __slots__ = ("slot", "caption", "hashtags", "collaborators", "subject", "image_paths")
+    __slots__ = ("slot", "caption", "hashtags", "collaborators", "subject", "image_paths", "location", "mention")
 
     def __init__(self, slot: str) -> None:
         self.slot: str = slot
@@ -237,6 +237,8 @@ class PostSpec:
         self.collaborators: list[str] = []
         self.subject: str = ""
         self.image_paths: list[Path] = []
+        self.location: str = ""   # 인스타 위치태그용 — 캡션 본문에 포함하지 않음
+        self.mention: str = ""    # ### 멘션 섹션 — 캡션 본문에 포함하지 않음
 
     def merged_caption(self, extra_mentions: list[str] | None = None) -> str:
         """캡션 + 해시태그 합성. extra_mentions 있으면 해시태그 줄 앞에 멘션 줄 삽입.
@@ -303,7 +305,7 @@ def parse_curation_md(md_path: Path) -> dict[str, PostSpec]:
 
 def _parse_post_section(slot: str, body: str) -> PostSpec:
     spec = PostSpec(slot)
-    field_re = re.compile(r"^###\s*(캡션|해시태그|Collaborator|협업자|종목)\s*$", re.MULTILINE)
+    field_re = re.compile(r"^###\s*(캡션|해시태그|Collaborator|협업자|종목|위치|멘션)\s*$", re.MULTILINE)
     fields = list(field_re.finditer(body))
     for idx, m in enumerate(fields):
         label = m.group(1)
@@ -320,6 +322,10 @@ def _parse_post_section(slot: str, body: str) -> PostSpec:
             ]
         elif label == "종목":
             spec.subject = chunk.splitlines()[0].strip() if chunk else ""
+        elif label == "위치":
+            spec.location = chunk.splitlines()[0].strip() if chunk else ""
+        elif label == "멘션":
+            spec.mention = chunk.strip()
     return spec
 
 
@@ -906,16 +912,18 @@ async def run_publish(
 
         for idx, slot in enumerate(present_slots):
             spec = posts[slot]
+            # spec.location(큐레이션_추천.md ### 위치) 우선, 없으면 run_publish 인자 location 사용
+            effective_location = spec.location or location
             print(f"\n[INFO] ── post {slot} 발행 시작 ── images={len(spec.image_paths)} / collab={len(spec.collaborators)}")
             try:
-                url, outcome = await _publish_single_post(page, spec, content_folder, location=location, mentions=mentions, account=account)
+                url, outcome = await _publish_single_post(page, spec, content_folder, location=effective_location, mentions=mentions, account=account)
             except Exception as e:
                 print(f"[ERROR] post {slot} 발행 예외: {e}")
                 # 자동 재시도 1회 (지시 v1.0) — 예외(UI 크래시)에만 재시도.
                 # (FIX2) '확인필요' 는 예외가 아니라 정상 반환이므로 여기로 오지 않음 = 중복 발행 안 됨.
                 print(f"[INFO] post {slot} 자동 재시도 1회 시작")
                 try:
-                    url, outcome = await _publish_single_post(page, spec, content_folder, location=location, mentions=mentions, account=account)
+                    url, outcome = await _publish_single_post(page, spec, content_folder, location=effective_location, mentions=mentions, account=account)
                 except Exception as e2:
                     print(f"[ERROR] post {slot} 재시도 실패: {e2}")
                     telegram_report(
