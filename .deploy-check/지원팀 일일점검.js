@@ -54,7 +54,7 @@ function _roundKeyLabel(rk) {
 // ─── 회차라벨(오전조/오후조/마감조) → 제출도장 shiftKey(am/pm/night). led.sub/subAt 조회용. 2026-06-20 시우 ───
 function _labelToShiftKey(label) {
   var l = String(label || '');
-  if (l.indexOf('마감') >= 0 || l.indexOf('야간') >= 0 || l.indexOf('저녁') >= 0) return 'night';
+  if (l.indexOf('마감') >= 0 || l.indexOf('야간') >= 0 || l.indexOf('탕청소') >= 0 || l.indexOf('저녁') >= 0) return 'night';
   if (l.indexOf('오후') >= 0) return 'pm';
   if (l.indexOf('오전') >= 0) return 'am';
   return '';
@@ -542,7 +542,7 @@ function doGet(e) {
         var submitStr = String(data[i][8] || '');
         var hasAm = submitStr.indexOf('오전') >= 0 || submitStr === '제출완료';
         var hasPm = submitStr.indexOf('오후') >= 0;
-        var hasNight = submitStr.indexOf('야간') >= 0;
+        var hasNight = submitStr.indexOf('야간') >= 0 || submitStr.indexOf('탕청소') >= 0;
         rows.push({
           zone: name,
           itemId: String(data[i][1]),
@@ -1497,7 +1497,7 @@ function _handleSaveV2Compat(body) {
   var parts = [];
   if (body.submitted_am) parts.push('오전조 제출완료');
   if (body.submitted_pm) parts.push('오후조 제출완료');
-  if (body.submitted_night) parts.push('야간조 제출완료');
+  if (body.submitted_night) parts.push('탕청소 제출완료');
   var submitStatus = parts.length > 0 ? parts.join(' / ') : '미제출';
   var submitAt = body.submittedAt_am || body.submittedAt_pm || body.submittedAt_night || '';
   var submitters = [];
@@ -2460,7 +2460,7 @@ function _getSheetsForDept(dept) {
 // 완료율 일·주 집계에서 같은 (구역,교대) 셀의 중복 라운드 행을 한 셀로 묶기 위한 버킷 키.
 function _shiftBucket(s) {
   var v = String(s == null ? '' : s).trim();
-  if (v.indexOf('야간') === 0 || v === 'night') return 'night';
+  if (v.indexOf('야간') === 0 || v.indexOf('탕청소') === 0 || v === 'night') return 'night';
   if (v.indexOf('오전') === 0 || v === 'am') return 'am';
   // 마감조는 오후조와 별도 회차 — 같은 zone|pm 키 충돌로 한 회차 누락되던 버그 수정(2026-06-16).
   if (v.indexOf('마감') === 0 || v.indexOf('close') >= 0) return 'close';

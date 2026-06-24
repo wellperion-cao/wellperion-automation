@@ -997,7 +997,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   <div class="submit-bar" id="submitBarM">
     <button class="submit-btn primary" id="submitAmM" onclick="submitShift('am','m')" disabled>오전조 제출</button>
     <button class="submit-btn primary" id="submitPmM" onclick="submitShift('pm','m')" disabled>오후조 제출</button>
-    <button class="submit-btn night-btn" id="submitNightM" onclick="submitShift('night','m')" disabled style="display:none">야간조 제출</button>
+    <button class="submit-btn night-btn" id="submitNightM" onclick="submitShift('night','m')" disabled style="display:none">탕청소 제출</button>
   </div>
 </div>
 
@@ -1037,7 +1037,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   <div class="submit-bar" id="submitBarF" style="display:none">
     <button class="submit-btn primary" id="submitAmF" onclick="submitShift('am','f')" disabled>오전조 제출</button>
     <button class="submit-btn primary" id="submitPmF" onclick="submitShift('pm','f')" disabled>오후조 제출</button>
-    <button class="submit-btn night-btn" id="submitNightF" onclick="submitShift('night','f')" disabled style="display:none">야간조 제출</button>
+    <button class="submit-btn night-btn" id="submitNightF" onclick="submitShift('night','f')" disabled style="display:none">탕청소 제출</button>
   </div>
 </div>
 
@@ -1354,7 +1354,7 @@ function promoteSave(){
 /* 시간대(slot) → 교대조(shift) 추정 (기본 항목 배열의 slot 명명 규칙 기준) */
 function slotToShiftFront(slot){
   var s = slot || '';
-  if(s.indexOf('야간')>=0||s.indexOf('23:')>=0||s.indexOf('00:')>=0||s.indexOf('01:')>=0||s.indexOf('02:')>=0||s.indexOf('03:')>=0||s.indexOf('20:30')>=0||s.indexOf('21:00')>=0||s.indexOf('22:00~23')>=0) return 'night';
+  if(s.indexOf('야간')>=0||s.indexOf('탕청소')>=0||s.indexOf('23:')>=0||s.indexOf('00:')>=0||s.indexOf('01:')>=0||s.indexOf('02:')>=0||s.indexOf('03:')>=0||s.indexOf('20:30')>=0||s.indexOf('21:00')>=0||s.indexOf('22:00~23')>=0) return 'night';
   if(s.indexOf('상시')>=0) return 'all';
   if(s.indexOf('오픈')>=0||s.indexOf('오전')>=0||s.indexOf('05:30')>=0||s.indexOf('07:30')>=0||s.indexOf('인수인계')>=0||s.indexOf('08:00')>=0||s.indexOf('10:00')>=0) return 'am';
   return 'pm';
@@ -2594,7 +2594,7 @@ function drawUI(d,gender){
 
   if(nightMode){
     const nightStats=getShiftStatsG(sched,'night',d,gender);
-    html+=`<div class="shift-divider night-shift"><div class="shift-label">야간조 (탕청소 업체)</div>
+    html+=`<div class="shift-divider night-shift"><div class="shift-label">탕청소 (외주 업체)</div>
       <div class="shift-progress">
         <div class="progress-text"><span>${nightStats.done}/${nightStats.total}</span><span>${nightStats.pct}%</span></div>
         <div class="progress-bar"><div class="progress-fill" style="width:${nightStats.pct}%;background:var(--orange)"></div></div>
@@ -3160,7 +3160,7 @@ function renderItem(it,shift,gender,round){
   // Use unique element ids per gender tab to avoid collisions
   const pfx=g+'_';
   /* 점검 화면 항목 편집/초기화 제거(GM 2026-06-12): 항목 수정·추가는 '매뉴얼' 탭 단일출처. 점검=체크+이슈/노하우만. */
-  const shiftLabel={am:'오전조',pm:'오후조',night:'야간조',focus:'요일집중',all:'전체'};
+  const shiftLabel={am:'오전조',pm:'오후조',night:'탕청소',focus:'요일집중',all:'전체'};
   let metaInfo='';
   if(ov.slot||ov.shift||ov.cat){
     const m=[];
@@ -3312,9 +3312,9 @@ function updateNightSubmitButtonG(sched,nightStats,d,gender){
   const sub=getSubmitterForGender(gender);
   if(STATE._submitted_night){
     if(nightStats.done<nightStats.total){
-      btnNight.textContent=`➕ 야간조 추가 제출 (남은 ${nightStats.total-nightStats.done}건)`;btnNight.disabled=!sub;btnNight.className='submit-btn night-btn';
+      btnNight.textContent=`➕ 탕청소 추가 제출 (남은 ${nightStats.total-nightStats.done}건)`;btnNight.disabled=!sub;btnNight.className='submit-btn night-btn';
     }else{
-      btnNight.textContent='야간조 제출 완료';btnNight.disabled=true;btnNight.className='submit-btn submitted';
+      btnNight.textContent='탕청소 제출 완료';btnNight.disabled=true;btnNight.className='submit-btn submitted';
     }
   }else if(!sub){
     btnNight.textContent='↑ 점검자를 먼저 선택';btnNight.disabled=true;btnNight.className='submit-btn night-btn';
@@ -3322,7 +3322,7 @@ function updateNightSubmitButtonG(sched,nightStats,d,gender){
     /* 점검 시작·종료 선행 게이트(GM 2026-06-24) */
     btnNight.textContent='▶ 점검 시작·종료 먼저';btnNight.disabled=true;btnNight.className='submit-btn night-btn';
   }else{
-    btnNight.textContent=nightStats.done===nightStats.total&&nightStats.total>0?'야간조 제출':`야간조 제출 (${nightStats.done}/${nightStats.total})`;
+    btnNight.textContent=nightStats.done===nightStats.total&&nightStats.total>0?'탕청소 제출':`탕청소 제출 (${nightStats.done}/${nightStats.total})`;
     btnNight.disabled=nightStats.done===0;btnNight.className='submit-btn night-btn';
   }
 }
@@ -3387,7 +3387,7 @@ function _onCkAfter(d,gender){
       if(!sub){alert('점검자 이름을 먼저 입력하세요.');return}
       /* 시작·종료 게이트(GM 2026-06-24): 점검 시작·종료 미완이면 자동제출 제안 안 함(버튼 안내로 유도) */
       if(typeof timerGatePassed==='function'&&!timerGatePassed(gender))return;
-      if(confirm(`야간조 항목을 모두 완료했습니다.\n${sub}님 이름으로 제출할까요?`)){
+      if(confirm(`탕청소 항목을 모두 완료했습니다.\n${sub}님 이름으로 제출할까요?`)){
         submitShift('night',gender);
       }
     }
@@ -3643,7 +3643,7 @@ async function submitShift(shift,gender){
   const sub=getSubmitterForGender(gender);
   if(!sub){alert('점검자를 선택해주세요.');return}
   const d=getDateG(gender);
-  const labels={am:'오전조',pm:'오후조',night:'야간조'};
+  const labels={am:'오전조',pm:'오후조',night:'탕청소'};
   const genderLabel=gender==='f'?'여':'남';
   const label=labels[shift]||shift;
   /* 거짓제출 가드(시우 2026-06-13): 가시항목 체크 0이면 confirm 경고 — done>0이면 무조건 통과(정상흐름 무파괴). */
@@ -3922,7 +3922,7 @@ async function sendTelegramNotify(date,shift,submitter,gender){
   const nightMode=(shift==='night');
   const sched=nightMode?getNightSched(date):getSched(date);
   if(!sched)return;
-  const labels={am:'오전조',pm:'오후조',night:'야간조'};
+  const labels={am:'오전조',pm:'오후조',night:'탕청소'};
   const genderLabel=gender==='f'?'여':'남';
   const label=labels[shift]||shift;
   const stats=getShiftStatsG(sched,shift,date,gender);
@@ -4046,7 +4046,7 @@ function collectDashboardData(d){
     if(!submitterStats[name])submitterStats[name]={done:0,total:0,issues:0,shifts:new Set()};
     submitterStats[name].done+=nightDone;
     submitterStats[name].total+=nightTotal;
-    submitterStats[name].shifts.add('야간');
+    submitterStats[name].shifts.add('탕청소');
     issuesNight.forEach(()=>submitterStats[name].issues++);
   }
 
@@ -4124,7 +4124,7 @@ async function renderAdmin(){
   const shiftRows=[
     {label:'오전',done:data.amDone,total:data.amTotal,pct:data.amPct,sub:STATE._submitted_am,who:STATE._submitter_am,color:'green'},
     {label:'오후',done:data.pmDone,total:data.pmTotal,pct:data.pmPct,sub:STATE._submitted_pm,who:STATE._submitter_pm,color:'blue'},
-    {label:'야간',done:data.nightDone,total:data.nightTotal,pct:data.nightPct,sub:STATE._submitted_night,who:STATE._submitter_night,color:'orange'},
+    {label:'탕청소',done:data.nightDone,total:data.nightTotal,pct:data.nightPct,sub:STATE._submitted_night,who:STATE._submitter_night,color:'orange'},
     {label:'마감',done:data.closingDone,total:data.closingTotal,pct:data.closingPct,sub:null,who:null,color:'accent'}
   ];
   shiftRows.forEach(r=>{
@@ -4155,7 +4155,7 @@ async function renderAdmin(){
   html+=buildAdminShiftCard('am','오전조',data.amDone,data.amTotal,data.amPct,STATE._submitted_am,STATE._submitter_am,STATE._submittedAt_am?new Date(STATE._submittedAt_am).toLocaleString('ko-KR'):'-',data.sched,null,dow,dn);
   html+=buildAdminShiftCard('pm','오후조',data.pmDone,data.pmTotal,data.pmPct,STATE._submitted_pm,STATE._submitter_pm,STATE._submittedAt_pm?new Date(STATE._submittedAt_pm).toLocaleString('ko-KR'):'-',data.sched,null,dow,dn);
   if(data.nightSched){
-    html+=buildAdminShiftCard('night','야간조 (탕청소)',data.nightDone,data.nightTotal,data.nightPct,STATE._submitted_night,STATE._submitter_night,STATE._submittedAt_night?new Date(STATE._submittedAt_night).toLocaleString('ko-KR'):'-',null,data.nightSched,dow,dn);
+    html+=buildAdminShiftCard('night','탕청소 (외주 업체)',data.nightDone,data.nightTotal,data.nightPct,STATE._submitted_night,STATE._submitter_night,STATE._submittedAt_night?new Date(STATE._submittedAt_night).toLocaleString('ko-KR'):'-',null,data.nightSched,dow,dn);
   }
 
   /* ━━━ 이슈 ━━━ 5차(2026-06-22 시우·GM 분리결정): 점검 이슈는 각 회차 점검표에 기록·보관(점검 맥락 유지).
@@ -4164,7 +4164,7 @@ async function renderAdmin(){
   if(data.allIssues && data.allIssues.length){
     html+='<div class="admin-card" style="border-color:rgba(214,138,44,0.3)">';
     html+='<div style="font-size:13px;font-weight:700;color:#c8841f;margin-bottom:6px;">기록된 이슈 ('+data.allIssues.length+'건) — 이 날짜</div>';
-    data.allIssues.forEach(it=>{const sl={am:'오전',pm:'오후',night:'야간',all:'상시',focus:'집중'}[it.shift]||it.shift;html+=`<div style="padding:6px 0;border-bottom:1px solid rgba(214,138,44,0.2)"><div style="font-size:13px;font-weight:600">${escapeHTML(it.name)} <span style="color:var(--dim);font-size:11px">${it.cat?escapeHTML(it.cat)+' · ':''}${sl}</span></div><div style="color:#c8841f;font-size:12px;white-space:pre-wrap">${escapeHTML(it.memo)}</div></div>`;});
+    data.allIssues.forEach(it=>{const sl={am:'오전',pm:'오후',night:'탕청소',all:'상시',focus:'집중'}[it.shift]||it.shift;html+=`<div style="padding:6px 0;border-bottom:1px solid rgba(214,138,44,0.2)"><div style="font-size:13px;font-weight:600">${escapeHTML(it.name)} <span style="color:var(--dim);font-size:11px">${it.cat?escapeHTML(it.cat)+' · ':''}${sl}</span></div><div style="color:#c8841f;font-size:12px;white-space:pre-wrap">${escapeHTML(it.memo)}</div></div>`;});
     html+='<div style="font-size:12px;color:var(--dim);margin-top:8px;line-height:1.6">외부 접수·타부서 처리가 필요한 건만 점검 항목의 <strong>\'접수처로 보내기\'</strong>로 종합접수처에 올리세요.</div>';
     html+='</div>';
   }else{
@@ -4174,7 +4174,7 @@ async function renderAdmin(){
   /* ━━━ 노하우 ━━━ */
   if(data.allTips.length){
     html+='<div class="tip-card"><h3>노하우/개선 의견 ('+data.allTips.length+'건)</h3>';
-    data.allTips.forEach(t=>{const sl={am:'오전',pm:'오후',night:'야간',all:'상시',focus:'집중'}[t.shift]||t.shift;html+=`<div style="padding:6px 0;border-bottom:1px solid rgba(167,139,218,0.2)"><div style="font-size:13px;font-weight:600">${t.name} <span style="color:var(--dim);font-size:11px">${sl}</span></div><div style="color:var(--purple);font-size:12px">${t.memo}</div></div>`});
+    data.allTips.forEach(t=>{const sl={am:'오전',pm:'오후',night:'탕청소',all:'상시',focus:'집중'}[t.shift]||t.shift;html+=`<div style="padding:6px 0;border-bottom:1px solid rgba(167,139,218,0.2)"><div style="font-size:13px;font-weight:600">${t.name} <span style="color:var(--dim);font-size:11px">${sl}</span></div><div style="color:var(--purple);font-size:12px">${t.memo}</div></div>`});
     html+='</div>';
   }
 
@@ -4448,7 +4448,7 @@ async function copyReport(){
   const shifts=[
     {label:'오전 점검',done:data.amDone,total:data.amTotal,shift:'am',sched:data.sched},
     {label:'오후 점검',done:data.pmDone,total:data.pmTotal,shift:'pm',sched:data.sched},
-    {label:'야간 점검',done:data.nightDone,total:data.nightTotal,shift:'night',sched:data.nightSched}
+    {label:'탕청소 점검',done:data.nightDone,total:data.nightTotal,shift:'night',sched:data.nightSched}
   ];
 
   shifts.forEach(s=>{
@@ -4497,7 +4497,7 @@ async function copyReport(){
   if(data.allIssues.length>0){
     lines.push('■ 이슈 사항');
     data.allIssues.forEach(i=>{
-      const shLabel={am:'오전',pm:'오후',night:'야간',focus:'집중'}[i.shift]||i.shift;
+      const shLabel={am:'오전',pm:'오후',night:'탕청소',focus:'집중'}[i.shift]||i.shift;
       lines.push('  ! '+i.name+' ('+shLabel+') -- '+i.memo);
     });
     lines.push('');
@@ -4544,7 +4544,7 @@ async function copyShare(){
     parts.push('[오후] '+data.pmDone+'/'+data.pmTotal+(data.pmDone===data.pmTotal?' 완료':' 진행중'));
   }
   if(data.nightTotal>0){
-    parts.push('[야간] '+data.nightDone+'/'+data.nightTotal+(data.nightDone===data.nightTotal?' 완료':' 진행중'));
+    parts.push('[탕청소] '+data.nightDone+'/'+data.nightTotal+(data.nightDone===data.nightTotal?' 완료':' 진행중'));
   }
 
   let line=d+' ('+dn[dow]+') '+parts.join(' | ');
