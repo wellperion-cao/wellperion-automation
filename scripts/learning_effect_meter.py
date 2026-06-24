@@ -66,7 +66,46 @@ def _probe_ceo_brain_hands(card: dict):
     return "미확인", "프롬프트에 흔적 없음 — 수동 측정 필요"
 
 
-PROBES = [_probe_model_router, _probe_ceo_brain_hands]
+def _git_has(args: list) -> bool:
+    """git 명령이 성공+비어있지 않은 출력을 내면 True. 실패·예외는 False."""
+    import subprocess
+    try:
+        r = subprocess.run(["git"] + args, cwd=_ROOT, capture_output=True,
+                           text=True, encoding="utf-8", errors="replace", timeout=20)
+        return r.returncode == 0 and bool((r.stdout or "").strip())
+    except Exception:
+        return False
+
+
+def _probe_generic_artifact(card: dict):
+    """범용 프로브 — 전용 프로브 없는 반영위치(메모리·보고체계·운영프로세스 등)까지 커버.
+    제안이 가리키는 산출물(파일·심볼·인용토큰)이 리포지터리에 실재하면 '반영 실재'로 효과있음.
+    증거 없으면 '미확인'(허위 금지). 항상 (effect, 근거) 반환 → 마지막 catch-all 프로브."""
+    import re
+    txt = " ".join(str(card.get(k, "")) for k in ("구현_초안", "무엇을", "왜_근거"))
+    files = set(re.findall(r"[\w./\-]+\.(?:py|js|gs|html|json|md)", txt))
+    symbols = set(re.findall(r"\b([A-Za-z_][A-Za-z0-9_]{3,})\(\)", txt))
+    quoted = set(re.findall(r"[`'\"]([^`'\"\n]{4,40})[`'\"]", txt))
+    STOP = {"json", "html", "true", "false", "none", "main", "self", "print", "status", "value"}
+    hits = []
+    for f in list(files)[:6]:
+        base = f.split("/")[-1]
+        if _git_has(["ls-files", "*" + base]):
+            hits.append(base)
+    for s in list(symbols | quoted)[:8]:
+        s = s.strip()
+        if len(s) < 4 or s.lower() in STOP:
+            continue
+        if _git_has(["grep", "-l", "-F", "--", s]):
+            hits.append(s)
+    if hits:
+        uniq = list(dict.fromkeys(hits))[:4]
+        return "효과있음", "제안 산출물 리포지터리 실재 확인: " + ", ".join(uniq)
+    return "미확인", "산출물 시그니처(파일·심볼·토큰) 리포지터리 미발견 — 수동 --record-effect 필요"
+
+
+# 순서: 전용 프로브(풍부한 근거) 먼저, 범용 산출물 프로브가 나머지 catch-all.
+PROBES = [_probe_model_router, _probe_ceo_brain_hands, _probe_generic_artifact]
 
 
 def measure_one(card: dict) -> tuple[str | None, str]:
