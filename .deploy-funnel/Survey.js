@@ -435,10 +435,11 @@ function _notifyTelegram(text, chatIdOverride) {
 // FORM_SHEETS 각 시트의 신규 행을 5분마다 감지해 TELEGRAM_INQUIRY_CHAT_ID 방으로 알림.
 // ScriptProperties INQ_LASTROW_<ssId>_<gid> 에 마지막 처리 행수 저장 → 중복 방지.
 // 최초 실행: 기준선만 저장, 과거 문의 일괄발송 없음.
+var _INQUIRY_CHAT_ID_FALLBACK = '-5516675010';  // '문의 알림' 방 — 프로퍼티 없을 때 폴백(그룹 ID, 민감정보 아님)
+
 function _notifyNewInquiries_() {
   var props = PropertiesService.getScriptProperties();
-  var inquiryChatId = props.getProperty('TELEGRAM_INQUIRY_CHAT_ID');
-  if (!inquiryChatId) { Logger.log('[문의알림] TELEGRAM_INQUIRY_CHAT_ID 미설정 — 스킵'); return; }
+  var inquiryChatId = props.getProperty('TELEGRAM_INQUIRY_CHAT_ID') || _INQUIRY_CHAT_ID_FALLBACK;
 
   FORM_SHEETS.forEach(function(cfg) {
     var propKey = 'INQ_LASTROW_' + cfg.ssId + '_' + cfg.gid;
@@ -519,6 +520,30 @@ function installInquiryNotifyTrigger() {
   ScriptApp.newTrigger('_notifyNewInquiries_')
     .timeBased().everyMinutes(5).create();
   Logger.log('트리거 설치 완료: _notifyNewInquiries_ 5분 주기');
+}
+
+// '문의 알림' 방 → GAS 토큰 작동 1회 확인 (일회용 — GAS 에디터에서 수동 실행)
+// ① 봇 토큰 존재여부 Logger 출력 ② 토큰 있으면 테스트 메시지 발송 후 응답코드 출력
+function verifyInquiryNotify() {
+  var token = _prop('BOT_TOKEN') || _prop('TELEGRAM_BOT_TOKEN');
+  if (!token) {
+    Logger.log('[작동확인] 토큰 미설정 — TELEGRAM_BOT_TOKEN 프로퍼티 추가 필요');
+    return;
+  }
+  Logger.log('[작동확인] 봇 토큰 확인됨 (길이=' + token.length + ')');
+  var chatId = _INQUIRY_CHAT_ID_FALLBACK;
+  var msg = '✅ [작동 확인] GAS에서 신규 문의 알림이 이 방으로 정상 발송됩니다 — 시모';
+  try {
+    var res = UrlFetchApp.fetch('https://api.telegram.org/bot' + token + '/sendMessage', {
+      method: 'post',
+      contentType: 'application/json',
+      payload: JSON.stringify({ chat_id: chatId, text: msg }),
+      muteHttpExceptions: true
+    });
+    Logger.log('[작동확인] 응답코드=' + res.getResponseCode());
+  } catch (e) {
+    Logger.log('[작동확인] 발송 오류: ' + e.message);
+  }
 }
 
 // ═══════════════════════════════════════════
@@ -757,7 +782,7 @@ function _processAction(body) {
       + '유형: ' + (body.type || '-') + '\n'
       + '유입채널: ' + (body.inflow || '-') + '\n'
       + '내용: ' + (body.message || '-').substring(0, 100),
-      _prop('TELEGRAM_INQUIRY_CHAT_ID') || undefined
+      _prop('TELEGRAM_INQUIRY_CHAT_ID') || _INQUIRY_CHAT_ID_FALLBACK
     );
 
     return _json({ ok: true, id: id, message: '문의가 접수되었습니다.' });
