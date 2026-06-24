@@ -828,5 +828,19 @@
     "next": "🌀 표류 — 다음 미정 (필요 시 GM·웰리/담당 C-Level 지정)",
     "adhoc_commit": "74d3b8922f75170f0171df971f232c36736cae92",
     "ship_no": 135
+  },
+  {
+    "task_id": "CPO-2026-06-24-ADHOC-d46c7c9d",
+    "clevel": "cpo",
+    "title": "[시포] /cpo 멤버십 회원관리 — 유효회원(잔여일>0) 필터 + 종료회원 분리",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-06-24",
+    "processed_at": "2026-06-24",
+    "artifact": "- GAS member_active_list: scope=valid(잔여일>0 & 이탈제외)/ended(나머지) 분기.\n  빈 헤더·쓰레기 날짜헤더(GMT/표준시) 컬럼·회원명 없는 빈행 제외. 전체 컬럼 그대로\n- 결과: 유효 1,013 / 종료 681 (기존 1,697 무차별 노출 해소). 29컬럼\n- 페이지: 멤버십 회원관리 탭에 유효회원/종료 회원 토글 추가(read-only)\n- 라이브 배포 @71 완료 (CLI ad-hoc · 커밋 d46c7c9d)",
+    "next": "🌀 표류 — 다음 미정 (필요 시 GM·웰리/담당 C-Level 지정)",
+    "adhoc_commit": "d46c7c9d1acc0962d642dc8e3cd82a1613d35eac",
+    "ship_no": 24
   }
 ]
