@@ -2,5 +2,7 @@
 # _queue.json: 여러 세션이 각자 '배'를 추가해도 task_id 합집합으로 자동 병합(전용 드라이버).
 #   파일명 패턴이라 status/_queue.json + '3. 웰페리온 가이드/status/_queue.json'(미러) 모두 적용.
 _queue.json merge=queuejson
+# 아카이브(지난 입항·폐기 분리분)도 동일 합집합 병합 — 드라이버 재사용(추가 등록 불필요).
+_queue_archive.json merge=queuejson
 # append-only 로그(.jsonl): 양쪽 추가분을 union 으로 자동 결합(git 내장 드라이버).
 *.jsonl merge=union

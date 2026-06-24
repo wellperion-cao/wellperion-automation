@@ -32,6 +32,7 @@ import sys
 
 SYNC_PAIRS = [
     ("status/_queue.json",               "3. 웰페리온 가이드/status/_queue.json"),
+    ("status/_queue_archive.json",       "3. 웰페리온 가이드/status/_queue_archive.json"),
     ("status/learning_proposals.json",   "3. 웰페리온 가이드/status/learning_proposals.json"),
 ]
 

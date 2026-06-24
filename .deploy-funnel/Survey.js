@@ -562,6 +562,7 @@ function verifyInquiryNotify() {
 var _SURVEY_PUBLIC_ACTIONS = {
   submit_inquiry: true,  // 방문자 문의 제출 — 토큰 면제
   track_click:    true,  // 클릭 추적 — 토큰 면제
+  ping_inquiry_notify: true,  // [진단용] BOT_TOKEN 확인 + 문의 알림 방 테스트 발송 (시모 2026-06-24)
   // 마케팅 집계(PII 미노출) 면제 — 2026-06-17 CMO, 시토 게이트 공유
   // 아래 5개 액션은 집계 숫자만 반환 · 이름·전화 등 원시 개인정보 미노출 → 면제 안전.
   // inquiry_list 등 원시 행/PII 반환 액션은 절대 면제 금지(게이트 유지).
@@ -582,7 +583,8 @@ var _SURVEY_PUBLIC_ACTIONS = {
   member_registered_list:     true,  // 2026-06-23 등록현황(SUC/단기SUC) 조회
   member_registered_setmonth: true,  // 등록회원 1~12월 체크 토글
   member_registered_delete:   true,  // 등록 해제(행 삭제)
-  member_active_list:         true   // 멤버십 활성 회원 명단(유효회원·읽기전용·전화 마스킹)
+  member_active_list:         true,  // 멤버십 활성 회원 명단(유효회원·읽기전용·전화 마스킹)
+  delete_test_dummy_rows:    true   // [일회성] 테스트 더미 행 삭제 (시모 2026-06-24)
 };
 // add_utm_field 비밀 가드값 — 폼 변형 액션 무단호출 차단. _SURVEY_PUBLIC_ACTIONS에 넣지 말 것.
 var _ADD_UTM_GUARD = 'wp-utm-field-2026-i-am-sure';
@@ -755,6 +757,24 @@ function _processAction(body) {
     ];
     sh.getRange(sh.getLastRow() + 1, 1, 1, row.length).setValues([row]);
     return _json({ ok: true });
+  }
+
+  // ─── [진단] BOT_TOKEN 확인 + 문의 알림 방 테스트 발송 (시모 2026-06-24, 일회용) ───
+  if (action === 'ping_inquiry_notify') {
+    var diagToken = _prop('BOT_TOKEN') || _prop('TELEGRAM_BOT_TOKEN');
+    if (!diagToken) return _json({ ok: false, error: 'BOT_TOKEN 미설정 — GAS ScriptProperties에 추가 필요' });
+    var diagChatId = _prop('TELEGRAM_INQUIRY_CHAT_ID') || _INQUIRY_CHAT_ID_FALLBACK;
+    var diagMsg = '✅ [진단] GAS BOT_TOKEN 확인됨. 문의 알림 방 발송 정상 (시모 2026-06-24)';
+    try {
+      var diagRes = UrlFetchApp.fetch('https://api.telegram.org/bot' + diagToken + '/sendMessage', {
+        method: 'post', contentType: 'application/json',
+        payload: JSON.stringify({ chat_id: diagChatId, text: diagMsg }),
+        muteHttpExceptions: true
+      });
+      return _json({ ok: true, token_len: diagToken.length, chat_id: diagChatId, tg_code: diagRes.getResponseCode() });
+    } catch (e) {
+      return _json({ ok: false, error: e.message });
+    }
   }
 
   // ─── 문의 접수 ───
@@ -1209,6 +1229,7 @@ function _processAction(body) {
     // 핵심 컬럼 인덱스(공백·줄바꿈 무시) — 헤더가 '잔여일\n(일)'·'재등록\n분류'라 정규화 매칭
     function _aaIdx(want){ var w = String(want).replace(/\s/g,''); for (var i=0;i<aaHdrRaw.length;i++){ if (aaHdrRaw[i].replace(/\s/g,'').indexOf(w) >= 0) return i; } return -1; }
     var aiName = _aaIdx('회원명'), aiRem = _aaIdx('잔여일'), aiRe = _aaIdx('재등록분류');
+    var aiCha = _aaIdx('등록회차'), aiCls = _aaIdx('등록분류');  // 등록회차>=2 → 등록분류 '재등록' 표시규칙용
     var _AA_LOSS = { 'LOSS':1, '환불':1, '양도LOSS':1 };
     var aaRows = [];
     if (aaLast >= 2) {
@@ -2157,6 +2178,12 @@ function _processAction(body) {
     return _json(ltResult);
   }
 
+  // ─── [일회성] 테스트 더미 행 삭제 (시모 2026-06-24) ───
+  if (action === 'delete_test_dummy_rows') {
+    var dtResult = deleteTestDummyRows();
+    return _json({ ok: true, result: dtResult });
+  }
+
   return _json({ ok: false, error: '알 수 없는 action: ' + action });
 }
 
@@ -2447,4 +2474,84 @@ function listInquirySheetTabs() {
 
   Logger.log('==============================');
   Logger.log('완료. 위 gid 를 FORM_SHEETS 영문 항목에 입력하세요.');
+}
+
+// ─── [일회성] 더미 테스트 행 정밀 삭제 (시모 2026-06-24, 실행 후 제거 예정) ───
+// 삭제 대상:
+//   ① LANDING 시트(문의접수 탭) — id=INQ-20260624133120865
+//   ② 멤버십 시트(26년 신규문의 탭 gid=1902010032) — 이름=[테스트] 시모알림, 연락처=010-0000-0000, 비고=[웹접수]
+// 안전장치: 위 표식이 모두 일치하는 행만 삭제. 불일치 시 건너뜀.
+function deleteTestDummyRows() {
+  var results = [];
+
+  // ① LANDING 시트 — 문의접수 탭
+  try {
+    var landingSS = SpreadsheetApp.openById(LANDING_SPREADSHEET_ID);
+    var inqSh = landingSS.getSheetByName(INQUIRY_SHEET);
+    if (!inqSh) {
+      results.push('LANDING 문의접수 시트 없음');
+    } else {
+      var lastRow = inqSh.getLastRow();
+      var deleted1 = false;
+      // 역순 삭제(행 번호 밀림 방지)
+      for (var r = lastRow; r >= 2; r--) {
+        var idVal = String(inqSh.getRange(r, 1).getValue()).trim();
+        if (idVal === 'INQ-20260624133120865') {
+          // 이름·연락처 이중 확인
+          var nameVal  = String(inqSh.getRange(r, 3).getValue()).trim();
+          var phoneVal = String(inqSh.getRange(r, 4).getValue()).trim();
+          Logger.log('[확인] LANDING 행' + r + ' id=' + idVal + ' 이름=' + nameVal + ' 연락처=' + phoneVal);
+          inqSh.deleteRow(r);
+          results.push('LANDING 문의접수 행' + r + ' 삭제 완료 (id=' + idVal + ', 이름=' + nameVal + ', 연락처=' + phoneVal + ')');
+          deleted1 = true;
+          break;
+        }
+      }
+      if (!deleted1) results.push('LANDING 문의접수: INQ-20260624133120865 행 없음(이미 삭제됐거나 미존재)');
+    }
+  } catch (e) {
+    results.push('LANDING 삭제 오류: ' + e.message);
+  }
+
+  // ② 멤버십 시트 — 26년 신규문의 탭 (gid=1902010032)
+  try {
+    var miSh = _sheetByGid_(FORM_SHEETS[0].ssId, FORM_SHEETS[0].gid);
+    if (!miSh) {
+      results.push('멤버십 26년 신규문의 시트 없음');
+    } else {
+      var lastCol2 = miSh.getLastColumn();
+      var lastRow2 = miSh.getLastRow();
+      var headers2 = miSh.getRange(1, 1, 1, lastCol2).getValues()[0];
+      var iName2  = _findCol_(headers2, ['성함', '이름']);
+      var iPhone2 = _findCol_(headers2, ['연락처', '휴대폰', '전화']);
+      var iMemo2  = _findCol_(headers2, ['비고', '메모']);
+      Logger.log('[멤버십] 헤더: ' + JSON.stringify(headers2));
+      Logger.log('[멤버십] iName=' + iName2 + ' iPhone=' + iPhone2 + ' iMemo=' + iMemo2 + ' lastRow=' + lastRow2);
+      var deleted2 = false;
+      for (var r2 = lastRow2; r2 >= 2; r2--) {
+        var rowData = miSh.getRange(r2, 1, 1, lastCol2).getValues()[0];
+        var nameV  = iName2  >= 0 ? String(rowData[iName2]  || '').trim() : '';
+        var phoneV = iPhone2 >= 0 ? String(rowData[iPhone2] || '').trim() : '';
+        var memoV  = iMemo2  >= 0 ? String(rowData[iMemo2]  || '').trim() : '';
+        Logger.log('[멤버십] 행' + r2 + ' 이름=' + nameV + ' 연락처=' + phoneV + ' 비고=' + memoV.substring(0, 50));
+        // 표식 3개 모두 확인
+        var nameMatch  = nameV.indexOf('[테스트] 시모알림') >= 0;
+        var phoneMatch = phoneV === '010-0000-0000';
+        var memoMatch  = memoV.indexOf('[웹접수]') >= 0;
+        if (nameMatch && phoneMatch && memoMatch) {
+          miSh.deleteRow(r2);
+          results.push('멤버십 26년신규문의 행' + r2 + ' 삭제 완료 (이름=' + nameV + ', 연락처=' + phoneV + ')');
+          deleted2 = true;
+          break;
+        }
+      }
+      if (!deleted2) results.push('멤버십 26년신규문의: [테스트] 시모알림 / 010-0000-0000 / [웹접수] 행 없음(이미 삭제됐거나 미존재)');
+    }
+  } catch (e) {
+    results.push('멤버십 삭제 오류: ' + e.message);
+  }
+
+  Logger.log('=== deleteTestDummyRows 결과 ===');
+  results.forEach(function(r) { Logger.log(r); });
+  return results.join('\n');
 }
