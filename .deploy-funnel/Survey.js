@@ -583,8 +583,8 @@ var _SURVEY_PUBLIC_ACTIONS = {
   member_registered_list:     true,  // 2026-06-23 등록현황(SUC/단기SUC) 조회
   member_registered_setmonth: true,  // 등록회원 1~12월 체크 토글
   member_registered_delete:   true,  // 등록 해제(행 삭제)
-  member_active_list:         true,  // 멤버십 활성 회원 명단(유효회원·읽기전용·전화 마스킹)
-  delete_test_dummy_rows:    true   // [일회성] 테스트 더미 행 삭제 (시모 2026-06-24)
+  member_active_list:         true,  // 멤버십 회원 명단(유효회원·전화 마스킹)
+  member_active_update:       true   // 2026-06-24 멤버십 셀 인라인 수정(유효회원 시트·전화 제외)
 };
 // add_utm_field 비밀 가드값 — 폼 변형 액션 무단호출 차단. _SURVEY_PUBLIC_ACTIONS에 넣지 말 것.
 var _ADD_UTM_GUARD = 'wp-utm-field-2026-i-am-sure';
@@ -1244,7 +1244,7 @@ function _processAction(body) {
         var isValid = !isNaN(rem) && rem > 0 && !_AA_LOSS[reV];  // 유효 = 잔여일>0 & 이탈표시 없음
         if (aaScope === 'valid' && !isValid) continue;
         if (aaScope === 'ended' && isValid) continue;   // 종료 = 유효가 아닌 모든 회원명 보유 행
-        var obj = {};
+        var obj = { rowIndex: ai + 2 };   // 시트 실제 행번호(인라인 수정 저장용)
         for (var ac = 0; ac < aaHdrRaw.length; ac++) {
           if (!aaKeep[ac]) continue;
           var key = aaHdrRaw[ac];
@@ -1254,10 +1254,34 @@ function _processAction(body) {
           if (key === MEMBER_PHONE_COL) { var pp = v.replace(/[^0-9]/g, ''); v = pp.length >= 10 ? pp.slice(0,3) + '-****-' + pp.slice(-4) : (pp ? '***' : ''); }
           obj[key] = v;
         }
+        // 등록회차>=2 → 등록분류 '재등록' 표시(시트 미변경 · 표시 규칙) 2026-06-24 GM
+        if (aiCls >= 0) {
+          var _chaM = (aiCha >= 0 ? String(arow[aiCha] == null ? '' : arow[aiCha]) : '').match(/\d+/);
+          if (_chaM && parseInt(_chaM[0], 10) >= 2) obj[aaHdrRaw[aiCls]] = '재등록';
+        }
         aaRows.push(obj);
       }
     }
     return _json({ ok: true, scope: aaScope, headers: aaHdrs, count: aaRows.length, data: aaRows });
+  }
+
+  // ─── 멤버십 회원관리: 셀 인라인 수정(유효회원 시트 write-back · 전화 컬럼 제외) 2026-06-24 GM ───
+  if (action === 'member_active_update') {
+    var auRow = parseInt(body.rowIndex, 10);
+    if (!auRow || auRow < 2) return _json({ ok: false, error: 'rowIndex 필수(2 이상)' });
+    var auCol = String(body.col || '').trim();
+    if (!auCol) return _json({ ok: false, error: 'col 필수' });
+    if (auCol.replace(/\s/g, '').indexOf('휴대폰') >= 0) return _json({ ok: false, error: '전화번호는 마스킹 표시라 여기서 수정 불가(시트에서 직접)' });
+    var auSh = SpreadsheetApp.openById(MEMBER_SPREADSHEET_ID).getSheetByName(MEMBER_SHEET);
+    if (!auSh) return _json({ ok: false, error: '유효회원 시트 없음' });
+    var auHdr = auSh.getRange(1, 1, 1, auSh.getLastColumn()).getValues()[0].map(function(v){ return String(v).trim(); });
+    var _auW = auCol.replace(/\s/g, '');
+    var auIdx = -1;
+    for (var au1 = 0; au1 < auHdr.length; au1++) { if (auHdr[au1].replace(/\s/g, '') === _auW) { auIdx = au1; break; } }
+    if (auIdx < 0) { for (var au2 = 0; au2 < auHdr.length; au2++) { if (auHdr[au2] && auHdr[au2].replace(/\s/g, '').indexOf(_auW) >= 0) { auIdx = au2; break; } } }
+    if (auIdx < 0) return _json({ ok: false, error: '컬럼 미발견: ' + auCol });
+    auSh.getRange(auRow, auIdx + 1).setValue(body.value == null ? '' : String(body.value));
+    return _json({ ok: true, rowIndex: auRow, col: auCol });
   }
 
   // ─── 문의→가입 전환 집계 ───
@@ -2178,12 +2202,6 @@ function _processAction(body) {
     return _json(ltResult);
   }
 
-  // ─── [일회성] 테스트 더미 행 삭제 (시모 2026-06-24) ───
-  if (action === 'delete_test_dummy_rows') {
-    var dtResult = deleteTestDummyRows();
-    return _json({ ok: true, result: dtResult });
-  }
-
   return _json({ ok: false, error: '알 수 없는 action: ' + action });
 }
 
@@ -2474,84 +2492,4 @@ function listInquirySheetTabs() {
 
   Logger.log('==============================');
   Logger.log('완료. 위 gid 를 FORM_SHEETS 영문 항목에 입력하세요.');
-}
-
-// ─── [일회성] 더미 테스트 행 정밀 삭제 (시모 2026-06-24, 실행 후 제거 예정) ───
-// 삭제 대상:
-//   ① LANDING 시트(문의접수 탭) — id=INQ-20260624133120865
-//   ② 멤버십 시트(26년 신규문의 탭 gid=1902010032) — 이름=[테스트] 시모알림, 연락처=010-0000-0000, 비고=[웹접수]
-// 안전장치: 위 표식이 모두 일치하는 행만 삭제. 불일치 시 건너뜀.
-function deleteTestDummyRows() {
-  var results = [];
-
-  // ① LANDING 시트 — 문의접수 탭
-  try {
-    var landingSS = SpreadsheetApp.openById(LANDING_SPREADSHEET_ID);
-    var inqSh = landingSS.getSheetByName(INQUIRY_SHEET);
-    if (!inqSh) {
-      results.push('LANDING 문의접수 시트 없음');
-    } else {
-      var lastRow = inqSh.getLastRow();
-      var deleted1 = false;
-      // 역순 삭제(행 번호 밀림 방지)
-      for (var r = lastRow; r >= 2; r--) {
-        var idVal = String(inqSh.getRange(r, 1).getValue()).trim();
-        if (idVal === 'INQ-20260624133120865') {
-          // 이름·연락처 이중 확인
-          var nameVal  = String(inqSh.getRange(r, 3).getValue()).trim();
-          var phoneVal = String(inqSh.getRange(r, 4).getValue()).trim();
-          Logger.log('[확인] LANDING 행' + r + ' id=' + idVal + ' 이름=' + nameVal + ' 연락처=' + phoneVal);
-          inqSh.deleteRow(r);
-          results.push('LANDING 문의접수 행' + r + ' 삭제 완료 (id=' + idVal + ', 이름=' + nameVal + ', 연락처=' + phoneVal + ')');
-          deleted1 = true;
-          break;
-        }
-      }
-      if (!deleted1) results.push('LANDING 문의접수: INQ-20260624133120865 행 없음(이미 삭제됐거나 미존재)');
-    }
-  } catch (e) {
-    results.push('LANDING 삭제 오류: ' + e.message);
-  }
-
-  // ② 멤버십 시트 — 26년 신규문의 탭 (gid=1902010032)
-  try {
-    var miSh = _sheetByGid_(FORM_SHEETS[0].ssId, FORM_SHEETS[0].gid);
-    if (!miSh) {
-      results.push('멤버십 26년 신규문의 시트 없음');
-    } else {
-      var lastCol2 = miSh.getLastColumn();
-      var lastRow2 = miSh.getLastRow();
-      var headers2 = miSh.getRange(1, 1, 1, lastCol2).getValues()[0];
-      var iName2  = _findCol_(headers2, ['성함', '이름']);
-      var iPhone2 = _findCol_(headers2, ['연락처', '휴대폰', '전화']);
-      var iMemo2  = _findCol_(headers2, ['비고', '메모']);
-      Logger.log('[멤버십] 헤더: ' + JSON.stringify(headers2));
-      Logger.log('[멤버십] iName=' + iName2 + ' iPhone=' + iPhone2 + ' iMemo=' + iMemo2 + ' lastRow=' + lastRow2);
-      var deleted2 = false;
-      for (var r2 = lastRow2; r2 >= 2; r2--) {
-        var rowData = miSh.getRange(r2, 1, 1, lastCol2).getValues()[0];
-        var nameV  = iName2  >= 0 ? String(rowData[iName2]  || '').trim() : '';
-        var phoneV = iPhone2 >= 0 ? String(rowData[iPhone2] || '').trim() : '';
-        var memoV  = iMemo2  >= 0 ? String(rowData[iMemo2]  || '').trim() : '';
-        Logger.log('[멤버십] 행' + r2 + ' 이름=' + nameV + ' 연락처=' + phoneV + ' 비고=' + memoV.substring(0, 50));
-        // 표식 3개 모두 확인
-        var nameMatch  = nameV.indexOf('[테스트] 시모알림') >= 0;
-        var phoneMatch = phoneV === '010-0000-0000';
-        var memoMatch  = memoV.indexOf('[웹접수]') >= 0;
-        if (nameMatch && phoneMatch && memoMatch) {
-          miSh.deleteRow(r2);
-          results.push('멤버십 26년신규문의 행' + r2 + ' 삭제 완료 (이름=' + nameV + ', 연락처=' + phoneV + ')');
-          deleted2 = true;
-          break;
-        }
-      }
-      if (!deleted2) results.push('멤버십 26년신규문의: [테스트] 시모알림 / 010-0000-0000 / [웹접수] 행 없음(이미 삭제됐거나 미존재)');
-    }
-  } catch (e) {
-    results.push('멤버십 삭제 오류: ' + e.message);
-  }
-
-  Logger.log('=== deleteTestDummyRows 결과 ===');
-  results.forEach(function(r) { Logger.log(r); });
-  return results.join('\n');
 }

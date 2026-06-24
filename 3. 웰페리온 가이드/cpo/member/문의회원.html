@@ -678,7 +678,7 @@ a.funnel-step:hover{background:rgba(183,159,138,0.08);color:var(--accent)}
 
   <!-- ══════════════════════════════ 퍼널 위치 공통 표시 ══════════════════════════════ -->
   <div class="funnel-steps" style="margin-bottom:18px">
-    <span class="funnel-step done" data-stage="marketing">마케팅</span>
+    <a class="funnel-step done" data-stage="marketing" href="../../cmo/funnel/마케팅현황대시보드.html" title="마케팅 현황 대시보드(시모)" style="text-decoration:none">마케팅</a>
     <span class="funnel-arrow">→</span>
     <a class="funnel-step current" data-stage="inquiry" href="javascript:void(0)" onclick="switchTab('db')" style="text-decoration:none;cursor:pointer" title="문의·체험 단계로">문의 · 체험/상담투어</a>
     <span class="funnel-arrow">→</span>
@@ -1206,6 +1206,10 @@ if (action === 'member_calendar') {
       </div>
 
       <div class="reg-toolbar">
+        <button type="button" id="regBtnDay"   class="btn-query" style="padding:8px 12px;font-size:12px" onclick="setRegRange('day')">일</button>
+        <button type="button" id="regBtnWeek"  class="btn-query" style="padding:8px 12px;font-size:12px;background:var(--accent-bg);color:var(--accent);border-color:var(--accent-border)" onclick="setRegRange('week')">주</button>
+        <button type="button" id="regBtnMonth" class="btn-query" style="padding:8px 12px;font-size:12px;background:var(--accent-bg);color:var(--accent);border-color:var(--accent-border)" onclick="setRegRange('month')">월</button>
+        <span class="reg-sep" style="margin:0 2px"></span>
         <input type="date" id="regFrom" title="등록일 시작">
         <span class="reg-sep">~</span>
         <input type="date" id="regTo" title="등록일 종료">
@@ -1253,6 +1257,9 @@ if (action === 'member_calendar') {
         <span class="icon">👥</span>멤버십 회원관리
         <span style="font-size:11px;font-weight:400;color:var(--dim);margin-left:4px">유효회원 시트 · 읽기전용 · 전화 마스킹</span>
       </div>
+
+      <!-- 현황 요약 카드 (작업 3) -->
+      <div id="activeSummary" class="card" style="display:none;padding:14px 18px;margin-bottom:12px;border-left:3px solid var(--teal)"></div>
 
       <div class="active-toggle" style="display:flex;gap:6px;margin-bottom:12px">
         <button type="button" id="activeScopeValid" class="seg-btn" onclick="setActiveScope('valid', this)"
@@ -1317,7 +1324,7 @@ function switchTab(id, btn) {
   // 하단 퍼널: 현재 단계를 동기화 (이전 단계=완료, 현재=current)
   syncFunnel(id);
   if (id === 'db') loadDbData();
-  if (id === 'registered') loadRegistered();
+  if (id === 'registered') setRegRange(_regRangeMode || 'month');
   if (id === 'active') loadActiveMembers();
 }
 
@@ -1339,6 +1346,46 @@ function syncFunnel(id) {
    등록회원 명단
 ───────────────────────────────────────────── */
 var _regRows = [];  // 현재 로드된 등록회원 배열
+var _regRangeMode = 'month';  // 현재 활성 빠른범위
+
+function _pad2(n){ return ('0'+n).slice(-2); }
+
+function setRegRange(mode) {
+  _regRangeMode = mode;
+  var now = new Date();
+  var y = now.getFullYear(), m = now.getMonth(), d = now.getDate();
+  var from, to;
+  if (mode === 'day') {
+    from = to = y + '-' + _pad2(m+1) + '-' + _pad2(d);
+  } else if (mode === 'week') {
+    var dow = now.getDay(); // 0=일
+    var mon = new Date(now); mon.setDate(d - ((dow + 6) % 7));
+    var sun = new Date(mon); sun.setDate(mon.getDate() + 6);
+    from = mon.getFullYear() + '-' + _pad2(mon.getMonth()+1) + '-' + _pad2(mon.getDate());
+    to   = sun.getFullYear() + '-' + _pad2(sun.getMonth()+1) + '-' + _pad2(sun.getDate());
+  } else {
+    // month
+    var lastDay = new Date(y, m+1, 0).getDate();
+    from = y + '-' + _pad2(m+1) + '-01';
+    to   = y + '-' + _pad2(m+1) + '-' + _pad2(lastDay);
+  }
+  document.getElementById('regFrom').value = from;
+  document.getElementById('regTo').value   = to;
+
+  // 버튼 강조 토글
+  var TEAL_BG  = 'var(--teal-bg)';   var TEAL_C  = 'var(--teal)';   var TEAL_BD  = 'var(--teal-border)';
+  var ACC_BG   = 'var(--accent-bg)'; var ACC_C   = 'var(--accent)'; var ACC_BD   = 'var(--accent-border)';
+  [['day','regBtnDay'],['week','regBtnWeek'],['month','regBtnMonth']].forEach(function(pair){
+    var btn = document.getElementById(pair[1]);
+    if (!btn) return;
+    var active = (pair[0] === mode);
+    btn.style.background   = active ? TEAL_BG  : ACC_BG;
+    btn.style.color        = active ? TEAL_C   : ACC_C;
+    btn.style.borderColor  = active ? TEAL_BD  : ACC_BD;
+  });
+
+  loadRegistered();
+}
 
 function loadRegistered() {
   if (GAS_URL === GAS_PLACEHOLDER) {
@@ -1526,7 +1573,9 @@ function loadActiveMembers() {
       _activeRows    = data.data    || [];
       _activeLoaded  = true;
       _activeRender(_activeRows);
+      renderActiveSummary();
       _activeWireSearch();
+      _wireActiveDblclick();
     })
     .catch(function(err){
       if (_seq !== _activeReqSeq) return;
@@ -1569,7 +1618,8 @@ function _activeRender(rows, isFiltered) {
 
   if (!isFiltered) {
     var ths = _activeHeaders.map(function(h){
-      return '<th style="white-space:nowrap">' + esc(h) + '</th>';
+      var leftAlign = (h === '수강반종목명') ? ';text-align:left' : '';
+      return '<th style="white-space:nowrap' + leftAlign + '">' + esc(h) + '</th>';
     }).join('');
     head.innerHTML = '<tr>' + ths + '</tr>';
   }
@@ -1591,13 +1641,118 @@ function _activeRender(rows, isFiltered) {
 
   var html = '';
   rows.forEach(function(row){
-    html += '<tr>';
+    var ri = row.rowIndex != null ? String(row.rowIndex) : '';
+    html += '<tr data-rowindex="' + esc(ri) + '">';
     _activeHeaders.forEach(function(h){
-      html += '<td style="white-space:nowrap">' + esc(row[h] != null ? row[h] : '—') + '</td>';
+      var isPhone = (h === '휴대폰 번호');
+      var leftStyle = (h === '수강반종목명') ? 'text-align:left;' : '';
+      var editAttr = (!isPhone) ? ' data-col="' + esc(h) + '"' : '';
+      html += '<td style="white-space:nowrap;' + leftStyle + '"' + editAttr + '>' + esc(row[h] != null ? row[h] : '—') + '</td>';
     });
     html += '</tr>';
   });
   tbody.innerHTML = html;
+}
+
+/* ─── 멤버십 현황 요약 카드 ─── */
+function renderActiveSummary() {
+  var el = document.getElementById('activeSummary');
+  if (!el) return;
+  var rows = _activeRows;
+  if (!rows || rows.length === 0) { el.style.display = 'none'; return; }
+  el.style.display = '';
+
+  var title = (_activeScope === 'ended') ? '종료회원 현황' : '유효회원 현황';
+  var counts = {};
+  var KNOWN = ['멤버십','입주민','중단기','보증금','FAN VIP'];
+  rows.forEach(function(row){
+    var v = String(row['회원\n구분'] || row['회원구분'] || '').trim() || '기타';
+    if (KNOWN.indexOf(v) < 0) v = '기타';
+    counts[v] = (counts[v] || 0) + 1;
+  });
+
+  var chipsHtml = KNOWN.map(function(k){
+    var n = counts[k] || 0;
+    if (n === 0) return '';
+    return '<span style="display:inline-flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;background:var(--teal-bg);border:1px solid var(--teal-border);font-size:12px;font-weight:700;color:var(--teal);white-space:nowrap">' +
+      esc(k) + '<span style="font-size:14px;font-weight:800">' + n + '</span></span>';
+  }).join('');
+  var etc = counts['기타'] || 0;
+  if (etc > 0) {
+    chipsHtml += '<span style="display:inline-flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;background:var(--accent-bg);border:1px solid var(--accent-border);font-size:12px;font-weight:700;color:var(--accent);white-space:nowrap">기타<span style="font-size:14px;font-weight:800">' + etc + '</span></span>';
+  }
+
+  el.innerHTML =
+    '<div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">' +
+      '<div style="display:flex;flex-direction:column;align-items:center;min-width:64px">' +
+        '<div style="font-size:10px;font-weight:700;color:var(--teal);letter-spacing:0.08em;margin-bottom:2px">' + esc(title) + '</div>' +
+        '<div style="font-size:34px;font-weight:800;color:var(--teal);line-height:1">' + rows.length + '</div>' +
+        '<div style="font-size:10px;color:var(--dim);margin-top:2px">명</div>' +
+      '</div>' +
+      '<div style="width:1px;height:40px;background:var(--border);flex-shrink:0"></div>' +
+      '<div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center">' + chipsHtml + '</div>' +
+    '</div>';
+}
+
+/* ─── 멤버십 표 더블클릭 인라인 편집 위임 ─── */
+function _wireActiveDblclick(){
+  var tbody = document.getElementById('activeBody');
+  if (!tbody || tbody.dataset.dblwired) return;
+  tbody.dataset.dblwired = '1';
+  tbody.addEventListener('dblclick', function(e){
+    var td = e.target.closest('td');
+    if (!td) return;
+    var col = td.dataset.col;
+    if (!col) return;                         // 편집 불가 컬럼(휴대폰 번호 등 data-col 없음)
+    if (td.dataset.editing) return;           // 이미 편집 중
+    var tr = td.closest('tr');
+    if (!tr) return;
+    var rowIndex = parseInt(tr.dataset.rowindex, 10);
+    if (!rowIndex) return;
+
+    // 원본값
+    var origText = td.textContent === '—' ? '' : td.textContent;
+
+    td.dataset.editing = '1';
+    td.classList.add('cell-active');
+    td.innerHTML = '';
+
+    var inp = document.createElement('input');
+    inp.className = 'cell-input';
+    inp.type = 'text';
+    inp.value = origText;
+    inp.style.minWidth = '80px';
+    td.appendChild(inp);
+
+    var composing = false;
+    inp.addEventListener('compositionstart', function(){ composing = true; });
+    inp.addEventListener('compositionend', function(){ composing = false; });
+
+    var committed = false;
+    function commit() {
+      if (committed) return;
+      committed = true;
+      delete td.dataset.editing;
+      td.classList.remove('cell-active');
+      var newVal = inp.value;
+      td.innerHTML = '';
+      td.textContent = newVal || '—';
+      if (newVal === origText) return;
+      // 로컬 _activeRows 갱신
+      var r = _activeRows.find(function(x){ return x.rowIndex == rowIndex; });
+      if (r) r[col] = newVal;
+      apiPost({ action: 'member_active_update', rowIndex: rowIndex, col: col, value: newVal })
+        .then(function(){ showToast('저장', 'ok'); })
+        .catch(function(err){ showToast('저장 실패: ' + (err.message || ''), 'err'); });
+    }
+
+    inp.addEventListener('keydown', function(e){
+      if (e.key === 'Enter' && !composing) { e.preventDefault(); inp.blur(); }
+      if (e.key === 'Escape') { committed = true; delete td.dataset.editing; td.classList.remove('cell-active'); td.innerHTML = ''; td.textContent = origText || '—'; }
+    });
+    inp.addEventListener('blur', commit);
+    inp.focus();
+  });
 }
 
 function _activeRenderState(state, msg) {
