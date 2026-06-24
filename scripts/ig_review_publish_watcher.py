@@ -266,7 +266,7 @@ def publish_item(it: dict) -> tuple[str | None, int]:
             caption_tmp = None
 
     try:
-        env = dict(os.environ, PYTHONIOENCODING="utf-8")
+        env = dict(os.environ, PYTHONIOENCODING="utf-8", IG_SUPPRESS_TELEGRAM="1")
         proc = subprocess.run(cmd, cwd=str(ROOT), capture_output=True, text=True,
                               encoding="utf-8", errors="replace", env=env, timeout=600)
     finally:

@@ -465,6 +465,9 @@ def validate_post_spec(spec: PostSpec) -> list[str]:
 # 텔레그램 보고 — 토큰 stdout 노출 금지 (메모리 feedback_no_token_in_stdout)
 # -----------------------------------------------------------------
 def telegram_report(message: str) -> None:
+    if os.environ.get("IG_SUPPRESS_TELEGRAM", "").strip() == "1":
+        print(f"[INFO] (telegram suppressed by watcher) {message}")
+        return
     token = os.environ.get(TELEGRAM_TOKEN_ENV_KEY, "").strip()
     if not token:
         print("[WARN] 텔레그램 토큰 미설정 — 보고 생략 (env: TELEGRAM_BOT_TOKEN)")
