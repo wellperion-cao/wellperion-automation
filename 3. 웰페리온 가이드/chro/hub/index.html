@@ -1924,8 +1924,8 @@ function renderDocs(){
       {name:"체련복 표준계약서", id:"1pZxs0o2Jel-rrUkwysiecd2v9au9t5Sf", type:"HWP", mode:"dl"}
     ]},
     {title:"근태 · 휴가 신청", desc:"빈 양식 — 작성용 다운로드", items:[
-      {name:"연차계", id:"1JISHP4fggrHzFeNvnSrQfyBugIVPkI2o", type:"PDF", mode:"dl"},
-      {name:"반차계", id:"1lNcdYHslt8v6tO9KK04mGY50lRz5SdmG", type:"PDF", mode:"dl"},
+      {name:"연차계", url:"../forms/yeoncha.pdf", type:"PDF", mode:"dl"},
+      {name:"반차계", url:"../forms/bancha.pdf", type:"PDF", mode:"dl"},
       {name:"조퇴 · 외출 신청서", id:"1Jtib8YMDR017LKKubRXtRzMEDT89IxhJ", type:"HWP", mode:"dl"},
       {name:"결근계", id:"1JovAXoX4kPQk15Bv4miTKtIG1LThMoSY", type:"HWP", mode:"dl"},
       {name:"지각이유서", id:"1Ja1HNSs_9gRW7Swo4CBYrOhcuRfDG8Gf", type:"HWP", mode:"dl"},
@@ -1936,8 +1936,8 @@ function renderDocs(){
     ]},
     {title:"증빙 · 기타", desc:"빈 양식 — 작성용 다운로드", items:[
       {name:"경력 (재직) 증명서", id:"1K2s_bezzA5yKE6M3RrDRIqcu-ooCKf1x", type:"HWP", mode:"dl"},
-      {name:"사유서", id:"1oo2fvxefF4lSxeCrOt1Dn-6Jtg0Nzyt7", type:"HWP", mode:"dl"},
-      {name:"시말서", id:"1JQd6NBYwKaPURyMCWvSe0j2VUIy41tQZ", type:"HWP", mode:"dl"},
+      {name:"사유서", url:"../forms/sayuseo.pdf", type:"PDF", mode:"dl"},
+      {name:"시말서", url:"../forms/simalseo.pdf", type:"PDF", mode:"dl"},
       {name:"확인서", id:"1JSEQgu6K5qWyCz3SmXIUamxoxs1fRslf", type:"HWP", mode:"dl"},
       {name:"일일수당 지급신청서", id:"15FaKSkedjr9QipVszvmJTRwD-tTx1c5u", type:"XLSX", mode:"dl"},
       {name:"직원 · 강사 등록 체크리스트", id:"1Ybrq0eYvo2a3VWz7Fu5W6MKd2kjmFTwt", type:"HWP", mode:"dl"},
@@ -1953,16 +1953,23 @@ function renderDocs(){
     html+='<div class="sec-title">'+esc(g.title)+'<span style="font-weight:500;color:var(--ink-faint);letter-spacing:0;text-transform:none;margin-left:8px;font-size:11px">'+esc(g.desc)+'</span></div>';
     html+='<div class="docs-grid">';
     g.items.forEach(function(it){
-      var btn=it.mode==="open"
-        ? '<a class="doc-btn open" href="'+VIEW+it.id+'/view" target="_blank" rel="noopener">↗ 시트 열기</a>'
-        : '<a class="doc-btn" href="'+DL+it.id+'" target="_blank" rel="noopener">⬇ 다운로드</a>';
+      var btn,side;
+      if(it.url){   // repo 호스팅(공개 빈 양식) — 대시보드와 동일 원본
+        btn='<a class="doc-btn" href="'+it.url+'" download="'+esc(it.name)+'.pdf">⬇ 다운로드</a>';
+        side='<a class="doc-link" href="'+it.url+'" target="_blank" rel="noopener" title="미리보기">미리보기</a>';
+      }else if(it.mode==="open"){
+        btn='<a class="doc-btn open" href="'+VIEW+it.id+'/view" target="_blank" rel="noopener">↗ 시트 열기</a>';
+        side='<a class="doc-link" href="'+VIEW+it.id+'/view" target="_blank" rel="noopener" title="Drive에서 열기">Drive</a>';
+      }else{
+        btn='<a class="doc-btn" href="'+DL+it.id+'" target="_blank" rel="noopener">⬇ 다운로드</a>';
+        side='<a class="doc-link" href="'+VIEW+it.id+'/view" target="_blank" rel="noopener" title="Drive에서 열기">Drive</a>';
+      }
       html+='<div class="doc-card">'+
         '<div class="doc-top"><span class="doc-type t-'+it.type.toLowerCase()+'">'+it.type+'</span>'+
         (it.mode==="open"?'<span class="doc-lock">🔒 관리자</span>':'')+'</div>'+
         '<div class="doc-name">'+esc(it.name)+'</div>'+
         (it.note?'<div class="doc-note">'+esc(it.note)+'</div>':'')+
-        '<div class="doc-act">'+btn+
-        '<a class="doc-link" href="'+VIEW+it.id+'/view" target="_blank" rel="noopener" title="Drive에서 열기">Drive</a></div>'+
+        '<div class="doc-act">'+btn+side+'</div>'+
         '</div>';
     });
     html+='</div>';
