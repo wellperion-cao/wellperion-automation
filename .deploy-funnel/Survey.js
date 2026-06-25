@@ -584,7 +584,8 @@ var _SURVEY_PUBLIC_ACTIONS = {
   member_registered_delete:   true,  // 등록 해제(행 삭제)
   member_active_list:         true,  // 멤버십 회원 명단(유효회원·전화 마스킹)
   member_active_update:       true,  // 2026-06-24 멤버십 셀 인라인 수정(유효회원 시트·전화 제외)
-  cpo_today_stats:            true   // 2026-06-24 CPO 오늘/이번달 문의·등록 건수(PII 미노출)
+  cpo_today_stats:            true,  // 2026-06-24 CPO 오늘/이번달 문의·등록 건수(PII 미노출)
+  pii_status:                 true   // [진단] PII_MASK/토큰 설정 상태(비밀값 미노출) 2026-06-25 시토
 };
 // add_utm_field 비밀 가드값 — 폼 변형 액션 무단호출 차단. _SURVEY_PUBLIC_ACTIONS에 넣지 말 것.
 var _ADD_UTM_GUARD = 'wp-utm-field-2026-i-am-sure';
@@ -605,10 +606,10 @@ function _checkSurveyAccess_(action, key) {
 //   직원 화면 '전체보기'에 토큰 1회 입력(localStorage wp_access_token → ?key=). 미입력/불일치=마스킹.
 //   즉시 역롤백: PII_MASK 속성 삭제 → 다음 호출부터 전체 풀 복귀(재배포 불필요).
 function _piiFull_(key) {
-  if (_accessProp_('PII_MASK') !== 'on') return true;   // 스위치 OFF(기본) = 현행 유지(무중단)
-  var tok = _accessProp_('ACCESS_TOKEN');
-  if (!tok) return true;                                // 토큰 미설정 시 직원 잠김 방지 → 통과
-  return String(key || '') === tok;
+  if (String(_accessProp_('PII_MASK') || '').trim().toLowerCase() !== 'on') return true;  // OFF(기본)=현행 풀(무중단)
+  var tok = String(_accessProp_('ACCESS_TOKEN') || '').trim();
+  if (!tok) return false;                               // PII_MASK on·토큰 미설정 = 전부 마스킹(누수 차단). 토큰 설정 후 직원 전체보기.
+  return String(key || '') === tok;                     // 토큰 일치 시에만 풀
 }
 function _svMaskName_(n) {
   n = String(n == null ? '' : n).trim(); if (!n) return '';
@@ -948,6 +949,15 @@ function _processAction(body) {
       items.push({ id: '', 시각: f.시각, 이름: '', 연락처: '', 문의유형: f.문의유형, 내용: '', 유입채널: f.유입채널, 상태: '신규', 메모: '구글폼' });
     });
     return _json({ ok: true, count: items.length, data: items });
+  }
+
+  // ─── [진단] PII 마스킹 상태 (비밀값 노출 없음) 2026-06-25 시토 ───
+  if (action === 'pii_status') {
+    return _json({ ok: true,
+      pii_mask: String(_accessProp_('PII_MASK') || ''),
+      token_set: !!String(_accessProp_('ACCESS_TOKEN') || '').trim(),
+      masking_active: !_piiFull_('__diag_nokey__')
+    });
   }
 
   // ─── 문의회원 페이지(CPO): 익명 문의 목록 (A안 공개·이름/전화/메모 0) ───

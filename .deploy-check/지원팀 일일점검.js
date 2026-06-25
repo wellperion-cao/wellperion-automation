@@ -1115,6 +1115,22 @@ function _checkNotifyIssues(issues, gender) {
   } catch (e) { /* fail-soft: 알림 실패가 점검 저장에 영향 없음 */ }
 }
 
+// 이미 알림 보낸 이슈 키 추적(영속) — 자동저장·재제출마다 같은 이슈 재발송되던 중복 차단. 2026-06-25 시토·GM.
+// 키 = date|itemId|issueText. 원장(_chkKey JSON)의 noti 필드에 누적. 이슈 텍스트가 바뀌면 새 키=새 알림(정상).
+function _checkLoadNotified(dept, date, gender) {
+  try { var led = JSON.parse(PropertiesService.getScriptProperties().getProperty(_chkKey(dept, date, gender)) || '{}'); return led.noti || {}; }
+  catch (e) { return {}; }
+}
+function _checkSaveNotified(dept, date, gender, notiObj) {
+  try {
+    var props = PropertiesService.getScriptProperties();
+    var k = _chkKey(dept, date, gender);
+    var led = JSON.parse(props.getProperty(k) || '{}');   // 최신 원장 재읽기 후 noti만 갱신(타 필드 보존)
+    led.noti = notiObj;
+    props.setProperty(k, JSON.stringify(led));
+  } catch (e) { /* fail-soft */ }
+}
+
 function _writePerRoundRows(dept, date, body) {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var gender = body.genderTab || 'm';
@@ -1290,7 +1306,18 @@ function _writePerRoundRows(dept, date, body) {
   });
 
   // 점검관리방 텔레그램 알림(fail-soft): 이슈 있는 제출 → 점검관리방(-5136037543) 1건 발송. 2026-06-25 시우·GM.
-  try { _checkNotifyIssues(issuesToForward, gender); } catch (e) {}
+  try {
+    var _noti = _checkLoadNotified(dept, date, gender);
+    var _fresh = [];
+    issuesToForward.forEach(function (it) {
+      var _nk = it.date + '|' + it.itemId + '|' + String(it.issue || '').trim();
+      if (!_noti[_nk]) { _noti[_nk] = 1; _fresh.push(it); }
+    });
+    if (_fresh.length) {                                  // 새 이슈만 발송 — 이미 보낸 건 재발송 안 함
+      _checkNotifyIssues(_fresh, gender);
+      _checkSaveNotified(dept, date, gender, _noti);
+    }
+  } catch (e) {}
 
   return jsonRes({ success: true, perRound: true, saved: total });
 }
