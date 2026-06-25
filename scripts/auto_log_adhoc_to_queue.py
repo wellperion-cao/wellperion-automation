@@ -231,7 +231,7 @@ def _build_item(meta: dict, clevel: str) -> dict:
         "enqueued_at": date,
         "processed_at": date,
         "artifact": artifact,
-        "next": "🌀 표류 — 다음 미정 (필요 시 GM·웰리/담당 C-Level 지정)",
+        "next": "🏁 입항완료(루틴) — 다음 불필요",
         "adhoc_commit": meta["full"],
     }
 
