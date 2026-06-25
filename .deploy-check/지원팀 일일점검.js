@@ -956,6 +956,18 @@ function _updateCheckLedger(dept, date, body) {
             measure: String(m.measure || ''), reflected: String(m.reflected || '') }
         : 1;
     });
+    // 버그수정 2026-06-25 시우: 이슈/노하우 있는 미체크 항목도 led.cr에 기록.
+    // 기존엔 roundChecks(체크된 항목)만 led.cr에 기록 → 미체크 이슈는 cr에 없어 today_live에서 이슈 0건.
+    // roundCheckMeta에는 이미 미체크 이슈 항목이 포함됨(페이지 _buildPushPayload 수정 완료) → cr에도 반영.
+    Object.keys(_rcm).forEach(function (k) {
+      if (!k) return;
+      if (led.cr[String(k)]) return;   // 이미 체크 항목으로 기록됨
+      var m = _rcm[String(k)];
+      if (!m || (!m.iss && !m.tip)) return;   // 이슈/노하우 없으면 제외
+      led.cr[String(k)] = { by: String(m.by || ''), at: String(m.at || ''), du: String(m.du || ''),
+        iss: String(m.iss || ''), tip: String(m.tip || ''),
+        measure: String(m.measure || ''), reflected: String(m.reflected || '') };
+    });
   }
   // 점검 타이머 영속(2026-06-17 시우·GM): body.timers = { '<rk>':{s,e}, night:{s,e} } (ms 문자열).
   // led.timers에 머지 저장 — 빈값이 기존값 덮지 않게 값 있을 때만 갱신(머지). loadState가 led.timers로 복원.
@@ -2639,6 +2651,29 @@ function handleTodayLive(params) {
   var total = sumTotal.am + sumTotal.pm + sumTotal.close;
   var pct = total > 0 ? Math.round(done / total * 100) : 0;
 
+  // ─── 이슈 집계 — led.cr 메타에서 iss 필드 수집(2026-06-25 시우): 단일 소스 ───
+  // today_live가 이슈를 집계하지 않아 allIssues=0 고정이던 버그 수정.
+  // 저장 소스: _updateCheckLedger → led.cr[k].iss. 여기서 직접 읽어 반환.
+  // dedup: 같은 (성별+항목ID+이슈텍스트)는 1건만(동일 항목 복수 회차 제출 시 중복 방지).
+  var allIssues = [];
+  var _issSeenTL = {};
+  ['m', 'f'].forEach(function (g) {
+    var led = _getCheckLedger(dept, date, g);
+    var cr = (led && led.cr && typeof led.cr === 'object') ? led.cr : {};
+    Object.keys(cr).forEach(function (k) {
+      var m = cr[k];
+      if (!m || typeof m !== 'object') return;
+      var iss = String(m.iss || '').trim();
+      if (!iss) return;
+      var us = String(k).indexOf('_'); if (us < 0) return;
+      var round = k.slice(0, us), id = k.slice(us + 1);
+      var dk = g + '|' + id + '|' + iss;
+      if (_issSeenTL[dk]) return;
+      _issSeenTL[dk] = 1;
+      allIssues.push({ gender: g, roundKey: round, itemId: id, issue: iss, tip: String(m.tip || ''), by: String(m.by || '') });
+    });
+  });
+
   function genderSummary(g) {
     var gd = doneByG[g], gt = totalByG[g];
     var gdone = gd.am + gd.pm + gd.close;   // night 제외
@@ -2654,6 +2689,7 @@ function handleTodayLive(params) {
     am: sumDone.am, pm: sumDone.pm, close: sumDone.close, night: sumDone.night,
     amTotal: sumTotal.am, pmTotal: sumTotal.pm, closeTotal: sumTotal.close, nightTotal: sumTotal.night,
     total: total, done: done, pct: pct,
+    allIssues: allIssues,   // 2026-06-25 시우: led.cr 메타에서 이슈 집계 — 쓰기·읽기 단일 소스 정합
     byGender: { m: genderSummary('m'), f: genderSummary('f'), all: genderSummary('all') }
   });
 }

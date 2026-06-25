@@ -656,6 +656,7 @@ function _miReadRows_() {
   var iTour  = _miColIdx_(hdr, ['시설투어 및 상담 예약','시설견학 및 상담 일정','상담 예약','상담']);
   var iExp1  = _miColIdx_(hdr, ['체험1 확정시간','체험1']);
   var iExp2  = _miColIdx_(hdr, ['체험2 확정시간','체험2']);
+  var iExp3  = _miColIdx_(hdr, ['체험3 확정시간','체험3']);
   var iOwner = _miColIdx_(hdr, ['담당','담당자']);
   var iMemo  = _miColIdx_(hdr, ['메모','비고','담당자메모']);
   var iChan  = _miColIdx_(hdr, ['문의채널','유입채널','채널','경로','알게']);
@@ -677,6 +678,8 @@ function _miReadRows_() {
       exp1Time: _miTime_(iExp1 >= 0 ? row[iExp1] : ''),
       exp2:     _miToISO_(iExp2 >= 0 ? row[iExp2] : ''),
       exp2Time: _miTime_(iExp2 >= 0 ? row[iExp2] : ''),
+      exp3:     _miToISO_(iExp3 >= 0 ? row[iExp3] : ''),
+      exp3Time: _miTime_(iExp3 >= 0 ? row[iExp3] : ''),
       timestamp:_miToISO_(iTs   >= 0 ? row[iTs]   : ''),
       memo:     iMemo  >= 0 ? String(row[iMemo]  || '') : '',
       owner:    iOwner >= 0 ? String(row[iOwner] || '') : ''
@@ -956,6 +959,7 @@ function _processAction(body) {
     _maSet(['시설투어 및 상담 예약','시설견학 및 상담 일정','상담 예약','상담'], body.tour);
     _maSet(['체험1 확정시간','체험1'], body.exp1);
     _maSet(['체험2 확정시간','체험2'], body.exp2);
+    _maSet(['체험3 확정시간','체험3'], body.exp3);
     _maSet(['타임스탬프','접수일','날짜'], body.timestamp || maNow);
     maSh.appendRow(maRow);
     if (body.status === 'SUC' || body.status === '단기SUC') {
@@ -979,6 +983,7 @@ function _processAction(body) {
       add(row.tourDate, '상담', row.tourTime);
       add(row.exp1, '체험', row.exp1Time);
       add(row.exp2, '체험', row.exp2Time);
+      add(row.exp3, '체험', row.exp3Time);
     });
     return _json({ ok: true, month: mcMonth, count: mcEvents.length, events: mcEvents });
   }
@@ -1006,6 +1011,7 @@ function _processAction(body) {
     _muSet(['시설투어 및 상담 예약','시설견학 및 상담 일정','상담 예약','상담'], body.tour);
     _muSet(['체험1 확정시간','체험1'], body.exp1);
     _muSet(['체험2 확정시간','체험2'], body.exp2);
+    _muSet(['체험3 확정시간','체험3'], body.exp3);
     // carry-over: SUC/단기SUC = 등록회원 → 등록현황 탭 자동 이관(문의명단에서 넘어감)
     if (body.status === 'SUC' || body.status === '단기SUC') {
       try { _regUpsert_(body.name, body.phone, body.program); } catch (e) {}

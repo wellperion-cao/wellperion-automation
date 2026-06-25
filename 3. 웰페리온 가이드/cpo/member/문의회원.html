@@ -800,7 +800,7 @@ a.funnel-step:hover{background:rgba(183,159,138,0.08);color:var(--accent)}
     <div class="info-box yellow">
       <strong>범례</strong> —
       <span style="display:inline-block;font-size:11px;font-weight:700;padding:1px 7px;border-radius:4px;background:var(--teal-bg);color:var(--teal);margin-right:6px">체험</span>
-      체험1/2 확정시간 칸
+      체험1/2/3 확정시간 칸
       &nbsp;|&nbsp;
       <span style="display:inline-block;font-size:11px;font-weight:700;padding:1px 7px;border-radius:4px;background:var(--purple-bg);color:var(--purple);margin-right:6px">견학/상담</span>
       시설견학 및 상담 일정 칸
@@ -948,7 +948,7 @@ a.funnel-step:hover{background:rgba(183,159,138,0.08);color:var(--accent)}
       <div class="card-title"><span class="icon">📅</span>2단계 — 체험/견학/상담 예약</div>
       <div style="font-size:13px;line-height:1.9">
         1. 시설 견학·상담: 시트 <strong>시설견학 및 상담 일정</strong> 칸에 날짜 기록<br>
-        2. 체험1: <strong>체험1 확정시간</strong> 칸 / 체험2: <strong>시설 체험 일정2</strong> 칸<br>
+        2. 체험1: <strong>체험1 확정시간</strong> / 체험2: <strong>체험2 확정시간</strong> / 체험3: <strong>체험3 확정시간</strong> 칸<br>
         3. 무조건 <strong>사전 예약제</strong> — 워크인 불가<br>
         4. 진행상황 → <strong>예약</strong>으로 업데이트<br>
         5. 운영 가능 시간: 평일 06:00–22:30 / 주말·공휴일 08:00–20:00
@@ -2202,12 +2202,17 @@ function buildDbRow(row, isNew) {
   if (!READ_ONLY) { tdName.className = 'editable-cell'; tdName.addEventListener('click', function(){ _activateCellText(this, row, 'name'); }); }
   tr.appendChild(tdName);
 
-  // ── [1] 연락처 ──
+  // ── [1] 연락처 (성함과 동일 — 흰색·진하게·동일 크기 · 2026-06-25 GM) ──
   var tdPhone = document.createElement('td');
+  tdPhone.style.fontWeight = '700';
   var phoneMask = document.createElement('span');
   phoneMask.className = 'pii-mask';
   phoneMask.id = 'phone-' + row.rowIndex;
   phoneMask.textContent = row.phone || '—';
+  phoneMask.style.color = 'var(--text)';
+  phoneMask.style.fontStyle = 'normal';
+  phoneMask.style.fontSize = '13px';
+  phoneMask.style.fontWeight = '700';
   tdPhone.appendChild(phoneMask);
   if (!READ_ONLY) { tdPhone.className = 'editable-cell'; tdPhone.addEventListener('click', function(){ _activateCellText(this, row, 'phone'); }); }
   tr.appendChild(tdPhone);
@@ -2265,7 +2270,8 @@ function _renderScheduleCell(td, row) {
   td.innerHTML =
     '🗓 상담: ' + esc((row.tourDate || '—') + (row.tourTime ? ' ' + row.tourTime : '')) + '<br>' +
     '🏃 체험1: ' + esc((row.exp1 || '—') + (row.exp1Time ? ' ' + row.exp1Time : '')) + '<br>' +
-    '🏃 체험2: ' + esc((row.exp2 || '—') + (row.exp2Time ? ' ' + row.exp2Time : ''));
+    '🏃 체험2: ' + esc((row.exp2 || '—') + (row.exp2Time ? ' ' + row.exp2Time : '')) + '<br>' +
+    '🏃 체험3: ' + esc((row.exp3 || '—') + (row.exp3Time ? ' ' + row.exp3Time : ''));
 }
 
 /* ─── 로컬 row 업데이트 + 서버 저장 (전 필드 포함) ─── */
@@ -2286,7 +2292,8 @@ function _saveCell(rowIndex, patch) {
     memo:     r.memo !== undefined ? r.memo : '',
     tour:     _comboDateTime(r.tourDate, r.tourTime),
     exp1:     _comboDateTime(r.exp1, r.exp1Time),
-    exp2:     _comboDateTime(r.exp2, r.exp2Time)
+    exp2:     _comboDateTime(r.exp2, r.exp2Time),
+    exp3:     _comboDateTime(r.exp3, r.exp3Time)
   };
   if (dbSaveTimer) clearTimeout(dbSaveTimer);
   dbSaveTimer = setTimeout(function(){
@@ -2433,7 +2440,9 @@ function _activateCellSchedule(td, row) {
         exp1:     patch.exp1    || '',
         exp1Time: patch.exp1Time || '',
         exp2:     patch.exp2    || '',
-        exp2Time: patch.exp2Time || ''
+        exp2Time: patch.exp2Time || '',
+        exp3:     patch.exp3    || '',
+        exp3Time: patch.exp3Time || ''
       };
       _renderScheduleCell(td, Object.assign({}, live, dataPatch));
       td.classList.remove('cell-active');
@@ -2479,6 +2488,7 @@ function buildScheduleEditBlock(row) {
   wrap.appendChild(mk('상담', 'tour', 'tourTime', row.tourDate, row.tourTime));
   wrap.appendChild(mk('체험1', 'exp1', 'exp1Time', row.exp1, row.exp1Time));
   wrap.appendChild(mk('체험2', 'exp2', 'exp2Time', row.exp2, row.exp2Time));
+  wrap.appendChild(mk('체험3', 'exp3', 'exp3Time', row.exp3, row.exp3Time));
   return wrap;
 }
 
@@ -2602,6 +2612,7 @@ function submitNewRow(tr) {
     tour:      _comboDateTime(fields.tour, fields.tourTime),
     exp1:      _comboDateTime(fields.exp1, fields.exp1Time),
     exp2:      _comboDateTime(fields.exp2, fields.exp2Time),
+    exp3:      _comboDateTime(fields.exp3, fields.exp3Time),
     timestamp: new Date().toISOString().slice(0,10)
   };
 
