@@ -1142,10 +1142,9 @@ async function loadStaffFromSheet(){
    ↔ 시트 컬럼 {항목ID, 카테고리, 항목명, 상세, 성별, 시간대, 정렬} 매핑. */
 let CUSTOM_ITEMS = [];
 const ITEM_CACHE_KEY = 'wcheck_items_cache'; // 오프라인 폴백 캐시
-/* 2b-1(2026-06-11 시우): 이슈→항목 승격 모달이 참조하는 항목별 렌더 컨텍스트.
-   renderItem이 항목 id별로 {cat,slot,shift,round,gender}를 적립 → openPromoteFromIssue가 prefill. */
+/* 매뉴얼 '＋ 항목 추가' 모달(manualAddItem)이 참조하는 컨텍스트 — 승격 진입로 제거 후 매뉴얼 추가 전용 */
 const PROMOTE_CTX = {};
-let promoteSourceId = null;   // 현재 승격 진행 중인 원본 이슈 항목 id(반영완료 마킹용)
+let promoteSourceId = null;   // 원본 이슈 없음(매뉴얼 신규추가)시 null → promoteSave가 반영완료 마킹 건너뜀
 
 
 /* ── 온도 측정 대상 항목 설정 (2026-06-11 시우) ──
@@ -1192,12 +1191,6 @@ function toggleReflected(id,gender,round){
   drawUI(d,g);
 }
 
-/* ════════════════════════════════════════════════════════════
-   2b-1(2026-06-11 시우·GM): 이슈 → 점검·매뉴얼 항목 원클릭 승격.
-   이슈 텍스트가 달린 항목 옆 '➕ 점검·매뉴얼 항목으로' → 모달 → CUSTOM_ITEM 1개 생성
-   (mgmtSaveItems 파이프라인). 회차 다중선택은 rounds로 보존 →
-   점검표(선택 회차)·매뉴얼board에 단일 소스(WEEKDAY+CUSTOM_ITEMS)로 동시 등장.
-   ════════════════════════════════════════════════════════════ */
 /* 현재 스케줄에 등장하는 구역(group.title) 목록 — 카테고리 선택 옵션용(중복 제거, 등장순) */
 function promoteZoneTitles(){
   const out=[]; const seen={};
@@ -1209,62 +1202,6 @@ function promoteZoneTitles(){
     }));
   }catch(e){}
   return out;
-}
-/* 승격 모달 열기 — 원본 이슈 항목의 컨텍스트로 prefill. */
-function openPromoteFromIssue(id,gender){
-  const ctx=PROMOTE_CTX[id]||{};
-  const g=gender||ctx.gender||activeGenderTab;
-  promoteSourceId=id;
-  // 헤더 복원(매뉴얼 신규추가 모드에서 바뀐 문구 되돌림)
-  const _t=document.getElementById('promoteTitle'); if(_t)_t.textContent='이슈 → 점검·매뉴얼 항목 추가';
-  const _st=document.getElementById('promoteSubtitle'); if(_st)_st.textContent='자주 발생하는 이슈를 점검표와 매뉴얼에 항목으로 등록합니다. 선택한 회차에 자동으로 등장합니다.';
-  const issText=(typeof issFor==='function'?issFor(id,(ctx&&ctx.round)||'',g):STATE['iss_'+id])||'';   // 회차별 이슈 prefill(레거시 폴백)
-  // 항목명: 이슈 텍스트 prefill(수정 가능)
-  const nameEl=document.getElementById('promoteName');
-  if(nameEl)nameEl.value=issText;
-  // 상세: 비움(선택)
-  const detEl=document.getElementById('promoteDetail');
-  if(detEl)detEl.value='';
-  // 성별: 기본 all
-  const genEl=document.getElementById('promoteGender');
-  if(genEl)genEl.value='all';
-  // 구역(카테고리) 옵션 구성 + 현재 구역 선택
-  const catSel=document.getElementById('promoteCatSelect');
-  if(catSel){
-    const titles=promoteZoneTitles();
-    let opts=titles.map(t=>`<option value="${escapeAttr(t)}">${escapeHTML(t)}</option>`).join('');
-    opts+='<option value="__custom__">+ 직접 입력…</option>';
-    catSel.innerHTML=opts;
-    catSel.disabled=false;   // 이슈 승격 경로는 구역 선택 가능(manualAddItem이 잠갔던 것 해제)
-    const cur=ctx.cat||'';
-    if(cur&&titles.indexOf(cur)>=0){catSel.value=cur;}
-    else if(cur){catSel.value='__custom__';}
-    else{catSel.value=titles.length?titles[0]:'__custom__';}
-  }
-  promoteOnCatChange();
-  const catIn=document.getElementById('promoteCatCustom');
-  if(catIn && catSel && catSel.value==='__custom__')catIn.value=ctx.cat||'';
-  // 회차 체크박스: 기본=이 항목의 현재 회차들(itemRounds). 없으면 현재 라운드 또는 현재 시각 근처 조.
-  let defRounds=[];
-  const liveItem={id:id,slot:ctx.slot,shift:ctx.shift};
-  // CUSTOM 항목이면 rounds 보유 → itemRounds가 그걸 반환. 기본 항목이면 ROUND_MAP/슬롯 폴백.
-  const ci=(CUSTOM_ITEMS||[]).find(x=>x.id===id);
-  if(ci)liveItem.rounds=ci.rounds;
-  try{ defRounds=itemRounds(liveItem)||[]; }catch(e){ defRounds=[]; }
-  if(!defRounds.length){ defRounds=[ctx.round||autoRoundForNow()]; }
-  ROUND_KEYS.forEach(rk=>{
-    const cb=document.getElementById('promoteRound_'+rk);
-    if(cb)cb.checked=defRounds.indexOf(rk)>=0;
-  });
-  // 사우나 내부류 안내(3조 전부 권장)
-  const hint=document.getElementById('promoteRoundHint');
-  if(hint){
-    const c=(ctx.cat||'');
-    const sauna=c.indexOf('사우나')>=0||/^A/.test(c);
-    hint.style.display=sauna?'block':'none';
-  }
-  const modal=document.getElementById('promoteModal');
-  if(modal)modal.style.display='flex';
 }
 function closePromoteModal(){
   const modal=document.getElementById('promoteModal');
@@ -3206,10 +3143,6 @@ function renderItem(it,shift,gender,round){
   const hasMemo=!!(iss||tip);
   const isRef=!!(round?STATE[refKey(round,it.id,g)]:STATE['reflected_'+it.id]);
   const refBtn=hasMemo?`<button class="tiny-btn" style="${isRef?'background:rgba(44,138,79,0.14);color:#2c8a4f;border-color:rgba(44,138,79,0.4);':'background:rgba(140,139,131,0.12);color:#8c8b83;border-color:rgba(140,139,131,0.3);'}font-size:12px;" title="이슈/노하우 후속 조치 완료 표시" onclick="toggleReflected('${it.id}','${g}'${_rArg})">${isRef?'✓ 반영완료':'반영완료'}</button>`:'';
-  /* 2b-1(2026-06-11 시우): 이슈 → 점검·매뉴얼 항목 승격. 이슈 텍스트가 있을 때만 노출.
-     클릭 시 현재 항목의 구역(카테고리)·라운드·슬롯 컨텍스트를 PROMOTE_CTX에 적립해 모달이 prefill. */
-  PROMOTE_CTX[it.id]={cat:(ov.cat||it.cat||it.category||''),slot:(ov.slot||it.slot||''),shift:(ov.shift||it.shift||shift||''),round:round||'',gender:g};
-  const promoteBtn=iss?`<button class="tiny-btn" style="background:rgba(91,159,213,0.12);color:#5b9fd5;border-color:rgba(91,159,213,0.35);font-size:12px;" title="이 이슈를 점검표·매뉴얼 항목으로 추가" onclick="openPromoteFromIssue('${it.id}','${g}')">➕ 점검·매뉴얼 항목으로</button>`:'';
   /* 요일·주기 일정 배지 (편집 시 '월수금'·'둘째주'·'격주' 입력하면 헬스장처럼 배지로 표시). GM 2026-06-12 */
   const _dayChips=(typeof scheduleBadges==='function')?scheduleBadges(it,itemName,itemDetail):'';
   /* 항목별 점검 기록줄(점검자·시각·담당) — 체크된 항목 아래 회색. GM 2026-06-15 */
@@ -3225,7 +3158,6 @@ function renderItem(it,shift,gender,round){
     </div>${_attrLine}
     <div class="item-detail">${det}</div>${tempHtml}
     <input class="extra-input issue-field${iss?' show':''}" id="${pfx}iss_${it.id}" placeholder="이슈 (이 점검에 남음)..." value="${esc(iss)}" ${_locked?'readonly':''} onchange="onExtra('iss','${it.id}',${round?`'${round}'`:'\'\''},'${g}','${pfx}iss_${it.id}')">
-    ${promoteBtn?`<div class="promote-bar" style="margin:4px 0 2px;display:flex;flex-wrap:wrap;gap:6px;align-items:center;">${promoteBtn}</div>`:''}
     <input class="extra-input tip-field${tip?' show':''}" id="${pfx}tip_${it.id}" placeholder="노하우/개선 의견..." value="${esc(tip)}" ${_locked?'readonly':''} onchange="onExtra('tip','${it.id}',${round?`'${round}'`:'\'\''},'${g}','${pfx}tip_${it.id}')">
   </div>`;
 }
