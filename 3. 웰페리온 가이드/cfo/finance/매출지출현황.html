@@ -57,6 +57,7 @@ td.fut{color:var(--ink-faint);font-style:italic}td.neg{color:var(--red)}
 .chip{display:inline-block;font-size:10.5px;padding:2px 8px;border-radius:20px;font-weight:700}
 .chip.wait{background:#fcf2dd;color:#9a7322}.chip.ok{background:#e3f0e6;color:var(--green)}.chip.no{background:#f6e1de;color:var(--red)}.chip.rev{background:#e3eaf3;color:#2f6d9e}.chip.set{background:#f3ece0;color:#a98a52}
 .thumb{height:42px;max-width:66px;object-fit:cover;border-radius:5px;cursor:zoom-in;vertical-align:middle;border:1px solid var(--line);margin:1px;background:#f0ede7}
+.thumb2{height:84px;max-width:132px;object-fit:cover;border-radius:6px;cursor:zoom-in;vertical-align:middle;border:1px solid var(--line);margin:2px;background:#f0ede7}
 #gate{position:fixed;inset:0;z-index:100;display:flex;align-items:center;justify-content:center;background:linear-gradient(180deg,#262524,#1a1918);padding:20px}
 .gate-card{background:var(--surface);border-radius:14px;padding:32px 28px;max-width:344px;width:100%;text-align:center;box-shadow:0 18px 50px rgba(0,0,0,.4)}
 .gate-card .mark{font-size:11px;letter-spacing:.28em;color:var(--gold);font-weight:600;text-transform:uppercase}
@@ -438,6 +439,7 @@ function renderReqTbl(){
   document.getElementById("reqCount").textContent=(reqFilter==="완료")?"(완료 "+REQ_DONE.length+"건)":"("+reqFilter+" "+src.length+"건 · 미완료 합 "+REQ_ACTIVE.length+")";
   var rows=src.slice().reverse();
   var stc={"품의":"wait","검토":"rev","정산":"set","완료":"ok","승인":"wait","미승인":"no","캔슬":"no"};
+  var tc=(reqFilter==="정산")?"thumb2":"thumb"; // 정산 탭에서 사진 2배
   var h='<thead><tr><th style="text-align:center">#</th><th>날짜</th><th style="text-align:left">소속</th><th style="text-align:left">요청자</th><th style="text-align:left">승인자</th><th style="text-align:left">물품</th><th>금액</th><th style="text-align:center">사진/증빙</th><th style="text-align:center">상태</th><th style="text-align:center">승인 / 처리</th></tr></thead><tbody>';
   rows.forEach(function(r){
     var st=r.상태||"품의",act="";
@@ -448,8 +450,8 @@ function renderReqTbl(){
     else act='<span style="color:var(--ink-faint);font-size:11px">'+st+'</span>';
     if(st==="품의"||st==="검토"||st==="정산"||st==="승인")act+=' <button class="reqRej" data-row="'+r.row+'" style="'+btnCss("#b14238")+'">반려</button>';
     act+=' <button class="reqDel" data-row="'+r.row+'" title="시트에서 삭제" style="font-size:12px;padding:3px 7px;cursor:pointer;border:1px solid var(--line);border-radius:6px;background:#fff">🗑</button>';
-    var photo=(r.이미지&&(String(r.이미지).indexOf("http")===0||String(r.이미지).indexOf("data:")===0))?'<img src="'+r.이미지+'" class="thumb" title="첨부사진" onclick="window.open(this.src,\'_blank\')" loading="lazy">':'';
-    var pf=(r.지출증빙&&String(r.지출증빙).indexOf("http")===0)?'<img src="'+r.지출증빙+'" class="thumb" title="영수증/증빙" onclick="window.open(this.src,\'_blank\')" loading="lazy">':'';
+    var photo=(r.이미지&&(String(r.이미지).indexOf("http")===0||String(r.이미지).indexOf("data:")===0))?'<img src="'+r.이미지+'" class="'+tc+'" title="첨부사진" onclick="window.open(this.src,\'_blank\')" loading="lazy">':'';
+    var pf=(r.지출증빙&&String(r.지출증빙).indexOf("http")===0)?'<img src="'+r.지출증빙+'" class="'+tc+'" title="영수증/증빙" onclick="window.open(this.src,\'_blank\')" loading="lazy">':'';
     var rcpt=(photo||pf)?(photo+pf):'<button class="reqPhoto" data-row="'+r.row+'" style="font-size:10.5px;padding:4px 9px;cursor:pointer;border:1px dashed var(--gold);border-radius:6px;background:#fbf7ee;color:var(--gold-deep)">+ 사진</button>';
     h+='<tr><td style="text-align:center;font-weight:700;color:var(--gold-deep)">'+(r.번호?("#"+r.번호):"")+'</td><td style="text-align:left">'+r.날짜+'</td><td style="text-align:left">'+(r.소속||"")+'</td><td style="text-align:left">'+(r.요청자||"")+'</td><td style="text-align:left">'+(r.승인자||"")+'</td><td style="text-align:left">'+(r.물품||"")+'</td><td>'+won(r.가격)+'</td><td style="text-align:center">'+rcpt+'</td><td style="text-align:center"><span class="chip '+(stc[st]||"wait")+'">'+st+'</span></td><td style="text-align:center;white-space:nowrap">'+act+'</td></tr>';
   });
