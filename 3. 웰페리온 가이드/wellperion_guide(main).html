@@ -10624,26 +10624,60 @@ function crTab(btn, panelId) {
         +'</a>';
     }
 
-    // byGender({m,f}) → {total,done,undone,pct} — GAS today_live 응답 내 byGender 필드 활용
+    // byGender({m,f}) → {total,done,undone,pct,rounds:[{name,done,total,pct},...]} — GAS today_live 내 byGender 활용
     function parseGenderKpi(byGender, gender){
       if(!byGender||!byGender[gender]) return null;
       var g=byGender[gender];
       var total=typeof g.total==='number'?g.total:0;
       var done =typeof g.done ==='number'?g.done :0;
       var pct  =typeof g.pct  ==='number'?g.pct  :(total?Math.round(done/total*100):0);
-      return {total:total,done:done,undone:total-done,pct:pct};
+      // 회차별 rows — total>0인 회차만 포함
+      var ROUNDS=[['am','오전조'],['pm','오후조'],['close','마감조'],['night','탕청소']];
+      var rounds=[];
+      for(var i=0;i<ROUNDS.length;i++){
+        var key=ROUNDS[i][0], name=ROUNDS[i][1];
+        var rt=typeof g[key+'Total']==='number'?g[key+'Total']:0;
+        if(rt<=0) continue; // total=0 회차 생략
+        var rd=typeof g[key]==='number'?g[key]:0;
+        var rp=Math.round(rd/rt*100);
+        rounds.push({name:name,done:rd,total:rt,pct:rp});
+      }
+      return {total:total,done:done,undone:total-done,pct:pct,rounds:rounds};
+    }
+
+    // 지원부 전용 카드 — 회차별 3줄 표시
+    function buildSupportRoundCard(icon, label, gKpi, href){
+      if(!gKpi) return '<div style="background:var(--paper);border:1px solid var(--border);border-top:3px solid var(--border);border-radius:12px;padding:14px 16px;font-size:12px;color:var(--dim);">'+label+' 점검 — 집계 중</div>';
+      // 최고 회차 완료율로 카드 상단 색상 결정 (전체 총계 숨김 — 회차 3줄이 진실)
+      var topColor = gKpi.pct>=90?'#6abf7b':gKpi.pct>=60?'#e6c84e':'#ED5B3F';
+      var rowsHtml='';
+      for(var i=0;i<gKpi.rounds.length;i++){
+        var r=gKpi.rounds[i];
+        var c=r.pct>=90?'#6abf7b':r.pct>=60?'#e6c84e':'#ED5B3F';
+        var pctStr=r.total>0?(r.pct+'%'):'-';
+        rowsHtml+='<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px solid var(--border);">'
+          +'<span style="font-size:11px;color:var(--dim);">'+r.name+'</span>'
+          +'<span style="font-size:11.5px;font-weight:700;color:var(--text);">'+r.done+'/'+r.total+'</span>'
+          +'<span style="font-size:11px;font-weight:700;color:'+c+';min-width:36px;text-align:right;">'+pctStr+'</span>'
+          +'</div>';
+      }
+      if(!rowsHtml) rowsHtml='<div style="font-size:11px;color:var(--dim);padding:4px 0;">회차 데이터 없음</div>';
+      return '<a href="'+href+'" target="_blank" style="background:var(--paper);border:1px solid var(--border);border-top:3px solid '+topColor+';border-radius:12px;padding:14px 16px;text-decoration:none;display:block;transition:transform .12s,box-shadow .12s;" onmouseover="this.style.transform=\'translateY(-2px)\';this.style.boxShadow=\'0 6px 18px rgba(0,0,0,0.15)\'" onmouseout="this.style.transform=\'\';this.style.boxShadow=\'\'">'
+        +'<div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:10px;">'+icon+' '+label+' 점검</div>'
+        +rowsHtml
+        +'</a>';
     }
 
     function renderHomeKpi(facilityData, supportData){
       var el=document.getElementById('home-check-kpi');
       if(!el)return;
       var fKpi=parseKpi(facilityData);
-      // 지원부 남/여 분리 — byGender 필드 우선, 없으면 전체 통합값 폴백
+      // 지원부 남/여 분리 — byGender 필드 우선 (회차별 rows 포함)
       var raw=(supportData&&supportData.byGender)?supportData:null;
       var sMKpi=raw?parseGenderKpi(raw.byGender,'m'):null;
       var sFKpi=raw?parseGenderKpi(raw.byGender,'f'):null;
-      var sKpiAll=parseKpi(supportData); // 폴백용
-      // heroCheckPct: 시설 + 지원남 + 지원여 3값 평균 (가능한 값만)
+      var sKpiAll=parseKpi(supportData); // 폴백용 (byGender 없을 때)
+      // heroCheckPct: 시설 + 지원남 + 지원여 3값 평균
       (function(){
         var _p=[];
         if(fKpi)_p.push(fKpi.pct);
@@ -10653,15 +10687,15 @@ function crTab(btn, panelId) {
         if(_h&&_p.length)_h.textContent=Math.round(_p.reduce(function(a,b){return a+b;},0)/_p.length);
       })();
       var html='';
-      // 카드1: 시설부
+      // 카드1: 시설부 — weekly 스냅샷(회차 구조 상이) → 기존 buildHomeKpiCard 유지
       if(fKpi) html+=buildHomeKpiCard('🏭','시설부',fKpi,FACILITY_URL);
       else html+='<div style="background:var(--paper);border:1px solid var(--border);border-top:3px solid var(--border);border-radius:12px;padding:14px 16px;font-size:12px;color:var(--dim);">시설부 점검 — 로드 실패</div>';
-      // 카드2: 지원부(남) — byGender.m
-      if(sMKpi) html+=buildHomeKpiCard('🚹','지원부(남)',sMKpi,SUPPORT_URL);
-      else if(sKpiAll) html+=buildHomeKpiCard('✅','지원부(남)',sKpiAll,SUPPORT_URL);
+      // 카드2: 지원부(남) — 회차별 3줄
+      if(sMKpi) html+=buildSupportRoundCard('🚹','지원부(남)',sMKpi,SUPPORT_URL);
+      else if(sKpiAll) html+=buildHomeKpiCard('🚹','지원부(남)',sKpiAll,SUPPORT_URL);
       else html+='<div style="background:var(--paper);border:1px solid var(--border);border-top:3px solid var(--border);border-radius:12px;padding:14px 16px;font-size:12px;color:var(--dim);">지원부(남) 점검 — 로드 실패</div>';
-      // 카드3: 지원부(여) — byGender.f
-      if(sFKpi) html+=buildHomeKpiCard('🚺','지원부(여)',sFKpi,SUPPORT_URL);
+      // 카드3: 지원부(여) — 회차별 3줄
+      if(sFKpi) html+=buildSupportRoundCard('🚺','지원부(여)',sFKpi,SUPPORT_URL);
       else html+='<div style="background:var(--paper);border:1px solid var(--border);border-top:3px solid var(--border);border-radius:12px;padding:14px 16px;font-size:12px;color:var(--dim);">지원부(여) 점검 — 집계 중</div>';
       // 주차관리부: 점검 없음 — 카드 제외(의도적). 부서 바로가기는 홈 하단 링크 버튼에 유지.
       el.innerHTML=html;
