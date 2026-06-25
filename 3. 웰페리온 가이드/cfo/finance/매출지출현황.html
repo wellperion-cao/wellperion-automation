@@ -67,6 +67,26 @@ td.fut{color:var(--ink-faint);font-style:italic}td.neg{color:var(--red)}
 #loading{text-align:center;padding:70px 20px;color:var(--ink-soft)}
 footer{margin-top:26px;font-size:11px;color:var(--ink-faint);text-align:center;line-height:1.8}
 @media(max-width:680px){.grid-2{grid-template-columns:1fr}.kpi .val{font-size:21px}}
+/* ── 예산·이상지출 위젯 (F-4 추가) ── */
+.bud-row{display:grid;grid-template-columns:108px 1fr 220px;gap:12px;align-items:center;padding:9px 2px;border-bottom:1px solid var(--line-soft)}
+.bud-row:last-child{border-bottom:none}
+.bud-name{font-weight:600;color:var(--ink);font-size:12.5px}
+.bud-bar{position:relative;height:18px;background:var(--line-soft);border-radius:9px;overflow:hidden}
+.bud-fill{position:absolute;left:0;top:0;bottom:0;border-radius:9px;background:linear-gradient(90deg,var(--gold),var(--gold-deep));transition:width .4s}
+.bud-fill.warn{background:linear-gradient(90deg,#d3a93f,var(--amber))}
+.bud-fill.over{background:linear-gradient(90deg,#c2705f,var(--red))}
+.bud-pct{position:absolute;right:8px;top:0;line-height:18px;font-size:10.5px;font-weight:700;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.35)}
+.bud-meta{font-size:10.5px;color:var(--ink-soft);text-align:right;font-variant-numeric:tabular-nums;line-height:1.45}
+.bud-meta .snap{color:var(--ink-faint)}
+.flag-badges{display:flex;gap:10px;flex-wrap:wrap;margin-top:6px}
+.flag-badge{cursor:pointer;border:1px solid var(--line);border-radius:10px;padding:10px 14px;background:var(--surface);min-width:118px;transition:.15s;text-align:left}
+.flag-badge:hover{border-color:var(--gold)}
+.flag-badge.on{border-color:var(--navy);box-shadow:0 0 0 2px rgba(34,50,74,.12)}
+.flag-badge .fb-n{font-size:22px;font-weight:750;color:var(--navy);line-height:1}
+.flag-badge .fb-l{font-size:11.5px;color:var(--ink);font-weight:700;margin-top:5px}
+.flag-badge .fb-d{font-size:10px;color:var(--ink-faint);margin-top:2px}
+.flag-badge.sev-red .fb-n{color:var(--red)}.flag-badge.sev-amber .fb-n{color:var(--amber)}.flag-badge.sev-blue .fb-n{color:var(--blue)}
+@media(max-width:680px){.bud-row{grid-template-columns:80px 1fr;gap:8px}.bud-meta{grid-column:1/-1;text-align:left}}
 </style></head><body>
 
 <div id="gate"><div class="gate-card">
@@ -160,6 +180,22 @@ footer{margin-top:26px;font-size:11px;color:var(--ink-faint);text-align:center;l
     <div class="notice">품의 → 검토 → 집행 → 정산(영수증). 상태를 바꾸거나 영수증을 올리면 시트에 실시간 반영됩니다.</div>
   </section>
 
+  <section class="panel" data-panel="budget">
+    <div class="card">
+      <h3>부서별 예산 대비 집행률 <span style="font-size:11px;color:var(--ink-faint)">(경상·구매성 · YTD)</span></h3>
+      <div class="desc">막대 = YTD 경상집행 ÷ 도래 경상예산(연 경상예산 × 경과월/12). 110%↑ 빨강 · 90~110% 황색. 골프존 GDR 등 정기·계약성 대형(자본)은 제외.</div>
+      <div id="budList"></div>
+      <div class="notice" id="budNote"></div>
+    </div>
+    <div class="card">
+      <h3>이상지출 자동 플래그 <span style="font-size:11px;color:var(--ink-faint)">(지출품의 라인아이템)</span></h3>
+      <div class="desc">배지를 클릭하면 해당 사유의 건이 아래에 표시됩니다. 화이트리스트(정기·계약성 대형)는 플래그에서 제외됩니다.</div>
+      <div class="flag-badges" id="flagBadges"></div>
+      <div id="flagDetail" style="margin-top:14px"></div>
+      <div class="notice" id="flagNote"></div>
+    </div>
+  </section>
+
   </div>
 </main>
 
@@ -185,6 +221,13 @@ var PROC_DEPT={"골프":[262000,0,69300000,0,804960,873200],"운영부":[239600,
 var FB_LABOR={"골프":[15469018,12720271,16901114,16422307,13815335,12810239],"P.T":[46607840,41390419,47422370,45572009,43450392,38817814],"수영":[43578251,34885477,43639470,44832435,42688800,38009034],"스쿼시":[12307298,10065683,12842770,11397199,8684634,15188782],"체조&트램":[12471128,10484004,12526288,12401927,12037764,8719279],"필라테스":[7702254,8225256,10696879,10926820,12929559,4934696],"루프매소드":[0,0,0,280800,1038960,0],"뮤지컬":[0,0,0,0,0,0]};
 var FB_OPER=[34045838,35419025,36274362,32826139,30100000,30100000];
 var REQ_SAMPLE=[{날짜:"2026-06-20",부서:"골프",항목:"GDR 소모품",금액:430000,요청자:"최현준",상태:"승인"},{날짜:"2026-06-22",부서:"시설",항목:"사우나 약품",금액:1280000,요청자:"이지영",상태:"대기"}];
+/* ── 2026 부서별 경상(운영) 예산 — 출처: '웰페리온 2026 부서별·항목별 예산안' 시트(ID 1lj6Lf5VxItNAbYN3nk1K6gqGqLToGeFHmrh9qXbvBbk) '경상 부서별' 표 (CFO 판단형·2026-06-25). 연 경상 합계 55,930,000원(월 4,710,000원). 정의: 단건<100만=경상 / 단건>=100만=자본·대형(건별 통제). 키는 PROC_DEPT 명칭에 맞춤(체조→체조&트램). */
+var BUDGET_YR={"운영부":20600000,"시설":16240000,"지원":5510000,"P.T":3440000,"스쿼시":2610000,"골프":2310000,"뮤지컬":1870000,"수영":1300000,"체조&트램":1050000,"필라테스":750000,"기타":250000}; // 연간 경상예산
+var BUDGET_MO={"운영부":1720000,"시설":1360000,"지원":460000,"P.T":290000,"스쿼시":220000,"골프":200000,"뮤지컬":160000,"수영":110000,"체조&트램":90000,"필라테스":70000,"기타":30000}; // 월 한도(시트)
+var BUDGET_H1={"운영부":9796970,"시설":7730978,"지원":2617570,"골프":1095560,"P.T":650800,"스쿼시":749140,"체조&트램":478500,"필라테스":351120,"수영":292950,"뮤지컬":22190,"기타":116100}; // 시트 '2026 상반기 경상' 실적(자본·대형 제외 정확값) — 라이브 PROC와 교차검증용 스냅샷
+/* 정기·계약성 대형(자본) 화이트리스트 — 경상 집행률·이상플래그에서 제외. 골프존 GDR 69.3M(2026-03·일회성)이 대표. 월집계(PROC_DEPT)에서 식별 가능한 분만 차감. 그 외 단건 100만↑ 자본은 월합계에 섞여 분리불가 → 한계 주석. */
+var CAPEX_WHITELIST={"골프":{2:69300000}}; // 골프 3월(idx2) GDR 69,300,000
+var GDR_KEYWORDS=["GDR","골프존","gdr"]; // 라인아이템(물품명) 화이트리스트 키워드
 
 var LABOR=[],OPER=[],INSTRUCTORS=[],laborMonth=[],procMonth=[],salesMonth=[],totalCost=[],LIVE=false,SALES_LIVE=false;
 var SALES_G=0,COST_G=0,LABOR_G=0,OPER_G=0,PROC_G=0,MEMBER_G=0,DATA_LAST=6,selTeam=null,period=-1,_charts={};
@@ -248,7 +291,7 @@ function aggregate(){
   MEMBER_G=sum(SALES_MEMBER.slice(0,DATA_LAST));SALES_G=sum(salesMonth.slice(0,DATA_LAST));COST_G=LABOR_G+OPER_G+PROC_G;
 }
 
-var TABS=[{id:"dash",label:"대시보드"},{id:"sales",label:"매출현황"},{id:"expense",label:"지출현황"}]; // 구매요청은 직원용(?req=1)으로 분리
+var TABS=[{id:"dash",label:"대시보드"},{id:"sales",label:"매출현황"},{id:"expense",label:"지출현황"},{id:"budget",label:"📊 예산·이상지출"}]; // 구매요청은 직원용(?req=1)으로 분리
 function renderNav(){var nav=document.getElementById("nav");
   nav.innerHTML=TABS.map(function(t,i){return '<button class="tab'+(i?'':' active')+'" data-p="'+t.id+'">'+t.label+'</button>';}).join('');
   nav.querySelectorAll(".tab").forEach(function(b){b.onclick=function(){
@@ -261,6 +304,7 @@ async function startApp(){
   document.getElementById("loading").style.display="none";document.getElementById("content").style.display="block";
   document.getElementById("syncMeta").textContent="인건비 "+(LIVE?"🟢실시간":"⚪폴백")+" · 매출 "+(SALES_LIVE?"🟢실시간":"⚪폴백")+" · 구매성 1~6월 확정 · 7~12월 도래 시 자동";
   renderKpi();renderMain();renderSalesDept();renderMix();renderSales();renderSalesTbl();renderExpTbl();renderPeople();
+  renderBudget();ensureAnom(); // ① 예산 위젯(즉시) ② 이상지출(라인아이템 비동기 로드)
 }
 
 // 직원용 구매요청 전용 모드 (?req=1) — 재무 데이터·차트 미로드, 구매요청 탭만
@@ -381,6 +425,78 @@ function renderPeople(){
   if(!staff.length)h+='<tr><td colspan="'+(L6+2)+'" style="color:var(--ink-faint)">이 부서는 구매성 지출만 있고 강사가 없습니다.</td></tr>';
   h+='<tr class="totrow"><td>'+selTeam+' 인건비 계</td>'+MONTHS.slice(0,L6).map(function(m,i){return '<td>'+won(sum(staff.map(function(s){return s.d[i]||0;})))+'</td>';}).join('')+'<td>'+won(sum(staff.map(function(s){return sum(s.d.slice(0,L6));})))+'</td></tr></tbody>';
   document.getElementById("staffTbl").innerHTML=h;
+}
+
+/* ── ① 부서별 예산 대비 집행률 ── */
+function deptNorm(d){if(d==="체조")return "체조&트램";return d;}
+function budExecYTD(dept){ // 경상 YTD 집행 = PROC_DEPT 월합 − 화이트리스트(GDR 등)
+  var arr=PROC_DEPT[dept]||[],wl=CAPEX_WHITELIST[dept]||{},s=0;
+  for(var m=0;m<DATA_LAST;m++){var v=Number(arr[m])||0;if(wl[m])v-=wl[m];s+=v;}
+  return s;
+}
+function renderBudget(){
+  var mo=DATA_LAST;
+  var rows=Object.keys(BUDGET_YR).map(function(d){
+    var yr=BUDGET_YR[d],due=yr*mo/12,exec=budExecYTD(d),pct=due>0?(exec/due*100):0;
+    return {d:d,yr:yr,due:due,exec:exec,pct:pct,h1:BUDGET_H1[d]||0};
+  }).sort(function(a,b){return b.pct-a.pct;});
+  document.getElementById("budList").innerHTML=rows.map(function(r){
+    var cls=r.pct>110?"over":(r.pct>=90?"warn":""),w=Math.max(2,Math.min(100,r.pct));
+    return '<div class="bud-row"><div class="bud-name">'+r.d+'</div>'+
+      '<div class="bud-bar"><div class="bud-fill '+cls+'" style="width:'+w+'%"></div><span class="bud-pct">'+r.pct.toFixed(0)+'%</span></div>'+
+      '<div class="bud-meta">집행 '+won(r.exec)+' / 도래 '+won(r.due)+'<br><span class="snap">연예산 '+won(r.yr)+' · 시트 경상 '+(r.h1?won(r.h1):"–")+'</span></div></div>';
+  }).join("");
+  document.getElementById("budNote").innerHTML="⚠️ 실집행=구매성(PROC) YTD에서 골프존 GDR(69.3M·일회성)만 차감. <b>운영부·시설·필라테스·골프</b> 등은 단건 100만↑ 자본·대형이 월집계에 일부 섞여 경상 집행률이 실제보다 높게 보일 수 있어 빨강은 '라인아이템 검토 필요' 신호로 봅니다. 정확 경상은 예산안 시트 '상반기 경상' 스냅샷(메타 우측) 참고. 도래예산 = 연 경상예산 × 경과월("+mo+"/12).";
+}
+
+/* ── ② 이상지출 자동 플래그 (지출품의 라인아이템) ── */
+var ANOM_ROWS=null,ANOM_LOADED=false,ANOM_SEL=null,ANOM_GROUPS=null;
+function fmtToday(){var d=new Date();function p(n){return (n<10?"0":"")+n;}return d.getFullYear()+"-"+p(d.getMonth()+1)+"-"+p(d.getDate());}
+function isWhitelist(item){var s=String(item||"");return GDR_KEYWORDS.some(function(k){return s.indexOf(k)>=0;});}
+function monthOf(ds){try{var m=String(ds).match(/^(\d{4})-(\d{2})/);if(m)return parseInt(m[2],10)-1;}catch(e){}return -1;}
+async function ensureAnom(){
+  if(ANOM_LOADED)return;ANOM_LOADED=true;
+  document.getElementById("flagBadges").innerHTML='<span style="color:var(--ink-soft);font-size:12px">불러오는 중…</span>';
+  var rows=[];
+  try{var a=await procCall("list",{mode:"active"});if(a&&a.data)rows=rows.concat(a.data);}catch(e){}
+  try{var y=new Date().getFullYear();var d=await procCall("list",{mode:"done",from:y+"-01-01",to:fmtToday()});if(d&&d.data)rows=rows.concat(d.data);}catch(e){}
+  ANOM_ROWS=rows;computeAnom();renderAnom();
+}
+function computeAnom(){
+  var G={big:[],warn:[],over:[],dup:[],qual:[],wl:[]};
+  var rows=(ANOM_ROWS||[]).filter(function(r){return ["반려","미승인","캔슬"].indexOf(r.상태||"")<0;}); // 실집행성만
+  var dupMap={};
+  rows.forEach(function(r){
+    var raw=r.가격,amt=Number(raw),item=r.물품||"",dept=r.소속||"",date=r.날짜||"";
+    var bad=(raw===""||raw==null||isNaN(amt)||amt<0||!date||!String(date).match(/\d{4}-\d{2}-\d{2}/)||!dept);
+    if(bad)G.qual.push(r);
+    if(isWhitelist(item)){G.wl.push(r);return;} // 정기·계약성 대형 제외
+    if(!bad){if(amt>=1000000)G.big.push(r);else if(amt>500000)G.warn.push(r);}
+    var key=date+"|"+(isNaN(amt)?raw:amt)+"|"+item;(dupMap[key]=dupMap[key]||[]).push(r);
+  });
+  Object.keys(dupMap).forEach(function(k){if(dupMap[k].length>1)G.dup=G.dup.concat(dupMap[k]);});
+  var dm={};
+  rows.forEach(function(r){if(isWhitelist(r.물품))return;var amt=Number(r.가격);if(isNaN(amt)||amt<0)return;var m=monthOf(r.날짜);if(m<0)return;var k=deptNorm(r.소속)+"@"+m;dm[k]=(dm[k]||0)+amt;});
+  var over={};
+  Object.keys(dm).forEach(function(k){var d=k.split("@")[0],lim=BUDGET_MO[d];if(lim&&dm[k]>lim*1.1)over[k]=dm[k];});
+  rows.forEach(function(r){if(isWhitelist(r.물품))return;var k=deptNorm(r.소속)+"@"+monthOf(r.날짜);if(over[k]!==undefined)G.over.push(r);});
+  G._over=over;ANOM_GROUPS=G;
+}
+function renderAnom(){
+  var G=ANOM_GROUPS;if(!G)return;
+  var defs=[{k:"big",l:"대형(검토)",sev:"red",d:"단건 100만원↑"},{k:"warn",l:"경상 주의",sev:"amber",d:"단건 50만원 초과"},{k:"over",l:"예산초과",sev:"red",d:"부서 월예산 110%↑"},{k:"dup",l:"중복 의심",sev:"blue",d:"동일 일자·금액·항목"},{k:"qual",l:"품질경고",sev:"amber",d:"빈칸·마이너스·형식"}];
+  document.getElementById("flagBadges").innerHTML=defs.map(function(x){var n=(G[x.k]||[]).length;return '<button class="flag-badge sev-'+x.sev+(ANOM_SEL===x.k?' on':'')+'" data-k="'+x.k+'"><div class="fb-n">'+n+'</div><div class="fb-l">'+x.l+'</div><div class="fb-d">'+x.d+'</div></button>';}).join("");
+  document.querySelectorAll("#flagBadges .flag-badge").forEach(function(b){b.onclick=function(){ANOM_SEL=(ANOM_SEL===b.dataset.k?null:b.dataset.k);renderAnom();};});
+  var det=document.getElementById("flagDetail");
+  if(ANOM_SEL&&G[ANOM_SEL]){
+    var list=G[ANOM_SEL];
+    if(!list.length)det.innerHTML='<div style="color:var(--ink-faint);font-size:12px">해당 건 없음</div>';
+    else{var h='<div class="tbl-wrap"><table style="min-width:600px"><thead><tr><th style="text-align:left">날짜</th><th style="text-align:left">소속</th><th style="text-align:left">요청자</th><th style="text-align:left">물품</th><th>금액</th><th style="text-align:center">상태</th></tr></thead><tbody>';
+      list.forEach(function(r){h+='<tr><td style="text-align:left">'+(r.날짜||"")+'</td><td style="text-align:left">'+(r.소속||"")+'</td><td style="text-align:left">'+(r.요청자||"")+'</td><td style="text-align:left">'+(r.물품||"")+'</td><td>'+won(r.가격)+'</td><td style="text-align:center">'+(r.상태||"")+'</td></tr>';});
+      h+='</tbody></table></div>';det.innerHTML=h;}
+  } else det.innerHTML='<div style="color:var(--ink-faint);font-size:12px">배지를 클릭하면 해당 건이 표시됩니다.</div>';
+  var over=G._over||{},ov=Object.keys(over).map(function(k){var d=k.split("@")[0],m=+k.split("@")[1];return d+" "+MONTHS[m]+"("+won(over[k])+"/한도"+won(BUDGET_MO[d])+")";}).join(", ");
+  document.getElementById("flagNote").innerHTML="대상 "+((ANOM_ROWS||[]).length)+"건(반려·캔슬 제외) · 화이트리스트(정기·계약성) 제외 "+(G.wl?G.wl.length:0)+"건"+(ov?(" · 예산초과 부서·월: "+ov):"")+". 임계값: 대형 100만↑ / 경상주의 50만↑ / 월예산 110%↑ / 중복 / 품질.";
 }
 
 var REQ_ACTIVE=[],REQ_DONE=[],reqFilter="품의";
