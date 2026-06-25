@@ -1533,34 +1533,45 @@ function _processAction(body) {
 
   // ─── 회원관리 페이지(CPO): 등록회원 명단 조회 (등록기간 from~to 필터, 1~12월 체크 포함) ───
   if (action === 'member_registered_list') {
-    var rlSh = _regSheet_();
-    var rlLast = rlSh.getLastRow();
+    // 2026-06-25 GM: 실제 회원 DB(유효회원 시트) 등록일자 기준 — 대시보드 '멤버십 등록건' 카드와 동일 소스.
+    var rlFrom = String(body.from || '');  // YYYY-MM-DD
+    var rlTo   = String(body.to   || '');
     var rlRows = [];
-    if (rlLast >= 2) {
-      var rlData = rlSh.getRange(2, 1, rlLast - 1, _REG_HEADER.length).getValues();
-      var rlFrom = String(body.from || '');  // YYYY-MM-DD (doGet이 쿼리를 body로 병합)
-      var rlTo   = String(body.to   || '');
-      for (var ri = 0; ri < rlData.length; ri++) {
-        var rr = rlData[ri];
-        if (!rr[0] && !rr[1]) continue;  // 빈 행 스킵
-        var regDate = _miToISO_(rr[3]);
-        if (rlFrom && regDate && regDate < rlFrom) continue;
-        if (rlTo   && regDate && regDate > rlTo)   continue;
-        var months = [];
-        for (var m = 0; m < 12; m++) {
-          var cv = rr[4 + m];
-          months.push(cv === true || cv === 1 || (typeof cv === 'string' && cv.trim() !== ''));
+    try {
+      var rlSh = SpreadsheetApp.openById(MEMBER_SPREADSHEET_ID).getSheetByName(MEMBER_SHEET);
+      if (rlSh && rlSh.getLastRow() >= 2) {
+        var rlCols = rlSh.getLastColumn();
+        var rlHdr = rlSh.getRange(1, 1, 1, rlCols).getValues()[0].map(function(v){ return String(v).trim(); });
+        function _rlIdx(want){ var w = String(want).replace(/\s/g, ''); for (var i = 0; i < rlHdr.length; i++){ if (rlHdr[i] && rlHdr[i].replace(/\s/g, '').indexOf(w) >= 0) return i; } return -1; }
+        var rlNmI  = _rlIdx('회원명');
+        var rlRegI = _rlIdx('등록일자');
+        var rlPhI  = _rlIdx('휴대폰'); if (rlPhI < 0) rlPhI = _rlIdx('연락처'); if (rlPhI < 0) rlPhI = _rlIdx('전화');
+        var rlPgI  = _rlIdx('회원권'); if (rlPgI < 0) rlPgI = _rlIdx('상품'); if (rlPgI < 0) rlPgI = _rlIdx('등록분류'); if (rlPgI < 0) rlPgI = _rlIdx('프로그램');
+        var rlData = rlSh.getRange(2, 1, rlSh.getLastRow() - 1, rlCols).getValues();
+        for (var ri = 0; ri < rlData.length; ri++) {
+          var rr = rlData[ri];
+          var rlNm = rlNmI >= 0 ? String(rr[rlNmI] == null ? '' : rr[rlNmI]).trim() : '';
+          if (!rlNm) continue;
+          var rv = rlRegI >= 0 ? rr[rlRegI] : '';
+          var regDate = (rv instanceof Date && !isNaN(rv.getTime())) ? Utilities.formatDate(rv, 'Asia/Seoul', 'yyyy-MM-dd') : _miToISO_(rv);
+          if (!regDate) continue;                       // 등록일 없는 행 제외
+          if (rlFrom && regDate < rlFrom) continue;
+          if (rlTo   && regDate > rlTo)   continue;
+          var rlPh = rlPhI >= 0 ? String(rr[rlPhI] == null ? '' : rr[rlPhI]) : '';
+          var rlPp = rlPh.replace(/[^0-9]/g, '');
+          if (rlPp.length === 11) rlPh = rlPp.slice(0,3) + '-' + rlPp.slice(3,7) + '-' + rlPp.slice(7);
+          else if (rlPp.length === 10) rlPh = rlPp.slice(0,3) + '-' + rlPp.slice(3,6) + '-' + rlPp.slice(6);
+          rlRows.push({
+            rowIndex: ri + 2,
+            name:     rlNm,
+            phone:    rlPh,
+            program:  rlPgI >= 0 ? String(rr[rlPgI] == null ? '' : rr[rlPgI]).trim() : '',
+            regDate:  regDate
+          });
         }
-        rlRows.push({
-          rowIndex: ri + 2,
-          name:     String(rr[0] || ''),
-          phone:    String(rr[1] || ''),
-          program:  String(rr[2] || ''),
-          regDate:  regDate,
-          months:   months
-        });
+        rlRows.sort(function(a, b){ return a.regDate < b.regDate ? 1 : (a.regDate > b.regDate ? -1 : 0); }); // 최신 등록 먼저
       }
-    }
+    } catch (eRl) {}
     return _json({ ok: true, count: rlRows.length, data: rlRows });
   }
 
@@ -1605,8 +1616,44 @@ function _processAction(body) {
   //   scope=valid(기본): 잔여일>0 유효회원(2026-06-24 GM) / scope=ended: 종료·이탈(잔여일≤0 또는 LOSS·환불·양도LOSS)
   //   ★빈 헤더·쓰레기 날짜헤더(GMT/표준시) 컬럼 제외 + 회원명 없는 빈/이상 행 제외(전체 컬럼은 그대로 노출).
   if (action === 'member_active_list') {
-    var aaScope = (String(body.scope || 'valid') === 'ended') ? 'ended' : 'valid';
-    var aaSh = SpreadsheetApp.openById(MEMBER_SPREADSHEET_ID).getSheetByName(MEMBER_SHEET);
+    var aaScope = String(body.scope || 'valid'); if (aaScope !== 'ended' && aaScope !== 'corp') aaScope = 'valid';
+    var aaSs0 = SpreadsheetApp.openById(MEMBER_SPREADSHEET_ID);
+    // 법인회원: 별도 시트(법인현황 gid=1612064257) 전체를 제네릭 표시 (2026-06-25 GM)
+    if (aaScope === 'corp') {
+      var cpSh = null, cpShs = aaSs0.getSheets();
+      for (var cps = 0; cps < cpShs.length; cps++) { if (cpShs[cps].getSheetId() === 1612064257) { cpSh = cpShs[cps]; break; } }
+      if (!cpSh) cpSh = aaSs0.getSheetByName('법인현황');
+      if (!cpSh) return _json({ ok: true, scope: 'corp', headers: [], count: 0, data: [] });
+      var cpCols = cpSh.getLastColumn(), cpLast = cpSh.getLastRow();
+      if (cpLast < 1 || cpCols < 1) return _json({ ok: true, scope: 'corp', headers: [], count: 0, data: [] });
+      var cpHdrRaw = cpSh.getRange(1, 1, 1, cpCols).getValues()[0].map(function(v){ return String(v).trim(); });
+      var cpKeep = cpHdrRaw.map(function(h){ return h && !/GMT|표준시/.test(h); });
+      var cpHdrs = []; for (var ch = 0; ch < cpHdrRaw.length; ch++) if (cpKeep[ch]) cpHdrs.push(cpHdrRaw[ch]);
+      var cpRows = [];
+      if (cpLast >= 2) {
+        var cpData = cpSh.getRange(2, 1, cpLast - 1, cpCols).getValues();
+        for (var cpr = 0; cpr < cpData.length; cpr++) {
+          var crow = cpData[cpr];
+          var cpAny = false; for (var cc = 0; cc < cpCols; cc++){ if (cpKeep[cc] && String(crow[cc] == null ? '' : crow[cc]).trim()){ cpAny = true; break; } }
+          if (!cpAny) continue;
+          var cpObj = { rowIndex: cpr + 2 };
+          for (var cc2 = 0; cc2 < cpHdrRaw.length; cc2++) {
+            if (!cpKeep[cc2]) continue;
+            var cv2 = crow[cc2];
+            if (cv2 instanceof Date && !isNaN(cv2.getTime())) cv2 = Utilities.formatDate(cv2, 'Asia/Seoul', 'yyyy-MM-dd');
+            cv2 = (cv2 === null || cv2 === undefined) ? '' : String(cv2);
+            var cpHk = cpHdrRaw[cc2], cpHkN = cpHk.replace(/\s/g, '');
+            if (cpHkN.indexOf('휴대폰') >= 0 || cpHkN.indexOf('연락처') >= 0 || cpHkN.indexOf('전화') >= 0) {
+              var cpPn = cv2.replace(/[^0-9]/g, ''); if (cpPn.length === 11) cv2 = cpPn.slice(0,3)+'-'+cpPn.slice(3,7)+'-'+cpPn.slice(7); else if (cpPn.length === 10) cv2 = cpPn.slice(0,3)+'-'+cpPn.slice(3,6)+'-'+cpPn.slice(6);
+            }
+            cpObj[cpHk] = cv2;
+          }
+          cpRows.push(cpObj);
+        }
+      }
+      return _json({ ok: true, scope: 'corp', headers: cpHdrs, count: cpRows.length, data: cpRows });
+    }
+    var aaSh = aaSs0.getSheetByName(MEMBER_SHEET);
     if (!aaSh) return _json({ ok: false, error: '유효회원 시트 없음' });
     var aaLast = aaSh.getLastRow();
     var aaCols = aaSh.getLastColumn();
@@ -1654,6 +1701,12 @@ function _processAction(body) {
         if (!aaFull && aaNameKey) obj[aaNameKey] = _svMaskName_(obj[aaNameKey]);
         aaRows.push(obj);
       }
+    }
+    // 종료일자 최근순(내림차순) 기본 정렬 — 종료일 늦은 회원이 최상위 (2026-06-25 GM)
+    var aiEnd = _aaIdx('종료일'); if (aiEnd < 0) aiEnd = _aaIdx('만료일'); if (aiEnd < 0) aiEnd = _aaIdx('이용종료'); if (aiEnd < 0) aiEnd = _aaIdx('만기일'); if (aiEnd < 0) aiEnd = _aaIdx('이탈일');
+    if (aiEnd >= 0 && aaKeep[aiEnd]) {
+      var aiEndKey = aaHdrRaw[aiEnd];
+      aaRows.sort(function(a, b){ var av = String(a[aiEndKey] || ''); var bv = String(b[aiEndKey] || ''); return av < bv ? 1 : (av > bv ? -1 : 0); });
     }
     return _json({ ok: true, scope: aaScope, headers: aaHdrs, count: aaRows.length, data: aaRows });
   }
