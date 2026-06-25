@@ -33,7 +33,7 @@ const CHAT_ID   = '-5136037543';  // 점검 관리 방 (시우 102, 2026-06-24) 
 // 2026-06-15 GM 스키마 v2: 시간대→회차(조 단위) · 담당자를 점검자 앞으로 · 교대 열 삭제(14열).
 const HEADERS = [
   '날짜','항목ID','항목명','카테고리','회차',
-  '점검결과','이슈(종합접수처)','노하우','제출상태','제출시각',
+  '점검결과','이슈','노하우','제출상태','제출시각',
   '근무자','점검자','측정값','반영완료','소요시간'
 ]; // (닫힘 — 아래 _roundLabel). 15열 소요시간(분)=(제출시각 − 회차 시작시각). 못 구하면 빈칸. _ensureHeaders가 헤더라벨 자동정합.
 // 슬롯/교대 → 조(회차) 라벨. 프론트 roundOfSlot과 동일 매핑(오전조/오후조/마감조). GM 2026-06-15.
@@ -209,9 +209,7 @@ function _createCheckSheet(ss, name) {
   sheet.setFrozenRows(1);
   var widths = [100,70,220,140,150,80,200,200,110,130,100,70,180,90];  // 13열 측정값 + 14열 반영완료
   for (var i = 0; i < widths.length; i++) sheet.setColumnWidth(i+1, widths[i]);
-  // G열(이슈·인덱스6) 폐기 — 이슈는 종합접수처로 이관 완료. 물리삭제 금지(15열 인덱스 보존), 시각적으로만 숨김.
-  // 시트 재생성(setupNewStructure/setupDeptSheets)돼도 G열 재노출 방지(재발 가드). 2026-06-20 시우.
-  try { sheet.hideColumns(7); } catch (e) {}
+  // G열(이슈·인덱스6) — 2026-06-25 시우·GM: 이슈를 G열에 직접 저장하므로 숨김 가드 제거. G열 표시 유지.
 }
 
 function _createStaffSheet(ss) {
@@ -782,10 +780,9 @@ function deleteFacilityEmptyGenderSheets() {
   return jsonRes({ ok: true, log: log });
 }
 
-// G열(이슈·인덱스6, 헤더 '이슈(종합접수처)') 폐기 처리(GM 2026-06-20 시우) — 이슈는 종합접수처로 전부 이관·검증 완료.
-// ① 데이터행(2행~) G열 내용 비우기(clearContent) ② G열 컬럼 숨김(hideColumns). 물리 삭제 절대 안 함
-// (deleteColumn 시 정렬=J열9·소요시간=O열14·제출상태=I열8 등 15열 인덱스 붕괴). 자리·인덱스 보존, 시각적으로만 제거.
-// 새 행 append돼도 컬럼 숨김은 시트 속성이라 유지됨(+_createCheckSheet에 재발 가드 추가). GET ?action=hide_issue_col&dept=support
+// G열(이슈·인덱스6) 숨김 해제 필요 시 사용(2026-06-25 시우·GM): 이슈는 G열에 다시 저장되므로,
+// 과거 hide_issue_col 실행으로 숨겨진 시트라면 G열을 수동으로 표시(showColumns)해야 함.
+// 이 함수 자체는 보존(인덱스 보호 목적), 물리 삭제 절대 안 함. GET ?action=hide_issue_col&dept=support
 function hideIssueColumn(dept) {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var t = _deptTabs(dept);
@@ -1067,104 +1064,27 @@ function _collapseDupRowsForDate(sheet, date) {
   return del.length;
 }
 // ═══════════════════════════════════════════
-//  종합접수처 자동전송 (점검 이슈 → reg_submit)
-//  GM 2026-06-20 시우: 점검 중 이슈메모 발견 → 점검자 추가입력 없이 자동으로 종합접수처 DB 1건 등록.
-//  - 멱등: 같은 (날짜+항목ID+이슈텍스트)는 ScriptProperties 플래그로 단 1회만 전송(복제버그·재제출·자동저장 안전).
-//  - fail-soft: 전송 실패/타임아웃나도 점검 저장·텔레그램은 정상(호출부 try/catch).
-//  - 배포는 GM(clasp login 후 일괄). exec URL은 ScriptProperties VOC_EXEC_URL(미설정 시 라이브 폴백).
+//  이슈 → 점검관리방 텔레그램 알림 (2026-06-25 시우·GM)
+//  종합접수처 자동전송 완전 삭제 — 이슈는 점검 시트 G열 기록 + 점검관리방(-5136037543) 알림으로 대체.
 // ═══════════════════════════════════════════
 
-// 종합접수처 라이브 exec URL — 비밀 아님(공개 엔드포인트)이라 폴백 상수 허용. 변경 시 ScriptProperties VOC_EXEC_URL로 덮어씀.
-var VOC_EXEC_URL_FALLBACK = 'https://script.google.com/macros/s/AKfycbwk2XS1FND9V2xtXlWgsXzgA5p0FG7jVm6YKD74JK_ME_ZvHsNUUfGE5A_8p0X8VcF3gQ/exec';
-// 전송 멱등 플래그 ScriptProperties 키 접두사. 키=VOCSENT_<date>_<itemId>_<해시>.
-var VOC_SENT_PREFIX = 'VOCSENT_';
-// 설비 고장성 키워드 — 있으면 category=facility(시설고장), 없으면 기본 clean(청결). 단순·설명가능 하드코딩 배열.
-// 4차(2026-06-20 시우·GM): '안됨'·'안 됨' 단독 제거 — '정리정돈 안됨'(청결) 같은 텍스트가 시설고장으로 오분류되던 함정.
-// 설비맥락으로 좁힌 '작동 안'·'전원 안'·'작동불가'만 facility로 본다. 자동전송·이관 공용 함수라 여기 한 곳이 양쪽에 적용.
-var VOC_FACILITY_KEYWORDS = [
-  '고장', '파손', '작동 안', '작동안', '작동불가', '전원 안', '안 켜', '안켜',
-  '누수', '물샘', '새는', '깨짐', '깨진', '균열', '금이', '정전',
-  '배수', '막힘', '막혀', '역류', '누전', '누설', '터짐', '부러', '떨어짐', '고장남'
-];
-
-// 이슈텍스트 → category 키 자동매핑. 설비 고장성 키워드 매칭 시 facility, 아니면 clean(기본).
-function _checkMapCategory(issueText) {
-  var t = String(issueText || '');
-  for (var i = 0; i < VOC_FACILITY_KEYWORDS.length; i++) {
-    if (t.indexOf(VOC_FACILITY_KEYWORDS[i]) >= 0) return 'facility';
-  }
-  return 'clean';
-}
-
-// gender('m'/'f') → 출처 구역 표기.
-function _checkZoneLabel(gender) {
-  return (String(gender || '') === 'f') ? '여성구역' : '남성구역';
-}
-
-// 멱등 키 — 같은 (날짜+항목ID+이슈텍스트) 단일화. ScriptProperties 키 길이 한계 회피용 경량 해시.
-function _checkVocSentKey(date, itemId, issueText) {
-  var s = String(date) + '|' + String(itemId) + '|' + String(issueText || '').trim();
-  var h = 0;
-  for (var i = 0; i < s.length; i++) { h = ((h << 5) - h + s.charCodeAt(i)) | 0; }
-  return VOC_SENT_PREFIX + String(date) + '_' + String(itemId) + '_' + (h >>> 0).toString(36);
-}
-
-// 이슈 배열 → 종합접수처 reg_submit POST(멱등·fail-soft). 호출부에서 try/catch로 한 번 더 감쌈.
-function _checkSendIssuesToVoc(issues, gender) {
-  // ★분리결정(GM 2026-06-22): 점검 이슈는 점검 안에만 기록·보관 — 종합접수처 자동전송 폐지.
-  //  실제 깊은청소=야간 업체이고, 점검 청결 이슈가 회원 접수처(접수_청결)를 가득 채워(자동접수) 회원 VOC와 섞이던 문제.
-  //  외부 접수·타부서 처리가 필요한 건만 점검 화면의 수동 '접수처로 보내기'로 올린다. 코드는 보존 — 되돌릴 땐 이 return만 제거.
-  return;
+// 이슈 배열 → 점검관리방 텔레그램 1건 알림(이슈 여러 개면 목록으로 묶어 1메시지). fail-soft.
+// issues: [{date,itemId,itemName,cat,roundLabel,issue}], gender: 'm'|'f'
+function _checkNotifyIssues(issues, gender) {
   if (!issues || !issues.length) return;
-  var props = PropertiesService.getScriptProperties();
-  var execUrl = (props.getProperty('VOC_EXEC_URL') || VOC_EXEC_URL_FALLBACK).trim();
-  if (!execUrl) return;
-  var zone = _checkZoneLabel(gender);
-
+  if (!BOT_TOKEN || !CHAT_ID) return;
+  var zone = (String(gender || '') === 'f') ? '여성구역' : '남성구역';
+  var lines = ['🔴 점검 이슈 — ' + zone];
   issues.forEach(function (it) {
-    try {
-      var sentKey = _checkVocSentKey(it.date, it.itemId, it.issue);
-      if (props.getProperty(sentKey)) return;   // 이미 전송 — 재전송 차단(멱등)
-
-      var category = _checkMapCategory(it.issue);
-      var loc = String(it.itemName || it.itemId || '').trim();
-      var content = String(it.issue || '').trim()
-        + ' [' + zone + ' · ' + String(it.roundLabel || '') + ' · ' + String(it.date || '') + ']';
-
-      var payload = {
-        action:   'reg_submit',
-        source:   'check',                       // voc GAS가 이 분기로 name/contact 필수 면제
-        category: category,
-        name:     '지원부 점검(' + zone + ')',   // 출처표기(구역=시트탭 기준)
-        contact:  '자동접수(점검)',               // 실연락처 없음 — 고정 표기
-        loc:      loc,
-        content:  content
-      };
-      if (category === 'clean') {
-        payload.issueKind = '점검';
-        payload.urgency   = '보통';
-      } else {
-        payload.equipName = loc;
-        payload.severity  = '보통';
-        payload.usable    = '확인필요';
-      }
-
-      var resp = UrlFetchApp.fetch(execUrl, {
-        method: 'post',
-        contentType: 'application/json',
-        payload: JSON.stringify(payload),
-        muteHttpExceptions: true,
-        followRedirects: true
-      });
-      var code = resp.getResponseCode();
-      var ok = false;
-      if (code >= 200 && code < 300) {
-        try { ok = !!(JSON.parse(resp.getContentText()) || {}).ok; } catch (pe) { ok = false; }
-      }
-      // 성공으로 확인된 건만 멱등 플래그 적립 — 실패건은 다음 제출 때 재시도(at-least-once).
-      if (ok) props.setProperty(sentKey, String(Date.now()));
-    } catch (e) { /* fail-soft: 개별 이슈 전송 실패는 점검 저장에 영향 없음 */ }
+    lines.push('· [' + String(it.roundLabel || '') + '] ' + String(it.itemName || it.itemId || '') + ': ' + String(it.issue || ''));
   });
+  var msg = lines.join('\n');
+  try {
+    UrlFetchApp.fetch('https://api.telegram.org/bot' + BOT_TOKEN + '/sendMessage', {
+      method: 'post', contentType: 'application/json',
+      payload: JSON.stringify({ chat_id: CHAT_ID, text: msg })
+    });
+  } catch (e) { /* fail-soft: 알림 실패가 점검 저장에 영향 없음 */ }
 }
 
 function _writePerRoundRows(dept, date, body) {
@@ -1209,7 +1129,7 @@ function _writePerRoundRows(dept, date, body) {
   var meta = {};
   checks.forEach(function (c) { meta[String(c.itemId)] = c; });
 
-  // 종합접수처 자동전송 후보 — 이슈메모 있는 (항목) 수집(중복 dedup은 _checkSendIssuesToVoc가 멱등 처리). 2026-06-20 시우·GM.
+  // 이슈 수집 — G열 저장 + 점검관리방 알림 대상. 중복 dedup: 같은 (날짜+항목ID+이슈텍스트) 1건만. 2026-06-25 시우·GM.
   var issuesToForward = [];   // [{date,itemId,itemName,cat,roundLabel,issue}]
   var _issueSeen = {};        // (date+itemId+issue) 메모리 1차 dedup(복제버그 3회차 동일값 차단)
 
@@ -1231,7 +1151,7 @@ function _writePerRoundRows(dept, date, body) {
     var duty = mm.du || body.duty || '';
     // (회차×항목) 단위 메타 우선(mm) — 이슈/노하우/온도측정/반영완료를 회차별로 격리. 없으면 항목단위(c.*) 폴백. GM 2026-06-15 시우.
     var iss = (mm.iss != null && mm.iss !== '') ? String(mm.iss) : (c.issue || '');
-    // 종합접수처 자동전송 후보 적립 — 같은 (날짜+항목ID+이슈텍스트)는 1건만(복제버그 3회차 동일값 차단). 2026-06-20 시우.
+    // 이슈 수집 — 같은 (날짜+항목ID+이슈텍스트)는 1건만(복제버그 3회차 동일값 차단). 2026-06-25 시우.
     var _issTrim = String(iss || '').trim();
     if (_issTrim) {
       var _dk = date + '|' + id + '|' + _issTrim;
@@ -1246,7 +1166,7 @@ function _writePerRoundRows(dept, date, body) {
     var values = [
       date, id, c.name, c.cat, rl,
       checkedRound ? '완료' : '미완료',
-      '', tip,   // 4차(2026-06-20 시우·GM): G열(이슈메모)=빈값 적재. 이슈는 종합접수처 DB로만(issuesToForward→_checkSendIssuesToVoc). 컬럼 자리(인덱스6)는 유지·내용만 비움.
+      _issTrim, tip,   // 2026-06-25 시우·GM: G열(이슈)=실제 이슈 텍스트 저장. 종합접수처 전송 폐지 — 이슈는 시트 G열 기록+점검관리방 알림으로.
       _roundSubmitStatus(rl), at, duty, inspector,   // 9열 제출상태=회차별 led.sub 단일출처(미제출 회귀 버그 수정)
       measure, reflected,
       _roundDurationMin(round, rl)    // 15열 소요시간(분) — (제출시각 − 시작시각). 못 구하면 빈칸
@@ -1341,9 +1261,8 @@ function _writePerRoundRows(dept, date, body) {
     _sortByDateDesc(sheet);
   });
 
-  // 종합접수처 자동전송(fail-soft): 이슈메모 있는 항목 → reg_submit POST. 실패해도 점검 저장은 정상 진행. 2026-06-20 시우·GM.
-  // ★폐지(GM 2026-06-22): 함수 내부 첫 줄 return 가드로 무동작. 재활성 시 return만 제거.
-  try { _checkSendIssuesToVoc(issuesToForward, gender); } catch (e) {}
+  // 점검관리방 텔레그램 알림(fail-soft): 이슈 있는 제출 → 점검관리방(-5136037543) 1건 발송. 2026-06-25 시우·GM.
+  try { _checkNotifyIssues(issuesToForward, gender); } catch (e) {}
 
   return jsonRes({ success: true, perRound: true, saved: total });
 }
