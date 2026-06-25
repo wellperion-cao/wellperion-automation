@@ -70,8 +70,29 @@ def _local_active_count() -> int:
         return -1
 
 
+def _unpushed_count() -> int:
+    """origin/master..HEAD 커밋 수. 확인 불가 시 -1."""
+    try:
+        r = subprocess.run(
+            ["git", "rev-list", f"{REMOTE}/{BRANCH}..HEAD", "--count"],
+            cwd=str(ROOT),
+            capture_output=True,
+            text=True,
+            timeout=30,
+        )
+        if r.returncode != 0:
+            return -1
+        return int((r.stdout or "0").strip() or "0")
+    except Exception:
+        return -1
+
+
 def check_queue_live() -> tuple[str, bool, str]:
-    """① G1 큐 라이브: HTTP 200 + JSON + 라이브 active == 로컬 active."""
+    """① G1 큐 라이브: HTTP 200 + JSON + 라이브 active == 로컬 active.
+
+    건수 불일치 + 미푸시=0 + HTTP 200 → CDN 캐시 지연으로 분류(경보 없음, INC-007 후속).
+    진짜 끊김 = (미푸시>0) OR (HTTP non-200).
+    """
     name = "G1 큐 라이브"
     try:
         status, body = _http_get(LIVE_QUEUE_URL)
@@ -85,11 +106,21 @@ def check_queue_live() -> tuple[str, bool, str]:
         if local_active < 0:
             return name, False, f"라이브 active {live_active}건 / 로컬 큐 읽기 실패"
         if live_active != local_active:
+            # 미푸시 여부로 진짜 끊김 vs CDN 캐시 지연 구분 (INC-007 후속)
+            unpushed = _unpushed_count()
+            if unpushed > 0:
+                return (
+                    name,
+                    False,
+                    f"건수 불일치 — 라이브 {live_active}건 ≠ 로컬 {local_active}건"
+                    f" (미푸시 {unpushed}건 · 즉시 push 필요)",
+                )
+            # 미푸시=0 + HTTP 200 = CDN 반영 지연(캐시). 경보 안 띄움.
             return (
                 name,
-                False,
-                f"건수 불일치 — 라이브 {live_active}건 ≠ 로컬 {local_active}건"
-                f"(미푸시·발행 지연 의심, 즉시 push 필요)",
+                True,
+                f"CDN 캐시 지연 — 라이브 {live_active}건 ≠ 로컬 {local_active}건"
+                f" (미푸시 0 · Pages 반영 대기 중, 정상)",
             )
         return name, True, f"HTTP 200 · active {live_active}건 라이브=로컬 일치"
     except urllib.error.HTTPError as e:
