@@ -180,7 +180,7 @@
       <button class="primary" onclick="openApply()">＋ 연차/반차 신청</button>
       <button onclick="openShift()">🔁 근무변경 신청</button>
       <button id="editBtn" onclick="toggleEdit()">✏️ 스케줄 수정</button>
-      <button class="ghost" onclick="loadSample()">📥 6월 샘플</button>
+      <button class="ghost" onclick="loadSample()">📥 6월 실제 스케줄 불러오기</button>
       <button class="ghost" onclick="window.print()">🖨️ 인쇄</button>
     </div>
 
@@ -278,6 +278,7 @@
   </div>
 </div>
 
+<script src="june_data.js"></script>
 <script>
 const DEPTS = [
   ["운영", ["김남욱","이경연","임정은","나우열","최준용","윤병현","이지영"]],
@@ -415,9 +416,15 @@ function normTime(s){
   return pad(+s.slice(0,2))+":"+s.slice(2,4);
 }
 /* 표시용: 단일 05:40→5:40·09:00→9 / 범위 "13:30 18:00"→"13:30~18:00" */
-function fmt(v){const p=v.split(" ");
-  if(p.length>1)return p.map(t=>(+t.slice(0,2))+":"+pad(+t.slice(3,5))).join("~");
-  const t=p[0],h=+t.slice(0,2),m=+t.slice(3,5);return m?h+":"+pad(m):""+h;}
+function fmt(v){
+  // 출근시간(HH:MM 또는 HH:MM HH:MM)만 정규화 표시, 그 외(오픈/마감/쇼/- 등)는 원문 그대로
+  if(/^\d{2}:\d{2}( \d{2}:\d{2})?$/.test(v)){
+    const p=v.split(" ");
+    if(p.length>1) return p.map(t=>(+t.slice(0,2))+":"+t.slice(3)).join("~");
+    const h=+v.slice(0,2),m=+v.slice(3,5); return m?h+":"+pad(m):""+h;
+  }
+  return v;
+}
 /* 한 사람 셀 → {start,end} (분) */
 function parseShift(v){const ts=v.split(" ");return{start:mins(ts[0]),end:ts[1]?mins(ts[1]):null};}
 function isOpener(dept,we,v){const c=cfgOf(dept,we);if(!c)return false;return parseShift(v).start<=mins(c.open)+30;}
@@ -637,39 +644,14 @@ function approve(id){const r=reqs.find(x=>x.id===id);if(!r)return;r.status="승�
 function reject(id){const r=reqs.find(x=>x.id===id);if(r){r.status="반려";save();renderReqs();}}
 function delReq(id){reqs=reqs.filter(x=>x.id!==id);save();renderReqs();}
 
-/* 6월 샘플 데이터 (실측 패턴 기반 데모 — 운영·시설·지원 평일 기본 배치) */
+/* 실제 6월 스케줄 불러오기 (원본 시트 그대로 — june_data.js의 SAMPLE_JUNE) */
 function loadSample(){
-  if(!confirm("6월 평일 기본 배치 샘플을 불러올까요? (현재 입력값을 덮어씁니다)"))return;
-  const base={
-    "이지영":"05:40","이경연":"13:30","김남욱":"09:00","임정은":"10:00","나우열":"12:00","최준용":"12:00","윤병현":"13:30",
-    "박호균":"05:00","이정헌":"08:00","김종현":"13:00",
-    "황용석":"06:00","박남일":"06:00","김유정":"10:00","천진석":"14:00",
-    "우춘화":"06:00","김미영":"06:00","이경미":"07:00","이연희":"14:00"
-  };
-  leave={}; const y=2026,m=5,days=30;
-  ALL_EMP.forEach(nm=>leave[nm]={});
-  // 1) 교대근무 부서 출근시간 채우기 (휴관 제외 · 6/3도 근무=업장 운영)
-  for(let d=1;d<=days;d++){
-    if(isClosedSun(y,m,d))continue;
-    const dt=ymd(y,m,d), we=isWE(y,m,d);
-    for(const nm of Object.keys(base)){
-      let t=base[nm];
-      if(we){ if(t==="05:40")t="07:40"; if(t==="05:00")t="07:00"; if(t==="06:00")t="08:00"; }
-      leave[nm][dt]=t;
-    }
-  }
-  // 2) 전 직원 휴무 샘플: 정기휴무 4(휴) + 6/3 근무 보상 대휴 1 → 작성 5 + 휴관 2 = 7
-  const cand=[]; // 평일(6/3·휴관 제외)
-  for(let d=1;d<=days;d++){const dow=new Date(y,m,d).getDay(),dt=ymd(y,m,d);
-    if(dow>=1&&dow<=5&&dt!=="2026-06-03"&&!isClosedSun(y,m,d))cand.push(d);}
-  const L=cand.length, stride=Math.max(1,Math.floor(L/5));
-  ALL_EMP.forEach((nm,gi)=>{
-    const start=gi%stride;
-    for(let k=0;k<4;k++){ leave[nm][ymd(y,m,cand[(start+k*stride)%L])]="휴"; }   // 정기휴무 4
-    leave[nm][ymd(y,m,cand[(start+4*stride)%L])]="대휴";                          // 6/3 근무 보상 대휴 1
-  });
-  save(); render(); erpBulk();   // ERP 전체 동기화(오프라인 시 no-op)
-  alert("6월 샘플(스케줄+직원 휴무) 로드 완료 — 6/3 근무·대휴, 휴1~휴N 자동번호, '휴무 /7' 개수, 배치 경고를 확인해 보세요.");
+  if(typeof SAMPLE_JUNE==="undefined"){ alert("6월 데이터(june_data.js)를 불러오지 못했습니다. 새로고침 후 다시 시도해 주세요."); return; }
+  if(!confirm("원본 시트의 실제 6월 스케줄을 불러옵니다.\n현재 입력값을 덮어쓰고 ERP에 저장됩니다. 진행할까요?"))return;
+  leave={};
+  for(const nm in SAMPLE_JUNE){ leave[nm]=Object.assign({}, SAMPLE_JUNE[nm]); }
+  save(); cur=new Date(2026,5,1); render(); erpBulk();   // ERP 전체 동기화(오프라인 시 no-op)
+  alert("실제 6월 스케줄을 불러왔습니다. (ERP 저장 완료 시 상단에 표시)");
 }
 
 function fillEmp(id,blank){
