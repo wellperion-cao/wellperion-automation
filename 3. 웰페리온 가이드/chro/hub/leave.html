@@ -46,6 +46,11 @@
   .colName{left:62px;min-width:80px;text-align:left;padding:0 8px;font-weight:600}
   thead .colDept{left:0;z-index:5}thead .colName{left:62px;z-index:5}
   td.day{min-width:38px;cursor:default}
+  /* 오늘 열 — 굵은 바깥 테두리로 강조 */
+  th.today,td.today{border-left:3px solid #c0392b!important;border-right:3px solid #c0392b!important}
+  thead th.today{border-top:3px solid #c0392b!important}
+  #boardBody tr:last-child td.today{border-bottom:3px solid #c0392b!important}
+  th.today{color:#c0392b}
   td.day.edit{cursor:text}
   td.day.edit:hover{outline:2px solid var(--accent);outline-offset:-2px}
   th.sun,td.sun{background:var(--sun)} th.sat,td.sat{background:var(--sat)}
@@ -339,6 +344,7 @@ async function erpBulk(){
 }
 const pad=n=>String(n).padStart(2,"0");
 const ymd=(y,m,d)=>`${y}-${pad(m+1)}-${pad(d)}`;
+const _TD=new Date(); const TODAY_STR=ymd(_TD.getFullYear(),_TD.getMonth(),_TD.getDate());
 const DOW=["일","월","화","수","목","금","토"];
 const mins=t=>(+t.slice(0,2))*60+(+t.slice(3,5));
 const LEAVE_LABEL={"휴":"휴","연차":"연차","반차오전":"반午","반차오후":"반後","공휴":"공휴","대휴":"대휴","휴관":"휴관"};
@@ -433,7 +439,7 @@ function render(){
   for(let d=1;d<=days;d++){
     const dt=ymd(y,m,d), dow=new Date(y,m,d).getDay();
     const cls=HOLIDAYS[dt]?"hol":(dow===0?"sun":dow===6?"sat":"");
-    h+=`<th class='day ${cls}'>${d}<br><span style='font-weight:400'>${DOW[dow]}</span></th>`;
+    h+=`<th class='day ${cls}${dt===TODAY_STR?' today':''}'>${d}<br><span style='font-weight:400'>${DOW[dow]}</span></th>`;
   }
   h+="<th class='sumcol sc-u'>사용<br>연차</th><th class='sumcol sc-r'>잔여<br>연차</th><th class='sumcol sc-q'>휴무<br>/"+meta.req+"</th></tr>";
   document.getElementById("boardHead").innerHTML=h;
@@ -453,7 +459,7 @@ function render(){
         else if(s.state==="gap"){cc="cc-gap";txt=s.miss.join("");}
         else if(s.state==="closed"){cc="cc-none";txt="휴관";}
         else {cc="cc-none";txt="";}
-        cr+=`<td class='day ${base} ${cc}'>${txt}</td>`;
+        cr+=`<td class='day ${base} ${cc}${dt===TODAY_STR?' today':''}'>${txt}</td>`;
       }
       cr+=`<td class='sumcol sc-u'></td><td class='sumcol sc-r'></td><td class='sumcol sc-q'></td></tr>`;
       b+=cr;
@@ -474,7 +480,7 @@ function render(){
             else tag=`<span class='cell-tag ${leaveClass(v)}'>${LEAVE_LABEL[v]}</span>`;
           } else { tag=`<span class='cell-tag sh-work'>${fmt(v)}</span>`; }
         }
-        row+=`<td class='day ${base}${editMode?' edit':''}' data-emp='${nm}' data-date='${dt}'>${tag}</td>`;
+        row+=`<td class='day ${base}${editMode?' edit':''}${dt===TODAY_STR?' today':''}' data-emp='${nm}' data-date='${dt}'>${tag}</td>`;
       }
       const remain=ANNUAL_GRANT-used, total=off+meta.closed, has=hasAny(nm,y,m), qcls=has?(total!==meta.req?'q-bad':'q-ok'):'';
       row+=`<td class='sumcol sc-u'>${used%1?used.toFixed(1):used}</td><td class='sumcol sc-r ${remain<0?'sum-warn':''}'>${remain%1?remain.toFixed(1):remain}</td>`+
