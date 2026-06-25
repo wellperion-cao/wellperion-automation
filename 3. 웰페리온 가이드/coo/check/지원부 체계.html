@@ -3484,6 +3484,25 @@ function renderManualItems(){
     });
     html+=`</div>`;
   });
+  /* ── 미분류 캐치올 — 시트에 있지만 catOrder 어느 그룹에도 표시되지 않은 항목 ── */
+  /* seen = catOrder 렌더 중 실제 화면에 올라간 id 집합(pushItem 내 중복제거와 동일 기준).
+     CUSTOM_ITEMS 전체를 순회해 seen에 없으면 미분류로 수집. shadow 항목(편집분)도 포함. */
+  const _uncategorized=(typeof CUSTOM_ITEMS!=='undefined'?CUSTOM_ITEMS:[]).filter(ci=>!seen.has(ci.id)&&!hidden.has(ci.id));
+  if(_uncategorized.length){
+    html+=`<div style="background:var(--paper);border:2px solid #c0392b;border-radius:10px;margin-bottom:10px;overflow:hidden;">`;
+    html+=`<div style="padding:10px 16px;font-size:13px;font-weight:700;color:#c0392b;border-bottom:1px solid rgba(192,57,67,0.35);display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;"><span>⚠️ 미분류 / 기타 (정리 대상) — ${_uncategorized.length}건 · 시트에만 존재, 화면 미표시</span></div>`;
+    _uncategorized.forEach(ci=>{
+      const _catVal=ci.category||'(카테고리 없음)';
+      const _idLabel=` <span style="font-size:10px;color:var(--dim);background:rgba(140,139,131,0.12);padding:1px 6px;border-radius:6px;font-family:monospace;">${ci.id}</span>`;
+      const _catLabel=` <span style="font-size:10px;color:#c0392b;background:rgba(192,57,67,0.1);padding:1px 6px;border-radius:6px;">cat: ${_catVal}</span>`;
+      const _delBtn=`<button onclick="event.stopPropagation();manualDeleteItem('${ci.id}')" style="${_btn}color:#c0392b;background:rgba(192,57,67,0.1);border-color:rgba(192,57,67,0.4);">삭제</button>`;
+      html+=`<div style="padding:10px 16px;border-bottom:1px solid rgba(192,57,67,0.2);display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;">`;
+      html+=`<span style="font-size:13px;font-weight:600;">${ci.name}${_idLabel}${_catLabel}</span>`;
+      html+=`<div style="display:flex;align-items:center;gap:6px;">${_delBtn}</div>`;
+      html+=`</div>`;
+    });
+    html+=`</div>`;
+  }
   /* 숨긴 기본 항목 — 복구 가능(편집 모드에서만) */
   if(EM&&hiddenItems.length){
     html+=`<div style="background:var(--paper);border:1px dashed var(--border);border-radius:10px;margin-top:6px;overflow:hidden;opacity:.85;">`;
