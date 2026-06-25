@@ -262,26 +262,103 @@ def update_queue_with_bridge(
         return (label, False)
 
 
-def build_telegram_message(clevel: str, task_id: str, status: str, summary: str,
-                           bridge_label: str = "") -> str:
-    """표준 보고 메시지: [{CLEVEL}] {task_id} {status} - {summary} (· 브릿지 라벨)"""
-    msg = "[" + clevel.upper() + "] " + task_id + " " + status + " - " + summary
-    if bridge_label:
-        msg += "\n  ↳ " + bridge_label
-    return msg
+def build_telegram_message(
+    clevel: str,
+    task_id: str,
+    status: str,
+    summary: str,
+    bridge_label: str = "",
+    title: str = "",
+    version: str = "",
+    changelog: str = "",
+    artifact_url: str = "",
+    next_desc: str = "",
+    terminal: bool = False,
+) -> str:
+    """L18 세로 라벨 양식 보고 메시지.
 
+    형식:
+        {STATUS_ICON} {status} · [{CLEVEL}] {task_id}
+        🔴 이슈: {title}
+        🔧 해결: {summary}
+        ✅ 반영: {version}{ · changelog}
+        🔍 증거: {artifact_url}   ← artifact_url 있을 때만
+        👉 다음: {next}           ← next_desc/terminal/bridge_label 있을 때만
 
-def send_telegram(clevel: str, task_id: str, status: str, summary: str, dry_run: bool,
-                  bridge_label: str = "") -> bool:
+    STATUS_ICON: 완료→✅ · 이슈→⚠️ · 진행중→⏳ · 기타→•
     """
-    @namuki_report_bot 으로 단일 보고 라인 발송 (telegram_notifier.TelegramNotifier 사용).
+    _icon_map = {
+        "완료": "✅", "done": "✅", "DONE": "✅",
+        "이슈": "⚠️", "issue": "⚠️",
+        "진행중": "⏳", "inprogress": "⏳",
+    }
+    icon = _icon_map.get(status, _icon_map.get(status.lower(), "•"))
+
+    # 상태 헤더: 항상 출력
+    display_title = title if title else summary
+    lines: list[str] = [
+        icon + " " + status + " · [" + clevel.upper() + "] " + task_id,
+        "🔴 이슈: " + display_title,
+        "🔧 해결: " + summary,
+    ]
+
+    # ✅ 반영: version + optional changelog
+    version_str = version if version else "v1.0"
+    reflection = "✅ 반영: " + version_str
+    if changelog and changelog.strip():
+        reflection += " · " + changelog.strip()
+    lines.append(reflection)
+
+    # 🔍 증거: artifact_url 있을 때만
+    if artifact_url and artifact_url.strip():
+        lines.append("🔍 증거: " + artifact_url.strip())
+
+    # 👉 다음: next_desc > terminal > bridge_label 순. 셋 다 없으면 생략
+    if next_desc and next_desc.strip():
+        lines.append("👉 다음: " + next_desc.strip())
+    elif terminal:
+        lines.append("👉 다음: 🌀 여기서 종결")
+    elif bridge_label and bridge_label.strip():
+        lines.append("👉 다음: " + bridge_label.strip())
+
+    return "\n".join(lines)
+
+
+def send_telegram(
+    clevel: str,
+    task_id: str,
+    status: str,
+    summary: str,
+    dry_run: bool,
+    bridge_label: str = "",
+    title: str = "",
+    version: str = "",
+    changelog: str = "",
+    artifact_url: str = "",
+    next_desc: str = "",
+    terminal: bool = False,
+) -> bool:
+    """
+    @namuki_report_bot 으로 L18 양식 보고 발송 (telegram_notifier.TelegramNotifier 사용).
     --dry-run 이면 발송하지 않고 [DRY-RUN] would send 만 출력.
     토큰/chat_id 원문은 stdout 에 절대 출력하지 않는다.
     """
-    msg = build_telegram_message(clevel, task_id, status, summary, bridge_label)
+    msg = build_telegram_message(
+        clevel=clevel,
+        task_id=task_id,
+        status=status,
+        summary=summary,
+        bridge_label=bridge_label,
+        title=title,
+        version=version,
+        changelog=changelog,
+        artifact_url=artifact_url,
+        next_desc=next_desc,
+        terminal=terminal,
+    )
 
     if dry_run:
-        print("[DRY-RUN] would send: " + msg)
+        print("[DRY-RUN] would send:\n" + msg)
         return True
 
     try:
@@ -397,6 +474,12 @@ def main() -> int:
         summary=args.summary,
         dry_run=args.dry_run,
         bridge_label=bridge_label,
+        title=title,
+        version=args.version,
+        changelog=args.changelog,
+        artifact_url=args.artifact_url or "",
+        next_desc=args.next_desc or "",
+        terminal=args.terminal,
     )
 
     if args.dry_run:
