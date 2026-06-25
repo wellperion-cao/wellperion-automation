@@ -114,6 +114,44 @@
   .hint{background:#322e2b;border:1px dashed var(--accent2);border-radius:10px;padding:10px 14px;font-size:12px;color:#bdb3a6;margin-bottom:14px}
   .editing-on{box-shadow:inset 0 0 0 2px var(--amber)}
   @media(max-width:640px){.colName{min-width:64px}.brand small{display:none}}
+  /* ===== 표는 밝게 — 다크 ERP 위에 올라간 밝은 카드(가독성 우선) ===== */
+  .tablecard{background:#fbf8f2;border:1px solid #cdbfa8;box-shadow:0 2px 14px rgba(0,0,0,.32)}
+  .tablecard table,.tablecard th,.tablecard td{border-color:#e3dccf;color:#2b2622}
+  .tablecard thead th{background:#efe7d8;color:#7a6f5f}
+  .tablecard .colDept,.tablecard .colName{background:#fbf8f2}
+  .tablecard .colDept{color:#9a7b4f}
+  .tablecard .deptcell{background:#efe7d8!important;color:#8a6a3a;border-right:2px solid #cdbfa8}
+  .tablecard .dept-crit{color:#8a8178}
+  .tablecard .deptfirst td{border-top:2px solid #cdbfa8}
+  .tablecard .sumcol{background:#efe7d8}
+  .tablecard .sh-work,.tablecard .sh-open,.tablecard .sh-close,.tablecard .sh-mid{color:#17130f}
+  .tablecard .t-휴,.tablecard .t-연차{background:#f7eef1;color:#b5577f}
+  .tablecard .t-반차{background:#efeaf7;color:#7a5cae}
+  .tablecard .t-공휴{background:#f7f1e3;color:#a9842f}
+  .tablecard .t-대휴{background:#e6f4ee;color:#2f8a68}
+  .tablecard .t-휴관{background:#fbeceb;color:#c0463d}
+  .tablecard .cc-ok{background:#e3f1e9;color:#2f8a5a}
+  .tablecard .cc-gap{background:#eeb6af;color:#8a2a22}
+  .tablecard .cc-none{background:#f3eee4;color:#b8ad9c}
+  .tablecard .covrow .colName{background:#f3eee4;color:#9b8e7c}
+  .tablecard .covrow .colDept{background:#f3eee4}
+  .tablecard .q-ok{background:#dcefe4;color:#1f6b42}
+  .tablecard .q-bad{background:#c0463d;color:#fff}
+  .tablecard .sum-warn{color:#c0463d}
+  .tablecard th.sun,.tablecard td.sun{background:#fbeceb}
+  .tablecard th.sat,.tablecard td.sat{background:#eef3fa}
+  .tablecard th.hol,.tablecard td.hol{background:#f6ecd8}
+  .tablecard th.today,.tablecard td.today{border-left-color:#c0392b!important;border-right-color:#c0392b!important}
+  .tablecard thead th.today{border-top-color:#c0392b!important}
+  #boardBody tr:last-child td.today{border-bottom-color:#c0392b!important}
+  .tablecard th.today{color:#c0392b}
+  #boardBody tr:hover td{background:#f3e7cf!important}
+  #boardBody tr:hover td.colName{background:#ece0c2!important}
+  .celledit{background:#fffdf9;color:#2b2622}
+  /* 신청내역 표도 밝게 */
+  .reqlist{background:#fbf8f2;border:1px solid #cdbfa8}
+  .reqlist th{background:#efe7d8;color:#7a6f5f}
+  .reqlist td{color:#2b2622;border-color:#e3dccf}
 </style>
 </head>
 <body>
