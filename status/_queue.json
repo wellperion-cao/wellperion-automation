@@ -848,5 +848,19 @@
     "next": "🌀 표류 — 다음 미정 (필요 시 GM·웰리/담당 C-Level 지정)",
     "adhoc_commit": "9dfe6a86f3b2490315994cdbc3cc74416991540a",
     "ship_no": 33
+  },
+  {
+    "task_id": "CMO-2026-06-25-ADHOC-7c7d5865",
+    "clevel": "cmo",
+    "title": "[시모] /inquiry 문의 알림 즉시발송 배선 정리 — onFormSubmit+폴링 백스톱, 누락분 수동발송 action(@92)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-06-25",
+    "processed_at": "2026-06-25",
+    "artifact": "- onFormSubmit 즉시발송 + 5분 폴링 백스톱(INQ_LASTROW 공유마커 중복방지)\n- resend_recent_inquiry: 시트 빈행 보정(전화번호 기반 실데이터 판별·전역 최신 타임스탬프 선택)으로 정확한 최신 1건 수동 발송\n- 라이브 @92 배포본과 동기화. 신규문의 실시간 자동발송은 다음 실제 제출로 최종 확인 예정\n- ※후속: resend_recent_inquiry는 무토큰 공개 action이라 우발 호출 방지 위해 차후 가드/제거 검토 (CLI ad-hoc · 커밋 7c7d5865)",
+    "next": "🌀 표류 — 다음 미정 (필요 시 GM·웰리/담당 C-Level 지정)",
+    "adhoc_commit": "7c7d58655286cc7b38c722ccf2451b403da4b434",
+    "ship_no": 176
   }
 ]
