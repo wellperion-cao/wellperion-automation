@@ -6,13 +6,13 @@
 <title>WELLPERION · 휴무 · 근무 스케줄 관리</title>
 <style>
   :root{
-    --bg:#f4f1ec; --paper:#ffffff; --ink:#2b2622; --dim:#8a8178;
-    --line:#e5ded4; --accent:#9a7b4f; --accent2:#b79f8a;
-    --green:#3f9b6d; --red:#d05a52; --amber:#d39a3c; --blue:#4a7ab0;
-    --wk:#faf6ef; --sun:#fbeceb; --sat:#eef3fa; --hol:#f6ecd8;
+    --bg:#221F20; --paper:#2a2725; --ink:#f5f2ef; --dim:#8c8b83;
+    --line:#3d3835; --accent:#B79F8A; --accent2:#6e6052;
+    --green:#5fbf8a; --red:#e0726a; --amber:#e0b15c; --blue:#7fa8d8;
+    --wk:#322e2b; --sun:#392b2b; --sat:#2a3038; --hol:#3a3327;
   }
   *{box-sizing:border-box;margin:0;padding:0}
-  body{font-family:'Malgun Gothic','Apple SD Gothic Neo',sans-serif;background:var(--bg);color:var(--ink);font-size:13px;line-height:1.5}
+  body{font-family:"Pretendard",'Apple SD Gothic Neo','Malgun Gothic',sans-serif;background:var(--bg);color:var(--ink);font-size:13px;line-height:1.5}
   header{background:var(--paper);border-bottom:1px solid var(--line);padding:16px 22px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px}
   .brand{font-size:18px;font-weight:800;letter-spacing:1px}
   .brand span{color:var(--accent)}
@@ -23,8 +23,8 @@
   .monthnav b{font-size:15px;min-width:130px;text-align:center}
   button{font-family:inherit;cursor:pointer;border:1px solid var(--line);background:var(--paper);color:var(--ink);border-radius:8px;padding:7px 13px;font-size:13px;transition:.15s}
   button:hover{border-color:var(--accent);color:var(--accent)}
-  button.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
-  button.primary:hover{background:#82663f;color:#fff}
+  button.primary{background:var(--accent);color:#221F20;border-color:var(--accent)}
+  button.primary:hover{background:#d4b89e;color:#221F20}
   button.ghost{background:transparent}
   .spacer{flex:1}
   .pill{display:inline-flex;align-items:center;gap:5px;font-size:12px;color:var(--dim)}
@@ -32,11 +32,11 @@
   .lg{display:inline-flex;align-items:center;gap:5px;font-size:11px;background:var(--paper);border:1px solid var(--line);border-radius:20px;padding:3px 10px}
   .dot{width:11px;height:11px;border-radius:3px;display:inline-block}
   .covpanel{border-radius:12px;padding:11px 16px;margin-bottom:14px;font-size:12.5px}
-  .cov-ok{background:#e9f4ee;border:1px solid #bfe0cd;color:#2c6b48}
-  .cov-bad{background:#fbeceb;border:1px solid #f0c4c0;color:#9c3b34}
+  .cov-ok{background:rgba(95,191,138,.14);border:1px solid rgba(95,191,138,.4);color:#7fd3a3}
+  .cov-bad{background:rgba(224,114,106,.14);border:1px solid rgba(224,114,106,.45);color:#e8908a}
   .covpanel b{font-weight:800}
   .cov-list{margin-top:8px;display:flex;flex-wrap:wrap;gap:6px}
-  .cov-chip{background:#fff;border:1px solid #f0c4c0;border-radius:7px;padding:4px 9px;font-size:11.5px;color:#9c3b34}
+  .cov-chip{background:var(--paper);border:1px solid rgba(224,114,106,.4);border-radius:7px;padding:4px 9px;font-size:11.5px;color:#e8908a}
   .tablecard{background:var(--paper);border:1px solid var(--line);border-radius:12px;overflow:auto;box-shadow:0 1px 3px rgba(0,0,0,.04)}
   table{border-collapse:collapse;width:100%;font-size:12px;white-space:nowrap}
   th,td{border:1px solid var(--line);padding:0;text-align:center;height:30px}
@@ -46,33 +46,33 @@
   .colName{left:88px;min-width:80px;text-align:left;padding:0 8px;font-weight:600}
   thead .colDept{left:0;z-index:5}thead .colName{left:88px;z-index:5}
   /* 부서명+기준 병합셀 (구분 열) */
-  .deptcell{background:#f1ebe1!important;color:var(--accent);text-align:center;vertical-align:middle;white-space:normal;line-height:1.25;padding:5px 3px;border-right:2px solid var(--accent2)}
+  .deptcell{background:#34302d!important;color:var(--accent);text-align:center;vertical-align:middle;white-space:normal;line-height:1.25;padding:5px 3px;border-right:2px solid var(--accent2)}
   .dept-nm{font-weight:800;font-size:11.5px}
-  .dept-crit{font-weight:600;font-size:9px;color:#8a8178;margin-top:3px}
-  .deptfirst td{border-top:2px solid #cdbfa8}
+  .dept-crit{font-weight:600;font-size:9px;color:var(--dim);margin-top:3px}
+  .deptfirst td{border-top:2px solid #4d4845}
   td.day{min-width:34px;cursor:default}
   th.day{min-width:34px}
   /* 행 hover 강조 — 마우스 올린 가로열 부각 */
-  #boardBody tr:hover td{background:#f5ead4!important}
-  #boardBody tr:hover td.colName{background:#efe0c0!important}
+  #boardBody tr:hover td{background:#3a352e!important}
+  #boardBody tr:hover td.colName{background:#454036!important}
   /* 오늘 열 — 굵은 바깥 테두리로 강조 */
-  th.today,td.today{border-left:3px solid #c0392b!important;border-right:3px solid #c0392b!important}
-  thead th.today{border-top:3px solid #c0392b!important}
-  #boardBody tr:last-child td.today{border-bottom:3px solid #c0392b!important}
-  th.today{color:#c0392b}
+  th.today,td.today{border-left:3px solid #f0766c!important;border-right:3px solid #f0766c!important}
+  thead th.today{border-top:3px solid #f0766c!important}
+  #boardBody tr:last-child td.today{border-bottom:3px solid #f0766c!important}
+  th.today{color:#f0766c}
   td.day.edit{cursor:text}
   td.day.edit:hover{outline:2px solid var(--accent);outline-offset:-2px}
   th.sun,td.sun{background:var(--sun)} th.sat,td.sat{background:var(--sat)}
   th.hol,td.hol{background:var(--hol)}
-  .deptband td{background:#f1ebe1;font-weight:700;color:var(--accent);text-align:left;padding:4px 10px;font-size:11px;position:sticky;left:0}
+  .deptband td{background:#34302d;font-weight:700;color:var(--accent);text-align:left;padding:4px 10px;font-size:11px;position:sticky;left:0}
   .cell-tag{font-weight:700;font-size:11px;display:block;width:100%;height:100%;line-height:30px}
   /* 근무(출근시간) = 주인공: 진한 글씨·굵게·약간 크게 */
-  .sh-work,.sh-open,.sh-close,.sh-mid{color:#17130f;font-weight:800;font-size:12.5px}
+  .sh-work,.sh-open,.sh-close,.sh-mid{color:var(--ink);font-weight:800;font-size:12.5px}
   /* 휴무 = 옅게 처리해 근무가 도드라지도록 (글씨 가늘게·연한 색) */
   .cell-tag.t-휴,.cell-tag.t-연차,.cell-tag.t-반차,.cell-tag.t-공휴,.cell-tag.t-대휴,.cell-tag.t-휴관{font-weight:600;font-size:10.5px}
-  .t-휴{background:#f7eef1;color:#c193a6} .t-연차{background:#f7eef1;color:#c193a6}
-  .t-반차{background:#efeaf7;color:#a08cc4} .t-공휴{background:#f7f1e3;color:#c2a36a}
-  .t-대휴{background:#e9f4ef;color:#84ad9e} .t-휴관{background:#f6efee;color:#d29f9a}
+  .t-휴{background:rgba(224,150,180,.15);color:#e0a0bd} .t-연차{background:rgba(224,150,180,.15);color:#e0a0bd}
+  .t-반차{background:rgba(170,150,220,.15);color:#c3aee8} .t-공휴{background:rgba(224,177,92,.15);color:#e0b15c}
+  .t-대휴{background:rgba(95,191,138,.15);color:#7fd3a3} .t-휴관{background:rgba(224,114,106,.15);color:#e8908a}
   .sumcol{min-width:46px;width:46px;font-weight:700;background:var(--wk)}
   /* 오른쪽 요약 3칸 = 오른쪽에 고정(항상 보이게) */
   .sc-u,.sc-r,.sc-q{position:sticky;z-index:2}
@@ -80,21 +80,21 @@
   .sc-q{right:0;font-size:13px;border-left:2px solid var(--accent)} .sc-r{right:46px} .sc-u{right:92px}
   .sum-warn{color:var(--red)}
   /* 휴무 개수 배지 — 한눈에: 충족=초록 / 불일치=빨강 */
-  .q-ok{background:#e0f0e7;color:#236b43;font-weight:800} .q-bad{background:#d05a52;color:#fff;font-weight:800}
+  .q-ok{background:rgba(95,191,138,.18);color:#7fd3a3;font-weight:800} .q-bad{background:#c0463d;color:#fff;font-weight:800}
   /* 배치(커버리지) 행 */
   .covrow td{height:20px;font-size:10px;font-weight:700}
-  .covrow .colName{background:#fbf8f3;color:#9b8e7c;font-weight:700;font-size:10px}
-  .covrow .colDept{background:#fbf8f3}
-  .cc-ok{background:#e3f1e9;color:#3f9b6d} .cc-gap{background:#f5cfca;color:#9c3b34} .cc-none{background:#faf8f4;color:#ccc4b8}
+  .covrow .colName{background:#322e2b;color:var(--dim);font-weight:700;font-size:10px}
+  .covrow .colDept{background:#322e2b}
+  .cc-ok{background:rgba(95,191,138,.2);color:#7fd3a3} .cc-gap{background:#b3463d;color:#fff} .cc-none{background:var(--paper);color:#5a554f}
   /* 인라인 입력 */
-  .celledit{width:100%;height:28px;border:2px solid var(--accent);border-radius:4px;text-align:center;font-size:11px;font-family:inherit;background:#fffdf9;padding:0 2px}
-  .ov{position:fixed;inset:0;background:rgba(40,34,28,.45);display:none;align-items:center;justify-content:center;z-index:50;padding:16px}
+  .celledit{width:100%;height:28px;border:2px solid var(--accent);border-radius:4px;text-align:center;font-size:11px;font-family:inherit;background:#1f1c1a;color:var(--ink);padding:0 2px}
+  .ov{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center;z-index:50;padding:16px}
   .ov.on{display:flex}
   .modal{background:var(--paper);border-radius:14px;width:100%;max-width:440px;padding:22px;box-shadow:0 18px 50px rgba(0,0,0,.25);max-height:90vh;overflow:auto}
   .modal h3{font-size:16px;margin-bottom:4px}
   .modal p.sub{color:var(--dim);font-size:12px;margin-bottom:16px}
   label{display:block;font-size:12px;font-weight:600;color:var(--dim);margin:12px 0 5px}
-  select,input,textarea{width:100%;font-family:inherit;font-size:13px;padding:9px 11px;border:1px solid var(--line);border-radius:8px;background:#fcfaf7}
+  select,input,textarea{width:100%;font-family:inherit;font-size:13px;padding:9px 11px;border:1px solid var(--line);border-radius:8px;background:#1f1c1a;color:var(--ink)}
   select:focus,input:focus,textarea:focus{outline:none;border-color:var(--accent)}
   textarea{resize:vertical;min-height:60px}
   .row2{display:flex;gap:10px}.row2>div{flex:1}
@@ -108,12 +108,50 @@
   .reqlist th{background:var(--wk);padding:10px;font-size:12px}
   .reqlist td{padding:10px;text-align:left;font-size:12.5px}
   .badge{display:inline-block;font-size:11px;font-weight:700;padding:2px 9px;border-radius:20px}
-  .b-대기{background:#fdf3e0;color:var(--amber)} .b-승인{background:#e6f2ec;color:var(--green)} .b-반려{background:#fbeceb;color:var(--red)}
+  .b-대기{background:rgba(224,177,92,.18);color:#e0b15c} .b-승인{background:rgba(95,191,138,.18);color:#7fd3a3} .b-반려{background:rgba(224,114,106,.18);color:#e8908a}
   .mini{font-size:11px;padding:4px 9px;border-radius:6px}
   .empty{padding:40px;text-align:center;color:var(--dim)}
-  .hint{background:#fbf7ef;border:1px dashed var(--accent2);border-radius:10px;padding:10px 14px;font-size:12px;color:#7a6a52;margin-bottom:14px}
+  .hint{background:#322e2b;border:1px dashed var(--accent2);border-radius:10px;padding:10px 14px;font-size:12px;color:#bdb3a6;margin-bottom:14px}
   .editing-on{box-shadow:inset 0 0 0 2px var(--amber)}
   @media(max-width:640px){.colName{min-width:64px}.brand small{display:none}}
+  /* ===== 표는 밝게 — 다크 ERP 위에 올라간 밝은 카드(가독성 우선) ===== */
+  .tablecard{background:#fbf8f2;border:1px solid #cdbfa8;box-shadow:0 2px 14px rgba(0,0,0,.32)}
+  .tablecard table,.tablecard th,.tablecard td{border-color:#e3dccf;color:#2b2622}
+  .tablecard thead th{background:#efe7d8;color:#7a6f5f}
+  .tablecard .colDept,.tablecard .colName{background:#fbf8f2}
+  .tablecard .colDept{color:#9a7b4f}
+  .tablecard .deptcell{background:#efe7d8!important;color:#8a6a3a;border-right:2px solid #cdbfa8}
+  .tablecard .dept-crit{color:#8a8178}
+  .tablecard .deptfirst td{border-top:2px solid #cdbfa8}
+  .tablecard .sumcol{background:#efe7d8}
+  .tablecard .sh-work,.tablecard .sh-open,.tablecard .sh-close,.tablecard .sh-mid{color:#17130f}
+  .tablecard .t-휴,.tablecard .t-연차{background:#f7eef1;color:#b5577f}
+  .tablecard .t-반차{background:#efeaf7;color:#7a5cae}
+  .tablecard .t-공휴{background:#f7f1e3;color:#a9842f}
+  .tablecard .t-대휴{background:#e6f4ee;color:#2f8a68}
+  .tablecard .t-휴관{background:#fbeceb;color:#c0463d}
+  .tablecard .cc-ok{background:#e3f1e9;color:#2f8a5a}
+  .tablecard .cc-gap{background:#eeb6af;color:#8a2a22}
+  .tablecard .cc-none{background:#f3eee4;color:#b8ad9c}
+  .tablecard .covrow .colName{background:#f3eee4;color:#9b8e7c}
+  .tablecard .covrow .colDept{background:#f3eee4}
+  .tablecard .q-ok{background:#dcefe4;color:#1f6b42}
+  .tablecard .q-bad{background:#c0463d;color:#fff}
+  .tablecard .sum-warn{color:#c0463d}
+  .tablecard th.sun,.tablecard td.sun{background:#fbeceb}
+  .tablecard th.sat,.tablecard td.sat{background:#eef3fa}
+  .tablecard th.hol,.tablecard td.hol{background:#f6ecd8}
+  .tablecard th.today,.tablecard td.today{border-left-color:#c0392b!important;border-right-color:#c0392b!important}
+  .tablecard thead th.today{border-top-color:#c0392b!important}
+  #boardBody tr:last-child td.today{border-bottom-color:#c0392b!important}
+  .tablecard th.today{color:#c0392b}
+  #boardBody tr:hover td{background:#f3e7cf!important}
+  #boardBody tr:hover td.colName{background:#ece0c2!important}
+  .celledit{background:#fffdf9;color:#2b2622}
+  /* 신청내역 표도 밝게 */
+  .reqlist{background:#fbf8f2;border:1px solid #cdbfa8}
+  .reqlist th{background:#efe7d8;color:#7a6f5f}
+  .reqlist td{color:#2b2622;border-color:#e3dccf}
 </style>
 </head>
 <body>
