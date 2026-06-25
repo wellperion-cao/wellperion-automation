@@ -709,23 +709,62 @@ async def _fill_tags(page, tags: list[str]) -> None:
 
 async def _center_align_first_sticker(page, scope) -> None:
     """본문 맨 처음 스티커 컴포넌트에 가운데정렬 적용 (삽입 직후 1회).
-    JS로 첫 번째 se-sticker 컴포넌트를 찾아 text-align:center 주입.
+    근본 수정(2026-06-25): JS style.textAlign 직접 주입은 SmartEditor가 se-l-* 클래스로
+    정렬을 관리하므로 즉시 덮어써짐 → 동작 안 함.
+    올바른 방법: ① 스티커 컴포넌트 클릭해 선택 → ② 플로팅 툴바 가운데정렬 버튼 클릭.
+    플로팅 툴바 실패 시 폴백: se-l-center 클래스 직접 토글 + se-l-default 제거.
     실패해도 발행은 막지 않는다."""
     try:
-        applied = await scope.evaluate(
-            """() => {
-                const sticker = document.querySelector('.se-component.se-sticker');
-                if (!sticker) return false;
-                sticker.style.textAlign = 'center';
-                const inner = sticker.querySelector('.se-section, .se-module, .se-sticker-content');
-                if (inner) inner.style.textAlign = 'center';
-                return true;
-            }"""
-        )
-        if applied:
-            print("[INFO] 스티커 가운데정렬 적용 완료 (JS text-align:center)")
-        else:
+        # ① 첫 번째 스티커 컴포넌트를 클릭해 선택 상태로 만든다
+        sticker_loc = scope.locator('.se-component.se-sticker').first
+        if await sticker_loc.count() == 0:
             print("[WARN] 스티커 가운데정렬 — se-sticker 컴포넌트 미발견, 건너뜀")
+            return
+        await sticker_loc.click()
+        await page.wait_for_timeout(400)
+
+        # ② 플로팅 툴바 가운데정렬 버튼 클릭 시도
+        align_center_selectors = [
+            'button[data-name="align_center"]',
+            'button[data-log="align.center"]',
+            '.se-toolbar-floating button[data-name="align_center"]',
+            'button.se-align-button[data-value="center"]',
+            '.se-component-toolbar button[title*="가운데"]',
+            '.se-component-toolbar button[aria-label*="center"]',
+        ]
+        toolbar_clicked = False
+        for sel in align_center_selectors:
+            try:
+                btn = scope.locator(sel).first
+                if await btn.count() > 0 and await btn.is_visible():
+                    await btn.click()
+                    await page.wait_for_timeout(300)
+                    toolbar_clicked = True
+                    print(f"[INFO] 스티커 가운데정렬 — 플로팅 툴바 버튼 클릭 ({sel})")
+                    break
+            except Exception:
+                continue
+
+        if not toolbar_clicked:
+            # 폴백: se-l-center 클래스 토글 (SmartEditor 정렬 class 직접 조작)
+            applied = await scope.evaluate(
+                """() => {
+                    const sticker = document.querySelector('.se-component.se-sticker');
+                    if (!sticker) return false;
+                    sticker.classList.remove('se-l-default', 'se-l-left', 'se-l-right');
+                    sticker.classList.add('se-l-center');
+                    const section = sticker.querySelector('.se-section-sticker');
+                    if (section) {
+                        section.classList.remove('se-l-default', 'se-l-left', 'se-l-right');
+                        section.classList.add('se-l-center');
+                    }
+                    return true;
+                }"""
+            )
+            if applied:
+                print("[INFO] 스티커 가운데정렬 — 폴백 se-l-center 클래스 적용")
+            else:
+                print("[WARN] 스티커 가운데정렬 폴백도 실패 (발행 계속)")
     except Exception as e:
         print(f"[WARN] 스티커 가운데정렬 실패(발행 계속): {e}")
 
@@ -887,6 +926,36 @@ async def _insert_link_card(page, scope, url: str = LINK_CARD_CTA_URL) -> bool:
                 "() => document.querySelectorAll('.se-oglink-thumbnail img, .se-module-oglink img').length"
             )
             print(f"[INFO] 링크 카드 삽입 성공 — og:image 썸네일: {'있음' if thumb_cnt > 0 else '로딩중/없음'} ({thumb_cnt}개)")
+            # 근본 수정(2026-06-25 버그B): oglink 카드 변환 후에도 URL 텍스트 문단이 잔류함.
+            url_domain = url.split("//")[-1].split("/")[0]
+            removed = await scope.evaluate(
+                """(domain) => {
+                    let removed = 0;
+                    const paras = document.querySelectorAll('p.se-text-paragraph, .se-text-paragraph');
+                    paras.forEach(p => {
+                        const txt = p.textContent || '';
+                        if (txt.includes(domain) && (txt.includes('http') || txt.includes('://') || txt.includes('inquiry'))) {
+                            let node = p;
+                            while (node && node.parentElement) {
+                                if (node.classList && node.classList.contains('se-component')) {
+                                    node.parentElement.removeChild(node);
+                                    removed++;
+                                    return;
+                                }
+                                node = node.parentElement;
+                            }
+                            p.parentElement && p.parentElement.removeChild(p);
+                            removed++;
+                        }
+                    });
+                    return removed;
+                }""",
+                url_domain
+            )
+            if removed > 0:
+                print(f"[INFO] 링크 카드 URL 텍스트 잔류 제거 완료 ({removed}개 문단)")
+            else:
+                print("[INFO] 링크 카드 URL 텍스트 잔류 없음 (정상)")
         else:
             print("[WARN] 링크 카드 컴포넌트 미감지 (5초 대기 후) — 평문 URL로 폴백")
         return detected
@@ -984,6 +1053,78 @@ async def run_draft(args: argparse.Namespace) -> int:
         await page.wait_for_timeout(3000)
         await page.screenshot(path=str(shot))
         print(f"[INFO] 임시등록 완료 — 스크린샷 {shot}")
+        # ── 임시저장 직후 DOM 검증 ──
+        try:
+            _ev_dir = EVIDENCE_DIR
+            await page.evaluate("window.scrollTo(0,0)")
+            await page.wait_for_timeout(400)
+            await page.screenshot(path=str(_ev_dir / "reverify_cafe_top.png"), full_page=False)
+            print("[REVERIFY-SNAP] reverify_cafe_top.png")
+            _body300 = await page.evaluate("""
+(function(){
+    var paras = document.querySelectorAll('.se-text-paragraph');
+    var out = '';
+    for(var i=0;i<paras.length;i++){ out += (paras[i].innerText||'') + '\\n'; }
+    return out.slice(0,300);
+})()
+""")
+            print(f"[REVERIFY-A] 카페 본문 첫 300자:\n{_body300}")
+            _sub_adj = await page.evaluate("""
+(function(){
+    var comps = Array.from(document.querySelectorAll('.se-component'));
+    var res = [];
+    comps.forEach(function(c,i){
+        var t = c.innerText||'';
+        if(t.indexOf('▍')!==-1){
+            var nxt = comps[i+1];
+            res.push({
+                subtitle: t.trim().slice(0,60),
+                nextText: nxt?(nxt.innerText||'').trim().slice(0,80):'(없음)',
+                nextEmpty: nxt?((nxt.innerText||'').trim()===''):true
+            });
+        }
+    });
+    return res;
+})()
+""")
+            import json as _json
+            print(f"[REVERIFY-B] 소제목-내용 인접:\n{_json.dumps(_sub_adj, ensure_ascii=False, indent=2)}")
+            _url_txt = await page.evaluate("""
+(function(){
+    var paras = document.querySelectorAll('.se-text-paragraph');
+    var found = [];
+    for(var i=0;i<paras.length;i++){
+        var t = paras[i].innerText||'';
+        if(t.indexOf('wellperion.com/ko/inquiry')!==-1){ found.push(t.trim().slice(0,120)); }
+    }
+    return found;
+})()
+""")
+            print(f"[REVERIFY-C] URL 텍스트 잔류: {_url_txt}")
+            _stk = await page.evaluate("""
+(function(){
+    var ss = document.querySelectorAll('.se-sticker');
+    var out=[];
+    for(var i=0;i<ss.length;i++){ out.push({idx:i,cls:ss[i].className}); }
+    return out;
+})()
+""")
+            print(f"[REVERIFY-D] 스티커 class: {_stk}")
+            _tags = await page.evaluate("""
+(function(){
+    var chips = document.querySelectorAll('.tag_item .tag_name, .tag_item, [class*="tag_item"]');
+    var out = [];
+    chips.forEach(function(el){ var t=(el.innerText||'').trim(); if(t && t!=='x' && t!=='×') out.push(t); });
+    return out;
+})()
+""")
+            print(f"[REVERIFY-E] 카페 태그: {_tags}")
+            await page.evaluate("window.scrollTo(0,700)")
+            await page.wait_for_timeout(500)
+            await page.screenshot(path=str(_ev_dir / "reverify_cafe_mid.png"), full_page=False)
+            print("[REVERIFY-SNAP] reverify_cafe_mid.png")
+        except Exception as _re:
+            print(f"[WARN] reverify DOM 추출 실패(무시): {_re}")
     except Exception as e:
         await page.screenshot(path=str(shot.with_suffix(".error.png")))
         print(f"[ERROR] draft 실패: {e}")

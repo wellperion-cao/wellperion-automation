@@ -135,7 +135,7 @@ def normalize_body(body: str, for_cafe: bool = False) -> tuple[str, list[str]]:
     for_cafe=True 이면 본문에서 해시태그 줄을 제거하고 태그 리스트만 반환.
 
     적용 규칙:
-    ① 소제목(▍) 다음 줄이 바로 내용이면 빈 줄 1개 삽입 (소제목 아래 구조 보장)
+    ① 소제목(▍) 다음 빈 줄을 제거해 내용이 '바로 아랫줄'에 오게 (GM 2026-06-25)
     ② 인라인 CTA 줄(wellperion.com/ko/inquiry 포함) 제거 (링크카드가 단일 CTA)
     ③ 해시태그 정렬·#스포츠클럽→#종합스포츠클럽 치환
     ④ 카페: 본문에서 해시태그 줄 제거 + 태그 리스트 반환
@@ -155,11 +155,13 @@ def normalize_body(body: str, for_cafe: bool = False) -> tuple[str, list[str]]:
             i += 1
             continue
         out.append(ln)
-        # 소제목 다음에 바로 내용(비어있지 않은 줄)이 오면 빈 줄 삽입
-        if _SUBHEADING_RE.match(ln) and i + 1 < len(lines):
-            next_ln = lines[i + 1]
-            if next_ln.strip() and not _SUBHEADING_RE.match(next_ln):
-                out.append("")  # 빈 줄 삽입
+        # 소제목이면 그 다음 빈 줄을 건너뛰어 내용이 '바로 아랫줄'에 오게 (GM 2026-06-25)
+        if _SUBHEADING_RE.match(ln):
+            j = i + 1
+            while j < len(lines) and not lines[j].strip():
+                j += 1
+            i = j
+            continue
         i += 1
 
     # ③ 해시태그 정렬·치환
@@ -169,13 +171,9 @@ def normalize_body(body: str, for_cafe: bool = False) -> tuple[str, list[str]]:
         if _HASHTAG_LINE_RE.match(ln.strip()):
             normalized = _normalize_hashtags(ln.strip())
             extracted_tags = re.findall(r"#\S+", normalized)
-            if for_cafe:
-                # ④ 카페: 본문에서 해시태그 줄 제거
-                pass
-            else:
-                result_lines.append(normalized)
-        else:
-            result_lines.append(ln)
+            # 블로그·카페 모두 본문에서 해시태그 제거 → 카페=태그칸 / 블로그=발행 태그칸 (GM 2026-06-25)
+            continue
+        result_lines.append(ln)
 
     # 연속 빈 줄 2개 이상 → 1개로 압축 (CTA 줄 제거 후 공백 잔상 방지)
     collapsed: list[str] = []

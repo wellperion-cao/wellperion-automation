@@ -199,14 +199,15 @@ IMAGE_EXTS = (".jpg", ".jpeg", ".png")
 # 본문 조립 — body-file(가공완료 최종본) + 제목. (feedback_final_content_only_for_publish)
 # -----------------------------------------------------------------
 class BlogPost:
-    __slots__ = ("title", "body", "image_paths", "sticker_count", "link_card_url")
+    __slots__ = ("title", "body", "image_paths", "sticker_count", "link_card_url", "tags")
 
-    def __init__(self, title: str, body: str, image_paths: list[Path], sticker_count: int = STICKER_COUNT_DEFAULT, link_card_url: str = "") -> None:
+    def __init__(self, title: str, body: str, image_paths: list[Path], sticker_count: int = STICKER_COUNT_DEFAULT, link_card_url: str = "", tags: list[str] | None = None) -> None:
         self.title = title
         self.body = body
         self.image_paths = image_paths
         self.sticker_count = sticker_count
         self.link_card_url = link_card_url or LINK_CARD_CTA_URL
+        self.tags = tags or []  # # 포함 형태(예: ['#한남동골프', '#WELLPERION'])
 
 
 def load_body(body_file: Path | None, body_inline: str | None) -> str:
@@ -278,7 +279,7 @@ def build_post(args: argparse.Namespace) -> BlogPost:
     images = collect_images(image_dir, args.image_glob)
     images = append_cta_card(images)  # 4채널 마지막 이미지로 문의 CTA 카드(IG 제외)
     sticker_count = getattr(args, "sticker_count", STICKER_COUNT_DEFAULT)
-    return BlogPost(title, body, images, sticker_count, _link_card_url)
+    return BlogPost(title, body, images, sticker_count, _link_card_url, _tags)
 
 
 def validate_post(post: BlogPost, require_images: bool) -> list[str]:
@@ -731,23 +732,64 @@ async def _insert_one_sticker_at_caret(page, target, label: str) -> int:
 
 async def _center_align_first_sticker(page, target) -> None:
     """본문 맨 처음 스티커 컴포넌트에 가운데정렬 적용 (삽입 직후 1회).
-    JS로 첫 번째 se-sticker 컴포넌트를 찾아 text-align:center 주입.
+    근본 수정(2026-06-25): JS style.textAlign 직접 주입은 SmartEditor가 se-l-* 클래스로
+    정렬을 관리하므로 즉시 덮어써짐 → 동작 안 함.
+    올바른 방법: ① 스티커 컴포넌트 클릭해 선택 → ② 플로팅 툴바 가운데정렬 버튼 클릭.
+    플로팅 툴바 실패 시 폴백: se-l-center 클래스 직접 토글 + se-l-default 제거.
     실패해도 발행은 막지 않는다."""
     try:
-        applied = await target.evaluate(
-            """() => {
-                const sticker = document.querySelector('.se-component.se-sticker');
-                if (!sticker) return false;
-                sticker.style.textAlign = 'center';
-                const inner = sticker.querySelector('.se-section, .se-module, .se-sticker-content');
-                if (inner) inner.style.textAlign = 'center';
-                return true;
-            }"""
-        )
-        if applied:
-            print("[INFO] 스티커 가운데정렬 적용 완료 (JS text-align:center)")
-        else:
+        # ① 첫 번째 스티커 컴포넌트를 클릭해 선택 상태로 만든다
+        sticker_loc = target.locator('.se-component.se-sticker').first
+        if await sticker_loc.count() == 0:
             print("[WARN] 스티커 가운데정렬 — se-sticker 컴포넌트 미발견, 건너뜀")
+            return
+        await sticker_loc.click()
+        await page.wait_for_timeout(400)
+
+        # ② 플로팅 툴바 가운데정렬 버튼 클릭 시도
+        # SmartEditor 플로팅 툴바 정렬 버튼 셀렉터 (실측 클래스명)
+        align_center_selectors = [
+            'button[data-name="align_center"]',
+            'button[data-log="align.center"]',
+            '.se-toolbar-floating button[data-name="align_center"]',
+            'button.se-align-button[data-value="center"]',
+            '.se-component-toolbar button[title*="가운데"]',
+            '.se-component-toolbar button[aria-label*="center"]',
+        ]
+        toolbar_clicked = False
+        for sel in align_center_selectors:
+            try:
+                btn = target.locator(sel).first
+                if await btn.count() > 0 and await btn.is_visible():
+                    await btn.click()
+                    await page.wait_for_timeout(300)
+                    toolbar_clicked = True
+                    print(f"[INFO] 스티커 가운데정렬 — 플로팅 툴바 버튼 클릭 ({sel})")
+                    break
+            except Exception:
+                continue
+
+        if not toolbar_clicked:
+            # 폴백: se-l-center 클래스 토글 (SmartEditor 정렬 class 직접 조작)
+            applied = await target.evaluate(
+                """() => {
+                    const sticker = document.querySelector('.se-component.se-sticker');
+                    if (!sticker) return false;
+                    sticker.classList.remove('se-l-default', 'se-l-left', 'se-l-right');
+                    sticker.classList.add('se-l-center');
+                    // section 내부도 동일하게
+                    const section = sticker.querySelector('.se-section-sticker');
+                    if (section) {
+                        section.classList.remove('se-l-default', 'se-l-left', 'se-l-right');
+                        section.classList.add('se-l-center');
+                    }
+                    return true;
+                }"""
+            )
+            if applied:
+                print("[INFO] 스티커 가운데정렬 — 폴백 se-l-center 클래스 적용")
+            else:
+                print("[WARN] 스티커 가운데정렬 폴백도 실패 (발행 계속)")
     except Exception as e:
         print(f"[WARN] 스티커 가운데정렬 실패(발행 계속): {e}")
 
@@ -826,6 +868,40 @@ async def _insert_link_card(page, target, url: str = LINK_CARD_CTA_URL) -> bool:
                 "() => document.querySelectorAll('.se-oglink-thumbnail img, .se-module-oglink img').length"
             )
             print(f"[INFO] 링크 카드 삽입 성공 — og:image 썸네일: {'있음' if thumb_cnt > 0 else '로딩중/없음'} ({thumb_cnt}개)")
+            # 근본 수정(2026-06-25 버그B): oglink 카드 변환 후에도 URL 텍스트 문단이 잔류함.
+            # URL 입력 줄(se-text-paragraph 중 해당 URL 텍스트 포함 노드)을 찾아 삭제한다.
+            url_domain = url.split("//")[-1].split("/")[0]  # e.g. 'wellperion.com'
+            removed = await target.evaluate(
+                """(domain) => {
+                    let removed = 0;
+                    // se-text-paragraph 중 URL 도메인 텍스트를 포함한 문단 제거
+                    const paras = document.querySelectorAll('p.se-text-paragraph, .se-text-paragraph');
+                    paras.forEach(p => {
+                        const txt = p.textContent || '';
+                        if (txt.includes(domain) && (txt.includes('http') || txt.includes('://') || txt.includes('inquiry'))) {
+                            // 상위 se-component(텍스트 컴포넌트)까지 올라가 제거
+                            let node = p;
+                            while (node && node.parentElement) {
+                                if (node.classList && node.classList.contains('se-component')) {
+                                    node.parentElement.removeChild(node);
+                                    removed++;
+                                    return;
+                                }
+                                node = node.parentElement;
+                            }
+                            // se-component 못 찾으면 문단 자체 제거
+                            p.parentElement && p.parentElement.removeChild(p);
+                            removed++;
+                        }
+                    });
+                    return removed;
+                }""",
+                url_domain
+            )
+            if removed > 0:
+                print(f"[INFO] 링크 카드 URL 텍스트 잔류 제거 완료 ({removed}개 문단)")
+            else:
+                print("[INFO] 링크 카드 URL 텍스트 잔류 없음 (정상)")
         else:
             print("[WARN] 링크 카드 컴포넌트 미감지 (5초 대기 후) — 평문 URL로 폴백")
         return detected
@@ -932,6 +1008,28 @@ async def run_draft(args: argparse.Namespace) -> int:
     page = await context.new_page()
     try:
         await _enter_write_and_fill(page, post, args.blog_id)
+        # 편집화면 상단 캡처 — 버그 수정 라이브 검증용 (2026-06-25)
+        _verify_shot = EVIDENCE_DIR / "blog_fix_verify_top.png"
+        try:
+            # DOM 검증 — 버그A: 스티커 정렬 class / 버그B: URL 텍스트 잔류
+            _sticker_class = await page.evaluate(
+                "() => { const s = document.querySelector('.se-component.se-sticker'); return s ? s.className : 'NOT_FOUND'; }"
+            )
+            _url_remain = await page.evaluate(
+                "() => { const paras = [...document.querySelectorAll('.se-text-paragraph')]; "
+                "return paras.filter(p => p.textContent.includes('inquiry')).map(p => p.textContent.trim().slice(0,80)); }"
+            )
+            print(f"[VERIFY-A] 스티커 컴포넌트 class: {_sticker_class}")
+            print(f"[VERIFY-B] 본문 내 'inquiry' 포함 문단: {_url_remain}")
+            # 편집화면 iframe 내부 첫 스티커 컴포넌트를 뷰포트에 맞춰 스크롤 후 스크린샷
+            await page.evaluate(
+                "() => { const s = document.querySelector('.se-component.se-sticker'); if (s) s.scrollIntoView({block:'start'}); else window.scrollTo(0,0); }"
+            )
+            await page.wait_for_timeout(600)
+            await page.screenshot(path=str(_verify_shot), full_page=False)
+            print(f"[INFO] 편집화면 상단 스크린샷 저장 → {_verify_shot}")
+        except Exception as _ve:
+            print(f"[WARN] 검증 스크린샷 실패(무시): {_ve}")
         # 임시저장
         save_loc, save_sel = await _first_locator(page, SAVE_DRAFT_SELECTORS)
         if save_loc is None:
@@ -942,6 +1040,85 @@ async def run_draft(args: argparse.Namespace) -> int:
         await page.wait_for_timeout(3000)
         await page.screenshot(path=str(shot))
         print(f"[INFO] 임시저장 완료 — 스크린샷 {shot}")
+        # ── 임시저장 직후 DOM 검증 (에디터 페이지 유지 상태) ──
+        try:
+            _ev_dir = EVIDENCE_DIR
+            # 맨위 스크린샷
+            await page.evaluate("window.scrollTo(0,0)")
+            await page.wait_for_timeout(400)
+            await page.screenshot(path=str(_ev_dir / "reverify_blog_top.png"), full_page=False)
+            print(f"[REVERIFY-SNAP] reverify_blog_top.png")
+            # A) 본문 첫 300자
+            _body300 = await page.evaluate("""
+(function(){
+    var paras = document.querySelectorAll('.se-text-paragraph');
+    var out = '';
+    for(var i=0;i<paras.length;i++){ out += (paras[i].innerText||'') + '\\n'; }
+    return out.slice(0,300);
+})()
+""")
+            print(f"[REVERIFY-A] 본문 첫 300자:\n{_body300}")
+            # B) 소제목 다음 노드 인접 여부
+            _sub_adj = await page.evaluate("""
+(function(){
+    var comps = Array.from(document.querySelectorAll('.se-component'));
+    var res = [];
+    comps.forEach(function(c,i){
+        var t = c.innerText||'';
+        if(t.indexOf('▍')!==-1){
+            var nxt = comps[i+1];
+            res.push({
+                subtitle: t.trim().slice(0,60),
+                nextText: nxt?(nxt.innerText||'').trim().slice(0,80):'(없음)',
+                nextEmpty: nxt?((nxt.innerText||'').trim()===''):true
+            });
+        }
+    });
+    return res;
+})()
+""")
+            import json as _json
+            print(f"[REVERIFY-B] 소제목-내용 인접:\n{_json.dumps(_sub_adj, ensure_ascii=False, indent=2)}")
+            # C) URL 텍스트 잔류
+            _url_txt = await page.evaluate("""
+(function(){
+    var paras = document.querySelectorAll('.se-text-paragraph');
+    var found = [];
+    for(var i=0;i<paras.length;i++){
+        var t = paras[i].innerText||'';
+        if(t.indexOf('wellperion.com/ko/inquiry')!==-1){ found.push(t.trim().slice(0,120)); }
+    }
+    return found;
+})()
+""")
+            print(f"[REVERIFY-C] URL 텍스트 잔류: {_url_txt}")
+            # D) 스티커 class
+            _stk_cls = await page.evaluate("""
+(function(){
+    var ss = document.querySelectorAll('.se-sticker');
+    var out=[];
+    for(var i=0;i<ss.length;i++){ out.push({idx:i,cls:ss[i].className}); }
+    return out;
+})()
+""")
+            print(f"[REVERIFY-D] 스티커 class: {_stk_cls}")
+            # 임시저장 개수 배지
+            _draft_badge = await page.evaluate("""
+(function(){
+    var els = document.querySelectorAll('[class*="save"] [class*="count"], [class*="draft"] [class*="count"], .save_count, .draft_count');
+    var out=[];
+    els.forEach(function(e){ out.push(e.innerText||e.textContent); });
+    return out;
+})()
+""")
+            print(f"[REVERIFY-DRAFT-COUNT] 배지: {_draft_badge}")
+            # 중간 스크린샷
+            await page.evaluate("window.scrollTo(0,700)")
+            await page.wait_for_timeout(500)
+            await page.screenshot(path=str(_ev_dir / "reverify_blog_mid.png"), full_page=False)
+            print(f"[REVERIFY-SNAP] reverify_blog_mid.png")
+        except Exception as _re:
+            print(f"[WARN] reverify DOM 추출 실패(무시): {_re}")
     except Exception as e:
         await page.screenshot(path=str(shot.with_suffix(".error.png")))
         print(f"[ERROR] draft 실패: {e}")
@@ -954,6 +1131,126 @@ async def run_draft(args: argparse.Namespace) -> int:
     telegram_report(f"네이버 블로그 임시저장 완료\n제목: {post.title}")
     print("[INFO] === DRAFT 완료 (발행 안 함 — 사람 검수 게이트) ===")
     return 0
+
+
+# -----------------------------------------------------------------
+# 발행 레이어 태그 입력 (publish 모드 전용)
+# -----------------------------------------------------------------
+# 네이버 블로그 발행 설정 레이어(카테고리·공개설정·태그편집)에만 태그칸 존재.
+# 태그 입력 필드 셀렉터 후보 (실측 PoC 2026-06-25):
+PUBLISH_TAG_INPUT_SELECTORS = [
+    "input#tag-input",
+    ".tag_input input",
+    "input[placeholder*='태그']",
+    ".se_tag_area input",
+    ".publish_layer input[type='text']",
+    "div[class*='tag'] input",
+    "input[class*='tag']",
+]
+# 공개설정 전체공개 셀렉터 (발행 레이어 내)
+PUBLISH_PUBLIC_SELECTORS = [
+    "input#open-type-all",
+    "label[for='open-type-all']",
+    "input[value='all']",
+]
+
+
+async def _fill_publish_tags(page, tags: list[str]) -> int:
+    """발행 설정 레이어가 열린 상태에서 태그 입력칸을 찾아 tags 를 한 개씩 입력.
+    태그는 # 없는 텍스트로 입력 후 Enter(네이버 방식). 입력된 태그 수 반환.
+    실패해도 발행은 막지 않음(WARN 출력 후 0 반환)."""
+    if not tags:
+        return 0
+
+    EVIDENCE_DIR.mkdir(parents=True, exist_ok=True)
+    # 발행 레이어 스크린샷 (태그칸 PoC 증거)
+    try:
+        await page.screenshot(path=str(EVIDENCE_DIR / "blog_publish_tag_field.png"))
+        print(f"[INFO] 발행 레이어 스크린샷 저장 → {EVIDENCE_DIR / 'blog_publish_tag_field.png'}")
+    except Exception:
+        pass
+
+    # 태그 입력 필드 탐색
+    tag_input = None
+    found_sel = None
+    for sel in PUBLISH_TAG_INPUT_SELECTORS:
+        try:
+            loc = page.locator(sel).first
+            if await loc.count() > 0:
+                # 가시성 확인
+                if await loc.is_visible():
+                    tag_input = loc
+                    found_sel = sel
+                    print(f"[INFO] 태그 입력칸 발견: {sel!r}")
+                    break
+        except Exception:
+            continue
+
+    if tag_input is None:
+        # 폴백: DOM 전체에서 input type=text 탐색 + 위치 기반 후보
+        print("[WARN] 표준 태그 셀렉터 미발견 — DOM input 전수 탐색")
+        try:
+            # 발행 레이어 내부의 모든 text input 수집
+            inputs_info = await page.evaluate("""
+() => {
+    const inputs = [...document.querySelectorAll('input[type="text"], input:not([type])')];
+    return inputs.map((inp, i) => ({
+        idx: i,
+        id: inp.id || '',
+        name: inp.name || '',
+        placeholder: inp.placeholder || '',
+        className: inp.className || '',
+        visible: inp.offsetParent !== null,
+        rect: (() => { const r = inp.getBoundingClientRect(); return {top: Math.round(r.top), left: Math.round(r.left), w: Math.round(r.width)}; })()
+    }));
+}
+""")
+            print(f"[INFO] DOM input 후보:\n{inputs_info}")
+        except Exception as e:
+            print(f"[WARN] DOM input 탐색 실패: {e}")
+        print("[WARN] 태그 입력칸 미발견 — 태그 입력 건너뜀 (발행 계속)")
+        return 0
+
+    # 공개설정 전체공개 확인
+    for pub_sel in PUBLISH_PUBLIC_SELECTORS:
+        try:
+            pub_loc = page.locator(pub_sel).first
+            if await pub_loc.count() > 0:
+                await pub_loc.click(force=True)
+                print(f"[INFO] 공개설정 전체공개 확인 ({pub_sel!r})")
+                await page.wait_for_timeout(300)
+                break
+        except Exception:
+            continue
+
+    # 태그 # 제거 후 한 개씩 입력 + Enter
+    inserted = 0
+    for raw_tag in tags:
+        tag_text = raw_tag.lstrip("#").strip()
+        if not tag_text:
+            continue
+        try:
+            await tag_input.click()
+            await page.wait_for_timeout(200)
+            await tag_input.fill("")  # 기존 내용 초기화
+            await page.keyboard.type(tag_text, delay=30)
+            await page.wait_for_timeout(300)
+            await page.keyboard.press("Enter")
+            await page.wait_for_timeout(400)
+            inserted += 1
+            print(f"[INFO] 태그 입력: #{tag_text}")
+        except Exception as e:
+            print(f"[WARN] 태그 입력 실패 (#{tag_text}): {e}")
+
+    # 태그 입력 후 스크린샷 (증거)
+    try:
+        await page.screenshot(path=str(EVIDENCE_DIR / "blog_publish_tags_filled.png"))
+        print(f"[INFO] 태그 입력 완료 스크린샷 → {EVIDENCE_DIR / 'blog_publish_tags_filled.png'}")
+    except Exception:
+        pass
+
+    print(f"[INFO] 태그 입력 완료: {inserted}/{len(tags)}개 ({found_sel!r})")
+    return inserted
 
 
 # -----------------------------------------------------------------
@@ -989,26 +1286,90 @@ async def run_publish(args: argparse.Namespace) -> int:
             raise RuntimeError("발행 버튼 미발견")
         await trig_loc.click(force=True)
         print(f"[INFO] 발행 패널 진입 ({trig_sel!r})")
-        await page.wait_for_timeout(1500)
+        await page.wait_for_timeout(2000)  # 발행 레이어 완전 로딩 대기
+
+        # ── 발행 설정 레이어 내 태그 입력 ──────────────────────────
+        if post.tags:
+            print(f"[INFO] 태그 {len(post.tags)}개 입력 시작: {post.tags}")
+            await _fill_publish_tags(page, post.tags)
+        else:
+            print("[INFO] 태그 없음 — 태그 입력 건너뜀")
+
+        # ── 발행 직전 스크린샷 (증거) ───────────────────────────────
+        try:
+            await page.screenshot(path=str(EVIDENCE_DIR / "blog_publish_before_confirm.png"))
+            print(f"[INFO] 발행 직전 스크린샷 → {EVIDENCE_DIR / 'blog_publish_before_confirm.png'}")
+        except Exception:
+            pass
+
+        # ── 최종 발행 확인 버튼 클릭 ────────────────────────────────
+        # 태그 입력 후 발행 확인 버튼 재탐색 (레이어 구조상 동일 버튼이나 태그 입력 후 재확인)
         conf_loc, conf_sel = await _first_locator(page, PUBLISH_CONFIRM_SELECTORS)
         if conf_loc is None:
             raise RuntimeError("발행 확인 버튼 미발견")
         await conf_loc.click(force=True)
         print(f"[INFO] 발행 확인 클릭 ({conf_sel!r})")
-        await page.wait_for_timeout(5000)
+        await page.wait_for_timeout(6000)  # 발행 완료 + 리다이렉트 대기
+
+        # ── 발행 완료 스크린샷 ──────────────────────────────────────
         await page.screenshot(path=str(shot))
         print(f"[INFO] 발행 완료 — 스크린샷 {shot}")
-        # 발행 후 현재 페이지 URL 회수 시도 (감시기 post_url 기록용)
-        # 네이버 블로그는 발행 후 게시물 URL로 이동하는 경우가 있어 현재 URL 확인.
-        # URL 취득 불가 시에도 발행 성공 사실은 exit code 0 으로 전달.
+
+        # ── 공개 글 URL 회수 ─────────────────────────────────────────
+        # 네이버 블로그 발행 후 이동 패턴:
+        #   - blog.naver.com/wellperion/{postNo}  (일반 뷰)
+        #   - blog.naver.com/PostView.naver?...   (구형)
+        #   - blog.naver.com/wellperion/postview/... (신형)
+        # URL이 에디터 페이지에 머물면 history 탐색도 시도.
+        post_url = ""
         try:
             current_url = page.url
-            if current_url and "blog.naver.com" in current_url and "/postview" in current_url.lower():
-                print(f"post A: {current_url}")
+            # 발행 후 에디터 URL에 머물러 있을 경우 — 잠시 더 대기
+            if "postwrite" in current_url or "PostWriteForm" in current_url:
+                await page.wait_for_timeout(3000)
+                current_url = page.url
+            if current_url and "blog.naver.com" in current_url and "postwrite" not in current_url:
+                post_url = current_url
+                print(f"[INFO] 공개 글 URL (자동 이동): {post_url}")
             else:
-                print("post A: (naver-url-회수불가)")
-        except Exception:
-            print("post A: (naver-url-회수불가)")
+                # 직접 최신 게시물 URL 탐색: wellperion 블로그 목록 첫 번째 글 URL 추출
+                print("[INFO] 자동 이동 없음 — 블로그 목록에서 최신 글 URL 탐색")
+                await page.goto(
+                    f"https://blog.naver.com/{args.blog_id or DEFAULT_BLOG_ID}",
+                    wait_until="domcontentloaded", timeout=15000
+                )
+                await page.wait_for_timeout(2000)
+                # 최신 글 링크 추출
+                latest_url = await page.evaluate(r"""
+() => {
+    // 블로그 목록 최신 글 앵커 탐색 (다양한 레이아웃 대응)
+    const candidates = [
+        ...document.querySelectorAll('a[href*="/wellperion/"]'),
+        ...document.querySelectorAll('a[href*="PostView"]'),
+    ];
+    for (const a of candidates) {
+        const href = a.href || '';
+        // 숫자 postNo 패턴: /wellperion/숫자
+        if (/blog\.naver\.com\/wellperion\/\d+/.test(href)) return href;
+        if (/blog\.naver\.com\/PostView/.test(href)) return href;
+    }
+    return '';
+}
+""")
+                if latest_url and "blog.naver.com" in latest_url:
+                    post_url = latest_url
+                    print(f"[INFO] 공개 글 URL (목록 탐색): {post_url}")
+                    await page.screenshot(path=str(EVIDENCE_DIR / "blog_publish_after_list.png"))
+                else:
+                    print("[WARN] 공개 글 URL 자동 회수 실패 — 블로그 관리자에서 직접 확인 필요")
+        except Exception as _ue:
+            print(f"[WARN] URL 회수 실패(무시): {_ue}")
+
+        # stdout 에 단일 발행 URL 출력 (파싱 기준선)
+        if post_url:
+            print(f"post_url: {post_url}")
+        else:
+            print("post_url: (회수불가)")
     except Exception as e:
         await page.screenshot(path=str(shot.with_suffix(".error.png")))
         print(f"[ERROR] publish 실패: {e}")
