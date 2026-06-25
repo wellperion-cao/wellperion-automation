@@ -281,7 +281,7 @@ a.funnel-step:hover{background:rgba(183,159,138,0.08);color:var(--accent)}
 .cal-day-label:first-child{color:rgba(237,91,63,0.7)}
 .cal-day-label:last-child{color:rgba(91,159,213,0.7)}
 .cal-cell{
-  min-height:68px;background:var(--paper);
+  min-height:88px;background:var(--paper);
   border:1px solid var(--border);
   border-radius:8px;padding:6px 7px;
   cursor:default;
@@ -305,6 +305,8 @@ a.funnel-step:hover{background:rgba(183,159,138,0.08);color:var(--accent)}
 }
 .cal-chip.tour{background:var(--purple-bg);color:var(--purple);border:1px solid var(--purple-border)}
 .cal-chip.experience{background:var(--teal-bg);color:var(--teal);border:1px solid var(--teal-border)}
+.cal-chip .cc-l1{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cal-chip .cc-l2{font-size:9px;font-weight:600;opacity:0.9;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
 /* ── 클릭된 날 패널 ── */
 .day-panel{
@@ -634,35 +636,6 @@ a.funnel-step:hover{background:rgba(183,159,138,0.08);color:var(--accent)}
 @media(max-width:520px){.dash-grid{grid-template-columns:1fr}}
 
 /* ═══════════════════════════════════════
-   금일 / 이번달 예약자 정리
-   ═══════════════════════════════════════ */
-.resv-split{display:grid;grid-template-columns:1fr 1fr;gap:18px}
-.resv-col-head{
-  font-size:12px;font-weight:700;color:var(--accent);
-  margin-bottom:10px;padding-bottom:8px;
-  border-bottom:1px solid var(--border-subtle);
-  display:flex;align-items:center;gap:8px;
-}
-.resv-count{
-  font-size:11px;font-weight:700;padding:1px 8px;border-radius:10px;
-  background:var(--accent-bg);color:var(--accent);border:1px solid var(--accent-border);
-}
-.resv-list{max-height:300px;overflow-y:auto}
-.resv-item{
-  display:flex;align-items:center;gap:8px;
-  padding:8px 2px;border-bottom:1px solid var(--border-subtle);font-size:12.5px;
-}
-.resv-item:last-child{border-bottom:none}
-.resv-item-date{font-size:11px;font-weight:700;color:var(--dim-mid);min-width:42px;flex-shrink:0}
-.resv-kind{font-size:10px;font-weight:700;padding:2px 7px;border-radius:8px;white-space:nowrap;flex-shrink:0}
-.resv-kind.tour{background:var(--purple-bg);color:var(--purple);border:1px solid var(--purple-border)}
-.resv-kind.experience{background:var(--teal-bg);color:var(--teal);border:1px solid var(--teal-border)}
-.resv-name{font-weight:700}
-.resv-status{font-size:11px;color:var(--dim-mid);margin-left:auto;flex-shrink:0}
-.resv-empty{font-size:12px;color:var(--dim);padding:18px 0;text-align:center}
-@media(max-width:520px){.resv-split{grid-template-columns:1fr;gap:14px}}
-
-/* ═══════════════════════════════════════
    인쇄
    ═══════════════════════════════════════ */
 @media print{
@@ -717,7 +690,44 @@ a.funnel-step:hover{background:rgba(183,159,138,0.08);color:var(--accent)}
   .cal-nav-btn{width:40px;height:40px}
 }
 </style>
-<script src="../../_assets/gate.js" charset="utf-8"></script>
+<script>
+/* 문의회원 전용 입장 게이트 — 서버검증형. 입장 비번 = 서버 ACCESS_TOKEN(소스에 없음).
+   맞으면 토큰 저장 → 데이터 전체(성함·전화) 표시 / 틀리면 입장 차단. 2026-06-25 시토·GM.
+   ※ 공용 커튼(_assets/gate.js)과 달리 로컬 비교 안 함 — 서버(pii_status?key=)가 판정. */
+(function(){
+  "use strict";
+  var SKEY="mi_gate_ok";
+  var EXEC="https://script.google.com/macros/s/AKfycbzdwSCCSSJ6JXLDoWuo7HG0JmBM2iy10TujFQ_O5JbTjnWaN7gOk-ddA4IAvsNfelg0xA/exec";
+  try { if (sessionStorage.getItem(SKEY)==="1") return; } catch(e){}
+  var root=document.documentElement;
+  var st=document.createElement("style"); st.setAttribute("data-mi-gate","");
+  st.textContent="body{visibility:hidden!important}#miGate{visibility:visible!important}#miGate{position:fixed;inset:0;z-index:2147483647;display:flex;align-items:center;justify-content:center;background:linear-gradient(180deg,#262524,#1a1918);padding:20px;font-family:'Pretendard',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}#miGate .gc{background:#2f2d2b;border:1px solid #45423f;border-radius:14px;padding:34px 28px;max-width:344px;width:100%;text-align:center;box-shadow:0 18px 50px rgba(0,0,0,.45)}#miGate .mk{font-size:11px;letter-spacing:.28em;color:#c9a24b;font-weight:700}#miGate h2{margin:10px 0 4px;font-size:18px;color:#f3efe9}#miGate p{margin:0;font-size:12px;color:#a8a39c}#miGate input{width:100%;box-sizing:border-box;text-align:center;padding:11px;margin-top:16px;border:1px solid #45423f;border-radius:8px;background:#1f1d1c;color:#f3efe9;font:13px inherit;outline:none}#miGate input:focus{border-color:#c9a24b}#miGate button{width:100%;margin-top:10px;padding:11px;border:0;border-radius:8px;cursor:pointer;background:#c9a24b;color:#1a1918;font:600 13px inherit}#miGate button:disabled{opacity:.6;cursor:default}#miGate .er{color:#e06a5a;font-size:12px;margin-top:10px;min-height:16px}";
+  root.appendChild(st);
+  function pass(pw){ try{ if(pw!=null) localStorage.setItem("wp_access_token",pw); sessionStorage.setItem(SKEY,"1"); }catch(e){} location.reload(); }
+  function build(){
+    if(document.getElementById("miGate"))return;
+    var ov=document.createElement("div"); ov.id="miGate";
+    ov.innerHTML='<div class="gc"><div class="mk">WELLPERION</div><h2>사내 전용 · 회원 정보</h2><p>접근 비밀번호를 입력하세요.</p><input type="password" id="miPw" placeholder="접근 비밀번호" autocomplete="current-password"><button type="button" id="miBtn">입장</button><div class="er" id="miErr"></div></div>';
+    (document.body||root).appendChild(ov);
+    var input=document.getElementById("miPw"), err=document.getElementById("miErr"), btn=document.getElementById("miBtn");
+    function attempt(){
+      var v=(input.value||"").trim(); if(!v){err.textContent="비밀번호를 입력해 주세요.";return;}
+      btn.disabled=true; err.textContent="확인 중…";
+      fetch(EXEC+"?action=pii_status&key="+encodeURIComponent(v))
+        .then(function(r){return r.json();})
+        .then(function(d){
+          if(d && (d.key_valid || d.masking_active===false)){ pass(v); }
+          else { err.textContent="비밀번호가 올바르지 않습니다."; btn.disabled=false; input.select(); }
+        })
+        .catch(function(){ err.textContent="확인 실패 — 다시 시도해 주세요."; btn.disabled=false; });
+    }
+    btn.addEventListener("click",attempt);
+    input.addEventListener("keydown",function(e){if(e.key==="Enter")attempt();});
+    setTimeout(function(){try{input.focus();}catch(e){}},30);
+  }
+  if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",build); else build();
+})();
+</script>
 </head>
 <body>
 
@@ -750,15 +760,15 @@ a.funnel-step:hover{background:rgba(183,159,138,0.08);color:var(--accent)}
 
   <!-- ══════════════════════════════ CPO 요약 대시보드 (탭별 4카드 · 클릭 시 해당 탭) ══════════════════════════════ -->
   <div class="dash-grid" id="cpoTodayStrip">
-    <!-- 카드1: 예약 달력 — 상담·투어 (금일/월간 예약·진행) -->
+    <!-- 카드1: 예약 달력 (금일/월간 예약 건수) -->
     <a class="dash-card" data-kind="tour" href="javascript:void(0)" onclick="switchTab('calendar')">
-      <div class="dash-head"><span class="dash-dot tour"></span><span class="dash-title">예약 달력</span><span class="dash-tag">상담·투어</span></div>
+      <div class="dash-head"><span class="dash-dot tour"></span><span class="dash-title">예약 달력</span><span class="dash-tag">상담·체험</span></div>
       <div class="dash-metrics">
-        <div class="dash-line"><span class="dash-k">금일</span><span class="dash-v"><b class="lead" id="dTourTodayBook">0</b> 예약 · <b id="dTourTodayProg">0</b> 진행</span></div>
-        <div class="dash-line"><span class="dash-k">월간</span><span class="dash-v"><b id="dTourMonBook">0</b> 예약 · <b id="dTourMonProg">0</b> 진행</span></div>
+        <div class="dash-line"><span class="dash-k">금일</span><span class="dash-v"><b class="lead" id="dTourToday">0</b> 건</span></div>
+        <div class="dash-line"><span class="dash-k">월간</span><span class="dash-v"><b id="dTourMon">0</b> 건</span></div>
       </div>
     </a>
-    <!-- 카드2: 멤버십 문의 현황 (금일/월간 문의) -->
+    <!-- 카드2: 멤버십 문의 현황 -->
     <a class="dash-card" data-kind="inq" href="javascript:void(0)" onclick="switchTab('db')">
       <div class="dash-head"><span class="dash-dot inq"></span><span class="dash-title">멤버십 문의 현황</span></div>
       <div class="dash-metrics">
@@ -766,31 +776,26 @@ a.funnel-step:hover{background:rgba(183,159,138,0.08);color:var(--accent)}
         <div class="dash-line"><span class="dash-k">월간</span><span class="dash-v"><b id="dInqMonth">0</b> 건</span></div>
       </div>
     </a>
-    <!-- 카드3: 멤버십 등록건 (금일/금월 신규 등록) -->
+    <!-- 카드3: 멤버십 등록건 -->
     <a class="dash-card" data-kind="reg" href="javascript:void(0)" onclick="switchTab('registered')">
       <div class="dash-head"><span class="dash-dot reg"></span><span class="dash-title">멤버십 등록건</span></div>
       <div class="dash-metrics">
-        <div class="dash-line"><span class="dash-k">금일</span><span class="dash-v"><b class="lead" id="dRegToday">0</b> 건 신규</span></div>
-        <div class="dash-line"><span class="dash-k">금월</span><span class="dash-v"><b id="dRegMonth">0</b> 건 신규</span></div>
+        <div class="dash-line"><span class="dash-k">금일</span><span class="dash-v"><b class="lead" id="dRegToday">0</b> 건</span></div>
+        <div class="dash-line"><span class="dash-k">월간</span><span class="dash-v"><b id="dRegMonth">0</b> 건</span></div>
       </div>
     </a>
-    <!-- 카드4: 멤버십 회원 현황 (현재 회원수 / 금일 LOSS) -->
+    <!-- 카드4: 멤버십 회원 현황 (현재 인원 / Loss 인원) -->
     <a class="dash-card" data-kind="mem" href="javascript:void(0)" onclick="switchTab('active')">
       <div class="dash-head"><span class="dash-dot mem"></span><span class="dash-title">멤버십 회원 현황</span></div>
       <div class="dash-metrics">
         <div class="dash-line"><span class="dash-k">현재</span><span class="dash-v"><b class="lead" id="dMemActive">0</b> 명</span></div>
-        <div class="dash-line"><span class="dash-k">금일</span><span class="dash-v"><b id="dMemLoss">0</b> 명 LOSS</span></div>
+        <div class="dash-line"><span class="dash-k">Loss</span><span class="dash-v"><b id="dMemLoss">0</b> 명</span></div>
       </div>
     </a>
   </div>
 
   <!-- ══════════════════════════════ 1. 예약 달력 ══════════════════════════════ -->
   <div id="pane-calendar" class="pane active">
-
-    <div class="info-box teal" style="margin-bottom:16px">
-      <strong>데이터 소스</strong> — 26년 신규문의 시트(견학/상담 일정·체험1/2 확정시간). GAS 연동 후 자동 표시.<br>
-      이름은 성+** 마스킹. PII(전화·풀네임) 미표시. 달력 = 읽기 전용.
-    </div>
 
     <!-- 캘린더 -->
     <div class="card">
@@ -822,34 +827,12 @@ a.funnel-step:hover{background:rgba(183,159,138,0.08);color:var(--accent)}
       </div>
     </div>
 
-    <div class="info-box yellow">
-      <strong>범례</strong> —
-      <span style="display:inline-block;font-size:11px;font-weight:700;padding:1px 7px;border-radius:4px;background:var(--teal-bg);color:var(--teal);margin-right:6px">체험</span>
-      체험1/2/3 확정시간 칸
-      &nbsp;|&nbsp;
-      <span style="display:inline-block;font-size:11px;font-weight:700;padding:1px 7px;border-radius:4px;background:var(--purple-bg);color:var(--purple);margin-right:6px">견학/상담</span>
-      시설견학 및 상담 일정 칸
-      &nbsp;|&nbsp;
-      <span style="border:1px solid var(--teal);border-radius:4px;padding:1px 6px;font-size:11px;font-weight:700;color:var(--teal)">오늘</span>
+    <div class="info-box accent">
+      <strong>가이드</strong> — <strong>날짜를 누르면</strong> 그 날 예약 상세(시간·이름·연락처·프로그램·진행상황)가 아래에 펼쳐집니다.
+      <span style="display:inline-block;font-size:11px;font-weight:700;padding:1px 7px;border-radius:4px;background:var(--purple-bg);color:var(--purple);margin:0 4px">상담·투어</span>·<span style="display:inline-block;font-size:11px;font-weight:700;padding:1px 7px;border-radius:4px;background:var(--teal-bg);color:var(--teal);margin:0 4px">체험</span> 색으로 구분 · 무조건 사전 예약제(워크인 불가) · 읽기 전용(수정은 '멤버십 문의 현황' 탭).<br>
+      회원 실명·연락처가 표시되는 실무용 화면 — 외부 공유에 주의하세요.
     </div>
 
-    <!-- ── 금일 / 이번달 예약자 정리 (달력과 동일 소스 · 이름 마스킹) ── -->
-    <div class="card" id="resvListCard">
-      <div class="card-title">
-        <span class="icon">🗓️</span>예약자 정리
-        <span style="font-size:11px;font-weight:400;color:var(--dim);margin-left:4px">달력과 같은 소스 · 이름 성+** 마스킹 · 읽기 전용</span>
-      </div>
-      <div class="resv-split">
-        <div class="resv-col">
-          <div class="resv-col-head">금일 예약자 <span class="resv-count" id="resvTodayCount">0</span></div>
-          <div class="resv-list" id="resvTodayList"></div>
-        </div>
-        <div class="resv-col">
-          <div class="resv-col-head">이번 달 예약자 <span class="resv-count" id="resvMonthCount">0</span></div>
-          <div class="resv-list" id="resvMonthList"></div>
-        </div>
-      </div>
-    </div>
   </div>
 
   <!-- ══════════════════════════════ 2. 문의 DB (CRUD) ══════════════════════════════ -->
@@ -861,11 +844,6 @@ a.funnel-step:hover{background:rgba(183,159,138,0.08);color:var(--accent)}
     GAS 자리표시자(https://script.google.com/macros/s/AKfycbzdwSCCSSJ6JXLDoWuo7HG0JmBM2iy10TujFQ_O5JbTjnWaN7gOk-ddA4IAvsNfelg0xA/exec)가 교체되면 자동 활성화됩니다.
   -->
   <div id="pane-db" class="pane">
-
-    <div class="info-box red" style="margin-bottom:16px">
-      <strong>접근통제 전제</strong> — 이 DB는 회원 개인정보(이름·전화)를 포함합니다.
-      GAS 배포 + 시토 접근통제 구축 후 GM go 시 라이브 발효. 현재 GAS 미연동 시 읽기/쓰기 모두 비활성.
-    </div>
 
     <div class="card">
       <div class="db-toolbar">
@@ -885,7 +863,6 @@ a.funnel-step:hover{background:rgba(183,159,138,0.08);color:var(--accent)}
         </div>
         <div class="db-toolbar-actions">
           <button class="btn-add" id="btnAddRow" onclick="addNewRow()">+ 전화·직접 문의</button>
-          <button class="btn-add" id="btnFullPii" onclick="wpSetFullToken()" title="회원 실명·전화 전체보기 (비밀번호 입력)">🔓 전체보기</button>
           <span id="addActions" style="display:none;gap:6px;align-items:center">
             <button class="row-btn btn-save" id="btnAddSave">추가</button>
             <button class="row-btn btn-cancel" id="btnAddCancel">취소</button>
@@ -1349,7 +1326,7 @@ if (action === 'member_calendar') {
     <div class="card">
       <div class="card-title">
         <span class="icon">👥</span>멤버십 회원관리
-        <span style="font-size:11px;font-weight:400;color:var(--dim);margin-left:4px">유효회원 시트 · 읽기전용 · 전화 마스킹</span>
+        <span style="font-size:11px;font-weight:400;color:var(--dim);margin-left:4px">유효회원 시트 · 읽기전용 · 연락처 표시</span>
       </div>
 
       <!-- 현황 요약 카드 (작업 3) -->
@@ -1400,10 +1377,9 @@ if (action === 'member_calendar') {
 var GAS_URL = 'https://script.google.com/macros/s/AKfycbzdwSCCSSJ6JXLDoWuo7HG0JmBM2iy10TujFQ_O5JbTjnWaN7gOk-ddA4IAvsNfelg0xA/exec';
 /* 미연동 판별 센티넬 — GAS_URL 이 아래 자리표시자와 같을 때만 '미연동'. 실제 URL 연동됨(2026-06-22) → 가드 비발동 */
 var GAS_PLACEHOLDER = '__PASTE_GAS_EXEC_URL__';
-// ── PII 전체보기 토큰 ── 서버 ACCESS_TOKEN과 대조. 비번은 소스에 없음(직원이 1회 입력→localStorage).
-// 미입력/불일치 시 서버가 실명·전화를 마스킹 반환(성+**·010-****-1234). 서버 PII_MASK='on' 발효 시에만 적용.
+// ── PII 토큰 ── 입장 비번(= 서버 ACCESS_TOKEN, 소스에 없음)을 입장 게이트가 저장 → 데이터 호출에 부착.
+// 맞는 비번이면 서버가 성함·전화 전체 반환, 틀리면 입장 차단(게이트). 별도 '전체보기' 버튼 폐지(2026-06-25 GM).
 function _wpKeyParam(){ try { var t = (localStorage.getItem('wp_access_token')||'').trim(); return t ? '&key=' + encodeURIComponent(t) : ''; } catch(e){ return ''; } }
-function wpSetFullToken(){ try { var c = (localStorage.getItem('wp_access_token')||''); var t = prompt('회원 실명·전화 전체보기 비밀번호를 입력하세요.\n(빈칸으로 두면 마스킹 보기로 전환)', c); if (t === null) return; localStorage.setItem('wp_access_token', t.trim()); location.reload(); } catch(e){ alert('저장 실패: ' + e); } }
 /* ── 수정 모드(2026-06-22 GM '그냥 열기') — 진행상태·메모·일정·담당만 수정. 이름·전화는 익명 유지·수정불가 ── */
 var READ_ONLY = false;
 var ALLOW_DELETE = false;  // 2026-06-23 GM: 삭제 제거 — 삭제는 시트에서 수동으로만
@@ -1915,7 +1891,7 @@ function loadCpoTodayStats() {
       // 카드2 멤버십 문의 / 카드3 등록 / 카드4 회원 현황
       _setTxt('dInqToday', d.todayInquiry); _setTxt('dInqMonth', d.monthInquiry);
       _setTxt('dRegToday', d.todayReg);     _setTxt('dRegMonth', d.monthReg);
-      _setTxt('dMemActive', d.memberActive); _setTxt('dMemLoss', d.todayLoss);
+      _setTxt('dMemActive', d.memberActive); _setTxt('dMemLoss', d.monthLoss);
     })
     .catch(function(){});
 }
@@ -1925,9 +1901,7 @@ function changeMonth(delta) {
   if (calMonth > 12) { calMonth = 1; calYear++; }
   if (calMonth < 1)  { calMonth = 12; calYear--; }
   calEvents = {};
-  renderTopDash();
-  renderReservationLists();
-  closeDayPanel();
+  renderTopDash();  closeDayPanel();
   renderCalendarShell();
   loadCalendarData();
 }
@@ -1992,7 +1966,6 @@ function loadCalendarData() {
     titleEl.textContent = 'GAS 미연동 상태';
     descEl.textContent = 'GM이 GAS를 배포하고 URL을 교체하면 예약이 자동 표시됩니다.';
     renderTopDash();
-    renderReservationLists();
     return;
   }
 
@@ -2026,72 +1999,33 @@ function processCalendarData(data) {
     calEvents[date].forEach(function(ev){
       var chip = document.createElement('div');
       chip.className = 'cal-chip ' + (ev.kind === '체험' ? 'experience' : 'tour');
-      chip.textContent = ev.kind + (ev.time ? ' ' + ev.time : '');
+      var l1 = (ev.time ? esc(ev.time) + ' ' : '') + esc(ev.kind) + (ev.name ? ' ' + esc(ev.name) : '');
+      chip.innerHTML = '<div class="cc-l1">' + l1 + '</div>' + (ev.phone ? '<div class="cc-l2">' + esc(ev.phone) + '</div>' : '');
       chipsDiv.appendChild(chip);
     });
   });
 
-  renderTopDash();
-  renderReservationLists();
-}
+  renderTopDash();}
 
 function _setTxt(id, v) {
   var el = document.getElementById(id);
   if (el) el.textContent = (v === undefined || v === null || v === '') ? '0' : v;
 }
-// 카드1(예약 달력) — 상담·투어 예약건/진행건, 금일·월간. calEvents(표시 중인 달) 기준.
-// 진행건 = 진행상황이 방문·가입·SUC·단기SUC·완료(실제 진행/완료) / 예약건 = 잡힌 상담·투어 전체.
+// 카드1(예약 달력) — 금일·월간 예약 건수(상담·체험 전체). calEvents(표시 중인 달) 기준.
 function renderTopDash() {
   var today = new Date();
   var todayStr = today.getFullYear() + '-' +
     String(today.getMonth()+1).padStart(2,'0') + '-' +
     String(today.getDate()).padStart(2,'0');
-  var PROG = { '방문':1, '가입':1, 'SUC':1, '단기SUC':1, '완료':1 };
-  var tToday = 0, pToday = 0, tMon = 0, pMon = 0;
+  var tToday = 0, tMon = 0;
   Object.keys(calEvents).forEach(function(date){
     (calEvents[date] || []).forEach(function(ev){
-      if (ev.kind === '체험') return;  // 상담·투어만(체험 제외)
-      var prog = PROG[String(ev.status || '').trim()] ? 1 : 0;
-      tMon++; if (prog) pMon++;
-      if (ev.date === todayStr) { tToday++; if (prog) pToday++; }
+      tMon++;
+      if (ev.date === todayStr) tToday++;
     });
   });
-  _setTxt('dTourTodayBook', tToday); _setTxt('dTourTodayProg', pToday);
-  _setTxt('dTourMonBook', tMon);     _setTxt('dTourMonProg', pMon);
-}
-
-// 금일 / 이번달 예약자 — calEvents(표시 중인 달) 기준, 달력과 동일 소스
-function renderReservationLists() {
-  var today = new Date();
-  var todayStr = today.getFullYear() + '-' +
-    String(today.getMonth()+1).padStart(2,'0') + '-' +
-    String(today.getDate()).padStart(2,'0');
-  var all = [];
-  Object.keys(calEvents).forEach(function(date){
-    (calEvents[date] || []).forEach(function(ev){ all.push(ev); });
-  });
-  all.sort(function(a,b){ return a.date < b.date ? -1 : (a.date > b.date ? 1 : 0); });
-  var todayItems = all.filter(function(ev){ return ev.date === todayStr; });
-  _renderResvInto('resvTodayList', 'resvTodayCount', todayItems, '오늘 예약 없음');
-  _renderResvInto('resvMonthList', 'resvMonthCount', all, '이번 달 예약 없음');
-}
-
-function _renderResvInto(listId, countId, items, emptyMsg) {
-  var listEl = document.getElementById(listId);
-  var countEl = document.getElementById(countId);
-  if (countEl) countEl.textContent = items.length;
-  if (!listEl) return;
-  if (!items.length) { listEl.innerHTML = '<div class="resv-empty">' + emptyMsg + '</div>'; return; }
-  listEl.innerHTML = items.map(function(ev){
-    var md = ev.date ? ev.date.slice(5).replace('-','/') : '';
-    var kindCls = ev.kind === '체험' ? 'experience' : 'tour';
-    return '<div class="resv-item">' +
-      '<span class="resv-item-date">' + esc(md) + '</span>' +
-      '<span class="resv-kind ' + kindCls + '">' + esc(ev.kind) + '</span>' +
-      '<span class="resv-name">' + esc(ev.name || '—') + '</span>' +
-      (ev.status ? '<span class="resv-status">' + esc(ev.status) + '</span>' : '') +
-      '</div>';
-  }).join('');
+  _setTxt('dTourToday', tToday);
+  _setTxt('dTourMon', tMon);
 }
 
 function openDayPanel(date) {
@@ -2107,7 +2041,7 @@ function openDayPanel(date) {
     item.innerHTML =
       '<span class="day-item-kind ' + (ev.kind==='체험'?'experience':'tour') + '">' + esc(ev.kind) + '</span>' +
       '<div class="day-item-info">' +
-        '<div class="day-item-name">' + esc(ev.time ? ev.time : '시간 미정') + '</div>' +
+        '<div class="day-item-name">' + esc(ev.time ? ev.time : '시간 미정') + (ev.name ? ' · ' + esc(ev.name) : '') + (ev.phone ? ' · ' + esc(ev.phone) : '') + '</div>' +
         '<div class="day-item-meta">' + esc(ev.program || '—') + ' · 진행상황: ' + esc(ev.status || '—') + '</div>' +
       '</div>';
     listEl.appendChild(item);

@@ -1143,25 +1143,19 @@ function _processAction(body) {
 
   // ─── [진단] PII 마스킹 상태 (비밀값 노출 없음) 2026-06-25 시토 ───
   if (action === 'pii_status') {
+    var _pt = String(_accessProp_('ACCESS_TOKEN') || '').trim();
     return _json({ ok: true,
       pii_mask: String(_accessProp_('PII_MASK') || ''),
-      token_set: !!String(_accessProp_('ACCESS_TOKEN') || '').trim(),
-      masking_active: !_piiFull_('__diag_nokey__')
+      token_set: !!_pt,
+      masking_active: !_piiFull_('__diag_nokey__'),
+      key_valid: !!_pt && String(body.key || '') === _pt   // 입장 게이트 비번 검증용(비밀값 미노출)
     });
   }
 
   // ─── 문의회원 페이지(CPO): 익명 문의 목록 (A안 공개·이름/전화/메모 0) ───
   if (action === 'member_inquiry_list') {
     var miRows = _miReadRows_();
-    var _miFull = _piiFull_(body.key);
-    if (!_miFull) {
-      miRows = miRows.map(function(r){
-        r.name  = _svMaskName_(r.name);
-        r.phone = _svMaskPhone_(r.phone);
-        r.memo  = '';   // 메모도 PII 가능성 → 마스킹 시 비움
-        return r;
-      });
-    }
+    var _miFull = true;  // 2026-06-25 GM '성함·연락처 다 공개' — 마스킹 해제(무인증 공개 주의·시토 인증게이트 전제)
     return _json({ ok: true, count: miRows.length, data: miRows, anon: !_miFull });
   }
 
@@ -1207,7 +1201,7 @@ function _processAction(body) {
       function add(dateStr, kind, timeStr) {
         if (!dateStr) return;
         if (mcMonth && dateStr.slice(0,7) !== mcMonth) return;
-        mcEvents.push({ date: dateStr, kind: kind, time: timeStr || '', name: '', program: row.program, status: row.status });
+        mcEvents.push({ date: dateStr, kind: kind, time: timeStr || '', name: row.name || '', phone: row.phone || '', program: row.program, status: row.status });
       }
       add(row.tourDate, '상담', row.tourTime);
       add(row.exp1, '체험', row.exp1Time);
@@ -1488,7 +1482,7 @@ function _processAction(body) {
           var v = arow[ac];
           if (v instanceof Date && !isNaN(v.getTime())) v = Utilities.formatDate(v, 'Asia/Seoul', 'yyyy-MM-dd');
           v = (v === null || v === undefined) ? '' : String(v);
-          if (key === MEMBER_PHONE_COL) { var pp = v.replace(/[^0-9]/g, ''); v = pp.length >= 10 ? pp.slice(0,3) + '-****-' + pp.slice(-4) : (pp ? '***' : ''); }
+          if (key === MEMBER_PHONE_COL) { var pp = v.replace(/[^0-9]/g, ''); if (pp.length === 11) v = pp.slice(0,3) + '-' + pp.slice(3,7) + '-' + pp.slice(7); else if (pp.length === 10) v = pp.slice(0,3) + '-' + pp.slice(3,6) + '-' + pp.slice(6); }
           obj[key] = v;
         }
         // 등록회차>=2 → 등록분류 '재등록' 표시(시트 미변경 · 표시 규칙) 2026-06-24 GM
@@ -1509,7 +1503,7 @@ function _processAction(body) {
     if (!auRow || auRow < 2) return _json({ ok: false, error: 'rowIndex 필수(2 이상)' });
     var auCol = String(body.col || '').trim();
     if (!auCol) return _json({ ok: false, error: 'col 필수' });
-    if (auCol.replace(/\s/g, '').indexOf('휴대폰') >= 0) return _json({ ok: false, error: '전화번호는 마스킹 표시라 여기서 수정 불가(시트에서 직접)' });
+    if (auCol.replace(/\s/g, '').indexOf('휴대폰') >= 0) return _json({ ok: false, error: '전화번호는 시트에서 직접 수정해주세요' });
     var auSh = SpreadsheetApp.openById(MEMBER_SPREADSHEET_ID).getSheetByName(MEMBER_SHEET);
     if (!auSh) return _json({ ok: false, error: '유효회원 시트 없음' });
     var auHdr = auSh.getRange(1, 1, 1, auSh.getLastColumn()).getValues()[0].map(function(v){ return String(v).trim(); });
@@ -1525,13 +1519,13 @@ function _processAction(body) {
   // ─── CPO 오늘 현황(PII 미노출 집계): 오늘/이번달 문의·등록 건수 2026-06-24 GM ───
   if (action === 'cpo_today_stats') {
     var ctCache = CacheService.getScriptCache();
-    var ctCached = ctCache.get('cpo_today_stats_v2');
+    var ctCached = ctCache.get('cpo_today_stats_v3');
     if (ctCached) return _json(JSON.parse(ctCached));
     var ctTz = 'Asia/Seoul';
     var ctToday = Utilities.formatDate(new Date(), ctTz, 'yyyy-MM-dd');
     var ctMonth = ctToday.slice(0, 7);
     var ctTI = 0, ctMI = 0, ctTR = 0, ctMR = 0;
-    var ctActive = 0, ctEnded = 0, ctLoss = 0, ctLossDated = false;
+    var ctActive = 0, ctEnded = 0, ctLoss = 0, ctMonthLoss = 0, ctLossDated = false;
     // 문의: 26년 신규문의 타임스탬프
     try {
       var ciSh = _miSheet_();
@@ -1590,12 +1584,13 @@ function _processAction(body) {
             var lv = crow[crLossI];
             var lD = (lv instanceof Date && !isNaN(lv.getTime())) ? Utilities.formatDate(lv, ctTz, 'yyyy-MM-dd') : _miToISO_(lv);
             if (lD === ctToday) ctLoss++;
+            if (lD && lD.slice(0, 7) === ctMonth) ctMonthLoss++;
           }
         }
       }
     } catch (eCr) {}
-    var ctResult = { ok: true, date: ctToday, todayInquiry: ctTI, monthInquiry: ctMI, todayReg: ctTR, monthReg: ctMR, memberActive: ctActive, memberEnded: ctEnded, todayLoss: ctLoss, lossDated: ctLossDated };
-    try { ctCache.put('cpo_today_stats_v2', JSON.stringify(ctResult), 60); } catch (eCc) {}
+    var ctResult = { ok: true, date: ctToday, todayInquiry: ctTI, monthInquiry: ctMI, todayReg: ctTR, monthReg: ctMR, memberActive: ctActive, memberEnded: ctEnded, todayLoss: ctLoss, monthLoss: ctMonthLoss, lossDated: ctLossDated };
+    try { ctCache.put('cpo_today_stats_v3', JSON.stringify(ctResult), 60); } catch (eCc) {}
     return _json(ctResult);
   }
 
