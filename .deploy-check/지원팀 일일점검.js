@@ -18,7 +18,7 @@ const SHEET_ITEMS  = '지원_매뉴얼';   // GM 편집 점검 항목 마스터(
 // 보존. dept(인덱스9) 뒤에 붙여 기존 인덱스 불변. 빈값 → 프론트 itemRounds가 roundOfSlot 폴백(하위호환).
 // Part1(2026-06-23 시우): '시드'(seed) 13번째 열 — 맨 뒤 추가(기존 인덱스 전부 불변).
 // 빈값=레거시(CUSTOM: shadow/added), 'Y'=페이지 단방향 동기분(syncSeedItems 격리행).
-// getItems/saveItems/_buildTodayMaster는 seed='Y' 행을 skip → 마스터=non-seed 53항목 단일출처(분모·분자 동일).
+// getItems/saveItems/_buildTodayMaster는 seed='Y' 행을 skip → 마스터=non-seed 단일출처(분모·분자 동일). 시트 행 수=시트 실물 기준(페이지 배열: 평일30/주말31/야간포함45).
 const ITEM_HEADERS = ['항목ID','카테고리','항목명','상세','성별','시간대','정렬','타입','필드정의','부서','회차','일정','시드'];
 const ITEM_DEPT_COL = 9;    // '부서' 0-based 인덱스(10번째 열)
 const ITEM_ROUNDS_COL = 10; // '회차' 0-based 인덱스(11번째 열) — 구 10열 시트는 undefined → 빈값 폴백
@@ -2567,7 +2567,7 @@ function _roundBucket(roundKey) {
 }
 
 // ─── 분모·분자 단일출처: 항목 마스터(action=items와 동일 모집단) ───────────────
-// GM 확정(2026-06-24): 점검 마스터 = getItems가 반환하는 53개 NON-seed 지원부 행.
+// GM 확정(2026-06-24): 점검 마스터 = getItems가 반환하는 NON-seed 지원부 행(시트 실물 기준·페이지 배열: 평일30/주말31/야간포함45).
 //   분모 규칙 = 각 항목을 '대표 버킷'(rounds 배열의 첫 회차)에 1회만 계상. 멀티회차(am1,pm1,close1)는
 //   대표=am 1회만(과거 회차전개 3중계상=259 부풀림 제거). gender all→[m,f]·m→[m]·f→[f].
 //   DAY_FOCUS(df_*) 항목은 rounds 비어있고 id에 요일 인코딩(df_wed1) → 오늘 요일과 일치할 때만 close 1회.
@@ -2649,7 +2649,7 @@ function handleTodayLive(params) {
   var buckets = ['am', 'pm', 'close', 'night'];
   function newBuckets() { return { am: 0, pm: 0, close: 0, night: 0 }; }
 
-  // ─── 마스터(분모·분자 단일출처): action=items와 동일 모집단(53 non-seed 지원부 항목) ───
+  // ─── 마스터(분모·분자 단일출처): action=items와 동일 모집단(non-seed 지원부 항목·시트 실물 기준·페이지 배열: 평일30/주말31/야간포함45) ───
   var dateObj = new Date(date + 'T00:00:00+09:00');
   var dow = dateObj.getDay();
   var master = _buildTodayMaster(dept, dow);   // { byId:{id:{bucket,glist}}, count }
