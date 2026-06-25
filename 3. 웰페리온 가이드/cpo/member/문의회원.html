@@ -861,6 +861,7 @@ a.funnel-step:hover{background:rgba(183,159,138,0.08);color:var(--accent)}
         </div>
         <div class="db-toolbar-actions">
           <button class="btn-add" id="btnAddRow" onclick="addNewRow()">+ 전화·직접 문의</button>
+          <button class="btn-add" id="btnFullPii" onclick="wpSetFullToken()" title="회원 실명·전화 전체보기 (비밀번호 입력)">🔓 전체보기</button>
           <span id="addActions" style="display:none;gap:6px;align-items:center">
             <button class="row-btn btn-save" id="btnAddSave">추가</button>
             <button class="row-btn btn-cancel" id="btnAddCancel">취소</button>
@@ -1374,6 +1375,10 @@ if (action === 'member_calendar') {
 var GAS_URL = 'https://script.google.com/macros/s/AKfycbzdwSCCSSJ6JXLDoWuo7HG0JmBM2iy10TujFQ_O5JbTjnWaN7gOk-ddA4IAvsNfelg0xA/exec';
 /* 미연동 판별 센티넬 — GAS_URL 이 아래 자리표시자와 같을 때만 '미연동'. 실제 URL 연동됨(2026-06-22) → 가드 비발동 */
 var GAS_PLACEHOLDER = '__PASTE_GAS_EXEC_URL__';
+// ── PII 전체보기 토큰 ── 서버 ACCESS_TOKEN과 대조. 비번은 소스에 없음(직원이 1회 입력→localStorage).
+// 미입력/불일치 시 서버가 실명·전화를 마스킹 반환(성+**·010-****-1234). 서버 PII_MASK='on' 발효 시에만 적용.
+function _wpKeyParam(){ try { var t = (localStorage.getItem('wp_access_token')||'').trim(); return t ? '&key=' + encodeURIComponent(t) : ''; } catch(e){ return ''; } }
+function wpSetFullToken(){ try { var c = (localStorage.getItem('wp_access_token')||''); var t = prompt('회원 실명·전화 전체보기 비밀번호를 입력하세요.\n(빈칸으로 두면 마스킹 보기로 전환)', c); if (t === null) return; localStorage.setItem('wp_access_token', t.trim()); location.reload(); } catch(e){ alert('저장 실패: ' + e); } }
 /* ── 수정 모드(2026-06-22 GM '그냥 열기') — 진행상태·메모·일정·담당만 수정. 이름·전화는 익명 유지·수정불가 ── */
 var READ_ONLY = false;
 var ALLOW_DELETE = false;  // 2026-06-23 GM: 삭제 제거 — 삭제는 시트에서 수동으로만
@@ -1636,7 +1641,7 @@ function loadActiveMembers() {
   }
   _activeRenderState('loading');
   var _seq = ++_activeReqSeq;
-  fetch(GAS_URL + '?action=member_active_list&scope=' + (_activeScope || 'valid'))
+  fetch(GAS_URL + '?action=member_active_list&scope=' + (_activeScope || 'valid') + _wpKeyParam())
     .then(function(r){ return r.json(); })
     .then(function(data){
       if (_seq !== _activeReqSeq) return;   // 더 최신 요청이 있으면 이 응답 무시(경쟁 가드)
@@ -2119,7 +2124,7 @@ function loadDbData() {
     return;
   }
   document.getElementById('dbCount').textContent = '불러오는 중…';
-  fetch(GAS_URL + '?action=member_inquiry_list')
+  fetch(GAS_URL + '?action=member_inquiry_list' + _wpKeyParam())
     .then(function(r){ return r.json(); })
     .then(function(data){
       if (!data.ok) {

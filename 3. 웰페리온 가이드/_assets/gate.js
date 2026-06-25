@@ -16,7 +16,7 @@
   "use strict";
 
   // ── 단일 출처: 비밀번호는 오직 여기서만 관리 ──────────────────
-  var GATE_PW = "wellperion!@1202";
+  var GATE_PW = "wellperion!@345";
   window.WELP_GATE_PW = GATE_PW; // 기존 GAS 호출(password 동봉) 호환용
   var SKEY = "welp_gate_ok";     // 같은 탭 세션에서 한 번 통과하면 다른 보호 페이지도 통과
 

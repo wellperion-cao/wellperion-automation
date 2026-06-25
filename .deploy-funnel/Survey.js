@@ -599,6 +599,26 @@ function _checkSurveyAccess_(action, key) {
   return String(key || '') === tok;
 }
 
+// PII 마스킹 게이트 — 원시 실명·전화는 토큰 있을 때만 풀(full)로. 2026-06-25 시토(GM go: '닫기').
+// ★ 불변식: PII_MASK 가 'on' 이 아니면(기본) 항상 풀 반환 → 코드 배포만으로는 라이브 영향 0.
+//   GM 활성화: ① ScriptProperties ACCESS_TOKEN=<강한 무작위 문자열> ② PII_MASK='on' ③ 웹앱 새 버전 재배포.
+//   직원 화면 '전체보기'에 토큰 1회 입력(localStorage wp_access_token → ?key=). 미입력/불일치=마스킹.
+//   즉시 역롤백: PII_MASK 속성 삭제 → 다음 호출부터 전체 풀 복귀(재배포 불필요).
+function _piiFull_(key) {
+  if (_accessProp_('PII_MASK') !== 'on') return true;   // 스위치 OFF(기본) = 현행 유지(무중단)
+  var tok = _accessProp_('ACCESS_TOKEN');
+  if (!tok) return true;                                // 토큰 미설정 시 직원 잠김 방지 → 통과
+  return String(key || '') === tok;
+}
+function _svMaskName_(n) {
+  n = String(n == null ? '' : n).trim(); if (!n) return '';
+  return n.length <= 1 ? n : n.charAt(0) + Array(n.length).join('*');
+}
+function _svMaskPhone_(p) {
+  var d = String(p == null ? '' : p).replace(/[^0-9]/g, '');
+  return d.length >= 10 ? d.slice(0,3) + '-****-' + d.slice(-4) : (d ? '***' : '');
+}
+
 // ═══════════════════════════════════════════
 //  문의회원 페이지 전용 — '26년 신규문의' 익명 읽기 (CPO cpo/member/문의회원.html)
 //  ★ A안(2026-06-22 GM go): 이름·전화·메모 완전 제거(빈값) → 공개 페이지 안전, PII_GATE 불필요.
@@ -933,7 +953,16 @@ function _processAction(body) {
   // ─── 문의회원 페이지(CPO): 익명 문의 목록 (A안 공개·이름/전화/메모 0) ───
   if (action === 'member_inquiry_list') {
     var miRows = _miReadRows_();
-    return _json({ ok: true, count: miRows.length, data: miRows, anon: true });
+    var _miFull = _piiFull_(body.key);
+    if (!_miFull) {
+      miRows = miRows.map(function(r){
+        r.name  = _svMaskName_(r.name);
+        r.phone = _svMaskPhone_(r.phone);
+        r.memo  = '';   // 메모도 PII 가능성 → 마스킹 시 비움
+        return r;
+      });
+    }
+    return _json({ ok: true, count: miRows.length, data: miRows, anon: !_miFull });
   }
 
   // ─── 문의회원 페이지(CPO): 행 추가 (전화·직접 문의 수기 입력) ───
@@ -1238,6 +1267,8 @@ function _processAction(body) {
     var aiCha = _aaIdx('등록회차'), aiCls = _aaIdx('등록분류');  // 등록회차>=2 → 등록분류 '재등록' 표시규칙용
     var _AA_LOSS = { 'LOSS':1, '환불':1, '양도LOSS':1 };
     var aaRows = [];
+    var aaFull = _piiFull_(body.key);                          // 토큰 없으면 회원명 마스킹(전화는 항상 마스킹)
+    var aaNameKey = aiName >= 0 ? aaHdrRaw[aiName] : '';
     if (aaLast >= 2) {
       var aaData = aaSh.getRange(2, 1, aaLast - 1, aaCols).getValues();
       for (var ai = 0; ai < aaData.length; ai++) {
@@ -1265,6 +1296,7 @@ function _processAction(body) {
           var _chaM = (aiCha >= 0 ? String(arow[aiCha] == null ? '' : arow[aiCha]) : '').match(/\d+/);
           if (_chaM && parseInt(_chaM[0], 10) >= 2) obj[aaHdrRaw[aiCls]] = '재등록';
         }
+        if (!aaFull && aaNameKey) obj[aaNameKey] = _svMaskName_(obj[aaNameKey]);
         aaRows.push(obj);
       }
     }
