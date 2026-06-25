@@ -1736,7 +1736,7 @@ function _processAction(body) {
         var rlNmI  = _rlIdx('회원명');
         var rlRegI = _rlIdx('등록일자');
         var rlPhI  = _rlIdx('휴대폰'); if (rlPhI < 0) rlPhI = _rlIdx('연락처'); if (rlPhI < 0) rlPhI = _rlIdx('전화');
-        var rlPgI  = _rlIdx('회원권'); if (rlPgI < 0) rlPgI = _rlIdx('상품'); if (rlPgI < 0) rlPgI = _rlIdx('등록분류'); if (rlPgI < 0) rlPgI = _rlIdx('프로그램');
+        var rlPgI  = _rlIdx('수강반종목'); if (rlPgI < 0) rlPgI = _rlIdx('종목명'); if (rlPgI < 0) rlPgI = _rlIdx('회원권'); if (rlPgI < 0) rlPgI = _rlIdx('상품'); if (rlPgI < 0) rlPgI = _rlIdx('프로그램');
         var rlData = rlSh.getRange(2, 1, rlSh.getLastRow() - 1, rlCols).getValues();
         for (var ri = 0; ri < rlData.length; ri++) {
           var rr = rlData[ri];
@@ -1859,7 +1859,7 @@ function _processAction(body) {
     var aiCha = _aaIdx('등록회차'), aiCls = _aaIdx('등록분류');  // 등록회차>=2 → 등록분류 '재등록' 표시규칙용
     var _AA_LOSS = { 'LOSS':1, '환불':1, '양도LOSS':1 };
     var aaRows = [];
-    var aaFull = _piiFull_(body.key);                          // 토큰 없으면 회원명 마스킹(전화는 항상 마스킹)
+    var aaFull = true;                                         // 2026-06-25 GM 전체공개 — 회원명도 평문(페이지 전체 PII 공개 정책 통일·전화도 평문)
     var aaNameKey = aiName >= 0 ? aaHdrRaw[aiName] : '';
     if (aaLast >= 2) {
       var aaData = aaSh.getRange(2, 1, aaLast - 1, aaCols).getValues();
