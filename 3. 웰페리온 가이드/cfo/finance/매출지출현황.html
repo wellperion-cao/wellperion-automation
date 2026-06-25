@@ -143,7 +143,9 @@ footer{margin-top:26px;font-size:11px;color:var(--ink-faint);text-align:center;l
         <div class="field"><label>필요 물품</label><input type="text" id="reqItem" placeholder="예: 골프공 100개"></div>
         <div class="field"><label>금액(원)</label><input type="number" id="reqAmt" placeholder="0"></div>
         <div class="field"><label>관련 링크</label><input type="text" id="reqLink" placeholder="구매처 URL"></div>
-        <div class="field"><label>승인자</label><input type="text" id="reqApprover" placeholder="소속부서장"></div>
+        <div class="field"><label>승인자</label><select id="reqApprover"><option>이정헌소장</option><option>이경연실장</option><option>나우열매니저</option></select></div>
+        <div class="field"><label>계정(항목1)</label><select id="reqCat1"><option>운영비</option><option>소모품</option><option>업무추진비</option><option>비품</option><option>홍보비</option><option>장비</option><option>기타</option></select></div>
+        <div class="field"><label>항목2</label><select id="reqCat2"><option>소모품</option><option>비품</option><option>장비</option><option>기타</option></select></div>
         <div class="field" style="grid-column:1/-1"><label>구매목적 / 사용내용</label><input type="text" id="reqPurpose" placeholder="목적"></div>
         <div class="field" style="grid-column:1/-1"><label>사진 첨부 (영수증·견적서·이미지)</label><input type="file" id="reqPhoto" accept="image/*,application/pdf"></div>
       </div>
@@ -378,9 +380,17 @@ async function loadReq(){try{var d=await procCall("list",{mode:"active"});REQ_AC
 async function loadDone(){var dm=document.getElementById("doneMsg");dm.textContent="검색 중…";
   try{var d=await procCall("list",{mode:"done",from:rval("doneFrom"),to:rval("doneTo")});REQ_DONE=(d&&d.data)||[];dm.textContent="완료 "+REQ_DONE.length+"건";}catch(e){REQ_DONE=[];dm.textContent="검색 실패";}
   reqFilter="완료";renderReqTbl();}
+function apprFor(dept){
+  if(dept==="시설"||dept==="지원"||dept==="주차") return "이정헌소장";
+  if(dept==="운영부") return "이경연실장";
+  return "나우열매니저";
+}
 function renderReq(){
   var depts=["시설","운영부","지원","주차","P.T","수영","골프","스쿼시","체조","필라테스","뮤지컬"];
   document.getElementById("reqDept").innerHTML=depts.map(function(d){return '<option>'+d+'</option>';}).join('');
+  var dd=document.getElementById("reqDept");
+  dd.onchange=function(){document.getElementById("reqApprover").value=apprFor(this.value);};
+  document.getElementById("reqApprover").value=apprFor(depts[0]);
   document.getElementById("reqSubmit").onclick=submitReq;
   document.getElementById("doneSearchBtn").onclick=loadDone;
   loadReq();
@@ -389,7 +399,7 @@ async function submitReq(){
   var msg=document.getElementById("reqMsg");
   if(!rval("reqWho")||!rval("reqItem")){msg.textContent="요청자·물품은 필수입니다";return;}
   msg.textContent="제출 중…";
-  var base={요청자:rval("reqWho"),소속:rval("reqDept"),물품:rval("reqItem"),가격:rval("reqAmt"),링크:rval("reqLink"),목적:rval("reqPurpose"),승인자:rval("reqApprover")};
+  var base={요청자:rval("reqWho"),소속:rval("reqDept"),물품:rval("reqItem"),가격:rval("reqAmt"),링크:rval("reqLink"),목적:rval("reqPurpose"),승인자:rval("reqApprover"),항목1:rval("reqCat1"),항목2:rval("reqCat2")};
   var fp=document.getElementById("reqPhoto");var f=fp&&fp.files&&fp.files[0];
   if(f){attachPhoto(base,f,function(){doSubmit(base,msg,fp);});}
   else doSubmit(base,msg,fp);
@@ -415,7 +425,7 @@ function attachPhoto(base,f,cb){ // 원본 base64 + 이미지면 캔버스 썸�
 }
 async function doSubmit(base,msg,fp){
   var d=await procCall("add",base);
-  if(d&&d.ok){msg.textContent="✅ 등록 완료";["reqWho","reqItem","reqAmt","reqLink","reqPurpose","reqApprover"].forEach(function(id){document.getElementById(id).value="";});if(fp)fp.value="";loadReq();}
+  if(d&&d.ok){msg.textContent="✅ 등록 완료";["reqWho","reqItem","reqAmt","reqLink","reqPurpose"].forEach(function(id){document.getElementById(id).value="";});if(fp)fp.value="";loadReq();}
   else msg.textContent="⚠️ 실패: "+((d&&d.error)||"서버 오류");
 }
 var STAGES=["품의","검토","정산","완료"];
