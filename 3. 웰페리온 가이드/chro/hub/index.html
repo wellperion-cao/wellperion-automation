@@ -347,6 +347,7 @@
     <section class="panel" data-panel="onbo"></section>
     <section class="panel" data-panel="eval"></section>
     <section class="panel" data-panel="exit"></section>
+    <section class="panel" data-panel="leave"></section>
     <section class="panel" data-panel="docs"></section>
     <section class="panel" data-panel="std"></section>
   </div>
@@ -552,6 +553,7 @@ var DBMETA=[["emp","임직원 명부"],["hire","채용 공고"],["appl","지원�
 var TABS = [
   {id:"dash",label:"대시보드"},{id:"emp",label:"임직원"},{id:"hire",label:"채용"},
   {id:"onbo",label:"온보딩"},{id:"eval",label:"평가·포상"},{id:"exit",label:"퇴사"},
+  {id:"leave",label:"휴무 관리 · 베타"},
   {id:"docs",label:"인사 서류함"},{id:"std",label:"운영 기준"}
 ];
 var DB={emp:[],hire:[],appl:[],onbo:[],eval:[],exit:[]};
@@ -2011,7 +2013,19 @@ function drawDonut(cid,obj){
 }
 var RENDERED={};
 var RENDERERS={dash:renderDash,emp:renderEmp,hire:renderHire,onbo:renderOnbo,
-  eval:renderEval,exit:renderExit,docs:renderDocs,std:renderStd};
+  eval:renderEval,exit:renderExit,leave:renderLeave,docs:renderDocs,std:renderStd};
+function renderLeave(){
+  setPanel("leave",
+    '<div class="card" style="padding:0;overflow:hidden">'+
+      '<div style="display:flex;align-items:center;gap:8px;padding:10px 16px;border-bottom:1px solid var(--line,#e5ded4);font-size:12.5px;color:#8a8178;background:#faf6ef">'+
+        '<b style="color:#9a7b4f">휴무 · 근무 스케줄 관리</b>'+
+        '<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;background:rgba(169,138,82,.18);color:#9a7b4f;border:1px solid rgba(169,138,82,.4)">BETA</span>'+
+        '<span style="margin-left:auto">데이터는 이 브라우저에만 저장됩니다(로컬·미공유).</span>'+
+      '</div>'+
+      '<iframe src="leave.html" title="휴무 관리" loading="lazy" '+
+        'style="width:100%;height:calc(100vh - 230px);min-height:560px;border:0;display:block"></iframe>'+
+    '</div>');
+}
 function showTab(id){
   TABS.forEach(function(t){
     document.querySelector('.tab[data-tab="'+t.id+'"]').classList.toggle("active",t.id===id);
