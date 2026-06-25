@@ -17,7 +17,7 @@
   .brand{font-size:18px;font-weight:800;letter-spacing:1px}
   .brand span{color:var(--accent)}
   .brand small{display:block;font-size:11px;font-weight:500;color:var(--dim);letter-spacing:0}
-  .wrap{max-width:1400px;margin:18px auto;padding:0 18px}
+  .wrap{max-width:100%;margin:12px auto;padding:0 10px}
   .toolbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px}
   .monthnav{display:flex;align-items:center;gap:8px;background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:6px 10px}
   .monthnav b{font-size:15px;min-width:130px;text-align:center}
@@ -50,7 +50,11 @@
   .dept-nm{font-weight:800;font-size:11.5px}
   .dept-crit{font-weight:600;font-size:9px;color:#8a8178;margin-top:3px}
   .deptfirst td{border-top:2px solid #cdbfa8}
-  td.day{min-width:38px;cursor:default}
+  td.day{min-width:34px;cursor:default}
+  th.day{min-width:34px}
+  /* 행 hover 강조 — 마우스 올린 가로열 부각 */
+  #boardBody tr:hover td{background:#f5ead4!important}
+  #boardBody tr:hover td.colName{background:#efe0c0!important}
   /* 오늘 열 — 굵은 바깥 테두리로 강조 */
   th.today,td.today{border-left:3px solid #c0392b!important;border-right:3px solid #c0392b!important}
   thead th.today{border-top:3px solid #c0392b!important}

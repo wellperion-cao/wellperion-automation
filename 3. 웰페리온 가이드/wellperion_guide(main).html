@@ -41,7 +41,7 @@
 
   .main{flex:1; padding:48px 60px 80px; max-width:980px;}
   /* 휴무·근무 스케줄(H3): 표가 넓어 본문 980px 제한을 풀고 화면 폭으로 확장 (넓은 화면에서만) */
-  @media(min-width:1100px){ #H3{ max-width:none; width:calc(100vw - 286px - 80px); } }
+  @media(min-width:1100px){ #H3{ max-width:none; width:calc(100vw - 286px - 40px); margin-left:-20px; } }
   .doc{display:none; animation:fadeIn 0.18s ease-out;}
   .doc.active{display:block;}
   @keyframes fadeIn{from{opacity:0; transform:translateY(4px);} to{opacity:1; transform:none;}}
