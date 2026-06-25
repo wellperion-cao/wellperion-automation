@@ -1906,5 +1906,19 @@
     "next": "🌀 표류 — 다음 미정 (필요 시 GM·웰리/담당 C-Level 지정)",
     "adhoc_commit": "86f03051d00cc44e29ba390703883857c6abc930",
     "ship_no": 170
+  },
+  {
+    "task_id": "CTO-2026-06-25-ADHOC-ba74d781",
+    "clevel": "cto",
+    "title": "[시토] /sec 민감 8개 페이지 사내 게이트 단일 공유화(_assets/gate.js)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-06-25",
+    "processed_at": "2026-06-25",
+    "artifact": "매출지출현황의 비번 가림막을 민감 페이지로 확장. 페이지별 비번 복붙 대신\n단일 공유 게이트 1벌(_assets/gate.js)을 각 <head>에 1줄 include. 비번 1곳 관리.\n대상: 지출/매출/문의회원/회원관리/결재현황/마케팅대시보드/월간마케팅/재등록대시보드.\n세션 1회 통과(sessionStorage)·body 가림(플래시 방지). 커튼=우연차단, 진짜잠금=배21 JWT(보류).\nERP 메인 허브(guide main)는 의도적 공개요약층이라 제외·GM 판단건. (CLI ad-hoc · 커밋 ba74d781)",
+    "next": "🌀 표류 — 다음 미정 (필요 시 GM·웰리/담당 C-Level 지정)",
+    "adhoc_commit": "ba74d78146c74a72b3a8e04f89f3a18f664e63b0",
+    "ship_no": 166
   }
 ]
