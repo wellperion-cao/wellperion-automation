@@ -93,6 +93,107 @@ def slugify_campaign(path_or_name: str) -> str:
     return slug
 
 
+# ─────────────────────────────────────────────────────────────
+# 본문 정규화 — 업로드 직전 자동 적용 (누가 본문을 쓰든 매번 동일 결과)
+# ─────────────────────────────────────────────────────────────
+
+# 인라인 CTA 줄 제거 패턴: wellperion.com/ko/inquiry 포함 줄
+_INLINE_CTA_RE = re.compile(r"^.{0,30}wellperion\.com/ko/inquiry.{0,60}$", re.MULTILINE)
+
+# 해시태그 줄 감지: # 로 시작하는 단어가 2개 이상인 줄
+_HASHTAG_LINE_RE = re.compile(r"^(#\S+\s*){2,}$", re.MULTILINE)
+
+# 고정 꼬리 태그 (항상 마지막에 이 순서로)
+_TAIL_TAGS = ["#종합스포츠클럽", "#웰페리온", "#WELLPERION"]
+# #스포츠클럽 → #종합스포츠클럽 치환 (단독 태그만, #종합스포츠클럽은 건드리지 않음)
+_SPORT_CLUB_RE = re.compile(r"(?<!\S)#스포츠클럽(?!\S)")
+
+# 소제목 줄: ▍로 시작
+_SUBHEADING_RE = re.compile(r"^(▍.+)$", re.MULTILINE)
+
+
+def _normalize_hashtags(tag_line: str) -> str:
+    """해시태그 줄을 정규화:
+    1) #스포츠클럽 → #종합스포츠클럽 치환
+    2) 꼬리 태그(#종합스포츠클럽 #웰페리온 #WELLPERION) 순서로 정렬 — 선두 태그는 원래 순서 유지
+    """
+    # #스포츠클럽 치환
+    tag_line = _SPORT_CLUB_RE.sub("#종합스포츠클럽", tag_line)
+    # 태그 파싱
+    tags = re.findall(r"#\S+", tag_line)
+    # 꼬리 태그 분리
+    tail_set = set(_TAIL_TAGS)
+    head_tags = [t for t in tags if t not in tail_set]
+    # 꼬리 태그 중 원본에 있던 것만 순서대로 (없는 것도 고정 꼬리로 추가)
+    result = head_tags + _TAIL_TAGS
+    return " ".join(result)
+
+
+def normalize_body(body: str, for_cafe: bool = False) -> tuple[str, list[str]]:
+    """본문 정규화 — 업로드 직전 호출.
+    반환: (정규화된 본문, 추출된 해시태그 리스트)
+    for_cafe=True 이면 본문에서 해시태그 줄을 제거하고 태그 리스트만 반환.
+
+    적용 규칙:
+    ① 소제목(▍) 다음 줄이 바로 내용이면 빈 줄 1개 삽입 (소제목 아래 구조 보장)
+    ② 인라인 CTA 줄(wellperion.com/ko/inquiry 포함) 제거 (링크카드가 단일 CTA)
+    ③ 해시태그 정렬·#스포츠클럽→#종합스포츠클럽 치환
+    ④ 카페: 본문에서 해시태그 줄 제거 + 태그 리스트 반환
+    """
+    if not body:
+        return body, []
+
+    lines = body.split("\n")
+    out: list[str] = []
+
+    # ① 소제목 아래 빈 줄 보장 + ② 인라인 CTA 제거
+    i = 0
+    while i < len(lines):
+        ln = lines[i]
+        # 인라인 CTA 줄 제거
+        if _INLINE_CTA_RE.match(ln.strip()) and "wellperion.com/ko/inquiry" in ln:
+            i += 1
+            continue
+        out.append(ln)
+        # 소제목 다음에 바로 내용(비어있지 않은 줄)이 오면 빈 줄 삽입
+        if _SUBHEADING_RE.match(ln) and i + 1 < len(lines):
+            next_ln = lines[i + 1]
+            if next_ln.strip() and not _SUBHEADING_RE.match(next_ln):
+                out.append("")  # 빈 줄 삽입
+        i += 1
+
+    # ③ 해시태그 정렬·치환
+    extracted_tags: list[str] = []
+    result_lines: list[str] = []
+    for ln in out:
+        if _HASHTAG_LINE_RE.match(ln.strip()):
+            normalized = _normalize_hashtags(ln.strip())
+            extracted_tags = re.findall(r"#\S+", normalized)
+            if for_cafe:
+                # ④ 카페: 본문에서 해시태그 줄 제거
+                pass
+            else:
+                result_lines.append(normalized)
+        else:
+            result_lines.append(ln)
+
+    # 연속 빈 줄 2개 이상 → 1개로 압축 (CTA 줄 제거 후 공백 잔상 방지)
+    collapsed: list[str] = []
+    prev_blank = False
+    for ln in result_lines:
+        is_blank = not ln.strip()
+        if is_blank and prev_blank:
+            continue  # 연속 빈 줄 건너뜀
+        collapsed.append(ln)
+        prev_blank = is_blank
+
+    # 후행 공백 줄 정리
+    while collapsed and not collapsed[-1].strip():
+        collapsed.pop()
+
+    return "\n".join(collapsed), extracted_tags
+
+
 def apply_cta_utm(text: str, channel: str, campaign: str | None = None) -> str:
     """본문 text 안의 문의 CTA URL에 채널 utm_source·medium·campaign 부착.
     - 이미 utm_source= 가 있으면 그대로 둠(중복 방지).

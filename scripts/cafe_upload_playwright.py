@@ -33,11 +33,11 @@ from pathlib import Path
 
 # UTM 딱지 헬퍼 — 본문 문의 CTA URL에 카페 출처 부착 (scripts/ 동일 디렉터리)
 try:
-    from cta_utm import apply_cta_utm, append_cta_card
+    from cta_utm import apply_cta_utm, append_cta_card, normalize_body, slugify_campaign
 except ImportError:
     import sys as _sys, os as _os
     _sys.path.insert(0, _os.path.dirname(_os.path.abspath(__file__)))
-    from cta_utm import apply_cta_utm, append_cta_card
+    from cta_utm import apply_cta_utm, append_cta_card, normalize_body, slugify_campaign
 
 # Windows 콘솔(cp949)에서 한글·em-dash 출력 깨짐 방지 — UTF-8 강제
 try:
@@ -175,14 +175,16 @@ IMAGE_EXTS = (".jpg", ".jpeg", ".png")
 # 본문 조립
 # -----------------------------------------------------------------
 class CafePost:
-    __slots__ = ("title", "body", "image_paths", "menu_id", "sticker_count")
+    __slots__ = ("title", "body", "image_paths", "menu_id", "sticker_count", "link_card_url", "tags")
 
-    def __init__(self, title: str, body: str, image_paths: list[Path], menu_id: int, sticker_count: int = STICKER_COUNT_DEFAULT) -> None:
+    def __init__(self, title: str, body: str, image_paths: list[Path], menu_id: int, sticker_count: int = STICKER_COUNT_DEFAULT, link_card_url: str = "", tags: list = None) -> None:
         self.title = title
         self.body = body
         self.image_paths = image_paths
         self.menu_id = menu_id
         self.sticker_count = sticker_count
+        self.link_card_url = link_card_url or LINK_CARD_CTA_URL
+        self.tags = tags or []
 
 
 def load_body(body_file: Path | None, body_inline: str | None) -> str:
@@ -257,15 +259,20 @@ def build_post(args: argparse.Namespace) -> CafePost:
     title = (args.title or "").strip()
     body = load_body(Path(args.body_file) if args.body_file else None, args.body)
     body = _strip_leading_title(title, body)
-    # 문의 CTA URL에 네이버 카페 utm_source+medium+campaign 부착 (발행 직전 원본 미변경·중복 안전)
-    body = apply_cta_utm(body, "naver_cafe", campaign=args.campaign)
+    # ① 소제목 구조 보장 ② 인라인 CTA 줄 제거 ③ 해시태그 정렬·치환 ④ 카페: 본문서 태그 제거+추출
+    body, extracted_tags = normalize_body(body, for_cafe=True)
+    # 링크카드 UTM URL 생성 (campaign 없으면 body_file 경로에서 자동 슬러그)
+    _campaign = args.campaign or (slugify_campaign(args.body_file) if args.body_file else "")
+    import urllib.parse as _up
+    _lc_params = f"utm_source=naver_cafe&utm_medium=cafe" + (f"&utm_campaign={_up.quote(_campaign, safe='')}" if _campaign else "")
+    _link_card_url = f"http://wellperion.com/ko/inquiry/?{_lc_params}"
     image_dir = Path(args.image_dir) if args.image_dir else None
     if image_dir and not image_dir.is_absolute():
         image_dir = ROOT / image_dir
     images = collect_images(image_dir, args.image_glob)
     images = append_cta_card(images)  # 4채널 마지막 이미지로 문의 CTA 카드(IG 제외)
     sticker_count = getattr(args, "sticker_count", STICKER_COUNT_DEFAULT)
-    return CafePost(title, body, images, args.menuid, sticker_count)
+    return CafePost(title, body, images, args.menuid, sticker_count, _link_card_url, extracted_tags)
 
 
 # 카페 톤 격상 룰 가드 (feedback_cafe_tone_elevated) — 게시 차단이 아닌 경고만.
@@ -581,6 +588,8 @@ async def _enter_write_and_fill(page, post: CafePost) -> None:
     # 스티커#1 = 본문 맨 처음 (빈 본문에 먼저 삽입)
     if sticker_count >= 1:
         await _insert_stickers(page, scope, 1, label="#1 본문 맨 처음")
+        # ① 본문 맨 처음 스티커 가운데정렬 (삽입 직후 1회)
+        await _center_align_first_sticker(page, scope)
     # 본문 세그먼트1 (문의 줄 포함) 타이핑
     await _focus_body_end(page, scope)
     await page.keyboard.type(seg1, delay=8)
@@ -610,12 +619,115 @@ async def _enter_write_and_fill(page, post: CafePost) -> None:
     except Exception:
         pass
 
-    # 링크 카드 삽입 — 본문 끝에 문의 CTA를 og:image 썸네일 포함 링크 카드로 삽입 (PoC 실측 2026-06-24).
-    # URL 타이핑 → Enter → SmartEditor 자동 카드화. 실패해도 draft 진행(평문 URL 폴백은 본문에 이미 포함).
-    await _insert_link_card(page, scope)
+    # 링크 카드 삽입 — UTM 추적형 URL로 문의 CTA를 og:image 썸네일 포함 링크 카드로 삽입.
+    # 실패해도 draft 진행.
+    await _insert_link_card(page, scope, url=post.link_card_url)
 
     if post.image_paths:
         await _attach_images(page, scope, post.image_paths)
+
+    # ④ 카페 태그 입력칸에 해시태그 입력 (최대 10개)
+    if post.tags:
+        await _fill_tags(page, post.tags)
+
+
+async def _fill_tags(page, tags: list[str]) -> None:
+    """카페 글쓰기 태그 입력칸에 해시태그를 최대 10개 입력한다.
+    셀렉터 후보를 순서대로 시도. 찾으면 # 제거한 태그명을 Enter/쉼표로 구분 입력.
+    셀렉터 미발견 시 DOM 후보를 출력하고 보류로 보고(억지 진행 금지)."""
+    MAX_TAGS = 10
+    targets = tags[:MAX_TAGS]
+    # 태그 입력칸 셀렉터 후보 — 실측(2026-06-25): className=tag_input, placeholder=태그를 입력해주세요 (최대 10개)
+    TAG_INPUT_SELECTORS = [
+        'input.tag_input',                          # 실측 1순위 (className 직접)
+        'input[placeholder*="태그를 입력"]',          # placeholder 실측값
+        'input[placeholder*="태그"]',
+        'input[placeholder*="tag"]',
+        'input[placeholder*="Tag"]',
+        '.tag_input input',
+        '.TagInput input',
+        '[class*="tag"] input',
+        '[class*="Tag"] input',
+    ]
+    tag_input = None
+    found_sel = None
+    # SmartEditor iframe 포커스 해제 — 태그칸(메인 프레임)에 fill 가능하도록
+    try:
+        await page.keyboard.press("Escape")
+        await page.wait_for_timeout(300)
+    except Exception:
+        pass
+    for sel in TAG_INPUT_SELECTORS:
+        try:
+            loc = page.locator(sel).first
+            if await loc.count() > 0 and await loc.is_visible():
+                tag_input = loc
+                found_sel = sel
+                break
+        except Exception:
+            continue
+
+    if tag_input is None:
+        # DOM 후보 진단 출력 (억지 진행 금지)
+        try:
+            candidates = await page.evaluate(
+                """() => {
+                    const all = document.querySelectorAll('input');
+                    return Array.from(all).slice(0, 20).map(el => ({
+                        placeholder: el.placeholder || '',
+                        className: el.className || '',
+                        id: el.id || '',
+                        name: el.name || '',
+                        type: el.type || ''
+                    }));
+                }"""
+            )
+            print("[WARN] 카페 태그 입력칸 미발견 — DOM input 후보:")
+            for c in candidates:
+                if c.get("placeholder") or "tag" in (c.get("className") or "").lower():
+                    print(f"        placeholder={c['placeholder']!r} class={c['className']!r} id={c['id']!r}")
+        except Exception:
+            print("[WARN] 카페 태그 입력칸 미발견 — DOM 진단 실패")
+        print("[WARN] 카페 태그 입력 보류 (셀렉터 확정 후 재시도 필요)")
+        return
+
+    print(f"[INFO] 카페 태그 입력칸 발견 ({found_sel!r}) — {len(targets)}개 입력")
+    try:
+        await tag_input.click()
+        await page.wait_for_timeout(400)
+        for tag in targets:
+            # # 기호 제거 후 type (fill은 SmartEditor 포커스 잔존 시 timeout 발생)
+            tag_text = tag.lstrip("#")
+            await tag_input.type(tag_text, delay=30)
+            await page.wait_for_timeout(200)
+            await page.keyboard.press("Enter")
+            await page.wait_for_timeout(400)
+        print(f"[INFO] 카페 태그 입력 완료: {targets}")
+    except Exception as e:
+        print(f"[WARN] 카페 태그 입력 실패(발행 계속): {e}")
+
+
+async def _center_align_first_sticker(page, scope) -> None:
+    """본문 맨 처음 스티커 컴포넌트에 가운데정렬 적용 (삽입 직후 1회).
+    JS로 첫 번째 se-sticker 컴포넌트를 찾아 text-align:center 주입.
+    실패해도 발행은 막지 않는다."""
+    try:
+        applied = await scope.evaluate(
+            """() => {
+                const sticker = document.querySelector('.se-component.se-sticker');
+                if (!sticker) return false;
+                sticker.style.textAlign = 'center';
+                const inner = sticker.querySelector('.se-section, .se-module, .se-sticker-content');
+                if (inner) inner.style.textAlign = 'center';
+                return true;
+            }"""
+        )
+        if applied:
+            print("[INFO] 스티커 가운데정렬 적용 완료 (JS text-align:center)")
+        else:
+            print("[WARN] 스티커 가운데정렬 — se-sticker 컴포넌트 미발견, 건너뜀")
+    except Exception as e:
+        print(f"[WARN] 스티커 가운데정렬 실패(발행 계속): {e}")
 
 
 async def _focus_body_end(page, scope) -> None:

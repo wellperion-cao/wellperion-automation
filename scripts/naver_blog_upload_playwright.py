@@ -35,11 +35,11 @@ from pathlib import Path
 
 # UTM 딱지 헬퍼 — 본문 문의 CTA URL에 채널 출처 부착 (scripts/ 동일 디렉터리)
 try:
-    from cta_utm import apply_cta_utm, append_cta_card
+    from cta_utm import apply_cta_utm, append_cta_card, normalize_body, slugify_campaign
 except ImportError:
     import sys as _sys, os as _os
     _sys.path.insert(0, _os.path.dirname(_os.path.abspath(__file__)))
-    from cta_utm import apply_cta_utm, append_cta_card
+    from cta_utm import apply_cta_utm, append_cta_card, normalize_body, slugify_campaign
 
 # Windows 콘솔(cp949)에서 한글·em-dash 출력 깨짐 방지 — UTF-8 강제
 try:
@@ -199,13 +199,14 @@ IMAGE_EXTS = (".jpg", ".jpeg", ".png")
 # 본문 조립 — body-file(가공완료 최종본) + 제목. (feedback_final_content_only_for_publish)
 # -----------------------------------------------------------------
 class BlogPost:
-    __slots__ = ("title", "body", "image_paths", "sticker_count")
+    __slots__ = ("title", "body", "image_paths", "sticker_count", "link_card_url")
 
-    def __init__(self, title: str, body: str, image_paths: list[Path], sticker_count: int = STICKER_COUNT_DEFAULT) -> None:
+    def __init__(self, title: str, body: str, image_paths: list[Path], sticker_count: int = STICKER_COUNT_DEFAULT, link_card_url: str = "") -> None:
         self.title = title
         self.body = body
         self.image_paths = image_paths
         self.sticker_count = sticker_count
+        self.link_card_url = link_card_url or LINK_CARD_CTA_URL
 
 
 def load_body(body_file: Path | None, body_inline: str | None) -> str:
@@ -264,15 +265,20 @@ def build_post(args: argparse.Namespace) -> BlogPost:
     title = (args.title or "").strip()
     body = load_body(Path(args.body_file) if args.body_file else None, args.body)
     body = _strip_leading_title(title, body)
-    # 문의 CTA URL에 네이버 블로그 utm_source+medium+campaign 부착 (발행 직전 원본 미변경·중복 안전)
-    body = apply_cta_utm(body, "naver_blog", campaign=args.campaign)
+    # ① 소제목 구조 보장 ② 인라인 CTA 줄 제거 ③ 해시태그 정렬·치환
+    body, _tags = normalize_body(body, for_cafe=False)
+    # 링크카드 UTM URL 생성 (campaign 없으면 body_file 경로에서 자동 슬러그)
+    _campaign = args.campaign or (slugify_campaign(args.body_file) if args.body_file else "")
+    import urllib.parse as _up
+    _lc_params = f"utm_source=naver_blog&utm_medium=blog" + (f"&utm_campaign={_up.quote(_campaign, safe='')}" if _campaign else "")
+    _link_card_url = f"http://wellperion.com/ko/inquiry/?{_lc_params}"
     image_dir = Path(args.image_dir) if args.image_dir else None
     if image_dir and not image_dir.is_absolute():
         image_dir = ROOT / image_dir
     images = collect_images(image_dir, args.image_glob)
     images = append_cta_card(images)  # 4채널 마지막 이미지로 문의 CTA 카드(IG 제외)
     sticker_count = getattr(args, "sticker_count", STICKER_COUNT_DEFAULT)
-    return BlogPost(title, body, images, sticker_count)
+    return BlogPost(title, body, images, sticker_count, _link_card_url)
 
 
 def validate_post(post: BlogPost, require_images: bool) -> list[str]:
@@ -585,12 +591,14 @@ async def _enter_write_and_fill(page, post: BlogPost, blog_id: str | None) -> No
     if sticker_count > 0:
         await _place_caret_at_body_start(page, target)
         await _insert_one_sticker_at_caret(page, target, "본문 맨 처음")
+        # ① 본문 맨 처음 스티커 가운데정렬 (삽입 직후 1회)
+        await _center_align_first_sticker(page, target)
         await _place_caret_after_inquiry_line(page, target)
         await _insert_one_sticker_at_caret(page, target, "'문의' 줄 다음")
 
-    # 링크 카드 삽입 — 본문 끝에 문의 CTA를 og:image 썸네일 포함 링크 카드로 삽입 (PoC 실측 2026-06-24).
-    # URL 타이핑 → Enter → SmartEditor 자동 카드화. 실패해도 draft 진행(평문 URL 폴백은 본문에 이미 포함).
-    await _insert_link_card(page, target)
+    # 링크 카드 삽입 — UTM 추적형 URL로 문의 CTA를 og:image 썸네일 포함 링크 카드로 삽입.
+    # URL 타이핑 → Enter → SmartEditor 자동 카드화. 실패해도 draft 진행.
+    await _insert_link_card(page, target, url=post.link_card_url)
 
     # 이미지 첨부 (슬라이드 모달 단계 포함). 본문 맨 아래에 삽입. 실패해도 draft 진행.
     if post.image_paths:
@@ -719,6 +727,29 @@ async def _insert_one_sticker_at_caret(page, target, label: str) -> int:
     else:
         print(f"[WARN] 스티커 삽입 실패 — {label} (본문 스티커 {before}→{after}, 클릭 {clicked})")
     return inserted
+
+
+async def _center_align_first_sticker(page, target) -> None:
+    """본문 맨 처음 스티커 컴포넌트에 가운데정렬 적용 (삽입 직후 1회).
+    JS로 첫 번째 se-sticker 컴포넌트를 찾아 text-align:center 주입.
+    실패해도 발행은 막지 않는다."""
+    try:
+        applied = await target.evaluate(
+            """() => {
+                const sticker = document.querySelector('.se-component.se-sticker');
+                if (!sticker) return false;
+                sticker.style.textAlign = 'center';
+                const inner = sticker.querySelector('.se-section, .se-module, .se-sticker-content');
+                if (inner) inner.style.textAlign = 'center';
+                return true;
+            }"""
+        )
+        if applied:
+            print("[INFO] 스티커 가운데정렬 적용 완료 (JS text-align:center)")
+        else:
+            print("[WARN] 스티커 가운데정렬 — se-sticker 컴포넌트 미발견, 건너뜀")
+    except Exception as e:
+        print(f"[WARN] 스티커 가운데정렬 실패(발행 계속): {e}")
 
 
 async def _place_caret_at_body_start(page, target) -> None:
