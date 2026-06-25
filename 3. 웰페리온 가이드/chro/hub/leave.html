@@ -42,9 +42,14 @@
   th,td{border:1px solid var(--line);padding:0;text-align:center;height:30px}
   thead th{background:var(--wk);position:sticky;top:0;z-index:3;font-weight:700;color:var(--dim);font-size:11px}
   .colDept,.colName{position:sticky;z-index:2;background:var(--paper)}
-  .colDept{left:0;min-width:62px;font-weight:700;color:var(--accent);font-size:11px}
-  .colName{left:62px;min-width:80px;text-align:left;padding:0 8px;font-weight:600}
-  thead .colDept{left:0;z-index:5}thead .colName{left:62px;z-index:5}
+  .colDept{left:0;min-width:88px;width:88px;font-weight:700;color:var(--accent);font-size:11px}
+  .colName{left:88px;min-width:80px;text-align:left;padding:0 8px;font-weight:600}
+  thead .colDept{left:0;z-index:5}thead .colName{left:88px;z-index:5}
+  /* 부서명+기준 병합셀 (구분 열) */
+  .deptcell{background:#f1ebe1!important;color:var(--accent);text-align:center;vertical-align:middle;white-space:normal;line-height:1.25;padding:5px 3px;border-right:2px solid var(--accent2)}
+  .dept-nm{font-weight:800;font-size:11.5px}
+  .dept-crit{font-weight:600;font-size:9px;color:#8a8178;margin-top:3px}
+  .deptfirst td{border-top:2px solid #cdbfa8}
   td.day{min-width:38px;cursor:default}
   /* 오늘 열 — 굵은 바깥 테두리로 강조 */
   th.today,td.today{border-left:3px solid #c0392b!important;border-right:3px solid #c0392b!important}
@@ -446,10 +451,13 @@ function render(){
   let b="";
   for(const [dept,names] of DEPTS){
     const sh=SHIFTS[dept];
-    b+=`<tr class='deptband'><td colspan='${days+5}'>${dept}${sh?` <span style='font-weight:400;color:#9b8e7c'>· 오픈 ${sh.wd.open} / 마감 →${sh.wd.closeEnd}${sh.sun2?" · 일·공휴 2인":""}</span>`:""}</td></tr>`;
+    const _rc=(sh?1:0)+names.length;
+    const _crit=sh?`오픈 ${sh.wd.open}<br>마감 →${sh.wd.closeEnd}${sh.sun2?"<br>일·공휴 2인":""}`:"";
+    const _deptCell=`<td class='colDept deptcell' rowspan='${_rc}'><div class='dept-nm'>${dept}</div>${_crit?`<div class='dept-crit'>${_crit}</div>`:""}</td>`;
+    let _placed=false;
     // 배치 행 (커버리지 색상)
     if(sh){
-      let cr=`<tr class='covrow'><td class='colDept'></td><td class='colName'>배치 ✓/✕</td>`;
+      let cr=`<tr class='covrow deptfirst'>${_deptCell}<td class='colName'>배치 ✓/✕</td>`; _placed=true;
       for(let d=1;d<=days;d++){
         const dt=ymd(y,m,d), dow=new Date(y,m,d).getDay();
         const base=HOLIDAYS[dt]?"hol":(dow===0?"sun":dow===6?"sat":"");
@@ -466,7 +474,7 @@ function render(){
     }
     for(const nm of names){
       let used=0, off=0, huN=0;
-      let row=`<tr><td class='colDept'></td><td class='colName'>${nm}</td>`;
+      let row=`<tr${_placed?'':" class='deptfirst'"}>${_placed?'':_deptCell}<td class='colName'>${nm}</td>`; _placed=true;
       for(let d=1;d<=days;d++){
         const dt=ymd(y,m,d), dow=new Date(y,m,d).getDay();
         const base=HOLIDAYS[dt]?"hol":(dow===0?"sun":dow===6?"sat":"");
