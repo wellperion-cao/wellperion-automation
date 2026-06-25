@@ -56,7 +56,7 @@
 
 ### 3) 모바일 폼 라이브 호스팅
 `voc_mobile_form.html` 은 GitHub Pages 로 자동 노출됨:
-`https://wellperion-cao.github.io/wellperion-automation/3.%20%EC%9B%B0%ED%8E%98%EB%A6%AC%EC%98%A8%20%EA%B0%80%EC%9D%B4%EB%93%9C/coo/voc/voc_mobile_form.html`
+`https://wellperion-cao.github.io/wellperion-automation/coo/voc/voc_mobile_form.html`
 
 위치별 QR 은 여기에 `?loc=` 만 붙이면 됨.
 
