@@ -248,7 +248,7 @@ function aggregate(){
   MEMBER_G=sum(SALES_MEMBER.slice(0,DATA_LAST));SALES_G=sum(salesMonth.slice(0,DATA_LAST));COST_G=LABOR_G+OPER_G+PROC_G;
 }
 
-var TABS=[{id:"dash",label:"대시보드"},{id:"sales",label:"매출현황"},{id:"expense",label:"지출현황"},{id:"request",label:"구매요청"}];
+var TABS=[{id:"dash",label:"대시보드"},{id:"sales",label:"매출현황"},{id:"expense",label:"지출현황"}]; // 구매요청은 직원용(?req=1)으로 분리
 function renderNav(){var nav=document.getElementById("nav");
   nav.innerHTML=TABS.map(function(t,i){return '<button class="tab'+(i?'':' active')+'" data-p="'+t.id+'">'+t.label+'</button>';}).join('');
   nav.querySelectorAll(".tab").forEach(function(b){b.onclick=function(){
@@ -260,7 +260,7 @@ async function startApp(){
   await loadData();await loadSales();aggregate();
   document.getElementById("loading").style.display="none";document.getElementById("content").style.display="block";
   document.getElementById("syncMeta").textContent="인건비 "+(LIVE?"🟢실시간":"⚪폴백")+" · 매출 "+(SALES_LIVE?"🟢실시간":"⚪폴백")+" · 구매성 1~6월 확정 · 7~12월 도래 시 자동";
-  renderKpi();renderMain();renderSalesDept();renderMix();renderSales();renderSalesTbl();renderExpTbl();renderPeople();renderReq();
+  renderKpi();renderMain();renderSalesDept();renderMix();renderSales();renderSalesTbl();renderExpTbl();renderPeople();
 }
 
 // 직원용 구매요청 전용 모드 (?req=1) — 재무 데이터·차트 미로드, 구매요청 탭만
