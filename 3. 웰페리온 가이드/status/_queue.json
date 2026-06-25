@@ -972,5 +972,19 @@
     "next": "🌀 표류 — 다음 미정 (필요 시 GM·웰리/담당 C-Level 지정)",
     "adhoc_commit": "025a72675fe3bdafb425e460b66763b001a015f7",
     "ship_no": 172
+  },
+  {
+    "task_id": "CMO-2026-06-25-ADHOC-a177583c",
+    "clevel": "cmo",
+    "title": "[시모] /inquiry 문의 자동알림 마커 버그 수정 — 빈행 포함 getLastRow→실데이터행 기준 감지(@95)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-06-25",
+    "processed_at": "2026-06-25",
+    "artifact": "- 원인: INQ_LASTROW 마커가 getLastRow()(시트 끝 빈행 수백개 포함)로 잡혀 새 문의가 마커 아래라 영구 스킵(onFormSubmit·폴링 양쪽). 오늘 강습 2건 미알림 원인\n- 수정: _realLastDataRow_ 헬퍼(전화번호 채워진 실데이터 마지막 행) 기준으로 감지·마커 교체 — _notifyNewInquiries_·onInquiryFormSubmit·install init 전부. 8개 시트 공통\n- 마커 실데이터 기준 교정(전 시트 marker==realDataRow). 발송 0 (CLI ad-hoc · 커밋 a177583c)",
+    "next": "🌀 표류 — 다음 미정 (필요 시 GM·웰리/담당 C-Level 지정)",
+    "adhoc_commit": "a177583ccd21056d42b3861e1ed07b0c2451fe82",
+    "ship_no": 177
   }
 ]
