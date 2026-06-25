@@ -10624,24 +10624,46 @@ function crTab(btn, panelId) {
         +'</a>';
     }
 
+    // byGender({m,f}) → {total,done,undone,pct} — GAS today_live 응답 내 byGender 필드 활용
+    function parseGenderKpi(byGender, gender){
+      if(!byGender||!byGender[gender]) return null;
+      var g=byGender[gender];
+      var total=typeof g.total==='number'?g.total:0;
+      var done =typeof g.done ==='number'?g.done :0;
+      var pct  =typeof g.pct  ==='number'?g.pct  :(total?Math.round(done/total*100):0);
+      return {total:total,done:done,undone:total-done,pct:pct};
+    }
+
     function renderHomeKpi(facilityData, supportData){
       var el=document.getElementById('home-check-kpi');
       if(!el)return;
       var fKpi=parseKpi(facilityData);
-      var sKpi=parseKpi(supportData);
-      (function(){var _p=[];if(fKpi)_p.push(fKpi.pct);if(sKpi)_p.push(sKpi.pct);var _h=document.getElementById('heroCheckPct');if(_h&&_p.length)_h.textContent=Math.round(_p.reduce(function(a,b){return a+b;},0)/_p.length);})();
+      // 지원부 남/여 분리 — byGender 필드 우선, 없으면 전체 통합값 폴백
+      var raw=(supportData&&supportData.byGender)?supportData:null;
+      var sMKpi=raw?parseGenderKpi(raw.byGender,'m'):null;
+      var sFKpi=raw?parseGenderKpi(raw.byGender,'f'):null;
+      var sKpiAll=parseKpi(supportData); // 폴백용
+      // heroCheckPct: 시설 + 지원남 + 지원여 3값 평균 (가능한 값만)
+      (function(){
+        var _p=[];
+        if(fKpi)_p.push(fKpi.pct);
+        if(sMKpi)_p.push(sMKpi.pct); else if(sKpiAll)_p.push(sKpiAll.pct);
+        if(sFKpi)_p.push(sFKpi.pct);
+        var _h=document.getElementById('heroCheckPct');
+        if(_h&&_p.length)_h.textContent=Math.round(_p.reduce(function(a,b){return a+b;},0)/_p.length);
+      })();
       var html='';
+      // 카드1: 시설부
       if(fKpi) html+=buildHomeKpiCard('🏭','시설부',fKpi,FACILITY_URL);
       else html+='<div style="background:var(--paper);border:1px solid var(--border);border-top:3px solid var(--border);border-radius:12px;padding:14px 16px;font-size:12px;color:var(--dim);">시설부 점검 — 로드 실패</div>';
-      if(sKpi) html+=buildHomeKpiCard('✅','지원부',sKpi,SUPPORT_URL);
-      else html+='<div style="background:var(--paper);border:1px solid var(--border);border-top:3px solid var(--border);border-radius:12px;padding:14px 16px;font-size:12px;color:var(--dim);">지원부 점검 — 로드 실패</div>';
-      // 주차관리부 — GAS dept=parking 미구현, 자리 고정 (구현 시 buildHomeKpiCard로 교체)
-      html+='<div style="background:var(--paper);border:1px solid var(--border);border-top:3px solid var(--dim-soft);border-radius:12px;padding:14px 16px;">'
-        +'<div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:8px;">주차관리부 점검</div>'
-        +'<div style="font-size:11px;color:var(--dim);margin-bottom:10px;">입출차·주차</div>'
-        +'<span style="display:inline-block;font-size:11px;font-weight:700;color:var(--dim);background:var(--gray-bg);padding:3px 10px;border-radius:20px;">연결 대기</span>'
-        +'<div style="font-size:10.5px;color:var(--dim-soft);margin-top:8px;">GAS dept=parking 미구현 · 시우/COO 후속</div>'
-        +'</div>';
+      // 카드2: 지원부(남) — byGender.m
+      if(sMKpi) html+=buildHomeKpiCard('🚹','지원부(남)',sMKpi,SUPPORT_URL);
+      else if(sKpiAll) html+=buildHomeKpiCard('✅','지원부(남)',sKpiAll,SUPPORT_URL);
+      else html+='<div style="background:var(--paper);border:1px solid var(--border);border-top:3px solid var(--border);border-radius:12px;padding:14px 16px;font-size:12px;color:var(--dim);">지원부(남) 점검 — 로드 실패</div>';
+      // 카드3: 지원부(여) — byGender.f
+      if(sFKpi) html+=buildHomeKpiCard('🚺','지원부(여)',sFKpi,SUPPORT_URL);
+      else html+='<div style="background:var(--paper);border:1px solid var(--border);border-top:3px solid var(--border);border-radius:12px;padding:14px 16px;font-size:12px;color:var(--dim);">지원부(여) 점검 — 집계 중</div>';
+      // 주차관리부: 점검 없음 — 카드 제외(의도적). 부서 바로가기는 홈 하단 링크 버튼에 유지.
       el.innerHTML=html;
     }
 
