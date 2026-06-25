@@ -2014,17 +2014,25 @@ function drawDonut(cid,obj){
 var RENDERED={};
 var RENDERERS={dash:renderDash,emp:renderEmp,hire:renderHire,onbo:renderOnbo,
   eval:renderEval,exit:renderExit,leave:renderLeave,docs:renderDocs,std:renderStd};
+function sendLeavePass(){
+  // 휴무 iframe에 로그인 관리자 비번을 전달 → iframe이 ERP(db:leave) 자동 로드/저장
+  var f=document.getElementById("leaveFrame");
+  if(!f||!f.contentWindow||!SESSION_PW)return;
+  try{f.contentWindow.postMessage({type:"wp-pass",pw:SESSION_PW},location.origin);}catch(e){}
+}
 function renderLeave(){
   setPanel("leave",
     '<div class="card" style="padding:0;overflow:hidden">'+
       '<div style="display:flex;align-items:center;gap:8px;padding:10px 16px;border-bottom:1px solid var(--line,#e5ded4);font-size:12.5px;color:#8a8178;background:#faf6ef">'+
         '<b style="color:#9a7b4f">휴무 · 근무 스케줄 관리</b>'+
-        '<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;background:rgba(169,138,82,.18);color:#9a7b4f;border:1px solid rgba(169,138,82,.4)">BETA</span>'+
-        '<span style="margin-left:auto">데이터는 이 브라우저에만 저장됩니다(로컬·미공유).</span>'+
+        '<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;background:rgba(169,138,82,.18);color:#9a7b4f;border:1px solid rgba(169,138,82,.4)">ERP 연동</span>'+
+        '<span style="margin-left:auto">ERP 연동 — 전 직원 공유(서버 자동 저장).</span>'+
       '</div>'+
-      '<iframe src="leave.html" title="휴무 관리" loading="lazy" '+
+      '<iframe id="leaveFrame" src="leave.html" title="휴무 관리" loading="lazy" onload="sendLeavePass()" '+
         'style="width:100%;height:calc(100vh - 230px);min-height:560px;border:0;display:block"></iframe>'+
     '</div>');
+  // 렌더 직후에도 한 번 전송(이미 로드된 경우 대비)
+  setTimeout(sendLeavePass,300);
 }
 function showTab(id){
   TABS.forEach(function(t){
@@ -2038,6 +2046,7 @@ function showTab(id){
       '화면 렌더링 중 오류가 발생했습니다.<br><span class="muted">'+esc(e.message||e)+'</span></div></div>');}
     RENDERED[id]=true;
   }
+  if(id==="leave")setTimeout(sendLeavePass,200);  // 탭 보일 때마다 비번 재전송(안전)
 }
 function buildNav(){
   document.getElementById("nav").innerHTML=TABS.map(function(t){
