@@ -40,6 +40,8 @@
   .sidebar .foot{font-size:11.5px; color:var(--dim); padding:22px 26px 0; margin-top:18px; border-top:1px solid var(--border); line-height:1.7;}
 
   .main{flex:1; padding:48px 60px 80px; max-width:980px;}
+  /* 휴무·근무 스케줄(H3): 표가 넓어 본문 980px 제한을 풀고 화면 폭으로 확장 (넓은 화면에서만) */
+  @media(min-width:1100px){ #H3{ max-width:none; width:calc(100vw - 286px - 80px); } }
   .doc{display:none; animation:fadeIn 0.18s ease-out;}
   .doc.active{display:block;}
   @keyframes fadeIn{from{opacity:0; transform:translateY(4px);} to{opacity:1; transform:none;}}
@@ -431,6 +433,7 @@
     <div class="sub-nav" data-parent="chro-nav2">
       <a data-id="H1">📋 취업규칙</a>
       <a data-id="H2">🧑‍💼 인사 운영 허브</a>
+      <a data-id="H3">🗓️ 휴무·근무 스케줄</a>
       <a href="https://wellperion-cao.github.io/wellperion-automation/chro/recruiting/" target="_blank">📢 Recruiting</a>
       <a data-id="S3">📝 업무&결재 현황 SSOT</a>
     </div>
@@ -681,6 +684,7 @@
         <div id="ps-caption-top" style="font-size:9px;color:var(--dim-soft);margin-top:6px;text-align:right">스냅샷 기준 2026-06-22 · PII 비공개, 상세는 HR 허브</div>
         <div style="display:flex;gap:7px;flex-wrap:wrap;margin-top:14px;">
           <a href="#" onclick="event.preventDefault();document.querySelector('[data-id=H1]').click();" style="font-size:12px;font-weight:600;padding:6px 12px;background:var(--accent-bg);color:var(--accent);border-radius:99px;text-decoration:none;border:1px solid var(--border);">취업규칙</a>
+          <a href="#" onclick="event.preventDefault();document.querySelector('[data-id=H3]').click();" style="font-size:12px;font-weight:600;padding:6px 12px;background:var(--accent-bg);color:var(--accent);border-radius:99px;text-decoration:none;border:1px solid var(--border);">🗓️ 휴무</a>
           <a href="https://wellperion-cao.github.io/wellperion-automation/chro/hub/" target="_blank" title="비밀번호 입력 후 입장 — 사내 전용" style="font-size:12px;font-weight:700;padding:6px 12px;background:var(--accent);color:#1a1817;border-radius:99px;text-decoration:none;border:1px solid var(--accent);">🔒 HR 허브 ↗</a>
       <a href="https://wellperion-cao.github.io/wellperion-automation/chro/recruiting/" target="_blank" style="font-size:12px;font-weight:600;padding:6px 12px;background:var(--accent-bg);color:var(--accent);border-radius:99px;text-decoration:none;border:1px solid var(--border);">📢 Recruiting</a>
         </div>
@@ -6567,6 +6571,15 @@ function crTab(btn, panelId) {
       else psLoad();
     })();
     </script>
+  </article>
+
+  <!-- ── H3: 휴무·근무 스케줄 (ERP db:leave 연동 · leave.html 자체 로그인 게이트) ── -->
+  <article class="doc" id="H3">
+    <div class="doc-header"><h2>🗓️ 휴무·근무 스케줄</h2><div class="meta">CHRO 관할 · 나우열M · 🤖 AI CHRO (시로) · ERP 백엔드 연동(전 직원 공유)</div></div>
+    <p class="lead">월별 출근시간 스케줄·오픈/마감 배치 경고·연차/반차/근무변경 신청을 관리합니다. 직원 휴무 데이터(PII)는 보안상 <strong>관리자 비밀번호 입력 후</strong>에만 표시됩니다.</p>
+    <div style="margin-top:14px;border:1px solid var(--border);border-radius:14px;overflow:hidden;background:var(--paper)">
+      <iframe src="chro/hub/leave.html" title="휴무·근무 스케줄" loading="lazy" style="width:100%;height:80vh;min-height:560px;border:0;display:block"></iframe>
+    </div>
   </article>
 
   <!-- ── G19: 업무자동화 ── -->
