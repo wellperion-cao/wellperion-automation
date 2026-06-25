@@ -1147,52 +1147,6 @@ const ITEM_CACHE_KEY = 'wcheck_items_cache'; // 오프라인 폴백 캐시
 const PROMOTE_CTX = {};
 let promoteSourceId = null;   // 현재 승격 진행 중인 원본 이슈 항목 id(반영완료 마킹용)
 
-/* ── 점검 이슈 → VOC 종합 접수처(운영부) 연동 (2026-06-17 시우) ──
-   GM 확정: '접수 필요' 이슈만 운영부 VOC 구글폼에 프리필로 열어 직원이 확인·제출.
-   기존 분류·전달 파이프라인(장소→부서) 그대로 재사용 — 점검 로직 무변경, '보내기'만 얹음.
-   ── 폼 entry 매핑 (urllib로 viewform FB_PUBLIC_LOAD_DATA_ 파싱, 2026-06-17) ──
-     entry.749003756 = 직원&회원명 (단답, 필수)   → 접수자(점검자)
-     entry.1854535620 = 이슈 내용 (장문)           → 이슈 텍스트 + 장소 헤더
-     entry.1744243246 = 불편했던 장소 (체크박스)   → 프리필 생략(옵션 미일치 시 무효, 내용에 장소 명기)
-     entry.586901934  = 접수자 (장문)              → 점검자(중복 기재)
-     entry.360795738  = 전달 부서 (체크박스)        → 직원이 폼에서 선택
-   체크박스 항목은 옵션 문자열 정확일치만 프리필되므로 자유 장소는 '이슈 내용' 본문에 명기한다. */
-const VOC_FORM_BASE = 'https://docs.google.com/forms/d/e/1FAIpQLSd7mDzTyZT5FSXVcxmpMCaqv7M-RR3EmEu2lFqGRksUE77osA/viewform';
-const VOC_ENTRY = { name:'entry.749003756', content:'entry.1854535620', reporter:'entry.586901934' };
-/* 이슈 항목별 접수완료 플래그 — 중복전송 방지(localStorage). 키=장소+내용 해시 단순화로 항목+회차 식별. */
-function vocSentKey(id,round,g){ return 'wcheck_voc_sent_'+(g||activeGenderTab)+'_'+(round||'')+'_'+id; }
-function vocAlreadySent(id,round,g){ try{ return localStorage.getItem(vocSentKey(id,round,g))==='1'; }catch(e){ return false; } }
-/* 점검 이슈를 VOC 폼 프리필 URL로 새 탭 열기.
-   장소 = 구역(카테고리)+항목명 (예: '남 사우나 A-1'), 내용 = 이슈 텍스트, 접수자 = 현재 점검자. */
-function sendIssueToVOC(id,gender){
-  const ctx=PROMOTE_CTX[id]||{};
-  const g=gender||ctx.gender||activeGenderTab;
-  const issText=(typeof issFor==='function'?issFor(id,(ctx&&ctx.round)||'',g):STATE['iss_'+id])||'';
-  if(!issText.trim()){ alert('이슈 내용이 비어 있어 접수처로 보낼 수 없습니다.'); return; }
-  // 장소 = 성별 + 구역(카테고리) + 항목명
-  const genLabel=(g==='f')?'여':'남';
-  const cat=(ctx.cat||'').trim();
-  const ov=(typeof getItemOverrides==='function'?getItemOverrides():{})[id]||{};
-  let itemName=ov.name||'';
-  if(!itemName){ const src=(CUSTOM_ITEMS||[]).find(x=>x.id===id); itemName=(src&&src.name)||''; }
-  const place=[genLabel,cat,itemName].filter(Boolean).join(' ').trim()||'(장소 미상)';
-  // 접수자(점검자) = 현재 점검자 입력칸
-  const se=document.getElementById(g==='f'?'submitterF':'submitterM');
-  const inspector=(se&&se.value||'').trim()||'점검자';
-  // 재전송 확인(이미 보낸 항목)
-  if(vocAlreadySent(id,(ctx&&ctx.round)||'',g)){
-    if(!confirm('이미 접수처로 보낸 이슈입니다. 다시 보낼까요?'))return;
-  }
-  const content='[점검 이슈] 장소: '+place+'\n내용: '+issText;
-  const url=VOC_FORM_BASE+'?usp=pp_url'
-    +'&'+VOC_ENTRY.name+'='+encodeURIComponent(inspector)
-    +'&'+VOC_ENTRY.content+'='+encodeURIComponent(content)
-    +'&'+VOC_ENTRY.reporter+'='+encodeURIComponent(inspector);
-  window.open(url,'_blank','noopener');
-  try{ localStorage.setItem(vocSentKey(id,(ctx&&ctx.round)||'',g),'1'); }catch(e){}
-  // 배지 갱신을 위해 해당 항목만 다시 그리는 대신 전체 재렌더(입력 포커스 없으므로 IME 안전)
-  if(typeof renderG==='function')renderG(g);
-}
 
 /* ── 온도 측정 대상 항목 설정 (2026-06-11 시우) ──
    key=항목ID, fields=[{key(영문),label(표시),min,max,unit}].
@@ -2274,7 +2228,7 @@ async function loadState(d,g){
               /* 점검자·담당자 서버 복원(GM 2026-06-16): 기기/세션 바뀌어도(텔레그램 링크 등) 비지 않게 — 로컬 비었을 때만 서버 값으로 채움(로컬 편집 보존). */
               try{ if(_m.by){ if(!localStorage.getItem('wcheck_sub_'+gg+'_'+rk))localStorage.setItem('wcheck_sub_'+gg+'_'+rk,_m.by); if(!localStorage.getItem('wcheck_sub_last_'+gg))localStorage.setItem('wcheck_sub_last_'+gg,_m.by); }
                     if(_m.du){ if(!localStorage.getItem('wcheck_duty_'+gg+'_'+rk))localStorage.setItem('wcheck_duty_'+gg+'_'+rk,_m.du); if(!localStorage.getItem('wcheck_duty_last_'+gg))localStorage.setItem('wcheck_duty_last_'+gg,_m.du); } }catch(e){}
-              /* 5차(2026-06-22 시우·GM 분리결정): 점검 이슈는 점검 안에 기록·복원(회차+성별 키 issKey=복제버그 없음). 종합접수처 자동유입 폐지 — 외부 접수 필요 건만 수동 '접수처로 보내기'. */
+              /* 5차(2026-06-22 시우·GM 분리결정): 점검 이슈는 점검 안에 기록·복원(회차+성별 키 issKey=복제버그 없음). 종합접수처 연동 완전 제거(2026-06-25). */
               if(_m.iss)STATE[issKey(rk,id,gg)]=_m.iss;
               if(_m.tip)STATE[tipKey(rk,id,gg)]=_m.tip;
               if(_m.measure)restoreTempFromMeasure(id,_m.measure,rk,gg);
@@ -3256,12 +3210,6 @@ function renderItem(it,shift,gender,round){
      클릭 시 현재 항목의 구역(카테고리)·라운드·슬롯 컨텍스트를 PROMOTE_CTX에 적립해 모달이 prefill. */
   PROMOTE_CTX[it.id]={cat:(ov.cat||it.cat||it.category||''),slot:(ov.slot||it.slot||''),shift:(ov.shift||it.shift||shift||''),round:round||'',gender:g};
   const promoteBtn=iss?`<button class="tiny-btn" style="background:rgba(91,159,213,0.12);color:#5b9fd5;border-color:rgba(91,159,213,0.35);font-size:12px;" title="이 이슈를 점검표·매뉴얼 항목으로 추가" onclick="openPromoteFromIssue('${it.id}','${g}')">➕ 점검·매뉴얼 항목으로</button>`:'';
-  /* VOC 접수처 보내기(2026-06-17 시우): 이슈가 있을 때만. '접수 필요' 이슈를 운영부 VOC 폼 프리필로 새 탭 오픈.
-     이미 보낸 항목은 '📨 접수됨' 배지(localStorage). 점검 로직 무변경. */
-  const _vocSent=iss?vocAlreadySent(it.id,round||'',g):false;
-  const vocBtn=iss?(_vocSent
-    ? `<span class="tiny-btn" style="background:rgba(44,138,79,0.14);color:#2c8a4f;border-color:rgba(44,138,79,0.4);font-size:12px;cursor:pointer;" title="접수처로 보냄 — 다시 보내려면 클릭" onclick="sendIssueToVOC('${it.id}','${g}')">📨 접수됨</span>`
-    : `<button class="tiny-btn" style="background:rgba(214,138,44,0.12);color:#c8841f;border-color:rgba(214,138,44,0.35);font-size:12px;" title="이 이슈를 운영부 VOC 종합 접수처로 보내기(직원 확인·제출)" onclick="sendIssueToVOC('${it.id}','${g}')">📨 접수처로 보내기</button>`):'';
   /* 요일·주기 일정 배지 (편집 시 '월수금'·'둘째주'·'격주' 입력하면 헬스장처럼 배지로 표시). GM 2026-06-12 */
   const _dayChips=(typeof scheduleBadges==='function')?scheduleBadges(it,itemName,itemDetail):'';
   /* 항목별 점검 기록줄(점검자·시각·담당) — 체크된 항목 아래 회색. GM 2026-06-15 */
@@ -3273,11 +3221,11 @@ function renderItem(it,shift,gender,round){
   }
   return `<div class="${cls}">
     <div class="item-row"><input type="checkbox" id="cb_${pfx}${it.id}" ${ck} ${_locked?'disabled':''} onchange="onCk('${it.id}','${shift}','${g}'${_rArg})"><label for="cb_${pfx}${it.id}">${itemName}${_dayChips}${editedTag}${_locked?' <span style="font-size:10px;color:#2c8a4f;font-weight:700;">🔒제출됨</span>':''}</label>
-      <div class="item-btns"><button class="tiny-btn issue" title="발견한 이슈를 적으면 이 점검(회차)에 기록·보관됩니다. 외부 접수·타부서 처리가 필요한 건만 아래 '접수처로 보내기'로." onclick="togX('${pfx}iss_${it.id}')">이슈</button><button class="tiny-btn tip" onclick="togX('${pfx}tip_${it.id}')">노하우</button>${refBtn}</div>
+      <div class="item-btns"><button class="tiny-btn issue" title="발견한 이슈를 적으면 이 점검(회차)에 기록·보관됩니다." onclick="togX('${pfx}iss_${it.id}')">이슈</button><button class="tiny-btn tip" onclick="togX('${pfx}tip_${it.id}')">노하우</button>${refBtn}</div>
     </div>${_attrLine}
     <div class="item-detail">${det}</div>${tempHtml}
     <input class="extra-input issue-field${iss?' show':''}" id="${pfx}iss_${it.id}" placeholder="이슈 (이 점검에 남음)..." value="${esc(iss)}" ${_locked?'readonly':''} onchange="onExtra('iss','${it.id}',${round?`'${round}'`:'\'\''},'${g}','${pfx}iss_${it.id}')">
-    ${(promoteBtn||vocBtn)?`<div class="promote-bar" style="margin:4px 0 2px;display:flex;flex-wrap:wrap;gap:6px;align-items:center;">${promoteBtn}${vocBtn}</div>`:''}
+    ${promoteBtn?`<div class="promote-bar" style="margin:4px 0 2px;display:flex;flex-wrap:wrap;gap:6px;align-items:center;">${promoteBtn}</div>`:''}
     <input class="extra-input tip-field${tip?' show':''}" id="${pfx}tip_${it.id}" placeholder="노하우/개선 의견..." value="${esc(tip)}" ${_locked?'readonly':''} onchange="onExtra('tip','${it.id}',${round?`'${round}'`:'\'\''},'${g}','${pfx}tip_${it.id}')">
   </div>`;
 }
@@ -4215,17 +4163,16 @@ async function renderAdmin(){
     html+=buildAdminShiftCard('night','탕청소 (외주 업체)',data.nightDone,data.nightTotal,data.nightPct,STATE._submitted_night,STATE._submitter_night,STATE._submittedAt_night?new Date(STATE._submittedAt_night).toLocaleString('ko-KR'):'-',null,data.nightSched,dow,dn);
   }
 
-  /* ━━━ 이슈 ━━━ 5차(2026-06-22 시우·GM 분리결정): 점검 이슈는 각 회차 점검표에 기록·보관(점검 맥락 유지).
-     외부 접수·타부서 처리가 필요한 건만 수동 '접수처로 보내기'. (현황 이슈 목록 통합 표시는 후속) */
+  /* ━━━ 이슈 ━━━ 점검 이슈는 각 회차 점검표에 기록·보관. 종합접수처 연동 완전 제거(2026-06-25). */
   html+=`<div class="dash-section-title">이슈</div>`;
   if(data.allIssues && data.allIssues.length){
     html+='<div class="admin-card" style="border-color:rgba(214,138,44,0.3)">';
     html+='<div style="font-size:13px;font-weight:700;color:#c8841f;margin-bottom:6px;">기록된 이슈 ('+data.allIssues.length+'건) — 이 날짜</div>';
     data.allIssues.forEach(it=>{const sl={am:'오전',pm:'오후',night:'탕청소',all:'상시',focus:'집중'}[it.shift]||it.shift;html+=`<div style="padding:6px 0;border-bottom:1px solid rgba(214,138,44,0.2)"><div style="font-size:13px;font-weight:600">${escapeHTML(it.name)} <span style="color:var(--dim);font-size:11px">${it.cat?escapeHTML(it.cat)+' · ':''}${sl}</span></div><div style="color:#c8841f;font-size:12px;white-space:pre-wrap">${escapeHTML(it.memo)}</div></div>`;});
-    html+='<div style="font-size:12px;color:var(--dim);margin-top:8px;line-height:1.6">외부 접수·타부서 처리가 필요한 건만 점검 항목의 <strong>\'접수처로 보내기\'</strong>로 종합접수처에 올리세요.</div>';
+    html+='<div style="font-size:12px;color:var(--dim);margin-top:8px;line-height:1.6">이슈는 점검 안에 기록됩니다. 외부 처리가 필요한 건은 별도 합의 경로를 이용하세요.</div>';
     html+='</div>';
   }else{
-    html+=`<div class="admin-card" style="border-color:rgba(214,138,44,0.3)"><div style="font-size:13px;color:var(--dim);line-height:1.6">이 날짜에 기록된 점검 이슈가 없습니다. 점검 중 이슈는 각 회차 점검표에 기록되며, 외부 접수가 필요한 건만 <strong>'접수처로 보내기'</strong>로 종합접수처에 올립니다.</div></div>`;
+    html+=`<div class="admin-card" style="border-color:rgba(214,138,44,0.3)"><div style="font-size:13px;color:var(--dim);line-height:1.6">이 날짜에 기록된 점검 이슈가 없습니다. 점검 중 이슈는 각 회차 점검표에 기록·보관됩니다.</div></div>`;
   }
 
   /* ━━━ 노하우 ━━━ */
