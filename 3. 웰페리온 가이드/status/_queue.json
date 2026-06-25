@@ -820,5 +820,19 @@
     "next": "🌀 표류 — 다음 미정 (필요 시 GM·웰리/담당 C-Level 지정)",
     "adhoc_commit": "d9163f56081627bb5a2bcaf9e7572d4799f91872",
     "ship_no": 170
+  },
+  {
+    "task_id": "CMO-2026-06-25-ADHOC-b1759ffe",
+    "clevel": "cmo",
+    "title": "[시모] /inquiry 문의 텔레그램 알림 폼제출 즉시발송 전환 — onFormSubmit 트리거+폴링 백스톱(중복방지)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-06-25",
+    "processed_at": "2026-06-25",
+    "artifact": "- onInquiryFormSubmit: 폼 제출 즉시 문의알림방(-5516675010) 발송, baseline 억제 안 탐\n- 멤버십·강습 응답시트에 onFormSubmit 트리거 설치(웹앱 action으로 설치, GM 에디터 불필요)\n- _notifyNewInquiries_ 5분 폴링은 백스톱 유지, INQ_LASTROW 공유마커로 중복발송 0\n- clasp 배포 @84. TEST 발송 문의알림방 200 확인 (CLI ad-hoc · 커밋 b1759ffe)",
+    "next": "🌀 표류 — 다음 미정 (필요 시 GM·웰리/담당 C-Level 지정)",
+    "adhoc_commit": "b1759ffe66c9075ec7c81dd16de008cedcc60ba4",
+    "ship_no": 175
   }
 ]
