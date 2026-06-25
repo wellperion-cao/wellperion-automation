@@ -505,6 +505,7 @@ function doGet(e) {
   if (action === 'delete_facility_sheets') { return deleteFacilitySheets(); }
   if (action === 'delete_facility_empty_genders') { return deleteFacilityEmptyGenderSheets(); }   // 빈 껍데기 시설_남성/여성구역 2개만 정밀 삭제(공용구역 절대 보존, 데이터행0 확인). 1회성. 2026-06-20 시우.
   if (action === 'hide_issue_col') { return hideIssueColumn(e.parameter.dept || 'support'); }   // G열(이슈·인덱스6) 데이터행 비우기 + 컬럼 숨김(물리삭제 X·인덱스 보존). 1회성. 2026-06-20 시우.
+  if (action === 'show_issue_col') { return showIssueColumn(e.parameter.dept || 'support'); }   // G열 숨김 해제 — hide_issue_col 실행 후 이슈 저장 재활성화 시 1회 실행. 2026-06-25 시우.
   if (action === 'clear_old_duration') { return clearOldDuration(e.parameter.dept || 'support'); }   // O열(소요시간·인덱스14) 옛 시각값(1899-12-30 시리얼) 비우기. 컬럼 숨김 X — 소요시간은 화면 표시 유지. 1회성. 2026-06-20 시우.
 
   var date = e.parameter.date;
@@ -796,6 +797,21 @@ function hideIssueColumn(dept) {
     if (last > 1) { sh.getRange(2, ISSUE_COL, last - 1, 1).clearContent(); cleared = last - 1; }   // 데이터행 G열만 비움(헤더·타 열 무손상)
     sh.hideColumns(ISSUE_COL);   // 컬럼 숨김(인덱스 보존)
     log.push(name + ' G열 비움' + cleared + '행·숨김');
+  });
+  return jsonRes({ ok: true, dept: dept, col: 'G(이슈/index6)', log: log });
+}
+
+// G열 숨김 해제 — hide_issue_col 실행 후 이슈 저장 재활성화 시 1회 실행. GET ?action=show_issue_col&dept=support. 2026-06-25 시우.
+function showIssueColumn(dept) {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var t = _deptTabs(dept);
+  var ISSUE_COL = 7;   // G열(1-based)
+  var log = [];
+  [t.male, t.female].forEach(function (name) {
+    var sh = ss.getSheetByName(name);
+    if (!sh) { log.push('없음(스킵):' + name); return; }
+    sh.showColumns(ISSUE_COL);
+    log.push(name + ' G열 숨김해제');
   });
   return jsonRes({ ok: true, dept: dept, col: 'G(이슈/index6)', log: log });
 }

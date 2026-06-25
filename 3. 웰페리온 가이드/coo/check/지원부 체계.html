@@ -2071,9 +2071,11 @@ function refKey(round,id,g){return 'reflected_'+(g||activeGenderTab)+'_'+round+'
 /* 보고·스냅샷용: 회차별 이슈/노하우 읽기(회차키 우선, 없으면 레거시 폴백). GM 2026-06-15. */
 function issFor(id,round,g){ if(round){const v=STATE[issKey(round,id,g)]; if(v!==undefined)return v;} return STATE['iss_'+id]; }
 function tipFor(id,round,g){ if(round){const v=STATE[tipKey(round,id,g)]; if(v!==undefined)return v;} return STATE['tip_'+id]; }
-/* 항목의 '어느 회차든 첫 값'(레거시 폴백) — checks[] 시트행 보조용(마이그레이션 후 레거시키 소멸 대비). GM 2026-06-15. */
-function _issAny(id,g){ const v=STATE['iss_'+id]; if(v)return v; for(let i=0;i<ROUND_KEYS.length;i++){const x=STATE[issKey(ROUND_KEYS[i],id,g)]; if(x)return x;} return ''; }
-function _tipAny(id,g){ const v=STATE['tip_'+id]; if(v)return v; for(let i=0;i<ROUND_KEYS.length;i++){const x=STATE[tipKey(ROUND_KEYS[i],id,g)]; if(x)return x;} return ''; }
+/* 항목의 '어느 회차든 첫 값' — 회차키 우선, 없으면 레거시 폴백. GM 2026-06-15, 버그수정 2026-06-25 시우:
+   기존 레거시키 우선 순서로 인해 회차키로만 저장된 이슈가 대시보드·보고에서 항상 0건으로 탈락하던 버그 수정.
+   현재 UI는 회차키(iss_<g>_<rk>_<id>)로만 저장하므로 회차키를 먼저 확인해야 한다. */
+function _issAny(id,g){ for(let i=0;i<ROUND_KEYS.length;i++){const x=STATE[issKey(ROUND_KEYS[i],id,g)]; if(x)return x;} const v=STATE['iss_'+id]; if(v)return v; return ''; }
+function _tipAny(id,g){ for(let i=0;i<ROUND_KEYS.length;i++){const x=STATE[tipKey(ROUND_KEYS[i],id,g)]; if(x)return x;} const v=STATE['tip_'+id]; if(v)return v; return ''; }
 function _measAny(id,g){ const v=collectTempJSON(id); if(v)return v; for(let i=0;i<ROUND_KEYS.length;i++){const x=collectTempJSON(id,ROUND_KEYS[i],g); if(x)return x;} return ''; }
 function _refAny(id,g){ if(STATE['reflected_'+id])return true; for(let i=0;i<ROUND_KEYS.length;i++){if(STATE[refKey(ROUND_KEYS[i],id,g)])return true;} return false; }
 /* 특정 라운드에서 이 항목이 체크됐는지. 라운드 키 우선, 없으면 레거시 STATE[id] 폴백
@@ -2403,6 +2405,27 @@ function _buildPushPayload(d,g,includeSubmitMeta){
       iss:(rk?STATE[issKey(rk,id,g)]:'')||'',tip:(rk?STATE[tipKey(rk,id,g)]:'')||'',
       measure:(rk?collectTempJSON(id,rk,g):'')||'',reflected:(rk&&STATE[refKey(rk,id,g)])?'1':''};
   });
+  /* 버그수정 2026-06-25 시우: 이슈/노하우 입력됐지만 체크(완료표시) 안 한 항목도 roundCheckMeta에 포함.
+     기존엔 roundChecks(체크된 항목만) 기준으로 roundCheckMeta를 구성해, 미체크 이슈 항목은
+     mm.iss=빈값 → c.issue 폴백인데 c.issue도 레거시키 우선이라 빈값 → G열 저장·알림 누락.
+     수정: 회차별로 이슈/노하우가 있는 미체크 항목을 찾아 roundCheckMeta에 추가(체크=false이므로 GAS (2)분기에서 미완료 행으로 기록). */
+  if(sched){
+    sched.forEach(slot=>{slot.groups.forEach(gr=>{gr.items.forEach(it=>{
+      if(typeof shouldShowItemForGender==='function'&&!shouldShowItemForGender(it,g))return;
+      const ctx={...it,slot:slot.slot,shift:slot.shift};
+      let rounds=[];
+      try{ rounds=itemRounds(ctx)||[]; }catch(e){ rounds=[]; }
+      rounds.forEach(rk=>{
+        const k=rk+'_'+it.id;
+        if(roundCheckMeta[k])return;   // 이미 체크 항목으로 등록됨
+        const iss=STATE[issKey(rk,it.id,g)]||'';
+        const tip=STATE[tipKey(rk,it.id,g)]||'';
+        if(!iss&&!tip)return;          // 이슈/노하우 없으면 제외
+        roundCheckMeta[k]={by:STATE['chkby_'+g+'_'+k]||'',at:STATE['chkat_'+g+'_'+k]||'',du:STATE['chkduty_'+g+'_'+k]||'',
+          iss:iss,tip:tip,measure:collectTempJSON(it.id,rk,g)||'',reflected:STATE[refKey(rk,it.id,g)]?'1':''};
+      });
+    })})});
+  }
   /* 점검 타이머 영속(2026-06-17 시우·GM): 이 date+gender의 전 회차(day)+야간 타이머 시작/완료(ms)를 수집해 전송.
      서버 led.timers에 머지 저장 → 새로고침·타기기·시크릿서 loadState가 복원(STATE 비어 '--:--'던 회귀 차단).
      타이머는 사용자 실제 입력이라 상시전송 OK(제출도장·거짓대량제출과 무관). 빈값 가드는 백엔드 머지서 처리. */
