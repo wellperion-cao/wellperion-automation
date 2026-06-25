@@ -212,6 +212,20 @@
   </div>
 </div>
 
+<!-- 자체 로그인 게이트 (허브 iframe 밖·새 탭에서 단독으로 열렸을 때) -->
+<div class="ov" id="ovLogin">
+  <div class="modal" style="max-width:380px">
+    <h3>🔒 WELLPERION 관리자 인증</h3>
+    <p class="sub">휴무·근무 스케줄에는 직원 개인정보가 포함되어 있어 관리자 비밀번호가 필요합니다.</p>
+    <label>웰페리온 관리자 비밀번호</label>
+    <input type="password" id="lg_pw" autocomplete="current-password" placeholder="비밀번호 입력">
+    <div id="lg_err" style="display:none;color:var(--red);font-size:12px;font-weight:700;margin-top:8px"></div>
+    <div class="modal-actions">
+      <button class="primary" id="lg_btn" onclick="submitLogin()">확인</button>
+    </div>
+  </div>
+</div>
+
 <script>
 const DEPTS = [
   ["운영", ["김남욱","이경연","임정은","나우열","최준용","윤병현","이지영"]],
@@ -617,8 +631,71 @@ function switchTab(t){
 document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>switchTab(b.dataset.tab));
 document.querySelectorAll(".ov").forEach(o=>o.onclick=e=>{if(e.target===o)o.classList.remove("on");});
 
-setOfflineBadge(!WP_PW);   // 초기엔 오프라인 표기(부모 비번 수신 시 erpLoad에서 해제)
-render();
+/* ===== 자체 로그인 게이트 =====
+   우선순위: ① 부모 허브 postMessage(wp-pass) 1.2초 대기 → ② sessionStorage("wp_pw")
+   둘 다 없으면 비밀번호 입력 오버레이. 검증은 db:leave 응답(ok:true/unauthorized)으로. */
+const SS_PW_KEY="wp_pw";
+let _gateResolved=false;   // 부모 비번 또는 세션 비번으로 이미 로드 착수했는지
+function resolveGate(pw){
+  if(_gateResolved) return;
+  _gateResolved=true;
+  WP_PW=pw; setOfflineBadge(false);
+  closeOv("ovLogin");
+  erpLoad();
+}
+/* 부모 postMessage 경로(기존 유지)도 게이트를 해제하도록 래핑 */
+const _origMsgLoad=erpLoad;
+window.addEventListener("message", e=>{
+  if(e.origin!==location.origin) return;
+  if(e.data && e.data.type==="wp-pass" && e.data.pw){
+    try{ sessionStorage.setItem(SS_PW_KEY,e.data.pw); }catch(_){}
+    resolveGate(e.data.pw);
+  }
+});
+/* 입력 오버레이 제출 → db:leave로 비번 검증 */
+async function submitLogin(){
+  const inp=document.getElementById("lg_pw"), err=document.getElementById("lg_err"), btn=document.getElementById("lg_btn");
+  const pw=(inp.value||"").trim();
+  err.style.display="none";
+  if(!pw){ err.textContent="비밀번호를 입력하세요"; err.style.display="block"; return; }
+  btn.disabled=true; btn.textContent="확인 중…";
+  try{
+    const r=await erpPost({db:"leave",password:pw});
+    if(r && r.ok && Array.isArray(r.results)){
+      try{ sessionStorage.setItem(SS_PW_KEY,pw); }catch(_){}
+      // erpLoad가 다시 호출하지 않도록, 받은 결과를 직접 반영
+      WP_PW=pw; erpReady=true; _gateResolved=true;
+      const next={};
+      r.results.forEach(row=>{ const nm=row["성명"],dt=row["날짜"],val=row["값"]; if(!nm||!dt)return; (next[nm]=next[nm]||{})[dt]=val; });
+      leave=next; save();
+      setOfflineBadge(false); setErpStatus("ERP 동기화됨 ✓","var(--green)");
+      closeOv("ovLogin"); render();
+    } else {
+      err.textContent="비밀번호가 올바르지 않습니다"; err.style.display="block";
+    }
+  }catch(e2){
+    err.textContent="서버 연결 실패 — 잠시 후 다시 시도하세요"; err.style.display="block";
+  }finally{
+    btn.disabled=false; btn.textContent="확인";
+  }
+}
+document.getElementById("lg_pw").addEventListener("keydown",e=>{ if(e.key==="Enter"){e.preventDefault();submitLogin();} });
+
+setOfflineBadge(true);   // 초기엔 오프라인 표기(인증 성공 시 해제)
+render();                // 데이터 없이 빈 표 먼저 그림
+
+/* 게이트 진입: 부모 비번 1.2초 대기 → 세션 비번 → 오버레이 */
+(function gateInit(){
+  let sess=null; try{ sess=sessionStorage.getItem(SS_PW_KEY); }catch(_){}
+  if(sess){ resolveGate(sess); return; }   // 세션 비번 있으면 즉시 로드(부모 메시지도 위에서 처리)
+  setTimeout(()=>{
+    if(_gateResolved) return;              // 그 사이 부모 postMessage 수신됨
+    let s2=null; try{ s2=sessionStorage.getItem(SS_PW_KEY); }catch(_){}
+    if(s2){ resolveGate(s2); return; }
+    openOv("ovLogin");                      // 어디서도 비번 못 받음 → 입력 요구
+    setTimeout(()=>{ const i=document.getElementById("lg_pw"); if(i)i.focus(); },50);
+  },1200);
+})();
 </script>
 </body>
 </html>
