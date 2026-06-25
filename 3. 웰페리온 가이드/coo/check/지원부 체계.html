@@ -1511,7 +1511,9 @@ const WEEKDAY=[
     {title:"오픈 점검",items:[
       {id:"op3",name:"세탁물 입고 운반",detail:"입고된 세탁물을 세탁실로 운반",gender:"all"},
       {id:"op4",name:"운동복/양말 상태 + 배치",detail:"상태 체크 후 사이즈별 배치",gender:"all"},
-      {id:"op5",name:"타올류 상태 + 배치",detail:"거품타올/타올/바스타올 상태 체크 후 배치",gender:"all"}
+      {id:"op5",name:"타올류 상태 + 배치",detail:"거품타올/타올/바스타올 상태 체크 후 배치",gender:"all"},
+      {id:"op8",name:"OP-7 코드 및 스위치 전원 OFF",detail:"선풍기 / 드라이기 / 사우나 / 화장실 / 파우더룸 / 직원룸 / 락커룸 전체 ( 신발장앞)",gender:"all"},
+      {id:"op9",name:"OP-6 분실물 수거·정리",detail:"사우나 ㅣ 파우더룸 ㅣ 락커룸",gender:"all"}
     ]},
     {title:"전일 마감·야간청소 확인",items:[
       {id:"cl3",name:"사우나/파우더 청결 확인 (전일 마감·야간청소)",detail:"오픈 시 점검: 남/여 사우나 & 파우더 공간 청결 + 전일 야간 탕청소 결과 이상 유무 확인\n미비 시 시설/운영부 보고 (마감엔 마감업무, 상태 확인은 오픈에 — GM 2026-06-22)",gender:"all"}
@@ -1570,7 +1572,9 @@ const WEEKEND=[
     {title:"오픈 점검",items:[
       {id:"op3",name:"세탁물 입고 운반",detail:"입고된 세탁물을 세탁실로 운반",gender:"all"},
       {id:"op4",name:"운동복/양말 상태 + 배치",detail:"상태 체크 후 사이즈별 배치",gender:"all"},
-      {id:"op5",name:"타올류 상태 + 배치",detail:"거품타올/타올/바스타올 상태 체크 후 배치",gender:"all"}
+      {id:"op5",name:"타올류 상태 + 배치",detail:"거품타올/타올/바스타올 상태 체크 후 배치",gender:"all"},
+      {id:"op8",name:"OP-7 코드 및 스위치 전원 OFF",detail:"선풍기 / 드라이기 / 사우나 / 화장실 / 파우더룸 / 직원룸 / 락커룸 전체 ( 신발장앞)",gender:"all"},
+      {id:"op9",name:"OP-6 분실물 수거·정리",detail:"사우나 ㅣ 파우더룸 ㅣ 락커룸",gender:"all"}
     ]},
     {title:"전일 마감·야간청소 확인",items:[
       {id:"cl3",name:"사우나/파우더 청결 확인 (전일 마감·야간청소)",detail:"오픈 시 점검: 남/여 사우나 & 파우더 청결 + 전일 야간 탕청소 결과 이상 유무 확인 / 미비 시 시설·운영부 보고",gender:"all"}
@@ -1924,7 +1928,7 @@ const ROUND_MAP={
   b6:['am1','pm1'],
   /* C 세탁물 = 전 조 */
   /* 오픈 점검(세탁물 입고 등) = 오전조 전용 (마감 점검의 반대, GM 2026-06-12) */
-  op3:['am1'], op4:['am1'], op5:['am1'],
+  op3:['am1'], op4:['am1'], op5:['am1'], op8:['am1'], op9:['am1'],
   /* C 내부(c1~c10) + D 업장(d1 헬스장·d2 골프장·d3 G.X) + E 외부(e1 주차장) = 전 조 (2026-06-13 ID정규화) */
   c1:['am1','pm1'], c2:['am1','pm1'], c3:['am1','pm1'], c4:['am1','pm1'], c5:['am1','pm1'],
   c6:['am1','pm1'], c7:['am1','pm1'], c8:['am1','pm1'], c9:['am1','pm1'], c10:['am1','pm1'],
