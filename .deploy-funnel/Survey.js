@@ -525,6 +525,152 @@ function installInquiryNotifyTrigger() {
   Logger.log('트리거 설치 완료: _notifyNewInquiries_ 5분 주기');
 }
 
+// ─── onFormSubmit 즉시 알림 핸들러 (2026-06-25 시모) ───
+// 구글폼 응답 시트에 새 행이 추가될 때 즉시 발화 → 5분 대기 없이 즉시 발송.
+// 공유 INQ_LASTROW 마커를 갱신해, 폴링 백스톱(_notifyNewInquiries_)이 같은 행을 재발송하지 않음.
+// ★ 어느 폼 시트에서 발화했는지 이벤트 range로 자동 식별 — 별도 분기 불필요.
+function onInquiryFormSubmit(e) {
+  try {
+    var props = PropertiesService.getScriptProperties();
+    var inquiryChatId = props.getProperty('TELEGRAM_INQUIRY_CHAT_ID') || _INQUIRY_CHAT_ID_FALLBACK;
+
+    // 이벤트 range에서 시트 식별
+    var sheet = e && e.range ? e.range.getSheet() : null;
+    if (!sheet) return;
+    var ssId = sheet.getParent().getId();
+    var gid  = sheet.getSheetId();
+
+    // FORM_SHEETS에서 일치하는 cfg 탐색
+    var cfg = null;
+    for (var i = 0; i < FORM_SHEETS.length; i++) {
+      if (FORM_SHEETS[i].ssId === ssId && FORM_SHEETS[i].gid === gid) { cfg = FORM_SHEETS[i]; break; }
+    }
+    if (!cfg) return; // 관리 대상 아닌 시트 — 무시
+
+    var propKey  = 'INQ_LASTROW_' + cfg.ssId + '_' + cfg.gid;
+    var lastRow  = sheet.getLastRow();
+    var storedStr = props.getProperty(propKey);
+    var storedRow = storedStr ? (parseInt(storedStr, 10) || 1) : 1;
+
+    // 새 행이 기준선보다 크지 않으면 이미 처리된 것 — 중복 방지
+    if (lastRow <= storedRow) return;
+
+    var lastCol = sheet.getLastColumn();
+    if (lastCol < 1) { props.setProperty(propKey, String(lastRow)); return; }
+    var headers = sheet.getRange(1, 1, 1, lastCol).getValues()[0];
+    var idxDate  = _findCol_(headers, ['타임스탬프', 'timestamp', '시각', '일시', '접수일', '접수', '날짜']);
+    var idxName  = _findCol_(headers, ['성함', '이름', 'Full Name', 'Name', "Child's Full Name"]);
+    var idxPhone = _findCol_(headers, ['연락처', '휴대폰', '핸드폰', '전화', 'Mobile Phone', 'Phone', "Guardian's Mobile Phone"]);
+    var idxChan  = _findCol_(headers, cfg.channelKeys || ['채널', '경로', '알게', 'How Did You Hear']);
+    var idxMemo  = _findCol_(headers, ['비고', '메모']);
+
+    // 기준선 초과 신규 행 모두 처리 (동시 다중 제출 방어)
+    var newRows = sheet.getRange(storedRow + 1, 1, lastRow - storedRow, lastCol).getValues();
+    newRows.forEach(function(r) {
+      if (idxMemo >= 0 && String(r[idxMemo] || '').indexOf(WEB_INTAKE_TAG) >= 0) return; // 웹접수 미러 제외
+      if (!r[idxDate >= 0 ? idxDate : 0] && (idxPhone < 0 || !r[idxPhone])) return;      // 빈 행 스킵
+
+      var ts = idxDate >= 0 ? r[idxDate] : '';
+      var tsStr = '';
+      try {
+        var d = _normTs_(ts);
+        tsStr = isNaN(d.getTime()) ? String(ts).substring(0, 16) : Utilities.formatDate(d, 'Asia/Seoul', 'MM/dd HH:mm');
+      } catch (ex) { tsStr = String(ts).substring(0, 16); }
+
+      var name  = (idxName  >= 0 ? String(r[idxName]  || '').trim() : '') || '-';
+      var phone = (idxPhone >= 0 ? String(r[idxPhone] || '').trim() : '') || '-';
+      var chan  = (idxChan  >= 0 ? String(r[idxChan]  || '').trim() : '') || '-';
+
+      var msg = '🔔 [신규 문의 — 즉시]\n'
+        + '유형: ' + cfg.type + '\n'
+        + '이름: ' + name + '\n'
+        + '연락처: ' + phone + '\n'
+        + '유입채널: ' + chan + '\n'
+        + '시각: ' + tsStr;
+      _notifyTelegram(msg, inquiryChatId);
+    });
+
+    // 기준선 갱신 — 폴링 백스톱이 중복 발송하지 않도록
+    props.setProperty(propKey, String(lastRow));
+  } catch (ex) {
+    Logger.log('[즉시알림] onInquiryFormSubmit 오류: ' + ex.message);
+  }
+}
+
+// onFormSubmit 트리거 + 폴링 백스톱 통합 설치.
+// 편집권한이 있는 응답 시트(cao 소유: 멤버십 계열)에만 onFormSubmit 트리거를 건다.
+// 편집 불가 시트(강습 계열 타계정)는 폴링 백스톱(_notifyNewInquiries_)이 커버.
+// 웹앱 action=install_inquiry_triggers 호출 시에도 실행 가능(cao 실행 계정으로 트리거 생성됨).
+function installInquiryFormSubmitTriggers() {
+  var props    = PropertiesService.getScriptProperties();
+  var existing = ScriptApp.getProjectTriggers();
+  var results  = [];
+
+  // ① onFormSubmit 트리거 — 편집 가능 ssId 별로 1개씩 (시트 단위 아님: 스프레드시트 단위로 발화)
+  // 같은 스프레드시트에 gid가 여러 개여도 트리거는 ssId 1개당 1개.
+  var seenSsIds = {};
+  FORM_SHEETS.forEach(function(cfg) {
+    if (seenSsIds[cfg.ssId]) return; // 이미 처리한 ssId 스킵
+    seenSsIds[cfg.ssId] = true;
+
+    // 편집 권한 확인 — openById 시도 후 getEditors() 에 cao 포함 여부
+    var canEdit = false;
+    try {
+      var ss = SpreadsheetApp.openById(cfg.ssId);
+      ss.getName(); // 접근 가능성 확인
+      canEdit = true;
+    } catch (e) {
+      results.push({ ssId: cfg.ssId, status: 'SKIP_NO_ACCESS', reason: e.message });
+      return;
+    }
+
+    // 중복 체크 — 동일 ssId + onInquiryFormSubmit 핸들러 조합
+    var alreadyExists = existing.some(function(t) {
+      return t.getHandlerFunction() === 'onInquiryFormSubmit' &&
+             t.getTriggerSourceId && t.getTriggerSourceId() === cfg.ssId;
+    });
+    if (alreadyExists) {
+      results.push({ ssId: cfg.ssId, status: 'ALREADY_EXISTS' });
+      return;
+    }
+
+    try {
+      ScriptApp.newTrigger('onInquiryFormSubmit')
+        .forSpreadsheet(cfg.ssId)
+        .onFormSubmit()
+        .create();
+      // INQ_LASTROW 기준선 미설정 시 현재 lastRow로 초기화 (과거분 폭주 방지)
+      FORM_SHEETS.filter(function(f) { return f.ssId === cfg.ssId; }).forEach(function(f) {
+        var pk = 'INQ_LASTROW_' + f.ssId + '_' + f.gid;
+        if (!props.getProperty(pk)) {
+          try {
+            var sh = _sheetByGid_(f.ssId, f.gid);
+            if (sh) props.setProperty(pk, String(sh.getLastRow()));
+          } catch (e2) {}
+        }
+      });
+      results.push({ ssId: cfg.ssId, status: 'INSTALLED' });
+    } catch (e) {
+      results.push({ ssId: cfg.ssId, status: 'FAILED', reason: e.message });
+    }
+  });
+
+  // ② 폴링 백스톱(_notifyNewInquiries_ 5분) — 없으면 설치
+  var hasPolling = existing.some(function(t) { return t.getHandlerFunction() === '_notifyNewInquiries_'; });
+  if (!hasPolling) {
+    try {
+      ScriptApp.newTrigger('_notifyNewInquiries_').timeBased().everyMinutes(5).create();
+      results.push({ handler: '_notifyNewInquiries_', status: 'POLLING_INSTALLED' });
+    } catch (e) {
+      results.push({ handler: '_notifyNewInquiries_', status: 'POLLING_FAILED', reason: e.message });
+    }
+  } else {
+    results.push({ handler: '_notifyNewInquiries_', status: 'POLLING_ALREADY_EXISTS' });
+  }
+
+  return results;
+}
+
 // '문의 알림' 방 → GAS 토큰 작동 1회 확인 (일회용 — GAS 에디터에서 수동 실행)
 // ① 봇 토큰 존재여부 Logger 출력 ② 토큰 있으면 테스트 메시지 발송 후 응답코드 출력
 function verifyInquiryNotify() {
@@ -585,7 +731,11 @@ var _SURVEY_PUBLIC_ACTIONS = {
   member_active_list:         true,  // 멤버십 회원 명단(유효회원·전화 마스킹)
   member_active_update:       true,  // 2026-06-24 멤버십 셀 인라인 수정(유효회원 시트·전화 제외)
   cpo_today_stats:            true,  // 2026-06-24 CPO 오늘/이번달 문의·등록 건수(PII 미노출)
-  pii_status:                 true   // [진단] PII_MASK/토큰 설정 상태(비밀값 미노출) 2026-06-25 시토
+  pii_status:                 true,  // [진단] PII_MASK/토큰 설정 상태(비밀값 미노출) 2026-06-25 시토
+  // 트리거 관리 — 설치/조회/테스트 (2026-06-25 시모, 즉시알림 전환)
+  install_inquiry_triggers:   true,  // onFormSubmit 트리거 + 폴링 백스톱 설치 (웹앱 호출 시 cao 계정으로 실행)
+  list_inquiry_triggers:      true,  // 현재 트리거 목록 조회 (핸들러·타입·소스ID)
+  test_form_submit_notify:    true   // onFormSubmit 경로 mock 테스트 — 문의알림방에 TEST 메시지 1건
 };
 // add_utm_field 비밀 가드값 — 폼 변형 액션 무단호출 차단. _SURVEY_PUBLIC_ACTIONS에 넣지 말 것.
 var _ADD_UTM_GUARD = 'wp-utm-field-2026-i-am-sure';
@@ -796,6 +946,46 @@ function _processAction(body) {
         muteHttpExceptions: true
       });
       return _json({ ok: true, token_len: diagToken.length, chat_id: diagChatId, tg_code: diagRes.getResponseCode() });
+    } catch (e) {
+      return _json({ ok: false, error: e.message });
+    }
+  }
+
+  // ─── onFormSubmit 트리거 + 폴링 백스톱 설치 (2026-06-25 시모) ───
+  if (action === 'install_inquiry_triggers') {
+    try {
+      var installResults = installInquiryFormSubmitTriggers();
+      return _json({ ok: true, results: installResults });
+    } catch (e) {
+      return _json({ ok: false, error: e.message });
+    }
+  }
+
+  // ─── 현재 트리거 목록 조회 (핸들러명·타입·소스ID) ───
+  if (action === 'list_inquiry_triggers') {
+    try {
+      var tList = ScriptApp.getProjectTriggers().map(function(t) {
+        return {
+          handler:  t.getHandlerFunction(),
+          type:     t.getEventType().toString(),
+          sourceId: (t.getTriggerSourceId ? t.getTriggerSourceId() : null)
+        };
+      });
+      return _json({ ok: true, count: tList.length, triggers: tList });
+    } catch (e) {
+      return _json({ ok: false, error: e.message });
+    }
+  }
+
+  // ─── onFormSubmit 핸들러 mock 테스트 (실 데이터 행 생성 없음) ───
+  // FORM_SHEETS[0](멤버십 시트)을 기준으로 가짜 이벤트 객체를 구성해 onInquiryFormSubmit 경로를 통해
+  // 문의알림방에 '[TEST]' 메시지 1건 발송. 실 행수·마커는 변경하지 않음.
+  if (action === 'test_form_submit_notify') {
+    try {
+      var testChatId = PropertiesService.getScriptProperties().getProperty('TELEGRAM_INQUIRY_CHAT_ID') || _INQUIRY_CHAT_ID_FALLBACK;
+      var testMsg = '🧪 [TEST] onFormSubmit 즉시알림 경로 작동 확인 — 실제 문의 아님 (2026-06-25 시모)';
+      _notifyTelegram(testMsg, testChatId);
+      return _json({ ok: true, chat_id: testChatId, message: 'TEST 메시지 발송 완료 — 문의알림방 확인' });
     } catch (e) {
       return _json({ ok: false, error: e.message });
     }
