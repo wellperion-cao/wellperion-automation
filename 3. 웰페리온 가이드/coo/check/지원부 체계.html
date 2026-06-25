@@ -1447,10 +1447,14 @@ async function loadItemMasterFromSheet(){
     const data = await res.json();
     const items = Array.isArray(data.items) ? data.items : [];
     CUSTOM_ITEMS = items.map(itemFromSheet);
+    // 서버 성공 = 단일 진실: 캐시를 서버값으로 완전 교체(옛 cx_/custom_ 잔상 제거)
     localStorage.setItem(ITEM_CACHE_KEY, JSON.stringify(CUSTOM_ITEMS)); // 오프라인 폴백
   }catch(e){
-    // 실패 시 캐시 폴백, 그래도 없으면 빈 배열 (기본 항목은 항상 렌더)
-    try{ CUSTOM_ITEMS = JSON.parse(localStorage.getItem(ITEM_CACHE_KEY)) || []; }catch(_){ CUSTOM_ITEMS = []; }
+    // 실패 시 캐시 폴백 — 단, cx_/custom_ ID는 서버에서 정식화됐으므로 걸러낸다
+    try{
+      const cached = JSON.parse(localStorage.getItem(ITEM_CACHE_KEY)) || [];
+      CUSTOM_ITEMS = cached.filter(it => !/^(cx_|custom_)/.test(String(it.id||'')));
+    }catch(_){ CUSTOM_ITEMS = []; }
   }
   // 로드 후 현재 화면 갱신
   if(typeof mgmtInjectCustomItems==='function') mgmtInjectCustomItems();
@@ -1794,7 +1798,7 @@ const NIGHT_WEEKEND=[
 ];
 
 /* ── E: Day-of-week focused cleaning ── */
-/* 요일별 집중 청소 = 'F 탕 청소 업체'(요일별 집중) 분류로 이관(GM 2026-06-16 시우): 시트 항목 + 요일(sched)로 관리,
+/* 요일별 집중 청소 = 'F 집중'(요일별 집중) 분류로 이관(GM 2026-06-16 시우): 시트 항목 + 요일(sched)로 관리,
    요일칸(F1)으로 표시(평일=오후조/주말=마감조). 정적 시드로 박지 않음 — 시트+요일이 단일 출처.
    하드코딩 비움 — 기존 DAY_FOCUS[dow] 특수처리는 빈 객체라 자동 무력화(no-op). */
 const DAY_FOCUS={};
