@@ -3,12 +3,12 @@
     "task_id": "COO-2026-06-25-CHECK-DENOM-UNIFY",
     "clevel": "coo",
     "title": "[시우] 지원부 점검 분모 단일출처 통일 — 서버 today_live·독려를 화면 계산식(collectDashboardData)에 1:1 정합",
-    "status": "IN_PROGRESS",
+    "status": "PENDING",
     "priority": "HIGH",
     "enqueued_at": "2026-06-25",
     "ship_no": 14,
-    "note": "[2026-06-25 GM 옵션A] 분모가 화면(시프트점유·성별별 26/20/19)·서버today_live(첫회차·합산 74)·17시독려(8/9) 3곳서 다르게 계산돼 '또 안맞네' 반복. 라이브 추측배포(108→111) 폐기·안정복귀(dedup만 유지). 정공법=화면 collectDashboardData+getSched 로직을 서버에 1:1 복제. 검증=@HEAD 테스트URL서 per-gender 일치 확인 후 live(AKfycbyXw…) 1회 배포. 독려도 today_live 읽게 정합. 추측배포 금지·오프라인 검증 후 1회.",
-    "next": "화면 분모 계산식 정밀 매핑 → 서버 _buildTodayMaster/handleTodayLive 복제 → @HEAD 검증 → live 1회 배포 → 독려 정합",
+    "note": "[2026-06-25 GM 옵션A] 점검 분모가 화면(하드코딩+localStorage)·서버(시트)·독려 3소스로 제각각('또 안맞네'). 진행: 1단계 백업 완료(check_items_backup_20260625_181300.json). 3단계(서버 today_live)=라이브 @112 완료 — 성별별+요일/주차 sched 필터+시프트 presence 모델로 시트 기준 재구현(로컬 노드 검증 후 1회 배포). 서버 byGender 남=여 24/20/19, 독려는 today_live byGender 읽어 자동 정합. 스팸 dedup(CHKNOTI @108~) 유지. ★남은 핵심=화면(collectDashboardData)이 아직 하드코딩 WEEKDAY 배열+localStorage라 서버와 다른 엔진 → 화면도 시트 전환 필요(4단계). 같은날 분모 4실측: 화면새기기18/14/2·GM기기26/20/19·서버24/20/19. 4단계 구현사양=설계서 brief. GM 지시=화면 수술은 다음 집중세션(라이브 점검 UI 위험·신중). 오늘 라이브 무리한 실험 교훈→로컬검증 후 1회배포 원칙.",
+    "next": "다음 집중세션: 4단계(화면 분모를 today_live/시트로 전환·하드코딩 배열 폐기). 로컬 노드 모의 검증 후 라이브 1회+역롤백 대기.",
     "terminal": false
   },
   {

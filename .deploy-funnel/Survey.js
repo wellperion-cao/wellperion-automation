@@ -24,20 +24,20 @@ const INQUIRY_TYPES = ['투어 예약', '프로그램 문의', '멤버십 상담
 // gid 기반 탭 조회(이름 변경에 강함). 컬럼은 헤더 키워드로 탐색(폼 문항 순서 변동 대비).
 // ※ 여름특강(5종 하위폼)은 구조 미확정 → 추후 추가.
 const FORM_SHEETS = [
-  { ssId: '12AWcAlgmmYKr2nUbWmVpa71_z3zi0BaU4ZdnOwrI_7U', gid: 1902010032, type: '멤버십',     channelKeys: ['채널', '경로', '알게'] },  // '26년 신규문의' 스태프 로그(멤버십 단일출처·날짜 'YYYY. M. D'·문의채널 드롭다운). 구 폼응답탭 953023270 대체 — 폼3건이 아닌 실제 로그 집계(2026-06-13 GM 확인)
-  { ssId: '1b0XU1oTHlXzBhEzUOar5GEm44vjopdO25qfsh-awDXw', gid: 111889422, type: '성인강습',   channelKeys: ['경로', '채널'] },
-  { ssId: '1b0XU1oTHlXzBhEzUOar5GEm44vjopdO25qfsh-awDXw', gid: 268994754, type: '유소년강습', channelKeys: ['경로', '채널'] }
+  { ssId: '12AWcAlgmmYKr2nUbWmVpa71_z3zi0BaU4ZdnOwrI_7U', gid: 1902010032, type: '멤버십',     channelKeys: ['채널', '경로', '알게'],  programKeys: ['관심 있는 프로그램 종목', '종목', '프로그램'] },  // '26년 신규문의' 스태프 로그
+  { ssId: '1b0XU1oTHlXzBhEzUOar5GEm44vjopdO25qfsh-awDXw', gid: 111889422, type: '성인강습',   channelKeys: ['경로', '채널'],          programKeys: ['성인 강습 종목', '종목', '과목'] },
+  { ssId: '1b0XU1oTHlXzBhEzUOar5GEm44vjopdO25qfsh-awDXw', gid: 268994754, type: '유소년강습', channelKeys: ['경로', '채널'],          programKeys: ['WSC 강습 종목', '종목', '과목'] }
   // ─── 신규 2종 틀 (시모·GM 2026-06-12 승인 — 공간 렌트·비즈니스 파트너) ───
   // ★ 준비중: GM이 구글폼 2개 생성 후 ① ssId=실제 응답 스프레드시트 ID ② gid='__GID__'→실제 응답탭 gid(숫자)
   //   로 교체하고, 아래 두 줄 앞의 주석(//)을 풀어 활성화한다.
   //   ⚠️ gid 가 문자열 '__GID__' 인 상태에서는 _sheetByGid_ 매칭(=== 숫자 비교)이 실패 → 자동 스킵(무중단).
   //   ⚠️ clasp push ≠ 웹앱 배포 — gid 교체 후 새 버전 웹앱 재배포 1회(GM/CTO) 필요. (명세: 문의_신규유형_폼설계_260612.md §5)
-  , { ssId: '12AWcAlgmmYKr2nUbWmVpa71_z3zi0BaU4ZdnOwrI_7U', gid: 2014877540, type: '공간렌트',       channelKeys: ['경로', '채널', '알게'] }  // 2026-06-15 멤버십 시트로 통합(설문지 응답 시트12)
-  , { ssId: '12AWcAlgmmYKr2nUbWmVpa71_z3zi0BaU4ZdnOwrI_7U', gid: 1356708303, type: '비즈니스파트너', channelKeys: ['경로', '채널', '알게'] }  // 2026-06-15 멤버십 시트로 통합(설문지 응답 시트13)
+  , { ssId: '12AWcAlgmmYKr2nUbWmVpa71_z3zi0BaU4ZdnOwrI_7U', gid: 2014877540, type: '공간렌트',       channelKeys: ['경로', '채널', '알게'] }  // 2026-06-15 멤버십 시트로 통합
+  , { ssId: '12AWcAlgmmYKr2nUbWmVpa71_z3zi0BaU4ZdnOwrI_7U', gid: 1356708303, type: '비즈니스파트너', channelKeys: ['경로', '채널', '알게'] }  // 2026-06-15 멤버십 시트로 통합
   // ─── 영문 문의 3종 (시모 2026-06-24) ───
-  , { ssId: '12AWcAlgmmYKr2nUbWmVpa71_z3zi0BaU4ZdnOwrI_7U', gid: 1887747109, type: '멤버십(영문)',    channelKeys: ['How Did You Hear About Us?', '경로', '채널'] }
-  , { ssId: '1b0XU1oTHlXzBhEzUOar5GEm44vjopdO25qfsh-awDXw', gid: 311319200,  type: '성인강습(영문)',  channelKeys: ['How Did You Hear About Us?', '경로', '채널'] }
-  , { ssId: '1b0XU1oTHlXzBhEzUOar5GEm44vjopdO25qfsh-awDXw', gid: 931249179,  type: '유소년강습(영문)', channelKeys: ['How Did You Hear About Us?', '경로', '채널'] }
+  , { ssId: '12AWcAlgmmYKr2nUbWmVpa71_z3zi0BaU4ZdnOwrI_7U', gid: 1887747109, type: '멤버십(영문)',    channelKeys: ['How Did You Hear About Us?', '경로', '채널'], programKeys: ['Programs of Interest', '종목', '프로그램'] }
+  , { ssId: '1b0XU1oTHlXzBhEzUOar5GEm44vjopdO25qfsh-awDXw', gid: 311319200,  type: '성인강습(영문)',  channelKeys: ['How Did You Hear About Us?', '경로', '채널'], programKeys: ['Program of Interest', '종목', '과목'] }
+  , { ssId: '1b0XU1oTHlXzBhEzUOar5GEm44vjopdO25qfsh-awDXw', gid: 931249179,  type: '유소년강습(영문)', channelKeys: ['How Did You Hear About Us?', '경로', '채널'], programKeys: ['WSC Program of Interest', '종목', '과목'] }
 ];
 
 // 강습 '팀 정리' 스프레드시트 (통합본 → 팀별 별도 시트로 재취합, 팀장이 등록/실패/컨택중 처리). 수강등록 전환 정본.
@@ -485,6 +485,7 @@ function _notifyNewInquiries_() {
       var idxPhone = _findCol_(headers, ['연락처', '휴대폰', '핸드폰', '전화', 'Mobile Phone', 'Phone', "Guardian's Mobile Phone"]);
       var idxChan  = _findCol_(headers, cfg.channelKeys || ['채널', '경로', '알게', 'How Did You Hear']);
       var idxMemo  = _findCol_(headers, ['비고', '메모']);
+      var idxProg  = _findCol_(headers, cfg.programKeys || ['종목', '프로그램', '과목', 'Program']);
 
       // ★ 실데이터 마지막 행번호 (전화번호/타임스탬프 기준, 빈행 제외)
       var realLastRow = _realLastDataRow_(sh, idxPhone, idxDate, idxMemo);
@@ -518,12 +519,14 @@ function _notifyNewInquiries_() {
         var name  = idxName  >= 0 ? String(r[idxName]  || '').trim() : '-';
         var phone = idxPhone >= 0 ? String(r[idxPhone] || '').trim() : '-';
         var chan  = idxChan  >= 0 ? String(r[idxChan]  || '').trim() : '-';
+        var prog  = idxProg  >= 0 ? String(r[idxProg]  || '').trim() : '';
         if (!name)  name  = '-';
         if (!phone) phone = '-';
         if (!chan)  chan  = '-';
 
         var msg = '🔔 [신규 문의]\n'
           + '유형: ' + cfg.type + '\n'
+          + (prog ? '종목: ' + prog + '\n' : '')
           + '이름: ' + name + '\n'
           + '연락처: ' + phone + '\n'
           + '유입채널: ' + chan + '\n'
@@ -584,6 +587,7 @@ function onInquiryFormSubmit(e) {
     var idxPhone = _findCol_(headers, ['연락처', '휴대폰', '핸드폰', '전화', 'Mobile Phone', 'Phone', "Guardian's Mobile Phone"]);
     var idxChan  = _findCol_(headers, cfg.channelKeys || ['채널', '경로', '알게', 'How Did You Hear']);
     var idxMemo  = _findCol_(headers, ['비고', '메모']);
+    var idxProg  = _findCol_(headers, cfg.programKeys || ['종목', '프로그램', '과목', 'Program']);
 
     // ★ 실데이터 마지막 행번호 (빈행 포함 getLastRow 사용 금지)
     var realLastRow = _realLastDataRow_(sheet, idxPhone, idxDate, idxMemo);
@@ -609,9 +613,11 @@ function onInquiryFormSubmit(e) {
       var name  = (idxName  >= 0 ? String(r[idxName]  || '').trim() : '') || '-';
       var phone = (idxPhone >= 0 ? String(r[idxPhone] || '').trim() : '') || '-';
       var chan  = (idxChan  >= 0 ? String(r[idxChan]  || '').trim() : '') || '-';
+      var prog  = (idxProg  >= 0 ? String(r[idxProg]  || '').trim() : '');
 
       var msg = '🔔 [신규 문의 — 즉시]\n'
         + '유형: ' + cfg.type + '\n'
+        + (prog ? '종목: ' + prog + '\n' : '')
         + '이름: ' + name + '\n'
         + '연락처: ' + phone + '\n'
         + '유입채널: ' + chan + '\n'
@@ -777,7 +783,9 @@ var _SURVEY_PUBLIC_ACTIONS = {
   diag_inquiry_ts:            true,  // 진단: 시트별 마지막 3행 타임스탬프 파싱 결과 (2026-06-25)
   diag_inquiry_state:         true,  // 진단(읽기전용): 마커값·실데이터행·트리거목록 (2026-06-25 시모)
   reset_inquiry_markers:      true,  // 마커 교정(발송0): 각 시트 실데이터 마지막 행으로 덮어씀 (2026-06-25)
-  count_missed_inquiries:     true   // 읽기전용: 특정 시각 이후 신규 실데이터 행 건수 집계 (2026-06-25)
+  count_missed_inquiries:     true,  // 읽기전용: 특정 시각 이후 신규 실데이터 행 건수 집계 (2026-06-25)
+  read_rows_by_rownum:        true,  // 읽기전용: 지정 시트·행번호의 알림 필드 원문 반환 (2026-06-25)
+  preview_notify_msg:         true   // 읽기전용: 지정 행의 알림 메시지 텍스트 미리보기(발송 0) (2026-06-25)
 };
 // add_utm_field 비밀 가드값 — 폼 변형 액션 무단호출 차단. _SURVEY_PUBLIC_ACTIONS에 넣지 말 것.
 var _ADD_UTM_GUARD = 'wp-utm-field-2026-i-am-sure';
@@ -1261,6 +1269,117 @@ function _processAction(body) {
         };
       });
       return _json({ ok: true, sheets: dsOut, triggers: triggers });
+    } catch(e) {
+      return _json({ ok: false, error: e.message });
+    }
+  }
+
+  // ─── 읽기전용: 지정 시트 gid + 행번호 목록의 알림 필드 원문 반환 (2026-06-25) ───
+  // 파라미터: gid(숫자), rows(쉼표구분 행번호, 예 "3491,4522"), ssId(선택)
+  // sendMessage 절대 없음. 마커 변경 없음.
+  if (action === 'read_rows_by_rownum') {
+    try {
+      var rrbGid    = parseInt(body.gid, 10);
+      var rrbRows   = String(body.rows || '').split(',').map(function(s){ return parseInt(s.trim(), 10); }).filter(function(n){ return !isNaN(n); });
+      var rrbSsId   = body.ssId || null;
+      if (!rrbGid || rrbRows.length === 0) return _json({ ok: false, error: 'gid·rows 필수' });
+
+      // FORM_SHEETS에서 gid 일치 cfg 탐색
+      var rrbCfg = null;
+      for (var i = 0; i < FORM_SHEETS.length; i++) {
+        if (FORM_SHEETS[i].gid === rrbGid && (!rrbSsId || FORM_SHEETS[i].ssId === rrbSsId)) {
+          rrbCfg = FORM_SHEETS[i]; break;
+        }
+      }
+      if (!rrbCfg) return _json({ ok: false, error: 'gid 매칭 없음: ' + rrbGid });
+
+      var sh = _sheetByGid_(rrbCfg.ssId, rrbCfg.gid);
+      if (!sh) return _json({ ok: false, error: 'sheet_not_found' });
+
+      var lastCol = sh.getLastColumn();
+      var headers = sh.getRange(1, 1, 1, lastCol).getValues()[0];
+      var idxDate  = _findCol_(headers, ['타임스탬프','timestamp','시각','일시','접수일','접수','날짜']);
+      var idxName  = _findCol_(headers, ['성함','이름','Full Name','Name',"Child's Full Name"]);
+      var idxPhone = _findCol_(headers, ['연락처','휴대폰','핸드폰','전화','Mobile Phone','Phone',"Guardian's Mobile Phone"]);
+      var idxChan  = _findCol_(headers, rrbCfg.channelKeys || ['채널','경로','알게','How Did You Hear']);
+
+      var rrbOut = rrbRows.map(function(rowNum) {
+        try {
+          var r = sh.getRange(rowNum, 1, 1, lastCol).getValues()[0];
+          var raw = idxDate >= 0 ? r[idxDate] : r[0];
+          var tsStr = '';
+          try {
+            var d = _normTs_(raw);
+            tsStr = !isNaN(d.getTime()) ? Utilities.formatDate(d, 'Asia/Seoul', 'yyyy-MM-dd HH:mm:ss') : String(raw).substring(0, 30);
+          } catch(ex) { tsStr = String(raw || '').substring(0, 30); }
+          return {
+            row:      rowNum,
+            type:     rrbCfg.type,
+            name:     idxName  >= 0 ? String(r[idxName]  || '').trim() : '',
+            phone:    idxPhone >= 0 ? String(r[idxPhone] || '').trim() : '',
+            channel:  idxChan  >= 0 ? String(r[idxChan]  || '').trim() : '',
+            ts:       tsStr
+          };
+        } catch(e2) { return { row: rowNum, error: e2.message }; }
+      });
+      return _json({ ok: true, type: rrbCfg.type, rows: rrbOut });
+    } catch(e) {
+      return _json({ ok: false, error: e.message });
+    }
+  }
+
+  // ─── 읽기전용: 지정 행의 알림 메시지 텍스트 미리보기(발송 0) (2026-06-25) ───
+  // 파라미터: gid(숫자), rows(쉼표구분 행번호). UrlFetchApp 미호출, sendMessage 없음.
+  if (action === 'preview_notify_msg') {
+    try {
+      var pvGid  = parseInt(body.gid, 10);
+      var pvRows = String(body.rows || '').split(',').map(function(s){ return parseInt(s.trim(),10); }).filter(function(n){ return !isNaN(n); });
+      if (!pvGid || pvRows.length === 0) return _json({ ok: false, error: 'gid·rows 필수' });
+
+      var pvCfg = null;
+      for (var i = 0; i < FORM_SHEETS.length; i++) {
+        if (FORM_SHEETS[i].gid === pvGid) { pvCfg = FORM_SHEETS[i]; break; }
+      }
+      if (!pvCfg) return _json({ ok: false, error: 'gid 매칭 없음: ' + pvGid });
+
+      var pvSh = _sheetByGid_(pvCfg.ssId, pvCfg.gid);
+      if (!pvSh) return _json({ ok: false, error: 'sheet_not_found' });
+
+      var pvLastCol = pvSh.getLastColumn();
+      var pvHdrs   = pvSh.getRange(1, 1, 1, pvLastCol).getValues()[0];
+      var pvIdxDate  = _findCol_(pvHdrs, ['타임스탬프','timestamp','시각','일시','접수일','접수','날짜']);
+      var pvIdxName  = _findCol_(pvHdrs, ['성함','이름','Full Name','Name',"Child's Full Name"]);
+      var pvIdxPhone = _findCol_(pvHdrs, ['연락처','휴대폰','핸드폰','전화','Mobile Phone','Phone',"Guardian's Mobile Phone"]);
+      var pvIdxChan  = _findCol_(pvHdrs, pvCfg.channelKeys || ['채널','경로','알게','How Did You Hear']);
+      var pvIdxProg  = _findCol_(pvHdrs, pvCfg.programKeys || ['종목','프로그램','과목','Program']);
+
+      var pvOut = pvRows.map(function(rowNum) {
+        try {
+          var r = pvSh.getRange(rowNum, 1, 1, pvLastCol).getValues()[0];
+          var raw = pvIdxDate >= 0 ? r[pvIdxDate] : r[0];
+          var tsStr = '';
+          try {
+            var d = _normTs_(raw);
+            tsStr = !isNaN(d.getTime()) ? Utilities.formatDate(d, 'Asia/Seoul', 'MM/dd HH:mm') : String(raw||'').substring(0,16);
+          } catch(ex) { tsStr = String(raw||'').substring(0,16); }
+
+          var name  = (pvIdxName  >= 0 ? String(r[pvIdxName]  ||'').trim() : '') || '-';
+          var phone = (pvIdxPhone >= 0 ? String(r[pvIdxPhone] ||'').trim() : '') || '-';
+          var chan  = (pvIdxChan  >= 0 ? String(r[pvIdxChan]  ||'').trim() : '') || '-';
+          var prog  = (pvIdxProg  >= 0 ? String(r[pvIdxProg]  ||'').trim() : '');
+
+          var msg = '🔔 [신규 문의 — 즉시]\n'
+            + '유형: ' + pvCfg.type + '\n'
+            + (prog ? '종목: ' + prog + '\n' : '')
+            + '이름: ' + name + '\n'
+            + '연락처: ' + phone + '\n'
+            + '유입채널: ' + chan + '\n'
+            + '시각: ' + tsStr;
+
+          return { row: rowNum, msg: msg, prog_col_found: pvIdxProg >= 0 };
+        } catch(e2) { return { row: rowNum, error: e2.message }; }
+      });
+      return _json({ ok: true, previews: pvOut });
     } catch(e) {
       return _json({ ok: false, error: e.message });
     }
