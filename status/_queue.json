@@ -792,5 +792,19 @@
     "next": "🌀 표류 — 다음 미정 (필요 시 GM·웰리/담당 C-Level 지정)",
     "adhoc_commit": "95865af8c12964e50b3817b6120c7c5106b58399",
     "ship_no": 144
+  },
+  {
+    "task_id": "CTO-2026-06-25-ADHOC-3a039782",
+    "clevel": "cto",
+    "title": "[시토] /fix PII 마스킹 견고화+진단 / 점검관리방 중복 알림 영속 dedup",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-06-25",
+    "processed_at": "2026-06-25",
+    "artifact": "① PII(Survey.js): _piiFull_ 견고화 — PII_MASK 값 trim·소문자 허용, on이면 토큰\n   없어도 마스킹(누수 즉시 차단·전엔 토큰 없으면 풀로 새던 분기 제거). 토큰 일치 시만 풀.\n   진단 액션 pii_status 추가(PII_MASK 값·토큰설정 여부·마스킹활성 — 비밀값 미노출).\n② 점검(지원팀 일일점검.js): 이슈→점검관리방 알림이 매 저장(자동저장 포함)마다\n   전체 재발송되던 중복을, 원장 noti 필드에 (date|itemId|issue) 키 누적해 새 이슈만 1회 발송.\n   (CLI ad-hoc · 커밋 3a039782)",
+    "next": "🌀 표류 — 다음 미정 (필요 시 GM·웰리/담당 C-Level 지정)",
+    "adhoc_commit": "3a039782d130228006ad9cf5ec10b4898dd84933",
+    "ship_no": 169
   }
 ]
