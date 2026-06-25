@@ -1117,18 +1117,15 @@ function _checkNotifyIssues(issues, gender) {
 
 // 이미 알림 보낸 이슈 키 추적(영속) — 자동저장·재제출마다 같은 이슈 재발송되던 중복 차단. 2026-06-25 시토·GM.
 // 키 = date|itemId|issueText. 원장(_chkKey JSON)의 noti 필드에 누적. 이슈 텍스트가 바뀌면 새 키=새 알림(정상).
+// noti 이력은 점검 원장(_chkKey)과 분리된 전용 속성에 저장 — 원장 저장/재구성(_updateCheckLedger)이
+// noti를 날려 매 저장마다 같은 이슈가 재발송되던 스팸 차단. 2026-06-25 시우 fix(전용키 분리).
 function _checkLoadNotified(dept, date, gender) {
-  try { var led = JSON.parse(PropertiesService.getScriptProperties().getProperty(_chkKey(dept, date, gender)) || '{}'); return led.noti || {}; }
+  try { return JSON.parse(PropertiesService.getScriptProperties().getProperty('CHKNOTI|' + dept + '|' + date + '|' + (gender || 'm')) || '{}'); }
   catch (e) { return {}; }
 }
 function _checkSaveNotified(dept, date, gender, notiObj) {
-  try {
-    var props = PropertiesService.getScriptProperties();
-    var k = _chkKey(dept, date, gender);
-    var led = JSON.parse(props.getProperty(k) || '{}');   // 최신 원장 재읽기 후 noti만 갱신(타 필드 보존)
-    led.noti = notiObj;
-    props.setProperty(k, JSON.stringify(led));
-  } catch (e) { /* fail-soft */ }
+  try { PropertiesService.getScriptProperties().setProperty('CHKNOTI|' + dept + '|' + date + '|' + (gender || 'm'), JSON.stringify(notiObj || {})); }
+  catch (e) { /* fail-soft */ }
 }
 
 function _writePerRoundRows(dept, date, body) {
