@@ -263,6 +263,19 @@ async function startApp(){
   renderKpi();renderMain();renderSalesDept();renderMix();renderSales();renderSalesTbl();renderExpTbl();renderPeople();renderReq();
 }
 
+// 직원용 구매요청 전용 모드 (?req=1) — 재무 데이터·차트 미로드, 구매요청 탭만
+async function startReqOnly(){
+  document.getElementById("app").style.display="block";
+  TABS=[{id:"request",label:"구매요청"}]; renderNav();
+  var h1=document.querySelector(".brand h1"); if(h1) h1.textContent="구매요청";
+  var hs=document.querySelector(".hd-sub"); if(hs) hs.textContent="웰페리온 구매 품의 · 직원용 · 제출하면 담당 부서장이 승인/반려";
+  var sm=document.getElementById("syncMeta"); if(sm) sm.textContent="";
+  document.getElementById("loading").style.display="none";
+  document.getElementById("content").style.display="block";
+  document.querySelectorAll(".panel").forEach(function(p){p.classList.toggle("active",p.dataset.panel==="request");});
+  renderReq();
+}
+
 function renderKpi(){
   document.getElementById("kpis").innerHTML=[
     {l:"누적 매출",v:eok(SALES_G),note:won(SALES_G),up:true},
@@ -484,7 +497,9 @@ async function doAct(row,next,needPw,btn){
   loadReq();  // 서버 재확인
 }
 
-(function(){var ok="";try{ok=sessionStorage.getItem("wp_fin_ok")||"";}catch(e){}
+(function(){
+  if(/[?&]req=1/.test(location.search)){document.getElementById("gate").style.display="none";startReqOnly();return;} // 직원용 구매요청 전용
+  var ok="";try{ok=sessionStorage.getItem("wp_fin_ok")||"";}catch(e){}
   if(ok==="1"){document.getElementById("gate").style.display="none";startApp();}else document.getElementById("gatePw").focus();})();
 </script>
 </body></html>
