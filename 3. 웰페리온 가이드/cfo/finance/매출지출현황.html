@@ -474,7 +474,7 @@ function addPhotoTo(row,btn){
 }
 function btnCss(c){return "font-size:11px;padding:4px 11px;cursor:pointer;border:none;border-radius:6px;color:#fff;font-weight:600;background:"+c;}
 async function doAct(row,next,needPw,btn){
-  if(needPw){var pw=prompt("승인·반려 확정 — 비밀번호를 입력하세요");if(pw===null)return;pw=String(pw).trim();if(pw!=="1202"&&pw!==GATE_PW){alert("비밀번호가 올바르지 않습니다");return;}}
+  if(needPw){var _a=(next==="반려")?"반려":"승인";if(!confirm("이 품의를 "+_a+" 처리할까요?"))return;}
   if(btn){btn.disabled=true;btn.textContent="처리중…";}
   var src=(reqFilter==="완료")?REQ_DONE:REQ_ACTIVE;var item=src.filter(function(x){return String(x.row)===String(row);})[0];
   if(item){item.상태=next;renderReqTbl();}  // 즉시 반영(낙관적)
