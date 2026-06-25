@@ -540,5 +540,19 @@
     "next": "🌀 표류 — 다음 미정 (필요 시 GM·웰리/담당 C-Level 지정)",
     "adhoc_commit": "b3d48228be07e1e71f7dd9c67835f5485f8098ea",
     "ship_no": 167
+  },
+  {
+    "task_id": "CTO-2026-06-25-ADHOC-42fdc879",
+    "clevel": "cto",
+    "title": "[시토] /sec 회원 PII 서버측 토큰 잠금 — 실명·전화 무인증 공개 차단(기본 OFF·1초 롤백)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-06-25",
+    "processed_at": "2026-06-25",
+    "artifact": "문제: member_inquiry_list·member_active_list가 공개 액션이라 회원 실명·전화가\n토큰 없이 GAS URL만으로 노출(2026-06-22 '전체 공개' 설정 잔존). 커튼(gate.js)은\n화면만 가려 뒷단 호출은 못 막음 → 실제 누수 지점. (CLI ad-hoc · 커밋 42fdc879)",
+    "next": "🌀 표류 — 다음 미정 (필요 시 GM·웰리/담당 C-Level 지정)",
+    "adhoc_commit": "42fdc87943b76c6936600b0524ac5ceef006ab79",
+    "ship_no": 168
   }
 ]
