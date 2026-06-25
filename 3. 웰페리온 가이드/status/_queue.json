@@ -958,5 +958,19 @@
     "next": "🌀 표류 — 다음 미정 (필요 시 GM·웰리/담당 C-Level 지정)",
     "adhoc_commit": "80a84c0cbee2b48fb972b4eec03d6bbdff023017",
     "ship_no": 147
+  },
+  {
+    "task_id": "CTO-2026-06-25-ADHOC-025a7267",
+    "clevel": "cto",
+    "title": "[시토] compose_golf·compose_cta_card 캐논값 직독 전환 — INC-005 복사 재발 봉인 (cto)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-06-25",
+    "processed_at": "2026-06-25",
+    "artifact": "- compose_golf.py: _CTA_URL 리터럴 → canon_get(\"inquiry_path\")\n- compose_cta_card.py: INQUIRY_URL·PHONE·ADDRESS 3개 리터럴 → canon_get 직독\n- poc_blog_link_card.py: DEFAULT_CTA_URL·CAFE_WRITE_URL → canon_get 직독\n- ssot/canon_values.json: naver_cafe_club_id allow_globs에 poc_blog_link_card.py 추가 (CLI ad-hoc · 커밋 025a7267)",
+    "next": "🌀 표류 — 다음 미정 (필요 시 GM·웰리/담당 C-Level 지정)",
+    "adhoc_commit": "025a72675fe3bdafb425e460b66763b001a015f7",
+    "ship_no": 172
   }
 ]
