@@ -735,7 +735,9 @@ var _SURVEY_PUBLIC_ACTIONS = {
   // 트리거 관리 — 설치/조회/테스트 (2026-06-25 시모, 즉시알림 전환)
   install_inquiry_triggers:   true,  // onFormSubmit 트리거 + 폴링 백스톱 설치 (웹앱 호출 시 cao 계정으로 실행)
   list_inquiry_triggers:      true,  // 현재 트리거 목록 조회 (핸들러·타입·소스ID)
-  test_form_submit_notify:    true   // onFormSubmit 경로 mock 테스트 — 문의알림방에 TEST 메시지 1건
+  test_form_submit_notify:    true,  // onFormSubmit 경로 mock 테스트 — 문의알림방에 TEST 메시지 1건
+  resend_recent_inquiry:      true,  // 누락분 수동 발송 — FORM_SHEETS 최근 문의 1건 재발송 (마커 불변)
+  diag_inquiry_ts:            true   // 진단: 시트별 마지막 3행 타임스탬프 파싱 결과 (2026-06-25)
 };
 // add_utm_field 비밀 가드값 — 폼 변형 액션 무단호출 차단. _SURVEY_PUBLIC_ACTIONS에 넣지 말 것.
 var _ADD_UTM_GUARD = 'wp-utm-field-2026-i-am-sure';
@@ -987,6 +989,165 @@ function _processAction(body) {
       _notifyTelegram(testMsg, testChatId);
       return _json({ ok: true, chat_id: testChatId, message: 'TEST 메시지 발송 완료 — 문의알림방 확인' });
     } catch (e) {
+      return _json({ ok: false, error: e.message });
+    }
+  }
+
+  // ─── 누락분 수동 발송 — FORM_SHEETS 전체에서 가장 최근 문의 1건 재발송 (2026-06-25 시모) ───
+  // INQ_LASTROW 마커 불변. 딱 1건만 발송. 머리에 '[누락분 수동 발송]' 표식.
+  // v2: 시트별 break 폐기 → 각 시트 최근 30행 전부 파싱해 전역 타임스탬프 max 1건 선택.
+  //     날짜형식 혼재(구글폼 Date, 'YYYY. M. D', 'YYYY-MM-DD HH:mm:ss') 모두 _normTs_ 정규화.
+  if (action === 'resend_recent_inquiry') {
+    try {
+      var rriChatId = PropertiesService.getScriptProperties().getProperty('TELEGRAM_INQUIRY_CHAT_ID') || _INQUIRY_CHAT_ID_FALLBACK;
+      var rriCandidates = []; // 전 시트 후보 행 목록 — 타임스탬프 기준 정렬용
+
+      FORM_SHEETS.forEach(function(cfg) {
+        try {
+          var sh = _sheetByGid_(cfg.ssId, cfg.gid);
+          if (!sh) return;
+          var lastRow = sh.getLastRow();
+          if (lastRow < 2) return;
+          var lastCol = sh.getLastColumn();
+          if (lastCol < 1) return;
+          var headers = sh.getRange(1, 1, 1, lastCol).getValues()[0];
+          var idxDate  = _findCol_(headers, ['타임스탬프', 'timestamp', '시각', '일시', '접수일', '접수', '날짜']);
+          var idxName  = _findCol_(headers, ['성함', '이름', 'Full Name', 'Name', "Child's Full Name"]);
+          var idxPhone = _findCol_(headers, ['연락처', '휴대폰', '핸드폰', '전화', 'Mobile Phone', 'Phone', "Guardian's Mobile Phone"]);
+          var idxChan  = _findCol_(headers, cfg.channelKeys || ['채널', '경로', '알게', 'How Did You Hear']);
+          var idxMemo  = _findCol_(headers, ['비고', '메모']);
+
+          // 최근 200행 일괄 읽기 — 시트 끝에 빈 행이 대량 존재할 수 있어 30행으론 부족
+          var readStart = Math.max(2, lastRow - 199);
+          var readCount = lastRow - readStart + 1;
+          var allRows = sh.getRange(readStart, 1, readCount, lastCol).getValues();
+
+          for (var ri = 0; ri < allRows.length; ri++) {
+            var r = allRows[ri];
+            var rowNum = readStart + ri;
+            // [웹접수] 미러 행 제외
+            if (idxMemo >= 0 && String(r[idxMemo] || '').indexOf(WEB_INTAKE_TAG) >= 0) continue;
+            // 실데이터 판별: 전화번호 OR 타임스탬프 중 하나라도 있으면 실 행
+            var hasTs    = idxDate >= 0 ? !!r[idxDate] : false;
+            var hasPhone = idxPhone >= 0 && !!r[idxPhone];
+            if (!hasTs && !hasPhone) continue;
+
+            var ts = idxDate >= 0 ? r[idxDate] : '';
+            var tsDate = null;
+            var tsStr = '';
+            try {
+              var d = _normTs_(ts);
+              if (!isNaN(d.getTime())) {
+                tsDate = d;
+                tsStr = Utilities.formatDate(d, 'Asia/Seoul', 'MM/dd HH:mm');
+              } else {
+                tsStr = String(ts).substring(0, 16);
+              }
+            } catch (ex) { tsStr = String(ts).substring(0, 16); }
+
+            var name  = (idxName  >= 0 ? String(r[idxName]  || '').trim() : '') || '-';
+            var phone = (idxPhone >= 0 ? String(r[idxPhone] || '').trim() : '') || '-';
+            var chan  = (idxChan  >= 0 ? String(r[idxChan]  || '').trim() : '') || '-';
+
+            rriCandidates.push({
+              ts:        tsDate,          // Date or null
+              tsMs:      tsDate ? tsDate.getTime() : 0,
+              tsStr:     tsStr,
+              type:      cfg.type,
+              sheetName: sh.getName(),
+              row:       rowNum,
+              name:      name,
+              phone:     phone,
+              chan:       chan
+            });
+          }
+        } catch (e2) { /* 시트 접근 실패 무시 */ }
+      });
+
+      if (rriCandidates.length === 0) return _json({ ok: false, error: '발송 가능한 문의 행 없음' });
+
+      // 타임스탬프 내림차순 정렬 — null(파싱실패)은 맨 뒤로
+      rriCandidates.sort(function(a, b) {
+        if (!a.ts && !b.ts) return 0;
+        if (!a.ts) return 1;
+        if (!b.ts) return -1;
+        return b.tsMs - a.tsMs;
+      });
+
+      var best = rriCandidates[0];
+      var msg = '🗂 [누락분 수동 발송]\n'
+        + '유형: ' + best.type + '\n'
+        + '이름: ' + best.name + '\n'
+        + '연락처: ' + best.phone + '\n'
+        + '유입채널: ' + best.chan + '\n'
+        + '시각: ' + best.tsStr;
+
+      _notifyTelegram(msg, rriChatId);
+
+      // 진단용 top3 (시트·시각만)
+      var top3 = rriCandidates.slice(0, 3).map(function(c) {
+        return { type: c.type, sheet: c.sheetName, row: c.row, ts: c.tsStr };
+      });
+
+      return _json({
+        ok:        true,
+        chat_id:   rriChatId,
+        sent_type: best.type,
+        sent_sheet:best.sheetName,
+        sent_row:  best.row,
+        sent_ts:   best.tsStr,
+        sent_msg:  msg,
+        top3:      top3
+      });
+    } catch (e) {
+      return _json({ ok: false, error: e.message });
+    }
+  }
+
+  // ─── 누락분 진단 — FORM_SHEETS 시트별 마지막 실데이터 행(역순 최대 200행 탐색) 반환 (2026-06-25) ───
+  if (action === 'diag_inquiry_ts') {
+    try {
+      var diagOut = [];
+      FORM_SHEETS.forEach(function(cfg) {
+        var rec = { ssId: cfg.ssId, gid: cfg.gid, type: cfg.type, sheet: null, lastRow: 0, latestDataRow: null, error: null };
+        try {
+          var sh = _sheetByGid_(cfg.ssId, cfg.gid);
+          if (!sh) { rec.error = 'sheet_not_found'; diagOut.push(rec); return; }
+          rec.sheet = sh.getName();
+          var lastRow = sh.getLastRow();
+          rec.lastRow = lastRow;
+          if (lastRow < 2) { diagOut.push(rec); return; }
+          var lastCol = sh.getLastColumn();
+          var headers = sh.getRange(1, 1, 1, lastCol).getValues()[0];
+          rec.headers = headers.slice(0, 10).map(function(h){ return String(h||'').trim(); });
+          var idxDate = _findCol_(headers, ['타임스탬프', 'timestamp', '시각', '일시', '접수일', '접수', '날짜']);
+          var idxName = _findCol_(headers, ['성함', '이름', 'Full Name', 'Name', "Child's Full Name"]);
+          var idxPhone = _findCol_(headers, ['연락처', '휴대폰', '핸드폰', '전화', 'Mobile Phone', 'Phone', "Guardian's Mobile Phone"]);
+          var idxMemo = _findCol_(headers, ['비고', '메모']);
+          rec.idxDate = idxDate; rec.idxPhone = idxPhone;
+          // 역순으로 최대 200행 탐색해 실데이터 행 찾기 (빈행 스킵 조건: date AND phone 모두 없는 경우만)
+          var readStart = Math.max(2, lastRow - 199);
+          var rows = sh.getRange(readStart, 1, lastRow - readStart + 1, lastCol).getValues();
+          for (var ri = rows.length - 1; ri >= 0; ri--) {
+            var r = rows[ri];
+            var rowNum = readStart + ri;
+            if (idxMemo >= 0 && String(r[idxMemo] || '').indexOf(WEB_INTAKE_TAG) >= 0) continue;
+            var raw = idxDate >= 0 ? r[idxDate] : r[0];  // idxDate 못 찾으면 1열로 폴백
+            var hasPhone = idxPhone >= 0 && r[idxPhone];
+            if (!raw && !hasPhone) continue;  // 타임스탬프·전화번호 둘 다 없을 때만 빈 행 처리
+            var tsStr = '';
+            try {
+              var d = _normTs_(raw);
+              tsStr = !isNaN(d.getTime()) ? Utilities.formatDate(d, 'Asia/Seoul', 'yyyy-MM-dd HH:mm:ss') : ('파싱실패:' + String(raw).substring(0, 30));
+            } catch(ex) { tsStr = 'error'; }
+            rec.latestDataRow = { row: rowNum, rawTs: String(raw).substring(0, 40), isDate: raw instanceof Date, parsed: tsStr, name: idxName >= 0 ? String(r[idxName]||'').substring(0,15) : '', col0: String(r[0]||'').substring(0,20) };
+            break;
+          }
+        } catch(e2) { rec.error = e2.message; }
+        diagOut.push(rec);
+      });
+      return _json({ ok: true, sheets: diagOut });
+    } catch(e) {
       return _json({ ok: false, error: e.message });
     }
   }
