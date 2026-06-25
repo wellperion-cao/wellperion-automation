@@ -1328,6 +1328,7 @@ function _processAction(body) {
     var ctToday = Utilities.formatDate(new Date(), ctTz, 'yyyy-MM-dd');
     var ctMonth = ctToday.slice(0, 7);
     var ctTI = 0, ctMI = 0, ctTR = 0, ctMR = 0;
+    var ctActive = 0, ctEnded = 0, ctLoss = 0, ctLossDated = false;
     // 문의: 26년 신규문의 타임스탬프
     try {
       var ciSh = _miSheet_();
@@ -1349,25 +1350,48 @@ function _processAction(body) {
         }
       }
     } catch (eCi) {}
-    // 등록: 유효회원 등록일자
+    // 등록 + 회원 현황(유효/종료/금일 LOSS): 유효회원 시트
     try {
       var crSh = SpreadsheetApp.openById(MEMBER_SPREADSHEET_ID).getSheetByName(MEMBER_SHEET);
       if (crSh && crSh.getLastRow() >= 2) {
-        var crH = crSh.getRange(1, 1, 1, crSh.getLastColumn()).getValues()[0].map(function(v){ return String(v).replace(/\s/g, ''); });
-        var crIdx = -1;
-        for (var cj = 0; cj < crH.length; cj++) { if (crH[cj].indexOf('등록일자') >= 0) { crIdx = cj; break; } }
-        if (crIdx >= 0) {
-          var crData = crSh.getRange(2, crIdx + 1, crSh.getLastRow() - 1, 1).getValues();
-          for (var cr = 0; cr < crData.length; cr++) {
-            var cv = crData[cr][0];
+        var crCols = crSh.getLastColumn();
+        var crHdr = crSh.getRange(1, 1, 1, crCols).getValues()[0].map(function(v){ return String(v).trim(); });
+        function _crIdx(want){ var w = String(want).replace(/\s/g, ''); for (var i = 0; i < crHdr.length; i++){ if (crHdr[i].replace(/\s/g, '').indexOf(w) >= 0) return i; } return -1; }
+        var crRegI  = _crIdx('등록일자');
+        var crNmI   = _crIdx('회원명');
+        var crRemI  = _crIdx('잔여일');
+        var crReI   = _crIdx('재등록분류');
+        var crLossI = _crIdx('이탈일'); if (crLossI < 0) crLossI = _crIdx('해지일'); if (crLossI < 0) crLossI = _crIdx('종료일');
+        ctLossDated = (crLossI >= 0);
+        var _CR_LOSS = { 'LOSS':1, '환불':1, '양도LOSS':1 };
+        var crAll = crSh.getRange(2, 1, crSh.getLastRow() - 1, crCols).getValues();
+        for (var cr = 0; cr < crAll.length; cr++) {
+          var crow = crAll[cr];
+          // 등록 집계(등록일자 — 금일/금월 신규)
+          if (crRegI >= 0) {
+            var cv = crow[crRegI];
             var crD = (cv instanceof Date && !isNaN(cv.getTime())) ? Utilities.formatDate(cv, ctTz, 'yyyy-MM-dd') : _miToISO_(cv);
             if (crD === ctToday) ctTR++;
             if (crD && crD.slice(0, 7) === ctMonth) ctMR++;
           }
+          // 회원 현황(회원명 있는 행만): 유효 = 잔여일>0 & 이탈표시 없음
+          var crNm = crNmI >= 0 ? String(crow[crNmI] == null ? '' : crow[crNmI]).trim() : '';
+          if (!crNm) continue;
+          var crRemRaw = crRemI >= 0 ? String(crow[crRemI] == null ? '' : crow[crRemI]).replace(/[^0-9\-]/g, '') : '';
+          var crRem = (crRemRaw === '' || crRemRaw === '-') ? NaN : parseInt(crRemRaw, 10);
+          var crReV = crReI >= 0 ? String(crow[crReI] == null ? '' : crow[crReI]).trim() : '';
+          var crValid = !isNaN(crRem) && crRem > 0 && !_CR_LOSS[crReV];
+          if (crValid) ctActive++; else ctEnded++;
+          // 금일 LOSS: 이탈일(또는 해지/종료일)이 오늘 + 유효 아님 — 날짜 칸 없으면 0 유지
+          if (crLossI >= 0 && !crValid) {
+            var lv = crow[crLossI];
+            var lD = (lv instanceof Date && !isNaN(lv.getTime())) ? Utilities.formatDate(lv, ctTz, 'yyyy-MM-dd') : _miToISO_(lv);
+            if (lD === ctToday) ctLoss++;
+          }
         }
       }
     } catch (eCr) {}
-    return _json({ ok: true, date: ctToday, todayInquiry: ctTI, monthInquiry: ctMI, todayReg: ctTR, monthReg: ctMR });
+    return _json({ ok: true, date: ctToday, todayInquiry: ctTI, monthInquiry: ctMI, todayReg: ctTR, monthReg: ctMR, memberActive: ctActive, memberEnded: ctEnded, todayLoss: ctLoss, lossDated: ctLossDated });
   }
 
   // ─── 문의→가입 전환 집계 ───

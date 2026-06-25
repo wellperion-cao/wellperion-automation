@@ -596,42 +596,42 @@ a.funnel-step:hover{background:rgba(183,159,138,0.08);color:var(--accent)}
 .active-count{font-size:12px;color:var(--dim-mid);min-height:18px;margin-bottom:10px}
 
 /* ═══════════════════════════════════════
-   CPO 현황 스트립 — 일/월 2단
+   CPO 요약 대시보드 (탭별 4카드 · 클릭 시 해당 탭)
    ═══════════════════════════════════════ */
-.cpo-stat-split{display:flex;align-items:flex-end;justify-content:center;gap:20px;margin-top:6px}
-.cpo-stat-col{display:flex;flex-direction:column;align-items:center;gap:5px}
-.cpo-stat-cap{font-size:10px;font-weight:700;color:var(--dim);letter-spacing:0.04em}
-.cpo-stat-month{font-size:22px;font-weight:800;line-height:1;color:var(--dim-mid);letter-spacing:-0.02em}
-
-/* ═══════════════════════════════════════
-   예약 현황 카드 (체험/상담·투어/등록 · 오늘·이번달)
-   ═══════════════════════════════════════ */
-.cal-stat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
-.cal-stat{
-  background:var(--paper-raised);
-  border:1px solid var(--border);
-  border-radius:12px;
-  padding:15px 16px 16px;
-  position:relative;overflow:hidden;
+.dash-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px}
+.dash-card{
+  display:block;text-decoration:none;color:inherit;
+  background:var(--paper);border:1px solid var(--border);
+  border-radius:var(--radius-card);padding:15px 16px 16px;
+  position:relative;overflow:hidden;box-shadow:var(--shadow-card);
+  transition:border-color .15s,transform .15s;
 }
-.cal-stat::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
-.cal-stat[data-kind="exp"]::before{background:var(--teal)}
-.cal-stat[data-kind="tour"]::before{background:var(--purple)}
-.cal-stat[data-kind="reg"]::before{background:var(--green)}
-.cal-stat-head{display:flex;align-items:center;gap:7px;font-size:13px;font-weight:700;margin-bottom:14px}
-.cal-stat-dot{width:9px;height:9px;border-radius:50%;display:inline-block;flex-shrink:0}
-.cal-stat-dot.exp{background:var(--teal)}
-.cal-stat-dot.tour{background:var(--purple)}
-.cal-stat-dot.reg{background:var(--green)}
-.cal-stat-body{display:flex;align-items:flex-end;gap:22px}
-.cal-stat-col{display:flex;flex-direction:column;gap:6px}
-.cal-stat-cap{font-size:10px;font-weight:700;color:var(--dim);letter-spacing:0.04em}
-.cal-stat-today{font-size:30px;font-weight:800;line-height:1;letter-spacing:-0.02em}
-.cal-stat[data-kind="exp"] .cal-stat-today{color:var(--teal)}
-.cal-stat[data-kind="tour"] .cal-stat-today{color:var(--purple)}
-.cal-stat[data-kind="reg"] .cal-stat-today{color:var(--green)}
-.cal-stat-month{font-size:21px;font-weight:800;line-height:1;color:var(--dim-mid);letter-spacing:-0.02em}
-@media(max-width:768px){.cal-stat-grid{grid-template-columns:1fr;gap:10px}.cal-stat-body{gap:30px}}
+.dash-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
+.dash-card[data-kind="tour"]::before{background:var(--purple)}
+.dash-card[data-kind="inq"]::before{background:var(--teal)}
+.dash-card[data-kind="reg"]::before{background:var(--green)}
+.dash-card[data-kind="mem"]::before{background:var(--accent)}
+.dash-card:hover{border-color:var(--accent-border);transform:translateY(-1px)}
+.dash-head{display:flex;align-items:center;gap:7px;font-size:13px;font-weight:700}
+.dash-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+.dash-dot.tour{background:var(--purple)}
+.dash-dot.inq{background:var(--teal)}
+.dash-dot.reg{background:var(--green)}
+.dash-dot.mem{background:var(--accent)}
+.dash-title{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dash-tag{font-size:10px;font-weight:600;color:var(--dim);margin-left:auto;flex-shrink:0}
+.dash-metrics{margin-top:13px;display:flex;flex-direction:column;gap:9px}
+.dash-line{display:flex;align-items:baseline;gap:9px}
+.dash-k{font-size:10px;font-weight:700;color:var(--dim);letter-spacing:0.04em;min-width:30px;flex-shrink:0}
+.dash-v{font-size:12px;color:var(--dim-mid)}
+.dash-v b{font-size:18px;font-weight:800;color:var(--text);letter-spacing:-0.02em}
+.dash-v b.lead{font-size:24px}
+.dash-card[data-kind="tour"] .dash-v b.lead{color:var(--purple)}
+.dash-card[data-kind="inq"] .dash-v b.lead{color:var(--teal)}
+.dash-card[data-kind="reg"] .dash-v b.lead{color:var(--green)}
+.dash-card[data-kind="mem"] .dash-v b.lead{color:var(--accent)}
+@media(max-width:900px){.dash-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:520px){.dash-grid{grid-template-columns:1fr}}
 
 /* ═══════════════════════════════════════
    금일 / 이번달 예약자 정리
@@ -743,27 +743,45 @@ a.funnel-step:hover{background:rgba(183,159,138,0.08);color:var(--accent)}
   <!-- ══════════════════════════════ 내비 탭 (상단) ══════════════════════════════ -->
   <div class="funnel-steps" style="margin-bottom:14px">
     <a class="funnel-step current" data-tab="calendar" href="javascript:void(0)" onclick="switchTab('calendar')" style="text-decoration:none;cursor:pointer">예약 달력</a>
-    <a class="funnel-step" data-tab="db" href="javascript:void(0)" onclick="switchTab('db')" style="text-decoration:none;cursor:pointer">문의·체험/상담투어</a>
+    <a class="funnel-step" data-tab="db" href="javascript:void(0)" onclick="switchTab('db')" style="text-decoration:none;cursor:pointer">멤버십 문의 현황</a>
     <a class="funnel-step" data-tab="registered" href="javascript:void(0)" onclick="switchTab('registered')" style="text-decoration:none;cursor:pointer">등록</a>
-    <a class="funnel-step" data-tab="active" href="javascript:void(0)" onclick="switchTab('active')" style="text-decoration:none;cursor:pointer">멤버십 회원 관리</a>
+    <a class="funnel-step" data-tab="active" href="javascript:void(0)" onclick="switchTab('active')" style="text-decoration:none;cursor:pointer">멤버십 회원 현황</a>
   </div>
 
-  <!-- ══════════════════════════════ CPO 현황 (일/월 기준 · 탭 아래) ══════════════════════════════ -->
-  <div class="kpi-grid" id="cpoTodayStrip" style="margin-bottom:18px">
-    <div class="kpi-box">
-      <div class="kpi-label">멤버십 신규 문의</div>
-      <div class="cpo-stat-split">
-        <div class="cpo-stat-col"><div class="cpo-stat-cap">오늘(일)</div><div class="kpi-value teal" id="ctsTodayInq">—</div></div>
-        <div class="cpo-stat-col"><div class="cpo-stat-cap">이번달(월)</div><div class="cpo-stat-month" id="ctsMonthInq">—</div></div>
+  <!-- ══════════════════════════════ CPO 요약 대시보드 (탭별 4카드 · 클릭 시 해당 탭) ══════════════════════════════ -->
+  <div class="dash-grid" id="cpoTodayStrip">
+    <!-- 카드1: 예약 달력 — 상담·투어 (금일/월간 예약·진행) -->
+    <a class="dash-card" data-kind="tour" href="javascript:void(0)" onclick="switchTab('calendar')">
+      <div class="dash-head"><span class="dash-dot tour"></span><span class="dash-title">예약 달력</span><span class="dash-tag">상담·투어</span></div>
+      <div class="dash-metrics">
+        <div class="dash-line"><span class="dash-k">금일</span><span class="dash-v"><b class="lead" id="dTourTodayBook">0</b> 예약 · <b id="dTourTodayProg">0</b> 진행</span></div>
+        <div class="dash-line"><span class="dash-k">월간</span><span class="dash-v"><b id="dTourMonBook">0</b> 예약 · <b id="dTourMonProg">0</b> 진행</span></div>
       </div>
-    </div>
-    <div class="kpi-box">
-      <div class="kpi-label">신규 등록</div>
-      <div class="cpo-stat-split">
-        <div class="cpo-stat-col"><div class="cpo-stat-cap">오늘(일)</div><div class="kpi-value green" id="ctsTodayReg">—</div></div>
-        <div class="cpo-stat-col"><div class="cpo-stat-cap">이번달(월)</div><div class="cpo-stat-month" id="ctsMonthReg">—</div></div>
+    </a>
+    <!-- 카드2: 멤버십 문의 현황 (금일/월간 문의) -->
+    <a class="dash-card" data-kind="inq" href="javascript:void(0)" onclick="switchTab('db')">
+      <div class="dash-head"><span class="dash-dot inq"></span><span class="dash-title">멤버십 문의 현황</span></div>
+      <div class="dash-metrics">
+        <div class="dash-line"><span class="dash-k">금일</span><span class="dash-v"><b class="lead" id="dInqToday">0</b> 건</span></div>
+        <div class="dash-line"><span class="dash-k">월간</span><span class="dash-v"><b id="dInqMonth">0</b> 건</span></div>
       </div>
-    </div>
+    </a>
+    <!-- 카드3: 멤버십 등록건 (금일/금월 신규 등록) -->
+    <a class="dash-card" data-kind="reg" href="javascript:void(0)" onclick="switchTab('registered')">
+      <div class="dash-head"><span class="dash-dot reg"></span><span class="dash-title">멤버십 등록건</span></div>
+      <div class="dash-metrics">
+        <div class="dash-line"><span class="dash-k">금일</span><span class="dash-v"><b class="lead" id="dRegToday">0</b> 건 신규</span></div>
+        <div class="dash-line"><span class="dash-k">금월</span><span class="dash-v"><b id="dRegMonth">0</b> 건 신규</span></div>
+      </div>
+    </a>
+    <!-- 카드4: 멤버십 회원 현황 (현재 회원수 / 금일 LOSS) -->
+    <a class="dash-card" data-kind="mem" href="javascript:void(0)" onclick="switchTab('active')">
+      <div class="dash-head"><span class="dash-dot mem"></span><span class="dash-title">멤버십 회원 현황</span></div>
+      <div class="dash-metrics">
+        <div class="dash-line"><span class="dash-k">현재</span><span class="dash-v"><b class="lead" id="dMemActive">0</b> 명</span></div>
+        <div class="dash-line"><span class="dash-k">금일</span><span class="dash-v"><b id="dMemLoss">0</b> 명 LOSS</span></div>
+      </div>
+    </a>
   </div>
 
   <!-- ══════════════════════════════ 1. 예약 달력 ══════════════════════════════ -->
@@ -813,37 +831,6 @@ a.funnel-step:hover{background:rgba(183,159,138,0.08);color:var(--accent)}
       시설견학 및 상담 일정 칸
       &nbsp;|&nbsp;
       <span style="border:1px solid var(--teal);border-radius:4px;padding:1px 6px;font-size:11px;font-weight:700;color:var(--teal)">오늘</span>
-    </div>
-
-    <!-- ── 예약 현황 (체험 / 상담·투어 / 등록 · 오늘(일)·이번달(월)) — 달력 아래 (2026-06-25 GM) ── -->
-    <div class="card" id="calStatusCard">
-      <div class="card-title">
-        <span class="icon">📊</span>예약 현황
-        <span style="font-size:11px;font-weight:400;color:var(--dim);margin-left:4px">오늘(일) · 이번 달(월) 기준</span>
-      </div>
-      <div class="cal-stat-grid">
-        <div class="cal-stat" data-kind="exp">
-          <div class="cal-stat-head"><span class="cal-stat-dot exp"></span>체험 현황</div>
-          <div class="cal-stat-body">
-            <div class="cal-stat-col"><div class="cal-stat-cap">오늘(일)</div><div class="cal-stat-today" id="csExpToday">0</div></div>
-            <div class="cal-stat-col"><div class="cal-stat-cap">이번 달(월)</div><div class="cal-stat-month" id="csExpMonth">0</div></div>
-          </div>
-        </div>
-        <div class="cal-stat" data-kind="tour">
-          <div class="cal-stat-head"><span class="cal-stat-dot tour"></span>상담·투어 현황</div>
-          <div class="cal-stat-body">
-            <div class="cal-stat-col"><div class="cal-stat-cap">오늘(일)</div><div class="cal-stat-today" id="csTourToday">0</div></div>
-            <div class="cal-stat-col"><div class="cal-stat-cap">이번 달(월)</div><div class="cal-stat-month" id="csTourMonth">0</div></div>
-          </div>
-        </div>
-        <div class="cal-stat" data-kind="reg">
-          <div class="cal-stat-head"><span class="cal-stat-dot reg"></span>등록 현황</div>
-          <div class="cal-stat-body">
-            <div class="cal-stat-col"><div class="cal-stat-cap">오늘(일)</div><div class="cal-stat-today" id="csRegToday">0</div></div>
-            <div class="cal-stat-col"><div class="cal-stat-cap">이번 달(월)</div><div class="cal-stat-month" id="csRegMonth">0</div></div>
-          </div>
-        </div>
-      </div>
     </div>
 
     <!-- ── 금일 / 이번달 예약자 정리 (달력과 동일 소스 · 이름 마스킹) ── -->
@@ -1921,14 +1908,10 @@ function loadCpoTodayStats() {
     .then(function(r){ return r.json(); })
     .then(function(d){
       if (!d || !d.ok) return;
-      var set = function(id, v){ var el = document.getElementById(id); if (el) el.textContent = v; };
-      set('ctsTodayInq', d.todayInquiry);
-      set('ctsTodayReg', d.todayReg);
-      set('ctsMonthInq', d.monthInquiry);
-      set('ctsMonthReg', d.monthReg);
-      _cpoRegStats = { today: d.todayReg, month: d.monthReg };
-      _setTxt('csRegToday', d.todayReg);
-      _setTxt('csRegMonth', d.monthReg);
+      // 카드2 멤버십 문의 / 카드3 등록 / 카드4 회원 현황
+      _setTxt('dInqToday', d.todayInquiry); _setTxt('dInqMonth', d.monthInquiry);
+      _setTxt('dRegToday', d.todayReg);     _setTxt('dRegMonth', d.monthReg);
+      _setTxt('dMemActive', d.memberActive); _setTxt('dMemLoss', d.todayLoss);
     })
     .catch(function(){});
 }
@@ -1938,7 +1921,7 @@ function changeMonth(delta) {
   if (calMonth > 12) { calMonth = 1; calYear++; }
   if (calMonth < 1)  { calMonth = 12; calYear--; }
   calEvents = {};
-  renderCalStatus();
+  renderTopDash();
   renderReservationLists();
   closeDayPanel();
   renderCalendarShell();
@@ -2004,7 +1987,7 @@ function loadCalendarData() {
     spinnerEl.style.display = 'none';
     titleEl.textContent = 'GAS 미연동 상태';
     descEl.textContent = 'GM이 GAS를 배포하고 URL을 교체하면 예약이 자동 표시됩니다.';
-    renderCalStatus();
+    renderTopDash();
     renderReservationLists();
     return;
   }
@@ -2044,31 +2027,33 @@ function processCalendarData(data) {
     });
   });
 
-  renderCalStatus();
+  renderTopDash();
   renderReservationLists();
 }
 
-// 예약 현황 — 체험/상담·투어=calEvents(표시 중인 달) · 등록=cpo_today_stats. 오늘(일)/이번달(월)
-var _cpoRegStats = { today: '0', month: '0' };
 function _setTxt(id, v) {
   var el = document.getElementById(id);
   if (el) el.textContent = (v === undefined || v === null || v === '') ? '0' : v;
 }
-function renderCalStatus() {
+// 카드1(예약 달력) — 상담·투어 예약건/진행건, 금일·월간. calEvents(표시 중인 달) 기준.
+// 진행건 = 진행상황이 방문·가입·SUC·단기SUC·완료(실제 진행/완료) / 예약건 = 잡힌 상담·투어 전체.
+function renderTopDash() {
   var today = new Date();
   var todayStr = today.getFullYear() + '-' +
     String(today.getMonth()+1).padStart(2,'0') + '-' +
     String(today.getDate()).padStart(2,'0');
-  var expToday = 0, expMonth = 0, tourToday = 0, tourMonth = 0;
+  var PROG = { '방문':1, '가입':1, 'SUC':1, '단기SUC':1, '완료':1 };
+  var tToday = 0, pToday = 0, tMon = 0, pMon = 0;
   Object.keys(calEvents).forEach(function(date){
     (calEvents[date] || []).forEach(function(ev){
-      if (ev.kind === '체험') { expMonth++; if (ev.date === todayStr) expToday++; }
-      else { tourMonth++; if (ev.date === todayStr) tourToday++; }
+      if (ev.kind === '체험') return;  // 상담·투어만(체험 제외)
+      var prog = PROG[String(ev.status || '').trim()] ? 1 : 0;
+      tMon++; if (prog) pMon++;
+      if (ev.date === todayStr) { tToday++; if (prog) pToday++; }
     });
   });
-  _setTxt('csExpToday', expToday);  _setTxt('csExpMonth', expMonth);
-  _setTxt('csTourToday', tourToday); _setTxt('csTourMonth', tourMonth);
-  _setTxt('csRegToday', _cpoRegStats.today); _setTxt('csRegMonth', _cpoRegStats.month);
+  _setTxt('dTourTodayBook', tToday); _setTxt('dTourTodayProg', pToday);
+  _setTxt('dTourMonBook', tMon);     _setTxt('dTourMonProg', pMon);
 }
 
 // 금일 / 이번달 예약자 — calEvents(표시 중인 달) 기준, 달력과 동일 소스
