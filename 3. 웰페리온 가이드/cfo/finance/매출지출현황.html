@@ -144,7 +144,7 @@ footer{margin-top:26px;font-size:11px;color:var(--ink-faint);text-align:center;l
         <div class="field"><label>필요 물품</label><input type="text" id="reqItem" placeholder="예: 골프공 100개"></div>
         <div class="field"><label>금액(원)</label><input type="number" id="reqAmt" placeholder="0"></div>
         <div class="field"><label>관련 링크</label><input type="text" id="reqLink" placeholder="구매처 URL"></div>
-        <div class="field"><label>승인자</label><select id="reqApprover"><option>이정헌소장</option><option>이경연실장</option><option>나우열매니저</option></select></div>
+        <div class="field"><label>승인자</label><select id="reqApprover"><option>이정헌소장</option><option>이경연실장</option><option>김남욱GM</option></select></div>
         <div class="field"><label>계정(항목1)</label><select id="reqCat1"><option>운영비</option><option>소모품</option><option>업무추진비</option><option>비품</option><option>홍보비</option><option>장비</option><option>기타</option></select></div>
         <div class="field"><label>항목2</label><select id="reqCat2"><option>소모품</option><option>비품</option><option>장비</option><option>기타</option></select></div>
         <div class="field" style="grid-column:1/-1"><label>구매목적 / 사용내용</label><input type="text" id="reqPurpose" placeholder="목적"></div>
@@ -384,7 +384,7 @@ async function loadDone(){var dm=document.getElementById("doneMsg");dm.textConte
 function apprFor(dept){
   if(dept==="시설"||dept==="지원"||dept==="주차") return "이정헌소장";
   if(dept==="운영부") return "이경연실장";
-  return "나우열매니저";
+  return "김남욱GM";
 }
 function renderReq(){
   var depts=["시설","운영부","지원","주차","P.T","수영","골프","스쿼시","체조","필라테스","뮤지컬"];
