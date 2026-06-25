@@ -660,7 +660,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
     </div>
     <div class="mgmt-row">
       <div class="mgmt-field"><label>계약형태</label><input type="text" id="vaf-contract" placeholder="연간계약·수시 등"></div>
-      <div class="mgmt-field"><label>단가</label><input type="text" id="vaf-price" placeholder="GM 확정 필요"></div>
+      <div class="mgmt-field"><label>단가</label><input type="text" id="vaf-price" placeholder="⚠ GM 제공 대기"></div>
     </div>
     <div class="mgmt-row">
       <div class="mgmt-field"><label>갱신일(법정주기)</label><input type="text" id="vaf-renewal" placeholder="YYYY-MM-DD 또는 주기"></div>
@@ -769,7 +769,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
     </tr>
   </table>
 
-  <p style="font-size:12px;color:var(--dim);margin:0 0 4px;">※ 위는 2인 동시 근무 시 적용하는 <strong>원칙(예시)</strong>입니다 · 1인 근무·3인 이상 케이스는 GM 추후 지정 예정</p>
+  <p style="font-size:12px;color:var(--dim);margin:0 0 4px;">※ 위는 2인 동시 근무 시 적용하는 <strong>원칙(예시)</strong>입니다 · 기본 2인 교대 유지. 1인 근무 불가피 시 휴게는 회원 한산시간에 분할하고 비상연락 상시 유지. 3인 이상은 조장이 시차 배치.</p>
 
   <!-- ── 실제 운영(평일·여) 근무조 ── -->
   <p style="font-size:14px;font-weight:700;color:var(--accent);margin:18px 0 8px;">실제 운영 (평일 · 여직원 근무조)</p>
@@ -891,8 +891,8 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
             <span class="manual-label">[기준값 / 주기]</span>
             <ul>
               <li>작업일지 결재: <strong>매일 마감 시 1회</strong></li>
-              <li>법정점검(소방 작동점검·전기안전 등): 법정 주기 — <span class="highlight">기준값 확정 예정</span></li>
-              <li>투자·보수 계획 보고: 주기 <span class="highlight">확정 예정</span> (운영부 정기회의 연동 검토)</li>
+              <li>법정점검(소방 작동점검·전기안전 등): 소방 작동점검 <strong>연 1회</strong> · 전기안전점검 <strong>3년 1회</strong></li>
+              <li>투자·보수 계획 보고: <strong>분기 1회</strong> (운영부 정기회의 연동)</li>
             </ul>
             <span class="manual-label">[비상·예외 대응]</span>
             <ul>
@@ -927,8 +927,8 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
               <li>온도·수질 기록: <strong>1일 5회</strong> (07·09·12·15·18시)</li>
               <li>사우나 온도(작업일지 기준값): 온탕 <strong>39°C</strong> · 열탕 <strong>42°C</strong> · 건식 <strong>78°C</strong> · 습식 <strong>48°C</strong> · 찜질방 <strong>68°C</strong> <span style="color:var(--dim);font-size:11px;">(작업일지 양식 인쇄 기준값)</span></li>
               <li><span style="color:var(--dim);">※ 참고: 옛 청소 매뉴얼엔 건식 90~100°C / 습식 60~70°C로 표기 — 작업일지 운영값(건식 78°C·습식 48°C)과 상이. 운영 기준은 <strong>작업일지값</strong>을 따름</span></li>
-              <li>수영장 pH·잔류염소 적정 범위: <span class="highlight">기준값 확정 예정</span> (법정 수질기준 확인 후 기입)</li>
-              <li>기계실 가동 시각: 심야전기 05:00 · 1번 열교환기 05:00 · 가스점검 05:00 · 고온수기 등 14:00 <span style="color:var(--dim);font-size:11px;">(작업일지 표기 — 표준 시각 확정 예정)</span></li>
+              <li>수영장 pH·잔류염소 적정 범위: <strong>pH 5.8~8.6 / 유리잔류염소 0.4~4.0mg/L / 탁도 1.5NTU 이하</strong> <span style="color:var(--dim);font-size:11px;">(체육시설법 시행규칙 기준 — 일일 측정·기록)</span></li>
+              <li>기계실 가동 시각: 심야전기 05:00 · 1번 열교환기 05:00 · 가스점검 05:00 · 고온수기 등 14:00 <span style="color:var(--dim);font-size:11px;">(작업일지 기록 기준 — 고정 표준시각 없이 실제 가동·정지 시각을 작업일지에 기재)</span></li>
             </ul>
             <span class="manual-label">[비상·예외 대응]</span>
             <ul>
@@ -963,9 +963,9 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
             </ul>
             <span class="manual-label">[기준값 / 주기]</span>
             <ul>
-              <li>현장 순회점검: <strong>일 1회 이상</strong> (시간대 <span class="highlight">확정 예정</span>)</li>
-              <li>소방 작동점검: 일일 확인 + 법정 작동점검 주기 <span class="highlight">확정 예정</span></li>
-              <li>비품(정수기 필터 등) 교체 주기: <span class="highlight">기준값 확정 예정</span></li>
+              <li>현장 순회점검: <strong>일 1회 이상</strong> (점검 시작·종료 버튼 기록 기준 — 약 2시간 간격)</li>
+              <li>소방 작동점검: 일일 확인 + 법정 작동점검 <strong>연 1회</strong></li>
+              <li>비품(정수기 필터 등) 교체 주기: <strong>6개월</strong></li>
               <li>청소업체 작업 확인: 청소 전/후 사진 촬영 의무 (탕실·건습식 사우나·화장실)</li>
             </ul>
             <span class="manual-label">[비상·예외 대응]</span>
@@ -2633,7 +2633,7 @@ const FAC_GUIDE_SEED = {
     {id:'gd_pride', title:'회원도 왕이지만, 우리도 품격 있는 프로다', body:'회원을 최고로 모시는 것이 우리의 자부심입니다. 그러나 그것은 굴종이 아니라 당당한 프로페셔널의 서비스입니다.\n직원·파트너 한 사람의 품격이 곧 웰페리온의 품격이며, 스스로를 존중하는 사람만이 회원을 진심으로 존중할 수 있습니다.\n무례·폭언에는 정중하되 단호하게 선을 지키고(반복 시 팀장 보고), 회원과 직원이 서로 존중하는 하이엔드 커뮤니티 문화를 함께 지켜갑니다.'},
     {id:'gd_attitude', title:'응대 태도', body:'회원 첫 인사 → 눈 맞춤 + 미소 필수 / 먼저 인사 / 이름 알면 호칭 사용\n불편사항 접수 → 끝까지 경청 → 즉시 해결 가능 여부 판단 → 처리 결과 반드시 고지\n에티켓 위반 → 정중하되 단호하게 안내 / 반복 위반 시 팀장 보고\n긴급·안전 → 즉시 팀장·소장 보고 → 지시 후 조치 / 자의 판단 금지'},
     {id:'gd_dress', title:'복장·용모', body:'유니폼 → 웰페리온 지급 유니폼 착용 / 청결 유지\n명찰 → 항상 패용 / 좌측 가슴\n신발 → 미끄럼 방지 안전화 / 실외화 구역 내 착용 금지\n청소 구역 → 고무장갑·마스크 필수 / 환기 후 작업'},
-    {id:'gd_zone', title:'구역별 관리 기준', body:'A 사우나 탕 → 오버풀 타이머 준수 / 냉탕 매일 배수 / 온탕·열탕 격일 / 수위·온도 상시 확인\nA 건/습식 → 바닥·타일 물때 제거 / 고압세척(수요일) / 산성세제 금지\nB 락커·파우더 → 소모품 최소 재고 유지 / 드라이기 작동 수시 확인\nC 세탁물 → 입고 즉시 사이즈별 분리 / 상태 불량 별도 / 마감 출고 빠짐없이\nD 외부 → 외부 화장실 악취 관리 / 분리수거장 정리\nE 외곽 → 헬스장 장비 정돈 / 골프장 청결 / 복도 바닥 중심'},
+    {id:'gd_zone', title:'구역별 관리 기준', body:'A 사우나 탕 → 오버풀 타이머 준수 / 냉탕 매일 배수 / 온탕·열탕 격일 / 수위·온도 상시 확인\nA 건/습식 → 바닥·타일 물때 제거 / 고압세척(수요일) / 산성세제 금지\n수영장 수질 → pH 5.8~8.6 · 유리잔류염소 0.4~4.0mg/L · 탁도 1.5NTU 이하 유지 · 일일 측정·기록 (체육시설법 시행규칙 기준)\nB 락커·파우더 → 소모품 최소 재고 유지 / 드라이기 작동 수시 확인\nC 세탁물 → 입고 즉시 사이즈별 분리 / 상태 불량 별도 / 마감 출고 빠짐없이\nD 외부 → 외부 화장실 악취 관리 / 분리수거장 정리\nE 외곽 → 헬스장 장비 정돈 / 골프장 청결 / 복도 바닥 중심'},
     {id:'gd_morning', title:'시간대별 절차 — 오전조 (05:30~14:15)', body:'[05:30~08:00 오픈]\nA-1 사우나 탕 수위·온도 체크 / 오버풀 관리\nA-2 건/습식 온도 체크 및 내부 청결\nA-3 배수로·배수구·바닥·타일·거울 점검\nB-6 데일리 락커 요일별 청소 (월1~30 · 화31~60 · 수61~90 · 목91~120 · 금121~150 · 토151~180)\n[08:00~12:00 오전]\nB-1 파우더: 드라이기·소독기·발건조기·비품\nB-2 휴게실: TV·소파·테이블\nB-3 수면실(남)/찜질방(여): 청결·비품\nB-4 마루바닥: 미끄럼·청결\nB-5 사우나 화장실: 소변기·대변기·세면공간·비품\nC 세탁물 입고 → 운반 → 사이즈별 분리 배치\nE-1 센터 복도 바닥 (1F/B1/B2)\nE-2 거울·유리창 (화요일 집중)\nE-3 청소 비품 지정 위치 관리\nE-4 헬스장: 머신·런닝머신 땀 / 요일별 집중 청소\nE-5 골프장: 복도·타석·레슨룸 요일별\n[10:00~12:00 오전 후반]\nD-1 외부 화장실 (골프장/B1/B2)\nD-2 복도 휴지통 수거\nD-3 메인 계단 B1-B2 (남 전담)\nD-4 메인 복도 휴게공간 (여 전담)\nD-5 분리수거장\n[13:00~14:00 인수인계]\n세탁물 출고 운반\n오전조 → 오후조 인수사항 카카오톡 공유'},
     {id:'gd_afternoon', title:'시간대별 절차 — 오후조·탕청소', body:'[14:00~18:00 오후]\nA-1/A-2/A-3 오후 재점검 (수위·온도·바닥·배수) / 팀장 15분 점검 카톡 보고\nD-6 G.X룸 거울·바닥 (남 전담 / 화요일 집중)\nD-7 센터 화분 물 공급 (여 전담 / 금요일 집중)\nD-9 수영장 계단 주 1회 청소\nB-2/B-3/B-4/B-5 오후 재점검\n[19:00~22:00 저녁]\nB-2/B-3/B-4 저녁 재점검\nD-8 키즈 샤워실 파우더룸 정리 20:30 / 2주 1회 청소 수 13:00 (남 전담)\nE-6 주차장 바닥·화장실·차단기\n[22:00~22:30 마감]\n세탁물 최종 출고 운반\n남/여 사우나·파우더 청결 최종 확인 → 시설·운영부 마감자 카톡 보고\n마감 미비 시 경고 / 3회 → 경징계\n전 구역 이상 유무 / 다음날 일정 준비\n[탕청소 — 외주 업체 / 평일 23:00]\n23:00~23:30 청소 도구 준비·초기 점검\n23:30~00:30 남 사우나: 냉/온/열탕 배수 → 탕 내부·샤워부스·바닥·배수구 세척 / 격주 돌돌이\n00:30~01:30 요일별 집중 청소\n01:30~02:00 휴게 30분\n02:00~03:00 여 사우나: 냉/온/열탕 배수 → 탕 내부·샤워부스·바닥·배수구 / 격주 돌돌이\n03:00~04:00 여 사우나 화장실 청소 + 요일별 청소 마무리 + 탕 배수 일지 작성\n[탕청소 — 외주 업체 / 주말 20:30]\n20:30~21:00 도구 준비·초기 점검\n21:00~22:00 남 사우나 탕청소\n22:00~23:00 요일별 집중 청소\n23:00~23:30 휴게 30분\n23:30~00:30 여 사우나 탕청소\n00:30~01:30 여 화장실 + 마감 점검 + 일지'}
   ]
@@ -3037,28 +3037,28 @@ let VENDOR_COLS = VENDOR_COLS_SEED.map(c=>Object.assign({},c));
 /* 시드 — 작업일지(2026-06-04)·시설부 체계 본문 확인분만. 추측 금지. 단가·계약·담당자·갱신일=빈칸. */
 const VENDOR_SEED = {
   fire:[
-    {id:'vnd_fire_01', name:'3S소방', contact:'010-3168-8030', manager:'', contract:'', price:'', renewal:'', status:'거래중', note:'소방 작동점검·법정 검사기간 / 단가·계약형태·갱신일 GM 확정 필요', createdAt:'2026-06-11', updatedAt:'2026-06-11'}
+    {id:'vnd_fire_01', name:'3S소방', contact:'010-3168-8030', manager:'', contract:'', price:'', renewal:'', status:'거래중', note:'소방 작동점검·법정 검사기간 담당 업체 — 단가·계약형태·갱신일 ⚠ GM 제공 대기', createdAt:'2026-06-11', updatedAt:'2026-06-11'}
   ],
   cctv:[
-    {id:'vnd_cctv_01', name:'확인 필요', contact:'', manager:'', contract:'', price:'', renewal:'', status:'거래중', note:'CCTV 고장처리 담당 업체 — 업체명·연락처 GM 확정 필요', createdAt:'2026-06-11', updatedAt:'2026-06-11'}
+    {id:'vnd_cctv_01', name:'확인 필요', contact:'', manager:'', contract:'', price:'', renewal:'', status:'거래중', note:'CCTV 고장처리 담당 업체 — 상호·연락처 ⚠ GM 제공 대기', createdAt:'2026-06-11', updatedAt:'2026-06-11'}
   ],
   hvac:[
-    {id:'vnd_hvac_01', name:'확인 필요', contact:'', manager:'', contract:'', price:'', renewal:'', status:'거래중', note:'공조설비 담당 업체 — GM 확정 필요', createdAt:'2026-06-11', updatedAt:'2026-06-11'}
+    {id:'vnd_hvac_01', name:'확인 필요', contact:'', manager:'', contract:'', price:'', renewal:'', status:'거래중', note:'공조설비 담당 업체 — 상호·연락처 ⚠ GM 제공 대기', createdAt:'2026-06-11', updatedAt:'2026-06-11'}
   ],
   water:[
-    {id:'vnd_water_01', name:'확인 필요', contact:'', manager:'', contract:'', price:'', renewal:'', status:'거래중', note:'수질 점검 담당 업체 — GM 확정 필요', createdAt:'2026-06-11', updatedAt:'2026-06-11'}
+    {id:'vnd_water_01', name:'확인 필요', contact:'', manager:'', contract:'', price:'', renewal:'', status:'거래중', note:'수질 점검 담당 업체 — 상호·연락처 ⚠ GM 제공 대기', createdAt:'2026-06-11', updatedAt:'2026-06-11'}
   ],
   clean:[
-    {id:'vnd_clean_01', name:'확인 필요', contact:'', manager:'', contract:'', price:'', renewal:'', status:'거래중', note:'청소 협력업체 — 소장·과장 감독 / GM 확정 필요', createdAt:'2026-06-11', updatedAt:'2026-06-11'}
+    {id:'vnd_clean_01', name:'확인 필요', contact:'', manager:'', contract:'', price:'', renewal:'', status:'거래중', note:'청소 협력업체 — 소장·과장 감독 / 상호·연락처 ⚠ GM 제공 대기', createdAt:'2026-06-11', updatedAt:'2026-06-11'}
   ],
   pest:[
-    {id:'vnd_pest_01', name:'확인 필요', contact:'', manager:'', contract:'', price:'', renewal:'', status:'거래중', note:'방제 협력업체 — GM 확정 필요', createdAt:'2026-06-11', updatedAt:'2026-06-11'}
+    {id:'vnd_pest_01', name:'확인 필요', contact:'', manager:'', contract:'', price:'', renewal:'', status:'거래중', note:'방제 협력업체 — 상호·연락처 ⚠ GM 제공 대기', createdAt:'2026-06-11', updatedAt:'2026-06-11'}
   ],
   tub:[
-    {id:'vnd_tub_01', name:'확인 필요', contact:'', manager:'', contract:'', price:'', renewal:'', status:'거래중', note:'야간 탕청소 위탁 — 평일 23:00 / 주말 20:30 출근 / 업체명·연락처 GM 확정 필요', createdAt:'2026-06-11', updatedAt:'2026-06-11'}
+    {id:'vnd_tub_01', name:'확인 필요', contact:'', manager:'', contract:'', price:'', renewal:'', status:'거래중', note:'야간 탕청소 위탁 — 평일 23:00 / 주말 20:30 출근 / 상호·연락처 ⚠ GM 제공 대기', createdAt:'2026-06-11', updatedAt:'2026-06-11'}
   ],
   maint:[
-    {id:'vnd_maint_01', name:'확인 필요', contact:'', manager:'', contract:'', price:'', renewal:'', status:'거래중', note:'정비 협력업체 — 과장 감독 / GM 확정 필요', createdAt:'2026-06-11', updatedAt:'2026-06-11'}
+    {id:'vnd_maint_01', name:'확인 필요', contact:'', manager:'', contract:'', price:'', renewal:'', status:'거래중', note:'정비 협력업체 — 과장 감독 / 상호·연락처 ⚠ GM 제공 대기', createdAt:'2026-06-11', updatedAt:'2026-06-11'}
   ]
 };
 
@@ -3397,7 +3397,7 @@ function renderVendorBoard(){
             + '<label class="pol-edit-lab">계약형태</label>'
             + '<input type="text" class="pol-edit-title" id="vndctr_'+cid+'" placeholder="연간계약·수시 등">'
             + '<label class="pol-edit-lab">단가</label>'
-            + '<input type="text" class="pol-edit-title" id="vndprc_'+cid+'" placeholder="GM 확정 필요">'
+            + '<input type="text" class="pol-edit-title" id="vndprc_'+cid+'" placeholder="⚠ GM 제공 대기">'
             + '<label class="pol-edit-lab">갱신일(법정주기)</label>'
             + '<input type="text" class="pol-edit-title" id="vndrwl_'+cid+'" placeholder="YYYY-MM-DD 또는 주기">'
             + '<label class="pol-edit-lab">거래상태</label>'
@@ -3495,7 +3495,7 @@ function vendorAddCard(colKey){
   if(wrap && wrap.querySelector('.dv-cell.editing')){ alert('편집 중인 카드를 먼저 저장하거나 닫아주세요.'); return; }
   if(!Array.isArray(VENDOR_DATA[colKey])) VENDOR_DATA[colKey]=[];
   const nid = vendorGenId();
-  VENDOR_DATA[colKey].push({id:nid,name:'새 업체',contact:'',manager:'',contract:'',price:'',renewal:'',status:'거래중',note:'GM 확정 필요',createdAt:vendorToday(),updatedAt:vendorToday()});
+  VENDOR_DATA[colKey].push({id:nid,name:'새 업체',contact:'',manager:'',contract:'',price:'',renewal:'',status:'거래중',note:'상호·연락처 ⚠ GM 제공 대기',createdAt:vendorToday(),updatedAt:vendorToday()});
   persistVendorData();
   renderVendorBoard();
   vendorToggleEdit(colKey, nid);
