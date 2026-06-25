@@ -1324,6 +1324,9 @@ function _processAction(body) {
 
   // ─── CPO 오늘 현황(PII 미노출 집계): 오늘/이번달 문의·등록 건수 2026-06-24 GM ───
   if (action === 'cpo_today_stats') {
+    var ctCache = CacheService.getScriptCache();
+    var ctCached = ctCache.get('cpo_today_stats_v2');
+    if (ctCached) return _json(JSON.parse(ctCached));
     var ctTz = 'Asia/Seoul';
     var ctToday = Utilities.formatDate(new Date(), ctTz, 'yyyy-MM-dd');
     var ctMonth = ctToday.slice(0, 7);
@@ -1391,7 +1394,9 @@ function _processAction(body) {
         }
       }
     } catch (eCr) {}
-    return _json({ ok: true, date: ctToday, todayInquiry: ctTI, monthInquiry: ctMI, todayReg: ctTR, monthReg: ctMR, memberActive: ctActive, memberEnded: ctEnded, todayLoss: ctLoss, lossDated: ctLossDated });
+    var ctResult = { ok: true, date: ctToday, todayInquiry: ctTI, monthInquiry: ctMI, todayReg: ctTR, monthReg: ctMR, memberActive: ctActive, memberEnded: ctEnded, todayLoss: ctLoss, lossDated: ctLossDated };
+    try { ctCache.put('cpo_today_stats_v2', JSON.stringify(ctResult), 60); } catch (eCc) {}
+    return _json(ctResult);
   }
 
   // ─── 문의→가입 전환 집계 ───

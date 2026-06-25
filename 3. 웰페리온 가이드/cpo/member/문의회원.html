@@ -1018,6 +1018,7 @@ a.funnel-step:hover{background:rgba(183,159,138,0.08);color:var(--accent)}
 
     <div class="card">
       <div class="card-title"><span class="icon">📄</span>GAS 전체 코드 (Survey.js 추가분 — CRUD 포함)</div>
+      <div class="info-box yellow" style="margin-bottom:10px;font-size:11.5px">⚠️ <strong>참조용 스냅샷</strong> — 정본은 <code style="font-size:10.5px">.deploy-funnel/Survey.js</code> 입니다. 아래 코드는 옛 버전일 수 있어(예: 체험3·kind값) 그대로 배포하지 말고 라이브 소스를 사용하세요.</div>
       <pre style="font-size:11px;line-height:1.7;color:var(--dim);overflow-x:auto;white-space:pre-wrap;word-break:break-word"><code>/**
  * ══════════════════════════════════════════════
  * 문의회원 CRUD 액션 — Survey.js 추가분
@@ -1429,10 +1430,11 @@ function switchTab(id, btn) {
     s.classList.remove('current','done');
     if (s.getAttribute('data-tab') === id) s.classList.add('current');
   });
-  if (id === 'db') loadDbData();
-  if (id === 'calendar') loadCalendarData();
-  if (id === 'registered') setRegRange(_regRangeMode || 'month');
-  if (id === 'active') loadActiveMembers();
+  // 탭 데이터는 최초 진입 시 1회만 로드(재방문 시 재fetch 안 함 — 속도). 새로고침 버튼·월이동은 직접 호출이라 항상 갱신.
+  if (id === 'db'         && !_tabLoaded.db)         { _tabLoaded.db = true;         loadDbData(); }
+  if (id === 'calendar'   && !_tabLoaded.calendar)   { _tabLoaded.calendar = true;   loadCalendarData(); }
+  if (id === 'registered' && !_tabLoaded.registered) { _tabLoaded.registered = true; setRegRange(_regRangeMode || 'month'); }
+  if (id === 'active'     && !_tabLoaded.active)     { _tabLoaded.active = true;     loadActiveMembers(); }
 }
 
 // syncFunnel — 내비 탭 전환으로 대체됨. 하위 호환 보존용 빈 함수.
@@ -1890,6 +1892,8 @@ function _activeRenderState(state, msg) {
 ───────────────────────────────────────────── */
 var calYear, calMonth;
 var calEvents = {};
+// 탭별 최초 로드 여부(재방문 재fetch 방지). calendar=초기 init에서 로드하므로 true로 시작.
+var _tabLoaded = { calendar: true, db: false, registered: false, active: false };
 
 (function init() {
   var now = new Date();
