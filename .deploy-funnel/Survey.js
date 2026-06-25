@@ -434,10 +434,36 @@ function _notifyTelegram(text, chatIdOverride) {
   } catch (e) { Logger.log('텔레그램 실패: ' + e.message); }
 }
 
+// ─── 실데이터 마지막 행번호 탐색 헬퍼 (2026-06-25 버그수정) ───
+// sh.getLastRow()는 빈 행(포맷만 있고 데이터 없는)을 포함해 반환하므로,
+// INQ_LASTROW 마커를 그 값으로 세팅하면 실데이터 이후 빈행 영역이 마커보다 앞에 있어
+// 새 제출이 영구 스킵되는 버그 발생.
+// 이 함수는 역순으로 최대 500행을 탐색해 '전화번호 칼럼이 채워진' 마지막 행번호를 반환.
+// 전화번호 없는 시트(멤버십 스태프 로그 등)는 타임스탬프로 폴백.
+// 실데이터가 없으면 1(헤더행=기준선 최솟값) 반환.
+function _realLastDataRow_(sh, idxPhone, idxDate, idxMemo) {
+  var lastRow = sh.getLastRow();
+  if (lastRow < 2) return 1;
+  var lastCol = sh.getLastColumn();
+  if (lastCol < 1) return 1;
+  var readStart = Math.max(2, lastRow - 499);
+  var rows = sh.getRange(readStart, 1, lastRow - readStart + 1, lastCol).getValues();
+  for (var ri = rows.length - 1; ri >= 0; ri--) {
+    var r = rows[ri];
+    // [웹접수] 미러 행 제외
+    if (idxMemo >= 0 && String(r[idxMemo] || '').indexOf(WEB_INTAKE_TAG) >= 0) continue;
+    var hasPhone = idxPhone >= 0 && !!r[idxPhone];
+    var hasTs    = idxDate  >= 0 && !!r[idxDate];
+    if (hasPhone || hasTs) return readStart + ri;
+  }
+  return 1;
+}
+
 // ─── 신규 문의 감지 → 텔레그램 '문의 알림' 방 발송 (시모, 2026-06-24) ───
 // FORM_SHEETS 각 시트의 신규 행을 5분마다 감지해 TELEGRAM_INQUIRY_CHAT_ID 방으로 알림.
-// ScriptProperties INQ_LASTROW_<ssId>_<gid> 에 마지막 처리 행수 저장 → 중복 방지.
+// ScriptProperties INQ_LASTROW_<ssId>_<gid> 에 마지막 처리한 실데이터 행번호 저장 → 중복 방지.
 // 최초 실행: 기준선만 저장, 과거 문의 일괄발송 없음.
+// ★ 마커 = 실데이터 마지막 행번호(전화번호/타임스탬프 기준). getLastRow()(빈행포함) 사용 금지.
 var _INQUIRY_CHAT_ID_FALLBACK = '-5516675010';  // '문의 알림' 방 — 프로퍼티 없을 때 폴백(그룹 ID, 민감정보 아님)
 
 function _notifyNewInquiries_() {
@@ -449,22 +475,10 @@ function _notifyNewInquiries_() {
     try {
       var sh = _sheetByGid_(cfg.ssId, cfg.gid);
       if (!sh) return;
-      var lastRow = sh.getLastRow();
-      var storedStr = props.getProperty(propKey);
 
-      // 최초 실행: 기준선 저장 후 종료 (과거분 폭주 방지)
-      if (!storedStr) {
-        props.setProperty(propKey, String(lastRow));
-        Logger.log('[문의알림] 기준선 저장 — ' + cfg.type + ' lastRow=' + lastRow);
-        return;
-      }
-
-      var storedRow = parseInt(storedStr, 10) || 1;
-      if (lastRow <= storedRow) return; // 신규 없음
-
-      // 헤더 읽기
+      // 헤더를 먼저 읽어 실데이터 탐색에 필요한 칼럼 인덱스 확보
       var lastCol = sh.getLastColumn();
-      if (lastCol < 1) { props.setProperty(propKey, String(lastRow)); return; }
+      if (lastCol < 1) return;
       var headers = sh.getRange(1, 1, 1, lastCol).getValues()[0];
       var idxDate  = _findCol_(headers, ['타임스탬프', 'timestamp', '시각', '일시', '접수일', '접수', '날짜']);
       var idxName  = _findCol_(headers, ['성함', '이름', 'Full Name', 'Name', "Child's Full Name"]);
@@ -472,8 +486,22 @@ function _notifyNewInquiries_() {
       var idxChan  = _findCol_(headers, cfg.channelKeys || ['채널', '경로', '알게', 'How Did You Hear']);
       var idxMemo  = _findCol_(headers, ['비고', '메모']);
 
-      // 신규 행 처리
-      var newRows = sh.getRange(storedRow + 1, 1, lastRow - storedRow, lastCol).getValues();
+      // ★ 실데이터 마지막 행번호 (전화번호/타임스탬프 기준, 빈행 제외)
+      var realLastRow = _realLastDataRow_(sh, idxPhone, idxDate, idxMemo);
+      var storedStr   = props.getProperty(propKey);
+
+      // 최초 실행: 실데이터 기준선 저장 후 종료 (과거분 폭주 방지)
+      if (!storedStr) {
+        props.setProperty(propKey, String(realLastRow));
+        Logger.log('[문의알림] 기준선 저장 — ' + cfg.type + ' realLastRow=' + realLastRow);
+        return;
+      }
+
+      var storedRow = parseInt(storedStr, 10) || 1;
+      if (realLastRow <= storedRow) return; // 신규 실데이터 없음
+
+      // 신규 행 처리 (storedRow+1 ~ realLastRow)
+      var newRows = sh.getRange(storedRow + 1, 1, realLastRow - storedRow, lastCol).getValues();
       newRows.forEach(function(r) {
         // [웹접수] 미러 행 제외 (이미 submit_inquiry에서 발송)
         if (idxMemo >= 0 && String(r[idxMemo] || '').indexOf(WEB_INTAKE_TAG) >= 0) return;
@@ -503,8 +531,8 @@ function _notifyNewInquiries_() {
         _notifyTelegram(msg, inquiryChatId);
       });
 
-      // 기준선 갱신
-      props.setProperty(propKey, String(lastRow));
+      // 기준선 갱신 — 실데이터 마지막 행번호로 저장 (빈행 포함 getLastRow 사용 금지)
+      props.setProperty(propKey, String(realLastRow));
     } catch (e) {
       Logger.log('[문의알림] ' + cfg.type + ' 오류: ' + e.message);
     }
@@ -548,24 +576,25 @@ function onInquiryFormSubmit(e) {
     if (!cfg) return; // 관리 대상 아닌 시트 — 무시
 
     var propKey  = 'INQ_LASTROW_' + cfg.ssId + '_' + cfg.gid;
-    var lastRow  = sheet.getLastRow();
-    var storedStr = props.getProperty(propKey);
-    var storedRow = storedStr ? (parseInt(storedStr, 10) || 1) : 1;
-
-    // 새 행이 기준선보다 크지 않으면 이미 처리된 것 — 중복 방지
-    if (lastRow <= storedRow) return;
-
-    var lastCol = sheet.getLastColumn();
-    if (lastCol < 1) { props.setProperty(propKey, String(lastRow)); return; }
-    var headers = sheet.getRange(1, 1, 1, lastCol).getValues()[0];
+    var lastCol  = sheet.getLastColumn();
+    if (lastCol < 1) return;
+    var headers  = sheet.getRange(1, 1, 1, lastCol).getValues()[0];
     var idxDate  = _findCol_(headers, ['타임스탬프', 'timestamp', '시각', '일시', '접수일', '접수', '날짜']);
     var idxName  = _findCol_(headers, ['성함', '이름', 'Full Name', 'Name', "Child's Full Name"]);
     var idxPhone = _findCol_(headers, ['연락처', '휴대폰', '핸드폰', '전화', 'Mobile Phone', 'Phone', "Guardian's Mobile Phone"]);
     var idxChan  = _findCol_(headers, cfg.channelKeys || ['채널', '경로', '알게', 'How Did You Hear']);
     var idxMemo  = _findCol_(headers, ['비고', '메모']);
 
+    // ★ 실데이터 마지막 행번호 (빈행 포함 getLastRow 사용 금지)
+    var realLastRow = _realLastDataRow_(sheet, idxPhone, idxDate, idxMemo);
+    var storedStr   = props.getProperty(propKey);
+    var storedRow   = storedStr ? (parseInt(storedStr, 10) || 1) : 1;
+
+    // 새 실데이터 행이 기준선 이하면 이미 처리된 것 — 중복 방지
+    if (realLastRow <= storedRow) return;
+
     // 기준선 초과 신규 행 모두 처리 (동시 다중 제출 방어)
-    var newRows = sheet.getRange(storedRow + 1, 1, lastRow - storedRow, lastCol).getValues();
+    var newRows = sheet.getRange(storedRow + 1, 1, realLastRow - storedRow, lastCol).getValues();
     newRows.forEach(function(r) {
       if (idxMemo >= 0 && String(r[idxMemo] || '').indexOf(WEB_INTAKE_TAG) >= 0) return; // 웹접수 미러 제외
       if (!r[idxDate >= 0 ? idxDate : 0] && (idxPhone < 0 || !r[idxPhone])) return;      // 빈 행 스킵
@@ -590,8 +619,8 @@ function onInquiryFormSubmit(e) {
       _notifyTelegram(msg, inquiryChatId);
     });
 
-    // 기준선 갱신 — 폴링 백스톱이 중복 발송하지 않도록
-    props.setProperty(propKey, String(lastRow));
+    // 기준선 갱신 — 실데이터 마지막 행번호로 저장 (폴링 백스톱 중복 발송 방지)
+    props.setProperty(propKey, String(realLastRow));
   } catch (ex) {
     Logger.log('[즉시알림] onInquiryFormSubmit 오류: ' + ex.message);
   }
@@ -639,13 +668,21 @@ function installInquiryFormSubmitTriggers() {
         .forSpreadsheet(cfg.ssId)
         .onFormSubmit()
         .create();
-      // INQ_LASTROW 기준선 미설정 시 현재 lastRow로 초기화 (과거분 폭주 방지)
+      // INQ_LASTROW 기준선 미설정 시 실데이터 마지막 행번호로 초기화 (과거분 폭주 방지)
+      // ★ getLastRow()(빈행포함) 금지 — 실데이터 기준 _realLastDataRow_ 사용
       FORM_SHEETS.filter(function(f) { return f.ssId === cfg.ssId; }).forEach(function(f) {
         var pk = 'INQ_LASTROW_' + f.ssId + '_' + f.gid;
         if (!props.getProperty(pk)) {
           try {
             var sh = _sheetByGid_(f.ssId, f.gid);
-            if (sh) props.setProperty(pk, String(sh.getLastRow()));
+            if (sh) {
+              var lastCol2 = sh.getLastColumn();
+              var hdrs2 = lastCol2 > 0 ? sh.getRange(1, 1, 1, lastCol2).getValues()[0] : [];
+              var iP2 = _findCol_(hdrs2, ['연락처','휴대폰','핸드폰','전화','Mobile Phone','Phone',"Guardian's Mobile Phone"]);
+              var iD2 = _findCol_(hdrs2, ['타임스탬프','timestamp','시각','일시','접수일','접수','날짜']);
+              var iM2 = _findCol_(hdrs2, ['비고','메모']);
+              props.setProperty(pk, String(_realLastDataRow_(sh, iP2, iD2, iM2)));
+            }
           } catch (e2) {}
         }
       });
@@ -737,7 +774,10 @@ var _SURVEY_PUBLIC_ACTIONS = {
   list_inquiry_triggers:      true,  // 현재 트리거 목록 조회 (핸들러·타입·소스ID)
   test_form_submit_notify:    true,  // onFormSubmit 경로 mock 테스트 — 문의알림방에 TEST 메시지 1건
   resend_recent_inquiry:      true,  // 누락분 수동 발송 — FORM_SHEETS 최근 문의 1건 재발송 (마커 불변)
-  diag_inquiry_ts:            true   // 진단: 시트별 마지막 3행 타임스탬프 파싱 결과 (2026-06-25)
+  diag_inquiry_ts:            true,  // 진단: 시트별 마지막 3행 타임스탬프 파싱 결과 (2026-06-25)
+  diag_inquiry_state:         true,  // 진단(읽기전용): 마커값·실데이터행·트리거목록 (2026-06-25 시모)
+  reset_inquiry_markers:      true,  // 마커 교정(발송0): 각 시트 실데이터 마지막 행으로 덮어씀 (2026-06-25)
+  count_missed_inquiries:     true   // 읽기전용: 특정 시각 이후 신규 실데이터 행 건수 집계 (2026-06-25)
 };
 // add_utm_field 비밀 가드값 — 폼 변형 액션 무단호출 차단. _SURVEY_PUBLIC_ACTIONS에 넣지 말 것.
 var _ADD_UTM_GUARD = 'wp-utm-field-2026-i-am-sure';
@@ -1147,6 +1187,156 @@ function _processAction(body) {
         diagOut.push(rec);
       });
       return _json({ ok: true, sheets: diagOut });
+    } catch(e) {
+      return _json({ ok: false, error: e.message });
+    }
+  }
+
+  // ─── 진단(읽기전용): 마커값·실데이터행·트리거목록 (2026-06-25 시모) ───
+  // sendMessage 절대 미포함. 쓰기 없음. INQ_LASTROW 변경 없음.
+  if (action === 'diag_inquiry_state') {
+    try {
+      var props = PropertiesService.getScriptProperties();
+      var dsOut = [];
+      FORM_SHEETS.forEach(function(cfg) {
+        var propKey = 'INQ_LASTROW_' + cfg.ssId + '_' + cfg.gid;
+        var markerVal = props.getProperty(propKey);
+        var rec = {
+          type: cfg.type, ssId: cfg.ssId, gid: cfg.gid,
+          marker_key: propKey,
+          marker_value: markerVal,          // INQ_LASTROW 현재 저장값 (null=미설정)
+          sheet_lastRow: null,              // sh.getLastRow() — 빈행 포함
+          real_lastDataRow: null,           // 전화번호 기준 실데이터 마지막 행번호
+          real_lastDataTs: null,            // 그 행의 타임스탬프 문자열
+          gap: null,                        // sheet_lastRow - real_lastDataRow (빈행 수)
+          marker_vs_real: null,             // marker - real_lastDataRow (양수=마커가 앞섬→신규행 스킵)
+          sheet: null, error: null
+        };
+        try {
+          var sh = _sheetByGid_(cfg.ssId, cfg.gid);
+          if (!sh) { rec.error = 'sheet_not_found'; dsOut.push(rec); return; }
+          rec.sheet = sh.getName();
+          var lastRow = sh.getLastRow();
+          rec.sheet_lastRow = lastRow;
+          if (lastRow < 2) { dsOut.push(rec); return; }
+          var lastCol = sh.getLastColumn();
+          var headers = sh.getRange(1, 1, 1, lastCol).getValues()[0];
+          var idxDate  = _findCol_(headers, ['타임스탬프','timestamp','시각','일시','접수일','접수','날짜']);
+          var idxPhone = _findCol_(headers, ['연락처','휴대폰','핸드폰','전화','Mobile Phone','Phone',"Guardian's Mobile Phone"]);
+          var idxMemo  = _findCol_(headers, ['비고','메모']);
+          // 역순 최대 500행 탐색 — 빈행이 수백 개여도 실데이터 찾음
+          var readStart = Math.max(2, lastRow - 499);
+          var rows = sh.getRange(readStart, 1, lastRow - readStart + 1, lastCol).getValues();
+          for (var ri = rows.length - 1; ri >= 0; ri--) {
+            var r = rows[ri];
+            var rowNum = readStart + ri;
+            if (idxMemo >= 0 && String(r[idxMemo]||'').indexOf(WEB_INTAKE_TAG) >= 0) continue;
+            var hasTs    = idxDate  >= 0 && !!r[idxDate];
+            var hasPhone = idxPhone >= 0 && !!r[idxPhone];
+            if (!hasTs && !hasPhone) continue;
+            var raw = idxDate >= 0 ? r[idxDate] : r[0];
+            var tsStr = '';
+            try {
+              var d = _normTs_(raw);
+              tsStr = !isNaN(d.getTime())
+                ? Utilities.formatDate(d, 'Asia/Seoul', 'yyyy-MM-dd HH:mm:ss')
+                : ('파싱실패:' + String(raw).substring(0, 30));
+            } catch(ex) { tsStr = String(raw).substring(0, 30); }
+            rec.real_lastDataRow = rowNum;
+            rec.real_lastDataTs  = tsStr;
+            break;
+          }
+          rec.gap = rec.real_lastDataRow !== null ? (lastRow - rec.real_lastDataRow) : null;
+          rec.marker_vs_real = (rec.real_lastDataRow !== null && markerVal !== null)
+            ? (parseInt(markerVal, 10) - rec.real_lastDataRow) : null;
+        } catch(e2) { rec.error = e2.message; }
+        dsOut.push(rec);
+      });
+      // 트리거 목록
+      var triggers = ScriptApp.getProjectTriggers().map(function(t) {
+        return {
+          handler:  t.getHandlerFunction(),
+          type:     t.getEventType().toString(),
+          sourceId: (t.getTriggerSourceId ? t.getTriggerSourceId() : null)
+        };
+      });
+      return _json({ ok: true, sheets: dsOut, triggers: triggers });
+    } catch(e) {
+      return _json({ ok: false, error: e.message });
+    }
+  }
+
+  // ─── 마커 교정(발송 0): 각 시트 실데이터 마지막 행으로 INQ_LASTROW 덮어씀 (2026-06-25) ───
+  // sendMessage 절대 미포함. 읽기+ScriptProperties 쓰기만.
+  if (action === 'reset_inquiry_markers') {
+    try {
+      var props = PropertiesService.getScriptProperties();
+      var rmOut = [];
+      FORM_SHEETS.forEach(function(cfg) {
+        var propKey = 'INQ_LASTROW_' + cfg.ssId + '_' + cfg.gid;
+        var rec = { type: cfg.type, ssId: cfg.ssId, gid: cfg.gid, before: null, after: null, error: null };
+        try {
+          rec.before = props.getProperty(propKey);
+          var sh = _sheetByGid_(cfg.ssId, cfg.gid);
+          if (!sh) { rec.error = 'sheet_not_found'; rmOut.push(rec); return; }
+          var lastCol = sh.getLastColumn();
+          var hdrs = lastCol > 0 ? sh.getRange(1, 1, 1, lastCol).getValues()[0] : [];
+          var iP = _findCol_(hdrs, ['연락처','휴대폰','핸드폰','전화','Mobile Phone','Phone',"Guardian's Mobile Phone"]);
+          var iD = _findCol_(hdrs, ['타임스탬프','timestamp','시각','일시','접수일','접수','날짜']);
+          var iM = _findCol_(hdrs, ['비고','메모']);
+          var realRow = _realLastDataRow_(sh, iP, iD, iM);
+          props.setProperty(propKey, String(realRow));
+          rec.after = realRow;
+        } catch(e2) { rec.error = e2.message; }
+        rmOut.push(rec);
+      });
+      return _json({ ok: true, results: rmOut });
+    } catch(e) {
+      return _json({ ok: false, error: e.message });
+    }
+  }
+
+  // ─── 읽기전용: 특정 시각 이후 신규 실데이터 행 건수 집계 (2026-06-25) ───
+  // 발송 0. 파라미터: since=YYYY-MM-DDTHH:MM (KST, 예 2026-06-25T16:23)
+  if (action === 'count_missed_inquiries') {
+    try {
+      var sinceStr = body.since || '';
+      var sinceDate = sinceStr ? new Date(sinceStr.replace('T', ' ').replace(' ', 'T').indexOf('+') >= 0 ? sinceStr : sinceStr + '+09:00') : null;
+      var cmOut = [];
+      FORM_SHEETS.forEach(function(cfg) {
+        var rec = { type: cfg.type, gid: cfg.gid, count: 0, rows: [], error: null };
+        try {
+          var sh = _sheetByGid_(cfg.ssId, cfg.gid);
+          if (!sh) { rec.error = 'sheet_not_found'; cmOut.push(rec); return; }
+          var lastRow = sh.getLastRow();
+          if (lastRow < 2) { cmOut.push(rec); return; }
+          var lastCol = sh.getLastColumn();
+          var hdrs = sh.getRange(1, 1, 1, lastCol).getValues()[0];
+          var iD = _findCol_(hdrs, ['타임스탬프','timestamp','시각','일시','접수일','접수','날짜']);
+          var iP = _findCol_(hdrs, ['연락처','휴대폰','핸드폰','전화','Mobile Phone','Phone',"Guardian's Mobile Phone"]);
+          var iM = _findCol_(hdrs, ['비고','메모']);
+          var iN = _findCol_(hdrs, ['성함','이름','Full Name','Name',"Child's Full Name"]);
+          // 역순 최대 300행 탐색
+          var readStart = Math.max(2, lastRow - 299);
+          var rows = sh.getRange(readStart, 1, lastRow - readStart + 1, lastCol).getValues();
+          for (var ri = rows.length - 1; ri >= 0; ri--) {
+            var r = rows[ri];
+            if (iM >= 0 && String(r[iM]||'').indexOf(WEB_INTAKE_TAG) >= 0) continue;
+            var hasPhone = iP >= 0 && !!r[iP];
+            var hasTs    = iD >= 0 && !!r[iD];
+            if (!hasPhone && !hasTs) continue;
+            var raw = iD >= 0 ? r[iD] : null;
+            var d = raw ? _normTs_(raw) : null;
+            if (sinceDate && (!d || isNaN(d.getTime()) || d < sinceDate)) continue;
+            var tsStr = (d && !isNaN(d.getTime())) ? Utilities.formatDate(d, 'Asia/Seoul', 'MM/dd HH:mm') : String(raw||'').substring(0,16);
+            rec.count++;
+            if (rec.rows.length < 10) rec.rows.push({ row: readStart + ri, ts: tsStr, name: iN >= 0 ? String(r[iN]||'').substring(0,10) : '' });
+          }
+        } catch(e2) { rec.error = e2.message; }
+        cmOut.push(rec);
+      });
+      var total = cmOut.reduce(function(s, r){ return s + r.count; }, 0);
+      return _json({ ok: true, since: sinceStr, total: total, sheets: cmOut });
     } catch(e) {
       return _json({ ok: false, error: e.message });
     }
