@@ -3708,21 +3708,6 @@ window._regAssign = function(id, category) {
           <tr><td>대기 보고 포맷</td><td>대기 보고 포맷(3섹션 + 🔴 GM 결정·5필드)은 <strong>공통 탭 '작업 사이클 보고 포맷'이 단일 원본</strong> → 참조. CTO는 식별자 시토-N, 링크는 웰페리온 ERP 식별자(S1·S2·S3·M5·T1~T3·G1) 적용.</td></tr>
         </table>
 
-        <h3 style="margin-top:24px;border-top:1px solid var(--border);padding-top:20px;"><span class="ico">💾</span>CTO 개발 아카이브 운영 <span style="font-size:12px;color:var(--dim);font-weight:400;">— T1→S2 합병 2026-06-06</span></h3>
-        <p style="font-size:13px;color:var(--dim);">DB: [CTO] 개발 아카이브 &amp; 거버넌스 · 흐름: 기획DB(승인) → 운영 아카이브(결과→유지보수) → 개발 아카이브(Done, 기술 SSOT)</p>
-        <details class="toggle" style="margin-top:8px;">
-          <summary style="font-weight:700;">스키마·본문·원칙 (펼쳐보기)</summary>
-          <div class="toggle-body">
-            <p style="font-size:13px;"><strong>필수 속성</strong> — Name(title) · 구분(거버넌스/개발배포/장애핫픽스/인프라변경) · 상태 · 담당(multi) · 버전 · 배포일 · 태그 · 보안등급(일반/내부/기밀/제한)</p>
-            <p style="font-size:13px;"><strong>본문 5섹션</strong> — ①무엇 ②왜(기획링크) ③어떻게(흐름·의존성) ④배포·검증(테스트·롤백) ⑤제한·후속</p>
-            <ul style="font-size:13px;">
-              <li>운영 아카이브 <code>유지보수</code> 전환 후에만 Done(장애·핫픽스는 즉시)</li>
-              <li>SSOT: 기획DB=기획 / 운영 아카이브=결과 / 이 DB=기술. 중복 금지</li>
-              <li>토큰·비밀번호·API 키 본문 기재 절대 금지 · 태그 성실 기입</li>
-            </ul>
-          </div>
-        </details>
-
         <div class="callout tip" style="margin-top:20px;"><strong>🚀 세션 부팅 = 공통 탭 'AI 부팅 6단계' 정본.</strong> 읽는 파일만 <code>ai-cto.md</code> · <code>status/cto.json</code>. 흡수 탭 = 공통 + 본 CTO 탭.</div>
         <!-- ── /골격 보강 + 역할 원칙 흡수 STAGE2 ── -->
       </div>
@@ -4216,6 +4201,23 @@ window._regAssign = function(id, category) {
         </table>
         <div class="callout"><strong>핵심 한 줄.</strong> 메인은 <code>welperion-automation</code> · 활성 설정 1곳 · 헌법 1곳 · 메모리 1곳.</div>
         <p style="font-size:13px;color:var(--dim);margin-top:10px;">※ 셋업·점검 프롬프트는 <strong>S2 AI C-Level 운영 가이드 ▸ 공통 ▸ 운영 프롬프트 ③</strong>에서 관리.</p>
+
+        <!-- ── CTO 개발 아카이브 운영 (S2 CTO탭 → T1 기술 분리 2026-06-26) ── -->
+        <h3 style="margin-top:24px;border-top:1px solid var(--border);padding-top:20px;"><span class="ico">💾</span>CTO 개발 아카이브 운영 <span style="font-size:12px;color:var(--dim);font-weight:400;">— 기술 상세 · S2 CTO탭에서 분리 2026-06-26</span></h3>
+        <p style="font-size:13px;color:var(--dim);">DB: [CTO] 개발 아카이브 &amp; 거버넌스 · 흐름: 기획DB(승인) → 운영 아카이브(결과→유지보수) → 개발 아카이브(Done, 기술 SSOT)</p>
+        <details class="toggle" style="margin-top:8px;">
+          <summary style="font-weight:700;">스키마·본문·원칙 (펼쳐보기)</summary>
+          <div class="toggle-body">
+            <p style="font-size:13px;"><strong>필수 속성</strong> — Name(title) · 구분(거버넌스/개발배포/장애핫픽스/인프라변경) · 상태 · 담당(multi) · 버전 · 배포일 · 태그 · 보안등급(일반/내부/기밀/제한)</p>
+            <p style="font-size:13px;"><strong>본문 5섹션</strong> — ①무엇 ②왜(기획링크) ③어떻게(흐름·의존성) ④배포·검증(테스트·롤백) ⑤제한·후속</p>
+            <ul style="font-size:13px;">
+              <li>운영 아카이브 <code>유지보수</code> 전환 후에만 Done(장애·핫픽스는 즉시)</li>
+              <li>SSOT: 기획DB=기획 / 운영 아카이브=결과 / 이 DB=기술. 중복 금지</li>
+              <li>토큰·비밀번호·API 키 본문 기재 절대 금지 · 태그 성실 기입</li>
+            </ul>
+          </div>
+        </details>
+        <!-- ── /CTO 개발 아카이브 운영 ── -->
       </div>
       <!-- ── /탭: 설정 위치 ── -->
 
