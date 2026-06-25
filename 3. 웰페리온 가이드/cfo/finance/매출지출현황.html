@@ -392,7 +392,7 @@ async function procCall(action,extra){
 function rval(id){return document.getElementById(id).value;}
 async function loadReq(){try{var d=await procCall("list",{mode:"active"});REQ_ACTIVE=(d&&d.data)||[];}catch(e){REQ_ACTIVE=[];}renderReqTbl();}
 async function loadDone(){var dm=document.getElementById("doneMsg");dm.textContent="검색 중…";
-  try{var d=await procCall("list",{mode:"done",from:rval("doneFrom"),to:rval("doneTo")});REQ_DONE=(d&&d.data)||[];dm.textContent="완료 "+REQ_DONE.length+"건";}catch(e){REQ_DONE=[];dm.textContent="검색 실패";}
+  try{var d=await procCall("list",{mode:"done",from:rval("doneFrom"),to:rval("doneTo")});REQ_DONE=(d&&d.data)||[];dm.textContent="조회 "+REQ_DONE.length+"건";}catch(e){REQ_DONE=[];dm.textContent="검색 실패";}
   reqFilter="완료";renderReqTbl();}
 function apprFor(dept){
   if(dept==="시설"||dept==="지원"||dept==="주차") return "이정헌소장";
@@ -444,14 +444,15 @@ async function doSubmit(base,msg,fp){
 }
 var STAGES=["품의","검토","정산","완료"];
 function renderReqTbl(){
-  var STG=["품의","검토","정산","완료"];var fc=document.getElementById("reqFilter");
+  var STG=["품의","검토","정산","완료","반려"];var fc=document.getElementById("reqFilter");
   fc.innerHTML=STG.map(function(s){return '<button class="team-chip'+(s===reqFilter?' on':'')+'" data-f="'+s+'">'+s+'</button>';}).join('');
   fc.querySelectorAll(".team-chip").forEach(function(b){b.onclick=function(){reqFilter=b.dataset.f;renderReqTbl();};});
-  document.getElementById("reqDoneSearch").style.display=(reqFilter==="완료")?"block":"none";
-  var src=(reqFilter==="완료")?REQ_DONE:REQ_ACTIVE.filter(function(r){return r.상태===reqFilter;});
-  document.getElementById("reqCount").textContent=(reqFilter==="완료")?"(완료 "+REQ_DONE.length+"건)":"("+reqFilter+" "+src.length+"건 · 미완료 합 "+REQ_ACTIVE.length+")";
+  var isDone=(reqFilter==="완료"||reqFilter==="반려");
+  document.getElementById("reqDoneSearch").style.display=isDone?"block":"none";
+  var src=isDone?REQ_DONE.filter(function(r){return (reqFilter==="반려")?(r.상태==="반려"):(r.상태!=="반려");}):REQ_ACTIVE.filter(function(r){return r.상태===reqFilter;});
+  document.getElementById("reqCount").textContent=isDone?"("+reqFilter+" "+src.length+"건)":"("+reqFilter+" "+src.length+"건 · 미완료 합 "+REQ_ACTIVE.length+")";
   var rows=src.slice().reverse();
-  var stc={"품의":"wait","검토":"rev","정산":"set","완료":"ok","승인":"wait","미승인":"no","캔슬":"no"};
+  var stc={"품의":"wait","검토":"rev","정산":"set","완료":"ok","승인":"wait","미승인":"no","캔슬":"no","반려":"no"};
   var tc=(reqFilter==="정산")?"thumb2":"thumb"; // 정산 탭에서 사진 2배
   var h='<thead><tr><th style="text-align:center">#</th><th>날짜</th><th style="text-align:left">소속</th><th style="text-align:left">요청자</th><th style="text-align:left">승인자</th><th style="text-align:left">물품</th><th>금액</th><th style="text-align:center">사진/증빙</th><th style="text-align:center">상태</th><th style="text-align:center">승인 / 처리</th></tr></thead><tbody>';
   rows.forEach(function(r){
@@ -468,7 +469,7 @@ function renderReqTbl(){
     var rcpt=(photo||pf)?(photo+pf):'<button class="reqPhoto" data-row="'+r.row+'" style="font-size:10.5px;padding:4px 9px;cursor:pointer;border:1px dashed var(--gold);border-radius:6px;background:#fbf7ee;color:var(--gold-deep)">+ 사진</button>';
     h+='<tr><td style="text-align:center;font-weight:700;color:var(--gold-deep)">'+(r.번호?("#"+r.번호):"")+'</td><td style="text-align:left">'+r.날짜+'</td><td style="text-align:left">'+(r.소속||"")+'</td><td style="text-align:left">'+(r.요청자||"")+'</td><td style="text-align:left">'+(r.승인자||"")+'</td><td style="text-align:left">'+(r.물품||"")+'</td><td>'+won(r.가격)+'</td><td style="text-align:center">'+rcpt+'</td><td style="text-align:center"><span class="chip '+(stc[st]||"wait")+'">'+st+'</span></td><td style="text-align:center;white-space:nowrap">'+act+'</td></tr>';
   });
-  if(!rows.length)h+='<tr><td colspan="10" style="color:var(--ink-faint)">'+(reqFilter==="완료"?"기간을 선택하고 [검색]을 누르세요.":"해당 단계의 품의가 없습니다.")+'</td></tr>';
+  if(!rows.length)h+='<tr><td colspan="10" style="color:var(--ink-faint)">'+(isDone?(REQ_DONE.length?("해당 기간에 "+reqFilter+" 건이 없습니다."):"기간을 선택하고 [검색]을 누르세요."):"해당 단계의 품의가 없습니다.")+'</td></tr>';
   h+='</tbody>';document.getElementById("reqTbl").innerHTML=h;
   document.querySelectorAll(".reqAct").forEach(function(b){b.onclick=function(){doAct(b.dataset.row,b.dataset.next,b.dataset.pw,b);};});
   document.querySelectorAll(".reqPhoto").forEach(function(b){b.onclick=function(){addPhotoTo(b.dataset.row,b);};});
@@ -491,7 +492,7 @@ function btnCss(c){return "font-size:11px;padding:4px 11px;cursor:pointer;border
 async function doAct(row,next,needPw,btn){
   if(needPw){var _a=(next==="반려")?"반려":"승인";var pw=prompt(_a+" 처리 — 부서장 비밀번호를 입력하세요");if(pw===null)return;if(String(pw).trim()!=="1202"){alert("비밀번호가 올바르지 않습니다");return;}}
   if(btn){btn.disabled=true;btn.textContent="처리중…";}
-  var src=(reqFilter==="완료")?REQ_DONE:REQ_ACTIVE;var item=src.filter(function(x){return String(x.row)===String(row);})[0];
+  var src=(reqFilter==="완료"||reqFilter==="반려")?REQ_DONE:REQ_ACTIVE;var item=src.filter(function(x){return String(x.row)===String(row);})[0];
   if(item){item.상태=next;renderReqTbl();}  // 즉시 반영(낙관적)
   try{await procCall("status",{row:row,status:next});}catch(e){}
   loadReq();  // 서버 재확인

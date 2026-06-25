@@ -6582,7 +6582,7 @@ function crTab(btn, panelId) {
     <div class="doc-header"><h2>🗓️ 휴무·근무 스케줄</h2><div class="meta">CHRO 관할 · 나우열M · 🤖 AI CHRO (시로) · ERP 백엔드 연동(전 직원 공유)</div></div>
     <p class="lead">월별 출근시간 스케줄·오픈/마감 배치 경고·연차/반차/근무변경 신청을 관리합니다. 직원 휴무 데이터(PII)는 보안상 <strong>관리자 비밀번호 입력 후</strong>에만 표시됩니다.</p>
     <div style="margin-top:14px;border:1px solid var(--border);border-radius:14px;overflow:hidden;background:var(--paper)">
-      <iframe src="chro/hub/leave.html" title="휴무·근무 스케줄" loading="lazy" style="width:100%;height:80vh;min-height:560px;border:0;display:block"></iframe>
+      <iframe id="leaveFrame" src="chro/hub/leave.html" title="휴무·근무 스케줄" loading="lazy" onload="window.sendLeavePass&&window.sendLeavePass()" style="width:100%;height:80vh;min-height:560px;border:0;display:block"></iframe>
     </div>
   </article>
 
@@ -6894,8 +6894,21 @@ function crTab(btn, panelId) {
     'g15':'T1','T3':'T1','gm1':'G1','O5':'O4'
   };
 
+  /* H3(휴무·근무 스케줄) iframe = leave.html 로 ERP 관리자 비번 전달 → 자동 통과(비번창 미출현).
+     수신측 계약: leave.html window.message 리스너가 {type:"wp-pass", pw} 를 동일오리진에서만 수신해
+     해당 pw 를 db:leave 비밀번호로 그대로 사용(자동 로드). 메인 게이트(GM1_PW='1234')와는 무관.
+     lazy 로드 대비: ① iframe onload 1회 ② H3 재진입(activateDoc) 재송신. (2026-06-26 A-5) */
+  window.WP_LEAVE_PASS = 'wellperion!@1202';
+  window.sendLeavePass = function () {
+    var f = document.getElementById('leaveFrame');
+    if (f && f.contentWindow) {
+      try { f.contentWindow.postMessage({ type: 'wp-pass', pw: window.WP_LEAVE_PASS }, location.origin); } catch (_) {}
+    }
+  };
+
   function activateDoc(id, tabName) {
     docs.forEach(d => d.classList.toggle('active', d.id === id));
+    if (id === 'H3') { window.sendLeavePass(); }   // 재진입 시 재송신(이미 로드된 iframe엔 onload 미발생)
     if (tabName) {
       const tabsContainer = document.querySelector(`.tabs[data-tabs="${id}"]`);
       if (tabsContainer) {
