@@ -1344,8 +1344,8 @@ function _processAction(body) {
           var ciData = ciSh.getRange(2, 1, ciSh.getLastRow() - 1, ciH.length).getValues();
           for (var ci = 0; ci < ciData.length; ci++) {
             if (ciNm >= 0 && !String(ciData[ci][ciNm] || '').trim() && !ciData[ci][ciTs]) continue;
-            // 멤버십 문의만(플래티넘·노블레스 계열). 프로그램 칸 없으면 전부 포함(폴백).
-            if (ciPg >= 0) { var ciPv = String(ciData[ci][ciPg] || ''); if (ciPv.indexOf('플래티넘') < 0 && ciPv.indexOf('노블레스') < 0) continue; }
+            // 멤버십 문의 집계: 프로그램 미기재(빈칸)는 포함(목록과 분모 일치), 명시적 비멤버십(강습 등)만 제외.
+            if (ciPg >= 0) { var ciPv = String(ciData[ci][ciPg] || '').trim(); if (ciPv && ciPv.indexOf('플래티넘') < 0 && ciPv.indexOf('노블레스') < 0) continue; }
             var ciD = _miToISO_(ciData[ci][ciTs]);
             if (ciD === ctToday) ctTI++;
             if (ciD && ciD.slice(0, 7) === ctMonth) ctMI++;
