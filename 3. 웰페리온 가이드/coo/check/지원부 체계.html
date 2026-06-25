@@ -1239,6 +1239,10 @@ function promoteSave(){
   // 성별 / 상세
   const gender=(document.getElementById('promoteGender')||{}).value||'all';
   const detail=((document.getElementById('promoteDetail')||{}).value||'').trim();
+  // 요일·주차 → sched 직렬화 (기존 buildSched 재사용)
+  const _pDays=[].slice.call(document.querySelectorAll('#promoteDays .promoteDayCb')).filter(function(c){return c.checked;}).map(function(c){return c.value;});
+  const _pWeeks=[].slice.call(document.querySelectorAll('#promoteWeeks .promoteWeekCb')).filter(function(c){return c.checked;}).map(function(c){return c.value;});
+  const newSched=(typeof buildSched==='function')?buildSched(_pDays,_pWeeks):'';
   // 대표 slot/shift — 선택 회차의 첫 라운드 baseShift 기준(라벨은 표시 안 됨, 폴백용)
   const firstR=roundDef(rounds[0]);
   const baseShift=firstR?firstR.baseShift:'pm';
@@ -1254,7 +1258,8 @@ function promoteSave(){
     name: name,
     detail: detail,
     order: undefined,
-    rounds: rounds.slice()   // 2b-1: 선택 회차 다중 — itemRounds가 이 배열 사용
+    rounds: rounds.slice(),   // 2b-1: 선택 회차 다중 — itemRounds가 이 배열 사용
+    sched: newSched   // 요일·주차 일정 (빈값=상시/매일)
   };
   const next=(CUSTOM_ITEMS||[]).concat([newItem]);
   mgmtSaveItems(next);   // CUSTOM_ITEMS 갱신 + 시트 저장(saveItems POST, 회차 포함)
@@ -2858,6 +2863,14 @@ function renderSchedPickers(sched){
   const wEl=document.getElementById('editWeeks');
   if(wEl)wEl.innerHTML=SCHED_WEEKS.map(function(w){return '<label style="display:flex;align-items:center;gap:4px;font-size:13px;cursor:pointer;background:var(--paper);border:1px solid var(--border);border-radius:7px;padding:5px 9px;"><input type="checkbox" class="editWeekCb" value="'+w[0]+'"'+(cur.weeks.indexOf(w[0])>=0?' checked':'')+'> '+w[1]+(w[0]==='b'?'':'주')+'</label>';}).join('');
 }
+/* promoteModal 전용 요일·주차 피커 (editModal과 별도 DOM id 사용) */
+function renderPromoteSchedPickers(sched){
+  const cur=parseSched(sched);
+  const dEl=document.getElementById('promoteDays');
+  if(dEl)dEl.innerHTML=SCHED_DAYS.map(function(d){return '<label style="display:flex;align-items:center;gap:4px;font-size:13px;cursor:pointer;background:var(--paper);border:1px solid var(--border);border-radius:7px;padding:5px 9px;"><input type="checkbox" class="promoteDayCb" value="'+d[0]+'"'+(cur.days.indexOf(d[0])>=0?' checked':'')+'> '+d[1]+'</label>';}).join('');
+  const wEl=document.getElementById('promoteWeeks');
+  if(wEl)wEl.innerHTML=SCHED_WEEKS.map(function(w){return '<label style="display:flex;align-items:center;gap:4px;font-size:13px;cursor:pointer;background:var(--paper);border:1px solid var(--border);border-radius:7px;padding:5px 9px;"><input type="checkbox" class="promoteWeekCb" value="'+w[0]+'"'+(cur.weeks.indexOf(w[0])>=0?' checked':'')+'> '+w[1]+(w[0]==='b'?'':'주')+'</label>';}).join('');
+}
 window.saveItemEdit=function(){
   const id=_editingItemId;
   if(!id)return;
@@ -2948,6 +2961,8 @@ window.manualAddItem=function(cat){
   // 회차: 기본 오후조 1개 체크(GM이 자유 조정) — 최소 1개 강제는 promoteSave가 검증
   ROUND_KEYS.forEach(rk=>{const cb=document.getElementById('promoteRound_'+rk);if(cb)cb.checked=(rk==='pm1');});
   const hint=document.getElementById('promoteRoundHint'); if(hint)hint.style.display='none';
+  // 요일·주차 체크박스 초기화(신규 추가 = 빈값 = 상시)
+  renderPromoteSchedPickers('');
   const modal=document.getElementById('promoteModal'); if(modal)modal.style.display='flex';
 };
 window.manualDeleteItem=function(id){
@@ -6084,7 +6099,15 @@ renderManualItems();
       </div>
       <div id="promoteRoundHint" style="display:none;font-size:12px;color:#5b9fd5;margin-top:6px;">사우나 내부류는 3개 조 전부 권장합니다.</div>
     </div>
-    <div style="margin:12px 0 16px;">
+    <div style="margin:12px 0 10px;">
+      <label style="display:block;font-size:13px;font-weight:600;color:var(--dim);margin-bottom:6px;">요일 (선택 — 미선택 시 상시/매일)</label>
+      <div id="promoteDays" style="display:flex;flex-wrap:wrap;gap:6px;"></div>
+      <div style="margin-top:6px;display:flex;flex-wrap:wrap;gap:6px;align-items:center;">
+        <span style="font-size:12px;color:var(--dim);">주차:</span>
+        <div id="promoteWeeks" style="display:flex;flex-wrap:wrap;gap:6px;"></div>
+      </div>
+    </div>
+    <div style="margin:0 0 16px;">
       <label style="display:block;font-size:13px;font-weight:600;color:var(--dim);margin-bottom:4px;">상세 (선택)</label>
       <textarea id="promoteDetail" placeholder="이슈 맥락·점검 방법 등" style="width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:10px 14px;border-radius:8px;font-size:13px;font-family:inherit;min-height:64px;line-height:1.6;resize:vertical;"></textarea>
     </div>
