@@ -107,7 +107,7 @@
   <div class="brand">WELL<span>PERION</span> · 휴무 · 근무 스케줄
     <small>한남점 · 출근시간 스케줄 / 오픈·마감 배치 경고 / 연차·반차·근무변경 신청</small>
   </div>
-  <div class="pill">⚠️ 프로토타입 — 데이터는 이 브라우저에 임시 저장 (ERP 연동 전)</div>
+  <div class="pill"><span id="erpBadge">ERP 연동(전 직원 공유)</span> <span id="erpStatus" style="margin-left:6px;font-weight:700"></span></div>
 </header>
 
 <div class="wrap">
@@ -255,6 +255,74 @@ let reqs  = JSON.parse(localStorage.getItem(LS_REQ)||"[]");
 let cur = new Date(2026,5,1);
 let editMode=false;
 const save=()=>{localStorage.setItem(LS_LEAVE,JSON.stringify(leave));localStorage.setItem(LS_REQ,JSON.stringify(reqs));};
+
+/* ===== ERP 백엔드 연동 ===== */
+const EXEC_URL="https://script.google.com/macros/s/AKfycbyyXrdM7nSXKPG3Dy8wI6_3AI1spZs24d-uHTzQZlsqzoRXKkFbSFnX-hr42D3ScQSSHQ/exec";
+let WP_PW=null;            // 부모 허브가 postMessage로 전달하는 관리자 비번
+let erpReady=false;        // db:leave 로드 성공 여부
+/* CORS: Content-Type 헤더 설정 금지(simple request로 preflight 회피) */
+async function erpPost(payload){
+  const res=await fetch(EXEC_URL,{method:"POST",body:JSON.stringify(payload)});
+  return await res.json();
+}
+function setErpStatus(txt,color){
+  const el=document.getElementById("erpStatus"); if(!el)return;
+  el.textContent=txt||""; el.style.color=color||"var(--green)";
+}
+function setOfflineBadge(on){
+  const b=document.getElementById("erpBadge"); if(!b)return;
+  if(on){ b.textContent="오프라인(허브에서 열면 ERP 연동)"; b.style.color="var(--amber)"; }
+  else  { b.textContent="ERP 연동(전 직원 공유)"; b.style.color="var(--dim)"; }
+}
+/* 부모 허브로부터 비번 수신 → 자동 로드 */
+window.addEventListener("message", e=>{
+  if(e.origin!==location.origin) return;          // 동일 오리진만 신뢰
+  if(e.data && e.data.type==="wp-pass" && e.data.pw){
+    WP_PW=e.data.pw; setOfflineBadge(false); erpLoad();
+  }
+});
+/* 서버(db:leave) → {emp:{date:값}} 재구성 후 render + 로컬 캐시 */
+async function erpLoad(){
+  if(!WP_PW){ setOfflineBadge(true); setErpStatus("오프라인",""); return; }
+  setErpStatus("불러오는 중…","var(--blue)");
+  try{
+    const r=await erpPost({db:"leave",password:WP_PW});
+    if(!r||!r.ok||!Array.isArray(r.results)) throw new Error((r&&r.error)||"응답 오류");
+    const next={};
+    r.results.forEach(row=>{
+      const nm=row["성명"], dt=row["날짜"], val=row["값"];
+      if(!nm||!dt) return;
+      (next[nm]=next[nm]||{})[dt]=val;
+    });
+    leave=next; save();           // 로컬에도 캐시
+    erpReady=true; setOfflineBadge(false); setErpStatus("ERP 동기화됨 ✓","var(--green)");
+    render();
+  }catch(err){
+    erpReady=false; setErpStatus("⚠ ERP 불러오기 실패(로컬 표시)","var(--red)");
+    render();
+  }
+}
+/* 단일 셀 서버 반영 (value 빈문자=삭제) */
+async function erpSet(emp,date,value){
+  if(!WP_PW||!erpReady) return;   // 오프라인/미로드 시 로컬만
+  setErpStatus("저장 중…","var(--blue)");
+  try{
+    const r=await erpPost({action:"set-leave",adminPassword:WP_PW,emp,date,value:value||"",dept:EMP_DEPT[emp]||""});
+    if(!r||!r.ok) throw new Error((r&&r.error)||"저장 실패");
+    setErpStatus("ERP 저장됨 ✓","var(--green)");
+  }catch(err){ setErpStatus("⚠ 저장 실패","var(--red)"); }
+}
+/* 일괄 동기화 (샘플 로드 등) */
+async function erpBulk(){
+  if(!WP_PW||!erpReady) return;
+  setErpStatus("전체 동기화 중…","var(--blue)");
+  try{
+    const deptMap={}; ALL_EMP.forEach(n=>deptMap[n]=EMP_DEPT[n]||"");
+    const r=await erpPost({action:"set-leave-bulk",adminPassword:WP_PW,data:leave,deptMap});
+    if(!r||!r.ok) throw new Error((r&&r.error)||"동기화 실패");
+    setErpStatus("ERP 전체 동기화됨 ✓","var(--green)");
+  }catch(err){ setErpStatus("⚠ 동기화 실패","var(--red)"); }
+}
 const pad=n=>String(n).padStart(2,"0");
 const ymd=(y,m,d)=>`${y}-${pad(m+1)}-${pad(d)}`;
 const DOW=["일","월","화","수","목","금","토"];
@@ -430,15 +498,19 @@ function inlineEdit(td){
 }
 function setCell(emp,date,val){
   let v=val.trim(); leave[emp]=leave[emp]||{};
-  if(!v){ delete leave[emp][date]; save(); return; }
-  if(/^휴\s*\d+$/.test(v))v="휴";  // 휴1·휴2 입력 → 정기휴무(자동 번호매김)
-  if(LEAVE_SYN[v]){ leave[emp][date]=LEAVE_SYN[v]; save(); return; }
-  // 8자리(HHMMHHMM)·6자리(HMMHMM)는 두 시간으로 분리 (반차 13301800 등)
-  const toks=v.split(/\s+/)
-    .flatMap(t=>/^\d{8}$/.test(t)?[t.slice(0,4),t.slice(4)]:/^\d{6}$/.test(t)?[t.slice(0,3),t.slice(3)]:[t])
-    .map(normTime).filter(Boolean);
-  if(toks.length){ leave[emp][date]=toks.join(" "); } else { delete leave[emp][date]; }
+  let stored="";   // 서버/로컬에 저장될 최종 값("" = 삭제)
+  if(!v){ delete leave[emp][date]; stored=""; }
+  else if((v=(/^휴\s*\d+$/.test(v)?"휴":v), LEAVE_SYN[v])){ stored=LEAVE_SYN[v]; leave[emp][date]=stored; }
+  else{
+    // 8자리(HHMMHHMM)·6자리(HMMHMM)는 두 시간으로 분리 (반차 13301800 등)
+    const toks=v.split(/\s+/)
+      .flatMap(t=>/^\d{8}$/.test(t)?[t.slice(0,4),t.slice(4)]:/^\d{6}$/.test(t)?[t.slice(0,3),t.slice(3)]:[t])
+      .map(normTime).filter(Boolean);
+    if(toks.length){ stored=toks.join(" "); leave[emp][date]=stored; }
+    else { delete leave[emp][date]; stored=""; }
+  }
   save();
+  erpSet(emp,date,stored);   // ERP 즉시 반영(오프라인 시 no-op)
 }
 
 /* 연차/반차 신청 */
@@ -490,7 +562,7 @@ function renderReqs(){
       : `<button class="mini ghost" onclick="delReq('${r.id}')">삭제</button>`}</td></tr>`).join("");
 }
 function approve(id){const r=reqs.find(x=>x.id===id);if(!r)return;r.status="승인";
-  if(r.kind==="연차/반차"){leave[r.emp]=leave[r.emp]||{};leave[r.emp][r.date]=r.type;}
+  if(r.kind==="연차/반차"){leave[r.emp]=leave[r.emp]||{};leave[r.emp][r.date]=r.type;erpSet(r.emp,r.date,r.type);}
   save();renderReqs();render();}
 function reject(id){const r=reqs.find(x=>x.id===id);if(r){r.status="반려";save();renderReqs();}}
 function delReq(id){reqs=reqs.filter(x=>x.id!==id);save();renderReqs();}
@@ -526,7 +598,7 @@ function loadSample(){
     for(let k=0;k<4;k++){ leave[nm][ymd(y,m,cand[(start+k*stride)%L])]="휴"; }   // 정기휴무 4
     leave[nm][ymd(y,m,cand[(start+4*stride)%L])]="대휴";                          // 6/3 근무 보상 대휴 1
   });
-  save(); render();
+  save(); render(); erpBulk();   // ERP 전체 동기화(오프라인 시 no-op)
   alert("6월 샘플(스케줄+직원 휴무) 로드 완료 — 6/3 근무·대휴, 휴1~휴N 자동번호, '휴무 /7' 개수, 배치 경고를 확인해 보세요.");
 }
 
@@ -545,6 +617,7 @@ function switchTab(t){
 document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>switchTab(b.dataset.tab));
 document.querySelectorAll(".ov").forEach(o=>o.onclick=e=>{if(e.target===o)o.classList.remove("on");});
 
+setOfflineBadge(!WP_PW);   // 초기엔 오프라인 표기(부모 비번 수신 시 erpLoad에서 해제)
 render();
 </script>
 </body>
