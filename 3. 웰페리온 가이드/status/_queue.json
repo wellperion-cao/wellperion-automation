@@ -1620,5 +1620,19 @@
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "58afd45d8125a279c830fe01271496fb1f57c573",
     "ship_no": 192
+  },
+  {
+    "task_id": "CMO-2026-06-26-ADHOC-fe36c415",
+    "clevel": "cmo",
+    "title": "[시모] URL 회수엔진+발행대조 스크립트 (실험적·사후 스크래핑 신뢰성 낮음, 자동스케줄 미배선)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-06-26",
+    "processed_at": "2026-06-26",
+    "artifact": "- retrieve_post_url.py: 채널별 글 URL 회수 엔진(blog/cafe/kakao/danggn)\n- reconcile_published.py: 누락 URL 비파괴 백필(긍정일치만 기록, 미발견=무변경)\n- 한계: 헤드리스 고정스크립트로는 공개카카오·네이버 글목록 미렌더로 0건 회수.\n  사후 스크래핑보다 '발행시점 URL 캡처 + 수동게시 1탭'이 신뢰성 높음(후속). (CLI ad-hoc · 커밋 fe36c415)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "fe36c415c02a9253a81726eddcecb029779e4f28",
+    "ship_no": 190
   }
 ]
