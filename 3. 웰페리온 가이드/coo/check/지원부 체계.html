@@ -3760,15 +3760,18 @@ async function unlockRound(round,gender){
     localStorage.removeItem(roundSubLSKey(d,gender,round));
     localStorage.removeItem('wcheck_rsubBy_'+d+'_'+gender+'_'+round);
     localStorage.removeItem('wcheck_rsubAt_'+d+'_'+gender+'_'+round);
-    // baseShift 잠금도 해제(동일 shift의 다른 라운드가 없으면)
-    const bs=rdef.baseShift;
+    // shift-level 잠금도 해제(동일 shift의 다른 라운드가 없으면)
+    // [근본수정 2026-06-26 시우] 마감조(close1)는 독립 'close' 칸을 쓰므로 _submitted_close를 지운다(제출 경로 line 3708과 대칭).
+    //   기존엔 close1.baseShift='pm'이라 _submitted_close 잔존 → pm1 재제출 시 payload에 submitter_close 재전송 → 마감조 재잠금하던 버그.
+    //   ★pm1 unlock은 bs='pm'(close 무관)·close1 unlock은 bs='close'(pm 무관)로 시프트키 분리.
+    const bs=(round==='close1')?'close':rdef.baseShift;
     const sibStillLocked=roundsOfShift(bs).some(rk=>rk!==round&&isRoundSubmitted(d,gender,rk));
     if(!sibStillLocked){
       delete STATE['_submitted_'+bs];
       delete STATE['_submittedAt_'+bs];
       delete STATE['_submitter_'+bs];
     }
-    saveLocal(d,STATE,gender);
+    saveLocal(d,STATE,gender);   // STATE 전체 직렬화(LK) → _submitted_close 삭제가 localStorage 미러에도 반영
     drawUI(d,gender);
     alert(`${rdef.name} 잠금이 해제되었습니다. 체크 데이터는 유지됩니다.`);
   }catch(e){
@@ -4040,6 +4043,14 @@ function collectDashboardData(d){
     submitterStats[name].shifts.add('탕청소');
     issuesNight.forEach(()=>submitterStats[name].issues++);
   }
+  // 마감 제출자 — 2026-06-26 시우: close 시프트키 배선(am/pm/night 동일 패턴). 마감 항목은 closingDone/Total로 별도 집계.
+  if(STATE._submitter_close){
+    const name=STATE._submitter_close;
+    if(!submitterStats[name])submitterStats[name]={done:0,total:0,issues:0,shifts:new Set()};
+    submitterStats[name].done+=closingDone;
+    submitterStats[name].total+=closingTotal;
+    submitterStats[name].shifts.add('마감');
+  }
 
   return {
     closed:false,d,dow,dn,info,sched,nightSched,
@@ -4116,11 +4127,11 @@ async function renderAdmin(){
     {label:'오전',done:data.amDone,total:data.amTotal,pct:data.amPct,sub:STATE._submitted_am,who:STATE._submitter_am,color:'green'},
     {label:'오후',done:data.pmDone,total:data.pmTotal,pct:data.pmPct,sub:STATE._submitted_pm,who:STATE._submitter_pm,color:'blue'},
     {label:'탕청소',done:data.nightDone,total:data.nightTotal,pct:data.nightPct,sub:STATE._submitted_night,who:STATE._submitter_night,color:'orange'},
-    {label:'마감',done:data.closingDone,total:data.closingTotal,pct:data.closingPct,sub:null,who:null,color:'accent'}
+    {label:'마감',done:data.closingDone,total:data.closingTotal,pct:data.closingPct,sub:STATE._submitted_close,who:STATE._submitter_close,at:STATE._submittedAt_close,color:'accent'}   // 2026-06-26 시우: close 시프트키 배선(기존 sub:null '-' 하드코딩 제거)
   ];
   shiftRows.forEach(r=>{
     if(r.total===0)return;
-    const subTxt=r.sub?`<span style="color:var(--green);font-weight:600">제출(${r.who||'-'})</span>`:(r.label==='마감'?'-':'<span style="color:var(--red);font-weight:600">미제출</span>');
+    const subTxt=r.sub?`<span style="color:var(--green);font-weight:600">제출(${r.who||'-'})</span>`:'<span style="color:var(--red);font-weight:600">미제출</span>';
     html+=`<tr><td><strong>${r.label}</strong></td><td>${r.done}</td><td>${r.total}</td><td>${r.pct}%</td><td>${subTxt}</td>`;
     html+=`<td><div class="dash-bar-wrap"><div class="dash-bar ${r.color}" style="width:${r.pct}%"></div></div></td></tr>`;
   });
@@ -4148,6 +4159,8 @@ async function renderAdmin(){
   if(data.nightSched){
     html+=buildAdminShiftCard('night','탕청소 (외주 업체)',data.nightDone,data.nightTotal,data.nightPct,STATE._submitted_night,STATE._submitter_night,STATE._submittedAt_night?new Date(STATE._submittedAt_night).toLocaleString('ko-KR'):'-',null,data.nightSched,dow,dn);
   }
+  // 2026-06-26 시우: 마감조(close) 상세카드 — am/pm/night와 동일 빌더. 평일·주말 모두 마감조 존재 → 항상 노출.
+  html+=buildAdminShiftCard('close','마감조',data.closingDone,data.closingTotal,data.closingPct,STATE._submitted_close,STATE._submitter_close,STATE._submittedAt_close?new Date(STATE._submittedAt_close).toLocaleString('ko-KR'):'-',data.sched,null,dow,dn);
 
   /* ━━━ 이슈 ━━━ 점검 이슈는 각 회차 점검표에 기록·보관. 종합접수처 연동 완전 제거(2026-06-25). */
   html+=`<div class="dash-section-title">이슈</div>`;

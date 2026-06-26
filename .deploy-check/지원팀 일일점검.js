@@ -54,7 +54,10 @@ function _roundKeyLabel(rk) {
 // ─── 회차라벨(오전조/오후조/마감조) → 제출도장 shiftKey(am/pm/night). led.sub/subAt 조회용. 2026-06-20 시우 ───
 function _labelToShiftKey(label) {
   var l = String(label || '');
-  if (l.indexOf('마감') >= 0 || l.indexOf('야간') >= 0 || l.indexOf('탕청소') >= 0 || l.indexOf('저녁') >= 0) return 'night';
+  // ★2026-06-26 시우: '마감' 라벨은 'close'(led.sub.close)로 분리. '탕청소'·'야간'은 'night' 유지.
+  //   순서 주의 — 마감 체크를 야간 체크보다 먼저(탕청소엔 '마감' 글자 없으니 안전).
+  if (l.indexOf('마감') >= 0) return 'close';
+  if (l.indexOf('야간') >= 0 || l.indexOf('탕청소') >= 0 || l.indexOf('저녁') >= 0) return 'night';
   if (l.indexOf('오후') >= 0) return 'pm';
   if (l.indexOf('오전') >= 0) return 'am';
   return '';
@@ -1477,12 +1480,14 @@ function _handleSaveV2Compat(body) {
   var parts = [];
   if (body.submitted_am) parts.push('오전조 제출완료');
   if (body.submitted_pm) parts.push('오후조 제출완료');
+  if (body.submitted_close) parts.push('마감조 제출완료');   // 2026-06-26 시우: close 시프트 보강(am/pm/night 동일 패턴)
   if (body.submitted_night) parts.push('탕청소 제출완료');
   var submitStatus = parts.length > 0 ? parts.join(' / ') : '미제출';
-  var submitAt = body.submittedAt_am || body.submittedAt_pm || body.submittedAt_night || '';
+  var submitAt = body.submittedAt_am || body.submittedAt_pm || body.submittedAt_close || body.submittedAt_night || '';
   var submitters = [];
   if (body.submitter_am) submitters.push(body.submitter_am);
   if (body.submitter_pm) submitters.push(body.submitter_pm);
+  if (body.submitter_close) submitters.push(body.submitter_close);   // 2026-06-26 시우: close 보강
   if (body.submitter_night) submitters.push(body.submitter_night);
   var submitter = submitters.join(' / ');
 
