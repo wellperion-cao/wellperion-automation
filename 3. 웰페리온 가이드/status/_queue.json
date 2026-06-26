@@ -1250,5 +1250,19 @@
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "49e4755956d449a703b71546ab2b4a4b96d5ce52",
     "ship_no": 183
+  },
+  {
+    "task_id": "CTO-2026-06-26-ADHOC-a89078c6",
+    "clevel": "cto",
+    "title": "[시토] feat(funnel)[시토]: 문의→등록 전환 알림 강화 + 중복발화 차단 (A안)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-06-26",
+    "processed_at": "2026-06-26",
+    "artifact": "member_inquiry_update: 상태 변경 '전' 값 캡처 → 신규→SUC/단기SUC 실제 전환\n시점에만 _regUpsert_(등록현황 이관) 1회 실행. 과거엔 status==SUC면 값 미변경에도\n매 저장 재실행되던 중복 제거. 전환 시 '문의 알림' 방(-5516675010)에 등록 전환\n전용 알림(이름·프로그램·담당) 발송. A안=유효회원(실계약 정본) 자동생성 안 함. (CLI ad-hoc · 커밋 a89078c6)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "a89078c6d09a05cc42bf0d77841fd18b82584551",
+    "ship_no": 174
   }
 ]
