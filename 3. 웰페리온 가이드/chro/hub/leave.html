@@ -44,6 +44,9 @@
   .colDept,.colName{position:sticky;z-index:2;background:var(--paper)}
   .colDept{left:0;min-width:88px;width:88px;font-weight:700;color:var(--accent);font-size:11px}
   .colName{left:88px;min-width:80px;text-align:left;padding:0 8px;font-weight:600}
+  .colName.emp-link{cursor:pointer}
+  .colName.emp-link:hover{color:var(--accent);text-decoration:underline}
+  .tablecard .colName.emp-link:hover{color:#9a7b4f}
   thead .colDept{left:0;z-index:5}thead .colName{left:88px;z-index:5}
   /* 부서명+기준 병합셀 (구분 열) */
   .deptcell{background:#34302d!important;color:var(--accent);text-align:center;vertical-align:middle;white-space:normal;line-height:1.25;padding:5px 3px;border-right:2px solid var(--accent2)}
@@ -207,7 +210,7 @@
         <tbody id="boardBody"></tbody>
       </table>
     </div>
-    <p style="color:var(--dim);font-size:11px;margin-top:8px">※ 셀=출근시간(수기 입력) · '배치' 행=오픈/마감 커버리지 · 지원부 일·공휴는 2인 필수 · 연차=1·반차=0.5 차감(부여 15일 임시)</p>
+    <p style="color:var(--dim);font-size:11px;margin-top:8px">※ 셀=출근시간(수기 입력) · '배치' 행=오픈/마감 커버리지 · 지원부 일·공휴는 2인 필수 · 연차=1·반차=0.5 차감 · 총 연차=입사일 기준 근로기준법 자동산정 · <b>성명 클릭</b>=개인 연차현황</p>
   </div>
 
   <div id="tab-reqs" style="display:none">
@@ -264,6 +267,18 @@
   </div>
 </div>
 
+<!-- 직원별 연차 현황 상세 (성명 클릭) -->
+<div class="ov" id="ovEmp">
+  <div class="modal" style="max-width:380px">
+    <h3 id="ve_name">연차 현황</h3>
+    <p class="sub" id="ve_sub"></p>
+    <div id="ve_body"></div>
+    <div class="modal-actions">
+      <button class="ghost" onclick="closeOv('ovEmp')" style="flex:1">닫기</button>
+    </div>
+  </div>
+</div>
+
 <!-- 자체 로그인 게이트 (허브 iframe 밖·새 탭에서 단독으로 열렸을 때) -->
 <div class="ov" id="ovLogin">
   <div class="modal" style="max-width:380px">
@@ -297,7 +312,10 @@ const DEPTS = [
 ];
 const EMP_DEPT={}; DEPTS.forEach(([d,ns])=>ns.forEach(n=>EMP_DEPT[n]=d));
 const ALL_EMP=DEPTS.flatMap(d=>d[1]);
-const ANNUAL_GRANT = 15;
+/* 연차 현황 (db:emp 입사일 기준 · 읽기 전용) */
+let EMP_JOIN={};      // 보드 성명 → 입사일("YYYY-MM-DD")
+let EMP_TYPE={};      // 보드 성명 → 고용형태(원문, 표시 시 프리랜서→파트너)
+let empLoaded=false;  // db:emp 로드 완료 여부
 
 /* 부서별 오픈/마감 표준 (시트 실측 근거)
    open=오픈 출근, close=마감조 출근, closeEnd=마감 퇴근, sun2=일·공휴 2인 필수 */
@@ -363,11 +381,35 @@ async function erpLoad(){
     });
     leave=next; save();           // 로컬에도 캐시
     erpReady=true; setOfflineBadge(false); setErpStatus("ERP 동기화됨 ✓","var(--green)");
-    render();
+    render(); empLoad();          // 휴무표 렌더 후 db:emp(입사일·고용형태) 비동기 로드
   }catch(err){
     erpReady=false; setErpStatus("⚠ ERP 불러오기 실패(로컬 표시)","var(--red)");
     render();
   }
+}
+/* db:emp 읽기(전용) → 보드 성명별 입사일·고용형태 맵 구축 후 재렌더. 실패해도 휴무표는 정상. */
+async function empLoad(){
+  if(!WP_PW) return;
+  try{
+    const r=await erpPost({db:"emp",password:WP_PW});
+    if(!r||!r.ok||!Array.isArray(r.results)) return;
+    const byName={};
+    r.results.forEach(row=>{
+      const nm=(row["성명"]||row["이름"]||"").toString().trim(); if(!nm) return;
+      const jd=(row["date:입사일:start"]||row["입사일"]||"").toString().trim();
+      const tp=(row["고용 형태"]||row["고용형태"]||"").toString().trim();
+      byName[nm]={jd,tp};
+    });
+    /* 보드 성명 정규화: (외주)·후행 영문(S/M) 제거 후 emp 성명과 매칭 */
+    const strip=n=>String(n).replace(/\([^)]*\)/g,"").replace(/[A-Za-z]+$/,"").trim();
+    const J={}, T={};
+    ALL_EMP.forEach(n=>{
+      let rec=byName[n]||byName[strip(n)];
+      if(!rec){ const s=strip(n); const k=Object.keys(byName).find(x=>strip(x)===s); if(k)rec=byName[k]; }
+      if(rec){ if(rec.jd)J[n]=rec.jd; if(rec.tp)T[n]=rec.tp; }
+    });
+    EMP_JOIN=J; EMP_TYPE=T; empLoaded=true; render();
+  }catch(_){ /* emp 실패 — 연차열 '–' 유지 */ }
 }
 /* 단일 셀 서버 반영 (value 빈문자=삭제) */
 async function erpSet(emp,date,value){
@@ -393,6 +435,7 @@ async function erpBulk(){
 const pad=n=>String(n).padStart(2,"0");
 const ymd=(y,m,d)=>`${y}-${pad(m+1)}-${pad(d)}`;
 const _TD=new Date(); const TODAY_STR=ymd(_TD.getFullYear(),_TD.getMonth(),_TD.getDate());
+const NOW_D=new Date(_TD.getFullYear(),_TD.getMonth(),_TD.getDate());  // 시각 제거(날짜만) — 근속 계산용
 const DOW=["일","월","화","수","목","금","토"];
 const mins=t=>(+t.slice(0,2))*60+(+t.slice(3,5));
 const LEAVE_LABEL={"휴":"휴","연차":"연차","반차오전":"반午","반차오후":"반後","공휴":"공휴","대휴":"대휴","휴관":"휴관"};
@@ -484,6 +527,57 @@ function quotaIssues(y,m){const meta=monthMeta(y,m),out=[];
   for(const nm of ALL_EMP){if(!hasAny(nm,y,m))continue;const total=personOff(nm,y,m)+meta.closed;if(total!==meta.req)out.push({nm,total,req:meta.req});}
   return out;}
 
+/* ===== 직원별 연차 현황 (db:emp 입사일 기준 · 근로기준법) ===== */
+function joinDateOf(nm){
+  const raw=EMP_JOIN[nm]; if(!raw) return null;
+  const s=String(raw).slice(0,10), mm=s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  const d = mm ? new Date(+mm[1],+mm[2]-1,+mm[3]) : new Date(s);  // 로컬 자정 파싱(NOW_D와 동일 기준)
+  return isNaN(d.getTime())?null:d;
+}
+/* 입사일~오늘 만 근속 개월수(미달월 절사) */
+function monthsServed(jd){
+  let m=(NOW_D.getFullYear()-jd.getFullYear())*12+(NOW_D.getMonth()-jd.getMonth());
+  if(NOW_D.getDate()<jd.getDate()) m--; return m<0?0:m;
+}
+/* {matched, pre(미입사), grant(총연차), jd, months} — 매칭 실패 시 {matched:false} */
+function annInfo(nm){
+  const jd=joinDateOf(nm);
+  if(!jd) return {matched:false};
+  if(jd>NOW_D) return {matched:true,pre:true,grant:0,jd,months:0};   // 미입사
+  const m=monthsServed(jd); let grant;
+  if(m<12) grant=Math.min(11,m);                                     // 근속<1년: 만근속개월수(≤11)
+  else { const y=Math.floor(m/12); grant=Math.min(25, 15 + (y>=3?Math.floor((y-1)/2):0)); }
+  return {matched:true,pre:false,grant,jd,months:m};
+}
+/* 2026년 날짜의 연차=1·반차=0.5 합 */
+function usedAnnual2026(nm){
+  let u=0; const o=leave[nm]||{};
+  for(const dt in o){ if(String(dt).slice(0,4)!=="2026") continue; const c=o[dt];
+    if(c==="연차") u+=1; else if(typeof c==="string"&&c.startsWith("반차")) u+=0.5; }
+  return u;
+}
+function empTypeOf(nm){ const t=EMP_TYPE[nm]||""; return t==="프리랜서"?"파트너":t; }   // 표기: 프리랜서→파트너
+/* 성명 클릭 → 개인 연차현황 상세 패널 */
+function showEmpDetail(nm){
+  const ai=annInfo(nm), used=usedAnnual2026(nm);
+  const type=empTypeOf(nm)||"—", dept=EMP_DEPT[nm]||"—", us=used%1?used.toFixed(1):used;
+  let joinStr,tenureStr,totalStr,remainStr,note="";
+  if(!empLoaded){ joinStr="불러오는 중…"; tenureStr="—"; totalStr="—"; remainStr="—"; note="emp 명부 로딩 후 표시됩니다."; }
+  else if(!ai.matched){ joinStr="미확인"; tenureStr="—"; totalStr="–"; remainStr="–"; note="emp 명부에서 입사일을 찾지 못했습니다(미매칭)."; }
+  else if(ai.pre){ joinStr=`${ai.jd.getFullYear()}-${pad(ai.jd.getMonth()+1)}-${pad(ai.jd.getDate())}`; tenureStr="미입사 예정"; totalStr="0일 (미입사)"; remainStr="0일"; }
+  else { joinStr=`${ai.jd.getFullYear()}-${pad(ai.jd.getMonth()+1)}-${pad(ai.jd.getDate())}`;
+    tenureStr=`${Math.floor(ai.months/12)}년 ${ai.months%12}개월`; totalStr=`${ai.grant}일`;
+    const r=ai.grant-used; remainStr=`${r%1?r.toFixed(1):r}일`+(r<0?" (초과)":""); }
+  document.getElementById("ve_name").textContent=`${nm} · 연차 현황`;
+  document.getElementById("ve_sub").textContent=`${dept} · ${type}`;
+  const rows=[["입사일",joinStr],["근속",tenureStr],["고용형태",type],["총 연차",totalStr],["2026 사용",`${us}일`],["잔여",remainStr]];
+  document.getElementById("ve_body").innerHTML=
+    `<table style="width:100%;border-collapse:collapse;font-size:13px">`+
+    rows.map(([k,v])=>`<tr><th style="text-align:left;color:var(--dim);font-weight:600;padding:7px 10px;border-bottom:1px solid var(--line);width:88px">${k}</th><td style="padding:7px 10px;border-bottom:1px solid var(--line);font-weight:700">${v}</td></tr>`).join("")+
+    `</table>`+(note?`<p class="sub" style="margin-top:12px">${note}</p>`:"");
+  openOv("ovEmp");
+}
+
 function render(){
   const y=cur.getFullYear(), m=cur.getMonth();
   document.getElementById("monthLabel").textContent=`${y}년 ${m+1}월`;
@@ -495,7 +589,7 @@ function render(){
     const cls=HOLIDAYS[dt]?"hol":(dow===0?"sun":dow===6?"sat":"");
     h+=`<th class='day ${cls}${dt===TODAY_STR?' today':''}'>${d}<br><span style='font-weight:400'>${DOW[dow]}</span></th>`;
   }
-  h+="<th class='sumcol sc-u'>사용<br>연차</th><th class='sumcol sc-r'>잔여<br>연차</th><th class='sumcol sc-q'>휴무<br>/"+meta.req+"</th></tr>";
+  h+="<th class='sumcol sc-u' title='2026년 사용 연차'>사용<br>연차</th><th class='sumcol sc-r' title='총 연차 − 2026 사용 (입사일 기준 자동산정)'>잔여<br>연차</th><th class='sumcol sc-q'>휴무<br>/"+meta.req+"</th></tr>";
   document.getElementById("boardHead").innerHTML=h;
   let b="";
   for(const [dept,names] of DEPTS){
@@ -523,7 +617,7 @@ function render(){
     }
     for(const nm of names){
       let used=0, off=0, huN=0;
-      let row=`<tr${_placed?'':" class='deptfirst'"}>${_placed?'':_deptCell}<td class='colName'>${nm}</td>`; _placed=true;
+      let row=`<tr${_placed?'':" class='deptfirst'"}>${_placed?'':_deptCell}<td class='colName emp-link' onclick="showEmpDetail('${nm}')" title='연차 현황 보기'>${nm}</td>`; _placed=true;
       for(let d=1;d<=days;d++){
         const dt=ymd(y,m,d), dow=new Date(y,m,d).getDay();
         const base=HOLIDAYS[dt]?"hol":(dow===0?"sun":dow===6?"sat":"");
@@ -539,9 +633,12 @@ function render(){
         }
         row+=`<td class='day ${base}${editMode?' edit':''}${dt===TODAY_STR?' today':''}' data-emp='${nm}' data-date='${dt}'>${tag}</td>`;
       }
-      const remain=ANNUAL_GRANT-used, total=off+meta.closed, has=hasAny(nm,y,m), qcls=has?(total!==meta.req?'q-bad':'q-ok'):'';
-      row+=`<td class='sumcol sc-u'>${used%1?used.toFixed(1):used}</td><td class='sumcol sc-r ${remain<0?'sum-warn':''}'>${remain%1?remain.toFixed(1):remain}</td>`+
-        `<td class='sumcol sc-q ${qcls}' title='작성휴무 ${off} + 휴관 ${meta.closed} = ${total} / 필요 ${meta.req}'>${total}/${meta.req}</td></tr>`;
+      const offTotal=off+meta.closed, has=hasAny(nm,y,m), qcls=has?(offTotal!==meta.req?'q-bad':'q-ok'):'';
+      const ai=annInfo(nm), aUsed=usedAnnual2026(nm), uCell=aUsed%1?aUsed.toFixed(1):aUsed;
+      let rCell='–', rWarn='';
+      if(ai.matched){ const rem=ai.grant-aUsed; if(rem<0)rWarn='sum-warn'; rCell=rem%1?rem.toFixed(1):rem; }
+      row+=`<td class='sumcol sc-u'>${uCell}</td><td class='sumcol sc-r ${rWarn}'>${rCell}</td>`+
+        `<td class='sumcol sc-q ${qcls}' title='작성휴무 ${off} + 휴관 ${meta.closed} = ${offTotal} / 필요 ${meta.req}'>${offTotal}/${meta.req}</td></tr>`;
       b+=row;
     }
   }
@@ -598,8 +695,13 @@ function openApply(){
   openOv("ovApply");
 }
 function usedOf(emp){let u=0;Object.values(leave[emp]||{}).forEach(c=>{if(c==="연차")u+=1;if(typeof c==="string"&&c.startsWith("반차"))u+=0.5;});return u;}
-function updateRemain(){const emp=document.getElementById("ap_emp").value,u=usedOf(emp);
-  document.getElementById("ap_remain").innerHTML=`📊 <b>${emp}</b> · 사용 연차 ${u}일 / 잔여 <b>${ANNUAL_GRANT-u}일</b> (부여 ${ANNUAL_GRANT}일 기준)`;}
+function updateRemain(){
+  const emp=document.getElementById("ap_emp").value, ai=annInfo(emp), u=usedAnnual2026(emp), us=u%1?u.toFixed(1):u;
+  const el=document.getElementById("ap_remain");
+  if(!ai.matched){ el.innerHTML=`📊 <b>${emp}</b> · 2026 사용 ${us}일 / 총 연차 <b>미확인</b> (입사일 미확인)`; }
+  else if(ai.pre){ el.innerHTML=`📊 <b>${emp}</b> · <b>미입사</b> (총 연차 0일)`; }
+  else { const r=ai.grant-u; el.innerHTML=`📊 <b>${emp}</b> · 2026 사용 ${us}일 / 잔여 <b>${r%1?r.toFixed(1):r}일</b> (총 ${ai.grant}일)`; }
+}
 function submitApply(){
   const emp=document.getElementById("ap_emp").value,type=document.getElementById("ap_type").value;
   const date=document.getElementById("ap_date").value,reason=document.getElementById("ap_reason").value.trim();
@@ -707,7 +809,7 @@ async function submitLogin(){
       r.results.forEach(row=>{ const nm=row["성명"],dt=row["날짜"],val=row["값"]; if(!nm||!dt)return; (next[nm]=next[nm]||{})[dt]=val; });
       leave=next; save();
       setOfflineBadge(false); setErpStatus("ERP 동기화됨 ✓","var(--green)");
-      closeOv("ovLogin"); render();
+      closeOv("ovLogin"); render(); empLoad();
     } else {
       err.textContent="비밀번호가 올바르지 않습니다"; err.style.display="block";
     }
