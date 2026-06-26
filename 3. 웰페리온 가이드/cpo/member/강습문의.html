@@ -612,6 +612,44 @@ body{
   .header h1,.header .sub{color:#000}
 }
 
+/* ─── 범위 토글: 올해↔전체 기간 ─── */
+.scope-bar{
+  display:flex;align-items:center;gap:8px;
+  padding:8px 0 12px;flex-wrap:wrap;
+}
+.scope-label{font-size:11px;color:var(--dim-mid);font-weight:700;letter-spacing:0.06em;white-space:nowrap}
+.scope-btn{
+  display:inline-flex;align-items:center;gap:5px;
+  padding:5px 14px;border-radius:var(--radius-chip);
+  font-size:12px;font-weight:700;font-family:inherit;cursor:pointer;
+  border:1px solid var(--border);background:var(--bg);color:var(--dim-mid);
+  transition:background 0.15s,color 0.15s,border-color 0.15s;white-space:nowrap;
+}
+.scope-btn.active{background:var(--teal-bg);color:var(--teal);border-color:var(--teal-border)}
+.scope-btn:not(.active):hover{background:var(--accent-bg);color:var(--accent);border-color:var(--accent-border)}
+
+/* ─── 종목 필터 칩 ─── */
+.sport-filter-bar{
+  display:flex;gap:6px;flex-wrap:wrap;
+  padding:10px 0 12px;
+  border-bottom:1px solid var(--border-subtle);
+  margin-bottom:12px;
+}
+.sport-chip{
+  display:inline-flex;align-items:center;gap:4px;
+  padding:4px 10px;border-radius:var(--radius-chip);
+  font-size:11.5px;font-weight:700;font-family:inherit;cursor:pointer;
+  border:1px solid var(--border);background:var(--bg);color:var(--dim-mid);
+  transition:background 0.15s,color 0.15s,border-color 0.15s;white-space:nowrap;
+}
+.sport-chip.active{background:var(--teal-bg);color:var(--teal);border-color:var(--teal-border)}
+.sport-chip:not(.active):hover{background:var(--accent-bg);color:var(--accent);border-color:var(--accent-border)}
+.sport-chip .sc-count{
+  font-size:10px;font-weight:700;
+  background:rgba(255,255,255,0.07);
+  padding:1px 5px;border-radius:6px;color:inherit;opacity:0.85;
+}
+
 /* ═══════════════════════════════════════
    반응형 — 태블릿 768px
    ═══════════════════════════════════════ */
@@ -705,6 +743,13 @@ body{
 </div>
 
 <div class="content">
+
+  <!-- ─── 범위 토글: 올해(2026)만 ↔ 전체 기간 ─── -->
+  <div class="scope-bar">
+    <span class="scope-label">기간</span>
+    <button class="scope-btn active" id="scopeBtnYear" onclick="setScopeYear()">올해(2026)만</button>
+    <button class="scope-btn" id="scopeBtnAll" onclick="setScopeAll()">전체 기간 보기</button>
+  </div>
 
   <!-- ══════════════════════════════ CPO 요약 대시보드 ══════════════════════════════ -->
   <div class="dash-grid" id="lDashStrip">
@@ -803,6 +848,9 @@ body{
           <button class="action-btn" id="btnRefreshDb" onclick="loadDbData()">새로고침</button>
         </div>
       </div>
+
+      <!-- 종목 필터 칩 — JS renderSportChips()가 채움 -->
+      <div class="sport-filter-bar" id="sportFilterBar"></div>
 
       <div class="db-table-wrap">
         <table class="db-table" id="dbTable">
@@ -953,7 +1001,7 @@ var _tabLoaded = { calendar: true, db: false };
 /* 강습 통계 — 카드2·3·4 */
 function loadLessonStats() {
   if (GAS_URL === GAS_PLACEHOLDER) return;
-  fetch(GAS_URL + '?action=lesson_stats')
+  fetch(GAS_URL + '?action=lesson_stats' + (currentScope === 'all' ? '&scope=all' : ''))
     .then(function(r){ return r.json(); })
     .then(function(d){
       if (!d || !d.ok) return;
@@ -972,10 +1020,10 @@ function loadLessonStats() {
 }
 
 function _sportCount(bySport, key) {
-  /* bySport 키가 부분 일치('수영'이 키에 포함)인 경우도 합산 */
+  /* bySport = [{k, v}] 배열 형식 (GAS _lsSort 반환값). 부분일치 합산. */
   var n = 0;
-  Object.keys(bySport).forEach(function(k){
-    if (k.indexOf(key) >= 0) n += (bySport[k] || 0);
+  (bySport || []).forEach(function(item){
+    if (item && item.k && item.k.indexOf(key) >= 0) n += (item.v || 0);
   });
   return n || 0;
 }
@@ -1054,7 +1102,7 @@ function loadCalendarData() {
   }
 
   var monthStr = calYear + '-' + String(calMonth).padStart(2,'0');
-  fetch(GAS_URL + '?action=lesson_calendar&month=' + monthStr)
+  fetch(GAS_URL + '?action=lesson_calendar&month=' + monthStr + (currentScope === 'all' ? '&scope=all' : ''))
     .then(function(r){ return r.json(); })
     .then(function(data){
       if (!data.ok) throw new Error('GAS 응답 오류');
@@ -1237,6 +1285,8 @@ function saveConsultModal() {
    강습 문의 DB 섹션
 ───────────────────────────────────────────── */
 var dbRows = [];
+var currentScope = '';        // '' = 올해(기본), 'all' = 전체 기간
+var currentSportFilter = '';  // '' = 전체, 종목명 = 해당 종목만
 var dbSaveTimer = null;
 
 function loadDbData() {
@@ -1245,7 +1295,7 @@ function loadDbData() {
     return;
   }
   document.getElementById('dbCount').textContent = '불러오는 중…';
-  fetch(GAS_URL + '?action=lesson_inquiry_list' + _wpKeyParam())
+  fetch(GAS_URL + '?action=lesson_inquiry_list' + _wpKeyParam() + (currentScope === 'all' ? '&scope=all' : ''))
     .then(function(r){ return r.json(); })
     .then(function(data){
       if (!data.ok) {
@@ -1254,6 +1304,7 @@ function loadDbData() {
       dbRows = data.data || [];
       /* 접수일(timestamp) 기준 최근이 상단 */
       dbRows.sort(function(a, b){ return String(b.timestamp || '').localeCompare(String(a.timestamp || '')); });
+      renderSportChips();
       renderDbTable();
     })
     .catch(function(err){
@@ -1284,7 +1335,8 @@ function renderDbTable() {
       (row.sport  || '').toLowerCase().indexOf(search) >= 0 ||
       (row.memo   || '').toLowerCase().indexOf(search) >= 0 ||
       (row.owner  || '').toLowerCase().indexOf(search) >= 0;
-    return matchStatus && matchSearch;
+    var matchSport = !currentSportFilter || _sportMatch(row.sport, currentSportFilter);
+    return matchStatus && matchSearch && matchSport;
   });
 
   var tbody = document.getElementById('dbBody');
@@ -1549,6 +1601,83 @@ function _activateCellDate(td, row) {
   searchEl.addEventListener('input', function(){ if (!composing) renderDbTable(); });
   document.getElementById('dbFilter').addEventListener('change', renderDbTable);
 })();
+
+/* ─────────────────────────────────────────────
+   범위 토글 — 올해(기본) ↔ 전체 기간 (2026-06-26 시포)
+───────────────────────────────────────────── */
+function setScopeYear() {
+  if (currentScope === '') return;
+  currentScope = '';
+  _updateScopeBtns();
+  _reloadAll();
+}
+function setScopeAll() {
+  if (currentScope === 'all') return;
+  currentScope = 'all';
+  _updateScopeBtns();
+  _reloadAll();
+}
+function _updateScopeBtns() {
+  var isAll = currentScope === 'all';
+  document.getElementById('scopeBtnYear').classList.toggle('active', !isAll);
+  document.getElementById('scopeBtnAll').classList.toggle('active', isAll);
+}
+function _reloadAll() {
+  loadLessonStats();
+  calEvents = {};
+  closeDayPanel();
+  renderCalendarShell();
+  loadCalendarData();
+  if (_tabLoaded.db) loadDbData();
+}
+
+/* ─────────────────────────────────────────────
+   종목 필터 칩 — 클라이언트 사이드 (재호출 없음, 2026-06-26 시포)
+───────────────────────────────────────────── */
+/* GAS _sportBuckets_ 매핑 미러 — 시트 원문 자유텍스트 대응. */
+var SPORT_MATCH = {
+  '수영':       ['수영'],
+  '필라테스':   ['필라테스', '필라'],
+  'P.T':        ['P.T', 'PT', '피티', '퍼스널'],
+  '스쿼시':     ['스쿼시'],
+  '골프':       ['골프'],
+  '아쿠아로빅': ['아쿠아'],
+  '바레':       ['바레'],
+  '발레':       ['발레'],
+  '뮤지컬':     ['뮤지컬'],
+  '체조':       ['체조']
+};
+var SPORT_CHIPS = ['수영','필라테스','P.T','스쿼시','골프','아쿠아로빅','바레','발레','뮤지컬','체조'];
+
+function _sportMatch(sportField, chipKey) {
+  var s = String(sportField || '');
+  var keys = SPORT_MATCH[chipKey] || [chipKey];
+  for (var i = 0; i < keys.length; i++) { if (s.indexOf(keys[i]) >= 0) return true; }
+  return false;
+}
+
+function renderSportChips() {
+  var bar = document.getElementById('sportFilterBar');
+  if (!bar) return;
+  var totalCnt = dbRows.length;
+  var html = '<button class="sport-chip' + (!currentSportFilter ? ' active' : '') +
+             '" onclick="setSportFilter(\'\')">전체 <span class="sc-count">' + totalCnt + '</span></button>';
+  SPORT_CHIPS.forEach(function(s) {
+    var cnt = 0;
+    dbRows.forEach(function(r) { if (_sportMatch(r.sport, s)) cnt++; });
+    var isActive = (currentSportFilter === s);
+    html += '<button class="sport-chip' + (isActive ? ' active' : '') +
+            '" onclick="setSportFilter(\'' + s.replace(/\\/g,'\\\\').replace(/'/g,"\\'") + '\')">' +
+            esc(s) + ' <span class="sc-count">' + cnt + '</span></button>';
+  });
+  bar.innerHTML = html;
+}
+
+function setSportFilter(sport) {
+  currentSportFilter = sport;
+  renderSportChips();
+  renderDbTable();
+}
 
 /* ─────────────────────────────────────────────
    탭 전환
