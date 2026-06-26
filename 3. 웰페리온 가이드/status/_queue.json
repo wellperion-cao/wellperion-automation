@@ -3,11 +3,11 @@
     "task_id": "CMO-2026-06-26-M5-SSOT-UNIFY",
     "clevel": "cmo",
     "title": "[시모] M5 검수큐 단일 정본 통합 — CMO파이프라인.html(시트·3채널)을 review_queue.json(5채널·URL) 기준으로 재배선·시트모델 폐기 + 채널/status enum 표준화",
-    "status": "PENDING",
+    "status": "IN_PROGRESS",
     "priority": "🛳️크루즈",
     "enqueued_at": "2026-06-26",
-    "note": "[2026-06-26 GM 결정#3] M5 정본=review_queue.json 단일 통합. 현재 화면(CMO파이프라인.html+apps_script_cmo 시트, 3채널·post_url칸 없음)과 SSOT(review_queue.json, 5채널·URL)가 별개 두 시스템 → 드리프트 구조적. 보완: 화면을 review_queue.json 기준 재배선, 시트 보드 폐기/흡수. 동반 표준화: 채널 enum 6개(IG회사/IG개인/블로그/카페/카카오/당근)·status enum 5종·published_at ISO8601·발행완료 URL게이트. 진단서 status/briefs/CMO-2026-06-26-M1-M5-AUDIT.md. ⚠️라이브 ERP UI 수술이라 로컬검증 후 1회배포·역롤백.",
-    "next": "로컬에서 review_queue.json 렌더 보드 구현·검증 → 채널/status enum 정규화 → 시트모델 폐기/흡수 → 라이브 1회 배포.",
+    "note": "[2026-06-26 GM 결정#3] M5 정본=review_queue.json 단일 통합. ✅1단계 완료(2026-06-26): CMO파이프라인.html을 시트 CRUD 모델에서 review_queue.json(5채널·URL) 읽기 거울로 전면 재작성·배포. 6채널 매트릭스·folder 그룹핑·URL 클릭·요약/필터. 로컬 Playwright 검증(카드38·골프EP1~3 5채널·콘솔에러0) 후 라이브 1회 배포. 시트 CRUD/등록·편집 폐기. 잔여: ①채널 enum 데이터파일 정규화(현재 보드 JS가 표기변형 흡수 중이라 무중단·후순위) ②수동발행 콜백(네이버 블로그·카페 GM 손게시 시 review_queue 자동기록 — 텔레그램 1탭 회신 고리, 동기화 틈 최종 봉합) ③status enum·published_at ISO 표준화. 진단서 status/briefs/CMO-2026-06-26-M1-M5-AUDIT.md.",
+    "next": "잔여 핵심=수동발행 콜백(네이버 GM 손게시→텔레그램 1탭→review_queue 발행완료+URL 자동기록)으로 동기화 틈 최종 봉합. + 채널/status enum 데이터 정규화.",
     "ship_no": 185
   },
   {
