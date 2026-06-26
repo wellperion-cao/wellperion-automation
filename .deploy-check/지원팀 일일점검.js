@@ -1096,9 +1096,15 @@ function _collapseDupRowsForDate(sheet, date) {
 //  종합접수처 자동전송 완전 삭제 — 이슈는 점검 시트 G열 기록 + 점검관리방(-5136037543) 알림으로 대체.
 // ═══════════════════════════════════════════
 
+// 실시간 이슈 드립 on/off (2026-06-26 시토·GM). false=폐지 — 점검 중 자동저장마다 이슈를 항목별로
+// 쪼개 보내던 알림(🔴 점검 이슈)이 회차 제출 요약(handleNotifyRound: 점검자·완료율·전체이슈·링크 종합)과
+// 같은 이슈를 이중 발송하던 중복의 원인. 제출 요약이 단일 SSOT 알림. 재활성 필요 시 true 1줄로 즉시 복원.
+var CHK_ISSUE_DRIP_ENABLED = false;
+
 // 이슈 배열 → 점검관리방 텔레그램 1건 알림(이슈 여러 개면 목록으로 묶어 1메시지). fail-soft.
 // issues: [{date,itemId,itemName,cat,roundLabel,issue}], gender: 'm'|'f'
 function _checkNotifyIssues(issues, gender) {
+  if (!CHK_ISSUE_DRIP_ENABLED) return;   // 실시간 드립 폐지 — 제출 요약(handleNotifyRound)이 단일 알림
   if (!issues || !issues.length) return;
   if (!BOT_TOKEN || !CHAT_ID) return;
   var zone = (String(gender || '') === 'f') ? '여성구역' : '남성구역';
@@ -2547,17 +2553,31 @@ function _roundBucket(roundKey) {
 
 var _TL_DOW_TOKEN = { 0: 'sun', 1: 'mon', 2: 'tue', 3: 'wed', 4: 'thu', 5: 'fri', 6: 'sat' };
 
-// df_* 항목의 id에서 요일 토큰 추출(df_wed1 → 'wed'). df_ 아니면 null.
-function _tlDayFocusToken(id) {
-  var m = String(id || '').match(/^df_([a-z]+)\d*$/);
-  return m ? m[1] : null;
+// sched 문자열 파싱(화면 parseSched와 동일): "tue,fri|2,4" → {days:['tue','fri'], weeks:['2','4']}.
+function _tlParseSched(s) {
+  s = String(s == null ? '' : s).trim();
+  var p = s.split('|');
+  var days  = (p[0] || '').split(',').filter(Boolean);
+  var weeks = (p.length > 1 ? p[1].split(',') : []).filter(Boolean);
+  return { days: days, weeks: weeks };
 }
 
-// 항목 마스터 빌드 → { byId:{id:{bucket,glist,gender}}, count }.
-// getItems와 동일하게 seed='Y' 행 제외(중복 차단). 오늘(dow) 일정/요일 필터 반영.
-function _buildTodayMaster(dept, dow) {
+// sched 요일/주차 필터(화면 _itemOnDay + 주차 격주 반영). 빈 sched=항상 통과.
+//   days 있으면 오늘 요일토큰이 days에 있어야 통과. weeks 있으면 'b'(격주) 또는 이번주차(week)가 weeks에 있어야 통과.
+function _tlPassesSched(sched, dowTok, week) {
+  var p = _tlParseSched(sched);
+  if (p.days.length && p.days.indexOf(dowTok) < 0) return false;
+  if (p.weeks.length && p.weeks.indexOf('b') < 0 && p.weeks.indexOf(String(week)) < 0) return false;
+  return true;
+}
+
+// 항목 마스터 빌드 → { byId:{id:{buckets:[unique shifts], glist, gender}}, count }.
+// getItems와 동일하게 seed='Y' 행 제외(중복 차단). 오늘(dow) sched 요일/주차 필터 반영.
+// ★ 화면정합(2026-06-25 시우): (a) 시프트 presence — 항목을 회차마다 1회씩(시프트당 unique) 계상(과거: 첫 회차 1버킷만).
+//   (b) sched 요일/주차 필터 추가(화면 parseSched/_itemOnDay 동치) — 화면에 안 뜨는 항목은 분모서도 제외.
+//   (c) df_* 처리 유지: rounds 비고 id가 df로 시작 → close 1회(요일은 sched 필터가 처리). night는 합계 제외 유지.
+function _buildTodayMaster(dept, dow, week) {
   var master = { byId: {}, count: 0 };
-  var isWeekend = (dow === 0 || dow === 6);
   var dowTok = _TL_DOW_TOKEN[dow];
 
   var ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -2571,37 +2591,35 @@ function _buildTodayMaster(dept, dow) {
     var id      = String(row[0] || '').trim();
     var name    = String(row[2] || '').trim();
     var gender  = String(row[4] || 'all').trim() || 'all';
-    var dayType = String(row[ITEM_SCHED_COL] == null ? '' : row[ITEM_SCHED_COL]).trim();   // '일정' 컬럼
+    var sched   = String(row[ITEM_SCHED_COL] == null ? '' : row[ITEM_SCHED_COL]).trim();      // '일정'(요일|주차) 컬럼
     var deptVal = _itemDept(row[ITEM_DEPT_COL]);
-    var roundsRaw = String(row[ITEM_ROUNDS_COL] == null ? '' : row[ITEM_ROUNDS_COL]).trim(); // '회차' 컬럼
+    var roundsRaw = String(row[ITEM_ROUNDS_COL] == null ? '' : row[ITEM_ROUNDS_COL]).trim();   // '회차' 컬럼
 
     if (!id && !name) return;             // 빈 행
     if (deptVal !== 'support') return;    // 지원부만
     if (_isSeedRow(row)) return;          // getItems와 동일: seed 행 제외(마스터=non-seed 단일출처)
     if (!id) return;
 
-    // dayType 필터: 빈값/'both'=항상, 'weekday'=평일만, 'weekend'=주말만
-    if (dayType && dayType !== 'both') {
-      if (dayType === 'weekday' && isWeekend) return;
-      if (dayType === 'weekend' && !isWeekend) return;
-    }
+    // sched 요일/주차 필터(화면 _itemOnDay + 격주): 오늘 안 뜨는 항목은 분모 제외.
+    if (!_tlPassesSched(sched, dowTok, week)) return;
 
     var glist = (gender === 'all') ? ['m', 'f'] : [gender];
 
-    // 대표 버킷 결정: df_* = 오늘 요일 일치 시에만 close, 그 외엔 오늘 제외.
-    var bucket;
-    var focusTok = _tlDayFocusToken(id);
-    if (focusTok !== null) {
-      if (focusTok !== dowTok) return;   // 오늘이 그 요일 아니면 마스터에서 제외
-      bucket = 'close';
+    // 시프트 presence: id가 df로 시작 & rounds 비었으면 close 1회. 아니면 rounds 각 토큰 bucket(시프트당 dedup). night 제외.
+    var buckets = {};
+    if (id.indexOf('df') === 0 && !roundsRaw) {
+      buckets['close'] = 1;
     } else {
       var rounds = roundsRaw ? roundsRaw.split(',').map(function (s) { return s.trim(); }).filter(Boolean) : [];
-      if (rounds.length === 0) return;   // 회차 미정 + df_ 아님 → 분모 제외(미분류)
-      bucket = _roundBucket(rounds[0]);  // 대표 = 첫 회차
+      rounds.forEach(function (r) {
+        var b = _roundBucket(r);
+        if (b === 'am' || b === 'pm' || b === 'close') buckets[b] = 1;   // night 제외
+      });
     }
-    if (bucket !== 'am' && bucket !== 'pm' && bucket !== 'close' && bucket !== 'night') return;
+    var bucketList = Object.keys(buckets);
+    if (!bucketList.length) return;       // 회차 미정 + df_ 아님 → 분모 제외(미분류)
 
-    master.byId[id] = { bucket: bucket, glist: glist, gender: gender };
+    master.byId[id] = { buckets: bucketList, glist: glist, gender: gender };
     master.count++;
   });
 
@@ -2623,35 +2641,44 @@ function handleTodayLive(params) {
   // ─── 마스터(분모·분자 단일출처): action=items와 동일 모집단(non-seed 지원부 항목·시트 실물 기준·페이지 배열: 평일30/주말31/야간포함45) ───
   var dateObj = new Date(date + 'T00:00:00+09:00');
   var dow = dateObj.getDay();
-  var master = _buildTodayMaster(dept, dow);   // { byId:{id:{bucket,glist}}, count }
+  var week = Math.ceil(Number(date.slice(8, 10)) / 7);   // 화면 getDayInfo와 동일: Math.ceil(일/7)
+  var master = _buildTodayMaster(dept, dow, week);   // { byId:{id:{buckets:[unique shifts],glist}}, count }
 
-  // ─── 분자(done): cr 원장 — 항목ID 1회 dedup, 마스터 대표버킷에 계상(분모와 동일 기준) ───
-  // 멀티회차 항목이 am1·pm1·close1 모두 체크돼도 done은 대표버킷(am)에 1회만(분모 정합).
-  // 마스터에 없는 고아 id(리네임 잔재 등)는 분모가 없으므로 계상 제외(100% 초과·total 부풀림 차단).
+  // ─── 분자(done): cr 원장 — (항목,시프트) presence(마스터 항목·시프트당 1회). 분모와 동일 기준 ───
+  // 멀티회차 항목이 am1·pm1·close1 체크되면 done도 각 시프트(am/pm/close)에 1회씩(분모 시프트 presence와 정합).
+  // 마스터에 없는 고아 id(리네임 잔재) 또는 마스터 항목에 없는 시프트는 분모가 없으므로 제외(100% 초과 차단).
   var doneByG = { m: newBuckets(), f: newBuckets(), all: newBuckets() };
   genders.forEach(function (g) {
     var led = _getCheckLedger(dept, date, g);
     var cr = (led && led.cr && typeof led.cr === 'object') ? led.cr : {};
-    var seenItem = {};   // 이 성별에서 done 1회 처리한 항목ID
+    var seenPair = {};   // 이 성별에서 done 1회 처리한 '항목|시프트'
     Object.keys(cr).forEach(function (k) {
       if (!cr[k]) return;
       var us = String(k).indexOf('_');
       if (us < 0) return;
+      var round = String(k).slice(0, us);
       var id = String(k).slice(us + 1);
-      if (!id || seenItem[id]) return;     // 항목당 1회만
+      if (!id) return;
       var info = master.byId[id];
       if (!info) return;                   // 마스터 밖 고아 → 제외(분모 없음)
-      seenItem[id] = 1;
-      doneByG[g][info.bucket]++;
+      var b = _roundBucket(round);
+      if (info.buckets.indexOf(b) < 0) return;   // 마스터 항목에 없는 시프트 → 제외(분모 없음·night 포함)
+      var pk = id + '|' + b;
+      if (seenPair[pk]) return;            // (항목,시프트)당 1회만
+      seenPair[pk] = 1;
+      doneByG[g][b]++;
     });
   });
 
-  // ─── 분모(total): 위에서 빌드한 동일 master를 대표버킷에 1회씩 계상(성별 분리) ───
+  // ─── 분모(total): 위에서 빌드한 동일 master를 시프트 presence(시프트당 1회)로 계상(성별 분리) ───
   var totalByG = { m: newBuckets(), f: newBuckets(), all: newBuckets() };
   Object.keys(master.byId).forEach(function (id) {
     var info = master.byId[id];
     info.glist.forEach(function (g) {
-      if (totalByG[g] && totalByG[g][info.bucket] !== undefined) totalByG[g][info.bucket]++;
+      if (!totalByG[g]) return;
+      info.buckets.forEach(function (b) {
+        if (totalByG[g][b] !== undefined) totalByG[g][b]++;
+      });
     });
   });
   // gender=all 원장: 분자=분모(항상 100% — 합산 왜곡 방지).
