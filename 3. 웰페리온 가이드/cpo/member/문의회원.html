@@ -517,6 +517,76 @@ a.funnel-step:hover{background:rgba(183,159,138,0.08);color:var(--accent)}
 .save-toast.show{opacity:1;transform:translateY(0)}
 
 /* ═══════════════════════════════════════
+   상담 모달 (달력 일정 클릭 → 방문완료·상담메모)
+   ═══════════════════════════════════════ */
+.consult-overlay{
+  position:fixed;inset:0;z-index:10000;display:none;
+  background:rgba(0,0,0,0.62);
+  align-items:center;justify-content:center;padding:20px;
+}
+.consult-overlay.open{display:flex}
+.consult-modal{
+  background:var(--paper-raised);border:1px solid var(--accent-border);
+  border-radius:var(--radius-card);
+  width:100%;max-width:460px;max-height:88vh;overflow-y:auto;
+  box-shadow:0 12px 48px rgba(0,0,0,0.5);
+  padding:22px 22px 20px;
+}
+.consult-modal-head{
+  display:flex;align-items:center;gap:9px;
+  margin-bottom:16px;padding-bottom:14px;
+  border-bottom:1px solid var(--border-subtle);
+}
+.consult-modal-kind{
+  font-size:10.5px;font-weight:700;padding:3px 10px;
+  border-radius:var(--radius-chip);white-space:nowrap;
+}
+.consult-modal-kind.tour{background:var(--purple-bg);color:var(--purple);border:1px solid var(--purple-border)}
+.consult-modal-kind.experience{background:var(--teal-bg);color:var(--teal);border:1px solid var(--teal-border)}
+.consult-modal-title{font-size:15px;font-weight:800;color:var(--text)}
+.consult-row{display:flex;gap:10px;font-size:13px;margin-bottom:7px;line-height:1.5}
+.consult-row .ck{color:var(--dim-mid);min-width:62px;flex-shrink:0}
+.consult-row .cv{color:var(--text);font-weight:600;word-break:break-all}
+.consult-field-label{
+  font-size:12px;font-weight:700;color:var(--accent);
+  margin:16px 0 7px;letter-spacing:0.02em;
+}
+.consult-visit-toggle{
+  display:flex;align-items:center;gap:9px;cursor:pointer;
+  padding:11px 13px;border-radius:var(--radius-btn);
+  background:var(--accent-bg);border:1px solid var(--accent-border);
+  font-size:13px;font-weight:700;color:var(--text);user-select:none;
+}
+.consult-visit-toggle input{width:17px;height:17px;accent-color:var(--purple);cursor:pointer}
+.consult-memo{
+  width:100%;min-height:96px;resize:vertical;
+  background:var(--bg);border:1px solid var(--border);
+  border-radius:var(--radius-btn);
+  color:var(--text);font-size:13px;font-family:inherit;line-height:1.6;
+  padding:10px 12px;outline:none;
+  transition:border-color 0.15s,box-shadow 0.15s;
+}
+.consult-memo:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(183,159,138,0.12)}
+.consult-memo-prev{
+  font-size:12px;color:var(--dim-mid);line-height:1.55;
+  white-space:pre-wrap;word-break:break-all;
+  background:var(--bg);border:1px solid var(--border-subtle);
+  border-radius:var(--radius-btn);padding:9px 11px;max-height:120px;overflow-y:auto;
+}
+.consult-actions{display:flex;gap:8px;margin-top:20px}
+.consult-actions button{
+  flex:1;font-size:13px;font-weight:700;padding:11px 0;
+  border-radius:var(--radius-btn);font-family:inherit;cursor:pointer;
+  border:1px solid transparent;transition:background 0.15s;
+}
+.consult-btn-save{background:var(--accent-bg);color:var(--accent);border-color:var(--accent-border)}
+.consult-btn-save:hover{background:rgba(183,159,138,0.2)}
+.consult-btn-cancel{background:var(--bg);color:var(--dim-mid);border:1px solid var(--border)}
+.consult-btn-cancel:hover{background:rgba(255,255,255,0.04)}
+.day-item.clickable{cursor:pointer;border-radius:8px;transition:background 0.12s;padding-left:8px;padding-right:8px;margin:0 -8px}
+.day-item.clickable:hover{background:rgba(183,159,138,0.07)}
+
+/* ═══════════════════════════════════════
    로딩 / 빈 상태
    ═══════════════════════════════════════ */
 .empty-state{text-align:center;padding:44px 20px;color:var(--dim)}
@@ -1364,6 +1434,37 @@ if (action === 'member_calendar') {
 <!-- 저장 토스트 -->
 <div class="save-toast" id="saveToast"></div>
 
+<!-- 상담 모달 (달력 일정 클릭 → 방문완료 도장 + 상담 내용 메모 → 문의 현황 자동 반영) -->
+<div class="consult-overlay" id="consultOverlay" onclick="if(event.target===this)closeConsultModal()">
+  <div class="consult-modal" role="dialog" aria-modal="true">
+    <div class="consult-modal-head">
+      <span class="consult-modal-kind tour" id="cmKind">상담</span>
+      <span class="consult-modal-title" id="cmTitle">상담</span>
+    </div>
+    <div class="consult-row"><span class="ck">이름</span><span class="cv" id="cmName">—</span></div>
+    <div class="consult-row"><span class="ck">전화</span><span class="cv" id="cmPhone">—</span></div>
+    <div class="consult-row"><span class="ck">프로그램</span><span class="cv" id="cmProgram">—</span></div>
+    <div class="consult-row"><span class="ck">일정</span><span class="cv" id="cmSchedule">—</span></div>
+    <div class="consult-row"><span class="ck">진행상황</span><span class="cv" id="cmStatus">—</span></div>
+
+    <div class="consult-field-label">방문 처리</div>
+    <label class="consult-visit-toggle">
+      <input type="checkbox" id="cmVisited"> ☑ 방문 완료 (체크 후 저장 시 진행상황 '방문' 처리)
+    </label>
+
+    <div class="consult-field-label">기존 메모</div>
+    <div class="consult-memo-prev" id="cmMemoPrev">—</div>
+
+    <div class="consult-field-label">상담 내용 (오늘 기록 — 기존 메모 아래 누적)</div>
+    <textarea class="consult-memo" id="cmMemoInput" placeholder="상담·통화 내용을 입력하세요."></textarea>
+
+    <div class="consult-actions">
+      <button class="consult-btn-cancel" onclick="closeConsultModal()">취소</button>
+      <button class="consult-btn-save" id="cmSaveBtn" onclick="saveConsultModal()">저장</button>
+    </div>
+  </div>
+</div>
+
 <script>
 /* ── GAS URL (퍼널 Survey 웹앱 /exec — 2026-06-22 연결) ── */
 var GAS_URL = 'https://script.google.com/macros/s/AKfycbzdwSCCSSJ6JXLDoWuo7HG0JmBM2iy10TujFQ_O5JbTjnWaN7gOk-ddA4IAvsNfelg0xA/exec';
@@ -1995,13 +2096,18 @@ function openDayPanel(date) {
   listEl.innerHTML = '';
   (calEvents[date] || []).forEach(function(ev){
     var item = document.createElement('div');
-    item.className = 'day-item';
+    // rowIndex 있는 일정만 클릭→상담 모달(수정 가능). 없으면 읽기전용 유지.
+    var canEdit = (ev.rowIndex !== undefined && ev.rowIndex !== null && ev.rowIndex !== '');
+    item.className = 'day-item' + (canEdit ? ' clickable' : '');
     item.innerHTML =
       '<span class="day-item-kind ' + (ev.kind==='체험'?'experience':'tour') + '">' + esc(ev.kind) + '</span>' +
       '<div class="day-item-info">' +
         '<div class="day-item-name">' + esc(ev.time ? ev.time : '시간 미정') + (ev.name ? ' · ' + esc(ev.name) : '') + (ev.phone ? ' · ' + esc(ev.phone) : '') + '</div>' +
         '<div class="day-item-meta">' + esc(ev.program || '—') + ' · 진행상황: ' + esc(ev.status || '—') + '</div>' +
       '</div>';
+    if (canEdit) {
+      item.addEventListener('click', (function(evt){ return function(){ openConsultModal(evt); }; })(ev));
+    }
     listEl.appendChild(item);
   });
   panel.classList.add('open');
@@ -2009,6 +2115,73 @@ function openDayPanel(date) {
 
 function closeDayPanel() {
   document.getElementById('dayPanel').classList.remove('open');
+}
+
+/* ─────────────────────────────────────────────
+   상담 모달 — 달력 일정 클릭 → 방문완료·상담메모(문의 현황 자동 반영)
+───────────────────────────────────────────── */
+var _consultEv = null;   // 현재 모달이 다루는 달력 이벤트(rowIndex·memo 등 포함)
+
+function openConsultModal(ev) {
+  _consultEv = ev;
+  var kindEl = document.getElementById('cmKind');
+  kindEl.textContent = ev.kind || '상담';
+  kindEl.className = 'consult-modal-kind ' + (ev.kind === '체험' ? 'experience' : 'tour');
+  document.getElementById('cmTitle').textContent = (ev.kind || '상담') + ' 상담 처리';
+  document.getElementById('cmName').textContent = ev.name || '—';
+  document.getElementById('cmPhone').textContent = ev.phone || '—';
+  document.getElementById('cmProgram').textContent = ev.program || '—';
+  var sched = (ev.date || '') + (ev.time ? ' ' + ev.time : ' (시간 미정)');
+  document.getElementById('cmSchedule').textContent = sched + ' · ' + (ev.kind || '상담');
+  document.getElementById('cmStatus').textContent = ev.status || '—';
+  var visitedChk = document.getElementById('cmVisited');
+  visitedChk.checked = (ev.status === '방문');
+  var prevEl = document.getElementById('cmMemoPrev');
+  prevEl.textContent = (ev.memo && String(ev.memo).trim()) ? ev.memo : '(기존 메모 없음)';
+  document.getElementById('cmMemoInput').value = '';   // 모달 열 때 1회 초기화(IME 안전 — 입력 중 재생성 없음)
+  document.getElementById('consultOverlay').classList.add('open');
+}
+
+function closeConsultModal() {
+  document.getElementById('consultOverlay').classList.remove('open');
+  _consultEv = null;
+}
+
+function saveConsultModal() {
+  if (!_consultEv || _consultEv.rowIndex === undefined || _consultEv.rowIndex === null || _consultEv.rowIndex === '') {
+    showToast('대상 행을 찾을 수 없습니다', 'err');
+    return;
+  }
+  var visited = document.getElementById('cmVisited').checked;
+  var input = document.getElementById('cmMemoInput').value.trim();
+  if (!visited && !input) { showToast('변경 사항이 없습니다', 'err'); return; }
+
+  var payload = { action: 'member_inquiry_update', rowIndex: _consultEv.rowIndex };
+  // 방문완료 체크 시에만 status 전송(미체크면 기존 상태 보존 — status 필드 생략).
+  if (visited) payload.status = '방문';
+  // 상담 내용: 기존 메모 보존 + 새 줄 누적. 빈 입력이면 메모 미전송.
+  if (input) {
+    var today = new Date();
+    var ds = today.getFullYear() + '-' + String(today.getMonth()+1).padStart(2,'0') + '-' + String(today.getDate()).padStart(2,'0');
+    var line = '[' + ds + '] 상담: ' + input;
+    var prev = (_consultEv.memo && String(_consultEv.memo).trim()) ? String(_consultEv.memo) : '';
+    payload.memo = prev ? (prev + '\n' + line) : line;
+  }
+
+  var saveBtn = document.getElementById('cmSaveBtn');
+  saveBtn.disabled = true;
+  apiPost(payload)
+    .then(function(){
+      showToast('저장', 'ok');
+      closeConsultModal();
+      renderCalendarShell();
+      loadCalendarData();                       // 달력 갱신(셸 재구성 후 재로드 — 칩 중복 방지)
+      if (_tabLoaded.db) loadDbData();          // 같은 시트 → 문의 현황도 동기
+    })
+    .catch(function(err){
+      showToast('저장 실패: ' + (err.message || ''), 'err');
+    })
+    .then(function(){ saveBtn.disabled = false; });
 }
 
 /* ─────────────────────────────────────────────

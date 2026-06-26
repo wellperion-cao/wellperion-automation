@@ -1153,5 +1153,17 @@
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "9934b5cb37bb4ec213801b8965f5593ce14290c6",
     "ship_no": 182
+  },
+  {
+    "task_id": "CPO-2026-06-26-INQUIRY-CALENDAR-CRM",
+    "clevel": "cpo",
+    "status": "IN_PROGRESS",
+    "terminal": false,
+    "priority": "⛴️여객선",
+    "enqueued_at": "2026-06-26",
+    "ship_no": 29,
+    "title": "[시포] 문의회원 예약달력 상담 CRM — 일정 클릭→방문완료·상담메모(문의현황 자동동기)+시간인식 보강",
+    "note": "코드 완료(Survey.js+문의회원.html): member_calendar 이벤트에 rowIndex·memo·owner 동봉, 달력 일정 클릭→상담 모달(방문완료 도장+상담내용 누적메모)→member_inquiry_update로 같은 시트 문의현황 자동 반영. 시간 인식 보강=확정시간 칸(col10/col12)의 한글표기(11시·3시30분·오후4시·시간미정 등) 파싱 _miTimeKR_ 신설(달력 전용, DB표 무영향), 누락되던 2차 방문일(col11)도 달력 표출. ⛔ 배포 막힘: clasp OAuth invalid_rapt(재인증 필요) — GM이 clasp login 후 push/deploy 필요. 프론트는 배포 전까지 읽기전용으로 안전 degrade.",
+    "next": "GM clasp login→배포 후 라이브 검증. 강습 문의 페이지가 이 패턴 복제(시포21)."
   }
 ]

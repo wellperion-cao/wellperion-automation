@@ -860,6 +860,27 @@ function _miTime_(val) {
   var t = String(val).match(/(\d{1,2}):(\d{2})/);
   return t ? ('0'+t[1]).slice(-2) + ':' + t[2] : '';
 }
+// 자유 텍스트(확정시간 칸)에서 한글 시각 추출 — 달력 표시 전용. '11시 등록상담'·'3시30분'·'오후4시'·'2시반'·'14시'·'오후 2:30' 인식.
+//   추측 금지: 오전/오후 표기는 쓴 그대로 보존, 맨시각(N시)도 24h 변환 없이 그대로 노출. '미정'·시각 없는 메모는 '' 반환.
+function _miTimeKR_(val) {
+  if (!val) return '';
+  var s = String(val);
+  // 1) 한글 시각: (오전|오후)? N시 (M분|반)?
+  var km = s.match(/(오전|오후)?\s*(\d{1,2})\s*시\s*(반|\d{1,2}\s*분)?/);
+  if (km) {
+    var ap = km[1] ? km[1] + ' ' : '';
+    var mn = '';
+    if (km[3]) mn = (km[3].indexOf('반') >= 0) ? '30분' : km[3].replace(/\s/g, '');
+    return ap + km[2] + '시' + mn;
+  }
+  // 2) HH:MM (오전/오후 접두 포함)
+  var hm = s.match(/(오전|오후)?\s*(\d{1,2}):(\d{2})/);
+  if (hm) {
+    var ap2 = hm[1] ? hm[1] + ' ' : '';
+    return ap2 + ('0'+hm[2]).slice(-2) + ':' + hm[3];
+  }
+  return '';
+}
 // 익명 행 배열 반환(이름·전화·메모 비움). 빈 행 스킵.
 function _miReadRows_() {
   var sh = _miSheet_();
@@ -878,6 +899,7 @@ function _miReadRows_() {
   var iExp1  = _miColIdx_(hdr, ['체험1 확정시간','체험1']);
   var iExp2  = _miColIdx_(hdr, ['체험2 확정시간','체험2']);
   var iExp3  = _miColIdx_(hdr, ['체험3 확정시간','체험3']);
+  var iV2Dt  = _miColIdx_(hdr, ['시설 체험 예약2(날짜 기록)','시설 체험 예약2','체험 예약2']);  // 2차 방문 날짜(달력 보강용·확정시간 칸과 별개)
   var iOwner = _miColIdx_(hdr, ['담당','담당자']);
   var iMemo  = _miColIdx_(hdr, ['메모','비고','담당자메모']);
   var iChan  = _miColIdx_(hdr, ['문의채널','유입채널','채널','경로','알게']);
@@ -901,6 +923,7 @@ function _miReadRows_() {
       exp2Time: _miTime_(iExp2 >= 0 ? row[iExp2] : ''),
       exp3:     _miToISO_(iExp3 >= 0 ? row[iExp3] : ''),
       exp3Time: _miTime_(iExp3 >= 0 ? row[iExp3] : ''),
+      visit2Date: _miToISO_(iV2Dt >= 0 ? row[iV2Dt] : ''),  // 2차 방문 날짜(col11) — 달력에서 누락되던 일정 보강
       timestamp:_miToISO_(iTs   >= 0 ? row[iTs]   : ''),
       memo:     iMemo  >= 0 ? String(row[iMemo]  || '') : '',
       owner:    iOwner >= 0 ? String(row[iOwner] || '') : ''
@@ -1671,12 +1694,16 @@ function _processAction(body) {
       function add(dateStr, kind, timeStr) {
         if (!dateStr) return;
         if (mcMonth && dateStr.slice(0,7) !== mcMonth) return;
-        mcEvents.push({ date: dateStr, kind: kind, time: timeStr || '', name: row.name || '', phone: row.phone || '', program: row.program, status: row.status });
+        // rowIndex·memo·owner 동봉 — 달력 일정 클릭 → 상담 모달에서 방문완료·메모 수정용(2026-06-26 CRM)
+        mcEvents.push({ date: dateStr, kind: kind, time: timeStr || '', name: row.name || '', phone: row.phone || '', program: row.program, status: row.status, rowIndex: row.rowIndex, memo: row.memo || '', owner: row.owner || '' });
       }
-      add(row.tourDate, '상담', row.tourTime);
+      // 1차 상담: 날짜=상담칸(col9), 시간=확정시간 텍스트(col10·'11시 등록상담' 등 한글표기). 시간 누락 보강.
+      add(row.tourDate, '상담', row.tourTime || _miTimeKR_(row.exp1));
       add(row.exp1, '체험', row.exp1Time);
       add(row.exp2, '체험', row.exp2Time);
       add(row.exp3, '체험', row.exp3Time);
+      // 2차 방문: 날짜=col11, 시간=확정시간 텍스트(col12) — 기존 달력에서 통째로 누락되던 일정.
+      add(row.visit2Date, '체험', _miTimeKR_(row.exp2));
     });
     return _json({ ok: true, month: mcMonth, count: mcEvents.length, events: mcEvents });
   }
