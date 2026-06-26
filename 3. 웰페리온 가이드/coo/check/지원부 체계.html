@@ -4588,6 +4588,8 @@ function switchTab(tab, opts){
     if(pw !== '1234'){ if(pw !== null) alert('비밀번호가 틀립니다.'); return; }
     sessionStorage.setItem('checkAuth','1');
   }
+  // 매뉴얼(항목 관리) 탭 진입 게이트 — 비번 모르면 매뉴얼 자체를 못 엶. 편집 5함수와 editAuth 세션 공유(통과 시 내부 편집 재입력 없음). 실패·취소 시 DOM 변경 전 return → 직전 탭 그대로. 역롤백=이 if 블록 삭제. [시우 2026-06-26]
+  if(tab==='manual' && typeof requireEditAuth==='function' && !requireEditAuth()) return;
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
   document.querySelectorAll('.tab').forEach(t=>{
     var oc = t.getAttribute('onclick') || '';
