@@ -450,6 +450,7 @@
     <a data-toggle="cpo-nav2" data-has-sub="true"><span class="num">🤝</span><span class="label">AI CPO 회원관리<span class="tag">임정은M</span></span></a>
     <div class="sub-nav" data-parent="cpo-nav2">
       <a href="cpo/member/문의회원.html" target="_blank">📋 문의 회원 관리 (등록前)</a>
+      <a href="cpo/member/강습문의.html" target="_blank">🏊 강습 문의 관리</a>
       <a href="cpo/member/회원관리.html" target="_blank">🤝 멤버십 회원 관리 (등록後)</a>
     </div>
 
@@ -721,6 +722,7 @@
         <div style="display:flex;gap:7px;flex-wrap:wrap;margin-top:14px;">
           <a href="https://crm.broj.co.kr/" target="_blank" rel="noopener" style="font-size:12px;font-weight:600;padding:6px 12px;background:var(--accent-bg);color:var(--accent);border-radius:99px;text-decoration:none;border:1px solid var(--border);">브로제이 ↗</a>
           <a href="cpo/member/문의회원.html" target="_blank" style="font-size:12px;font-weight:600;padding:6px 12px;background:var(--accent-bg);color:var(--accent);border-radius:99px;text-decoration:none;border:1px solid var(--border);">문의 회원 관리 ↗</a>
+          <a href="cpo/member/강습문의.html" target="_blank" style="font-size:12px;font-weight:600;padding:6px 12px;background:var(--accent-bg);color:var(--accent);border-radius:99px;text-decoration:none;border:1px solid var(--border);">강습 문의 관리 ↗</a>
           <a href="cpo/member/회원관리.html" target="_blank" style="font-size:12px;font-weight:600;padding:6px 12px;background:var(--accent-bg);color:var(--accent);border-radius:99px;text-decoration:none;border:1px solid var(--border);">멤버십 회원 관리 ↗</a>
         </div>
       </div>
@@ -3672,11 +3674,11 @@ window._regAssign = function(id, category) {
         <p style="margin-top:8px;font-size:13px;color:var(--dim);">기술은 공간의 조용한 골격. 회원 정보 당일 완료 · 실시간 동기화 · 장애 시 수동 대체 즉시 가동.</p>
 
         <!-- ── 시토 운영 헌장 8축 (deep-interview 2026-06-18) ── -->
-        <h3 style="margin-top:24px;border-top:1px solid var(--border);padding-top:20px;"><span class="ico">⚓</span>시토 운영 헌장 — 8축 <span style="font-size:12px;color:var(--dim);font-weight:400;">(deep-interview 확정 2026-06-18 · 북극성 AI 자율화 확장 2026-06-24)</span></h3>
+        <h3 style="margin-top:24px;border-top:1px solid var(--border);padding-top:20px;"><span class="ico">⚓</span>시토 운영 헌장 — 8축 <span style="font-size:12px;color:var(--dim);font-weight:400;">(deep-interview 확정 2026-06-18 · 북극성 3기둥(자율화·보안·단순화) 확정 2026-06-26)</span></h3>
         <div class="callout" style="background:#1a2a1a;border-left:3px solid #059669;margin-bottom:12px;">시토가 일하는 한 장의 지도. <strong>공통 원칙(파이프라인·라우팅·박제·보고·부팅)은 공통 탭이 단일 원본</strong> — 여기선 참조만, 중복 하드코딩 금지.</div>
         <table>
           <tr><th style="width:160px">축</th><th>시토 정의</th></tr>
-          <tr><td>🌟 1. 북극성<br><span style="font-size:11px;color:var(--dim);">목적지</span></td><td>ERP 전 업무 <strong>AI 자율화</strong>(자동화의 다음 단계 — 시키는 일을 대신하는 <em>자동화</em>를 넘어, 맡기면 <strong>AI들끼리 스스로 판단·협업해 끝내는 자율화</strong>) + 그 기반으로 시설·기술 인프라 <strong>보안·안정성</strong>. 도달 상태 = <strong>사람(C-Level)은 방향만 정하고, AI가 알아서 판단·협업해 일을 완결한다.</strong></td></tr>
+          <tr><td>🌟 1. 북극성<br><span style="font-size:11px;color:var(--dim);">목적지</span></td><td><strong>3기둥</strong> — ① ERP 전 업무 <strong>자동화 → AI 자율화</strong>(시키는 일을 대신하는 <em>자동화</em>를 넘어, 맡기면 <strong>AI들끼리 스스로 판단·협업해 끝내는 자율화</strong>) ② 서버·시설·기술 인프라 <strong>보안·안정성 철저</strong> ③ <strong>무의미·중복 데이터 제거·단순화</strong>(단일 진실·드리프트 0 — <em>새 자동화 전 단순화·통합 먼저</em>). 도달 상태 = <strong>GM이 서버·ERP 뒷단을 신경 쓰지 않아도 — AI가 알아서 판단·협업해 완결하고, 안전하고, 가볍다.</strong></td></tr>
           <tr><td>🔧 2. 파이프라인<br><span style="font-size:11px;color:var(--dim);">경로 실행</span></td><td>모호성 제거 → 자동화 도구로 끝까지 → 실무진 바로쓰는 단순화. <span style="color:var(--dim);">상세 = 공통 탭 ① 모호성 게이트(약속 L14). 모든 일 = <code>status/_queue.json</code>(G1) 단일 진실(L15).</span></td></tr>
           <tr><td>📚 3. 부트셋업 SSOT<br><span style="font-size:11px;color:var(--dim);">출발 준비</span></td><td><code>ai-cto.md</code> + CLAUDE.md(인덱스) + <strong>S2 공통·cto탭</strong>(사람용 렌더) + <strong><code>ssot/</code> 3종 직독=정본</strong>(약속·incidents·canon_values) + <code>status/_queue.json</code>(본인 배). <span style="color:var(--dim);">부팅 절차 = 공통 탭 'AI 부팅 6단계'.</span></td></tr>
           <tr><td>📊 4. KPI<br><span style="font-size:11px;color:var(--dim);">도착 측정</span></td><td>자동 측정 4: <strong>미푸시 0 · 무인증 GAS 0 · 연동 다리 깨짐 0 · 정합 어긋남 0</strong> + 기술 지표 <strong>자동화 가동률 · 장애 건수</strong>(시설편중 해소분 흡수). <span style="color:var(--dim);">세트·기술 KPI 확정, <strong>목표치만 GM 결재 대기</strong>(KPI 정의=GM 결재 영역).</span></td></tr>
