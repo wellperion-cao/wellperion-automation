@@ -94,6 +94,8 @@ footer{margin-top:26px;font-size:11px;color:var(--ink-faint);text-align:center;l
 .pc-chip:hover{background:var(--gold);color:#fff}
 .pc-chip.dan{border-color:var(--navy);color:var(--navy);background:#eef1f6}
 .pc-chip.dan:hover{background:var(--navy);color:#fff}
+.pc-chip.src{border-color:var(--line);color:var(--ink-soft);background:var(--surface-2)}
+.pc-chip.src:hover{background:var(--ink-soft);color:#fff;border-color:var(--ink-soft)}
 </style></head><body>
 
 <div id="gate"><div class="gate-card">
@@ -175,9 +177,9 @@ footer{margin-top:26px;font-size:11px;color:var(--ink-faint);text-align:center;l
       <div class="form-grid">
         <div class="field"><label>소속</label><select id="reqDept"></select></div>
         <div class="field"><label>요청자</label><input type="text" id="reqWho" placeholder="이름"></div>
-        <div class="field"><label>필요 물품</label><input type="text" id="reqItem" placeholder="예: 골프공 100개"></div>
+        <div class="field"><label>필요 물품 <span style="color:var(--ink-faint);font-weight:400">· 모델명 권장</span></label><input type="text" id="reqItem" placeholder="모델명 포함 권장 (예: 샥즈 오픈런 프로2)"></div>
         <div class="field"><label>금액(원)</label><input type="number" id="reqAmt" placeholder="0"></div>
-        <div class="field"><label>관련 링크</label><input type="text" id="reqLink" placeholder="구매처 URL"></div>
+        <div class="field"><label>관련 링크 <span style="color:var(--ink-faint);font-weight:400">· 공개 링크 권장</span></label><input type="text" id="reqLink" placeholder="공개 상품 링크 권장 (회원 주문상세·장바구니 링크 X)"></div>
         <div class="field"><label>승인자</label><select id="reqApprover"><option>이정헌소장</option><option>이경연실장</option><option>김남욱GM</option></select></div>
         <div class="field"><label>계정(항목1)</label><select id="reqCat1"><option>운영비</option><option>소모품</option><option>업무추진비</option><option>비품</option><option>홍보비</option><option>장비</option><option>기타</option></select></div>
         <div class="field"><label>항목2</label><select id="reqCat2"><option>소모품</option><option>비품</option><option>장비</option><option>기타</option></select></div>
@@ -568,6 +570,9 @@ function renderReq(){
 async function submitReq(){
   var msg=document.getElementById("reqMsg");
   if(!rval("reqWho")||!rval("reqItem")){msg.textContent="요청자·물품은 필수입니다";return;}
+  var lk=rval("reqLink"); // 회원전용/장바구니 링크 부드러운 경고(차단 아님)
+  if(lk){var memberPats=[/order_detail/i,/mycoupang/i,/mypage/i,/sourceType=CART/i,/(?:^|[?&\/=])cart(?![a-z])/i];
+    if(memberPats.some(function(p){return p.test(lk);})&&!confirm("회원 전용/장바구니 링크는 다른 사람이 열 수 없어 최저가 비교가 어렵습니다. 공개 상품 페이지 링크를 권장합니다. 그래도 제출할까요?")){msg.textContent="제출 취소됨 — 링크 확인 후 다시 시도";return;}}
   msg.textContent="제출 중…";
   var base={요청자:rval("reqWho"),소속:rval("reqDept"),물품:rval("reqItem"),가격:rval("reqAmt"),링크:rval("reqLink"),목적:rval("reqPurpose"),승인자:rval("reqApprover"),항목1:rval("reqCat1"),항목2:rval("reqCat2")};
   var fp=document.getElementById("reqPhoto");var f=fp&&fp.files&&fp.files[0];
@@ -613,14 +618,21 @@ function searchTerm(name){
 }
 function priceLinks(r,st){
   if(!(st==="품의"||st==="승인"))return "";                       // 승인 전 단계만 (검토·정산·완료·반려 제외)
-  var term=searchTerm(r.물품);
-  if(!term)return "";                                              // 물품명 비면 미표시
-  var q=encodeURIComponent(term),safe=term.replace(/[<>"]/g,"");
-  var nav="https://search.shopping.naver.com/search/all?query="+q+"&sort=price_asc";
-  var dan="https://search.danawa.com/dsearch.php?query="+q;
-  return '<div class="pc-links" title="승인 전 시세 대조: '+safe+'">'+
-    '<a class="pc-chip" href="'+nav+'" target="_blank" rel="noopener">🔍 네이버 최저가</a>'+
-    '<a class="pc-chip dan" href="'+dan+'" target="_blank" rel="noopener">다나와</a></div>';
+  var chips="",term=searchTerm(r.물품);
+  if(term){                                                        // 물품명 있으면 최저가 검색 칩
+    var q=encodeURIComponent(term);
+    var nav="https://search.shopping.naver.com/search/all?query="+q+"&sort=price_asc";
+    var dan="https://search.danawa.com/dsearch.php?query="+q;
+    chips+='<a class="pc-chip" href="'+nav+'" target="_blank" rel="noopener">🔍 네이버 최저가</a>'+
+      '<a class="pc-chip dan" href="'+dan+'" target="_blank" rel="noopener">다나와</a>';
+  }
+  var link=String(r.링크||"");
+  if(/^https?:\/\//i.test(link)){                                  // 원본 관련 링크(http) 있으면 품의 링크 칩 병기
+    chips+='<a class="pc-chip src" href="'+link.replace(/"/g,"%22")+'" target="_blank" rel="noopener" title="품의에 첨부된 원본 관련 링크">📎 품의 링크</a>';
+  }
+  if(!chips)return "";
+  var safe=term.replace(/[<>"]/g,"");
+  return '<div class="pc-links" title="승인 전 시세 대조'+(safe?": "+safe:"")+'">'+chips+'</div>';
 }
 function renderReqTbl(){
   var STG=["품의","검토","정산","완료","반려"];var fc=document.getElementById("reqFilter");
