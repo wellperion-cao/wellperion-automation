@@ -51,23 +51,18 @@ tbody td{padding:5px 8px;border-bottom:1px solid var(--line);vertical-align:midd
 tbody tr:nth-child(even) td{background:var(--paper2)}
 tbody tr.dirty td{background:rgba(192,133,27,.10)}
 td.num{color:var(--beige-deep);font-weight:700;width:42px;text-align:center}
-td input,td textarea{width:100%;border:1px solid var(--line2);background:#fff;border-radius:6px;padding:6px 8px;font-size:12.6px;font-family:inherit;color:var(--ink);resize:none}
-td input:hover,td textarea:hover{border-color:var(--beige)}
-td input:focus,td textarea:focus{border-color:var(--beige);box-shadow:0 0 0 2px rgba(183,159,138,.20);outline:none}
+td input,td textarea{width:100%;border:1px solid transparent;background:transparent;border-radius:6px;padding:6px 7px;font-size:12.6px;font-family:inherit;color:var(--ink);resize:none}
+td input:hover,td textarea:hover{border-color:var(--line)}
+td input:focus,td textarea:focus{border-color:var(--beige);background:#fff;outline:none}
 td.wide{min-width:360px}
 td.wide textarea{min-width:340px;line-height:1.5}
-td.tel{min-width:150px;white-space:nowrap} td.tel input{font-variant-numeric:tabular-nums}
+td.tel{min-width:120px} td.exp{min-width:96px}
 td.namecell input{font-weight:700}
 td.act{width:64px;text-align:center}
 .saveb{background:var(--orange);color:#fff;border:none;border-radius:7px;padding:6px 10px;font-size:11.5px;font-weight:700;cursor:pointer;font-family:inherit;display:none}
 tr.dirty .saveb{display:inline-block}
 .saveb.saving{background:var(--amber);opacity:.8}
 .cnt{font-size:12px;color:var(--muted);margin:0 2px 10px;font-weight:600}
-.hint{font-size:12px;color:var(--beige-deep);background:rgba(183,159,138,.10);border:1px solid var(--line);border-radius:8px;padding:8px 12px;margin:2px 2px 10px;font-weight:600}
-.kpi{display:flex;gap:8px;flex-wrap:wrap;margin:2px 2px 12px}
-.kchip{font-size:12.5px;font-weight:700;padding:7px 13px;border-radius:999px;border:1px solid var(--line);color:var(--ink2);background:var(--paper)}
-.kchip.kexp{color:#fff;background:var(--orange);border-color:var(--orange)}
-.kchip.kvac{color:var(--beige-deep)}
 .toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:11px 20px;border-radius:10px;font-size:13px;font-weight:600;opacity:0;transition:.25s;pointer-events:none;z-index:60}
 .toast.show{opacity:1}
 .toast.bad{background:var(--orange)}
@@ -97,8 +92,6 @@ tr.dirty .saveb{display:inline-block}
     <button class="btn" id="refreshBtn">지금 새로고침</button>
     <span class="status" id="status"></span>
   </div>
-  <div class="kpi" id="kpi"></div>
-  <div class="hint">✏️ 표의 각 칸을 클릭하면 바로 수정됩니다 — 다른 칸으로 넘어가면 자동 저장(번호 칸만 고정)</div>
   <div class="cnt" id="cnt"></div>
   <div class="tablecard"><div class="tscroll"><table>
     <thead id="thead"></thead><tbody id="tbody"></tbody>
@@ -115,7 +108,6 @@ const TABS = [['men','남자라커'],['women','여자라커'],['golf','골프라
 const ORDER = ['번호','성함','만기','전화','이름표','회수','참고','1차','2차'];  // 컬럼 표시 순서
 const READONLY = ['번호'];            // 수정 불가
 const WIDE = ['참고'];                // textarea로 넓게
-const LABELS = {'1차':'1차 문자발송','2차':'2차 문자발송'};  // 헤더 표시 이름
 
 /* ===== 상태 ===== */
 let PW = sessionStorage.getItem('lk_pw') || '';     // 읽기 비번
@@ -189,7 +181,7 @@ function render(){
   const db=curDb, rows=DATA[db]||[];
   const cols=colsFor(db);
   document.getElementById('thead').innerHTML =
-    '<tr>'+cols.map(c=>`<th>${LABELS[c]||c}</th>`).join('')+'<th></th></tr>';
+    '<tr>'+cols.map(c=>`<th>${c}</th>`).join('')+'<th></th></tr>';
   const q=(document.getElementById('q').value||'').toLowerCase().trim();
   let shown=0, out=[];
   rows.forEach(r=>{
@@ -201,7 +193,7 @@ function render(){
       const val = (c in d)? d[c] : (r[c]==null?'':r[c]);
       if(READONLY.indexOf(c)>=0) return `<td class="num">${val}</td>`;
       const isWide = WIDE.indexOf(c)>=0;
-      const cls = (c==='성함'?'namecell ':'') + (isWide?'wide':'') + (c==='전화'?' tel':'');
+      const cls = (c==='성함'?'namecell ':'') + (isWide?'wide':'');
       if(isWide)
         return `<td class="${cls}"><textarea rows="2" data-r="${r._sheet_row}" data-f="${c}" oninput="onEdit(this)" onblur="autoSave(this)">${esc(val)}</textarea></td>`;
       return `<td class="${cls}"><input value="${esc(val)}" data-r="${r._sheet_row}" data-f="${c}" oninput="onEdit(this)" onblur="autoSave(this)"></td>`;
@@ -210,23 +202,6 @@ function render(){
   });
   document.getElementById('tbody').innerHTML = out.join('') || `<tr><td colspan="${cols.length+1}" style="padding:30px;text-align:center;color:#B3A795">결과 없음</td></tr>`;
   document.getElementById('cnt').textContent = `${shown}건 표시 · 전체 ${rows.length}건`;
-  updateKpi();
-}
-function lkParseExp(s){
-  if(!s) return null; s=String(s).trim();
-  const m=s.match(/^(\d{4})[.\-\/](\d{1,2})[.\-\/](\d{1,2})$/);
-  if(!m) return null; const d=new Date(+m[1],+m[2]-1,+m[3]); return isNaN(d)?null:d;
-}
-function updateKpi(){
-  const rows=DATA[curDb]||[]; const today=new Date(); today.setHours(0,0,0,0);
-  let exp=0, vac=0;
-  rows.forEach(r=>{
-    const name=String(r['성함']==null?'':r['성함']).trim();
-    if(!name){ vac++; return; }
-    const d=lkParseExp(r['만기']); if(d && d<today) exp++;
-  });
-  const el=document.getElementById('kpi'); if(!el) return;
-  el.innerHTML = `<span class="kchip kexp">만기 라커 ${exp}</span><span class="kchip kvac">공란 ${vac}</span><span class="kchip">전체 ${rows.length}</span>`;
 }
 function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
