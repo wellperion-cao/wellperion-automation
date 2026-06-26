@@ -6,8 +6,8 @@
     "status": "IN_PROGRESS",
     "priority": "🛳️크루즈",
     "enqueued_at": "2026-06-26",
-    "note": "[2026-06-26 GM 결정#3] M5 정본=review_queue.json 단일 통합. ✅1단계 완료(2026-06-26): CMO파이프라인.html을 시트 CRUD 모델에서 review_queue.json(5채널·URL) 읽기 거울로 전면 재작성·배포. 6채널 매트릭스·folder 그룹핑·URL 클릭·요약/필터. 로컬 Playwright 검증(카드38·골프EP1~3 5채널·콘솔에러0) 후 라이브 1회 배포. 시트 CRUD/등록·편집 폐기. 잔여: ①채널 enum 데이터파일 정규화(현재 보드 JS가 표기변형 흡수 중이라 무중단·후순위) ②수동발행 콜백(네이버 블로그·카페 GM 손게시 시 review_queue 자동기록 — 텔레그램 1탭 회신 고리, 동기화 틈 최종 봉합) ③status enum·published_at ISO 표준화. 진단서 status/briefs/CMO-2026-06-26-M1-M5-AUDIT.md.",
-    "next": "잔여 핵심=수동발행 콜백(네이버 GM 손게시→텔레그램 1탭→review_queue 발행완료+URL 자동기록)으로 동기화 틈 최종 봉합. + 채널/status enum 데이터 정규화.",
+    "note": "[2026-06-26 GM 결정#3] M5 정본=review_queue.json 단일 통합. ✅(2026-06-26) 봉합 3축 구축: ①보드=CMO파이프라인.html을 시트 CRUD→review_queue.json 읽기 거울로 전면 재작성·라이브 배포(6채널 매트릭스·URL클릭·요약/필터, Playwright 검증 카드38·골프5채널·콘솔0). ②발행시점 캡처=당근 발행 직후 business-posts URL 자동기록(정규식 실측), 카카오 best-effort(공개ID 미노출 구조), IG 기존캡처. review_queue_util.py 공유헬퍼. ③수동발행 콜백=봇 handle_message에 네이버 블로그·카페 URL 회신→대기글 발행완료+URL 자동기록(애매시 GM확인·비파괴). ⚠️봇 변경은 다음 재기동 시 발효. 사후 스크래퍼(retrieve_post_url/reconcile_published)는 실험적·신뢰성낮음(자동스케줄 미배선). 잔여(후순위): 채널/status enum 데이터 정규화·published_at ISO. 진단서 status/briefs/CMO-2026-06-26-M1-M5-AUDIT.md. 메모리 project_m5_channel_sync_gap.",
+    "next": "검증 대기: ①다음 봇 재기동 후 네이버 URL 회신 자동기록 실동작 확인 ②다음 당근 발행 시 URL 자동캡처 확인. 그 후 채널/status enum 데이터 정규화(후순위).",
     "ship_no": 185
   },
   {
