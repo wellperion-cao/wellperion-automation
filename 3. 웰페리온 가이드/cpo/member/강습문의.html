@@ -1254,7 +1254,7 @@ function saveConsultModal() {
     return;
   }
 
-  var payload = { action: 'lesson_inquiry_update', rowIndex: _consultEv.rowIndex };
+  var payload = { action: 'lesson_inquiry_update', rowIndex: _consultEv.rowIndex, keyPhone: _consultEv.phone || '' };
   if (newStatus) payload.status = newStatus;
   if (newDate) payload.consult = newDate + (newTime ? ' ' + newTime : '');
   if (input) {
@@ -1448,16 +1448,11 @@ function _saveCell(rowIndex, patch) {
   var idx = -1;
   for (var i = 0; i < dbRows.length; i++) { if (dbRows[i].rowIndex === rowIndex) { idx = i; break; } }
   if (idx < 0) return;
+  var keyPhone = dbRows[idx].phone || '';   // 편집 전(로드된) 전화 = 행키(서버 rowIndex 밀림 검증용)
   Object.keys(patch).forEach(function(k){ dbRows[idx][k] = patch[k]; });
-  var r = dbRows[idx];
-  var payload = {
-    action:   'lesson_inquiry_update',
-    rowIndex: rowIndex,
-    status:   r.status  || '신규',
-    owner:    r.owner   || '',
-    memo:     r.memo    !== undefined ? r.memo : '',
-    consult:  r.consult || ''
-  };
+  // ★변경된 필드(patch)만 전송 — 빈값이 기존 시트값(특히 consult 날짜·status)을 덮어쓰지 않게.
+  var payload = { action: 'lesson_inquiry_update', rowIndex: rowIndex, keyPhone: keyPhone };
+  Object.keys(patch).forEach(function(k){ payload[k] = patch[k]; });
   if (dbSaveTimer) clearTimeout(dbSaveTimer);
   dbSaveTimer = setTimeout(function(){
     apiPost(payload)

@@ -670,7 +670,7 @@ a.funnel-step:hover{background:rgba(183,159,138,0.08);color:var(--accent)}
 /* ═══════════════════════════════════════
    CPO 요약 대시보드 (탭별 4카드 · 클릭 시 해당 탭)
    ═══════════════════════════════════════ */
-.dash-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px}
+.dash-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:18px}
 .dash-card{
   display:block;text-decoration:none;color:inherit;
   background:var(--paper);border:1px solid var(--border);
@@ -839,20 +839,11 @@ a.funnel-step:hover{background:rgba(183,159,138,0.08);color:var(--accent)}
         <div class="dash-line"><span class="dash-k">월간</span><span class="dash-v"><b id="dInqMonth">0</b> 건</span></div>
       </div>
     </a>
-    <!-- 카드3: 멤버십 등록건 -->
-    <a class="dash-card" data-kind="reg" data-tab="registered" href="javascript:void(0)" onclick="switchTab('registered')">
-      <div class="dash-head"><span class="dash-dot reg"></span><span class="dash-title">멤버십 등록건</span></div>
+    <!-- 카드3: 등록 후 단계(멤버십 등록건·회원 현황)는 회원관리.html(멤버십 회원 관리)로 이관 — 2026-06-26 -->
+    <a class="dash-card" data-kind="mem" href="회원관리.html">
+      <div class="dash-head"><span class="dash-dot mem"></span><span class="dash-title">멤버십 회원 관리 (등록 후)</span><span class="dash-tag">이동 →</span></div>
       <div class="dash-metrics">
-        <div class="dash-line"><span class="dash-k">금일</span><span class="dash-v"><b class="lead" id="dRegToday">0</b> 건</span></div>
-        <div class="dash-line"><span class="dash-k">월간</span><span class="dash-v"><b id="dRegMonth">0</b> 건</span></div>
-      </div>
-    </a>
-    <!-- 카드4: 멤버십 회원 현황 (현재 인원 / Loss 인원) -->
-    <a class="dash-card" data-kind="mem" data-tab="active" href="javascript:void(0)" onclick="switchTab('active')">
-      <div class="dash-head"><span class="dash-dot mem"></span><span class="dash-title">멤버십 회원 현황</span></div>
-      <div class="dash-metrics">
-        <div class="dash-line"><span class="dash-k">현재</span><span class="dash-v"><b class="lead" id="dMemActive">0</b> 명</span></div>
-        <div class="dash-line"><span class="dash-k">Loss</span><span class="dash-v"><b id="dMemLoss">0</b> 명</span></div>
+        <div class="dash-line"><span class="dash-v" style="font-size:12px;color:var(--dim-mid)">등록 현황·유효회원 명단은<br>멤버십 회원 관리 페이지에서</span></div>
       </div>
     </a>
   </div>
@@ -1880,7 +1871,8 @@ function _wireActiveDblclick(){
       // 로컬 _activeRows 갱신
       var r = _activeRows.find(function(x){ return x.rowIndex == rowIndex; });
       if (r) r[col] = newVal;
-      apiPost({ action: 'member_active_update', rowIndex: rowIndex, col: col, value: newVal })
+      var _keyPhone = (r && (r['휴대폰 번호'] || r['휴대폰'])) || '';   // 행키(서버 rowIndex 밀림 검증용)
+      apiPost({ action: 'member_active_update', rowIndex: rowIndex, col: col, value: newVal, keyPhone: _keyPhone })
         .then(function(){ showToast('저장', 'ok'); })
         .catch(function(err){ showToast('저장 실패: ' + (err.message || ''), 'err'); });
     }
@@ -2169,7 +2161,7 @@ function saveConsultModal() {
   var input = document.getElementById('cmMemoInput').value.trim();
   if (!visited && !input) { showToast('변경 사항이 없습니다', 'err'); return; }
 
-  var payload = { action: 'member_inquiry_update', rowIndex: _consultEv.rowIndex };
+  var payload = { action: 'member_inquiry_update', rowIndex: _consultEv.rowIndex, keyPhone: _consultEv.phone || '' };
   // 방문완료 체크 시에만 status 전송(미체크면 기존 상태 보존 — status 필드 생략).
   if (visited) payload.status = '방문';
   // 상담 내용: 기존 메모 보존 + 새 줄 누적. 빈 입력이면 메모 미전송.
@@ -2405,11 +2397,13 @@ function _renderScheduleCell(td, row) {
 function _saveCell(rowIndex, patch) {
   var idx = dbRows.findIndex(function(r){ return r.rowIndex === rowIndex; });
   if (idx < 0) return;
+  var keyPhone = dbRows[idx].phone || '';   // 편집 전(로드된) 전화 = 행키. body.phone(새 값)과 별개 — 전화 수정 시에도 안전.
   Object.assign(dbRows[idx], patch);
   var r = dbRows[idx];
   var payload = {
     action:   'member_inquiry_update',
     rowIndex: rowIndex,
+    keyPhone: keyPhone,
     name:     r.name    || '',
     phone:    r.phone   || '',
     program:  r.program || '',

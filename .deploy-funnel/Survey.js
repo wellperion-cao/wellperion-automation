@@ -73,6 +73,19 @@ function _findCol_(headers, keys) {
   return -1;
 }
 
+// 정확일치 전용 컬럼 탐색 — 부분일치 충돌(예: '담당' ↔ '접수담당자') 방지. 2026-06-26 시우.
+function _findColExact_(headers, keys) {
+  for (var k = 0; k < keys.length; k++) {
+    for (var i = 0; i < headers.length; i++) {
+      if (String(headers[i] || '').trim() === keys[k]) return i;
+    }
+  }
+  return -1;
+}
+
+// 전화번호 정규화(숫자만) — 행키(rowIndex) 검증용 안정키 비교에 사용. 2026-06-26 시우.
+function _normPhone_(v) { return String(v == null ? '' : v).replace(/[^0-9]/g, ''); }
+
 // ─── 유입채널 표준화 (시모·GM 2026-06-13 확정 — 마케팅용 10버킷) ───
 // 자유텍스트(과거 리셉션 + 구글폼 자유입력)로 300여 개 난립한 채널 원문을 표준 10종으로 정규화한다.
 // 비파괴: 시트 원본은 손대지 않고, 대시보드 집계(byChannel/byChannelMonth) '읽기 시점'에만 적용.
@@ -124,11 +137,13 @@ function _sportBuckets_(raw) {
 function _stageOf_(raw) {
   var s = String(raw == null ? '' : raw).trim();
   if (!s) return 1; // 빈칸 → 최소단계(①문의)
-  if (/이탈|보류|포기|거절|취소|loss/i.test(s)) return 0;
+  if (/이탈|보류|포기|거절|취소|종료|loss/i.test(s)) return 0;  // '종료'(강습 STATUS_OPTIONS 종착) 추가 — 미인식→문의(1) 오분류 차단
   // SUC / 단기SUC = 수강등록 성공(강습 팀시트 정본값) → 가입(5)
   if (/^(suc|단기\s*suc)$/i.test(s))            return 5;
   // 멤버십 '26년 신규문의' 탭 실사용 코드(2026-06-20 시포 실측): 결제완납·결제완료·완납·키오스크 완 = 가입(5)
   if (/가입|등록|전환|회원|완납|결제완|키오스크\s*완/.test(s)) return 5;
+  // 강습 STATUS_OPTIONS: 'OT완료'·'상담완료' = 만난 단계(상담/OT 완료) → 방문(4). '상담예약'은 아래 예약(3)으로 흘려보냄(완료 미포함).
+  if (/(ot|상담)\s*완료/i.test(s))               return 4;
   if (/방문|내방|방문완료/.test(s))              return 4;
   if (/예약|투어|상담/.test(s))                  return 3;
   // 멤버십 실사용 코드: 컨택중 = 응대(2)
@@ -1037,7 +1052,8 @@ function _regUpsert_(name, phone, program) {
 // ═══════════════════════════════════════════
 var LESSON_SS_ID = '1b0XU1oTHlXzBhEzUOar5GEm44vjopdO25qfsh-awDXw';
 var LESSON_GID = 111889422;
-var _LESSON_MGMT_COLS = ['진행상태', '담당', '상담메모', '상담예약', '방문상태'];
+// 관리 담당 컬럼명='관리담당'(★'담당'은 폼 원본 '접수담당자'와 부분일치 충돌 → 컬럼 미생성·원본 덮어쓰기 버그. 2026-06-26 시우).
+var _LESSON_MGMT_COLS = ['진행상태', '관리담당', '상담메모', '상담예약', '방문상태'];
 
 // gid 매칭 시트 핸들(탭명 변경에 강함).
 function _lessonSheet_() {
@@ -1050,7 +1066,7 @@ function _lessonEnsureCols_(sh) {
   if (!sh) return [];
   var lastCol = sh.getLastColumn();
   var hdr = lastCol > 0 ? sh.getRange(1, 1, 1, lastCol).getValues()[0].map(function(v){ return String(v).trim(); }) : [];
-  var missing = _LESSON_MGMT_COLS.filter(function(c){ return _findCol_(hdr, [c]) < 0; });
+  var missing = _LESSON_MGMT_COLS.filter(function(c){ return _findColExact_(hdr, [c]) < 0; });  // 정확일치 — '관리담당'이 '접수담당자'에 흡수되지 않게
   if (missing.length > 0) {
     sh.getRange(1, lastCol + 1, 1, missing.length).setValues([missing]);
     lastCol += missing.length;
@@ -1075,7 +1091,7 @@ function _lessonReadRows_() {
   var iNote  = _findCol_(hdr, ['문의 사항', '문의사항', '문의 내용', '내용']);
   var iWish  = _findCol_(hdr, ['희망하시는 레슨 시간', '희망 레슨', '희망시간', '레슨 시간']);
   var iStat  = _findCol_(hdr, ['진행상태', '진행현황', '진행상황', '상태']);
-  var iOwner = _findCol_(hdr, ['담당', '담당자']);
+  var iOwner = _findColExact_(hdr, ['관리담당']);  // ★정확일치 — 폼 원본 '접수담당자' 절대 안 건드림(관리 담당 별도 컬럼만)
   var iMemo  = _findCol_(hdr, ['상담메모', '메모', '비고']);
   var iCons  = _findCol_(hdr, ['상담예약', '상담 예약', '상담일정']);
   var iVisit = _findCol_(hdr, ['방문상태', '방문']);
@@ -1096,7 +1112,7 @@ function _lessonReadRows_() {
       sport:   iSport >= 0 ? String(row[iSport] || '') : '',
       channel: iChan  >= 0 ? String(row[iChan]  || '') : '',
       note:    iNote  >= 0 ? String(row[iNote]  || '') : '',
-      wishtime:iWish  >= 0 ? String(row[iWish]  || '') : '',
+      wishTime:iWish  >= 0 ? String(row[iWish]  || '') : '',  // 키=wishTime(프론트 row.wishTime와 통일·소문자 wishtime 버그 수정)
       status:  iStat  >= 0 ? String(row[iStat]  || '') : '',
       owner:   iOwner >= 0 ? String(row[iOwner] || '') : '',
       memo:    iMemo  >= 0 ? String(row[iMemo]  || '') : '',
@@ -1114,7 +1130,11 @@ function _lessonReadRows_() {
 function _lessonScopeFilter_(rows, body) {
   if (String((body && body.scope) || '') === 'all') return rows;
   var yr = Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy');
-  return rows.filter(function(row) { return String(row.timestamp || '').slice(0, 4) === yr; });
+  return rows.filter(function(row) {
+    var y = String(row.timestamp || '').slice(0, 4);
+    if (!/^\d{4}$/.test(y)) return true;  // ★타임스탬프 파싱 실패(빈/비표준)는 버리지 않고 포함 — 조용한 누락 방지
+    return y === yr;
+  });
 }
 
 function _processAction(body) {
@@ -1868,6 +1888,18 @@ function _processAction(body) {
     var muSh = _miSheet_();
     if (!muSh) return _json({ ok: false, error: '시트 없음' });
     var muHdr = _miHeaders_(muSh);
+    // ★행키 검증(비파괴·하위호환): keyPhone 동봉 시 대상 행의 현재 전화와 대조 — 삭제/시트편집 후 rowIndex 밀림으로 엉뚱한 회원 덮어쓰기 방지.
+    //   keyPhone=편집 전(로드된) 전화. body.phone(새 값)과 별개. keyPhone 미전송이면 기존 동작 폴백(정상 편집 무중단).
+    if (body.keyPhone !== undefined && String(body.keyPhone) !== '') {
+      var _muPhCi = _miColIdx_(muHdr, ['연락처','전화','휴대폰']);
+      if (_muPhCi >= 0) {
+        var _muRowPh = _normPhone_(muSh.getRange(muRow, _muPhCi + 1).getValue());
+        var _muKeyPh = _normPhone_(body.keyPhone);
+        if (_muRowPh && _muKeyPh && _muRowPh !== _muKeyPh) {
+          return _json({ ok: false, error: 'row-key-mismatch', detail: '행 검증 실패 — 목록을 새로고침 후 다시 시도하세요' });
+        }
+      }
+    }
     function _muSet(colNames, val) {
       if (val === undefined || val === null) return;
       var ci = _miColIdx_(muHdr, colNames);
@@ -1912,6 +1944,18 @@ function _processAction(body) {
     var mdSh = _miSheet_();
     if (!mdSh) return _json({ ok: false, error: '시트 없음' });
     if (mdRow > mdSh.getLastRow()) return _json({ ok: false, error: '행 범위 초과' });
+    // ★행키 검증(비파괴·하위호환): keyPhone 동봉 시 대상 행 전화 대조 후에만 삭제(rowIndex 밀림 오삭제 방지). 미전송이면 폴백.
+    if (body.keyPhone !== undefined && String(body.keyPhone) !== '') {
+      var _mdHdr = _miHeaders_(mdSh);
+      var _mdPhCi = _miColIdx_(_mdHdr, ['연락처','전화','휴대폰']);
+      if (_mdPhCi >= 0) {
+        var _mdRowPh = _normPhone_(mdSh.getRange(mdRow, _mdPhCi + 1).getValue());
+        var _mdKeyPh = _normPhone_(body.keyPhone);
+        if (_mdRowPh && _mdKeyPh && _mdRowPh !== _mdKeyPh) {
+          return _json({ ok: false, error: 'row-key-mismatch', detail: '행 검증 실패 — 목록을 새로고침 후 다시 시도하세요' });
+        }
+      }
+    }
     mdSh.deleteRow(mdRow);
     try { _notifyTelegram('🗑 문의회원 삭제(공개페이지) — 행 ' + mdRow); } catch (e) {}
     return _json({ ok: true, rowIndex: mdRow, message: '삭제되었습니다.' });
@@ -1967,13 +2011,24 @@ function _processAction(body) {
     var luSh = _lessonSheet_();
     if (!luSh) return _json({ ok: false, error: '시트 없음' });
     var luHdr = _lessonEnsureCols_(luSh);
+    // ★행키 검증(비파괴·하위호환): keyPhone 동봉 시 대상 행 전화 대조 — rowIndex 밀림 오수정 방지. 미전송이면 폴백.
+    if (body.keyPhone !== undefined && String(body.keyPhone) !== '') {
+      var _luPhCi = _findCol_(luHdr, ['연락처', '전화', '휴대폰']);
+      if (_luPhCi >= 0) {
+        var _luRowPh = _normPhone_(luSh.getRange(luRow, _luPhCi + 1).getValue());
+        var _luKeyPh = _normPhone_(body.keyPhone);
+        if (_luRowPh && _luKeyPh && _luRowPh !== _luKeyPh) {
+          return _json({ ok: false, error: 'row-key-mismatch', detail: '행 검증 실패 — 목록을 새로고침 후 다시 시도하세요' });
+        }
+      }
+    }
     function _luSet(colNames, val) {
       if (val === undefined || val === null) return;
       var ci = _findCol_(luHdr, colNames);
       if (ci >= 0) luSh.getRange(luRow, ci + 1).setValue(val);
     }
     _luSet(['진행상태', '진행현황', '진행상황', '상태'], body.status);
-    _luSet(['담당', '담당자'], body.owner);
+    _luSet(['관리담당'], body.owner);  // ★관리 담당 컬럼만(폼 원본 '접수담당자' 절대 안 건드림)
     _luSet(['상담메모', '메모', '비고'], body.memo);
     _luSet(['상담예약', '상담 예약', '상담일정'], body.consult);
     _luSet(['방문상태', '방문'], body.visited);
@@ -2286,6 +2341,18 @@ function _processAction(body) {
     var auSh = SpreadsheetApp.openById(MEMBER_SPREADSHEET_ID).getSheetByName(MEMBER_SHEET);
     if (!auSh) return _json({ ok: false, error: '유효회원 시트 없음' });
     var auHdr = auSh.getRange(1, 1, 1, auSh.getLastColumn()).getValues()[0].map(function(v){ return String(v).trim(); });
+    // ★행키 검증(비파괴·하위호환): keyPhone 동봉 시 대상 행 전화 대조 — rowIndex 밀림 오수정 방지. 미전송이면 폴백.
+    if (body.keyPhone !== undefined && String(body.keyPhone) !== '') {
+      var _auPhI = -1;
+      for (var _ap = 0; _ap < auHdr.length; _ap++) { var _aph = auHdr[_ap].replace(/\s/g, ''); if (_aph.indexOf('휴대폰') >= 0 || _aph.indexOf('전화') >= 0 || _aph.indexOf('연락처') >= 0) { _auPhI = _ap; break; } }
+      if (_auPhI >= 0 && auRow <= auSh.getLastRow()) {
+        var _auRowPh = _normPhone_(auSh.getRange(auRow, _auPhI + 1).getValue());
+        var _auKeyPh = _normPhone_(body.keyPhone);
+        if (_auRowPh && _auKeyPh && _auRowPh !== _auKeyPh) {
+          return _json({ ok: false, error: 'row-key-mismatch', detail: '행 검증 실패 — 목록을 새로고침 후 다시 시도하세요' });
+        }
+      }
+    }
     var _auW = auCol.replace(/\s/g, '');
     var auIdx = -1;
     for (var au1 = 0; au1 < auHdr.length; au1++) { if (auHdr[au1].replace(/\s/g, '') === _auW) { auIdx = au1; break; } }
