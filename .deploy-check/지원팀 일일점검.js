@@ -921,9 +921,11 @@ function _updateCheckLedger(dept, date, body) {
     if (body.submitter_am)    led.sub.am = String(body.submitter_am);
     if (body.submitter_pm)    led.sub.pm = String(body.submitter_pm);
     if (body.submitter_night) led.sub.night = String(body.submitter_night);
+    if (body.submitter_close) led.sub.close = String(body.submitter_close);   // [근본수정 2026-06-26 시우] 마감조 전용칸(pm과 독립). 미전송 구버전 프론트면 자동 무시(하위호환).
     if (body.submittedAt_am)    led.subAt.am = String(body.submittedAt_am);
     if (body.submittedAt_pm)    led.subAt.pm = String(body.submittedAt_pm);
     if (body.submittedAt_night) led.subAt.night = String(body.submittedAt_night);
+    if (body.submittedAt_close) led.subAt.close = String(body.submittedAt_close);
   }
   // 회차별 영속(2026-06-12 시우·GM): roundChecks = 현재 성별의 전체 회차 체크 키('<round>_<id>') 목록.
   // 프론트가 매 저장 시 현 상태 전체를 보내므로 led.cr 전체 교체 → 복원도 회차별(오전·오후·마감 격리).
@@ -3064,7 +3066,7 @@ function dedupSnapshot(dept) {
 var CHECK_UNLOCK_PIN_DEFAULT = '1234';
 function _roundToShiftKey(round) {
   var r = String(round || '');
-  if (r.indexOf('close') >= 0) return 'night';
+  if (r.indexOf('close') >= 0) return 'close';   // [근본수정 2026-06-26 시우] 마감조 잠금해제=led.sub.close만 삭제(탕청소 night·오후 pm 무영향). 구버전은 'night'였음.
   if (r.indexOf('pm') >= 0)    return 'pm';
   return 'am';
 }

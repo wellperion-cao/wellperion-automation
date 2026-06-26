@@ -2206,9 +2206,11 @@ async function loadState(d,g){
       if(sub.am&&!STATE._submitter_am){STATE._submitter_am=sub.am;STATE._submitted_am=true;}
       if(sub.pm&&!STATE._submitter_pm){STATE._submitter_pm=sub.pm;STATE._submitted_pm=true;}
       if(sub.night&&!STATE._submitter_night){STATE._submitter_night=sub.night;STATE._submitted_night=true;}
+      if(sub.close&&!STATE._submitter_close){STATE._submitter_close=sub.close;STATE._submitted_close=true;}
       if(subAt.am&&!STATE._submittedAt_am)STATE._submittedAt_am=subAt.am;
       if(subAt.pm&&!STATE._submittedAt_pm)STATE._submittedAt_pm=subAt.pm;
       if(subAt.night&&!STATE._submittedAt_night)STATE._submittedAt_night=subAt.night;
+      if(subAt.close&&!STATE._submittedAt_close)STATE._submittedAt_close=subAt.close;
       // [Edit E] round-level 제출 잠금 복원 — sub.am/pm/night → roundSubKey + localStorage
       // fresh load(시크릿·타기기)에서 isRoundSubmitted()가 true 되도록 STATE·LS 키 세팅
       // [Edit E2 2026-06-17] 제출시각(subAt)도 round-level 키로 복원 → 제출완료 시 점검시간 표시·고정(fresh/타기기/시크릿)
@@ -2218,13 +2220,19 @@ async function loadState(d,g){
         if(subAt.am){STATE['submittedAt_'+d+'_'+gg+'_am1']=subAt.am;try{localStorage.setItem('wcheck_rsubAt_'+d+'_'+gg+'_am1',subAt.am);}catch(e){}}
         if(sub.am){STATE['submitter_'+d+'_'+gg+'_am1']=sub.am;try{localStorage.setItem('wcheck_rsubBy_'+d+'_'+gg+'_am1',sub.am);}catch(e){}}
       }
+      // [근본수정 2026-06-26 시우] 오후조(pm1)만 복원 — 과거 close1까지 sub.pm에 묶어 강제 '제출완료'로 잠그던 3줄 제거(거짓표시 B).
       if(sub.pm){
         STATE[roundSubKey(d,gg,'pm1')]=true;
-        STATE[roundSubKey(d,gg,'close1')]=true;
         try{localStorage.setItem(roundSubLSKey(d,gg,'pm1'),'1');}catch(e){}
+        if(subAt.pm){STATE['submittedAt_'+d+'_'+gg+'_pm1']=subAt.pm;try{localStorage.setItem('wcheck_rsubAt_'+d+'_'+gg+'_pm1',subAt.pm);}catch(e){}}
+        if(sub.pm){STATE['submitter_'+d+'_'+gg+'_pm1']=sub.pm;try{localStorage.setItem('wcheck_rsubBy_'+d+'_'+gg+'_pm1',sub.pm);}catch(e){}}
+      }
+      // [근본수정 2026-06-26 시우] 마감조(close1) 전용칸 sub.close → close1 독립 복원(오후조와 완전 분리·B+A 합치).
+      if(sub.close){
+        STATE[roundSubKey(d,gg,'close1')]=true;
         try{localStorage.setItem(roundSubLSKey(d,gg,'close1'),'1');}catch(e){}
-        if(subAt.pm){STATE['submittedAt_'+d+'_'+gg+'_pm1']=subAt.pm;STATE['submittedAt_'+d+'_'+gg+'_close1']=subAt.pm;try{localStorage.setItem('wcheck_rsubAt_'+d+'_'+gg+'_pm1',subAt.pm);}catch(e){}try{localStorage.setItem('wcheck_rsubAt_'+d+'_'+gg+'_close1',subAt.pm);}catch(e){}}
-        if(sub.pm){STATE['submitter_'+d+'_'+gg+'_pm1']=sub.pm;STATE['submitter_'+d+'_'+gg+'_close1']=sub.pm;try{localStorage.setItem('wcheck_rsubBy_'+d+'_'+gg+'_pm1',sub.pm);}catch(e){}try{localStorage.setItem('wcheck_rsubBy_'+d+'_'+gg+'_close1',sub.pm);}catch(e){}}
+        if(subAt.close){STATE['submittedAt_'+d+'_'+gg+'_close1']=subAt.close;try{localStorage.setItem('wcheck_rsubAt_'+d+'_'+gg+'_close1',subAt.close);}catch(e){}}
+        if(sub.close){STATE['submitter_'+d+'_'+gg+'_close1']=sub.close;try{localStorage.setItem('wcheck_rsubBy_'+d+'_'+gg+'_close1',sub.close);}catch(e){}}
       }
       if(sub.night){
         STATE[roundSubKey(d,gg,'night1')]=true;
@@ -2352,6 +2360,8 @@ function _buildPushPayload(d,g,includeSubmitMeta){
     p.submitted_am=!!STATE._submitted_am; p.submittedAt_am=STATE._submittedAt_am||''; p.submitter_am=STATE._submitter_am||'';
     p.submitted_pm=!!STATE._submitted_pm; p.submittedAt_pm=STATE._submittedAt_pm||''; p.submitter_pm=STATE._submitter_pm||'';
     p.submitted_night=!!STATE._submitted_night; p.submittedAt_night=STATE._submittedAt_night||''; p.submitter_night=STATE._submitter_night||'';
+    /* [근본수정 2026-06-26 시우] 마감조 전용 서버칸(pm과 독립). GAS가 led.sub.close에 저장(미지원 구버전 GAS는 무시·안전). */
+    p.submitted_close=!!STATE._submitted_close; p.submittedAt_close=STATE._submittedAt_close||''; p.submitter_close=STATE._submitter_close||'';
     /* F2(GM 2026-06-16): 제출한 회차는 전 항목을 시트에 기록 → 미체크 항목을 '미완료'로 함께 전송(서버가 행 생성). 제출 안 한 회차는 미포함. */
     const _subR=ROUND_KEYS.filter(rk=>isRoundSubmitted(d,g,rk));
     const _ru=[];
@@ -3692,8 +3702,10 @@ async function submitRound(round,gender){
   localStorage.setItem(roundSubLSKey(d,gender,round),'1');
   localStorage.setItem('wcheck_rsubBy_'+d+'_'+gender+'_'+round,sub);
   localStorage.setItem('wcheck_rsubAt_'+d+'_'+gender+'_'+round,nowIso);
-  /* 회차 제출 시 그 조(shift)의 제출상태도 켠다 — 회차 하나만 제출해도 시트 제출칸이 '미제출'로 남던 것 해소(GM 2026-06-16 시우). */
-  const _bs=rdef.baseShift;
+  /* 회차 제출 시 그 조(shift)의 제출상태도 켠다 — 회차 하나만 제출해도 시트 제출칸이 '미제출'로 남던 것 해소(GM 2026-06-16 시우).
+     [근본수정 2026-06-26 시우] 마감조(close1)는 오후조(pm)와 독립된 'close' 칸에 도장 → 오후↔마감 거짓 동반제출 차단.
+     기존 am/pm/night 집계·텔레그램 경로는 아래 baseShift 블록(3707~)이 그대로 담당(무변경). */
+  const _bs=(round==='close1')?'close':rdef.baseShift;
   if(_bs){ STATE['_submitted_'+_bs]=true; STATE['_submittedAt_'+_bs]=nowIso; STATE['_submitter_'+_bs]=sub; }
   saveLocal(d,STATE,gender);
   if(ONLINE)await pushToServer(d,gender,true);   // ★명시적 제출 — 제출메타 전송(폐루프 절단)
