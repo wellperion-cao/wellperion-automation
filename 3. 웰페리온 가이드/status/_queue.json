@@ -198,14 +198,15 @@
   {
     "task_id": "CPO-2026-06-23-LESSON-INQUIRY-PAGE",
     "clevel": "cpo",
-    "status": "PENDING",
-    "terminal": false,
+    "status": "DONE",
+    "terminal": true,
     "priority": "⛴️여객선",
     "enqueued_at": "2026-06-23",
+    "processed_at": "2026-06-26",
     "ship_no": 21,
-    "title": "[시포] 강습 문의 회원관리 ERP 페이지화 (향후) — 시트 연동 탈피, 시트=DB only",
-    "note": "[2026-06-23 GM 방향] 지금은 강습 문의 시트(1b0XU1o…)에 붙은 GAS가 메일+핵심멤버방 알림(오늘 수정·연동 완료). 향후엔 ERP에 \"강습 문의 회원관리\" 별도 페이지를 두고(문의 회원관리=문의회원.html과 짝), 구글시트는 DB 백엔드로만 활용. 자체 문의 DB 목표(시토18·project_self_hosted_inquiry_db_goal)와 한 틀. 등록前 잠재고객 페이지(문의회원.html)·퍼널 단계 페이지화(project_funnel_stage_pages)의 강습 버전.",
-    "next": "GM 착수 신호 시 설계 — 회원관리 페이지 패턴 차용, 시트는 read/write DB로"
+    "title": "[시포] 강습 문의 회원관리 ERP 페이지화 — 시트 연동 완료",
+    "note": "[2026-06-26 완료] 강습문의.html 신설(문의회원.html 구조 복제·게이트 동일). Survey.js: _miTminKR_ 신설·lesson_* 4액션(lesson_inquiry_list·lesson_stats·lesson_calendar·lesson_inquiry_update)·공개화이트리스트 등록·tmin 달력정렬. 문의회원.html: sortByTime 헬퍼+processCalendarData·openDayPanel 정렬 적용. ERP홈+문의회원.html 링크 짝 추가. clasp push+deploy @101.",
+    "next": "강습 문의 데이터 누적 후 전환율 추적 — 종목별 등록 전환 집계(시포 제안)"
   },
   {
     "task_id": "COO-2026-06-23-CORE-ROOM-ALERT-SPLIT",

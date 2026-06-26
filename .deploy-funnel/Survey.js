@@ -774,6 +774,11 @@ var _SURVEY_PUBLIC_ACTIONS = {
   member_active_list:         true,  // 멤버십 회원 명단(유효회원·전화 마스킹)
   member_active_update:       true,  // 2026-06-24 멤버십 셀 인라인 수정(유효회원 시트·전화 제외)
   cpo_today_stats:            true,  // 2026-06-24 CPO 오늘/이번달 문의·등록 건수(PII 미노출)
+  // 강습문의 페이지(CPO) — 멤버십 member_* 와 동일 정책(2026-06-26)
+  lesson_inquiry_list:        true,  // 성인 강습 문의 목록(관리 필드 포함)
+  lesson_stats:               true,  // 강습 통계(총·이번달·종목·경로 분포)
+  lesson_calendar:            true,  // 상담예약 달력
+  lesson_inquiry_update:      true,  // 진행상태·담당·상담메모·상담예약·방문상태 수정
   pii_status:                 true,  // [진단] PII_MASK/토큰 설정 상태(비밀값 미노출) 2026-06-25 시토
   // 트리거 관리 — 설치/조회/테스트 (2026-06-25 시모, 즉시알림 전환)
   install_inquiry_triggers:   true,  // onFormSubmit 트리거 + 폴링 백스톱 설치 (웹앱 호출 시 cao 계정으로 실행)
@@ -881,6 +886,37 @@ function _miTimeKR_(val) {
   }
   return '';
 }
+// 시간 표시 텍스트 → 정렬용 분(0~1439 정수). 시간 없음/미정 → null. (달력 시간순 정렬 전용 · 2026-06-26)
+//   '오전 N시'→N*60(오전 12시=0) · '오후 N시'→(12시=그대로/그외 +12)*60 · 'N시M분'·'N시반' 분 반영 ·
+//   'HH:MM'(오전/오후 접두 포함) · 접두 없는 맨 'N시'·'HH:MM'→있는 그대로 환산. 추측 없이 표기 그대로.
+function _miTminKR_(val) {
+  if (!val) return null;
+  var s = String(val).trim();
+  if (!s) return null;
+  // 1) 한글 시각: (오전|오후)? N시 (반|M분)?
+  var km = s.match(/(오전|오후)?\s*(\d{1,2})\s*시\s*(반|\d{1,2}\s*분)?/);
+  if (km) {
+    var h = parseInt(km[2], 10);
+    var ap = km[1] || '';
+    var mn = 0;
+    if (km[3]) mn = (km[3].indexOf('반') >= 0) ? 30 : (parseInt(km[3].replace(/[^0-9]/g, ''), 10) || 0);
+    if (ap === '오전') { if (h === 12) h = 0; }
+    else if (ap === '오후') { if (h !== 12) h += 12; }
+    var t = h * 60 + mn;
+    return (t >= 0 && t <= 1439) ? t : null;
+  }
+  // 2) HH:MM (오전/오후 접두 포함)
+  var hm = s.match(/(오전|오후)?\s*(\d{1,2}):(\d{2})/);
+  if (hm) {
+    var h2 = parseInt(hm[2], 10), m2 = parseInt(hm[3], 10);
+    var ap2 = hm[1] || '';
+    if (ap2 === '오전') { if (h2 === 12) h2 = 0; }
+    else if (ap2 === '오후') { if (h2 !== 12) h2 += 12; }
+    var t2 = h2 * 60 + m2;
+    return (t2 >= 0 && t2 <= 1439) ? t2 : null;
+  }
+  return null;
+}
 // 익명 행 배열 반환(이름·전화·메모 비움). 빈 행 스킵.
 function _miReadRows_() {
   var sh = _miSheet_();
@@ -969,6 +1005,86 @@ function _regUpsert_(name, phone, program) {
   var row = new Array(_REG_HEADER.length).fill('');
   row[0] = name || ''; row[1] = phone || ''; row[2] = program || ''; row[3] = today;
   sh.appendRow(row);
+}
+
+// ═══════════════════════════════════════════
+//  강습문의 페이지 전용 — 성인 강습 문의 시트 CRM (CPO cpo/member/강습문의.html)
+//  ★ 멤버십 문의회원(26년 신규문의) CRM 패턴을 그대로 복제 — 강습 문의 시트(성인 강습 응답탭)로 적용.
+//     시트 헤더: 1타임스탬프 2성함 3연락처 4나이 5성인강습종목 6문의경로 7문의사항 8접수담당자 9희망레슨시간 10개인정보동의.
+//     관리용 칸(진행상태·담당·상담메모·상담예약·방문상태)은 시트에 없음 → _lessonEnsureCols_ 가 우측에 멱등 생성.
+// ═══════════════════════════════════════════
+var LESSON_SS_ID = '1b0XU1oTHlXzBhEzUOar5GEm44vjopdO25qfsh-awDXw';
+var LESSON_GID = 111889422;
+var _LESSON_MGMT_COLS = ['진행상태', '담당', '상담메모', '상담예약', '방문상태'];
+
+// gid 매칭 시트 핸들(탭명 변경에 강함).
+function _lessonSheet_() {
+  var sheets = SpreadsheetApp.openById(LESSON_SS_ID).getSheets();
+  for (var i = 0; i < sheets.length; i++) { if (sheets[i].getSheetId() === LESSON_GID) return sheets[i]; }
+  return null;
+}
+// 관리 헤더가 헤더행에 없으면 우측에 append(멱등). 각 액션 진입 시 1회 보장.
+function _lessonEnsureCols_(sh) {
+  if (!sh) return [];
+  var lastCol = sh.getLastColumn();
+  var hdr = lastCol > 0 ? sh.getRange(1, 1, 1, lastCol).getValues()[0].map(function(v){ return String(v).trim(); }) : [];
+  var missing = _LESSON_MGMT_COLS.filter(function(c){ return _findCol_(hdr, [c]) < 0; });
+  if (missing.length > 0) {
+    sh.getRange(1, lastCol + 1, 1, missing.length).setValues([missing]);
+    lastCol += missing.length;
+    hdr = sh.getRange(1, 1, 1, lastCol).getValues()[0].map(function(v){ return String(v).trim(); });
+  }
+  return hdr;
+}
+// 강습 행 배열 — 문의 + 관리 필드 통합. 빈 행(성함·연락처 둘 다 없음) 스킵.
+function _lessonReadRows_() {
+  var sh = _lessonSheet_();
+  if (!sh) return [];
+  var hdr = _lessonEnsureCols_(sh);
+  var last = sh.getLastRow();
+  if (last < 2) return [];
+  var data = sh.getRange(2, 1, last - 1, hdr.length).getValues();
+  var iTs    = _findCol_(hdr, ['타임스탬프', 'timestamp', '시각', '일시', '접수일', '날짜']);
+  var iName  = _findCol_(hdr, ['성함', '이름']);   // '성함' 우선 — '접수 담당자 혹은 본인 이름' 오매칭 차단
+  var iPhone = _findCol_(hdr, ['연락처', '전화', '휴대폰']);
+  var iAge   = _findCol_(hdr, ['나이', '연령']);
+  var iSport = _findCol_(hdr, ['성인 강습 종목', '강습 종목', '종목', '과목']);
+  var iChan  = _findCol_(hdr, ['문의 경로', '경로', '채널', '알게']);
+  var iNote  = _findCol_(hdr, ['문의 사항', '문의사항', '문의 내용', '내용']);
+  var iWish  = _findCol_(hdr, ['희망하시는 레슨 시간', '희망 레슨', '희망시간', '레슨 시간']);
+  var iStat  = _findCol_(hdr, ['진행상태', '진행현황', '진행상황', '상태']);
+  var iOwner = _findCol_(hdr, ['담당', '담당자']);
+  var iMemo  = _findCol_(hdr, ['상담메모', '메모', '비고']);
+  var iCons  = _findCol_(hdr, ['상담예약', '상담 예약', '상담일정']);
+  var iVisit = _findCol_(hdr, ['방문상태', '방문']);
+  var out = [];
+  for (var r = 0; r < data.length; r++) {
+    var row = data[r];
+    var hasName  = iName  >= 0 && row[iName];
+    var hasPhone = iPhone >= 0 && row[iPhone];
+    if (!hasName && !hasPhone) continue;  // 완전 빈 행 스킵
+    var consVal = iCons >= 0 ? row[iCons] : '';
+    var consTime = _miTime_(consVal) || _miTimeKR_(consVal);
+    out.push({
+      rowIndex: r + 2,
+      timestamp: _miToISO_(iTs >= 0 ? row[iTs] : ''),
+      name:    iName  >= 0 ? String(row[iName]  || '') : '',
+      phone:   iPhone >= 0 ? String(row[iPhone] || '') : '',
+      age:     iAge   >= 0 ? String(row[iAge]   || '') : '',
+      sport:   iSport >= 0 ? String(row[iSport] || '') : '',
+      channel: iChan  >= 0 ? String(row[iChan]  || '') : '',
+      note:    iNote  >= 0 ? String(row[iNote]  || '') : '',
+      wishtime:iWish  >= 0 ? String(row[iWish]  || '') : '',
+      status:  iStat  >= 0 ? String(row[iStat]  || '') : '',
+      owner:   iOwner >= 0 ? String(row[iOwner] || '') : '',
+      memo:    iMemo  >= 0 ? String(row[iMemo]  || '') : '',
+      consult: _miToISO_(consVal),
+      consultTime: consTime,
+      consultTmin: _miTminKR_(consTime),
+      visited: iVisit >= 0 ? String(row[iVisit] || '') : ''
+    });
+  }
+  return out;
 }
 
 function _processAction(body) {
@@ -1695,7 +1811,8 @@ function _processAction(body) {
         if (!dateStr) return;
         if (mcMonth && dateStr.slice(0,7) !== mcMonth) return;
         // rowIndex·memo·owner 동봉 — 달력 일정 클릭 → 상담 모달에서 방문완료·메모 수정용(2026-06-26 CRM)
-        mcEvents.push({ date: dateStr, kind: kind, time: timeStr || '', name: row.name || '', phone: row.phone || '', program: row.program, status: row.status, rowIndex: row.rowIndex, memo: row.memo || '', owner: row.owner || '' });
+        // tmin = 시간대별 정렬키(분 단위 정수·미정=null). time 표시 텍스트는 그대로 유지(2026-06-26).
+        mcEvents.push({ date: dateStr, kind: kind, time: timeStr || '', tmin: _miTminKR_(timeStr), name: row.name || '', phone: row.phone || '', program: row.program, status: row.status, rowIndex: row.rowIndex, memo: row.memo || '', owner: row.owner || '' });
       }
       // 1차 상담: 날짜=상담칸(col9), 시간=확정시간 텍스트(col10·'11시 등록상담' 등 한글표기). 시간 누락 보강.
       add(row.tourDate, '상담', row.tourTime || _miTimeKR_(row.exp1));
@@ -1763,6 +1880,72 @@ function _processAction(body) {
     mdSh.deleteRow(mdRow);
     try { _notifyTelegram('🗑 문의회원 삭제(공개페이지) — 행 ' + mdRow); } catch (e) {}
     return _json({ ok: true, rowIndex: mdRow, message: '삭제되었습니다.' });
+  }
+
+  // ─── 강습문의 페이지(CPO): 전체 목록 (성인 강습 문의 + 관리 필드) ───
+  if (action === 'lesson_inquiry_list') {
+    var liRows = _lessonReadRows_();
+    return _json({ ok: true, count: liRows.length, data: liRows });
+  }
+
+  // ─── 강습문의 페이지(CPO): 통계 (총·이번달·종목 분포·유입경로 분포) ───
+  if (action === 'lesson_stats') {
+    var lsRows = _lessonReadRows_();
+    var lsTotal = lsRows.length;
+    var lsMonth = Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy-MM');
+    var lsThisMonth = 0;
+    var lsSport = {}, lsChan = {};
+    lsRows.forEach(function(row) {
+      if (row.timestamp && row.timestamp.slice(0, 7) === lsMonth) lsThisMonth++;
+      // 종목: 멀티체크(콤마·슬래시·중점 구분) — 각각 카운트
+      String(row.sport || '').split(/[,/·;]+/).forEach(function(s){
+        var k = s.trim(); if (!k) return; lsSport[k] = (lsSport[k] || 0) + 1;
+      });
+      // 유입경로: 표준 10버킷 정규화(빈값=기타·미상)
+      var ch = _canonicalChannel_(row.channel || '');
+      lsChan[ch] = (lsChan[ch] || 0) + 1;
+    });
+    function _lsSort(obj) {
+      return Object.keys(obj).map(function(k){ return { k: k, v: obj[k] }; })
+        .sort(function(a, b){ return b.v - a.v; });
+    }
+    return _json({ ok: true, total: lsTotal, thisMonth: lsThisMonth, bySport: _lsSort(lsSport), byChannel: _lsSort(lsChan) });
+  }
+
+  // ─── 강습문의 페이지(CPO): 예약 달력 (상담예약 일정) ───
+  if (action === 'lesson_calendar') {
+    var lcMonth = String(body.month || '');  // 'YYYY-MM'
+    var lcRows = _lessonReadRows_();
+    var lcEvents = [];
+    lcRows.forEach(function(row) {
+      var d = row.consult;
+      if (!d) return;
+      if (lcMonth && d.slice(0, 7) !== lcMonth) return;
+      lcEvents.push({ date: d, time: row.consultTime || '', tmin: row.consultTmin, kind: '상담', name: row.name || '', phone: row.phone || '', sport: row.sport || '', status: row.status || '', memo: row.memo || '', rowIndex: row.rowIndex });
+    });
+    return _json({ ok: true, month: lcMonth, count: lcEvents.length, events: lcEvents });
+  }
+
+  // ─── 강습문의 페이지(CPO): 행 수정 (진행상태·담당·상담메모·상담예약·방문상태) ───
+  //   멤버십 member_inquiry_update 구조 그대로. undefined 필드는 스킵.
+  if (action === 'lesson_inquiry_update') {
+    var luRow = parseInt(body.rowIndex, 10);
+    if (!luRow || luRow < 2) return _json({ ok: false, error: 'rowIndex 필수(2 이상)' });
+    var luSh = _lessonSheet_();
+    if (!luSh) return _json({ ok: false, error: '시트 없음' });
+    var luHdr = _lessonEnsureCols_(luSh);
+    function _luSet(colNames, val) {
+      if (val === undefined || val === null) return;
+      var ci = _findCol_(luHdr, colNames);
+      if (ci >= 0) luSh.getRange(luRow, ci + 1).setValue(val);
+    }
+    _luSet(['진행상태', '진행현황', '진행상황', '상태'], body.status);
+    _luSet(['담당', '담당자'], body.owner);
+    _luSet(['상담메모', '메모', '비고'], body.memo);
+    _luSet(['상담예약', '상담 예약', '상담일정'], body.consult);
+    _luSet(['방문상태', '방문'], body.visited);
+    try { _notifyTelegram('📝 강습문의 수정 — 행 ' + luRow + ' · 상태:' + (body.status || '-') + ' · 담당:' + (body.owner || '-')); } catch (e) {}
+    return _json({ ok: true, rowIndex: luRow, message: '수정되었습니다.' });
   }
 
   // ─── UTM 귀속(파일럿): 구글폼에 '유입경로(자동)' 텍스트 항목 추가 + prefill entry ID 회수 (2026-06-23 ship113) ───
