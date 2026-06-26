@@ -88,16 +88,23 @@ footer{margin-top:26px;font-size:11px;color:var(--ink-faint);text-align:center;l
 .flag-badge .fb-d{font-size:10px;color:var(--ink-faint);margin-top:2px}
 .flag-badge.sev-red .fb-n{color:var(--red)}.flag-badge.sev-amber .fb-n{color:var(--amber)}.flag-badge.sev-blue .fb-n{color:var(--blue)}
 @media(max-width:680px){.bud-row{grid-template-columns:80px 1fr;gap:8px}.bud-meta{grid-column:1/-1;text-align:left}}
-/* ── 승인 전 최저가 비교 링크 (F-4 추가) ── */
-.pc-links{margin-top:5px;display:flex;gap:5px;flex-wrap:wrap}
-.pc-chip{display:inline-block;font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;text-decoration:none;border:1px solid var(--gold);color:var(--gold-deep);background:#fbf7ee;white-space:nowrap}
+/* ── 승인 전: 최저가 검토 배지 + 비교 링크 (컴팩트·정렬) ── */
+.req-item{font-weight:600;color:var(--ink)}
+.rev-low{margin-top:4px;display:inline-flex;align-items:center;gap:6px;flex-wrap:wrap;max-width:100%;font-size:11px;color:var(--gold-deep);background:#fbf7ee;border:1px solid #ecdcb3;border-radius:7px;padding:2px 8px;line-height:1.5}
+.rev-low b{color:var(--navy);font-size:11.5px;font-weight:750}
+.rev-delta{font-size:10px;font-weight:700;white-space:nowrap}
+.rev-delta.down{color:var(--green)}
+.rev-delta.up{color:var(--ink-faint)}
+.rev-conf{font-size:9.5px;color:var(--ink-faint);font-weight:600}
+.rev-shop{text-decoration:none;font-size:11px;line-height:1}
+.pc-links{margin-top:4px;display:flex;gap:4px;flex-wrap:wrap;align-items:center}
+.pc-chip{display:inline-block;font-size:9.5px;font-weight:700;padding:2px 7px;border-radius:20px;text-decoration:none;border:1px solid var(--gold);color:var(--gold-deep);background:#fbf7ee;white-space:nowrap;line-height:1.5}
 .pc-chip:hover{background:var(--gold);color:#fff}
 .pc-chip.dan{border-color:var(--navy);color:var(--navy);background:#eef1f6}
 .pc-chip.dan:hover{background:var(--navy);color:#fff}
 .pc-chip.src{border-color:var(--line);color:var(--ink-soft);background:var(--surface-2)}
 .pc-chip.src:hover{background:var(--ink-soft);color:#fff;border-color:var(--ink-soft)}
-.rev-low{margin-top:5px;font-size:11px;color:var(--gold-deep);background:#fbf7ee;border:1px solid #e6cf8f;border-radius:8px;padding:4px 9px;display:inline-block;line-height:1.6}
-.rev-low b{color:var(--navy);font-size:12px}
+@media(max-width:680px){.rev-low{font-size:10.5px}.pc-chip{font-size:9px;padding:2px 6px}}
 </style></head><body>
 
 <div id="gate"><div class="gate-card">
@@ -659,11 +666,15 @@ function reviewBadge(r,st){
   var rec=REVIEW_LOW[String(r.row)];                               // A(품의행) === r.row 매칭 (예시행 '예시-삭제가능'은 미매칭→무시)
   if(!rec||rec.lowest==null||rec.lowest==="")return "";            // 레코드/최저가 없으면 미표시
   var link=String(rec.link||"");
-  var shop=/^https?:\/\//i.test(link)?' <a class="pc-chip" href="'+link.replace(/"/g,"%22")+'" target="_blank" rel="noopener">🔗 판매처</a>':'';
-  var vs=(rec.vs!=null&&rec.vs!=="")?(" · "+String(rec.vs)):"";
-  var conf=(rec.conf!=null&&rec.conf!=="")?(" (신뢰도 "+String(rec.conf)+")"):"";
-  var tip=rec.same?(' title="동일제품: '+String(rec.same).replace(/[<>"]/g,"")+'"'):"";
-  return '<div class="rev-low"'+tip+'>💡 동일제품 최저가 <b>'+won(rec.lowest)+'</b>'+shop+vs+conf+'</div>';
+  var shop=/^https?:\/\//i.test(link)?'<a class="rev-shop" href="'+link.replace(/"/g,"%22")+'" target="_blank" rel="noopener" title="판매처 열기">🔗</a>':'';
+  var lo=Number(rec.lowest),rp=Number(rec.reqPrice),delta="";      // 델타=최저가−품의가 (둘 다 숫자일 때만). 음수=최저가가 더 쌈(절약)
+  if(isFinite(lo)&&rec.reqPrice!=null&&rec.reqPrice!==""&&isFinite(rp)){
+    var d=lo-rp; if(d!==0){var ch=d<0; delta='<span class="rev-delta '+(ch?'down':'up')+'" title="품의가 대비">'+(ch?'−':'+')+Math.abs(d).toLocaleString("ko-KR")+(ch?' ▾':' ▲')+'</span>';}
+  }
+  var conf=(rec.conf!=null&&rec.conf!=="")?'<span class="rev-conf">신뢰도 '+String(rec.conf).replace(/[<>"]/g,"")+'</span>':"";
+  var tp=[]; if(rec.same)tp.push("동일제품: "+String(rec.same)); if(rec.vs!=null&&rec.vs!=="")tp.push(String(rec.vs)); if(rec.note)tp.push(String(rec.note));
+  var tip=tp.length?(' title="'+tp.join(" · ").replace(/[<>"]/g,"")+'"'):"";
+  return '<div class="rev-low"'+tip+'>💡 최저가 <b>'+won(rec.lowest)+'</b>'+(delta?' '+delta:'')+(shop?' '+shop:'')+(conf?' '+conf:'')+'</div>';
 }
 function renderReqTbl(){
   var STG=["품의","검토","정산","완료","반려"];var fc=document.getElementById("reqFilter");
@@ -689,7 +700,7 @@ function renderReqTbl(){
     var photo=(r.이미지&&(String(r.이미지).indexOf("http")===0||String(r.이미지).indexOf("data:")===0))?'<img src="'+r.이미지+'" class="'+tc+'" title="첨부사진" onclick="window.open(this.src,\'_blank\')" loading="lazy">':'';
     var pf=(r.지출증빙&&String(r.지출증빙).indexOf("http")===0)?'<img src="'+r.지출증빙+'" class="'+tc+'" title="영수증/증빙" onclick="window.open(this.src,\'_blank\')" loading="lazy">':'';
     var rcpt=(photo||pf)?(photo+pf):'<button class="reqPhoto" data-row="'+r.row+'" style="font-size:10.5px;padding:4px 9px;cursor:pointer;border:1px dashed var(--gold);border-radius:6px;background:#fbf7ee;color:var(--gold-deep)">+ 사진</button>';
-    h+='<tr><td style="text-align:center;font-weight:700;color:var(--gold-deep)">'+(r.번호?("#"+r.번호):"")+'</td><td style="text-align:left">'+r.날짜+'</td><td style="text-align:left">'+(r.소속||"")+'</td><td style="text-align:left">'+(r.요청자||"")+'</td><td style="text-align:left">'+(r.승인자||"")+'</td><td style="text-align:left">'+(r.물품||"")+reviewBadge(r,st)+priceLinks(r,st)+'</td><td>'+won(r.가격)+'</td><td style="text-align:center">'+rcpt+'</td><td style="text-align:center"><span class="chip '+(stc[st]||"wait")+'">'+st+'</span></td><td style="text-align:center;white-space:nowrap">'+act+'</td></tr>';
+    h+='<tr><td style="text-align:center;font-weight:700;color:var(--gold-deep)">'+(r.번호?("#"+r.번호):"")+'</td><td style="text-align:left">'+r.날짜+'</td><td style="text-align:left">'+(r.소속||"")+'</td><td style="text-align:left">'+(r.요청자||"")+'</td><td style="text-align:left">'+(r.승인자||"")+'</td><td style="text-align:left"><span class="req-item">'+(r.물품||"")+'</span>'+reviewBadge(r,st)+priceLinks(r,st)+'</td><td>'+won(r.가격)+'</td><td style="text-align:center">'+rcpt+'</td><td style="text-align:center"><span class="chip '+(stc[st]||"wait")+'">'+st+'</span></td><td style="text-align:center;white-space:nowrap">'+act+'</td></tr>';
   });
   if(!rows.length)h+='<tr><td colspan="10" style="color:var(--ink-faint)">'+(isDone?(REQ_DONE.length?("해당 기간에 "+reqFilter+" 건이 없습니다."):"기간을 선택하고 [검색]을 누르세요."):"해당 단계의 품의가 없습니다.")+'</td></tr>';
   h+='</tbody>';document.getElementById("reqTbl").innerHTML=h;
