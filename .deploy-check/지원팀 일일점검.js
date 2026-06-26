@@ -564,13 +564,13 @@ function doGet(e) {
           gender: name === baseMale ? 'm' : name === baseFemale ? 'f' : 'all',
           submitted_am: hasAm,
           submittedAt_am: hasAm ? String(data[i][9] || '') : '',
-          submitter_am: hasAm ? String(data[i][10] || '') : '',
+          submitter_am: hasAm ? String(data[i][11] || '') : '',     // [근본수정 2026-06-26 시우 #7] 제출자=점검자(12열 idx11). 구버전은 근무자(11열 idx10)를 잘못 반환.
           submitted_pm: hasPm,
           submittedAt_pm: hasPm ? String(data[i][9] || '') : '',
-          submitter_pm: hasPm ? String(data[i][10] || '') : '',
+          submitter_pm: hasPm ? String(data[i][11] || '') : '',     // [근본수정 2026-06-26 시우 #7] 제출자=점검자(idx11)
           submitted_night: hasNight,
           submittedAt_night: hasNight ? String(data[i][9] || '') : '',
-          submitter_night: hasNight ? String(data[i][10] || '') : ''
+          submitter_night: hasNight ? String(data[i][11] || '') : ''  // [근본수정 2026-06-26 시우 #7] 제출자=점검자(idx11)
         });
       }
     }

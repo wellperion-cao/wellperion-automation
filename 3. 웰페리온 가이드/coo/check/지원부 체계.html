@@ -2145,9 +2145,9 @@ async function loadState(d,g){
       if(row.submitted_night)STATE._submitted_night=true;
       if(row.submittedAt_night)STATE._submittedAt_night=row.submittedAt_night;
       if(row.submitter_night)STATE._submitter_night=row.submitter_night;
-      if(row.submitted)STATE._submitted_am=true;
-      /* 제출된 행의 시각만 '조 제출시각'으로 복원 — 자동저장 행의 항목별 체크시각이 오염시키지 않게 가드. GM 2026-06-15 */
-      if(row.submitted&&row.submittedAt&&!STATE._submittedAt_am)STATE._submittedAt_am=row.submittedAt;
+      /* [근본수정 2026-06-26 시우 #5] 레거시 일반 폴백(row.submitted→_submitted_am / _submittedAt_am) 제거.
+         PM·야간·마감 행도 submitted=true(GAS submitStr!=='미제출')라 _submitted_am을 거짓오염 → 오전 미제출인데 '제출완료'·admin 오전칸 거짓 + 과거엔 오전 마감 텔레그램/스냅샷 스킵 유발.
+         오전 복원은 정밀 신호 submitted_am(2139·GAS hasAm)·checkedLedger sub.am이 전담. 하위호환: 레거시 '제출완료'/오전행도 GAS hasAm=true→submitted_am로 그대로 커버. */
     });
     // 완료 체크 원장 복원(2026-06-11 시우): 정상완료 항목은 시트행이 없으므로(이상치만 기록)
     // 서버 원장(chk_<dept>_<date>)으로 STATE[itemId] 복원 → 과거일/타기기 admin 완료율 회귀 방지.
@@ -3715,8 +3715,11 @@ async function submitRound(round,gender){
   if(!_isAdd && ONLINE){
     await sendTelegramRound(d,round,sub,gender);
   }
-  /* 3) 비회귀: 같은 shift의 모든 라운드가 제출되면 기존 shift 제출 경로 1회 발화 */
-  const baseShift=rdef.baseShift;
+  /* 3) 비회귀: 같은 shift의 모든 라운드가 제출되면 기존 shift 제출 경로 1회 발화
+     [근본수정 2026-06-26 시우 #6] 브리지 shift 키를 close-인지(_bs)로 정합 — close1을 'pm'으로 오발화하던 버그 차단.
+       기존 baseShift=rdef.baseShift는 close1.baseShift='pm'이라 마감조 제출이 '오후조' 텔레그램·pm 스냅샷을 오발송(주말=pm 부재로 더 심각).
+       _bs(close1→'close')는 line3709에서 이미 _submitted_<_bs>를 선점하므로 아래 가드가 스킵 → 회차레벨(sendTelegramRound·appendRoundSnapshot '마감조[1]')이 단일 출처. 평일 오전·오후·마감 각 회차 텔레그램 무변경. */
+  const baseShift=_bs;
   const sibRounds=roundsOfShift(baseShift);
   /* 빈 조(가시 항목 0)는 제출 불필요로 간주 → 항목 있는 조가 모두 제출되면 shift 완료 */
   const allDone=sibRounds.every(rk=>!roundHasItems(d,gender,rk)||isRoundSubmitted(d,gender,rk));
