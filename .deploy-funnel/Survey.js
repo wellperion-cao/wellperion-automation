@@ -1721,6 +1721,9 @@ function _processAction(body) {
       var ci = _miColIdx_(muHdr, colNames);
       if (ci >= 0) muSh.getRange(muRow, ci + 1).setValue(val);
     }
+    // 등록 전환 감지: 상태 변경 '전' 값 캡처(신규→SUC 실제 전환 시점만 이관·알림 — 중복발화 차단). 2026-06-26 시토·GM.
+    var _muStatusCi  = _miColIdx_(muHdr, ['진행현황','진행상황','진행상태','상태']);
+    var _muOldStatus = (_muStatusCi >= 0) ? String(muSh.getRange(muRow, _muStatusCi + 1).getValue() || '').trim() : '';
     _muSet(['성함','이름'], body.name);
     _muSet(['연락처','전화','휴대폰'], body.phone);
     _muSet(['관심 있는 프로그램 종류','관심프로그램','프로그램'], body.program);
@@ -1732,9 +1735,19 @@ function _processAction(body) {
     _muSet(['체험1 확정시간','체험1'], body.exp1);
     _muSet(['체험2 확정시간','체험2'], body.exp2);
     _muSet(['체험3 확정시간','체험3'], body.exp3);
-    // carry-over: SUC/단기SUC = 등록회원 → 등록현황 탭 자동 이관(문의명단에서 넘어감)
-    if (body.status === 'SUC' || body.status === '단기SUC') {
+    // carry-over: 신규→SUC/단기SUC '실제 전환' 시에만 등록현황 탭 이관 + 등록 전환 전용 알림. 2026-06-26 시토·GM.
+    //   A안(GM 결재): 유효회원(실계약 정본)에는 자동생성 안 함 — 계약 확정 시 사람 입력. 여기선 깔때기 이관+알림까지만.
+    //   과거 버그: body.status==SUC면 값 미변경에도 매 저장 _regUpsert_ 재실행 → 등록현황 중복 갱신. 이제 old≠SUC && new==SUC 1회만.
+    var _muNewStatus = String(body.status == null ? '' : body.status).trim();
+    var _isSucNew = (_muNewStatus === 'SUC' || _muNewStatus === '단기SUC');
+    var _wasSuc   = (_muOldStatus === 'SUC' || _muOldStatus === '단기SUC');
+    if (_isSucNew && !_wasSuc) {
       try { _regUpsert_(body.name, body.phone, body.program); } catch (e) {}
+      // 등록 전환 전용 알림 → '문의 알림' 방(신규문의 알림과 동일 방, 퍼널 성과를 한곳에서). 누가·어떤 문의가 등록됐는지.
+      try {
+        var _regChatId = PropertiesService.getScriptProperties().getProperty('TELEGRAM_INQUIRY_CHAT_ID') || _INQUIRY_CHAT_ID_FALLBACK;
+        _notifyTelegram('✅ <b>등록 전환</b> — 문의회원이 등록(' + _muNewStatus + ')으로 전환\n· 이름: ' + (body.name || '-') + '\n· 프로그램: ' + (body.program || '-') + '\n· 담당: ' + (body.owner || '-'), _regChatId);
+      } catch (e) {}
     }
     try { _notifyTelegram('📝 문의회원 수정(공개페이지) — 행 ' + muRow + ' · 상태:' + (body.status || '-') + ' · 담당:' + (body.owner || '-')); } catch (e) {}
     return _json({ ok: true, rowIndex: muRow, message: '수정되었습니다.' });
