@@ -5649,7 +5649,7 @@ loadSupportGuideData(); renderSupportGuideBoard(); loadSupportGuideFromBackend()
 function requireEditAuth(){
   if(sessionStorage.getItem('editAuth')==='1') return true;
   var pw = prompt('항목 편집 비밀번호를 입력하세요');
-  if(pw !== '1234'){ if(pw !== null) alert('비밀번호가 틀립니다.'); return false; }
+  if(pw !== 'wellperion!@345'){ if(pw !== null) alert('비밀번호가 틀립니다.'); return false; }
   sessionStorage.setItem('editAuth','1');
   return true;
 }
