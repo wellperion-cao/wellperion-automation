@@ -881,6 +881,29 @@ function _miColIdx_(headers, names) {
   for (var k = 0; k < arr.length; k++) { for (var j = 0; j < headers.length; j++) { if (headers[j].indexOf(arr[k]) >= 0) return j; } }
   return -1;
 }
+// 전화번호 표시 정규화 — 시트가 '01034761531'을 숫자로 저장해 앞 0이 떨어진 '1034761531'로 보이는 문제 교정.
+//   무조건 '010-3476-1531' 형식. 판단 불가(자릿수 안 맞음)면 원문 보존(손실 금지). 2026-06-26 시포·GM.
+function _fmtPhone_(v) {
+  var src = String(v == null ? '' : v);
+  var digits = src.replace(/\D/g, '');
+  if (!digits) return '';
+  if (digits.length === 10 && digits.slice(0, 2) === '10') digits = '0' + digits;   // 앞 0 떨어진 휴대폰 복원
+  if (digits.length === 11) return digits.slice(0, 3) + '-' + digits.slice(3, 7) + '-' + digits.slice(7);
+  if (digits.length === 10) {
+    if (digits.slice(0, 2) === '02') return '02-' + digits.slice(2, 6) + '-' + digits.slice(6);  // 02 지역
+    return digits.slice(0, 3) + '-' + digits.slice(3, 6) + '-' + digits.slice(6);                 // 그 외 3-3-4
+  }
+  if (digits.length === 9 && digits.slice(0, 2) === '02') return '02-' + digits.slice(2, 5) + '-' + digits.slice(5);
+  return src;  // 판단 불가 → 원문 그대로
+}
+// 연락기록(Contact)은 자유 텍스트 — '전화처럼 보일 때만'(숫자·하이픈·괄호·공백뿐) 정규화, 아니면 원문 보존.
+function _fmtContact_(v) {
+  var s = String(v == null ? '' : v);
+  if (s.trim() && /^[\d\s\-+().]+$/.test(s.trim())) return _fmtPhone_(s);
+  return s;
+}
+function _fmtPhoneOrUndef_(v)   { return (v === undefined || v === null) ? v : _fmtPhone_(v); }
+function _fmtContactOrUndef_(v) { return (v === undefined || v === null) ? v : _fmtContact_(v); }
 function _miToISO_(val) {
   if (!val) return '';
   if (val instanceof Date && !isNaN(val.getTime())) {
@@ -976,6 +999,10 @@ function _miReadRows_() {
   var iOwner = _miColIdx_(hdr, ['담당','담당자']);
   var iMemo  = _miColIdx_(hdr, ['메모','비고','담당자메모']);
   var iChan  = _miColIdx_(hdr, ['문의채널','유입채널','채널','경로','알게']);
+  // 연락기록 3칸 — Contact1·Contact2·Contact3 헤더 우선, 못 찾으면 절대 컬럼 18/19/20(0-based 17/18/19) 폴백 (2026-06-26 시포)
+  var iC1 = _miColIdx_(hdr, ['Contact1']); if (iC1 < 0) iC1 = 17;
+  var iC2 = _miColIdx_(hdr, ['Contact2']); if (iC2 < 0) iC2 = 18;
+  var iC3 = _miColIdx_(hdr, ['Contact3']); if (iC3 < 0) iC3 = 19;
   for (var r = 0; r < data.length; r++) {
     var row = data[r];
     var hasName  = iName  >= 0 && row[iName];
@@ -984,7 +1011,7 @@ function _miReadRows_() {
     out.push({
       rowIndex: r + 2,
       name:     iName  >= 0 ? String(row[iName]  || '') : '',  // 2026-06-22 GM '전체 공개' — 실명 노출
-      phone:    iPhone >= 0 ? String(row[iPhone] || '') : '',  // 연락처 노출
+      phone:    iPhone >= 0 ? _fmtPhone_(row[iPhone]) : '',    // 연락처 노출 + 표시 정규화(앞 0 복원·하이픈)
       program:  iProg  >= 0 ? String(row[iProg]  || '') : '',
       status:   iStat  >= 0 ? String(row[iStat]  || '') : '',
       channel:  (iChan >= 0 && row[iChan]) ? _canonicalChannel_(String(row[iChan])) : '',  // 유입채널 표준 10버킷(빈값은 빈값 유지)
@@ -999,7 +1026,10 @@ function _miReadRows_() {
       visit2Date: _miToISO_(iV2Dt >= 0 ? row[iV2Dt] : ''),  // 2차 방문 날짜(col11) — 달력에서 누락되던 일정 보강
       timestamp:_miToISO_(iTs   >= 0 ? row[iTs]   : ''),
       memo:     iMemo  >= 0 ? String(row[iMemo]  || '') : '',
-      owner:    iOwner >= 0 ? String(row[iOwner] || '') : ''
+      owner:    iOwner >= 0 ? String(row[iOwner] || '') : '',
+      contact1: (iC1 >= 0 && iC1 < row.length) ? _fmtContact_(row[iC1]) : '',
+      contact2: (iC2 >= 0 && iC2 < row.length) ? _fmtContact_(row[iC2]) : '',
+      contact3: (iC3 >= 0 && iC3 < row.length) ? _fmtContact_(row[iC3]) : ''
     });
   }
   return out;
@@ -1107,7 +1137,7 @@ function _lessonReadRows_() {
       rowIndex: r + 2,
       timestamp: _miToISO_(iTs >= 0 ? row[iTs] : ''),
       name:    iName  >= 0 ? String(row[iName]  || '') : '',
-      phone:   iPhone >= 0 ? String(row[iPhone] || '') : '',
+      phone:   iPhone >= 0 ? _fmtPhone_(row[iPhone]) : '',   // 표시 정규화(앞 0 복원·하이픈)
       age:     iAge   >= 0 ? String(row[iAge]   || '') : '',
       sport:   iSport >= 0 ? String(row[iSport] || '') : '',
       channel: iChan  >= 0 ? String(row[iChan]  || '') : '',
@@ -1829,10 +1859,18 @@ function _processAction(body) {
       var ci = _miColIdx_(maHdr, colNames);
       if (ci >= 0) maRow[ci] = val;
     }
+    // 연락기록 — 헤더 우선, 못 찾으면 절대 컬럼 폴백(0-based). 행 배열이 짧으면 확장. (2026-06-26 시포)
+    function _maSetCol(colNames, absIdx0, val) {
+      if (val === undefined || val === null || val === '') return;
+      var ci = _miColIdx_(maHdr, colNames);
+      if (ci < 0) ci = absIdx0;
+      while (maRow.length <= ci) maRow.push('');
+      maRow[ci] = val;
+    }
     var maNow = Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy-MM-dd');
     if (!body.name && !body.phone) return _json({ ok: false, error: '이름 또는 전화번호 필수' });
     _maSet(['성함','이름'], body.name);
-    _maSet(['연락처','전화','휴대폰'], body.phone);
+    _maSet(['연락처','전화','휴대폰'], _fmtPhone_(body.phone));  // 하이픈 텍스트로 저장 → 시트가 앞 0 보존
     _maSet(['관심 있는 프로그램 종류','관심프로그램','프로그램'], body.program);
     _maSet(['진행현황','진행상황','진행상태','상태'], body.status || '신규');
     _maSet(['문의채널','유입채널','채널','경로'], body.channel || '유선전화');
@@ -1842,6 +1880,9 @@ function _processAction(body) {
     _maSet(['체험1 확정시간','체험1'], body.exp1);
     _maSet(['체험2 확정시간','체험2'], body.exp2);
     _maSet(['체험3 확정시간','체험3'], body.exp3);
+    _maSetCol(['Contact1'], 17, _fmtContact_(body.contact1));
+    _maSetCol(['Contact2'], 18, _fmtContact_(body.contact2));
+    _maSetCol(['Contact3'], 19, _fmtContact_(body.contact3));
     _maSet(['타임스탬프','접수일','날짜'], body.timestamp || maNow);
     maSh.appendRow(maRow);
     if (body.status === 'SUC' || body.status === '단기SUC') {
@@ -1905,11 +1946,18 @@ function _processAction(body) {
       var ci = _miColIdx_(muHdr, colNames);
       if (ci >= 0) muSh.getRange(muRow, ci + 1).setValue(val);
     }
+    // 연락기록 — 헤더 우선, 못 찾으면 절대 컬럼 폴백(0-based). undefined/null 스킵('' 은 클리어). (2026-06-26 시포)
+    function _muSetCol(colNames, absIdx0, val) {
+      if (val === undefined || val === null) return;
+      var ci = _miColIdx_(muHdr, colNames);
+      if (ci < 0) ci = absIdx0;
+      muSh.getRange(muRow, ci + 1).setValue(val);
+    }
     // 등록 전환 감지: 상태 변경 '전' 값 캡처(신규→SUC 실제 전환 시점만 이관·알림 — 중복발화 차단). 2026-06-26 시토·GM.
     var _muStatusCi  = _miColIdx_(muHdr, ['진행현황','진행상황','진행상태','상태']);
     var _muOldStatus = (_muStatusCi >= 0) ? String(muSh.getRange(muRow, _muStatusCi + 1).getValue() || '').trim() : '';
     _muSet(['성함','이름'], body.name);
-    _muSet(['연락처','전화','휴대폰'], body.phone);
+    _muSet(['연락처','전화','휴대폰'], _fmtPhoneOrUndef_(body.phone));  // 하이픈 텍스트 저장 → 앞 0 보존(undefined는 스킵)
     _muSet(['관심 있는 프로그램 종류','관심프로그램','프로그램'], body.program);
     _muSet(['진행현황','진행상황','진행상태','상태'], body.status);
     _muSet(['문의채널','유입채널','채널','경로'], body.channel);
@@ -1919,6 +1967,9 @@ function _processAction(body) {
     _muSet(['체험1 확정시간','체험1'], body.exp1);
     _muSet(['체험2 확정시간','체험2'], body.exp2);
     _muSet(['체험3 확정시간','체험3'], body.exp3);
+    _muSetCol(['Contact1'], 17, _fmtContactOrUndef_(body.contact1));
+    _muSetCol(['Contact2'], 18, _fmtContactOrUndef_(body.contact2));
+    _muSetCol(['Contact3'], 19, _fmtContactOrUndef_(body.contact3));
     // carry-over: 신규→SUC/단기SUC '실제 전환' 시에만 등록현황 탭 이관 + 등록 전환 전용 알림. 2026-06-26 시토·GM.
     //   A안(GM 결재): 유효회원(실계약 정본)에는 자동생성 안 함 — 계약 확정 시 사람 입력. 여기선 깔때기 이관+알림까지만.
     //   과거 버그: body.status==SUC면 값 미변경에도 매 저장 _regUpsert_ 재실행 → 등록현황 중복 갱신. 이제 old≠SUC && new==SUC 1회만.
