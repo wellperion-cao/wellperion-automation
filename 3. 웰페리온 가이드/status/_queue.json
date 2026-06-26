@@ -1475,5 +1475,19 @@
     "artifact": "등록현황·회원현황을 회원관리.html(등록후)로 이관. 회원관리=gate.js+2탭 신설(member_registered_list 18건·member_active_list 1013명·active_update 인라인편집)+라이브 대시보드(cpo_today_stats). 문의회원=문의+달력+상담CRM 전담(member_inquiry 583건·calendar 45건 회귀없음, 약 416줄 JS 제거). GAS 무수정. 커밋 a0a8852d",
     "next": "🔗 회원관리 이탈현황 실측 데이터 연결",
     "adhoc_commit": "a0a8852dce59c8cf56a9aa425e9baa25f241b0cb"
+  },
+  {
+    "task_id": "COO-2026-06-26-ADHOC-fecc8fe7",
+    "clevel": "coo",
+    "title": "[시우] 휴회 제거 + 접수보드 키 정합 + SLA 이식 [시우]",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-06-26",
+    "processed_at": "2026-06-26",
+    "artifact": "① 휴회 접수(leave) 코드 제거 — 백엔드 REG_CATEGORIES/REG_EXTRA_HEADERS·프론트 무참조 확인(폐지·브로제이 이관, GM 2026-06-26).\n② 접수 보드 키 정합 — 운영부 체계.html 렌더·_KNOWN_KEYS를 백엔드 영문키(regId/category/status…)에 맞춤(빈칸·regId 미바인딩 silent fail 해소).\n③ _regComputeSla 이식 — 라이브 GAS에 SLA(deadline/remainH/slaStatus) 복원, reg_board에 적용.\n④ 분실물 kee (CLI ad-hoc · 커밋 fecc8fe7)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "fecc8fe722f170073784980bd0d77a89e380d3e1",
+    "ship_no": 188
   }
 ]
