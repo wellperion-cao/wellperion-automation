@@ -2547,7 +2547,16 @@ function deptRegLoad(dept){
     });
 }
 
-var _KNOWN_KEYS = ['접수ID','카테고리','접수일시','이름','연락처','위치','내용','사진URL','상태','담당','처리메모','부서'];
+// ★ 백엔드(reg_board) 영문 키와 정합 — 한글 키 접근은 전부 undefined 였음(빈 카드 버그).
+//   공통 12키 + SLA 계산키(slaHours·deadline·remainH·slaStatus)를 제외 목록에 포함 → 추가필드만 extras 표시.
+var _KNOWN_KEYS = ['regId','category','createdAt','name','contact','loc','content','photoUrl','status','assignee','memo','dept','slaHours','deadline','remainH','slaStatus'];
+// 추가필드 영문키 → 한글 라벨 (백엔드 REG_EXTRA_HEADERS 라벨과 동일). 미정의 키는 키명 그대로 표시.
+var _EXTRA_LABEL = {
+  itemName:'분실물품', lostWhen:'분실시점', keepWhere:'보관요청',
+  equipName:'고장설비', severity:'위험도', usable:'사용가능여부',
+  issueKind:'유형', urgency:'시급도',
+  targetStaff:'대상직원·강사', episode:'사례', anonymousPref:'익명희망'
+};
 var _STATUS_LIST = ['접수','처리중','완료'];
 var _STATUS_COLOR = {'접수':'var(--yellow)','처리중':'var(--blue)','완료':'var(--green)'};
 var _STATUS_BG    = {'접수':'var(--yellow-bg)','처리중':'var(--blue-bg)','완료':'var(--green-bg)'};
@@ -2562,7 +2571,7 @@ function _deptRegRender(board, rows, dept){
   /* 상태별 그룹 */
   var groups = {'접수':[],'처리중':[],'완료':[]};
   rows.forEach(function(r){
-    var s = r['상태']||'접수';
+    var s = r['status']||'접수';
     if(!groups[s]) groups[s] = [];
     groups[s].push(r);
   });
@@ -2614,26 +2623,26 @@ function _deptRegRender(board, rows, dept){
 }
 
 function _deptRegCard(r, dept){
-  var id  = _esc(r['접수ID']||'');
-  var cat = _esc(r['카테고리']||'');
-  var status = r['상태']||'접수';
-  var catColor = _CAT_COLOR[r['카테고리']]||'var(--accent)';
-  var catBg    = _CAT_BG[r['카테고리']]||'var(--accent-bg)';
-  var rawId  = String(r['접수ID']||'');
-  var rawCat = String(r['카테고리']||'');
+  var id  = _esc(r['regId']||'');
+  var cat = _esc(r['category']||'');
+  var status = r['status']||'접수';
+  var catColor = _CAT_COLOR[r['category']]||'var(--accent)';
+  var catBg    = _CAT_BG[r['category']]||'var(--accent-bg)';
+  var rawId  = String(r['regId']||'');
+  var rawCat = String(r['category']||'');
 
   /* 추가 필드(공통 외 key:value) */
   var extras = [];
   Object.keys(r).forEach(function(k){
     if(_KNOWN_KEYS.indexOf(k)<0 && r[k]!=null && r[k]!==''){
-      extras.push('<span style="font-size:11px;color:var(--dim);">'+_esc(k)+': </span><span style="font-size:11px;color:var(--text);">'+_esc(String(r[k]))+'</span>');
+      extras.push('<span style="font-size:11px;color:var(--dim);">'+_esc(_EXTRA_LABEL[k]||k)+': </span><span style="font-size:11px;color:var(--text);">'+_esc(String(r[k]))+'</span>');
     }
   });
 
   /* 사진 링크 */
   var photoHtml = '';
-  if(r['사진URL']){
-    photoHtml = '<a href="'+_esc(r['사진URL'])+'" target="_blank" style="font-size:11px;color:var(--blue);text-decoration:none;">사진 보기</a>';
+  if(r['photoUrl']){
+    photoHtml = '<a href="'+_esc(r['photoUrl'])+'" target="_blank" style="font-size:11px;color:var(--blue);text-decoration:none;">사진 보기</a>';
   }
 
   /* 상태 select */
@@ -2647,23 +2656,23 @@ function _deptRegCard(r, dept){
   /* 헤더 행: 카테고리 배지 + 접수일시 */
   html += '<div style="display:flex;align-items:center;gap:7px;margin-bottom:7px;flex-wrap:wrap;">';
   if(cat) html += '<span style="font-size:11px;font-weight:700;padding:2px 9px;border-radius:10px;background:'+catBg+';color:'+catColor+';">'+cat+'</span>';
-  if(r['접수일시']) html += '<span style="font-size:11px;color:var(--dim);">'+_esc(String(r['접수일시']))+'</span>';
+  if(r['createdAt']) html += '<span style="font-size:11px;color:var(--dim);">'+_esc(String(r['createdAt']))+'</span>';
   if(id) html += '<span style="font-size:10px;color:var(--dim);margin-left:auto;">#'+id+'</span>';
   html += '</div>';
 
   /* 이름·연락처 */
-  if(r['이름']||r['연락처']){
-    html += '<div style="font-size:13px;font-weight:600;margin-bottom:4px;">'+_esc(String(r['이름']||''))+'<span style="font-size:12px;color:var(--dim);font-weight:400;margin-left:8px;">'+_esc(String(r['연락처']||''))+'</span></div>';
+  if(r['name']||r['contact']){
+    html += '<div style="font-size:13px;font-weight:600;margin-bottom:4px;">'+_esc(String(r['name']||''))+'<span style="font-size:12px;color:var(--dim);font-weight:400;margin-left:8px;">'+_esc(String(r['contact']||''))+'</span></div>';
   }
 
   /* 내용 */
-  if(r['내용']){
-    html += '<div style="font-size:13px;color:var(--text);line-height:1.5;margin-bottom:6px;word-break:break-word;">'+_esc(String(r['내용']))+'</div>';
+  if(r['content']){
+    html += '<div style="font-size:13px;color:var(--text);line-height:1.5;margin-bottom:6px;word-break:break-word;">'+_esc(String(r['content']))+'</div>';
   }
 
   /* 위치 */
-  if(r['위치']){
-    html += '<div style="font-size:11px;color:var(--dim);margin-bottom:5px;">위치: '+_esc(String(r['위치']))+'</div>';
+  if(r['loc']){
+    html += '<div style="font-size:11px;color:var(--dim);margin-bottom:5px;">위치: '+_esc(String(r['loc']))+'</div>';
   }
 
   /* 사진 */
@@ -2686,13 +2695,13 @@ function _deptRegCard(r, dept){
   /* 담당 */
   html += '<div style="display:flex;gap:7px;align-items:center;flex-wrap:wrap;margin-bottom:6px;">';
   html += '<label style="font-size:12px;font-weight:700;color:var(--dim);white-space:nowrap;">담당</label>';
-  html += '<input type="text" data-reg-assignee placeholder="담당자" value="'+_esc(String(r['담당']||''))+'" style="flex:1;background:var(--paper);border:1px solid var(--border);color:var(--text);padding:5px 8px;border-radius:7px;font-size:12px;font-family:inherit;">';
+  html += '<input type="text" data-reg-assignee placeholder="담당자" value="'+_esc(String(r['assignee']||''))+'" style="flex:1;background:var(--paper);border:1px solid var(--border);color:var(--text);padding:5px 8px;border-radius:7px;font-size:12px;font-family:inherit;">';
   html += '</div>';
 
   /* 처리메모 */
   html += '<div style="margin-bottom:8px;">';
   html += '<label style="font-size:12px;font-weight:700;color:var(--dim);display:block;margin-bottom:4px;">처리 메모</label>';
-  html += '<textarea data-reg-memo rows="2" style="width:100%;background:var(--paper);border:1px solid var(--border);color:var(--text);padding:6px 8px;border-radius:7px;font-size:12px;font-family:inherit;resize:vertical;box-sizing:border-box;">'+_esc(String(r['처리메모']||''))+'</textarea>';
+  html += '<textarea data-reg-memo rows="2" style="width:100%;background:var(--paper);border:1px solid var(--border);color:var(--text);padding:6px 8px;border-radius:7px;font-size:12px;font-family:inherit;resize:vertical;box-sizing:border-box;">'+_esc(String(r['memo']||''))+'</textarea>';
   html += '</div>';
 
   /* 저장 버튼 */
