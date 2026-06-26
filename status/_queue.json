@@ -1349,5 +1349,19 @@
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "c71b8e8b4e05aa94716baa800e3cf31424f05654",
     "ship_no": 168
+  },
+  {
+    "task_id": "COO-2026-06-26-ADHOC-df894795",
+    "clevel": "coo",
+    "title": "[시우] 자동저장 시 체크해제 즉시 반영 — 거짓 진행률 차단 [시우]",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-06-26",
+    "processed_at": "2026-06-26",
+    "artifact": "#8: 회차 항목 체크 후 해제 시, 명시 제출 전까지 자동저장이 roundUnchecked를 안 보내 led.cr(today_live 분자)에 해제분이 잔존 → 현황판 진행률이 거짓으로 높게 유지되던 버그. 자동저장에 '미제출(작업중) 회차'의 미체크 항목을 roundUnchecked로 포함해 led.cr 즉시정리. 제출(locked) 회차는 제외(resetShiftChecks 후 미체크처럼 보여도 led.cr 보존). GAS는 시트 '미완료' 행을 led.sub 제출도장 회차만 기록하도록 게이트 → F2 보존+노이즈 0. (CLI ad-hoc · 커밋 df894795)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "df8947954cc8c0dbc1b7ddea74a7ff1d1de3beaa",
+    "ship_no": 186
   }
 ]
