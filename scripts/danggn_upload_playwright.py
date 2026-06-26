@@ -1018,7 +1018,37 @@ async def _run_draft_with_context(page, context, args: argparse.Namespace, publi
 
     # ④ 발행(publish=True) — '다음→게시' 흐름 / 아니면 임시저장
     if publish:
-        return await _publish_via_next(page)
+        rc = await _publish_via_next(page)
+        if rc == 0:
+            # 발행 성공 직후 page.url에서 daangn business-posts/{id} 캡처 (발행시점)
+            # try/except 로 감싸 실패해도 발행 흐름 절대 막지 않음
+            try:
+                _pub_url = page.url
+                _m = re.search(
+                    r"https?://(?:www\.)?daangn\.com/kr/business-posts/[A-Za-z0-9_-]+",
+                    _pub_url,
+                )
+                if _m:
+                    _captured_url = _m.group(0)
+                    print(f"[INFO] 당근 게시글 URL 캡처: {_captured_url}")
+                    _folder = (getattr(args, "content_dir", None) or "").strip()
+                    if _folder:
+                        try:
+                            from review_queue_util import update_review_post_url as _upd_rq
+                        except ImportError:
+                            sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+                            from review_queue_util import update_review_post_url as _upd_rq
+                        _upd_rq(_folder, "당근", _captured_url)
+                    else:
+                        print("[WARN] --content-dir 미지정 — review_queue 갱신 생략")
+                else:
+                    print(
+                        f"[INFO] 당근 URL 패턴 불일치 (현재: {_pub_url[:80]})"
+                        " — 수동 회수 필요"
+                    )
+            except Exception as _cap_e:
+                print(f"[WARN] 당근 URL 캡처 실패 (발행 흐름 영향 없음): {_cap_e}")
+        return rc
 
     # ④ 임시저장
     save_loc, save_sel = await _find_first(page, _SAVE_DRAFT_SELECTORS)
