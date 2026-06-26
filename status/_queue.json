@@ -1321,5 +1321,19 @@
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "e766763ead8a4225756bb758305e79a2a135d8ea",
     "ship_no": 39
+  },
+  {
+    "task_id": "COO-2026-06-26-ADHOC-e15efdcf",
+    "clevel": "coo",
+    "title": "[시우] 제출·텔레그램 정합 — AM 마감누락·주말 마감조 오발송·제출자 컬럼 [시우]/support",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-06-26",
+    "processed_at": "2026-06-26",
+    "artifact": "#5 오후조 제출된 날 오전조 마감누락: loadState 레거시 폴백(row.submitted→_submitted_am/At) 제거 — PM·야간·마감 행이 _submitted_am 거짓오염하던 근원 차단(정밀 submitted_am·checkedLedger sub.am이 전담).\n#6 주말 마감조 '오후조' 오발송: submitRound shift-완료 브리지 키를 close-인지(_bs)로 정합 — close1을 'pm'으로 오발화하던 버그 차단, 회차레벨(마감조[1])이 단일 출처.\n#7 제출자=근무자 오표시: GAS get (CLI ad-hoc · 커밋 e15efdcf)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "e15efdcf4d81956ad1b12050e089efed1ce15add",
+    "ship_no": 185
   }
 ]
