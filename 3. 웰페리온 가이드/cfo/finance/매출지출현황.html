@@ -665,6 +665,9 @@ function reviewBadge(r,st){
   if(!(st==="품의"||st==="승인"))return "";                        // 승인 전 단계만
   var rec=REVIEW_LOW[String(r.row)];                               // A(품의행) === r.row 매칭 (예시행 '예시-삭제가능'은 미매칭→무시)
   if(!rec||rec.lowest==null||rec.lowest==="")return "";            // 레코드/최저가 없으면 미표시
+  // stale 방지: B(품의물품)과 현재 r.물품이 일치할 때만 표시. row 재사용·물품 수정 시 옛 검토값 차단. 공백 차이 무시.
+  var _norm=function(x){return String(x==null?"":x).trim().replace(/\s+/g," ");};
+  if(!_norm(rec.item)||_norm(rec.item)!==_norm(r.물품))return ""; // 물품명 불일치 → 조용히 미표시
   var link=String(rec.link||"");
   var shop=/^https?:\/\//i.test(link)?'<a class="rev-shop" href="'+link.replace(/"/g,"%22")+'" target="_blank" rel="noopener" title="판매처 열기">🔗</a>':'';
   var lo=Number(rec.lowest),rp=Number(rec.reqPrice),delta="";      // 델타=최저가−품의가 (둘 다 숫자일 때만). 음수=최저가가 더 쌈(절약)
