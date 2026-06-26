@@ -13,11 +13,12 @@ const TODO_SHEET_FALLBACKS = [
   '업무 현황 SSOT'
 ];
 const DONE_SHEET_NAME = '업무 완료 현황';   // 백업 (상태=완료 자동 복사 + 결재완료 자동 복사)
+// ⚠ 완료보관(아카이브) 전용 fallback — '업무 완료 현황' 정확 매칭 우선.
+// '결재 현황'/'결재 현황 SSOT'(결재 진행 SSOT 탭)은 의도적으로 제외: 완료 건이 결재 현황 탭으로
+//   잘못 복사되던 오탐 차단(2026-06-26 시로). 완료보관은 오직 '업무 완료 현황'/'TODO_완료' 만 대상.
 const DONE_SHEET_FALLBACKS = [
   '업무 완료 현황',
-  '결재 현황',
-  'TODO_완료',
-  '결재 현황 SSOT'
+  'TODO_완료'
 ];
 
 // 데이터 있는 시트 우선 — 첫 행 헤더에 '업무명' 또는 'id' 있으면 정식 시트
@@ -239,37 +240,48 @@ function _applyStatusColor(sh, row, status) {
   sh.getRange(row, colIdx).setBackground(color).setFontColor('#ffffff');
 }
 
-// 결재 현황(완료/반려) 시트에 완료 건 복사
+// 완료보관('업무 완료 현황') 시트에 완료 건 복사 (수동 완료·결재완료 공통)
+// 동시 완료 시 보관행 유실 방지 — getLastRow 읽기~append 임계구역을 ScriptLock 으로 보호(2026-06-26 시로).
 function _copyToDoneSheet(srcSheet, srcRow) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
-  let doneSh = _findSheet(ss, DONE_SHEET_FALLBACKS, false);
+  // ── 동시성 가드: 보관 append 직렬화(다중 완료 동시 호출 시 같은 newRow 덮어쓰기 방지) ──
+  const lock = LockService.getScriptLock();
+  try { lock.waitLock(20000); } catch (e) { /* 잠금 실패해도 보관 시도는 진행(데이터 우선) */ }
+  try {
+    let doneSh = _findSheet(ss, DONE_SHEET_FALLBACKS, false);
 
-  // 시트가 없으면 자동 생성 (메인 fallback 이름 우선)
-  if (!doneSh) {
-    doneSh = ss.insertSheet(DONE_SHEET_NAME);
-    // 헤더 + 완료일 컬럼 추가
-    const headers = TODO_HEADERS.concat(['완료일']);
-    doneSh.getRange(1, 1, 1, headers.length).setValues([headers]);
-    doneSh.getRange(1, 1, 1, headers.length)
-      .setFontWeight('bold')
-      .setBackground('#34a853')
-      .setFontColor('#ffffff');
-    const widths = [130, 200, 130, 80, 100, 100, 300, 70, 70, 200, 200, 80, 130, 130, 130];
-    widths.forEach((w, i) => { if (i < headers.length) doneSh.setColumnWidth(i + 1, w); });
-    doneSh.setFrozenRows(1);
+    // 시트가 없으면 자동 생성 (메인 fallback 이름 우선)
+    if (!doneSh) {
+      doneSh = ss.insertSheet(DONE_SHEET_NAME);
+      // 헤더 = TODO_HEADERS(끝에 '완료일' 포함) + 보관시각(아카이브 복사 시각).
+      //   ※ '완료일' 중복 제거(2026-06-26 시로): 과거엔 TODO_HEADERS에 완료일이 없어 concat(['완료일'])
+      //     했으나, 현재 TODO_HEADERS 끝이 이미 '완료일'이라 헤더가 2번 찍히던 버그. 추가 컬럼은 '보관시각'으로 명명.
+      const headers = TODO_HEADERS.concat(['보관시각']);
+      doneSh.getRange(1, 1, 1, headers.length).setValues([headers]);
+      doneSh.getRange(1, 1, 1, headers.length)
+        .setFontWeight('bold')
+        .setBackground('#34a853')
+        .setFontColor('#ffffff');
+      const widths = [130, 200, 130, 80, 100, 100, 300, 70, 70, 200, 200, 80, 130, 130, 130];
+      widths.forEach((w, i) => { if (i < headers.length) doneSh.setColumnWidth(i + 1, w); });
+      doneSh.setFrozenRows(1);
+    }
+
+    // 원본 행 데이터 읽기
+    const rowData = srcSheet.getRange(srcRow, 1, 1, TODO_HEADERS.length).getValues()[0];
+    // 보관시각 추가 (아카이브로 복사된 시점)
+    rowData.push(_now());
+
+    // 완료 시트에 추가
+    const newRow = doneSh.getLastRow() + 1;
+    doneSh.getRange(newRow, 1, 1, rowData.length).setValues([rowData]);
+    // 상태 셀 녹색 표시
+    const statusCol = TODO_HEADERS.indexOf('상태') + 1;
+    doneSh.getRange(newRow, statusCol).setBackground('#34a853').setFontColor('#ffffff');
+    SpreadsheetApp.flush();  // 잠금 해제 전 기록 확정
+  } finally {
+    try { lock.releaseLock(); } catch (e) {}
   }
-
-  // 원본 행 데이터 읽기
-  const rowData = srcSheet.getRange(srcRow, 1, 1, TODO_HEADERS.length).getValues()[0];
-  // 완료일 추가
-  rowData.push(_now());
-
-  // 완료 시트에 추가
-  const newRow = doneSh.getLastRow() + 1;
-  doneSh.getRange(newRow, 1, 1, rowData.length).setValues([rowData]);
-  // 상태 셀 녹색 표시
-  const statusCol = TODO_HEADERS.indexOf('상태') + 1;
-  doneSh.getRange(newRow, statusCol).setBackground('#34a853').setFontColor('#ffffff');
 }
 
 // ─── CORS JSON 응답 ───
@@ -1773,6 +1785,10 @@ function _processTodoAction(body) {
       existing[TODO_HEADERS.indexOf('수정일')] = now;
       sh.getRange(rowNum, 1, 1, TODO_HEADERS.length).setValues([existing]);
       if (!next) _applyStatusColor(sh, rowNum, '완료');
+      // 결재완료(최종 승인) 건도 완료보관 시트에 복사 — todo_done 과 동일 보관 경로(2026-06-26 시로).
+      //   기존엔 todo_done(수동 완료)만 _copyToDoneSheet 를 호출해 결재로 끝난 업무가 아카이브에서 누락되던 버그.
+      //   서명/승인 처리 흐름은 위 그대로, '보관 복사'만 추가(인자=todo_done 동일: sh, rowNum).
+      if (!next) _copyToDoneSheet(sh, rowNum);
 
       // 결과보고서는 자동 생성하지 않음 — 페이지 "인쇄/PDF 저장" 버튼으로 수동 (2026-05-29 GM 결재)
       // 텔레그램 결재 카드 폐기 (2026-05-28). 단순 진행 알림만 유지.
