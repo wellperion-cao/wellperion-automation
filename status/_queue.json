@@ -1432,5 +1432,19 @@
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "bf464477cf46939be991080832786cac3b32e0ca",
     "ship_no": 177
+  },
+  {
+    "task_id": "COO-2026-06-26-ADHOC-eb6593bc",
+    "clevel": "coo",
+    "title": "[시우] 회원·강습 문의 서버↔화면 정합 — 담당컬럼·희망시간·퍼널rank·빈값보존·행키검증 [시우]",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-06-26",
+    "processed_at": "2026-06-26",
+    "artifact": "- 강습 관리'담당' → '관리담당' 별도 컬럼(정확일치). 폼 원본 '접수담당자' 덮어쓰기 차단(소급수정 없음·앞으로만 정합)\n- 강습 희망시간 키 통일: 서버 wishTime(소문자 wishtime→camelCase·프론트 row.wishTime와 일치)\n- 퍼널 rank 보강: OT완료·상담완료=방문(4)·종료=이탈(0). 멤버십 매핑 회귀 없음\n- 강습 셀저장 patch-only: 변경 필드만 전송 → 빈값이 consult 날짜·status 덮어쓰기 방지\n- 빈/비표준 timestamp 행 목록 유지(_lessonScopeF (CLI ad-hoc · 커밋 eb6593bc)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "eb6593bc4d1a1647c550e256dc3c20af20e58047",
+    "ship_no": 187
   }
 ]
