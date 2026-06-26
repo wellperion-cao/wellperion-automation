@@ -1278,5 +1278,19 @@
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "c9a0e72a290ad15c1eefdf451fc8ee8b27d4175d",
     "ship_no": 167
+  },
+  {
+    "task_id": "COO-2026-06-26-ADHOC-ea8dd85c",
+    "clevel": "coo",
+    "title": "[시우] 마감조 close 배선 완성 — 시트 제출상태·관리자뷰·PIN잠금해제 정합 [시우]",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-06-26",
+    "processed_at": "2026-06-26",
+    "artifact": "- 버그1: GAS _labelToShiftKey('마감')→'close'(야간보다 먼저 분리) → 시트 I열 마감조 제출완료/소요시간 정상 기록. V2Compat submitted_close도 보강.\n- 버그2: 관리자 대시보드 '마감' 행·상세카드·점검자통계를 STATE._submitted_close/_submitter_close에 배선(기존 '-' 하드코딩 제거).\n- 버그3: close1 unlock이 _submitted_close를 지우도록 정합(기존 baseShift='pm'이라 잔존→재제출 시 마감조 재잠금하던 버그). (CLI ad-hoc · 커밋 ea8dd85c)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "ea8dd85cec8b22ee6be6f47f43e35a7d197d74c5",
+    "ship_no": 184
   }
 ]
