@@ -88,6 +88,12 @@ footer{margin-top:26px;font-size:11px;color:var(--ink-faint);text-align:center;l
 .flag-badge .fb-d{font-size:10px;color:var(--ink-faint);margin-top:2px}
 .flag-badge.sev-red .fb-n{color:var(--red)}.flag-badge.sev-amber .fb-n{color:var(--amber)}.flag-badge.sev-blue .fb-n{color:var(--blue)}
 @media(max-width:680px){.bud-row{grid-template-columns:80px 1fr;gap:8px}.bud-meta{grid-column:1/-1;text-align:left}}
+/* ── 승인 전 최저가 비교 링크 (F-4 추가) ── */
+.pc-links{margin-top:5px;display:flex;gap:5px;flex-wrap:wrap}
+.pc-chip{display:inline-block;font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;text-decoration:none;border:1px solid var(--gold);color:var(--gold-deep);background:#fbf7ee;white-space:nowrap}
+.pc-chip:hover{background:var(--gold);color:#fff}
+.pc-chip.dan{border-color:var(--navy);color:var(--navy);background:#eef1f6}
+.pc-chip.dan:hover{background:var(--navy);color:#fff}
 </style></head><body>
 
 <div id="gate"><div class="gate-card">
@@ -593,6 +599,29 @@ async function doSubmit(base,msg,fp){
   else msg.textContent="⚠️ 실패: "+((d&&d.error)||"서버 오류");
 }
 var STAGES=["품의","검토","정산","완료"];
+/* ── 승인 전 최저가 검색 링크 — 물품명에서 수량/단위·노이즈어 제거 후 핵심 제품명으로 네이버 최저가·다나와 새탭 검색 (승인 전 시세 대조용, 자동선별 아님) ── */
+function searchTerm(name){
+  var s=String(name||"");
+  if(!s.trim())return "";
+  s=s.replace(/[\(\[\{][^\)\]\}]*[\)\]\}]/g," ");                 // 괄호 주석 제거 (예: (재구매))
+  s=s.replace(/\d+\s*(개입|세트|셋트|켤레|묶음|개|벌|명|박스|팩|권|대|매|장|통|병|쌍|롤|자루|봉|갑|포|짝|족|세|ea|EA|pcs|PCS|set|SET)/g," "); // 수량+단위 (2개·20개·9명·2벌·각1개)
+  s=s.replace(/(재구매|재 구매|추가구매|추가구입|추가 구매|추가|각각|각|신규|교체|교환|구입|구매|주문|일괄|일체)/g," ");          // 노이즈어
+  s=s.replace(/[,/·•\-+*×~]/g," ");                                // 구분기호 → 공백 (9명*2벌의 * 등)
+  s=s.replace(/(?:^|\s)\d{1,4}(?=\s|$)/g," ");                     // 단독 수량 숫자 제거(모델번호 55인치·V2는 보존)
+  s=s.replace(/\s+/g," ").trim();
+  return s;
+}
+function priceLinks(r,st){
+  if(!(st==="품의"||st==="승인"))return "";                       // 승인 전 단계만 (검토·정산·완료·반려 제외)
+  var term=searchTerm(r.물품);
+  if(!term)return "";                                              // 물품명 비면 미표시
+  var q=encodeURIComponent(term),safe=term.replace(/[<>"]/g,"");
+  var nav="https://search.shopping.naver.com/search/all?query="+q+"&sort=price_asc";
+  var dan="https://search.danawa.com/dsearch.php?query="+q;
+  return '<div class="pc-links" title="승인 전 시세 대조: '+safe+'">'+
+    '<a class="pc-chip" href="'+nav+'" target="_blank" rel="noopener">🔍 네이버 최저가</a>'+
+    '<a class="pc-chip dan" href="'+dan+'" target="_blank" rel="noopener">다나와</a></div>';
+}
 function renderReqTbl(){
   var STG=["품의","검토","정산","완료","반려"];var fc=document.getElementById("reqFilter");
   fc.innerHTML=STG.map(function(s){return '<button class="team-chip'+(s===reqFilter?' on':'')+'" data-f="'+s+'">'+s+'</button>';}).join('');
@@ -617,7 +646,7 @@ function renderReqTbl(){
     var photo=(r.이미지&&(String(r.이미지).indexOf("http")===0||String(r.이미지).indexOf("data:")===0))?'<img src="'+r.이미지+'" class="'+tc+'" title="첨부사진" onclick="window.open(this.src,\'_blank\')" loading="lazy">':'';
     var pf=(r.지출증빙&&String(r.지출증빙).indexOf("http")===0)?'<img src="'+r.지출증빙+'" class="'+tc+'" title="영수증/증빙" onclick="window.open(this.src,\'_blank\')" loading="lazy">':'';
     var rcpt=(photo||pf)?(photo+pf):'<button class="reqPhoto" data-row="'+r.row+'" style="font-size:10.5px;padding:4px 9px;cursor:pointer;border:1px dashed var(--gold);border-radius:6px;background:#fbf7ee;color:var(--gold-deep)">+ 사진</button>';
-    h+='<tr><td style="text-align:center;font-weight:700;color:var(--gold-deep)">'+(r.번호?("#"+r.번호):"")+'</td><td style="text-align:left">'+r.날짜+'</td><td style="text-align:left">'+(r.소속||"")+'</td><td style="text-align:left">'+(r.요청자||"")+'</td><td style="text-align:left">'+(r.승인자||"")+'</td><td style="text-align:left">'+(r.물품||"")+'</td><td>'+won(r.가격)+'</td><td style="text-align:center">'+rcpt+'</td><td style="text-align:center"><span class="chip '+(stc[st]||"wait")+'">'+st+'</span></td><td style="text-align:center;white-space:nowrap">'+act+'</td></tr>';
+    h+='<tr><td style="text-align:center;font-weight:700;color:var(--gold-deep)">'+(r.번호?("#"+r.번호):"")+'</td><td style="text-align:left">'+r.날짜+'</td><td style="text-align:left">'+(r.소속||"")+'</td><td style="text-align:left">'+(r.요청자||"")+'</td><td style="text-align:left">'+(r.승인자||"")+'</td><td style="text-align:left">'+(r.물품||"")+priceLinks(r,st)+'</td><td>'+won(r.가격)+'</td><td style="text-align:center">'+rcpt+'</td><td style="text-align:center"><span class="chip '+(stc[st]||"wait")+'">'+st+'</span></td><td style="text-align:center;white-space:nowrap">'+act+'</td></tr>';
   });
   if(!rows.length)h+='<tr><td colspan="10" style="color:var(--ink-faint)">'+(isDone?(REQ_DONE.length?("해당 기간에 "+reqFilter+" 건이 없습니다."):"기간을 선택하고 [검색]을 누르세요."):"해당 단계의 품의가 없습니다.")+'</td></tr>';
   h+='</tbody>';document.getElementById("reqTbl").innerHTML=h;
