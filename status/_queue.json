@@ -1578,5 +1578,19 @@
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "a6fa9534134593498d85876ae8e4225e7cae5e12",
     "ship_no": 6
+  },
+  {
+    "task_id": "COO-2026-06-26-ADHOC-675a650c",
+    "clevel": "coo",
+    "title": "[시우] 매뉴얼 탭 진입 비번 게이트 — 비번 모르면 매뉴얼 못 엶 [시우]",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-06-26",
+    "processed_at": "2026-06-26",
+    "artifact": "- switchTab(tab,opts) 진입점에 매뉴얼 탭 게이트 추가(checkAuth 블록 직후, DOM 변경 전).\n- tab==='manual' 진입 시 requireEditAuth() 먼저 호출 → 실패·취소 시 return으로 직전 탭 그대로(반쯤 열림·UI 깨짐 없음).\n- 기존 requireEditAuth(비번 wellperion!@345·editAuth 세션) 재사용 → 진입 통과 시 내부 편집 5함수 재입력 없음(같은 세션·비번).\n- 점검 수행 탭(check-m/check-f·체크·제출)·checkAuth 게이트 (CLI ad-hoc · 커밋 675a650c)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "675a650cee10416470d249dab69fa55652637ea8",
+    "ship_no": 191
   }
 ]
