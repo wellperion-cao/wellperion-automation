@@ -214,7 +214,7 @@
         <tbody id="boardBody"></tbody>
       </table>
     </div>
-    <p style="color:var(--dim);font-size:11px;margin-top:8px">※ 셀=출근시간(수기 입력) · '배치' 행=오픈/마감 커버리지 · 지원부 일·공휴는 2인 필수 · 연차=1·반차=0.5 차감 · 총 연차=입사일 기준 근로기준법 자동산정 · <b>성명 클릭</b>=개인 연차현황</p>
+    <p style="color:var(--dim);font-size:11px;margin-top:8px">※ 셀=출근시간(수기 입력) · '배치' 행=오픈/마감 커버리지 · 지원부 일·공휴는 2인 필수 · 연차=1·반차=0.5 차감 · 총 연차=입사일 기준 회사 연차표 산정 · <b>성명 클릭</b>=개인 연차현황</p>
   </div>
 
   <div id="tab-reqs" style="display:none">
@@ -531,7 +531,7 @@ function quotaIssues(y,m){const meta=monthMeta(y,m),out=[];
   for(const nm of ALL_EMP){if(!hasAny(nm,y,m))continue;const total=personOff(nm,y,m)+meta.closed;if(total!==meta.req)out.push({nm,total,req:meta.req});}
   return out;}
 
-/* ===== 직원별 연차 현황 (db:emp 입사일 기준 · 근로기준법) ===== */
+/* ===== 직원별 연차 현황 (db:emp 입사일 기준 · 회사 연차표) ===== */
 function joinDateOf(nm){
   const raw=EMP_JOIN[nm]; if(!raw) return null;
   const s=String(raw).slice(0,10), mm=s.match(/^(\d{4})-(\d{2})-(\d{2})/);
@@ -543,6 +543,16 @@ function monthsServed(jd){
   let m=(NOW_D.getFullYear()-jd.getFullYear())*12+(NOW_D.getMonth()-jd.getMonth());
   if(NOW_D.getDate()<jd.getDate()) m--; return m<0?0:m;
 }
+/* 회사 실제 연차표 (근속 만년수 n 기준 룩업 · n≥1) */
+function annualGrantByYears(n){
+  if(n>=21) return 25;   // 21~25년: 25일 (25년 초과도 상한 25)
+  if(n===20) return 24;  // 20년: 24일
+  if(n>=15) return 22;   // 15~19년: 22일
+  if(n>=10) return 19;   // 10~14년: 19일
+  if(n>=5)  return 17;   // 5~9년: 17일
+  if(n>=3)  return 16;   // 3~4년: 16일
+  return 15;             // 1~2년: 15일
+}
 /* {matched, pre(미입사), grant(총연차), jd, months} — 매칭 실패 시 {matched:false} */
 function annInfo(nm){
   const jd=joinDateOf(nm);
@@ -550,7 +560,7 @@ function annInfo(nm){
   if(jd>NOW_D) return {matched:true,pre:true,grant:0,jd,months:0};   // 미입사
   const m=monthsServed(jd); let grant;
   if(m<12) grant=Math.min(11,m);                                     // 근속<1년: 만근속개월수(≤11)
-  else { const y=Math.floor(m/12); grant=Math.min(25, 15 + (y>=3?Math.floor((y-1)/2):0)); }
+  else grant=annualGrantByYears(Math.floor(m/12));                   // 1년 이상: 회사 실제 연차표 룩업
   return {matched:true,pre:false,grant,jd,months:m};
 }
 /* 2026년 날짜의 연차=1·반차=0.5 합 */
