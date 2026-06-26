@@ -189,6 +189,13 @@ def _should_skip(meta: dict, queue: list) -> bool:
     # b. 제목 패턴.
     if low.startswith("chore(erp)") or low.startswith("chore(queue)"):
         return True
+    # b-1. 자율 웰리 스윕(welly_sweep) self-exclude — 가역성 불변식(1작업=1커밋) 보존(T0).
+    #   sweep 커밋이 post-commit 훅을 타고 2차 chore(queue) 커밋을 낳으면 'git 1줄 되돌림'이
+    #   깨진다. 제목 접두사 chore(welly-sweep) 또는 본문 [welly-sweep] 태그면 자동기록 skip.
+    if low.startswith("chore(welly-sweep)"):
+        return True
+    if "[welly-sweep]" in subject or "[welly-sweep]" in meta.get("body", ""):
+        return True
     for kw in ("auto-log", "시스템 현황 자동 발행", "erp_status", "changelog"):
         if kw.lower() in low:
             return True
