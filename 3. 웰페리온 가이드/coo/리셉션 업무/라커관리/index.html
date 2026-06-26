@@ -56,7 +56,7 @@ td input:hover,td textarea:hover{border-color:var(--line)}
 td input:focus,td textarea:focus{border-color:var(--beige);background:#fff;outline:none}
 td.wide{min-width:360px}
 td.wide textarea{min-width:340px;line-height:1.5}
-td.tel{min-width:160px;white-space:nowrap} td.tel input{min-width:150px;font-variant-numeric:tabular-nums} td.exp{min-width:96px}
+td.tel{min-width:160px;white-space:nowrap} td.tel input{min-width:150px;font-variant-numeric:tabular-nums} td.exp{min-width:120px;white-space:nowrap}
 td.namecell input{font-weight:700}
 td.act{width:64px;text-align:center}
 .saveb{background:var(--orange);color:#fff;border:none;border-radius:7px;padding:6px 10px;font-size:11.5px;font-weight:700;cursor:pointer;font-family:inherit;display:none}
@@ -65,7 +65,9 @@ tr.dirty .saveb{display:inline-block}
 .cnt{font-size:12px;color:var(--muted);margin:0 2px 10px;font-weight:600}
 .kpi{display:none;gap:8px;flex-wrap:wrap;margin:2px 2px 12px}
 .kpi.show{display:flex}
-.kchip{font-size:12.5px;font-weight:700;padding:7px 13px;border-radius:999px;border:1px solid var(--line);color:var(--ink2);background:var(--paper)}
+.kchip{font-size:12.5px;font-weight:700;padding:7px 13px;border-radius:999px;border:1px solid var(--line);color:var(--ink2);background:var(--paper);cursor:pointer;user-select:none}
+.kchip:hover{border-color:var(--beige)}
+.kchip.act{box-shadow:0 0 0 2px var(--ink)}
 .kchip.kexp{color:#fff;background:var(--orange);border-color:var(--orange)}
 .kchip.kvac{color:var(--beige-deep)}
 .toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:11px 20px;border-radius:10px;font-size:13px;font-weight:600;opacity:0;transition:.25s;pointer-events:none;z-index:60}
@@ -127,6 +129,7 @@ let autoOn = AUTO_REFRESH_SEC > 0;
 let timer = null;
 let saveTimers = {};   // 디바운스 자동저장 타이머
 let savingRows = {};   // 행별 저장 진행중 플래그
+let kpiFilter = null;  // 현황 필터: null=전체 / 'exp'=만기 / 'vac'=공란
 
 /* ===== 통신 ===== */
 async function call(payload){
@@ -166,9 +169,12 @@ function updateKpi(){
     const d=lkParseExp(r['만기']); if(d && d<today) exp++;
   });
   const el=document.getElementById('kpi'); if(!el) return;
-  el.innerHTML = `<span class="kchip kexp">만기 라커 ${exp}</span><span class="kchip kvac">공란 ${vac}</span><span class="kchip">전체 ${rows.length}</span>`;
+  el.innerHTML = `<span class="kchip kexp${kpiFilter==='exp'?' act':''}" onclick="lkSetFilter('exp')">만기 라커 ${exp}</span>`
+    + `<span class="kchip kvac${kpiFilter==='vac'?' act':''}" onclick="lkSetFilter('vac')">공란 ${vac}</span>`
+    + `<span class="kchip${!kpiFilter?' act':''}" onclick="lkSetFilter(null)">전체 ${rows.length}</span>`;
 }
 function lkKpiSync(){ const el=document.getElementById('kpi'); if(el && el.classList.contains('show')) updateKpi(); }
+function lkSetFilter(f){ kpiFilter = (kpiFilter===f)?null:f; render(); updateKpi(); }
 
 /* ===== 로그인 ===== */
 const loginEl=document.getElementById('login');
@@ -223,8 +229,14 @@ function render(){
     '<tr>'+cols.map(c=>`<th>${LABELS[c]||c}</th>`).join('')+'<th></th></tr>';
   const q=(document.getElementById('q').value||'').toLowerCase().trim();
   let shown=0, out=[];
+  const _today=new Date(); _today.setHours(0,0,0,0);
   rows.forEach(r=>{
     if(q){ const hay=cols.map(c=>r[c]).join(' ').toLowerCase(); if(hay.indexOf(q)<0) return; }
+    if(kpiFilter){
+      const _nm=String(r['성함']==null?'':r['성함']).trim();
+      if(kpiFilter==='vac' && _nm!=='') return;
+      if(kpiFilter==='exp'){ const _d=lkParseExp(r['만기']); if(!(_nm && _d && _d<_today)) return; }
+    }
     shown++;
     const key=db+':'+r._sheet_row;
     const d=dirty[key]||{};
@@ -232,7 +244,7 @@ function render(){
       const val = (c in d)? d[c] : (r[c]==null?'':r[c]);
       if(READONLY.indexOf(c)>=0) return `<td class="num">${val}</td>`;
       const isWide = WIDE.indexOf(c)>=0;
-      const cls = (c==='성함'?'namecell ':'') + (isWide?'wide':'') + (c==='전화'?' tel':'');
+      const cls = (c==='성함'?'namecell ':'') + (isWide?'wide':'') + (c==='전화'?' tel':'') + (c==='만기'?' exp':'');
       if(isWide)
         return `<td class="${cls}"><textarea rows="2" data-r="${r._sheet_row}" data-f="${c}" oninput="onEdit(this)" onblur="autoSave(this)">${esc(val)}</textarea></td>`;
       return `<td class="${cls}"><input value="${esc(val)}" data-r="${r._sheet_row}" data-f="${c}" oninput="onEdit(this)" onblur="autoSave(this)"></td>`;
@@ -307,7 +319,7 @@ async function tick(){
 }
 document.getElementById('autoBtn').onclick=()=>setAuto(!autoOn);
 document.getElementById('refreshBtn').onclick=async()=>{ DATA[curDb]=null; await go(curDb); };
-document.getElementById('kpiBtn').onclick=()=>{ const el=document.getElementById('kpi'); el.classList.toggle('show'); const on=el.classList.contains('show'); document.getElementById('kpiBtn').classList.toggle('on',on); if(on) updateKpi(); };
+document.getElementById('kpiBtn').onclick=()=>{ const el=document.getElementById('kpi'); el.classList.toggle('show'); const on=el.classList.contains('show'); document.getElementById('kpiBtn').classList.toggle('on',on); if(on){ updateKpi(); } else { kpiFilter=null; render(); } };
 
 /* ===== 유틸 ===== */
 function setStatus(s){ document.getElementById('status').innerHTML=s; }
