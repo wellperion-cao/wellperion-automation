@@ -1,5 +1,38 @@
 [
   {
+    "task_id": "CMO-2026-06-26-M5-SSOT-UNIFY",
+    "clevel": "cmo",
+    "title": "[시모] M5 검수큐 단일 정본 통합 — CMO파이프라인.html(시트·3채널)을 review_queue.json(5채널·URL) 기준으로 재배선·시트모델 폐기 + 채널/status enum 표준화",
+    "status": "PENDING",
+    "priority": "🛳️크루즈",
+    "enqueued_at": "2026-06-26",
+    "note": "[2026-06-26 GM 결정#3] M5 정본=review_queue.json 단일 통합. 현재 화면(CMO파이프라인.html+apps_script_cmo 시트, 3채널·post_url칸 없음)과 SSOT(review_queue.json, 5채널·URL)가 별개 두 시스템 → 드리프트 구조적. 보완: 화면을 review_queue.json 기준 재배선, 시트 보드 폐기/흡수. 동반 표준화: 채널 enum 6개(IG회사/IG개인/블로그/카페/카카오/당근)·status enum 5종·published_at ISO8601·발행완료 URL게이트. 진단서 status/briefs/CMO-2026-06-26-M1-M5-AUDIT.md. ⚠️라이브 ERP UI 수술이라 로컬검증 후 1회배포·역롤백.",
+    "next": "로컬에서 review_queue.json 렌더 보드 구현·검증 → 채널/status enum 정규화 → 시트모델 폐기/흡수 → 라이브 1회 배포.",
+    "ship_no": 185
+  },
+  {
+    "task_id": "CMO-2026-06-26-M4-METRIC-HONESTY",
+    "clevel": "cmo",
+    "title": "[시모] M4 대시보드 지표 정직화 — '실측 등록'을 GM 보고 단일기준으로 + '추정 전환' 라벨 통일 + 죽은 배선 제거 + 문의폼 출처필드 필수화",
+    "status": "PENDING",
+    "priority": "⛴️여객선",
+    "enqueued_at": "2026-06-26",
+    "note": "[2026-06-26 GM 결정#5] M4 GM 보고 기준=실측 등록(추정 전환 아님). 보완: 대시보드 '등록'(실측)과 월간보고서 '전환'(전화매칭 추정)이 같은 개념 다른 수 → 한 화면 병기·정의 단일화, '추정' 라벨 ③표·요약·전환율칸 통일. 죽은 배선(funnel-*/fc-* DOM·미사용 funnel CSS) 삭제. '콘텐츠별 문의 유입'→'콘텐츠별 클릭 순위' 정정. 출처미상43% 해소 위해 문의폼 '어떻게 알고 오셨나요?' 필수화(처방 이미 화면에 있으나 미실행). 진단서 동일.",
+    "next": "월간보고서·대시보드 지표 정의 단일화 + 추정 라벨 + dead wiring 제거 → 문의폼 출처필드 필수화(시포 협업).",
+    "ship_no": 186
+  },
+  {
+    "task_id": "CMO-2026-06-26-M2-M3-PRACTICAL",
+    "clevel": "cmo",
+    "title": "[시모] M2·M3 메뉴 실무화 — M2 4/5채널 통일·기둥 가능불가 분리·발행스크립트표 / M3 사용법·종류별 사이즈프리셋·표준슬로건",
+    "status": "PENDING",
+    "priority": "⛵돛단배",
+    "enqueued_at": "2026-06-26",
+    "note": "[2026-06-26 audit 후속] M1 현실화(개인계정 AI채널 등재·2017/1,000·badge·카페링크 fix)는 2026-06-26 완료. 잔여: M2=4채널/5채널 표기 통일·6대기둥 가능/불가 분리·채널별 발행스크립트 표·외부게시금지 콜아웃 승격. M3=3단계 사용법+예시·종류별 사이즈 프리셋·미리보기 슬로건 표준교체·서브브랜드 canon 동기화·디자인표준 링크. 진단서 status/briefs/CMO-2026-06-26-M1-M5-AUDIT.md.",
+    "next": "M2 표기·기둥 정리 → M3 사용법·프리셋·슬로건. 실무진 바로 따라하는 수준까지.",
+    "ship_no": 187
+  },
+  {
     "task_id": "COO-2026-06-25-CHECK-DENOM-UNIFY",
     "clevel": "coo",
     "title": "[시우] 지원부 점검 분모 단일출처 통일 — 서버 today_live·독려를 화면 계산식(collectDashboardData)에 1:1 정합",

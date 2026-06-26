@@ -131,6 +131,24 @@ def telegram(message: str, chat_id: str | None = None) -> None:
         _safe_print("[WARN] 텔레그램 보고 실패 (토큰 trace 노출 방지로 상세 미출력)")
 
 
+def _notify_published(folder: str) -> None:
+    """발행완료 직후 '링크 모음' 텔레그램 알림 (비차단 서브프로세스, 실패 무시).
+    기존 발행 요약 텔레그램과 별개 메시지 — GM 명시 요청(2026-06-26)."""
+    if not folder:
+        return
+    notify_script = ROOT / "scripts" / "notify_published_links.py"
+    try:
+        subprocess.Popen(
+            [str(PY), str(notify_script), "--folder", folder],
+            cwd=str(ROOT),
+            env=dict(os.environ, PYTHONIOENCODING="utf-8"),
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+    except Exception as exc:
+        _safe_print(f"[WARN] 링크 모음 알림 서브프로세스 실행 실패(발행 흐름 무영향): {exc}")
+
+
 def load_notified() -> set:
     """이미 검수대기 알림을 발송한 id 집합 로드."""
     if not NOTIFIED_FILE.exists():
@@ -457,6 +475,7 @@ def dispatch_publish(it: dict, events: list) -> None:
             it["published_at"] = datetime.now().isoformat(timespec="seconds")
             it.pop("note", None)
             events.append(f"✅ {title} 당근 발행 완료")
+            _notify_published(it.get("folder", ""))
         else:
             it["status"] = "수동발행대기"
             it["note"] = f"당근 자동 임시저장 실패({reason}) — 수동 업로드 필요"
@@ -476,6 +495,7 @@ def dispatch_publish(it: dict, events: list) -> None:
             it["published_at"] = datetime.now().isoformat(timespec="seconds")
             it.pop("note", None)
             events.append(f"✅ {title} 카카오 채널 발행 완료")
+            _notify_published(it.get("folder", ""))
         else:
             it["status"] = "수동발행대기"
             it["note"] = f"카카오 자동 발행 실패({reason}) — 수동 업로드 필요"
