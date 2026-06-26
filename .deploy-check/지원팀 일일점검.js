@@ -1245,11 +1245,17 @@ function _writePerRoundRows(dept, date, body) {
       pushWant(_roundLabelToKey(_roundLabel(c.slot, c.shift)), id, false);
     }
   });
-  // (3) F2(GM 2026-06-16 시우): 제출한 회차의 미체크 항목 → '미완료' 행 기록(시트=그 회차 전 항목 완료/미완료). 제출 안 한 회차는 프론트가 미포함.
+  // (3) F2(GM 2026-06-16 시우): 제출한 회차의 미체크 항목 → '미완료' 행 기록(시트=그 회차 전 항목 완료/미완료).
+  // ★#8(2026-06-26 시우): 자동저장이 보내는 '미제출(작업중) 회차'의 미체크분은 led.cr 동기화(취소 즉시반영·_updateCheckLedger)용일 뿐 —
+  //   시트 '미완료' 행으로는 쓰지 않는다(미완료 노이즈 0). 회차 제출도장(led.sub) 있는 회차만 행 기록 → F2 보존+자동저장 led.cr 정합.
+  //   하위호환: 구버전 프론트는 제출회차만 roundUnchecked로 보내므로 게이트 통과(동작 불변).
   (body.roundUnchecked || []).forEach(function (k) {
     k = String(k); if (roundChecks.indexOf(k) >= 0) return;   // 체크된 회차항목은 (1)에서 완료로 기록됨
     var us = k.indexOf('_'); if (us < 0) return;
-    pushWant(k.slice(0, us), k.slice(us + 1), false);
+    var _ruRound = k.slice(0, us);
+    var _ruSk = _labelToShiftKey(_roundKeyLabel(_ruRound));   // 회차 → 제출도장 shiftKey(am/pm/close)
+    if (!(_ruSk && _ledSub[_ruSk])) return;                   // 미제출 회차 미체크분은 시트행 미기록(led.cr만 정리)
+    pushWant(_ruRound, k.slice(us + 1), false);
   });
 
   // ★취소 정합(GM 2026-06-16 시우): 활성 성별탭에 남길 행이 0건이어도 primaryTarget을 처리 대상에 포함 →

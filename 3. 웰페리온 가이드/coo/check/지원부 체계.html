@@ -2362,18 +2362,28 @@ function _buildPushPayload(d,g,includeSubmitMeta){
     p.submitted_night=!!STATE._submitted_night; p.submittedAt_night=STATE._submittedAt_night||''; p.submitter_night=STATE._submitter_night||'';
     /* [근본수정 2026-06-26 시우] 마감조 전용 서버칸(pm과 독립). GAS가 led.sub.close에 저장(미지원 구버전 GAS는 무시·안전). */
     p.submitted_close=!!STATE._submitted_close; p.submittedAt_close=STATE._submittedAt_close||''; p.submitter_close=STATE._submitter_close||'';
-    /* F2(GM 2026-06-16): 제출한 회차는 전 항목을 시트에 기록 → 미체크 항목을 '미완료'로 함께 전송(서버가 행 생성). 제출 안 한 회차는 미포함. */
-    const _subR=ROUND_KEYS.filter(rk=>isRoundSubmitted(d,g,rk));
-    const _ru=[];
-    if(sched&&_subR.length){
-      sched.forEach(slot=>slot.groups.forEach(gr=>gr.items.forEach(it=>{
-        if(typeof shouldShowItemForGender==='function'&&!shouldShowItemForGender(it,g))return;
-        const ctx={...it,slot:slot.slot,shift:slot.shift};
-        itemRounds(ctx).forEach(rk=>{ if(_subR.indexOf(rk)>=0 && !isChecked(it.id,rk,g)) _ru.push(rk+'_'+it.id); });
-      })));
-    }
-    p.roundUnchecked=_ru;
   }
+  /* roundUnchecked = 회차별 미체크 항목 → GAS가 led.cr(today_live 분자)를 회차단위로 정밀 재구성.
+     ★#8(시우 2026-06-26): 자동저장도 미체크를 즉시 반영해 거짓 진행률 차단. 경로별 대상 분리(겹침 0·안전):
+       · 제출(includeSubmitMeta): '제출한 회차'의 미체크 → F2 시트 '미완료' 행 기록(기존 동작 유지).
+       · 자동저장: '미제출(작업중) 회차'의 미체크만 → led.cr 즉시정리(거짓 진행률 차단). 제출(locked)
+         회차는 제외 — resetShiftChecks 후 미체크처럼 보여도 led.cr 보존(전량교체 회귀 차단·GAS 회차머지 정합).
+     ★제출도장(submitted_/submitter_)은 위 게이트(명시 제출 때만) 그대로 — roundUnchecked는 제출키가
+       아니라 '이 회차에서 해제된 항목' 정보라 자동저장에 포함해도 거짓 대량제출 안 생긴다. 하위호환:
+       구버전 GAS는 roundUnchecked로 led.cr만 정리(시트 미완료 행은 GAS가 led.sub 제출도장으로 게이트). */
+  const _ru=[];
+  if(sched){
+    sched.forEach(slot=>slot.groups.forEach(gr=>gr.items.forEach(it=>{
+      if(typeof shouldShowItemForGender==='function'&&!shouldShowItemForGender(it,g))return;
+      const ctx={...it,slot:slot.slot,shift:slot.shift};
+      itemRounds(ctx).forEach(rk=>{
+        const _sub=isRoundSubmitted(d,g,rk);
+        if(includeSubmitMeta ? !_sub : _sub)return;   // 제출:제출회차만 / 자동저장:미제출회차만
+        if(!isChecked(it.id,rk,g)) _ru.push(rk+'_'+it.id);
+      });
+    })));
+  }
+  p.roundUnchecked=_ru;
   return p;
 }
 
