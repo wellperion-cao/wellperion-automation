@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>라커 운영 | AI COO</title>
+<link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<style>
+:root{
+  --bg:#F4EEE6; --paper:#FFFFFF; --paper2:#FBF7F1; --ink:#221F20; --ink2:#4A443E;
+  --muted:#8C8073; --beige:#B79F8A; --beige-deep:#9A7F64; --line:#E7DCCE; --line2:#D8C9B6;
+  --orange:#ED5B3F; --amber:#C0851B; --green:#337342;
+}
+*{box-sizing:border-box} html,body{margin:0;padding:0}
+body{background:radial-gradient(1100px 520px at 88% -8%,rgba(183,159,138,.18),transparent 60%),var(--bg);
+  color:var(--ink);font-family:"Pretendard","Pretendard Variable",-apple-system,"Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;line-height:1.6}
+.wrap{max-width:1240px;margin:0 auto;padding:0 22px}
+/* login overlay */
+#login{position:fixed;inset:0;background:rgba(34,31,32,.55);display:flex;align-items:center;justify-content:center;z-index:50}
+#login .box{background:var(--paper);border-radius:18px;padding:34px 32px;width:340px;box-shadow:0 20px 60px rgba(0,0,0,.25);text-align:center}
+#login .mark{width:46px;height:46px;border:1.5px solid var(--ink);border-radius:10px;display:grid;place-items:center;font-weight:800;font-size:22px;margin:0 auto 14px}
+#login h2{margin:0 0 4px;font-size:18px;font-weight:800}
+#login p{margin:0 0 18px;font-size:12.5px;color:var(--muted)}
+#login input{width:100%;padding:12px 14px;border:1.5px solid var(--line);border-radius:10px;font-size:14px;font-family:inherit;outline:none}
+#login input:focus{border-color:var(--beige)}
+#login button{width:100%;margin-top:12px;padding:12px;border:none;border-radius:10px;background:var(--ink);color:#fff;font-weight:700;font-size:14px;cursor:pointer;font-family:inherit}
+#login .err{color:var(--orange);font-size:12px;margin-top:10px;min-height:16px}
+/* letterhead */
+.letterhead{display:flex;align-items:center;justify-content:space-between;padding:22px 0 16px;border-bottom:1.5px solid var(--ink)}
+.brand{display:flex;align-items:center;gap:13px}
+.brand .mark{width:38px;height:38px;border:1.5px solid var(--ink);border-radius:9px;display:grid;place-items:center;font-weight:800;font-size:19px;background:linear-gradient(160deg,rgba(183,159,138,.22),transparent)}
+.brand .wm{font-weight:800;letter-spacing:.32em;font-size:14px}
+.brand .wm small{display:block;letter-spacing:.18em;font-size:9.5px;color:var(--beige-deep);font-weight:700;margin-top:3px}
+.head-r{text-align:right;font-size:11.5px;color:var(--muted);line-height:1.7}
+.head-r a{color:var(--beige-deep);text-decoration:none;font-weight:600;cursor:pointer}
+.tabs{display:flex;gap:8px;flex-wrap:wrap;margin:22px 0 6px}
+.tab{background:var(--paper);border:1.5px solid var(--line);color:var(--muted);padding:11px 20px;border-radius:999px;cursor:pointer;font-size:13.5px;font-weight:700;display:flex;align-items:center;gap:9px}
+.tab.active{background:var(--ink);border-color:var(--ink);color:#fff}
+.tab .c{font-size:11.5px;color:var(--muted);font-weight:700}.tab.active .c{color:var(--beige)}
+.toolbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:14px 0}
+.search{flex:1;min-width:200px;position:relative}
+.search input{width:100%;background:var(--paper);border:1.5px solid var(--line);padding:11px 14px 11px 38px;border-radius:10px;font-size:13.5px;outline:none;font-family:inherit}
+.search:before{content:"⌕";position:absolute;left:13px;top:50%;transform:translateY(-50%);color:var(--beige-deep);font-size:16px}
+.btn{background:var(--paper);border:1.5px solid var(--line);color:var(--ink2);font-size:12.5px;font-weight:700;padding:9px 14px;border-radius:9px;cursor:pointer;font-family:inherit}
+.btn:hover{border-color:var(--beige)}
+.btn.on{background:rgba(51,115,66,.12);border-color:var(--green);color:var(--green)}
+.status{font-size:12px;color:var(--muted);font-weight:600}
+.status b{color:var(--green)} .status .sv{color:var(--amber)}
+.tablecard{border:1px solid var(--line);border-radius:14px;overflow:hidden;background:var(--paper);box-shadow:0 4px 20px rgba(154,127,100,.07);margin-bottom:10px}
+.tscroll{max-height:620px;overflow:auto}
+table{width:100%;border-collapse:collapse;font-size:12.8px}
+thead th{position:sticky;top:0;background:var(--ink);color:#F0E7DB;text-align:left;font-weight:600;padding:12px 10px;z-index:2;white-space:nowrap;font-size:12px}
+tbody td{padding:5px 8px;border-bottom:1px solid var(--line);vertical-align:middle}
+tbody tr:nth-child(even) td{background:var(--paper2)}
+tbody tr.dirty td{background:rgba(192,133,27,.10)}
+td.num{color:var(--beige-deep);font-weight:700;width:42px;text-align:center}
+td input,td textarea{width:100%;border:1px solid transparent;background:transparent;border-radius:6px;padding:6px 7px;font-size:12.6px;font-family:inherit;color:var(--ink);resize:none}
+td input:hover,td textarea:hover{border-color:var(--line)}
+td input:focus,td textarea:focus{border-color:var(--beige);background:#fff;outline:none}
+td.wide{min-width:360px}
+td.wide textarea{min-width:340px;line-height:1.5}
+td.tel{min-width:160px;white-space:nowrap} td.tel input{min-width:150px;font-variant-numeric:tabular-nums} td.exp{min-width:96px}
+td.namecell input{font-weight:700}
+td.act{width:64px;text-align:center}
+.saveb{background:var(--orange);color:#fff;border:none;border-radius:7px;padding:6px 10px;font-size:11.5px;font-weight:700;cursor:pointer;font-family:inherit;display:none}
+tr.dirty .saveb{display:inline-block}
+.saveb.saving{background:var(--amber);opacity:.8}
+.cnt{font-size:12px;color:var(--muted);margin:0 2px 10px;font-weight:600}
+.kpi{display:none;gap:8px;flex-wrap:wrap;margin:2px 2px 12px}
+.kpi.show{display:flex}
+.kchip{font-size:12.5px;font-weight:700;padding:7px 13px;border-radius:999px;border:1px solid var(--line);color:var(--ink2);background:var(--paper)}
+.kchip.kexp{color:#fff;background:var(--orange);border-color:var(--orange)}
+.kchip.kvac{color:var(--beige-deep)}
+.toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:11px 20px;border-radius:10px;font-size:13px;font-weight:600;opacity:0;transition:.25s;pointer-events:none;z-index:60}
+.toast.show{opacity:1}
+.toast.bad{background:var(--orange)}
+.foot{border-top:1.5px solid var(--ink);margin-top:40px;padding:18px 0 46px;color:var(--muted);font-size:11.5px;text-align:center;line-height:1.8}
+::-webkit-scrollbar{width:11px;height:11px}::-webkit-scrollbar-thumb{background:#D8C9B6;border-radius:8px;border:3px solid var(--paper)}
+</style></head><body>
+
+<!-- 로그인 -->
+<div id="login"><div class="box">
+  <div class="mark">W</div>
+  <h2>라커 운영 대시보드</h2>
+  <p>접근 비밀번호를 입력하세요</p>
+  <input id="pwIn" type="password" placeholder="비밀번호" autocomplete="off">
+  <button id="pwBtn">들어가기</button>
+  <div class="err" id="pwErr"></div>
+</div></div>
+
+<div class="wrap" id="app" style="display:none">
+  <div class="letterhead">
+    <div class="brand"><div class="mark">W</div><div class="wm">WELPERION<small>라커 운영</small></div></div>
+    <div class="head-r">AI COO · 리셉션 업무 › 라커관리<br><span id="whoami"></span> · <a id="logout">로그아웃</a></div>
+  </div>
+  <div class="tabs" id="tabs"></div>
+  <div class="toolbar">
+    <div class="search"><input id="q" type="text" placeholder="성함·번호·연락처·메모 검색…" oninput="render()"></div>
+    <button class="btn on" id="autoBtn">⟳ 자동새로고침 ON</button>
+    <button class="btn" id="refreshBtn">지금 새로고침</button>
+    <button class="btn" id="kpiBtn">📊 현황 보기</button>
+    <span class="status" id="status"></span>
+  </div>
+  <div class="kpi" id="kpi"></div>
+  <div class="cnt" id="cnt"></div>
+  <div class="tablecard"><div class="tscroll"><table>
+    <thead id="thead"></thead><tbody id="tbody"></tbody>
+  </table></div></div>
+  <div class="foot">웰페리온 (WELPERION) · 라커 운영 라이브 대시보드 · 회원 개인정보 포함 · 내부 운영용<br>편집 시 원본 시트에 실시간 저장됩니다</div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+/* ===== 설정 ===== */
+const WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbyyN0I7od8cfXEMHAci1SFesDB-s4TiJi0popexeGR_RF3Cni6qtzFWEV0-dTzfB0E/exec';
+const AUTO_REFRESH_SEC = 30;          // 자동 새로고침 주기(초). 0이면 끔
+const TABS = [['men','남자라커'],['women','여자라커'],['golf','골프라커']];
+const ORDER = ['번호','성함','만기','전화','이름표','회수','참고','1차','2차'];  // 컬럼 표시 순서
+const READONLY = ['번호'];            // 수정 불가
+const WIDE = ['참고'];                // textarea로 넓게
+const LABELS = {'1차':'1차 문자발송','2차':'2차 문자발송'};  // 헤더 표시 이름
+
+/* ===== 상태 ===== */
+let PW = sessionStorage.getItem('lk_pw') || '';     // 읽기 비번
+let APW = sessionStorage.getItem('lk_apw') || '';   // 쓰기 비번(없으면 PW로 시도)
+let curDb = 'men';
+let DATA = {};            // db -> rows
+let dirty = {};          // "db:row" -> {field:newval}
+let autoOn = AUTO_REFRESH_SEC > 0;
+let timer = null;
+let saveTimers = {};   // 디바운스 자동저장 타이머
+let savingRows = {};   // 행별 저장 진행중 플래그
+
+/* ===== 통신 ===== */
+async function call(payload){
+  const r = await fetch(WEBAPP_URL, {method:'POST',
+    headers:{'Content-Type':'text/plain;charset=utf-8'}, body: JSON.stringify(payload)});
+  return r.json();
+}
+async function readDb(db){ return call({db, password: PW}); }
+async function writeRow(db, row, fields, adminPw){
+  return call({action:'update', db, adminPassword: adminPw, _sheet_row: row, fields});
+}
+
+/* ===== 전화번호 앞자리 0 복원 (예: 1012345678 → 01012345678) ===== */
+function lkNormPhone(v){
+  let s=(v==null?'':String(v)).trim();
+  if(!s) return s;
+  if(/^\d+$/.test(s) && s[0]!=='0' && (s.length===9 || s.length===10)) return '0'+s;
+  return s;
+}
+function lkNormRows(rows){
+  (rows||[]).forEach(r=>{ if(r && ('전화' in r)) r['전화']=lkNormPhone(r['전화']); });
+  return rows;
+}
+
+/* ===== 현황(KPI): 만기 라커 / 공란 / 전체 ===== */
+function lkParseExp(s){
+  if(!s) return null; s=String(s).trim();
+  const m=s.match(/^(\d{4})[.\-\/](\d{1,2})[.\-\/](\d{1,2})$/);
+  if(!m) return null; const d=new Date(+m[1],+m[2]-1,+m[3]); return isNaN(d)?null:d;
+}
+function updateKpi(){
+  const rows=DATA[curDb]||[]; const today=new Date(); today.setHours(0,0,0,0);
+  let exp=0, vac=0;
+  rows.forEach(r=>{
+    const name=String(r['성함']==null?'':r['성함']).trim();
+    if(!name){ vac++; return; }
+    const d=lkParseExp(r['만기']); if(d && d<today) exp++;
+  });
+  const el=document.getElementById('kpi'); if(!el) return;
+  el.innerHTML = `<span class="kchip kexp">만기 라커 ${exp}</span><span class="kchip kvac">공란 ${vac}</span><span class="kchip">전체 ${rows.length}</span>`;
+}
+function lkKpiSync(){ const el=document.getElementById('kpi'); if(el && el.classList.contains('show')) updateKpi(); }
+
+/* ===== 로그인 ===== */
+const loginEl=document.getElementById('login');
+async function tryLogin(pw){
+  document.getElementById('pwErr').textContent='확인 중…';
+  PW = pw;
+  const res = await readDb('men').catch(e=>({ok:false,error:String(e)}));
+  if(res && res.ok){
+    sessionStorage.setItem('lk_pw', pw);
+    DATA['men'] = lkNormRows(res.results);
+    loginEl.style.display='none';
+    document.getElementById('app').style.display='';
+    startApp();
+  } else {
+    document.getElementById('pwErr').textContent =
+      (res && res.error==='unauthorized') ? '비밀번호가 맞지 않습니다.' :
+      ('연결 오류: ' + ((res&&res.error)||'알 수 없음'));
+    PW='';
+  }
+}
+document.getElementById('pwBtn').onclick=()=>tryLogin(document.getElementById('pwIn').value);
+document.getElementById('pwIn').addEventListener('keydown',e=>{ if(e.key==='Enter') tryLogin(e.target.value); });
+document.getElementById('logout').onclick=()=>{ sessionStorage.clear(); location.reload(); };
+
+/* ===== 앱 ===== */
+function startApp(){
+  buildTabs();
+  go('men');
+  setAuto(autoOn);
+}
+function buildTabs(){
+  document.getElementById('tabs').innerHTML = TABS.map((t,i)=>
+    `<div class="tab ${i===0?'active':''}" data-db="${t[0]}" onclick="go('${t[0]}')"><span>${t[1]}</span><span class="c" id="cnt_${t[0]}"></span></div>`).join('');
+}
+async function go(db){
+  curDb=db;
+  [...document.querySelectorAll('.tab')].forEach(t=>t.classList.toggle('active', t.dataset.db===db));
+  if(!DATA[db]){ setStatus('불러오는 중…'); const res=await readDb(db); if(res.ok) DATA[db]=lkNormRows(res.results); else { toast('읽기 실패: '+res.error,true); return; } }
+  render(); refreshCounts(); lkKpiSync(); setStatus('읽음 · '+nowStr());
+}
+function refreshCounts(){ TABS.forEach(([db])=>{ const el=document.getElementById('cnt_'+db); if(el&&DATA[db]) el.textContent=DATA[db].length; }); }
+
+function colsFor(db){
+  const rows=DATA[db]||[];
+  const present = new Set(); rows.forEach(r=>Object.keys(r).forEach(k=>{ if(k!=='_sheet_row') present.add(k); }));
+  return ORDER.filter(c=>present.has(c));
+}
+function render(){
+  const db=curDb, rows=DATA[db]||[];
+  const cols=colsFor(db);
+  document.getElementById('thead').innerHTML =
+    '<tr>'+cols.map(c=>`<th>${LABELS[c]||c}</th>`).join('')+'<th></th></tr>';
+  const q=(document.getElementById('q').value||'').toLowerCase().trim();
+  let shown=0, out=[];
+  rows.forEach(r=>{
+    if(q){ const hay=cols.map(c=>r[c]).join(' ').toLowerCase(); if(hay.indexOf(q)<0) return; }
+    shown++;
+    const key=db+':'+r._sheet_row;
+    const d=dirty[key]||{};
+    const tds=cols.map(c=>{
+      const val = (c in d)? d[c] : (r[c]==null?'':r[c]);
+      if(READONLY.indexOf(c)>=0) return `<td class="num">${val}</td>`;
+      const isWide = WIDE.indexOf(c)>=0;
+      const cls = (c==='성함'?'namecell ':'') + (isWide?'wide':'') + (c==='전화'?' tel':'');
+      if(isWide)
+        return `<td class="${cls}"><textarea rows="2" data-r="${r._sheet_row}" data-f="${c}" oninput="onEdit(this)" onblur="autoSave(this)">${esc(val)}</textarea></td>`;
+      return `<td class="${cls}"><input value="${esc(val)}" data-r="${r._sheet_row}" data-f="${c}" oninput="onEdit(this)" onblur="autoSave(this)"></td>`;
+    }).join('');
+    out.push(`<tr data-row="${r._sheet_row}" class="${Object.keys(d).length?'dirty':''}">${tds}<td class="act"><button class="saveb" onclick="saveRow(${r._sheet_row})">저장</button></td></tr>`);
+  });
+  document.getElementById('tbody').innerHTML = out.join('') || `<tr><td colspan="${cols.length+1}" style="padding:30px;text-align:center;color:#B3A795">결과 없음</td></tr>`;
+  document.getElementById('cnt').textContent = `${shown}건 표시 · 전체 ${rows.length}건`;
+}
+function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+function onEdit(el){
+  const db=curDb, row=+el.dataset.r, f=el.dataset.f, val=el.value;
+  const key=db+':'+row;
+  const orig=(DATA[db].find(x=>x._sheet_row===row)||{})[f];
+  dirty[key]=dirty[key]||{};
+  if(String(val)===String(orig==null?'':orig)) delete dirty[key][f]; else dirty[key][f]=val;
+  if(Object.keys(dirty[key]).length===0) delete dirty[key];
+  const tr=el.closest('tr'); if(tr) tr.classList.toggle('dirty', !!dirty[key]);
+  // 입력 멈추면 1.2초 후 자동 저장(버튼 안 눌러도 됨)
+  clearTimeout(saveTimers[key]);
+  saveTimers[key] = setTimeout(()=>{ if(dirty[key]) saveRow(row); }, 1200);
+}
+function autoSave(el){   // 칸에서 포커스가 빠지면 즉시 저장
+  const row=+el.dataset.r, key=curDb+':'+row;
+  clearTimeout(saveTimers[key]);
+  if(dirty[key]) saveRow(row);
+}
+
+async function saveRow(row){
+  const db=curDb, key=db+':'+row;
+  if(!dirty[key]||Object.keys(dirty[key]).length===0) return;
+  if(savingRows[key]) return;                 // 같은 행 중복 저장 방지
+  savingRows[key]=true;
+  const fields={...dirty[key]};               // 스냅샷(저장 중 추가 수정 보존)
+  const tr=document.querySelector(`tr[data-row="${row}"]`);
+  const btn=tr&&tr.querySelector('.saveb'); if(btn){btn.classList.add('saving');btn.textContent='저장중…';}
+  let res = await writeRow(db,row,fields, APW||PW).catch(e=>({ok:false,error:String(e)}));
+  if(res && res.error==='unauthorized'){
+    const ap = prompt('수정(쓰기) 비밀번호를 입력하세요');
+    if(ap==null){ savingRows[key]=false; if(btn){btn.classList.remove('saving');btn.textContent='저장';} return; }
+    APW=ap; sessionStorage.setItem('lk_apw',ap);
+    res = await writeRow(db,row,fields,APW).catch(e=>({ok:false,error:String(e)}));
+  }
+  savingRows[key]=false;
+  if(btn){btn.classList.remove('saving');btn.textContent='저장';}
+  if(res && res.ok){
+    const r=DATA[db].find(x=>x._sheet_row===row); if(r) Object.assign(r, fields);
+    // 저장된 필드만 dirty에서 제거(저장 중 새로 친 글자는 보존)
+    Object.keys(fields).forEach(f=>{ if(dirty[key] && String(dirty[key][f])===String(fields[f])) delete dirty[key][f]; });
+    if(dirty[key] && Object.keys(dirty[key]).length===0) delete dirty[key];
+    if(tr && !dirty[key]) tr.classList.remove('dirty');
+    toast('저장됨');
+    if(dirty[key]) saveTimers[key]=setTimeout(()=>{ if(dirty[key]) saveRow(row); }, 1000); // 남은 수정 곧 저장
+  } else {
+    toast('저장 실패: '+((res&&res.error)||'오류'), true);
+  }
+}
+
+/* ===== 자동 새로고침 ===== */
+function setAuto(on){
+  autoOn=on;
+  const b=document.getElementById('autoBtn');
+  b.classList.toggle('on',on); b.textContent = on? '⟳ 자동새로고침 ON':'⟳ 자동새로고침 OFF';
+  if(timer){clearInterval(timer);timer=null;}
+  if(on && AUTO_REFRESH_SEC>0) timer=setInterval(tick, AUTO_REFRESH_SEC*1000);
+}
+async function tick(){
+  if(Object.keys(dirty).some(k=>k.startsWith(curDb+':'))){ setStatus('수정 중 — 자동 새로고침 보류'); return; }
+  const res=await readDb(curDb).catch(()=>null);
+  if(res&&res.ok){ DATA[curDb]=lkNormRows(res.results); render(); refreshCounts(); lkKpiSync(); setStatus('자동 새로고침 · '+nowStr()); }
+}
+document.getElementById('autoBtn').onclick=()=>setAuto(!autoOn);
+document.getElementById('refreshBtn').onclick=async()=>{ DATA[curDb]=null; await go(curDb); };
+document.getElementById('kpiBtn').onclick=()=>{ const el=document.getElementById('kpi'); el.classList.toggle('show'); const on=el.classList.contains('show'); document.getElementById('kpiBtn').classList.toggle('on',on); if(on) updateKpi(); };
+
+/* ===== 유틸 ===== */
+function setStatus(s){ document.getElementById('status').innerHTML=s; }
+function nowStr(){ const d=new Date(); return d.getHours().toString().padStart(2,'0')+':'+d.getMinutes().toString().padStart(2,'0')+':'+d.getSeconds().toString().padStart(2,'0'); }
+let toastT;
+function toast(msg,bad){ const t=document.getElementById('toast'); t.textContent=msg; t.className='toast show'+(bad?' bad':''); clearTimeout(toastT); toastT=setTimeout(()=>t.className='toast',2600); }
+
+/* 세션에 비번 있으면 자동 로그인 시도 */
+if(PW){ tryLogin(PW); }
+</script>
+</body></html>
