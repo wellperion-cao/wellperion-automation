@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8"><link rel="icon" type="image/png" href="/wellperion-automation/wellperion_favicon.png">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>웰페리온 강습 회원 관리 (등록 후) — AI CPO</title>
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" rel="stylesheet">
+<style>
+:root{
+  --bg:#221F20;--paper:#2a2725;--text:#f5f2ef;--dim:#8c8b83;
+  --accent:#B79F8A;--accent-bg:rgba(183,159,138,0.12);--border:#3d3835;
+  --green:#6abf7b;--green-bg:rgba(106,191,123,0.12);
+  --red:#ED5B3F;--red-bg:rgba(237,91,63,0.12);
+  --yellow:#e6c84e;--yellow-bg:rgba(230,200,78,0.12);
+  --blue:#5b9fd5;--blue-bg:rgba(91,159,213,0.12);
+  --purple:#a78bda;--purple-bg:rgba(167,139,218,0.12);
+  --orange:#e6944e;--orange-bg:rgba(230,148,78,0.12);
+  --teal:#4ec4c4;--teal-bg:rgba(78,196,196,0.12);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
+  background:var(--bg);color:var(--text);line-height:1.6;font-size:15px;min-height:100vh;
+}
+
+/* ── 헤더 ── */
+.sticky-top{position:sticky;top:0;z-index:10;background:var(--bg);border-bottom:1px solid var(--border)}
+.header{background:var(--paper);padding:12px 20px}
+.header-top{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.header h1{font-size:17px;font-weight:700;margin:0}
+.header .sub{font-size:12px;color:var(--dim);margin-top:2px}
+.badge{display:inline-block;font-size:10px;font-weight:700;padding:3px 10px;border-radius:12px;
+  background:var(--purple-bg);color:var(--purple)}
+.header-actions{display:flex;gap:6px;margin-left:auto;flex-wrap:wrap}
+.action-btn{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;
+  padding:4px 10px;border-radius:8px;background:var(--accent-bg);color:var(--accent);
+  border:1px solid rgba(183,159,138,0.3);text-decoration:none;cursor:pointer;
+  font-family:inherit;transition:background 0.15s}
+.action-btn:hover{background:rgba(183,159,138,0.22)}
+
+/* ── 컨텐츠 영역 ── */
+.content{padding:20px 20px 80px;max-width:760px;margin:0 auto}
+
+/* ── 공통 카드 ── */
+.card{background:var(--paper);border:1px solid var(--border);border-radius:12px;
+  padding:16px 18px;margin-bottom:14px}
+
+/* ── 인포 박스 ── */
+.info-box{border-radius:10px;padding:12px 16px;font-size:13px;line-height:1.7;margin-bottom:12px}
+.info-box.accent{background:var(--accent-bg);border:1px solid rgba(183,159,138,0.3);color:var(--text)}
+.info-box strong{font-weight:700}
+
+/* ── 빈/준비중 상태 ── */
+.empty-state{text-align:center;padding:48px 20px;color:var(--dim)}
+.empty-state-icon{font-size:42px;margin-bottom:14px}
+.empty-state-title{font-size:16px;font-weight:700;margin-bottom:8px;color:var(--text)}
+.empty-state-desc{font-size:13px;line-height:1.8}
+
+@media print{
+  .sticky-top,.action-btn{display:none!important}
+  body{background:#fff;color:#000}
+  .card{border-color:#ccc;background:#f9f9f9}
+}
+</style>
+<script src="../../_assets/gate.js" charset="utf-8"></script>
+</head>
+<body>
+
+<div class="sticky-top">
+  <div class="header">
+    <div class="header-top">
+      <div>
+        <h1>강습 회원 관리 (등록 후) <span class="badge">AI CPO v0.1</span></h1>
+        <div class="sub">강습 등록 전환 회원 관리 — 담당 실무: 임정은M</div>
+      </div>
+      <div class="header-actions">
+        <a class="action-btn" href="강습문의.html">강습 문의 (등록 전)</a>
+        <a class="action-btn" href="회원관리.html">멤버십 회원 관리 (등록 후)</a>
+        <a class="action-btn" href="../../../wellperion_guide(main).html">ERP 홈</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="content">
+
+  <div class="info-box accent" style="margin-bottom:16px">
+    <strong>강습 등록 회원 관리</strong> — 강습 문의에서 <strong>'등록' 전환</strong>된 회원을 관리하는 다음 단계 페이지입니다.
+    문의 단계는 <a href="강습문의.html" style="color:var(--teal);font-weight:700">강습 문의 (등록 전)</a>에서.
+  </div>
+
+  <div class="card">
+    <div class="empty-state">
+      <div class="empty-state-icon">🚧</div>
+      <div class="empty-state-title">준비 중 — 강습 등록회원 관리 (다음 단계)</div>
+      <div class="empty-state-desc">
+        강습 문의에서 '등록' 전환된 회원을 관리할 페이지입니다.<br>
+        등록회원 목록·갱신 관리·강습 일정 연동은 다음 배에서 구현됩니다.
+      </div>
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>

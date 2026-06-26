@@ -97,6 +97,28 @@ function _canonicalChannel_(raw) {
   return '기타·미상';
 }
 
+// ─── 강습 종목 표준 버킷 (시포·GM 2026-06-26) ───
+// 자유라벨('성인 수영 (개인레슨/단체레슨)' 등)을 표준 종목으로 집계한다.
+// 라벨 통째 쪼개기 금지 — 한 응답이 여러 종목 다중체크면 각 버킷 +1(부분문자열 매칭).
+// 어느 버킷에도 안 걸리고 텍스트가 있으면 '기타'로 귀속(날조 금지).
+function _sportBuckets_(raw) {
+  var s = String(raw == null ? '' : raw);
+  var out = [];
+  function hit(re, key) { if (re.test(s)) out.push(key); }
+  hit(/수영/, '수영');
+  hit(/필라테스|필라/, '필라테스');
+  hit(/P\.?T|피티|퍼스널/i, 'P.T');
+  hit(/스쿼시/, '스쿼시');
+  hit(/골프/, '골프');
+  hit(/아쿠아/, '아쿠아로빅');
+  hit(/바레/, '바레');
+  hit(/발레/, '발레');
+  hit(/뮤지컬/, '뮤지컬');
+  hit(/체조/, '체조');
+  if (out.length === 0 && s.trim()) out.push('기타');
+  return out;
+}
+
 // ─── 진행상태 → 전환 단계 rank 매핑 (설계 SSOT 2026-06-15) ───
 // 0=이탈, 1=문의(기본), 2=응대, 3=예약, 4=방문, 5=가입
 function _stageOf_(raw) {
@@ -1087,6 +1109,14 @@ function _lessonReadRows_() {
   return out;
 }
 
+// 강습 데이터 범위 필터 — 기본=올해(현재연도)만, scope=all이면 전체(시포·GM 2026-06-26).
+// 타임스탬프는 _miToISO_로 'YYYY-MM-DD' 정규화됨 → 앞 4자리=연도(Asia/Seoul 기준 현재연도와 비교).
+function _lessonScopeFilter_(rows, body) {
+  if (String((body && body.scope) || '') === 'all') return rows;
+  var yr = Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy');
+  return rows.filter(function(row) { return String(row.timestamp || '').slice(0, 4) === yr; });
+}
+
 function _processAction(body) {
   const action = body.action || '';
   // nocache=1 → 캐시 읽기 우회(강제 재계산·재캐싱). 워머 트리거가 캐시를 미리 데우는 용도(2026-06-19 시토).
@@ -1796,6 +1826,11 @@ function _processAction(body) {
     maSh.appendRow(maRow);
     if (body.status === 'SUC' || body.status === '단기SUC') {
       try { _regUpsert_(body.name, body.phone, body.program); } catch (e) {}
+      // 등록 전환 전용 알림 → '문의 알림' 방(수정 경로와 동일 포맷). add는 새 행이라 old/new 비교 불필요. 이름·프로그램·담당만(전화=PII 제외). 2026-06-26 시포.
+      try {
+        var _maRegChatId = PropertiesService.getScriptProperties().getProperty('TELEGRAM_INQUIRY_CHAT_ID') || _INQUIRY_CHAT_ID_FALLBACK;
+        _notifyTelegram('✅ <b>등록 전환</b> — 문의회원이 등록(' + body.status + ')으로 전환\n· 이름: ' + (body.name || '-') + '\n· 프로그램: ' + (body.program || '-') + '\n· 담당: ' + (body.owner || '-'), _maRegChatId);
+      } catch (e) {}
     }
     try { _notifyTelegram('➕ 전화·직접 문의 추가 — ' + (body.name || '(이름없음)') + ' · ' + (body.phone || '-') + ' · 채널:' + (body.channel || '유선전화')); } catch (e) {}
     return _json({ ok: true, message: '추가되었습니다.', rowIndex: maSh.getLastRow() });
@@ -1884,23 +1919,21 @@ function _processAction(body) {
 
   // ─── 강습문의 페이지(CPO): 전체 목록 (성인 강습 문의 + 관리 필드) ───
   if (action === 'lesson_inquiry_list') {
-    var liRows = _lessonReadRows_();
+    var liRows = _lessonScopeFilter_(_lessonReadRows_(), body);
     return _json({ ok: true, count: liRows.length, data: liRows });
   }
 
   // ─── 강습문의 페이지(CPO): 통계 (총·이번달·종목 분포·유입경로 분포) ───
   if (action === 'lesson_stats') {
-    var lsRows = _lessonReadRows_();
+    var lsRows = _lessonScopeFilter_(_lessonReadRows_(), body);
     var lsTotal = lsRows.length;
     var lsMonth = Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy-MM');
     var lsThisMonth = 0;
     var lsSport = {}, lsChan = {};
     lsRows.forEach(function(row) {
       if (row.timestamp && row.timestamp.slice(0, 7) === lsMonth) lsThisMonth++;
-      // 종목: 멀티체크(콤마·슬래시·중점 구분) — 각각 카운트
-      String(row.sport || '').split(/[,/·;]+/).forEach(function(s){
-        var k = s.trim(); if (!k) return; lsSport[k] = (lsSport[k] || 0) + 1;
-      });
+      // 종목: 표준 버킷 집계(라벨 통째 쪼개기 금지·다중체크는 각 버킷 +1). 2026-06-26 시포.
+      _sportBuckets_(row.sport).forEach(function(k){ lsSport[k] = (lsSport[k] || 0) + 1; });
       // 유입경로: 표준 10버킷 정규화(빈값=기타·미상)
       var ch = _canonicalChannel_(row.channel || '');
       lsChan[ch] = (lsChan[ch] || 0) + 1;
@@ -1915,7 +1948,7 @@ function _processAction(body) {
   // ─── 강습문의 페이지(CPO): 예약 달력 (상담예약 일정) ───
   if (action === 'lesson_calendar') {
     var lcMonth = String(body.month || '');  // 'YYYY-MM'
-    var lcRows = _lessonReadRows_();
+    var lcRows = _lessonScopeFilter_(_lessonReadRows_(), body);
     var lcEvents = [];
     lcRows.forEach(function(row) {
       var d = row.consult;
