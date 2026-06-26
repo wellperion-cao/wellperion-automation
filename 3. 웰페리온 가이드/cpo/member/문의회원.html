@@ -997,7 +997,7 @@ a.funnel-step:hover{background:rgba(183,159,138,0.08);color:var(--accent)}
               <th style="width:90px">진행상황</th>
               <th style="width:110px">유입채널</th>
               <th style="width:85px">담당</th>
-              <th style="width:240px">메모</th>
+              <th style="width:220px">Contact (연락 기록)</th>
               <th style="width:200px">일정 (상담·체험)</th>
             </tr>
           </thead>
@@ -2733,13 +2733,13 @@ function buildDbRow(row, isNew) {
   if (!READ_ONLY) { tdOwner.className = 'editable-cell'; tdOwner.addEventListener('click', function(){ _activateCellSelect(this, row, 'owner', OWNER_OPTIONS); }); }
   tr.appendChild(tdOwner);
 
-  // ── [6] 메모 ──
-  var tdMemo = document.createElement('td');
-  tdMemo.style.fontSize = '12px'; tdMemo.style.color = 'var(--dim)';
-  tdMemo.style.maxWidth = '240px'; tdMemo.style.whiteSpace = 'pre-wrap'; tdMemo.style.wordBreak = 'break-word';
-  tdMemo.textContent = row.memo || '—';
-  if (!READ_ONLY) { tdMemo.className = 'editable-cell'; tdMemo.addEventListener('click', function(){ _activateCellMemo(this, row); }); }
-  tr.appendChild(tdMemo);
+  // ── [6] Contact (연락 기록 1·2·3) — 체험1~3처럼 3칸 (2026-06-26 GM: 메모칸→Contact) ──
+  var tdContact = document.createElement('td');
+  tdContact.style.fontSize = '11px'; tdContact.style.color = 'var(--dim)'; tdContact.style.lineHeight = '1.6';
+  tdContact.style.maxWidth = '220px'; tdContact.style.whiteSpace = 'pre-wrap'; tdContact.style.wordBreak = 'break-word';
+  _renderContactCell(tdContact, row);
+  if (!READ_ONLY) { tdContact.className = 'editable-cell'; tdContact.addEventListener('click', function(){ _activateCellContact(this, row); }); }
+  tr.appendChild(tdContact);
 
   // ── 일정 (상담·체험) ──
   var tdSched = document.createElement('td');
@@ -2778,6 +2778,9 @@ function _saveCell(rowIndex, patch) {
     channel:  r.channel || '',
     owner:    r.owner   || '',
     memo:     r.memo !== undefined ? r.memo : '',
+    contact1: r.contact1 !== undefined ? r.contact1 : '',
+    contact2: r.contact2 !== undefined ? r.contact2 : '',
+    contact3: r.contact3 !== undefined ? r.contact3 : '',
     tour:     _comboDateTime(r.tourDate, r.tourTime),
     exp1:     _comboDateTime(r.exp1, r.exp1Time),
     exp2:     _comboDateTime(r.exp2, r.exp2Time),
@@ -2891,6 +2894,53 @@ function _activateCellMemo(td, row) {
     if (newVal !== prevVal) _saveCell(rowIndex, { memo: newVal });
   }
   ta.addEventListener('blur', commit);
+}
+
+/* ─── Contact 셀 (contact1·2·3 composite) 표시 + 활성화 (2026-06-26 GM: 메모칸→Contact, 체험1~3처럼) ─── */
+function _renderContactCell(td, row) {
+  td.innerHTML =
+    'C1: ' + esc(row.contact1 || '—') + '<br>' +
+    'C2: ' + esc(row.contact2 || '—') + '<br>' +
+    'C3: ' + esc(row.contact3 || '—');
+}
+function _activateCellContact(td, row) {
+  if (td.classList.contains('cell-active')) return; // 이미 편집 중
+  var rowIndex = parseInt(td.closest('tr').dataset.rowIndex, 10);
+  var live = dbRows.find(function(r){ return r.rowIndex === rowIndex; }) || row;
+
+  td.classList.add('cell-active');
+  td.innerHTML = '';
+  var block = document.createElement('div');
+  block.style.display = 'flex'; block.style.flexDirection = 'column'; block.style.gap = '4px';
+  ['contact1','contact2','contact3'].forEach(function(f, i){
+    var inp = document.createElement('input');
+    inp.className = 'cell-input'; inp.type = 'text';
+    inp.style.width = '200px';
+    inp.placeholder = 'Contact ' + (i+1) + ' — ' + (i+1) + '차 연락 기록';
+    inp.value = live[f] || '';
+    inp.dataset.field = f;
+    block.appendChild(inp);
+  });
+  td.appendChild(block);
+  var firstInput = block.querySelector('input');
+  if (firstInput) firstInput.focus();
+
+  // 블록 밖으로 포커스 완전히 벗어나면 커밋 (IME 안전 — 입력 중 재생성 없음)
+  var committed = false;
+  function onFocusOut() {
+    requestAnimationFrame(function(){
+      if (td.contains(document.activeElement)) return;
+      if (committed) return;
+      committed = true;
+      td.removeEventListener('focusout', onFocusOut);
+      var patch = {};
+      block.querySelectorAll('[data-field]').forEach(function(el){ patch[el.dataset.field] = el.value; });
+      _renderContactCell(td, Object.assign({}, live, patch));
+      td.classList.remove('cell-active');
+      _saveCell(rowIndex, patch);
+    });
+  }
+  td.addEventListener('focusout', onFocusOut);
 }
 
 /* ─── 일정 셀 (상담·체험1·체험2 composite) 활성화 ─── */
