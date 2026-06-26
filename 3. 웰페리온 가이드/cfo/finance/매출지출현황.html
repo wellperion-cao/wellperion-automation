@@ -122,6 +122,13 @@ footer{margin-top:26px;font-size:11px;color:var(--ink-faint);text-align:center;l
       <div class="card"><h3>매출 구성</h3>
         <div style="height:240px"><canvas id="chartMix"></canvas></div></div>
     </div>
+    <div class="card">
+      <h3>종목별 기여이익 <span style="font-size:11px;color:var(--ink-faint)">(강습 · YTD · 강사인건비 기준)</span></h3>
+      <div class="notice" style="margin-top:0;margin-bottom:10px">⚠️ <b>강사인건비 기준 기여이익</b> — 임대료·고정비 배분 전이므로 종목 '순이익'이 아닙니다(부분 기여이익). 회원권(운영부)은 강습이 아니므로 제외.</div>
+      <div class="desc">기여이익 = 강습매출 − 종목 강사인건비 · 기여율 = 기여이익 ÷ 강습매출. 흑자=네이비/골드, 적자=빨강. 막대 내림차순. (* = 강사인건비 미매칭)</div>
+      <div style="height:280px"><canvas id="chartContrib"></canvas></div>
+      <div class="tbl-wrap" style="margin-top:12px"><table id="contribTbl" style="min-width:560px"></table></div>
+    </div>
   </section>
 
   <section class="panel" data-panel="sales">
@@ -309,6 +316,7 @@ async function startApp(){
   document.getElementById("loading").style.display="none";document.getElementById("content").style.display="block";
   document.getElementById("syncMeta").textContent="인건비 "+(LIVE?"🟢실시간":"⚪폴백")+" · 매출 "+(SALES_LIVE?"🟢실시간":"⚪폴백")+" · 구매성 1~6월 확정 · 7~12월 도래 시 자동";
   renderKpi();renderMain();renderSalesDept();renderMix();renderSales();renderSalesTbl();renderExpTbl();renderPeople();
+  renderContrib(); // 종목별 기여이익(대시보드 · SALES_DEPT·LABOR 재사용)
   renderBudget();ensureAnom(); // ① 예산 위젯(즉시) ② 이상지출(라인아이템 비동기 로드)
 }
 
@@ -352,6 +360,27 @@ function renderMix(){var gradesum=Object.keys(SALES_DEPT).reduce(function(s,d){r
     options:{maintainAspectRatio:false,plugins:{legend:{position:"bottom",labels:{font:{size:11}}},tooltip:{callbacks:{label:function(c){return c.label+": "+eok(c.raw)+" ("+(SALES_G?(c.raw/SALES_G*100).toFixed(1):0)+"%)";}}}}}});
 }
 function cell(v,fut){if(fut)return '<td class="fut">예정</td>';if(v===0)return '<td style="color:#cdd5e6">–</td>';if(v<0)return '<td class="neg">'+won(v)+'</td>';return '<td>'+won(v)+'</td>';}
+
+/* ── 종목별 기여이익 (강사인건비 기준 부분 기여이익) — 매출(SALES_DEPT,운영부 제외) − 강사인건비(LABOR). 종목명은 LABOR(=DEPTS_ORDER) 키와 정확 일치 시 매칭, 불일치(GXE 등)는 미매칭 표시 후 기여이익=매출. SALES_DEPT·LABOR 재사용(신규 fetch 없음). */
+function renderContrib(){
+  var arr=Object.keys(SALES_DEPT).filter(function(d){return d!=="운영부";}).map(function(d){
+    var rev=sum((SALES_DEPT[d]||[]).slice(0,DATA_LAST));
+    var matched=LABOR.some(function(x){return x.n===d;}); // 종목명 정확 일치 확인
+    var lab=matched?sum(laborArr(d).slice(0,DATA_LAST)):0;
+    var cp=rev-lab;
+    return {d:d,rev:rev,lab:lab,cp:cp,rate:rev>0?(cp/rev*100):0,matched:matched};
+  }).sort(function(a,b){return b.cp-a.cp;});
+  newChart("chartContrib",{type:"bar",data:{labels:arr.map(function(o){return o.d+(o.matched?"":"*");}),datasets:[{data:arr.map(function(o){return o.cp;}),backgroundColor:arr.map(function(o){return o.cp<0?"#b14238":(o.matched?"#22324a":"#a98a52");}),borderRadius:4}]},
+    options:{indexAxis:"y",maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){var o=arr[c.dataIndex];return "기여이익 "+won(o.cp)+" · 기여율 "+o.rate.toFixed(1)+"%"+(o.matched?"":" (강사비 미매칭)");}}}},scales:{x:moneyAxis()}}});
+  var h='<thead><tr><th>종목</th><th>강습매출</th><th>강사인건비</th><th>기여이익</th><th>기여율</th></tr></thead><tbody>';
+  arr.forEach(function(o){
+    var neg=o.cp<0,note=o.matched?'':' <span style="color:var(--amber);font-size:10px;font-weight:700">⚠ 강사인건비 미매칭</span>';
+    h+='<tr><td>'+o.d+note+'</td><td>'+won(o.rev)+'</td><td>'+(o.matched?won(o.lab):'–')+'</td><td'+(neg?' class="neg"':'')+'><b>'+won(o.cp)+'</b></td><td'+(neg?' class="neg"':'')+'>'+o.rate.toFixed(1)+'%</td></tr>';
+  });
+  var tr=sum(arr.map(function(o){return o.rev;})),tl=sum(arr.map(function(o){return o.lab;})),tc=tr-tl;
+  h+='<tr class="totrow"><td>강습 합계</td><td>'+won(tr)+'</td><td>'+won(tl)+'</td><td>'+won(tc)+'</td><td>'+(tr?(tc/tr*100).toFixed(1):0)+'%</td></tr></tbody>';
+  document.getElementById("contribTbl").innerHTML=h;
+}
 
 function renderSales(){
   newChart("chartSalesTrend",{type:"bar",data:{labels:MONTHS,datasets:[{label:"매출",data:salesMonth.map(function(v,i){return i<Math.min(DATA_LAST,6)?v:null;}),backgroundColor:"#a98a52",borderRadius:4}]},
