@@ -1489,5 +1489,19 @@
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "fecc8fe722f170073784980bd0d77a89e380d3e1",
     "ship_no": 188
+  },
+  {
+    "task_id": "COO-2026-06-26-ADHOC-0a9a8f33",
+    "clevel": "coo",
+    "title": "[시우] 매뉴얼 편집 전 경로 비번 잠금 — 수정·초기화·삭제·정리 게이트 [시우]",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-06-26",
+    "processed_at": "2026-06-26",
+    "artifact": "- 단일 길목 mgmtSaveItems() 최상단에 requireEditAuth 게이트(현재·미래 모든 매뉴얼 시트 쓰기 자동 잠금)\n- 파괴적 4함수 진입부 게이트(confirm 전 비번): saveItemEdit·resetItem·manualDeleteItem·manualPurgeCustom\n- 점검 수행(체크·제출 saveState·toggleCheck·submitRound) 무영향 — mgmtSaveItems 미경유\n- 비번값 1234 그대로 유지(즉시 잠금 우선)\n- 역롤백: 추가한 requireEditAuth 1줄씩 삭제 (CLI ad-hoc · 커밋 0a9a8f33)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "0a9a8f33cbea5d3061c1e9b7e9f9c54dbac8a8c9",
+    "ship_no": 189
   }
 ]
