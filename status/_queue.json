@@ -1236,5 +1236,19 @@
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "a3fcf0ca93dd123307f3bf41d6cd1ed0f605713c",
     "ship_no": 38
+  },
+  {
+    "task_id": "COO-2026-06-26-ADHOC-49e47559",
+    "clevel": "coo",
+    "title": "[시우] 마감조 제출칸 sub.close 분리 — 오후조 제출이 마감조 거짓완료로 표시되던 버그 근본수정 [시우]",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-06-26",
+    "processed_at": "2026-06-26",
+    "artifact": "B(거짓표시 제거): 마감조 제출칸을 오후조(pm)와 공유하던 탓에 오후조 제출만으로 마감조가 완료로 거짓표시되던 문제 제거.\nA(서버칸 분리): led.sub.close / led.subAt.close 독립칸 신설, _roundToShiftKey('close')='close'로 잠금해제도 마감조만 격리(night·pm 무영향).\n하위호환: submitter_close 미전송 구버전 프론트는 자동 무시 — 기존 am/pm/night 응답 구조 불변.\n역롤백: 본 커밋 revert + GAS clasp deploy로 직전 버전(@11 (CLI ad-hoc · 커밋 49e47559)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "49e4755956d449a703b71546ab2b4a4b96d5ce52",
+    "ship_no": 183
   }
 ]
