@@ -56,13 +56,18 @@ td input:hover,td textarea:hover{border-color:var(--line)}
 td input:focus,td textarea:focus{border-color:var(--beige);background:#fff;outline:none}
 td.wide{min-width:360px}
 td.wide textarea{min-width:340px;line-height:1.5}
-td.tel{min-width:120px} td.exp{min-width:96px}
+td.tel{min-width:160px;white-space:nowrap} td.tel input{min-width:150px;font-variant-numeric:tabular-nums} td.exp{min-width:96px}
 td.namecell input{font-weight:700}
 td.act{width:64px;text-align:center}
 .saveb{background:var(--orange);color:#fff;border:none;border-radius:7px;padding:6px 10px;font-size:11.5px;font-weight:700;cursor:pointer;font-family:inherit;display:none}
 tr.dirty .saveb{display:inline-block}
 .saveb.saving{background:var(--amber);opacity:.8}
 .cnt{font-size:12px;color:var(--muted);margin:0 2px 10px;font-weight:600}
+.kpi{display:none;gap:8px;flex-wrap:wrap;margin:2px 2px 12px}
+.kpi.show{display:flex}
+.kchip{font-size:12.5px;font-weight:700;padding:7px 13px;border-radius:999px;border:1px solid var(--line);color:var(--ink2);background:var(--paper)}
+.kchip.kexp{color:#fff;background:var(--orange);border-color:var(--orange)}
+.kchip.kvac{color:var(--beige-deep)}
 .toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:11px 20px;border-radius:10px;font-size:13px;font-weight:600;opacity:0;transition:.25s;pointer-events:none;z-index:60}
 .toast.show{opacity:1}
 .toast.bad{background:var(--orange)}
@@ -90,8 +95,10 @@ tr.dirty .saveb{display:inline-block}
     <div class="search"><input id="q" type="text" placeholder="성함·번호·연락처·메모 검색…" oninput="render()"></div>
     <button class="btn on" id="autoBtn">⟳ 자동새로고침 ON</button>
     <button class="btn" id="refreshBtn">지금 새로고침</button>
+    <button class="btn" id="kpiBtn">📊 현황 보기</button>
     <span class="status" id="status"></span>
   </div>
+  <div class="kpi" id="kpi"></div>
   <div class="cnt" id="cnt"></div>
   <div class="tablecard"><div class="tscroll"><table>
     <thead id="thead"></thead><tbody id="tbody"></tbody>
@@ -108,6 +115,7 @@ const TABS = [['men','남자라커'],['women','여자라커'],['golf','골프라
 const ORDER = ['번호','성함','만기','전화','이름표','회수','참고','1차','2차'];  // 컬럼 표시 순서
 const READONLY = ['번호'];            // 수정 불가
 const WIDE = ['참고'];                // textarea로 넓게
+const LABELS = {'1차':'1차 문자발송','2차':'2차 문자발송'};  // 헤더 표시 이름
 
 /* ===== 상태 ===== */
 let PW = sessionStorage.getItem('lk_pw') || '';     // 읽기 비번
@@ -131,6 +139,37 @@ async function writeRow(db, row, fields, adminPw){
   return call({action:'update', db, adminPassword: adminPw, _sheet_row: row, fields});
 }
 
+/* ===== 전화번호 앞자리 0 복원 (예: 1012345678 → 01012345678) ===== */
+function lkNormPhone(v){
+  let s=(v==null?'':String(v)).trim();
+  if(!s) return s;
+  if(/^\d+$/.test(s) && s[0]!=='0' && (s.length===9 || s.length===10)) return '0'+s;
+  return s;
+}
+function lkNormRows(rows){
+  (rows||[]).forEach(r=>{ if(r && ('전화' in r)) r['전화']=lkNormPhone(r['전화']); });
+  return rows;
+}
+
+/* ===== 현황(KPI): 만기 라커 / 공란 / 전체 ===== */
+function lkParseExp(s){
+  if(!s) return null; s=String(s).trim();
+  const m=s.match(/^(\d{4})[.\-\/](\d{1,2})[.\-\/](\d{1,2})$/);
+  if(!m) return null; const d=new Date(+m[1],+m[2]-1,+m[3]); return isNaN(d)?null:d;
+}
+function updateKpi(){
+  const rows=DATA[curDb]||[]; const today=new Date(); today.setHours(0,0,0,0);
+  let exp=0, vac=0;
+  rows.forEach(r=>{
+    const name=String(r['성함']==null?'':r['성함']).trim();
+    if(!name){ vac++; return; }
+    const d=lkParseExp(r['만기']); if(d && d<today) exp++;
+  });
+  const el=document.getElementById('kpi'); if(!el) return;
+  el.innerHTML = `<span class="kchip kexp">만기 라커 ${exp}</span><span class="kchip kvac">공란 ${vac}</span><span class="kchip">전체 ${rows.length}</span>`;
+}
+function lkKpiSync(){ const el=document.getElementById('kpi'); if(el && el.classList.contains('show')) updateKpi(); }
+
 /* ===== 로그인 ===== */
 const loginEl=document.getElementById('login');
 async function tryLogin(pw){
@@ -139,7 +178,7 @@ async function tryLogin(pw){
   const res = await readDb('men').catch(e=>({ok:false,error:String(e)}));
   if(res && res.ok){
     sessionStorage.setItem('lk_pw', pw);
-    DATA['men'] = res.results;
+    DATA['men'] = lkNormRows(res.results);
     loginEl.style.display='none';
     document.getElementById('app').style.display='';
     startApp();
@@ -167,8 +206,8 @@ function buildTabs(){
 async function go(db){
   curDb=db;
   [...document.querySelectorAll('.tab')].forEach(t=>t.classList.toggle('active', t.dataset.db===db));
-  if(!DATA[db]){ setStatus('불러오는 중…'); const res=await readDb(db); if(res.ok) DATA[db]=res.results; else { toast('읽기 실패: '+res.error,true); return; } }
-  render(); refreshCounts(); setStatus('읽음 · '+nowStr());
+  if(!DATA[db]){ setStatus('불러오는 중…'); const res=await readDb(db); if(res.ok) DATA[db]=lkNormRows(res.results); else { toast('읽기 실패: '+res.error,true); return; } }
+  render(); refreshCounts(); lkKpiSync(); setStatus('읽음 · '+nowStr());
 }
 function refreshCounts(){ TABS.forEach(([db])=>{ const el=document.getElementById('cnt_'+db); if(el&&DATA[db]) el.textContent=DATA[db].length; }); }
 
@@ -181,7 +220,7 @@ function render(){
   const db=curDb, rows=DATA[db]||[];
   const cols=colsFor(db);
   document.getElementById('thead').innerHTML =
-    '<tr>'+cols.map(c=>`<th>${c}</th>`).join('')+'<th></th></tr>';
+    '<tr>'+cols.map(c=>`<th>${LABELS[c]||c}</th>`).join('')+'<th></th></tr>';
   const q=(document.getElementById('q').value||'').toLowerCase().trim();
   let shown=0, out=[];
   rows.forEach(r=>{
@@ -193,7 +232,7 @@ function render(){
       const val = (c in d)? d[c] : (r[c]==null?'':r[c]);
       if(READONLY.indexOf(c)>=0) return `<td class="num">${val}</td>`;
       const isWide = WIDE.indexOf(c)>=0;
-      const cls = (c==='성함'?'namecell ':'') + (isWide?'wide':'');
+      const cls = (c==='성함'?'namecell ':'') + (isWide?'wide':'') + (c==='전화'?' tel':'');
       if(isWide)
         return `<td class="${cls}"><textarea rows="2" data-r="${r._sheet_row}" data-f="${c}" oninput="onEdit(this)" onblur="autoSave(this)">${esc(val)}</textarea></td>`;
       return `<td class="${cls}"><input value="${esc(val)}" data-r="${r._sheet_row}" data-f="${c}" oninput="onEdit(this)" onblur="autoSave(this)"></td>`;
@@ -264,10 +303,11 @@ function setAuto(on){
 async function tick(){
   if(Object.keys(dirty).some(k=>k.startsWith(curDb+':'))){ setStatus('수정 중 — 자동 새로고침 보류'); return; }
   const res=await readDb(curDb).catch(()=>null);
-  if(res&&res.ok){ DATA[curDb]=res.results; render(); refreshCounts(); setStatus('자동 새로고침 · '+nowStr()); }
+  if(res&&res.ok){ DATA[curDb]=lkNormRows(res.results); render(); refreshCounts(); lkKpiSync(); setStatus('자동 새로고침 · '+nowStr()); }
 }
 document.getElementById('autoBtn').onclick=()=>setAuto(!autoOn);
 document.getElementById('refreshBtn').onclick=async()=>{ DATA[curDb]=null; await go(curDb); };
+document.getElementById('kpiBtn').onclick=()=>{ const el=document.getElementById('kpi'); el.classList.toggle('show'); const on=el.classList.contains('show'); document.getElementById('kpiBtn').classList.toggle('on',on); if(on) updateKpi(); };
 
 /* ===== 유틸 ===== */
 function setStatus(s){ document.getElementById('status').innerHTML=s; }
