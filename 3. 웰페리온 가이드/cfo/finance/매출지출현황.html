@@ -96,6 +96,8 @@ footer{margin-top:26px;font-size:11px;color:var(--ink-faint);text-align:center;l
 .pc-chip.dan:hover{background:var(--navy);color:#fff}
 .pc-chip.src{border-color:var(--line);color:var(--ink-soft);background:var(--surface-2)}
 .pc-chip.src:hover{background:var(--ink-soft);color:#fff;border-color:var(--ink-soft)}
+.rev-low{margin-top:5px;font-size:11px;color:var(--gold-deep);background:#fbf7ee;border:1px solid #e6cf8f;border-radius:8px;padding:4px 9px;display:inline-block;line-height:1.6}
+.rev-low b{color:var(--navy);font-size:12px}
 </style></head><body>
 
 <div id="gate"><div class="gate-card">
@@ -232,6 +234,10 @@ var DEPTS_ORDER=["골프","P.T","수영","스쿼시","체조&트램","필라테�
 var PAL=["#22324a","#a98a52","#3c7a4a","#2f6d9e","#b07d24","#6a5891","#b14238","#5b9fd5","#8a6f3f","#4f9e6a","#c2705f","#7e9bbf"];
 var SALES_SHEET="18VRvDEYQ7LfaPaHmXROBpIVmYtjqZGrYie75JZnRKDA";
 var SALES_GVIZ="https://docs.google.com/spreadsheets/d/"+SALES_SHEET+"/gviz/tq?tqx=out:json";
+/* 최저가검토(자동) 시트 — 회계 백엔드와 무관, gviz 읽기 전용. 컬럼 A품의행·B품의물품·C동일제품·D최저가·E판매처링크·F품의가·G품의가대비·H신뢰도·I검토일·J비고. A(품의행)를 r.row와 매칭. */
+var REVIEW_SHEET="1rUjnf_oxVTnT89B1aU46Z2txYc8k_MdKYdwhulpgw48";
+var REVIEW_GVIZ="https://docs.google.com/spreadsheets/d/"+REVIEW_SHEET+"/gviz/tq?tqx=out:json";
+var REVIEW_LOW={},REVIEW_LOADED=false;
 var FB_SALES={"운영부":[291174533,318993972,312998498,282246580,210399498,217283030],"P.T":[79298450,119547350,114219650,63273500,55391100,90687210],"필라테스":[17216900,16998900,22667800,20978500,28890100,23257200],"수영":[106374150,81905700,108413500,107943500,100604500,89640250],"스쿼시":[29118700,21351100,27627250,24290500,24678600,26502780],"골프":[27883750,26713000,27699000,18726000,27163000,25669000],"체조&트램":[31737750,23977250,31264750,28998750,27038000,21777250],"뮤지컬":[2505000,8450000,1570000,2700000,660000,380000],"GXE":[1062000,1188000,1008000,1584000,144000,414000],"루프매소드":[0,0,0,1452000,1496000,1210000]};
 var SALES_DEPT={},SALES_MEMBER=[]; // 운영부 = 회원권 매출 (매출 마스터 시트 실시간)
 var PROC_DEPT={"골프":[262000,0,69300000,0,804960,873200],"운영부":[239600,1118070,242620,13085350,248900,-39060],"시설":[755860,150600,1171878,433280,1019470,11081390],"필라테스":[11880000,0,11230,0,9890,0],"지원":[180470,264110,442630,406300,597600,579460],"스쿼시":[0,0,270340,0,238800,240000],"P.T":[20800,0,0,0,630000,0],"체조&트램":[0,0,0,0,0,478500],"수영":[54350,0,0,0,200100,0],"뮤지컬":[22190,0,0,0,0,0]};
@@ -298,6 +304,18 @@ async function loadSales(){
     if(!found)throw "e";SALES_DEPT=map;SALES_LIVE=true;
   }catch(e){SALES_DEPT=FB_SALES;SALES_LIVE=false;}
   SALES_MEMBER=SALES_DEPT["운영부"]||[];
+}
+/* 최저가검토 시트 로드(읽기전용, gviz). 실패(미공유 등) 시 조용히 무시 — 기존 기능 영향 없음. 성공 시 배지 갱신. */
+async function loadReviewLowest(){
+  try{
+    var r=await fetch(REVIEW_GVIZ,{cache:"no-store"});var t=await r.text();
+    var json=JSON.parse(t.substring(t.indexOf("{"),t.lastIndexOf("}")+1));var rows=json.table.rows||[];
+    var map={};
+    rows.forEach(function(row){var c=row.c||[];var key=(c[0]&&c[0].v!=null)?String(c[0].v):"";if(!key)return; // A 품의행
+      map[key]={item:c[1]&&c[1].v,same:c[2]&&c[2].v,lowest:c[3]&&c[3].v,link:c[4]&&c[4].v,reqPrice:c[5]&&c[5].v,vs:c[6]&&c[6].v,conf:c[7]&&c[7].v,date:c[8]&&c[8].v,note:c[9]&&c[9].v};});
+    REVIEW_LOW=map;REVIEW_LOADED=true;
+    try{if(document.getElementById("reqTbl"))renderReqTbl();}catch(e2){} // 로드되면 배지 갱신
+  }catch(e){ if(window.console&&console.warn)console.warn("[review] 최저가검토 시트 로드 실패(미공유 가능) — 배지 생략:",e); }
 }
 
 function aggregate(){
@@ -565,6 +583,7 @@ function renderReq(){
   document.getElementById("reqApprover").value=apprFor(depts[0]);
   document.getElementById("reqSubmit").onclick=submitReq;
   document.getElementById("doneSearchBtn").onclick=loadDone;
+  loadReviewLowest(); // 최저가검토 시트(읽기전용) — 로드되면 배지 갱신, 실패 무음
   loadReq();
 }
 async function submitReq(){
@@ -634,6 +653,18 @@ function priceLinks(r,st){
   var safe=term.replace(/[<>"]/g,"");
   return '<div class="pc-links" title="승인 전 시세 대조'+(safe?": "+safe:"")+'">'+chips+'</div>';
 }
+/* 최저가검토(자동) 배지 — 검토시트에 이 품의행(r.row) 레코드가 있고 최저가가 있으면 승인 전 행에 표시. 없으면 조용히 미표시. */
+function reviewBadge(r,st){
+  if(!(st==="품의"||st==="승인"))return "";                        // 승인 전 단계만
+  var rec=REVIEW_LOW[String(r.row)];                               // A(품의행) === r.row 매칭 (예시행 '예시-삭제가능'은 미매칭→무시)
+  if(!rec||rec.lowest==null||rec.lowest==="")return "";            // 레코드/최저가 없으면 미표시
+  var link=String(rec.link||"");
+  var shop=/^https?:\/\//i.test(link)?' <a class="pc-chip" href="'+link.replace(/"/g,"%22")+'" target="_blank" rel="noopener">🔗 판매처</a>':'';
+  var vs=(rec.vs!=null&&rec.vs!=="")?(" · "+String(rec.vs)):"";
+  var conf=(rec.conf!=null&&rec.conf!=="")?(" (신뢰도 "+String(rec.conf)+")"):"";
+  var tip=rec.same?(' title="동일제품: '+String(rec.same).replace(/[<>"]/g,"")+'"'):"";
+  return '<div class="rev-low"'+tip+'>💡 동일제품 최저가 <b>'+won(rec.lowest)+'</b>'+shop+vs+conf+'</div>';
+}
 function renderReqTbl(){
   var STG=["품의","검토","정산","완료","반려"];var fc=document.getElementById("reqFilter");
   fc.innerHTML=STG.map(function(s){return '<button class="team-chip'+(s===reqFilter?' on':'')+'" data-f="'+s+'">'+s+'</button>';}).join('');
@@ -658,7 +689,7 @@ function renderReqTbl(){
     var photo=(r.이미지&&(String(r.이미지).indexOf("http")===0||String(r.이미지).indexOf("data:")===0))?'<img src="'+r.이미지+'" class="'+tc+'" title="첨부사진" onclick="window.open(this.src,\'_blank\')" loading="lazy">':'';
     var pf=(r.지출증빙&&String(r.지출증빙).indexOf("http")===0)?'<img src="'+r.지출증빙+'" class="'+tc+'" title="영수증/증빙" onclick="window.open(this.src,\'_blank\')" loading="lazy">':'';
     var rcpt=(photo||pf)?(photo+pf):'<button class="reqPhoto" data-row="'+r.row+'" style="font-size:10.5px;padding:4px 9px;cursor:pointer;border:1px dashed var(--gold);border-radius:6px;background:#fbf7ee;color:var(--gold-deep)">+ 사진</button>';
-    h+='<tr><td style="text-align:center;font-weight:700;color:var(--gold-deep)">'+(r.번호?("#"+r.번호):"")+'</td><td style="text-align:left">'+r.날짜+'</td><td style="text-align:left">'+(r.소속||"")+'</td><td style="text-align:left">'+(r.요청자||"")+'</td><td style="text-align:left">'+(r.승인자||"")+'</td><td style="text-align:left">'+(r.물품||"")+priceLinks(r,st)+'</td><td>'+won(r.가격)+'</td><td style="text-align:center">'+rcpt+'</td><td style="text-align:center"><span class="chip '+(stc[st]||"wait")+'">'+st+'</span></td><td style="text-align:center;white-space:nowrap">'+act+'</td></tr>';
+    h+='<tr><td style="text-align:center;font-weight:700;color:var(--gold-deep)">'+(r.번호?("#"+r.번호):"")+'</td><td style="text-align:left">'+r.날짜+'</td><td style="text-align:left">'+(r.소속||"")+'</td><td style="text-align:left">'+(r.요청자||"")+'</td><td style="text-align:left">'+(r.승인자||"")+'</td><td style="text-align:left">'+(r.물품||"")+reviewBadge(r,st)+priceLinks(r,st)+'</td><td>'+won(r.가격)+'</td><td style="text-align:center">'+rcpt+'</td><td style="text-align:center"><span class="chip '+(stc[st]||"wait")+'">'+st+'</span></td><td style="text-align:center;white-space:nowrap">'+act+'</td></tr>';
   });
   if(!rows.length)h+='<tr><td colspan="10" style="color:var(--ink-faint)">'+(isDone?(REQ_DONE.length?("해당 기간에 "+reqFilter+" 건이 없습니다."):"기간을 선택하고 [검색]을 누르세요."):"해당 단계의 품의가 없습니다.")+'</td></tr>';
   h+='</tbody>';document.getElementById("reqTbl").innerHTML=h;
