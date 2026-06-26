@@ -1512,7 +1512,8 @@ function renderHire(){
 
   // 채용 탭 액션 버튼 클릭 위임
   var panel=document.querySelector('.panel[data-panel="hire"]');
-  if(panel){
+  if(panel && !panel.__hireBound){
+    panel.__hireBound=true;   // 위임 리스너 1회만(재렌더 시 중복 바인딩 방지)
     panel.addEventListener("click",function(ev){
       var t=ev.target;
       if(!t||!t.closest)return;
@@ -1537,6 +1538,7 @@ function renderHire(){
       var __ap=t.closest("[data-applname]");if(__ap){if(typeof window.openApplicantInfo==="function"){(function(){var _scc=t.closest("[data-stagechg]");if(_scc){window.openApplicantInfo(_scc.getAttribute("data-stagechg"),_scc.getAttribute("data-stagepid"));return;}var _pg=__ap.getAttribute("data-applicant")||"";if(!_pg){var _nm=__ap.getAttribute("data-applname")||"";var _f=(DB.appl||[]).find(function(x){return String(x["지원자명"]||"")===_nm;});if(_f)_pg=normId(_f.url);}if(_pg&&typeof openPrintView==="function"){openPrintView(_pg,true);}else{window.openApplicantInfo(__ap.getAttribute("data-applname"), __ap.getAttribute("data-apppid"));}})();}return;}
     });
   }
+  try{ window.__lastHireSig=hireSig(); }catch(e){}
 }
 
 /* ============ ONBOARDING ============ */
@@ -2024,6 +2026,7 @@ function showTab(id){
       '화면 렌더링 중 오류가 발생했습니다.<br><span class="muted">'+esc(e.message||e)+'</span></div></div>');}
     RENDERED[id]=true;
   }
+  try{ syncHirePolling(); }catch(e){}
 }
 function buildNav(){
   document.getElementById("nav").innerHTML=TABS.map(function(t){
@@ -2041,12 +2044,7 @@ function finishLoad(forceTab){
     if(SESSION_ROLE==="admin"){rp.className="role-pill admin";rp.textContent="관리자 모드";}
     else{rp.className="role-pill viewer";rp.textContent="뷰어 모드";}
   }
-  var ok=DBMETA.filter(function(m){return !ERR[m[0]];}).length;
-  var now=new Date();
-  document.getElementById("syncMeta").textContent=
-    "마지막 동기화 "+now.getFullYear()+"-"+p2(now.getMonth()+1)+"-"+p2(now.getDate())+" "+
-    p2(now.getHours())+":"+p2(now.getMinutes())+" · 6개 DB 중 "+ok+"개 정상"+
-    (DB.emp.length?" · 재직 "+(function(){var s={};DB.emp.filter(function(e){return e["재직 상태"]!=="퇴사";}).forEach(function(e){var n=(e["성명"]||e["이름"]||"").toString().trim();if(n)s[n]=1;});return Object.keys(s).length;})()+"명":"");
+  updateSyncMeta();
   var target="dash";
   if(forceTab&&TABS.some(function(t){return t.id===forceTab;})){
     target=forceTab;   // 입장(게이트 통과) 시 항상 대시보드부터
@@ -2076,6 +2074,64 @@ async function reloadData(){
   finishLoad();
   if(btn){btn.disabled=false;btn.textContent="↻ 새로고침";}
 }
+
+/* ============ 동기화 메타(헤더 우측) 갱신 — 수동/자동 공용 ============ */
+function updateSyncMeta(){
+  var el=document.getElementById("syncMeta");if(!el)return;
+  var ok=DBMETA.filter(function(m){return !ERR[m[0]];}).length;
+  var now=new Date();
+  el.textContent=
+    "마지막 동기화 "+now.getFullYear()+"-"+p2(now.getMonth()+1)+"-"+p2(now.getDate())+" "+
+    p2(now.getHours())+":"+p2(now.getMinutes())+" · 6개 DB 중 "+ok+"개 정상"+
+    (DB.emp.length?" · 재직 "+(function(){var s={};DB.emp.filter(function(e){return e["재직 상태"]!=="퇴사";}).forEach(function(e){var n=(e["성명"]||e["이름"]||"").toString().trim();if(n)s[n]=1;});return Object.keys(s).length;})()+"명":"");
+}
+
+/* ============ 채용(hire) 탭 자동 갱신 — 외부(AI·타인·타기기) 변경 무음 반영 ============ */
+var AUTO_HIRE_MS=30000;        // 채용탭 폴링 주기(서버 읽기 캐시 45~60초라 30초면 1분 내 반영)
+var __autoTimer=null;          // 폴링 타이머(채용탭에서만 가동)
+var __autoInflight=false;      // 동시 갱신 1개 가드
+function currentTab(){var el=document.querySelector(".tab.active");return el?el.getAttribute("data-tab"):"";}
+function appVisible(){var a=document.getElementById("app");return !!a && a.style.display!=="none";}
+function anyModalOpen(){
+  // .show 클래스형(resign/hire/schedule/iveval/hireComplete) + 인라인 display:flex형(aiModal/ob*) 모두 감지
+  var ms=document.querySelectorAll(".modal-bg");
+  for(var i=0;i<ms.length;i++){var el=ms[i];
+    if(el.classList&&el.classList.contains("show"))return true;
+    var d=el.style&&el.style.display;
+    if(d&&d!=="none")return true;
+  }
+  return false;
+}
+function hireSig(){try{return JSON.stringify(DB.hire)+""+JSON.stringify(DB.appl);}catch(e){return "x"+Date.now();}}
+async function autoRefreshHire(){
+  if(__autoInflight)return;                       // 이전 갱신 진행 중 → skip
+  if(!appVisible())return;                        // 게이트/로딩 중 → skip
+  if(currentTab()!=="hire")return;                // 채용탭 아닐 때 서버호출 차단
+  if(anyModalOpen())return;                       // 입력 중(모달) → 끊지 않음
+  __autoInflight=true;
+  try{
+    await loadAll();                              // 큰 로딩 UI 없이 백그라운드 fetch(DB 갱신)
+    if(currentTab()!=="hire"||anyModalOpen())return; // fetch 도중 탭이동/모달 열림 → 재렌더 보류
+    var sig=hireSig();
+    if(sig===window.__lastHireSig)return;         // 직전 렌더와 동일 → 재렌더 생략(무플리커)
+    var sx=window.scrollX,sy=window.scrollY;       // 스크롤 보존
+    var dEl=document.querySelector('[data-panel="hire"] details.closed-jobs');
+    var wasOpen=!!(dEl&&dEl.open);                  // 채용 마감건 토글 보존
+    var keepMonth=(window.__ivMonth&&typeof window.__ivMonth.y==="number")?{y:window.__ivMonth.y,m:window.__ivMonth.m}:null; // 캘린더 보던 월 보존
+    RENDERED.hire=false;renderHire();RENDERED.hire=true;  // 제자리 재렌더(__lastHireSig 갱신)
+    if(wasOpen){var d2=document.querySelector('[data-panel="hire"] details.closed-jobs');if(d2)d2.open=true;}
+    if(keepMonth){window.__ivMonth=keepMonth;var cc=document.getElementById("ivCalCard");if(cc&&window.__renderIvCal)cc.innerHTML=window.__renderIvCal(keepMonth.y,keepMonth.m);}
+    updateSyncMeta();
+    window.scrollTo(sx,sy);
+  }catch(e){if(window.console&&console.warn)console.warn("[auto-hire]",(e&&e.message)||e);}
+  finally{__autoInflight=false;}
+}
+function startHirePolling(){if(__autoTimer)return;__autoTimer=setInterval(autoRefreshHire,AUTO_HIRE_MS);}
+function stopHirePolling(){if(__autoTimer){clearInterval(__autoTimer);__autoTimer=null;}}
+function syncHirePolling(){if(currentTab()==="hire"&&appVisible())startHirePolling();else stopHirePolling();}
+// 복귀 시 즉시 갱신: 화면 다시 보이거나 창 포커스 → 바로 최신화(가드는 autoRefreshHire 내부)
+document.addEventListener("visibilitychange",function(){if(document.visibilityState==="visible"){syncHirePolling();autoRefreshHire();}});
+window.addEventListener("focus",function(){autoRefreshHire();});
 
 /* ============ 퇴사 처리 모달 ============ */
 var resignTarget=null;
