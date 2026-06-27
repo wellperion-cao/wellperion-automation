@@ -599,5 +599,19 @@
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "f51abcc8ec7251cf410699234ea513dc76146132",
     "ship_no": 174
+  },
+  {
+    "task_id": "COO-2026-06-27-ADHOC-4d182894",
+    "clevel": "coo",
+    "title": "[시우] feat(check)[시우]: 지원부 항목 시트 단일출처 통일 — 백·프론트 12칸 정합·seed폐기·렌더 시트화",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-06-27",
+    "processed_at": "2026-06-27",
+    "artifact": "GM 시트(46항목·12칸, 시간대 삭제)를 진짜 단일출처로:\n- 백엔드: ITEM_HEADERS 12칸·인덱스상수 정정·getItems seed skip 제거(전행 반환)·saveItems 12칸·syncSeedItems no-op·F/G 타입/부서 교정(check/support).\n- 프론트: getSched가 하드코딩 WEEKDAY 대신 CUSTOM_ITEMS(시트)로 빌드(카테고리 그룹·order 정렬·회차/성별/요일 필터), autoSync 폐지(삭제분 부활 차단), WEEKDAY는 오프라인 폴백만.\n검증: getItems (CLI ad-hoc · 커밋 4d182894)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "4d182894c196f2a3f7d9fe5a89a93689fc45d750",
+    "ship_no": 188
   }
 ]
