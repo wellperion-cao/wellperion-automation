@@ -816,6 +816,7 @@ var _SURVEY_PUBLIC_ACTIONS = {
   lesson_stats:               true,  // 강습 통계(총·이번달·종목·경로 분포)
   lesson_calendar:            true,  // 상담예약 달력
   lesson_inquiry_update:      true,  // 진행상태·담당·상담메모·상담예약·방문상태 수정
+  lesson_registered_roster:   true,  // 강습 등록현황·회원 명단(팀시트 상태열 _isLessonReg_) — PII 노출(전체공개 2026-06-22) 2026-06-27 시포
   pii_status:                 true,  // [진단] PII_MASK/토큰 설정 상태(비밀값 미노출) 2026-06-25 시토
   // 트리거 관리 — 설치/조회/테스트 (2026-06-25 시모, 즉시알림 전환)
   install_inquiry_triggers:   true,  // onFormSubmit 트리거 + 폴링 백스톱 설치 (웹앱 호출 시 cao 계정으로 실행)
@@ -2023,7 +2024,65 @@ function _processAction(body) {
   // ─── 강습문의 페이지(CPO): 전체 목록 (성인 강습 문의 + 관리 필드) ───
   if (action === 'lesson_inquiry_list') {
     var liRows = _lessonScopeFilter_(_lessonReadRows_(_lessonGidOf_(body)), body);
+    // 종목 표준 버킷 — 프론트 칩 그룹/필터용(원문 sport 필드는 표 표시용으로 유지). 2026-06-27 시포.
+    liRows.forEach(function(r){ var b = _sportBuckets_(r.sport); r.bucket = (b && b.length) ? b[0] : '기타'; });
     return _json({ ok: true, count: liRows.length, data: liRows });
+  }
+
+  // ─── 강습 등록현황·회원 명단(CPO): 팀시트 상태열 '등록'/'SUC' 행 → 종목별 집계 + 회원 명단 ───
+  //   _collectLessonRegByName_ 의 상태열 탐지(고유값 2~30 + _isLessonStatusVal_ 최다 열) 동일 재사용.
+  //   시트 미연결/상태열 미발견 종목은 registered=null(0 날조 금지). PII 노출 OK(전체공개 2026-06-22). 2026-06-27 시포.
+  if (action === 'lesson_registered_roster') {
+    var lrrType = String(body.type || '성인강습');
+    var lrrDisplay = LESSON_DISPLAY[lrrType] || [];
+    var lrrCfgByName = {};
+    LESSON_TEAM_SHEETS.forEach(function(c){ lrrCfgByName[c.명] = c; });
+    var lrrBySport = [];
+    var lrrRoster = [];
+    lrrDisplay.forEach(function(item){
+      var rec = { 명: item.명, registered: null, sheetFound: false };
+      var cfg = item.sheet ? lrrCfgByName[item.sheet] : null;
+      if (!cfg) { lrrBySport.push(rec); return; }  // sheet:null(데이터 미연결) → registered=null 유지
+      try {
+        var sh = _sheetByGid_(cfg.ssId, cfg.gid);
+        if (!sh) { lrrBySport.push(rec); return; }
+        rec.sheetFound = true;
+        var last = sh.getLastRow(), lastCol = sh.getLastColumn();
+        if (last < 2 || lastCol < 1) { rec.registered = 0; lrrBySport.push(rec); return; }
+        var data = sh.getRange(1, 1, last, lastCol).getValues();
+        var headers = data[0];
+        // 상태열 탐지 — _collectLessonRegByName_ 동일(고유값 2~30 + 코드형 상태값 최다 열)
+        var best = -1, bestCnt = 0;
+        for (var c = 0; c < lastCol; c++) {
+          var cnt = 0, distinct = {}, dn = 0;
+          for (var r = 1; r < data.length; r++) {
+            var cv = String(data[r][c] || '').trim();
+            if (!cv) continue;
+            if (!distinct[cv]) { distinct[cv] = 1; dn++; }
+            if (_isLessonStatusVal_(cv)) cnt++;
+          }
+          if (dn >= 2 && dn <= 30 && cnt > bestCnt) { bestCnt = cnt; best = c; }
+        }
+        if (best < 0) { lrrBySport.push(rec); return; }  // 상태열 못 찾음 → null 유지(0 날조 금지)
+        var iName  = _findCol_(headers, ['성함', '이름', '성명']);
+        var iPhone = _findCol_(headers, ['연락처', '전화', '휴대폰']);
+        var reg = 0;
+        for (var r2 = 1; r2 < data.length; r2++) {
+          var sv = data[r2][best];
+          if (!_isLessonReg_(sv)) continue;
+          reg++;
+          lrrRoster.push({
+            sport:  item.명,
+            name:   iName  >= 0 ? String(data[r2][iName] || '') : '',
+            phone:  iPhone >= 0 ? _fmtPhone_(data[r2][iPhone]) : '',
+            status: String(sv == null ? '' : sv).trim()
+          });
+        }
+        rec.registered = reg;  // 시트·상태열 존재 → 0도 실측치(정직)
+      } catch (e) { rec.error = String(e); }  // 접근 실패 → registered=null 유지
+      lrrBySport.push(rec);
+    });
+    return _json({ ok: true, type: lrrType, total: lrrRoster.length, bySport: lrrBySport, roster: lrrRoster });
   }
 
   // ─── 강습문의 페이지(CPO): 통계 (총·이번달·종목 분포·유입경로 분포) ───

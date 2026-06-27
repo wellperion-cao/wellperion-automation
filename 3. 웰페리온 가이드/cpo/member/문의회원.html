@@ -705,6 +705,11 @@ a.funnel-step:hover{background:rgba(183,159,138,0.08);color:var(--accent)}
 .dash-card[data-kind="mem"] .dash-v b.lead{color:var(--accent)}
 @media(max-width:900px){.dash-grid{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:520px){.dash-grid{grid-template-columns:1fr}}
+/* ── 강습 sub-pane(문의/등록/회원) 토글 — 멤버십 dash-card 패턴 차용, 강습 전용 lessonSwitchCard ── */
+.lesson-dash{grid-template-columns:repeat(3,1fr)}
+@media(max-width:680px){.lesson-dash{grid-template-columns:1fr}}
+.lesson-subpane{display:none}
+.lesson-subpane.active{display:block}
 
 /* ── 문의 유형 칩 바 (멤버십 / 강습 / 공간렌트 / 비즈니스) — 2026-06-26 시포 통합 ── */
 .type-chip-bar{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px}
@@ -1487,8 +1492,26 @@ if (action === 'member_calendar') {
 
   <!-- ══════════════════════════════ 유형: 성인 강습 (문의 현황 — 종목 필터) ══════════════════════════════ -->
   <div id="type-lessonAdult" class="type-pane">
+    <!-- 강습 대시카드 3종: 문의 현황 · 등록 현황 · 강습 회원 관리 (강습 전용 lessonSwitchCard) -->
+    <div class="dash-grid lesson-dash" style="margin-bottom:18px">
+      <a class="dash-card active" data-kind="inq" data-lcard="inq" href="javascript:void(0)" onclick="lessonSwitchCard('adult','inq')">
+        <div class="dash-head"><span class="dash-dot inq"></span><span class="dash-title">문의 현황</span></div>
+        <div class="dash-metrics"><div class="dash-line"><span class="dash-v" style="font-size:12px;color:var(--dim-mid)" id="lessonCardInq_adult">종목별 강습 문의</span></div></div>
+      </a>
+      <a class="dash-card" data-kind="reg" data-lcard="reg" href="javascript:void(0)" onclick="lessonSwitchCard('adult','reg')">
+        <div class="dash-head"><span class="dash-dot reg"></span><span class="dash-title">등록 현황</span></div>
+        <div class="dash-metrics"><div class="dash-line"><span class="dash-v" style="font-size:12px;color:var(--dim-mid)" id="lessonCardReg_adult">종목별 등록 회원</span></div></div>
+      </a>
+      <a class="dash-card" data-kind="mem" data-lcard="mem" href="javascript:void(0)" onclick="lessonSwitchCard('adult','mem')">
+        <div class="dash-head"><span class="dash-dot mem"></span><span class="dash-title">강습 회원 관리</span></div>
+        <div class="dash-metrics"><div class="dash-line"><span class="dash-v" style="font-size:12px;color:var(--dim-mid)">수강 회원 명단</span></div></div>
+      </a>
+    </div>
+
+    <!-- sub-pane: 문의 현황 -->
+    <div id="lessonPane_adult_inq" class="lesson-subpane active">
     <div class="info-box accent" style="margin-bottom:14px">
-      <strong>성인 강습 문의 현황</strong> — 종목별로 필터해 보세요. (등록 현황·강습 회원 관리는 다음 단계)
+      <strong>성인 강습 문의 현황</strong> — 종목 버킷으로 필터해 보세요.
     </div>
     <div class="card">
       <div class="card-title">
@@ -1525,12 +1548,86 @@ if (action === 'member_calendar') {
         </table>
       </div>
     </div>
+    </div>
+
+    <!-- sub-pane: 등록 현황 -->
+    <div id="lessonPane_adult_reg" class="lesson-subpane">
+      <div class="info-box accent" style="margin-bottom:14px">
+        <strong>성인 강습 등록 현황</strong> — 종목별 팀시트 상태열(등록/SUC) 기준. 읽기 전용.
+      </div>
+      <div class="card">
+        <div class="card-title"><span class="icon">✅</span>종목별 등록 회원 수
+          <span id="lessonRegStatLine_adult" style="font-size:11px;font-weight:400;color:var(--dim);margin-left:6px"></span>
+          <button class="btn-refresh" onclick="lessonRegLoad('adult')" style="margin-left:auto">새로고침</button>
+        </div>
+        <div id="lessonRegBox_adult" style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:14px"></div>
+        <div id="lessonRegChips_adult" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px"></div>
+        <div class="reg-table-wrap">
+          <table class="reg-table">
+            <thead><tr>
+              <th style="min-width:90px">종목</th>
+              <th class="left" style="min-width:70px">이름</th>
+              <th style="min-width:120px">연락처</th>
+              <th style="min-width:80px">상태</th>
+            </tr></thead>
+            <tbody id="lessonRegBody_adult">
+              <tr><td colspan="4"><div class="empty-state"><div class="loading-spinner"></div><div class="empty-state-title" style="margin-top:12px">불러오는 중…</div></div></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- sub-pane: 강습 회원 관리 -->
+    <div id="lessonPane_adult_mem" class="lesson-subpane">
+      <div class="info-box accent" style="margin-bottom:14px">
+        <strong>성인 강습 회원 관리</strong> — 수강(등록) 회원 전체 명단. 상태·담당·메모 편집은 다음 단계.
+      </div>
+      <div class="card">
+        <div class="card-title"><span class="icon">🧑‍🏫</span>수강 회원 명단
+          <span id="lessonMemStatLine_adult" style="font-size:11px;font-weight:400;color:var(--dim);margin-left:6px"></span>
+          <button class="btn-refresh" onclick="lessonRegLoad('adult')" style="margin-left:auto">새로고침</button>
+        </div>
+        <div id="lessonMemChips_adult" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px"></div>
+        <div class="reg-table-wrap">
+          <table class="reg-table">
+            <thead><tr>
+              <th style="min-width:90px">종목</th>
+              <th class="left" style="min-width:70px">이름</th>
+              <th style="min-width:120px">연락처</th>
+              <th style="min-width:80px">상태</th>
+            </tr></thead>
+            <tbody id="lessonMemBody_adult">
+              <tr><td colspan="4"><div class="empty-state"><div class="loading-spinner"></div><div class="empty-state-title" style="margin-top:12px">불러오는 중…</div></div></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- ══════════════════════════════ 유형: 유소년 강습 (문의 현황 — 종목 필터) ══════════════════════════════ -->
   <div id="type-lessonYouth" class="type-pane">
+    <!-- 강습 대시카드 3종: 문의 현황 · 등록 현황 · 강습 회원 관리 -->
+    <div class="dash-grid lesson-dash" style="margin-bottom:18px">
+      <a class="dash-card active" data-kind="inq" data-lcard="inq" href="javascript:void(0)" onclick="lessonSwitchCard('youth','inq')">
+        <div class="dash-head"><span class="dash-dot inq"></span><span class="dash-title">문의 현황</span></div>
+        <div class="dash-metrics"><div class="dash-line"><span class="dash-v" style="font-size:12px;color:var(--dim-mid)" id="lessonCardInq_youth">종목별 강습 문의</span></div></div>
+      </a>
+      <a class="dash-card" data-kind="reg" data-lcard="reg" href="javascript:void(0)" onclick="lessonSwitchCard('youth','reg')">
+        <div class="dash-head"><span class="dash-dot reg"></span><span class="dash-title">등록 현황</span></div>
+        <div class="dash-metrics"><div class="dash-line"><span class="dash-v" style="font-size:12px;color:var(--dim-mid)" id="lessonCardReg_youth">종목별 등록 회원</span></div></div>
+      </a>
+      <a class="dash-card" data-kind="mem" data-lcard="mem" href="javascript:void(0)" onclick="lessonSwitchCard('youth','mem')">
+        <div class="dash-head"><span class="dash-dot mem"></span><span class="dash-title">강습 회원 관리</span></div>
+        <div class="dash-metrics"><div class="dash-line"><span class="dash-v" style="font-size:12px;color:var(--dim-mid)">수강 회원 명단</span></div></div>
+      </a>
+    </div>
+
+    <!-- sub-pane: 문의 현황 -->
+    <div id="lessonPane_youth_inq" class="lesson-subpane active">
     <div class="info-box accent" style="margin-bottom:14px">
-      <strong>유소년 강습 문의 현황</strong> — 종목별로 필터해 보세요. (등록 현황·강습 회원 관리는 다음 단계)
+      <strong>유소년 강습 문의 현황</strong> — 종목 버킷으로 필터해 보세요.
     </div>
     <div class="card">
       <div class="card-title">
@@ -1565,6 +1662,62 @@ if (action === 'member_calendar') {
             <tr><td colspan="7"><div class="empty-state"><div class="loading-spinner"></div><div class="empty-state-title" style="margin-top:12px">불러오는 중…</div></div></td></tr>
           </tbody>
         </table>
+      </div>
+    </div>
+    </div>
+
+    <!-- sub-pane: 등록 현황 -->
+    <div id="lessonPane_youth_reg" class="lesson-subpane">
+      <div class="info-box accent" style="margin-bottom:14px">
+        <strong>유소년 강습 등록 현황</strong> — 종목별 팀시트 상태열(등록/SUC) 기준. 읽기 전용.
+      </div>
+      <div class="card">
+        <div class="card-title"><span class="icon">✅</span>종목별 등록 회원 수
+          <span id="lessonRegStatLine_youth" style="font-size:11px;font-weight:400;color:var(--dim);margin-left:6px"></span>
+          <button class="btn-refresh" onclick="lessonRegLoad('youth')" style="margin-left:auto">새로고침</button>
+        </div>
+        <div id="lessonRegBox_youth" style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:14px"></div>
+        <div id="lessonRegChips_youth" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px"></div>
+        <div class="reg-table-wrap">
+          <table class="reg-table">
+            <thead><tr>
+              <th style="min-width:90px">종목</th>
+              <th class="left" style="min-width:70px">이름</th>
+              <th style="min-width:120px">연락처</th>
+              <th style="min-width:80px">상태</th>
+            </tr></thead>
+            <tbody id="lessonRegBody_youth">
+              <tr><td colspan="4"><div class="empty-state"><div class="loading-spinner"></div><div class="empty-state-title" style="margin-top:12px">불러오는 중…</div></div></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- sub-pane: 강습 회원 관리 -->
+    <div id="lessonPane_youth_mem" class="lesson-subpane">
+      <div class="info-box accent" style="margin-bottom:14px">
+        <strong>유소년 강습 회원 관리</strong> — 수강(등록) 회원 전체 명단. 상태·담당·메모 편집은 다음 단계.
+      </div>
+      <div class="card">
+        <div class="card-title"><span class="icon">🧑‍🏫</span>수강 회원 명단
+          <span id="lessonMemStatLine_youth" style="font-size:11px;font-weight:400;color:var(--dim);margin-left:6px"></span>
+          <button class="btn-refresh" onclick="lessonRegLoad('youth')" style="margin-left:auto">새로고침</button>
+        </div>
+        <div id="lessonMemChips_youth" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px"></div>
+        <div class="reg-table-wrap">
+          <table class="reg-table">
+            <thead><tr>
+              <th style="min-width:90px">종목</th>
+              <th class="left" style="min-width:70px">이름</th>
+              <th style="min-width:120px">연락처</th>
+              <th style="min-width:80px">상태</th>
+            </tr></thead>
+            <tbody id="lessonMemBody_youth">
+              <tr><td colspan="4"><div class="empty-state"><div class="loading-spinner"></div><div class="empty-state-title" style="margin-top:12px">불러오는 중…</div></div></td></tr>
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   </div>
@@ -1785,16 +1938,34 @@ function switchType(type) {
   document.querySelectorAll('.type-chip[data-type]').forEach(function(c){
     c.classList.toggle('active', c.getAttribute('data-type') === type);
   });
-  if (type === 'lessonAdult') lessonInit('adult');   // 최초 진입 시 1회 로드
-  if (type === 'lessonYouth') lessonInit('youth');
+  if (type === 'lessonAdult') { lessonSwitchCard('adult', 'inq'); lessonInit('adult'); }   // 기본=문의 현황 + 최초 1회 로드
+  if (type === 'lessonYouth') { lessonSwitchCard('youth', 'inq'); lessonInit('youth'); }
 }
 
 /* ── 강습 문의 목록(inline) — 성인/유소년 독립 상태. lesson_inquiry_list·lesson_stats 재사용 ── */
 // target='adult'(성인강습) | 'youth'(유소년강습). DOM id 접미사 + GAS type 파라미터로 분기.
 var _lessonState = {
-  adult: { rows: [], scope: 'year', sport: '', loaded: false, type: '성인강습' },
-  youth: { rows: [], scope: 'year', sport: '', loaded: false, type: '유소년강습' }
+  adult: { rows: [], scope: 'year', sport: '', loaded: false, type: '성인강습',
+           card: 'inq', roster: [], bySport: [], regSport: '', memSport: '', regLoaded: false },
+  youth: { rows: [], scope: 'year', sport: '', loaded: false, type: '유소년강습',
+           card: 'inq', roster: [], bySport: [], regSport: '', memSport: '', regLoaded: false }
 };
+
+/* 강습 대시카드 전환(문의/등록/회원) — 멤버십 switchTab 와 독립(id 충돌 회피). 2026-06-27 시포. */
+function lessonSwitchCard(t, card) {
+  var st = _lessonState[t];
+  if (!st) return;
+  st.card = card;
+  var root = document.getElementById(_lessonPaneId(t));
+  if (!root) return;
+  root.querySelectorAll('.lesson-subpane').forEach(function(p){ p.classList.remove('active'); });
+  var sp = document.getElementById('lessonPane_' + t + '_' + card);
+  if (sp) sp.classList.add('active');
+  root.querySelectorAll('.dash-card[data-lcard]').forEach(function(c){
+    c.classList.toggle('active', c.getAttribute('data-lcard') === card);
+  });
+  if ((card === 'reg' || card === 'mem') && !st.regLoaded) { st.regLoaded = true; lessonRegLoad(t); }
+}
 
 function lessonInit(t) {
   var st = _lessonState[t];
@@ -1868,7 +2039,8 @@ function lessonRenderChips(t) {
   if (!bar) return;
   var rows = _lessonState[t].rows;
   var counts = {};
-  rows.forEach(function(r){ var s = String(r.sport || '').trim() || '미지정'; counts[s] = (counts[s] || 0) + 1; });
+  // 종목칩 = 표준 버킷(r.bucket) 그룹 — 원문 라벨 대신 압축. 표는 원문 sport 그대로(아래 lessonRender). 2026-06-27 시포.
+  rows.forEach(function(r){ var s = String(r.bucket || '기타').trim() || '기타'; counts[s] = (counts[s] || 0) + 1; });
   var sports = Object.keys(counts).sort(function(a, b){ return counts[b] - counts[a]; });
   var html = _lessonChipHtml(t, '', '전체', rows.length);
   sports.forEach(function(s){ html += _lessonChipHtml(t, s, s, counts[s]); });
@@ -1888,7 +2060,7 @@ function lessonRender(t) {
   var rows = st.rows;
   if (st.sport) {
     rows = st.rows.filter(function(r){
-      var s = String(r.sport || '').trim() || '미지정';
+      var s = String(r.bucket || '기타').trim() || '기타';   // 필터는 버킷 기준(칩과 동일)
       return s === st.sport;
     });
   }
@@ -1903,6 +2075,120 @@ function lessonRender(t) {
       '<td style="font-size:12px">' + esc(r.status || '—') + '</td>' +
       '<td style="font-size:12px;color:var(--dim)">' + esc(r.owner || '—') + '</td>' +
       '<td class="left" style="font-size:11px;color:var(--dim);white-space:pre-wrap">' + esc(r.memo || '—') + '</td>' +
+    '</tr>';
+  });
+  tbody.innerHTML = html;
+}
+
+/* ─────────────────────────────────────────────
+   강습 등록현황·회원 명단 (lesson_registered_roster) — 읽기 전용. 2026-06-27 시포.
+   reg(등록 현황): 종목별 집계 박스 + 명단 / mem(회원 관리): 동일 roster 재사용 명단.
+───────────────────────────────────────────── */
+function _lessonRegEmpty(t, title, desc) {
+  ['lessonRegBody_', 'lessonMemBody_'].forEach(function(p){
+    var b = document.getElementById(p + t);
+    if (b) b.innerHTML = '<tr><td colspan="4"><div class="empty-state"><div class="empty-state-icon">📭</div>' +
+      '<div class="empty-state-title">' + esc(title) + '</div>' +
+      '<div class="empty-state-desc">' + esc(desc) + '</div></div></td></tr>';
+  });
+}
+
+function lessonRegLoad(t) {
+  var st = _lessonState[t];
+  st.regLoaded = true;
+  if (GAS_URL === GAS_PLACEHOLDER) { _lessonRegEmpty(t, '미연동', 'GAS URL이 교체되면 자동으로 등록 회원이 표시됩니다.'); return; }
+  ['lessonRegBody_', 'lessonMemBody_'].forEach(function(p){
+    var b = document.getElementById(p + t);
+    if (b) b.innerHTML = '<tr><td colspan="4"><div class="empty-state"><div class="loading-spinner"></div>' +
+      '<div class="empty-state-title" style="margin-top:12px">불러오는 중…</div></div></td></tr>';
+  });
+  fetch(GAS_URL + '?action=lesson_registered_roster&type=' + encodeURIComponent(st.type) + _wpKeyParam())
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      if (!d || !d.ok) throw new Error((d && d.error) || 'GAS 응답 오류');
+      st.roster = d.roster || [];
+      st.bySport = d.bySport || [];
+      lessonRegRenderBox(t);
+      _lessonRosterChips(t, 'reg'); _lessonRosterRender(t, 'reg');
+      _lessonRosterChips(t, 'mem'); _lessonRosterRender(t, 'mem');
+      var rs = document.getElementById('lessonRegStatLine_' + t);
+      if (rs) rs.textContent = '등록 ' + (d.total || 0) + '명';
+      var ms = document.getElementById('lessonMemStatLine_' + t);
+      if (ms) ms.textContent = '수강 ' + (d.total || 0) + '명';
+    })
+    .catch(function(e){ _lessonRegEmpty(t, '데이터 로드 실패', e.message || 'GAS URL 또는 배포 상태를 확인하세요.'); });
+}
+
+// 종목별 등록 수 집계 박스 — registered=null(시트 미연결)은 '데이터 미연결' 회색(0 날조 금지).
+function lessonRegRenderBox(t) {
+  var box = document.getElementById('lessonRegBox_' + t);
+  if (!box) return;
+  var arr = _lessonState[t].bySport || [];
+  if (!arr.length) { box.innerHTML = '<span style="font-size:12px;color:var(--dim)">집계할 종목이 없습니다.</span>'; return; }
+  var html = '';
+  arr.forEach(function(s){
+    var connected = (s.registered !== null && s.registered !== undefined);
+    var val = connected ? String(s.registered) : '데이터 미연결';
+    var color = connected ? 'var(--green)' : 'var(--dim)';
+    html += '<div style="min-width:92px;padding:10px 14px;border-radius:10px;border:1px solid var(--border);background:var(--paper)">' +
+      '<div style="font-size:12px;color:var(--dim);margin-bottom:4px">' + esc(s.명) + '</div>' +
+      '<div style="font-size:' + (connected ? '20px' : '12px') + ';font-weight:800;color:' + color + '">' + esc(val) +
+        (connected ? '<span style="font-size:11px;font-weight:600;color:var(--dim)"> 명</span>' : '') + '</div>' +
+    '</div>';
+  });
+  box.innerHTML = html;
+}
+
+// 종목 버킷 필터칩(roster.sport=표준 종목명) — reg·mem 공용(kind로 필터 상태·컨테이너 분기).
+function _lessonRosterChipHtml(t, kind, val, label, n) {
+  var cur = (kind === 'reg') ? _lessonState[t].regSport : _lessonState[t].memSport;
+  var active = (val === cur);
+  return '<button type="button" data-sport="' + esc(val) + '" onclick="lessonRosterFilter(\'' + t + '\',\'' + kind + '\',this)" ' +
+    'style="padding:5px 12px;border-radius:99px;font-size:12px;font-weight:700;font-family:inherit;cursor:pointer;' +
+    'border:1px solid ' + (active ? 'var(--teal-border)' : 'var(--border)') + ';' +
+    'background:' + (active ? 'var(--teal-bg)' : 'var(--paper)') + ';' +
+    'color:' + (active ? 'var(--teal)' : 'var(--dim)') + '">' + esc(label) + ' ' + n + '</button>';
+}
+
+function _lessonRosterChips(t, kind) {
+  var bar = document.getElementById((kind === 'reg' ? 'lessonRegChips_' : 'lessonMemChips_') + t);
+  if (!bar) return;
+  var roster = _lessonState[t].roster || [];
+  var counts = {};
+  roster.forEach(function(r){ var s = String(r.sport || '기타').trim() || '기타'; counts[s] = (counts[s] || 0) + 1; });
+  var sports = Object.keys(counts).sort(function(a, b){ return counts[b] - counts[a]; });
+  var html = _lessonRosterChipHtml(t, kind, '', '전체', roster.length);
+  sports.forEach(function(s){ html += _lessonRosterChipHtml(t, kind, s, s, counts[s]); });
+  bar.innerHTML = html;
+}
+
+function lessonRosterFilter(t, kind, btn) {
+  var v = btn.getAttribute('data-sport') || '';
+  if (kind === 'reg') _lessonState[t].regSport = v; else _lessonState[t].memSport = v;
+  _lessonRosterChips(t, kind);
+  _lessonRosterRender(t, kind);
+}
+
+function _lessonRosterRender(t, kind) {
+  var tbody = document.getElementById((kind === 'reg' ? 'lessonRegBody_' : 'lessonMemBody_') + t);
+  if (!tbody) return;
+  var st = _lessonState[t];
+  var filter = (kind === 'reg') ? st.regSport : st.memSport;
+  var rows = st.roster || [];
+  if (filter) rows = rows.filter(function(r){ return String(r.sport || '기타').trim() === filter; });
+  if (!rows.length) {
+    tbody.innerHTML = '<tr><td colspan="4"><div class="empty-state"><div class="empty-state-icon">📭</div>' +
+      '<div class="empty-state-title">등록 회원 없음</div>' +
+      '<div class="empty-state-desc">해당 조건의 등록 회원이 없습니다.</div></div></td></tr>';
+    return;
+  }
+  var html = '';
+  rows.forEach(function(r){
+    html += '<tr>' +
+      '<td style="font-size:12px">' + esc(r.sport || '—') + '</td>' +
+      '<td class="left" style="font-weight:700">' + esc(r.name || '—') + '</td>' +
+      '<td style="font-size:12px;color:var(--dim)">' + esc(r.phone || '—') + '</td>' +
+      '<td style="font-size:12px">' + esc(r.status || '—') + '</td>' +
     '</tr>';
   });
   tbody.innerHTML = html;
