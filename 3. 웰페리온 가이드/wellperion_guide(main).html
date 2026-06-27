@@ -1319,7 +1319,11 @@
       // 분실물 접수 extras
       itemName:'물품명', lostWhen:'분실시각', keepWhere:'보관처',
       // 휴회 접수 extras
-      memberNo:'회원번호', startDate:'시작일', period:'기간', reason:'사유'
+memberNo:'회원번호', startDate:'시작일', period:'기간', reason:'사유',
+      // 시설·청결·칭찬·쓴소리 extras
+      equipName:'고장설비', severity:'위험도', usable:'사용가능여부',
+      issueKind:'유형', urgency:'시급도',
+      targetStaff:'대상직원·강사', episode:'사례', anonymousPref:'익명희망'
     };
     function _regNormalize(rows){
       return (rows||[]).map(function(row){
@@ -1418,7 +1422,7 @@
       var photo = String(it['사진URL'] || '').trim();
       var dt = _regEsc(String(it['접수일시'] || '').slice(0, 16));
       // 공통 외 추가필드 (접수ID·카테고리·접수일시·이름·연락처·위치·내용·사진URL·상태·담당·처리메모·부서 제외)
-      var COMMON_KEYS = ['접수ID','카테고리','접수일시','이름','연락처','위치','내용','사진URL','상태','담당','처리메모','부서'];
+      var COMMON_KEYS = ['접수ID','카테고리','접수일시','이름','연락처','위치','내용','사진URL','상태','담당','처리메모','부서','slaHours','deadline','remainH','slaStatus'];
       var extras = '';
       Object.keys(it).forEach(function(k){
         if(COMMON_KEYS.indexOf(k) === -1 && it[k] !== '' && it[k] !== null && it[k] !== undefined){
