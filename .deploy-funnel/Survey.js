@@ -411,6 +411,116 @@ var LESSON_DISPLAY = {
   ]
 };
 
+// ─── 강습 등록 원장 (금일 등록현황) — 2026-06-27 시포 ───
+// 팀시트엔 등록일이 없어 '금일 등록'을 알 수 없으므로, 멤버십(26년 등록현황)과 동형의 원장을 둔다.
+// sync-on-load: lesson_registry_list 호출 시 _syncLessonRegistry_()가 팀시트 SUC roster→원장 upsert.
+//   신규 전화키 = 등록일 today(KST) 도장 / 기존 키 = 등록일 보존(상태·이름·종목만 갱신).
+//   시드: 원장 빈 상태 최초 동기화 = 그 배치 전체를 등록일='2000-01-01'(기준선)로 적재 → 금일 제외.
+var _LESSON_REG_SHEET  = '강습 등록현황';
+var _LESSON_REG_HEADER = ['유형', '종목', '이름', '전화', '상태', '등록일', '키'];
+function _lessonRegSheet_() {
+  var ss = SpreadsheetApp.openById(_MI_SS_ID);
+  var sh = ss.getSheetByName(_LESSON_REG_SHEET);
+  if (!sh) {
+    sh = ss.insertSheet(_LESSON_REG_SHEET);
+    sh.getRange(1, 1, 1, _LESSON_REG_HEADER.length).setValues([_LESSON_REG_HEADER]);
+    sh.getRange(1, 1, 1, _LESSON_REG_HEADER.length).setFontWeight('bold');
+  }
+  return sh;
+}
+
+// 팀시트(LESSON_TEAM_SHEETS)에서 현재 등록(SUC) 회원 명단 수집 — lesson_registered_roster 동일 로직.
+//   반환: [{sport, name, phone, status}]. 상태열 못 찾거나 시트 미연결이면 해당 종목 스킵(날조 금지).
+function _collectLessonRoster_(type) {
+  var display = LESSON_DISPLAY[type] || [];
+  var cfgByName = {};
+  LESSON_TEAM_SHEETS.forEach(function(c){ cfgByName[c.명] = c; });
+  var roster = [];
+  display.forEach(function(item){
+    var cfg = item.sheet ? cfgByName[item.sheet] : null;
+    if (!cfg) return;
+    try {
+      var sh = _sheetByGid_(cfg.ssId, cfg.gid);
+      if (!sh) return;
+      var last = sh.getLastRow(), lastCol = sh.getLastColumn();
+      if (last < 2 || lastCol < 1) return;
+      var data = sh.getRange(1, 1, last, lastCol).getValues();
+      var headers = data[0];
+      var best = -1, bestCnt = 0;
+      for (var c = 0; c < lastCol; c++) {
+        var cnt = 0, distinct = {}, dn = 0;
+        for (var r = 1; r < data.length; r++) {
+          var cv = String(data[r][c] || '').trim();
+          if (!cv) continue;
+          if (!distinct[cv]) { distinct[cv] = 1; dn++; }
+          if (_isLessonStatusVal_(cv)) cnt++;
+        }
+        if (dn >= 2 && dn <= 30 && cnt > bestCnt) { bestCnt = cnt; best = c; }
+      }
+      if (best < 0) return;
+      var iName  = _findCol_(headers, ['성함', '이름', '성명']);
+      var iPhone = _findCol_(headers, ['연락처', '전화', '휴대폰']);
+      for (var r2 = 1; r2 < data.length; r2++) {
+        var sv = data[r2][best];
+        if (!_isLessonReg_(sv)) continue;
+        roster.push({
+          sport:  item.명,
+          name:   iName  >= 0 ? String(data[r2][iName] || '') : '',
+          phone:  iPhone >= 0 ? _fmtPhone_(data[r2][iPhone]) : '',
+          status: String(sv == null ? '' : sv).trim()
+        });
+      }
+    } catch (e) {}
+  });
+  return roster;
+}
+
+// 팀시트 roster → 원장 upsert. CacheService 5분 가드 + LockService 짧은 락(중복쓰기 방지).
+function _syncLessonRegistry_() {
+  var cache = CacheService.getScriptCache();
+  if (cache.get('lesson_reg_synced')) return;          // 5분 내 이미 동기화됨
+  var lock = LockService.getScriptLock();
+  if (!lock.tryLock(5000)) return;                     // 다른 호출이 동기화 중 → 스킵(무중단)
+  try {
+    if (cache.get('lesson_reg_synced')) return;        // 락 획득 후 더블체크
+    var today = Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy-MM-dd');
+    var sh = _lessonRegSheet_();
+    var last = sh.getLastRow();
+    var seed = (last < 2);                              // 원장 빈 상태 → 기준선 시드 모드
+    var rows = (last >= 2) ? sh.getRange(2, 1, last - 1, _LESSON_REG_HEADER.length).getValues() : [];
+    var keyIdx = {};
+    for (var i = 0; i < rows.length; i++) {
+      var k = String(rows[i][6] || '').trim();
+      if (k) keyIdx[k] = i;
+    }
+    var dirty = false;
+    ['성인강습', '유소년강습'].forEach(function(type){
+      _collectLessonRoster_(type).forEach(function(m){
+        var np = _normPhone_(m.phone);
+        if (!np) return;                               // 전화 없으면 키 불가 → 스킵
+        var key = np + '|' + type;
+        if (keyIdx.hasOwnProperty(key)) {
+          var rr = rows[keyIdx[key]];                  // 기존 키 — 등록일 보존, 상태·이름·종목만 갱신
+          if (rr[1] !== m.sport || rr[2] !== m.name || rr[4] !== m.status) {
+            rr[1] = m.sport; rr[2] = m.name; rr[4] = m.status; dirty = true;
+          }
+        } else {
+          rows.push([type, m.sport, m.name, m.phone, m.status, (seed ? '2000-01-01' : today), key]);
+          keyIdx[key] = rows.length - 1;
+          dirty = true;
+        }
+      });
+    });
+    if (dirty && rows.length) {
+      sh.getRange(2, 1, rows.length, _LESSON_REG_HEADER.length).setValues(rows);
+    }
+    cache.put('lesson_reg_synced', '1', 300);          // 5분 가드
+  } catch (e) {
+  } finally {
+    lock.releaseLock();
+  }
+}
+
 // ─── 시트 초기화 ───
 function _getSheet(name, headers) {
   const ss = SpreadsheetApp.openById(LANDING_SPREADSHEET_ID);
@@ -817,6 +927,7 @@ var _SURVEY_PUBLIC_ACTIONS = {
   lesson_calendar:            true,  // 상담예약 달력
   lesson_inquiry_update:      true,  // 진행상태·담당·상담메모·상담예약·방문상태 수정
   lesson_registered_roster:   true,  // 강습 등록현황·회원 명단(팀시트 상태열 _isLessonReg_) — PII 노출(전체공개 2026-06-22) 2026-06-27 시포
+  lesson_registry_list:       true,  // 강습 금일 등록현황(원장 sync-on-load) — PII 노출(전체공개) 2026-06-27 시포
   pii_status:                 true,  // [진단] PII_MASK/토큰 설정 상태(비밀값 미노출) 2026-06-25 시토
   // 트리거 관리 — 설치/조회/테스트 (2026-06-25 시모, 즉시알림 전환)
   install_inquiry_triggers:   true,  // onFormSubmit 트리거 + 폴링 백스톱 설치 (웹앱 호출 시 cao 계정으로 실행)
@@ -2083,6 +2194,43 @@ function _processAction(body) {
       lrrBySport.push(rec);
     });
     return _json({ ok: true, type: lrrType, total: lrrRoster.length, bySport: lrrBySport, roster: lrrRoster });
+  }
+
+  // ─── 강습 등록 원장 명단 (금일 등록현황) — sync-on-load. 2026-06-27 시포 ───
+  //   호출 시 _syncLessonRegistry_() 선실행(팀시트 SUC→원장 upsert). type 일치 + 등록일 ∈ [from,to] 명단.
+  //   from/to 미지정 = 오늘(KST). 카드=오늘 명단. 시드 직후 금일=0이 정상(과거분은 기준선 2000-01-01).
+  if (action === 'lesson_registry_list') {
+    _syncLessonRegistry_();
+    var lglType = String(body.type || '');
+    var lglToday = Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy-MM-dd');
+    var lglFrom = String(body.from || lglToday);
+    var lglTo   = String(body.to   || lglToday);
+    var lglData = [];
+    try {
+      var lglSh = _lessonRegSheet_();
+      var lglLast = lglSh.getLastRow();
+      if (lglLast >= 2) {
+        var lglRows = lglSh.getRange(2, 1, lglLast - 1, _LESSON_REG_HEADER.length).getValues();
+        for (var lgi = 0; lgi < lglRows.length; lgi++) {
+          var lgRow = lglRows[lgi];
+          if (lglType && String(lgRow[0] || '').trim() !== lglType) continue;
+          var lgD = lgRow[5];
+          lgD = (lgD instanceof Date && !isNaN(lgD.getTime()))
+            ? Utilities.formatDate(lgD, 'Asia/Seoul', 'yyyy-MM-dd')
+            : String(lgD == null ? '' : lgD).trim();
+          if (lglFrom && lgD < lglFrom) continue;
+          if (lglTo   && lgD > lglTo)   continue;
+          lglData.push({
+            종목:   String(lgRow[1] || ''),
+            이름:   String(lgRow[2] || ''),
+            전화:   _fmtPhone_(lgRow[3]),
+            상태:   String(lgRow[4] || ''),
+            등록일: lgD
+          });
+        }
+      }
+    } catch (eLg) {}
+    return _json({ ok: true, type: lglType, from: lglFrom, to: lglTo, count: lglData.length, data: lglData });
   }
 
   // ─── 강습문의 페이지(CPO): 통계 (총·이번달·종목 분포·유입경로 분포) ───
