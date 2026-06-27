@@ -55,17 +55,18 @@ FONT_MEDIUM = FONT_DIR / "Pretendard-Medium.otf"
 W, H = 1080, 1920
 FPS = 30
 
-# 타이밍
-DEFAULT_SEC = 1.6        # 컷당 노출(초)
-CROSSFADE_SEC = 0.18     # 컷 전환 크로스디졸브
-CAP_IN_SEC = 0.30        # 자막 슬라이드업+페이드인
-CAP_OUT_SEC = 0.20       # 자막 페이드아웃
+# 타이밍 — v3 시네마틱 느린 페이스
+DEFAULT_SEC = 3.6        # 컷당 노출(초) — 한 공간이 충분히 보이고 자막 읽을 시간
+HOOK_SEC = 4.2           # 후크(1번) 컷은 더 오래 머물러 첫 3초 후킹
+CROSSFADE_SEC = 0.30     # 컷 전환 부드러운 크로스디졸브
+CAP_IN_SEC = 0.35        # 자막 슬라이드업+페이드인
+CAP_OUT_SEC = 0.30       # 자막 페이드아웃
 CAP_SLIDE_PX = 34        # 자막 슬라이드업 거리(px)
 MUSIC_FADEOUT_SEC = 0.6
 
-# 켄번즈 줌 헤드룸 (플레이트는 캔버스보다 ZOOM배 크게 cover)
-ZOOM = 1.18
-PAN_FRAC = 0.018         # 미세 팬: 가용 슬랙의 ±비율
+# 푸시인 줌 헤드룸 (플레이트는 캔버스보다 ZOOM배 크게 cover) — 줌폭 작게 1.0→1.06
+ZOOM = 1.06
+PAN_FRAC = 0.0           # 팬 제거: 컷마다 한 방향 느린 푸시인만(차분·고급)
 TOP_BIAS = 0.12          # cover 세로 슬랙에서 상단 바이어스(0=중앙, 0.5=완전상단)
 
 IMG_EXTS = (".jpg", ".jpeg", ".png")
@@ -212,11 +213,16 @@ def build_vignette() -> np.ndarray:
     return mask[:, :, None]
 
 
-def build_caption_layer(caption: str, is_cta: bool) -> tuple[np.ndarray, int]:
+def build_caption_layer(caption: str, is_cta: bool, is_hook: bool = False) -> tuple[np.ndarray, int]:
     """자막 텍스트를 WxH 투명 캔버스 기준 위치에 렌더한 RGBA + 블록상단 y 반환."""
     if not caption.strip():
         return np.zeros((H, W, 4), dtype=np.uint8), H
-    size = int(W * (0.072 if is_cta else 0.062))
+    if is_cta:
+        size = int(W * 0.072)
+    elif is_hook:
+        size = int(W * 0.067)   # 후크는 살짝 크게
+    else:
+        size = int(W * 0.060)
     font = _load_font(size, "bold")
     margin = int(W * 0.08)
     max_w = W - 2 * margin
@@ -277,9 +283,9 @@ _PW, _PH = int(round(W * ZOOM)), int(round(H * ZOOM))
 
 
 def make_cut(plate: np.ndarray, caption: str, sec: float, zoom_in: bool, pan_dir: int,
-             is_cta: bool) -> VideoClip:
-    """단일 컷 → VideoClip. cover 플레이트 위 켄번즈 + 키네틱 자막 + 고정 오버레이."""
-    cap_layer, _ = build_caption_layer(caption, is_cta)
+             is_cta: bool, is_hook: bool = False) -> VideoClip:
+    """단일 컷 → VideoClip. cover 플레이트 위 느린 푸시인 + 키네틱 자막 + 고정 오버레이."""
+    cap_layer, _ = build_caption_layer(caption, is_cta, is_hook)
 
     def frame_fn(t: float) -> np.ndarray:
         prog = max(0.0, min(1.0, t / sec)) if sec > 0 else 0.0
@@ -343,9 +349,10 @@ def build_reel(imgs: list[Path], captions: list[str], base_name: str, sec: float
         plate = cover_plate(p)
         cap = captions[i] if i < len(captions) else ""
         is_cta = (i == n - 1)
-        zoom_in = (i % 2 == 0)
-        pan_dir = 1 if (i % 2 == 0) else -1
-        clip = make_cut(plate, cap, sec, zoom_in, pan_dir, is_cta)
+        is_hook = (i == 0)
+        cut_sec = HOOK_SEC if is_hook else sec
+        # v3: 컷마다 한 방향 느린 푸시인(줌아웃 펀치 교차 폐지) · 팬 없음
+        clip = make_cut(plate, cap, cut_sec, True, 0, is_cta, is_hook)
         if clips:
             clip = clip.with_effects([CrossFadeIn(CROSSFADE_SEC)])
         clips.append(clip)
@@ -397,7 +404,7 @@ def main() -> None:
         if not music.is_file():
             sys.exit(f"[오류] --music 파일 없음: {music}")
 
-    print(f"[엔진] 릴스 v2 트렌디 — 세로풀크롭·모션·키네틱자막·그레이딩")
+    print(f"[엔진] 릴스 v3 시네마틱 — 세로풀크롭·느린푸시인(3.6s)·장점카피·그레이딩")
     print(f"[소스] {src_folder}")
     print(f"[이미지] {len(imgs)}장 · 컷당 {args.sec}s · 크로스디졸브 {CROSSFADE_SEC}s")
     for i, p in enumerate(imgs):
@@ -407,7 +414,7 @@ def main() -> None:
 
     out_path, duration = build_reel(imgs, captions, base, args.sec, music)
 
-    print("\n[완료] 릴스 v2 생성")
+    print("\n[완료] 릴스 v3 생성")
     print(f"   경로  : {out_path}")
     print(f"   길이  : {duration:.2f}초")
     print(f"   해상도: {W}x{H} @ {FPS}fps (H.264/libx264) · cover 풀크롭(레터박스 0)")
