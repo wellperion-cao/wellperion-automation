@@ -1,14 +1,15 @@
-"""공식 @wellperion 시설 종합 F1 — 사진형 슬라이드 5장 (파일럿).
+"""공식 @wellperion 시설 종합 F1 — 사진형 슬라이드 6장 (GM 피드백 재정리).
 
 디자인 정본 = compose_barre 의 스타일 프리미티브(center_crop_fill·apply_bottom_gradient·
 paste_logo·draw_chip·draw_counter·load_font)를 그대로 import 재사용한다. 손 디자인 추측 금지
 (메모리: feedback_visual_reuse_reference_generator · project_ballet_design_canonical).
 
 전 슬라이드 = 풀사진 + 하단 그라디언트 + 좌상단 풀로고 + 우상단 WELLPERION 칩 (회사 공식계정).
-출력: instagram/260629_공식_시설_F1종합/output(인스타그램)/post_1..5.jpg + _검수_미리보기_5장.png
+구성: 표지(라운지) + 5대 시설(수영·헬스·골프·스쿼시·사우나) = 6장.
+출력: instagram/260629_공식_시설_F1종합/output(인스타그램)/post_1..6.jpg + _검수_미리보기_6장.png
 
 실행:
-  python scripts\\compose_official_facility_f1.py            # 제작 + M5 등록 + 검수카드
+  python scripts\\compose_official_facility_f1.py            # 제작 + M5 등록
   python scripts\\compose_official_facility_f1.py --no-register   # 제작만(룩 확인용)
 """
 from __future__ import annotations
@@ -27,17 +28,17 @@ from brand_constants import BEIGE, WHITE, GRAY, PROJECT_ROOT  # noqa: E402
 
 PHOTO_DIR = PROJECT_ROOT / "2. 브랜드_공식문서" / "시설 사진" / "web_10mb아래"
 OUT_DIR = PROJECT_ROOT / "instagram" / "260629_공식_시설_F1종합" / "output(인스타그램)"
-TOTAL = 5
+TOTAL = 6
 
 CAPTION = (
     "한 곳에서 하루가 완성되는 곳, 웰페리온.\n\n"
     "한남동 3,000평 종합 스포츠클럽.\n"
-    "25m 수영장부터 GDR 스크린골프, 스쿼시, 테크노짐 헬스존,\n"
-    "그리고 운동 뒤 사우나·스파와 필라테스 스튜디오까지.\n"
+    "25m 정규 수영장, GDR 스크린골프, 스쿼시 코트,\n"
+    "테크노짐 헬스존, 그리고 사우나·스파까지.\n"
     "운동의 시작과 회복을 한 공간에서 누리세요.\n\n"
     "문의: wellperion.com/ko/inquiry\n\n"
     "#웰페리온 #한남동 #스포츠클럽 #프리미엄 #수영 #골프 #스쿼시 "
-    "#필라테스 #스파 #테크노짐"
+    "#헬스 #사우나 #테크노짐"
 )
 
 
@@ -118,11 +119,12 @@ def build_montage(slide_paths: list[Path], dest: Path,
 def main() -> None:
     register = "--no-register" not in sys.argv
     photos = {
-        1: PHOTO_DIR / "094A9901.jpg",
-        2: PHOTO_DIR / "094A0008.jpg",
-        3: PHOTO_DIR / "094A9961.jpg",
-        4: PHOTO_DIR / "094A9949.jpg",
-        5: PHOTO_DIR / "094A9986.jpg",
+        1: PHOTO_DIR / "094A0032.jpg",  # 라운지·갤러리 — 표지
+        2: PHOTO_DIR / "094A9901.jpg",  # 수영장
+        3: PHOTO_DIR / "094A9977.jpg",  # 헬스장
+        4: PHOTO_DIR / "094A0008.jpg",  # 골프장
+        5: PHOTO_DIR / "094A9943.jpg",  # 스쿼시장
+        6: PHOTO_DIR / "094A9949.jpg",  # 사우나
     }
     for n, p in photos.items():
         if not p.exists():
@@ -130,12 +132,12 @@ def main() -> None:
             sys.exit(1)
 
     OUT_DIR.mkdir(parents=True, exist_ok=True)
-    print("=== 공식 시설 F1 종합 — 5장 합성 ===")
+    print("=== 공식 시설 F1 종합 — 6장 합성 ===")
 
     META = "한남동 3,000평 종합 스포츠클럽"
     FOOT = "WELLPERION  ·  FACILITY"
 
-    # post_1 — 표지 (수영장)
+    # post_1 — 표지 (라운지·갤러리)
     compose_hero(
         photos[1],
         "한 곳에서,\n하루가 완성된다",
@@ -145,31 +147,33 @@ def main() -> None:
         out_path=OUT_DIR / "post_1.jpg",
         title_size=70,
     )
-    # post_2~4 — 종목 (골프·헬스·스파)
-    compose_feature(photos[2], META, "골프", "GDR 15 오토티업 스크린골프",
+    # post_2~5 — 5대 시설 (수영·헬스·골프·스쿼시)
+    compose_feature(photos[2], META, "수영", "25m 정규 레인",
                     FOOT, 2, OUT_DIR / "post_2.jpg")
     compose_feature(photos[3], META, "헬스", "테크노짐 프리미엄 존",
                     FOOT, 3, OUT_DIR / "post_3.jpg")
-    compose_feature(photos[4], META, "스파 · 사우나", "운동 뒤 회복까지",
+    compose_feature(photos[4], META, "골프", "GDR 15 오토티업",
                     FOOT, 4, OUT_DIR / "post_4.jpg")
-    # post_5 — 마무리 (필라테스) + CTA
+    compose_feature(photos[5], META, "스쿼시", "정식 코트",
+                    FOOT, 5, OUT_DIR / "post_5.jpg")
+    # post_6 — 마무리 (사우나) + CTA
     compose_hero(
-        photos[5],
-        "수영·골프·스쿼시·헬스부터\n스파·필라테스까지",
+        photos[6],
+        "스파 · 사우나\n운동 뒤 회복까지",
         sub="",
-        footer="WELLPERION  ·  FACILITY",
+        footer=FOOT,
         cta="문의 · wellperion.com/ko/inquiry",
-        out_path=OUT_DIR / "post_5.jpg",
-        title_size=56,
+        out_path=OUT_DIR / "post_6.jpg",
+        title_size=60,
     )
 
-    slides = [OUT_DIR / f"post_{i}.jpg" for i in range(1, 6)]
-    montage = OUT_DIR / "_검수_미리보기_5장.png"
+    slides = [OUT_DIR / f"post_{i}.jpg" for i in range(1, 7)]
+    montage = OUT_DIR / "_검수_미리보기_6장.png"
     build_montage(slides, montage)
     print("=== 합성 완료 ===")
 
     if not register:
-        print("[INFO] --no-register: 등록·카드 생략(룩 확인용).")
+        print("[INFO] --no-register: 등록 생략(룩 확인용).")
         return
 
     from publish_register import register_publish
@@ -186,7 +190,7 @@ def main() -> None:
         queue_id="CMO-2026-06-29-OFFICIAL-F1-시설종합",
         title="공식 #F1 — 시설 종합: 한 곳에서, 하루가 완성된다",
         channel="인스타그램 (wellperion)",
-        send_card=True,
+        send_card=False,  # 재정리본 — 텔레그램 검수카드 재발송 금지(콘텐츠당 1회 원칙)
     )
 
 
