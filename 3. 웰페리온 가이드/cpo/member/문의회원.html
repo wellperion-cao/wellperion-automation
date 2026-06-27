@@ -866,7 +866,8 @@ a.funnel-step:hover{background:rgba(183,159,138,0.08);color:var(--accent)}
   <!-- ══════════════════════════════ 문의 유형 칩 바 (통합 — 2026-06-26 시포) ══════════════════════════════ -->
   <div class="type-chip-bar" id="typeChipBar">
     <button type="button" class="type-chip active" data-type="membership" onclick="switchType('membership')">멤버십</button>
-    <button type="button" class="type-chip" data-type="lesson" onclick="switchType('lesson')">강습</button>
+    <button type="button" class="type-chip" data-type="lessonAdult" onclick="switchType('lessonAdult')">성인 강습</button>
+    <button type="button" class="type-chip" data-type="lessonYouth" onclick="switchType('lessonYouth')">유소년 강습</button>
     <button type="button" class="type-chip soon" data-type="rent" onclick="switchType('rent')">공간 렌트 🚧</button>
     <button type="button" class="type-chip soon" data-type="biz" onclick="switchType('biz')">비즈니스 🚧</button>
   </div>
@@ -1026,7 +1027,7 @@ a.funnel-step:hover{background:rgba(183,159,138,0.08);color:var(--accent)}
     <div class="info-box accent" style="margin-bottom:16px">
       문의 → 체험/견학/상담 → 등록 전 구간 CPO SOP. 등록 후 단계(등록 현황·멤버십 회원 관리)는
       상단 대시보드 카드의 <strong style="color:var(--accent)">등록 현황 · 멤버십 회원 관리</strong> 탭에서.
-      강습 문의는 상단 <strong style="color:var(--teal)">강습</strong> 유형 또는 <a href="강습문의.html" style="color:var(--teal);font-weight:700">강습 문의 관리</a>에서.
+      강습 문의는 상단 <strong style="color:var(--teal)">성인 강습 · 유소년 강습</strong> 유형에서 종목별로 확인하세요.
     </div>
 
     <div class="section-label">담당 (R/R)</div>
@@ -1484,30 +1485,29 @@ if (action === 'member_calendar') {
 
   </div><!-- /type-membership -->
 
-  <!-- ══════════════════════════════ 유형: 강습 (성인·유소년 통합 — 종목 필터로 구분) ══════════════════════════════ -->
-  <div id="type-lesson" class="type-pane">
+  <!-- ══════════════════════════════ 유형: 성인 강습 (문의 현황 — 종목 필터) ══════════════════════════════ -->
+  <div id="type-lessonAdult" class="type-pane">
     <div class="info-box accent" style="margin-bottom:14px">
-      강습 문의(성인·유소년 통합) — <strong>종목 필터</strong>로 구분합니다. 상세 편집·예약 달력은
-      <a href="강습문의.html" style="color:var(--teal);font-weight:700">강습 문의 관리</a> 페이지에서.
+      <strong>성인 강습 문의 현황</strong> — 종목별로 필터해 보세요. (등록 현황·강습 회원 관리는 다음 단계)
     </div>
     <div class="card">
       <div class="card-title">
-        <span class="icon">🏊</span>강습 문의 목록
-        <span id="lessonStatLine" style="font-size:11px;font-weight:400;color:var(--dim);margin-left:6px"></span>
+        <span class="icon">🏊</span>성인 강습 문의 목록
+        <span id="lessonStatLine_adult" style="font-size:11px;font-weight:400;color:var(--dim);margin-left:6px"></span>
       </div>
 
       <div style="display:flex;gap:6px;align-items:center;margin-bottom:12px;flex-wrap:wrap">
-        <button type="button" id="lessonScopeYear" class="lesson-scope-btn" onclick="lessonSetScope('year', this)"
+        <button type="button" class="lesson-scope-btn" onclick="lessonSetScope('year', this, 'adult')"
           style="padding:7px 14px;border-radius:8px;border:1px solid var(--teal-border);background:var(--teal-bg);color:var(--teal);font-size:12px;font-weight:700;font-family:inherit;cursor:pointer">올해(2026)만</button>
-        <button type="button" id="lessonScopeAll" class="lesson-scope-btn" onclick="lessonSetScope('all', this)"
+        <button type="button" class="lesson-scope-btn" onclick="lessonSetScope('all', this, 'adult')"
           style="padding:7px 14px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--dim);font-size:12px;font-weight:700;font-family:inherit;cursor:pointer">전체 기간</button>
-        <button class="btn-refresh" onclick="lessonLoad();lessonLoadStats()" style="margin-left:auto">새로고침</button>
+        <button class="btn-refresh" onclick="lessonLoad('adult');lessonLoadStats('adult')" style="margin-left:auto">새로고침</button>
       </div>
 
-      <div id="lessonSportBar" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px"></div>
+      <div id="lessonSportBar_adult" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px"></div>
 
       <div class="reg-table-wrap">
-        <table class="reg-table" id="lessonTable">
+        <table class="reg-table">
           <thead>
             <tr>
               <th class="left" style="min-width:90px">문의일</th>
@@ -1519,7 +1519,49 @@ if (action === 'member_calendar') {
               <th class="left" style="min-width:160px">메모</th>
             </tr>
           </thead>
-          <tbody id="lessonBody">
+          <tbody id="lessonBody_adult">
+            <tr><td colspan="7"><div class="empty-state"><div class="loading-spinner"></div><div class="empty-state-title" style="margin-top:12px">불러오는 중…</div></div></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════ 유형: 유소년 강습 (문의 현황 — 종목 필터) ══════════════════════════════ -->
+  <div id="type-lessonYouth" class="type-pane">
+    <div class="info-box accent" style="margin-bottom:14px">
+      <strong>유소년 강습 문의 현황</strong> — 종목별로 필터해 보세요. (등록 현황·강습 회원 관리는 다음 단계)
+    </div>
+    <div class="card">
+      <div class="card-title">
+        <span class="icon">🤸</span>유소년 강습 문의 목록
+        <span id="lessonStatLine_youth" style="font-size:11px;font-weight:400;color:var(--dim);margin-left:6px"></span>
+      </div>
+
+      <div style="display:flex;gap:6px;align-items:center;margin-bottom:12px;flex-wrap:wrap">
+        <button type="button" class="lesson-scope-btn" onclick="lessonSetScope('year', this, 'youth')"
+          style="padding:7px 14px;border-radius:8px;border:1px solid var(--teal-border);background:var(--teal-bg);color:var(--teal);font-size:12px;font-weight:700;font-family:inherit;cursor:pointer">올해(2026)만</button>
+        <button type="button" class="lesson-scope-btn" onclick="lessonSetScope('all', this, 'youth')"
+          style="padding:7px 14px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--dim);font-size:12px;font-weight:700;font-family:inherit;cursor:pointer">전체 기간</button>
+        <button class="btn-refresh" onclick="lessonLoad('youth');lessonLoadStats('youth')" style="margin-left:auto">새로고침</button>
+      </div>
+
+      <div id="lessonSportBar_youth" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px"></div>
+
+      <div class="reg-table-wrap">
+        <table class="reg-table">
+          <thead>
+            <tr>
+              <th class="left" style="min-width:90px">문의일</th>
+              <th class="left" style="min-width:70px">성함</th>
+              <th style="min-width:120px">연락처</th>
+              <th style="min-width:90px">강습종목</th>
+              <th style="min-width:80px">진행상태</th>
+              <th style="min-width:70px">담당</th>
+              <th class="left" style="min-width:160px">메모</th>
+            </tr>
+          </thead>
+          <tbody id="lessonBody_youth">
             <tr><td colspan="7"><div class="empty-state"><div class="loading-spinner"></div><div class="empty-state-title" style="margin-top:12px">불러오는 중…</div></div></td></tr>
           </tbody>
         </table>
@@ -1743,104 +1785,114 @@ function switchType(type) {
   document.querySelectorAll('.type-chip[data-type]').forEach(function(c){
     c.classList.toggle('active', c.getAttribute('data-type') === type);
   });
-  if (type === 'lesson') lessonInit();   // 최초 진입 시 1회 로드
+  if (type === 'lessonAdult') lessonInit('adult');   // 최초 진입 시 1회 로드
+  if (type === 'lessonYouth') lessonInit('youth');
 }
 
-/* ── 강습 문의 목록(inline) — lesson_inquiry_list·lesson_stats 재사용 ── */
-var _lessonRows   = [];
-var _lessonScope  = 'year';   // 'year'(올해 기본) | 'all'
-var _lessonSport  = '';       // '' = 전체 종목
-var _lessonLoaded = false;
+/* ── 강습 문의 목록(inline) — 성인/유소년 독립 상태. lesson_inquiry_list·lesson_stats 재사용 ── */
+// target='adult'(성인강습) | 'youth'(유소년강습). DOM id 접미사 + GAS type 파라미터로 분기.
+var _lessonState = {
+  adult: { rows: [], scope: 'year', sport: '', loaded: false, type: '성인강습' },
+  youth: { rows: [], scope: 'year', sport: '', loaded: false, type: '유소년강습' }
+};
 
-function lessonInit() {
-  if (_lessonLoaded) return;
-  _lessonLoaded = true;
-  lessonLoad();
-  lessonLoadStats();
+function lessonInit(t) {
+  var st = _lessonState[t];
+  if (!st || st.loaded) return;
+  st.loaded = true;
+  lessonLoad(t);
+  lessonLoadStats(t);
 }
 
-function lessonSetScope(scope, btn) {
-  _lessonScope = (scope === 'all') ? 'all' : 'year';
-  document.querySelectorAll('#type-lesson .lesson-scope-btn').forEach(function(b){
+function _lessonPaneId(t) { return t === 'youth' ? 'type-lessonYouth' : 'type-lessonAdult'; }
+
+function lessonSetScope(scope, btn, t) {
+  var st = _lessonState[t];
+  st.scope = (scope === 'all') ? 'all' : 'year';
+  document.querySelectorAll('#' + _lessonPaneId(t) + ' .lesson-scope-btn').forEach(function(b){
     b.style.background = 'var(--bg)'; b.style.color = 'var(--dim)'; b.style.borderColor = 'var(--border)';
   });
   if (btn) { btn.style.background = 'var(--teal-bg)'; btn.style.color = 'var(--teal)'; btn.style.borderColor = 'var(--teal-border)'; }
-  lessonLoad();
-  lessonLoadStats();
+  lessonLoad(t);
+  lessonLoadStats(t);
 }
 
-function _lessonEmpty(title, desc) {
-  var b = document.getElementById('lessonBody');
+function _lessonEmpty(t, title, desc) {
+  var b = document.getElementById('lessonBody_' + t);
   if (b) b.innerHTML = '<tr><td colspan="7"><div class="empty-state"><div class="empty-state-icon">📭</div>' +
     '<div class="empty-state-title">' + esc(title) + '</div>' +
     '<div class="empty-state-desc">' + esc(desc) + '</div></div></td></tr>';
 }
 
-function lessonLoad() {
-  if (GAS_URL === GAS_PLACEHOLDER) { _lessonEmpty('미연동', 'GAS URL이 교체되면 자동으로 강습 문의가 표시됩니다.'); return; }
-  var b = document.getElementById('lessonBody');
+function lessonLoad(t) {
+  var st = _lessonState[t];
+  if (GAS_URL === GAS_PLACEHOLDER) { _lessonEmpty(t, '미연동', 'GAS URL이 교체되면 자동으로 강습 문의가 표시됩니다.'); return; }
+  var b = document.getElementById('lessonBody_' + t);
   if (b) b.innerHTML = '<tr><td colspan="7"><div class="empty-state"><div class="loading-spinner"></div>' +
     '<div class="empty-state-title" style="margin-top:12px">불러오는 중…</div></div></td></tr>';
-  fetch(GAS_URL + '?action=lesson_inquiry_list' + _wpKeyParam() + (_lessonScope === 'all' ? '&scope=all' : ''))
+  fetch(GAS_URL + '?action=lesson_inquiry_list&type=' + encodeURIComponent(st.type) + _wpKeyParam() + (st.scope === 'all' ? '&scope=all' : ''))
     .then(function(r){ return r.json(); })
     .then(function(d){
       if (!d.ok) throw new Error(d.error || 'GAS 응답 오류');
-      _lessonRows = d.data || [];
-      lessonRenderChips();
-      lessonRender();
+      st.rows = d.data || [];
+      lessonRenderChips(t);
+      lessonRender(t);
     })
-    .catch(function(e){ _lessonEmpty('데이터 로드 실패', e.message || 'GAS URL 또는 배포 상태를 확인하세요.'); });
+    .catch(function(e){ _lessonEmpty(t, '데이터 로드 실패', e.message || 'GAS URL 또는 배포 상태를 확인하세요.'); });
 }
 
-function lessonLoadStats() {
+function lessonLoadStats(t) {
+  var st = _lessonState[t];
   if (GAS_URL === GAS_PLACEHOLDER) return;
-  fetch(GAS_URL + '?action=lesson_stats' + (_lessonScope === 'all' ? '&scope=all' : ''))
+  fetch(GAS_URL + '?action=lesson_stats&type=' + encodeURIComponent(st.type) + (st.scope === 'all' ? '&scope=all' : ''))
     .then(function(r){ return r.json(); })
     .then(function(d){
       if (!d || !d.ok) return;
-      var el = document.getElementById('lessonStatLine');
+      var el = document.getElementById('lessonStatLine_' + t);
       if (el) el.textContent = '총 ' + (d.total || 0) + '건 · 이번달 ' + (d.thisMonth || 0) + '건';
     })
     .catch(function(){});
 }
 
-function _lessonChipHtml(val, label, n) {
-  var active = (val === _lessonSport);
-  return '<button type="button" data-sport="' + esc(val) + '" onclick="lessonFilterSport(this)" ' +
+function _lessonChipHtml(t, val, label, n) {
+  var active = (val === _lessonState[t].sport);
+  return '<button type="button" data-sport="' + esc(val) + '" onclick="lessonFilterSport(this, \'' + t + '\')" ' +
     'style="padding:5px 12px;border-radius:99px;font-size:12px;font-weight:700;font-family:inherit;cursor:pointer;' +
     'border:1px solid ' + (active ? 'var(--teal-border)' : 'var(--border)') + ';' +
     'background:' + (active ? 'var(--teal-bg)' : 'var(--paper)') + ';' +
     'color:' + (active ? 'var(--teal)' : 'var(--dim)') + '">' + esc(label) + ' ' + n + '</button>';
 }
 
-function lessonRenderChips() {
-  var bar = document.getElementById('lessonSportBar');
+function lessonRenderChips(t) {
+  var bar = document.getElementById('lessonSportBar_' + t);
   if (!bar) return;
+  var rows = _lessonState[t].rows;
   var counts = {};
-  _lessonRows.forEach(function(r){ var s = String(r.sport || '').trim() || '미지정'; counts[s] = (counts[s] || 0) + 1; });
+  rows.forEach(function(r){ var s = String(r.sport || '').trim() || '미지정'; counts[s] = (counts[s] || 0) + 1; });
   var sports = Object.keys(counts).sort(function(a, b){ return counts[b] - counts[a]; });
-  var html = _lessonChipHtml('', '전체', _lessonRows.length);
-  sports.forEach(function(s){ html += _lessonChipHtml(s, s, counts[s]); });
+  var html = _lessonChipHtml(t, '', '전체', rows.length);
+  sports.forEach(function(s){ html += _lessonChipHtml(t, s, s, counts[s]); });
   bar.innerHTML = html;
 }
 
-function lessonFilterSport(btn) {
-  _lessonSport = btn.getAttribute('data-sport') || '';
-  lessonRenderChips();
-  lessonRender();
+function lessonFilterSport(btn, t) {
+  _lessonState[t].sport = btn.getAttribute('data-sport') || '';
+  lessonRenderChips(t);
+  lessonRender(t);
 }
 
-function lessonRender() {
-  var tbody = document.getElementById('lessonBody');
+function lessonRender(t) {
+  var tbody = document.getElementById('lessonBody_' + t);
   if (!tbody) return;
-  var rows = _lessonRows;
-  if (_lessonSport) {
-    rows = _lessonRows.filter(function(r){
+  var st = _lessonState[t];
+  var rows = st.rows;
+  if (st.sport) {
+    rows = st.rows.filter(function(r){
       var s = String(r.sport || '').trim() || '미지정';
-      return s === _lessonSport;
+      return s === st.sport;
     });
   }
-  if (rows.length === 0) { _lessonEmpty('강습 문의 없음', '해당 조건의 강습 문의가 없습니다.'); return; }
+  if (rows.length === 0) { _lessonEmpty(t, '강습 문의 없음', '해당 조건의 강습 문의가 없습니다.'); return; }
   var html = '';
   rows.forEach(function(r){
     html += '<tr>' +

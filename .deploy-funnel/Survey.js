@@ -1081,14 +1081,22 @@ function _regUpsert_(name, phone, program) {
 //     관리용 칸(진행상태·담당·상담메모·상담예약·방문상태)은 시트에 없음 → _lessonEnsureCols_ 가 우측에 멱등 생성.
 // ═══════════════════════════════════════════
 var LESSON_SS_ID = '1b0XU1oTHlXzBhEzUOar5GEm44vjopdO25qfsh-awDXw';
-var LESSON_GID = 111889422;
+var LESSON_GID = 111889422;            // 성인 강습 응답탭
+var LESSON_GID_YOUTH = 268994754;      // 유소년 강습 응답탭(WSC) — 성인/유소년 별도 탭 분리(2026-06-27 시포)
+// 대상(type) → gid 해석. body.type 미전송=성인(하위호환·강습문의.html).
+function _lessonGidOf_(body) {
+  var t = String((body && body.type) || '');
+  if (t === '유소년강습' || t === '유소년' || t === 'youth') return LESSON_GID_YOUTH;
+  return LESSON_GID;
+}
 // 관리 담당 컬럼명='관리담당'(★'담당'은 폼 원본 '접수담당자'와 부분일치 충돌 → 컬럼 미생성·원본 덮어쓰기 버그. 2026-06-26 시우).
 var _LESSON_MGMT_COLS = ['진행상태', '관리담당', '상담메모', '상담예약', '방문상태'];
 
 // gid 매칭 시트 핸들(탭명 변경에 강함).
-function _lessonSheet_() {
+function _lessonSheet_(gid) {
+  var want = gid || LESSON_GID;
   var sheets = SpreadsheetApp.openById(LESSON_SS_ID).getSheets();
-  for (var i = 0; i < sheets.length; i++) { if (sheets[i].getSheetId() === LESSON_GID) return sheets[i]; }
+  for (var i = 0; i < sheets.length; i++) { if (sheets[i].getSheetId() === want) return sheets[i]; }
   return null;
 }
 // 관리 헤더가 헤더행에 없으면 우측에 append(멱등). 각 액션 진입 시 1회 보장.
@@ -1105,8 +1113,8 @@ function _lessonEnsureCols_(sh) {
   return hdr;
 }
 // 강습 행 배열 — 문의 + 관리 필드 통합. 빈 행(성함·연락처 둘 다 없음) 스킵.
-function _lessonReadRows_() {
-  var sh = _lessonSheet_();
+function _lessonReadRows_(gid) {
+  var sh = _lessonSheet_(gid);
   if (!sh) return [];
   var hdr = _lessonEnsureCols_(sh);
   var last = sh.getLastRow();
@@ -1115,8 +1123,8 @@ function _lessonReadRows_() {
   var iTs    = _findCol_(hdr, ['타임스탬프', 'timestamp', '시각', '일시', '접수일', '날짜']);
   var iName  = _findCol_(hdr, ['성함', '이름']);   // '성함' 우선 — '접수 담당자 혹은 본인 이름' 오매칭 차단
   var iPhone = _findCol_(hdr, ['연락처', '전화', '휴대폰']);
-  var iAge   = _findCol_(hdr, ['나이', '연령']);
-  var iSport = _findCol_(hdr, ['성인 강습 종목', '강습 종목', '종목', '과목']);
+  var iAge   = _findCol_(hdr, ['나이', '연령', '자녀 나이', '자녀나이', '학년']);
+  var iSport = _findCol_(hdr, ['성인 강습 종목', 'WSC 강습 종목', 'WSC 강습 종류', '강습 종목', '종목', '과목']);
   var iChan  = _findCol_(hdr, ['문의 경로', '경로', '채널', '알게']);
   var iNote  = _findCol_(hdr, ['문의 사항', '문의사항', '문의 내용', '내용']);
   var iWish  = _findCol_(hdr, ['희망하시는 레슨 시간', '희망 레슨', '희망시간', '레슨 시간']);
@@ -2014,13 +2022,13 @@ function _processAction(body) {
 
   // ─── 강습문의 페이지(CPO): 전체 목록 (성인 강습 문의 + 관리 필드) ───
   if (action === 'lesson_inquiry_list') {
-    var liRows = _lessonScopeFilter_(_lessonReadRows_(), body);
+    var liRows = _lessonScopeFilter_(_lessonReadRows_(_lessonGidOf_(body)), body);
     return _json({ ok: true, count: liRows.length, data: liRows });
   }
 
   // ─── 강습문의 페이지(CPO): 통계 (총·이번달·종목 분포·유입경로 분포) ───
   if (action === 'lesson_stats') {
-    var lsRows = _lessonScopeFilter_(_lessonReadRows_(), body);
+    var lsRows = _lessonScopeFilter_(_lessonReadRows_(_lessonGidOf_(body)), body);
     var lsTotal = lsRows.length;
     var lsMonth = Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy-MM');
     var lsThisMonth = 0;
@@ -2043,7 +2051,7 @@ function _processAction(body) {
   // ─── 강습문의 페이지(CPO): 예약 달력 (상담예약 일정) ───
   if (action === 'lesson_calendar') {
     var lcMonth = String(body.month || '');  // 'YYYY-MM'
-    var lcRows = _lessonScopeFilter_(_lessonReadRows_(), body);
+    var lcRows = _lessonScopeFilter_(_lessonReadRows_(_lessonGidOf_(body)), body);
     var lcEvents = [];
     lcRows.forEach(function(row) {
       var d = row.consult;
@@ -2059,7 +2067,7 @@ function _processAction(body) {
   if (action === 'lesson_inquiry_update') {
     var luRow = parseInt(body.rowIndex, 10);
     if (!luRow || luRow < 2) return _json({ ok: false, error: 'rowIndex 필수(2 이상)' });
-    var luSh = _lessonSheet_();
+    var luSh = _lessonSheet_(_lessonGidOf_(body));
     if (!luSh) return _json({ ok: false, error: '시트 없음' });
     var luHdr = _lessonEnsureCols_(luSh);
     // ★행키 검증(비파괴·하위호환): keyPhone 동봉 시 대상 행 전화 대조 — rowIndex 밀림 오수정 방지. 미전송이면 폴백.
