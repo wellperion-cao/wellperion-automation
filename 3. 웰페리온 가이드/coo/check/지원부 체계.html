@@ -3486,10 +3486,9 @@ function renderManualItems(){
   const _addGroupBtn=EM?`<button onclick="addManualGroup()" style="${_btn}color:var(--accent);background:var(--bg);border-color:var(--accent);">＋ 구역 추가</button>`:'';
   /* Part1: 시드 명단 → 시트 단방향 push(syncSeedItems). 멱등이라 여러 번 눌러도 안전. 편집 모드에서만 노출(운영 실수 방지). */
   const _seedBtn=EM?`<button onclick="if(confirm('시드 45항목 명단을 시트로 동기화합니다(멱등·안전). 진행할까요?'))pushSeedItemsToSheet()" style="${_btn}color:#5b9fd5;background:rgba(91,159,213,0.12);border-color:rgba(91,159,213,0.35);">⟳ 시드 동기화</button>`:'';
-  /* 시트(서버) 기준으로 이 기기 화면 초기화 — 브라우저 표시 오버레이(숨김·순서·이름변경 등 7키) 리셋(역롤백=이 _resetBtn 한 줄 + resetManualLocalView 함수 삭제) */
-  const _resetBtn=`<button onclick="resetManualLocalView()" style="${_btn}color:#8c6d1f;background:rgba(230,200,78,0.14);border-color:rgba(230,200,78,0.5);" title="이 기기의 매뉴얼 화면 설정을 지우고 시트 내용 그대로 다시 불러옵니다">🔄 시트 기준으로 초기화</button>`;
+  /* 2026-06-27 GM: '🔄 시트 기준으로 초기화' 버튼 제거(위험 판단). resetManualLocalView 함수도 폐지. */
   html+=`<div style="background:var(--accent-bg);border:1px solid var(--accent);border-radius:10px;padding:10px 14px;margin-bottom:12px;font-size:12px;color:var(--text);line-height:1.6;">
-    <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;"><span><b style="color:var(--accent);">매뉴얼 = 항목 단일출처</b> · 편집 모드를 켜면 구역(A·B…) <b>추가·이름변경·삭제·순서(▲▼)</b>와 항목 추가·편집·삭제가 나타납니다.</span><span style="display:inline-flex;gap:6px;">${_resetBtn}${_seedBtn}${_addGroupBtn}${_emBtn}</span></div>
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;"><span><b style="color:var(--accent);">매뉴얼 = 항목 단일출처</b> · 편집 모드를 켜면 구역(A·B…) <b>추가·이름변경·삭제·순서(▲▼)</b>와 항목 추가·편집·삭제가 나타납니다.</span><span style="display:inline-flex;gap:6px;">${_seedBtn}${_addGroupBtn}${_emBtn}</span></div>
   </div>`;
   catOrder.forEach((cat,gi)=>{
     const items=catMap[cat];
@@ -3573,14 +3572,7 @@ function renderManualItems(){
   el.innerHTML=html||'<div style="color:var(--dim);font-size:13px;">항목 없음</div>';
 }
 
-/* 시트(서버) 기준으로 이 기기의 매뉴얼 화면 초기화 — 브라우저 localStorage 표시 오버레이 7키만 제거 후 새로고침.
-   서버(GAS getItems)가 지원_매뉴얼 시트를 단일출처로 다시 렌더한다. 점검 수행 경로·시트 데이터 무영향.
-   (역롤백=이 함수 + 위 _resetBtn 한 줄 삭제) */
-function resetManualLocalView(){
-  if(!confirm('이 기기의 매뉴얼 화면 설정(숨김·순서·이름변경)을 지우고 시트(서버) 내용 그대로 다시 불러옵니다. 계속할까요?'))return;
-  ['wcheck_hidden_items','wcheck_group_hidden','wcheck_group_rename','wcheck_group_added','wcheck_item_order','wcheck_group_order','wcheck_items_cache'].forEach(k=>{try{localStorage.removeItem(k)}catch(e){}});
-  location.reload();
-}
+/* 2026-06-27 GM: resetManualLocalView('🔄 시트 기준으로 초기화')는 위험 판단으로 제거됨. */
 
 /* 매뉴얼 탭 개별 항목 점검완료 체크 → 기존 체크 저장 시스템(STATE+saveState+pushToServer) 재사용 */
 function onManualCk(id){
