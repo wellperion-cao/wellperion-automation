@@ -157,13 +157,15 @@ function lkNormRows(rows){
 /* ===== 현황(KPI): 만기 라커 / 공란 / 전체 ===== */
 function lkParseExp(s){
   if(!s) return null; s=String(s).trim();
-  const m=s.match(/^(\d{4})[.\-\/](\d{1,2})[.\-\/](\d{1,2})$/);
+  const m=s.match(/^(\d{4})\s*[.\-\/]\s*(\d{1,2})\s*[.\-\/]\s*(\d{1,2})\.?\s*$/);
   if(!m) return null; const d=new Date(+m[1],+m[2]-1,+m[3]); return isNaN(d)?null:d;
 }
 function updateKpi(){
   const rows=DATA[curDb]||[]; const today=new Date(); today.setHours(0,0,0,0);
-  let exp=0, vac=0;
+  let exp=0, vac=0, total=0;
   rows.forEach(r=>{
+    const num=String(r['번호']==null?'':r['번호']).trim();
+    if(num) total++;
     const name=String(r['성함']==null?'':r['성함']).trim();
     if(!name){ vac++; return; }
     const d=lkParseExp(r['만기']); if(d && d<today) exp++;
@@ -171,7 +173,7 @@ function updateKpi(){
   const el=document.getElementById('kpi'); if(!el) return;
   el.innerHTML = `<span class="kchip kexp${kpiFilter==='exp'?' act':''}" onclick="lkSetFilter('exp')">만기 라커 ${exp}</span>`
     + `<span class="kchip kvac${kpiFilter==='vac'?' act':''}" onclick="lkSetFilter('vac')">공란 ${vac}</span>`
-    + `<span class="kchip${!kpiFilter?' act':''}" onclick="lkSetFilter(null)">전체 ${rows.length}</span>`;
+    + `<span class="kchip${!kpiFilter?' act':''}" onclick="lkSetFilter(null)">전체 ${total}</span>`;
 }
 function lkKpiSync(){ const el=document.getElementById('kpi'); if(el && el.classList.contains('show')) updateKpi(); }
 function lkSetFilter(f){ kpiFilter = (kpiFilter===f)?null:f; render(); updateKpi(); }
