@@ -2647,11 +2647,9 @@ function _buildTodayMaster(dept, dow, week) {
       buckets['close'] = 1;
     } else {
       var rounds = roundsRaw ? roundsRaw.split(',').map(function (s) { return s.trim(); }).filter(Boolean) : [];
-      var isWeekend = (dow === 0 || dow === 6);
       rounds.forEach(function (r) {
         var b = _roundBucket(r);
-        if (b === 'am' || b === 'close') buckets[b] = 1;
-        else if (b === 'pm' && !isWeekend) buckets[b] = 1;
+        if (b === 'am' || b === 'pm' || b === 'close') buckets[b] = 1;
       });
     }
     var bucketList = Object.keys(buckets);
