@@ -1,5 +1,17 @@
 [
   {
+    "task_id": "COO-2026-06-27-SUPPORT-CHECK-PHANTOM-CLEANUP",
+    "clevel": "coo",
+    "title": "[시우] 지원부 점검 데이터 정합 — 조간누수 유령행 정밀청소 (배포대기)",
+    "status": "IN_PROGRESS",
+    "priority": "HIGH",
+    "enqueued_at": "2026-06-27",
+    "note": "[2026-06-27 GM] 지원_매뉴얼/남성/여성구역·점검(남/여) 3증상(제출시각빈칸·소요시간이상·미점검인데 제출완료) 진단. 라이브 실측: 오후조→마감조 누수버그는 6/26 이미 근본수정(close분리, 커밋 49e47559·ea8dd85c)·오늘(6/27) 데이터 깨끗 = 수정 정상작동 증거. 6/26 깨진건 수정 전 잔재. GM go=유령만 정밀제거. 진짜 유령=여 6/26 마감조 c2·c5·c6·d1·d2(11:0x 오후조 누수·소요1분), 진짜 마감(20:4x·16행)은 보존. revert_phantom_rows 액션 추가·node구문검증·커밋 863f9da1. 원장 백업 완료(롤백 안전망). 진단서 status/briefs/COO-2026-06-27-SUPPORT-CHECK-DATA-INTEGRITY.md.",
+    "next": "⚓ GM clasp 재인증(invalid_grant) 후: clasp push+deploy 1회 → revert_phantom_rows 실행(여 6/26 마감조 5건) → dump_zone 모순0 검증 → 시크릿크롬 라이브 확인 → GM 보고. + 제출시각 빈칸 위치·여 6/27 0행 확인.",
+    "depends_on": "GM clasp 재인증 (! clasp login)",
+    "ship_no": 184
+  },
+  {
     "task_id": "CMO-2026-06-26-M5-SSOT-UNIFY",
     "clevel": "cmo",
     "title": "[시모] M5 검수큐 단일 정본 통합 — CMO파이프라인.html(시트·3채널)을 review_queue.json(5채널·URL) 기준으로 재배선·시트모델 폐기 + 채널/status enum 표준화",
