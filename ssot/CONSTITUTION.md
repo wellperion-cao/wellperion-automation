@@ -24,7 +24,7 @@
 | canon_values | S2(렌더) | `ssot/canon_values.json` 직독 | `canon.py`·`divergence_scan.py` | ✅ |
 | 항로 양식(L16) | G1 보드 · CLAUDE.md §3-1 | `ssot/약속.json` L16 직독 | `hangro_board.py`(L16 동일값) | ✅ |
 | 할일(_queue) | G1 항로 보드 | `status/_queue.json` 직독 | `hangro_board.py`·`sync_queue_mirror.py` | ✅ |
-| KPI | S2 본인탭 HTML(손기록) | 없음(json 원천 없음) | 없음(정의 직독 불가) | ❌ |
+| KPI | S2 본인탭(렌더) + 매트릭스 배지 | ssot/kpi.json 직독(정의) | kpi_collector.py → status/kpi_values.json(실측) | ✅ |
 
 - 세 칸이 한 원천 → ✅ / 한 칸이라도 다르면 ❌ = 통합 대상(복사본 제거 또는 생성·직독 전환).
 - 규칙: 세 칸이 안 맞으면 '완료'로 닫지 않는다. 본 헌법·`incidents.json` 자체도 이 표를 통과해야 한다.
