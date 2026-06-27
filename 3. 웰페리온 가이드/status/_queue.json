@@ -461,5 +461,19 @@
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "0fd8ea7d6b96063257b28477321e01d22755c7a6",
     "ship_no": 200
+  },
+  {
+    "task_id": "COO-2026-06-27-ADHOC-a667ef17",
+    "clevel": "coo",
+    "title": "[시우] fix(check)[시우]: 과거 날짜 체크 0/N 표시 버그 근본수정 — loadState 성별 격리",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-06-27",
+    "processed_at": "2026-06-27",
+    "artifact": "증상(GM): 어제 오전조 제출완료인데 조 탭 클릭 시 0/27 0/23 0/21로 표시.\n원인: STATE는 남/여 공용 전역인데 loadState가 STATE={}로 통째 비움 → 남/여 동시\nloadState 시 늦게 끝난 쪽이 반대 성별 체크(chk_<g>_)를 지움 → 재렌더 시 0/N(데이터는 서버에 멀쩡).\n수정: ①loadState가 현재 성별+공용 키만 비우고 반대 성별 키는 prefix매칭으로 보존(b4_m/b4_f itemId 함정 회피)\n②syncAllFromWorkDate 남/여 순차(.then)로 공용키 레 (CLI ad-hoc · 커밋 a667ef17)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "a667ef17e91382daeabfd05fbdc5cc516b071b56",
+    "ship_no": 186
   }
 ]
