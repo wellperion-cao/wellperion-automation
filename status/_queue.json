@@ -583,6 +583,21 @@
     "enqueued_at": "2026-06-27",
     "note": "GM 지시(2026-06-27) '웰리는 home에 점검 현황 챙겨'. home 점검 위젯(#home-check-kpi: 시설부·지원부 남/여) 표면을 웰리가 소유·검증. 현재 지원부 주말 회차가 '오후조'로 잘못 표시(정답=오전조+마감조). 백엔드/시트 회차 정합은 시우 담당(GM 직접 지시) — 인계 brief=status/briefs/COO-2026-06-27-SUPPORT-WEEKEND-ROUNDS-HANDOFF.md. home fetch 캐시끄기(no-store)는 이미 적용(커밋 af7b6646). 라이브 점검 GAS 즉흥수정 금지·로컬검증 후 1회배포 교훈.",
     "next": "시우 지원_매뉴얼 회차 정합 완료 후 → home 시크릿 라이브 검증(주말 남/여 오전조+마감조 2칸 표시·오후조 사라짐) → 정상이면 GM 보고. depends_on=시우 시트정합.",
-    "depends_on": "시우 지원부 회차 시트 정합"
+    "depends_on": "시우 지원부 회차 시트 정합",
+    "ship_no": 173
+  },
+  {
+    "task_id": "CEO-2026-06-27-ADHOC-f51abcc8",
+    "clevel": "ceo",
+    "title": "[웰리] chore[웰리]: home 점검현황 웰리 소유 등록 + 지원부 주말회차 시우 인계 brief",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-06-27",
+    "processed_at": "2026-06-27",
+    "artifact": "GM 분담: 시우=시트·백엔드 회차정합 / 웰리=home 점검 표면 관리·검증.\n라이브 @122 원복 상태. 정답=주말 오전조+마감조(남/여). (CLI ad-hoc · 커밋 f51abcc8)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "f51abcc8ec7251cf410699234ea513dc76146132",
+    "ship_no": 174
   }
 ]
