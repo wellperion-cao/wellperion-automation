@@ -2125,7 +2125,21 @@ async function loadState(d,g){
     const r=await fetch(API_URL+'?date='+d+DEPT_Q+'&gender='+encodeURIComponent(gg),{redirect:'follow'});
     const j=await r.json();
     if(j&&j.inspMemos&&typeof j.inspMemos==='object'){window._inspMemo[gg]=j.inspMemos;}   // 회차 점검자 배정 메모 복원(공유)
-    STATE={};
+    /* [근본수정 2026-06-27 시우] 과거: STATE={} 가 공용 전역을 통째 비워 → 남/여 동시 loadState 시 한쪽이
+       반대 성별 체크(chk_<g>_)를 지워 → 조 탭 클릭·재렌더 시 0/N으로 보이던 버그(데이터는 서버에 멀쩡).
+       수정: 현재 성별(gg) 스코프 키 + 공용 transient 키만 비우고, 반대 성별(og)의 체크·메타·제출·타이머 키는 보존.
+       성별은 키 prefix 위치(chk_<g>_·iss_<g>_·submitted_<d>_<g>_…) — itemId에 b4_m 등 성별글자 섞여 substring 매칭은 위험 → prefix 매칭만. */
+    (function(){
+      var og=(gg==='m')?'f':'m';   // 보존할 반대 성별
+      Object.keys(STATE).forEach(function(k){
+        if( k.indexOf('chk_'+og+'_')===0 || k.indexOf('iss_'+og+'_')===0
+         || k.indexOf('tip_'+og+'_')===0 || k.indexOf('reflected_'+og+'_')===0
+         || k.indexOf('chkby_'+og+'_')===0 || k.indexOf('chkat_'+og+'_')===0 || k.indexOf('chkduty_'+og+'_')===0
+         || k.indexOf('submitted_'+d+'_'+og+'_')===0 || k.indexOf('submittedAt_'+d+'_'+og+'_')===0 || k.indexOf('submitter_'+d+'_'+og+'_')===0
+         || k.indexOf('timerStart_'+d+'_'+og+'_')===0 || k.indexOf('timerEnd_'+d+'_'+og+'_')===0 ) return;   // 반대 성별 보존
+        delete STATE[k];   // 현재 성별 키 + 공용 키(_submitted_*·tip_<id>·_gsub_* 등)는 비움 → 아래서 현재 성별로 재구성
+      });
+    })();
     (j.rows||[]).forEach(row=>{
       // 2026-06-12 시우: 서버 응답이 성별 구분돼 오면(row.gender) 현재 성별(gg)만 STATE 반영 —
       // 성별화 체크는 chkKey에 기록해 화면 격리 유지. gender 미동반(레거시·서버 미격리)이면 기존 동작.
@@ -2510,8 +2524,8 @@ function syncAllFromWorkDate(){
   const mEl=document.getElementById('checkDateM'); if(mEl) mEl.value=WORK_DATE;
   const fEl=document.getElementById('checkDateF'); if(fEl) fEl.value=WORK_DATE;
   renderWorkdateBar();
-  // 점검 두 구역(남/여): 같은 날짜로 항상 함께 갱신
-  if(typeof renderG==='function'){ renderG('m'); renderG('f'); }
+  // 점검 두 구역(남/여): 같은 날짜로 항상 함께 갱신 — [2026-06-27 시우] 순차(.then)로 공용 키(_submitted_* 등) 동시쓰기 레이스 축소(체크 카운트는 loadState per-성별 clear로 이미 격리).
+  if(typeof renderG==='function'){ renderG('m').then(function(){ return renderG('f'); }); }
   // 업무보드: 다중선택(SELECTED_DAYS) 독립 — 날짜 네비와 분리(절충 복구 GM 2026-06-22). 여기서 재렌더 안 함.
 }
 /* 공통 요일바: 날짜 설정 → 전구역 동기 */
