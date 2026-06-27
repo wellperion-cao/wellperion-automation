@@ -1,8 +1,8 @@
 {
   "_doc": "ERP 시스템 현황 단일 출처. erp_status_publisher.py 가 발행. ERP가 읽어 표시.",
-  "generated_at": "2026-06-27T02:26:32Z",
-  "generated_at_kst": "2026-06-27 11:26",
-  "summary": "✅ 전체 정상",
+  "generated_at": "2026-06-27T02:56:32Z",
+  "generated_at_kst": "2026-06-27 11:56",
+  "summary": "⚠️ 점검 필요: 큐 미러 동기",
   "systems": [
     {
       "name": "일일 스케줄러",
@@ -13,7 +13,7 @@
     {
       "name": "텔레그램 봇",
       "state": "정상",
-      "detail": "113분 전 활동",
+      "detail": "143분 전 활동",
       "note": "보고·승인 중계"
     },
     {
@@ -35,8 +35,8 @@
     },
     {
       "name": "큐 미러 동기",
-      "state": "정상",
-      "detail": "일치 · active 21건/79820B"
+      "state": "이상",
+      "detail": "미러 드리프트 — 로컬 active 21건/34208B ≠ 미러 21건/79820B"
     },
     {
       "name": "시트 GAS(todo_list)",
