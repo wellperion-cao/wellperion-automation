@@ -1288,9 +1288,18 @@ function slotToShiftFront(slot){
 
 /* 2b-1(2026-06-11 시우): 시트 회차 문자열("am1,pm1") ↔ 프론트 rounds 배열 변환.
    유효 라운드 키(ROUND_KEYS)만 통과 — 오타·공백·빈값은 폐기 → 빈 배열이면 itemRounds가 폴백. */
+/* 회차 라벨/키 정규화(2026-06-27): 시트 회차칸이 한글(오전조/오후조/마감조)이든 키(am1/pm1/close1)든 동일 키로. */
+function _roundLabelToKey(x){
+  var v=String(x==null?'':x).trim();
+  if(!v) return '';
+  if(v.indexOf('오전')>=0) return 'am1';
+  if(v.indexOf('오후')>=0) return 'pm1';
+  if(v.indexOf('마감')>=0||v.indexOf('저녁')>=0) return 'close1';
+  return v;   // 이미 am1/pm1/close1 등 키면 그대로(아래 ROUND_KEYS 필터가 검증)
+}
 function parseRoundsStr(s){
   if(!s) return [];
-  return String(s).split(',').map(function(x){return x.trim();})
+  return String(s).split(',').map(function(x){return _roundLabelToKey(x.trim());})
     .filter(function(x){return x && ROUND_KEYS.indexOf(x)>=0;});
 }
 function roundsToStr(arr){
@@ -3499,7 +3508,7 @@ function renderManualItems(){
   const _emBtn=`<button onclick="toggleManualEdit()" style="${_btn}${EM?'color:#fff;background:var(--accent);border-color:var(--accent);':'color:var(--accent);background:var(--bg);border-color:var(--accent);'}">${EM?'✓ 편집 모드 (끄기)':'✎ 편집 모드'}</button>`;
   const _addGroupBtn=EM?`<button onclick="addManualGroup()" style="${_btn}color:var(--accent);background:var(--bg);border-color:var(--accent);">＋ 구역 추가</button>`:'';
   /* Part1: 시드 명단 → 시트 단방향 push(syncSeedItems). 멱등이라 여러 번 눌러도 안전. 편집 모드에서만 노출(운영 실수 방지). */
-  const _seedBtn=EM?`<button onclick="if(confirm('시드 45항목 명단을 시트로 동기화합니다(멱등·안전). 진행할까요?'))pushSeedItemsToSheet()" style="${_btn}color:#5b9fd5;background:rgba(91,159,213,0.12);border-color:rgba(91,159,213,0.35);">⟳ 시드 동기화</button>`:'';
+  const _seedBtn='';   // 2026-06-27 시드 동기화 버튼 폐지(시트=항목 마스터 단일출처)
   /* 2026-06-27 GM: '🔄 시트 기준으로 초기화' 버튼 제거(위험 판단). resetManualLocalView 함수도 폐지. */
   html+=`<div style="background:var(--accent-bg);border:1px solid var(--accent);border-radius:10px;padding:10px 14px;margin-bottom:12px;font-size:12px;color:var(--text);line-height:1.6;">
     <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;"><span><b style="color:var(--accent);">매뉴얼 = 항목 단일출처</b> · 편집 모드를 켜면 구역(A·B…) <b>추가·이름변경·삭제·순서(▲▼)</b>와 항목 추가·편집·삭제가 나타납니다.</span><span style="display:inline-flex;gap:6px;">${_seedBtn}${_addGroupBtn}${_emBtn}</span></div>
@@ -5460,7 +5469,7 @@ loadSupplyData(); renderSupplyTable(); // 비품: 로컬 즉시 렌더(서버 �
 renderG('m');
 /* 로드 시 시드 자동 동기(무트리거) — setTimeout(0)로 스크립트 평가 완료 후 실행(const TDZ 회피)·비차단.
    시그니처 가드로 회차/명단 바뀐 경우에만 시트 write, 10초 디바운스로 멀티탭 연타 방지. GM 2026-06-23 [시우]. */
-try{ setTimeout(function(){ if(typeof autoSyncSeedsIfChanged==='function') autoSyncSeedsIfChanged(); }, 0); }catch(e){}
+/* 2026-06-27: 시드 자동동기 폐지 — 시트=항목 마스터 단일출처(하드코딩 배열 되쓰기 차단, GM 삭제분 부활 방지). */
 
 /* ═══════════════════════════════════════════════
    항목 관리 (CRUD) — localStorage 기반
@@ -5743,6 +5752,7 @@ const SEED_SYNC_DEBOUNCE_MS=10000;   // 멀티탭/연타 가드
 
 /* 로드 시 자동 시드 동기 — 시그니처가 바뀐 경우에만 push(쓰기 0 최적화). 비차단·실패 시 콘솔 경고만. */
 function autoSyncSeedsIfChanged(){
+  return;   // 2026-06-27 폐지(시트 단일출처). 아래 레거시 미실행.
   try{
     if(!ONLINE) return;
     let seeds;
@@ -6046,13 +6056,61 @@ function _relocateDayItems(sched, ds){
   out.push({slot:'📅 '+dayKor+'요일 점검', shift:'pm', _dayfocus:true, groups:[{title:'📅 '+dayKor+'요일 점검', items:collected}]});
   return out;
 }
+/* ── 2026-06-27: 시트=항목 마스터 단일출처 렌더 ──
+   온라인 + 시트 항목 존재 시 getSched의 base를 하드코딩 WEEKDAY/WEEKEND 대신 CUSTOM_ITEMS(시트)에서 빌드.
+   오프라인/빈 시트는 하드코딩 폴백(기존 동작 보존). 야간(getNightSched)은 폴백 유지(탕청소 외주 별도). */
+function sheetSourceActive(){
+  return !!(ONLINE && Array.isArray(CUSTOM_ITEMS) && CUSTOM_ITEMS.length > 0);
+}
+/* 항목이 '주간 점검(조)'로 분류 가능한지 — 명시 회차(rounds)·ROUND_MAP·요일일정(sched) 중 하나라도 있어야 주간 포함.
+   셋 다 없으면 제외(야간·외주 F/G 또는 회차 미설정 → 화면 미표시). roundOfSlot 폴백 금지(오배치 차단). */
+function _itemIsDayScheduled(it){
+  if(!it || !it.id) return false;
+  if(Array.isArray(it.rounds) && it.rounds.length) return true;
+  if(typeof ROUND_MAP!=='undefined' && ROUND_MAP[it.id]) return true;
+  try{ var p=parseSched(it.sched||''); if(p.days && p.days.length) return true; }catch(e){}
+  return false;
+}
+/* CUSTOM_ITEMS(시트) → drawUI 소비 구조([{slot,shift,groups:[{title,items:[{id,name,detail,gender,rounds,sched,cat,_custom}]}]}]).
+   그룹=카테고리(cat), 정렬=order 순. 단일 합성 슬롯(shift:'all'→drawUI가 pm로 처리).
+   라운드/요일 필터·성별 필터·구역 순서는 drawUI/applyBaseOverrides/_relocateDayItems가 수행. */
+function buildSchedFromItems(items){
+  if(!Array.isArray(items)) return [];
+  var srt = items.slice().sort(function(a,b){ return (Number(a&&a.order)||9999)-(Number(b&&b.order)||9999); });
+  var gmap={}, order=[];
+  srt.forEach(function(it){
+    if(!_itemIsDayScheduled(it)) return;
+    var cat = it.category || it.cat || '추가 점검';
+    if(!gmap[cat]){ gmap[cat]={title:cat, items:[]}; order.push(cat); }
+    gmap[cat].items.push({
+      id: it.id,
+      name: it.name||'',
+      detail: it.detail||'',
+      gender: it.gender||'all',
+      rounds: Array.isArray(it.rounds)?it.rounds.slice():[],
+      sched: it.sched||'',
+      cat: cat,
+      _custom: (typeof isAddedItem==='function' && isAddedItem(it.id))
+    });
+  });
+  if(!order.length) return [];
+  return [{ slot:'점검 항목', shift:'all', groups: order.map(function(c){ return gmap[c]; }) }];
+}
 getSched = function(ds){
-  const base = _origGetSched(ds);
-  if(!base) return null;
   const info = getDayInfo(ds);
+  if(info && info.type==='closed') return null;   // 휴관일
   const schedType = info.type; // 'weekday' or 'weekend'
-  const customItems = mgmtGetCustomItemsForSchedule(schedType).filter(i => i.shift !== 'night');
-  const customSlots = mgmtBuildCustomSlots(customItems);
+  let base=null, customSlots=[];
+  if(sheetSourceActive()){
+    const sb = buildSchedFromItems(CUSTOM_ITEMS);
+    if(sb && sb.length){ base=sb; customSlots=[]; }   // 시트=base → 추가 병합 없음(중복 차단)
+  }
+  if(!base){                                          // 오프라인/빈 시트 → 하드코딩 폴백(기존 동작)
+    base = _origGetSched(ds);
+    if(!base) return null;
+    const customItems = mgmtGetCustomItemsForSchedule(schedType).filter(i => i.shift !== 'night');
+    customSlots = mgmtBuildCustomSlots(customItems);
+  }
   return _relocateDayItems(applyBaseOverrides(mgmtMergeSchedule(base, customSlots), ds), ds);
 };
 
