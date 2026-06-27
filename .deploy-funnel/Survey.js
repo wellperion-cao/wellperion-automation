@@ -1908,7 +1908,7 @@ function _processAction(body) {
         if (mcMonth && dateStr.slice(0,7) !== mcMonth) return;
         // rowIndex·memo·owner 동봉 — 달력 일정 클릭 → 상담 모달에서 방문완료·메모 수정용(2026-06-26 CRM)
         // tmin = 시간대별 정렬키(분 단위 정수·미정=null). time 표시 텍스트는 그대로 유지(2026-06-26).
-        mcEvents.push({ date: dateStr, kind: kind, time: timeStr || '', tmin: _miTminKR_(timeStr), name: row.name || '', phone: row.phone || '', program: row.program, status: row.status, rowIndex: row.rowIndex, memo: row.memo || '', owner: row.owner || '' });
+        mcEvents.push({ date: dateStr, kind: kind, time: timeStr || '', tmin: _miTminKR_(timeStr), name: row.name || '', phone: row.phone || '', program: row.program, status: row.status, rowIndex: row.rowIndex, memo: row.memo || '', owner: row.owner || '', contact1: row.contact1 || '', contact2: row.contact2 || '', contact3: row.contact3 || '' });
       }
       // 1차 상담: 날짜=상담칸(col9), 시간=확정시간 텍스트(col10·'11시 등록상담' 등 한글표기). 시간 누락 보강.
       add(row.tourDate, '상담', row.tourTime || _miTimeKR_(row.exp1));
