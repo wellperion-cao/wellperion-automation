@@ -510,6 +510,29 @@ function doGet(e) {
   if (action === 'hide_issue_col') { return hideIssueColumn(e.parameter.dept || 'support'); }   // G열(이슈·인덱스6) 데이터행 비우기 + 컬럼 숨김(물리삭제 X·인덱스 보존). 1회성. 2026-06-20 시우.
   if (action === 'show_issue_col') { return showIssueColumn(e.parameter.dept || 'support'); }   // G열 숨김 해제 — hide_issue_col 실행 후 이슈 저장 재활성화 시 1회 실행. 2026-06-25 시우.
   if (action === 'clear_old_duration') { return clearOldDuration(e.parameter.dept || 'support'); }   // O열(소요시간·인덱스14) 옛 시각값(1899-12-30 시리얼) 비우기. 컬럼 숨김 X — 소요시간은 화면 표시 유지. 1회성. 2026-06-20 시우.
+  if (action === 'revert_phantom_rows') {   // 조간 누수 유령 행만 '미제출'로 정밀 되돌림 — 9열 제출상태→미제출·10열 제출시각→''·15열 소요시간→''. 점검결과·근무자·점검자·이슈 전부 보존. 백업 후 1회성. 2026-06-27 시우.
+    // GET ?action=revert_phantom_rows&dept=support&date=2026-06-26&zone=female&round=마감조&ids=c2,c5,c6,d1,d2
+    var _rpz = _deptTabs(e.parameter.dept || 'support')[e.parameter.zone || 'female'];
+    var _rpsh = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(_rpz);
+    if (!_rpsh) return jsonRes({ error: 'no sheet: ' + _rpz });
+    var _rpdate = e.parameter.date || '', _rpround = e.parameter.round || '';
+    var _rpids = String(e.parameter.ids || '').split(',').map(function (s) { return s.trim(); }).filter(Boolean);
+    if (!_rpdate || !_rpids.length) return jsonRes({ error: 'date·ids 필수' });
+    var _rpset = {}; _rpids.forEach(function (x) { _rpset[x] = 1; });
+    var _rpd = _rpsh.getDataRange().getValues(), _rpn = 0, _rphit = [];
+    for (var _rpi = 1; _rpi < _rpd.length; _rpi++) {
+      var _row = _rpd[_rpi];
+      var _dok = String(_row[0]) === _rpdate || formatDate(_row[0]) === _rpdate;
+      var _rok = !_rpround || String(_row[4]) === _rpround;   // 회차열(idx4) 라벨 매칭(예: '마감조')
+      if (_dok && _rok && _rpset[String(_row[1])]) {
+        _rpsh.getRange(_rpi + 1, 9).setValue('미제출');   // 9열 제출상태(idx8)
+        _rpsh.getRange(_rpi + 1, 10).setValue('');         // 10열 제출시각(idx9)
+        _rpsh.getRange(_rpi + 1, 15).setValue('');         // 15열 소요시간(idx14)
+        _rpn++; _rphit.push(String(_row[1]) + '/' + String(_row[4]));
+      }
+    }
+    return jsonRes({ ok: true, sheet: _rpz, date: _rpdate, round: _rpround, reverted: _rpn, hit: _rphit });
+  }
 
   var date = e.parameter.date;
   if (!date) return jsonRes({ error: 'date required' });
