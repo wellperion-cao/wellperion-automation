@@ -1,11 +1,14 @@
-"""2026 여름 방학특강 Ep1 — 공간(시설)편 슬라이드 빌드 (미니멀 재제작)
+"""2026 여름 방학특강 Ep1 — 공간(시설)편 슬라이드 빌드 (공식 매거진 룩)
 
-GM 피드백 반영 (2026-06-29):
-  1. 슬라이드 번호(카운터) 완전 제거
-  2. 글씨 축소·여백 강조 (제목 64→40, 부제 30→24, 메타라인 제거)
-  3. 시설 사진 5장만 사용 (강습 사진 제외)
-  4. 표지 = 한글 시작 문구 주연
-  5. 총 7장 구성
+정본 구조 = compose_barre.compose_cover / compose_story 그대로.
+단, compose_story 카운터(draw_counter)만 제거 — 래퍼 함수로 처리.
+
+GM 지시 반영 (2026-06-29 재작업):
+  1. 표지 = 수영장 메인.jpg (post_1 교체)
+  2. 마무리 = 단색 정보띠 사진 없음 (post_7, 골프룸 중복 금지)
+  3. 제목 = 설명형 문구 (한 단어 제목 금지)
+  4. 슬라이드 번호(카운터) 제거
+  5. 메타라인·제목·부제·풋터·칩·로고 공식 복원
 """
 from __future__ import annotations
 
@@ -22,16 +25,16 @@ SCRIPTS = Path(r"C:\Users\jjky0\welperion-automation\scripts")
 sys.path.insert(0, str(SCRIPTS))
 
 from compose_barre import (
+    compose_cover,
     center_crop_fill,
     apply_bottom_gradient,
     paste_logo,
     draw_chip,
     load_font,
-    to_duotone,
     W,
     H,
 )
-from brand_constants import BEIGE, BLACK_BG, WHITE, GRAY, SEP_LINE
+from brand_constants import BEIGE, BLACK_BG, WHITE, GRAY, SEP_LINE, CHIP_BEIGE
 
 ROOT    = Path(r"C:\Users\jjky0\welperion-automation")
 SRC     = ROOT / "instagram" / "Image" / "방학특강(원본 이미지)"
@@ -43,13 +46,14 @@ QUEUE_F = REVIEW / "review_queue.json"
 TOTAL       = 7
 CHIP_LABEL  = "WELLPERION"
 FOOTER_TEXT = "WELLPERION  ·  스포츠클럽"
+META_LINE   = "여름 방학특강  ·  한남동 웰페리온"
 
 CAPTION = """웰페리온 여름방학 특강이 시작되었습니다.
 
 6월 29일 ~ 8월 14일
 2019년 이전 출생 유소년 대상
 
-먼저, 아이들이 머무를 공간을 소개합니다.
+먼저, 아이들이 머는 공간을 소개합니다.
 실내 수영장, 체조룸, 트램폴린장, 스쿼시 코트, 실내 골프 연습실.
 사계절 날씨 걱정 없이, 한 곳에서.
 
@@ -60,54 +64,8 @@ CAPTION = """웰페리온 여름방학 특강이 시작되었습니다.
 
 #한남동수영 #한남동골프 #유소년스포츠 #주니어스포츠 #여름방학특강 #키즈스포츠 #수영 #체조 #스쿼시 #골프 #스포츠클럽 #웰페리온 #WELLPERION"""
 
-# 슬라이드 스펙 — 시설 사진 5장만, 강습 사진 제외
-SLIDES_SPEC = [
-    {
-        "type":     "cover",
-        "photo":    "3. 수영장.jpg",
-        "main_kor": "웰페리온 여름방학 특강이\n시작되었습니다",
-        "label_eng": "2026 SUMMER CAMP",
-        "date_line": "6.29 ~ 8.14  ·  유소년",
-    },
-    {
-        "type":  "story",
-        "photo": "3. 수영장.jpg",
-        "title": "실내 수영장",
-        "sub":   "물과 친해지는 넓은 레인",
-    },
-    {
-        "type":  "story",
-        "photo": "체조룸(스프링매트 ).png",
-        "title": "체조룸",
-        "sub":   "스프링 매트 위 안전한 움직임",
-    },
-    {
-        "type":  "story",
-        "photo": "트램폴린장.png",
-        "title": "트램폴린장",
-        "sub":   "뛰며 키우는 균형과 순발력",
-    },
-    {
-        "type":  "story",
-        "photo": "스쿼시장.png",
-        "title": "스쿼시 코트",
-        "sub":   "정식 규격 전용 코트",
-    },
-    {
-        "type":  "story",
-        "photo": "골프룸.jpg",
-        "title": "실내 골프 연습실",
-        "sub":   "사계절 날씨 걱정 없이",
-    },
-    {
-        "type":  "closing",
-        "photo": "골프룸.jpg",
-        "title": "네 가지 공간이, 한 곳에",
-        "sub":   "수영 · 체조 · 스쿼시 · 골프 · 1:6 소수정예",
-    },
-]
-
 REQUIRED_PHOTOS = [
+    "수영장 메인.jpg",
     "3. 수영장.jpg",
     "체조룸(스프링매트 ).png",
     "트램폴린장.png",
@@ -121,135 +79,146 @@ def verify_sources() -> None:
     if missing:
         print(f"[ERROR] 원본 누락: {missing}")
         raise SystemExit(1)
-    print(f"  시설 사진 {len(REQUIRED_PHOTOS)}장 확인 완료 (강습 사진 제외)")
+    print(f"  원본 사진 {len(REQUIRED_PHOTOS)}장 확인 완료")
 
 
-def _draw_chip_small(draw: ImageDraw.ImageDraw) -> None:
-    """우상단 칩 (카운터 없음)."""
-    chip_font = load_font("bold", 26)
-    chip_w, chip_h = 220, 48
+def _draw_chip_official(draw: ImageDraw.ImageDraw) -> None:
+    """웰상단 칩 (공식 규격: 240x52, bold 28px)."""
+    chip_font = load_font("bold", 28)
+    chip_w, chip_h = 240, 52
     chip_x = W - 40 - chip_w
     chip_y = 38
     draw_chip(draw, CHIP_LABEL, chip_font, chip_x, chip_y, chip_w, chip_h)
 
 
-def compose_minimal_cover(
-    photo_path: Path,
-    main_kor: str,
-    label_eng: str,
-    date_line: str,
-    output_path: Path,
-) -> None:
-    """미니멀 표지 — 한글 시작 문구 주연, 영문 소형 라벨, 카운터 없음."""
-    canvas = Image.new("RGB", (W, H), BLACK_BG)
-
-    # 상단 65% 사진 (듀오톤)
-    photo = center_crop_fill(photo_path, W, 700)
-    photo = to_duotone(photo, normalize=True)
-    canvas.paste(photo, (0, 0))
-
-    # 분리선
-    draw_base = ImageDraw.Draw(canvas)
-    draw_base.rectangle([(50, 701), (1030, 702)], fill=SEP_LINE)
-
-    # 로고 좌상단
-    canvas = paste_logo(canvas, logo_w=130)
-
-    draw = ImageDraw.Draw(canvas)
-    _draw_chip_small(draw)
-
-    # 영문 소형 라벨 (베이지, 22px, 중앙)
-    draw.text((W // 2, 742), label_eng,
-              font=load_font("medium", 22), fill=BEIGE, anchor="mm")
-
-    # 라벨·본문 분리선 (베이지, 25px 너비)
-    draw.rectangle([(W // 2 - 20, 758), (W // 2 + 20, 760)], fill=BEIGE)
-
-    # 한글 메인 문구 (흰색 bold, 44px, 중앙, 줄바꿈 지원)
-    title_font = load_font("bold", 44)
-    lines = main_kor.split("\n")
-    y_start = 818
-    line_gap = 62
-    for i, line in enumerate(lines):
-        draw.text((W // 2, y_start + i * line_gap), line,
-                  font=title_font, fill=WHITE, anchor="mm")
-
-    # 하단 날짜 (회색, 20px, 중앙)
-    draw.text((W // 2, 960), date_line,
-              font=load_font("medium", 20), fill=GRAY, anchor="mm")
-
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-    canvas.convert("RGB").save(output_path, "JPEG", quality=93, optimize=True)
-    print(f"  [표지] {output_path.name} ({output_path.stat().st_size // 1024}KB)")
-
-
-def compose_minimal_story(
+def compose_story_no_counter(
     photo_path: Path,
     title_kor: str,
     sub_text: str,
     output_path: Path,
 ) -> None:
-    """미니멀 스토리/닫음 — 카운터·메타라인 없음, 제목 40px, 부제 24px, 여백 충분."""
+    """공식 compose_story 구조 유지, 카운터(draw_counter)만 제거.
+    메타라인 · 제목 · 부제 · 풋터 · 칩 · 로고는 정본 좌표 그대로 유지."""
     canvas = center_crop_fill(photo_path, W, H)
-    canvas = ImageEnhance.Brightness(canvas).enhance(0.88)
-    canvas = apply_bottom_gradient(canvas, gradient_start_y=545)
-
+    canvas = ImageEnhance.Brightness(canvas).enhance(0.90)
+    canvas = apply_bottom_gradient(canvas, gradient_start_y=555)
     canvas = paste_logo(canvas, logo_w=130)
+
     draw = ImageDraw.Draw(canvas)
-    _draw_chip_small(draw)
+    _draw_chip_official(draw)
+    # draw_counter 호출 제거 (커운터 없음)
 
-    # 제목 (흰색 bold 40px)
-    draw.text((40, 846), title_kor,
-              font=load_font("bold", 40), fill=WHITE)
+    # 메타라인 (y=795, GRAY, medium 26px)
+    draw.text((40, 795), META_LINE, font=load_font("medium", 26), fill=GRAY)
 
-    # 부제 (베이지 semibold 24px)
-    draw.text((40, 908), sub_text,
-              font=load_font("semibold", 24), fill=BEIGE)
+    # 제목 (y=860, WHITE, bold 64px)
+    draw.text((40, 860), title_kor, font=load_font("bold", 64), fill=WHITE)
 
-    # 풋터 (베이지 medium 22px)
-    draw.text((40, 1036), FOOTER_TEXT,
-              font=load_font("medium", 22), fill=BEIGE)
+    # 부제 (y=958, BEIGE, semibold 30px)
+    draw.text((40, 958), sub_text, font=load_font("semibold", 30), fill=BEIGE)
+
+    # 풋터 (y=1026, BEIGE, medium 26px)
+    draw.text((40, 1026), FOOTER_TEXT, font=load_font("medium", 26), fill=BEIGE)
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
     canvas.convert("RGB").save(output_path, "JPEG", quality=93, optimize=True)
     print(f"  [슬라이드] {output_path.name} ({output_path.stat().st_size // 1024}KB)")
 
 
+def compose_closing_card(output_path: Path) -> None:
+    """마무리 단색 정보띄 (사진 없음, compose_cover 스타일 중앙정렬).
+    골프룸 중복 방지 우한 순수 검정 배경."""
+    canvas = Image.new("RGB", (W, H), BLACK_BG)
+
+    # 분리선 (표지와 동일: y=701~702)
+    draw_base = ImageDraw.Draw(canvas)
+    draw_base.rectangle([(50, 701), (1030, 702)], fill=SEP_LINE)
+
+    canvas = paste_logo(canvas, logo_w=130)
+    draw = ImageDraw.Draw(canvas)
+    _draw_chip_official(draw)
+
+    # 메인 제목 (흔색 bold 64px, 중앙 y=780)
+    draw.text(
+        (W // 2, 780),
+        "네 가지 공간이, 한 곳에",
+        font=load_font("bold", 64),
+        fill=WHITE,
+        anchor="mm",
+    )
+
+    # 부제 (베이지 semibold 36px, 중앙 y=878)
+    draw.text(
+        (W // 2, 878),
+        "수영  ·  체조  ·  스쿼시  ·  골프",
+        font=load_font("semibold", 36),
+        fill=BEIGE,
+        anchor="mm",
+    )
+
+    # 소형 정보 (회색 medium 24px, 중앙 y=952)
+    draw.text(
+        (W // 2, 952),
+        "1:6 소수정예  ·  횟수 자율조정  ·  주차 제공",
+        font=load_font("medium", 24),
+        fill=GRAY,
+        anchor="mm",
+    )
+
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    canvas.convert("RGB").save(output_path, "JPEG", quality=93, optimize=True)
+    print(f"  [마무리] {output_path.name} ({output_path.stat().st_size // 1024}KB)")
+
+
 def build_slides() -> list[Path]:
     OUT.mkdir(parents=True, exist_ok=True)
-    # 기존 슬라이드 정리
     for old in OUT.glob("post_*.jpg"):
         old.unlink()
 
     paths: list[Path] = []
-    for idx, spec in enumerate(SLIDES_SPEC, start=1):
-        out_path = OUT / f"post_{idx}.jpg"
-        stype = spec["type"]
 
-        if stype == "cover":
-            compose_minimal_cover(
-                photo_path=SRC / spec["photo"],
-                main_kor=spec["main_kor"],
-                label_eng=spec["label_eng"],
-                date_line=spec["date_line"],
-                output_path=out_path,
-            )
-        else:  # story or closing
-            compose_minimal_story(
-                photo_path=SRC / spec["photo"],
-                title_kor=spec["title"],
-                sub_text=spec["sub"],
-                output_path=out_path,
-            )
-        paths.append(out_path)
+    # post_1 — 표지 (compose_cover 정본)
+    p1 = OUT / "post_1.jpg"
+    compose_cover(
+        photo_path=SRC / "수영장 메인.jpg",
+        title_eng="SUMMER CAMP",
+        title_kor="웰페리온 여름방학 특강이 시작되었습니다",
+        date_location="6.29 ~ 8.14  ·  2019년 이전 출생 유소년",
+        output_path=p1,
+    )
+    paths.append(p1)
+
+    # post_2~6 — 시설 스토리 (카운터 없는 래퍼)
+    stories = [
+        ("3. 수영장.jpg",         "물과 친해지는 실내 수영장", "넓은 레인에서 차근차근"),
+        ("체조룸(스프링매트 ).png", "안전하게 구르는 체조룸",   "스프링 매트 전용 공간"),
+        ("트램폴린장.png",          "뛰며 배우는 트램폴린장",   "균형과 순발력을 한 번에"),
+        ("스쿼시장.png",           "집중을 배우는 스쿼시 코트", "정식 규격 전용 코트"),
+        ("골프룸.jpg",             "사계절 즐기는 실내 골프",   "날씨 걱정 없는 골프 연습실"),
+    ]
+    for i, (photo, title, sub) in enumerate(stories, start=2):
+        p = OUT / f"post_{i}.jpg"
+        compose_story_no_counter(
+            photo_path=SRC / photo,
+            title_kor=title,
+            sub_text=sub,
+            output_path=p,
+        )
+        paths.append(p)
+
+    # post_7 — 마무리 단색 정보띄 (사진 없음)
+    p7 = OUT / "post_7.jpg"
+    compose_closing_card(output_path=p7)
+    paths.append(p7)
+
     return paths
 
 
 def build_montage(slide_paths: list[Path]) -> Path:
-    """4×2 그리드 몽타주 (7장, 8번째 슬롯 블랙)."""
+    """4x2 그리드 몹타주 (7장, 8번째 슬롯 바낙)."""
     COLS = 4
-    TW   = W // COLS   # 270
-    TH   = W // COLS   # 270
+    TW   = W // COLS
+    TH   = W // COLS
     ROWS = 2
     mont = Image.new("RGB", (TW * COLS, TH * ROWS), (20, 20, 20))
     for i, p in enumerate(slide_paths):
@@ -259,19 +228,18 @@ def build_montage(slide_paths: list[Path]) -> Path:
         row, col = divmod(i, COLS)
         mont.paste(thumb, (col * TW, row * TH))
 
-    # 구 몽타주 파일 정리
     for old in OUT.glob("_검수_미리보기_*.png"):
         old.unlink()
 
     out = OUT / "_검수_미리보기_7장.png"
     mont.save(out, "PNG", optimize=True)
-    print(f"  [몽타주] {out.name} ({out.stat().st_size // 1024}KB)")
+    print(f"  [몹타주] {out.name} ({out.stat().st_size // 1024}KB)")
     return out
 
 
 def update_review_queue(montage: Path) -> str:
     """review_queue.json의 CMO-2026-06-29-SUMMER-CAMP-EP1 항목 업데이트.
-    title·slides·caption·preview 갱신, status=검수대기 유지. 새 항목 추가 금지."""
+    slides · preview 갱신, status=검수대기 유지. 새 항목 추가 금지."""
     ts = datetime.now().strftime("%Y%m%d%H%M%S")
     prev_name = f"260629_여름방학특강_ep1_preview_{ts}.png"
     prev_dest = REVIEW / prev_name
@@ -302,12 +270,12 @@ def update_review_queue(montage: Path) -> str:
         json.dumps(data, ensure_ascii=False, indent=2),
         encoding="utf-8",
     )
-    print(f"  [queue] 업데이트 완료 — title=Ep1 공간(시설)편, slides={len(slides_list)}, preview={prev_rel}")
+    print(f"  [queue] 업데이트 완료 — slides={len(slides_list)}, preview={prev_rel}")
     return prev_rel
 
 
 def send_review_card() -> None:
-    """이전 카드 삭제 후 수정본 검수 카드 재발송 (send_review_card.py 자동 처리)."""
+    """이전 카드 삭제 후 수정본 검수 카드 재발송."""
     result = subprocess.run(
         [
             sys.executable,
@@ -325,9 +293,9 @@ def send_review_card() -> None:
 
 
 def main() -> None:
-    print("=== Ep1 공간(시설)편 미니멀 재제작 ===")
+    print("=== Ep1 공간(시설)편 공식 매거진 룩 재점합 ===")
     print(f"출력: {OUT}")
-    print("변경: 카운터 제거 / 폰트 축소(40/24) / 시설 5장 단일사진 / 7장 구성")
+    print("변경: compose_cover/story 정본 복원 · 카운터 제거 · 표지=수영장메인 · post_7=단색정보띄")
 
     verify_sources()
     slides = build_slides()
