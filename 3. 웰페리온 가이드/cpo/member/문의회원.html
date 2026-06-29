@@ -919,7 +919,7 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
     </a>
     <!-- 카드3: 등록 현황 (등록 회원 명단 — 내부 탭) -->
     <a class="dash-card" data-kind="reg" data-tab="registered" href="javascript:void(0)" onclick="switchTab('registered')">
-      <div class="dash-head"><span class="dash-dot reg"></span><span class="dash-title">등록 현황</span></div>
+      <div class="dash-head"><span class="dash-dot reg"></span><span class="dash-title">신규 등록 현황</span></div>
       <div class="dash-metrics">
         <div class="dash-line"><span class="dash-k">금일</span><span class="dash-v"><b class="lead" id="dRegToday">0</b> 명</span></div>
         <div class="dash-line"><span class="dash-k">월간</span><span class="dash-v"><b id="dRegMonth">0</b> 명</span></div>
@@ -930,7 +930,8 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
       <div class="dash-head"><span class="dash-dot mem"></span><span class="dash-title">멤버십 회원 관리</span></div>
       <div class="dash-metrics">
         <div class="dash-line"><span class="dash-k">유효</span><span class="dash-v"><b class="lead" id="dMemActive">0</b> 명</span></div>
-        <div class="dash-line"><span class="dash-k">이탈(월)</span><span class="dash-v"><b id="dMemLoss">0</b> 명</span></div>
+        <div class="dash-line"><span class="dash-k">법인</span><span class="dash-v"><b id="dMemCorp">0</b> 명</span></div>
+        <div class="dash-line"><span class="dash-k">종료</span><span class="dash-v"><b id="dMemEnded">0</b> 명</span></div>
       </div>
     </a>
   </div>
@@ -1416,7 +1417,7 @@ if (action === 'member_calendar') {
 
     <div class="card">
       <div class="card-title">
-        <span class="icon">📋</span>등록 회원 명단
+        <span class="icon">📋</span>신규 등록 회원 명단
         <span style="font-size:11px;font-weight:400;color:var(--dim);margin-left:4px">회원 DB 등록일 기준 · 기간 선택(상단 카드와 동일 소스)</span>
       </div>
 
@@ -2455,6 +2456,7 @@ function _regRender() {
    멤버십 회원관리 (활성 회원 — 읽기전용)
 ───────────────────────────────────────────── */
 var _activeRows    = [];
+var _cpoStats      = null;   // cpo_today_stats 결과 보관(교차 구성 요약카드용)
 var _activeHeaders = [];
 var _activeLoaded  = false;
 var _activeComposing = false;
@@ -2593,12 +2595,37 @@ function _activeRender(rows, isFiltered) {
 }
 
 /* ─── 멤버십 현황 요약 카드 ─── */
+// 교차 구성 블록(유효·법인·종료 + 비율 미니바 + 이번달 순증감) — cpo_today_stats 기준, scope 무관. 2026-06-29 시포
+function _composeHtml() {
+  var d = _cpoStats; if (!d) return '';
+  var v = d.memberActive || 0, c = d.memberCorp || 0, e = d.memberEnded || 0, total = v + c + e;
+  if (!total) return '';
+  var pv = Math.round(v / total * 100), pc = Math.round(c / total * 100), pe = Math.max(0, 100 - pv - pc);
+  var reg = d.monthReg || 0, loss = d.monthLoss || 0, net = reg - loss;
+  var netCol = net >= 0 ? 'var(--green)' : 'var(--red)', netSgn = net >= 0 ? '+' : '−';
+  var bar = '<div style="display:flex;height:8px;border-radius:5px;overflow:hidden;width:100%;max-width:340px;margin:7px 0">' +
+      '<div style="width:' + pv + '%;background:var(--teal)"></div>' +
+      '<div style="width:' + pc + '%;background:var(--accent)"></div>' +
+      '<div style="width:' + pe + '%;background:var(--dim-mid)"></div></div>';
+  return '<div>' +
+      '<div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:4px">' +
+        '<span style="font-size:11px;font-weight:800;color:var(--text);letter-spacing:0.04em">회원 구성</span>' +
+        '<span style="font-size:12px;color:var(--dim)">합계 <b style="color:var(--text)">' + total.toLocaleString() + '</b> 명</span>' +
+      '</div>' +
+      '<div style="font-size:13px;font-weight:700;color:var(--text)">유효 <b style="color:var(--teal)">' + v.toLocaleString() + '</b> · 법인 <b style="color:var(--accent)">' + c + '</b> · 종료 <b style="color:var(--dim-mid)">' + e.toLocaleString() + '</b></div>' +
+      bar +
+      '<div style="font-size:12px;color:var(--dim)">이번달 신규 <b style="color:var(--green)">+' + reg + '</b> · 이탈 <b style="color:var(--red)">−' + loss + '</b> → 순증감 <b style="color:' + netCol + '">' + netSgn + Math.abs(net) + '</b> 명</div>' +
+    '</div>';
+}
+
 function renderActiveSummary() {
   var el = document.getElementById('activeSummary');
   if (!el) return;
-  var rows = _activeRows;
-  if (!rows || rows.length === 0) { el.style.display = 'none'; return; }
+  var rows = _activeRows || [];
+  var _cross = _composeHtml();
+  if (rows.length === 0 && !_cross) { el.style.display = 'none'; return; }
   el.style.display = '';
+  if (rows.length === 0) { el.innerHTML = _cross; return; }   // 구성만(아직 scope 미로드)
 
   var title = _activeScope === 'ended' ? '종료회원 현황' : (_activeScope === 'corp' ? '법인회원 현황' : '유효회원 현황');
   var counts = {};
@@ -2621,6 +2648,7 @@ function renderActiveSummary() {
   }
 
   el.innerHTML =
+    _cross + (_cross ? '<div style="height:1px;background:var(--border);margin:11px 0"></div>' : '') +
     '<div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">' +
       '<div style="display:flex;flex-direction:column;align-items:center;min-width:64px">' +
         '<div style="font-size:10px;font-weight:700;color:var(--teal);letter-spacing:0.08em;margin-bottom:2px">' + esc(title) + '</div>' +
@@ -2751,7 +2779,8 @@ function loadCpoTodayStats() {
       // 카드2 멤버십 문의 / 카드3 등록 / 카드4 회원 현황
       _setTxt('dInqToday', d.todayInquiry); _setTxt('dInqMonth', d.monthInquiry);
       _setTxt('dRegToday', d.todayReg);     _setTxt('dRegMonth', d.monthReg);
-      _setTxt('dMemActive', d.memberActive); _setTxt('dMemLoss', d.monthLoss);
+      _setTxt('dMemActive', d.memberActive); _setTxt('dMemCorp', d.memberCorp); _setTxt('dMemEnded', d.memberEnded);
+      _cpoStats = d; renderActiveSummary();   // 교차 구성 요약카드 갱신(유효·법인·종료·순증감)
     })
     .catch(function(){});
 }

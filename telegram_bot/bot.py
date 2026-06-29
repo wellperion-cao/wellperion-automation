@@ -101,6 +101,9 @@ STATUS_DIR = REPO_ROOT / "status"
 QUOTES_FILE = STATUS_DIR / "quotes.json"
 QUEUE_FILE = STATUS_DIR / "_queue.json"
 CEO_LOG_FILE = STATUS_DIR / "_ceo_log.jsonl"
+# 북극성 추천기 2단계 (CTO 2026-06-29) — 카드 승인 회신 → _queue PENDING 배 등록
+NORTHSTAR_PENDING = STATUS_DIR / "northstar_pending.json"
+NORTHSTAR_LOG = STATUS_DIR / "northstar_log.jsonl"
 
 WORKDIR = Path.home() / "welperion-automation"  # Claude 실행 기준 디렉토리 (2026-05-23 fix: Desktop → 메인 repo)
 
@@ -646,6 +649,144 @@ async def route_approval(update: Update, text: str) -> bool:
     return True
 
 
+# ─── 북극성 추천 카드 승인 회신 (CTO 2026-06-29, 2단계) ──────────────────────
+# 06:30 northstar_recommender.py --send 가 보낸 카드에 GM이 [승인 1/2/3]/[보류] 회신.
+# 승인 → 해당 후보를 status/_queue.json PENDING 배로 등록(read-before-write, ship_no=max+1)
+#       + northstar_pending.json 후보 status=approved. 보류 → status=held(무파괴).
+# 토큰: 대괄호 형태만 인식 → 결재 키워드("승인"/"보류" startswith) 라우터와 충돌 없음.
+_NS_APPROVE_RE = re.compile(r"^\[\s*승인\s*([123])\s*\]$")
+_NS_HOLD_RE = re.compile(r"^\[\s*보류\s*\]$")
+
+
+def _ns_log(event: str, **fields) -> None:
+    """status/northstar_log.jsonl 1행 append (폐루프 v1 — 적중률·기여 추적)."""
+    import datetime as _dt
+    rec = {"event": event, **fields, "logged_at": _dt.datetime.now().isoformat()}
+    try:
+        with open(NORTHSTAR_LOG, "a", encoding="utf-8") as f:
+            f.write(json.dumps(rec, ensure_ascii=False) + "\n")
+    except Exception as e:
+        log.error(f"[북극성] 로그 append 실패: {e}")
+
+
+def _ns_register_queue_bar(cand: dict) -> int | None:
+    """승인된 후보를 _queue.json PENDING 배로 등록. read-before-write·ship_no=max+1.
+    성공 시 ship_no 반환, 실패 None."""
+    import datetime as _dt
+    items = _load_queue()
+    max_ship = max([int(x.get("ship_no") or 0) for x in items], default=0)
+    ship_no = max_ship + 1
+    role = (cand.get("role") or "ceo").lower()
+    today = _dt.date.today().isoformat()
+    title_raw = str(cand.get("title", "")).strip() or "(제목없음)"
+    note_parts = ["[웰리 북극성 추천 승인 2026-06-29]"]
+    if cand.get("path_map"):
+        note_parts.append(str(cand["path_map"]))
+    if cand.get("rationale"):
+        note_parts.append(f"근거: {cand['rationale']}")
+    bar = {
+        "task_id": f"{role.upper()}-{today}-NORTHSTAR-{ship_no}",
+        "clevel": role,
+        "title": f"[북극성추천] {title_raw}",
+        "status": "PENDING",
+        "priority": cand.get("difficulty", "⛴️여객선"),
+        "enqueued_at": today,
+        "ship_no": ship_no,
+        "note": " / ".join(note_parts),
+        "next": "",
+        "depends_on": "",
+    }
+    items.append(bar)
+    if not _save_queue(items):
+        return None
+    return ship_no
+
+
+async def route_northstar(update: Update, text: str) -> bool:
+    """북극성 추천 카드 회신 라우터. 매칭·처리 시 True(이후 흐름 skip), 미매칭 False.
+
+    충돌 회피: route_approval 보다 먼저 호출. 대괄호 토큰만 인식하므로 결재
+    키워드(startswith '승인'/'보류')와 겹치지 않는다. 진행 중 추천(northstar_pending.json
+    candidates)이 없으면 False 반환 — 일반 흐름으로 흘려보낸다(무파괴)."""
+    stripped = text.strip()
+    m_app = _NS_APPROVE_RE.match(stripped)
+    m_hold = _NS_HOLD_RE.match(stripped)
+    if not m_app and not m_hold:
+        return False
+    if not NORTHSTAR_PENDING.exists():
+        return False
+    try:
+        pending = json.loads(NORTHSTAR_PENDING.read_text(encoding="utf-8"))
+    except Exception as e:
+        log.error(f"[북극성] pending 로드 실패: {e}")
+        return False
+    cands = pending.get("candidates", [])
+    if not isinstance(cands, list) or not cands:
+        return False
+
+    import datetime as _dt
+
+    # 보류 — 전체 held (무파괴, _queue 등록 없음)
+    if m_hold:
+        pending["status"] = "held"
+        for c in cands:
+            if c.get("status") not in ("approved",):
+                c["status"] = "held"
+        pending["held_at"] = _dt.datetime.now().isoformat()
+        try:
+            NORTHSTAR_PENDING.write_text(
+                json.dumps(pending, ensure_ascii=False, indent=2), encoding="utf-8")
+        except Exception as e:
+            log.error(f"[북극성] pending 저장 실패(보류): {e}")
+        _ns_log("held", date=pending.get("date"), candidate_count=len(cands))
+        await update.message.reply_text(
+            "🧭 북극성 추천 — 오늘 후보를 보류(held) 처리했습니다. 다음 추천 때 새로 제안드립니다."
+        )
+        return True
+
+    # 승인 N
+    idx = int(m_app.group(1)) - 1
+    if idx < 0 or idx >= len(cands):
+        await update.message.reply_text(
+            f"🧭 후보 번호가 범위를 벗어났습니다(1~{len(cands)}). 다시 확인해 주세요."
+        )
+        return True
+    cand = cands[idx]
+    if cand.get("status") == "approved":
+        await update.message.reply_text(
+            f"🧭 후보 {idx+1} 은 이미 승인되어 배로 등록되어 있습니다."
+        )
+        return True
+
+    ship_no = _ns_register_queue_bar(cand)
+    if ship_no is None:
+        await update.message.reply_text(
+            "⚠️ 북극성 후보 승인 처리 중 _queue.json 쓰기에 실패했습니다. 로그 확인이 필요합니다."
+        )
+        return True
+    cand["status"] = "approved"
+    cand["approved_at"] = _dt.datetime.now().isoformat()
+    cand["ship_no"] = ship_no
+    pending["status"] = "approved"
+    try:
+        NORTHSTAR_PENDING.write_text(
+            json.dumps(pending, ensure_ascii=False, indent=2), encoding="utf-8")
+    except Exception as e:
+        log.error(f"[북극성] pending 저장 실패(승인): {e}")
+    _ns_log(
+        "approved",
+        date=pending.get("date"),
+        role=cand.get("role"),
+        title=str(cand.get("title", ""))[:80],
+        ship_no=ship_no,
+    )
+    await update.message.reply_text(
+        f"✅ 북극성 후보 {idx+1} 승인 — [{str(cand.get('role','')).upper()}] 배 #{ship_no} 로 "
+        f"_queue 등록 완료.\n• {str(cand.get('title',''))[:80]}"
+    )
+    return True
+
+
 # ── [DEPRECATED] 이전 분류 게이트 (v1.0 양방향 통신으로 대체, 2026-05-25) ────
 # 아래 함수들은 현재 호출되지 않음. 향후 Claude CLI 직접 호출 복원 시 재활성화.
 _HAIKU_MODEL = "claude-haiku-4-5-20251001"
@@ -913,6 +1054,12 @@ async def handle_message(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
 
     state = load_state()
     session_id = state.get("session_id")
+
+    # ── 북극성 추천 카드 회신 라우터 (결재보다 우선 — 대괄호 토큰 전용) ────────────
+    if await route_northstar(update, prompt):
+        _inbox_log("out", "CEO", f"[북극성 추천 회신] {prompt[:60]}", msg_type="northstar")
+        return
+    # ────────────────────────────────────────────────────────────────────────
 
     # ── 결재 회신 라우터 (양방향 분류보다 우선) ────────────────────────────────
     routed = await route_approval(update, prompt)
