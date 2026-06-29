@@ -213,7 +213,7 @@
              'oncompositionstart="window._compOn()" oncompositionend="window._compOff()" ' +
              'onblur="window._cellBlur(this)">' + esc(raw) + '</div>';
     }
-    var items = raw.split(/\s*[·\n]\s*/).map(function(s){ return s.trim(); }).filter(function(s){ return s.length; });
+    var items = raw.split(/\n+/).map(function(s){ return s.trim(); }).filter(function(s){ return s.length; });
     var lis = items.length
       ? items.map(function(s){ return '<li>' + esc(s) + '</li>'; }).join('')
       : '<li class="dim-empty">—</li>';
@@ -228,7 +228,7 @@
              'oncompositionstart="window._compOn()" oncompositionend="window._compOff()" ' +
              'onblur="window._cellBlur(this)">' + esc(raw) + '</div>';
     }
-    var items = raw.split(/\s*[·\n]\s*/).map(function(s){ return s.trim(); }).filter(function(s){ return s.length; });
+    var items = raw.split(/\n+/).map(function(s){ return s.trim(); }).filter(function(s){ return s.length; });
     var lis = items.length
       ? items.map(function(s){ return '<li>' + esc(s) + '</li>'; }).join('')
       : '<li class="dim-empty">—</li>';
