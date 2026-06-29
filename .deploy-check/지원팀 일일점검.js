@@ -312,6 +312,7 @@ function doGet(e) {
   if (action === 'dedup_items') { return dedupItems(e.parameter.dept || 'support'); }   // 지원_매뉴얼 중복 항목ID 1줄로 정리(시드행 중복 청소)+시드칸 전체 비움. 백업탭 적립. 2026-06-29 시우.
   if (action === 'set_round_duty') { return setRoundDuty(e.parameter.dept || 'support', e.parameter.zone || 'male', e.parameter.date || '', e.parameter.round || '', e.parameter.name || ''); }   // 지정 date+round 구역행 근무자(11열) 단일 통일 — stale 기본값 오염 보정. 점검결과·점검자·이슈 무변경. 2026-06-29 시우.
   if (action === 'normalize_subat_format') { return normalizeSubatFormat(e.parameter.dept || 'support'); }   // 제출시각(10열) 표시형식을 'yyyy-MM-dd HH:mm'로 통일 — 일부 셀 날짜만 표시(시간가림) 정정. 값 무변경(표시만). 2026-06-29 시우.
+  if (action === 'set_ledger_duty') { return setLedgerDuty(e.parameter.dept || 'support', e.parameter.date || '', e.parameter.gender || 'm', e.parameter.round || '', e.parameter.name || ''); }   // 페이지 원장(ScriptProperties led.cr[].du) 근무자 통일 — stale 오염 보정. 시트 set_round_duty의 페이지측 짝. 2026-06-29 시우.
   if (action === 'list_tabs') { return jsonRes({ tabs: SpreadsheetApp.getActiveSpreadsheet().getSheets().map(function(s){ return { name: s.getName(), gid: s.getSheetId() }; }) }); }   // gid→탭 확인용. 2026-06-15 시우.
   if (action === 'dump_snapshot') {   // 점검일지 스냅샷 전체행 덤프 — 진단용. 2026-06-16 시우.
     var _ssh = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(_snapshotTabName(e.parameter.dept || 'support'));
@@ -1998,6 +1999,27 @@ function saveItems(body) {
     sheet.getRange(2, 1, rows.length, ITEM_HEADERS.length).setValues(rows);
   }
   return jsonRes({ ok: true, count: mine.length, total: rows.length, dept: reqDept });
+}
+
+// ─── 페이지 원장 근무자 통일 (GET ?action=set_ledger_duty&dept&date=yyyy-MM-dd&gender=m|f&round=am1&name) — 2026-06-29 시우 ───
+// 페이지(지원부 체계)는 시트가 아닌 ScriptProperties 원장 led.cr[<round>_<id>].du 에서 근무자를 읽어 복원한다.
+// set_round_duty(시트 col10)의 페이지측 짝 — 같은 stale 오염을 원장에서도 1명으로 통일. round=원장 회차접두(am1/pm1/close1), 빈값이면 전 회차.
+function setLedgerDuty(dept, date, gender, round, name) {
+  if (!date || !gender || !name) return jsonRes({ ok: false, error: 'date/gender/name required' });
+  var props = PropertiesService.getScriptProperties();
+  var key = _chkKey(dept, date, gender);
+  var led;
+  try { led = JSON.parse(props.getProperty(key) || '{}'); } catch (e) { return jsonRes({ ok: false, error: 'ledger parse fail' }); }
+  if (!led.cr || typeof led.cr !== 'object') return jsonRes({ ok: true, changed: 0, note: 'no cr ledger', key: key });
+  var changed = [], before = [];
+  Object.keys(led.cr).forEach(function (k) {
+    if (round && String(k).indexOf(round + '_') !== 0) return;   // 지정 회차접두만(빈값=전부)
+    var m = led.cr[k];
+    if (!m || typeof m !== 'object') return;
+    if (String(m.du || '') !== name) { before.push({ k: k, was: String(m.du || '') }); m.du = name; changed.push(k); }
+  });
+  if (changed.length) props.setProperty(key, JSON.stringify(led));
+  return jsonRes({ ok: true, changed: changed.length, keys: changed, before: before, key: key, gender: gender, round: round, name: name });
 }
 
 // ─── 제출시각 표시형식 통일 (GET ?action=normalize_subat_format[&dept=support]) — 2026-06-29 시우 ───
