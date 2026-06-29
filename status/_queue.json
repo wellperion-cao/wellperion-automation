@@ -333,5 +333,19 @@
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "f6f0c5ad8233eef52cc177148374ac1d089814a5",
     "ship_no": 207
+  },
+  {
+    "task_id": "CPO-2026-06-29-ADHOC-0afb426d",
+    "clevel": "cpo",
+    "title": "[시포] 문의회원 달력 상담모달 — 연락기록 빈칸 삭제 저장 반영",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-06-29",
+    "processed_at": "2026-06-29",
+    "artifact": "saveConsultModal이 빈 Contact 칸을 payload에서 무조건 생략해\n서버가 옛값을 보존 → 삭제 불가 버그. 모달 연 시점 원본과 비교해\n'바뀐 칸만'(지워서 빈칸 된 것 포함) 전송하도록 수정. 서버(Survey.js)는\n이미 '' 수신 시 클리어하므로 클라만 수정. (CLI ad-hoc · 커밋 0afb426d)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "0afb426daff9c85a39fb187bf7a2aba4a1424d45",
+    "ship_no": 1
   }
 ]
