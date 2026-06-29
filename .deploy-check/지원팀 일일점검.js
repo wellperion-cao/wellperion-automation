@@ -1955,7 +1955,7 @@ function _schedToKorean(eng){
   var wkParts = []; if(ords.length) wkParts.push(ords.join('·')+'주'); if(wks.indexOf('b')>=0) wkParts.push('격주');
   var wkStr = wkParts.join(' · ');
   if(days.length && !wks.length) return '매주 '+dayStr+'요일';
-  if(days.length && wks.length) return dayStr+'요일 · '+wkStr;
+  if(days.length && wks.length) return wkStr+' '+dayStr+'요일';   // 주간 앞 · 요일 뒤 (GM 2026-06-29) 예: 둘째·넷째주 토요일
   return wkStr;
 }
 // 한글/영어 → 영어(페이지 표준형). '요일' 접미 먼저 제거(일요일의 '일'과 충돌 방지) 후 요일자 스캔.
