@@ -39,6 +39,7 @@
   td.role-cell .ricon{font-size:16px;}
   td.role-cell .rname{font-weight:800; font-size:13px;}
   td.role-cell .rtitle{font-size:10px; color:var(--dim); margin-top:1px;}
+  td.role-cell .rowner{font-size:10px; color:var(--accent-soft); margin-top:2px;}
   tr.role-gm td{background:rgba(184,134,11,0.10);}
   tr.role-gm td.role-cell{background:rgba(184,134,11,0.18);}
   .dim-label{font-size:9px; font-weight:700; letter-spacing:0.02em; color:var(--dim); display:block; margin-bottom:0; text-transform:uppercase;}
@@ -215,6 +216,7 @@
           '<div class="ricon">' + esc(role.icon) + '</div>' +
           '<div class="rname" style="color:' + esc(ac) + ';">' + esc(role.name) + '</div>' +
           '<div class="rtitle">' + esc(role.title) + '</div>' +
+          (role.owner ? '<div class="rowner">담당 · ' + esc(role.owner) + '</div>' : '') +
         '</td>' + cells +
       '</tr>';
     }).join('');
