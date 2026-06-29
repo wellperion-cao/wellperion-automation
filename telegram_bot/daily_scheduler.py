@@ -1510,21 +1510,14 @@ def _build_18_body() -> str:
     else:
         commit_section = "  오늘 기록된 커밋 없음"
 
-    # 명언
-    quote = fetch_random_quote("18시")
-    if quote:
-        quote_line = f'\n> "{quote}"\n'
-    else:
-        quote_line = "\n"
-
+    # 명언 = 아침(06시)·밤(22시) 2회만 (GM 2026-06-29 중복 정리) — 18시 명언 제거
     return (
         f"{_unified_header('18', '회사', '오후 시설·지원·주차 · 퇴근 루틴')}\n"
         f"🌙 오늘도 수고하셨습니다.\n\n"
         f"{checklist_block}\n\n"
         f"{_DIVIDER}\n"
         f"📊 오늘 성과\n"
-        f"{commit_section}\n"
-        f"{quote_line}"
+        f"{commit_section}\n\n"
         f"{_AUTO_FOOTER}"
     )
 
@@ -1612,7 +1605,7 @@ def _build_21_body() -> str:
 
 
 def _build_22_body() -> str:
-    """22시 — 취침·전자기기off + 마무리(종료) 인사 통합 + 북극성 + 명언 [개인]
+    """22시 — 취침·전자기기off + 마무리(종료) 인사 + 명언 [개인] (북극성은 08시로 일원화·GM 2026-06-29)
 
     [2026-06-08 GM 지시] 기존 22:00 취침안내 + 22:25 종료인사(별도 예약작업)가
     25분 내 중복 발송되던 것을 22:00 단일 메시지로 통합. 별도 22:25 종료인사
@@ -1625,12 +1618,9 @@ def _build_22_body() -> str:
         quote_line = "\n> \"충분한 수면이 내일의 판단력을 만듭니다.\"\n"
 
     return (
-        f"{_unified_header('22', '개인', '전자기기 OFF · 취침 · 북극성')}\n"
+        f"{_unified_header('22', '개인', '전자기기 OFF · 취침')}\n"
         f"오늘 하루도 고생 많으셨습니다, GM님.\n"
-        f"📵 전자기기 off — 수면 루틴 시작\n\n"
-        f"🌟 북극성\n"
-        f"  GM만 보는 G1 오케스트레이션 +\n"
-        f"  웰페리온 스포츠클럽 ERP 제품화\n"
+        f"📵 전자기기 off — 수면 루틴 시작\n"
         f"{quote_line}"
         f"{_AUTO_FOOTER}"
     )
