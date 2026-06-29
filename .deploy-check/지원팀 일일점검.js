@@ -20,13 +20,21 @@ const SHEET_ITEMS  = '지원_매뉴얼';   // GM 편집 점검 항목 마스터(
 // getItems/_buildTodayMaster는 더는 seed 행을 skip하지 않음(시트 행 전체가 마스터). syncSeedItems=no-op(되쓰기 차단).
 // 2026-06-27: GM 확정 12칸 스키마 — '시간대' 열 폐지(회차=타이밍 축). 시트=항목 마스터 단일출처.
 // 헤더: 항목ID|카테고리|항목명|상세|성별|정렬|타입|필드정의|부서|회차|점검일정|시드
-const ITEM_HEADERS = ['항목ID','카테고리','항목명','상세','성별','정렬','타입','필드정의','부서','회차','점검일정','시드'];
+const ITEM_HEADERS = ['항목ID','카테고리','항목명','상세','성별','정렬','타입','필드정의','부서','회차','점검일정'];   // 2026-06-29 시우: '시드'칸 폐지(11칸). 성별·타입·부서·회차·점검일정 = 시트엔 한글 저장.
 const ITEM_DEPT_COL = 8;    // '부서' 0-based 인덱스(9번째 열)
 const ITEM_ROUNDS_COL = 9;  // '회차' 0-based 인덱스(10번째 열) — 오전조/오후조/마감조 라벨 또는 am1,pm1,close1. 빈값 폴백
 const ITEM_SCHED_COL = 10;  // '점검일정' 0-based 인덱스(11번째 열) — 요일·몇째주 구조저장 "tue,fri|2" 형식. 빈값 가능
 const ITEM_SEED_COL = 11;   // '시드' 12번째 열 — 2026-06-29 개념 완전 폐기. 항상 빈칸·어떤 로직도 읽지 않음(데드 컬럼).
 function _isSeedRow(row){ return false; }   // 2026-06-29 시우: seed 개념 폐기 — 항상 false(되살아나지 않게 박제). 과거 'Y' 보존이 saveItems 시 시드행 중복증식의 뿌리였음.
-function _itemDept(v){ var d = String(v == null ? '' : v).trim(); return d || 'support'; }
+// ─── 부서/성별/타입/회차 한글 ↔ 영어 (2026-06-29 시우) — 시트엔 한글 저장, 페이지엔 영어 전달(거르기·탭 무변경) ───
+function _itemDept(v){ var d = String(v == null ? '' : v).trim(); if(!d) return 'support'; var m={'지원부':'support','시설부':'facility'}; return m[d] || d; }   // 한글 부서 → 표준코드(거르기용). 영어/기타는 그대로.
+function _deptToKorean(d){ d = String(d||'').trim(); var m={'support':'지원부','facility':'시설부'}; return m[d] || (d || '지원부'); }
+function _genderToEnglish(v){ v = String(v||'').trim(); var m={'공통':'all','남':'m','여':'f','남녀공통':'all','전체':'all','all':'all','m':'m','f':'f'}; return m[v] || 'all'; }
+function _genderToKorean(v){ v = String(v||'').trim(); var m={'all':'공통','m':'남','f':'여','공통':'공통','남':'남','여':'여'}; return m[v] || '공통'; }
+function _typeToEnglish(v){ v = String(v||'').trim(); var m={'점검':'check','측정':'measure'}; if(m[v]) return m[v]; return v || 'check'; }   // 빈값·영어는 그대로(빈→check)
+function _typeToKorean(v){ v = String(v||'').trim(); var m={'check':'점검','measure':'측정'}; return m[v] || (v ? v : '점검'); }
+function _roundsToEnglish(v){ v = String(v||'').trim(); if(!v) return ''; var m={'오전조':'am1','오후조':'pm1','마감조':'close1','야간조':'night1'}; return v.split(/[,·]/).map(function(x){ x=x.trim(); return m[x]||x; }).filter(Boolean).join(','); }
+function _roundsToKorean(v){ v = String(v||'').trim(); if(!v) return ''; var m={'am1':'오전조','pm1':'오후조','close1':'마감조','night1':'야간조'}; return v.split(/[,·]/).map(function(x){ x=x.trim(); return m[x]||x; }).filter(Boolean).join(', '); }
 
 const BOT_TOKEN = PropertiesService.getScriptProperties().getProperty('TELEGRAM_BOT_TOKEN');
 const CHAT_ID   = '-5136037543';  // 점검 관리 방 (시우 102, 2026-06-24) — ScriptProperty UI 50개+ 잠김으로 코드 고정. BOT_TOKEN은 property 유지.
@@ -314,6 +322,7 @@ function doGet(e) {
   if (action === 'normalize_subat_format') { return normalizeSubatFormat(e.parameter.dept || 'support'); }   // 제출시각(10열) 표시형식을 'yyyy-MM-dd HH:mm'로 통일 — 일부 셀 날짜만 표시(시간가림) 정정. 값 무변경(표시만). 2026-06-29 시우.
   if (action === 'set_ledger_duty') { return setLedgerDuty(e.parameter.dept || 'support', e.parameter.date || '', e.parameter.gender || 'm', e.parameter.round || '', e.parameter.name || ''); }   // 페이지 원장(ScriptProperties led.cr[].du) 근무자 통일 — stale 오염 보정. 시트 set_round_duty의 페이지측 짝. 2026-06-29 시우.
   if (action === 'migrate_sched_korean') { return migrateSchedKorean(e.parameter.dept || 'support'); }   // 점검일정 칸 기존 영어값을 한글 표시로 1회 전환(왕복검증 후). 2026-06-29 시우.
+  if (action === 'migrate_sheet_korean') { return migrateSheetKorean(e.parameter.dept || 'support'); }   // 성별·타입·부서·회차 기존값 한글 전환(왕복검증) + 시드칸 삭제. 2026-06-29 시우.
   if (action === 'list_tabs') { return jsonRes({ tabs: SpreadsheetApp.getActiveSpreadsheet().getSheets().map(function(s){ return { name: s.getName(), gid: s.getSheetId() }; }) }); }   // gid→탭 확인용. 2026-06-15 시우.
   if (action === 'dump_snapshot') {   // 점검일지 스냅샷 전체행 덤프 — 진단용. 2026-06-16 시우.
     var _ssh = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(_snapshotTabName(e.parameter.dept || 'support'));
@@ -1902,7 +1911,7 @@ function initItemSheet() {
     .setBackground('#2a2725').setFontColor('#B79F8A')
     .setFontWeight('bold').setHorizontalAlignment('center');
   sheet.setFrozenRows(1);
-  var widths = [180, 180, 240, 360, 80, 70, 90, 200, 90, 120, 140, 60];  // 12칸(시간대 폐지): 정렬·타입·필드정의·부서·회차·점검일정·시드
+  var widths = [180, 180, 240, 360, 80, 70, 90, 200, 90, 120, 140];  // 11칸(시드 폐지 2026-06-29): …부서·회차·점검일정
   for (var i = 0; i < widths.length; i++) sheet.setColumnWidth(i + 1, widths[i]);
   return sheet;
 }
@@ -1964,6 +1973,57 @@ function _schedToEnglish(s){
   return ds.join(',')+'|'+ws.join(',');
 }
 
+// ─── 성별·타입·부서·회차 기존값 한글 전환 + 시드칸 삭제 (GET ?action=migrate_sheet_korean[&dept=support]) — 2026-06-29 시우 ───
+// 시트 칸을 사람이 읽는 한글로 1회 전환. 각 칸 왕복검증(한글→영어가 원래와 같은지) 통과해야만 기록(거르기 회귀 0). 끝에 데드 '시드' 열 삭제.
+function migrateSheetKorean(dept) {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName(SHEET_ITEMS);
+  if (!sheet) return jsonRes({ ok: false, error: 'no item sheet' });
+  var last = sheet.getLastRow(), lastCol = sheet.getLastColumn();
+  if (last < 2) return jsonRes({ ok: true, changed: 0 });
+  var data = sheet.getRange(2, 1, last - 1, lastCol).getValues();
+  var changed = 0, mism = [];
+  // 0성별=idx4 · 타입=idx6 · 부서=idx8 · 회차=idx9 · 점검일정=idx10
+  for (var i = 0; i < data.length; i++) {
+    var r = data[i];
+    if (!String(r[0] || '').trim() && !String(r[2] || '').trim()) continue;   // 빈 행 스킵
+    var id = String(r[1] || '');
+    // 성별
+    var g0 = String(r[4] || ''), gK = _genderToKorean(g0);
+    if (_genderToEnglish(gK) !== _genderToEnglish(g0)) mism.push('성별:' + id);
+    else if (gK !== g0) { r[4] = gK; changed++; }
+    // 타입
+    var t0 = String(r[6] || ''), tK = _typeToKorean(t0);
+    if (_typeToEnglish(tK) !== _typeToEnglish(t0)) mism.push('타입:' + id);
+    else if (tK !== t0) { r[6] = tK; changed++; }
+    // 부서
+    var d0 = String(r[8] || ''), dK = _deptToKorean(d0);
+    if (_itemDept(dK) !== _itemDept(d0)) mism.push('부서:' + id);
+    else if (dK !== d0) { r[8] = dK; changed++; }
+    // 회차
+    var rd0 = String(r[9] || ''), rdK = _roundsToKorean(rd0);
+    if (_roundsToEnglish(rdK) !== _roundsToEnglish(rd0)) mism.push('회차:' + id);
+    else if (rdK !== rd0) { r[9] = rdK; changed++; }
+    // 점검일정(이미 한글일 수 있음 — 재정합)
+    if (lastCol > 10) {
+      var s0 = String(r[10] || ''), sK = _schedToKorean(_schedToEnglish(s0));
+      if (_schedNormEng(_schedToEnglish(sK)) !== _schedNormEng(_schedToEnglish(s0))) mism.push('점검일정:' + id);
+      else if (sK !== s0) { r[10] = sK; changed++; }
+    }
+  }
+  if (mism.length) return jsonRes({ ok: false, error: '왕복검증 불일치 — 안전상 중단(미기록)', mism: mism });
+  sheet.getRange(2, 1, data.length, lastCol).setValues(data);
+  // 데드 '시드' 열 삭제
+  var seedDeleted = false;
+  var hdr = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+  for (var c = hdr.length - 1; c >= 0; c--) {
+    if (String(hdr[c]).trim() === '시드') { sheet.deleteColumn(c + 1); seedDeleted = true; break; }
+  }
+  // 헤더 라벨 11칸 정합
+  sheet.getRange(1, 1, 1, ITEM_HEADERS.length).setValues([ITEM_HEADERS]);
+  return jsonRes({ ok: true, changed: changed, seedDeleted: seedDeleted, cols: sheet.getLastColumn() });
+}
+
 // ─── 점검일정 기존값 한글 전환 (GET ?action=migrate_sched_korean[&dept=support]) — 2026-06-29 시우 ───
 // 시트의 점검일정 칸(영어 tue| 등)을 한글 표시(매주 화요일 등)로 1회 전환. 각 칸 왕복검증(한글→영어가 원래와 같은지) 통과해야만 기록(거르기 회귀 0 보장). 빈칸→'매일'.
 function migrateSchedKorean(dept) {
@@ -2002,20 +2062,20 @@ function getItems(params) {
     // seed='Y' skip 제거(2026-06-27): 시트=단일출처 → seed 행도 마스터로 포함.
     if (_itemDept(data[i][ITEM_DEPT_COL]) !== reqDept) continue; // dept 불일치 제외
     // S1(2026-06-10 시토): type 빈값 → 'check' 폴백. fields = measure 입력 영문키 목록(없으면 빈문자).
-    var itemType = String(data[i][6] || '').trim() || 'check';
+    var itemType = _typeToEnglish(data[i][6]);   // 한글(점검/측정)→영어. 빈값→check.
     items.push({
       id:     String(data[i][0] || ''),
       cat:    String(data[i][1] || ''),
       name:   String(data[i][2] || ''),
       detail: String(data[i][3] || ''),
-      gender: String(data[i][4] || 'all'),
+      gender: _genderToEnglish(data[i][4]),   // 한글(공통/남/여)→영어(all/m/f). 탭 거르기 무변경.
       slot:   '',   // 시간대 열 폐지(12칸) — slot 무효. 프론트는 회차/카테고리 기반.
       order:  data[i][5] !== '' && data[i][5] != null ? Number(data[i][5]) : (i),
       type:   itemType,
       fields: String(data[i][7] || ''),
       dept:   _itemDept(data[i][ITEM_DEPT_COL]),
-      // 회차(rounds) — 오전조/오후조/마감조 라벨 또는 am1,pm1,close1. 빈값 → 프론트 폴백.
-      rounds: String(data[i][ITEM_ROUNDS_COL] == null ? '' : data[i][ITEM_ROUNDS_COL]),
+      // 회차(rounds) — 시트엔 한글(오전조/오후조/마감조) 저장, 페이지엔 영어코드(am1/pm1/close1)로 변환. 빈값 → 프론트 폴백.
+      rounds: _roundsToEnglish(data[i][ITEM_ROUNDS_COL]),
       // 점검일정(요일·몇째주) — 시트엔 한글 저장, 페이지엔 영어("tue,fri|2")로 되돌려 전달(거르기 무변경). 2026-06-29 시우.
       sched: _schedToEnglish(data[i][ITEM_SCHED_COL] == null ? '' : data[i][ITEM_SCHED_COL])
     });
@@ -2052,15 +2112,14 @@ function saveItems(body) {
       String(it.cat || ''),
       String(it.name || ''),
       String(it.detail || ''),
-      String(it.gender || 'all'),
+      _genderToKorean(it.gender || 'all'),   // 성별(한글 저장 공통/남/여) — getItems가 영어로 되돌림. 2026-06-29 시우.
       it.order !== undefined && it.order !== '' ? it.order : (idx + 1),
-      // S1(2026-06-10 시토): 타입·필드정의 패스스루(빈값→'check' 폴백). 영문키만(한글 키 금지).
-      String(it.type || '').trim() || 'check',
+      // S1: 타입 패스스루(빈값→check). 시트엔 한글(점검/측정) 저장. 2026-06-29 시우.
+      _typeToKorean(String(it.type || '').trim() || 'check'),
       String(it.fields || ''),
-      reqDept,   // S4 갭②: 부서
-      String(it.rounds || ''),   // 회차(오전조/오후조/마감조 또는 am1,pm1) — 빈값이면 프론트 폴백
-      _schedToKorean(it.sched || ''),    // 점검일정 — 페이지는 영어로 보내고 시트엔 한글로 저장(매주 화요일 등). getItems가 영어로 되돌림. 2026-06-29 시우.
-      ''                          // 시드열 — 폐기(seed 개념 폐지). 항상 빈값.
+      _deptToKorean(reqDept),   // 부서(한글 저장 지원부) — _itemDept가 거르기 때 표준코드로 되돌림. 2026-06-29 시우.
+      _roundsToKorean(it.rounds || ''),   // 회차(한글 저장 오전조/오후조/마감조) — getItems가 am1/pm1/close1로 되돌림. 2026-06-29 시우.
+      _schedToKorean(it.sched || '')     // 점검일정(한글 저장 매주 화요일 등) — getItems가 영어로 되돌림. 2026-06-29 시우. ★시드칸 폐지(11칸 스키마)
     ];
   });
 
@@ -2175,26 +2234,20 @@ function dedupItems(reqDept) {
   bk.getRange(1, 1, 1, W).setValues([ITEM_HEADERS]);
   if (all.length > 0) bk.getRange(2, 1, all.length, W).setValues(all);
 
-  // 2) 항목ID별 dedup — 시드 빈칸행 우선 보존(시드='Y'행 버림)
+  // 2) 항목ID별 dedup — 첫 등장행 보존(시드칸 폐지로 우선규칙 불필요). 2026-06-29 시우.
   var order = [], pick = {}, removed = [];
   for (var i = 0; i < all.length; i++) {
     var r = all[i];
     var id = String(r[0] || '').trim();
     if (!id && !String(r[2] || '').trim()) continue;   // 완전 빈 행 스킵
-    var seedBlank = String(r[ITEM_SEED_COL] == null ? '' : r[ITEM_SEED_COL]).trim() !== 'Y';
     if (!pick[id]) { pick[id] = r; order.push(id); }
-    else {
-      var keptBlank = String(pick[id][ITEM_SEED_COL] == null ? '' : pick[id][ITEM_SEED_COL]).trim() !== 'Y';
-      if (!keptBlank && seedBlank) pick[id] = r;   // 기존이 Y·새것이 빈칸 → 교체
-      removed.push(id);
-    }
+    else removed.push(id);
   }
 
-  // 3) 생존행 시드칸 '' 박제 후 재기록
+  // 3) 생존행 재기록(11칸 정합)
   var out = order.map(function (id) {
-    var r = pick[id].slice();
+    var r = pick[id].slice(0, W);
     while (r.length < W) r.push('');
-    r[ITEM_SEED_COL] = '';
     return r;
   });
   sheet.getRange(2, 1, lastRow - 1, W).clearContent();
