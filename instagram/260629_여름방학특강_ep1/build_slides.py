@@ -46,7 +46,7 @@ FOOTER_TEXT = "WELLPERION  ·  스포츠클럽"
 
 CAPTION = """웰페리온 여름방학 특강이 시작되었습니다.
 
-6월 22일 ~ 8월 14일
+6월 29일 ~ 8월 14일
 2019년 이전 출생 유소년 대상
 
 먼저, 아이들이 머무를 공간을 소개합니다.
@@ -67,7 +67,7 @@ SLIDES_SPEC = [
         "photo":    "3. 수영장.jpg",
         "main_kor": "웰페리온 여름방학 특강이\n시작되었습니다",
         "label_eng": "2026 SUMMER CAMP",
-        "date_line": "6.22 ~ 8.14  ·  유소년",
+        "date_line": "6.29 ~ 8.14  ·  유소년",
     },
     {
         "type":  "story",
