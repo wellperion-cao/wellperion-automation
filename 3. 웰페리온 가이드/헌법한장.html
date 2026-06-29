@@ -267,16 +267,20 @@
     if(!_matrixData) return;
     _matrixData.updated_at = new Date().toISOString().slice(0,10);
     var content = JSON.stringify(_matrixData, null, 2);
-    var params = new URLSearchParams({
-      action: 'commit_file',
-      path: '3. 웰페리온 가이드/coo/bootsetup_matrix.json',
-      content: content,
-      message: '[GM] 헌법 한 장 5칸 편집 ' + _matrixData.updated_at,
-      key: pin
-    });
     var btn = document.getElementById('matrix-save-btn');
     if(btn){ btn.textContent = '저장 중…'; btn.disabled = true; }
-    fetch(GAS_URL + '?' + params.toString(), {redirect:'follow'})
+    fetch(GAS_URL, {
+      method: 'POST',
+      redirect: 'follow',
+      headers: {'Content-Type': 'text/plain;charset=utf-8'},
+      body: JSON.stringify({
+        action: 'commit_file',
+        path: '3. 웰페리온 가이드/coo/bootsetup_matrix.json',
+        content: content,
+        message: '[GM] 헌법 한 장 5칸 편집 ' + _matrixData.updated_at,
+        key: pin
+      })
+    })
       .then(function(r){ return r.json(); })
       .then(function(res){
         if(res && res.ok){

@@ -2060,6 +2060,11 @@ function doPost(e) {
   try {
     const body = JSON.parse(e.postData.contents);
     const act = body.action || '';
+    // 대용량/파일 쓰기 = POST(text/plain JSON 본문)로 받는다 — GET URL 길이초과 회피 (2026-06-29)
+    if (act === 'commit_file') return _json(_githubCommitFile(body.path || '', body.content || '', body.message || '', body.key || ''));
+    if (act === 'read_file') return _json(_githubReadFile(body.path || ''));
+    if (act === 'review_set_status') return _json(_reviewSetStatus(body.id || '', body.status || '', body.key || ''));
+    if (act === 'expense_set_budget') return _expenseSetBudget(body.amount || '', body.key || '');
     if (act.indexOf('notice_') === 0) return _processNoticeAction(body);
     if (act.indexOf('ai_') === 0) return _processAiAction(_mapFields(body));
     return _processTodoAction(body);
