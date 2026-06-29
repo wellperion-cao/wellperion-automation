@@ -2343,11 +2343,28 @@ function _processAction(body) {
       var ci = _findCol_(luHdr, colNames);
       if (ci >= 0) luSh.getRange(luRow, ci + 1).setValue(val);
     }
+    // 등록 전환 감지: 상태 변경 '전' 값 캡처(신규→SUC 실제 전환 1회만 알림 — 멤버십 member_inquiry_update와 동일 패턴·중복발화 차단). 시토 2026-06-29 GM.
+    var _luStatusCi  = _findCol_(luHdr, ['진행상태', '진행현황', '진행상황', '상태']);
+    var _luOldStatus = (_luStatusCi >= 0) ? String(luSh.getRange(luRow, _luStatusCi + 1).getValue() || '').trim() : '';
     _luSet(['진행상태', '진행현황', '진행상황', '상태'], body.status);
     _luSet(['관리담당'], body.owner);  // ★관리 담당 컬럼만(폼 원본 '접수담당자' 절대 안 건드림)
     _luSet(['상담메모', '메모', '비고'], body.memo);
     _luSet(['상담예약', '상담 예약', '상담일정'], body.consult);
     _luSet(['방문상태', '방문'], body.visited);
+    // 강습 등록 전환(신규→SUC/단기SUC 1회) → '문의 알림' 방 통보(멤버십과 정합). 시토 2026-06-29 GM.
+    try {
+      var _luNewStatus = String(body.status == null ? '' : body.status).trim();
+      var _luIsSucNew  = (_luNewStatus === 'SUC' || _luNewStatus === '단기SUC');
+      var _luWasSuc    = (_luOldStatus === 'SUC' || _luOldStatus === '단기SUC');
+      if (_luIsSucNew && !_luWasSuc) {
+        var _luNameCi  = _findCol_(luHdr, ['이름', '성함']);
+        var _luSportCi = _findCol_(luHdr, ['종목', '과목', '관심종목', '강습종목']);
+        var _luName  = (String(body.name  || (_luNameCi  >= 0 ? luSh.getRange(luRow, _luNameCi  + 1).getValue() : '')).trim()) || '-';
+        var _luSport = (String(body.sport || body.program || (_luSportCi >= 0 ? luSh.getRange(luRow, _luSportCi + 1).getValue() : '')).trim()) || '-';
+        var _luRegChatId = PropertiesService.getScriptProperties().getProperty('TELEGRAM_INQUIRY_CHAT_ID') || _INQUIRY_CHAT_ID_FALLBACK;
+        _notifyTelegram('✅ <b>등록 전환(강습)</b> — 강습문의가 등록(' + _luNewStatus + ')으로 전환\n· 이름: ' + _luName + '\n· 종목: ' + _luSport + '\n· 담당: ' + (body.owner || '-'), _luRegChatId);
+      }
+    } catch (e) {}
     try { _notifyTelegram('📝 강습문의 수정 — 행 ' + luRow + ' · 상태:' + (body.status || '-') + ' · 담당:' + (body.owner || '-')); } catch (e) {}
     return _json({ ok: true, rowIndex: luRow, message: '수정되었습니다.' });
   }
