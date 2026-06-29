@@ -27,7 +27,7 @@
 
   /* ── 매트릭스 ── */
   .matrix-scroll{overflow-x:auto; border:1px solid var(--border); border-radius:11px; background:var(--paper);}
-  table.matrix{border-collapse:collapse; width:100%; min-width:1040px; font-size:11.5px; table-layout:fixed;}
+  table.matrix{border-collapse:collapse; width:100%; min-width:1040px; font-size:13px; table-layout:fixed;}
   table.matrix th, table.matrix td{border:1px solid var(--border); padding:7px 9px; text-align:left; vertical-align:top; line-height:1.42; white-space:pre-wrap; word-break:break-word;}
   table.matrix thead th{background:var(--surface); font-weight:700; font-size:12px; position:sticky; top:0; z-index:2;}
   table.matrix thead th.grp-np{color:#f0c674;}
@@ -37,14 +37,18 @@
   table.matrix th.role-col{width:95px; min-width:90px;}
   td.role-cell{background:var(--surface);}
   td.role-cell .ricon{font-size:16px;}
-  td.role-cell .rname{font-weight:800; font-size:13px;}
-  td.role-cell .rtitle{font-size:10px; color:var(--dim); margin-top:1px;}
-  td.role-cell .rowner{font-size:10px; color:var(--accent-soft); margin-top:2px;}
+  td.role-cell .rname{font-weight:800; font-size:14px;}
+  td.role-cell .rtitle{font-size:11px; color:var(--dim); margin-top:1px;}
+  td.role-cell .rowner{font-size:11px; color:var(--accent-soft); margin-top:2px;}
   tr.role-gm td{background:rgba(184,134,11,0.10);}
   tr.role-gm td.role-cell{background:rgba(184,134,11,0.18);}
-  .dim-label{font-size:9px; font-weight:700; letter-spacing:0.02em; color:var(--dim); display:block; margin-bottom:1px; text-transform:uppercase;}
+  .dim-label{font-size:10.5px; font-weight:700; letter-spacing:0.02em; color:var(--dim); display:block; margin-bottom:1px; text-transform:uppercase;}
   .dim-val{display:block; margin-bottom:8px; white-space:pre-wrap;}
   .dim-val:last-child{margin-bottom:0;}
+  .dim-bul{margin:3px 0 0 15px; padding:0;}
+  .dim-bul li{font-size:12.5px; line-height:1.45; margin-bottom:3px;}
+  .dim-empty{list-style:none; color:var(--dim); margin-left:-15px;}
+  .col-own{width:150px;}
   .own-chip{display:inline-block; font-size:11px; color:var(--accent-soft); text-decoration:none; border:1px solid var(--border-strong); border-radius:6px; padding:2px 8px; margin:0 4px 4px 0;}
   .own-chip:hover{background:var(--surface); border-color:var(--accent);}
   .matrix-status{padding:14px; font-size:12px; color:var(--dim);}
@@ -89,6 +93,7 @@
     td.role-cell{background:#f4f4f4 !important;}
     tr.role-gm td, tr.role-gm td.role-cell{background:#f8f2dc !important;}
     td.role-cell .rname, td.role-cell .rtitle, td.role-cell .rowner, .dim-label, .dim-val{color:#111 !important;}
+    .dim-bul li{color:#111 !important;}
     .own-chip{color:#000 !important; border-color:#666 !important; background:#fff !important;}
     .matrix-scroll{background:#fff !important; border-color:#999 !important;}
     .ccard, .ccard h3, .ccard .desc{background:#fff !important; color:#111 !important; border-color:#999 !important;}
@@ -114,7 +119,7 @@
           <th class="role-col">주체</th>
           <th class="grp-np">🌟 목표·지표</th>
           <th class="grp-boot">🔧 일하는 법</th>
-          <th class="grp-guard">🚧 소유 관리</th>
+          <th class="grp-guard col-own">🚧 소유 관리</th>
         </tr>
       </thead>
       <tbody id="matrix-body">
@@ -196,16 +201,23 @@
 
   var body = document.getElementById('matrix-body');
 
-  // 라벨 블록: 작은 라벨(.dim-label) + 값(.dim-val). 편집 모드면 값이 .cell-edit(개별 contenteditable).
-  function blk(role, d, di, label){
+  // 라벨 블록: 작은 라벨(.dim-label) + 값.
+  //   비편집 = 원문을 ·/줄바꿈으로 split → 불릿 목록(.dim-bul). 빈 항목 제거. 없으면 '—'.
+  //   편집 = 기존처럼 원문 그대로(.cell-edit · 개별 contenteditable · IME 핸들러). 저장은 원문.
+  function dimBlock(role, di, label){
+    var d = (role.dims) || [];
+    var raw = (d[di] == null ? '' : String(d[di]));
     var lab = '<span class="dim-label">' + label + '</span>';
-    var val = esc(d[di]);
     if(_editMode){
       return lab + '<div class="dim-val cell-edit" contenteditable="true" data-role="' + esc(role.id) + '" data-dim="' + di + '" ' +
              'oncompositionstart="window._compOn()" oncompositionend="window._compOff()" ' +
-             'onblur="window._cellBlur(this)">' + val + '</div>';
+             'onblur="window._cellBlur(this)">' + esc(raw) + '</div>';
     }
-    return lab + '<div class="dim-val">' + val + '</div>';
+    var items = raw.split(/\s*[·\n]\s*/).map(function(s){ return s.trim(); }).filter(function(s){ return s.length; });
+    var lis = items.length
+      ? items.map(function(s){ return '<li>' + esc(s) + '</li>'; }).join('')
+      : '<li class="dim-empty">—</li>';
+    return lab + '<ul class="dim-bul">' + lis + '</ul>';
   }
 
   function renderMatrix(){
@@ -215,13 +227,12 @@
       return;
     }
     body.innerHTML = roles.map(function(role){
-      var d = role.dims || [];
       var ac = role.accent || 'var(--accent)';
       var gm = role.id === 'gm';
       // 칸1 목표·지표 = 🌟북극성(0) + 📊KPI(3)
-      var c1 = '<td>' + blk(role, d, 0, '🌟 북극성') + blk(role, d, 3, '📊 KPI') + '</td>';
-      // 칸2 일하는 법 = 📚부트셋업 SSOT(2) + 🔧파이프라인(1)
-      var c2 = '<td>' + blk(role, d, 2, '📚 부트셋업 SSOT') + blk(role, d, 1, '🔧 파이프라인') + '</td>';
+      var c1 = '<td>' + dimBlock(role, 0, '🌟 북극성') + dimBlock(role, 3, '📊 KPI') + '</td>';
+      // 칸2 일하는 법 = 📚읽는 정본(2) + 🔧일 흐름(1)
+      var c2 = '<td>' + dimBlock(role, 2, '📚 읽는 정본') + dimBlock(role, 1, '🔧 일 흐름') + '</td>';
       // 칸3 소유 관리 = role.owns 링크칩(편집 대상 아님)
       var owns = (role.owns || []).map(function(o){
         return '<a class="own-chip" href="' + esc(o.href) + '">' + esc(o.label) + '</a>';
@@ -278,7 +289,7 @@
     var table = document.querySelector('table.matrix');
     if(!table) return;
     var ths = table.querySelectorAll('thead th');
-    var KEY = 'hunjang-colw-v2', saved = {};
+    var KEY = 'hunjang-colw-v3', saved = {};
     try{ saved = JSON.parse(localStorage.getItem(KEY) || '{}'); }catch(e){}
     Array.prototype.forEach.call(ths, function(th, i){
       if(saved[i]) th.style.width = saved[i] + 'px';
