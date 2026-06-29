@@ -1194,5 +1194,19 @@
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "5e0c785522a6311624ea66af04a90a3297992eb1",
     "ship_no": 215
+  },
+  {
+    "task_id": "CTO-2026-06-29-ADHOC-a82964e4",
+    "clevel": "cto",
+    "title": "[시토] 북극성 추천기 2단계 라이브 — 06:30 예약+텔레그램 알림+웹 풀표+봇 승인콜백→_queue 등록+G2 만료",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-06-29",
+    "processed_at": "2026-06-29",
+    "artifact": "- northstar_recommender.py --send: 3후보 생성→G2 만료(이전 미승인 expired)→pending 기록→텔레그램 짧은알림 발송→폐루프 로그\n- 후보 3줄 브릿지(🌟북극성 →📍지금 →👉오늘) path_map + northstar·progress 필드(2b 추적)\n- northstar_today.html 웹 풀표(다크톤·status/ 미러 직독) + S2/지도 진입링크\n- bot.py route_northstar: [승인 N]/[보류] 회신→_queue PENDING 배 등록(read-before-writ (CLI ad-hoc · 커밋 a82964e4)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "a82964e48b4b4187f064fa5d6de1762792ea354b",
+    "ship_no": 216
   }
 ]
