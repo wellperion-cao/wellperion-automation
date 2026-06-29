@@ -2354,6 +2354,16 @@ window._regAssign = function(id, category) {
           <span style="font-size:14px;font-weight:800;color:#fff;background:#7C3AED;border-radius:9px;padding:9px 16px;white-space:nowrap;">전체화면 →</span>
         </a>
 
+        <!-- ══ 🌅 오늘의 항로 추천 진입 (북극성 추천기 2단계 · 2026-06-29) ══ -->
+        <a href="northstar_today.html" style="display:flex;align-items:center;gap:16px;margin:0 0 18px;padding:16px 22px;background:linear-gradient(135deg,#3a2a14,#1a1a2a);border:1px solid #f0c674;border-radius:14px;text-decoration:none;color:#fff;box-shadow:0 2px 10px rgba(240,198,116,0.14);">
+          <span style="font-size:30px;flex-shrink:0;">🌅</span>
+          <span style="flex:1;">
+            <span style="display:block;font-size:17px;font-weight:800;letter-spacing:-0.01em;">오늘의 항로 추천 — 북극성 한 수</span>
+            <span style="display:block;font-size:13px;color:#e6d2a8;margin-top:4px;line-height:1.5;">매일 06:30 웰리가 전 C-Level 북극성 대비 현황을 읽어 전사 top3를 제안 → 텔레그램 [승인 N] 회신으로 배 등록. 풀표로 한눈에.</span>
+          </span>
+          <span style="font-size:14px;font-weight:800;color:#221F20;background:#f0c674;border-radius:9px;padding:9px 16px;white-space:nowrap;">표 보기 →</span>
+        </a>
+
 
         <!-- ══ 📍 어디에 뭐가 있나 (주제별 단일출처 지도 · home→S2 이관 2026-06-16) ══ -->
         <details class="toggle" style="background:var(--paper);border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:12px;padding:4px 20px 14px;margin:0 0 20px;">
@@ -2361,6 +2371,7 @@ window._regAssign = function(id, category) {
           <table style="margin-top:8px;">
             <tr><th style="width:48%;">찾는 것</th><th>여기서 봅니다 (단일출처)</th></tr>
             <tr><td>오늘 할 일·항로</td><td><a href="#" style="color:var(--accent);font-weight:700;text-decoration:underline;" onclick="event.preventDefault();document.querySelector('[data-id=G1]').click();">🧭 G1 오늘의 항로</a></td></tr>
+            <tr><td>오늘의 북극성 추천(06:30 전사 top3)</td><td><a href="northstar_today.html" style="color:var(--accent);font-weight:700;text-decoration:underline;">🌅 오늘의 항로 추천 (풀표)</a></td></tr>
             <tr><td>업무·결재 현황</td><td><a href="#" style="color:var(--accent);font-weight:700;text-decoration:underline;" onclick="event.preventDefault();document.querySelector('[data-id=S3]').click();">📝 S3 업무·결재 현황</a></td></tr>
             <tr><td>우리의 약속·재발방지·공식값</td><td><a href="#" style="color:var(--accent);font-weight:700;text-decoration:underline;" onclick="event.preventDefault();document.querySelector('[data-id=S2]').click();">⚖️ S2 공통탭</a></td></tr>
             <tr><td>보고 형식·업무 처리 단계·AI 협업 원칙</td><td><a href="#" style="color:var(--accent);font-weight:700;text-decoration:underline;" onclick="event.preventDefault();document.querySelector('[data-id=S2]').click();">⚖️ S2 공통탭</a></td></tr>

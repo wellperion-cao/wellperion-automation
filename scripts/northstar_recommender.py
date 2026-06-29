@@ -28,15 +28,26 @@ GM 잠금 결정(2026-06-29):
 사용법:
   python scripts/northstar_recommender.py            # 드라이런(기본): 콘솔 출력 + northstar_pending.json 기록
   python scripts/northstar_recommender.py --stdout-only   # 파일 기록 없이 콘솔만
+  python scripts/northstar_recommender.py --send     # 2단계 라이브: G2 만료 + 기록 + 텔레그램 카드 발송 + 폐루프 로그 (06:30 예약 진입점)
+
+2단계(2026-06-29 라이브):
+  - GM 보강: 후보별 3줄 브릿지(🌟 북극성 → 📍 지금 → 👉 오늘 한 수)를 path_map 에 담고
+             northstar·progress 필드도 함께 저장(2b 추적용).
+  - 06:30 Task Scheduler → launchers/northstar_recommender.vbs → scripts/northstar_recommender.bat → --send
+  - 카드 [승인 1/2/3]/[보류] 회신 → telegram_bot/bot.py 가 _queue.json PENDING 배 등록 + pending status 갱신.
+  - G2: 새 추천 생성 시 이전 'proposed' 미승인 건 자동 만료(expired) — northstar_log.jsonl 기록.
 """
 from __future__ import annotations
 
 import argparse
+import html
 import io
 import json
 import os
 import re
 import sys
+import urllib.parse
+import urllib.request
 from datetime import datetime
 from pathlib import Path
 
@@ -48,9 +59,20 @@ MATRIX_FILE = BASE_DIR / "3. 웰페리온 가이드" / "coo" / "bootsetup_matrix
 QUEUE_FILE = BASE_DIR / "status" / "_queue.json"
 KPI_FILE = BASE_DIR / "status" / "kpi_values.json"
 PENDING_FILE = BASE_DIR / "status" / "northstar_pending.json"
+LOG_FILE = BASE_DIR / "status" / "northstar_log.jsonl"
+ENV_FILE = BASE_DIR / "telegram_bot" / ".env"  # 텔레그램 토큰·챗ID 단일출처(INC-004)
 
 # ── 대상 역할 (gm 제외, 전 C-Level 7역할) ──
 TARGET_ROLES = ["ceo", "cmo", "coo", "cto", "cpo", "cfo", "chro"]
+
+# ── 역할 닉네임 (카드 1줄 표기용) ──
+ROLE_NICK = {
+    "ceo": "웰리", "cfo": "시뽀", "chro": "시로", "cmo": "시모",
+    "coo": "시우", "cpo": "시포", "cto": "시토",
+}
+
+# ── 웹 풀표 페이지 (Pages 발행루트=가이드폴더 → URL 접두사 없음·ASCII) ──
+NORTHSTAR_WEB_URL = "https://wellperion-cao.github.io/wellperion-automation/northstar_today.html"
 
 # ── 난이도 배 ──
 DIFFICULTY_BOATS = ["⛵돛단배", "⛴️여객선", "🛳️크루즈"]
@@ -318,14 +340,163 @@ def normalize_candidates(raw: list) -> list:
 
 
 # ═══════════════════════════════════════════
+#  3줄 브릿지 보강 (GM 2026-06-29 — 북극성↔지금↔오늘 한눈)
+# ═══════════════════════════════════════════
+def _role_progress(rd: dict) -> str:
+    """역할의 '지금(진행 현황)' 한 줄 — 활성 배 수·완료건 next·KPI 현재값. 수집 입력만 사용."""
+    n_active = len(rd.get("active_ships", []))
+    n_next = len(rd.get("next_steps", []))
+    kv = rd.get("kpi_values", {}) or {}
+    kv_str = ", ".join(f"{k}={v}" for k, v in kv.items() if not k.startswith("_"))
+    parts = [f"활성 {n_active}척"]
+    parts.append(f"완료건 next {n_next}건" if n_next else "완료건 next 없음(표류)")
+    parts.append(f"KPI {kv_str}" if kv_str else "KPI 집계없음")
+    return " · ".join(parts)
+
+
+def enrich_candidates(candidates: list, roles_by_id: dict) -> list:
+    """각 후보에 northstar·progress 필드 + 3줄 브릿지 path_map 부여(이미 수집한 입력만).
+    🌟 북극성(dims0) → 📍 지금(활성·next·KPI) → 👉 오늘 한 수(제목+근거신호)."""
+    for c in candidates:
+        rd = roles_by_id.get(c.get("role"), {})
+        ns = (rd.get("northstar") or "").strip()[:80]
+        progress = _role_progress(rd) if rd else "(현황 없음)"
+        c["northstar"] = ns
+        c["progress"] = progress
+        c["path_map"] = (
+            f"🌟 북극성: {ns or '(미정)'}\n"
+            f"📍 지금: {progress}\n"
+            f"👉 오늘 한 수: {c.get('title', '')} ({c.get('signal', '')})"
+        )
+    return candidates
+
+
+# ═══════════════════════════════════════════
+#  텔레그램 발송 (.env 직독 · INC-004) + 카드
+# ═══════════════════════════════════════════
+def _env_val(key: str) -> str:
+    """환경변수 → telegram_bot/.env 순서로 값 로드(토큰·챗ID 단일출처)."""
+    val = os.environ.get(key, "").strip()
+    if val:
+        return val
+    if ENV_FILE.exists():
+        for line in ENV_FILE.read_text(encoding="utf-8").splitlines():
+            line = line.strip()
+            if not line or line.startswith("#") or "=" not in line:
+                continue
+            k, _, v = line.partition("=")
+            if k.strip() == key:
+                return v.strip().strip('"').strip("'")
+    return ""
+
+
+def build_card(pending: dict) -> str:
+    """텔레그램 알림 — 짧고 빠른 승인(약속 L12, GM 2026-06-29 확정 포맷).
+
+    풀표 아님. '🌅 오늘의 항로 추천 N건' + 후보 1줄(번호·역할닉네임·제목)
+    + [승인 N]/[보류] + 맨끝 '📊 표로 자세히: <웹 풀표 URL>'.
+    상세 3줄 브릿지·북극성·진행현황은 웹 풀표 페이지(northstar_today.html)에서 본다.
+
+    ※ 표시 포맷은 이 함수에 격리 — 교체 시 여기만 수정(데이터·콜백 로직 불변)."""
+    e = html.escape
+    d = pending.get("date", today_str())
+    try:
+        wd = ["월", "화", "수", "목", "금", "토", "일"][datetime.strptime(d, "%Y-%m-%d").weekday()]
+    except Exception:
+        wd = ""
+    cands = pending.get("candidates", [])
+    lines = [
+        f"🌅 <b>오늘의 항로 추천 {len(cands)}건</b>",
+        f"📅 {e(d)} ({wd})",
+        "",
+    ]
+    for i, c in enumerate(cands, 1):
+        role = (c.get("role") or "").lower()
+        nick = ROLE_NICK.get(role, role.upper())
+        diff = c.get("difficulty", "")
+        title = e(c.get("title", ""))
+        lines.append(f"<b>{i}.</b> {diff} [{e(nick)}] {title}")
+    lines.append("")
+    lines.append(
+        "👉 이 메시지에 회신: "
+        "<b>[승인 1]</b> · <b>[승인 2]</b> · <b>[승인 3]</b> · <b>[보류]</b>"
+    )
+    lines.append(f"📊 표로 자세히: {NORTHSTAR_WEB_URL}")
+    return "\n".join(lines)
+
+
+def send_card(pending: dict) -> bool:
+    """북극성 추천 카드를 .env TELEGRAM_CHAT_ID 로 발송. 성공 True."""
+    token = _env_val("TELEGRAM_BOT_TOKEN")
+    chat_id = _env_val("TELEGRAM_CHAT_ID")
+    if not token or not chat_id:
+        print("[WARN] 텔레그램 토큰/챗ID 미설정(.env) — 카드 발송 생략")
+        return False
+    text = build_card(pending)
+    data = urllib.parse.urlencode({
+        "chat_id": chat_id,
+        "text": text,
+        "parse_mode": "HTML",
+        "disable_web_page_preview": "true",
+    }).encode("utf-8")
+    req = urllib.request.Request(
+        f"https://api.telegram.org/bot{token}/sendMessage", data=data, method="POST")
+    try:
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            ok = resp.status == 200
+            print(f"[INFO] 북극성 카드 발송 {'성공' if ok else '실패'}")
+            return ok
+    except Exception:
+        print("[WARN] 카드 발송 실패 (토큰 trace 노출 방지로 상세 미출력)")
+        return False
+
+
+# ═══════════════════════════════════════════
+#  폐루프 로그 + G2 만료
+# ═══════════════════════════════════════════
+def log_event(event: str, **fields) -> None:
+    """status/northstar_log.jsonl 1행 append (적중률·기여 추적 v1)."""
+    rec = {"event": event, "logged_at": now_str(), **fields}
+    try:
+        with open(LOG_FILE, "a", encoding="utf-8") as f:
+            f.write(json.dumps(rec, ensure_ascii=False) + "\n")
+    except Exception as e:
+        print(f"[WARN] 로그 기록 실패: {e}")
+
+
+def expire_previous() -> None:
+    """새 추천 생성 시점에 이전 'proposed' 미승인 건을 자동 만료(G2). 당일 자정 아님."""
+    if not PENDING_FILE.exists():
+        return
+    try:
+        prev = json.loads(PENDING_FILE.read_text(encoding="utf-8"))
+    except Exception:
+        return
+    if str(prev.get("status")) == "proposed":
+        cands = prev.get("candidates", [])
+        log_event(
+            "expired",
+            date=prev.get("date"),
+            candidate_count=len(cands),
+            reason="새 추천 생성으로 자동 보류(G2)",
+        )
+        print(f"[G2] 이전 미승인 추천({prev.get('date')}) {len(cands)}건 → expired 처리")
+
+
+# ═══════════════════════════════════════════
 #  메인
 # ═══════════════════════════════════════════
-def run(stdout_only: bool = False):
-    print(f"[시작] 일일 북극성 추천기 (드라이런) — {now_str()}")
-    print("  ★ 라이브 부작용 0: 텔레그램 전송 없음 · 스케줄러 등록 없음 (전부 2단계)\n")
+def run(stdout_only: bool = False, send: bool = False):
+    mode = "라이브 발송(--send)" if send else "드라이런"
+    print(f"[시작] 일일 북극성 추천기 ({mode}) — {now_str()}")
+    if send:
+        print("  ★ 2단계 라이브: 텔레그램 카드 발송 + G2 만료 + 폐루프 로그\n")
+    else:
+        print("  ★ 드라이런: 콘솔 + northstar_pending.json 기록만 (텔레그램 발송 없음)\n")
 
     # 1. 입력 수집
     inputs = collect_inputs()
+    roles_by_id = {r["id"]: r for r in inputs["roles"]}
     print(f"[1/3] 입력 수집 완료 — 대상 {len(inputs['roles'])}역할 "
           f"(matrix {inputs['matrix_updated_at']} · kpi {inputs['kpi_generated_at']})")
 
@@ -352,6 +523,9 @@ def run(stdout_only: bool = False):
         if brain == "ClaudeCLI":
             brain = "ClaudeCLI+폴백보충"
 
+    # 2-b. 3줄 브릿지 보강 (GM 2026-06-29) — northstar·progress·path_map(3줄)
+    candidates = enrich_candidates(candidates, roles_by_id)
+
     # 3. 결과 조립
     pending = {
         "date": today_str(),
@@ -365,19 +539,36 @@ def run(stdout_only: bool = False):
         "candidates": candidates,
     }
 
-    # 콘솔 출력
+    # 콘솔 출력 — 3줄 브릿지(북극성→지금→오늘) 그대로 노출
     print(f"\n{'='*60}")
     print(f"  🧭 전사 북극성 추천 — 전사 top3  (생성두뇌={brain})")
     print(f"{'='*60}")
     for i, c in enumerate(candidates, 1):
         print(f"\n┌ 후보 {i} {c['difficulty']}  [{c['role']}]")
-        print(f"│ 제목: {c['title']}")
-        print(f"│ 경로: {c['path_map']}")
+        print(f"│ {c['path_map']}".replace("\n", "\n│ "))
         print(f"│ 근거: {c['rationale']}  ({c['signal']})")
         print("└")
     print(f"\n{'='*60}")
-    print("  (1단계 드라이런 — 텔레그램 카드·승인콜백·스케줄러는 2단계)")
 
+    # 발송 모드 — G2 만료(이전 미승인) → 파일 기록 → 카드 발송 → 폐루프 로그
+    if send:
+        expire_previous()
+        PENDING_FILE.write_text(json.dumps(pending, ensure_ascii=False, indent=2), encoding="utf-8")
+        sent = send_card(pending)
+        log_event(
+            "proposed",
+            date=pending["date"],
+            generated_by=brain,
+            sent=sent,
+            roles=[c["role"] for c in candidates],
+            titles=[c["title"][:60] for c in candidates],
+        )
+        print(f"\n[3/3] 기록·발송 완료: {PENDING_FILE} (텔레그램 {'발송' if sent else '미발송'})")
+        print(f"[완료] ({now_str()})")
+        return pending
+
+    # 드라이런
+    print("  (드라이런 — 텔레그램 카드·승인콜백은 --send / 봇)")
     if stdout_only:
         print("\n[--stdout-only] 파일 기록 생략")
         return pending
@@ -397,9 +588,12 @@ def main():
                         help="드라이런(기본 동작) — 콘솔 + northstar_pending.json 기록. 라이브 부작용 없음")
     parser.add_argument("--stdout-only", action="store_true", dest="stdout_only",
                         help="파일 기록 없이 콘솔 출력만")
+    parser.add_argument("--send", action="store_true",
+                        help="2단계 라이브 — 3후보 생성 + G2 만료 + northstar_pending.json 기록 "
+                             "+ 텔레그램 카드 발송 + 폐루프 로그 (06:30 예약 진입점)")
     args = parser.parse_args()
-    # --dry-run 은 기본 동작(1단계는 항상 드라이런). 플래그는 명시성용.
-    run(stdout_only=args.stdout_only)
+    # --dry-run 은 기본 동작. --send 는 라이브 발송(06:30 가동).
+    run(stdout_only=args.stdout_only, send=args.send)
 
 
 if __name__ == "__main__":
