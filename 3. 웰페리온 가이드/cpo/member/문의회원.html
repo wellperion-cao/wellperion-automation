@@ -999,6 +999,9 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
             <option value="결제완납">결제완납</option>
             <option value="LOSS">LOSS(이탈)</option>
           </select>
+          <label style="display:inline-flex;align-items:center;gap:5px;font-size:12px;color:var(--dim);cursor:pointer;white-space:nowrap" title="등록(SUC·단기SUC·결제완납)·이탈(LOSS) 건을 숨겨 진행 중 깔때기만 봅니다">
+            <input type="checkbox" id="dbHideRegistered" onchange="renderDbTable()" style="cursor:pointer"> 미등록만 보기
+          </label>
         </div>
         <div class="db-toolbar-actions">
           <button class="btn-add" id="btnAddRow" onclick="addNewRow()">+ 전화·직접 문의</button>
@@ -3085,13 +3088,17 @@ function renderDbTable() {
   var search = document.getElementById('dbSearch').value.trim().toLowerCase();
   var filter = document.getElementById('dbFilter').value;
 
+  var _hideRegEl = document.getElementById('dbHideRegistered');
+  var hideReg = _hideRegEl && _hideRegEl.checked;   // '미등록만 보기' — 등록·이탈 종결건 숨김
+  var _TERMINAL = ['SUC','단기SUC','결제완납','LOSS'];
   var filtered = dbRows.filter(function(row){
     var matchStatus = !filter || row.status === filter;
     var matchSearch = !search ||
       (row.name  || '').toLowerCase().includes(search) ||
       (row.memo  || '').toLowerCase().includes(search) ||
       (row.owner || '').toLowerCase().includes(search);
-    return matchStatus && matchSearch;
+    var matchHide = !hideReg || _TERMINAL.indexOf(row.status) < 0;
+    return matchStatus && matchSearch && matchHide;
   });
 
   var tbody = document.getElementById('dbBody');
