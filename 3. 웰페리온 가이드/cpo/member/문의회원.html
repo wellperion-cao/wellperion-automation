@@ -1781,13 +1781,17 @@ if (action === 'member_calendar') {
     </span></div>
     <div class="consult-row"><span class="ck">진행상황</span><span class="cv" id="cmStatus">—</span></div>
 
-    <div class="consult-field-label">방문 · 등록 처리</div>
+    <div class="consult-field-label">방문 · 등록 처리 (각각 독립 — 둘 다/하나만 가능)</div>
     <label class="consult-visit-toggle">
-      <input type="checkbox" id="cmVisited"> ☑ 방문 완료 (저장 시 진행상황 '방문')
+      <input type="checkbox" id="cmVisited"> ☑ 방문 완료 (실제 방문 기록 — 등록과 별개)
     </label>
     <label class="consult-visit-toggle">
-      <input type="checkbox" id="cmRegistered"> ✅ 등록 완료 (저장 시 진행상황 '등록(SUC)' → 금일 등록현황 자동 반영 + 알림 · 등록이 방문보다 우선)
+      <input type="checkbox" id="cmRegistered"> ✅ 등록 완료 (등록(SUC) → 금일 등록현황 반영 + 알림)
     </label>
+    <div class="consult-row" id="cmRegDateRow" style="margin-top:6px"><span class="ck">등록일자</span><span class="cv" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+      <input type="date" id="cmRegDate" style="padding:6px 10px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:13px;font-family:inherit">
+      <span style="font-size:11px;color:var(--dim)">— 등록 완료 체크 시 이 날짜로 기록</span>
+    </span></div>
 
     <div class="consult-field-label">기존 메모</div>
     <div class="consult-memo-prev" id="cmMemoPrev">—</div>
@@ -2825,24 +2829,31 @@ function processCalendarData(data) {
   // 하루 안 일정 시간순 정렬(미정은 하단) — 셀 칩·날짜 패널·상담 모달 진입 목록 공유
   Object.keys(calEvents).forEach(function(date){ calEvents[date] = sortByTime(calEvents[date]); });
 
+  renderCalendarChips();
+  renderTopDash();
+}
+
+// 칩만 로컬 재렌더(GAS 재조회 없이 낙관적 업데이트용). calEvents 기준. 2026-06-29 시포
+function renderCalendarChips() {
   Object.keys(calEvents).forEach(function(date){
     var chipsDiv = document.getElementById('chips-' + date);
     if (!chipsDiv) return;
+    chipsDiv.innerHTML = '';                      // 중복 방지
     var cell = chipsDiv.parentElement;
     cell.classList.add('has-event');
     calEvents[date].forEach(function(ev){
-      var _registered = (ev.status === 'SUC' || ev.status === '단기SUC');   // 등록 완료 → 금색 ♛(방문보다 우선)
-      var _visited = (ev.status === '방문');                                 // 방문 완료 → 녹색 ✓
+      var _registered = (ev.status === 'SUC' || ev.status === '단기SUC');   // 등록 완료 → 금색 ♛
+      var _visited = !!ev.visited || (ev.status === '방문');                 // 방문 완료(독립 칸·옛 status='방문' 호환) → 녹색 ✓
       var chip = document.createElement('div');
       chip.className = 'cal-chip ' + (ev.kind === '체험' ? 'experience' : 'tour') + (_registered ? ' registered' : (_visited ? ' visited' : ''));
-      var _mark = _registered ? '<span class="cc-reg">♛</span>' : (_visited ? '<span class="cc-check">✓</span>' : '');
+      // 방문·등록 독립 → ♛(등록)와 ✓(방문)를 각각 표시. 둘 다면 둘 다, 하나면 하나. 2026-06-29 시포
+      var _mark = (_registered ? '<span class="cc-reg">♛</span>' : '') + (_visited ? '<span class="cc-check">✓</span>' : '');
       var l1 = _mark + (ev.time ? esc(ev.time) + ' ' : '') + esc(ev.kind) + (ev.name ? ' ' + esc(ev.name) : '');
       chip.innerHTML = '<div class="cc-l1">' + l1 + '</div>' + (ev.phone ? '<div class="cc-l2">' + esc(ev.phone) + '</div>' : '');
       chipsDiv.appendChild(chip);
     });
   });
-
-  renderTopDash();}
+}
 
 function _setTxt(id, v) {
   var el = document.getElementById(id);
@@ -2917,8 +2928,13 @@ function openConsultModal(ev) {
   document.getElementById('cmSchedule').textContent = sched + ' · ' + (ev.kind || '상담');
   document.getElementById('cmStatus').textContent = ev.status || '—';
   var visitedChk = document.getElementById('cmVisited');
-  visitedChk.checked = (ev.status === '방문');
-  document.getElementById('cmRegistered').checked = (ev.status === 'SUC' || ev.status === '단기SUC');  // 이미 등록된 건이면 체크 표시
+  var _isReg = (ev.status === 'SUC' || ev.status === '단기SUC');
+  visitedChk.checked = !!ev.visited;                        // 방문 완료(독립 칸) — 진행상황과 무관
+  document.getElementById('cmRegistered').checked = _isReg; // 이미 등록된 건이면 등록 체크 표시
+  // 등록일자 기본값 — 기존 등록일 단서 없으면 오늘
+  var _rdEl = document.getElementById('cmRegDate');
+  var _td = new Date();
+  _rdEl.value = ev.regDate || (_td.getFullYear() + '-' + String(_td.getMonth()+1).padStart(2,'0') + '-' + String(_td.getDate()).padStart(2,'0'));
   var prevEl = document.getElementById('cmMemoPrev');
   prevEl.textContent = (ev.memo && String(ev.memo).trim()) ? ev.memo : '(기존 메모 없음)';
   document.getElementById('cmMemoInput').value = '';   // 모달 열 때 1회 초기화(IME 안전 — 입력 중 재생성 없음)
@@ -2965,7 +2981,13 @@ function saveConsultModal() {
   var selTime = document.getElementById('cmTimeSel').value;
   var timeWritable = ['tour','exp1','exp2','exp3','visit2'].indexOf(_consultEv.slot || '') >= 0;
   var timeChanged = timeWritable && (selTime !== _consultOrigTime);
-  if (!visited && !registered && !input && !c1Changed && !c2Changed && !c3Changed && !timeChanged) { showToast('변경 사항이 없습니다', 'err'); return; }
+  // 방문·등록은 독립 — 원본과 비교해 변경 감지. 2026-06-29 시포
+  var origVisited = !!_consultEv.visited;
+  var origReg = (_consultEv.status === 'SUC' || _consultEv.status === '단기SUC');
+  var visitedChanged = (visited !== origVisited);
+  var regChanged = (registered !== origReg);
+  var regDate = document.getElementById('cmRegDate').value;
+  if (!visitedChanged && !regChanged && !input && !c1Changed && !c2Changed && !c3Changed && !timeChanged) { showToast('변경 사항이 없습니다', 'err'); return; }
 
   var payload = { action: 'member_inquiry_update', rowIndex: _consultEv.rowIndex, keyPhone: _consultEv.phone || '' };
   if (c1Changed) payload.contact1 = c1;
@@ -2974,8 +2996,11 @@ function saveConsultModal() {
   // 시간 변경 → 해당 일정 칸에 '날짜+시간' 결합 전송(단일셀 모델·그리드와 동일). 날짜는 유지, 시간만 교체.
   if (timeChanged) payload[_consultEv.slot] = _comboDateTime(_consultEv.date, selTime);
   // 진행상황: 등록>방문 우선. 등록 완료=SUC(→서버가 금일 등록현황 carry-over+알림). 방문 완료=방문. 둘 다 미체크면 기존 상태 보존.
-  if (registered) payload.status = 'SUC';
-  else if (visited) payload.status = '방문';
+  // 방문 완료 — 진행상황과 독립 칸(방문완료일). 바뀌었을 때만 전송(체크=방문일자=예약일 기록, 해제=클리어).
+  if (visitedChanged) { payload.visited = visited; if (visited) payload.visitDate = _consultEv.date || ''; }
+  // 등록 — 등록 완료면 진행상황 SUC + (새 등록일 때만)등록일자. 방문만(미등록)이면 퍼널 상태 '방문'.
+  if (registered) { payload.status = 'SUC'; if (!origReg) payload.regDate = regDate; }
+  else if (visited && visitedChanged) { payload.status = '방문'; }
   // 상담 내용: 기존 메모 보존 + 새 줄 누적. 빈 입력이면 메모 미전송.
   if (input) {
     var today = new Date();
@@ -2986,16 +3011,36 @@ function saveConsultModal() {
   }
 
   var saveBtn = document.getElementById('cmSaveBtn');
-  var _celebrateReg = registered; var _regName = (_consultEv && _consultEv.name) ? _consultEv.name : '';
+  var _celebrateReg = registered && !origReg; var _regName = (_consultEv && _consultEv.name) ? _consultEv.name : '';
+  var evRef = _consultEv;   // 낙관적 업데이트용 — closeConsultModal이 _consultEv=null 해도 calEvents 내 객체 참조 유지
   saveBtn.disabled = true;
   apiPost(payload)
     .then(function(){
       showToast(_celebrateReg ? ('🎉 등록 완료 · ' + (_regName ? _regName + '님 환영합니다' : '환영합니다')) : '저장', 'ok');
+      // 낙관적 업데이트 — 서버 전체 재조회(GAS 왕복) 없이 바뀐 부분만 로컬 반영(버벅임 제거). 2026-06-29 시포
+      if (evRef) {
+        if (payload.status !== undefined) evRef.status = payload.status;
+        if (payload.visited !== undefined) { evRef.visited = payload.visited; evRef.visitDate = payload.visitDate || ''; }
+        if (payload.contact1 !== undefined) evRef.contact1 = payload.contact1;
+        if (payload.contact2 !== undefined) evRef.contact2 = payload.contact2;
+        if (payload.contact3 !== undefined) evRef.contact3 = payload.contact3;
+        if (payload.memo !== undefined) evRef.memo = payload.memo;
+        if (timeChanged) evRef.time = selTime;
+        var _dr = dbRows.find(function(r){ return r.rowIndex === evRef.rowIndex; });
+        if (_dr) {
+          if (payload.status !== undefined) _dr.status = payload.status;
+          if (payload.visited !== undefined) _dr.visited = payload.visited;
+          if (payload.contact1 !== undefined) _dr.contact1 = payload.contact1;
+          if (payload.contact2 !== undefined) _dr.contact2 = payload.contact2;
+          if (payload.contact3 !== undefined) _dr.contact3 = payload.contact3;
+          if (payload.memo !== undefined) _dr.memo = payload.memo;
+        }
+      }
       closeConsultModal();
       renderCalendarShell();
-      loadCalendarData();                       // 달력 갱신(셸 재구성 후 재로드 — 칩 중복 방지)
-      if (_tabLoaded.db) loadDbData();          // 같은 시트 → 문의 현황도 동기
-      if (registered && _tabLoaded.registered) loadRegistered();  // 등록(SUC) 처리 → 금일 등록현황 즉시 반영
+      renderCalendarChips();                     // 로컬 재렌더(GAS 재조회 없음 — 즉시 반영)
+      if (_tabLoaded.db) renderDbTable();        // 그리드도 로컬 재렌더
+      if (_celebrateReg && _tabLoaded.registered) loadRegistered();  // 신규 등록 시에만 등록현황 1회 재조회(새 행 반영)
     })
     .catch(function(err){
       showToast('저장 실패: ' + (err.message || ''), 'err');

@@ -374,6 +374,7 @@ select{appearance:none;-webkit-appearance:none;background-image:url("data:image/
 
     var payload = {
       action: 'reg_submit',
+      t: 'wlp_voc_7b3f9a2e6c1d4085',   // 접수 위조방지 토큰(시토 2026-06-29) — GAS VOC_SUBMIT_TOKEN_DEFAULT와 일치. 바뀌면 양쪽 동시 교체.
       category: selectedCategory,
       name: vals.name || '',
       contact: vals.contact || '',

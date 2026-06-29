@@ -18,6 +18,9 @@ const INQUIRY_HEADERS = ['id', '시각', '이름', '연락처', '문의유형', 
 
 const INQUIRY_TYPES = ['투어 예약', '프로그램 문의', '멤버십 상담', '시설 안내', '기타'];
 
+// ─── 문의 내용(자유서술) 칼럼 탐지 키워드 (시토 2026-06-29 GM '내용도 같이') — 구글폼 응답시트의 자유서술 칸 탐지. 구체 표현 우선(_findCol_은 키워드 순서대로 첫 매치). 칸 없으면 idx<0 → 알림에서 '내용' 줄 자동 생략(무중단). ───
+var INQUIRY_CONTENT_KEYS = ['문의 내용', '문의내용', '상담 내용', '상담내용', '남기실 말씀', '하실 말씀', '문의 사항', '문의사항', '요청 사항', '요청사항', '궁금하신 점', '궁금한 점', '추가 문의', '하고 싶은 말', '전달 사항', '메시지', '내용', 'Message', 'Comments', 'Inquiry Details', 'Details', 'Your Message'];
+
 // ─── 구글폼 응답 시트 (실제 문의 — 자체폼 휴면 대체, 2026-06-05) ───
 // 5채널 콘텐츠 → wellperion.com/ko/inquiry → 구글폼 작성 → 각 폼 응답시트 누적.
 // 대시보드(inquiry_list·funnel_conversion)가 이 응답들을 읽어 '문의수=0' 빈틈을 메움.
@@ -633,6 +636,7 @@ function _notifyNewInquiries_() {
       var idxChan  = _findCol_(headers, cfg.channelKeys || ['채널', '경로', '알게', 'How Did You Hear']);
       var idxMemo  = _findCol_(headers, ['비고', '메모']);
       var idxProg  = _findCol_(headers, cfg.programKeys || ['종목', '프로그램', '과목', 'Program']);
+      var idxContent = _findCol_(headers, INQUIRY_CONTENT_KEYS);  // 문의 내용(자유서술) 칸 — GM 2026-06-29 시토
 
       // ★ 실데이터 마지막 행번호 (전화번호/타임스탬프 기준, 빈행 제외)
       var realLastRow = _realLastDataRow_(sh, idxPhone, idxDate, idxMemo);
@@ -671,13 +675,16 @@ function _notifyNewInquiries_() {
         if (!phone) phone = '-';
         if (!chan)  chan  = '-';
 
+        var content = idxContent >= 0 ? String(r[idxContent] || '').trim() : '';
+        if (content.length > 300) content = content.substring(0, 300) + '…';
         var msg = '🔔 [신규 문의]\n'
           + '유형: ' + cfg.type + '\n'
           + (prog ? '종목: ' + prog + '\n' : '')
           + '이름: ' + name + '\n'
           + '연락처: ' + phone + '\n'
           + '유입채널: ' + chan + '\n'
-          + '시각: ' + tsStr;
+          + '시각: ' + tsStr
+          + (content ? '\n내용: ' + content : '');
         _notifyTelegram(msg, inquiryChatId);
       });
 
@@ -735,6 +742,7 @@ function onInquiryFormSubmit(e) {
     var idxChan  = _findCol_(headers, cfg.channelKeys || ['채널', '경로', '알게', 'How Did You Hear']);
     var idxMemo  = _findCol_(headers, ['비고', '메모']);
     var idxProg  = _findCol_(headers, cfg.programKeys || ['종목', '프로그램', '과목', 'Program']);
+    var idxContent = _findCol_(headers, INQUIRY_CONTENT_KEYS);  // 문의 내용(자유서술) 칸 — GM 2026-06-29 시토
 
     // ★ 실데이터 마지막 행번호 (빈행 포함 getLastRow 사용 금지)
     var realLastRow = _realLastDataRow_(sheet, idxPhone, idxDate, idxMemo);
@@ -762,13 +770,16 @@ function onInquiryFormSubmit(e) {
       var chan  = (idxChan  >= 0 ? String(r[idxChan]  || '').trim() : '') || '-';
       var prog  = (idxProg  >= 0 ? String(r[idxProg]  || '').trim() : '');
 
+      var content = idxContent >= 0 ? String(r[idxContent] || '').trim() : '';
+      if (content.length > 300) content = content.substring(0, 300) + '…';
       var msg = '🔔 [신규 문의 — 즉시]\n'
         + '유형: ' + cfg.type + '\n'
         + (prog ? '종목: ' + prog + '\n' : '')
         + '이름: ' + name + '\n'
         + '연락처: ' + phone + '\n'
         + '유입채널: ' + chan + '\n'
-        + '시각: ' + tsStr;
+        + '시각: ' + tsStr
+        + (content ? '\n내용: ' + content : '');
       _notifyTelegram(msg, inquiryChatId);
     });
 
@@ -993,6 +1004,16 @@ function _miColIdx_(headers, names) {
   for (var k = 0; k < arr.length; k++) { for (var j = 0; j < headers.length; j++) { if (headers[j].indexOf(arr[k]) >= 0) return j; } }
   return -1;
 }
+function _todayKR_() { return Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy-MM-dd'); }
+// 헤더에 name 칸이 없으면 맨 끝에 새 칸으로 생성(비파괴·멱등) 후 0-based 인덱스 반환. 2026-06-29 시포(방문완료일).
+function _miEnsureCol_(sh, hdr, name) {
+  var ci = _miColIdx_(hdr, [name]);
+  if (ci >= 0) return ci;
+  var newCol = hdr.length + 1;
+  sh.getRange(1, newCol).setValue(name);
+  hdr.push(name);
+  return newCol - 1;
+}
 // 전화번호 표시 정규화 — 시트가 '01034761531'을 숫자로 저장해 앞 0이 떨어진 '1034761531'로 보이는 문제 교정.
 //   무조건 '010-3476-1531' 형식. 판단 불가(자릿수 안 맞음)면 원문 보존(손실 금지). 2026-06-26 시포·GM.
 function _fmtPhone_(v) {
@@ -1108,6 +1129,7 @@ function _miReadRows_() {
   var iExp2  = _miColIdx_(hdr, ['체험2 확정시간','체험2']);
   var iExp3  = _miColIdx_(hdr, ['체험3 확정시간','체험3']);
   var iV2Dt  = _miColIdx_(hdr, ['시설 체험 예약2(날짜 기록)','시설 체험 예약2','체험 예약2']);  // 2차 방문 날짜(달력 보강용·확정시간 칸과 별개)
+  var iVisited = _miColIdx_(hdr, ['방문완료일','방문완료','방문일자']);  // 방문 완료(진행상황과 독립 — 등록돼도 방문 기록 유지). 2026-06-29 시포
   var iOwner = _miColIdx_(hdr, ['담당','담당자']);
   var iMemo  = _miColIdx_(hdr, ['메모','비고','담당자메모']);
   var iChan  = _miColIdx_(hdr, ['문의채널','유입채널','채널','경로','알게']);
@@ -1137,6 +1159,8 @@ function _miReadRows_() {
       exp3Time: _miTime_(iExp3 >= 0 ? row[iExp3] : ''),
       visit2Date: _miToISO_(iV2Dt >= 0 ? row[iV2Dt] : ''),  // 2차 방문 날짜(col11) — 달력에서 누락되던 일정 보강
       visit2Time: _miTime_(iV2Dt >= 0 ? row[iV2Dt] : ''),   // 2차 방문 시간 — 같은 셀에서 직독(시간 설정 지원, 2026-06-29 시포)
+      visited:    (iVisited >= 0 && row[iVisited] !== '' && row[iVisited] != null) ? true : false,  // 방문 완료 여부(독립)
+      visitDate:  (iVisited >= 0) ? _miToISO_(row[iVisited]) : '',  // 방문 완료일
       timestamp:_miToISO_(iTs   >= 0 ? row[iTs]   : ''),
       memo:     iMemo  >= 0 ? String(row[iMemo]  || '') : '',
       owner:    iOwner >= 0 ? String(row[iOwner] || '') : '',
@@ -1166,24 +1190,24 @@ function _regSheet_() {
 }
 function _regNormPhone_(p) { return String(p == null ? '' : p).replace(/[^0-9]/g, ''); }
 // SUC/단기SUC 전환 시 등록현황에 upsert(전화 키). 신규=등록일 오늘+행추가. 기존=이름·프로그램만 갱신(등록일 보존).
-function _regUpsert_(name, phone, program) {
+function _regUpsert_(name, phone, program, regDate) {
   var key = _regNormPhone_(phone);
   if (!key) return;
   var sh = _regSheet_();
   var last = sh.getLastRow();
   if (last >= 2) {
-    var data = sh.getRange(2, 1, last - 1, 3).getValues();  // 이름·전화·프로그램
+    var data = sh.getRange(2, 1, last - 1, 4).getValues();  // 이름·전화·프로그램·등록일
     for (var i = 0; i < data.length; i++) {
       if (_regNormPhone_(data[i][1]) === key) {
         if (name)    sh.getRange(i + 2, 1).setValue(name);
         if (program) sh.getRange(i + 2, 3).setValue(program);
+        if (regDate) sh.getRange(i + 2, 4).setValue(regDate);  // 등록일자 명시 시 갱신(GM 보정 가능)
         return;
       }
     }
   }
-  var today = Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy-MM-dd');
   var row = new Array(_REG_HEADER.length).fill('');
-  row[0] = name || ''; row[1] = phone || ''; row[2] = program || ''; row[3] = today;
+  row[0] = name || ''; row[1] = phone || ''; row[2] = program || ''; row[3] = regDate || _todayKR_();  // 등록일=지정값 우선, 없으면 오늘
   sh.appendRow(row);
 }
 
@@ -1692,6 +1716,7 @@ function _processAction(body) {
       var pvIdxPhone = _findCol_(pvHdrs, ['연락처','휴대폰','핸드폰','전화','Mobile Phone','Phone',"Guardian's Mobile Phone"]);
       var pvIdxChan  = _findCol_(pvHdrs, pvCfg.channelKeys || ['채널','경로','알게','How Did You Hear']);
       var pvIdxProg  = _findCol_(pvHdrs, pvCfg.programKeys || ['종목','프로그램','과목','Program']);
+      var pvIdxContent = _findCol_(pvHdrs, INQUIRY_CONTENT_KEYS);  // 문의 내용 칸 — GM 2026-06-29 시토
 
       var pvOut = pvRows.map(function(rowNum) {
         try {
@@ -1708,13 +1733,16 @@ function _processAction(body) {
           var chan  = (pvIdxChan  >= 0 ? String(r[pvIdxChan]  ||'').trim() : '') || '-';
           var prog  = (pvIdxProg  >= 0 ? String(r[pvIdxProg]  ||'').trim() : '');
 
+          var content = pvIdxContent >= 0 ? String(r[pvIdxContent] || '').trim() : '';
+          if (content.length > 300) content = content.substring(0, 300) + '…';
           var msg = '🔔 [신규 문의 — 즉시]\n'
             + '유형: ' + pvCfg.type + '\n'
             + (prog ? '종목: ' + prog + '\n' : '')
             + '이름: ' + name + '\n'
             + '연락처: ' + phone + '\n'
             + '유입채널: ' + chan + '\n'
-            + '시각: ' + tsStr;
+            + '시각: ' + tsStr
+            + (content ? '\n내용: ' + content : '');
 
           return { row: rowNum, msg: msg, prog_col_found: pvIdxProg >= 0 };
         } catch(e2) { return { row: rowNum, error: e2.message }; }
@@ -2030,7 +2058,7 @@ function _processAction(body) {
         // rowIndex·memo·owner 동봉 — 달력 일정 클릭 → 상담 모달에서 방문완료·메모 수정용(2026-06-26 CRM)
         // tmin = 시간대별 정렬키(분 단위 정수·미정=null). time 표시 텍스트는 그대로 유지(2026-06-26).
         // slot = 어느 일정 칸(tour/exp1/exp2/exp3/visit2)인지 — 달력 모달 시간 설정 시 쓰기 대상 식별(2026-06-29 시포).
-        mcEvents.push({ date: dateStr, kind: kind, time: timeStr || '', tmin: _miTminKR_(timeStr), slot: slot || '', name: row.name || '', phone: row.phone || '', program: row.program, status: row.status, rowIndex: row.rowIndex, memo: row.memo || '', owner: row.owner || '', contact1: row.contact1 || '', contact2: row.contact2 || '', contact3: row.contact3 || '' });
+        mcEvents.push({ date: dateStr, kind: kind, time: timeStr || '', tmin: _miTminKR_(timeStr), slot: slot || '', name: row.name || '', phone: row.phone || '', program: row.program, status: row.status, rowIndex: row.rowIndex, memo: row.memo || '', owner: row.owner || '', contact1: row.contact1 || '', contact2: row.contact2 || '', contact3: row.contact3 || '', visited: row.visited, visitDate: row.visitDate || '' });
       }
       // 1차 상담: 날짜=상담칸(col9), 시간=확정시간 텍스트(col10·'11시 등록상담' 등 한글표기). 시간 누락 보강.
       add(row.tourDate, '상담', row.tourTime || _miTimeKR_(row.exp1), 'tour');
@@ -2093,6 +2121,12 @@ function _processAction(body) {
     _muSetCol(['Contact1'], 17, _fmtContactOrUndef_(body.contact1));
     _muSetCol(['Contact2'], 18, _fmtContactOrUndef_(body.contact2));
     _muSetCol(['Contact3'], 19, _fmtContactOrUndef_(body.contact3));
+    // 방문 완료 — 진행상황과 독립 칸(방문완료일). 등록(SUC)돼도 방문 기록 유지. body.visited 미전송이면 무변경.
+    //   true=방문일자(없으면 오늘) 기록 / false=클리어. 칸 없으면 _miEnsureCol_이 생성. 2026-06-29 시포.
+    if (body.visited !== undefined) {
+      var _vci = _miEnsureCol_(muSh, muHdr, '방문완료일');
+      muSh.getRange(muRow, _vci + 1).setValue(body.visited ? (body.visitDate || _todayKR_()) : '');
+    }
     // carry-over: 신규→SUC/단기SUC '실제 전환' 시에만 등록현황 탭 이관 + 등록 전환 전용 알림. 2026-06-26 시토·GM.
     //   A안(GM 결재): 유효회원(실계약 정본)에는 자동생성 안 함 — 계약 확정 시 사람 입력. 여기선 깔때기 이관+알림까지만.
     //   과거 버그: body.status==SUC면 값 미변경에도 매 저장 _regUpsert_ 재실행 → 등록현황 중복 갱신. 이제 old≠SUC && new==SUC 1회만.
@@ -2111,7 +2145,7 @@ function _processAction(body) {
       var _coProg  = body.program || (_coProgCi >= 0 ? String(muSh.getRange(muRow, _coProgCi + 1).getValue() || '') : '');
       var _coOwner = body.owner   || (_coOwnCi  >= 0 ? String(muSh.getRange(muRow, _coOwnCi  + 1).getValue() || '') : '');
       // _regUpsert_는 멱등(전화키 존재 시 갱신·없으면 today 도장 추가) → SUC 저장 시 항상 등록현황 보장(과거 누락 건도 재저장으로 복구).
-      try { _regUpsert_(_coName, _coPhone, _coProg); } catch (e) {}
+      try { _regUpsert_(_coName, _coPhone, _coProg, body.regDate); } catch (e) {}
       // 등록 전환 전용 알림은 '실제 전환(이전≠SUC)' 1회만 — 매 저장 중복 알림 방지. '문의 알림' 방.
       if (!_wasSuc) {
         try {
@@ -2309,11 +2343,28 @@ function _processAction(body) {
       var ci = _findCol_(luHdr, colNames);
       if (ci >= 0) luSh.getRange(luRow, ci + 1).setValue(val);
     }
+    // 등록 전환 감지: 상태 변경 '전' 값 캡처(신규→SUC 실제 전환 1회만 알림 — 멤버십 member_inquiry_update와 동일 패턴·중복발화 차단). 시토 2026-06-29 GM.
+    var _luStatusCi  = _findCol_(luHdr, ['진행상태', '진행현황', '진행상황', '상태']);
+    var _luOldStatus = (_luStatusCi >= 0) ? String(luSh.getRange(luRow, _luStatusCi + 1).getValue() || '').trim() : '';
     _luSet(['진행상태', '진행현황', '진행상황', '상태'], body.status);
     _luSet(['관리담당'], body.owner);  // ★관리 담당 컬럼만(폼 원본 '접수담당자' 절대 안 건드림)
     _luSet(['상담메모', '메모', '비고'], body.memo);
     _luSet(['상담예약', '상담 예약', '상담일정'], body.consult);
     _luSet(['방문상태', '방문'], body.visited);
+    // 강습 등록 전환(신규→SUC/단기SUC 1회) → '문의 알림' 방 통보(멤버십과 정합). 시토 2026-06-29 GM.
+    try {
+      var _luNewStatus = String(body.status == null ? '' : body.status).trim();
+      var _luIsSucNew  = (_luNewStatus === 'SUC' || _luNewStatus === '단기SUC');
+      var _luWasSuc    = (_luOldStatus === 'SUC' || _luOldStatus === '단기SUC');
+      if (_luIsSucNew && !_luWasSuc) {
+        var _luNameCi  = _findCol_(luHdr, ['이름', '성함']);
+        var _luSportCi = _findCol_(luHdr, ['종목', '과목', '관심종목', '강습종목']);
+        var _luName  = (String(body.name  || (_luNameCi  >= 0 ? luSh.getRange(luRow, _luNameCi  + 1).getValue() : '')).trim()) || '-';
+        var _luSport = (String(body.sport || body.program || (_luSportCi >= 0 ? luSh.getRange(luRow, _luSportCi + 1).getValue() : '')).trim()) || '-';
+        var _luRegChatId = PropertiesService.getScriptProperties().getProperty('TELEGRAM_INQUIRY_CHAT_ID') || _INQUIRY_CHAT_ID_FALLBACK;
+        _notifyTelegram('✅ <b>등록 전환(강습)</b> — 강습문의가 등록(' + _luNewStatus + ')으로 전환\n· 이름: ' + _luName + '\n· 종목: ' + _luSport + '\n· 담당: ' + (body.owner || '-'), _luRegChatId);
+      }
+    } catch (e) {}
     try { _notifyTelegram('📝 강습문의 수정 — 행 ' + luRow + ' · 상태:' + (body.status || '-') + ' · 담당:' + (body.owner || '-')); } catch (e) {}
     return _json({ ok: true, rowIndex: luRow, message: '수정되었습니다.' });
   }

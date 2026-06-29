@@ -28,17 +28,18 @@
   /* ── 매트릭스 ── */
   .matrix-scroll{overflow-x:auto; border:1px solid var(--border); border-radius:11px; background:var(--paper);}
   table.matrix{border-collapse:collapse; width:100%; min-width:1040px; font-size:11.5px;}
-  table.matrix th, table.matrix td{border:1px solid var(--border); padding:7px 9px; text-align:left; vertical-align:top; line-height:1.42;}
+  table.matrix th, table.matrix td{border:1px solid var(--border); padding:7px 9px; text-align:left; vertical-align:top; line-height:1.42; white-space:pre-wrap; word-break:break-word;}
   table.matrix thead th{background:var(--surface); font-weight:700; font-size:12px; position:sticky; top:0; z-index:2;}
   table.matrix thead th.grp-np{color:#f0c674;}
   table.matrix thead th.grp-boot{color:#7ac4f0;}
   table.matrix thead th.grp-guard{color:#6abf7b;}
   table.matrix thead th.grp-collab{color:var(--accent-soft);}
-  table.matrix th.role-col{width:140px; min-width:132px;}
+  table.matrix th.role-col{width:95px; min-width:90px;}
   td.role-cell{background:var(--surface);}
   td.role-cell .ricon{font-size:16px;}
   td.role-cell .rname{font-weight:800; font-size:13px;}
   td.role-cell .rtitle{font-size:10px; color:var(--dim); margin-top:1px;}
+  td.role-cell .rowner{font-size:10px; color:var(--accent-soft); margin-top:2px;}
   tr.role-gm td{background:rgba(184,134,11,0.10);}
   tr.role-gm td.role-cell{background:rgba(184,134,11,0.18);}
   .dim-label{font-size:9px; font-weight:700; letter-spacing:0.02em; color:var(--dim); display:block; margin-bottom:0; text-transform:uppercase;}
@@ -65,7 +66,7 @@
   footer.foot{margin-top:16px; font-size:10.5px; color:var(--dim); border-top:1px solid var(--border); padding-top:10px; line-height:1.55;}
 
   @media print{
-    @page{size:A4 landscape; margin:8mm;}
+    @page{size:A4 portrait; margin:8mm;}
     body{background:#fff; color:#111; padding:0; font-size:9px;}
     header.page-head{margin-bottom:8px; padding-bottom:6px;}
     header.page-head h1{font-size:16px;}
@@ -73,9 +74,18 @@
     table.matrix{min-width:0; font-size:8px;}
     table.matrix th, table.matrix td{padding:3px 4px;}
     .matrix-scroll, table.matrix tr, .ccard{break-inside:avoid;}
-    .cards{grid-template-columns:repeat(4,1fr); gap:6px;}
-    header.page-head .back, .ccard a.lk{display:none;}
+    .cards{grid-template-columns:repeat(2,1fr); gap:6px;}
+    header.page-head .back, .ccard a.lk, .ebtn{display:none;}
     .ccard a.lk{display:none;}
+    /* 인쇄 색상 강제 라이트 — 다크배경/밝은글자 충돌(보호색) 방지 */
+    table.matrix, table.matrix tr, table.matrix th, table.matrix td{background:#fff !important; color:#111 !important; border-color:#999 !important;}
+    table.matrix thead th{background:#ececec !important; color:#000 !important;}
+    td.role-cell{background:#f4f4f4 !important;}
+    tr.role-gm td, tr.role-gm td.role-cell{background:#f8f2dc !important;}
+    td.role-cell .rname, td.role-cell .rtitle, td.role-cell .rowner, .dim-label, .dim-val{color:#111 !important;}
+    .matrix-scroll{background:#fff !important; border-color:#999 !important;}
+    .ccard, .ccard h3, .ccard .desc{background:#fff !important; color:#111 !important; border-color:#999 !important;}
+    h2.sec, header.page-head h1{color:#111 !important;}
   }
 </style>
 </head>
@@ -84,14 +94,12 @@
 
   <header class="page-head">
     <h1>🏛️ 웰페리온 전사 운영 헌법 — 한 장</h1>
-    <div class="sub">정본(<code>coo/bootsetup_matrix.json</code>)을 직접 읽어 그립니다. <b>GM</b>=✏️ 편집 버튼+비밀번호로 5칸을 바로 고칩니다 / <b>웰리</b>=정본 파일 직접 편집(git). 정본 1곳 = <code>coo/bootsetup_matrix.json</code>.</div>
     <a class="back" href="wellperion_guide(main).html#S2">← 웰페리온 ERP 운영 가이드(S2)로</a>
+    <a class="back" href="#" onclick="window.print();return false;">🖨️ 인쇄</a>
   </header>
 
   <!-- ════ A. 8주체 × 5칸 매트릭스 (편집형 · 2026-06-29) ════ -->
   <h2 class="sec">🧭 8주체 × 5칸 매트릭스 <span id="matrix-edit-wrap" style="font-size:11px;font-weight:400;"></span></h2>
-  <div class="sec-note">정본 = <code>coo/bootsetup_matrix.json</code> (직독·캐시 없음). 5칸 = 역할마다 다른 것: 🌟 북극성 · 📊 KPI · 🔧 파이프라인 · 📚 부트셋업 SSOT · 🚧 소유 관리. <b>결재선·재발방지는 전 역할 공통</b>이라 아래 공통 4섹션/재발방지 현황에 한 번만 있습니다(역할칸 아님).</div>
-
   <div class="matrix-scroll">
     <table class="matrix">
       <thead>
@@ -112,16 +120,8 @@
 
   <!-- ════ B. 공통 헌법 4섹션 (S2 정본으로 링크만) ════ -->
   <h2 class="sec">📜 공통 헌법 4섹션</h2>
-  <div class="sec-note">내용은 각 정본(S2 공통탭·<code>ssot/</code>)에 삽니다 — 여기선 점프 링크만(복사 금지·약속 L01).</div>
-
   <div class="cards" id="common-cards"><!-- JS가 라이브 URL로 채움 --></div>
 
-  <div class="dedupe">🧹 중복 2건 정리됨(2026-06-29): 브릿지 = 완료 4요건 ③('다음') 흡수 / 5종 = 운영 SOP 단일출처(GM 결재 5종 = 5종 단일출처).</div>
-
-  <footer class="foot">
-    정본: <code>coo/bootsetup_matrix.json</code> (매트릭스) · <code>ssot/약속.json</code>·<code>ssot/incidents.json</code>·<code>ssot/canon_values.json</code>·<code>ssot/kpi.json</code> (헌법 데이터) · S2 공통탭(운영 SOP).
-    이 페이지는 정본을 직독해 렌더합니다 — GM ✏️ 편집은 정본(<code>coo/bootsetup_matrix.json</code>)을 직접 커밋하므로 손동기화가 필요 없습니다.
-  </footer>
 
 </div>
 
@@ -215,6 +215,7 @@
           '<div class="ricon">' + esc(role.icon) + '</div>' +
           '<div class="rname" style="color:' + esc(ac) + ';">' + esc(role.name) + '</div>' +
           '<div class="rtitle">' + esc(role.title) + '</div>' +
+          (role.owner ? '<div class="rowner">담당 · ' + esc(role.owner) + '</div>' : '') +
         '</td>' + cells +
       '</tr>';
     }).join('');
@@ -227,7 +228,7 @@
     if(window._composing) return;
     var role = el.getAttribute('data-role');
     var dim  = parseInt(el.getAttribute('data-dim'), 10);
-    var val  = el.textContent || '';
+    var val  = el.innerText || el.textContent || '';
     if(!_matrixData) return;
     (_matrixData.roles || []).forEach(function(r){
       if(r.id === role && Array.isArray(r.dims) && dim < r.dims.length){
@@ -254,27 +255,42 @@
   }
 
   window._matrixEdit = function(){ setEdit(true); };
-  window._matrixCancel = function(){
-    fetch(RAW_URL + '?t=' + Date.now(), {cache:'no-store'})
+  function fetchMatrix(){
+    // 최신 보장: GAS read_file(GitHub API 직독·CDN 캐시 없음) → 실패 시 Pages 폴백
+    return fetch(GAS_URL, {method:'POST', redirect:'follow', headers:{'Content-Type':'text/plain;charset=utf-8'},
+        body: JSON.stringify({action:'read_file', path:'3. 웰페리온 가이드/coo/bootsetup_matrix.json'})})
       .then(function(r){ return r.json(); })
-      .then(function(d){ _matrixData = d; setEdit(false); });
+      .then(function(res){ if(res && res.ok && res.content){ return JSON.parse(res.content); } throw new Error((res && res.error) || 'read 실패'); })
+      .catch(function(){ return fetch('coo/bootsetup_matrix.json?t=' + Date.now(), {cache:'no-store'}).then(function(r){ return r.json(); }); });
+  }
+  window._matrixCancel = function(){
+    fetchMatrix().then(function(d){ _matrixData = d; setEdit(false); });
   };
   window._matrixSave = function(){
     var pin = prompt('GM 편집 저장 — 비밀번호를 입력하세요:');
     if(pin === null || pin === '') return;
     if(!_matrixData) return;
+    // 저장 직전 편집칸 전체를 모델에 반영 — blur/IME 누락 방지(원상복귀 버그 차단)
+    Array.prototype.forEach.call(body.querySelectorAll('td.cell-edit[contenteditable]'), function(el){
+      var role = el.getAttribute('data-role'), dim = parseInt(el.getAttribute('data-dim'), 10), val = el.innerText || el.textContent || '';
+      (_matrixData.roles || []).forEach(function(r){ if(r.id === role && Array.isArray(r.dims) && dim < r.dims.length) r.dims[dim] = val; });
+    });
     _matrixData.updated_at = new Date().toISOString().slice(0,10);
     var content = JSON.stringify(_matrixData, null, 2);
-    var params = new URLSearchParams({
-      action: 'commit_file',
-      path: '3. 웰페리온 가이드/coo/bootsetup_matrix.json',
-      content: content,
-      message: '[GM] 헌법 한 장 5칸 편집 ' + _matrixData.updated_at,
-      key: pin
-    });
     var btn = document.getElementById('matrix-save-btn');
     if(btn){ btn.textContent = '저장 중…'; btn.disabled = true; }
-    fetch(GAS_URL + '?' + params.toString(), {redirect:'follow'})
+    fetch(GAS_URL, {
+      method: 'POST',
+      redirect: 'follow',
+      headers: {'Content-Type': 'text/plain;charset=utf-8'},
+      body: JSON.stringify({
+        action: 'commit_file',
+        path: '3. 웰페리온 가이드/coo/bootsetup_matrix.json',
+        content: content,
+        message: '[GM] 헌법 한 장 5칸 편집 ' + _matrixData.updated_at,
+        key: pin
+      })
+    })
       .then(function(r){ return r.json(); })
       .then(function(res){
         if(res && res.ok){
@@ -291,8 +307,7 @@
       });
   };
 
-  fetch(RAW_URL + '?t=' + Date.now(), {cache:'no-store'})
-    .then(function(r){ if(!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+  fetchMatrix()
     .then(function(j){
       _matrixData = j;
       renderMatrix();

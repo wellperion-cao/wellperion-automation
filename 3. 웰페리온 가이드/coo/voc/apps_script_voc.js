@@ -112,6 +112,39 @@ function _vprop(key) {
   return PropertiesService.getScriptProperties().getProperty(key) || '';
 }
 
+// ─── 접수 위조 방지 게이트 (시토 2026-06-29 GM '접수 막고 보완') ───
+// 공개 폼(voc_mobile_form.html)이 숨김토큰 t 를 함께 보내야 reg_submit/voc_submit 통과 + 속도제한.
+// 역롤백(즉시·재배포 불요): ScriptProperties VOC_GATE_OFF='1' 설정 → 게이트 해제. 토큰 교체=ScriptProperties VOC_SUBMIT_TOKEN(없으면 코드 기본).
+// ⚠ 한계: 토큰이 폼(클라이언트)에 노출 → 봇·무차별 위조는 막지만 소스를 본 사람은 우회 가능. 진짜 인증=자체서버 JWT(시토 21, 2026-09 통합).
+var VOC_SUBMIT_TOKEN_DEFAULT = 'wlp_voc_7b3f9a2e6c1d4085';
+var VOC_SUBMIT_GATE_ENFORCE  = true;   // 코드 기본 ON. OFF=ScriptProperties VOC_GATE_OFF='1'(즉시) 또는 이 값 false 후 재배포.
+function _vSubmitGateOk_(body) {
+  if (_vprop('VOC_GATE_OFF') === '1') return true;   // 즉시 역롤백 스위치
+  if (!VOC_SUBMIT_GATE_ENFORCE) return true;
+  var expected = _vprop('VOC_SUBMIT_TOKEN') || VOC_SUBMIT_TOKEN_DEFAULT;
+  var got = String((body && (body.t || body.token)) || '');
+  return got === expected;
+}
+function _vFp_(s) {   // 가벼운 내용 지문(중복 차단용)
+  var str = String(s || ''), h = 0;
+  for (var i = 0; i < str.length; i++) { h = ((h << 5) - h + str.charCodeAt(i)) | 0; }
+  return String(h);
+}
+function _vRateLimitOk_(fp) {   // 전역 분당 상한 + 동일내용 60초 중복 차단. 캐시 장애 시 통과(접수 우선).
+  try {
+    var cache = CacheService.getScriptCache();
+    var cur = parseInt(cache.get('voc_rl_min') || '0', 10);
+    if (cur >= 40) return false;
+    cache.put('voc_rl_min', String(cur + 1), 60);
+    if (fp) {
+      var dk = 'voc_rl_dup_' + fp;
+      if (cache.get(dk)) return false;
+      cache.put(dk, '1', 60);
+    }
+    return true;
+  } catch (e) { return true; }
+}
+
 // ─── 유틸 ───
 function _vNow() {
   return Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy-MM-dd HH:mm:ss');
@@ -755,6 +788,17 @@ function _vProcess(action, body, params) {
   var _gateKey = (body && body.key) || (params && params.key) || '';
   if (!_vCheckAccess_(action, _gateKey)) {
     return _vJson({ ok: false, error: 'unauthorized' });
+  }
+
+  // ─── 접수 위조 방지(시토 2026-06-29 GM): 제출 액션은 숨김토큰 + 속도제한 ───
+  if (action === 'reg_submit' || action === 'voc_submit') {
+    if (!_vSubmitGateOk_(body)) {
+      return _vJson({ ok: false, error: '접수 권한 확인에 실패했습니다. 페이지를 새로고침 후 다시 시도해 주세요.', code: 'BAD_TOKEN' });
+    }
+    var _fp = _vFp_(String((body && (body.category || body.type)) || '') + '|' + String((body && body.contact) || '') + '|' + String((body && body.content) || ''));
+    if (!_vRateLimitOk_(_fp)) {
+      return _vJson({ ok: false, error: '요청이 많아 잠시 후 다시 시도해 주세요. (중복·과다 접수 방지)', code: 'RATE_LIMIT' });
+    }
   }
 
   // ── 종합 접수처 액션 ──
