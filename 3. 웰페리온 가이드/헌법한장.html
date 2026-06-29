@@ -48,7 +48,7 @@
   .dim-bul{margin:3px 0 0 15px; padding:0;}
   .dim-bul li{font-size:12.5px; line-height:1.45; margin-bottom:3px;}
   .dim-empty{list-style:none; color:var(--dim); margin-left:-15px;}
-  .col-own{width:150px;}
+  .col-own{width:170px;}
   .own-chip{display:inline-block; font-size:11px; color:var(--accent-soft); text-decoration:none; border:1px solid var(--border-strong); border-radius:6px; padding:2px 8px; margin:0 4px 4px 0;}
   .own-chip:hover{background:var(--surface); border-color:var(--accent);}
   .matrix-status{padding:14px; font-size:12px; color:var(--dim);}
@@ -220,6 +220,21 @@
     return lab + '<ul class="dim-bul">' + lis + '</ul>';
   }
 
+  function ideasBlock(role){
+    var raw = (role.ideas == null ? '' : String(role.ideas));
+    var lab = '<span class="dim-label">💡 확장 아이디어</span>';
+    if(_editMode){
+      return lab + '<div class="dim-val cell-edit" contenteditable="true" data-role="' + esc(role.id) + '" data-field="ideas" ' +
+             'oncompositionstart="window._compOn()" oncompositionend="window._compOff()" ' +
+             'onblur="window._cellBlur(this)">' + esc(raw) + '</div>';
+    }
+    var items = raw.split(/\s*[·\n]\s*/).map(function(s){ return s.trim(); }).filter(function(s){ return s.length; });
+    var lis = items.length
+      ? items.map(function(s){ return '<li>' + esc(s) + '</li>'; }).join('')
+      : '<li class="dim-empty">—</li>';
+    return lab + '<ul class="dim-bul">' + lis + '</ul>';
+  }
+
   function renderMatrix(){
     var roles = (_matrixData && _matrixData.roles) || [];
     if(!roles.length){
@@ -237,7 +252,7 @@
       var owns = (role.owns || []).map(function(o){
         return '<a class="own-chip" href="' + esc(o.href) + '">' + esc(o.label) + '</a>';
       }).join('');
-      var c3 = '<td>' + owns + '</td>';
+      var c3 = '<td>' + owns + ideasBlock(role) + '</td>';
       return '<tr class="' + (gm ? 'role-gm' : '') + '">' +
         '<td class="role-cell" style="border-left:4px solid ' + esc(ac) + ';">' +
           '<div class="ricon">' + esc(role.icon) + '</div>' +
@@ -254,15 +269,22 @@
   window._compOff = function(){ window._composing = false; };
   window._cellBlur = function(el){
     if(window._composing) return;
-    var role = el.getAttribute('data-role');
-    var dim  = parseInt(el.getAttribute('data-dim'), 10);
-    var val  = el.innerText || el.textContent || '';
+    var role  = el.getAttribute('data-role');
+    var field = el.getAttribute('data-field');
+    var val   = el.innerText || el.textContent || '';
     if(!_matrixData) return;
-    (_matrixData.roles || []).forEach(function(r){
-      if(r.id === role && Array.isArray(r.dims) && dim < r.dims.length){
-        r.dims[dim] = val;   // 편집칸 인덱스(0,3,2,1)만 갱신 — 나머지 dims는 손대지 않음
-      }
-    });
+    if(field === 'ideas'){
+      (_matrixData.roles || []).forEach(function(r){
+        if(r.id === role) r.ideas = val;
+      });
+    } else {
+      var dim = parseInt(el.getAttribute('data-dim'), 10);
+      (_matrixData.roles || []).forEach(function(r){
+        if(r.id === role && Array.isArray(r.dims) && dim < r.dims.length){
+          r.dims[dim] = val;   // 편집칸 인덱스(0,3,2,1)만 갱신 — 나머지 dims는 손대지 않음
+        }
+      });
+    }
   };
 
   function renderEditBtn(){
@@ -325,8 +347,13 @@
     if(!_matrixData) return;
     // 저장 직전 편집칸 전체를 모델에 반영 — blur/IME 누락 방지(원상복귀 버그 차단)
     Array.prototype.forEach.call(body.querySelectorAll('.cell-edit[contenteditable]'), function(el){
-      var role = el.getAttribute('data-role'), dim = parseInt(el.getAttribute('data-dim'), 10), val = el.innerText || el.textContent || '';
-      (_matrixData.roles || []).forEach(function(r){ if(r.id === role && Array.isArray(r.dims) && dim < r.dims.length) r.dims[dim] = val; });
+      var role = el.getAttribute('data-role'), field = el.getAttribute('data-field'), val = el.innerText || el.textContent || '';
+      if(field === 'ideas'){
+        (_matrixData.roles || []).forEach(function(r){ if(r.id === role) r.ideas = val; });
+      } else {
+        var dim = parseInt(el.getAttribute('data-dim'), 10);
+        (_matrixData.roles || []).forEach(function(r){ if(r.id === role && Array.isArray(r.dims) && dim < r.dims.length) r.dims[dim] = val; });
+      }
     });
     _matrixData.updated_at = new Date().toISOString().slice(0,10);
     var content = JSON.stringify(_matrixData, null, 2);
