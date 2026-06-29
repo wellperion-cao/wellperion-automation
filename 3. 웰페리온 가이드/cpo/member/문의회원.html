@@ -2892,16 +2892,21 @@ function saveConsultModal() {
   }
   var visited = document.getElementById('cmVisited').checked;
   var input = document.getElementById('cmMemoInput').value.trim();
-  // 연락기록 3칸 — 입력한 칸만 전송(빈칸은 생략 → 기존 값 보존, 달력 이벤트는 contact 미보유라 빈칸 클로버 방지)
+  // 연락기록 3칸 — 모달 연 시점 원본과 비교해 '바뀐 칸만' 전송(지워서 빈칸이 된 것도 변경 → '' 전송 → 서버가 클리어).
+  // 안 바뀐 칸은 생략(기존 값 보존). 2026-06-29 시포: 빈칸=무조건 생략 버그(삭제 저장 안됨) 수정.
   var c1 = document.getElementById('cmContact1').value.trim();
   var c2 = document.getElementById('cmContact2').value.trim();
   var c3 = document.getElementById('cmContact3').value.trim();
-  if (!visited && !input && !c1 && !c2 && !c3) { showToast('변경 사항이 없습니다', 'err'); return; }
+  var o1 = String(_consultEv.contact1 || '').trim();
+  var o2 = String(_consultEv.contact2 || '').trim();
+  var o3 = String(_consultEv.contact3 || '').trim();
+  var c1Changed = (c1 !== o1), c2Changed = (c2 !== o2), c3Changed = (c3 !== o3);
+  if (!visited && !input && !c1Changed && !c2Changed && !c3Changed) { showToast('변경 사항이 없습니다', 'err'); return; }
 
   var payload = { action: 'member_inquiry_update', rowIndex: _consultEv.rowIndex, keyPhone: _consultEv.phone || '' };
-  if (c1) payload.contact1 = c1;
-  if (c2) payload.contact2 = c2;
-  if (c3) payload.contact3 = c3;
+  if (c1Changed) payload.contact1 = c1;
+  if (c2Changed) payload.contact2 = c2;
+  if (c3Changed) payload.contact3 = c3;
   // 방문완료 체크 시에만 status 전송(미체크면 기존 상태 보존 — status 필드 생략).
   if (visited) payload.status = '방문';
   // 상담 내용: 기존 메모 보존 + 새 줄 누적. 빈 입력이면 메모 미전송.
