@@ -28,13 +28,13 @@
   /* ── 매트릭스 ── */
   .matrix-scroll{overflow-x:auto; border:1px solid var(--border); border-radius:11px; background:var(--paper);}
   table.matrix{border-collapse:collapse; width:100%; min-width:1040px; font-size:11.5px;}
-  table.matrix th, table.matrix td{border:1px solid var(--border); padding:7px 9px; text-align:left; vertical-align:top; line-height:1.42;}
+  table.matrix th, table.matrix td{border:1px solid var(--border); padding:7px 9px; text-align:left; vertical-align:top; line-height:1.42; white-space:pre-wrap; word-break:break-word;}
   table.matrix thead th{background:var(--surface); font-weight:700; font-size:12px; position:sticky; top:0; z-index:2;}
   table.matrix thead th.grp-np{color:#f0c674;}
   table.matrix thead th.grp-boot{color:#7ac4f0;}
   table.matrix thead th.grp-guard{color:#6abf7b;}
   table.matrix thead th.grp-collab{color:var(--accent-soft);}
-  table.matrix th.role-col{width:140px; min-width:132px;}
+  table.matrix th.role-col{width:112px; min-width:106px;}
   td.role-cell{background:var(--surface);}
   td.role-cell .ricon{font-size:16px;}
   td.role-cell .rname{font-weight:800; font-size:13px;}
@@ -77,6 +77,15 @@
     .cards{grid-template-columns:repeat(2,1fr); gap:6px;}
     header.page-head .back, .ccard a.lk, .ebtn{display:none;}
     .ccard a.lk{display:none;}
+    /* 인쇄 색상 강제 라이트 — 다크배경/밝은글자 충돌(보호색) 방지 */
+    table.matrix, table.matrix tr, table.matrix th, table.matrix td{background:#fff !important; color:#111 !important; border-color:#999 !important;}
+    table.matrix thead th{background:#ececec !important; color:#000 !important;}
+    td.role-cell{background:#f4f4f4 !important;}
+    tr.role-gm td, tr.role-gm td.role-cell{background:#f8f2dc !important;}
+    td.role-cell .rname, td.role-cell .rtitle, td.role-cell .rowner, .dim-label, .dim-val{color:#111 !important;}
+    .matrix-scroll{background:#fff !important; border-color:#999 !important;}
+    .ccard, .ccard h3, .ccard .desc{background:#fff !important; color:#111 !important; border-color:#999 !important;}
+    h2.sec, header.page-head h1{color:#111 !important;}
   }
 </style>
 </head>
@@ -219,7 +228,7 @@
     if(window._composing) return;
     var role = el.getAttribute('data-role');
     var dim  = parseInt(el.getAttribute('data-dim'), 10);
-    var val  = el.textContent || '';
+    var val  = el.innerText || el.textContent || '';
     if(!_matrixData) return;
     (_matrixData.roles || []).forEach(function(r){
       if(r.id === role && Array.isArray(r.dims) && dim < r.dims.length){
@@ -263,7 +272,7 @@
     if(!_matrixData) return;
     // 저장 직전 편집칸 전체를 모델에 반영 — blur/IME 누락 방지(원상복귀 버그 차단)
     Array.prototype.forEach.call(body.querySelectorAll('td.cell-edit[contenteditable]'), function(el){
-      var role = el.getAttribute('data-role'), dim = parseInt(el.getAttribute('data-dim'), 10), val = el.textContent || '';
+      var role = el.getAttribute('data-role'), dim = parseInt(el.getAttribute('data-dim'), 10), val = el.innerText || el.textContent || '';
       (_matrixData.roles || []).forEach(function(r){ if(r.id === role && Array.isArray(r.dims) && dim < r.dims.length) r.dims[dim] = val; });
     });
     _matrixData.updated_at = new Date().toISOString().slice(0,10);
