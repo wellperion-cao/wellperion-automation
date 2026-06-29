@@ -333,5 +333,19 @@
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "1406bb7866cffc7925e45e0a081d23322465e60f",
     "ship_no": 102
+  },
+  {
+    "task_id": "CPO-2026-06-29-ADHOC-779dced1",
+    "clevel": "cpo",
+    "title": "[시포] 문의회원 예약달력 — 2차방문 일정도 시간 설정 가능 + 캐시버스터",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-06-29",
+    "processed_at": "2026-06-29",
+    "artifact": "'2차 방문(visit2)' 일정이 '시간 변경 불가'로 비활성되던 문제.\nvisit2 칸을 자체 날짜+시간 단일셀로 일관화(read visit2Time 추가,\nmember_inquiry_update에 visit2 쓰기 추가), 클라 writable 목록에 visit2\n포함. 달력 fetch에 캐시버스터 추가해 재배포 후 stale 데이터 방지. (CLI ad-hoc · 커밋 779dced1)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "779dced182bd1f9defba3f6826db85a0e6939ff0",
+    "ship_no": 4
   }
 ]
