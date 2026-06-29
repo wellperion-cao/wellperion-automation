@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"><link rel="icon" type="image/png" href="/wellperion-automation/wellperion_favicon.png">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>웰페리온 통합 문의 회원 — AI CPO</title>
+<title>웰페리온 통합 회원 관리 — AI CPO</title>
 <link rel="preconnect" href="https://cdn.jsdelivr.net">
 <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" rel="stylesheet">
 <style>
@@ -294,10 +294,18 @@ a.funnel-step:hover{background:rgba(183,159,138,0.08);color:var(--accent)}
   box-shadow:0 0 0 1px var(--teal) inset;
   background:rgba(78,196,196,0.04);
 }
+/* 선택한 날 — 골드 테두리(금일=청록과 구분). 2026-06-29 시포 */
+.cal-cell:not(.empty){cursor:pointer}
+.cal-cell.selected{
+  border-color:var(--accent);
+  box-shadow:0 0 0 2px var(--accent) inset;
+  background:var(--accent-bg);
+}
 .cal-cell.has-event{cursor:pointer}
 .cal-cell.has-event:hover{border-color:var(--teal-bright)}
 .cal-date{font-size:11px;font-weight:700;margin-bottom:4px;line-height:1;color:var(--dim-mid)}
 .cal-cell.today .cal-date{color:var(--teal);font-weight:800}
+.cal-cell.selected .cal-date{color:var(--accent);font-weight:800}
 .cal-chips{display:flex;flex-direction:column;gap:2px}
 .cal-chip{
   font-size:10px;font-weight:700;padding:2px 5px;border-radius:4px;
@@ -307,6 +315,12 @@ a.funnel-step:hover{background:rgba(183,159,138,0.08);color:var(--accent)}
 .cal-chip.experience{background:var(--teal-bg);color:var(--teal);border:1px solid var(--teal-border)}
 .cal-chip .cc-l1{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .cal-chip .cc-l2{font-size:9px;font-weight:600;opacity:0.9;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* 방문 완료 — 녹색 ✓ + 녹색 링(예약 색은 유지). 2026-06-29 시포 */
+.cal-chip.visited{border-color:var(--green-border);box-shadow:0 0 0 1px var(--green-border) inset}
+.cal-chip .cc-check{color:var(--green);font-weight:800;margin-right:3px}
+/* 등록 완료 — 금색 ♛ + 금색 링(방문 녹색과 구분). 2026-06-29 시포 */
+.cal-chip.registered{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset;background:var(--accent-bg)}
+.cal-chip .cc-reg{color:var(--accent);font-weight:800;margin-right:3px}
 
 /* ── 클릭된 날 패널 ── */
 .day-panel{
@@ -425,6 +439,9 @@ a.funnel-step:hover{background:rgba(183,159,138,0.08);color:var(--accent)}
 .db-table tr:last-child td{border-bottom:none}
 .db-table tr:hover td{background:rgba(255,255,255,0.025)}
 .db-table tr.editing td{background:rgba(78,196,196,0.04)}
+/* 등록(SUC) 회원 행 — 금색 좌측 띠 + 옅은 금색 배경. 2026-06-29 시포 */
+tr.row-registered{background:var(--accent-bg)}
+tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
 
 /* ── 인라인 입력 ── */
 .cell-input{
@@ -648,6 +665,7 @@ a.funnel-step:hover{background:rgba(183,159,138,0.08);color:var(--accent)}
 .reg-table td.left{text-align:left}
 .reg-table tr:last-child td{border-bottom:none}
 .reg-table tr:hover td{background:rgba(255,255,255,0.02)}
+.reg-new-badge{display:inline-block;font-size:10px;font-weight:800;padding:1px 6px;border-radius:6px;background:var(--accent);color:#fff;margin-left:6px;vertical-align:middle}
 .month-cb{width:15px;height:15px;cursor:pointer;accent-color:var(--teal)}
 
 /* ═══════════════════════════════════════
@@ -705,6 +723,11 @@ a.funnel-step:hover{background:rgba(183,159,138,0.08);color:var(--accent)}
 .dash-card[data-kind="mem"] .dash-v b.lead{color:var(--accent)}
 @media(max-width:900px){.dash-grid{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:520px){.dash-grid{grid-template-columns:1fr}}
+/* ── 강습 sub-pane(문의/등록/회원) 토글 — 멤버십 dash-card 패턴 차용, 강습 전용 lessonSwitchCard ── */
+.lesson-dash{grid-template-columns:repeat(3,1fr)}
+@media(max-width:680px){.lesson-dash{grid-template-columns:1fr}}
+.lesson-subpane{display:none}
+.lesson-subpane.active{display:block}
 
 /* ── 문의 유형 칩 바 (멤버십 / 강습 / 공간렌트 / 비즈니스) — 2026-06-26 시포 통합 ── */
 .type-chip-bar{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px}
@@ -843,7 +866,7 @@ a.funnel-step:hover{background:rgba(183,159,138,0.08);color:var(--accent)}
   <div class="header">
     <div class="header-top">
       <div class="header-brand">
-        <h1>통합 문의 회원 <span class="badge">AI CPO v2.0</span></h1>
+        <h1>통합 회원 관리 <span class="badge">AI CPO v2.0</span></h1>
         <div class="sub">멤버십 · 강습 통합 — 잠재고객 관리 · 체험/견학/상담 예약 달력 · 전체 CRUD — 담당 실무: 임정은M</div>
       </div>
       <div class="header-actions">
@@ -866,7 +889,8 @@ a.funnel-step:hover{background:rgba(183,159,138,0.08);color:var(--accent)}
   <!-- ══════════════════════════════ 문의 유형 칩 바 (통합 — 2026-06-26 시포) ══════════════════════════════ -->
   <div class="type-chip-bar" id="typeChipBar">
     <button type="button" class="type-chip active" data-type="membership" onclick="switchType('membership')">멤버십</button>
-    <button type="button" class="type-chip" data-type="lesson" onclick="switchType('lesson')">강습</button>
+    <button type="button" class="type-chip" data-type="lessonAdult" onclick="switchType('lessonAdult')">성인 강습</button>
+    <button type="button" class="type-chip" data-type="lessonYouth" onclick="switchType('lessonYouth')">유소년 강습</button>
     <button type="button" class="type-chip soon" data-type="rent" onclick="switchType('rent')">공간 렌트 🚧</button>
     <button type="button" class="type-chip soon" data-type="biz" onclick="switchType('biz')">비즈니스 🚧</button>
   </div>
@@ -895,9 +919,9 @@ a.funnel-step:hover{background:rgba(183,159,138,0.08);color:var(--accent)}
     </a>
     <!-- 카드3: 등록 현황 (등록 회원 명단 — 내부 탭) -->
     <a class="dash-card" data-kind="reg" data-tab="registered" href="javascript:void(0)" onclick="switchTab('registered')">
-      <div class="dash-head"><span class="dash-dot reg"></span><span class="dash-title">등록 현황</span></div>
+      <div class="dash-head"><span class="dash-dot reg"></span><span class="dash-title">금일 등록 현황</span></div>
       <div class="dash-metrics">
-        <div class="dash-line"><span class="dash-v" style="font-size:12px;color:var(--dim-mid)">기간별 등록 회원 명단</span></div>
+        <div class="dash-line"><span class="dash-v" style="font-size:12px;color:var(--dim-mid)">오늘 등록 회원 명단</span></div>
       </div>
     </a>
     <!-- 카드4: 멤버십 회원 관리 (유효회원 명단 — 내부 탭) -->
@@ -975,6 +999,9 @@ a.funnel-step:hover{background:rgba(183,159,138,0.08);color:var(--accent)}
             <option value="결제완납">결제완납</option>
             <option value="LOSS">LOSS(이탈)</option>
           </select>
+          <label style="display:inline-flex;align-items:center;gap:5px;font-size:12px;color:var(--dim);cursor:pointer;white-space:nowrap" title="등록(SUC·단기SUC·결제완납)·이탈(LOSS) 건을 숨겨 진행 중 깔때기만 봅니다">
+            <input type="checkbox" id="dbHideRegistered" onchange="renderDbTable()" style="cursor:pointer"> 미등록만 보기
+          </label>
         </div>
         <div class="db-toolbar-actions">
           <button class="btn-add" id="btnAddRow" onclick="addNewRow()">+ 전화·직접 문의</button>
@@ -997,7 +1024,7 @@ a.funnel-step:hover{background:rgba(183,159,138,0.08);color:var(--accent)}
               <th style="width:90px">진행상황</th>
               <th style="width:110px">유입채널</th>
               <th style="width:85px">담당</th>
-              <th style="width:240px">메모</th>
+              <th style="width:220px">Contact (연락 기록)</th>
               <th style="width:200px">일정 (상담·체험)</th>
             </tr>
           </thead>
@@ -1026,7 +1053,7 @@ a.funnel-step:hover{background:rgba(183,159,138,0.08);color:var(--accent)}
     <div class="info-box accent" style="margin-bottom:16px">
       문의 → 체험/견학/상담 → 등록 전 구간 CPO SOP. 등록 후 단계(등록 현황·멤버십 회원 관리)는
       상단 대시보드 카드의 <strong style="color:var(--accent)">등록 현황 · 멤버십 회원 관리</strong> 탭에서.
-      강습 문의는 상단 <strong style="color:var(--teal)">강습</strong> 유형 또는 <a href="강습문의.html" style="color:var(--teal);font-weight:700">강습 문의 관리</a>에서.
+      강습 문의는 상단 <strong style="color:var(--teal)">성인 강습 · 유소년 강습</strong> 유형에서 종목별로 확인하세요.
     </div>
 
     <div class="section-label">담당 (R/R)</div>
@@ -1484,30 +1511,47 @@ if (action === 'member_calendar') {
 
   </div><!-- /type-membership -->
 
-  <!-- ══════════════════════════════ 유형: 강습 (성인·유소년 통합 — 종목 필터로 구분) ══════════════════════════════ -->
-  <div id="type-lesson" class="type-pane">
+  <!-- ══════════════════════════════ 유형: 성인 강습 (문의 현황 — 종목 필터) ══════════════════════════════ -->
+  <div id="type-lessonAdult" class="type-pane">
+    <!-- 강습 대시카드 3종: 문의 현황 · 등록 현황 · 강습 회원 관리 (강습 전용 lessonSwitchCard) -->
+    <div class="dash-grid lesson-dash" style="margin-bottom:18px">
+      <a class="dash-card active" data-kind="inq" data-lcard="inq" href="javascript:void(0)" onclick="lessonSwitchCard('adult','inq')">
+        <div class="dash-head"><span class="dash-dot inq"></span><span class="dash-title">문의 현황</span></div>
+        <div class="dash-metrics"><div class="dash-line"><span class="dash-v" style="font-size:12px;color:var(--dim-mid)" id="lessonCardInq_adult">종목별 강습 문의</span></div></div>
+      </a>
+      <a class="dash-card" data-kind="reg" data-lcard="reg" href="javascript:void(0)" onclick="lessonSwitchCard('adult','reg')">
+        <div class="dash-head"><span class="dash-dot reg"></span><span class="dash-title">금일 등록 현황</span></div>
+        <div class="dash-metrics"><div class="dash-line"><span class="dash-v" style="font-size:12px;color:var(--dim-mid)" id="lessonCardReg_adult">오늘 등록 회원</span></div></div>
+      </a>
+      <a class="dash-card" data-kind="mem" data-lcard="mem" href="javascript:void(0)" onclick="lessonSwitchCard('adult','mem')">
+        <div class="dash-head"><span class="dash-dot mem"></span><span class="dash-title">강습 회원 관리</span></div>
+        <div class="dash-metrics"><div class="dash-line"><span class="dash-v" style="font-size:12px;color:var(--dim-mid)">수강 회원 명단</span></div></div>
+      </a>
+    </div>
+
+    <!-- sub-pane: 문의 현황 -->
+    <div id="lessonPane_adult_inq" class="lesson-subpane active">
     <div class="info-box accent" style="margin-bottom:14px">
-      강습 문의(성인·유소년 통합) — <strong>종목 필터</strong>로 구분합니다. 상세 편집·예약 달력은
-      <a href="강습문의.html" style="color:var(--teal);font-weight:700">강습 문의 관리</a> 페이지에서.
+      <strong>성인 강습 문의 현황</strong> — 종목 버킷으로 필터해 보세요.
     </div>
     <div class="card">
       <div class="card-title">
-        <span class="icon">🏊</span>강습 문의 목록
-        <span id="lessonStatLine" style="font-size:11px;font-weight:400;color:var(--dim);margin-left:6px"></span>
+        <span class="icon">🏊</span>성인 강습 문의 목록
+        <span id="lessonStatLine_adult" style="font-size:11px;font-weight:400;color:var(--dim);margin-left:6px"></span>
       </div>
 
       <div style="display:flex;gap:6px;align-items:center;margin-bottom:12px;flex-wrap:wrap">
-        <button type="button" id="lessonScopeYear" class="lesson-scope-btn" onclick="lessonSetScope('year', this)"
+        <button type="button" class="lesson-scope-btn" onclick="lessonSetScope('year', this, 'adult')"
           style="padding:7px 14px;border-radius:8px;border:1px solid var(--teal-border);background:var(--teal-bg);color:var(--teal);font-size:12px;font-weight:700;font-family:inherit;cursor:pointer">올해(2026)만</button>
-        <button type="button" id="lessonScopeAll" class="lesson-scope-btn" onclick="lessonSetScope('all', this)"
+        <button type="button" class="lesson-scope-btn" onclick="lessonSetScope('all', this, 'adult')"
           style="padding:7px 14px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--dim);font-size:12px;font-weight:700;font-family:inherit;cursor:pointer">전체 기간</button>
-        <button class="btn-refresh" onclick="lessonLoad();lessonLoadStats()" style="margin-left:auto">새로고침</button>
+        <button class="btn-refresh" onclick="lessonLoad('adult');lessonLoadStats('adult')" style="margin-left:auto">새로고침</button>
       </div>
 
-      <div id="lessonSportBar" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px"></div>
+      <div id="lessonSportBar_adult" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px"></div>
 
       <div class="reg-table-wrap">
-        <table class="reg-table" id="lessonTable">
+        <table class="reg-table">
           <thead>
             <tr>
               <th class="left" style="min-width:90px">문의일</th>
@@ -1519,10 +1563,180 @@ if (action === 'member_calendar') {
               <th class="left" style="min-width:160px">메모</th>
             </tr>
           </thead>
-          <tbody id="lessonBody">
+          <tbody id="lessonBody_adult">
             <tr><td colspan="7"><div class="empty-state"><div class="loading-spinner"></div><div class="empty-state-title" style="margin-top:12px">불러오는 중…</div></div></td></tr>
           </tbody>
         </table>
+      </div>
+    </div>
+    </div>
+
+    <!-- sub-pane: 금일 등록 현황 -->
+    <div id="lessonPane_adult_reg" class="lesson-subpane">
+      <div class="info-box accent" style="margin-bottom:14px">
+        <strong>성인 강습 금일 등록 현황</strong> — 오늘 새로 등록된 회원. (기존 회원 전체는 강습 회원 관리 탭)
+      </div>
+      <div class="card">
+        <div class="card-title"><span class="icon">✅</span>금일 등록 회원
+          <span id="lessonRegStatLine_adult" style="font-size:11px;font-weight:400;color:var(--dim);margin-left:6px"></span>
+          <button class="btn-refresh" onclick="lessonRegistryLoad('adult')" style="margin-left:auto">새로고침</button>
+        </div>
+        <div id="lessonRegChips_adult" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px"></div>
+        <div class="reg-table-wrap">
+          <table class="reg-table">
+            <thead><tr>
+              <th style="min-width:90px">종목</th>
+              <th class="left" style="min-width:70px">이름</th>
+              <th style="min-width:120px">연락처</th>
+              <th style="min-width:80px">상태</th>
+            </tr></thead>
+            <tbody id="lessonRegBody_adult">
+              <tr><td colspan="4"><div class="empty-state"><div class="loading-spinner"></div><div class="empty-state-title" style="margin-top:12px">불러오는 중…</div></div></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- sub-pane: 강습 회원 관리 -->
+    <div id="lessonPane_adult_mem" class="lesson-subpane">
+      <div class="info-box accent" style="margin-bottom:14px">
+        <strong>성인 강습 회원 관리</strong> — 수강(등록) 회원 전체 명단. 상태·담당·메모 편집은 다음 단계.
+      </div>
+      <div class="card">
+        <div class="card-title"><span class="icon">🧑‍🏫</span>수강 회원 명단
+          <span id="lessonMemStatLine_adult" style="font-size:11px;font-weight:400;color:var(--dim);margin-left:6px"></span>
+          <button class="btn-refresh" onclick="lessonRegLoad('adult')" style="margin-left:auto">새로고침</button>
+        </div>
+        <div id="lessonMemChips_adult" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px"></div>
+        <div class="reg-table-wrap">
+          <table class="reg-table">
+            <thead><tr>
+              <th style="min-width:90px">종목</th>
+              <th class="left" style="min-width:70px">이름</th>
+              <th style="min-width:120px">연락처</th>
+              <th style="min-width:80px">상태</th>
+            </tr></thead>
+            <tbody id="lessonMemBody_adult">
+              <tr><td colspan="4"><div class="empty-state"><div class="loading-spinner"></div><div class="empty-state-title" style="margin-top:12px">불러오는 중…</div></div></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════ 유형: 유소년 강습 (문의 현황 — 종목 필터) ══════════════════════════════ -->
+  <div id="type-lessonYouth" class="type-pane">
+    <!-- 강습 대시카드 3종: 문의 현황 · 등록 현황 · 강습 회원 관리 -->
+    <div class="dash-grid lesson-dash" style="margin-bottom:18px">
+      <a class="dash-card active" data-kind="inq" data-lcard="inq" href="javascript:void(0)" onclick="lessonSwitchCard('youth','inq')">
+        <div class="dash-head"><span class="dash-dot inq"></span><span class="dash-title">문의 현황</span></div>
+        <div class="dash-metrics"><div class="dash-line"><span class="dash-v" style="font-size:12px;color:var(--dim-mid)" id="lessonCardInq_youth">종목별 강습 문의</span></div></div>
+      </a>
+      <a class="dash-card" data-kind="reg" data-lcard="reg" href="javascript:void(0)" onclick="lessonSwitchCard('youth','reg')">
+        <div class="dash-head"><span class="dash-dot reg"></span><span class="dash-title">금일 등록 현황</span></div>
+        <div class="dash-metrics"><div class="dash-line"><span class="dash-v" style="font-size:12px;color:var(--dim-mid)" id="lessonCardReg_youth">오늘 등록 회원</span></div></div>
+      </a>
+      <a class="dash-card" data-kind="mem" data-lcard="mem" href="javascript:void(0)" onclick="lessonSwitchCard('youth','mem')">
+        <div class="dash-head"><span class="dash-dot mem"></span><span class="dash-title">강습 회원 관리</span></div>
+        <div class="dash-metrics"><div class="dash-line"><span class="dash-v" style="font-size:12px;color:var(--dim-mid)">수강 회원 명단</span></div></div>
+      </a>
+    </div>
+
+    <!-- sub-pane: 문의 현황 -->
+    <div id="lessonPane_youth_inq" class="lesson-subpane active">
+    <div class="info-box accent" style="margin-bottom:14px">
+      <strong>유소년 강습 문의 현황</strong> — 종목 버킷으로 필터해 보세요.
+    </div>
+    <div class="card">
+      <div class="card-title">
+        <span class="icon">🤸</span>유소년 강습 문의 목록
+        <span id="lessonStatLine_youth" style="font-size:11px;font-weight:400;color:var(--dim);margin-left:6px"></span>
+      </div>
+
+      <div style="display:flex;gap:6px;align-items:center;margin-bottom:12px;flex-wrap:wrap">
+        <button type="button" class="lesson-scope-btn" onclick="lessonSetScope('year', this, 'youth')"
+          style="padding:7px 14px;border-radius:8px;border:1px solid var(--teal-border);background:var(--teal-bg);color:var(--teal);font-size:12px;font-weight:700;font-family:inherit;cursor:pointer">올해(2026)만</button>
+        <button type="button" class="lesson-scope-btn" onclick="lessonSetScope('all', this, 'youth')"
+          style="padding:7px 14px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--dim);font-size:12px;font-weight:700;font-family:inherit;cursor:pointer">전체 기간</button>
+        <button class="btn-refresh" onclick="lessonLoad('youth');lessonLoadStats('youth')" style="margin-left:auto">새로고침</button>
+      </div>
+
+      <div id="lessonSportBar_youth" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px"></div>
+
+      <div class="reg-table-wrap">
+        <table class="reg-table">
+          <thead>
+            <tr>
+              <th class="left" style="min-width:90px">문의일</th>
+              <th class="left" style="min-width:70px">성함</th>
+              <th style="min-width:120px">연락처</th>
+              <th style="min-width:90px">강습종목</th>
+              <th style="min-width:80px">진행상태</th>
+              <th style="min-width:70px">담당</th>
+              <th class="left" style="min-width:160px">메모</th>
+            </tr>
+          </thead>
+          <tbody id="lessonBody_youth">
+            <tr><td colspan="7"><div class="empty-state"><div class="loading-spinner"></div><div class="empty-state-title" style="margin-top:12px">불러오는 중…</div></div></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    </div>
+
+    <!-- sub-pane: 금일 등록 현황 -->
+    <div id="lessonPane_youth_reg" class="lesson-subpane">
+      <div class="info-box accent" style="margin-bottom:14px">
+        <strong>유소년 강습 금일 등록 현황</strong> — 오늘 새로 등록된 회원. (기존 회원 전체는 강습 회원 관리 탭)
+      </div>
+      <div class="card">
+        <div class="card-title"><span class="icon">✅</span>금일 등록 회원
+          <span id="lessonRegStatLine_youth" style="font-size:11px;font-weight:400;color:var(--dim);margin-left:6px"></span>
+          <button class="btn-refresh" onclick="lessonRegistryLoad('youth')" style="margin-left:auto">새로고침</button>
+        </div>
+        <div id="lessonRegChips_youth" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px"></div>
+        <div class="reg-table-wrap">
+          <table class="reg-table">
+            <thead><tr>
+              <th style="min-width:90px">종목</th>
+              <th class="left" style="min-width:70px">이름</th>
+              <th style="min-width:120px">연락처</th>
+              <th style="min-width:80px">상태</th>
+            </tr></thead>
+            <tbody id="lessonRegBody_youth">
+              <tr><td colspan="4"><div class="empty-state"><div class="loading-spinner"></div><div class="empty-state-title" style="margin-top:12px">불러오는 중…</div></div></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- sub-pane: 강습 회원 관리 -->
+    <div id="lessonPane_youth_mem" class="lesson-subpane">
+      <div class="info-box accent" style="margin-bottom:14px">
+        <strong>유소년 강습 회원 관리</strong> — 수강(등록) 회원 전체 명단. 상태·담당·메모 편집은 다음 단계.
+      </div>
+      <div class="card">
+        <div class="card-title"><span class="icon">🧑‍🏫</span>수강 회원 명단
+          <span id="lessonMemStatLine_youth" style="font-size:11px;font-weight:400;color:var(--dim);margin-left:6px"></span>
+          <button class="btn-refresh" onclick="lessonRegLoad('youth')" style="margin-left:auto">새로고침</button>
+        </div>
+        <div id="lessonMemChips_youth" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px"></div>
+        <div class="reg-table-wrap">
+          <table class="reg-table">
+            <thead><tr>
+              <th style="min-width:90px">종목</th>
+              <th class="left" style="min-width:70px">이름</th>
+              <th style="min-width:120px">연락처</th>
+              <th style="min-width:80px">상태</th>
+            </tr></thead>
+            <tbody id="lessonMemBody_youth">
+              <tr><td colspan="4"><div class="empty-state"><div class="loading-spinner"></div><div class="empty-state-title" style="margin-top:12px">불러오는 중…</div></div></td></tr>
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   </div>
@@ -1561,11 +1775,18 @@ if (action === 'member_calendar') {
     <div class="consult-row"><span class="ck">전화</span><span class="cv" id="cmPhone">—</span></div>
     <div class="consult-row"><span class="ck">프로그램</span><span class="cv" id="cmProgram">—</span></div>
     <div class="consult-row"><span class="ck">일정</span><span class="cv" id="cmSchedule">—</span></div>
+    <div class="consult-row"><span class="ck">시간 설정</span><span class="cv" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+      <select id="cmTimeSel" style="padding:6px 10px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:13px;font-family:inherit"></select>
+      <span id="cmTimeHint" style="font-size:11px;color:var(--dim)">— 저장 시 달력 시간에 반영</span>
+    </span></div>
     <div class="consult-row"><span class="ck">진행상황</span><span class="cv" id="cmStatus">—</span></div>
 
-    <div class="consult-field-label">방문 처리</div>
+    <div class="consult-field-label">방문 · 등록 처리</div>
     <label class="consult-visit-toggle">
-      <input type="checkbox" id="cmVisited"> ☑ 방문 완료 (체크 후 저장 시 진행상황 '방문' 처리)
+      <input type="checkbox" id="cmVisited"> ☑ 방문 완료 (저장 시 진행상황 '방문')
+    </label>
+    <label class="consult-visit-toggle">
+      <input type="checkbox" id="cmRegistered"> ✅ 등록 완료 (저장 시 진행상황 '등록(SUC)' → 금일 등록현황 자동 반영 + 알림 · 등록이 방문보다 우선)
     </label>
 
     <div class="consult-field-label">기존 메모</div>
@@ -1726,7 +1947,7 @@ function switchTab(id, btn) {
   // 탭 데이터는 최초 진입 시 1회만 로드(재방문 시 재fetch 안 함 — 속도). 새로고침 버튼·월이동은 직접 호출이라 항상 갱신.
   if (id === 'db'         && !_tabLoaded.db)         { _tabLoaded.db = true;         loadDbData(); }
   if (id === 'calendar'   && !_tabLoaded.calendar)   { _tabLoaded.calendar = true;   loadCalendarData(); }
-  if (id === 'registered' && !_tabLoaded.registered) { _tabLoaded.registered = true; setRegRange(_regRangeMode || 'month'); }
+  if (id === 'registered' && !_tabLoaded.registered) { _tabLoaded.registered = true; setRegRange(_regRangeMode || 'day'); }
   if (id === 'active'     && !_tabLoaded.active)     { _tabLoaded.active = true;     loadActiveMembers(); }
 }
 
@@ -1743,104 +1964,134 @@ function switchType(type) {
   document.querySelectorAll('.type-chip[data-type]').forEach(function(c){
     c.classList.toggle('active', c.getAttribute('data-type') === type);
   });
-  if (type === 'lesson') lessonInit();   // 최초 진입 시 1회 로드
+  if (type === 'lessonAdult') { lessonSwitchCard('adult', 'inq'); lessonInit('adult'); }   // 기본=문의 현황 + 최초 1회 로드
+  if (type === 'lessonYouth') { lessonSwitchCard('youth', 'inq'); lessonInit('youth'); }
 }
 
-/* ── 강습 문의 목록(inline) — lesson_inquiry_list·lesson_stats 재사용 ── */
-var _lessonRows   = [];
-var _lessonScope  = 'year';   // 'year'(올해 기본) | 'all'
-var _lessonSport  = '';       // '' = 전체 종목
-var _lessonLoaded = false;
+/* ── 강습 문의 목록(inline) — 성인/유소년 독립 상태. lesson_inquiry_list·lesson_stats 재사용 ── */
+// target='adult'(성인강습) | 'youth'(유소년강습). DOM id 접미사 + GAS type 파라미터로 분기.
+var _lessonState = {
+  adult: { rows: [], scope: 'year', sport: '', loaded: false, type: '성인강습',
+           card: 'inq', roster: [], registry: [], bySport: [], regSport: '', memSport: '', regLoaded: false, memLoaded: false },
+  youth: { rows: [], scope: 'year', sport: '', loaded: false, type: '유소년강습',
+           card: 'inq', roster: [], registry: [], bySport: [], regSport: '', memSport: '', regLoaded: false, memLoaded: false }
+};
 
-function lessonInit() {
-  if (_lessonLoaded) return;
-  _lessonLoaded = true;
-  lessonLoad();
-  lessonLoadStats();
+/* 강습 대시카드 전환(문의/등록/회원) — 멤버십 switchTab 와 독립(id 충돌 회피). 2026-06-27 시포. */
+function lessonSwitchCard(t, card) {
+  var st = _lessonState[t];
+  if (!st) return;
+  st.card = card;
+  var root = document.getElementById(_lessonPaneId(t));
+  if (!root) return;
+  root.querySelectorAll('.lesson-subpane').forEach(function(p){ p.classList.remove('active'); });
+  var sp = document.getElementById('lessonPane_' + t + '_' + card);
+  if (sp) sp.classList.add('active');
+  root.querySelectorAll('.dash-card[data-lcard]').forEach(function(c){
+    c.classList.toggle('active', c.getAttribute('data-lcard') === card);
+  });
+  if (card === 'reg' && !st.regLoaded) { lessonRegistryLoad(t); }   // 금일 등록 원장(오늘 명단)
+  if (card === 'mem' && !st.memLoaded) { lessonRegLoad(t); }        // 강습 회원 관리(전체 roster)
 }
 
-function lessonSetScope(scope, btn) {
-  _lessonScope = (scope === 'all') ? 'all' : 'year';
-  document.querySelectorAll('#type-lesson .lesson-scope-btn').forEach(function(b){
+function lessonInit(t) {
+  var st = _lessonState[t];
+  if (!st || st.loaded) return;
+  st.loaded = true;
+  lessonLoad(t);
+  lessonLoadStats(t);
+}
+
+function _lessonPaneId(t) { return t === 'youth' ? 'type-lessonYouth' : 'type-lessonAdult'; }
+
+function lessonSetScope(scope, btn, t) {
+  var st = _lessonState[t];
+  st.scope = (scope === 'all') ? 'all' : 'year';
+  document.querySelectorAll('#' + _lessonPaneId(t) + ' .lesson-scope-btn').forEach(function(b){
     b.style.background = 'var(--bg)'; b.style.color = 'var(--dim)'; b.style.borderColor = 'var(--border)';
   });
   if (btn) { btn.style.background = 'var(--teal-bg)'; btn.style.color = 'var(--teal)'; btn.style.borderColor = 'var(--teal-border)'; }
-  lessonLoad();
-  lessonLoadStats();
+  lessonLoad(t);
+  lessonLoadStats(t);
 }
 
-function _lessonEmpty(title, desc) {
-  var b = document.getElementById('lessonBody');
+function _lessonEmpty(t, title, desc) {
+  var b = document.getElementById('lessonBody_' + t);
   if (b) b.innerHTML = '<tr><td colspan="7"><div class="empty-state"><div class="empty-state-icon">📭</div>' +
     '<div class="empty-state-title">' + esc(title) + '</div>' +
     '<div class="empty-state-desc">' + esc(desc) + '</div></div></td></tr>';
 }
 
-function lessonLoad() {
-  if (GAS_URL === GAS_PLACEHOLDER) { _lessonEmpty('미연동', 'GAS URL이 교체되면 자동으로 강습 문의가 표시됩니다.'); return; }
-  var b = document.getElementById('lessonBody');
+function lessonLoad(t) {
+  var st = _lessonState[t];
+  if (GAS_URL === GAS_PLACEHOLDER) { _lessonEmpty(t, '미연동', 'GAS URL이 교체되면 자동으로 강습 문의가 표시됩니다.'); return; }
+  var b = document.getElementById('lessonBody_' + t);
   if (b) b.innerHTML = '<tr><td colspan="7"><div class="empty-state"><div class="loading-spinner"></div>' +
     '<div class="empty-state-title" style="margin-top:12px">불러오는 중…</div></div></td></tr>';
-  fetch(GAS_URL + '?action=lesson_inquiry_list' + _wpKeyParam() + (_lessonScope === 'all' ? '&scope=all' : ''))
+  fetch(GAS_URL + '?action=lesson_inquiry_list&type=' + encodeURIComponent(st.type) + _wpKeyParam() + (st.scope === 'all' ? '&scope=all' : ''))
     .then(function(r){ return r.json(); })
     .then(function(d){
       if (!d.ok) throw new Error(d.error || 'GAS 응답 오류');
-      _lessonRows = d.data || [];
-      lessonRenderChips();
-      lessonRender();
+      st.rows = d.data || [];
+      lessonRenderChips(t);
+      lessonRender(t);
     })
-    .catch(function(e){ _lessonEmpty('데이터 로드 실패', e.message || 'GAS URL 또는 배포 상태를 확인하세요.'); });
+    .catch(function(e){ _lessonEmpty(t, '데이터 로드 실패', e.message || 'GAS URL 또는 배포 상태를 확인하세요.'); });
 }
 
-function lessonLoadStats() {
+function lessonLoadStats(t) {
+  var st = _lessonState[t];
   if (GAS_URL === GAS_PLACEHOLDER) return;
-  fetch(GAS_URL + '?action=lesson_stats' + (_lessonScope === 'all' ? '&scope=all' : ''))
+  fetch(GAS_URL + '?action=lesson_stats&type=' + encodeURIComponent(st.type) + (st.scope === 'all' ? '&scope=all' : ''))
     .then(function(r){ return r.json(); })
     .then(function(d){
       if (!d || !d.ok) return;
-      var el = document.getElementById('lessonStatLine');
+      var el = document.getElementById('lessonStatLine_' + t);
       if (el) el.textContent = '총 ' + (d.total || 0) + '건 · 이번달 ' + (d.thisMonth || 0) + '건';
     })
     .catch(function(){});
 }
 
-function _lessonChipHtml(val, label, n) {
-  var active = (val === _lessonSport);
-  return '<button type="button" data-sport="' + esc(val) + '" onclick="lessonFilterSport(this)" ' +
+function _lessonChipHtml(t, val, label, n) {
+  var active = (val === _lessonState[t].sport);
+  return '<button type="button" data-sport="' + esc(val) + '" onclick="lessonFilterSport(this, \'' + t + '\')" ' +
     'style="padding:5px 12px;border-radius:99px;font-size:12px;font-weight:700;font-family:inherit;cursor:pointer;' +
     'border:1px solid ' + (active ? 'var(--teal-border)' : 'var(--border)') + ';' +
     'background:' + (active ? 'var(--teal-bg)' : 'var(--paper)') + ';' +
     'color:' + (active ? 'var(--teal)' : 'var(--dim)') + '">' + esc(label) + ' ' + n + '</button>';
 }
 
-function lessonRenderChips() {
-  var bar = document.getElementById('lessonSportBar');
+function lessonRenderChips(t) {
+  var bar = document.getElementById('lessonSportBar_' + t);
   if (!bar) return;
+  var rows = _lessonState[t].rows;
   var counts = {};
-  _lessonRows.forEach(function(r){ var s = String(r.sport || '').trim() || '미지정'; counts[s] = (counts[s] || 0) + 1; });
+  // 종목칩 = 표준 버킷(r.bucket) 그룹 — 원문 라벨 대신 압축. 표는 원문 sport 그대로(아래 lessonRender). 2026-06-27 시포.
+  rows.forEach(function(r){ var s = String(r.bucket || '기타').trim() || '기타'; counts[s] = (counts[s] || 0) + 1; });
   var sports = Object.keys(counts).sort(function(a, b){ return counts[b] - counts[a]; });
-  var html = _lessonChipHtml('', '전체', _lessonRows.length);
-  sports.forEach(function(s){ html += _lessonChipHtml(s, s, counts[s]); });
+  var html = _lessonChipHtml(t, '', '전체', rows.length);
+  sports.forEach(function(s){ html += _lessonChipHtml(t, s, s, counts[s]); });
   bar.innerHTML = html;
 }
 
-function lessonFilterSport(btn) {
-  _lessonSport = btn.getAttribute('data-sport') || '';
-  lessonRenderChips();
-  lessonRender();
+function lessonFilterSport(btn, t) {
+  _lessonState[t].sport = btn.getAttribute('data-sport') || '';
+  lessonRenderChips(t);
+  lessonRender(t);
 }
 
-function lessonRender() {
-  var tbody = document.getElementById('lessonBody');
+function lessonRender(t) {
+  var tbody = document.getElementById('lessonBody_' + t);
   if (!tbody) return;
-  var rows = _lessonRows;
-  if (_lessonSport) {
-    rows = _lessonRows.filter(function(r){
-      var s = String(r.sport || '').trim() || '미지정';
-      return s === _lessonSport;
+  var st = _lessonState[t];
+  var rows = st.rows;
+  if (st.sport) {
+    rows = st.rows.filter(function(r){
+      var s = String(r.bucket || '기타').trim() || '기타';   // 필터는 버킷 기준(칩과 동일)
+      return s === st.sport;
     });
   }
-  if (rows.length === 0) { _lessonEmpty('강습 문의 없음', '해당 조건의 강습 문의가 없습니다.'); return; }
+  if (rows.length === 0) { _lessonEmpty(t, '강습 문의 없음', '해당 조건의 강습 문의가 없습니다.'); return; }
   var html = '';
   rows.forEach(function(r){
     html += '<tr>' +
@@ -1857,10 +2108,160 @@ function lessonRender() {
 }
 
 /* ─────────────────────────────────────────────
+   강습 금일 등록 현황 + 강습 회원 관리 — 읽기 전용. 2026-06-27 시포.
+   reg(금일 등록 현황): 강습 등록 원장 오늘 명단(lesson_registry_list, sync-on-load).
+   mem(강습 회원 관리): 전체 roster 명단(lesson_registered_roster).
+───────────────────────────────────────────── */
+// 강습 회원 관리(mem) — 전체 roster 명단(lesson_registered_roster).
+function lessonRegLoad(t) {
+  var st = _lessonState[t];
+  st.memLoaded = true;
+  var b = document.getElementById('lessonMemBody_' + t);
+  if (GAS_URL === GAS_PLACEHOLDER) { if (b) b.innerHTML = _lessonRegRow('미연동', 'GAS URL이 교체되면 자동으로 등록 회원이 표시됩니다.'); return; }
+  if (b) b.innerHTML = '<tr><td colspan="4"><div class="empty-state"><div class="loading-spinner"></div>' +
+    '<div class="empty-state-title" style="margin-top:12px">불러오는 중…</div></div></td></tr>';
+  fetch(GAS_URL + '?action=lesson_registered_roster&type=' + encodeURIComponent(st.type) + _wpKeyParam())
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      if (!d || !d.ok) throw new Error((d && d.error) || 'GAS 응답 오류');
+      st.roster = d.roster || [];
+      _lessonRosterChips(t, 'mem'); _lessonRosterRender(t, 'mem');
+      var ms = document.getElementById('lessonMemStatLine_' + t);
+      if (ms) ms.textContent = '수강 ' + (d.total || 0) + '명';
+    })
+    .catch(function(e){ if (b) b.innerHTML = _lessonRegRow('데이터 로드 실패', e.message || 'GAS URL 또는 배포 상태를 확인하세요.'); });
+}
+
+// 금일 등록 현황(reg) — 강습 등록 원장 오늘 명단(lesson_registry_list, sync-on-load). from/to 미지정=오늘.
+function lessonRegistryLoad(t) {
+  var st = _lessonState[t];
+  st.regLoaded = true;
+  var b = document.getElementById('lessonRegBody_' + t);
+  if (GAS_URL === GAS_PLACEHOLDER) { if (b) b.innerHTML = _lessonRegRow('미연동', 'GAS URL이 교체되면 오늘 등록 회원이 표시됩니다.'); return; }
+  if (b) b.innerHTML = '<tr><td colspan="4"><div class="empty-state"><div class="loading-spinner"></div>' +
+    '<div class="empty-state-title" style="margin-top:12px">불러오는 중…</div></div></td></tr>';
+  fetch(GAS_URL + '?action=lesson_registry_list&type=' + encodeURIComponent(st.type) + _wpKeyParam())
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      if (!d || !d.ok) throw new Error((d && d.error) || 'GAS 응답 오류');
+      st.registry = d.data || [];
+      _lessonRegistryChips(t); _lessonRegistryRender(t);
+      var rs = document.getElementById('lessonRegStatLine_' + t);
+      if (rs) rs.textContent = '금일 등록 ' + (d.count || 0) + '명';
+    })
+    .catch(function(e){ if (b) b.innerHTML = _lessonRegRow('데이터 로드 실패', e.message || 'GAS URL 또는 배포 상태를 확인하세요.'); });
+}
+
+function _lessonRegRow(title, desc) {
+  return '<tr><td colspan="4"><div class="empty-state"><div class="empty-state-icon">📭</div>' +
+    '<div class="empty-state-title">' + esc(title) + '</div>' +
+    '<div class="empty-state-desc">' + esc(desc) + '</div></div></td></tr>';
+}
+
+// 금일 등록 원장 종목 버킷 필터칩 (registry.종목 기준)
+function _lessonRegistryChipHtml(t, val, label, n) {
+  var active = (val === _lessonState[t].regSport);
+  return '<button type="button" data-sport="' + esc(val) + '" onclick="lessonRegistryFilter(\'' + t + '\',this)" ' +
+    'style="padding:5px 12px;border-radius:99px;font-size:12px;font-weight:700;font-family:inherit;cursor:pointer;' +
+    'border:1px solid ' + (active ? 'var(--teal-border)' : 'var(--border)') + ';' +
+    'background:' + (active ? 'var(--teal-bg)' : 'var(--paper)') + ';' +
+    'color:' + (active ? 'var(--teal)' : 'var(--dim)') + '">' + esc(label) + ' ' + n + '</button>';
+}
+function _lessonRegistryChips(t) {
+  var bar = document.getElementById('lessonRegChips_' + t);
+  if (!bar) return;
+  var arr = _lessonState[t].registry || [];
+  var counts = {};
+  arr.forEach(function(r){ var s = String(r.종목 || '기타').trim() || '기타'; counts[s] = (counts[s] || 0) + 1; });
+  var sports = Object.keys(counts).sort(function(a, b){ return counts[b] - counts[a]; });
+  var html = _lessonRegistryChipHtml(t, '', '전체', arr.length);
+  sports.forEach(function(s){ html += _lessonRegistryChipHtml(t, s, s, counts[s]); });
+  bar.innerHTML = html;
+}
+function lessonRegistryFilter(t, btn) {
+  _lessonState[t].regSport = btn.getAttribute('data-sport') || '';
+  _lessonRegistryChips(t);
+  _lessonRegistryRender(t);
+}
+function _lessonRegistryRender(t) {
+  var tbody = document.getElementById('lessonRegBody_' + t);
+  if (!tbody) return;
+  var st = _lessonState[t];
+  var rows = st.registry || [];
+  if (st.regSport) rows = rows.filter(function(r){ return String(r.종목 || '기타').trim() === st.regSport; });
+  if (!rows.length) { tbody.innerHTML = _lessonRegRow('오늘 등록 없음', '오늘 새로 등록된 회원이 없습니다.'); return; }
+  var html = '';
+  rows.forEach(function(r){
+    html += '<tr>' +
+      '<td style="font-size:12px">' + esc(r.종목 || '—') + '</td>' +
+      '<td class="left" style="font-weight:700">' + esc(r.이름 || '—') + '</td>' +
+      '<td style="font-size:12px;color:var(--dim)">' + esc(r.전화 || '—') + '</td>' +
+      '<td style="font-size:12px">' + esc(r.상태 || '—') + '</td>' +
+    '</tr>';
+  });
+  tbody.innerHTML = html;
+}
+
+// 종목 버킷 필터칩(roster.sport=표준 종목명) — reg·mem 공용(kind로 필터 상태·컨테이너 분기).
+function _lessonRosterChipHtml(t, kind, val, label, n) {
+  var cur = (kind === 'reg') ? _lessonState[t].regSport : _lessonState[t].memSport;
+  var active = (val === cur);
+  return '<button type="button" data-sport="' + esc(val) + '" onclick="lessonRosterFilter(\'' + t + '\',\'' + kind + '\',this)" ' +
+    'style="padding:5px 12px;border-radius:99px;font-size:12px;font-weight:700;font-family:inherit;cursor:pointer;' +
+    'border:1px solid ' + (active ? 'var(--teal-border)' : 'var(--border)') + ';' +
+    'background:' + (active ? 'var(--teal-bg)' : 'var(--paper)') + ';' +
+    'color:' + (active ? 'var(--teal)' : 'var(--dim)') + '">' + esc(label) + ' ' + n + '</button>';
+}
+
+function _lessonRosterChips(t, kind) {
+  var bar = document.getElementById((kind === 'reg' ? 'lessonRegChips_' : 'lessonMemChips_') + t);
+  if (!bar) return;
+  var roster = _lessonState[t].roster || [];
+  var counts = {};
+  roster.forEach(function(r){ var s = String(r.sport || '기타').trim() || '기타'; counts[s] = (counts[s] || 0) + 1; });
+  var sports = Object.keys(counts).sort(function(a, b){ return counts[b] - counts[a]; });
+  var html = _lessonRosterChipHtml(t, kind, '', '전체', roster.length);
+  sports.forEach(function(s){ html += _lessonRosterChipHtml(t, kind, s, s, counts[s]); });
+  bar.innerHTML = html;
+}
+
+function lessonRosterFilter(t, kind, btn) {
+  var v = btn.getAttribute('data-sport') || '';
+  if (kind === 'reg') _lessonState[t].regSport = v; else _lessonState[t].memSport = v;
+  _lessonRosterChips(t, kind);
+  _lessonRosterRender(t, kind);
+}
+
+function _lessonRosterRender(t, kind) {
+  var tbody = document.getElementById((kind === 'reg' ? 'lessonRegBody_' : 'lessonMemBody_') + t);
+  if (!tbody) return;
+  var st = _lessonState[t];
+  var filter = (kind === 'reg') ? st.regSport : st.memSport;
+  var rows = st.roster || [];
+  if (filter) rows = rows.filter(function(r){ return String(r.sport || '기타').trim() === filter; });
+  if (!rows.length) {
+    tbody.innerHTML = '<tr><td colspan="4"><div class="empty-state"><div class="empty-state-icon">📭</div>' +
+      '<div class="empty-state-title">등록 회원 없음</div>' +
+      '<div class="empty-state-desc">해당 조건의 등록 회원이 없습니다.</div></div></td></tr>';
+    return;
+  }
+  var html = '';
+  rows.forEach(function(r){
+    html += '<tr>' +
+      '<td style="font-size:12px">' + esc(r.sport || '—') + '</td>' +
+      '<td class="left" style="font-weight:700">' + esc(r.name || '—') + '</td>' +
+      '<td style="font-size:12px;color:var(--dim)">' + esc(r.phone || '—') + '</td>' +
+      '<td style="font-size:12px">' + esc(r.status || '—') + '</td>' +
+    '</tr>';
+  });
+  tbody.innerHTML = html;
+}
+
+/* ─────────────────────────────────────────────
    등록회원 명단
 ───────────────────────────────────────────── */
 var _regRows = [];  // 현재 로드된 등록회원 배열
-var _regRangeMode = 'month';  // 현재 활성 빠른범위
+var _regRangeMode = 'day';  // 현재 활성 빠른범위(기본=금일 — 카드 '금일 등록 현황')
 
 function _pad2(n){ return ('0'+n).slice(-2); }
 
@@ -1961,11 +2362,13 @@ function _regRender() {
   tbody.innerHTML = '';
 
   if (_regRows.length === 0) {
-    _regRenderEmpty('등록 회원 없음', '해당 기간에 등록된 회원이 없습니다.');
+    _regRenderEmpty('오늘 등록 없음', '선택한 기간에 등록한 회원이 없습니다.');
     return;
   }
 
   document.getElementById('regCount').textContent = '총 ' + _regRows.length + '명';
+
+  var _today = (function(){ var d = new Date(); return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'); })();
 
   _regRows.forEach(function(member){
     var tr = document.createElement('tr');
@@ -1974,7 +2377,8 @@ function _regRender() {
     var tdName = document.createElement('td');
     tdName.className = 'left';
     tdName.style.fontWeight = '700';
-    tdName.textContent = member.name || '—';
+    var _isNewToday = member.regDate && String(member.regDate).startsWith(_today);
+    tdName.innerHTML = (member.name ? esc(member.name) : '—') + (_isNewToday ? '<span class="reg-new-badge">NEW</span>' : '');
     tr.appendChild(tdName);
 
     var tdPhone = document.createElement('td');
@@ -2314,6 +2718,14 @@ function changeMonth(delta) {
   loadCalendarData();
 }
 
+var _selectedDate = null;  // 사용자가 선택한 날(YYYY-MM-DD) — 골드 테두리 표시 + 재렌더 유지
+function selectCalCell(cell) {
+  _selectedDate = cell.dataset.date;
+  var grid = document.getElementById('calGrid');
+  grid.querySelectorAll('.cal-cell.selected').forEach(function(c){ c.classList.remove('selected'); });
+  cell.classList.add('selected');
+}
+
 function renderCalendarShell() {
   document.getElementById('calTitle').textContent = calYear + '년 ' + calMonth + '월';
   var grid = document.getElementById('calGrid');
@@ -2337,6 +2749,7 @@ function renderCalendarShell() {
     var cell = document.createElement('div');
     cell.className = 'cal-cell';
     if (dateStr === todayStr) cell.classList.add('today');
+    if (dateStr === _selectedDate) cell.classList.add('selected');  // 재렌더 후에도 선택 유지
     cell.dataset.date = dateStr;
 
     var dateDiv = document.createElement('div');
@@ -2351,7 +2764,8 @@ function renderCalendarShell() {
 
     cell.addEventListener('click', function() {
       var dt = this.dataset.date;
-      if (calEvents[dt] && calEvents[dt].length) openDayPanel(dt);
+      selectCalCell(this);          // 어느 날을 눌러도 골드 테두리 선택 표시
+      openDayPanel(dt);             // 예약 없는 날은 '예약 없음' 안내
     }.bind(cell));
 
     grid.appendChild(cell);
@@ -2378,7 +2792,7 @@ function loadCalendarData() {
   }
 
   var monthStr = calYear + '-' + String(calMonth).padStart(2,'0');
-  fetch(GAS_URL + '?action=member_calendar&month=' + monthStr)
+  fetch(GAS_URL + '?action=member_calendar&month=' + monthStr + '&_=' + Date.now())  // 캐시버스터 — 항상 최신 slot/시간 반영
     .then(function(r){ return r.json(); })
     .then(function(data){
       if (!data.ok) throw new Error('GAS 응답 오류');
@@ -2417,9 +2831,12 @@ function processCalendarData(data) {
     var cell = chipsDiv.parentElement;
     cell.classList.add('has-event');
     calEvents[date].forEach(function(ev){
+      var _registered = (ev.status === 'SUC' || ev.status === '단기SUC');   // 등록 완료 → 금색 ♛(방문보다 우선)
+      var _visited = (ev.status === '방문');                                 // 방문 완료 → 녹색 ✓
       var chip = document.createElement('div');
-      chip.className = 'cal-chip ' + (ev.kind === '체험' ? 'experience' : 'tour');
-      var l1 = (ev.time ? esc(ev.time) + ' ' : '') + esc(ev.kind) + (ev.name ? ' ' + esc(ev.name) : '');
+      chip.className = 'cal-chip ' + (ev.kind === '체험' ? 'experience' : 'tour') + (_registered ? ' registered' : (_visited ? ' visited' : ''));
+      var _mark = _registered ? '<span class="cc-reg">♛</span>' : (_visited ? '<span class="cc-check">✓</span>' : '');
+      var l1 = _mark + (ev.time ? esc(ev.time) + ' ' : '') + esc(ev.kind) + (ev.name ? ' ' + esc(ev.name) : '');
       chip.innerHTML = '<div class="cc-l1">' + l1 + '</div>' + (ev.phone ? '<div class="cc-l2">' + esc(ev.phone) + '</div>' : '');
       chipsDiv.appendChild(chip);
     });
@@ -2471,6 +2888,9 @@ function openDayPanel(date) {
     }
     listEl.appendChild(item);
   });
+  if (!listEl.children.length) {
+    listEl.innerHTML = '<div class="day-item" style="opacity:.55">이 날은 예약이 없습니다.</div>';
+  }
   panel.classList.add('open');
 }
 
@@ -2482,6 +2902,7 @@ function closeDayPanel() {
    상담 모달 — 달력 일정 클릭 → 방문완료·상담메모(문의 현황 자동 반영)
 ───────────────────────────────────────────── */
 var _consultEv = null;   // 현재 모달이 다루는 달력 이벤트(rowIndex·memo 등 포함)
+var _consultOrigTime = '';  // 모달 연 시점의 시간(변경 감지 기준)
 
 function openConsultModal(ev) {
   _consultEv = ev;
@@ -2497,6 +2918,7 @@ function openConsultModal(ev) {
   document.getElementById('cmStatus').textContent = ev.status || '—';
   var visitedChk = document.getElementById('cmVisited');
   visitedChk.checked = (ev.status === '방문');
+  document.getElementById('cmRegistered').checked = (ev.status === 'SUC' || ev.status === '단기SUC');  // 이미 등록된 건이면 체크 표시
   var prevEl = document.getElementById('cmMemoPrev');
   prevEl.textContent = (ev.memo && String(ev.memo).trim()) ? ev.memo : '(기존 메모 없음)';
   document.getElementById('cmMemoInput').value = '';   // 모달 열 때 1회 초기화(IME 안전 — 입력 중 재생성 없음)
@@ -2504,6 +2926,16 @@ function openConsultModal(ev) {
   document.getElementById('cmContact1').value = ev.contact1 || '';
   document.getElementById('cmContact2').value = ev.contact2 || '';
   document.getElementById('cmContact3').value = ev.contact3 || '';
+  // 시간 설정 드롭다운 — 06~22시(그리드와 동일). 현재 시간 프리셀렉트. 쓰기 가능한 칸(상담·체험1·2·3)만 활성. 2026-06-29 시포
+  var tSel = document.getElementById('cmTimeSel'), tHint = document.getElementById('cmTimeHint');
+  var _writable = ['tour','exp1','exp2','exp3','visit2'].indexOf(ev.slot || '') >= 0;
+  tSel.innerHTML = '';
+  var blank = document.createElement('option'); blank.value = ''; blank.textContent = '시간 미정'; tSel.appendChild(blank);
+  for (var _h = 6; _h <= 22; _h++) { var _hh = ('0'+_h).slice(-2)+':00'; var _o = document.createElement('option'); _o.value = _hh; _o.textContent = _hh; tSel.appendChild(_o); }
+  tSel.value = String(ev.time || '').trim();   // 'HH:00' 형식이면 매칭, 아니면 '시간 미정'
+  _consultOrigTime = tSel.value;
+  tSel.disabled = !_writable;
+  tHint.textContent = _writable ? '— 저장 시 달력 시간에 반영' : '— 이 일정은 여기서 시간 변경 불가';
   document.getElementById('consultOverlay').classList.add('open');
 }
 
@@ -2518,19 +2950,32 @@ function saveConsultModal() {
     return;
   }
   var visited = document.getElementById('cmVisited').checked;
+  var registered = document.getElementById('cmRegistered').checked;   // 등록 완료 → 진행상황 SUC
   var input = document.getElementById('cmMemoInput').value.trim();
-  // 연락기록 3칸 — 입력한 칸만 전송(빈칸은 생략 → 기존 값 보존, 달력 이벤트는 contact 미보유라 빈칸 클로버 방지)
+  // 연락기록 3칸 — 모달 연 시점 원본과 비교해 '바뀐 칸만' 전송(지워서 빈칸이 된 것도 변경 → '' 전송 → 서버가 클리어).
+  // 안 바뀐 칸은 생략(기존 값 보존). 2026-06-29 시포: 빈칸=무조건 생략 버그(삭제 저장 안됨) 수정.
   var c1 = document.getElementById('cmContact1').value.trim();
   var c2 = document.getElementById('cmContact2').value.trim();
   var c3 = document.getElementById('cmContact3').value.trim();
-  if (!visited && !input && !c1 && !c2 && !c3) { showToast('변경 사항이 없습니다', 'err'); return; }
+  var o1 = String(_consultEv.contact1 || '').trim();
+  var o2 = String(_consultEv.contact2 || '').trim();
+  var o3 = String(_consultEv.contact3 || '').trim();
+  var c1Changed = (c1 !== o1), c2Changed = (c2 !== o2), c3Changed = (c3 !== o3);
+  // 시간 설정 — 쓰기 가능한 칸(상담/체험1·2·3)에서 원본과 다르면 변경. 2026-06-29 시포
+  var selTime = document.getElementById('cmTimeSel').value;
+  var timeWritable = ['tour','exp1','exp2','exp3','visit2'].indexOf(_consultEv.slot || '') >= 0;
+  var timeChanged = timeWritable && (selTime !== _consultOrigTime);
+  if (!visited && !registered && !input && !c1Changed && !c2Changed && !c3Changed && !timeChanged) { showToast('변경 사항이 없습니다', 'err'); return; }
 
   var payload = { action: 'member_inquiry_update', rowIndex: _consultEv.rowIndex, keyPhone: _consultEv.phone || '' };
-  if (c1) payload.contact1 = c1;
-  if (c2) payload.contact2 = c2;
-  if (c3) payload.contact3 = c3;
-  // 방문완료 체크 시에만 status 전송(미체크면 기존 상태 보존 — status 필드 생략).
-  if (visited) payload.status = '방문';
+  if (c1Changed) payload.contact1 = c1;
+  if (c2Changed) payload.contact2 = c2;
+  if (c3Changed) payload.contact3 = c3;
+  // 시간 변경 → 해당 일정 칸에 '날짜+시간' 결합 전송(단일셀 모델·그리드와 동일). 날짜는 유지, 시간만 교체.
+  if (timeChanged) payload[_consultEv.slot] = _comboDateTime(_consultEv.date, selTime);
+  // 진행상황: 등록>방문 우선. 등록 완료=SUC(→서버가 금일 등록현황 carry-over+알림). 방문 완료=방문. 둘 다 미체크면 기존 상태 보존.
+  if (registered) payload.status = 'SUC';
+  else if (visited) payload.status = '방문';
   // 상담 내용: 기존 메모 보존 + 새 줄 누적. 빈 입력이면 메모 미전송.
   if (input) {
     var today = new Date();
@@ -2541,14 +2986,16 @@ function saveConsultModal() {
   }
 
   var saveBtn = document.getElementById('cmSaveBtn');
+  var _celebrateReg = registered; var _regName = (_consultEv && _consultEv.name) ? _consultEv.name : '';
   saveBtn.disabled = true;
   apiPost(payload)
     .then(function(){
-      showToast('저장', 'ok');
+      showToast(_celebrateReg ? ('🎉 등록 완료 · ' + (_regName ? _regName + '님 환영합니다' : '환영합니다')) : '저장', 'ok');
       closeConsultModal();
       renderCalendarShell();
       loadCalendarData();                       // 달력 갱신(셸 재구성 후 재로드 — 칩 중복 방지)
       if (_tabLoaded.db) loadDbData();          // 같은 시트 → 문의 현황도 동기
+      if (registered && _tabLoaded.registered) loadRegistered();  // 등록(SUC) 처리 → 금일 등록현황 즉시 반영
     })
     .catch(function(err){
       showToast('저장 실패: ' + (err.message || ''), 'err');
@@ -2641,13 +3088,17 @@ function renderDbTable() {
   var search = document.getElementById('dbSearch').value.trim().toLowerCase();
   var filter = document.getElementById('dbFilter').value;
 
+  var _hideRegEl = document.getElementById('dbHideRegistered');
+  var hideReg = _hideRegEl && _hideRegEl.checked;   // '미등록만 보기' — 등록·이탈 종결건 숨김
+  var _TERMINAL = ['SUC','단기SUC','결제완납','LOSS'];
   var filtered = dbRows.filter(function(row){
     var matchStatus = !filter || row.status === filter;
     var matchSearch = !search ||
       (row.name  || '').toLowerCase().includes(search) ||
       (row.memo  || '').toLowerCase().includes(search) ||
       (row.owner || '').toLowerCase().includes(search);
-    return matchStatus && matchSearch;
+    var matchHide = !hideReg || _TERMINAL.indexOf(row.status) < 0;
+    return matchStatus && matchSearch && matchHide;
   });
 
   var tbody = document.getElementById('dbBody');
@@ -2674,6 +3125,7 @@ function buildDbRow(row, isNew) {
   if (isNew) tr.classList.add('editing');
 
   var statusCls = STATUS_CLASS[row.status] || 'new';
+  if (row.status === 'SUC' || row.status === '단기SUC') tr.classList.add('row-registered');  // 등록 회원 금색 강조
 
   // ── 문의일 (읽기 전용) — 맨 앞 (2026-06-24 GM) ──
   var tdTs = document.createElement('td');
@@ -2733,13 +3185,13 @@ function buildDbRow(row, isNew) {
   if (!READ_ONLY) { tdOwner.className = 'editable-cell'; tdOwner.addEventListener('click', function(){ _activateCellSelect(this, row, 'owner', OWNER_OPTIONS); }); }
   tr.appendChild(tdOwner);
 
-  // ── [6] 메모 ──
-  var tdMemo = document.createElement('td');
-  tdMemo.style.fontSize = '12px'; tdMemo.style.color = 'var(--dim)';
-  tdMemo.style.maxWidth = '240px'; tdMemo.style.whiteSpace = 'pre-wrap'; tdMemo.style.wordBreak = 'break-word';
-  tdMemo.textContent = row.memo || '—';
-  if (!READ_ONLY) { tdMemo.className = 'editable-cell'; tdMemo.addEventListener('click', function(){ _activateCellMemo(this, row); }); }
-  tr.appendChild(tdMemo);
+  // ── [6] Contact (연락 기록 1·2·3) — 체험1~3처럼 3칸 (2026-06-26 GM: 메모칸→Contact) ──
+  var tdContact = document.createElement('td');
+  tdContact.style.fontSize = '11px'; tdContact.style.color = 'var(--dim)'; tdContact.style.lineHeight = '1.6';
+  tdContact.style.maxWidth = '220px'; tdContact.style.whiteSpace = 'pre-wrap'; tdContact.style.wordBreak = 'break-word';
+  _renderContactCell(tdContact, row);
+  if (!READ_ONLY) { tdContact.className = 'editable-cell'; tdContact.addEventListener('click', function(){ _activateCellContact(this, row); }); }
+  tr.appendChild(tdContact);
 
   // ── 일정 (상담·체험) ──
   var tdSched = document.createElement('td');
@@ -2778,6 +3230,9 @@ function _saveCell(rowIndex, patch) {
     channel:  r.channel || '',
     owner:    r.owner   || '',
     memo:     r.memo !== undefined ? r.memo : '',
+    contact1: r.contact1 !== undefined ? r.contact1 : '',
+    contact2: r.contact2 !== undefined ? r.contact2 : '',
+    contact3: r.contact3 !== undefined ? r.contact3 : '',
     tour:     _comboDateTime(r.tourDate, r.tourTime),
     exp1:     _comboDateTime(r.exp1, r.exp1Time),
     exp2:     _comboDateTime(r.exp2, r.exp2Time),
@@ -2891,6 +3346,53 @@ function _activateCellMemo(td, row) {
     if (newVal !== prevVal) _saveCell(rowIndex, { memo: newVal });
   }
   ta.addEventListener('blur', commit);
+}
+
+/* ─── Contact 셀 (contact1·2·3 composite) 표시 + 활성화 (2026-06-26 GM: 메모칸→Contact, 체험1~3처럼) ─── */
+function _renderContactCell(td, row) {
+  td.innerHTML =
+    'C1: ' + esc(row.contact1 || '—') + '<br>' +
+    'C2: ' + esc(row.contact2 || '—') + '<br>' +
+    'C3: ' + esc(row.contact3 || '—');
+}
+function _activateCellContact(td, row) {
+  if (td.classList.contains('cell-active')) return; // 이미 편집 중
+  var rowIndex = parseInt(td.closest('tr').dataset.rowIndex, 10);
+  var live = dbRows.find(function(r){ return r.rowIndex === rowIndex; }) || row;
+
+  td.classList.add('cell-active');
+  td.innerHTML = '';
+  var block = document.createElement('div');
+  block.style.display = 'flex'; block.style.flexDirection = 'column'; block.style.gap = '4px';
+  ['contact1','contact2','contact3'].forEach(function(f, i){
+    var inp = document.createElement('input');
+    inp.className = 'cell-input'; inp.type = 'text';
+    inp.style.width = '200px';
+    inp.placeholder = 'Contact ' + (i+1) + ' — ' + (i+1) + '차 연락 기록';
+    inp.value = live[f] || '';
+    inp.dataset.field = f;
+    block.appendChild(inp);
+  });
+  td.appendChild(block);
+  var firstInput = block.querySelector('input');
+  if (firstInput) firstInput.focus();
+
+  // 블록 밖으로 포커스 완전히 벗어나면 커밋 (IME 안전 — 입력 중 재생성 없음)
+  var committed = false;
+  function onFocusOut() {
+    requestAnimationFrame(function(){
+      if (td.contains(document.activeElement)) return;
+      if (committed) return;
+      committed = true;
+      td.removeEventListener('focusout', onFocusOut);
+      var patch = {};
+      block.querySelectorAll('[data-field]').forEach(function(el){ patch[el.dataset.field] = el.value; });
+      _renderContactCell(td, Object.assign({}, live, patch));
+      td.classList.remove('cell-active');
+      _saveCell(rowIndex, patch);
+    });
+  }
+  td.addEventListener('focusout', onFocusOut);
 }
 
 /* ─── 일정 셀 (상담·체험1·체험2 composite) 활성화 ─── */

@@ -921,6 +921,11 @@ async def handle_message(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
         return  # 결재 처리 완료 — 양방향 분류 skip
     # ────────────────────────────────────────────────────────────────────────
 
+    # ── 네이버 URL 자동기록 분기 (GM 손게시 → review_queue.json, 2026-06-26) ─
+    if await _handle_naver_url_record(update, ctx, prompt):
+        return
+    # ────────────────────────────────────────────────────────────────────────
+
     # ── 양방향 통신 분류 게이트 (v1.0, 2026-05-25) ─────────────────────────────
     # Claude API/CLI 호출 없이 순수 Python 키워드 분류
     bidir_category, bidir_reply = _bidir_classify(prompt)
@@ -1072,6 +1077,205 @@ def _git_seq_locked(commit_msg: str) -> None:
             _seq()
     except Exception as exc:  # 락 타임아웃 등 — 무방비 진행 금지, 다음 기회 재커밋
         log.error(f"[pub] git lock/seq 실패(커밋 건너뜀): {exc}")
+
+
+# ─── 네이버 URL 자동기록 (GM 손게시 → review_queue.json, 2026-06-26) ───────────
+# GM이 텔레그램으로 네이버 블로그·카페 URL을 보내면 review_queue.json 해당 항목에
+# post_url 기록 후 커밋·푸시. 후보 복수 시 번호 선택 요청(절대 임의 기록 금지).
+_NAVER_BLOG_RE = re.compile(r'https?://blog\.naver\.com/\S+')
+_NAVER_CAFE_RE = re.compile(r'https?://cafe\.naver\.com/\S+')
+_NOTIFY_LINKS_SCRIPT = WORKDIR / "scripts" / "notify_published_links.py"
+_NAVER_PENDING_KEY = "naver_url_pending"
+
+
+def _extract_naver_url(text: str):
+    """텍스트에서 첫 번째 네이버 블로그/카페 URL과 채널명 추출.
+    blog 우선. 둘 다 없으면 (None, None)."""
+    m = _NAVER_BLOG_RE.search(text)
+    if m:
+        return m.group(0).rstrip(".,)>\"'"), "네이버 블로그"
+    m = _NAVER_CAFE_RE.search(text)
+    if m:
+        return m.group(0).rstrip(".,)>\"'"), "네이버 카페 (동부이촌동)"
+    return None, None
+
+
+def _rq_candidates(items: list, channel: str) -> list:
+    """채널 일치 AND (status=='임시저장완료' OR (status=='발행완료' AND post_url 없음))
+    published_at/enqueued_at 최신순 정렬."""
+    result = [
+        it for it in items
+        if it.get("channel") == channel
+        and (
+            it.get("status") == "임시저장완료"
+            or (it.get("status") == "발행완료" and not it.get("post_url"))
+        )
+    ]
+    result.sort(
+        key=lambda it: it.get("published_at") or it.get("enqueued_at") or it.get("id", ""),
+        reverse=True,
+    )
+    return result
+
+
+def _rq_apply_url(it: dict, url: str) -> None:
+    """review_queue 항목에 post_url·status 갱신 + note append."""
+    import datetime
+    it["post_url"] = url
+    it["status"] = "발행완료"
+    today = datetime.date.today().isoformat()
+    old_note = (it.get("note") or "").rstrip()
+    suffix = f"[GM 텔레그램 회신 {today}] URL 자동기록"
+    it["note"] = (old_note + " / " + suffix) if old_note else suffix
+
+
+def _try_notify_links(item: dict) -> None:
+    """notify_published_links.py --folder 비차단 호출(best-effort)."""
+    folder = item.get("folder", "")
+    if not folder or not _NOTIFY_LINKS_SCRIPT.exists():
+        return
+    try:
+        subprocess.Popen(
+            [str(_VENV_PY), "-u", str(_NOTIFY_LINKS_SCRIPT), "--folder", folder],
+            cwd=str(WORKDIR),
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            env=dict(os.environ, PYTHONIOENCODING="utf-8", TELEGRAM_BOT_TOKEN=(TOKEN or "")),
+        )
+    except Exception as exc:
+        log.warning(f"[naver_url] notify_published_links 호출 실패(무시): {exc}")
+
+
+async def _handle_naver_url_record(
+    update: Update, ctx: ContextTypes.DEFAULT_TYPE, prompt: str
+) -> bool:
+    """GM이 보낸 네이버 URL을 review_queue.json에 자동 기록.
+
+    흐름:
+      1) pending 확인 — 이전 메시지에서 번호 선택 대기 중이면 숫자로 해소.
+         숫자가 아닌 새 메시지면 pending 취소 후 URL 탐지로 계속.
+      2) 네이버 URL 탐지(blog/cafe). 없으면 False 반환(기존 라우팅 통과).
+      3) 후보 1건: 즉시 기록·커밋·회신.
+         후보 다건: 번호 목록 제시 후 pending 저장. 임의 기록 금지.
+         후보 0건: '대기 없음' 안내.
+
+    처리 완료(handle_message가 return해야 하는 경우) True 반환.
+    해당 없으면 False 반환.
+    """
+    # ── 1) pending 해소 ────────────────────────────────────────────────────
+    pending = ctx.user_data.get(_NAVER_PENDING_KEY)
+    if pending:
+        stripped = prompt.strip()
+        if stripped.isdigit():
+            idx = int(stripped) - 1
+            candidates = pending["candidates"]
+            if 0 <= idx < len(candidates):
+                chosen_id = candidates[idx]["id"]
+                url = pending["url"]
+                channel = pending["channel"]
+                try:
+                    items = json.loads(REVIEW_QUEUE.read_text(encoding="utf-8"))
+                except Exception as exc:
+                    await update.message.reply_text(f"⚠️ 큐 로드 실패: {exc}")
+                    ctx.user_data.pop(_NAVER_PENDING_KEY, None)
+                    return True
+                target = next((it for it in items if it.get("id") == chosen_id), None)
+                if target is None:
+                    await update.message.reply_text(
+                        f"⚠️ 큐에서 항목을 찾지 못했습니다 (id={chosen_id})."
+                    )
+                    ctx.user_data.pop(_NAVER_PENDING_KEY, None)
+                    return True
+                if target.get("post_url"):
+                    await update.message.reply_text(
+                        f"⚠️ 이미 URL이 기록된 항목입니다: {target.get('title')}\n"
+                        f"기존 URL: {target['post_url']}\n덮어쓰지 않습니다."
+                    )
+                    ctx.user_data.pop(_NAVER_PENDING_KEY, None)
+                    return True
+                _rq_apply_url(target, url)
+                REVIEW_QUEUE.write_text(
+                    json.dumps(items, ensure_ascii=False, indent=2), encoding="utf-8"
+                )
+                commit_msg = (
+                    f"auto(cmo): GM 텔레그램 URL 기록 — {target.get('title', '?')} [{channel}]"
+                )
+                await asyncio.to_thread(_git_seq_locked, commit_msg)
+                ctx.user_data.pop(_NAVER_PENDING_KEY, None)
+                await update.message.reply_text(
+                    f"✅ {target.get('title', '?')} — {channel} URL 기록 완료"
+                )
+                _try_notify_links(target)
+                return True
+            else:
+                await update.message.reply_text(
+                    f"⚠️ 1~{len(candidates)} 번호만 유효합니다. 다시 입력해 주세요."
+                )
+                return True
+        else:
+            # 숫자가 아닌 새 메시지 → pending 취소 후 URL 탐지로 계속
+            ctx.user_data.pop(_NAVER_PENDING_KEY, None)
+
+    # ── 2) 네이버 URL 탐지 ──────────────────────────────────────────────────
+    url, channel = _extract_naver_url(prompt)
+    if url is None:
+        return False
+
+    try:
+        items = json.loads(REVIEW_QUEUE.read_text(encoding="utf-8"))
+    except Exception as exc:
+        await update.message.reply_text(f"⚠️ 큐 로드 실패: {exc}")
+        return True
+
+    candidates = _rq_candidates(items, channel)
+
+    # ── 3-A) 정확히 1건 ─────────────────────────────────────────────────────
+    if len(candidates) == 1:
+        target = candidates[0]
+        if target.get("post_url"):
+            await update.message.reply_text(
+                f"⚠️ 이미 URL이 기록된 항목입니다: {target.get('title')}\n"
+                f"기존 URL: {target['post_url']}\n덮어쓰지 않습니다."
+            )
+            return True
+        _rq_apply_url(target, url)
+        REVIEW_QUEUE.write_text(
+            json.dumps(items, ensure_ascii=False, indent=2), encoding="utf-8"
+        )
+        commit_msg = (
+            f"auto(cmo): GM 텔레그램 URL 기록 — {target.get('title', '?')} [{channel}]"
+        )
+        await asyncio.to_thread(_git_seq_locked, commit_msg)
+        await update.message.reply_text(
+            f"✅ {target.get('title', '?')} — {channel} URL 기록 완료"
+        )
+        _try_notify_links(target)
+        return True
+
+    # ── 3-B) 여러 건 — 반드시 GM 확인 후 기록 ────────────────────────────────
+    if len(candidates) > 1:
+        lines = [
+            f"GM, {channel} 대기 중인 글이 {len(candidates)}건 있습니다. 몇 번에 기록할까요?"
+        ]
+        for i, it in enumerate(candidates, 1):
+            lines.append(f"  {i}. [{it.get('status', '')}] {it.get('title', it.get('id'))}")
+        lines.append("\n숫자만 보내주시면 기록합니다.")
+        ctx.user_data[_NAVER_PENDING_KEY] = {
+            "url": url,
+            "channel": channel,
+            "candidates": [
+                {"id": it["id"], "title": it.get("title", it.get("id"))}
+                for it in candidates
+            ],
+        }
+        await update.message.reply_text("\n".join(lines))
+        return True
+
+    # ── 3-C) 0건 ────────────────────────────────────────────────────────────
+    await update.message.reply_text(
+        f"GM, 대기 중인 {channel} 글이 없습니다. 콘텐츠명을 함께 알려주시면 찾아 기록할게요."
+    )
+    return True
 
 
 async def cmd_publish_callback(update: Update, ctx: ContextTypes.DEFAULT_TYPE):

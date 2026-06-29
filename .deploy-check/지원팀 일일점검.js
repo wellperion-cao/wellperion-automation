@@ -16,15 +16,16 @@ const SHEET_ITEMS  = '지원_매뉴얼';   // GM 편집 점검 항목 마스터(
 // 빈값 → 'support'(레거시 기존 항목=원본 지원부) 안전 폴백.
 // 2b-1(2026-06-11 시우): '회차'(rounds) 11열 추가 — 이슈→항목 승격 시 선택한 5조(am1,pm1…)를
 // 보존. dept(인덱스9) 뒤에 붙여 기존 인덱스 불변. 빈값 → 프론트 itemRounds가 roundOfSlot 폴백(하위호환).
-// Part1(2026-06-23 시우): '시드'(seed) 13번째 열 — 맨 뒤 추가(기존 인덱스 전부 불변).
-// 빈값=레거시(CUSTOM: shadow/added), 'Y'=페이지 단방향 동기분(syncSeedItems 격리행).
-// getItems/saveItems/_buildTodayMaster는 seed='Y' 행을 skip → 마스터=non-seed 단일출처(분모·분자 동일). 시트 행 수=시트 실물 기준(페이지 배열: 평일30/주말31/야간포함45).
-const ITEM_HEADERS = ['항목ID','카테고리','항목명','상세','성별','시간대','정렬','타입','필드정의','부서','회차','일정','시드'];
-const ITEM_DEPT_COL = 9;    // '부서' 0-based 인덱스(10번째 열)
-const ITEM_ROUNDS_COL = 10; // '회차' 0-based 인덱스(11번째 열) — 구 10열 시트는 undefined → 빈값 폴백
-const ITEM_SCHED_COL = 11;  // '일정' 0-based 인덱스(12번째 열) — 요일·몇째주 구조저장 "mon,wed,fri|2" 형식. 구시트 undefined → 빈값
-const ITEM_SEED_COL = 12;   // '시드' 0-based 인덱스(13번째 열) — 'Y'=시드 단방향 동기행. 구시트 undefined → 빈값(=레거시 CUSTOM)
-function _isSeedRow(row){ return String(row[ITEM_SEED_COL] == null ? '' : row[ITEM_SEED_COL]).trim() === 'Y'; }
+// 2026-06-27: '시드'(seed) 12번째 열은 과거 잔재 — seed 개념 폐기. 시트=항목 마스터 단일출처.
+// getItems/_buildTodayMaster는 더는 seed 행을 skip하지 않음(시트 행 전체가 마스터). syncSeedItems=no-op(되쓰기 차단).
+// 2026-06-27: GM 확정 12칸 스키마 — '시간대' 열 폐지(회차=타이밍 축). 시트=항목 마스터 단일출처.
+// 헤더: 항목ID|카테고리|항목명|상세|성별|정렬|타입|필드정의|부서|회차|점검일정|시드
+const ITEM_HEADERS = ['항목ID','카테고리','항목명','상세','성별','정렬','타입','필드정의','부서','회차','점검일정','시드'];
+const ITEM_DEPT_COL = 8;    // '부서' 0-based 인덱스(9번째 열)
+const ITEM_ROUNDS_COL = 9;  // '회차' 0-based 인덱스(10번째 열) — 오전조/오후조/마감조 라벨 또는 am1,pm1,close1. 빈값 폴백
+const ITEM_SCHED_COL = 10;  // '점검일정' 0-based 인덱스(11번째 열) — 요일·몇째주 구조저장 "tue,fri|2" 형식. 빈값 가능
+const ITEM_SEED_COL = 11;   // '시드' 12번째 열 — 2026-06-29 개념 완전 폐기. 항상 빈칸·어떤 로직도 읽지 않음(데드 컬럼).
+function _isSeedRow(row){ return false; }   // 2026-06-29 시우: seed 개념 폐기 — 항상 false(되살아나지 않게 박제). 과거 'Y' 보존이 saveItems 시 시드행 중복증식의 뿌리였음.
 function _itemDept(v){ var d = String(v == null ? '' : v).trim(); return d || 'support'; }
 
 const BOT_TOKEN = PropertiesService.getScriptProperties().getProperty('TELEGRAM_BOT_TOKEN');
@@ -308,6 +309,9 @@ function doGet(e) {
   if (action === 'clear_zone_checks') { return clearZoneCheckedRows(e.parameter.dept || 'support', e.parameter.date || '', e.parameter.all === '1'); }
   if (action === 'delete_item_row') { return deleteItemRow(e.parameter.dept || 'support', e.parameter.date || '', e.parameter.zone || '', e.parameter.itemId || ''); }
   if (action === 'purge_orphan_checks') { return purgeOrphanChecks(e.parameter.dept || 'support'); }   // 매뉴얼에 없는 고아/테스트 항목ID를 원장·시트에서 일괄 제거. 2026-06-16 시우.
+  if (action === 'dedup_items') { return dedupItems(e.parameter.dept || 'support'); }   // 지원_매뉴얼 중복 항목ID 1줄로 정리(시드행 중복 청소)+시드칸 전체 비움. 백업탭 적립. 2026-06-29 시우.
+  if (action === 'set_round_duty') { return setRoundDuty(e.parameter.dept || 'support', e.parameter.zone || 'male', e.parameter.date || '', e.parameter.round || '', e.parameter.name || ''); }   // 지정 date+round 구역행 근무자(11열) 단일 통일 — stale 기본값 오염 보정. 점검결과·점검자·이슈 무변경. 2026-06-29 시우.
+  if (action === 'normalize_subat_format') { return normalizeSubatFormat(e.parameter.dept || 'support'); }   // 제출시각(10열) 표시형식을 'yyyy-MM-dd HH:mm'로 통일 — 일부 셀 날짜만 표시(시간가림) 정정. 값 무변경(표시만). 2026-06-29 시우.
   if (action === 'list_tabs') { return jsonRes({ tabs: SpreadsheetApp.getActiveSpreadsheet().getSheets().map(function(s){ return { name: s.getName(), gid: s.getSheetId() }; }) }); }   // gid→탭 확인용. 2026-06-15 시우.
   if (action === 'dump_snapshot') {   // 점검일지 스냅샷 전체행 덤프 — 진단용. 2026-06-16 시우.
     var _ssh = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(_snapshotTabName(e.parameter.dept || 'support'));
@@ -499,7 +503,7 @@ function doGet(e) {
       var upd = _um[uid];
       if (upd.newId && upd.newId !== uid) { _ushi.getRange(ui + 1, 1).setValue(upd.newId); _uUpdId++; }
       if (upd.name != null) { _ushi.getRange(ui + 1, 3).setValue(upd.name); _uUpdName++; }
-      if (upd.order != null) { _ushi.getRange(ui + 1, 7).setValue(upd.order); _uUpdOrder++; }
+      if (upd.order != null) { _ushi.getRange(ui + 1, 6).setValue(upd.order); _uUpdOrder++; }  // 12칸: 정렬=6열(구 7열)
     }
     return jsonRes({ ok: true, updId: _uUpdId, updName: _uUpdName, updOrder: _uUpdOrder });
   }
@@ -510,6 +514,54 @@ function doGet(e) {
   if (action === 'hide_issue_col') { return hideIssueColumn(e.parameter.dept || 'support'); }   // G열(이슈·인덱스6) 데이터행 비우기 + 컬럼 숨김(물리삭제 X·인덱스 보존). 1회성. 2026-06-20 시우.
   if (action === 'show_issue_col') { return showIssueColumn(e.parameter.dept || 'support'); }   // G열 숨김 해제 — hide_issue_col 실행 후 이슈 저장 재활성화 시 1회 실행. 2026-06-25 시우.
   if (action === 'clear_old_duration') { return clearOldDuration(e.parameter.dept || 'support'); }   // O열(소요시간·인덱스14) 옛 시각값(1899-12-30 시리얼) 비우기. 컬럼 숨김 X — 소요시간은 화면 표시 유지. 1회성. 2026-06-20 시우.
+  if (action === 'fix_item_type_dept') {   // 지정 항목ID의 타입(7열)→check·부서(9열)→support 정정. F/G 칸어긋남 교정. GET ?action=fix_item_type_dept&ids=f1,f2,...,g1. 2026-06-27 시우.
+    var _fim = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_ITEMS);
+    if (!_fim) return jsonRes({ error: 'no SHEET_ITEMS' });
+    var _fids = String(e.parameter.ids || '').split(',').map(function (s) { return s.trim(); }).filter(Boolean);
+    if (!_fids.length) return jsonRes({ error: 'ids 필수' });
+    var _fset = {}; _fids.forEach(function (x) { _fset[x] = 1; });
+    var _fid = _fim.getDataRange().getValues(), _fn = 0, _fhit = [];
+    for (var _fi = 1; _fi < _fid.length; _fi++) {
+      if (_fset[String(_fid[_fi][0])]) {
+        _fim.getRange(_fi + 1, 7).setValue('check');     // 7열=타입(idx6)
+        _fim.getRange(_fi + 1, 9).setValue('support');   // 9열=부서(idx8)
+        _fn++; _fhit.push(String(_fid[_fi][0]));
+      }
+    }
+    return jsonRes({ ok: true, fixed: _fn, ids: _fhit });
+  }
+  if (action === 'dump_items_raw') {   // 지원_매뉴얼 원본 12칸 전수 덤프(파싱 전) — 칸 어긋남 진단. 2026-06-27 시우.
+    var _dir = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_ITEMS);
+    if (!_dir) return jsonRes({ error: 'no SHEET_ITEMS' });
+    var _dird = _dir.getDataRange().getValues(), _dirOut = [];
+    for (var _dri = 0; _dri < _dird.length; _dri++) {
+      _dirOut.push(_dird[_dri].map(function (c) { return String(c == null ? '' : c); }));
+    }
+    return jsonRes({ rows: _dirOut.length, cols: (_dird[0] || []).length, data: _dirOut });
+  }
+  if (action === 'revert_phantom_rows') {   // 조간 누수 유령 행만 '미제출'로 정밀 되돌림 — 9열 제출상태→미제출·10열 제출시각→''·15열 소요시간→''. 점검결과·근무자·점검자·이슈 전부 보존. 백업 후 1회성. 2026-06-27 시우.
+    // GET ?action=revert_phantom_rows&dept=support&date=2026-06-26&zone=female&round=마감조&ids=c2,c5,c6,d1,d2
+    var _rpz = _deptTabs(e.parameter.dept || 'support')[e.parameter.zone || 'female'];
+    var _rpsh = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(_rpz);
+    if (!_rpsh) return jsonRes({ error: 'no sheet: ' + _rpz });
+    var _rpdate = e.parameter.date || '', _rpround = e.parameter.round || '';
+    var _rpids = String(e.parameter.ids || '').split(',').map(function (s) { return s.trim(); }).filter(Boolean);
+    if (!_rpdate || !_rpids.length) return jsonRes({ error: 'date·ids 필수' });
+    var _rpset = {}; _rpids.forEach(function (x) { _rpset[x] = 1; });
+    var _rpd = _rpsh.getDataRange().getValues(), _rpn = 0, _rphit = [];
+    for (var _rpi = 1; _rpi < _rpd.length; _rpi++) {
+      var _row = _rpd[_rpi];
+      var _dok = String(_row[0]) === _rpdate || formatDate(_row[0]) === _rpdate;
+      var _rok = !_rpround || String(_row[4]) === _rpround;   // 회차열(idx4) 라벨 매칭(예: '마감조')
+      if (_dok && _rok && _rpset[String(_row[1])]) {
+        _rpsh.getRange(_rpi + 1, 9).setValue('미제출');   // 9열 제출상태(idx8)
+        _rpsh.getRange(_rpi + 1, 10).setValue('');         // 10열 제출시각(idx9)
+        _rpsh.getRange(_rpi + 1, 15).setValue('');         // 15열 소요시간(idx14)
+        _rpn++; _rphit.push(String(_row[1]) + '/' + String(_row[4]));
+      }
+    }
+    return jsonRes({ ok: true, sheet: _rpz, date: _rpdate, round: _rpround, reverted: _rpn, hit: _rphit });
+  }
 
   var date = e.parameter.date;
   if (!date) return jsonRes({ error: 'date required' });
@@ -1848,7 +1900,7 @@ function initItemSheet() {
     .setBackground('#2a2725').setFontColor('#B79F8A')
     .setFontWeight('bold').setHorizontalAlignment('center');
   sheet.setFrozenRows(1);
-  var widths = [180, 180, 240, 360, 80, 180, 70, 90, 200, 90, 120, 140, 60];  // 타입·필드정의·부서·회차·일정·시드 추가
+  var widths = [180, 180, 240, 360, 80, 70, 90, 200, 90, 120, 140, 60];  // 12칸(시간대 폐지): 정렬·타입·필드정의·부서·회차·점검일정·시드
   for (var i = 0; i < widths.length; i++) sheet.setColumnWidth(i + 1, widths[i]);
   return sheet;
 }
@@ -1872,24 +1924,24 @@ function getItems(params) {
   var items = [];
   for (var i = 1; i < data.length; i++) {
     if (!data[i][0] && !data[i][2]) continue; // id·항목명 모두 없으면 건너뜀
-    if (_isSeedRow(data[i])) continue; // P1-5: seed='Y' 행은 CUSTOM_ITEMS로 비유입(isShadow 오인·중복 차단). 시드는 JS 배열이 렌더 정본.
+    // seed='Y' skip 제거(2026-06-27): 시트=단일출처 → seed 행도 마스터로 포함.
     if (_itemDept(data[i][ITEM_DEPT_COL]) !== reqDept) continue; // dept 불일치 제외
     // S1(2026-06-10 시토): type 빈값 → 'check' 폴백. fields = measure 입력 영문키 목록(없으면 빈문자).
-    var itemType = String(data[i][7] || '').trim() || 'check';
+    var itemType = String(data[i][6] || '').trim() || 'check';
     items.push({
       id:     String(data[i][0] || ''),
       cat:    String(data[i][1] || ''),
       name:   String(data[i][2] || ''),
       detail: String(data[i][3] || ''),
       gender: String(data[i][4] || 'all'),
-      slot:   String(data[i][5] || ''),
-      order:  data[i][6] !== '' && data[i][6] != null ? Number(data[i][6]) : (i),
+      slot:   '',   // 시간대 열 폐지(12칸) — slot 무효. 프론트는 회차/카테고리 기반.
+      order:  data[i][5] !== '' && data[i][5] != null ? Number(data[i][5]) : (i),
       type:   itemType,
-      fields: String(data[i][8] || ''),
+      fields: String(data[i][7] || ''),
       dept:   _itemDept(data[i][ITEM_DEPT_COL]),
-      // 2b-1: 회차(rounds) — 구 10열 시트는 인덱스11 undefined → '' (프론트 폴백). 신규는 "am1,pm1" 형태.
+      // 회차(rounds) — 오전조/오후조/마감조 라벨 또는 am1,pm1,close1. 빈값 → 프론트 폴백.
       rounds: String(data[i][ITEM_ROUNDS_COL] == null ? '' : data[i][ITEM_ROUNDS_COL]),
-      // 일정(요일·몇째주) 구조저장 "mon,wed,fri|2" — 구시트 undefined → '' (프론트 텍스트파싱 폴백)
+      // 점검일정(요일·몇째주) 구조저장 "tue,fri|2" — 빈값 → 항상 통과
       sched: String(data[i][ITEM_SCHED_COL] == null ? '' : data[i][ITEM_SCHED_COL])
     });
   }
@@ -1913,8 +1965,8 @@ function saveItems(body) {
     for (var e = 0; e < existing.length; e++) {
       var r = existing[e];
       if (!r[0] && !r[2]) continue; // 빈 행 스킵
-      // P1-4: 타 dept OR seed='Y' 행 보존 → CUSTOM(shadow/added) 저장이 시드 격리행을 침범하지 않음.
-      if (_itemDept(r[ITEM_DEPT_COL]) !== reqDept || _isSeedRow(r)) preserved.push(r);
+      // 2026-06-29 시우: '시드' 개념 완전 폐기 — seed='Y' 행 별도 보존 제거(이게 saveItems 시 시드행 1개씩 중복증식의 뿌리). 타 dept 행만 보존.
+      if (_itemDept(r[ITEM_DEPT_COL]) !== reqDept) preserved.push(r);
     }
   }
 
@@ -1926,15 +1978,14 @@ function saveItems(body) {
       String(it.name || ''),
       String(it.detail || ''),
       String(it.gender || 'all'),
-      String(it.slot || ''),
       it.order !== undefined && it.order !== '' ? it.order : (idx + 1),
       // S1(2026-06-10 시토): 타입·필드정의 패스스루(빈값→'check' 폴백). 영문키만(한글 키 금지).
       String(it.type || '').trim() || 'check',
       String(it.fields || ''),
       reqDept,   // S4 갭②: 부서
-      String(it.rounds || ''),   // 2b-1: 회차(예 "am1,pm1") — 빈값이면 프론트 roundOfSlot 폴백
-      String(it.sched || ''),    // 일정(요일·몇째주) "mon,wed,fri|2" — 매뉴얼 편집 체크박스에서 설정
-      ''                          // Part1: 시드열 — CUSTOM 저장분은 항상 빈값(시드 아님). 시드행은 syncSeedItems 전용.
+      String(it.rounds || ''),   // 회차(오전조/오후조/마감조 또는 am1,pm1) — 빈값이면 프론트 폴백
+      String(it.sched || ''),    // 점검일정(요일·몇째주) "tue,fri|2" — 매뉴얼 편집 체크박스에서 설정
+      ''                          // 시드열 — 폐기(seed 개념 폐지). 항상 빈값.
     ];
   });
 
@@ -1949,15 +2000,125 @@ function saveItems(body) {
   return jsonRes({ ok: true, count: mine.length, total: rows.length, dept: reqDept });
 }
 
+// ─── 제출시각 표시형식 통일 (GET ?action=normalize_subat_format[&dept=support]) — 2026-06-29 시우 ───
+// 일부 셀의 제출시각이 '날짜만'(2026. 6. 29)으로 표시돼 시간이 가려지는 문제 정정. 값은 그대로(시간 보유), 표시형식만 'yyyy-MM-dd HH:mm'로 통일. 빈칸·텍스트는 무영향.
+function normalizeSubatFormat(dept) {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var tabs = _deptTabs(dept);   // {male,female,common}
+  var COL = 10, FMT = 'yyyy-MM-dd HH:mm', out = {};
+  Object.keys(tabs).forEach(function (k) {
+    var sh = ss.getSheetByName(tabs[k]);
+    if (!sh) return;
+    var last = sh.getLastRow();
+    if (last < 2) { out[tabs[k]] = { rows: 0 }; return; }
+    sh.getRange(2, COL, last - 1, 1).setNumberFormat(FMT);
+    out[tabs[k]] = { rows: last - 1 };
+  });
+  // 검증: 남 시트 제출시각 표시값 중 시간(:) 없는 칸 카운트(빈칸 제외) — 0이어야 통과
+  var msh = ss.getSheetByName(tabs.male || SHEET_MALE), noTime = 0, sample = [];
+  if (msh) {
+    var last = msh.getLastRow();
+    if (last >= 2) {
+      var disp = msh.getRange(2, COL, last - 1, 1).getDisplayValues();
+      var ids = msh.getRange(2, 2, last - 1, 1).getValues();
+      for (var i = 0; i < disp.length; i++) {
+        var d = String(disp[i][0] || '');
+        if (d && !/\d{1,2}:\d{2}/.test(d)) { noTime++; if (sample.length < 10) sample.push(String(ids[i][0] || '') + '=' + d); }
+      }
+    }
+  }
+  return jsonRes({ ok: true, format: FMT, col: COL, sheets: out, male_noTimeAfter: noTime, male_noTimeSample: sample });
+}
+
+// ─── 회차 근무자 통일 보정 (GET ?action=set_round_duty&dept&zone&date=yyyy-MM-dd&round&name) — 2026-06-29 시우 ───
+// stale 기본값 오염(아침 미리선택된 근무자로 첫 몇 건이 잘못 기록)을 실제 근무자 1명으로 통일. 11열(근무자)만 변경 — 점검결과·점검자·이슈·시각 전부 보존.
+function setRoundDuty(dept, zoneKey, dateStr, round, name) {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName(_deptTabs(dept)[zoneKey]);
+  if (!sheet) return jsonRes({ ok: false, error: 'no zone sheet for ' + zoneKey });
+  if (!dateStr || !round || !name) return jsonRes({ ok: false, error: 'date/round/name required' });
+  var tz = Session.getScriptTimeZone();
+  var last = sheet.getLastRow();
+  if (last < 2) return jsonRes({ ok: true, changed: 0 });
+  var data = sheet.getRange(2, 1, last - 1, HEADERS.length).getValues();
+  var changed = [], before = [];
+  for (var i = 0; i < data.length; i++) {
+    var c = data[i][0];
+    var dd = (c instanceof Date) ? c : (c ? new Date(c) : null);
+    var ds = (dd && !isNaN(dd.getTime())) ? Utilities.formatDate(dd, tz, 'yyyy-MM-dd') : String(c || '');
+    var rd = String(data[i][4] || '');
+    if (ds === dateStr && rd === round) {
+      if (String(data[i][10] || '') !== name) {
+        before.push({ id: String(data[i][1] || ''), was: String(data[i][10] || '') });
+        data[i][10] = name;
+        changed.push(String(data[i][1] || ''));
+      }
+    }
+  }
+  if (changed.length) sheet.getRange(2, 1, data.length, HEADERS.length).setValues(data);
+  return jsonRes({ ok: true, changed: changed.length, ids: changed, before: before, zone: zoneKey, date: dateStr, round: round, name: name });
+}
+
+// ─── 매뉴얼 항목 중복 정리 (GET ?action=dedup_items[&dept=support]) — 2026-06-29 시우 ───
+// '시드' 개념 폐기 잔재 청소: 같은 항목ID가 〈시드 빈칸〉+〈시드='Y'〉 2줄로 증식된 것을 1줄로.
+// 안전: ①원본 전체를 백업탭(_매뉴얼백업_dedup)에 적립(역롤백) ②항목ID별 1줄만 보존(시드 빈칸행 우선) ③생존행 시드칸 전부 '' ④멱등(재실행 시 removed 0).
+function dedupItems(reqDept) {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName(SHEET_ITEMS);
+  if (!sheet) return jsonRes({ ok: false, error: 'no item sheet' });
+  var lastRow = sheet.getLastRow();
+  if (lastRow < 2) return jsonRes({ ok: true, before: 0, after: 0, removed: [] });
+  var W = ITEM_HEADERS.length;
+  var all = sheet.getRange(2, 1, lastRow - 1, W).getValues();
+
+  // 1) 백업탭 덮어쓰기 — 헤더 + 원본 전체(역롤백 안전망)
+  var bkName = '_매뉴얼백업_dedup';
+  var bk = ss.getSheetByName(bkName);
+  if (!bk) bk = ss.insertSheet(bkName);
+  bk.clearContents();
+  bk.getRange(1, 1, 1, W).setValues([ITEM_HEADERS]);
+  if (all.length > 0) bk.getRange(2, 1, all.length, W).setValues(all);
+
+  // 2) 항목ID별 dedup — 시드 빈칸행 우선 보존(시드='Y'행 버림)
+  var order = [], pick = {}, removed = [];
+  for (var i = 0; i < all.length; i++) {
+    var r = all[i];
+    var id = String(r[0] || '').trim();
+    if (!id && !String(r[2] || '').trim()) continue;   // 완전 빈 행 스킵
+    var seedBlank = String(r[ITEM_SEED_COL] == null ? '' : r[ITEM_SEED_COL]).trim() !== 'Y';
+    if (!pick[id]) { pick[id] = r; order.push(id); }
+    else {
+      var keptBlank = String(pick[id][ITEM_SEED_COL] == null ? '' : pick[id][ITEM_SEED_COL]).trim() !== 'Y';
+      if (!keptBlank && seedBlank) pick[id] = r;   // 기존이 Y·새것이 빈칸 → 교체
+      removed.push(id);
+    }
+  }
+
+  // 3) 생존행 시드칸 '' 박제 후 재기록
+  var out = order.map(function (id) {
+    var r = pick[id].slice();
+    while (r.length < W) r.push('');
+    r[ITEM_SEED_COL] = '';
+    return r;
+  });
+  sheet.getRange(2, 1, lastRow - 1, W).clearContent();
+  if (out.length > 0) sheet.getRange(2, 1, out.length, W).setValues(out);
+
+  return jsonRes({ ok: true, before: all.length, after: out.length, removedCount: removed.length, removed: removed, backupTab: bkName, dept: reqDept });
+}
+
 // ─── 시드 단방향 동기화 (POST {action:'syncSeedItems', dept, seeds:[...]}) — Part1 시우 2026-06-23 ───
 // 페이지가 전체 시드 명단(WEEKDAY/WEEKEND/NIGHT_* + ROUND_MAP 회차)을 단방향 push.
 // seed='Y' 격리행만 멱등 upsert(항목ID 키): 있으면 update·없으면 append·payload에 없는 옛 seed행 삭제.
 // → N회 호출해도 seed행 = payload와 1:1(중복 0). shadow/added/타 dept 행은 절대 안 건드림.
 // Part1 단계: getItems·_countTodaySchedule이 seed행 skip → 적재만 하고 분모·렌더 무변화.
 function syncSeedItems(body) {
+  // 2026-06-27 시드 개념 폐기 — 시트=항목 마스터 단일출처. 하드코딩 배열 되쓰기 차단(GM 삭제분 부활 방지).
+  return jsonRes({ ok: true, deprecated: true, note: 'seed 폐기 — 시트 단일출처(되쓰기 no-op)' });
+  // (이하 레거시 — 도달 불가)
   var reqDept = body.dept ? String(body.dept).trim() : 'support';
   var seeds = body.seeds || [];
-  var sheet = initItemSheet();   // _ensureItemCols로 13열 보장
+  var sheet = initItemSheet();
 
   // 1) payload → seed 행(부서·시드='Y' 박제). 항목ID 기준 dedup(중복 id는 마지막 승).
   var seedMap = {};   // id → row
@@ -2075,11 +2236,11 @@ function seedItemMaster() {
   // 남/여 공통 구역 항목 (S4 갭②: 부서='support' — 기존 지원부 마스터)
   // 2b-1: 회차(11열) 빈값 — 기본 항목은 프론트 ROUND_MAP/roundOfSlot이 라운드 결정(시드 불필요).
   ZONE_ITEMS.forEach(function (it) {
-    rows.push([it.id, it.cat, it.name, '', 'all', it.slot, order++, 'check', '', 'support', '']);
+    rows.push([it.id, it.cat, it.name, '', 'all', order++, 'check', '', 'support', '', '', '']);
   });
   // 공용 구역 항목
   COMMON_ITEMS.forEach(function (it) {
-    rows.push([it.id, it.cat, it.name, '', 'all', it.slot, order++, 'check', '', 'support', '']);
+    rows.push([it.id, it.cat, it.name, '', 'all', order++, 'check', '', 'support', '', '', '']);
   });
   if (rows.length > 0) {
     sheet.getRange(2, 1, rows.length, ITEM_HEADERS.length).setValues(rows);
@@ -2610,7 +2771,7 @@ function _buildTodayMaster(dept, dow, week) {
 
     if (!id && !name) return;             // 빈 행
     if (deptVal !== 'support') return;    // 지원부만
-    if (_isSeedRow(row)) return;          // getItems와 동일: seed 행 제외(마스터=non-seed 단일출처)
+    // seed skip 제거(2026-06-27): getItems와 동일하게 seed 행도 포함(시트=단일출처).
     if (!id) return;
 
     // sched 요일/주차 필터(화면 _itemOnDay + 격주): 오늘 안 뜨는 항목은 분모 제외.
@@ -2626,7 +2787,7 @@ function _buildTodayMaster(dept, dow, week) {
       var rounds = roundsRaw ? roundsRaw.split(',').map(function (s) { return s.trim(); }).filter(Boolean) : [];
       rounds.forEach(function (r) {
         var b = _roundBucket(r);
-        if (b === 'am' || b === 'pm' || b === 'close') buckets[b] = 1;   // night 제외
+        if (b === 'am' || b === 'pm' || b === 'close') buckets[b] = 1;
       });
     }
     var bucketList = Object.keys(buckets);
@@ -2973,7 +3134,7 @@ function sortManualByPageOrder(){
   var rng = sheet.getRange(2, 1, last - 1, lastCol);
   var vals = rng.getValues();
   var dec = vals.map(function(r, i){
-    var sortv = parseFloat(r[6]); if (isNaN(sortv)) sortv = 9999;
+    var sortv = parseFloat(r[5]); if (isNaN(sortv)) sortv = 9999;  // 12칸: 정렬=idx5(구 idx6)
     return { r: r, i: i, d: _itemDept(r[ITEM_DEPT_COL]), rank: _manualCatRank(r[1]), sortv: sortv };
   });
   dec.sort(function(a, b){
@@ -2982,7 +3143,7 @@ function sortManualByPageOrder(){
     if (a.sortv !== b.sortv) return a.sortv - b.sortv;
     return a.i - b.i;
   });
-  var out = dec.map(function(o, k){ var r = o.r.slice(); r[6] = k + 1; return r; });
+  var out = dec.map(function(o, k){ var r = o.r.slice(); r[5] = k + 1; return r; });  // 12칸: 정렬=idx5
   rng.setValues(out);
   return jsonRes({ ok: true, sheet: SHEET_ITEMS, sorted: out.length, order: out.map(function(r){ return String(r[0]); }) });
 }

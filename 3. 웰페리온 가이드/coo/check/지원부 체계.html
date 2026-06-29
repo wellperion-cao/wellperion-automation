@@ -1288,9 +1288,18 @@ function slotToShiftFront(slot){
 
 /* 2b-1(2026-06-11 시우): 시트 회차 문자열("am1,pm1") ↔ 프론트 rounds 배열 변환.
    유효 라운드 키(ROUND_KEYS)만 통과 — 오타·공백·빈값은 폐기 → 빈 배열이면 itemRounds가 폴백. */
+/* 회차 라벨/키 정규화(2026-06-27): 시트 회차칸이 한글(오전조/오후조/마감조)이든 키(am1/pm1/close1)든 동일 키로. */
+function _roundLabelToKey(x){
+  var v=String(x==null?'':x).trim();
+  if(!v) return '';
+  if(v.indexOf('오전')>=0) return 'am1';
+  if(v.indexOf('오후')>=0) return 'pm1';
+  if(v.indexOf('마감')>=0||v.indexOf('저녁')>=0) return 'close1';
+  return v;   // 이미 am1/pm1/close1 등 키면 그대로(아래 ROUND_KEYS 필터가 검증)
+}
 function parseRoundsStr(s){
   if(!s) return [];
-  return String(s).split(',').map(function(x){return x.trim();})
+  return String(s).split(',').map(function(x){return _roundLabelToKey(x.trim());})
     .filter(function(x){return x && ROUND_KEYS.indexOf(x)>=0;});
 }
 function roundsToStr(arr){
@@ -1394,7 +1403,8 @@ function populateOneDropdown(selId,gender){
   if(!el)return;
   if(document.activeElement===el)return;   // 입력 중엔 미개입(IME 보호)
   const rk=(typeof getRoundG==='function')?getRoundG(gender):'';
-  el.value=(rk&&localStorage.getItem('wcheck_sub_'+gender+'_'+rk))||localStorage.getItem('wcheck_sub_last_'+gender)||'';
+  const dk=(typeof getDateG==='function')?getDateG(gender):'';
+  el.value=(dk&&rk&&localStorage.getItem('wcheck_sub_'+dk+'_'+gender+'_'+rk))||(dk&&localStorage.getItem('wcheck_sub_last_'+dk+'_'+gender))||'';   // 2026-06-29 시우: 날짜 스코프 — 새 날엔 빈칸(클릭 후 바로 입력), 당일 회차값만 복원
 }
 
 /* 담당자 명단 = 지원부 규정 '실제 운영 근무조'(tab-policy 표)와 일치 유지. GM 2026-06-12.
@@ -1439,7 +1449,8 @@ function populateOneDuty(selId,gender,roster0){
   const el=document.getElementById(selId);
   if(!el)return;
   const rk=(typeof getRoundG==='function')?getRoundG(gender):'';
-  const saved=(rk&&localStorage.getItem('wcheck_duty_'+gender+'_'+rk))||localStorage.getItem('wcheck_duty_last_'+gender)||localStorage.getItem('wcheck_duty_'+gender)||'';   // 회차키 정합(GM 2026-06-16): onDutyChangeG 저장키와 일치 → 새로고침 시 담당자 유지
+  const dk=(typeof getDateG==='function')?getDateG(gender):'';
+  const saved=(dk&&rk&&localStorage.getItem('wcheck_duty_'+dk+'_'+gender+'_'+rk))||(dk&&localStorage.getItem('wcheck_duty_last_'+dk+'_'+gender))||'';   // 2026-06-29 시우: 날짜 스코프 — 새 날엔 「근무자 선택」 기본(빈칸), 당일 회차 선택값만 복원
   const roster=(roster0||DUTY_ROSTER)[gender]||[];
   let html='<option value="">근무자 선택</option>';
   roster.forEach(r=>{
@@ -1453,7 +1464,7 @@ function populateOneDuty(selId,gender,roster0){
 function getDutyForGender(g){const el=document.getElementById(g==='f'?'dutyF':'dutyM');return el?el.value||'':'';}
 function onDutyChangeG(g){
   const el=document.getElementById(g==='f'?'dutyF':'dutyM');
-  if(el){const rk=getRoundG(g);localStorage.setItem('wcheck_duty_'+g+'_'+rk,el.value||'');localStorage.setItem('wcheck_duty_last_'+g,el.value||'');}   // 회차별 담당자 + 직전값(GM 2026-06-15)
+  if(el){const rk=getRoundG(g);const dk=(typeof getDateG==='function')?getDateG(g):'';localStorage.setItem('wcheck_duty_'+dk+'_'+g+'_'+rk,el.value||'');localStorage.setItem('wcheck_duty_last_'+dk+'_'+g,el.value||'');}   // 회차별 담당자 + 직전값(날짜 스코프 2026-06-29 시우)
 }
 /* 회차 전환 시 점검자·담당자 입력칸을 그 회차 저장값으로 교체(빈칸=미입력). focus 중이면 건너뜀(한글IME 클로버링 차단). */
 function _applyRoundActor(g,round){
@@ -1461,9 +1472,10 @@ function _applyRoundActor(g,round){
   // 제출완료 회차면 입력칸도 잠금(수정 차단).
   const locked=!!(typeof isRoundSubmitted==='function'&&isRoundSubmitted(getDateG(g),g,round));
   const se=document.getElementById(g==='f'?'submitterF':'submitterM');
-  if(se){ if(document.activeElement!==se)se.value=localStorage.getItem('wcheck_sub_'+g+'_'+round)||localStorage.getItem('wcheck_sub_last_'+g)||''; se.disabled=locked; }
+  const dk=(typeof getDateG==='function')?getDateG(g):'';
+  if(se){ if(document.activeElement!==se)se.value=(dk&&localStorage.getItem('wcheck_sub_'+dk+'_'+g+'_'+round))||(dk&&localStorage.getItem('wcheck_sub_last_'+dk+'_'+g))||''; se.disabled=locked; }
   const de=document.getElementById(g==='f'?'dutyF':'dutyM');
-  if(de){ if(document.activeElement!==de)de.value=localStorage.getItem('wcheck_duty_'+g+'_'+round)||localStorage.getItem('wcheck_duty_last_'+g)||''; de.disabled=locked; }
+  if(de){ if(document.activeElement!==de)de.value=(dk&&localStorage.getItem('wcheck_duty_'+dk+'_'+g+'_'+round))||(dk&&localStorage.getItem('wcheck_duty_last_'+dk+'_'+g))||''; de.disabled=locked; }
 }
 
 function getStaffInfo(name){
@@ -2021,7 +2033,7 @@ function saveSubmitterG(g,v){localStorage.setItem('wcheck_submitter_'+g,v)}
 function onSubmitterChangeG(g){
   // 점검자 = 회차별 저장(자유입력). 입력 즉시 제출버튼 재평가.
   const el=document.getElementById(g==='f'?'submitterF':'submitterM');
-  if(el){const rk=getRoundG(g);localStorage.setItem('wcheck_sub_'+g+'_'+rk,el.value||'');localStorage.setItem('wcheck_sub_last_'+g,el.value||'');}   // 회차별 점검자 + 직전값(GM 2026-06-15)
+  if(el){const rk=getRoundG(g);const dk=(typeof getDateG==='function')?getDateG(g):'';localStorage.setItem('wcheck_sub_'+dk+'_'+g+'_'+rk,el.value||'');localStorage.setItem('wcheck_sub_last_'+dk+'_'+g,el.value||'');}   // 회차별 점검자 + 직전값(날짜 스코프 2026-06-29 시우)
   const d=getDateG(g);
   drawUI(d,g);
 }
@@ -2125,7 +2137,21 @@ async function loadState(d,g){
     const r=await fetch(API_URL+'?date='+d+DEPT_Q+'&gender='+encodeURIComponent(gg),{redirect:'follow'});
     const j=await r.json();
     if(j&&j.inspMemos&&typeof j.inspMemos==='object'){window._inspMemo[gg]=j.inspMemos;}   // 회차 점검자 배정 메모 복원(공유)
-    STATE={};
+    /* [근본수정 2026-06-27 시우] 과거: STATE={} 가 공용 전역을 통째 비워 → 남/여 동시 loadState 시 한쪽이
+       반대 성별 체크(chk_<g>_)를 지워 → 조 탭 클릭·재렌더 시 0/N으로 보이던 버그(데이터는 서버에 멀쩡).
+       수정: 현재 성별(gg) 스코프 키 + 공용 transient 키만 비우고, 반대 성별(og)의 체크·메타·제출·타이머 키는 보존.
+       성별은 키 prefix 위치(chk_<g>_·iss_<g>_·submitted_<d>_<g>_…) — itemId에 b4_m 등 성별글자 섞여 substring 매칭은 위험 → prefix 매칭만. */
+    (function(){
+      var og=(gg==='m')?'f':'m';   // 보존할 반대 성별
+      Object.keys(STATE).forEach(function(k){
+        if( k.indexOf('chk_'+og+'_')===0 || k.indexOf('iss_'+og+'_')===0
+         || k.indexOf('tip_'+og+'_')===0 || k.indexOf('reflected_'+og+'_')===0
+         || k.indexOf('chkby_'+og+'_')===0 || k.indexOf('chkat_'+og+'_')===0 || k.indexOf('chkduty_'+og+'_')===0
+         || k.indexOf('submitted_'+d+'_'+og+'_')===0 || k.indexOf('submittedAt_'+d+'_'+og+'_')===0 || k.indexOf('submitter_'+d+'_'+og+'_')===0
+         || k.indexOf('timerStart_'+d+'_'+og+'_')===0 || k.indexOf('timerEnd_'+d+'_'+og+'_')===0 ) return;   // 반대 성별 보존
+        delete STATE[k];   // 현재 성별 키 + 공용 키(_submitted_*·tip_<id>·_gsub_* 등)는 비움 → 아래서 현재 성별로 재구성
+      });
+    })();
     (j.rows||[]).forEach(row=>{
       // 2026-06-12 시우: 서버 응답이 성별 구분돼 오면(row.gender) 현재 성별(gg)만 STATE 반영 —
       // 성별화 체크는 chkKey에 기록해 화면 격리 유지. gender 미동반(레거시·서버 미격리)이면 기존 동작.
@@ -2176,8 +2202,9 @@ async function loadState(d,g){
               if(_m.at)STATE['chkat_'+gg+'_'+rk+'_'+id]=_m.at;
               if(_m.du)STATE['chkduty_'+gg+'_'+rk+'_'+id]=_m.du;
               /* 점검자·담당자 서버 복원(GM 2026-06-16): 기기/세션 바뀌어도(텔레그램 링크 등) 비지 않게 — 로컬 비었을 때만 서버 값으로 채움(로컬 편집 보존). */
-              try{ if(_m.by){ if(!localStorage.getItem('wcheck_sub_'+gg+'_'+rk))localStorage.setItem('wcheck_sub_'+gg+'_'+rk,_m.by); if(!localStorage.getItem('wcheck_sub_last_'+gg))localStorage.setItem('wcheck_sub_last_'+gg,_m.by); }
-                    if(_m.du){ if(!localStorage.getItem('wcheck_duty_'+gg+'_'+rk))localStorage.setItem('wcheck_duty_'+gg+'_'+rk,_m.du); if(!localStorage.getItem('wcheck_duty_last_'+gg))localStorage.setItem('wcheck_duty_last_'+gg,_m.du); } }catch(e){}
+              try{ var _dk=(typeof getDateG==='function')?getDateG(gg):'';
+                    if(_m.by){ if(!localStorage.getItem('wcheck_sub_'+_dk+'_'+gg+'_'+rk))localStorage.setItem('wcheck_sub_'+_dk+'_'+gg+'_'+rk,_m.by); if(!localStorage.getItem('wcheck_sub_last_'+_dk+'_'+gg))localStorage.setItem('wcheck_sub_last_'+_dk+'_'+gg,_m.by); }
+                    if(_m.du){ if(!localStorage.getItem('wcheck_duty_'+_dk+'_'+gg+'_'+rk))localStorage.setItem('wcheck_duty_'+_dk+'_'+gg+'_'+rk,_m.du); if(!localStorage.getItem('wcheck_duty_last_'+_dk+'_'+gg))localStorage.setItem('wcheck_duty_last_'+_dk+'_'+gg,_m.du); } }catch(e){}   // 날짜 스코프 2026-06-29 시우
               /* 5차(2026-06-22 시우·GM 분리결정): 점검 이슈는 점검 안에 기록·복원(회차+성별 키 issKey=복제버그 없음). 종합접수처 연동 완전 제거(2026-06-25). */
               if(_m.iss)STATE[issKey(rk,id,gg)]=_m.iss;
               if(_m.tip)STATE[tipKey(rk,id,gg)]=_m.tip;
@@ -2510,8 +2537,8 @@ function syncAllFromWorkDate(){
   const mEl=document.getElementById('checkDateM'); if(mEl) mEl.value=WORK_DATE;
   const fEl=document.getElementById('checkDateF'); if(fEl) fEl.value=WORK_DATE;
   renderWorkdateBar();
-  // 점검 두 구역(남/여): 같은 날짜로 항상 함께 갱신
-  if(typeof renderG==='function'){ renderG('m'); renderG('f'); }
+  // 점검 두 구역(남/여): 같은 날짜로 항상 함께 갱신 — [2026-06-27 시우] 순차(.then)로 공용 키(_submitted_* 등) 동시쓰기 레이스 축소(체크 카운트는 loadState per-성별 clear로 이미 격리).
+  if(typeof renderG==='function'){ renderG('m').then(function(){ return renderG('f'); }); }
   // 업무보드: 다중선택(SELECTED_DAYS) 독립 — 날짜 네비와 분리(절충 복구 GM 2026-06-22). 여기서 재렌더 안 함.
 }
 /* 공통 요일바: 날짜 설정 → 전구역 동기 */
@@ -3485,11 +3512,10 @@ function renderManualItems(){
   const _emBtn=`<button onclick="toggleManualEdit()" style="${_btn}${EM?'color:#fff;background:var(--accent);border-color:var(--accent);':'color:var(--accent);background:var(--bg);border-color:var(--accent);'}">${EM?'✓ 편집 모드 (끄기)':'✎ 편집 모드'}</button>`;
   const _addGroupBtn=EM?`<button onclick="addManualGroup()" style="${_btn}color:var(--accent);background:var(--bg);border-color:var(--accent);">＋ 구역 추가</button>`:'';
   /* Part1: 시드 명단 → 시트 단방향 push(syncSeedItems). 멱등이라 여러 번 눌러도 안전. 편집 모드에서만 노출(운영 실수 방지). */
-  const _seedBtn=EM?`<button onclick="if(confirm('시드 45항목 명단을 시트로 동기화합니다(멱등·안전). 진행할까요?'))pushSeedItemsToSheet()" style="${_btn}color:#5b9fd5;background:rgba(91,159,213,0.12);border-color:rgba(91,159,213,0.35);">⟳ 시드 동기화</button>`:'';
-  /* 시트(서버) 기준으로 이 기기 화면 초기화 — 브라우저 표시 오버레이(숨김·순서·이름변경 등 7키) 리셋(역롤백=이 _resetBtn 한 줄 + resetManualLocalView 함수 삭제) */
-  const _resetBtn=`<button onclick="resetManualLocalView()" style="${_btn}color:#8c6d1f;background:rgba(230,200,78,0.14);border-color:rgba(230,200,78,0.5);" title="이 기기의 매뉴얼 화면 설정을 지우고 시트 내용 그대로 다시 불러옵니다">🔄 시트 기준으로 초기화</button>`;
+  const _seedBtn='';   // 2026-06-27 시드 동기화 버튼 폐지(시트=항목 마스터 단일출처)
+  /* 2026-06-27 GM: '🔄 시트 기준으로 초기화' 버튼 제거(위험 판단). resetManualLocalView 함수도 폐지. */
   html+=`<div style="background:var(--accent-bg);border:1px solid var(--accent);border-radius:10px;padding:10px 14px;margin-bottom:12px;font-size:12px;color:var(--text);line-height:1.6;">
-    <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;"><span><b style="color:var(--accent);">매뉴얼 = 항목 단일출처</b> · 편집 모드를 켜면 구역(A·B…) <b>추가·이름변경·삭제·순서(▲▼)</b>와 항목 추가·편집·삭제가 나타납니다.</span><span style="display:inline-flex;gap:6px;">${_resetBtn}${_seedBtn}${_addGroupBtn}${_emBtn}</span></div>
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;"><span><b style="color:var(--accent);">매뉴얼 = 항목 단일출처</b> · 편집 모드를 켜면 구역(A·B…) <b>추가·이름변경·삭제·순서(▲▼)</b>와 항목 추가·편집·삭제가 나타납니다.</span><span style="display:inline-flex;gap:6px;">${_seedBtn}${_addGroupBtn}${_emBtn}</span></div>
   </div>`;
   catOrder.forEach((cat,gi)=>{
     const items=catMap[cat];
@@ -3573,14 +3599,7 @@ function renderManualItems(){
   el.innerHTML=html||'<div style="color:var(--dim);font-size:13px;">항목 없음</div>';
 }
 
-/* 시트(서버) 기준으로 이 기기의 매뉴얼 화면 초기화 — 브라우저 localStorage 표시 오버레이 7키만 제거 후 새로고침.
-   서버(GAS getItems)가 지원_매뉴얼 시트를 단일출처로 다시 렌더한다. 점검 수행 경로·시트 데이터 무영향.
-   (역롤백=이 함수 + 위 _resetBtn 한 줄 삭제) */
-function resetManualLocalView(){
-  if(!confirm('이 기기의 매뉴얼 화면 설정(숨김·순서·이름변경)을 지우고 시트(서버) 내용 그대로 다시 불러옵니다. 계속할까요?'))return;
-  ['wcheck_hidden_items','wcheck_group_hidden','wcheck_group_rename','wcheck_group_added','wcheck_item_order','wcheck_group_order','wcheck_items_cache'].forEach(k=>{try{localStorage.removeItem(k)}catch(e){}});
-  location.reload();
-}
+/* 2026-06-27 GM: resetManualLocalView('🔄 시트 기준으로 초기화')는 위험 판단으로 제거됨. */
 
 /* 매뉴얼 탭 개별 항목 점검완료 체크 → 기존 체크 저장 시스템(STATE+saveState+pushToServer) 재사용 */
 function onManualCk(id){
@@ -3826,13 +3845,18 @@ async function sendTelegramRound(date,round,submitter,gender){
   if(round==='close1'&&DAY_FOCUS[dow])DAY_FOCUS[dow].forEach(it=>{ if(shouldShowItemForGender(it,gender)){ total++; if(isChecked(it.id,round,gender))done++; {const _v=issFor(it.id,round,gender); if(_v)issues.push(`  - ${it.name}: ${_v}`);} } });
   const pct=total?Math.round(done/total*100):0;
   const link=encodeURI('https://wellperion-cao.github.io/wellperion-automation/coo/check/지원부 체계.html')+'?date='+date+'&g='+gender;   // 공백·한글 인코딩 → 텔레그램 링크 안 짤림(GM 2026-06-15)
-  let msg=`[지원부 체계 점검 ${rdef.name} ${rdef.time} 제출 (${genderLabel})]\n날짜: ${date}\n점검자: ${submitter}\n완료: ${done}/${total} (${pct}%)`;
+  /* 근무자·소요시간 노출(GM 2026-06-29 시토): 점검자 외 근무자(근무조 드롭다운)·소요시간(시작~종료 타이머)도 알림에 표기. appendRoundSnapshot과 동일 계산. */
+  const duty=(typeof getDutyForGender==='function'?getDutyForGender(gender):'')||'';
+  const _t=timerKeys(date,gender,round);
+  const _dur=_timerDuration(STATE[_t.sk],STATE[_t.ek]);
+  const _durTxt=(_dur!=null)?_dur+'분':'미측정';
+  let msg=`[지원부 체계 점검 ${rdef.name} ${rdef.time} 제출 (${genderLabel})]\n날짜: ${date}\n점검자: ${submitter}\n근무자: ${duty||'-'}\n소요시간: ${_durTxt}\n완료: ${done}/${total} (${pct}%)`;
   if(issues.length)msg+=`\n\n이슈 ${issues.length}건:\n${issues.join('\n')}`;
   msg+=`\n\n점검 페이지: ${link}`;
   try{
     await fetch(API_URL,{method:'POST',redirect:'follow',
       headers:{'Content-Type':'text/plain'},
-      body:JSON.stringify({action:'notify_round',dept:DEPT,date,round,gender,genderTab:gender,submitter,message:msg,pageLink:link})
+      body:JSON.stringify({action:'notify_round',dept:DEPT,date,round,gender,genderTab:gender,submitter,duty,durationMin:(_dur!=null?_dur:''),message:msg,pageLink:link})
     });
   }catch(e){}
 }
@@ -3965,13 +3989,14 @@ async function sendTelegramNotify(date,shift,submitter,gender){
       if(_v)issues.push(`  - ${it.name}: ${_v}`);
     });
   }
-  let msg=`[지원부 체계 점검 ${label} 제출 (${genderLabel})]\n날짜: ${date}\n점검자: ${submitter}\n완료: ${stats.done}/${stats.total} (${stats.pct}%)`;
+  const duty=(typeof getDutyForGender==='function'?getDutyForGender(gender):'')||'';   // 근무자 노출(GM 2026-06-29 시토)
+  let msg=`[지원부 체계 점검 ${label} 제출 (${genderLabel})]\n날짜: ${date}\n점검자: ${submitter}\n근무자: ${duty||'-'}\n완료: ${stats.done}/${stats.total} (${stats.pct}%)`;
   if(issues.length)msg+=`\n\n이슈 ${issues.length}건:\n${issues.join('\n')}`;
   try{
     if(ONLINE){
       await fetch(API_URL,{method:'POST',redirect:'follow',
         headers:{'Content-Type':'text/plain'},
-        body:JSON.stringify({action:'notify',date,shift,submitter,genderTab:gender,message:msg})
+        body:JSON.stringify({action:'notify',date,shift,submitter,duty,genderTab:gender,message:msg})
       });
     }
   }catch(e){}
@@ -5454,7 +5479,7 @@ loadSupplyData(); renderSupplyTable(); // 비품: 로컬 즉시 렌더(서버 �
 renderG('m');
 /* 로드 시 시드 자동 동기(무트리거) — setTimeout(0)로 스크립트 평가 완료 후 실행(const TDZ 회피)·비차단.
    시그니처 가드로 회차/명단 바뀐 경우에만 시트 write, 10초 디바운스로 멀티탭 연타 방지. GM 2026-06-23 [시우]. */
-try{ setTimeout(function(){ if(typeof autoSyncSeedsIfChanged==='function') autoSyncSeedsIfChanged(); }, 0); }catch(e){}
+/* 2026-06-27: 시드 자동동기 폐지 — 시트=항목 마스터 단일출처(하드코딩 배열 되쓰기 차단, GM 삭제분 부활 방지). */
 
 /* ═══════════════════════════════════════════════
    항목 관리 (CRUD) — localStorage 기반
@@ -5737,6 +5762,7 @@ const SEED_SYNC_DEBOUNCE_MS=10000;   // 멀티탭/연타 가드
 
 /* 로드 시 자동 시드 동기 — 시그니처가 바뀐 경우에만 push(쓰기 0 최적화). 비차단·실패 시 콘솔 경고만. */
 function autoSyncSeedsIfChanged(){
+  return;   // 2026-06-27 폐지(시트 단일출처). 아래 레거시 미실행.
   try{
     if(!ONLINE) return;
     let seeds;
@@ -6040,13 +6066,61 @@ function _relocateDayItems(sched, ds){
   out.push({slot:'📅 '+dayKor+'요일 점검', shift:'pm', _dayfocus:true, groups:[{title:'📅 '+dayKor+'요일 점검', items:collected}]});
   return out;
 }
+/* ── 2026-06-27: 시트=항목 마스터 단일출처 렌더 ──
+   온라인 + 시트 항목 존재 시 getSched의 base를 하드코딩 WEEKDAY/WEEKEND 대신 CUSTOM_ITEMS(시트)에서 빌드.
+   오프라인/빈 시트는 하드코딩 폴백(기존 동작 보존). 야간(getNightSched)은 폴백 유지(탕청소 외주 별도). */
+function sheetSourceActive(){
+  return !!(ONLINE && Array.isArray(CUSTOM_ITEMS) && CUSTOM_ITEMS.length > 0);
+}
+/* 항목이 '주간 점검(조)'로 분류 가능한지 — 명시 회차(rounds)·ROUND_MAP·요일일정(sched) 중 하나라도 있어야 주간 포함.
+   셋 다 없으면 제외(야간·외주 F/G 또는 회차 미설정 → 화면 미표시). roundOfSlot 폴백 금지(오배치 차단). */
+function _itemIsDayScheduled(it){
+  if(!it || !it.id) return false;
+  if(Array.isArray(it.rounds) && it.rounds.length) return true;
+  if(typeof ROUND_MAP!=='undefined' && ROUND_MAP[it.id]) return true;
+  try{ var p=parseSched(it.sched||''); if(p.days && p.days.length) return true; }catch(e){}
+  return false;
+}
+/* CUSTOM_ITEMS(시트) → drawUI 소비 구조([{slot,shift,groups:[{title,items:[{id,name,detail,gender,rounds,sched,cat,_custom}]}]}]).
+   그룹=카테고리(cat), 정렬=order 순. 단일 합성 슬롯(shift:'all'→drawUI가 pm로 처리).
+   라운드/요일 필터·성별 필터·구역 순서는 drawUI/applyBaseOverrides/_relocateDayItems가 수행. */
+function buildSchedFromItems(items){
+  if(!Array.isArray(items)) return [];
+  var srt = items.slice().sort(function(a,b){ return (Number(a&&a.order)||9999)-(Number(b&&b.order)||9999); });
+  var gmap={}, order=[];
+  srt.forEach(function(it){
+    if(!_itemIsDayScheduled(it)) return;
+    var cat = it.category || it.cat || '추가 점검';
+    if(!gmap[cat]){ gmap[cat]={title:cat, items:[]}; order.push(cat); }
+    gmap[cat].items.push({
+      id: it.id,
+      name: it.name||'',
+      detail: it.detail||'',
+      gender: it.gender||'all',
+      rounds: Array.isArray(it.rounds)?it.rounds.slice():[],
+      sched: it.sched||'',
+      cat: cat,
+      _custom: (typeof isAddedItem==='function' && isAddedItem(it.id))
+    });
+  });
+  if(!order.length) return [];
+  return [{ slot:'점검 항목', shift:'all', groups: order.map(function(c){ return gmap[c]; }) }];
+}
 getSched = function(ds){
-  const base = _origGetSched(ds);
-  if(!base) return null;
   const info = getDayInfo(ds);
+  if(info && info.type==='closed') return null;   // 휴관일
   const schedType = info.type; // 'weekday' or 'weekend'
-  const customItems = mgmtGetCustomItemsForSchedule(schedType).filter(i => i.shift !== 'night');
-  const customSlots = mgmtBuildCustomSlots(customItems);
+  let base=null, customSlots=[];
+  if(sheetSourceActive()){
+    const sb = buildSchedFromItems(CUSTOM_ITEMS);
+    if(sb && sb.length){ base=sb; customSlots=[]; }   // 시트=base → 추가 병합 없음(중복 차단)
+  }
+  if(!base){                                          // 오프라인/빈 시트 → 하드코딩 폴백(기존 동작)
+    base = _origGetSched(ds);
+    if(!base) return null;
+    const customItems = mgmtGetCustomItemsForSchedule(schedType).filter(i => i.shift !== 'night');
+    customSlots = mgmtBuildCustomSlots(customItems);
+  }
   return _relocateDayItems(applyBaseOverrides(mgmtMergeSchedule(base, customSlots), ds), ds);
 };
 

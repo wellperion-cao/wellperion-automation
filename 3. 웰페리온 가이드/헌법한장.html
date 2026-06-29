@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🏛️ 웰페리온 전사 운영 헌법 — 한 장</title>
+<link rel="icon" type="image/x-icon" href="welly_favicon.ico">
+<style>
+  :root{
+    --bg:#221F20; --paper:#2a2725; --surface:#1a1817;
+    --text:#f5f2ef; --text-soft:#d4d0cc; --dim:#8c8b83;
+    --accent:#7C3AED; --accent-soft:#a875f5;
+    --border:#3d3835; --border-strong:#4d4845;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif; color:var(--text); background:var(--bg); line-height:1.5; font-size:13px; -webkit-font-smoothing:antialiased; padding:18px 18px 32px;}
+  .wrap{max-width:1340px; margin:0 auto;}
+
+  header.page-head{margin-bottom:14px; padding-bottom:10px; border-bottom:2px solid var(--border-strong); display:flex; flex-wrap:wrap; align-items:baseline; gap:10px 16px;}
+  header.page-head h1{font-size:22px; font-weight:800; letter-spacing:-0.02em;}
+  header.page-head .sub{font-size:12px; color:var(--dim); line-height:1.45; flex:1; min-width:240px;}
+  header.page-head .back{font-size:12px; color:var(--accent-soft); text-decoration:none; border:1px solid var(--border-strong); border-radius:7px; padding:4px 11px; white-space:nowrap;}
+  header.page-head .back:hover{background:var(--surface);}
+
+  h2.sec{font-size:15px; font-weight:700; margin:16px 0 2px; display:flex; align-items:center; gap:7px;}
+  .sec-note{font-size:11px; color:var(--dim); margin-bottom:8px;}
+
+  /* ── 매트릭스 ── */
+  .matrix-scroll{overflow-x:auto; border:1px solid var(--border); border-radius:11px; background:var(--paper);}
+  table.matrix{border-collapse:collapse; width:100%; min-width:1040px; font-size:11.5px;}
+  table.matrix th, table.matrix td{border:1px solid var(--border); padding:7px 9px; text-align:left; vertical-align:top; line-height:1.42;}
+  table.matrix thead th{background:var(--surface); font-weight:700; font-size:12px; position:sticky; top:0; z-index:2;}
+  table.matrix thead th.grp-np{color:#f0c674;}
+  table.matrix thead th.grp-boot{color:#7ac4f0;}
+  table.matrix thead th.grp-guard{color:#6abf7b;}
+  table.matrix thead th.grp-collab{color:var(--accent-soft);}
+  table.matrix th.role-col{width:140px; min-width:132px;}
+  td.role-cell{background:var(--surface);}
+  td.role-cell .ricon{font-size:16px;}
+  td.role-cell .rname{font-weight:800; font-size:13px;}
+  td.role-cell .rtitle{font-size:10px; color:var(--dim); margin-top:1px;}
+  tr.role-gm td{background:rgba(184,134,11,0.10);}
+  tr.role-gm td.role-cell{background:rgba(184,134,11,0.18);}
+  .dim-label{font-size:9px; font-weight:700; letter-spacing:0.02em; color:var(--dim); display:block; margin-bottom:0; text-transform:uppercase;}
+  .dim-val{display:block; margin-bottom:5px;}
+  .dim-val:last-child{margin-bottom:0;}
+  .matrix-status{padding:14px; font-size:12px; color:var(--dim);}
+  /* ── 편집 모드 ── */
+  .ebtn{font-size:11px; padding:3px 11px; border-radius:7px; cursor:pointer; margin-left:6px;}
+  .ebtn.edit{background:var(--surface); color:var(--accent-soft); border:1px solid var(--accent);}
+  .ebtn.save{background:var(--accent); color:#fff; border:none;}
+  .ebtn.cancel{background:var(--surface); color:var(--dim); border:1px solid var(--border-strong);}
+  td.cell-edit{outline:2px dashed var(--accent); outline-offset:-3px; background:rgba(124,58,237,0.06); cursor:text;}
+  td.cell-edit:focus{outline-color:var(--accent-soft); background:rgba(124,58,237,0.12);}
+
+  /* ── 공통 4섹션 카드 ── */
+  .cards{display:grid; grid-template-columns:repeat(auto-fit,minmax(230px,1fr)); gap:10px; margin-top:4px;}
+  .ccard{background:var(--paper); border:1px solid var(--border); border-left:3px solid var(--accent); border-radius:10px; padding:11px 13px;}
+  .ccard h3{font-size:13px; font-weight:700; margin-bottom:2px;}
+  .ccard .desc{font-size:11px; color:var(--dim); margin-bottom:8px; line-height:1.4;}
+  .ccard a.lk{display:inline-block; font-size:11.5px; color:var(--accent-soft); text-decoration:none; border:1px solid var(--border-strong); border-radius:6px; padding:3px 9px; margin:0 5px 5px 0;}
+  .ccard a.lk:hover{background:var(--surface); border-color:var(--accent);}
+
+  .dedupe{margin-top:11px; font-size:11px; color:var(--dim); background:var(--surface); border:1px dashed var(--border-strong); border-radius:9px; padding:9px 13px;}
+  footer.foot{margin-top:16px; font-size:10.5px; color:var(--dim); border-top:1px solid var(--border); padding-top:10px; line-height:1.55;}
+
+  @media print{
+    @page{size:A4 landscape; margin:8mm;}
+    body{background:#fff; color:#111; padding:0; font-size:9px;}
+    header.page-head{margin-bottom:8px; padding-bottom:6px;}
+    header.page-head h1{font-size:16px;}
+    h2.sec{margin:9px 0 2px; font-size:12px;}
+    table.matrix{min-width:0; font-size:8px;}
+    table.matrix th, table.matrix td{padding:3px 4px;}
+    .matrix-scroll, table.matrix tr, .ccard{break-inside:avoid;}
+    .cards{grid-template-columns:repeat(4,1fr); gap:6px;}
+    header.page-head .back, .ccard a.lk{display:none;}
+    .ccard a.lk{display:none;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="page-head">
+    <h1>🏛️ 웰페리온 전사 운영 헌법 — 한 장</h1>
+    <div class="sub">정본(<code>coo/bootsetup_matrix.json</code>)을 직접 읽어 그립니다. <b>GM</b>=✏️ 편집 버튼+비밀번호로 5칸을 바로 고칩니다 / <b>웰리</b>=정본 파일 직접 편집(git). 정본 1곳 = <code>coo/bootsetup_matrix.json</code>.</div>
+    <a class="back" href="wellperion_guide(main).html#S2">← 웰페리온 ERP 운영 가이드(S2)로</a>
+  </header>
+
+  <!-- ════ A. 8주체 × 5칸 매트릭스 (편집형 · 2026-06-29) ════ -->
+  <h2 class="sec">🧭 8주체 × 5칸 매트릭스 <span id="matrix-edit-wrap" style="font-size:11px;font-weight:400;"></span></h2>
+  <div class="sec-note">정본 = <code>coo/bootsetup_matrix.json</code> (직독·캐시 없음). 5칸 = 역할마다 다른 것: 🌟 북극성 · 📊 KPI · 🔧 파이프라인 · 📚 부트셋업 SSOT · 🚧 소유 관리. <b>결재선·재발방지는 전 역할 공통</b>이라 아래 공통 4섹션/재발방지 현황에 한 번만 있습니다(역할칸 아님).</div>
+
+  <div class="matrix-scroll">
+    <table class="matrix">
+      <thead>
+        <tr>
+          <th class="role-col">주체</th>
+          <th class="grp-np">🌟 북극성</th>
+          <th class="grp-np">📊 KPI</th>
+          <th class="grp-boot">🔧 파이프라인</th>
+          <th class="grp-boot">📚 부트셋업 SSOT</th>
+          <th class="grp-guard">🚧 소유 관리</th>
+        </tr>
+      </thead>
+      <tbody id="matrix-body">
+        <tr><td colspan="6" class="matrix-status">매트릭스 정본을 불러오는 중…</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ════ B. 공통 헌법 4섹션 (S2 정본으로 링크만) ════ -->
+  <h2 class="sec">📜 공통 헌법 4섹션</h2>
+  <div class="sec-note">내용은 각 정본(S2 공통탭·<code>ssot/</code>)에 삽니다 — 여기선 점프 링크만(복사 금지·약속 L01).</div>
+
+  <div class="cards" id="common-cards"><!-- JS가 라이브 URL로 채움 --></div>
+
+  <div class="dedupe">🧹 중복 2건 정리됨(2026-06-29): 브릿지 = 완료 4요건 ③('다음') 흡수 / 5종 = 운영 SOP 단일출처(GM 결재 5종 = 5종 단일출처).</div>
+
+  <footer class="foot">
+    정본: <code>coo/bootsetup_matrix.json</code> (매트릭스) · <code>ssot/약속.json</code>·<code>ssot/incidents.json</code>·<code>ssot/canon_values.json</code>·<code>ssot/kpi.json</code> (헌법 데이터) · S2 공통탭(운영 SOP).
+    이 페이지는 정본을 직독해 렌더합니다 — GM ✏️ 편집은 정본(<code>coo/bootsetup_matrix.json</code>)을 직접 커밋하므로 손동기화가 필요 없습니다.
+  </footer>
+
+</div>
+
+<script>
+(function(){
+  // S2 라이브 URL 기준 (GitHub Pages 루트 = "3. 웰페리온 가이드/" → 접두사 없음)
+  var S2 = 'wellperion_guide(main).html';
+
+  // ── B. 공통 4섹션 카드 (S2 앵커 링크) ──
+  var cards = [
+    {
+      h:'⚖️ 절대기준 2종',
+      d:'절대 원칙 3대 + 완료의 단일 정의(4요건 · ③ "다음"=브릿지 흡수)',
+      links:[
+        ['절대 원칙 3대', 'con-absolute'],
+        ['완료 4요건', 'con-done4']
+      ]
+    },
+    {
+      h:'🔗 통합원칙 10',
+      d:'전 C-Level 통합 원칙 (S2 공통탭 토글)',
+      links:[
+        ['통합 원칙 보기', 'con-unified']
+      ]
+    },
+    {
+      h:'📌 정본데이터 4',
+      d:'약속 · 재발방지 · 공식값 · KPI',
+      links:[
+        ['우리의 약속', 'common-promises'],
+        ['🛡️ 재발방지', 'common-incidents'],
+        ['🏛️ 공식값', 'common-incidents'],
+        ['📊 KPI', 'common-promises']
+      ]
+    },
+    {
+      h:'🔌 운영 SOP 5',
+      d:'부팅 · 보고표 · GM 결재 5종(5종 단일출처) · 입력금지 5종 · 텔레그램',
+      links:[
+        ['🎯 GM 결재 5종', 'con-gm5'],
+        ['🚫 입력 금지 5종', 'con-input5'],
+        ['🎚️ 토큰 라우팅', 'con-token']
+      ]
+    }
+  ];
+  var cc = document.getElementById('common-cards');
+  cc.innerHTML = cards.map(function(c){
+    var ls = c.links.map(function(l){
+      return '<a class="lk" href="' + S2 + '#S2/common/' + l[1] + '">' + l[0] + ' ↗</a>';
+    }).join('');
+    return '<div class="ccard"><h3>' + c.h + '</h3><div class="desc">' + c.d + '</div>' + ls + '</div>';
+  }).join('');
+
+  // ── A. 매트릭스 정본 직독 렌더 + GM 5칸 인라인 편집 (2026-06-29) ──
+  //   읽기=RAW_URL(raw GitHub) → _matrixData에 8 dims 전체 보유.
+  //   저장=GAS commit_file(coo/bootsetup_matrix.json). 5칸(dims 0,3,1,2,6)만 반영, 나머지(4,5,7) 원본 보존.
+  var RAW_URL = 'https://raw.githubusercontent.com/wellperion-cao/wellperion-automation/master/3.%20%EC%9B%B0%ED%8E%98%EB%A6%AC%EC%98%A8%20%EA%B0%80%EC%9D%B4%EB%93%9C/coo/bootsetup_matrix.json';
+  var GAS_URL = 'https://script.google.com/macros/s/AKfycbxDwFkrxK1YIaEoSNcuw2MiHiZQ-7o5N6311ytksSyeEd86ZFOhLknOWqQgNArQvZ-7/exec';
+  // 표시 5칸 = dims 인덱스(이 순서 고정): 🌟북극성=0, 📊KPI=3, 🔧파이프라인=1, 📚부트셋업SSOT=2, 🚧소유관리=6
+  var COL_DIMS = [0, 3, 1, 2, 6];
+  var _matrixData = null;
+  var _editMode = false;
+
+  var esc = function(s){
+    return String(s == null ? '' : s)
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  };
+
+  var body = document.getElementById('matrix-body');
+
+  function renderMatrix(){
+    var roles = (_matrixData && _matrixData.roles) || [];
+    if(!roles.length){
+      body.innerHTML = '<tr><td colspan="6" class="matrix-status">roles 비어 있음. 정본: <code>coo/bootsetup_matrix.json</code></td></tr>';
+      return;
+    }
+    body.innerHTML = roles.map(function(role){
+      var d = role.dims || [];
+      var ac = role.accent || 'var(--accent)';
+      var gm = role.id === 'gm';
+      var cells = COL_DIMS.map(function(di){
+        if(_editMode){
+          return '<td class="cell-edit" contenteditable="true" data-role="' + esc(role.id) + '" data-dim="' + di + '" ' +
+                 'oncompositionstart="window._compOn()" oncompositionend="window._compOff()" ' +
+                 'onblur="window._cellBlur(this)">' + esc(d[di]) + '</td>';
+        }
+        return '<td>' + esc(d[di]) + '</td>';
+      }).join('');
+      return '<tr class="' + (gm ? 'role-gm' : '') + '">' +
+        '<td class="role-cell" style="border-left:4px solid ' + esc(ac) + ';">' +
+          '<div class="ricon">' + esc(role.icon) + '</div>' +
+          '<div class="rname" style="color:' + esc(ac) + ';">' + esc(role.name) + '</div>' +
+          '<div class="rtitle">' + esc(role.title) + '</div>' +
+        '</td>' + cells +
+      '</tr>';
+    }).join('');
+  }
+
+  // IME 안전: 조합 중 blur 반영 차단
+  window._compOn  = function(){ window._composing = true; };
+  window._compOff = function(){ window._composing = false; };
+  window._cellBlur = function(el){
+    if(window._composing) return;
+    var role = el.getAttribute('data-role');
+    var dim  = parseInt(el.getAttribute('data-dim'), 10);
+    var val  = el.textContent || '';
+    if(!_matrixData) return;
+    (_matrixData.roles || []).forEach(function(r){
+      if(r.id === role && Array.isArray(r.dims) && dim < r.dims.length){
+        r.dims[dim] = val;   // 5칸 인덱스만 갱신 — 나머지 dims는 손대지 않음
+      }
+    });
+  };
+
+  function renderEditBtn(){
+    var wrap = document.getElementById('matrix-edit-wrap');
+    if(!wrap) return;
+    if(_editMode){
+      wrap.innerHTML = '<button class="ebtn save" id="matrix-save-btn" onclick="window._matrixSave()">저장</button>' +
+                       '<button class="ebtn cancel" onclick="window._matrixCancel()">취소</button>';
+    } else {
+      wrap.innerHTML = '<button class="ebtn edit" onclick="window._matrixEdit()">✏️ GM 편집</button>';
+    }
+  }
+
+  function setEdit(on){
+    _editMode = !!on;
+    renderMatrix();
+    renderEditBtn();
+  }
+
+  window._matrixEdit = function(){ setEdit(true); };
+  window._matrixCancel = function(){
+    fetch(RAW_URL + '?t=' + Date.now(), {cache:'no-store'})
+      .then(function(r){ return r.json(); })
+      .then(function(d){ _matrixData = d; setEdit(false); });
+  };
+  window._matrixSave = function(){
+    var pin = prompt('GM 편집 저장 — 비밀번호를 입력하세요:');
+    if(pin === null || pin === '') return;
+    if(!_matrixData) return;
+    _matrixData.updated_at = new Date().toISOString().slice(0,10);
+    var content = JSON.stringify(_matrixData, null, 2);
+    var params = new URLSearchParams({
+      action: 'commit_file',
+      path: '3. 웰페리온 가이드/coo/bootsetup_matrix.json',
+      content: content,
+      message: '[GM] 헌법 한 장 5칸 편집 ' + _matrixData.updated_at,
+      key: pin
+    });
+    var btn = document.getElementById('matrix-save-btn');
+    if(btn){ btn.textContent = '저장 중…'; btn.disabled = true; }
+    fetch(GAS_URL + '?' + params.toString(), {redirect:'follow'})
+      .then(function(r){ return r.json(); })
+      .then(function(res){
+        if(res && res.ok){
+          alert('저장 완료. (커밋: ' + ((res.commit||'') + '').slice(0,7) + ')');
+          setEdit(false);
+        } else {
+          alert('저장 실패: ' + ((res && res.error) || '알 수 없는 오류'));
+          if(btn){ btn.textContent = '저장'; btn.disabled = false; }
+        }
+      })
+      .catch(function(e){
+        alert('저장 오류: ' + e.message);
+        if(btn){ btn.textContent = '저장'; btn.disabled = false; }
+      });
+  };
+
+  fetch(RAW_URL + '?t=' + Date.now(), {cache:'no-store'})
+    .then(function(r){ if(!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+    .then(function(j){
+      _matrixData = j;
+      renderMatrix();
+      renderEditBtn();
+    })
+    .catch(function(e){
+      body.innerHTML = '<tr><td colspan="6" class="matrix-status">매트릭스 정본을 불러오지 못했습니다 (' + esc(e.message) +
+        '). 정본: <code>coo/bootsetup_matrix.json</code></td></tr>';
+    });
+})();
+</script>
+</body>
+</html>

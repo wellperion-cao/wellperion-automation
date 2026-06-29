@@ -51,21 +51,23 @@ tbody td{padding:5px 8px;border-bottom:1px solid var(--line);vertical-align:midd
 tbody tr:nth-child(even) td{background:var(--paper2)}
 tbody tr.dirty td{background:rgba(192,133,27,.10)}
 td.num{color:var(--beige-deep);font-weight:700;width:42px;text-align:center}
-td input,td textarea{width:100%;border:1px solid var(--line2);background:#fff;border-radius:6px;padding:6px 8px;font-size:12.6px;font-family:inherit;color:var(--ink);resize:none}
-td input:hover,td textarea:hover{border-color:var(--beige)}
-td input:focus,td textarea:focus{border-color:var(--beige);box-shadow:0 0 0 2px rgba(183,159,138,.20);outline:none}
+td input,td textarea{width:100%;border:1px solid transparent;background:transparent;border-radius:6px;padding:6px 7px;font-size:12.6px;font-family:inherit;color:var(--ink);resize:none}
+td input:hover,td textarea:hover{border-color:var(--line)}
+td input:focus,td textarea:focus{border-color:var(--beige);background:#fff;outline:none}
 td.wide{min-width:360px}
 td.wide textarea{min-width:340px;line-height:1.5}
-td.tel{min-width:150px;white-space:nowrap} td.tel input{font-variant-numeric:tabular-nums}
+td.tel{min-width:160px;white-space:nowrap} td.tel input{min-width:150px;font-variant-numeric:tabular-nums} td.exp{min-width:120px;white-space:nowrap}
 td.namecell input{font-weight:700}
 td.act{width:64px;text-align:center}
 .saveb{background:var(--orange);color:#fff;border:none;border-radius:7px;padding:6px 10px;font-size:11.5px;font-weight:700;cursor:pointer;font-family:inherit;display:none}
 tr.dirty .saveb{display:inline-block}
 .saveb.saving{background:var(--amber);opacity:.8}
 .cnt{font-size:12px;color:var(--muted);margin:0 2px 10px;font-weight:600}
-.hint{font-size:12px;color:var(--beige-deep);background:rgba(183,159,138,.10);border:1px solid var(--line);border-radius:8px;padding:8px 12px;margin:2px 2px 10px;font-weight:600}
-.kpi{display:flex;gap:8px;flex-wrap:wrap;margin:2px 2px 12px}
-.kchip{font-size:12.5px;font-weight:700;padding:7px 13px;border-radius:999px;border:1px solid var(--line);color:var(--ink2);background:var(--paper)}
+.kpi{display:none;gap:8px;flex-wrap:wrap;margin:2px 2px 12px}
+.kpi.show{display:flex}
+.kchip{font-size:12.5px;font-weight:700;padding:7px 13px;border-radius:999px;border:1px solid var(--line);color:var(--ink2);background:var(--paper);cursor:pointer;user-select:none}
+.kchip:hover{border-color:var(--beige)}
+.kchip.act{box-shadow:0 0 0 2px var(--ink)}
 .kchip.kexp{color:#fff;background:var(--orange);border-color:var(--orange)}
 .kchip.kvac{color:var(--beige-deep)}
 .toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:11px 20px;border-radius:10px;font-size:13px;font-weight:600;opacity:0;transition:.25s;pointer-events:none;z-index:60}
@@ -95,10 +97,10 @@ tr.dirty .saveb{display:inline-block}
     <div class="search"><input id="q" type="text" placeholder="성함·번호·연락처·메모 검색…" oninput="render()"></div>
     <button class="btn on" id="autoBtn">⟳ 자동새로고침 ON</button>
     <button class="btn" id="refreshBtn">지금 새로고침</button>
+    <button class="btn" id="kpiBtn">📊 현황 보기</button>
     <span class="status" id="status"></span>
   </div>
   <div class="kpi" id="kpi"></div>
-  <div class="hint">✏️ 표의 각 칸을 클릭하면 바로 수정됩니다 — 다른 칸으로 넘어가면 자동 저장(번호 칸만 고정)</div>
   <div class="cnt" id="cnt"></div>
   <div class="tablecard"><div class="tscroll"><table>
     <thead id="thead"></thead><tbody id="tbody"></tbody>
@@ -127,6 +129,7 @@ let autoOn = AUTO_REFRESH_SEC > 0;
 let timer = null;
 let saveTimers = {};   // 디바운스 자동저장 타이머
 let savingRows = {};   // 행별 저장 진행중 플래그
+let kpiFilter = null;  // 현황 필터: null=전체 / 'exp'=만기 / 'vac'=공란
 
 /* ===== 통신 ===== */
 async function call(payload){
@@ -139,6 +142,42 @@ async function writeRow(db, row, fields, adminPw){
   return call({action:'update', db, adminPassword: adminPw, _sheet_row: row, fields});
 }
 
+/* ===== 전화번호 앞자리 0 복원 (예: 1012345678 → 01012345678) ===== */
+function lkNormPhone(v){
+  let s=(v==null?'':String(v)).trim();
+  if(!s) return s;
+  if(/^\d+$/.test(s) && s[0]!=='0' && (s.length===9 || s.length===10)) return '0'+s;
+  return s;
+}
+function lkNormRows(rows){
+  (rows||[]).forEach(r=>{ if(r && ('전화' in r)) r['전화']=lkNormPhone(r['전화']); });
+  return rows;
+}
+
+/* ===== 현황(KPI): 만기 라커 / 공란 / 전체 ===== */
+function lkParseExp(s){
+  if(!s) return null; s=String(s).trim();
+  const m=s.match(/^(\d{4})\s*[.\-\/]\s*(\d{1,2})\s*[.\-\/]\s*(\d{1,2})\.?\s*$/);
+  if(!m) return null; const d=new Date(+m[1],+m[2]-1,+m[3]); return isNaN(d)?null:d;
+}
+function updateKpi(){
+  const rows=DATA[curDb]||[]; const today=new Date(); today.setHours(0,0,0,0);
+  let exp=0, vac=0, total=0;
+  rows.forEach(r=>{
+    const num=String(r['번호']==null?'':r['번호']).trim();
+    if(num) total++;
+    const name=String(r['성함']==null?'':r['성함']).trim();
+    if(!name){ vac++; return; }
+    const d=lkParseExp(r['만기']); if(d && d<today) exp++;
+  });
+  const el=document.getElementById('kpi'); if(!el) return;
+  el.innerHTML = `<span class="kchip kexp${kpiFilter==='exp'?' act':''}" onclick="lkSetFilter('exp')">만기 라커 ${exp}</span>`
+    + `<span class="kchip kvac${kpiFilter==='vac'?' act':''}" onclick="lkSetFilter('vac')">공란 ${vac}</span>`
+    + `<span class="kchip${!kpiFilter?' act':''}" onclick="lkSetFilter(null)">전체 ${total}</span>`;
+}
+function lkKpiSync(){ const el=document.getElementById('kpi'); if(el && el.classList.contains('show')) updateKpi(); }
+function lkSetFilter(f){ kpiFilter = (kpiFilter===f)?null:f; render(); updateKpi(); }
+
 /* ===== 로그인 ===== */
 const loginEl=document.getElementById('login');
 async function tryLogin(pw){
@@ -147,7 +186,7 @@ async function tryLogin(pw){
   const res = await readDb('men').catch(e=>({ok:false,error:String(e)}));
   if(res && res.ok){
     sessionStorage.setItem('lk_pw', pw);
-    DATA['men'] = res.results;
+    DATA['men'] = lkNormRows(res.results);
     loginEl.style.display='none';
     document.getElementById('app').style.display='';
     startApp();
@@ -175,8 +214,8 @@ function buildTabs(){
 async function go(db){
   curDb=db;
   [...document.querySelectorAll('.tab')].forEach(t=>t.classList.toggle('active', t.dataset.db===db));
-  if(!DATA[db]){ setStatus('불러오는 중…'); const res=await readDb(db); if(res.ok) DATA[db]=res.results; else { toast('읽기 실패: '+res.error,true); return; } }
-  render(); refreshCounts(); setStatus('읽음 · '+nowStr());
+  if(!DATA[db]){ setStatus('불러오는 중…'); const res=await readDb(db); if(res.ok) DATA[db]=lkNormRows(res.results); else { toast('읽기 실패: '+res.error,true); return; } }
+  render(); refreshCounts(); lkKpiSync(); setStatus('읽음 · '+nowStr());
 }
 function refreshCounts(){ TABS.forEach(([db])=>{ const el=document.getElementById('cnt_'+db); if(el&&DATA[db]) el.textContent=DATA[db].length; }); }
 
@@ -192,8 +231,14 @@ function render(){
     '<tr>'+cols.map(c=>`<th>${LABELS[c]||c}</th>`).join('')+'<th></th></tr>';
   const q=(document.getElementById('q').value||'').toLowerCase().trim();
   let shown=0, out=[];
+  const _today=new Date(); _today.setHours(0,0,0,0);
   rows.forEach(r=>{
     if(q){ const hay=cols.map(c=>r[c]).join(' ').toLowerCase(); if(hay.indexOf(q)<0) return; }
+    if(kpiFilter){
+      const _nm=String(r['성함']==null?'':r['성함']).trim();
+      if(kpiFilter==='vac' && _nm!=='') return;
+      if(kpiFilter==='exp'){ const _d=lkParseExp(r['만기']); if(!(_nm && _d && _d<_today)) return; }
+    }
     shown++;
     const key=db+':'+r._sheet_row;
     const d=dirty[key]||{};
@@ -201,7 +246,7 @@ function render(){
       const val = (c in d)? d[c] : (r[c]==null?'':r[c]);
       if(READONLY.indexOf(c)>=0) return `<td class="num">${val}</td>`;
       const isWide = WIDE.indexOf(c)>=0;
-      const cls = (c==='성함'?'namecell ':'') + (isWide?'wide':'') + (c==='전화'?' tel':'');
+      const cls = (c==='성함'?'namecell ':'') + (isWide?'wide':'') + (c==='전화'?' tel':'') + (c==='만기'?' exp':'');
       if(isWide)
         return `<td class="${cls}"><textarea rows="2" data-r="${r._sheet_row}" data-f="${c}" oninput="onEdit(this)" onblur="autoSave(this)">${esc(val)}</textarea></td>`;
       return `<td class="${cls}"><input value="${esc(val)}" data-r="${r._sheet_row}" data-f="${c}" oninput="onEdit(this)" onblur="autoSave(this)"></td>`;
@@ -210,23 +255,6 @@ function render(){
   });
   document.getElementById('tbody').innerHTML = out.join('') || `<tr><td colspan="${cols.length+1}" style="padding:30px;text-align:center;color:#B3A795">결과 없음</td></tr>`;
   document.getElementById('cnt').textContent = `${shown}건 표시 · 전체 ${rows.length}건`;
-  updateKpi();
-}
-function lkParseExp(s){
-  if(!s) return null; s=String(s).trim();
-  const m=s.match(/^(\d{4})[.\-\/](\d{1,2})[.\-\/](\d{1,2})$/);
-  if(!m) return null; const d=new Date(+m[1],+m[2]-1,+m[3]); return isNaN(d)?null:d;
-}
-function updateKpi(){
-  const rows=DATA[curDb]||[]; const today=new Date(); today.setHours(0,0,0,0);
-  let exp=0, vac=0;
-  rows.forEach(r=>{
-    const name=String(r['성함']==null?'':r['성함']).trim();
-    if(!name){ vac++; return; }
-    const d=lkParseExp(r['만기']); if(d && d<today) exp++;
-  });
-  const el=document.getElementById('kpi'); if(!el) return;
-  el.innerHTML = `<span class="kchip kexp">만기 라커 ${exp}</span><span class="kchip kvac">공란 ${vac}</span><span class="kchip">전체 ${rows.length}</span>`;
 }
 function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
@@ -289,10 +317,11 @@ function setAuto(on){
 async function tick(){
   if(Object.keys(dirty).some(k=>k.startsWith(curDb+':'))){ setStatus('수정 중 — 자동 새로고침 보류'); return; }
   const res=await readDb(curDb).catch(()=>null);
-  if(res&&res.ok){ DATA[curDb]=res.results; render(); refreshCounts(); setStatus('자동 새로고침 · '+nowStr()); }
+  if(res&&res.ok){ DATA[curDb]=lkNormRows(res.results); render(); refreshCounts(); lkKpiSync(); setStatus('자동 새로고침 · '+nowStr()); }
 }
 document.getElementById('autoBtn').onclick=()=>setAuto(!autoOn);
 document.getElementById('refreshBtn').onclick=async()=>{ DATA[curDb]=null; await go(curDb); };
+document.getElementById('kpiBtn').onclick=()=>{ const el=document.getElementById('kpi'); el.classList.toggle('show'); const on=el.classList.contains('show'); document.getElementById('kpiBtn').classList.toggle('on',on); if(on){ updateKpi(); } else { kpiFilter=null; render(); } };
 
 /* ===== 유틸 ===== */
 function setStatus(s){ document.getElementById('status').innerHTML=s; }

@@ -546,6 +546,45 @@ async def run_publish(args: argparse.Namespace) -> int:
             await asyncio.sleep(5)
             await page.screenshot(path=str(EVIDENCE_DIR / "kakao_publish_done.png"))
             print("[INFO] === PUBLISH 완료 (실 발행) ===")
+            # 발행 직후 공개 URL 캡처 시도 (pf.kakao.com/_cgxiKj/{id})
+            # 카카오 관리자는 공개 id를 항상 노출하지 않으므로 best-effort.
+            # try/except 로 감싸 실패해도 발행 흐름 절대 막지 않음
+            try:
+                _kakao_url = None
+                _cur_url = page.url
+                # ① 현재 URL에서 직접 패턴 탐색
+                _km = re.search(
+                    r"https?://pf\.kakao\.com/[A-Za-z0-9_]+/\w+", _cur_url
+                )
+                if _km:
+                    _kakao_url = _km.group(0)
+                # ② DOM 내 pf.kakao.com 링크 탐색 (성공 화면·목록 최상단 등)
+                if not _kakao_url:
+                    _dom_links = await page.evaluate(
+                        "() => Array.from(document.querySelectorAll('a[href*=\"pf.kakao.com\"]'))"
+                        ".map(a => a.href).filter(Boolean)"
+                    )
+                    if _dom_links:
+                        _kakao_url = _dom_links[0]
+                        print(f"[INFO] 카카오 DOM에서 공개 URL 발견: {_kakao_url}")
+                if _kakao_url:
+                    _folder = (getattr(args, "content_dir", None) or "").strip()
+                    if _folder:
+                        try:
+                            from review_queue_util import update_review_post_url as _upd_rq
+                        except ImportError:
+                            sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+                            from review_queue_util import update_review_post_url as _upd_rq
+                        _upd_rq(_folder, "카카오 채널", _kakao_url)
+                    else:
+                        print("[WARN] --content-dir 미지정 — review_queue 갱신 생략")
+                else:
+                    print(
+                        f"[INFO] 카카오 공개 URL 미캡처 (현재: {_cur_url[:80]})"
+                        " — 발행 완료, URL 수동 회수 필요"
+                    )
+            except Exception as _cap_e:
+                print(f"[WARN] 카카오 URL 캡처 실패 (발행 흐름 영향 없음): {_cap_e}")
     except Exception as e:
         print(f"[ERROR] publish 실패: {e}")
         rc = 5
