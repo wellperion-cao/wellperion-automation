@@ -5464,7 +5464,7 @@ function policyDeleteCard(colKey,id){
    점검 기록·근무자·제출 등 진짜 데이터는 전부 서버(GAS)에 있어 무손실 — 페이지는 비운 뒤 서버에서 다시 읽는다.
    ※ 페이지 내용을 의미있게 바꿔 배포할 때마다 APP_VER 값을 새로(날짜+접미) 올리면 전 사용자 창이 다음 새로고침 때 자동 최신화된다. */
 (function(){
-  var APP_VER='2026-06-29b';
+  var APP_VER='2026-06-29c';
   try{
     if(localStorage.getItem('wcheck_app_ver')!==APP_VER){
       Object.keys(localStorage)
@@ -6093,10 +6093,10 @@ function sheetSourceActive(){
    셋 다 없으면 제외(야간·외주 F/G 또는 회차 미설정 → 화면 미표시). roundOfSlot 폴백 금지(오배치 차단). */
 function _itemIsDayScheduled(it){
   if(!it || !it.id) return false;
-  if(Array.isArray(it.rounds) && it.rounds.length) return true;
-  if(typeof ROUND_MAP!=='undefined' && ROUND_MAP[it.id]) return true;
-  try{ var p=parseSched(it.sched||''); if(p.days && p.days.length) return true; }catch(e){}
-  return false;
+  // 2026-06-29 시우: 점검 항목 = 회차(rounds)가 명시된 것만 점검(남/여)에 노출.
+  // 회차 빈 항목(F 사우나 깊은청소 f1~f7·G 방역 g1 등)=매뉴얼 기록 전용 → 점검 화면 제외(매뉴얼 탭엔 그대로).
+  // ROUND_MAP(하드코딩 폴백)·요일만으로는 점검 포함 안 함 — 회차=시트 매뉴얼 단일출처.
+  return !!(Array.isArray(it.rounds) && it.rounds.length);
 }
 /* CUSTOM_ITEMS(시트) → drawUI 소비 구조([{slot,shift,groups:[{title,items:[{id,name,detail,gender,rounds,sched,cat,_custom}]}]}]).
    그룹=카테고리(cat), 정렬=order 순. 단일 합성 슬롯(shift:'all'→drawUI가 pm로 처리).
