@@ -428,5 +428,19 @@
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "b3b45b0ea9711e1eb9c1e52df1156e115d7a6618",
     "ship_no": 200
+  },
+  {
+    "task_id": "CPO-2026-06-29-ADHOC-7518dc61",
+    "clevel": "cpo",
+    "title": "[시포] 등록 전환 carry-over — 시트 행 직독 + 멱등 보장",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-06-29",
+    "processed_at": "2026-06-29",
+    "artifact": "달력 모달은 status=SUC만 보내 body.phone 부재 → _regUpsert_가 전화키\n없이 호출돼 등록현황 미반영 + 알림 빈칸('-') 버그. carry-over가 시트\n행에서 이름·전화·프로그램·담당 직독(body 우선)하도록 수정. _regUpsert_는\n멱등이라 SUC 저장 시 항상 실행해 과거 누락 건도 재저장으로 복구, 알림은\n실제 전환(이전≠SUC) 1회만. (CLI ad-hoc · 커밋 7518dc61)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "7518dc6188748b7ab9fa18b1d5d91a7c3d05f499",
+    "ship_no": 6
   }
 ]
