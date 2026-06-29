@@ -2727,7 +2727,7 @@ function _processAction(body) {
   // ─── CPO 오늘 현황(PII 미노출 집계): 오늘/이번달 문의·등록 건수 2026-06-24 GM ───
   if (action === 'cpo_today_stats') {
     var ctCache = CacheService.getScriptCache();
-    var ctCached = ctCache.get('cpo_today_stats_v3');
+    var ctCached = ctCache.get('cpo_today_stats_v4');
     if (ctCached) return _json(JSON.parse(ctCached));
     var ctTz = 'Asia/Seoul';
     var ctToday = Utilities.formatDate(new Date(), ctTz, 'yyyy-MM-dd');
@@ -2797,8 +2797,21 @@ function _processAction(body) {
         }
       }
     } catch (eCr) {}
-    var ctResult = { ok: true, date: ctToday, todayInquiry: ctTI, monthInquiry: ctMI, todayReg: ctTR, monthReg: ctMR, memberActive: ctActive, memberEnded: ctEnded, todayLoss: ctLoss, monthLoss: ctMonthLoss, lossDated: ctLossDated };
-    try { ctCache.put('cpo_today_stats_v3', JSON.stringify(ctResult), 60); } catch (eCc) {}
+    // 법인회원 수(별도 시트 gid 1612064257 '법인현황' — 회원명 있는 행). 2026-06-29 시포.
+    var ctCorp = 0;
+    try {
+      var ctCorpSs = SpreadsheetApp.openById(MEMBER_SPREADSHEET_ID), ctCorpSh = null, ctCorpShs = ctCorpSs.getSheets();
+      for (var cci = 0; cci < ctCorpShs.length; cci++) { if (ctCorpShs[cci].getSheetId() === 1612064257) { ctCorpSh = ctCorpShs[cci]; break; } }
+      if (!ctCorpSh) ctCorpSh = ctCorpSs.getSheetByName('법인현황');
+      if (ctCorpSh && ctCorpSh.getLastRow() >= 2) {
+        var ctCorpHdr = ctCorpSh.getRange(1, 1, 1, ctCorpSh.getLastColumn()).getValues()[0], ctCorpNmI = 0;
+        for (var cch = 0; cch < ctCorpHdr.length; cch++) { if (String(ctCorpHdr[cch]).replace(/\s/g, '').indexOf('회원명') >= 0) { ctCorpNmI = cch; break; } }
+        var ctCorpData = ctCorpSh.getRange(2, ctCorpNmI + 1, ctCorpSh.getLastRow() - 1, 1).getValues();
+        for (var ccd = 0; ccd < ctCorpData.length; ccd++) { if (String(ctCorpData[ccd][0] == null ? '' : ctCorpData[ccd][0]).trim()) ctCorp++; }
+      }
+    } catch (eCorp) {}
+    var ctResult = { ok: true, date: ctToday, todayInquiry: ctTI, monthInquiry: ctMI, todayReg: ctTR, monthReg: ctMR, memberActive: ctActive, memberCorp: ctCorp, memberEnded: ctEnded, todayLoss: ctLoss, monthLoss: ctMonthLoss, lossDated: ctLossDated };
+    try { ctCache.put('cpo_today_stats_v4', JSON.stringify(ctResult), 60); } catch (eCc) {}
     return _json(ctResult);
   }
 
