@@ -919,16 +919,18 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
     </a>
     <!-- 카드3: 등록 현황 (등록 회원 명단 — 내부 탭) -->
     <a class="dash-card" data-kind="reg" data-tab="registered" href="javascript:void(0)" onclick="switchTab('registered')">
-      <div class="dash-head"><span class="dash-dot reg"></span><span class="dash-title">금일 등록 현황</span></div>
+      <div class="dash-head"><span class="dash-dot reg"></span><span class="dash-title">등록 현황</span></div>
       <div class="dash-metrics">
-        <div class="dash-line"><span class="dash-v" style="font-size:12px;color:var(--dim-mid)">오늘 등록 회원 명단</span></div>
+        <div class="dash-line"><span class="dash-k">금일</span><span class="dash-v"><b class="lead" id="dRegToday">0</b> 명</span></div>
+        <div class="dash-line"><span class="dash-k">월간</span><span class="dash-v"><b id="dRegMonth">0</b> 명</span></div>
       </div>
     </a>
     <!-- 카드4: 멤버십 회원 관리 (유효회원 명단 — 내부 탭) -->
     <a class="dash-card" data-kind="mem" data-tab="active" href="javascript:void(0)" onclick="switchTab('active')">
       <div class="dash-head"><span class="dash-dot mem"></span><span class="dash-title">멤버십 회원 관리</span></div>
       <div class="dash-metrics">
-        <div class="dash-line"><span class="dash-v" style="font-size:12px;color:var(--dim-mid)">유효·법인·종료 회원 명단</span></div>
+        <div class="dash-line"><span class="dash-k">유효</span><span class="dash-v"><b class="lead" id="dMemActive">0</b> 명</span></div>
+        <div class="dash-line"><span class="dash-k">이탈(월)</span><span class="dash-v"><b id="dMemLoss">0</b> 명</span></div>
       </div>
     </a>
   </div>
@@ -1000,7 +1002,7 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
             <option value="LOSS">LOSS(이탈)</option>
           </select>
           <label style="display:inline-flex;align-items:center;gap:5px;font-size:12px;color:var(--dim);cursor:pointer;white-space:nowrap" title="등록(SUC·단기SUC·결제완납)·이탈(LOSS) 건을 숨겨 진행 중 깔때기만 봅니다">
-            <input type="checkbox" id="dbHideRegistered" onchange="renderDbTable()" style="cursor:pointer"> 미등록만 보기
+            <input type="checkbox" id="dbHideRegistered" onchange="renderDbTable()" style="cursor:pointer"> 진행중만 보기
           </label>
         </div>
         <div class="db-toolbar-actions">
@@ -1429,6 +1431,17 @@ if (action === 'member_calendar') {
         <input type="date" id="regTo" title="등록일 종료">
         <button class="btn-query" onclick="loadRegistered()">조회</button>
         <button class="btn-refresh" onclick="loadRegistered()">새로고침</button>
+        <button class="btn-add" style="margin-left:auto" onclick="toggleRegAdd()">+ 직접 등록</button>
+      </div>
+
+      <!-- 직접 등록 추가 — 문의 퍼널 안 거친 직접·법인 계약 등을 페이지에서 바로 등록현황에 추가. 2026-06-29 시포 -->
+      <div id="regAddForm" style="display:none;flex-wrap:wrap;gap:8px;align-items:center;margin:8px 0;padding:10px;border:1px solid var(--accent-border);border-radius:8px;background:var(--accent-bg)">
+        <input id="regAddName" type="text" placeholder="이름" autocomplete="off" style="padding:7px 10px;border-radius:7px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:13px;width:110px">
+        <input id="regAddPhone" type="text" placeholder="전화 010-0000-0000" autocomplete="off" style="padding:7px 10px;border-radius:7px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:13px;width:160px">
+        <input id="regAddProg" type="text" placeholder="프로그램(예: 플래티넘+골프 12개월)" autocomplete="off" style="padding:7px 10px;border-radius:7px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:13px;width:240px">
+        <input id="regAddDate" type="date" title="등록일자" style="padding:7px 10px;border-radius:7px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:13px">
+        <button class="btn-query" onclick="submitRegAdd()">추가</button>
+        <button class="btn-refresh" onclick="toggleRegAdd(false)">취소</button>
       </div>
 
       <div class="reg-count" id="regCount"></div>
@@ -2311,6 +2324,37 @@ function setRegRange(mode) {
   loadRegistered();
 }
 
+// 직접 등록 추가 폼 — 토글 + 제출(문의 퍼널 안 거친 직접·법인 계약). 2026-06-29 시포
+function toggleRegAdd(show) {
+  var f = document.getElementById('regAddForm');
+  var on = (show === undefined) ? (f.style.display === 'none') : show;
+  f.style.display = on ? 'flex' : 'none';
+  if (on) {
+    var t = new Date();
+    document.getElementById('regAddDate').value = t.getFullYear() + '-' + String(t.getMonth()+1).padStart(2,'0') + '-' + String(t.getDate()).padStart(2,'0');
+    document.getElementById('regAddName').focus();
+  }
+}
+function submitRegAdd() {
+  var name  = document.getElementById('regAddName').value.trim();
+  var phone = document.getElementById('regAddPhone').value.trim();
+  var prog  = document.getElementById('regAddProg').value.trim();
+  var date  = document.getElementById('regAddDate').value;
+  if (!phone) { showToast('전화번호는 필수입니다(중복 방지 키)', 'err'); return; }
+  if (!name)  { showToast('이름을 입력하세요', 'err'); return; }
+  apiPost({ action: 'member_registered_add', name: name, phone: phone, program: prog, regDate: date })
+    .then(function(){
+      showToast('🎉 등록 추가 · ' + name + '님', 'ok');
+      document.getElementById('regAddName').value = '';
+      document.getElementById('regAddPhone').value = '';
+      document.getElementById('regAddProg').value = '';
+      toggleRegAdd(false);
+      loadRegistered();        // 명단 갱신
+      loadCpoTodayStats();     // 카드 금일/월간 등록 수 갱신
+    })
+    .catch(function(e){ showToast('추가 실패: ' + (e.message || ''), 'err'); });
+}
+
 function loadRegistered() {
   if (GAS_URL === GAS_PLACEHOLDER) {
     _regRenderEmpty('미연동', 'GAS URL이 교체되면 자동으로 등록 회원 명단이 표시됩니다.');
@@ -2999,8 +3043,9 @@ function saveConsultModal() {
   // 방문 완료 — 진행상황과 독립 칸(방문완료일). 바뀌었을 때만 전송(체크=방문일자=예약일 기록, 해제=클리어).
   if (visitedChanged) { payload.visited = visited; if (visited) payload.visitDate = _consultEv.date || ''; }
   // 등록 — 등록 완료면 진행상황 SUC + (새 등록일 때만)등록일자. 방문만(미등록)이면 퍼널 상태 '방문'.
-  if (registered) { payload.status = 'SUC'; if (!origReg) payload.regDate = regDate; }
-  else if (visited && visitedChanged) { payload.status = '방문'; }
+  if (registered && regChanged) { payload.status = 'SUC'; if (!origReg) payload.regDate = regDate; }  // 신규 등록 시에만 전송(불필요 재전송 방지·리뷰 #5)
+  else if (regChanged && origReg) { payload.status = (visited ? '방문' : '예약'); }   // 등록 해제 → 강등(서버가 등록현황에서도 제거)
+  // 방문 완료는 독립 ✓플래그(payload.visited)로만 기록 — 진행상황(가망·컨택중 등 퍼널 단계)은 건드리지 않음. 2026-06-29 시포(리뷰 #2)
   // 상담 내용: 기존 메모 보존 + 새 줄 누적. 빈 입력이면 메모 미전송.
   if (input) {
     var today = new Date();
@@ -3012,11 +3057,12 @@ function saveConsultModal() {
 
   var saveBtn = document.getElementById('cmSaveBtn');
   var _celebrateReg = registered && !origReg; var _regName = (_consultEv && _consultEv.name) ? _consultEv.name : '';
+  var _unregistered = (!registered && origReg && regChanged);   // 등록 해제(되돌리기)
   var evRef = _consultEv;   // 낙관적 업데이트용 — closeConsultModal이 _consultEv=null 해도 calEvents 내 객체 참조 유지
   saveBtn.disabled = true;
   apiPost(payload)
     .then(function(){
-      showToast(_celebrateReg ? ('🎉 등록 완료 · ' + (_regName ? _regName + '님 환영합니다' : '환영합니다')) : '저장', 'ok');
+      showToast(_celebrateReg ? ('🎉 등록 완료 · ' + (_regName ? _regName + '님 환영합니다' : '환영합니다')) : (_unregistered ? '등록 취소 · 진행상황 강등' : '저장'), 'ok');
       // 낙관적 업데이트 — 서버 전체 재조회(GAS 왕복) 없이 바뀐 부분만 로컬 반영(버벅임 제거). 2026-06-29 시포
       if (evRef) {
         if (payload.status !== undefined) evRef.status = payload.status;
@@ -3025,6 +3071,7 @@ function saveConsultModal() {
         if (payload.contact2 !== undefined) evRef.contact2 = payload.contact2;
         if (payload.contact3 !== undefined) evRef.contact3 = payload.contact3;
         if (payload.memo !== undefined) evRef.memo = payload.memo;
+        if (payload.regDate !== undefined) evRef.regDate = payload.regDate;   // 등록일자 로컬 반영 — 재오픈 시 오늘로 리셋 방지(리뷰 #4)
         if (timeChanged) evRef.time = selTime;
         var _dr = dbRows.find(function(r){ return r.rowIndex === evRef.rowIndex; });
         if (_dr) {
@@ -3040,7 +3087,7 @@ function saveConsultModal() {
       renderCalendarShell();
       renderCalendarChips();                     // 로컬 재렌더(GAS 재조회 없음 — 즉시 반영)
       if (_tabLoaded.db) renderDbTable();        // 그리드도 로컬 재렌더
-      if (_celebrateReg && _tabLoaded.registered) loadRegistered();  // 신규 등록 시에만 등록현황 1회 재조회(새 행 반영)
+      if ((_celebrateReg || _unregistered) && _tabLoaded.registered) loadRegistered();  // 등록/해제 시 등록현황 재조회
     })
     .catch(function(err){
       showToast('저장 실패: ' + (err.message || ''), 'err');
@@ -3134,7 +3181,7 @@ function renderDbTable() {
   var filter = document.getElementById('dbFilter').value;
 
   var _hideRegEl = document.getElementById('dbHideRegistered');
-  var hideReg = _hideRegEl && _hideRegEl.checked;   // '미등록만 보기' — 등록·이탈 종결건 숨김
+  var hideReg = _hideRegEl && _hideRegEl.checked;   // '진행중만 보기' — 등록·완납·이탈 종결건 숨김
   var _TERMINAL = ['SUC','단기SUC','결제완납','LOSS'];
   var filtered = dbRows.filter(function(row){
     var matchStatus = !filter || row.status === filter;

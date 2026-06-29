@@ -929,6 +929,7 @@ var _SURVEY_PUBLIC_ACTIONS = {
   member_registered_list:     true,  // 2026-06-23 등록현황(SUC/단기SUC) 조회
   member_registered_setmonth: true,  // 등록회원 1~12월 체크 토글
   member_registered_delete:   true,  // 등록 해제(행 삭제)
+  member_registered_add:      true,  // 2026-06-29 등록현황 직접 추가(페이지 수기 등록)
   member_active_list:         true,  // 멤버십 회원 명단(유효회원·전화 마스킹)
   member_active_update:       true,  // 2026-06-24 멤버십 셀 인라인 수정(유효회원 시트·전화 제외)
   cpo_today_stats:            true,  // 2026-06-24 CPO 오늘/이번달 문의·등록 건수(PII 미노출)
@@ -1159,7 +1160,7 @@ function _miReadRows_() {
       exp3Time: _miTime_(iExp3 >= 0 ? row[iExp3] : ''),
       visit2Date: _miToISO_(iV2Dt >= 0 ? row[iV2Dt] : ''),  // 2차 방문 날짜(col11) — 달력에서 누락되던 일정 보강
       visit2Time: _miTime_(iV2Dt >= 0 ? row[iV2Dt] : ''),   // 2차 방문 시간 — 같은 셀에서 직독(시간 설정 지원, 2026-06-29 시포)
-      visited:    (iVisited >= 0 && row[iVisited] !== '' && row[iVisited] != null) ? true : false,  // 방문 완료 여부(독립)
+      visited:    (iVisited >= 0 && String(row[iVisited] == null ? '' : row[iVisited]).trim() !== '') ? true : false,  // 방문 완료 여부(독립·공백/0 오인 방지)
       visitDate:  (iVisited >= 0) ? _miToISO_(row[iVisited]) : '',  // 방문 완료일
       timestamp:_miToISO_(iTs   >= 0 ? row[iTs]   : ''),
       memo:     iMemo  >= 0 ? String(row[iMemo]  || '') : '',
@@ -1209,6 +1210,16 @@ function _regUpsert_(name, phone, program, regDate) {
   var row = new Array(_REG_HEADER.length).fill('');
   row[0] = name || ''; row[1] = phone || ''; row[2] = program || ''; row[3] = regDate || _todayKR_();  // 등록일=지정값 우선, 없으면 오늘
   sh.appendRow(row);
+}
+// 등록 해제(잘못 등록 되돌리기) — 등록현황에서 전화키 매칭 행 제거(중복 있으면 전부). 2026-06-29 시포.
+function _regRemove_(phone) {
+  var key = _regNormPhone_(phone);
+  if (!key) return;
+  var sh = _regSheet_();
+  var last = sh.getLastRow();
+  for (var i = last; i >= 2; i--) {
+    if (_regNormPhone_(sh.getRange(i, 2).getValue()) === key) sh.deleteRow(i);
+  }
 }
 
 // ═══════════════════════════════════════════
@@ -2129,7 +2140,7 @@ function _processAction(body) {
     }
     // carry-over: 신규→SUC/단기SUC '실제 전환' 시에만 등록현황 탭 이관 + 등록 전환 전용 알림. 2026-06-26 시토·GM.
     //   A안(GM 결재): 유효회원(실계약 정본)에는 자동생성 안 함 — 계약 확정 시 사람 입력. 여기선 깔때기 이관+알림까지만.
-    //   과거 버그: body.status==SUC면 값 미변경에도 매 저장 _regUpsert_ 재실행 → 등록현황 중복 갱신. 이제 old≠SUC && new==SUC 1회만.
+    //   _regUpsert_는 멱등(전화키 매칭 갱신·없으면 today 도장) → SUC 저장 시 항상 실행해 등록현황 보장(중복 행 안 생김). 알림만 실제 전환(이전≠SUC) 1회. 프런트는 신규 등록 시에만 status=SUC 전송(불필요 재전송 방지).
     var _muNewStatus = String(body.status == null ? '' : body.status).trim();
     var _isSucNew = (_muNewStatus === 'SUC' || _muNewStatus === '단기SUC');
     var _wasSuc   = (_muOldStatus === 'SUC' || _muOldStatus === '단기SUC');
@@ -2153,6 +2164,12 @@ function _processAction(body) {
           _notifyTelegram('✅ <b>등록 전환</b> — 문의회원이 등록(' + _muNewStatus + ')으로 전환\n· 이름: ' + (_coName || '-') + '\n· 프로그램: ' + (_coProg || '-') + '\n· 담당: ' + (_coOwner || '-'), _regChatId);
         } catch (e) {}
       }
+    }
+    // 등록 해제(이전 SUC → 신규 비SUC, status 명시 전송 시) — 잘못 등록 되돌리기: 등록현황에서 제거. 2026-06-29 시포.
+    if (_wasSuc && !_isSucNew && body.status !== undefined) {
+      var _urPhCi = _miColIdx_(muHdr, ['연락처','전화','휴대폰']);
+      var _urPhone = (body.keyPhone && String(body.keyPhone)) || (_urPhCi >= 0 ? String(muSh.getRange(muRow, _urPhCi + 1).getValue() || '') : '');
+      try { _regRemove_(_urPhone); } catch (e) {}
     }
     try { _notifyTelegram('📝 문의회원 수정(공개페이지) — 행 ' + muRow + ' · 상태:' + (body.status || '-') + ' · 담당:' + (body.owner || '-')); } catch (e) {}
     return _json({ ok: true, rowIndex: muRow, message: '수정되었습니다.' });
@@ -2563,6 +2580,18 @@ function _processAction(body) {
       }
     }
     return _json({ ok: false, error: '해당 등록회원 없음' });
+  }
+
+  // ─── 등록현황(CPO): 페이지에서 직접 등록 추가(문의 퍼널 안 거친 직접·법인 계약 등) — _regUpsert_ 멱등(전화키). 2026-06-29 시포 ───
+  if (action === 'member_registered_add') {
+    var raName  = String(body.name    || '').trim();
+    var raPhone = String(body.phone   || '').trim();
+    var raProg  = String(body.program || '').trim();
+    var raDate  = String(body.regDate || '').trim() || _todayKR_();
+    if (!raPhone) return _json({ ok: false, error: '전화번호 필수(중복 방지 키)' });
+    _regUpsert_(raName, raPhone, raProg, raDate);  // 기존 전화면 갱신, 없으면 등록일 도장 추가
+    try { _notifyTelegram('➕ 등록현황 직접 추가 — ' + (raName || '-') + ' · ' + (raProg || '-') + ' (' + raDate + ')'); } catch (e) {}
+    return _json({ ok: true, message: '등록 추가되었습니다.' });
   }
 
   // ─── 회원관리 페이지(CPO): 멤버십 회원 명단 ('유효회원' 시트, 읽기전용·전화 마스킹) ───

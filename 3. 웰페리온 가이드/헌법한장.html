@@ -27,7 +27,7 @@
 
   /* ── 매트릭스 ── */
   .matrix-scroll{overflow-x:auto; border:1px solid var(--border); border-radius:11px; background:var(--paper);}
-  table.matrix{border-collapse:collapse; width:100%; min-width:1040px; font-size:11.5px; table-layout:fixed;}
+  table.matrix{border-collapse:collapse; width:100%; min-width:1040px; font-size:13px; table-layout:fixed;}
   table.matrix th, table.matrix td{border:1px solid var(--border); padding:7px 9px; text-align:left; vertical-align:top; line-height:1.42; white-space:pre-wrap; word-break:break-word;}
   table.matrix thead th{background:var(--surface); font-weight:700; font-size:12px; position:sticky; top:0; z-index:2;}
   table.matrix thead th.grp-np{color:#f0c674;}
@@ -37,22 +37,28 @@
   table.matrix th.role-col{width:95px; min-width:90px;}
   td.role-cell{background:var(--surface);}
   td.role-cell .ricon{font-size:16px;}
-  td.role-cell .rname{font-weight:800; font-size:13px;}
-  td.role-cell .rtitle{font-size:10px; color:var(--dim); margin-top:1px;}
-  td.role-cell .rowner{font-size:10px; color:var(--accent-soft); margin-top:2px;}
+  td.role-cell .rname{font-weight:800; font-size:14px;}
+  td.role-cell .rtitle{font-size:11px; color:var(--dim); margin-top:1px;}
+  td.role-cell .rowner{font-size:11px; color:var(--accent-soft); margin-top:2px;}
   tr.role-gm td{background:rgba(184,134,11,0.10);}
   tr.role-gm td.role-cell{background:rgba(184,134,11,0.18);}
-  .dim-label{font-size:9px; font-weight:700; letter-spacing:0.02em; color:var(--dim); display:block; margin-bottom:0; text-transform:uppercase;}
-  .dim-val{display:block; margin-bottom:5px;}
+  .dim-label{font-size:10.5px; font-weight:700; letter-spacing:0.02em; color:var(--dim); display:block; margin-bottom:1px; text-transform:uppercase;}
+  .dim-val{display:block; margin-bottom:8px; white-space:pre-wrap;}
   .dim-val:last-child{margin-bottom:0;}
+  .dim-bul{margin:3px 0 0 15px; padding:0;}
+  .dim-bul li{font-size:12.5px; line-height:1.45; margin-bottom:3px;}
+  .dim-empty{list-style:none; color:var(--dim); margin-left:-15px;}
+  .col-own{width:170px;}
+  .own-chip{display:inline-block; font-size:11px; color:var(--accent-soft); text-decoration:none; border:1px solid var(--border-strong); border-radius:6px; padding:2px 8px; margin:0 4px 4px 0;}
+  .own-chip:hover{background:var(--surface); border-color:var(--accent);}
   .matrix-status{padding:14px; font-size:12px; color:var(--dim);}
   /* ── 편집 모드 ── */
   .ebtn{font-size:11px; padding:3px 11px; border-radius:7px; cursor:pointer; margin-left:6px;}
   .ebtn.edit{background:var(--surface); color:var(--accent-soft); border:1px solid var(--accent);}
   .ebtn.save{background:var(--accent); color:#fff; border:none;}
   .ebtn.cancel{background:var(--surface); color:var(--dim); border:1px solid var(--border-strong);}
-  td.cell-edit{outline:2px dashed var(--accent); outline-offset:-3px; background:rgba(124,58,237,0.06); cursor:text;}
-  td.cell-edit:focus{outline-color:var(--accent-soft); background:rgba(124,58,237,0.12);}
+  .cell-edit{outline:2px dashed var(--accent); outline-offset:-3px; background:rgba(124,58,237,0.06); cursor:text; white-space:pre-wrap;}
+  .cell-edit:focus{outline-color:var(--accent-soft); background:rgba(124,58,237,0.12);}
   /* 열 너비 드래그 조정 핸들 — 편집 모드에서만 노출 */
   .col-resizer{position:absolute; top:0; right:0; width:8px; height:100%; cursor:col-resize; display:none; z-index:5; user-select:none;}
   table.matrix.editing .col-resizer{display:block;}
@@ -70,7 +76,7 @@
   footer.foot{margin-top:16px; font-size:10.5px; color:var(--dim); border-top:1px solid var(--border); padding-top:10px; line-height:1.55;}
 
   @media print{
-    @page{size:A4 portrait; margin:8mm;}
+    @page{size:A3 portrait; margin:8mm;}
     body{background:#fff; color:#111; padding:0; font-size:9px;}
     header.page-head{margin-bottom:8px; padding-bottom:6px;}
     header.page-head h1{font-size:16px;}
@@ -87,6 +93,8 @@
     td.role-cell{background:#f4f4f4 !important;}
     tr.role-gm td, tr.role-gm td.role-cell{background:#f8f2dc !important;}
     td.role-cell .rname, td.role-cell .rtitle, td.role-cell .rowner, .dim-label, .dim-val{color:#111 !important;}
+    .dim-bul li{color:#111 !important;}
+    .own-chip{color:#000 !important; border-color:#666 !important; background:#fff !important;}
     .matrix-scroll{background:#fff !important; border-color:#999 !important;}
     .ccard, .ccard h3, .ccard .desc{background:#fff !important; color:#111 !important; border-color:#999 !important;}
     h2.sec, header.page-head h1{color:#111 !important;}
@@ -102,22 +110,20 @@
     <a class="back" href="#" onclick="window.print();return false;">🖨️ 인쇄</a>
   </header>
 
-  <!-- ════ A. 8주체 × 5칸 매트릭스 (편집형 · 2026-06-29) ════ -->
-  <h2 class="sec">🧭 8주체 × 5칸 매트릭스 <span id="matrix-edit-wrap" style="font-size:11px;font-weight:400;"></span></h2>
+  <!-- ════ A. 8주체 × 3칸 매트릭스 (편집형 · 2026-06-29) ════ -->
+  <h2 class="sec">🧭 8주체 × 3칸 매트릭스 <span id="matrix-edit-wrap" style="font-size:11px;font-weight:400;"></span></h2>
   <div class="matrix-scroll">
     <table class="matrix">
       <thead>
         <tr>
           <th class="role-col">주체</th>
-          <th class="grp-np">🌟 북극성</th>
-          <th class="grp-np">📊 KPI</th>
-          <th class="grp-boot">🔧 파이프라인</th>
-          <th class="grp-boot">📚 부트셋업 SSOT</th>
-          <th class="grp-guard">🚧 소유 관리</th>
+          <th class="grp-np">🌟 목표·지표</th>
+          <th class="grp-boot">🔧 일하는 법</th>
+          <th class="grp-guard col-own">🚧 소유 관리</th>
         </tr>
       </thead>
       <tbody id="matrix-body">
-        <tr><td colspan="6" class="matrix-status">매트릭스 정본을 불러오는 중…</td></tr>
+        <tr><td colspan="4" class="matrix-status">매트릭스 정본을 불러오는 중…</td></tr>
       </tbody>
     </table>
   </div>
@@ -179,13 +185,12 @@
     return '<div class="ccard"><h3>' + c.h + '</h3><div class="desc">' + c.d + '</div>' + ls + '</div>';
   }).join('');
 
-  // ── A. 매트릭스 정본 직독 렌더 + GM 5칸 인라인 편집 (2026-06-29) ──
+  // ── A. 매트릭스 정본 직독 렌더 + GM 3칸 병합 인라인 편집 (2026-06-29) ──
   //   읽기=RAW_URL(raw GitHub) → _matrixData에 8 dims 전체 보유.
-  //   저장=GAS commit_file(coo/bootsetup_matrix.json). 5칸(dims 0,3,1,2,6)만 반영, 나머지(4,5,7) 원본 보존.
+  //   저장=GAS commit_file(coo/bootsetup_matrix.json). 편집칸(dims 0,3,2,1)만 반영, 나머지(4,5,6,7) 원본 보존.
+  //   3칸 병합: 목표·지표=[🌟0,📊3] / 일하는 법=[📚2,🔧1] / 소유 관리=role.owns 링크칩(편집 대상 아님).
   var RAW_URL = 'https://raw.githubusercontent.com/wellperion-cao/wellperion-automation/master/3.%20%EC%9B%B0%ED%8E%98%EB%A6%AC%EC%98%A8%20%EA%B0%80%EC%9D%B4%EB%93%9C/coo/bootsetup_matrix.json';
   var GAS_URL = 'https://script.google.com/macros/s/AKfycbxDwFkrxK1YIaEoSNcuw2MiHiZQ-7o5N6311ytksSyeEd86ZFOhLknOWqQgNArQvZ-7/exec';
-  // 표시 5칸 = dims 인덱스(이 순서 고정): 🌟북극성=0, 📊KPI=3, 🔧파이프라인=1, 📚부트셋업SSOT=2, 🚧소유관리=6
-  var COL_DIMS = [0, 3, 1, 2, 6];
   var _matrixData = null;
   var _editMode = false;
 
@@ -196,31 +201,65 @@
 
   var body = document.getElementById('matrix-body');
 
+  // 라벨 블록: 작은 라벨(.dim-label) + 값.
+  //   비편집 = 원문을 ·/줄바꿈으로 split → 불릿 목록(.dim-bul). 빈 항목 제거. 없으면 '—'.
+  //   편집 = 기존처럼 원문 그대로(.cell-edit · 개별 contenteditable · IME 핸들러). 저장은 원문.
+  function dimBlock(role, di, label){
+    var d = (role.dims) || [];
+    var raw = (d[di] == null ? '' : String(d[di]));
+    var lab = '<span class="dim-label">' + label + '</span>';
+    if(_editMode){
+      return lab + '<div class="dim-val cell-edit" contenteditable="true" data-role="' + esc(role.id) + '" data-dim="' + di + '" ' +
+             'oncompositionstart="window._compOn()" oncompositionend="window._compOff()" ' +
+             'onblur="window._cellBlur(this)">' + esc(raw) + '</div>';
+    }
+    var items = raw.split(/\s*[·\n]\s*/).map(function(s){ return s.trim(); }).filter(function(s){ return s.length; });
+    var lis = items.length
+      ? items.map(function(s){ return '<li>' + esc(s) + '</li>'; }).join('')
+      : '<li class="dim-empty">—</li>';
+    return lab + '<ul class="dim-bul">' + lis + '</ul>';
+  }
+
+  function ideasBlock(role){
+    var raw = (role.ideas == null ? '' : String(role.ideas));
+    var lab = '<span class="dim-label">💡 확장 아이디어</span>';
+    if(_editMode){
+      return lab + '<div class="dim-val cell-edit" contenteditable="true" data-role="' + esc(role.id) + '" data-field="ideas" ' +
+             'oncompositionstart="window._compOn()" oncompositionend="window._compOff()" ' +
+             'onblur="window._cellBlur(this)">' + esc(raw) + '</div>';
+    }
+    var items = raw.split(/\s*[·\n]\s*/).map(function(s){ return s.trim(); }).filter(function(s){ return s.length; });
+    var lis = items.length
+      ? items.map(function(s){ return '<li>' + esc(s) + '</li>'; }).join('')
+      : '<li class="dim-empty">—</li>';
+    return lab + '<ul class="dim-bul">' + lis + '</ul>';
+  }
+
   function renderMatrix(){
     var roles = (_matrixData && _matrixData.roles) || [];
     if(!roles.length){
-      body.innerHTML = '<tr><td colspan="6" class="matrix-status">roles 비어 있음. 정본: <code>coo/bootsetup_matrix.json</code></td></tr>';
+      body.innerHTML = '<tr><td colspan="4" class="matrix-status">roles 비어 있음. 정본: <code>coo/bootsetup_matrix.json</code></td></tr>';
       return;
     }
     body.innerHTML = roles.map(function(role){
-      var d = role.dims || [];
       var ac = role.accent || 'var(--accent)';
       var gm = role.id === 'gm';
-      var cells = COL_DIMS.map(function(di){
-        if(_editMode){
-          return '<td class="cell-edit" contenteditable="true" data-role="' + esc(role.id) + '" data-dim="' + di + '" ' +
-                 'oncompositionstart="window._compOn()" oncompositionend="window._compOff()" ' +
-                 'onblur="window._cellBlur(this)">' + esc(d[di]) + '</td>';
-        }
-        return '<td>' + esc(d[di]) + '</td>';
+      // 칸1 목표·지표 = 🌟북극성(0) + 📊KPI(3)
+      var c1 = '<td>' + dimBlock(role, 0, '🌟 북극성') + dimBlock(role, 3, '📊 KPI') + '</td>';
+      // 칸2 일하는 법 = 📚읽는 정본(2) + 🔧일 흐름(1)
+      var c2 = '<td>' + dimBlock(role, 2, '📚 읽는 정본') + dimBlock(role, 1, '🔧 일 흐름') + '</td>';
+      // 칸3 소유 관리 = role.owns 링크칩(편집 대상 아님)
+      var owns = (role.owns || []).map(function(o){
+        return '<a class="own-chip" href="' + esc(o.href) + '">' + esc(o.label) + '</a>';
       }).join('');
+      var c3 = '<td>' + owns + ideasBlock(role) + '</td>';
       return '<tr class="' + (gm ? 'role-gm' : '') + '">' +
         '<td class="role-cell" style="border-left:4px solid ' + esc(ac) + ';">' +
           '<div class="ricon">' + esc(role.icon) + '</div>' +
           '<div class="rname" style="color:' + esc(ac) + ';">' + esc(role.name) + '</div>' +
           '<div class="rtitle">' + esc(role.title) + '</div>' +
           (role.owner ? '<div class="rowner">담당 · ' + esc(role.owner) + '</div>' : '') +
-        '</td>' + cells +
+        '</td>' + c1 + c2 + c3 +
       '</tr>';
     }).join('');
   }
@@ -230,15 +269,22 @@
   window._compOff = function(){ window._composing = false; };
   window._cellBlur = function(el){
     if(window._composing) return;
-    var role = el.getAttribute('data-role');
-    var dim  = parseInt(el.getAttribute('data-dim'), 10);
-    var val  = el.innerText || el.textContent || '';
+    var role  = el.getAttribute('data-role');
+    var field = el.getAttribute('data-field');
+    var val   = el.innerText || el.textContent || '';
     if(!_matrixData) return;
-    (_matrixData.roles || []).forEach(function(r){
-      if(r.id === role && Array.isArray(r.dims) && dim < r.dims.length){
-        r.dims[dim] = val;   // 5칸 인덱스만 갱신 — 나머지 dims는 손대지 않음
-      }
-    });
+    if(field === 'ideas'){
+      (_matrixData.roles || []).forEach(function(r){
+        if(r.id === role) r.ideas = val;
+      });
+    } else {
+      var dim = parseInt(el.getAttribute('data-dim'), 10);
+      (_matrixData.roles || []).forEach(function(r){
+        if(r.id === role && Array.isArray(r.dims) && dim < r.dims.length){
+          r.dims[dim] = val;   // 편집칸 인덱스(0,3,2,1)만 갱신 — 나머지 dims는 손대지 않음
+        }
+      });
+    }
   };
 
   function renderEditBtn(){
@@ -265,7 +311,7 @@
     var table = document.querySelector('table.matrix');
     if(!table) return;
     var ths = table.querySelectorAll('thead th');
-    var KEY = 'hunjang-colw-v1', saved = {};
+    var KEY = 'hunjang-colw-v3', saved = {};
     try{ saved = JSON.parse(localStorage.getItem(KEY) || '{}'); }catch(e){}
     Array.prototype.forEach.call(ths, function(th, i){
       if(saved[i]) th.style.width = saved[i] + 'px';
@@ -300,9 +346,14 @@
     if(pin === null || pin === '') return;
     if(!_matrixData) return;
     // 저장 직전 편집칸 전체를 모델에 반영 — blur/IME 누락 방지(원상복귀 버그 차단)
-    Array.prototype.forEach.call(body.querySelectorAll('td.cell-edit[contenteditable]'), function(el){
-      var role = el.getAttribute('data-role'), dim = parseInt(el.getAttribute('data-dim'), 10), val = el.innerText || el.textContent || '';
-      (_matrixData.roles || []).forEach(function(r){ if(r.id === role && Array.isArray(r.dims) && dim < r.dims.length) r.dims[dim] = val; });
+    Array.prototype.forEach.call(body.querySelectorAll('.cell-edit[contenteditable]'), function(el){
+      var role = el.getAttribute('data-role'), field = el.getAttribute('data-field'), val = el.innerText || el.textContent || '';
+      if(field === 'ideas'){
+        (_matrixData.roles || []).forEach(function(r){ if(r.id === role) r.ideas = val; });
+      } else {
+        var dim = parseInt(el.getAttribute('data-dim'), 10);
+        (_matrixData.roles || []).forEach(function(r){ if(r.id === role && Array.isArray(r.dims) && dim < r.dims.length) r.dims[dim] = val; });
+      }
     });
     _matrixData.updated_at = new Date().toISOString().slice(0,10);
     var content = JSON.stringify(_matrixData, null, 2);
@@ -316,7 +367,7 @@
         action: 'commit_file',
         path: '3. 웰페리온 가이드/coo/bootsetup_matrix.json',
         content: content,
-        message: '[GM] 헌법 한 장 5칸 편집 ' + _matrixData.updated_at,
+        message: '[GM] 헌법 한 장 3칸 편집 ' + _matrixData.updated_at,
         key: pin
       })
     })
@@ -344,7 +395,7 @@
       initColResizers();
     })
     .catch(function(e){
-      body.innerHTML = '<tr><td colspan="6" class="matrix-status">매트릭스 정본을 불러오지 못했습니다 (' + esc(e.message) +
+      body.innerHTML = '<tr><td colspan="4" class="matrix-status">매트릭스 정본을 불러오지 못했습니다 (' + esc(e.message) +
         '). 정본: <code>coo/bootsetup_matrix.json</code></td></tr>';
     });
 })();

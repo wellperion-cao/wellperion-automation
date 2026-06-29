@@ -1104,7 +1104,7 @@ _WEEKDAY_KOR = ["월", "화", "수", "목", "금", "토", "일"]
 #   · 공통 헤더:  [HH시 · {분류} · 한줄목적]  + 날짜줄 + 구분선
 #   · 분류 라벨:  개인 / 회사 / 개인&회사  (GM 한눈 파악 핵심)
 #   · 공통 구분선·푸터 단일화 (중복 제거)
-# ※ 07s(직원 공유 카드)는 GM 확정대로 제외 — 손대지 않음.
+# ※ 07s(직원 공유 카드)는 GM 2026-06-29 지시로 07:00 본문에 합본(분리발송 폐지).
 # ※ 시간·내용 substance·로직은 불변. 시각 구조(헤더/구분/푸터)만 통일.
 _DIVIDER = "━━━━━━━━━━━━━━━━"
 _AUTO_FOOTER = "_본 메시지는 자동 발송입니다._"
@@ -1510,21 +1510,14 @@ def _build_18_body() -> str:
     else:
         commit_section = "  오늘 기록된 커밋 없음"
 
-    # 명언
-    quote = fetch_random_quote("18시")
-    if quote:
-        quote_line = f'\n> "{quote}"\n'
-    else:
-        quote_line = "\n"
-
+    # 명언 = 아침(06시)·밤(22시) 2회만 (GM 2026-06-29 중복 정리) — 18시 명언 제거
     return (
         f"{_unified_header('18', '회사', '오후 시설·지원·주차 · 퇴근 루틴')}\n"
         f"🌙 오늘도 수고하셨습니다.\n\n"
         f"{checklist_block}\n\n"
         f"{_DIVIDER}\n"
         f"📊 오늘 성과\n"
-        f"{commit_section}\n"
-        f"{quote_line}"
+        f"{commit_section}\n\n"
         f"{_AUTO_FOOTER}"
     )
 
@@ -1612,7 +1605,7 @@ def _build_21_body() -> str:
 
 
 def _build_22_body() -> str:
-    """22시 — 취침·전자기기off + 마무리(종료) 인사 통합 + 북극성 + 명언 [개인]
+    """22시 — 취침·전자기기off + 마무리(종료) 인사 + 명언 [개인] (북극성은 08시로 일원화·GM 2026-06-29)
 
     [2026-06-08 GM 지시] 기존 22:00 취침안내 + 22:25 종료인사(별도 예약작업)가
     25분 내 중복 발송되던 것을 22:00 단일 메시지로 통합. 별도 22:25 종료인사
@@ -1625,12 +1618,9 @@ def _build_22_body() -> str:
         quote_line = "\n> \"충분한 수면이 내일의 판단력을 만듭니다.\"\n"
 
     return (
-        f"{_unified_header('22', '개인', '전자기기 OFF · 취침 · 북극성')}\n"
+        f"{_unified_header('22', '개인', '전자기기 OFF · 취침')}\n"
         f"오늘 하루도 고생 많으셨습니다, GM님.\n"
-        f"📵 전자기기 off — 수면 루틴 시작\n\n"
-        f"🌟 북극성\n"
-        f"  GM만 보는 G1 오케스트레이션 +\n"
-        f"  웰페리온 스포츠클럽 ERP 제품화\n"
+        f"📵 전자기기 off — 수면 루틴 시작\n"
         f"{quote_line}"
         f"{_AUTO_FOOTER}"
     )
@@ -1847,8 +1837,21 @@ def _build_23_body() -> str:
 
 # ── 지원부 점검 미완 자동 독려 (오후17시·마감22시·미완시만·하루1회) — 시우 2026-06-18 ──
 # 점검 관리 방(점검 독려 대상). 핵심멤버방 3분류 분리(시우 102, 2026-06-24): 점검 알림 → '점검 관리' 방.
-# .env TELEGRAM_CHECK_CHAT_ID 사용. 미설정 시 구 핵심멤버방(현 '종합 접수처')으로 폴백.
-CHECK_NUDGE_CHAT_ID = int(ENV.get("TELEGRAM_CHECK_CHAT_ID") or -5065206276)
+# .env TELEGRAM_CHECK_CHAT_ID 사용. 폴백=점검관리방(-5136037543). [시토 2026-06-29] 폴백 리터럴 오타 수정(구: -5065206276 종합접수처 → 점검 독려가 엉뚱한 방 갈 위험 제거).
+CHECK_NUDGE_CHAT_ID = int(ENV.get("TELEGRAM_CHECK_CHAT_ID") or -5136037543)
+
+# ── 하루 일과 정리 알림 (매일 22:30) — 문의·점검·접수 3방 — GM 2026-06-29 ──────
+DIGEST_INQUIRY_CHAT_ID   = int(ENV.get("TELEGRAM_INQUIRY_CHAT_ID")   or -5516675010)
+DIGEST_CHECK_CHAT_ID     = int(ENV.get("TELEGRAM_CHECK_CHAT_ID")     or -5136037543)
+DIGEST_RECEPTION_CHAT_ID = int(ENV.get("TELEGRAM_RECEPTION_CHAT_ID") or -5065206276)
+FUNNEL_EXEC_URL = (
+    "https://script.google.com/macros/s/"
+    "AKfycbzdwSCCSSJ6JXLDoWuo7HG0JmBM2iy10TujFQ_O5JbTjnWaN7gOk-ddA4IAvsNfelg0xA/exec"
+)
+VOC_EXEC_URL = (
+    "https://script.google.com/macros/s/"
+    "AKfycbwk2XS1FND9V2xtXlWgsXzgA5p0FG7jVm6YKD74JK_ME_ZvHsNUUfGE5A_8p0X8VcF3gQ/exec"
+)
 
 
 def _build_nudge_body(shift: str) -> str | None:
@@ -1920,10 +1923,207 @@ def run_nudge(shift: str) -> None:
         logger.error(f"{label} 핵심멤버방 발송 실패 — dedup 미기록(다음 트리거 재시도)")
 
 
+# ── 하루 일과 정리 빌더 3종 + 오케스트레이터 ─────────────────────────────────
+
+def _utc_iso_to_kst_date(iso_str: str) -> str:
+    """UTC ISO 8601 문자열(Z suffix) → KST YYYY-MM-DD."""
+    from datetime import timezone as _tz
+    try:
+        s = str(iso_str).rstrip("Z").replace("T", " ")
+        dt_utc = datetime.fromisoformat(s).replace(tzinfo=_tz.utc)
+        return (dt_utc + timedelta(hours=9)).strftime("%Y-%m-%d")
+    except Exception:
+        return ""
+
+
+def _build_digest_inquiry(today: str) -> str:
+    """문의알림방 — 오늘 문의 핵심요약 + 상세. str 반환(전송 분리)."""
+    weekday = _WEEKDAY_KOR[datetime.now().weekday()]
+    header = f"📋 [하루 일과 정리] {today}({weekday})\n🔔 오늘의 문의 현황"
+    try:
+        resp = requests.get(
+            FUNNEL_EXEC_URL, params={"action": "inquiry_list"},
+            timeout=20, allow_redirects=True,
+        )
+        if resp.status_code != 200:
+            return f"{header}\n\n조회 실패 (HTTP {resp.status_code})"
+        data = resp.json()
+        if not data.get("ok"):
+            return f"{header}\n\n조회 실패 (ok=False)"
+        rows = data.get("data", [])
+    except Exception as e:
+        return f"{header}\n\n조회 오류: {str(e)[:120]}"
+
+    today_rows = [r for r in rows if _utc_iso_to_kst_date(r.get("시각", "")) == today]
+    if not today_rows:
+        return f"{header}\n\n오늘 신규 문의 없음."
+
+    # 유형별 집계
+    type_count: dict[str, int] = {}
+    for r in today_rows:
+        t = r.get("문의유형", "기타") or "기타"
+        type_count[t] = type_count.get(t, 0) + 1
+
+    summary_lines = [f"총 {len(today_rows)}건"]
+    for t, c in sorted(type_count.items(), key=lambda x: -x[1]):
+        summary_lines.append(f"  · {t}: {c}건")
+
+    # 상세 (최대 15건)
+    detail_lines: list[str] = []
+    from datetime import timezone as _tz2
+    for r in today_rows[:15]:
+        try:
+            s = str(r.get("시각", "")).rstrip("Z").replace("T", " ")
+            dt_kst = datetime.fromisoformat(s).replace(tzinfo=_tz2.utc) + timedelta(hours=9)
+            hm = dt_kst.strftime("%H:%M")
+        except Exception:
+            hm = "--:--"
+        유형 = r.get("문의유형", "") or ""
+        채널 = r.get("유입채널", "") or ""
+        이름 = r.get("이름", "") or ""
+        name_part = f" ({이름})" if 이름 else ""
+        detail_lines.append(f"  {hm} {유형} / {채널}{name_part}")
+
+    over = len(today_rows) - 15
+    if over > 0:
+        detail_lines.append(f"  …외 {over}건")
+
+    return (
+        f"{header}\n\n"
+        f"[핵심 요약]\n" + "\n".join(summary_lines) + "\n\n"
+        f"[상세]\n" + "\n".join(detail_lines)
+    )
+
+
+def _build_digest_check(today: str) -> str:
+    """점검관리방 — 종일 완료율 + 남/여 + 약점 + 차트. str 반환(전송 분리)."""
+    weekday = _WEEKDAY_KOR[datetime.now().weekday()]
+    header = f"📋 [하루 일과 정리] {today}({weekday})\n🧹 오늘의 점검 현황"
+    d = _fetch_support_today_live(today)
+    if d is None:
+        return f"{header}\n\n점검 데이터 조회 실패."
+
+    total = d.get("total", 0)
+    done = d.get("done", 0)
+    pct_all = f"{round(done / total * 100)}%" if total else "-"
+
+    g = d.get("byGender", {})
+    gm = g.get("m", {})
+    gf = g.get("f", {})
+    m_t = sum(gm.get(k + "Total", 0) for k in ("am", "pm", "close"))
+    m_d = sum(gm.get(k, 0) for k in ("am", "pm", "close"))
+    f_t = sum(gf.get(k + "Total", 0) for k in ("am", "pm", "close"))
+    f_d = sum(gf.get(k, 0) for k in ("am", "pm", "close"))
+    m_pct = f"{round(m_d / m_t * 100)}%" if m_t else "-"
+    f_pct = f"{round(f_d / f_t * 100)}%" if f_t else "-"
+
+    weakspot = _build_support_weakspot(d)
+    chart = _build_support_check_chart(d)
+
+    return (
+        f"{header}\n\n"
+        f"[핵심 요약]\n"
+        f"종일 완료율: {done}/{total}({pct_all})\n"
+        f"  남성구역: {m_d}/{m_t}({m_pct}) · 여성구역: {f_d}/{f_t}({f_pct})\n"
+        f"{weakspot}\n\n"
+        f"[상세]\n"
+        f"{chart}"
+    )
+
+
+def _build_digest_reception(today: str) -> str:
+    """종합접수처 — 오늘 VOC 접수 핵심요약 + 상세. str 반환(전송 분리)."""
+    weekday = _WEEKDAY_KOR[datetime.now().weekday()]
+    header = f"📋 [하루 일과 정리] {today}({weekday})\n📮 오늘의 접수 현황"
+    try:
+        resp = requests.get(
+            VOC_EXEC_URL, params={"action": "reg_list"},
+            timeout=20, allow_redirects=True,
+        )
+        if resp.status_code != 200:
+            return f"{header}\n\n조회 실패 (HTTP {resp.status_code})"
+        data = resp.json()
+        if not data.get("ok"):
+            return f"{header}\n\n조회 실패 (ok=False)"
+        rows = data.get("data", [])
+    except Exception as e:
+        return f"{header}\n\n조회 오류: {str(e)[:120]}"
+
+    # createdAt = "YYYY-MM-DD HH:MM:SS" (KST 로컬)
+    today_rows = [r for r in rows if str(r.get("createdAt", "")).startswith(today)]
+    if not today_rows:
+        return f"{header}\n\n오늘 신규 접수 없음."
+
+    cat_count: dict[str, int] = {}
+    undone = 0
+    for r in today_rows:
+        cat = r.get("category", "기타") or "기타"
+        cat_count[cat] = cat_count.get(cat, 0) + 1
+        if str(r.get("status", "")) != "완료":
+            undone += 1
+
+    summary_lines = [f"총 {len(today_rows)}건 (미처리 {undone}건)"]
+    for cat, c in sorted(cat_count.items(), key=lambda x: -x[1]):
+        summary_lines.append(f"  · {cat}: {c}건")
+
+    detail_lines: list[str] = []
+    for r in today_rows[:15]:
+        created = str(r.get("createdAt", ""))
+        hm = created[11:16] if len(created) >= 16 else "--:--"
+        cat = r.get("category", "") or ""
+        equip = r.get("equipName", "") or r.get("loc", "") or ""
+        st = r.get("status", "") or ""
+        detail_lines.append(f"  {hm} [{cat}] {equip[:20]} — {st}")
+
+    over = len(today_rows) - 15
+    if over > 0:
+        detail_lines.append(f"  …외 {over}건")
+
+    return (
+        f"{header}\n\n"
+        f"[핵심 요약]\n" + "\n".join(summary_lines) + "\n\n"
+        f"[상세]\n" + "\n".join(detail_lines)
+    )
+
+
+def run_daily_digest() -> None:
+    """3방 하루 일과 정리 알림 오케스트레이터 — 매일 22:30."""
+    from datetime import timezone as _tz3
+    today = (datetime.now(_tz3.utc) + timedelta(hours=9)).strftime("%Y-%m-%d")
+    label = "[22:30 하루 일과 정리]"
+    logger.info(f"{label} 시작 — today={today}")
+
+    targets = [
+        ("문의알림방", DIGEST_INQUIRY_CHAT_ID,   _build_digest_inquiry),
+        ("점검관리방", DIGEST_CHECK_CHAT_ID,     _build_digest_check),
+        ("종합접수처", DIGEST_RECEPTION_CHAT_ID, _build_digest_reception),
+    ]
+    for room_name, chat_id, builder in targets:
+        try:
+            msg = builder(today)
+            success = send_telegram(chat_id, msg)
+            if success:
+                logger.info(f"{label} {room_name} 발송 완료 chat_id={chat_id}")
+            else:
+                logger.error(f"{label} {room_name} 발송 실패 chat_id={chat_id}")
+        except Exception as e:
+            logger.error(f"{label} {room_name} 예외: {e}")
+
+
+def _build_07_combined_body() -> str:
+    """07시 통합(GM 2026-06-29): 어제 항로 결산 + 직원 공유 카드를 한 메시지로(07:05 분리발송 폐지)."""
+    main = _build_07_body()
+    card = _build_share_card_body()
+    return (
+        f"{main}\n\n"
+        f"✂️ ───── 직원 공유용 (아래부터 복사) ─────\n\n"
+        f"{card}"
+    )
+
+
 SLOT_BUILDERS = {
     "06": _build_06_body,
-    "07s": _build_share_card_body,
-    "07": _build_07_body,
+    "07": _build_07_combined_body,
     "09": _build_09_body,
     "12": _build_12_body,
     "15": _build_15_body,
@@ -1937,7 +2137,7 @@ SLOT_BUILDERS = {
 # ── 핵심 보고 실행 함수 ───────────────────────────────────────────────────────
 def run_report(slot: str, test_mode: bool = False) -> None:
     """
-    slot: "06" | "07s" | "07" | "09" | "12" | "15" | "18" | "21" | "22" | "23"
+    slot: "06" | "07" | "09" | "12" | "15" | "18" | "21" | "22" | "23"
     """
     now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     label = f"[{'TEST ' if test_mode else ''}{slot}시 보고]"
@@ -2296,7 +2496,6 @@ def main():
         #   동시에 22시는 취침안내+종료인사 통합(별도 22:25 종료인사 예약작업 제거).
         schedule_map = {
             "06": (6, 0),
-            "07s": (7, 5),   # 직원 공유용 카드 — 07시 어제항로 직후 5분
             "07": (7, 0),
             "09": (9, 0),
             "12": (12, 0),
@@ -2334,6 +2533,17 @@ def main():
                 coalesce=True,
             )
             logger.info(f"  등록: {slot} {hour:02d}:{minute:02d} 지원부 점검 미완 독려")
+
+        # ── 하루 일과 정리 (22:30) — 문의·점검·접수 3방 핵심+상세 — CTO 2026-06-29 ──
+        #   22:00=nudge_close·report_22 겹침 → 22:30 분리(GM 2026-06-29 지시).
+        scheduler.add_job(
+            run_daily_digest,
+            trigger=CronTrigger(hour=22, minute=30, timezone="Asia/Seoul"),
+            id="daily_digest_2230",
+            misfire_grace_time=600,
+            coalesce=True,
+        )
+        logger.info("daily_digest_2230 등록 완료 (22:30) — 하루 일과 정리 3방 발송")
 
     logger.info(f"스케줄러 기동 완료. PID={os.getpid()}")
     try:

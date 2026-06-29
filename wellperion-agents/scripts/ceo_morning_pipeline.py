@@ -1071,17 +1071,7 @@ def build_telegram_report(s1: dict, assigned: list[dict], orch: dict) -> str:
             lines.append(f" · {plainify(summarize_title(u['title']))} ({mmdd} 마감){who}")
         lines.append("")
 
-    # ── 🔗 지나온 항로 (어제 완료 → 다음 항로점 = 다리 놓음) ──
-    lines.append("🔗 지나온 항로  (어제 입항 완료 → 다음 항로점)")
-    if yday_items:
-        for d in yday_items[:5]:
-            title = plainify(summarize_title(d.get("title", "")))
-            wp = _next_waypoint(d)
-            lines.append(f" ✅ {title}")
-            lines.append(f"   ↳ 다음 항로점: {plainify(wp)}")
-    else:
-        lines.append(" · 어제 입항한 배 없음")
-    lines.append("")
+    # ── 🔗 '지나온 항로(어제 완료)'는 07시 결산이 전담 — 08시는 '오늘 항로'만 (역할분담·중복제거, GM 2026-06-29) ──
 
     # ── 🧭 오늘의 항로 (배 종류로 묶음: 크루즈→여객선→돛단배) ──
     lines.append("🧭 오늘의 항로  (무거운 배부터 · 🔴급함 🌟북극성)")
