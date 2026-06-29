@@ -919,16 +919,18 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
     </a>
     <!-- 카드3: 등록 현황 (등록 회원 명단 — 내부 탭) -->
     <a class="dash-card" data-kind="reg" data-tab="registered" href="javascript:void(0)" onclick="switchTab('registered')">
-      <div class="dash-head"><span class="dash-dot reg"></span><span class="dash-title">금일 등록 현황</span></div>
+      <div class="dash-head"><span class="dash-dot reg"></span><span class="dash-title">등록 현황</span></div>
       <div class="dash-metrics">
-        <div class="dash-line"><span class="dash-v" style="font-size:12px;color:var(--dim-mid)">오늘 등록 회원 명단</span></div>
+        <div class="dash-line"><span class="dash-k">금일</span><span class="dash-v"><b class="lead" id="dRegToday">0</b> 명</span></div>
+        <div class="dash-line"><span class="dash-k">월간</span><span class="dash-v"><b id="dRegMonth">0</b> 명</span></div>
       </div>
     </a>
     <!-- 카드4: 멤버십 회원 관리 (유효회원 명단 — 내부 탭) -->
     <a class="dash-card" data-kind="mem" data-tab="active" href="javascript:void(0)" onclick="switchTab('active')">
       <div class="dash-head"><span class="dash-dot mem"></span><span class="dash-title">멤버십 회원 관리</span></div>
       <div class="dash-metrics">
-        <div class="dash-line"><span class="dash-v" style="font-size:12px;color:var(--dim-mid)">유효·법인·종료 회원 명단</span></div>
+        <div class="dash-line"><span class="dash-k">유효</span><span class="dash-v"><b class="lead" id="dMemActive">0</b> 명</span></div>
+        <div class="dash-line"><span class="dash-k">이탈(월)</span><span class="dash-v"><b id="dMemLoss">0</b> 명</span></div>
       </div>
     </a>
   </div>
