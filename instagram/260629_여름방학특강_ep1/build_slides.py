@@ -181,25 +181,27 @@ def compose_closing_card(output_path: Path) -> None:
         tile = ImageEnhance.Brightness(tile).enhance(0.85)
         canvas.paste(tile, (x, y))
 
-    # 정중앙 반투명 띠 — 4장 모두 식별 가능
+    # 정중앙 반투명 띠 — 두 줄 텍스트 수용, 4장 모두 식별 가능
     band_overlay = Image.new("RGBA", (W, H), (0, 0, 0, 0))
     band_draw = ImageDraw.Draw(band_overlay)
-    band_draw.rectangle([(0, 470), (W, 610)], fill=(0, 0, 0, 150))
+    band_draw.rectangle([(0, 448), (W, 632)], fill=(0, 0, 0, 150))
     canvas = Image.alpha_composite(canvas.convert("RGBA"), band_overlay).convert("RGB")
 
     canvas = paste_logo(canvas, logo_w=115)
     draw = ImageDraw.Draw(canvas)
     _draw_chip_mini(draw)
 
-    draw.text(
-        (W // 2, 510),
-        "네 가지 공간이, 한 곳에",
-        font=load_font("bold", 64),
+    draw.multiline_text(
+        (W // 2, 502),
+        "이 여름,\n네 가지 도전이 시작됩니다",
+        font=load_font("bold", 54),
         fill=WHITE,
         anchor="mm",
+        align="center",
+        spacing=8,
     )
     draw.text(
-        (W // 2, 575),
+        (W // 2, 593),
         "수영  ·  체조  ·  스쿼시  ·  골프",
         font=load_font("semibold", 36),
         fill=BEIGE,
