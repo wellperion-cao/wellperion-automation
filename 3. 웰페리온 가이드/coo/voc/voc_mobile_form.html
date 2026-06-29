@@ -118,6 +118,8 @@ select{appearance:none;-webkit-appearance:none;background-image:url("data:image/
 <script>
 (function(){
   var VOC_API = 'https://script.google.com/macros/s/AKfycbwk2XS1FND9V2xtXlWgsXzgA5p0FG7jVm6YKD74JK_ME_ZvHsNUUfGE5A_8p0X8VcF3gQ/exec';
+  // 백엔드 위조방지 게이트용 숨김토큰 — ScriptProperties VOC_SUBMIT_TOKEN 값과 일치해야 함(없으면 코드 기본값).
+  var VOC_SUBMIT_TOKEN = 'wlp_voc_7b3f9a2e6c1d4085';
 
   // 분실위치 드롭다운 항목 — 필요 시 이 배열만 수정.
   var LOCATIONS = ['헬스장','수영장','남자사우나','여자사우나','골프장','스쿼시장','체조장','G.X룸','키즈락커','프론트/리셉션','주차장','카페','기타'];
@@ -380,6 +382,7 @@ select{appearance:none;-webkit-appearance:none;background-image:url("data:image/
 
     var payload = {
       action: 'reg_submit',
+      t: VOC_SUBMIT_TOKEN,
       category: selectedCategory,
       name: vals.name || '',
       contact: vals.contact || '',
