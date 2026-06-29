@@ -66,7 +66,7 @@
   footer.foot{margin-top:16px; font-size:10.5px; color:var(--dim); border-top:1px solid var(--border); padding-top:10px; line-height:1.55;}
 
   @media print{
-    @page{size:A4 landscape; margin:8mm;}
+    @page{size:A4 portrait; margin:8mm;}
     body{background:#fff; color:#111; padding:0; font-size:9px;}
     header.page-head{margin-bottom:8px; padding-bottom:6px;}
     header.page-head h1{font-size:16px;}
@@ -74,8 +74,8 @@
     table.matrix{min-width:0; font-size:8px;}
     table.matrix th, table.matrix td{padding:3px 4px;}
     .matrix-scroll, table.matrix tr, .ccard{break-inside:avoid;}
-    .cards{grid-template-columns:repeat(4,1fr); gap:6px;}
-    header.page-head .back, .ccard a.lk{display:none;}
+    .cards{grid-template-columns:repeat(2,1fr); gap:6px;}
+    header.page-head .back, .ccard a.lk, .ebtn{display:none;}
     .ccard a.lk{display:none;}
   }
 </style>
@@ -85,14 +85,12 @@
 
   <header class="page-head">
     <h1>🏛️ 웰페리온 전사 운영 헌법 — 한 장</h1>
-    <div class="sub">정본(<code>coo/bootsetup_matrix.json</code>)을 직접 읽어 그립니다. <b>GM</b>=✏️ 편집 버튼+비밀번호로 5칸을 바로 고칩니다 / <b>웰리</b>=정본 파일 직접 편집(git). 정본 1곳 = <code>coo/bootsetup_matrix.json</code>.</div>
     <a class="back" href="wellperion_guide(main).html#S2">← 웰페리온 ERP 운영 가이드(S2)로</a>
+    <a class="back" href="#" onclick="window.print();return false;">🖨️ 인쇄</a>
   </header>
 
   <!-- ════ A. 8주체 × 5칸 매트릭스 (편집형 · 2026-06-29) ════ -->
   <h2 class="sec">🧭 8주체 × 5칸 매트릭스 <span id="matrix-edit-wrap" style="font-size:11px;font-weight:400;"></span></h2>
-  <div class="sec-note">정본 = <code>coo/bootsetup_matrix.json</code> (직독·캐시 없음). 5칸 = 역할마다 다른 것: 🌟 북극성 · 📊 KPI · 🔧 파이프라인 · 📚 부트셋업 SSOT · 🚧 소유 관리. <b>결재선·재발방지는 전 역할 공통</b>이라 아래 공통 4섹션/재발방지 현황에 한 번만 있습니다(역할칸 아님).</div>
-
   <div class="matrix-scroll">
     <table class="matrix">
       <thead>
@@ -113,16 +111,8 @@
 
   <!-- ════ B. 공통 헌법 4섹션 (S2 정본으로 링크만) ════ -->
   <h2 class="sec">📜 공통 헌법 4섹션</h2>
-  <div class="sec-note">내용은 각 정본(S2 공통탭·<code>ssot/</code>)에 삽니다 — 여기선 점프 링크만(복사 금지·약속 L01).</div>
-
   <div class="cards" id="common-cards"><!-- JS가 라이브 URL로 채움 --></div>
 
-  <div class="dedupe">🧹 중복 2건 정리됨(2026-06-29): 브릿지 = 완료 4요건 ③('다음') 흡수 / 5종 = 운영 SOP 단일출처(GM 결재 5종 = 5종 단일출처).</div>
-
-  <footer class="foot">
-    정본: <code>coo/bootsetup_matrix.json</code> (매트릭스) · <code>ssot/약속.json</code>·<code>ssot/incidents.json</code>·<code>ssot/canon_values.json</code>·<code>ssot/kpi.json</code> (헌법 데이터) · S2 공통탭(운영 SOP).
-    이 페이지는 정본을 직독해 렌더합니다 — GM ✏️ 편집은 정본(<code>coo/bootsetup_matrix.json</code>)을 직접 커밋하므로 손동기화가 필요 없습니다.
-  </footer>
 
 </div>
 
