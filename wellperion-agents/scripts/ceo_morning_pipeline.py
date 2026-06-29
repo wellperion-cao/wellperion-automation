@@ -900,6 +900,8 @@ def yesterday_done() -> tuple[list[str], list[dict]]:
                         "clevel": (q.get("clevel") or "").upper(),
                         "task_id": q.get("task_id", ""),
                         "note": q.get("note", ""),
+                        "terminal": q.get("terminal", False),  # 표류 판정 보존
+                        "next": q.get("next", ""),             # 표류 판정 보존
                     })
         except Exception:
             pass
@@ -973,6 +975,31 @@ def _next_waypoint(item: dict) -> str:
     return "입항(종결)"
 
 
+# 종결·후속 마커 — terminal/next 필드 기반 표류 제외 판정용
+_SETTLED_MARKERS_RE = re.compile(r"입항완료|입항 완료|다음 불필요|다음 불요|🏁|루틴")
+
+
+def _is_settled_or_bridged(d: dict) -> bool:
+    """
+    완료 배가 명시적으로 종결/후속 처리됐으면 True → 표류 아님.
+    1) terminal=True       → 명시적 최종 종결
+    2) next에 종결 마커    → 정상 입항(다음 불필요)
+    3) next에 후속 신호    → 🔗 항로점(다음 있음)
+    note 필드만 보던 기존 로직의 next·terminal 누락 버그 보완.
+    """
+    if d.get("terminal") is True:
+        return True
+    nxt = str(d.get("next") or "").strip()
+    if nxt:
+        if _SETTLED_MARKERS_RE.search(nxt):
+            return True
+        if "🔗" in nxt or "다음=" in nxt:
+            return True
+        if _FOLLOWUP_RE.search(nxt):
+            return True
+    return False
+
+
 def build_telegram_report(s1: dict, assigned: list[dict], orch: dict) -> str:
     """
     GM 아침 보고 — '오늘의 항로' 레이아웃 (2026-06-05 GM 재설계).
@@ -1021,8 +1048,9 @@ def build_telegram_report(s1: dict, assigned: list[dict], orch: dict) -> str:
     # 🌟 북극성 침로 = today 중 northstar 인 것
     northstar_today = [s for s in today_ships if s["_ship"]["northstar"]]
 
-    # 🌀 표류 = 어제/오늘 완료 중 다음 항로점이 '입항(종결)' 도 후속신호도 아닌 것
-    #   (note 에 후속 신호가 없으면 다음 항로점이 비어 끊김 — '입항(종결)'은 정상 종결이라 표류 아님)
+    # 🌀 표류 = 어제/오늘 완료 중 다음 항로점도 종결 표시도 없는 진짜 끊긴 건
+    #   terminal=True / next 종결·후속 마커 있으면 표류 아님 (_is_settled_or_bridged).
+    #   note 만 보던 기존 로직이 next·terminal을 무시해 ADHOC 배 82건 오분류 → 수정(2026-06-30).
     drift_pool = list(yday_items) + list(s1.get("_g1_done_today", []))
     drift_seen: set = set()
     drift: list[dict] = []
@@ -1031,6 +1059,8 @@ def build_telegram_report(s1: dict, assigned: list[dict], orch: dict) -> str:
         if k in drift_seen:
             continue
         drift_seen.add(k)
+        if _is_settled_or_bridged(d):   # 명시적 종결·항로점 → 표류 아님
+            continue
         if _next_waypoint(d) == "입항(종결)" and not str(d.get("note") or "").strip():
             drift.append(d)
 
