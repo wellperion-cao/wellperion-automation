@@ -1,4 +1,4 @@
-# 260629 슬라이드 빌드 — 시키지 않아도, 스스로 배운다 (AI 시리즈 #29 · namuk.wellperion · 시즌2 실전편)
+# 260629 슬라이드 빌드 — 시키지 않아도, 스스로 배운다 (AI 시리즈 #28 · namuk.wellperion · 시즌2 실전편)
 # 텍스트 중심(사진 없음) · 브랜드 BLACK 배경 + 베이지 타이포 · main 프리셋
 # 정확히 6장. compose_text_slide(main) SSOT, 디자인 코드 재발명 금지.
 # 확정 카드(로드맵 §5.1): 자동화를 해놔도 새로 배운 건 매번 내가 알려줘야 했다 → AI가 주1회 스스로
@@ -16,12 +16,12 @@ sys.path.insert(0, str(ROOT / "scripts"))
 from slide_compositor import compose_text_slide  # noqa: E402
 from publish_register import register_publish  # noqa: E402
 
-FOLDER = ROOT / "instagram" / "namuk.wellperion" / "260629_AI29_시키지않아도스스로배운다"
+FOLDER = ROOT / "instagram" / "namuk.wellperion" / "260629_AI28_시키지않아도스스로배운다"
 OUT = FOLDER / "output"
 
 # 제작완료 자동 등록용 메타
-QUEUE_ID = "CMO-2026-06-29-AI29-시키지않아도스스로배"
-QUEUE_TITLE = "AI #29편 — 시키지 않아도 스스로 배운다(개인계정)"
+QUEUE_ID = "CMO-2026-06-29-AI28-시키지않아도스스로배"
+QUEUE_TITLE = "AI #28편 — 시키지 않아도 스스로 배운다(개인계정)"
 QUEUE_CHANNEL = "인스타그램 (namuk.wellperion)"
 ACCOUNT = "namuk.wellperion"
 LOCATION = "웰페리온 스포츠클럽"
@@ -131,7 +131,7 @@ def main() -> None:
     slides_rel = [p.relative_to(ROOT).as_posix() for p in paths]
     register_publish(
         content_folder=FOLDER,
-        slug="260629_AI29_시키지않아도스스로배운다",
+        slug="260629_AI28_시키지않아도스스로배운다",
         montage_path=montage,
         caption=CAPTION,
         location=LOCATION,

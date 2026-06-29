@@ -1,4 +1,4 @@
-# 260628 슬라이드 빌드 — GM의 일요일 3: 일요일을, 진짜 일요일로 (AI 시리즈 #28 · namuk.wellperion)
+# 260628 슬라이드 빌드 — GM의 일요일 3: 일요일을, 진짜 일요일로 (AI 시리즈 #27 · namuk.wellperion)
 # 텍스트 중심(사진 없음) · 브랜드 BLACK 배경 + 베이지 타이포 · main 프리셋
 # 정확히 6장. compose_text_slide(main) SSOT, 디자인 코드 재발명 금지.
 # 시즌2(실전편) · C안 확정(2026-06-28 GM) — A안(260627_AI27) 대체.
@@ -15,12 +15,12 @@ sys.path.insert(0, str(ROOT / "scripts"))
 from slide_compositor import compose_text_slide  # noqa: E402
 from publish_register import register_publish  # noqa: E402
 
-FOLDER = ROOT / "instagram" / "namuk.wellperion" / "260628_AI28_GM의일요일3"
+FOLDER = ROOT / "instagram" / "namuk.wellperion" / "260628_AI27_GM의일요일3"
 OUT = FOLDER / "output"
 
 # 제작완료 자동 등록용 메타
-QUEUE_ID = "CMO-2026-06-28-AI28-GM의일요일3진짜"
-QUEUE_TITLE = "AI #28편 — GM의 일요일 3: 일요일을, 진짜 일요일로(개인계정)"
+QUEUE_ID = "CMO-2026-06-28-AI27-GM의일요일3진짜"
+QUEUE_TITLE = "AI #27편 — GM의 일요일 3: 일요일을, 진짜 일요일로(개인계정)"
 QUEUE_CHANNEL = "인스타그램 (namuk.wellperion)"
 ACCOUNT = "namuk.wellperion"
 LOCATION = "웰페리온 스포츠클럽"
@@ -139,7 +139,7 @@ def main() -> None:
     slides_rel = [p.relative_to(ROOT).as_posix() for p in paths]
     register_publish(
         content_folder=FOLDER,
-        slug="260628_AI28_GM의일요일3",
+        slug="260628_AI27_GM의일요일3",
         montage_path=montage,
         caption=CAPTION,
         location=LOCATION,
