@@ -2914,7 +2914,7 @@ function _buildTodayMaster(dept, dow, week) {
     var id      = String(row[0] || '').trim();
     var name    = String(row[2] || '').trim();
     var gender  = String(row[4] || 'all').trim() || 'all';
-    var sched   = String(row[ITEM_SCHED_COL] == null ? '' : row[ITEM_SCHED_COL]).trim();      // '일정'(요일|주차) 컬럼
+    var sched   = _schedToEnglish(row[ITEM_SCHED_COL] == null ? '' : row[ITEM_SCHED_COL]);   // '일정'(요일|주차) 컬럼 — getItems와 동일 패턴(2026-06-30 시우)
     var deptVal = _itemDept(row[ITEM_DEPT_COL]);
     var roundsRaw = String(row[ITEM_ROUNDS_COL] == null ? '' : row[ITEM_ROUNDS_COL]).trim();   // '회차' 컬럼
 
