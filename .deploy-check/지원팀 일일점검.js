@@ -311,6 +311,7 @@ function doGet(e) {
   if (action === 'purge_orphan_checks') { return purgeOrphanChecks(e.parameter.dept || 'support'); }   // 매뉴얼에 없는 고아/테스트 항목ID를 원장·시트에서 일괄 제거. 2026-06-16 시우.
   if (action === 'dedup_items') { return dedupItems(e.parameter.dept || 'support'); }   // 지원_매뉴얼 중복 항목ID 1줄로 정리(시드행 중복 청소)+시드칸 전체 비움. 백업탭 적립. 2026-06-29 시우.
   if (action === 'set_round_duty') { return setRoundDuty(e.parameter.dept || 'support', e.parameter.zone || 'male', e.parameter.date || '', e.parameter.round || '', e.parameter.name || ''); }   // 지정 date+round 구역행 근무자(11열) 단일 통일 — stale 기본값 오염 보정. 점검결과·점검자·이슈 무변경. 2026-06-29 시우.
+  if (action === 'normalize_subat_format') { return normalizeSubatFormat(e.parameter.dept || 'support'); }   // 제출시각(10열) 표시형식을 'yyyy-MM-dd HH:mm'로 통일 — 일부 셀 날짜만 표시(시간가림) 정정. 값 무변경(표시만). 2026-06-29 시우.
   if (action === 'list_tabs') { return jsonRes({ tabs: SpreadsheetApp.getActiveSpreadsheet().getSheets().map(function(s){ return { name: s.getName(), gid: s.getSheetId() }; }) }); }   // gid→탭 확인용. 2026-06-15 시우.
   if (action === 'dump_snapshot') {   // 점검일지 스냅샷 전체행 덤프 — 진단용. 2026-06-16 시우.
     var _ssh = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(_snapshotTabName(e.parameter.dept || 'support'));
@@ -1997,6 +1998,36 @@ function saveItems(body) {
     sheet.getRange(2, 1, rows.length, ITEM_HEADERS.length).setValues(rows);
   }
   return jsonRes({ ok: true, count: mine.length, total: rows.length, dept: reqDept });
+}
+
+// ─── 제출시각 표시형식 통일 (GET ?action=normalize_subat_format[&dept=support]) — 2026-06-29 시우 ───
+// 일부 셀의 제출시각이 '날짜만'(2026. 6. 29)으로 표시돼 시간이 가려지는 문제 정정. 값은 그대로(시간 보유), 표시형식만 'yyyy-MM-dd HH:mm'로 통일. 빈칸·텍스트는 무영향.
+function normalizeSubatFormat(dept) {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var tabs = _deptTabs(dept);   // {male,female,common}
+  var COL = 10, FMT = 'yyyy-MM-dd HH:mm', out = {};
+  Object.keys(tabs).forEach(function (k) {
+    var sh = ss.getSheetByName(tabs[k]);
+    if (!sh) return;
+    var last = sh.getLastRow();
+    if (last < 2) { out[tabs[k]] = { rows: 0 }; return; }
+    sh.getRange(2, COL, last - 1, 1).setNumberFormat(FMT);
+    out[tabs[k]] = { rows: last - 1 };
+  });
+  // 검증: 남 시트 제출시각 표시값 중 시간(:) 없는 칸 카운트(빈칸 제외) — 0이어야 통과
+  var msh = ss.getSheetByName(tabs.male || SHEET_MALE), noTime = 0, sample = [];
+  if (msh) {
+    var last = msh.getLastRow();
+    if (last >= 2) {
+      var disp = msh.getRange(2, COL, last - 1, 1).getDisplayValues();
+      var ids = msh.getRange(2, 2, last - 1, 1).getValues();
+      for (var i = 0; i < disp.length; i++) {
+        var d = String(disp[i][0] || '');
+        if (d && !/\d{1,2}:\d{2}/.test(d)) { noTime++; if (sample.length < 10) sample.push(String(ids[i][0] || '') + '=' + d); }
+      }
+    }
+  }
+  return jsonRes({ ok: true, format: FMT, col: COL, sheets: out, male_noTimeAfter: noTime, male_noTimeSample: sample });
 }
 
 // ─── 회차 근무자 통일 보정 (GET ?action=set_round_duty&dept&zone&date=yyyy-MM-dd&round&name) — 2026-06-29 시우 ───
