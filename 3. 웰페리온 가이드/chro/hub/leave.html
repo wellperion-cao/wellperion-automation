@@ -63,9 +63,6 @@
   thead th.today{border-top:3px solid #f0766c!important}
   #boardBody tr:last-child td.today{border-bottom:3px solid #f0766c!important}
   th.today{color:#f0766c}
-  /* 오늘 열 — 옅은 빨강 배경 톤(반투명 오버레이) — 셀 내용 위에 얹혀 채워진 셀에서도 식별, 클릭은 통과 */
-  td.today{position:relative}
-  th.today::after,td.today::after{content:"";position:absolute;inset:0;background:rgba(240,118,108,.13);pointer-events:none}
   td.day.edit{cursor:text}
   td.day.edit:hover{outline:2px solid var(--accent);outline-offset:-2px}
   th.sun,td.sun{background:var(--sun)} th.sat,td.sat{background:var(--sat)}
@@ -151,7 +148,6 @@
   .tablecard thead th.today{border-top-color:#c0392b!important}
   #boardBody tr:last-child td.today{border-bottom-color:#c0392b!important}
   .tablecard th.today{color:#c0392b}
-  .tablecard th.today::after,.tablecard td.today::after{background:rgba(192,57,43,.11)}
   #boardBody tr:hover td{background:#f3e7cf!important}
   #boardBody tr:hover td.colName{background:#ece0c2!important}
   .celledit{background:#fffdf9;color:#2b2622}
@@ -595,6 +591,7 @@ function showEmpDetail(nm){
 function render(){
   const y=cur.getFullYear(), m=cur.getMonth();
   document.getElementById("monthLabel").textContent=`${y}년 ${m+1}월`;
+  applyEditLock();   // 마감월이면 수정버튼 잠금 + 편집모드 해제 (셀 렌더 전에 적용)
   const days=new Date(y,m+1,0).getDate();
   const meta=monthMeta(y,m);
   let h="<tr><th class='colDept'>구분</th><th class='colName'>성명</th>";
@@ -672,7 +669,27 @@ function render(){
 function moveMonth(n){cur=new Date(cur.getFullYear(),cur.getMonth()+n,1);render();}
 function goToday(){cur=new Date(2026,5,1);render();}
 
+/* 마감월 = 이미 끝난(말일 자정 지난) 월 = 현재 실제 월보다 이전. 매월 말일 24:00에 해당 월 수정 잠금, 다음 달 자동 해제 */
+function isLockedMonth(y,m){ const n=new Date(); return (y<n.getFullYear())||(y===n.getFullYear()&&m<n.getMonth()); }
+/* 보는 월이 마감월이면 '스케줄 수정' 버튼 비활성화 + 편집모드 강제 해제 (셀 렌더 전에 호출) */
+function applyEditLock(){
+  const locked=isLockedMonth(cur.getFullYear(),cur.getMonth());
+  const btn=document.getElementById("editBtn");
+  if(btn){
+    btn.disabled=locked;
+    btn.title=locked?"마감된 월입니다 — 말일 자정 이후 수정 잠금":"";
+    btn.style.opacity=locked?"0.45":""; btn.style.cursor=locked?"not-allowed":"";
+  }
+  if(locked && editMode){
+    editMode=false;
+    if(btn){ btn.classList.remove("primary"); btn.textContent="✏️ 스케줄 수정"; }
+    const eh=document.getElementById("editHint"); if(eh)eh.style.display="none";
+    const bd=document.getElementById("board"); if(bd)bd.classList.remove("editing-on");
+  }
+  return locked;
+}
 function toggleEdit(){
+  if(isLockedMonth(cur.getFullYear(),cur.getMonth())){ alert("마감된 월입니다.\n말일 자정 이후에는 해당 월 스케줄을 수정할 수 없습니다."); return; }
   editMode=!editMode;
   const btn=document.getElementById("editBtn");
   btn.classList.toggle("primary",editMode);
