@@ -126,19 +126,36 @@ def compose_story_no_counter(
 
 
 def compose_closing_card(output_path: Path) -> None:
-    """마무리 단색 정보띄 (사진 없음, compose_cover 스타일 중앙정렬).
-    골프룸 중복 방지 우한 순수 검정 배경."""
-    canvas = Image.new("RGB", (W, H), BLACK_BG)
+    """마무리 2×2 그리드 (4장 공간 사진, 사분면 각 540×540).
+    GM 지시 (2026-06-29): 네 가지 공간을 한 번에 모아 보여주는 의도적 예외.
+    post_1~6 단일사진 원칙은 유지, 이 장만 예외."""
+    HALF = W // 2  # 540
 
-    # 분리선 (표지와 동일: y=701~702)
-    draw_base = ImageDraw.Draw(canvas)
-    draw_base.rectangle([(50, 701), (1030, 702)], fill=SEP_LINE)
+    # 사분면: 좌상=수영, 우상=체조(트램폴린), 좌하=스쿼시, 우하=골프
+    grid_photos = [
+        (SRC / "3. 수영장.jpg",  0,    0),
+        (SRC / "트램폴린장.png", HALF, 0),
+        (SRC / "스쿼시장.png",   0,    HALF),
+        (SRC / "골프룸.jpg",     HALF, HALF),
+    ]
+
+    canvas = Image.new("RGB", (W, H), (0, 0, 0))
+    for src_path, x, y in grid_photos:
+        tile = center_crop_fill(src_path, HALF, HALF)
+        tile = ImageEnhance.Brightness(tile).enhance(0.85)
+        canvas.paste(tile, (x, y))
+
+    # 반투명 다크 스크림 — 텍스트 가독성 확보 (y=580 이하)
+    scrim_overlay = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+    scrim_draw = ImageDraw.Draw(scrim_overlay)
+    scrim_draw.rectangle([(0, 580), (W, H)], fill=(0, 0, 0, 168))
+    canvas = Image.alpha_composite(canvas.convert("RGBA"), scrim_overlay).convert("RGB")
 
     canvas = paste_logo(canvas, logo_w=130)
     draw = ImageDraw.Draw(canvas)
     _draw_chip_official(draw)
 
-    # 메인 제목 (흔색 bold 64px, 중앙 y=780)
+    # 메인 (흰색 bold 64px, 중앙 y=780)
     draw.text(
         (W // 2, 780),
         "네 가지 공간이, 한 곳에",
