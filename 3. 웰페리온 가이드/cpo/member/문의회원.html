@@ -1773,10 +1773,10 @@ if (action === 'member_calendar') {
 
     <div class="consult-field-label">방문 · 등록 처리</div>
     <label class="consult-visit-toggle">
-      <input type="checkbox" id="cmVisited"> ☑ 방문 완료 (저장 시 진행상황 '방문')
+      <input type="checkbox" id="cmVisited" onchange="if(this.checked)document.getElementById('cmRegistered').checked=false"> ☑ 방문 완료 (저장 시 진행상황 '방문')
     </label>
     <label class="consult-visit-toggle">
-      <input type="checkbox" id="cmRegistered"> ✅ 등록 완료 (저장 시 진행상황 '등록(SUC)' → 금일 등록현황 자동 반영 + 알림)
+      <input type="checkbox" id="cmRegistered" onchange="if(this.checked)document.getElementById('cmVisited').checked=false"> ✅ 등록 완료 (저장 시 진행상황 '등록(SUC)' → 금일 등록현황 자동 반영 + 알림)
     </label>
 
     <div class="consult-field-label">기존 메모</div>
