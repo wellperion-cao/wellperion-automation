@@ -820,5 +820,19 @@
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "ada07000ae0e3119f27f6a02e2fdba5eab49a049",
     "ship_no": 191
+  },
+  {
+    "task_id": "CPO-2026-06-29-ADHOC-c2964b5b",
+    "clevel": "cpo",
+    "title": "[시포] 등록 완료 해제 되돌리기 — 강등 + 등록현황 제거",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-06-29",
+    "processed_at": "2026-06-29",
+    "artifact": "리뷰 발견 #1: 등록(SUC) 체크 해제 시 status가 SUC 그대로라 '저장' 떠도\n실제 무동작이던 버그. 해제 시 진행상황을 방문(방문기록 있으면)/예약으로\n강등하고, 서버는 SUC→비SUC 전환 감지해 등록현황에서 행 제거(_regRemove_).\n달력·그리드·등록현황 모두 즉시 반영. (CLI ad-hoc · 커밋 c2964b5b)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "c2964b5bbf345e72747af9f8ddffaeb3d7438dc6",
+    "ship_no": 13
   }
 ]
