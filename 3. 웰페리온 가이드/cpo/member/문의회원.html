@@ -2831,11 +2831,12 @@ function processCalendarData(data) {
     var cell = chipsDiv.parentElement;
     cell.classList.add('has-event');
     calEvents[date].forEach(function(ev){
-      var _registered = (ev.status === 'SUC' || ev.status === '단기SUC');   // 등록 완료 → 금색 ♛(방문보다 우선)
+      var _registered = (ev.status === 'SUC' || ev.status === '단기SUC');   // 등록 완료 → 금색 ♛
       var _visited = (ev.status === '방문');                                 // 방문 완료 → 녹색 ✓
       var chip = document.createElement('div');
       chip.className = 'cal-chip ' + (ev.kind === '체험' ? 'experience' : 'tour') + (_registered ? ' registered' : (_visited ? ' visited' : ''));
-      var _mark = _registered ? '<span class="cc-reg">♛</span>' : (_visited ? '<span class="cc-check">✓</span>' : '');
+      // 등록은 방문을 포함 → 등록 회원은 ♛+✓ 둘 다 표시(방문 완료도 달력에 반영). 방문만이면 ✓. 2026-06-29 시포
+      var _mark = _registered ? '<span class="cc-reg">♛</span><span class="cc-check">✓</span>' : (_visited ? '<span class="cc-check">✓</span>' : '');
       var l1 = _mark + (ev.time ? esc(ev.time) + ' ' : '') + esc(ev.kind) + (ev.name ? ' ' + esc(ev.name) : '');
       chip.innerHTML = '<div class="cc-l1">' + l1 + '</div>' + (ev.phone ? '<div class="cc-l2">' + esc(ev.phone) + '</div>' : '');
       chipsDiv.appendChild(chip);
@@ -2917,8 +2918,9 @@ function openConsultModal(ev) {
   document.getElementById('cmSchedule').textContent = sched + ' · ' + (ev.kind || '상담');
   document.getElementById('cmStatus').textContent = ev.status || '—';
   var visitedChk = document.getElementById('cmVisited');
-  visitedChk.checked = (ev.status === '방문');
-  document.getElementById('cmRegistered').checked = (ev.status === 'SUC' || ev.status === '단기SUC');  // 이미 등록된 건이면 체크 표시
+  var _isReg = (ev.status === 'SUC' || ev.status === '단기SUC');
+  visitedChk.checked = (ev.status === '방문' || _isReg);   // 등록=방문 포함 → 등록 회원은 방문도 체크 표시
+  document.getElementById('cmRegistered').checked = _isReg; // 이미 등록된 건이면 등록 체크 표시
   var prevEl = document.getElementById('cmMemoPrev');
   prevEl.textContent = (ev.memo && String(ev.memo).trim()) ? ev.memo : '(기존 메모 없음)';
   document.getElementById('cmMemoInput').value = '';   // 모달 열 때 1회 초기화(IME 안전 — 입력 중 재생성 없음)
