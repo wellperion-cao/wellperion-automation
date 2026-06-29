@@ -40,6 +40,7 @@
   td.role-cell .rname{font-weight:800; font-size:14px;}
   td.role-cell .rtitle{font-size:11px; color:var(--dim); margin-top:1px;}
   td.role-cell .rowner{font-size:11px; color:var(--accent-soft); margin-top:2px;}
+  .rdraft{font-size:9px;color:#e0a;background:rgba(238,0,170,0.12);border-radius:3px;padding:1px 4px;font-weight:600;vertical-align:middle;margin-left:4px;}
   tr.role-gm td{background:rgba(184,134,11,0.10);}
   tr.role-gm td.role-cell{background:rgba(184,134,11,0.18);}
   .dim-label{font-size:10.5px; font-weight:700; letter-spacing:0.02em; color:var(--dim); display:block; margin-bottom:1px; text-transform:uppercase;}
@@ -278,7 +279,7 @@
       return '<tr class="' + (gm ? 'role-gm' : '') + '">' +
         '<td class="role-cell" style="border-left:4px solid ' + esc(ac) + ';">' +
           '<div class="ricon">' + esc(role.icon) + '</div>' +
-          '<div class="rname" style="color:' + esc(ac) + ';">' + esc(role.name) + '</div>' +
+          '<div class="rname" style="color:' + esc(ac) + ';">' + esc(role.name) + (role.draft ? '<span class="rdraft">🔖 초안</span>' : '') + '</div>' +
           '<div class="rtitle">' + esc(role.title) + '</div>' +
           (role.owner ? '<div class="rowner">담당 · ' + esc(role.owner) + '</div>' : '') +
         '</td>' + c1 + c2 + c3 +

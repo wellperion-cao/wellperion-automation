@@ -2714,9 +2714,9 @@ window._regAssign = function(id, category) {
         </table>
         <!-- ══ /절대 원칙 ══ -->
 
-        <!-- ══ 🌟 전사 자동화 로드맵 (북극성 목표 · 7대 모듈 · T2→S2 이관·고도화 2026-06-16) ══ -->
-        <h3 id="con-roadmap" style="margin-top:28px;border-top:1px solid var(--border);padding-top:24px;"><span class="ico">🌟</span>전사 자동화 로드맵 <span style="font-size:13px;font-weight:400;color:var(--dim);">— 7대 모듈, 지금 어디까지 → 목표 (북극성)</span></h3>
-        <p style="font-size:12.5px;color:var(--dim);margin:0 0 10px;">웰페리온 ERP가 완성될 모습입니다. 모든 AI가 부팅 때 읽고 이 방향으로 일합니다. 👑 웰리가 전 모듈을 통합·검수하고 GM은 G1(오늘의 항로)만 봅니다.</p>
+        <!-- ══ 📝 GM 개인 메모 — 로드맵 (이 브라우저 localStorage 전용 · 공유 아님) ══ -->
+        <h3 id="con-roadmap" style="margin-top:28px;border-top:1px solid var(--border);padding-top:24px;"><span class="ico">📝</span>GM 개인 메모 — 로드맵 <span style="font-size:13px;font-weight:400;color:var(--dim);">— 이 브라우저에만 저장 · 공유 아님</span></h3>
+        <p style="font-size:12.5px;color:var(--dim);margin:0 0 10px;">웰페리온 자동화 로드맵 GM 개인 메모. <strong style="color:#e0a;">📝 localStorage — 이 브라우저에만 저장되며 다른 AI·기기에 공유되지 않습니다.</strong> 클릭해 자유롭게 편집하세요.</p>
         <table id="s2-roadmap-table">
           <tr><th style="width:128px">모듈</th><th style="width:42%;">지금 (현재)</th><th>목표 (완성 시)</th></tr>
           <tr><td>👥 회원 (CPO)</td><td>회원 DB·재등록 현황 시트 운영</td><td>가입·갱신 자동 · 이탈징후 감지→케어 · NPS 자동수집 · 갱신율 추적</td></tr>
@@ -2739,7 +2739,7 @@ window._regAssign = function(id, category) {
           cells.forEach(function(c){ c.setAttribute('contenteditable','true'); c.style.cursor='text'; });
           function save(){ var a=[]; cells.forEach(function(c){ a.push(c.innerHTML); }); try{ localStorage.setItem(KEY, JSON.stringify(a)); }catch(e){} }
           tbl.addEventListener('input', save);
-          var h=document.getElementById('s2-roadmap-hint'); if(h) h.textContent='✏️ 현재·목표 칸을 클릭해 바로 편집 · 자동 저장';
+          var h=document.getElementById('s2-roadmap-hint'); if(h) h.textContent='✏️ 클릭해 편집 · 이 브라우저에만 저장 (다른 AI·기기에 공유 안 됨)';
         })();
         </script>
         <!-- ══ /전사 자동화 로드맵 ══ -->
