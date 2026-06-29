@@ -3841,13 +3841,18 @@ async function sendTelegramRound(date,round,submitter,gender){
   if(round==='close1'&&DAY_FOCUS[dow])DAY_FOCUS[dow].forEach(it=>{ if(shouldShowItemForGender(it,gender)){ total++; if(isChecked(it.id,round,gender))done++; {const _v=issFor(it.id,round,gender); if(_v)issues.push(`  - ${it.name}: ${_v}`);} } });
   const pct=total?Math.round(done/total*100):0;
   const link=encodeURI('https://wellperion-cao.github.io/wellperion-automation/coo/check/지원부 체계.html')+'?date='+date+'&g='+gender;   // 공백·한글 인코딩 → 텔레그램 링크 안 짤림(GM 2026-06-15)
-  let msg=`[지원부 체계 점검 ${rdef.name} ${rdef.time} 제출 (${genderLabel})]\n날짜: ${date}\n점검자: ${submitter}\n완료: ${done}/${total} (${pct}%)`;
+  /* 근무자·소요시간 노출(GM 2026-06-29 시토): 점검자 외 근무자(근무조 드롭다운)·소요시간(시작~종료 타이머)도 알림에 표기. appendRoundSnapshot과 동일 계산. */
+  const duty=(typeof getDutyForGender==='function'?getDutyForGender(gender):'')||'';
+  const _t=timerKeys(date,gender,round);
+  const _dur=_timerDuration(STATE[_t.sk],STATE[_t.ek]);
+  const _durTxt=(_dur!=null)?_dur+'분':'미측정';
+  let msg=`[지원부 체계 점검 ${rdef.name} ${rdef.time} 제출 (${genderLabel})]\n날짜: ${date}\n점검자: ${submitter}\n근무자: ${duty||'-'}\n소요시간: ${_durTxt}\n완료: ${done}/${total} (${pct}%)`;
   if(issues.length)msg+=`\n\n이슈 ${issues.length}건:\n${issues.join('\n')}`;
   msg+=`\n\n점검 페이지: ${link}`;
   try{
     await fetch(API_URL,{method:'POST',redirect:'follow',
       headers:{'Content-Type':'text/plain'},
-      body:JSON.stringify({action:'notify_round',dept:DEPT,date,round,gender,genderTab:gender,submitter,message:msg,pageLink:link})
+      body:JSON.stringify({action:'notify_round',dept:DEPT,date,round,gender,genderTab:gender,submitter,duty,durationMin:(_dur!=null?_dur:''),message:msg,pageLink:link})
     });
   }catch(e){}
 }
@@ -3980,13 +3985,14 @@ async function sendTelegramNotify(date,shift,submitter,gender){
       if(_v)issues.push(`  - ${it.name}: ${_v}`);
     });
   }
-  let msg=`[지원부 체계 점검 ${label} 제출 (${genderLabel})]\n날짜: ${date}\n점검자: ${submitter}\n완료: ${stats.done}/${stats.total} (${stats.pct}%)`;
+  const duty=(typeof getDutyForGender==='function'?getDutyForGender(gender):'')||'';   // 근무자 노출(GM 2026-06-29 시토)
+  let msg=`[지원부 체계 점검 ${label} 제출 (${genderLabel})]\n날짜: ${date}\n점검자: ${submitter}\n근무자: ${duty||'-'}\n완료: ${stats.done}/${stats.total} (${stats.pct}%)`;
   if(issues.length)msg+=`\n\n이슈 ${issues.length}건:\n${issues.join('\n')}`;
   try{
     if(ONLINE){
       await fetch(API_URL,{method:'POST',redirect:'follow',
         headers:{'Content-Type':'text/plain'},
-        body:JSON.stringify({action:'notify',date,shift,submitter,genderTab:gender,message:msg})
+        body:JSON.stringify({action:'notify',date,shift,submitter,duty,genderTab:gender,message:msg})
       });
     }
   }catch(e){}
