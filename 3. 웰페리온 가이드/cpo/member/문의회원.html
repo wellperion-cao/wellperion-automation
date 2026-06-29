@@ -2999,7 +2999,7 @@ function saveConsultModal() {
   // 방문 완료 — 진행상황과 독립 칸(방문완료일). 바뀌었을 때만 전송(체크=방문일자=예약일 기록, 해제=클리어).
   if (visitedChanged) { payload.visited = visited; if (visited) payload.visitDate = _consultEv.date || ''; }
   // 등록 — 등록 완료면 진행상황 SUC + (새 등록일 때만)등록일자. 방문만(미등록)이면 퍼널 상태 '방문'.
-  if (registered) { payload.status = 'SUC'; if (!origReg) payload.regDate = regDate; }
+  if (registered && regChanged) { payload.status = 'SUC'; if (!origReg) payload.regDate = regDate; }  // 신규 등록 시에만 전송(불필요 재전송 방지·리뷰 #5)
   else if (regChanged && origReg) { payload.status = (visited ? '방문' : '예약'); }   // 등록 해제 → 강등(서버가 등록현황에서도 제거)
   // 방문 완료는 독립 ✓플래그(payload.visited)로만 기록 — 진행상황(가망·컨택중 등 퍼널 단계)은 건드리지 않음. 2026-06-29 시포(리뷰 #2)
   // 상담 내용: 기존 메모 보존 + 새 줄 누적. 빈 입력이면 메모 미전송.

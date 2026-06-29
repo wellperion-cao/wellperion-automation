@@ -1159,7 +1159,7 @@ function _miReadRows_() {
       exp3Time: _miTime_(iExp3 >= 0 ? row[iExp3] : ''),
       visit2Date: _miToISO_(iV2Dt >= 0 ? row[iV2Dt] : ''),  // 2차 방문 날짜(col11) — 달력에서 누락되던 일정 보강
       visit2Time: _miTime_(iV2Dt >= 0 ? row[iV2Dt] : ''),   // 2차 방문 시간 — 같은 셀에서 직독(시간 설정 지원, 2026-06-29 시포)
-      visited:    (iVisited >= 0 && row[iVisited] !== '' && row[iVisited] != null) ? true : false,  // 방문 완료 여부(독립)
+      visited:    (iVisited >= 0 && String(row[iVisited] == null ? '' : row[iVisited]).trim() !== '') ? true : false,  // 방문 완료 여부(독립·공백/0 오인 방지)
       visitDate:  (iVisited >= 0) ? _miToISO_(row[iVisited]) : '',  // 방문 완료일
       timestamp:_miToISO_(iTs   >= 0 ? row[iTs]   : ''),
       memo:     iMemo  >= 0 ? String(row[iMemo]  || '') : '',
@@ -2139,7 +2139,7 @@ function _processAction(body) {
     }
     // carry-over: 신규→SUC/단기SUC '실제 전환' 시에만 등록현황 탭 이관 + 등록 전환 전용 알림. 2026-06-26 시토·GM.
     //   A안(GM 결재): 유효회원(실계약 정본)에는 자동생성 안 함 — 계약 확정 시 사람 입력. 여기선 깔때기 이관+알림까지만.
-    //   과거 버그: body.status==SUC면 값 미변경에도 매 저장 _regUpsert_ 재실행 → 등록현황 중복 갱신. 이제 old≠SUC && new==SUC 1회만.
+    //   _regUpsert_는 멱등(전화키 매칭 갱신·없으면 today 도장) → SUC 저장 시 항상 실행해 등록현황 보장(중복 행 안 생김). 알림만 실제 전환(이전≠SUC) 1회. 프런트는 신규 등록 시에만 status=SUC 전송(불필요 재전송 방지).
     var _muNewStatus = String(body.status == null ? '' : body.status).trim();
     var _isSucNew = (_muNewStatus === 'SUC' || _muNewStatus === '단기SUC');
     var _wasSuc   = (_muOldStatus === 'SUC' || _muOldStatus === '단기SUC');
