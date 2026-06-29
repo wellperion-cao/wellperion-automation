@@ -1,5 +1,7 @@
 # 시토 v1 설계서 — 일일 북극성 추천기 엔진
-> 작성: 2026-06-29 · 상태: **GM 검토 대기** · 스펙 원본: `.omc/specs/deep-interview-daily-northstar-recommender.md`
+> 작성: 2026-06-29 · 상태: **G1/G2/G3 GM 잠금 확정 · 1단계(두뇌 드라이런 엔진) 빌드 완료** · 스펙 원본: `.omc/specs/deep-interview-daily-northstar-recommender.md`
+>
+> **GM 잠금 결정(2026-06-29):** G1=`status/northstar_pending.json`(git 추적) · G2=미승인은 다음날 06:30 새 추천 시 자동 보류(만료)·당일 자정 아님 · G3=**파일럿 폐기→처음부터 전 C-Level(7역할)**, 웰리가 전사 top3 선정·역할 태그.
 
 ---
 
@@ -10,8 +12,8 @@
 | 목적 | 매일 06:30, 북극성 대비 현재 갭을 읽어 "오늘의 다음 한 수" 3후보를 텔레그램으로 제안 |
 | 두뇌 | 웰리(AI CEO) — 후보 선정·경로지도·우선순위 판단 |
 | 손 | 시토(AI CTO) — 스케줄러·입력 수집·카드 발송·승인 콜백·큐 등록 |
-| 파일럿 | 웰리 row 단일(전사 통합) → 검증 후 6 C-Level 확장 |
-| 1관문 | **본 설계서 GM 검토·승인 → 엔진 빌드 착수** |
+| 대상 | **처음부터 전 C-Level(7역할 ceo·cmo·coo·cto·cpo·cfo·chro, gm 제외)** — 웰리가 전사 top3 선정·역할 태그 (G3 확정) |
+| 1관문 | ✅ **1단계 빌드 완료** — `scripts/northstar_recommender.py` 드라이런 엔진. GM 1단계 확인 후 2단계(스케줄러·텔레그램·콜백) |
 | 자율 범위 | 제안까지만. 실행은 GM 승인 후 기존 파이프라인 |
 
 ---
@@ -189,14 +191,25 @@ kpi_values.json 변화 추적
 
 ---
 
-## 9. GM 결정 필요 지점 (빌드 착수 전)
+## 9. GM 결정 지점 — ✅ 전부 확정 (2026-06-29)
 
-| 번호 | 질문 | 선택지 |
+| 번호 | 질문 | **GM 잠금 결정** |
 |---|---|---|
-| **G1** | `northstar_pending.json` 위치 | `status/` (git 추적) vs `scratchpad/` (git 제외) |
-| **G2** | 미승인 건 처리 | 당일 자정 자동 보류 vs 다음 날 06:30까지 유지 |
-| **G3** | 추천 대상 시작 | 웰리(CEO) 단독 파일럿 → 확정 or 처음부터 전 C-Level? |
+| **G1** | `northstar_pending.json` 위치 | ✅ **`status/northstar_pending.json` (git 추적)** |
+| **G2** | 미승인 건 처리 | ✅ **다음날 06:30 새 추천 생성 시 자동 보류(만료)** — 당일 자정 만료 아님 |
+| **G3** | 추천 대상 시작 | ✅ **처음부터 전 C-Level(7역할)** — 파일럿 폐기. 입력=matrix 7 C-Level행 전부, 웰리가 전사 top3 선정·각 후보에 역할·북극성 태그 |
 
 ---
 
-*설계서 끝 — 승인 시 시토가 ①→⑥ 순서로 단계별 빌드 착수.*
+## 10. 1단계 빌드 결과 (2026-06-29)
+
+- **신규:** `scripts/northstar_recommender.py` — 드라이런 추천 엔진(라이브 부작용 0).
+  - 입력 수집: `bootsetup_matrix.json`(7 C-Level행 북극성=dims[0]·KPI=dims[3]·owns·ideas) + `status/_queue.json`(active 배·완료건 next) + `status/kpi_values.json`.
+  - 두뇌: claude CLI(`model_router` 폴백 경유, self_learning 패턴 재사용) — 웰리 추천 로직(신호3·우선순위·다양성·중복방지·전사 top3). 실패 시 규칙기반 폴백.
+  - 출력: 콘솔 + `status/northstar_pending.json`(date·candidates[3]{role,title,path_map,rationale,difficulty,signal}·status=proposed). **텔레그램 전송·스케줄러 등록 없음.**
+  - `--dry-run` 기본.
+- **2단계(GM 1단계 확인 후):** 06:30 Task Scheduler(§5) · 텔레그램 카드(§3) · 봇 승인콜백→_queue 등록(§4) · 폐루프(§6).
+
+---
+
+*설계서 끝 — 1단계 완료. GM 1단계 확인 시 시토가 ③→⑥ 순서로 2단계 빌드 착수.*

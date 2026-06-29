@@ -1066,8 +1066,8 @@
     "status": "IN_PROGRESS",
     "priority": "🛳️크루즈",
     "enqueued_at": "2026-06-29",
-    "note": "[2026-06-29 GM GO·deep-interview 확정] 스펙=.omc/specs/deep-interview-daily-northstar-recommender.md. 브릿지=북극성↔오늘 잇는 과정. 최상급 과정 4박자=경로지도+품질완주(기존 완료4요건·웰리검수 게이트 활용·새 실행권 없음)+지표환류+근거투명. 자율=제안까지(GM 승인 후 실행). 파일럿=웰리(전사통합), 개인 북극성 v1 제외. 두뇌=웰리(추천 로직)/손=시토(엔진). 단계적: ①입력정본(헌법한장)✅ ②웰리 로직규칙(설계서 반영) ③06:30 카드+승인콜백+큐등록 ④폐루프 환류. 1관문=시토 v1 설계서→GM 검토.",
-    "next": "🔗 시토 v1 설계서(status/briefs/CTO-2026-06-29-NORTHSTAR-RECOMMENDER-DESIGN.md) GM 검토 → 승인 시 엔진 빌드 착수",
+    "note": "[2026-06-29 GM GO·deep-interview 확정] 스펙=.omc/specs/deep-interview-daily-northstar-recommender.md. 브릿지=북극성↔오늘 잇는 과정. 최상급 과정 4박자=경로지도+품질완주(기존 완료4요건·웰리검수 게이트 활용·새 실행권 없음)+지표환류+근거투명. 자율=제안까지(GM 승인 후 실행). 개인 북극성 v1 제외. 두뇌=웰리(추천 로직)/손=시토(엔진). [2026-06-29 GM 잠금결정] G1=상태파일 status/northstar_pending.json(git추적) · G2=미승인은 다음날 06:30 새 추천 시 자동보류(만료) · G3=파일럿 폐기→처음부터 전 C-Level(7역할 ceo·cmo·coo·cto·cpo·cfo·chro, gm제외), 웰리가 전사 top3 선정·역할 태그. ✅1단계 빌드 완료(2026-06-29): scripts/northstar_recommender.py 드라이런 엔진(입력=matrix 7행+_queue+kpi_values, 두뇌=claude CLI model_router폴백, 출력=status/northstar_pending.json·라이브 부작용0). 2단계(06:30 스케줄러·텔레그램 전송·봇 핸들러)=GM 1단계 확인 후.",
+    "next": "🔗 GM 1단계(드라이런 엔진) 확인 → 2단계 착수: 06:30 Task Scheduler 등록 + 텔레그램 카드 발송 + 봇 승인콜백→_queue 등록 + 폐루프 환류",
     "depends_on": "",
     "ship_no": 213
   },
