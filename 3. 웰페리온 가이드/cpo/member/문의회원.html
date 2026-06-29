@@ -765,6 +765,16 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
 .signal-badge.high{background:var(--red-bg);color:var(--red)}
 .signal-badge.med{background:var(--yellow-bg);color:var(--yellow)}
 .signal-badge.low{background:var(--blue-bg);color:var(--blue)}
+/* 통합 현황판 랜딩 — 좌 컬럼 카드는 2열(좁은 폭 대응) · 2026-06-29 시포 */
+.cpo-landing .dash-grid{grid-template-columns:repeat(2,1fr);margin-bottom:0}
+@media(max-width:520px){.cpo-landing .dash-grid{grid-template-columns:1fr}}
+/* 우측 CPO 가이드 펼치기 아코디언 — 2026-06-29 시포 */
+.guide-acc{display:flex;flex-direction:column;gap:4px}
+.guide-acc-btn{display:flex;justify-content:space-between;align-items:center;width:100%;text-align:left;padding:8px 11px;border-radius:7px;border:1px solid var(--border);background:var(--paper);color:var(--text);font-size:12px;font-weight:700;font-family:inherit;cursor:pointer}
+.guide-acc-btn:hover{border-color:var(--accent-border);background:var(--accent-bg)}
+.guide-acc-btn.open{background:var(--accent-bg);color:var(--accent);border-color:var(--accent-border)}
+.guide-acc-body{padding:8px 4px;font-size:12px;overflow-x:auto}
+.guide-acc-body table{font-size:11px}
 
 /* ═══════════════════════════════════════
    인쇄
@@ -873,10 +883,6 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
         <a class="action-btn" href="http://wellperion.com/ko/inquiry/" target="_blank" rel="noopener">🔗 문의 페이지 →</a>
         <a class="action-btn" href="https://docs.google.com/spreadsheets/d/12AWcAlgmmYKr2nUbWmVpa71_z3zi0BaU4ZdnOwrI_7U/edit#gid=1902010032" target="_blank" rel="noopener">📊 문의 회원관리 시트 →</a>
         <button class="action-btn" onclick="openGuidePopup()">📖 문의 가이드</button>
-        <button class="action-btn" onclick="openGdoc('principle')">🎯 CPO 운영원칙</button>
-        <button class="action-btn" onclick="openGdoc('routine')">📅 정기 루틴</button>
-        <button class="action-btn" onclick="openGdoc('churn')">⚠️ 이탈 신호 대응</button>
-        <button class="action-btn" onclick="openGdoc('churnstat')">📊 이탈 현황</button>
         <a class="action-btn" href="../../../wellperion_guide(main).html">ERP 홈</a>
         <button class="action-btn" onclick="window.print()">인쇄</button>
       </div>
@@ -898,8 +904,9 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
   <!-- ══════════════════════════════ 유형: 멤버십 (문의현황·달력·등록현황·회원관리) ══════════════════════════════ -->
   <div id="type-membership" class="type-pane active">
 
-  <!-- ══════════════════════════════ CPO 요약 대시보드 (탭별 카드 · 클릭 시 해당 탭) ══════════════════════════════ -->
-  <!-- 순서: 멤버십 문의 현황(좌) → 예약 달력(중앙) → 등록 현황 → 멤버십 회원 관리 — 2026-06-26 GM 레이아웃 -->
+  <!-- ══ 통합 회원 현황판 (랜딩) — 좌 한눈 현황 / 우측위 CPO 가이드 · 2026-06-29 시포 ══ -->
+  <div class="cpo-landing" style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:16px;align-items:flex-start">
+   <div style="flex:1 1 58%;min-width:340px;display:flex;flex-direction:column;gap:12px">
   <div class="dash-grid" id="cpoTodayStrip">
     <!-- 카드1: 멤버십 문의 현황 (맨 왼쪽) -->
     <a class="dash-card" data-kind="inq" data-tab="db" href="javascript:void(0)" onclick="switchTab('db')">
@@ -934,6 +941,35 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
         <div class="dash-line"><span class="dash-k">종료</span><span class="dash-v"><b id="dMemEnded">0</b> 명</span></div>
       </div>
     </a>
+  </div>
+      <div id="landingFlow" class="card" style="padding:13px 16px"></div>
+   </div>
+   <aside style="flex:1 1 30%;min-width:280px">
+     <div class="card cpo-guide" style="padding:14px 16px">
+       <div style="font-size:13px;font-weight:800;color:var(--text);margin-bottom:10px">🧭 CPO 운영 가이드</div>
+       <div style="display:flex;gap:14px;padding:9px 12px;border-radius:8px;background:var(--red-bg);border:1px solid var(--red-border);margin-bottom:11px">
+         <div><div style="font-size:10px;color:var(--red);font-weight:700">오늘 이탈</div><div style="font-size:21px;font-weight:800;color:var(--red)" id="gToLoss">0</div></div>
+         <div style="width:1px;background:var(--red-border)"></div>
+         <div><div style="font-size:10px;color:var(--red);font-weight:700">이번달 이탈</div><div style="font-size:21px;font-weight:800;color:var(--red)" id="gMoLoss">0</div></div>
+       </div>
+       <div style="font-size:11px;font-weight:800;color:var(--text);margin:2px 0 6px">⚠️ 이탈 신호 (상위)</div>
+       <div style="display:flex;flex-direction:column;gap:5px;margin-bottom:12px">
+         <div style="display:flex;align-items:center;gap:7px;font-size:12px"><span class="signal-badge high">HIGH</span> 2주 이상 연속 결석</div>
+         <div style="display:flex;align-items:center;gap:7px;font-size:12px"><span class="signal-badge high">HIGH</span> 강습 3회 연속 취소</div>
+         <div style="display:flex;align-items:center;gap:7px;font-size:12px"><span class="signal-badge high">HIGH</span> CS 컴플레인 2건+</div>
+       </div>
+       <div class="guide-acc">
+         <button class="guide-acc-btn" onclick="toggleGuideAcc(this,'churn')">⚠️ 전체 이탈 신호 매트릭스 <span>▾</span></button>
+         <div class="guide-acc-body" style="display:none"></div>
+         <button class="guide-acc-btn" onclick="toggleGuideAcc(this,'churnstat')">📊 이탈 현황 추적 <span>▾</span></button>
+         <div class="guide-acc-body" style="display:none"></div>
+         <button class="guide-acc-btn" onclick="toggleGuideAcc(this,'principle')">🎯 CPO 운영원칙 <span>▾</span></button>
+         <div class="guide-acc-body" style="display:none"></div>
+         <button class="guide-acc-btn" onclick="toggleGuideAcc(this,'routine')">📅 정기 루틴 <span>▾</span></button>
+         <div class="guide-acc-body" style="display:none"></div>
+       </div>
+     </div>
+   </aside>
   </div>
 
   <!-- ══════════════════════════════ 1. 예약 달력 ══════════════════════════════ -->
@@ -1953,6 +1989,20 @@ function openGdoc(id) {
 function closeGdoc() {
   document.getElementById('gdocOverlay').classList.remove('open');
 }
+// 우측 CPO 가이드 펼치기 — 기존 gdoc 템플릿 콘텐츠를 인라인으로 clone(중복 없음). 2026-06-29 시포
+function toggleGuideAcc(btn, id) {
+  var body = btn.nextElementSibling;
+  if (!body) return;
+  var open = body.style.display === 'none';
+  if (open && !body.dataset.loaded) {
+    var tpl = document.querySelector('#gdoc-tpl [data-gdoc="' + id + '"]');
+    body.innerHTML = tpl ? tpl.innerHTML : '<div style="color:var(--dim);font-size:12px">내용 없음</div>';
+    body.dataset.loaded = '1';
+  }
+  body.style.display = open ? 'block' : 'none';
+  btn.classList.toggle('open', open);
+  var arrow = btn.querySelector('span'); if (arrow) arrow.textContent = open ? '▴' : '▾';
+}
 
 /* ── 탭 전환 ── */
 function switchTab(id, btn) {
@@ -2781,6 +2831,8 @@ function loadCpoTodayStats() {
       _setTxt('dRegToday', d.todayReg);     _setTxt('dRegMonth', d.monthReg);
       _setTxt('dMemActive', d.memberActive); _setTxt('dMemCorp', d.memberCorp); _setTxt('dMemEnded', d.memberEnded);
       _cpoStats = d; renderActiveSummary();   // 교차 구성 요약카드 갱신(유효·법인·종료·순증감)
+      var _lf = document.getElementById('landingFlow'); if (_lf) _lf.innerHTML = _composeHtml();   // 랜딩 좌: 회원구성·비율바·순증감
+      _setTxt('gToLoss', d.todayLoss); _setTxt('gMoLoss', d.monthLoss);                            // 랜딩 우: 이탈 현황(오늘/월)
     })
     .catch(function(){});
 }
