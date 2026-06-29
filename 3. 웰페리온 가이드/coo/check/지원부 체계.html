@@ -3449,11 +3449,9 @@ window.toggleManualEdit=function(){ _manualEdit=!_manualEdit; renderManualItems(
 function renderManualItems(){
   const el=document.getElementById('manual-items-sync');
   if(!el)return;
-  // WEEKDAY를 기준으로 항목 수집 (평일 = 기본 표준 스케줄)
-  const sched=typeof WEEKDAY!=='undefined'?WEEKDAY:[];
-  // 점검 탭 override 맵 — 시트 편집분(shadow 항목)을 단일출처로 적용
-  const ovMap=typeof getItemOverrides==='function'?getItemOverrides():{};
-  // 카테고리별로 항목 모으기 (중복 id 제거)
+  // 2026-06-29 시우: 매뉴얼 = 시트(CUSTOM_ITEMS) 단일출처. 옛 WEEKDAY 하드코딩 기준 폐기.
+  // 이유: GM이 시트에서 지운 항목(마감 cl 등)이 WEEKDAY 배열에 남아 매뉴얼에 '부활'하던 문제 차단(시드 동류).
+  // 효과: ①시트에서 지우면 매뉴얼에서도 사라짐 ②카테고리=시트 기준 통일 ③매뉴얼 WEEKDAY 의존 제거.
   const catMap={};
   let catOrder=[];
   const seen=new Set();
@@ -3463,30 +3461,16 @@ function renderManualItems(){
     if(!catMap[cat]){catMap[cat]=[];catOrder.push(cat);}
     if(!seen.has(it.id)){seen.add(it.id);catMap[cat].push(it);}
   }
-  sched.forEach(slot=>{
-    slot.groups.forEach(grp=>{
-      grp.items.forEach(it=>{
-        // 기본 항목: override가 있으면 name·detail·성별 합성
-        const ov=ovMap[it.id]||{};
-        if(hidden.has(it.id)){ if(!seen.has(it.id)){seen.add(it.id);hiddenItems.push({id:it.id,name:ov.name||it.name,cat:grp.title});} return; }
-        pushItem(grp.title,{
-          id:it.id,
-          name:ov.name||it.name,
-          detail:ov.detail||it.detail,
-          gender:ov.gender||it.gender,
-          sched:ov.sched||'',
-          _edited:!!(ov.name||ov.detail||ov.gender||ov.rounds||ov.sched)
-        });
-      });
+  const sheetItems=((typeof CUSTOM_ITEMS!=='undefined' && Array.isArray(CUSTOM_ITEMS))?CUSTOM_ITEMS:[]).slice()
+    .sort(function(a,b){ return (Number(a&&a.order)||9999)-(Number(b&&b.order)||9999); });
+  sheetItems.forEach(ci=>{
+    const cat=ci.category||ci.cat||'추가 점검';
+    if(hidden.has(ci.id)){ if(!seen.has(ci.id)){seen.add(ci.id);hiddenItems.push({id:ci.id,name:ci.name,cat:cat});} return; }
+    pushItem(cat,{
+      id:ci.id, name:ci.name, detail:ci.detail, gender:ci.gender, sched:ci.sched||'',
+      _custom:(typeof isAddedItem==='function' && isAddedItem(ci.id))
     });
   });
-  // GM이 추가한 항목(CUSTOM_ITEMS)도 함께 표시
-  if(typeof CUSTOM_ITEMS!=='undefined'){
-    CUSTOM_ITEMS.forEach(ci=>{
-      if(hidden.has(ci.id))return;   // 숨긴 항목 제외
-      pushItem(ci.category||'추가 점검',{id:ci.id,name:ci.name,detail:ci.detail,gender:ci.gender,sched:ci.sched||'',_custom:true});
-    });
-  }
   /* 빈 구역(사용자 추가) 합류 + 숨긴 구역 분리 + 순서 적용 */
   (typeof getAddedGroups==='function'?getAddedGroups():[]).forEach(g=>{ if(!catMap[g]){catMap[g]=[];catOrder.push(g);} });
   const _hiddenG=(typeof getHiddenGroups==='function')?getHiddenGroups():new Set();
@@ -5464,7 +5448,7 @@ function policyDeleteCard(colKey,id){
    점검 기록·근무자·제출 등 진짜 데이터는 전부 서버(GAS)에 있어 무손실 — 페이지는 비운 뒤 서버에서 다시 읽는다.
    ※ 페이지 내용을 의미있게 바꿔 배포할 때마다 APP_VER 값을 새로(날짜+접미) 올리면 전 사용자 창이 다음 새로고침 때 자동 최신화된다. */
 (function(){
-  var APP_VER='2026-06-29c';
+  var APP_VER='2026-06-29d';
   try{
     if(localStorage.getItem('wcheck_app_ver')!==APP_VER){
       Object.keys(localStorage)
