@@ -145,40 +145,31 @@ def compose_closing_card(output_path: Path) -> None:
         tile = ImageEnhance.Brightness(tile).enhance(0.85)
         canvas.paste(tile, (x, y))
 
-    # 반투명 다크 스크림 — 텍스트 가독성 확보 (y=580 이하)
-    scrim_overlay = Image.new("RGBA", (W, H), (0, 0, 0, 0))
-    scrim_draw = ImageDraw.Draw(scrim_overlay)
-    scrim_draw.rectangle([(0, 580), (W, H)], fill=(0, 0, 0, 168))
-    canvas = Image.alpha_composite(canvas.convert("RGBA"), scrim_overlay).convert("RGB")
+    # 정중앙 가로 반투명 띠 — 하단 전체 스크림 제거, 4장 모두 식별 가능하게
+    band_overlay = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+    band_draw = ImageDraw.Draw(band_overlay)
+    band_draw.rectangle([(0, 470), (W, 610)], fill=(0, 0, 0, 150))
+    canvas = Image.alpha_composite(canvas.convert("RGBA"), band_overlay).convert("RGB")
 
     canvas = paste_logo(canvas, logo_w=130)
     draw = ImageDraw.Draw(canvas)
     _draw_chip_official(draw)
 
-    # 메인 (흰색 bold 64px, 중앙 y=780)
+    # 메인 (흰색 bold 64px, 중앙 y=510 — 띠 안)
     draw.text(
-        (W // 2, 780),
+        (W // 2, 510),
         "네 가지 공간이, 한 곳에",
         font=load_font("bold", 64),
         fill=WHITE,
         anchor="mm",
     )
 
-    # 부제 (베이지 semibold 36px, 중앙 y=878)
+    # 부제 (베이지 semibold 36px, 중앙 y=575 — 띠 안)
     draw.text(
-        (W // 2, 878),
+        (W // 2, 575),
         "수영  ·  체조  ·  스쿼시  ·  골프",
         font=load_font("semibold", 36),
         fill=BEIGE,
-        anchor="mm",
-    )
-
-    # 소형 정보 (회색 medium 24px, 중앙 y=952)
-    draw.text(
-        (W // 2, 952),
-        "1:6 소수정예  ·  횟수 자율조정  ·  주차 제공",
-        font=load_font("medium", 24),
-        fill=GRAY,
         anchor="mm",
     )
 
