@@ -27,10 +27,12 @@ v1.2 헬스체크 업그레이드 (2026-04-20, 4.20-텔레그램 통신 장애 �
 from __future__ import annotations
 
 import argparse
+from collections import Counter
 import json
 import logging
 import os
 import random
+import re
 import subprocess
 import sys
 import time
@@ -423,6 +425,50 @@ def _git_log_between(since: str, until: str, max_lines: int = 40) -> list[str]:
         return []
 
 
+# ── 자동봇 커밋 노이즈 필터 (07시 결산용) ──────────────────────────────────────
+# erp_status_publisher.py 가 30분 주기로 생성하는 chore(erp) 봇 커밋을 제외한다.
+_NOISE_COMMIT_RE = re.compile(
+    r"시스템 현황 자동 발행|erp_status\.json",
+    re.IGNORECASE,
+)
+
+# ── conventional-commit prefix → 한글 태그 변환 (07시 결산 표시용) ─────────────
+_CC_KOR_MAP: dict[str, str] = {
+    "feat": "기능", "fix": "수정", "chore": "정리",
+    "docs": "문서", "refactor": "구조개선", "style": "스타일",
+    "test": "테스트", "perf": "성능", "ci": "CI",
+    "build": "빌드", "revert": "되돌림",
+}
+_CC_HUMANIZE_RE = re.compile(
+    r"^(feat|fix|chore|refactor|style|test|docs|perf|ci|build|revert)"
+    r"(?:\([^)]*\))?!?:\s*",
+    re.IGNORECASE,
+)
+
+
+def _humanize_commit(msg: str) -> str:
+    """conventional-commit prefix 를 한글 태그로 변환.
+    예: feat(auth): 로그인 개선  →  [기능] 로그인 개선
+    prefix 없는 메시지는 원문 그대로 반환."""
+    m = _CC_HUMANIZE_RE.match(msg)
+    if not m:
+        return msg
+    label = _CC_KOR_MAP.get(m.group(1).lower(), m.group(1))
+    body = msg[m.end():]
+    return f"[{label}] {body}"
+
+
+# ── 봇 자동기록성 배 제목 필터 (07시 업무완료 집계 제외) ─────────────────────────
+# "auto(", "auto-log", "검수 승인 건 발행", "자동기록" 등은 사람/AI 실작업이 아닌 봇 로그.
+_AUTO_TASK_RE = re.compile(
+    r"auto\(|auto-log|검수 승인 건 발행|자동기록|입항완료 자동",
+    re.IGNORECASE,
+)
+
+# ── 배 제목에서 닉네임 추출 ([시포], [웰리] 등) ──────────────────────────────────
+_NICK_RE = re.compile(r"^\[([가-힣A-Za-z0-9]{2,6})\]")
+
+
 def fetch_yesterday_summary() -> str:
     """
     전날(어제) git 커밋을 집계. SSOT = GitHub (노션 결과물DB 폐기 2026-05-29).
@@ -469,6 +515,33 @@ def _fetch_yesterday_done_todos() -> list[str]:
     except Exception as e:
         logger.warning(f"_fetch_yesterday_done_todos 예외: {e}")
         return []
+
+
+def _fetch_yesterday_queue_done() -> list[str]:
+    """
+    status/_queue.json 에서 어제 완료된 배 제목 목록 반환.
+    processed_at(우선) 또는 enqueued_at 이 어제 날짜인 DONE/완료 항목.
+    실패 시 빈 리스트.
+    """
+    yesterday = (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d")
+    queue_path = REPO_ROOT / "status" / "_queue.json"
+    try:
+        with open(queue_path, encoding="utf-8") as _f:
+            items = json.load(_f)
+    except Exception as e:
+        logger.warning(f"_fetch_yesterday_queue_done 예외: {e}")
+        return []
+    result = []
+    for x in items:
+        if x.get("status") not in ("DONE", "완료", "done"):
+            continue
+        date_val = str(x.get("processed_at") or x.get("enqueued_at") or "")
+        if not date_val.startswith(yesterday):
+            continue
+        title = str(x.get("title") or "").strip()
+        if title:
+            result.append(title[:60])
+    return result
 
 
 def _fetch_open_todo_cards_for_tomorrow() -> list[dict]:
@@ -1181,59 +1254,64 @@ def _build_share_card_body() -> str:
 
 
 def _build_07_body() -> str:
-    """07시 — 어제 한 항로 정리 (git 완료 + todo_list 어제완료 머지) [개인&회사]"""
+    """07시 — 어제 결산 (업무 완료 중심 · 코드 저장 보조 지표) [개인&회사]"""
     now = datetime.now()
     yesterday = (now - timedelta(days=1)).strftime("%Y-%m-%d")
     yesterday_wd = _WEEKDAY_KOR[(now - timedelta(days=1)).weekday()]
     today_str = now.strftime("%Y-%m-%d")
     weekday_kor = _WEEKDAY_KOR[now.weekday()]
 
-    # ① git 커밋 (어제)
-    commits = _git_log_between(f"{yesterday} 00:00", f"{today_str} 00:00")
+    # ① 코드 저장 수 (보조 지표) ─ 노이즈 필터 후 카운트만 (목록 나열 없음)
+    # max_lines=150: 노이즈(~48건) + 실제 커밋이 하루 100건 이내라 충분
+    commits_raw = _git_log_between(f"{yesterday} 00:00", f"{today_str} 00:00", max_lines=150)
+    commits = [c for c in commits_raw if not _NOISE_COMMIT_RE.search(c)]
+    n_noise = len(commits_raw) - len(commits)
     n_commits = len(commits)
 
-    # ② todo_list 어제완료 항목
-    done_todos = _fetch_yesterday_done_todos()
-    n_todos = len(done_todos)
+    # ② 업무 완료 (중심 지표) ─ GAS todo_list + _queue.json DONE 머지
+    done_gas = _fetch_yesterday_done_todos()
+    done_queue = _fetch_yesterday_queue_done()
+    # 제목 기준 중복 제거 (GAS 우선)
+    seen_titles: set[str] = set(done_gas)
+    for t in done_queue:
+        if t not in seen_titles:
+            done_gas.append(t)
+            seen_titles.add(t)
+    # 봇 자동기록성 ADHOC 제외 → 실제 사람/AI 작업만
+    real_todos = [t for t in done_gas if not _AUTO_TASK_RE.search(t)]
+    n_todos = len(real_todos)
 
-    total = n_commits + n_todos
+    # 닉네임별 건수 요약 한 줄
+    nick_count: Counter[str] = Counter()
+    for t in real_todos:
+        m = _NICK_RE.match(t)
+        nick_count[m.group(1) if m else "기타"] += 1
+    nick_parts = [f"{k} {v}건" for k, v in nick_count.most_common(6)]
+    if len(nick_count) > 6:
+        nick_parts.append("...")
+    nick_summary = " · ".join(nick_parts) if nick_parts else "없음"
 
-    # 박스표: 완료 요약
-    table_rows = [
-        ("코드·자동화 커밋", str(n_commits)),
-        ("업무 완료 항목",   str(n_todos)),
-        ("합계",            str(total)),
-    ]
-    table_str = "\n".join(_count_table(table_rows))
-
-    # 커밋 목록
-    commit_lines = []
-    for c in commits[:8]:
-        commit_lines.append(f"  · {c}")
-    if n_commits > 8:
-        commit_lines.append(f"  ... 외 {n_commits - 8}건")
-
-    # 업무 완료 목록 (배 이모지 적용 — ship_classify 기준대로 분류)
+    # 대표 제목 최대 5건
     todo_lines = []
-    for t in done_todos[:5]:
+    for t in real_todos[:5]:
         ship = classify_ship({"업무명": t})
         line = render_ship_line(t, "", ship)
-        todo_lines.append(f"  ✅ {line}")
+        todo_lines.append(f"  {line}")
     if n_todos > 5:
         todo_lines.append(f"  ... 외 {n_todos - 5}건")
-
-    commit_block = "\n".join(commit_lines) if commit_lines else "  (어제 커밋 없음)"
     todo_block = "\n".join(todo_lines) if todo_lines else "  (어제 완료 항목 없음)"
+
+    # 코드 저장 — 한 줄 숫자 요약만 (목록 나열 금지, 20줄 이내 준수)
+    noise_note = f" (자동발행 {n_noise}회 별도)" if n_noise > 0 else ""
+    code_line = f"🛠 코드 저장 {n_commits}회{noise_note}"
 
     return (
         f"{_unified_header('07', '개인&회사', '어제 결산')}\n"
         f"🏁 {yesterday} ({yesterday_wd}) 결산\n\n"
-        f"   완료 요약\n"
-        f"{table_str}\n\n"
-        f"🚢 코드·자동화\n"
-        f"{commit_block}\n\n"
-        f"✅ 업무 완료\n"
+        f"✅ 업무 완료  {n_todos}건\n"
+        f"  {nick_summary}\n"
         f"{todo_block}\n\n"
+        f"{code_line}\n\n"
         f"{_DIVIDER}\n"
         f"📅 오늘 출항: {today_str} ({weekday_kor})\n"
         f"{_AUTO_FOOTER}"
