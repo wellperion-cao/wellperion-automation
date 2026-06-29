@@ -765,10 +765,7 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
 .signal-badge.high{background:var(--red-bg);color:var(--red)}
 .signal-badge.med{background:var(--yellow-bg);color:var(--yellow)}
 .signal-badge.low{background:var(--blue-bg);color:var(--blue)}
-/* 통합 현황판 랜딩 — 좌 컬럼 카드는 2열(좁은 폭 대응) · 2026-06-29 시포 */
-.cpo-landing .dash-grid{grid-template-columns:repeat(2,1fr);margin-bottom:0}
-@media(max-width:520px){.cpo-landing .dash-grid{grid-template-columns:1fr}}
-/* 우측 CPO 가이드 펼치기 아코디언 — 2026-06-29 시포 */
+/* CPO 가이드 펼치기 아코디언 — 2026-06-29 시포 */
 .guide-acc{display:flex;flex-direction:column;gap:4px}
 .guide-acc-btn{display:flex;justify-content:space-between;align-items:center;width:100%;text-align:left;padding:8px 11px;border-radius:7px;border:1px solid var(--border);background:var(--paper);color:var(--text);font-size:12px;font-weight:700;font-family:inherit;cursor:pointer}
 .guide-acc-btn:hover{border-color:var(--accent-border);background:var(--accent-bg)}
@@ -904,9 +901,7 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
   <!-- ══════════════════════════════ 유형: 멤버십 (문의현황·달력·등록현황·회원관리) ══════════════════════════════ -->
   <div id="type-membership" class="type-pane active">
 
-  <!-- ══ 통합 회원 현황판 (랜딩) — 좌 한눈 현황 / 우측위 CPO 가이드 · 2026-06-29 시포 ══ -->
-  <div class="cpo-landing" style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:16px;align-items:flex-start">
-   <div style="flex:1 1 58%;min-width:340px;display:flex;flex-direction:column;gap:12px">
+  <!-- ══ 통합 회원 현황판 — 카드 현황 + CPO 가이드(전체폭) · 2026-06-29 시포 ══ -->
   <div class="dash-grid" id="cpoTodayStrip">
     <!-- 카드1: 멤버십 문의 현황 (맨 왼쪽) -->
     <a class="dash-card" data-kind="inq" data-tab="db" href="javascript:void(0)" onclick="switchTab('db')">
@@ -942,34 +937,35 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
       </div>
     </a>
   </div>
-      <div id="landingFlow" class="card" style="padding:13px 16px"></div>
-   </div>
-   <aside style="flex:1 1 30%;min-width:280px">
-     <div class="card cpo-guide" style="padding:14px 16px">
-       <div style="font-size:13px;font-weight:800;color:var(--text);margin-bottom:10px">🧭 CPO 운영 가이드</div>
-       <div style="display:flex;gap:14px;padding:9px 12px;border-radius:8px;background:var(--red-bg);border:1px solid var(--red-border);margin-bottom:11px">
-         <div><div style="font-size:10px;color:var(--red);font-weight:700">오늘 이탈</div><div style="font-size:21px;font-weight:800;color:var(--red)" id="gToLoss">0</div></div>
-         <div style="width:1px;background:var(--red-border)"></div>
-         <div><div style="font-size:10px;color:var(--red);font-weight:700">이번달 이탈</div><div style="font-size:21px;font-weight:800;color:var(--red)" id="gMoLoss">0</div></div>
-       </div>
-       <div style="font-size:11px;font-weight:800;color:var(--text);margin:2px 0 6px">⚠️ 이탈 신호 (상위)</div>
-       <div style="display:flex;flex-direction:column;gap:5px;margin-bottom:12px">
-         <div style="display:flex;align-items:center;gap:7px;font-size:12px"><span class="signal-badge high">HIGH</span> 2주 이상 연속 결석</div>
-         <div style="display:flex;align-items:center;gap:7px;font-size:12px"><span class="signal-badge high">HIGH</span> 강습 3회 연속 취소</div>
-         <div style="display:flex;align-items:center;gap:7px;font-size:12px"><span class="signal-badge high">HIGH</span> CS 컴플레인 2건+</div>
-       </div>
-       <div class="guide-acc">
-         <button class="guide-acc-btn" onclick="toggleGuideAcc(this,'churn')">⚠️ 전체 이탈 신호 매트릭스 <span>▾</span></button>
-         <div class="guide-acc-body" style="display:none"></div>
-         <button class="guide-acc-btn" onclick="toggleGuideAcc(this,'churnstat')">📊 이탈 현황 추적 <span>▾</span></button>
-         <div class="guide-acc-body" style="display:none"></div>
-         <button class="guide-acc-btn" onclick="toggleGuideAcc(this,'principle')">🎯 CPO 운영원칙 <span>▾</span></button>
-         <div class="guide-acc-body" style="display:none"></div>
-         <button class="guide-acc-btn" onclick="toggleGuideAcc(this,'routine')">📅 정기 루틴 <span>▾</span></button>
-         <div class="guide-acc-body" style="display:none"></div>
-       </div>
-     </div>
-   </aside>
+
+  <!-- CPO 운영 가이드 (전체폭 — 이탈 현황·신호 한 줄, 펼치기 4섹션) -->
+  <div class="card cpo-guide" style="padding:14px 18px;margin-bottom:16px">
+    <div style="font-size:13px;font-weight:800;color:var(--text);margin-bottom:11px">🧭 CPO 운영 가이드</div>
+    <div style="display:flex;gap:18px;flex-wrap:wrap;align-items:flex-start;margin-bottom:13px">
+      <div style="display:flex;gap:16px;padding:9px 16px;border-radius:8px;background:var(--red-bg);border:1px solid var(--red-border)">
+        <div><div style="font-size:10px;color:var(--red);font-weight:700">오늘 이탈</div><div style="font-size:22px;font-weight:800;color:var(--red)" id="gToLoss">0</div></div>
+        <div style="width:1px;background:var(--red-border)"></div>
+        <div><div style="font-size:10px;color:var(--red);font-weight:700">이번달 이탈</div><div style="font-size:22px;font-weight:800;color:var(--red)" id="gMoLoss">0</div></div>
+      </div>
+      <div style="flex:1;min-width:240px">
+        <div style="font-size:11px;font-weight:800;color:var(--text);margin:0 0 7px">⚠️ 이탈 신호 (상위)</div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px 14px">
+          <div style="display:flex;align-items:center;gap:7px;font-size:12px"><span class="signal-badge high">HIGH</span> 2주 이상 연속 결석</div>
+          <div style="display:flex;align-items:center;gap:7px;font-size:12px"><span class="signal-badge high">HIGH</span> 강습 3회 연속 취소</div>
+          <div style="display:flex;align-items:center;gap:7px;font-size:12px"><span class="signal-badge high">HIGH</span> CS 컴플레인 2건+</div>
+        </div>
+      </div>
+    </div>
+    <div class="guide-acc">
+      <button class="guide-acc-btn" onclick="toggleGuideAcc(this,'churn')">⚠️ 전체 이탈 신호 매트릭스 <span>▾</span></button>
+      <div class="guide-acc-body" style="display:none"></div>
+      <button class="guide-acc-btn" onclick="toggleGuideAcc(this,'churnstat')">📊 이탈 현황 추적 <span>▾</span></button>
+      <div class="guide-acc-body" style="display:none"></div>
+      <button class="guide-acc-btn" onclick="toggleGuideAcc(this,'principle')">🎯 CPO 운영원칙 <span>▾</span></button>
+      <div class="guide-acc-body" style="display:none"></div>
+      <button class="guide-acc-btn" onclick="toggleGuideAcc(this,'routine')">📅 정기 루틴 <span>▾</span></button>
+      <div class="guide-acc-body" style="display:none"></div>
+    </div>
   </div>
 
   <!-- ══════════════════════════════ 1. 예약 달력 ══════════════════════════════ -->
@@ -2830,9 +2826,8 @@ function loadCpoTodayStats() {
       _setTxt('dInqToday', d.todayInquiry); _setTxt('dInqMonth', d.monthInquiry);
       _setTxt('dRegToday', d.todayReg);     _setTxt('dRegMonth', d.monthReg);
       _setTxt('dMemActive', d.memberActive); _setTxt('dMemCorp', d.memberCorp); _setTxt('dMemEnded', d.memberEnded);
-      _cpoStats = d; renderActiveSummary();   // 교차 구성 요약카드 갱신(유효·법인·종료·순증감)
-      var _lf = document.getElementById('landingFlow'); if (_lf) _lf.innerHTML = _composeHtml();   // 랜딩 좌: 회원구성·비율바·순증감
-      _setTxt('gToLoss', d.todayLoss); _setTxt('gMoLoss', d.monthLoss);                            // 랜딩 우: 이탈 현황(오늘/월)
+      _cpoStats = d; renderActiveSummary();   // 회원관리 탭 요약카드(유효·법인·종료·비율바·순증감)
+      _setTxt('gToLoss', d.todayLoss); _setTxt('gMoLoss', d.monthLoss);   // CPO 가이드 이탈 현황(오늘/월)
     })
     .catch(function(){});
 }
