@@ -2756,8 +2756,8 @@ window._regAssign = function(id, category) {
           <tr><th style="width:44px">순서</th><th>켜면 하는 일</th><th>읽는 것</th></tr>
           <tr><td>1</td><td>내가 누구인지 파악 (페르소나·담당)</td><td><code>ai-{역할}.md</code></td></tr>
           <tr><td>2</td><td>회사 기본 규칙 로드</td><td><code>CLAUDE.md</code> (헌법·인덱스)</td></tr>
-          <tr><td>3</td><td><strong>운영 가이드 흡수</strong> (R/R·KPI·원칙)</td><td>웰페리온 ERP <strong>S2 공통탭 + 내 역할탭</strong></td></tr>
-          <tr><td>4</td><td>내 할 일 확인</td><td><code>status/{역할}.json</code> + 대기열</td></tr>
+          <tr><td>3</td><td><strong>운영 가이드 흡수</strong> (R/R·KPI·원칙)</td><td>웰페리온 ERP <strong>S2 공통탭 + 내 역할탭</strong> + <code>ssot/약속.json·incidents.json·canon_values.json·kpi.json</code> 직독(S2는 렌더만)</td></tr>
+          <tr><td>4</td><td>내 할 일 확인</td><td><code>status/_queue.json</code>의 내 <strong>PENDING·IN_PROGRESS</strong> (단일 출처) · <code>{역할}.json</code>은 보조</td></tr>
           <tr><td>5</td><td>나·KPI·권한을 표로 선언</td><td>—</td></tr>
           <tr><td>6</td><td>남의 영역 침범 금지 선언 후 대기</td><td>—</td></tr>
         </table>
@@ -2886,7 +2886,7 @@ window._regAssign = function(id, category) {
           <tr><th style="width:64px">#</th><th style="width:120px">요건</th><th>내용</th></tr>
           <tr><td><strong>①</strong></td><td><strong>커밋</strong></td><td><code>[DONE][{clevel}][{task_id}]</code> 형식으로 git <strong>commit + push</strong>.</td></tr>
           <tr><td><strong>②</strong></td><td><strong>상태</strong></td><td><code>status/{clevel}.json</code> + <code>status/_queue.json</code> 의 해당 task <code>status=DONE</code>.</td></tr>
-          <tr><td><strong>③</strong></td><td><strong>다음</strong></td><td>브릿지 <code>--next "다음 한 줄"</code> 또는 종결이면 <code>--terminal</code> — 빈칸 통과 금지(끊김 방지).</td></tr>
+          <tr><td><strong>③</strong></td><td><strong>다음</strong></td><td>브릿지 <code>--next "다음 한 줄"</code> 또는 종결이면 <code>--terminal</code> — 빈칸 통과 금지(끊김 방지). <span style="color:var(--dim);">(경고만 · 하드 차단은 ④ 증거뿐)</span></td></tr>
           <tr><td><strong>④</strong></td><td><strong>증거</strong></td><td><code>--artifact-url</code> = 스크린샷·로그·라이브확인 <strong>링크 필수</strong>. <strong>없으면 post-action이 DONE 등록을 거부</strong>(응답코드·push 성공만으론 완료 아님).</td></tr>
         </table>
         <div class="callout" style="margin-top:10px;background:#2a1a1a;border-left:3px solid #c0392b;"><strong>❌ 완료 거부 조건:</strong> ④증거(<code>--artifact-url</code>) 없이 DONE을 올리면 <code>clevel_post_action.py</code>가 <strong>거부(exit 2)</strong>하고 <code>clevel.bat</code>이 <strong>[DONE] 커밋·푸시를 막는다</strong>. 증거가 아직 없으면 <code>--status 진행중</code>으로 보고(완료 처리되지 않음).</div>
@@ -2993,11 +2993,7 @@ window._regAssign = function(id, category) {
         <h4 style="margin-top:20px;"><span class="ico">🔴</span>GM 게이트 (자동 차단 → 라우팅) <span style="font-size:12px;color:var(--dim);font-weight:400;">— 자동 진행 금지</span></h4>
         <table>
           <tr><th style="width:200px">위험 동작</th><th>처리</th></tr>
-          <tr><td><strong>💰 결제</strong></td><td>1원 이상 모든 결제 — 자동 차단 → GM 게이트</td></tr>
-          <tr><td><strong>🔒 보안</strong></td><td>비밀번호·결제·키값 등 — 자동 차단 → GM 게이트</td></tr>
-          <tr><td><strong>🚫 금지</strong></td><td>금지 항목 변경 — 자동 차단 → GM 게이트</td></tr>
-          <tr><td><strong>📐 전략</strong></td><td>전략·방향·포지셔닝 결정 — 자동 차단 → GM 게이트</td></tr>
-          <tr><td><strong>🏷️ 공식값</strong></td><td>브랜드·공식값 변경 — 자동 차단 → GM 게이트</td></tr>
+          <tr><td><strong>💰🔒🚫📐🏷️ 5종</strong></td><td>위 <a href="#con-gm5" style="color:var(--accent);">🎯 GM 결재 영역</a>(정본) 참조 — 자동 차단 → GM 게이트 (재열거 금지)</td></tr>
           <tr><td><strong>🛡️ 보안·차단 라이브 발효</strong></td><td>실제 차단·잠금 켜기 — <strong>GM 명시 go + 즉시 역롤백 보장</strong> 필수 (코드·설계·검증은 위 자율)</td></tr>
         </table>
         <p style="font-size:12.5px;color:var(--dim);margin-top:8px;">이 표 = <strong>advisory 경계 정의</strong>(점검 절차). 자동 차단/통과를 코드로 강제하는 enforcement는 별도 후속.</p>
@@ -3136,9 +3132,9 @@ window._regAssign = function(id, category) {
         <div class="callout" style="margin:8px 0 12px;"><strong>메인 CEO·6 C-Level = Opus(판단·결재 본업) 유지.</strong> 반복 작업(가동·patch·집계·git·송부)은 무조건 Sonnet/Haiku 서브에이전트(<code>executor</code> 등) 위임. 메인 모델로 반복 작업 처리 = 위반.</div>
         <table>
           <tr><th style="width:140px">모델</th><th>담당</th></tr>
-          <tr><td><strong>Haiku 4.5</strong></td><td>단순 read·lookup · 1줄 보고 · 텔레그램 송부</td></tr>
-          <tr><td><strong>Sonnet 4.6</strong></td><td>자동화 가동 · 집계 · patch · git · 콘텐츠 가공 · 일일 보고 빌드 · 로그 정리</td></tr>
-          <tr><td><strong>Opus 4.7</strong></td><td>판단 · 결정 · 진행 · 검토 · 결재 · 정책 정립 · 이슈 진단 · R&amp;D 방향 · Peer Cross-Check</td></tr>
+          <tr><td><strong>Haiku</strong></td><td>단순 read·lookup · 1줄 보고 · 텔레그램 송부</td></tr>
+          <tr><td><strong>Sonnet</strong></td><td>자동화 가동 · 집계 · patch · git · 콘텐츠 가공 · 일일 보고 빌드 · 로그 정리</td></tr>
+          <tr><td><strong>Opus</strong></td><td>판단 · 결정 · 진행 · 검토 · 결재 · 정책 정립 · 이슈 진단 · R&amp;D 방향 · Peer Cross-Check</td></tr>
         </table>
 
         <h4 style="margin-top:24px;"><span class="ico">📌</span>⑩ 지적·교훈 박제 원리 (구조·파이프라인으로 관리 · 지식만 메모리)</h4>
@@ -3234,7 +3230,7 @@ window._regAssign = function(id, category) {
       <tr>
         <td><strong>AI CTO</strong></td><td>CTX-CTO</td>
         <td>전사 인프라·자동화·시설 SOP·개발 아카이브 / 🗜️ 캐시·상시 컨텍스트 압축</td>
-        <td>scripts/ 폴더 구조 정비 / 자동화 태스크 가동 상태 점검 / 시설 유지보수 현황 갱신 / 기술 문서 현행화 / <strong>🗜️ 캐시·상시 컨텍스트 압축</strong> — 대상: 7 C레벨+웰리(CEO) 매 턴 로드 파일(review_queue.json·status/_queue.json·에이전트md·MEMORY.md·거대 SSOT 부분조회 등) / 기준: ① 죽은 이력 stub+아카이브 ② 정본 단일화(중복·구식 제거, S2 포인터 유지) ③ 측정→감축 (<strong>매주 일요일 정비 시작 시 <code>python scripts/context_budget_report.py --notify</code> 실행</strong> → <code>status/context_budget.json</code>에 항목별 토큰·추세 기록 → 임계초과 항목부터 슬림화. 측정=자동/삭제=사람 확인) / 안전: 행동=코드/멱등 스크립트(scripts/archive_review_queue.py · context_budget_report.py 등), 원본 아카이브 보존, 살아있는 데이터 무손상 / 연결: CTO-2026-06-09-CONTEXT-COMPRESSION-REVIEW 정규 실행분 (첫 적용 2026-06-13: review_queue.json 691→446행)</td>
+        <td>scripts/ 폴더 구조 정비 / 자동화 태스크 가동 상태 점검 / 시설 유지보수 현황 갱신 / 기술 문서 현행화 / <strong>🗜️ 캐시·상시 컨텍스트 압축</strong> — 대상: 7 C레벨+웰리(CEO) 매 턴 로드 파일(review_queue.json·status/_queue.json·에이전트md·MEMORY.md·거대 SSOT 부분조회 등) / 기준: ① 죽은 이력 stub+아카이브 ② 정본 단일화(중복·구식 제거, S2 포인터 유지) ③ 측정→감축 (<strong>매주 일요일 정비 시작 시 <code>python scripts/context_budget_report.py --notify</code> 실행</strong> → <code>status/context_budget.json</code>에 항목별 토큰·추세 기록 → 임계초과 항목부터 슬림화. 측정=자동/삭제=사람 확인) / 안전: 행동=코드/멱등 스크립트(scripts/archive_review_queue.py · context_budget_report.py 등), 원본 아카이브 보존, 살아있는 데이터 무손상</td>
       </tr>
         </table>
         <p style="margin-top:6px;color:var(--dim);font-size:12px;"><strong>공통 의무:</strong> 중복·구식·과잉 항목 정리 / 업무 흐름 명확화 / GM 지시 이상 자율 진화·고도화 제안·반영</p>
