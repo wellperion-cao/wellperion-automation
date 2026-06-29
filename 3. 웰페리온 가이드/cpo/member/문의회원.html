@@ -315,6 +315,9 @@ a.funnel-step:hover{background:rgba(183,159,138,0.08);color:var(--accent)}
 .cal-chip.experience{background:var(--teal-bg);color:var(--teal);border:1px solid var(--teal-border)}
 .cal-chip .cc-l1{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .cal-chip .cc-l2{font-size:9px;font-weight:600;opacity:0.9;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* 방문 완료 — 녹색 ✓ + 녹색 링(예약 색은 유지). 2026-06-29 시포 */
+.cal-chip.visited{border-color:var(--green-border);box-shadow:0 0 0 1px var(--green-border) inset}
+.cal-chip .cc-check{color:var(--green);font-weight:800;margin-right:3px}
 
 /* ── 클릭된 날 패널 ── */
 .day-panel{
@@ -2808,9 +2811,11 @@ function processCalendarData(data) {
     var cell = chipsDiv.parentElement;
     cell.classList.add('has-event');
     calEvents[date].forEach(function(ev){
+      var _visited = (ev.status === '방문');   // 방문 완료 → 칩에 녹색 ✓ 표시
       var chip = document.createElement('div');
-      chip.className = 'cal-chip ' + (ev.kind === '체험' ? 'experience' : 'tour');
-      var l1 = (ev.time ? esc(ev.time) + ' ' : '') + esc(ev.kind) + (ev.name ? ' ' + esc(ev.name) : '');
+      chip.className = 'cal-chip ' + (ev.kind === '체험' ? 'experience' : 'tour') + (_visited ? ' visited' : '');
+      var _check = _visited ? '<span class="cc-check">✓</span>' : '';
+      var l1 = _check + (ev.time ? esc(ev.time) + ' ' : '') + esc(ev.kind) + (ev.name ? ' ' + esc(ev.name) : '');
       chip.innerHTML = '<div class="cc-l1">' + l1 + '</div>' + (ev.phone ? '<div class="cc-l2">' + esc(ev.phone) + '</div>' : '');
       chipsDiv.appendChild(chip);
     });
