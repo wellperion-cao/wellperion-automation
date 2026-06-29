@@ -1044,8 +1044,40 @@ async def _run_draft_with_context(page, context, args: argparse.Namespace, publi
                 else:
                     print(
                         f"[INFO] 당근 URL 패턴 불일치 (현재: {_pub_url[:80]})"
-                        " — 수동 회수 필요"
+                        " — posts list에서 공개 URL 탐색"
                     )
+                    # bizprofile posts list에서 daangn.com/kr/business-posts/{fullPostId}
+                    # 링크 추출 (발행 직후 목록 최상단 = 방금 게시한 글)
+                    try:
+                        import asyncio as _asyncio
+                        _pl_url = (
+                            f"https://bizprofile.daangn.com/biz_accounts/"
+                            f"{DANGGN_BIZ_ACCOUNT_ID}/manager/posts"
+                        )
+                        await page.goto(_pl_url, wait_until="networkidle", timeout=20_000)
+                        await _asyncio.sleep(2)
+                        _hrefs = await page.evaluate(r"""() =>
+                            Array.from(document.querySelectorAll('a[href]'))
+                            .map(a => a.href)
+                            .filter(h => /daangn\.com\/kr\/business-posts\//.test(h))
+                        """)
+                        if _hrefs:
+                            _list_url = _hrefs[0]
+                            print(f"[INFO] posts list 공개 URL 발견: {_list_url}")
+                            _folder2 = (getattr(args, "content_dir", None) or "").strip()
+                            if _folder2:
+                                try:
+                                    from review_queue_util import update_review_post_url as _upd_rq2
+                                except ImportError:
+                                    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+                                    from review_queue_util import update_review_post_url as _upd_rq2
+                                _upd_rq2(_folder2, "당근", _list_url)
+                            else:
+                                print("[WARN] --content-dir 미지정 — review_queue 갱신 생략")
+                        else:
+                            print("[INFO] posts list에서도 공개 URL 미발견 (biz postId만 기록됨)")
+                    except Exception as _list_e:
+                        print(f"[WARN] posts list URL 탐색 실패: {_list_e}")
             except Exception as _cap_e:
                 print(f"[WARN] 당근 URL 캡처 실패 (발행 흐름 영향 없음): {_cap_e}")
         return rc

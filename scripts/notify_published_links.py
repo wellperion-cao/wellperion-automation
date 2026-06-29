@@ -118,6 +118,51 @@ def _format_message(group: list[dict]) -> str:
 
 
 # ---------------------------------------------------------------------------
+# 5채널 요약 메시지 (📢 형식 — 채널별 이모지)
+# ---------------------------------------------------------------------------
+_CHANNEL_EMOJI: dict[str, str] = {
+    "인스타그램": "📷",
+    "카카오": "💬",
+    "당근": "🥕",
+    "블로그": "📝",
+    "카페": "📝",
+}
+
+# 채널 출력 순서 고정: IG → 카카오 → 당근 → 블로그 → 카페
+_CHANNEL_ORDER = ["인스타그램", "카카오", "당근", "블로그", "카페"]
+
+
+def _channel_emoji(channel: str) -> str:
+    for key, emoji in _CHANNEL_EMOJI.items():
+        if key in channel:
+            return emoji
+    return "📄"
+
+
+def _format_summary_message(group: list[dict]) -> str:
+    """📢 5채널 발행 완료 요약 형식 (review_queue post_url 자동 수집)."""
+    title = _representative_title(group)
+    n = len(group)
+    lines = [f"📢 {title} — {n}채널 발행 완료", ""]
+    ordered = sorted(
+        group,
+        key=lambda it: next(
+            (i for i, k in enumerate(_CHANNEL_ORDER) if k in (it.get("channel") or "")),
+            len(_CHANNEL_ORDER),
+        ),
+    )
+    for it in ordered:
+        ch = it.get("channel") or "채널 미지정"
+        url = (it.get("post_url") or "").strip()
+        em = _channel_emoji(ch)
+        if url:
+            lines.append(f"{em} {ch}  {url}")
+        else:
+            lines.append(f"{em} {ch}  (URL 미회수)")
+    return "\n".join(lines)
+
+
+# ---------------------------------------------------------------------------
 # 텔레그램 전송
 # ---------------------------------------------------------------------------
 def _send(token: str, chat_id: str, text: str) -> bool:
@@ -142,7 +187,7 @@ def _send(token: str, chat_id: str, text: str) -> bool:
 # ---------------------------------------------------------------------------
 # 실행 엔트리
 # ---------------------------------------------------------------------------
-def run(folder: str | None, today: bool, since: str | None, dry_run: bool) -> int:
+def run(folder: str | None, today: bool, since: str | None, dry_run: bool, summary: bool = False) -> int:
     try:
         items: list[dict] = json.loads(QUEUE.read_text(encoding="utf-8"))
     except Exception as exc:
@@ -166,7 +211,7 @@ def run(folder: str | None, today: bool, since: str | None, dry_run: bool) -> in
 
     sent = 0
     for key, group in groups.items():
-        msg = _format_message(group)
+        msg = _format_summary_message(group) if summary else _format_message(group)
         if dry_run:
             print(msg)
             print("-" * 40)
@@ -186,6 +231,8 @@ def main() -> None:
     p.add_argument("--today", action="store_true", help="오늘(KST) 발행완료 건 롤업")
     p.add_argument("--since", metavar="YYYY-MM-DD", help="해당 날짜 이후 발행완료 건")
     p.add_argument("--dry-run", action="store_true", help="전송 없이 stdout 출력")
+    p.add_argument("--summary", action="store_true",
+                   help="📢 5채널 요약 형식 전송 (채널별 이모지+URL, review_queue post_url 자동 수집)")
     args = p.parse_args()
 
     if not args.folder and not args.today and not args.since:
@@ -197,6 +244,7 @@ def main() -> None:
         today=args.today,
         since=args.since,
         dry_run=args.dry_run,
+        summary=args.summary,
     ))
 
 

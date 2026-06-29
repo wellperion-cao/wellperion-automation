@@ -1101,28 +1101,34 @@ _WEEKDAY_KOR = ["월", "화", "수", "목", "금", "토", "일"]
 
 # ── 통일 포맷 헬퍼 (2026-06-11 GM 지시) ────────────────────────────────────────
 # 9슬롯(06/07/09/12/15/18/21/22/23) 출력 포맷을 단일 템플릿으로 통일.
-#   · 공통 헤더:  [HH시 · {분류} · 한줄목적]  + 날짜줄 + 구분선
+#   · 공통 헤더:  🕐 HH시 · 분류 — 짧은목적  + 짧은날짜줄 + 구분선
 #   · 분류 라벨:  개인 / 회사 / 개인&회사  (GM 한눈 파악 핵심)
 #   · 공통 구분선·푸터 단일화 (중복 제거)
 # ※ 07s(직원 공유 카드)는 GM 2026-06-29 지시로 07:00 본문에 합본(분리발송 폐지).
 # ※ 시간·내용 substance·로직은 불변. 시각 구조(헤더/구분/푸터)만 통일.
+# ※ 헤더 압축형 GM 2026-06-29 — 대괄호 제거·날짜 MM-DD 단축·시계 이모지 추가.
 _DIVIDER = "━━━━━━━━━━━━━━━━"
 _AUTO_FOOTER = "_본 메시지는 자동 발송입니다._"
+_CLOCK_FACES = ['🕛','🕐','🕑','🕒','🕓','🕔','🕕','🕖','🕗','🕘','🕙','🕚']
 
 
 def _unified_header(hour: str, category: str, purpose: str) -> str:
-    """모든 슬롯 공통 헤더 — [HH시 · 분류 · 한줄목적] + 날짜줄 + 구분선.
+    """슬롯 공통 헤더(압축형 GM 2026-06-29) — '🕐 HH시 · 분류 — 짧은목적' + 짧은날짜 + 구분선.
 
     hour:     "06" 등 2자리 시
     category: "개인" | "회사" | "개인&회사"
-    purpose:  한 줄 목적 (예: "하루 시작 · 운동 점검")
+    purpose:  한 줄 목적 (예: "하루시작·운동")
     """
     now = datetime.now()
-    date_str = now.strftime("%Y-%m-%d")
+    date_str = now.strftime("%m-%d")
     weekday_kor = _WEEKDAY_KOR[now.weekday()]
+    try:
+        clock = _CLOCK_FACES[int(hour) % 12]
+    except Exception:
+        clock = '🕐'
     return (
-        f"[{hour}시 · {category} · {purpose}]\n"
-        f"📅 {date_str} ({weekday_kor})\n"
+        f"{clock} {hour}시 · {category} — {purpose}\n"
+        f"{date_str}({weekday_kor})\n"
         f"{_DIVIDER}"
     )
 
@@ -1140,7 +1146,7 @@ def _build_06_body() -> str:
         workout_lines.append(f"  • {name}  ___{unit}  ☐")
 
     return (
-        f"{_unified_header('06', '개인', '하루 시작 · 운동 점검')}\n"
+        f"{_unified_header('06', '개인', '하루시작·운동')}\n"
         f"오늘도 좋은 하루 되십시오."
         f"{quote_line}\n"
         + "\n".join(workout_lines)
@@ -1220,7 +1226,7 @@ def _build_07_body() -> str:
     todo_block = "\n".join(todo_lines) if todo_lines else "  (어제 완료 항목 없음)"
 
     return (
-        f"{_unified_header('07', '개인&회사', '어제의 항로 결산')}\n"
+        f"{_unified_header('07', '개인&회사', '어제 결산')}\n"
         f"🏁 {yesterday} ({yesterday_wd}) 결산\n\n"
         f"   완료 요약\n"
         f"{table_str}\n\n"
@@ -1307,7 +1313,7 @@ def _build_09_body() -> str:
     finance_block = _fetch_cfo_finance_block()
 
     return (
-        f"{_unified_header('09', '회사', '업무·매출·지출 현황')}\n"
+        f"{_unified_header('09', '회사', '업무·매출·지출')}\n"
         f"📋 C-Level 업무 진행현황\n"
         f"{progress}\n\n"
         f"{_DIVIDER}\n"
@@ -1451,7 +1457,7 @@ def _build_12_body() -> str:
     checklist_block = _build_checklist_block("12:00")
 
     return (
-        f"{_unified_header('12', '회사', '오전 시설·지원·주차 현황')}\n"
+        f"{_unified_header('12', '회사', '오전 점검 현황')}\n"
         f"{checklist_block}\n\n"
         f"{_AUTO_FOOTER}"
     )
@@ -1480,7 +1486,7 @@ def _build_15_body() -> str:
     progress = fetch_current_progress()
 
     return (
-        f"{_unified_header('15', '개인&회사', '오늘 항로 1차 정리 · 진행 체크')}\n"
+        f"{_unified_header('15', '개인&회사', '오늘 1차 정리')}\n"
         f"👤 GM 진행 중 ({n_gm}건)\n"
         f"{gm_section}\n\n"
         f"{_DIVIDER}\n"
@@ -1512,7 +1518,7 @@ def _build_18_body() -> str:
 
     # 명언 = 아침(06시)·밤(22시) 2회만 (GM 2026-06-29 중복 정리) — 18시 명언 제거
     return (
-        f"{_unified_header('18', '회사', '오후 시설·지원·주차 · 퇴근 루틴')}\n"
+        f"{_unified_header('18', '회사', '오후 점검·퇴근')}\n"
         f"🌙 오늘도 수고하셨습니다.\n\n"
         f"{checklist_block}\n\n"
         f"{_DIVIDER}\n"
@@ -1589,7 +1595,7 @@ def _build_21_body() -> str:
     bridge_block = "\n".join(bridge_lines) if bridge_lines else "  (미완료 이월 항목 없음 — 오늘 항로 완주)"
 
     return (
-        f"{_unified_header('21', '개인&회사', '오늘 항로 최종 정리 · 내일 항로 정립')}\n"
+        f"{_unified_header('21', '개인&회사', '오늘 마감·내일 정립')}\n"
         f"   오늘의 성과\n"
         f"{table_str}\n\n"
         f"🚢 코드·자동화\n"
@@ -1618,7 +1624,7 @@ def _build_22_body() -> str:
         quote_line = "\n> \"충분한 수면이 내일의 판단력을 만듭니다.\"\n"
 
     return (
-        f"{_unified_header('22', '개인', '전자기기 OFF · 취침')}\n"
+        f"{_unified_header('22', '개인', '전자기기 OFF·취침')}\n"
         f"오늘 하루도 고생 많으셨습니다, GM님.\n"
         f"📵 전자기기 off — 수면 루틴 시작\n"
         f"{quote_line}"
@@ -1816,7 +1822,7 @@ def _build_23_body() -> str:
         # 폴백 — 기존 12/18 공용 블록 재사용
         checklist_block = _build_checklist_block("23:00")
         return (
-            f"{_unified_header('23', '회사', '마감 시설·지원·주차 현황')}\n"
+            f"{_unified_header('23', '회사', '마감 점검')}\n"
             f"{checklist_block}\n\n"
             f"{_AUTO_FOOTER}"
         )
@@ -1826,7 +1832,7 @@ def _build_23_body() -> str:
     dept_lines = _dept_status_lines()
 
     return (
-        f"{_unified_header('23', '회사', '마감 점검 현황')}\n"
+        f"{_unified_header('23', '회사', '마감 점검')}\n"
         f"{chart}\n"
         f"{weakspot}\n\n"
         f"{dept_lines}\n\n"
