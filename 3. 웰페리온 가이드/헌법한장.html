@@ -246,15 +246,26 @@
   }
 
   window._matrixEdit = function(){ setEdit(true); };
-  window._matrixCancel = function(){
-    fetch(RAW_URL + '?t=' + Date.now(), {cache:'no-store'})
+  function fetchMatrix(){
+    // 최신 보장: GAS read_file(GitHub API 직독·CDN 캐시 없음) → 실패 시 Pages 폴백
+    return fetch(GAS_URL, {method:'POST', redirect:'follow', headers:{'Content-Type':'text/plain;charset=utf-8'},
+        body: JSON.stringify({action:'read_file', path:'3. 웰페리온 가이드/coo/bootsetup_matrix.json'})})
       .then(function(r){ return r.json(); })
-      .then(function(d){ _matrixData = d; setEdit(false); });
+      .then(function(res){ if(res && res.ok && res.content){ return JSON.parse(res.content); } throw new Error((res && res.error) || 'read 실패'); })
+      .catch(function(){ return fetch('coo/bootsetup_matrix.json?t=' + Date.now(), {cache:'no-store'}).then(function(r){ return r.json(); }); });
+  }
+  window._matrixCancel = function(){
+    fetchMatrix().then(function(d){ _matrixData = d; setEdit(false); });
   };
   window._matrixSave = function(){
     var pin = prompt('GM 편집 저장 — 비밀번호를 입력하세요:');
     if(pin === null || pin === '') return;
     if(!_matrixData) return;
+    // 저장 직전 편집칸 전체를 모델에 반영 — blur/IME 누락 방지(원상복귀 버그 차단)
+    Array.prototype.forEach.call(body.querySelectorAll('td.cell-edit[contenteditable]'), function(el){
+      var role = el.getAttribute('data-role'), dim = parseInt(el.getAttribute('data-dim'), 10), val = el.textContent || '';
+      (_matrixData.roles || []).forEach(function(r){ if(r.id === role && Array.isArray(r.dims) && dim < r.dims.length) r.dims[dim] = val; });
+    });
     _matrixData.updated_at = new Date().toISOString().slice(0,10);
     var content = JSON.stringify(_matrixData, null, 2);
     var btn = document.getElementById('matrix-save-btn');
@@ -287,8 +298,7 @@
       });
   };
 
-  fetch(RAW_URL + '?t=' + Date.now(), {cache:'no-store'})
-    .then(function(r){ if(!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+  fetchMatrix()
     .then(function(j){
       _matrixData = j;
       renderMatrix();
