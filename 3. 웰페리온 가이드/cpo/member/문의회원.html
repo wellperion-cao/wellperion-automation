@@ -294,10 +294,18 @@ a.funnel-step:hover{background:rgba(183,159,138,0.08);color:var(--accent)}
   box-shadow:0 0 0 1px var(--teal) inset;
   background:rgba(78,196,196,0.04);
 }
+/* 선택한 날 — 골드 테두리(금일=청록과 구분). 2026-06-29 시포 */
+.cal-cell:not(.empty){cursor:pointer}
+.cal-cell.selected{
+  border-color:var(--accent);
+  box-shadow:0 0 0 2px var(--accent) inset;
+  background:var(--accent-bg);
+}
 .cal-cell.has-event{cursor:pointer}
 .cal-cell.has-event:hover{border-color:var(--teal-bright)}
 .cal-date{font-size:11px;font-weight:700;margin-bottom:4px;line-height:1;color:var(--dim-mid)}
 .cal-cell.today .cal-date{color:var(--teal);font-weight:800}
+.cal-cell.selected .cal-date{color:var(--accent);font-weight:800}
 .cal-chips{display:flex;flex-direction:column;gap:2px}
 .cal-chip{
   font-size:10px;font-weight:700;padding:2px 5px;border-radius:4px;
@@ -2687,6 +2695,14 @@ function changeMonth(delta) {
   loadCalendarData();
 }
 
+var _selectedDate = null;  // 사용자가 선택한 날(YYYY-MM-DD) — 골드 테두리 표시 + 재렌더 유지
+function selectCalCell(cell) {
+  _selectedDate = cell.dataset.date;
+  var grid = document.getElementById('calGrid');
+  grid.querySelectorAll('.cal-cell.selected').forEach(function(c){ c.classList.remove('selected'); });
+  cell.classList.add('selected');
+}
+
 function renderCalendarShell() {
   document.getElementById('calTitle').textContent = calYear + '년 ' + calMonth + '월';
   var grid = document.getElementById('calGrid');
@@ -2710,6 +2726,7 @@ function renderCalendarShell() {
     var cell = document.createElement('div');
     cell.className = 'cal-cell';
     if (dateStr === todayStr) cell.classList.add('today');
+    if (dateStr === _selectedDate) cell.classList.add('selected');  // 재렌더 후에도 선택 유지
     cell.dataset.date = dateStr;
 
     var dateDiv = document.createElement('div');
@@ -2724,7 +2741,8 @@ function renderCalendarShell() {
 
     cell.addEventListener('click', function() {
       var dt = this.dataset.date;
-      if (calEvents[dt] && calEvents[dt].length) openDayPanel(dt);
+      selectCalCell(this);          // 어느 날을 눌러도 골드 테두리 선택 표시
+      openDayPanel(dt);             // 예약 없는 날은 '예약 없음' 안내
     }.bind(cell));
 
     grid.appendChild(cell);
@@ -2844,6 +2862,9 @@ function openDayPanel(date) {
     }
     listEl.appendChild(item);
   });
+  if (!listEl.children.length) {
+    listEl.innerHTML = '<div class="day-item" style="opacity:.55">이 날은 예약이 없습니다.</div>';
+  }
   panel.classList.add('open');
 }
 
