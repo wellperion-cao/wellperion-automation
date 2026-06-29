@@ -18,7 +18,7 @@
 
 | 항목 | 사람이 보는 곳 | AI가 읽는 곳 | 기계가 읽는 곳 | 같은 원천? |
 |---|---|---|---|---|
-| 헌법 | S2 ceo탭(렌더) + `ssot/CONSTITUTION.md` | `ssot/CONSTITUTION.md` 부팅 직독(7 C-Level) | `welly_boot_guard.py` 등 코드가드 | ✅ |
+| 헌법 | S2 ceo탭(렌더) + `ssot/CONSTITUTION.md` | `ssot/CONSTITUTION.md` 부팅 직독(AI 7주체 = CEO+6 C-Level) | `welly_boot_guard.py` 등 코드가드 | ✅ |
 | 약속 | S2 공통탭(렌더) | `ssot/약속.json` 부팅 직독 | `hangro_board.py` 등 직독 | ✅ |
 | incidents | S2 + `ssot/dashboard.html` | `ssot/incidents.json` 직독 | `precommit_incident_guard.py` | ✅ |
 | canon_values | S2(렌더) | `ssot/canon_values.json` 직독 | `canon.py`·`divergence_scan.py` | ✅ |

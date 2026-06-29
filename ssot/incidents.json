@@ -3,6 +3,9 @@
     "fields": [
       "id",
       "date",
+      "watch_globs",
+      "gate",
+      "요약",
       "증상",
       "본질",
       "뿌리분류",
@@ -138,19 +141,6 @@
       "검증증거": "라이브 https://wellperion-cao.github.io/wellperion-automation/status/_queue.json HTTP200·active 20(PENDING 14+IN_PROGRESS 6)·DONE 54. 미러(3. 웰페리온 가이드/status/_queue.json) active 20=원본과 바이트 동일. sync 훅 직접 재실행 → no-op(멱등 재현). 커밋 c3de5178(미러+URL 교정)·c9eec7d3(동기화 훅)."
     },
     {
-      "id": "INC-009",
-      "date": "2026-06-26",
-      "watch_globs": [],
-      "gate": "warn",
-      "요약": "자율 웰리 루프 1관문 검증 중 executor 서브에이전트가 공유 작업 디렉터리에서 git reset --hard를 실행해 미커밋 작업물 6건을 소실시킨 사고. 격리 없이 파괴적 git 명령 실행이 근본원인.",
-      "증상": "자율 웰리 루프 1관문 검증 중 디스패치된 executor 서브에이전트가 공유 작업 디렉터리(C:\\Users\\jjky0\\welperion-automation)에서 `git reset --hard b68dcc53` 실행 → 미커밋 작업물 소실: scripts/compose_golf.py·compose_cta_card.py·danggn_upload_playwright.py·poc_blog_link_card.py 편집 + ssot/canon_values.json 편집 + status/briefs/COO-2026-06-25-CHECK-SINGLE-SOURCE-DESIGN.md 편집. git 복구 불가(추적 파일 미커밋 변경은 reflog 미저장). 부분 복구: instagram/_AI시리즈_로드맵.md → dangling blob 에서 .RECOVERED.md 로 복원(GM 비교용). 미추적(??) 파일은 전부 무사.",
-      "본질": "공유 작업 디렉터리에서 파괴적 git 명령(reset --hard) 격리 없이 실행 — 서브에이전트가 미커밋 변경 존재 여부를 확인하지 않고 실험·검증 목적으로 공유 워킹트리를 유일한 실험장으로 사용. INC-002(검증멈춤)와 같은 결 — 파괴적 명령 전 상태 검증 단계 누락.",
-      "뿌리분류": "검증멈춤",
-      "차단조치": "격리 git 작업(reset --hard·revert·clean·checkout -- 등 증빙/실험 목적 파괴 명령)은 공유 작업 디렉터리에서 절대 금지. 반드시 임시 worktree(`git worktree add`)또는 별도 clone 에서 수행. 파괴적 명령 전 미커밋 변경(git status)이 있으면 즉시 중단·GM 보고. 서브에이전트 디스패치 시 파일 변조 격리는 isolation=worktree 옵션 사용 의무화. incidents.json + 메모리 파일(feedback_no_destructive_git_in_shared_worktree.md) 박제.",
-      "상태": "GUARDED",
-      "검증증거": "2026-06-26 사고 확정. 소실 추적파일 6건(git log·reflog 복구 불가). 부분 복구: instagram/_AI시리즈_로드맵.RECOVERED.md(dangling blob cat-file). 미추적 파일 전부 무사(reset --hard는 untracked 미건드림). 가드레일 incidents.json INC-009 박제 + 메모리 파일 작성 완료. 재현 검증은 소실 특성상 사후 실측 불가 — 가드레일 명문화로 GUARDED 처리."
-    },
-    {
       "id": "INC-008",
       "date": "2026-06-19",
       "watch_globs": [
@@ -166,6 +156,19 @@
       "차단조치": "A) _queue.json 전용 git 머지 드라이버 scripts/git_merge_queue.py — 충돌 시 두 버전을 task_id 합집합으로 자동 병합(terminal/DONE 우선·무손실·파싱실패는 정상충돌로 폴백). B) .gitattributes: '_queue.json merge=queuejson'(파일명 패턴=본체+미러 동시적용) + '*.jsonl merge=union'(append 로그). C) install_hooks.sh 에 merge.queuejson git config 등록(머신 영구화). D) post_commit_push.py: 부모 lock 안 non-ff 는 경고 대신 로그(false 알람 제거), 신규 --sweep 푸시 스위퍼(daily_scheduler 5분 주기)가 lock 정상획득→fetch+rebase+push 로 밀린 커밋 확실 드레인·진짜 실패만 경고.",
       "상태": "GUARDED",
       "검증증거": "격리 git repo 재현: divergent 2커밋(ours=X 추가·master=Y 추가)을 rebase → 'Successfully rebased'·충돌마커 0·결과에 X·Y·BASE 전부 보존(union 무손실). 드라이버 단위테스트: 같은 task_id 충돌 시 terminal=true 버전 채택 확인. git config merge.queuejson.driver 활성 실측. .gitattributes·git_merge_queue.py origin 반영. 스위퍼(--sweep) no-op·정상 push 경로 통과(unpushed 0). 봇 재기동 후 스위퍼 5분 주기 발효."
+    },
+    {
+      "id": "INC-009",
+      "date": "2026-06-26",
+      "watch_globs": [],
+      "gate": "warn",
+      "요약": "자율 웰리 루프 1관문 검증 중 executor 서브에이전트가 공유 작업 디렉터리에서 git reset --hard를 실행해 미커밋 작업물 6건을 소실시킨 사고. 격리 없이 파괴적 git 명령 실행이 근본원인.",
+      "증상": "자율 웰리 루프 1관문 검증 중 디스패치된 executor 서브에이전트가 공유 작업 디렉터리(C:\\Users\\jjky0\\welperion-automation)에서 `git reset --hard b68dcc53` 실행 → 미커밋 작업물 소실: scripts/compose_golf.py·compose_cta_card.py·danggn_upload_playwright.py·poc_blog_link_card.py 편집 + ssot/canon_values.json 편집 + status/briefs/COO-2026-06-25-CHECK-SINGLE-SOURCE-DESIGN.md 편집. git 복구 불가(추적 파일 미커밋 변경은 reflog 미저장). 부분 복구: instagram/_AI시리즈_로드맵.md → dangling blob 에서 .RECOVERED.md 로 복원(GM 비교용). 미추적(??) 파일은 전부 무사.",
+      "본질": "공유 작업 디렉터리에서 파괴적 git 명령(reset --hard) 격리 없이 실행 — 서브에이전트가 미커밋 변경 존재 여부를 확인하지 않고 실험·검증 목적으로 공유 워킹트리를 유일한 실험장으로 사용. INC-002(검증멈춤)와 같은 결 — 파괴적 명령 전 상태 검증 단계 누락.",
+      "뿌리분류": "검증멈춤",
+      "차단조치": "격리 git 작업(reset --hard·revert·clean·checkout -- 등 증빙/실험 목적 파괴 명령)은 공유 작업 디렉터리에서 절대 금지. 반드시 임시 worktree(`git worktree add`)또는 별도 clone 에서 수행. 파괴적 명령 전 미커밋 변경(git status)이 있으면 즉시 중단·GM 보고. 서브에이전트 디스패치 시 파일 변조 격리는 isolation=worktree 옵션 사용 의무화. incidents.json + 메모리 파일(feedback_no_destructive_git_in_shared_worktree.md) 박제.",
+      "상태": "GUARDED",
+      "검증증거": "2026-06-26 사고 확정. 소실 추적파일 6건(git log·reflog 복구 불가). 부분 복구: instagram/_AI시리즈_로드맵.RECOVERED.md(dangling blob cat-file). 미추적 파일 전부 무사(reset --hard는 untracked 미건드림). 가드레일 incidents.json INC-009 박제 + 메모리 파일 작성 완료. 재현 검증은 소실 특성상 사후 실측 불가 — 가드레일 명문화로 GUARDED 처리."
     }
   ]
 }

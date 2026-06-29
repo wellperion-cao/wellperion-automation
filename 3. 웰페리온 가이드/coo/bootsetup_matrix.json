@@ -1,5 +1,5 @@
 {
-  "_doc": "AI C-Level 부트셋업 한눈에 매트릭스 단일 정본 (8역할 x 8차원). S2 공통탭 카드그리드 렌더 소스. 편집=S2 인라인편집+GM PIN. 저장=GAS commit_file(3. 웰페리온 가이드/coo/bootsetup_matrix.json). 이 파일=ssot/ 정본(렌더용 미러=coo/bootsetup_matrix.json). 변경=GM 결재.",
+  "_doc": "AI C-Level 부트셋업 한눈에 매트릭스 단일 정본 (8역할 x 8차원). 정본=coo/bootsetup_matrix.json (역할 캐논 렌더 소스 · ssot/엔 이 파일 없음). S2 공통탭 카드그리드 + 헌법한장.html 렌더 소스. 편집=S2/헌법한장 인라인편집+GM PIN. 저장=GAS commit_file(3. 웰페리온 가이드/coo/bootsetup_matrix.json). 변경=GM 결재. ※ KPI 정본=ssot/kpi.json — dims[3](KPI)은 표시에서 미사용(헌법한장은 kpi.json 직독, GM만 dims[3] 폴백). 복사발산 차단(INC-001류).",
   "updated_at": "2026-06-29",
   "roles": [
     {
@@ -35,7 +35,7 @@
       "dims": [
         "ERP 전 업무 자동화·고도화, 스포츠클럽 ERP 상품화",
         "C레벨 배 정리·항해 조율 → 북극성 도달 오케스트레이션 · 매일 06:30 전 C-Level 북극성 추천 두뇌(top3 선정·역할태그·근거)→GM 승인→항로 자동등록(엔진=시토)",
-        "ssot/ 3종 직독 + AGENTS.md + 웰리.md + _queue",
+        "ssot/ 4종(약속·incidents·canon·kpi) 직독 + AGENTS.md + 웰리.md + _queue",
         "- C레벨 항해 배 정리\n- 북극성 진척도\n- 실행 완결률\n- G1 정합",
         "incidents.json 정합성 가드 · 같은 본질 2회 = 에스컬레이션",
         "결제·보안·금지·전략·공식값 = GM 결재. 결재 종착 = GM 단일",
@@ -68,7 +68,7 @@
       "dims": [
         "노출 → 회원 전환 엔진 완성 (무인 자동화 + 전환율 목표)",
         "기획→제작→검수→GM 승인→자동발행→웰리 대조 완료",
-        "ssot/ 3종 + 시모.md + S2 공통·cmo탭 + M1~M4",
+        "ssot/ 4종(약속·incidents·canon·kpi) + 시모.md + S2 공통·cmo탭 + M1~M4",
         "- 전환 퍼널 단계별 전환율\n- 자동화 무인화율\n- 월 ROI",
         "incidents.json INC-001·003~006 GUARDED · 코드가드 4종",
         "자율: 제작·기획·코드·집계. GM 게이트: 발행·결제·보안·공식값",
@@ -109,7 +109,7 @@
       "dims": [
         "무인 운영 시스템 완성 — 점검·결재·VOC·SOP 자동화",
         "모호성 제거 → 자동화 실행 → 실무진 바로 쓰는 수준 = 완료",
-        "ssot/ 3종 + 시우.md + S2 공통·COO탭 + O1·O2 + coo.json",
+        "ssot/ 4종(약속·incidents·canon·kpi) + 시우.md + S2 공통·COO탭 + O1·O2 + coo.json",
         "- 점검 완료율(4부서 일일)\n- 운영 마찰 인시던트 수",
         "incidents.json GUARDED · truncation 게이트 + git_lock",
         "자율: 금지 외 전부. GM 결재: 결제·보안·금지·전략·공식값",
@@ -146,7 +146,7 @@
       "dims": [
         "서버·ERP 백엔드(서버+시트)단을 GM이 신경 안 써도 되게\n①자동화→자율화(AI가 판단·완결)\n②보안·안정성 철저\n③무의미·중복 데이터 제거·단순화.\n새 자동화 전 단순화 먼저",
         "모호성 제거(L14) → ralph·ulw·team → 실무진 바로 쓰는 수준",
-        "ssot/ 3종 + 시토.md + S2 공통·cto탭",
+        "ssot/ 4종(약속·incidents·canon·kpi) + 시토.md + S2 공통·cto탭",
         "- 자동화 가동률\n- 장애 0\n- 무인증 GAS 0\n- 미푸시 0\n- 정합 어긋남 0",
         "incidents.json GUARDED · 트렁케이션게이트·GitLock·부팅가드·연동헬스",
         "보안·결제·금지·전략·공식값·KPI정의 = GM 결재. 라이브발효 = GM 승인",
@@ -175,7 +175,7 @@
       "dims": [
         "문의→체험→가입 전환 퍼널 가시화 · 회원 라이프사이클 관리",
         "문의유입→진행상태 기록→퍼널집계→전환추적→이탈감지→에스컬",
-        "ssot/ 3종 + 시포.md + S2 공통·cpo탭 + P1섹터 + cpo.json",
+        "ssot/ 4종(약속·incidents·canon·kpi) + 시포.md + S2 공통·cpo탭 + P1섹터 + cpo.json",
         "- 문의 전환율\n- 퍼널 잔류 수\n- 진행상태 입력 완료율\n- 예약 활성 건수",
         "PII 게이트 · 이중집계 방지 · 컬럼 매칭 폴백 · stage_funnel 오집계",
         "자율: 금지 외 전부. GM 게이트: PII 발효·실명노출·회원DB 구조변경",
@@ -200,7 +200,7 @@
       "dims": [
         "매출·지출 KPI 정확화 · 재무 투명성 (전사 예산 한눈에)",
         "소스확인(GAS·시트)→집계·검증→대시보드 반영→웰리·GM 보고",
-        "ssot/ 3종 + 시뽀.md + S2 공통·cfo탭 + F1·F2 + cfo.json",
+        "ssot/ 4종(약속·incidents·canon·kpi) + 시뽀.md + S2 공통·cfo탭 + F1·F2 + cfo.json",
         "- 월 매출 정확도\n- 연간 달성률\n- 지출 연동 상태\n- 이상감지→경보 소요",
         "8.33억 중복합산 가드 · 칸밀림 가드 · MCP차단→GAS openById · 공식값 게이트",
         "자율: 집계로직·대시보드 패치. GM 결재: 결제·예산정책·목표값·공식값",
@@ -225,7 +225,7 @@
       "dims": [
         "인사가 시스템으로 굴러가는 조직 — 소속·평가·교육·계약 자동화",
         "이슈접수→데이터확인(H1·H2)→처리·설계→보고결재→박제 원샷커밋",
-        "ssot/ 3종 + 시로.md + S2 공통·chro탭 + H1·H2 + chro.json",
+        "ssot/ 4종(약속·incidents·canon·kpi) + 시로.md + S2 공통·chro탭 + H1·H2 + chro.json",
         "- 인사평가 체계 가동률\n- 교육 이수율\n- 이슈 처리 리드타임\n- 소속 정합도",
         "유령GAS 생성 금지 · 평가GAS=설계확정 전 구현 금지 · 결재워크플로 수정 금지",
         "자율: 금지 외 전부. GM 결재: 평가체계확정·취업규칙변경·계약조건·채용퇴사",
