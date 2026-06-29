@@ -318,6 +318,9 @@ a.funnel-step:hover{background:rgba(183,159,138,0.08);color:var(--accent)}
 /* 방문 완료 — 녹색 ✓ + 녹색 링(예약 색은 유지). 2026-06-29 시포 */
 .cal-chip.visited{border-color:var(--green-border);box-shadow:0 0 0 1px var(--green-border) inset}
 .cal-chip .cc-check{color:var(--green);font-weight:800;margin-right:3px}
+/* 등록 완료 — 금색 ♛ + 금색 링(방문 녹색과 구분). 2026-06-29 시포 */
+.cal-chip.registered{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset;background:var(--accent-bg)}
+.cal-chip .cc-reg{color:var(--accent);font-weight:800;margin-right:3px}
 
 /* ── 클릭된 날 패널 ── */
 .day-panel{
@@ -436,6 +439,9 @@ a.funnel-step:hover{background:rgba(183,159,138,0.08);color:var(--accent)}
 .db-table tr:last-child td{border-bottom:none}
 .db-table tr:hover td{background:rgba(255,255,255,0.025)}
 .db-table tr.editing td{background:rgba(78,196,196,0.04)}
+/* 등록(SUC) 회원 행 — 금색 좌측 띠 + 옅은 금색 배경. 2026-06-29 시포 */
+tr.row-registered{background:var(--accent-bg)}
+tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
 
 /* ── 인라인 입력 ── */
 .cell-input{
@@ -659,6 +665,7 @@ a.funnel-step:hover{background:rgba(183,159,138,0.08);color:var(--accent)}
 .reg-table td.left{text-align:left}
 .reg-table tr:last-child td{border-bottom:none}
 .reg-table tr:hover td{background:rgba(255,255,255,0.02)}
+.reg-new-badge{display:inline-block;font-size:10px;font-weight:800;padding:1px 6px;border-radius:6px;background:var(--accent);color:#fff;margin-left:6px;vertical-align:middle}
 .month-cb{width:15px;height:15px;cursor:pointer;accent-color:var(--teal)}
 
 /* ═══════════════════════════════════════
@@ -2358,6 +2365,8 @@ function _regRender() {
 
   document.getElementById('regCount').textContent = '총 ' + _regRows.length + '명';
 
+  var _today = (function(){ var d = new Date(); return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'); })();
+
   _regRows.forEach(function(member){
     var tr = document.createElement('tr');
     tr.dataset.phone = member.phone || '';
@@ -2365,7 +2374,8 @@ function _regRender() {
     var tdName = document.createElement('td');
     tdName.className = 'left';
     tdName.style.fontWeight = '700';
-    tdName.textContent = member.name || '—';
+    var _isNewToday = member.regDate && String(member.regDate).startsWith(_today);
+    tdName.innerHTML = (member.name ? esc(member.name) : '—') + (_isNewToday ? '<span class="reg-new-badge">NEW</span>' : '');
     tr.appendChild(tdName);
 
     var tdPhone = document.createElement('td');
@@ -2818,11 +2828,12 @@ function processCalendarData(data) {
     var cell = chipsDiv.parentElement;
     cell.classList.add('has-event');
     calEvents[date].forEach(function(ev){
-      var _visited = (ev.status === '방문');   // 방문 완료 → 칩에 녹색 ✓ 표시
+      var _registered = (ev.status === 'SUC' || ev.status === '단기SUC');   // 등록 완료 → 금색 ♛(방문보다 우선)
+      var _visited = (ev.status === '방문');                                 // 방문 완료 → 녹색 ✓
       var chip = document.createElement('div');
-      chip.className = 'cal-chip ' + (ev.kind === '체험' ? 'experience' : 'tour') + (_visited ? ' visited' : '');
-      var _check = _visited ? '<span class="cc-check">✓</span>' : '';
-      var l1 = _check + (ev.time ? esc(ev.time) + ' ' : '') + esc(ev.kind) + (ev.name ? ' ' + esc(ev.name) : '');
+      chip.className = 'cal-chip ' + (ev.kind === '체험' ? 'experience' : 'tour') + (_registered ? ' registered' : (_visited ? ' visited' : ''));
+      var _mark = _registered ? '<span class="cc-reg">♛</span>' : (_visited ? '<span class="cc-check">✓</span>' : '');
+      var l1 = _mark + (ev.time ? esc(ev.time) + ' ' : '') + esc(ev.kind) + (ev.name ? ' ' + esc(ev.name) : '');
       chip.innerHTML = '<div class="cc-l1">' + l1 + '</div>' + (ev.phone ? '<div class="cc-l2">' + esc(ev.phone) + '</div>' : '');
       chipsDiv.appendChild(chip);
     });
@@ -2972,10 +2983,11 @@ function saveConsultModal() {
   }
 
   var saveBtn = document.getElementById('cmSaveBtn');
+  var _celebrateReg = registered; var _regName = (_consultEv && _consultEv.name) ? _consultEv.name : '';
   saveBtn.disabled = true;
   apiPost(payload)
     .then(function(){
-      showToast('저장', 'ok');
+      showToast(_celebrateReg ? ('🎉 등록 완료 · ' + (_regName ? _regName + '님 환영합니다' : '환영합니다')) : '저장', 'ok');
       closeConsultModal();
       renderCalendarShell();
       loadCalendarData();                       // 달력 갱신(셸 재구성 후 재로드 — 칩 중복 방지)
@@ -3106,6 +3118,7 @@ function buildDbRow(row, isNew) {
   if (isNew) tr.classList.add('editing');
 
   var statusCls = STATUS_CLASS[row.status] || 'new';
+  if (row.status === 'SUC' || row.status === '단기SUC') tr.classList.add('row-registered');  // 등록 회원 금색 강조
 
   // ── 문의일 (읽기 전용) — 맨 앞 (2026-06-24 GM) ──
   var tdTs = document.createElement('td');
