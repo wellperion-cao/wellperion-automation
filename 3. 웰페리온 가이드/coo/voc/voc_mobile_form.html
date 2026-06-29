@@ -84,10 +84,7 @@ select{appearance:none;-webkit-appearance:none;background-image:url("data:image/
         <button type="button" class="type-btn" data-cat="clean">🧹 청결 이슈 접수</button>
         <button type="button" class="type-btn" data-cat="facility">🛠️ 시설물 고장 접수</button>
         <button type="button" class="type-btn" data-cat="lost">🔍 분실물 접수</button>
-        <div class="banner-card" aria-label="안내">
-          <span class="banner-icon">💬</span>
-          <span class="banner-main">회원님의 말씀 귀담아 듣겠습니다</span>
-        </div>
+        <button type="button" class="type-btn" data-cat="complaint">💬 컴플레인 접수</button>
         <button type="button" class="type-btn" data-cat="praise">⭐ 직원·강사 칭찬합니다</button>
         <button type="button" class="type-btn" data-cat="voice">🗣️ 직원·강사 쓴소리합니다</button>
       </div>
@@ -176,10 +173,19 @@ select{appearance:none;-webkit-appearance:none;background-image:url("data:image/
       { key:'loc',           label:'위치',           type:'text',     ph:'예: 2층 락커룸, 수영장 …' },
       { key:'content',       label:'상세 내용',      type:'textarea', opt:true, ph:'추가로 전하실 내용이 있으면 자유롭게 적어주세요.' },
       { key:'photo',         label:'사진 첨부',      type:'photo',    opt:true }
+    ],
+    complaint: [
+      { key:'name',       label:'이름',       type:'text',     ph:'실명을 입력해 주세요', req:true },
+      { key:'contact',    label:'연락처',     type:'tel',      ph:'010-1234-5678', req:true },
+      { key:'area',       label:'분야',       type:'select',   ph:'분야를 선택하세요', opts:['직원 응대','운영·정책','이용 에티켓','기타'] },
+      { key:'loc',        label:'발생 위치',  type:'text',     ph:'예: 2층 락커룸, 수영장 …' },
+      { key:'occurredAt', label:'발생 시점',  type:'date' },
+      { key:'content',    label:'내용',       type:'textarea', ph:'불편하셨던 상황을 편하게 들려주세요. 자세히 적어주실수록 더 정확히 도와드릴 수 있어요.' },
+      { key:'photo',      label:'사진 첨부',  type:'photo',    opt:true }
     ]
   };
   // 백엔드로 보낼 추가 필드 키 (없으면 빈값)
-  var EXTRA_KEYS = ['itemName','lostWhen','keepWhere','equipName','severity','usable','issueKind','urgency','targetStaff','episode','anonymousPref'];
+  var EXTRA_KEYS = ['itemName','lostWhen','keepWhere','equipName','severity','usable','issueKind','urgency','targetStaff','episode','anonymousPref','area','occurredAt'];
 
   var selectedCategory = '';
   var photoData = '';
@@ -374,7 +380,6 @@ select{appearance:none;-webkit-appearance:none;background-image:url("data:image/
 
     var payload = {
       action: 'reg_submit',
-      t: 'wlp_voc_7b3f9a2e6c1d4085',   // 접수 위조방지 토큰(시토 2026-06-29) — GAS VOC_SUBMIT_TOKEN_DEFAULT와 일치. 바뀌면 양쪽 동시 교체.
       category: selectedCategory,
       name: vals.name || '',
       contact: vals.contact || '',
