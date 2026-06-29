@@ -24,8 +24,8 @@ const ITEM_HEADERS = ['항목ID','카테고리','항목명','상세','성별','�
 const ITEM_DEPT_COL = 8;    // '부서' 0-based 인덱스(9번째 열)
 const ITEM_ROUNDS_COL = 9;  // '회차' 0-based 인덱스(10번째 열) — 오전조/오후조/마감조 라벨 또는 am1,pm1,close1. 빈값 폴백
 const ITEM_SCHED_COL = 10;  // '점검일정' 0-based 인덱스(11번째 열) — 요일·몇째주 구조저장 "tue,fri|2" 형식. 빈값 가능
-const ITEM_SEED_COL = 11;   // '시드' 0-based 인덱스(12번째 열) — 과거 'Y' 잔재(seed 폐기). getItems가 더는 skip 안 함
-function _isSeedRow(row){ return String(row[ITEM_SEED_COL] == null ? '' : row[ITEM_SEED_COL]).trim() === 'Y'; }
+const ITEM_SEED_COL = 11;   // '시드' 12번째 열 — 2026-06-29 개념 완전 폐기. 항상 빈칸·어떤 로직도 읽지 않음(데드 컬럼).
+function _isSeedRow(row){ return false; }   // 2026-06-29 시우: seed 개념 폐기 — 항상 false(되살아나지 않게 박제). 과거 'Y' 보존이 saveItems 시 시드행 중복증식의 뿌리였음.
 function _itemDept(v){ var d = String(v == null ? '' : v).trim(); return d || 'support'; }
 
 const BOT_TOKEN = PropertiesService.getScriptProperties().getProperty('TELEGRAM_BOT_TOKEN');
@@ -309,6 +309,7 @@ function doGet(e) {
   if (action === 'clear_zone_checks') { return clearZoneCheckedRows(e.parameter.dept || 'support', e.parameter.date || '', e.parameter.all === '1'); }
   if (action === 'delete_item_row') { return deleteItemRow(e.parameter.dept || 'support', e.parameter.date || '', e.parameter.zone || '', e.parameter.itemId || ''); }
   if (action === 'purge_orphan_checks') { return purgeOrphanChecks(e.parameter.dept || 'support'); }   // 매뉴얼에 없는 고아/테스트 항목ID를 원장·시트에서 일괄 제거. 2026-06-16 시우.
+  if (action === 'dedup_items') { return dedupItems(e.parameter.dept || 'support'); }   // 지원_매뉴얼 중복 항목ID 1줄로 정리(시드행 중복 청소)+시드칸 전체 비움. 백업탭 적립. 2026-06-29 시우.
   if (action === 'list_tabs') { return jsonRes({ tabs: SpreadsheetApp.getActiveSpreadsheet().getSheets().map(function(s){ return { name: s.getName(), gid: s.getSheetId() }; }) }); }   // gid→탭 확인용. 2026-06-15 시우.
   if (action === 'dump_snapshot') {   // 점검일지 스냅샷 전체행 덤프 — 진단용. 2026-06-16 시우.
     var _ssh = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(_snapshotTabName(e.parameter.dept || 'support'));
@@ -1962,8 +1963,8 @@ function saveItems(body) {
     for (var e = 0; e < existing.length; e++) {
       var r = existing[e];
       if (!r[0] && !r[2]) continue; // 빈 행 스킵
-      // P1-4: 타 dept OR seed='Y' 행 보존 → CUSTOM(shadow/added) 저장이 시드 격리행을 침범하지 않음.
-      if (_itemDept(r[ITEM_DEPT_COL]) !== reqDept || _isSeedRow(r)) preserved.push(r);
+      // 2026-06-29 시우: '시드' 개념 완전 폐기 — seed='Y' 행 별도 보존 제거(이게 saveItems 시 시드행 1개씩 중복증식의 뿌리). 타 dept 행만 보존.
+      if (_itemDept(r[ITEM_DEPT_COL]) !== reqDept) preserved.push(r);
     }
   }
 
@@ -1995,6 +1996,54 @@ function saveItems(body) {
     sheet.getRange(2, 1, rows.length, ITEM_HEADERS.length).setValues(rows);
   }
   return jsonRes({ ok: true, count: mine.length, total: rows.length, dept: reqDept });
+}
+
+// ─── 매뉴얼 항목 중복 정리 (GET ?action=dedup_items[&dept=support]) — 2026-06-29 시우 ───
+// '시드' 개념 폐기 잔재 청소: 같은 항목ID가 〈시드 빈칸〉+〈시드='Y'〉 2줄로 증식된 것을 1줄로.
+// 안전: ①원본 전체를 백업탭(_매뉴얼백업_dedup)에 적립(역롤백) ②항목ID별 1줄만 보존(시드 빈칸행 우선) ③생존행 시드칸 전부 '' ④멱등(재실행 시 removed 0).
+function dedupItems(reqDept) {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName(SHEET_ITEMS);
+  if (!sheet) return jsonRes({ ok: false, error: 'no item sheet' });
+  var lastRow = sheet.getLastRow();
+  if (lastRow < 2) return jsonRes({ ok: true, before: 0, after: 0, removed: [] });
+  var W = ITEM_HEADERS.length;
+  var all = sheet.getRange(2, 1, lastRow - 1, W).getValues();
+
+  // 1) 백업탭 덮어쓰기 — 헤더 + 원본 전체(역롤백 안전망)
+  var bkName = '_매뉴얼백업_dedup';
+  var bk = ss.getSheetByName(bkName);
+  if (!bk) bk = ss.insertSheet(bkName);
+  bk.clearContents();
+  bk.getRange(1, 1, 1, W).setValues([ITEM_HEADERS]);
+  if (all.length > 0) bk.getRange(2, 1, all.length, W).setValues(all);
+
+  // 2) 항목ID별 dedup — 시드 빈칸행 우선 보존(시드='Y'행 버림)
+  var order = [], pick = {}, removed = [];
+  for (var i = 0; i < all.length; i++) {
+    var r = all[i];
+    var id = String(r[0] || '').trim();
+    if (!id && !String(r[2] || '').trim()) continue;   // 완전 빈 행 스킵
+    var seedBlank = String(r[ITEM_SEED_COL] == null ? '' : r[ITEM_SEED_COL]).trim() !== 'Y';
+    if (!pick[id]) { pick[id] = r; order.push(id); }
+    else {
+      var keptBlank = String(pick[id][ITEM_SEED_COL] == null ? '' : pick[id][ITEM_SEED_COL]).trim() !== 'Y';
+      if (!keptBlank && seedBlank) pick[id] = r;   // 기존이 Y·새것이 빈칸 → 교체
+      removed.push(id);
+    }
+  }
+
+  // 3) 생존행 시드칸 '' 박제 후 재기록
+  var out = order.map(function (id) {
+    var r = pick[id].slice();
+    while (r.length < W) r.push('');
+    r[ITEM_SEED_COL] = '';
+    return r;
+  });
+  sheet.getRange(2, 1, lastRow - 1, W).clearContent();
+  if (out.length > 0) sheet.getRange(2, 1, out.length, W).setValues(out);
+
+  return jsonRes({ ok: true, before: all.length, after: out.length, removedCount: removed.length, removed: removed, backupTab: bkName, dept: reqDept });
 }
 
 // ─── 시드 단방향 동기화 (POST {action:'syncSeedItems', dept, seeds:[...]}) — Part1 시우 2026-06-23 ───

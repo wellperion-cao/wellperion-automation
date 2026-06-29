@@ -1403,7 +1403,8 @@ function populateOneDropdown(selId,gender){
   if(!el)return;
   if(document.activeElement===el)return;   // 입력 중엔 미개입(IME 보호)
   const rk=(typeof getRoundG==='function')?getRoundG(gender):'';
-  el.value=(rk&&localStorage.getItem('wcheck_sub_'+gender+'_'+rk))||localStorage.getItem('wcheck_sub_last_'+gender)||'';
+  const dk=(typeof getDateG==='function')?getDateG(gender):'';
+  el.value=(dk&&rk&&localStorage.getItem('wcheck_sub_'+dk+'_'+gender+'_'+rk))||(dk&&localStorage.getItem('wcheck_sub_last_'+dk+'_'+gender))||'';   // 2026-06-29 시우: 날짜 스코프 — 새 날엔 빈칸(클릭 후 바로 입력), 당일 회차값만 복원
 }
 
 /* 담당자 명단 = 지원부 규정 '실제 운영 근무조'(tab-policy 표)와 일치 유지. GM 2026-06-12.
@@ -1448,7 +1449,8 @@ function populateOneDuty(selId,gender,roster0){
   const el=document.getElementById(selId);
   if(!el)return;
   const rk=(typeof getRoundG==='function')?getRoundG(gender):'';
-  const saved=(rk&&localStorage.getItem('wcheck_duty_'+gender+'_'+rk))||localStorage.getItem('wcheck_duty_last_'+gender)||localStorage.getItem('wcheck_duty_'+gender)||'';   // 회차키 정합(GM 2026-06-16): onDutyChangeG 저장키와 일치 → 새로고침 시 담당자 유지
+  const dk=(typeof getDateG==='function')?getDateG(gender):'';
+  const saved=(dk&&rk&&localStorage.getItem('wcheck_duty_'+dk+'_'+gender+'_'+rk))||(dk&&localStorage.getItem('wcheck_duty_last_'+dk+'_'+gender))||'';   // 2026-06-29 시우: 날짜 스코프 — 새 날엔 「근무자 선택」 기본(빈칸), 당일 회차 선택값만 복원
   const roster=(roster0||DUTY_ROSTER)[gender]||[];
   let html='<option value="">근무자 선택</option>';
   roster.forEach(r=>{
@@ -1462,7 +1464,7 @@ function populateOneDuty(selId,gender,roster0){
 function getDutyForGender(g){const el=document.getElementById(g==='f'?'dutyF':'dutyM');return el?el.value||'':'';}
 function onDutyChangeG(g){
   const el=document.getElementById(g==='f'?'dutyF':'dutyM');
-  if(el){const rk=getRoundG(g);localStorage.setItem('wcheck_duty_'+g+'_'+rk,el.value||'');localStorage.setItem('wcheck_duty_last_'+g,el.value||'');}   // 회차별 담당자 + 직전값(GM 2026-06-15)
+  if(el){const rk=getRoundG(g);const dk=(typeof getDateG==='function')?getDateG(g):'';localStorage.setItem('wcheck_duty_'+dk+'_'+g+'_'+rk,el.value||'');localStorage.setItem('wcheck_duty_last_'+dk+'_'+g,el.value||'');}   // 회차별 담당자 + 직전값(날짜 스코프 2026-06-29 시우)
 }
 /* 회차 전환 시 점검자·담당자 입력칸을 그 회차 저장값으로 교체(빈칸=미입력). focus 중이면 건너뜀(한글IME 클로버링 차단). */
 function _applyRoundActor(g,round){
@@ -1470,9 +1472,10 @@ function _applyRoundActor(g,round){
   // 제출완료 회차면 입력칸도 잠금(수정 차단).
   const locked=!!(typeof isRoundSubmitted==='function'&&isRoundSubmitted(getDateG(g),g,round));
   const se=document.getElementById(g==='f'?'submitterF':'submitterM');
-  if(se){ if(document.activeElement!==se)se.value=localStorage.getItem('wcheck_sub_'+g+'_'+round)||localStorage.getItem('wcheck_sub_last_'+g)||''; se.disabled=locked; }
+  const dk=(typeof getDateG==='function')?getDateG(g):'';
+  if(se){ if(document.activeElement!==se)se.value=(dk&&localStorage.getItem('wcheck_sub_'+dk+'_'+g+'_'+round))||(dk&&localStorage.getItem('wcheck_sub_last_'+dk+'_'+g))||''; se.disabled=locked; }
   const de=document.getElementById(g==='f'?'dutyF':'dutyM');
-  if(de){ if(document.activeElement!==de)de.value=localStorage.getItem('wcheck_duty_'+g+'_'+round)||localStorage.getItem('wcheck_duty_last_'+g)||''; de.disabled=locked; }
+  if(de){ if(document.activeElement!==de)de.value=(dk&&localStorage.getItem('wcheck_duty_'+dk+'_'+g+'_'+round))||(dk&&localStorage.getItem('wcheck_duty_last_'+dk+'_'+g))||''; de.disabled=locked; }
 }
 
 function getStaffInfo(name){
@@ -2030,7 +2033,7 @@ function saveSubmitterG(g,v){localStorage.setItem('wcheck_submitter_'+g,v)}
 function onSubmitterChangeG(g){
   // 점검자 = 회차별 저장(자유입력). 입력 즉시 제출버튼 재평가.
   const el=document.getElementById(g==='f'?'submitterF':'submitterM');
-  if(el){const rk=getRoundG(g);localStorage.setItem('wcheck_sub_'+g+'_'+rk,el.value||'');localStorage.setItem('wcheck_sub_last_'+g,el.value||'');}   // 회차별 점검자 + 직전값(GM 2026-06-15)
+  if(el){const rk=getRoundG(g);const dk=(typeof getDateG==='function')?getDateG(g):'';localStorage.setItem('wcheck_sub_'+dk+'_'+g+'_'+rk,el.value||'');localStorage.setItem('wcheck_sub_last_'+dk+'_'+g,el.value||'');}   // 회차별 점검자 + 직전값(날짜 스코프 2026-06-29 시우)
   const d=getDateG(g);
   drawUI(d,g);
 }
@@ -2199,8 +2202,9 @@ async function loadState(d,g){
               if(_m.at)STATE['chkat_'+gg+'_'+rk+'_'+id]=_m.at;
               if(_m.du)STATE['chkduty_'+gg+'_'+rk+'_'+id]=_m.du;
               /* 점검자·담당자 서버 복원(GM 2026-06-16): 기기/세션 바뀌어도(텔레그램 링크 등) 비지 않게 — 로컬 비었을 때만 서버 값으로 채움(로컬 편집 보존). */
-              try{ if(_m.by){ if(!localStorage.getItem('wcheck_sub_'+gg+'_'+rk))localStorage.setItem('wcheck_sub_'+gg+'_'+rk,_m.by); if(!localStorage.getItem('wcheck_sub_last_'+gg))localStorage.setItem('wcheck_sub_last_'+gg,_m.by); }
-                    if(_m.du){ if(!localStorage.getItem('wcheck_duty_'+gg+'_'+rk))localStorage.setItem('wcheck_duty_'+gg+'_'+rk,_m.du); if(!localStorage.getItem('wcheck_duty_last_'+gg))localStorage.setItem('wcheck_duty_last_'+gg,_m.du); } }catch(e){}
+              try{ var _dk=(typeof getDateG==='function')?getDateG(gg):'';
+                    if(_m.by){ if(!localStorage.getItem('wcheck_sub_'+_dk+'_'+gg+'_'+rk))localStorage.setItem('wcheck_sub_'+_dk+'_'+gg+'_'+rk,_m.by); if(!localStorage.getItem('wcheck_sub_last_'+_dk+'_'+gg))localStorage.setItem('wcheck_sub_last_'+_dk+'_'+gg,_m.by); }
+                    if(_m.du){ if(!localStorage.getItem('wcheck_duty_'+_dk+'_'+gg+'_'+rk))localStorage.setItem('wcheck_duty_'+_dk+'_'+gg+'_'+rk,_m.du); if(!localStorage.getItem('wcheck_duty_last_'+_dk+'_'+gg))localStorage.setItem('wcheck_duty_last_'+_dk+'_'+gg,_m.du); } }catch(e){}   // 날짜 스코프 2026-06-29 시우
               /* 5차(2026-06-22 시우·GM 분리결정): 점검 이슈는 점검 안에 기록·복원(회차+성별 키 issKey=복제버그 없음). 종합접수처 연동 완전 제거(2026-06-25). */
               if(_m.iss)STATE[issKey(rk,id,gg)]=_m.iss;
               if(_m.tip)STATE[tipKey(rk,id,gg)]=_m.tip;
