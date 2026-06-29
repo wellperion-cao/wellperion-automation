@@ -3027,6 +3027,7 @@ function saveConsultModal() {
         if (payload.contact2 !== undefined) evRef.contact2 = payload.contact2;
         if (payload.contact3 !== undefined) evRef.contact3 = payload.contact3;
         if (payload.memo !== undefined) evRef.memo = payload.memo;
+        if (payload.regDate !== undefined) evRef.regDate = payload.regDate;   // 등록일자 로컬 반영 — 재오픈 시 오늘로 리셋 방지(리뷰 #4)
         if (timeChanged) evRef.time = selTime;
         var _dr = dbRows.find(function(r){ return r.rowIndex === evRef.rowIndex; });
         if (_dr) {
@@ -3136,7 +3137,7 @@ function renderDbTable() {
   var filter = document.getElementById('dbFilter').value;
 
   var _hideRegEl = document.getElementById('dbHideRegistered');
-  var hideReg = _hideRegEl && _hideRegEl.checked;   // '미등록만 보기' — 등록·이탈 종결건 숨김
+  var hideReg = _hideRegEl && _hideRegEl.checked;   // '진행중만 보기' — 등록·완납·이탈 종결건 숨김
   var _TERMINAL = ['SUC','단기SUC','결제완납','LOSS'];
   var filtered = dbRows.filter(function(row){
     var matchStatus = !filter || row.status === filter;
