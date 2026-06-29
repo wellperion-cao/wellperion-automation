@@ -3000,6 +3000,7 @@ function saveConsultModal() {
   if (visitedChanged) { payload.visited = visited; if (visited) payload.visitDate = _consultEv.date || ''; }
   // 등록 — 등록 완료면 진행상황 SUC + (새 등록일 때만)등록일자. 방문만(미등록)이면 퍼널 상태 '방문'.
   if (registered) { payload.status = 'SUC'; if (!origReg) payload.regDate = regDate; }
+  else if (regChanged && origReg) { payload.status = (visited ? '방문' : '예약'); }   // 등록 해제 → 강등(서버가 등록현황에서도 제거)
   else if (visited && visitedChanged) { payload.status = '방문'; }
   // 상담 내용: 기존 메모 보존 + 새 줄 누적. 빈 입력이면 메모 미전송.
   if (input) {
@@ -3012,11 +3013,12 @@ function saveConsultModal() {
 
   var saveBtn = document.getElementById('cmSaveBtn');
   var _celebrateReg = registered && !origReg; var _regName = (_consultEv && _consultEv.name) ? _consultEv.name : '';
+  var _unregistered = (!registered && origReg && regChanged);   // 등록 해제(되돌리기)
   var evRef = _consultEv;   // 낙관적 업데이트용 — closeConsultModal이 _consultEv=null 해도 calEvents 내 객체 참조 유지
   saveBtn.disabled = true;
   apiPost(payload)
     .then(function(){
-      showToast(_celebrateReg ? ('🎉 등록 완료 · ' + (_regName ? _regName + '님 환영합니다' : '환영합니다')) : '저장', 'ok');
+      showToast(_celebrateReg ? ('🎉 등록 완료 · ' + (_regName ? _regName + '님 환영합니다' : '환영합니다')) : (_unregistered ? '등록 취소 · 진행상황 강등' : '저장'), 'ok');
       // 낙관적 업데이트 — 서버 전체 재조회(GAS 왕복) 없이 바뀐 부분만 로컬 반영(버벅임 제거). 2026-06-29 시포
       if (evRef) {
         if (payload.status !== undefined) evRef.status = payload.status;
@@ -3040,7 +3042,7 @@ function saveConsultModal() {
       renderCalendarShell();
       renderCalendarChips();                     // 로컬 재렌더(GAS 재조회 없음 — 즉시 반영)
       if (_tabLoaded.db) renderDbTable();        // 그리드도 로컬 재렌더
-      if (_celebrateReg && _tabLoaded.registered) loadRegistered();  // 신규 등록 시에만 등록현황 1회 재조회(새 행 반영)
+      if ((_celebrateReg || _unregistered) && _tabLoaded.registered) loadRegistered();  // 등록/해제 시 등록현황 재조회
     })
     .catch(function(err){
       showToast('저장 실패: ' + (err.message || ''), 'err');

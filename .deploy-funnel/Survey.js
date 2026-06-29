@@ -1210,6 +1210,16 @@ function _regUpsert_(name, phone, program, regDate) {
   row[0] = name || ''; row[1] = phone || ''; row[2] = program || ''; row[3] = regDate || _todayKR_();  // 등록일=지정값 우선, 없으면 오늘
   sh.appendRow(row);
 }
+// 등록 해제(잘못 등록 되돌리기) — 등록현황에서 전화키 매칭 행 제거(중복 있으면 전부). 2026-06-29 시포.
+function _regRemove_(phone) {
+  var key = _regNormPhone_(phone);
+  if (!key) return;
+  var sh = _regSheet_();
+  var last = sh.getLastRow();
+  for (var i = last; i >= 2; i--) {
+    if (_regNormPhone_(sh.getRange(i, 2).getValue()) === key) sh.deleteRow(i);
+  }
+}
 
 // ═══════════════════════════════════════════
 //  강습문의 페이지 전용 — 성인 강습 문의 시트 CRM (CPO cpo/member/강습문의.html)
@@ -2153,6 +2163,12 @@ function _processAction(body) {
           _notifyTelegram('✅ <b>등록 전환</b> — 문의회원이 등록(' + _muNewStatus + ')으로 전환\n· 이름: ' + (_coName || '-') + '\n· 프로그램: ' + (_coProg || '-') + '\n· 담당: ' + (_coOwner || '-'), _regChatId);
         } catch (e) {}
       }
+    }
+    // 등록 해제(이전 SUC → 신규 비SUC, status 명시 전송 시) — 잘못 등록 되돌리기: 등록현황에서 제거. 2026-06-29 시포.
+    if (_wasSuc && !_isSucNew && body.status !== undefined) {
+      var _urPhCi = _miColIdx_(muHdr, ['연락처','전화','휴대폰']);
+      var _urPhone = (body.keyPhone && String(body.keyPhone)) || (_urPhCi >= 0 ? String(muSh.getRange(muRow, _urPhCi + 1).getValue() || '') : '');
+      try { _regRemove_(_urPhone); } catch (e) {}
     }
     try { _notifyTelegram('📝 문의회원 수정(공개페이지) — 행 ' + muRow + ' · 상태:' + (body.status || '-') + ' · 담당:' + (body.owner || '-')); } catch (e) {}
     return _json({ ok: true, rowIndex: muRow, message: '수정되었습니다.' });
