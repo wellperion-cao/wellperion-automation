@@ -1771,9 +1771,12 @@ if (action === 'member_calendar') {
     </span></div>
     <div class="consult-row"><span class="ck">진행상황</span><span class="cv" id="cmStatus">—</span></div>
 
-    <div class="consult-field-label">방문 처리</div>
+    <div class="consult-field-label">방문 · 등록 처리</div>
     <label class="consult-visit-toggle">
-      <input type="checkbox" id="cmVisited"> ☑ 방문 완료 (체크 후 저장 시 진행상황 '방문' 처리)
+      <input type="checkbox" id="cmVisited"> ☑ 방문 완료 (저장 시 진행상황 '방문')
+    </label>
+    <label class="consult-visit-toggle">
+      <input type="checkbox" id="cmRegistered"> ✅ 등록 완료 (저장 시 진행상황 '등록(SUC)' → 금일 등록현황 자동 반영 + 알림)
     </label>
 
     <div class="consult-field-label">기존 메모</div>
@@ -2901,6 +2904,7 @@ function openConsultModal(ev) {
   document.getElementById('cmStatus').textContent = ev.status || '—';
   var visitedChk = document.getElementById('cmVisited');
   visitedChk.checked = (ev.status === '방문');
+  document.getElementById('cmRegistered').checked = (ev.status === 'SUC' || ev.status === '단기SUC');  // 이미 등록된 건이면 체크 표시
   var prevEl = document.getElementById('cmMemoPrev');
   prevEl.textContent = (ev.memo && String(ev.memo).trim()) ? ev.memo : '(기존 메모 없음)';
   document.getElementById('cmMemoInput').value = '';   // 모달 열 때 1회 초기화(IME 안전 — 입력 중 재생성 없음)
@@ -2932,6 +2936,7 @@ function saveConsultModal() {
     return;
   }
   var visited = document.getElementById('cmVisited').checked;
+  var registered = document.getElementById('cmRegistered').checked;   // 등록 완료 → 진행상황 SUC
   var input = document.getElementById('cmMemoInput').value.trim();
   // 연락기록 3칸 — 모달 연 시점 원본과 비교해 '바뀐 칸만' 전송(지워서 빈칸이 된 것도 변경 → '' 전송 → 서버가 클리어).
   // 안 바뀐 칸은 생략(기존 값 보존). 2026-06-29 시포: 빈칸=무조건 생략 버그(삭제 저장 안됨) 수정.
@@ -2946,7 +2951,7 @@ function saveConsultModal() {
   var selTime = document.getElementById('cmTimeSel').value;
   var timeWritable = ['tour','exp1','exp2','exp3','visit2'].indexOf(_consultEv.slot || '') >= 0;
   var timeChanged = timeWritable && (selTime !== _consultOrigTime);
-  if (!visited && !input && !c1Changed && !c2Changed && !c3Changed && !timeChanged) { showToast('변경 사항이 없습니다', 'err'); return; }
+  if (!visited && !registered && !input && !c1Changed && !c2Changed && !c3Changed && !timeChanged) { showToast('변경 사항이 없습니다', 'err'); return; }
 
   var payload = { action: 'member_inquiry_update', rowIndex: _consultEv.rowIndex, keyPhone: _consultEv.phone || '' };
   if (c1Changed) payload.contact1 = c1;
@@ -2954,8 +2959,9 @@ function saveConsultModal() {
   if (c3Changed) payload.contact3 = c3;
   // 시간 변경 → 해당 일정 칸에 '날짜+시간' 결합 전송(단일셀 모델·그리드와 동일). 날짜는 유지, 시간만 교체.
   if (timeChanged) payload[_consultEv.slot] = _comboDateTime(_consultEv.date, selTime);
-  // 방문완료 체크 시에만 status 전송(미체크면 기존 상태 보존 — status 필드 생략).
-  if (visited) payload.status = '방문';
+  // 진행상황: 등록>방문 우선. 등록 완료=SUC(→서버가 금일 등록현황 carry-over+알림). 방문 완료=방문. 둘 다 미체크면 기존 상태 보존.
+  if (registered) payload.status = 'SUC';
+  else if (visited) payload.status = '방문';
   // 상담 내용: 기존 메모 보존 + 새 줄 누적. 빈 입력이면 메모 미전송.
   if (input) {
     var today = new Date();
@@ -2974,6 +2980,7 @@ function saveConsultModal() {
       renderCalendarShell();
       loadCalendarData();                       // 달력 갱신(셸 재구성 후 재로드 — 칩 중복 방지)
       if (_tabLoaded.db) loadDbData();          // 같은 시트 → 문의 현황도 동기
+      if (registered && _tabLoaded.registered) loadRegistered();  // 등록(SUC) 처리 → 금일 등록현황 즉시 반영
     })
     .catch(function(err){
       showToast('저장 실패: ' + (err.message || ''), 'err');
