@@ -1431,6 +1431,17 @@ if (action === 'member_calendar') {
         <input type="date" id="regTo" title="등록일 종료">
         <button class="btn-query" onclick="loadRegistered()">조회</button>
         <button class="btn-refresh" onclick="loadRegistered()">새로고침</button>
+        <button class="btn-add" style="margin-left:auto" onclick="toggleRegAdd()">+ 직접 등록</button>
+      </div>
+
+      <!-- 직접 등록 추가 — 문의 퍼널 안 거친 직접·법인 계약 등을 페이지에서 바로 등록현황에 추가. 2026-06-29 시포 -->
+      <div id="regAddForm" style="display:none;flex-wrap:wrap;gap:8px;align-items:center;margin:8px 0;padding:10px;border:1px solid var(--accent-border);border-radius:8px;background:var(--accent-bg)">
+        <input id="regAddName" type="text" placeholder="이름" autocomplete="off" style="padding:7px 10px;border-radius:7px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:13px;width:110px">
+        <input id="regAddPhone" type="text" placeholder="전화 010-0000-0000" autocomplete="off" style="padding:7px 10px;border-radius:7px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:13px;width:160px">
+        <input id="regAddProg" type="text" placeholder="프로그램(예: 플래티넘+골프 12개월)" autocomplete="off" style="padding:7px 10px;border-radius:7px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:13px;width:240px">
+        <input id="regAddDate" type="date" title="등록일자" style="padding:7px 10px;border-radius:7px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:13px">
+        <button class="btn-query" onclick="submitRegAdd()">추가</button>
+        <button class="btn-refresh" onclick="toggleRegAdd(false)">취소</button>
       </div>
 
       <div class="reg-count" id="regCount"></div>
@@ -2311,6 +2322,37 @@ function setRegRange(mode) {
   });
 
   loadRegistered();
+}
+
+// 직접 등록 추가 폼 — 토글 + 제출(문의 퍼널 안 거친 직접·법인 계약). 2026-06-29 시포
+function toggleRegAdd(show) {
+  var f = document.getElementById('regAddForm');
+  var on = (show === undefined) ? (f.style.display === 'none') : show;
+  f.style.display = on ? 'flex' : 'none';
+  if (on) {
+    var t = new Date();
+    document.getElementById('regAddDate').value = t.getFullYear() + '-' + String(t.getMonth()+1).padStart(2,'0') + '-' + String(t.getDate()).padStart(2,'0');
+    document.getElementById('regAddName').focus();
+  }
+}
+function submitRegAdd() {
+  var name  = document.getElementById('regAddName').value.trim();
+  var phone = document.getElementById('regAddPhone').value.trim();
+  var prog  = document.getElementById('regAddProg').value.trim();
+  var date  = document.getElementById('regAddDate').value;
+  if (!phone) { showToast('전화번호는 필수입니다(중복 방지 키)', 'err'); return; }
+  if (!name)  { showToast('이름을 입력하세요', 'err'); return; }
+  apiPost({ action: 'member_registered_add', name: name, phone: phone, program: prog, regDate: date })
+    .then(function(){
+      showToast('🎉 등록 추가 · ' + name + '님', 'ok');
+      document.getElementById('regAddName').value = '';
+      document.getElementById('regAddPhone').value = '';
+      document.getElementById('regAddProg').value = '';
+      toggleRegAdd(false);
+      loadRegistered();        // 명단 갱신
+      loadCpoTodayStats();     // 카드 금일/월간 등록 수 갱신
+    })
+    .catch(function(e){ showToast('추가 실패: ' + (e.message || ''), 'err'); });
 }
 
 function loadRegistered() {

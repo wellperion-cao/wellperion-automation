@@ -929,6 +929,7 @@ var _SURVEY_PUBLIC_ACTIONS = {
   member_registered_list:     true,  // 2026-06-23 등록현황(SUC/단기SUC) 조회
   member_registered_setmonth: true,  // 등록회원 1~12월 체크 토글
   member_registered_delete:   true,  // 등록 해제(행 삭제)
+  member_registered_add:      true,  // 2026-06-29 등록현황 직접 추가(페이지 수기 등록)
   member_active_list:         true,  // 멤버십 회원 명단(유효회원·전화 마스킹)
   member_active_update:       true,  // 2026-06-24 멤버십 셀 인라인 수정(유효회원 시트·전화 제외)
   cpo_today_stats:            true,  // 2026-06-24 CPO 오늘/이번달 문의·등록 건수(PII 미노출)
@@ -2579,6 +2580,18 @@ function _processAction(body) {
       }
     }
     return _json({ ok: false, error: '해당 등록회원 없음' });
+  }
+
+  // ─── 등록현황(CPO): 페이지에서 직접 등록 추가(문의 퍼널 안 거친 직접·법인 계약 등) — _regUpsert_ 멱등(전화키). 2026-06-29 시포 ───
+  if (action === 'member_registered_add') {
+    var raName  = String(body.name    || '').trim();
+    var raPhone = String(body.phone   || '').trim();
+    var raProg  = String(body.program || '').trim();
+    var raDate  = String(body.regDate || '').trim() || _todayKR_();
+    if (!raPhone) return _json({ ok: false, error: '전화번호 필수(중복 방지 키)' });
+    _regUpsert_(raName, raPhone, raProg, raDate);  // 기존 전화면 갱신, 없으면 등록일 도장 추가
+    try { _notifyTelegram('➕ 등록현황 직접 추가 — ' + (raName || '-') + ' · ' + (raProg || '-') + ' (' + raDate + ')'); } catch (e) {}
+    return _json({ ok: true, message: '등록 추가되었습니다.' });
   }
 
   // ─── 회원관리 페이지(CPO): 멤버십 회원 명단 ('유효회원' 시트, 읽기전용·전화 마스킹) ───
