@@ -1104,7 +1104,7 @@ _WEEKDAY_KOR = ["월", "화", "수", "목", "금", "토", "일"]
 #   · 공통 헤더:  [HH시 · {분류} · 한줄목적]  + 날짜줄 + 구분선
 #   · 분류 라벨:  개인 / 회사 / 개인&회사  (GM 한눈 파악 핵심)
 #   · 공통 구분선·푸터 단일화 (중복 제거)
-# ※ 07s(직원 공유 카드)는 GM 확정대로 제외 — 손대지 않음.
+# ※ 07s(직원 공유 카드)는 GM 2026-06-29 지시로 07:00 본문에 합본(분리발송 폐지).
 # ※ 시간·내용 substance·로직은 불변. 시각 구조(헤더/구분/푸터)만 통일.
 _DIVIDER = "━━━━━━━━━━━━━━━━"
 _AUTO_FOOTER = "_본 메시지는 자동 발송입니다._"
@@ -1850,7 +1850,7 @@ def _build_23_body() -> str:
 # .env TELEGRAM_CHECK_CHAT_ID 사용. 폴백=점검관리방(-5136037543). [시토 2026-06-29] 폴백 리터럴 오타 수정(구: -5065206276 종합접수처 → 점검 독려가 엉뚱한 방 갈 위험 제거).
 CHECK_NUDGE_CHAT_ID = int(ENV.get("TELEGRAM_CHECK_CHAT_ID") or -5136037543)
 
-# ── 하루 일과 정리 알림 (매일 22:10) — 문의·점검·접수 3방 — CTO 2026-06-29 ──────
+# ── 하루 일과 정리 알림 (매일 22:30) — 문의·점검·접수 3방 — GM 2026-06-29 ──────
 DIGEST_INQUIRY_CHAT_ID   = int(ENV.get("TELEGRAM_INQUIRY_CHAT_ID")   or -5516675010)
 DIGEST_CHECK_CHAT_ID     = int(ENV.get("TELEGRAM_CHECK_CHAT_ID")     or -5136037543)
 DIGEST_RECEPTION_CHAT_ID = int(ENV.get("TELEGRAM_RECEPTION_CHAT_ID") or -5065206276)
@@ -2097,10 +2097,10 @@ def _build_digest_reception(today: str) -> str:
 
 
 def run_daily_digest() -> None:
-    """3방 하루 일과 정리 알림 오케스트레이터 — 매일 22:10."""
+    """3방 하루 일과 정리 알림 오케스트레이터 — 매일 22:30."""
     from datetime import timezone as _tz3
     today = (datetime.now(_tz3.utc) + timedelta(hours=9)).strftime("%Y-%m-%d")
-    label = "[22:10 하루 일과 정리]"
+    label = "[22:30 하루 일과 정리]"
     logger.info(f"{label} 시작 — today={today}")
 
     targets = [
@@ -2120,10 +2120,20 @@ def run_daily_digest() -> None:
             logger.error(f"{label} {room_name} 예외: {e}")
 
 
+def _build_07_combined_body() -> str:
+    """07시 통합(GM 2026-06-29): 어제 항로 결산 + 직원 공유 카드를 한 메시지로(07:05 분리발송 폐지)."""
+    main = _build_07_body()
+    card = _build_share_card_body()
+    return (
+        f"{main}\n\n"
+        f"✂️ ───── 직원 공유용 (아래부터 복사) ─────\n\n"
+        f"{card}"
+    )
+
+
 SLOT_BUILDERS = {
     "06": _build_06_body,
-    "07s": _build_share_card_body,
-    "07": _build_07_body,
+    "07": _build_07_combined_body,
     "09": _build_09_body,
     "12": _build_12_body,
     "15": _build_15_body,
@@ -2137,7 +2147,7 @@ SLOT_BUILDERS = {
 # ── 핵심 보고 실행 함수 ───────────────────────────────────────────────────────
 def run_report(slot: str, test_mode: bool = False) -> None:
     """
-    slot: "06" | "07s" | "07" | "09" | "12" | "15" | "18" | "21" | "22" | "23"
+    slot: "06" | "07" | "09" | "12" | "15" | "18" | "21" | "22" | "23"
     """
     now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     label = f"[{'TEST ' if test_mode else ''}{slot}시 보고]"
@@ -2496,7 +2506,6 @@ def main():
         #   동시에 22시는 취침안내+종료인사 통합(별도 22:25 종료인사 예약작업 제거).
         schedule_map = {
             "06": (6, 0),
-            "07s": (7, 5),   # 직원 공유용 카드 — 07시 어제항로 직후 5분
             "07": (7, 0),
             "09": (9, 0),
             "12": (12, 0),
@@ -2535,16 +2544,16 @@ def main():
             )
             logger.info(f"  등록: {slot} {hour:02d}:{minute:02d} 지원부 점검 미완 독려")
 
-        # ── 하루 일과 정리 (22:10) — 문의·점검·접수 3방 핵심+상세 — CTO 2026-06-29 ──
-        #   22:00=nudge_close·report_22 겹침 → 22:10 분리.
+        # ── 하루 일과 정리 (22:30) — 문의·점검·접수 3방 핵심+상세 — CTO 2026-06-29 ──
+        #   22:00=nudge_close·report_22 겹침 → 22:30 분리(GM 2026-06-29 지시).
         scheduler.add_job(
             run_daily_digest,
-            trigger=CronTrigger(hour=22, minute=10, timezone="Asia/Seoul"),
-            id="daily_digest_2210",
+            trigger=CronTrigger(hour=22, minute=30, timezone="Asia/Seoul"),
+            id="daily_digest_2230",
             misfire_grace_time=600,
             coalesce=True,
         )
-        logger.info("daily_digest_2210 등록 완료 (22:10) — 하루 일과 정리 3방 발송")
+        logger.info("daily_digest_2230 등록 완료 (22:30) — 하루 일과 정리 3방 발송")
 
     logger.info(f"스케줄러 기동 완료. PID={os.getpid()}")
     try:
