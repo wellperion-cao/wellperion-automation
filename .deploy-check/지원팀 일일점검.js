@@ -310,6 +310,7 @@ function doGet(e) {
   if (action === 'delete_item_row') { return deleteItemRow(e.parameter.dept || 'support', e.parameter.date || '', e.parameter.zone || '', e.parameter.itemId || ''); }
   if (action === 'purge_orphan_checks') { return purgeOrphanChecks(e.parameter.dept || 'support'); }   // 매뉴얼에 없는 고아/테스트 항목ID를 원장·시트에서 일괄 제거. 2026-06-16 시우.
   if (action === 'dedup_items') { return dedupItems(e.parameter.dept || 'support'); }   // 지원_매뉴얼 중복 항목ID 1줄로 정리(시드행 중복 청소)+시드칸 전체 비움. 백업탭 적립. 2026-06-29 시우.
+  if (action === 'set_round_duty') { return setRoundDuty(e.parameter.dept || 'support', e.parameter.zone || 'male', e.parameter.date || '', e.parameter.round || '', e.parameter.name || ''); }   // 지정 date+round 구역행 근무자(11열) 단일 통일 — stale 기본값 오염 보정. 점검결과·점검자·이슈 무변경. 2026-06-29 시우.
   if (action === 'list_tabs') { return jsonRes({ tabs: SpreadsheetApp.getActiveSpreadsheet().getSheets().map(function(s){ return { name: s.getName(), gid: s.getSheetId() }; }) }); }   // gid→탭 확인용. 2026-06-15 시우.
   if (action === 'dump_snapshot') {   // 점검일지 스냅샷 전체행 덤프 — 진단용. 2026-06-16 시우.
     var _ssh = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(_snapshotTabName(e.parameter.dept || 'support'));
@@ -1996,6 +1997,35 @@ function saveItems(body) {
     sheet.getRange(2, 1, rows.length, ITEM_HEADERS.length).setValues(rows);
   }
   return jsonRes({ ok: true, count: mine.length, total: rows.length, dept: reqDept });
+}
+
+// ─── 회차 근무자 통일 보정 (GET ?action=set_round_duty&dept&zone&date=yyyy-MM-dd&round&name) — 2026-06-29 시우 ───
+// stale 기본값 오염(아침 미리선택된 근무자로 첫 몇 건이 잘못 기록)을 실제 근무자 1명으로 통일. 11열(근무자)만 변경 — 점검결과·점검자·이슈·시각 전부 보존.
+function setRoundDuty(dept, zoneKey, dateStr, round, name) {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName(_deptTabs(dept)[zoneKey]);
+  if (!sheet) return jsonRes({ ok: false, error: 'no zone sheet for ' + zoneKey });
+  if (!dateStr || !round || !name) return jsonRes({ ok: false, error: 'date/round/name required' });
+  var tz = Session.getScriptTimeZone();
+  var last = sheet.getLastRow();
+  if (last < 2) return jsonRes({ ok: true, changed: 0 });
+  var data = sheet.getRange(2, 1, last - 1, HEADERS.length).getValues();
+  var changed = [], before = [];
+  for (var i = 0; i < data.length; i++) {
+    var c = data[i][0];
+    var dd = (c instanceof Date) ? c : (c ? new Date(c) : null);
+    var ds = (dd && !isNaN(dd.getTime())) ? Utilities.formatDate(dd, tz, 'yyyy-MM-dd') : String(c || '');
+    var rd = String(data[i][4] || '');
+    if (ds === dateStr && rd === round) {
+      if (String(data[i][10] || '') !== name) {
+        before.push({ id: String(data[i][1] || ''), was: String(data[i][10] || '') });
+        data[i][10] = name;
+        changed.push(String(data[i][1] || ''));
+      }
+    }
+  }
+  if (changed.length) sheet.getRange(2, 1, data.length, HEADERS.length).setValues(data);
+  return jsonRes({ ok: true, changed: changed.length, ids: changed, before: before, zone: zoneKey, date: dateStr, round: round, name: name });
 }
 
 // ─── 매뉴얼 항목 중복 정리 (GET ?action=dedup_items[&dept=support]) — 2026-06-29 시우 ───
