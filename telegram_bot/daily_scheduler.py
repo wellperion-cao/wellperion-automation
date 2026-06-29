@@ -1847,8 +1847,8 @@ def _build_23_body() -> str:
 
 # ── 지원부 점검 미완 자동 독려 (오후17시·마감22시·미완시만·하루1회) — 시우 2026-06-18 ──
 # 점검 관리 방(점검 독려 대상). 핵심멤버방 3분류 분리(시우 102, 2026-06-24): 점검 알림 → '점검 관리' 방.
-# .env TELEGRAM_CHECK_CHAT_ID 사용. 미설정 시 구 핵심멤버방(현 '종합 접수처')으로 폴백.
-CHECK_NUDGE_CHAT_ID = int(ENV.get("TELEGRAM_CHECK_CHAT_ID") or -5065206276)
+# .env TELEGRAM_CHECK_CHAT_ID 사용. 폴백=점검관리방(-5136037543). [시토 2026-06-29] 폴백 리터럴 오타 수정(구: -5065206276 종합접수처 → 점검 독려가 엉뚱한 방 갈 위험 제거).
+CHECK_NUDGE_CHAT_ID = int(ENV.get("TELEGRAM_CHECK_CHAT_ID") or -5136037543)
 
 # ── 하루 일과 정리 알림 (매일 22:10) — 문의·점검·접수 3방 — CTO 2026-06-29 ──────
 DIGEST_INQUIRY_CHAT_ID   = int(ENV.get("TELEGRAM_INQUIRY_CHAT_ID")   or -5516675010)
