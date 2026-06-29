@@ -2099,13 +2099,26 @@ function _processAction(body) {
     var _muNewStatus = String(body.status == null ? '' : body.status).trim();
     var _isSucNew = (_muNewStatus === 'SUC' || _muNewStatus === '단기SUC');
     var _wasSuc   = (_muOldStatus === 'SUC' || _muOldStatus === '단기SUC');
-    if (_isSucNew && !_wasSuc) {
-      try { _regUpsert_(body.name, body.phone, body.program); } catch (e) {}
-      // 등록 전환 전용 알림 → '문의 알림' 방(신규문의 알림과 동일 방, 퍼널 성과를 한곳에서). 누가·어떤 문의가 등록됐는지.
-      try {
-        var _regChatId = PropertiesService.getScriptProperties().getProperty('TELEGRAM_INQUIRY_CHAT_ID') || _INQUIRY_CHAT_ID_FALLBACK;
-        _notifyTelegram('✅ <b>등록 전환</b> — 문의회원이 등록(' + _muNewStatus + ')으로 전환\n· 이름: ' + (body.name || '-') + '\n· 프로그램: ' + (body.program || '-') + '\n· 담당: ' + (body.owner || '-'), _regChatId);
-      } catch (e) {}
+    if (_isSucNew) {
+      // ★carry-over·알림은 시트 행의 실제 값 사용(body 우선, 없으면 행 직독). 달력 모달은 status만 보내므로 body.phone 부재 시
+      //   _regUpsert_가 전화키 없이 호출돼 등록현황 미반영 + 알림 빈칸('-') 버그 → 행 직독으로 근본 해결. 2026-06-29 시포.
+      var _coNameCi = _miColIdx_(muHdr, ['성함','이름']);
+      var _coPhCi   = _miColIdx_(muHdr, ['연락처','전화','휴대폰']);
+      var _coProgCi = _miColIdx_(muHdr, ['관심 있는 프로그램 종류','관심프로그램','프로그램']);
+      var _coOwnCi  = _miColIdx_(muHdr, ['담당','담당자']);
+      var _coName  = body.name    || (_coNameCi >= 0 ? String(muSh.getRange(muRow, _coNameCi + 1).getValue() || '') : '');
+      var _coPhone = body.phone   || (_coPhCi   >= 0 ? String(muSh.getRange(muRow, _coPhCi   + 1).getValue() || '') : '');
+      var _coProg  = body.program || (_coProgCi >= 0 ? String(muSh.getRange(muRow, _coProgCi + 1).getValue() || '') : '');
+      var _coOwner = body.owner   || (_coOwnCi  >= 0 ? String(muSh.getRange(muRow, _coOwnCi  + 1).getValue() || '') : '');
+      // _regUpsert_는 멱등(전화키 존재 시 갱신·없으면 today 도장 추가) → SUC 저장 시 항상 등록현황 보장(과거 누락 건도 재저장으로 복구).
+      try { _regUpsert_(_coName, _coPhone, _coProg); } catch (e) {}
+      // 등록 전환 전용 알림은 '실제 전환(이전≠SUC)' 1회만 — 매 저장 중복 알림 방지. '문의 알림' 방.
+      if (!_wasSuc) {
+        try {
+          var _regChatId = PropertiesService.getScriptProperties().getProperty('TELEGRAM_INQUIRY_CHAT_ID') || _INQUIRY_CHAT_ID_FALLBACK;
+          _notifyTelegram('✅ <b>등록 전환</b> — 문의회원이 등록(' + _muNewStatus + ')으로 전환\n· 이름: ' + (_coName || '-') + '\n· 프로그램: ' + (_coProg || '-') + '\n· 담당: ' + (_coOwner || '-'), _regChatId);
+        } catch (e) {}
+      }
     }
     try { _notifyTelegram('📝 문의회원 수정(공개페이지) — 행 ' + muRow + ' · 상태:' + (body.status || '-') + ' · 담당:' + (body.owner || '-')); } catch (e) {}
     return _json({ ok: true, rowIndex: muRow, message: '수정되었습니다.' });
