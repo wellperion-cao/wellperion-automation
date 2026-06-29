@@ -1765,6 +1765,10 @@ if (action === 'member_calendar') {
     <div class="consult-row"><span class="ck">전화</span><span class="cv" id="cmPhone">—</span></div>
     <div class="consult-row"><span class="ck">프로그램</span><span class="cv" id="cmProgram">—</span></div>
     <div class="consult-row"><span class="ck">일정</span><span class="cv" id="cmSchedule">—</span></div>
+    <div class="consult-row"><span class="ck">시간 설정</span><span class="cv" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+      <select id="cmTimeSel" style="padding:6px 10px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:13px;font-family:inherit"></select>
+      <span id="cmTimeHint" style="font-size:11px;color:var(--dim)">— 저장 시 달력 시간에 반영</span>
+    </span></div>
     <div class="consult-row"><span class="ck">진행상황</span><span class="cv" id="cmStatus">—</span></div>
 
     <div class="consult-field-label">방문 처리</div>
@@ -2881,6 +2885,7 @@ function closeDayPanel() {
    상담 모달 — 달력 일정 클릭 → 방문완료·상담메모(문의 현황 자동 반영)
 ───────────────────────────────────────────── */
 var _consultEv = null;   // 현재 모달이 다루는 달력 이벤트(rowIndex·memo 등 포함)
+var _consultOrigTime = '';  // 모달 연 시점의 시간(변경 감지 기준)
 
 function openConsultModal(ev) {
   _consultEv = ev;
@@ -2903,6 +2908,16 @@ function openConsultModal(ev) {
   document.getElementById('cmContact1').value = ev.contact1 || '';
   document.getElementById('cmContact2').value = ev.contact2 || '';
   document.getElementById('cmContact3').value = ev.contact3 || '';
+  // 시간 설정 드롭다운 — 06~22시(그리드와 동일). 현재 시간 프리셀렉트. 쓰기 가능한 칸(상담·체험1·2·3)만 활성. 2026-06-29 시포
+  var tSel = document.getElementById('cmTimeSel'), tHint = document.getElementById('cmTimeHint');
+  var _writable = ['tour','exp1','exp2','exp3'].indexOf(ev.slot || '') >= 0;
+  tSel.innerHTML = '';
+  var blank = document.createElement('option'); blank.value = ''; blank.textContent = '시간 미정'; tSel.appendChild(blank);
+  for (var _h = 6; _h <= 22; _h++) { var _hh = ('0'+_h).slice(-2)+':00'; var _o = document.createElement('option'); _o.value = _hh; _o.textContent = _hh; tSel.appendChild(_o); }
+  tSel.value = String(ev.time || '').trim();   // 'HH:00' 형식이면 매칭, 아니면 '시간 미정'
+  _consultOrigTime = tSel.value;
+  tSel.disabled = !_writable;
+  tHint.textContent = _writable ? '— 저장 시 달력 시간에 반영' : '— 이 일정은 여기서 시간 변경 불가';
   document.getElementById('consultOverlay').classList.add('open');
 }
 
@@ -2927,12 +2942,18 @@ function saveConsultModal() {
   var o2 = String(_consultEv.contact2 || '').trim();
   var o3 = String(_consultEv.contact3 || '').trim();
   var c1Changed = (c1 !== o1), c2Changed = (c2 !== o2), c3Changed = (c3 !== o3);
-  if (!visited && !input && !c1Changed && !c2Changed && !c3Changed) { showToast('변경 사항이 없습니다', 'err'); return; }
+  // 시간 설정 — 쓰기 가능한 칸(상담/체험1·2·3)에서 원본과 다르면 변경. 2026-06-29 시포
+  var selTime = document.getElementById('cmTimeSel').value;
+  var timeWritable = ['tour','exp1','exp2','exp3'].indexOf(_consultEv.slot || '') >= 0;
+  var timeChanged = timeWritable && (selTime !== _consultOrigTime);
+  if (!visited && !input && !c1Changed && !c2Changed && !c3Changed && !timeChanged) { showToast('변경 사항이 없습니다', 'err'); return; }
 
   var payload = { action: 'member_inquiry_update', rowIndex: _consultEv.rowIndex, keyPhone: _consultEv.phone || '' };
   if (c1Changed) payload.contact1 = c1;
   if (c2Changed) payload.contact2 = c2;
   if (c3Changed) payload.contact3 = c3;
+  // 시간 변경 → 해당 일정 칸에 '날짜+시간' 결합 전송(단일셀 모델·그리드와 동일). 날짜는 유지, 시간만 교체.
+  if (timeChanged) payload[_consultEv.slot] = _comboDateTime(_consultEv.date, selTime);
   // 방문완료 체크 시에만 status 전송(미체크면 기존 상태 보존 — status 필드 생략).
   if (visited) payload.status = '방문';
   // 상담 내용: 기존 메모 보존 + 새 줄 누적. 빈 입력이면 메모 미전송.

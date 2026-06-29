@@ -2023,20 +2023,21 @@ function _processAction(body) {
     var mcRows = _miReadRows_();
     var mcEvents = [];
     mcRows.forEach(function(row){
-      function add(dateStr, kind, timeStr) {
+      function add(dateStr, kind, timeStr, slot) {
         if (!dateStr) return;
         if (mcMonth && dateStr.slice(0,7) !== mcMonth) return;
         // rowIndex·memo·owner 동봉 — 달력 일정 클릭 → 상담 모달에서 방문완료·메모 수정용(2026-06-26 CRM)
         // tmin = 시간대별 정렬키(분 단위 정수·미정=null). time 표시 텍스트는 그대로 유지(2026-06-26).
-        mcEvents.push({ date: dateStr, kind: kind, time: timeStr || '', tmin: _miTminKR_(timeStr), name: row.name || '', phone: row.phone || '', program: row.program, status: row.status, rowIndex: row.rowIndex, memo: row.memo || '', owner: row.owner || '', contact1: row.contact1 || '', contact2: row.contact2 || '', contact3: row.contact3 || '' });
+        // slot = 어느 일정 칸(tour/exp1/exp2/exp3/visit2)인지 — 달력 모달 시간 설정 시 쓰기 대상 식별(2026-06-29 시포).
+        mcEvents.push({ date: dateStr, kind: kind, time: timeStr || '', tmin: _miTminKR_(timeStr), slot: slot || '', name: row.name || '', phone: row.phone || '', program: row.program, status: row.status, rowIndex: row.rowIndex, memo: row.memo || '', owner: row.owner || '', contact1: row.contact1 || '', contact2: row.contact2 || '', contact3: row.contact3 || '' });
       }
       // 1차 상담: 날짜=상담칸(col9), 시간=확정시간 텍스트(col10·'11시 등록상담' 등 한글표기). 시간 누락 보강.
-      add(row.tourDate, '상담', row.tourTime || _miTimeKR_(row.exp1));
-      add(row.exp1, '체험', row.exp1Time);
-      add(row.exp2, '체험', row.exp2Time);
-      add(row.exp3, '체험', row.exp3Time);
-      // 2차 방문: 날짜=col11, 시간=확정시간 텍스트(col12) — 기존 달력에서 통째로 누락되던 일정.
-      add(row.visit2Date, '체험', _miTimeKR_(row.exp2));
+      add(row.tourDate, '상담', row.tourTime || _miTimeKR_(row.exp1), 'tour');
+      add(row.exp1, '체험', row.exp1Time, 'exp1');
+      add(row.exp2, '체험', row.exp2Time, 'exp2');
+      add(row.exp3, '체험', row.exp3Time, 'exp3');
+      // 2차 방문: 날짜=col11, 시간=확정시간 텍스트(col12) — 기존 달력에서 통째로 누락되던 일정. (시간 설정 미지원 칸)
+      add(row.visit2Date, '체험', _miTimeKR_(row.exp2), 'visit2');
     });
     return _json({ ok: true, month: mcMonth, count: mcEvents.length, events: mcEvents });
   }
