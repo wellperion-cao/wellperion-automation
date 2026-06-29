@@ -3073,7 +3073,7 @@ window._regAssign = function(id, category) {
         <!-- ══ /🚫 데이터 경계·에스컬레이션 ══ -->
 
         <!-- ══ 전 C-Level 통합 원칙 (메모리 단일화) STAGE 1 흡수 ══ -->
-        <details class="toggle" style="margin-top:36px;border-top:2px solid var(--accent);padding-top:24px;">
+        <details id="con-unified" class="toggle" style="margin-top:36px;border-top:2px solid var(--accent);padding-top:24px;">
           <summary style="cursor:pointer;font-weight:700;font-size:16px;"><span class="ico">📚</span>전 C-Level 통합 원칙 (메모리 단일화) <span style="font-size:12px;color:var(--dim);font-weight:400;">— 9테마 참고</span></summary>
           <div class="toggle-body" style="margin-top:12px;">
         <div class="callout" style="background:#1a1a2a;border-left:3px solid #7C3AED;margin:12px 0 20px;">
@@ -7090,7 +7090,8 @@ function crTab(btn, panelId) {
   function applyHashDeepLink() {
     const raw = (window.location.hash || '').replace(/^#/, '');
     if (!raw) return;
-    const [rawId, tabName] = raw.split('/');
+    const _hp = raw.split('/');
+    const rawId = _hp[0], tabName = _hp[1], anchorId = _hp[2];
     if (!rawId) return;
     const docId = LEGACY_TO_ID[rawId] || rawId;   // 식별자는 그대로, 옛 별칭(#g10)만 식별자(S2)로 변환
     const docEl = document.getElementById(docId);
@@ -7111,6 +7112,16 @@ function crTab(btn, panelId) {
       }
     }
     activateDoc(docId, tabName || null);
+    // 세부 앵커(#문서/탭/앵커): 조상 토글(details) 펼치고 스크롤 — 접힌 헌법 항목 딥링크 (2026-06-29)
+    if (anchorId) {
+      setTimeout(function(){
+        var el = document.getElementById(anchorId);
+        if (!el) return;
+        var p = el.parentElement;
+        while (p) { if (p.tagName === 'DETAILS' && !p.open) p.open = true; p = p.parentElement; }
+        el.scrollIntoView({behavior:'smooth', block:'start'});
+      }, 90);
+    }
   }
   window.addEventListener('hashchange', applyHashDeepLink);
   if (document.readyState !== 'loading') applyHashDeepLink();

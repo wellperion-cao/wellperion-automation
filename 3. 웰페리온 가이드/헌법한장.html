@@ -128,41 +128,41 @@
       h:'⚖️ 절대기준 2종',
       d:'절대 원칙 3대 + 완료의 단일 정의(4요건 · ③ "다음"=브릿지 흡수)',
       links:[
-        ['절대 원칙 3대', '#con-absolute'],
-        ['완료 4요건', '#con-done4']
+        ['절대 원칙 3대', 'con-absolute'],
+        ['완료 4요건', 'con-done4']
       ]
     },
     {
       h:'🔗 통합원칙 10',
       d:'전 C-Level 통합 원칙 (S2 공통탭 토글)',
       links:[
-        ['통합 원칙 보기', '#S2']
+        ['통합 원칙 보기', 'con-unified']
       ]
     },
     {
       h:'📌 정본데이터 4',
       d:'약속 · 재발방지 · 공식값 · KPI',
       links:[
-        ['우리의 약속', '#common-promises'],
-        ['🛡️ 재발방지', '#common-incidents'],
-        ['🏛️ 공식값', '#common-incidents'],
-        ['📊 KPI(ssot/kpi.json)', '#common-promises']
+        ['우리의 약속', 'common-promises'],
+        ['🛡️ 재발방지', 'common-incidents'],
+        ['🏛️ 공식값', 'common-incidents'],
+        ['📊 KPI', 'common-promises']
       ]
     },
     {
       h:'🔌 운영 SOP 5',
       d:'부팅 · 보고표 · GM 결재 5종(5종 단일출처) · 입력금지 5종 · 텔레그램',
       links:[
-        ['🎯 GM 결재 5종', '#con-gm5'],
-        ['🚫 입력 금지 5종', '#con-input5'],
-        ['🎚️ 토큰 라우팅', '#con-token']
+        ['🎯 GM 결재 5종', 'con-gm5'],
+        ['🚫 입력 금지 5종', 'con-input5'],
+        ['🎚️ 토큰 라우팅', 'con-token']
       ]
     }
   ];
   var cc = document.getElementById('common-cards');
   cc.innerHTML = cards.map(function(c){
     var ls = c.links.map(function(l){
-      return '<a class="lk" href="' + S2 + l[1] + '">' + l[0] + ' ↗</a>';
+      return '<a class="lk" href="' + S2 + '#S2/common/' + l[1] + '">' + l[0] + ' ↗</a>';
     }).join('');
     return '<div class="ccard"><h3>' + c.h + '</h3><div class="desc">' + c.d + '</div>' + ls + '</div>';
   }).join('');
