@@ -53,6 +53,17 @@
   .own-chip{display:inline-block; font-size:11px; color:var(--accent-soft); text-decoration:none; border:1px solid var(--border-strong); border-radius:6px; padding:2px 8px; margin:0 4px 4px 0;}
   .own-chip:hover{background:var(--surface); border-color:var(--accent);}
   .matrix-status{padding:14px; font-size:12px; color:var(--dim);}
+  /* ── 살아있는 지휘판: KPI 실측 막대 · 진행현황 · 오늘 추천 (2026-06-29) ── */
+  .kmeas{margin:4px 0 8px;}
+  .kmeas-h{display:block; font-size:9px; color:var(--dim); text-transform:none; letter-spacing:0; margin-bottom:2px;}
+  .kbar{height:6px; border-radius:4px; background:var(--surface); border:1px solid var(--border); overflow:hidden; margin-bottom:2px;}
+  .kbar>i{display:block; height:100%; background:linear-gradient(90deg,var(--accent),var(--accent-soft)); border-radius:4px;}
+  .kbar.alt>i{background:linear-gradient(90deg,#3f8f4f,#6abf7b);}
+  .kmeta{font-size:11px; color:var(--text-soft); margin-bottom:4px;}
+  .kmeta b{color:var(--text);}
+  .pstat{font-size:12px; color:var(--text-soft); margin-bottom:8px;}
+  .pstat b{color:var(--accent-soft);}
+  .todaychip{display:inline-block; font-size:11.5px; color:#f0c674; background:rgba(240,198,116,0.10); border:1px solid rgba(240,198,116,0.35); border-radius:7px; padding:3px 9px; margin-bottom:4px; line-height:1.35; white-space:normal;}
   /* ── 편집 모드 ── */
   .ebtn{font-size:11px; padding:3px 11px; border-radius:7px; cursor:pointer; margin-left:6px;}
   .ebtn.edit{background:var(--surface); color:var(--accent-soft); border:1px solid var(--accent);}
@@ -99,6 +110,11 @@
     .matrix-scroll{background:#fff !important; border-color:#999 !important;}
     .ccard, .ccard h3, .ccard .desc{background:#fff !important; color:#111 !important; border-color:#999 !important;}
     h2.sec, header.page-head h1{color:#111 !important;}
+    /* 신규 지휘판 요소도 인쇄 시 라이트색·검정글자 강제 */
+    .kbar{background:#eee !important; border-color:#999 !important;}
+    .kbar>i, .kbar.alt>i{background:#666 !important;}
+    .kmeas-h, .kmeta, .kmeta b, .pstat, .pstat b{color:#111 !important;}
+    .todaychip{color:#111 !important; background:#f8f2dc !important; border-color:#999 !important;}
   }
 </style>
 </head>
@@ -194,9 +210,37 @@
   var RAW_URL = 'https://raw.githubusercontent.com/wellperion-cao/wellperion-automation/master/3.%20%EC%9B%B0%ED%8E%98%EB%A6%AC%EC%98%A8%20%EA%B0%80%EC%9D%B4%EB%93%9C/coo/bootsetup_matrix.json';
   var KPI_RAW_URL = 'https://raw.githubusercontent.com/wellperion-cao/wellperion-automation/master/ssot/kpi.json';
   var GAS_URL = 'https://script.google.com/macros/s/AKfycbxDwFkrxK1YIaEoSNcuw2MiHiZQ-7o5N6311ytksSyeEd86ZFOhLknOWqQgNArQvZ-7/exec';
+  var RAW_BASE = 'https://raw.githubusercontent.com/wellperion-cao/wellperion-automation/master/';
   var _matrixData = null;
   var _kpiData = null;
+  var _kpiValues = null;      // status/kpi_values.json roles{} — 현재 실측값(없으면 null)
+  var _queueCounts = null;    // status/_queue.json 집계 → role.id별 {active, doneToday}
+  var _pendingByRole = null;  // status/northstar_pending.json → role.id별 후보 1개
   var _editMode = false;
+
+  // 뷰어 로컬(=GM 기준 KST) 오늘 날짜 YYYY-MM-DD
+  function localToday(){
+    var d = new Date(), p = function(n){ return (n < 10 ? '0' : '') + n; };
+    return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate());
+  }
+  // _queue 직독 집계: 활성(PENDING+IN_PROGRESS) · 오늘 완료(DONE & processed_at=오늘)
+  function computeQueueCounts(arr){
+    var m = {}, today = localToday();
+    (Array.isArray(arr) ? arr : []).forEach(function(t){
+      var role = t && t.clevel; if(!role) return;
+      var o = m[role] || (m[role] = { active:0, doneToday:0 });
+      var st = t.status;
+      if(st === 'PENDING' || st === 'IN_PROGRESS') o.active++;
+      else if(st === 'DONE' && String(t.processed_at || '').slice(0,10) === today) o.doneToday++;
+    });
+    return m;
+  }
+  // northstar_pending.candidates → role별 첫 후보
+  function computePending(d){
+    var m = {}, arr = (d && d.candidates) || [];
+    arr.forEach(function(c){ if(c && c.role && !m[c.role]) m[c.role] = c; });
+    return m;
+  }
 
   var esc = function(s){
     return String(s == null ? '' : s)
@@ -246,7 +290,7 @@
     var lab = '<span class="dim-label">📊 KPI' + note + '</span>';
     var kd = (_kpiData && _kpiData[role.id]) || null;
     if(kd && kd.kpi_html){
-      return lab + '<div class="dim-val" style="white-space:normal;">' + kd.kpi_html + '</div>';
+      return lab + '<div class="dim-val" style="white-space:normal;">' + kd.kpi_html + '</div>' + measuredBar(role);
     }
     // kpi.json 미등록 주체(예: GM) — dims[3] 폴백(읽기전용)
     var d = (role.dims) || [];
@@ -255,7 +299,45 @@
     var lis = items.length
       ? items.map(function(s){ return '<li>' + esc(s) + '</li>'; }).join('')
       : '<li class="dim-empty">—</li>';
-    return lab + '<ul class="dim-bul">' + lis + '</ul>';
+    return lab + '<ul class="dim-bul">' + lis + '</ul>' + measuredBar(role);
+  }
+
+  // 📊 KPI 실측 막대 — status/kpi_values.json(현재 실측값). 정의=kpi.json, 현재=여기.
+  //   완결률(0~1)=진행률 막대 / 누적 완료 수 병기. coo는 지원부 점검완료율 추가 막대.
+  //   값 없으면 빈 문자열(graceful — 절대 깨지지 않게).
+  function measuredBar(role){
+    var v = (_kpiValues && _kpiValues[role.id]) || null;
+    if(!v) return '';
+    var parts = [];
+    if(typeof v['완결률'] === 'number'){
+      var pct = Math.max(0, Math.min(100, Math.round(v['완결률'] * 100)));
+      parts.push('<div class="kbar" title="완결률(누적 실측)"><i style="width:' + pct + '%"></i></div>' +
+        '<div class="kmeta">완결률 <b>' + pct + '%</b>' +
+        (typeof v['완료'] === 'number' ? (' · 누적 완료 <b>' + v['완료'] + '</b>') : '') + '</div>');
+    }
+    if(typeof v['지원부_점검완료율'] === 'number'){
+      var p2 = Math.max(0, Math.min(100, Math.round(v['지원부_점검완료율'] * 100)));
+      parts.push('<div class="kbar alt" title="지원부 점검 완료율"><i style="width:' + p2 + '%"></i></div>' +
+        '<div class="kmeta">지원부 점검 <b>' + p2 + '%</b></div>');
+    }
+    if(!parts.length) return '';
+    return '<div class="kmeas"><span class="kmeas-h">실측 · status/kpi_values.json</span>' + parts.join('') + '</div>';
+  }
+
+  // 📍 진행현황 — status/_queue.json 직독 집계(활성 N · 오늘 완료 M). 데이터 없으면 줄 생략.
+  function progressBlock(role){
+    var c = (_queueCounts && _queueCounts[role.id]) || null;
+    if(!c) return '';
+    var lab = '<span class="dim-label">📍 진행현황</span>';
+    return lab + '<div class="pstat">📍 활성 <b>' + c.active + '</b> · 오늘 완료 <b>' + c.doneToday + '</b></div>';
+  }
+
+  // 🌅 오늘 추천 — status/northstar_pending.json 후보 1개. 없으면 숨김.
+  function recommendBlock(role){
+    var cand = (_pendingByRole && _pendingByRole[role.id]) || null;
+    if(!cand || !cand.title) return '';
+    var lab = '<span class="dim-label">🌅 오늘 추천</span>';
+    return lab + '<div class="todaychip" title="' + esc(cand.rationale || '') + '">🌅 ' + esc(cand.title) + '</div>';
   }
 
   function renderMatrix(){
@@ -267,8 +349,9 @@
     body.innerHTML = roles.map(function(role){
       var ac = role.accent || 'var(--accent)';
       var gm = role.id === 'gm';
-      // 칸1 목표·지표 = 🌟북극성(dims[0]·편집) + 📊KPI(ssot/kpi.json 직독·읽기전용)
-      var c1 = '<td>' + dimBlock(role, 0, '🌟 북극성') + kpiBlock(role) + '</td>';
+      // 칸1 목표·지표 = 🌟북극성(dims[0]·편집) + 📊KPI(목표 정의 + 실측 막대) + 📍진행현황 + 🌅오늘 추천
+      //   살아있는 지휘판: 북극성→KPI(목표vs현재)→진행현황→오늘 한 수를 세로 스택으로(데이터 없으면 graceful 생략).
+      var c1 = '<td>' + dimBlock(role, 0, '🌟 북극성') + kpiBlock(role) + progressBlock(role) + recommendBlock(role) + '</td>';
       // 칸2 일하는 법 = 📚읽는 정본(2) + 🔧일 흐름(1)
       var c2 = '<td>' + dimBlock(role, 2, '📚 읽는 정본') + dimBlock(role, 1, '🔧 일 흐름') + '</td>';
       // 칸3 소유 관리 = role.owns 링크칩(편집 대상 아님)
@@ -370,6 +453,14 @@
       .then(function(res){ if(res && res.ok && res.content){ return JSON.parse(res.content); } throw new Error((res && res.error) || 'kpi read 실패'); })
       .catch(function(){ return fetch(KPI_RAW_URL + '?t=' + Date.now(), {cache:'no-store'}).then(function(r){ return r.json(); }); });
   }
+  // 범용 직독: GAS read_file(최신·캐시없음) → 실패 시 raw GitHub 폴백. 실패해도 호출부에서 .catch(null) 처리.
+  function gasRead(path, rawUrl){
+    return fetch(GAS_URL, {method:'POST', redirect:'follow', headers:{'Content-Type':'text/plain;charset=utf-8'},
+        body: JSON.stringify({action:'read_file', path:path})})
+      .then(function(r){ return r.json(); })
+      .then(function(res){ if(res && res.ok && res.content){ return JSON.parse(res.content); } throw new Error((res && res.error) || 'read 실패'); })
+      .catch(function(){ return fetch(rawUrl + '?t=' + Date.now(), {cache:'no-store'}).then(function(r){ return r.json(); }); });
+  }
   window._matrixCancel = function(){
     fetchMatrix().then(function(d){ _matrixData = d; setEdit(false); });
   };
@@ -419,10 +510,19 @@
       });
   };
 
-  Promise.all([fetchMatrix(), fetchKpi().catch(function(){ return null; })])
+  Promise.all([
+    fetchMatrix(),
+    fetchKpi().catch(function(){ return null; }),
+    gasRead('status/kpi_values.json',     RAW_BASE + 'status/kpi_values.json').catch(function(){ return null; }),
+    gasRead('status/_queue.json',         RAW_BASE + 'status/_queue.json').catch(function(){ return null; }),
+    gasRead('status/northstar_pending.json', RAW_BASE + 'status/northstar_pending.json').catch(function(){ return null; })
+  ])
     .then(function(arr){
       _matrixData = arr[0];
       _kpiData = (arr[1] && arr[1].roles) || {};
+      _kpiValues = (arr[2] && arr[2].roles) || {};
+      _queueCounts = computeQueueCounts(arr[3]);
+      _pendingByRole = computePending(arr[4]);
       renderMatrix();
       renderEditBtn();
       initColResizers();
