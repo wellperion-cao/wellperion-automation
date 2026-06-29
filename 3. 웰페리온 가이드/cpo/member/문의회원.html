@@ -2776,7 +2776,7 @@ function loadCalendarData() {
   }
 
   var monthStr = calYear + '-' + String(calMonth).padStart(2,'0');
-  fetch(GAS_URL + '?action=member_calendar&month=' + monthStr)
+  fetch(GAS_URL + '?action=member_calendar&month=' + monthStr + '&_=' + Date.now())  // 캐시버스터 — 항상 최신 slot/시간 반영
     .then(function(r){ return r.json(); })
     .then(function(data){
       if (!data.ok) throw new Error('GAS 응답 오류');
@@ -2910,7 +2910,7 @@ function openConsultModal(ev) {
   document.getElementById('cmContact3').value = ev.contact3 || '';
   // 시간 설정 드롭다운 — 06~22시(그리드와 동일). 현재 시간 프리셀렉트. 쓰기 가능한 칸(상담·체험1·2·3)만 활성. 2026-06-29 시포
   var tSel = document.getElementById('cmTimeSel'), tHint = document.getElementById('cmTimeHint');
-  var _writable = ['tour','exp1','exp2','exp3'].indexOf(ev.slot || '') >= 0;
+  var _writable = ['tour','exp1','exp2','exp3','visit2'].indexOf(ev.slot || '') >= 0;
   tSel.innerHTML = '';
   var blank = document.createElement('option'); blank.value = ''; blank.textContent = '시간 미정'; tSel.appendChild(blank);
   for (var _h = 6; _h <= 22; _h++) { var _hh = ('0'+_h).slice(-2)+':00'; var _o = document.createElement('option'); _o.value = _hh; _o.textContent = _hh; tSel.appendChild(_o); }
@@ -2944,7 +2944,7 @@ function saveConsultModal() {
   var c1Changed = (c1 !== o1), c2Changed = (c2 !== o2), c3Changed = (c3 !== o3);
   // 시간 설정 — 쓰기 가능한 칸(상담/체험1·2·3)에서 원본과 다르면 변경. 2026-06-29 시포
   var selTime = document.getElementById('cmTimeSel').value;
-  var timeWritable = ['tour','exp1','exp2','exp3'].indexOf(_consultEv.slot || '') >= 0;
+  var timeWritable = ['tour','exp1','exp2','exp3','visit2'].indexOf(_consultEv.slot || '') >= 0;
   var timeChanged = timeWritable && (selTime !== _consultOrigTime);
   if (!visited && !input && !c1Changed && !c2Changed && !c3Changed && !timeChanged) { showToast('변경 사항이 없습니다', 'err'); return; }
 

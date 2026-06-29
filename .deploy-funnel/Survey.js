@@ -1136,6 +1136,7 @@ function _miReadRows_() {
       exp3:     _miToISO_(iExp3 >= 0 ? row[iExp3] : ''),
       exp3Time: _miTime_(iExp3 >= 0 ? row[iExp3] : ''),
       visit2Date: _miToISO_(iV2Dt >= 0 ? row[iV2Dt] : ''),  // 2차 방문 날짜(col11) — 달력에서 누락되던 일정 보강
+      visit2Time: _miTime_(iV2Dt >= 0 ? row[iV2Dt] : ''),   // 2차 방문 시간 — 같은 셀에서 직독(시간 설정 지원, 2026-06-29 시포)
       timestamp:_miToISO_(iTs   >= 0 ? row[iTs]   : ''),
       memo:     iMemo  >= 0 ? String(row[iMemo]  || '') : '',
       owner:    iOwner >= 0 ? String(row[iOwner] || '') : '',
@@ -2036,8 +2037,8 @@ function _processAction(body) {
       add(row.exp1, '체험', row.exp1Time, 'exp1');
       add(row.exp2, '체험', row.exp2Time, 'exp2');
       add(row.exp3, '체험', row.exp3Time, 'exp3');
-      // 2차 방문: 날짜=col11, 시간=확정시간 텍스트(col12) — 기존 달력에서 통째로 누락되던 일정. (시간 설정 미지원 칸)
-      add(row.visit2Date, '체험', _miTimeKR_(row.exp2), 'visit2');
+      // 2차 방문: 날짜+시간 = 같은 셀(col11)에서 직독. 옛 데이터(시간 미기재)는 exp2 한글시간으로 폴백. 시간 설정 지원(2026-06-29 시포).
+      add(row.visit2Date, '체험', row.visit2Time || _miTimeKR_(row.exp2), 'visit2');
     });
     return _json({ ok: true, month: mcMonth, count: mcEvents.length, events: mcEvents });
   }
@@ -2088,6 +2089,7 @@ function _processAction(body) {
     _muSet(['체험1 확정시간','체험1'], body.exp1);
     _muSet(['체험2 확정시간','체험2'], body.exp2);
     _muSet(['체험3 확정시간','체험3'], body.exp3);
+    _muSet(['시설 체험 예약2(날짜 기록)','시설 체험 예약2','체험 예약2'], body.visit2);  // 2차 방문 날짜+시간(시간 설정 지원, 2026-06-29 시포)
     _muSetCol(['Contact1'], 17, _fmtContactOrUndef_(body.contact1));
     _muSetCol(['Contact2'], 18, _fmtContactOrUndef_(body.contact2));
     _muSetCol(['Contact3'], 19, _fmtContactOrUndef_(body.contact3));
