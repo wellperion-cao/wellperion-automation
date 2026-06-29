@@ -626,13 +626,22 @@ function rrnAge(b,g){
   if(m<mm||(m===mm&&t.getDate()<dd)) age--;
   return (age>=0&&age<=120)?age:null;
 }
-// 임직원 표시 셀: "590721 · 만 66세" (값 없으면 —)
+// 주민번호 6자리(YYMMDD)+성별자리 → "YYYY-MM-DD" (날짜 유효하지 않으면 null)
+function fmtRRNDate(b,g){
+  var yy=+b.slice(0,2), mm=+b.slice(2,4), dd=+b.slice(4,6);
+  if(!mm||!dd||mm>12||dd>31) return null;
+  var c=(g==="1"||g==="2"||g==="5"||g==="6")?1900:(g==="9"||g==="0")?1800:2000;
+  var p=function(n){return(n<10?"0":"")+n;};
+  return (c+yy)+"-"+p(mm)+"-"+p(dd);
+}
+// 임직원 표시 셀: "1959-07-21 · 만 66세" (값 없으면 —, 날짜 깨지면 원본 6자리)
 function empBirthCell(e){
   var r=empRRN(e); if(!r) return "—";
   var a=rrnAge(r.b,r.g);
-  if(a==null) return esc(r.b);
+  var disp=fmtRRNDate(r.b,r.g)||esc(r.b);   // 생년월일 날짜 형식화(실패 시 원본 6자리 폴백)
+  if(a==null) return disp;
   var tag=(a>=62)?' <span style="color:var(--gold-deep);font-weight:700">(촉탁)</span>':'';
-  return esc(r.b)+' <span class="t-sub">· 만 '+a+'세</span>'+tag;
+  return disp+' <span class="t-sub">· 만 '+a+'세</span>'+tag;
 }
 // 채용 채널 값을 개별 채널 토큰 배열로 (콤마/슬래시/、 구분)
 function chTokens(v){
