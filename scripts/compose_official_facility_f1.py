@@ -33,8 +33,8 @@ TOTAL = 6
 CAPTION = (
     "한 곳에서 하루가 완성되는 곳, 웰페리온.\n\n"
     "한남동 3,000평 종합 스포츠클럽.\n"
-    "25m 정규 수영장, GDR 스크린골프, 스쿼시 코트,\n"
-    "테크노짐 헬스존, 그리고 사우나·스파까지.\n"
+    "25m 정규 수영장, 스쿼시 코트, 테크노짐 헬스존,\n"
+    "GDR·QED 15타석 오토티업 + 골프강습룸 1타석, 사우나·스파까지.\n"
     "운동의 시작과 회복을 한 공간에서 누리세요.\n\n"
     "문의: wellperion.com/ko/inquiry\n\n"
     "#웰페리온 #한남동 #스포츠클럽 #프리미엄 #수영 #골프 #스쿼시 "
@@ -152,7 +152,7 @@ def main() -> None:
                     FOOT, 2, OUT_DIR / "post_2.jpg")
     compose_feature(photos[3], META, "헬스", "테크노짐 프리미엄 존",
                     FOOT, 3, OUT_DIR / "post_3.jpg")
-    compose_feature(photos[4], META, "골프", "GDR 15 오토티업",
+    compose_feature(photos[4], META, "골프", "GDR·QED 15타석 오토티업",
                     FOOT, 4, OUT_DIR / "post_4.jpg")
     compose_feature(photos[5], META, "스쿼시", "정식 코트",
                     FOOT, 5, OUT_DIR / "post_5.jpg")
