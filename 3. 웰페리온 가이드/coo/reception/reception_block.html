@@ -15,6 +15,10 @@
 /* ── 종합접수처 페이지(8434) 한정 테마 보정 ── */
 /* 영어판 없음 → ENG 누르면 홈으로 튐. QR 한글 전용이므로 언어버튼 숨김 */
 body.page-id-8434 a.lang-header{display:none!important}
+/* 노란 Buttonizer 플로팅 '문의하기' 버튼 숨김 — 접수 폼 자체가 있어 불필요·가림 */
+body.page-id-8434 .buttonizer,
+body.page-id-8434 #buttonizer,
+body.page-id-8434 [class*="buttonizer"]{display:none!important}
 /* WP 페이지 타이틀 숨김 — 폼 자체 헤더('종합접수처')를 사용 */
 body.page-id-8434 h1.entry-title,
 body.page-id-8434 .entry-title,
