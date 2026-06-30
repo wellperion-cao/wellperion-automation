@@ -27,10 +27,11 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 .tab{padding:8px 18px;font-size:14px;font-weight:600;color:var(--dim);background:none;border:none;border-radius:8px;cursor:pointer;font-family:inherit;white-space:nowrap;flex-shrink:0}
 .tab.active{background:var(--accent-bg);color:var(--accent)}
 .tab-dropdown{position:relative;flex-shrink:0}
-.tab-dropdown-menu{display:none;position:absolute;top:100%;left:0;background:var(--bg);border:1px solid rgba(183,159,138,0.25);border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,0.12);z-index:200;min-width:130px;padding:4px 0;margin-top:2px}
+.tab-dropdown-menu{display:none;position:fixed;background:var(--bg);border:1px solid rgba(183,159,138,0.25);border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,0.4);z-index:1000;min-width:130px;padding:4px 0}
 .tab-dropdown-menu.open{display:block}
 .tab-dropdown-menu button{display:block;width:100%;padding:9px 16px;font-size:14px;font-weight:600;color:var(--dim);background:none;border:none;cursor:pointer;font-family:inherit;white-space:nowrap;text-align:left;border-radius:0}
 .tab-dropdown-menu button:hover{background:var(--accent-bg);color:var(--accent)}
+.tab-dropdown-menu button.active{background:var(--accent-bg);color:var(--accent)}
 .content{padding:16px 20px 140px;max-width:720px;margin:0 auto}
 /* 가이드 탭 본문 풀폭 (S2 · 운영부 정합 · GM 2026-06-11) */
 #tab-policy,#tab-guide,#tab-chem,#tab-manual,#tab-check-m,#tab-check-f,#tab-reg,#tab-supply{max-width:none;margin-left:0;margin-right:0}
@@ -709,12 +710,19 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 <div class="tabs">
   <button class="tab active" onclick="switchTab('policy')">지원부 규정</button>
   <div class="tab-dropdown" id="tabDropdown">
-    <button class="tab" id="tabDropdownBtn" onclick="toggleTabDropdown(event)">📚 가이드·관리 ▾</button>
+    <button class="tab" id="tabDropdownBtn" onclick="openTabDropdown(this,document.getElementById('tabDropdownMenu'),event)">📚 가이드·관리 ▾</button>
     <div class="tab-dropdown-menu" id="tabDropdownMenu">
-      <button onclick="switchTab('guide');closeTabDropdown()">직원 가이드</button>
-      <button onclick="switchTab('chem');closeTabDropdown()">약품 가이드</button>
-      <button onclick="switchTab('manual');closeTabDropdown()">매뉴얼</button>
-      <button onclick="switchTab('supply');closeTabDropdown()">비품관리</button>
+      <button onclick="switchTab('guide');closeAllDropdowns()">직원 가이드</button>
+      <button onclick="switchTab('chem');closeAllDropdowns()">약품 가이드</button>
+      <button onclick="switchTab('manual');closeAllDropdowns()">매뉴얼</button>
+      <button onclick="switchTab('supply');closeAllDropdowns()">비품관리</button>
+    </div>
+  </div>
+  <div class="tab-dropdown" id="monthlyDropdown">
+    <button class="tab" id="monthlyDropdownBtn" onclick="openTabDropdown(this,document.getElementById('monthlyDropdownMenu'),event)">📅 월간 보고 ▾</button>
+    <div class="tab-dropdown-menu" id="monthlyDropdownMenu">
+      <!-- 새 달 추가 패턴: 아래 항목 1줄 복사 후 해당 달 인쇄 함수·#a3-monthly-print 블록 추가 (배208 자동 데이터 주입 후속) -->
+      <button onclick="printA3Monthly();closeAllDropdowns()">2026년 6월</button>
     </div>
   </div>
   <button class="tab" onclick="switchTab('reg')">청결 이슈 접수</button>
@@ -724,7 +732,6 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
     <button class="util-btn print-btn" onclick="printCurrentTab()">인쇄</button>
     <button class="util-btn print-btn" onclick="printA3Guideline()" title="규정+가이드를 A3 세로 좌우2단으로 인쇄">🖨️ A3 가이드라인</button>
     <button class="util-btn print-btn" onclick="printA3Manual()" title="매뉴얼 보드를 A3 가로 1장 주간표(월~일 7열)로 인쇄">🖨️ A3 매뉴얼(주간)</button>
-    <button class="util-btn print-btn" onclick="printA3Monthly()" title="이번 달 점검 월간 보고를 A3 가로로 인쇄">🖨️ A3 월간 보고</button>
     <button class="util-btn report-btn" onclick="copyReport()">보고용</button>
     <button class="util-btn share-btn" onclick="copyShare()">공유용</button>
   </div>
@@ -4772,15 +4779,25 @@ async function copyShare(){
   _copyToClipboard(line);
 }
 
-function toggleTabDropdown(e){
+function openTabDropdown(btnEl, menuEl, e){
   e.stopPropagation();
-  document.getElementById('tabDropdownMenu').classList.toggle('open');
+  var isOpen = menuEl.classList.contains('open');
+  closeAllDropdowns();
+  if(!isOpen){
+    var rect = btnEl.getBoundingClientRect();
+    menuEl.style.top = (rect.bottom + 2) + 'px';
+    menuEl.style.left = rect.left + 'px';
+    menuEl.classList.add('open');
+  }
 }
-function closeTabDropdown(){
-  var m = document.getElementById('tabDropdownMenu');
-  if(m) m.classList.remove('open');
+function closeAllDropdowns(){
+  document.querySelectorAll('.tab-dropdown-menu').forEach(function(m){ m.classList.remove('open'); });
 }
-document.addEventListener('click', function(){ closeTabDropdown(); });
+// 하위 호환 — 구형 인라인 onclick 참조 보존
+function closeTabDropdown(){ closeAllDropdowns(); }
+document.addEventListener('click', function(){ closeAllDropdowns(); });
+window.addEventListener('scroll', function(){ closeAllDropdowns(); }, true);
+window.addEventListener('resize', function(){ closeAllDropdowns(); });
 
 function switchTab(tab, opts){
   // 탭 떠나기 전, 대기 중인 저장 스냅샷을 즉시 전송(떠나는 탭 체크 영속 보장 — 스냅샷이라 레이스 없음). GM 2026-06-12
@@ -4805,6 +4822,12 @@ function switchTab(tab, opts){
     if(_grp.indexOf(tab) >= 0) _dropBtn.classList.add('active');
     else _dropBtn.classList.remove('active');
   }
+  // 드롭다운 메뉴 항목 active 표시 (A-2)
+  document.querySelectorAll('#tabDropdownMenu button').forEach(function(b){
+    var oc = b.getAttribute('onclick') || '';
+    if(oc.indexOf("'"+tab+"'") >= 0) b.classList.add('active');
+    else b.classList.remove('active');
+  });
   document.getElementById('tab-policy').classList.toggle('hidden',tab!=='policy');
   document.getElementById('tab-guide').classList.toggle('hidden',tab!=='guide');
   document.getElementById('tab-chem').classList.toggle('hidden',tab!=='chem');
