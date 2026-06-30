@@ -113,4 +113,12 @@ if [ -f "$ENFORCE_GUARD" ] && [ -n "$PYBIN" ]; then
   fi
 fi
 
+# ── ③ 텔레그램 방번호 폴백 어긋남 가드 (chat_id drift · 2026-06-30 시토) ─────
+# telegram_bot/.env 정본 대비 추적파일 폴백 리터럴 어긋남 감지·경고(warn-only).
+# 항상 exit 0(fail-open). watcher 자동push 보호.
+CHATID_DRIFT_GUARD="$REPO_ROOT/scripts/check_chatid_drift.py"
+if [ -f "$CHATID_DRIFT_GUARD" ] && [ -n "$PYBIN" ]; then
+  PYTHONUTF8=1 "$PYBIN" "$CHATID_DRIFT_GUARD" || true
+fi
+
 exit 0
