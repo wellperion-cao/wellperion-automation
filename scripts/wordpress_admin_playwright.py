@@ -887,7 +887,7 @@ RECEPTION_IFRAME_HTML = (
     ".page-header h1,.title-container h1{display:none!important}"
     "</style>"
     '<iframe id="recptForm"'
-    ' src="https://wellperion-cao.github.io/wellperion-automation/coo/voc/voc_mobile_form.html"'
+    ' src="https://wellperion-cao.github.io/wellperion-automation/coo/reception/reception_form.html"'
     ' width="100%" height="950"'
     ' style="border:0;display:block;max-width:100%;"'
     ' loading="lazy">'
@@ -897,7 +897,7 @@ RECEPTION_IFRAME_HTML = (
     "var loc=new URLSearchParams(location.search).get('loc');"
     "if(loc){"
     "var f=document.getElementById('recptForm');"
-    "f.src='https://wellperion-cao.github.io/wellperion-automation/coo/voc/voc_mobile_form.html'"
+    "f.src='https://wellperion-cao.github.io/wellperion-automation/coo/reception/reception_form.html'"
     "+'?loc='+encodeURIComponent(loc);"
     "}"
     "})();"

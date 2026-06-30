@@ -7,7 +7,7 @@
 | 파일 | 역할 |
 |---|---|
 | `coo/voc/apps_script_voc.js` | VOC 전용 백엔드 GAS (submit·list·update·사진 base64→Drive·텔레그램 알림) |
-| `coo/voc/voc_mobile_form.html` | 회원용 모바일 폼 (QR `?loc=` 프리필, 다크·모바일) |
+| `coo/reception/reception_form.html` | 회원용 모바일 폼 (QR `?loc=` 프리필, 다크·모바일) |
 | `coo/check/운영부 체계.html` ▸ VOC 탭 | 운영부 현황 보드(접수/처리중/완료 칸반 + 담당배정·상태전환) |
 
 ---
@@ -49,14 +49,14 @@
 > ⚠️ `/exec` 반영은 **새 버전 재배포** 필요. 코드만 저장해선 라이브에 반영되지 않음.
 
 ### 2) /exec URL 폼에 입력 (placeholder 교체)
-배포 후 받은 `/exec` 주소로 `voc_mobile_form.html` 안의 `VOC_API` 변수를 교체:
-- `coo/voc/voc_mobile_form.html` — `var VOC_API = '여기';`
+배포 후 받은 `/exec` 주소로 `reception_form.html` 안의 `VOC_API` 변수를 교체:
+- `coo/reception/reception_form.html` — `var VOC_API = '여기';`
 
 > 교체 후 커밋+푸시하면 GitHub Pages 에 자동 반영.
 
 ### 3) 모바일 폼 라이브 호스팅
-`voc_mobile_form.html` 은 GitHub Pages 로 자동 노출됨:
-`https://wellperion-cao.github.io/wellperion-automation/coo/voc/voc_mobile_form.html`
+`reception_form.html` 은 GitHub Pages 로 자동 노출됨:
+`https://wellperion-cao.github.io/wellperion-automation/coo/reception/reception_form.html`
 
 위치별 QR 은 여기에 `?loc=` 만 붙이면 됨.
 
@@ -73,10 +73,10 @@
 
 | 위치 | QR URL |
 |---|---|
-| 리셉션 | `…/voc_mobile_form.html?loc=리셉션` |
-| 락커룸 | `…/voc_mobile_form.html?loc=락커룸` |
-| 운동장(헬스장) | `…/voc_mobile_form.html?loc=헬스장` |
-| 주차장 | `…/voc_mobile_form.html?loc=주차장` |
+| 리셉션 | `…/reception_form.html?loc=리셉션` |
+| 락커룸 | `…/reception_form.html?loc=락커룸` |
+| 운동장(헬스장) | `…/reception_form.html?loc=헬스장` |
+| 주차장 | `…/reception_form.html?loc=주차장` |
 
 (앞부분 `…` = GitHub Pages 전체 경로)
 QR 생성: qr-code-generator.com 등에 URL 입력 → PNG 다운로드.
