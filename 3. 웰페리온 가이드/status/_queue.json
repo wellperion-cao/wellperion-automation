@@ -716,5 +716,19 @@
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "66cf2e35c889b685c55bdb9a946ca4251c553cff",
     "ship_no": 229
+  },
+  {
+    "task_id": "CMO-2026-06-30-ADHOC-4061fa73",
+    "clevel": "cmo",
+    "title": "[시모] fix(wp): 종합접수처 ?loc 파라미터 iframe 전달 추가",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-06-30",
+    "processed_at": "2026-06-30",
+    "artifact": "- RECEPTION_IFRAME_HTML에 id=recptForm 추가\n- 인라인 JS: 부모 URL ?loc 값 읽어 iframe src에 ?loc=encodeURIComponent(loc) 주입\n- 검증: loc=리셉션/락커/헬스장/주차장 모두 iframe src에 정상 전달 확인\n- 폼 내 loc 칩(📍) 렌더 + f_loc 필드 프리필 작동 확인 (CLI ad-hoc · 커밋 4061fa73)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "4061fa73914354897cf3fe64fd2bd13e01810aa9",
+    "ship_no": 230
   }
 ]
