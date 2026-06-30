@@ -718,6 +718,9 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
       <button onclick="switchTab('supply');closeAllDropdowns()">비품관리</button>
     </div>
   </div>
+  <button class="tab" onclick="switchTab('reg')">청결 이슈 접수</button>
+  <button class="tab" onclick="switchTab('check-m','lock')">점검(남) 🔒</button>
+  <button class="tab" onclick="switchTab('check-f','lock')">점검(여) 🔒</button>
   <div class="tab-dropdown" id="monthlyDropdown">
     <button class="tab" id="monthlyDropdownBtn" onclick="openTabDropdown(this,document.getElementById('monthlyDropdownMenu'),event)">📅 월간 보고 ▾</button>
     <div class="tab-dropdown-menu" id="monthlyDropdownMenu">
@@ -725,9 +728,6 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
       <button onclick="printA3Monthly();closeAllDropdowns()">2026년 6월</button>
     </div>
   </div>
-  <button class="tab" onclick="switchTab('reg')">청결 이슈 접수</button>
-  <button class="tab" onclick="switchTab('check-m','lock')">점검(남) 🔒</button>
-  <button class="tab" onclick="switchTab('check-f','lock')">점검(여) 🔒</button>
   <div style="display:flex;gap:4px;margin-left:auto;">
     <button class="util-btn print-btn" onclick="printCurrentTab()">인쇄</button>
     <button class="util-btn print-btn" onclick="printA3Guideline()" title="규정+가이드를 A3 세로 좌우2단으로 인쇄">🖨️ A3 가이드라인</button>
