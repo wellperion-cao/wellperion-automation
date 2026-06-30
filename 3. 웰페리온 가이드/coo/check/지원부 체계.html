@@ -472,6 +472,45 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 #a3-guideline-print{display:none}
 /* ── A3 매뉴얼(주간) 인쇄 전용 컨테이너 ── */
 #a3-manual-print{display:none}
+/* ── A3 월간 보고 인쇄 전용 컨테이너 ── */
+#a3-monthly-print{display:none}
+/* ── 월간 보고 탭 화면 뷰 — 라이트 배경 문서카드 ── */
+#tab-monthly .monthly-doc-bar{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;gap:12px;flex-wrap:wrap}
+#tab-monthly .monthly-month-badge{font-size:14px;font-weight:800;color:#4a3a2e;background:#f3ede7;border:1.5px solid #B79F8A;border-radius:8px;padding:6px 16px}
+#tab-monthly .monthly-print-btn{background:#B79F8A;color:#fff;border:none;padding:8px 20px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;letter-spacing:0.01em;transition:background 0.15s}
+#tab-monthly .monthly-print-btn:hover{background:#9d8470}
+#tab-monthly .monthly-wrap{background:#f5f2ef;border-radius:10px;padding:0;border:1px solid #d5ccc3;overflow:hidden}
+#tab-monthly .mr-title-band{background:#f3ede7;border-bottom:3px solid #B79F8A;padding:16px 20px;display:flex;align-items:flex-start;justify-content:space-between;gap:20px;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+#tab-monthly .mr-main-title{font-size:18px;font-weight:800;color:#4a3a2e;letter-spacing:-0.015em;margin-bottom:4px}
+#tab-monthly .mr-sub-title{font-size:11.5px;color:#7a6a5e;font-weight:500}
+#tab-monthly .mr-title-meta{text-align:right;font-size:10.5px;color:#7a6a5e;line-height:1.7;flex-shrink:0;white-space:nowrap}
+#tab-monthly .mr-kpi-row{display:flex;gap:8px;padding:12px 16px;background:#fdfaf7;border-bottom:1px solid #e8e0d8}
+#tab-monthly .mr-kpi-chip{flex:1;min-width:130px;background:#fff;border:1px solid #ccc;border-radius:6px;padding:9px 11px;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+#tab-monthly .mr-kpi-key{font-size:13px;font-weight:800;color:#4a3a2e;margin-bottom:4px;line-height:1.3}
+#tab-monthly .mr-kpi-num{color:#c0392b;font-weight:900}
+#tab-monthly .mr-kpi-desc{font-size:10px;color:#7a6a5e;line-height:1.4}
+#tab-monthly .mr-body-row{display:grid;grid-template-columns:1fr 1fr;border-bottom:1px solid #e8e0d8}
+#tab-monthly .mr-col{padding:13px 16px 11px}
+#tab-monthly .mr-col:first-child{border-right:1px solid #e8e0d8}
+#tab-monthly .mr-col-head{font-size:12px;font-weight:800;padding:4px 10px 4px 13px;margin-bottom:9px;border-radius:4px;background:#f3ede7;color:#4a3a2e;border-left:4px solid #B79F8A;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+#tab-monthly .mr-card{border:1px solid #ccc;border-radius:5px;padding:7px 10px;margin-bottom:6px;background:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+#tab-monthly .mr-card:last-child{margin-bottom:0}
+#tab-monthly .mr-card-title{font-size:11.5px;font-weight:800;color:#4a3a2e;margin-bottom:4px;padding-bottom:3px;border-bottom:1px solid #ece8e4}
+#tab-monthly .mr-card-line{font-size:10.5px;color:#3a3330;padding:2px 0 2px 11px;position:relative;line-height:1.4}
+#tab-monthly .mr-card-line::before{content:"·";position:absolute;left:2px;color:#B79F8A;font-size:14px;line-height:1;top:1px}
+#tab-monthly .mr-bottom-row{display:grid;grid-template-columns:1fr 1fr;border-bottom:1px solid #e8e0d8}
+#tab-monthly .mr-bottom-col{padding:11px 16px 10px}
+#tab-monthly .mr-bottom-col:first-child{border-right:1px solid #e8e0d8}
+#tab-monthly .mr-bottom-head{font-size:11.5px;font-weight:800;padding:4px 9px 4px 12px;margin-bottom:7px;border-radius:4px;background:#eef7f0;color:#1a4a2a;border-left:4px solid #5a9a6e;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+#tab-monthly .mr-bottom-head.discuss{background:#eaf3fb;color:#1a3a5a;border-left-color:#5b9fd5}
+#tab-monthly .mr-footer{padding:6px 16px;font-size:9px;color:#9a8a7a;background:#fdfaf7;line-height:1.5}
+@media(max-width:560px){
+  #tab-monthly .mr-body-row,#tab-monthly .mr-bottom-row{grid-template-columns:1fr}
+  #tab-monthly .mr-col:first-child,#tab-monthly .mr-bottom-col:first-child{border-right:none;border-bottom:1px solid #e8e0d8}
+  #tab-monthly .mr-kpi-row{flex-wrap:wrap}
+  #tab-monthly .mr-title-band{flex-direction:column}
+  #tab-monthly .mr-title-meta{text-align:left;white-space:normal}
+}
 /* ── A3 인쇄 모드 (body.a3-print-mode → @media print 분기) ── */
 @media print{
   body.a3-print-mode{font-size:10px;line-height:1.4;color:#111;background:#fff}
@@ -488,7 +527,8 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   body.a3-print-mode #tab-chem,
   body.a3-print-mode #tab-manual,
   body.a3-print-mode #tab-supply,
-  body.a3-print-mode #tab-reg{display:none!important}
+  body.a3-print-mode #tab-reg,
+  body.a3-print-mode #tab-monthly{display:none!important}
   body.a3-print-mode #a3-guideline-print{display:block!important}
   body.a3-print-mode #a3-manual-print{display:none!important}
   /* ── A3 매뉴얼(주간) 인쇄 모드 ── */
@@ -509,6 +549,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   body.a3-manual-mode #tab-reg,
   body.a3-manual-mode #tab-check-m,
   body.a3-manual-mode #tab-check-f,
+  body.a3-manual-mode #tab-monthly,
   body.a3-manual-mode #a3-guideline-print{display:none!important}
   body.a3-manual-mode #a3-manual-print{display:block!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
   .a3m-header{text-align:center;font-size:15px;font-weight:800;letter-spacing:0.05em;padding:2px 0 4px;border-bottom:2.5px solid #4a3a2e;margin-bottom:2px;color:#2a2018}
@@ -554,6 +595,56 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   .a3-guide-clone div[style*="background:rgba(183,159,138"]{background:#f5f0eb!important;border-left:3px solid #B79F8A;padding:5px 7px;margin:4px 0;break-inside:avoid}
   .a3-guide-clone div[style*="background:var(--paper)"]{background:#faf8f5!important;border-left:3px solid #B79F8A;padding:5px 7px;margin-bottom:4px;break-inside:avoid}
   .a3-guide-clone .manual-section .manual-body{padding-left:8px}
+  /* ── A3 월간 보고 인쇄 모드 ── */
+  body.a3-monthly-mode{font-size:10px;line-height:1.4;color:#111;background:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  body.a3-monthly-mode .header,
+  body.a3-monthly-mode .tabs,
+  body.a3-monthly-mode .submit-bar,
+  body.a3-monthly-mode .saving,
+  body.a3-monthly-mode .toast-msg,
+  body.a3-monthly-mode .header-util-btns,
+  body.a3-monthly-mode .util-btn,
+  body.a3-monthly-mode .sheet-links,
+  body.a3-monthly-mode #tab-policy,
+  body.a3-monthly-mode #tab-guide,
+  body.a3-monthly-mode #tab-chem,
+  body.a3-monthly-mode #tab-manual,
+  body.a3-monthly-mode #tab-supply,
+  body.a3-monthly-mode #tab-reg,
+  body.a3-monthly-mode #tab-check-m,
+  body.a3-monthly-mode #tab-check-f,
+  body.a3-monthly-mode #tab-monthly,
+  body.a3-monthly-mode #a3-guideline-print,
+  body.a3-monthly-mode #a3-manual-print{display:none!important}
+  body.a3-monthly-mode #a3-monthly-print{display:block!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  /* 월간 보고 인쇄 전용 컴포넌트 스타일 */
+  #a3-monthly-print .mrp-doc{background:#fff;overflow:hidden;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  #a3-monthly-print .mrp-title-band{background:#f3ede7!important;border-bottom:3px solid #B79F8A;padding:16px 22px;display:flex;align-items:flex-start;justify-content:space-between;gap:20px;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  #a3-monthly-print .mrp-main-title{font-size:20px;font-weight:800;color:#4a3a2e;letter-spacing:-0.015em;margin-bottom:4px}
+  #a3-monthly-print .mrp-sub-title{font-size:11.5px;color:#7a6a5e;font-weight:500}
+  #a3-monthly-print .mrp-title-meta{text-align:right;font-size:10.5px;color:#7a6a5e;line-height:1.7;flex-shrink:0;white-space:nowrap}
+  #a3-monthly-print .mrp-kpi-row{display:flex;gap:10px;padding:14px 20px;background:#fdfaf7!important;border-bottom:1px solid #e8e0d8;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  #a3-monthly-print .mrp-kpi-chip{flex:1;background:#fff!important;border:1px solid #ccc;border-radius:6px;padding:12px 14px;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  #a3-monthly-print .mrp-kpi-key{font-size:14px;font-weight:800;color:#4a3a2e;margin-bottom:6px;line-height:1.3}
+  #a3-monthly-print .mrp-kpi-num{color:#c0392b;font-weight:900}
+  #a3-monthly-print .mrp-kpi-desc{font-size:11px;color:#7a6a5e;line-height:1.55}
+  #a3-monthly-print .mrp-body-row{display:grid;grid-template-columns:1fr 1fr;border-bottom:1px solid #e8e0d8}
+  #a3-monthly-print .mrp-col{padding:18px 22px 16px}
+  #a3-monthly-print .mrp-col:first-child{border-right:1px solid #e8e0d8}
+  #a3-monthly-print .mrp-col-head{font-size:13px;font-weight:800;padding:5px 11px 5px 14px;margin-bottom:12px;border-radius:4px;background:#f3ede7!important;color:#4a3a2e;border-left:4px solid #B79F8A;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  #a3-monthly-print .mrp-card{border:1px solid #ccc;border-radius:5px;padding:11px 14px;margin-bottom:11px;background:#fff!important;break-inside:avoid;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  #a3-monthly-print .mrp-card:last-child{margin-bottom:0}
+  #a3-monthly-print .mrp-card-title{font-size:12px;font-weight:800;color:#4a3a2e;margin-bottom:6px;padding-bottom:4px;border-bottom:1px solid #ece8e4}
+  #a3-monthly-print .mrp-card-line{font-size:11px;color:#3a3330;padding:3px 0 3px 13px;position:relative;line-height:1.55}
+  #a3-monthly-print .mrp-card-line::before{content:"·";position:absolute;left:2px;color:#B79F8A;font-size:15px;line-height:1;top:2px}
+  #a3-monthly-print .mrp-bottom-row{display:grid;grid-template-columns:1fr 1fr;border-bottom:1px solid #e8e0d8}
+  #a3-monthly-print .mrp-bottom-col{padding:16px 22px 14px}
+  #a3-monthly-print .mrp-bottom-col:first-child{border-right:1px solid #e8e0d8}
+  #a3-monthly-print .mrp-bottom-head{font-size:12px;font-weight:800;padding:5px 10px 5px 14px;margin-bottom:10px;border-radius:4px;background:#eef7f0!important;color:#1a4a2a;border-left:4px solid #5a9a6e;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  #a3-monthly-print .mrp-bottom-head.discuss{background:#eaf3fb!important;color:#1a3a5a;border-left-color:#5b9fd5}
+  #a3-monthly-print .mrp-bottom-line{font-size:11px;color:#3a3330;padding:3px 0 3px 13px;position:relative;line-height:1.55}
+  #a3-monthly-print .mrp-bottom-line::before{content:"·";position:absolute;left:2px;color:#B79F8A;font-size:15px;line-height:1;top:2px}
+  #a3-monthly-print .mrp-footer{padding:8px 22px;font-size:10px;color:#9a8a7a;background:#fdfaf7!important;line-height:1.5;-webkit-print-color-adjust:exact;print-color-adjust:exact}
 }
 /* ── Print (기존 A4) ── */
 @media print{
@@ -659,6 +750,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   <button class="tab" onclick="switchTab('reg')">청결 이슈 접수</button>
   <button class="tab" onclick="switchTab('check-m','lock')">점검(남) 🔒</button>
   <button class="tab" onclick="switchTab('check-f','lock')">점검(여) 🔒</button>
+  <button class="tab" onclick="switchTab('monthly')">📅 월간 보고</button>
   <div style="display:flex;gap:4px;margin-left:auto;">
     <button class="util-btn print-btn" onclick="printCurrentTab()">인쇄</button>
     <button class="util-btn print-btn" onclick="printA3Guideline()" title="규정+가이드를 A3 세로 좌우2단으로 인쇄">🖨️ A3 가이드라인</button>
@@ -678,6 +770,101 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   <div id="a3m-table-host"></div>
 </div>
 
+<!-- ══ A3 월간 보고 인쇄 전용 컨테이너 (화면 숨김 / 인쇄 시 전용 표시) ══ -->
+<div id="a3-monthly-print">
+  <div class="mrp-doc">
+    <div class="mrp-title-band">
+      <div>
+        <div class="mrp-main-title">지원부 점검 체계 — 2026년 6월 작업 요약</div>
+        <div class="mrp-sub-title">시트 단일기준 전환 &nbsp;·&nbsp; 회차 모델 정립 &nbsp;·&nbsp; 데이터 정합 &nbsp;·&nbsp; 자동 독려/보고 구축</div>
+      </div>
+      <div class="mrp-title-meta">
+        작성: AI COO(시우) &nbsp;·&nbsp; 2026-06-30<br>
+        논의: 지원부 &nbsp;·&nbsp; 보고: 경영진
+      </div>
+    </div>
+    <div class="mrp-kpi-row">
+      <div class="mrp-kpi-chip">
+        <div class="mrp-kpi-key">기준 통일</div>
+        <div class="mrp-kpi-desc">점검 갯수가 화면·서버·기기마다 달랐던 문제를 '시트 한 곳' 단일기준으로 통일</div>
+      </div>
+      <div class="mrp-kpi-chip">
+        <div class="mrp-kpi-key">회차 모델 확립</div>
+        <div class="mrp-kpi-desc">평일 3조(오전10시·오후15시·마감20시) / 주말 2조(오전12시·마감18시)</div>
+      </div>
+      <div class="mrp-kpi-chip">
+        <div class="mrp-kpi-key">남/여 구역 분리</div>
+        <div class="mrp-kpi-desc">성별 전용 항목 격리(수면실=남, 찜질방=여), 남/여 탭 날짜 동기</div>
+      </div>
+      <div class="mrp-kpi-chip">
+        <div class="mrp-kpi-key">자동화 구축</div>
+        <div class="mrp-kpi-desc">미완 시 17시·22시 독려 + 23시 마감 보고 + 텔레그램에 근무자·소요시간 표기</div>
+      </div>
+      <div class="mrp-kpi-chip">
+        <div class="mrp-kpi-key"><span class="mrp-kpi-num">6월 점검 작업 약 100건</span></div>
+        <div class="mrp-kpi-desc">AI COO(시우) 주도, 코드로 박아 재발 방지</div>
+      </div>
+    </div>
+    <div class="mrp-body-row">
+      <div class="mrp-col">
+        <div class="mrp-col-head">① 기준·구조 바로잡기</div>
+        <div class="mrp-card">
+          <div class="mrp-card-title">단일출처(SSOT) 확립</div>
+          <div class="mrp-card-line">점검 항목을 시트 한 곳에서만 관리. 화면·관리자·독려가 모두 같은 숫자를 봄(기기 무관).</div>
+        </div>
+        <div class="mrp-card">
+          <div class="mrp-card-title">'시드' 개념 폐기</div>
+          <div class="mrp-card-line">매뉴얼 항목이 저장할 때마다 1개씩 늘어나던 중복증식의 뿌리를 제거.</div>
+        </div>
+        <div class="mrp-card">
+          <div class="mrp-card-title">남/여 데이터 격리</div>
+          <div class="mrp-card-line">과거 날짜에서 점검수가 0으로 보이던 버그를 성별 분리로 근본 수정.</div>
+        </div>
+        <div class="mrp-card">
+          <div class="mrp-card-title">데이터 정밀 청소</div>
+          <div class="mrp-card-line">'미점검인데 제출완료'로 남던 유령 기록 정밀 되돌림, 중복행 자가치유(저장 시 자동).</div>
+        </div>
+      </div>
+      <div class="mrp-col">
+        <div class="mrp-col-head">② 운영·자동화 강화</div>
+        <div class="mrp-card">
+          <div class="mrp-card-title">회차/조 타이머</div>
+          <div class="mrp-card-line">점검 시작~종료 버튼으로 소요시간 자동 기록(수동 시간 입력 폐지).</div>
+        </div>
+        <div class="mrp-card">
+          <div class="mrp-card-title">이슈 처리 일원화</div>
+          <div class="mrp-card-line">점검 중 발견한 이슈는 점검 안에 기록 + 점검관리방에 알림(외부 자동전송은 폐지해 혼선 제거).</div>
+        </div>
+        <div class="mrp-card">
+          <div class="mrp-card-title">매뉴얼 시스템</div>
+          <div class="mrp-card-line">매뉴얼=시트 단일출처, 편집은 비밀번호 잠금, A3 주간 매뉴얼 인쇄 제공.</div>
+        </div>
+        <div class="mrp-card">
+          <div class="mrp-card-title">자동 독려·보고</div>
+          <div class="mrp-card-line">점검 미완 시 17시·22시 독려, 23시 마감 보고, 텔레그램 알림에 근무자·소요시간까지 표기.</div>
+        </div>
+      </div>
+    </div>
+    <div class="mrp-bottom-row">
+      <div class="mrp-bottom-col">
+        <div class="mrp-bottom-head">현재 점검은 이렇게 돕니다</div>
+        <div class="mrp-bottom-line">시트(항목 마스터) = 유일 기준 → 남/여 각각, 회차별로 점검</div>
+        <div class="mrp-bottom-line">home 점검 위젯·관리자 대시보드·독려 알림이 모두 같은 시트 숫자를 표시</div>
+        <div class="mrp-bottom-line">제출하면 점검자·소요시간·이슈가 함께 기록되고 점검관리방에 자동 보고</div>
+      </div>
+      <div class="mrp-bottom-col">
+        <div class="mrp-bottom-head discuss">다음 단계 · 지원부와 의논할 점</div>
+        <div class="mrp-bottom-line">(다음) 점검 '화면'의 갯수 계산도 시트로 완전 전환 — 마지막 단계, 신중 배포 예정</div>
+        <div class="mrp-bottom-line">(다음) 7월부터 매월 점검 분석 리포트 자동화(완료율·이슈·개선 시사점 → 텔레그램 요약)</div>
+        <div class="mrp-bottom-line">(의논) 회차 시간·인원 기준(1인 근무/3인 근무 케이스), 점검 항목 추가·삭제 현장 피드백, 주말 회차 운영 방식</div>
+      </div>
+    </div>
+    <div class="mrp-footer">
+      정본: status/_queue.json(배 14·184·208) &nbsp;·&nbsp; status/briefs/ 점검 설계 문서 &nbsp;·&nbsp; 라이브 지원부 체계 페이지. &nbsp;|&nbsp; 본 요약은 2026-06-30 기준.
+    </div>
+  </div>
+</div>
+
 <!-- ══ A3 가이드라인 인쇄 전용 컨테이너 (화면 숨김 / 인쇄 시 전용 표시) ══ -->
 <div id="a3-guideline-print">
   <div class="a3-print-header">지원부 운영 가이드라인</div>
@@ -691,6 +878,114 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
       <!-- JS가 tab-guide 내용 복제 -->
     </div>
   </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     탭: 월간 보고 (printA3Monthly 연동)
+══════════════════════════════════════ -->
+<div id="tab-monthly" class="content hidden">
+  <div class="monthly-doc-bar">
+    <span class="monthly-month-badge">📅 2026년 6월</span>
+    <button class="monthly-print-btn" onclick="printA3Monthly()">🖨️ A3 인쇄</button>
+  </div>
+  <!-- 월간 보고 블록: 새 달은 이 블록 복제 -->
+  <div class="monthly-wrap">
+    <!-- 타이틀 밴드 -->
+    <div class="mr-title-band">
+      <div>
+        <div class="mr-main-title">지원부 점검 체계 — 2026년 6월 작업 요약</div>
+        <div class="mr-sub-title">시트 단일기준 전환 &nbsp;·&nbsp; 회차 모델 정립 &nbsp;·&nbsp; 데이터 정합 &nbsp;·&nbsp; 자동 독려/보고 구축</div>
+      </div>
+      <div class="mr-title-meta">
+        작성: AI COO(시우) &nbsp;·&nbsp; 2026-06-30<br>
+        논의: 지원부 &nbsp;·&nbsp; 보고: 경영진
+      </div>
+    </div>
+    <!-- KPI 칩 5개 -->
+    <div class="mr-kpi-row">
+      <div class="mr-kpi-chip">
+        <div class="mr-kpi-key">기준 통일</div>
+        <div class="mr-kpi-desc">점검 갯수가 화면·서버·기기마다 달랐던 문제를 '시트 한 곳' 단일기준으로 통일</div>
+      </div>
+      <div class="mr-kpi-chip">
+        <div class="mr-kpi-key">회차 모델 확립</div>
+        <div class="mr-kpi-desc">평일 3조(오전10시·오후15시·마감20시) / 주말 2조(오전12시·마감18시)</div>
+      </div>
+      <div class="mr-kpi-chip">
+        <div class="mr-kpi-key">남/여 구역 분리</div>
+        <div class="mr-kpi-desc">성별 전용 항목 격리(수면실=남, 찜질방=여), 남/여 탭 날짜 동기</div>
+      </div>
+      <div class="mr-kpi-chip">
+        <div class="mr-kpi-key">자동화 구축</div>
+        <div class="mr-kpi-desc">미완 시 17시·22시 독려 + 23시 마감 보고 + 텔레그램에 근무자·소요시간 표기</div>
+      </div>
+      <div class="mr-kpi-chip">
+        <div class="mr-kpi-key"><span class="mr-kpi-num">6월 점검 작업 약 100건</span></div>
+        <div class="mr-kpi-desc">AI COO(시우) 주도, 코드로 박아 재발 방지</div>
+      </div>
+    </div>
+    <!-- 영역별 개선 2단 -->
+    <div class="mr-body-row">
+      <div class="mr-col">
+        <div class="mr-col-head">① 기준·구조 바로잡기</div>
+        <div class="mr-card">
+          <div class="mr-card-title">단일출처(SSOT) 확립</div>
+          <div class="mr-card-line">점검 항목을 시트 한 곳에서만 관리. 화면·관리자·독려가 모두 같은 숫자를 봄(기기 무관).</div>
+        </div>
+        <div class="mr-card">
+          <div class="mr-card-title">'시드' 개념 폐기</div>
+          <div class="mr-card-line">매뉴얼 항목이 저장할 때마다 1개씩 늘어나던 중복증식의 뿌리를 제거.</div>
+        </div>
+        <div class="mr-card">
+          <div class="mr-card-title">남/여 데이터 격리</div>
+          <div class="mr-card-line">과거 날짜에서 점검수가 0으로 보이던 버그를 성별 분리로 근본 수정.</div>
+        </div>
+        <div class="mr-card">
+          <div class="mr-card-title">데이터 정밀 청소</div>
+          <div class="mr-card-line">'미점검인데 제출완료'로 남던 유령 기록 정밀 되돌림, 중복행 자가치유(저장 시 자동).</div>
+        </div>
+      </div>
+      <div class="mr-col">
+        <div class="mr-col-head">② 운영·자동화 강화</div>
+        <div class="mr-card">
+          <div class="mr-card-title">회차/조 타이머</div>
+          <div class="mr-card-line">점검 시작~종료 버튼으로 소요시간 자동 기록(수동 시간 입력 폐지).</div>
+        </div>
+        <div class="mr-card">
+          <div class="mr-card-title">이슈 처리 일원화</div>
+          <div class="mr-card-line">점검 중 발견한 이슈는 점검 안에 기록 + 점검관리방에 알림(외부 자동전송은 폐지해 혼선 제거).</div>
+        </div>
+        <div class="mr-card">
+          <div class="mr-card-title">매뉴얼 시스템</div>
+          <div class="mr-card-line">매뉴얼=시트 단일출처, 편집은 비밀번호 잠금, A3 주간 매뉴얼 인쇄 제공.</div>
+        </div>
+        <div class="mr-card">
+          <div class="mr-card-title">자동 독려·보고</div>
+          <div class="mr-card-line">점검 미완 시 17시·22시 독려, 23시 마감 보고, 텔레그램 알림에 근무자·소요시간까지 표기.</div>
+        </div>
+      </div>
+    </div>
+    <!-- 하단 2칸 -->
+    <div class="mr-bottom-row">
+      <div class="mr-bottom-col">
+        <div class="mr-bottom-head">현재 점검은 이렇게 돕니다</div>
+        <div class="mr-card-line">시트(항목 마스터) = 유일 기준 → 남/여 각각, 회차별로 점검</div>
+        <div class="mr-card-line">home 점검 위젯·관리자 대시보드·독려 알림이 모두 같은 시트 숫자를 표시</div>
+        <div class="mr-card-line">제출하면 점검자·소요시간·이슈가 함께 기록되고 점검관리방에 자동 보고</div>
+      </div>
+      <div class="mr-bottom-col">
+        <div class="mr-bottom-head discuss">다음 단계 · 지원부와 의논할 점</div>
+        <div class="mr-card-line">(다음) 점검 '화면'의 갯수 계산도 시트로 완전 전환 — 마지막 단계, 신중 배포 예정</div>
+        <div class="mr-card-line">(다음) 7월부터 매월 점검 분석 리포트 자동화(완료율·이슈·개선 시사점 → 텔레그램 요약)</div>
+        <div class="mr-card-line">(의논) 회차 시간·인원 기준(1인 근무/3인 근무 케이스), 점검 항목 추가·삭제 현장 피드백, 주말 회차 운영 방식</div>
+      </div>
+    </div>
+    <!-- 푸터 -->
+    <div class="mr-footer">
+      정본: status/_queue.json(배 14·184·208) &nbsp;·&nbsp; status/briefs/ 점검 설계 문서 &nbsp;·&nbsp; 라이브 지원부 체계 페이지. &nbsp;|&nbsp; 본 요약은 2026-06-30 기준.
+    </div>
+  </div>
+  <!-- /월간 보고 블록 끝 -->
 </div>
 
 <div id="tab-policy" class="content">
@@ -4641,6 +4936,7 @@ function switchTab(tab, opts){
   document.getElementById('tab-manage').classList.toggle('hidden',tab!=='manage');
   document.getElementById('tab-reg').classList.toggle('hidden',tab!=='reg');
   document.getElementById('tab-supply').classList.toggle('hidden',tab!=='supply');
+  document.getElementById('tab-monthly').classList.toggle('hidden',tab!=='monthly');
   if(tab==='reg'){deptRegLoad('지원부');}
   if(tab==='supply'){ if(typeof loadSupplyFromBackend==='function') loadSupplyFromBackend(); }
   // Show correct submit bar
@@ -6558,6 +6854,28 @@ function printA3Manual(){
   window.print();
   document.body.classList.remove('a3-manual-mode');
   styleTag.textContent='';
+}
+
+/* ═══════════════════════════════════════════
+   A3 월간 보고 인쇄
+   body.a3-monthly-mode + @page A3 가로 동적 주입 후 복원
+   - #a3-monthly-print 전용 컨테이너 표시, 인쇄 후 복원
+   - printA3Guideline/printA3Manual과 완전 독립
+     (함수명: printA3Monthly / 클래스: a3-monthly-mode
+      style id: a3-monthly-page-style / 컨테이너: #a3-monthly-print)
+   ═══════════════════════════════════════════ */
+function printA3Monthly(){
+  document.body.classList.add('a3-monthly-mode');
+  let styleTag = document.getElementById('a3-monthly-page-style');
+  if(!styleTag){
+    styleTag = document.createElement('style');
+    styleTag.id = 'a3-monthly-page-style';
+    document.head.appendChild(styleTag);
+  }
+  styleTag.textContent = '@media print{ @page{ size:A3 landscape; margin:8mm; } }';
+  window.print();
+  document.body.classList.remove('a3-monthly-mode');
+  styleTag.textContent = '';
 }
 </script>
 
