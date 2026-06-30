@@ -4,89 +4,311 @@
 <meta charset="UTF-8"><link rel="icon" type="image/png" href="/wellperion-automation/wellperion_favicon.png">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>웰페리온 종합접수처</title>
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
 <!--
   웰페리온 회원 종합 접수처 모바일 폼 (QR + 사진) — 로그인 불필요.
   위치별 QR 의 ?loc= 파라미터로 위치 자동 프리필.
   제출 → GAS reg_submit (POST · 사진 base64 본문).
   [v4] 카테고리별 폼 정의(FORMS) 구조 — 카테고리마다 필드 순서·종류 자유 구성.
        모든 카테고리: 이름·연락처 최상단. 쓴소리: 익명체크 → 이름·연락처 순.
+  [v5-light] 문의 페이지(wp_inquiry_block.html) 브랜드 톤 통일 — 외관만 변경, JS 무손상.
 -->
 <style>
-:root{--bg:#221F20;--paper:#2a2725;--text:#f5f2ef;--dim:#8c8b83;--accent:#B79F8A;--accent-bg:rgba(183,159,138,0.12);--border:#3d3835;--green:#6abf7b;--green-bg:rgba(106,191,123,0.12);--red:#ED5B3F;--blue:#5b9fd5;--orange:#e6944e}
+/* ── Design tokens (문의 페이지와 동일 팔레트) ── */
+:root{
+  --bg:#faf9f7;
+  --paper:#ffffff;
+  --text:#1a1a1a;
+  --dim:#999;
+  --accent:#b08d57;
+  --accent-bg:rgba(176,141,87,0.09);
+  --border:#e8e2d8;
+  --green:#2e7d5b;
+  --green-bg:rgba(46,125,91,0.10);
+  --red:#c0392b;
+  --blue:#2471a3;
+  --orange:#d68910
+}
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.6;font-size:16px;min-height:100vh;-webkit-text-size-adjust:100%}
-.wrap{max-width:780px;margin:0 auto;padding:28px 18px 60px}
-.brand{text-align:center;margin-bottom:16px}
-.brand .logo{font-size:13px;font-weight:700;letter-spacing:2px;color:var(--accent)}
-.brand h1{font-size:23px;font-weight:700;margin:8px 0 6px;letter-spacing:-0.5px}
-.brand p{font-size:13.5px;color:var(--dim);line-height:1.6}
-.card{background:var(--paper);border:1px solid var(--border);border-radius:16px;padding:16px 16px;margin-bottom:12px}
-.field{margin-bottom:13px}
+body{
+  font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
+  background:var(--bg);
+  color:var(--text);
+  line-height:1.6;
+  font-size:16px;
+  min-height:100vh;
+  -webkit-text-size-adjust:100%
+}
+.wrap{max-width:540px;margin:0 auto;padding:40px 20px 68px}
+
+/* ── Brand Header ── */
+.brand{text-align:center;margin-bottom:28px}
+.brand-eyebrow{
+  font-size:11px;font-weight:700;letter-spacing:3px;
+  color:var(--accent);text-transform:uppercase;margin-bottom:12px
+}
+.brand-slogan{
+  font-size:clamp(26px,6.5vw,40px);font-weight:800;
+  letter-spacing:-1px;color:var(--text);
+  line-height:1.1;margin-bottom:6px
+}
+.brand-sub{
+  font-size:clamp(14px,3.2vw,18px);font-weight:500;
+  color:#666;letter-spacing:-.2px;margin-bottom:0
+}
+.gold-divider{
+  display:flex;align-items:center;justify-content:center;
+  gap:14px;margin:18px auto 18px;max-width:300px
+}
+.gd-line{flex:1;height:1px}
+.gd-line.left{background:linear-gradient(90deg,transparent,#d9c4a3)}
+.gd-line.right{background:linear-gradient(90deg,#d9c4a3,transparent)}
+.gd-diamond{color:var(--accent);font-size:10px;line-height:1}
+.brand h1{
+  font-size:clamp(18px,4vw,22px);font-weight:700;
+  color:var(--text);margin-bottom:8px;letter-spacing:-.4px
+}
+.brand-desc{font-size:13.5px;color:#777;line-height:1.7}
+
+/* Location chip */
+.loc-chip{
+  display:inline-block;margin-top:12px;padding:5px 14px;
+  background:var(--accent-bg);color:var(--accent);
+  border:1px solid rgba(176,141,87,0.28);
+  border-radius:20px;font-size:13px;font-weight:600
+}
+
+/* ── Card ── */
+.card{
+  background:var(--paper);
+  border:1px solid var(--border);
+  border-radius:18px;
+  padding:20px 18px;
+  margin-bottom:14px;
+  box-shadow:0 1px 6px rgba(0,0,0,.04)
+}
+
+/* ── Field ── */
+.field{margin-bottom:14px}
 .field:last-child{margin-bottom:0}
-label.fl{display:block;font-size:14px;font-weight:700;color:var(--accent);margin-bottom:9px}
-label.fl .opt{font-size:12px;font-weight:500;color:var(--dim);margin-left:4px}
-.types{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
-.type-btn{display:flex;align-items:center;justify-content:center;min-height:48px;padding:11px 10px;border:1.5px solid var(--border);border-radius:12px;background:var(--bg);color:var(--text);font-size:15px;font-weight:600;font-family:inherit;cursor:pointer;transition:all .15s;text-align:center}
-.type-btn.active{border-color:var(--accent);background:var(--accent-bg);color:var(--accent)}
-input[type=text],input[type=tel],input[type=date],textarea,select{width:100%;background:var(--bg);border:1.5px solid var(--border);color:var(--text);padding:13px 14px;border-radius:12px;font-size:15px;font-family:inherit;line-height:1.5}
-input[type=text]:focus,input[type=tel]:focus,input[type=date]:focus,textarea:focus,select:focus{outline:none;border-color:var(--accent)}
-input[type=date]{color-scheme:dark}
+label.fl{
+  display:block;font-size:13px;font-weight:700;
+  color:var(--accent);margin-bottom:8px;
+  letter-spacing:.3px;text-transform:uppercase
+}
+label.fl .opt{font-size:12px;font-weight:500;color:var(--dim);margin-left:4px;text-transform:none}
+
+/* ── Category type buttons — 문의 페이지 카드 스타일 ── */
+.types{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.type-btn{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  min-height:68px;padding:14px 10px 12px;
+  border:1.5px solid var(--border);border-radius:14px;
+  background:var(--paper);color:var(--text);
+  font-size:13px;font-weight:700;font-family:inherit;
+  cursor:pointer;transition:all .18s;
+  text-align:center;line-height:1.4;
+  box-shadow:0 1px 2px rgba(0,0,0,.03)
+}
+.type-btn .cat-icon{font-size:22px;margin-bottom:6px;line-height:1;display:block}
+.type-btn .cat-label{font-size:12.5px;font-weight:700;color:inherit;line-height:1.35;display:block}
+.type-btn:hover{
+  border-color:var(--accent);
+  box-shadow:0 2px 10px rgba(176,141,87,.15)
+}
+.type-btn.active{
+  border-color:var(--accent);
+  background:var(--accent-bg);
+  color:var(--accent);
+  box-shadow:0 2px 10px rgba(176,141,87,.18)
+}
+
+/* ── Inputs ── */
+input[type=text],input[type=tel],input[type=date],textarea,select{
+  width:100%;
+  background:var(--bg);
+  border:1.5px solid var(--border);
+  color:var(--text);
+  padding:13px 14px;
+  border-radius:12px;
+  font-size:15px;
+  font-family:inherit;
+  line-height:1.5;
+  transition:border-color .15s,box-shadow .15s
+}
+input[type=text]:focus,input[type=tel]:focus,input[type=date]:focus,
+textarea:focus,select:focus{
+  outline:none;
+  border-color:var(--accent);
+  box-shadow:0 0 0 3px rgba(176,141,87,.09)
+}
+input::placeholder,textarea::placeholder{color:#c0b9b0}
+input[type=date]{color-scheme:light}
 textarea{min-height:120px;resize:vertical}
-select{appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'><path fill='%238c8b83' d='M1 1l5 5 5-5'/></svg>");background-repeat:no-repeat;background-position:right 14px center}
-.photo-zone{border:1.5px dashed var(--border);border-radius:12px;padding:18px;text-align:center;cursor:pointer;transition:border-color .15s}
+select{
+  appearance:none;-webkit-appearance:none;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'><path fill='%23888' d='M1 1l5 5 5-5'/></svg>");
+  background-repeat:no-repeat;background-position:right 14px center
+}
+
+/* ── Photo zone ── */
+.photo-zone{
+  border:1.5px dashed var(--border);border-radius:12px;
+  padding:20px;text-align:center;cursor:pointer;
+  transition:border-color .18s;background:var(--bg)
+}
 .photo-zone:hover{border-color:var(--accent)}
-.photo-zone .ph-icon{font-size:30px;margin-bottom:6px}
-.photo-zone .ph-text{font-size:14px;color:var(--dim)}
+.photo-zone .ph-icon{font-size:28px;margin-bottom:6px}
+.photo-zone .ph-text{font-size:13.5px;color:var(--dim)}
 .photo-zone input[type=file]{display:none}
 .preview{margin-top:12px;display:none}
-.preview img{width:100%;max-height:280px;object-fit:cover;border-radius:12px;border:1px solid var(--border)}
-.preview .rm{display:inline-block;margin-top:8px;font-size:13px;color:var(--red);cursor:pointer;font-weight:600}
-.submit{width:100%;padding:16px;background:var(--accent);color:#fff;border:none;border-radius:14px;font-size:16px;font-weight:700;font-family:inherit;cursor:pointer;margin-top:4px}
-.submit:disabled{opacity:.5;cursor:not-allowed}
-.note{font-size:12.5px;color:var(--dim);text-align:center;margin-top:14px;line-height:1.6}
-.toast{position:fixed;top:24px;left:50%;transform:translateX(-50%) translateY(-120px);background:var(--green);color:#fff;padding:12px 22px;border-radius:12px;font-size:14px;font-weight:700;z-index:50;transition:transform .3s;box-shadow:0 6px 20px rgba(0,0,0,.3);max-width:90%;text-align:center}
+.preview img{
+  width:100%;max-height:260px;object-fit:cover;
+  border-radius:12px;border:1px solid var(--border)
+}
+.preview .rm{
+  display:inline-block;margin-top:8px;
+  font-size:13px;color:var(--red);cursor:pointer;font-weight:600
+}
+
+/* ── Submit button ── */
+.submit{
+  width:100%;padding:17px;
+  background:var(--accent);color:#fff;
+  border:none;border-radius:14px;
+  font-size:16px;font-weight:700;font-family:inherit;
+  cursor:pointer;margin-top:4px;
+  transition:opacity .18s,transform .12s;
+  letter-spacing:.3px
+}
+.submit:hover{opacity:.9}
+.submit:active{transform:scale(.99)}
+.submit:disabled{opacity:.45;cursor:not-allowed}
+
+/* ── Note / Toast ── */
+.note{
+  font-size:12.5px;color:var(--dim);
+  text-align:center;margin-top:14px;line-height:1.75
+}
+.toast{
+  position:fixed;top:24px;left:50%;
+  transform:translateX(-50%) translateY(-120px);
+  background:var(--green);color:#fff;
+  padding:12px 22px;border-radius:12px;
+  font-size:14px;font-weight:700;z-index:50;
+  transition:transform .3s;
+  box-shadow:0 6px 20px rgba(0,0,0,.15);
+  max-width:90%;text-align:center
+}
 .toast.show{transform:translateX(-50%) translateY(0)}
 .toast.err{background:var(--red)}
-.done{display:none;text-align:center;padding:40px 20px}
-.done .dot{font-size:52px;margin-bottom:14px}
-.done h2{font-size:22px;font-weight:700;margin-bottom:10px}
-.done p{font-size:14.5px;color:var(--dim);line-height:1.7;margin-bottom:22px}
-.done .again{padding:13px 26px;background:var(--accent-bg);color:var(--accent);border:1px solid var(--accent);border-radius:12px;font-size:14px;font-weight:700;font-family:inherit;cursor:pointer}
-.loc-chip{display:inline-block;margin-top:6px;padding:4px 12px;background:var(--accent-bg);color:var(--accent);border-radius:20px;font-size:13px;font-weight:600}
+
+/* ── Done screen ── */
+.done{display:none;text-align:center;padding:50px 20px}
+.done .dot{font-size:52px;margin-bottom:16px}
+.done h2{font-size:22px;font-weight:800;margin-bottom:10px;color:var(--text)}
+.done p{font-size:14.5px;color:#777;line-height:1.75;margin-bottom:24px}
+.done .again{
+  padding:13px 28px;
+  background:var(--accent-bg);color:var(--accent);
+  border:1.5px solid var(--accent);
+  border-radius:12px;font-size:14px;font-weight:700;
+  font-family:inherit;cursor:pointer;
+  transition:background .18s
+}
+.done .again:hover{background:rgba(176,141,87,.18)}
+
+/* ── Misc (JS-generated elements) ── */
 .hint-empty{font-size:13.5px;color:var(--dim);text-align:center;padding:10px 0 2px}
 .chk-row{display:flex;align-items:center;gap:10px;padding:6px 0}
-.chk-row input[type=checkbox]{width:20px;height:20px;accent-color:var(--accent);cursor:pointer;flex-shrink:0}
+.chk-row input[type=checkbox]{
+  width:20px;height:20px;
+  accent-color:var(--accent);cursor:pointer;flex-shrink:0
+}
 .chk-row span{font-size:14px;color:var(--text)}
-.banner-card{display:flex;flex-direction:row;align-items:center;justify-content:center;gap:6px;min-height:48px;padding:11px 10px;border:1.5px solid var(--accent);border-radius:12px;background:var(--accent-bg);cursor:default;user-select:none;text-align:center}
-.social-section{text-align:center;margin-top:20px;margin-bottom:8px}
-.social-section .social-title{font-size:13.5px;color:var(--dim);margin-bottom:12px;letter-spacing:-0.2px}
-.social-links{display:flex;flex-wrap:wrap;justify-content:center;gap:8px}
-.social-chip{display:inline-flex;align-items:center;gap:5px;padding:9px 14px;background:var(--paper);border:1px solid var(--border);border-radius:20px;color:var(--text);font-size:13px;font-weight:600;font-family:inherit;text-decoration:none;transition:border-color .15s,color .15s}
-.social-chip:hover{border-color:var(--accent);color:var(--accent)}
+.banner-card{
+  display:flex;flex-direction:row;align-items:center;justify-content:center;
+  gap:6px;min-height:48px;padding:11px 10px;
+  border:1.5px solid var(--accent);border-radius:12px;
+  background:var(--accent-bg);cursor:default;user-select:none;text-align:center
+}
 .banner-icon{font-size:16px;line-height:1}
 .banner-main{font-size:13px;font-weight:700;color:var(--accent);line-height:1.3}
-.banner-sub{font-size:11.5px;color:var(--dim);line-height:1.4}
+.banner-sub{font-size:11.5px;color:#888;line-height:1.4}
+
+/* ── Social & Footer ── */
+.footer-divider{
+  display:flex;align-items:center;justify-content:center;
+  gap:14px;margin:28px auto 20px;max-width:300px
+}
+.social-section{text-align:center;margin-bottom:12px}
+.social-section .social-title{
+  font-size:13px;color:var(--dim);margin-bottom:12px;letter-spacing:-.1px
+}
+.social-links{display:flex;flex-wrap:wrap;justify-content:center;gap:8px}
+.social-chip{
+  display:inline-flex;align-items:center;gap:5px;
+  padding:9px 15px;
+  background:var(--paper);border:1px solid var(--border);
+  border-radius:20px;color:#666;
+  font-size:13px;font-weight:600;font-family:inherit;
+  text-decoration:none;transition:border-color .15s,color .15s
+}
+.social-chip:hover{border-color:var(--accent);color:var(--accent)}
+.footer-links{
+  text-align:center;font-size:12.5px;color:var(--dim);line-height:2;margin-top:10px
+}
 </style>
 </head>
 <body>
 <div class="toast" id="toast"></div>
 <div class="wrap" id="formWrap">
+
+  <!-- ── Brand Header (문의 페이지 동일 구조) ── -->
   <div class="brand">
-    <div class="logo">WELLPERION</div>
+    <p class="brand-eyebrow">Wellperion</p>
+    <h2 class="brand-slogan">A Day, Well Completed.</h2>
+    <p class="brand-sub">하루의 완성, 웰페리온</p>
+    <div class="gold-divider">
+      <span class="gd-line left"></span>
+      <span class="gd-diamond">&#9670;</span>
+      <span class="gd-line right"></span>
+    </div>
     <h1>종합접수처</h1>
-    <p>무엇을 접수하시나요?<br>담당 부서가 신속히 확인·처리합니다.</p>
+    <p class="brand-desc">불편하신 사항이나 건의사항을 알려주세요.<br>담당 부서가 신속히 확인·처리합니다.</p>
     <div class="loc-chip" id="locChip" style="display:none"></div>
   </div>
+
+  <!-- ── Form card ── -->
   <div class="card">
     <div class="field">
       <label class="fl">원하시는 항목을 선택해 주세요</label>
       <div class="types" id="typeGroup">
-        <button type="button" class="type-btn" data-cat="clean">🧹 청결 이슈 접수</button>
-        <button type="button" class="type-btn" data-cat="facility">🛠️ 시설물 고장 접수</button>
-        <button type="button" class="type-btn" data-cat="lost">🔍 분실물 접수</button>
-        <button type="button" class="type-btn" data-cat="complaint">💬 컴플레인 접수</button>
-        <button type="button" class="type-btn" data-cat="praise">⭐ 직원·강사 칭찬합니다</button>
-        <button type="button" class="type-btn" data-cat="voice">🗣️ 직원·강사 쓴소리합니다</button>
+        <button type="button" class="type-btn" data-cat="clean">
+          <span class="cat-icon">🧹</span>
+          <span class="cat-label">청결 이슈 접수</span>
+        </button>
+        <button type="button" class="type-btn" data-cat="facility">
+          <span class="cat-icon">🛠️</span>
+          <span class="cat-label">시설물 고장 접수</span>
+        </button>
+        <button type="button" class="type-btn" data-cat="lost">
+          <span class="cat-icon">🔍</span>
+          <span class="cat-label">분실물 접수</span>
+        </button>
+        <button type="button" class="type-btn" data-cat="complaint">
+          <span class="cat-icon">💬</span>
+          <span class="cat-label">컴플레인 접수</span>
+        </button>
+        <button type="button" class="type-btn" data-cat="praise">
+          <span class="cat-icon">⭐</span>
+          <span class="cat-label">직원·강사 칭찬합니다</span>
+        </button>
+        <button type="button" class="type-btn" data-cat="voice">
+          <span class="cat-icon">🗣️</span>
+          <span class="cat-label">직원·강사 쓴소리합니다</span>
+        </button>
       </div>
     </div>
     <!-- 카테고리 선택 시 폼 전체가 여기 렌더됨 -->
@@ -95,6 +317,13 @@ select{appearance:none;-webkit-appearance:none;background-image:url("data:image/
   </div>
   <button class="submit" id="submitBtn">접수하기</button>
   <p class="note">접수해 주셔서 감사합니다. 처리 결과는 입력하신 연락처로 안내드립니다.<br>하루의 완성, 웰페리온</p>
+
+  <!-- ── Footer social (골드 구분선 + 소셜 링크) ── -->
+  <div class="footer-divider">
+    <span class="gd-line left"></span>
+    <span class="gd-diamond">&#9670;</span>
+    <span class="gd-line right"></span>
+  </div>
   <div class="social-section">
     <p class="social-title">웰페리온 소식을 구경해보세요</p>
     <div class="social-links">
@@ -104,17 +333,21 @@ select{appearance:none;-webkit-appearance:none;background-image:url("data:image/
       <a class="social-chip" href="https://map.naver.com/p/search/웰페리온/place/1048457693" target="_blank" rel="noopener">📍 네이버지도</a>
     </div>
   </div>
-  <div style="text-align:center;margin-top:16px;font-size:12.5px;color:var(--dim);line-height:2">
+  <div class="footer-links">
     <div>문의/상담 — <a href="mailto:info@wellperion.com" style="color:var(--accent);text-decoration:none">info@wellperion.com</a></div>
     <div>비즈니스/기타 — <a href="mailto:cao@wellperion.com" style="color:var(--accent);text-decoration:none">cao@wellperion.com</a></div>
   </div>
 </div>
+
+<!-- ── Done screen ── -->
 <div class="wrap done" id="doneWrap">
   <div class="dot">✅</div>
   <h2>접수가 완료되었습니다</h2>
   <p>소중한 의견 감사합니다.<br>담당 부서가 빠르게 확인하겠습니다.</p>
   <button class="again" id="againBtn">새 건의 접수하기</button>
 </div>
+
+<!-- ★ 이하 JS 블록 — 기능·동작 100% 무손상 (외관 변경 범위 외) ★ -->
 <script>
 (function(){
   var VOC_API = 'https://script.google.com/macros/s/AKfycbwk2XS1FND9V2xtXlWgsXzgA5p0FG7jVm6YKD74JK_ME_ZvHsNUUfGE5A_8p0X8VcF3gQ/exec';
