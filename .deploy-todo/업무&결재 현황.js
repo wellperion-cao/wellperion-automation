@@ -1509,10 +1509,13 @@ function doGet(e) {
       return _processNoticeAction(nbody);
     }
 
-    // 상품 기획 저장 — list (GET 조회)
+    // 상품 기획 저장 — list(GET 조회)·save/delete(POST 본문) 공용
     if (action.startsWith('product_plan_')) {
       const pbody = {};
       Object.keys(e.parameter).forEach(k => pbody[k] = e.parameter[k]);
+      if (e.postData && e.postData.contents) {
+        try { const pb3 = JSON.parse(e.postData.contents); Object.keys(pb3).forEach(k => pbody[k] = pb3[k]); } catch(ignored3){}
+      }
       pbody.action = action;
       return _processProductPlanAction(pbody);
     }
