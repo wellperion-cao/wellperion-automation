@@ -6,8 +6,8 @@
     "status": "IN_PROGRESS",
     "priority": "⛴️여객선",
     "enqueued_at": "2026-06-30",
-    "note": "[2026-06-30 GM] '텔레그램은 시토가 면밀히 보고 자동화 가능한 건 진행'. 촉발=종합접수처 분실물 알림 조용한 실패(VOC GAS 토큰/chat_id 미설정). 진단=봇경로 견고/진짜위험=GAS 3종+토큰미설정 침묵/chat_id 중복 drift. ✅완료: ①헬스체크 scripts/telegram_health_check.py(봇생존+3방 getChatMember+발송원장 리컨실, 문제시만 OWNER경보) 매일13시 예약(Wellperion-Telegram-HealthCheck-1300) ②VOC GAS diag 액션+헬스체크 일일ping(VOC·문의 GAS 설정누락 원격탐지, VOC @19 hasToken:true). GM승인 잔여=③점검 GAS diag(드리프트주의·라이브 .deploy-check) ④chat_id 중복정리+pre-commit 어긋남 가드. 보류=토큰 로테이션(보안).",
-    "next": "③점검 GAS diag 추가(라이브 .deploy-check 신중·1회배포) → ④chat_id 폴백 리터럴 SSOT 단일화+pre-commit 가드(런타임 영향분은 스케줄러 재기동 필요).",
+    "note": "[2026-06-30 GM] '텔레그램은 시토가 면밀히 보고 자동화 가능한 건 진행'. 촉발=종합접수처 분실물 알림 조용한 실패. ✅2단계 전부 라이브: ①헬스체크(scripts/telegram_health_check.py·봇/3방 getChatMember/발송원장 리컨실, 매일13시 Wellperion-Telegram-HealthCheck-1300, 문제시만 OWNER경보) ②GAS 원격진단 ?action=diag — VOC·문의(Survey)·점검(.deploy-check @134, 배포전후 점검읽기 동일=무영향) 3종 hasToken/hasChatId 매일 ping ③chat_id drift 가드(scripts/check_chatid_drift.py·pre-commit warn-only·.env 정본). 이제 오늘 유형(조용한 실패)은 매일 자동 탐지. 정본 메모리=reference_telegram_alert_healthcheck_and_gas_diag.",
+    "next": "🔗 상시 모니터링 단계(헬스체크 자동가동). 잔여=토큰 로테이션(.env 평문 다곳·보안, GM 보류) — 별도 집중세션 시 7곳 동시갱신+봇 재기동. chat_id 런타임 SSOT 단일화도 후속(가드는 적용됨).",
     "ship_no": 102
   },
   {
