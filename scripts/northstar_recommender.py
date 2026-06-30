@@ -187,21 +187,31 @@ def _build_prompt(inputs: dict) -> str:
 - 다양성: 3개는 가능하면 서로 다른 역할/신호.
 - 중복방지: 이미 active 인 배와 겹치는 추천 금지.
 - 전사 top3: 7역할 전체에서 가장 가치 높은 3개만(특정 역할 편중 지양).
+- **반드시 1순위 하나를 명확히 고르고** rank=1로 표시한 뒤, 왜 1순위인지 one_reason에 한 줄로 적는다.
+
+닉네임 매핑(owner 필드에 사용): ceo=웰리, cfo=시뽀, chro=시로, cmo=시모, coo=시우, cpo=시포, cto=시토.
 
 각 후보는 반드시 아래 JSON 배열 형식으로만 응답하세요 (설명문·마크다운·코드블록 없이 순수 JSON만):
 [
   {{
+    "rank": 1,
     "role": "cmo",
+    "owner": "시모",
     "title": "오늘의 한 수 (한 줄, 구체적·실행가능)",
+    "first_action": "승인 직후 담당이 바로 할 첫 행동 1줄",
+    "expected": "예상 산출·효과 1줄 (구체 수치 또는 결과물)",
     "path_map": "북극성 → [브릿지 단계들] → 지금 여기 → 오늘 이 한 수",
     "rationale": "근거 — 어느 신호(①/②/③)·어느 갭/지표인지 명시",
+    "one_reason": "왜 이게 1순위인지 한 줄(rank=1만 필수, 2·3은 빈칸 가능)",
     "difficulty": "⛵돛단배 또는 ⛴️여객선 또는 🛳️크루즈",
     "signal": "신호① 또는 신호② 또는 신호③"
   }}
 ]
 
 규칙:
+- rank 는 1/2/3 (1=최우선 추천, 3개 모두 서로 다른 rank)
 - role 은 반드시 ceo/cmo/coo/cto/cpo/cfo/chro 중 하나
+- owner 는 위 닉네임 매핑 그대로
 - difficulty 는 반드시 ⛵돛단배/⛴️여객선/🛳️크루즈 중 하나
 - 정확히 3개. 순수 JSON 배열만 출력(```json 코드블록도 없이)."""
 
@@ -253,30 +263,33 @@ def _kpi_gap_roles(inputs: dict) -> list:
 
 
 def brain_fallback(inputs: dict) -> list:
-    """규칙기반 — 신호 3종으로 서로 다른 역할 후보 3개 생성(최소동작 보장)."""
-    cands = []
-    used_roles = set()
+    """규칙기반 — 신호 3종으로 서로 다른 역할 후보 3개 생성(최소동작 보장).
+    rank 우선순위: 신호①(북극성 갭)=1 > 신호②(KPI 미달)=2 > 신호③(다음 한 걸음)=3."""
+    sig1: dict | None = None  # 북극성 갭 — rank 1
+    sig2: dict | None = None  # KPI 미달 — rank 2
+    sig3: dict | None = None  # 완료건 next 미착수 — rank 3
+    used_roles: set = set()
 
-    # 신호③ — 완료건 next 중 미착수(active 제목과 안 겹치는 것)
+    # 신호① — 북극성 갭(ideas/owns 있는 역할 우선)
     for r in inputs["roles"]:
         if r["id"] in used_roles:
             continue
-        active_titles = " ".join(s["title"] for s in r["active_ships"])
-        for nxt in r["next_steps"]:
-            core = re.sub(r"^[🔗🌀⚓🏁\s]+", "", nxt)[:80]
-            if core and core[:12] not in active_titles:
-                cands.append({
-                    "role": r["id"],
-                    "title": f"{core}",
-                    "path_map": f"{r['northstar'][:40]} → 진행 브릿지 → 지금(완료건 next 미착수) → 오늘 이 다음 걸음",
-                    "rationale": f"신호③ 다음 한 걸음 — [{r['id']}] 완료건 next 미착수: '{core[:50]}'",
-                    "difficulty": "⛴️여객선",
-                    "signal": "신호③",
-                })
-                used_roles.add(r["id"])
-                break
-        if len(cands) >= 1:
-            break
+        nick = ROLE_NICK.get(r["id"], r["id"].upper())
+        sig1 = {
+            "rank": 1,
+            "role": r["id"],
+            "owner": nick,
+            "title": f"{r['title']} 북극성 '{r['northstar'][:30]}' 향한 다음 브릿지 한 칸 설계",
+            "first_action": f"{nick}가 북극성 갭 분석 후 다음 브릿지 배 1척 _queue 등록",
+            "expected": f"북극성 연결고리 +1칸 — {', '.join(r['owns'][:2]) or '소유항목'} 진전",
+            "path_map": f"{r['northstar'][:40]} → 미배치 브릿지 → 지금(active {len(r['active_ships'])}건) → 오늘 북극성 갭 한 칸",
+            "rationale": f"신호① 북극성 갭 — [{r['id']}] 북극성 서술 대비 비어있는 다음 걸음(소유: {', '.join(r['owns'][:2]) or '없음'})",
+            "one_reason": f"북극성 직접기여 신호 — 전사 방향성에 직결되므로 1순위",
+            "difficulty": "🛳️크루즈",
+            "signal": "신호①",
+        }
+        used_roles.add(r["id"])
+        break
 
     # 신호② — KPI 미달 역할
     for r in _kpi_gap_roles(inputs):
@@ -285,32 +298,52 @@ def brain_fallback(inputs: dict) -> list:
         kv = r["kpi_values"]
         wan = kv.get("완결률")
         wan_s = f"{wan:.0%}" if isinstance(wan, (int, float)) else "집계없음"
-        cands.append({
+        nick = ROLE_NICK.get(r["id"], r["id"].upper())
+        sig2 = {
+            "rank": 2,
             "role": r["id"],
+            "owner": nick,
             "title": f"{r['title']} 활성 배 {kv.get('활성',0)}건 중 1건 완주 — 완결률 끌어올리기",
+            "first_action": f"{nick}가 활성 배 중 가장 가까운 완료 가능 배 1척 집중 완주",
+            "expected": f"완결률 {wan_s} → 1건 완료로 KPI 개선, 표류 방지",
             "path_map": f"{r['northstar'][:40]} → KPI({r['kpi_def'][:30]}) → 지금(완결률 {wan_s}) → 오늘 완주 1건",
             "rationale": f"신호② KPI 미달 — [{r['id']}] 완결률 {wan_s}, 활성 {kv.get('활성',0)} / 완료 {kv.get('완료',0)}",
+            "one_reason": "",
             "difficulty": "⛵돛단배",
             "signal": "신호②",
-        })
+        }
         used_roles.add(r["id"])
         break
 
-    # 신호① — 북극성 갭(아직 안 쓴 역할 중 ideas/owns 있는 곳 우선)
+    # 신호③ — 완료건 next 중 미착수(active 제목과 안 겹치는 것)
     for r in inputs["roles"]:
         if r["id"] in used_roles:
             continue
-        cands.append({
-            "role": r["id"],
-            "title": f"{r['title']} 북극성 '{r['northstar'][:30]}' 향한 다음 브릿지 한 칸 설계",
-            "path_map": f"{r['northstar'][:40]} → 미배치 브릿지 → 지금(active {len(r['active_ships'])}건) → 오늘 북극성 갭 한 칸",
-            "rationale": f"신호① 북극성 갭 — [{r['id']}] 북극성 서술 대비 비어있는 다음 걸음(소유: {', '.join(r['owns'][:2]) or '없음'})",
-            "difficulty": "🛳️크루즈",
-            "signal": "신호①",
-        })
-        used_roles.add(r["id"])
-        break
+        active_titles = " ".join(s["title"] for s in r["active_ships"])
+        nick = ROLE_NICK.get(r["id"], r["id"].upper())
+        for nxt in r["next_steps"]:
+            core = re.sub(r"^[🔗🌀⚓🏁\s]+", "", nxt)[:80]
+            if core and core[:12] not in active_titles:
+                sig3 = {
+                    "rank": 3,
+                    "role": r["id"],
+                    "owner": nick,
+                    "title": f"{core}",
+                    "first_action": f"{nick}가 해당 next 배 _queue 등록 후 착수",
+                    "expected": "완료건 브릿지 연속성 확보 — 표류 방지",
+                    "path_map": f"{r['northstar'][:40]} → 진행 브릿지 → 지금(완료건 next 미착수) → 오늘 이 다음 걸음",
+                    "rationale": f"신호③ 다음 한 걸음 — [{r['id']}] 완료건 next 미착수: '{core[:50]}'",
+                    "one_reason": "",
+                    "difficulty": "⛴️여객선",
+                    "signal": "신호③",
+                }
+                used_roles.add(r["id"])
+                break
+        if sig3:
+            break
 
+    # 반환: rank 순(①>②>③), None 제거
+    cands = [c for c in [sig1, sig2, sig3] if c is not None]
     return cands[:3]
 
 
@@ -319,7 +352,7 @@ def brain_fallback(inputs: dict) -> list:
 # ═══════════════════════════════════════════
 def normalize_candidates(raw: list) -> list:
     out = []
-    for c in raw[:3]:
+    for i, c in enumerate(raw[:3], 1):
         if not isinstance(c, dict):
             continue
         role = (c.get("role") or "").lower()
@@ -328,14 +361,28 @@ def normalize_candidates(raw: list) -> list:
         diff = c.get("difficulty", "")
         if diff not in DIFFICULTY_BOATS:
             diff = "⛴️여객선"
+        # rank: LLM/폴백이 제공하면 그대로, 없으면 순서로 대체
+        try:
+            rank = int(c.get("rank", i))
+        except (ValueError, TypeError):
+            rank = i
+        # owner: LLM이 주면 그대로, 없으면 ROLE_NICK 매핑
+        owner = str(c.get("owner", "") or "").strip() or ROLE_NICK.get(role, role.upper())
         out.append({
+            "rank": rank,
             "role": role,
+            "owner": owner,
             "title": str(c.get("title", "")).strip(),
+            "first_action": str(c.get("first_action", "")).strip(),
+            "expected": str(c.get("expected", "")).strip(),
             "path_map": str(c.get("path_map", "")).strip(),
             "rationale": str(c.get("rationale", "")).strip(),
+            "one_reason": str(c.get("one_reason", "")).strip(),
             "difficulty": diff,
             "signal": str(c.get("signal", "")).strip(),
         })
+    # rank=1이 index 0이 되도록 정렬 → [승인 1] = 1순위 보존
+    out.sort(key=lambda x: x.get("rank", 99))
     return out
 
 
@@ -391,11 +438,10 @@ def _env_val(key: str) -> str:
 
 
 def build_card(pending: dict) -> str:
-    """텔레그램 알림 — 짧고 빠른 승인(약속 L12, GM 2026-06-29 확정 포맷).
+    """텔레그램 GM 결재 카드 — 1순위 강조·담당·첫행동·예상효과·승인 효과 안내.
 
-    풀표 아님. '🌅 오늘의 항로 추천 N건' + 후보 1줄(번호·역할닉네임·제목)
-    + [승인 N]/[보류] + 맨끝 '📊 표로 자세히: <웹 풀표 URL>'.
-    상세 3줄 브릿지·북극성·진행현황은 웹 풀표 페이지(northstar_today.html)에서 본다.
+    candidates 배열은 rank 순 정렬(0번=rank 1=1순위 → [승인 1]).
+    포맷: 🥇1순위 블록(전체) + 다른 후보 2개(간단) + 고정 승인 안내.
 
     ※ 표시 포맷은 이 함수에 격리 — 교체 시 여기만 수정(데이터·콜백 로직 불변)."""
     e = html.escape
@@ -405,21 +451,56 @@ def build_card(pending: dict) -> str:
     except Exception:
         wd = ""
     cands = pending.get("candidates", [])
+
     lines = [
         f"🌅 <b>오늘의 항로 추천 {len(cands)}건</b>",
         f"📅 {e(d)} ({wd})",
         "",
     ]
-    for i, c in enumerate(cands, 1):
-        role = (c.get("role") or "").lower()
-        nick = ROLE_NICK.get(role, role.upper())
-        diff = c.get("difficulty", "")
-        title = e(c.get("title", ""))
-        lines.append(f"<b>{i}.</b> {diff} [{e(nick)}] {title}")
-    lines.append("")
+
+    if cands:
+        # ── 🥇 1순위 블록 (index 0 = rank=1) ──
+        c1 = cands[0]
+        title1 = e(c1.get("title", ""))
+        owner1 = e(c1.get("owner", ""))
+        diff1 = c1.get("difficulty", "")
+        fa1 = e(c1.get("first_action", ""))
+        exp1 = e(c1.get("expected", ""))
+        rat1 = e(c1.get("rationale", ""))
+        why1 = e(c1.get("one_reason", ""))
+        lines += [
+            f"🥇 <b>1순위 추천 — [승인 1]로 바로 결재 가능</b>",
+            f"<b>{title1}</b>",
+            f"담당: <b>{owner1}</b>  크기: {diff1}",
+            f"첫 행동: {fa1}" if fa1 else "",
+            f"예상 효과: {exp1}" if exp1 else "",
+            f"추천 이유: {rat1}" if rat1 else "",
+            f"★ 왜 1순위: {why1}" if why1 else "",
+        ]
+        # 빈 줄 제거
+        lines = [ln for ln in lines if ln != ""]
+        lines.append("")
+
+        # ── 다른 후보 ──
+        alts = cands[1:]
+        if alts:
+            lines.append("<b>다른 후보</b>")
+            for i, c in enumerate(alts, 2):
+                diff = c.get("difficulty", "")
+                owner = e(c.get("owner", ""))
+                title = e(c.get("title", ""))
+                rat = e(c.get("rationale", ""))[:60]
+                lines.append(f"<b>{i}.</b> {diff} [{owner}] {title}")
+                if rat:
+                    lines.append(f"   └ {rat}")
+            lines.append("")
+
+    # ── 회신 안내 + 고정 승인 효과 ──
     lines.append(
-        "👉 이 메시지에 회신: "
-        "<b>[승인 1]</b> · <b>[승인 2]</b> · <b>[승인 3]</b> · <b>[보류]</b>"
+        "👉 회신: <b>[승인 1]</b> · <b>[승인 2]</b> · <b>[승인 3]</b> · <b>[보류]</b>"
+    )
+    lines.append(
+        "✅ 승인 시 → 이 배가 G1 큐(_queue)에 등록되고 담당이 바로 착수합니다."
     )
     lines.append(f"📊 표로 자세히: {NORTHSTAR_WEB_URL}")
     return "\n".join(lines)
