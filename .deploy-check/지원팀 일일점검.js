@@ -183,6 +183,13 @@ function jsonRes(obj) {
     .setMimeType(ContentService.MimeType.JSON);
 }
 
+// ─── 진단 핸들러: 설정 유무만 반환(비밀값 노출 없음). action=diag 전용. 2026-06-30 시토 ───
+function handleCheckDiag() {
+  var hasToken = !!(BOT_TOKEN && String(BOT_TOKEN).trim());
+  var hasChatId = !!(CHAT_ID && String(CHAT_ID).trim());
+  return jsonRes({ ok: true, system: 'check', hasToken: hasToken, hasChatId: hasChatId });
+}
+
 // S2(2026-06-10 시토): measure 값을 13열 저장용 문자열로 정규화.
 // 문자열이면 그대로(클라가 보낸 영문키 JSON), 객체면 JSON.stringify, 없으면 빈문자.
 // boolean 점검·완료율 판정과 무관 — 단순 패스스루.
@@ -573,6 +580,8 @@ function doGet(e) {
     }
     return jsonRes({ ok: true, sheet: _rpz, date: _rpdate, round: _rpround, reverted: _rpn, hit: _rphit });
   }
+
+  if (action === 'diag') return handleCheckDiag();   // 읽기전용 진단: 설정 유무 불리언만 반환(비밀값 노출 없음). 2026-06-30 시토.
 
   var date = e.parameter.date;
   if (!date) return jsonRes({ error: 'date required' });

@@ -117,6 +117,10 @@ _FUNNEL_DIAG_URL = (
     "https://script.google.com/macros/s/"
     "AKfycbzdwSCCSSJ6JXLDoWuo7HG0JmBM2iy10TujFQ_O5JbTjnWaN7gOk-ddA4IAvsNfelg0xA/exec"
 )
+_CHECK_DIAG_URL = (
+    "https://script.google.com/macros/s/"
+    "AKfycbyXw4ZaA6hLK567GC7NY33Y8SvNPW6kNtrXFz2OsSdFVBmCnZP-2oD-RQiX0IpekBu1/exec"
+)
 
 
 # ── 점검 3a: GAS 설정 진단 프로브 ────────────────────────────────────────────
@@ -130,6 +134,7 @@ def _check_gas_diag() -> list[str]:
         # (이름, URL, action 파라미터, 불리언 필드 목록)
         ("VOC GAS",    _VOC_DIAG_URL,    "diag",               ["hasToken", "hasChatId"]),
         ("Survey GAS", _FUNNEL_DIAG_URL, "diag_inquiry_state", []),
+        ("점검 GAS",   _CHECK_DIAG_URL,  "diag",               ["hasToken", "hasChatId"]),
     ]
     for name, url, action, bool_fields in probes:
         try:
