@@ -57,10 +57,9 @@ def git_commit_push(paths, message, holder, pull_autostash=True, push=True):
 | IG 발행(`ig_review_publish_watcher.py` 등) | 동상 | 불필요(단발/--once) |
 | `ceo_morning_pipeline.py` | git 쓰기 있으면 동상 / read는 락 안에서 스냅샷 읽기 권장 | 불필요(단발) |
 | `bot.py` | 콜백의 git 시퀀스 → `git_commit_push(...)` | **필요(상시 프로세스)=GM 게이트** |
-| changelog 훅 etc. (`scripts/update_guide_hub_changelog.py`) | **변경 없음** | — |
 
 ### 3.4 pre-commit 훅 데드락 회피 (중요)
-pre-commit 훅(truncation guard + changelog `git add`)은 **이미 락을 쥔 commit 프로세스 내부**에서 실행됨 → 훅은 **절대 락을 재획득하지 않는다**(재진입 금지). 훅의 `git add`는 같은 프로세스 임계구역 안이라 안전. 락은 오직 최상위 시퀀스에서만 잡는다.
+pre-commit 훅(truncation guard 등 가드)은 **이미 락을 쥔 commit 프로세스 내부**에서 실행됨 → 훅은 **절대 락을 재획득하지 않는다**(재진입 금지). 훅의 `git add`(ship_no·_queue 미러 등)는 같은 프로세스 임계구역 안이라 안전. 락은 오직 최상위 시퀀스에서만 잡는다.
 
 ## 4. 파라미터 근거
 - `STALE=300s`: 느린 push(네트워크) 허용 상한 > 정상 보유시간(수초). PID 생존검사로 크래시는 더 빨리 회수.
