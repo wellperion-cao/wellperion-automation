@@ -222,7 +222,8 @@ tr:hover td{background:var(--accent-bg);}
   </div>
   <nav class="tab-nav" role="tablist">
     <button class="tab-btn active" role="tab" onclick="switchTab('membership',this)"><span class="tab-icon">🏅</span>멤버십</button>
-    <button class="tab-btn" role="tab" onclick="switchTab('lesson',this)"><span class="tab-icon">🏊</span>강습</button>
+    <button class="tab-btn" role="tab" onclick="switchTab('adult',this)"><span class="tab-icon">🏊</span>성인강습</button>
+    <button class="tab-btn" role="tab" onclick="switchTab('youth',this)"><span class="tab-icon">👦</span>유소년강습</button>
     <button class="tab-btn" role="tab" onclick="switchTab('policy',this)"><span class="tab-icon">💳</span>요금 정책</button>
     <button class="tab-btn" role="tab" onclick="switchTab('workshop',this)"><span class="tab-icon">✏️</span>기획 작업대</button>
   </nav>
@@ -363,10 +364,10 @@ tr:hover td{background:var(--accent-bg);}
   </div>
 
   <!-- ══════════════════════════════════════
-       TAB 2: 강습
+       TAB 2: 성인강습
   ══════════════════════════════════════ -->
-  <div id="tab-lesson" class="tab-panel">
-    <div class="section-badge read">📌 현행 강습 요금 — 읽기 참조 · 정적 박제</div>
+  <div id="tab-adult" class="tab-panel">
+    <div class="section-badge read">📌 현행 성인 강습 요금 — 읽기 참조 · 정적 박제</div>
 
     <div class="card">
       <div class="card-title">🏊 성인 수영</div>
@@ -461,9 +462,22 @@ tr:hover td{background:var(--accent-bg);}
         </table>
       </div>
     </div>
+  </div>
+
+  <!-- ══════════════════════════════════════
+       TAB 3: 유소년강습
+  ══════════════════════════════════════ -->
+  <div id="tab-youth" class="tab-panel">
+    <div class="section-badge read">📌 WSC 유소년 강습 요금 — 읽기 참조 · 정적 박제</div>
+
+    <div class="info-box" style="margin-bottom:16px;">
+      📋 <strong>나이 기준 안내</strong> — WSC 대상: <strong>5~16세</strong> (만 나이 기준, 모자수영 12~60개월 별도).
+      한국 나이 17세 = 2010년생 기준 · <strong>2026.3 이전 등록 건에 한해 기존 조건 유지</strong> 적용.
+      스쿼시는 <strong>10~16세</strong>부터 가능.
+    </div>
 
     <div class="card">
-      <div class="card-title">👦 WSC (유소년)</div>
+      <div class="card-title">👦 WSC 유소년 강습 (수영·골프·스쿼시·체조)</div>
       <div class="tbl-wrap">
         <table>
           <thead>
