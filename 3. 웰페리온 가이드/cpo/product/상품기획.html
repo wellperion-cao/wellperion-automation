@@ -189,6 +189,15 @@ tr:hover td{background:var(--accent-bg);}
 .status-msg{font-size:12px;color:var(--dim-mid);padding:6px 0;min-height:22px;}
 .status-msg.err{color:var(--red);}
 
+/* ─── 히어로 선언 블록 ─── */
+.hero-declaration{background:linear-gradient(135deg,rgba(183,159,138,0.18) 0%,rgba(183,159,138,0.07) 100%);border:1.5px solid var(--accent-border);border-radius:16px;padding:24px 28px;margin-bottom:20px;position:relative;overflow:hidden;}
+.hero-declaration::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--accent) 0%,transparent 80%);border-radius:16px 16px 0 0;}
+.hero-eyebrow{font-size:10px;font-weight:700;letter-spacing:0.1em;color:var(--accent);text-transform:uppercase;margin-bottom:10px;opacity:0.85;}
+.hero-headline{font-size:26px;font-weight:800;color:var(--text);line-height:1.2;letter-spacing:-0.02em;margin-bottom:12px;}
+.hero-body{font-size:13.5px;color:var(--dim-mid);line-height:1.85;}
+.hero-body strong{color:var(--accent-bright);}
+@media(max-width:600px){.hero-headline{font-size:20px;}.hero-declaration{padding:18px 18px;}}
+
 /* ─── 작업대 섹션 그룹 ─── */
 .plan-sections{display:block;}
 .plan-section{margin-bottom:28px;}
@@ -776,8 +785,10 @@ tr:hover td{background:var(--accent-bg);}
   <div id="tab-workshop" class="tab-panel">
     <div class="section-badge edit">✏️ 신규 기획 작업대 — 편집·저장 가능 · 시트 공유</div>
 
-    <div class="callout" style="margin-bottom:16px;font-size:13.5px;line-height:1.8;border-radius:12px;padding:16px 20px;">
-      🏛️ <strong>1순위 = 할인 아닌 프리미엄 차별화</strong> — 내부 시설·비품·어메니티 셋업으로 정가의 가치를 경험으로 증명합니다. 가성비가 아니라 말 그대로 프리미엄.
+    <div class="hero-declaration">
+      <div class="hero-eyebrow">🏛️ 포지셔닝 선언 · 확정</div>
+      <div class="hero-headline">가성비가 아니라, 프리미엄.</div>
+      <div class="hero-body">웰페리온은 할인으로 경쟁하지 않습니다. 회원이 정가를 기꺼이 내는 이유 = 내부 시설·비품·어메니티가 만드는 압도적 경험.<br>할인 대신 차별화, 가격 대신 가치 — <strong>1순위는 시설·어메니티 차별화</strong>입니다.</div>
     </div>
 
     <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:12px;">
@@ -863,14 +874,6 @@ var TODO_API_URL = 'https://script.google.com/macros/s/AKfycbxDwFkrxK1YIaEoSNcuw
 
 // ── 시드 기획안 (서버가 비었을 때만 표시) ─────────────────────────
 var SEEDS = [
-  // ── 포지셔닝 (1장, 확정) ──────────────────────────────────────────
-  {
-    id:'SEED-POS1', 구분:'포지셔닝', 제안명:'🎯 프리미엄 포지셔닝 선언',
-    구성:'가성비 아닌 프리미엄 — 할인으로 경쟁하지 않는다',
-    가격가설:'회원이 정가를 기꺼이 내는 이유 = 시설·어메니티가 만드는 압도적 경험',
-    근거:'할인 대신 차별화, 가격 대신 가치',
-    상태:'확정', 작성자:'시포', isSeed:true
-  },
   // ── 차별화레버 (7장, 초안 — 구성=현재, 가격가설=목표, 근거=우선) ──
   {
     id:'SEED-L1', 구분:'차별화레버', 제안명:'🚿 라커·샤워·세면 어메니티',
@@ -1000,7 +1003,6 @@ function renderCards(items) {
     return;
   }
   var SECTIONS = [
-    { key:'포지셔닝',  label:'🎯 포지셔닝 선언',                            cls:'positioning' },
     { key:'차별화레버', label:'🏛️ 차별화 레버 — 시설·비품·어메니티 (메인)', cls:'main' },
     { key:'가격전략',  label:'💹 가격 전략',                                cls:'pricing' },
     { key:'라인업',   label:'🧱 상품 라인업',                               cls:'lineup' }
