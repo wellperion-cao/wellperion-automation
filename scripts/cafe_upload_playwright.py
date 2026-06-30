@@ -127,9 +127,13 @@ SAVE_DRAFT_SELECTORS = [
     'button:has-text("임시저장")',
 ]
 # 카페 등록(발행) 버튼 — publish 모드·GM go 가드 전용
+# 실측 2026-06-30: 새 카페(ca-fe) 에디터 등록 버튼 = <a class="BaseButton BaseButton--skinGreen">등록</a>.
+# 기존 button:has-text("등록")은 <button>만 찾아 엉뚱한 요소 클릭 → 미게시. 정확 셀렉터를 1순위로.
 PUBLISH_TRIGGER_SELECTORS = [
+    'a.BaseButton--skinGreen:has-text("등록")',
     "a.btn_register",
     "button.btn_register",
+    'a:has-text("등록")',
     'button:has-text("등록")',
 ]
 
@@ -537,10 +541,41 @@ async def _select_board_and_prefix(page) -> None:
             return
         await buttons.nth(1).click()
         await page.wait_for_timeout(800)
-        # 열린 드롭다운 목록의 보이는 옵션 중 정확히 '웰페리온' 클릭
-        await page.get_by_text(PREFIX_TARGET_TEXT, exact=True).first.click(timeout=4000)
+        # 열린 드롭다운 옵션 중 '웰페리온' 클릭 (실측 수정 2026-06-30).
+        # 버그: get_by_text("웰페리온", exact=True).first 는 우상단 내비 '웰페리온'(y≈17)을
+        # 먼저 집어 드롭다운 옵션(y≈600)을 놓침. 드롭다운엔 '말머리 선택 안 함'·'웰페리온'
+        # 2개 옵션이 버튼 아래에 뜬다 → 정확매칭 '웰페리온' 중 화면에서 가장 아래(top 최대) 클릭.
+        # 실제 Playwright 클릭(JS el.click()은 네이버 옵션 핸들러 미발화 — 실측 2026-06-30 v2).
+        # exact "웰페리온"은 우상단 내비에도 걸리므로 .first 금지 → bounding_box y가
+        # 가장 큰(화면 아래=드롭다운 옵션) 매칭에 진짜 마우스 클릭.
+        prefix_clicked = False
+        best_y = 0.0
+        try:
+            opts = page.get_by_text(PREFIX_TARGET_TEXT, exact=True)
+            cnt = await opts.count()
+            best_i = -1
+            for i in range(cnt):
+                try:
+                    box = await opts.nth(i).bounding_box()
+                    if box and box["y"] > 150 and box["y"] > best_y:
+                        best_y = box["y"]; best_i = i
+                except Exception:
+                    continue
+            if best_i >= 0:
+                await opts.nth(best_i).click(timeout=3000)
+                prefix_clicked = True
+        except Exception as e:
+            print(f"[WARN] 말머리 옵션 클릭 예외: {e}")
         await page.wait_for_timeout(800)
-        print(f"[INFO] 말머리 선택 = {PREFIX_TARGET_TEXT!r}")
+        # 칩 실값 검증 — 클릭이 실제 반영됐는지 확인
+        try:
+            chip = (await page.locator(BOARD_SELECT_BUTTON_SELECTOR).nth(1).inner_text()).strip()
+        except Exception:
+            chip = "?"
+        if PREFIX_TARGET_TEXT in chip:
+            print(f"[INFO] 말머리 선택 = {PREFIX_TARGET_TEXT!r} (칩 검증 OK, y={best_y:.0f})")
+        else:
+            print(f"[WARN] 말머리 미반영 — 칩 현재값 {chip!r} (clicked={prefix_clicked}, y={best_y:.0f})")
     except Exception as e:
         print(f"[WARN] 말머리 선택 실패(게시판은 선택됨): {e}")
 
@@ -863,10 +898,53 @@ async def _insert_stickers(page, scope, count: int, label: str = "") -> int:
             print("[WARN] 스티커 그리드 항목 0개 (전 프레임)")
             break
         n = await items.count()
-        idx = ((before + k) * 5) % n  # 호출·반복 누적 기준으로 매번 다른 스티커
+        # 놀라는(surprise) 스티커 우선 탐색 (실측 수정 2026-06-30).
+        # 기존: ((before+k)*5)%n → 호출마다 임의 스티커, '우는' 스티커가 걸림.
+        # 수정: 항목 alt/aria-label/title/src 속성에서 놀람 키워드 탐색.
+        #        실패 시 안정 인덱스 fallback (draft 검증 후 고정).
+        _SURPRISE_KWS = ["놀람", "놀라", "헉", "surprise", "wow", "amazing", "astonish", "shock"]
+        # 최초 패널 오픈 시 항목 속성 덤프 (실측용 — 첫 삽입 시 1회만)
+        if k == 0:
+            for dbg_i in range(min(n, 12)):
+                try:
+                    info = await items.nth(dbg_i).evaluate(
+                        "el => JSON.stringify({"
+                        "  alt: el.querySelector('img')?.alt || '',"
+                        "  aria: el.getAttribute('aria-label') || '',"
+                        "  title: el.getAttribute('title') || '',"
+                        "  src: (el.querySelector('img')?.src || '').split('/').slice(-1)[0]"
+                        "})"
+                    )
+                    print(f"[DEBUG][sticker][{dbg_i}] {info}")
+                except Exception:
+                    pass
+        # 속성 키워드 탐색 (alt|aria-label|title|src 연결 문자열 기준)
+        surprise_idx = -1
+        for i_s in range(n):
+            try:
+                attrs = await items.nth(i_s).evaluate(
+                    "el => ["
+                    "  el.querySelector('img')?.alt || '',"
+                    "  el.getAttribute('aria-label') || '',"
+                    "  el.getAttribute('title') || '',"
+                    "  el.querySelector('img')?.src || ''"
+                    "].join('|').toLowerCase()"
+                )
+                if any(kw.lower() in attrs for kw in _SURPRISE_KWS):
+                    surprise_idx = i_s
+                    print(f"[INFO] 놀라는 스티커 속성 발견 (인덱스 {i_s})")
+                    break
+            except Exception:
+                continue
+        # fallback 인덱스 — 스티커 패널 실측(2026-06-30): 기본 움직이는 스티커팩 grid 행순서
+        # idx10(2행6열)=보라색 '!' 눈동그란 = 놀라는(surprise). alt 전부 '움직이는 스티커'라 속성식별 불가→인덱스 고정.
+        SURPRISE_FALLBACK_IDX = 10
+        if surprise_idx < 0:
+            print(f"[WARN] 놀라는 스티커 속성 미발견 → fallback idx={SURPRISE_FALLBACK_IDX} (draft 검증 후 확정)")
+        target_idx = surprise_idx if surprise_idx >= 0 else SURPRISE_FALLBACK_IDX
         picked = False
         for off in range(n):
-            it = items.nth((idx + off) % n)
+            it = items.nth((target_idx + off) % n)
             try:
                 if await it.is_visible():
                     await it.click(force=True)
@@ -1169,24 +1247,42 @@ async def run_publish(args: argparse.Namespace) -> int:
     page = await context.new_page()
     try:
         await _enter_write_and_fill(page, post)
+        # 등록 전 팝업킬러 정지 — 등록 확인 레이어를 killer가 삭제하는 사고 방지(실측 2026-06-30).
+        await _stop_popup_killer(page)
         trig_loc, trig_sel = await _first_locator(page, PUBLISH_TRIGGER_SELECTORS)
         if trig_loc is None:
             raise RuntimeError("등록(발행) 버튼 미발견")
         await trig_loc.click(force=True)
         print(f"[INFO] 등록 클릭 ({trig_sel!r})")
-        await page.wait_for_timeout(5000)
-        await page.screenshot(path=str(shot))
-        print(f"[INFO] 등록 완료 — 스크린샷 {shot}")
-        # 발행 후 현재 페이지 URL 회수 시도 (감시기 post_url 기록용)
-        # 카페는 등록 후 게시물 상세 페이지로 이동하는 경우가 있어 현재 URL 확인.
-        # URL 취득 불가 시에도 발행 성공 사실은 exit code 0 으로 전달.
+        # 등록 확인 레이어가 뜨면 확인 클릭 (없으면 무시)
+        await page.wait_for_timeout(1500)
         try:
-            current_url = page.url
-            if current_url and "cafe.naver.com" in current_url and "/articles/" in current_url:
-                print(f"post A: {current_url}")
-            else:
-                print("post A: (naver-url-회수불가)")
+            for cf_sel in ['.btn_register', 'button:has-text("확인")', 'a:has-text("확인")']:
+                cfl = page.locator(cf_sel).last
+                if await cfl.count() > 0 and await cfl.is_visible():
+                    await cfl.click(force=True)
+                    print(f"[INFO] 등록 확인 레이어 클릭 ({cf_sel!r})")
+                    break
         except Exception:
+            pass
+        # 게시 성공 = 게시물 상세로 이동. write URL(/articles/write)은 제외하고 폴링 검증.
+        published_url = ""
+        for _ in range(12):
+            await page.wait_for_timeout(1000)
+            u = page.url
+            if "cafe.naver.com" in u and "/articles/" in u and "/write" not in u:
+                published_url = u
+                break
+            if "ArticleRead" in u:
+                published_url = u
+                break
+        await page.wait_for_timeout(1000)
+        await page.screenshot(path=str(shot))
+        if published_url:
+            print(f"[INFO] PUBLISHED_OK — 게시 URL {published_url} — 스크린샷 {shot}")
+            print(f"post A: {published_url}")
+        else:
+            print(f"[WARN] PUBLISH_UNCONFIRMED — 게시물 이동 미확인(글쓰기 잔류). 스크린샷 {shot}")
             print("post A: (naver-url-회수불가)")
     except Exception as e:
         await page.screenshot(path=str(shot.with_suffix(".error.png")))
