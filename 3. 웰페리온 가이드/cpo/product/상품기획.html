@@ -189,6 +189,22 @@ tr:hover td{background:var(--accent-bg);}
 .status-msg{font-size:12px;color:var(--dim-mid);padding:6px 0;min-height:22px;}
 .status-msg.err{color:var(--red);}
 
+/* ─── 작업대 섹션 그룹 ─── */
+.plan-sections{display:block;}
+.plan-section{margin-bottom:28px;}
+.plan-section-header{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:700;padding:10px 16px;border-radius:10px;margin-bottom:12px;border:1px solid var(--border);background:var(--paper-raised);color:var(--text);}
+.plan-section-header.positioning{background:var(--green-bg);border-color:var(--green-border);color:var(--green);}
+.plan-section-header.main{background:var(--accent-bg);border-color:var(--accent-border);color:var(--accent-bright);font-size:14px;padding:12px 18px;}
+.plan-section-header.pricing{background:var(--teal-bg);border-color:var(--teal-border);color:var(--teal);}
+.plan-section-header.lineup{background:var(--blue-bg);border-color:var(--blue-border);color:var(--blue);}
+
+/* ─── 차별화 레버 카드 현재/목표/우선 라벨 ─── */
+.lever-row{display:flex;align-items:baseline;gap:6px;margin-bottom:5px;font-size:12.5px;color:var(--dim-mid);line-height:1.5;}
+.lever-row:last-child{margin-bottom:0;}
+.lever-label{display:inline-flex;font-size:9px;font-weight:700;padding:1px 7px;border-radius:99px;background:var(--paper-raised);color:var(--dim-mid);border:1px solid var(--border);white-space:nowrap;flex-shrink:0;letter-spacing:0.03em;}
+.lever-label.goal{background:var(--accent-bg);color:var(--accent);border-color:var(--accent-border);}
+.lever-label.prio{background:var(--teal-bg);color:var(--teal);border-color:var(--teal-border);}
+
 /* ─── 반응형 ─── */
 @media(max-width:720px){
   .tab-btn{padding:10px 12px;font-size:12px;}
@@ -772,7 +788,7 @@ tr:hover td{background:var(--accent-bg);}
       </div>
     </div>
 
-    <div class="plan-grid" id="planGrid">
+    <div class="plan-sections" id="planGrid">
       <!-- 카드 동적 렌더 -->
     </div>
   </div><!-- /tab-workshop -->
@@ -788,22 +804,22 @@ tr:hover td{background:var(--accent-bg);}
     <input type="hidden" id="editId">
     <div class="form-row">
       <label>구분</label>
-      <input type="text" id="editGubun" placeholder="예: 멤버십 / 강습 / 프로모션">
+      <input type="text" id="editGubun" placeholder="예: 포지셔닝 / 차별화레버 / 가격전략 / 라인업" oninput="updateModalLabels(this.value)">
     </div>
     <div class="form-row">
       <label>제안명</label>
       <input type="text" id="editName" placeholder="한 줄 제안 이름">
     </div>
     <div class="form-row">
-      <label>구성</label>
+      <label id="labelComp">구성</label>
       <textarea id="editComp" placeholder="상품 구성 상세 설명"></textarea>
     </div>
     <div class="form-row">
-      <label>가격 가설</label>
+      <label id="labelPrice">가격 가설</label>
       <input type="text" id="editPrice" placeholder="예: 3,500,000 / 번들 5% 추가">
     </div>
     <div class="form-row">
-      <label>근거</label>
+      <label id="labelBase">근거</label>
       <textarea id="editBase" placeholder="기획 근거 · 연계 데이터 · 목표"></textarea>
     </div>
     <div class="form-row">
@@ -847,98 +863,92 @@ var TODO_API_URL = 'https://script.google.com/macros/s/AKfycbxDwFkrxK1YIaEoSNcuw
 
 // ── 시드 기획안 (서버가 비었을 때만 표시) ─────────────────────────
 var SEEDS = [
-  // ── 프리미엄차별화 (centerpiece) ──────────────────────────────────
+  // ── 포지셔닝 (1장, 확정) ──────────────────────────────────────────
   {
-    id:'SEED-P1', 구분:'프리미엄차별화', 제안명:'🚿 라커·샤워·세면 어메니티',
-    구성:'고급 브랜드 스킨케어·바디 어메니티, 호텔급 가운·타월, 드라이/스타일링 바',
-    가격가설:'정가 정당화·체험→등록 전환↑',
-    근거:'어메니티=회원 체감 차별 1순위',
+    id:'SEED-POS1', 구분:'포지셔닝', 제안명:'🎯 프리미엄 포지셔닝 선언',
+    구성:'가성비 아닌 프리미엄 — 할인으로 경쟁하지 않는다',
+    가격가설:'회원이 정가를 기꺼이 내는 이유 = 시설·어메니티가 만드는 압도적 경험',
+    근거:'할인 대신 차별화, 가격 대신 가치',
+    상태:'확정', 작성자:'시포', isSeed:true
+  },
+  // ── 차별화레버 (7장, 초안 — 구성=현재, 가격가설=목표, 근거=우선) ──
+  {
+    id:'SEED-L1', 구분:'차별화레버', 제안명:'🚿 라커·샤워·세면 어메니티',
+    구성:'[실사 필요]',
+    가격가설:'호텔급 가운·타월, 고급 브랜드 스킨케어·바디, 스타일링 바',
+    근거:'상 — 회원 체감 1순위',
     상태:'초안', 작성자:'시포', isSeed:true
   },
   {
-    id:'SEED-P2', 구분:'프리미엄차별화', 제안명:'💆 회복·웰니스 시설',
-    구성:'사우나(건식·습식·소금)·냉온탕·생크몽드 연계 바디케어·회복 라운지·스트레칭존',
-    가격가설:'노블레스급 가치·체류시간↑',
-    근거:'회복 수요 고성장',
+    id:'SEED-L2', 구분:'차별화레버', 제안명:'💆 회복·웰니스',
+    구성:'[실사 필요]',
+    가격가설:'사우나(건·습·소금)·냉온탕·생크몽드 바디케어·회복 라운지·스트레칭존',
+    근거:'상',
     상태:'초안', 작성자:'시포', isSeed:true
   },
   {
-    id:'SEED-P3', 구분:'프리미엄차별화', 제안명:'☕ 라운지·F&B',
-    구성:'멤버 라운지·충전형 카페·헬시스낵·프로틴/스무디 바',
-    가격가설:'커뮤니티·LTV·체류↑',
-    근거:'프리미엄 클럽 표준',
+    id:'SEED-L3', 구분:'차별화레버', 제안명:'☕ 라운지·F&B',
+    구성:'[실사 필요]',
+    가격가설:'멤버 라운지·충전형 카페·헬시스낵·프로틴/스무디 바',
+    근거:'중',
     상태:'초안', 작성자:'시포', isSeed:true
   },
   {
-    id:'SEED-P4', 구분:'프리미엄차별화', 제안명:'🕯️ 감각·앰비언스',
-    구성:'시그니처 향·음악·조도·온습도·청결 5성 표준화',
-    가격가설:'브랜드 각인·재등록↑',
-    근거:'무형 경험이 프리미엄 인지를 좌우',
+    id:'SEED-L4', 구분:'차별화레버', 제안명:'🕯️ 감각·앰비언스',
+    구성:'[실사 필요]',
+    가격가설:'시그니처 향·음악·조도·온습도·청결 5성 표준',
+    근거:'중 — 저비용 고효과',
     상태:'초안', 작성자:'시포', isSeed:true
   },
   {
-    id:'SEED-P5', 구분:'프리미엄차별화', 제안명:'🛎️ 서비스·컨시어지',
-    구성:'발렛·1:1 컨시어지(FAN VIP)·세신·개인 라커 셋업·예약 우선',
-    가격가설:'상위 등급 차별·VVIP 유지',
-    근거:'등급제(FAN VIP)와 연계',
+    id:'SEED-L5', 구분:'차별화레버', 제안명:'🛎️ 서비스·컨시어지',
+    구성:'[실사 필요]',
+    가격가설:'발렛·1:1 컨시어지(FAN VIP)·세신·개인 라커 셋업·예약 우선',
+    근거:'중',
     상태:'초안', 작성자:'시포', isSeed:true
   },
   {
-    id:'SEED-P6', 구분:'프리미엄차별화', 제안명:'👦 유소년·가족 존',
-    구성:'WSC 전용 공간·키즈 어메니티·가족 라운지·안전 설계',
-    가격가설:'가족 멤버십·유소년 강습 연계 매출',
-    근거:'가족 정가 전환과 짝',
+    id:'SEED-L6', 구분:'차별화레버', 제안명:'👦 유소년·가족 존',
+    구성:'[실사 필요]',
+    가격가설:'WSC 전용 공간·키즈 어메니티·가족 라운지·안전 설계',
+    근거:'중',
     상태:'초안', 작성자:'시포', isSeed:true
   },
   {
-    id:'SEED-P7', 구분:'프리미엄차별화', 제안명:'📦 비품 표준·브랜딩',
-    구성:'타월·생수·소독·정수·운동기구 소모비품 프리미엄 일관 브랜딩',
-    가격가설:'일관된 고급 인상·운영 품질',
-    근거:'디테일이 프리미엄을 완성',
+    id:'SEED-L7', 구분:'차별화레버', 제안명:'📦 비품 표준·브랜딩',
+    구성:'[실사 필요]',
+    가격가설:'타월·생수·소독·정수·운동기구 소모비품 프리미엄 일관 브랜딩',
+    근거:'상 — 디테일이 프리미엄 완성',
     상태:'초안', 작성자:'시포', isSeed:true
   },
-  // ── 가격전략 (플래그십) ────────────────────────────────────────────
+  // ── 가격전략 (1장, 초안) ──────────────────────────────────────────
   {
     id:'SEED-G1', 구분:'가격전략', 제안명:'💹 무할인 + 2년주기 인상폭 상향 기준안',
-    구성:'원칙=할인 폐지·정가 일원화 / 주기=짝수해 10월(26.10·28.10) / 적용=계약 중 기존요금 보장·재등록 시 새 정가',
-    가격가설:'인상폭 시나리오(경영 결재 택1) ①등급 정률 +10~15%/주기 ②종목 정액 +50~100만/주기 ③정원 충족률 연동 차등',
-    근거:'멤버십 시트 1,000~1,500명 정원충족·종목별 100만 인상 시뮬 + 할인 소멸분이 실질 인상에 가산',
+    구성:'할인 폐지·정가 일원화 / 짝수해 10월(26.10·28.10) / 계약 중 기존요금 보장·재등록 시 새 정가',
+    가격가설:'인상폭 시나리오(경영 결재 택1) ①등급 정률 +10~15%/주기 ②종목 정액 +50~100만/주기 ③정원 충족률 연동',
+    근거:'멤버십 시트 1,000~1,500명 정원충족·종목별 100만 인상 시뮬 + 할인 소멸분 실질 가산',
     상태:'초안', 작성자:'시포', isSeed:true
   },
-  // ── 상품구조 ──────────────────────────────────────────────────────
+  // ── 라인업 (3장, 초안) ────────────────────────────────────────────
   {
-    id:'SEED-A', 구분:'상품구조', 제안명:'등급 간소화 2축 구조',
-    구성:'4종목 조합 → 베이스(헬스+사우나) + 옵션 토글(수영·골프). 선택 피로 최소화.',
-    가격가설:'베이스 2,800,000 / 수영 옵션 +600,000 / 골프 옵션 +400,000',
-    근거:'시트 본문 "단일/2종목 간소화" 방향 명시·선택 피로↓',
-    상태:'초안', 작성자:'시포', isSeed:true
-  },
-  {
-    id:'SEED-B', 구분:'상품구조', 제안명:'멤버십+강습 정가 묶음 패키지',
-    구성:'예) 노블레스 + PT10회 정가 묶음. 묶음 할인 아님, 정가 묶음(통합 편의·LTV). 멤버십+강습 연계 단일 계약.',
-    가격가설:'노블레스(3,600,000) + PT10회(1,089,000) → 번들 정가 합산',
-    근거:'강습 객단가↑ + 멤버십 리텐션↑ 동시. 강습 월 3억 목표 연계.',
+    id:'SEED-LA1', 구분:'라인업', 제안명:'등급 간소화 2축',
+    구성:'4종목조합→베이스(헬스+사우나)+옵션 토글(수영·골프)',
+    가격가설:'선택 피로↓·정가 명료',
+    근거:'시트도 단일/2종목 간소화 방향 명시',
     상태:'초안', 작성자:'시포', isSeed:true
   },
   {
-    id:'SEED-C', 구분:'상품구조', 제안명:'시간대 상품 (데이타임·얼리버드)',
-    구성:'데이타임(평일 09~17시)·얼리버드(06~09시) 한정 멤버십. 저가 아닌 정가 차등(비혼잡 가치).',
-    가격가설:'데이타임 2,200,000 / 얼리버드 1,800,000 (연간)',
-    근거:'비혼잡 시간 활용 + 비혼잡 가치 차등 정가. 신규 고객층 확대.',
+    id:'SEED-LA2', 구분:'라인업', 제안명:'멤버십×강습 정가 묶음',
+    구성:'예) 노블레스+PT10회 정가 패키지',
+    가격가설:'할인 아닌 통합 편의·LTV↑',
+    근거:'강습 월 3억 목표 연계',
     상태:'초안', 작성자:'시포', isSeed:true
   },
   {
-    id:'SEED-D', 구분:'상품구조', 제안명:'신규 가치 패키지 (웰컴 강화)',
-    구성:'유료 체험/바우처 중심. 입회비 면제 등 할인성 요소 제거 → 웰컴팩 강화(경험 가치) 대체.',
-    가격가설:'체험 바우처 정가 유지 · 전환 시 웰컴팩 증정(비가격)',
-    근거:'문의→등록 전환(퍼널 누수)의 직접 레버. 전환율 개선 목표.',
-    상태:'초안', 작성자:'시포', isSeed:true
-  },
-  {
-    id:'SEED-E', 구분:'상품구조', 제안명:'비가격 리텐션 (서비스·등급 혜택)',
-    구성:'할인 리텐션 제거 → 서비스·등급 혜택 리텐션. 이탈 신호(방문↓)와 자동 연계. 맞춤 비가격 오퍼 발송.',
-    가격가설:'기존 재등록 비가격 혜택 유지 + 자동화 비용 최소화',
-    근거:'저이용 특별선택권(연 90일 미만) 기존 제도 활용. 이탈→복귀 전환.',
+    id:'SEED-LA3', 구분:'라인업', 제안명:'시간대 정가 차등',
+    구성:'데이타임·얼리버드 한정 등급',
+    가격가설:'저가 아닌 비혼잡 가치',
+    근거:'유휴 시간 활용',
     상태:'초안', 작성자:'시포', isSeed:true
   }
 ];
@@ -949,32 +959,81 @@ function statusBadge(s) {
   var cls = map[s] || 'draft';
   return '<span class="tag-badge ' + cls + '">' + (s||'초안') + '</span>';
 }
+function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+function renderCard(it) {
+  var isLever = (it.구분||'').indexOf('차별화') === 0;
+  var seedMark = it.isSeed ? '<span class="seed-mark">시드</span>' : '';
+  var updAt = it.updated_at ? '<span style="color:var(--dim);font-size:10px;"> · ' + String(it.updated_at).slice(0,10) + '</span>' : '';
+  var bodyHtml;
+  if (isLever) {
+    bodyHtml =
+      '<div class="lever-row"><span class="lever-label">현재</span> ' + esc(it.구성||'') + '</div>' +
+      '<div class="lever-row"><span class="lever-label goal">목표</span> ' + esc(it.가격가설||'') + '</div>' +
+      '<div class="lever-row"><span class="lever-label prio">우선</span> ' + esc(it.근거||'') + '</div>';
+  } else {
+    bodyHtml =
+      '<strong>구성</strong> ' + esc(it.구성||'') + '<br>' +
+      '<strong>가격가설</strong> ' + esc(it.가격가설||'') + '<br>' +
+      '<strong>근거</strong> ' + esc(it.근거||'');
+  }
+  var safeIt = JSON.stringify(it).replace(/</g,'\\u003c').replace(/>/g,'\\u003e').replace(/&/g,'\\u0026');
+  return '<div class="plan-card" data-id="' + esc(it.id) + '">' +
+    '<div class="plan-card-head"><div>' +
+      '<div class="plan-card-title">' + esc(it.제안명||'') + seedMark + '</div>' +
+      '<div class="plan-card-meta">' + statusBadge(it.상태) + updAt + '</div>' +
+    '</div></div>' +
+    '<div class="plan-card-body">' + bodyHtml + '</div>' +
+    '<div class="plan-card-actions">' +
+      '<button class="btn-sm edit" onclick=\'openModal(' + safeIt + ')\'>✎ 편집</button>' +
+      (it.isSeed
+        ? '<button class="btn-sm edit" style="background:var(--teal-bg);color:var(--teal);border-color:var(--teal-border);" onclick=\'saveSeed(' + safeIt + ')\'>↑ 시트 저장</button>'
+        : '<button class="btn-sm del" onclick="deletePlan(\'' + esc(it.id) + '\')">✕ 삭제</button>') +
+    '</div>' +
+  '</div>';
+}
+
 function renderCards(items) {
   var grid = document.getElementById('planGrid');
-  if (!items || !items.length) { grid.innerHTML = '<div class="info-box" style="grid-column:1/-1;text-align:center;padding:24px;">기획안이 없습니다. "새 기획 추가"로 시작하세요.</div>'; return; }
-  grid.innerHTML = items.map(function(it) {
-    var seedMark = it.isSeed ? '<span class="seed-mark">시드</span>' : '';
-    var updAt = it.updated_at ? '<span style="color:var(--dim);font-size:10px;"> · ' + String(it.updated_at).slice(0,10) + '</span>' : '';
-    return '<div class="plan-card" data-id="' + esc(it.id) + '">' +
-      '<div class="plan-card-head">' +
-        '<div>' +
-          '<div class="plan-card-title">' + esc(it.제안명||'') + seedMark + '</div>' +
-          '<div class="plan-card-meta">' + statusBadge(it.상태) + ' · <span style="color:var(--accent-bright);">' + esc(it.구분||'') + '</span>' + updAt + '</div>' +
-        '</div>' +
-      '</div>' +
-      '<div class="plan-card-body">' +
-        '<strong>구성</strong> ' + esc(it.구성||'') + '<br>' +
-        '<strong>가격가설</strong> ' + esc(it.가격가설||'') + '<br>' +
-        '<strong>근거</strong> ' + esc(it.근거||'') +
-      '</div>' +
-      '<div class="plan-card-actions">' +
-        '<button class="btn-sm edit" onclick="openModal(' + JSON.stringify(it) + ')">✎ 편집</button>' +
-        (it.isSeed ? '<button class="btn-sm edit" style="background:var(--teal-bg);color:var(--teal);border-color:var(--teal-border);" onclick="saveSeed(' + JSON.stringify(it) + ')">↑ 시트 저장</button>' : '<button class="btn-sm del" onclick="deletePlan(\'' + esc(it.id) + '\')">✕ 삭제</button>') +
-      '</div>' +
-    '</div>';
-  }).join('');
+  if (!items || !items.length) {
+    grid.innerHTML = '<div class="info-box" style="text-align:center;padding:24px;">기획안이 없습니다. "새 기획 추가"로 시작하세요.</div>';
+    return;
+  }
+  var SECTIONS = [
+    { key:'포지셔닝',  label:'🎯 포지셔닝 선언',                            cls:'positioning' },
+    { key:'차별화레버', label:'🏛️ 차별화 레버 — 시설·비품·어메니티 (메인)', cls:'main' },
+    { key:'가격전략',  label:'💹 가격 전략',                                cls:'pricing' },
+    { key:'라인업',   label:'🧱 상품 라인업',                               cls:'lineup' }
+  ];
+  var knownKeys = SECTIONS.map(function(s){ return s.key; });
+  var groups = {};
+  var others = [];
+  items.forEach(function(it) {
+    var k = it.구분 || '';
+    if (knownKeys.indexOf(k) >= 0) {
+      if (!groups[k]) groups[k] = [];
+      groups[k].push(it);
+    } else {
+      others.push(it);
+    }
+  });
+  var html = '';
+  SECTIONS.forEach(function(sec) {
+    var list = groups[sec.key] || [];
+    if (!list.length) return;
+    html += '<div class="plan-section">';
+    html += '<div class="plan-section-header ' + sec.cls + '">' + sec.label + '</div>';
+    html += '<div class="plan-grid">';
+    list.forEach(function(it){ html += renderCard(it); });
+    html += '</div></div>';
+  });
+  if (others.length) {
+    html += '<div class="plan-section"><div class="plan-section-header">📋 기타</div><div class="plan-grid">';
+    others.forEach(function(it){ html += renderCard(it); });
+    html += '</div></div>';
+  }
+  grid.innerHTML = html;
 }
-function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
 // ── 불러오기 ───────────────────────────────────────────────────────────
 function setStatus(msg, isErr) {
@@ -1039,6 +1098,12 @@ function deletePlan(id) {
 }
 
 // ── 모달 ───────────────────────────────────────────────────────────────
+function updateModalLabels(gubun) {
+  var isLever = (gubun||'').indexOf('차별화') === 0;
+  document.getElementById('labelComp').textContent  = isLever ? '현재 상태'     : '구성';
+  document.getElementById('labelPrice').textContent = isLever ? '프리미엄 목표'  : '가격 가설';
+  document.getElementById('labelBase').textContent  = isLever ? '우선순위·효과' : '근거';
+}
 function openModal(it) {
   document.getElementById('editId').value     = it ? (it.id||'') : '';
   document.getElementById('editGubun').value  = it ? (it.구분||'') : '';
@@ -1049,6 +1114,7 @@ function openModal(it) {
   document.getElementById('editStatus').value = it ? (it.상태||'초안') : '초안';
   document.getElementById('editAuthor').value = it ? (it.작성자||'') : '';
   document.getElementById('modalTitle').textContent = it && it.id ? '기획 편집' : '기획 추가';
+  updateModalLabels((it && it.구분) || '');
   document.getElementById('modalBg').classList.add('open');
 }
 function closeModal() {
