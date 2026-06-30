@@ -2323,41 +2323,6 @@ window._regAssign = function(id, category) {
           <span style="font-size:14px;font-weight:800;color:#fff;background:#7C3AED;border-radius:9px;padding:9px 16px;white-space:nowrap;">전체화면 →</span>
         </a>
 
-        <!-- ══ 🌅 오늘의 항로 추천 진입 (북극성 추천기 2단계 · 2026-06-29) ══ -->
-        <a href="northstar_today.html" style="display:flex;align-items:center;gap:16px;margin:0 0 18px;padding:16px 22px;background:linear-gradient(135deg,#3a2a14,#1a1a2a);border:1px solid #f0c674;border-radius:14px;text-decoration:none;color:#fff;box-shadow:0 2px 10px rgba(240,198,116,0.14);">
-          <span style="font-size:30px;flex-shrink:0;">🌅</span>
-          <span style="flex:1;">
-            <span style="display:block;font-size:17px;font-weight:800;letter-spacing:-0.01em;">오늘의 항로 추천 — 북극성 한 수</span>
-            <span style="display:block;font-size:13px;color:#e6d2a8;margin-top:4px;line-height:1.5;">매일 06:30 웰리가 전 C-Level 북극성 대비 현황을 읽어 전사 top3를 제안 → 텔레그램 [승인 N] 회신으로 배 등록. 풀표로 한눈에.</span>
-          </span>
-          <span style="font-size:14px;font-weight:800;color:#221F20;background:#f0c674;border-radius:9px;padding:9px 16px;white-space:nowrap;">표 보기 →</span>
-        </a>
-
-
-        <!-- ══ 📍 어디에 뭐가 있나 (주제별 단일출처 지도 · home→S2 이관 2026-06-16) ══ -->
-        <details class="toggle" style="background:var(--paper);border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:12px;padding:4px 20px 14px;margin:0 0 20px;">
-          <summary style="cursor:pointer;font-weight:700;font-size:16px;padding:10px 0;"><span class="ico">📍</span>어디에 뭐가 있나 <span style="font-size:13px;font-weight:400;color:var(--dim);">— 찾는 게 어느 페이지에 있는지</span></summary>
-          <table style="margin-top:8px;">
-            <tr><th style="width:48%;">찾는 것</th><th>여기서 봅니다 (단일출처)</th></tr>
-            <tr><td>오늘 할 일·항로</td><td><a href="#" style="color:var(--accent);font-weight:700;text-decoration:underline;" onclick="event.preventDefault();document.querySelector('[data-id=G1]').click();">🧭 G1 오늘의 항로</a></td></tr>
-            <tr><td>오늘의 북극성 추천(06:30 전사 top3)</td><td><a href="northstar_today.html" style="color:var(--accent);font-weight:700;text-decoration:underline;">🌅 오늘의 항로 추천 (풀표)</a></td></tr>
-            <tr><td>업무·결재 현황</td><td><a href="#" style="color:var(--accent);font-weight:700;text-decoration:underline;" onclick="event.preventDefault();document.querySelector('[data-id=S3]').click();">📝 S3 업무·결재 현황</a></td></tr>
-            <tr><td>우리의 약속·재발방지·공식값</td><td><a href="#" style="color:var(--accent);font-weight:700;text-decoration:underline;" onclick="event.preventDefault();document.querySelector('[data-id=S2]').click();">⚖️ S2 공통탭</a></td></tr>
-            <tr><td>보고 형식·업무 처리 단계·AI 협업 원칙</td><td><a href="#" style="color:var(--accent);font-weight:700;text-decoration:underline;" onclick="event.preventDefault();document.querySelector('[data-id=S2]').click();">⚖️ S2 공통탭</a></td></tr>
-            <tr><td>각 AI 임원 역할·KPI</td><td><a href="#" style="color:var(--accent);font-weight:700;text-decoration:underline;" onclick="event.preventDefault();document.querySelector('[data-id=S2]').click();">⚖️ S2 (각 C-Level 탭)</a></td></tr>
-            <tr><td>자동화·예약작업·정각보고·PC 켜고끔</td><td><a href="#" style="color:var(--accent);font-weight:700;text-decoration:underline;" onclick="event.preventDefault();document.querySelector('[data-id=T2]').click();">🤖 T2 업무자동화</a></td></tr>
-            <tr><td>시스템이 잘 도는지 (현황)</td><td><a href="#" style="color:var(--accent);font-weight:700;text-decoration:underline;" onclick="event.preventDefault();document.querySelector('[data-id=T2]').click();">🖥️ T2 ▸ 시스템 현황</a></td></tr>
-            <tr><td>기술 설정·파일 경로 <span style="color:var(--dim);font-size:11px;">· 기술자용</span></td><td><a href="#" style="color:var(--accent);font-weight:700;text-decoration:underline;" onclick="event.preventDefault();document.querySelector('[data-id=T1]').click();">🖥️ T1 기술 & AI 학습</a></td></tr>
-            <tr><td>AI 교육(토큰·사용법) <span style="color:var(--dim);font-size:11px;">· 기술자용</span></td><td><a href="#" style="color:var(--accent);font-weight:700;text-decoration:underline;" onclick="event.preventDefault();document.querySelector('[data-id=T1]').click();">📚 T1 (학습)</a></td></tr>
-            <tr><td>프롬프트 (복사·붙여넣기) <span style="color:var(--dim);font-size:11px;">· 기술자용</span></td><td>운영=<a href="#" style="color:var(--accent);font-weight:700;text-decoration:underline;" onclick="event.preventDefault();document.querySelector('[data-id=S2]').click();">S2</a> · 기술=<a href="#" style="color:var(--accent);font-weight:700;text-decoration:underline;" onclick="event.preventDefault();document.querySelector('[data-id=T1]').click();">T1</a></td></tr>
-            <tr><td>콘텐츠 검수·발행</td><td><a href="#" style="color:var(--accent);font-weight:700;text-decoration:underline;" onclick="event.preventDefault();document.querySelector('[data-id=M5]').click();">🎬 M5 콘텐츠 검수</a></td></tr>
-            <tr><td>마케팅 현황</td><td><a href="#" style="color:var(--accent);font-weight:700;text-decoration:underline;" onclick="event.preventDefault();document.querySelector('[data-id=M4]').click();">📡 M4 마케팅 대시보드</a></td></tr>
-            <tr><td>부서 운영 체계</td><td><a href="#" style="color:var(--accent);font-weight:700;text-decoration:underline;" onclick="event.preventDefault();document.querySelector('[data-id=O1]').click();">🧑‍💻 O1 운영 통합 체계</a></td></tr>
-          </table>
-          <div style="font-size:12px;color:var(--dim);margin-top:8px;">같은 내용을 두 곳에 두지 않습니다 — 각 주제는 위 <strong>한 곳</strong>에만 두고, 다른 데선 링크로 가리킵니다.</div>
-        </details>
-        <!-- ══ /어디에 뭐가 있나 ══ -->
-
         <!-- ══ 📌 우리의 약속 (ssot/약속.json native 렌더 · 2026-06-15) ══ -->
         <div id="common-promises" style="margin:16px 0 20px;">
           <h3 style="margin-top:0;margin-bottom:6px;"><span class="ico">📌</span>우리의 약속 <span style="font-size:13px;font-weight:400;color:var(--dim);">(AI·실무진이 다같이 지키는 것)</span></h3>
@@ -3060,7 +3025,7 @@ window._regAssign = function(id, category) {
 2. 대시보드 숫자 = 실제 목록과 정확히 일치 (추정·중복 카운트 금지).
 3. 같은 종류 표는 컬럼(순서·항목값) 100% 동일.
 4. 요약은 칸으로, 상세는 행별 토글(접힘)로.
-5. 정리·폐기된 항목은 본문에서 완전 삭제 (git 이력이 보존 — 별도 '이력' 토글·이관 로그 안 남김). 위치 안내는 '어디에 뭐가 있나' 지도가 담당.
+5. 정리·폐기된 항목은 본문에서 완전 삭제 (git 이력이 보존 — 별도 '이력' 토글·이관 로그 안 남김). 위치 안내는 모듈 바로가기·헌법 한 장이 담당.
 6. 참고성(다이어그램·SOP·절차)은 접이식 토글로.
 7. 중복 = SSOT 단일화. 여러 곳이면 주관 1곳만, 나머지는 이동 후 포인터 없이 완전 삭제(식별자·주소 반영).
 8. 읽을거리 최소화 — 장식·반복·과장 제거.
@@ -4440,6 +4405,34 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
       <p style="color:#f0b8b8;font-size:11.5px;margin:8px 0 0;">⚠️ <strong style="color:#ff9a9a;">🌀 표류</strong> = 끝냈는데(🏁) '다음'을 안 남긴 것. 그냥 두지 말고 바로 <strong style="color:#fff;">"👉 다음 뭐 할지"</strong>를 정하세요 — 안 그러면 다음 날 "어디였더라?" 헤맵니다.</p>
     </div>
     <!-- ══ /🏁 완료·다음 ══ -->
+
+    <!-- ══ 🌅 오늘의 항로 추천 진입 배너 (북극성 추천기 1차 진입 · pending 있을 때만 표시 · S2→G1 이관 2026-06-30) ══ -->
+    <a id="gm1-northstar-rec" href="northstar_today.html" style="display:none;align-items:center;gap:14px;margin:0 0 16px;padding:14px 20px;background:linear-gradient(135deg,#3a2a14,#1a1a2a);border:1px solid #f0c674;border-radius:14px;text-decoration:none;color:#fff;box-shadow:0 2px 10px rgba(240,198,116,0.14);">
+      <span style="font-size:26px;flex-shrink:0;">🌅</span>
+      <span style="flex:1;">
+        <span style="display:block;font-size:15px;font-weight:800;letter-spacing:-0.01em;">오늘의 항로 추천 <span id="gm1-northstar-rec-count" style="color:#f0c674;"></span></span>
+        <span style="display:block;font-size:12px;color:#e6d2a8;margin-top:3px;line-height:1.5;">웰리가 북극성 대비 현황을 읽어 제안한 오늘 한 수입니다. 풀표로 보고 텔레그램 [승인]으로 배 등록.</span>
+      </span>
+      <span style="font-size:13px;font-weight:800;color:#221F20;background:#f0c674;border-radius:9px;padding:8px 14px;white-space:nowrap;">보기 →</span>
+    </a>
+    <script>
+    (function(){
+      // status/northstar_pending.json 직독 — 후보 N건 있으면 배너 표시, 없으면 숨김(빈 카드 방지 · 헌법한장:335 동일 원칙).
+      var NS_URL = '/wellperion-automation/status/northstar_pending.json';
+      fetch(NS_URL + '?_=' + Date.now(), {cache:'no-store'})
+        .then(function(r){ return r.ok ? r.json() : null; })
+        .then(function(data){
+          var n = (data && Array.isArray(data.candidates)) ? data.candidates.length : 0;
+          if(!n) return;  // 없으면 숨김
+          var el = document.getElementById('gm1-northstar-rec');
+          var ct = document.getElementById('gm1-northstar-rec-count');
+          if(ct) ct.textContent = n + '건';
+          if(el) el.style.display = 'flex';
+        })
+        .catch(function(){});
+    })();
+    </script>
+    <!-- ══ /🌅 오늘의 항로 추천 진입 배너 ══ -->
 
     <!-- 오늘 할 일 (최상단 — GM 진입 즉시 노출, 2026-06-05) -->
     <details id="gm1-todo-section" open style="margin:8px 0 24px;">
