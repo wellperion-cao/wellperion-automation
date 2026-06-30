@@ -2,12 +2,12 @@
      ★ 근본구조: iframe('미리보기 창') 폐기 → 폼을 페이지에 직접 인라인 주입.
         문의 페이지(8394)가 wp_inquiry_block.html 을 vc_raw_html 로 직접 심는 것과 완전히 동일한 방식.
         결과: 페이지 단일 스크롤·헤더 로고/본문/푸터가 한 몸. "창 속의 창" 분리감 0.
-     ★ 기능: coo/reception/reception_form.html(GitHub Pages 독립본·현 QR 대상)의 폼 정의(FORMS)·JS·
-        VOC_API·VOC_SUBMIT_TOKEN·LOCATIONS·reg_submit 제출·?loc 프리필·사진 FileReader 를 그대로 복제.
+     ★ 기능: 폼 정의(FORMS)·JS·VOC_API·VOC_SUBMIT_TOKEN·LOCATIONS·reg_submit 제출·?loc 프리필·
+        사진 FileReader 를 포함하는 단일 정본(self-contained).
         QR/페이지 URL 의 ?loc= 는 폼 JS가 location.search 에서 직접 읽음(iframe 중계 JS 불필요·제거).
      ★ CSS 충돌 방지: 전 규칙을 .wlp-recept 래퍼 하위로 스코프 → Salient/WPBakery 테마 오염 차단.
         ENG 언어버튼(a.lang-header)·WP 페이지 타이틀은 page-id-8434 한정으로 숨김.
-     수정 시: 폼 로직(FORMS·토큰·LOCATIONS·GAS 액션)은 reception_form.html 과 동일하게 유지하고
+     수정 시: 폼 로직(FORMS·토큰·LOCATIONS·GAS 액션) 변경 후
               draft-reception 모드로 재주입. -->
 <style>
 @import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css");
@@ -379,7 +379,7 @@ body.page-id-8434 #header-outer #logo{margin-top:32px!important}
   </div>
 </div>
 
-<!-- ★ 이하 JS 블록 — reception_form.html 과 동일(기능·동작 100% 무손상). ?loc 은 페이지 URL에서 직접 읽음. ★ -->
+<!-- ★ 이하 JS 블록 — 단일 정본(reception_block.html). ?loc 은 페이지 URL에서 직접 읽음. ★ -->
 <script>
 (function(){
   var VOC_API = 'https://script.google.com/macros/s/AKfycbwk2XS1FND9V2xtXlWgsXzgA5p0FG7jVm6YKD74JK_ME_ZvHsNUUfGE5A_8p0X8VcF3gQ/exec';

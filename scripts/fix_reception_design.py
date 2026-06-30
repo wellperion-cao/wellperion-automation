@@ -4,7 +4,7 @@
 # 2) 플로팅 '문의하기' 버튼 숨김 → Buttonizer 셀렉터 탐지 후 display:none
 # 3) 폼 컨테이너 폭·여백·배경 → 문의 페이지(8394)와 동일 토큰 적용
 #
-# ★ iframe 안 reception_form.html 기능은 0 변경.
+# ★ iframe 폐기 후 폼은 reception_block.html 직접 주입 방식으로 전환. 기능 0 변경.
 # ★ 문의 페이지(8394)·다른 페이지 건드리지 않음.
 #
 # 실행: python scripts\fix_reception_design.py

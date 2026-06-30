@@ -883,7 +883,7 @@ async def run_swap_href(post_id_arg: str, find: str, repl: str) -> int:
 RECEPTION_PAGE_TITLE = "종합접수처"
 # ★ 근본구조 전환(2026-06-30): iframe('미리보기 창') 폐기 → 폼을 페이지 본문에 직접 인라인 주입.
 #   문의 페이지(8394) wp_inquiry_block.html 직접주입과 완전히 동일한 방식.
-#   주입 소스 = reception_block.html (reception_form.html 의 폼·JS·토큰을 .wlp-recept 스코프로 복제).
+#   주입 소스 = reception_block.html (폼·JS·토큰 단일 정본, .wlp-recept 스코프 적용).
 #   ?loc 프리필은 폼 JS가 페이지 URL location.search 에서 직접 읽음(iframe 중계 JS 불필요).
 RECEPTION_BLOCK_FILE = ROOT / "3. 웰페리온 가이드" / "coo" / "reception" / "reception_block.html"
 
