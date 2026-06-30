@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<link rel="icon" type="image/png" href="/wellperion-automation/wellperion_favicon.png">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🏷️ 스포츠클럽 상품 기획 — AI CPO</title>
+<script src="../../_assets/gate.js" charset="utf-8"></script>
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" rel="stylesheet">
+<style>
+:root{
+  --bg:#221F20;
+  --paper:#272422;
+  --paper-raised:#2e2b28;
+  --text:#f0ece7;
+  --dim:#7d7b74;
+  --dim-mid:#9e9b93;
+  --accent:#B79F8A;
+  --accent-bright:#c9b49e;
+  --accent-bg:rgba(183,159,138,0.10);
+  --accent-border:rgba(183,159,138,0.25);
+  --border:#38322e;
+  --border-subtle:rgba(56,50,46,0.6);
+  --green:#6abf7b;--green-bg:rgba(106,191,123,0.10);--green-border:rgba(106,191,123,0.28);
+  --red:#ED5B3F;--red-bg:rgba(237,91,63,0.10);--red-border:rgba(237,91,63,0.28);
+  --yellow:#e6c84e;--yellow-bg:rgba(230,200,78,0.10);--yellow-border:rgba(230,200,78,0.28);
+  --blue:#5b9fd5;--blue-bg:rgba(91,159,213,0.10);--blue-border:rgba(91,159,213,0.28);
+  --purple:#a78bda;--purple-bg:rgba(167,139,218,0.10);--purple-border:rgba(167,139,218,0.28);
+  --orange:#e6944e;--orange-bg:rgba(230,148,78,0.10);--orange-border:rgba(230,148,78,0.28);
+  --teal:#4ec4c4;--teal-bright:#6dd4d4;--teal-bg:rgba(78,196,196,0.10);--teal-border:rgba(78,196,196,0.28);
+  --shadow-card:0 2px 12px rgba(0,0,0,0.35);
+  --shadow-header:0 1px 0 var(--border),0 4px 16px rgba(0,0,0,0.4);
+  --radius-card:14px;
+  --radius-btn:8px;
+  --radius-chip:10px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.6;font-size:15px;min-height:100vh;-webkit-font-smoothing:antialiased;}
+
+/* ─── 헤더 ─── */
+.sticky-top{position:sticky;top:0;z-index:100;background:var(--bg);box-shadow:var(--shadow-header);}
+.header{background:linear-gradient(180deg,#2f2b28 0%,#272422 100%);padding:14px 24px;border-bottom:1px solid var(--border);}
+.header-top{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.header-brand{display:flex;flex-direction:column;gap:3px}
+.header h1{font-size:16px;font-weight:800;margin:0;letter-spacing:-0.01em;display:flex;align-items:center;gap:8px;}
+.header .sub{font-size:11px;color:var(--dim-mid);line-height:1.5}
+.badge{display:inline-flex;align-items:center;font-size:10px;font-weight:700;padding:2px 9px;border-radius:var(--radius-chip);background:var(--accent-bg);color:var(--accent);border:1px solid var(--accent-border);letter-spacing:0.02em;}
+.badge.teal{background:var(--teal-bg);color:var(--teal);border-color:var(--teal-border);}
+.header-actions{display:flex;gap:6px;margin-left:auto;flex-wrap:wrap}
+.action-btn{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;padding:5px 12px;border-radius:var(--radius-btn);background:var(--accent-bg);color:var(--accent);border:1px solid var(--accent-border);text-decoration:none;cursor:pointer;font-family:inherit;transition:background 0.15s,color 0.15s,border-color 0.15s;white-space:nowrap;}
+.action-btn:hover{background:rgba(183,159,138,0.2);color:var(--accent-bright);border-color:rgba(183,159,138,0.4)}
+.action-btn.green{background:var(--green-bg);color:var(--green);border-color:var(--green-border);}
+.action-btn.green:hover{background:rgba(106,191,123,0.2);}
+
+/* ─── 레이아웃 ─── */
+.content{padding:24px;max-width:1100px;margin:0 auto;}
+
+/* ─── 섹션 배지 ─── */
+.section-badge{display:flex;align-items:center;gap:10px;margin:0 0 16px;padding:10px 16px;border-radius:var(--radius-card);font-size:12px;font-weight:600;}
+.section-badge.read{background:var(--accent-bg);border:1px solid var(--accent-border);color:var(--accent);}
+.section-badge.edit{background:var(--teal-bg);border:1px solid var(--teal-border);color:var(--teal);}
+
+/* ─── 섹션 구분선 ─── */
+.section-divider{display:flex;align-items:center;gap:16px;margin:36px 0 24px;}
+.section-divider::before,.section-divider::after{content:'';flex:1;height:1px;background:var(--border);}
+.section-divider span{font-size:13px;font-weight:700;color:var(--dim-mid);letter-spacing:0.06em;white-space:nowrap;}
+
+/* ─── 카드/인포박스 ─── */
+.card{background:var(--paper);border:1px solid var(--border);border-radius:var(--radius-card);padding:18px 20px;margin-bottom:16px;box-shadow:var(--shadow-card);}
+.card-title{font-size:14px;font-weight:700;color:var(--accent-bright);margin-bottom:12px;display:flex;align-items:center;gap:6px;}
+.info-box{background:var(--paper-raised);border:1px solid var(--border);border-radius:10px;padding:12px 16px;margin-top:10px;font-size:13px;color:var(--dim-mid);}
+.info-box strong{color:var(--text);}
+.callout{background:var(--accent-bg);border:1px solid var(--accent-border);border-radius:10px;padding:12px 16px;font-size:13px;color:var(--accent-bright);margin-top:12px;}
+
+/* ─── 테이블 ─── */
+.tbl-wrap{overflow-x:auto;margin-top:10px;}
+table{width:100%;border-collapse:collapse;font-size:12.5px;}
+th{background:var(--paper-raised);color:var(--dim-mid);font-weight:600;padding:7px 10px;text-align:left;border-bottom:1px solid var(--border);white-space:nowrap;}
+td{padding:6px 10px;border-bottom:1px solid var(--border-subtle);vertical-align:middle;}
+tr:last-child td{border-bottom:none;}
+tr:hover td{background:var(--accent-bg);}
+.num{text-align:right;font-variant-numeric:tabular-nums;}
+.dim{color:var(--dim-mid);}
+.tag-badge{display:inline-flex;font-size:10px;font-weight:600;padding:1px 7px;border-radius:99px;white-space:nowrap;}
+.tag-badge.draft{background:var(--yellow-bg);color:var(--yellow);border:1px solid var(--yellow-border);}
+.tag-badge.review{background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue-border);}
+.tag-badge.confirmed{background:var(--green-bg);color:var(--green);border:1px solid var(--green-border);}
+
+/* ─── 기획 카드 그리드 ─── */
+.plan-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px;margin-top:4px;}
+.plan-card{background:var(--paper);border:1px solid var(--border);border-radius:var(--radius-card);padding:16px 18px;box-shadow:var(--shadow-card);position:relative;transition:transform 0.14s,box-shadow 0.14s,border-color 0.14s;}
+.plan-card:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(0,0,0,0.25);border-color:var(--accent-border);}
+.plan-card-head{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:10px;}
+.plan-card-title{font-size:13.5px;font-weight:700;line-height:1.4;}
+.plan-card-meta{font-size:11px;color:var(--dim-mid);margin-top:4px;line-height:1.5;}
+.plan-card-body{font-size:12.5px;color:var(--dim-mid);line-height:1.6;margin-top:6px;}
+.plan-card-body strong{color:var(--text);}
+.plan-card-actions{display:flex;gap:6px;margin-top:12px;flex-wrap:wrap;}
+.btn-sm{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;padding:4px 10px;border-radius:var(--radius-btn);cursor:pointer;font-family:inherit;border:1px solid;transition:background 0.12s;}
+.btn-sm.edit{background:var(--accent-bg);color:var(--accent);border-color:var(--accent-border);}
+.btn-sm.edit:hover{background:rgba(183,159,138,0.2);}
+.btn-sm.del{background:var(--red-bg);color:var(--red);border-color:var(--red-border);}
+.btn-sm.del:hover{background:rgba(237,91,63,0.2);}
+.seed-mark{display:inline-flex;font-size:10px;font-weight:600;padding:1px 6px;border-radius:99px;background:var(--purple-bg);color:var(--purple);border:1px solid var(--purple-border);margin-left:4px;}
+
+/* ─── 모달 ─── */
+.modal-bg{position:fixed;inset:0;background:rgba(20,18,17,0.78);z-index:500;display:flex;align-items:center;justify-content:center;padding:20px;opacity:0;pointer-events:none;transition:opacity 0.18s;}
+.modal-bg.open{opacity:1;pointer-events:auto;}
+.modal{background:var(--paper);border:1px solid var(--border);border-radius:16px;padding:24px;width:100%;max-width:540px;box-shadow:0 20px 60px rgba(0,0,0,0.55);max-height:90vh;overflow-y:auto;}
+.modal h3{font-size:15px;font-weight:800;margin-bottom:18px;}
+.form-row{margin-bottom:14px;}
+.form-row label{display:block;font-size:11px;font-weight:600;color:var(--dim-mid);margin-bottom:5px;letter-spacing:0.04em;}
+.form-row input,.form-row textarea,.form-row select{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:9px 11px;color:var(--text);font:13px/1.5 inherit;outline:none;resize:vertical;}
+.form-row input:focus,.form-row textarea:focus,.form-row select:focus{border-color:var(--accent);}
+.form-row textarea{min-height:80px;}
+.modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:20px;flex-wrap:wrap;}
+.btn-primary{background:var(--accent);color:#1a1918;border:none;border-radius:var(--radius-btn);padding:9px 18px;font:600 13px/1 inherit;cursor:pointer;}
+.btn-primary:hover{background:var(--accent-bright);}
+.btn-cancel{background:none;color:var(--dim-mid);border:1px solid var(--border);border-radius:var(--radius-btn);padding:9px 18px;font:600 13px/1 inherit;cursor:pointer;}
+.btn-cancel:hover{color:var(--text);}
+
+/* ─── 상태 표시 ─── */
+.status-msg{font-size:12px;color:var(--dim-mid);padding:6px 0;min-height:22px;}
+.status-msg.err{color:var(--red);}
+
+/* ─── 반응형 ─── */
+@media(max-width:600px){
+  .content{padding:14px;}
+  .plan-grid{grid-template-columns:1fr;}
+  .modal{padding:18px;}
+}
+</style>
+</head>
+<body>
+
+<div class="sticky-top">
+  <div class="header">
+    <div class="header-top">
+      <div class="header-brand">
+        <h1>🏷️ 스포츠클럽 상품 기획</h1>
+        <div class="sub">AI CPO (시포) · 현행 상품 정리 + 신규 기획 작업대</div>
+      </div>
+      <div class="header-actions">
+        <span class="badge teal">CPO 시포</span>
+        <a href="../../wellperion_guide(main).html" class="action-btn">← ERP 홈</a>
+        <button class="action-btn green" onclick="openModal(null)">+ 새 기획 추가</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="content">
+
+  <!-- ══════════════════════════════════════
+       [상] 현재 상품 한눈 정리
+       ══════════════════════════════════════ -->
+  <div class="section-badge read">📌 상 — 현행 상품 (읽기 참조 · 정적 박제 · 기획 참고용)</div>
+
+  <!-- 멤버십 등급 -->
+  <div class="card">
+    <div class="card-title">🏅 멤버십 등급 (연 12개월 기준)</div>
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr><th>등급</th><th>포함 시설</th><th class="num">연간 요금</th><th class="num">월 환산</th><th>비고</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><strong>플래티넘</strong></td><td>헬스 + 사우나</td><td class="num">3,000,000</td><td class="num dim">250,000</td><td></td></tr>
+          <tr><td><strong>플래티넘+골프</strong></td><td>헬스 + 골프 + 사우나</td><td class="num">3,400,000</td><td class="num dim">283,333</td><td></td></tr>
+          <tr><td><strong>노블레스</strong></td><td>헬스 + 수영 + 사우나</td><td class="num">3,600,000</td><td class="num dim">300,000</td><td></td></tr>
+          <tr><td><strong>노블레스+골프</strong></td><td>헬스 + 골프 + 수영 + 사우나</td><td class="num">4,000,000</td><td class="num dim">333,333</td><td>최상위</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="callout">💡 마스터 앵커 논리 — 월 정상 510,000 × 4종목 × 12개월 = 연 6,120,000 → 연간권 노블레스+골프 4,000,000으로 인하. 연간 절약 2,120,000(35%↓). ※ 전 등급 웰컴팩 제공.</div>
+  </div>
+
+  <!-- 가족/단체/법인 -->
+  <div class="card">
+    <div class="card-title">👨‍👩‍👧‍👦 가족·단체·법인 (플래티넘 기준)</div>
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr><th>구분</th><th class="num">요금</th><th class="num">정상 대비</th><th>조건</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>가족 1인</td><td class="num">3,000,000</td><td class="num dim">기준</td><td>직계가족 한정</td></tr>
+          <tr><td>가족 2인</td><td class="num">5,700,000</td><td class="num" style="color:var(--green);">5.3%↓</td><td>정상 6,000,000</td></tr>
+          <tr><td>가족 3인</td><td class="num">8,400,000</td><td class="num" style="color:var(--green);">7.1%↓</td><td>정상 9,000,000</td></tr>
+          <tr><td>가족 4인</td><td class="num">11,100,000</td><td class="num" style="color:var(--green);">8.1%↓</td><td>정상 12,000,000</td></tr>
+          <tr><td>단체 5~10인</td><td class="num">13,500,000</td><td class="num" style="color:var(--green);">10%↓</td><td></td></tr>
+          <tr><td>법인 11인+</td><td class="num">63,000,000</td><td class="num" style="color:var(--green);">30%↓</td><td>법인 계약</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- 일일권 -->
+  <div class="card">
+    <div class="card-title">🎟️ 일일권 · 입주민 · 패키지</div>
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr><th>구분</th><th class="num">1회</th><th>비고</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>플래티넘 일일권</td><td class="num">14,000</td><td></td></tr>
+          <tr><td>플래티넘+골프 일일권</td><td class="num">15,000</td><td></td></tr>
+          <tr><td>노블레스 일일권</td><td class="num">16,000</td><td></td></tr>
+          <tr><td>노블레스+골프 일일권</td><td class="num">17,000</td><td></td></tr>
+          <tr><td>입주민 일일권</td><td class="num">47,000~55,000</td><td>등급별</td></tr>
+          <tr><td>10매 패키지</td><td class="num">~500,000</td><td>유효기간 2개월</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- 업그레이드 -->
+  <div class="card">
+    <div class="card-title">⬆️ 업그레이드 옵션 (플래티넘 기준 · 연)</div>
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr><th>추가 옵션</th><th class="num">연 추가금</th><th class="num">일 환산</th><th>비고</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>골프 추가</td><td class="num">+400,000</td><td class="num dim">일 1,095</td><td></td></tr>
+          <tr><td>수영 추가</td><td class="num">+600,000</td><td class="num dim">일 1,643</td><td></td></tr>
+          <tr><td>골프+수영 추가</td><td class="num">+1,000,000</td><td class="num dim">일 2,740</td><td></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="info-box">⚠️ <strong>다운그레이드 불가.</strong> 등급 업그레이드만 가능.</div>
+  </div>
+
+  <!-- 재등록 혜택 -->
+  <div class="card">
+    <div class="card-title">🔄 재등록 혜택 · 부가 서비스</div>
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr><th>구분</th><th>내용</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><strong>재등록 기본</strong></td><td>5% 할인 + 일일입장권 3매</td></tr>
+          <tr><td><strong>저이용 특별선택권</strong></td><td>연 90일 미만 이용 시 → 2개월 연장 + 일일입장권 3매</td></tr>
+          <tr><td><strong>풀데이 옵션</strong></td><td>재등록 시 선택 가능</td></tr>
+          <tr><td>개인 락커</td><td>월 10,000</td></tr>
+          <tr><td>골프 락커 (윗층)</td><td>월 15,000</td></tr>
+          <tr><td>골프 락커 (아랫층)</td><td>월 20,000</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- 강습 요금 -->
+  <div class="card">
+    <div class="card-title">🏊 강습 요금 — 성인 수영</div>
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr><th>강습명</th><th class="num">회수</th><th class="num">정회원</th><th class="num">준회원</th><th>유효기간</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>수영 1:1 강습</td><td class="num">4회</td><td class="num">374,000</td><td class="num">434,000</td><td>노블레스 유지</td></tr>
+          <tr><td>수영 1:2 강습</td><td class="num">4회</td><td class="num">308,000</td><td class="num">368,000</td><td></td></tr>
+          <tr><td>수영 단체반 (남)</td><td class="num">8회</td><td class="num">144,000</td><td class="num">330,000</td><td rowspan="2">준회원 +66,000</td></tr>
+          <tr><td>수영 단체반 (여, 10%↓)</td><td class="num">8회</td><td class="num dim">—</td><td class="num">297,000</td></tr>
+          <tr><td>아쿠아로빅</td><td class="num">8회</td><td class="num">132,000</td><td class="num">242,000</td><td></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">💪 강습 요금 — P.T (50분)</div>
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr><th>강습명</th><th class="num">회수</th><th class="num">할인율</th><th class="num">정회원</th><th class="num">준회원</th><th>유효기간</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>패시브 스트레칭 (25분)</td><td class="num">10회</td><td class="num dim">—</td><td class="num">550,000</td><td class="num dim">정회원전용</td><td>2개월</td></tr>
+          <tr><td>P.T</td><td class="num">10회</td><td class="num dim">0%</td><td class="num">1,089,000</td><td class="num">1,239,000</td><td>2개월</td></tr>
+          <tr><td>P.T</td><td class="num">20회</td><td class="num" style="color:var(--green);">5%↓</td><td class="num">2,069,100</td><td class="num">2,369,100</td><td>3개월</td></tr>
+          <tr><td>P.T</td><td class="num">30회</td><td class="num" style="color:var(--green);">10%↓</td><td class="num">2,940,300</td><td class="num">3,390,300</td><td>5개월</td></tr>
+          <tr><td>P.T</td><td class="num">50회</td><td class="num" style="color:var(--green);">15%↓</td><td class="num">4,628,250</td><td class="num">5,378,250</td><td>8개월</td></tr>
+          <tr><td>P.T</td><td class="num">100회</td><td class="num" style="color:var(--green);">25%↓</td><td class="num">8,167,500</td><td class="num">9,667,500</td><td>12개월</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">🧘 강습 요금 — 필라테스 (50분)</div>
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr><th>강습명</th><th class="num">회수</th><th class="num">할인율</th><th class="num">정회원</th><th class="num">준회원</th><th>유효기간</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>필라테스</td><td class="num">10회</td><td class="num dim">0%</td><td class="num">1,089,000</td><td class="num">1,239,000</td><td>2개월</td></tr>
+          <tr><td>필라테스</td><td class="num">20회</td><td class="num dim">0%</td><td class="num">2,069,100</td><td class="num">2,369,100</td><td>3개월</td></tr>
+          <tr><td>필라테스</td><td class="num">30회</td><td class="num" style="color:var(--green);">5%↓</td><td class="num">2,940,300</td><td class="num">3,390,300</td><td>5개월</td></tr>
+          <tr><td>단체반 1:3</td><td class="num">8회</td><td class="num dim">—</td><td class="num">220,000</td><td class="num">340,000</td><td>2개월</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">🎾 강습 요금 — 스쿼시</div>
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr><th>강습명</th><th class="num">회수</th><th>타임</th><th class="num">정회원</th><th class="num">준회원</th><th>유효기간</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>원포인트</td><td class="num">1회</td><td>50분</td><td class="num">130,000</td><td class="num">145,000</td><td>1일</td></tr>
+          <tr><td>강습</td><td class="num">10회</td><td>30분</td><td class="num">594,000</td><td class="num">744,000</td><td>2개월</td></tr>
+          <tr><td>강습</td><td class="num">10회</td><td>50분</td><td class="num">792,000</td><td class="num">942,000</td><td>2개월</td></tr>
+          <tr><td>강습</td><td class="num">30회</td><td>30분</td><td class="num">1,692,900</td><td class="num">2,142,900</td><td>5개월</td></tr>
+          <tr><td>강습</td><td class="num">30회</td><td>50분</td><td class="num">2,257,200</td><td class="num">2,707,200</td><td>5개월</td></tr>
+          <tr><td>국대코치 강습</td><td class="num">10회</td><td>30분</td><td class="num">770,000</td><td class="num">920,000</td><td>2개월</td></tr>
+          <tr><td>국대코치 강습</td><td class="num">10회</td><td>50분</td><td class="num">1,089,000</td><td class="num">1,239,000</td><td>2개월</td></tr>
+          <tr><td>단체반 1:4</td><td class="num">8회</td><td>50분</td><td class="num">198,000</td><td class="num">318,000</td><td>2개월</td></tr>
+          <tr><td>WSC 박스래더/성인동호회</td><td class="num">1회</td><td>2시간</td><td class="num">55,000</td><td class="num dim">—</td><td>1일</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">⛳ 강습 요금 — 골프 (25분)</div>
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr><th>강습명</th><th class="num">회수</th><th class="num">할인율</th><th class="num">정회원</th><th class="num">준회원</th><th>유효기간</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>원포인트</td><td class="num">1회</td><td class="num dim">—</td><td class="num">130,000</td><td class="num">145,000</td><td>1일</td></tr>
+          <tr><td>15분 레슨</td><td class="num">8회</td><td class="num dim">—</td><td class="num">330,000</td><td class="num dim">—</td><td>1개월</td></tr>
+          <tr><td>골프강습</td><td class="num">10회</td><td class="num dim">0%</td><td class="num">650,000</td><td class="num">800,000</td><td>2개월</td></tr>
+          <tr><td>골프강습</td><td class="num">20회</td><td class="num" style="color:var(--green);">5%↓</td><td class="num">1,235,000</td><td class="num">1,535,000</td><td>3개월</td></tr>
+          <tr><td>골프강습</td><td class="num">30회</td><td class="num" style="color:var(--green);">10%↓</td><td class="num">1,755,000</td><td class="num">2,205,000</td><td>5개월</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">👦 강습 요금 — WSC (유소년)</div>
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr><th>종목</th><th>강습명</th><th class="num">회수</th><th class="num">1:1</th><th class="num">1:2</th><th class="num">그룹</th><th>나이</th><th>유효기간</th></tr>
+        </thead>
+        <tbody>
+          <tr><td rowspan="3">수영</td><td>모자수영 강습</td><td class="num">1회</td><td class="num dim">—</td><td class="num dim">—</td><td class="num">66,000</td><td>12~60개월</td><td>1일</td></tr>
+          <tr><td>WSC수영 강습</td><td class="num">1회</td><td class="num dim">—</td><td class="num dim">—</td><td class="num">55,000</td><td>5~16세</td><td>1일</td></tr>
+          <tr><td>WSC수영 강습</td><td class="num">4회</td><td class="num">407,000</td><td class="num">308,000</td><td class="num">209,000<span class="dim">(1:5)</span></td><td>5~16세</td><td>2개월</td></tr>
+          <tr><td rowspan="2">골프</td><td>WSC골프 체험</td><td class="num">1회</td><td class="num dim">—</td><td class="num">55,000</td><td class="num dim">—</td><td>5~16세</td><td>1일</td></tr>
+          <tr><td>WSC골프 강습</td><td class="num">4회</td><td class="num">407,000</td><td class="num">308,000</td><td class="num">616,000<span class="dim">(패밀리)</span></td><td>5~16세</td><td>2개월</td></tr>
+          <tr><td>스쿼시</td><td>WSC스쿼시 강습</td><td class="num">4회</td><td class="num">407,000</td><td class="num">308,000</td><td class="num">209,000<span class="dim">(1:6)</span> / 220,000<span class="dim">(엘리트)</span></td><td>10~16세</td><td>2개월</td></tr>
+          <tr><td rowspan="2">체조</td><td>WSC체조 체험</td><td class="num">1회</td><td class="num dim">—</td><td class="num dim">—</td><td class="num">44,000</td><td>5~16세</td><td>1일</td></tr>
+          <tr><td>WSC체조 강습</td><td class="num">4회</td><td class="num">407,000</td><td class="num">308,000</td><td class="num">209,000<span class="dim">(1:5)</span></td><td>5~16세</td><td>2개월</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════
+       [하] 신규 기획 작업대
+       ══════════════════════════════════════ -->
+  <div class="section-divider"><span>▼ 기획 작업대</span></div>
+  <div class="section-badge edit">✏️ 하 — 신규 기획 (편집·저장 가능 · 시트 공유)</div>
+
+  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:12px;">
+    <div class="status-msg" id="statusMsg">불러오는 중…</div>
+    <div style="display:flex;gap:6px;">
+      <button class="action-btn" onclick="loadPlans()">↺ 새로고침</button>
+      <button class="action-btn green" onclick="openModal(null)">+ 새 기획 추가</button>
+    </div>
+  </div>
+
+  <div class="plan-grid" id="planGrid">
+    <!-- 카드 동적 렌더 -->
+  </div>
+
+</div><!-- /content -->
+
+<!-- ══════════════════════════════════════
+     편집 모달
+     ══════════════════════════════════════ -->
+<div class="modal-bg" id="modalBg" onclick="if(event.target===this)closeModal()">
+  <div class="modal">
+    <h3 id="modalTitle">기획 추가</h3>
+    <input type="hidden" id="editId">
+    <div class="form-row">
+      <label>구분</label>
+      <input type="text" id="editGubun" placeholder="예: 멤버십 / 강습 / 프로모션">
+    </div>
+    <div class="form-row">
+      <label>제안명</label>
+      <input type="text" id="editName" placeholder="한 줄 제안 이름">
+    </div>
+    <div class="form-row">
+      <label>구성</label>
+      <textarea id="editComp" placeholder="상품 구성 상세 설명"></textarea>
+    </div>
+    <div class="form-row">
+      <label>가격 가설</label>
+      <input type="text" id="editPrice" placeholder="예: 3,500,000 / 번들 5% 추가">
+    </div>
+    <div class="form-row">
+      <label>근거</label>
+      <textarea id="editBase" placeholder="기획 근거 · 연계 데이터 · 목표"></textarea>
+    </div>
+    <div class="form-row">
+      <label>상태</label>
+      <select id="editStatus">
+        <option value="초안">초안</option>
+        <option value="검토중">검토중</option>
+        <option value="확정">확정</option>
+      </select>
+    </div>
+    <div class="form-row">
+      <label>작성자</label>
+      <input type="text" id="editAuthor" placeholder="닉네임 또는 이름">
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal()">취소</button>
+      <button class="btn-primary" onclick="submitPlan()">저장</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── 상수 ──────────────────────────────────────────────────────────
+var TODO_API_URL = 'https://script.google.com/macros/s/AKfycbxDwFkrxK1YIaEoSNcuw2MiHiZQ-7o5N6311ytksSyeEd86ZFOhLknOWqQgNArQvZ-7/exec';
+
+// ── 시드 기획안 (서버가 비었을 때만 표시) ─────────────────────────
+var SEEDS = [
+  {
+    id:'SEED-A', 구분:'멤버십', 제안명:'등급 간소화 2축 구조',
+    구성:'4종목 조합 → 베이스(헬스+사우나) + 옵션 토글(수영·골프). 선택 피로 최소화.',
+    가격가설:'베이스 2,800,000 / 수영 옵션 +600,000 / 골프 옵션 +400,000',
+    근거:'시트 본문 "단일/2종목 간소화" 방향 명시·선택 피로↓',
+    상태:'초안', 작성자:'시포', isSeed:true
+  },
+  {
+    id:'SEED-B', 구분:'멤버십×강습 번들', 제안명:'멤버십+강습 번들 패키지',
+    구성:'예) 노블레스 + PT10회 패키지. 멤버십+강습 연계 단일 계약.',
+    가격가설:'노블레스(3,600,000) + PT10회(1,089,000) → 번들 4,500,000(약 4.9%↓)',
+    근거:'강습 객단가↑ + 멤버십 리텐션↑ 동시. 강습 월 3억 목표 연계.',
+    상태:'초안', 작성자:'시포', isSeed:true
+  },
+  {
+    id:'SEED-C', 구분:'라이프스타일', 제안명:'시간대 한정 등급 상품',
+    구성:'데이타임(평일 09~17시)·얼리버드(06~09시) 한정 멤버십. 비혼잡 시간 활용.',
+    가격가설:'데이타임 2,200,000 / 얼리버드 1,800,000 (연간)',
+    근거:'비혼잡 시간 활용 + 진입 가격장벽↓. 신규 고객층 확대.',
+    상태:'초안', 작성자:'시포', isSeed:true
+  },
+  {
+    id:'SEED-D', 구분:'신규 전환', 제안명:'2주 트라이얼 패스',
+    구성:'2주 체험 패스. 체험 후 등록 시 입회비 면제 + 등록 첫 달 10% 할인.',
+    가격가설:'체험 2주: 90,000 / 등록 전환 시 차감',
+    근거:'문의→등록 전환(퍼널 누수)의 직접 레버. 전환율 개선 목표.',
+    상태:'초안', 작성자:'시포', isSeed:true
+  },
+  {
+    id:'SEED-E', 구분:'리텐션', 제안명:'이탈 신호 연계 재등록 오퍼',
+    구성:'5% 할인+저이용 선택권을 통합 회원 관리 이탈 신호(방문↓)와 자동 연계. 맞춤 리텐션 오퍼 발송.',
+    가격가설:'기존 재등록 혜택 + 자동화 비용 최소화',
+    근거:'저이용 특별선택권(연 90일 미만) 기존 제도 활용. 이탈→복귀 전환.',
+    상태:'초안', 작성자:'시포', isSeed:true
+  }
+];
+
+// ── 카드 렌더 ──────────────────────────────────────────────────────
+function statusBadge(s) {
+  var map = {초안:'draft',검토중:'review',확정:'confirmed'};
+  var cls = map[s] || 'draft';
+  return '<span class="tag-badge ' + cls + '">' + (s||'초안') + '</span>';
+}
+function renderCards(items) {
+  var grid = document.getElementById('planGrid');
+  if (!items || !items.length) { grid.innerHTML = '<div class="info-box" style="grid-column:1/-1;text-align:center;padding:24px;">기획안이 없습니다. "새 기획 추가"로 시작하세요.</div>'; return; }
+  grid.innerHTML = items.map(function(it) {
+    var seedMark = it.isSeed ? '<span class="seed-mark">시드</span>' : '';
+    var updAt = it.updated_at ? '<span style="color:var(--dim);font-size:10px;"> · ' + String(it.updated_at).slice(0,10) + '</span>' : '';
+    return '<div class="plan-card" data-id="' + esc(it.id) + '">' +
+      '<div class="plan-card-head">' +
+        '<div>' +
+          '<div class="plan-card-title">' + esc(it.제안명||'') + seedMark + '</div>' +
+          '<div class="plan-card-meta">' + statusBadge(it.상태) + ' · <span style="color:var(--accent-bright);">' + esc(it.구분||'') + '</span>' + updAt + '</div>' +
+        '</div>' +
+      '</div>' +
+      '<div class="plan-card-body">' +
+        '<strong>구성</strong> ' + esc(it.구성||'') + '<br>' +
+        '<strong>가격가설</strong> ' + esc(it.가격가설||'') + '<br>' +
+        '<strong>근거</strong> ' + esc(it.근거||'') +
+      '</div>' +
+      '<div class="plan-card-actions">' +
+        '<button class="btn-sm edit" onclick="openModal(' + JSON.stringify(it) + ')">✎ 편집</button>' +
+        (it.isSeed ? '<button class="btn-sm edit" style="background:var(--teal-bg);color:var(--teal);border-color:var(--teal-border);" onclick="saveSeed(' + JSON.stringify(it) + ')">↑ 시트 저장</button>' : '<button class="btn-sm del" onclick="deletePlan(\'' + esc(it.id) + '\')">✕ 삭제</button>') +
+      '</div>' +
+    '</div>';
+  }).join('');
+}
+function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+// ── 불러오기 ───────────────────────────────────────────────────────
+function setStatus(msg, isErr) {
+  var el = document.getElementById('statusMsg');
+  el.textContent = msg;
+  el.className = 'status-msg' + (isErr ? ' err' : '');
+}
+function loadPlans() {
+  setStatus('불러오는 중…');
+  fetch(TODO_API_URL + '?action=product_plan_list', {redirect:'follow'})
+    .then(function(r){ return r.json(); })
+    .then(function(res) {
+      if (res.ok && res.data && res.data.length > 0) {
+        setStatus('기획안 ' + res.data.length + '건 로드됨');
+        renderCards(res.data);
+      } else {
+        setStatus('시드 기획안 표시 중 (저장 버튼으로 시트에 영속)');
+        renderCards(SEEDS);
+      }
+    })
+    .catch(function() {
+      setStatus('네트워크 오류 — 시드 기획안 표시', true);
+      renderCards(SEEDS);
+    });
+}
+
+// ── 저장 ───────────────────────────────────────────────────────────
+function savePlan(item) {
+  fetch(TODO_API_URL, {
+    method:'POST',
+    mode:'no-cors',
+    headers:{'Content-Type':'text/plain;charset=utf-8'},
+    body: JSON.stringify({action:'product_plan_save', item: item})
+  }).then(function() {
+    setTimeout(loadPlans, 900);
+  }).catch(function() {
+    setTimeout(loadPlans, 900);
+  });
+}
+
+// ── 시드 저장 (isSeed 제거 후 저장) ──────────────────────────────
+function saveSeed(it) {
+  var item = Object.assign({}, it);
+  delete item.isSeed;
+  item.id = 'PP-' + Date.now();
+  setStatus('시트에 저장 중…');
+  savePlan(item);
+}
+
+// ── 삭제 ───────────────────────────────────────────────────────────
+function deletePlan(id) {
+  if (!confirm('이 기획안을 삭제하시겠습니까?')) return;
+  fetch(TODO_API_URL, {
+    method:'POST',
+    mode:'no-cors',
+    headers:{'Content-Type':'text/plain;charset=utf-8'},
+    body: JSON.stringify({action:'product_plan_delete', id: id})
+  }).then(function() {
+    setStatus('삭제 완료. 재조회 중…');
+    setTimeout(loadPlans, 900);
+  });
+}
+
+// ── 모달 ───────────────────────────────────────────────────────────
+function openModal(it) {
+  document.getElementById('editId').value     = it ? (it.id||'') : '';
+  document.getElementById('editGubun').value  = it ? (it.구분||'') : '';
+  document.getElementById('editName').value   = it ? (it.제안명||'') : '';
+  document.getElementById('editComp').value   = it ? (it.구성||'') : '';
+  document.getElementById('editPrice').value  = it ? (it.가격가설||'') : '';
+  document.getElementById('editBase').value   = it ? (it.근거||'') : '';
+  document.getElementById('editStatus').value = it ? (it.상태||'초안') : '초안';
+  document.getElementById('editAuthor').value = it ? (it.작성자||'') : '';
+  document.getElementById('modalTitle').textContent = it && it.id ? '기획 편집' : '기획 추가';
+  document.getElementById('modalBg').classList.add('open');
+}
+function closeModal() {
+  document.getElementById('modalBg').classList.remove('open');
+}
+function submitPlan() {
+  var id = document.getElementById('editId').value || ('PP-' + Date.now());
+  var item = {
+    id: id,
+    구분:    document.getElementById('editGubun').value.trim(),
+    제안명:  document.getElementById('editName').value.trim(),
+    구성:    document.getElementById('editComp').value.trim(),
+    가격가설:document.getElementById('editPrice').value.trim(),
+    근거:    document.getElementById('editBase').value.trim(),
+    상태:    document.getElementById('editStatus').value,
+    작성자:  document.getElementById('editAuthor').value.trim()
+  };
+  if (!item.제안명) { alert('제안명을 입력하세요.'); return; }
+  setStatus('저장 중…');
+  closeModal();
+  savePlan(item);
+}
+
+// ── 게이트 통과 후 앱 시작 ────────────────────────────────────────
+window.startApp = function() { loadPlans(); };
+// 게이트 없이 바로 로드된 경우(이미 통과된 세션)
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', function() {
+    try { if (sessionStorage.getItem('welp_gate_ok') === '1') loadPlans(); } catch(e) {}
+  });
+} else {
+  try { if (sessionStorage.getItem('welp_gate_ok') === '1') loadPlans(); } catch(e) {}
+}
+</script>
+</body>
+</html>
