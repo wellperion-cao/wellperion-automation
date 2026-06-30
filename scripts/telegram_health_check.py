@@ -108,6 +108,47 @@ def _check_rooms(token: str, bot_id: int, rooms: list[tuple[str, int]]) -> list[
     return issues
 
 
+# ── GAS exec URL (daily_scheduler.py 상수와 동일 소스) ───────────────────────
+_VOC_DIAG_URL = (
+    "https://script.google.com/macros/s/"
+    "AKfycbwk2XS1FND9V2xtXlWgsXzgA5p0FG7jVm6YKD74JK_ME_ZvHsNUUfGE5A_8p0X8VcF3gQ/exec"
+)
+_FUNNEL_DIAG_URL = (
+    "https://script.google.com/macros/s/"
+    "AKfycbzdwSCCSSJ6JXLDoWuo7HG0JmBM2iy10TujFQ_O5JbTjnWaN7gOk-ddA4IAvsNfelg0xA/exec"
+)
+
+
+# ── 점검 3a: GAS 설정 진단 프로브 ────────────────────────────────────────────
+def _check_gas_diag() -> list[str]:
+    """VOC·Survey GAS 설정 정상 여부를 ping.
+    네트워크 실패 = WARN 로그만(오탐 방지·경보 제외).
+    hasToken/hasChatId false = 설정 누락 → 경보 흐름에 합류.
+    """
+    issues: list[str] = []
+    probes = [
+        # (이름, URL, action 파라미터, 불리언 필드 목록)
+        ("VOC GAS",    _VOC_DIAG_URL,    "diag",               ["hasToken", "hasChatId"]),
+        ("Survey GAS", _FUNNEL_DIAG_URL, "diag_inquiry_state", []),
+    ]
+    for name, url, action, bool_fields in probes:
+        try:
+            resp = requests.get(url, params={"action": action}, timeout=15)
+            if resp.status_code != 200:
+                print(f"[WARN] {name} diag HTTP {resp.status_code} — 네트워크 이상(경보 제외)", flush=True)
+                continue
+            data = resp.json()
+            if not data.get("ok"):
+                issues.append(f"{name} 설정 이상 — GAS 응답 ok=false: {str(data)[:100]}")
+                continue
+            for field in bool_fields:
+                if not data.get(field):
+                    issues.append(f"{name} 설정 누락({field}=false) — GAS ScriptProperties 미설정")
+        except Exception as e:
+            print(f"[WARN] {name} diag 프로브 예외: {e} — 네트워크 이상(경보 제외)", flush=True)
+    return issues
+
+
 # ── 점검 3: 발송 원장 리컨실 ─────────────────────────────────────────────────
 def _check_log_failures() -> list[str]:
     """오늘자 telegram_sent-*.log 에서 ok=false 건 집계 → 문제 목록 반환."""
@@ -203,7 +244,13 @@ def main() -> None:
     except Exception as e:
         all_issues.append(f"발송 원장 리컨실 예외: {e}")
 
-    # 4. 결과 출력 및 경보
+    # 4. GAS 설정 진단 프로브 (VOC·Survey)
+    try:
+        all_issues.extend(_check_gas_diag())
+    except Exception as e:
+        all_issues.append(f"GAS 진단 프로브 예외: {e}")
+
+    # 5. 결과 출력 및 경보
     if all_issues:
         today_str = datetime.date.today().strftime('%Y-%m-%d')
         alert_msg = (

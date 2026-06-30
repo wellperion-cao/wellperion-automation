@@ -842,7 +842,8 @@ var _VOC_PUBLIC_ACTIONS = {
   voc_types:   true,  // 유형·상태 목록 조회 — 토큰 면제
   reg_submit:  true,  // 종합 접수처 제출 — 토큰 면제
   reg_board:   true,  // 마스킹 공개 보드 — 이름·연락처 가려서 반환, 토큰 면제
-  reg_update:  true   // 상태·담당·메모 갱신 — PII 미포함, 토큰 면제
+  reg_update:  true,  // 상태·담당·메모 갱신 — PII 미포함, 토큰 면제
+  diag:        true   // read-only 진단 — 비밀값 절대 미노출, 불리언만 반환
   // ⚠️ reg_list 는 전체 PII(이름·연락처 원문) 포함 — 절대 public 금지, GATED 유지.
   // voc_list / voc_update 도 게이트 적용.
 };
@@ -855,6 +856,20 @@ function _vCheckAccess_(action, key) {
   var tok = _vAccessProp_('ACCESS_TOKEN');
   if (!tok) return true;                                   // 토큰 미설정 = 안전을 위해 통과
   return String(key || '') === tok;
+}
+
+// ─── 진단 액션 (read-only · 비밀값 절대 미노출) ───
+// hasToken/hasChatId/hasSpreadsheetId: 값 존재 여부만 반환(값 자체 절대 노출 금지).
+// 헬스체크(telegram_health_check.py)가 매일 ping — GET ?action=diag 로 호출.
+function _vDiag() {
+  return _vJson({
+    ok:               true,
+    system:           'voc',
+    hasToken:         !!_vprop('TELEGRAM_BOT_TOKEN'),
+    hasChatId:        !!_vprop('TELEGRAM_CHAT_ID'),
+    hasSpreadsheetId: !!_vprop('SPREADSHEET_ID'),
+    seq:              parseInt(_vprop('VOC_SEQ') || '0', 10)
+  });
 }
 
 // 공용 라우터 (doGet/doPost)
@@ -875,6 +890,9 @@ function _vProcess(action, body, params) {
       return _vJson({ ok: false, error: '요청이 많아 잠시 후 다시 시도해 주세요. (중복·과다 접수 방지)', code: 'RATE_LIMIT' });
     }
   }
+
+  // ── 진단 액션 ──
+  if (action === 'diag') return _vDiag();
 
   // ── 종합 접수처 액션 ──
   if (action === 'reg_submit') return _regSubmit(body);
