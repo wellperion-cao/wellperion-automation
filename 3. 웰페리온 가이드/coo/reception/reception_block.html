@@ -26,6 +26,12 @@ body.page-id-8434 .page-title,
 body.page-id-8434 .title-container h1,
 body.page-id-8434 .page-header h1{display:none!important}
 
+/* 종합접수처 페이지(8434) 한정 — 헤더 로고 상단 잘림 해소 (문의 페이지 8394와 동일값 차용) */
+body.page-id-8434 #header-outer #logo{margin-top:32px!important}
+@media (max-width:1000px){
+  body.page-id-8434 #header-outer #logo{margin-top:22px!important}
+}
+
 /* ── Design tokens + 베이스 (문의 페이지와 동일 팔레트, .wlp-recept 스코프) ── */
 .wlp-recept{
   --bg:#faf9f7;
@@ -40,7 +46,9 @@ body.page-id-8434 .page-header h1{display:none!important}
   --red:#c0392b;
   --blue:#2471a3;
   --orange:#d68910;
-  background:var(--bg);
+  /* 배경 2겹 제거 — 문의 페이지(8394)처럼 래퍼 배경 없음. 회색 페이지 배경 1겹만 보이게.
+     (--bg 토큰은 입력칸·photo-zone 배경용으로 유지) */
+  background:transparent;
   color:var(--text);
   line-height:1.6;
   font-size:16px;
@@ -52,7 +60,8 @@ body.page-id-8434 .page-header h1{display:none!important}
 .wlp-recept *{box-sizing:border-box;margin:0;padding:0}
 .wlp-recept button{font-family:inherit;-webkit-appearance:none;appearance:none;cursor:pointer}
 .wlp-recept a{text-decoration:none}
-.wlp-recept .wrap{max-width:540px;margin:0 auto;padding:40px 20px 68px}
+/* 문의 페이지(8394) 골격 차용 — 상·하 여백 동일 리듬(70/80). 폼이라 폭 540·좌우 20 유지 */
+.wlp-recept .wrap{max-width:540px;margin:0 auto;padding:70px 16px 80px}
 
 /* ── Brand Header ── */
 .wlp-recept .brand{text-align:center;margin-bottom:28px}
