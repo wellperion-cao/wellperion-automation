@@ -958,5 +958,19 @@
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "ae169772f2d8acf52accd2732fac404377025efb",
     "ship_no": 4
+  },
+  {
+    "task_id": "COO-2026-06-30-ADHOC-167add85",
+    "clevel": "coo",
+    "title": "[시우] 종합접수처(8434) Buttonizer 플로팅 버튼 재숨김 [시우]/reception",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-06-30",
+    "processed_at": "2026-06-30",
+    "artifact": "직접주입 전환(iframe 폐기) 후 페이지 콘텐츠 교체로 이전 숨김 CSS 유실.\nreception_block.html <style> 안(ENG 숨김 옆)에 page-id-8434 한정 규칙 추가:\n  body.page-id-8434 .buttonizer,\n  body.page-id-8434 #buttonizer,\n  body.page-id-8434 [class*=\"buttonizer\"] { display:none!important }\n→ 페이지 콘텐츠와 한 몸이라 이후 재주입에도 유실 없음. (CLI ad-hoc · 커밋 167add85)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "167add8563fab73e0d01b6f96f3b63735d9ffd31",
+    "ship_no": 219
   }
 ]
