@@ -86,7 +86,8 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 .submitter-bar-split .sb-time{flex:1;font-size:15px;font-weight:700;color:var(--text)}
 .timer-btn{flex:0 0 auto;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:8px 12px;border-radius:8px;font-size:14px;font-family:inherit;font-weight:700;cursor:pointer;white-space:nowrap}
 .timer-btn.running{background:#c0392b;border-color:#c0392b;color:#fff}
-.timer-btn.done{background:var(--paper);color:var(--accent)}
+.timer-btn.done{background:var(--paper);color:var(--accent);cursor:default;pointer-events:none;opacity:0.85}
+.timer-reset-btn{flex:0 0 auto;background:none;border:1px solid var(--border);color:#888;padding:4px 8px;border-radius:6px;font-size:12px;font-family:inherit;cursor:pointer;white-space:nowrap;margin-left:6px}
 .submitter-bar-split select{flex:1;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:10px 14px;border-radius:8px;font-size:15px;font-family:inherit;font-weight:600;min-width:0}
 .submitter-bar-split .submitter-input{flex:1;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:10px 14px;border-radius:8px;font-size:15px;font-family:inherit;font-weight:600;min-width:0}
 .submitter-input::placeholder{color:var(--dim);font-weight:500}
@@ -1001,6 +1002,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   <div class="submitter-bar submitter-bar-split">
     <div class="sb-half">
       <button class="timer-btn" id="timerBtnM" onclick="toggleCheckTimer('m')">▶ 점검 시작</button>
+      <button class="timer-reset-btn no-print" id="timerResetM" style="display:none" onclick="resetCheckTimer('m')">↺ 재측정</button>
       <span class="sb-time" id="checkTimeM">--:--</span>
     </div>
     <div class="sb-half">
@@ -1044,6 +1046,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   <div class="submitter-bar submitter-bar-split">
     <div class="sb-half">
       <button class="timer-btn" id="timerBtnF" onclick="toggleCheckTimer('f')">▶ 점검 시작</button>
+      <button class="timer-reset-btn no-print" id="timerResetF" style="display:none" onclick="resetCheckTimer('f')">↺ 재측정</button>
       <span class="sb-time" id="checkTimeF">--:--</span>
     </div>
     <div class="sb-half">
@@ -2793,24 +2796,30 @@ function timerGatePassed(gender){
 /* 해당 날짜+성별(+라운드) STATE 값으로 타이머 UI 복원 (없으면 idle). drawUI 끝에서 호출. */
 function setCheckTime(gender){
   const btn=document.getElementById(gender==='f'?'timerBtnF':'timerBtnM');
+  const resetBtn=document.getElementById(gender==='f'?'timerResetF':'timerResetM');
   const el=document.getElementById(gender==='f'?'checkTimeF':'checkTimeM');
   if(!btn||!el)return;
   const k=activeTimerKeys(gender);
   const start=STATE[k.sk];
   const end=STATE[k.ek];
   btn.classList.remove('running','done');
+  btn.removeAttribute('disabled');
+  if(resetBtn) resetBtn.style.display='none';
   if(!start){
     btn.textContent='▶ 점검 시작';el.textContent='--:--';
   }else if(start&&!end){
     btn.textContent='■ 점검 완료';btn.classList.add('running');
     el.textContent='시작 '+_hhmm(start)+' (진행중)';
   }else{
-    btn.textContent='↺ 다시';btn.classList.add('done');
     const dur=_timerDuration(start,end);
-    el.textContent=_hhmm(start)+' → '+_hhmm(end)+(dur!=null?' ('+dur+'분)':'');
+    btn.textContent='✓ 완료 '+_hhmm(start)+'→'+_hhmm(end)+(dur!=null?' ('+dur+'분)':'');
+    btn.classList.add('done');
+    btn.setAttribute('disabled','');
+    el.textContent='';
+    if(resetBtn) resetBtn.style.display='';
   }
 }
-/* idle→running(시작 기록) → done(완료·소요분) → idle(리셋, 새 점검) */
+/* idle→running(시작 기록) → done(완료·소요분). done 상태 클릭은 no-op — 재측정은 resetCheckTimer로만. */
 function toggleCheckTimer(gender){
   const d=getDateG(gender);
   const k=activeTimerKeys(gender);
@@ -2820,11 +2829,18 @@ function toggleCheckTimer(gender){
     STATE[sk]=Date.now();delete STATE[ek];
   }else if(start&&!end){            // running → done
     STATE[ek]=Date.now();
-  }else{                            // done → idle (새 점검)
-    delete STATE[sk];delete STATE[ek];
   }
+  // done 상태에서 클릭 = no-op (메인 버튼은 disabled라 여기까지 오지 않음)
   saveState(d,gender);
   setCheckTime(gender);
+}
+/* 완료 후 재측정 — 확인창 통과 시에만 시작·종료 삭제하고 idle로 복귀. */
+function resetCheckTimer(gender){
+  if(!confirm('측정한 점검 시간을 지우고 다시 잴까요?')) return;
+  const d=getDateG(gender);
+  const k=activeTimerKeys(gender);
+  delete STATE[k.sk]; delete STATE[k.ek];
+  saveState(d,gender); setCheckTime(gender);
 }
 
 /* v2.48 — 점검 항목 사용자 수정 기능. v2.49 onclick HTML 충돌 fix
