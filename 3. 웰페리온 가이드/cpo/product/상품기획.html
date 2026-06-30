@@ -504,6 +504,13 @@ tr:hover td{background:var(--accent-bg);}
   <div id="tab-policy" class="tab-panel">
     <div class="section-badge policy">💳 요금 정책 — 현행 운영 규정 · 26년 적용 기준</div>
 
+    <!-- 무할인 원칙 배너 -->
+    <div class="callout red" style="margin-bottom:20px;font-size:13.5px;line-height:1.7;border-radius:12px;padding:16px 20px;">
+      🚫 <strong>무할인 원칙 (2026 전환)</strong> — 웰페리온은 가격 할인 정책을 폐지합니다.<br>
+      할인 대신 <strong>정가 + 비가격 혜택</strong>(서비스·웰컴팩·등급 혜택)으로 가치를 제공합니다.<br>
+      <span style="font-size:12px;opacity:0.85;">계약 중 기존요금 보장 · 재등록 시 새 정가 적용 · 2년 주기 인상 유지(26.10 / 28.10)</span>
+    </div>
+
     <!-- 1. 신규 등록 & 웰컴패키지 -->
     <div class="accordion open" id="acc1">
       <div class="acc-header" onclick="toggleAcc('acc1')">
@@ -514,11 +521,13 @@ tr:hover td{background:var(--accent-bg);}
         <div class="acc-badges">
           <span class="num-badge blue">분기 기획</span>
           <span class="num-badge accent">공제금 주의</span>
+          <span class="num-badge red">가격 할인 아님</span>
         </div>
         <span class="acc-chevron">▼</span>
       </div>
       <div class="acc-body">
         <p><strong>분기별 신규 기획</strong> — 1~3월 / 4~6월 / 7~9월 / 10~12월 단위 기획. 회장 보고 체계.</p>
+        <div class="callout green" style="margin-bottom:10px;">✅ 가격 할인 아닌 <strong>웰컴 가치 기획</strong> 중심으로 운영 — 서비스·경험·혜택 구성이 핵심, 가격 인하 기획 금지.</div>
         <p><strong>웰컴패키지 구성</strong></p>
         <ul>
           <li>바우처 일일입장권 <strong>3매</strong></li>
@@ -561,26 +570,29 @@ tr:hover td{background:var(--accent-bg);}
         </div>
         <div class="section-divider" style="margin:14px 0 12px;"><span>가족 요금</span></div>
         <p style="font-size:13px;color:var(--dim-mid);">2번째 가족부터 각 <strong style="color:var(--text);">270만원</strong> · 가족증명 첨부 필수</p>
+        <div class="callout red" style="margin-bottom:10px;">🚫 <strong>가족 할인 폐지 → 정가 적용</strong> — 가족 혜택은 웰컴팩 중복 제공·우선 서비스(비가격 혜택)로 대체. 아래 수치는 현행 참고용.</div>
         <div class="tbl-wrap">
           <table>
             <thead>
-              <tr><th>가족수</th><th class="num">합계</th><th class="num">절감률</th></tr>
+              <tr><th>가족수</th><th class="num">현행 합계 (참고)</th><th class="num">전환 방향</th></tr>
             </thead>
             <tbody>
-              <tr><td>2인</td><td class="num">5,700,000</td><td class="num"><span class="num-badge green">5%↓</span></td></tr>
-              <tr><td>3인</td><td class="num">8,400,000</td><td class="num"><span class="num-badge green">6.7%↓</span></td></tr>
-              <tr><td>4인</td><td class="num">11,100,000</td><td class="num"><span class="num-badge green">7.5%↓</span></td></tr>
+              <tr><td>2인</td><td class="num dim">5,700,000</td><td class="num"><span class="num-badge red">정가 전환</span></td></tr>
+              <tr><td>3인</td><td class="num dim">8,400,000</td><td class="num"><span class="num-badge red">정가 전환</span></td></tr>
+              <tr><td>4인</td><td class="num dim">11,100,000</td><td class="num"><span class="num-badge red">정가 전환</span></td></tr>
             </tbody>
           </table>
         </div>
         <div class="section-divider" style="margin:14px 0 12px;"><span>법인·단체</span></div>
+        <div class="callout red" style="margin-bottom:10px;">🚫 <strong>가격 할인 폐지/전환</strong> — 정가 기준·기명 관리 유지. 아래 수치는 현행 참고용.</div>
         <ul>
-          <li><strong>5인</strong> — 1,350만원 (10%↓) · 사업자등록증 · 휴회불가 · 양도 1회 5만</li>
-          <li><strong>10인</strong> — 2,550만원 (15%↓) · 동일 조건</li>
+          <li><strong>5인</strong> — 현행 1,350만원 <span class="num-badge red" style="vertical-align:middle;">정가 전환</span> · 사업자등록증 · 휴회불가 · 양도 1회 5만</li>
+          <li><strong>10인</strong> — 현행 2,550만원 <span class="num-badge red" style="vertical-align:middle;">정가 전환</span> · 동일 조건</li>
         </ul>
         <div class="section-divider" style="margin:14px 0 12px;"><span>회원 소개</span></div>
         <p>소개자 이용권 <strong>5매</strong> + 선물 <strong>15만원 상당</strong></p>
-        <div class="callout yellow" style="margin-top:12px;">📅 <strong>2년 주기 인상 예정</strong> — 2026년 10월 / 2028년 10월</div>
+        <div class="callout green" style="margin-top:8px;margin-bottom:0;">✅ <strong>가격 할인 아님 = 비가격 혜택, 유지</strong> — 이용권·선물은 가격 인하가 아닌 서비스 제공이므로 무할인 원칙과 별개.</div>
+        <div class="callout yellow" style="margin-top:12px;">📅 <strong>2년 주기 인상 유지 + 인상폭 상향</strong> — 2026년 10월 / 2028년 10월 · 상세 시나리오는 '기획 작업대' 참조</div>
       </div>
     </div>
 
@@ -592,14 +604,16 @@ tr:hover td{background:var(--accent-bg);}
           <span class="acc-title">재등록 정책</span>
         </div>
         <div class="acc-badges">
-          <span class="num-badge green">5% 고정 할인</span>
+          <span class="num-badge red">재등록 가격할인 폐지</span>
+          <span class="num-badge green">비가격 혜택 유지</span>
         </div>
         <span class="acc-chevron">▼</span>
       </div>
       <div class="acc-body">
+        <div class="callout red" style="margin-bottom:12px;">🚫 <strong>재등록 가격 할인 폐지</strong> — 현행 5% 할인은 무할인 원칙으로 전환. 혜택은 바우처·사은품(비가격)으로 유지.</div>
         <ul>
-          <li>할인율 <strong>5% 고정</strong> (횟수 무관)</li>
-          <li>바우처 일일입장권 <strong>3매</strong> 제공</li>
+          <li>재등록 가격 할인 <strong>폐지</strong> <span class="num-badge red" style="vertical-align:middle;">전환</span> (현행 5% 고정 참고용)</li>
+          <li>바우처 일일입장권 <strong>3매</strong> 제공 (비가격 혜택, 유지)</li>
           <li><strong>90일 미만</strong> 이용 회원 → 2개월 연장 + 일일입장권 3매 (저이용 특별선택권)</li>
           <li>만기 후 <strong>1년 내</strong> 등록 시 재등록 혜택 / 1년 경과 시 신규 혜택 적용</li>
           <li>풀데이 추가요금 기준 <strong>240일</strong></li>
@@ -746,6 +760,10 @@ tr:hover td{background:var(--accent-bg);}
   <div id="tab-workshop" class="tab-panel">
     <div class="section-badge edit">✏️ 신규 기획 작업대 — 편집·저장 가능 · 시트 공유</div>
 
+    <div class="callout" style="margin-bottom:16px;font-size:13.5px;line-height:1.8;border-radius:12px;padding:16px 20px;">
+      🏛️ <strong>1순위 = 할인 아닌 프리미엄 차별화</strong> — 내부 시설·비품·어메니티 셋업으로 정가의 가치를 경험으로 증명합니다. 가성비가 아니라 말 그대로 프리미엄.
+    </div>
+
     <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:12px;">
       <div class="status-msg" id="statusMsg">불러오는 중…</div>
       <div style="display:flex;gap:6px;">
@@ -829,38 +847,97 @@ var TODO_API_URL = 'https://script.google.com/macros/s/AKfycbxDwFkrxK1YIaEoSNcuw
 
 // ── 시드 기획안 (서버가 비었을 때만 표시) ─────────────────────────
 var SEEDS = [
+  // ── 프리미엄차별화 (centerpiece) ──────────────────────────────────
   {
-    id:'SEED-A', 구분:'멤버십', 제안명:'등급 간소화 2축 구조',
+    id:'SEED-P1', 구분:'프리미엄차별화', 제안명:'🚿 라커·샤워·세면 어메니티',
+    구성:'고급 브랜드 스킨케어·바디 어메니티, 호텔급 가운·타월, 드라이/스타일링 바',
+    가격가설:'정가 정당화·체험→등록 전환↑',
+    근거:'어메니티=회원 체감 차별 1순위',
+    상태:'초안', 작성자:'시포', isSeed:true
+  },
+  {
+    id:'SEED-P2', 구분:'프리미엄차별화', 제안명:'💆 회복·웰니스 시설',
+    구성:'사우나(건식·습식·소금)·냉온탕·생크몽드 연계 바디케어·회복 라운지·스트레칭존',
+    가격가설:'노블레스급 가치·체류시간↑',
+    근거:'회복 수요 고성장',
+    상태:'초안', 작성자:'시포', isSeed:true
+  },
+  {
+    id:'SEED-P3', 구분:'프리미엄차별화', 제안명:'☕ 라운지·F&B',
+    구성:'멤버 라운지·충전형 카페·헬시스낵·프로틴/스무디 바',
+    가격가설:'커뮤니티·LTV·체류↑',
+    근거:'프리미엄 클럽 표준',
+    상태:'초안', 작성자:'시포', isSeed:true
+  },
+  {
+    id:'SEED-P4', 구분:'프리미엄차별화', 제안명:'🕯️ 감각·앰비언스',
+    구성:'시그니처 향·음악·조도·온습도·청결 5성 표준화',
+    가격가설:'브랜드 각인·재등록↑',
+    근거:'무형 경험이 프리미엄 인지를 좌우',
+    상태:'초안', 작성자:'시포', isSeed:true
+  },
+  {
+    id:'SEED-P5', 구분:'프리미엄차별화', 제안명:'🛎️ 서비스·컨시어지',
+    구성:'발렛·1:1 컨시어지(FAN VIP)·세신·개인 라커 셋업·예약 우선',
+    가격가설:'상위 등급 차별·VVIP 유지',
+    근거:'등급제(FAN VIP)와 연계',
+    상태:'초안', 작성자:'시포', isSeed:true
+  },
+  {
+    id:'SEED-P6', 구분:'프리미엄차별화', 제안명:'👦 유소년·가족 존',
+    구성:'WSC 전용 공간·키즈 어메니티·가족 라운지·안전 설계',
+    가격가설:'가족 멤버십·유소년 강습 연계 매출',
+    근거:'가족 정가 전환과 짝',
+    상태:'초안', 작성자:'시포', isSeed:true
+  },
+  {
+    id:'SEED-P7', 구분:'프리미엄차별화', 제안명:'📦 비품 표준·브랜딩',
+    구성:'타월·생수·소독·정수·운동기구 소모비품 프리미엄 일관 브랜딩',
+    가격가설:'일관된 고급 인상·운영 품질',
+    근거:'디테일이 프리미엄을 완성',
+    상태:'초안', 작성자:'시포', isSeed:true
+  },
+  // ── 가격전략 (플래그십) ────────────────────────────────────────────
+  {
+    id:'SEED-G1', 구분:'가격전략', 제안명:'💹 무할인 + 2년주기 인상폭 상향 기준안',
+    구성:'원칙=할인 폐지·정가 일원화 / 주기=짝수해 10월(26.10·28.10) / 적용=계약 중 기존요금 보장·재등록 시 새 정가',
+    가격가설:'인상폭 시나리오(경영 결재 택1) ①등급 정률 +10~15%/주기 ②종목 정액 +50~100만/주기 ③정원 충족률 연동 차등',
+    근거:'멤버십 시트 1,000~1,500명 정원충족·종목별 100만 인상 시뮬 + 할인 소멸분이 실질 인상에 가산',
+    상태:'초안', 작성자:'시포', isSeed:true
+  },
+  // ── 상품구조 ──────────────────────────────────────────────────────
+  {
+    id:'SEED-A', 구분:'상품구조', 제안명:'등급 간소화 2축 구조',
     구성:'4종목 조합 → 베이스(헬스+사우나) + 옵션 토글(수영·골프). 선택 피로 최소화.',
     가격가설:'베이스 2,800,000 / 수영 옵션 +600,000 / 골프 옵션 +400,000',
     근거:'시트 본문 "단일/2종목 간소화" 방향 명시·선택 피로↓',
     상태:'초안', 작성자:'시포', isSeed:true
   },
   {
-    id:'SEED-B', 구분:'멤버십×강습 번들', 제안명:'멤버십+강습 번들 패키지',
-    구성:'예) 노블레스 + PT10회 패키지. 멤버십+강습 연계 단일 계약.',
-    가격가설:'노블레스(3,600,000) + PT10회(1,089,000) → 번들 4,500,000(약 4.9%↓)',
+    id:'SEED-B', 구분:'상품구조', 제안명:'멤버십+강습 정가 묶음 패키지',
+    구성:'예) 노블레스 + PT10회 정가 묶음. 묶음 할인 아님, 정가 묶음(통합 편의·LTV). 멤버십+강습 연계 단일 계약.',
+    가격가설:'노블레스(3,600,000) + PT10회(1,089,000) → 번들 정가 합산',
     근거:'강습 객단가↑ + 멤버십 리텐션↑ 동시. 강습 월 3억 목표 연계.',
     상태:'초안', 작성자:'시포', isSeed:true
   },
   {
-    id:'SEED-C', 구분:'라이프스타일', 제안명:'시간대 한정 등급 상품',
-    구성:'데이타임(평일 09~17시)·얼리버드(06~09시) 한정 멤버십. 비혼잡 시간 활용.',
+    id:'SEED-C', 구분:'상품구조', 제안명:'시간대 상품 (데이타임·얼리버드)',
+    구성:'데이타임(평일 09~17시)·얼리버드(06~09시) 한정 멤버십. 저가 아닌 정가 차등(비혼잡 가치).',
     가격가설:'데이타임 2,200,000 / 얼리버드 1,800,000 (연간)',
-    근거:'비혼잡 시간 활용 + 진입 가격장벽↓. 신규 고객층 확대.',
+    근거:'비혼잡 시간 활용 + 비혼잡 가치 차등 정가. 신규 고객층 확대.',
     상태:'초안', 작성자:'시포', isSeed:true
   },
   {
-    id:'SEED-D', 구분:'신규 전환', 제안명:'2주 트라이얼 패스',
-    구성:'2주 체험 패스. 체험 후 등록 시 입회비 면제 + 등록 첫 달 10% 할인.',
-    가격가설:'체험 2주: 90,000 / 등록 전환 시 차감',
+    id:'SEED-D', 구분:'상품구조', 제안명:'신규 가치 패키지 (웰컴 강화)',
+    구성:'유료 체험/바우처 중심. 입회비 면제 등 할인성 요소 제거 → 웰컴팩 강화(경험 가치) 대체.',
+    가격가설:'체험 바우처 정가 유지 · 전환 시 웰컴팩 증정(비가격)',
     근거:'문의→등록 전환(퍼널 누수)의 직접 레버. 전환율 개선 목표.',
     상태:'초안', 작성자:'시포', isSeed:true
   },
   {
-    id:'SEED-E', 구분:'리텐션', 제안명:'이탈 신호 연계 재등록 오퍼',
-    구성:'5% 할인+저이용 선택권을 통합 회원 관리 이탈 신호(방문↓)와 자동 연계. 맞춤 리텐션 오퍼 발송.',
-    가격가설:'기존 재등록 혜택 + 자동화 비용 최소화',
+    id:'SEED-E', 구분:'상품구조', 제안명:'비가격 리텐션 (서비스·등급 혜택)',
+    구성:'할인 리텐션 제거 → 서비스·등급 혜택 리텐션. 이탈 신호(방문↓)와 자동 연계. 맞춤 비가격 오퍼 발송.',
+    가격가설:'기존 재등록 비가격 혜택 유지 + 자동화 비용 최소화',
     근거:'저이용 특별선택권(연 90일 미만) 기존 제도 활용. 이탈→복귀 전환.',
     상태:'초안', 작성자:'시포', isSeed:true
   }
