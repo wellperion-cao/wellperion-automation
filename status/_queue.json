@@ -62,11 +62,13 @@
     "task_id": "CMO-2026-06-26-M4-METRIC-HONESTY",
     "clevel": "cmo",
     "title": "[시모] M4 대시보드 지표 정직화 — '실측 등록'을 GM 보고 단일기준으로 + '추정 전환' 라벨 통일 + 죽은 배선 제거 + 문의폼 출처필드 필수화",
-    "status": "IN_PROGRESS",
+    "status": "DONE",
+    "terminal": true,
+    "processed_at": "2026-06-30",
     "priority": "⛴️여객선",
     "enqueued_at": "2026-06-26",
     "note": "[2026-06-26 GM 결정#5] M4 GM 보고 기준=실측 등록(추정 전환 아님). ✅대시보드 정직화 완료·라이브 배포(2026-06-26): 대시보드='실측 등록' GM기준 명시·강습 '누적' 라벨 분리·'월말예상=단순 선형 추정' 병기·'콘텐츠별 문의 유입'→'콘텐츠별 클릭 순위(문의귀속 아님)' 정정·죽은배선 6개(fc-*/funnel-* JS+.funnel-stage/.s1~5 CSS) 제거(라이브 .funnel-stages 퍼널바 보존). 월간보고서=정의 콜아웃(등록 실측/전환 추정)·전환 전부 '추정' 라벨 통일(KPI표·요약·채널퍼널). 로컬 검증 콘솔에러0·라벨DOM확인, Pages 라이브 반영 확인. 잔여 핵심=문의폼 '어떻게 알고 오셨나요?' 필수화(출처미상43% 해소 레버, WP폼 수정=시포 협업). 진단서 status/briefs/CMO-2026-06-26-M1-M5-AUDIT.md.",
-    "next": "잔여=문의폼 출처필드('어떻게 알고 오셨나요?') 필수화(시포 협업·WP폼). 이게 채널 ROI·UTM 귀속의 진짜 레버. + (선택)월간보고서 ?ym 월선택.",
+    "next": "🏁 입항(2026-06-30) — M4 대시보드 정직화 본체 완료(실측등록 GM기준·추정 라벨통일·죽은배선 제거, 라이브 배포). 잔여였던 '출처 귀속'은 배113(UTM 6폼 prefill, 06-30 라이브)이 흡수=콘텐츠별 문의귀속 자동화로 해결. 🔗 다음=2주 데이터 축적 후 채널 ROI 확인. (선택 월간보고서 ?ym은 사소·필요시).",
     "ship_no": 186
   },
   {
@@ -274,13 +276,15 @@
     "id": "CMO-2026-06-23-FUNNEL-UTM-FORM-CAPTURE",
     "clevel": "cmo",
     "title": "[시모] UTM 문의제출 귀속 — 구글폼 prefill(utm 필드 추가)로 문의 건수까지 콘텐츠별 집계",
-    "status": "IN_PROGRESS",
+    "status": "DONE",
+    "terminal": true,
+    "processed_at": "2026-06-30",
     "priority": "NORMAL",
     "enqueued_at": "2026-06-23",
     "note": "UTM 귀속 6폼 중 3폼 라이브 배선 완료(홈 /ko/inquiry 반영·entryId 검증): 멤버십=866460284 · 공간렌트=285015675 · 비즈니스파트너=1850207696. 나머지 3폼(성인강습·유소년강습·여름방학특강)은 cao 편집권한 없음(다른 계정 소유 폼)→ '유입경로(자동)' 필드 추가 불가 → 매핑 제외(원래 링크 유지·무중단). Survey.js add_utm_field에 viewUrl/DriveApp 폼ID 안전해석(게시URL검증·유니크매칭·listOnly 진단) 추가·배포 @69. wp_inquiry_block.html 프리필 일반화(버튼명→entryId 매핑+범용 wpPrefillForm). WP 8394 주입·라이브 검증 완료. ※잔여: 3폼은 폼 소유 계정서 편집공유 받거나 직접 필드추가 필요.",
     "extra": "[2026-06-30 시모 자율] GM이 cao 편집권한 가능 확인(내 '권한없음' 판단 오류). add_utm_field를 formId 직접호출(JSON POST)로 3폼 UTM 필드 추가 성공: 멤버십 entry=2135419713 · 성인강습=1133812410 · 유소년강습=764678574(전부 created). wp_inquiry_block.html WP_PREFILL_MAP에 3폼 배선 + 성인·유소년 버튼 wpPrefillForm 추가(커밋 1e146491). WP 8394 초안 주입 완료(본문검증 OK). ★남은 단계=GM이 초안 확인 후 publish-inquiry로 라이브 발행(발행 게이트).",
     "ship_no": 113,
-    "next": "👉 GM: WP 8394 초안(6폼 UTM 배선) 확인 → publish-inquiry로 라이브 발행. 그러면 콘텐츠 링크 utm이 6폼 전부 '유입경로(자동)'에 프리필 → 문의 콘텐츠귀속 완성. (여름특강폼은 별도 1폼 더 있으면 동일 처리 가능)"
+    "next": "🏁 입항(2026-06-30) — WP 8394 라이브 발행 완료·검수 통과(라이브 /ko/inquiry에 6폼 wpPrefillForm·신규3 entry 1133812410·764678574·2135419713 확인). 콘텐츠 utm→6폼 '유입경로(자동)' 프리필 작동. 🔗 다음=2주 데이터 축적 후 콘텐츠별 문의귀속 대시보드 확인(배106 평가환류와 연결)."
   },
   {
     "task_id": "CMO-2026-06-27-OFFICIAL-FACILITY-LESSON-6",

@@ -881,39 +881,26 @@ async def run_swap_href(post_id_arg: str, find: str, repl: str) -> int:
 
 
 RECEPTION_PAGE_TITLE = "종합접수처"
-RECEPTION_IFRAME_HTML = (
-    "<style>"
-    "h1.entry-title,.entry-title,.post-title,h1.page-title,"
-    ".page-header h1,.title-container h1{display:none!important}"
-    "</style>"
-    '<iframe id="recptForm"'
-    ' src="https://wellperion-cao.github.io/wellperion-automation/coo/reception/reception_form.html"'
-    ' width="100%" height="950"'
-    ' style="border:0;display:block;max-width:100%;"'
-    ' loading="lazy">'
-    "</iframe>"
-    "<script>"
-    "(function(){"
-    "var loc=new URLSearchParams(location.search).get('loc');"
-    "if(loc){"
-    "var f=document.getElementById('recptForm');"
-    "f.src='https://wellperion-cao.github.io/wellperion-automation/coo/reception/reception_form.html'"
-    "+'?loc='+encodeURIComponent(loc);"
-    "}"
-    "})();"
-    "</script>"
-)
+# ★ 근본구조 전환(2026-06-30): iframe('미리보기 창') 폐기 → 폼을 페이지 본문에 직접 인라인 주입.
+#   문의 페이지(8394) wp_inquiry_block.html 직접주입과 완전히 동일한 방식.
+#   주입 소스 = reception_block.html (reception_form.html 의 폼·JS·토큰을 .wlp-recept 스코프로 복제).
+#   ?loc 프리필은 폼 JS가 페이지 URL location.search 에서 직접 읽음(iframe 중계 JS 불필요).
+RECEPTION_BLOCK_FILE = ROOT / "3. 웰페리온 가이드" / "coo" / "reception" / "reception_block.html"
 
 
 async def run_draft_reception(post_id_arg: "str | None" = None) -> int:
-    """종합접수처 페이지를 비공개 초안으로 생성/갱신. VOC 모바일 폼 iframe 임베드.
-    post_id_arg 지정 시 기존 페이지 갱신(중복 생성 방지). 메뉴 미노출 유지."""
+    """종합접수처 페이지를 생성/갱신. VOC 모바일 폼을 페이지 본문에 직접 인라인 주입(iframe 폐기).
+    주입 소스=reception_block.html. post_id 지정 시 기존 페이지 갱신. 발행 상태면 발행 유지."""
     async_playwright = _import_playwright()
     print("[INFO] === 워드프레스 종합접수처 페이지 — 비공개 초안 생성/갱신 (발행 안 함) ===")
     if not PROFILE_DIR.exists():
         print("[ERROR] 프로필 미존재 — 먼저 --mode setup 실행 필요.")
         return 3
-    html = _wrap_vc_raw_html(RECEPTION_IFRAME_HTML)
+    if not RECEPTION_BLOCK_FILE.exists():
+        print(f"[ERROR] 종합접수처 블록 HTML 부재: {RECEPTION_BLOCK_FILE}")
+        return 4
+    raw_html = RECEPTION_BLOCK_FILE.read_text(encoding="utf-8")
+    html = _wrap_vc_raw_html(raw_html)   # 직접 인라인 주입(iframe 폐기)
     INSPECT_DIR.mkdir(parents=True, exist_ok=True)
     p, ctx = await _launch(async_playwright)
     page = ctx.pages[0] if ctx.pages else await ctx.new_page()
