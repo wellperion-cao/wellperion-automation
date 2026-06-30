@@ -765,6 +765,19 @@ async function loadOne(k){
 async function loadAll(){
   await Promise.all(KEYS.map(function(k){return loadOne(k);}));
 }
+// 진입 즉시 1차 렌더용: 유효 로컬캐시를 DB에 즉시 채움(stale-while-revalidate)
+// 정상 폴백/STALE 의미 보존 — STALE[k]=cached.ts(예전 데이터 배지), loadAll이 곧 최신으로 덮음
+function primeCache(){
+  var any=false;
+  KEYS.forEach(function(k){
+    var c=loadCache(k);
+    if(c&&c.rows&&c.rows.length>0){
+      DB[k]=c.rows;ROWCOUNT[k]=c.rows.length;ERR[k]=false;STALE[k]=c.ts;
+      any=true;
+    }
+  });
+  return any;
+}
 
 /* ============ shared ============ */
 function empNameByUrl(){var m={};DB.emp.forEach(function(e){m[normId(e.url)]=e["성명"]||"";});return m;}
@@ -2069,8 +2082,17 @@ async function startApp(){
     document.getElementById("reloadBtn").addEventListener("click",reloadData);
     navBuilt=true;
   }
-  await loadAll();
-  finishLoad("dash");
+  var primed=primeCache();          // 유효 캐시 즉시 채움
+  if(primed){finishLoad("dash");}   // 1차 렌더(0초) — 직전 데이터 즉시 표시
+  await loadAll();                  // 백그라운드 최신화
+  if(primed){
+    RENDERED={};                    // 2차 렌더 위해 캐시
+    var ct=currentTab()||"dash";    // 사용자가 보던 탭 유지(강제 dash 복귀 방지)
+    showTab(ct);                    // 활성 패널 조용히 교체(나머지는 방문 시 재렌더)
+    updateSyncMeta();
+  }else{
+    finishLoad("dash");             // 캐시 없음 → 기존 동작(네트워크 대기 후 렌더)
+  }
 }
 async function reloadData(){
   var btn=document.getElementById("reloadBtn");
