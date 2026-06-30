@@ -423,6 +423,7 @@ details.footnote-toggle > .fn-body{
     <button class="period-btn" data-period="custom" onclick="toggleCustomRange()">기간</button>
     <button class="period-btn" onclick="loadYearToDate()">올해</button>
     <a href="월간마케팅보고서.html" class="period-btn" style="text-decoration:none">📄 월간 보고서</a>
+    <button class="period-btn" onclick="openExpModal()" title="완료된 마케팅 실험 결과 보기">🧪 실험 결과</button>
     <span class="period-status" id="period-status">월간 기준 · 집계 불러오는 중…</span>
   </div>
 
@@ -534,33 +535,45 @@ details.footnote-toggle > .fn-body{
     </div>
   </div>
 
-  <!-- ════════════════════════════════════════════
-       마케팅 실험 결과 (완료 실험 요약 · 진행추적=G1 항로)
-       정적 카드 — SSOT=내부 브리프/큐. 옛 '실험로그(진행)' 섹션과 다름(중복 아님).
-       ════════════════════════════════════════════ -->
-  <div class="section">
-    <div class="section-title">마케팅 실험 결과 <span style="font-size:9px;font-weight:400;color:var(--dim);text-transform:none;letter-spacing:0;margin-left:6px">완료 실험 요약 · 진행 추적은 G1 항로</span></div>
-    <div style="border:1px solid var(--border);border-radius:var(--radius-md);padding:16px 18px;background:#fff">
-      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px">
-        <span style="font-size:15px;font-weight:700;color:#1a1a1a">실험 #1 — IG 캡션 첫줄 문의 CTA</span>
-        <span style="font-size:11px;font-weight:700;color:#b4232a;background:#fbe9ea;border-radius:10px;padding:2px 9px">❌ 무효 · 레버 아님 → 종료</span>
-        <span style="font-size:11px;color:var(--dim)">측정 2026.06.15 ~ 06.29 · 회사 IG</span>
-      </div>
-      <div style="font-size:13px;color:#444;line-height:1.75">
-        <b>가설</b> &middot; IG 캡션 첫 줄에 문의 CTA를 고정하면 문의 페이지 클릭·문의가 는다.<br>
-        <b>실측</b> &middot; 측정창 클릭 <b>305</b> · 문의 <b>160</b> 중 <b style="color:#b4232a">인스타그램 출처 문의 2건</b>(이번 달 전체도 2건). 문의의 <b>84%</b>가 네이버·소개·기존회원 = IG와 무관.<br>
-        <b>판정</b> &middot; IG 캡션 미세조정의 ROI ≈ 0. 클릭→캡션 귀속 계측·대조군 부재로 성공기준(+20%) 적용 자체 불가.<br>
-        <b>다음 레버</b> &middot; ① 네이버 플레이스 관리(문의 출처 1위) ② 문의폼 출처필드 = 배113 UTM 귀속 라이브(2026-06-30).<br>
-        <span style="color:var(--dim);font-size:12px">첫줄 CTA는 브랜드 톤 훼손 없어 표준 유지 · 전체 분석 = 내부 브리프 CMO-2026-06-06-EXPERIMENT-01-IG-CTA</span>
-      </div>
-    </div>
-  </div>
-
 </div>
 
 <div class="page-footer">
   웰페리온 마케팅 현황 대시보드 · AI CMO · 실무진: 김남욱 GM
 </div>
+
+<!-- ════════════════ 마케팅 실험 결과 모달 (상단 🧪 버튼 → 팝업 · 완료 실험 누적) ════════════════
+     새 실험 추가 = #exp-results-list 안에 .exp 카드 한 장을 '맨 위'에 추가(최신순). SSOT=내부 브리프/큐. -->
+<div id="exp-modal" onclick="if(event.target===this)closeExpModal()"
+     style="display:none;position:fixed;inset:0;background:rgba(20,20,20,.5);z-index:1000;align-items:flex-start;justify-content:center;padding:48px 16px;overflow:auto">
+  <div style="background:#fff;border-radius:16px;max-width:560px;width:100%;box-shadow:0 14px 50px rgba(0,0,0,.25)">
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:1px solid var(--border)">
+      <span style="font-size:16px;font-weight:700;color:#1a1a1a">🧪 마케팅 실험 결과
+        <span style="font-size:11px;color:var(--dim);font-weight:400;margin-left:4px">완료 실험 누적 · 진행 추적은 G1 항로</span></span>
+      <button onclick="closeExpModal()" style="background:none;border:none;font-size:22px;line-height:1;cursor:pointer;color:var(--dim)">&times;</button>
+    </div>
+    <div id="exp-results-list" style="padding:16px 20px;display:flex;flex-direction:column;gap:14px;max-height:70vh;overflow:auto">
+      <div style="border:1px solid var(--border);border-radius:12px;padding:14px 16px">
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px">
+          <span style="font-size:15px;font-weight:700;color:#1a1a1a">실험 #1 — IG 캡션 첫줄 문의 CTA</span>
+          <span style="font-size:11px;font-weight:700;color:#b4232a;background:#fbe9ea;border-radius:10px;padding:2px 9px">❌ 무효 · 레버 아님 → 종료</span>
+          <span style="font-size:11px;color:var(--dim)">2026.06.15 ~ 06.29 · 회사 IG</span>
+        </div>
+        <div style="font-size:13px;color:#444;line-height:1.75">
+          <b>가설</b> &middot; IG 캡션 첫 줄에 문의 CTA를 고정하면 문의가 는다.<br>
+          <b>실측</b> &middot; 측정창 클릭 <b>305</b> · 문의 <b>160</b> 중 <b style="color:#b4232a">인스타그램 출처 문의 2건</b>(이번 달 전체도 2건) · 문의 <b>84%</b>가 네이버·소개·기존회원=IG 무관.<br>
+          <b>판정</b> &middot; IG 캡션 미세조정 ROI ≈ 0. 클릭→캡션 귀속 계측·대조군 부재로 성공기준(+20%) 적용 불가.<br>
+          <b>다음 레버</b> &middot; ① 네이버 플레이스 관리 ② 문의폼 출처필드=배113 UTM 귀속 라이브(06-30).<br>
+          <span style="color:var(--dim);font-size:12px">첫줄 CTA는 톤 훼손 없어 표준 유지 · 전체 분석=브리프 CMO-2026-06-06-EXPERIMENT-01-IG-CTA</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+function openExpModal(){var m=document.getElementById('exp-modal');if(m)m.style.display='flex';}
+function closeExpModal(){var m=document.getElementById('exp-modal');if(m)m.style.display='none';}
+document.addEventListener('keydown',function(e){if(e.key==='Escape')closeExpModal();});
+</script>
 
 <script>
 function toggleCard(header) {
