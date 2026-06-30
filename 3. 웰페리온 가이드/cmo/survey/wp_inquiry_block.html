@@ -54,14 +54,14 @@ body.page-id-8394 #header-outer #logo { margin-top: 32px !important; }
       <div style="font-size:14px;color:#777;line-height:1.5;">스포츠클럽 멤버십 가입·시설 투어 상담</div>
     </a>
 
-    <a href="https://forms.gle/ad6xrR9ECRRDnzmE9" target="_blank" rel="noopener" onclick="wpTrackClick('성인강습문의')"
+    <a href="https://forms.gle/ad6xrR9ECRRDnzmE9" target="_blank" rel="noopener" onclick="wpPrefillForm(this,'성인강습문의');wpTrackClick('성인강습문의')"
        style="display:block;text-decoration:none;border:1px solid #e2e2e2;border-radius:14px;padding:22px 24px;background:#fff;transition:all .18s;box-shadow:0 1px 2px rgba(0,0,0,.03);">
       <div style="font-size:13px;font-weight:600;color:#b08d57;letter-spacing:.5px;margin-bottom:6px;">ADULT LESSON</div>
       <div style="font-size:18px;font-weight:700;color:#1a1a1a;margin-bottom:4px;">성인 강습 문의 →</div>
       <div style="font-size:14px;color:#777;line-height:1.5;">스쿼시·필라테스 등 성인 강습 프로그램</div>
     </a>
 
-    <a href="https://forms.gle/RaFbZLxypNMMV9f17" target="_blank" rel="noopener" onclick="wpTrackClick('유소년강습문의')"
+    <a href="https://forms.gle/RaFbZLxypNMMV9f17" target="_blank" rel="noopener" onclick="wpPrefillForm(this,'유소년강습문의');wpTrackClick('유소년강습문의')"
        style="display:block;text-decoration:none;border:1px solid #e2e2e2;border-radius:14px;padding:22px 24px;background:#fff;transition:all .18s;box-shadow:0 1px 2px rgba(0,0,0,.03);">
       <div style="font-size:13px;font-weight:600;color:#b08d57;letter-spacing:.5px;margin-bottom:6px;">YOUTH LESSON</div>
       <div style="font-size:18px;font-weight:700;color:#1a1a1a;margin-bottom:4px;">유소년 강습 문의 →</div>
@@ -202,7 +202,10 @@ body.page-id-8394 #header-outer #logo { margin-top: 32px !important; }
   //   버튼명 → { base: 프리필 view URL, entry: '유입경로(자동)' entry ID } 매핑(add_utm_field 회수값).
   //   entry ID 회수 못 한 폼(성인·유소년·여름특강 = cao 편집권한 없음)은 매핑서 제외 → 원래 링크 유지.
   var WP_PREFILL_MAP={
-    // '멤버십문의': 새 폼(1FAIpQLSd1EG…)으로 교체(2026-06-24). UTM 콘텐츠 귀속은 새 폼에 '유입경로(자동)' 필드 추가·entry 회수 후 복구 예정.
+    // 2026-06-30 cao 편집권한 확인됨 → 성인·유소년·멤버십 신폼 entry 회수·배선(add_utm_field). 6폼 전부 UTM 귀속.
+    '멤버십문의':       { base:'https://docs.google.com/forms/d/e/1FAIpQLSd1EGHsPtVjqEK_Y_8rPQWnRj7cpvxOLpO9OuXdTjsaZogT_Q/viewform', entry:'2135419713' },
+    '성인강습문의':     { base:'https://docs.google.com/forms/d/e/1FAIpQLSdS4iTbRB0Obkzo4TeJPzfdZn0mvJw9hLmJKMso8XFiXOcuzQ/viewform', entry:'1133812410' },
+    '유소년강습문의':   { base:'https://docs.google.com/forms/d/e/1FAIpQLSfigBMJaRfN76cORR1BRIRAysL0_o6AVrIIKCWzEwOqbw_Leg/viewform', entry:'764678574'  },
     '공간렌트문의':     { base:'https://docs.google.com/forms/d/e/1FAIpQLScS1Gb-iEPzCxb84VNTiz__QROx2RMW6SS6Oplfzr492vAiZQ/viewform', entry:'285015675'  },
     '비즈니스파트너문의':{ base:'https://docs.google.com/forms/d/e/1FAIpQLSfITRMdRqlgS3iLsiM_S05d1E0C7m8aSuXBZ-5XD-p6SecEAw/viewform', entry:'1850207696' }
   };
