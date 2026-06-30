@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>지원부 점검 체계 — 2026년 6월 작업 요약 (A3)</title>
+<style>
+/* ── 변수 ── */
+:root {
+  --accent:      #B79F8A;
+  --accent-bg:   #f3ede7;
+  --text:        #4a3a2e;
+  --text-dim:    #7a6a5e;
+  --card-bg:     #ffffff;
+  --card-border: #cccccc;
+  --red:         #c0392b;
+  --green-bg:    #eef7f0;
+  --green-text:  #1a4a2a;
+  --green-border:#5a9a6e;
+  --blue-bg:     #eaf3fb;
+  --blue-text:   #1a3a5a;
+  --blue-border: #5b9fd5;
+  --divider:     #e8e0d8;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: "Pretendard", -apple-system, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+  background: #f5f2ef;
+  color: var(--text);
+  line-height: 1.45;
+}
+
+/* ── 화면 래퍼 ── */
+.screen-wrap {
+  max-width: 1180px;
+  margin: 20px auto;
+  padding: 0 16px 40px;
+}
+
+/* ── 인쇄 버튼 바 ── */
+.print-bar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.print-hint {
+  font-size: 11px;
+  color: var(--text-dim);
+}
+.print-btn {
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  padding: 8px 22px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+  letter-spacing: 0.01em;
+  transition: background 0.15s;
+}
+.print-btn:hover { background: #9d8470; }
+
+/* ── A3 문서 박스 ── */
+.a3-doc {
+  background: #fff;
+  border: 1px solid #d5ccc3;
+  border-radius: 8px;
+  overflow: hidden;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+/* ════════════════════════════════
+   블록 0: 타이틀 밴드
+════════════════════════════════ */
+.a3-title-band {
+  background: var(--accent-bg);
+  border-bottom: 3px solid var(--accent);
+  padding: 16px 22px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+.title-left .main-title {
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--text);
+  letter-spacing: -0.015em;
+  margin-bottom: 4px;
+}
+.title-left .sub-title {
+  font-size: 11.5px;
+  color: var(--text-dim);
+  font-weight: 500;
+}
+.title-meta {
+  text-align: right;
+  font-size: 10.5px;
+  color: var(--text-dim);
+  line-height: 1.7;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+/* ════════════════════════════════
+   블록 1: KPI 칩 5개 가로
+════════════════════════════════ */
+.a3-kpi-row {
+  display: flex;
+  gap: 8px;
+  padding: 12px 18px;
+  background: #fdfaf7;
+  border-bottom: 1px solid var(--divider);
+}
+.kpi-chip {
+  flex: 1;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 6px;
+  padding: 9px 11px;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+.kpi-chip:last-child .kpi-key .kpi-num {
+  color: var(--red);
+  font-weight: 900;
+}
+.kpi-key {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--text);
+  margin-bottom: 4px;
+  line-height: 1.3;
+}
+.kpi-desc {
+  font-size: 10px;
+  color: var(--text-dim);
+  line-height: 1.4;
+}
+
+/* ════════════════════════════════
+   블록 2: 영역별 개선 2단
+════════════════════════════════ */
+.a3-body-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  border-bottom: 1px solid var(--divider);
+}
+.a3-col {
+  padding: 13px 18px 11px;
+}
+.a3-col:first-child {
+  border-right: 1px solid var(--divider);
+}
+
+.a3-col-head {
+  font-size: 12px;
+  font-weight: 800;
+  padding: 4px 10px 4px 13px;
+  margin-bottom: 9px;
+  border-radius: 4px;
+  background: var(--accent-bg);
+  color: var(--text);
+  border-left: 4px solid var(--accent);
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+.a3-card {
+  border: 1px solid var(--card-border);
+  border-radius: 5px;
+  padding: 7px 10px;
+  margin-bottom: 6px;
+  background: var(--card-bg);
+  break-inside: avoid;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+.a3-card:last-child { margin-bottom: 0; }
+
+.a3-card-title {
+  font-size: 11.5px;
+  font-weight: 800;
+  color: var(--text);
+  margin-bottom: 4px;
+  padding-bottom: 3px;
+  border-bottom: 1px solid #ece8e4;
+}
+
+.a3-card-line {
+  font-size: 10px;
+  color: #3a3330;
+  padding: 2px 0 2px 11px;
+  position: relative;
+  line-height: 1.4;
+}
+.a3-card-line::before {
+  content: "·";
+  position: absolute;
+  left: 2px;
+  color: var(--accent);
+  font-size: 14px;
+  line-height: 1;
+  top: 1px;
+}
+
+/* ════════════════════════════════
+   블록 3: 하단 2칸
+════════════════════════════════ */
+.a3-bottom-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  border-bottom: 1px solid var(--divider);
+}
+.a3-bottom-col {
+  padding: 11px 18px 10px;
+}
+.a3-bottom-col:first-child {
+  border-right: 1px solid var(--divider);
+}
+
+.a3-bottom-head {
+  font-size: 11.5px;
+  font-weight: 800;
+  padding: 4px 9px 4px 12px;
+  margin-bottom: 7px;
+  border-radius: 4px;
+  background: var(--green-bg);
+  color: var(--green-text);
+  border-left: 4px solid var(--green-border);
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+.a3-bottom-head.discuss {
+  background: var(--blue-bg);
+  color: var(--blue-text);
+  border-left-color: var(--blue-border);
+}
+
+/* ── 푸터 ── */
+.a3-footer {
+  padding: 6px 18px;
+  font-size: 9px;
+  color: #9a8a7a;
+  background: #fdfaf7;
+  line-height: 1.5;
+}
+
+/* ════════════════════════════════
+   인쇄 전용 CSS
+════════════════════════════════ */
+@media print {
+  @page { size: A3 landscape; margin: 8mm; }
+
+  .no-print { display: none !important; }
+
+  body {
+    background: #fff !important;
+    font-size: 11px;
+    line-height: 1.4;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .screen-wrap {
+    max-width: 100%;
+    margin: 0;
+    padding: 0;
+  }
+
+  .a3-doc {
+    border: none !important;
+    border-radius: 0;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* 타이틀 */
+  .a3-title-band {
+    padding: 20px 24px;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .title-left .main-title { font-size: 22px; margin-bottom: 5px; }
+  .title-left .sub-title  { font-size: 12px; }
+  .title-meta             { font-size: 11px; line-height: 1.9; }
+
+  /* KPI 칩 */
+  .a3-kpi-row { padding: 16px 20px; gap: 10px; }
+  .kpi-chip   { padding: 20px 14px; }
+  .kpi-key    { font-size: 14px; margin-bottom: 7px; }
+  .kpi-desc   { font-size: 11px; line-height: 1.55; }
+
+  /* 본문 2단 */
+  .a3-col        { padding: 20px 22px 18px; }
+  .a3-col-head   { font-size: 13px; padding: 6px 12px 6px 15px; margin-bottom: 12px; }
+  .a3-card       { padding: 12px 14px; margin-bottom: 12px; }
+  .a3-card-title { font-size: 12px; margin-bottom: 6px; padding-bottom: 5px; }
+  .a3-card-line  { font-size: 11px; padding: 3px 0 3px 13px; line-height: 1.55; }
+  .a3-card-line::before { font-size: 15px; top: 1px; }
+
+  /* 하단 */
+  .a3-bottom-col  { padding: 18px 22px 16px; }
+  .a3-bottom-head { font-size: 12px; padding: 6px 11px 6px 14px; margin-bottom: 11px; }
+
+  /* 푸터 */
+  .a3-footer { padding: 10px 22px; font-size: 10px; }
+}
+</style>
+</head>
+<body>
+
+<div class="screen-wrap">
+
+  <!-- 인쇄 버튼 (화면 전용) -->
+  <div class="print-bar no-print">
+    <span class="print-hint">브라우저 인쇄 → 용지 A3 가로, 배경 그래픽 켬</span>
+    <button class="print-btn" onclick="window.print()">🖨️ 인쇄</button>
+  </div>
+
+  <div class="a3-doc">
+
+    <!-- ══ 블록 0: 타이틀 밴드 ══ -->
+    <div class="a3-title-band">
+      <div class="title-left">
+        <div class="main-title">지원부 점검 체계 — 2026년 6월 작업 요약</div>
+        <div class="sub-title">시트 단일기준 전환 &nbsp;·&nbsp; 회차 모델 정립 &nbsp;·&nbsp; 데이터 정합 &nbsp;·&nbsp; 자동 독려/보고 구축</div>
+      </div>
+      <div class="title-meta">
+        작성: AI COO(시우) &nbsp;·&nbsp; 2026-06-30<br>
+        논의: 지원부 &nbsp;·&nbsp; 보고: 경영진
+      </div>
+    </div>
+
+    <!-- ══ 블록 1: KPI 칩 5개 ══ -->
+    <div class="a3-kpi-row">
+      <div class="kpi-chip">
+        <div class="kpi-key">기준 통일</div>
+        <div class="kpi-desc">점검 갯수가 화면·서버·기기마다 달랐던 문제를 '시트 한 곳' 단일기준으로 통일</div>
+      </div>
+      <div class="kpi-chip">
+        <div class="kpi-key">회차 모델 확립</div>
+        <div class="kpi-desc">평일 3조(오전10시·오후15시·마감20시) / 주말 2조(오전12시·마감18시)</div>
+      </div>
+      <div class="kpi-chip">
+        <div class="kpi-key">남/여 구역 분리</div>
+        <div class="kpi-desc">성별 전용 항목 격리(수면실=남, 찜질방=여), 남/여 탭 날짜 동기</div>
+      </div>
+      <div class="kpi-chip">
+        <div class="kpi-key">자동화 구축</div>
+        <div class="kpi-desc">미완 시 17시·22시 독려 + 23시 마감 보고 + 텔레그램에 근무자·소요시간 표기</div>
+      </div>
+      <div class="kpi-chip">
+        <div class="kpi-key"><span class="kpi-num">6월 점검 작업 약 100건</span></div>
+        <div class="kpi-desc">AI COO(시우) 주도, 코드로 박아 재발 방지</div>
+      </div>
+    </div>
+
+    <!-- ══ 블록 2: 영역별 개선 2단 ══ -->
+    <div class="a3-body-row">
+
+      <!-- 좌단: 기준·구조 -->
+      <div class="a3-col">
+        <div class="a3-col-head">① 기준·구조 바로잡기</div>
+
+        <div class="a3-card">
+          <div class="a3-card-title">단일출처(SSOT) 확립</div>
+          <div class="a3-card-line">점검 항목을 시트 한 곳에서만 관리. 화면·관리자·독려가 모두 같은 숫자를 봄(기기 무관).</div>
+        </div>
+
+        <div class="a3-card">
+          <div class="a3-card-title">'시드' 개념 폐기</div>
+          <div class="a3-card-line">매뉴얼 항목이 저장할 때마다 1개씩 늘어나던 중복증식의 뿌리를 제거.</div>
+        </div>
+
+        <div class="a3-card">
+          <div class="a3-card-title">남/여 데이터 격리</div>
+          <div class="a3-card-line">과거 날짜에서 점검수가 0으로 보이던 버그를 성별 분리로 근본 수정.</div>
+        </div>
+
+        <div class="a3-card">
+          <div class="a3-card-title">데이터 정밀 청소</div>
+          <div class="a3-card-line">'미점검인데 제출완료'로 남던 유령 기록 정밀 되돌림, 중복행 자가치유(저장 시 자동).</div>
+        </div>
+      </div>
+
+      <!-- 우단: 운영·자동화 -->
+      <div class="a3-col">
+        <div class="a3-col-head">② 운영·자동화 강화</div>
+
+        <div class="a3-card">
+          <div class="a3-card-title">회차/조 타이머</div>
+          <div class="a3-card-line">점검 시작~종료 버튼으로 소요시간 자동 기록(수동 시간 입력 폐지).</div>
+        </div>
+
+        <div class="a3-card">
+          <div class="a3-card-title">이슈 처리 일원화</div>
+          <div class="a3-card-line">점검 중 발견한 이슈는 점검 안에 기록 + 점검관리방에 알림(외부 자동전송은 폐지해 혼선 제거).</div>
+        </div>
+
+        <div class="a3-card">
+          <div class="a3-card-title">매뉴얼 시스템</div>
+          <div class="a3-card-line">매뉴얼=시트 단일출처, 편집은 비밀번호 잠금, A3 주간 매뉴얼 인쇄 제공.</div>
+        </div>
+
+        <div class="a3-card">
+          <div class="a3-card-title">자동 독려·보고</div>
+          <div class="a3-card-line">점검 미완 시 17시·22시 독려, 23시 마감 보고, 텔레그램 알림에 근무자·소요시간까지 표기.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ 블록 3: 하단 2칸 ══ -->
+    <div class="a3-bottom-row">
+
+      <div class="a3-bottom-col">
+        <div class="a3-bottom-head">현재 점검은 이렇게 돕니다</div>
+        <div class="a3-card-line">시트(항목 마스터) = 유일 기준 → 남/여 각각, 회차별로 점검</div>
+        <div class="a3-card-line">home 점검 위젯·관리자 대시보드·독려 알림이 모두 같은 시트 숫자를 표시</div>
+        <div class="a3-card-line">제출하면 점검자·소요시간·이슈가 함께 기록되고 점검관리방에 자동 보고</div>
+      </div>
+
+      <div class="a3-bottom-col">
+        <div class="a3-bottom-head discuss">다음 단계 · 지원부와 의논할 점</div>
+        <div class="a3-card-line">(다음) 점검 '화면'의 갯수 계산도 시트로 완전 전환 — 마지막 단계, 신중 배포 예정</div>
+        <div class="a3-card-line">(다음) 7월부터 매월 점검 분석 리포트 자동화(완료율·이슈·개선 시사점 → 텔레그램 요약)</div>
+        <div class="a3-card-line">(의논) 회차 시간·인원 기준(1인 근무/3인 근무 케이스), 점검 항목 추가·삭제 현장 피드백, 주말 회차 운영 방식</div>
+      </div>
+    </div>
+
+    <!-- ══ 푸터 ══ -->
+    <div class="a3-footer">
+      정본: status/_queue.json(배 14·184·208) &nbsp;·&nbsp; status/briefs/ 점검 설계 문서 &nbsp;·&nbsp; 라이브 지원부 체계 페이지. &nbsp;|&nbsp; 본 요약은 2026-06-30 기준.
+    </div>
+
+  </div><!-- /.a3-doc -->
+</div><!-- /.screen-wrap -->
+
+</body>
+</html>
