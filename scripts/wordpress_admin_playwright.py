@@ -880,16 +880,173 @@ async def run_swap_href(post_id_arg: str, find: str, repl: str) -> int:
     return 0 if ok else 15
 
 
+RECEPTION_PAGE_TITLE = "종합접수처"
+RECEPTION_IFRAME_HTML = (
+    "<style>"
+    "h1.entry-title,.entry-title,.post-title,h1.page-title,"
+    ".page-header h1,.title-container h1{display:none!important}"
+    "</style>"
+    '<iframe'
+    ' src="https://wellperion-cao.github.io/wellperion-automation/coo/voc/voc_mobile_form.html"'
+    ' width="100%" height="950"'
+    ' style="border:0;display:block;max-width:100%;"'
+    ' loading="lazy">'
+    "</iframe>"
+)
+
+
+async def run_draft_reception(post_id_arg: "str | None" = None) -> int:
+    """종합접수처 페이지를 비공개 초안으로 생성/갱신. VOC 모바일 폼 iframe 임베드.
+    post_id_arg 지정 시 기존 페이지 갱신(중복 생성 방지). 메뉴 미노출 유지."""
+    async_playwright = _import_playwright()
+    print("[INFO] === 워드프레스 종합접수처 페이지 — 비공개 초안 생성/갱신 (발행 안 함) ===")
+    if not PROFILE_DIR.exists():
+        print("[ERROR] 프로필 미존재 — 먼저 --mode setup 실행 필요.")
+        return 3
+    html = _wrap_vc_raw_html(RECEPTION_IFRAME_HTML)
+    INSPECT_DIR.mkdir(parents=True, exist_ok=True)
+    p, ctx = await _launch(async_playwright)
+    page = ctx.pages[0] if ctx.pages else await ctx.new_page()
+    target = (f"http://wellperion.com/wp/wp-admin/post.php?post={post_id_arg}&action=edit&lang=ko"
+              if post_id_arg else NEW_PAGE_URL)
+    print(f"[INFO] 대상: {'갱신 post='+post_id_arg if post_id_arg else '신규 페이지'}")
+    await page.goto(target, wait_until="domcontentloaded", timeout=40_000)
+    await page.wait_for_timeout(2500)
+    if "wp-login" in page.url:
+        print("[ERROR] 세션 만료 — setup 재실행 필요.")
+        await ctx.close(); await p.stop(); return 2
+
+    probe = await page.evaluate(
+        """() => ({
+            title_classic: !!document.querySelector('#title'),
+            content_textarea: !!document.querySelector('#content'),
+            text_tab: !!document.querySelector('#content-html'),
+            save_draft_btn: !!document.querySelector('#save-post'),
+        })"""
+    )
+    print(f"[INFO] 편집기 감지: {probe}")
+    await page.screenshot(path=str(INSPECT_DIR / "wp_reception_editor.png"))
+
+    if not probe.get("title_classic") or not probe.get("content_textarea"):
+        print("[ERROR] Classic 편집기 미검출 — 스크린샷: wp_reception_editor.png")
+        await ctx.close(); await p.stop(); return 5
+
+    cur_title = await page.evaluate("() => (document.querySelector('#title')||{}).value || ''")
+    if not cur_title.strip():
+        await page.fill("#title", RECEPTION_PAGE_TITLE)
+        await page.wait_for_timeout(500)
+
+    if probe.get("text_tab"):
+        await page.click("#content-html")
+        await page.wait_for_timeout(800)
+    await page.evaluate(
+        """(html) => { const ta = document.querySelector('#content');
+            ta.value = html; ta.dispatchEvent(new Event('input', {bubbles:true}));
+            ta.dispatchEvent(new Event('change', {bubbles:true})); }""",
+        html,
+    )
+    await page.wait_for_timeout(500)
+    injected = await page.evaluate("() => (document.querySelector('#content')||{}).value || ''")
+    ok_inject = "vc_raw_html" in injected and len(injected) > 100
+    print(f"[INFO] 본문 주입 검증: {ok_inject} (길이 {len(injected)})")
+    if not ok_inject:
+        print("[ERROR] 본문 주입 실패 — 저장 중단.")
+        await ctx.close(); await p.stop(); return 6
+
+    pre_status = await page.evaluate(
+        "() => (document.querySelector('#post-status-display')||{}).innerText || ''"
+    )
+    is_published = ("공개" in pre_status) or ("발행" in pre_status) or ("published" in pre_status.lower())
+    if is_published:
+        print(f"[INFO] 이미 발행됨('{pre_status}') → 업데이트로 저장(발행 유지)")
+        await page.click("#publish")
+    else:
+        await page.click("#save-post")
+    try:
+        await page.wait_for_url("**/post.php?post=*", timeout=30_000)
+    except Exception:
+        await page.wait_for_timeout(4000)
+    await page.wait_for_timeout(1500)
+    cur = page.url
+    import re as _re
+    m = _re.search(r"[?&]post=(\d+)", cur)
+    post_id = m.group(1) if m else None
+    status = await page.evaluate(
+        "() => (document.querySelector('#post-status-display')||{}).innerText || ''"
+    )
+    await page.screenshot(path=str(INSPECT_DIR / "wp_reception_draft_saved.png"))
+    print(f"[INFO] 저장 후 URL: {cur}")
+    print(f"[INFO] 글 상태: {status or '(미검출)'}  /  page_id: {post_id or '(미검출)'}")
+    if post_id:
+        preview = f"http://wellperion.com/wp/?page_id={post_id}&preview=true"
+        edit = f"http://wellperion.com/wp/wp-admin/post.php?post={post_id}&action=edit"
+        print("[INFO] === GM 검수 링크 ===")
+        print(f"        미리보기: {preview}")
+        print(f"        편집화면: {edit}")
+        print(f"[INFO] 발행 명령: python scripts\\wordpress_admin_playwright.py --mode publish-reception --post-id {post_id}")
+    print("[INFO] (※ 초안 상태 — 외부에 공개되지 않음. 발행은 GM 확인 후 별도 진행)")
+    await ctx.close(); await p.stop()
+    print("[INFO] === 종합접수처 초안 생성 완료 (발행 안 함) ===")
+    return 0 if post_id else 7
+
+
+async def run_publish_reception(post_id_arg: str, slug: str = "reception") -> int:
+    """종합접수처 초안을 슬러그 'reception' 설정 후 공개 발행. 메뉴 미노출 유지."""
+    async_playwright = _import_playwright()
+    print(f"[INFO] === 워드프레스 종합접수처 페이지 발행 (post={post_id_arg}, slug={slug}) ===")
+    if not PROFILE_DIR.exists():
+        print("[ERROR] 프로필 미존재 — 먼저 --mode setup 실행 필요.")
+        return 3
+    p, ctx = await _launch(async_playwright)
+    page = ctx.pages[0] if ctx.pages else await ctx.new_page()
+    await page.goto(f"http://wellperion.com/wp/wp-admin/post.php?post={post_id_arg}&action=edit&lang=ko",
+                    wait_until="domcontentloaded", timeout=40_000)
+    await page.wait_for_timeout(2500)
+    if "wp-login" in page.url:
+        print("[ERROR] 세션 만료 — setup 재실행 필요.")
+        await ctx.close(); await p.stop(); return 2
+
+    try:
+        if await page.query_selector("#edit-slug-buttons button.edit-slug"):
+            await page.click("#edit-slug-buttons button.edit-slug")
+            await page.wait_for_timeout(600)
+            await page.fill("#new-post-slug", slug)
+            await page.click("#edit-slug-buttons button.save")
+            await page.wait_for_timeout(1200)
+            print(f"[INFO] 슬러그 설정: {slug}")
+    except Exception as e:
+        print(f"[WARN] 슬러그 설정 경고(무시): {e}")
+
+    await page.click("#publish")
+    try:
+        await page.wait_for_url("**/post.php?post=*", timeout=30_000)
+    except Exception:
+        await page.wait_for_timeout(4000)
+    await page.wait_for_timeout(1500)
+    status = await page.evaluate("() => (document.querySelector('#post-status-display')||{}).innerText || ''")
+    permalink = await page.evaluate(
+        "() => { const a=document.querySelector('#sample-permalink a, #sample-permalink'); return a? (a.href||a.innerText):''; }"
+    )
+    await page.screenshot(path=str(INSPECT_DIR / "wp_reception_published.png"))
+    print(f"[INFO] 글 상태: {status or '(미검출)'}")
+    print(f"[INFO] 공개 URL: {permalink or '(미검출)'}")
+    await ctx.close(); await p.stop()
+    published = "공개" in status or "published" in status.lower() or "발행" in status
+    print(f"[INFO] === 발행 {'완료' if published else '확인 필요'} ===")
+    return 0 if published else 8
+
+
 def main() -> int:
-    ap = argparse.ArgumentParser(description="워드프레스 관리자 반자동 (setup/check/inspect/draft-inquiry/publish-inquiry/add-menu/swap-href/wpml-create-en/draft-inquiry-en/publish-inquiry-en)")
+    ap = argparse.ArgumentParser(description="워드프레스 관리자 반자동 (setup/check/inspect/draft-inquiry/publish-inquiry/add-menu/swap-href/wpml-create-en/draft-inquiry-en/publish-inquiry-en/draft-reception/publish-reception)")
     ap.add_argument("--mode", choices=[
         "setup", "check", "inspect",
         "draft-inquiry", "publish-inquiry", "add-menu", "swap-href",
         "wpml-create-en", "draft-inquiry-en", "publish-inquiry-en",
+        "draft-reception", "publish-reception",
     ], default="setup")
     ap.add_argument("--find", dest="find", default=None, help="swap-href 찾을 문자열")
     ap.add_argument("--repl", dest="repl", default=None, help="swap-href 바꿀 문자열")
-    ap.add_argument("--slug", dest="slug", default="inquiry", help="publish-inquiry 슬러그(기본 inquiry)")
+    ap.add_argument("--slug", dest="slug", default=None, help="publish-* 슬러그 (미지정 시: inquiry 모드=inquiry, reception 모드=reception)")
     ap.add_argument("--menu-id", dest="menu_id", default=KOREAN_MENU_ID, help="add-menu 대상 메뉴 ID(기본 59=한글메인)")
     ap.add_argument("--post-id", dest="post_id", default=None,
                     help="draft/publish 갱신 대상 페이지 ID")
@@ -903,7 +1060,7 @@ def main() -> int:
     if args.mode == "publish-inquiry":
         if not args.post_id:
             print("[ERROR] --post-id 필요"); return 1
-        return asyncio.run(run_publish_inquiry(args.post_id, args.slug))
+        return asyncio.run(run_publish_inquiry(args.post_id, args.slug or "inquiry"))
     if args.mode == "add-menu":
         if not args.post_id:
             print("[ERROR] --post-id 필요"); return 1
@@ -921,7 +1078,13 @@ def main() -> int:
     if args.mode == "publish-inquiry-en":
         if not args.post_id:
             print("[ERROR] --post-id 필요 (영어 페이지 ID)"); return 1
-        return asyncio.run(run_publish_inquiry_en(args.post_id, args.slug))
+        return asyncio.run(run_publish_inquiry_en(args.post_id, args.slug or "inquiry"))
+    if args.mode == "draft-reception":
+        return asyncio.run(run_draft_reception(args.post_id))
+    if args.mode == "publish-reception":
+        if not args.post_id:
+            print("[ERROR] --post-id 필요"); return 1
+        return asyncio.run(run_publish_reception(args.post_id, args.slug or "reception"))
     return asyncio.run(run_check())
 
 
