@@ -47,24 +47,36 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 .header .sub{font-size:11px;color:var(--dim-mid);line-height:1.5}
 .badge{display:inline-flex;align-items:center;font-size:10px;font-weight:700;padding:2px 9px;border-radius:var(--radius-chip);background:var(--accent-bg);color:var(--accent);border:1px solid var(--accent-border);letter-spacing:0.02em;}
 .badge.teal{background:var(--teal-bg);color:var(--teal);border-color:var(--teal-border);}
+.badge.yellow{background:var(--yellow-bg);color:var(--yellow);border-color:var(--yellow-border);}
 .header-actions{display:flex;gap:6px;margin-left:auto;flex-wrap:wrap}
 .action-btn{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;padding:5px 12px;border-radius:var(--radius-btn);background:var(--accent-bg);color:var(--accent);border:1px solid var(--accent-border);text-decoration:none;cursor:pointer;font-family:inherit;transition:background 0.15s,color 0.15s,border-color 0.15s;white-space:nowrap;}
 .action-btn:hover{background:rgba(183,159,138,0.2);color:var(--accent-bright);border-color:rgba(183,159,138,0.4)}
 .action-btn.green{background:var(--green-bg);color:var(--green);border-color:var(--green-border);}
 .action-btn.green:hover{background:rgba(106,191,123,0.2);}
 
+/* ─── 탭 내비게이션 ─── */
+.tab-nav{display:flex;gap:2px;padding:0 24px;background:var(--paper);border-bottom:1px solid var(--border);overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;}
+.tab-nav::-webkit-scrollbar{display:none;}
+.tab-btn{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;padding:11px 18px;border:none;background:none;color:var(--dim-mid);cursor:pointer;font-family:inherit;white-space:nowrap;border-bottom:2px solid transparent;margin-bottom:-1px;transition:color 0.15s,border-color 0.15s;}
+.tab-btn:hover{color:var(--accent-bright);}
+.tab-btn.active{color:var(--accent-bright);border-bottom-color:var(--accent);}
+.tab-icon{font-size:14px;}
+
 /* ─── 레이아웃 ─── */
 .content{padding:24px;max-width:1100px;margin:0 auto;}
+.tab-panel{display:none;}
+.tab-panel.active{display:block;}
 
 /* ─── 섹션 배지 ─── */
 .section-badge{display:flex;align-items:center;gap:10px;margin:0 0 16px;padding:10px 16px;border-radius:var(--radius-card);font-size:12px;font-weight:600;}
 .section-badge.read{background:var(--accent-bg);border:1px solid var(--accent-border);color:var(--accent);}
 .section-badge.edit{background:var(--teal-bg);border:1px solid var(--teal-border);color:var(--teal);}
+.section-badge.policy{background:var(--blue-bg);border:1px solid var(--blue-border);color:var(--blue);}
 
 /* ─── 섹션 구분선 ─── */
-.section-divider{display:flex;align-items:center;gap:16px;margin:36px 0 24px;}
+.section-divider{display:flex;align-items:center;gap:16px;margin:28px 0 20px;}
 .section-divider::before,.section-divider::after{content:'';flex:1;height:1px;background:var(--border);}
-.section-divider span{font-size:13px;font-weight:700;color:var(--dim-mid);letter-spacing:0.06em;white-space:nowrap;}
+.section-divider span{font-size:12px;font-weight:700;color:var(--dim-mid);letter-spacing:0.06em;white-space:nowrap;}
 
 /* ─── 카드/인포박스 ─── */
 .card{background:var(--paper);border:1px solid var(--border);border-radius:var(--radius-card);padding:18px 20px;margin-bottom:16px;box-shadow:var(--shadow-card);}
@@ -72,6 +84,31 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 .info-box{background:var(--paper-raised);border:1px solid var(--border);border-radius:10px;padding:12px 16px;margin-top:10px;font-size:13px;color:var(--dim-mid);}
 .info-box strong{color:var(--text);}
 .callout{background:var(--accent-bg);border:1px solid var(--accent-border);border-radius:10px;padding:12px 16px;font-size:13px;color:var(--accent-bright);margin-top:12px;}
+.callout.blue{background:var(--blue-bg);border-color:var(--blue-border);color:var(--blue);}
+.callout.yellow{background:var(--yellow-bg);border-color:var(--yellow-border);color:var(--yellow);}
+.callout.red{background:var(--red-bg);border-color:var(--red-border);color:var(--red);}
+.callout.green{background:var(--green-bg);border-color:var(--green-border);color:var(--green);}
+
+/* ─── 비교 카드 그리드 ─── */
+.grade-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-bottom:16px;}
+.grade-card{background:var(--paper-raised);border:1px solid var(--border);border-radius:12px;padding:16px;position:relative;overflow:hidden;}
+.grade-card.top{border-color:var(--accent-border);}
+.grade-card-label{font-size:10px;font-weight:700;letter-spacing:0.08em;color:var(--dim-mid);margin-bottom:6px;}
+.grade-card-name{font-size:15px;font-weight:800;color:var(--text);margin-bottom:4px;}
+.grade-card-price{font-size:22px;font-weight:800;color:var(--accent-bright);line-height:1;margin-bottom:6px;}
+.grade-card-price span{font-size:13px;font-weight:500;color:var(--dim-mid);}
+.grade-card-features{font-size:12px;color:var(--dim-mid);line-height:1.7;}
+.grade-card-features strong{color:var(--text);}
+.grade-ribbon{position:absolute;top:10px;right:-18px;background:var(--accent);color:#1a1918;font-size:9px;font-weight:800;padding:2px 24px;transform:rotate(30deg);letter-spacing:0.05em;}
+
+/* ─── 숫자 배지 ─── */
+.num-badge{display:inline-flex;align-items:center;font-size:11px;font-weight:700;padding:2px 8px;border-radius:6px;white-space:nowrap;}
+.num-badge.accent{background:var(--accent-bg);color:var(--accent-bright);border:1px solid var(--accent-border);}
+.num-badge.green{background:var(--green-bg);color:var(--green);border:1px solid var(--green-border);}
+.num-badge.yellow{background:var(--yellow-bg);color:var(--yellow);border:1px solid var(--yellow-border);}
+.num-badge.blue{background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue-border);}
+.num-badge.red{background:var(--red-bg);color:var(--red);border:1px solid var(--red-border);}
+.num-badge.orange{background:var(--orange-bg);color:var(--orange);border:1px solid var(--orange-border);}
 
 /* ─── 테이블 ─── */
 .tbl-wrap{overflow-x:auto;margin-top:10px;}
@@ -86,6 +123,34 @@ tr:hover td{background:var(--accent-bg);}
 .tag-badge.draft{background:var(--yellow-bg);color:var(--yellow);border:1px solid var(--yellow-border);}
 .tag-badge.review{background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue-border);}
 .tag-badge.confirmed{background:var(--green-bg);color:var(--green);border:1px solid var(--green-border);}
+
+/* ─── 아코디언 ─── */
+.accordion{border:1px solid var(--border);border-radius:var(--radius-card);overflow:hidden;margin-bottom:12px;}
+.acc-header{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;background:var(--paper);cursor:pointer;user-select:none;transition:background 0.14s;gap:12px;}
+.acc-header:hover{background:var(--paper-raised);}
+.acc-header-left{display:flex;align-items:center;gap:10px;flex:1;min-width:0;}
+.acc-icon{font-size:16px;flex-shrink:0;}
+.acc-title{font-size:13.5px;font-weight:700;color:var(--text);}
+.acc-badges{display:flex;gap:6px;flex-wrap:wrap;flex-shrink:0;}
+.acc-chevron{font-size:12px;color:var(--dim-mid);transition:transform 0.2s;flex-shrink:0;}
+.accordion.open .acc-chevron{transform:rotate(180deg);}
+.acc-body{display:none;padding:16px 18px;background:var(--paper-raised);border-top:1px solid var(--border);}
+.accordion.open .acc-body{display:block;}
+.acc-body p{font-size:13px;color:var(--dim-mid);line-height:1.7;margin-bottom:8px;}
+.acc-body p:last-child{margin-bottom:0;}
+.acc-body p strong{color:var(--text);}
+.acc-body ul{font-size:13px;color:var(--dim-mid);padding-left:18px;line-height:1.8;}
+.acc-body ul li strong{color:var(--text);}
+.acc-row{display:flex;flex-direction:column;gap:10px;}
+
+/* ─── 정책 비교 박스 ─── */
+.policy-compare{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px;}
+.pc-box{background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:12px 14px;}
+.pc-box-label{font-size:10px;font-weight:700;letter-spacing:0.07em;margin-bottom:6px;}
+.pc-box.current .pc-box-label{color:var(--dim-mid);}
+.pc-box.next .pc-box-label{color:var(--accent);}
+.pc-box-content{font-size:12.5px;line-height:1.7;color:var(--dim-mid);}
+.pc-box-content strong{color:var(--text);}
 
 /* ─── 기획 카드 그리드 ─── */
 .plan-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px;margin-top:4px;}
@@ -125,10 +190,17 @@ tr:hover td{background:var(--accent-bg);}
 .status-msg.err{color:var(--red);}
 
 /* ─── 반응형 ─── */
-@media(max-width:600px){
+@media(max-width:720px){
+  .tab-btn{padding:10px 12px;font-size:12px;}
+  .grade-grid{grid-template-columns:1fr 1fr;}
+  .policy-compare{grid-template-columns:1fr;}
+}
+@media(max-width:480px){
   .content{padding:14px;}
   .plan-grid{grid-template-columns:1fr;}
   .modal{padding:18px;}
+  .grade-grid{grid-template-columns:1fr;}
+  .tab-btn{padding:9px 10px;font-size:11px;gap:4px;}
 }
 </style>
 </head>
@@ -139,7 +211,7 @@ tr:hover td{background:var(--accent-bg);}
     <div class="header-top">
       <div class="header-brand">
         <h1>🏷️ 스포츠클럽 상품 기획</h1>
-        <div class="sub">AI CPO (시포) · 현행 상품 정리 + 신규 기획 작업대</div>
+        <div class="sub">AI CPO (시포) · 현행 상품 정리 + 요금 정책 + 신규 기획 작업대</div>
       </div>
       <div class="header-actions">
         <span class="badge teal">CPO 시포</span>
@@ -148,251 +220,536 @@ tr:hover td{background:var(--accent-bg);}
       </div>
     </div>
   </div>
+  <nav class="tab-nav" role="tablist">
+    <button class="tab-btn active" role="tab" onclick="switchTab('membership',this)"><span class="tab-icon">🏅</span>멤버십</button>
+    <button class="tab-btn" role="tab" onclick="switchTab('lesson',this)"><span class="tab-icon">🏊</span>강습</button>
+    <button class="tab-btn" role="tab" onclick="switchTab('policy',this)"><span class="tab-icon">💳</span>요금 정책</button>
+    <button class="tab-btn" role="tab" onclick="switchTab('workshop',this)"><span class="tab-icon">✏️</span>기획 작업대</button>
+  </nav>
 </div>
 
 <div class="content">
 
   <!-- ══════════════════════════════════════
-       [상] 현재 상품 한눈 정리
-       ══════════════════════════════════════ -->
-  <div class="section-badge read">📌 상 — 현행 상품 (읽기 참조 · 정적 박제 · 기획 참고용)</div>
+       TAB 1: 멤버십
+  ══════════════════════════════════════ -->
+  <div id="tab-membership" class="tab-panel active">
+    <div class="section-badge read">📌 현행 멤버십 상품 — 읽기 참조 · 정적 박제 · 기획 참고용</div>
 
-  <!-- 멤버십 등급 -->
-  <div class="card">
-    <div class="card-title">🏅 멤버십 등급 (연 12개월 기준)</div>
-    <div class="tbl-wrap">
-      <table>
-        <thead>
-          <tr><th>등급</th><th>포함 시설</th><th class="num">연간 요금</th><th class="num">월 환산</th><th>비고</th></tr>
-        </thead>
-        <tbody>
-          <tr><td><strong>플래티넘</strong></td><td>헬스 + 사우나</td><td class="num">3,000,000</td><td class="num dim">250,000</td><td></td></tr>
-          <tr><td><strong>플래티넘+골프</strong></td><td>헬스 + 골프 + 사우나</td><td class="num">3,400,000</td><td class="num dim">283,333</td><td></td></tr>
-          <tr><td><strong>노블레스</strong></td><td>헬스 + 수영 + 사우나</td><td class="num">3,600,000</td><td class="num dim">300,000</td><td></td></tr>
-          <tr><td><strong>노블레스+골프</strong></td><td>헬스 + 골프 + 수영 + 사우나</td><td class="num">4,000,000</td><td class="num dim">333,333</td><td>최상위</td></tr>
-        </tbody>
-      </table>
+    <!-- 등급 카드 비교 -->
+    <div class="card">
+      <div class="card-title">🏅 멤버십 등급 한눈 비교 (연 12개월)</div>
+      <div class="grade-grid">
+        <div class="grade-card">
+          <div class="grade-card-label">PLATINUM</div>
+          <div class="grade-card-name">플래티넘</div>
+          <div class="grade-card-price">300<span>만원/년</span></div>
+          <div class="grade-card-features">
+            <strong>헬스 + 사우나</strong><br>
+            월 환산 250,000원
+          </div>
+        </div>
+        <div class="grade-card">
+          <div class="grade-card-label">PLATINUM + GOLF</div>
+          <div class="grade-card-name">플래티넘+골프</div>
+          <div class="grade-card-price">340<span>만원/년</span></div>
+          <div class="grade-card-features">
+            <strong>헬스 + 골프 + 사우나</strong><br>
+            월 환산 283,333원
+          </div>
+        </div>
+        <div class="grade-card">
+          <div class="grade-card-label">NOBLESSE</div>
+          <div class="grade-card-name">노블레스</div>
+          <div class="grade-card-price">360<span>만원/년</span></div>
+          <div class="grade-card-features">
+            <strong>헬스 + 수영 + 사우나</strong><br>
+            월 환산 300,000원
+          </div>
+        </div>
+        <div class="grade-card top">
+          <div class="grade-ribbon">최상위</div>
+          <div class="grade-card-label">NOBLESSE + GOLF</div>
+          <div class="grade-card-name">노블레스+골프</div>
+          <div class="grade-card-price">400<span>만원/년</span></div>
+          <div class="grade-card-features">
+            <strong>헬스 + 골프 + 수영 + 사우나</strong><br>
+            월 환산 333,333원
+          </div>
+        </div>
+      </div>
+      <div class="callout">💡 마스터 앵커 논리 — 월 정상 510,000 × 4종목 × 12개월 = 연 6,120,000 → 연간권 노블레스+골프 4,000,000으로 인하. 연간 절약 2,120,000 (35%↓). ※ 전 등급 웰컴팩 제공.</div>
     </div>
-    <div class="callout">💡 마스터 앵커 논리 — 월 정상 510,000 × 4종목 × 12개월 = 연 6,120,000 → 연간권 노블레스+골프 4,000,000으로 인하. 연간 절약 2,120,000(35%↓). ※ 전 등급 웰컴팩 제공.</div>
-  </div>
 
-  <!-- 가족/단체/법인 -->
-  <div class="card">
-    <div class="card-title">👨‍👩‍👧‍👦 가족·단체·법인 (플래티넘 기준)</div>
-    <div class="tbl-wrap">
-      <table>
-        <thead>
-          <tr><th>구분</th><th class="num">요금</th><th class="num">정상 대비</th><th>조건</th></tr>
-        </thead>
-        <tbody>
-          <tr><td>가족 1인</td><td class="num">3,000,000</td><td class="num dim">기준</td><td>직계가족 한정</td></tr>
-          <tr><td>가족 2인</td><td class="num">5,700,000</td><td class="num" style="color:var(--green);">5.3%↓</td><td>정상 6,000,000</td></tr>
-          <tr><td>가족 3인</td><td class="num">8,400,000</td><td class="num" style="color:var(--green);">7.1%↓</td><td>정상 9,000,000</td></tr>
-          <tr><td>가족 4인</td><td class="num">11,100,000</td><td class="num" style="color:var(--green);">8.1%↓</td><td>정상 12,000,000</td></tr>
-          <tr><td>단체 5~10인</td><td class="num">13,500,000</td><td class="num" style="color:var(--green);">10%↓</td><td></td></tr>
-          <tr><td>법인 11인+</td><td class="num">63,000,000</td><td class="num" style="color:var(--green);">30%↓</td><td>법인 계약</td></tr>
-        </tbody>
-      </table>
+    <!-- 가족/단체/법인 -->
+    <div class="card">
+      <div class="card-title">👨‍👩‍👧‍👦 가족·단체·법인 (플래티넘 기준)</div>
+      <div class="tbl-wrap">
+        <table>
+          <thead>
+            <tr><th>구분</th><th class="num">요금</th><th class="num">정상 대비</th><th>조건</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>가족 1인</td><td class="num">3,000,000</td><td class="num dim">기준</td><td>직계가족 한정</td></tr>
+            <tr><td>가족 2인</td><td class="num">5,700,000</td><td class="num"><span class="num-badge green">5.3%↓</span></td><td>정상 6,000,000</td></tr>
+            <tr><td>가족 3인</td><td class="num">8,400,000</td><td class="num"><span class="num-badge green">7.1%↓</span></td><td>정상 9,000,000</td></tr>
+            <tr><td>가족 4인</td><td class="num">11,100,000</td><td class="num"><span class="num-badge green">8.1%↓</span></td><td>정상 12,000,000</td></tr>
+            <tr><td>단체 5인</td><td class="num">13,500,000</td><td class="num"><span class="num-badge green">10%↓</span></td><td>사업자등록증 · 휴회불가 · 양도 1회 5만</td></tr>
+            <tr><td>단체 10인</td><td class="num">25,500,000</td><td class="num"><span class="num-badge green">15%↓</span></td><td>사업자등록증 · 휴회불가 · 양도 1회 5만</td></tr>
+            <tr><td>법인 11인+</td><td class="num">63,000,000</td><td class="num"><span class="num-badge green">30%↓</span></td><td>법인 계약</td></tr>
+          </tbody>
+        </table>
+      </div>
     </div>
-  </div>
 
-  <!-- 일일권 -->
-  <div class="card">
-    <div class="card-title">🎟️ 일일권 · 입주민 · 패키지</div>
-    <div class="tbl-wrap">
-      <table>
-        <thead>
-          <tr><th>구분</th><th class="num">1회</th><th>비고</th></tr>
-        </thead>
-        <tbody>
-          <tr><td>플래티넘 일일권</td><td class="num">14,000</td><td></td></tr>
-          <tr><td>플래티넘+골프 일일권</td><td class="num">15,000</td><td></td></tr>
-          <tr><td>노블레스 일일권</td><td class="num">16,000</td><td></td></tr>
-          <tr><td>노블레스+골프 일일권</td><td class="num">17,000</td><td></td></tr>
-          <tr><td>입주민 일일권</td><td class="num">47,000~55,000</td><td>등급별</td></tr>
-          <tr><td>10매 패키지</td><td class="num">~500,000</td><td>유효기간 2개월</td></tr>
-        </tbody>
-      </table>
+    <!-- 일일권 -->
+    <div class="card">
+      <div class="card-title">🎟️ 일일권 · 입주민 · 패키지</div>
+      <div class="tbl-wrap">
+        <table>
+          <thead>
+            <tr><th>구분</th><th class="num">1회</th><th>비고</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>플래티넘 일일권</td><td class="num">14,000</td><td></td></tr>
+            <tr><td>플래티넘+골프 일일권</td><td class="num">15,000</td><td></td></tr>
+            <tr><td>노블레스 일일권</td><td class="num">16,000</td><td></td></tr>
+            <tr><td>노블레스+골프 일일권</td><td class="num">17,000</td><td></td></tr>
+            <tr><td>입주민 1회권</td><td class="num">47,000</td><td>등급 구분 없음</td></tr>
+            <tr><td>일반 1회권</td><td class="num">55,000</td><td>유효기간 당일</td></tr>
+            <tr><td>10매 바우처</td><td class="num">500,000</td><td>입주민 420,000 / 유효 2개월</td></tr>
+          </tbody>
+        </table>
+      </div>
     </div>
-  </div>
 
-  <!-- 업그레이드 -->
-  <div class="card">
-    <div class="card-title">⬆️ 업그레이드 옵션 (플래티넘 기준 · 연)</div>
-    <div class="tbl-wrap">
-      <table>
-        <thead>
-          <tr><th>추가 옵션</th><th class="num">연 추가금</th><th class="num">일 환산</th><th>비고</th></tr>
-        </thead>
-        <tbody>
-          <tr><td>골프 추가</td><td class="num">+400,000</td><td class="num dim">일 1,095</td><td></td></tr>
-          <tr><td>수영 추가</td><td class="num">+600,000</td><td class="num dim">일 1,643</td><td></td></tr>
-          <tr><td>골프+수영 추가</td><td class="num">+1,000,000</td><td class="num dim">일 2,740</td><td></td></tr>
-        </tbody>
-      </table>
+    <!-- 업그레이드 -->
+    <div class="card">
+      <div class="card-title">⬆️ 업그레이드 옵션 (플래티넘 기준 · 연)</div>
+      <div class="tbl-wrap">
+        <table>
+          <thead>
+            <tr><th>추가 옵션</th><th class="num">연 추가금</th><th class="num">일 환산</th><th>비고</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>골프 추가</td><td class="num">+400,000</td><td class="num dim">일 1,095</td><td></td></tr>
+            <tr><td>수영 추가</td><td class="num">+600,000</td><td class="num dim">일 1,643</td><td></td></tr>
+            <tr><td>골프+수영 추가</td><td class="num">+1,000,000</td><td class="num dim">일 2,740</td><td></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="info-box">⚠️ <strong>다운그레이드 불가.</strong> 등급 업그레이드만 가능.</div>
     </div>
-    <div class="info-box">⚠️ <strong>다운그레이드 불가.</strong> 등급 업그레이드만 가능.</div>
-  </div>
 
-  <!-- 재등록 혜택 -->
-  <div class="card">
-    <div class="card-title">🔄 재등록 혜택 · 부가 서비스</div>
-    <div class="tbl-wrap">
-      <table>
-        <thead>
-          <tr><th>구분</th><th>내용</th></tr>
-        </thead>
-        <tbody>
-          <tr><td><strong>재등록 기본</strong></td><td>5% 할인 + 일일입장권 3매</td></tr>
-          <tr><td><strong>저이용 특별선택권</strong></td><td>연 90일 미만 이용 시 → 2개월 연장 + 일일입장권 3매</td></tr>
-          <tr><td><strong>풀데이 옵션</strong></td><td>재등록 시 선택 가능</td></tr>
-          <tr><td>개인 락커</td><td>월 10,000</td></tr>
-          <tr><td>골프 락커 (윗층)</td><td>월 15,000</td></tr>
-          <tr><td>골프 락커 (아랫층)</td><td>월 20,000</td></tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
-
-  <!-- 강습 요금 -->
-  <div class="card">
-    <div class="card-title">🏊 강습 요금 — 성인 수영</div>
-    <div class="tbl-wrap">
-      <table>
-        <thead>
-          <tr><th>강습명</th><th class="num">회수</th><th class="num">정회원</th><th class="num">준회원</th><th>유효기간</th></tr>
-        </thead>
-        <tbody>
-          <tr><td>수영 1:1 강습</td><td class="num">4회</td><td class="num">374,000</td><td class="num">434,000</td><td>노블레스 유지</td></tr>
-          <tr><td>수영 1:2 강습</td><td class="num">4회</td><td class="num">308,000</td><td class="num">368,000</td><td></td></tr>
-          <tr><td>수영 단체반 (남)</td><td class="num">8회</td><td class="num">144,000</td><td class="num">330,000</td><td rowspan="2">준회원 +66,000</td></tr>
-          <tr><td>수영 단체반 (여, 10%↓)</td><td class="num">8회</td><td class="num dim">—</td><td class="num">297,000</td></tr>
-          <tr><td>아쿠아로빅</td><td class="num">8회</td><td class="num">132,000</td><td class="num">242,000</td><td></td></tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
-
-  <div class="card">
-    <div class="card-title">💪 강습 요금 — P.T (50분)</div>
-    <div class="tbl-wrap">
-      <table>
-        <thead>
-          <tr><th>강습명</th><th class="num">회수</th><th class="num">할인율</th><th class="num">정회원</th><th class="num">준회원</th><th>유효기간</th></tr>
-        </thead>
-        <tbody>
-          <tr><td>패시브 스트레칭 (25분)</td><td class="num">10회</td><td class="num dim">—</td><td class="num">550,000</td><td class="num dim">정회원전용</td><td>2개월</td></tr>
-          <tr><td>P.T</td><td class="num">10회</td><td class="num dim">0%</td><td class="num">1,089,000</td><td class="num">1,239,000</td><td>2개월</td></tr>
-          <tr><td>P.T</td><td class="num">20회</td><td class="num" style="color:var(--green);">5%↓</td><td class="num">2,069,100</td><td class="num">2,369,100</td><td>3개월</td></tr>
-          <tr><td>P.T</td><td class="num">30회</td><td class="num" style="color:var(--green);">10%↓</td><td class="num">2,940,300</td><td class="num">3,390,300</td><td>5개월</td></tr>
-          <tr><td>P.T</td><td class="num">50회</td><td class="num" style="color:var(--green);">15%↓</td><td class="num">4,628,250</td><td class="num">5,378,250</td><td>8개월</td></tr>
-          <tr><td>P.T</td><td class="num">100회</td><td class="num" style="color:var(--green);">25%↓</td><td class="num">8,167,500</td><td class="num">9,667,500</td><td>12개월</td></tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
-
-  <div class="card">
-    <div class="card-title">🧘 강습 요금 — 필라테스 (50분)</div>
-    <div class="tbl-wrap">
-      <table>
-        <thead>
-          <tr><th>강습명</th><th class="num">회수</th><th class="num">할인율</th><th class="num">정회원</th><th class="num">준회원</th><th>유효기간</th></tr>
-        </thead>
-        <tbody>
-          <tr><td>필라테스</td><td class="num">10회</td><td class="num dim">0%</td><td class="num">1,089,000</td><td class="num">1,239,000</td><td>2개월</td></tr>
-          <tr><td>필라테스</td><td class="num">20회</td><td class="num dim">0%</td><td class="num">2,069,100</td><td class="num">2,369,100</td><td>3개월</td></tr>
-          <tr><td>필라테스</td><td class="num">30회</td><td class="num" style="color:var(--green);">5%↓</td><td class="num">2,940,300</td><td class="num">3,390,300</td><td>5개월</td></tr>
-          <tr><td>단체반 1:3</td><td class="num">8회</td><td class="num dim">—</td><td class="num">220,000</td><td class="num">340,000</td><td>2개월</td></tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
-
-  <div class="card">
-    <div class="card-title">🎾 강습 요금 — 스쿼시</div>
-    <div class="tbl-wrap">
-      <table>
-        <thead>
-          <tr><th>강습명</th><th class="num">회수</th><th>타임</th><th class="num">정회원</th><th class="num">준회원</th><th>유효기간</th></tr>
-        </thead>
-        <tbody>
-          <tr><td>원포인트</td><td class="num">1회</td><td>50분</td><td class="num">130,000</td><td class="num">145,000</td><td>1일</td></tr>
-          <tr><td>강습</td><td class="num">10회</td><td>30분</td><td class="num">594,000</td><td class="num">744,000</td><td>2개월</td></tr>
-          <tr><td>강습</td><td class="num">10회</td><td>50분</td><td class="num">792,000</td><td class="num">942,000</td><td>2개월</td></tr>
-          <tr><td>강습</td><td class="num">30회</td><td>30분</td><td class="num">1,692,900</td><td class="num">2,142,900</td><td>5개월</td></tr>
-          <tr><td>강습</td><td class="num">30회</td><td>50분</td><td class="num">2,257,200</td><td class="num">2,707,200</td><td>5개월</td></tr>
-          <tr><td>국대코치 강습</td><td class="num">10회</td><td>30분</td><td class="num">770,000</td><td class="num">920,000</td><td>2개월</td></tr>
-          <tr><td>국대코치 강습</td><td class="num">10회</td><td>50분</td><td class="num">1,089,000</td><td class="num">1,239,000</td><td>2개월</td></tr>
-          <tr><td>단체반 1:4</td><td class="num">8회</td><td>50분</td><td class="num">198,000</td><td class="num">318,000</td><td>2개월</td></tr>
-          <tr><td>WSC 박스래더/성인동호회</td><td class="num">1회</td><td>2시간</td><td class="num">55,000</td><td class="num dim">—</td><td>1일</td></tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
-
-  <div class="card">
-    <div class="card-title">⛳ 강습 요금 — 골프 (25분)</div>
-    <div class="tbl-wrap">
-      <table>
-        <thead>
-          <tr><th>강습명</th><th class="num">회수</th><th class="num">할인율</th><th class="num">정회원</th><th class="num">준회원</th><th>유효기간</th></tr>
-        </thead>
-        <tbody>
-          <tr><td>원포인트</td><td class="num">1회</td><td class="num dim">—</td><td class="num">130,000</td><td class="num">145,000</td><td>1일</td></tr>
-          <tr><td>15분 레슨</td><td class="num">8회</td><td class="num dim">—</td><td class="num">330,000</td><td class="num dim">—</td><td>1개월</td></tr>
-          <tr><td>골프강습</td><td class="num">10회</td><td class="num dim">0%</td><td class="num">650,000</td><td class="num">800,000</td><td>2개월</td></tr>
-          <tr><td>골프강습</td><td class="num">20회</td><td class="num" style="color:var(--green);">5%↓</td><td class="num">1,235,000</td><td class="num">1,535,000</td><td>3개월</td></tr>
-          <tr><td>골프강습</td><td class="num">30회</td><td class="num" style="color:var(--green);">10%↓</td><td class="num">1,755,000</td><td class="num">2,205,000</td><td>5개월</td></tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
-
-  <div class="card">
-    <div class="card-title">👦 강습 요금 — WSC (유소년)</div>
-    <div class="tbl-wrap">
-      <table>
-        <thead>
-          <tr><th>종목</th><th>강습명</th><th class="num">회수</th><th class="num">1:1</th><th class="num">1:2</th><th class="num">그룹</th><th>나이</th><th>유효기간</th></tr>
-        </thead>
-        <tbody>
-          <tr><td rowspan="3">수영</td><td>모자수영 강습</td><td class="num">1회</td><td class="num dim">—</td><td class="num dim">—</td><td class="num">66,000</td><td>12~60개월</td><td>1일</td></tr>
-          <tr><td>WSC수영 강습</td><td class="num">1회</td><td class="num dim">—</td><td class="num dim">—</td><td class="num">55,000</td><td>5~16세</td><td>1일</td></tr>
-          <tr><td>WSC수영 강습</td><td class="num">4회</td><td class="num">407,000</td><td class="num">308,000</td><td class="num">209,000<span class="dim">(1:5)</span></td><td>5~16세</td><td>2개월</td></tr>
-          <tr><td rowspan="2">골프</td><td>WSC골프 체험</td><td class="num">1회</td><td class="num dim">—</td><td class="num">55,000</td><td class="num dim">—</td><td>5~16세</td><td>1일</td></tr>
-          <tr><td>WSC골프 강습</td><td class="num">4회</td><td class="num">407,000</td><td class="num">308,000</td><td class="num">616,000<span class="dim">(패밀리)</span></td><td>5~16세</td><td>2개월</td></tr>
-          <tr><td>스쿼시</td><td>WSC스쿼시 강습</td><td class="num">4회</td><td class="num">407,000</td><td class="num">308,000</td><td class="num">209,000<span class="dim">(1:6)</span> / 220,000<span class="dim">(엘리트)</span></td><td>10~16세</td><td>2개월</td></tr>
-          <tr><td rowspan="2">체조</td><td>WSC체조 체험</td><td class="num">1회</td><td class="num dim">—</td><td class="num dim">—</td><td class="num">44,000</td><td>5~16세</td><td>1일</td></tr>
-          <tr><td>WSC체조 강습</td><td class="num">4회</td><td class="num">407,000</td><td class="num">308,000</td><td class="num">209,000<span class="dim">(1:5)</span></td><td>5~16세</td><td>2개월</td></tr>
-        </tbody>
-      </table>
+    <!-- 재등록 -->
+    <div class="card">
+      <div class="card-title">🔄 재등록 혜택 · 부가 서비스</div>
+      <div class="tbl-wrap">
+        <table>
+          <thead>
+            <tr><th>구분</th><th>내용</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><strong>재등록 기본</strong></td><td>5% 할인 + 일일입장권 3매</td></tr>
+            <tr><td><strong>저이용 특별선택권</strong></td><td>연 90일 미만 이용 시 → 2개월 연장 + 일일입장권 3매</td></tr>
+            <tr><td><strong>풀데이 옵션</strong></td><td>재등록 시 선택 가능 (추가요금 기준 240일)</td></tr>
+            <tr><td>개인 락커</td><td>월 10,000</td></tr>
+            <tr><td>골프 락커 (윗층)</td><td>월 15,000</td></tr>
+            <tr><td>골프 락커 (아랫층)</td><td>월 20,000</td></tr>
+          </tbody>
+        </table>
+      </div>
     </div>
   </div>
 
   <!-- ══════════════════════════════════════
-       [하] 신규 기획 작업대
-       ══════════════════════════════════════ -->
-  <div class="section-divider"><span>▼ 기획 작업대</span></div>
-  <div class="section-badge edit">✏️ 하 — 신규 기획 (편집·저장 가능 · 시트 공유)</div>
+       TAB 2: 강습
+  ══════════════════════════════════════ -->
+  <div id="tab-lesson" class="tab-panel">
+    <div class="section-badge read">📌 현행 강습 요금 — 읽기 참조 · 정적 박제</div>
 
-  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:12px;">
-    <div class="status-msg" id="statusMsg">불러오는 중…</div>
-    <div style="display:flex;gap:6px;">
-      <button class="action-btn" onclick="loadPlans()">↺ 새로고침</button>
-      <button class="action-btn green" onclick="openModal(null)">+ 새 기획 추가</button>
+    <div class="card">
+      <div class="card-title">🏊 성인 수영</div>
+      <div class="tbl-wrap">
+        <table>
+          <thead>
+            <tr><th>강습명</th><th class="num">회수</th><th class="num">정회원</th><th class="num">준회원</th><th>유효기간</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>수영 1:1 강습</td><td class="num">4회</td><td class="num">374,000</td><td class="num">434,000</td><td>노블레스 유지</td></tr>
+            <tr><td>수영 1:2 강습</td><td class="num">4회</td><td class="num">308,000</td><td class="num">368,000</td><td></td></tr>
+            <tr><td>수영 단체반 (남)</td><td class="num">8회</td><td class="num">144,000</td><td class="num">330,000</td><td rowspan="2">준회원 +66,000</td></tr>
+            <tr><td>수영 단체반 (여, 10%↓)</td><td class="num">8회</td><td class="num dim">—</td><td class="num">297,000</td></tr>
+            <tr><td>아쿠아로빅</td><td class="num">8회</td><td class="num">132,000</td><td class="num">242,000</td><td></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">💪 P.T (50분)</div>
+      <div class="tbl-wrap">
+        <table>
+          <thead>
+            <tr><th>강습명</th><th class="num">회수</th><th class="num">할인율</th><th class="num">정회원</th><th class="num">준회원</th><th>유효기간</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>패시브 스트레칭 (25분)</td><td class="num">10회</td><td class="num dim">—</td><td class="num">550,000</td><td class="num dim">정회원전용</td><td>2개월</td></tr>
+            <tr><td>P.T</td><td class="num">10회</td><td class="num dim">0%</td><td class="num">1,089,000</td><td class="num">1,239,000</td><td>2개월</td></tr>
+            <tr><td>P.T</td><td class="num">20회</td><td class="num"><span class="num-badge green">5%↓</span></td><td class="num">2,069,100</td><td class="num">2,369,100</td><td>3개월</td></tr>
+            <tr><td>P.T</td><td class="num">30회</td><td class="num"><span class="num-badge green">10%↓</span></td><td class="num">2,940,300</td><td class="num">3,390,300</td><td>5개월</td></tr>
+            <tr><td>P.T</td><td class="num">50회</td><td class="num"><span class="num-badge green">15%↓</span></td><td class="num">4,628,250</td><td class="num">5,378,250</td><td>8개월</td></tr>
+            <tr><td>P.T</td><td class="num">100회</td><td class="num"><span class="num-badge green">25%↓</span></td><td class="num">8,167,500</td><td class="num">9,667,500</td><td>12개월</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">🧘 필라테스 (50분)</div>
+      <div class="tbl-wrap">
+        <table>
+          <thead>
+            <tr><th>강습명</th><th class="num">회수</th><th class="num">할인율</th><th class="num">정회원</th><th class="num">준회원</th><th>유효기간</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>필라테스</td><td class="num">10회</td><td class="num dim">0%</td><td class="num">1,089,000</td><td class="num">1,239,000</td><td>2개월</td></tr>
+            <tr><td>필라테스</td><td class="num">20회</td><td class="num dim">0%</td><td class="num">2,069,100</td><td class="num">2,369,100</td><td>3개월</td></tr>
+            <tr><td>필라테스</td><td class="num">30회</td><td class="num"><span class="num-badge green">5%↓</span></td><td class="num">2,940,300</td><td class="num">3,390,300</td><td>5개월</td></tr>
+            <tr><td>단체반 1:3</td><td class="num">8회</td><td class="num dim">—</td><td class="num">220,000</td><td class="num">340,000</td><td>2개월</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">🎾 스쿼시</div>
+      <div class="tbl-wrap">
+        <table>
+          <thead>
+            <tr><th>강습명</th><th class="num">회수</th><th>타임</th><th class="num">정회원</th><th class="num">준회원</th><th>유효기간</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>원포인트</td><td class="num">1회</td><td>50분</td><td class="num">130,000</td><td class="num">145,000</td><td>1일</td></tr>
+            <tr><td>강습</td><td class="num">10회</td><td>30분</td><td class="num">594,000</td><td class="num">744,000</td><td>2개월</td></tr>
+            <tr><td>강습</td><td class="num">10회</td><td>50분</td><td class="num">792,000</td><td class="num">942,000</td><td>2개월</td></tr>
+            <tr><td>강습</td><td class="num">30회</td><td>30분</td><td class="num">1,692,900</td><td class="num">2,142,900</td><td>5개월</td></tr>
+            <tr><td>강습</td><td class="num">30회</td><td>50분</td><td class="num">2,257,200</td><td class="num">2,707,200</td><td>5개월</td></tr>
+            <tr><td>국대코치 강습</td><td class="num">10회</td><td>30분</td><td class="num">770,000</td><td class="num">920,000</td><td>2개월</td></tr>
+            <tr><td>국대코치 강습</td><td class="num">10회</td><td>50분</td><td class="num">1,089,000</td><td class="num">1,239,000</td><td>2개월</td></tr>
+            <tr><td>단체반 1:4</td><td class="num">8회</td><td>50분</td><td class="num">198,000</td><td class="num">318,000</td><td>2개월</td></tr>
+            <tr><td>WSC 박스래더/성인동호회</td><td class="num">1회</td><td>2시간</td><td class="num">55,000</td><td class="num dim">—</td><td>1일</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">⛳ 골프 (25분)</div>
+      <div class="tbl-wrap">
+        <table>
+          <thead>
+            <tr><th>강습명</th><th class="num">회수</th><th class="num">할인율</th><th class="num">정회원</th><th class="num">준회원</th><th>유효기간</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>원포인트</td><td class="num">1회</td><td class="num dim">—</td><td class="num">130,000</td><td class="num">145,000</td><td>1일</td></tr>
+            <tr><td>15분 레슨</td><td class="num">8회</td><td class="num dim">—</td><td class="num">330,000</td><td class="num dim">—</td><td>1개월</td></tr>
+            <tr><td>골프강습</td><td class="num">10회</td><td class="num dim">0%</td><td class="num">650,000</td><td class="num">800,000</td><td>2개월</td></tr>
+            <tr><td>골프강습</td><td class="num">20회</td><td class="num"><span class="num-badge green">5%↓</span></td><td class="num">1,235,000</td><td class="num">1,535,000</td><td>3개월</td></tr>
+            <tr><td>골프강습</td><td class="num">30회</td><td class="num"><span class="num-badge green">10%↓</span></td><td class="num">1,755,000</td><td class="num">2,205,000</td><td>5개월</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">👦 WSC (유소년)</div>
+      <div class="tbl-wrap">
+        <table>
+          <thead>
+            <tr><th>종목</th><th>강습명</th><th class="num">회수</th><th class="num">1:1</th><th class="num">1:2</th><th class="num">그룹</th><th>나이</th><th>유효기간</th></tr>
+          </thead>
+          <tbody>
+            <tr><td rowspan="3">수영</td><td>모자수영 강습</td><td class="num">1회</td><td class="num dim">—</td><td class="num dim">—</td><td class="num">66,000</td><td>12~60개월</td><td>1일</td></tr>
+            <tr><td>WSC수영 강습</td><td class="num">1회</td><td class="num dim">—</td><td class="num dim">—</td><td class="num">55,000</td><td>5~16세</td><td>1일</td></tr>
+            <tr><td>WSC수영 강습</td><td class="num">4회</td><td class="num">407,000</td><td class="num">308,000</td><td class="num">209,000<span class="dim">(1:5)</span></td><td>5~16세</td><td>2개월</td></tr>
+            <tr><td rowspan="2">골프</td><td>WSC골프 체험</td><td class="num">1회</td><td class="num dim">—</td><td class="num">55,000</td><td class="num dim">—</td><td>5~16세</td><td>1일</td></tr>
+            <tr><td>WSC골프 강습</td><td class="num">4회</td><td class="num">407,000</td><td class="num">308,000</td><td class="num">616,000<span class="dim">(패밀리)</span></td><td>5~16세</td><td>2개월</td></tr>
+            <tr><td>스쿼시</td><td>WSC스쿼시 강습</td><td class="num">4회</td><td class="num">407,000</td><td class="num">308,000</td><td class="num">209,000<span class="dim">(1:6)</span> / 220,000<span class="dim">(엘리트)</span></td><td>10~16세</td><td>2개월</td></tr>
+            <tr><td rowspan="2">체조</td><td>WSC체조 체험</td><td class="num">1회</td><td class="num dim">—</td><td class="num dim">—</td><td class="num">44,000</td><td>5~16세</td><td>1일</td></tr>
+            <tr><td>WSC체조 강습</td><td class="num">4회</td><td class="num">407,000</td><td class="num">308,000</td><td class="num">209,000<span class="dim">(1:5)</span></td><td>5~16세</td><td>2개월</td></tr>
+          </tbody>
+        </table>
+      </div>
     </div>
   </div>
 
-  <div class="plan-grid" id="planGrid">
-    <!-- 카드 동적 렌더 -->
-  </div>
+  <!-- ══════════════════════════════════════
+       TAB 3: 요금 정책
+  ══════════════════════════════════════ -->
+  <div id="tab-policy" class="tab-panel">
+    <div class="section-badge policy">💳 요금 정책 — 현행 운영 규정 · 26년 적용 기준</div>
+
+    <!-- 1. 신규 등록 & 웰컴패키지 -->
+    <div class="accordion open" id="acc1">
+      <div class="acc-header" onclick="toggleAcc('acc1')">
+        <div class="acc-header-left">
+          <span class="acc-icon">🎁</span>
+          <span class="acc-title">신규 등록 &amp; 웰컴패키지</span>
+        </div>
+        <div class="acc-badges">
+          <span class="num-badge blue">분기 기획</span>
+          <span class="num-badge accent">공제금 주의</span>
+        </div>
+        <span class="acc-chevron">▼</span>
+      </div>
+      <div class="acc-body">
+        <p><strong>분기별 신규 기획</strong> — 1~3월 / 4~6월 / 7~9월 / 10~12월 단위 기획. 회장 보고 체계.</p>
+        <p><strong>웰컴패키지 구성</strong></p>
+        <ul>
+          <li>바우처 일일입장권 <strong>3매</strong></li>
+          <li>손톱깍이 1개</li>
+          <li>강습 3회 — PT · 필라테스 · 골프 · 스쿼시 중 <strong>택 1</strong></li>
+          <li>강습 3회 대신 <strong>생크몽드 100회 대체</strong> 선택 가능</li>
+        </ul>
+        <div class="callout red" style="margin-top:12px;">⚠️ <strong>환불 시 웰컴패키지 공제금</strong> — 강습 진행 확인 시에 한해 적용<br>
+          PT 326,700원 / 필라테스 326,700원 / 스쿼시 237,600원 / 골프 195,000원<br>
+          <span style="font-size:12px;opacity:0.8;">일일입장권·손톱깍이는 공제 대상 아님</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2. 요금 체계 & 인상 계획 -->
+    <div class="accordion" id="acc2">
+      <div class="acc-header" onclick="toggleAcc('acc2')">
+        <div class="acc-header-left">
+          <span class="acc-icon">📊</span>
+          <span class="acc-title">요금 체계 &amp; 인상 계획</span>
+        </div>
+        <div class="acc-badges">
+          <span class="num-badge yellow">26.10 / 28.10 인상 예정</span>
+        </div>
+        <span class="acc-chevron">▼</span>
+      </div>
+      <div class="acc-body">
+        <div class="tbl-wrap">
+          <table>
+            <thead>
+              <tr><th>등급</th><th class="num">연간 요금</th><th>비고</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>플래티넘</td><td class="num">3,000,000</td><td></td></tr>
+              <tr><td>플래티넘+골프</td><td class="num">3,400,000</td><td></td></tr>
+              <tr><td>노블레스</td><td class="num">3,600,000</td><td></td></tr>
+              <tr><td>노블레스+골프</td><td class="num">4,000,000</td><td>최상위</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="section-divider" style="margin:14px 0 12px;"><span>가족 요금</span></div>
+        <p style="font-size:13px;color:var(--dim-mid);">2번째 가족부터 각 <strong style="color:var(--text);">270만원</strong> · 가족증명 첨부 필수</p>
+        <div class="tbl-wrap">
+          <table>
+            <thead>
+              <tr><th>가족수</th><th class="num">합계</th><th class="num">절감률</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>2인</td><td class="num">5,700,000</td><td class="num"><span class="num-badge green">5%↓</span></td></tr>
+              <tr><td>3인</td><td class="num">8,400,000</td><td class="num"><span class="num-badge green">6.7%↓</span></td></tr>
+              <tr><td>4인</td><td class="num">11,100,000</td><td class="num"><span class="num-badge green">7.5%↓</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="section-divider" style="margin:14px 0 12px;"><span>법인·단체</span></div>
+        <ul>
+          <li><strong>5인</strong> — 1,350만원 (10%↓) · 사업자등록증 · 휴회불가 · 양도 1회 5만</li>
+          <li><strong>10인</strong> — 2,550만원 (15%↓) · 동일 조건</li>
+        </ul>
+        <div class="section-divider" style="margin:14px 0 12px;"><span>회원 소개</span></div>
+        <p>소개자 이용권 <strong>5매</strong> + 선물 <strong>15만원 상당</strong></p>
+        <div class="callout yellow" style="margin-top:12px;">📅 <strong>2년 주기 인상 예정</strong> — 2026년 10월 / 2028년 10월</div>
+      </div>
+    </div>
+
+    <!-- 3. 재등록 정책 -->
+    <div class="accordion" id="acc3">
+      <div class="acc-header" onclick="toggleAcc('acc3')">
+        <div class="acc-header-left">
+          <span class="acc-icon">🔄</span>
+          <span class="acc-title">재등록 정책</span>
+        </div>
+        <div class="acc-badges">
+          <span class="num-badge green">5% 고정 할인</span>
+        </div>
+        <span class="acc-chevron">▼</span>
+      </div>
+      <div class="acc-body">
+        <ul>
+          <li>할인율 <strong>5% 고정</strong> (횟수 무관)</li>
+          <li>바우처 일일입장권 <strong>3매</strong> 제공</li>
+          <li><strong>90일 미만</strong> 이용 회원 → 2개월 연장 + 일일입장권 3매 (저이용 특별선택권)</li>
+          <li>만기 후 <strong>1년 내</strong> 등록 시 재등록 혜택 / 1년 경과 시 신규 혜택 적용</li>
+          <li>풀데이 추가요금 기준 <strong>240일</strong></li>
+          <li>사은품 별도 제공</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- 4. 멤버십 등급제 FAN -->
+    <div class="accordion" id="acc4">
+      <div class="acc-header" onclick="toggleAcc('acc4')">
+        <div class="acc-header-left">
+          <span class="acc-icon">⭐</span>
+          <span class="acc-title">멤버십 등급제 (FAN)</span>
+        </div>
+        <div class="acc-badges">
+          <span class="num-badge orange">26년 4→3단계 축소</span>
+        </div>
+        <span class="acc-chevron">▼</span>
+      </div>
+      <div class="acc-body">
+        <div class="policy-compare">
+          <div class="pc-box current">
+            <div class="pc-box-label">25년 현행 (4단계)</div>
+            <div class="pc-box-content">4개 등급 운영</div>
+          </div>
+          <div class="pc-box next">
+            <div class="pc-box-label">26년 변경 (3단계)</div>
+            <div class="pc-box-content">
+              <strong>FAN VIP</strong> — 누적 1,700만원↑<br>
+              <strong>VIP</strong> — 누적 1,200만원↑<br>
+              <strong>M</strong> — 누적 800만원↑
+            </div>
+          </div>
+        </div>
+        <div class="section-divider" style="margin:14px 0 12px;"><span>FAN 혜택</span></div>
+        <ul>
+          <li>FAN 전용 락커</li>
+          <li>주차 연장</li>
+          <li>일일입장 혜택</li>
+          <li>카페 충전 크레딧</li>
+        </ul>
+        <div class="callout" style="margin-top:12px;">📋 평가 기준 — 이용금액 · 출석 · 에티켓 · 경영진 VVVIP 지정</div>
+      </div>
+    </div>
+
+    <!-- 5. 회원 서비스 옵션 -->
+    <div class="accordion" id="acc5">
+      <div class="acc-header" onclick="toggleAcc('acc5')">
+        <div class="acc-header-left">
+          <span class="acc-icon">⚙️</span>
+          <span class="acc-title">회원 서비스 옵션</span>
+        </div>
+        <div class="acc-badges">
+          <span class="num-badge accent">입장·휴회·양도·환불</span>
+        </div>
+        <span class="acc-chevron">▼</span>
+      </div>
+      <div class="acc-body">
+        <div class="tbl-wrap">
+          <table>
+            <thead>
+              <tr><th>서비스</th><th>조건 / 규정</th></tr>
+            </thead>
+            <tbody>
+              <tr><td><strong>입장</strong></td><td>1일 1회 원칙 · 풀데이 추가 48만원 (책임자 컨펌)</td></tr>
+              <tr><td><strong>휴회</strong></td><td>연 3회 / 총 60일 · 특이사항 시 최대 90일</td></tr>
+              <tr><td><strong>양도</strong></td><td>1회 한정 · 직계가족 / 비가족 양도비 5만원 · 단기권 양도 가능</td></tr>
+              <tr><td><strong>환불</strong></td><td>위약금 10% · 24시간 이내 취소 시 무위약 · 일일요금 기준 플래티넘 14,000~노블+골프 17,000</td></tr>
+              <tr><td><strong>일일입장권</strong></td><td>1회 55,000 / 입주민 47,000 · 10회 바우처 500,000 / 입주민 420,000 · 유효 2개월</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- 6. 입회 나이 정책 -->
+    <div class="accordion" id="acc6">
+      <div class="acc-header" onclick="toggleAcc('acc6')">
+        <div class="acc-header-left">
+          <span class="acc-icon">🎂</span>
+          <span class="acc-title">입회 나이 정책</span>
+        </div>
+        <div class="acc-badges">
+          <span class="num-badge red">70세+ 조건부</span>
+        </div>
+        <span class="acc-chevron">▼</span>
+      </div>
+      <div class="acc-body">
+        <div class="tbl-wrap">
+          <table>
+            <thead>
+              <tr><th>연령</th><th>가능 여부</th><th>조건</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>17~69세</td><td><span class="num-badge green">가능</span></td><td>일반 절차</td></tr>
+              <tr><td>70~75세</td><td><span class="num-badge yellow">조건부</span></td><td>건강검진 + 서약서</td></tr>
+              <tr><td>76세 이상</td><td><span class="num-badge orange">조건부</span></td><td>건강검진 + 서약서 + 수영 불가 + 컨시어지 동반</td></tr>
+              <tr><td>기존회원 재등록</td><td><span class="num-badge green">무조건</span></td><td>나이 제한 미적용</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="callout yellow" style="margin-top:12px;">⚠️ 만료 1개월 내 미등록 시 → 시니어 나이 정책 새로 적용</div>
+      </div>
+    </div>
+
+    <!-- 7. 시설 운영 -->
+    <div class="accordion" id="acc7">
+      <div class="acc-header" onclick="toggleAcc('acc7')">
+        <div class="acc-header-left">
+          <span class="acc-icon">🏢</span>
+          <span class="acc-title">시설 운영 정책</span>
+        </div>
+        <div class="acc-badges">
+          <span class="num-badge accent">주차·편의·휴일</span>
+        </div>
+        <span class="acc-chevron">▼</span>
+      </div>
+      <div class="acc-body">
+        <div class="tbl-wrap">
+          <table>
+            <thead>
+              <tr><th>항목</th><th>내용</th></tr>
+            </thead>
+            <tbody>
+              <tr><td><strong>휴일</strong></td><td>신정 · 설 연휴 · 추석 연휴 · 둘째·넷째 일요일</td></tr>
+              <tr><td><strong>주차</strong></td><td>기본 4시간 무료 · 발렛 FAN VIP 대상 · 1인 1차량 등록제</td></tr>
+              <tr><td><strong>비치 타올</strong></td><td>클럽 내 제공</td></tr>
+              <tr><td><strong>여자 세신</strong></td><td>제공 (사우나)</td></tr>
+              <tr><td><strong>세미나실</strong></td><td>대관 가능</td></tr>
+              <tr><td><strong>노블레스 수영복 거치대</strong></td><td>노블레스 등급 전용</td></tr>
+              <tr><td><strong>강습 할인</strong></td><td>정회원 전용 강습 할인 요금 적용</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /tab-policy -->
+
+  <!-- ══════════════════════════════════════
+       TAB 4: 기획 작업대
+  ══════════════════════════════════════ -->
+  <div id="tab-workshop" class="tab-panel">
+    <div class="section-badge edit">✏️ 신규 기획 작업대 — 편집·저장 가능 · 시트 공유</div>
+
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:12px;">
+      <div class="status-msg" id="statusMsg">불러오는 중…</div>
+      <div style="display:flex;gap:6px;">
+        <button class="action-btn" onclick="loadPlans()">↺ 새로고침</button>
+        <button class="action-btn green" onclick="openModal(null)">+ 새 기획 추가</button>
+      </div>
+    </div>
+
+    <div class="plan-grid" id="planGrid">
+      <!-- 카드 동적 렌더 -->
+    </div>
+  </div><!-- /tab-workshop -->
 
 </div><!-- /content -->
 
 <!-- ══════════════════════════════════════
      편집 모달
-     ══════════════════════════════════════ -->
+══════════════════════════════════════ -->
 <div class="modal-bg" id="modalBg" onclick="if(event.target===this)closeModal()">
   <div class="modal">
     <h3 id="modalTitle">기획 추가</h3>
@@ -437,6 +794,22 @@ tr:hover td{background:var(--accent-bg);}
 </div>
 
 <script>
+// ── 탭 전환 ──────────────────────────────────────────────────────────
+function switchTab(id, btn) {
+  var panels = document.querySelectorAll('.tab-panel');
+  var btns = document.querySelectorAll('.tab-btn');
+  for (var i = 0; i < panels.length; i++) panels[i].classList.remove('active');
+  for (var j = 0; j < btns.length; j++) btns[j].classList.remove('active');
+  document.getElementById('tab-' + id).classList.add('active');
+  btn.classList.add('active');
+  if (id === 'workshop') loadPlans();
+}
+
+// ── 아코디언 ─────────────────────────────────────────────────────────
+function toggleAcc(id) {
+  document.getElementById(id).classList.toggle('open');
+}
+
 // ── 상수 ──────────────────────────────────────────────────────────
 var TODO_API_URL = 'https://script.google.com/macros/s/AKfycbxDwFkrxK1YIaEoSNcuw2MiHiZQ-7o5N6311ytksSyeEd86ZFOhLknOWqQgNArQvZ-7/exec';
 
@@ -479,7 +852,7 @@ var SEEDS = [
   }
 ];
 
-// ── 카드 렌더 ──────────────────────────────────────────────────────
+// ── 카드 렌더 ──────────────────────────────────────────────────────────
 function statusBadge(s) {
   var map = {초안:'draft',검토중:'review',확정:'confirmed'};
   var cls = map[s] || 'draft';
@@ -512,7 +885,7 @@ function renderCards(items) {
 }
 function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
-// ── 불러오기 ───────────────────────────────────────────────────────
+// ── 불러오기 ───────────────────────────────────────────────────────────
 function setStatus(msg, isErr) {
   var el = document.getElementById('statusMsg');
   el.textContent = msg;
@@ -537,7 +910,7 @@ function loadPlans() {
     });
 }
 
-// ── 저장 ───────────────────────────────────────────────────────────
+// ── 저장 ───────────────────────────────────────────────────────────────
 function savePlan(item) {
   fetch(TODO_API_URL, {
     method:'POST',
@@ -551,7 +924,7 @@ function savePlan(item) {
   });
 }
 
-// ── 시드 저장 (isSeed 제거 후 저장) ──────────────────────────────
+// ── 시드 저장 (isSeed 제거 후 저장) ──────────────────────────────────
 function saveSeed(it) {
   var item = Object.assign({}, it);
   delete item.isSeed;
@@ -560,7 +933,7 @@ function saveSeed(it) {
   savePlan(item);
 }
 
-// ── 삭제 ───────────────────────────────────────────────────────────
+// ── 삭제 ───────────────────────────────────────────────────────────────
 function deletePlan(id) {
   if (!confirm('이 기획안을 삭제하시겠습니까?')) return;
   fetch(TODO_API_URL, {
@@ -574,7 +947,7 @@ function deletePlan(id) {
   });
 }
 
-// ── 모달 ───────────────────────────────────────────────────────────
+// ── 모달 ───────────────────────────────────────────────────────────────
 function openModal(it) {
   document.getElementById('editId').value     = it ? (it.id||'') : '';
   document.getElementById('editGubun').value  = it ? (it.구분||'') : '';
@@ -608,7 +981,7 @@ function submitPlan() {
   savePlan(item);
 }
 
-// ── 게이트 통과 후 앱 시작 ────────────────────────────────────────
+// ── 게이트 통과 후 앱 시작 ────────────────────────────────────────────
 window.startApp = function() { loadPlans(); };
 // 게이트 없이 바로 로드된 경우(이미 통과된 세션)
 if (document.readyState === 'loading') {
