@@ -154,6 +154,21 @@ function _vGenId() {
     + ('000' + new Date().getMilliseconds()).slice(-3);
 }
 
+// ─── 전체 통합 순번 ID — VOC-1, VOC-2 … (식별자 겸 순번) ───
+// ScriptProperties 'VOC_SEQ' 를 단조증가(monotonic) 카운터로 사용 → 행을 삭제해도 번호 재사용 안 함(식별자 안정).
+// LockService 로 동시 접수 시 같은 번호 발급 충돌 방지. 5종 카테고리 통틀어 하나의 일련번호.
+function _vNextSeqId() {
+  var lock = LockService.getScriptLock();
+  try { lock.waitLock(5000); } catch (e) {}
+  var props = PropertiesService.getScriptProperties();
+  var cur = parseInt(props.getProperty('VOC_SEQ') || '0', 10);
+  if (isNaN(cur)) cur = 0;
+  var next = cur + 1;
+  props.setProperty('VOC_SEQ', String(next));
+  try { lock.releaseLock(); } catch (e) {}
+  return 'VOC-' + next;
+}
+
 // ─── CORS JSON 응답 ───
 function _vJson(obj) {
   return ContentService
@@ -462,7 +477,7 @@ function _vSubmit(body) {
   }
 
   var sh = _vGetSheet();
-  var id = _vGenId();
+  var id = _vNextSeqId();
   var now = _vNow();
   var row = new Array(VOC_HEADERS.length).fill('');
   row[VOC_HEADERS.indexOf('접수ID')]   = id;
@@ -588,7 +603,7 @@ function _regSubmit(body) {
   }
 
   var headers = _regHeadersFor(cat.key); // [{key,label}]
-  var id  = _vGenId();
+  var id  = _vNextSeqId();
   var now = _vNow();
 
   // 행 구성 — 공통 컬럼 채우기
@@ -753,6 +768,66 @@ function _regDelete(body) {
   return _vJson({ ok: false, error: '해당 접수ID를 찾을 수 없습니다: ' + id });
 }
 
+// ─── reg_renumber — 전체 접수 통합 순번 재부여 (GATED·일회성 마이그레이션) ───
+// 모든 카테고리 시트 + 레거시 '접수 VOC'의 전 행을 접수일시 오름차순으로 모아 VOC-1..N 재부여
+// (시트별 접수ID/regId 컬럼만 갱신, 다른 칸 불변) 후 VOC_SEQ=N 동기화 → 새 접수는 VOC-(N+1) 이어감.
+// 재실행해도 접수일시 순서가 같으면 같은 번호 → 멱등. 백업은 호출 전 외부(reg_list 덤프)에서 수행.
+function _regRenumber(body) {
+  var entries = [];   // {sheet, rowNum, idCol(1-based), createdAt}
+
+  // 종합접수처 카테고리 시트들
+  REG_CATEGORIES.forEach(function (cat) {
+    var sh;
+    try { sh = _regGetSheet(cat.key); } catch (e) { return; }
+    var headers = _regHeadersFor(cat.key);
+    var idIdx = -1, createdIdx = -1;
+    for (var i = 0; i < headers.length; i++) {
+      if (headers[i].key === 'regId')     idIdx = i;
+      if (headers[i].key === 'createdAt') createdIdx = i;
+    }
+    if (idIdx < 0) return;
+    var last = sh.getLastRow();
+    if (last < 2) return;
+    var data = sh.getRange(2, 1, last - 1, headers.length).getValues();
+    for (var r = 0; r < data.length; r++) {
+      var c = data[r][createdIdx];
+      if (c instanceof Date) c = Utilities.formatDate(c, 'Asia/Seoul', 'yyyy-MM-dd HH:mm:ss');
+      entries.push({ sheet: sh, rowNum: r + 2, idCol: idIdx + 1, createdAt: String(c || '') });
+    }
+  });
+
+  // 레거시 '접수 VOC' 시트(있으면)
+  try {
+    var lss = _vGetSpreadsheet().getSheetByName(VOC_SHEET);
+    if (lss && lss.getLastRow() >= 2) {
+      var lIdIdx = VOC_HEADERS.indexOf('접수ID');
+      var lCrIdx = VOC_HEADERS.indexOf('접수일시');
+      var ld = lss.getRange(2, 1, lss.getLastRow() - 1, VOC_HEADERS.length).getValues();
+      for (var k = 0; k < ld.length; k++) {
+        var c2 = ld[k][lCrIdx];
+        if (c2 instanceof Date) c2 = Utilities.formatDate(c2, 'Asia/Seoul', 'yyyy-MM-dd HH:mm:ss');
+        entries.push({ sheet: lss, rowNum: k + 2, idCol: lIdIdx + 1, createdAt: String(c2 || '') });
+      }
+    }
+  } catch (e) {}
+
+  // 접수일시 오름차순(빈값 뒤로)
+  entries.sort(function (a, b) {
+    if (!a.createdAt) return 1;
+    if (!b.createdAt) return -1;
+    return a.createdAt < b.createdAt ? -1 : (a.createdAt > b.createdAt ? 1 : 0);
+  });
+
+  var n = 0;
+  entries.forEach(function (e) {
+    n += 1;
+    e.sheet.getRange(e.rowNum, e.idCol).setValue('VOC-' + n);
+  });
+  PropertiesService.getScriptProperties().setProperty('VOC_SEQ', String(n));
+
+  return _vJson({ ok: true, renumbered: n, message: '전체 접수 ' + n + '건을 VOC-1..VOC-' + n + '로 재부여했습니다.' });
+}
+
 // ═══════════════════════════════════════════
 //  접근 게이트 (PII 보호 — TOKEN_ENFORCE 스위치)
 // ═══════════════════════════════════════════
@@ -812,6 +887,7 @@ function _vProcess(action, body, params) {
   }
   if (action === 'reg_update') return _regUpdate(body);
   if (action === 'reg_delete') return _regDelete(body);   // 접수ID로 행 정밀 삭제(배포검증 더미 청소용·GATED). 2026-06-20 시우.
+  if (action === 'reg_renumber') return _regRenumber(body); // 전체 통합 순번 VOC-1.. 재부여(일회성·멱등·GATED). 2026-06-30 시토.
 
   // ── 레거시 VOC 액션 (하위호환) ──
   if (action === 'voc_submit') return _vSubmit(body);
