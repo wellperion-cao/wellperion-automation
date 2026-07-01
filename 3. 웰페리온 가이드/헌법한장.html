@@ -80,6 +80,35 @@
   .kbar.neutral>i{background:var(--dim);}
   .workrate-meta{font-size:10.5px; color:var(--dim);}
   .workrate-meta b{color:var(--text-soft);}
+  /* ── 🛡️ 재발방지 GUARDED (ssot/incidents.json 직독 · 역할 연관) — 2026-07-02 ── */
+  .incd{margin:6px 0 4px; padding:6px 8px; border:1px solid rgba(106,191,123,0.28); border-left:3px solid #6abf7b; border-radius:8px; background:rgba(106,191,123,0.06);}
+  .incd-h{display:block; font-size:10px; font-weight:800; color:#6abf7b; margin-bottom:3px;}
+  .incd-meta{font-size:12px; color:var(--text-soft);}
+  .incd-meta b{color:#8fd89e;}
+  .incd-recent{display:block; font-size:11px; color:var(--dim); margin-top:2px; line-height:1.35;}
+  /* ── 🎛️ 필터·폴침 컨트롤바 (역할·칸 토글 + 간략/펼침) — 2026-07-02 ── */
+  .mx-controls{display:flex; flex-wrap:wrap; gap:6px 8px; align-items:center; margin:6px 0 8px; padding:8px 10px; background:var(--paper); border:1px solid var(--border); border-radius:9px;}
+  .mx-controls .grp{display:flex; flex-wrap:wrap; gap:5px; align-items:center;}
+  .mx-controls .glab{font-size:10px; color:var(--dim); text-transform:uppercase; letter-spacing:0.03em; margin-right:2px;}
+  .mx-chip{font-size:11px; color:var(--text-soft); background:var(--surface); border:1px solid var(--border-strong); border-radius:20px; padding:3px 10px; cursor:pointer; user-select:none; line-height:1.3; white-space:nowrap;}
+  .mx-chip:hover{border-color:var(--accent);}
+  .mx-chip.on{background:var(--accent); color:#fff; border-color:var(--accent);}
+  .mx-chip.col.on{background:var(--surface); color:var(--accent-soft); border-color:var(--accent);}
+  .mx-sep{width:1px; align-self:stretch; min-height:20px; background:var(--border-strong); margin:0 2px;}
+  /* 첫 칸(주체) 고정 — 가로 스크롤 시에도 항상 보이게(모바일 스캔성) */
+  table.matrix td.role-cell{position:sticky; left:0; z-index:1;}
+  table.matrix thead th.role-col{position:sticky; left:0; z-index:3;}
+  /* 칸 숨김(차원 토글) */
+  table.matrix.hide-c0 th:nth-child(2), table.matrix.hide-c0 td:nth-child(2),
+  table.matrix.hide-c1 th:nth-child(3), table.matrix.hide-c1 td:nth-child(3),
+  table.matrix.hide-c2 th:nth-child(4), table.matrix.hide-c2 td:nth-child(4){display:none;}
+  /* 간략(폴침) — 긴 dims 클램프(편집 중엔 미적용) */
+  table.matrix.compact td .dim-bul, table.matrix.compact td .dim-val{max-height:62px; overflow:hidden;}
+  @media (max-width:640px){
+    table.matrix{min-width:760px;}
+    td.role-cell .rname{font-size:13px;}
+    table.matrix th, table.matrix td{padding:6px 7px;}
+  }
   /* ── 편집 모드 ── */
   .ebtn{font-size:11px; padding:3px 11px; border-radius:7px; cursor:pointer; margin-left:6px;}
   .ebtn.edit{background:var(--surface); color:var(--accent-soft); border:1px solid var(--accent);}
@@ -133,6 +162,12 @@
     .todaychip{color:#111 !important; background:#f8f2dc !important; border-color:#999 !important;}
     .nsreach{background:#f8f2dc !important; border-color:#caa84a !important;}
     .nsreach-h, .nsreach-meta, .nsreach-meta b, .nsreach-note, .nsreach-build, .workrate-h, .workrate-meta, .workrate-meta b{color:#111 !important;}
+    /* 신규(2026-07-02): 컨트롤바 숨김 · 첫칸고정/폴침 해제 · 재발방지 라이트 */
+    .mx-controls{display:none !important;}
+    table.matrix td.role-cell, table.matrix thead th.role-col{position:static !important;}
+    table.matrix.compact td .dim-bul, table.matrix.compact td .dim-val{max-height:none !important; overflow:visible !important;}
+    .incd{background:#eef7ef !important; border-color:#8ab894 !important;}
+    .incd-h, .incd-meta, .incd-meta b, .incd-recent{color:#111 !important;}
   }
 </style>
 </head>
@@ -147,7 +182,8 @@
 
   <!-- ════ A. 8주체 × 3칸 매트릭스 (편집형 · 2026-06-29) ════ -->
   <h2 class="sec">🧭 8주체 × 3칸 매트릭스 <span id="matrix-edit-wrap" style="font-size:11px;font-weight:400;"></span></h2>
-  <div class="sec-note">핵심 3칸만 표시. 재발방지·결재선·소유침범·보고협업 4개 차원은 S2 본인탭 참조. 📊 KPI = ssot/kpi.json 정본 직독(읽기전용 · 편집 제외).</div>
+  <div class="sec-note">핵심 3칸만 표시. 재발방지·결재선·소유침범·보고협업 4개 차원은 S2 본인탭 참조. 📊 KPI = ssot/kpi.json 정본 직독(읽기전용 · 편집 제외). 🛡️ 재발방지 GUARDED = ssot/incidents.json 직독.</div>
+  <div class="mx-controls" id="mx-controls"><!-- JS: 역할·칸 필터 + 폴침 --></div>
   <div class="matrix-scroll">
     <table class="matrix">
       <thead>
@@ -234,7 +270,13 @@
   var _kpiValues = null;      // status/kpi_values.json roles{} — 현재 실측값(없으면 null)
   var _queueCounts = null;    // status/_queue.json 집계 → role.id별 {active, doneToday}
   var _pendingByRole = null;  // status/northstar_pending.json → role.id별 후보 1개
+  var _incidents = null;      // ssot/incidents.json → role.id별 {guarded, recent}
   var _editMode = false;
+  // 뷰 상태(GM PC 세션 한정 · 정본 아님): 역할 필터 · 칸 숨김 · 폴침
+  var _roleFilter = null;     // null=전체, 아니면 role.id
+  var _colHidden = [false, false, false];
+  var _compact = false;
+  var _ctrlBound = false;
 
   // 뷰어 로컬(=GM 기준 KST) 오늘 날짜 YYYY-MM-DD
   function localToday(){
@@ -257,6 +299,26 @@
   function computePending(d){
     var m = {}, arr = (d && d.candidates) || [];
     arr.forEach(function(c){ if(c && c.role && !m[c.role]) m[c.role] = c; });
+    return m;
+  }
+  // incidents.json → 역할 추론(명시 role 필드 없음 → watch_globs/본문 키워드).
+  //   판정은 watch_globs(사건의 도메인 앵커)만 사용 — 본문 자유서술은 우발 언급(예: 소실 파일명)이 섞여 오분류하므로 제외.
+  //   cmo=콘텐츠/IG/슬라이드/검수큐, 그 외 거버넌스·인프라 재발방지는 cto(기술 소유) 귀속.
+  function incidentRole(inc){
+    var g = ((inc.watch_globs || []).join(' ')).toLowerCase();
+    if(/instagram|cmo\/|compose_|ig_series|review_queue|slide|ballet|spa_/.test(g)) return 'cmo';
+    return 'cto';
+  }
+  // GUARDED만 집계 → role.id별 {guarded 건수, recent(최신 date)}
+  function computeIncidents(d){
+    var m = {}, arr = (d && d.incidents) || [];
+    arr.forEach(function(inc){
+      if(String(inc.상태 || '') !== 'GUARDED') return;
+      var rid = incidentRole(inc);
+      var o = m[rid] || (m[rid] = { guarded:0, recent:null });
+      o.guarded++;
+      if(!o.recent || String(inc.date || '') >= String(o.recent.date || '')) o.recent = inc;
+    });
     return m;
   }
 
@@ -381,6 +443,17 @@
     return lab + '<div class="todaychip" title="' + esc(cand.rationale || '') + '">🌅 ' + esc(cand.title) + '</div>';
   }
 
+  // 🛡️ 재발방지 GUARDED — ssot/incidents.json 직독 집계. 역할 연관 봉인 건수 + 최근 1건. 없으면 숨김.
+  function incidentsBlock(role){
+    var c = (_incidents && _incidents[role.id]) || null;
+    if(!c || !c.guarded) return '';
+    var r = c.recent;
+    var rc = r ? ('<span class="incd-recent" title="' + esc(r.요약 || '') + '">최근 ' + esc(r.id) +
+                  ' · ' + esc(String(r.요약 || '').slice(0, 44)) + (String(r.요약 || '').length > 44 ? '…' : '') + '</span>') : '';
+    return '<div class="incd"><span class="incd-h">🛡️ 재발방지 GUARDED</span>' +
+      '<div class="incd-meta">🛡️ 봉인 <b>' + c.guarded + '</b>건</div>' + rc + '</div>';
+  }
+
   function renderMatrix(){
     var roles = (_matrixData && _matrixData.roles) || [];
     if(!roles.length){
@@ -401,8 +474,8 @@
       var owns = (role.owns || []).map(function(o){
         return '<a class="own-chip" href="' + esc(o.href) + '">' + esc(o.label) + '</a>';
       }).join('');
-      var c3 = '<td>' + owns + ideasBlock(role) + '</td>';
-      return '<tr class="' + (gm ? 'role-gm' : '') + '">' +
+      var c3 = '<td>' + owns + incidentsBlock(role) + ideasBlock(role) + '</td>';
+      return '<tr data-role="' + esc(role.id) + '" class="' + (gm ? 'role-gm' : '') + '">' +
         '<td class="role-cell" style="border-left:4px solid ' + esc(ac) + ';">' +
           '<div class="ricon">' + esc(role.icon) + '</div>' +
           '<div class="rname" style="color:' + esc(ac) + ';">' + esc(role.name) + (role.draft ? '<span class="rdraft">🔖 초안</span>' : '') + '</div>' +
@@ -411,6 +484,56 @@
         '</td>' + c1 + c2 + c3 +
       '</tr>';
     }).join('');
+  }
+
+  // ── 🎛️ 컨트롤바(역할·칸 필터 + 폴침) — 편집/저장 로직과 독립 ──
+  function buildControlBar(){
+    var el = document.getElementById('mx-controls');
+    if(!el) return;
+    var roles = (_matrixData && _matrixData.roles) || [];
+    var roleChips = '<span class="mx-chip' + (!_roleFilter ? ' on' : '') + '" data-act="role" data-val="">전체</span>' +
+      roles.map(function(r){
+        return '<span class="mx-chip' + (_roleFilter === r.id ? ' on' : '') + '" data-act="role" data-val="' + esc(r.id) + '">' +
+               esc(r.icon || '') + ' ' + esc(r.name) + '</span>';
+      }).join('');
+    var colNames = ['🌟 목표·지표', '🔧 일하는 법', '🚧 소유 관리'];
+    var colChips = colNames.map(function(n, i){
+      return '<span class="mx-chip col' + (!_colHidden[i] ? ' on' : '') + '" data-act="col" data-val="' + i + '">' + esc(n) + '</span>';
+    }).join('');
+    var foldChip = '<span class="mx-chip' + (_compact ? ' on' : '') + '" data-act="fold" data-val="">' +
+                   (_compact ? '📑 간략히' : '📖 펼침') + '</span>';
+    el.innerHTML =
+      '<div class="grp"><span class="glab">주체</span>' + roleChips + '</div>' +
+      '<span class="mx-sep"></span>' +
+      '<div class="grp"><span class="glab">칸</span>' + colChips + '</div>' +
+      '<span class="mx-sep"></span>' +
+      '<div class="grp"><span class="glab">보기</span>' + foldChip + '</div>';
+    if(!_ctrlBound){
+      _ctrlBound = true;
+      el.addEventListener('click', function(e){
+        var c = e.target.closest ? e.target.closest('.mx-chip') : null;
+        if(!c) return;
+        var act = c.getAttribute('data-act'), val = c.getAttribute('data-val');
+        if(act === 'role'){ _roleFilter = val || null; }
+        else if(act === 'col'){ var i = parseInt(val, 10); if(i >= 0 && i < 3) _colHidden[i] = !_colHidden[i]; }
+        else if(act === 'fold'){ _compact = !_compact; }
+        buildControlBar();
+        applyViewState();
+      });
+    }
+  }
+  // 뷰 상태를 렌더 후 매트릭스에 반영(행 필터·칸 숨김·폴침). renderMatrix 뒤 항상 호출.
+  function applyViewState(){
+    var t = document.querySelector('table.matrix');
+    if(!t) return;
+    t.classList.toggle('compact', _compact && !_editMode);
+    t.classList.toggle('hide-c0', _colHidden[0]);
+    t.classList.toggle('hide-c1', _colHidden[1]);
+    t.classList.toggle('hide-c2', _colHidden[2]);
+    Array.prototype.forEach.call(body.querySelectorAll('tr[data-role]'), function(tr){
+      var rid = tr.getAttribute('data-role');
+      tr.style.display = (!_roleFilter || _roleFilter === rid) ? '' : 'none';
+    });
   }
 
   // IME 안전: 조합 중 blur 반영 차단
@@ -453,6 +576,7 @@
     if(t) t.classList.toggle('editing', _editMode);
     renderMatrix();
     renderEditBtn();
+    applyViewState();
   }
 
   // 편집 모드에서 열 너비 드래그 조정 (GM PC localStorage 저장 · 정본 아님)
@@ -558,7 +682,8 @@
     fetchKpi().catch(function(){ return null; }),
     gasRead('status/kpi_values.json',     RAW_BASE + 'status/kpi_values.json').catch(function(){ return null; }),
     gasRead('status/_queue.json',         RAW_BASE + 'status/_queue.json').catch(function(){ return null; }),
-    gasRead('status/northstar_pending.json', RAW_BASE + 'status/northstar_pending.json').catch(function(){ return null; })
+    gasRead('status/northstar_pending.json', RAW_BASE + 'status/northstar_pending.json').catch(function(){ return null; }),
+    gasRead('ssot/incidents.json',        RAW_BASE + 'ssot/incidents.json').catch(function(){ return null; })
   ])
     .then(function(arr){
       _matrixData = arr[0];
@@ -566,9 +691,12 @@
       _kpiValues = (arr[2] && arr[2].roles) || {};
       _queueCounts = computeQueueCounts(arr[3]);
       _pendingByRole = computePending(arr[4]);
+      _incidents = computeIncidents(arr[5]);
       renderMatrix();
       renderEditBtn();
       initColResizers();
+      buildControlBar();
+      applyViewState();
     })
     .catch(function(e){
       body.innerHTML = '<tr><td colspan="4" class="matrix-status">매트릭스 정본을 불러오지 못했습니다 (' + esc(e.message) +
