@@ -7705,5 +7705,20 @@
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "7af472823536a05152d8e2d08610c1217dda42c3",
     "ship_no": 213
+  },
+  {
+    "task_id": "COO-2026-06-27-SUPPORT-CHECK-PHANTOM-CLEANUP",
+    "clevel": "coo",
+    "title": "[시우] 지원부 점검 데이터 정합 — 조간누수 유령행 정밀청소 (배포대기)",
+    "status": "DONE",
+    "priority": "HIGH",
+    "enqueued_at": "2026-06-27",
+    "note": "[2026-06-27 GM] 지원_매뉴얼/남성/여성구역·점검(남/여) 3증상(제출시각빈칸·소요시간이상·미점검인데 제출완료) 진단. 라이브 실측: 오후조→마감조 누수버그는 6/26 이미 근본수정(close분리, 커밋 49e47559·ea8dd85c)·오늘(6/27) 데이터 깨끗 = 수정 정상작동 증거. 6/26 깨진건 수정 전 잔재. GM go=유령만 정밀제거. ✅완료(2026-06-27): revert_phantom_rows 액션 추가·커밋 863f9da1 → clasp push+deploy @118 → 여 6/26 마감조 유령 5건(c2·c5·c6·d1·d2, 11:0x 오후조누수) 미제출 되돌림 실행, dump_zone 라이브 검증=유령 5/5 청소·진짜마감 16/16 보존. 남은 모순 18건은 '조 제출됐으나 개별 미체크'(GM: 문제없음)라 미터치. 원장 백업(롤백 안전망)·진단서 status/briefs/COO-2026-06-27-SUPPORT-CHECK-DATA-INTEGRITY.md.",
+    "next": "🏁 입항완료 — GM 페이지 새로고침 시 과거날짜 조 탭 체크수 정상(선택 확인)",
+    "depends_on": "",
+    "ship_no": 184,
+    "terminal": true,
+    "processed_at": "2026-07-02",
+    "artifact": "5증상 전부 처리·라이브 실증거(revert_phantom_rows @118·유령 5/5 청소·진짜마감 16/16 보존·과거날짜 STATE 격리 a667ef17·진단서 status/briefs/COO-2026-06-27-SUPPORT-CHECK-DATA-INTEGRITY.md). 웰리 하이진 입항 도장 2026-07-02."
   }
 ]
