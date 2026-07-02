@@ -1686,8 +1686,8 @@ function empOpenCard(nm){
   if(SESSION_ROLE!=="admin"){alert("인사카드는 관리자 로그인 시 열람 가능합니다.");return;}
   var target=String(nm||"").trim();
   var matches=(DB.appl||[]).filter(function(x){return String(x["지원자명"]||"").trim()===target;});
-  if(!matches.length){alert(target+" 님은 지원자 기록(인사카드)이 없습니다. — 허브 도입 전 입사자");return;}
-  var best=matches.find(function(x){return String(x["전형 단계"]||"").trim()==="최종 합격";})||matches[0];
+  var best=matches.find(function(x){return String(x["전형 단계"]||"").trim()==="최종 합격";});
+  if(!best){alert(target+" 님은 지원자 기록(인사카드)이 없습니다. — 허브 도입 전 입사자");return;}
   openPrintView(normId(best.url),true);
 }
 function dashCalEvents(){var out=[];(DB.appl||[]).forEach(function(a){var v=(typeof dval==="function")?dval(a,"면접 일정"):a["면접 일정"];var s=String(v||"");if(!s)return;var dt=new Date(s.replace(" ","T"));if(isNaN(dt.getTime()))return;out.push({kind:"면접",y:dt.getFullYear(),m:dt.getMonth(),d:dt.getDate(),t:dt.getTime(),date:s,name:a["지원자명"]||"",label:(a["전형 단계"]||"면접"),done:false});});obCheckEvents().forEach(function(e){out.push({kind:"온보딩",y:e.y,m:e.m,d:e.d,t:e.t,date:e.date,name:e.name,label:e.label,done:e.done,row:e.row});});return out;}
