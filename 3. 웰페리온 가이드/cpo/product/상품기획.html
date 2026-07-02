@@ -1042,18 +1042,26 @@ function setStatus(msg, isErr) {
   el.textContent = msg;
   el.className = 'status-msg' + (isErr ? ' err' : '');
 }
+// 저장본·시드 병합 키 — 같은 항목(구분+제안명)이면 저장본이 시드를 덮는다.
+function _planKey(it){ return (it.구분||'') + '|' + (it.제안명||''); }
 function loadPlans() {
   setStatus('불러오는 중…');
   fetch(TODO_API_URL + '?action=product_plan_list', {redirect:'follow'})
     .then(function(r){ return r.json(); })
     .then(function(res) {
-      if (res.ok && res.data && res.data.length > 0) {
-        setStatus('기획안 ' + res.data.length + '건 로드됨');
-        renderCards(res.data);
+      var saved = (res.ok && res.data && res.data.length > 0) ? res.data : [];
+      // ── 시드는 항상 '기본 바탕' — 저장본이 같은 항목만 덮고, 저장 안 된 시드는 그대로 노출.
+      //    저장본 1건이 시드 전체(레버 7장 등)를 숨기던 '전부-아니면-전무' 함정 제거. 2026-07-02 시포(GM 지시)
+      var savedKeys = {};
+      saved.forEach(function(it){ savedKeys[_planKey(it)] = true; });
+      var seedRest = SEEDS.filter(function(s){ return !savedKeys[_planKey(s)]; });
+      var merged = saved.concat(seedRest);
+      if (saved.length) {
+        setStatus('기획안 ' + saved.length + '건 + 시드 ' + seedRest.length + '건 표시 중');
       } else {
         setStatus('시드 기획안 표시 중 (저장 버튼으로 시트에 영속)');
-        renderCards(SEEDS);
       }
+      renderCards(merged.length ? merged : SEEDS);
     })
     .catch(function() {
       setStatus('네트워크 오류 — 시드 기획안 표시', true);
