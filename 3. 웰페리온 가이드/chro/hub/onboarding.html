@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WELLPERION · 온보딩 체크인</title>
+<style>
+  :root{
+    --bg:#221F20; --paper:#2a2725; --ink:#f5f2ef; --dim:#8c8b83;
+    --line:#3d3835; --accent:#B79F8A; --accent2:#6e6052;
+    --green:#5fbf8a; --red:#e0726a; --amber:#e0b15c; --blue:#7fa8d8;
+    --card:#fbf8f2; --card-ink:#2b2622; --card-dim:#8a8178; --card-line:#e3dccf;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:"Pretendard",'Apple SD Gothic Neo','Malgun Gothic',sans-serif;background:var(--bg);color:var(--ink);font-size:14px;line-height:1.5}
+  header{background:var(--paper);border-bottom:1px solid var(--line);padding:16px 18px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px}
+  .brand{font-size:17px;font-weight:800;letter-spacing:.5px}
+  .brand span{color:var(--accent)}
+  .brand small{display:block;font-size:11px;font-weight:500;color:var(--dim);letter-spacing:0;margin-top:2px}
+  .wrap{max-width:640px;margin:16px auto;padding:0 14px 60px}
+  button{font-family:inherit;cursor:pointer;border:1px solid var(--line);background:var(--paper);color:var(--ink);border-radius:9px;padding:9px 15px;font-size:13.5px;transition:.15s}
+  button:hover{border-color:var(--accent);color:var(--accent)}
+  button.primary{background:var(--accent);color:#221F20;border-color:var(--accent);font-weight:700}
+  button.primary:hover{background:#d4b89e;color:#221F20}
+  button.ghost{background:transparent}
+  button:disabled{opacity:.5;cursor:not-allowed}
+  input,textarea,select{width:100%;font-family:inherit;font-size:14px;padding:10px 12px;border:1px solid var(--line);border-radius:9px;background:#1f1c1a;color:var(--ink)}
+  input:focus,textarea:focus,select:focus{outline:none;border-color:var(--accent)}
+  label{display:block;font-size:12px;font-weight:600;color:var(--dim);margin:12px 0 6px}
+
+  /* ===== 게이트 오버레이 ===== */
+  .ov{position:fixed;inset:0;background:rgba(0,0,0,.62);display:none;align-items:center;justify-content:center;z-index:60;padding:16px}
+  .ov.on{display:flex}
+  .modal{background:var(--paper);border-radius:14px;width:100%;max-width:380px;padding:24px;box-shadow:0 18px 50px rgba(0,0,0,.3)}
+  .modal h3{font-size:17px;margin-bottom:6px}
+  .modal p.sub{color:var(--dim);font-size:12.5px;margin-bottom:16px}
+  .modal-actions{margin-top:18px}
+  .modal-actions button{width:100%;padding:12px}
+
+  /* ===== 직원 선택 화면 ===== */
+  .emp-empty{background:var(--card);border:1px solid var(--card-line);border-radius:14px;padding:34px 20px;text-align:center;color:var(--card-dim);font-size:13.5px}
+  .emp-list{display:flex;flex-direction:column;gap:10px;margin-top:14px}
+  .emp-btn{background:var(--card);border:1px solid var(--card-line);border-radius:12px;padding:15px 16px;text-align:left;display:flex;align-items:center;justify-content:space-between;gap:10px;cursor:pointer;color:var(--card-ink);text-decoration:none}
+  .emp-btn:hover{border-color:var(--accent)}
+  .emp-btn b{font-size:15px}
+
+  /* ===== 체크리스트 화면 ===== */
+  .empHead{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:4px}
+  .empHead h2{font-size:19px}
+  .backlink{font-size:12.5px;color:var(--dim);cursor:pointer;text-decoration:underline}
+  .backlink:hover{color:var(--accent)}
+  .progress-bar{background:var(--line);border-radius:20px;height:9px;overflow:hidden;margin:12px 0 4px}
+  .progress-fill{height:100%;background:var(--green);transition:width .3s}
+  .progress-txt{font-size:12px;color:var(--dim);margin-bottom:16px}
+
+  .item{background:var(--card);border:1px solid var(--card-line);border-radius:13px;padding:14px 16px;margin-bottom:11px;color:var(--card-ink);cursor:pointer}
+  .item:hover{border-color:var(--accent)}
+  .item.done{border-left:4px solid var(--green)}
+  .item.overdue{border-left:4px solid var(--red)}
+  .item-top{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-bottom:7px}
+  .pill{font-size:10.5px;font-weight:700;padding:3px 9px;border-radius:20px;background:#efe7d8;color:#8a6a3a}
+  .pill.due{background:#f3eee4;color:#9b8e7c}
+  .pill.due.late{background:#fbeceb;color:#c0463d}
+  .pill.done{background:#e3f4ea;color:#1a7f5a}
+  .item-title{font-size:14.5px;font-weight:700;margin-bottom:3px}
+  .item-note{font-size:11.5px;color:var(--card-dim);margin-top:4px;white-space:pre-wrap}
+
+  .banner{background:#322e2b;border:1px dashed var(--accent2);border-radius:10px;padding:11px 14px;font-size:12px;color:#bdb3a6;margin-bottom:16px}
+  .banner.err{border-color:var(--red);color:#e8908a;background:#3a2a28}
+  .loading{padding:50px 0;text-align:center;color:var(--dim);font-size:13px}
+
+  /* ===== 체크인 입력 모달 ===== */
+  .cm-guide{font-size:11.5px;background:#3a352f;border:1px solid #4a4238;border-radius:8px;padding:9px 11px;margin-bottom:10px;color:#d8c9a8}
+  .cm-q{font-size:12px;color:#cfc9bf;margin:8px 0 3px}
+  .cm-row{display:flex;gap:8px}
+  .cm-row > div{flex:1}
+  .cm-msg{font-size:12px;margin:8px 0;min-height:16px}
+  .cm-msg.err{color:var(--red)}
+  .cm-msg.ok{color:var(--green)}
+  .modal.wide{max-width:480px;max-height:88vh;overflow:auto}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">WELL<span>PERION</span> · 온보딩 체크인
+    <small id="hdrSub">위임 입력 전용 · PIN 입장 · 온보딩 체크인 필드만 기입 가능</small>
+  </div>
+</header>
+
+<div class="wrap">
+  <div id="banner"></div>
+  <div id="app"><div class="loading">불러오는 중…</div></div>
+</div>
+
+<!-- PIN 게이트 -->
+<div class="ov" id="ovLogin">
+  <div class="modal">
+    <h3>🧭 온보딩 체크인 입장</h3>
+    <p class="sub" id="lg_sub">온보딩 담당자·멘토 전용 위임 입력 페이지입니다. PIN을 입력하세요. (다른 인사 데이터는 조회·수정할 수 없습니다)</p>
+    <label>기입자 성명 (담당자로 기록됩니다)</label>
+    <input type="text" id="lg_owner" placeholder="예: 이경연">
+    <label>PIN</label>
+    <input type="password" id="lg_pw" inputmode="numeric" autocomplete="off" placeholder="PIN 입력">
+    <div id="lg_err" style="display:none;color:var(--red);font-size:12px;font-weight:700;margin-top:8px"></div>
+    <div class="modal-actions">
+      <button class="primary" id="lg_btn" onclick="submitLogin()">입장</button>
+    </div>
+  </div>
+</div>
+
+<!-- 체크인 입력 모달 -->
+<div class="ov" id="ovCheck">
+  <div class="modal wide">
+    <h3 id="cm_title">체크인</h3>
+    <p class="sub" id="cm_sub"></p>
+    <div class="cm-guide" id="cm_guide" style="display:none"></div>
+    <div id="cm_questions"></div>
+    <label>적응도 1~5점 — 1 매우미흡 · 3 보통 · 5 매우우수</label>
+    <div class="cm-row">
+      <div><div class="cm-q">업무</div><select id="cm_work"></select></div>
+      <div><div class="cm-q">관계</div><select id="cm_rel"></select></div>
+      <div><div class="cm-q">문화</div><select id="cm_cul"></select></div>
+    </div>
+    <label>어려운 점 / 이슈</label>
+    <textarea id="cm_issue" rows="2"></textarea>
+    <label>조치 / 후속</label>
+    <textarea id="cm_action" rows="2"></textarea>
+    <label style="display:flex;align-items:center;gap:7px;margin-top:12px"><input type="checkbox" id="cm_risk" style="width:auto"> 이탈위험으로 표시</label>
+    <div id="cm_verdictWrap" style="display:none">
+      <label>수습 판정 (12주차)</label>
+      <select id="cm_verdict">
+        <option value="">-</option>
+        <option>정규 전환</option>
+        <option>조건부 전환</option>
+        <option>수습 1개월 연장</option>
+        <option>부적합</option>
+      </select>
+    </div>
+    <label>담당자</label>
+    <input type="text" id="cm_owner">
+    <div id="cm_prev" style="font-size:11.5px;color:var(--dim);background:#1f1c1a;padding:8px;border-radius:8px;margin-top:8px;display:none"></div>
+    <div class="cm-msg" id="cm_msg"></div>
+    <div style="display:flex;justify-content:space-between;gap:10px;margin-top:8px">
+      <button class="ghost" onclick="closeOv('ovCheck')">취소</button>
+      <button class="primary" id="cm_submit" onclick="submitCheck()">완료 기록</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ===== 백엔드 연동 — 온보딩 위임 기입 전용 스코프 액션(onbo-checkin-*, PIN 1202)만 사용.
+   관리자 마스터 비밀번호는 이 페이지 어디에도 없음. ===== */
+const EXEC_URL = "https://script.google.com/macros/s/AKfycbyyXrdM7nSXKPG3Dy8wI6_3AI1spZs24d-uHTzQZlsqzoRXKkFbSFnX-hr42D3ScQSSHQ/exec";
+const SS_KEY = "wp_onbo_ck";
+let SESSION = null; // { pin, name, owner }
+let ROWS = [];       // 인증 후 해당 인원 체크인 행
+
+async function erpPost(payload){
+  const res = await fetch(EXEC_URL, { method:"POST", headers:{"Content-Type":"text/plain;charset=utf-8"}, body: JSON.stringify(payload) });
+  return await res.json();
+}
+function esc(s){ return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;"); }
+function isYes(v){ return v===true || v==="Y" || v==="true" || v==="__YES__"; }
+function openOv(id){ document.getElementById(id).classList.add("on"); }
+function closeOv(id){ document.getElementById(id).classList.remove("on"); }
+function setBanner(html, isErr){
+  const b=document.getElementById("banner");
+  if(!html){ b.innerHTML=""; return; }
+  b.innerHTML = `<div class="banner${isErr?' err':''}">${html}</div>`;
+}
+function getParamName(){
+  try{ return (new URLSearchParams(location.search).get("name")||"").trim(); }catch(_){ return ""; }
+}
+
+/* ===== 이름 미지정 시: 공개(비밀번호 불필요) 진행중 명단만 보여주고 선택 ===== */
+async function renderPickList(){
+  document.getElementById("hdrSub").textContent = "온보딩 진행중인 직원을 선택하세요";
+  document.getElementById("app").innerHTML = `<div class="loading">불러오는 중…</div>`;
+  try{
+    const r = await erpPost({ action:"onbo-active-names" });
+    const names = (r && r.ok===true && Array.isArray(r.names)) ? r.names : [];
+    if(!names.length){
+      document.getElementById("app").innerHTML = `<div class="emp-empty">현재 진행중인 온보딩이 없습니다.</div>`;
+      return;
+    }
+    document.getElementById("app").innerHTML = `<div class="emp-list">` + names.map(n=>
+      `<a class="emp-btn" href="?name=${encodeURIComponent(n)}"><b>🧭 ${esc(n)}</b><span style="color:var(--card-dim);font-size:12px">체크인 입력 →</span></a>`
+    ).join("") + `</div>`;
+  }catch(e){
+    document.getElementById("app").innerHTML = `<div class="emp-empty">명단을 불러오지 못했습니다. 잠시 후 다시 시도하세요.</div>`;
+  }
+}
+
+/* ===== PIN 게이트 ===== */
+async function verifyAndLoad(pin, name, owner){
+  const r = await erpPost({ action:"onbo-checkin-read", pin, name });
+  if(r && r.ok===true && Array.isArray(r.rows)){
+    SESSION = { pin, name, owner };
+    ROWS = r.rows;
+    try{ sessionStorage.setItem(SS_KEY, JSON.stringify(SESSION)); }catch(_){}
+    closeOv("ovLogin");
+    renderChecklist();
+    return { ok:true };
+  }
+  return { ok:false, error: (r&&r.error)||"unknown" };
+}
+async function submitLogin(){
+  const name = getParamName();
+  const owner = (document.getElementById("lg_owner").value||"").trim();
+  const pin = (document.getElementById("lg_pw").value||"").trim();
+  const err = document.getElementById("lg_err"), btn = document.getElementById("lg_btn");
+  err.style.display = "none";
+  if(!owner){ err.textContent = "기입자 성명을 입력하세요"; err.style.display="block"; return; }
+  if(!pin){ err.textContent = "PIN을 입력하세요"; err.style.display="block"; return; }
+  btn.disabled = true; btn.textContent = "확인 중…";
+  try{
+    const res = await verifyAndLoad(pin, name, owner);
+    if(!res.ok){
+      err.textContent = res.error==="pin_invalid" ? "PIN이 올바르지 않습니다" :
+                         res.error==="not_found" ? "해당 이름의 체크인 대상을 찾을 수 없습니다" :
+                         "확인 실패 — 잠시 후 다시 시도하세요";
+      err.style.display = "block";
+    }
+  }catch(e){
+    err.textContent = "서버 연결 실패 — 잠시 후 다시 시도하세요"; err.style.display = "block";
+  }finally{
+    btn.disabled = false; btn.textContent = "입장";
+  }
+}
+document.getElementById("lg_pw").addEventListener("keydown", e=>{ if(e.key==="Enter"){ e.preventDefault(); submitLogin(); } });
+
+/* ===== 체크리스트 화면 ===== */
+function renderChecklist(){
+  const name = SESSION.name;
+  document.getElementById("hdrSub").textContent = name + " 님 온보딩 체크인 · 기입자: " + SESSION.owner;
+  const today = new Date(); today.setHours(0,0,0,0);
+  const todayStr = today.getFullYear()+"-"+String(today.getMonth()+1).padStart(2,"0")+"-"+String(today.getDate()).padStart(2,"0");
+  const rows = ROWS.slice();
+  const done = rows.filter(r=>isYes(r.done)).length;
+  const total = rows.length || 1;
+  const pct = Math.round(done/total*100);
+
+  let html = `<div class="empHead"><h2>🧭 ${esc(name)}</h2></div>`;
+  html += `<div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>`;
+  html += `<div class="progress-txt">${done} / ${rows.length} 항목 완료 (${pct}%)</div>`;
+
+  rows.forEach(row=>{
+    const sr = row._sheet_row;
+    const dn = isYes(row.done);
+    const due = String(row.due||"").slice(0,10);
+    const late = due && !dn && due < todayStr;
+    html += `<div class="item ${dn?'done':(late?'overdue':'')}" data-row="${sr}" onclick="openCheck(${sr})">
+      <div class="item-top">
+        ${dn?`<span class="pill done">완료 ✓ ${esc(String(row.completedDate||'').slice(0,10))}</span>`:""}
+        ${due?`<span class="pill due${late?' late':''}">${late?'⚠ 기한지남 ':'기한 '}${esc(due)}</span>`:""}
+      </div>
+      <div class="item-title">${esc(row.item||"(제목 없음)")}</div>
+      ${row.note?`<div class="item-note">${esc(row.note)}</div>`:""}
+    </div>`;
+  });
+
+  document.getElementById("app").innerHTML = html;
+}
+
+/* ===== 체크인 가이드 (허브 index.html OB_GUIDE 동일) ===== */
+const OB_GUIDE = {
+"1주차 체크인":{focus:"입사 첫 주 안착 · 환영",q:["필요한 계정·장비·자리는 다 받았나?","첫 주 가장 막힌 점은?","물어볼 사람(멘토)이 정해졌나?"]},
+"2주차 체크인":{focus:"기본 업무·동선 인지",q:["주요 반복 업무를 파악했나?","예약/회원/결제 시스템은 익숙해지나?","근무 일과·동선이 익숙한가?"]},
+"3주차 체크인":{focus:"초기 독립 시도",q:["혼자 해본 업무는?","아직 헷갈리는 부분은?","회원 응대 톤은 편한가?"]},
+"4주차 체크인":{focus:"기본기 · 기대 정합 (1개월)",q:["혼자 되는 업무 / 아직 어려운 업무는?","입사 전 기대와 실제가 맞나?","더 배우고 싶은 것은?"]},
+"5주차 체크인":{focus:"숙련 진행",q:["업무 속도·정확도가 나아지나?","반복해서 실수하는 부분은?","팀과의 협업은 어떤가?"]},
+"6주차 체크인":{focus:"돌발 대응 · 업무량",q:["예상 못한 상황을 어떻게 처리했나?","업무량은 적정한가?","스트레스·과부하 신호는 없나?"]},
+"7주차 체크인":{focus:"자기주도 시작",q:["스스로 챙기는 업무가 늘었나?","개선하면 좋겠다 싶은 점은?","동료와의 관계는?"]},
+"8주차 체크인":{focus:"기여 · 팀 융화 (2개월)",q:["최근 잘 해낸 일·기여는?","팀에 소속감을 느끼나?","막히면 누구에게 도움을 청하나?"]},
+"9주차 체크인":{focus:"안정화",q:["전반적으로 안정됐나?","강점을 발휘하는 영역은?","여전히 어려운 영역은?"]},
+"10주차 체크인":{focus:"정착 · 만족도",q:["직무 만족도는 어떤가?","장기근속 의향이 있나?","회사가 더 지원할 부분은?"]},
+"11주차 체크인":{focus:"수습평가 준비",q:["수습 마무리 전 보완할 점은?","정규 전환 후 맡고 싶은 역할은?","남은 우려사항은?"]},
+"12주차 수습평가":{focus:"수습 종합평가 · 정규 전환 판정",q:["12주 종합 — 가장 큰 성장 / 가장 어려웠던 점은?","정규 전환 적합성은?","향후 3·6개월 목표는?"],verdict:true}
+};
+function scoreOpts(){
+  return '<option value="">-</option><option value="1">1 — 매우 미흡</option><option value="2">2 — 미흡</option><option value="3">3 — 보통</option><option value="4">4 — 우수</option><option value="5">5 — 매우 우수</option>';
+}
+let __curRow = null, __qN = 0;
+function openCheck(sr){
+  const row = ROWS.find(r=>r._sheet_row===sr);
+  if(!row) return;
+  __curRow = row;
+  const g = OB_GUIDE[String(row.item||"")] || null;
+  document.getElementById("cm_title").textContent = row.item || "체크인";
+  document.getElementById("cm_sub").textContent = "기한 " + (String(row.due||"").slice(0,10)||"—");
+  const ge = document.getElementById("cm_guide");
+  if(g){ ge.style.display="block"; ge.innerHTML = "<b>"+esc(row.item)+"</b> — "+esc(g.focus); } else { ge.style.display="none"; }
+  const qwrap = document.getElementById("cm_questions");
+  if(g && g.q){
+    qwrap.innerHTML = g.q.map((q,i)=>`<div class="cm-q">${esc(q)}</div><textarea id="cm_q${i}" rows="2" placeholder="면담 내용·답변 기록"></textarea>`).join("");
+    __qN = g.q.length;
+  } else { qwrap.innerHTML=""; __qN = 0; }
+  ["cm_work","cm_rel","cm_cul"].forEach(id=>{ document.getElementById(id).innerHTML = scoreOpts(); document.getElementById(id).value=""; });
+  document.getElementById("cm_issue").value = "";
+  document.getElementById("cm_action").value = "";
+  document.getElementById("cm_risk").checked = String(row.note||"").indexOf("[위험]")>=0;
+  document.getElementById("cm_verdictWrap").style.display = (g && g.verdict) ? "block" : "none";
+  document.getElementById("cm_verdict").value = "";
+  document.getElementById("cm_owner").value = SESSION.owner;
+  const prev = document.getElementById("cm_prev");
+  if(row.note){ prev.style.display="block"; prev.textContent = "이전 기록: " + row.note; } else { prev.style.display="none"; }
+  document.getElementById("cm_msg").textContent = "";
+  document.getElementById("cm_msg").className = "cm-msg";
+  openOv("ovCheck");
+}
+async function submitCheck(){
+  const row = __curRow; if(!row) return;
+  const w = document.getElementById("cm_work").value, rel = document.getElementById("cm_rel").value, cul = document.getElementById("cm_cul").value;
+  const issue = document.getElementById("cm_issue").value.trim(), act = document.getElementById("cm_action").value.trim();
+  const risk = document.getElementById("cm_risk").checked;
+  const owner = (document.getElementById("cm_owner").value||"").trim() || SESSION.owner;
+  const verdict = document.getElementById("cm_verdict").value;
+  const nums = [w,rel,cul].filter(x=>x).map(Number);
+  const avg = nums.length ? (nums.reduce((a,b)=>a+b,0)/nums.length).toFixed(1) : "-";
+  let note = `적응도 종합:${avg}/5 (업무${w||"-"} 관계${rel||"-"} 문화${cul||"-"})`;
+  const qa=[];
+  for(let i=0;i<__qN;i++){ const el=document.getElementById("cm_q"+i); if(el && el.value.trim()) qa.push((i+1)+") "+el.value.trim()); }
+  if(qa.length) note += " | 면담: " + qa.join(" ");
+  if(issue) note += " | 어려운점: " + issue;
+  if(act) note += " | 조치: " + act;
+  if(risk) note += " [위험]";
+  if(verdict) note += " | 수습판정: " + verdict;
+
+  const msg = document.getElementById("cm_msg"), btn = document.getElementById("cm_submit");
+  btn.disabled = true; btn.textContent = "저장 중…"; msg.className="cm-msg"; msg.textContent="";
+  try{
+    const r = await erpPost({ action:"onbo-checkin-save", pin: SESSION.pin, name: SESSION.name, sheetRow: row._sheet_row, done:true, note, owner });
+    if(!r || r.ok!==true) throw new Error((r&&r.message)||(r&&r.error)||"저장 실패");
+    closeOv("ovCheck");
+    await reloadRows();
+  }catch(e){
+    msg.className = "cm-msg err"; msg.textContent = "실패: " + (e.message||e);
+  }finally{
+    btn.disabled = false; btn.textContent = "완료 기록";
+  }
+}
+async function reloadRows(){
+  const r = await erpPost({ action:"onbo-checkin-read", pin: SESSION.pin, name: SESSION.name });
+  if(r && r.ok===true && Array.isArray(r.rows)) ROWS = r.rows;
+  renderChecklist();
+}
+
+/* ===== 초기화 ===== */
+(function init(){
+  const name = getParamName();
+  if(!name){ renderPickList(); return; }
+  document.getElementById("hdrSub").textContent = name + " 님 온보딩 체크인";
+  document.getElementById("app").innerHTML = "";
+  let sess=null; try{ const raw=sessionStorage.getItem(SS_KEY); if(raw) sess=JSON.parse(raw); }catch(_){}
+  if(sess && sess.name===name && sess.pin){
+    verifyAndLoad(sess.pin, name, sess.owner).then(res=>{
+      if(!res.ok){ try{ sessionStorage.removeItem(SS_KEY); }catch(_){} openOv("ovLogin"); }
+    }).catch(()=>{ openOv("ovLogin"); });
+  } else {
+    openOv("ovLogin");
+    setTimeout(()=>{ const i=document.getElementById("lg_owner"); if(i) i.focus(); }, 60);
+  }
+})();
+</script>
+</body>
+</html>
