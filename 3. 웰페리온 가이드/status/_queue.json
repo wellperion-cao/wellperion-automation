@@ -410,5 +410,19 @@
     "note": "[2026-07-02 스펙 .omc/specs/deep-interview-gm-northstar-kpi-autonomy.md] 헌법 북극성·KPI 지도 정직 정식화(배236 ②③)의 후속 = 실제 측정 배관 수리. 웰리 순차 위임 #1(가장 쉬운 첫 성공사례): 시우(COO) 일일 점검 완료율 — 배관은 있는데 값만 null(kpi_collector.py가 지원부_점검완료율·4부서_점검완료율을 못 읽음, kpi_values.json coo 전부 null·_note='rows 없음(점검 미시작 또는 GAS 오류)'). 수리만 하면 즉시 실측 → 헌법 🗺️북극성 지도(coo.nsmap value_key=지원부_점검완료율)가 정직 텍스트에서 라이브 %로 자동 점등 = 7역할 중 첫 '측정 개통' 신뢰 사례. 기술 배관=시토, 지표 의미=시우. 경계: 매출 GAS 배선(시뽀)·시모 전환율 bio는 별도 후속 배(순차).",
     "next": "웰리 순차 위임 #1: kpi_collector.py의 coo 점검 완료율 읽기 경로 진단(GAS 응답·시트 rows·분모정합 배14 연관) → null 원인 수리 → kpi_values.json 실측 채움 → 헌법 coo 카드 라이브 % 점등 시크릿 검증. 완료 시 #2(시모 전환율)·#3(시뽀 매출)로 순차.",
     "depends_on": ""
+  },
+  {
+    "task_id": "CTO-2026-07-02-ADHOC-215014ac",
+    "clevel": "cto",
+    "title": "[시토] 헌법 북극성·KPI 지도 정직 정식화 — 회사 비전 배너 + 7역할 대표KPI·측정tier·경로",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-02",
+    "processed_at": "2026-07-02",
+    "artifact": "배236 ②③축: 헌법 맨 위 회사 비전(스포츠클럽 ERP 제품화·GM=G1만) + 역할별\n🗺️북극성 지도(대표 KPI 1개 + 측정 tier ✅/🔧/★ + 현재값 + 목표 + 경로 한 줄).\n정본=bootsetup_matrix.json role.nsmap. 가짜 숫자·진척바 0건(확정 목표=점검≥95%·\n자동화≥99% 둘뿐). draft 3역할 북극성=제안본·GM 결재 대기. 기존 배236 배선 무변경.\n배관 수리는 후속 배239(시우 점검 완료율 collector) 신설. (CLI ad-hoc · 커밋 215014ac)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "215014accb384e98bf1be811f90b20e952648055",
+    "ship_no": 240
   }
 ]
