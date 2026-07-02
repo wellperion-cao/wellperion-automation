@@ -99,6 +99,15 @@ html,body{background:var(--bg);color:var(--text);font-family:"Pretendard","Apple
 .sign-pill.empty{background:transparent;color:var(--dim);border:1px dashed var(--border)}
 .sign-pill .time{font-size:10px;font-weight:500;opacity:0.85;margin-left:2px}
 .complete-time{display:inline-flex;align-items:center;gap:4px;font-size:11px;padding:4px 9px;border-radius:6px;background:var(--paper);color:var(--dim);border:1px solid var(--border);font-weight:600;margin-top:8px}
+.opinion-block{margin-top:8px;padding-top:8px;border-top:1px dashed var(--border)}
+.opinion-title{font-size:11px;font-weight:700;color:var(--purple);margin-bottom:6px}
+.opinion-row{background:var(--purple-bg);border-left:3px solid var(--purple);border-radius:6px;padding:6px 10px;margin:4px 0}
+.opinion-who{font-size:11px;font-weight:700;color:var(--purple)}
+.opinion-time{font-size:10px;color:var(--dim);margin-left:6px}
+.opinion-text{font-size:13px;line-height:1.5;color:var(--text);white-space:pre-wrap;margin-top:2px;word-break:break-word}
+.opinion-btn-row{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.opinion-btn{font-size:11px;font-weight:600;padding:4px 10px;border-radius:7px;background:var(--purple-bg);color:var(--purple);border:1px solid rgba(167,139,218,0.3);cursor:pointer;font-family:inherit}
+.opinion-btn:hover{opacity:0.85}
 .detail-toggle{cursor:pointer;font-size:11px;color:var(--dim);margin-top:8px;padding-top:8px;border-top:1px dashed var(--border);display:flex;align-items:center;gap:4px;user-select:none}
 .detail-toggle:hover{color:var(--accent)}
 .detail-toggle .arrow{transition:transform 0.18s}
@@ -216,6 +225,9 @@ html,body{background:var(--bg);color:var(--text);font-family:"Pretendard","Apple
   body[data-print-mode="cards"] .header,
   body[data-print-mode="cards"] .dash-overlay{display:none!important}
   body[data-print-mode="cards"] #approvalPrintArea{display:block!important}
+  .opinion-btn-row{display:none!important}
+  .opinion-block{border-top:1px solid #ccc}
+  .opinion-row{background:#f5f0fa!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
   @page{margin:10mm;size:A4}
   /* ── 결재 보고서 인쇄 — 업무 현황 보고서(rr-page)와 동일 품질로 통일 (2026-06-16 GM) ── */
   #approvalPrintArea .rr-page{font-family:"Malgun Gothic",sans-serif;color:#111;font-size:11px;line-height:1.6;padding:0;page-break-after:always}
@@ -438,6 +450,7 @@ function normalizeTask(r) {
   t.repSign = r['대표싸인'] || '';
   t.approvalStatus = r['결재상태'] || '';
   t.completeTime = r['결재완료시각'] || '';
+    t.opinions = r['결재의견'] || '';
   t.reportUrl = r['결과보고서URL'] || '';
   t.updatedAt = r['수정일'] || r.updatedAt || '';
   t.createdAt = r['생성일'] || r.createdAt || '';
@@ -754,6 +767,10 @@ function buildApprovalPrint(list) {
         + '<div class="rr-result-box">' + esc(parsed.result) + '</div>'
       : '';
 
+    /* ── 결재 의견 (부서장·GM이 남긴 의견 — 최종 결재권자 GM에게 함께 전달) ── */
+    var _ops = parseOpinions(t.opinions);
+    var opinionHtml = _ops.length ? '<div class="rr-section-title">결재 의견</div><div class="rr-section-body">' + _ops.map(function(o){ return '[' + esc(o.name||o.role||'') + ' · ' + esc(String(o.time||'').slice(0,16)) + '] ' + esc(o.text||''); }).join('\n') + '</div>' : '';
+
     /* ── 진척 로그 (날짜 오름차순) ── */
     var logsHtml = '';
     if (parsed.logs && parsed.logs.length > 0) {
@@ -794,6 +811,7 @@ function buildApprovalPrint(list) {
       + routeHtml
       + bodyHtml
       + resultHtml
+      + opinionHtml
       + logsHtml
       + planHtml
       + budgetHtml
@@ -1335,6 +1353,7 @@ function renderApprovalCard(t, idx) {
   h += renderSignPill('부서장',       t.deptSign, t.id, nxt === '부서장',  route.includes('부서장'), _midName);
   h += renderSignPill('GM',          t.gmSign,   t.id, nxt === 'GM',     route.includes('GM'));
   h += '</div>';
+  h += renderOpinions(t, route, _midName);
 
   // [업무 중요도] 부서장 확정 게이트 — 담당자 제안 업무 중요도를 부서장이 결재단계에서 확정·조정 (2026-06-03 GM ③)
   if (!isRejected) {
@@ -1425,6 +1444,44 @@ function renderSignPill(role, sign, taskId, isCurrent, isInRoute, displayLabel) 
       '</span>';
   }
   return '<span class="sign-pill empty">' + esc(label) + ' 미서명</span>';
+}
+
+/* ─── [결재 의견] 부서장·GM이 아무 때나 의견 기록 → 최종 결재권자(GM)에게 카드·인쇄로 함께 전달 (2026-07-02 시우 · GM 지시) ─── */
+function parseOpinions(raw) {
+  if (!raw) return [];
+  try { var a = JSON.parse(raw); return Array.isArray(a) ? a : []; } catch (e) { return []; }
+}
+function renderOpinions(t, route, midName) {
+  var ops = parseOpinions(t.opinions);
+  var h = '<div class="opinion-block">';
+  if (ops.length) {
+    h += '<div class="opinion-title">💬 결재 의견 <span style="color:var(--dim);font-weight:600;">' + ops.length + '건 · 최종 결재권자(GM)에게 함께 전달</span></div>';
+    ops.forEach(function(o){
+      var nm = esc(o.name || o.role || '');
+      var tm = esc(String(o.time || '').slice(0,16));
+      h += '<div class="opinion-row"><span class="opinion-who">' + nm + '</span><span class="opinion-time">' + tm + '</span><div class="opinion-text">' + esc(o.text || '') + '</div></div>';
+    });
+  }
+  var btns = '';
+  if (route.includes('부서장')) btns += '<button onclick="event.stopPropagation();addOpinion(\'' + escAttr(t.id) + '\',\'부서장\',\'' + escAttr(midName || '부서장') + '\')" class="opinion-btn">💬 ' + esc(midName || '부서장') + ' 의견 남기기</button>';
+  if (route.includes('GM')) btns += '<button onclick="event.stopPropagation();addOpinion(\'' + escAttr(t.id) + '\',\'GM\',\'김남욱GM\')" class="opinion-btn">💬 GM 의견 남기기</button>';
+  if (btns) h += '<div class="opinion-btn-row">' + btns + '</div>';
+  h += '</div>';
+  return h;
+}
+async function addOpinion(taskId, role, name) {
+  var pin = gateApproval(role, '의견 등록');
+  if (pin === null) return;
+  var text = prompt(name + ' 의견을 입력하세요 (최종 결재권자 GM에게 카드로 함께 전달됩니다):');
+  if (text === null) return;
+  if (!text.trim()) { alert('의견 내용을 입력하세요.'); return; }
+  var params = new URLSearchParams({ action:'todo_opinion', id:taskId, role:role, name:name, text:text.trim(), pin:pin || '', signer:'페이지' });
+  try {
+    var r = await fetch(TODO_API_URL + '?' + params.toString(), { redirect:'follow' });
+    var res = await r.json();
+    if (res.ok) { loadTasks(); }
+    else { alert('의견 등록 실패: ' + (res.error || '알 수 없는 오류')); }
+  } catch (e) { alert('연결 실패: ' + e.message); }
 }
 
 /* ── [결재-3] 결재 현황 대시보드 ── */

@@ -65,7 +65,9 @@ const TODO_HEADERS = [
   // 완료일 (2026-06-10 시토) — 상태→'완료' 전환 시점의 날짜(yyyy-MM-dd, Asia/Seoul) 자동 스탬프.
   // 결재완료시각과 별개: 결재 안 거친 업무도 완료일이 찍혀 G1 '오늘/지난 입항' 100% 정확.
   // append-only 맨 끝 추가 → 기존 컬럼 인덱스 불변. initTodoSheet 자동 마이그레이션이 시트에 컬럼 추가.
-  '완료일'
+  '완료일',
+  // 결재 의견 (2026-07-02 시우) — 부서장·GM이 아무 때나 남기는 의견 JSON 배열([{role,name,time,text}]). 최종 결재권자(GM)가 카드·인쇄로 함께 봄. append-only 맨 끝 → 기존 인덱스 불변, initTodoSheet 마이그레이션 자동 컬럼 추가.
+  '결재의견'
 ];
 
 // 카테고리 목록 (2026-06-10 GM 확정 9분류 — 프론트(업무·결재·G1 SSOT)와 동일 라벨·띄어쓰기 통일)
@@ -1862,6 +1864,47 @@ function _processTodoAction(body) {
       }
 
       return _json({ ok: true, id: id, message: role + ' 승인 처리됨', next: next || null, decision: 'approve' });
+    }
+
+    // ─── [결재 의견] 부서장·GM이 아무 때나 의견 기록(승인/반려 무관) → 결재의견 컬럼 JSON append. 최종 결재권자(GM)가 카드·인쇄로 함께 봄. (2026-07-02 시우 · GM 지시) ───
+    if (action === 'todo_opinion') {
+      const sh = initTodoSheet();
+      const id = body.id;
+      const role = body.role || '';          // '부서장' / 'GM'
+      const name = body.name || role;
+      const text = String(body.text || '').trim();
+      if (!id || !role || !text) return _json({ ok: false, error: 'id·role·text 필수' });
+      const rowNum = _findRow(sh, id);
+      if (rowNum < 0) return _json({ ok: false, error: '해당 ID를 찾을 수 없습니다: ' + id });
+      const existing = sh.getRange(rowNum, 1, 1, TODO_HEADERS.length).getValues()[0];
+      const record = {};
+      TODO_HEADERS.forEach((h, i) => record[h] = existing[i]);
+      // 신원 PIN 게이트 — 서명(todo_sign)과 동일 규칙: GM 필수 / 부서장 graceful(속성 미설정 시 통과)
+      var _pinKey = { 'GM': 'APPROVAL_PIN_GM' }[role];
+      var _pinOptional = false;
+      if (role === '부서장') {
+        var _MID_PIN = { '이경연 실장':'APPROVAL_PIN_OPS', '이정헌 소장':'APPROVAL_PIN_FAC', '나우열M':'APPROVAL_PIN_PARTNER' };
+        var _reqDH = String(record['결재요청'] || '').split(',').map(function(s){ return s.trim(); }).filter(function(m){ return _MID_PIN[m]; })[0];
+        var _ownerDH = String(record['담당자'] || '').split(',').map(function(s){ return s.trim(); }).filter(function(m){ return _MID_PIN[m]; })[0];
+        var _mid = _reqDH || _ownerDH || _deptHeadFor(record['카테고리']);
+        _pinKey = (_mid && _MID_PIN[_mid]) ? _MID_PIN[_mid] : null;
+        _pinOptional = true;
+      }
+      if (_pinKey) {
+        var _expected = String(_prop(_pinKey) || '').trim();
+        var _submitted = String(body.pin || '').trim();
+        if (!_expected) { if (!_pinOptional) return _json({ ok: false, error: role + ' 비밀번호가 서버에 설정되지 않았습니다.', pinKey: _pinKey }); }
+        else if (_submitted !== _expected) return _json({ ok: false, error: '비밀번호가 일치하지 않습니다.', pinKey: _pinKey });
+      }
+      const _opIdx = TODO_HEADERS.indexOf('결재의견');
+      var _ops = [];
+      try { var _raw = String(existing[_opIdx] || ''); if (_raw) { var _p = JSON.parse(_raw); if (Array.isArray(_p)) _ops = _p; } } catch (e) { _ops = []; }
+      _ops.push({ role: role, name: name, time: _now(), text: text });
+      existing[_opIdx] = JSON.stringify(_ops);
+      existing[TODO_HEADERS.indexOf('수정일')] = _now();
+      sh.getRange(rowNum, 1, 1, TODO_HEADERS.length).setValues([existing]);
+      _notifyTelegram('💬 <b>[결재 의견]</b> ' + name + '\n📌 ' + (record['업무명']||'-') + '\n📝 ' + text + '\n🆔 ' + id);
+      return _json({ ok: true, id: id, message: '의견 등록됨', count: _ops.length });
     }
 
     // ─── 결재 리셋 (GM 전용) — 결재요청 전으로 복원, 업무현황에서 수정 가능 (2026-06-05 GM) ───
