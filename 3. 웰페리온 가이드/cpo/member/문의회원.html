@@ -1022,7 +1022,7 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
     <div class="card">
       <div class="db-toolbar">
         <div class="db-toolbar-search-group">
-          <input class="db-search" id="dbSearch" type="text" placeholder="이름·메모 검색…" autocomplete="off">
+          <input class="db-search" id="dbSearch" type="text" placeholder="이름·연락처·프로그램·메모 전체 검색…" autocomplete="off">
           <select class="db-filter" id="dbFilter">
             <option value="">전체 상태</option>
             <option value="신규">신규</option>
@@ -3067,7 +3067,7 @@ function openConsultModal(ev) {
   var _writable = ['tour','exp1','exp2','exp3','visit2'].indexOf(ev.slot || '') >= 0;
   tSel.innerHTML = '';
   var blank = document.createElement('option'); blank.value = ''; blank.textContent = '시간 미정'; tSel.appendChild(blank);
-  for (var _h = 6; _h <= 22; _h++) { var _hh = ('0'+_h).slice(-2)+':00'; var _o = document.createElement('option'); _o.value = _hh; _o.textContent = _hh; tSel.appendChild(_o); }
+  for (var _h = 6; _h <= 22; _h++) { ['00','30'].forEach(function(_m){ var _hh = ('0'+_h).slice(-2)+':'+_m; var _o = document.createElement('option'); _o.value = _hh; _o.textContent = _hh; tSel.appendChild(_o); }); }  // 30분 단위(06:00~22:30). 2026-07-02 시포(GM)
   tSel.value = String(ev.time || '').trim();   // 'HH:00' 형식이면 매칭, 아니면 '시간 미정'
   _consultOrigTime = tSel.value;
   tSel.disabled = !_writable;
@@ -3259,12 +3259,20 @@ function renderDbTable() {
   var _hideRegEl = document.getElementById('dbHideRegistered');
   var hideReg = _hideRegEl && _hideRegEl.checked;   // '진행중만 보기' — 등록·완납·이탈 종결건 숨김
   var _TERMINAL = ['SUC','단기SUC','결제완납','LOSS'];
+  var searchDigits = search.replace(/\D/g, '');   // 연락처 숫자만 매칭용(하이픈·공백 무시). 2026-07-02 시포(GM)
   var filtered = dbRows.filter(function(row){
     var matchStatus = !filter || row.status === filter;
-    var matchSearch = !search ||
-      (row.name  || '').toLowerCase().includes(search) ||
-      (row.memo  || '').toLowerCase().includes(search) ||
-      (row.owner || '').toLowerCase().includes(search);
+    var matchSearch = true;
+    if (search) {
+      // 전체 항목 검색 — 이름·연락처·프로그램·상태·채널·담당·메모·Contact·일정 전부. 2026-07-02 시포(GM)
+      var hay = [row.name, row.phone, row.program, row.status, row.channel, row.owner, row.memo,
+                 row.contact1, row.contact2, row.contact3,
+                 row.tourDate, row.tourTime, row.exp1, row.exp1Time, row.exp2, row.exp2Time, row.exp3, row.exp3Time]
+                .join(' ').toLowerCase();
+      var textHit = hay.includes(search);
+      var phoneHit = !!searchDigits && String(row.phone || '').replace(/\D/g, '').includes(searchDigits);  // 하이픈 없이 쳐도 연락처 매칭
+      matchSearch = textHit || phoneHit;
+    }
     var matchHide = !hideReg || _TERMINAL.indexOf(row.status) < 0;
     return matchStatus && matchSearch && matchHide;
   });
@@ -3635,10 +3643,12 @@ function buildScheduleEditBlock(row) {
     var blank = document.createElement('option'); blank.value = ''; blank.textContent = '시간';
     ti.appendChild(blank);
     for (var h = 6; h <= 22; h++) {
-      var hh = ('0' + h).slice(-2) + ':00';
-      var o = document.createElement('option'); o.value = hh; o.textContent = hh;
-      if (hh === (timeVal || '')) o.selected = true;
-      ti.appendChild(o);
+      ['00','30'].forEach(function(m){                 // 30분 단위(06:00~22:30). 2026-07-02 시포(GM)
+        var hh = ('0' + h).slice(-2) + ':' + m;
+        var o = document.createElement('option'); o.value = hh; o.textContent = hh;
+        if (hh === (timeVal || '')) o.selected = true;
+        ti.appendChild(o);
+      });
     }
     d.appendChild(s); d.appendChild(di); d.appendChild(ti);
     return d;
