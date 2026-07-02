@@ -999,5 +999,19 @@
     "artifact": "- 6월 매출 불일치 수정: 매출마스터 부서합(4.97억) → 「26년 매출 분석」 정본(6.22억)\n  CFO 매출현황과 동일 소스(sales_monthly)로 미러. 기타·주차(~1.26억) 누락 해소.\n- 매출 우선배치: 💰 매출·지출 섹션을 ERP 진척 위 최상단으로, hero 강조.\n- 목표 대비 진척 + 부서별 매출/지출 분해(선택월) 표 추가.\n- 경영진 인쇄 A3 가로 → A3 세로(매출 상단 전폭). (CLI ad-hoc · 커밋 4d9d125d)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "4d9d125d6e87fa463510a56f18e7324546ef9795"
+  },
+  {
+    "task_id": "COO-2026-07-02-ADHOC-2e205470",
+    "clevel": "coo",
+    "title": "[시우] coo 점검완료율 측정개통 확인·nsmap 정직화 (배239)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-02",
+    "processed_at": "2026-07-02",
+    "ship_no": 302,
+    "artifact": "- kpi_collector _coo_check_rate GAS fetch 정상 작동 실측 확인(지원부 95/95=100%)\n- bootsetup_matrix coo nsmap: stale \"배관수리(collector null)\"·\"null(collector 못읽음)\"\n  → \"✅ 측정개통(지원부 GAS 라이브)\"·\"라이브 실측\" 정직화\n- kpi_values.json·northstar_reach.json fresh 재산출(coo measured 도달율 100%/목표 95%) (CLI ad-hoc · 커밋 2e205470)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "2e205470791681ead12ffeee52d345b962a88feb"
   }
 ]
