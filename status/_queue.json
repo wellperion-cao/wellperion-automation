@@ -370,5 +370,19 @@
     "note": "[2026-07-02 GM] '정말 중요' 지시. 헌법 GM칸(제작 루프)·웰리칸(오케스트레이션)에 이은 자율화 다음 지평. 3층: ①관찰=GM 지시·결정·루틴·추천 승인/보류·텔레그램 응답·일일 스케줄 준수 로그 학습 ②포착=패턴 대비 GM이 놓친 것·다음 할 것 선제 감지(미승인·표류·루틴 누락·대기 지연) ③선제=자율 화이트리스트는 스스로 처리, 게이트 밖은 선제 제안. 두뇌=웰리, 엔진=시토(로그·패턴감지·자기학습 파이프라인 확장), 전 C-Level=도메인별 GM 놓친 것 포착. 기존 물림=북극성 추천기·bridge_mechanized·ai_self_learning·G1·GM 개인 북극성. 보안·프라이버시 게이트+자율 화이트리스트 준수. GM 인정 '어려울 수 있는데'→슬슬 단계적.",
     "next": "첫걸음 GM 확정 대기(후보 ⓐ deep-interview 정밀설계 ⓑ 작은 첫걸음=웰리 'GM 관찰 원장' 적재 시작). 헌법 기록 완료.",
     "depends_on": ""
+  },
+  {
+    "task_id": "CTO-2026-07-02-ADHOC-7b3946d7",
+    "clevel": "cto",
+    "title": "[시토] GM 관찰 원장 MVP — 배237 첫걸음 (순수 관찰·기록만)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-02",
+    "processed_at": "2026-07-02",
+    "artifact": "northstar_log·_queue(active+archive) 기존 신호로 status/gm_observation_ledger.jsonl 시드.\n핵심 관찰: 최근 3일(06-29~07-01) 추천 카드 GM 승인/보류 0건·전부 자동만료.\n라이브 부작용 없음(read+append만), 멱등(dedup_key로 재실행 시 중복 방지). (CLI ad-hoc · 커밋 7b3946d7)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "7b3946d74156c82b39c33d049fff701bb79469e2",
+    "ship_no": 237
   }
 ]
