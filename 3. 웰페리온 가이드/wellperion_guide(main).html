@@ -1182,7 +1182,14 @@
                 + '<td style="text-align:right;padding:4px 4px;color:var(--dim);">' + rVal + '</td>'
                 + '</tr>';
             }
-            tbody.innerHTML = rows;
+            var noteRow = '';
+            if(s.breakdownMonth){
+              noteRow = '<tr><td colspan="3" style="padding:2px 4px 5px;color:var(--dim);font-size:10px;">'
+                + s.breakdownMonth + '월 기준'
+                + (s.breakdownFallback ? ' (당월 미입력 → 최근 마감월)' : '')
+                + ' · 총액과 동일 소스</td></tr>';
+            }
+            tbody.innerHTML = noteRow + rows;
           })();
 
           /* 지출 — 정식 지출 ERP 시트 연동 (2026-06-10 시토·시뽀, GM 승인) · UI=매출 카드 벤치마킹 */

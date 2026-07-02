@@ -714,6 +714,22 @@ var BREAKDOWN_NAME_MAP = {
   'P.L팀 매출': 'PL팀', 'GXE': 'GXE'
 };
 
+// ── '26년 매출 분석' 시트 팀별 열 매핑 (1-base col) — 2026-07-02 시토 probe 실측 ──
+//   행 = 월+2 (row3=1월 … row14=12월). 각 팀 = 해당 블록의 '합계' 열(row2 라벨로 실측).
+//   총합(col48) = 회원권(col12=멤버십 합계, 옵션 포함) + 강습 팀 합계들 + 강습조정(col45+col46).
+//   ▶ 총액(AV=col48)과 동일 시트·동일 행 → breakdown 합이 총액과 정합.
+var SALES_TEAM_COLS = [
+  { name: '회원권',   col: 12 }, // 멤버십 합계(매출) — 신규·재등록·양도·환불·옵션 포함
+  { name: '수영',     col: 28 },
+  { name: 'PT',       col: 18 },
+  { name: '필라테스', col: 23 },
+  { name: '스쿼시',   col: 33 },
+  { name: '골프',     col: 38 },
+  { name: '체조',     col: 40 }  // 체조&트램폴린 (WSC 단일 열)
+];
+// 강습 총합계 블록의 환불·위약금(집계행) 열 — 팀 합을 총액(col48)과 정합시키는 조정 항목.
+var SALES_ADJ_COLS = [45, 46]; // 45=환불, 46=기타(위약금)
+
 function _kpiParseSalesTab(sheet) {
   var lastRow = sheet.getLastRow();
   var lastCol = sheet.getLastColumn();
@@ -893,20 +909,39 @@ function _kpiSales() {
     // 연 달성률: year 있고 yearTarget 있을 때만 산출. Math.round 소수점1자리.
     yearRate = (year !== null && yearTarget) ? Math.round((year / yearTarget) * 1000) / 10 : null;
 
-    // ══ breakdown = '보고' 탭 팀별 + 주차(parking_revenue.json). year/month 계산엔 미사용. ══
+    // ══ breakdown = '26년 매출 분석' 시트 팀별(총액 AV열과 동일 소스 → 정합) + 주차. ══
+    //   (2026-07-02 시토·GM 지시: '보고' 탭 의존 제거 — 7월 미입력 시 팀별 공백 문제 해결)
+    //   기준월 = 당월(cm) AV 값 있으면 cm, 전부 빈 달이면 lastFilledMonth 폴백(+ '기준월' 라벨·정직).
+    //   행(rowIdx=월+2)의 각 팀 열(SALES_TEAM_COLS)을 읽어 breakdown 구성. year/month(hero)엔 미사용.
     var bd = [];
+    var breakdownMonth = null;
+    var breakdownFallback = false;
     try {
-      var ss = SpreadsheetApp.openById(KPI_SALES_SHEET_ID);
-      var tab = ss.getSheetByName('보고');
-      if (!tab) {
-        var sheets = ss.getSheets();
-        for (var i = 0; i < sheets.length; i++) {
-          var p0 = _kpiParseSalesTab(sheets[i]);
-          if (p0 && p0.sheetMonthsSum > 0) { tab = sheets[i]; break; }
+      var bmonth = hasCurMonth ? cm : lastFilledMonth;
+      if (bmonth && KPI_SALES_ANALYSIS_SHEET_ID) {
+        var bSs = SpreadsheetApp.openById(KPI_SALES_ANALYSIS_SHEET_ID);
+        var bTab = bSs.getSheetByName('26년 매출 분석');
+        if (bTab) {
+          var rowVals = bTab.getRange(bmonth + 2, 1, 1, 48).getValues()[0]; // 1월→row3
+          breakdownMonth = bmonth;
+          breakdownFallback = !hasCurMonth;
+          for (var ti = 0; ti < SALES_TEAM_COLS.length; ti++) {
+            var tc = SALES_TEAM_COLS[ti];
+            var tv = _kpiNum(rowVals[tc.col - 1]);
+            if (tv === null) continue; // 열 결측만 제외 (0은 정직 표기)
+            bd.push({ name: tc.name, today: null, month: tv, target: null, rate: null });
+          }
+          // 강습 환불·위약금(집계행) → 팀 합이 총액(col48)과 정합하도록 조정 행(비영 시만).
+          var adj = 0, adjHas = false;
+          for (var xi = 0; xi < SALES_ADJ_COLS.length; xi++) {
+            var av2 = _kpiNum(rowVals[SALES_ADJ_COLS[xi] - 1]);
+            if (av2 !== null) { adj += av2; adjHas = true; }
+          }
+          if (adjHas && adj !== 0) {
+            bd.push({ name: '강습 환불·위약금', today: null, month: adj, target: null, rate: null });
+          }
         }
       }
-      var cur = tab ? _kpiParseSalesTab(tab) : null;
-      if (cur && cur.breakdown) bd = cur.breakdown;
     } catch (bdErr) {
       // breakdown 실패는 무영향(fail-safe) — 매출 hero 값은 AV 기준 그대로.
     }
@@ -923,6 +958,7 @@ function _kpiSales() {
              yearTarget: yearTarget, yearRate: yearRate,
              curMonth: cm, hasCurMonth: hasCurMonth,
              lastFilledMonth: lastFilledMonth,
+             breakdownMonth: breakdownMonth, breakdownFallback: breakdownFallback,
              breakdown: bd };
   } catch (err) {
     return { today: null, month: null, year: null, target: null, rate: null,
