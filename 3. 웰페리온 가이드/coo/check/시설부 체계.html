@@ -27,11 +27,8 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 .tab{padding:8px 18px;font-size:14px;font-weight:600;color:var(--dim);background:none;border:none;border-radius:8px;cursor:pointer;font-family:inherit;white-space:nowrap;flex-shrink:0}
 .tab.active{background:var(--accent-bg);color:var(--accent)}
 .content{padding:16px 20px 140px;max-width:720px;margin:0 auto}
-#tab-policy,#tab-guide,#tab-manual,#tab-fcheck,#tab-reg,#tab-vendor{max-width:none;margin-left:0;margin-right:0}/* 전체 탭 풀폭 좌측정렬 (GM 2026-06-23) */
+#tab-policy,#tab-guide,#tab-manual,#tab-fcheck,#tab-vendor{max-width:none;margin-left:0;margin-right:0}/* 전체 탭 풀폭 좌측정렬 (GM 2026-06-23) */
 #tab-vendor.content{text-align:left}
-#tab-reg.content{text-align:left}
-#tab-reg .admin-card{text-align:left}
-#tab-reg .dash-stat-card{text-align:left}
 .date-bar{display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap}
 .date-bar input{background:var(--paper);border:1px solid var(--border);color:var(--text);padding:8px 14px;border-radius:8px;font-size:15px;font-family:inherit}
 .btn{padding:8px 14px;background:var(--accent-bg);color:var(--accent);border:1px solid var(--accent);border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit}
@@ -388,7 +385,6 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   body.a3-print-mode #tab-guide,
   body.a3-print-mode #tab-manual,
   body.a3-print-mode #tab-fcheck,
-  body.a3-print-mode #tab-reg,
   body.a3-print-mode #tab-vendor{display:none!important}
   body.a3-print-mode #a3-guideline-print{display:block!important}
   .a3-print-header{text-align:center;font-size:16px;font-weight:800;letter-spacing:0.04em;padding:6px 0 10px;border-bottom:2px solid #333;margin-bottom:10px;color:#111}
@@ -431,7 +427,6 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   body.a3-manual-mode #tab-guide,
   body.a3-manual-mode #tab-manual,
   body.a3-manual-mode #tab-fcheck,
-  body.a3-manual-mode #tab-reg,
   body.a3-manual-mode #tab-vendor,
   body.a3-manual-mode #a3-guideline-print{display:none!important}
   body.a3-manual-mode #a3-manual-print{display:block!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
@@ -554,7 +549,6 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   <button class="tab active" onclick="switchTab('policy')">시설부 규정</button>
   <button class="tab" onclick="switchTab('guide')">직원 가이드</button>
   <button class="tab" onclick="switchTab('manual')">매뉴얼</button>
-  <button class="tab" onclick="switchTab('reg')">시설물 고장 접수</button>
   <!-- 옛 점검(남)/(여) 탭 제거(2026-06-12). 신규 '시설점검'=날짜별 측정 작업일지(2026-06-16 GM·PDF 기반). -->
   <button class="tab" onclick="switchTab('fcheck')">시설점검</button>
   <button class="tab" onclick="switchTab('vendor')">거래업체</button>
@@ -612,11 +606,6 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
     <summary style="cursor:pointer;font-size:13px;font-weight:700;color:var(--text);">오늘 제출 이력 <span id="fc-history-count">(0건)</span></summary>
     <div id="fc-history-list" style="margin-top:8px;font-size:12px;color:var(--dim);"></div>
   </details>
-</div>
-
-<div id="tab-reg" class="content hidden">
-  <h2 style="font-size:20px;margin-bottom:6px;">시설물 고장 및 불편 현황</h2>
-  <div id="deptRegBoard"><p class="loading">불러오는 중...</p></div>
 </div>
 
 <div id="tab-vendor" class="content hidden">
@@ -1943,13 +1932,11 @@ function switchTab(tab, opts){
   document.getElementById('tab-guide').classList.toggle('hidden',tab!=='guide');
   document.getElementById('tab-manual').classList.toggle('hidden',tab!=='manual');
   document.getElementById('tab-vendor').classList.toggle('hidden',tab!=='vendor');
-  document.getElementById('tab-reg').classList.toggle('hidden',tab!=='reg');
   document.getElementById('tab-fcheck').classList.toggle('hidden',tab!=='fcheck');
   if(tab==='fcheck'){ if(typeof fcLoad==='function') fcLoad(); }
   if(tab==='manual'){renderBoard();renderManualItems();}
   if(tab==='guide'){ if(typeof facRenderGuideBoard==='function') facRenderGuideBoard(); }
   if(tab==='vendor'){ if(typeof loadVendorCategoriesFromBackend==='function'){ loadVendorCategoriesFromBackend().then(function(){ if(typeof loadVendorFromBackend==='function') loadVendorFromBackend(); }); } }   // 탭 열 때마다 백엔드 재로드(분류→업체) — GM 2026-06-12
-  if(tab==='reg'){ if(typeof deptRegLoad==='function') deptRegLoad('시설부'); }
 }
 // 해시 딥링크(예 …#fcheck) → 로드 시 해당 탭 자동 열기
 window.addEventListener('DOMContentLoaded',function(){ try{ var h=(location.hash||'').replace('#',''); if(h && document.getElementById('tab-'+h)) switchTab(h); }catch(e){} });
@@ -4064,200 +4051,6 @@ function vendorSubmitAddForm(){
   };
   try{ var fd=document.getElementById('fcDate'); if(fd){ fd.value=new Date().toLocaleDateString('sv-SE'); fcRender(); fcLoad(); } }catch(e){}
 })();
-</script>
-
-<script>
-/* ═══════════════════════════════════════════════
-   접수 현황 탭 — 시설물 고장·불편 접수 보드
-   API: REG_API (reg_list GET / reg_update POST)
-   접근 게이트: _wpKey / _wpUrl / _wpGate
-   ═══════════════════════════════════════════════ */
-var REG_API = 'https://script.google.com/macros/s/AKfycbwk2XS1FND9V2xtXlWgsXzgA5p0FG7jVm6YKD74JK_ME_ZvHsNUUfGE5A_8p0X8VcF3gQ/exec';
-
-// PII는 서버(TOKEN_ENFORCE)에서 유지, 클라이언트 열쇠 입력 UX 폐기(GM 옵션A).
-// _wpKey=빈값 / _wpUrl=passthrough / _wpGate=무동작(입력창 안 뜸)
-function _wpKey(){ return ''; }
-function _wpUrl(base){ return base; }
-function _wpGate(json){ return false; }
-
-function _regEsc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
-
-var REG_STATUS_LABELS = {'접수':'접수','처리중':'처리중','완료':'완료'};
-var REG_STATUS_COLORS = {'접수':'var(--yellow)','처리중':'var(--blue)','완료':'var(--green)'};
-var REG_STATUS_BG    = {'접수':'var(--yellow-bg)','처리중':'var(--blue-bg)','완료':'var(--green-bg)'};
-
-function deptRegLoad(dept){
-  var board = document.getElementById('deptRegBoard');
-  if(!board) return;
-  board.innerHTML = '<p class="loading">불러오는 중...</p>';
-  var url = REG_API + '?action=reg_board&dept=' + encodeURIComponent(dept) + '&_=' + Date.now();
-  fetch(url, {redirect:'follow'})
-    .then(function(r){ return r.json(); })
-    .then(function(d){
-      if(_wpGate(d)) return;
-      if(!d || !d.ok){
-        board.innerHTML = '<p style="color:var(--red);padding:20px;">오류: ' + _regEsc((d&&d.error)||'응답 실패') + '</p>';
-        return;
-      }
-      _regRender(d.data || [], dept);
-    })
-    .catch(function(e){
-      board.innerHTML = '<p style="color:var(--red);padding:20px;">네트워크 오류: ' + _regEsc(String(e)) + '</p>';
-    });
-}
-
-function _regRender(rows, dept){
-  var board = document.getElementById('deptRegBoard');
-  if(!board) return;
-
-  /* 상태별 그룹 */
-  var groups = {'접수':[], '처리중':[], '완료':[]};
-  rows.forEach(function(r){
-    var st = r['상태'] || '접수';
-    if(!groups[st]) groups[st] = [];
-    groups[st].push(r);
-  });
-
-  var html = '';
-  /* 요약 카운터 */
-  html += '<div class="dash-stat-row">';
-  ['접수','처리중','완료'].forEach(function(st){
-    html += '<div class="dash-stat-card"><div class="num" style="color:' + REG_STATUS_COLORS[st] + '">' + groups[st].length + '</div><div class="label">' + _regEsc(st) + '</div></div>';
-  });
-  html += '</div>';
-
-  ['접수','처리중','완료'].forEach(function(st){
-    var list = groups[st];
-    html += '<div style="margin-bottom:18px;">';
-    html += '<div style="font-size:13px;font-weight:700;color:' + REG_STATUS_COLORS[st] + ';background:' + REG_STATUS_BG[st] + ';padding:6px 14px;border-radius:8px;margin-bottom:8px;display:inline-block;">' + _regEsc(st) + ' ' + list.length + '건</div>';
-    if(list.length === 0){
-      html += '<p style="font-size:13px;color:var(--dim);padding:10px 0;">' + _regEsc(st) + ' 건 없음</p>';
-    } else {
-      list.forEach(function(r){
-        html += _regCard(r, dept);
-      });
-    }
-    html += '</div>';
-  });
-
-  if(rows.length === 0){
-    html = '<p style="text-align:center;color:var(--dim);padding:40px 20px;">접수 내역이 없습니다.</p>';
-  }
-
-  board.innerHTML = html;
-}
-
-function _regCard(r, dept){
-  var id       = _regEsc(r['접수ID'] || '');
-  var cat      = _regEsc(r['카테고리'] || '');
-  var dt       = _regEsc(r['접수일시'] || '');
-  var name     = _regEsc(r['이름'] || '');
-  var tel      = _regEsc(r['연락처'] || '');
-  var loc      = _regEsc(r['위치'] || '');
-  var body     = _regEsc(r['내용'] || '');
-  var photoUrl = r['사진URL'] || '';
-  var st       = r['상태'] || '접수';
-  var assignee = _regEsc(r['담당'] || '');
-  var memo     = _regEsc(r['처리메모'] || '');
-  var broken   = _regEsc(r['고장설비'] || '');
-  var risk     = _regEsc(r['위험도'] || '');
-  var usable   = _regEsc(r['사용가능여부'] || '');
-  var rawId    = r['접수ID'] || '';
-  var rawCat   = r['카테고리'] || '';
-
-  var stColor  = REG_STATUS_COLORS[st] || 'var(--dim)';
-  var stBg     = REG_STATUS_BG[st]    || 'var(--paper)';
-
-  var html = '';
-  html += '<div class="admin-card" style="margin-bottom:10px;border-left:4px solid ' + stColor + ';">';
-  /* 헤더행 */
-  html += '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px;">';
-  if(cat) html += '<span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:8px;background:var(--accent-bg);color:var(--accent);">' + cat + '</span>';
-  html += '<span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:8px;background:' + stBg + ';color:' + stColor + ';">' + _regEsc(st) + '</span>';
-  if(dt) html += '<span style="font-size:11px;color:var(--dim);margin-left:auto;">' + dt + '</span>';
-  html += '</div>';
-  /* 본문 */
-  html += '<div style="font-size:14px;font-weight:700;margin-bottom:4px;">' + (name||'(이름없음)') + (tel ? ' &nbsp;<span style="font-size:12px;color:var(--dim);font-weight:400;">' + tel + '</span>' : '') + '</div>';
-  if(loc)    html += '<div style="font-size:12px;color:var(--dim);margin-bottom:4px;">📍 ' + loc + '</div>';
-  if(body)   html += '<div style="font-size:13px;margin-bottom:6px;word-break:break-word;">' + body + '</div>';
-  /* 추가 정보 */
-  var extra = [];
-  if(broken) extra.push('고장설비: ' + broken);
-  if(risk)   extra.push('위험도: ' + risk);
-  if(usable) extra.push('사용가능: ' + usable);
-  if(extra.length) html += '<div style="font-size:12px;color:var(--dim);margin-bottom:6px;">' + extra.map(_regEsc).join(' &nbsp;·&nbsp; ') + '</div>';
-  /* 사진 */
-  if(photoUrl){
-    html += '<a href="' + _regEsc(photoUrl) + '" target="_blank" rel="noopener" style="display:inline-block;margin-bottom:8px;font-size:12px;color:var(--blue);">📷 사진 보기</a> ';
-  }
-  /* 상태 변경 + 담당 */
-  html += '<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:8px;padding-top:8px;border-top:1px solid var(--border);">';
-  html += '<label style="font-size:12px;color:var(--dim);font-weight:700;">상태</label>';
-  html += '<select data-reg-id="' + id + '" data-reg-cat="' + _regEsc(rawCat) + '" data-reg-field="status" onchange="regUpdate(this)" style="background:var(--bg);border:1px solid var(--border);color:var(--text);padding:5px 8px;border-radius:6px;font-size:12px;font-family:inherit;">';
-  ['접수','처리중','완료'].forEach(function(s){
-    html += '<option value="' + _regEsc(s) + '"' + (st===s?' selected':'') + '>' + _regEsc(s) + '</option>';
-  });
-  html += '</select>';
-  html += '<label style="font-size:12px;color:var(--dim);font-weight:700;">담당</label>';
-  html += '<input type="text" data-reg-id="' + id + '" data-reg-cat="' + _regEsc(rawCat) + '" data-reg-field="assignee" value="' + assignee + '" placeholder="담당자" style="background:var(--bg);border:1px solid var(--border);color:var(--text);padding:5px 8px;border-radius:6px;font-size:12px;font-family:inherit;width:90px;">';
-  html += '<button onclick="regUpdateFromCard(this)" style="padding:5px 12px;font-size:12px;font-weight:700;border-radius:6px;border:1px solid rgba(183,159,138,0.4);background:var(--accent-bg);color:var(--accent);cursor:pointer;font-family:inherit;">저장</button>';
-  html += '</div>';
-  /* 처리메모 */
-  html += '<div style="margin-top:8px;">';
-  html += '<label style="font-size:12px;color:var(--dim);font-weight:700;display:block;margin-bottom:4px;">처리 메모</label>';
-  html += '<textarea data-reg-id="' + id + '" data-reg-cat="' + _regEsc(rawCat) + '" data-reg-field="memo" rows="2" placeholder="처리 내용 메모..." style="width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:7px 10px;border-radius:7px;font-size:13px;font-family:inherit;resize:vertical;box-sizing:border-box;">' + memo + '</textarea>';
-  html += '<div style="text-align:right;margin-top:4px;"><button onclick="regUpdateFromMemo(this)" style="padding:5px 14px;font-size:12px;font-weight:700;border-radius:6px;border:1px solid rgba(183,159,138,0.4);background:var(--accent-bg);color:var(--accent);cursor:pointer;font-family:inherit;">메모 저장</button></div>';
-  html += '</div>';
-  html += '</div>'; /* /admin-card */
-  return html;
-}
-
-function regUpdate(selectEl){
-  /* 상태 select onchange — 즉시 POST */
-  var id  = selectEl.getAttribute('data-reg-id');
-  var cat = selectEl.getAttribute('data-reg-cat');
-  var val = selectEl.value;
-  _regPost({id:id, category:cat, status:val});
-}
-
-function regUpdateFromCard(btn){
-  /* 담당 저장 버튼 */
-  var card = btn.closest('.admin-card');
-  var assigneeEl = card.querySelector('input[data-reg-field="assignee"]');
-  var statusEl   = card.querySelector('select[data-reg-field="status"]');
-  var id  = assigneeEl ? assigneeEl.getAttribute('data-reg-id')  : '';
-  var cat = assigneeEl ? assigneeEl.getAttribute('data-reg-cat') : '';
-  _regPost({id:id, category:cat, status:statusEl?statusEl.value:undefined, assignee:assigneeEl?assigneeEl.value:''});
-}
-
-function regUpdateFromMemo(btn){
-  /* 메모 저장 버튼 */
-  var card    = btn.closest('.admin-card');
-  var memoEl  = card.querySelector('textarea[data-reg-field="memo"]');
-  var statusEl= card.querySelector('select[data-reg-field="status"]');
-  var id  = memoEl ? memoEl.getAttribute('data-reg-id')  : '';
-  var cat = memoEl ? memoEl.getAttribute('data-reg-cat') : '';
-  _regPost({id:id, category:cat, status:statusEl?statusEl.value:undefined, memo:memoEl?memoEl.value:''});
-}
-
-function _regPost(payload){
-  fetch(REG_API, {
-    method:'POST',
-    headers:{'Content-Type':'text/plain;charset=UTF-8'},
-    body: JSON.stringify(Object.assign({action:'reg_update', key:_wpKey()}, payload)),
-    redirect:'follow'
-  })
-  .then(function(r){ return r.json(); })
-  .then(function(d){
-    if(_wpGate(d)) return;
-    if(!d || !d.ok){
-      alert('저장 실패: ' + ((d&&d.error)||'알 수 없는 오류'));
-      return;
-    }
-    deptRegLoad('시설부');
-  })
-  .catch(function(e){ alert('네트워크 오류: ' + String(e)); });
-}
 </script>
 
 </body>
