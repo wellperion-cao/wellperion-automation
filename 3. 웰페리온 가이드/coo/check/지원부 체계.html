@@ -798,14 +798,20 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
     </div>
   </div>
   <div style="display:flex;gap:4px;margin-left:auto;">
-    <button class="util-btn print-btn" onclick="printCurrentTab()">인쇄</button>
-    <button class="util-btn print-btn" onclick="printA3Guideline()" title="규정+가이드를 A3 세로 좌우2단으로 인쇄">🖨️ A3 가이드라인</button>
-    <button class="util-btn print-btn" onclick="printA3Manual()" title="매뉴얼 보드를 A3 가로 1장 주간표(월~일 7열)로 인쇄">🖨️ A3 매뉴얼(주간)</button>
-    <button class="util-btn print-btn" onclick="printA3Manual('m')" title="남+외곽 구역만 A3 가로 1장 주간표로 인쇄">🖨 A3 가로(남)</button>
-    <button class="util-btn print-btn" onclick="printA3Manual('f')" title="여+외곽 구역만 A3 가로 1장 주간표로 인쇄">🖨 A3 가로(여)</button>
-    <button class="util-btn print-btn" onclick="printA3ManualPortrait()" title="평일 공통 항목을 분리해 A3 세로 1장으로 압축 인쇄">🖨 A3 세로(1장)</button>
-    <button class="util-btn print-btn" onclick="printA3ManualPortrait('m')" title="남+외곽 구역만 평일 공통 분리 A3 세로 1장으로 압축 인쇄">🖨 A3 세로(남)</button>
-    <button class="util-btn print-btn" onclick="printA3ManualPortrait('f')" title="여+외곽 구역만 평일 공통 분리 A3 세로 1장으로 압축 인쇄">🖨 A3 세로(여)</button>
+    <!-- 인쇄 버튼 통합 드롭다운 (월간 보고와 동일 패턴 · 버튼 난립 해소 2026-07-02 시우, GM) -->
+    <div class="tab-dropdown" id="printDropdown">
+      <button class="util-btn print-btn" id="printDropdownBtn" onclick="openTabDropdown(this,document.getElementById('printDropdownMenu'),event)">🖨 인쇄 ▾</button>
+      <div class="tab-dropdown-menu" id="printDropdownMenu">
+        <button onclick="printCurrentTab();closeAllDropdowns()">현재 화면 인쇄</button>
+        <button onclick="printA3Guideline();closeAllDropdowns()">A3 가이드라인 (규정+가이드)</button>
+        <button onclick="printA3Manual();closeAllDropdowns()">A3 주간(가로) · 전체</button>
+        <button onclick="printA3Manual('m');closeAllDropdowns()">A3 주간(가로) · 남</button>
+        <button onclick="printA3Manual('f');closeAllDropdowns()">A3 주간(가로) · 여</button>
+        <button onclick="printA3ManualPortrait();closeAllDropdowns()">A3 세로 1장 · 전체</button>
+        <button onclick="printA3ManualPortrait('m');closeAllDropdowns()">A3 세로 1장 · 남</button>
+        <button onclick="printA3ManualPortrait('f');closeAllDropdowns()">A3 세로 1장 · 여</button>
+      </div>
+    </div>
     <button class="util-btn report-btn" onclick="copyReport()">보고용</button>
     <button class="util-btn share-btn" onclick="copyShare()">공유용</button>
   </div>
