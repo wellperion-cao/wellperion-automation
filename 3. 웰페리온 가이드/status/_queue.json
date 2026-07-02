@@ -452,5 +452,19 @@
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "0a6e0fcfde94eb113b0ca252bc0d991b7561e165",
     "ship_no": 241
+  },
+  {
+    "task_id": "CTO-2026-07-02-ADHOC-04d6823c",
+    "clevel": "cto",
+    "title": "[시토] fix(telegram): 일일 문의 디지스트 타임아웃·상태 미반영 결함 수정",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-02",
+    "processed_at": "2026-07-02",
+    "artifact": "- funnel inquiry_list 조회 timeout 20s→40s (콜드스타트 시 초과로 매일 실패하던 문제)\n- 문의 상태(신규/응대/예약/방문/가입 등) 집계 추가 — 지금까지 상태 무시하고 전부 '신규'로만 표시되던 문제\n- rank 매핑은 .deploy-funnel/Survey.js _stageOf_ SSOT 이식(_inquiry_stage_of)\n- 타임아웃 예외 메시지를 raw 에러 문자열 대신 사람이 읽는 안내로 순화 (CLI ad-hoc · 커밋 04d6823c)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "04d6823ca9b87202be84118f1570a0ee05339296",
+    "ship_no": 242
   }
 ]
