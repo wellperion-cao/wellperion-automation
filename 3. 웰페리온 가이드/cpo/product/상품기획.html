@@ -562,243 +562,25 @@ tr:hover td{background:var(--accent-bg);}
       <span style="font-size:12px;opacity:0.85;">계약 중 기존요금 보장 · 재등록 시 새 정가 적용 · 2년 주기 인상 유지(26.10 / 28.10)</span>
     </div>
 
-    <!-- 1. 신규 등록 & 웰컴패키지 -->
-    <div class="accordion open" id="acc1">
-      <div class="acc-header" onclick="toggleAcc('acc1')">
-        <div class="acc-header-left">
-          <span class="acc-icon">🎁</span>
-          <span class="acc-title">신규 등록 &amp; 웰컴패키지</span>
-        </div>
-        <div class="acc-badges">
-          <span class="num-badge blue">분기 기획</span>
-          <span class="num-badge accent">공제금 주의</span>
-          <span class="num-badge red">가격 할인 아님</span>
-        </div>
-        <span class="acc-chevron">▼</span>
+    <!-- 요금 정책 전체 = 한눈에 편집 가능한 표. 구분·항목·내용·비고 · GM 인라인 편집·저장(예약 레코드 POLICY-TABLE). 2026-07-02 시포·GM -->
+    <div id="policyTableCard">
+      <div class="tbl-wrap">
+        <table class="pricing-edit-tbl">
+          <thead><tr>
+            <th style="width:112px">구분</th>
+            <th style="width:150px">항목</th>
+            <th>내용</th>
+            <th style="width:210px">비고</th>
+            <th style="width:30px"></th>
+          </tr></thead>
+          <tbody id="policyBody"><tr><td colspan="5" style="color:var(--dim);font-size:12px;padding:10px;">불러오는 중…</td></tr></tbody>
+        </table>
       </div>
-      <div class="acc-body">
-        <p><strong>분기별 신규 기획</strong> — 1~3월 / 4~6월 / 7~9월 / 10~12월 단위 기획. 회장 보고 체계.</p>
-        <div class="callout green" style="margin-bottom:10px;">✅ 가격 할인 아닌 <strong>웰컴 가치 기획</strong> 중심으로 운영 — 서비스·경험·혜택 구성이 핵심, 가격 인하 기획 금지.</div>
-        <p><strong>웰컴패키지 구성</strong></p>
-        <ul>
-          <li>바우처 일일입장권 <strong>3매</strong></li>
-          <li>손톱깍이 1개</li>
-          <li>강습 3회 — PT · 필라테스 · 골프 · 스쿼시 중 <strong>택 1</strong></li>
-          <li>강습 3회 대신 <strong>생크몽드 100회 대체</strong> 선택 가능</li>
-        </ul>
-        <div class="callout red" style="margin-top:12px;">⚠️ <strong>환불 시 웰컴패키지 공제금</strong> — 강습 진행 확인 시에 한해 적용<br>
-          PT 326,700원 / 필라테스 326,700원 / 스쿼시 237,600원 / 골프 195,000원<br>
-          <span style="font-size:12px;opacity:0.8;">일일입장권·손톱깍이는 공제 대상 아님</span>
-        </div>
-      </div>
-    </div>
-
-    <!-- 2. 요금 체계 & 인상 계획 -->
-    <div class="accordion" id="acc2">
-      <div class="acc-header" onclick="toggleAcc('acc2')">
-        <div class="acc-header-left">
-          <span class="acc-icon">📊</span>
-          <span class="acc-title">요금 체계 &amp; 인상 계획</span>
-        </div>
-        <div class="acc-badges">
-          <span class="num-badge yellow">26.10 / 28.10 인상 예정</span>
-        </div>
-        <span class="acc-chevron">▼</span>
-      </div>
-      <div class="acc-body">
-        <!-- 등급별 연간요금 — GM 직접 편집·저장(핵심 요금표, 2026-07-02 시포·GM) -->
-        <div class="tbl-wrap" id="pricingCard">
-          <table class="pricing-edit-tbl">
-            <thead><tr><th>등급</th><th class="num">연간 요금(원)</th><th>비고</th><th style="width:34px"></th></tr></thead>
-            <tbody id="pricingBody"><tr><td colspan="4" style="color:var(--dim);font-size:12px;padding:10px;">불러오는 중…</td></tr></tbody>
-          </table>
-          <div class="pricing-toolbar">
-            <button class="action-btn green" onclick="savePolicyPricing()">💾 요금표 저장</button>
-            <button class="action-btn" onclick="addPricingRow()">➕ 등급 추가</button>
-            <span class="pricing-hint" id="pricingStatus">GM이 직접 수정 → 저장하면 시트에 반영됩니다</span>
-          </div>
-        </div>
-        <div class="section-divider" style="margin:14px 0 12px;"><span>가족 요금</span></div>
-        <p style="font-size:13px;color:var(--dim-mid);">2번째 가족부터 각 <strong style="color:var(--text);">270만원</strong> · 가족증명 첨부 필수</p>
-        <div class="callout red" style="margin-bottom:10px;">🚫 <strong>가족 할인 폐지 → 정가 적용</strong> — 가족 혜택은 웰컴팩 중복 제공·우선 서비스(비가격 혜택)로 대체. 아래 수치는 현행 참고용.</div>
-        <div class="tbl-wrap">
-          <table>
-            <thead>
-              <tr><th>가족수</th><th class="num">현행 합계 (참고)</th><th class="num">전환 방향</th></tr>
-            </thead>
-            <tbody>
-              <tr><td>2인</td><td class="num dim">5,700,000</td><td class="num"><span class="num-badge red">정가 전환</span></td></tr>
-              <tr><td>3인</td><td class="num dim">8,400,000</td><td class="num"><span class="num-badge red">정가 전환</span></td></tr>
-              <tr><td>4인</td><td class="num dim">11,100,000</td><td class="num"><span class="num-badge red">정가 전환</span></td></tr>
-            </tbody>
-          </table>
-        </div>
-        <div class="section-divider" style="margin:14px 0 12px;"><span>법인·단체</span></div>
-        <div class="callout red" style="margin-bottom:10px;">🚫 <strong>가격 할인 폐지/전환</strong> — 정가 기준·기명 관리 유지. 아래 수치는 현행 참고용.</div>
-        <ul>
-          <li><strong>5인</strong> — 현행 1,350만원 <span class="num-badge red" style="vertical-align:middle;">정가 전환</span> · 사업자등록증 · 휴회불가 · 양도 1회 5만</li>
-          <li><strong>10인</strong> — 현행 2,550만원 <span class="num-badge red" style="vertical-align:middle;">정가 전환</span> · 동일 조건</li>
-        </ul>
-        <div class="section-divider" style="margin:14px 0 12px;"><span>회원 소개</span></div>
-        <p>소개자 이용권 <strong>5매</strong> + 선물 <strong>15만원 상당</strong></p>
-        <div class="callout green" style="margin-top:8px;margin-bottom:0;">✅ <strong>가격 할인 아님 = 비가격 혜택, 유지</strong> — 이용권·선물은 가격 인하가 아닌 서비스 제공이므로 무할인 원칙과 별개.</div>
-        <div class="callout yellow" style="margin-top:12px;">📅 <strong>2년 주기 인상 유지 + 인상폭 상향</strong> — 2026년 10월 / 2028년 10월 · 상세 시나리오는 '기획 작업대' 참조</div>
-      </div>
-    </div>
-
-    <!-- 3. 재등록 정책 -->
-    <div class="accordion" id="acc3">
-      <div class="acc-header" onclick="toggleAcc('acc3')">
-        <div class="acc-header-left">
-          <span class="acc-icon">🔄</span>
-          <span class="acc-title">재등록 정책</span>
-        </div>
-        <div class="acc-badges">
-          <span class="num-badge red">재등록 가격할인 폐지</span>
-          <span class="num-badge green">비가격 혜택 유지</span>
-        </div>
-        <span class="acc-chevron">▼</span>
-      </div>
-      <div class="acc-body">
-        <div class="callout red" style="margin-bottom:12px;">🚫 <strong>재등록 가격 할인 폐지</strong> — 현행 5% 할인은 무할인 원칙으로 전환. 혜택은 바우처·사은품(비가격)으로 유지.</div>
-        <ul>
-          <li>재등록 가격 할인 <strong>폐지</strong> <span class="num-badge red" style="vertical-align:middle;">전환</span> (현행 5% 고정 참고용)</li>
-          <li>바우처 일일입장권 <strong>3매</strong> 제공 (비가격 혜택, 유지)</li>
-          <li><strong>90일 미만</strong> 이용 회원 → 2개월 연장 + 일일입장권 3매 (저이용 특별선택권)</li>
-          <li>만기 후 <strong>1년 내</strong> 등록 시 재등록 혜택 / 1년 경과 시 신규 혜택 적용</li>
-          <li>풀데이 추가요금 기준 <strong>240일</strong></li>
-          <li>사은품 별도 제공</li>
-        </ul>
-      </div>
-    </div>
-
-    <!-- 4. 멤버십 등급제 FAN -->
-    <div class="accordion" id="acc4">
-      <div class="acc-header" onclick="toggleAcc('acc4')">
-        <div class="acc-header-left">
-          <span class="acc-icon">⭐</span>
-          <span class="acc-title">멤버십 등급제 (FAN)</span>
-        </div>
-        <div class="acc-badges">
-          <span class="num-badge orange">26년 4→3단계 축소</span>
-        </div>
-        <span class="acc-chevron">▼</span>
-      </div>
-      <div class="acc-body">
-        <div class="policy-compare">
-          <div class="pc-box current">
-            <div class="pc-box-label">25년 현행 (4단계)</div>
-            <div class="pc-box-content">4개 등급 운영</div>
-          </div>
-          <div class="pc-box next">
-            <div class="pc-box-label">26년 변경 (3단계)</div>
-            <div class="pc-box-content">
-              <strong>FAN VIP</strong> — 누적 1,700만원↑<br>
-              <strong>VIP</strong> — 누적 1,200만원↑<br>
-              <strong>M</strong> — 누적 800만원↑
-            </div>
-          </div>
-        </div>
-        <div class="section-divider" style="margin:14px 0 12px;"><span>FAN 혜택</span></div>
-        <ul>
-          <li>FAN 전용 락커</li>
-          <li>주차 연장</li>
-          <li>일일입장 혜택</li>
-          <li>카페 충전 크레딧</li>
-        </ul>
-        <div class="callout" style="margin-top:12px;">📋 평가 기준 — 이용금액 · 출석 · 에티켓 · 경영진 VVVIP 지정</div>
-      </div>
-    </div>
-
-    <!-- 5. 회원 서비스 옵션 -->
-    <div class="accordion" id="acc5">
-      <div class="acc-header" onclick="toggleAcc('acc5')">
-        <div class="acc-header-left">
-          <span class="acc-icon">⚙️</span>
-          <span class="acc-title">회원 서비스 옵션</span>
-        </div>
-        <div class="acc-badges">
-          <span class="num-badge accent">입장·휴회·양도·환불</span>
-        </div>
-        <span class="acc-chevron">▼</span>
-      </div>
-      <div class="acc-body">
-        <div class="tbl-wrap">
-          <table>
-            <thead>
-              <tr><th>서비스</th><th>조건 / 규정</th></tr>
-            </thead>
-            <tbody>
-              <tr><td><strong>입장</strong></td><td>1일 1회 원칙 · 풀데이 추가 48만원 (책임자 컨펌)</td></tr>
-              <tr><td><strong>휴회</strong></td><td>연 3회 / 총 60일 · 특이사항 시 최대 90일</td></tr>
-              <tr><td><strong>양도</strong></td><td>1회 한정 · 직계가족 / 비가족 양도비 5만원 · 단기권 양도 가능</td></tr>
-              <tr><td><strong>환불</strong></td><td>위약금 10% · 24시간 이내 취소 시 무위약 · 일일요금 기준 플래티넘 14,000~노블+골프 17,000</td></tr>
-              <tr><td><strong>일일입장권</strong></td><td>1회 55,000 / 입주민 47,000 · 10회 바우처 500,000 / 입주민 420,000 · 유효 2개월</td></tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-
-    <!-- 6. 입회 나이 정책 -->
-    <div class="accordion" id="acc6">
-      <div class="acc-header" onclick="toggleAcc('acc6')">
-        <div class="acc-header-left">
-          <span class="acc-icon">🎂</span>
-          <span class="acc-title">입회 나이 정책</span>
-        </div>
-        <div class="acc-badges">
-          <span class="num-badge red">70세+ 조건부</span>
-        </div>
-        <span class="acc-chevron">▼</span>
-      </div>
-      <div class="acc-body">
-        <div class="tbl-wrap">
-          <table>
-            <thead>
-              <tr><th>연령</th><th>가능 여부</th><th>조건</th></tr>
-            </thead>
-            <tbody>
-              <tr><td>17~69세</td><td><span class="num-badge green">가능</span></td><td>일반 절차</td></tr>
-              <tr><td>70~75세</td><td><span class="num-badge yellow">조건부</span></td><td>건강검진 + 서약서</td></tr>
-              <tr><td>76세 이상</td><td><span class="num-badge orange">조건부</span></td><td>건강검진 + 서약서 + 수영 불가 + 컨시어지 동반</td></tr>
-              <tr><td>기존회원 재등록</td><td><span class="num-badge green">무조건</span></td><td>나이 제한 미적용</td></tr>
-            </tbody>
-          </table>
-        </div>
-        <div class="callout yellow" style="margin-top:12px;">⚠️ 만료 1개월 내 미등록 시 → 시니어 나이 정책 새로 적용</div>
-      </div>
-    </div>
-
-    <!-- 7. 시설 운영 -->
-    <div class="accordion" id="acc7">
-      <div class="acc-header" onclick="toggleAcc('acc7')">
-        <div class="acc-header-left">
-          <span class="acc-icon">🏢</span>
-          <span class="acc-title">시설 운영 정책</span>
-        </div>
-        <div class="acc-badges">
-          <span class="num-badge accent">주차·편의·휴일</span>
-        </div>
-        <span class="acc-chevron">▼</span>
-      </div>
-      <div class="acc-body">
-        <div class="tbl-wrap">
-          <table>
-            <thead>
-              <tr><th>항목</th><th>내용</th></tr>
-            </thead>
-            <tbody>
-              <tr><td><strong>휴일</strong></td><td>신정 · 설 연휴 · 추석 연휴 · 둘째·넷째 일요일</td></tr>
-              <tr><td><strong>주차</strong></td><td>기본 4시간 무료 · 발렛 FAN VIP 대상 · 1인 1차량 등록제</td></tr>
-              <tr><td><strong>비치 타올</strong></td><td>클럽 내 제공</td></tr>
-              <tr><td><strong>여자 세신</strong></td><td>제공 (사우나)</td></tr>
-              <tr><td><strong>세미나실</strong></td><td>대관 가능</td></tr>
-              <tr><td><strong>노블레스 수영복 거치대</strong></td><td>노블레스 등급 전용</td></tr>
-              <tr><td><strong>강습 할인</strong></td><td>정회원 전용 강습 할인 요금 적용</td></tr>
-            </tbody>
-          </table>
-        </div>
+      <div class="pricing-toolbar">
+        <button class="action-btn green" onclick="savePolicyTable()">💾 요금 정책 저장</button>
+        <button class="action-btn" onclick="addPolicyRow()">➕ 행 추가</button>
+        <button class="action-btn" onclick="loadPolicyTable(true)">↺ 새로고침</button>
+        <span class="pricing-hint" id="policyStatus">GM이 셀을 직접 수정 → 저장하면 시트에 반영됩니다</span>
       </div>
     </div>
 
@@ -887,68 +669,51 @@ function switchTab(id, btn) {
   document.getElementById('tab-' + id).classList.add('active');
   btn.classList.add('active');
   if (id === 'workshop') loadPlans();
-  if (id === 'policy') loadPolicyPricing();
+  if (id === 'policy') loadPolicyTable();
 }
 
-// ── 요금 정책: 핵심 요금표 GM 편집·저장 (예약 레코드 id=POLICY-PRICING, '상품기획저장' 시트 재사용·새 배포 불필요). 2026-07-02 시포·GM ──
-var POLICY_PRICING_ID = 'POLICY-PRICING';
-var POLICY_PRICING_DEFAULT = [
-  { grade:'플래티넘',       fee:'3,000,000', note:'' },
-  { grade:'플래티넘+골프',  fee:'3,400,000', note:'' },
-  { grade:'노블레스',       fee:'3,600,000', note:'' },
-  { grade:'노블레스+골프',  fee:'4,000,000', note:'최상위' }
-];
-var _pricingLoaded = false;
-function _pricingStatus(msg){ var el=document.getElementById('pricingStatus'); if(el) el.textContent=msg; }
-function _pricingRowHtml(r){
+// ── 요금 정책: 전체를 한눈에 편집 가능한 표로. 예약 레코드(id=POLICY-TABLE, '상품기획저장' 시트 재사용·새 배포 불필요). 2026-07-02 시포·GM ──
+var POLICY_TABLE_ID = 'POLICY-TABLE';
+var POLICY_TABLE_DEFAULT = [{"cat": "요금체계","item": "플래티넘","val": "3,000,000","note": "연간"},{"cat": "요금체계","item": "플래티넘+골프","val": "3,400,000","note": "연간"},{"cat": "요금체계","item": "노블레스","val": "3,600,000","note": "연간"},{"cat": "요금체계","item": "노블레스+골프","val": "4,000,000","note": "연간·최상위"},{"cat": "요금체계","item": "가족(2번째부터)","val": "각 2,700,000","note": "가족증명 필수·할인 아닌 정가"},{"cat": "요금체계","item": "법인 5인","val": "현행 13,500,000","note": "정가 전환·사업자등록·휴회불가·양도1회 5만"},{"cat": "요금체계","item": "법인 10인","val": "현행 25,500,000","note": "정가 전환·동일 조건"},{"cat": "요금체계","item": "인상 계획","val": "2년 주기(26.10 / 28.10)","note": "인상폭 상향"},{"cat": "신규·웰컴","item": "분기 기획","val": "1~3 / 4~6 / 7~9 / 10~12월 단위","note": "회장 보고 체계"},{"cat": "신규·웰컴","item": "웰컴패키지","val": "일일입장권 3매·손톱깍이 1·강습 3회(PT/필라/골프/스쿼시 택1)","note": "강습 3회 대신 생크몽드 100회 대체 가능·가격할인 아님"},{"cat": "신규·웰컴","item": "환불 공제금","val": "PT 326,700 · 필라테스 326,700 · 스쿼시 237,600 · 골프 195,000","note": "강습 진행 확인 시·일일입장권/손톱깍이 제외"},{"cat": "회원소개","item": "소개 혜택","val": "이용권 5매 + 선물 15만원 상당","note": "비가격 혜택·유지"},{"cat": "재등록","item": "가격 할인","val": "폐지(현행 5%)","note": "비가격 혜택으로 전환"},{"cat": "재등록","item": "바우처","val": "일일입장권 3매","note": "유지"},{"cat": "재등록","item": "90일 미만 이용","val": "2개월 연장 + 일일입장권 3매","note": "저이용 특별선택권"},{"cat": "재등록","item": "만기 후 1년내","val": "재등록 혜택 / 1년 경과=신규 혜택","note": ""},{"cat": "재등록","item": "풀데이 추가 기준","val": "240일","note": "사은품 별도 제공"},{"cat": "등급제(FAN)","item": "단계","val": "26년 4→3단계 축소","note": ""},{"cat": "등급제(FAN)","item": "FAN VIP","val": "누적 1,700만원↑","note": ""},{"cat": "등급제(FAN)","item": "VIP","val": "누적 1,200만원↑","note": ""},{"cat": "등급제(FAN)","item": "M","val": "누적 800만원↑","note": ""},{"cat": "등급제(FAN)","item": "FAN 혜택","val": "전용락커·주차연장·일일입장·카페 크레딧","note": "평가=이용금액·출석·에티켓·경영진 지정"},{"cat": "서비스","item": "입장","val": "1일 1회·풀데이 추가 480,000","note": "책임자 컨펌"},{"cat": "서비스","item": "휴회","val": "연 3회 / 총 60일","note": "특이사항 시 최대 90일"},{"cat": "서비스","item": "양도","val": "1회 한정·양도비 50,000","note": "직계/비가족·단기권 양도 가능"},{"cat": "서비스","item": "환불","val": "위약금 10%·24h내 무위약","note": "일일요금 플래티넘 14,000~노블+골프 17,000"},{"cat": "서비스","item": "일일입장권","val": "1회 55,000(입주민 47,000)·10회 500,000(입주민 420,000)","note": "유효 2개월"},{"cat": "입회나이","item": "17~69세","val": "가능","note": "일반 절차"},{"cat": "입회나이","item": "70~75세","val": "조건부","note": "건강검진+서약서"},{"cat": "입회나이","item": "76세 이상","val": "조건부","note": "건강검진+서약서+수영불가+컨시어지 동반"},{"cat": "입회나이","item": "기존회원 재등록","val": "무조건","note": "나이 제한 미적용·만료 1개월 초과시 시니어정책"},{"cat": "시설운영","item": "휴일","val": "신정·설·추석·둘째넷째 일요일","note": ""},{"cat": "시설운영","item": "주차","val": "기본 4시간 무료·발렛=FAN VIP","note": "1인 1차량 등록제"},{"cat": "시설운영","item": "비치타올","val": "클럽 내 제공","note": ""},{"cat": "시설운영","item": "여자 세신","val": "제공(사우나)","note": ""},{"cat": "시설운영","item": "세미나실","val": "대관 가능","note": ""},{"cat": "시설운영","item": "노블레스 수영복 거치대","val": "노블레스 전용","note": ""},{"cat": "시설운영","item": "강습 할인","val": "정회원 전용 요금","note": ""}];
+var _policyLoaded = false;
+function _policyStatus(m){ var el=document.getElementById('policyStatus'); if(el) el.textContent=m; }
+function _policyRowHtml(r){
   r=r||{};
-  return '<td><input type="text" data-k="grade" value="'+esc(r.grade||'')+'"></td>'+
-         '<td><input type="text" class="num" data-k="fee" value="'+esc(r.fee||'')+'"></td>'+
+  return '<td><input type="text" data-k="cat" value="'+esc(r.cat||'')+'"></td>'+
+         '<td><input type="text" data-k="item" value="'+esc(r.item||'')+'"></td>'+
+         '<td><input type="text" data-k="val" value="'+esc(r.val||'')+'"></td>'+
          '<td><input type="text" data-k="note" value="'+esc(r.note||'')+'"></td>'+
          '<td style="text-align:center"><button class="pp-del" title="행 삭제" onclick="this.closest(\'tr\').remove()">✕</button></td>';
 }
-function renderPricing(rows){
-  var tb=document.getElementById('pricingBody'); if(!tb) return;
+function renderPolicyTable(rows){
+  var tb=document.getElementById('policyBody'); if(!tb) return;
   tb.innerHTML='';
-  (rows&&rows.length?rows:POLICY_PRICING_DEFAULT).forEach(function(r){
-    var tr=document.createElement('tr'); tr.innerHTML=_pricingRowHtml(r); tb.appendChild(tr);
-  });
+  (rows&&rows.length?rows:POLICY_TABLE_DEFAULT).forEach(function(r){ var tr=document.createElement('tr'); tr.innerHTML=_policyRowHtml(r); tb.appendChild(tr); });
 }
-function addPricingRow(){
-  var tb=document.getElementById('pricingBody'); if(!tb) return;
-  var tr=document.createElement('tr'); tr.innerHTML=_pricingRowHtml({}); tb.appendChild(tr);
-  var f=tr.querySelector('input'); if(f) f.focus();
-}
-function _collectPricing(){
-  var rows=[];
-  document.querySelectorAll('#pricingBody tr').forEach(function(tr){
-    var r={}; tr.querySelectorAll('input[data-k]').forEach(function(i){ r[i.dataset.k]=i.value.trim(); });
-    if(r.grade||r.fee||r.note) rows.push(r);
-  });
-  return rows;
-}
-function loadPolicyPricing(){
-  if(_pricingLoaded) return; _pricingLoaded=true;
-  _pricingStatus('불러오는 중…');
+function addPolicyRow(){ var tb=document.getElementById('policyBody'); if(!tb) return; var tr=document.createElement('tr'); tr.innerHTML=_policyRowHtml({}); tb.appendChild(tr); var f=tr.querySelector('input'); if(f) f.focus(); }
+function _collectPolicy(){ var rows=[]; document.querySelectorAll('#policyBody tr').forEach(function(tr){ var r={}; tr.querySelectorAll('input[data-k]').forEach(function(i){ r[i.dataset.k]=i.value.trim(); }); if(r.cat||r.item||r.val||r.note) rows.push(r); }); return rows; }
+function loadPolicyTable(force){
+  if(_policyLoaded && !force) return; _policyLoaded=true;
+  _policyStatus('불러오는 중…');
   fetch(TODO_API_URL + '?action=product_plan_list', {redirect:'follow'})
     .then(function(r){ return r.json(); })
     .then(function(res){
       var found=null;
-      if(res.ok && res.data) found=res.data.find(function(x){ return String(x.id)===POLICY_PRICING_ID; });
-      var rows=POLICY_PRICING_DEFAULT;
-      if(found && found.구성){ try{ var p=JSON.parse(found.구성); if(p&&p.length) rows=p; }catch(e){} }
-      renderPricing(rows);
-      _pricingStatus(found?'시트 저장본 표시 중 · GM 수정 가능':'기본값 표시 중 · 저장하면 시트에 영속');
+      if(res.ok && res.data) found=res.data.find(function(x){ return String(x.id)===POLICY_TABLE_ID; });
+      var rows=POLICY_TABLE_DEFAULT;
+      if(found && found['\uad6c\ubd84']!==undefined && found['\uad6c\uc131']){ try{ var p=JSON.parse(found['\uad6c\uc131']); if(p&&p.length) rows=p; }catch(e){} }
+      renderPolicyTable(rows);
+      _policyStatus(found?'시트 저장본 표시 중 · GM 수정 가능':'기본값 표시 중 · 저장하면 시트에 영속');
     })
-    .catch(function(){ renderPricing(POLICY_PRICING_DEFAULT); _pricingStatus('네트워크 오류 — 기본값 표시'); });
+    .catch(function(){ renderPolicyTable(POLICY_TABLE_DEFAULT); _policyStatus('네트워크 오류 — 기본값 표시'); });
 }
-function savePolicyPricing(){
-  var rows=_collectPricing();
-  _pricingStatus('저장 중…');
-  var item={ id:POLICY_PRICING_ID, 구분:'_policy', 제안명:'등급별 연간요금', 구성:JSON.stringify(rows), 가격가설:'', 근거:'', 상태:'', 작성자:'GM' };
+function savePolicyTable(){
+  var rows=_collectPolicy();
+  _policyStatus('저장 중…');
+  var item={ id:POLICY_TABLE_ID, '\uad6c\ubd84':'_policy', '\uc81c\uc548\uba85':'요금 정책 표', '\uad6c\uc131':JSON.stringify(rows), '\uac00\uaca9\uac00\uc124':'', '\uadfc\uac70':'', '\uc0c1\ud0dc':'', '\uc791\uc131\uc790':'GM' };
   fetch(TODO_API_URL, { method:'POST', mode:'no-cors', headers:{'Content-Type':'text/plain;charset=utf-8'}, body:JSON.stringify({action:'product_plan_save', item:item}) })
-    .then(function(){ _pricingStatus('저장 완료 · 시트 반영됨'); })
-    .catch(function(){ _pricingStatus('저장 완료(응답 확인 불가) · 새로고침 시 반영'); });
+    .then(function(){ _policyStatus('저장 완료 · 시트 반영됨'); })
+    .catch(function(){ _policyStatus('저장 완료(응답 확인 불가) · 새로고침 시 반영'); });
 }
 
 // ── 아코디언 ─────────────────────────────────────────────────────────
