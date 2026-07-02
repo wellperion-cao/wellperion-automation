@@ -249,7 +249,8 @@ var REVIEW_GVIZ="https://docs.google.com/spreadsheets/d/"+REVIEW_SHEET+"/gviz/tq
 var REVIEW_LOW={},REVIEW_LOADED=false;
 var FB_SALES={"운영부":[291174533,318993972,312998498,282246580,210399498,217283030],"P.T":[79298450,119547350,114219650,63273500,55391100,90687210],"필라테스":[17216900,16998900,22667800,20978500,28890100,23257200],"수영":[106374150,81905700,108413500,107943500,100604500,89640250],"스쿼시":[29118700,21351100,27627250,24290500,24678600,26502780],"골프":[27883750,26713000,27699000,18726000,27163000,25669000],"체조&트램":[31737750,23977250,31264750,28998750,27038000,21777250],"뮤지컬":[2505000,8450000,1570000,2700000,660000,380000],"GXE":[1062000,1188000,1008000,1584000,144000,414000],"루프매소드":[0,0,0,1452000,1496000,1210000]};
 var SALES_DEPT={},SALES_MEMBER=[]; // 운영부 = 회원권 매출 (매출 마스터 시트 실시간)
-var PROC_DEPT={"골프":[262000,0,69300000,0,804960,873200],"운영부":[239600,1118070,242620,13085350,248900,-39060],"시설":[755860,150600,1171878,433280,1019470,11081390],"필라테스":[11880000,0,11230,0,9890,0],"지원":[180470,264110,442630,406300,597600,579460],"스쿼시":[0,0,270340,0,238800,240000],"P.T":[20800,0,0,0,630000,0],"체조&트램":[0,0,0,0,0,478500],"수영":[54350,0,0,0,200100,0],"뮤지컬":[22190,0,0,0,0,0]};
+/* 구매성 폴백(하드코딩 1~6월 스냅샷) — 라이브 로드(loadProc) 실패 시에만 사용. 평상시엔 지출품의에서 월별 자동 집계. */
+var FB_PROC={"골프":[262000,0,69300000,0,804960,873200],"운영부":[239600,1118070,242620,13085350,248900,-39060],"시설":[755860,150600,1171878,433280,1019470,11081390],"필라테스":[11880000,0,11230,0,9890,0],"지원":[180470,264110,442630,406300,597600,579460],"스쿼시":[0,0,270340,0,238800,240000],"P.T":[20800,0,0,0,630000,0],"체조&트램":[0,0,0,0,0,478500],"수영":[54350,0,0,0,200100,0],"뮤지컬":[22190,0,0,0,0,0]};
 var FB_LABOR={"골프":[15469018,12720271,16901114,16422307,13815335,12810239],"P.T":[46607840,41390419,47422370,45572009,43450392,38817814],"수영":[43578251,34885477,43639470,44832435,42688800,38009034],"스쿼시":[12307298,10065683,12842770,11397199,8684634,15188782],"체조&트램":[12471128,10484004,12526288,12401927,12037764,8719279],"필라테스":[7702254,8225256,10696879,10926820,12929559,4934696],"루프매소드":[0,0,0,280800,1038960,0],"뮤지컬":[0,0,0,0,0,0]};
 var FB_OPER=[34045838,35419025,36274362,32826139,30100000,30100000];
 var REQ_SAMPLE=[{날짜:"2026-06-20",부서:"골프",항목:"GDR 소모품",금액:430000,요청자:"최현준",상태:"승인"},{날짜:"2026-06-22",부서:"시설",항목:"사우나 약품",금액:1280000,요청자:"이지영",상태:"대기"}];
@@ -267,6 +268,7 @@ var GDR_KEYWORDS=["GDR","골프존","gdr"]; // 라인아이템(물품명) 화이
 var LABOR=[],OPER=[],INSTRUCTORS=[],laborMonth=[],procMonth=[],salesMonth=[],totalCost=[],LIVE=false,SALES_LIVE=false;
 var SALES_G=0,COST_G=0,LABOR_G=0,OPER_G=0,PROC_G=0,MEMBER_G=0,DATA_LAST=6,selTeam=null,period=-1,_charts={};
 var SALES_TRUTH=null,SALES_TRUTH_LAST=0,SALES_TRUTH_LIVE=false,SALES_ETC=[],ETC_G=0,SALES_LAST=6; // 매출 정본(월별 총매출)·기타보정
+var PROC_DEPT=FB_PROC,PROC_LIVE=false; // 구매성 부서별×월별 — 라이브(loadProc) 성공 시 교체, 실패 시 FB_PROC
 
 function attemptGate(pw){var err=document.getElementById("gateErr");
   if(!pw){err.textContent="비밀번호를 입력해 주세요.";return;}
@@ -327,6 +329,24 @@ async function loadSalesTruth(){
     }else{SALES_TRUTH=null;SALES_TRUTH_LIVE=false;}
   }catch(e){SALES_TRUTH=null;SALES_TRUTH_LIVE=false;}
 }
+/* 구매성 지출 라이브 집계 — 지출품의(구매요청) 전체 라인아이템을 월별×부서별로 자동 합산. 실집행성(반려·미승인·캔슬 제외)만, 이상지출·예산 정의와 동일. 하드코딩 대체 → 신규 승인분 자동 반영. 실패 시 FB_PROC 폴백. 로드한 rows는 이상지출(ensureAnom)과 공유(중복 fetch 방지). */
+async function loadProc(){
+  var rows=[];
+  try{var a=await procCall("list",{mode:"active"});if(a&&a.data)rows=rows.concat(a.data);}catch(e){}
+  try{var y=new Date().getFullYear();var d=await procCall("list",{mode:"done",from:y+"-01-01",to:fmtToday()});if(d&&d.data)rows=rows.concat(d.data);}catch(e){}
+  if(!rows.length){PROC_DEPT=FB_PROC;PROC_LIVE=false;return;} // 로드 실패 → 폴백(하드코딩 스냅샷)
+  ANOM_ROWS=rows; // 이상지출 재사용
+  var live={},pmonth=function(ds){var m=String(ds).match(/(\d{4})\D+(\d{1,2})\D+(\d{1,2})/);return m?parseInt(m[2],10)-1:-1;};
+  rows.forEach(function(r){
+    if(["반려","미승인","캔슬"].indexOf(r.상태||"")>=0)return; // 실집행성만(예산·이상지출과 동일)
+    var m=pmonth(r.날짜);if(m<0||m>11)return; // 날짜 없는 대기 품의 등 제외
+    var amt=Number(String(r.가격).replace(/[^0-9\-]/g,""));if(isNaN(amt))return;
+    var dp=deptNorm(r.소속||"기타")||"기타";
+    if(!live[dp])live[dp]=Array(12).fill(0);
+    live[dp][m]+=amt;
+  });
+  PROC_DEPT=live;PROC_LIVE=true;
+}
 /* 최저가검토 시트 로드(읽기전용, gviz). 실패(미공유 등) 시 조용히 무시 — 기존 기능 영향 없음. 성공 시 배지 갱신. */
 async function loadReviewLowest(){
   try{
@@ -369,9 +389,9 @@ function renderNav(){var nav=document.getElementById("nav");
 
 async function startApp(){
   document.getElementById("app").style.display="block";renderNav();
-  await loadData();await loadSales();await loadSalesTruth();aggregate();
+  await loadData();await loadSales();await loadSalesTruth();await loadProc();aggregate();
   document.getElementById("loading").style.display="none";document.getElementById("content").style.display="block";
-  document.getElementById("syncMeta").textContent="인건비 "+(LIVE?"🟢실시간":"⚪폴백")+" · 매출 "+(SALES_TRUTH_LIVE?"🟢정본 실시간":(SALES_LIVE?"🟡마스터":"⚪폴백"))+" · 종목분해 "+(SALES_LIVE?"실시간":"폴백")+" · 구매성 1~6월 확정";
+  document.getElementById("syncMeta").textContent="인건비 "+(LIVE?"🟢실시간":"⚪폴백")+" · 매출 "+(SALES_TRUTH_LIVE?"🟢정본 실시간":(SALES_LIVE?"🟡마스터":"⚪폴백"))+" · 종목분해 "+(SALES_LIVE?"실시간":"폴백")+" · 구매성 "+(PROC_LIVE?"🟢실시간(지출품의)":"⚪폴백");
   renderKpi();renderMain();renderSalesDept();renderMix();renderSales();renderSalesTbl();renderExpTbl();renderPeople();
   renderContrib(); // 종목별 기여이익(대시보드 · SALES_DEPT·LABOR 재사용)
   renderBudget();ensureAnom(); // ① 예산 위젯(즉시) ② 이상지출(라인아이템 비동기 로드)
@@ -550,6 +570,7 @@ function isWhitelist(item){var s=String(item||"");return GDR_KEYWORDS.some(funct
 function monthOf(ds){try{var m=String(ds).match(/^(\d{4})-(\d{2})/);if(m)return parseInt(m[2],10)-1;}catch(e){}return -1;}
 async function ensureAnom(){
   if(ANOM_LOADED)return;ANOM_LOADED=true;
+  if(ANOM_ROWS&&ANOM_ROWS.length){computeAnom();renderAnom();return;} // loadProc가 이미 로드 → 재사용(중복 fetch 방지)
   document.getElementById("flagBadges").innerHTML='<span style="color:var(--ink-soft);font-size:12px">불러오는 중…</span>';
   var rows=[];
   try{var a=await procCall("list",{mode:"active"});if(a&&a.data)rows=rows.concat(a.data);}catch(e){}
