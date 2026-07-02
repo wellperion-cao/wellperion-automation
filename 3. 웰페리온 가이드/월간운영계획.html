@@ -156,6 +156,34 @@
   .prow .pns{grid-column:1 / -1; font-size:11.5px; color:var(--gold); border-top:1px dashed var(--border); padding-top:7px; margin-top:2px;}
   .prow .pns.empty{color:var(--dim); font-style:italic;}
 
+  /* ── 🚀 ERP 월별 진척 타임라인 ── */
+  .erp-time{display:flex; gap:10px; align-items:stretch; position:relative;}
+  .erp-step{flex:1; min-width:0; background:var(--paper); border:1px solid var(--border); border-radius:12px; padding:13px 14px 12px; position:relative; display:flex; flex-direction:column; gap:7px;}
+  .erp-step.tgt{border-style:dashed; border-color:var(--border-strong);}
+  .erp-step .etop{display:flex; align-items:baseline; justify-content:space-between; gap:6px;}
+  .erp-step .em{font-size:12px; font-weight:700; color:var(--text-soft); letter-spacing:-0.01em;}
+  .erp-step .ebadge{font-size:9.5px; font-weight:700; border-radius:20px; padding:2px 8px; white-space:nowrap;}
+  .erp-step .ebadge.done{color:var(--green); background:rgba(106,191,123,0.10); border:1px solid rgba(106,191,123,0.35);}
+  .erp-step .ebadge.tg{color:var(--gold); background:rgba(240,198,116,0.10); border:1px solid rgba(240,198,116,0.35);}
+  .erp-step .ep{font-size:30px; font-weight:800; line-height:1; letter-spacing:-0.03em; color:var(--text);}
+  .erp-step.tgt .ep{color:var(--gold);}
+  .erp-step .ep span{font-size:15px; font-weight:700; color:var(--dim); margin-left:1px;}
+  .erp-step .ebar{height:9px; border-radius:6px; background:var(--surface); border:1px solid var(--border); overflow:hidden;}
+  .erp-step .ebar>i{display:block; height:100%; border-radius:6px; background:linear-gradient(90deg,var(--accent),var(--accent-soft)); transition:width .3s ease;}
+  .erp-step.tgt .ebar>i{background:linear-gradient(90deg,#b8860b,var(--gold));}
+  .erp-step .enote{font-size:10.5px; color:var(--dim); line-height:1.5;}
+  .erp-step .arw-c{position:absolute; right:-8px; top:50%; transform:translateY(-50%); z-index:2; color:var(--border-strong); font-size:14px; background:var(--bg); padding:0 1px;}
+  .erp-edit{display:flex; flex-wrap:wrap; gap:6px; align-items:center; margin-top:2px;}
+  .erp-edit input[type=number]{width:60px; font-size:12px; color:var(--text); background:var(--surface); border:1px solid var(--accent); border-radius:6px; padding:3px 6px; text-align:right;}
+  .erp-edit select{font-size:11px;}
+  .erp-note-edit{font-size:10.5px; color:var(--text); background:var(--surface); border:1px dashed var(--accent); border-radius:7px; padding:5px 7px; min-height:44px; white-space:pre-wrap; outline:none;}
+  .erp-note-edit:focus{border-color:var(--accent-soft); background:rgba(124,58,237,0.08);}
+  .erp-legend{font-size:10.5px; color:var(--dim); margin-top:9px; display:flex; gap:14px; flex-wrap:wrap;}
+  .erp-legend b{color:var(--gold); font-weight:700;}
+  .cfo-link{font-size:11px; font-weight:600; color:var(--gold); text-decoration:none; border:1px solid rgba(240,198,116,0.32); background:rgba(240,198,116,0.06); border-radius:7px; padding:3px 10px; white-space:nowrap; margin-left:auto;}
+  .cfo-link:hover{border-color:var(--gold); background:rgba(240,198,116,0.12);}
+  h2.sec.has-link{flex-wrap:wrap;}
+
   .report-box{padding:13px 15px; border:1px dashed var(--border-strong); border-radius:11px; background:var(--surface); font-size:12px; color:var(--text-soft); line-height:1.55;}
   .report-box.done{border-style:solid; border-left:3px solid var(--green);}
   .report-box .rh{font-size:13px; font-weight:700; color:var(--text); margin-bottom:5px;}
@@ -165,32 +193,55 @@
 
   @media (max-width:720px){
     .prow{grid-template-columns:1fr;}
+    .erp-time{flex-wrap:wrap;}
+    .erp-step{min-width:calc(50% - 5px);}
   }
   @media (max-width:640px){
     header.page-head h1{font-size:19px;}
   }
+  /* ══════════ 경영진 A3 결론 한 장 (A3 가로 인쇄) ══════════ */
   @media print{
-    @page{size:A4 portrait; margin:10mm;}
-    body{background:#fff; color:#111; padding:0; font-size:10px;}
+    @page{size:A3 landscape; margin:9mm;}
+    body{background:#fff; color:#111; padding:0; font-size:8.5px; line-height:1.4;}
+    .wrap{max-width:none;}
     .layers, .month-bar, .ebtn, header.page-head .back{display:none !important;}
     input, select, .note-edit, .fin-in, .pin-num{display:none !important;}
-    header.page-head, .month-head, .rpt-wrap, .metric, .report-box, .fchart, .prow, table.rpt tr{break-inside:avoid;}
-    .month-head, .rpt-wrap, table.rpt, .metric, .report-box, .fchart, .prow{background:#fff !important; color:#111 !important; border-color:#999 !important;}
-    table.rpt thead th{background:#f2f2f2 !important; color:#333 !important; border-color:#999 !important;}
-    table.rpt tbody td, table.rpt tbody tr:hover td, .fin tr.cur-m td{background:#fff !important; color:#222 !important; border-color:#bbb !important;}
+    /* 2단 컬럼으로 결론을 한 장에 밀도있게 배치 */
+    .report-grid{column-count:2; column-gap:8mm; column-fill:balance;}
+    .blk{break-inside:avoid; margin:0 0 4px;}
+    h2.sec{font-size:10.5px; margin:0 0 4px; border-bottom:1px solid #bbb; padding-bottom:2px; break-after:avoid;}
+    h2.sec .stag{font-size:7.5px;}
+    h2.sec .cfo-link{font-size:7.5px; padding:1px 6px; color:#333 !important; border-color:#999 !important;}
+    header.page-head, .month-head, .rpt-wrap, .metric, .report-box, .prow, table.rpt tr, .erp-step, .erp-time{break-inside:avoid;}
+    header.page-head{margin-bottom:4px; padding-bottom:4px;}
+    header.page-head h1{font-size:14px;}
+    .month-head{margin:3px 0 5px; padding:5px 8px; gap:4px 10px;}
+    .month-head .mtitle{font-size:11px;} .month-head .mtheme{font-size:8.5px;}
+    .fchart, .erp-legend, .flegend{display:none !important;}  /* 막대차트·범례 생략(밀도) */
+    .metric{margin-top:4px; padding:4px 7px;}
+    .erp-step{padding:8px 10px 7px; gap:4px;} .erp-step .ep{font-size:20px;} .erp-step .enote{font-size:8px; line-height:1.4;}
+    .erp-time{gap:6px;}
+    .prow{padding:5px 9px; gap:4px 12px;}
+    .report-box{padding:8px 11px;}
+    footer.foot{margin-top:8px; padding-top:6px; font-size:8px;}
+    .month-head, .rpt-wrap, table.rpt, .metric, .report-box, .prow, .erp-step{background:#fff !important; color:#111 !important; border-color:#999 !important;}
+    table.rpt thead th{background:#f2f2f2 !important; color:#333 !important; border-color:#999 !important; padding:3px 6px; font-size:8px;}
+    table.rpt tbody td{padding:3px 6px; font-size:8.5px;}
+    table.rpt tbody td, table.rpt tbody tr:hover td, .fin tr.cur-m td{background:#fff !important; color:#222 !important; border-color:#ccc !important;}
+    .r-title{font-size:9px;} .c-note .r-note{font-size:8px;}
     .fin tr.fin-tot td{background:#f2f2f2 !important;}
-    .r-title, .month-head .mtitle, .month-head .mtheme, .metric-meta, .metric-meta b, h2.sec, .pname, .fmo, .fin b, .prog .pnum{color:#111 !important;}
-    .r-note, .metric-h, .pgoal, .fin-sub{color:#333 !important;}
-    .prog .track, .mbar{background:#eee !important; border-color:#999 !important;}
-    .prog .track>i{background:#555 !important;}
+    .r-title, .month-head .mtitle, .month-head .mtheme, .metric-meta, .metric-meta b, h2.sec, .pname, .fmo, .fin b, .prog .pnum, .erp-step .ep, .erp-step .em{color:#111 !important;}
+    .r-note, .metric-h, .pgoal, .fin-sub, .erp-step .enote{color:#333 !important;}
+    .prog .track, .mbar, .erp-step .ebar{background:#eee !important; border-color:#999 !important;}
+    .prog .track>i, .erp-step .ebar>i{background:#555 !important;}
+    .erp-step.tgt .ebar>i{background:#999 !important;}
     .mbar>i{background:#666 !important;}
-    .fbars .bs{background:#555 !important;} .fbars .be{background:#999 !important;}
-    .fcol.cur-m .fbars{background:#eee !important;}
     .chip{color:#000 !important; background:#fff !important; border-color:#666 !important;}
-    .obadge, .mstat{color:#000 !important; background:#f2f2f2 !important; border-color:#666 !important;}
-    body.chair-mode .print-head{display:block !important; text-align:center; margin:0 0 12px; padding-bottom:8px; border-bottom:1.5px solid #999;}
-    body.chair-mode .print-head .ph-title{font-size:15px; font-weight:800; color:#111 !important;}
-    body.chair-mode .print-head .ph-sub{font-size:11px; color:#444 !important; margin-top:3px;}
+    .obadge, .mstat, .erp-step .ebadge{color:#000 !important; background:#f2f2f2 !important; border-color:#666 !important;}
+    .prow{grid-template-columns:150px 1fr 150px; padding:7px 10px;}
+    .print-head{display:block !important; text-align:center; margin:0 0 8px; padding-bottom:6px; border-bottom:1.5px solid #999;}
+    .print-head .ph-title{font-size:14px; font-weight:800; color:#111 !important;}
+    .print-head .ph-sub{font-size:9.5px; color:#444 !important; margin-top:3px;}
   }
 </style>
 </head>
@@ -211,39 +262,57 @@
     <a href="wellperion_guide(main).html">🧭 오늘의 항로 (G1)</a>
   </div>
 
-  <!-- 월 선택 + 편집 -->
+  <!-- 월 선택 + 편집 (경영진 보고 = 상시 공식직함, 토글 없음) -->
   <div class="month-bar">
     <label for="month-sel">월 선택</label>
     <select id="month-sel"></select>
-    <button class="ebtn chair" id="chair-toggle" onclick="window._toggleChair()" title="C-Level 표기를 공식 직함으로 전환(경영진 제출용)">👔 경영진 보고</button>
     <span id="edit-wrap"></span>
     <span id="save-flag" style="font-size:11px;color:var(--dim);"></span>
   </div>
 
-  <!-- 경영진 보고 인쇄 배너(화면 숨김·인쇄+경영진 보고 모드에서만 표시) -->
+  <!-- 경영진 보고 인쇄 배너(A3 한 장 상단 · 상시) -->
   <div class="print-head" id="print-head"></div>
 
   <!-- 월 헤더 -->
   <div class="month-head" id="month-head" style="display:none;"></div>
 
-  <!-- 💰 연간 매출·지출 대시 (지속 관리·월 선택 무관) -->
-  <h2 class="sec">💰 2026 연간 매출·지출 <span class="stag">매출 − 지출 = 순액 · 당월 매출 라이브</span></h2>
-  <div id="fin-board"><div class="board-status">연간 재무 정본을 불러오는 중…</div></div>
+  <!-- 경영진 A3 결론 한 장 = 아래 report-grid (인쇄 시 2단) -->
+  <div class="report-grid">
 
-  <!-- 📋 이달 계획 -->
-  <h2 class="sec">📋 이달 계획 <span class="stag">목표 · 담당 · 상태 · 도달율 · 진행</span></h2>
-  <div id="obj-board"><div class="board-status">월간 계획 정본을 불러오는 중…</div></div>
+    <!-- 🚀 ERP 월별 진척 (공식값·GM 확정) -->
+    <section class="blk">
+      <h2 class="sec">🚀 웰페리온 ERP 월별 진척 <span class="stag">40 → 60 → 80 → 95% · 실적/목표</span></h2>
+      <div id="erp-board"><div class="board-status">ERP 진척 정본을 불러오는 중…</div></div>
+    </section>
 
-  <!-- 👤 실무책임자 도달율 -->
-  <h2 class="sec" id="prac-sec" style="display:none;">👤 실무책임자 도달율 <span class="stag">GM 직속 3라인</span></h2>
-  <div id="prac-board" style="display:none;"></div>
+    <!-- 💰 연간 매출·지출 대시 (정본 월매출 = AI CFO 매출현황 연동) -->
+    <section class="blk">
+      <h2 class="sec has-link">💰 2026 연간 매출·지출 <span class="stag">매출·지출 = AI CFO 매출현황 미러(읽기전용)</span><a class="cfo-link" href="cfo/finance/매출지출현황.html">📊 AI CFO 매출현황 →</a></h2>
+      <div id="fin-board"><div class="board-status">연간 재무 정본을 불러오는 중…</div></div>
+    </section>
 
-  <!-- 📊 월말 결과 보고 -->
-  <h2 class="sec">📊 월말 결과 보고</h2>
-  <div id="report-area"></div>
+    <!-- 📋 이달 계획 -->
+    <section class="blk">
+      <h2 class="sec">📋 이달 계획 <span class="stag">목표 · 담당 · 상태 · 도달율 · 진행</span></h2>
+      <div id="obj-board"><div class="board-status">월간 계획 정본을 불러오는 중…</div></div>
+    </section>
+
+    <!-- 👤 실무책임자 도달율 -->
+    <section class="blk">
+      <h2 class="sec" id="prac-sec" style="display:none;">👤 실무책임자 도달율 <span class="stag">GM 직속 3라인</span></h2>
+      <div id="prac-board" style="display:none;"></div>
+    </section>
+
+    <!-- 📊 월말 결과 보고 -->
+    <section class="blk">
+      <h2 class="sec">📊 월말 결과 보고</h2>
+      <div id="report-area"></div>
+    </section>
+
+  </div>
 
   <footer class="foot">
-    정본 = <code>status/monthly_ops_plan.json</code> · 편집 저장 = GM/담당 PIN.
+    정본 = <code>status/monthly_ops_plan.json</code> · 매출·지출 = <a href="cfo/finance/매출지출현황.html" style="color:var(--gold);text-decoration:none">AI CFO 매출현황</a> 미러(읽기전용·이 페이지 저장 안 함) · 계획·ERP진척·도달율 편집 저장 = GM/담당 PIN.
   </footer>
 
 </div>
@@ -255,16 +324,25 @@
   var RAW_BASE = 'https://raw.githubusercontent.com/wellperion-cao/wellperion-automation/master/';
   var PLAN_PATH = 'status/monthly_ops_plan.json';
   var FIN_YEAR = '2026';
+  // ── 매출·지출 SSOT = AI CFO 매출현황(cfo/finance/매출지출현황.html). 이 페이지는 그 페이지의 gviz 소스를 그대로 미러(읽기전용). ──
+  // 매출 = 매출 마스터 시트(부서별×월) 전 부서 합(운영부 회원권 + 강습).
+  var SALES_SHEET = '18VRvDEYQ7LfaPaHmXROBpIVmYtjqZGrYie75JZnRKDA';
+  var SALES_GVIZ  = 'https://docs.google.com/spreadsheets/d/' + SALES_SHEET + '/gviz/tq?tqx=out:json';
+  // 지출 인건비 = 인건비 시트(부서·강사×월) 전 행 합(강사 인건비 + 운영부 인건비). CFO 페이지 GVIZ와 동일 소스.
+  // 구매성(PROC)은 CFO 페이지에 상수로 박혀 있고 별도 조회 엔드포인트가 없어(비번게이트 지출품의만 존재) 미러 제외 — 상세 지출은 CFO 링크로 이동.
+  var LABOR_SHEET = '1uAmZXX0GbiDImORxEwnDFm4_C-r0W43s-_tV_cPq9lE';
+  var LABOR_GVIZ  = 'https://docs.google.com/spreadsheets/d/' + LABOR_SHEET + '/gviz/tq?tqx=out:json';
 
   var _data = null;      // monthly_ops_plan.json 전체(정본 모델)
   var _sel = null;       // 선택 월 키
   var _homeSales = undefined; // home_kpi sales.month (라이브) — undefined=미조회, null=미측정
+  var _cfoSales = null;  // CFO 매출: 월별 센터전체 매출 배열[12] — null=미조회/실패
+  var _cfoExp = null;    // CFO 지출(인건비): 월별 총인건비 배열[12] — null=미조회/실패
   var _editMode = false;
 
-  // ── 경영진 보고 모드: C-Level 표기를 닉네임 → 공식 직함으로 전환(화면 전환만·정본 무변경) ──
+  // ── 경영진 보고 = 상시(토글 없음): C-Level 표기 항상 공식 직함. 닉네임 뷰 미노출. ──
   var TITLE_MAP = {ceo:"AI CEO", cmo:"AI CMO", coo:"AI COO", cto:"AI CTO", cpo:"AI CPO", cfo:"AI CFO", chro:"AI CHRO", gm:"대표(GM)"};
-  var _chairMode = false;
-  try{ _chairMode = (localStorage.getItem('wp_mops_chair') === '1'); }catch(e){}
+  var _chairMode = true;
 
   var esc = function(s){
     return String(s == null ? '' : s)
@@ -302,6 +380,41 @@
         return null;
       })
       .catch(function(){ return null; });
+  }
+  // ── CFO 소스 미러(공통): gviz 시트에서 행별 월값을 합산 → 월별 배열[12]. valCol0=월값 시작 컬럼(매출=1, 인건비=2). 실패=null ──
+  function readGvizMonthly(url, valCol0){
+    return fetch(url, {cache:'no-store'})
+      .then(function(r){ return r.text(); })
+      .then(function(t){
+        var json = JSON.parse(t.substring(t.indexOf('{'), t.lastIndexOf('}') + 1));
+        var rows = (json.table && json.table.rows) || [];
+        var months = new Array(12).fill(0), found = false;
+        rows.forEach(function(row){
+          var c = row.c || [];
+          var key = c[0] && c[0].v;
+          if(!key) return;
+          var name = c[1] && c[1].v;
+          // 인건비 시트(valCol0=2): '소계'·'전체' 집계행 제외(중복합산 방지). 매출 시트(valCol0=1)는 부서 행만이라 무관.
+          if(valCol0 === 2){
+            if(String(name || '').indexOf('소계') >= 0 || String(key).indexOf('전체') >= 0) return;
+            if(!name) return;
+          }
+          for(var m = 0; m < 12; m++){
+            var cl = c[valCol0 + m];
+            if(cl && typeof cl.v === 'number'){ months[m] += cl.v; found = true; }
+          }
+        });
+        return found ? months : null;
+      })
+      .catch(function(){ return null; });
+  }
+  // 매출(센터전체)·지출(총인건비) 동시 미러
+  function readCfoFinance(){
+    return Promise.all([
+      readGvizMonthly(SALES_GVIZ, 1),
+      readGvizMonthly(LABOR_GVIZ, 2)
+    ]).then(function(a){ return {sales:a[0], exp:a[1]}; })
+      .catch(function(){ return {sales:null, exp:null}; });
   }
 
   // ── 월 선택 드롭다운 ──
@@ -450,28 +563,36 @@
       '</tr></thead><tbody>' + objs.map(objRow).join('') + '</tbody></table></div>';
   }
 
-  // ── 연간 매출·지출 대시 ──
+  // ── 연간 매출·지출 대시 (AI CFO 매출현황 미러 · 읽기전용) ──
   function renderFinance(){
     var host = document.getElementById('fin-board');
-    var fy = _data.finance && _data.finance[FIN_YEAR];
-    if(!fy){ host.innerHTML = '<div class="board-status">연간 재무 정본(finance)이 없습니다.</div>'; return; }
     var now = new Date();
     var curM = (now.getFullYear() === Number(FIN_YEAR)) ? pad2(now.getMonth() + 1) : null;
     var months = ['01','02','03','04','05','06','07','08','09','10','11','12'];
 
+    // 소스 전무(둘 다 실패) → 가짜값 없이 실패 안내 + CFO 링크
+    if(!_cfoSales && !_cfoExp){
+      host.innerHTML = '<div class="board-status">AI CFO 매출현황 소스(gviz)에 연결하지 못했습니다. ' +
+        '매출·지출 정본은 <a href="cfo/finance/매출지출현황.html" style="color:var(--gold)">AI CFO 매출현황</a>에서 확인하세요.</div>';
+      return;
+    }
+
     var rows = months.map(function(mm){
-      var f = fy[mm] || {sales:null, expense:null};
-      var stored = (typeof f.sales === 'number') ? f.sales : null;
+      var idx = Number(mm) - 1;
+      // 매출 = CFO 매출현황(센터전체). 유효값(>0)만. 당월은 CFO값 없으면 home_kpi 라이브 오버레이.
+      var cfoS = (_cfoSales && typeof _cfoSales[idx] === 'number' && _cfoSales[idx] > 0) ? _cfoSales[idx] : null;
       var live = (mm === curM && typeof _homeSales === 'number') ? _homeSales : null;
-      var effSales = (stored != null) ? stored : (live != null ? live : null);
-      var exp = (typeof f.expense === 'number') ? f.expense : null;
-      var net = (effSales != null && exp != null) ? (effSales - exp) : null;
-      return {mm:mm, stored:stored, live:live, effSales:effSales, exp:exp, net:net};
+      var sales = (cfoS != null) ? cfoS : (live != null ? live : null);
+      var salesLive = (cfoS != null) || (live != null);
+      // 지출 = CFO 인건비(강사+운영부, 라이브). 구매성은 미러 제외(CFO 링크 참조).
+      var exp = (_cfoExp && typeof _cfoExp[idx] === 'number' && _cfoExp[idx] > 0) ? _cfoExp[idx] : null;
+      var net = (sales != null && exp != null) ? (sales - exp) : null;
+      return {mm:mm, sales:sales, salesLive:salesLive, cfoS:cfoS, live:live, exp:exp, net:net};
     });
 
     var maxV = 1, sumS = 0, sumE = 0, cntS = 0, cntE = 0;
     rows.forEach(function(r){
-      if(r.effSales != null){ maxV = Math.max(maxV, r.effSales); sumS += r.effSales; cntS++; }
+      if(r.sales != null){ maxV = Math.max(maxV, r.sales); sumS += r.sales; cntS++; }
       if(r.exp != null){ maxV = Math.max(maxV, r.exp); sumE += r.exp; cntE++; }
     });
     var sumNet = (cntS || cntE) ? (sumS - sumE) : null;
@@ -479,20 +600,15 @@
     var trs = rows.map(function(r){
       var cur = (r.mm === curM) ? ' class="cur-m"' : '';
       var salesCell;
-      if(_editMode){
-        salesCell = '<input class="fin-in" type="number" data-fin-m="' + r.mm + '" data-fin-f="sales" value="' + (r.stored != null ? r.stored : '') + '" placeholder="미입력">' +
-          (r.live != null ? '<div class="fin-live">● 라이브 ' + fmtWon(r.live) + '</div>' : '');
-      } else if(r.live != null){
-        salesCell = '<span class="fin-live-v">● ' + fmtWon(r.live) + '</span>' +
-          (r.stored != null ? '<span class="fin-sub">편집 ' + fmtWon(r.stored) + '</span>' : '<span class="fin-sub">당월 라이브</span>');
-      } else if(r.stored != null){
-        salesCell = '<b>' + fmtWon(r.stored) + '</b>';
+      if(r.sales != null){
+        salesCell = '<span class="fin-live-v">● ' + fmtWon(r.sales) + '</span>' +
+          '<span class="fin-sub">' + (r.cfoS != null ? 'CFO 매출현황' : '당월 라이브') + '</span>';
       } else {
-        salesCell = '<span class="fin-none">미입력</span>';
+        salesCell = '<span class="fin-none">측정 전</span>';
       }
-      var expCell = _editMode
-        ? '<input class="fin-in" type="number" data-fin-m="' + r.mm + '" data-fin-f="expense" value="' + (r.exp != null ? r.exp : '') + '" placeholder="미입력">'
-        : (r.exp != null ? ('<b>' + fmtWon(r.exp) + '</b>') : '<span class="fin-none">미입력</span>');
+      var expCell = (r.exp != null)
+        ? ('<b>' + fmtWon(r.exp) + '</b><span class="fin-sub">인건비</span>')
+        : '<span class="fin-none">측정 전</span>';
       var netCell = (r.net != null)
         ? ('<b class="' + (r.net >= 0 ? 'pos' : 'neg') + '">' + fmtWon(r.net) + '</b>')
         : '<span class="fin-none">—</span>';
@@ -505,21 +621,22 @@
       '<td>' + (sumNet != null ? ('<b class="' + (sumNet >= 0 ? 'pos' : 'neg') + '">' + fmtWon(sumNet) + '</b>') : '—') + '</td></tr>';
 
     var table = '<div class="rpt-wrap"><table class="rpt fin"><thead><tr>' +
-      '<th>월</th><th>매출</th><th>지출</th><th>순액</th>' +
+      '<th>월</th><th>매출</th><th>지출<span style="font-weight:400;color:var(--dim)"> · 인건비</span></th><th>순액</th>' +
       '</tr></thead><tbody>' + trs + totRow + '</tbody></table></div>';
 
     var chart = '<div class="fchart">' + rows.map(function(r){
-      var hs = r.effSales ? Math.max(3, Math.round(r.effSales / maxV * 100)) : 0;
+      var hs = r.sales ? Math.max(3, Math.round(r.sales / maxV * 100)) : 0;
       var he = r.exp ? Math.max(3, Math.round(r.exp / maxV * 100)) : 0;
       return '<div class="fcol' + (r.mm === curM ? ' cur-m' : '') + '"><div class="fbars">' +
-        '<i class="bs" style="height:' + hs + '%" title="매출 ' + (r.effSales ? fmtWon(r.effSales) : '미입력') + '"></i>' +
-        '<i class="be" style="height:' + he + '%" title="지출 ' + (r.exp ? fmtWon(r.exp) : '미입력') + '"></i>' +
+        '<i class="bs" style="height:' + hs + '%" title="매출 ' + (r.sales ? fmtWon(r.sales) : '측정 전') + '"></i>' +
+        '<i class="be" style="height:' + he + '%" title="지출(인건비) ' + (r.exp ? fmtWon(r.exp) : '측정 전') + '"></i>' +
         '</div><span class="fmo">' + r.mm + '</span></div>';
     }).join('') + '</div>';
 
     var legend = '<div class="flegend">' +
-      '<span><i class="ls"></i>매출</span><span><i class="le"></i>지출</span>' +
-      '<span class="fnote">● 당월=home_kpi 라이브 실측 · 나머지=편집값 · 미입력=측정 전(가짜값 없음)</span>' +
+      '<span><i class="ls"></i>매출(센터전체)</span><span><i class="le"></i>지출(인건비)</span>' +
+      '<span class="fnote">● 매출·지출 = <a href="cfo/finance/매출지출현황.html" style="color:var(--gold);text-decoration:none">AI CFO 매출현황</a> gviz 미러(읽기전용). 매출=회원권+강습 / 지출=강사+운영부 인건비(라이브). ' +
+      '구매성·예산·정규직/임대 등 전체 지출은 CFO 매출현황 참조. 측정 전=소스 미기재(가짜값 없음).</span>' +
     '</div>';
 
     host.innerHTML = table + legend + chart;
@@ -559,6 +676,62 @@
     }).join('') + '</div>';
   }
 
+  // ── 🚀 ERP 월별 진척 타임라인 (공식값·GM 확정) ──
+  function renderErp(){
+    var host = document.getElementById('erp-board');
+    if(!host) return;
+    var ep = _data && _data.erp_progress;
+    var items = (ep && ep.items) || [];
+    if(!items.length){ host.innerHTML = '<div class="board-status">ERP 진척 정본(erp_progress)이 없습니다.</div>'; return; }
+    var n = items.length;
+    var steps = items.map(function(it, i){
+      var pct = clampPct(it.pct);
+      var isTgt = !!it.target;
+      var parts = String(it.month || '').split('-');
+      var mLab = parts[1] ? (Number(parts[1]) + '월') : esc(it.month || '');
+      var yLab = parts[0] ? ("'" + String(parts[0]).slice(2)) : '';
+      var badge = isTgt
+        ? '<span class="ebadge tg">🎯 목표</span>'
+        : '<span class="ebadge done">✓ 실적</span>';
+      var arw = (i < n - 1) ? '<span class="arw-c">›</span>' : '';
+
+      var body;
+      if(_editMode){
+        var tgOpts = '<option value="0"' + (!isTgt ? ' selected' : '') + '>실적</option>' +
+                     '<option value="1"' + (isTgt ? ' selected' : '') + '>목표</option>';
+        body =
+          '<div class="etop"><span class="em">' + yLab + ' ' + mLab + '</span></div>' +
+          '<div class="erp-edit">' +
+            '<input type="number" min="0" max="100" data-erp-i="' + i + '" data-ef="pct" value="' + pct + '" oninput="window._epv(this)"> %' +
+            '<select data-erp-i="' + i + '" data-ef="target">' + tgOpts + '</select>' +
+          '</div>' +
+          '<div class="ebar"><i style="width:' + pct + '%"></i></div>' +
+          '<div class="erp-note-edit" contenteditable="true" data-erp-i="' + i + '" data-ef="note" ' +
+            'oncompositionstart="window._compOn()" oncompositionend="window._compOff()">' + esc(it.note || '') + '</div>';
+      } else {
+        body =
+          '<div class="etop"><span class="em">' + yLab + ' ' + mLab + '</span>' + badge + '</div>' +
+          '<div class="ep">' + pct + '<span>%</span></div>' +
+          '<div class="ebar"><i style="width:' + pct + '%"></i></div>' +
+          (it.note ? '<div class="enote">' + esc(it.note) + '</div>' : '');
+      }
+      return '<div class="erp-step' + (isTgt ? ' tgt' : '') + '">' + body + arw + '</div>';
+    }).join('');
+
+    host.innerHTML =
+      '<div class="erp-time">' + steps + '</div>' +
+      '<div class="erp-legend"><span>보라 막대 = <b style="color:var(--accent-soft)">실적</b></span>' +
+      '<span>골드 점선 = <b>목표(미달성)</b></span>' +
+      '<span style="color:var(--dim)">완성도 % · 월별 누적 · 08월 이후 ERP 비즈니스 확장 준비</span></div>';
+  }
+  // 편집 중 ERP 막대 미리보기
+  window._epv = function(el){
+    var v = clampPct(el.value);
+    var step = el.closest ? el.closest('.erp-step') : null;
+    var i = step && step.querySelector('.ebar > i');
+    if(i) i.style.width = v + '%';
+  };
+
   // ── 월말 보고 영역 ──
   function renderReport(){
     var el = document.getElementById('report-area');
@@ -592,12 +765,13 @@
 
   function render(){
     renderMonthHead();
+    renderErp();
     renderFinance();
     renderBoard();
     renderPractitioners();
     renderReport();
     renderEditBtn();
-    renderChairBtn();
+    applyChair();
     var sel = document.getElementById('month-sel');
     if(sel) sel.value = _sel;
   }
@@ -606,22 +780,13 @@
   window._compOn  = function(){ window._composing = true; };
   window._compOff = function(){ window._composing = false; };
 
-  // ── 경영진 보고 토글(화면 전환만·정본 무변경) ──
-  window._toggleChair = function(){
-    _chairMode = !_chairMode;
-    try{ localStorage.setItem('wp_mops_chair', _chairMode ? '1' : '0'); }catch(e){}
-    render();
-  };
-  function renderChairBtn(){
-    var b = document.getElementById('chair-toggle');
-    if(!b) return;
-    b.className = 'ebtn chair' + (_chairMode ? ' on' : '');
-    b.textContent = _chairMode ? '👔 경영진 보고 ON' : '👔 경영진 보고';
-    document.body.classList.toggle('chair-mode', _chairMode);
+  // ── 경영진 보고 = 상시(공식 직함 고정) · A3 인쇄 배너 렌더 ──
+  function applyChair(){
+    document.body.classList.add('chair-mode');
     var ph = document.getElementById('print-head');
     if(ph){
-      ph.innerHTML = '<div class="ph-title">웰페리온 AI·ERP 운영 보고 — ' + esc(_sel || '') + '</div>' +
-                     '<div class="ph-sub">AI C-Level 7인 체계 운영</div>';
+      ph.innerHTML = '<div class="ph-title">웰페리온 AI·ERP 월간 운영 보고 — ' + esc(_sel || '') + '</div>' +
+                     '<div class="ph-sub">AI C-Level 7인 체계 · 경영진 제출용 (A3 결론 한 장)</div>';
     }
   }
 
@@ -659,16 +824,19 @@
       m.practitioner_progress[pid] = clampPct(el.value);
     });
 
-    // 연간 매출·지출
-    var fy = _data.finance && _data.finance[FIN_YEAR];
-    if(fy){
-      Array.prototype.forEach.call(document.querySelectorAll('#fin-board [data-fin-m]'), function(el){
-        var mm = el.getAttribute('data-fin-m'), fld = el.getAttribute('data-fin-f');
-        if(!fy[mm]) fy[mm] = {sales:null, expense:null};
-        var v = el.value.trim();
-        fy[mm][fld] = (v === '') ? null : Number(v);
+    // 🚀 ERP 월별 진척 (pct·목표여부·메모)
+    var ep = _data.erp_progress;
+    if(ep && ep.items){
+      Array.prototype.forEach.call(document.querySelectorAll('#erp-board [data-erp-i]'), function(el){
+        var i = Number(el.getAttribute('data-erp-i')), f = el.getAttribute('data-ef');
+        var it = ep.items[i]; if(!it) return;
+        if(f === 'pct'){ it.pct = clampPct(el.value); }
+        else if(f === 'target'){ it.target = (el.value === '1'); }
+        else if(f === 'note'){ it.note = (el.innerText || el.textContent || '').trim(); }
       });
     }
+
+    // 연간 매출·지출 = AI CFO 매출현황 미러(읽기전용) → 이 페이지에서 저장 안 함(SSOT·INC-001). 편집 대상 아님.
   }
 
   window._planSave = function(){
@@ -704,10 +872,12 @@
   };
 
   // ── 부팅 ──
-  Promise.all([ readPlan(), readHomeSales() ])
+  Promise.all([ readPlan(), readHomeSales(), readCfoFinance() ])
     .then(function(arr){
       _data = arr[0];
       _homeSales = arr[1];
+      _cfoSales = arr[2] && arr[2].sales;
+      _cfoExp = arr[2] && arr[2].exp;
       buildMonthSelect();
       render();
     })

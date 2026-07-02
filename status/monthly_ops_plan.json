@@ -1,5 +1,5 @@
 {
-  "_doc": "월간 운영 계획·보고 SSOT. 헌법(장기 비전·KPI)과 G1 오늘의 항로(일일 배) 사이의 '월간 운영' 층. 월초=계획 세우기, 월말=결과 보고. 담당=도메인 C-Level(제안·조정 가능). 정본=이 파일, 페이지(월간운영계획.html)는 렌더만. finance=연간 매출·지출 축적(null=미입력·가짜값 금지·당월 매출은 home_kpi 라이브 오버레이). objectives.progress·practitioner_progress=도달율(0~100·편집값·상태기반 기본).",
+  "_doc": "월간 운영 계획·보고 SSOT. 헌법(장기 비전·KPI)과 G1 오늘의 항로(일일 배) 사이의 '월간 운영' 층. 월초=계획 세우기, 월말=결과 보고. 담당=도메인 C-Level(제안·조정 가능). 정본=이 파일, 페이지(월간운영계획.html)는 렌더만. 매출·지출 SSOT=cfo/finance/매출지출현황.html(그 페이지의 gviz 소스 미러·이 파일엔 매출/지출 값 저장 금지·INC-001). objectives.progress·practitioner_progress=도달율(0~100·편집값·상태기반 기본). erp_progress=ERP 월별 진척(공식값).",
   "정본": "status/monthly_ops_plan.json",
   "updated_at": "2026-07-02",
   "owner_nick": {"ceo":"웰리","cmo":"시모","coo":"시우","cto":"시토","cpo":"시포","cfo":"시뽀","chro":"시로"},
@@ -9,21 +9,15 @@
     {"id": "lee-jh", "name": "이정헌", "dept": "시설부", "role": "소장", "northstar": ""},
     {"id": "na-uy", "name": "나우열", "dept": "파트너", "role": "파트너(재무·인사 실무)", "northstar": ""}
   ],
-  "finance": {
-    "2026": {
-      "01": {"sales": null, "expense": null},
-      "02": {"sales": null, "expense": null},
-      "03": {"sales": null, "expense": null},
-      "04": {"sales": null, "expense": null},
-      "05": {"sales": null, "expense": null},
-      "06": {"sales": null, "expense": null},
-      "07": {"sales": null, "expense": null},
-      "08": {"sales": null, "expense": null},
-      "09": {"sales": null, "expense": null},
-      "10": {"sales": null, "expense": null},
-      "11": {"sales": null, "expense": null},
-      "12": {"sales": null, "expense": null}
-    }
+  "erp_progress": {
+    "_doc": "웰페리온 ERP 월별 진척(공식값·GM 확정). pct=완성도 %, target=true는 목표(아직 미달성), false는 실적. 정본=이 키, 페이지는 렌더만. PIN 편집 가능.",
+    "unit": "%",
+    "items": [
+      {"month": "2026-05", "pct": 40, "target": false, "note": "AI 도입으로 마케터 200만원 절감 · 마케팅 자동화 완료(100%) · 웰페리온 ERP 시스템 구축 40%"},
+      {"month": "2026-06", "pct": 60, "target": false, "note": "웰페리온 ERP 고도화 및 현장 맞춤 구축·개선 진행 60%"},
+      {"month": "2026-07", "pct": 80, "target": true, "note": "ERP 80% 목표"},
+      {"month": "2026-08", "pct": 95, "target": true, "note": "ERP 95% 목표 · 웰페리온 ERP 기준으로 ERP 비즈니스 확장 준비(3개월)"}
+    ]
   },
   "months": {
     "2026-06": {
