@@ -241,6 +241,8 @@ var DEPTS_ORDER=["골프","P.T","수영","스쿼시","체조&트램","필라테�
 var PAL=["#22324a","#a98a52","#3c7a4a","#2f6d9e","#b07d24","#6a5891","#b14238","#5b9fd5","#8a6f3f","#4f9e6a","#c2705f","#7e9bbf"];
 var SALES_SHEET="18VRvDEYQ7LfaPaHmXROBpIVmYtjqZGrYie75JZnRKDA";
 var SALES_GVIZ="https://docs.google.com/spreadsheets/d/"+SALES_SHEET+"/gviz/tq?tqx=out:json";
+/* 매출 총액 정본 — 「26년 매출 분석」 시트(월별 마감 총매출). 매출현황 페이지와 동일 소스. 총매출·월별 KPI는 이 정본에 동기화, 종목별 분해만 매출마스터(SALES_DEPT) 사용. 차액(정본−종목합)=기타·주차 등 보정. */
+var SALES_TRUTH_API="https://script.google.com/macros/s/AKfycbxDwFkrxK1YIaEoSNcuw2MiHiZQ-7o5N6311ytksSyeEd86ZFOhLknOWqQgNArQvZ-7/exec";
 /* 최저가검토(자동) 시트 — 회계 백엔드와 무관, gviz 읽기 전용. 컬럼 A품의행·B품의물품·C동일제품·D최저가·E판매처링크·F품의가·G품의가대비·H신뢰도·I검토일·J비고. A(품의행)를 r.row와 매칭. */
 var REVIEW_SHEET="1rUjnf_oxVTnT89B1aU46Z2txYc8k_MdKYdwhulpgw48";
 var REVIEW_GVIZ="https://docs.google.com/spreadsheets/d/"+REVIEW_SHEET+"/gviz/tq?tqx=out:json";
@@ -264,6 +266,7 @@ var GDR_KEYWORDS=["GDR","골프존","gdr"]; // 라인아이템(물품명) 화이
 
 var LABOR=[],OPER=[],INSTRUCTORS=[],laborMonth=[],procMonth=[],salesMonth=[],totalCost=[],LIVE=false,SALES_LIVE=false;
 var SALES_G=0,COST_G=0,LABOR_G=0,OPER_G=0,PROC_G=0,MEMBER_G=0,DATA_LAST=6,selTeam=null,period=-1,_charts={};
+var SALES_TRUTH=null,SALES_TRUTH_LAST=0,SALES_TRUTH_LIVE=false,SALES_ETC=[],ETC_G=0,SALES_LAST=6; // 매출 정본(월별 총매출)·기타보정
 
 function attemptGate(pw){var err=document.getElementById("gateErr");
   if(!pw){err.textContent="비밀번호를 입력해 주세요.";return;}
@@ -312,6 +315,18 @@ async function loadSales(){
   }catch(e){SALES_DEPT=FB_SALES;SALES_LIVE=false;}
   SALES_MEMBER=SALES_DEPT["운영부"]||[];
 }
+/* 매출 총액 정본 로드 — 「26년 매출 분석」 GAS(sales_monthly). 실패 시 조용히 폴백(매출마스터 종목합 사용). 매출현황 페이지와 동일 소스 → 자동 동기화. */
+async function loadSalesTruth(){
+  try{
+    var r=await fetch(SALES_TRUTH_API+"?action=sales_monthly&_cb="+Date.now(),{cache:"no-store"});
+    var j=await r.json();
+    if(j&&j.ok&&j.months&&j.months.length){
+      var arr=Array(12).fill(null),last=0;
+      j.months.forEach(function(m){var i=(m.m||0)-1;if(i>=0&&i<12){arr[i]=(typeof m.value==="number")?m.value:null;if(arr[i]!==null)last=m.m;}});
+      SALES_TRUTH=arr;SALES_TRUTH_LAST=last;SALES_TRUTH_LIVE=true;
+    }else{SALES_TRUTH=null;SALES_TRUTH_LIVE=false;}
+  }catch(e){SALES_TRUTH=null;SALES_TRUTH_LIVE=false;}
+}
 /* 최저가검토 시트 로드(읽기전용, gviz). 실패(미공유 등) 시 조용히 무시 — 기존 기능 영향 없음. 성공 시 배지 갱신. */
 async function loadReviewLowest(){
   try{
@@ -329,11 +344,20 @@ function aggregate(){
   var cm=curMonth();DATA_LAST=LIVE?Math.min(cm,12):Math.min(cm,6);
   laborMonth=MONTHS.map(function(_,i){return sum(LABOR.map(function(o){return o.d[i]||0;}));});
   procMonth=MONTHS.map(function(_,i){var s=0;for(var d in PROC_DEPT)s+=pv(PROC_DEPT,d,i);return s;});
-  salesMonth=MONTHS.map(function(_,i){var s=0;for(var d in SALES_DEPT)s+=pv(SALES_DEPT,d,i);return s;});
+  /* 종목별 월합(매출마스터) — 종목 차트·기여이익용 */
+  var deptMonth=MONTHS.map(function(_,i){var s=0;for(var d in SALES_DEPT)s+=pv(SALES_DEPT,d,i);return s;});
+  /* 총매출 = 정본(「26년 매출 분석」) 우선. 없으면(폴백) 종목합. 기타 = 정본 − 종목합(주차·기타수입 등, 종목마스터 미포함분) */
+  if(SALES_TRUTH_LIVE&&SALES_TRUTH){
+    salesMonth=MONTHS.map(function(_,i){return SALES_TRUTH[i]!==null?SALES_TRUTH[i]:deptMonth[i];});
+    SALES_ETC=MONTHS.map(function(_,i){return (SALES_TRUTH[i]!==null?SALES_TRUTH[i]:deptMonth[i])-deptMonth[i];});
+    SALES_LAST=SALES_TRUTH_LAST||DATA_LAST;
+  }else{
+    salesMonth=deptMonth;SALES_ETC=MONTHS.map(function(){return 0;});SALES_LAST=DATA_LAST;
+  }
   totalCost=MONTHS.map(function(_,i){return laborMonth[i]+(OPER[i]||0)+procMonth[i];});
   LABOR.forEach(function(o){o.t=sum(o.d.slice(0,DATA_LAST));});
   LABOR_G=sum(laborMonth.slice(0,DATA_LAST));OPER_G=sum(OPER.slice(0,DATA_LAST));PROC_G=sum(procMonth.slice(0,DATA_LAST));
-  MEMBER_G=sum(SALES_MEMBER.slice(0,DATA_LAST));SALES_G=sum(salesMonth.slice(0,DATA_LAST));COST_G=LABOR_G+OPER_G+PROC_G;
+  MEMBER_G=sum(SALES_MEMBER.slice(0,DATA_LAST));SALES_G=sum(salesMonth.slice(0,SALES_LAST));ETC_G=sum(SALES_ETC.slice(0,SALES_LAST));COST_G=LABOR_G+OPER_G+PROC_G;
 }
 
 var TABS=[{id:"dash",label:"대시보드"},{id:"sales",label:"매출현황"},{id:"expense",label:"지출현황"},{id:"budget",label:"📊 예산·이상지출"}]; // 구매요청은 직원용(?req=1)으로 분리
@@ -345,9 +369,9 @@ function renderNav(){var nav=document.getElementById("nav");
 
 async function startApp(){
   document.getElementById("app").style.display="block";renderNav();
-  await loadData();await loadSales();aggregate();
+  await loadData();await loadSales();await loadSalesTruth();aggregate();
   document.getElementById("loading").style.display="none";document.getElementById("content").style.display="block";
-  document.getElementById("syncMeta").textContent="인건비 "+(LIVE?"🟢실시간":"⚪폴백")+" · 매출 "+(SALES_LIVE?"🟢실시간":"⚪폴백")+" · 구매성 1~6월 확정 · 7~12월 도래 시 자동";
+  document.getElementById("syncMeta").textContent="인건비 "+(LIVE?"🟢실시간":"⚪폴백")+" · 매출 "+(SALES_TRUTH_LIVE?"🟢정본 실시간":(SALES_LIVE?"🟡마스터":"⚪폴백"))+" · 종목분해 "+(SALES_LIVE?"실시간":"폴백")+" · 구매성 1~6월 확정";
   renderKpi();renderMain();renderSalesDept();renderMix();renderSales();renderSalesTbl();renderExpTbl();renderPeople();
   renderContrib(); // 종목별 기여이익(대시보드 · SALES_DEPT·LABOR 재사용)
   renderBudget();ensureAnom(); // ① 예산 위젯(즉시) ② 이상지출(라인아이템 비동기 로드)
@@ -373,12 +397,12 @@ function renderKpi(){
     {l:"영업수지",v:eok(SALES_G-COST_G),note:"※ 정규직 일부·임대 미포함"},
     {l:"매출 대비 지출률",v:(SALES_G?(COST_G/SALES_G*100).toFixed(1):0)+"%",note:"낮을수록 양호"},
   ].map(function(k){return '<div class="kpi'+(k.up?' up':'')+(k.down?' down':'')+'"><div class="label">'+k.l+'</div><div class="val">'+k.v+'</div><div class="note">'+k.note+'</div></div>';}).join("");
-  document.getElementById("notice").innerHTML="💡 <b>상반기 매출 "+eok(SALES_G)+" · 지출 "+eok(COST_G)+" · 수지 "+eok(SALES_G-COST_G)+"</b> · 지출 중 인건비 비중 "+(COST_G?((LABOR_G+OPER_G)/COST_G*100).toFixed(0):0)+"%. (지출엔 정규직 일부·임대 미포함)";
+  document.getElementById("notice").innerHTML="💡 <b>누적 매출 "+eok(SALES_G)+"(정본) · 지출 "+eok(COST_G)+" · 수지 "+eok(SALES_G-COST_G)+"</b> · 지출 중 인건비 비중 "+(COST_G?((LABOR_G+OPER_G)/COST_G*100).toFixed(0):0)+"%. (매출=「26년 매출 분석」 정본 · 지출엔 정규직 일부·임대 미포함, 최근월 진행분 포함 시 수지는 참고)";
 }
 function moneyAxis(){return {ticks:{callback:function(v){return (v/1e8).toFixed(1)+"억";}}};}
 function renderMain(){
   newChart("chartMain",{data:{labels:MONTHS,datasets:[
-    {type:"bar",label:"매출",data:salesMonth.map(function(v,i){return i<DATA_LAST?v:null;}),backgroundColor:"#a98a52",borderRadius:4,order:2},
+    {type:"bar",label:"매출(정본)",data:salesMonth.map(function(v,i){return i<SALES_LAST?v:null;}),backgroundColor:"#a98a52",borderRadius:4,order:2},
     {type:"line",label:"총지출",data:totalCost.map(function(v,i){return i<DATA_LAST?v:null;}),borderColor:"#b14238",backgroundColor:"#b14238",tension:.3,order:1}]},
     options:{maintainAspectRatio:false,plugins:{legend:{position:"bottom",labels:{font:{size:11}}},tooltip:{callbacks:{label:function(c){return c.dataset.label+": "+won(c.raw);}}}},
       scales:{x:{grid:{display:false}},y:moneyAxis()}}});
@@ -389,7 +413,10 @@ function renderSalesDept(){
     options:{indexAxis:"y",maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){return won(c.raw);}}}},scales:{x:moneyAxis()}}});
 }
 function renderMix(){var gradesum=Object.keys(SALES_DEPT).reduce(function(s,d){return d==="운영부"?s:s+sum(SALES_DEPT[d].slice(0,DATA_LAST));},0);
-  newChart("chartMix",{type:"doughnut",data:{labels:["운영부(회원권)","강습(부서별)"],datasets:[{data:[MEMBER_G,gradesum],backgroundColor:["#22324a","#a98a52"]}]},
+  var etc=Math.max(0,SALES_G-MEMBER_G-gradesum); // 기타·주차 등 (정본−회원권−강습종목합)
+  var labels=["운영부(회원권)","강습(부서별)"],data=[MEMBER_G,gradesum],colors=["#22324a","#a98a52"];
+  if(etc>0){labels.push("기타·주차 등");data.push(etc);colors.push("#6a5891");}
+  newChart("chartMix",{type:"doughnut",data:{labels:labels,datasets:[{data:data,backgroundColor:colors}]},
     options:{maintainAspectRatio:false,plugins:{legend:{position:"bottom",labels:{font:{size:11}}},tooltip:{callbacks:{label:function(c){return c.label+": "+eok(c.raw)+" ("+(SALES_G?(c.raw/SALES_G*100).toFixed(1):0)+"%)";}}}}}});
 }
 function cell(v,fut){if(fut)return '<td class="fut">예정</td>';if(v===0)return '<td style="color:#cdd5e6">–</td>';if(v<0)return '<td class="neg">'+won(v)+'</td>';return '<td>'+won(v)+'</td>';}
