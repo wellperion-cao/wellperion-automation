@@ -332,9 +332,13 @@ async function loadSalesTruth(){
 }
 /* 구매성 지출 라이브 집계 — 지출품의(구매요청) 전체 라인아이템을 월별×부서별로 자동 합산. 실집행성(반려·미승인·캔슬 제외)만, 이상지출·예산 정의와 동일. 하드코딩 대체 → 신규 승인분 자동 반영. 실패 시 FB_PROC 폴백. 로드한 rows는 이상지출(ensureAnom)과 공유(중복 fetch 방지). */
 async function loadProc(){
-  var rows=[];
-  try{var a=await procCall("list",{mode:"active"});if(a&&a.data)rows=rows.concat(a.data);}catch(e){}
-  try{var y=new Date().getFullYear();var d=await procCall("list",{mode:"done",from:y+"-01-01",to:fmtToday()});if(d&&d.data)rows=rows.concat(d.data);}catch(e){}
+  var rows=[],y=new Date().getFullYear();
+  var res=await Promise.all([ // active·done 병렬(순차 대비 절반)
+    procCall("list",{mode:"active"}).catch(function(){return null;}),
+    procCall("list",{mode:"done",from:y+"-01-01",to:fmtToday()}).catch(function(){return null;})
+  ]);
+  if(res[0]&&res[0].data)rows=rows.concat(res[0].data);
+  if(res[1]&&res[1].data)rows=rows.concat(res[1].data);
   if(!rows.length){PROC_DEPT=FB_PROC;PROC_LIVE=false;return;} // 로드 실패 → 폴백(하드코딩 스냅샷)
   ANOM_ROWS=rows; // 이상지출 재사용
   var live={},pmonth=function(ds){var m=String(ds).match(/(\d{4})\D+(\d{1,2})\D+(\d{1,2})/);return m?parseInt(m[2],10)-1:-1;};
@@ -388,14 +392,25 @@ function renderNav(){var nav=document.getElementById("nav");
     nav.querySelectorAll(".tab").forEach(function(x){x.classList.remove("active");});b.classList.add("active");
     document.querySelectorAll(".panel").forEach(function(p){p.classList.toggle("active",p.dataset.panel===b.dataset.p);});};});}
 
+function updateSyncMeta(){var sm=document.getElementById("syncMeta");if(!sm)return;
+  sm.textContent="인건비 "+(LIVE?"🟢실시간":"⚪폴백")+" · 매출 "+(SALES_TRUTH_LIVE?"🟢정본 실시간":(SALES_LIVE?"🟡마스터":"⚪폴백"))+" · 종목분해 "+(SALES_LIVE?"실시간":"폴백")+" · 구매성 "+(PROC_LIVE?"🟢실시간(지출품의)":"⏳불러오는 중…");}
 async function startApp(){
   document.getElementById("app").style.display="block";renderNav();
-  await loadData();await loadSales();await loadSalesTruth();await loadProc();aggregate();
+  // 독립 소스(인건비·매출마스터·매출정본) 병렬 로드 — 초기 렌더 지연 최소화. 구매성(loadProc)은 무겁고 느려 블로킹에서 제외.
+  await Promise.all([loadData(),loadSales(),loadSalesTruth()]);
+  aggregate(); // 구매성은 우선 폴백(FB_PROC)으로 즉시 표시
   document.getElementById("loading").style.display="none";document.getElementById("content").style.display="block";
-  document.getElementById("syncMeta").textContent="인건비 "+(LIVE?"🟢실시간":"⚪폴백")+" · 매출 "+(SALES_TRUTH_LIVE?"🟢정본 실시간":(SALES_LIVE?"🟡마스터":"⚪폴백"))+" · 종목분해 "+(SALES_LIVE?"실시간":"폴백")+" · 구매성 "+(PROC_LIVE?"🟢실시간(지출품의)":"⚪폴백");
+  updateSyncMeta();
   renderKpi();renderMain();renderSalesDept();renderMix();renderSales();renderSalesTbl();renderExpTbl();renderPeople();
-  renderContrib(); // 종목별 기여이익(대시보드 · SALES_DEPT·LABOR 재사용)
-  renderBudget();ensureAnom(); // ① 예산 위젯(즉시) ② 이상지출(라인아이템 비동기 로드)
+  renderContrib(); // 종목별 기여이익(SALES_DEPT·LABOR 재사용)
+  renderBudget();
+  // 구매성 라이브 + 이상지출 = 백그라운드(초기 화면을 막지 않음). 완료되면 재집계·구매성 의존 뷰만 재렌더.
+  loadProc().then(function(){
+    if(PROC_LIVE){aggregate();renderKpi();renderMain();renderExpTbl();renderPeople();renderBudget();}
+    updateSyncMeta();
+    if(ANOM_ROWS&&ANOM_ROWS.length){ANOM_LOADED=true;computeAnom();renderAnom();} // loadProc가 받아온 라인아이템 재사용
+    else ensureAnom(); // 폴백: 별도 로드 시도
+  });
 }
 
 // 직원용 구매요청 전용 모드 (?req=1) — 재무 데이터·차트 미로드, 구매요청 탭만
