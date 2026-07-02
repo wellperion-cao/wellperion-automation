@@ -15,7 +15,7 @@
   }
   *{box-sizing:border-box; margin:0; padding:0;}
   body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif; color:var(--text); background:var(--bg); line-height:1.5; font-size:13px; -webkit-font-smoothing:antialiased; padding:18px 16px 40px;}
-  .wrap{max-width:1080px; margin:0 auto;}
+  .wrap{max-width:100%; margin:0;}
 
   header.page-head{margin-bottom:14px; padding-bottom:12px; border-bottom:2px solid var(--border-strong); display:flex; flex-wrap:wrap; align-items:baseline; gap:8px 16px;}
   header.page-head h1{font-size:22px; font-weight:800; letter-spacing:-0.02em;}
@@ -189,7 +189,7 @@
 
   <!-- ════ 섹션 3 · 루프가 돈 흔적 ════ -->
   <h2 class="sec">🕘 최근 자율 처리 이력 <span style="font-size:11px;font-weight:400;color:var(--dim);">(루프가 돈 흔적)</span></h2>
-  <div class="sec-note">여러 로그(포착·추천·자기학습·입항 완료)를 시간 역순으로 통합. 최근 처리 흐름을 한 줄씩.</div>
+  <div class="sec-note">진짜 자율 판단·실행만(포착·추천·자기학습·자율관찰)을 시간 역순으로 통합. 루틴 입항완료는 제외(완료 배는 G1·아카이브에서).</div>
   <div class="feed" id="feed">
     <div class="feed-status">처리 이력을 불러오는 중…</div>
   </div>
@@ -342,13 +342,21 @@
         what:'GM 보좌 06:30 스캔 실행',
         res:'포착 <b>' + cap + '</b>건 · 신규등록 ' + reg + (s.auto_exec_on ? ' · 자율실행 ON' : '') });
     });
-    // 북극성 추천
+    // 북극성 추천 (제안·승인·보류 = 진짜 자율 판단)
     d.nsLog.forEach(function(x){
-      if(x.event !== 'proposed') return;
-      var n = (x.titles || x.roles || []).length;
-      items.push({ t:ts(x.logged_at), when:x.logged_at, ico:'🌟', tag:'추천', tagc:'var(--gold)',
-        what:'북극성 추천 ' + (x.sent ? '발송' : '생성'),
-        res:'<b>' + n + '</b>건 (' + esc((x.roles || []).join('·')) + ')' });
+      var ev = x.event, roleTxt = esc((x.roles || []).join('·') || x.title || '');
+      if(ev === 'proposed'){
+        var n = (x.titles || x.roles || []).length;
+        items.push({ t:ts(x.logged_at), when:x.logged_at, ico:'🌟', tag:'추천', tagc:'var(--gold)',
+          what:'북극성 추천 ' + (x.sent ? '발송' : '생성'),
+          res:'<b>' + n + '</b>건 (' + esc((x.roles || []).join('·')) + ')' });
+      } else if(ev === 'approved'){
+        items.push({ t:ts(x.logged_at), when:x.logged_at, ico:'✅', tag:'승인', tagc:'var(--green)',
+          what:'북극성 추천 승인 — ' + roleTxt, res:'GM 채택' });
+      } else if(ev === 'held'){
+        items.push({ t:ts(x.logged_at), when:x.logged_at, ico:'⚓', tag:'보류', tagc:'var(--dim)',
+          what:'북극성 추천 보류 — ' + roleTxt, res: esc(x.reason || '') });
+      }
     });
     // 자기학습 제안/반영
     d.learn.forEach(function(p){
@@ -363,15 +371,10 @@
           res: p['효과'] ? ('효과 <b>' + esc(p['효과']) + '</b>') : '' });
       }
     });
-    // 자율 처리(입항 완료 · 웰리/aide 관련만 강조하되 전체 최근 DONE 표시)
-    d.archive.filter(function(t){ return t.status === 'DONE' && t.processed_at; })
-      .forEach(function(t){
-        items.push({ t:ts(t.processed_at) + (t.ship_no ? (t.ship_no % 900) : 0), when:t.processed_at, ico:'🏁', tag:'입항', tagc:'var(--accent-soft)',
-          what: esc(String(t.title || '').slice(0, 76)) + (String(t.title||'').length > 76 ? '…' : ''),
-          res: (t.ship_no ? ('배 ' + t.ship_no + ' · ') : '') + esc(t.clevel || '') });
-      });
-    // aide 포착/승인/활성화 관찰(자율 신뢰 이벤트)
-    d.obsLedger.filter(function(o){ return /^(gm_aide_|gm_aide$)/.test(o.source || '') || o.signal_type === 'activation' || o.signal_type === 'hit_rate'; })
+    // aide 포착·승인·활성화·적중률·놓침 관찰(진짜 자율 판단 신호)
+    // ※ 루틴 입항완료(_queue_archive adhoc)는 자율 판단이 아니라 일반 처리라 이력에서 제외(노이즈 방지).
+    var AUTO_SIG = { auto_exec:1, approval:1, hit_rate:1, activation:1, missed:1 };
+    d.obsLedger.filter(function(o){ return /^gm_aide/.test(o.source || '') || AUTO_SIG[o.signal_type]; })
       .forEach(function(o){
         items.push({ t:ts(o.observed_at), when:o.observed_at, ico:'🔎', tag:'자율', tagc:'var(--pink)',
           what: esc(String(o.summary || '').slice(0, 80)),
@@ -379,12 +382,13 @@
       });
 
     items.sort(function(a,b){ return b.t - a.t; });
-    return items.slice(0, 46);
+    return items;
   }
   function renderFeed(items){
     var el = document.getElementById('feed');
     if(!items.length){ el.innerHTML = '<div class="feed-status">표시할 자율 처리 이력이 없습니다.</div>'; return; }
-    el.innerHTML = items.map(function(it){
+    var show = items.slice(0, 46);
+    el.innerHTML = show.map(function(it){
       return '<div class="feed-item">' +
         '<span class="fi-ico">' + it.ico + '</span>' +
         '<span class="fi-body">' +
@@ -393,11 +397,11 @@
           '<span class="fi-what">' + it.what + '</span>' +
           (it.res ? '<span class="fi-res">' + it.res + '</span>' : '') +
         '</span></div>';
-    }).join('') + '<div class="feed-more">최근 ' + items.length + '건 · 전체 이력은 각 로그(<code>status/</code>) 직독</div>';
+    }).join('') + '<div class="feed-more">진짜 자율 이력 ' + items.length + '건 중 최근 ' + show.length + '건 · 전체는 각 로그(<code>status/</code>) 직독</div>';
   }
 
   // ═══════════ 섹션 3: 성과 요약 ═══════════
-  function renderStats(d){
+  function renderStats(d, feedItems){
     var el = document.getElementById('stats');
     var cards = [];
 
@@ -435,14 +439,15 @@
       }
     })();
 
-    // 3) 최근 7일 자율 처리 건수 — archive DONE processed_at ≤ 7일
+    // 3) 최근 7일 진짜 자율 건수 — 이력 피드(포착·추천·학습·자율관찰)에서 ≤ 7일. 루틴 입항완료 제외.
     (function(){
       var cut = localTodayMs() - 6 * 86400000; // 오늘 포함 7일
-      var recent = (d.archive || []).filter(function(t){ return t.status === 'DONE' && ts(t.processed_at) >= cut; });
-      var todayN = recent.filter(function(t){ return ts(t.processed_at) >= localTodayMs(); }).length;
-      cards.push('<div class="scard" style="--sc:var(--accent-soft)"><div class="sh">🏁 최근 7일 처리</div>' +
+      var items = feedItems || [];
+      var recent = items.filter(function(it){ return it.t >= cut; });
+      var todayN = recent.filter(function(it){ return it.t >= localTodayMs(); }).length;
+      cards.push('<div class="scard" style="--sc:var(--accent-soft)"><div class="sh">🤖 최근 7일 자율</div>' +
         '<div class="sbig">' + recent.length + '<small>건</small></div>' +
-        '<div class="ssub">입항 완료(자율·지시 포함) · 오늘 <b>' + todayN + '</b>건</div></div>');
+        '<div class="ssub">진짜 자율 판단·실행(포착·추천·학습·관찰) · 오늘 <b>' + todayN + '</b>건</div></div>');
     })();
 
     // 4) 누적 포착(등록) — scan_log registered 합
@@ -473,9 +478,11 @@
       learn:    Array.isArray(learnRaw) ? learnRaw : [],
       archive:  Array.isArray(archRaw) ? archRaw : (archRaw && Array.isArray(archRaw.items) ? archRaw.items : [])
     };
+    var feedItems = [];
+    try{ feedItems = buildFeed(d); }catch(e){ feedItems = []; }
     try{ renderRoutines(d); }catch(e){ document.getElementById('routines').innerHTML = '<div class="feed-status" style="grid-column:1/-1;">상시 체계 표시 오류 — 로그 파싱 실패.</div>'; }
-    try{ renderFeed(buildFeed(d)); }catch(e){ document.getElementById('feed').innerHTML = '<div class="feed-status">처리 이력 표시 오류.</div>'; }
-    try{ renderStats(d); }catch(e){ document.getElementById('stats').innerHTML = '<div class="feed-status" style="grid-column:1/-1;">성과 지표 계산 오류.</div>'; }
+    try{ renderFeed(feedItems); }catch(e){ document.getElementById('feed').innerHTML = '<div class="feed-status">처리 이력 표시 오류.</div>'; }
+    try{ renderStats(d, feedItems); }catch(e){ document.getElementById('stats').innerHTML = '<div class="feed-status" style="grid-column:1/-1;">성과 지표 계산 오류.</div>'; }
     var fl = document.getElementById('foot-loaded');
     if(fl) fl.innerHTML = ' · 로드 <b>' + fmtWhen(new Date().toISOString()) + '</b>';
   }).catch(function(){
