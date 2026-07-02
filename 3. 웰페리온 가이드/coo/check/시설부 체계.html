@@ -863,8 +863,102 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 
 <div id="tab-guide" class="content hidden">
   <p style="font-size:13px;color:var(--dim);margin-bottom:14px;line-height:1.6;">시설부 가이드를 카드로 정리했습니다. 각 카드의 <b>편집</b> 버튼으로 내용을 바로 수정·저장하면 모든 기기에 반영됩니다. <b>＋ 카드 추가</b>로 새 가이드를 추가할 수 있습니다.</p>
-  <!-- ① 1단 레이아웃: 직원 구성·역할은 gd_staff_roles 카드로 흡수(우측 가이드 보드 첫 카드). 좌측 열 제거(2026-07-02 GM 지시) -->
+  <!-- ① 2단 레이아웃: 좌=직원 구성·역할, 우=가이드 카드 (2026-06-24 시우, GM 요청) -->
   <div style="display:flex;gap:18px;align-items:flex-start;flex-wrap:wrap;margin-bottom:18px;">
+    <!-- 좌: 직원 구성·역할 (③ togManual 토글 패턴 재사용) -->
+    <div style="flex:0 0 420px;min-width:280px;max-width:460px;">
+      <div style="background:var(--paper);border:1px solid var(--border);border-radius:14px;border-left:4px solid var(--green);overflow:hidden;">
+        <div style="padding:12px 16px;background:var(--bg);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;">
+          <span style="font-size:17px;font-weight:800;color:var(--green);">👥 직원 구성 · 역할</span>
+        </div>
+        <div style="padding:12px 14px;">
+        <!-- 직원 구성표 카드+토글 -->
+        <div class="manual-section" style="margin-bottom:10px;border-left:4px solid var(--green);">
+          <div class="manual-header" onclick="togManual(this)">
+            <h3>직원 구성 요약 · 결재 라인</h3>
+            <span class="arrow">&#9654;</span>
+          </div>
+          <div class="manual-body">
+            <table style="width:100%;border-collapse:collapse;margin-bottom:10px;font-size:13px;">
+              <tr style="background:var(--paper);">
+                <th style="padding:8px;border:1px solid var(--border);width:78px;">직책</th>
+                <th style="padding:8px;border:1px solid var(--border);width:86px;">성명</th>
+                <th style="padding:8px;border:1px solid var(--border);">역할 한 줄</th>
+              </tr>
+              <tr><td style="padding:8px;border:1px solid var(--border);"><strong>소장</strong></td><td style="padding:8px;border:1px solid var(--border);">이정헌</td><td style="padding:8px;border:1px solid var(--border);">시설 운영 총괄 · 안전/소방 총괄책임자 · 협력업체·공사·투자보수·작업일지 결재</td></tr>
+              <tr><td style="padding:8px;border:1px solid var(--border);"><strong>차장</strong></td><td style="padding:8px;border:1px solid var(--border);">김종현</td><td style="padding:8px;border:1px solid var(--border);">설비·기계 운영 (기계실·공조·수영장 수질·사우나 온도·에너지)</td></tr>
+              <tr><td style="padding:8px;border:1px solid var(--border);"><strong>과장</strong></td><td style="padding:8px;border:1px solid var(--border);">박호균</td><td style="padding:8px;border:1px solid var(--border);">현장 점검·정비 (순회점검·소방 작동점검 실무·CCTV/전기·비품·청소협력업체 감독·작업일지 작성)</td></tr>
+            </table>
+            <p style="font-size:12px;color:var(--dim);margin:0;line-height:1.5;">결재 라인: 과장(작업일지 작성) → 차장(설비 검토) → <strong>소장(최종 결재)</strong>. 비상 시 지휘권은 소장, 소장 부재 시 차장이 대행합니다. <span style="display:inline-block;font-size:11px;font-weight:700;padding:2px 9px;border-radius:10px;background:var(--green-bg);color:var(--green);border:1px solid rgba(106,191,123,0.4);">확정 2026-06-08</span></p>
+          </div>
+        </div>
+
+        <!-- ① 이정헌 소장 -->
+        <div class="manual-section" style="margin-bottom:10px;border-left:4px solid var(--accent);">
+          <div class="manual-header" onclick="togManual(this)"><h3>① 이정헌 소장 — 시설 총괄</h3><span class="arrow">&#9654;</span></div>
+          <div class="manual-body">
+            <span class="manual-label">[담당 R/R]</span>
+            <ul>
+              <li><strong>안전·소방 총괄책임자</strong> (법정 선임자)</li>
+              <li>대외 대응: 소방서·법정점검기관·관리사무소</li>
+            </ul>
+            <span class="manual-label">[일일 점검·관리 항목]</span>
+            <ul>
+              <li>당일 작업일지 검토·결재 (마감 시)</li>
+              <li>차장·과장 보고 사항 점검, 이슈 에스컬레이션 판단</li>
+              <li>협력업체 출입·작업 결과 확인 (청소·정비 업체)</li>
+            </ul>
+            <span class="manual-label">[기준값 / 주기]</span>
+            <ul>
+              <li>작업일지 결재: <strong>매일 마감 시 1회</strong></li>
+              <li>법정점검(소방 작동점검·전기안전 등): 소방 작동점검 <strong>연 1회</strong> · 전기안전점검 <strong>3년 1회</strong></li>
+              <li>투자·보수 계획 보고: <strong>분기 1회</strong> (운영부 정기회의 연동)</li>
+            </ul>
+            <span class="manual-label">[비상·예외 대응]</span>
+            <ul>
+              <li><strong>비상대응 지휘</strong> (화재·누수·정전·설비 중대고장 시 총괄 지휘)</li>
+              <li>소방서·119·관계기관 신고 및 대외 창구</li>
+              <li>부재 시: <strong>김종현 차장</strong>이 지휘 대행</li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- ② 김종현 차장 -->
+        <div class="manual-section" style="margin-bottom:10px;border-left:4px solid var(--blue);">
+          <div class="manual-header" onclick="togManual(this)"><h3>② 김종현 차장 — 설비·기계 운영</h3><span class="arrow">&#9654;</span></div>
+          <div class="manual-body">
+            <span class="manual-label">[비상·예외 대응]</span>
+            <ul>
+              <li>설비 이상(온도·수질 기준 이탈, AHU 정지, 보일러 고장) 즉시 <strong>소장 보고</strong> 후 1차 조치</li>
+              <li>가스 누출 의심 시: 밸브 차단 → 환기 → 소장·119 통보</li>
+              <li>수질 기준 이탈 시: 약품 조정·여과 재가동, 회복 전까지 이용 제한 검토</li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- ③ 박호균 과장 -->
+        <div class="manual-section" style="margin-bottom:0;border-left:4px solid var(--green);">
+          <div class="manual-header" onclick="togManual(this)"><h3>③ 박호균 과장 — 현장 점검·정비</h3><span class="arrow">&#9654;</span></div>
+          <div class="manual-body">
+            <span class="manual-label">[기준값 / 주기]</span>
+            <ul>
+              <li>현장 순회점검: <strong>일 1회 이상</strong> (점검 시작·종료 버튼 기록 기준 — 약 2시간 간격)</li>
+              <li>소방 작동점검: 일일 확인 + 법정 작동점검 <strong>연 1회</strong></li>
+              <li>비품(정수기 필터 등) 교체 주기: <strong>6개월</strong></li>
+              <li>청소업체 작업 확인: 청소 전/후 사진 촬영 의무 (탕실·건습식 사우나·화장실)</li>
+            </ul>
+            <span class="manual-label">[비상·예외 대응]</span>
+            <ul>
+              <li>현장 이상(누수·미끄럼·고장·악취) 발견 시 즉시 <strong>차장·소장 보고</strong>, 1차 안전조치</li>
+              <li>소방·CCTV 작동 불량 시 즉시 보고 후 복구 의뢰</li>
+              <li>협력업체 작업 누락·불량 시 재작업 요청 및 일지 기록</li>
+            </ul>
+          </div>
+        </div>
+
+        </div>
+      </div>
+    </div><!-- /좌 -->
     <!-- 우: 시설부 가이드 카드 (1.5배 폭) -->
     <div style="flex:1 1 615px;min-width:280px;">
       <div class="board-fullwidth">
@@ -875,7 +969,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
         </div>
       </div>
     </div><!-- /우 -->
-  </div><!-- /1단 -->
+  </div><!-- /2단 -->
 </div>
 
 <div id="tab-manual" class="content hidden">
