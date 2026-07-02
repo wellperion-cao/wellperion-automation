@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<link rel="icon" type="image/png" href="/wellperion-automation/wellperion_favicon.png">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>웰페리온 종합접수처 현황</title>
+<style>
+:root {
+  --bg:#221F20;--paper:#2a2725;--text:#f5f2ef;--dim:#8c8b83;
+  --accent:#B79F8A;--accent-bg:rgba(183,159,138,0.12);--border:#3d3835;
+  --green:#6abf7b;--green-bg:rgba(106,191,123,0.12);
+  --red:#ED5B3F;--red-bg:rgba(237,91,63,0.12);
+  --yellow:#e6c84e;--yellow-bg:rgba(230,200,78,0.12);
+  --blue:#5b9fd5;--blue-bg:rgba(91,159,213,0.12);
+  --orange:#e6944e;--orange-bg:rgba(230,148,78,0.12);
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
+  background:var(--bg); color:var(--text); line-height:1.6; font-size:15px;
+}
+a { color:var(--accent); text-decoration:none; }
+
+/* ── 상단 고정 헤더 ── */
+.sticky-top { position:sticky; top:0; z-index:100; background:var(--bg); border-bottom:1px solid var(--border); }
+.header {
+  background:var(--paper); display:flex; align-items:center; justify-content:space-between;
+  padding:12px 16px; gap:10px; flex-wrap:wrap;
+}
+.header h1 { font-size:17px; font-weight:700; }
+.header-meta { font-size:12px; color:var(--dim); margin-top:2px; }
+.header-btns { display:flex; gap:6px; flex-wrap:wrap; }
+.header-btns button, .header-btns a {
+  padding:6px 12px; border:1px solid var(--border); border-radius:8px;
+  background:var(--bg); color:var(--text); cursor:pointer; font-size:12px; font-weight:600;
+  display:inline-flex; align-items:center; gap:4px; font-family:inherit; text-decoration:none;
+}
+.header-btns button:hover, .header-btns a:hover {
+  background:var(--accent-bg); color:var(--accent); border-color:rgba(183,159,138,0.3);
+}
+
+.content { padding:16px; max-width:1100px; margin:0 auto; }
+
+/* ── 요약 카운트 ── */
+.summary-row { display:flex; flex-wrap:wrap; gap:10px; margin-bottom:14px; }
+.summary-pill {
+  display:inline-flex; align-items:center; gap:7px; padding:8px 14px; border-radius:12px;
+  background:var(--paper); border:1px solid var(--border); font-size:13px; font-weight:600;
+}
+.summary-pill .n { font-size:16px; font-weight:800; }
+
+/* ── 필터 칩 ── */
+.filter-block { margin-bottom:14px; }
+.filter-label { font-size:11px; font-weight:700; color:var(--dim); margin:0 0 6px; letter-spacing:0.02em; }
+.chips { display:flex; flex-wrap:wrap; gap:8px; }
+.chip {
+  font-size:12.5px; font-weight:700; padding:5px 14px; border-radius:20px;
+  border:1.5px solid var(--border); background:var(--paper); color:var(--text);
+  cursor:pointer; font-family:inherit;
+}
+.chip.active { border-color:var(--accent); background:var(--accent-bg); color:var(--accent); }
+
+/* ── 칸반 ── */
+.board { display:flex; gap:12px; overflow-x:auto; -webkit-overflow-scrolling:touch; padding-bottom:8px; align-items:flex-start; }
+.col { flex:1; min-width:280px; background:var(--paper); border:1px solid var(--border); border-radius:12px; overflow:hidden; }
+.col-head { padding:11px 15px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; }
+.col-head .t { font-size:14px; font-weight:800; }
+.col-head .c { font-size:12px; font-weight:700; background:var(--bg); border-radius:10px; padding:2px 9px; }
+.col-body { padding:10px 10px 4px; min-height:40px; }
+.col-empty { padding:10px 4px; font-size:12px; color:var(--dim); }
+
+.card { background:var(--bg); border:1px solid var(--border); border-radius:10px; padding:12px 12px 10px; margin-bottom:8px; }
+.card-top { display:flex; align-items:center; gap:7px; margin-bottom:7px; flex-wrap:wrap; }
+.badge { font-size:11px; font-weight:700; padding:2px 9px; border-radius:10px; }
+.card-when { font-size:11px; color:var(--dim); }
+.card-id { font-size:10px; color:var(--dim); margin-left:auto; }
+.card-name { font-size:13px; font-weight:600; margin-bottom:4px; }
+.card-name .contact { font-size:12px; color:var(--dim); font-weight:400; margin-left:8px; }
+.card-content { font-size:13px; color:var(--text); line-height:1.5; margin-bottom:6px; word-break:break-word; }
+.card-loc { font-size:11px; color:var(--dim); margin-bottom:5px; }
+.card-extras { margin-bottom:6px; display:flex; flex-wrap:wrap; gap:5px; }
+.card-extras .k { font-size:11px; color:var(--dim); }
+.card-extras .v { font-size:11px; color:var(--text); }
+.card-sla { display:inline-block; font-size:10px; font-weight:700; padding:2px 7px; border-radius:8px; white-space:nowrap; }
+.divider { border-top:1px solid var(--border); margin:8px 0; }
+.field-row { display:flex; gap:7px; align-items:center; flex-wrap:wrap; margin-bottom:6px; }
+.field-row label { font-size:12px; font-weight:700; color:var(--dim); white-space:nowrap; }
+.field-row select, .field-row input, .card textarea {
+  background:var(--paper); border:1px solid var(--border); color:var(--text);
+  padding:5px 8px; border-radius:7px; font-size:12px; font-family:inherit;
+}
+.field-row select, .field-row input { flex:1; min-width:80px; }
+.card textarea { width:100%; box-sizing:border-box; resize:vertical; }
+.save-row { display:flex; justify-content:flex-end; }
+.save-btn {
+  font-size:12px; font-weight:700; padding:5px 14px; border-radius:7px;
+  background:var(--accent-bg); color:var(--accent); border:1px solid rgba(183,159,138,0.4);
+  cursor:pointer; font-family:inherit;
+}
+.state-msg { padding:24px 4px; text-align:center; color:var(--dim); font-size:13px; }
+</style>
+</head>
+<body>
+
+<div class="sticky-top">
+  <div class="header">
+    <div>
+      <h1>🙋 웰페리온 종합접수처 현황</h1>
+      <div class="header-meta">COO 관할 · 5종 접수 통합 칸반 · GAS 실시간 (단일 SSOT)</div>
+    </div>
+    <div class="header-btns">
+      <a href="http://wellperion.com/ko/reception/" target="_blank">📲 회원 접수 폼</a>
+      <a href="/wellperion-automation/wellperion_guide(main).html#O4">🏠 ERP 허브</a>
+      <button onclick="regLoad()">↻ 새로고침</button>
+    </div>
+  </div>
+</div>
+
+<div class="content">
+  <!-- 상태 요약 -->
+  <div class="summary-row" id="statusSummary"></div>
+
+  <!-- 카테고리 필터 -->
+  <div class="filter-block">
+    <div class="filter-label">카테고리</div>
+    <div class="chips" id="catChips"></div>
+  </div>
+
+  <!-- 부서 필터 -->
+  <div class="filter-block">
+    <div class="filter-label">부서</div>
+    <div class="chips" id="deptChips"></div>
+  </div>
+
+  <!-- 칸반 -->
+  <div class="board" id="board">
+    <div class="state-msg">불러오는 중…</div>
+  </div>
+</div>
+
+<script>
+/* ═══════════════════════════════════════════
+   웰페리온 종합접수처 현황 (전용 SSOT 보드)
+   데이터: VOC GAS reg_board (공개·마스킹·SLA 포함, no-store)
+   갱신: reg_update (상태·담당·메모, 공개 액션)
+   렌더 로직 = 운영부 체계.html _deptRegRender 이식·통합
+   ═══════════════════════════════════════════ */
+var REG_API = 'https://script.google.com/macros/s/AKfycbwk2XS1FND9V2xtXlWgsXzgA5p0FG7jVm6YKD74JK_ME_ZvHsNUUfGE5A_8p0X8VcF3gQ/exec';
+
+var STATUS_LIST  = ['접수','처리중','완료'];
+var STATUS_COLOR = {'접수':'var(--yellow)','처리중':'var(--blue)','완료':'var(--green)'};
+var STATUS_BG    = {'접수':'var(--yellow-bg)','처리중':'var(--blue-bg)','완료':'var(--green-bg)'};
+
+/* 5종 카테고리 (백엔드 REG_CATEGORIES 라벨과 동일) */
+var CAT_META = [
+  {label:'분실물 접수',          icon:'📦', dept:'운영부', color:'var(--orange)', bg:'var(--orange-bg)'},
+  {label:'시설물 고장 접수',      icon:'🔧', dept:'시설부', color:'var(--blue)',   bg:'var(--blue-bg)'},
+  {label:'청결 이슈 접수',        icon:'🧹', dept:'지원부', color:'var(--green)',  bg:'var(--green-bg)'},
+  {label:'직원·강사 칭찬합니다',   icon:'⭐', dept:'운영부', color:'var(--green)',  bg:'var(--green-bg)'},
+  {label:'직원·강사 쓴소리합니다', icon:'💬', dept:'운영부', color:'var(--red)',    bg:'var(--red-bg)'}
+];
+var DEPT_LIST = ['운영부','시설부','지원부'];
+
+/* 공통·SLA 키 → 나머지는 extras */
+var KNOWN_KEYS = ['regId','category','createdAt','name','contact','loc','content','photoUrl','status','assignee','memo','dept','slaHours','deadline','remainH','slaStatus'];
+var EXTRA_LABEL = {
+  itemName:'분실물품', lostWhen:'분실시점', keepWhere:'보관요청',
+  equipName:'고장설비', severity:'위험도', usable:'사용가능여부',
+  issueKind:'유형', urgency:'시급도',
+  targetStaff:'대상직원·강사', episode:'사례', anonymousPref:'익명희망'
+};
+
+var _allItems = [];
+var _curCat = '';
+var _curDept = '';
+var _loading = false;
+
+function _esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+function _catMeta(label){ for(var i=0;i<CAT_META.length;i++){ if(CAT_META[i].label===label) return CAT_META[i]; } return null; }
+
+/* ── 로드 (항상 전체 → 클라이언트 필터) ── */
+function regLoad(){
+  if(_loading) return;
+  _loading = true;
+  var board = document.getElementById('board');
+  board.innerHTML = '<div class="state-msg">불러오는 중…</div>';
+  var url = REG_API + '?action=reg_board&_=' + Date.now();
+  fetch(url, {redirect:'follow', cache:'no-store'})
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      _loading = false;
+      if(!d || !d.ok){ board.innerHTML = '<div class="state-msg">현황을 불러오지 못했습니다 — ' + _esc(d && d.error || '') + '</div>'; return; }
+      _allItems = Array.isArray(d.data) ? d.data : [];
+      _render();
+    })
+    .catch(function(){
+      _loading = false;
+      board.innerHTML = '<div class="state-msg">네트워크 오류 — 새로고침 해주세요.</div>';
+    });
+}
+
+/* ── 필터 칩 렌더 ── */
+function _renderChips(){
+  var cc = document.getElementById('catChips');
+  var html = '<button class="chip' + (_curCat===''?' active':'') + '" onclick="setCat(\'\')">전체</button>';
+  CAT_META.forEach(function(m){
+    var n = _allItems.filter(function(r){ return String(r.category||'')===m.label; }).length;
+    html += '<button class="chip' + (_curCat===m.label?' active':'') + '" onclick="setCat(\'' + m.label + '\')">' + m.icon + ' ' + _esc(m.label) + ' (' + n + ')</button>';
+  });
+  cc.innerHTML = html;
+
+  var dc = document.getElementById('deptChips');
+  var dh = '<button class="chip' + (_curDept===''?' active':'') + '" onclick="setDept(\'\')">전체</button>';
+  DEPT_LIST.forEach(function(dep){
+    var n = _allItems.filter(function(r){ return String(r.dept||'')===dep; }).length;
+    dh += '<button class="chip' + (_curDept===dep?' active':'') + '" onclick="setDept(\'' + dep + '\')">' + _esc(dep) + ' (' + n + ')</button>';
+  });
+  dc.innerHTML = dh;
+}
+function setCat(c){ _curCat = c; _render(); }
+function setDept(d){ _curDept = d; _render(); }
+
+/* ── 필터 적용 목록 ── */
+function _filtered(){
+  return _allItems.filter(function(r){
+    if(_curCat && String(r.category||'') !== _curCat) return false;
+    if(_curDept && String(r.dept||'') !== _curDept) return false;
+    return true;
+  });
+}
+
+/* ── 상태 요약 ── */
+function _renderSummary(rows){
+  var el = document.getElementById('statusSummary');
+  var html = '<span class="summary-pill">전체 <span class="n" style="color:var(--accent);">' + rows.length + '</span></span>';
+  STATUS_LIST.forEach(function(s){
+    var n = rows.filter(function(r){ return String(r.status||'접수')===s; }).length;
+    html += '<span class="summary-pill">' + _esc(s) + ' <span class="n" style="color:' + (STATUS_COLOR[s]||'var(--accent)') + ';">' + n + '</span></span>';
+  });
+  el.innerHTML = html;
+}
+
+/* ── SLA 배지 (서버 slaStatus/remainH/deadline 기준) ── */
+function _slaBadge(r){
+  var st = String(r.slaStatus||'');
+  if(st!=='정상' && st!=='임박' && st!=='초과') return '';
+  var rem = (r.remainH===null||r.remainH===undefined) ? null : Number(r.remainH);
+  var bg, color, txt;
+  if(st==='초과'){ bg='var(--red-bg)'; color='var(--red)'; txt='초과 +' + (rem!==null?Math.abs(Math.round(rem))+'h':''); }
+  else if(st==='임박'){ bg='var(--orange-bg)'; color='var(--orange)'; txt='임박' + (rem!==null?' '+(rem<1?Math.round(rem*60)+'분':Math.round(rem)+'h'):''); }
+  else { bg='var(--border)'; color='var(--dim)'; txt='기한 ' + (rem!==null?(rem<24?Math.round(rem)+'h':'D-'+Math.floor(rem/24)):''); }
+  return '<span class="card-sla" title="기한 ' + _esc(String(r.deadline||'')) + '" style="background:' + bg + ';color:' + color + ';">' + _esc(txt) + '</span>';
+}
+
+/* ── 전체 렌더 ── */
+function _render(){
+  _renderChips();
+  var rows = _filtered();
+  _renderSummary(rows);
+
+  var board = document.getElementById('board');
+  if(!rows.length){
+    board.innerHTML = '<div class="state-msg">해당 조건의 접수 항목이 없습니다.</div>';
+    return;
+  }
+  var groups = {'접수':[],'처리중':[],'완료':[]};
+  rows.forEach(function(r){ var s = String(r.status||'접수'); if(!groups[s]) groups[s]=[]; groups[s].push(r); });
+
+  var html = '';
+  STATUS_LIST.forEach(function(status){
+    var list = groups[status]||[];
+    var color = STATUS_COLOR[status]||'var(--accent)';
+    var bg = STATUS_BG[status]||'var(--accent-bg)';
+    html += '<div class="col">';
+    html += '<div class="col-head" style="background:' + bg + ';">';
+    html += '<span class="t" style="color:' + color + ';">' + _esc(status) + '</span>';
+    html += '<span class="c" style="color:' + color + ';">' + list.length + '</span>';
+    html += '</div><div class="col-body">';
+    if(!list.length){ html += '<div class="col-empty">없음</div>'; }
+    else { list.forEach(function(r){ html += _card(r); }); }
+    html += '</div></div>';
+  });
+  board.innerHTML = html;
+
+  /* 이벤트 위임 */
+  board.addEventListener('change', function(e){
+    if(e.target && e.target.dataset && e.target.dataset.regAction==='status'){
+      _update(e.target.dataset.regId, e.target.dataset.regCat, {status:e.target.value});
+    }
+  });
+  board.addEventListener('click', function(e){
+    var btn = e.target.closest('[data-reg-save]');
+    if(!btn) return;
+    var card = btn.closest('[data-reg-card]');
+    if(!card) return;
+    var payload = {};
+    var a = card.querySelector('[data-reg-assignee]');
+    var m = card.querySelector('[data-reg-memo]');
+    if(a) payload.assignee = a.value;
+    if(m) payload.memo = m.value;
+    _update(card.dataset.regCard, card.dataset.regCat, payload, btn);
+  });
+}
+
+/* ── 카드 ── */
+function _card(r){
+  var id = _esc(r.regId||'');
+  var catLabel = String(r.category||'');
+  var cm = _catMeta(catLabel);
+  var catColor = cm ? cm.color : 'var(--accent)';
+  var catBg = cm ? cm.bg : 'var(--accent-bg)';
+  var catIcon = cm ? cm.icon : '📋';
+  var status = String(r.status||'접수');
+  var rawId = String(r.regId||'');
+  var rawCat = String(r.category||'');
+
+  var extras = [];
+  Object.keys(r).forEach(function(k){
+    if(KNOWN_KEYS.indexOf(k)<0 && r[k]!=null && r[k]!==''){
+      extras.push('<span class="k">' + _esc(EXTRA_LABEL[k]||k) + ': </span><span class="v">' + _esc(String(r[k])) + '</span>');
+    }
+  });
+
+  var h = '<div class="card" data-reg-card="' + _esc(rawId) + '" data-reg-cat="' + _esc(rawCat) + '">';
+  h += '<div class="card-top">';
+  if(catLabel) h += '<span class="badge" style="background:' + catBg + ';color:' + catColor + ';">' + catIcon + ' ' + _esc(catLabel) + '</span>';
+  var sla = _slaBadge(r);
+  if(sla) h += sla;
+  if(r.dept) h += '<span class="card-when">' + _esc(String(r.dept)) + '</span>';
+  if(id) h += '<span class="card-id">#' + id + '</span>';
+  h += '</div>';
+
+  if(r.createdAt) h += '<div class="card-loc" style="margin-bottom:6px;">🕒 ' + _esc(String(r.createdAt)) + '</div>';
+  if(r.name||r.contact) h += '<div class="card-name">' + _esc(String(r.name||'')) + '<span class="contact">' + _esc(String(r.contact||'')) + '</span></div>';
+  if(r.content) h += '<div class="card-content">' + _esc(String(r.content)) + '</div>';
+  if(r.loc) h += '<div class="card-loc">위치: ' + _esc(String(r.loc)) + '</div>';
+  if(extras.length) h += '<div class="card-extras">' + extras.join('<span style="color:var(--border);">|</span>') + '</div>';
+
+  h += '<div class="divider"></div>';
+
+  /* 상태 */
+  var opts = STATUS_LIST.map(function(s){ return '<option value="' + _esc(s) + '"' + (s===status?' selected':'') + '>' + _esc(s) + '</option>'; }).join('');
+  h += '<div class="field-row"><label>상태</label>';
+  h += '<select data-reg-action="status" data-reg-id="' + _esc(rawId) + '" data-reg-cat="' + _esc(rawCat) + '">' + opts + '</select></div>';
+
+  /* 담당 */
+  h += '<div class="field-row"><label>담당</label>';
+  h += '<input type="text" data-reg-assignee placeholder="담당자" value="' + _esc(String(r.assignee||'')) + '"></div>';
+
+  /* 메모 */
+  h += '<div style="margin-bottom:8px;"><label style="font-size:12px;font-weight:700;color:var(--dim);display:block;margin-bottom:4px;">처리 메모</label>';
+  h += '<textarea data-reg-memo rows="2">' + _esc(String(r.memo||'')) + '</textarea></div>';
+
+  /* 저장 */
+  h += '<div class="save-row"><button data-reg-save type="button" class="save-btn">저장</button></div>';
+  h += '</div>';
+  return h;
+}
+
+/* ── 갱신 (reg_update) ── */
+function _update(id, cat, payload, btn){
+  if(!id) return;
+  var isStatus = ('status' in payload);
+  var oBg='', oColor='', oBorder='';
+  if(btn && !isStatus){
+    oBg=btn.style.background; oColor=btn.style.color; oBorder=btn.style.borderColor;
+    btn.textContent='저장 중...'; btn.style.background='var(--green-bg)'; btn.style.color='var(--green)';
+    btn.style.borderColor='rgba(106,191,123,0.4)'; btn.style.pointerEvents='none';
+  }
+  var body = { action:'reg_update', id:id, category:cat };
+  if('status' in payload) body.status = payload.status;
+  if('assignee' in payload) body.assignee = payload.assignee;
+  if('memo' in payload) body.memo = payload.memo;
+
+  fetch(REG_API, {
+    method:'POST', headers:{'Content-Type':'text/plain;charset=UTF-8'},
+    body:JSON.stringify(body), redirect:'follow'
+  }).then(function(r){ return r.json(); }).then(function(d){
+    if(d && d.ok){
+      if(isStatus){ regLoad(); }
+      else if(btn){
+        btn.textContent='저장 완료 ✓';
+        setTimeout(function(){ btn.textContent='저장'; btn.style.background=oBg; btn.style.color=oColor; btn.style.borderColor=oBorder; btn.style.pointerEvents='auto'; }, 2000);
+      }
+    } else {
+      if(btn && !isStatus){ btn.textContent='저장'; btn.style.background=oBg; btn.style.color=oColor; btn.style.borderColor=oBorder; btn.style.pointerEvents='auto'; }
+      alert('저장 실패: ' + (d&&d.error?d.error:'알 수 없는 오류'));
+    }
+  }).catch(function(){
+    if(btn && !isStatus){ btn.textContent='저장'; btn.style.background=oBg; btn.style.color=oColor; btn.style.borderColor=oBorder; btn.style.pointerEvents='auto'; }
+    alert('네트워크 오류 — 저장되지 않았습니다.');
+  });
+}
+
+regLoad();
+</script>
+</body>
+</html>

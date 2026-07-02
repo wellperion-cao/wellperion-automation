@@ -580,6 +580,7 @@
         </div>
         <div style="margin-top:11px;padding-top:10px;border-top:1px dashed var(--border);display:flex;gap:7px;flex-wrap:wrap;">
           <a href="#" onclick="event.preventDefault();document.querySelector('[data-id=O4]').click();" style="font-size:11px;font-weight:700;padding:3px 10px;background:var(--accent-bg);color:var(--accent);border-radius:20px;text-decoration:none;border:1px solid var(--border);">현황 보드 →</a>
+          <a href="/wellperion-automation/coo/reception/종합접수처_현황.html" target="_blank" style="font-size:11px;font-weight:700;padding:3px 10px;background:var(--accent-bg);color:var(--accent);border-radius:20px;text-decoration:none;border:1px solid var(--border);">📊 전용 현황 페이지</a>
           <a href="http://wellperion.com/ko/reception/" target="_blank" style="font-size:11px;font-weight:700;padding:3px 10px;background:var(--accent-bg);color:var(--accent);border-radius:20px;text-decoration:none;border:1px solid var(--border);">📲 회원 접수 폼</a>
         </div>
       </div>
@@ -6410,14 +6411,15 @@ function crTab(btn, panelId) {
     <div style="background:var(--paper);border:1px solid var(--border);border-left:4px solid var(--accent);border-radius:10px;padding:14px 18px;margin:16px 0;">
       <div style="font-size:14px;font-weight:800;color:var(--accent);margin-bottom:8px;">종합접수처 처리 절차</div>
       <div style="font-size:13px;color:var(--text);line-height:1.85;">
-        <b>① 접수</b> — 회원 건의 즉시 구글 폼(멤버의 소리) 기록. 직원명·회원명·내용·장소·전달 부서 필수 입력.<br>
-        <b>② 부서 전달</b> — 접수 당일 해당 부서에 전달. 전달 기록은 이슈 응답 시트에서 확인.<br>
+        <b>① 접수</b> — 회원이 종합접수처 폼(QR·모바일)으로 제출하면 즉시 GAS 시트에 기록됩니다. 5종 카테고리·위치·내용 입력.<br>
+        <b>② 부서 전달</b> — 카테고리별 담당 부서로 자동 라우팅. 아래 칸반에서 담당 배정 → 상태 전환하면 실시간 반영됩니다.<br>
         <b>③ 완료 고지</b> — 처리 완료 시 회원에게 결과 고지(가능한 경우). 미처리 건은 다음 교대조에 인계.
       </div>
       <div style="margin-top:10px;font-size:12px;">
-        <a href="https://docs.google.com/forms/d/e/1FAIpQLSd7mDzTyZT5FSXVcxmpMCaqv7M-RR3EmEu2lFqGRksUE77osA/viewform" target="_blank" style="color:var(--accent);font-weight:700;text-decoration:none;">📝 종합접수처 폼</a>
+        <!-- 옛 구글폼·응답시트 링크 은퇴(2026-07-02 시토): 접수 단일 진입점 = 종합접수처(reg). 옛 시트는 데이터 보존만, 링크·집계 끊음. -->
+        <a href="/wellperion-automation/coo/reception/종합접수처_현황.html" target="_blank" style="color:var(--accent);font-weight:700;text-decoration:none;">📊 전용 현황 페이지</a>
         &nbsp;·&nbsp;
-        <a href="https://docs.google.com/spreadsheets/d/1akZLs7ITs3FZWFIzMQvSYrdRucGQglmerOvTC2TLEcQ/edit#gid=1576318230" target="_blank" style="color:var(--accent);font-weight:700;text-decoration:none;">📋 이슈 응답 시트</a>
+        <a href="http://wellperion.com/ko/reception/" target="_blank" style="color:var(--accent);font-weight:700;text-decoration:none;">📲 회원 접수 폼</a>
       </div>
     </div>
 
@@ -6439,6 +6441,7 @@ function crTab(btn, panelId) {
     <div style="display:flex;align-items:center;gap:11px;margin-bottom:14px;">
       <span style="font-size:16px;font-weight:800;letter-spacing:-0.01em;color:var(--text);">접수 현황</span>
       <span style="flex:1;height:1px;background:var(--border);"></span>
+      <a href="/wellperion-automation/coo/reception/종합접수처_현황.html" target="_blank" style="display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:700;padding:5px 12px;background:var(--accent-bg);color:var(--accent);border:1px solid var(--border);border-radius:20px;text-decoration:none;white-space:nowrap;">📊 전용 현황 페이지</a>
       <a href="http://wellperion.com/ko/reception/" target="_blank" style="display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:700;padding:5px 12px;background:var(--accent-bg);color:var(--accent);border:1px solid var(--border);border-radius:20px;text-decoration:none;white-space:nowrap;">📲 회원 접수 폼 열기</a>
       <button onclick="regBoardLoad()" style="font-size:12px;font-weight:700;padding:5px 12px;background:var(--paper);color:var(--dim);border:1px solid var(--border);border-radius:20px;cursor:pointer;font-family:inherit;">↻ 새로고침</button>
     </div>

@@ -635,8 +635,12 @@ var KPI_YEAR_TARGET = 7200000000;
 // '지출 현황' 탭(gid 821406206) = 거래행(승인건 포함) 표면. 첫 탭 자동선택 금지(칸밀림 오판 원인).
 var KPI_EXPENSE_SHEET_ID = '1umSF9rf3K0TuAvR5l0F_gvXHxcOLVKKvkSUfTtbRhdc';
 var KPI_EXPENSE_GID      = 821406206;
+// ⚠️ 옛 VOC 응답시트(구 구글폼 280/241) — 2026-07-02 시토 은퇴. home_kpi.voc 는 이제 종합접수처(reg) 실집계.
+//   시트 자체는 데이터 보존(삭제 금지). 아래 두 상수는 미사용(하위 참조 안전망만).
 var KPI_VOC_SHEET_ID     = '1akZLs7ITs3FZWFIzMQvSYrdRucGQglmerOvTC2TLEcQ';
 var KPI_VOC_GID          = 1576318230;
+// 종합접수처 VOC GAS /exec (고정 배포ID) — reg_board 공개·마스킹·집계. home_kpi.voc 정본.
+var VOC_REG_EXEC         = 'https://script.google.com/macros/s/AKfycbwk2XS1FND9V2xtXlWgsXzgA5p0FG7jVm6YKD74JK_ME_ZvHsNUUfGE5A_8p0X8VcF3gQ/exec';
 
 // 월 지출 예산 — 1차 출처='지출 현황' 시트의 '예산' 라벨 셀(GM이 시트에서 수시 변경, 재배포 불필요).
 // 시트에 '예산' 셀이 없을 때만 이 상수 fallback 사용. 미설정이면 null/0.
@@ -1208,60 +1212,36 @@ function _kpiExpense() {
 // ── 이슈(VOC) ──
 // gid 로 탭 찾고, 타임스탬프·진행 상황 컬럼 탐지.
 // todayNew/done/pending/rate.
+// home_kpi.voc — 종합접수처(reg) 실집계. 옛 구글폼 응답시트(280/241) 은퇴(2026-07-02 시토).
+//   출처 = VOC GAS reg_board(공개·마스킹·집계). 상태(접수/처리중/완료)·접수일시로 집계.
+//   반환 {todayNew, pending(접수+처리중), done, rate}. 실패 시 전부 null(카드 "—" 유지).
 function _kpiVoc() {
   try {
-    var ss = SpreadsheetApp.openById(KPI_VOC_SHEET_ID);
-    var sheets = ss.getSheets();
-    var sh = null;
-    for (var i = 0; i < sheets.length; i++) {
-      if (sheets[i].getSheetId() === KPI_VOC_GID) { sh = sheets[i]; break; }
-    }
-    if (!sh) {
-      // gid 미발견 → 이름 추정(응답/VOC/이슈 포함)
-      for (var k = 0; k < sheets.length; k++) {
-        var nm = sheets[k].getName();
-        if (/응답|VOC|이슈/i.test(nm)) { sh = sheets[k]; break; }
-      }
-    }
-    if (!sh) sh = sheets[0];
-    var lastRow = sh.getLastRow();
-    var lastCol = sh.getLastColumn();
-    if (lastRow < 2 || lastCol < 2) {
+    var resp = UrlFetchApp.fetch(VOC_REG_EXEC + '?action=reg_board&_=' + Date.now(), {
+      method: 'get', followRedirects: true, muteHttpExceptions: true
+    });
+    if (resp.getResponseCode() !== 200) {
       return { todayNew: null, pending: null, done: null, rate: null };
     }
-    var values = sh.getRange(1, 1, lastRow, lastCol).getValues();
-    var hdr = values[0].map(function (h) { return String(h || '').trim(); });
-    function _col(names) {
-      for (var i2 = 0; i2 < hdr.length; i2++) {
-        for (var j = 0; j < names.length; j++) {
-          if (hdr[i2].indexOf(names[j]) >= 0) return i2;
-        }
-      }
-      return -1;
+    var d = JSON.parse(resp.getContentText());
+    if (!d || !d.ok || !Array.isArray(d.data)) {
+      return { todayNew: null, pending: null, done: null, rate: null };
     }
-    var tsCol     = _col(['타임스탬프', '타임 스탬프', '제출 시간', '제출시간']);
-    var statusCol = _col(['진행 상황', '진행상황']);
+    var rows = d.data;
+    var total = rows.length;
+    if (total === 0) return { todayNew: 0, pending: 0, done: 0, rate: null };
     var t = _kpiToday();
-    var total = 0, todayNew = 0, done = 0;
-    for (var r = 1; r < values.length; r++) {
-      var row = values[r];
-      // 유효행 판정: 타임스탬프 또는 어떤 값이라도 있어야
-      var hasTs = tsCol >= 0 && row[tsCol] !== '' && row[tsCol] !== null;
-      var rowHasData = row.some(function (c) { return c !== '' && c !== null && c !== undefined; });
-      if (!rowHasData) continue;
-      total++;
-      if (hasTs) {
-        var d = _kpiParseDate(row[tsCol]);
-        if (d && d.y === t.y && d.m === t.m && d.d === t.d) todayNew++;
-      }
-      if (statusCol >= 0) {
-        var stv = String(row[statusCol] || '');
-        if (stv.indexOf('완료') >= 0) done++;
-      }
+    var todayStr = t.y + '-' + ('0' + t.m).slice(-2) + '-' + ('0' + t.d).slice(-2);
+    var todayNew = 0, done = 0;
+    for (var r = 0; r < rows.length; r++) {
+      var row = rows[r] || {};
+      var st = String(row.status || row['상태'] || '');
+      if (st.indexOf('완료') >= 0) done++;
+      var created = String(row.createdAt || row['접수일시'] || '');
+      if (created.slice(0, 10) === todayStr) todayNew++;
     }
     var pending = total - done;
     var rate = total > 0 ? Math.round((done / total) * 10000) / 100 : null;
-    if (total === 0) return { todayNew: null, pending: null, done: null, rate: null };
     return { todayNew: todayNew, pending: pending, done: done, rate: rate };
   } catch (err) {
     return { todayNew: null, pending: null, done: null, rate: null, error: String(err) };
