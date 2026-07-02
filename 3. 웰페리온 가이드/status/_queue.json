@@ -438,5 +438,19 @@
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "e2f8eb79988dac6f5a217f381b6acf64b446fa3b",
     "ship_no": 239
+  },
+  {
+    "task_id": "CTO-2026-07-02-ADHOC-0a6e0fcf",
+    "clevel": "cto",
+    "title": "[시토] home 매출 KPI 당월/연간 월전환 버그 수정 — [시토]/cto",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-02",
+    "processed_at": "2026-07-02",
+    "artifact": "- _kpiParseSalesTab: 당월=현재월(_kpiToday().m) 블록만 채택(지출 방식 대칭). 현재월 블록 없으면 month=null 정직표기(스테일 이전달 금지)\n- _kpiSales: 연간 = (1~5월 마감 AV3:AV7) + sheetMonthsSum(6월~당월) 항상 고정. yearValid 잠복폭탄 경로 제거(7월 입력시 1~5월 급락 방지)\n- home HTML: 월/연간 라벨에 현재 월 동적 표기(월 매출 (7월)·연간 (1~N월 누적)), 당월 미입력시 '이번달 미입력' 안내\n- 실제 매출 금액 불변  (CLI ad-hoc · 커밋 0a6e0fcf)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "0a6e0fcfde94eb113b0ca252bc0d991b7561e165",
+    "ship_no": 241
   }
 ]
