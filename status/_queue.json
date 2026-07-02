@@ -807,5 +807,19 @@
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "eb8f5af50b48287fbb3f3ade9bb0675c71c2389d",
     "ship_no": 10
+  },
+  {
+    "task_id": "CTO-2026-07-02-ADHOC-b3e8e65c",
+    "clevel": "cto",
+    "title": "[시토] VOC 종합접수처 알림 개선 — ID제거·사진 sendPhoto 실첨부·접수일시",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-02",
+    "processed_at": "2026-07-02",
+    "artifact": "- [시토] _vNotifyTelegram(text, photoUrl): 사진 있으면 Drive blob → sendPhoto multipart, 실패 시 sendMessage 폴백(알림 유실 금지)\n- _vExtractFileId_ 신설: Drive URL에서 fileId 파싱\n- reg_submit/voc_submit: 🆔 ID표시 제거(시트·JSON엔 유지), 📷라벨 제거, 🕒 접수일시 추가 (CLI ad-hoc · 커밋 b3e8e65c)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "b3e8e65c93f8b701f006424859d3d4768773c925",
+    "ship_no": 256
   }
 ]
