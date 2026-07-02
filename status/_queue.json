@@ -496,5 +496,19 @@
     "source": "gm_aide_scan",
     "reversibility": "비가역",
     "aide_proposal_key": "gmaide|unapproved_streak|3|2026-07-02"
+  },
+  {
+    "task_id": "CEO-2026-07-02-ADHOC-3a7917d1",
+    "clevel": "ceo",
+    "title": "[웰리] GM 보좌 자율화 phase1 — 프로필 생성기+포착 스캔+G1 제안 배선 (ship237)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-02",
+    "processed_at": "2026-07-02",
+    "artifact": "- scripts/gm_profile_builder.py: 관찰 원장+큐 → gm_profile.md(수치 카운터+LLM 서술 하이브리드, claude CLI 폴백·규칙 폴백, 멱등)\n- scripts/gm_aide_scan.py: 06:30 포착 스캔(표류·장기PENDING·미승인추천·루틴누락) + 가역/비가역 분류. 비가역·게이트 건만 '[GM보좌 제안]' PENDING 배 자동등록(read-before-write·ship_no=max+1·dedup·cap5·note에 사유+KPI→북극성 경로)\n- phase1 경계: 관찰·프로 (CLI ad-hoc · 커밋 3a7917d1)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "3a7917d1d821c8537c1c52bc86ac292405da7227",
+    "ship_no": 245
   }
 ]
