@@ -889,7 +889,10 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
 
 <div class="content">
 
-  <!-- ══════════════════════════════ 문의 유형 칩 바 (통합 — 2026-06-26 시포) ══════════════════════════════ -->
+  <!-- ══════════════════════════════ 관리 그룹 라벨 (AI CPO 메뉴 3칸 — 배6, 2026-07-02 시포·GM) ══════════════════════════════ -->
+  <div id="manageFamilyLabel" style="font-size:16px;font-weight:800;margin-bottom:12px;color:var(--accent);letter-spacing:-0.01em">멤버십 회원관리</div>
+
+  <!-- ══════════════════════════════ 문의 유형 칩 바 (그룹 내 유형 — 2026-06-26 시포) ══════════════════════════════ -->
   <div class="type-chip-bar" id="typeChipBar">
     <button type="button" class="type-chip active" data-type="membership" onclick="switchType('membership')">멤버십</button>
     <button type="button" class="type-chip" data-type="lessonAdult" onclick="switchType('lessonAdult')">성인 강습</button>
@@ -2033,6 +2036,20 @@ function switchType(type) {
   if (type === 'lessonYouth') { lessonSwitchCard('youth', 'inq'); lessonInit('youth'); }
 }
 
+/* ── 관리 그룹(family) — AI CPO 메뉴 3칸 분리(배6, 2026-07-02 시포·GM). 한 페이지 유지·접수 통합,
+      메뉴가 ?manage=membership|lesson 로 그룹 진입. 멤버십 관리=멤버십·공간렌트·비즈니스 / 강습 관리=성인·유소년. ── */
+var TYPE_FAMILIES = { membership: ['membership','rent','biz'], lesson: ['lessonAdult','lessonYouth'] };
+function switchFamily(fam) {
+  var types = TYPE_FAMILIES[fam] || TYPE_FAMILIES.membership;
+  // 그룹에 속한 유형 칩만 노출
+  document.querySelectorAll('.type-chip[data-type]').forEach(function(c){
+    c.style.display = (types.indexOf(c.getAttribute('data-type')) >= 0) ? '' : 'none';
+  });
+  var famEl = document.getElementById('manageFamilyLabel');
+  if (famEl) famEl.textContent = (fam === 'lesson') ? '강습 회원관리' : '멤버십 회원관리';
+  switchType(types[0]);   // 그룹 첫 유형으로 전환
+}
+
 /* ── 강습 문의 목록(inline) — 성인/유소년 독립 상태. lesson_inquiry_list·lesson_stats 재사용 ── */
 // target='adult'(성인강습) | 'youth'(유소년강습). DOM id 접미사 + GAS type 파라미터로 분기.
 var _lessonState = {
@@ -2814,6 +2831,9 @@ var _tabLoaded = { calendar: true, db: false, registered: false, active: false }
   loadCalendarData();  // 기본 활성 탭=예약 달력 (2026-06-24 GM 변경)
   loadCpoTodayStats();  // 상단 CPO 오늘 현황(오늘/이번달 문의·등록)
   if (!ALLOW_ADD) { var _ab = document.getElementById('btnAddRow'); if (_ab) _ab.style.display = 'none'; }
+  // 메뉴 그룹 진입(?manage=membership|lesson) — 배6. 기본=멤버십 관리. 2026-07-02 시포·GM.
+  try { var _mp = new URLSearchParams(location.search).get('manage'); switchFamily(_mp === 'lesson' ? 'lesson' : 'membership'); }
+  catch(e){ switchFamily('membership'); }
 })();
 
 // CPO 오늘 현황 — 오늘/이번달 문의·등록 건수(PII 미노출 집계)

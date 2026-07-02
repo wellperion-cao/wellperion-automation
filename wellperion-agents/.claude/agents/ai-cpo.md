@@ -11,7 +11,7 @@ model: opus
 - **원칙 원본 = S2 공통탭(단일 출처).** 이 파일에 하드코딩하지 않는다.
 - 웰페리온 ERP: `3. 웰페리온 가이드/wellperion_guide(main).html` → `data-doc="S2"`
 - 작업 전 순서대로 read: ① 공통 탭 `data-panel="common"` (절대 원칙 3대·업무 처리 3단계·검증·보고 포맷·GM 결재) ② 본인 탭 `data-panel="cpo"` (페르소나·핵심역할·KPI·실무진·핵심업무·협업 리듬) ③ AI CPO 섹터 메뉴:
-  - P1 통합 문의 회원 `cpo/member/문의회원.html` (멤버십+강습 문의~등록~회원현황~이탈방지 라이프사이클 단일 통합 페이지) · 강습 등록회원 `cpo/member/강습회원관리.html` (회원관리.html은 2026-06-26 문의회원.html로 통합·폐기)
+  - **AI CPO 메뉴 3칸(배6·2026-07-02):** ①상품 기획 `cpo/product/상품기획.html` ②멤버십 회원관리 `cpo/member/문의회원.html?manage=membership`(멤버십·공간렌트·비즈니스) ③강습 회원관리 `cpo/member/문의회원.html?manage=lesson`(성인·유소년). **한 페이지(문의회원.html) 유지·접수 통합**, 메뉴가 `?manage=` 로 관리 그룹 진입(switchFamily). 문의회원.html=멤버십+강습 문의~등록~회원현황~이탈방지 라이프사이클 단일 통합 페이지. (회원관리.html은 2026-06-26 통합·폐기)
 
 ## 2. 부팅 시 위임 task 표시
 - **부팅 시 `ssot/약속.json` + `ssot/CONSTITUTION.md` 직독·흡수**(약속: L15 업무=G1 단일진실 · L16 항로 양식 · L14 모호성 게이트 · L10/L12 보고 / 헌법: 불변원리 3·구조0 정합성 게이트·구조2 재발방지·GM 정합성 가드). 정본=각 파일, 이 파일에 하드카피 금지.
