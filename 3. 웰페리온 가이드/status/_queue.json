@@ -601,12 +601,14 @@
     "task_id": "CTO-2026-07-02-MONTHLY-OPS-PLAN",
     "clevel": "cto",
     "title": "[시토] 월간 운영 계획·보고 신설 — 헌법·G1 사이 월간층(GM 6·7월 시드). 월초 계획+월말 보고 자동카드는 후속",
-    "status": "IN_PROGRESS",
+    "status": "DONE",
+    "terminal": true,
     "priority": "🛳️크루즈",
     "enqueued_at": "2026-07-02",
+    "processed_at": "2026-07-02",
     "ship_no": 247,
-    "note": "웰리 총괄·시토 엔진. 정본=status/monthly_ops_plan.json(GM 6·7월 시드). 페이지=3. 웰페리온 가이드/월간운영계획.html(라이브 루트배포·가이드접두사 없음). 기능=월선택·목표보드(담당닉·상태배지·target·progress_note)·측정목표(매출=home_kpi sales.month 라이브 대비 6.5억 / ERP완성도=수동 current)·월초계획+월말보고 placeholder·GM PIN 인라인편집(헌법한장.html commit_file 패턴 재사용)·정직표기(L05). 3층 네비(북극성→월간→오늘).",
-    "next": "월초/월말 자동 카드 엔진(배237 자율화 재사용) 후속 빌드",
+    "note": "웰리 총괄·시토 엔진. 정본=status/monthly_ops_plan.json(GM 6·7월 시드). 페이지=월간운영계획.html(배248). ★월초/월말 자동카드 엔진 완료(2026-07-02): scripts/monthly_ops_report.py(--mode start|end · --send/--dry-run · 결정론·LLM불필요). 월초=전월 미완 이월후보+이번달 시드+계획확정 CTA / 월말=상태요약+측정목표 실측(매출=home_kpi sales.month 라이브 vs 6.5억 · ERP%=metric.current)+미완이월+검토 CTA. 정직(L05)=미측정은 상태만. 런처=launchers/monthly_ops_report_hidden.vbs+scripts/monthly_ops_report.bat. 예약=Wellperion-MonthlyOps-Start-0900(매월1일09:00)·Wellperion-MonthlyOps-End-2100(말일21:00). 첫 실발송=월말 7/31·월초 8/1.",
+    "next": "🏁 입항완료 — 첫 실발송(7/31 월말·8/1 월초) 후 카드 실제 도달·매출 실측 반영 확인",
     "depends_on": ""
   },
   {
