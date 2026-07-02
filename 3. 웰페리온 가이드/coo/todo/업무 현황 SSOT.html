@@ -125,6 +125,13 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 .wide-row .task-meta{margin-bottom:0;min-width:0}
 /* 내용 요약 한 줄 (상시 노출, 말줄임) */
 .task-summary-line{font-size:12px;color:var(--dim);line-height:1.5;margin-top:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* 결재 의견 읽기전용 표시 (부서장·GM, 반려이력과 별개) — 2026-07-02 COO 배64 */
+.appr-opinions{margin-top:8px;padding:8px 10px;border-left:3px solid var(--purple);background:var(--purple-bg);border-radius:6px}
+.appr-op-title{font-size:12px;font-weight:700;color:var(--purple);margin-bottom:5px}
+.appr-op-row{margin:4px 0}
+.appr-op-who{font-size:11px;font-weight:700;color:var(--purple)}
+.appr-op-time{font-size:10px;color:var(--dim);margin-left:5px}
+.appr-op-text{font-size:13px;line-height:1.5;white-space:pre-wrap;word-break:break-word;margin-top:2px}
 
 /* ── Task Card ── */
 .task-card{padding:14px 16px;border:1px solid var(--border);border-radius:10px;margin-bottom:10px;transition:background 0.1s}
@@ -1020,6 +1027,7 @@ function normalizeTask(raw) {
   if (!t.approval) t.approval = raw.approval || raw['결재요청'] || '';
   if (!t.link) t.link = raw.link || raw['링크'] || '';
   if (!t.creator) t.creator = raw.creator || raw['생성자'] || '';
+  t.opinions = raw['결재의견'] || raw.opinions || '';
   return t;
 }
 
@@ -1503,6 +1511,12 @@ function renderTaskCard(t, idx) {
   html += '</div>'; // task-meta
   html += '</div>'; // /wide-row (업무명+메타 가로 한 줄)
 
+  // 결재 의견 (부서장·GM) — 읽기전용 표시. 반려 건이 아니어도 의견 있으면 노출 (2026-07-02 COO 배64)
+  var _ops = parseOpinions(t.opinions);
+  if (_ops.length) {
+    html += '<div class="appr-opinions"><div class="appr-op-title">💬 결재 의견 (부서장·GM)</div>' + _ops.map(function(o){ return '<div class="appr-op-row"><span class="appr-op-who">'+esc(o.name||o.role||'')+'</span> <span class="appr-op-time">'+esc(String(o.time||'').slice(0,16))+'</span><div class="appr-op-text">'+esc(o.text||'')+'</div></div>'; }).join('') + '</div>';
+  }
+
   // 내용 요약 한 줄 (상시 노출 — 한 줄 말줄임). 본문 첫 줄을 요약으로 사용.
   const _sumParsed = parseContent(t.content);
   const _sumText = String((_sumParsed.body || '')).split('\n').map(function(s){return s.trim();}).filter(Boolean)[0] || '';
@@ -1806,6 +1820,9 @@ function routeApproval(category, amount) {
       return [];
   }
 }
+
+// 결재 의견 파서 — 시트 '결재의견' 컬럼(JSON 배열 [{role,name,time,text}]) 읽기전용 표시용 (2026-07-02 COO 배64)
+function parseOpinions(raw){ if(!raw) return []; try{ var a=JSON.parse(raw); return Array.isArray(a)?a:[]; }catch(e){ return []; } }
 
 function parseContent(content) {
   const raw = String(content || '');
