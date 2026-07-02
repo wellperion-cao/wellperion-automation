@@ -803,7 +803,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
       </div>
       <div class="mrp-kpi-chip">
         <div class="mrp-kpi-key">회차 모델 확립</div>
-        <div class="mrp-kpi-desc">평일 3조(오전10시·오후15시·마감20시) / 주말 2조(오전12시·마감18시)</div>
+        <div class="mrp-kpi-desc">평일 3조(오전10시·오후16시·마감20시) / 주말 2조(오전12시·마감18시)</div>
       </div>
       <div class="mrp-kpi-chip">
         <div class="mrp-kpi-key">남/여 구역 분리</div>
@@ -1991,12 +1991,12 @@ function getAllItems(sched){
    조→기존슬롯 매핑은 slot 라벨 문자열 기반(roundOfSlot). 정상(주간)모드에만 적용,
    야간(탕청소 업체)모드는 기존 그대로. (시우·GM 2026-06-11 · 1단계)
    ════════════════════════════════════════════════════════════ */
-/* 3조(라운드) — 평일 3조(오전 10시 / 오후 15시 / 마감 20시) · 주말 2조(오전 12시 / 마감 18시).
+/* 3조(라운드) — 평일 3조(오전 10시 / 오후 16시 / 마감 20시) · 주말 2조(오전 12시 / 마감 18시).
    ROUNDS = 전 키 마스터(am1·pm1·close1) — roundDef/roundLabel/promote 모달 등 전역 참조용.
    날짜별 노출·시각은 getRoundsFor(date) / roundHourFor(date)가 분기(평일/주말). */
 const ROUNDS_WEEKDAY=[
   {key:'am1',name:'오전조[1]',time:'10시',hour:10,baseShift:'am'},
-  {key:'pm1',name:'오후조[1]',time:'15시',hour:15,baseShift:'pm'},
+  {key:'pm1',name:'오후조[1]',time:'16시',hour:16,baseShift:'pm'},
   {key:'close1',name:'마감조[1]',time:'20시',hour:20,baseShift:'pm'}
 ];
 const ROUNDS_WEEKEND=[
@@ -2028,7 +2028,7 @@ function roundOfSlot(slotLabel,shift){
   if(shift==='pm')return 'close1';
   return 'am1';
 }
-/* 날짜별 조 대표시각(시). 주말 am1=12·close1=18 / 평일 am1=10·pm1=15·close1=20. */
+/* 날짜별 조 대표시각(시). 주말 am1=12·close1=18 / 평일 am1=10·pm1=16·close1=20. */
 function roundHourFor(rk,ds){const r=roundDefFor(rk,ds);return r?r.hour:10}
 /* 현재 시각으로 가장 가까운(직전/현재) 조 자동선택 — 그 날짜의 조 집합 기준. */
 function autoRoundForNow(ds){
@@ -6511,7 +6511,7 @@ renderManualItems();
       <label style="display:block;font-size:13px;font-weight:600;color:var(--dim);margin-bottom:6px;">회차(다중 선택)</label>
       <div style="display:flex;flex-wrap:wrap;gap:8px;">
         <label style="display:inline-flex;align-items:center;gap:5px;font-size:13px;color:var(--text);background:var(--bg);border:1px solid var(--border);padding:7px 12px;border-radius:8px;cursor:pointer;"><input type="checkbox" id="promoteRound_am1">오전조[1] (평일 10시·주말 12시)</label>
-        <label style="display:inline-flex;align-items:center;gap:5px;font-size:13px;color:var(--text);background:var(--bg);border:1px solid var(--border);padding:7px 12px;border-radius:8px;cursor:pointer;"><input type="checkbox" id="promoteRound_pm1">오후조[1] 15시 (평일만)</label>
+        <label style="display:inline-flex;align-items:center;gap:5px;font-size:13px;color:var(--text);background:var(--bg);border:1px solid var(--border);padding:7px 12px;border-radius:8px;cursor:pointer;"><input type="checkbox" id="promoteRound_pm1">오후조[1] 16시 (평일만)</label>
         <label style="display:inline-flex;align-items:center;gap:5px;font-size:13px;color:var(--text);background:var(--bg);border:1px solid var(--border);padding:7px 12px;border-radius:8px;cursor:pointer;"><input type="checkbox" id="promoteRound_close1">마감조[1] (평일 20시·주말 18시)</label>
       </div>
       <div id="promoteRoundHint" style="display:none;font-size:12px;color:#5b9fd5;margin-top:6px;">사우나 내부류는 3개 조 전부 권장합니다.</div>
