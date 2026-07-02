@@ -432,14 +432,45 @@ function _vUploadPhoto(base64, fileName, mimeType) {
   return file.getUrl();
 }
 
+// ─── Drive URL/문자열에서 파일ID 추출 (사진 sendPhoto용) ───
+// _vUploadPhoto 는 file.getUrl() 만 반환 → sendPhoto 시 blob 로딩에 필요한 fileId 를 URL 에서 파싱.
+// 지원 형태: .../d/{id}/... · ?id={id} · &id={id}
+function _vExtractFileId_(url) {
+  var s = String(url || '');
+  var m = s.match(/\/d\/([a-zA-Z0-9_-]+)/) || s.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+  return m ? m[1] : '';
+}
+
 // ─── 텔레그램 알림 (점검 GAS handleNotify 패턴) — 토큰=ScriptProperties, repo 하드코딩 금지 ───
 // 핵심멤버방 chat_id = TELEGRAM_CHAT_ID (점검 GAS와 동일 키명 — GM이 신규 GAS 속성에 동일 등록).
-function _vNotifyTelegram(text) {
+// photoUrl 있으면 sendPhoto(Drive blob 업로드, caption=text) 시도, 실패 시 sendMessage 폴백 → 알림 절대 유실 금지.
+function _vNotifyTelegram(text, photoUrl) {
   var token = _vprop('TELEGRAM_BOT_TOKEN');
   var chatId = _vprop('TELEGRAM_CHAT_ID');
   if (!token || !chatId) return false; // 미설정이면 조용히 통과 (제출 자체는 성공)
+  var base = 'https://api.telegram.org/bot' + token;
+
+  // 사진 첨부: Drive URL 직접 전달은 인증 때문에 텔레그램이 못 받음 → blob 을 multipart 로 업로드.
+  if (photoUrl) {
+    try {
+      var fileId = _vExtractFileId_(photoUrl);
+      if (fileId) {
+        var blob = DriveApp.getFileById(fileId).getBlob();
+        var caption = String(text || '');
+        if (caption.length > 1024) caption = caption.slice(0, 1024); // 텔레그램 caption 상한
+        var resp = UrlFetchApp.fetch(base + '/sendPhoto', {
+          method: 'post',
+          payload: { chat_id: chatId, caption: caption, parse_mode: 'HTML', photo: blob },
+          muteHttpExceptions: true
+        });
+        if (resp.getResponseCode() === 200) return true;
+        // 200 아니면 아래 sendMessage 폴백으로 진행
+      }
+    } catch (e) { /* blob 로딩·전송 실패 → sendMessage 폴백 */ }
+  }
+
   try {
-    UrlFetchApp.fetch('https://api.telegram.org/bot' + token + '/sendMessage', {
+    UrlFetchApp.fetch(base + '/sendMessage', {
       method: 'post', contentType: 'application/json',
       payload: JSON.stringify({ chat_id: chatId, text: text, parse_mode: 'HTML' }),
       muteHttpExceptions: true
@@ -492,15 +523,15 @@ function _vSubmit(body) {
   sh.getRange(newRow, 1, 1, row.length).setValues([row]);
   _vApplyStatusColor(sh, newRow, '접수');
 
-  // 텔레그램 핵심멤버방 알림 (설정 시)
+  // 텔레그램 핵심멤버방 알림 (설정 시) — 사진 있으면 sendPhoto 로 실제 첨부
   _vNotifyTelegram(
     '🙋 <b>[회원 VOC 접수]</b>\n' +
     '유형: ' + (type || '-') + '\n' +
     '위치: ' + (loc || '-') + '\n' +
-    '내용: ' + (content ? content.slice(0, 120) : '-') +
-    (photoUrl ? '\n📷 사진 첨부' : '') +
-    (contact ? '\n☎ ' + contact : '') +
-    '\n🆔 ' + id
+    '내용: ' + (content ? content.slice(0, 120) : '-') + '\n' +
+    (contact ? '☎ ' + contact + '\n' : '') +
+    '🕒 ' + now,
+    photoUrl
   );
 
   return _vJson({ ok: true, id: id, photoUrl: photoUrl, message: 'VOC가 접수되었습니다.' });
@@ -635,15 +666,15 @@ function _regSubmit(body) {
   sh.getRange(newRow, 1, 1, row.length).setValues([row]);
   _regApplyStatusColor(sh, newRow, '접수', headers);
 
-  // 텔레그램 알림 (익명 접수 시 이름 표기)
+  // 텔레그램 알림 (익명 접수 시 이름 표기) — 사진 있으면 sendPhoto 로 실제 첨부
   _vNotifyTelegram(
     '📋 <b>[종합 접수처]</b> ' + cat.label + '\n' +
     '부서: ' + cat.dept + '\n' +
     '이름: ' + (isAnon ? '익명' : name) + '\n' +
     '위치: ' + (loc || '-') + '\n' +
-    '내용: ' + (content ? content.slice(0, 100) : '-') +
-    (photoUrl ? '\n📷 사진 첨부' : '') +
-    '\n🆔 ' + id
+    '내용: ' + (content ? content.slice(0, 100) : '-') + '\n' +
+    '🕒 ' + now,
+    photoUrl
   );
 
   return _vJson({ ok: true, id: id, dept: cat.dept });
