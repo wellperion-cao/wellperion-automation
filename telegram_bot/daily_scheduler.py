@@ -2020,6 +2020,31 @@ def _utc_iso_to_kst_date(iso_str: str) -> str:
         return ""
 
 
+def _inquiry_stage_of(raw: str) -> int:
+    """진행상태 → 전환 단계 rank. .deploy-funnel/Survey.js `_stageOf_` 와 동일 규칙(SSOT 2026-06-15) 이식.
+    0=이탈, 1=문의(신규/접수/빈칸), 2=응대, 3=예약, 4=방문, 5=가입."""
+    s = str(raw or "").strip()
+    if not s:
+        return 1  # 빈칸 → 최소단계(①문의)
+    if re.search(r"이탈|보류|포기|거절|취소|종료|loss", s, re.I):
+        return 0
+    if re.fullmatch(r"(suc|단기\s*suc)", s, re.I):
+        return 5
+    if re.search(r"가입|등록|전환|회원|완납|결제완|키오스크\s*완", s):
+        return 5
+    if re.search(r"(ot|상담)\s*완료", s, re.I):
+        return 4
+    if re.search(r"방문|내방|방문완료", s):
+        return 4
+    if re.search(r"예약|투어|상담", s):
+        return 3
+    if re.search(r"응대|연락|통화|문자|회신|컨택", s):
+        return 2
+    if re.search(r"신규|접수", s):
+        return 1
+    return 1  # 미인식 → ① 문의(안전 처리)
+
+
 def _build_digest_inquiry(today: str) -> str:
     """문의알림방 — 오늘 문의 핵심요약 + 상세. str 반환(전송 분리)."""
     weekday = _WEEKDAY_KOR[datetime.now().weekday()]
@@ -2027,7 +2052,7 @@ def _build_digest_inquiry(today: str) -> str:
     try:
         resp = requests.get(
             FUNNEL_EXEC_URL, params={"action": "inquiry_list"},
-            timeout=20, allow_redirects=True,
+            timeout=40, allow_redirects=True,
         )
         if resp.status_code != 200:
             return f"{header}\n\n조회 실패 (HTTP {resp.status_code})"
@@ -2035,20 +2060,23 @@ def _build_digest_inquiry(today: str) -> str:
         if not data.get("ok"):
             return f"{header}\n\n조회 실패 (ok=False)"
         rows = data.get("data", [])
-    except Exception as e:
-        return f"{header}\n\n조회 오류: {str(e)[:120]}"
+    except Exception:
+        return f"{header}\n\n조회 지연으로 문의 현황을 불러오지 못했습니다. (서버 콜드스타트 추정 — 잠시 후 재시도됩니다)"
 
     today_rows = [r for r in rows if _utc_iso_to_kst_date(r.get("시각", "")) == today]
     if not today_rows:
         return f"{header}\n\n오늘 신규 문의 없음."
 
-    # 유형별 집계
+    # 유형별 집계 + 상태(전환 rank) 집계
     type_count: dict[str, int] = {}
+    handled = 0  # rank>=2 (응대/예약/방문/가입) = 처리·전환
     for r in today_rows:
         t = r.get("문의유형", "기타") or "기타"
         type_count[t] = type_count.get(t, 0) + 1
+        if _inquiry_stage_of(r.get("상태", "")) >= 2:
+            handled += 1
 
-    summary_lines = [f"총 {len(today_rows)}건"]
+    summary_lines = [f"총 {len(today_rows)}건 (신규 {len(today_rows) - handled}건 · 처리·전환 {handled}건)"]
     for t, c in sorted(type_count.items(), key=lambda x: -x[1]):
         summary_lines.append(f"  · {t}: {c}건")
 
