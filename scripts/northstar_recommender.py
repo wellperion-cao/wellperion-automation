@@ -438,10 +438,11 @@ def _env_val(key: str) -> str:
 
 
 def build_card(pending: dict) -> str:
-    """텔레그램 GM 결재 카드 — 1순위 강조·담당·첫행동·예상효과·승인 효과 안내.
+    """텔레그램 GM 결재 카드 — 웰리(AI CEO) 통합 Top3 한 목소리(GM 지시 2026-07-02·배213).
 
     candidates 배열은 rank 순 정렬(0번=rank 1=1순위 → [승인 1]).
-    포맷: 🥇1순위 블록(전체) + 다른 후보 2개(간단) + 고정 승인 안내.
+    포맷: 역할별 섹션 분리 없이 웰리가 고른 전사 통합 1·2·3순위를 동일한 틀로 나열,
+    담당 역할은 각 줄 끝 작은 태그(owner)로만 표기.
 
     ※ 표시 포맷은 이 함수에 격리 — 교체 시 여기만 수정(데이터·콜백 로직 불변)."""
     e = html.escape
@@ -451,49 +452,33 @@ def build_card(pending: dict) -> str:
     except Exception:
         wd = ""
     cands = pending.get("candidates", [])
+    medals = {1: "🥇", 2: "🥈", 3: "🥉"}
 
     lines = [
-        f"🌅 <b>오늘의 항로 추천 {len(cands)}건</b>",
+        "🧭 <b>웰리의 오늘의 항로 — 통합 Top3</b>",
         f"📅 {e(d)} ({wd})",
         "",
     ]
 
-    if cands:
-        # ── 🥇 1순위 블록 (index 0 = rank=1) ──
-        c1 = cands[0]
-        title1 = e(c1.get("title", ""))
-        owner1 = e(c1.get("owner", ""))
-        diff1 = c1.get("difficulty", "")
-        fa1 = e(c1.get("first_action", ""))
-        exp1 = e(c1.get("expected", ""))
-        rat1 = e(c1.get("rationale", ""))
-        why1 = e(c1.get("one_reason", ""))
-        lines += [
-            f"🥇 <b>1순위 추천 — [승인 1]로 바로 결재 가능</b>",
-            f"<b>{title1}</b>",
-            f"담당: <b>{owner1}</b>  크기: {diff1}",
-            f"첫 행동: {fa1}" if fa1 else "",
-            f"예상 효과: {exp1}" if exp1 else "",
-            f"추천 이유: {rat1}" if rat1 else "",
-            f"★ 왜 1순위: {why1}" if why1 else "",
-        ]
-        # 빈 줄 제거
-        lines = [ln for ln in lines if ln != ""]
+    for i, c in enumerate(cands, 1):
+        medal = medals.get(i, f"{i}.")
+        title = e(c.get("title", ""))
+        owner = e(c.get("owner", ""))
+        diff = c.get("difficulty", "")
+        fa = e(c.get("first_action", ""))
+        exp = e(c.get("expected", ""))
+        rat = e(c.get("rationale", ""))
+        why = e(c.get("one_reason", "")) if i == 1 else ""
+        lines.append(f"{medal} <b>{title}</b> {diff} <i>({owner})</i>")
+        if fa:
+            lines.append(f"   👉 첫 행동: {fa}")
+        if exp:
+            lines.append(f"   📈 예상 효과: {exp}")
+        if rat:
+            lines.append(f"   💡 추천 이유: {rat}")
+        if why:
+            lines.append(f"   ★ 왜 1순위: {why}")
         lines.append("")
-
-        # ── 다른 후보 ──
-        alts = cands[1:]
-        if alts:
-            lines.append("<b>다른 후보</b>")
-            for i, c in enumerate(alts, 2):
-                diff = c.get("difficulty", "")
-                owner = e(c.get("owner", ""))
-                title = e(c.get("title", ""))
-                rat = e(c.get("rationale", ""))[:60]
-                lines.append(f"<b>{i}.</b> {diff} [{owner}] {title}")
-                if rat:
-                    lines.append(f"   └ {rat}")
-            lines.append("")
 
     # ── 회신 안내 + 고정 승인 효과 ──
     lines.append(

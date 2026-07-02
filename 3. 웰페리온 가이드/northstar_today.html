@@ -32,7 +32,6 @@
   table.ns th, table.ns td{border:1px solid var(--border); padding:8px 10px; text-align:left; vertical-align:top; line-height:1.45; white-space:pre-wrap; word-break:break-word;}
   table.ns thead th{background:var(--surface); font-weight:700; font-size:12px; position:sticky; top:0; z-index:2;}
   table.ns th.c-num{width:38px; text-align:center;}
-  table.ns th.c-role{width:104px;}
   table.ns th.c-ns{width:200px; color:var(--warn);}
   table.ns th.c-prog{width:190px;}
   table.ns th.c-today{width:240px; color:var(--accent-soft);}
@@ -48,6 +47,7 @@
   td.why{font-size:12px; color:var(--text-soft);}
   td.diff{font-size:13px;}
   td.stat{text-align:center; font-weight:700; font-size:11.5px;}
+  .owner-tag{display:inline-block; margin-left:4px; font-size:10.5px; font-weight:700; color:var(--dim); background:var(--surface); border:1px solid var(--border-strong); border-radius:5px; padding:1px 6px; white-space:nowrap;}
   .badge{display:inline-block; border-radius:6px; padding:2px 8px; font-size:11px; font-weight:700;}
   .badge.proposed{color:var(--warn); border:1px solid var(--warn);}
   .badge.approved{color:var(--ok); border:1px solid var(--ok);}
@@ -63,8 +63,8 @@
 <div class="wrap">
 
   <header class="page-head">
-    <h1>🌅 오늘의 항로 추천</h1>
-    <span class="sub">매일 06:30 웰리(AI CEO)가 전 C-Level 북극성 대비 현황을 읽어 전사 top3 '오늘의 다음 한 수'를 제안합니다. 승인은 텔레그램 [승인 N] 회신으로.</span>
+    <h1>🧭 웰리의 오늘의 항로 — 통합 Top3</h1>
+    <span class="sub">매일 06:30 웰리(AI CEO)가 전사 관점에서 고른 오늘의 통합 1·2·3순위입니다(역할별 구분 없이 한 목소리). 담당 역할은 태그로만 표기. 승인은 텔레그램 [승인 N] 회신으로.</span>
     <a class="back" href="wellperion_guide(main).html#S2">← 웰페리온 ERP(S2)로</a>
     <a class="back" href="헌법한장.html">🏛️ 운영 헌법</a>
   </header>
@@ -75,18 +75,17 @@
     <table class="ns">
       <thead>
         <tr>
-          <th class="c-num">#</th>
-          <th class="c-role">역할</th>
+          <th class="c-num">순위</th>
           <th class="c-ns">🌟 북극성</th>
           <th class="c-prog">📍 진행현황</th>
-          <th class="c-today">👉 오늘 추천</th>
+          <th class="c-today">👉 웰리의 오늘 한 수 <span style="font-weight:400;">(담당 태그)</span></th>
           <th class="c-why">근거(신호)</th>
           <th class="c-diff">난이도</th>
           <th class="c-stat">상태</th>
         </tr>
       </thead>
       <tbody id="ns-body">
-        <tr><td colspan="8" class="status-row">불러오는 중…</td></tr>
+        <tr><td colspan="7" class="status-row">불러오는 중…</td></tr>
       </tbody>
     </table>
   </div>
@@ -138,7 +137,7 @@
     var nApproved = cands.filter(function(c){ return (c.status||"")==="approved"; }).length;
     var sum = document.getElementById("summary");
     sum.innerHTML =
-      '<b>📅 '+esc(date)+esc(wd)+' · 전사 top'+cands.length+' 추천</b>'+
+      '<b>📅 '+esc(date)+esc(wd)+' · 웰리 통합 top'+cands.length+' 추천</b>'+
       ' — 승인 '+nApproved+'건'+
       '<div class="meta">생성: '+esc((pending&&pending.generated_at)||"?")+
       ' · 두뇌: '+esc((pending&&pending.generated_by)||"?")+
@@ -146,20 +145,20 @@
 
     var body = document.getElementById("ns-body");
     if(!cands.length){
-      body.innerHTML = '<tr><td colspan="8" class="status-row">오늘 등록된 추천이 없습니다.</td></tr>';
+      body.innerHTML = '<tr><td colspan="7" class="status-row">오늘 등록된 추천이 없습니다.</td></tr>';
       return;
     }
+    var medal = ["🥇","🥈","🥉"];
     var rows = cands.map(function(c, i){
       var role = String(c.role||"").toLowerCase();
       var r = ROLE[role] || {nick:role.toUpperCase(), icon:"•"};
+      var rankTag = medal[i] || (i+1);
+      var ownerTag = '<span class="owner-tag">'+r.icon+' '+esc(r.nick)+'</span>';
       return '<tr>'+
-        '<td class="num">'+(i+1)+'</td>'+
-        '<td class="role"><span class="ricon">'+r.icon+'</span>'+
-          '<span class="rnick">'+esc(r.nick)+'</span>'+
-          '<span class="rid">'+esc(role)+'</span></td>'+
+        '<td class="num">'+rankTag+'</td>'+
         '<td class="ns-goal">'+esc(c.northstar||"")+'</td>'+
         '<td>'+esc(c.progress||"")+'</td>'+
-        '<td class="today">'+esc(c.title||"")+'</td>'+
+        '<td class="today">'+esc(c.title||"")+' '+ownerTag+'</td>'+
         '<td class="why">'+esc(c.rationale||"")+' <b>('+esc(c.signal||"")+')</b></td>'+
         '<td class="diff">'+esc(c.difficulty||"")+'</td>'+
         '<td class="stat">'+statusBadge(c, pending)+'</td>'+
@@ -171,7 +170,7 @@
   function fail(msg){
     document.getElementById("summary").textContent = "추천을 불러오지 못했습니다.";
     document.getElementById("ns-body").innerHTML =
-      '<tr><td colspan="8" class="status-row">⚠️ '+esc(msg)+'</td></tr>';
+      '<tr><td colspan="7" class="status-row">⚠️ '+esc(msg)+'</td></tr>';
   }
 
   // 발행루트 상대경로(미러) → 라이브 200. 캐시 무력화용 쿼리.
