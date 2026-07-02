@@ -90,12 +90,21 @@
   .loop-head .lh-t{font-size:14px; font-weight:800; letter-spacing:-0.01em; white-space:nowrap;}
   .loop-head .lh-s{font-size:11.5px; color:var(--text-soft); line-height:1.45; flex:1; min-width:220px;}
   .loop-head .lh-s b{color:var(--text);}
-  .loop-flow{display:flex; align-items:center; gap:5px; flex-wrap:wrap;}
+  .loop-flow{display:flex; align-items:flex-start; gap:8px; flex-wrap:wrap;}
+  .loop-group{display:flex; flex-direction:column; gap:5px; padding:7px 9px 8px; border-radius:9px; border:1px dashed var(--border-strong); background:rgba(255,255,255,0.02);}
+  .loop-glabel{font-size:9px; font-weight:800; letter-spacing:0.05em; text-transform:uppercase; color:var(--dim);}
+  .loop-grow{display:flex; align-items:center; gap:5px; flex-wrap:wrap;}
+  .loop-group.lg-goal{border-color:rgba(240,198,116,0.45); background:rgba(240,198,116,0.06);}
+  .loop-group.lg-goal .loop-glabel{color:var(--gold);}
+  .loop-group.lg-loop{border-style:solid; border-color:rgba(124,58,237,0.35); background:rgba(124,58,237,0.05);}
+  .loop-group.lg-loop .loop-glabel{color:var(--accent-soft);}
   .loop-step{font-size:11.5px; font-weight:700; border:1px solid var(--border-strong); border-radius:8px; padding:5px 10px; background:var(--paper); white-space:nowrap;}
   .loop-step.ns{border-color:var(--gold); color:var(--gold); background:rgba(240,198,116,0.08);}
+  .loop-step.prep{border-color:var(--border); color:var(--text-soft); background:var(--surface); font-weight:600;}
   .loop-step.num{border-color:var(--accent); color:var(--accent-soft); background:rgba(124,58,237,0.10);}
   .loop-step.repeat{border-color:var(--green); color:var(--green); background:rgba(106,191,123,0.10);}
   .loop-arrow{color:var(--dim); font-size:13px; flex-shrink:0;}
+  .loop-arrow.lg-connector{align-self:center; font-size:15px; color:var(--accent-soft);}
 
   @media (max-width:560px){
     body{padding:14px 12px 36px; font-size:12.5px;}
@@ -129,23 +138,38 @@
       <span class="lh-s">모든 자율 작업은 <b>북극성을 향해</b> 이 루프를 돈다 — 웰리가 각 작업의 단계를 추적하고 완료 시 다음 단계를 자동 촉발한다.</span>
     </div>
     <div class="loop-flow">
-      <span class="loop-step ns">🌟 북극성</span>
-      <span class="loop-arrow">→</span>
-      <span class="loop-step">기획·설계</span>
-      <span class="loop-arrow">→</span>
-      <span class="loop-step">초안</span>
-      <span class="loop-arrow">→</span>
-      <span class="loop-step num">① 기능·UI/UX 디자인</span>
-      <span class="loop-arrow">→</span>
-      <span class="loop-step num">② 고도화</span>
-      <span class="loop-arrow">→</span>
-      <span class="loop-step num">③ 단순화</span>
-      <span class="loop-arrow">→</span>
-      <span class="loop-step num">④ 실무 진행 및 피드백</span>
-      <span class="loop-arrow">→</span>
-      <span class="loop-step num">⑤ 피드백 AI 검토 후 반영 설계</span>
-      <span class="loop-arrow">↻</span>
-      <span class="loop-step repeat">⑥ ①~⑤ 루프</span>
+      <div class="loop-group lg-goal">
+        <div class="loop-glabel">목표</div>
+        <div class="loop-grow">
+          <span class="loop-step ns">🌟 북극성</span>
+        </div>
+      </div>
+      <span class="loop-arrow lg-connector">→</span>
+      <div class="loop-group lg-prep">
+        <div class="loop-glabel">준비 (무번호)</div>
+        <div class="loop-grow">
+          <span class="loop-step prep">기획·설계</span>
+          <span class="loop-arrow">→</span>
+          <span class="loop-step prep">초안</span>
+        </div>
+      </div>
+      <span class="loop-arrow lg-connector">→</span>
+      <div class="loop-group lg-loop">
+        <div class="loop-glabel">반복 루프</div>
+        <div class="loop-grow">
+          <span class="loop-step num">① 기능·UI/UX 디자인</span>
+          <span class="loop-arrow">→</span>
+          <span class="loop-step num">② 고도화</span>
+          <span class="loop-arrow">→</span>
+          <span class="loop-step num">③ 단순화</span>
+          <span class="loop-arrow">→</span>
+          <span class="loop-step num">④ 실무 진행 및 피드백</span>
+          <span class="loop-arrow">→</span>
+          <span class="loop-step num">⑤ 피드백 AI 검토 후 반영 설계</span>
+          <span class="loop-arrow">↻</span>
+          <span class="loop-step repeat">⑥ ①~⑤ 루프</span>
+        </div>
+      </div>
     </div>
   </section>
 
