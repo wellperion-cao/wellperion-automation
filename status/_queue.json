@@ -1112,5 +1112,69 @@
     "artifact": "- engagement_collector.py --channel danggn/blog 1회 실행 → 당근 조회수/찜\n  실측 갱신(6/15→7/3), 블로그 RSS 신규 발행 7건 감지(조회수는 로그인 필요라 미측정).\n- 마케팅현황대시보드.html: \"채널 반응 스냅\" 섹션 신설(콘텐츠별 문의 유입 아래) —\n  당근 자동수집 노출(조회수)·찜만 표시, 문의 기여는 자동 대조하지 않음을\n  footnote-toggle로 명시(측정 못하는 걸 측정한 척 금지).\n- 라이브 페이지(M4/M5) incognito 렌더 실측 점검: 레이 (CLI ad-hoc · 커밋 f3317b7a)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "f3317b7a74a8c5e0bb74fdba739067258963fa45"
+  },
+  {
+    "id": "CMO-2026-06-23-FUNNEL-EVAL-FEEDBACK",
+    "clevel": "cmo",
+    "title": "[시모] 파이프라인#5 평가 환류 자동화 — 주간 통한콘텐츠 Top/Bottom 시그널→다음 기획 반영",
+    "status": "PENDING",
+    "priority": "NORMAL",
+    "enqueued_at": "2026-06-23",
+    "note": "UTM 태깅 선행 필요. | [2026-06-24] 보류 유지: UTM 클릭 데이터 초기라 축적 후 착수. 좋은콘텐츠 지표 정의=저장+댓글+클릭 가중으로 사전설계 예정.",
+    "ship_no": 106,
+    "next": "🔗 UTM 클릭 데이터 축적 대기 중 — 그동안 좋은콘텐츠 지표 정의(저장+댓글+클릭 가중) 사전설계 (담당 시모)."
+  },
+  {
+    "task_id": "CFO-2026-07-03-ADHOC-66cc595e",
+    "clevel": "cfo",
+    "title": "[시뽀] 추천기 top3 대상에서 cfo·chro 제외 (2026-07-03 GM)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-03",
+    "processed_at": "2026-07-03",
+    "ship_no": 309,
+    "artifact": "나우열M 실무 담당 도메인(cfo·chro)은 AI 항로 배 대상이 아니므로\nTARGET_ROLES에서 제외 — 남는 대상 = ceo·cmo·coo·cto·cpo(5역할).\n프롬프트·규칙기반 폴백·normalize_candidates 전부 TARGET_ROLES\n단일 출처를 따르므로 자동 반영됨. 설계 브리프 G3 항목에 범위 수정 기록. (CLI ad-hoc · 커밋 66cc595e)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "66cc595e0efd0d30829726186a3d468b99fd0fa3"
+  },
+  {
+    "id": "CMO-2026-06-23-FUNNEL-EVAL-FEEDBACK",
+    "clevel": "cmo",
+    "title": "[시모] 파이프라인#5 평가 환류 자동화 — 주간 통한콘텐츠 Top/Bottom 시그널→다음 기획 반영",
+    "status": "PENDING",
+    "priority": "NORMAL",
+    "enqueued_at": "2026-06-23",
+    "note": "UTM 태깅 선행 필요. | [2026-06-24] 보류 유지: UTM 클릭 데이터 초기라 축적 후 착수. 좋은콘텐츠 지표 정의=저장+댓글+클릭 가중으로 사전설계 예정.",
+    "ship_no": 106,
+    "next": "🔗 UTM 클릭 데이터 축적 대기 중 — 그동안 좋은콘텐츠 지표 정의(저장+댓글+클릭 가중) 사전설계 (담당 시모)."
+  },
+  {
+    "task_id": "CMO-2026-07-03-ADHOC-45ddba83",
+    "clevel": "cmo",
+    "title": "[시모] IG 발행검증 자동 대조 → 발행완료 도장",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-03",
+    "processed_at": "2026-07-03",
+    "ship_no": 309,
+    "artifact": "auto(cmo): IG 발행검증 자동 대조 → 발행완료 도장 (CLI ad-hoc · 커밋 45ddba83)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "45ddba83416ef13eb19fc094aaee366980ce4a8d"
+  },
+  {
+    "task_id": "CEO-2026-07-03-ADHOC-150bdbd1",
+    "clevel": "ceo",
+    "title": "[웰리] 배포 동시성 취소 방지 — cancel-in-progress false로 겹침 취소 실패 해결",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-03",
+    "processed_at": "2026-07-03",
+    "ship_no": 310,
+    "artifact": "Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com> (CLI ad-hoc · 커밋 150bdbd1)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "150bdbd126de1579aba6dd3b446b41863f37536b"
   }
 ]
