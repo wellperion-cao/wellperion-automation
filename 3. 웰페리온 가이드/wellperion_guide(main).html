@@ -4499,45 +4499,186 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
 
       <!-- 컨디션 트래커 -->
       <div data-panel="tracker">
-        <h3><span class="ico">📊</span>루틴 트래커</h3>
-        <p>루틴·영양·원칙 — 3가지 축을 매일 기록합니다. O=완수 △=일부 X=미실시</p>
+        <h3 style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;"><span class="ico">📊</span>루틴 트래커 <span class="badge" style="background:var(--grow);color:#fff;font-size:11px;">라이브 저장</span></h3>
+        <p style="margin:2px 0 6px;color:var(--text-soft);font-size:14px;line-height:1.7;">
+          북극성 — <em style="color:var(--accent-hover);font-style:italic;">사랑하는 단순한 하루 루틴 하나. 나·아빠·남편·일이 다 담겨 돌아가는 것 (일은 한 토막, 중심 아님).</em><br>
+          <span style="color:var(--dim);font-size:12.5px;">점수 아닌 거울 · 못 지켜도 혼내지 않음. '일'이 제일 자주 켜지는 건 자연스러운 현실 — 북극성이 조용히 삶 쪽으로 당깁니다.</span>
+        </p>
 
-        <table style="font-size:13px;">
-          <tr>
-            <th rowspan="2">날짜</th><th rowspan="2">체중</th><th rowspan="2">수면</th>
-            <th colspan="3" style="text-align:center;background:var(--accent-bg);">루틴</th>
-            <th colspan="3" style="text-align:center;background:var(--grow-bg);">영양</th>
-            <th rowspan="2">원칙 점검</th>
-            <th rowspan="2">비고</th>
-          </tr>
-          <tr>
-            <th style="background:var(--accent-bg);">아침운동</th><th style="background:var(--accent-bg);">저녁러닝</th><th style="background:var(--accent-bg);">자기계발</th>
-            <th style="background:var(--grow-bg);">보충제</th><th style="background:var(--grow-bg);">식사3끼</th><th style="background:var(--grow-bg);">수분1.5L</th>
-          </tr>
-          <tr>
-            <td>05-27(수)</td><td>95.2kg</td><td>00시→07:40<br>7h 40m</td>
-            <td style="text-align:center;color:var(--warm);font-weight:700;">X</td>
-            <td style="text-align:center;color:var(--warm);font-weight:700;">X</td>
-            <td style="text-align:center;color:var(--warm);font-weight:700;">X</td>
-            <td style="text-align:center;color:var(--green);font-weight:700;">O</td>
-            <td style="text-align:center;color:var(--green);font-weight:700;">O</td>
-            <td style="text-align:center;color:var(--dim);">-</td>
-            <td>-</td>
-            <td>목기침·콧물 심함</td>
-          </tr>
-          <tr>
-            <td>05-26(화)</td><td>95.9kg</td><td>23시→07시<br>중간각성</td>
-            <td style="text-align:center;color:var(--accent);font-weight:700;">△</td>
-            <td style="text-align:center;color:var(--dim);">-</td>
-            <td style="text-align:center;color:var(--dim);">-</td>
-            <td style="text-align:center;color:var(--green);font-weight:700;">O</td>
-            <td style="text-align:center;color:var(--green);font-weight:700;">O</td>
-            <td style="text-align:center;color:var(--dim);">-</td>
-            <td>-</td>
-            <td>푸시업40·크로스50·스쿼트100·냉샤워</td>
-          </tr>
-        </table>
-        <p style="font-size:12px;color:var(--dim);">매일 기록 누적 · 주간 요약은 매주 일요일 리뷰 시 정리</p>
+        <!-- ── 오늘 도달율 게이지 (5 생활토막) ── -->
+        <div class="card accent" style="margin:14px 0;">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:12px;">
+            <div style="font-weight:700;font-size:14px;">🧭 오늘 도달율 <span id="gmrtToday" style="color:var(--dim);font-weight:400;font-size:12px;"></span></div>
+            <div style="font-size:13px;color:var(--dim);"><span id="gmrtReachNum" style="font-size:20px;font-weight:800;color:var(--accent-hover);">–</span> / 5 토막</div>
+          </div>
+          <div id="gmrtToroks" style="display:flex;gap:8px;flex-wrap:wrap;"></div>
+          <div style="margin-top:14px;border-top:1px dashed var(--border);padding-top:12px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+              <span style="font-size:12.5px;color:var(--dim);font-weight:600;">최근 7일 추세</span>
+              <span id="gmrtWeekAvg" style="font-size:12px;color:var(--dim);"></span>
+            </div>
+            <div id="gmrtSpark" style="display:flex;align-items:flex-end;gap:6px;height:52px;"></div>
+          </div>
+        </div>
+
+        <!-- ── 오늘 체크인 ── -->
+        <div class="card" style="margin:14px 0;">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:12px;">
+            <div style="font-weight:700;font-size:14px;">✍️ 오늘 체크인</div>
+            <div style="display:flex;gap:6px;align-items:center;">
+              <span id="gmrtSaveState" style="font-size:11.5px;color:var(--dim);"></span>
+              <button id="gmrtSaveBtn" style="padding:6px 16px;font-size:12.5px;font-weight:700;border-radius:8px;cursor:pointer;font-family:inherit;background:var(--accent);color:#fff;border:none;">💾 저장</button>
+            </div>
+          </div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px;">
+            <label style="flex:1;min-width:130px;font-size:12px;color:var(--dim);">체중
+              <input id="gmrtWeight" type="text" placeholder="95.0kg" style="width:100%;margin-top:4px;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:7px 10px;border-radius:8px;font-size:13px;font-family:inherit;box-sizing:border-box;">
+            </label>
+            <label style="flex:2;min-width:180px;font-size:12px;color:var(--dim);">수면
+              <input id="gmrtSleep" type="text" placeholder="23시→06시 · 7h" style="width:100%;margin-top:4px;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:7px 10px;border-radius:8px;font-size:13px;font-family:inherit;box-sizing:border-box;">
+            </label>
+          </div>
+          <p style="font-size:11.5px;color:var(--dim);margin:0 0 6px;">칸을 눌러 순환 — <span style="color:var(--grow);font-weight:700;">O 완수</span> · <span style="color:var(--accent-hover);font-weight:700;">△ 일부</span> · <span style="color:var(--warm);font-weight:700;">X 미실시</span> · 빈칸 미기록</p>
+          <div id="gmrtAxes" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;"></div>
+          <label style="font-size:12px;color:var(--dim);display:block;">비고
+            <input id="gmrtNote" type="text" placeholder="오늘 한 줄…" style="width:100%;margin-top:4px;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:7px 10px;border-radius:8px;font-size:13px;font-family:inherit;box-sizing:border-box;">
+          </label>
+        </div>
+
+        <!-- ── 최근 기록 ── -->
+        <h4 style="margin:18px 0 6px;">최근 기록</h4>
+        <div id="gmrtRecent" style="font-size:13px;color:var(--dim);">불러오는 중…</div>
+
+<script>
+/* GM 개인 루틴 트래커 — 라이브 저장(status/gm_personal_routine.json, GAS commit_file) + 5 생활토막 북극성 도달율.
+   기존 헌법한장.html read_file→raw fallback + commit_file 패턴 재사용. localStorage 아님(정본=json). */
+(function(){
+  var GAS_URL = 'https://script.google.com/macros/s/AKfycbxDwFkrxK1YIaEoSNcuw2MiHiZQ-7o5N6311ytksSyeEd86ZFOhLknOWqQgNArQvZ-7/exec';
+  var JPATH   = 'status/gm_personal_routine.json';
+  var RAW     = 'https://raw.githubusercontent.com/wellperion-cao/wellperion-automation/master/status/gm_personal_routine.json';
+  var CYCLE   = ['', 'O', '△', 'X'];
+  var COLOR   = { 'O':'var(--grow)', '△':'var(--accent-hover)', 'X':'var(--warm)', '':'var(--dim)' };
+  var DATA = null, DAY = null; // DAY = 오늘 편집 상태
+
+  function today(){ var d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+  function ko(dstr){ var p=dstr.split('-'); var d=new Date(+p[0],+p[1]-1,+p[2]); var w=['일','월','화','수','목','금','토'][d.getDay()]; return (+p[1])+'-'+String(+p[2]).padStart(2,'0')+'('+w+')'; }
+  function litToroks(axes){ // 도달=매핑 축 중 하나라도 O 또는 △ (담겼는지)
+    var out={}; (DATA.toroks||[]).forEach(function(t){ out[t.id]=(t.axes||[]).some(function(ax){ var v=(axes||{})[ax]; return v==='O'||v==='△'; }); }); return out;
+  }
+  function reachOf(axes){ var l=litToroks(axes); return Object.keys(l).filter(function(k){return l[k];}).length; }
+
+  function gasRead(){
+    return fetch(GAS_URL, {method:'POST', redirect:'follow', headers:{'Content-Type':'text/plain;charset=utf-8'},
+        body: JSON.stringify({action:'read_file', path:JPATH})})
+      .then(function(r){ return r.json(); })
+      .then(function(res){ if(res && res.ok && res.content){ return JSON.parse(res.content); } throw new Error('read'); })
+      .catch(function(){ return fetch(RAW+'?t='+Date.now(), {cache:'no-store'}).then(function(r){ return r.json(); }); });
+  }
+
+  function renderToroks(){
+    var box=document.getElementById('gmrtToroks'); if(!box) return;
+    var lit=litToroks(DAY.axes), n=0;
+    box.innerHTML=(DATA.toroks||[]).map(function(t){
+      var on=lit[t.id]; if(on) n++;
+      return '<span title="'+t.meaning+'" style="display:inline-flex;align-items:center;gap:5px;padding:6px 11px;border-radius:20px;font-size:12.5px;font-weight:700;border:1px solid '+(on?'var(--grow)':'var(--border)')+';background:'+(on?'var(--grow-bg)':'transparent')+';color:'+(on?'var(--text)':'var(--dim)')+';opacity:'+(on?1:0.55)+';">'+t.icon+' '+t.label+(on?' <span style="color:var(--grow);">✓</span>':'')+'</span>';
+    }).join('');
+    var num=document.getElementById('gmrtReachNum'); if(num) num.textContent=n;
+    var td=document.getElementById('gmrtToday'); if(td) td.textContent='· '+ko(today());
+  }
+  function renderAxes(){
+    var box=document.getElementById('gmrtAxes'); if(!box) return;
+    box.innerHTML=(DATA.axes||[]).map(function(a){
+      var v=(DAY.axes||{})[a.id]||'';
+      var mapped=a.torok?'':' style2';
+      return '<button data-ax="'+a.id+'" class="gmrt-axbtn" style="display:inline-flex;flex-direction:column;align-items:center;gap:2px;min-width:70px;padding:8px 6px;border-radius:9px;cursor:pointer;font-family:inherit;border:1px solid var(--border);background:var(--paper-soft,var(--bg));">'
+        +'<span style="font-size:11px;color:var(--dim);">'+a.label+'</span>'
+        +'<span class="gmrt-axval" style="font-size:16px;font-weight:800;color:'+COLOR[v]+';">'+(v||'·')+'</span></button>';
+    }).join('');
+    Array.prototype.forEach.call(box.querySelectorAll('.gmrt-axbtn'), function(btn){
+      btn.addEventListener('click', function(){
+        var id=btn.getAttribute('data-ax'); var cur=(DAY.axes||{})[id]||'';
+        var next=CYCLE[(CYCLE.indexOf(cur)+1)%CYCLE.length];
+        DAY.axes=DAY.axes||{}; DAY.axes[id]=next;
+        var vs=btn.querySelector('.gmrt-axval'); if(vs){ vs.textContent=next||'·'; vs.style.color=COLOR[next]; }
+        renderToroks();
+      });
+    });
+  }
+  function renderSpark(){
+    var box=document.getElementById('gmrtSpark'); if(!box) return;
+    var days=DATA.days||{}, html='', sum=0, cnt=0;
+    for(var i=6;i>=0;i--){
+      var d=new Date(); d.setDate(d.getDate()-i);
+      var key=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+      var has=days[key]; var r=has?reachOf(has.axes):-1;
+      if(r>=0){ sum+=r; cnt++; }
+      var h=r>=0?Math.max(6, r/5*40):3;
+      var col=r>=0?(r>=3?'var(--grow)':(r>=1?'var(--accent)':'var(--warm)')):'var(--border)';
+      var lab=['일','월','화','수','목','금','토'][d.getDay()];
+      html+='<div title="'+key+' · '+(r>=0?r+'/5':'미기록')+'" style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;">'
+        +'<div style="width:100%;max-width:26px;height:'+h+'px;border-radius:4px;background:'+col+';opacity:'+(r>=0?0.9:0.4)+';"></div>'
+        +'<span style="font-size:10px;color:'+(i===0?'var(--accent-hover)':'var(--dim)')+';font-weight:'+(i===0?700:400)+';">'+lab+'</span></div>';
+    }
+    box.innerHTML=html;
+    var avg=document.getElementById('gmrtWeekAvg'); if(avg) avg.textContent=cnt?('평균 '+(sum/cnt).toFixed(1)+'/5 · '+cnt+'일 기록'):'기록 없음';
+  }
+  function renderRecent(){
+    var box=document.getElementById('gmrtRecent'); if(!box) return;
+    var days=DATA.days||{}, keys=Object.keys(days).sort().reverse().slice(0,7);
+    if(!keys.length){ box.innerHTML='<span style="color:var(--dim);">아직 기록이 없습니다 — 오늘 첫 체크인을 해보세요.</span>'; return; }
+    var rows=keys.map(function(k){
+      var day=days[k], r=reachOf(day.axes), lit=litToroks(day.axes);
+      var dots=(DATA.toroks||[]).map(function(t){ return '<span title="'+t.label+'" style="opacity:'+(lit[t.id]?1:0.28)+';">'+t.icon+'</span>'; }).join('');
+      var ax=(DATA.axes||[]).filter(function(a){return a.torok;}).map(function(a){ var v=(day.axes||{})[a.id]||''; return v?'<span style="color:'+COLOR[v]+';font-weight:700;" title="'+a.label+'">'+v+'</span>':'<span style="color:var(--dim);opacity:0.4;">·</span>'; }).join(' ');
+      return '<tr><td style="white-space:nowrap;font-weight:600;">'+ko(k)+'</td>'
+        +'<td style="text-align:center;font-weight:800;color:'+(r>=3?'var(--grow)':(r>=1?'var(--accent-hover)':'var(--dim)'))+';">'+r+'/5</td>'
+        +'<td style="font-size:13px;letter-spacing:1px;white-space:nowrap;">'+dots+'</td>'
+        +'<td style="white-space:nowrap;">'+ax+'</td>'
+        +'<td style="color:var(--dim);">'+(day.weight||'')+'</td>'
+        +'<td style="color:var(--dim);font-size:12px;">'+(day.note?String(day.note).replace(/</g,'&lt;'):'')+'</td></tr>';
+    }).join('');
+    box.innerHTML='<table style="font-size:13px;margin:6px 0;"><tr><th>날짜</th><th style="text-align:center;">도달</th><th>토막</th><th>루틴축</th><th>체중</th><th>비고</th></tr>'+rows+'</table>';
+  }
+  function renderAll(){ renderToroks(); renderAxes(); renderSpark(); renderRecent();
+    var w=document.getElementById('gmrtWeight'), s=document.getElementById('gmrtSleep'), n=document.getElementById('gmrtNote');
+    if(w) w.value=DAY.weight||''; if(s) s.value=DAY.sleep||''; if(n) n.value=DAY.note||'';
+  }
+
+  function save(){
+    var btn=document.getElementById('gmrtSaveBtn'), st=document.getElementById('gmrtSaveState');
+    DAY.weight=(document.getElementById('gmrtWeight')||{}).value||'';
+    DAY.sleep =(document.getElementById('gmrtSleep')||{}).value||'';
+    DAY.note  =(document.getElementById('gmrtNote')||{}).value||'';
+    DAY.reach = reachOf(DAY.axes);
+    DAY.toroks= litToroks(DAY.axes);
+    DAY.updated_at=today();
+    DATA.days=DATA.days||{}; DATA.days[today()]=DAY; DATA.updated_at=today();
+    if(btn){ btn.disabled=true; btn.textContent='저장 중…'; }
+    if(st) st.textContent='';
+    fetch(GAS_URL, {method:'POST', redirect:'follow', headers:{'Content-Type':'text/plain;charset=utf-8'},
+      body: JSON.stringify({action:'commit_file', path:JPATH, content:JSON.stringify(DATA,null,2), message:'[GM] 개인 루틴 트래커 체크인 '+today(), key:''})})
+      .then(function(r){ return r.json(); })
+      .then(function(res){
+        if(res && res.ok){ if(st){ st.style.color='var(--grow)'; st.textContent='저장됨 · 1~2분 후 반영'; } renderAll(); }
+        else { var e=(res&&res.error)||'오류'; if(st){ st.style.color='var(--warm)'; st.textContent=/GITHUB_TOKEN/.test(e)?'관리자 토큰 설정 후 저장':'저장 실패: '+e; } }
+      })
+      .catch(function(e){ if(st){ st.style.color='var(--warm)'; st.textContent='연결 실패: '+e.message; } })
+      .then(function(){ if(btn){ btn.disabled=false; btn.textContent='💾 저장'; } });
+  }
+
+  function boot(){
+    var box=document.getElementById('gmrtRecent'); if(!box) return; // 트래커 블록 없으면 skip
+    gasRead().then(function(j){
+      DATA=j||{}; DATA.toroks=DATA.toroks||[]; DATA.axes=DATA.axes||[]; DATA.days=DATA.days||{};
+      DAY = DATA.days[today()] ? JSON.parse(JSON.stringify(DATA.days[today()])) : { axes:{}, weight:'', sleep:'', note:'' };
+      DAY.axes=DAY.axes||{};
+      renderAll();
+      var sb=document.getElementById('gmrtSaveBtn'); if(sb) sb.addEventListener('click', save);
+    }).catch(function(){ if(box) box.innerHTML='<span style="color:var(--warm);">정본(status/gm_personal_routine.json) 불러오기 실패 — 새로고침 해보세요.</span>'; });
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', boot); else boot();
+})();
+</script>
 
         <h4>끊어야 할 습관 추적</h4>
         <table>
