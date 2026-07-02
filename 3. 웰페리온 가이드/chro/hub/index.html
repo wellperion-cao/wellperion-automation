@@ -121,6 +121,7 @@
   tr:last-child td{border-bottom:none}
   tr:hover td{background:var(--surface-2)}
   .t-name{font-weight:650;color:var(--ink)}
+  .t-name .emp-nm:hover{text-decoration:underline}
   .t-sub{color:var(--ink-faint);font-size:11px}
   .scroll-y{max-height:560px;overflow-y:auto}
   th.th-sort{cursor:pointer;user-select:none;white-space:nowrap}
@@ -1061,7 +1062,7 @@ function renderEmp(){
     var isAdmin=SESSION_ROLE==="admin";
     document.getElementById("empBody").innerHTML=rows.length?rows.map(function(e){
       var canResign=e["재직 상태"]!=="퇴사";
-      return '<tr><td class="t-name">'+esc(txt(e["성명"]))+'</td>'+
+      return '<tr><td class="t-name"><span class="emp-nm" data-nm="'+esc(txt(e["성명"]))+'" onclick="empOpenCard(this.dataset.nm)" title="클릭: 인사카드" style="cursor:pointer">'+esc(txt(e["성명"]))+'</span></td>'+
         '<td>'+esc(txt(e["부서"]))+'</td><td>'+esc(txt(e["소속"]))+'</td>'+
         '<td>'+esc(txt(e["직급"]))+'</td><td>'+badge(normEmpType(e["고용 형태"]))+'</td>'+
         '<td>'+badge(e["재직 상태"])+'</td><td>'+fmtD(dval(e,"입사일"))+'</td>'+
@@ -1681,6 +1682,14 @@ function renderObCalCard(){
   return h;}
 function upcomingCard(){var now=new Date();now.setHours(0,0,0,0);var hz=now.getTime()+30*86400000;var evs=[];(DB.appl||[]).forEach(function(a){var v=(typeof dval==="function")?dval(a,"면접 일정"):a["면접 일정"];var s=String(v||"");if(!s)return;var dt=new Date(s.replace(" ","T"));if(isNaN(dt.getTime()))return;var tt=dt.getTime();if(tt>=now.getTime()&&tt<=hz)evs.push({t:tt,date:s,kind:"면접",who:a["지원자명"],detail:(a["전형 단계"]||"면접")});});obCheckEvents().forEach(function(e){if(e.done)return;var tt=new Date(e.date).getTime();if(tt>=now.getTime()&&tt<=hz)evs.push({t:tt,date:e.date,kind:"온보딩",who:e.name,detail:e.label,row:e.row});});(DB.hire||[]).forEach(function(hj){if(hj["채용 상태"]!=="공고중")return;var v=(typeof dval==="function")?dval(hj,"공고 마감일"):hj["공고 마감일"];var s=String(v||"");if(!s)return;var dt=new Date(s.replace(" ","T"));if(isNaN(dt.getTime()))return;var tt=dt.getTime();if(tt>=now.getTime()&&tt<=hz)evs.push({t:tt,date:s,kind:"공고마감",who:(hj["포지션명"]||""),detail:"공고 마감"});});evs.sort(function(a,b){return a.t-b.t;});var h='<div class="card" style="margin-top:10px"><div class="sec-title">다가오는 일정 — 면접·온보딩·공고마감 (30일)</div>';if(!evs.length){return h+emptyState("예정된 면접·온보딩·공고마감 일정이 없습니다.","🗓")+'</div>';}h+='<div style="font-size:12.5px">'+evs.map(function(e){var dd=new Date(e.date);var md=(dd.getMonth()+1)+'/'+dd.getDate();var col=e.kind==="면접"?"#2f6d9e":(e.kind==="공고마감"?"#b5532f":"#b08d57");var clk=e.row?(' onclick="obCheck('+e.row+')" style="cursor:pointer;display:flex;gap:8px;padding:4px 0;border-bottom:1px solid #f2f2f2"'):' style="display:flex;gap:8px;padding:4px 0;border-bottom:1px solid #f2f2f2"';return '<div'+clk+'><span style="white-space:nowrap;font-weight:700;color:#666;width:42px">'+md+'</span><span style="white-space:nowrap;color:'+col+';font-weight:600;width:48px">'+e.kind+'</span><span>'+esc(e.who)+' · '+esc(e.detail)+'</span></div>';}).join("")+'</div></div>';return h;}
 function obOpenCard(nm){var a=(DB.appl||[]).find(function(x){return String(x["지원자명"]||"").trim()===String(nm||"").trim();});if(!a){alert(nm+" 지원자 정보를 찾을 수 없습니다.");return;}openPrintView(normId(a.url),true);}
+function empOpenCard(nm){
+  if(SESSION_ROLE!=="admin"){alert("인사카드는 관리자 로그인 시 열람 가능합니다.");return;}
+  var target=String(nm||"").trim();
+  var matches=(DB.appl||[]).filter(function(x){return String(x["지원자명"]||"").trim()===target;});
+  if(!matches.length){alert(target+" 님은 지원자 기록(인사카드)이 없습니다. — 허브 도입 전 입사자");return;}
+  var best=matches.find(function(x){return String(x["전형 단계"]||"").trim()==="최종 합격";})||matches[0];
+  openPrintView(normId(best.url),true);
+}
 function dashCalEvents(){var out=[];(DB.appl||[]).forEach(function(a){var v=(typeof dval==="function")?dval(a,"면접 일정"):a["면접 일정"];var s=String(v||"");if(!s)return;var dt=new Date(s.replace(" ","T"));if(isNaN(dt.getTime()))return;out.push({kind:"면접",y:dt.getFullYear(),m:dt.getMonth(),d:dt.getDate(),t:dt.getTime(),date:s,name:a["지원자명"]||"",label:(a["전형 단계"]||"면접"),done:false});});obCheckEvents().forEach(function(e){out.push({kind:"온보딩",y:e.y,m:e.m,d:e.d,t:e.t,date:e.date,name:e.name,label:e.label,done:e.done,row:e.row});});return out;}
 function dashCalNav(delta){var ym=window.__dashYM||{};var m=ym.m+delta,y=ym.y;if(m<0){m=11;y--;}if(m>11){m=0;y++;}window.__dashYM={y:y,m:m};renderDash();}
 function renderDashCalCard(){
