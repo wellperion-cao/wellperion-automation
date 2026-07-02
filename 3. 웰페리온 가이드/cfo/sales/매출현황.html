@@ -228,7 +228,7 @@ a { color: var(--accent); text-decoration: none; }
   <div class="header">
     <div>
       <h1>웰페리온 운영 매출현황</h1>
-      <div class="header-meta">AI CFO 재무 라인 · 담당: 나우열M · v0.1</div>
+      <div class="header-meta">AI CFO 재무 라인 · 담당: 나우열M · <span id="asOf">실측 연동 v1.0</span></div>
     </div>
     <div class="header-btns">
       <a href="/"><span>&#127968;</span> 웰페리온 ERP</a>
@@ -243,13 +243,9 @@ a { color: var(--accent); text-decoration: none; }
   </div>
   <div class="filter-bar" id="filterBar">
     <select id="filterMonth" onchange="onMonthChange()">
-      <option value="2026-05">2026년 5월</option>
-      <option value="2026-04">2026년 4월</option>
-      <option value="2026-03">2026년 3월</option>
-      <option value="2026-02">2026년 2월</option>
-      <option value="2026-01">2026년 1월</option>
+      <option value="">로딩 중…</option>
     </select>
-    <span class="total-badge" id="totalBadge">이번 달 매출: 추후 측정</span>
+    <span class="total-badge" id="totalBadge">이번 달 매출: 로딩 중…</span>
   </div>
 </div>
 
@@ -262,9 +258,8 @@ a { color: var(--accent); text-decoration: none; }
     <div class="info-banner">
       <span class="info-icon">&#9432;</span>
       <span>
-        이 페이지는 <strong>v0.1 샘플</strong>입니다.
-        실측 데이터는 Apps Script 시트 연동 후 자동으로 채워집니다.
-        수치가 필요한 항목은 나우열M이 직접 입력하거나, Q3 2026 Apps Script 연동 완료 후 자동화합니다.
+        <strong>실측 연동</strong> — 매출 정본 「26년 매출 분석」 시트(월별 마감 총매출)에 자동 배선됩니다.
+        미마감 월은 <strong>정직하게 비웁니다</strong>(추정·위조 없음). 채널·미수금 일부 항목은 아직 데이터 소스 미배관.
       </span>
     </div>
 
@@ -272,31 +267,31 @@ a { color: var(--accent); text-decoration: none; }
     <div class="kpi-row">
       <div class="kpi-card">
         <div class="kpi-label">이달 총 매출</div>
-        <div class="kpi-value"><span class="placeholder-inline">추후 측정</span></div>
-        <div class="kpi-sub">2026년 5월 기준</div>
+        <div class="kpi-value" id="kpiMonth">…</div>
+        <div class="kpi-sub" id="kpiMonthSub">—</div>
       </div>
       <div class="kpi-card">
-        <div class="kpi-label">월 목표 달성률</div>
-        <div class="kpi-value"><span class="placeholder-inline">추후 측정</span></div>
+        <div class="kpi-label">연 목표 달성률</div>
+        <div class="kpi-value" id="kpiYearRate">…</div>
         <div class="gauge-wrap">
           <div class="gauge-track">
             <div class="gauge-fill warn" style="width:0%" id="goalGauge"></div>
           </div>
           <div class="gauge-label">
-            <span>목표: 추후 측정</span>
+            <span>연 목표: 72억</span>
             <span id="goalPct">—%</span>
           </div>
         </div>
       </div>
       <div class="kpi-card">
         <div class="kpi-label">전월 대비 증감</div>
-        <div class="kpi-value"><span class="placeholder-inline">추후 측정</span></div>
-        <div class="kpi-delta flat">데이터 연동 전</div>
+        <div class="kpi-value" id="kpiMoM">…</div>
+        <div class="kpi-delta flat" id="kpiMoMSub">—</div>
       </div>
       <div class="kpi-card">
         <div class="kpi-label">미수금 잔액</div>
-        <div class="kpi-value"><span class="placeholder-inline">추후 측정</span></div>
-        <div class="kpi-sub">정산 대기 포함</div>
+        <div class="kpi-value"><span class="placeholder-inline">데이터 소스 미배관</span></div>
+        <div class="kpi-sub">CRM·정산 시트 연동 필요</div>
       </div>
     </div>
 
@@ -305,59 +300,24 @@ a { color: var(--accent); text-decoration: none; }
       <h3>전월 대비 매출 비교</h3>
       <div class="compare-row">
         <div class="compare-card">
-          <div class="c-label">이번 달 (2026-05)</div>
-          <div class="c-val"><span class="placeholder-inline">추후 측정</span></div>
-          <div class="c-sub">목표 대비: 추후 측정</div>
+          <div class="c-label" id="cmpCurLabel">이번 달</div>
+          <div class="c-val" id="cmpCurVal">…</div>
+          <div class="c-sub" id="cmpCurSub">—</div>
         </div>
         <div class="compare-card">
-          <div class="c-label">지난 달 (2026-04)</div>
-          <div class="c-val"><span class="placeholder-inline">추후 측정</span></div>
-          <div class="c-sub">달성률: 추후 측정</div>
+          <div class="c-label" id="cmpPrevLabel">지난 달</div>
+          <div class="c-val" id="cmpPrevVal">…</div>
+          <div class="c-sub" id="cmpPrevSub">—</div>
         </div>
       </div>
-      <div class="placeholder">Apps Script 시트 연동 완료 후 자동으로 수치가 표시됩니다.</div>
+      <div id="cmpNote" style="font-size:12px; color:var(--dim); margin-top:4px"></div>
     </div>
 
     <!-- 채널별 간략 요약 -->
     <div class="section-card">
-      <h3>채널별 매출 요약</h3>
-      <div class="bar-chart">
-        <div class="bar-row">
-          <span class="bar-row-label">멤버십</span>
-          <div class="bar-track">
-            <div class="bar-fill accent" style="width:0%" id="barMembership">
-              <span></span>
-            </div>
-          </div>
-          <span class="bar-row-val"><span class="placeholder-inline">추후 측정</span></span>
-        </div>
-        <div class="bar-row">
-          <span class="bar-row-label">PT·레슨</span>
-          <div class="bar-track">
-            <div class="bar-fill blue" style="width:0%" id="barPt">
-              <span></span>
-            </div>
-          </div>
-          <span class="bar-row-val"><span class="placeholder-inline">추후 측정</span></span>
-        </div>
-        <div class="bar-row">
-          <span class="bar-row-label">스쿼시</span>
-          <div class="bar-track">
-            <div class="bar-fill green" style="width:0%" id="barSquash">
-              <span></span>
-            </div>
-          </div>
-          <span class="bar-row-val"><span class="placeholder-inline">추후 측정</span></span>
-        </div>
-        <div class="bar-row">
-          <span class="bar-row-label">기타</span>
-          <div class="bar-track">
-            <div class="bar-fill purple" style="width:0%" id="barOther">
-              <span></span>
-            </div>
-          </div>
-          <span class="bar-row-val"><span class="placeholder-inline">추후 측정</span></span>
-        </div>
+      <h3>채널별 매출 요약 <span style="font-size:11px;color:var(--dim);font-weight:400">(당월 · 「보고」 팀별 + 주차 실측)</span></h3>
+      <div class="bar-chart" id="channelSummary">
+        <div class="placeholder">로딩 중…</div>
       </div>
     </div>
 
@@ -367,101 +327,47 @@ a { color: var(--accent); text-decoration: none; }
   <div id="tabChannel" style="display:none;">
 
     <div class="section-card">
-      <h3>채널별 매출 상세 분해</h3>
+      <h3>채널별 매출 상세 분해 <span style="font-size:11px;color:var(--dim);font-weight:400">(당월 · 「보고」 팀별 + 주차 실측)</span></h3>
       <table class="channel-table">
         <thead>
           <tr>
             <th>채널</th>
             <th style="text-align:right">매출액</th>
             <th style="text-align:right">비율</th>
-            <th style="text-align:right">전월 대비</th>
             <th>구성비</th>
           </tr>
         </thead>
-        <tbody>
-          <tr>
-            <td>멤버십 (월회비)</td>
-            <td class="amount"><span class="placeholder-inline">추후 측정</span></td>
-            <td class="pct">—%</td>
-            <td class="pct">—</td>
-            <td>
-              <span class="ratio-bar">
-                <span class="ratio-track"><span class="ratio-fill" style="width:0%"></span></span>
-              </span>
-            </td>
-          </tr>
-          <tr>
-            <td>PT·개인 레슨</td>
-            <td class="amount"><span class="placeholder-inline">추후 측정</span></td>
-            <td class="pct">—%</td>
-            <td class="pct">—</td>
-            <td>
-              <span class="ratio-bar">
-                <span class="ratio-track"><span class="ratio-fill" style="width:0%"></span></span>
-              </span>
-            </td>
-          </tr>
-          <tr>
-            <td>스쿼시 코트</td>
-            <td class="amount"><span class="placeholder-inline">추후 측정</span></td>
-            <td class="pct">—%</td>
-            <td class="pct">—</td>
-            <td>
-              <span class="ratio-bar">
-                <span class="ratio-track"><span class="ratio-fill" style="width:0%"></span></span>
-              </span>
-            </td>
-          </tr>
-          <tr>
-            <td>발레·바레·기타 클래스</td>
-            <td class="amount"><span class="placeholder-inline">추후 측정</span></td>
-            <td class="pct">—%</td>
-            <td class="pct">—</td>
-            <td>
-              <span class="ratio-bar">
-                <span class="ratio-track"><span class="ratio-fill" style="width:0%"></span></span>
-              </span>
-            </td>
-          </tr>
-          <tr>
-            <td>기타 (입장료·부대)</td>
-            <td class="amount"><span class="placeholder-inline">추후 측정</span></td>
-            <td class="pct">—%</td>
-            <td class="pct">—</td>
-            <td>
-              <span class="ratio-bar">
-                <span class="ratio-track"><span class="ratio-fill" style="width:0%"></span></span>
-              </span>
-            </td>
-          </tr>
+        <tbody id="channelTableBody">
+          <tr><td colspan="4" style="color:var(--dim)">로딩 중…</td></tr>
         </tbody>
       </table>
-      <div class="placeholder" style="margin-top:12px">
-        채널별 분해 데이터는 CRM 결제 내역 및 Apps Script 시트 연동 후 자동 집계됩니다.
+      <div class="placeholder" style="margin-top:12px" id="channelTableNote">
+        채널별 분해는 「보고」 탭 팀별 매출 + 주차 크롤러 실측. 팀 세부 정산(멤버십·CRM 결제 상세)은 소스 미배관.
       </div>
     </div>
 
     <!-- 북극성 KPI 연결 -->
     <div class="section-card">
-      <h3>북극성 KPI 연결</h3>
+      <h3>북극성 KPI 연결 <span style="font-size:11px;color:var(--dim);font-weight:400">(시뽀 CFO · 재무 투명성 · 측정 개통)</span></h3>
       <div class="bar-chart">
+        <div class="bar-row">
+          <span class="bar-row-label">연 목표 달성</span>
+          <div class="bar-track">
+            <div class="bar-fill green" style="width:0%" id="nsYearFill"><span></span></div>
+          </div>
+          <span class="bar-row-val" id="nsYearVal">…</span>
+        </div>
         <div class="bar-row">
           <span class="bar-row-label">OCF 기여</span>
           <div class="bar-track">
             <div class="bar-fill accent" style="width:0%"><span></span></div>
           </div>
-          <span class="bar-row-val"><span class="placeholder-inline">월 OCF: 추후 측정</span></span>
-        </div>
-        <div class="bar-row">
-          <span class="bar-row-label">목표 달성률</span>
-          <div class="bar-track">
-            <div class="bar-fill green" style="width:0%"><span></span></div>
-          </div>
-          <span class="bar-row-val"><span class="placeholder-inline">추후 측정</span></span>
+          <span class="bar-row-val"><span class="placeholder-inline">데이터 소스 미배관</span></span>
         </div>
       </div>
-      <div style="margin-top:12px; font-size:13px; color:var(--dim)">
-        달성률 ≥100% → 녹색 표시 / 80~99% → 노란색 경보 / 80% 미만 → 적색 경보 (데이터 연동 후 자동 적용)
+      <div style="margin-top:12px; font-size:13px; color:var(--dim)" id="nsNote">
+        북극성: 「월 매출·지출 연동」 → 측정 개통. 연 목표 72억(GM 결재 확정)이 유일한 확정 목표.
+        달성률 ≥100% 녹색 / 80~99% 노란 / 80% 미만 적색.
       </div>
     </div>
 
@@ -472,62 +378,18 @@ a { color: var(--accent); text-decoration: none; }
 
     <div class="section-card">
       <h3>월별 매출 추이 (2026년)</h3>
-      <div class="bar-chart">
-        <div class="bar-row">
-          <span class="bar-row-label">2026-01</span>
-          <div class="bar-track"><div class="bar-fill accent" style="width:0%"><span></span></div></div>
-          <span class="bar-row-val"><span class="placeholder-inline">추후 측정</span></span>
-        </div>
-        <div class="bar-row">
-          <span class="bar-row-label">2026-02</span>
-          <div class="bar-track"><div class="bar-fill accent" style="width:0%"><span></span></div></div>
-          <span class="bar-row-val"><span class="placeholder-inline">추후 측정</span></span>
-        </div>
-        <div class="bar-row">
-          <span class="bar-row-label">2026-03</span>
-          <div class="bar-track"><div class="bar-fill accent" style="width:0%"><span></span></div></div>
-          <span class="bar-row-val"><span class="placeholder-inline">추후 측정</span></span>
-        </div>
-        <div class="bar-row">
-          <span class="bar-row-label">2026-04</span>
-          <div class="bar-track"><div class="bar-fill accent" style="width:0%"><span></span></div></div>
-          <span class="bar-row-val"><span class="placeholder-inline">추후 측정</span></span>
-        </div>
-        <div class="bar-row">
-          <span class="bar-row-label" style="color:var(--accent); font-weight:700">2026-05</span>
-          <div class="bar-track"><div class="bar-fill green" style="width:0%"><span></span></div></div>
-          <span class="bar-row-val" style="color:var(--accent); font-weight:700"><span class="placeholder-inline">이번 달</span></span>
-        </div>
+      <div class="bar-chart" id="trendBars">
+        <div class="placeholder">로딩 중…</div>
       </div>
       <div class="placeholder" style="margin-top:12px">
-        월별 추이는 Apps Script 시트 연동 완료 후 실측값으로 자동 갱신됩니다.
-        데이터 소스: 매출 집계 구글 스프레드시트 (나우열M 관리)
+        정본: 「26년 매출 분석」 시트 AV3:AV14(월별 마감 총매출). 미마감 월은 빈칸(정직 표기).
       </div>
     </div>
 
     <div class="section-card">
-      <h3>분기별 목표 대비 달성</h3>
-      <div class="bar-chart">
-        <div class="bar-row">
-          <span class="bar-row-label">Q1 2026</span>
-          <div class="bar-track"><div class="bar-fill blue" style="width:0%"><span></span></div></div>
-          <span class="bar-row-val"><span class="placeholder-inline">추후 측정</span></span>
-        </div>
-        <div class="bar-row">
-          <span class="bar-row-label">Q2 2026</span>
-          <div class="bar-track"><div class="bar-fill blue" style="width:0%"><span></span></div></div>
-          <span class="bar-row-val"><span class="placeholder-inline">추후 측정</span></span>
-        </div>
-        <div class="bar-row">
-          <span class="bar-row-label">Q3 2026</span>
-          <div class="bar-track"><div class="bar-fill warn" style="width:0%"><span></span></div></div>
-          <span class="bar-row-val"><span class="placeholder-inline">진행 중</span></span>
-        </div>
-        <div class="bar-row">
-          <span class="bar-row-label">Q4 2026</span>
-          <div class="bar-track"><div class="bar-fill orange" style="width:0%"><span></span></div></div>
-          <span class="bar-row-val"><span class="placeholder-inline">계획</span></span>
-        </div>
+      <h3>분기별 목표 대비 달성 <span style="font-size:11px;color:var(--dim);font-weight:400">(분기 목표=연 72억÷4=18억, GM 확정 필요)</span></h3>
+      <div class="bar-chart" id="quarterBars">
+        <div class="placeholder">로딩 중…</div>
       </div>
     </div>
 
@@ -542,46 +404,15 @@ a { color: var(--accent); text-decoration: none; }
       <div class="info-banner" style="margin-bottom:12px">
         <span class="info-icon">&#9432;</span>
         <span>
-          아래 항목은 <strong>샘플 구조</strong>입니다.
-          실제 미수금 데이터는 나우열M이 직접 입력하거나, CRM 연동 후 자동으로 채워집니다.
+          <strong>데이터 소스 미배관.</strong>
+          미수금·정산대기 정본 시트(또는 CRM 결제·정산 원장)가 아직 연동되지 않았습니다.
+          소스가 확정되면 매출과 같은 방식(GAS openById 읽기 전용)으로 자동 배선됩니다.
+          가짜 수치는 표시하지 않습니다.
         </span>
       </div>
 
-      <div class="receivable-item">
-        <div>
-          <div class="receivable-name">샘플: 미수금 항목 A</div>
-          <div class="receivable-meta">발생일: 추후 측정 · 담당: 나우열M</div>
-        </div>
-        <div style="display:flex; align-items:center; gap:10px">
-          <span class="badge badge-yellow">정산 대기</span>
-          <span class="receivable-amount"><span class="placeholder-inline">추후 측정</span></span>
-        </div>
-      </div>
-
-      <div class="receivable-item">
-        <div>
-          <div class="receivable-name">샘플: 미수금 항목 B</div>
-          <div class="receivable-meta">발생일: 추후 측정 · 담당: 나우열M</div>
-        </div>
-        <div style="display:flex; align-items:center; gap:10px">
-          <span class="badge badge-red">연체</span>
-          <span class="receivable-amount"><span class="placeholder-inline">추후 측정</span></span>
-        </div>
-      </div>
-
-      <div class="receivable-item">
-        <div>
-          <div class="receivable-name">샘플: 정산 완료 항목</div>
-          <div class="receivable-meta">정산일: 추후 측정 · 담당: 나우열M</div>
-        </div>
-        <div style="display:flex; align-items:center; gap:10px">
-          <span class="badge badge-green">완료</span>
-          <span class="receivable-amount" style="color:var(--dim)"><span class="placeholder-inline">추후 측정</span></span>
-        </div>
-      </div>
-
-      <div class="placeholder" style="margin-top:16px">
-        미수금 총계: 추후 측정 · 정산 대기: 추후 측정건 · 연체: 추후 측정건
+      <div class="placeholder" style="margin-top:8px">
+        미수금 총계 · 정산 대기 · 연체 = 데이터 소스 미배관 (표시할 실측값 없음)
       </div>
     </div>
 
@@ -591,9 +422,9 @@ a { color: var(--accent); text-decoration: none; }
       <div style="font-size:13px; color:var(--dim); line-height:1.8">
         <p>미수금은 영업현금흐름(OCF)을 왜곡합니다. 매출로 인식되었으나 실제 현금이 유입되지 않은 금액입니다.</p>
         <br>
-        <p>현재 미수금 잔액: <span class="placeholder-inline">추후 측정</span></p>
-        <p>OCF 보정치 (미수금 제외 실현 현금): <span class="placeholder-inline">추후 측정</span></p>
-        <p>북극성 KPI(월 OCF 흑자) 달성 여부: <span class="placeholder-inline">데이터 연동 후 자동 판정</span></p>
+        <p>현재 미수금 잔액: <span class="placeholder-inline">데이터 소스 미배관</span></p>
+        <p>OCF 보정치 (미수금 제외 실현 현금): <span class="placeholder-inline">데이터 소스 미배관</span></p>
+        <p>북극성 KPI(월 OCF 흑자) 달성 여부: <span class="placeholder-inline">미수금·현금흐름 소스 연동 후 판정</span></p>
       </div>
     </div>
 
@@ -602,34 +433,279 @@ a { color: var(--accent); text-decoration: none; }
 </div><!-- /content -->
 
 <script>
+// ═══ 데이터 소스 (정본: 업무&결재 GAS · 읽기 전용) ═══
+// home_kpi = 매출 hero(당월·연간·달성률) + 채널 breakdown(팀별+주차)
+// sales_monthly = AV3:AV14 12개월 배열(월별 추이·전월대비·분기)
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbxDwFkrxK1YIaEoSNcuw2MiHiZQ-7o5N6311ytksSyeEd86ZFOhLknOWqQgNArQvZ-7/exec';
+const YEAR_TARGET = 7200000000;      // 연 목표 72억 (GM 결재 확정 · 유일 확정 목표)
+const Q_TARGET = YEAR_TARGET / 4;     // 분기 목표 18억 (연÷4, GM 확정 필요)
+
+let STATE = { monthly: null, sales: null };
+
+// ─── 금액 포맷 ───
+function fmtWon(n) {
+  if (n === null || n === undefined || isNaN(n)) return '—';
+  if (n >= 1e8) return (n / 1e8).toFixed(2) + '억';
+  if (n >= 1e4) return Math.round(n / 1e4).toLocaleString() + '만';
+  return Math.round(n).toLocaleString() + '원';
+}
+function fmtWonFull(n) {
+  if (n === null || n === undefined || isNaN(n)) return '—';
+  return Math.round(n).toLocaleString() + '원';
+}
+function pct(n, d) {
+  if (!d || n === null || n === undefined || isNaN(n)) return null;
+  return Math.round((n / d) * 1000) / 10;
+}
+function gaugeClass(p) { return p >= 100 ? 'good' : (p >= 80 ? 'warn' : 'bad'); }
+
 // ─── 탭 전환 ───
 function switchTab(tab) {
   const tabs = ['overview', 'channel', 'trend', 'receivable'];
-  const labels = ['매출 개요', '채널별 분해', '월별 추이', '미수금'];
-
   tabs.forEach(t => {
     document.getElementById('tab' + t.charAt(0).toUpperCase() + t.slice(1)).style.display =
       t === tab ? '' : 'none';
   });
-
   document.querySelectorAll('.tab-bar button').forEach((btn, i) => {
     btn.classList.toggle('active', i === tabs.indexOf(tab));
   });
-
   document.getElementById('filterBar').style.display =
     (tab === 'overview' || tab === 'channel') ? '' : 'none';
 }
 
-// ─── 월 변경 핸들러 ───
+// ─── 월 선택 → 개요 KPI/전월대비 갱신 ───
 function onMonthChange() {
-  const month = document.getElementById('filterMonth').value;
+  const m = parseInt(document.getElementById('filterMonth').value, 10);
+  if (!m || !STATE.monthly) return;
+  renderOverviewForMonth(m);
+}
+
+// 특정 월(1~12) 기준으로 이달 총 매출·달성·전월대비 렌더
+function renderOverviewForMonth(m) {
+  const months = STATE.monthly.months;
+  const cur = months[m - 1];
+  const prev = m > 1 ? months[m - 2] : null;
+  const label = cur.label;
+  const partial = STATE.monthly.curMonth === m; // 당월=진행중 가능성
+
+  // 총액 배지
   document.getElementById('totalBadge').textContent =
-    month + ' 매출: 추후 측정';
+    label + ' 매출: ' + (cur.value !== null ? fmtWon(cur.value) : '미마감');
+
+  // KPI: 이달 총 매출
+  const kpiMonth = document.getElementById('kpiMonth');
+  if (cur.value !== null) {
+    kpiMonth.textContent = fmtWon(cur.value);
+    document.getElementById('kpiMonthSub').textContent =
+      label + (partial ? ' 기준 (진행중)' : ' 마감');
+  } else {
+    kpiMonth.innerHTML = '<span class="placeholder-inline">미마감</span>';
+    document.getElementById('kpiMonthSub').textContent = label + ' 마감 전';
+  }
+
+  // KPI: 전월 대비 증감
+  const kpiMoM = document.getElementById('kpiMoM');
+  const kpiMoMSub = document.getElementById('kpiMoMSub');
+  if (cur.value !== null && prev && prev.value !== null && prev.value > 0) {
+    const diff = cur.value - prev.value;
+    const rate = Math.round((diff / prev.value) * 1000) / 10;
+    kpiMoM.textContent = (diff >= 0 ? '+' : '') + fmtWon(Math.abs(diff)).replace('—', '0');
+    kpiMoM.style.color = diff >= 0 ? 'var(--green)' : 'var(--red)';
+    kpiMoMSub.className = 'kpi-delta ' + (diff >= 0 ? 'up' : 'down');
+    kpiMoMSub.textContent = (rate >= 0 ? '▲ ' : '▼ ') + Math.abs(rate) + '% (vs ' + prev.label + ')' +
+      (partial ? ' · 당월 진행중' : '');
+  } else {
+    kpiMoM.innerHTML = '<span class="placeholder-inline">비교 불가</span>';
+    kpiMoMSub.className = 'kpi-delta flat';
+    kpiMoMSub.textContent = prev ? '전월 미마감' : '이전 달 없음';
+  }
+
+  // 전월 대비 비교 카드
+  document.getElementById('cmpCurLabel').textContent = '이번 달 (' + label + ')';
+  document.getElementById('cmpCurVal').innerHTML =
+    cur.value !== null ? fmtWon(cur.value) : '<span class="placeholder-inline">미마감</span>';
+  const curRate = cur.value !== null ? pct(cur.value, Q_TARGET / 3) : null;
+  document.getElementById('cmpCurSub').textContent =
+    cur.value !== null ? ('월 목표(6억) 대비: ' + (curRate !== null ? curRate + '%' : '—')) : '—';
+
+  document.getElementById('cmpPrevLabel').textContent = prev ? ('지난 달 (' + prev.label + ')') : '지난 달';
+  document.getElementById('cmpPrevVal').innerHTML =
+    (prev && prev.value !== null) ? fmtWon(prev.value) : '<span class="placeholder-inline">해당 없음</span>';
+  const prevRate = (prev && prev.value !== null) ? pct(prev.value, Q_TARGET / 3) : null;
+  document.getElementById('cmpPrevSub').textContent =
+    (prev && prev.value !== null) ? ('월 목표(6억) 대비: ' + (prevRate !== null ? prevRate + '%' : '—')) : '—';
+
+  document.getElementById('cmpNote').textContent =
+    '월 목표(6억)=연 72억÷12 파생치 (GM 확정 필요). 확정 목표는 연 72억뿐.' +
+    (partial ? ' 당월은 진행중이라 전월과 단순비교는 참고용.' : '');
+}
+
+// ─── 연간 KPI (개요 게이지 + 북극성) ───
+function renderYearKpi() {
+  const s = STATE.sales || {};
+  const year = s.year;
+  const yr = pct(year, YEAR_TARGET);
+  const el = document.getElementById('kpiYearRate');
+  const gauge = document.getElementById('goalGauge');
+  const goalPct = document.getElementById('goalPct');
+  if (year !== null && year !== undefined) {
+    el.textContent = (yr !== null ? yr + '%' : '—');
+    el.title = '연 누적 ' + fmtWonFull(year) + ' / 72억';
+    goalPct.textContent = fmtWon(year) + ' / 72억';
+    gauge.style.width = Math.min(yr || 0, 100) + '%';
+    gauge.className = 'gauge-fill ' + gaugeClass(yr || 0);
+  } else {
+    el.innerHTML = '<span class="placeholder-inline">집계 보완 중</span>';
+    goalPct.textContent = '—';
+  }
+  // 북극성 KPI 연결 (연 목표 달성 막대)
+  const nsFill = document.getElementById('nsYearFill');
+  const nsVal = document.getElementById('nsYearVal');
+  if (year !== null && year !== undefined) {
+    nsFill.style.width = Math.min(yr || 0, 100) + '%';
+    nsFill.className = 'bar-fill ' + (yr >= 100 ? 'green' : (yr >= 80 ? 'accent' : 'orange'));
+    nsFill.querySelector('span').textContent = (yr || 0) + '%';
+    nsVal.textContent = fmtWon(year) + ' / 72억';
+  } else {
+    nsVal.innerHTML = '<span class="placeholder-inline">집계 보완 중</span>';
+  }
+}
+
+// ─── 채널 breakdown (개요 요약 + 상세 테이블) ───
+function renderChannels() {
+  const bd = (STATE.sales && STATE.sales.breakdown) ? STATE.sales.breakdown.filter(b => b.month !== null && b.month > 0) : [];
+  const total = bd.reduce((a, b) => a + (b.month || 0), 0);
+  const colors = ['accent', 'blue', 'green', 'purple', 'orange'];
+
+  // 개요 요약 바
+  const sum = document.getElementById('channelSummary');
+  if (!bd.length) {
+    sum.innerHTML = '<div class="placeholder">채널별 실측 데이터 소스 미배관 (당월 팀별 매출 미기입)</div>';
+  } else {
+    const max = Math.max.apply(null, bd.map(b => b.month));
+    sum.innerHTML = bd.map((b, i) =>
+      '<div class="bar-row"><span class="bar-row-label">' + b.name + '</span>' +
+      '<div class="bar-track"><div class="bar-fill ' + colors[i % colors.length] + '" style="width:' +
+      Math.max(2, Math.round((b.month / max) * 100)) + '%"><span>' + fmtWon(b.month) + '</span></div></div>' +
+      '<span class="bar-row-val">' + fmtWon(b.month) + '</span></div>'
+    ).join('');
+  }
+
+  // 상세 테이블
+  const body = document.getElementById('channelTableBody');
+  if (!bd.length) {
+    body.innerHTML = '<tr><td colspan="4" style="color:var(--dim)">데이터 소스 미배관 (당월 팀별 매출 미기입)</td></tr>';
+  } else {
+    body.innerHTML = bd.map(b => {
+      const p = total ? Math.round((b.month / total) * 1000) / 10 : 0;
+      return '<tr><td>' + b.name + '</td>' +
+        '<td class="amount">' + fmtWon(b.month) + '</td>' +
+        '<td class="pct">' + p + '%</td>' +
+        '<td><span class="ratio-bar"><span class="ratio-track"><span class="ratio-fill" style="width:' + p + '%"></span></span></span></td></tr>';
+    }).join('');
+  }
+}
+
+// ─── 월별 추이 (2026) ───
+function renderTrend() {
+  const months = STATE.monthly.months;
+  const vals = months.map(m => m.value).filter(v => v !== null && v > 0);
+  const max = vals.length ? Math.max.apply(null, vals) : 0;
+  const cm = STATE.monthly.curMonth;
+  const el = document.getElementById('trendBars');
+  el.innerHTML = months.map(m => {
+    const isCur = m.m === cm;
+    if (m.value === null) {
+      return '<div class="bar-row"><span class="bar-row-label">' + m.label + '</span>' +
+        '<div class="bar-track"></div>' +
+        '<span class="bar-row-val"><span class="placeholder-inline">미마감</span></span></div>';
+    }
+    const w = max ? Math.max(2, Math.round((m.value / max) * 100)) : 0;
+    const cls = isCur ? 'green' : 'accent';
+    const lblStyle = isCur ? ' style="color:var(--accent); font-weight:700"' : '';
+    return '<div class="bar-row"><span class="bar-row-label"' + lblStyle + '>' + m.label + (isCur ? ' (진행중)' : '') + '</span>' +
+      '<div class="bar-track"><div class="bar-fill ' + cls + '" style="width:' + w + '%"><span>' + fmtWon(m.value) + '</span></div></div>' +
+      '<span class="bar-row-val"' + lblStyle + '>' + fmtWon(m.value) + '</span></div>';
+  }).join('');
+}
+
+// ─── 분기별 목표 대비 ───
+function renderQuarters() {
+  const months = STATE.monthly.months;
+  const cm = STATE.monthly.curMonth;
+  const qDefs = [[0,1,2],[3,4,5],[6,7,8],[9,10,11]];
+  const colors = ['blue', 'blue', 'warn', 'orange'];
+  const el = document.getElementById('quarterBars');
+  el.innerHTML = qDefs.map((idxs, qi) => {
+    const parts = idxs.map(i => months[i].value);
+    const filled = parts.filter(v => v !== null && v > 0);
+    const partial = idxs.some(i => (i + 1) === cm) || (filled.length > 0 && filled.length < 3);
+    const future = filled.length === 0 && idxs[0] + 1 > cm;
+    const sum = filled.reduce((a, b) => a + b, 0);
+    if (future) {
+      return barRow('Q' + (qi + 1) + ' 2026', 0, colors[qi], '<span class="placeholder-inline">계획</span>');
+    }
+    if (filled.length === 0) {
+      return barRow('Q' + (qi + 1) + ' 2026', 0, colors[qi], '<span class="placeholder-inline">미마감</span>');
+    }
+    const p = Math.round((sum / Q_TARGET) * 1000) / 10;
+    const tag = partial ? ' (진행중 ' + filled.length + '/3월)' : '';
+    return barRow('Q' + (qi + 1) + ' 2026', Math.min(p, 100), colors[qi],
+      fmtWon(sum) + ' · ' + p + '%' + tag);
+  }).join('');
+}
+function barRow(label, width, cls, valHtml) {
+  return '<div class="bar-row"><span class="bar-row-label">' + label + '</span>' +
+    '<div class="bar-track"><div class="bar-fill ' + cls + '" style="width:' + width + '%"><span>' +
+    (width ? width + '%' : '') + '</span></div></div>' +
+    '<span class="bar-row-val">' + valHtml + '</span></div>';
+}
+
+// ─── 월 선택 드롭다운 채우기 ───
+function fillMonthSelect() {
+  const sel = document.getElementById('filterMonth');
+  const months = STATE.monthly.months;
+  const cm = STATE.monthly.curMonth;
+  // 값 있는 달 + 당월만 (내림차순)
+  const opts = months.filter(m => m.value !== null || m.m === cm);
+  sel.innerHTML = opts.slice().reverse().map(m =>
+    '<option value="' + m.m + '"' + (m.m === cm ? ' selected' : '') + '>' +
+    m.label.replace('-', '년 ') + '월</option>'
+  ).join('');
+}
+
+// ─── 데이터 로드 ───
+async function loadData() {
+  try {
+    const [rk, rm] = await Promise.all([
+      fetch(GAS_URL + '?action=home_kpi&_cb=' + Date.now()).then(r => r.json()),
+      fetch(GAS_URL + '?action=sales_monthly&_cb=' + Date.now()).then(r => r.json())
+    ]);
+    STATE.sales = (rk && rk.ok) ? rk.sales : {};
+    STATE.monthly = (rm && rm.ok) ? rm : { months: [], curMonth: new Date().getMonth() + 1 };
+    if (rm && rm.asOf) document.getElementById('asOf').textContent = '실측 ' + rm.asOf;
+
+    if (STATE.monthly.months.length) {
+      fillMonthSelect();
+      renderOverviewForMonth(STATE.monthly.curMonth);
+      renderTrend();
+      renderQuarters();
+    } else {
+      document.getElementById('trendBars').innerHTML = '<div class="placeholder">매출 정본 연동 실패 — 잠시 후 새로고침</div>';
+      document.getElementById('quarterBars').innerHTML = '<div class="placeholder">매출 정본 연동 실패</div>';
+    }
+    renderYearKpi();
+    renderChannels();
+  } catch (e) {
+    document.getElementById('totalBadge').textContent = '연동 오류 — 새로고침';
+    document.getElementById('trendBars').innerHTML = '<div class="placeholder">연동 오류: ' + e + '</div>';
+  }
 }
 
 // ─── 초기화 ───
 document.addEventListener('DOMContentLoaded', () => {
   switchTab('overview');
+  loadData();
 });
 </script>
 

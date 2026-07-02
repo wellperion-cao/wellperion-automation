@@ -930,6 +930,40 @@ function _kpiSales() {
   }
 }
 
+// ── 월별 매출 배열 ── (2026-07-02 시토: CFO 매출현황 페이지 배선용)
+// GET ?action=sales_monthly → { ok, year, yearTarget, curMonth, months:[{m,label,value}], asOf }
+//   정본 = '26년 매출 분석' 시트 AV3:AV14 = 1~12월 월별 마감 총매출(행=월+2).
+//   value = 값 있으면 number, 미마감/빈 셀이면 null(정직 — 0 위조 금지).
+//   ⚠️ 읽기 전용. 기존 _kpiSales·home_kpi 무변경, 이 함수만 별도 추가.
+function _kpiSalesMonthly() {
+  try {
+    var year = 2026;
+    var yearTarget = KPI_YEAR_TARGET || null;
+    var curMonth = _kpiToday().m;
+    var months = [];
+    // 기본 골격 먼저(시트 실패해도 12개월 라벨 유지, value=null).
+    for (var mm = 1; mm <= 12; mm++) {
+      months.push({ m: mm, label: year + '-' + ('0' + mm).slice(-2), value: null });
+    }
+    if (KPI_SALES_ANALYSIS_SHEET_ID) {
+      var anaSs = SpreadsheetApp.openById(KPI_SALES_ANALYSIS_SHEET_ID);
+      var anaTab = anaSs.getSheetByName('26년 매출 분석');
+      if (anaTab) {
+        // AV = 48번째 컬럼. AV3:AV14 = 1~12월.
+        var avVals = anaTab.getRange(3, 48, 12, 1).getValues();
+        for (var ai = 0; ai < 12; ai++) {
+          var v = _kpiNum(avVals[ai][0]);
+          months[ai].value = (v !== null && v > 0) ? v : null;
+        }
+      }
+    }
+    return _json({ ok: true, year: year, yearTarget: yearTarget,
+                   curMonth: curMonth, months: months, asOf: _now() });
+  } catch (err) {
+    return _json({ ok: false, error: String(err) });
+  }
+}
+
 // ── 지출 ── (2026-06-10 시토·시뽀: GM 확정 정본 '지출 현황' 탭으로 재연결)
 // 시트 1umSF… '지출 현황' 탭(gid 821406206) = 구매·지출 거래행 표면. 컬럼 구조(1-base):
 //   1 날짜 · 2 타임스탬프 · 3 구매요청자 · 4 소속 · 5 물품명 · 6 링크 · 7 가격 · 8 목적
@@ -1466,6 +1500,12 @@ function doGet(e) {
     // GET ?action=home_kpi → { ok, sales, expense, voc, asOf }. 읽기 전용.
     if (action === 'home_kpi') {
       return _homeKpi();
+    }
+
+    // ─── CFO 매출현황 월별 배열 (AV3:AV14 12개월) — 2026-07-02 시토 ───
+    // GET ?action=sales_monthly → { ok, year, yearTarget, curMonth, months, asOf }. 읽기 전용.
+    if (action === 'sales_monthly') {
+      return _kpiSalesMonthly();
     }
 
     // ─── G1 '오늘의 항로' 서버 단일 머지 (2026-06-11 시토 · ②a 미사용·비파괴) ───
