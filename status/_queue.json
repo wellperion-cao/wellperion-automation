@@ -1098,5 +1098,19 @@
     "artifact": "auto(cmo): 검수 승인 건 발행 1건 / 수동대기 0건 (CLI ad-hoc · 커밋 d4e5689a)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "d4e5689ae6f81eb2f62991d1bad2ecc5bc8e7de0"
+  },
+  {
+    "task_id": "CPO-2026-07-03-ADHOC-10c9ec3b",
+    "clevel": "cpo",
+    "title": "[시포] 회원 문의 5종 체계 정합 — ERP홈 죽은링크·중복nav·고아페이지 정리",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-03",
+    "processed_at": "2026-07-03",
+    "ship_no": 309,
+    "artifact": "- 문의회원.html·강습문의.html: ERP 홈 링크 ../../../ → ../../ (라이브 404 확인 후 수정,\n  실제 배포 루트=cpo/member 기준 2단계 위)\n- 강습문의.html: 중복 nav(통합 문의 회원/강습 등록 회원 2버튼→동일 목적지) 정리,\n  manage=lesson 파라미터 누락 수정\n- 강습회원관리.html: 실제로는 문의회원.html?manage=lesson에 이미 통합 구현되어\n  \"준비 중\" 안내가 사실과 다른 고아 스텁 → 통합 안내+자동 리다이렉트로 교체\n- 문의회원.html 성인/ (CLI ad-hoc · 커밋 10c9ec3b)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "10c9ec3b1ffe92b0e01a108dd1733301df3ddd5c"
   }
 ]
