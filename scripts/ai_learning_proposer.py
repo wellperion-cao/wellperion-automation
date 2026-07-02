@@ -30,6 +30,7 @@ status/learning_proposals.json 에 누적 저장 + 텔레그램 1줄 알림.
 """
 import argparse
 import json
+import os
 import sys
 import io
 import re
@@ -47,6 +48,9 @@ BASE_DIR = Path(r"C:\Users\jjky0\welperion-automation")
 ENV_FILE = BASE_DIR / "telegram_bot" / ".env"
 SUMMARY_FILE = BASE_DIR / "scripts" / "_education_data" / "latest_summary.json"
 PROPOSALS_FILE = BASE_DIR / "status" / "learning_proposals.json"
+# 신규 입력 — 스킬 인벤토리(skill_inventory.py) + 최근 작업 맥락 소스
+QUEUE_FILE = BASE_DIR / "status" / "_queue.json"
+GM_LEDGER_FILE = BASE_DIR / "status" / "gm_observation_ledger.jsonl"
 
 # ── C-Level 목록 (제안 배분용) ──
 CLEVELS = ["시토", "시우", "시모", "시포", "시로", "시뽀", "웰리"]
@@ -58,6 +62,7 @@ IMPROVEMENT_AREAS = [
     {"area": "자동화코드", "desc": "스크립트·파이프라인 개선·신규 자동화"},
     {"area": "보고체계", "desc": "텔레그램·G1 보고 형식·주기 개선"},
     {"area": "운영프로세스", "desc": "일일 워크플로우·루틴 효율화"},
+    {"area": "스킬·플러그인 활용", "desc": "설치된 스킬·플러그인을 우리 워크플로에 활용"},
 ]
 
 # ── 허용 status 값 ──
@@ -162,6 +167,84 @@ def _build_effect_feedback(limit: int = 12) -> str:
     )
 
 
+def _load_skill_inventory() -> dict | None:
+    """skill_inventory.py 를 import 해 설치 스킬 인벤토리를 얻는다. best-effort(read-only).
+    실패 시 None — 스킬 영역 없이 기존 5영역만 정상 동작."""
+    try:
+        try:
+            from skill_inventory import build_inventory
+        except ImportError:
+            sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+            from skill_inventory import build_inventory
+        return build_inventory()
+    except Exception as e:
+        print(f"[WARN] 스킬 인벤토리 수집 실패({type(e).__name__}) — 스킬 영역 생략")
+        return None
+
+
+def _recent_work_context(ledger_limit: int = 6, queue_limit: int = 8) -> str:
+    """최근 작업 맥락 — gm_observation_ledger.jsonl 최근 몇 건 + _queue.json 최근 제목.
+    '이 작업엔 이 스킬' 활용제안을 우리 실제 맥락에 붙이기 위한 신호. read-only·best-effort."""
+    lines = []
+    # 최근 GM 관측/결정
+    try:
+        if GM_LEDGER_FILE.exists():
+            raw = GM_LEDGER_FILE.read_text(encoding="utf-8").splitlines()
+            recent = [l for l in raw if l.strip()][-ledger_limit:]
+            obs = []
+            for l in recent:
+                try:
+                    rec = json.loads(l)
+                    obs.append(str(rec.get("summary", ""))[:90])
+                except Exception:
+                    continue
+            if obs:
+                lines.append("최근 GM 관측·결정:")
+                lines += [f"  - {o}" for o in obs if o]
+    except Exception:
+        pass
+    # 최근 큐 제목 (PENDING·IN_PROGRESS 우선)
+    try:
+        if QUEUE_FILE.exists():
+            data = json.loads(QUEUE_FILE.read_text(encoding="utf-8"))
+            items = data if isinstance(data, list) else []
+            active = [it for it in items if str(it.get("status", "")).upper() in ("PENDING", "IN_PROGRESS")]
+            picked = (active or items)[:queue_limit]
+            titles = [str(it.get("title", ""))[:90] for it in picked if it.get("title")]
+            if titles:
+                lines.append("최근·진행중 업무(큐):")
+                lines += [f"  - {t}" for t in titles]
+    except Exception:
+        pass
+    return "\n".join(lines)
+
+
+def _build_skill_and_context_block() -> str:
+    """LLM 프롬프트에 주입할 [스킬 인벤토리 + 최근 작업 맥락] 블록. 없으면 빈 문자열."""
+    inv = _load_skill_inventory()
+    ctx = _recent_work_context()
+    if not inv and not ctx:
+        return ""
+    parts = ["\n[설치된 스킬·플러그인 인벤토리 + 최근 작업 맥락 — 활용제안 생성용]"]
+    if inv:
+        from_prompt = None
+        try:
+            from skill_inventory import format_for_prompt
+            from_prompt = format_for_prompt(inv)
+        except Exception:
+            from_prompt = None
+        if from_prompt:
+            parts.append(from_prompt)
+        parts.append(
+            "\n위는 이미 설치돼 바로 쓸 수 있는 스킬 목록이다(✨=아직 우리 워크플로에 미활용). "
+            "미활용 스킬 중 우리 최근 작업에 실제로 도움될 것을 골라, '이 작업엔 이 스킬을 이렇게 쓴다'를 "
+            "반영위치=\"스킬·플러그인 활용\" 카드로 최소 1개 제안하라."
+        )
+    if ctx:
+        parts.append("\n" + ctx)
+    return "\n".join(parts) + "\n"
+
+
 def _build_llm_prompt(summary_text: str, max_proposals: int) -> str:
     return f"""당신은 웰페리온(하이엔드 스포츠클럽 멤버십 커뮤니티) AI 운영팀의 기술 자문입니다.
 
@@ -170,9 +253,11 @@ def _build_llm_prompt(summary_text: str, max_proposals: int) -> str:
 {summary_text}
 ---
 {_build_effect_feedback()}
-위 학습 요약과 (있다면) 지난 개선의 효과 이력을 함께 바탕으로, 웰페리온 C-Level AI
-에이전트(AI CEO·CFO·CHRO·CMO·COO·CPO·CTO) 운영에서
+{_build_skill_and_context_block()}
+위 학습 요약 + (있다면) 지난 개선의 효과 이력 + 설치 스킬 인벤토리·최근 작업 맥락을 함께
+바탕으로, 웰페리온 C-Level AI 에이전트(AI CEO·CFO·CHRO·CMO·COO·CPO·CTO) 운영에서
 개선할 수 있는 제안을 정확히 {max_proposals}개 생성하세요.
+(스킬 인벤토리가 제공됐다면 그중 최소 1개는 반영위치="스킬·플러그인 활용" 카드로.)
 
 각 제안은 반드시 아래 JSON 배열 형식으로만 응답하세요 (설명문·마크다운 없이 순수 JSON만):
 [
@@ -180,7 +265,7 @@ def _build_llm_prompt(summary_text: str, max_proposals: int) -> str:
     "대상_clevel": "시토",
     "무엇을": "구체적 개선 내용 (1~2문장)",
     "왜_근거": "위 학습 요약의 어떤 내용에서 착안했는지",
-    "반영위치": "메모리 또는 프롬프트 또는 자동화코드 또는 보고체계 또는 운영프로세스",
+    "반영위치": "메모리 또는 프롬프트 또는 자동화코드 또는 보고체계 또는 운영프로세스 또는 스킬·플러그인 활용",
     "예상효과": "기대되는 구체적 효과",
     "위험": "도입 시 주의사항 또는 부작용 (없으면 '없음')",
     "구현_초안": "바로 착수 가능한 실행 초안. ▸대상 파일/위치(예: scripts/xxx.py · S2 cto탭) ▸구체적 변경(핵심 코드·텍스트 스니펫 또는 정확한 수정점) ▸검증법(예: py_compile·라이브 확인). 모르면 '미상'이 아니라 합리적 초안을 제시."
@@ -189,7 +274,7 @@ def _build_llm_prompt(summary_text: str, max_proposals: int) -> str:
 
 규칙:
 - 대상_clevel 은 반드시 시토/시우/시모/시포/시로/시뽀/웰리 중 하나
-- 반영위치 는 반드시 메모리/프롬프트/자동화코드/보고체계/운영프로세스 중 하나
+- 반영위치 는 반드시 메모리/프롬프트/자동화코드/보고체계/운영프로세스/스킬·플러그인 활용 중 하나
 - 중복 대상_clevel 최소화 (여러 C-Level 분산)
 - 구현_초안 은 '설명'이 아니라 담당 AI가 그대로 착수할 수 있는 구체 초안(파일·변경·검증)으로. 추상적 방향만 적지 말 것
 - 순수 JSON 배열만 출력 (```json 코드블록도 없이)"""
@@ -263,28 +348,58 @@ def generate_proposals_anthropic_sdk(summary_text: str, max_proposals: int, api_
 #  규칙기반 폴백 제안 생성
 # ═══════════════════════════════════════════
 def generate_proposals_fallback(summary: dict, max_proposals: int) -> list:
-    """LLM 불가 시 요약 항목을 규칙 변환하여 최소동작 제안 생성."""
+    """LLM 불가 시 요약 항목을 규칙 변환하여 최소동작 제안 생성.
+    ★ 스킬·플러그인 활용 영역 최소 1개 포함 보장(설계 요구)."""
     text = summary.get("text", "")
     lines = [l.strip() for l in text.splitlines() if l.strip() and not l.startswith("=")]
     items = [l for l in lines if l and l[0].isdigit() and ". " in l]
     items = [re.sub(r"^\d+\.\s*", "", i) for i in items]
 
-    proposals = []
-    areas = IMPROVEMENT_AREAS[:max_proposals]
-    clevels = CLEVELS[:max_proposals]
+    SKILL_AREA = "스킬·플러그인 활용"
+    ALLOWED_LOC = ["메모리", "프롬프트", "자동화코드", "보고체계", "운영프로세스", SKILL_AREA]
 
+    # 스킬 영역이 반드시 슬롯 하나를 차지하도록 영역 목록 구성
+    non_skill = [a for a in IMPROVEMENT_AREAS if a["area"] != SKILL_AREA]
+    skill_area = next((a for a in IMPROVEMENT_AREAS if a["area"] == SKILL_AREA),
+                      {"area": SKILL_AREA, "desc": "설치된 스킬·플러그인을 우리 워크플로에 활용"})
+    if max_proposals <= 1:
+        areas = [skill_area]
+    else:
+        areas = non_skill[:max_proposals - 1] + [skill_area]
+
+    clevels = CLEVELS
+
+    # 스킬 영역 카드용 — 실제 미활용 스킬 몇 개를 근거로
+    inv = _load_skill_inventory()
+    unused_hint = ""
+    if inv and inv.get("unused"):
+        unused_hint = ", ".join(inv["unused"][:5])
+
+    proposals = []
     for i, area_info in enumerate(areas):
         ref = items[i] if i < len(items) else "최신 AI 동향"
-        proposal = {
+        is_skill = area_info["area"] == SKILL_AREA
+        if is_skill:
+            what = (f"{SKILL_AREA} 개선: 설치된 스킬 중 미활용분을 워크플로에 편입"
+                    + (f" (미활용 예: {unused_hint})" if unused_hint else ""))
+            why = (f"skill_inventory 인벤토리 — 미활용 스킬 {inv.get('unused_count', '?')}개 발굴"
+                   if inv else "설치 스킬 인벤토리 기반")
+            draft = ("▸skill_inventory.py 로 미활용 스킬 확인 "
+                     "▸해당 스킬을 우리 실제 작업에 시범 적용 ▸효과 확인 후 docs/skill_cheatsheet.md 박제")
+        else:
+            what = f"{area_info['area']} 개선: {area_info['desc']}"
+            why = f"학습 요약 참조 항목: '{ref}'"
+            draft = "(규칙폴백 — 자동 초안 없음, 담당 AI 수동 설계 필요)"
+        loc = area_info["area"] if area_info["area"] in ALLOWED_LOC else "자동화코드"
+        proposals.append({
             "대상_clevel": clevels[i % len(clevels)],
-            "무엇을": f"{area_info['area']} 개선: {area_info['desc']}",
-            "왜_근거": f"학습 요약 참조 항목: '{ref}'",
-            "반영위치": area_info["area"] if area_info["area"] in ["메모리", "프롬프트"] else "자동화코드",
-            "예상효과": "운영 효율 향상 및 최신 AI 기법 반영",
+            "무엇을": what,
+            "왜_근거": why,
+            "반영위치": loc,
+            "예상효과": "운영 효율 향상 및 최신 AI 기법·도구 반영",
             "위험": "기존 동작 회귀 가능성 — 반영 전 GM 승인 필수",
-            "구현_초안": "(규칙폴백 — 자동 초안 없음, 담당 AI 수동 설계 필요)",
-        }
-        proposals.append(proposal)
+            "구현_초안": draft,
+        })
 
     return proposals[:max_proposals]
 
