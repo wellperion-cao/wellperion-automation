@@ -849,65 +849,80 @@ function _kpiParkingRevenueRow() {
 
 function _kpiSales() {
   try {
-    var ss = SpreadsheetApp.openById(KPI_SALES_SHEET_ID);
-    // 우선순위: "보고" 탭 → "총 매출 합계" 포함 탭 자동탐지
-    var tab = ss.getSheetByName('보고');
-    if (!tab) {
-      var sheets = ss.getSheets();
-      for (var i = 0; i < sheets.length; i++) {
-        var p0 = _kpiParseSalesTab(sheets[i]);
-        // 매출 탭 판별 = "총 매출 합계" 월 블록 실재 여부(sheetMonthsSum>0). 당월 미입력이어도 탭은 잡힌다.
-        if (p0 && p0.sheetMonthsSum > 0) { tab = sheets[i]; break; }
-      }
-    }
-    var cur = tab ? _kpiParseSalesTab(tab) : null;
-    if (!cur) return { today: null, month: null, year: null, target: null, rate: null, breakdown: [] };
-    // 연간 매출 = (1~5월 마감 AV3:AV7) + (시트 내 월별 마감 합 = 6월~당월 진행). 항상 이 모델 고정.
-    //   ⚠ 잠복 폭탄 제거(2026-07-02 시토): 예전 yearValid 경로는 시트 월합만 써서 7월 입력 순간
-    //     1~5월(AV) 누락·급락이 났다. 이제 어느 달이 입력돼도 1~5월 마감분이 항상 포함된다.
-    //   ⚠ 중복 없음: sheetMonthsSum 이 6월~당월(현재월 진행분 포함)을 이미 합산 → 당월을 별도로 더하지 않는다.
-    // AV열 3~7행 = 1~5월 순서(행3=1월·행7=5월, GM 확인). 빈 셀·0은 합산 제외.
-    // AV(1~5월) 읽기 실패·전부 0이면 연간 = null(집계 보완 중) 정직 표기 — 부분 연간 위조 금지.
+    var cm = _kpiToday().m; // 현재월(1~12)
+
+    // ══ 매출 정본 = '26년 매출 분석' 시트 AV열 단일화(2026-07-02 시토·GM 지시) ══
+    //   AV3=1월 · AV4=2월 · … · AV8=6월 · … · AV14=12월 (월별 마감 총매출, 행=월+2).
+    //   연간 = AV3:AV14 중 값 있는(숫자>0) 셀만 합산 → 달 마감될수록 자동 누적(빈 달 제외).
+    //   당월 = AV(현재월+2)행. 값 있으면 그 값, 없으면 month=null·hasCurMonth=false(미마감 정직 표기).
+    //   ⚠ '보고' 탭(sheetMonthsSum)은 연간/당월 산출에서 완전 제외 — 이중집계(6월 중복) 원천 차단.
+    //     ('보고' 탭 _kpiParseSalesTab 은 팀별 breakdown 용도로만 유지.)
+    //   ⚠ AV 접근 실패·전부 0이면 year=null(집계 보완 중) 정직 폴백 — 0/부분값 위조 금지.
     // 연 목표 = GM 결재 2026-06-20 확정 72억(KPI_YEAR_TARGET 상수). 분석시트에 셀 없어 상수 단일출처.
     var yearTarget = KPI_YEAR_TARGET || null;
     var year = null;
     var yearRate = null;
+    var month = null;
+    var hasCurMonth = false;
+    var lastFilledMonth = null;
     try {
       if (KPI_SALES_ANALYSIS_SHEET_ID) {
         var anaSs = SpreadsheetApp.openById(KPI_SALES_ANALYSIS_SHEET_ID);
         var anaTab = anaSs.getSheetByName('26년 매출 분석');
         if (anaTab) {
-          // AV = 48번째 컬럼. getRange(row, col, numRows, numCols)
-          var avVals = anaTab.getRange(3, 48, 5, 1).getValues(); // AV3:AV7 = 1~5월 마감
-          var sum15 = 0;
+          // AV = 48번째 컬럼. getRange(row, col, numRows, numCols) = AV3:AV14 (1~12월).
+          var avVals = anaTab.getRange(3, 48, 12, 1).getValues();
+          var sum = 0;
           var validMonths = 0;
           for (var ai = 0; ai < avVals.length; ai++) {
             var v = _kpiNum(avVals[ai][0]);
-            if (v !== null && v > 0) { sum15 += v; validMonths++; }
+            if (v !== null && v > 0) { sum += v; validMonths++; lastFilledMonth = ai + 1; }
           }
-          // 1~5월 중 1개라도 유효값이 있어야 연간 확정(없으면 null 유지). 6월~당월 = sheetMonthsSum.
-          if (validMonths > 0) {
-            year = sum15 + (cur.sheetMonthsSum || 0);
+          // 값 있는 달이 1개라도 있어야 연간 확정(없으면 null 유지 = 집계 보완 중).
+          if (validMonths > 0) year = sum;
+          // 당월 = AV(현재월)행 = 배열 인덱스 (cm-1). 값 있으면 채택, 없으면 미마감(null).
+          if (cm >= 1 && cm <= 12) {
+            var cv = _kpiNum(avVals[cm - 1][0]);
+            if (cv !== null && cv > 0) { month = cv; hasCurMonth = true; }
           }
         }
       }
     } catch (anaErr) {
-      // 분석 시트 오류는 무시 — year null 유지(집계 보완 중 표시)
+      // 분석 시트 오류 → year/month null 유지(집계 보완 중 표시)
     }
     // 연 달성률: year 있고 yearTarget 있을 때만 산출. Math.round 소수점1자리.
     yearRate = (year !== null && yearTarget) ? Math.round((year / yearTarget) * 1000) / 10 : null;
+
+    // ══ breakdown = '보고' 탭 팀별 + 주차(parking_revenue.json). year/month 계산엔 미사용. ══
+    var bd = [];
+    try {
+      var ss = SpreadsheetApp.openById(KPI_SALES_SHEET_ID);
+      var tab = ss.getSheetByName('보고');
+      if (!tab) {
+        var sheets = ss.getSheets();
+        for (var i = 0; i < sheets.length; i++) {
+          var p0 = _kpiParseSalesTab(sheets[i]);
+          if (p0 && p0.sheetMonthsSum > 0) { tab = sheets[i]; break; }
+        }
+      }
+      var cur = tab ? _kpiParseSalesTab(tab) : null;
+      if (cur && cur.breakdown) bd = cur.breakdown;
+    } catch (bdErr) {
+      // breakdown 실패는 무영향(fail-safe) — 매출 hero 값은 AV 기준 그대로.
+    }
     // 주차 매출을 breakdown 'GXE' 행 바로 아래에 삽입(없으면 맨 끝). 시트 총합/hero 값은 불변.
-    var bd = cur.breakdown || [];
     var park = _kpiParkingRevenueRow();
     if (park) {
       var gi = -1;
       for (var bi = 0; bi < bd.length; bi++) { if (bd[bi].name === 'GXE') { gi = bi; break; } }
       if (gi >= 0) bd.splice(gi + 1, 0, park); else bd.push(park);
     }
-    return { today: cur.today, month: cur.month, year: year,
-             target: cur.target, rate: cur.rate,
+
+    return { today: null, month: month, year: year,
+             target: null, rate: null,
              yearTarget: yearTarget, yearRate: yearRate,
-             curMonth: cur.curMonth, hasCurMonth: cur.hasCurMonth,
+             curMonth: cm, hasCurMonth: hasCurMonth,
+             lastFilledMonth: lastFilledMonth,
              breakdown: bd };
   } catch (err) {
     return { today: null, month: null, year: null, target: null, rate: null,

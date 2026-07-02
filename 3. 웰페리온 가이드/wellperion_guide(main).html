@@ -1128,15 +1128,15 @@
 
           /* 매출 — 월 매출/달성률 + 연간 매출/달성률 2구분 (2026-06-20 시뽀) */
           /* 라벨에 현재 월 표기 — 스테일 즉시 감지용 (2026-07-02 시토).
-             당월 = 시트의 '현재월 블록'에서만 채택. 이번달 미입력이면 이전달 값으로 대체하지 않고
-             '이번달 미입력' 정직 표기(스테일 방지). curMonth = GAS _kpiToday().m. */
+             매출 정본 = '26년 매출 분석' 시트 AV3:AV14 단일화. 당월 = AV(현재월)행에서만 채택.
+             이번달 미마감이면 이전달 값으로 대체하지 않고 '이번달 미마감' 정직 표기. curMonth = GAS _kpiToday().m. */
           var cmLabel = (s.curMonth != null) ? (' (' + s.curMonth + '월)') : '';
           set('salesMonthLabel', cmLabel);
-          /* 연간 = 1~5월 마감(분석시트 AV3:AV7) + 6월~당월 진행. 라벨에 누적 범위 명시. */
-          set('salesYearLabel', (s.curMonth != null) ? (' (1~' + s.curMonth + '월 누적)') : '');
+          /* 연간 = AV3:AV14 중 값 있는 달 합(자동 누적). 라벨 N = 마지막으로 값 있는 달(lastFilledMonth). */
+          set('salesYearLabel', (s.lastFilledMonth != null) ? (' (1~' + s.lastFilledMonth + '월 누적)') : ' (누적)');
           if (s.hasCurMonth === false) {
-            set('heroSalesMonth', '이번달 미입력');
-            setTitle('heroSalesMonth', '시트에 이번달(' + (s.curMonth != null ? s.curMonth + '월' : '현재월') + ') "총 매출 합계" 블록이 아직 없습니다 — 스테일 방지로 이전달 값을 쓰지 않음');
+            set('heroSalesMonth', '이번달 미마감');
+            setTitle('heroSalesMonth', '분석시트 AV(이번달=' + (s.curMonth != null ? s.curMonth + '월' : '현재월') + ') 마감값이 아직 없습니다 — 스테일 방지로 이전달 값을 쓰지 않음');
             set('heroSalesRate', '—');
             set('heroSalesDay', '—');
           } else {
@@ -1146,12 +1146,12 @@
             set('heroSalesDay',   krAmt(s.today));
             set('heroSalesRate',  (s.rate == null) ? '목표 미설정' : pct(s.rate));
           }
-          /* 연간: 26년 매출 분석 시트 AV3:AV7(1~5월 마감합) + 6월~당월 진행 = year(GAS 산출).
+          /* 연간: 26년 매출 분석 시트 AV3:AV14 중 값 있는 달 합 = year(GAS 산출·자동 누적).
              연 목표 72억 = GM 결재 2026-06-20 확정(KPI_YEAR_TARGET 상수). yearRate = year/72억 소수1자리.
-             분석시트 접근 실패 시 year=null → '집계 보완 중' 안전 fallback. */
+             분석시트 접근 실패·전부 0 시 year=null → '집계 보완 중' 안전 fallback. */
           if (s.year == null) {
             set('heroSalesYear', '집계 보완 중');
-            setTitle('heroSalesYear', '26년 매출 분석 시트(1~5월 마감합) 읽기 실패 또는 유효값 없음 — GAS 로그 확인');
+            setTitle('heroSalesYear', '26년 매출 분석 시트 AV3:AV14 읽기 실패 또는 유효값 없음 — GAS 로그 확인');
             set('heroSalesYearRate', '—');
           } else {
             set('heroSalesYear', krAmt(s.year));
