@@ -157,6 +157,10 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 .board-col-head .bday{font-size:20px;font-weight:800}
 .board-col.is-weekend .board-col-head .bday{color:var(--orange)}
 .board-col-body{padding:12px 14px;display:flex;flex-direction:column;gap:12px}
+/* 설비 매뉴얼 보드 — 단일 컬럼 풀폭 + 카드 여러 칸(그리드)로 구분 (2026-07-02 시우, GM: 한칸 나열→여러칸) */
+#fac-manual-flow{overflow-x:visible}
+#fac-manual-flow .board-col{flex:1 1 100%;width:100%;max-width:100%;min-width:0}
+#fac-manual-flow .board-col-body{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px}
 /* 보드 빈 상태(아무 요일도 안 켰을 때) */
 .board-empty{padding:34px 18px;text-align:center;color:var(--dim);font-size:14px;line-height:1.6;background:var(--paper);border:1px dashed var(--border);border-radius:14px}
 
@@ -978,8 +982,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
     <li>비상(화재·누수·정전·설비 중대고장): <span class="highlight">소장 총괄 지휘</span> / 소장 부재 시 차장 대행 / 119·관계기관 신고</li>
   </ul></div></div>
 
-  <!-- 설비 구역별 매뉴얼 카드 보드 -->
-  <div style="font-size:16px;font-weight:700;color:var(--text);padding:2px 0 4px;">설비 구역별 매뉴얼</div>
+  <!-- 설비 구역별 매뉴얼 카드 보드 (라벨은 보드 컬럼 헤더가 표시 — 중복 제목 제거) -->
   <div class="board-fullwidth"><div class="board-scroll" id="fac-manual-flow"><div id="fac-manual-board" style="display:contents"></div></div></div>
 
 </div>
