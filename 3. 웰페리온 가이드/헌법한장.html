@@ -137,6 +137,15 @@
   .nsmap-row .nsmap-k{display:inline-block; min-width:58px; font-size:10px; color:var(--dim); text-transform:uppercase; letter-spacing:0.02em;}
   .nsmap-row b{color:var(--text);}
   .nsmap-path{font-size:11.5px; color:#f0c674; margin-top:4px; line-height:1.4;}
+  /* ── 복합 축 리스트(측정 축=라이브값 · 미측정 축=회색) — 2026-07-02 ── */
+  .nsax-list{margin:3px 0 2px;}
+  .nsax{font-size:11.5px; line-height:1.5; color:var(--text-soft); margin-bottom:1px;}
+  .nsax .nsax-name{color:var(--dim);}
+  .nsax.nsax-live b{color:#8fd89e;}
+  .nsax.nsax-none{opacity:0.72;}
+  .nsax.nsax-none b{color:var(--dim); font-weight:600;}
+  .nsax-goal{font-size:10px; color:var(--dim);}
+  .nsax-note{font-size:10px; color:var(--dim);}
 
   /* ── 공통 4섹션 카드 ── */
   .cards{display:grid; grid-template-columns:repeat(auto-fit,minmax(230px,1fr)); gap:10px; margin-top:4px;}
@@ -190,6 +199,7 @@
     .vision-h, .vision-txt, .vision-txt b, .vision-note{color:#111 !important;}
     .nsmap{background:#f6f6f6 !important; border-color:#999 !important;}
     .nsmap-h, .nsmap-row, .nsmap-row b, .nsmap-row .nsmap-k, .nsmap-path{color:#111 !important;}
+    .nsax, .nsax b, .nsax .nsax-name, .nsax-goal, .nsax-note{color:#111 !important;}
   }
 </style>
 </head>
@@ -300,6 +310,7 @@
   var _matrixData = null;
   var _kpiData = null;
   var _kpiValues = null;      // status/kpi_values.json roles{} — 현재 실측값(없으면 null)
+  var _kpiGlobal = null;      // status/kpi_values.json global{} — 전역 실측값(unpushed·mirror_ok·health 등)
   var _queueCounts = null;    // status/_queue.json 집계 → role.id별 {active, doneToday}
   var _pendingByRole = null;  // status/northstar_pending.json → role.id별 후보 1개
   var _incidents = null;      // ssot/incidents.json → role.id별 {guarded, recent}
@@ -419,33 +430,80 @@
   //   정본 = bootsetup_matrix.json role.nsmap {kpi,tier,goal,path,현재,value_key}. 가짜 숫자·진척바 금지(약속 L05 · M4-METRIC-HONESTY).
   //   현재값: value_key가 kpi_values에 실측 숫자로 있으면 우선 표시, 없으면 nsmap.현재(정직 서술)·그것도 없으면 '미측정'.
   //   draft 역할(cpo·cfo·chro)은 '제안본 · GM 결재 대기'(kpi.json 정의 변경 게이트).
-  function liveKpiValue(role, m){
-    if(!m || !m.value_key) return null;
+  // 실측값 직독: value_key를 kpi_values.roles[id] → kpi_values.global 순으로 조회.
+  //   숫자(율→%·그외 그대로)·문자(예: "ok")는 표시. 없음/null=미측정(정직) → null 반환.
+  function liveVal(role, value_key){
+    if(!value_key) return null;
     var v = (_kpiValues && _kpiValues[role.id]) || null;
-    if(!v) return null;
-    var raw = v[m.value_key];
-    if(typeof raw !== 'number') return null;     // null(미측정)·문자 제외 → 정직
-    return /율$/.test(m.value_key) ? (Math.round(raw * 100) + '%') : String(raw);
+    var raw = (v && (value_key in v)) ? v[value_key]
+            : (_kpiGlobal && (value_key in _kpiGlobal)) ? _kpiGlobal[value_key] : undefined;
+    if(raw === undefined || raw === null) return null;   // 미측정 → 정직
+    if(typeof raw === 'number') return /율$/.test(value_key) ? (Math.round(raw * 100) + '%') : String(raw);
+    return String(raw);                                   // 문자 상태(예: ok)
+  }
+  // 축 1개 렌더. measured=true → 라이브 값(없으면 note로 상태 표기·회색 아님) / measured=false → 회색 '미측정'.
+  function axisRow(role, ax){
+    var measured = !!(ax && ax.measured);
+    var live = measured ? liveVal(role, ax.value_key) : null;
+    var goal = ax.goal ? ' <span class="nsax-goal">→ ' + esc(ax.goal) + '</span>' : '';
+    if(measured){
+      var body = (live != null) ? esc(live) : esc(ax.note || '측정중');
+      var note = (live != null && ax.note) ? ' <span class="nsax-note">' + esc(ax.note) + '</span>' : '';
+      return '<div class="nsax nsax-live"><span class="nsax-name">' + esc(ax.name) + '</span> <b>' + body + '</b>' + goal + note + '</div>';
+    }
+    var un = ax.note ? ' <span class="nsax-note">' + esc(ax.note) + '</span>' : '';
+    return '<div class="nsax nsax-none"><span class="nsax-name">' + esc(ax.name) + '</span> <b>미측정</b>' + goal + un + '</div>';
+  }
+  // 복합 축 커버리지: measured 개수 M / 전체 K + 측정 축의 표시값 목록(정직 병기용).
+  function axesCoverage(role){
+    var ax = (role.nsmap && role.nsmap.axes) || [];
+    var M = 0, vals = [];
+    ax.forEach(function(a){
+      if(a && a.measured){
+        M++;
+        var v = liveVal(role, a.value_key);
+        vals.push(esc(a.name) + ' ' + (v != null ? esc(v) : esc(a.note || '측정중')));
+      }
+    });
+    return { K: ax.length, M: M, vals: vals };
   }
   function nsMapBlock(role){
     var m = role.nsmap;
     if(!m) return '';
-    var live = liveKpiValue(role, m);
-    var cur = (live != null) ? live : (m['현재'] || '미측정');
     var prop = role.draft ? '<span class="nsmap-prop">제안본 · GM 결재 대기</span>' : '';
-    return '<div class="nsmap">' +
-      '<span class="nsmap-h">🗺️ 북극성 지도' + prop + '</span>' +
-      (m.kpi  ? '<div class="nsmap-row"><span class="nsmap-k">대표 KPI</span> <b>' + esc(m.kpi) + '</b></div>' : '') +
-      (m.tier ? '<div class="nsmap-row"><span class="nsmap-k">측정</span> ' + esc(m.tier) + ' · 현재 <b>' + esc(cur) + '</b></div>' : '') +
-      (m.goal ? '<div class="nsmap-row"><span class="nsmap-k">목표</span> ' + esc(m.goal) + '</div>' : '') +
-      (m.path ? '<div class="nsmap-path">🧭 ' + esc(m.path) + '</div>' : '') +
-    '</div>';
+    var out = '<div class="nsmap"><span class="nsmap-h">🗺️ 북극성 지도' + prop + '</span>';
+    if(m.kpi) out += '<div class="nsmap-row"><span class="nsmap-k">복합 KPI</span> <b>' + esc(m.kpi) + '</b></div>';
+    if(Array.isArray(m.axes) && m.axes.length){
+      out += '<div class="nsax-list">' + m.axes.map(function(a){ return axisRow(role, a); }).join('') + '</div>';
+    } else {
+      // 축 미설정 폴백(구 단일 프록시) — 회귀 안전.
+      var live = liveVal(role, m.value_key);
+      var cur = (live != null) ? live : (m['현재'] || '미측정');
+      if(m.tier) out += '<div class="nsmap-row"><span class="nsmap-k">측정</span> ' + esc(m.tier) + ' · 현재 <b>' + esc(cur) + '</b></div>';
+      if(m.goal) out += '<div class="nsmap-row"><span class="nsmap-k">목표</span> ' + esc(m.goal) + '</div>';
+    }
+    if(m.path) out += '<div class="nsmap-path">🧭 ' + esc(m.path) + '</div>';
+    return out + '</div>';
   }
 
   // 🌟 북극성 도달율 — 궁극 목표 · 전면(골드). 하이브리드 정본 = status/northstar_reach.json(엔진 northstar_reach.py 산출).
   //   measured = 실측/목표 % · milestone = 마일스톤 N/M + % (제안본). 측정 불가 = 거짓 숫자 금지 → "측정 개통 전" 정직 텍스트(막대 없음).
   //   가짜 %·가짜 진척바 금지(약속 L05 · M4-METRIC-HONESTY). 값·basis 계산은 전부 엔진에 위임(HTML은 렌더만).
   function northStarReachBlock(role){
+    var m = role.nsmap;
+    // ── 복합 축 종합(정직) — 측정된 축만 종합 + '측정 M/전체 K축' 커버리지 병기. 좁은 프록시 100%로 안 보이게. ──
+    if(m && Array.isArray(m.axes) && m.axes.length){
+      var labC = '<span class="nsreach-h">🌟 북극성 도달율 <span class="nsreach-note">(복합 축 · 커버리지 정직)</span></span>';
+      var cov = axesCoverage(role);
+      var pct = cov.K ? Math.round(cov.M / cov.K * 100) : 0;   // 커버리지(측정된 축 비율) — 도달율 아님, 좁은 프록시 100% 방지
+      var kpiLbl = esc(m.kpi || '북극성');
+      var valTxt = cov.vals.length ? cov.vals.join(' · ') : '측정 축 없음(축적 전)';
+      return '<div class="nsreach">' + labC +
+        '<div class="kbar gold" title="측정 커버리지 — 전체 축 중 실측된 비율(도달율 아님)"><i style="width:' + pct + '%"></i></div>' +
+        '<div class="nsreach-meta">🌟 ' + kpiLbl + ': <b>' + valTxt + '</b> <span class="nsreach-note">· 측정 ' + cov.M + '/' + cov.K + '축</span></div>' +
+        '<div class="nsreach-build" style="margin-top:2px;">복합 축 종합 — 좁은 프록시 하나로 &lsquo;북극성 도달&rsquo; 단정 금지(L05)</div>' +
+      '</div>';
+    }
     var lab = '<span class="nsreach-h">🌟 북극성 도달율 <span class="nsreach-note">(궁극 목표)</span></span>';
     var d = (_reachData && _reachData[role.id]) || null;
     if(d && typeof d.reach_pct === 'number'){
@@ -743,6 +801,7 @@
       _matrixData = arr[0];
       _kpiData = (arr[1] && arr[1].roles) || {};
       _kpiValues = (arr[2] && arr[2].roles) || {};
+      _kpiGlobal = (arr[2] && arr[2].global) || {};
       _queueCounts = computeQueueCounts(arr[3]);
       _pendingByRole = computePending(arr[4]);
       _incidents = computeIncidents(arr[5]);
