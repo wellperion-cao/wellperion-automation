@@ -6707,9 +6707,9 @@ function printA3Manual(){
 }
 
 /* ═══════════════════════════════════════════════
-   A3 매뉴얼(세로 1장) 인쇄 — 평일(월~금) 공통 항목 분리로 압축
-   섹션1: 평일 공통(월~금 5일 전부에 등장하는 항목, 분류별 1회만)
-   섹션2: 요일·주말 특화(공통을 뺀 나머지 + 토/일 그대로)
+   A3 매뉴얼(세로 1장) 인쇄 — 공통(매일) 항목 분리로 압축
+   섹션1: 공통(매일·월~일 — 월~금 교집합으로 산출한 뒤 토·일 셀에서도 동일 항목 제거해 중복 표시 방지)
+   섹션2: 요일·주말 특화(공통을 뺀 나머지. 토/일도 공통 제외 후 남은 특화 항목만 — 일요일 '둘째주 휴관일 작업'은 고유 항목이라 그대로 유지)
    printA3Manual/BOARD_DATA·BOARD_DAYS·BOARD_GENDERS·parseBoardLine 재사용, 기존 함수 무변경.
    함수명: printA3ManualPortrait / 클래스: a3-manual-portrait-mode
    style id: a3-manual-portrait-page-style / 컨테이너: #a3-manual-portrait-print
@@ -6738,7 +6738,9 @@ function computeA3ManualPortraitData(){
     BOARD_GENDERS.forEach(g=>{
       const gk=g.gk;
       const text=(BOARD_DATA[d]&&BOARD_DATA[d][gk])||'';
-      weekend[d][gk]=text.split('\n').map(l=>l.trim()).filter(l=>l.length);
+      const lines=text.split('\n').map(l=>l.trim()).filter(l=>l.length);
+      // 공통(매일) 확장: 토·일 셀에서도 common[gk]에 있는 항목은 제거(중복 표시 방지) — 나머지 고유 항목만 특화로 표시
+      weekend[d][gk]=lines.filter(line=>!(common[gk]||[]).includes(line));
     });
   });
   return {common, perDay, weekend};
@@ -6762,7 +6764,7 @@ function a3pvLinesHTML(lines){
 }
 function printA3ManualPortrait(){
   const data=computeA3ManualPortraitData();
-  let html='<div class="a3pv-sec-title">평일 공통 (월~금 매일)</div>';
+  let html='<div class="a3pv-sec-title">공통 (매일 · 월~일)</div>';
   html+='<div class="a3pv-common-grid">';
   BOARD_GENDERS.forEach(g=>{
     html+='<div class="a3pv-col"><div class="a3pv-col-head">'+escapeHTML(g.label)+'</div>'
@@ -6789,7 +6791,7 @@ function printA3ManualPortrait(){
   const host=document.getElementById('a3pv-body-host');
   if(host) host.innerHTML=html;
   const sub=document.querySelector('#a3-manual-portrait-print .a3pv-sub');
-  if(sub) sub.textContent='평일 공통 분리 압축판 — 세로 1장  ·  출력일 '+kstToday();
+  if(sub) sub.textContent='공통(매일) 분리 압축판 — 세로 1장  ·  출력일 '+kstToday();
   document.body.classList.add('a3-manual-portrait-mode');
   let pstyleTag=document.getElementById('a3-manual-portrait-page-style');
   if(!pstyleTag){
