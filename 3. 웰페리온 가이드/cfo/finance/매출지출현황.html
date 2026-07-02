@@ -2,6 +2,7 @@
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
 <title>💰 재무현황 · 웰페리온</title>
+<link rel="icon" id="favicon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='88'>💰</text></svg>">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.0/dist/chart.umd.js"></script>
 <style>
 :root{ --bg:#f4f3ef;--surface:#fff;--surface-2:#faf9f6;--ink:#1f1e1b;--ink-soft:#6c6961;
@@ -400,6 +401,8 @@ async function startApp(){
 // 직원용 구매요청 전용 모드 (?req=1) — 재무 데이터·차트 미로드, 구매요청 탭만
 async function startReqOnly(){
   document.getElementById("app").style.display="block";
+  document.title="🛒 구매요청 · 웰페리온"; // 직원용 페이지 탭 이름
+  var fav=document.getElementById("favicon"); if(fav) fav.href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='88'>🛒</text></svg>"; // 지구본→장바구니
   TABS=[{id:"request",label:"구매요청"}]; renderNav();
   var h1=document.querySelector(".brand h1"); if(h1) h1.textContent="구매요청";
   var hs=document.querySelector(".hd-sub"); if(hs) hs.textContent="웰페리온 구매 품의 · 직원용 · 제출하면 담당 부서장이 승인/반려";
