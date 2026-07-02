@@ -34,6 +34,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 QUEUE_REL = "status/_queue.json"
+ARCHIVE_REL = "status/_queue_archive.json"
 
 # clevel ↔ 닉네임 매핑 (CLAUDE.md §1).
 NICK = {
@@ -215,7 +216,22 @@ def _should_skip(meta: dict, queue: list) -> bool:
     return False
 
 
-def _build_item(meta: dict, clevel: str) -> dict:
+def _next_ship_no(active: list, archive: list) -> int:
+    """ship_no = _queue.json + _queue_archive.json 통틀어 max+1 (전역 유니크).
+
+    per-clevel 재시작(assign_ship_numbers 구방식)은 서로 다른 clevel 간 동일번호를
+    낳아 참조 시 혼동을 준다. 두 파일 전체 max+1 로 뽑아 재사용·교차중복을 막는다
+    (gm_aide_scan.max_ship_no·bot 북극성 등록과 동일 정신). 없으면 1.
+    """
+    nums = [
+        x.get("ship_no")
+        for x in list(active) + list(archive)
+        if isinstance(x, dict) and isinstance(x.get("ship_no"), int)
+    ]
+    return (max(nums) + 1) if nums else 1
+
+
+def _build_item(meta: dict, clevel: str, ship_no: int) -> dict:
     nick = NICK.get(clevel, clevel)
     sha7 = meta["short"]
     date = meta["date"]
@@ -237,6 +253,7 @@ def _build_item(meta: dict, clevel: str) -> dict:
         "priority": "NORMAL",
         "enqueued_at": date,
         "processed_at": date,
+        "ship_no": ship_no,
         "artifact": artifact,
         "next": "🏁 입항완료(루틴) — 다음 불필요",
         "adhoc_commit": meta["full"],
@@ -342,8 +359,14 @@ def main() -> int:
         if _should_skip(meta, queue):
             return 0
 
+        # ship_no = 활성 큐 + 아카이브 통틀어 max+1 (전역 유니크·재사용 방지).
+        archive_path = os.path.join(root, ARCHIVE_REL)
+        archive, _ = _load_queue(archive_path)
+        if archive is None:
+            archive = []
+
         clevel = _attribute_clevel(root, meta["subject"], meta["body"])
-        item = _build_item(meta, clevel)
+        item = _build_item(meta, clevel, _next_ship_no(queue, archive))
 
         queue.append(item)
         if not _write_queue(queue_path, queue, crlf):
