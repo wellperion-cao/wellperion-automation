@@ -1,19 +1,19 @@
 {
   "_doc": "ERP 시스템 현황 단일 출처. erp_status_publisher.py 가 발행. ERP가 읽어 표시.",
-  "generated_at": "2026-07-02T21:26:29Z",
-  "generated_at_kst": "2026-07-03 06:26",
-  "summary": "✅ 전체 정상",
+  "generated_at": "2026-07-02T21:56:29Z",
+  "generated_at_kst": "2026-07-03 06:56",
+  "summary": "⚠️ 점검 필요: 큐 미러 동기",
   "systems": [
     {
       "name": "일일 스케줄러",
       "state": "정상",
-      "detail": "11분 전 활동",
+      "detail": "13분 전 활동",
       "note": "정각 보고를 쏘는 시계"
     },
     {
       "name": "텔레그램 봇",
       "state": "정상",
-      "detail": "29분 전 활동",
+      "detail": "59분 전 활동",
       "note": "보고·승인 중계"
     },
     {
@@ -31,12 +31,12 @@
     {
       "name": "G1 큐 라이브",
       "state": "정상",
-      "detail": "HTTP 200 · active 24건 라이브=로컬 일치"
+      "detail": "CDN 캐시 지연 — 라이브 24건 ≠ 로컬 25건 (미푸시 0 · Pages 반영 대기 중, 정상)"
     },
     {
       "name": "큐 미러 동기",
-      "state": "정상",
-      "detail": "일치 · active 24건/81173B"
+      "state": "이상",
+      "detail": "미러 드리프트 — 로컬 active 25건/82302B ≠ 미러 24건/81173B"
     },
     {
       "name": "시트 GAS(todo_list)",
@@ -55,10 +55,10 @@
     }
   ],
   "automation_health": {
-    "summary": "자동화 11/16 정상 (69%)",
+    "summary": "자동화 12/16 정상 (75%)",
     "total": 16,
-    "healthy": 11,
-    "rate": 69,
+    "healthy": 12,
+    "rate": 75,
     "items": [
       {
         "name": "Wellperion-AI-Education-Weekly",
@@ -104,10 +104,10 @@
       },
       {
         "name": "Wellperion-GM-Aide-Scan-0630",
-        "state": "미실행",
-        "last_run": "1999-11-30 오전 12:00:00",
-        "last_result": 267011,
-        "next_run": "2026-07-03 오전 6:30:00"
+        "state": "정상",
+        "last_run": "2026-07-03 오전 6:30:01",
+        "last_result": 0,
+        "next_run": "2026-07-04 오전 6:30:00"
       },
       {
         "name": "Wellperion-IG-Series-Produce-0730",
@@ -140,9 +140,9 @@
       {
         "name": "Wellperion-NorthStar-0630",
         "state": "정상",
-        "last_run": "2026-07-02 오전 6:30:01",
+        "last_run": "2026-07-03 오전 6:30:01",
         "last_result": 0,
-        "next_run": "2026-07-03 오전 6:30:00"
+        "next_run": "2026-07-04 오전 6:30:00"
       },
       {
         "name": "Wellperion-PC-Boot-Greeting",
