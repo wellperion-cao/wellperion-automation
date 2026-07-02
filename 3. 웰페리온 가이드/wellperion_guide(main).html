@@ -506,13 +506,13 @@
         <!-- 월 | 연간 좌우 배치 (세로로 안 늘어나게) -->
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px;">
           <div>
-            <div style="font-size:10.5px;font-weight:700;color:var(--dim);">월 매출</div>
+            <div style="font-size:10.5px;font-weight:700;color:var(--dim);">월 매출<span id="salesMonthLabel"></span></div>
             <div style="font-size:21px;font-weight:800;line-height:1.1;margin:2px 0 3px;letter-spacing:-0.02em;color:var(--text);"><span id="heroSalesMonth">—</span></div>
             <div style="font-size:10.5px;color:var(--dim);">달성률 <span id="heroSalesRate" style="color:var(--grow);font-weight:700;">—</span></div>
             <div style="font-size:10.5px;color:var(--dim);">오늘 <span id="heroSalesDay" style="color:var(--grow);">—</span></div>
           </div>
           <div style="padding-left:10px;border-left:1px dashed var(--border);">
-            <div style="font-size:10.5px;font-weight:700;color:var(--dim);">연간 매출</div>
+            <div style="font-size:10.5px;font-weight:700;color:var(--dim);">연간 매출<span id="salesYearLabel"></span></div>
             <div style="font-size:21px;font-weight:800;line-height:1.1;margin:2px 0 3px;letter-spacing:-0.02em;color:var(--text);"><span id="heroSalesYear">—</span></div>
             <div style="font-size:10.5px;color:var(--dim);">달성률 <span id="heroSalesYearRate" style="color:var(--grow);font-weight:700;">—</span></div>
           </div>
@@ -1127,12 +1127,26 @@
           var s = d.sales || {}, e = d.expense || {}, v = d.voc || {};
 
           /* 매출 — 월 매출/달성률 + 연간 매출/달성률 2구분 (2026-06-20 시뽀) */
-          var smVal = krAmt(s.month);
-          set('heroSalesMonth', smVal);
-          setTitle('heroSalesMonth', krExact(s.month));
-          set('heroSalesDay',   krAmt(s.today));
-          set('heroSalesRate',  (s.rate == null) ? '목표 미설정' : pct(s.rate));
-          /* 연간: 26년 매출 분석 시트 AV3:AV7(1~5월 마감합) + 6월 현재 누적 = year(GAS 산출).
+          /* 라벨에 현재 월 표기 — 스테일 즉시 감지용 (2026-07-02 시토).
+             당월 = 시트의 '현재월 블록'에서만 채택. 이번달 미입력이면 이전달 값으로 대체하지 않고
+             '이번달 미입력' 정직 표기(스테일 방지). curMonth = GAS _kpiToday().m. */
+          var cmLabel = (s.curMonth != null) ? (' (' + s.curMonth + '월)') : '';
+          set('salesMonthLabel', cmLabel);
+          /* 연간 = 1~5월 마감(분석시트 AV3:AV7) + 6월~당월 진행. 라벨에 누적 범위 명시. */
+          set('salesYearLabel', (s.curMonth != null) ? (' (1~' + s.curMonth + '월 누적)') : '');
+          if (s.hasCurMonth === false) {
+            set('heroSalesMonth', '이번달 미입력');
+            setTitle('heroSalesMonth', '시트에 이번달(' + (s.curMonth != null ? s.curMonth + '월' : '현재월') + ') "총 매출 합계" 블록이 아직 없습니다 — 스테일 방지로 이전달 값을 쓰지 않음');
+            set('heroSalesRate', '—');
+            set('heroSalesDay', '—');
+          } else {
+            var smVal = krAmt(s.month);
+            set('heroSalesMonth', smVal);
+            setTitle('heroSalesMonth', krExact(s.month));
+            set('heroSalesDay',   krAmt(s.today));
+            set('heroSalesRate',  (s.rate == null) ? '목표 미설정' : pct(s.rate));
+          }
+          /* 연간: 26년 매출 분석 시트 AV3:AV7(1~5월 마감합) + 6월~당월 진행 = year(GAS 산출).
              연 목표 72억 = GM 결재 2026-06-20 확정(KPI_YEAR_TARGET 상수). yearRate = year/72억 소수1자리.
              분석시트 접근 실패 시 year=null → '집계 보완 중' 안전 fallback. */
           if (s.year == null) {

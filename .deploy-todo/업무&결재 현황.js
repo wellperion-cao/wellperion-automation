@@ -720,27 +720,21 @@ function _kpiParseSalesTab(sheet) {
   if (lastRow < 2 || lastCol < 2) return null;
   var values = sheet.getRange(1, 1, lastRow, lastCol).getValues();
 
-  // "총 매출 합계" 가 들어간 셀을 모두 찾는다. 가장 오른쪽=최신(이번달) 블록 채택.
+  // "총 매출 합계" 가 들어간 셀을 모두 찾는다.
   // ⚠ 시트 구조 실측(2026-06-20 시뽀): "보고" 탭 블록은 '월별'이 아니라 '같은 달의
-  //   일자별 누적 스냅샷'(예: 6/18 누적·6/19 누적). 따라서 모든 블록 month 를 무지성
-  //   합산하면 같은 6월을 중복 더해 가짜 연간(8.33억) 이 나온다. → 블록을 '월(month-of-year)'
-  //   기준으로 묶어 월별 최신 1개만 취하고, 그 월별 마감값을 합쳐야 진짜 연간이 된다.
-  var best = null; // {r, c} 최신 블록
+  //   일자별 누적 스냅샷'(예: 6/18 누적·6/19 누적). → 블록을 '월(month-of-year)' 기준으로
+  //   묶어 월별 최신 1개만 취한다.
+  // ⚠ 당월 선택 버그 수정(2026-07-02 시토): 예전엔 '가장 오른쪽 블록'을 무조건 당월로 삼아
+  //   7월 스냅샷 미입력 시 6월 값이 "월 매출"로 스테일 노출됐다. → 지출(_kpiExpense)처럼
+  //   _kpiToday().m(현재월)에 정확히 매칭되는 블록만 당월로 채택. 현재월 블록이 없으면 null(정직).
   var anchors = []; // 모든 "총 매출 합계" 셀 위치
   for (var r = 0; r < values.length; r++) {
     for (var c = 0; c < values[r].length; c++) {
       var cell = String(values[r][c] || '');
-      if (cell.indexOf('총 매출 합계') >= 0) {
-        anchors.push({ r: r, c: c });
-        if (!best || c > best.c) best = { r: r, c: c };
-      }
+      if (cell.indexOf('총 매출 합계') >= 0) anchors.push({ r: r, c: c });
     }
   }
-  if (!best) return null;
-
-  // 합계 행 파싱(최신 블록)
-  var summary = _kpiReadBlock(values[best.r], best.c);
-  if (!summary || summary.month === null) return null;
+  if (!anchors.length) return null;
 
   // 블록의 '월'을 추정: 같은 컬럼에서 위로 스캔해 날짜형 셀("26. 6. 19" / "2026-06-19")의
   //   월(month) 숫자를 읽는다. 못 찾으면 null.
@@ -760,61 +754,71 @@ function _kpiParseSalesTab(sheet) {
     return null;
   }
 
-  // 연간 누적 = '서로 다른 월'의 마감값만 합산. 같은 달의 일자별 스냅샷은
-  //   가장 오른쪽(=최신) 1개만 채택해 중복 합산을 막는다.
-  // 데이터가 1개 월뿐이면(=1~5월 마감값 부재) 연간은 '집계 보완 중'(null) 으로 정직 표기.
-  var monthBlocks = {}; // monthOfYear → {c, month}
-  var unknownMonth = false;
+  // 월별 최신 블록 묶기: monthOfYear → {r, c, block}. 같은 달은 더 오른쪽(최신)으로 덮어쓴다.
+  var monthBlocks = {};
   for (var ai = 0; ai < anchors.length; ai++) {
     var ablk = _kpiReadBlock(values[anchors[ai].r], anchors[ai].c);
     if (!ablk || ablk.month === null) continue;
     var moy = _blockMonthOf(anchors[ai].r, anchors[ai].c);
-    if (moy === null) { unknownMonth = true; continue; }
-    // 같은 달은 더 오른쪽(최신) 블록으로 덮어쓴다.
+    if (moy === null) continue; // 월 식별 불가 블록은 연간/당월 양쪽에서 제외
     if (!monthBlocks[moy] || anchors[ai].c > monthBlocks[moy].c) {
-      monthBlocks[moy] = { c: anchors[ai].c, month: ablk.month };
+      monthBlocks[moy] = { r: anchors[ai].r, c: anchors[ai].c, block: ablk, moy: moy };
     }
   }
-  var distinctMonths = [];
-  for (var mk in monthBlocks) { if (monthBlocks.hasOwnProperty(mk)) distinctMonths.push(mk); }
-  var yearSum = 0;
-  for (var dm = 0; dm < distinctMonths.length; dm++) yearSum += monthBlocks[distinctMonths[dm]].month;
-  // 진짜 연간으로 인정하는 조건: 서로 다른 월이 2개 이상 (월 마감 누적이 실제로 쌓였을 때).
-  //   월이 1개뿐이거나(=6월만), 월 식별 불가 블록이 섞였으면 → 연간 null(보완 중).
-  var yearValid = (distinctMonths.length >= 2) && !unknownMonth;
 
-  // 최신 블록 기준 컬럼(best.c). 같은 컬럼에서 아래 행들을 스캔해 breakdown 추출.
-  // 최대 15행 아래까지만 탐색 (블록 범위 이탈 방지).
+  // 시트에 실재하는 월(6월~)의 최신 마감값 합 = 연간 보완의 '시트 몫'(1~5월은 분석시트 AV3:AV7).
+  //   같은 달 일자별 스냅샷은 위에서 최신 1개로 접혀 중복 합산이 원천 차단됨.
+  var sheetMonthsSum = 0;
+  var sheetMonths = [];
+  for (var mk in monthBlocks) {
+    if (!monthBlocks.hasOwnProperty(mk)) continue;
+    sheetMonthsSum += monthBlocks[mk].block.month;
+    sheetMonths.push(+mk);
+  }
+  sheetMonths.sort(function (a, b) { return a - b; });
+
+  // 당월(현재월) 블록 선택 — 없으면 정직하게 null(스테일 이전달 금지).
+  var cm = _kpiToday().m;
+  var curMB = monthBlocks[cm] || null;
+  var s = curMB ? curMB.block : null;
+
+  // breakdown: 당월 블록 컬럼 기준. 당월 블록 없으면 빈 배열.
   var breakdown = [];
-  var seen = {};
-  for (var ri = best.r + 1; ri < Math.min(best.r + 16, values.length); ri++) {
-    var labelCell = String(values[ri][best.c] || '').trim();
-    for (var li = 0; li < BREAKDOWN_LABELS.length; li++) {
-      var key = BREAKDOWN_LABELS[li];
-      if (labelCell.indexOf(key) >= 0 && !seen[key]) {
-        seen[key] = true;
-        var blk = _kpiReadBlock(values[ri], best.c);
-        if (blk) {
-          var displayName = BREAKDOWN_NAME_MAP[key] || key;
-          breakdown.push({
-            name:   displayName,
-            today:  blk.today,
-            month:  blk.month,
-            target: blk.target,
-            rate:   blk.rate
-          });
+  if (curMB) {
+    var seen = {};
+    for (var ri = curMB.r + 1; ri < Math.min(curMB.r + 16, values.length); ri++) {
+      var labelCell = String(values[ri][curMB.c] || '').trim();
+      for (var li = 0; li < BREAKDOWN_LABELS.length; li++) {
+        var key = BREAKDOWN_LABELS[li];
+        if (labelCell.indexOf(key) >= 0 && !seen[key]) {
+          seen[key] = true;
+          var blk = _kpiReadBlock(values[ri], curMB.c);
+          if (blk) {
+            breakdown.push({
+              name:   BREAKDOWN_NAME_MAP[key] || key,
+              today:  blk.today,
+              month:  blk.month,
+              target: blk.target,
+              rate:   blk.rate
+            });
+          }
+          break;
         }
-        break;
       }
     }
   }
 
   return {
-    today: summary.today, month: summary.month,
-    target: summary.target, rate: summary.rate,
-    // 월 매출/달성률: month=월누적·rate=월 달성률(시트 "총 매출 합계" 행). 항상 유효.
-    // 연간 매출: 서로 다른 월 2개+ 마감값이 쌓였을 때만 합산값, 아니면 null(=홈에서 '집계 보완 중').
-    year: yearValid ? yearSum : null,
+    // 월 매출/달성률: 현재월 블록에서만. 현재월 블록 없으면 null(홈에서 '이번달 미입력' 정직 표기).
+    today:  s ? s.today  : null,
+    month:  s ? s.month  : null,
+    target: s ? s.target : null,
+    rate:   s ? s.rate   : null,
+    curMonth: cm,                    // 라벨용 현재 월(예 7)
+    hasCurMonth: !!curMB,            // 당월 블록 존재 여부
+    // 연간은 _kpiSales 에서 (1~5월 AV3:AV7) + sheetMonthsSum 로 항상 고정 산출.
+    sheetMonthsSum: sheetMonthsSum,  // 시트 내 월별 마감 합(6월~당월 진행)
+    sheetMonths: sheetMonths,        // 시트에 존재하는 월 목록
     breakdown: breakdown
   };
 }
@@ -852,37 +856,38 @@ function _kpiSales() {
       var sheets = ss.getSheets();
       for (var i = 0; i < sheets.length; i++) {
         var p0 = _kpiParseSalesTab(sheets[i]);
-        if (p0 && p0.month !== null) { tab = sheets[i]; break; }
+        // 매출 탭 판별 = "총 매출 합계" 월 블록 실재 여부(sheetMonthsSum>0). 당월 미입력이어도 탭은 잡힌다.
+        if (p0 && p0.sheetMonthsSum > 0) { tab = sheets[i]; break; }
       }
     }
     var cur = tab ? _kpiParseSalesTab(tab) : null;
     if (!cur) return { today: null, month: null, year: null, target: null, rate: null, breakdown: [] };
-    // 연간 매출 = 서로 다른 월 마감값 합(_kpiParseSalesTab.year). 1개 월뿐이면 null(보완 중).
-    //   ⚠ null 을 month 로 덮어쓰지 않는다 — 같은 달 중복합산 가짜 연간 방지(2026-06-20 시뽀).
-    var year = (cur.year !== null && cur.year !== undefined) ? cur.year : null;
-    // 연간 매출 보완 — 26년 매출 분석 시트 AV3:AV7 (1~5월 월별 마감 총합, GM 2026-06-20 제공).
-    // 기존 시트(KPI_SALES_SHEET_ID)는 6월 단일이라 year=null. 분석 시트에서 1~5월 합을 읽어 보완.
+    // 연간 매출 = (1~5월 마감 AV3:AV7) + (시트 내 월별 마감 합 = 6월~당월 진행). 항상 이 모델 고정.
+    //   ⚠ 잠복 폭탄 제거(2026-07-02 시토): 예전 yearValid 경로는 시트 월합만 써서 7월 입력 순간
+    //     1~5월(AV) 누락·급락이 났다. 이제 어느 달이 입력돼도 1~5월 마감분이 항상 포함된다.
+    //   ⚠ 중복 없음: sheetMonthsSum 이 6월~당월(현재월 진행분 포함)을 이미 합산 → 당월을 별도로 더하지 않는다.
     // AV열 3~7행 = 1~5월 순서(행3=1월·행7=5월, GM 확인). 빈 셀·0은 합산 제외.
-    // 6월 month(cur.month)가 있으면 연간 = 1~5월합 + 6월month. 어느 하나라도 없으면 null 유지.
+    // AV(1~5월) 읽기 실패·전부 0이면 연간 = null(집계 보완 중) 정직 표기 — 부분 연간 위조 금지.
     // 연 목표 = GM 결재 2026-06-20 확정 72억(KPI_YEAR_TARGET 상수). 분석시트에 셀 없어 상수 단일출처.
     var yearTarget = KPI_YEAR_TARGET || null;
+    var year = null;
     var yearRate = null;
     try {
-      if (year === null && cur.month !== null && KPI_SALES_ANALYSIS_SHEET_ID) {
+      if (KPI_SALES_ANALYSIS_SHEET_ID) {
         var anaSs = SpreadsheetApp.openById(KPI_SALES_ANALYSIS_SHEET_ID);
         var anaTab = anaSs.getSheetByName('26년 매출 분석');
         if (anaTab) {
           // AV = 48번째 컬럼. getRange(row, col, numRows, numCols)
-          var avVals = anaTab.getRange(3, 48, 5, 1).getValues(); // AV3:AV7
+          var avVals = anaTab.getRange(3, 48, 5, 1).getValues(); // AV3:AV7 = 1~5월 마감
           var sum15 = 0;
           var validMonths = 0;
           for (var ai = 0; ai < avVals.length; ai++) {
             var v = _kpiNum(avVals[ai][0]);
             if (v !== null && v > 0) { sum15 += v; validMonths++; }
           }
-          // 1~5월 중 1개라도 유효한 값이 있으면 보완 진행
+          // 1~5월 중 1개라도 유효값이 있어야 연간 확정(없으면 null 유지). 6월~당월 = sheetMonthsSum.
           if (validMonths > 0) {
-            year = sum15 + cur.month; // 1~5월 마감합 + 6월 현재 누적
+            year = sum15 + (cur.sheetMonthsSum || 0);
           }
         }
       }
@@ -902,6 +907,7 @@ function _kpiSales() {
     return { today: cur.today, month: cur.month, year: year,
              target: cur.target, rate: cur.rate,
              yearTarget: yearTarget, yearRate: yearRate,
+             curMonth: cur.curMonth, hasCurMonth: cur.hasCurMonth,
              breakdown: bd };
   } catch (err) {
     return { today: null, month: null, year: null, target: null, rate: null,
