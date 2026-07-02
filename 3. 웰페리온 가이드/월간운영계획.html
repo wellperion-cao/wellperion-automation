@@ -184,6 +184,11 @@
   .cfo-link:hover{border-color:var(--gold); background:rgba(240,198,116,0.12);}
   h2.sec.has-link{flex-wrap:wrap;}
 
+  /* ── 🗺️ 전략 · 확장 원본 바로가기(S0 동일 링크) ── */
+  .strat-row{display:flex; flex-wrap:wrap; gap:8px;}
+  .strat-link{display:inline-flex; align-items:center; gap:6px; font-size:12px; font-weight:600; color:var(--accent-soft); background:var(--paper); border:1px solid var(--border-strong); border-radius:8px; padding:6px 13px; text-decoration:none; white-space:nowrap;}
+  .strat-link:hover{border-color:var(--accent); background:var(--surface);}
+
   .report-box{padding:13px 15px; border:1px dashed var(--border-strong); border-radius:11px; background:var(--surface); font-size:12px; color:var(--text-soft); line-height:1.55;}
   .report-box.done{border-style:solid; border-left:3px solid var(--green);}
   .report-box .rh{font-size:13px; font-weight:700; color:var(--text); margin-bottom:5px;}
@@ -212,6 +217,8 @@
     h2.sec{font-size:10.5px; margin:0 0 4px; border-bottom:1px solid #bbb; padding-bottom:2px; break-after:avoid;}
     h2.sec .stag{font-size:7.5px;}
     h2.sec .cfo-link{font-size:7.5px; padding:1px 6px; color:#333 !important; border-color:#999 !important;}
+    .strat-row{gap:4px;}
+    .strat-link{font-size:7.5px; padding:2px 7px; color:#333 !important; background:#fff !important; border-color:#999 !important;}
     header.page-head, .month-head, .rpt-wrap, .metric, .report-box, .prow, table.rpt tr, .erp-step, .erp-time{break-inside:avoid;}
     header.page-head{margin-bottom:4px; padding-bottom:4px;}
     header.page-head h1{font-size:14px;}
@@ -283,6 +290,16 @@
     <section class="blk">
       <h2 class="sec">🚀 웰페리온 ERP 월별 진척 <span class="stag">40 → 60 → 80 → 95% · 실적/목표</span></h2>
       <div id="erp-board"><div class="board-status">ERP 진척 정본을 불러오는 중…</div></div>
+    </section>
+
+    <!-- 🗺️ 전략 · 확장 (원본 문서 바로가기 — S0과 동일 링크. 08월 ERP 확장과 스토리로 연결) -->
+    <section class="blk">
+      <h2 class="sec">🗺️ 전략 · 확장 <span class="stag">08월 ERP 확장 다음 스텝 — 원본 문서</span></h2>
+      <div class="strat-row">
+        <a class="strat-link" href="회사문서/2. 웰페리온_전략로드맵_보고서_v1.4_A3.html" target="_blank">🗺️ 전략 로드맵 (v1.4 · A3)</a>
+        <a class="strat-link" href="회사문서/1. 웰페리온_회사소개서_v2.19.html" target="_blank">📄 회사소개서 (v2.19)</a>
+        <a class="strat-link" href="회사문서/4. 웰페리온_브랜드확장_회사소개서_v1_단일파일.html" target="_blank">🆕 브랜드확장 소개서 (Cinq Mondes)</a>
+      </div>
     </section>
 
     <!-- 💰 연간 매출·지출 대시 (정본 월매출 = AI CFO 매출현황 연동) -->
