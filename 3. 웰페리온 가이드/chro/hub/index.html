@@ -850,7 +850,7 @@ function renderDash(){
   var exitTypes={};exit90.forEach(function(e){var t=e["퇴사 유형"]||"기타";exitTypes[t]=(exitTypes[t]||0)+1;});
   var turnover=(active.length+exit90.length)?Math.round(exit90.length/(active.length+exit90.length)*1000)/10:0;
   /* 채용 채널 */
-  var STD_CH=["잡코리아","알바몬","호호요가","스포드림카페","자사 채용홈"];
+  var STD_CH=["잡코리아","알바몬","벼룩시장","호호요가","스포드림카페","자사 채용홈"];
   var srcDist={};appl.forEach(function(a){var s=a["지원 경로"];if(s){srcDist[s]=(srcDist[s]||0)+1;}});
 
   var html=diagCard();
