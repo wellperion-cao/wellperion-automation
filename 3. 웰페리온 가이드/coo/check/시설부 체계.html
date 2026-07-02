@@ -863,10 +863,10 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 
 <div id="tab-guide" class="content hidden">
   <p style="font-size:13px;color:var(--dim);margin-bottom:14px;line-height:1.6;">시설부 가이드를 카드로 정리했습니다. 각 카드의 <b>편집</b> 버튼으로 내용을 바로 수정·저장하면 모든 기기에 반영됩니다. <b>＋ 카드 추가</b>로 새 가이드를 추가할 수 있습니다.</p>
-  <!-- ① 세로 적층: 직원 구성·역할(위) → 가이드 카드(아래) — 지원부와 동일 구조. 2단 flex는 우측 풀블리드 보드가 좌측을 덮어 카드가 겹쳐보이던 버그로 폐지 (2026-07-02 시우, GM) -->
-  <div style="margin-bottom:18px;">
-    <!-- 위: 직원 구성·역할 (③ togManual 토글 패턴 재사용) -->
-    <div style="max-width:460px;margin-bottom:18px;">
+  <!-- ① 2단 레이아웃: 좌=직원 구성·역할 / 우=시설부 가이드 카드. 우측 보드 board-fullwidth(풀블리드) 제거로 좌측을 덮지 않음 (2026-07-02 시우, GM) -->
+  <div style="display:flex;gap:18px;align-items:flex-start;flex-wrap:wrap;margin-bottom:18px;">
+    <!-- 좌: 직원 구성·역할 (③ togManual 토글 패턴 재사용) -->
+    <div style="flex:0 0 420px;min-width:280px;max-width:460px;">
       <div style="background:var(--paper);border:1px solid var(--border);border-radius:14px;border-left:4px solid var(--green);overflow:hidden;">
         <div style="padding:12px 16px;background:var(--bg);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;">
           <span style="font-size:17px;font-weight:800;color:var(--green);">👥 직원 구성 · 역할</span>
@@ -961,7 +961,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
     </div><!-- /좌 -->
     <!-- 우: 시설부 가이드 카드 (1.5배 폭) -->
     <div style="flex:1 1 615px;min-width:280px;">
-      <div class="board-fullwidth">
+      <div><!-- board-fullwidth(풀블리드) 제거 — 2단에서 우측이 좌측을 덮지 않게. 보드는 우측 칸 안에서 가로 스크롤 -->
         <!-- 가이드 카드 보드: 규정 보드와 동일 시스템(추가·편집·삭제·공유저장).
              #fac-guide-board는 display:contents → renderGuideBoard()가 만든 .board-col이 흐름에 합류. -->
         <div class="board-scroll" id="fac-guide-flow">

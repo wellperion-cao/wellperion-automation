@@ -2346,16 +2346,6 @@ window._regAssign = function(id, category) {
           <span style="font-size:14px;font-weight:800;color:#fff;background:#7C3AED;border-radius:9px;padding:9px 16px;white-space:nowrap;">전체화면 →</span>
         </a>
 
-        <!-- ══ 🗓️ 월간 운영 계획·보고 히어로 진입 (헌법·G1 사이 월간층 · 2026-07-02) ══ -->
-        <a href="월간운영계획.html" style="display:flex;align-items:center;gap:16px;margin:0 0 18px;padding:18px 22px;background:linear-gradient(135deg,#14352a,#1a1a2a);border:1px solid #2fa37a;border-radius:14px;text-decoration:none;color:#fff;box-shadow:0 2px 10px rgba(47,163,122,0.18);">
-          <span style="font-size:32px;flex-shrink:0;">🗓️</span>
-          <span style="flex:1;">
-            <span style="display:block;font-size:18px;font-weight:800;letter-spacing:-0.01em;">월간 운영 계획·보고 — 이 달 목표·결과</span>
-            <span style="display:block;font-size:13px;color:#a8e0c9;margin-top:4px;line-height:1.5;">매출·채용·부서·ERP 등 그 달 운영 목표를 한 곳에. 매출 목표는 실측 자동 대비 · 월초 계획/월말 보고 카드 자동. (북극성 → <b>월간</b> → 오늘의 항로)</span>
-          </span>
-          <span style="font-size:14px;font-weight:800;color:#fff;background:#2fa37a;border-radius:9px;padding:9px 16px;white-space:nowrap;">열기 →</span>
-        </a>
-
         <!-- ══ 📌 우리의 약속 (ssot/약속.json native 렌더 · 2026-06-15) ══ -->
         <div id="common-promises" style="margin:16px 0 20px;">
           <h3 style="margin-top:0;margin-bottom:6px;"><span class="ico">📌</span>우리의 약속 <span style="font-size:13px;font-weight:400;color:var(--dim);">(AI·실무진이 다같이 지키는 것)</span></h3>
@@ -5173,10 +5163,14 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
     <div class="doc-header"><h2>운영 통합 체계</h2><div class="meta">COO 관할 · 부서별 운영 체계 · 지원부 우선 완성 → 확장</div></div>
     <p class="lead">전 부서 공통 운영 체계입니다. 지원부를 먼저 완성하고, 운영부(리셉션)·시설부·주차관리부로 확장합니다.</p>
 
-    <!-- ── 부서별 핵심 현황 요약 (라이브) ── -->
-    <div id="o1-dept-summary" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;">
-      <div style="text-align:center;padding:16px;color:var(--dim);font-size:13px;">현황 불러오는 중...</div>
-    </div>
+    <a href="월간운영계획.html" style="display:flex;align-items:center;gap:14px;margin:14px 0 18px;padding:16px 20px;background:linear-gradient(135deg,#14352a,#1a1a2a);border:1px solid #2fa37a;border-radius:14px;text-decoration:none;color:#fff;">
+      <span style="font-size:28px;flex-shrink:0;">🗓️</span>
+      <span style="flex:1;">
+        <span style="display:block;font-size:16px;font-weight:800;">월간 운영 계획·보고 — 이 달 목표·결과</span>
+        <span style="display:block;font-size:12.5px;color:#a8e0c9;margin-top:3px;line-height:1.5;">매출·채용·부서·ERP 등 그 달 운영 목표를 한 곳에. 매출 목표 실측 자동 대비 · 월초 계획/월말 보고 카드 자동.</span>
+      </span>
+      <span style="font-size:13px;font-weight:800;color:#fff;background:#2fa37a;border-radius:9px;padding:8px 14px;white-space:nowrap;">열기 →</span>
+    </a>
 
     <h4 style="margin-bottom:10px;">부서별 체계</h4>
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
@@ -10451,7 +10445,7 @@ function crTab(btn, panelId) {
   })();
   // ── /대시보드 오늘 진행 현황 ─────────────────────────────────────
 
-  // ── O1 부서별 핵심 현황 요약 + home KPI (라이브) ───────────────────
+  // ── home KPI (라이브) ───────────────────
   (function(){
     var CHECK_API = 'https://script.google.com/macros/s/AKfycbyXw4ZaA6hLK567GC7NY33Y8SvNPW6kNtrXFz2OsSdFVBmCnZP-2oD-RQiX0IpekBu1/exec';   // 현재 배포(@56) — 옛 @9는 스냅샷 집계 없어 오늘 0/0 반환→home '안뜸' 원인. GM 2026-06-16 시우.
     var FACILITY_URL = 'https://wellperion-cao.github.io/wellperion-automation/coo/check/%EC%8B%9C%EC%84%A4%EB%B6%80%20%EC%B2%B4%EA%B3%84.html';
@@ -10466,44 +10460,6 @@ function crTab(btn, panelId) {
       var done  = typeof data.done ==='number' ? data.done  : 0;
       var pct   = typeof data.pct  ==='number' ? data.pct   : (total?Math.round(done/total*100):0);
       return {total:total, done:done, undone:total-done, pct:pct};
-    }
-
-    // O1 섹션용 KPI 카드 (클릭 → 체계 페이지)
-    function buildO1Card(icon, label, kpi, href){
-      var pctColor = kpi.pct>=90?'#6abf7b':kpi.pct>=60?'#e6c84e':'#ED5B3F';
-      var undoneColor = kpi.undone>0?'#ED5B3F':'#6abf7b';
-      var inner = '<div style="font-size:11px;color:#8c8b83;margin-bottom:6px;">총 점검항목</div>'
-        +'<div style="font-size:22px;font-weight:800;color:#f5f2ef;line-height:1.1;">'+kpi.total+'</div>'
-        +'<div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap;font-size:11px;font-weight:700;">'
-        +'<span style="color:#6abf7b;">완료 '+kpi.done+'건</span>'
-        +'<span style="color:'+undoneColor+';">미완료 '+kpi.undone+'건</span>'
-        +'</div>'
-        +'<div style="margin-top:6px;font-size:18px;font-weight:800;color:'+pctColor+';">'+kpi.pct+'%</div>'
-        +'<div style="font-size:10px;color:#8c8b83;">완료율</div>';
-      return '<a href="'+href+'" target="_blank" style="flex:1;min-width:160px;background:#2a2725;border:1px solid #3d3835;border-radius:12px;padding:16px 16px 14px;text-decoration:none;display:block;transition:border-color 0.15s;" onmouseover="this.style.borderColor=\'#B79F8A\'" onmouseout="this.style.borderColor=\'#3d3835\'">'
-        +'<div style="font-size:13px;font-weight:700;color:#f5f2ef;margin-bottom:10px;">'+icon+' '+label+'</div>'
-        +inner
-        +'</a>';
-    }
-
-    // O1 섹션용 오류 카드
-    function buildO1ErrorCard(icon, label, href){
-      return '<a href="'+href+'" target="_blank" style="flex:1;min-width:160px;background:#2a2725;border:1px solid #3d3835;border-radius:12px;padding:16px 16px 14px;text-decoration:none;display:block;">'
-        +'<div style="font-size:13px;font-weight:700;color:#f5f2ef;margin-bottom:10px;">'+icon+' '+label+'</div>'
-        +'<div style="font-size:12px;color:#8c8b83;">로드 실패 — 클릭하여 체계 페이지 확인</div>'
-        +'</a>';
-    }
-
-    function renderO1Summary(facilityData, supportData){
-      var el=document.getElementById('o1-dept-summary');
-      if(!el)return;
-      var fKpi=parseKpi(facilityData);
-      var sKpi=parseKpi(supportData);
-      var html='';
-      html += fKpi ? buildO1Card('🏭','시설부',fKpi,FACILITY_URL) : buildO1ErrorCard('🏭','시설부',FACILITY_URL);
-      html += sKpi ? buildO1Card('✅','지원부',sKpi,SUPPORT_URL)  : buildO1ErrorCard('✅','지원부',SUPPORT_URL);
-      html += '<div style="font-size:10px;color:#8c8b83;align-self:flex-end;padding-bottom:4px;">클릭 → 체계 페이지</div>';
-      el.innerHTML=html;
     }
 
     // home KPI 그리드용 미니 카드 (확장 가능 구조)
@@ -10619,29 +10575,11 @@ function crTab(btn, panelId) {
       Promise.all([fP,sP]).then(function(res){onSuccess(res[0],res[1]);});
     }
 
-    function loadO1Summary(){
-      var el=document.getElementById('o1-dept-summary');
-      if(!el)return;
-      fetchBoth(renderO1Summary);
-    }
-
     function loadHomeKpi(){
       var el=document.getElementById('home-check-kpi');
       if(!el)return;
       fetchBoth(renderHomeKpi);
     }
-
-    // O1 섹션 진입 시 로드 (사이드바 클릭 감지)
-    document.addEventListener('click',function(e){
-      var link=e.target.closest('[data-id="O1"]');
-      if(link)setTimeout(loadO1Summary,400);
-    });
-
-    // 페이지 로드 시 O1이 이미 표시 중이면 즉시 로드
-    setTimeout(function(){
-      var el=document.getElementById('o1-dept-summary');
-      if(el&&el.offsetParent!==null)loadO1Summary();
-    },800);
 
     // home KPI는 항상 로드 (홈이 기본 active)
     setTimeout(loadHomeKpi, 600);
@@ -10650,10 +10588,9 @@ function crTab(btn, panelId) {
     document.addEventListener('visibilitychange', function(){
       if(document.visibilityState!=='visible')return;
       loadHomeKpi();
-      var _o=document.getElementById('o1-dept-summary'); if(_o&&_o.offsetParent!==null)loadO1Summary();
     });
   })();
-  // ── /O1 부서별 핵심 현황 요약 + home KPI ────────────────────────
+  // ── /home KPI ────────────────────────
 </script>
 </body>
 </html>
