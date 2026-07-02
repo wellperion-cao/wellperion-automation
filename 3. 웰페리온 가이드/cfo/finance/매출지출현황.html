@@ -332,25 +332,12 @@ async function loadSalesTruth(){
 }
 /* 구매성 지출 라이브 집계 — 지출품의(구매요청) 전체 라인아이템을 월별×부서별로 자동 합산. 실집행성(반려·미승인·캔슬 제외)만, 이상지출·예산 정의와 동일. 하드코딩 대체 → 신규 승인분 자동 반영. 실패 시 FB_PROC 폴백. 로드한 rows는 이상지출(ensureAnom)과 공유(중복 fetch 방지). */
 async function loadProc(){
-  var rows=[],y=new Date().getFullYear();
-  var res=await Promise.all([ // active·done 병렬(순차 대비 절반)
-    procCall("list",{mode:"active"}).catch(function(){return null;}),
-    procCall("list",{mode:"done",from:y+"-01-01",to:fmtToday()}).catch(function(){return null;})
-  ]);
-  if(res[0]&&res[0].data)rows=rows.concat(res[0].data);
-  if(res[1]&&res[1].data)rows=rows.concat(res[1].data);
-  if(!rows.length){PROC_DEPT=FB_PROC;PROC_LIVE=false;return;} // 로드 실패 → 폴백(하드코딩 스냅샷)
-  ANOM_ROWS=rows; // 이상지출 재사용
-  var live={},pmonth=function(ds){var m=String(ds).match(/(\d{4})\D+(\d{1,2})\D+(\d{1,2})/);return m?parseInt(m[2],10)-1:-1;};
-  rows.forEach(function(r){
-    if(["반려","미승인","캔슬"].indexOf(r.상태||"")>=0)return; // 실집행성만(예산·이상지출과 동일)
-    var m=pmonth(r.날짜);if(m<0||m>11)return; // 날짜 없는 대기 품의 등 제외
-    var amt=Number(String(r.가격).replace(/[^0-9\-]/g,""));if(isNaN(amt))return;
-    var dp=deptNorm(r.소속||"기타")||"기타";
-    if(!live[dp])live[dp]=Array(12).fill(0);
-    live[dp][m]+=amt;
-  });
-  PROC_DEPT=live;PROC_LIVE=true;
+  // 서버측 경량 집계(proc_summary) — 이미지 제외·월별×부서별 합계만(<1KB). 대량 list(이미지 base64 273KB) 회피 → 빠르고 안정적.
+  try{
+    var j=await procCall("proc_summary",{});
+    if(j&&j.ok&&j.dept){PROC_DEPT=j.dept;PROC_LIVE=true;return;}
+  }catch(e){}
+  PROC_DEPT=FB_PROC;PROC_LIVE=false; // 실패 시 폴백(하드코딩 스냅샷)
 }
 /* 최저가검토 시트 로드(읽기전용, gviz). 실패(미공유 등) 시 조용히 무시 — 기존 기능 영향 없음. 성공 시 배지 갱신. */
 async function loadReviewLowest(){
