@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>📅 웰페리온 월간 운영 계획·보고</title>
+<link rel="icon" type="image/x-icon" href="welly_favicon.ico">
+<style>
+  :root{
+    --bg:#221F20; --paper:#2a2725; --surface:#1a1817;
+    --text:#f5f2ef; --text-soft:#d4d0cc; --dim:#8c8b83;
+    --accent:#7C3AED; --accent-soft:#a875f5;
+    --border:#3d3835; --border-strong:#4d4845;
+    --gold:#f0c674; --green:#6abf7b; --blue:#7ac4f0;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif; color:var(--text); background:var(--bg); line-height:1.5; font-size:13px; -webkit-font-smoothing:antialiased; padding:18px 18px 32px;}
+  .wrap{max-width:1120px; margin:0 auto;}
+
+  header.page-head{margin-bottom:12px; padding-bottom:10px; border-bottom:2px solid var(--border-strong); display:flex; flex-wrap:wrap; align-items:baseline; gap:10px 16px;}
+  header.page-head h1{font-size:22px; font-weight:800; letter-spacing:-0.02em;}
+  header.page-head .sub{font-size:12px; color:var(--dim); line-height:1.45; flex:1; min-width:220px;}
+  header.page-head .back{font-size:12px; color:var(--accent-soft); text-decoration:none; border:1px solid var(--border-strong); border-radius:7px; padding:4px 11px; white-space:nowrap;}
+  header.page-head .back:hover{background:var(--surface);}
+
+  /* ── 3층 네비 (북극성 → 월간 → 오늘) ── */
+  .layers{display:flex; flex-wrap:wrap; gap:6px; align-items:center; margin:2px 0 14px; padding:8px 11px; background:var(--paper); border:1px solid var(--border); border-radius:10px; font-size:12px;}
+  .layers a, .layers span.cur{text-decoration:none; border:1px solid var(--border-strong); border-radius:20px; padding:3px 12px; color:var(--text-soft); white-space:nowrap;}
+  .layers a:hover{border-color:var(--accent); color:var(--accent-soft);}
+  .layers span.cur{background:var(--accent); color:#fff; border-color:var(--accent); font-weight:700;}
+  .layers .arw{color:var(--dim); font-size:11px;}
+  .layers .lnote{color:var(--dim); font-size:10.5px; margin-left:4px;}
+
+  /* ── 월 선택 바 + 편집 ── */
+  .month-bar{display:flex; flex-wrap:wrap; gap:8px 12px; align-items:center; margin-bottom:8px;}
+  .month-bar label{font-size:12px; color:var(--dim);}
+  .month-bar select{font-size:14px; font-weight:700; color:var(--text); background:var(--surface); border:1px solid var(--border-strong); border-radius:8px; padding:5px 12px; cursor:pointer;}
+  .ebtn{font-size:12px; padding:5px 13px; border-radius:8px; cursor:pointer;}
+  .ebtn.edit{background:var(--surface); color:var(--accent-soft); border:1px solid var(--accent);}
+  .ebtn.save{background:var(--accent); color:#fff; border:none;}
+  .ebtn.cancel{background:var(--surface); color:var(--dim); border:1px solid var(--border-strong);}
+
+  /* ── 월 헤더 ── */
+  .month-head{margin:6px 0 14px; padding:12px 15px; border:1px solid var(--border); border-left:4px solid var(--accent); border-radius:11px; background:var(--paper); display:flex; flex-wrap:wrap; align-items:center; gap:8px 14px;}
+  .month-head .mtitle{font-size:17px; font-weight:800;}
+  .month-head .mtheme{font-size:13px; color:var(--text-soft); flex:1; min-width:200px;}
+
+  .mstat{display:inline-block; font-size:11.5px; font-weight:700; border-radius:20px; padding:3px 11px; white-space:nowrap;}
+  .mstat.계획{color:var(--dim); background:var(--surface); border:1px solid var(--border-strong);}
+  .mstat.진행{color:var(--blue); background:rgba(122,196,240,0.10); border:1px solid rgba(122,196,240,0.35);}
+  .mstat.완료{color:var(--green); background:rgba(106,191,123,0.10); border:1px solid rgba(106,191,123,0.35);}
+  .mstat.이월{color:var(--gold); background:rgba(240,198,116,0.10); border:1px solid rgba(240,198,116,0.35);}
+
+  h2.sec{font-size:15px; font-weight:700; margin:18px 0 3px; display:flex; align-items:center; gap:7px;}
+  .sec-note{font-size:11px; color:var(--dim); margin-bottom:10px; line-height:1.45;}
+
+  /* ── 목표 보드 ── */
+  .obj-grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(320px,1fr)); gap:11px;}
+  .ocard{background:var(--paper); border:1px solid var(--border); border-left:3px solid var(--accent); border-radius:11px; padding:12px 14px; display:flex; flex-direction:column; gap:6px;}
+  .ocard .otop{display:flex; align-items:flex-start; gap:8px; justify-content:space-between;}
+  .ocard .otitle{font-size:14px; font-weight:700; line-height:1.35;}
+  .ocard .ometa{display:flex; flex-wrap:wrap; gap:5px; align-items:center;}
+  .chip{display:inline-block; font-size:11px; border-radius:6px; padding:2px 8px; white-space:nowrap;}
+  .chip.own{color:var(--accent-soft); background:var(--surface); border:1px solid var(--border-strong);}
+  .chip.dept{color:var(--dim); background:var(--surface); border:1px solid var(--border);}
+  .chip.ns{color:var(--gold); background:rgba(240,198,116,0.08); border:1px solid rgba(240,198,116,0.30); text-decoration:none;}
+  .chip.ns:hover{border-color:var(--gold);}
+  .ocard .otarget{font-size:12px; color:var(--text-soft); line-height:1.45;}
+  .ocard .otarget b{color:var(--dim); font-weight:600; font-size:10.5px; text-transform:uppercase; letter-spacing:0.02em;}
+  .ocard .onote{font-size:11.5px; color:var(--dim); line-height:1.45; white-space:pre-wrap;}
+  .ocard .onote:empty{display:none;}
+
+  .obadge{display:inline-block; font-size:11px; font-weight:700; border-radius:20px; padding:2px 10px; white-space:nowrap;}
+  .obadge.계획{color:var(--dim); background:var(--surface); border:1px solid var(--border-strong);}
+  .obadge.진행{color:var(--blue); background:rgba(122,196,240,0.12); border:1px solid rgba(122,196,240,0.38);}
+  .obadge.완료{color:var(--green); background:rgba(106,191,123,0.12); border:1px solid rgba(106,191,123,0.38);}
+  .obadge.이월{color:var(--gold); background:rgba(240,198,116,0.12); border:1px solid rgba(240,198,116,0.38);}
+
+  /* ── 측정 목표(metric) 막대 ── */
+  .metric{margin-top:2px; padding:8px 10px; border:1px solid var(--border-strong); border-radius:9px; background:var(--surface);}
+  .metric-h{display:block; font-size:10px; color:var(--dim); text-transform:uppercase; letter-spacing:0.03em; margin-bottom:4px;}
+  .metric-h .live{color:var(--green); text-transform:none; letter-spacing:0; font-weight:700;}
+  .metric-h .manual{color:var(--gold); text-transform:none; letter-spacing:0; font-weight:700;}
+  .mbar{height:8px; border-radius:5px; background:var(--paper); border:1px solid var(--border); overflow:hidden; margin:3px 0;}
+  .mbar>i{display:block; height:100%; background:linear-gradient(90deg,var(--accent),var(--accent-soft)); border-radius:5px;}
+  .mbar.gold>i{background:linear-gradient(90deg,#b8860b,var(--gold));}
+  .mbar.green>i{background:linear-gradient(90deg,#3f8f4f,var(--green));}
+  .metric-meta{font-size:12.5px; color:var(--text-soft);}
+  .metric-meta b{color:var(--text); font-weight:700;}
+  .metric-meta .pct{color:var(--accent-soft); font-weight:700;}
+  .metric-none{font-size:11.5px; color:var(--dim);}
+
+  /* ── 편집 컨트롤 ── */
+  .edit-row{display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin-top:4px;}
+  .edit-row label{font-size:10.5px; color:var(--dim); text-transform:uppercase; letter-spacing:0.02em;}
+  .edit-row select, .edit-row input{font-size:12px; color:var(--text); background:var(--surface); border:1px solid var(--border-strong); border-radius:6px; padding:3px 8px;}
+  .note-edit{font-size:11.5px; color:var(--text); background:var(--surface); border:1px dashed var(--accent); border-radius:7px; padding:5px 8px; min-height:34px; white-space:pre-wrap; outline:none;}
+  .note-edit:focus{border-color:var(--accent-soft); background:rgba(124,58,237,0.08);}
+
+  /* ── 월말 보고 placeholder ── */
+  .report-box{padding:13px 15px; border:1px dashed var(--border-strong); border-radius:11px; background:var(--surface); font-size:12px; color:var(--text-soft); line-height:1.55;}
+  .report-box.done{border-style:solid; border-left:3px solid var(--green);}
+  .report-box .rh{font-size:13px; font-weight:700; color:var(--text); margin-bottom:5px;}
+  .report-box .rnote{font-size:11px; color:var(--dim); margin-top:6px;}
+
+  .board-status{padding:16px; font-size:12px; color:var(--dim); text-align:center;}
+  footer.foot{margin-top:20px; font-size:10.5px; color:var(--dim); border-top:1px solid var(--border); padding-top:10px; line-height:1.55;}
+
+  @media (max-width:640px){
+    .obj-grid{grid-template-columns:1fr;}
+    header.page-head h1{font-size:19px;}
+  }
+  @media print{
+    @page{size:A4 portrait; margin:10mm;}
+    body{background:#fff; color:#111; padding:0; font-size:10px;}
+    .layers, .month-bar, .ebtn, header.page-head .back, .edit-row{display:none !important;}
+    header.page-head, .month-head, .ocard, .metric, .report-box{break-inside:avoid;}
+    .month-head, .ocard, .paper, .metric, .report-box{background:#fff !important; color:#111 !important; border-color:#999 !important;}
+    .ocard .otitle, .month-head .mtitle, .month-head .mtheme, .metric-meta, .metric-meta b, .ocard .otarget, h2.sec{color:#111 !important;}
+    .ocard .onote, .metric-h, .ocard .otarget b{color:#333 !important;}
+    .mbar{background:#eee !important; border-color:#999 !important;}
+    .mbar>i{background:#666 !important;}
+    .chip{color:#000 !important; background:#fff !important; border-color:#666 !important;}
+    .obadge, .mstat{color:#000 !important; background:#f2f2f2 !important; border-color:#666 !important;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="page-head">
+    <h1>📅 월간 운영 계획·보고</h1>
+    <div class="sub">헌법(장기 비전)과 오늘의 항로(일일) 사이의 <b>월간 운영</b> 층 — 월초 계획·월말 보고. 정본 = <code>status/monthly_ops_plan.json</code>.</div>
+    <a class="back" href="#" onclick="window.print();return false;">🖨️ 인쇄</a>
+  </header>
+
+  <!-- 3층 구조: 북극성 → 월간 → 오늘 -->
+  <div class="layers">
+    <a href="헌법한장.html">🌟 북극성 (헌법)</a>
+    <span class="arw">›</span>
+    <span class="cur">📅 월간 운영</span>
+    <span class="arw">›</span>
+    <a href="wellperion_guide(main).html">🧭 오늘의 항로 (G1)</a>
+    <span class="lnote">장기 비전 → 이달 목표 → 오늘 할 일</span>
+  </div>
+
+  <!-- 월 선택 + 편집 -->
+  <div class="month-bar">
+    <label for="month-sel">월 선택</label>
+    <select id="month-sel"></select>
+    <span id="edit-wrap"></span>
+    <span id="save-flag" style="font-size:11px;color:var(--dim);"></span>
+  </div>
+
+  <!-- 월 헤더 -->
+  <div class="month-head" id="month-head" style="display:none;"></div>
+
+  <!-- 📋 이달 계획 -->
+  <h2 class="sec">📋 이달 계획 <span style="font-size:11px;font-weight:400;color:var(--dim);">(목표 보드)</span></h2>
+  <div class="sec-note">각 목표 = 담당 C-Level·목표(target)·상태·진행 메모. 📊 측정 목표는 라이브/수동값 대비. <b>정직(L05):</b> metric 없는 목표는 상태만, 미측정은 '미입력' 표기.</div>
+  <div class="obj-grid" id="obj-board">
+    <div class="board-status">월간 계획 정본을 불러오는 중…</div>
+  </div>
+
+  <!-- 📊 월말 결과 보고 -->
+  <h2 class="sec">📊 월말 결과 보고</h2>
+  <div id="report-area"></div>
+
+  <footer class="foot">
+    정본 = <code>status/monthly_ops_plan.json</code> · 페이지는 렌더+편집만. 편집 저장 = GM PIN + GAS commit_file(헌법한장.html 동일 패턴).<br>
+    월초 계획 / 월말 보고 <b>자동 카드 엔진</b>은 후속(배237 GM 보좌 자율화 재사용) — 현재는 GM/담당 수동 입력.
+  </footer>
+
+</div>
+
+<script>
+(function(){
+  // ── 설정: 라이브 URL(헌법한장.html 동일 GAS·raw 폴백 패턴) ──
+  var GAS_URL  = 'https://script.google.com/macros/s/AKfycbxDwFkrxK1YIaEoSNcuw2MiHiZQ-7o5N6311ytksSyeEd86ZFOhLknOWqQgNArQvZ-7/exec';
+  var RAW_BASE = 'https://raw.githubusercontent.com/wellperion-cao/wellperion-automation/master/';
+  var PLAN_PATH = 'status/monthly_ops_plan.json';
+
+  var _data = null;      // monthly_ops_plan.json 전체(정본 모델)
+  var _sel = null;       // 선택 월 키
+  var _homeSales = undefined; // home_kpi sales.month (라이브) — undefined=미조회, null=미측정
+  var _editMode = false;
+
+  var esc = function(s){
+    return String(s == null ? '' : s)
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  };
+  var nickOf = function(role){
+    return (_data && _data.owner_nick && _data.owner_nick[role]) || role || '';
+  };
+
+  // 원 단위 사람친화 포맷: 6.5억 / 2,434만
+  function fmtWon(n){
+    if(typeof n !== 'number' || isNaN(n)) return '—';
+    if(n >= 100000000){ var eok = Math.round(n / 100000000 * 100) / 100; return eok + '억'; }
+    if(n >= 10000){ return Math.round(n / 10000).toLocaleString() + '만'; }
+    return n.toLocaleString() + '원';
+  }
+
+  // ── 읽기: GAS read_file(최신·캐시없음) → raw GitHub 폴백 ──
+  function readPlan(){
+    return fetch(GAS_URL, {method:'POST', redirect:'follow', headers:{'Content-Type':'text/plain;charset=utf-8'},
+        body: JSON.stringify({action:'read_file', path:PLAN_PATH})})
+      .then(function(r){ return r.json(); })
+      .then(function(res){ if(res && res.ok && res.content){ return JSON.parse(res.content); } throw new Error((res && res.error) || 'read 실패'); })
+      .catch(function(){ return fetch(RAW_BASE + PLAN_PATH + '?t=' + Date.now(), {cache:'no-store'}).then(function(r){ return r.json(); }); });
+  }
+  // ── 라이브 매출: home_kpi → sales.month(당월 실측). 실패/미측정=null ──
+  function readHomeSales(){
+    return fetch(GAS_URL + '?action=home_kpi', {method:'GET', redirect:'follow'})
+      .then(function(r){ return r.json(); })
+      .then(function(res){
+        if(res && res.ok && res.sales && typeof res.sales.month === 'number') return res.sales.month;
+        return null;
+      })
+      .catch(function(){ return null; });
+  }
+
+  // ── 월 선택 드롭다운 ──
+  function buildMonthSelect(){
+    var sel = document.getElementById('month-sel');
+    var keys = Object.keys((_data && _data.months) || {}).sort();
+    if(!keys.length){ sel.innerHTML = '<option>—</option>'; return; }
+    if(!_sel || keys.indexOf(_sel) < 0){
+      // 기본 = 진행 월(가장 최근), 없으면 마지막 키
+      var running = keys.filter(function(k){ return _data.months[k].month_status === '진행'; });
+      _sel = running.length ? running[running.length-1] : keys[keys.length-1];
+    }
+    sel.innerHTML = keys.map(function(k){
+      var ms = _data.months[k].month_status || '';
+      return '<option value="' + esc(k) + '"' + (k === _sel ? ' selected' : '') + '>' + esc(k) + ' · ' + esc(ms) + '</option>';
+    }).join('');
+    sel.onchange = function(){ _sel = sel.value; _editMode = false; render(); };
+  }
+
+  // ── 월 헤더 ──
+  function renderMonthHead(){
+    var mh = document.getElementById('month-head');
+    var m = _data.months[_sel];
+    if(!m){ mh.style.display = 'none'; return; }
+    mh.style.display = 'flex';
+    var ms = m.month_status || '';
+    mh.innerHTML =
+      '<span class="mtitle">' + esc(_sel) + '</span>' +
+      '<span class="mstat ' + esc(ms) + '">' + esc(ms) + '</span>' +
+      '<span class="mtheme">' + esc(m.theme || '') + '</span>';
+  }
+
+  // ── 측정 목표 막대 ──
+  //   월 매출(unit 원·name '매출'): 라이브 home_kpi sales.month 대비 metric.target.
+  //   완성도 등(unit %): metric.current(수동) 대비 target. current 없으면 '미입력'.
+  function metricBlock(o){
+    var mt = o.metric;
+    if(!mt) return '';
+    var isSales = (mt.unit === '원') && /매출/.test(mt.name || '');
+    if(isSales){
+      var tgt = mt.target || 0;
+      var cur = _homeSales;   // undefined/null/number
+      var lab = '<span class="metric-h"><span class="live">● 라이브</span> ' + esc(mt.name || '매출') + ' · home_kpi 당월 실측</span>';
+      if(typeof cur === 'number' && tgt){
+        var pct = Math.max(0, Math.round(cur / tgt * 100));
+        var w = Math.max(0, Math.min(100, pct));
+        return '<div class="metric">' + lab +
+          '<div class="mbar green"><i style="width:' + w + '%"></i></div>' +
+          '<div class="metric-meta">현재 <b>' + fmtWon(cur) + '</b> / 목표 <b>' + fmtWon(tgt) + '</b> · 진행 <span class="pct">' + pct + '%</span></div>' +
+        '</div>';
+      }
+      return '<div class="metric">' + lab +
+        '<div class="metric-none">목표 <b style="color:var(--text)">' + fmtWon(tgt) + '</b> · 당월 실측 대기(마감 전 또는 조회 실패) — 가짜값 없음</div>' +
+      '</div>';
+    }
+    // 수동 measurable (완성도 등)
+    var tg = mt.target || 0;
+    var cr = mt.current;
+    var unit = mt.unit || '';
+    var lab2 = '<span class="metric-h"><span class="manual">✍ 수동</span> ' + esc(mt.name || '') + '</span>';
+    if(typeof cr === 'number' && tg){
+      var p = Math.max(0, Math.round(cr / tg * 100));
+      var w2 = Math.max(0, Math.min(100, p));
+      return '<div class="metric">' + lab2 +
+        '<div class="mbar gold"><i style="width:' + w2 + '%"></i></div>' +
+        '<div class="metric-meta">현재 <b>' + esc(cr) + unit + '</b> / 목표 <b>' + esc(tg) + unit + '</b> · <span class="pct">' + p + '%</span></div>' +
+      '</div>';
+    }
+    return '<div class="metric">' + lab2 +
+      '<div class="metric-none">목표 <b style="color:var(--text)">' + esc(tg) + unit + '</b> · 현재 <b style="color:var(--gold)">미입력</b> (수동 입력값 — 자동 측정 아님)</div>' +
+    '</div>';
+  }
+
+  // ── 편집 컨트롤(상태·진행메모·metric.current) ──
+  function editRow(o){
+    var opts = ((_data && _data.status_enum) || ['계획','진행','완료','이월']).map(function(s){
+      return '<option value="' + esc(s) + '"' + (o.status === s ? ' selected' : '') + '>' + esc(s) + '</option>';
+    }).join('');
+    var metricEdit = '';
+    if(o.metric && !((o.metric.unit === '원') && /매출/.test(o.metric.name || ''))){
+      // 매출(라이브)은 편집 대상 아님. 수동 metric.current만 편집.
+      var cv = (typeof o.metric.current === 'number') ? o.metric.current : '';
+      metricEdit = '<label>' + esc(o.metric.name || 'current') + '</label>' +
+        '<input type="number" data-id="' + esc(o.id) + '" data-f="current" value="' + esc(cv) + '" placeholder="미입력" style="width:90px;">' +
+        '<span style="font-size:11px;color:var(--dim);">' + esc(o.metric.unit || '') + '</span>';
+    }
+    return '<div class="edit-row">' +
+      '<label>상태</label><select data-id="' + esc(o.id) + '" data-f="status">' + opts + '</select>' +
+      metricEdit +
+      '</div>' +
+      '<label style="font-size:10.5px;color:var(--dim);display:block;margin-top:4px;">진행 메모</label>' +
+      '<div class="note-edit" contenteditable="true" data-id="' + esc(o.id) + '" data-f="progress_note" ' +
+        'oncompositionstart="window._compOn()" oncompositionend="window._compOff()">' + esc(o.progress_note || '') + '</div>';
+  }
+
+  // ── 목표 카드 ──
+  function objCard(o){
+    var ns = o.northstar ? '<a class="chip ns" href="헌법한장.html" title="북극성(헌법) 보기">🌟 북극성</a>' : '';
+    var top =
+      '<div class="otop">' +
+        '<div class="otitle">' + esc(o.title) + '</div>' +
+        '<span class="obadge ' + esc(o.status || '') + '">' + esc(o.status || '') + '</span>' +
+      '</div>';
+    var meta =
+      '<div class="ometa">' +
+        '<span class="chip own">' + esc(nickOf(o.owner)) + '</span>' +
+        '<span class="chip dept">' + esc(o.dept || '') + '</span>' +
+        ns +
+      '</div>';
+    var target = o.target ? '<div class="otarget"><b>목표</b> ' + esc(o.target) + '</div>' : '';
+    var body;
+    if(_editMode){
+      body = metricBlock(o) + editRow(o);
+    } else {
+      var note = o.progress_note ? '<div class="onote">📝 ' + esc(o.progress_note) + '</div>' : '';
+      body = metricBlock(o) + note;
+    }
+    return '<div class="ocard">' + top + meta + target + body + '</div>';
+  }
+
+  // ── 월말 보고 영역 ──
+  function renderReport(){
+    var el = document.getElementById('report-area');
+    var m = _data.months[_sel];
+    if(!m){ el.innerHTML = ''; return; }
+    if(m.month_status === '완료'){
+      var done = (m.objectives || []).filter(function(o){ return o.status === '완료'; }).length;
+      var tot = (m.objectives || []).length;
+      el.innerHTML = '<div class="report-box done">' +
+        '<div class="rh">✅ ' + esc(_sel) + ' 마감 — 목표 ' + done + '/' + tot + ' 완료</div>' +
+        '테마: ' + esc(m.theme || '') + '. 목표별 최종 상태·진행 메모는 위 보드 참조.' +
+        '<div class="rnote">자동 월말 결과 요약 카드(핵심 성과·미달·이월 사유)는 후속 엔진이 이 자리를 채웁니다.</div>' +
+      '</div>';
+    } else {
+      el.innerHTML = '<div class="report-box">' +
+        '<div class="rh">🗓️ ' + esc(_sel) + ' 진행 중 — 월말 보고 대기</div>' +
+        '이 달이 <b>완료</b>로 마감되면, 목표 달성 요약(완료 N/전체 · 핵심 성과 · 미달·이월 사유)이 여기 표시됩니다.' +
+        '<div class="rnote">월초 계획(위 보드)·월말 보고 자동 카드 엔진은 후속(배237 GM 보좌 자율화 재사용). 현재는 GM/담당 수동 편집.</div>' +
+      '</div>';
+    }
+  }
+
+  // ── 편집 버튼 ──
+  function renderEditBtn(){
+    var w = document.getElementById('edit-wrap');
+    if(_editMode){
+      w.innerHTML = '<button class="ebtn save" id="save-btn" onclick="window._planSave()">저장</button>' +
+                    '<button class="ebtn cancel" onclick="window._planCancel()">취소</button>';
+    } else {
+      w.innerHTML = '<button class="ebtn edit" onclick="window._planEdit()">✏️ GM/담당 편집</button>';
+    }
+  }
+
+  function renderBoard(){
+    var board = document.getElementById('obj-board');
+    var m = _data.months[_sel];
+    var objs = (m && m.objectives) || [];
+    if(!objs.length){ board.innerHTML = '<div class="board-status">이 달의 목표가 없습니다.</div>'; return; }
+    board.innerHTML = objs.map(objCard).join('');
+  }
+
+  function render(){
+    renderMonthHead();
+    renderBoard();
+    renderReport();
+    renderEditBtn();
+    var sel = document.getElementById('month-sel');
+    if(sel) sel.value = _sel;
+  }
+
+  // ── IME 안전 ──
+  window._compOn  = function(){ window._composing = true; };
+  window._compOff = function(){ window._composing = false; };
+
+  window._planEdit = function(){ _editMode = true; render(); };
+  window._planCancel = function(){
+    _editMode = false;
+    readPlan().then(function(d){ _data = d; render(); });
+  };
+
+  // 편집 DOM → _data 모델 반영
+  function gatherEdits(){
+    var m = _data.months[_sel];
+    if(!m) return;
+    var byId = {};
+    (m.objectives || []).forEach(function(o){ byId[o.id] = o; });
+    // 상태·metric.current (select/input)
+    Array.prototype.forEach.call(document.querySelectorAll('#obj-board [data-f]'), function(el){
+      var id = el.getAttribute('data-id'), f = el.getAttribute('data-f');
+      var o = byId[id]; if(!o) return;
+      if(f === 'status'){ o.status = el.value; }
+      else if(f === 'current'){
+        if(!o.metric) return;
+        var v = el.value.trim();
+        o.metric.current = (v === '') ? null : Number(v);
+      }
+      else if(f === 'progress_note'){ o.progress_note = (el.innerText || el.textContent || '').trim(); }
+    });
+  }
+
+  window._planSave = function(){
+    var pin = prompt('편집 저장 — GM/담당 비밀번호를 입력하세요:');
+    if(pin === null || pin === '') return;
+    if(!_data) return;
+    gatherEdits();
+    _data.updated_at = new Date().toISOString().slice(0,10);
+    var content = JSON.stringify(_data, null, 2);
+    var btn = document.getElementById('save-btn');
+    if(btn){ btn.textContent = '저장 중…'; btn.disabled = true; }
+    fetch(GAS_URL, {
+      method:'POST', redirect:'follow', headers:{'Content-Type':'text/plain;charset=utf-8'},
+      body: JSON.stringify({
+        action:'commit_file', path:PLAN_PATH, content:content,
+        message:'[월간운영] ' + _sel + ' 상태·진행 편집 ' + _data.updated_at, key:pin
+      })
+    })
+      .then(function(r){ return r.json(); })
+      .then(function(res){
+        if(res && res.ok){
+          alert('저장 완료. (커밋: ' + ((res.commit||'') + '').slice(0,7) + ')');
+          _editMode = false; render();
+        } else {
+          alert('저장 실패: ' + ((res && res.error) || '알 수 없는 오류'));
+          if(btn){ btn.textContent = '저장'; btn.disabled = false; }
+        }
+      })
+      .catch(function(e){
+        alert('저장 오류: ' + e.message);
+        if(btn){ btn.textContent = '저장'; btn.disabled = false; }
+      });
+  };
+
+  // ── 부팅 ──
+  Promise.all([ readPlan(), readHomeSales() ])
+    .then(function(arr){
+      _data = arr[0];
+      _homeSales = arr[1];
+      buildMonthSelect();
+      render();
+    })
+    .catch(function(e){
+      document.getElementById('obj-board').innerHTML =
+        '<div class="board-status">월간 계획 정본을 불러오지 못했습니다 (' + esc(e.message) +
+        '). 정본: <code>status/monthly_ops_plan.json</code></div>';
+    });
+})();
+</script>
+</body>
+</html>
