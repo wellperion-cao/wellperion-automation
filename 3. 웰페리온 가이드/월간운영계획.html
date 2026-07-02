@@ -302,10 +302,10 @@
       </div>
     </section>
 
-    <!-- 💰 연간 매출·지출 대시 (정본 월매출 = AI CFO 매출현황 연동) -->
+    <!-- 💰 선택월 매출·지출 요약 (정본 = AI CFO 매출현황 연동 · 전체지출=인건비+구매성 · 연간상세=CFO) -->
     <section class="blk">
-      <h2 class="sec has-link">💰 2026 연간 매출·지출 <span class="stag">매출·지출 = AI CFO 매출현황 미러(읽기전용)</span><a class="cfo-link" href="cfo/finance/매출지출현황.html">📊 AI CFO 매출현황 →</a></h2>
-      <div id="fin-board"><div class="board-status">연간 재무 정본을 불러오는 중…</div></div>
+      <h2 class="sec has-link">💰 선택월 매출·지출 <span class="stag">선택월 · 전체지출(인건비+구매성) · AI CFO 미러 · 연간상세=CFO</span><a class="cfo-link" href="cfo/finance/매출지출현황.html">📊 AI CFO 재무현황 →</a></h2>
+      <div id="fin-board"><div class="board-status">선택월 재무 요약을 불러오는 중…</div></div>
     </section>
 
     <!-- 📋 이달 계획 -->
@@ -346,15 +346,21 @@
   var SALES_SHEET = '18VRvDEYQ7LfaPaHmXROBpIVmYtjqZGrYie75JZnRKDA';
   var SALES_GVIZ  = 'https://docs.google.com/spreadsheets/d/' + SALES_SHEET + '/gviz/tq?tqx=out:json';
   // 지출 인건비 = 인건비 시트(부서·강사×월) 전 행 합(강사 인건비 + 운영부 인건비). CFO 페이지 GVIZ와 동일 소스.
-  // 구매성(PROC)은 CFO 페이지에 상수로 박혀 있고 별도 조회 엔드포인트가 없어(비번게이트 지출품의만 존재) 미러 제외 — 상세 지출은 CFO 링크로 이동.
   var LABOR_SHEET = '1uAmZXX0GbiDImORxEwnDFm4_C-r0W43s-_tV_cPq9lE';
   var LABOR_GVIZ  = 'https://docs.google.com/spreadsheets/d/' + LABOR_SHEET + '/gviz/tq?tqx=out:json';
+  // 구매성(PROC) = CFO 매출현황 페이지의 PROC_DEPT 상수 미러. CFO에 라이브 조회 엔드포인트가 없어(비번게이트 지출품의만 존재) 값을 그대로 미러한다.
+  // ⚠️ 정본은 CFO 매출현황(cfo/finance/매출지출현황.html)의 PROC_DEPT — CFO가 갱신되면 이 상수도 같이 맞춰야 함(1~6월 승인건 확정, 7월~ 미도래=0).
+  // 전체 지출 = 인건비(강사+운영부) + 구매성 — CFO 페이지 totalCost와 동일 정의(정규직 일부·임대료 미포함).
+  var PROC_DEPT = {"골프":[262000,0,69300000,0,804960,873200],"운영부":[239600,1118070,242620,13085350,248900,-39060],"시설":[755860,150600,1171878,433280,1019470,11081390],"필라테스":[11880000,0,11230,0,9890,0],"지원":[180470,264110,442630,406300,597600,579460],"스쿼시":[0,0,270340,0,238800,240000],"P.T":[20800,0,0,0,630000,0],"체조&트램":[0,0,0,0,0,478500],"수영":[54350,0,0,0,200100,0],"뮤지컬":[22190,0,0,0,0,0]};
+  var PROC_LAST = 6; // 구매성 확정 개월 수(1~6월). 이후 월은 미도래.
+  function procMonthArr(){ var a = new Array(12).fill(0); for(var d in PROC_DEPT){ var arr = PROC_DEPT[d] || []; for(var m = 0; m < arr.length && m < 12; m++){ a[m] += (Number(arr[m]) || 0); } } return a; }
 
   var _data = null;      // monthly_ops_plan.json 전체(정본 모델)
   var _sel = null;       // 선택 월 키
   var _homeSales = undefined; // home_kpi sales.month (라이브) — undefined=미조회, null=미측정
   var _cfoSales = null;  // CFO 매출: 월별 센터전체 매출 배열[12] — null=미조회/실패
-  var _cfoExp = null;    // CFO 지출(인건비): 월별 총인건비 배열[12] — null=미조회/실패
+  var _cfoExp = null;    // CFO 인건비: 월별 총인건비 배열[12](강사+운영부) — null=미조회/실패
+  var _cfoProc = null;   // 구매성: 월별 배열[12](PROC_DEPT 상수 미러) — 전체지출=인건비+구매성
   var _editMode = false;
 
   // ── 경영진 보고 = 상시(토글 없음): C-Level 표기 항상 공식 직함. 닉네임 뷰 미노출. ──
@@ -580,12 +586,11 @@
       '</tr></thead><tbody>' + objs.map(objRow).join('') + '</tbody></table></div>';
   }
 
-  // ── 연간 매출·지출 대시 (AI CFO 매출현황 미러 · 읽기전용) ──
+  // ── 선택월 매출·지출 요약 (AI CFO 매출현황 미러 · 읽기전용 · 전체 지출=인건비+구매성) ──
+  // 연간 12개월 상세는 재무현황(CFO)에서 파악 — 이 페이지는 선택월 요약 + CFO 바로가기만(GM 피드백 2026-07).
   function renderFinance(){
     var host = document.getElementById('fin-board');
-    var now = new Date();
-    var curM = (now.getFullYear() === Number(FIN_YEAR)) ? pad2(now.getMonth() + 1) : null;
-    var months = ['01','02','03','04','05','06','07','08','09','10','11','12'];
+    if(!host) return;
 
     // 소스 전무(둘 다 실패) → 가짜값 없이 실패 안내 + CFO 링크
     if(!_cfoSales && !_cfoExp){
@@ -594,69 +599,60 @@
       return;
     }
 
-    var rows = months.map(function(mm){
-      var idx = Number(mm) - 1;
-      // 매출 = CFO 매출현황(센터전체). 유효값(>0)만. 당월은 CFO값 없으면 home_kpi 라이브 오버레이.
-      var cfoS = (_cfoSales && typeof _cfoSales[idx] === 'number' && _cfoSales[idx] > 0) ? _cfoSales[idx] : null;
-      var live = (mm === curM && typeof _homeSales === 'number') ? _homeSales : null;
-      var sales = (cfoS != null) ? cfoS : (live != null ? live : null);
-      var salesLive = (cfoS != null) || (live != null);
-      // 지출 = CFO 인건비(강사+운영부, 라이브). 구매성은 미러 제외(CFO 링크 참조).
-      var exp = (_cfoExp && typeof _cfoExp[idx] === 'number' && _cfoExp[idx] > 0) ? _cfoExp[idx] : null;
-      var net = (sales != null && exp != null) ? (sales - exp) : null;
-      return {mm:mm, sales:sales, salesLive:salesLive, cfoS:cfoS, live:live, exp:exp, net:net};
-    });
+    // 선택월(_sel = 'YYYY-MM') 기준 인덱스
+    var mnum = _sel ? Number(String(_sel).split('-')[1]) : NaN;
+    if(!(mnum >= 1 && mnum <= 12)){
+      host.innerHTML = '<div class="board-status">선택월을 확인할 수 없습니다. 매출·지출은 <a href="cfo/finance/매출지출현황.html" style="color:var(--gold)">AI CFO 매출현황</a> 참조.</div>';
+      return;
+    }
+    var idx = mnum - 1;
+    var now = new Date();
+    var isCurMonth = (now.getFullYear() === Number(FIN_YEAR)) && (now.getMonth() + 1 === mnum);
 
-    var maxV = 1, sumS = 0, sumE = 0, cntS = 0, cntE = 0;
-    rows.forEach(function(r){
-      if(r.sales != null){ maxV = Math.max(maxV, r.sales); sumS += r.sales; cntS++; }
-      if(r.exp != null){ maxV = Math.max(maxV, r.exp); sumE += r.exp; cntE++; }
-    });
-    var sumNet = (cntS || cntE) ? (sumS - sumE) : null;
+    // 매출 = CFO 매출현황(센터전체). 유효값(>0)만. 당월+CFO값 없으면 home_kpi 라이브 오버레이.
+    var cfoS = (_cfoSales && typeof _cfoSales[idx] === 'number' && _cfoSales[idx] > 0) ? _cfoSales[idx] : null;
+    var live = (isCurMonth && typeof _homeSales === 'number') ? _homeSales : null;
+    var sales = (cfoS != null) ? cfoS : (live != null ? live : null);
 
-    var trs = rows.map(function(r){
-      var cur = (r.mm === curM) ? ' class="cur-m"' : '';
-      var salesCell;
-      if(r.sales != null){
-        salesCell = '<span class="fin-live-v">● ' + fmtWon(r.sales) + '</span>' +
-          '<span class="fin-sub">' + (r.cfoS != null ? 'CFO 매출현황' : '당월 라이브') + '</span>';
-      } else {
-        salesCell = '<span class="fin-none">측정 전</span>';
-      }
-      var expCell = (r.exp != null)
-        ? ('<b>' + fmtWon(r.exp) + '</b><span class="fin-sub">인건비</span>')
-        : '<span class="fin-none">측정 전</span>';
-      var netCell = (r.net != null)
-        ? ('<b class="' + (r.net >= 0 ? 'pos' : 'neg') + '">' + fmtWon(r.net) + '</b>')
-        : '<span class="fin-none">—</span>';
-      return '<tr' + cur + '><td class="fmo">' + r.mm + '월</td><td>' + salesCell + '</td><td>' + expCell + '</td><td>' + netCell + '</td></tr>';
-    }).join('');
+    // 전체 지출 = 인건비(강사+운영부, 라이브) + 구매성(상수 미러). CFO totalCost 정의와 동일.
+    var labor = (_cfoExp && typeof _cfoExp[idx] === 'number' && _cfoExp[idx] > 0) ? _cfoExp[idx] : null;
+    var procDue = idx < PROC_LAST;                       // 구매성 확정 도래 월인가
+    var proc = (_cfoProc && procDue) ? (_cfoProc[idx] || 0) : null; // 미도래 월=null(가짜 0 배분 금지)
+    var totalExp = (labor != null) ? (labor + (proc || 0)) : null;
+    var net = (sales != null && totalExp != null) ? (sales - totalExp) : null;
 
-    var totRow = '<tr class="fin-tot"><td>누계</td>' +
-      '<td><b>' + fmtWon(sumS) + '</b><span class="fin-sub">평균 ' + (cntS ? fmtWon(Math.round(sumS / cntS)) : '—') + '</span></td>' +
-      '<td><b>' + fmtWon(sumE) + '</b><span class="fin-sub">평균 ' + (cntE ? fmtWon(Math.round(sumE / cntE)) : '—') + '</span></td>' +
-      '<td>' + (sumNet != null ? ('<b class="' + (sumNet >= 0 ? 'pos' : 'neg') + '">' + fmtWon(sumNet) + '</b>') : '—') + '</td></tr>';
+    var salesCell = (sales != null)
+      ? ('<span class="fin-live-v">● ' + fmtWon(sales) + '</span><span class="fin-sub">' + (cfoS != null ? 'CFO 매출현황' : '당월 라이브') + '</span>')
+      : '<span class="fin-none">측정 전</span>';
+
+    var expSub = (labor != null)
+      ? ('인건비 ' + fmtWon(labor) + ' + 구매성 ' + (proc != null ? fmtWon(proc) : '미도래'))
+      : '';
+    var expCell = (totalExp != null)
+      ? ('<b>' + fmtWon(totalExp) + '</b><span class="fin-sub">' + expSub + '</span>')
+      : '<span class="fin-none">측정 전</span>';
+
+    var netCell = (net != null)
+      ? ('<b class="' + (net >= 0 ? 'pos' : 'neg') + '">' + fmtWon(net) + '</b>')
+      : '<span class="fin-none">—</span>';
 
     var table = '<div class="rpt-wrap"><table class="rpt fin"><thead><tr>' +
-      '<th>월</th><th>매출</th><th>지출<span style="font-weight:400;color:var(--dim)"> · 인건비</span></th><th>순액</th>' +
-      '</tr></thead><tbody>' + trs + totRow + '</tbody></table></div>';
+      '<th>선택월</th><th>매출</th><th>전체 지출<span style="font-weight:400;color:var(--dim)"> · 인건비+구매성</span></th><th>순액</th>' +
+      '</tr></thead><tbody>' +
+      '<tr class="cur-m"><td class="fmo">' + mnum + '월</td><td>' + salesCell + '</td><td>' + expCell + '</td><td>' + netCell + '</td></tr>' +
+      '</tbody></table></div>';
 
-    var chart = '<div class="fchart">' + rows.map(function(r){
-      var hs = r.sales ? Math.max(3, Math.round(r.sales / maxV * 100)) : 0;
-      var he = r.exp ? Math.max(3, Math.round(r.exp / maxV * 100)) : 0;
-      return '<div class="fcol' + (r.mm === curM ? ' cur-m' : '') + '"><div class="fbars">' +
-        '<i class="bs" style="height:' + hs + '%" title="매출 ' + (r.sales ? fmtWon(r.sales) : '측정 전') + '"></i>' +
-        '<i class="be" style="height:' + he + '%" title="지출(인건비) ' + (r.exp ? fmtWon(r.exp) : '측정 전') + '"></i>' +
-        '</div><span class="fmo">' + r.mm + '</span></div>';
-    }).join('') + '</div>';
+    var procNote = !procDue
+      ? ' 구매성은 1~' + PROC_LAST + '월까지 승인건 확정 — ' + mnum + '월은 미도래(전체 지출=인건비만 반영).'
+      : '';
 
     var legend = '<div class="flegend">' +
-      '<span><i class="ls"></i>매출(센터전체)</span><span><i class="le"></i>지출(인건비)</span>' +
-      '<span class="fnote">● 매출·지출 = <a href="cfo/finance/매출지출현황.html" style="color:var(--gold);text-decoration:none">AI CFO 매출현황</a> gviz 미러(읽기전용). 매출=회원권+강습 / 지출=강사+운영부 인건비(라이브). ' +
-      '구매성·예산·정규직/임대 등 전체 지출은 CFO 매출현황 참조. 측정 전=소스 미기재(가짜값 없음).</span>' +
+      '<span class="fnote">● 선택월(' + mnum + '월) 기준 · 매출·지출 = <a href="cfo/finance/매출지출현황.html" style="color:var(--gold);text-decoration:none">AI CFO 매출현황</a> 미러(읽기전용). ' +
+      '매출=회원권+강습 / <b>전체 지출=강사+운영부 인건비 + 구매성</b>(정규직 일부·임대료 미포함).' + procNote +
+      ' 연간 12개월·부서별 상세는 <a href="cfo/finance/매출지출현황.html" style="color:var(--gold);text-decoration:none">AI CFO 재무현황</a>에서 확인. 측정 전=소스 미기재(가짜값 없음).</span>' +
     '</div>';
 
-    host.innerHTML = table + legend + chart;
+    host.innerHTML = table + legend;
   }
 
   // ── 실무책임자 도달율 스코어보드 ──
@@ -895,6 +891,7 @@
       _homeSales = arr[1];
       _cfoSales = arr[2] && arr[2].sales;
       _cfoExp = arr[2] && arr[2].exp;
+      _cfoProc = procMonthArr(); // 구매성(상수 미러) — 전체지출 = 인건비 + 구매성
       buildMonthSelect();
       render();
     })
