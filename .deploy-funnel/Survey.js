@@ -933,6 +933,7 @@ var _SURVEY_PUBLIC_ACTIONS = {
   member_active_list:         true,  // 멤버십 회원 명단(유효회원·전화 마스킹)
   member_active_update:       true,  // 2026-06-24 멤버십 셀 인라인 수정(유효회원 시트·전화 제외)
   cpo_today_stats:            true,  // 2026-06-24 CPO 오늘/이번달 문의·등록 건수(PII 미노출)
+  cpo_churn_stats:            true,  // 2026-07-02 이탈 현황 실측(유효·이탈·이탈율·갱신임박 리스트) — 페이지 게이트 뒤(전체공개 정책과 동일)
   // 강습문의 페이지(CPO) — 멤버십 member_* 와 동일 정책(2026-06-26)
   lesson_inquiry_list:        true,  // 성인 강습 문의 목록(관리 필드 포함)
   lesson_stats:               true,  // 강습 통계(총·이번달·종목·경로 분포)
@@ -2812,6 +2813,41 @@ function _processAction(body) {
     var ctResult = { ok: true, date: ctToday, todayInquiry: ctTI, monthInquiry: ctMI, todayReg: ctTR, monthReg: ctMR, memberActive: ctActive, memberCorp: ctCorp, memberEnded: ctEnded, todayLoss: ctLoss, monthLoss: ctMonthLoss, lossDated: ctLossDated };
     try { ctCache.put('cpo_today_stats_v4', JSON.stringify(ctResult), 60); } catch (eCc) {}
     return _json(ctResult);
+  }
+
+  // ─── 이탈 현황 실측(1단계) — 유효회원 시트 잔여일·재등록분류로 유효/이탈/이탈율 + 갱신 임박 리스트. 2026-07-02 시포·GM ───
+  if (action === 'cpo_churn_stats') {
+    var czActive = 0, czLoss = 0, czRenew = [];
+    try {
+      var czSh = SpreadsheetApp.openById(MEMBER_SPREADSHEET_ID).getSheetByName(MEMBER_SHEET);
+      if (czSh && czSh.getLastRow() >= 2) {
+        var czCols = czSh.getLastColumn();
+        var czHdr = czSh.getRange(1, 1, 1, czCols).getValues()[0].map(function(v){ return String(v).trim(); });
+        function _czIdx(want){ var w = String(want).replace(/\s/g, ''); for (var i = 0; i < czHdr.length; i++){ if (czHdr[i].replace(/\s/g, '').indexOf(w) >= 0) return i; } return -1; }
+        var czNm = _czIdx('회원명'); var czRem = _czIdx('잔여일'); var czRe = _czIdx('재등록분류');
+        var czPg = _czIdx('등급'); if (czPg < 0) czPg = _czIdx('상품'); if (czPg < 0) czPg = _czIdx('프로그램');
+        var _CZ_LOSS = { 'LOSS':1, '환불':1, '양도LOSS':1 };
+        var czAll = czSh.getRange(2, 1, czSh.getLastRow() - 1, czCols).getValues();
+        for (var czr = 0; czr < czAll.length; czr++) {
+          var czrow = czAll[czr];
+          var czName = czNm >= 0 ? String(czrow[czNm] == null ? '' : czrow[czNm]).trim() : '';
+          if (!czName) continue;
+          var czRemRaw = czRem >= 0 ? String(czrow[czRem] == null ? '' : czrow[czRem]).replace(/[^0-9\-]/g, '') : '';
+          var czRemN = (czRemRaw === '' || czRemRaw === '-') ? NaN : parseInt(czRemRaw, 10);
+          var czReV = czRe >= 0 ? String(czrow[czRe] == null ? '' : czrow[czRe]).trim() : '';
+          var czIsLoss = !!_CZ_LOSS[czReV] || (!isNaN(czRemN) && czRemN <= 0);
+          if (czIsLoss) { czLoss++; continue; }
+          czActive++;
+          if (!isNaN(czRemN) && czRemN > 0 && czRemN <= 30) {
+            czRenew.push({ name: czName, rem: czRemN, program: czPg >= 0 ? String(czrow[czPg] || '').trim() : '' });
+          }
+        }
+      }
+    } catch (eCz) {}
+    czRenew.sort(function(a, b){ return a.rem - b.rem; });
+    var czTotal = czActive + czLoss;
+    var czRate = czTotal > 0 ? Math.round(czLoss / czTotal * 1000) / 10 : 0;
+    return _json({ ok: true, activeCount: czActive, lossCount: czLoss, lossRate: czRate, renewCount: czRenew.length, renewSoon: czRenew.slice(0, 40) });
   }
 
   // ─── 문의→가입 전환 집계 ───

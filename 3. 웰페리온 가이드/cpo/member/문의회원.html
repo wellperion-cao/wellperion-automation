@@ -1943,13 +1943,8 @@ if (action === 'member_calendar') {
       </table>
     </div>
   </div>
-  <div data-gdoc="churnstat" data-title="이탈 현황 추적 (추후 측정)">
-    <div style="font-size:13px;color:var(--dim);line-height:1.8">
-      · 이탈율: &lt;placeholder&gt;<br>
-      · 이번 달 이탈 회원 수: &lt;placeholder&gt;<br>
-      · 이탈 주요 사유 TOP 3: &lt;placeholder&gt;<br>
-      · 재가입 전환율: &lt;placeholder&gt;
-    </div>
+  <div data-gdoc="churnstat" data-title="이탈 현황 추적 (실측)">
+    <div style="font-size:12px;color:var(--dim)">불러오는 중… (유효회원 시트 잔여일·재등록분류 실측)</div>
   </div>
 </div>
 
@@ -1999,9 +1994,50 @@ function toggleGuideAcc(btn, id) {
     body.innerHTML = tpl ? tpl.innerHTML : '<div style="color:var(--dim);font-size:12px">내용 없음</div>';
     body.dataset.loaded = '1';
   }
+  if (open && id === 'churnstat') loadChurnStats(body);   // 이탈 현황 실측 주입(매 열람 갱신). 2026-07-02 시포·GM
   body.style.display = open ? 'block' : 'none';
   btn.classList.toggle('open', open);
   var arrow = btn.querySelector('span'); if (arrow) arrow.textContent = open ? '▴' : '▾';
+}
+
+/* ── 이탈 현황 추적 실측(1단계) — cpo_churn_stats: 유효·이탈·이탈율 + 갱신 임박(D-7/14/30). 2026-07-02 시포·GM ── */
+function loadChurnStats(el){
+  if (!el) return;
+  el.innerHTML = '<div style="color:var(--dim);font-size:12px">불러오는 중…</div>';
+  fetch(GAS_URL + '?action=cpo_churn_stats' + _wpKeyParam())
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      if (!d || !d.ok) { el.innerHTML = '<div style="color:var(--dim);font-size:12px">불러오기 실패</div>'; return; }
+      var b7=[], b14=[], b30=[];
+      (d.renewSoon||[]).forEach(function(m){ if (m.rem<=7) b7.push(m); else if (m.rem<=14) b14.push(m); else b30.push(m); });
+      function _rlist(title, arr, color){
+        if (!arr.length) return '';
+        var rows = arr.map(function(m){
+          return '<tr><td style="padding:4px 8px;border-bottom:1px solid var(--border-subtle)">'+esc(m.name)+
+                 '</td><td style="padding:4px 8px;border-bottom:1px solid var(--border-subtle);color:'+color+';font-weight:700;white-space:nowrap">D-'+m.rem+
+                 '</td><td style="padding:4px 8px;border-bottom:1px solid var(--border-subtle);color:var(--dim);font-size:11px">'+esc(m.program||'')+'</td></tr>';
+        }).join('');
+        return '<div style="font-size:11px;font-weight:800;color:'+color+';margin:12px 0 4px">'+title+' ('+arr.length+'명)</div>'+
+               '<table style="width:100%;border-collapse:collapse;font-size:12px">'+rows+'</table>';
+      }
+      function _kpi(label, val, color){
+        return '<div style="min-width:78px"><div style="font-size:10px;color:var(--dim);font-weight:700">'+label+'</div>'+
+               '<div style="font-size:22px;font-weight:800;color:'+color+'">'+val+'</div></div>';
+      }
+      el.innerHTML =
+        '<div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:6px">'+
+          _kpi('유효 회원', d.activeCount, 'var(--green)')+
+          _kpi('이탈', d.lossCount, 'var(--red)')+
+          _kpi('이탈율', d.lossRate+'%', 'var(--red)')+
+          _kpi('갱신 임박(30일)', d.renewCount, 'var(--accent)')+
+        '</div>'+
+        (d.renewCount
+          ? ('<div style="font-size:12px;font-weight:800;color:var(--text);margin-top:8px">⏰ 갱신 임박 회원 — 지금 챙길 명단</div>'+
+             _rlist('🔴 D-7 이내', b7, 'var(--red)')+_rlist('🟡 D-8~14', b14, 'var(--yellow)')+_rlist('🟢 D-15~30', b30, 'var(--green)'))
+          : '<div style="color:var(--dim);font-size:12px;margin-top:8px">30일 내 갱신 임박 회원 없음</div>')+
+        '<div style="color:var(--dim);font-size:10px;margin-top:12px">· 유효회원 시트 잔여일·재등록분류 실측 · 열람 시마다 갱신</div>';
+    })
+    .catch(function(){ el.innerHTML = '<div style="color:var(--dim);font-size:12px">네트워크 오류</div>'; });
 }
 
 /* ── 탭 전환 ── */
