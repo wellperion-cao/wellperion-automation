@@ -801,7 +801,11 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
     <button class="util-btn print-btn" onclick="printCurrentTab()">인쇄</button>
     <button class="util-btn print-btn" onclick="printA3Guideline()" title="규정+가이드를 A3 세로 좌우2단으로 인쇄">🖨️ A3 가이드라인</button>
     <button class="util-btn print-btn" onclick="printA3Manual()" title="매뉴얼 보드를 A3 가로 1장 주간표(월~일 7열)로 인쇄">🖨️ A3 매뉴얼(주간)</button>
+    <button class="util-btn print-btn" onclick="printA3Manual('m')" title="남+외곽 구역만 A3 가로 1장 주간표로 인쇄">🖨 A3 가로(남)</button>
+    <button class="util-btn print-btn" onclick="printA3Manual('f')" title="여+외곽 구역만 A3 가로 1장 주간표로 인쇄">🖨 A3 가로(여)</button>
     <button class="util-btn print-btn" onclick="printA3ManualPortrait()" title="평일 공통 항목을 분리해 A3 세로 1장으로 압축 인쇄">🖨 A3 세로(1장)</button>
+    <button class="util-btn print-btn" onclick="printA3ManualPortrait('m')" title="남+외곽 구역만 평일 공통 분리 A3 세로 1장으로 압축 인쇄">🖨 A3 세로(남)</button>
+    <button class="util-btn print-btn" onclick="printA3ManualPortrait('f')" title="여+외곽 구역만 평일 공통 분리 A3 세로 1장으로 압축 인쇄">🖨 A3 세로(여)</button>
     <button class="util-btn report-btn" onclick="copyReport()">보고용</button>
     <button class="util-btn share-btn" onclick="copyShare()">공유용</button>
   </div>
@@ -4968,6 +4972,16 @@ const BOARD_GENDERS = [
   {gk:'outer',cls:'outer',label:'🏢 외곽'}
 ];
 
+/* A3 인쇄 성별 필터 — 남 인쇄=남+외곽, 여 인쇄=여+외곽, 미지정(g falsy)=전체(기존 동작 유지) */
+function a3GenderList(g){
+  if(g==='m') return BOARD_GENDERS.filter(x=>x.gk==='m'||x.gk==='outer');
+  if(g==='f') return BOARD_GENDERS.filter(x=>x.gk==='f'||x.gk==='outer');
+  return BOARD_GENDERS;
+}
+function a3GenderLabel(g){
+  return g==='m'?' (남)':g==='f'?' (여)':'';
+}
+
 /* 시드(seed) — 기존 요일별 집중 청소 표 + 남/여 전담 + 외부·주차장·건물 외곽 항목을 요일·분류 셀로 분배.
    각 값은 줄바꿈(\n) 구분 항목 리스트 텍스트. 줄 맨 앞 "시간대::" 표기 시 그 시간대 그룹으로 묶임.
    GM이 이후 직접 편집·저장. */
@@ -6669,7 +6683,7 @@ function shortTimeslot(label){
   const m=String(label).match(/(\d{1,2}:\d{2})/);
   return m?m[1]:label.slice(0,6);
 }
-function printA3Manual(){
+function printA3Manual(g){
   if(!BOARD_DATA||!Object.keys(BOARD_DATA).length) loadBoardData();
   let html='<table class="a3m-grid">';
   html+='<colgroup><col class="a3m-rowhead">';
@@ -6680,10 +6694,10 @@ function printA3Manual(){
     html+='<th class="'+(d.weekend?'is-weekend':'')+'">'+escapeHTML(d.label)+'</th>';
   });
   html+='</tr></thead><tbody>';
-  BOARD_GENDERS.forEach(g=>{
-    html+='<tr><td class="a3m-rowhead">'+escapeHTML(g.label)+'</td>';
+  a3GenderList(g).forEach(gd=>{
+    html+='<tr><td class="a3m-rowhead">'+escapeHTML(gd.label)+'</td>';
     BOARD_DAYS.forEach(d=>{
-      const cell=(BOARD_DATA[d.key]&&BOARD_DATA[d.key][g.gk])||'';
+      const cell=(BOARD_DATA[d.key]&&BOARD_DATA[d.key][gd.gk])||'';
       html+='<td class="a3m-cell '+(d.weekend?'is-weekend':'')+'">'+a3mCellHTML(cell)+'</td>';
     });
     html+='</tr>';
@@ -6692,7 +6706,7 @@ function printA3Manual(){
   const host=document.getElementById('a3m-table-host');
   if(host) host.innerHTML=html;
   const sub=document.querySelector('#a3-manual-print .a3m-sub');
-  if(sub) sub.textContent='남·여·외곽 구역별 주간 청소 일정 — 월~일 한눈에  ·  출력일 '+kstToday();
+  if(sub) sub.textContent='남·여·외곽 구역별 주간 청소 일정 — 월~일 한눈에'+a3GenderLabel(g)+'  ·  출력일 '+kstToday();
   document.body.classList.add('a3-manual-mode');
   let styleTag=document.getElementById('a3-manual-page-style');
   if(!styleTag){
@@ -6762,27 +6776,27 @@ function a3pvLinesHTML(lines){
   });
   return html;
 }
-function printA3ManualPortrait(){
+function printA3ManualPortrait(g){
   const data=computeA3ManualPortraitData();
   let html='<div class="a3pv-sec-title">공통 (매일 · 월~일)</div>';
   html+='<div class="a3pv-common-grid">';
-  BOARD_GENDERS.forEach(g=>{
-    html+='<div class="a3pv-col"><div class="a3pv-col-head">'+escapeHTML(g.label)+'</div>'
-        +a3pvLinesHTML(data.common[g.gk])+'</div>';
+  a3GenderList(g).forEach(gd=>{
+    html+='<div class="a3pv-col"><div class="a3pv-col-head">'+escapeHTML(gd.label)+'</div>'
+        +a3pvLinesHTML(data.common[gd.gk])+'</div>';
   });
   html+='</div>';
   html+='<div class="a3pv-sec-title">요일·주말 특화</div>';
   html+='<div class="a3pv-day-grid">';
   BOARD_DAYS.forEach(d=>{
     const cellSet=d.weekend?data.weekend[d.key]:data.perDay[d.key];
-    const hasContent=BOARD_GENDERS.some(g=>cellSet[g.gk]&&cellSet[g.gk].length);
+    const hasContent=a3GenderList(g).some(gd=>cellSet[gd.gk]&&cellSet[gd.gk].length);
     if(!hasContent) return; // 특화항목 없는 요일은 생략(컴팩트)
     html+='<div class="a3pv-day'+(d.weekend?' is-weekend':'')+'">';
     html+='<div class="a3pv-day-title">'+escapeHTML(d.label)+'</div>';
-    BOARD_GENDERS.forEach(g=>{
-      const lines=cellSet[g.gk]||[];
+    a3GenderList(g).forEach(gd=>{
+      const lines=cellSet[gd.gk]||[];
       if(!lines.length) return;
-      html+='<div class="a3pv-day-gender"><span class="a3pv-day-gender-label">'+escapeHTML(g.label)+'</span>'
+      html+='<div class="a3pv-day-gender"><span class="a3pv-day-gender-label">'+escapeHTML(gd.label)+'</span>'
           +a3pvLinesHTML(lines)+'</div>';
     });
     html+='</div>';
@@ -6791,7 +6805,7 @@ function printA3ManualPortrait(){
   const host=document.getElementById('a3pv-body-host');
   if(host) host.innerHTML=html;
   const sub=document.querySelector('#a3-manual-portrait-print .a3pv-sub');
-  if(sub) sub.textContent='공통(매일) 분리 압축판 — 세로 1장  ·  출력일 '+kstToday();
+  if(sub) sub.textContent='공통(매일) 분리 압축판 — 세로 1장'+a3GenderLabel(g)+'  ·  출력일 '+kstToday();
   document.body.classList.add('a3-manual-portrait-mode');
   let pstyleTag=document.getElementById('a3-manual-portrait-page-style');
   if(!pstyleTag){
